@@ -3,3 +3,4 @@ pandas
 numpydoc
 scipy
 fluids
+coolprop
