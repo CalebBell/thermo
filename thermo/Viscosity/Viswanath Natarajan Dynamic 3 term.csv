@@ -1,0 +1,433 @@
+CASRN	Name	Formula	A	B	C	Tmin	Tmax
+60-35-5	Acetamide 	C2H5NO 	-1.6341	-422.9	149.84	360	500
+108-24-7	Acetic anhydride 	C4H6O3 	-1.5804	-374.6	49.411	270	410
+67-64-1	Acetone 	C3H6O 	-1.6125	-298.48	26.203	180	320
+75-05-8	Aceto nitrile 	C2H3N 	-1.8242	-430.37	13.17	280	360
+98-86-2	Aceto phenone 	C7H8O 	-1.6251	-468.3	45.007	370	480
+75-36-5	Acetyl chloride 	C2H3ClO 	-1.7447	-407.1	12.418	290	330
+557-40-4	Allyl ether 	C6H10O 	-2.5716	-938.43	-130.23	290	360
+556-56-9	Allyl iodide 	C3H5I 	-1.5436	-410.42	2.0868	270	380
+7727-15-3	Aluminum bromide 	AlBr3 	-1.2262	-493.82	64.743	370	530
+7784-23-8	Aluminum iodide 	AlI3 	-0.884	-443.03	132.69	470	680
+7664-41-7	Ammonia 	NH3 	-1.3044	-94.129	108.28	200	240
+75-85-4	tert-Amyl alcohol 	C5H12O 	-2.0567	-359.53	161.29	270	380
+540-18-1	Amyl butyrate 	C 9H18O2 	-1.4732	-321.43	87.301	270	380
+62-53-3	Aniline 	C6H7N 	-1.467	-327.72	138.45	280	460
+135-02-4	o-Anisaldehyde 	C8H8O 	-1.6222	-477.93	70.529	320	520
+100-47-0	Benzo nitrile 	C7H5N 	-1.2898	-274.62	100.95	290	470
+119-61-9	Benzo phenone 	C13H10O 	-1.6614	-416.84	148.97	300	380
+100-51-6	Benzyl alcohol 	C7H8O 	-1.6581	-422.73	121.75	280	480
+100-46-9	Benzyl amine 	C7H9N 	-1.7265	-480.83	49.937	290	460
+120-51-4	Benzyl benzoate 	C14H12O2 	-0.9401	-230.36	174.56	270	380
+100-44-7	Benzyl chloride 	C7H7Cl 	-0.8075	-122.5	163.81	280	310
+140-29-4	Benzyl cyanide 	C8H7N 	-1.2563	-292.41	109.28	290	420
+103-50-4	Benzyl ether 	C14H14O 	-1.0837	-260.57	149.28	270	380
+1605-65-8	Bis dimethyl amino phosphoryl chloride 	C4H12ClN2OP 	-1.1079	-297.31	118.96	240	350
+2778-42-9	1,3 - Bis (1 - Iso cyanato - 1- methyl) benzene 	C14H16N2O2 	-1.3198	-351.17	140.96	290	360
+12595-65-2	Bismuth 	Bi 	-0.1717	-93.808	343.93	550	1250
+7787-60-2	Bismuth chloride - molten 	BiCl3 	-2.7029	-198.83	348.83	500	675
+507-42-6	Bromal hydrate 	C2H3Br3O2 	-1.7271	-303.97	223.45	310	380
+10097-32-2	Bromine 	Br2 	-1.238	-329.88	26.153	270	330
+74-96-4	Bromo ethane 	C2H5Br 	-1.7817	-468.12	-47.339	200	300
+78-77-3	1- Bromo - 2 - metehyl -propane 	C4H9Br 	-2.1273	-731.96	-85.418	270	370
+615-36-1	2 - Bromoaniline 	C6H5NBr 	-1.1491	-282.29	142.43	310	380
+591-19-5	3 - Bromoaniline 	C6H6Br 	-0.831	-175.81	187.13	290	380
+108-86-1	Bromo benzene 	C6H5Br 	-1.2367	-279.94	77.353	270	420
+109-04-6	2 - Bromo pyridine 	C6H4BrN 	-1.2913	-347.61	71.653	290	400
+95-46-5	2 - Bromo toluene 	C7H7Br 	-1.1812	-252.67	107.57	270	380
+591-17-3	3 - Bromo toluene 	C7H7Br 	-1.1955	-258.83	92.688	270	380
+106-97-8	Butane 	C4H10 	-2.143	-528.24	88.682	180	310
+109-79-5	1 - Butane thiol 	C4H10S 	2.3425	-1606.6	908.1	280	340
+78-92-2	2 - Butanol 	C4H10O 	-2.2749	-452.89	134.4	280	370
+106-99-0	1,3 - Butadiene 	C4H6 	-3.0528	-973.83	-145.12	250	400
+123-86-4	Butyl acetate 	C6H12O2 	-1.7722	-431.58	29.726	270	380
+109-21-7	Butyl butyrate 	C8H16O2 	-1.5274	-338.81	72.283	270	380
+21078-85-3	2-Butyl dodecanol 	C16H34O 	-2.2109	-614.37	132.35	290	380
+142-96-1	Butyl ether 	C8H18O 	-1.809	-449.86	20.676	270	380
+592-84-7	Butyl formate 	C5H10O2 	-1.8197	-448.59	22.748	270	380
+66455-55-8	2 - Butyl - 3 -hexyl deca hydro naphthalene 	C20H38 	-1.2988	328.7	75.01	270	380
+55000-56-1	2 - Butyl - 3 -hexyl naphthalene 	C20H28 	-1.2679	-328.24	169.89	270	380
+23288-01-9	3 - Butyl - 2 – oxazolidone 	C7H13NO 2 	-1.2198	-311.24	135.32	270	340
+40482-46-0	3 - te t - Butyl - 2 – oxazolidinone 	C7H13NO2 	-1.3212	-352.73	127.83	270	340
+1126-79-0	Butyl phenyl ether 	C10H14O 	-1.7979	-500.67	51.416	290	490
+590-01-2	Butyl propionate 	C7H14O2 	-1.661	-393.94	44.512	270	380
+64180-21-8	Butyl sydnone 	C6H10N2O2 	-0.9759	-279	150.51	310	400
+5593-70-4	Butyl titanate 	C16H36O4Ti 	-3.5798	-1299.5	80.807	370	480
+3087-39-6	Tert - Butyl titanate 	C16H36O4Ti 	-1.818	-598.78	44.89	310	410
+591-68-4	Butyl valerate 	C9H18O2 	-1.5554	-370.73	67.95	270	380
+541-35-5	Butyramide 	C4H9NO 	-2.7069	-1130.3	7.6121	390	490
+106-31-0	Butyric anhydride 	C8H14O3 	-1.7648	-512.55	31.91	290	420
+7440-43-9	Cadmium 	Cd 	-0.6422	-941.06	280.31	590	730
+75-45-6	Chloro difluoro methane 	CHClF2 	-1.7458	-328.78	25.019	200	300
+593-70-4	Chloro fluoro methane 	CH2FCl 	-1.5953	-281.37	12.76	190	320
+67-66-3	Chloroform 	CHCl3 	-1.4573	-325.76	23.789	210	360
+87-63-8	2 - Chloro - 6 - methyl aniline 	C7H8ClN 	-0.5853	-76.581	216.4	290	330
+513-36-0	1 - Chloro - 2 -methyl propane 	C4H9Cl 	-2.0409	-575.22	-45.152	270	340
+95-57-8	2 - Chloro phenol 	C6H5ClO 	-1.2372	-230.71	169.42	280	450
+108-43-0	3 - Chloro phenol 	C6H5ClO 	-0.4776	-89.566	240.53	290	340
+106-48-9	4 - Chloro phenol 	C6H5ClO 	-1.7219	-507.99	103.79	370	500
+766-51-8	2 - Chloro phenyl methyl ether 	C7H7ClO 	-1.5675	-410.89	80.145	290	470
+109-09-1	2 - Chloro pyridine 	C5H4ClN 	-1.5143	-420.08	33.573	290	400
+95-49-8	2 - Chloro toluene 	C7H7Cl 	-1.6558	-464.57	14.885	270	440
+108-41-8	3 - Chloro toluene 	C7H7Cl 	-1.5776	-405.97	26.217	270	440
+106-43-4	4 - Chloro toluene 	C7H7Cl 	-1.5492	-380.43	39.664	280	440
+8001-30-7	Corn oil 	- 	-0.5581	-263.32	183.6	290	340
+8029-43-4	Corn syrup 	- 	-1.45	-234.8	159.91	280	360
+108-39-4	m - Cresol 	C7H8O 	-1.4933	-298.87	183.39	280	480
+95-48-7	o - Cresol 	C7H8O 	-1.3697	-250.28	187.77	270	470
+106-44-5	p - Cresol 	C7H8O 	-1.3867	-268.79	192.8	280	480
+100-70-9	2 - Cyanopyridine 	C6H4N2 	-1.3011	-315.45	100.85	300	400
+100-54-9	3 - Cyanopyridine 	C6H4N 	-1.2055	-268.49	137.4	320	400
+108-93-0	Cyclo hexanol 	C6H12O 	-1.8184	-388.21	189.65	300	440
+108-91-8	Cyclo hexyl amine 	C6H13N 	-1.6016	-357.42	109.06	280	410
+108-85-0	Cyclo hexyl bromide 	C6H11Br 	-1.5225	-412.4	76.454	280	440
+542-18-7	Cyclo hexyl chloride 	C6H11Cl 	-1.6971	-460.15	51.188	290	420
+493-01-6	Cis - Decalin 	C10H18 	-1.448	-395.48	93.359	240	460
+493-02-7	Trans - Decalin 	C10H18 	-1.5844	-443.2	61.638	240	440
+124-18-5	Decane 	C10H22 	-1.574	-343.92	68.462	240	380
+112-30-1	1 - Decanol 	C10H22O 	-2.2085	-619.24	107.41	280	330
+872-05-9	Decene 	C10H20 	-1.9646	-576.81	-13.145	290	420
+7789-20-0	Deuterium oxide 	D2 O 	-1.2911	-164.97	174.24	280	310
+78-90-0	1,2 - Diamino propane 	C3H10N2 	-1.0837	-167.55	166.21	240	330
+106-93-4	1,2 – Dibromo methane 	C2H4Br2 	-1.2416	-300.36	90.197	280	400
+594-34-3	1,2 - Dibromo - 2 - methyl propane 	C4H8Br2 	-1.5276	-435.27	60.001	270	420
+78-75-1	1,2 - Dibromo propane 	C3H6Br2 	-1.7088	-562.02	1.9572	270	420
+111-92-2	Dibutyl amine 	C8H19N 	-1.6971	-360.91	80.751	270	440
+542-52-9	Dibutyl carbonate 	C9H18O3 	-0.9131	-155.55	163.43	290	420
+79-43-6	Dichloro acetic acid 	C2H2Cl2O2 	-2.1869	-929.48	-25.087	290	470
+95-50-1	1,2 - Dichloro benzene 	C6H4Cl 	-1.5524	-456.48	23.531	290	460
+541-73-1	1,3 - Dichloro benzene 	C6H4Cl 	-1.6277	-490.14	-1.115	300	450
+75-34-3	1,1 - Dichloro ethane 	C2H2Cl2 	-1.836	-486.96	-25.909	280	330
+107-06-2	1,2 - Dichloro ethane 	C2H4Cl2 	-1.598	-385.16	39.584	270	360
+156-59-2	Cis - 1,2 - Dichloro - ethylenene 	C2H2Cl2 	-1.4812	-315.48	-18.953	200	300
+75-43-4	Dichloro fluoro methane 	CHCl2F 	-1.6041	-336.39	-6.3451	220	350
+75-09-2	Dichloro methane 	CH2Cl2 	-1.5147	-316.63	18.104	200	380
+579-66-8	2,6 - Diethyl aniline 	C10H15N 	-1.0635	-207.07	171.42	290	380
+105-58-8	Diethyl carbonate 	C5H10O3 	-0.798	-65.04	202.89	290	400
+693-21-0	Diethylene glycol dinitrate 	C4H8N2O7 	-0.8314	-192.04	182.51	280	340
+91-67-8	n,n - Diethyl - m - toludine 	C12H17NO 	-1.9635	-683.97	-5.57	380	510
+381-73-7	Difluoro acetic acid 	C2H2F2O2 	-1.5695	-380.88	106.79	290	340
+367-30-6	2,5 - Difluoro aniline 	C6H5F2N 	-1.2269	-264.07	127.26	290	340
+372-18-9	1,3 - Difluoro benzene 	C6H4F2 	-1.7875	-466.28	-8.3165	290	340
+540-36-3	1,4 - Difluoro benzene 	C6H4F2 	-1.9046	-549.69	-28.264	290	340
+454-31-9	1,1 - Difluoro ethyl acetate 	C4H6F2O2 	-2.014	-560.88	21.795	290	340
+359-13-7	2,2 - Difluoro ethyl alcohol 	C2H4F2O 	-1.755	-380.84	118.36	290	340
+75-10-5	Difluoro methane 	CH2F2 	-3.6081	-1079.9	-185.87	200	290
+2470-68-0	Diheptyl amine 	C14H31N 	-1.5966	-429.86	91.79	290	430
+110-96-3	Di iso butyl amine 	C 8H19N 	-1.6618	-345.27	71.137	270	400
+544-00-3	Di iso pentyl amine 	C10H23N 	-1.7264	-415.49	72.234	270	430
+513-81-5	Diiso propenyl 	C6H10 	-2.3047	-701.2	-109.18	270	330
+108-18-9	Diiso propyl amine 	CHN 	-2.0566	-540.15	-29.009	280	360
+151-10-0	1,3 - Dimethoxy benzene 	C8H10O2 	-1.6919	-461.09	70.728	310	490
+127-19-5	n,n - Dimethyl acetamide 	C4H9NO 	-1.8134	-547.67	37.944	290	450
+121-69-7	n,n - Dimethyl aniline 	C8H11N 	-1.694	-483.96	30.46	270	470
+75-83-2	2,2 - Dimethyl butane 	C8H14 	1.4653	-651.45	637.56	270	310
+616-38-6	Dimethyl carbonate 	C3H6O3 	-0.7328	-35.269	227.61	290	380
+80-73-9	n,n - Dimethyl - ethylene urea 	C5H12N2O 	-1.2477	-295.33	105.93	290	380
+68-12-2	n,n - Dimethyl  formamide 	C3H7NO 	-0.6398	-56.047	194.25	270	320
+1072-16-8	2,7 - Dimethyl octane 	C10H22 	-0.7054	-38.588	236.15	290	340
+54964-83-9	1,4 - Dimethyl - 5 - octyl deca hydro naphthalene 	C20H38 	-1.148	-302.82	168.39	270	380
+54964-85-1	2,6 - Dimethyl - 3 - octyl deca hydro naphthalene 	C20H38 	-1.1606	-302.58	171.06	290	380
+55000-53-8	1,4 - Dimethyl - 5 - octyl naphthalene 	C20H28 	-1.1315	-294.82	180.84	270	380
+3672-60-4	4,4 - Dimethyl -2 -oxa zolidine 	C5H9NO2 	-1.8411	-497.42	168.44	270	340
+565-80-0	2,4 - Dimethyl -3 - pentanone 	C7H14O 	-2.2591	-791.85	-91.339	290	380
+1073-23-0	2,6 - Dimethyl pyridine-N-oxide 	C7H9NO 	-1.0622	-218.72	179.99	290	400
+1003-78-7	2,4 - Dimethyl sulfolane 	C6H12O2S 	-1.1963	-331.93	143.99	290	400
+7226-23-5	1,3 - Dimethyl - 3,4,5,6 -tetra - hydro - 2 ( 1H ) pyridimidinone 	C6H12N2O 	-1.1959	-283.4	127.74	290	380
+609-72-3	n,n - Dimethyl - o - toluidine 	C9H13N 	-1.8977	-598.28	2.4885	340	460
+99-97-8	n,n - Dimethyl - p - toluidine 	C9H13N 	-1.9002	-645	-24.571	370	490
+99-65-0	1,3-Dinitro benzene 	C6H4N2O4 	-0.9732	-200.42	241.63	370	580
+2050-92-2	Dipentyl amine 	C10H23N 	-1.5796	-349.69	97.021	270	430
+122-39-4	Diphenyl amine 	C12H11N 	-1.2791	-281.54	186.14	300	410
+101-81-5	Diphenyl methane 	C13H12 	-1.84	-654.74	11.031	330	540
+53214-07-6	Ditellurium deca fluoride 	Te2F10 	-1.8292	-170.32	105.09	240	320
+109309-32-2	2,2-Di - p - toly butane 	C18H22 	-1.4205	-278.15	202.1	270	480
+112-40-3	Dodecane 	C12H26 	-1.5578	-375.97	76.83	270	380
+143-07-7	Dodecanoic acid 	C12H24O2 	-1.7935	-643.12	78.509	320	440
+2487-77-6	Dodecyl thio palmitate 	C28H56OS 	-0.859	-327.41	153.05	340	370
+112-95-8	Eicosane 	C20H42 	-1.5977	-509.04	81.873	310	500
+64-17-5	Ethanol 	C2H6O 	-2.5972	-846.95	24.124	210	350
+94-70-2	2 - Ethoxy benzenamine 	C8H11NO 	-1.0349	-191.08	188.2	270	380
+621-33-0	3 - Ethoxy benzenamine 	C8H11NO 	-1.0694	-203.67	210.01	300	380
+156-43-4	4 - Ethoxy benzenamine 	C8H11NO 	-1.1091	-226.14	191.43	290	380
+103-73-1	Ethoxy benzene 	C8H10O 	-1.7732	-469.95	44.325	290	450
+614-71-1	2 - Ethoxy toluene 	C9H12O 	-1.682	-425.29	60.601	280	450
+621-32-9	3 - Ethoxy toluene 	C9H12O 	-1.6888	-429.81	50.995	290	450
+104-93-8	4 - Ethoxy toluene 	C9H12O 	-1.8518	-530.68	21.765	280	450
+141-78-6	Ethyl acetate 	C4H8O2 	-1.8721	-452.07	-3.4748	270	350
+578-54-1	2 - Ethyl aniline 	C8H11N 	-0.924	-157.75	193.75	290	380
+103-69-5	n - Ethylaniline 	C8H11N 	-1.5575	-348.74	111.51	370	480
+100-41-4	Ethyl benzene 	C8H10 	-1.8421	-519.36	-18.754	270	410
+105-54-4	Ethyl butyrate 	C 6H12O2 	0.3189	-56.932	409.09	280	330
+123-66-0	Ethyl caproate 	C8H16O2 	-1.7822	-488.78	19.765	300	370
+105-56-6	Ethyl cyano acetate 	C5H7NO2 	-1.9267	-648.38	13.921	350	480
+1678-91-7	Ethyl cyclo hexane 	C8H16 	-1.5094	-338.98	56.684	270	320
+107-15-3	Ethylene diamine 	C 2H8N2 	-1.8506	-458.11	72.151	290	390
+107-21-1	Ethylene glycol 	C2H6O2 	-1.5448	-417.05	146.53	280	420
+628-96-6	Ethylene glycol dinitrate 	C2H4N2O6 	-0.8971	-190.9	167.79	280	340
+3741-38-6	Ethylene sulfite 	C 2H4SO3 	-1.2577	-316.63	96.579	290	350
+459-72-3	Ethyl fluoro acetate 	C 4H7FO2 	-1.4366	-278.91	96.402	290	340
+627-45-2	n-Ethyl formamide 	C 3H7NO 	-1.495	-403.12	79.019	290	350
+109-94-4	Ethyl formate 	C3H6O 	-1.5771	-297.6	40.866	270	330
+106-30-9	Ethyl heptanoate 	C9H18O2 	-1.5344	-360.05	72.643	270	380
+104-76-7	2 - Ethyl - 1 - hexanol 	C8H18O 	-1.9651	-436.77	140.04	270	380
+1632-16-2	2 - Ethyl - 1 - hexene 	C8H16 	-2.0166	-573.86	-46.195	290	380
+97-64-3	Ethyl lactate 	C5H10O3 	-1.7088	-369.1	121.15	270	380
+106-33-2	Ethyl laurate 	C14H28O2 	-1.6006	-474.53	70.2	300	370
+613-97-8	n - Ethyl - n - methyl aniline 	C9H13N 	-1.619	-391.17	90.088	380	480
+105-40-8	Ethyl - n - methyl carbamate 	C4H9NO2 	-1.5915	-354.47	127.89	290	380
+124-06-1	Ethyl myrisate 	C16H32O2 	-1.0528	-250.11	149.25	300	370
+5261-18-7	3 - Ethyl - 2 – oxazolidinone 	C5H9NO2 	-1.1644	-303.21	110.17	270	340
+16112-60-0	4 - Ethyl - 2 – oxazolidinone 	C5H9NO2 	-1.3902	-367.67	180.81	280	340
+628-97-7	Ethyl palmitate 	C 18H36O2 	-1.312	-375.53	116.66	300	370
+105-37-3	Ethyl propionate 	C5H10O2 	-2.0255	-577.2	36.36	270	370
+111-61-5	Ethyl stearate 	C20H40O2 	-1.2849	-383.58	120.19	300	370
+352-93-2	Ethyl sulfide 	C2H10S 	-2.0494	-622.24	-73.352	270	370
+101433-18-5	Ethyl tetra decanol 	C16H34O 	-2.049	-572.23	135.51	290	380
+539-82-2	Ethyl valerate 	C7H14O2 	-1.6077	-368.04	52.281	270	380
+97-53-0	Eugenol 	C10H12O2 	-1.0814	-207.8	191.38	270	380
+7782-41-4	Fluorine 	F2 	-1.0425	-19.965	39.377	60	85
+348-54-9	2 - Fluoro aniline 	C6H6FN 	-1.4778	-349.85	108.24	290	340
+372-19-0	3 - Fluoro aniline 	C6H6FN 	-0.7425	-113.06	198.67	290	340
+371-40-4	4 - Fluoro aniline 	C6H6FN 	-1.186	-247.24	144.82	290	340
+371-62-0	2 - Fluoro ethanol 	C2H5FO 	-1.3059	-237.31	144.01	290	340
+1493-27-2	1 - Fluoro - 2 - nitro benzene 	C6H4FNO2 	-0.9207	-190.52	152.29	290	340
+402-67-5	1 - Fluoro - 3 - nitrobenzene 	C6H4FNO2 	-0.8976	-168.21	162.25	290	340
+350-46-9	1 - Fluoro - 4 - nitrobenzene 	C6H4FNO2 	-0.8909	-168.55	167.51	300	340
+592-50-7	1 - Fluoro pentane 	C5H11F 	-2.5312	-970.96	-168.92	290	340
+451-80-9	2 - Fluoro phenetole 	C8H9FO 	-0.8508	-114.33	182.48	290	330
+458-03-7	3 - Fluoro phenetole 	C8H9FO 	-0.6435	-59.589	215.27	290	340
+459-26-7	4 - Fluoro phenetole 	C8H9FO 	-1.2889	-237.6	125.43	290	340
+95-52-3	2 - Fluoro toluene 	C7H7F 	-1.9997	-617.09	-43.732	290	340
+352-32-9	4 - Fluoro toluene 	C7H7F 	-1.7711	-463.94	-3.3819	290	340
+75-12-7	Formamide 	CH3NO 	-2.0263	-559.54	78.757	270	320
+64-18-6	Formic acid 	CH2O2 	-1.4442	-311.11	109.61	280	380
+98-01-1	2 - Furaldehyde 	C5H4O2 	-1.3068	-288.9	102.72	270	380
+8002-03-7	Ground nut oil 		-0.9621	-407.46	151.23	290	340
+629-78-7	Hepta decane 	C17H36 	-1.8559	-630.57	35.939	300	580
+142-82-5	Heptane 	C7H16 	-1.7163	-356.13	24.593	190	370
+628-00-2	2 - Heptane thiol 	C7H16S 	-1.5611	-364.98	52.252	270	380
+111-14-8	Heptanoic acid 	C7H14O2 	-1.72	-529.62	68.313	285	395
+543-49-7	2 - Heptanol 	C7H16O 	-1.9431	-408.06	137.51	300	430
+589-82-2	3 - Heptanol 	C7H16O 	-1.7334	-288.89	180.49	310	420
+589-55-9	4 - Heptanol 	C7H16O 	-1.7847	-307.04	170.68	290	420
+110-43-0	2 - Heptanone 	C7H14O 	-1.0164	-55.937	233.86	290	360
+592-76-7	1 - Heptene 	C7H14 	-1.7028	-367.41	0.52937	270	370
+112-06-1	Heptyl acetate 	C9H18O2 	-1.5679	-370.42	69.112	270	380
+111-68-2	Heptyl amine 	C7H17N 	-2.5848	-937.05	-48.457	280	400
+1639-09-4	Heptyl mercaptan 	C7H16S 	-1.5069	-354.88	61.388	270	380
+25355-03-7	2 - Heptyl nonanol 	C16H34O 	-2.2286	-622.89	130.58	290	380
+2307-13-3	Heptyl thio laurate 	C 19H38OS 	-0.9865	-308.04	136.82	300	370
+544-76-3	Hexa decane 	C16H34 	-1.8174	-578.33	46.605	290	520
+14852-31-4	2 - Hexa decanol 	C16H34O 	-2.3662	-672.23	124.54	290	380
+629-70-9	Hexa decyl acetate 	C18H36O2 	-1.4106	-403.22	118	290	380
+2307-06-4	7 - n - Hexadecyl spiro ( 4,5) decane 	C26H50 	-1.1827	-387.1	147.17	290	380
+110-54-3	Hexane 	C6H14 	-1.2463	-118.06	134.87	270	340
+628-73-9	Hexane nitrile 	C6H11N 	-1.78	-471.26	27.296	290	440
+111-31-9	1 - Hexane thiol 	C6H14S 	-1.5195	-343.01	54.236	270	380
+1679-06-7	2 - Hexane thiol 	C6H14S 	-1.5945	-361.31	42.281	270	380
+142-92-7	Hexyl ethanoate 	C8H16O2 	-1.6136	-390.55	59.772	300	370
+99332-99-7	Hexyl thiohexanoate 	C12H24OS 	-1.3053	-384.59	78.571	310	370
+2487-75-4	Hexyl thio laurate 	C18H36OS 	-1.1505	-371.22	112.96	310	370
+302-01-2	Hydrazine 	H4 N2 	-1.4407	-296.75	83.603	280	450
+74-90-8	Hydrogen cyanide 	HCN 	-1.6541	-217.4	61.204	250	300
+582-24-1	2 - Hydroxy aceto phenone 	C8H8O2 	-1.583	-435.71	84.205	320	490
+121-71-1	3 - Hydroxy aceto phenone 	C8H8O2 	-1.4802	-415.71	189.61	370	570
+123-08-0	4 - Hydroxy benzaldehyde 	C7H6O2 	-0.3974	-106.24	303.06	400	440
+496-11-7	Indan 	C9H10 	-1.2327	-250.37	114.78	270	400
+7440-74-6	Indium 	In 	-0.3239	-236.69	30.666	430	620
+7783-66-6	Iodine penta fluoride 	F5I 	-0.6707	-114.5	183.24	280	350
+591-50-4	Iodo benzene 	C6H5I 	-1.2107	-307.78	78.655	270	425
+75-03-6	Iodo ethane 	C2H5I 	-1.6258	-446.1	-27.294	270	350
+513-38-2	1 - Iodo - 2 - methyl propane 	C4H9I 	-1.6668	-470.78	7.0839	270	390
+107-08-4	1 - Iodo propane 	C3H7I 	-1.3648	-292.68	56.586	270	380
+75-30-9	2 - Iodo propane 	C3H7N 	-1.588	-409.62	6.1088	270	360
+544-01-4	Isoamyl ether 	C10H22O 	-1.5653	-344.08	74.225	270	380
+110-19-0	Isobutyl acetate 	C6H12O2 	-2.8472	-1268.1	176.33	290	460
+7425-80-1	Isobutyl titanate 	C16H36O4Ti 	-1.7234	-295.54	247.55	370	470
+591-76-4	Iso heptane 	C7H16 	-2.3931	-835.48	-130.45	270	370
+40482-44-8	3 - Isopropyl - 2 - oxa zolidinone 	C6H11NO2 	-1.2344	-323.09	118.18	270	340
+6939-17-9	3 - Iso propyl sydnone 	C5H8N2O2 	-1.1797	-338.42	141.61	330	400
+7439-92-1	Lead 	Pb 	-0.1186	-182.99	266.85	600	1200
+7791-18-6	Magnesium chloride hexahydrate (molten) 	MgCl2.6H2O 	-0.8293	-1261	90.022	990	1180
+2216-51-5	1 - Menthol 	C10H20O 	-2.039	-324.74	214.31	320	380
+7439-97-6	Mercury 	Hg 	-0.1105	-51.209	124.04	290	380
+67-56-1	Methanol 	CH4O 	-1.9016	-449.49	23.551	180	290
+5417-42-5	n - 2 - Methoxy ethyl acetamide 	C5H11O2 	-1.3441	-330.03	159.45	290	350
+90-05-1	2 - Methoxy phenol 	C7H8O2 	-1.4351	-313.21	151.1	320	480
+150-19-6	3 - Methoxy phenol 	C7H8O2 	-1.5348	-377.59	172.18	325	520
+150-76-5	4 - Methoxy phenol 	C7H8O2 	-1.59	-412.7	162.01	340	520
+74-89-5	Methyl amine 	CH5N 	-1.6228	-198.43	71.96	200	300
+100-61-8	n - Methyl aniline 	C7H9N 	-1.3528	-268.33	136.78	270	440
+823-40-5	2 - Methyl benzene amine 	C7H9N 	-1.4107	-297.19	149.02	270	480
+108-44-1	3 - Methyl benzene amine 	C7H9N 	-1.4494	-301.95	145.82	270	480
+529-19-1	2-Methyl benzo nitrile 	C 8H7N 	-1.3838	-319.82	96.496	290	420
+620-22-4	3-Methyl benzo nitrile 	C 8H7N 	-1.408	-321.16	95.332	290	420
+104-85-8	4-Methyl benzo nitrile 	C 8H7N 	-1.4654	-360.83	80.619	300	420
+137-32-6	2-Methyl-1- butanol 	C5H12O 	-2.3355	-551.3	113.41	290	400
+123-51-3	3-Methyl-1- butanol (optically active) 	C5H12O 	-2.775	-841.12	46.485	270	410
+598-75-4	3-Methyl-2- butanol 	C5H12O 	-1.8491	-313.81	169.58	290	380
+598-55-0	Methyl carbamate 	C2H5NO 	-1.3167	-280.14	166.4	320	370
+96-30-0	n - Methyl - 2 - chloro acetamide 	C3H6ClO 	-1.4456	-371.19	140.22	320	350
+108-87-2	Methyl cyclo hexane 	C7H14 	-1.5348	-319.07	64.712	270	380
+583-59-5	2-Methyl cyclo hexanol 	C7H14O 	-1.6708	-304.32	191.82	290	370
+591-23-1	3 - Methyl cyclo hexanol 	C7H14O 	-2.9247	-797.76	107.35	290	370
+589-91-3	4 - Methyl cyclo hexanol 	C7H14O 	-2.4635	-558.96	158	310	370
+583-60-8	2 - Methyl cyclo hexanone 	C7H12O 	-0.8722	-133.01	172.45	280	340
+591-24-2	3 - Methyl cyclo hexanone 	C7H12O 	-0.7405	-97.894	194.36	280	340
+589-92-4	4 - Methyl cyclo hexanone 	C7H12O 	-0.8959	-145	165.5	280	370
+96-37-7	Methyl cyclo pentane 	C6H12 	-2.5016	-940.03	132.64	240	330
+552-82-9	Methyl diphenyl amine 	C13H13N 	-0.8079	-170.88	191.05	270	360
+24549-06-2	2 - Methyl - 6 - ethyl aniline 	C9H13N 	-1.1038	-214.17	166.71	290	380
+107-31-3	Methyl formate 	C2H2O2 	-1.0229	-77.194	155.67	270	310
+625-25-2	2-Methyl-2 - heptanol 	C8H18O 	-1.8579	-419.93	121.96	270	380
+18720-62-2	2-Methyl- 3 - heptanol 	C8H18O 	-1.8686	-319.77	179.53	270	380
+21570-35-4	2-Methyl- 4 - heptanol 	C8H18O 	-2.3181	-471.17	149.48	270	380
+18720-66-6	2-Methyl -5 - heptanol 	C8H18O 	-1.8874	-430.45	86.77	270	380
+87077-20-1	2-Methyl - 7 -heptanol 	C8H18O 	-2.307	-637.23	99.314	270	380
+1070-32-2	3-Methyl -1 - heptanol 	C8H18O 	-1.848	-455.08	83.39	270	380
+31367-46-1	3- Methyl -2 -heptanol 	C8H18O 	-1.639	-334.29	116.43	270	380
+5582-82-1	3- Methyl -3 -heptanol 	C8H18O 	-1.791	-307.09	173.98	270	380
+1838-73-9	3 - Methyl - 4 - heptanol 	C8H18O 	-1.6737	-326.66	130.98	270	380
+18720-65-5	3-Methyl -5 - heptanol 	C8H18O 	-1.6993	-369.64	89.383	270	380
+14979-39-6	4-Methyl- 3 - heptanol 	C8H18O 	-1.6307	-325.82	102.6	270	380
+625-23-0	2-Methyl - 2 - hexanol 	C7H16O 	-1.8188	-322.52	165.66	300	410
+99-76-3	Methyl - 4 - hydroxy benzoate 	C8H8O3 	-1.651	-501.3	184.86	410	570
+25360-10-5	2 - Methyl octane - 2 - thiol 	C9H20S 	-1.5357	-308.54	106.32	280	330
+19836-78-3	3 - Methyl - 2 – oxazolidinone 	C4H7NO2 	-1.5133	-469.69	52.128	270	340
+1072-70-4	5 - Methyl -2 – oxazolidinone 	C4H7NO2 	-1.2193	-323.59	167.86	270	340
+107-83-5	2 - Methyl pentane 	C6H14 	-2.4697	-862.57	-149.9	270	330
+763-29-1	2 - Methyl - 1 - pentene 	C6H12 	0.4316	-236.49	536.99	290	330
+75-66-1	2 - Methyl - 2 - propane thiol 	C4H10S 	-1.726	-342.8	68.37	280	320
+78-83-1	2 - Methyl - 1 - propanol 	C4H10O 	-3.1025	-946.92	37.007	270	380
+75-65-0	2 - Methyl - 2 - propanol 	C4H10S 	-1.7679	-239.2	198.59	300	360
+554-12-1	Methyl propionate 	C4H8O2 	-1.9955	-553.64	-41.506	270	350
+79-31-2	2 - Methyl propionic acid 	C4H8O2 	-1.899	-597.55	-2.4824	270	430
+119-36-8	Methyl salicylate 	C 8H8O3 	-1.6908	-531.13	41.528	350	500
+872-93-5	3 - Methyl sulfolane 	C5H6SO2 	-1.2086	-376.51	132.99	290	400
+67-68-5	Methyl sulfoxide 	C2H6OS 	-1.3585	-323.95	102.62	290	400
+6939-12-4	3 - Methyl sydnone 	C3H4N2O2 	-0.9503	-268.63	154.26	310	400
+556-64-9	Methyl thio cyanate 	C2H3SN 	-1.4357	-314.04	57.847	270	380
+677-43-0	Mono dimethyl amino phosphoryl chloride 	C2H6Cl2NOP 	-0.8387	-175.69	142.04	250	350
+98-95-3	Nitro benzene 	C6H5NO2 	-1.4054	-372.85	75.641	270	500
+88-75-5	2 - Nitro phenol 	C6H5NO3 	-1.3361	-328.93	129.92	300	490
+554-84-7	3 - Nitro phenol 	C6H5NO3 	-0.9333	-216.26	223.8	360	400
+100-02-7	4 - Nitro phenol 	C6H5NO3 	-2.1303	-889.28	59.746	370	570
+15457-05-3	2 - Nitro phenyl methyl ether 	C8H9NO3 	-1.496	-422.07	106.85	280	520
+601-89-8	2 - Nitro resorcinol 	C6H5NO4 	-1.5642	-455.67	128.78	360	510
+88-72-2	2 - Nitro toluene 	C7H7NO2 	-1.4923	-404.73	76.683	270	500
+99-08-1	3 - Nitro toluene 	C7H7NO2 	-1.1521	-252.23	127.13	290	380
+99-99-0	4 - Nitro toluene 	C7H7NO2 	-1.4681	-404.79	71.717	330	520
+111-84-2	Nonane 	C9H20 	-1.7864	-440.73	24.243	270	380
+1455-21-6	1 - Nonane thiol 	C9H20S 	-1.3351	-297.76	102.73	270	400
+13281-11-3	2 - Nonane thiol 	C9H20S 	-1.4906	-335.75	80.523	270	400
+112-05-0	Nonanoic acid 	C9H18O2 	-1.621	-489.09	99.881	290	370
+502-56-7	5 - Nonanone 	C9H18O 	-1.4816	-346.38	76.18	290	380
+2307-28-0	Nonyl thio palmitate 	C 25H50OS 	-0.6375	-224.63	180.63	340	370
+593-45-3	Octa decane 	C18H38 	-1.3923	-378.2	111.62	300	380
+2307-27-9	Octa decyl thio myrisate 	C32H64OS 	0.6614	-6.4228	318.15	330	370
+111-65-9	Octane 	C8H18 	-2.103	-632.42	-51.438	270	400
+111-88-6	1 - Octane thiol 	C8H18S 	-1.5008	-366.58	68.84	270	380
+3001-66-9	2 - Octane thiol 	C8H18S 	-1.4502	-323.68	79.12	270	380
+124-07-2	Octanoic acid 	C8H16O2 	-1.1803	-272.88	153.08	290	370
+111-67-1	trans - 2 - Octene 	C8H16 	-2.3398	-836.02	-115.97	290	380
+111-86-4	Octyl amine 	C8H19N 	-1.9093	-501.41	57.503	270	340
+8001-25-0	Olive oil 	- 	-1.911	-699.7	110.3	290	340
+57-10-3	Palmitic acid 	C16H32O2 	-0.8383	-267.36	188.83	340	370
+123-63-7	Paracetaldehyde 	C6H12O3 	-1.7345	-361.18	93.813	280	400
+76-01-7	Penta chloro ethane 	C2H5Cl 	-1.5124	-438.07	63.314	270	360
+629-62-9	Penta decane 	C15H32 	-1.3494	-323.33	114	290	380
+109-66-0	Pentane 	C5H12 	-1.4907	-224.14	31.92	150	330
+2084-19-7	2 - Pentane thiol 	C5H12S 	-1.9446	-565.81	-43.074	270	380
+71-41-0	1 - Pentanol 	C5H12O 	-2.4786	-696.8	68.729	220	410
+6032-29-7	2 - Pentanol 	C5H12O 	-1.9433	-343.89	159.69	290	390
+584-02-1	3 - Pentanol 	C5H12O 	-1.7586	-254.46	191.08	290	390
+96-22-0	3 - Pentanone 	C5H10O 	-2.0685	-628.2	-68.044	270	380
+646-04-8	2 - Pentene 	C5H10 	-1.0663	-25.287	229.5	290	310
+693-65-2	Pentyl ether 	C10H22O 	-1.4828	-311.96	87.694	270	380
+23228-90-2	Perfluoro -1,4 -di iso propoxy butane 	C10F20O2 	0.0257999999999998	-7.0538	273.86	290	320
+60-12-8	Phenethyl alcohol 	C8H10O 	-1.4593	-324.57	168.71	270	380
+108-95-2	Phenol 	C6H6O 	-1.3571	-267.31	181.96	300	460
+2050-04-6	Phenyl - n - amyl ether 	C11H16O 	-1.8009	-510.42	58.052	290	510
+103-72-0	Phenyl iso thio cyanate 	C7H5NS 	-1.1719	-247.72	111.4	270	380
+1123-85-9	2 - Phenyl - 1 - propanol 	C9H12O 	0.2641	-26.229	270.16	290	330
+495-40-9	Phenyl propyl ketone 	C10H12O 	-1.1646	-232.5	142.01	270	380
+7719-12-2	Phosphorus trichloride 	PCl3 	-1.2542	-270	21.934	200	340
+10025-87-3	Phosphoryl chloride 	POCl 3 	-1.2043	-249.22	92.575	270	360
+109-06-8	2 - Picoline 	C6H7N 	-1.6362	-402.11	33.102	270	360
+931-19-1	2 - Picoline - N - oxide 	C6H7NO 	-1.1864	-294.26	156.24	320	400
+1003-73-2	3 - Picoline - N -oxide 	C6H7NO 	-1.0257	-241.12	184.32	310	400
+75-97-8	Pinacolone 	C6H12O 	-1.9656	-559.39	-14.42	290	360
+110-89-4	Pipiridine 	C5H11N 	-1.5966	-328.47	115	280	380
+7440-09-7	Potassium 	K 	-1.4954	-869.76	-389.82	400	1800
+13153-11-2	1,3 - Propane sulfone 	C3H6SO3 	-1.0403	-346.7	126.85	300	350
+75-33-2	2 - Propane thiol 	C3H8S 	-1.78	-387.13	7.6593	270	320
+71-23-8	1 - Propanol 	C3H8O 	-2.7281	-853.5	15.262	210	370
+67-63-0	2 - Propanol 	C3H8O 	-3.305	-1009.2	18.917	270	360
+123-38-6	Propionaldehyde 	C3H6O 	-2.1953	-611.3	-60.958	280	330
+79-05-0	Propionamide 	C3H7NO 	-1.3422	-267.72	205.36	260	490
+79-09-4	Propionic acid 	C3H6O2 	-1.8207	-561.55	-8.1224	270	420
+123-62-6	Propionic anhydride 	C 6H10O3 	-1.7818	-492.35	24.606	270	440
+107-12-0	Propio nitrile 	C3H5N 	-1.7953	-424.61	-37.983	290	380
+79-03-8	Propionyl chloride 	C3H5ClO 	-1.7776	-443.86	-11.959	290	360
+103-65-1	Propyl benzene 	C9H12O 	-1.7786	-473.64	53.513	280	460
+2696-84-6	Propyl benzene amine 	C9H13N 	-1.8964	-612.19	20.818	370	500
+627-12-3	Propyl carbamate 	C4H9NO 	-1.5234	-342.48	164.26	330	380
+6423-43-4	Propylene glycol dinitrate 	C3H6N2O6 	-0.9605	-196	168.35	280	340
+110-74-7	Propyl formate 	C4H8O2 	-2.3847	-858.62	116.02	270	360
+598-03-8	Propyl sulfone 	C6H14O2S 	-1.2525	-290.93	156.68	300	400
+4253-91-2	Propyl sulfoxide 	C6H14OS 	-1.2525	-290.93	156.68	300	400
+2307-10-0	Propyl thioacetate 	C5H10OS 	-1.4072	-330.35	49.855	300	370
+110-86-1	Pyridine 	C5H5N 	-1.1172	-174.52	133.66	270	390
+109-97-7	Pyrrole 	C4H5N 	-1.2156	-216.75	131.91	250	350
+123-75-1	Pyrrolidine 	C4H9N 	-1.285	-204.2	117.84	210	340
+8002-13-9	Rape seed oil 		-1.4802	-597.2	119.99	290	340
+90-02-8	Salicylic aldehyde 	C7H6O2 	-1.6526	-502.49	49.163	340	470
+10102-17-7	Sodium thiosulfate penta hydrate 	Na2S2O3.5H2 O 	-0.0453999999999999	-54.28	268.25	320	340
+8001-22-7	Soyabean oil 		-1.4977	-581.28	115.28	290	340
+180-43-8	Spiro ( 5,5 ) undecane 	C11H20 	-1.4509	-406.57	84.58	270	380
+181-15-7	Spiro ( 5,6 ) dodecane 	C12H22 	-1.3005	-349.6	114.44	270	380
+10025-70-4	Strontium chloride hexahydrate (molten) 	SrCl2.6H2O 	-0.6073	-954	341.06	1150	1320
+100-42-5	Styrene 	C8H8 	-1.6087	-343.56	61.746	270	420
+57-50-1	Sucrose 	C = 26, H2O 	-1.3736	-327.15	102.69	290	330
+8001-21-6	Sunflower oil 	- 	-0.6505	-304.27	168.98	290	340
+1067-42-1	Tetra butyl germane 	Ge(C4H9)4 	-1.0687	-211.37	158.55	270	340
+629-59-4	Tetra decane 	C14H30 	-1.348	-307.14	114.12	280	380
+2307-14-4	Tetra decyl thiolaurate 	C26H52OS 	-0.6644	-241.2	176.1	300	370
+2307-25-7	Tetra decyl thio myrisate 	C28H56OS 	-0.7246	-275.4	167.88	300	370
+597-63-7	Tetra - n - ethyl germane 	Ge(C2H5)4 	-0.8769	-124.05	127.22	270	340
+4828-44-8	Tetra - n - hexyl germane 	Ge(C6H13)4 	-1.1948	-307.49	142.51	270	340
+66538-96-3	1,2,3,4 - Tetrahydro -6 - butyl -hexyl naphthalene 	C20H32 	-1.4021	-382.01	159.74	270	380
+66205-02-5	1,2,3,4 -Tetra hydro - 7 -butyl - 1 - n - hexyl naphthalene 	C20H32 	-1.278	-335.62	163.76	270	380
+55255-58-8	1,2,3,4 -Tetra hydro - 5,8 -dimethyl - 1 - octyl naphthalene 	C20H32 	-1.1062	-288.48	183.98	290	390
+3634-47-7	Tetra - n -pentyl germane 	Ge(C5H11)4 	-0.9447	-210.02	166.92	270	340
+994-65-0	Tetra - n - propyl germane 	Ge(C3H7)4 	-1.2442	-244.89	114.56	270	350
+7440-28-0	Thallium 	Tl 	-0.1959	-282.64	118.24	570	740
+3982-91-0	Thio phosphoryl chloride 	PSCl3 	-1.1147	-230.6	92.836	240	380
+7440-31-5	Tin 	Sn 	-0.2469	-207.8	88.744	510	770
+688-74-4	Tri butyl borate 	C12H27BO3 	-1.8408	-562.33	24.655	290	500
+126-73-8	Tri butyl phosphate 	C12H27O4P 	-1.1597	-282.5	131.38	205	340
+150-46-9	Tri ethyl borate 	C6H15BO3 	-1.8708	-497.4	-15.747	290	370
+629-50-5	Tri decane 	C13H28 	-1.6835	-453.6	61.909	270	480
+2307-31-5	Tri decyl thiopalmitate	C29H58OS 	-0.3966	-176.63	204.38	340	370
+75-89-8	3,3,3 - Trifluoroethanol 	C2H3F3O 	-2.6152	-735.51	40.809	290	340
+102-86-3	Tri hexyl amine 	C 18H39N 	-1.5462	-412.41	105.78	280	430
+538-24-9	Tri laurin 	C39H74O2 	-0.9293	-336.14	170.15	310	360
+121-45-9	Tri methyl phosphite 	C3H9O3P 	-1.2594	-195.02	102.02	240	380
+4731-53-7	Tri octyl phosphine 	C24H51OP 	-0.4379	-126.97	249.94	330	380
+555-44-2	Tri palmitin 	C51H98O6 	-0.7364	-69.231	171.28	340	360
+115-86-6	Tri phenyl phosphate 	C18H15O4P 	-0.4721	-149.45	221.84	320	370
+101-02-0	Tri phenyl phosphite 	C18H15O3P 	-0.8459	-231.62	185.13	250	360
+688-71-1	Tri propyl borate 	C3H7BO3 	-2.0077	-633.51	-16.47	290	450
+680-31-9	Tris dimethyl amino phosphine oxide 	C6H18N3OP 	-0.9327	-226.35	143.09	280	350
+78-42-2	Tris - ( 2 - ethyl hexyl) phosphate 	C24H51O4P 	-1.1967	-332.1	151.17	220	350
+1120-21-4	Undecane 	C11H24 	-1.7592	-466.88	38.719	260	480
+112-12-9	2 - Undecanone 	C11H22O 	-1.5021	-364.95	92.28	290	420
+2307-30-4	Undecyl thio palmitate 	C27H54OS 	-0.7452	-275.62	166.17	340	370
+2307-38-2	Undecyl thio stearate 	C29H58OS 	-0.3186	-155.73	213.36	340	370
+110-59-8	Valero nitrile 	C5H9N 	-1.8445	-512.47	4.9088	270	420
+7732-18-5	Water 	H2 O 	-1.5318	-220.57	149.39	270	380
+108-38-3	m - Xylene 	C8H10 	-1.8271	-505.32	-19.347	270	410
+95-47-6	o - Xylene 	C8H10 	-1.8927	-553.59	-14.003	260	420
+106-42-3	p - Xylene 	C8H10 	-2.2463	-826.32	-109.48	280	410
+7440-66-6	Zinc 	Zn 	-0.0413000000000001	-186.99	405.78	690	1100

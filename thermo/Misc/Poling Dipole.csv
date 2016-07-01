@@ -1,0 +1,265 @@
+CAS	Chemical	Dipole
+7440-37-1	argon	0
+7726-95-6	bromine	0
+56-23-5	tetrachloromethane	0
+75-73-0	tetrafluoromethane	0
+74-82-8	methane	0
+124-38-9	carbon dioxide	0
+116-14-3	tetrafluoroethene	0
+76-16-4	hexafluoroethane	0
+74-86-2	ethyne (acetylene)	0
+359-35-3	1,1,2,2-tetrafluoroethane (R-134)	0
+74-85-1	ethene (ethylene)	0
+74-84-0	ethane	0
+76-19-7	octafluoropropane (R-218)	0
+75-19-4	cyclopropane	0
+74-98-6	propane	0
+115-25-3	octafluorocyclobutane	0
+106-99-0	1,3-butadiene	0
+287-23-0	cyclobutane	0
+624-64-6	trans-2-butene	0
+123-91-1	1,4-dioxane	0
+106-97-8	butane	0
+678-26-2	dodecafluoropentane	0
+287-92-3	cyclopentane	0
+109-66-0	pentane	0
+463-82-1	2,2-dimethylpropane (neopentane)	0
+392-56-3	hexafluorobenzene	0
+355-68-0	dodecafluorocyclohexane	0
+355-42-0	tetradecafluorohexane	0
+71-43-2	benzene	0
+96-37-7	methylcyclopentane	0
+110-54-3	hexane	0
+335-57-9	hexadecafluoroheptane	0
+291-64-5	cycloheptane	0
+108-87-2	methylcyclohexane	0
+1640-89-7	ethylcyclopentane	0
+142-82-5	heptane	0
+591-76-4	2-methylhexane	0
+589-34-4	3-methylhexane	0
+617-78-7	3-ethylpentane	0
+590-35-2	2,2-dimethylpentane	0
+565-59-3	2,3-dimethylpentane	0
+108-08-7	2,4-dimethylpentane	0
+562-49-2	3,3-dimethylpentane	0
+464-06-2	2,2,3-trimethylbutane	0
+307-34-6	octadecafluorooctane	0
+292-64-8	cyclooctane	0
+111-65-9	octane	0
+375-96-2	eicosafluorononane	0
+111-84-2	nonane	0
+307-45-9	docosafluorodecane	0
+91-20-3	naphthalene	0
+99-87-6	1-(1-methylethyl)-4-methylbenzene	0
+95-93-2	1,2,4,5-tetramethylbenzene	0
+493-01-6	cis-bicyclo[4.4.0]decane (cis-decalin)	0
+493-02-7	trans-bicyclo[4.4.0]decane (trans-decalin)	0
+124-18-5	decane	0
+1120-21-4	undecane	0
+92-52-4	1,1 ⬘-biphenyl	0
+112-40-3	dodecane	0
+629-50-5	tridecane	0
+85-01-8	phenanthrene	0
+120-12-7	anthracene	0
+629-59-4	tetradecane	0
+629-62-9	pentadecane	0
+544-76-3	hexadecane	0
+629-78-7	heptadecane	0
+593-45-3	octadecane	0
+629-92-5	nonadecane	0
+112-95-8	eicosane	0
+629-94-7	heneicosane	0
+629-97-0	docosane	0
+638-67-5	tricosane	0
+646-31-1	tetracosane	0
+7616-94-6	perchloryl fluoride	0
+7782-50-5	chlorine	0
+13983-20-5	deuterium hydride	0
+7782-39-0	deuterium	0
+800000-54-8	deuterium, normal	0
+7782-41-4	fluorine	0
+13776-62-0	trans-difluorodiazene	0
+13709-36-9	xenon difluoride	0
+13709-61-0	xenon tetrafluoride	0
+2551-62-4	sulfur hexafluoride	0
+7783-81-5	uranium hexafluoride	0
+1333-74-0	hydrogen	0
+630-08-0	carbon monoxide	0.1
+75-28-5	2-methylpropane	0.1
+78-78-4	2-methylbutane	0.1
+107-83-5	2-methylpentane	0.1
+106-42-3	1,4-dimethylbenzene ( p-xylene)	0.1
+108-67-8	1,3,5-trimethylbenzene (mesitylene)	0.1
+105-05-5	1,4-diethylbenzene	0.1
+463-49-0	1,2-propadiene	0.2
+79-29-8	2,3-dimethylbutane	0.2
+13812-43-6	cis-difluorodiazene	0.2
+7783-41-7	oxygen difluoride	0.2
+7783-54-2	nitrogen trifluoride	0.2
+76-15-3	1-chloro-1,1,2,2,2-pentafluoroethane	0.3
+106-98-9	1-butene	0.3
+590-18-1	cis-2-butene	0.3
+110-82-7	cyclohexane	0.3
+592-76-7	1-heptene	0.3
+108-38-3	1,3-dimethylbenzene (m-xylene)	0.3
+111-66-0	1-octene	0.3
+538-93-2	2-methylpropylbenzene	0.3
+10036-47-2	tetrafluorohydrazine	0.3
+115-07-1	propene (propylene)	0.4
+109-67-1	1-pentene	0.4
+592-41-6	1-hexene	0.4
+108-88-3	toluene	0.4
+100-41-4	ethylbenzene	0.4
+104-51-8	butylbenzene	0.4
+91-57-6	2-methylnaphthalene	0.4
+101-81-5	diphenylmethane	0.4
+75-72-9	chlorotrifluoromethane	0.5
+75-71-8	dichlorodifluoromethane (R-12)	0.5
+75-69-4	trichlorofluoromethane (R-11)	0.5
+76-14-2	1,2-dichloro-1,1,2,2-tetrafluoroethane	0.5
+110-02-1	thiophene	0.5
+115-11-7	2-methylpropene	0.5
+95-47-6	1,2-dimethylbenzene (o-xylene)	0.5
+90-12-0	1-methylnaphthalene	0.5
+10022-50-1	nitrogen dioxyfluoride	0.5
+10034-85-2	hydrogen iodide	0.5
+75-50-3	N, N-dimethylmethanamine (trimethyl amine)	0.6
+110-83-8	cyclohexene	0.6
+75-63-8	bromotrifluoromethane	0.7
+75-61-6	dibromodifluoromethane	0.7
+74-99-7	1-propyne (methyl acetylene)	0.7
+110-00-9	furan	0.7
+534-22-5	2-methylfuran	0.7
+92-94-4	1,4-diphenylbenzene	0.7
+10035-10-6	hydrogen bromide	0.8
+107-00-6	1-butyne	0.8
+98-82-8	1-methylethylbenzene (cumene)	0.8
+627-19-0	1-pentyne	0.9
+142-29-0	cyclopentene	0.9
+121-44-8	N, N-diethylethanamine (triethyl amine)	0.9
+106-93-4	1,2-dibromoethane	1
+124-40-3	N-methylmethanamine (dimethyl amine)	1
+503-74-2	3-methylbutanoic acid	1
+142-84-7	N-propyl-1-propanamine (dipropyl amine)	1
+7783-60-0	sulfur tetrafluoride	1
+7787-71-5	bromine trifluoride	1.1
+67-66-3	trichloromethane	1.1
+109-89-7	N-ethylethanamine (diethyl amine)	1.1
+111-92-2	N-butyl-1-butanamine (dibutyl amine)	1.1
+7647-01-0	hydrogen chloride	1.1
+540-67-0	methyl ethyl ether	1.2
+78-81-9	2-methyl-1-propanamine (isobutyl amine)	1.2
+628-32-0	ethyl propyl ether	1.2
+75-43-4	dichlorofluoromethane	1.3
+74-93-1	methanethiol (methyl mercaptan)	1.3
+74-89-5	methanamine (methyl amine)	1.3
+64-19-7	ethanoic acid (acetic acid)	1.3
+115-10-6	dimethyl ether	1.3
+75-04-7	ethanamine (ethyl amine)	1.3
+107-10-8	1-propanamine (propyl amine)	1.3
+79-31-2	2-methylpropanoic acid	1.3
+60-29-7	diethyl ether	1.3
+109-73-9	1-butanamine (butyl amine)	1.3
+75-45-6	chlorodifluoromethane (R-22)	1.4
+75-38-7	1,1-difluoroethene	1.4
+7789-30-2	bromine pentafluoride	1.5
+1511-62-2	bromodifluoromethane	1.5
+64-18-6	methanoic acid (formic acid)	1.5
+354-33-6	pentafluoroethane	1.5
+75-18-3	2-thiapropane (dimethylsulfide)	1.5
+79-09-4	propanoic acid	1.5
+107-92-6	butanoic acid	1.5
+95-87-4	2,5-dimethylphenol (2,5 xylenol)	1.5
+75-46-7	trifluoromethane (R-23)	1.6
+75-08-1	ethanethiol (ethyl mercaptan)	1.6
+352-93-2	3-thiapentane (diethyl sulfide)	1.6
+108-90-7	chlorobenzene	1.6
+108-95-2	phenol	1.6
+62-53-3	benzeneamine (aniline)	1.6
+95-48-7	2-methylphenol (o-cresol)	1.6
+106-44-5	4-methylphenol ( p-cresol)	1.6
+123-96-6	2-octanol	1.6
+67-56-1	methanol	1.7
+64-17-5	ethanol	1.7
+79-20-9	methyl ethanoate (methyl acetate)	1.7
+71-23-8	1-propanol	1.7
+67-63-0	2-propanol	1.7
+109-99-9	tetrahydrofuran	1.7
+554-12-1	methyl propanoate	1.7
+78-83-1	2-methyl-1-propanol (isobutanol)	1.7
+75-65-0	2-methyl-2-propanol (tert-butanol)	1.7
+78-92-2	2-butanol (sec-butanol)	1.7
+623-42-7	methyl butanoate	1.7
+71-41-0	1-pentanol	1.7
+108-93-0	cyclohexanol	1.7
+100-51-6	benzyl alcohol	1.7
+108-48-5	2,6-dimethylpyridine (2,6-lutidine)	1.7
+111-70-6	1-heptanol	1.7
+95-65-8	3,4-dimethylphenol (3,4 xylenol)	1.7
+143-08-8	1-nonanol	1.7
+112-92-5	1-octadecanol	1.7
+75-09-2	dichloromethane	1.8
+593-53-3	fluoromethane	1.8
+107-06-2	1,2-dichloroethane	1.8
+107-31-3	methyl methanoate (methyl formate)	1.8
+109-97-7	pyrrole	1.8
+71-36-3	1-butanol	1.8
+105-37-3	ethyl propanoate	1.8
+109-60-4	propyl ethanoate (propyl acetate)	1.8
+123-51-3	3-methyl-1-butanol	1.8
+105-54-4	ethyl butanoate	1.8
+106-36-5	propyl propanoate	1.8
+123-86-4	butyl ethanoate (butyl acetate)	1.8
+111-27-3	1-hexanol	1.8
+108-39-4	3-methylphenol (m-cresol)	1.8
+105-66-8	propyl butanoate	1.8
+123-92-2	3-methylbutyl ethanoate (isopentyl acetate)	1.8
+108-68-9	3,5-dimethylphenol (3,5 xylenol)	1.8
+104-76-7	2-ethyl-1-hexanol	1.8
+112-30-1	1-decanol	1.8
+2696-92-6	nitrogen oxychloride	1.8
+7664-39-3	hydrogen fluoride	1.8
+74-87-3	chloromethane	1.9
+141-78-6	ethyl ethanoate (ethyl acetate)	1.9
+110-74-7	propyl methanoate (propyl formate)	1.9
+542-55-2	2-methylpropyl methanoate (isobutyl formate)	1.9
+75-85-4	2-methyl-2-butanol	1.9
+109-06-8	2-methylpyridine (2-picoline)	1.9
+110-19-0	2-methylpropyl ethanoate (isobutyl acetate)	1.9
+638-49-3	pentyl methanoate (pentyl formate)	1.9
+583-58-4	3,4-dimethylpyridine (3,4-lutidine)	1.9
+7789-20-0	deuterium oxide	1.9
+10405-27-3	difluoroamine	1.9
+75-10-5	difluoromethane	2
+75-34-3	1,1-dichloroethane	2
+74-96-4	bromoethane	2
+75-00-3	chloroethane	2
+353-36-6	fluoroethane	2
+109-94-4	ethyl methanoate (ethyl formate)	2
+540-54-5	1-chloropropane	2
+547-63-7	methyl 2-methylpropanoate	2
+105-67-9	2,4-dimethylphenol (2,4 xylenol)	2
+111-87-5	1-octanol	2
+75-68-3	1-chloro-1,1-difluoroethane	2.1
+78-86-4	2-chlorobutane	2.1
+97-62-1	ethyl 2-methylpropanoate	2.1
+543-59-9	1-chloropentane	2.2
+583-61-9	2,3-dimethylpyridine (2,3-lutidine)	2.2
+589-93-5	2,5-dimethylpyridine (2,5-lutidine)	2.2
+420-46-2	1,1,1-trifluoroethane (R-143a)	2.3
+75-37-6	1,1-difluoroethane (R-152a)	2.3
+110-86-1	pyridine	2.3
+108-47-4	2,4-dimethylpyridine (2,4-lutidine)	2.3
+91-22-5	quinoline	2.3
+108-99-6	3-methylpyridine (3-picoline)	2.4
+107-87-9	2-pentanone (methyl propyl ketone)	2.5
+591-22-0	3,5-dimethylpyridine (3,5-lutidine)	2.6
+96-22-0	3-pentanone (diethyl ketone)	2.7
+119-65-3	isoquinoline	2.7
+563-80-4	3-methyl-2-butanone (methyl isopropyl ketone)	2.8
+108-10-1	4-methyl-2(methyl isobutyl ketone)	2.8
+67-64-1	propanone (acetone)	2.9
+108-24-7	acetic anhydride	3
+120-92-3	cyclopentanone	3
+75-52-5	nitromethane	3.1
+78-93-3	butanone (methyl ethyl ketone)	3.3

@@ -1,0 +1,7 @@
+pandas
+scipy
+numpy
+fluids
+pytest
+pytest-cov
+coveralls

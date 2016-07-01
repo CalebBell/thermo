@@ -1,0 +1,328 @@
+CASRN	Names	Tflash	Tautoignition	LFL	UFL
+50-00-0	Formaldehyde; (Methanal); (Methyl aldehyde); (Methylene oxide); HCHO	333.15	697.15	0.07	0.73
+51-80-9	N,N,N1,N1-Tetramethyl; methanediamine; (CH3)2NCH2N(CH3)2	260.15	453.15	0.0161	
+57-14-7	1.1-Dimethylhydrazine; (CH3)2NNH2	255.15	513.15	0.024	0.2
+60-29-7	1.11-Oxybisethane; (Diethyl ether); (Diethyl oxide); (Ethyl ether); (Ethyl oxide); (Ether); (CH3CH2)2O	228.15	448.15	0.017	0.392
+62-53-3	Benzenamine; (Aminobenzene); (Aniline); (Phenylamine); C6H5NH2	348.15	888.15	0.012	0.11
+64-17-5	Ethanol; (Alcohol); (Ethyl alcohol); CH3CH2OH	285.15	673.15	0.031	0.19
+64-18-6	Formic Acid; (Hydrogen carboxylic acid); (Methanoic acid); HCOOH	315.15	798.15	0.18	0.57
+64-19-7	Acetic acid; (Ethanoic acid); (Glacial acetic acid); CH3COOH	312.15	783.15	0.04	0.199
+64-67-5	Sulfuric acid diethyl ester; (Diethyl sulphate); (CH3CH2)2SO4	377.15	633.15		
+67-56-1	Methanol; (Carbinol); (Methyl alcohol); CH3OH	282.15	713.15	0.06	0.36
+67-63-0	2-Propanol; (Dimethyl carbinol); (Isopropanol); (Isopropyl alcohol); (Propan-2-ol); (CH3)2CHOH	285.15	672.15	0.02	0.127
+67-64-1	2-Propanone; (Acetone); (Dimethyl ketone); (CH3)2CO	253.15	812.15	0.025	0.143
+68-12-2	N.N-Dimethyl formamide; (Dimethylformamide); HCON(CH3)2	331.15	713.15	0.018	0.16
+71-23-8	1-Propanol; (Propan-1-ol); (n-Propyl alcohol); CH3CH2CH2OH	288.15	658.15	0.021	0.175
+71-36-3	1-Butanol; (n-Butyl alcohol); (n-Butanol); (Butyl alcohol); (1-Hydroxybutane); (n-Propyl carbinol); CH3(CH2)2CH2OH	308.15	616.15	0.014	0.12
+71-41-0	1-Pentanol; (n-Amyl alcohol); (n-Butyl carbinol); (Pentan-1-ol); (n-Pentyl alcohol); (n-Pentanol); CH3(CH2)3CH2OH	315.15	593.15	0.0106	0.105
+71-43-2	Benzene; (Phenyl hydride); C6H6	262.15	771.15	0.012	0.086
+74-82-8	Methane (see Section 5.2.4); CH4		873.15	0.044	0.17
+74-84-0	Ethane; CH3CH3		788.15	0.024	0.155
+74-85-1	Ethene; (Ethylene); CH2=CH2		713.15	0.023	0.36
+74-86-2	Ethine; (Acetylene); (Ethyne); CH\xe2\x89\xa1CH		578.15	0.023	1
+74-87-3	Methyl chloride; (Chloromethane); (Monochloromethane); CH3CI		898.15	0.076	0.19
+74-89-5	Methylamine; (Aminomethane); (Carbinamine); CH3NH2		703.15	0.042	0.207
+74-90-8	Hydrocyanic acid; (Hydrogen cyanide); (Formic anammonide); (Hydrocyanic acid); (Methanenitrile); (Prussic acid); HCN	253.15	811.15	0.054	0.46
+74-93-1	Methanethiol; (Mercaptomethane); (Methyl mercaptan); (Methyl sulfhydrate); CH3SH		613.15	0.041	0.21
+74-96-4	Bromoethane; (Ethyl bromide); Monobromoethane); CH3CH2Br		784.15	0.067	0.113
+74-98-6	Propane; (Dimethyl methane); (Propyl hydride); CH3CH2CH3		723.15	0.017	0.109
+74-99-7	Propyne; (Allylene); (Methylacetylen); CH3C\xe2\x89\xa1CH		613.15	0.017	0.168
+75-00-3	Chloroethane; (Ethyl chloride); (Hydrochloric ether); (Monochloroethane); (Muriatic ether); CH3CH2CI		783.15	0.036	0.154
+75-01-4	Chloroethene; (Vinyl Chloride); (Chloroethylene); CH2=CHCI		688.15	0.036	0.33
+75-04-7	Ethylamine; (Aminoethane); (Monoethylamine); C2H5NH2		658.15	0.035	0.14
+75-05-8	Acetonitrile; (Cyanomethane); (Ethyl nitrile); (Methyl cyanide); CH3CN	275.15	796.15	0.03	0.16
+75-07-0	Ethanal; (Acetic aldehyde); (Acetaldehyde); (Ethyl aldehyde); CH3CHO	235.15	428.15	0.04	0.6
+75-08-1	Ethanethiol; (Ethyl Mercaptan); (Ethyl sulfhydrate); (Mercaptoethane); CH3CH2SH	225.15	568.15	0.028	0.18
+75-15-0	Carbon Disulfide; CS2	243.15	363.15	0.006	0.6
+75-19-4	Cyclopropane; (Trimethylene); CH2CH2CH2		773.15	0.024	0.104
+75-21-8	Oxirane; (Ethylene oxide); (Epoxyethan); CH2CH2O		702.15	0.026	1
+75-28-5	2-Methylpropane; (iso-Butane); (CH3)2CHCH3		733.15	0.013	0.098
+75-29-6	2-Chloropropane; (CH3)2CHCI	253.15	863.15	0.028	0.107
+75-31-0	2-Propaneamine; (iso-Propylamine); (2-Aminopropane); (1-methylethylamine); (CH3)2CHNH2	249.15	613.15	0.023	0.086
+75-34-3	 1.1-Dichloroethane; (Asymmetrical dichloroethane); (Ethylidene chloride); (1,1-Ethylidene dichloride); CH3CHCI2	263.15	712.15	0.056	0.16
+75-35-4	1.1-Dichloroethene; (Vinylidene Chloride); CH2=CCI2		803.15	0.065	0.16
+75-36-5	Acetyl chloride; CH3COCI	269.15	663.15	0.05	0.19
+75-38-7	1.1-Difluoroethene; (Vinylidene fluoride); (Vinylidene difluoride); CH2=CF2		653.15	0.039	0.251
+75-50-3	Trimethylamine; (CH3)3N		463.15	0.02	0.12
+75-52-5	Nitromethane; (Nitrocarbol); CH3NO2	308.15	687.15	0.073	0.63
+75-56-9	2-Methyloxirane; (1.2-Epoxypropane); (Propylene oxide); CH3CHCH2O	236.15	703.15	0.019	0.37
+75-83-2	2.2-Dimethylbutane; (Neohexan); (CH3)3CCH2CH3	225.15	678.15	0.01	0.07
+75-85-4	2-Methylbutan-2-ol; CH3CH2C(OH)(CH3)2	291.15	665.15	0.014	0.102
+75-86-5	 2-Hydroxy-2methyl-propionitrile; (Cyanohydrin-2-propanone); (2-Cyano-2-propanol); (alpha-Hydroxyisobutyronitrile); (Acetone cyanohydrin); (2-Methyllactonitrile); CH3C(OH)CNCH3	347.15	816.15	0.022	0.12
+75-89-8	 2.2.2-Trifluoroethanol; (2.2.2-Trifluroethyl alcohol); CF3CH2OH	303.15	736.15	0.084	0.238
+76-37-9	 2.2.3.3-Tetrafluoropropan-1-ol; HCF2CF2CH2OH	316.15	710.15		
+77-73-6	 3a.4.7.7a-Tetrahydro-4,7-methano-; 1H-indene; (Dicyclopentadiene); (Cyclopentadiene dimer); C10H12	309.15	728.15	0.008	
+77-78-1	Sulfuric acid dimethyl ester; (Dimethyl sulfate); (CH3O)2SO2	356.15	722.15		
+78-10-4	Tetraethoxy Silane; (Silicic acid tetraethyl ester); (Tetraethyl silicate); (Silicon tetraethoxide); (C2H5)4Si	311.15	447.15	0.0045	0.072
+78-78-4	2-Methylbutane; (Ethyl dimethyl methane); (isopentane); (CH3)2CHCH2CH3	217.15	693.15	0.013	0.083
+78-80-8	2-Methyl-1-buten-3-yne; HC\xe2\x89\xa1CC(CH3)CH2	219.15	545.15	0.014	
+78-81-9	2-Methylpropan-1-amine; (iso-Butylamine); (CH3)2CHCH2NH2	253.15	647.15	0.0147	0.14
+78-83-1	2-Methyl-1-propanol; (iso-Butanol); (iso-Propylcarbinol); (iso-Butyl alcohol); (CH3)2CHCH2OH	301.15	681.15	0.014	0.11
+78-84-2	2-Methyl-1-propanal; (iso-Butanal); (iso-Butyraldehyde); (CH3)2CHCHO	251.15	438.15	0.016	0.11
+78-86-4	2-Chlorobutane; (sec-Butyl chloride); CH3CHCICH2CH3	252.15	688.15	0.02	0.088
+78-87-5	1.2-Dichloropropane; (Propylene dichloride); CH3CHCICH2CI	288.15	830.15	0.034	0.145
+78-92-2	2-Butanol; (sec-Butyl alcohol); (Butylene hydrate); (2-Hydroxybutane); (Methyl ethyl carbinol); CH CHOHCH CH3 2 3	297.15	679.15	0.017	0.098
+78-93-3	2-Butanone; (Ethyl methyl ketone); (Methyl acetone); (Methyl ethyl ketone); CH3CH2COCH3	263.15	677.15	0.015	0.134
+79-09-4	Propionic acid; (Carboxyethane); (Ethanecarboxylic acid); (Methyl acetic acid); CH3CH2COOH	326.15	758.15	0.021	0.121
+79-10-7	2-Propenoic acid; (Acroleic acid); (=Ethylenecarboxylic acid); (Glacial acrylic acid); (Acrytic acid); CH2=CHCOOH	328.15	679.15	0.024	0.08
+79-20-9	Acetic acid methyl ester; (Methyl acetate); (Ethanoic acid methyl ester); (Methyl ethanoate); CH3COOCH3	263.15	778.15	0.031	0.16
+79-22-1	 Carbonochloridic acid methyl ester; (Methyl chloroformate); (Methoxycarbonly chloride); CH3OOCCI	283.15	748.15	0.075	0.26
+79-24-3	Nitroethane; CH3CH2NO2	300.15	685.15	0.034	
+79-29-8	 2.3-Dimethylbutane; (Diisopropyl; (CH3)2CH(CH3)CH2CH3	253.15	669.15	0.01	
+79-31-2	2-Methylpropanoc acid; (iso-Butyric acid); (Dimethylacetic acid); (CH3)2CHCOOH	331.15	716.15	0.02	0.1
+79-38-9	Chlorotrifluoroethene; (Chlorotrifluoroethylene); CF2=CFCI		880.15	0.046	0.643
+80-62-6	 2-Methyl-2-propenoic acid; methyl ester; (Methyl methacrylate); (Methacrylate monomer); (Methyl ester of methacrylic acid); (Methyl-2-methyl-2-propenoate); CH3=CCH3COOCH3	283.15	703.15	0.017	0.125
+91-20-3	Naphthalene; (Tar camphor); (White tar); C10H8	350.15	813.15	0.006	0.059
+95-47-6	1.2-Dimethyl benzene; (o-Xylene); (o-Xyol); C6H4(CH3)2	303.15	743.15	0.01	0.076
+95-92-1	Ethanedioic acid diethyl ester; (Diethyl Oxalate); (Oxalic acid diethyl ester); (COOCH2CH3)2	349.15			
+96-22-0	Pentan-3-one; (Diethyl ketone); (Metacetone); (Propione); (CH3CH2)2CO	280.15	718.15	0.016	
+96-33-3	Propenoic acid methyl ester; (Acrylic acid methyl ester); (Methoxycarbonyl ethylene); (Methyl propenoate); (Methyl Acrylate); Ch2=CHCOOCH3	270.15	728.15	0.0195	0.163
+96-37-7	Methylcyclopentane; CH3CH(CH2) CH2	263.15	531.15	0.01	0.084
+97-62-1	2-Methylpropanoic acid ethyl ester; (Ethyl isobutyrate); (Ethyl 2-methylpropanoate); (CH3)2CHCOOC2H5	283.15	711.15	0.016	
+97-63-2	2-Methyl-prop-2-enoic acid ethyl ester; (Methacrylic acid ethyl ester); (Ethyl methacrylate); CH2=CCH3COOCH2CH3	307.15		0.008	
+97-85-8	 2-Methylpropanoic acid 2-methyl-; propyl ester; (iso-Butyl isobutyrate); (CH3)2CHCOOCH2CH(CH3)2	292.15	697.15	0.015	
+97-88-1	2-Methyl-2-propenoic acid butyl ester; (Butyl methacrylate); (Butyl-2-methylprop-2-enoate); CH2=C(CH3)COO(CH2)3CH3	326.15	562.15	0.01	0.068
+97-95-0	 2-Ethyl-1-butanol; (Isohexyl alcohol); CH3CH(CH2CH3)CH2CH2OH	330.15	588.15	0.012	0.083
+97-99-4	Tetrahydro-2-furan methanol); (Tetrahydrofurfuryl alcohol); (Tetrahydrofuran-2-yl-methanol); (Tetrahydro-2-furan carbinol); (2-Hydroxymethyl oxolane); OCH2CH2CH2CHCH2OH	343.15	553.15	0.015	0.097
+98-00-0	2-Furylmethanol; (Furfuryl Alcohol); (2-Hydroxymethylfuran); OC(CH2OH)CHCHCH	334.15	643.15	0.018	0.163
+98-01-1	2-Furancarbox aldehyde; (Fural); (Furfural); (2-Furaldehyde); OCH=CHCH=CHCHO	333.15	589.15	0.021	0.193
+98-82-8	(1-Methylethyl) benzene; (Cumene); (Isopropyl benzene); (2-Phenyl propane); C6H5CH (CH3)2	304.15	697.15	0.008	0.065
+98-83-9	 \xce\xb1-Methyl styrene; (Isopropenyl benzene); (1-Methyl-1-phenylethylene); (2-Phenyl propylene); C6H5C(CH3)=CH2	313.15	718.15	0.008	0.11
+98-95-3	Nitrobenzene; (=Nitrobenzol); (=Oil of mirbane); C6H5NO2	361.15	754.15	0.014	0.4
+99-87-6	 1-Methyl-4-(1-methylethyl)benzene; (p-Cymene); (-isopropyltoluene); CH3C6H4CH (CH3)2	320.15	709.15	0.007	0.056
+100-37-8	 2-Diethylaminoethanol; (Diethylaminoethanol); (2-Diethylaminoethyl alcohol); (N,N-Diethylethanol amine); (Diethyl-(2-hydroxyethyl)amine); (2-Hydroxytriethlamine); (C2H5)2NCH2CH2OH	333.15	593.15		
+100-40-3	 4-Ethenylcyclohexene; (Vinyl cyclohexene); (CH2=CH)CH(CH2)4CH2	288.15	530.15	0.008	
+100-41-4	Ethylbenzene; (\xce\xb1-Methyltoluene); (Phenylethane); C6H5CH2CH3	288.15	704.15	0.008	0.078
+100-42-5	Ethenylbenzene; (Styrene); (Vinylbenzene); (Phenylethylene); (Styrol); C6H5CH=CH2	303.15	763.15	0.01	0.08
+100-43-6	 4-Vinylpyridine; (4-Ethenylpyridine); (\xce\xb3-Vinylpyridine); NCHCHC(CH2=CH)CHCH	316.15	774.15	0.011	
+100-44-7	(Chloromethyl)benzene; (Benzyl chloride); (\xce\xb1-Chlorotoluene); (Tolyl Chloride); C6H5CH2CI	333.15	858.15	0.011	
+100-52-7	Benzaldehyde; C6H5CHO	337.15	465.15	0.014	
+100-69-6	 2-Vinylpyridine; (2-Ethenylpyridine); (=\xce\xb1-Vinylpyridine); NC(CH2=CH)CHCHCHCH	308.15	755.15	0.012	
+102-71-6	 Triethanolamine	452.15	589.15		
+103-09-3	Acetic acid-2-ethylhexyl ester; (2-Ethylhexyl acetate); CH3COOCH2CH(C2H5)C4H9	317.15	608.15	0.008	0.081
+103-11-7	Prop-2-enoic acid 2-ethylhexyl ester; (2-Ethylhexyl 2-propenoate); (2-Ethylhexyl acrylate); CH2=CHCOO(CH2)4CH3	355.15	525.15	0.007	0.082
+104-76-7	2-Ethyl-1-hexanol; CH (CH ) CH(CH CH )CH OH	346.15	561.15	0.009	0.097
+105-45-3	3-Oxo-butanoic acid methyl ester; (Acetoacetic acid methyl ester); (1-Methoxybutane-1,3-dione); (Methyl acetoacetate); CH3COOCH2COCH3	335.15	553.15	0.013	0.142
+105-46-4	Acetic acid 1-methylpropyl ester; (sec-Butyl acetate); (sec-Butyl ester of acetic acid); (1-Methylpropyl acetate); CH3COOCH(CH3)CH2CH3	255.15	695.15	0.013	0.075
+105-48-6	Chloroacetic acid-1-methylethyl ester; (iso-Propyl chloroacetate); (Propan-2-yl 2-chloroacetate); CICH2COOCH(CH3)2	315.15	699.15	0.016	
+105-54-4	Butanoic acid ethyl ester; (Ethyl butanoate); (Ethyl butyrate); (Butyric acid ethyl ester); CH3CH2CH2COOCH2CH3	294.15	708.15	0.014	
+105-58-8	Carbonic acid diethyl ester; (Diethyl carbonate); (CH3CH2O)2CO	297.15	723.15	0.014	0.117
+105-59-9	 Methyl diethanolamine	401.15	578.15		
+106-35-4	3-Heptanone; (Ethyl butyl ketone); CH3CH2CO(CH2)3CH3	310.15	683.15	0.011	0.073
+106-42-3	1.4-Dimethyl benzene; (p-Xylene); (p-Xyol); C6H4(CH3)2	298.15	808.15	0.009	0.076
+106-46-7	1.4-Dichlorobenzene; (Dichlorocide); C6H4CI2	339.15	921.15	0.022	0.092
+106-58-1	 1.4-Dimethylpiperazine; NH(CH3)CH2CH2NH(CH3)CH2CH2	294.65	472.15	0.01	
+106-89-8	 (Chloromethyl) oxirane; (Epichlorohydrin); (1-Chloro-2,3-epoxypropane); (2-Chloropropylene oxide); OCH2 CHCH2CI	301.15	658.15	0.023	0.344
+106-92-3	[(2-Propenyloxy) methyl] oxirane; (Allyl 2,3-epoxypropylether); (1-(Allyloxy)-2,3-epoxypropan); (Glycidyl allyl ether); (Allyl glycidyl ether); CH2=CH-CH2-O-CHCH2CH2O	318.15	522.15		
+106-96-7	3-Bromo-1-Propine; (Bromo propyne); CH3CH\xe2\x89\xa1CBr	283.15	597.15	0.03	
+106-97-8	n-Butane; (Butyl hydride); (Diethyl); (Methylethylmethane); CH3(CH2)2CH2		645.15	0.014	0.093
+106-98-9	1-Butene; (n-Butylene); (Ethylethylene); CH2=CHCH2CH3		618.15	0.016	0.1
+106-99-0	1.3-Butadiene; (Biethylene); (Bivinyl); (Divinyl); (Erythrene); (Vinylethylene); CH2=CHCH=CH2		693.15	0.014	0.163
+107-00-6	1-Butine; (Ethylacetylene); CH3CH2C\xe2\x89\xa1CH				
+107-02-8	2-Propenal (inhibited); (Acraldehyde); (Acrylaldehyde); (Acrylic aldehyde); (Allyl aldehyde); (Propenal); (Acrolein); (CH2=CHCHO	255.15	490.15	0.028	0.318
+107-05-1	3-Chloro-1-propene; (Allyl chloride); (1-Chloro-2-propene); (3-Chloropropylene); CH2=CHCH2CI	241.15	663.15	0.029	0.112
+107-06-2	1.2-Dichloroethane; (Ethylene chloride); (Ethylene dichloride); CH2CICH2CI	286.15	711.15	0.062	0.16
+107-07-3	Ethylene chlorohydrins; (2-Chloroethanol); (2-Chloroethyl alcohol); CH2CICH2OH	328.15	698.15	0.049	0.16
+107-10-8	1-Propaneamine; (1-Aminopropane); CH3(CH2)2NH2	236.15	591.15	0.02	0.104
+107-13-1	2-Propenenitrile; (Acrylonitrile); (Cyanoethylene); (Propenenitrile); (Acrylonitrile); (Vinyl cyanide, VCN); CH2=CHCN	268.15	753.15	0.028	0.28
+107-15-3	1.2-Ethanediamine; (Ethylenediamine); (Dimethylenediamine); NH2CH2CH2NH2	306.15	658.15	0.025	0.165
+107-18-6	2-Propen-1-ol; (Allylic alcohol); (Propenol); (Allyl alcohol); (Vinyl carbinol); CH2=CHCH2OH	294.15	651.15	0.025	0.18
+107-19-7	2-Propine-1-ol; (Prop-2-yn-1-ol); (Propargyl alcohol); HC\xe2\x89\xa1CCH2OH	306.15	619.15	0.024	
+107-20-0	Chloroacetaldehyde; (2-Chloroethanal); CICH2CHO			0.057	0.184
+107-30-2	Chloromethoxymethane; (Chloromethyl methyl ether); (Chlorodimethyl ether); (Chloromethoxy methane); (Dimethylchloroether); (Methylchloromethyl ether); CH3OCH2CI	265.15			
+107-31-3	Fomic acid methyl ester; (Methyl fomate); (Methyl methanoate); HCOOCH3	253.15	798.15	0.05	0.23
+108-01-0	2-(Dimethylamino)ethanol; (CH3)2NC2H4OH	312.15	493.15		
+108-03-2	 1-Nitropropane; CH3CH2CH2NO2	308.15	693.15	0.022	
+108-05-4	Acetic acid ethenyl ester; (Vinyl acetate); (1-Acetoxyethylene); CH3COOCH=CH2	266.15	658.15	0.026	0.134
+108-10-1	4-Methylpentan-2-one; (Hexone); (Isopropylacetone); (Methyl isobutyl ketone); (CH3)2CHCH2COCH3	289.15	748.15	0.012	0.08
+108-11-2	4-Methylpentan-2-ol; (Isobutylmethylcarbinol); (Methyl amyl alcohol); (Methyl isobutyl carbinol); (CH3)2CHCH2CHOHCH3	310.15	607.15	0.0114	0.055
+108-18-9	 n-(1-Methylethyl)-2-propanamine; (Diisopropylamine); ((CH3)2CH)2NH	253.15	558.15	0.012	0.085
+108-20-3	2.21-Oxybispropane; (Diisopropyl ether); (2-Isopropoxy propane); ((CH3)2CH)2O	245.15	678.15	0.01	0.21
+108-21-4	Acetic acid-1-methylethyl ester; (iso-propyl acetate); (iso-propyl ester of acetic acid); (1-Methylethyl ester of acetic acid); (2-Propyl acetate); CH3COOCH(CH3)2	274.15	698.15	0.017	0.081
+108-24-7	Acetic anhydride; (Acetic acid anhydride); (Acetic oxide); (Acetyl oxide); (Ethanoic anhydride); (CH3CO)2O	322.15	589.15	0.02	0.103
+108-38-3	1.3-Dimethylbenzene; (m-Xylene); (m-Xylol); C6H4(CH3)2	298.15	738.15	0.01	0.07
+108-62-3	 2.4.6.8-Tetramethyl-1.3.5.7-; tetraoxocane; (Metaldehyde); (C2H4O)4	309.15			
+108-67-8	 1.3.5-Trimethylbenzene; (Mesitylene); CHC(CH3)CHC(CH3)CHC(CH3)	317.15	772.15	0.008	0.073
+108-82-7	2.6-Dimethylheptan-4-ol; (Diisobutylcarbinol); ((CH3)2CHCH2)2CHOH	348.15	563.15	0.007	0.061
+108-87-2	Methylcyclohexane; (Hexahydrodoluene); CH3CH(CH2)4CH2	269.15	523.15	0.01	0.067
+108-88-3	Methyl benzene; (Toluene); (Methyl benzol); (Phenyl methane); C6H5CH3	277.15	803.15	0.01	0.078
+108-89-4	4-Methylpyridine; (\xce\xb3-Picoline); NCHCHC(CH3)CHCH2	316.15	807.15	0.011	0.078
+108-90-7	Chlorobenzene; (Phenyl chloride); (Monochlorobenzene); C6H5CI	301.15	866.15	0.013	0.11
+108-91-8	 Cyclohexylamine; (Aminocyclohexane); (Aminohexadydro-benzene); (Hexahydroaniline); (Hexahydro-benzenamine); CH2 (CH2)4CHNH2	300.15	548.15	0.011	0.094
+108-93-0	Cyclohexanol; (Cyclohexyl alcohol); (Hexahydrophenol); (Hexalin); CH2 (CH2)4CHOH	334.15	573.15	0.012	0.111
+108-94-1	Cyclohexanone; (Anone); (Cyclohexyl ketone); (Pimelic ketone); CH2 (CH2)4CO	316.15	692.15	0.013	0.094
+108-95-2	Phenol; (Carbolic acid); (Hydroxybenzene); (Monohydroxybenzene); (=Monophenol); (Oxybenzene); C6H5OH	348.15	868.15	0.013	0.095
+108-99-6	3-Methylpyridine; (\xce\xb2-Picoline); NCHC(CH3)CHCHCH	316.15	810.15	0.014	0.081
+109-06-8	 2-Methylpyridine; (\xce\xb1-Picoline); NC(CH3)CHCHCHCH	300.15	806.15	0.012	
+109-55-7	 N.N-Dimethylpropane-1.3-diamine; (3-Dimethylamino-propylamine); (1-Amino-3-dimethyl-aminopropane); (CH3)2N(CH2)3NH2	299.15	492.15	0.012	
+109-60-4	Acetic acid n-propyl ester; (n-Propyl acetate); (1-Acetoxypropane); (n-propyl ester acetic acid); CH3COOCH2CH2CH3	283.15	703.15	0.017	0.08
+109-65-9	1-Bromobutane; (n-Butyl bromide); CH3(CH2)2 CH2Br	286.15	538.15	0.025	0.066
+109-66-0	n-Pentane; CH3(CH2)3CH3	233.15	516.15	0.011	0.087
+109-69-3	 1-Chlorobutane; (n-Butyl chloride); (n-Propylcarbinylchloride); CH3(CH2)2CH2CI	261.15	518.15	0.018	0.1
+109-73-9	1-Aminobutane; (n-Butylamine); CH3(CH2)3NH2	261.15	585.15	0.017	0.098
+109-79-5	1-Butanethiol; (Butanethiol); (n-Butyl mercaptan); (n-Butanethiol); (1-Mercaptobutane); CH3(CH2)3SH	275.15	545.15	0.014	0.113
+109-86-4	 2-Methoxyethanol; (Ethylene glycol monomethyl ether); CH3OCH2CH2OH	312.15	558.15	0.018	0.206
+109-87-5	Dimethoxymethane; (Methylal); (Dimethyl acetal methanal); (Dimethyl acetal formaldehyde); (Dimethyl formal); (2,4-Dioxapentane); CH2(OCH3)2	252.15	508.15	0.022	0.199
+109-89-7	n-Ethylethanamine; (Diethamine); (Diethalamine); (C2H5)2NH	250.15	585.15	0.017	0.101
+109-94-4	Fomic acid ethyl ester; (Ethyl methanoate); (Ethyl fomate); HCOOCH2CH3	253.15	713.15	0.027	0.165
+109-95-5	comment: both are valid; Nitrous acid ethyl ester; (Ethyl nitrite; see Section 5.2.2); CH3CH2ONO	238.15	368.15	0.03	0.5
+109-99-9	Tetrahydrofuran; (1.4-Epoxybutane); (Oxolane); (Oxacyclopentane); (Tetramethylene oxide); CH2(CH2)2CH2O	259.15	503.15	0.015	0.124
+110-00-9	Furan; (Divinylene oxide); (Furfuran); (Tetrole); (Oxole); (Oxacyclopentadiene); CH=CHCH=CHO	253.15	663.15	0.023	0.143
+110-01-0	Tetrahydrothiopene; (Tetramethylene sulphide); (Thiolane); (Thiophane); (Thiocyclopentane); CH2(CH2)2CH2S	286.15	473.15	0.011	0.123
+110-02-1	Thiophene; (Divinylene sulphide); (Thiacyclopentadiene); (Thiofuran); CH=CHCH=CHS	264.15	668.15	0.015	0.125
+110-05-4	 bis(1.1-Dimethyethyl) peroxide; (tert-Dibutyl peroxide); (CH3)3COOC(CH3)3	277.15	443.15	0.0074	1
+110-43-0	Heptan-2-one; (1-Methylhexanal); (2-Oxoheptane); (Amyl methyl ketone); (Butylacetone); CH3CO(CH2)4CH3	312.15	578.15	0.011	0.079
+110-54-3	(n-Hexane); Hexane (mixed isomers); (Hexyl hydride); CH3(CH2)4CH3	251.15	498.15	0.01	0.089
+110-62-3	1-Pentanal; (Amyl aldehyde); (Butyl formal); (Valeraldehyde); CH (CH ) CHO	279.15	479.15	0.014	0.095
+110-71-4	 1.2-Dimethoxyethane; (Monoglyme); (Ethylene glycol dimethyl ether); (Dimethylglycol); (2,5-Dioxahexane); CH3O(CH2)2OCH3	267.15	470.15	0.016	0.104
+110-80-5	2-Ethoxyethanol; (Ethane-1,2-diol ethyl ether); (Ethyl cellosolve); (3-Oxapentan-1-ol); (Ethylene glycol ethyl ether); (Ethylene glycol monoethyl ether); CH3CH2OCH2CH2OH	313.15	508.15	0.017	0.157
+110-82-7	Cyclohexane; (Hexahydrobenzene); (Hexamethylene); (Hexanaphthene); Ch2(CH2)4CH2	256.15	517.15	0.01	0.08
+110-83-8	Cyclohexene; (Benzene tetrahydride); (Tetrahydrobenzene); CH2(CH2)3CH=CH	256.15	517.15	0.011	0.083
+110-85-0	Piperazine	355.15	593.15		
+110-86-1	Pyridine; (Azine); (Azabenzene); C5H5N	291.15	755.15	0.017	0.124
+110-88-3	1.3.5-Trioxane; (Trioxymethylene); OCH2OCH2OCH2	318.15	683.15	0.032	0.29
+110-91-8	Morpholine; (Diethylene imidoxide); (Diethylene oximide); (Tetrahydro-1,4-oxazine); OCH2CH2NHCH2CH2	306.15	548.15	0.014	0.152
+110-96-3	 2-Methyl-n-(2-methylpropyl)-1-; propanamine; (Diisobutylamine); ((CH3)2CHCH2)2NH	299.15	529.15	0.008	0.036
+111-15-9	Acetic acid 2-ethoxy-ethyl ester; (2-Ethoxyethyl acetate); (Ethylene glycol monoethyl; etheracetate); (Glycol monoethyl ether acetate); CH3COOCH2CH2OCH2CH3	324.15	653.15	0.012	0.127
+111-27-3	1-Hexanol; (Amylcarbinol); (Hexyl alcohol); (1-Hydroxyhexane); (Pentylcarbinol); CH3(CH2)4CH3	333.15	553.15	0.011	0.118
+111-40-0	Diethylenetriamine	372.15	630.15		
+111-42-2	 Diethanolamine (DEA)	447.15	935.15		
+111-43-3	 1.11-Oxybispropane; (Dipropylether); (1-propoxy-propane); CH3(CH2)2O	268.15	448.15	0.0118	
+111-49-9	Hexahydro-1H-acepine; (Azepane); CH2 (CH2)5NH	296.15	552.15		
+111-65-9	n-Octane; CH3(CH2)6CH3	286.15	479.15	0.008	0.065
+111-69-3	Hexanedinitrile; (1.4-Dicyanobutane); (Adiponitrile); (Tetramethylene cyanide); NC(CH ) CN	366.15	823.15	0.017	0.05
+111-70-6	Heptan-1-ol; (hexylcarbinol); (heptyl alcohol); (enanthic alcohol); (1-hydroxyheptane); CH3(CH2)5CH2OH	333.15	548.15	0.009	
+111-76-2	 2-Butoxyethanol; (Ethylene glycol monobutyl ether); (Butyl cellosolve); (Butylglykol); CH3(CH2)3OCH2OH	334.15	511.15	0.011	0.127
+111-84-2	Nonane; (Nonyl hydride); CH3(CH2)7CH2	303.15	478.15	0.007	0.056
+111-87-5	1-Octanol; (Caprylic alcohol); (Heptyl carbinol); (1-Hydroxyoctane); (=n-Octyl alcohol); CH3(CH2)6CH2OH	354.15	543.15	-0.009	0.07
+111-90-0	2- (2-Ethoxyethoxy) ethanol; (Diethylene glycol monoethyl ether); (3,6-Dioxaoctan-1-ol); CH3CH2OCH2CH2OCH2CH2OH	367.15	463.15	0.013	
+112-07-2	2-Butoxyethanol acetate; (Ethylene glycol monobutyl; etheracetate); C4H9O(CH2)2OCOCH3	344.15	613.15	0.009	0.089
+112-30-1	1-Decanol; (Decyl alcohol); CH3(CH2)9OH	355.15	561.15	0.007	0.055
+112-34-5	 2-(2-Butoxyethoxy) ethanol; (Butyldiglykol); (Diglycol monobutyl ether); CH3(CH2)3OCH2CH2OCH2CH2OH	373.15	498.15	0.0085	
+112-41-4	 1-Dodecene; CH3(CH2)9CH=CH2	350.15	498.15	0.006	
+112-58-3	1.11-Oxybishexane; (Dihexyl Ether); (CH3(CH2)5)2O	348.15	460.15		
+115-07-1	Propene; (Methylethylene); (Propylene); CH2=CHCH3		728.15	0.02	0.111
+115-10-6	Oxybismethane; (Methyl ether); (Dimethylether); (Wood ether); (Methoxymethane); (CH3)2O		513.15	0.027	0.32
+115-11-7	2-Methylprop-1-ene; (1.1-Dimethylethylene); (Isobutylene); (Isobutene); (2-Methylpropene); (CH3)2C=CH2		756.15	0.016	0.1
+116-14-3	Tetrafluoroethylene; CF2=CF2		528.15	0.1	0.59
+121-44-8	N.N-Diethylethanamine; (Triethylamine); (CH3CH2)3N	265.15	488.15	0.012	0.08
+121-69-7	 N.N-Dimethylbenzeneamine; (N.N-Dimethylaniline); C6H3(CH3)2NH2	335.15	643.15	0.012	0.07
+123-05-7	 2-Ethylhexanal; (2-Ethylhexaldehyde); CH3CH(CH2CH3)(CH2)3CHO	315.15	458.15	0.009	0.072
+123-38-6	 1-Propanal; (Propionic aldehyde); CH3CH2CHO	247.15	461.15	0.02	
+123-42-2	 4-Hydroxy-4-methylpenta-2-one; (Diacetone alcohol); (2-Methyl-2-pentanol-4-one); CH3COCH2C(CH3)2OH	331.15	953.15	0.018	0.069
+123-51-3	3-Methylbutan-1-ol; (Isoamyl alcohol); (CH3)2CH(CH2)2OH	315.15	612.15	0.013	0.105
+123-54-6	Pentane-2,4-dione; (Acetylacetone); CH3COCH2COCH3	307.15	613.15	0.017	
+123-63-7	 2.4.6-Trimethyl-1.3.5-trioxane; (p-Acetaldehyde); (Paracetaldehyde); (Paraldehyde); OCH(CH3)OCH(CH3)OCH(CH3)	300.15	508.15	0.013	
+123-72-8	1-Butanal; (Butyraldehyde); (Butyl aldehyde); CH3CH2CH2CHO	261.15	478.15	0.017	0.125
+123-86-4	Acetic acid n-butyl ester; (n-Butyl acetate); (n-Butyl ester of acetic acid); (Butyl ethanoate); CH3COOCH2(CH2)2CH3	295.15	663.15	0.012	0.085
+123-91-1	1.4-Dioxane; (Diethylene dioxide); (Diethylene ether); OCH2CH2OCH2CH2	284.15	648.15	0.014	0.225
+124-13-0	Octanal; (=Octaldehyde); CH3(CH2)6CHO	325.15	473.15		
+124-18-5	Decane; (mixed isomers); C10H22	319.15	508.15	0.007	0.056
+124-40-3	n-Methylmethanamine; (Dimethylamine); (CH3)2NH		673.15	0.028	0.144
+126-99-8	 2-Chloro-1,3-butadiene; (Chloroprene); CH2=CCICH=CH2	244.15	593.15	0.019	0.2
+138-86-3	 1-Methyl-4-(1-methylethenyl); cyclohexene; CH3CCHCH2CH(C(CH3)=CH2); CH2CH2	316.15	510.15	0.007	0.061
+140-88-5	2-Propenoic acid ethyl ester; (Acrylic acid ethyl ester); (Ethyl acrylate); (Ethyl propenoate); CH2=CHCOOCH2CH3	282.15	623.15	0.014	0.14
+141-32-2	2-Propenoic acid butyl ester; (inhibited); (n-Butyl acrylate); (Butyl ester of acrylic acid); (Butyl-2-propenoate); CH2=CHCOOC4H9	311.15	541.15	0.012	0.099
+141-43-5	2-Aminoethanol; (Ethanolamine); (beta-Aminoethyl alcohol); (Ethylolamine); (2-Hydroxyethylamine); (Monoethanolamine); NH2CH2CH2OH	358.15	683.15		
+141-78-6	Acetic acid ethyl ester; (Ethyl acetate); (Ethyl ethanoate); CH3COOCH2CH3	269.15	743.15	0.02	0.128
+141-79-7	4-Methylpent-3-en-2-one; (Mesityl oxide); (CH3)2CCHCOCH3	297.15	579.15	0.016	0.072
+141-97-9	3-Oxobutanoic acid ethyl ester; (Acetoacetic acid ethyl ester); (1-Ethoxybutane-1.3-dione); (Ethyl acetoacetate); CH3COCH2COOCH2CH3	338.15	623.15	0.01	0.095
+142-29-0	 Cyclopentene; CH=CHCH2CH2CH	251.15	582.15	0.0148	
+142-82-5	(n-Heptane); Heptane (mixed isomers); C7H16	266.15	477.15	0.0085	0.067
+142-84-7	n-Propyl-1-propanamine; (Dipropylamine); (CH3CH2CH2)2NH	277.15	533.15	0.012	0.091
+142-96-1	1.11-Oxybisbutane; (Dibutyl ether); (1-Butoxybutane); (CH3(CH2)3)2O	298.15	448.15	0.009	0.085
+151-56-4	Ethylenimine; (Aminoethylene); (Aziridine); CH3CH2N	262.15	593.15	0.033	0.548
+287-23-0	Cyclobutane; (Tertamethylene); CH2(CH2)2CH2			0.018	
+287-92-3	Cyclopentane; (Pentamethylene); CH2(CH2)3CH2	236.15	593.15	0.014	
+291-64-5	Cycloheptane; CH2(CH2)3CH2	279.15		0.011	0.067
+300-62-9	 (+-) \xce\xb1-Methylbenzeneethanamine; (Amphetamine); (1-Phenylpropan-2-amine); C6H5CH2CH(NH2)CH3	373.15			
+350-57-2	 1,1,2,2-Tetrafluoroethoxybenzene;  C6H5OCF2CF2H	320.15	756.15	0.016	
+359-11-5	Trifluoroethylene; CF2=CFH		592.15	0.153	0.27
+420-46-2	1,1,1-Trifluoroethane; (=Methylfluoroform); CF3CH3		987.15	0.068	0.176
+461-53-0	Butanoyl fluoride; (Butyryl fluoride); CH3(CH2)2COF	259.15	713.15	0.026	
+463-58-1	Carbonyl sulfide; COS		482.15	0.065	0.285
+493-02-7	 trans-Decahydronaphthalene; CH2(CH2)3CHCH(CH2)3CH2	327.15	561.15	0.007	0.049
+504-60-9	Penta-1.3-diene; (Piperyltene); CH2=CH-CH=CH-CH3	242.15	634.15	0.012	0.094
+507-20-0	 2-Chloro-2-methylpropane; (CH3)3CCI	255.15	814.15		
+513-35-9	2-Methylbut-2-ene; (Amylene); (Trimethylethylene); (CH3)2C=CHCH3	220.15	563.15	0.013	0.066
+513-36-0	 1-Chloro-2-methylpropane; (CH3)2CHCH2CI	259.15	689.15	0.02	0.088
+526-73-8	 1,2,3-Trimethylbenzene; (Hemimellitene); CHCHCH(CH3) C(CH3)C(CH3)	324.15	743.15	0.008	0.07
+534-22-5	2-Methylfuran; OC(CH3) CHCHCH	257.15	591.15	0.014	0.097
+536-74-3	Phenylacetylene; (Ethynylbenzene); (Phenyl ethyne); C6H5C\xe2\x89\xa1CH	314.15	693.15		
+540-54-5	1-Chloropropane; CH3CH2CH2CL	241.15	793.15	0.024	0.111
+540-59-0	1,2-Dichloroethene; (Acetylene dichloride); (trans-Acetylene dichloride); (sym-Dichloroethylene); CICH-CHCI	263.15	713.15	0.097	0.128
+540-67-0	Ethyl methyl ether; (Methoxythane); CH3OCH2CH3		463.15	0.02	0.101
+540-84-1	 2.2.4-Trimethylpentane; (iso-Butyltrimethyl methane); (iso-Octane); (CH3)2CHCH2C(CH3)3	261.15	686.15	0.007	0.06
+540-88-5	Acetic acid 1,1-dimethylethyl ester; (tert-Butyl acetate); (tert-Butyl ester of acetic acid); CH3COOC(CH3)3	274.15	708.15	0.013	0.073
+542-92-7	1.3-Cyclopentadiene; CH2CH=CHCH=CH	223.15	738.15		
+544-01-4	 1.11-Oxybis(3-methylbutane); (Diisopentylether); (Di(3-methyl-1-butyl) ether); (3-Methyl-1-(3-methyl-butoxy)-; butane); (CH3)2CH(CH2)2O(CH2)2CH(CH3)2	317.15	458.15	0.0127	
+554-14-3	2-Methylthiophene; SC(CH3) CHCHCH	272.15	706.15	0.013	0.065
+557-99-3	Acetyl fluoride; CH3COF	256.15	707.15	0.056	0.199
+563-47-3	 3-Chloro-2-methyl-1-propene; CH2=C(CH3)CH2CI	257.15	749.15	0.021	
+583-48-2	3.4-Dimethylhexane; CH3CH2CH(CH3)CH(CH3)CH2CH3	275.15	578.15	0.008	0.065
+590-01-2	Propionic acid butyl ester; (Propanoic acid, butyl ester); (Butyl propanoate); (Butyl propionate); C2H5COOC4H9	311.15	678.15	0.01	0.077
+590-18-1	2-Butene (cis); CH3CH=CHCH3		598.15	0.016	0.1
+590-86-3	3-Methylbutanal; (iso-Pentanal); (iso-Valeradehyde); (3-Methylbutyraldehyde); (CH3)2CHCH2CHO	268.15	480.15	0.013	0.13
+591-78-6	2-Hexanone; (Hexan-2-one); (Methyl butyl ketone); CH3CO(CH2)3CH3	296.15	693.15	0.012	0.094
+591-87-7	Acetic acid-2propenyl ester; (Acetoxypropene); (Acetic acid, allyl ester); (Allyl acetate); CH2=CHCH2OOCCH3	286.15	621.15	0.017	0.101
+592-77-8	Hept-2-ene; CH3(CH2)3CH=CHCH3	273.15	536.15		
+598-61-8	Methylcyclobutane; CH3CH(CH2)2CH2				
+623-36-9	2-Methylpent-2-enal; CH3CH2CHC(CH3)COH	303.15	479.15	0.0146	
+624-83-9	Methylisocyanate; (Methyl ester of isocyanic acid); CH3NCO	238.15	790.15	0.053	0.26
+625-55-8	Fomic acid-1-methylethyl ester; (iso-Propyl fomate); (Formic acid isopropyl ester); (1-Methylethyl fomate); HCOOCH(CH3)2	267.15	742.15		
+626-38-0	Acetic acid 1-methylbutyl ester; (sec-Amyl acetate); (1-Methylbutyl acetate); (2-Pentanol acetate); (2-Pentyl ester of acetic acid); CH3COOCH(CH3)(CH2)2CH3	296.15		0.11	0.075
+628-63-7	Acetic acid penthyl ester; (n-Amyl acetate); (Amyl acetic ester); (1-Pentanol acetate); (Pentyl Acetate); (Pentyl ester of acetic acid); (Primary amyl acetate); CH3COO(CH2)4CH3	298.15	633.15	0.01	0.075
+629-14-1	1.2-Diethoxyethane; (3,6-Dioxaoctane); CH3CH2O(CH2)2OCH2CH3	289.15	443.15		
+630-08-0	Carbon monoxide (water saturated; air at 18\xc2\xb0C; see 5.2.3); CO		880.15	0.109	0.74
+645-62-5	 2-Ethyl-2-hexenal; (Ethylpropylacrolein); CH3CH(CH2CH3)=CH(CH2)2CH3	313.15	457.15		
+646-06-0	1.3-Dioxolane; (glycolformal); (formaldehyde ethylene acetal); (ethylene glycol formal); OCH2CH2OCH2	268.15	518.15	0.023	0.305
+674-82-8	4-Methylene-2-oxetanone; (Acetyl ketene); (But-3-en-3-olide); (Diketene); CH2=CCH2C(O)O	306.15	535.15		
+677-21-4	 3,3,3-Trifluoroprop-1-ene; CH3CH=CH2		763.15	0.047	
+693-65-2	1.11-Oxybispentane; (Dipentylether); (CH3(CH2)4)2O	330.15	444.15		
+760-23-6	3.4-Dichlorobut-1-ene; CH2=CHCHCICH2CI	304.15	742.15	0.013	0.072
+764-48-7	 2-Vinyloxyethanol; (2-Ethenoxyethanol); CH2=CH-OCH2CH2OH	325.15	523.15		
+765-43-5	 1-Cyclopropyl ethanone; (acetylcyclopropane); (Cyclopropyl methyl ketone); CH2CH2CHCOCH3	288.15	725.15	0.017	
+814-68-6	Acryloyl chloride; (Propenoyl chloride); (Acrylic acid chloride); CH2CHCOCI	265.15	736.15	0.0268	0.18
+872-05-9	1-Decene; CH2(CH2)8CH3	320.15	508.15	0.0055	0.057
+920-46-7	Methacryloyl chloride; (Methacrylic acid chloride); (2-Methyl-2-propenoyl chloride); CH2CCH3COCI	290.15	783.15	0.025	
+926-57-8	 1.3-Dichloro-2-butene; CH3CCI=CHCH2CI	300.15	742.15		
+994-05-8	2-Methoxy-2-methyl-butane; (1.1-Dimethylpropyl methyl ether); (Methyl tert-pentyl ether); (CH3)2C(OCH3)CH2CH3	259.15	618.15	0.0118	
+1120-56-5	Methylenecyclobutane; C(=CH2)(CH2)2CH2	273.15	625.15	0.0125	0.086
+1122-03-8	4.4.5-Trimethyl-1.3-dioxane; OCH2OCH(CH3)C(CH3)2CH2	308.15	557.15		
+1300-73-8	Xylidenes (Mixture of isomers); (Xylidine); C6H3(CH3)2NH2		773.15	0.01	0.07
+1319-77-3	(o-Cresol); Cresol; (mixed isomers); CH3C6H4OH	354.15	830.15	0.011	
+1333-74-0	Hydrogen H2		833.15	0.04	0.77
+1498-64-2	O-Ethyl phosphoro dichloridothioate; C2H5OPSCI2	348.15	507.15		
+1634-04-4	2-Methoxy-2-methylpropane; (tert-Butyl methylether); (Methyl tert-butylether); CH3OC(CH3)3	246.15	658.15	0.015	0.084
+1640-89-7	Ethylcyclopentane; CH3CH2CH(CH2)3CH2	278.15	535.15	0.0105	0.068
+1678-91-7	Ethylcyclohexane; CH3CH2CH(CH2)4CH2	297.15	511.15	0.009	0.066
+1712-64-7	Nitric acid-1-methylethyl ester; (iso-Propyl nitrate); (Nitric acid isopropyl ester); (Propane-2-nitrate); (CH3)2CHONO2	284.15	448.15	0.02	1
+1719-53-5	 Dichlorodiethylsilane; (Diethyl-dicholoro-silane); (C2H5)2SiCI2	297.15		0.034	
+1738-25-6	 3-(Dimethylamino) propiononitrile; (CH3)2NHCH2CH2CN	323.15	590.15	0.0157	
+2032-35-1	2-Bromo-1,1-diethoxyethane; (CH3CH2O)2CHCH2Br	330.15	448.15		
+2426-08-6	(Butoxymethyl)oxirane; (n-Butyl glycidil ether); (Butyl 2,3-Epoxypropylether); (1.2-Epoxy-3-butoxypropane); (CH2)3OCH2; CH3CH2(CH2)3O CH2 CHCH2O	317.15	488.15		
+2673-15-6	 2.2.3.3.4.4.5.5-Octafluoro-1,1-; dimethylpentan-1-ol; H(CF2CF2)2C(CH3)2OH	334.15	738.15		
+2993-85-3	 2.2.3.3.4.4.5.5.6.6.7.7-; Dodecafluoroheptyl methacrylate; CH2=(C(CH3)COOCH2(CF2)6H		663.15	0.016	
+3583-47-9	1.4-Dichloro-2,3 Epoxybutane; (2,3-bis(chloromethyl) oxirane); CH2CICH2CHCHCOCH2CI			0.019	0.085
+4170-30-3	2-Butenal; (Crotonaldehyde); (beta-Methyl acrolein); (Propylene aldehyde); CH3CH=CHCHO	281.15	503.15	0.021	0.16
+4806-61-5	Ethylcyclobutane; CH3CH2CH(CH2)2CH2	257.15	485.15	0.012	0.077
+5870-82-6	1.1.3-Triethoxybutane; (CH3CH2O)2CHCH2CH(CH3CH2O); CH3	306.15	438.15	0.0078	0.058
+5891-21-4	 5-Chloro-2-pentanone; CH3CO(CH2)3CI	334.15	713.15	0.02	
+7383-71-3	2.2.3.3-Tetrafluoropropyl acrylate; (Acrylic acid 2.2.3.3-tetrafluoro-; propyl ester); (2.2.3.3-Tetrafluoro propyl prop-2-; enoate); CH2=CHCOOCH2CF2CF2H	318.15	630.15	0.024	
+7397-62-8	Hydroxyacetic butylester; (Butyl glycolate); (Butyl-2-hydroxyacetate); HOCH2COO(CH2)3CH3	334.15			
+7664-41-7	Ammonia; (Anhydrous ammonia); NH3		903.15	0.15	0.336
+7783-06-4	Hydrogen Sulfide; (Hydrosulfuric acid); (Sewer gas); (Sulfuretted hydrogen); H2S		533.15	0.04	0.455
+8006-61-9	Gasoline; (Motor fuel); (Natural gasoline); (Petrol)	227.15	553.15	0.014	0.076
+8006-64-2	Turpentine oil	308.15	526.15	0.008	
+8008-20-6	Kerosene; (Diesel Oil No. 1); (Fuel Oil No. 1)	311.15	483.15	0.007	0.05
+17639-76-8	 Methyl-2-methoxypropionate;  CH3CH(CH3O)COOCH3	321.15	484.15	0.012	
+20260-76-8	2-Methyl-5-vinylpyridine; NC(CH3)CHCHC(CH2=CH)CH	334.15	793.15		
+25377-83-7	Octene (mixed isomers); C8H16	255.15	503.15	0.009	0.059
+25639-42-3	Methylcyclohexanol (mixed isomers); (Hexahydromethyl phenol); (Hexahydrocresol); C7H13OH	341.15	568.15		
+26519-91-5	Methylcyclopentadiene-1.3; (CH3)C=CHCH=CHCH2	255.15	705.15	0.013	0.076
+29553-26-2	 2.2.3.3-Tetrafluoro-1.1-; dimethylpropan-1-ol; HCF2CF2C(CH3)2OH	308.15	720.15		
+30525-89-4	Paraformaldehyde; (Polyoxymethylene); (Polymerised formaldehyde); (Formaldehyde polymer); poly(CH2O)	343.15	653.15	0.07	0.73
+34590-94-8	 (2-Methoxymethylethoxy)propanol; (Dipropylene glycol monomethyl; ether); H3COC3H6OC3H6OH	347.15	543.15	0.011	0.109
+35158-25-9	2-iso-Propyl-5-methylhex-2-enal; (2-Hexenal, 5-methyl-2; (1-methylethyl)); (CH3)2CH-C(CHO)CHCH2CH(CH3)2		461.15		
+45102-52-1	2.2.3.3-Tetrafluoropropyl methacrylat; (2.2.3.3-Tetrafluoro propyl 2-; methylprop-2-enoate; CH2=C(CH2)COOCH2CF2CF2H		662.15	0.019	
+68476-34-6	 Fuel Oil No. 2	325.15	527.15	0.006	0.065

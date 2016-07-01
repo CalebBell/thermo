@@ -1,0 +1,232 @@
+CASRN	Name	Tflash	Tautoignition	LFL	UFL
+75-07-0	Acetaldehyde 	235.15	448.15	0.04	0.6
+64-19-7	Acetic Acid 	312.15	699.15		0.199
+108-24-7	Acetic Anhydride 	322.15	589.15	0.027	0.103
+67-64-1	Acetone 	253.15	738.15	0.025	0.128
+75-86-5	Acetone Cyanohydrin 	347.15	961.15	0.022	0.12
+75-05-8	Acetonitrile 	279.15	797.15	0.03	0.16
+74-86-2	Acetylene 		578.15	0.025	1
+107-02-8	Acrolein (Inhibited) 		508.15	0.028	0.31
+79-10-7	Acrylic Acid 	327.15	711.15	0.024	0.08
+107-13-1	Acrylonitrile 	273.15	754.15	0.03	0.17
+111-69-3	Adiponitrile 	366.15	823.15		
+107-18-6	Allyl Alcohol 	295.15	651.15	0.025	0.18
+107-05-1	Allyl Chloride 	241.15	758.15	0.029	0.111
+106-92-3	Allyl Glycidyl Ether 		330.15		
+98-83-9	Alpha-Methyl Styrene 		847.15	0.008	0.11
+628-63-7	n-Amyl Acetate 	298.15	633.15	0.011	0.075
+626-38-0	sec-Amyl Acetate 	296.15		0.011	0.075
+7664-41-7	Ammonia 		924.15	0.15	0.28
+62-53-3	Aniline 	343.15	888.15	0.012	0.083
+71-43-2	Benzene 	262.15	771.15	0.012	0.078
+98-87-3	Benzyl Chloride 		858.15	0.011	
+106-96-7	Bromopropyne 	283.15	597.15	0.03	
+106-97-8	n-Butane 		561.15	0.019	0.085
+106-99-0	1,3-Butadiene 		693.15	0.02	0.115
+71-36-3	1-Butanol 	309.15	616.15	0.014	0.112
+78-92-2	Butyl alcohol (s) (butanol-2) 	296.95	678.15	0.017	0.098
+109-73-9	Butylamine 	261.15	585.15	0.017	0.098
+25167-67-3	Butylene 		658.15	0.016	0.1
+123-72-8	n-Butyraldehyde 	261.15	491.15	0.019	0.125
+123-86-4	n-Butyl Acetate 	295.15	694.15	0.017	0.076
+105-46-4	sec-Butyl Acetate 	265.15		0.017	0.098
+540-88-5	tert-Butyl Acetate 			0.017	0.098
+141-32-2	n-Butyl Acrylate (Inhibited) 	322.15	566.15	0.017	0.099
+109-79-5	Butyl Mercaptan 	275.15			
+107-92-6	n-Butyric Acid 	345.15	716.15	0.02	0.1
+75-15-0	Carbon Disulfide 	243.15	363.15	0.013	0.5
+630-08-0	Carbon Monoxide 		882.15	0.125	0.74
+107-20-0	Chloroacetaldehyde 	361.15			
+108-90-7	Chlorobenzene 	302.15	866.15	0.013	0.096
+126-99-8	Chloroprene 	253.15		0.04	0.2
+1319-77-3	Cresol 	354.15	832.15	0.011	
+4170-30-3	Crotonaldehyde 	286.15	505.15	0.021	0.155
+98-82-8	Cumene 	309.15	697.15	0.009	0.065
+110-82-7	Cyclohexane 	256.15	518.15	0.013	0.08
+108-93-0	Cyclohexanol 	341.15	573.15		
+108-94-1	Cyclohexanone 	317.15	693.15	0.011	0.094
+110-83-8	Cyclohexene 	267.15	517.15	0.012	
+75-19-4	Cyclopropane 		776.15	0.024	0.104
+99-87-6	p-Cymene 	320.15	709.15	0.007	0.056
+872-05-9	Decene 		508.15		
+112-30-1	Decyl Alcohol 	355.15	561.15		
+123-42-2	Diacetone Alcohol 	337.15	876.15	0.018	0.069
+25167-70-8	Di-Isobutylene 	275.15	664.15	0.008	0.048
+108-83-8	Di-Isobutyl Ketone 	333.15	669.15	0.008	0.071
+95-50-1	o-Dichlorobenzene 	339.15	920.15	0.022	0.092
+3583-47-9	1,4-Dichloro-2,3 Epoxybutane 			0.019	0.085
+1300-21-6	1,1-Dichloroethane 		711.15	0.062	0.16
+156-59-2	1,2-Dichloroethylene	370.15	733.15	0.056	0.128
+594-72-9	1,1-Dichloro-1- Nitroethane 	349.15			
+10061-02-6	1,3-Dichloropropene	308.15		0.053	0.145
+77-73-6	Dicyclopentadiene 	305.15	776.15		
+109-89-7	Diethylamine 	245.15	585.15	0.018	0.101
+100-37-8	Diethylaminoethanol	333.15	593.15		
+25340-17-4	Diethyl Benzene 	330.15	668.15		
+60-29-7	Diethyl Ether (Ethyl Ether) 	228.15	433.15	0.019	0.36
+112-34-5	Diethylene Glycol Monobutyl Ether 	351.15	501.15	0.009	0.246
+111-77-3	Diethylene Glycol Monomethyl Ether 	366.15	514.15		
+68-12-2	Dimethyl Formamide 	331.15	728.15	0.022	0.152
+77-78-1	Dimethyl Sulfate 	356.15	461.15		
+124-40-3	Dimethylamine 		673.15	0.028	0.144
+75-83-2	2,2-Dimethylbutane 	225.15	678.15		
+79-29-8	2,3-Dimethylbutane 		669.15		
+1071-26-7	3,3-Dimethylheptane 		598.15		
+584-94-1	2,3-Dimethylhexane 		711.15		
+565-59-3	2,3-Dimethylpentane 		608.15		
+142-84-7	Di-N-Propylamine 	290.15	572.15		
+123-91-1	1,4-Dioxane 	285.15	453.15	0.02	0.22
+138-86-3	Dipentene 	318.15	510.15	0.007	0.061
+34590-94-8	Dipropylene Glycol Methyl Ether 	358.15		0.011	0.03
+108-18-9	Diisopropylamine 	267.15	589.15	0.011	0.071
+6842-15-5	Dodecene 	373.15	528.15		
+3132-64-7	Epichlorohydrin 	306.15	684.15	0.038	0.21
+74-84-0	Ethane 	244.15	745.15	0.03	0.125
+64-17-5	Ethanol 	286.15	636.15	0.033	0.19
+75-04-7	Ethylamine 	255.15	658.15	0.035	0.14
+74-85-1	Ethylene 		763.15	0.027	0.36
+107-15-3	Ethylenediamine 	306.15	658.15	0.025	0.12
+151-56-4	Ethylenimine 	262.15	593.15	0.033	0.548
+107-07-3	Ethylene Chlorohydrin 	332.15	698.15	0.049	0.159
+107-06-2	Ethylene Dichloride 	286.15	686.15	0.062	0.16
+111-15-9	Ethylene Glycol Monoethyl Ether Acetate 	320.15	652.15	0.017	
+112-07-2	Ethylene Glycol Monobutyl Ether Acetate 		613.15	0.009	0.085
+111-76-2	Ethylene Glycol Monobutyl Ether 		511.15	0.011	0.127
+110-80-5	Ethylene Glycol Monoethyl Ether 		508.15	0.017	0.156
+109-86-4	Ethylene Glycol Monomethyl Ether 		558.15	0.018	0.14
+75-21-8	Ethylene Oxide 	253.15	702.15	0.03	1
+123-05-7	2-Ethylhexaldehyde 	325.15	464.15	0.008	0.072
+104-76-7	2-Ethylhexanol 	354.15		0.009	0.097
+103-09-3	2-Ethylhexyl Acrylate 	361.15	525.15		
+141-78-6	Ethyl Acetate 	269.15	700.15	0.02	0.115
+140-88-5	Ethyl Acrylate (Inhibited) 	282.15	645.15	0.014	0.14
+541-85-5	Ethyl Sec-Amyl Ketone 	332.15			
+100-41-4	Ethyl Benzene 	288.15	705.15	0.008	0.067
+97-95-0	Ethyl Butanol 	330.15		0.012	0.077
+106-35-4	Ethyl Butyl Ketone 	319.15			
+75-00-3	Ethyl Chloride 	223.15	792.15	0.038	0.154
+109-94-4	Ethyl Formate 	253.15	728.15	0.028	0.16
+75-08-1	Ethyl Mercaptan 	255.15	573.15	0.028	0.18
+100-74-3	n-Ethyl Morpholine 	305.15			
+645-62-5	2-Ethyl-3-Propyl Acrolein 	341.15			
+50-00-0	Formaldehyde (Gas) 		703.15	0.07	0.73
+64-18-6	Formic Acid 	323.15	707.15	0.18	0.57
+98-01-1	Furfural 	333.15	589.15	0.021	0.193
+98-00-0	Furfuryl Alcohol 	348.15	763.15	0.018	0.163
+8006-61-9	Gasoline 	227.15	553.15	0.014	0.076
+142-82-5	n-Heptane 	269.15	477.15	0.01	0.067
+81624-04-6	n-Heptene 	272.15	477.15		
+110-54-3	n-Hexane 	250.15	498.15	0.011	0.075
+111-27-3	Hexanol 	336.15			
+591-78-6	2-Hexanone 	308.15	697.15	0.012	0.08
+592-41-6	Hexene 	247.15	518.15	0.012	0.069
+108-84-9	sec-Hexyl Acetate 	318.15			
+302-01-2	Hydrazine 	311.15	296.15		0.98
+1333-74-0	Hydrogen 		773.15	0.04	0.75
+74-90-8	Hydrogen Cyanide 	255.15	811.15	0.056	0.4
+7783-07-5	Hydrogen Selenide 				
+7783-06-4	Hydrogen Sulfide 		533.15	0.04	0.44
+123-92-2	Isoamyl Acetate 	298.15	633.15	0.01	0.075
+123-51-3	Isoamyl Alcohol 	316.15	623.15	0.012	0.09
+75-28-5	Isobutane 		733.15	0.018	0.084
+110-19-0	Isobutyl Acetate 	291.15	694.15	0.024	0.105
+106-63-8	Isobutyl Acrylate 		700.15		
+78-83-1	Isobutyl Alcohol 	233.15	689.15	0.012	0.109
+78-84-2	Isobutyraldehyde 	233.15	469.15	0.016	0.106
+107-83-5	Isohexane 		537.15		
+78-59-1	Isophorone 	357.15	733.15	0.008	0.038
+78-79-5	Isoprene 	219.15	493.15	0.015	0.089
+108-21-4	Isopropyl Acetate 		733.15	0.018	0.08
+108-20-3	Isopropyl Ether 	245.15	716.15	0.014	0.079
+75-31-0	Isopropylamine 	247.15	675.15	0.023	0.104
+8008-20-6	Kerosene 	345.15	483.15	0.007	0.05
+68476-85-7	Liquefied Petroleum Gas 		678.15		
+141-97-9	Mesityl Oxide 	304.15	617.15	0.014	0.072
+74-82-8	Methane 		873.15	0.05	0.15
+67-56-1	Methanol 	285.15	658.15	0.06	0.36
+79-20-9	Methyl Acetate 	263.15	727.15	0.031	0.16
+96-33-3	Methyl Acrylate 	270.15	741.15	0.028	0.25
+108-11-2	Methyl Amyl Alcohol 	314.15		0.01	0.055
+74-87-3	Methyl Chloride 	227.15	905.15	0.081	0.174
+115-10-6	Methyl Ether 	232.15	623.15	0.034	0.27
+78-93-3	Methyl Ethyl Ketone 	267.15	677.15	0.014	0.114
+534-15-6	Methyl Formal 	274.15	511.15		
+107-31-3	Methyl Formate 	254.15	722.15	0.045	0.23
+31394-54-4	2-Methylhexane 		553.15		
+141-79-7	Methyl Isobutyl Ketone 	304.15	713.15	0.012	0.08
+624-83-9	Methyl Isocyanate 	258.15	807.15	0.053	0.26
+74-93-1	Methyl Mercaptan 	255.15		0.039	0.218
+80-62-6	Methyl Methacrylate 	283.15	695.15	0.017	0.082
+110-43-0	Methyl N-Amyl Ketone 	322.15	666.15	0.011	0.079
+1634-04-4	Methyl Tertiary Butyl Ether 	193.15	708.15	0.016	0.084
+3221-61-2	2-Methyloctane 		493.15		
+75-65-0	Methyl-2-Propanol 	283.15	633.15	0.024	0.08
+104-90-5	2-Methyl-5-Ethyl Pyridine 	347.15		0.011	0.066
+74-99-7	Methylacetylene 			0.017	
+109-87-5	Methylal 	255.15	510.15	0.016	0.176
+74-89-5	Methylamine 		703.15	0.049	0.207
+78-78-4	2-Methylbutane 	217.15	693.15	0.014	0.083
+108-87-2	Methylcyclohexane 	269.15	523.15	0.012	0.067
+590-67-0	Methylcyclohexanol 	341.15	569.15		
+592-27-8	2-Methylheptane 		693.15		
+589-34-4	3-Methylhexane 		553.15		
+96-14-0	3-Methylpentane 		551.15		
+2216-32-2	2-Methyloctane 		493.15		
+2216-33-3	3-Methyloctane 		493.15		
+2216-34-4	4-Methyloctane 		498.15		
+141-43-5	Monoethanolamine 	358.15	683.15		
+78-96-6	Monoisopropanolamine	350.15	647.15		
+100-61-8	Monomethyl Aniline 		755.15		
+60-34-4	Monomethyl Hydrazine 	296.15	467.15	0.025	0.92
+110-91-8	Morpholine 	308.15	583.15	0.014	0.112
+8030-30-6	Naphtha (Petroleum) 	315.15	561.15	0.011	0.059
+463-82-1	Neopentane 	208.15	723.15	0.014	0.083
+98-95-3	Nitrobenzene 	361.15	755.15	0.018	
+79-24-3	Nitroethane 	301.15	687.15	0.034	
+75-52-5	Nitromethane 	308.15	691.15	0.073	
+108-03-2	1-Nitropropane 	307.15	694.15	0.022	
+79-46-9	2-Nitropropane 	301.15	701.15	0.026	0.11
+111-84-2	n-Nonane 	304.15	478.15	0.008	0.029
+124-11-8	Nonene 			0.008	
+143-08-8	Nonyl Alcohol 			0.008	0.061
+111-65-9	n-Octane 	286.15	479.15	0.01	0.065
+25377-83-7	Octene 	281.15	503.15	0.009	
+109-66-0	n-Pentane 	233.15	516.15	0.015	0.078
+71-41-0	1-Pentanol 	306.15	573.15	0.012	0.1
+107-87-9	2-Pentanone 	280.15	725.15	0.015	0.082
+109-67-1	1-Pentene 	255.15	548.15	0.015	0.087
+109-68-2	2-Pentene 	255.15			
+100-63-0	Phenylhydrazine 	362.15			
+74-98-6	2 Propane 		723.15	0.021	0.095
+71-23-8	1-Propanol 	288.15	686.15	0.022	0.137
+67-63-0	2-Propanol 	285.15	672.15	0.02	0.127
+57-57-8	Propiolactone 			0.029	
+123-38-6	Propionaldehyde 	264.15	480.15	0.026	0.17
+79-09-4	Propionic Acid 	327.15	739.15	0.029	0.121
+123-62-6	Propionic Anhydride 	347.15	558.15	0.013	0.095
+109-60-4	n-Propyl Acetate 	287.15	723.15	0.017	0.08
+111-43-3	n-Propyl Ether 	294.15	488.15	0.013	0.07
+627-13-4	Propyl Nitrate 	293.15	448.15	0.02	1
+115-07-1	Propylene 		733.15	0.024	0.103
+78-87-5	Propylene Dichloride 	289.15	830.15	0.034	0.145
+75-56-9	Propylene Oxide 	236.15	722.15	0.023	0.36
+110-86-1	Pyridine 	293.15	755.15	0.018	0.124
+100-42-5	Styrene 	304.15	763.15	0.009	0.068
+109-99-9	Tetrahydrofuran 	259.15	594.15	0.02	0.118
+119-64-2	Tetrahydronaphthalene		658.15	0.008	0.05
+75-74-1	Tetramethyl Lead 	311.15			
+108-88-3	Toluene 	277.15	753.15	0.011	0.071
+2437-56-1	n-Tridecene 			0.006	
+121-44-8	Triethylamine 	264.15	522.15	0.012	0.08
+25340-18-5	Triethylbenzene 	356.15			0.56
+102-69-2	Tripropylamine 	314.15			
+8006-64-2	Turpentine 	308.15	526.15	0.008	
+28761-27-5	n-Undecene 			0.007	
+57-14-7	Unsymmetrical Dimethyl Hydrazine 	258.15	522.15	0.02	0.95
+110-62-3	Valeraldehyde 	553.15	495.15		
+108-05-4	Vinyl Acetate 	267.15	675.15	0.026	0.134
+75-01-4	Vinyl Chloride 	195.15	745.15	0.036	0.33
+25013-15-4	Vinyl Toluene 	325.15	767.15	0.008	0.11
+75-35-4	Vinylidene Chloride 		843.15	0.065	0.155
+1330-20-7	Xylene 	298.15	737.15	0.009	0.07
+121-69-7	Xylidine 	336.15	644.15	0.01	

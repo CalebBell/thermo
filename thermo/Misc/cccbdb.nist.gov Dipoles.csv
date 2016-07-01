@@ -1,0 +1,427 @@
+CAS	Chemical	Dipole
+7782-39-0	Deuterium diatomic	0
+7782-41-4	Fluorine diatomic	0
+7782-44-7	Oxygen diatomic	0
+7782-50-5	Chlorine diatomic	0
+7693-27-8	magnesium dihydride	0
+7704-34-9	Sulfur atom	0
+7723-14-0	Phosphorus atom	0
+7726-95-6	Bromine diatomic	0
+7727-37-9	Nitrogen diatomic	0
+7446-11-9	Sulfur trioxide	0
+7446-70-0	Aluminum trichloride	0
+7631-86-9	silicon dioxide	0
+7637-07-2	Borane, trifluoro-	0
+7647-19-0	Phosphorus pentafluoride	0
+7783-61-1	Silicon tetrafluoride	0
+7784-18-1	Aluminum trifluoride	0
+7784-21-6	aluminum trihydride	0
+7787-52-2	beryllium dihydride	0
+7803-62-5	Silane	0
+10026-04-7	Silane, tetrachloro-	0
+10026-13-8	Phosphorus pentachloride	0
+10294-34-5	Borane, trichloro-	0
+10544-72-6	Dinitrogen tetroxide	0
+12070-15-4	Carbon diatomic	0
+12075-35-3	carbon trimer	0
+12185-09-0	Phosphorus diatomic	0
+12185-10-3	Phosphorus tetramer	0
+12385-13-6	Hydrogen atom	0
+12597-35-2	Silicon diatomic	0
+13283-31-3	boron trihydride	0
+13701-67-2	Diboron tetrachloride	0
+13766-28-4	Diboron dioxide	0
+13840-88-5	Boron dioxide	0
+13965-73-6	Diboron tetrafluoride	0
+14452-59-6	Lithium diatomic	0
+14452-60-9	Beryllium diatomic	0
+14762-94-8	Fluorine atom	0
+15626-43-4	trans-diazine	0
+16873-17-9	Deuterium atom	0
+17778-80-2	Oxygen atom	0
+17778-88-0	Nitrogen atom	0
+22537-15-1	Chlorine atom	0
+23550-45-0	Sulfur diatomic	0
+25681-79-2	Sodium diatomic	0
+29904-79-8	Magnesium diatomic	0
+30830-20-7	Bicyclo[2.2.0]hex-1(4)-ene	0
+32752-94-6	Aluminum diatomic	0
+1333-74-0	Hydrogen diatomic	0
+2229-07-4	Methyl radical	0
+2551-62-4	Sulfur Hexafluoride	0
+2809-69-0	2,4-Hexadiyne	0
+7429-90-5	Aluminum atom	0
+7439-93-2	Lithium atom	0
+7439-95-4	Magnesium atom	0
+7440-21-3	Silicon atom	0
+7440-23-5	Sodium atom	0
+7440-41-7	Beryllium atom	0
+7440-42-8	Boron atom	0
+7440-44-0	Carbon atom	0
+127-18-4	Tetrachloroethylene	0
+277-10-1	cubane	0
+290-37-9	Pyrazine	0
+290-87-9	1,3,5-Triazine	0
+460-12-8	Diacetylene	0
+460-19-5	Cyanogen	0
+463-49-0	allene	0
+463-82-1	Propane, 2,2-dimethyl-	0
+504-64-3	Carbon suboxide	0
+503-17-3	2-Butyne	0
+558-13-4	Carbon tetrabromide	0
+624-64-6	2-Butene, (E)-	0
+124-38-9	Carbon dioxide	0
+116-14-3	Tetrafluoroethylene	0
+75-73-0	Carbon tetrafluoride	0
+75-76-3	tetramethylsilane	0
+76-16-4	hexafluoroethane	0
+75-15-0	Carbon disulfide	0
+75-19-4	Cyclopropane	0
+56-23-5	Carbon tetrachloride	0
+71-43-2	Benzene	0
+74-82-8	Methane	0
+74-84-0	Ethane	0
+74-85-1	Ethylene	0
+74-86-2	Acetylene	0
+12061-70-0	Oxygen monofluoride	0
+7616-94-6	Perchloryl fluoride	0.02
+74-98-6	Propane	0.08
+279-23-2	Norbornane	0.09
+630-08-0	Carbon monoxide	0.11
+78-78-4	Butane, 2-methyl-	0.13
+75-28-5	Isobutane	0.13
+822-35-5	Cyclobutene	0.13
+1630-94-0	Cyclopropane, 1,1-dimethyl-	0.14
+10102-43-9	Nitric oxide	0.15
+13812-43-6	(Z)-Difluorodiazene	0.16
+10024-97-2	Nitrous oxide	0.17
+142-29-0	Cyclopentene	0.19
+285-58-5	Bicyclo[3.1.0]hexane	0.19
+7784-42-1	Arsine	0.2
+689-97-4	1-Buten-3-yne	0.22
+7783-54-2	Nitrogen trifluoride	0.23
+78-79-5	1,3-Butadiene, 2-methyl-	0.25
+590-18-1	2-Butene, (Z)-	0.26
+185-94-4	Bicyclo[2.1.0]pentane	0.26
+627-20-3	2-Pentene, (Z)-	0.28
+694-01-9	Bicyclo[3.1.0]hex-2-ene	0.29
+7783-41-7	Difluorine monoxide	0.3
+10102-44-0	Nitrogen dioxide	0.32
+110-83-8	cyclohexene	0.33
+108-88-3	toluene	0.33
+106-98-9	1-Butene	0.36
+10545-99-0	Sulfur dichloride	0.36
+115-07-1	Propene	0.36
+6829-52-3	HCP	0.39
+109-67-1	1-pentene	0.39
+590-19-2	1,2-Butadiene	0.4
+5164-35-2	Bicyclo[2.1.0]pent-2-ene	0.4
+6142-73-0	Methylenecyclopropane	0.4
+542-92-7	1,3-Cyclopentadiene	0.42
+497-20-1	Fulvene	0.42
+592-57-4	1,3-Cyclohexadiene	0.44
+593-63-5	Chloroacetylene	0.44
+10034-85-2	Hydrogen iodide	0.45
+75-69-4	Trichloromonofluoromethane	0.45
+2781-85-3	cyclopropene	0.45
+2154-59-8	Difluoromethylene	0.46
+12333-49-2	lithium sodium	0.46
+13768-60-0	Boron monofluoride	0.5
+1574-41-0	1,3-Pentadiene, (Z)-	0.5
+75-72-9	Methane, chlorotrifluoro-	0.5
+693-86-7	Ethenylcyclopropane	0.5
+115-11-7	1-Propene, 2-methyl-	0.5
+75-71-8	difluorodichloromethane	0.51
+78-80-8	1-Buten-3-yne, 2-methyl-	0.51
+1120-56-5	Cyclobutane, methylene-	0.51
+13863-41-7	Bromine monochloride	0.52
+76-15-3	pentafluorochloroethane	0.52
+13444-90-1	Nitryl chloride	0.53
+10028-15-6	Ozone	0.53
+598-25-4	1,2-Butadiene, 3-methyl-	0.55
+110-02-1	Thiophene	0.55
+7803-51-2	Phosphine	0.58
+2004-70-8	1,3-Pentadiene, (E)-	0.58
+100-41-4	Ethylbenzene	0.59
+7803-49-8	hydroxylamine	0.59
+7790-91-2	Chlorine trifluoride	0.6
+7789-60-8	Phosphorus tribromide	0.61
+75-50-3	Trimethylamine	0.61
+7783-07-5	Hydrogen selenide	0.63
+7783-60-0	Sulfur tetrafluoride	0.63
+75-63-8	Bromotrifluoromethane	0.64
+22400-26-6	isocyanato radical	0.64
+1449-65-6	methyl germane	0.64
+3889-75-6	Fluoromethylidyne	0.64
+536-74-3	phenylacetylene	0.66
+75-61-6	Methane, dibromodifluoro-	0.66
+110-00-9	Furan	0.66
+2004-69-5	3-Penten-1-yne, (E)-	0.66
+157-33-5	Bicyclo[1.1.0]butane	0.68
+463-58-1	Carbonyl sulfide	0.71
+2713-09-9	Fluoroacetylene	0.73
+992-94-9	methyl silane	0.74
+7789-33-5	Iodine monobromide	0.74
+1111-74-6	dimethylsilane	0.75
+1603-84-5	Carbonyl selenide	0.75
+13780-23-9	Mercapto-d	0.76
+13940-21-1	Mercapto radical	0.76
+14545-72-3	Chlorine nitrate	0.77
+7719-12-2	Phosphorus trichloride	0.78
+74-99-7	propyne	0.78
+107-00-6	1-Butyne	0.78
+109-93-3	Vinyl ether	0.78
+275-51-4	Azulene	0.8
+10035-10-6	hydrogen bromide	0.83
+693-02-7	1-Hexyne	0.83
+3100-04-7	1-Methylcyclopropene	0.84
+627-19-0	1-pentyne	0.85
+593-88-4	trimethyl arsine	0.86
+10025-78-2	Trichlorosilane	0.86
+61183-53-7	H2CPH	0.87
+7790-89-8	Chlorine monofluoride	0.88
+6746-94-7	Cyclopropylacetylene	0.89
+107-29-9	Acetaldoxime	0.94
+353-50-4	Carbonic difluoride	0.95
+7783-06-4	Hydrogen sulfide	0.97
+75-25-2	bromoform	0.99
+7787-71-5	Bromine trifluoride	1
+67-66-3	Chloroform	1.01
+124-40-3	Dimethylamine	1.03
+7783-55-3	Phosphorus trifluoride	1.03
+16860-99-4	Thio-thionyl fluoride	1.03
+106-93-4	Ethane, 1,2-dibromo-	1.04
+2314-97-8	trifluoroiodomethane	1.05
+13814-25-0	sulfur difluoride	1.05
+7647-01-0	Hydrogen chloride	1.08
+56-40-6	Glycine	1.09
+593-54-4	Methyl phosphine	1.1
+2699-79-8	Sulfuryl fluoride	1.12
+4109-96-0	dichlorosilane	1.13
+60-29-7	Ethoxy ethane	1.15
+75-44-5	Phosgene	1.17
+107-10-8	1-Propanamine	1.17
+110-89-4	Piperidine	1.19
+75-31-0	2-Propanamine	1.19
+765-30-0	Cyclopropylamine	1.19
+627-51-0	Divinyl sulfide	1.2
+111-43-3	di-n-propyl ether	1.21
+75-04-7	Ethylamine	1.22
+108-95-2	phenol	1.22
+540-67-0	Ethane, methoxy-	1.23
+1396-66-0	Silicon difluoride	1.23
+14989-30-1	Monochlorine monoxide	1.24
+100-66-3	Anisole	1.26
+13766-26-2	Boron monohydride	1.27
+75-43-4	fluorodichloromethane	1.29
+-20-4	Methane selenol	1.29
+13537-33-2	monofluorosilane	1.3
+14457-85-3	hydrogen boron sulfide	1.3
+7790-92-3	hypochlorous acid	1.3
+115-10-6	Dimethyl ether	1.3
+74-89-5	methyl amine	1.31
+13465-78-6	chlorosilane	1.31
+1708-29-8	Furan, 2,5-dihydro-	1.32
+353-85-5	Acetonitrile, trifluoro-	1.33
+75-35-4	Ethene, 1,1-dichloro-	1.34
+75-38-7	Ethene, 1,1-difluoro-	1.38
+13517-11-8	Hypobromous acid	1.38
+359-11-5	Trifluoroethylene	1.4
+64-18-6	Formic acid	1.41
+463-51-4	Ketene	1.42
+593-60-2	vinyl bromide	1.42
+13863-59-7	Bromine monofluoride	1.42
+75-02-5	Ethene, fluoro-	1.43
+74-95-3	dibromomethane	1.43
+7783-44-0	Perfluoroperoxide	1.44
+64-17-5	Ethanol	1.44
+75-01-4	Ethene, chloro-	1.45
+2074-87-5	Cyano radical	1.45
+7719-09-7	thionyl chloride	1.45
+13709-35-8	Difluorodisulfane	1.45
+20901-21-7	Disulfur monoxide	1.47
+7664-41-7	Ammonia	1.47
+1511-62-2	Methane, bromodifluoro-	1.5
+288-42-6	Oxazole	1.5
+334-88-3	diazomethane	1.5
+75-18-3	Dimethyl sulfide	1.5
+79-00-5	1,1,2-trichloroethane	1.5
+7789-30-2	bromine pentafluoride	1.51
+75-08-1	ethanethiol	1.52
+74-93-1	Methanethiol	1.52
+62-53-3	aniline	1.53
+1761-67-7	N-methylmethanimine	1.53
+13595-82-9	Aluminum monofluoride	1.53
+13827-32-2	Sulfur monoxide	1.55
+71-23-8	1-Propanol	1.55
+352-93-2	Diethyl sulfide	1.56
+372-18-9	metadifluorobenzene	1.58
+67-63-0	Isopropyl alcohol	1.58
+157-22-2	diazirine	1.59
+462-06-6	Fluorobenzene	1.6
+75-09-2	Methylene chloride	1.6
+107-18-6	2-Propen-1-ol	1.6
+74-88-4	methyl iodide	1.62
+109-99-9	Furan, tetrahydro-	1.63
+7446-09-5	Sulfur dioxide	1.63
+78-83-1	1-Propanol, 2-methyl-	1.64
+865-36-1	Thioformaldehyde	1.65
+75-46-7	Methane, trifluoro-	1.65
+71-36-3	1-Butanol	1.66
+3352-57-6	Hydroxyl radical	1.66
+16136-84-8	1-chloro-1-propene(Z)	1.67
+14332-28-6	Nitrosyl hydride	1.67
+108-90-7	chlorobenzene	1.69
+108-86-1	bromobenzene	1.7
+64-19-7	Acetic acid	1.7
+67-56-1	Methyl alcohol	1.7
+79-20-9	methyl acetate	1.72
+12504-41-5	silicon monosulfide	1.73
+75-65-0	Ethanol, 1,1-dimethyl-	1.74
+142-68-7	2H-Pyran, tetrahydro-	1.74
+302-01-2	Hydrazine	1.75
+1708-32-3	Thiophene, 2,5-dihydro-	1.75
+13478-20-1	Phosphoryl fluoride	1.76
+7722-84-1	Hydrogen peroxide	1.77
+107-31-3	methyl formate	1.77
+71-55-6	Ethane, 1,1,1-trichloro-	1.78
+141-78-6	Ethyl acetate	1.78
+1613-51-0	2H-Thiopyran, tetrahydro-	1.78
+10049-04-4	Chlorine dioxide	1.78
+6004-44-0	Methylketene	1.79
+74-83-9	methyl bromide	1.81
+107-19-7	2-Propyn-1-ol	1.81
+7789-25-5	Nitrosyl fluoride	1.81
+7791-25-5	Sulfuryl chloride	1.81
+12033-56-6	Mononitrogen monosulfide	1.81
+7664-39-3	Hydrogen fluoride	1.82
+593-70-4	fluorochloromethane	1.82
+109-97-7	Pyrrole	1.84
+593-53-3	Methyl fluoride	1.85
+287-27-4	Thietane	1.85
+420-12-2	Thiirane	1.85
+7732-18-5	Water	1.85
+14940-63-7	Water-d1	1.85
+7789-20-0	Deuterium oxide	1.85
+74-87-3	Methyl chloride	1.87
+14452-66-5	Phosphorus monoxide	1.88
+75-21-8	Ethylene oxide	1.89
+156-59-2	Ethene, 1,2-dichloro-, (Z)-	1.9
+2696-92-6	Nitrosyl chloride	1.9
+20729-41-3	ethanimine	1.9
+503-30-0	Oxetane	1.94
+107-05-1	1-Propene, 3-chloro-	1.94
+1072-43-1	Thiirane, methyl-	1.95
+353-36-6	fluoroethane	1.96
+75-10-5	Methane, difluoro-	1.97
+16136-85-9	1-chloro-1-propene(E)	1.97
+109-94-4	Ethyl formate	1.98
+2944-05-0	carbon monosulfide	1.98
+26404-66-0	peroxy nitric acid	1.99
+107-15-3	Ethylenediamine	1.99
+-2-2	Ammonia Dimer	1.99
+2053-29-4	Methanimine	2
+75-56-9	Propylene oxide	2.01
+1493-02-3	formyl fluoride	2.02
+74-96-4	Ethyl bromide	2.03
+78-86-4	Butane, 2-chloro-	2.04
+109-69-3	Butane, 1-chloro-	2.05
+75-00-3	Ethyl chloride	2.05
+540-54-5	Propane, 1-chloro-	2.05
+624-91-9	Methyl nitrite	2.05
+505-22-6	1,3-Dioxane	2.06
+75-34-3	Ethane, 1,1-dichloro-	2.06
+110-88-3	1,3,5-Trioxane	2.08
+10544-73-7	Dinitrogen trioxide	2.12
+507-20-0	Propane, 2-chloro-2-methyl-	2.13
+75-68-3	1-Chloro-1,1-Difluoroethane	2.14
+543-59-9	Pentane, 1-chloro-	2.16
+1495-50-7	Cyanogen fluoride	2.17
+75-29-6	Propane, 2-chloro-	2.17
+7697-37-2	Nitric acid	2.17
+106-94-5	n-propyl bromide	2.18
+110-86-1	Pyridine	2.19
+75-26-3	i-propyl bromide	2.21
+14034-79-8	Hypofluorous acid	2.23
+75-37-6	Ethane, 1,1-difluoro-	2.27
+594-20-7	Propane, 2,2-dichloro-	2.27
+76-05-1	trifluoroacetic acid	2.28
+420-46-2	Ethane, 1,1,1-trifluoro-	2.32
+50-00-0	Formaldehyde	2.33
+1630-77-9	Ethene, 1,2-difluoro-, (Z)-	2.42
+13966-78-4	Gallium monofluoride	2.45
+157-26-6	Dioxirane	2.48
+123-38-6	Propanal	2.52
+7784-35-2	Arsenic trifluoride	2.59
+13940-63-1	Germanium difluoride	2.61
+765-43-5	Methyl cyclopropyl ketone	2.62
+7446-08-4	Selenium dioxide	2.62
+12056-29-0	Sodium Potassium	2.67
+5009-27-8	Cyclopropanone	2.67
+75-07-0	Acetaldehyde	2.69
+75-36-5	Acetyl Chloride	2.72
+123-72-8	Butanal	2.72
+107-20-0	chloroacetaldehyde	2.72
+7664-93-9	Sulfuric acid	2.72
+141-46-8	hydroxy acetaldehyde	2.73
+17739-47-8	Phosphorus mononitride	2.75
+78-93-3	2-Butanone	2.78
+506-77-4	chlorocyanogen	2.82
+67-64-1	Acetone	2.88
+288-14-2	Isoxazole	2.9
+557-99-3	Acetyl fluoride	2.96
+1738-36-9	Methoxyacetonitrile	2.98
+74-90-8	Hydrogen cyanide	2.98
+1191-95-3	Cyclobutanone	2.99
+98-86-2	acetophenone	3.02
+108-94-1	cyclohexanone	3.02
+6914-07-4	hydrogen isocyanide	3.05
+506-85-4	fulminic acid	3.06
+598-58-3	Methyl nitrate	3.08
+616-42-2	Sulfurous acid, dimethyl ester	3.09
+10097-28-6	Silicon monoxide	3.1
+107-02-8	Acrolein	3.12
+100-52-7	benzaldehyde	3.14
+120-92-3	Cyclopentanone	3.25
+20619-16-3	Germanium monoxide	3.28
+625-58-1	Nitric acid, ethyl ester	3.39
+12030-83-0	Lithium Potassium	3.45
+75-52-5	Methane, nitro-	3.46
+980-10-1	furfural	3.54
+1070-71-9	Cyanoacetylene	3.72
+4170-30-3	2-Butenal	3.72
+75-12-7	formamide	3.73
+109-77-3	Malononitrile	3.73
+60-35-5	Acetamide	3.76
+68-12-2	dimethylformamide	3.82
+57-13-6	Urea	3.83
+593-75-9	methyl isocyanide	3.85
+107-13-1	acrylonitrile	3.87
+75-05-8	Acetonitrile	3.92
+630-18-2	Propanenitrile, 2,2-dimethyl-	3.95
+67-68-5	Dimethyl sulfoxide	3.96
+107-12-0	ethyl cyanide	4.02
+109-74-0	Butanenitrile	4.07
+1190-76-7	(Z)-2-Butenenitrile	4.08
+110-59-8	Pentanenitrile	4.12
+100-47-0	phenyl cyanide	4.18
+57-57-8	β–Propiolactone	4.18
+98-95-3	Nitrobenzene	4.22
+15606-71-0	calcium monochloride	4.26
+420-04-2	cyanamide	4.32
+67-71-0	Dimethyl sulfone	4.49
+627-26-9	(E)-2-Butenenitrile	4.5
+1317-38-0	Copper Monoxide	4.5
+1310-66-3	lithium hydroxide	4.76
+13478-41-6	Copper monofluoride	5.77
+7580-67-8	Lithium Hydride	5.88
+7789-24-4	lithium fluoride	6.28
+12142-77-7	lithium oxide	6.84
+7447-41-8	lithium chloride	7.13
+7550-35-8	Lithium Bromide	7.23
+7681-49-4	sodium fluoride	8.16
+7789-23-3	Potassium Fluoride	8.56
+7647-14-5	Sodium Chloride	9
+7647-15-6	Sodium Bromide	9.12
+7447-40-7	Potassium Chloride	10.24
+7758-02-3	Potassium Bromide	10.6

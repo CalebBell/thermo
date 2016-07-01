@@ -1,0 +1,30 @@
+language: python
+python:
+  - "2.6"
+  - "2.7"
+  - "3.3"
+  - "3.4"
+notifications:
+  email: false
+install:
+  - sudo apt-get update
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+      wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
+    else
+      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+    fi
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda info -a
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy
+  - source activate test-environment
+  - pip install -r requirements_test.txt
+  - python setup.py -q install
+script:
+  - python tests/test_doctests.py
+  - py.test . -v --cov-report html --cov=thermo --cov-report term-missing 
+after_success:
+  - coveralls
