@@ -71,8 +71,6 @@ by appending 'l' or 'g' or 's' to the property.
 
 .. code-block:: python
 
-    >>> tol.rho, tol.Cp, tol.k, tol.mu
-    (862.2380125827527, 1706.0746129119084, 0.13034801424538045, 0.0005521951637285534)
     >>> tol.rhog, tol.Cpg, tol.kg, tol.mug
     (4.032009635018902, 1126.5533755283168, 0.010736843919054837, 6.973325939594919e-06)
 
@@ -116,7 +114,7 @@ mixtures.
     >>> vodka = Mixture(['water', 'ethanol'], Vfls=[.6, .4], T=300, P=1E5)
     >>> vodka.Prl,vodka.Prg
     (35.130757024029364, 0.9490586345579207)
-    >>> air = air = Mixture('air', T=400, P=1e5)
+    >>> air = Mixture('air', T=400, P=1e5)
     >>> air.Cp
     1013.7956176577834
 
