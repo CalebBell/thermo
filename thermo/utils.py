@@ -1315,6 +1315,9 @@ class TDependentProperty(object):
 
         Calls `calculate_derivative` internally to perform the actual
         calculation.
+        
+        .. math::
+            \text{derivative} = \frac{d (\text{property})}{d T}
 
         Parameters
         ----------
