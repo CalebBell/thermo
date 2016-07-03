@@ -1407,6 +1407,9 @@ class TDependentProperty(object):
 
         If the calculation does not succeed, returns the actual error
         encountered.
+        
+        .. math::
+            \text{integral} = \int_{T_1}^{T_2} \text{property} \; dT
 
         Parameters
         ----------
@@ -1433,6 +1436,9 @@ class TDependentProperty(object):
         
         Calls `calculate_integral_over_T` internally to perform the actual
         calculation.
+        
+        .. math::
+            \text{integral} = \int_{T_1}^{T_2} \frac{\text{property}}{T} \; dT
 
         Parameters
         ----------
