@@ -54,6 +54,7 @@ setup(
   version = '0.1.6',
   description = 'Chemical properties component of Chemical Engineering Design Library (ChEDL)',
   author = 'Caleb Bell',
+  install_requires=['fluids', 'scipy', 'pandas', 'matplotlib'],
   extras_require = {
       'Coverage documentation':  ['wsgiref>=0.1.2', 'coverage>=4.0.3']
   },
