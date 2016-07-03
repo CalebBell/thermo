@@ -2,6 +2,25 @@
 thermo
 ======
 
+.. image:: http://img.shields.io/pypi/v/thermo.svg?style=flat
+   :target: https://pypi.python.org/pypi/thermo
+   :alt: Version_status
+.. image:: http://img.shields.io/badge/docs-latest-brightgreen.svg?style=flat
+   :target: https://thermo.readthedocs.io/en/latest/
+   :alt: Documentation
+.. image:: http://img.shields.io/travis/CalebBell/thermo/master.svg?style=flat
+   :target: https://travis-ci.org/CalebBell/thermo
+   :alt: Build_status
+.. image:: http://img.shields.io/badge/license-MIT-blue.svg?style=flat
+   :target: https://github.com/CalebBell/thermo/blob/master/LICENSE.txt
+   :alt: license
+.. image:: https://img.shields.io/coveralls/CalebBell/thermo.svg
+   :target: https://coveralls.io/github/CalebBell/thermo
+   :alt: Coverage
+.. image:: https://img.shields.io/pypi/pyversions/thermo.svg
+   :target: https://pypi.python.org/pypi/thermo
+   :alt: Supported_versions
+
 
 .. contents::
 
