@@ -23,10 +23,7 @@ install:
   - python setup.py -q install
 script:
   - python tests/test_doctests.py
-  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-      py.test . -v --cov-report html --cov=/home/travis/miniconda/envs/test-environment/lib/python2.7/site-packages/thermo/ --cov-report term-missing;
-    else
-      py.test . -v --cov-report html --cov=/home/travis/miniconda/envs/test-environment/lib/python3.4/site-packages/thermo/ --cov-report term-missing;
-    fi
+  - cd tests
+  - py.test . -v --cov-report html --cov=thermo --cov-report term-missing;
 after_success:
   - coveralls
