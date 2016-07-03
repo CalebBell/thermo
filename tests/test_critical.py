@@ -77,7 +77,7 @@ def test_data_CRC():
     assert_allclose(Vc_sum, 0.38876929999999998)
 
     Zc_sum = _crit_CRC['Zc'].sum()
-    assert_allclose(Zc_sum, 207.98663028416496)
+    assert_allclose(Zc_sum, 207.98663028416496, 1e-6)
 
     assert _crit_CRC.shape == (861, 8)
     assert _crit_CRC.index.is_unique
@@ -103,7 +103,7 @@ def test_data_PSRKR4():
     assert_allclose(Vc_sum, 0.40726849999999998)
 
     Zc_sum = _crit_PSRKR4['Zc'].sum()
-    assert_allclose(Zc_sum, 251.29839643655527)
+    assert_allclose(Zc_sum, 251.29839643655527, 1e-6)
 
     omega_sum = _crit_PSRKR4['omega'].sum()
     assert_allclose(omega_sum, 410.50560000000002)
@@ -137,7 +137,7 @@ def test_data_Yaws():
     assert_allclose(Vc_sum, 4.65511199)
 
     Zc_sum = _crit_Yaws['Zc'].sum()
-    assert_allclose(Zc_sum, 1859.6389176846883)
+    assert_allclose(Zc_sum, 1859.6389176846883, 1e-6)
 
     omega_sum = _crit_Yaws['omega'].sum()
     assert_allclose(omega_sum, 3170.3041999999996)
@@ -277,7 +277,7 @@ def test_Zc_main():
     # Use the default method for each chemical in this file
     Zcs = [Zc(i) for i in CASs]
     Zcs_default_sum = pd.Series(Zcs).sum()
-    assert_allclose(Zcs_default_sum, 1930.7388004412558)
+    assert_allclose(Zcs_default_sum, 1930.7388004412558, 1e-6)
 
     assert_allclose(0.241, Zc(CASRN='64-17-5'))
 
