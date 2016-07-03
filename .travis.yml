@@ -26,3 +26,4 @@ script:
   - py.test . -v --cov-report html --cov=thermo --cov-report term-missing 
 after_success:
   - coveralls
+  - find /home/travis/
