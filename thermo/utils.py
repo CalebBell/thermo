@@ -1280,9 +1280,10 @@ class TDependentProperty(object):
             raise Exception('To within the implemented temperature range, it is not possible to calculate the desired value.')
 
     def calculate_derivative(self, T, method, order=1):
-        r'''Method to calculate a derivative of a property of a given order
-        using a specified method. Uses SciPy's derivative function, with
-        a delta of 1E-6 K and a number of points equal to 2*order + 1.
+        r'''Method to calculate a derivative of a property with respect to 
+        temperature, of a given order  using a specified method. Uses SciPy's 
+        derivative function, with a delta of 1E-6 K and a number of points 
+        equal to 2*order + 1.
 
         This method can be overwritten by subclasses who may perfer to add
         analytical methods for some or all methods as this is much faster.
@@ -1307,9 +1308,10 @@ class TDependentProperty(object):
         return derivative(self.calculate, T, dx=1e-6, args=[method], n=order, order=1+order*2)
 
     def T_dependent_property_derivative(self, T, order=1):
-        r'''Method to obtain a derivative of a property of a given order.
-        Methods found valid  by `select_valid_methods` are attempted until a
-        method succeeds. If no methods are valid and succeed, None is returned.
+        r'''Method to obtain a derivative of a property with respect to 
+        temperature, of a given order. Methods found valid by 
+        `select_valid_methods` are attempted until a method succeeds. If no 
+        methods are valid and succeed, None is returned.
 
         Calls `calculate_derivative` internally to perform the actual
         calculation.
@@ -1336,9 +1338,57 @@ class TDependentProperty(object):
 
 
     def calculate_integral(self, T1, T2, method):
+        r'''Method to calculate the integral of a property with respect to
+        temperature, using a specified method. Uses SciPy's `quad` function
+        to perform the integral, with no options.
+        
+        This method can be overwritten by subclasses who may perfer to add
+        analytical methods for some or all methods as this is much faster.
+
+        If the calculation does not succeed, returns the actual error
+        encountered.
+
+        Parameters
+        ----------
+        T1 : float
+            Lower limit of integration, [K]
+        T2 : float
+            Upper limit of integration, [K]
+        method : str
+            Method for which to find the integral
+
+        Returns
+        -------
+        integral : float
+            Calculated integral of the property over the given range, 
+            [`units*K`]
+        '''
         return float(quad(self.calculate, T1, T2, args=(method))[0])
 
     def T_dependent_property_integral(self, T1, T2):
+        r'''Method to calculate the integral of a property with respect to
+        temperature, using a specified method. Methods found valid by 
+        `select_valid_methods` are attempted until a method succeeds. If no 
+        methods are valid and succeed, None is returned.
+        
+        Calls `calculate_integral` internally to perform the actual
+        calculation.
+
+        Parameters
+        ----------
+        T1 : float
+            Lower limit of integration, [K]
+        T2 : float
+            Upper limit of integration, [K]
+        method : str
+            Method for which to find the integral
+
+        Returns
+        -------
+        integral : float
+            Calculated integral of the property over the given range, 
+            [`units*K`]
+        '''
         sorted_valid_methods = self.select_valid_methods(T1)
         for method in sorted_valid_methods:
             try:
@@ -1348,22 +1398,18 @@ class TDependentProperty(object):
         return None
 
 
-    def calculate_integral_expression(self, T1, T2, method, expr):
-#        return float(quad(expr, T1, T2, args=(self.calculate))[0])
-        return float(quad(expr, T1, T2, args=(method))[0])
+    def calculate_integral_over_T(self, T1, T2, method):
+        return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
 
-    def T_dependent_property_integral_expression(self, T1, T2, expr=None):
-        if not expr:
-            expr = lambda T, method: self.calculate(T, method)/T
-#            expr = lambda T, func : func(T, method)/T
-            
+    def T_dependent_property_integral_over_T(self, T1, T2):
         sorted_valid_methods = self.select_valid_methods(T1)
         for method in sorted_valid_methods:
             try:
-                return self.calculate_integral_expression(T1, T2, method, expr)
+                return self.calculate_integral_over_T(T1, T2, method)
             except:
                 pass
         return None
+
 
     # Dummy functions, always to be overwritten, only for testing
 
