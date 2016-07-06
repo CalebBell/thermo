@@ -41,11 +41,11 @@ def test_molecular_weight():
 def test_mass_fractions():
     mfs_calc = mass_fractions({'H': 12, 'C': 20, 'O': 5})
     mfs = {'H': 0.03639798802478244, 'C': 0.7228692758981262, 'O': 0.24073273607709128}
-    assert mfs_calc == mfs
+    assert_allclose(sorted(mfs.values()), sorted(mfs_calc.values()))
 
     mfs_calc = mass_fractions({'C': 32, 'Cu': 1, 'H': 12, 'Na': 4, 'S': 4, 'O': 12, 'N': 8})
     mfs = {'C': 0.39049299264832493, 'H': 0.012288839545466314, 'O': 0.19506524140696244, 'N': 0.11384678245496294, 'S': 0.13031253183899086, 'Na': 0.09343069187887344, 'Cu': 0.06456292022641909}
-    assert mfs_calc == mfs
+    assert_allclose(sorted(mfs.values()), sorted(mfs_calc.values()))
 
     # Fail two tests, one without MW, and one with MW
     with pytest.raises(Exception):
@@ -57,7 +57,7 @@ def test_mass_fractions():
 def test_atom_fractions():
     fractions_calc = atom_fractions({'H': 12, 'C': 20, 'O': 5})
     fractions = {'H': 0.32432432432432434, 'C': 0.5405405405405406, 'O': 0.13513513513513514}
-    assert fractions_calc == fractions
+    assert_allclose(sorted(fractions_calc.values()), sorted(fractions.values()))
 
 
 def test_similarity_variable():
