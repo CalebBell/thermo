@@ -261,8 +261,6 @@ def molecular_weight(atoms):
     for i in atoms:
         if i in elements:
             MW += elements[i].MW*atoms[i]
-#        if i in elements.index:
-#            MW += elements.at[i, "atomic mass"]*atoms[i]
         else:
             raise Exception('Molecule includes unknown atoms')
     return MW

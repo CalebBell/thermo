@@ -23,18 +23,20 @@ SOFTWARE.'''
 from __future__ import division
 import os
 from math import log, exp
+import numpy as np
+import pandas as pd
+
 from scipy.constants import R, calorie
 from scipy.integrate import quad
+
 from thermo.utils import (to_num, property_molar_to_mass, none_and_length_check,
                           mixing_simple, property_mass_to_molar)
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
 from thermo.electrochem import (Laliberte_heat_capacity,
                                 _Laliberte_Heat_Capacity_ParametersDict)
-
 from thermo.utils import TDependentProperty
 from thermo.coolprop import *
 
-import pandas as pd
 
 folder = os.path.join(os.path.dirname(__file__), 'Heat Capacity')
 
@@ -42,17 +44,13 @@ folder = os.path.join(os.path.dirname(__file__), 'Heat Capacity')
 Poling_data = pd.read_csv(os.path.join(folder,
                        'PolingDatabank.csv'), sep='\t',
                        index_col=0)
-
-
-#    '''Read in a dict of 1961 heat capacity of gases complicated fits from:
-#    Kabo, G. J., and G. N. Roganov. Thermodynamics of Organic Compounds in the
-#    Gas State, Volume II: V. 2. College Station, Tex: CRC Press, 1994.
-#    '''
+_Poling_data_values = Poling_data.values
 
 
 TRC_gas_data = pd.read_csv(os.path.join(folder,
                        'TRC Thermodynamics of Organic Compounds in the Gas State.csv'), sep='\t',
                        index_col=0)
+_TRC_gas_data_values = TRC_gas_data.values
 
 
 
@@ -378,23 +376,19 @@ class HeatCapacityGas(TDependentProperty):
         Tmins, Tmaxs = [], []
         if self.CASRN in TRC_gas_data.index:
             methods.append(TRCIG)
-            _, Tmin, Tmax, a0, a1, a2, a3, a4, a5, a6, a7, _, _, _ = TRC_gas_data.loc[self.CASRN]
-            self.TRCIG_Tmin = float(Tmin)
-            self.TRCIG_Tmax = float(Tmax)
-            self.TRCIG_coefs = [float(i) for i in [a0, a1, a2, a3, a4, a5, a6, a7]]
+            _, self.TRCIG_Tmin, self.TRCIG_Tmax, a0, a1, a2, a3, a4, a5, a6, a7, _, _, _ = _TRC_gas_data_values[TRC_gas_data.index.get_loc(self.CASRN)].tolist()
+            self.TRCIG_coefs = [a0, a1, a2, a3, a4, a5, a6, a7]
             Tmins.append(self.TRCIG_Tmin); Tmaxs.append(self.TRCIG_Tmax)
-        if self.CASRN in Poling_data.index and pd.notnull(Poling_data.at[self.CASRN, 'a0']):
-            _, Tmin, Tmax, a0, a1, a2, a3, a4, Cpg, Cpl = Poling_data.loc[self.CASRN]
+        if self.CASRN in Poling_data.index and not np.isnan(Poling_data.at[self.CASRN, 'a0']):
+            _, self.POLING_Tmin, self.POLING_Tmax, a0, a1, a2, a3, a4, Cpg, Cpl = _Poling_data_values[Poling_data.index.get_loc(self.CASRN)].tolist()
             methods.append(POLING)
-            self.POLING_Tmin = float(Tmin)
-            self.POLING_Tmax = float(Tmax)
-            self.POLING_coefs = [float(i) for i in [a0, a1, a2, a3, a4]]
+            self.POLING_coefs = [a0, a1, a2, a3, a4]
             Tmins.append(self.POLING_Tmin); Tmaxs.append(self.POLING_Tmax)
-        if self.CASRN in Poling_data.index and pd.notnull(Poling_data.at[self.CASRN, 'Cpg']):
+        if self.CASRN in Poling_data.index and not np.isnan(Poling_data.at[self.CASRN, 'Cpg']):
             methods.append(POLING_CONST)
             self.POLING_T = 298.15
             self.POLING_constant = float(Poling_data.at[self.CASRN, 'Cpg'])
-        if self.CASRN in CRC_standard_data.index and pd.notnull(CRC_standard_data.at[self.CASRN, 'Cpg']):
+        if self.CASRN in CRC_standard_data.index and not np.isnan(CRC_standard_data.at[self.CASRN, 'Cpg']):
             methods.append(CRCSTD)
             self.CRCSTD_T = 298.15
             self.CRCSTD_constant = float(CRC_standard_data.at[self.CASRN, 'Cpg'])
@@ -1051,11 +1045,11 @@ class HeatCapacityLiquid(TDependentProperty):
         if self.CASRN in _ZabranskyIsop:
             methods.append(ZABRANSKY_QUASIPOLYNOMIAL_C)
             self.ZABRANSKY_QUASIPOLYNOMIAL_C_data = _ZabranskyIsop[self.CASRN]
-        if self.CASRN in Poling_data.index and pd.notnull(Poling_data.at[self.CASRN, 'Cpl']):
+        if self.CASRN in Poling_data.index and not np.isnan(Poling_data.at[self.CASRN, 'Cpl']):
             methods.append(POLING_CONST)
             self.POLING_T = 298.15
             self.POLING_constant = float(Poling_data.at[self.CASRN, 'Cpl'])
-        if self.CASRN in CRC_standard_data.index and pd.notnull(CRC_standard_data.at[self.CASRN, 'Cpl']):
+        if self.CASRN in CRC_standard_data.index and not np.isnan(CRC_standard_data.at[self.CASRN, 'Cpl']):
             methods.append(CRCSTD)
             self.CRCSTD_T = 298.15
             self.CRCSTD_constant = float(CRC_standard_data.at[self.CASRN, 'Cpl'])
@@ -1407,7 +1401,7 @@ class HeatCapacitySolid(TDependentProperty):
             self.PERRY151_quadinv = _PerryI[self.CASRN]['c']['Quadinv']
             methods.append(PERRY151)
             Tmins.append(self.PERRY151_Tmin); Tmaxs.append(self.PERRY151_Tmax)
-        if self.CASRN in CRC_standard_data.index and pd.notnull(CRC_standard_data.at[self.CASRN, 'Cpc']):
+        if self.CASRN in CRC_standard_data.index and not np.isnan(CRC_standard_data.at[self.CASRN, 'Cpc']):
             self.CRCSTD_Cp = float(CRC_standard_data.at[self.CASRN, 'Cpc'])
             methods.append(CRCSTD)
         if self.MW and self.similarity_variable:

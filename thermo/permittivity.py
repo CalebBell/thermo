@@ -31,6 +31,7 @@ folder = os.path.join(os.path.dirname(__file__), 'Electrolytes')
 
 CRC_Permittivity_data = pd.read_csv(os.path.join(folder, 'Permittivity (Dielectric Constant) of Liquids.csv'),
                                     sep='\t', index_col=0)
+_CRC_Permittivity_data_values = CRC_Permittivity_data.values
 
 
 CRC = 'CRC Handbook polynomials'
@@ -143,9 +144,7 @@ class Permittivity(TDependentProperty):
         Tmins, Tmaxs = [], []
         if self.CASRN in CRC_Permittivity_data.index:
             methods.append(CRC_CONSTANT)
-            T, Permittivity, A, B, C, D, Tmin, Tmax = map(float, list(CRC_Permittivity_data.loc[self.CASRN])[1:])
-            self.CRC_CONSTANT_T = T
-            self.CRC_permittivity = Permittivity
+            _, self.CRC_CONSTANT_T, self.CRC_permittivity, A, B, C, D, Tmin, Tmax = _CRC_Permittivity_data_values[CRC_Permittivity_data.index.get_loc(self.CASRN)].tolist()
             self.CRC_Tmin = Tmin
             self.CRC_Tmax = Tmax
             self.CRC_coeffs = [0 if np.isnan(x) else x for x in [A, B, C, D] ]

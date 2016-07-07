@@ -22,7 +22,8 @@ SOFTWARE.'''
 
 from __future__ import division
 import os
-from numpy import log
+from math import log
+import numpy as np
 from scipy.constants import R
 import pandas as pd
 from thermo.utils import mixing_simple, none_and_length_check
@@ -215,17 +216,17 @@ def Tc(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[SURF]):
     '''
     def list_methods():
         methods = []
-        if CASRN in _crit_IUPAC.index and pd.notnull(_crit_IUPAC.at[CASRN, 'Tc']):
+        if CASRN in _crit_IUPAC.index and not np.isnan(_crit_IUPAC.at[CASRN, 'Tc']):
             methods.append(IUPAC)
-        if CASRN in _crit_Matthews.index and pd.notnull(_crit_Matthews.at[CASRN, 'Tc']):
+        if CASRN in _crit_Matthews.index and not np.isnan(_crit_Matthews.at[CASRN, 'Tc']):
             methods.append(MATTHEWS)
-        if CASRN in _crit_CRC.index and pd.notnull(_crit_CRC.at[CASRN, 'Tc']):
+        if CASRN in _crit_CRC.index and not np.isnan(_crit_CRC.at[CASRN, 'Tc']):
             methods.append(CRC)
-        if CASRN in _crit_PSRKR4.index and pd.notnull(_crit_PSRKR4.at[CASRN, 'Tc']):
+        if CASRN in _crit_PSRKR4.index and not np.isnan(_crit_PSRKR4.at[CASRN, 'Tc']):
             methods.append(PSRK)
-        if CASRN in _crit_PassutDanner.index and pd.notnull(_crit_PassutDanner.at[CASRN, 'Tc']):
+        if CASRN in _crit_PassutDanner.index and not np.isnan(_crit_PassutDanner.at[CASRN, 'Tc']):
             methods.append(PD)
-        if CASRN in _crit_Yaws.index and pd.notnull(_crit_Yaws.at[CASRN, 'Tc']):
+        if CASRN in _crit_Yaws.index and not np.isnan(_crit_Yaws.at[CASRN, 'Tc']):
             methods.append(YAWS)
         if CASRN:
             methods.append(SURF)
@@ -399,17 +400,17 @@ def Pc(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[SURF]):
     '''
     def list_methods():
         methods = []
-        if CASRN in _crit_IUPAC.index and pd.notnull(_crit_IUPAC.at[CASRN, 'Pc']):
+        if CASRN in _crit_IUPAC.index and not np.isnan(_crit_IUPAC.at[CASRN, 'Pc']):
             methods.append(IUPAC)
-        if CASRN in _crit_Matthews.index and pd.notnull(_crit_Matthews.at[CASRN, 'Pc']):
+        if CASRN in _crit_Matthews.index and not np.isnan(_crit_Matthews.at[CASRN, 'Pc']):
             methods.append(MATTHEWS)
-        if CASRN in _crit_CRC.index and pd.notnull(_crit_CRC.at[CASRN, 'Pc']):
+        if CASRN in _crit_CRC.index and not np.isnan(_crit_CRC.at[CASRN, 'Pc']):
             methods.append(CRC)
-        if CASRN in _crit_PSRKR4.index and pd.notnull(_crit_PSRKR4.at[CASRN, 'Pc']):
+        if CASRN in _crit_PSRKR4.index and not np.isnan(_crit_PSRKR4.at[CASRN, 'Pc']):
             methods.append(PSRK)
-        if CASRN in _crit_PassutDanner.index and pd.notnull(_crit_PassutDanner.at[CASRN, 'Pc']):
+        if CASRN in _crit_PassutDanner.index and not np.isnan(_crit_PassutDanner.at[CASRN, 'Pc']):
             methods.append(PD)
-        if CASRN in _crit_Yaws.index and pd.notnull(_crit_Yaws.at[CASRN, 'Pc']):
+        if CASRN in _crit_Yaws.index and not np.isnan(_crit_Yaws.at[CASRN, 'Pc']):
             methods.append(YAWS)
         if CASRN:
             methods.append(SURF)
@@ -577,15 +578,15 @@ def Vc(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[SURF]):
     '''
     def list_methods():
         methods = []
-        if CASRN in _crit_IUPAC.index and pd.notnull(_crit_IUPAC.at[CASRN, 'Vc']):
+        if CASRN in _crit_IUPAC.index and not np.isnan(_crit_IUPAC.at[CASRN, 'Vc']):
             methods.append(IUPAC)
-        if CASRN in _crit_Matthews.index and pd.notnull(_crit_Matthews.at[CASRN, 'Vc']):
+        if CASRN in _crit_Matthews.index and not np.isnan(_crit_Matthews.at[CASRN, 'Vc']):
             methods.append(MATTHEWS)
-        if CASRN in _crit_CRC.index and pd.notnull(_crit_CRC.at[CASRN, 'Vc']):
+        if CASRN in _crit_CRC.index and not np.isnan(_crit_CRC.at[CASRN, 'Vc']):
             methods.append(CRC)
-        if CASRN in _crit_PSRKR4.index and pd.notnull(_crit_PSRKR4.at[CASRN, 'Vc']):
+        if CASRN in _crit_PSRKR4.index and not np.isnan(_crit_PSRKR4.at[CASRN, 'Vc']):
             methods.append(PSRK)
-        if CASRN in _crit_Yaws.index and pd.notnull(_crit_Yaws.at[CASRN, 'Vc']):
+        if CASRN in _crit_Yaws.index and not np.isnan(_crit_Yaws.at[CASRN, 'Vc']):
             methods.append(YAWS)
         if CASRN:
             methods.append(SURF)
@@ -749,15 +750,15 @@ def Zc(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[COMBINED]):
     '''
     def list_methods():
         methods = []
-        if CASRN in _crit_IUPAC.index and pd.notnull(_crit_IUPAC.at[CASRN, 'Zc']):
+        if CASRN in _crit_IUPAC.index and not np.isnan(_crit_IUPAC.at[CASRN, 'Zc']):
             methods.append(IUPAC)
-        if CASRN in _crit_Matthews.index and pd.notnull(_crit_Matthews.at[CASRN, 'Zc']):
+        if CASRN in _crit_Matthews.index and not np.isnan(_crit_Matthews.at[CASRN, 'Zc']):
             methods.append(MATTHEWS)
-        if CASRN in _crit_CRC.index and pd.notnull(_crit_CRC.at[CASRN, 'Zc']):
+        if CASRN in _crit_CRC.index and not np.isnan(_crit_CRC.at[CASRN, 'Zc']):
             methods.append(CRC)
-        if CASRN in _crit_PSRKR4.index and pd.notnull(_crit_PSRKR4.at[CASRN, 'Zc']):
+        if CASRN in _crit_PSRKR4.index and not np.isnan(_crit_PSRKR4.at[CASRN, 'Zc']):
             methods.append(PSRK)
-        if CASRN in _crit_Yaws.index and pd.notnull(_crit_Yaws.at[CASRN, 'Zc']):
+        if CASRN in _crit_Yaws.index and not np.isnan(_crit_Yaws.at[CASRN, 'Zc']):
             methods.append(YAWS)
         if Tc(CASRN) and Vc(CASRN) and Pc(CASRN):
             methods.append(COMBINED)

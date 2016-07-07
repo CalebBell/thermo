@@ -24,6 +24,7 @@ from __future__ import division
 from math import log, exp
 import os
 
+import numpy as np
 from scipy.constants import R
 from scipy.interpolate import interp1d
 
@@ -51,10 +52,11 @@ SNM0_data = pd.read_csv(os.path.join(folder, 'Mchaweh SN0 deltas.csv'),
 
 Perry_l_data = pd.read_csv(os.path.join(folder, 'Perry Parameters 105.csv'),
                            sep='\t', index_col=0)
-
+_Perry_l_data_values = Perry_l_data.values
 
 CRC_inorg_l_data = pd.read_csv(os.path.join(folder, 'CRC Inorganics densties of molten compounds and salts.csv'),
                                sep='\t', index_col=0)
+_CRC_inorg_l_data_values = CRC_inorg_l_data.values
 
 CRC_inorg_l_const_data = pd.read_csv(os.path.join(folder, 'CRC Liquid Inorganic Constant Densities.csv'),
                                      sep='\t', index_col=0)
@@ -64,6 +66,7 @@ CRC_inorg_s_const_data = pd.read_csv(os.path.join(folder, 'CRC Solid Inorganic C
 
 CRC_virial_data = pd.read_csv(os.path.join(folder, 'CRC Virial polynomials.csv'),
                               sep='\t', index_col=0)
+_CRC_virial_data_values = CRC_virial_data.values
 
 ### Critical-properties based
 
@@ -930,20 +933,13 @@ class VolumeLiquid(TPDependentProperty):
             Tmins.append(self.CP_f.Tt); Tmaxs.append(self.CP_f.Tc)
         if self.CASRN in CRC_inorg_l_data.index:
             methods.append(CRC_INORG_L)
-            _, MW, rho, k, Tm, Tmax = CRC_inorg_l_data.loc[self.CASRN]
-            self.CRC_INORG_L_MW = float(MW)
-            self.CRC_INORG_L_rho = float(rho)
-            self.CRC_INORG_L_k = float(k)
-            self.CRC_INORG_L_Tm = float(Tm)
-            self.CRC_INORG_L_Tmax = float(Tmax)
+            _, self.CRC_INORG_L_MW, self.CRC_INORG_L_rho, self.CRC_INORG_L_k, self.CRC_INORG_L_Tm, self.CRC_INORG_L_Tmax = _CRC_inorg_l_data_values[CRC_inorg_l_data.index.get_loc(self.CASRN)].tolist()
             Tmins.append(self.CRC_INORG_L_Tm); Tmaxs.append(self.CRC_INORG_L_Tmax)
         if self.CASRN in Perry_l_data.index:
             methods.append(PERRYDIPPR)
-            C1, C2, C3, C4, Tmin, Tmax = [float(Perry_l_data.at[self.CASRN, i]) for i in ['C1', 'C2', 'C3', 'C4', 'Tmin', 'Tmax']]
+            _, C1, C2, C3, C4, self.DIPPR_Tmin, self.DIPPR_Tmax = _Perry_l_data_values[Perry_l_data.index.get_loc(self.CASRN)].tolist()
             self.DIPPR_coeffs = [C1, C2, C3, C4]
-            self.DIPPR_Tmin = Tmin
-            self.DIPPR_Tmax = Tmax
-            Tmins.append(Tmin); Tmaxs.append(Tmax)
+            Tmins.append(self.DIPPR_Tmin); Tmaxs.append(self.DIPPR_Tmax)
         if self.CASRN in _VDISaturationDict:
             methods.append(VDI_TABULAR)
             Ts, props = VDI_tabular_data(self.CASRN, 'Volume (l)')
@@ -956,7 +952,7 @@ class VolumeLiquid(TPDependentProperty):
             self.COSTALD_Vchar = float(COSTALD_data.at[self.CASRN, 'Vchar'])
             self.COSTALD_omega_SRK = float(COSTALD_data.at[self.CASRN, 'omega_SRK'])
             Tmins.append(0); Tmaxs.append(self.Tc)
-        if self.Tc and self.Pc and self.CASRN in COSTALD_data.index and pd.notnull(COSTALD_data.at[self.CASRN, 'Z_RA']):
+        if self.Tc and self.Pc and self.CASRN in COSTALD_data.index and not np.isnan(COSTALD_data.at[self.CASRN, 'Z_RA']):
             methods.append(RACKETTFIT)
             self.RACKETT_Z_RA = float(COSTALD_data.at[self.CASRN, 'Z_RA'])
             Tmins.append(0); Tmaxs.append(self.Tc)
@@ -1497,7 +1493,7 @@ def volume_liquid_mixture(xs=None, ws=None, Vms=None, T=None, MWs=None, MW=None,
     elif Method == 'Rackett Parameters':
         Zcs = list(Zcs) # Copy to not edit originals
         for i in range(len(CASRNs)):
-            if CASRNs[i] in COSTALD_data.index and pd.notnull(COSTALD_data.at[CASRNs[i],'Z_RA']):
+            if CASRNs[i] in COSTALD_data.index and not np.isnan(COSTALD_data.at[CASRNs[i],'Z_RA']):
                 Zcs[i] = COSTALD_data.at[CASRNs[i],'Z_RA']
         _Vm = Rackett_mixture(T, xs, MWs, Tcs, Pcs, Zcs)
     elif Method == 'Laliberte':
@@ -1754,8 +1750,7 @@ class VolumeGas(TPDependentProperty):
                             PITZER_CURL])
         if self.CASRN in CRC_virial_data.index:
             methods_P.append(CRC_VIRIAL)
-            a1, a2, a3, a4, a5 = map(float, CRC_virial_data.loc[self.CASRN][1:])
-            self.CRC_VIRIAL_coeffs = [a1, a2, a3, a4, a5]
+            self.CRC_VIRIAL_coeffs = _CRC_virial_data_values[CRC_virial_data.index.get_loc(self.CASRN)].tolist()[1:]
         if has_CoolProp and self.CASRN in coolprop_dict:
             methods_P.append(COOLPROP)
             self.CP_f = coolprop_fluids[self.CASRN]

@@ -36,17 +36,19 @@ folder = os.path.join(os.path.dirname(__file__), 'SurfaceTensionData')
 
 Mulero_Cachadina_data = pd.read_csv(os.path.join(folder,
                         'MuleroCachadinaParameters.csv'), sep='\t', index_col=0)
-
+_Mulero_Cachadina_data_values = Mulero_Cachadina_data.values
 
 Jasper_Lange_data = pd.read_csv(os.path.join(folder, 'Jasper-Lange.csv'),
                       sep='\t', index_col=0)
+_Jasper_Lange_data_values = Jasper_Lange_data.values
 
 Somayajulu_data = pd.read_csv(os.path.join(folder, 'Somayajulu.csv'),
                       sep='\t', index_col=0)
+_Somayajulu_data_values = Somayajulu_data.values
 
 Somayajulu_data_2 = pd.read_csv(os.path.join(folder, 'SomayajuluRevised.csv'),
                       sep='\t', index_col=0)
-
+_Somayajulu_data_2_values = Somayajulu_data_2.values
 
 ### Regressed coefficient-based functions
 
@@ -751,25 +753,19 @@ class SurfaceTension(TDependentProperty):
         Tmins, Tmaxs = [], []
         if self.CASRN in Mulero_Cachadina_data.index:
             methods.append(STREFPROP)
-            sigma0, n0, sigma1, n1, sigma2, n2, Tc, Tmin, Tmax = map(float, list(Mulero_Cachadina_data.loc[self.CASRN])[1:])
-            self.STREFPROP_Tmin = Tmin
-            self.STREFPROP_Tmax = Tmax
+            _, sigma0, n0, sigma1, n1, sigma2, n2, Tc, self.STREFPROP_Tmin, self.STREFPROP_Tmax = _Mulero_Cachadina_data_values[Mulero_Cachadina_data.index.get_loc(self.CASRN)].tolist()
             self.STREFPROP_coeffs = [sigma0, n0, sigma1, n1, sigma2, n2, Tc]
-            Tmins.append(Tmin); Tmaxs.append(Tmax)
+            Tmins.append(self.STREFPROP_Tmin); Tmaxs.append(self.STREFPROP_Tmax)
         if self.CASRN in Somayajulu_data_2.index:
             methods.append(SOMAYAJULU2)
-            Tt, Tc, A, B, C = map(float, list(Somayajulu_data_2.loc[self.CASRN])[1:])
-            self.SOMAYAJULU2_Tt = Tt
-            self.SOMAYAJULU2_Tc = Tc
+            _, self.SOMAYAJULU2_Tt, self.SOMAYAJULU2_Tc, A, B, C = _Somayajulu_data_2_values[Somayajulu_data_2.index.get_loc(self.CASRN)].tolist()
             self.SOMAYAJULU2_coeffs = [A, B, C]
-            Tmins.append(Tt); Tmaxs.append(Tc)
+            Tmins.append(self.SOMAYAJULU2_Tt); Tmaxs.append(self.SOMAYAJULU2_Tc)
         if self.CASRN in Somayajulu_data.index:
             methods.append(SOMAYAJULU)
-            Tt, Tc, A, B, C = map(float, list(Somayajulu_data.loc[self.CASRN])[1:])
-            self.SOMAYAJULU_Tt = Tt
-            self.SOMAYAJULU_Tc = Tc
+            _, self.SOMAYAJULU_Tt, self.SOMAYAJULU_Tc, A, B, C = _Somayajulu_data_values[Somayajulu_data.index.get_loc(self.CASRN)].tolist()
             self.SOMAYAJULU_coeffs = [A, B, C]
-            Tmins.append(Tt); Tmaxs.append(Tc)
+            Tmins.append(self.SOMAYAJULU_Tt); Tmaxs.append(self.SOMAYAJULU_Tc)
         if self.CASRN in _VDISaturationDict:
             methods.append(VDI_TABULAR)
             Ts, props = VDI_tabular_data(self.CASRN, 'sigma')
@@ -779,11 +775,9 @@ class SurfaceTension(TDependentProperty):
             Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
         if self.CASRN in Jasper_Lange_data.index:
             methods.append(JASPER)
-            a, b, Tmin, Tmax = map(float, list(Jasper_Lange_data.loc[self.CASRN])[1:])
-            self.JASPER_Tmin = Tmin
-            self.JASPER_Tmax = Tmax
+            _, a, b, self.JASPER_Tmin, self.JASPER_Tmax= _Jasper_Lange_data_values[Jasper_Lange_data.index.get_loc(self.CASRN)].tolist()
             self.JASPER_coeffs = [a, b]
-            Tmins.append(Tmin); Tmaxs.append(Tmax)
+            Tmins.append(self.JASPER_Tmin); Tmaxs.append(self.JASPER_Tmax)
         if all((self.Tc, self.Vc, self.omega)):
             methods.append(MIQUEU)
             Tmins.append(0.0); Tmaxs.append(self.Tc)

@@ -22,6 +22,7 @@ SOFTWARE.'''
 
 from __future__ import division
 import os
+import numpy as np
 import pandas as pd
 
 
@@ -105,11 +106,11 @@ def dipole(CASRN='', AvailableMethods=False, Method=None):
     '''
     def list_methods():
         methods = []
-        if CASRN in _dipole_CCDB.index and pd.notnull(_dipole_CCDB.at[CASRN, 'Dipole']):
+        if CASRN in _dipole_CCDB.index and not np.isnan(_dipole_CCDB.at[CASRN, 'Dipole']):
             methods.append(CCCBDB)
-        if CASRN in _dipole_Muller.index and pd.notnull(_dipole_Muller.at[CASRN, 'Dipole']):
+        if CASRN in _dipole_Muller.index and not np.isnan(_dipole_Muller.at[CASRN, 'Dipole']):
             methods.append(MULLER)
-        if CASRN in _dipole_Poling.index and pd.notnull(_dipole_Poling.at[CASRN, 'Dipole']):
+        if CASRN in _dipole_Poling.index and not np.isnan(_dipole_Poling.at[CASRN, 'Dipole']):
             methods.append(POLING)
         methods.append(NONE)
         return methods

@@ -23,6 +23,7 @@ SOFTWARE.'''
 from __future__ import division
 import os
 from math import log, exp
+import numpy as np
 import pandas as pd
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
 from thermo.utils import TDependentProperty
@@ -33,16 +34,19 @@ folder = os.path.join(os.path.dirname(__file__), 'Vapor Pressure')
 
 WagnerMcGarry = pd.read_csv(os.path.join(folder, 'Wagner Original McGarry.csv'),
                             sep='\t', index_col=0)
+_WagnerMcGarry_values = WagnerMcGarry.values
 
 AntoinePoling = pd.read_csv(os.path.join(folder, 'Antoine Collection Poling.csv'),
                             sep='\t', index_col=0)
+_AntoinePoling_values = AntoinePoling.values
 
 WagnerPoling = pd.read_csv(os.path.join(folder, 'Wagner Collection Poling.csv'),
                            sep='\t', index_col=0)
+_WagnerPoling_values = WagnerPoling.values
 
 AntoineExtended = pd.read_csv(os.path.join(folder, 'Antoine Extended Collection Poling.csv'),
                               sep='\t', index_col=0)
-
+_AntoineExtended_values = AntoineExtended.values
 
 def Antoine(T, A, B, C, Base=10.0):
     '''Base 10 assumed; Coefficients type Pascal assumed; Coefficients type Kelvin or Celcius assumed.
@@ -339,36 +343,26 @@ class VaporPressure(TDependentProperty):
         Tmins, Tmaxs = [], []
         if self.CASRN in WagnerMcGarry.index:
             methods.append(WAGNER_MCGARRY)
-            A, B, C, D, Pc, Tc, Tmin = map(float, list(WagnerMcGarry.loc[self.CASRN])[1:])
-            self.WAGNER_MCGARRY_Tmin = Tmin
-            self.WAGNER_MCGARRY_Tc = Tc
-            self.WAGNER_MCGARRY_Pc = Pc
+            _, A, B, C, D, self.WAGNER_MCGARRY_Pc, self.WAGNER_MCGARRY_Tc, self.WAGNER_MCGARRY_Tmin = _WagnerMcGarry_values[WagnerMcGarry.index.get_loc(self.CASRN)].tolist()
             self.WAGNER_MCGARRY_coefs = [A, B, C, D]
-            Tmins.append(Tmin); Tmaxs.append(Tc)
+            Tmins.append(self.WAGNER_MCGARRY_Tmin); Tmaxs.append(self.WAGNER_MCGARRY_Tc)
         if self.CASRN in WagnerPoling.index:
             methods.append(WAGNER_POLING)
-            A, B, C, D, Tc, Pc, Tmin, Tmax = map(float, list(WagnerPoling.loc[self.CASRN])[1:])
+            _, A, B, C, D, self.WAGNER_POLING_Tc, self.WAGNER_POLING_Pc, Tmin, self.WAGNER_POLING_Tmax = _WagnerPoling_values[WagnerPoling.index.get_loc(self.CASRN)].tolist()
             # Some Tmin values are missing; Arbitrary choice of 0.1 lower limit
-            self.WAGNER_POLING_Tmin = Tmin if pd.notnull(Tmin) else Tmax*0.1
-            self.WAGNER_POLING_Tmax = Tmax
-            self.WAGNER_POLING_Tc = Tc
-            self.WAGNER_POLING_Pc = Pc
+            self.WAGNER_POLING_Tmin = Tmin if not np.isnan(Tmin) else self.WAGNER_POLING_Tmax*0.1
             self.WAGNER_POLING_coefs = [A, B, C, D]
-            Tmins.append(Tmin); Tmaxs.append(Tmax)
+            Tmins.append(Tmin); Tmaxs.append(self.WAGNER_POLING_Tmax)
         if self.CASRN in AntoineExtended.index:
             methods.append(ANTOINE_EXTENDED_POLING)
-            A, B, C, Tc, to, n, E, F, Tmin, Tmax = map(float, list(AntoineExtended.loc[self.CASRN])[1:])
-            self.ANTOINE_EXTENDED_POLING_Tmin = Tmin
-            self.ANTOINE_EXTENDED_POLING_Tmax = Tmax
+            _, A, B, C, Tc, to, n, E, F, self.ANTOINE_EXTENDED_POLING_Tmin, self.ANTOINE_EXTENDED_POLING_Tmax = _AntoineExtended_values[AntoineExtended.index.get_loc(self.CASRN)].tolist()
             self.ANTOINE_EXTENDED_POLING_coefs = [Tc, to, A, B, C, n, E, F]
-            Tmins.append(Tmin); Tmaxs.append(Tmax)
+            Tmins.append(self.ANTOINE_EXTENDED_POLING_Tmin); Tmaxs.append(self.ANTOINE_EXTENDED_POLING_Tmax)
         if self.CASRN in AntoinePoling.index:
             methods.append(ANTOINE_POLING)
-            A, B, C, Tmin, Tmax = map(float, list(AntoinePoling.loc[self.CASRN])[1:])
-            self.ANTOINE_POLING_Tmin = Tmin
-            self.ANTOINE_POLING_Tmax = Tmax
+            _, A, B, C, self.ANTOINE_POLING_Tmin, self.ANTOINE_POLING_Tmax = _AntoinePoling_values[AntoinePoling.index.get_loc(self.CASRN)].tolist()
             self.ANTOINE_POLING_coefs = [A, B, C]
-            Tmins.append(Tmin); Tmaxs.append(Tmax)
+            Tmins.append(self.ANTOINE_POLING_Tmin); Tmaxs.append(self.ANTOINE_POLING_Tmax)
         if has_CoolProp and self.CASRN in coolprop_dict:
             methods.append(COOLPROP)
             self.CP_f = coolprop_fluids[self.CASRN]

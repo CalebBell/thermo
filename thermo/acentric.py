@@ -22,6 +22,7 @@ SOFTWARE.'''
 
 from __future__ import division
 from math import log, log10
+import numpy as np
 import pandas as pd
 from thermo.utils import mixing_simple, none_and_length_check
 from thermo.critical import Tc, Pc
@@ -117,11 +118,11 @@ def omega(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[LK, DEFI
     '''
     def list_methods():
         methods = []
-        if CASRN in _crit_PSRKR4.index and pd.notnull(_crit_PSRKR4.at[CASRN, 'omega']):
+        if CASRN in _crit_PSRKR4.index and not np.isnan(_crit_PSRKR4.at[CASRN, 'omega']):
             methods.append(PSRK)
-        if CASRN in _crit_PassutDanner.index and pd.notnull(_crit_PassutDanner.at[CASRN, 'omega']):
+        if CASRN in _crit_PassutDanner.index and not np.isnan(_crit_PassutDanner.at[CASRN, 'omega']):
             methods.append(PD)
-        if CASRN in _crit_Yaws.index and pd.notnull(_crit_Yaws.at[CASRN, 'omega']):
+        if CASRN in _crit_Yaws.index and not np.isnan(_crit_Yaws.at[CASRN, 'omega']):
             methods.append(YAWS)
         Tcrit, Pcrit = Tc(CASRN), Pc(CASRN)
         if Tcrit and Pcrit:

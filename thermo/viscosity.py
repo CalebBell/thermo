@@ -35,15 +35,20 @@ folder = os.path.join(os.path.dirname(__file__), 'Viscosity')
 
 Dutt_Prasad = pd.read_csv(os.path.join(folder, 'Dutt Prasad 3 term.csv'),
                           sep='\t', index_col=0)
+_Dutt_Prasad_values = Dutt_Prasad.values
 
 VN3_data = pd.read_csv(os.path.join(folder, 'Viswanath Natarajan Dynamic 3 term.csv'),
                        sep='\t', index_col=0)
+_VN3_data_values = VN3_data.values
 
 VN2_data = pd.read_csv(os.path.join(folder, 'Viswanath Natarajan Dynamic 2 term.csv'),
                        sep='\t', index_col=0)
+_VN2_data_values = VN2_data.values
 
 VN2E_data = pd.read_csv(os.path.join(folder, 'Viswanath Natarajan Dynamic 2 term Exponential.csv'),
                         sep='\t', index_col=0)
+_VN2E_data_values = VN2E_data.values
+
 
 
 def ViswanathNatarajan2(T, A, B):
@@ -480,32 +485,24 @@ class ViscosityLiquid(TPDependentProperty):
             Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
         if self.CASRN in Dutt_Prasad.index:
             methods.append(DUTT_PRASAD)
-            A, B, C, Tmin, Tmax = map(float, Dutt_Prasad.loc[self.CASRN][1:])
-            self.DUTT_PRASAD_Tmin = Tmin
-            self.DUTT_PRASAD_Tmax = Tmax
+            _, A, B, C, self.DUTT_PRASAD_Tmin, self.DUTT_PRASAD_Tmax = _Dutt_Prasad_values[Dutt_Prasad.index.get_loc(self.CASRN)].tolist()
             self.DUTT_PRASAD_coeffs = [A, B, C]
-            Tmins.append(Tmin); Tmaxs.append(Tmax)
+            Tmins.append(self.DUTT_PRASAD_Tmin); Tmaxs.append(self.DUTT_PRASAD_Tmax)
         if self.CASRN in VN3_data.index:
             methods.append(VISWANATH_NATARAJAN_3)
-            A, B, C, Tmin, Tmax = map(float, VN3_data.loc[self.CASRN][2:])
-            self.VISWANATH_NATARAJAN_3_Tmin = Tmin
-            self.VISWANATH_NATARAJAN_3_Tmax = Tmax
+            _, _, A, B, C, self.VISWANATH_NATARAJAN_3_Tmin, self.VISWANATH_NATARAJAN_3_Tmax = _VN3_data_values[VN3_data.index.get_loc(self.CASRN)].tolist()
             self.VISWANATH_NATARAJAN_3_coeffs = [A, B, C]
-            Tmins.append(Tmin); Tmaxs.append(Tmax)
+            Tmins.append(self.VISWANATH_NATARAJAN_3_Tmin); Tmaxs.append(self.VISWANATH_NATARAJAN_3_Tmax)
         if self.CASRN in VN2_data.index:
             methods.append(VISWANATH_NATARAJAN_2)
-            A, B, Tmin, Tmax = map(float, VN2_data.loc[self.CASRN][2:])
-            self.VISWANATH_NATARAJAN_2_Tmin = Tmin
-            self.VISWANATH_NATARAJAN_2_Tmax = Tmax
+            _, _, A, B, self.VISWANATH_NATARAJAN_2_Tmin, self.VISWANATH_NATARAJAN_2_Tmax = _VN2_data_values[VN2_data.index.get_loc(self.CASRN)].tolist()
             self.VISWANATH_NATARAJAN_2_coeffs = [A, B]
-            Tmins.append(Tmin); Tmaxs.append(Tmax)
+            Tmins.append(self.VISWANATH_NATARAJAN_2_Tmin); Tmaxs.append(self.VISWANATH_NATARAJAN_2_Tmax)
         if self.CASRN in VN2E_data.index:
             methods.append(VISWANATH_NATARAJAN_2E)
-            C, D, Tmin, Tmax = map(float, VN2E_data.loc[self.CASRN][2:])
-            self.VISWANATH_NATARAJAN_2E_Tmin = Tmin
-            self.VISWANATH_NATARAJAN_2E_Tmax = Tmax
+            _, _, C, D, self.VISWANATH_NATARAJAN_2E_Tmin, self.VISWANATH_NATARAJAN_2E_Tmax = _VN2E_data_values[VN2E_data.index.get_loc(self.CASRN)].tolist()
             self.VISWANATH_NATARAJAN_2E_coeffs = [C, D]
-            Tmins.append(Tmin); Tmaxs.append(Tmax)
+            Tmins.append(self.VISWANATH_NATARAJAN_2E_Tmin); Tmaxs.append(self.VISWANATH_NATARAJAN_2E_Tmax)
         if all((self.MW, self.Tc, self.Pc, self.omega)):
             methods.append(LETSOU_STIEL)
             Tmins.append(self.Tc/4); Tmaxs.append(self.Tc) # TODO: test model at low T
