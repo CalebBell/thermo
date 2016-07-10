@@ -741,18 +741,17 @@ def phase_set_property(phase=None, s=None, l=None, g=None, V_over_F=None):
     3312.0
     '''
     if phase == 's':
-        prop = s
+        return s
     elif phase == 'l':
-        prop = l
+        return l
     elif phase == 'g':
-        prop = g
+        return g
     elif phase == 'two-phase':
-        prop = None  #TODO: all two-phase properties?
+        return None  #TODO: all two-phase properties?
     elif phase is None:
-        prop = None
+        return None
     else:
         raise Exception('Property not recognized')
-    return prop
 
 #print phase_set_property(phase='l', l=1560.14, g=3312.)
 

@@ -96,7 +96,6 @@ class Chemical(object): # pragma: no cover
         self.name = name(self.CAS).lower()
         self.synonyms = [i.lower() for i in synonyms(self.CAS)]
 
-#        self.set_none()
         self.set_structure()
 
         self.set_constant_sources()
@@ -118,6 +117,10 @@ class Chemical(object): # pragma: no cover
             self.similarity_variable = similarity_variable(self.atoms, self.MW)
             self.Hill = atoms_to_Hill(self.atoms)
         except:
+            self.rdkitmol = None
+            self.rdkitmol_Hs = None
+            self.charge = None
+            self.rings = None
             self.atoms = simple_formula_parser(self.formula)
             self.atom_fractions = atom_fractions(self.atoms)
             self.mass_fractions = mass_fractions(self.atoms, self.MW)
@@ -144,122 +147,6 @@ class Chemical(object): # pragma: no cover
             return p
         except:
             return 'py3Dmol and rdkit required'
-
-#    def set_none(self):
-#        # Null values as necessary
-#        self.rdkitmol = None
-#        self.atoms = None
-#        self.charge = None
-#        self.rings = None
-#        self.atom_fractions = None
-#        self.mass_fractions = None
-#        self.similarity_variable = None
-#
-#        self.Tm = None
-#        self.Tb = None
-#
-#        self.Tc = None
-#        self.Pc = None
-#        self.Vc = None
-#        self.omega = None
-#        self.StielPolar = None
-#
-#        self.Zc = None
-#        self.rhoC = None
-#        self.rhoCm = None
-#
-#        self.Pt = None
-#        self.Tt = None
-#
-#        self.Hf = None
-#        self.Hf298 = None
-#        self.Hfl = None
-#        self.Hfg = None
-#        self.Hc = None
-#
-#        self.Tflash = None
-#        self.Tautoignition = None
-#        self.LFL = None
-#        self.UFL = None
-#
-#        self.TWA = None
-#        self.STEL = None
-#        self.Ceiling = None
-#        self.Skin = None
-#        self.Carcinogen = None
-#
-#        self.dipole = None
-#        self.molecular_diameter = None
-#        self.Stockmayer = None
-#
-#        # Temperature dependent values
-#        self.Psat = None
-#        self.Psat_298 = None
-#        self.rhos = None
-#        self.Vms = None
-#        self.Zs = None
-#        self.rhosm = None
-#        self.rhol = None
-#        self.Vml = None
-#        self.Zl = None
-#        self.rholm = None
-#        self.rhog = None
-#        self.Vmg = None
-#        self.Zg = None
-#        self.rhogm = None
-#        self.Bvirial = None
-#
-#        self.Cps = None
-#        self.Cpl = None
-#        self.Cpg = None
-#        self.Cvg = None
-#
-#        self.Cpsm = None
-#        self.Cplm = None
-#        self.Cpgm = None
-#        self.Cvgm = None
-#        self.isentropic_exponent = None
-#
-#        self.permittivity = None
-#        self.conductivity = None
-#        self.sigma = None
-#        self.mul = None
-#        self.mug = None
-#
-#        self.Hvap = None
-#        self.HvapTb = None
-#        self.Hfus = None
-#        self.Hsub = None
-#
-#        self.Hvapm = None
-#        self.HvapTbm = None
-#        self.Hfusm = None
-#        self.Hsubm = None
-#
-#        self.H = None
-#
-#        self.ks = None
-#        self.kl = None
-#        self.kg = None
-#
-#        self.Prl = None
-#        self.Prg = None
-#        self.alphal = None
-#        self.alphag = None
-#
-#        self.solubility_parameter = None
-#        self.Parachor = None
-#
-#        self.GWP = None
-#        self.ODP = None
-#        self.logP = None
-#
-#        self.RI = None
-#        self.RIT = None
-#        self.conductivity = None
-#        self.conductivityT = None
-
-
 
     def set_constant_sources(self):
         self.Tm_sources = Tm(CASRN=self.CAS, AvailableMethods=True)
