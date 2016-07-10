@@ -887,12 +887,12 @@ class EnthalpyVaporization(TDependentProperty):
         Acentric factor, [-]
     similarity_variable : float, optional
         similarity variable, n_atoms/MW, [mol/g]
-    Psat : float, optional
-        Vapor pressure at T, [Pa]
-    Zl : float, optional
-        Compressibility of liquid at T, [-]
-    Zg : float, optional
-        Compressibility of gas at T, [-]
+    Psat : float or callable, optional
+        Vapor pressure at T or callable for the same, [Pa]
+    Zl : float or callable, optional
+        Compressibility of liquid at T or callable for the same, [-]
+    Zg : float or callable, optional
+        Compressibility of gas at T or callable for the same, [-]
     CASRN : str, optional
         The CAS number of the chemical
 
@@ -1133,12 +1133,15 @@ class EnthalpyVaporization(TDependentProperty):
         elif method == PITZER:
             Hvap = Pitzer(T, self.Tc, self.omega)
         elif method == CLAPEYRON:
-            if self.Zg:
-                if self.Zl:
-                    dZ = self.Zg-self.Zl
+            Zg = self.Zg(T) if hasattr(self.Zg, '__call__') else self.Zg
+            Zl = self.Zl(T) if hasattr(self.Zl, '__call__') else self.Zl
+            Psat = self.Psat(T) if hasattr(self.Psat, '__call__') else self.Psat
+            if Zg:
+                if Zl:
+                    dZ = Zg-Zl
                 else:
-                    dZ = self.Zg
-            Hvap = Clapeyron(T, self.Tc, self.Pc, dZ=dZ, Psat=self.Psat)
+                    dZ = Zg
+            Hvap = Clapeyron(T, self.Tc, self.Pc, dZ=dZ, Psat=Psat)
         # CSP methods at Tb only
         elif method == RIEDEL:
             Hvap = Riedel(self.Tb, self.Tc, self.Pc)

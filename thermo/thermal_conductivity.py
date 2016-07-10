@@ -1610,12 +1610,15 @@ class ThermalConductivityGas(TPDependentProperty):
         Acentric factor, [-]
     dipole : float, optional
         Dipole moment of the fluid, [debye]
-    Vmg : float, optional
-        Molar volume of the fluid at a pressure and temperature, [m^3/mol]
-    Cvgm : float, optional
-        Molar heat capacity of the fluid at a pressure and temperature, [J/mol/K]
-    mug : float, optional
-        Gas viscosity of the fluid at a pressure and temperature, [Pa*S]
+    Vmg : float or callable, optional
+        Molar volume of the fluid at a pressure and temperature or callable for
+        the same, [m^3/mol]
+    Cvgm : float or callable, optional
+        Molar heat capacity of the fluid at a pressure and temperature or 
+        or callable for the same, [J/mol/K]
+    mug : float or callable, optional
+        Gas viscosity of the fluid at a pressure and temperature or callable
+        for the same, [Pa*S]
 
     Notes
     -----
@@ -1859,15 +1862,24 @@ class ThermalConductivityGas(TPDependentProperty):
         if method == GHARAGHEIZI_G:
             kg = Gharagheizi_gas(T, self.MW, self.Tb, self.Pc, self.omega)
         elif method == DIPPR_9B:
-            kg = DIPPR9B(T, self.MW, self.Cvgm, self.mug, self.Tc)
+            Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
+            mug = self.mug(T) if hasattr(self.mug, '__call__') else self.mug
+            kg = DIPPR9B(T, self.MW, Cvgm, mug, self.Tc)
         elif method == CHUNG:
-            kg = Chung(T, self.MW, self.Tc, self.omega, self.Cvgm, self.mug)
+            Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
+            mug = self.mug(T) if hasattr(self.mug, '__call__') else self.mug
+            kg = Chung(T, self.MW, self.Tc, self.omega, Cvgm, mug)
         elif method == ELI_HANLEY:
-            kg = eli_hanley(T, self.MW, self.Tc, self.Vc, self.Zc, self.omega, self.Cvgm)
+            Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
+            kg = eli_hanley(T, self.MW, self.Tc, self.Vc, self.Zc, self.omega, Cvgm)
         elif method == EUCKEN_MOD:
-            kg = Eucken_modified(self.MW, self.Cvgm, self.mug)
+            Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
+            mug = self.mug(T) if hasattr(self.mug, '__call__') else self.mug
+            kg = Eucken_modified(self.MW, Cvgm, mug)
         elif method == EUCKEN:
-            kg = Eucken(self.MW, self.Cvgm, self.mug)
+            Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
+            mug = self.mug(T) if hasattr(self.mug, '__call__') else self.mug
+            kg = Eucken(self.MW, Cvgm, mug)
         elif method == BAHADORI_G:
             kg = Bahadori_gas(T, self.MW)
         elif method == COOLPROP:

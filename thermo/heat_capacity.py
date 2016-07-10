@@ -876,8 +876,8 @@ class HeatCapacityLiquid(TDependentProperty):
         Critical temperature, [K]
     omega : float, optional
         Acentric factor, [-]
-    Cpgm : float, optional
-        Idea-gas molar heat capacity at T, [J/mol/K]
+    Cpgm : float or callable, optional
+        Idea-gas molar heat capacity at T or callable for the same, [J/mol/K]
 
     Notes
     -----
@@ -1128,9 +1128,11 @@ class HeatCapacityLiquid(TDependentProperty):
         elif method == CRCSTD:
             Cp = self.CRCSTD_constant
         elif method == ROWLINSON_POLING:
-           Cp = Rowlinson_Poling(T, self.Tc, self.omega, self.Cpgm)
+            Cpgm = self.Cpgm(T) if hasattr(self.Cpgm, '__call__') else self.Cpgm
+            Cp = Rowlinson_Poling(T, self.Tc, self.omega, Cpgm)
         elif method == ROWLINSON_BONDI:
-            Cp = Rowlinson_Bondi(T, self.Tc, self.omega, self.Cpgm)
+            Cpgm = self.Cpgm(T) if hasattr(self.Cpgm, '__call__') else self.Cpgm
+            Cp = Rowlinson_Bondi(T, self.Tc, self.omega, Cpgm)
         elif method == DADGOSTAR_SHAW:
             Cp = Dadgostar_Shaw(T, self.similarity_variable)
             Cp = property_mass_to_molar(Cp, self.MW)

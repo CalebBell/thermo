@@ -1377,6 +1377,9 @@ class TDependentProperty(object):
         Calls `calculate_integral` internally to perform the actual
         calculation.
 
+        .. math::
+            \text{integral} = \int_{T_1}^{T_2} \text{property} \; dT
+
         Parameters
         ----------
         T1 : float
@@ -1410,9 +1413,6 @@ class TDependentProperty(object):
 
         If the calculation does not succeed, returns the actual error
         encountered.
-        
-        .. math::
-            \text{integral} = \int_{T_1}^{T_2} \text{property} \; dT
 
         Parameters
         ----------
@@ -1576,7 +1576,7 @@ class TDependentProperty(object):
 
 class TPDependentProperty(TDependentProperty):
     '''Class for calculating temperature and pressure dependent chemical
-    properties. Loads'''
+    properties.'''
     interpolation_P = None
     method_P = None
     forced_P = False
@@ -1719,7 +1719,7 @@ class TPDependentProperty(TDependentProperty):
         Ts and Psmust be in increasing order. If no name is given, data will be
         assigned the name 'Tabular data series #x', where x is the number of
         previously added tabular data series. The name is added to all
-        methods and iserted at the start of user methods,
+        methods and is inserted at the start of user methods,
 
         Parameters
         ----------

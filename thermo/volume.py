@@ -714,8 +714,8 @@ class VolumeLiquid(TPDependentProperty):
         Acentric factor, [-]
     dipole : float, optional
         Dipole, [debye]
-    Psat : float, optional
-        Vapor pressure at a given temperature, [Pa]
+    Psat : float or callable, optional
+        Vapor pressure at a given temperature, or callable for the same [Pa]
 
     Notes
     -----
@@ -1068,7 +1068,8 @@ class VolumeLiquid(TPDependentProperty):
         '''
         if method == COSTALD_COMPRESSED:
             Vm = self.T_dependent_property(T)
-            Vm = COSTALD_compressed(T, P, self.Psat, self.Tc, self.Pc, self.omega, Vm)
+            Psat = self.Psat(T) if hasattr(self.Psat, '__call__') else self.Psat
+            Vm = COSTALD_compressed(T, P, Psat, self.Tc, self.Pc, self.omega, Vm)
         elif method == COOLPROP:
             Vm = 1./PropsSI('DMOLAR', 'T', T, 'P', P, self.CASRN)
         elif method in self.tabular_data:

@@ -410,9 +410,14 @@ class Chemical(object): # pragma: no cover
         self.VaporPressure = VaporPressure(Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, omega=self.omega, CASRN=self.CAS)
         self.Psat_298 = self.VaporPressure.T_dependent_property(298.15)
 
+#        self.VolumeLiquid = VolumeLiquid(MW=self.MW, Tb=self.Tb, Tc=self.Tc,
+#                          Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega,
+#                          dipole=self.dipole, Psat=self.Psat, CASRN=self.CAS)
+
         self.VolumeLiquid = VolumeLiquid(MW=self.MW, Tb=self.Tb, Tc=self.Tc,
                           Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega,
-                          dipole=self.dipole, Psat=self.Psat, CASRN=self.CAS)
+                          dipole=self.dipole, Psat=self.VaporPressure.T_dependent_property, CASRN=self.CAS)
+
         if self.Tb:
             self.Vml_Tb = self.VolumeLiquid.T_dependent_property(self.Tb)
         else:
@@ -427,15 +432,12 @@ class Chemical(object): # pragma: no cover
 
         self.VolumeSolid = VolumeSolid(CASRN=self.CAS, MW=self.MW, Tt=self.Tt)
 
-        self.HeatCapacitySolid = HeatCapacitySolid(MW=self.MW, similarity_variable=self.similarity_variable, CASRN=self.CAS)
-
-        self.HeatCapacityLiquid = HeatCapacityLiquid(CASRN=self.CAS, MW=self.MW, similarity_variable=self.similarity_variable, Tc=self.Tc, omega=self.omega, Cpgm=self.Cpgm)
-
         self.HeatCapacityGas = HeatCapacityGas(CASRN=self.CAS, MW=self.MW, similarity_variable=self.similarity_variable)
 
-        self.ViscosityLiquid = ViscosityLiquid(CASRN=self.CAS, MW=self.MW, Tm=self.Tm, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, omega=self.omega, Psat=self.Psat, Vml=self.Vml)
+        self.HeatCapacitySolid = HeatCapacitySolid(MW=self.MW, similarity_variable=self.similarity_variable, CASRN=self.CAS)
 
-        self.ViscosityGas = ViscosityGas(CASRN=self.CAS, MW=self.MW, Tc=self.Tc, Pc=self.Pc, Zc=self.Zc, dipole=self.dipole, Vmg=self.Vmg)
+#        self.HeatCapacityLiquid = HeatCapacityLiquid(CASRN=self.CAS, MW=self.MW, similarity_variable=self.similarity_variable, Tc=self.Tc, omega=self.omega, Cpgm=self.Cpgm)
+        self.HeatCapacityLiquid = HeatCapacityLiquid(CASRN=self.CAS, MW=self.MW, similarity_variable=self.similarity_variable, Tc=self.Tc, omega=self.omega, Cpgm=self.HeatCapacityGas.T_dependent_property)
 
         self.EnthalpyVaporization = EnthalpyVaporization(CASRN=self.CAS, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, omega=self.omega, similarity_variable=self.similarity_variable)
         self.HvapTbm = self.EnthalpyVaporization.T_dependent_property(self.Tb)
@@ -447,9 +449,15 @@ class Chemical(object): # pragma: no cover
         self.Hsub_methods = Hsub(T=self.T, P=self.P, MW=self.MW, AvailableMethods=True, CASRN=self.CAS)
         self.Hsub_method = self.Hsub_methods[0]
 
+        self.ViscosityLiquid = ViscosityLiquid(CASRN=self.CAS, MW=self.MW, Tm=self.Tm, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, omega=self.omega, Psat=self.VaporPressure.T_dependent_property, Vml=self.VolumeLiquid.T_dependent_property)
+        
+        vmg_calc = lambda T : self.VolumeGas.TP_dependent_property(T, 101325)
+        self.ViscosityGas = ViscosityGas(CASRN=self.CAS, MW=self.MW, Tc=self.Tc, Pc=self.Pc, Zc=self.Zc, dipole=self.dipole, Vmg=vmg_calc)
+
         self.ThermalConductivityLiquid = ThermalConductivityLiquid(CASRN=self.CAS, MW=self.MW, Tm=self.Tm, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, omega=self.omega, Hfus=self.Hfusm)
 
-        self.ThermalConductivityGas = ThermalConductivityGas(CASRN=self.CAS, MW=self.MW, Tb=self.Tb, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, dipole=self.dipole, Vmg=self.Vmg, Cvgm=self.Cvgm, mug=self.mug)
+        cvgm_calc = lambda T : self.HeatCapacityGas.T_dependent_property(T) - R
+        self.ThermalConductivityGas = ThermalConductivityGas(CASRN=self.CAS, MW=self.MW, Tb=self.Tb, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, dipole=self.dipole, Vmg=vmg_calc, Cvgm=cvgm_calc, mug=self.ViscosityGas.T_dependent_property)
 
         self.SurfaceTension = SurfaceTension(CASRN=self.CAS, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, StielPolar=self.StielPolar)
 
@@ -478,7 +486,9 @@ class Chemical(object): # pragma: no cover
             self.Zs = None
 
 
-        self.VolumeLiquid.Psat = self.Psat
+###        self.VolumeLiquid.Psat = self.Psat
+        
+        
         self.Vml = self.VolumeLiquid.TP_dependent_property(self.T, self.P)
         # TODO: derivative
         self.isobaric_expansion_l = isobaric_expansion(V1=self.Vml, dT=0.01, V2=self.VolumeLiquid.TP_dependent_property(self.T+0.01, self.P))
@@ -515,7 +525,7 @@ class Chemical(object): # pragma: no cover
         self.Cpsm = self.HeatCapacitySolid.T_dependent_property(self.T)
         self.Cpgm = self.HeatCapacityGas.T_dependent_property(self.T)
 
-        self.HeatCapacityLiquid.Cpgm = self.Cpgm
+###        self.HeatCapacityLiquid.Cpgm = self.Cpgm
         self.Cplm = self.HeatCapacityLiquid.T_dependent_property(self.T)
         if self.Cplm:
             self.Cpl = property_molar_to_mass(self.Cplm, self.MW)
@@ -536,9 +546,9 @@ class Chemical(object): # pragma: no cover
         else:
             self.isentropic_exponent = None
 
-        self.EnthalpyVaporization.Psat = self.Psat
-        self.EnthalpyVaporization.Zl = self.Zl
-        self.EnthalpyVaporization.Zg = self.Zg
+###        self.EnthalpyVaporization.Psat = self.Psat
+###        self.EnthalpyVaporization.Zl = self.Zl
+###        self.EnthalpyVaporization.Zg = self.Zg
         self.Hvapm = self.EnthalpyVaporization.T_dependent_property(self.T)
         self.Hvap = property_molar_to_mass(self.Hvapm, self.MW)
 
@@ -547,13 +557,13 @@ class Chemical(object): # pragma: no cover
         self.Hfusm = property_mass_to_molar(self.Hfus, self.MW)
         self.Hsubm = property_mass_to_molar(self.Hsub, self.MW)
 
-        self.ViscosityLiquid.Psat = self.Psat
-        self.ViscosityLiquid.Vml = self.Vml
+###        self.ViscosityLiquid.Psat = self.Psat
+###        self.ViscosityLiquid.Vml = self.Vml
         self.mul = self.ViscosityLiquid.TP_dependent_property(self.T, self.P)
         if not self.mul:
             self.mul = self.ViscosityLiquid.T_dependent_property(self.T)
 
-        self.ViscosityGas.Vmg = self.Vmg
+###        self.ViscosityGas.Vmg = self.Vmg
         self.mug = self.ViscosityGas.TP_dependent_property(self.T, self.P)
         if not self.mug:
             self.mug = self.ViscosityGas.T_dependent_property(self.T)
@@ -562,9 +572,9 @@ class Chemical(object): # pragma: no cover
         if not self.kl:
             self.kl = self.ThermalConductivityLiquid.T_dependent_property(self.T)
 
-        self.ThermalConductivityGas.Vmg = self.Vmg
-        self.ThermalConductivityGas.Cvgm = self.Cvgm
-        self.ThermalConductivityGas.mug = self.mug
+###        self.ThermalConductivityGas.Vmg = self.Vmg
+###        self.ThermalConductivityGas.Cvgm = self.Cvgm
+###        self.ThermalConductivityGas.mug = self.mug
         self.kg = self.ThermalConductivityGas.TP_dependent_property(self.T, self.P)
         if not self.kg:
             self.kg = self.ThermalConductivityGas.T_dependent_property(self.T)

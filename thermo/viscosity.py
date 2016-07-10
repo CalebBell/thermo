@@ -295,10 +295,11 @@ class ViscosityLiquid(TPDependentProperty):
         Critical volume, [m^3/mol]
     omega : float, optional
         Acentric factor, [-]
-    Psat : float, optional
-        Vapor pressure at a given temperature, [Pa]
-    Vml : float, optional
-        Liquid molar volume at a given temperature and pressure, [m^3/mol]
+    Psat : float or callable, optional
+        Vapor pressure at a given temperature or callable for the same, [Pa]
+    Vml : float or callable, optional
+        Liquid molar volume at a given temperature and pressure or callable
+        for the same, [m^3/mol]
 
     Notes
     -----
@@ -552,7 +553,8 @@ class ViscosityLiquid(TPDependentProperty):
         elif method == LETSOU_STIEL:
             mu = Letsou_Stiel(T, self.MW, self.Tc, self.Pc, self.omega)
         elif method == PRZEDZIECKI_SRIDHAR:
-            mu = Przedziecki_Sridhar(T, self.Tm, self.Tc, self.Pc, self.Vc, self.Vml, self.omega, self.MW)
+            Vml = self.Vml(T) if hasattr(self.Vml, '__call__') else self.Vml
+            mu = Przedziecki_Sridhar(T, self.Tm, self.Tc, self.Pc, self.Vc, Vml, self.omega, self.MW)
         elif method in self.tabular_data:
             mu = self.interpolate(T, method)
         return mu
@@ -632,7 +634,8 @@ class ViscosityLiquid(TPDependentProperty):
         '''
         if method == LUCAS:
             mu = self.T_dependent_property(T)
-            mu = Lucas(T, P, self.Tc, self.Pc, self.omega, self.Psat, mu)
+            Psat = self.Psat(T) if hasattr(self.Psat, '__call__') else self.Psat
+            mu = Lucas(T, P, self.Tc, self.Pc, self.omega, Psat, mu)
         elif method == COOLPROP:
             mu = PropsSI('V', 'T', T, 'P', P, self.CASRN)
         elif method in self.tabular_data:
