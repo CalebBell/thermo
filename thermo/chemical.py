@@ -96,7 +96,7 @@ class Chemical(object): # pragma: no cover
         self.name = name(self.CAS).lower()
         self.synonyms = [i.lower() for i in synonyms(self.CAS)]
 
-        self.set_none()
+#        self.set_none()
         self.set_structure()
 
         self.set_constant_sources()
@@ -145,119 +145,119 @@ class Chemical(object): # pragma: no cover
         except:
             return 'py3Dmol and rdkit required'
 
-    def set_none(self):
-        # Null values as necessary
-        self.rdkitmol = None
-        self.atoms = None
-        self.charge = None
-        self.rings = None
-        self.atom_fractions = None
-        self.mass_fractions = None
-        self.similarity_variable = None
-
-        self.Tm = None
-        self.Tb = None
-
-        self.Tc = None
-        self.Pc = None
-        self.Vc = None
-        self.omega = None
-        self.StielPolar = None
-
-        self.Zc = None
-        self.rhoC = None
-        self.rhoCm = None
-
-        self.Pt = None
-        self.Tt = None
-
-        self.Hf = None
-        self.Hf298 = None
-        self.Hfl = None
-        self.Hfg = None
-        self.Hc = None
-
-        self.Tflash = None
-        self.Tautoignition = None
-        self.LFL = None
-        self.UFL = None
-
-        self.TWA = None
-        self.STEL = None
-        self.Ceiling = None
-        self.Skin = None
-        self.Carcinogen = None
-
-        self.dipole = None
-        self.molecular_diameter = None
-        self.Stockmayer = None
-
-        # Temperature dependent values
-        self.Psat = None
-        self.Psat_298 = None
-        self.rhos = None
-        self.Vms = None
-        self.Zs = None
-        self.rhosm = None
-        self.rhol = None
-        self.Vml = None
-        self.Zl = None
-        self.rholm = None
-        self.rhog = None
-        self.Vmg = None
-        self.Zg = None
-        self.rhogm = None
-        self.Bvirial = None
-
-        self.Cps = None
-        self.Cpl = None
-        self.Cpg = None
-        self.Cvg = None
-
-        self.Cpsm = None
-        self.Cplm = None
-        self.Cpgm = None
-        self.Cvgm = None
-        self.isentropic_exponent = None
-
-        self.permittivity = None
-        self.conductivity = None
-        self.sigma = None
-        self.mul = None
-        self.mug = None
-
-        self.Hvap = None
-        self.HvapTb = None
-        self.Hfus = None
-        self.Hsub = None
-
-        self.Hvapm = None
-        self.HvapTbm = None
-        self.Hfusm = None
-        self.Hsubm = None
-
-        self.H = None
-
-        self.ks = None
-        self.kl = None
-        self.kg = None
-
-        self.Prl = None
-        self.Prg = None
-        self.alphal = None
-        self.alphag = None
-
-        self.solubility_parameter = None
-        self.Parachor = None
-
-        self.GWP = None
-        self.ODP = None
-        self.logP = None
-
-        self.RI = None
-        self.RIT = None
-        self.conductivity = None
-        self.conductivityT = None
+#    def set_none(self):
+#        # Null values as necessary
+#        self.rdkitmol = None
+#        self.atoms = None
+#        self.charge = None
+#        self.rings = None
+#        self.atom_fractions = None
+#        self.mass_fractions = None
+#        self.similarity_variable = None
+#
+#        self.Tm = None
+#        self.Tb = None
+#
+#        self.Tc = None
+#        self.Pc = None
+#        self.Vc = None
+#        self.omega = None
+#        self.StielPolar = None
+#
+#        self.Zc = None
+#        self.rhoC = None
+#        self.rhoCm = None
+#
+#        self.Pt = None
+#        self.Tt = None
+#
+#        self.Hf = None
+#        self.Hf298 = None
+#        self.Hfl = None
+#        self.Hfg = None
+#        self.Hc = None
+#
+#        self.Tflash = None
+#        self.Tautoignition = None
+#        self.LFL = None
+#        self.UFL = None
+#
+#        self.TWA = None
+#        self.STEL = None
+#        self.Ceiling = None
+#        self.Skin = None
+#        self.Carcinogen = None
+#
+#        self.dipole = None
+#        self.molecular_diameter = None
+#        self.Stockmayer = None
+#
+#        # Temperature dependent values
+#        self.Psat = None
+#        self.Psat_298 = None
+#        self.rhos = None
+#        self.Vms = None
+#        self.Zs = None
+#        self.rhosm = None
+#        self.rhol = None
+#        self.Vml = None
+#        self.Zl = None
+#        self.rholm = None
+#        self.rhog = None
+#        self.Vmg = None
+#        self.Zg = None
+#        self.rhogm = None
+#        self.Bvirial = None
+#
+#        self.Cps = None
+#        self.Cpl = None
+#        self.Cpg = None
+#        self.Cvg = None
+#
+#        self.Cpsm = None
+#        self.Cplm = None
+#        self.Cpgm = None
+#        self.Cvgm = None
+#        self.isentropic_exponent = None
+#
+#        self.permittivity = None
+#        self.conductivity = None
+#        self.sigma = None
+#        self.mul = None
+#        self.mug = None
+#
+#        self.Hvap = None
+#        self.HvapTb = None
+#        self.Hfus = None
+#        self.Hsub = None
+#
+#        self.Hvapm = None
+#        self.HvapTbm = None
+#        self.Hfusm = None
+#        self.Hsubm = None
+#
+#        self.H = None
+#
+#        self.ks = None
+#        self.kl = None
+#        self.kg = None
+#
+#        self.Prl = None
+#        self.Prg = None
+#        self.alphal = None
+#        self.alphag = None
+#
+#        self.solubility_parameter = None
+#        self.Parachor = None
+#
+#        self.GWP = None
+#        self.ODP = None
+#        self.logP = None
+#
+#        self.RI = None
+#        self.RIT = None
+#        self.conductivity = None
+#        self.conductivityT = None
 
 
 
@@ -276,24 +276,22 @@ class Chemical(object): # pragma: no cover
         self.Vc_method = self.Vc_methods[0]
         self.omega_methods = omega(CASRN=self.CAS, AvailableMethods=True)
         self.omega_method = self.omega_methods[0]
-        self.StielPolar_methods = StielPolar(Tc=self.Tc, Pc=self.Pc, omega=self.omega, CASRN=self.CAS, AvailableMethods=True)
-        self.StielPolar_method = self.StielPolar_methods[0]
 
         # Triple point
         self.Tt_sources = Tt(self.CAS, AvailableMethods=True)
         self.Tt_source = self.Tt_sources[0]
         self.Pt_sources = Pt(self.CAS, AvailableMethods=True)
         self.Pt_source = self.Pt_sources[0]
+        
+        # Enthalpy
+        self.Hfus_methods = Hfus(T=self.T, P=self.P, MW=self.MW, AvailableMethods=True, CASRN=self.CAS)
+        self.Hfus_method = self.Hfus_methods[0]
 
         # Fire Safety Limits
         self.Tflash_sources = Tflash(self.CAS, AvailableMethods=True)
         self.Tflash_source = self.Tflash_sources[0]
         self.Tautoignition_sources = Tautoignition(self.CAS, AvailableMethods=True)
         self.Tautoignition_source = self.Tautoignition_sources[0]
-        self.LFL_sources = LFL(atoms=self.atoms, Hc=self.Hc, CASRN=self.CAS, AvailableMethods=True)
-        self.LFL_source = self.LFL_sources[0]
-        self.UFL_sources = UFL(atoms=self.atoms, Hc=self.Hc, CASRN=self.CAS, AvailableMethods=True)
-        self.UFL_source = self.UFL_sources[0]
 
         # Chemical Exposure Limits
         self.TWA_sources = TWA(self.CAS, AvailableMethods=True)
@@ -314,8 +312,6 @@ class Chemical(object): # pragma: no cover
         # Misc
         self.dipole_sources = dipole(CASRN=self.CAS, AvailableMethods=True)
         self.dipole_source = self.dipole_sources[0]
-        self.Stockmayer_sources = Stockmayer(Tc=self.Tc, Zc=self.Zc, omega=self.omega, AvailableMethods=True, CASRN=self.CAS)
-        self.Stockmayer_source = self.Stockmayer_sources[0]
 
         # Environmental
         self.GWP_sources = GWP(CASRN=self.CAS, AvailableMethods=True)
@@ -348,6 +344,9 @@ class Chemical(object): # pragma: no cover
         self.Pc = Pc(self.CAS, Method=self.Pc_method)
         self.Vc = Vc(self.CAS, Method=self.Vc_method)
         self.omega = omega(self.CAS, Method=self.omega_method)
+        
+        self.StielPolar_methods = StielPolar(Tc=self.Tc, Pc=self.Pc, omega=self.omega, CASRN=self.CAS, AvailableMethods=True)
+        self.StielPolar_method = self.StielPolar_methods[0]
         self.StielPolar = StielPolar(Tc=self.Tc, Pc=self.Pc, omega=self.omega, CASRN=self.CAS, Method=self.StielPolar_method)
 
         self.Zc = Z(self.Tc, self.Pc, self.Vc) if all((self.Tc, self.Pc, self.Vc)) else None
@@ -358,13 +357,21 @@ class Chemical(object): # pragma: no cover
         self.Pt = Pt(self.CAS, Method=self.Pt_source)
         self.Tt = Tt(self.CAS, Method=self.Tt_source)
 
+        # Enthalpy
+        self.Hfus = Hfus(T=self.T, P=self.P, MW=self.MW, Method=self.Hfus_method, CASRN=self.CAS)
+        self.Hfusm = property_mass_to_molar(self.Hfus, self.MW) if self.Hfus else None
+        
         # Chemistry
-        self.Hf298 = Hf(CASRN=self.CAS, Method=self.Hf_source)
-        self.Hc = Hcombustion(atoms=self.atoms, Hf=self.Hf298)
+        self.Hf = Hf(CASRN=self.CAS, Method=self.Hf_source)
+        self.Hc = Hcombustion(atoms=self.atoms, Hf=self.Hf)
 
         # Fire Safety Limits
         self.Tflash = Tflash(self.CAS, Method=self.Tflash_source)
         self.Tautoignition = Tautoignition(self.CAS, Method=self.Tautoignition_source)
+        self.LFL_sources = LFL(atoms=self.atoms, Hc=self.Hc, CASRN=self.CAS, AvailableMethods=True)
+        self.LFL_source = self.LFL_sources[0]
+        self.UFL_sources = UFL(atoms=self.atoms, Hc=self.Hc, CASRN=self.CAS, AvailableMethods=True)
+        self.UFL_source = self.UFL_sources[0]
         self.LFL = LFL(atoms=self.atoms, Hc=self.Hc, CASRN=self.CAS, Method=self.LFL_source)
         self.UFL = UFL(atoms=self.atoms, Hc=self.Hc, CASRN=self.CAS, Method=self.UFL_source)
 
@@ -377,6 +384,8 @@ class Chemical(object): # pragma: no cover
 
         # Misc
         self.dipole = dipole(self.CAS, Method=self.dipole_source) # Units of Debye
+        self.Stockmayer_sources = Stockmayer(Tc=self.Tc, Zc=self.Zc, omega=self.omega, AvailableMethods=True, CASRN=self.CAS)
+        self.Stockmayer_source = self.Stockmayer_sources[0]
         self.Stockmayer = Stockmayer(Tm=self.Tm, Tb=self.Tb, Tc=self.Tc, Zc=self.Zc, omega=self.omega, Method=self.Stockmayer_source, CASRN=self.CAS)
 
         # Environmental
@@ -426,9 +435,6 @@ class Chemical(object): # pragma: no cover
         self.EnthalpyVaporization = EnthalpyVaporization(CASRN=self.CAS, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, omega=self.omega, similarity_variable=self.similarity_variable)
         self.HvapTbm = self.EnthalpyVaporization.T_dependent_property(self.Tb) if self.Tb else None
         self.HvapTb = property_molar_to_mass(self.HvapTbm, self.MW)
-
-        self.Hfus_methods = Hfus(T=self.T, P=self.P, MW=self.MW, AvailableMethods=True, CASRN=self.CAS)
-        self.Hfus_method = self.Hfus_methods[0]
 
         self.Hsub_methods = Hsub(T=self.T, P=self.P, MW=self.MW, AvailableMethods=True, CASRN=self.CAS)
         self.Hsub_method = self.Hsub_methods[0]
@@ -497,9 +503,7 @@ class Chemical(object): # pragma: no cover
         self.Hvapm = self.EnthalpyVaporization.T_dependent_property(self.T)
         self.Hvap = property_molar_to_mass(self.Hvapm, self.MW)
 
-        self.Hfus = Hfus(T=self.T, P=self.P, MW=self.MW, Method=self.Hfus_method, CASRN=self.CAS)
         self.Hsub = Hsub(T=self.T, P=self.P, MW=self.MW, Method=self.Hsub_method, CASRN=self.CAS)
-        self.Hfusm = property_mass_to_molar(self.Hfus, self.MW)
         self.Hsubm = property_mass_to_molar(self.Hsub, self.MW)
 
         self.mul = self.ViscosityLiquid.TP_dependent_property(self.T, self.P)
@@ -546,7 +550,7 @@ class Chemical(object): # pragma: no cover
     def set_phase(self):
         self.phase_STP = identify_phase(T=298.15, P=101325., Tm=self.Tm, Tb=self.Tb, Tc=self.Tc, Psat=self.Psat_298)
         self.phase = identify_phase(T=self.T, P=self.P, Tm=self.Tm, Tb=self.Tb, Tc=self.Tc, Psat=self.Psat)
-        self.k = phase_set_property(phase=self.phase, s=self.ks, l=self.kl, g=self.kg)
+        self.k = phase_set_property(phase=self.phase, s=None, l=self.kl, g=self.kg) # ks not implemented
         self.rho = phase_set_property(phase=self.phase, s=self.rhos, l=self.rhol, g=self.rhog)
         self.Vm = phase_set_property(phase=self.phase, s=self.Vms, l=self.Vml, g=self.Vmg)
         self.Z = Z(self.T, self.P, self.Vm) if self.Vm else None
@@ -604,7 +608,7 @@ class Mixture(object):  # pragma: no cover
         self.P = P
         self.T = T
 
-        if type(IDs) == type('') or (type(IDs) == type([]) and len(IDs) == 1):
+        if isinstance(IDs, str) or (isinstance(IDs, list) and len(IDs) == 1):
             mixname = mixture_from_any(IDs)
             if mixname:
                 _d = _MixtureDict[mixname]
@@ -636,50 +640,25 @@ class Mixture(object):  # pragma: no cover
         self.set_chemical_constants()
         self.set_chemical_T()
         if zs:
-            self.zs = zs
+            self.zs = zs if sum(zs) == 1 else [zi/sum(zs) for zi in zs]
             self.ws = zs_to_ws(zs, self.MWs)
-            try:
-                self.Vfls = zs_to_Vfs(self.zs, self.Vmls)
-            except:
-                pass
-            try:
-                self.Vfgs = zs_to_Vfs(self.zs, self.Vmgs)
-            except:
-                pass
-
+            self.Vfls = zs_to_Vfs(self.zs, self.Vmls) if none_and_length_check([self.Vmls]) else None
+            self.Vfgs = zs_to_Vfs(self.zs, self.Vmgs) if none_and_length_check([self.Vmgs]) else None
         elif ws:
-            self.ws = ws
+            self.ws = ws if sum(ws) == 1 else [wi/sum(ws) for wi in ws]
             self.zs = ws_to_zs(ws, self.MWs)
-            try:
-                self.Vfls = zs_to_Vfs(self.zs, self.Vmls)
-            except:
-                pass
-            try:
-                self.Vfgs = zs_to_Vfs(self.zs, self.Vmgs)
-            except:
-                pass
+            self.Vfls = zs_to_Vfs(self.zs, self.Vmls) if none_and_length_check([self.Vmls]) else None
+            self.Vfgs = zs_to_Vfs(self.zs, self.Vmgs) if none_and_length_check([self.Vmgs]) else None
         elif Vfls:
+            self.Vfls = Vfls if sum(Vfls) == 1 else [Vfli/sum(Vfls) for Vfli in Vfls]
             self.zs = Vfs_to_zs(Vfls, self.Vmls)
             self.ws = zs_to_ws(self.zs, self.MWs)
-            try:
-                self.Vfls = zs_to_Vfs(self.zs, self.Vmls)
-            except:
-                pass
-            try:
-                self.Vfgs = zs_to_Vfs(self.zs, self.Vmgs)
-            except:
-                pass
+            self.Vfgs = zs_to_Vfs(self.zs, self.Vmgs) if none_and_length_check([self.Vmgs]) else None
         elif Vfgs:
+            self.Vfgs = Vfgs if sum(Vfgs) == 1 else [Vfgi/sum(Vfgs) for Vfgi in Vfgs]
             self.zs = Vfs_to_zs(Vfgs, self.Vmgs)
             self.ws = zs_to_ws(self.zs, self.MWs)
-            try:
-                self.Vfls = zs_to_Vfs(self.zs, self.Vmls)
-            except:
-                pass
-            try:
-                self.Vfgs = zs_to_Vfs(self.zs, self.Vmgs)
-            except:
-                pass
+            self.Vfls = zs_to_Vfs(self.zs, self.Vmls) if none_and_length_check([self.Vmls]) else None
         else:
             raise Exception('No composition provided')
 
@@ -842,16 +821,9 @@ class Mixture(object):  # pragma: no cover
         self.Vc = Vc_mixture(Vcs=self.Vcs, zs=self.zs, CASRNs=self.CASs, Method=self.Vc_method)
         self.omega = omega_mixture(omegas=self.omegas, zs=self.zs, CASRNs=self.CASs, Method=self.omega_method)
 
-        if all((self.Tc, self.Pc, self.Vc)):
-            self.Zc = Z(self.Tc, self.Pc, self.Vc)
-        else:
-            self.Zc = None
-
-        if self.Vc:
-            self.rhoC = Vm_to_rho(self.Vc, self.MW)
-        else:
-            self.rhoC = None
-        if self.Vc: self.rhoCm = 1./self.Vc
+        self.Zc = Z(self.Tc, self.Pc, self.Vc) if all((self.Tc, self.Pc, self.Vc)) else None
+        self.rhoC = Vm_to_rho(self.Vc, self.MW) if self.Vc else None
+        self.rhoCm = 1./self.Vc if self.Vc else None
 
         self.LFL = LFL_mixture(ys=self.zs, LFLs=self.LFLs, Method=self.LFL_method)
         self.UFL = UFL_mixture(ys=self.zs, UFLs=self.UFLs, Method=self.UFL_method)
@@ -901,29 +873,16 @@ class Mixture(object):  # pragma: no cover
         self.set_chemical_T()
 
         self.Vml = volume_liquid_mixture(xs=self.zs, ws=self.ws, Vms=self.Vmls, T=self.T, MWs=self.MWs, MW=self.MW, Tcs=self.Tcs, Pcs=self.Pcs, Vcs=self.Vcs, Zcs=self.Zcs, omegas=self.omegas, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, CASRNs=self.CASs, Molar=True, Method=self.Vl_method)
-        if self.Vml:
-            self.rhol = Vm_to_rho(self.Vml, self.MW)
-        else:
-            self.rhol = None
-
-        if self.Vml:
-            self.Zl = Z(self.T, self.P, self.Vml)
-        else:
-            self.Zl = None
-
-        if self.Vml: self.rholm = 1./self.Vml
+        self.rhol = Vm_to_rho(self.Vml, self.MW) if self.Vml else None
+        self.Zl = Z(self.T, self.P, self.Vml) if self.Vml else None
+        self.rholm = 1./self.Vml if self.Vml else None
 
         self.Vmg = volume_gas_mixture(ys=self.zs, Vms=self.Vmgs, T=self.T, P=self.P, Tc=self.Tc, Pc=self.Pc, omega=self.omega, MW=self.MW, CASRNs=self.CASs, Method=self.Vg_method)
-        if self.Vmg:
-            self.rhog = Vm_to_rho(self.Vmg, self.MW)
-        else:
-            self.rhog = None
+        self.rhog = Vm_to_rho(self.Vmg, self.MW) if self.Vmg else None
+        self.Zg = Z(self.T, self.P, self.Vmg) if self.Vmg else None
+        self.rhogm = 1./self.Vmg if self.Vmg else None
+        self.Bvirial = B_from_Z(self.Zg, self.T, self.P) if self.Vmg else None
 
-        if self.Vmg:
-            self.Zg = Z(self.T, self.P, self.Vmg)
-        else:
-            self.Zg = None
-        if self.Vmg: self.rhogm = 1./self.Vmg
 
         # Coefficient of isobaric_expansion_coefficient
         for i in self.Chemicals:
@@ -946,10 +905,7 @@ class Mixture(object):  # pragma: no cover
         self.Cplm = property_mass_to_molar(self.Cpl, self.MW)
         self.Cvgm = property_mass_to_molar(self.Cvg, self.MW)
 
-        if self.Cpg and self.Cvg:
-            self.isentropic_exponent = isentropic_exponent(self.Cpg, self.Cvg)
-        else:
-            self.isentropic_exponent = None
+        self.isentropic_exponent = isentropic_exponent(self.Cpg, self.Cvg) if all((self.Cpg, self.Cvg)) else None
 
         self.mul = viscosity_liquid_mixture(zs=self.zs, ws=self.ws, mus=self.muls, T=self.T, MW=self.MW, CASRNs=self.CASs, Method=self.mul_method)
         self.mug = viscosity_gas_mixture(T=self.T, ys=self.zs, ws=self.ws, mus=self.mugs, MWs=self.MWs, molecular_diameters=self.molecular_diameters, Stockmayers=self.Stockmayers, CASRNs=self.CASs, Method=self.mug_method)
@@ -961,33 +917,14 @@ class Mixture(object):  # pragma: no cover
         self.JTl = JT(T=self.T, V=self.Vml, Cp=self.Cplm, isobaric_expansion=self.isobaric_expansion_l)
         self.JTg = JT(T=self.T, V=self.Vmg, Cp=self.Cpgm, isobaric_expansion=self.isobaric_expansion_g)
 
-        try:
-            self.nul = nu_mu_converter(mu=self.mul, rho=self.rhol)
-        except Exception:
-            self.nul = None
-        try:
-            self.nug = nu_mu_converter(mu=self.mug, rho=self.rhog)
-        except Exception:
-            self.nug = None
+        self.nul = nu_mu_converter(mu=self.mul, rho=self.rhol) if all([self.mul, self.rhol]) else None
+        self.nug = nu_mu_converter(mu=self.mug, rho=self.rhog) if all([self.mug, self.rhog]) else None
 
-        try:
-            self.Prl = Prandtl(Cp=self.Cpl, mu=self.mul, k=self.kl)
-        except Exception:
-            self.Prl = None
-        try:
-            self.Prg = Prandtl(Cp=self.Cpg, mu=self.mug, k=self.kg)
-        except Exception:
-            self.Prg = None
+        self.Prl = Prandtl(Cp=self.Cpl, mu=self.mul, k=self.kl) if all([self.Cpl, self.mul, self.kl]) else None
+        self.Prg = Prandtl(Cp=self.Cpg, mu=self.mug, k=self.kg) if all([self.Cpg, self.mug, self.kg]) else None
 
-        try:
-            self.alphal = thermal_diffusivity(k=self.kl, rho=self.rhol, Cp=self.Cpl)
-        except Exception:
-            self.alphal = None
-        try:
-            self.alphag = thermal_diffusivity(k=self.kg, rho=self.rhog, Cp=self.Cpg)
-        except Exception:
-            self.alphag = None
-
+        self.alphal = thermal_diffusivity(k=self.kl, rho=self.rhol, Cp=self.Cpl) if all([self.kl, self.rhol, self.Cpl]) else None
+        self.alphag = thermal_diffusivity(k=self.kg, rho=self.rhog, Cp=self.Cpg) if all([self.kg, self.rhog, self.Cpg]) else None
 
     def set_phase(self):
         self.phase_methods = identify_phase_mixture(T=self.T, P=self.P, zs=self.zs, Tcs=self.Tcs, Pcs=self.Pcs, Psats=self.Psats, CASRNs=self.CASs, AvailableMethods=True)
@@ -1003,10 +940,7 @@ class Mixture(object):  # pragma: no cover
 
         self.rho = phase_set_property(phase=self.phase, s=self.rhos, l=self.rhol, g=self.rhog, V_over_F=self.V_over_F)
         self.Vm = phase_set_property(phase=self.phase, s=self.Vms, l=self.Vml, g=self.Vmg, V_over_F=self.V_over_F)
-        if self.Vm:
-            self.Z = Z(self.T, self.P, self.Vm)
-        else:
-            self.Z = None
+        self.Z = Z(self.T, self.P, self.Vm) if self.Vm else None
 
         self.Cp = phase_set_property(phase=self.phase, s=self.Cps, l=self.Cpl, g=self.Cpg, V_over_F=self.V_over_F)
         self.Cpm = phase_set_property(phase=self.phase, s=self.Cpsm, l=self.Cplm, g=self.Cpgm, V_over_F=self.V_over_F)

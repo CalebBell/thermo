@@ -31,6 +31,8 @@ def test_to_num():
 
 
 def test_none_and_length_check():
+    assert True == none_and_length_check([[1,2,3]])
+    
     assert True == none_and_length_check(([1, 1], [1, 1], [1, 30], [10,0]), length=2)
     assert True == none_and_length_check(([1, 1], [1, 1], [1, 30], [10,0]))
 
