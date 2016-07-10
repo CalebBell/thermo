@@ -1288,14 +1288,14 @@ class TDependentProperty(object):
         analytical methods for some or all methods as this is much faster.
 
         If the calculation does not succeed, returns the actual error
-        encountered .
+        encountered.
 
         Parameters
         ----------
         T : float
             Temperature at which to calculate the derivative, [K]
         order : int
-            Order of the derivative, > 1
+            Order of the derivative, >= 1
         method : str
             Method for which to find the derivative
 
@@ -1323,7 +1323,7 @@ class TDependentProperty(object):
         T : float
             Temperature at which to calculate the derivative, [K]
         order : int
-            Order of the derivative, > 1
+            Order of the derivative, >= 1
 
         Returns
         -------
@@ -1337,7 +1337,6 @@ class TDependentProperty(object):
             except:
                 pass
         return None
-
 
     def calculate_integral(self, T1, T2, method):
         r'''Method to calculate the integral of a property with respect to
@@ -1972,3 +1971,138 @@ class TPDependentProperty(TDependentProperty):
         plt.xlabel('Temperature, K')
         plt.title(self.name + ' of ' + self.CASRN)
         plt.show()
+
+    def calculate_derivative_T(self, T, P, method, order=1):
+        r'''Method to calculate a derivative of a temperature and pressure
+        dependent property with respect to  temperature at constant pressure,
+        of a given order using a specified  method. Uses SciPy's  derivative 
+        function, with a delta of 1E-6 K and a number of points equal to 
+        2*order + 1.
+
+        This method can be overwritten by subclasses who may perfer to add
+        analytical methods for some or all methods as this is much faster.
+
+        If the calculation does not succeed, returns the actual error
+        encountered.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the derivative, [K]
+        P : float
+            Pressure at which to calculate the derivative, [Pa]
+        order : int
+            Order of the derivative, >= 1
+        method : str
+            Method for which to find the derivative
+
+        Returns
+        -------
+        d_prop_d_T_at_P : float
+            Calculated derivative property at constant pressure, 
+            [`units/K^order`]
+        '''
+        return derivative(self.calculate_P, T, dx=1e-6, args=[P, method], n=order, order=1+order*2)
+
+    def calculate_derivative_P(self, P, T, method, order=1):
+        r'''Method to calculate a derivative of a temperature and pressure
+        dependent property with respect to pressure at constant temperature,
+        of a given order using a specified method. Uses SciPy's derivative 
+        function, with a delta of 0.01 Pa and a number of points equal to 
+        2*order + 1.
+
+        This method can be overwritten by subclasses who may perfer to add
+        analytical methods for some or all methods as this is much faster.
+
+        If the calculation does not succeed, returns the actual error
+        encountered.
+
+        Parameters
+        ----------
+        P : float
+            Pressure at which to calculate the derivative, [Pa]
+        T : float
+            Temperature at which to calculate the derivative, [K]
+        order : int
+            Order of the derivative, >= 1
+        method : str
+            Method for which to find the derivative
+
+        Returns
+        -------
+        d_prop_d_P_at_T : float
+            Calculated derivative property at constant temperature, 
+            [`units/Pa^order`]
+        '''
+        f = lambda P: self.calculate_P(T, P, method)
+        return derivative(f, P, dx=1e-2, n=order, order=1+order*2)
+
+    def TP_dependent_property_derivative_T(self, T, P, order=1):
+        r'''Method to calculate a derivative of a temperature and pressure
+        dependent property with respect to temperature at constant pressure,
+        of a given order. Methods found valid by `select_valid_methods_P` are 
+        attempted until a method succeeds. If no methods are valid and succeed,
+        None is returned.
+
+        Calls `calculate_derivative_T` internally to perform the actual
+        calculation.
+        
+        .. math::
+            \text{derivative} = \frac{d (\text{property})}{d T}|_{P}
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the derivative, [K]
+        P : float
+            Pressure at which to calculate the derivative, [Pa]
+        order : int
+            Order of the derivative, >= 1
+
+        Returns
+        -------
+        d_prop_d_T_at_P : float
+            Calculated derivative property, [`units/K^order`]
+        '''
+        sorted_valid_methods_P = self.select_valid_methods_P(T, P)
+        for method in sorted_valid_methods_P:
+            try:
+                return self.calculate_derivative_T(T, P, method, order)
+            except:
+                pass
+        return None
+
+    def TP_dependent_property_derivative_P(self, T, P, order=1):
+        r'''Method to calculate a derivative of a temperature and pressure
+        dependent property with respect to pressure at constant temperature,
+        of a given order. Methods found valid by `select_valid_methods_P` are 
+        attempted until a method succeeds. If no methods are valid and succeed,
+        None is returned.
+
+        Calls `calculate_derivative_P` internally to perform the actual
+        calculation.
+        
+        .. math::
+            \text{derivative} = \frac{d (\text{property})}{d P}|_{T}
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the derivative, [K]
+        P : float
+            Pressure at which to calculate the derivative, [Pa]
+        order : int
+            Order of the derivative, >= 1
+
+        Returns
+        -------
+        d_prop_d_P_at_T : float
+            Calculated derivative property, [`units/Pa^order`]
+        '''
+        sorted_valid_methods_P = self.select_valid_methods_P(T, P)
+        for method in sorted_valid_methods_P:
+            try:
+                return self.calculate_derivative_P(P, T, method, order)
+            except:
+                pass
+        return None

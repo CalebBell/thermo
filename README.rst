@@ -20,7 +20,9 @@ thermo
 .. image:: https://img.shields.io/pypi/pyversions/thermo.svg
    :target: https://pypi.python.org/pypi/thermo
    :alt: Supported_versions
-
+.. image:: https://badges.gitter.im/CalebBell/thermo.svg
+   :alt: Join the chat at https://gitter.im/CalebBell/thermo
+   :target: https://gitter.im/CalebBell/thermo
 
 .. contents::
 
