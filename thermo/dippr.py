@@ -43,7 +43,7 @@ def EQ100(T, A=0, B=0, C=0, D=0, E=0, F=0, G=0):
 
     Returns
     -------
-    Y: float
+    Y : float
         Property [constant-specific]
 
     Examples
@@ -81,7 +81,7 @@ def EQ101(T, A, B, C, D, E):
 
     Returns
     -------
-    Y: float
+    Y : float
         Property [constant-specific]
 
     Examples
@@ -117,7 +117,7 @@ def EQ102(T, A, B, C, D):
 
     Returns
     -------
-    Y: float
+    Y : float
         Property [constant-specific]
 
     Examples
@@ -152,7 +152,7 @@ def EQ104(T, A, B, C, D, E):
 
     Returns
     -------
-    Y: float
+    Y : float
         Property [constant-specific]
 
     Examples
@@ -187,7 +187,7 @@ def EQ105(T, A, B, C, D):
 
     Returns
     -------
-    Y: float
+    Y : float
         Property [constant-specific]
 
     Examples
@@ -227,7 +227,7 @@ def EQ106(T, Tc, A, B, C=0, D=0, E=0):
 
     Returns
     -------
-    Y: float
+    Y : float
         Property [constant-specific]
 
     Examples
@@ -264,7 +264,7 @@ def EQ107(T, A=0, B=0, C=0, D=0, E=0):
 
     Returns
     -------
-    Y: float
+    Y : float
         Property [constant-specific]
 
     Examples
@@ -309,7 +309,7 @@ def EQ114(T, Tc, A, B, C, D):
 
     Returns
     -------
-    Y: float
+    Y : float
         Property [constant-specific]
 
     Examples
@@ -345,7 +345,7 @@ def EQ115(T, A, B, C=0, D=0, E=0):
 
     Returns
     -------
-    Y: float
+    Y : float
         Property [constant-specific]
 
     Examples
@@ -381,7 +381,7 @@ def EQ116(T, Tc, A, B, C, D, E):
 
     Returns
     -------
-    Y: float
+    Y : float
         Property [constant-specific]
 
     Examples
@@ -421,7 +421,7 @@ def EQ127(T, A, B, C, D, E, F, G):
 
     Returns
     -------
-    Y: float
+    Y : float
         Property [constant-specific]
 
     Examples

@@ -318,7 +318,8 @@ class HeatCapacityGas(TDependentProperty):
     property_min = 0
     '''Heat capacities have a minimum value of 0 at 0 K.'''
     property_max = 1E4
-    '''Maximum valid of Heat capacity; arbitrarily set.'''
+    '''Maximum valid of Heat capacity; arbitrarily set. For fluids very near
+    the critical point, this value can be obscenely high.'''
 
 
     ranked_methods = [TRCIG, POLING, COOLPROP, LASTOVKA_SHAW, CRCSTD, POLING_CONST, VDI_TABULAR]
@@ -967,8 +968,9 @@ class HeatCapacityLiquid(TDependentProperty):
     property_min = 1
     '''Allow very low heat capacities; arbitrarily set; liquid heat capacity
     should always be somewhat substantial.'''
-    property_max = 1E4
-    '''Maximum valid of Heat capacity; arbitrarily set.'''
+    property_max = 1E4 # Originally 1E4
+    '''Maximum valid of Heat capacity; arbitrarily set. For fluids very near
+    the critical point, this value can be obscenely high.'''
 
 
     ranked_methods = [ZABRANSKY_SPLINE, ZABRANSKY_QUASIPOLYNOMIAL,

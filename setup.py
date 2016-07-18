@@ -51,10 +51,10 @@ setup(
   name = 'thermo',
   packages = ['thermo'],
   license='MIT',
-  version = '0.1.11',
+  version = '0.1.12',
   description = 'Chemical properties component of Chemical Engineering Design Library (ChEDL)',
   author = 'Caleb Bell',
-  install_requires=['fluids', 'scipy', 'pandas', 'matplotlib'],
+  install_requires=['fluids', 'scipy', 'pandas', 'matplotlib', 'coolprop'],
   extras_require = {
       'Coverage documentation':  ['wsgiref>=0.1.2', 'coverage>=4.0.3']
   },
@@ -62,7 +62,7 @@ setup(
   platforms=["Windows", "Linux", "Mac OS", "Unix"],
   author_email = 'Caleb.Andrew.Bell@gmail.com',
   url = 'https://github.com/CalebBell/thermo',
-  download_url = 'https://github.com/CalebBell/thermo/tarball/0.1.11',
+  download_url = 'https://github.com/CalebBell/thermo/tarball/0.1.12',
   keywords = ['chemical engineering', 'chemistry', 'mechanical engineering', 
   'thermodynamics', 'databases', 'cheminformatics'],
   classifiers = classifiers,
