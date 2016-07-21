@@ -22,6 +22,7 @@ SOFTWARE.'''
 
 from __future__ import division
 import os
+from io import open
 from math import log, exp
 import numpy as np
 import pandas as pd
@@ -696,7 +697,7 @@ def _append2dict(maindict, newdict):
     return data
 
 
-with open(os.path.join(folder, 'Zabransky.csv')) as f:
+with open(os.path.join(folder, 'Zabransky.csv'), encoding='utf-8') as f:
     next(f)
     for line in f:
         values = to_num(line.strip('\n').split('\t'))
