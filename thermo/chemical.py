@@ -70,6 +70,20 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
+# Format: (T, P, phase, H, S, molar=True)
+IAPWS = (273.16, 611.655, 'l', 0.00922, 0, True) # Water; had to convert Href from mass to molar
+ASHRAE = (233.15, 'Psat', 'l', 0, 0, True) # As described in REFPROP
+IIR = (273.15, 'Psat', 'l', 200E3, 1000, False) # 200 kj/kg reference, as described in REFPROP
+REFPROP = ('Tb', 101325, 'l', 0, 0, True)
+CHEMSEP = (298., 101325, 'g', 0, 0, True) # It has an option to add Hf to the reference
+PRO_II = (298.15, 101325, 'gas', 0, 0, True)
+HYSYS = (298.15, 101325, 'calc', 'Hf', 0, True)
+UNISIM = HYSYS #  
+SUPERPRO = (298.15, 101325, 'calc', 0, 0, True) # No support for entropy found, 0 assumed
+
+reference_states = [IAPWS, ASHRAE, IIR, REFPROP, CHEMSEP, PRO_II, HYSYS, 
+                    UNISIM, SUPERPRO]
+
 class Chemical(object): # pragma: no cover
     '''Class for obtaining properties of chemicals.
     Considered somewhat stable, but changes to some mthods are expected.
@@ -81,8 +95,6 @@ class Chemical(object): # pragma: no cover
 
     def __init__(self, ID, T=298.15, P=101325):
         self.ID = ID
-        self.P = P
-        self.T = T
 
         # Identification
         self.CAS = CASfromAny(ID)
@@ -100,9 +112,41 @@ class Chemical(object): # pragma: no cover
 
         self.set_constant_sources()
         self.set_constants()
-        self.set_T_sources()
-        self.set_T(self.T)
+        self.set_TP_sources()
+        self.set_ref()
+
+        self._P = P
+        self._T = T
+
+        self.set_TP(self._T, self._P)
         self.set_phase()
+        self.set_thermo()
+
+    @property
+    def T(self):
+        return self._T
+
+    @property
+    def P(self):
+        return self._P
+
+    @T.setter
+    def T(self, T):
+        self._T = T
+        self.set_TP(self._T, self._P)
+        self.set_phase()
+        self.set_thermo()
+
+    @P.setter
+    def P(self, P):
+        self._P = P
+        self.set_TP(self._T, self._P)
+        self.set_phase()
+        self.set_thermo()
+    
+    def TP(T, P):
+        self._T = T
+        self._P = P
 
 
     def set_structure(self):
@@ -171,7 +215,7 @@ class Chemical(object): # pragma: no cover
         self.Pt_source = self.Pt_sources[0]
         
         # Enthalpy
-        self.Hfus_methods = Hfus(T=self.T, P=self.P, MW=self.MW, AvailableMethods=True, CASRN=self.CAS)
+        self.Hfus_methods = Hfus(MW=self.MW, AvailableMethods=True, CASRN=self.CAS)
         self.Hfus_method = self.Hfus_methods[0]
 
         # Fire Safety Limits
@@ -245,7 +289,7 @@ class Chemical(object): # pragma: no cover
         self.Tt = Tt(self.CAS, Method=self.Tt_source)
 
         # Enthalpy
-        self.Hfus = Hfus(T=self.T, P=self.P, MW=self.MW, Method=self.Hfus_method, CASRN=self.CAS)
+        self.Hfus = Hfus(MW=self.MW, Method=self.Hfus_method, CASRN=self.CAS)
         self.Hfusm = property_mass_to_molar(self.Hfus, self.MW) if self.Hfus else None
         
         # Chemistry
@@ -289,7 +333,7 @@ class Chemical(object): # pragma: no cover
         self.conductivity, self.conductivityT = conductivity(CASRN=self.CAS, Method=self.conductivity_source)
 
 
-    def set_T_sources(self):
+    def set_TP_sources(self):
         # Tempearture and Pressure Denepdence
         # Get and choose initial methods
         self.VaporPressure = VaporPressure(Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, omega=self.omega, CASRN=self.CAS)
@@ -323,7 +367,7 @@ class Chemical(object): # pragma: no cover
         self.HvapTbm = self.EnthalpyVaporization.T_dependent_property(self.Tb) if self.Tb else None
         self.HvapTb = property_molar_to_mass(self.HvapTbm, self.MW)
 
-        self.Hsub_methods = Hsub(T=self.T, P=self.P, MW=self.MW, AvailableMethods=True, CASRN=self.CAS)
+        self.Hsub_methods = Hsub(MW=self.MW, AvailableMethods=True, CASRN=self.CAS)
         self.Hsub_method = self.Hsub_methods[0]
 
         self.ViscosityLiquid = ViscosityLiquid(CASRN=self.CAS, MW=self.MW, Tm=self.Tm, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, omega=self.omega, Psat=self.VaporPressure.T_dependent_property, Vml=self.VolumeLiquid.T_dependent_property)
@@ -340,12 +384,16 @@ class Chemical(object): # pragma: no cover
 
         self.Permittivity = Permittivity(CASRN=self.CAS)
 
-        self.solubility_parameter_methods = solubility_parameter(T=self.T, Hvapm=self.HvapTbm, Vml=self.Vml_STP, AvailableMethods=True, CASRN=self.CAS)
+        self.solubility_parameter_methods = solubility_parameter(Hvapm=self.HvapTbm, Vml=self.Vml_STP, AvailableMethods=True, CASRN=self.CAS)
         self.solubility_parameter_method = self.solubility_parameter_methods[0]
 
-    def set_T(self, T=None):
-        if T:
-            self.T = T
+        self.phase_STP = identify_phase(T=298.15, P=101325., Tm=self.Tm, Tb=self.Tb, Tc=self.Tc, Psat=self.Psat_298)
+
+    def set_TP(self, T=None, P=None):
+#        if T:
+#            self.T = T
+#        if P:
+#            self.P = P
         self.Psat = self.VaporPressure.T_dependent_property(T=self.T)
 
         self.Vms = self.VolumeSolid.T_dependent_property(T=self.T)
@@ -435,7 +483,6 @@ class Chemical(object): # pragma: no cover
         return True
 
     def set_phase(self):
-        self.phase_STP = identify_phase(T=298.15, P=101325., Tm=self.Tm, Tb=self.Tb, Tc=self.Tc, Psat=self.Psat_298)
         self.phase = identify_phase(T=self.T, P=self.P, Tm=self.Tm, Tb=self.Tb, Tc=self.Tc, Psat=self.Psat)
         self.k = phase_set_property(phase=self.phase, s=None, l=self.kl, g=self.kg) # ks not implemented
         self.rho = phase_set_property(phase=self.phase, s=self.rhos, l=self.rhol, g=self.rhog)
@@ -452,6 +499,118 @@ class Chemical(object): # pragma: no cover
         # TODO
         self.H = 0
         self.Hm = 0
+
+
+    def set_ref(self, T_ref=298.15, P_ref=101325, phase_ref='calc', H_ref=0, S_ref=0):
+        # Muse run after set_TP_sources, set_phase due to HeatCapacity*, phase_STP
+        self.T_ref = getattr(self, T_ref) if isinstance(T_ref, str) else T_ref
+        self.P_ref = getattr(self, P_ref) if isinstance(P_ref, str) else P_ref
+        self.H_ref = getattr(self, H_ref) if isinstance(H_ref, str) else H_ref
+        self.S_ref = getattr(self, S_ref) if isinstance(S_ref, str) else S_ref
+        self.phase_ref = self.phase_STP if phase_ref == 'calc' else phase_ref
+        
+        integrators = {'s': self.HeatCapacitySolid.T_dependent_property_integral,
+           'l': self.HeatCapacityLiquid.T_dependent_property_integral,
+           'g': self.HeatCapacityGas.T_dependent_property_integral}
+
+        integrators_T = {'s': self.HeatCapacitySolid.T_dependent_property_integral_over_T,
+           'l': self.HeatCapacityLiquid.T_dependent_property_integral_over_T,
+           'g': self.HeatCapacityGas.T_dependent_property_integral_over_T}
+        
+        # Integrals stored to avoid recalculation, all from T_low to T_high
+        if self.phase_ref != 'l':
+            self.H_int_l_Tm_to_Tb = integrators['l'](self.Tm, self.Tb)
+        if self.phase_ref == 's':
+            self.H_int_T_ref_s_to_Tm = integrators['s'](self.T_ref, self.Tm)
+        if self.phase_ref == 'g':
+            self.H_int_Tb_to_T_ref_g = integrators['g'](self.Tb, self.T_ref)
+        if self.phase_ref == 'l':
+            self.H_int_l_T_ref_l_to_Tb = integrators['l'](self.T_ref, self.Tb)
+            self.H_int_l_Tm_to_T_ref_l = integrators['l'](self.Tm, self.T_ref)
+
+        if self.phase_ref != 'l':
+            self.S_int_l_Tm_to_Tb = integrators_T['l'](self.Tm, self.Tb)
+        if self.phase_ref == 's':
+            self.S_int_T_ref_s_to_Tm = integrators_T['s'](self.T_ref, self.Tm)
+        if self.phase_ref == 'g':
+            self.S_int_Tb_to_T_ref_g = integrators_T['g'](self.Tb, self.T_ref)
+        if self.phase_ref == 'l':
+            self.S_int_l_T_ref_l_to_Tb = integrators_T['l'](self.T_ref, self.Tb)
+            self.S_int_l_Tm_to_T_ref_l = integrators_T['l'](self.Tm, self.T_ref)
+
+
+    def calc_H(self, T, P):
+
+        integrators = {'s': self.HeatCapacitySolid.T_dependent_property_integral,
+           'l': self.HeatCapacityLiquid.T_dependent_property_integral,
+           'g': self.HeatCapacityGas.T_dependent_property_integral}
+        try:
+            if self.phase == self.phase_ref:
+                H = self.H_ref + integrators[self.phase](self.T_ref, T)
+            elif self.phase_ref == 's' and self.phase == 'l':
+                H = self.H_ref + self.H_int_T_ref_s_to_Tm + self.Hfus + integrators['l'](self.Tm, T)
+            elif self.phase_ref == 'l' and self.phase == 's':
+                H = self.H_ref - self.H_int_l_Tm_to_T_ref_l - self.Hfus + integrators['s'](self.Tm, T)
+            elif self.phase_ref == 'l' and self.phase == 'g':
+                H = self.H_ref + self.H_int_l_T_ref_l_to_Tb + self.Hvap_Tb + integrators['g'](self.Tb, T)
+            elif self.phase_ref == 'g' and self.phase == 'l':
+                H = self.H_ref - self.H_int_Tb_to_T_ref_g - self.Hvap + integrators['l'](self.Tb, T)
+            elif self.phase_ref == 's' and self.phase == 'g':
+                H = self.H_ref + self.H_int_T_ref_s_to_Tm + self.Hfus + self.H_int_l_Tm_to_Tb + self.Hvap_Tb + integrators['g'](self.Tb, T)
+            elif self.phase_ref == 'g' and self.phase == 's':
+                H = self.H_ref - self.H_int_Tb_to_T_ref_g - self.Hvap_Tb - self.H_int_l_Tm_to_Tb - self.Hfus + integrators['s'](self.Tm, T)
+            else:
+                raise Exception('Unknown error')
+        except:
+            return None
+        return H
+
+
+    def calc_S(self, T, P):
+
+        integrators_T = {'s': self.HeatCapacitySolid.T_dependent_property_integral_over_T,
+           'l': self.HeatCapacityLiquid.T_dependent_property_integral_over_T,
+           'g': self.HeatCapacityGas.T_dependent_property_integral_over_T}
+
+        try:
+            if self.phase == self.phase_ref:
+                S = self.S_ref + integrators_T[self.phase](self.T_ref, T)
+            elif self.phase_ref == 's' and self.phase == 'l':
+                S = self.S_ref + self.H_int_T_ref_s_to_Tm + self.Hfus/self.Tm + integrators_T['l'](self.Tm, T)
+            elif self.phase_ref == 'l' and self.phase == 's':
+                S = self.S_ref - self.H_int_l_Tm_to_T_ref_l - self.Hfus/self.Tm + integrators_T['s'](self.Tm, T)
+            elif self.phase_ref == 'l' and self.phase == 'g':
+                S = self.S_ref + self.H_int_l_T_ref_l_to_Tb + self.Hvap_Tb/self.Tb + integrators_T['g'](self.Tb, T)
+            elif self.phase_ref == 'g' and self.phase == 'l':
+                S = self.S_ref - self.H_int_Tb_to_T_ref_g - self.Hvap/self.Tb + integrators_T['l'](self.Tb, T)
+            elif self.phase_ref == 's' and self.phase == 'g':
+                S = self.S_ref + self.H_int_T_ref_s_to_Tm + self.Hfus/self.Tm + self.H_int_l_Tm_to_Tb + self.Hvap_Tb/self.Tb + integrators_T['g'](self.Tb, T)
+            elif self.phase_ref == 'g' and self.phase == 's':
+                S = self.S_ref - self.H_int_Tb_to_T_ref_g - self.Hvap_Tb/self.Tb - self.H_int_l_Tm_to_Tb - self.Hfus/self.Tm + integrators_T['s'](self.Tm, T)
+            else:
+                raise Exception('Unknown error')
+        except:
+            return None
+        return S
+
+    def set_thermo(self):
+        self.Hm = self.calc_H(self.T, self.P)
+        self.H = property_molar_to_mass(self.Hm, self.MW) if self.Hm else None
+        
+        self.Sm = self.calc_S(self.T, self.P)
+        self.S = property_molar_to_mass(self.Sm, self.MW) if self.Sm else None
+        
+        self.G = self.H - self.T*self.S if (self.H and self.S) else None 
+        self.Gm = self.Hm - self.T*self.Sm if (self.Hm and self.Sm) else None 
+        
+        self.Um = self.Hm - self.P*self.Vm if (self.Vm and self.Hm) else None
+        self.U = property_molar_to_mass(self.Um, self.MW) if self.Um else None
+        
+        self.Am = self.Um - self.T*self.Sm if (self.Um and self.Sm) else None
+        self.A = self.U - self.T*self.S if (self.U and self.S) else None
+
+    def __repr__(self):
+        return '<Chemical [%s], T=%.2f K, P=%.0f Pa>' %(self.name, self.T, self.P)
 
 
     def Tsat(self, P):
@@ -525,7 +684,7 @@ class Mixture(object):  # pragma: no cover
 
         # Required for densities for volume fractions before setting fractions
         self.set_chemical_constants()
-        self.set_chemical_T()
+        self.set_chemical_TP()
         if zs:
             self.zs = zs if sum(zs) == 1 else [zi/sum(zs) for zi in zs]
             self.ws = zs_to_ws(zs, self.MWs)
@@ -554,8 +713,8 @@ class Mixture(object):  # pragma: no cover
         self.set_constant_sources()
         self.set_constants()
 
-        self.set_T_sources()
-        self.set_T()
+        self.set_TP_sources()
+        self.set_TP()
         self.set_phase()
 
     def set_none(self):
@@ -625,12 +784,12 @@ class Mixture(object):  # pragma: no cover
         self.legal_statuses = [i.legal_status for i in self.Chemicals]
         self.economic_statuses = [i.economic_status for i in self.Chemicals]
 
-    def set_chemical_T(self):
+    def set_chemical_TP(self):
         # Tempearture and Pressure Denepdence
         # Get and choose initial methods
         # TODO: Solids?
         for i in self.Chemicals:
-            i.set_T(self.T)
+            i.set_TP(self.T, self.P)
         self.Psats = [i.Psat for i in self.Chemicals]
 
         self.Vmls = [i.Vml for i in self.Chemicals]
@@ -716,7 +875,7 @@ class Mixture(object):  # pragma: no cover
         self.UFL = UFL_mixture(ys=self.zs, UFLs=self.UFLs, Method=self.UFL_method)
 
 
-    def set_T_sources(self):
+    def set_TP_sources(self):
         # Tempearture and Pressure Denepdence
         # No vapor pressure (bubble-dew points)
 
@@ -754,10 +913,12 @@ class Mixture(object):  # pragma: no cover
         self.sigma_method = self.sigma_methods[0]
 
 
-    def set_T(self, T=None):
+    def set_TP(self, T=None, P=None):
         if T:
             self.T = T
-        self.set_chemical_T()
+        if P:
+            self.P = P
+        self.set_chemical_TP()
 
         self.Vml = volume_liquid_mixture(xs=self.zs, ws=self.ws, Vms=self.Vmls, T=self.T, MWs=self.MWs, MW=self.MW, Tcs=self.Tcs, Pcs=self.Pcs, Vcs=self.Vcs, Zcs=self.Zcs, omegas=self.omegas, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, CASRNs=self.CASs, Molar=True, Method=self.Vl_method)
         self.rhol = Vm_to_rho(self.Vml, self.MW) if self.Vml else None
@@ -772,17 +933,18 @@ class Mixture(object):  # pragma: no cover
 
 
         # Coefficient of isobaric_expansion_coefficient
-        for i in self.Chemicals:
-            i.set_T(self.T+0.01)
-        _Vmls_2 = [i.Vml for i in self.Chemicals]
-        _Vmgs_2 = [i.Vmg for i in self.Chemicals]
-
-        _Vml_2 = volume_liquid_mixture(xs=self.zs, ws=self.ws, Vms=_Vmls_2, T=self.T+0.01, MWs=self.MWs, MW=self.MW, Tcs=self.Tcs, Pcs=self.Pcs, Vcs=self.Vcs, Zcs=self.Zcs,  Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, omegas=self.omegas,  CASRNs=self.CASs, Molar=True, Method=self.Vl_method)
-        _Vmg_2 = volume_gas_mixture(ys=self.zs, Vms=_Vmgs_2, T=self.T+0.01, P=self.P, Tc=self.Tc, Pc=self.Pc, omega=self.omega, MW=self.MW, CASRNs=self.CASs, Method=self.Vg_method)
-        self.isobaric_expansion_l = isobaric_expansion(V1=self.Vml, dT=0.01, V2=_Vml_2)
-        self.isobaric_expansion_g = isobaric_expansion(V1=self.Vmg, dT=0.01, V2=_Vmg_2)
-        for i in self.Chemicals:
-            i.set_T(self.T)
+        # Disabled for performance reasons
+#        for i in self.Chemicals:
+#            i.set_TP(self.T+0.01, self.P)
+#        _Vmls_2 = [i.Vml for i in self.Chemicals]
+#        _Vmgs_2 = [i.Vmg for i in self.Chemicals]
+#
+#        _Vml_2 = volume_liquid_mixture(xs=self.zs, ws=self.ws, Vms=_Vmls_2, T=self.T+0.01, MWs=self.MWs, MW=self.MW, Tcs=self.Tcs, Pcs=self.Pcs, Vcs=self.Vcs, Zcs=self.Zcs,  Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, omegas=self.omegas,  CASRNs=self.CASs, Molar=True, Method=self.Vl_method)
+#        _Vmg_2 = volume_gas_mixture(ys=self.zs, Vms=_Vmgs_2, T=self.T+0.01, P=self.P, Tc=self.Tc, Pc=self.Pc, omega=self.omega, MW=self.MW, CASRNs=self.CASs, Method=self.Vg_method)
+#        self.isobaric_expansion_l = isobaric_expansion(V1=self.Vml, dT=0.01, V2=_Vml_2)
+#        self.isobaric_expansion_g = isobaric_expansion(V1=self.Vmg, dT=0.01, V2=_Vmg_2)
+#        for i in self.Chemicals:
+#            i.set_TP(self.T, self.P)
 
 
         self.Cpl = Cp_liq_mixture(zs=self.zs, ws=self.ws, Cps=self.Cpls, T=self.T, CASRNs=self.CASs, Method=self.Cpl_method)
@@ -845,6 +1007,11 @@ class Mixture(object):  # pragma: no cover
         if all(self.Hms):
             self.Hm = mixing_simple(self.Hms, self.ws)
 
+    def __repr__(self):
+        return '<Mixture, components=%s, mole fractions=%s, T=%.2f K, P=%.0f \
+Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
+
+
     def Reynolds(self, V=None, D=None):
         return Reynolds(V=V, D=D, rho=self.rho, mu=self.mu)
 
@@ -887,13 +1054,3 @@ class Stream(Mixture): # pragma: no cover
             raise Exception('phase algorithm failed')
 
 
-#fluid_51 = Stream(IDs='natural gas', m=2E5/3600, T=273.15+93)
-#print fluid_51.H
-#
-#fluid_51 = Stream(IDs='natural gas', m=2E5/3600, T=273.15+65)
-#print fluid_51.H
-#
-#fluid_51.set_T(273.15+93)
-#print fluid_51.H
-#
-#print Chemical('Ethylene glycol', T-273.15+40)
