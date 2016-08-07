@@ -141,15 +141,15 @@ Ts_90_from_48 = Ts_48 + diffs_48
 Ts_90_from_76 = Ts_76 + diffs_76
 Ts_90_from_27 = Ts_27 + diffs_27
 
-T68_to_T90 = UnivariateSpline(Ts_68, Ts_90_from_68, s=0, ext='raise')
-T48_to_T90 = UnivariateSpline(Ts_48, Ts_90_from_48, s=0, ext='raise')
-T76_to_T90 = UnivariateSpline(Ts_76, Ts_90_from_76, s=0, ext='raise')
-T27_to_T90 = UnivariateSpline(Ts_27, Ts_90_from_27, s=0, ext='raise')
+T68_to_T90 = UnivariateSpline(Ts_68, Ts_90_from_68, s=0)
+T48_to_T90 = UnivariateSpline(Ts_48, Ts_90_from_48, s=0)
+T76_to_T90 = UnivariateSpline(Ts_76, Ts_90_from_76, s=0)
+T27_to_T90 = UnivariateSpline(Ts_27, Ts_90_from_27, s=0)
 
-T90_to_T68 = UnivariateSpline(Ts_90_from_68, Ts_68, s=0, ext='raise')
-T90_to_T48 = UnivariateSpline(Ts_90_from_48, Ts_48, s=0, ext='raise')
-T90_to_T76 = UnivariateSpline(Ts_90_from_76, Ts_76, s=0, ext='raise')
-T90_to_T27 = UnivariateSpline(Ts_90_from_27, Ts_27, s=0, ext='raise')
+T90_to_T68 = UnivariateSpline(Ts_90_from_68, Ts_68, s=0)
+T90_to_T48 = UnivariateSpline(Ts_90_from_48, Ts_48, s=0)
+T90_to_T76 = UnivariateSpline(Ts_90_from_76, Ts_76, s=0)
+T90_to_T27 = UnivariateSpline(Ts_90_from_27, Ts_27, s=0)
 
 
 def ITS90_68_difference(T):
@@ -340,16 +340,24 @@ def T_converter(T, current, desired):
        Temperature Scale of 1990 (Technical Report)." Pure and Applied
        Chemistry 64, no. 10 (1992): 1545-1562. doi:10.1351/pac199264101545.
     '''
+    def range_check(T, Tmin, Tmax):
+        if T < Tmin or T > Tmax:
+            raise Exception('Temperature conversion is outside one or both scales')
+
     try:
         if current == 'ITS-90':
             pass
         elif current == 'ITS-68':
+            range_check(T, 13.999, 4300.0001)
             T = T68_to_T90(T)
         elif current == 'ITS-76':
+            range_check(T, 4.9999, 27.0001)
             T = T76_to_T90(T)
         elif current == 'ITS-48':
+            range_check(T, 93.149999, 4273.15001)
             T = T48_to_T90(T)
         elif current == 'ITS-27':
+            range_check(T, 903.15, 4273.15)
             T = T27_to_T90(T)
         else:
             raise Exception('Current scale not supported')
@@ -358,12 +366,16 @@ def T_converter(T, current, desired):
         if desired == 'ITS-90':
             pass
         elif desired == 'ITS-68':
+            range_check(T, 13.999, 4300.0001)
             T = T90_to_T68(T)
         elif desired == 'ITS-76':
+            range_check(T, 4.9999, 27.0001)
             T = T90_to_T76(T)
         elif desired == 'ITS-48':
+            range_check(T, 93.149999, 4273.15001)
             T = T90_to_T48(T)
         elif desired == 'ITS-27':
+            range_check(T, 903.15, 4273.15)
             T = T90_to_T27(T)
         else:
             raise Exception('Desired scale not supported')
