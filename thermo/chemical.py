@@ -114,39 +114,18 @@ class Chemical(object): # pragma: no cover
         self.set_constants()
         self.set_TP_sources()
         self.set_ref()
+        
+        self.calculate(T, P)
 
-        self._P = P
-        self._T = T
+    def calculate(self, T=None, P=None):
+        if T:
+            self.T = T
+        if P:
+            self.P = P
 
-        self.set_TP(self._T, self._P)
+        self.set_TP()
         self.set_phase()
         self.set_thermo()
-
-    @property
-    def T(self):
-        return self._T
-
-    @property
-    def P(self):
-        return self._P
-
-    @T.setter
-    def T(self, T):
-        self._T = T
-        self.set_TP(self._T, self._P)
-        self.set_phase()
-        self.set_thermo()
-
-    @P.setter
-    def P(self, P):
-        self._P = P
-        self.set_TP(self._T, self._P)
-        self.set_phase()
-        self.set_thermo()
-    
-    def TP(T, P):
-        self._T = T
-        self._P = P
 
 
     def set_structure(self):
@@ -389,11 +368,7 @@ class Chemical(object): # pragma: no cover
 
         self.phase_STP = identify_phase(T=298.15, P=101325., Tm=self.Tm, Tb=self.Tb, Tc=self.Tc, Psat=self.Psat_298)
 
-    def set_TP(self, T=None, P=None):
-#        if T:
-#            self.T = T
-#        if P:
-#            self.P = P
+    def set_TP(self):
         self.Psat = self.VaporPressure.T_dependent_property(T=self.T)
 
         self.Vms = self.VolumeSolid.T_dependent_property(T=self.T)
@@ -595,19 +570,19 @@ class Chemical(object): # pragma: no cover
 
     def set_thermo(self):
         self.Hm = self.calc_H(self.T, self.P)
-        self.H = property_molar_to_mass(self.Hm, self.MW) if self.Hm else None
+        self.H = property_molar_to_mass(self.Hm, self.MW) if (self.Hm is not None) else None
         
         self.Sm = self.calc_S(self.T, self.P)
-        self.S = property_molar_to_mass(self.Sm, self.MW) if self.Sm else None
+        self.S = property_molar_to_mass(self.Sm, self.MW) if (self.Sm is not None) else None
         
-        self.G = self.H - self.T*self.S if (self.H and self.S) else None 
-        self.Gm = self.Hm - self.T*self.Sm if (self.Hm and self.Sm) else None 
+        self.G = self.H - self.T*self.S if (self.H is not None and self.S is not None) else None 
+        self.Gm = self.Hm - self.T*self.Sm if (self.Hm is not None and self.Sm is not None) else None 
         
-        self.Um = self.Hm - self.P*self.Vm if (self.Vm and self.Hm) else None
-        self.U = property_molar_to_mass(self.Um, self.MW) if self.Um else None
+        self.Um = self.Hm - self.P*self.Vm if (self.Vm and self.Hm is not None) else None
+        self.U = property_molar_to_mass(self.Um, self.MW) if (self.Um is not None) else None
         
-        self.Am = self.Um - self.T*self.Sm if (self.Um and self.Sm) else None
-        self.A = self.U - self.T*self.S if (self.U and self.S) else None
+        self.Am = self.Um - self.T*self.Sm if (self.Um is not None and self.Sm is not None) else None
+        self.A = self.U - self.T*self.S if (self.U is not None and self.S is not None) else None
 
     def __repr__(self):
         return '<Chemical [%s], T=%.2f K, P=%.0f Pa>' %(self.name, self.T, self.P)
@@ -789,7 +764,7 @@ class Mixture(object):  # pragma: no cover
         # Get and choose initial methods
         # TODO: Solids?
         for i in self.Chemicals:
-            i.set_TP(self.T, self.P)
+            i.calculate(self.T, self.P)
         self.Psats = [i.Psat for i in self.Chemicals]
 
         self.Vmls = [i.Vml for i in self.Chemicals]
@@ -932,19 +907,18 @@ class Mixture(object):  # pragma: no cover
         self.Bvirial = B_from_Z(self.Zg, self.T, self.P) if self.Vmg else None
 
 
-        # Coefficient of isobaric_expansion_coefficient
-        # Disabled for performance reasons
-#        for i in self.Chemicals:
-#            i.set_TP(self.T+0.01, self.P)
-#        _Vmls_2 = [i.Vml for i in self.Chemicals]
-#        _Vmgs_2 = [i.Vmg for i in self.Chemicals]
-#
-#        _Vml_2 = volume_liquid_mixture(xs=self.zs, ws=self.ws, Vms=_Vmls_2, T=self.T+0.01, MWs=self.MWs, MW=self.MW, Tcs=self.Tcs, Pcs=self.Pcs, Vcs=self.Vcs, Zcs=self.Zcs,  Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, omegas=self.omegas,  CASRNs=self.CASs, Molar=True, Method=self.Vl_method)
-#        _Vmg_2 = volume_gas_mixture(ys=self.zs, Vms=_Vmgs_2, T=self.T+0.01, P=self.P, Tc=self.Tc, Pc=self.Pc, omega=self.omega, MW=self.MW, CASRNs=self.CASs, Method=self.Vg_method)
-#        self.isobaric_expansion_l = isobaric_expansion(V1=self.Vml, dT=0.01, V2=_Vml_2)
-#        self.isobaric_expansion_g = isobaric_expansion(V1=self.Vmg, dT=0.01, V2=_Vmg_2)
-#        for i in self.Chemicals:
-#            i.set_TP(self.T, self.P)
+#         Coefficient of isobaric_expansion_coefficient
+        for i in self.Chemicals:
+            i.calculate(self.T+0.01, self.P)
+        _Vmls_2 = [i.Vml for i in self.Chemicals]
+        _Vmgs_2 = [i.Vmg for i in self.Chemicals]
+
+        _Vml_2 = volume_liquid_mixture(xs=self.zs, ws=self.ws, Vms=_Vmls_2, T=self.T+0.01, MWs=self.MWs, MW=self.MW, Tcs=self.Tcs, Pcs=self.Pcs, Vcs=self.Vcs, Zcs=self.Zcs,  Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, omegas=self.omegas,  CASRNs=self.CASs, Molar=True, Method=self.Vl_method)
+        _Vmg_2 = volume_gas_mixture(ys=self.zs, Vms=_Vmgs_2, T=self.T+0.01, P=self.P, Tc=self.Tc, Pc=self.Pc, omega=self.omega, MW=self.MW, CASRNs=self.CASs, Method=self.Vg_method)
+        self.isobaric_expansion_l = isobaric_expansion(V1=self.Vml, dT=0.01, V2=_Vml_2)
+        self.isobaric_expansion_g = isobaric_expansion(V1=self.Vmg, dT=0.01, V2=_Vmg_2)
+        for i in self.Chemicals:
+            i.calculate(self.T, self.P)
 
 
         self.Cpl = Cp_liq_mixture(zs=self.zs, ws=self.ws, Cps=self.Cpls, T=self.T, CASRNs=self.CASs, Method=self.Cpl_method)
@@ -1002,10 +976,10 @@ class Mixture(object):  # pragma: no cover
         self.isobaric_expansion = phase_set_property(phase=self.phase, l=self.isobaric_expansion_l, g=self.isobaric_expansion_g)
         self.JT = phase_set_property(phase=self.phase, l=self.JTl, g=self.JTg)
 
-        if all(self.Hs):
+        if not None in self.Hs:
             self.H = mixing_simple(self.Hs, self.ws)
-        if all(self.Hms):
-            self.Hm = mixing_simple(self.Hms, self.ws)
+            self.Hm = property_mass_to_molar(self.H, self.MW)
+            
 
     def __repr__(self):
         return '<Mixture, components=%s, mole fractions=%s, T=%.2f K, P=%.0f \
