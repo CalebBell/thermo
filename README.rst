@@ -23,6 +23,9 @@ thermo
 .. image:: https://badges.gitter.im/CalebBell/thermo.svg
    :alt: Join the chat at https://gitter.im/CalebBell/thermo
    :target: https://gitter.im/CalebBell/thermo
+.. image:: https://zenodo.org/badge/doi/10.5281/zenodo.59771.svg
+   :alt: Zendo
+   :target: https://zenodo.org/record/59771?ln=en
 
 .. contents::
 
@@ -98,16 +101,14 @@ by appending 'l' or 'g' or 's' to the property.
 Creating a chemical object involves identifying the appropriate chemical by name
 through a database, and retrieving all constant and temperature and pressure dependent
 coefficients from Pandas DataFrames - a ~1 ms process. To obtain properties at different
-conditions quickly, the method set_T has been implemented. The pressure can also be 
-changed simply by setting it, but set_T must be called after it.
+conditions quickly, the method calculate has been implemented. 
     
 .. code-block:: python
 
-    >>> tol.set_T(310)
+    >>> tol.calculate(T=310, P=101325)
     >>> tol.rho, tol.Cp, tol.k, tol.mu
     (851.1582219886011, 1743.280497511088, 0.12705495902514785, 0.00048161578053599225)
-    >>> tol.P = 2E6
-    >>> tol.set_T(310)
+    >>> tol.calculate(310, 2E6)
     >>> tol.rho, tol.Cp, tol.k, tol.mu
     (852.7643604407997, 1743.280497511088, 0.12773606382684732, 0.0004894942399156052)
 
@@ -142,19 +143,11 @@ mixtures.
 Roadmap
 -------
 
-This library has been in development for three years, and has been open-sourced 
-earlier than originally intended due to the rapidly developing nature of open
-source. It is hoped that bugs can be identified by users, and the efforts of 
-other libraries can be merged in, if those developers are interested. Also
-the conveniences of the open-source infrastructure (Git, continuous integration,
-coverage testing, easy installation through pypi) can help development
-substantially.
-
 This library includes a huge database of (70000+) chemicals taken from the PubChem
 database (selected by the availability of CAS numbers, which all data included here 
 is indexed by). Regretably, only ~20000 of those have even one chemical property
 apart from metadata (molecular weight, etc.). Some niche aspects (ions, ionic 
-liquids) have been poorly served by this database, and so extra databases manually
+liquids) have been poorly served by the PubChem, and so extra databases manually
 curated for these are in development. 
 
 The Chemical and Mixture classes may be subject to considerably change in the

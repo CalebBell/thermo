@@ -93,3 +93,5 @@ __all__ = ['activity', 'chemical', 'combustion', 'critical',
  'refractivity', 'safety', 'solubility', 'interface',
  'thermal_conductivity', 'triple', 'utils',
  'vapor_pressure', 'virial', 'viscosity', 'volume']
+
+__version__ = '0.1.14'
