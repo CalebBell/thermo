@@ -222,6 +222,67 @@ def TRCCp(T, a0, a1, a2, a3, a4, a5, a6, a7):
     return Cp
 
 
+def TRCCp_integral(T, a0, a1, a2, a3, a4, a5, a6, a7, I=0):
+    r'''Integrates ideal gas heat capacity using the model developed in [1]_.
+    Best used as a delta only.
+
+    The difference in enthalpy with respect to 0 K is given by:
+
+    .. math::
+        \frac{H(T) - H^{ref}}{RT} = a_0 + a_1x(a_2)/(a_2T) + I/T + h(T)/T
+        
+        h(T) = (a_5 + a_7)\left[(2a_3 + 8a_4)\ln(1-y)+ \left\{a_3\left(1 + 
+        \frac{1}{1-y}\right) + a_4\left(7 + \frac{1}{1-y}\right)\right\}y
+        + a_4\left\{3y^2 + (5/3)y^3 + y^4 + (3/5)y^5 + (1/3)y^6\right\} 
+        + (1/7)\left\{a_4 - \frac{a_5}{(a_6+a_7)^2}\right\}y^7\right]
+        
+        h(T) = 0 \text{ for } T \le a_7
+
+        y = \frac{T-a_7}{T+a_6} \text{ for } T > a_7 \text{ otherwise } 0
+
+    Parameters
+    ----------
+    T : float
+        Temperature [K]
+    a1-a7 : float
+        Coefficients
+    I : float, optional
+        Integral offset
+
+    Returns
+    -------
+    H-H(0) : float
+        Difference in enthalpy from 0 K , [J/mol]
+
+    Notes
+    -----
+    Analytical integral as provided in [1]_ and verified with numerical
+    integration. 
+
+    Examples
+    --------
+    >>> TRCCp_integral(298.15, 4.0, 7.65E5, 720., 3.565, -0.052, -1.55E6, 52., 
+    ... 201., 1.2)
+    10802.532600592816
+    
+    References
+    ----------
+    .. [1] Kabo, G. J., and G. N. Roganov. Thermodynamics of Organic Compounds
+       in the Gas State, Volume II: V. 2. College Station, Tex: CRC Press, 1994.
+    '''
+    y = (T - a7)/(T + a6)
+    if T <= a7:
+        h = 0
+    else:
+        first = a6 + a7
+        second = (2.*a3 + 8.*a4)*log(1.-y)
+        third = (a3*(1 + 1/(1.-y)) + a4*(7 + 1/(1.-y)))*y
+        fourth = a4*(3*y**2 + 5/3.*y**3 + y**4 + 3/5.*y**5 + 1/3.*y**6)
+        fifth = 1/7.*(a4 - a5/((a6+a7)**2))*y**7
+        h = first*(second + third + fourth + fifth)
+    return (a0 + a1*exp(-a2/T)/(a2*T) + I/T + h/T)*R*T
+
+
 TRCIG = 'TRC Thermodynamics of Organic Compounds in the Gas State (1994)'
 POLING = 'Poling et al. (2001)'
 POLING_CONST = 'Poling et al. (2001) constant'
@@ -1269,6 +1330,118 @@ def Lastovka_solid(T, similarity_variable):
     + (D1*similarity_variable + D2*similarity_variable**2)*T**2)
     Cp = Cp*1000 # J/g/K to J/kg/K
     return Cp
+
+
+def Lastovka_solid_integral(T, similarity_variable):
+    r'''Integrates solid constant-pressure heat capacitiy with the similarity
+    variable concept and method as shown in [1]_.
+    
+    Uses a explicit form as derived with Sympy.
+
+    Parameters
+    ----------
+    T : float
+        Temperature of solid [K]
+    similarity_variable : float
+        similarity variable as defined in [1]_, [mol/g]
+
+    Returns
+    -------
+    H : float
+        Difference in enthalpy from 0 K, [J/kg]
+
+    Notes
+    -----
+    Original model is in terms of J/g/K. Note that the model is for predicting
+    mass heat capacity, not molar heat capacity like most other methods!
+
+    See Also
+    --------
+    Lastovka_solid
+
+    Examples
+    --------
+    >>> Lastovka_solid_integral(300, 0.2139)
+    283246.1242170376
+
+    References
+    ----------
+    .. [1] Laštovka, Václav, Michal Fulem, Mildred Becerra, and John M. Shaw.
+       "A Similarity Variable for Estimating the Heat Capacity of Solid Organic
+       Compounds: Part II. Application: Heat Capacity Calculation for
+       Ill-Defined Organic Solids." Fluid Phase Equilibria 268, no. 1-2
+       (June 25, 2008): 134-41. doi:10.1016/j.fluid.2008.03.018.
+    '''
+    A1 = 0.013183
+    A2 = 0.249381
+    theta = 151.8675
+    C1 = 0.026526
+    C2 = -0.024942
+    D1 = 0.000025
+    D2 = -0.000123
+    H = (T**3*(1000*D1*similarity_variable/3. 
+        + 1000*D2*similarity_variable**2/3.) + T**2*(500*C1*similarity_variable 
+        + 500*C2*similarity_variable**2)
+        + (3000*A1*R*similarity_variable*theta
+        + 3000*A2*R*similarity_variable**2*theta)/(exp(theta/T) - 1))
+    return H
+
+
+def Lastovka_solid_integral_over_T(T, similarity_variable):
+    r'''Integrates over T solid constant-pressure heat capacitiy with the 
+    similarity variable concept and method as shown in [1]_.
+    
+    Uses a explicit form as derived with Sympy.
+
+    Parameters
+    ----------
+    T : float
+        Temperature of solid [K]
+    similarity_variable : float
+        similarity variable as defined in [1]_, [mol/g]
+
+    Returns
+    -------
+    S : float
+        Difference in entropy from 0 K, [J/kg/K]
+
+    Notes
+    -----
+    Original model is in terms of J/g/K. Note that the model is for predicting
+    mass heat capacity, not molar heat capacity like most other methods!
+
+    See Also
+    --------
+    Lastovka_solid
+
+    Examples
+    --------
+    >>> Lastovka_solid_integral_over_T(300, 0.2139)
+    1947.553552666818
+
+    References
+    ----------
+    .. [1] Laštovka, Václav, Michal Fulem, Mildred Becerra, and John M. Shaw.
+       "A Similarity Variable for Estimating the Heat Capacity of Solid Organic
+       Compounds: Part II. Application: Heat Capacity Calculation for
+       Ill-Defined Organic Solids." Fluid Phase Equilibria 268, no. 1-2
+       (June 25, 2008): 134-41. doi:10.1016/j.fluid.2008.03.018.
+    '''
+    A1 = 0.013183
+    A2 = 0.249381
+    theta = 151.8675
+    C1 = 0.026526
+    C2 = -0.024942
+    D1 = 0.000025
+    D2 = -0.000123
+    S = (-3000*R*similarity_variable*(A1 + A2*similarity_variable)*log(exp(theta/T) - 1) 
+    + T**2*(500*D1*similarity_variable + 500*D2*similarity_variable**2) 
+    + T*(1000*C1*similarity_variable + 1000*C2*similarity_variable**2) 
+    + (3000*A1*R*similarity_variable*theta 
+    + 3000*A2*R*similarity_variable**2*theta)/(T*exp(theta/T) - T) 
+    + (3000*A1*R*similarity_variable*theta 
+    + 3000*A2*R*similarity_variable**2*theta)/T)
+    return S
 
 
 LASTOVKA_S = 'Lastovka, Fulem, Becerra and Shaw (2008)'

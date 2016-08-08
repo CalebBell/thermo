@@ -43,6 +43,12 @@ def test_solid_models():
     # graph. 1684 was the best the pixels could give.
     Cp = Lastovka_solid(300, 0.2139)
     assert_allclose(Cp, 1682.063629222013)
+    
+    dH = Lastovka_solid_integral(300, 0.2139)
+    assert_allclose(dH, 283246.1242170376)
+    
+    dS = Lastovka_solid_integral_over_T(300, 0.2139)
+    assert_allclose(dS, 1947.553552666818)
 
     Cp = Dadgostar_Shaw(355.6, 0.139)
     assert_allclose(Cp, 1802.5291501191516)
@@ -106,6 +112,13 @@ def test_TRC_gas():
     assert_allclose(Cps, [35.584319834110346, 42.06525682312236])
 
 
+def test_TRCCp_integral():
+    dH = TRCCp_integral(298.15, 4.0, 7.65E5, 720., 3.565, -0.052, -1.55E6, 52., 201., 1.2)
+    assert_allclose(dH, 10802.532600592816)
+    dH = TRCCp_integral(150, 4.0, 7.65E5, 720., 3.565, -0.052, -1.55E6, 52., 201., 1.2)
+    assert_allclose(dH, 5071.355751575949)
+    
+    
 @pytest.mark.meta_T_dept
 def test_HeatCapacityGas():
     EtOH = HeatCapacityGas(CASRN='64-17-5', similarity_variable=0.1953615, MW=46.06844)
