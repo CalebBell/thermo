@@ -348,3 +348,36 @@ def test_TDependentProperty():
     # Test naming and retrieving
     with pytest.raises(Exception):
         EtOH.set_tabular_data(Ts=Ts, properties=props)
+
+
+
+
+
+def test_Z_from_virial_density_form():
+    Z_calc = Z_from_virial_density_form(300, 122057.233762653, 1E-4, 1E-5, 1E-6, 1E-7)
+    assert_allclose(Z_calc, 1.2843496002100001)
+    
+    Z_calc = Z_from_virial_density_form(300, 102031.881198762, 1e-4, 1e-5, 1e-6)
+    assert_allclose(Z_calc, 1.0736324409999995)
+
+    Z_calc = Z_from_virial_density_form(300, 96775.8831504971, 1e-4, 1e-5)
+    assert_allclose(Z_calc, 1.0183261000000003)
+    
+    Z_calc = Z_from_virial_density_form(300, 95396.3561037084, 1e-4)
+    assert_allclose(Z_calc,  1.0038100000000001)
+    
+    assert_allclose(1, Z_from_virial_density_form(300, 95396.3561037084))
+    
+    '''B-only solution, derived as follows:
+    
+    >>> B, C, D, E = symbols('B, C, D, E')
+    >>> P, V, Z, R, T = symbols('P, V, Z, R, T', positive=True, real=True, nonzero=True)
+    >>> rho = 1/V
+    >>> to_slv = Eq(P*V/R/T, 1 + B*rho)
+    >>> slns = solve(to_slv, V)
+    >>> simplify(slns[1]*P/R/T)
+    1/2 + sqrt(4*B*P + R*T)/(2*sqrt(R)*sqrt(T))
+    
+    To check this, simply disable the if statement and allow the numerical 
+    algorithm to run.
+    '''

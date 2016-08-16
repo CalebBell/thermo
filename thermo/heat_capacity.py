@@ -1571,8 +1571,8 @@ class HeatCapacitySolid(TDependentProperty):
         methods = []
         Tmins, Tmaxs = [], []
         if self.CASRN and self.CASRN in _PerryI and 'c' in _PerryI[self.CASRN]:
-            self.PERRY151_Tmin = _PerryI[self.CASRN]['c']['Tmin']
-            self.PERRY151_Tmax = _PerryI[self.CASRN]['c']['Tmax']
+            self.PERRY151_Tmin = _PerryI[self.CASRN]['c']['Tmin'] if _PerryI[self.CASRN]['c']['Tmin'] else 0
+            self.PERRY151_Tmax = _PerryI[self.CASRN]['c']['Tmax'] if _PerryI[self.CASRN]['c']['Tmax'] else 2000
             self.PERRY151_const = _PerryI[self.CASRN]['c']['Const']
             self.PERRY151_lin = _PerryI[self.CASRN]['c']['Lin']
             self.PERRY151_quad = _PerryI[self.CASRN]['c']['Quad']
