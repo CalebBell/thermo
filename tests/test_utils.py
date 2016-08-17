@@ -350,9 +350,6 @@ def test_TDependentProperty():
         EtOH.set_tabular_data(Ts=Ts, properties=props)
 
 
-
-
-
 def test_Z_from_virial_density_form():
     Z_calc = Z_from_virial_density_form(300, 122057.233762653, 1E-4, 1E-5, 1E-6, 1E-7)
     assert_allclose(Z_calc, 1.2843496002100001)
@@ -381,3 +378,17 @@ def test_Z_from_virial_density_form():
     To check this, simply disable the if statement and allow the numerical 
     algorithm to run.
     '''
+
+
+def test_Z_from_virial_pressure_form():
+    Z_calc = Z_from_virial_pressure_form(102919.99946855308, 4.032286555169439e-09, 1.6197059494442215e-13, 6.483855042486911e-19)
+    assert_allclose(Z_calc, 1.00283753944)
+    
+    Z_calc = Z_from_virial_pressure_form(102847.17619188508, 4.032286555169439e-09, 1.6197059494442215e-13)
+    assert_allclose(Z_calc, 1.00212796)
+
+    Z_calc = Z_from_virial_pressure_form(102671.27455742132, 4.032286555169439e-09)
+    assert_allclose(Z_calc, 1.000414)
+    
+    Z_calc = Z_calc = Z_from_virial_pressure_form(102671.27455742132)
+    assert_allclose(Z_calc, 1)

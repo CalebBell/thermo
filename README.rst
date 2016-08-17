@@ -90,7 +90,7 @@ identified, allowing for properties to be obtained without needing
 to specify the phase. However, the properties are also available in the
 hypothetical gas phase (when under the boiling point) and in the hypothetical
 liquid phase (when above the boiling point) as these properties are needed
-to evaluate mixture properties. Specity the phase of a property to be retrieved 
+to evaluate mixture properties. Specify the phase of a property to be retrieved 
 by appending 'l' or 'g' or 's' to the property.
 
 .. code-block:: python
@@ -125,7 +125,7 @@ it are included as possible. All methods can be visualized independently:
     409.5909115602903
     >>> Chemical('toluene').SurfaceTension.plot_T_dependent_property()
 
-Mixtures are supported and many mixing rules have been implemented. However,there is
+Mixtures are supported and many mixing rules have been implemented. However, there is
 no error handling. Inputs as mole fractions (`zs`), mass fractions (`ws`), or volume
 fractions (`Vfls` or `Vfgs`) are supported. Some shortcuts are supported to predefined
 mixtures.
@@ -156,25 +156,25 @@ documented and tested. However, each individual property method is mature and
 not expected to change. Documentation and testing are huge strengths, and
 it is intended to keep up the current quality of both.
 
-A numer of features have been worked on but are not yet included in this 
-library, not ordered by any priority:
+A number of features have been worked on but are not yet included in this 
+library, not ordered by any priority.
 
 Phase equilibria according to activity coefficient methods (NRTL, UNIQUAC, 
-Wilson, Van Laar, Margules). Functionality has been tentatively created, but
+Wilson, Van Laar, Margules): Functionality has been tentatively created, but
 is not included due to the lack of coefficient databases. Suggestions would
-be very welcome. UNIFAC has been tested, but is also ont included due to
+be very welcome. UNIFAC has been tested, but is also not included due to the
 lack of automatic group contribution assignment.
 
-Rigorous equations of state for excess properties, and phase equilibria.
+Rigorous equations of state for excess properties, and phase equilibria:
 Tested EOSs are PR, LK, VdW, SRK, BWRS, and a few others. The holdup here
 is the determination of analytical expressions for their partial 
-derivatives of mixtures. SymPy is imensely helpful, and has been used to
+derivatives of mixtures. SymPy is immensely helpful, and has been used to
 successfully obtain specific values of those derivatives at specific points.
 Unfortunately, most listed forms as in Walas (1985) are incorrect. If
 expressions are not eventually found, this will be implemented with numerical
 derivatives only.
 
-Fundamental Equations of State. The IAPWS-95 model, and that of 20 fluids
+Fundamental Equations of State: The IAPWS-95 model, and that of 20 fluids
 in "Short Fundamental Equations of State for 20 Industrial Fluids" have
 been implemented. However, they are quite slow in Python - taking 2-10 ms
 to solve. This can be reduced to ~1-2 ms if Cython is used, however, this
@@ -184,12 +184,12 @@ which has already been packaged for PyPi. Even if custom code is released
 for these EOS, CoolProp will remain prioritized; developed in C++, it is
 simply much faster than code can be in pure Python.
 
-Electrolyte models. The Pitzer, Bromley, and LIQUAC models have been in
+Electrolyte models: The Pitzer, Bromley, and LIQUAC models have been in
 development along with parameter databases for them. The ion database
 currently has ~300 species, few of them with much data available.
-Phase eqlibria with these models is also in progress.
+Phase equilibria with these models is also in progress.
 
-Safety information, regulatory information, and economic data for chemicals.
+Safety information, regulatory information, and economic data for chemicals:
 This functionality has been included, but is not yet very mature. This is 
 a low priority.
 
@@ -220,8 +220,7 @@ of this software, and a DISCLAIMER OF ALL WARRANTIES.
 
 Although not required by the thermo license, if it is convenient for you,
 please cite thermo if used in your work. Please also consider contributing
-any changes you make back, such that they may be incorporated into the
-main library and all of us will benefit from them.
+any changes you make back, and benefit the community.
 
 
 Citation

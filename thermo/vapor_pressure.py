@@ -62,7 +62,7 @@ def Antoine(T, A, B, C, Base=10.0):
 
 
 def Wagner_original(T, Tc, Pc, a, b, c, d):
-    r'''Calculates vapor pressure using theooriginal Wagner equation 3,6 form.
+    r'''Calculates vapor pressure using the original Wagner equation 3,6 form.
 
     Parameters are specific to a chemical, and form of Wagner equation.
 

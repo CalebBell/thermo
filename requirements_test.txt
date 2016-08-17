@@ -1,6 +1,7 @@
-pandas
-scipy
 numpy
+scipy
+pandas
+sympy
 fluids
 coolprop
 pytest
