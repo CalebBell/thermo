@@ -33,8 +33,8 @@ import matplotlib.pyplot as plt
 
 '''Experimental variable to switch math libraries to allow for computation
 with rational numbers, arbitrary precision, uncertainty propagation, or 
-arrays. Off by default; See `mathlib` to change which library is used. Must
-be changed in the code itself; cannot be toggled after importing.
+arrays. Off by default; See `mathlib` to change which math library is used. 
+Must be changed in the code itself; cannot be toggled after importing.
 
 Note that due to the use of logic, support for these libraries is greatly
 varying. At this time, the use of these other library prevents the use of any
@@ -59,9 +59,9 @@ are available:
     * 3 : scipy
     * 4 : mpmath
     * 5 : sympy
-    * 6 : uncertainties
-'''
+    * 6 : uncertainties'''
 mathlib = 1
+
 if ANYMATH:
     import math
     import numpy as np
