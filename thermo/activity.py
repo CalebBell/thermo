@@ -22,7 +22,8 @@ SOFTWARE.'''
 
 from __future__ import division
 from scipy.optimize import fsolve
-from math import exp, log
+#from math import exp, log
+from thermo.utils import exp, log
 import numpy as np
 import os
 from thermo.utils import none_and_length_check

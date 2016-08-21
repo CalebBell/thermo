@@ -22,7 +22,8 @@ SOFTWARE.'''
 
 from __future__ import division
 import os
-from math import pi
+#from math import pi
+from thermo.utils import pi
 from scipy.constants import N_A
 import pandas as pd
 

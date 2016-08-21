@@ -22,7 +22,8 @@ SOFTWARE.'''
 
 from __future__ import division
 import os
-from math import log
+#from math import log
+from thermo.utils import log
 import numpy as np
 from scipy.constants import R
 import pandas as pd

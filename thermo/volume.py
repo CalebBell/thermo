@@ -21,7 +21,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
-from math import log, exp
+#from math import log, exp
+from thermo.utils import log, exp
 import os
 
 import numpy as np
@@ -31,7 +32,7 @@ from scipy.interpolate import interp1d
 import pandas as pd
 
 from thermo.utils import Vm_to_rho, rho_to_Vm, mixing_simple, none_and_length_check
-from thermo.virial import BVirial_Pitzer_Curl, BVirial_Abbott, BVirial_Tsonopoulos, BVirial_Tsonopoulos_Extended
+from thermo.virial import BVirial_Pitzer_Curl, BVirial_Abbott, BVirial_Tsonopoulos, BVirial_Tsonopoulos_extended
 from thermo.pr import PR_Vm
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
 from thermo.dippr import EQ105
@@ -1612,7 +1613,7 @@ class VolumeGas(TPDependentProperty):
 
     **TSONOPOULOS_EXTENDED**:
         CSP method for second virial coefficients, described in
-        :obj:`thermo.virial.BVirial_Tsonopoulos_Extended`
+        :obj:`thermo.virial.BVirial_Tsonopoulos_extended`
     **TSONOPOULOS**:
         CSP method for second virial coefficients, described in
         :obj:`thermo.virial.BVirial_Tsonopoulos`
@@ -1634,7 +1635,7 @@ class VolumeGas(TPDependentProperty):
     :obj:`thermo.virial.BVirial_Pitzer_Curl`
     :obj:`thermo.virial.BVirial_Abbott`
     :obj:`thermo.virial.BVirial_Tsonopoulos`
-    :obj:`thermo.virial.BVirial_Tsonopoulos_Extended`
+    :obj:`thermo.virial.BVirial_Tsonopoulos_extended`
 
     References
     ----------
@@ -1781,7 +1782,7 @@ class VolumeGas(TPDependentProperty):
         if method == PR:
             Vm = PR_Vm(T, P, self.Tc, self.Pc, self.omega, phase='g')
         elif method == TSONOPOULOS_EXTENDED:
-            B = BVirial_Tsonopoulos_Extended(T, self.Tc, self.Pc, self.omega, dipole=self.dipole)
+            B = BVirial_Tsonopoulos_extended(T, self.Tc, self.Pc, self.omega, dipole=self.dipole)
             Vm = ideal_gas(T, P) + B
         elif method == TSONOPOULOS:
             B = BVirial_Tsonopoulos(T, self.Tc, self.Pc, self.omega)
@@ -1905,7 +1906,7 @@ def volume_gas_mixture(ys=None, Vms=None, T=None, P=None, Tc=None, Pc=None,
     elif Method == PR_PSEUDO:
         V = PR_Vm(T, P, Tc, Pc, omega, phase='g')
     elif Method == TSONOPOULOS_EXTENDED_PSEUDO:
-        B = BVirial_Tsonopoulos_Extended(T, Tc, Pc, omega)
+        B = BVirial_Tsonopoulos_extended(T, Tc, Pc, omega)
         V = ideal_gas(T, P) + B
     elif Method == TSONOPOULOS_PSEUDO:
         B = BVirial_Tsonopoulos(T, Tc, Pc, omega)

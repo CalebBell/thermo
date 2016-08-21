@@ -23,6 +23,7 @@ SOFTWARE.'''
 from __future__ import division
 import os
 from math import log, exp
+from thermo.utils import log, exp
 from scipy.constants import R
 
 folder = os.path.join(os.path.dirname(__file__), 'Solubility')

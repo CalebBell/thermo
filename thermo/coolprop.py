@@ -30,7 +30,7 @@ try:
 except ImportError:  # pragma: no cover
     has_CoolProp = False
     PropsSI, PhaseSI, CP, AbstractState = [None, None, None, None]
-#has_CoolProp = False # For testing
+#has_CoolProp = True # For testing
 
 # All of these can be inputs to the PropsSI function!
 coolprop_dict = ['100-41-4', '10024-97-2', '102687-65-0', '106-42-3',
@@ -141,6 +141,7 @@ def CoolProp_T_dependent_property(T, CASRN, prop, phase):
     if CASRN not in coolprop_dict:
         raise Exception('CASRN not in list of supported fluids')
     Tc = coolprop_fluids[CASRN].Tc
+    T = float(T) # Do not allow custom objects here
     if phase == 'l':
         if T > Tc:
             raise Exception('For liquid properties, must be under the critical temperature.')

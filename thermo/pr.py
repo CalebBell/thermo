@@ -24,7 +24,8 @@ from __future__ import division
 from scipy.constants import R
 from scipy.optimize import fsolve
 from numpy import roots
-from math import log, exp
+#from math import log, exp
+from thermo.utils import log, exp
 
 R = 8.3145
 

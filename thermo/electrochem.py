@@ -22,7 +22,8 @@ SOFTWARE.'''
 
 from __future__ import division
 import os
-from math import exp, log10
+#from math import exp, log10
+from thermo.utils import exp, log10
 from scipy.constants import e, N_A
 from thermo.utils import to_num
 from scipy.interpolate import interp1d

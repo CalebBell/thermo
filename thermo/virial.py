@@ -21,13 +21,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
-from math import log
+#from math import log
+from thermo.utils import log
 from scipy.constants import R
 from scipy.misc import derivative
 
 
 __all__ = ['BVirial_Pitzer_Curl', 'BVirial_Abbott', 'BVirial_Tsonopoulos',
-           'BVirial_Tsonopoulos_Extended']
+           'BVirial_Tsonopoulos_extended']
 
 ### Second Virial Coefficients
 
@@ -54,9 +55,11 @@ def BVirial_Pitzer_Curl(T, Tc, Pc, omega, order=0):
     omega : float
         Acentric factor for fluid, [-]
     order : int, optional
-        Order of the calculation; 0 for the calculation of B itsel; for 1, 
-        the first derivative with respect to temperature; for 2, the second, 
-        and for -1, the first integral with respect to temperature and so on. 
+        Order of the calculation. 0 for the calculation of B itsel; for 1/2/3, 
+        the first/second/third derivative of B with respect to temperature; and  
+        for -1/-2, the first/second indefinite integral of B with respect to 
+        temperature. No other integrals or derivatives are implemented, and an 
+        exception will be raised if any other order is given.
 
     Returns
     -------
@@ -127,12 +130,9 @@ def BVirial_Pitzer_Curl(T, Tc, Pc, omega, order=0):
     elif order == 2:
         B0 = -3*Tc*(1100*T**2 + 1385*T*Tc + 242*Tc**2)/(5000*T**5)
         B1 = Tc*(1150*T**7 - 3750*T**6*Tc - 1455*T**5*Tc**2 - 657*Tc**7)/(1250*T**10)
-#    elif order == 3:
-#        B0 = 3*Tc*(330*T**2 + 554*T*Tc + 121*Tc**2)/(500*T**6)
-#        B1 = 3*Tc*(-230*T**7 + 1000*T**6*Tc + 485*T**5*Tc**2 + 438*Tc**7)/(250*T**11)
-    elif order > 2:
-        return derivative(BVirial_Pitzer_Curl, T, dx=1E-7, n=order, order=40*order+1, args=(Tc, Pc, omega))
-        
+    elif order == 3:
+        B0 = 3*Tc*(330*T**2 + 554*T*Tc + 121*Tc**2)/(500*T**6)
+        B1 = 3*Tc*(-230*T**7 + 1000*T**6*Tc + 485*T**5*Tc**2 + 438*Tc**7)/(250*T**11)
     elif order == -1:
         B0 = 289*T/2000 - 33*Tc*log(T)/100 + (2770*T*Tc**2 + 121*Tc**3)/(20000*T**2)
         B1 = 73*T/1000 + 23*Tc*log(T)/50 + (35000*T**6*Tc**2 + 3395*T**5*Tc**3 + 73*Tc**8)/(70000*T**7)
@@ -166,6 +166,12 @@ def BVirial_Abbott(T, Tc, Pc, omega, order=0):
         Critical pressure of the fluid [Pa]
     omega : float
         Acentric factor for fluid, [-]
+    order : int, optional
+        Order of the calculation. 0 for the calculation of B itsel; for 1/2/3, 
+        the first/second/third derivative of B with respect to temperature; and  
+        for -1/-2, the first/second indefinite integral of B with respect to 
+        temperature. No other integrals or derivatives are implemented, and an 
+        exception will be raised if any other order is given.
 
     Returns
     -------
@@ -214,7 +220,7 @@ def BVirial_Abbott(T, Tc, Pc, omega, order=0):
     
     Examples
     --------
-    Example is from [1]_, p. 93, and matches the result exactly, for Isobutane.
+    Example is from [1]_, p. 93, and matches the result exactly, for isobutane.
 
     >>> BVirial_Abbott(510., 425.2, 38E5, 0.193)
     -0.00020570178037383633
@@ -269,6 +275,12 @@ def BVirial_Tsonopoulos(T, Tc, Pc, omega, order=0):
         Critical pressure of the fluid [Pa]
     omega : float
         Acentric factor for fluid, [-]
+    order : int, optional
+        Order of the calculation. 0 for the calculation of B itsel; for 1/2/3, 
+        the first/second/third derivative of B with respect to temperature; and  
+        for -1/-2, the first/second indefinite integral of B with respect to 
+        temperature. No other integrals or derivatives are implemented, and an 
+        exception will be raised if any other order is given.
 
     Returns
     -------
@@ -278,7 +290,7 @@ def BVirial_Tsonopoulos(T, Tc, Pc, omega, order=0):
     Notes
     -----
     A more complete expression is also available, in
-    BVirial_Tsonopoulos_Extended.
+    BVirial_Tsonopoulos_extended.
 
     Analytical models for derivatives and integrals are available for orders
     -2, -1, 1, 2, and 3, all obtained with SymPy.
@@ -356,7 +368,7 @@ def BVirial_Tsonopoulos(T, Tc, Pc, omega, order=0):
     return Br*R*Tc/Pc
 
 
-def BVirial_Tsonopoulos_Extended(T, Tc, Pc, omega, a=0, b=0, species_type='', 
+def BVirial_Tsonopoulos_extended(T, Tc, Pc, omega, a=0, b=0, species_type='', 
                                  dipole=0, order=0):
     r'''Calculates the second virial coefficient using the
     comprehensive model in [1]_.
@@ -384,6 +396,12 @@ def BVirial_Tsonopoulos_Extended(T, Tc, Pc, omega, a=0, b=0, species_type='',
         One of .
     dipole : float
         dipole moment, optional, [Debye]
+    order : int, optional
+        Order of the calculation. 0 for the calculation of B itsel; for 1/2/3, 
+        the first/second/third derivative of B with respect to temperature; and  
+        for -1/-2, the first/second indefinite integral of B with respect to 
+        temperature. No other integrals or derivatives are implemented, and an 
+        exception will be raised if any other order is given.
 
     Returns
     -------
@@ -454,7 +472,7 @@ def BVirial_Tsonopoulos_Extended(T, Tc, Pc, omega, a=0, b=0, species_type='',
     --------
     Example from Perry's Handbook, 8E, p2-499. Matches to a decimal place.
 
-    >>> BVirial_Tsonopoulos_Extended(430., 405.65, 11.28E6, 0.252608, a=0, b=0, speciestype='ketone', dipole=1.469)
+    >>> BVirial_Tsonopoulos_extended(430., 405.65, 11.28E6, 0.252608, a=0, b=0, speciestype='ketone', dipole=1.469)
     -9.679715056695323e-05
 
     References
@@ -502,10 +520,6 @@ def BVirial_Tsonopoulos_Extended(T, Tc, Pc, omega, a=0, b=0, species_type='',
         B3 = -Tc**8/(42*T**6)
     else: 
         raise Exception('Only orders -2, -1, 0, 1, 2 and 3 are supported.')
-
-
-
-
     if a == 0 and b == 0 and species_type != '':
         if species_type == 'simple' or species_type == 'normal':
             a, b = 0, 0

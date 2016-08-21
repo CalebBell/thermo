@@ -21,7 +21,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
-from math import log, exp, sinh, cosh
+from thermo.utils import log, exp, sinh, cosh
+#from math import log, exp, sinh, cosh
 
 
 def EQ100(T, A=0, B=0, C=0, D=0, E=0, F=0, G=0):

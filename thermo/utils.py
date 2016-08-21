@@ -21,8 +21,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
-from math import log, exp
-from cmath import sqrt
+#from math import log, exp
+from cmath import sqrt as csqrt
 import numpy as np
 from scipy.constants import R
 from scipy.optimize import brenth
@@ -30,6 +30,74 @@ from scipy.misc import derivative
 from scipy.integrate import quad
 from scipy.interpolate import interp1d, interp2d
 import matplotlib.pyplot as plt
+
+'''Experimental variable to switch math libraries to allow for computation
+with rational numbers, arbitrary precision, uncertainty propagation, or 
+arrays. Off by default; See `mathlib` to change which library is used. Must
+be changed in the code itself; cannot be toggled after importing.
+
+Note that due to the use of logic, support for these libraries is greatly
+varying. At this time, the use of these other library prevents the use of any
+object oriented code.
+
+Warning: If True, all the following math libraries must be available and will
+ be imported:
+ 
+    * numpy
+    * scipy
+    * mpmath
+    * sympy
+    * uncertainties
+'''
+ANYMATH = False
+
+'''Integer switch to change which library is used. Can be changed after import.  
+Only has an effect if `ANYMATH` was True before import. The following options  
+are available:
+    * 1 : math
+    * 2 : numpy
+    * 3 : scipy
+    * 4 : mpmath
+    * 5 : sympy
+    * 6 : uncertainties
+'''
+mathlib = 1
+if ANYMATH:
+    import math
+    import numpy as np
+    import scipy
+    import sympy
+    import mpmath
+    import uncertainties.umath as umath
+    
+    expfuncs = {1: math.exp, 2: np.exp, 3: scipy.exp, 4: mpmath.exp, 5:sympy.exp, 6: umath.exp}
+    logfuncs = {1: math.log, 2: np.log, 3: scipy.log, 4: mpmath.log, 5:sympy.log, 6: umath.log}
+    log10funcs = {1: math.log10, 2: np.log10, 3: scipy.log10, 4: mpmath.log, 5:lambda x : sympy.log(x, 10), 6: umath.log10} # Sympy doesn't support log10
+
+    sinfuncs = {1: math.sin, 2: np.sin, 3: scipy.sin, 4: mpmath.sin, 5:sympy.sin, 6: umath.sin}
+    coshfuncs = {1: math.cosh, 2: np.cosh, 3: scipy.cosh, 4: mpmath.cosh, 5:sympy.cosh, 6: umath.cosh}
+    sinhfuncs = {1: math.sinh, 2: np.sinh, 3: scipy.sinh, 4: mpmath.sinh, 5:sympy.sinh, 6: umath.sinh}
+
+    pifuncs = {1: math.pi, 2: np.pi, 3: scipy.pi, 4: mpmath.pi, 5: sympy.pi, 6: math.pi} # uncertainties doesn't support pi
+
+    pi = pifuncs[mathlib]
+
+    def exp(x):
+        return expfuncs[mathlib](x)
+    def log(x):
+        return logfuncs[mathlib](x)
+    def log10(x):
+        return log10funcs[mathlib](x)
+
+    def sin(x):
+        return sinfuncs[mathlib](x)
+    def cosh(x):
+        return coshfuncs[mathlib](x)
+    def sinh(x):
+        return sinhfuncs[mathlib](x)
+
+else:
+    from math import *
 
 
 def to_num(values):
@@ -481,7 +549,7 @@ def Z_from_virial_density_form(T, P, *args):
     if l == 2:
         B, C = args
         # A small imaginary part is ignored
-        return (P*(-(3*B*R*T/P + R**2*T**2/P**2)/(3*(-1/2 + sqrt(3)*1j/2)*(-9*B*R**2*T**2/(2*P**2) - 27*C*R*T/(2*P) + sqrt(-4*(3*B*R*T/P + R**2*T**2/P**2)**(3+0j) + (-9*B*R**2*T**2/P**2 - 27*C*R*T/P - 2*R**3*T**3/P**3)**(2+0j))/2 - R**3*T**3/P**3)**(1/3.+0j)) - (-1/2 + sqrt(3)*1j/2)*(-9*B*R**2*T**2/(2*P**2) - 27*C*R*T/(2*P) + sqrt(-4*(3*B*R*T/P + R**2*T**2/P**2)**(3+0j) + (-9*B*R**2*T**2/P**2 - 27*C*R*T/P - 2*R**3*T**3/P**3)**(2+0j))/2 - R**3*T**3/P**3)**(1/3.+0j)/3 + R*T/(3*P))/(R*T)).real
+        return (P*(-(3*B*R*T/P + R**2*T**2/P**2)/(3*(-1/2 + csqrt(3)*1j/2)*(-9*B*R**2*T**2/(2*P**2) - 27*C*R*T/(2*P) + csqrt(-4*(3*B*R*T/P + R**2*T**2/P**2)**(3+0j) + (-9*B*R**2*T**2/P**2 - 27*C*R*T/P - 2*R**3*T**3/P**3)**(2+0j))/2 - R**3*T**3/P**3)**(1/3.+0j)) - (-1/2 + csqrt(3)*1j/2)*(-9*B*R**2*T**2/(2*P**2) - 27*C*R*T/(2*P) + csqrt(-4*(3*B*R*T/P + R**2*T**2/P**2)**(3+0j) + (-9*B*R**2*T**2/P**2 - 27*C*R*T/P - 2*R**3*T**3/P**3)**(2+0j))/2 - R**3*T**3/P**3)**(1/3.+0j)/3 + R*T/(3*P))/(R*T)).real
     if l == 3:
         # Huge mess. Ideally sympy could optimize a function for quick python 
         # execution. Derived with kate's text highlighting
@@ -500,9 +568,9 @@ def Z_from_virial_density_form(T, P, *args):
         big3 = (-BRT/P - RT23/(8*P2))
         big4 = (mCRT/P - RT*(BRT/(2*P) + R2*T2/(8*P2))/P)
         big5 = big3*(-D*RT/P + RT*(mCRT/(4*P) - RT*(BRT/(16*P) + RT23P2256)/P)/P)
-        big2 = 2*big1/(3*(big3**3/216 - big5/6 + big4**2/16 + sqrt(big1**3/27 + (-big3**3/108 + big5/3 - big4**2/8)**2/4))**(1/3))
-        big7 = 2*BRT/(3*P) - big2 + 2*(big3**3/216 - big5/6 + big4**2/16 + sqrt(big1**3/27 + (-big3**3/108 + big5/3 - big4**2/8)**2/4))**(1/3) + R2*T2/(4*P2)
-        return (P*(((sqrt(big7)/2 + sqrt(4*BRT/(3*P) - (-2*C*RT/P - 2*RT*(BRT/(2*P) + R2*T2/(8*P2))/P)/sqrt(big7) + big2 - 2*(big3**3/216 - big5/6 + big4**2/16 + sqrt(big1**3/27 + (-big3**3/108 + big5/3 - big4**2/8)**2/4))**(1/3) + R2*T2/(2*P2))/2 + RT/(4*P))))/R/T).real
+        big2 = 2*big1/(3*(big3**3/216 - big5/6 + big4**2/16 + csqrt(big1**3/27 + (-big3**3/108 + big5/3 - big4**2/8)**2/4))**(1/3))
+        big7 = 2*BRT/(3*P) - big2 + 2*(big3**3/216 - big5/6 + big4**2/16 + csqrt(big1**3/27 + (-big3**3/108 + big5/3 - big4**2/8)**2/4))**(1/3) + R2*T2/(4*P2)
+        return (P*(((csqrt(big7)/2 + csqrt(4*BRT/(3*P) - (-2*C*RT/P - 2*RT*(BRT/(2*P) + R2*T2/(8*P2))/P)/csqrt(big7) + big2 - 2*(big3**3/216 - big5/6 + big4**2/16 + csqrt(big1**3/27 + (-big3**3/108 + big5/3 - big4**2/8)**2/4))**(1/3) + R2*T2/(2*P2))/2 + RT/(4*P))))/R/T).real
 
     args = list(args)
     args.reverse()

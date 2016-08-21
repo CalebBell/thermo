@@ -23,7 +23,8 @@ SOFTWARE.'''
 from __future__ import division
 import os
 from io import open
-from math import log, exp
+from thermo.utils import log, exp
+#from math import log, exp
 import numpy as np
 import pandas as pd
 

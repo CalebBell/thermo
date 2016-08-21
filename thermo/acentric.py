@@ -21,7 +21,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
-from math import log, log10
+#from math import log, log10
+from thermo.utils import log, log10
 import numpy as np
 import pandas as pd
 from thermo.utils import mixing_simple, none_and_length_check

@@ -22,7 +22,8 @@ SOFTWARE.'''
 
 from __future__ import division
 from scipy.constants import R
-from math import exp, log
+#from math import exp, log
+from thermo.utils import log, exp
 from thermo.utils import mixing_simple, none_and_length_check, TPDependentProperty
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
 from thermo.coolprop import has_CoolProp, coolprop_dict, coolprop_fluids, CoolProp_T_dependent_property, PropsSI, PhaseSI

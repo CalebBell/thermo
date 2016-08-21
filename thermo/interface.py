@@ -22,7 +22,8 @@ SOFTWARE.'''
 
 from __future__ import division
 import os
-from math import log, exp
+#from math import log, exp
+from thermo.utils import log, exp
 
 
 from thermo.utils import mixing_simple, none_and_length_check
@@ -1117,3 +1118,5 @@ def surface_tension_mixture(T=None, xs=[], sigmas=[], rhoms=[],
     else:
         raise Exception('Failure in in function')
     return sigma
+
+

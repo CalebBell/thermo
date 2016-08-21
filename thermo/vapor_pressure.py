@@ -22,7 +22,8 @@ SOFTWARE.'''
 
 from __future__ import division
 import os
-from math import log, exp
+#from math import log, exp
+from thermo.utils import log, exp
 import numpy as np
 import pandas as pd
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data

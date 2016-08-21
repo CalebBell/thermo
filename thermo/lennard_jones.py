@@ -22,7 +22,8 @@ SOFTWARE.'''
 
 from __future__ import division
 import os
-from math import exp, log, sin
+#from math import exp, log, sin
+from thermo.utils import exp, log, sin
 from scipy.constants import k
 import pandas as pd
 
