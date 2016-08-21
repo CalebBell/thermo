@@ -55,7 +55,7 @@ def BVirial_Pitzer_Curl(T, Tc, Pc, omega, order=0):
     omega : float
         Acentric factor for fluid, [-]
     order : int, optional
-        Order of the calculation. 0 for the calculation of B itsel; for 1/2/3, 
+        Order of the calculation. 0 for the calculation of B itself; for 1/2/3, 
         the first/second/third derivative of B with respect to temperature; and  
         for -1/-2, the first/second indefinite integral of B with respect to 
         temperature. No other integrals or derivatives are implemented, and an 
@@ -64,7 +64,8 @@ def BVirial_Pitzer_Curl(T, Tc, Pc, omega, order=0):
     Returns
     -------
     B : float
-        Second virial coefficient in density form, [m^3/mol]
+        Second virial coefficient in density form or its integral/derivative if
+        specified, [m^3/mol or m^3/mol/K^order]
 
     Notes
     -----
@@ -167,7 +168,7 @@ def BVirial_Abbott(T, Tc, Pc, omega, order=0):
     omega : float
         Acentric factor for fluid, [-]
     order : int, optional
-        Order of the calculation. 0 for the calculation of B itsel; for 1/2/3, 
+        Order of the calculation. 0 for the calculation of B itself; for 1/2/3, 
         the first/second/third derivative of B with respect to temperature; and  
         for -1/-2, the first/second indefinite integral of B with respect to 
         temperature. No other integrals or derivatives are implemented, and an 
@@ -176,7 +177,8 @@ def BVirial_Abbott(T, Tc, Pc, omega, order=0):
     Returns
     -------
     B : float
-        Second virial coefficient in density form, [m^3/mol]
+        Second virial coefficient in density form or its integral/derivative if
+        specified, [m^3/mol or m^3/mol/K^order]
 
     Notes
     -----
@@ -261,7 +263,7 @@ def BVirial_Tsonopoulos(T, Tc, Pc, omega, order=0):
     .. math::
         B_r=B^{(0)}+\omega B^{(1)}
 
-        B^{(0)}=0.1445-0.33/T_r-0.1385/T_r^2-0.0121/T_r^3
+        B^{(0)}= 0.1445-0.330/T_r - 0.1385/T_r^2 - 0.0121/T_r^3 - 0.000607/T_r^8
 
         B^{(1)} = 0.0637+0.331/T_r^2-0.423/T_r^3 -0.423/T_r^3 - 0.008/T_r^8
 
@@ -276,7 +278,7 @@ def BVirial_Tsonopoulos(T, Tc, Pc, omega, order=0):
     omega : float
         Acentric factor for fluid, [-]
     order : int, optional
-        Order of the calculation. 0 for the calculation of B itsel; for 1/2/3, 
+        Order of the calculation. 0 for the calculation of B itself; for 1/2/3, 
         the first/second/third derivative of B with respect to temperature; and  
         for -1/-2, the first/second indefinite integral of B with respect to 
         temperature. No other integrals or derivatives are implemented, and an 
@@ -285,7 +287,8 @@ def BVirial_Tsonopoulos(T, Tc, Pc, omega, order=0):
     Returns
     -------
     B : float
-        Second virial coefficient in density form, [m^3/mol]
+        Second virial coefficient in density form or its integral/derivative if
+        specified, [m^3/mol or m^3/mol/K^order]
 
     Notes
     -----
@@ -371,10 +374,19 @@ def BVirial_Tsonopoulos(T, Tc, Pc, omega, order=0):
 def BVirial_Tsonopoulos_extended(T, Tc, Pc, omega, a=0, b=0, species_type='', 
                                  dipole=0, order=0):
     r'''Calculates the second virial coefficient using the
-    comprehensive model in [1]_.
+    comprehensive model in [1]_. See the notes for the calculation of `a` and
+    `b`.
 
     .. math::
-        TODO
+        \frac{BP_c}{RT_c} = B^{(0)} + \omega B^{(1)} + a B^{(2)} + b B^{(3)}
+    
+        B^{(0)}=0.1445-0.33/T_r-0.1385/T_r^2-0.0121/T_r^3
+
+        B^{(1)} = 0.0637+0.331/T_r^2-0.423/T_r^3 -0.423/T_r^3 - 0.008/T_r^8
+        
+        B^{(2)} = 1/T_r^6
+
+        B^{(3)} = -1/T_r^8
 
     Parameters
     ----------
@@ -397,7 +409,7 @@ def BVirial_Tsonopoulos_extended(T, Tc, Pc, omega, a=0, b=0, species_type='',
     dipole : float
         dipole moment, optional, [Debye]
     order : int, optional
-        Order of the calculation. 0 for the calculation of B itsel; for 1/2/3, 
+        Order of the calculation. 0 for the calculation of B itself; for 1/2/3, 
         the first/second/third derivative of B with respect to temperature; and  
         for -1/-2, the first/second indefinite integral of B with respect to 
         temperature. No other integrals or derivatives are implemented, and an 
@@ -406,12 +418,67 @@ def BVirial_Tsonopoulos_extended(T, Tc, Pc, omega, a=0, b=0, species_type='',
     Returns
     -------
     B : float
-        Second virial coefficient in density form, [m^3/mol]
+        Second virial coefficient in density form or its integral/derivative if
+        specified, [m^3/mol or m^3/mol/K^order]
 
     Notes
     -----
     Analytical models for derivatives and integrals are available for orders
     -2, -1, 1, 2, and 3, all obtained with SymPy.
+
+
+    To calculate `a` or `b`, the following rules are used:
+
+    For 'simple' or 'normal' fluids:
+    
+    .. math::
+        a = 0
+        
+        b = 0
+
+    For 'ketone', 'aldehyde', 'alkyl nitrile', 'ether', 'carboxylic acid',
+    or 'ester' types of chemicals:
+    
+    .. math::
+        a = -2.14\times 10^{-4} \mu_r - 4.308 \times 10^{-21} (\mu_r)^8
+        
+        b = 0
+    
+    For 'alkyl halide', 'mercaptan', 'sulfide', or 'disulfide' types of 
+    chemicals:
+
+    .. math::
+        a = -2.188\times 10^{-4} (\mu_r)^4 - 7.831 \times 10^{-21} (\mu_r)^8
+        
+        b = 0
+
+    For 'alkanol' types of chemicals (except methanol):
+    
+    .. math::
+        a = 0.0878
+    
+        b = 0.00908 + 0.0006957 \mu_r
+        
+    For methanol:
+    
+    .. math::
+        a = 0.0878
+        
+        b = 0.0525
+    
+    For water:
+    
+    .. math::
+        a = -0.0109
+        
+        b = 0
+    
+    If required, the form of dipole moment used in the calculation of some
+    types of `a` and `b` values is as follows:
+    
+    .. math::
+        \mu_r = 100000\frac{\mu^2(Pc/101325.0)}{Tc^2}
+
 
     For first temperature derivative of B:
     
