@@ -29,7 +29,12 @@ from scipy.optimize import brenth
 from scipy.misc import derivative
 from scipy.integrate import quad
 from scipy.interpolate import interp1d, interp2d
-import matplotlib.pyplot as plt
+
+try:
+    import matplotlib.pyplot as plt
+    has_matplotlib = True
+except:
+    has_matplotlib = False
 
 '''Experimental variable to switch math libraries to allow for computation
 with rational numbers, arbitrary precision, uncertainty propagation, or 
@@ -1278,6 +1283,8 @@ class TDependentProperty(object):
             checking and use methods outside their bounds
         '''
         # This function cannot be tested
+        if not has_matplotlib:
+            raise Exception('Optional dependency matplotlib is required for plotting')
         if Tmin is None:
             if self.Tmin is not None:
                 Tmin = self.Tmin
@@ -2073,6 +2080,8 @@ class TPDependentProperty(TDependentProperty):
             checking and use methods outside their bounds
         '''
         # This function cannot be tested
+        if not has_matplotlib:
+            raise Exception('Optional dependency matplotlib is required for plotting')
         if Pmin is None:
             if self.Pmin is not None:
                 Pmin = self.Pmin
@@ -2144,6 +2153,8 @@ class TPDependentProperty(TDependentProperty):
             and handle errors; if False, attempt calculation without any
             checking and use methods outside their bounds
         '''
+        if not has_matplotlib:
+            raise Exception('Optional dependency matplotlib is required for plotting')
         if Tmin is None:
             if self.Tmin is not None:
                 Tmin = self.Tmin

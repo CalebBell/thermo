@@ -7,3 +7,4 @@ coolprop
 pytest
 pytest-cov
 coveralls
+matplotlib

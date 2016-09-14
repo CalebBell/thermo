@@ -1096,7 +1096,7 @@ def thermal_conductivity_liquid_mixture(T=None, P=None, zs=None, ws=None,
     elif Method == FILIPPOV:
         _kl = Filippov(ws, ks)
     elif Method == MAGOMEDOV:
-        k_w = ks[CASRNs.index['7732-18-5']]
+        k_w = ks[CASRNs.index('7732-18-5')]
         wCASRNs = list(CASRNs)
         wCASRNs.remove('7732-18-5')
         ws2 = list(ws)

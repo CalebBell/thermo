@@ -109,6 +109,9 @@ class PeriodicTable(object):
                 return i[key]
         raise KeyError('Key is not in the periodic table.')
 
+    def __getattr__(self, key):
+        return self.__getitem__(key)
+
 
 class Element(object):
     '''Class for storing data on chemical elements. Supports most common
