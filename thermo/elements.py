@@ -69,7 +69,7 @@ class PeriodicTable(object):
 
     See Also
     --------
-    elements
+    periodic_table
     Element
 
     References
