@@ -323,4 +323,4 @@ def test_BVirial_Tsonopoulos_extended():
             
             dBint = BVirial_Tsonopoulos_extended(T2, _Tc, _Pc, _omega, a=a, b=b, order=order) - BVirial_Tsonopoulos_extended(T1, _Tc, _Pc, _omega, a=a, b=b, order=order)
             dBquad = quad(BVirial_Tsonopoulos_extended, T1, T2, args=(_Tc, _Pc, _omega, a, b, '', 0, order+1))[0]
-            assert_allclose(dBint, dBquad)
+            assert_allclose(dBint, dBquad, rtol=5E-6)
