@@ -21,8 +21,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
+
+__all__ = ['Mulero_Cachadina_data', 'Jasper_Lange_data', 'Somayajulu_data', 
+           'Somayajulu_data_2', 'REFPROP', 'Somayajulu', 'Jasper', 
+           'Brock_Bird', 'Pitzer', 'Sastri_Rao', 'Zuo_Stenby', 
+           'Hakim_Steinberg_Stiel', 'Miqueu', 'surface_tension_methods', 
+           'SurfaceTension', 'Winterfeld_Scriven_Davis', 'Diguilio_Teja', 
+           'surface_tension_mixture_methods', 'surface_tension_mixture']
+
 import os
-#from math import log, exp
 from thermo.utils import log, exp
 
 
@@ -561,24 +568,23 @@ def Miqueu(T, Tc, Vc, omega):
 
 
 STREFPROP = 'REFPROP'
-SUPERCRITICAL = 'Supercritical'
-
-SOMAYAJULU2 = 'Somayajulu revised (1988)'
-SOMAYAJULU = 'Somayajulu (1988)'
-VDI_TABULAR = 'VDI Heat Atlas'
-JASPER = 'Jasper (1972)'
-MIQUEU = 'Miqueu (2000)'
-BROCKBIRD = 'Brock and Bird (1955)'
-SASTRIRAO = 'Sastri and Rao (1995)'
-PITZER = 'Pitzer (1958)'
-ZUOSTENBY = 'Zuo and Stenby (1997)'
-HAKIMSTEINBERGSTIEL = 'Hakim, Steinberg, and Stiel (1971)'
-NONE = 'None'
+SUPERCRITICAL = 'SUPERCRITICAL'
+SOMAYAJULU2 = 'SOMAYAJULU2'
+SOMAYAJULU = 'SOMAYAJULU'
+VDI_TABULAR = 'VDI_TABULAR'
+JASPER = 'JASPER'
+MIQUEU = 'MIQUEU'
+BROCK_BIRD = 'BROCK_BIRD'
+SASTRI_RAO = 'SASTRI_RAO'
+PITZER = 'PITZER'
+ZUO_STENBY = 'ZUO_STENBY'
+HAKIM_STEINBERG_STIEL = 'HAKIM_STEINBERG_STIEL)'
+NONE = 'NONE'
 
 
 surface_tension_methods = [STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_TABULAR,
-                           JASPER, MIQUEU, BROCKBIRD, SASTRIRAO, PITZER,
-                           ZUOSTENBY]
+                           JASPER, MIQUEU, BROCK_BIRD, SASTRI_RAO, PITZER,
+                           ZUO_STENBY]
 '''Holds all methods available for the SurfaceTension class, for use in
 iterating over them.'''
 
@@ -609,8 +615,6 @@ class SurfaceTension(TDependentProperty):
 
     Notes
     -----
-    A string holding each method's name is assigned to the following variables
-    in this module, intended as the most convenient way to refer to a method.
     To iterate over all methods, use the list stored in
     :obj:`surface_tension_methods`.
 
@@ -621,21 +625,21 @@ class SurfaceTension(TDependentProperty):
         The Somayajulu coefficient-based method,
         documented in the function :obj:`Somayajulu`. Both methods have data
         for 64 fluids. The first data set if from [1]_, and the second
-        from [2]_.
+        from [2]_. The later, revised coefficients should be used prefered.
     **JASPER**:
-        Fit with a single temperature coefficient,
+        Fit with a single temperature coefficient from Jaspen (1972)
         as documented in the function :obj:`Jasper`. Data for 522 fluids is
         available, as shown in [4]_ but originally in [3]_.
-    **BROCKBIRD**:
+    **BROCK_BIRD**:
         CSP method documented in :obj:`Brock_Bird`.
-        Most popular estimation method.
-    **SASTRIRAO**:
+        Most popular estimation method; from 1955.
+    **SASTRI_RAO**:
         CSP method documented in :obj:`Sastri_Rao`.
-        Second most popular estimation method.
+        Second most popular estimation method; from 1995.
     **PITZER**:
-        CSP method documented in :obj:`Pitzer`.
-    **ZUOSTENBY**:
-        CSP method documented in :obj:`Zuo_Stenby`.
+        CSP method documented in :obj:`Pitzer`; from 1958.
+    **ZUO_STENBY**:
+        CSP method documented in :obj:`Zuo_Stenby`; from 1997.
     **MIQUEU**:
         CSP method documented in :obj:`Miqueu`.
     **VDI_TABULAR**:
@@ -693,8 +697,8 @@ class SurfaceTension(TDependentProperty):
     mercury.'''
 
     ranked_methods = [STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_TABULAR,
-                      JASPER, MIQUEU, BROCKBIRD, SASTRIRAO, PITZER,
-                      ZUOSTENBY]
+                      JASPER, MIQUEU, BROCK_BIRD, SASTRI_RAO, PITZER,
+                      ZUO_STENBY]
     '''Default rankings of the available methods.'''
 
     def __init__(self, Tb=None, Tc=None, Pc=None, Vc=None, Zc=None, omega=None,
@@ -783,12 +787,12 @@ class SurfaceTension(TDependentProperty):
             methods.append(MIQUEU)
             Tmins.append(0.0); Tmaxs.append(self.Tc)
         if all((self.Tb, self.Tc, self.Pc)):
-            methods.append(BROCKBIRD)
-            methods.append(SASTRIRAO)
+            methods.append(BROCK_BIRD)
+            methods.append(SASTRI_RAO)
             Tmins.append(0.0); Tmaxs.append(self.Tc)
         if all((self.Tc, self.Pc, self.omega)):
             methods.append(PITZER)
-            methods.append(ZUOSTENBY)
+            methods.append(ZUO_STENBY)
             Tmins.append(0.0); Tmaxs.append(self.Tc)
         self.all_methods = set(methods)
         if Tmins and Tmaxs:
@@ -827,13 +831,13 @@ class SurfaceTension(TDependentProperty):
             sigma = Somayajulu(T, Tc=self.SOMAYAJULU_Tc, A=A, B=B, C=C)
         elif method == JASPER:
             sigma = Jasper(T, a=self.JASPER_coeffs[0], b=self.JASPER_coeffs[1])
-        elif method == BROCKBIRD:
+        elif method == BROCK_BIRD:
             sigma = Brock_Bird(T, self.Tb, self.Tc, self.Pc)
-        elif method == SASTRIRAO:
+        elif method == SASTRI_RAO:
             sigma = Sastri_Rao(T, self.Tb, self.Tc, self.Pc)
         elif method == PITZER:
             sigma = Pitzer(T, self.Tc, self.Pc, self.omega)
-        elif method == ZUOSTENBY:
+        elif method == ZUO_STENBY:
             sigma = Zuo_Stenby(T, self.Tc, self.Pc, self.omega)
         elif method == MIQUEU:
             sigma = Miqueu(T, self.Tc, self.Vc, self.omega)
@@ -877,7 +881,7 @@ class SurfaceTension(TDependentProperty):
         elif method == JASPER:
             if T < self.JASPER_Tmin or T > self.JASPER_Tmax:
                 validity = False
-        elif method in [BROCKBIRD, SASTRIRAO, PITZER, ZUOSTENBY, MIQUEU]:
+        elif method in [BROCK_BIRD, SASTRI_RAO, PITZER, ZUO_STENBY, MIQUEU]:
             if T > self.Tc:
                 validity = False
         elif method in self.tabular_data:

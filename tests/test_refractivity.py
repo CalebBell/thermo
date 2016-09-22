@@ -44,9 +44,9 @@ def test_refractivity_general():
     assert_allclose(val, 1.3611)
 
     vals = refractive_index(CASRN='64-17-5', AvailableMethods=True)
-    assert vals ==  [CRC, NONE]
+    assert vals ==  ['CRC', 'NONE']
 
-    assert (None, None) == refractive_index(CASRN='64-17-5', Method=NONE)
+    assert (None, None) == refractive_index(CASRN='64-17-5', Method='NONE')
     assert CRC_RI_organic.index.is_unique
     assert CRC_RI_organic.shape == (4490, 2)
 

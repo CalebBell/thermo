@@ -21,7 +21,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
-#from math import log, exp
+
+__all__ = ['has_matplotlib', 'ANYMATH', 'mathlib', 'to_num', 'CAS2int', 
+'int2CAS', 'Parachor', 'property_molar_to_mass', 'property_mass_to_molar', 
+'isobaric_expansion', 'JT', 'isentropic_exponent', 'Vm_to_rho', 'rho_to_Vm', 
+'Z', 'B_To_Z', 'B_from_Z', 'Z_from_virial_density_form', 
+'Z_from_virial_pressure_form', 'zs_to_ws', 'ws_to_zs', 'zs_to_Vfs', 
+'Vfs_to_zs', 'none_and_length_check', 'normalize', 'mixing_simple', 
+'mixing_logarithmic', 'phase_set_property', 'TDependentProperty', 
+'TPDependentProperty']
+
 from cmath import sqrt as csqrt
 import numpy as np
 from scipy.constants import R
@@ -29,6 +38,8 @@ from scipy.optimize import brenth
 from scipy.misc import derivative
 from scipy.integrate import quad
 from scipy.interpolate import interp1d, interp2d
+
+# __all__ may not be able to be imported due to the math library
 
 try:
     import matplotlib.pyplot as plt
@@ -103,6 +114,11 @@ if ANYMATH:
 
 else:
     from math import *
+    __all__.extend(['acos', 'acosh', 'asin', 'asinh', 'atan', 'atan2', 'atanh', 
+    'ceil', 'copysign', 'cos', 'cosh', 'degrees', 'e', 'erf', 'erfc', 'exp', 
+    'expm1', 'fabs', 'factorial', 'floor', 'fmod', 'frexp', 'fsum', 'gamma', 
+    'hypot', 'isinf', 'isnan', 'ldexp', 'lgamma', 'log', 'log10', 'log1p', 'modf', 
+    'pi', 'pow', 'radians', 'sin', 'sinh', 'sqrt', 'tan', 'tanh', 'trunc'])
 
 
 def to_num(values):

@@ -179,6 +179,9 @@ def test_normalize():
 
 
 def test_TDependentProperty():
+    TEST_METHOD_1 = 'Test method 1'
+    TEST_METHOD_2 = 'Test method 2'
+
     EtOH = TDependentProperty(CASRN='67-56-1')
     # Test pre-run info
     assert EtOH.method == None

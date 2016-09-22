@@ -21,12 +21,21 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
+
+__all__ = ['Tc', 'Pc', 'Vc', 'Zc', 'third_property', 'critical_surface', 
+           'Ihmels', 'Meissner', 'Grigoras', 'Li', 
+           'Chueh_Prausnitz_Tc', 'Grieves_Thodos', 'modified_Wilson_Tc', 
+           'Tc_mixture', 'Pc_mixture', 'Chueh_Prausnitz_Vc', 
+           'modified_Wilson_Vc', 'Vc_mixture']
+__all__.extend(['Tc_methods', 'Pc_methods', 'Vc_methods', 'Zc_methods', 
+                'critical_surface_methods', '_crit_IUPAC', '_crit_Matthews', 
+                '_crit_CRC', '_crit_PSRKR4', '_crit_PassutDanner', '_crit_Yaws'])
+
 import os
-#from math import log
-from thermo.utils import log
 import numpy as np
 from scipy.constants import R
 import pandas as pd
+from thermo.utils import log
 from thermo.utils import mixing_simple, none_and_length_check
 
 
@@ -70,14 +79,14 @@ _crit_Yaws['Zc'] = pd.Series(_crit_Yaws['Pc']*_crit_Yaws['Vc']/_crit_Yaws['Tc']/
 
 ### Strings defining each method
 
-IUPAC = 'IUPAC Organic Critical Properties'
-MATTHEWS = 'Matthews Inorganic Critical Properties'
-CRC = 'CRC Organic Critical Properties'
-PSRK = 'PSRK Revision 4 Appendix'
-PD = 'Passut Danner 1973 Critical Properties'
-YAWS = 'Yaws Critical Properties'
-SURF = 'Critical Surface'
-NONE = 'None'
+IUPAC = 'IUPAC'
+MATTHEWS = 'MATTHEWS'
+CRC = 'CRC'
+PSRK = 'PSRK'
+PD = 'PD'
+YAWS = 'YAWS'
+SURF = 'SURF'
+NONE = 'NONE'
 Tc_methods = [IUPAC, MATTHEWS, CRC, PSRK, PD, YAWS, SURF]
 
 
@@ -87,9 +96,8 @@ def Tc(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[SURF]):
     source to use if no Method is provided; returns None if the data is not
     available.
 
-    Prefered sources are 'IUPAC Organic Critical Properties' for organic
-    chemicals, and 'Matthews Inorganic Critical Properties' for inorganic
-    chemicals. Function has data for approximately 1000 chemicals.
+    Prefered sources are 'IUPAC' for organic chemicals, and 'MATTHEWS' for 
+    inorganic chemicals. Function has data for approximately 1000 chemicals.
 
     Parameters
     ----------
@@ -106,8 +114,9 @@ def Tc(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[SURF]):
     Other Parameters
     ----------------
     Method : string, optional
-        A string for the method name to use, as defined by constants in
-        Tc_methods
+        The method name to use. Accepted methods are 'IUPAC', 'MATTHEWS', 
+        'CRC', 'PSRK', 'PD', 'YAWS', and 'SURF'. All valid values are also held  
+        in the list `Tc_methods`.
     AvailableMethods : bool, optional
         If True, function will determine which methods can be used to obtain
         Tc for the desired chemical, and will return methods instead of Tc
@@ -255,7 +264,7 @@ def Tc(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[SURF]):
     elif Method == YAWS:
         _Tc = float(_crit_Yaws.at[CASRN, 'Tc'])
     elif Method == SURF:
-        _Tc = ThirdProperty(CASRN=CASRN, T=True)
+        _Tc = third_property(CASRN=CASRN, T=True)
     elif Method == NONE:
         _Tc = None
     else:
@@ -272,9 +281,8 @@ def Pc(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[SURF]):
     source to use if no Method is provided; returns None if the data is not
     available.
 
-    Prefered sources are 'IUPAC Organic Critical Properties' for organic
-    chemicals, and 'Matthews Inorganic Critical Properties' for inorganic
-    chemicals. Function has data for approximately 1000 chemicals.
+    Prefered sources are 'IUPAC' for organic chemicals, and 'MATTHEWS' for 
+    inorganic chemicals. Function has data for approximately 1000 chemicals.
 
     Examples
     --------
@@ -296,8 +304,9 @@ def Pc(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[SURF]):
     Other Parameters
     ----------------
     Method : string, optional
-        A string for the method name to use, as defined by constants in
-        Pc_methods
+        The method name to use. Accepted methods are 'IUPAC', 'MATTHEWS', 
+        'CRC', 'PSRK', 'PD', 'YAWS', and 'SURF'. All valid values are also held  
+        in the list `Pc_methods`.
     AvailableMethods : bool, optional
         If True, function will determine which methods can be used to obtain
         Pc for the desired chemical, and will return methods instead of Pc
@@ -309,22 +318,22 @@ def Pc(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[SURF]):
     -----
     A total of seven sources are available for this function. They are:
 
-        * 'IUPAC Organic Critical Properties', a series of critically evaluated
+        * 'IUPAC', a series of critically evaluated
           experimental datum for organic compounds in [1]_, [2]_, [3]_, [4]_,
           [5]_, [6]_, [7]_, [8]_, [9]_, [10]_, [11]_, and [12]_.
-        * 'Matthews Inorganic Critical Properties', a series of critically
+        * 'MATTHEWS', a series of critically
           evaluated data for inorganic compounds in [13]_.
-        * 'CRC Organic Critical Properties', a compillation of critically
+        * 'CRC', a compillation of critically
           evaluated data by the TRC as published in [14]_.
-        * 'PSRK Revision 4 Appendix', a compillation of experimental and
+        * 'PSRK', a compillation of experimental and
           estimated data published in [15]_.
-        * 'Passut Danner 1973 Critical Properties', an older compillation of
+        * 'PD', an older compillation of
           data published in [16]_
-        * 'Yaws Critical Properties', a large compillation of data from a
+        * 'YAWS', a large compillation of data from a
           variety of sources; no data points are sourced in the work of [17]_.
-        * Critical Surface', an estimation method using a
+        * SURF', an estimation method using a
           simple quadratic method for estimating Pc from Tc and Vc. This is
-          ignored and not returned as a method by default
+          ignored and not returned as a method by default.
 
     References
     ----------
@@ -439,7 +448,7 @@ def Pc(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[SURF]):
     elif Method == YAWS:
         _Pc = float(_crit_Yaws.at[CASRN, 'Pc'])
     elif Method == SURF:
-        _Pc = ThirdProperty(CASRN=CASRN, P=True)
+        _Pc = third_property(CASRN=CASRN, P=True)
     elif Method == NONE:
         return None
     else:
@@ -456,9 +465,8 @@ def Vc(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[SURF]):
     source to use if no Method is provided; returns None if the data is not
     available.
 
-    Prefered sources are 'IUPAC Organic Critical Properties' for organic
-    chemicals, and 'Matthews Inorganic Critical Properties' for inorganic
-    chemicals. Function has data for approximately 1000 chemicals.
+    Prefered sources are 'IUPAC' for organic chemicals, and 'MATTHEWS' for 
+    inorganic chemicals. Function has data for approximately 1000 chemicals.
 
     Examples
     --------
@@ -480,8 +488,9 @@ def Vc(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[SURF]):
     Other Parameters
     ----------------
     Method : string, optional
-        A string for the method name to use, as defined by constants in
-        Vc_methods
+        The method name to use. Accepted methods are 'IUPAC', 'MATTHEWS', 
+        'CRC', 'PSRK', 'YAWS', and 'SURF'. All valid values are also held  
+        in the list `Vc_methods`.
     AvailableMethods : bool, optional
         If True, function will determine which methods can be used to obtain
         Vc for the desired chemical, and will return methods instead of Vc
@@ -493,18 +502,18 @@ def Vc(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[SURF]):
     -----
     A total of six sources are available for this function. They are:
 
-        * 'IUPAC Organic Critical Properties', a series of critically evaluated
+        * 'IUPAC', a series of critically evaluated
           experimental datum for organic compounds in [1]_, [2]_, [3]_, [4]_,
           [5]_, [6]_, [7]_, [8]_, [9]_, [10]_, [11]_, and [12]_.
-        * 'Matthews Inorganic Critical Properties', a series of critically
+        * 'MATTHEWS', a series of critically
           evaluated data for inorganic compounds in [13]_.
-        * 'CRC Organic Critical Properties', a compillation of critically
+        * 'CRC', a compillation of critically
           evaluated data by the TRC as published in [14]_.
-        * 'PSRK Revision 4 Appendix', a compillation of experimental and
+        * 'PSRK', a compillation of experimental and
           estimated data published in [15]_.
-        * 'Yaws Critical Properties', a large compillation of data from a
+        * 'YAWS', a large compillation of data from a
           variety of sources; no data points are sourced in the work of [16]_.
-        * Critical Surface', an estimation method using a
+        * 'SURF', an estimation method using a
           simple quadratic method for estimating Pc from Tc and Vc. This is
           ignored and not returned as a method by default
 
@@ -613,7 +622,7 @@ def Vc(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[SURF]):
     elif Method == YAWS:
         _Vc = float(_crit_Yaws.at[CASRN, 'Vc'])
     elif Method == SURF:
-        _Vc = ThirdProperty(CASRN=CASRN, V=True)
+        _Vc = third_property(CASRN=CASRN, V=True)
     elif Method == NONE:
         return None
     else:
@@ -621,7 +630,7 @@ def Vc(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[SURF]):
     return _Vc
 
 
-COMBINED = 'Combined'
+COMBINED = 'COMBINED'
 Zc_methods = [IUPAC, MATTHEWS, CRC, PSRK, YAWS, COMBINED]
 
 
@@ -631,9 +640,8 @@ def Zc(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[COMBINED]):
     data source to use if no Method is provided; returns None if the data is
     not available.
 
-    Prefered sources are 'IUPAC Organic Critical Properties' for organic
-    chemicals, and 'Matthews Inorganic Critical Properties' for inorganic
-    chemicals. Function has data for approximately 1000 chemicals.
+    Prefered sources are 'IUPAC' for organic chemicals, and 'MATTHEWS' for 
+    inorganic chemicals. Function has data for approximately 1000 chemicals.
 
     Examples
     --------
@@ -655,8 +663,9 @@ def Zc(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[COMBINED]):
     Other Parameters
     ----------------
     Method : string, optional
-        A string for the method name to use, as defined by constants in
-        Zc_methods
+        The method name to use. Accepted methods are 'IUPAC', 'MATTHEWS', 
+        'CRC', 'PSRK', 'YAWS', and 'COMBINED'. All valid values are also held  
+        in `Zc_methods`.
     AvailableMethods : bool, optional
         If True, function will determine which methods can be used to obtain
         Zc for the desired chemical, and will return methods instead of Zc
@@ -668,16 +677,16 @@ def Zc(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[COMBINED]):
     -----
     A total of five sources are available for this function. They are:
 
-        * 'IUPAC Organic Critical Properties', a series of critically evaluated
+        * 'IUPAC', a series of critically evaluated
           experimental datum for organic compounds in [1]_, [2]_, [3]_, [4]_,
           [5]_, [6]_, [7]_, [8]_, [9]_, [10]_, [11]_, and [12]_.
-        * 'Matthews Inorganic Critical Properties', a series of critically
+        * 'MATTHEWS', a series of critically
           evaluated data for inorganic compounds in [13]_.
-        * 'CRC Organic Critical Properties', a compillation of critically
+        * 'CRC', a compillation of critically
           evaluated data by the TRC as published in [14]_.
-        * 'PSRK Revision 4 Appendix', a compillation of experimental and
+        * 'PSRK', a compillation of experimental and
           estimated data published in [15]_.
-        * 'Yaws Critical Properties', a large compillation of data from a
+        * 'YAWS', a large compillation of data from a
           variety of sources; no data points are sourced in the work of [16]_.
 
     References
@@ -993,9 +1002,10 @@ def Grigoras(Tc=None, Pc=None, Vc=None):
         raise Exception('Two of Tc, Pc, and Vc must be provided')
 
 
-IHMELS = 'Ihmels'
-MEISSNER = 'Meissner'
-GRIGORAS = 'Grigoras'
+IHMELS = 'IHMELS'
+MEISSNER = 'MEISSNER'
+GRIGORAS = 'GRIGORAS'
+critical_surface_methods = [IHMELS, MEISSNER, GRIGORAS]
 
 
 def critical_surface(Tc=None, Pc=None, Vc=None, AvailableMethods=False,
@@ -1059,7 +1069,7 @@ def critical_surface(Tc=None, Pc=None, Vc=None, AvailableMethods=False,
     return Third
 
 
-def ThirdProperty(CASRN=None, T=False, P=False, V=False):
+def third_property(CASRN=None, T=False, P=False, V=False):
     r'''Function for calculating a critical property of a substance from its
     other two critical properties, but retrieving the actual other critical
     values for convenient calculation.
@@ -1093,11 +1103,11 @@ def ThirdProperty(CASRN=None, T=False, P=False, V=False):
     Examples
     --------
     >>> # Decamethyltetrasiloxane [141-62-8]
-    >>> ThirdProperty('141-62-8', V=True)
+    >>> third_property('141-62-8', V=True)
     0.0010920041152263375
 
     >>> # Succinic acid 110-15-6
-    >>> ThirdProperty('110-15-6', P=True)
+    >>> third_property('110-15-6', P=True)
     6095016.233766234
     '''
     Third = None
@@ -1468,12 +1478,11 @@ def Tc_mixture(Tcs=None, zs=None, CASRNs=None, AvailableMethods=False, Method=No
         Method = list_methods()[0]
     # This is the calculate, given the method section
     if Method == 'Simple':
-        _Tc = mixing_simple(zs, Tcs)
+        return mixing_simple(zs, Tcs)
     elif Method == 'None':
         return None
     else:
         raise Exception('Failure in in function')
-    return _Tc
 
 ### Crtical Pressure of Mixtures
 
@@ -1499,12 +1508,11 @@ def Pc_mixture(Pcs=None, zs=None, CASRNs=None, AvailableMethods=False, Method=No
         Method = list_methods()[0]
     # This is the calculate, given the method section
     if Method == 'Simple':
-        _Pc = mixing_simple(zs, Pcs)
+        return mixing_simple(zs, Pcs)
     elif Method == 'None':
         return None
     else:
         raise Exception('Failure in in function')
-    return _Pc
 
 
 ### Crtical Volume of Mixtures
@@ -1655,11 +1663,10 @@ def Vc_mixture(Vcs=None, zs=None, CASRNs=None, AvailableMethods=False, Method=No
         Method = list_methods()[0]
     # This is the calculate, given the method section
     if Method == 'Simple':
-        _Vc = mixing_simple(zs, Vcs)
+        return mixing_simple(zs, Vcs)
     elif Method == 'None':
         return None
     else:
         raise Exception('Failure in in function')
-    return _Vc
 
 

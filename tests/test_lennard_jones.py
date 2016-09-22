@@ -22,6 +22,7 @@ SOFTWARE.'''
 
 from numpy.testing import assert_allclose
 import pytest
+import pandas as pd
 from thermo.lennard_jones import *
 
 def test_LJ_data():

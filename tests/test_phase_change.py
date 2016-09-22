@@ -24,6 +24,7 @@ from numpy.testing import assert_allclose
 import pytest
 
 from thermo.phase_change import *
+from thermo.miscdata import CRC_inorganic_data, CRC_organic_data
 from thermo.identifiers import checkCAS
 
 def test_Hvap():
@@ -136,7 +137,7 @@ def test_Tb():
     assert_allclose(Tbs, Tbs_calc)
 
     hits = [Tb(i, AvailableMethods=True) for i in ['993-50-0', '626-94-8', '7631-99-4']]
-    assert hits == [[CRC_INORG, NONE], [CRC_ORG, NONE], [YAWS, NONE]]
+    assert hits == [['CRC_INORG', 'NONE'], ['CRC_ORG', 'NONE'], ['YAWS', 'NONE']]
 
     s1 = CRC_inorganic_data.loc[CRC_inorganic_data['Tb'].notnull()].index
     s2 = CRC_organic_data.loc[CRC_organic_data['Tb'].notnull()].index
@@ -145,7 +146,7 @@ def test_Tb():
     tots = []
     tots_exp = [639213.2310000042, 2280667.079999829, 6631287.510000873]
     # These should match the sums of the respective series
-    for s, method in zip([s1, s2, s3], [CRC_INORG, CRC_ORG, YAWS]):
+    for s, method in zip([s1, s2, s3], ['CRC_INORG', 'CRC_ORG', 'YAWS']):
         tots.append(sum([Tb(i, Method=method) for i in s]))
     assert_allclose(tots, tots_exp)
 
@@ -153,17 +154,17 @@ def test_Tb():
         Tb('993-50-0', Method='BADMETHOD')
 
     assert None == Tb('9923443-50-0')
-    assert [NONE] == Tb('9923443-50-0', AvailableMethods=True)
+    assert ['NONE'] == Tb('9923443-50-0', AvailableMethods=True)
 
     s = set(); s.update(s1); s.update(s2); s.update(s3)
 
     w_methods = Tb('7732-18-5', AvailableMethods=True, IgnoreMethods=[])
-    assert w_methods == [CRC_INORG, YAWS, PSAT_DEFINITION, NONE]
+    assert w_methods == ['CRC_INORG', 'YAWS', 'PSAT_DEFINITION', 'NONE']
 
     Tbs = [Tb('7732-18-5', Method=i) for i in w_methods]
     assert_allclose(Tbs[0:-1], [373.124, 373.15, 373.16118392807095])
 
-    assert None == Tb('7732-18-5', IgnoreMethods=[CRC_ORG, CRC_INORG, YAWS, PSAT_DEFINITION])
+    assert None == Tb('7732-18-5', IgnoreMethods=['CRC_ORG', 'CRC_INORG', 'YAWS', 'PSAT_DEFINITION'])
 
 
 
@@ -174,7 +175,7 @@ def test_Tm():
     assert_allclose(Tms, Tms_calc)
 
     hits = [Tm(i, AvailableMethods=True) for i in ['996-50-9', '999-78-0', '993-50-0']]
-    assert hits == [[OPEN_NTBKM, NONE], [CRC_ORG, NONE], [CRC_INORG, NONE]]
+    assert hits == [['OPEN_NTBKM', 'NONE'], ['CRC_ORG', 'NONE'], ['CRC_INORG', 'NONE']]
 
 
     s1 = CRC_inorganic_data.loc[CRC_inorganic_data['Tm'].notnull()].index
@@ -183,7 +184,7 @@ def test_Tm():
     tots = []
     tots_exp = [1543322.6125999668, 2571284.480399755, 4059989.4249993376]
     # These should match the sums of the respective series
-    for s, method in zip([s1, s2, s3], [CRC_INORG, CRC_ORG, OPEN_NTBKM]):
+    for s, method in zip([s1, s2, s3], ['CRC_INORG', 'CRC_ORG', 'OPEN_NTBKM']):
         tots.append(sum([Tm(i, Method=method) for i in s]))
     assert_allclose(tots, tots_exp)
 
@@ -191,16 +192,16 @@ def test_Tm():
         Tm('993-50-0', Method='BADMETHOD')
 
     assert None == Tm('9923443-50-0')
-    assert [NONE] == Tm('9923443-50-0', AvailableMethods=True)
+    assert ['NONE'] == Tm('9923443-50-0', AvailableMethods=True)
 
 
     w_methods = Tm('7732-18-5', AvailableMethods=True)
-    assert w_methods == [OPEN_NTBKM, CRC_INORG, NONE]
+    assert w_methods == ['OPEN_NTBKM', 'CRC_INORG', 'NONE']
 
     Tms = [Tm('7732-18-5', Method=i) for i in w_methods]
     assert_allclose(Tms[0:-1], [273.15, 273.15])
 
-    assert None == Tm('7732-18-5', IgnoreMethods=[CRC_ORG, CRC_INORG, OPEN_NTBKM])
+    assert None == Tm('7732-18-5', IgnoreMethods=['CRC_ORG', 'CRC_INORG', 'OPEN_NTBKM'])
 
 @pytest.mark.meta_T_dept
 def test_EnthalpyVaporization():
@@ -213,18 +214,18 @@ def test_EnthalpyVaporization():
     assert [None]*14 == [(EtOH.set_user_methods(i), EtOH.T_dependent_property(5000))[1] for i in EtOH.all_methods]
 
     EtOH = EnthalpyVaporization(CASRN='64-17-5')
-    Hvap_calc = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(298.15))[1] for i in [GHARAGHEIZI_HVAP_298, CRC_HVAP_298, VDI_TABULAR, COOLPROP]]
+    Hvap_calc = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(298.15))[1] for i in ['GHARAGHEIZI_HVAP_298', 'CRC_HVAP_298', 'VDI_TABULAR', 'COOLPROP']]
     Hvap_exp = [42200.0, 42320.0, 42468.433273309995, 42413.51210041263]
     assert_allclose(Hvap_calc, Hvap_exp)
 
     # Test Clapeyron, without Zl
     EtOH = EnthalpyVaporization(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, similarity_variable=0.1954, Psat=7872.2, Zg=0.9633, CASRN='64-17-5')
-    assert_allclose(EtOH.calculate(298.15, CLAPEYRON), 37864.69224390057)
+    assert_allclose(EtOH.calculate(298.15, 'CLAPEYRON'), 37864.69224390057)
 
     EtOH = EnthalpyVaporization(Tb=351.39, Pc=6137000.0, omega=0.635, similarity_variable=0.1954, Psat=7872.2, Zg=0.9633, CASRN='64-17-5')
-    assert EtOH.test_method_validity(351.39, CRC_HVAP_TB)
-    assert not EtOH.test_method_validity(351.39+10, CRC_HVAP_TB)
-    assert not EtOH.test_method_validity(351.39, CRC_HVAP_298)
+    assert EtOH.test_method_validity(351.39, 'CRC_HVAP_TB')
+    assert not EtOH.test_method_validity(351.39+10, 'CRC_HVAP_TB')
+    assert not EtOH.test_method_validity(351.39, 'CRC_HVAP_298')
 
     Ts = [200, 250, 300, 400, 450]
     props = [46461.62768429649, 44543.08561867195, 42320.381894706225, 34627.726535926406, 27634.46144486471]

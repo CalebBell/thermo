@@ -21,9 +21,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
+
+__all__ = ['Staveley_data', 'Tt_methods', 'Tt', 'Pt_methods', 'Pt']
+
 import os
 import numpy as np
 import pandas as pd
+
 from thermo.phase_change import Tm
 from thermo.vapor_pressure import VaporPressure
 
@@ -33,9 +37,9 @@ folder = os.path.join(os.path.dirname(__file__), 'Triple Properties')
 Staveley_data = pd.read_csv(os.path.join(folder, 'Staveley 1981.csv'),
                        sep='\t', index_col=0)
 
-STAVELEY = 'Staveley (1981)'
-MELTING = 'Melting point'
-NONE = 'None'
+STAVELEY = 'STAVELEY'
+MELTING = 'MELTING'
+NONE = 'NONE'
 
 Tt_methods = [STAVELEY, MELTING]
 
@@ -54,7 +58,7 @@ def Tt(CASRN, AvailableMethods=False, Method=None):
 
     Returns
     -------
-    _Tt : float
+    Tt : float
         Triple point temperature, [K]
     methods : list, only returned if AvailableMethods == True
         List of methods which can be used to obtain Tt with the
@@ -105,16 +109,16 @@ def Tt(CASRN, AvailableMethods=False, Method=None):
         Method = list_methods()[0]
 
     if Method == STAVELEY:
-        _Tt = Staveley_data.at[CASRN, "Tt68"]
+        Tt = Staveley_data.at[CASRN, "Tt68"]
     elif Method == MELTING:
-        _Tt = Tm(CASRN)
+        Tt = Tm(CASRN)
     elif Method == NONE:
-        _Tt = None
+        Tt = None
     else:
         raise Exception('Failure in in function')
-    return _Tt
+    return Tt
 
-DEFINITION = 'Vapor pressure calculation'
+DEFINITION = 'DEFINITION'
 Pt_methods = [STAVELEY, DEFINITION]
 
 
@@ -133,7 +137,7 @@ def Pt(CASRN, AvailableMethods=False, Method=None):
 
     Returns
     -------
-    _Pt : float
+    Pt : float
         Triple point pressure, [Pa]
     methods : list, only returned if AvailableMethods == True
         List of methods which can be used to obtain Pt with the
@@ -151,7 +155,6 @@ def Pt(CASRN, AvailableMethods=False, Method=None):
 
     Notes
     -----
-
 
     Examples
     --------
@@ -180,12 +183,12 @@ def Pt(CASRN, AvailableMethods=False, Method=None):
         Method = list_methods()[0]
 
     if Method == STAVELEY:
-        _Pt = Staveley_data.at[CASRN, 'Pt']
+        Pt = Staveley_data.at[CASRN, 'Pt']
     elif Method == DEFINITION:
-        _Pt = VaporPressure(CASRN=CASRN).T_dependent_property(T=Tt(CASRN))
+        Pt = VaporPressure(CASRN=CASRN).T_dependent_property(T=Tt(CASRN))
     elif Method == NONE:
-        _Pt = None
+        Pt = None
     else:
         raise Exception('Failure in in function')
-    return _Pt
+    return Pt
 

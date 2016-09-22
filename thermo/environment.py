@@ -21,6 +21,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
+
+__all__ = ['GWP', 'ODP', 'logP', 'GWP_methods', 'GWP_data', 'ODP_methods', 
+           'ODP_data', 'logP_methods', 'CRClogPDict', 'SyrresDict2']
+
 import os
 import pandas as pd
 
@@ -58,7 +62,7 @@ def GWP(CASRN='', AvailableMethods=False, Method=None):
 
     Returns
     -------
-    _GWP : float
+    GWP : float
         Global warming potential, [(impact/mass chemical)/(impact/mass CO2)]
     methods : list, only returned if AvailableMethods == True
         List of methods which can be used to obtain GWP with the
@@ -67,8 +71,9 @@ def GWP(CASRN='', AvailableMethods=False, Method=None):
     Other Parameters
     ----------------
     Method : string, optional
-        A string for the method name to use, as defined by constants in
-        GWP_methods
+        The method name to use. Accepted methods are IPCC (2007) 100yr',
+        'IPCC (2007) 100yr-SAR', 'IPCC (2007) 20yr', and 'IPCC (2007) 500yr'. 
+        All valid values are also held in the list GWP_methods.
     AvailableMethods : bool, optional
         If True, function will determine which methods can be used to obtain
         the GWP for the desired chemical, and will return methods
@@ -159,7 +164,7 @@ def ODP(CASRN='', AvailableMethods=False, Method=None):
 
     Returns
     -------
-    _ODP : float or str
+    ODP : float or str
         Ozone Depletion potential, [(impact/mass chemical)/(impact/mass CFC-11)];
         if method selected has `string` in it, this will be returned as a
         string regardless of if a range is given or a number
@@ -169,6 +174,11 @@ def ODP(CASRN='', AvailableMethods=False, Method=None):
 
     Other Parameters
     ----------------
+    Method : string, optional
+        The method name to use. Accepted methods are 'ODP2 Max', 'ODP2 Min', 
+        'ODP2 string', 'ODP2 logarithmic average', and methods for older values
+        are 'ODP1 Max', 'ODP1 Min', 'ODP1 string', and 'ODP1 logarithmic average'.
+        All valid values are also held in the list ODP_methods.
     Method : string, optional
         A string for the method name to use, as defined by constants in
         ODP_methods
@@ -269,9 +279,9 @@ SyrresDict2 = pd.read_csv(os.path.join(folder,
                        'Syrres logP data.csv.gz'), sep='\t',
                        index_col=0, compression='gzip')
 
-SYRRES = 'Syrres'
-CRC = 'CRC Handbook'
-NONE = 'None'
+SYRRES = 'SYRRES'
+CRC = 'CRC'
+NONE = 'NONE'
 logP_methods = [SYRRES, CRC]
 
 
@@ -288,7 +298,7 @@ def logP(CASRN='', AvailableMethods=False, Method=None):
 
     Returns
     -------
-    _logP : float
+    logP : float
         Octanol-water partition coefficient, [-]
     methods : list, only returned if AvailableMethods == True
         List of methods which can be used to obtain logP with the
@@ -297,8 +307,8 @@ def logP(CASRN='', AvailableMethods=False, Method=None):
     Other Parameters
     ----------------
     Method : string, optional
-        A string for the method name to use, as defined by constants in
-        logP_methods
+        The method name to use. Accepted methods are 'SYRRES', or 'CRC', 
+        All valid values are also held in the list logP_methods.
     AvailableMethods : bool, optional
         If True, function will determine which methods can be used to obtain
         the logP for the desired chemical, and will return methods

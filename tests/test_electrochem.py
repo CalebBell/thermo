@@ -25,7 +25,7 @@ import pytest
 import numpy as np
 import pandas as pd
 from thermo.electrochem import *
-from thermo.electrochem import Laliberte_data, _Laliberte_Density_ParametersDict, _Laliberte_Viscosity_ParametersDict, _Laliberte_Heat_Capacity_ParametersDict
+from thermo.electrochem import _Laliberte_Density_ParametersDict, _Laliberte_Viscosity_ParametersDict, _Laliberte_Heat_Capacity_ParametersDict
 from thermo.identifiers import checkCAS
 from math import log10
 

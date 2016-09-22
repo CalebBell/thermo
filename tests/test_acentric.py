@@ -39,17 +39,17 @@ def test_acentric_main():
     omegas_default_sum = pd.Series(omegas).sum()
     assert_allclose(omegas_default_sum, 3520.538831100246)
 
-    omega_calc = omega('629-92-5', Method=DEFINITION)
+    omega_calc = omega('629-92-5', Method='DEFINITION')
     assert_allclose(omega_calc, 0.84483960799853519)
 
-    omega_calc = omega('629-92-5', Method=PSRK)
+    omega_calc = omega('629-92-5', Method='PSRK')
     assert_allclose(omega_calc, 0.8486)
 
-    omega_calc = omega('629-92-5', Method=PD)
+    omega_calc = omega('629-92-5', Method='PD')
     assert_allclose(omega_calc, 0.8271)
 
     methods = omega('74-98-6', AvailableMethods=True, IgnoreMethods=None)
-    assert methods == [PSRK, PD, YAWS, LK, DEFINITION, NONE]
+    assert methods == ['PSRK', 'PD', 'YAWS', 'LK', 'DEFINITION', 'NONE']
 
     # Error handling
     assert None == omega(CASRN='BADCAS')
@@ -68,9 +68,9 @@ def test_acentric_mixture():
     assert_allclose(o, 0.0915)
 
     methods = omega_mixture([0.025, 0.12], [0.3, 0.7], AvailableMethods=True)
-    assert methods == [SIMPLE, NONE]
+    assert methods == ['SIMPLE', 'NONE']
 
-    assert [NONE] == omega_mixture([0.025, 0.12], [], AvailableMethods=True)
+    assert ['NONE'] == omega_mixture([0.025, 0.12], [], AvailableMethods=True)
     assert None == omega_mixture([0.025, 0.12], [])
 
     with pytest.raises(Exception):
@@ -81,7 +81,7 @@ def test_StielPolar():
     factor = StielPolar(647.3, 22048321.0, 0.344, CASRN='7732-18-5')
     assert_allclose(factor, 0.02458114034873482)
 
-    assert [DEFINITION, NONE] == StielPolar(647.3, 22048321.0, 0.344, CASRN='7732-18-5', AvailableMethods=True)
+    assert ['DEFINITION', 'NONE'] == StielPolar(647.3, 22048321.0, 0.344, CASRN='7732-18-5', AvailableMethods=True)
 
     # Test missing Pc
     assert None == StielPolar(647.3, 22048321)

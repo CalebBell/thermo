@@ -21,6 +21,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
+
+__all__ = ['checkCAS', 'CASfromAny', 'PubChem', 'MW', 'formula', 'smiles', 
+           'InChI', 'InChI_Key', 'IUPAC_name', 'name', 'synonyms', 
+           '_MixtureDict', 'mixture_from_any', 'cryogenics', 'dippr_compounds',
+           'pubchem_dict']
 import os
 from thermo.utils import to_num
 

@@ -21,6 +21,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
+
+__all__ = ['Chemical', 'Mixture', 'Stream', 'reference_states']
+
+from scipy.constants import R
+
 from thermo.identifiers import *
 from thermo.identifiers import _MixtureDict
 from thermo.vapor_pressure import VaporPressure
@@ -40,7 +45,7 @@ from thermo.reaction import Hf
 from thermo.combustion import Hcombustion
 from thermo.safety import Tflash, Tautoignition, LFL, UFL, TWA, STEL, Ceiling, Skin, Carcinogen, LFL_mixture, UFL_mixture
 from thermo.solubility import solubility_parameter
-from thermo.dipole import dipole
+from thermo.dipole import dipole_moment as dipole
 from thermo.utils import *
 from fluids.core import Reynolds, Capillary, Weber, Bond, Grashof, Peclet_heat
 from thermo.lennard_jones import Stockmayer, molecular_diameter
@@ -68,6 +73,7 @@ from collections import Counter
 
 import warnings
 warnings.filterwarnings("ignore")
+
 
 
 # Format: (T, P, phase, H, S, molar=True)

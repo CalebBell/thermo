@@ -21,6 +21,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
+
+__all__ = ['DSL_data', 'CAN_DSL_flags', 'TSCA_flags', 'TSCA_data', 
+           'EINECS_data', 'SPIN_data', 'NLP_data', 'legal_status_methods', 
+           'legal_status', 'HPV_data', '_ECHATonnageDict', '_EPACDRDict', 
+           'economic_status', 'economic_status_methods']
+
 import os
 import zipfile
 from thermo.utils import to_num, CAS2int
@@ -29,15 +35,15 @@ import pandas as pd
 
 folder = os.path.join(os.path.dirname(__file__), 'Law')
 
-DSL = 'Domestic Substances List (Environment Canada)'
-TSCA = 'Toxic Substances Control Act (Environmental Protection Agency)'
-EINECS = 'European INventory of Existing Commercial chemical Substances'
-NLP = 'EINECS No-Longer Polymers'
-SPIN = 'Substances in Preparations In the Nordic countries'
-NONE = 'None'
-COMBINED = 'Combined'
-UNLISTED = 'Unlisted'
-LISTED = 'Listed'
+DSL = 'DSL'
+TSCA = 'TSCA'
+EINECS = 'EINECS'
+NLP = 'NLP'
+SPIN = 'SPIN'
+NONE = 'NONE'
+COMBINED = 'COMBINED'
+UNLISTED = 'UNLISTED'
+LISTED = 'LISTED'
 
 
 # Data is stored as integers to reduce memory usage
@@ -123,9 +129,10 @@ def legal_status(CASRN, Method=None, AvailableMethods=False, CASi=None):
 
     Notes
     -----
+
     Supported methods are:
 
-        * **Canada**: Domestic Substance List, [1]_. As extracted on Feb 11, 2015
+        * **DSL**: Canada Domestic Substance List, [1]_. As extracted on Feb 11, 2015
           from a html list. This list is updated continuously, so this version
           will always be somewhat old. Strictly speaking, there are multiple
           lists but they are all bundled together here. A chemical may be
@@ -134,7 +141,7 @@ def legal_status(CASRN, Method=None, AvailableMethods=False, CASi=None):
           or be on the DSL but with a 'Ministerial Condition pertaining to this
           substance', or have been removed from the DSL, or have had a
           Ministerial prohibition for the substance.
-        * **USA EPA**: Toxic Substances Control Act Chemical Inventory, [2]_.
+        * **TSCA**: USA EPA Toxic Substances Control Act Chemical Inventory, [2]_.
           This list is as extracted on 2016-01. It is believed this list is
           updated on a periodic basis (> 6 month). A chemical may simply be
           'Listed', or may have certain flags attached to it. All these flags
@@ -275,6 +282,8 @@ with open(os.path.join(folder, 'EPA 2012 Chemical Data Reporting.csv')) as f:
 EPACDR = 'EPA Chemical Data Reporting (2012)'
 ECHA = 'European Chemicals Agency Total Tonnage Bands'
 OECD = 'OECD high production volume chemicals'
+
+economic_status_methods = [EPACDR, ECHA, OECD]
 
 
 def economic_status(CASRN, Method=None, AvailableMethods=False):  # pragma: no cover

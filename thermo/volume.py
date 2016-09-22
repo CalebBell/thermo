@@ -21,24 +21,29 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
-#from math import log, exp
-from thermo.utils import log, exp
-import os
 
+__all__ = ['COSTALD_data', 'SNM0_data', 'Perry_l_data', 'CRC_inorg_l_data', 
+'CRC_inorg_l_const_data', 'CRC_inorg_s_const_data', 'CRC_virial_data', 
+'Yen_Woods_saturation', 'Rackett', 'Yamada_Gunn', 'Townsend_Hales', 
+'Bhirud_normal', 'COSTALD', 'Campbell_Thodos', 'SNM0', 'CRC_inorganic', 
+'volume_liquid_methods', 'volume_liquid_methods_P', 'VolumeLiquid', 
+'COSTALD_compressed', 'Amgat', 'Rackett_mixture', 'COSTALD_mixture', 
+'volume_liquid_mixture', 'ideal_gas', 'volume_gas_methods', 'VolumeGas', 
+'volume_gas_mixture_methods', 'Goodman', 'volume_solid_methods', 'VolumeSolid']
+
+import os
 import numpy as np
 from scipy.constants import R
 from scipy.interpolate import interp1d
-
 import pandas as pd
 
+from thermo.utils import log, exp
 from thermo.utils import Vm_to_rho, rho_to_Vm, mixing_simple, none_and_length_check
 from thermo.virial import BVirial_Pitzer_Curl, BVirial_Abbott, BVirial_Tsonopoulos, BVirial_Tsonopoulos_extended
 from thermo.pr import PR_Vm
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
 from thermo.dippr import EQ105
-
 from thermo.electrochem import _Laliberte_Density_ParametersDict, Laliberte_density
-
 from thermo.coolprop import has_CoolProp, PropsSI, PhaseSI, coolprop_fluids, coolprop_dict, CoolProp_T_dependent_property
 from thermo.utils import TDependentProperty, TPDependentProperty
 
@@ -649,25 +654,25 @@ def CRC_inorganic(T, rho0, k, Tm):
     return rho0 - k*(T-Tm)
 
 
-COOLPROP = 'CoolProp'
-PERRYDIPPR = "Perry's Handbook Table 2-32 DIPPR"
-MMSNM0 = 'Mchaweh and Moshfeghian SNM0 (2004)'
-MMSNM0FIT = 'Mchaweh and Moshfeghian SNM0 (2004) fitted'
-VDI_TABULAR = 'VDI Saturation'
-HTCOSTALD = 'Hankinson and Thomson COSTALD (1979)'
-HTCOSTALDFIT = 'Hankinson and Thomson COSTALD (1979) fitted'
-COSTALD_COMPRESSED = 'Hankinson and Thomson COSTALD (1982) compressed'
-RACKETT = 'Rackett (1970)'
-RACKETTFIT = 'Rackett (1970) fitted'
-YEN_WOODS_SAT = 'Yen Woods saturation'
-YAMADA_GUNN = 'Yamada Gunn'
-BHIRUD_NORMAL = 'Bhirud normal'
-TOWNSEND_HALES = 'Townsend Hales'
-CAMPBELL_THODOS = 'Campbell Thodos'
+COOLPROP = 'COOLPROP'
+PERRYDIPPR = "PERRYDIPPR"
+MMSNM0 = 'MMSNM0'
+MMSNM0FIT = 'MMSNM0FIT'
+VDI_TABULAR = 'VDI_TABULAR'
+HTCOSTALD = 'HTCOSTALD'
+HTCOSTALDFIT = 'HTCOSTALDFIT'
+COSTALD_COMPRESSED = 'COSTALD_COMPRESSED'
+RACKETT = 'RACKETT'
+RACKETTFIT = 'RACKETTFIT'
+YEN_WOODS_SAT = 'YEN_WOODS_SAT'
+YAMADA_GUNN = 'YAMADA_GUNN'
+BHIRUD_NORMAL = 'BHIRUD_NORMAL'
+TOWNSEND_HALES = 'TOWNSEND_HALES'
+CAMPBELL_THODOS = 'CAMPBELL_THODOS'
 
 
-CRC_INORG_L = 'CRC Handbook, Density of Molten Elements and Representative Salts'
-CRC_INORG_L_CONST = 'CRC Handbook, Physical Constants of Inorganic Compounds, liquid densities'
+CRC_INORG_L = 'CRC_INORG_L'
+CRC_INORG_L_CONST = 'CRC_INORG_L_CONST'
 
 volume_liquid_methods = [PERRYDIPPR, COOLPROP, MMSNM0FIT, VDI_TABULAR,
                          HTCOSTALDFIT, RACKETTFIT, CRC_INORG_L,
@@ -1558,13 +1563,13 @@ def ideal_gas(T, P):
 
 
 PR = 'PR'
-CRC_VIRIAL = 'CRC virial polynomials'
-TSONOPOULOS_EXTENDED = 'Tsonopoulos extended'
-TSONOPOULOS = 'Tsonopoulos'
-ABBOTT = 'Abbott'
-PITZER_CURL = 'Pitzer-Curl'
-IDEAL = 'Ideal gas'
-NONE = 'None'
+CRC_VIRIAL = 'CRC_VIRIAL'
+TSONOPOULOS_EXTENDED = 'TSONOPOULOS_EXTENDED'
+TSONOPOULOS = 'TSONOPOULOS'
+ABBOTT = 'ABBOTT'
+PITZER_CURL = 'PITZER_CURL'
+IDEAL = 'IDEAL'
+NONE = 'NONE'
 volume_gas_methods = [PR, CRC_VIRIAL, TSONOPOULOS_EXTENDED, TSONOPOULOS,
                       ABBOTT, PITZER_CURL, IDEAL]
 '''Holds all methods available for the VolumeGas class, for use in
@@ -1972,8 +1977,8 @@ def Goodman(T, Tt, rhol):
     return rhos
 
 
-GOODMAN = 'Goodman (2004)'
-CRC_INORG_S = 'CRC Inorganic solid constants'
+GOODMAN = 'GOODMAN'
+CRC_INORG_S = 'CRC_INORG_S'
 volume_solid_methods = [GOODMAN, CRC_INORG_S]
 '''Holds all methods available for the VolumeSolid class, for use in
 iterating over them.'''

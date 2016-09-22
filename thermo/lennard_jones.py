@@ -21,8 +21,21 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
+__all__ = ['MagalhaesLJ_data', 'Stockmayer_methods', 'Stockmayer', 
+'molecular_diameter_methods', 'molecular_diameter', 'sigma_Flynn', 
+'sigma_Bird_Stewart_Lightfoot_critical_2', 
+'sigma_Bird_Stewart_Lightfoot_critical_1', 
+'sigma_Bird_Stewart_Lightfoot_boiling', 'sigma_Bird_Stewart_Lightfoot_melting',
+'sigma_Stiel_Thodos', 'sigma_Tee_Gotoh_Steward_1', 'sigma_Tee_Gotoh_Steward_2',
+'sigma_Silva_Liu_Macedo', 'epsilon_Flynn', 
+'epsilon_Bird_Stewart_Lightfoot_critical', 
+'epsilon_Bird_Stewart_Lightfoot_boiling', 
+'epsilon_Bird_Stewart_Lightfoot_melting', 'epsilon_Stiel_Thodos', 
+'epsilon_Tee_Gotoh_Steward_1', 'epsilon_Tee_Gotoh_Steward_2', 
+'Neufeld_collision', 'collision_integral_Neufeld_Janzen_Aziz', 'As_collision',
+'Bs_collision', 'Cs_collision', 'collision_integral_Kim_Monroe', 'Tstar']
+
 import os
-#from math import exp, log, sin
 from thermo.utils import exp, log, sin
 from scipy.constants import k
 import pandas as pd

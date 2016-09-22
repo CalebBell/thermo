@@ -67,7 +67,7 @@ def test_similarity_variable():
 
 
 def test_elements_data():
-    tots_calc = [sum([getattr(i, att) for i in elements if not getattr(i, att) is None]) for att in
+    tots_calc = [sum([getattr(i, att) for i in periodic_table if not getattr(i, att) is None]) for att in
     ['number', 'MW', 'period', 'group', 'AReneg', 'rcov', 'rvdw', 'maxbonds', 'elneg', 'ionization', 'elaffinity', 'electrons', 'protons']]
     tots_exp = [7021, 17285.2137652, 620, 895, 109.91, 144.3100000000001, 179.4300000000001, 94, 163.27000000000007, 816.4238999999999, 67.50297235000001, 7021, 7021]
     assert_allclose(tots_calc, tots_exp)

@@ -21,8 +21,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
+
+__all__ = ['CRC_RI_organic', 'RI_methods', 'refractive_index', 
+           'polarizability_from_RI', 'molar_refractivity_from_RI', 
+           'RI_from_molar_refractivity']
+
 import os
-#from math import pi
 from thermo.utils import pi
 from scipy.constants import N_A
 import pandas as pd
@@ -32,8 +36,8 @@ folder = os.path.join(os.path.dirname(__file__), 'Misc')
 CRC_RI_organic = pd.read_csv(os.path.join(folder, 'CRC Handbook Organic RI.csv'),
                              sep='\t', index_col=0)
 
-CRC = 'CRC Organic RIs'
-NONE = 'None'
+CRC = 'CRC'
+NONE = 'NONE'
 RI_methods = [CRC]
 
 
@@ -42,7 +46,6 @@ def refractive_index(CASRN='', T=None, AvailableMethods=False, Method=None,
     r'''This function handles the retrieval of a chemical's refractive
     index. Lookup is based on CASRNs. Will automatically select a data source
     to use if no Method is provided; returns None if the data is not available.
-
 
     Function has data for approximately 4500 chemicals.
 
@@ -76,7 +79,7 @@ def refractive_index(CASRN='', T=None, AvailableMethods=False, Method=None,
     -----
     Only one source is available in this function. It is:
 
-        * 'CRC Organic RIs', a compillation of data in [1]_.
+        * 'CRC', a compillation of Organic RI data in [1]_.
 
     Examples
     --------

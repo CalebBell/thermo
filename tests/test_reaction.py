@@ -22,9 +22,11 @@ SOFTWARE.'''
 
 from numpy.testing import assert_allclose
 import pytest
+import pandas as pd
 
 from thermo.identifiers import checkCAS
 from thermo.reaction import *
+from thermo.heat_capacity import TRC_gas_data
 
 
 def test_API_TDB_data():
@@ -53,10 +55,10 @@ def test_ATcT_g():
 
 
 def test_Hf():
-    Hfs = [Hf('7732-18-5'), Hf('7732-18-5', Method=API_TDB)]
+    Hfs = [Hf('7732-18-5'), Hf('7732-18-5', Method='API_TDB')]
     assert_allclose(Hfs, [-241820.0]*2)
 
-    assert Hf('7732-18-5', AvailableMethods=True) == [API_TDB, NONE]
+    assert Hf('7732-18-5', AvailableMethods=True) == ['API_TDB', 'NONE']
 
     assert None == Hf('98-00-0')
 
@@ -68,10 +70,10 @@ def test_Hf():
 
 
 def test_Hf_l():
-    Hfs = [Hf_l('67-56-1'), Hf_l('67-56-1', Method=ATCT_L)]
+    Hfs = [Hf_l('67-56-1'), Hf_l('67-56-1', Method='ATCT_L')]
     assert_allclose(Hfs, [-238400.0]*2)
 
-    assert Hf_l('67-56-1', AvailableMethods=True) == [ATCT_L, NONE]
+    assert Hf_l('67-56-1', AvailableMethods=True) == ['ATCT_L', 'NONE']
     assert None == Hf_l('98-00-0')
 
     tot = sum([abs(Hf_l(i)) for i in ATcT_l.index])
@@ -85,14 +87,14 @@ def test_Hf_g():
     Hfs = [Hf_g('67-56-1', Method=i) for i in Hf_g_methods]
     assert_allclose(Hfs, [-200700.0, -190100.0])
 
-    assert Hf_g('67-56-1', AvailableMethods=True) == [ATCT_G, TRC, NONE]
+    assert Hf_g('67-56-1', AvailableMethods=True) == ['ATCT_G', 'TRC', 'NONE']
     assert None == Hf_g('98-00-0')
 
     with pytest.raises(Exception):
         Hf_g('98-00-0', Method='BADMETHOD')
 
-    tot1 = sum([abs(Hf_g(i, Method=TRC)) for i in TRC_gas_data.index[pd.notnull(TRC_gas_data['Hf'])]])
+    tot1 = sum([abs(Hf_g(i, Method='TRC')) for i in TRC_gas_data.index[pd.notnull(TRC_gas_data['Hf'])]])
     assert_allclose(tot1, 495689880.0)
 
-    tot2 = sum([abs(Hf_g(i, Method=ATCT_G)) for i in ATcT_g.index])
+    tot2 = sum([abs(Hf_g(i, Method='ATCT_G')) for i in ATcT_g.index])
     assert_allclose(tot2, 300592764.0)

@@ -21,6 +21,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
+
+__all__ = ['CRC_Permittivity_data', 'permittivity_IAPWS', 'Permittivity']
+
 import os
 import numpy as np
 from scipy.constants import N_A, epsilon_0, k
@@ -120,8 +123,8 @@ def permittivity_IAPWS(T, rho):
     return epsilon
 
 
-CRC = 'CRC Handbook polynomials'
-CRC_CONSTANT = 'CRC Handbook constant'
+CRC = 'CRC'
+CRC_CONSTANT = 'CRC_CONSTANT'
 permittivity_methods = [CRC, CRC_CONSTANT]
 '''Holds all methods available for the Permittivity class, for use in
 iterating over them.'''
@@ -139,8 +142,6 @@ class Permittivity(TDependentProperty):
 
     Notes
     -----
-    A string holding each method's name is assigned to the following variables
-    in this module, intended as the most convenient way to refer to a method.
     To iterate over all methods, use the list stored in
     :obj:`permittivity_methods`.
 

@@ -21,6 +21,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
+
+__all__ = ['periodic_table', 'PeriodicTable', 'molecular_weight', 'mass_fractions', 
+           'atom_fractions', 'similarity_variable', 'atoms_to_Hill', 
+           'simple_formula_parser', 'CAS_by_number', 'periods', 'groups', 
+           'blocks']
 import os
 import re
 from collections import Counter
@@ -183,7 +188,7 @@ class Element(object):
         self.electrons = number
 
 
-elements = []
+element_list = []
 with open(os.path.join(folder, 'element.txt'), 'rb') as f:
     '''Load the file from OpenBabel with element data, and store it as both a
     list of elements first, and then as an instance of Periodic Table.'''
@@ -209,9 +214,9 @@ with open(os.path.join(folder, 'element.txt'), 'rb') as f:
                           rcov=rcov, rvdw=rvdw, maxbonds=maxbonds, elneg=elneg,
                           ionization=ionization, elaffinity=elaffinity,
                           block=block, period=period, group=group)
-            elements.append(ele)
+            element_list.append(ele)
 
-elements = PeriodicTable(elements)
+periodic_table = PeriodicTable(element_list)
 '''Single instance of the PeriodicTable class'''
 
 
@@ -262,8 +267,8 @@ def molecular_weight(atoms):
     '''
     MW = 0
     for i in atoms:
-        if i in elements:
-            MW += elements[i].MW*atoms[i]
+        if i in periodic_table:
+            MW += periodic_table[i].MW*atoms[i]
         else:
             raise Exception('Molecule includes unknown atoms')
     return MW
@@ -313,8 +318,8 @@ def mass_fractions(atoms, MW=None):
         MW = molecular_weight(atoms)
     mfracs = {}
     for i in atoms:
-        if i in elements:
-            mfracs[i] = elements[i].MW*atoms[i]/MW
+        if i in periodic_table:
+            mfracs[i] = periodic_table[i].MW*atoms[i]/MW
         else:
             raise Exception('Molecule includes unknown atoms')
     return mfracs

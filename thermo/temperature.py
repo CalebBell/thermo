@@ -21,6 +21,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
+
+__all__ = ['T_converter', 'T_scales', 'ITS90_68_difference', 'Ts_68', 
+'diffs_68', 'Ts_48', 'diffs_48', 'Ts_76', 'diffs_76', 'Ts_27', 'diffs_27']
+
 import numpy as np
 from scipy.constants import C2K
 from scipy.interpolate import UnivariateSpline
@@ -274,12 +278,7 @@ def ITS90_68_difference(T):
     return dT
 
 
-ITS90 = 'ITS-90'
-ITS68 = 'ITS-68'
-ITS27 = 'ITS-27'
-ITS48 = 'ITS-48'
-ITS76 = 'ITS-76'
-T_scales = [ITS90, ITS68, ITS27, ITS48, ITS76]
+T_scales = ['ITS-90', 'ITS-68', 'ITS-27', 'ITS-48', 'ITS-76']
 
 
 def T_converter(T, current, desired):

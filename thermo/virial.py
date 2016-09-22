@@ -21,14 +21,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
-#from math import log
+
+__all__ = ['BVirial_Pitzer_Curl', 'BVirial_Abbott', 'BVirial_Tsonopoulos',
+           'BVirial_Tsonopoulos_extended']
+
 from thermo.utils import log
 from scipy.constants import R
 from scipy.misc import derivative
 
 
-__all__ = ['BVirial_Pitzer_Curl', 'BVirial_Abbott', 'BVirial_Tsonopoulos',
-           'BVirial_Tsonopoulos_extended']
 
 ### Second Virial Coefficients
 

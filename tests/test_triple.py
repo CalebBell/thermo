@@ -43,28 +43,28 @@ def test_data():
 def test_Tt():
     Tt1_calc = Tt('7664-41-7')
     Tt1 = 195.48
-    Tt2_calc = Tt('74-82-8', Method=MELTING)
+    Tt2_calc = Tt('74-82-8', Method='MELTING')
     Tt2 = 90.75
     Tt3_calc = Tt('74-82-8')
     Tt3 = 90.69
     assert_allclose([Tt1_calc, Tt2_calc, Tt3_calc], [Tt1, Tt2, Tt3])
 
     m = Tt('7439-90-9', AvailableMethods=True)
-    assert m == [STAVELEY, MELTING, NONE]
+    assert m == ['STAVELEY', 'MELTING', 'NONE']
     assert None == Tt('72433223439-90-9')
     with pytest.raises(Exception):
         Tt('74-82-8', Method='BADMETHOD')
 
     Tt_sum = sum([Tt(i) for i in Staveley_data.index])
     assert_allclose(Tt_sum, 31251.845000000001)
-    Tt_sum2 = pd.Series([Tt(i, Method=MELTING) for i in Staveley_data.index]).sum()
+    Tt_sum2 = pd.Series([Tt(i, Method='MELTING') for i in Staveley_data.index]).sum()
     assert_allclose(Tt_sum2, 28778.196000000004)
 
 
 def test_Pt():
     Pt1_calc = Pt('7664-41-7')
     Pt1 = 6079.5
-    Pt2_calc = Pt('7664-41-7', Method=DEFINITION)
+    Pt2_calc = Pt('7664-41-7', Method='DEFINITION')
     Pt2 = 6042.920357447978
     # Add a test back for water if you allow extrapolation, letting water have
     # its triple pressure back
@@ -72,7 +72,7 @@ def test_Pt():
     assert_allclose([Pt1_calc, Pt2_calc], [Pt1, Pt2])
 
     m = Pt('7664-41-7', AvailableMethods=True)
-    assert m == [STAVELEY, DEFINITION, NONE]
+    assert m == ['STAVELEY', 'DEFINITION', 'NONE']
     assert None == Pt('72433223439-90-9')
     with pytest.raises(Exception):
         Pt('74-82-8', Method='BADMETHOD')

@@ -21,12 +21,21 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
+
+__all__ = ['Dutt_Prasad', 'VN3_data', 'VN2_data', 'VN2E_data', 
+'ViswanathNatarajan2', 'ViswanathNatarajan2Exponential', 'ViswanathNatarajan3',
+ 'Letsou_Stiel', 'Przedziecki_Sridhar', 'volume_liquid_methods', 
+ 'volume_liquid_methods_P', 'ViscosityLiquid', 'ViscosityGas', 'Lucas', 
+ 'viscosity_liquid_mixture', 'Yoon_Thodos', 'Stiel_Thodos', 'lucas_gas', 
+ 'Gharagheizi_gas_viscosity', 'viscosity_gas_methods', 'viscosity_gas_methods_P', 
+ 'Herning_Zipperer', 'Wilke', 'Brokaw', 'viscosity_gas_mixture', 
+ 'viscosity_index']
+
 import os
-#from math import log, exp
-from thermo.utils import log, exp
 import numpy as np
 import pandas as pd
 
+from thermo.utils import log, exp
 from thermo.utils import none_and_length_check, mixing_simple, mixing_logarithmic, TPDependentProperty
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
 from thermo.electrochem import _Laliberte_Viscosity_ParametersDict, Laliberte_viscosity
@@ -245,18 +254,18 @@ def Przedziecki_Sridhar(T, Tm, Tc, Pc, Vc, Vm, omega, MW):
     return mu_l
 
 
-NONE = 'None'
-VDI_TABULAR = 'VDI Saturation'
-COOLPROP = 'CoolProp'
-SUPERCRITICAL = 'Supercritical'
-DUTT_PRASAD = 'Dutt and Prasad'
-VISWANATH_NATARAJAN_3 = 'Viswanath and Natarajan Dynamic 3-term'
-VISWANATH_NATARAJAN_2 = 'Viswanath and Natarajan Dynamic 2-term'
-VISWANATH_NATARAJAN_2E = 'Viswanath and Natarajan Dynamic 2-term exponential'
-LETSOU_STIEL = 'Letsou and Stiel (1973)'
-PRZEDZIECKI_SRIDHAR = 'Przedziecki-Sridhar (1985)'
-LUCAS = 'Lucas (1974)'
-NEGLIGIBLE = 'Negligible pressure effect'
+NONE = 'NONE'
+VDI_TABULAR = 'VDI_TABULAR'
+COOLPROP = 'COOLPROP'
+SUPERCRITICAL = 'SUPERCRITICAL'
+DUTT_PRASAD = 'DUTT_PRASAD'
+VISWANATH_NATARAJAN_3 = 'VISWANATH_NATARAJAN_3'
+VISWANATH_NATARAJAN_2 = 'VISWANATH_NATARAJAN_2'
+VISWANATH_NATARAJAN_2E = 'VISWANATH_NATARAJAN_2E'
+LETSOU_STIEL = 'LETSOU_STIEL'
+PRZEDZIECKI_SRIDHAR = 'PRZEDZIECKI_SRIDHAR'
+LUCAS = 'LUCAS'
+NEGLIGIBLE = 'NEGLIGIBLE'
 
 volume_liquid_methods = [COOLPROP, DUTT_PRASAD, VISWANATH_NATARAJAN_3,
                          VISWANATH_NATARAJAN_2, VISWANATH_NATARAJAN_2E,
@@ -304,8 +313,6 @@ class ViscosityLiquid(TPDependentProperty):
 
     Notes
     -----
-    A string holding each method's name is assigned to the following variables
-    in this module, intended as the most convenient way to refer to a method.
     To iterate over all methods, use the lists stored in
     :obj:`volume_liquid_methods` and :obj:`volume_liquid_methods_P` for low
     and high pressure methods respectively.
@@ -1017,7 +1024,7 @@ def lucas_gas(T, Tc, Pc, Zc, MW, dipole=0, CASRN=None):
     return eta
 
 
-def Gharagheizi_gas(T, Tc, Pc, MW):
+def Gharagheizi_gas_viscosity(T, Tc, Pc, MW):
     r'''Calculates the viscosity of a gas using an emperical formula
     developed in [1]_.
 
@@ -1052,7 +1059,7 @@ def Gharagheizi_gas(T, Tc, Pc, MW):
 
     Examples
     --------
-    >>> Gharagheizi_gas(120., 190.564, 45.99E5, 16.04246)
+    >>> Gharagheizi_gas_viscosity(120., 190.564, 45.99E5, 16.04246)
     5.215761625399613e-06
 
     References
@@ -1069,10 +1076,10 @@ def Gharagheizi_gas(T, Tc, Pc, MW):
     return mu_g
 
 
-GHARAGHEIZI = 'Gharagheizi'
-YOON_THODOS = 'Yoon-Thodos'
-STIEL_THODOS = 'Stiel-Thodos'
-LUCAS_GAS = 'Lucas'
+GHARAGHEIZI = 'GHARAGHEIZI'
+YOON_THODOS = 'YOON_THODOS'
+STIEL_THODOS = 'STIEL_THODOS'
+LUCAS_GAS = 'LUCAS_GAS'
 
 viscosity_gas_methods = [GHARAGHEIZI, YOON_THODOS, STIEL_THODOS, LUCAS_GAS]
 '''Holds all low-pressure methods available for the ViscosityGas
@@ -1123,7 +1130,7 @@ class ViscosityGas(TPDependentProperty):
     Low pressure methods:
 
     **GHARAGHEIZI**:
-        CSP method, described in :obj:`Gharagheizi_gas`.
+        CSP method, described in :obj:`Gharagheizi_gas_viscosity`.
     **YOON_THODOS**:
         CSP method, described in :obj:`Yoon_Thodos`.
     **STIEL_THODOS**:
@@ -1148,7 +1155,7 @@ class ViscosityGas(TPDependentProperty):
 
     See Also
     --------
-    Gharagheizi_gas
+    Gharagheizi_gas_viscosity
     Yoon_Thodos
     Stiel_Thodos
     lucas_gas
@@ -1309,7 +1316,7 @@ class ViscosityGas(TPDependentProperty):
             Viscosity of the gas at T and a low pressure, [Pa*S]
         '''
         if method == GHARAGHEIZI:
-            mu = Gharagheizi_gas(T, self.Tc, self.Pc, self.MW)
+            mu = Gharagheizi_gas_viscosity(T, self.Tc, self.Pc, self.MW)
         elif method == COOLPROP:
             mu = CoolProp_T_dependent_property(T, self.CASRN, 'V', 'g')
         elif method == YOON_THODOS:

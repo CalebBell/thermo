@@ -21,10 +21,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
+
+__all__ = ['PR_Vm']
 from scipy.constants import R
 from scipy.optimize import fsolve
 from numpy import roots
-#from math import log, exp
 from thermo.utils import log, exp
 
 R = 8.3145

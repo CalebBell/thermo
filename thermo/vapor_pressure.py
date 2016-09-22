@@ -21,8 +21,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
+
+__all__ = ['WagnerMcGarry', 'AntoinePoling', 'WagnerPoling', 'AntoineExtended',
+           'Antoine', 'Wagner_original', 'Wagner', 'TRC_Antoine_extended', 
+           'vapor_pressure_methods', 'VaporPressure', 
+           'boiling_critical_relation', 'Lee_Kesler', 'Ambrose_Walton', 
+           'Sanjari']
+
 import os
-#from math import log, exp
 from thermo.utils import log, exp
 import numpy as np
 import pandas as pd
@@ -159,17 +165,17 @@ def TRC_Antoine_extended(T, Tc, to, A, B, C, n, E, F):
     return _Psat
 
 
-WAGNER_MCGARRY = 'Wagner Original (McGarry)'
-WAGNER_POLING = 'Wagner (Poling)'
-ANTOINE_POLING = 'Antoine (Poling)'
-ANTOINE_EXTENDED_POLING = 'Antoine TRC Extended (Poling)'
-VDI_TABULAR = 'VDI Saturation'
-COOLPROP = 'CoolProp'
+WAGNER_MCGARRY = 'WAGNER_MCGARRY'
+WAGNER_POLING = 'WAGNER_POLING'
+ANTOINE_POLING = 'ANTOINE_POLING'
+ANTOINE_EXTENDED_POLING = 'ANTOINE_EXTENDED_POLING'
+VDI_TABULAR = 'VDI_TABULAR'
+COOLPROP = 'COOLPROP'
 
-BOILING_CRITICAL = 'Boiling-critical point relationship'
-LEE_KESLER_PSAT = 'Lee-Kesler (1975)'
-AMBROSE_WALTON = 'Ambrose and Walton (1989)'
-SANJARI = 'Sanjari (2013)'
+BOILING_CRITICAL = 'BOILING_CRITICAL'
+LEE_KESLER_PSAT = 'LEE_KESLER_PSAT'
+AMBROSE_WALTON = 'AMBROSE_WALTON'
+SANJARI = 'SANJARI'
 
 vapor_pressure_methods = [WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
                           COOLPROP, ANTOINE_POLING, VDI_TABULAR, AMBROSE_WALTON,
@@ -199,8 +205,6 @@ class VaporPressure(TDependentProperty):
 
     Notes
     -----
-    A string holding each method's name is assigned to the following variables
-    in this module, intended as the most convenient way to refer to a method.
     To iterate over all methods, use the list stored in
     :obj:`vapor_pressure_methods`.
 
@@ -487,9 +491,6 @@ class VaporPressure(TDependentProperty):
 
 
 ### CSP Methods
-
-### Checked equations for Psat
-
 
 def boiling_critical_relation(T, Tb, Tc, Pc):
     r'''Calculates vapor pressure of a fluid at arbitrary temperatures using a

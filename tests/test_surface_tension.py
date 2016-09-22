@@ -163,7 +163,7 @@ def test_SurfaceTension():
     sigma_calcs = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(5000))[1] for i in EtOH.sorted_valid_methods]
     assert [None]*10 == sigma_calcs
 
-    EtOH.set_user_methods(VDI_TABULAR, forced=True)
+    EtOH.set_user_methods('VDI_TABULAR', forced=True)
     EtOH.tabular_extrapolation_permitted = False
     assert None == EtOH.T_dependent_property(700.)
 

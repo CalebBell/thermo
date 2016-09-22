@@ -21,6 +21,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
+
+#__all__ = ['dipole'] # TODO rename file or function
+__all__ = ['dipole_moment', '_dipole_Poling', '_dipole_CCDB', '_dipole_Muller', 'dipole_methods']
 import os
 import numpy as np
 import pandas as pd
@@ -39,14 +42,14 @@ _dipole_Muller = pd.read_csv(os.path.join(folder, 'Muller Supporting Info Dipole
 
 
 CCCBDB = 'CCCBDB'
-MULLER = 'Muller, Liudmila and Wolfgang (2012)'
-POLING = 'Poling'
-NONE = 'None'
+MULLER = 'MULLER'
+POLING = 'POLING'
+NONE = 'NONE'
 
 dipole_methods = [CCCBDB, MULLER, POLING]
 
 
-def dipole(CASRN='', AvailableMethods=False, Method=None):
+def dipole_moment(CASRN='', AvailableMethods=False, Method=None):
     r'''This function handles the retrieval of a chemical's dipole moment.
     Lookup is based on CASRNs. Will automatically select a data source to use
     if no Method is provided; returns None if the data is not available.
@@ -70,8 +73,8 @@ def dipole(CASRN='', AvailableMethods=False, Method=None):
     Other Parameters
     ----------------
     Method : string, optional
-        A string for the method name to use, as defined by constants in
-        dipole_methods
+        The method name to use. Accepted methods are 'CCCBDB', 'MULLER', or
+        'POLING'. All valid values are also held in the list `dipole_methods`.
     AvailableMethods : bool, optional
         If True, function will determine which methods can be used to obtain
         the dipole moment for the desired chemical, and will return methods
@@ -83,13 +86,13 @@ def dipole(CASRN='', AvailableMethods=False, Method=None):
 
         * 'CCCBDB', a series of critically evaluated data for compounds in
           [1]_, intended for use in predictive modeling.
-        * 'Muller, Liudmila and Wolfgang (2012), a collection of data in a
+        * 'MULLER', a collection of data in a
           group-contribution scheme in [2]_.
-        * 'Poling', in the appendix in [3].
+        * 'POLING', in the appendix in [3].
 
     Examples
     --------
-    >>> dipole(CASRN='64-17-5')
+    >>> dipole_moment(CASRN='64-17-5')
     1.44
 
     References

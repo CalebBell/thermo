@@ -23,9 +23,9 @@ SOFTWARE.'''
 from numpy.testing import assert_allclose
 import pytest
 from thermo.dipole import *
-from thermo.dipole import _dipole_Poling, _dipole_CCDB, _dipole_Muller
 
-def test_dipole_methods():
+
+def test_dipole_moment_methods():
 
     tot = _dipole_Poling['Dipole'].sum()
     assert_allclose(tot, 248.59999999999999)
@@ -42,20 +42,20 @@ def test_dipole_methods():
 
 
 def test_dipole():
-    d = dipole(CASRN='64-17-5')
+    d = dipole_moment(CASRN='64-17-5')
     assert_allclose(d, 1.44)
 
-    d = dipole(CASRN='75-52-5', Method=POLING)
+    d = dipole_moment(CASRN='75-52-5', Method='POLING')
     assert_allclose(d, 3.1)
 
-    d = dipole(CASRN='56-81-5', Method=MULLER)
+    d = dipole_moment(CASRN='56-81-5', Method='MULLER')
     assert_allclose(d, 4.21)
 
-    methods = dipole(CASRN='78-78-4', AvailableMethods=True)
-    methods_fixed = [CCCBDB, MULLER, POLING, NONE]
+    methods = dipole_moment(CASRN='78-78-4', AvailableMethods=True)
+    methods_fixed = ['CCCBDB', 'MULLER', 'POLING', 'NONE']
     assert methods == methods_fixed
 
-    assert None == dipole(CASRN='78-78-4', Method=NONE)
+    assert None == dipole_moment(CASRN='78-78-4', Method='NONE')
 
     with pytest.raises(Exception):
-        dipole(CASRN='78-78-4', Method='FAIL')
+        dipole_moment(CASRN='78-78-4', Method='FAIL')

@@ -23,6 +23,7 @@ SOFTWARE.'''
 from numpy.testing import assert_allclose
 import pytest
 from thermo.heat_capacity import *
+from thermo.heat_capacity import TRCIG, POLING, CRCSTD, COOLPROP, POLING_CONST, VDI_TABULAR
 
 
 def test_heat_capacity_CSP():

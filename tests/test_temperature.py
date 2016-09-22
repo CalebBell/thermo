@@ -38,14 +38,14 @@ def test_conversion():
     T2 = T_converter(500, 'ITS-68', 'ITS-48')
     assert_allclose(T2, 499.9470092992346)
 
-    high_scales = [ITS90, ITS68, ITS27, ITS48]
+    high_scales = ['ITS-90', 'ITS-68', 'ITS-27', 'ITS-48']
 
     for scale1 in high_scales:
         for scale2 in high_scales:
             T = T_converter(1000, scale1, scale2)
             assert_allclose(T_converter(T, scale2, scale1), 1000)
 
-    mid_scales = [ITS90, ITS68, ITS48]
+    mid_scales = ['ITS-90', 'ITS-68', 'ITS-48']
 
     for Ti in range(100, 1000, 10):
         for scale1 in mid_scales:
@@ -53,7 +53,7 @@ def test_conversion():
                 T = T_converter(Ti, scale1, scale2)
                 assert_allclose(T_converter(T, scale2, scale1), Ti, rtol=1e-6)
 
-    low_scales = [ITS90, ITS68, ITS76]
+    low_scales = ['ITS-90', 'ITS-68', 'ITS-76']
 
     for Ti in range(15, 27, 1):
         for scale1 in low_scales:

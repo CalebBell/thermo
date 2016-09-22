@@ -83,6 +83,17 @@ def test_HPV_data():
 
 
 def test_legal_status():
+    DSL = 'DSL'
+    TSCA = 'TSCA'
+    EINECS = 'EINECS'
+    NLP = 'NLP'
+    SPIN = 'SPIN'
+    NONE = 'NONE'
+    COMBINED = 'COMBINED'
+    UNLISTED = 'UNLISTED'
+    LISTED = 'LISTED'
+
+    
     hit = legal_status(CASRN='1648727-81-4')
     hit_desc = {TSCA: sorted([TSCA_flags['N'], TSCA_flags['P'], TSCA_flags['XU']]),
                 SPIN: UNLISTED, DSL: UNLISTED, EINECS: UNLISTED, NLP: UNLISTED}

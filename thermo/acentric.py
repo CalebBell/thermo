@@ -21,27 +21,24 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
-#from math import log, log10
-from thermo.utils import log, log10
+
+__all__ = ['omega', 'LK_omega', 'omega_mixture','StielPolar']
+__all__.extend(['omega_methods', 'omega_mixture_methods', 'Stiel_polar_methods'])
+
 import numpy as np
 import pandas as pd
+from thermo.utils import log, log10
 from thermo.utils import mixing_simple, none_and_length_check
 from thermo.critical import Tc, Pc
 from thermo.critical import _crit_PSRKR4, _crit_PassutDanner, _crit_Yaws
-from thermo.critical import PSRK, PD, YAWS, NONE
 from thermo.phase_change import Tb
 from thermo.vapor_pressure import VaporPressure
 
-__all__ = ['omega', 'LK_omega', 'omega_mixture','StielPolar']
-__all__.extend(['LK', 'DEFINITION', 'omega_methods', 'SIMPLE', 
-'omega_mixture_methods', 'PSRK', 'PD', 'YAWS', 'NONE'])
 
-LK = 'Lee-Kesler'
-DEFINITION = 'Vapor pressure calculation'
-omega_methods = [PSRK, PD, YAWS, LK, DEFINITION]
+omega_methods = ['PSRK', 'PD', 'YAWS', 'LK', 'DEFINITION']
 
 
-def omega(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[LK, DEFINITION]):
+def omega(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=['LK', 'DEFINITION']):
     r'''This function handles the retrieval of a chemical's acentric factor,
     `omega`, or its calculation from correlations or directly through the
     definition of acentric factor if possible. Requires a known boiling point,
@@ -74,8 +71,9 @@ def omega(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[LK, DEFI
     Other Parameters
     ----------------
     Method : string, optional
-        A string for the method name to use, as defined by constants in
-        omega_methods
+        The method name to use. Accepted methods are 'PSRK', 'PD', 'YAWS', 
+        'LK', and 'DEFINITION'. All valid values are also held in the list
+        omega_methods.
     AvailableMethods : bool, optional
         If True, function will determine which methods can be used to obtain
         omega for the desired chemical, and will return methods instead of
@@ -88,14 +86,14 @@ def omega(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[LK, DEFI
     -----
     A total of five sources are available for this function. They are:
 
-        * 'PSRK Revision 4 Appendix', a compillation of experimental and
-          estimated data published in [15]_.
-        * 'Passut Danner 1973 Critical Properties', an older compillation of
-          data published in [16]_
-        * 'Yaws Critical Properties', a large compillation of data from a
+        * 'PSRK', a compillation of experimental and estimated data published 
+          in the Appendix of [15]_, the fourth revision of the PSRK model.
+        * 'PD', an older compillation of
+          data published in (Passut & Danner, 1973) [16]_.
+        * 'YAWS', a large compillation of data from a
           variety of sources; no data points are sourced in the work of [17]_.
-        * 'Lee-Kesler', a estimation method for hydrocarbons.
-        * 'Vapor pressure calculation', based on the definition of omega as
+        * 'LK', a estimation method for hydrocarbons.
+        * 'DEFINITION', based on the definition of omega as
           presented in [1]_, using vapor pressure data.
 
     References
@@ -120,40 +118,40 @@ def omega(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[LK, DEFI
     def list_methods():
         methods = []
         if CASRN in _crit_PSRKR4.index and not np.isnan(_crit_PSRKR4.at[CASRN, 'omega']):
-            methods.append(PSRK)
+            methods.append('PSRK')
         if CASRN in _crit_PassutDanner.index and not np.isnan(_crit_PassutDanner.at[CASRN, 'omega']):
-            methods.append(PD)
+            methods.append('PD')
         if CASRN in _crit_Yaws.index and not np.isnan(_crit_Yaws.at[CASRN, 'omega']):
-            methods.append(YAWS)
+            methods.append('YAWS')
         Tcrit, Pcrit = Tc(CASRN), Pc(CASRN)
         if Tcrit and Pcrit:
             if Tb(CASRN):
-                methods.append(LK)
+                methods.append('LK')
             if VaporPressure(CASRN=CASRN).T_dependent_property(Tcrit*0.7):
-                methods.append(DEFINITION)  # TODO: better integration
+                methods.append('DEFINITION')  # TODO: better integration
         if IgnoreMethods:
             for Method in IgnoreMethods:
                 if Method in methods:
                     methods.remove(Method)
-        methods.append(NONE)
+        methods.append('NONE')
         return methods
     if AvailableMethods:
         return list_methods()
     if not Method:
         Method = list_methods()[0]
     # This is the calculate, given the method section
-    if Method == PSRK:
+    if Method == 'PSRK':
         _omega = float(_crit_PSRKR4.at[CASRN, 'omega'])
-    elif Method == PD:
+    elif Method == 'PD':
         _omega = float(_crit_PassutDanner.at[CASRN, 'omega'])
-    elif Method == YAWS:
+    elif Method == 'YAWS':
         _omega = float(_crit_Yaws.at[CASRN, 'omega'])
-    elif Method == LK:
+    elif Method == 'LK':
         _omega = LK_omega(Tb(CASRN), Tc(CASRN), Pc(CASRN))
-    elif Method == DEFINITION:
+    elif Method == 'DEFINITION':
         P = VaporPressure(CASRN=CASRN).T_dependent_property(Tc(CASRN)*0.7)
         _omega = -log10(P/Pc(CASRN)) - 1.0
-    elif Method == NONE:
+    elif Method == 'NONE':
         _omega = None
     else:
         raise Exception('Failure in in function')
@@ -207,8 +205,7 @@ def LK_omega(Tb, Tc, Pc):
     return omega
 
 
-SIMPLE = 'Simple'
-omega_mixture_methods = [SIMPLE, NONE]
+omega_mixture_methods = ['SIMPLE', 'NONE']
 
 
 def omega_mixture(omegas, zs, CASRNs=None, Method=None,
@@ -242,8 +239,8 @@ def omega_mixture(omegas, zs, CASRNs=None, Method=None,
     Other Parameters
     ----------------
     Method : string, optional
-        A string for the method name to use, as defined by constants in
-        omega_mixture_methods
+        The method name to use. Only 'SIMPLE' is accepted so far.
+        All valid values are also held in the list omega_mixture_methods.
     AvailableMethods : bool, optional
         If True, function will determine which methods can be used to obtain
         omega for the desired chemical, and will return methods instead of
@@ -264,29 +261,29 @@ def omega_mixture(omegas, zs, CASRNs=None, Method=None,
     def list_methods():
         methods = []
         if none_and_length_check([zs, omegas]):
-            methods.append(SIMPLE)
-        methods.append(NONE)
+            methods.append('SIMPLE')
+        methods.append('NONE')
         return methods
     if AvailableMethods:
         return list_methods()
     if not Method:
         Method = list_methods()[0]
 
-    if Method == SIMPLE:
+    if Method == 'SIMPLE':
         _omega = mixing_simple(zs, omegas)
-    elif Method == NONE:
+    elif Method == 'NONE':
         _omega = None
     else:
         raise Exception('Failure in in function')
     return _omega
 
 
-Stiel_polar_methods = [DEFINITION]
+Stiel_polar_methods = ['DEFINITION']
 
 
 def StielPolar(Tc=None, Pc=None, omega=None, CASRN='', Method=None,
                AvailableMethods=False):
-    r'''This function handles the calculation of a chemical's Stiel polar
+    r'''This function handles the calculation of a chemical's Stiel Polar
     factor, directly through the definition of Stiel-polar factor if possible.
     Requires Tc, Pc, acentric factor, and a vapor pressure datum at Tr=0.6.
 
@@ -318,8 +315,8 @@ def StielPolar(Tc=None, Pc=None, omega=None, CASRN='', Method=None,
     Other Parameters
     ----------------
     Method : string, optional
-        A string for the method name to use, as defined by constants in
-        Stiel_polar_methods
+        The method name to use. Only 'DEFINITION' is accepted so far.
+        All valid values are also held in the list Stiel_polar_methods.
     AvailableMethods : bool, optional
         If True, function will determine which methods can be used to obtain
         Stiel-polar factor for the desired chemical, and will return methods
@@ -329,8 +326,8 @@ def StielPolar(Tc=None, Pc=None, omega=None, CASRN='', Method=None,
     -----
     Only one source is available for this function. It is:
 
-        * 'Vapor pressure calculation', based on the definition of
-          stiel polar factor presented in [1]_, using vapor pressure data.
+        * 'DEFINITION', based on the definition of
+          Stiel Polar Factor presented in [1]_, using vapor pressure data.
 
     A few points have also been published in [2]_, which may be used for
     comparison. Currently this is only used for a surface tension correlation.
@@ -352,22 +349,24 @@ def StielPolar(Tc=None, Pc=None, omega=None, CASRN='', Method=None,
     def list_methods():
         methods = []
         if Tc and Pc and omega:
-            methods.append(DEFINITION)
-        methods.append(NONE)
+            methods.append('DEFINITION')
+        methods.append('NONE')
         return methods
     if AvailableMethods:
         return list_methods()
     if not Method:
         Method = list_methods()[0]
-    if Method == DEFINITION:
+    if Method == 'DEFINITION':
         P = VaporPressure(CASRN=CASRN).T_dependent_property(Tc*0.6)
         if not P:
             factor = None
         else:
             Pr = P/Pc
             factor = log10(Pr) + 1.70*omega + 1.552
-    elif Method == NONE:
+    elif Method == 'NONE':
         factor = None
     else:
         raise Exception('Failure in in function')
     return factor
+
+

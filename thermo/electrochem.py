@@ -21,8 +21,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
+
+__all__ = ['conductivity', 'Laliberte_density', 'Laliberte_heat_capacity', 
+           'Laliberte_viscosity', 'Laliberte_data', 'Laliberte_viscosity_w', 
+           'Laliberte_viscosity_i', 'Laliberte_density_w', 
+           'Laliberte_density_i', 'Laliberte_heat_capacity_w', 
+           'Laliberte_heat_capacity_i', 'Lange_cond_pure', 
+           'conductivity_methods', 'Magomedovk_thermal_cond',
+           'thermal_conductivity_Magomedov', 'ionic_strength', 'Kweq_1981', 
+           'Kweq_IAPWS_gas', 'Kweq_IAPWS']
+
 import os
-#from math import exp, log10
 from thermo.utils import exp, log10
 from scipy.constants import e, N_A
 from thermo.utils import to_num
@@ -507,7 +516,7 @@ Lange_cond_pure = pd.read_csv(os.path.join(folder, 'Lange Pure Species Conductiv
                           sep='\t', index_col=0)
 
 
-LANGE_COND = "Lange's Handbook, Table 8.34 Electrical Conductivity of Various Pure Liquids"
+LANGE_COND = "LANGE_COND"
 NONE = 'None'
 
 conductivity_methods = [LANGE_COND]
@@ -551,8 +560,8 @@ def conductivity(CASRN=None, AvailableMethods=False, Method=None, full_info=True
     -----
     Only one source is available in this function. It is:
 
-        * 'Lange's Handbook, Table 8.34 Electrical Conductivity of Various Pure Liquids',
-        a compillation of data in [1]_.
+        * 'LANGE_COND' which is from Lange's Handbook, Table 8.34 Electrical 
+        Conductivity of Various Pure Liquids', a compillation of data in [1]_.
 
     Examples
     --------

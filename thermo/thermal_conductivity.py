@@ -21,15 +21,26 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
+
+__all__ = ['Sheffy_Johnson', 'Sato_Riedel', 'Lakshmi_Prasad', 
+'Gharagheizi_liquid', 'Nicola_original', 'Nicola', 'Bahadori_liquid', 
+'thermal_conductivity_liquid_methods', 'ThermalConductivityLiquid', 'DIPPR9G',
+ 'Missenard', 'DIPPR9I', 'Filippov', 'thermal_conductivity_liquid_mixture', 
+ 'Eucken', 'Eucken_modified', 'DIPPR9B', 'Chung', 'eli_hanley', 
+ 'Gharagheizi_gas', 'Bahadori_gas', 'thermal_conductivity_gas_methods', 
+ 'thermal_conductivity_gas_methods_P', 'ThermalConductivityGas', 
+ 'stiel_thodos_dense', 'eli_hanley_dense', 'chung_dense', 'Lindsay_Bromley', 
+ 'thermal_conductivity_gas_mixture']
+
+import numpy as np
+from scipy.interpolate import interp2d
 from scipy.constants import R
-#from math import exp, log
+
 from thermo.utils import log, exp
 from thermo.utils import mixing_simple, none_and_length_check, TPDependentProperty
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
 from thermo.coolprop import has_CoolProp, coolprop_dict, coolprop_fluids, CoolProp_T_dependent_property, PropsSI, PhaseSI
 from thermo.electrochem import thermal_conductivity_Magomedov, Magomedovk_thermal_cond
-from scipy.interpolate import interp2d
-import numpy as np
 
 ### Purely CSP Methods - Liquids
 
@@ -395,19 +406,19 @@ def Bahadori_liquid(T, M):
     return kl
 
 
-VDI_TABULAR = 'VDI Saturation'
-COOLPROP = 'CoolProp'
-GHARAGHEIZI_L = 'Gharagheizi liquid'
-NICOLA = 'Nicola'
-NICOLA_ORIGINAL = 'Nicola original'
-SATO_RIEDEL = 'Sato Riedel'
-SHEFFY_JOHNSON = 'Sheffy Johnson'
-BAHADORI_L = 'Bahadori liquid'
-LAKSHMI_PRASAD = 'Lakshmi Prasad'
-MISSENARD = 'Missenard'
-NONE = 'None'
-NEGLIGIBLE = 'Negligible'
-DIPPR_9G = 'DIPPR9G'
+VDI_TABULAR = 'VDI_TABULAR'
+COOLPROP = 'COOLPROP'
+GHARAGHEIZI_L = 'GHARAGHEIZI_L'
+NICOLA = 'NICOLA'
+NICOLA_ORIGINAL = 'NICOLA_ORIGINAL'
+SATO_RIEDEL = 'SATO_RIEDEL'
+SHEFFY_JOHNSON = 'SHEFFY_JOHNSON'
+BAHADORI_L = 'BAHADORI_L'
+LAKSHMI_PRASAD = 'LAKSHMI_PRASAD'
+MISSENARD = 'MISSENARD'
+NONE = 'NONE'
+NEGLIGIBLE = 'NEGLIGIBLE'
+DIPPR_9G = 'DIPPR_9G'
 
 thermal_conductivity_liquid_methods = [COOLPROP, VDI_TABULAR, GHARAGHEIZI_L,
                                        SATO_RIEDEL, NICOLA, NICOLA_ORIGINAL,
@@ -453,8 +464,6 @@ class ThermalConductivityLiquid(TPDependentProperty):
 
     Notes
     -----
-    A string holding each method's name is assigned to the following variables
-    in this module, intended as the most convenient way to refer to a method.
     To iterate over all methods, use the lists stored in
     :obj:`thermal_conductivity_liquid_methods` and
     :obj:`thermal_conductivity_liquid_methods_P` for low and high pressure
@@ -1558,16 +1567,16 @@ def Bahadori_gas(T, MW):
     return kg
 
 
-GHARAGHEIZI_G = 'Gharagheizi gas'
-CHUNG = 'Chung'
-ELI_HANLEY = 'Eli-Hanley'
-ELI_HANLEY_DENSE = 'Eli-Hanley dense'
-CHUNG_DENSE = 'Chung dense'
-EUCKEN_MOD = 'Eucken modified'
-EUCKEN = 'Eucken'
-BAHADORI_G = 'Bahadori'
-STIEL_THODOS_DENSE = 'Stiel-Thodos'
-DIPPR_9B = 'DIPPR 9B'
+GHARAGHEIZI_G = 'GHARAGHEIZI_G'
+CHUNG = 'CHUNG'
+ELI_HANLEY = 'ELI_HANLEY'
+ELI_HANLEY_DENSE = 'ELI_HANLEY_DENSE'
+CHUNG_DENSE = 'CHUNG_DENSE'
+EUCKEN_MOD = 'EUCKEN_MOD'
+EUCKEN = 'EUCKEN'
+BAHADORI_G = 'BAHADORI_G'
+STIEL_THODOS_DENSE = 'STIEL_THODOS_DENSE'
+DIPPR_9B = 'DIPPR_9B'
 
 thermal_conductivity_gas_methods = [COOLPROP, VDI_TABULAR, GHARAGHEIZI_G,
                                     DIPPR_9B, CHUNG, ELI_HANLEY, EUCKEN_MOD,
@@ -1623,8 +1632,6 @@ class ThermalConductivityGas(TPDependentProperty):
 
     Notes
     -----
-    A string holding each method's name is assigned to the following variables
-    in this module, intended as the most convenient way to refer to a method.
     To iterate over all methods, use the lists stored in
     :obj:`thermal_conductivity_gas_methods` and
     :obj:`thermal_conductivity_gas_methods_P` for low and high pressure

@@ -25,6 +25,7 @@ import numpy as np
 import pytest
 import pandas as pd
 from thermo.volume import *
+from thermo.utils import Vm_to_rho
 from thermo.identifiers import checkCAS
 
 def test_volume_CSP():
@@ -191,7 +192,7 @@ def test_VolumeLiquid():
     Vml_calcs = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(600))[1] for i in EtOH.sorted_valid_methods]
     assert [None]*13 == Vml_calcs
 
-    EtOH.set_user_methods(VDI_TABULAR, forced=True)
+    EtOH.set_user_methods('VDI_TABULAR', forced=True)
     EtOH.tabular_extrapolation_permitted = True
     assert_allclose(EtOH.T_dependent_property(700.), 0.0005648005718236466)
 
@@ -216,16 +217,16 @@ def test_VolumeLiquid():
 
     # Test lower limit for BHIRUD_NORMAL
     fake = VolumeLiquid(Tc=1000)
-    assert False == fake.test_method_validity(349.5, BHIRUD_NORMAL)
+    assert False == fake.test_method_validity(349.5, 'BHIRUD_NORMAL')
 
     # Ethanol compressed
     EtOH = VolumeLiquid(MW=46.06844, Tb=351.39, Tc=514.0, Pc=6137000.0, Vc=0.000168, Zc=0.24125, omega=0.635, dipole=1.44, CASRN='64-17-5', Psat=7882.16)
 
-    assert [False, True] == [EtOH.test_method_validity_P(300, P, COOLPROP) for P in (1E3, 1E5)]
-    assert [True, True] == [EtOH.test_method_validity_P(300, P, COSTALD_COMPRESSED) for P in (1E3, 1E5)]
+    assert [False, True] == [EtOH.test_method_validity_P(300, P, 'COOLPROP') for P in (1E3, 1E5)]
+    assert [True, True] == [EtOH.test_method_validity_P(300, P, 'COSTALD_COMPRESSED') for P in (1E3, 1E5)]
 
-    assert_allclose(EtOH.calculate_P(298.15, 1E6, COSTALD_COMPRESSED), 5.859498172626399e-05)
-    assert_allclose(EtOH.calculate_P(298.15, 1E6, COOLPROP), 5.861494869071554e-05)
+    assert_allclose(EtOH.calculate_P(298.15, 1E6, 'COSTALD_COMPRESSED'), 5.859498172626399e-05)
+    assert_allclose(EtOH.calculate_P(298.15, 1E6, 'COOLPROP'), 5.861494869071554e-05)
 
 
     # Ethanol data, calculated from CoolProp
@@ -301,7 +302,7 @@ def test_VolumeGas():
 
     # Test CRC Virial data
     H2 = VolumeGas(CASRN='1333-74-0')
-    H2.set_user_methods_P(CRC_VIRIAL, forced_P=True)
+    H2.set_user_methods_P('CRC_VIRIAL', forced_P=True)
     assert_allclose(H2.TP_dependent_property(300, 1E5), 0.024958834892394446)
 
 

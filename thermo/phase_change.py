@@ -21,7 +21,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
-#from math import log
+
+__all__ = ['Yaws_data', 'Tb_methods', 'Tb', 'Tm_ON_data', 'Tm_methods', 'Tm', 
+           'Clapeyron', 'Pitzer', 'SMK', 'MK', 'Velasco', 'Riedel', 'Chen', 
+           'Liu', 'Vetere', 'GharagheiziHvap_data', 'CRCHvap_data', 'Watson', 
+           'enthalpy_vaporization_methods', 'EnthalpyVaporization', 
+           'CRCHfus_data', 'Hfus', 'GharagheiziHsub_data', 'Hsub', 'Tliquidus']
+
 from thermo.utils import log
 import os
 
@@ -44,11 +50,11 @@ folder = os.path.join(os.path.dirname(__file__), 'Phase Change')
 Yaws_data = pd.read_csv(os.path.join(folder,
 'Yaws Boiling Points.csv'), sep='\t', index_col=0)
 
-CRC_ORG = 'CRC Physical Constants, organic'
-CRC_INORG = 'CRC Physical Constants, inorganic'
-YAWS = 'Yaws'
-PSAT_DEFINITION = 'Vapor pressure estimation'
-NONE = 'None'
+CRC_ORG = 'CRC_ORG'
+CRC_INORG = 'CRC_INORG'
+YAWS = 'YAWS'
+PSAT_DEFINITION = 'PSAT_DEFINITION'
+NONE = 'NONE'
 
 Tb_methods = [CRC_INORG, CRC_ORG, YAWS, PSAT_DEFINITION]
 
@@ -91,13 +97,13 @@ def Tb(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[PSAT_DEFINI
     -----
     A total of four methods are available for this function. They are:
 
-        * 'CRC Physical Constants, organic', a compillation of data on organics
+        * 'CRC_ORG', a compillation of data on organics
           as published in [1]_.
-        * 'CRC Physical Constants, inorganic', a compillation of data on
+        * 'CRC_INORG', a compillation of data on
           inorganic as published in [1]_.
-        * 'Yaws', a large compillation of data from a
+        * 'YAWS', a large compillation of data from a
           variety of sources; no data points are sourced in the work of [2]_.
-        * 'Vapor pressure estimation', calculation of boiling point from a
+        * 'PSAT_DEFINITION', calculation of boiling point from a
           vapor pressure calculation. This is normally off by a fraction of a
           degree even in the best cases. Listed in IgnoreMethods by default
           for performance reasons.
@@ -162,7 +168,7 @@ def Tb(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[PSAT_DEFINI
 Tm_ON_data = pd.read_csv(os.path.join(folder, 'OpenNotebook Melting Points.csv'),
                          sep='\t', index_col=0)
 
-OPEN_NTBKM = 'Open Notebook Melting Points'
+OPEN_NTBKM = 'OPEN_NTBKM'
 
 Tm_methods = [OPEN_NTBKM, CRC_INORG, CRC_ORG]
 
@@ -205,14 +211,15 @@ def Tm(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[]):
     -----
     A total of three sources are available for this function. They are:
 
-        * 'Open Notebook Melting Points', a compillation of data on organics
-          as published in [1]_. Averaged (median) values were used when
+        * 'OPEN_NTBKM, a compillation of data on organics
+          as published in [1]_ as Open Notebook Melting Points; Averaged 
+          (median) values were used when
           multiple points were available. For more information on this
           invaluable and excellent collection, see
           http://onswebservices.wikispaces.com/meltingpoint.
-        * 'CRC Physical Constants, organic', a compillation of data on organics
+        * 'CRC_ORG', a compillation of data on organics
           as published in [2]_.
-        * 'CRC Physical Constants, inorganic', a compillation of data on
+        * 'CRC_INORG', a compillation of data on
           inorganic as published in [2]_.
 
     Examples
@@ -847,21 +854,21 @@ def Watson(T, Hvap_ref, T_Ref, Tc, exponent=0.38):
     return H2
 
 
-COOLPROP = 'CoolProp'
-VDI_TABULAR = 'VDI Saturation'
-CRC_HVAP_TB = 'CRC Handbook at Tb'
-CRC_HVAP_298 = 'CRC Handbook at 298.15 K'
-GHARAGHEIZI_HVAP_298 = 'Gharagheizi Appendix, at 298.15 K'
-MORGAN_KOBAYASHI = 'MK'
-SIVARAMAN_MAGEE_KOBAYASHI = 'SMK'
-VELASCO = 'Velasco'
-PITZER = 'Pitzer'
-CLAPEYRON = 'Clapeyron'
+COOLPROP = 'COOLPROP'
+VDI_TABULAR = 'VDI_TABULAR'
+CRC_HVAP_TB = 'CRC_HVAP_TB'
+CRC_HVAP_298 = 'CRC_HVAP_298'
+GHARAGHEIZI_HVAP_298 = 'GHARAGHEIZI_HVAP_298'
+MORGAN_KOBAYASHI = 'MORGAN_KOBAYASHI'
+SIVARAMAN_MAGEE_KOBAYASHI = 'SIVARAMAN_MAGEE_KOBAYASHI'
+VELASCO = 'VELASCO'
+PITZER = 'PITZER'
+CLAPEYRON = 'CLAPEYRON'
 
-RIEDEL = 'Riedel'
-CHEN = 'Chen'
-LIU = 'Liu'
-VETERE = 'Vetere'
+RIEDEL = 'RIEDEL'
+CHEN = 'CHEN'
+LIU = 'LIU'
+VETERE = 'VETERE'
 enthalpy_vaporization_methods = [COOLPROP, VDI_TABULAR, MORGAN_KOBAYASHI,
                       SIVARAMAN_MAGEE_KOBAYASHI, VELASCO, PITZER,
                       CRC_HVAP_TB, CRC_HVAP_298, GHARAGHEIZI_HVAP_298,
@@ -899,8 +906,6 @@ class EnthalpyVaporization(TDependentProperty):
 
     Notes
     -----
-    A string holding each method's name is assigned to the following variables
-    in this module, intended as the most convenient way to refer to a method.
     To iterate over all methods, use the list stored in
     :obj:`enthalpy_vaporization_methods`.
 

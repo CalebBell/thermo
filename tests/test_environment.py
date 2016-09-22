@@ -39,7 +39,7 @@ def test_GWP():
     assert [GWP1_calc, GWP2_calc] == [25.0, 21.0]
 
     GWP_available = GWP(CASRN='56-23-5', AvailableMethods=True)
-    assert GWP_available == [IPCC100, IPCC100SAR, IPCC20, IPCC500, NONE]
+    assert GWP_available == ['IPCC (2007) 100yr', 'IPCC (2007) 100yr-SAR', 'IPCC (2007) 20yr', 'IPCC (2007) 500yr', 'NONE']
     tot = pd.DataFrame( [GWP(i, Method=j) for i in GWP_data.index for j in GWP(i, AvailableMethods=True)]).sum()
     assert_allclose(tot, 960256)
 
@@ -61,17 +61,17 @@ def test_logP():
     vals = logP('67-56-1'), logP('124-18-5'), logP('7732-18-5')
     assert_allclose(vals, [-0.74, 6.25, -1.38])
 
-    tot_CRC = np.sum(np.abs(np.array([logP(i, Method=CRC) for i in CRClogPDict.index])))
+    tot_CRC = np.sum(np.abs(np.array([logP(i, Method='CRC') for i in CRClogPDict.index])))
     assert_allclose(tot_CRC, 1216.99)
 
-    tot_SYRRES = np.sum(np.abs(np.array([logP(i, Method=SYRRES) for i in SyrresDict2.index])))
+    tot_SYRRES = np.sum(np.abs(np.array([logP(i, Method='SYRRES') for i in SyrresDict2.index])))
     assert_allclose(tot_SYRRES, 25658.060000000001)
 
     with pytest.raises(Exception):
         logP(CASRN='74-82-8', Method='BADMETHOD')
 
     logP_available = logP('110-54-3', AvailableMethods=True)
-    assert logP_available == [CRC, SYRRES, NONE]
+    assert logP_available == ['CRC', 'SYRRES', 'NONE']
 
     assert logP('1124321250-54-3') == None
 
@@ -87,13 +87,14 @@ def test_ODP_data():
 
 def test_ODP():
     V1 = ODP(CASRN='460-86-6')
-    V2 = ODP(CASRN='76-14-2', Method=ODP2MAX)
-    V3 = ODP(CASRN='76-14-2', Method=ODP1MAX)
+    V2 = ODP(CASRN='76-14-2', Method='ODP2 Max')
+    V3 = ODP(CASRN='76-14-2', Method='ODP1 Max')
     assert_allclose([V1, V2, V3], [7.5, 0.58, 1.0])
 
-    assert ODP(CASRN='148875-98-3', Method=ODP2STR) == '0.2-2.1'
+    assert ODP(CASRN='148875-98-3', Method='ODP2 string') == '0.2-2.1'
 
-    methods = [ODP2MAX, ODP1MAX, ODP2LOG, ODP1LOG, ODP2MIN, ODP1MIN, ODP2STR, ODP1STR, NONE]
+    methods = ['ODP2 Max', 'ODP1 Max', 'ODP2 logarithmic average', 'ODP1 logarithmic average', 'ODP2 Min', 'ODP1 Min', 'ODP2 string', 'ODP1 string', 'NONE']
+
     assert methods == ODP(CASRN='148875-98-3', AvailableMethods=True)
 
     with pytest.raises(Exception):

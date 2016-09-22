@@ -22,6 +22,9 @@ SOFTWARE.'''
 
 from __future__ import division
 
+__all__ = ['has_CoolProp', 'coolprop_dict', 'CP_fluid', 'coolprop_fluids', 
+'CoolProp_T_dependent_property', 'PropsSI', 'PhaseSI', 'CP', 'AbstractState']
+
 try:
     from CoolProp.CoolProp import PropsSI, PhaseSI
     import CoolProp.CoolProp as CP

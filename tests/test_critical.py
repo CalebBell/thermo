@@ -24,7 +24,6 @@ from numpy.testing import assert_allclose
 import pytest
 import pandas as pd
 from thermo.critical import *
-from thermo.critical import _crit_IUPAC, _crit_Matthews, _crit_CRC, _crit_PSRKR4, _crit_PassutDanner, _crit_Yaws
 
 def test_data_IUPAC():
     MW_sum = _crit_IUPAC['MW'].sum()
@@ -168,15 +167,15 @@ def test_relationships():
     with pytest.raises(Exception):
         Grigoras(Tc=559.4)
 
-    Vc1 = critical_surface(Tc=599.4, Pc=1.19E6, Method=IHMELS)
-    Vc2 = critical_surface(Tc=599.4, Pc=1.19E6, Method=MEISSNER)
-    Vc3 = critical_surface(Tc=599.4, Pc=1.19E6, Method=GRIGORAS)
+    Vc1 = critical_surface(Tc=599.4, Pc=1.19E6, Method='IHMELS')
+    Vc2 = critical_surface(Tc=599.4, Pc=1.19E6, Method='MEISSNER')
+    Vc3 = critical_surface(Tc=599.4, Pc=1.19E6, Method='GRIGORAS')
     assert_allclose([Vc1, Vc2, Vc3],
                     [0.0010927333333333334, 0.0010695726588235296, 0.00134532])
 
     methods = critical_surface(Tc=599.4, Pc=1.19E6, AvailableMethods=True)
     methods.sort()
-    methods_listed = [IHMELS, MEISSNER, GRIGORAS, NONE]
+    methods_listed = ['IHMELS', 'MEISSNER', 'GRIGORAS', 'NONE']
     methods_listed.sort()
     assert methods == methods_listed
 
@@ -197,14 +196,14 @@ def test_Tc_main():
 
     assert_allclose(514.0, Tc(CASRN='64-17-5'))
 
-    assert_allclose(647.3, Tc(CASRN='7732-18-5', Method=PSRK))
+    assert_allclose(647.3, Tc(CASRN='7732-18-5', Method='PSRK'))
 
-    assert_allclose(126.2, Tc(CASRN='7727-37-9', Method=MATTHEWS))
+    assert_allclose(126.2, Tc(CASRN='7727-37-9', Method='MATTHEWS'))
 
-    assert_allclose(467.3661399548533, Tc(CASRN='64-17-5', Method=SURF))
+    assert_allclose(467.3661399548533, Tc(CASRN='64-17-5', Method='SURF'))
 
     methods = Tc(CASRN='98-01-1', AvailableMethods=True)
-    assert methods == [IUPAC, PSRK, YAWS, NONE]
+    assert methods == ['IUPAC', 'PSRK', 'YAWS', 'NONE']
 
     # Error handling
     assert None == Tc(CASRN='BADCAS')
@@ -225,14 +224,14 @@ def test_Pc_main():
 
     assert_allclose(6137000.0, Pc(CASRN='64-17-5'))
 
-    assert_allclose(22048321.0, Pc(CASRN='7732-18-5', Method=PSRK))
+    assert_allclose(22048321.0, Pc(CASRN='7732-18-5', Method='PSRK'))
 
-    assert_allclose(3394387.5, Pc(CASRN='7727-37-9', Method=MATTHEWS))
+    assert_allclose(3394387.5, Pc(CASRN='7727-37-9', Method='MATTHEWS'))
 
-    assert_allclose(6751845.238095238, Pc(CASRN='64-17-5', Method=SURF))
+    assert_allclose(6751845.238095238, Pc(CASRN='64-17-5', Method='SURF'))
 
     methods = Pc(CASRN='98-01-1', AvailableMethods=True)
-    assert methods == [IUPAC, PSRK, YAWS, NONE]
+    assert methods == ['IUPAC', 'PSRK', 'YAWS', 'NONE']
 
     # Error handling
     assert None == Pc(CASRN='BADCAS')
@@ -253,14 +252,14 @@ def test_Vc_main():
 
     assert_allclose(0.000168, Vc(CASRN='64-17-5'))
 
-    assert_allclose(5.600e-05, Vc(CASRN='7732-18-5', Method=PSRK))
+    assert_allclose(5.600e-05, Vc(CASRN='7732-18-5', Method='PSRK'))
 
-    assert_allclose(8.950e-05, Vc(CASRN='7727-37-9', Method=MATTHEWS))
+    assert_allclose(8.950e-05, Vc(CASRN='7727-37-9', Method='MATTHEWS'))
 
-    assert_allclose(0.00018476306394027916, Vc(CASRN='64-17-5', Method=SURF))
+    assert_allclose(0.00018476306394027916, Vc(CASRN='64-17-5', Method='SURF'))
 
     methods = Vc(CASRN='98-01-1', AvailableMethods=True)
-    assert methods == [PSRK, YAWS, NONE]
+    assert methods == ['PSRK', 'YAWS', 'NONE']
 
     # Error handling
     assert None == Vc(CASRN='BADCAS')
@@ -281,14 +280,14 @@ def test_Zc_main():
 
     assert_allclose(0.241, Zc(CASRN='64-17-5'))
 
-    assert_allclose(0.22941610667800444, Zc(CASRN='7732-18-5', Method=PSRK))
+    assert_allclose(0.22941610667800444, Zc(CASRN='7732-18-5', Method='PSRK'))
 
-    assert_allclose(0.29, Zc(CASRN='7727-37-9', Method=MATTHEWS))
+    assert_allclose(0.29, Zc(CASRN='7727-37-9', Method='MATTHEWS'))
 
-    assert_allclose(0.24125051446879994, Zc(CASRN='64-17-5', Method=COMBINED))
+    assert_allclose(0.24125051446879994, Zc(CASRN='64-17-5', Method='COMBINED'))
 
     methods = Zc(CASRN='98-01-1', AvailableMethods=True)
-    assert methods == [PSRK, YAWS, NONE]
+    assert methods == ['PSRK', 'YAWS', 'NONE']
 
     # Error handling
     assert None == Zc(CASRN='BADCAS')
@@ -377,9 +376,9 @@ def test_mixing_modified_Wilson_Vc():
         modified_Wilson_Vc([0.4271], [0.000273, 0.000256], [[0, 0.6671250], [1.3939900, 0]])
 
 
-def test_ThirdProperty():
+def test_third_property():
     with pytest.raises(Exception):
-        ThirdProperty('141-62-8')
-    assert ThirdProperty('1410-62-8', V=True) is None
+        third_property('141-62-8')
+    assert third_property('1410-62-8', V=True) is None
 
 

@@ -21,17 +21,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
+
+__all__ = ['solubility_parameter_methods', 'solubility_parameter', 
+           'solubility_eutectic', 'Tm_depression_eutectic']
+           
 import os
 from math import log, exp
 from thermo.utils import log, exp
 from scipy.constants import R
 
 folder = os.path.join(os.path.dirname(__file__), 'Solubility')
-
-
-# Props('D', 'T',298.15, 'P',101.325, 'water')
-#rho_w_298 = 0.9970476367603757 # kg/L
-#MW_w = 18.01528
 
 
 #def MolarSolubility(CASRN=None, Pi=101325):
@@ -66,13 +65,13 @@ folder = os.path.join(os.path.dirname(__file__), 'Solubility')
 #MSO2 = 64.0638
 #print fit_m('1310-73-2', 40)
 
-DEFINITION = 'Defined calculation'
-NONE = 'None'
+DEFINITION = 'DEFINITION'
+NONE = 'NONE'
 solubility_parameter_methods = [DEFINITION]
 
 
 def solubility_parameter(T=298.15, Hvapm=None, Vml=None,
-                        CASRN='', AvailableMethods=False, Method=None):
+                         CASRN='', AvailableMethods=False, Method=None):
     r'''This function handles the calculation of a chemical's solubility
     parameter. Calculation is a function of temperature, but is not always
     presented as such. No lookup values are available; either `Hvapm`, `Vml`,

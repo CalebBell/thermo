@@ -27,6 +27,17 @@ import numpy as np
 from thermo.identifiers import checkCAS
 from thermo.safety import *
 
+SUZUKI = 'Suzuki (1994)'
+CROWLLOUVAR = 'Crowl and Louvar (2001)'
+IEC = 'IEC 60079-20-1 (2010)'
+NFPA = 'NFPA 497 (2008)'
+IARC = 'International Agency for Research on Cancer'
+NTP = 'National Toxicology Program 13th Report on Carcinogens'
+UNLISTED = 'Unlisted'
+COMBINED = 'Combined'
+ONTARIO = 'Ontario Limits'
+NONE = 'None'
+
 def test_OntarioExposureLimits():
     from thermo.safety import _OntarioExposureLimits
     pts = [_OntarioExposureLimits[i]["TWA (ppm)"] for i in _OntarioExposureLimits.keys()]

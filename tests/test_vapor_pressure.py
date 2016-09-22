@@ -138,7 +138,7 @@ def test_VaporPressure():
 
     # Get a check for Antoine Extended
     cycloheptane = VaporPressure(Tb=391.95, Tc=604.2, Pc=3820000.0, omega=0.2384, CASRN='291-64-5')
-    cycloheptane.set_user_methods(ANTOINE_EXTENDED_POLING, forced=True)
+    cycloheptane.set_user_methods('ANTOINE_EXTENDED_POLING', forced=True)
     assert_allclose(cycloheptane.T_dependent_property(410), 161647.35219882353)
     assert None == cycloheptane.T_dependent_property(400)
 

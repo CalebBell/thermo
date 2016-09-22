@@ -22,6 +22,8 @@ SOFTWARE.'''
 
 from __future__ import division
 
+__all__ = ['Hcombustion']
+
 
 def Hcombustion(atoms=None, Hf=None, HfH2O=-285825, HfCO2=-393474,
                 HfSO2=-296800, HfBr2=30880, HfI2=62417, HfHCl=-92173,

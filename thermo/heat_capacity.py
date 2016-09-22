@@ -21,10 +21,20 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
+
+__all__ = ['Poling_data', 'TRC_gas_data', '_PerryI', 'CRC_standard_data', 
+           'Lastovka_Shaw', 'TRCCp', 'TRCCp_integral', 
+           'heat_capacity_gas_methods', 'HeatCapacityGas', 
+           'Rowlinson_Poling', 'Rowlinson_Bondi', 'Dadgostar_Shaw', 
+           'Zabransky_quasi_polynomial', 'Zabransky_cubic', 
+           'ZABRANSKY_TO_DICT', 'heat_capacity_liquid_methods', 
+           'HeatCapacityLiquid', 'Lastovka_solid', 'Lastovka_solid_integral', 
+           'Lastovka_solid_integral_over_T', 'heat_capacity_solid_methods', 
+           'HeatCapacitySolid', 'Cp_liq_mixture', 'Cp_gas_mixture', 
+           'Cv_gas_mixture']
 import os
 from io import open
 from thermo.utils import log, exp
-#from math import log, exp
 import numpy as np
 import pandas as pd
 

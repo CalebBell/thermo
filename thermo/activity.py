@@ -21,15 +21,18 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
+
+__all__ = ['K', 'Rachford_Rice_flash_error', 'flash', 'dew_at_T', 
+           'bubble_at_T', 'identify_phase', 'mixture_phase_methods', 
+           'identify_phase_mixture', 'Pbubble_mixture', 'Pdew_mixture']
+
 from scipy.optimize import fsolve
-#from math import exp, log
 from thermo.utils import exp, log
 import numpy as np
 import os
 from thermo.utils import none_and_length_check
 
 from scipy.constants import R
-C2J = 4.1868
 
 folder = os.path.join(os.path.dirname(__file__), 'Phase Change')
 
@@ -163,12 +166,7 @@ def identify_phase(T=None, P=None, Tm=None, Tb=None, Tc=None, Psat=None):
     return phase
 
 
-IDEALVLE = 'Ideal'
-SUPERCRITICALT = 'Critical temperature criteria'
-SUPERCRITICALP = 'Critical pressure criteria'
-IDEALVLESUPERCRITICAL = 'Ideal with supercritical components'
-NONE = 'None'
-
+mixture_phase_methods = ['IDEAL_VLE', 'SUPERCRITICAL_T', 'SUPERCRITICAL_P', 'IDEAL_VLE_SUPERCRITICAL']
 
 def identify_phase_mixture(T=None, P=None, zs=None, Tcs=None, Pcs=None,
                            Psats=None, CASRNs=None,
@@ -186,14 +184,14 @@ def identify_phase_mixture(T=None, P=None, zs=None, Tcs=None, Pcs=None,
     def list_methods():
         methods = []
         if none_and_length_check((Psats, zs)):
-            methods.append(IDEALVLE)
+            methods.append('IDEAL_VLE')
         if none_and_length_check([Tcs]) and all([T >= i for i in Tcs]):
-            methods.append(SUPERCRITICALT)
+            methods.append('SUPERCRITICAL_T')
         if none_and_length_check([Pcs]) and all([P >= i for i in Pcs]):
-            methods.append(SUPERCRITICALP)
+            methods.append('SUPERCRITICAL_P')
         if none_and_length_check((zs, Tcs)) and any([T > Tc for Tc in Tcs]):
-            methods.append(IDEALVLESUPERCRITICAL)
-        methods.append(NONE)
+            methods.append('IDEAL_VLE_SUPERCRITICAL')
+        methods.append('NONE')
         return methods
     if AvailableMethods:
         return list_methods()
@@ -201,7 +199,7 @@ def identify_phase_mixture(T=None, P=None, zs=None, Tcs=None, Pcs=None,
         Method = list_methods()[0]
     # This is the calculate, given the method section
     xs, ys, phase, V_over_F = None, None, None, None
-    if Method == IDEALVLE:
+    if Method == 'IDEAL_VLE':
         Pdew = dew_at_T(zs, Psats)
         Pbubble = bubble_at_T(zs, Psats)
         if P >= Pbubble:
@@ -217,17 +215,17 @@ def identify_phase_mixture(T=None, P=None, zs=None, Tcs=None, Pcs=None,
         elif Pdew < P < Pbubble:
             xs, ys, V_over_F = flash(P, zs, Psats)
             phase = 'two-phase'
-    elif Method == SUPERCRITICALT:
+    elif Method == 'SUPERCRITICAL_T':
         if all([T >= i for i in Tcs]):
             phase = 'g'
         else: # The following is nonsensical
             phase = 'two-phase'
-    elif Method == SUPERCRITICALP:
+    elif Method == 'SUPERCRITICAL_P':
         if all([P >= i for i in Pcs]):
             phase = 'g'
         else: # The following is nonsensical
             phase = 'two-phase'
-    elif Method == IDEALVLESUPERCRITICAL:
+    elif Method == 'IDEAL_VLE_SUPERCRITICAL':
         Psats = list(Psats)
         for i in range(len(Psats)):
             if not Psats[i] and Tcs[i] and Tcs[i] <= T:
@@ -248,7 +246,7 @@ def identify_phase_mixture(T=None, P=None, zs=None, Tcs=None, Pcs=None,
             xs, ys, V_over_F = flash(P, zs, Psats)
             phase = 'two-phase'
 
-    elif Method == NONE:
+    elif Method == 'NONE':
         pass
     else:
         raise Exception('Failure in in function')
@@ -264,17 +262,17 @@ def Pbubble_mixture(T=None, zs=None, Psats=None, CASRNs=None,
     def list_methods():
         methods = []
         if none_and_length_check((Psats, zs)):
-            methods.append(IDEALVLE)
-        methods.append(NONE)
+            methods.append('IDEAL_VLE')
+        methods.append('NONE')
         return methods
     if AvailableMethods:
         return list_methods()
     if not Method:
         Method = list_methods()[0]
     # This is the calculate, given the method section
-    if Method == IDEALVLE:
+    if Method == 'IDEAL_VLE':
         Pbubble = bubble_at_T(zs, Psats)
-    elif Method == NONE:
+    elif Method == 'NONE':
         Pbubble = None
     else:
         raise Exception('Failure in in function')
@@ -290,17 +288,17 @@ def Pdew_mixture(T=None, zs=None, Psats=None, CASRNs=None,
     def list_methods():
         methods = []
         if none_and_length_check((Psats, zs)):
-            methods.append(IDEALVLE)
-        methods.append(NONE)
+            methods.append('IDEAL_VLE')
+        methods.append('NONE')
         return methods
     if AvailableMethods:
         return list_methods()
     if not Method:
         Method = list_methods()[0]
     # This is the calculate, given the method section
-    if Method == IDEALVLE:
+    if Method == 'IDEAL_VLE':
         Pdew = dew_at_T(zs, Psats)
-    elif Method == NONE:
+    elif Method == 'NONE':
         Pdew = None
     else:
         raise Exception('Failure in in function')

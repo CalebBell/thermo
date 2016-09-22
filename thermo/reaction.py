@@ -21,11 +21,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
-import os
 
-from thermo.heat_capacity import TRC_gas_data
+__all__ = ['API_TDB_data', 'ATcT_l', 'ATcT_g', 'Hf_methods', 'Hf', 
+           'Hf_l_methods', 'Hf_l', 'Hf_g_methods', 'Hf_g']
+           
+import os
 import numpy as np
 import pandas as pd
+from thermo.heat_capacity import TRC_gas_data
+
 folder = os.path.join(os.path.dirname(__file__), 'Reactions')
 
 
@@ -39,8 +43,8 @@ ATcT_g = pd.read_csv(os.path.join(folder, 'ATcT 1.112 (g).csv'),
                      sep='\t', index_col=0)
 
 
-API_TDB = 'API TDB'
-NONE = 'None'
+API_TDB = 'API_TDB'
+NONE = 'NONE'
 Hf_methods = [API_TDB]
 
 
@@ -77,7 +81,7 @@ def Hf(CASRN='', AvailableMethods=False, Method=None):
     -----
     Only one source of information is available to this function. it is:
 
-        * 'API TDB', a compilation of heats of formation of unspecified phase.
+        * 'API_TDB', a compilation of heats of formation of unspecified phase.
           Not the original data, but as reproduced in [1]_. Some chemicals with
           duplicated CAS numbers were removed.
 
@@ -113,8 +117,8 @@ def Hf(CASRN='', AvailableMethods=False, Method=None):
     return _Hf
 
 
-ATCT_L = 'Active Thermochemical Tables (l)'
-ATCT_G = 'Active Thermochemical Tables (g)'
+ATCT_L = 'ATCT_L'
+ATCT_G = 'ATCT_G'
 
 Hf_l_methods = [ATCT_L]
 
@@ -134,7 +138,7 @@ def Hf_l(CASRN='', AvailableMethods=False, Method=None):
 
     Returns
     -------
-    _Hfl : float
+    Hfl : float
         Liquid standard-state heat of formation, [J/mol]
     methods : list, only returned if AvailableMethods == True
         List of methods which can be used to obtain Hf(l) with the given inputs
@@ -152,7 +156,7 @@ def Hf_l(CASRN='', AvailableMethods=False, Method=None):
     -----
     Only one source of information is available to this function. It is:
 
-        * 'Active Thermochemical Tables (l)', version 1.112.
+        * 'ATCT_L', the Active Thermochemical Tables version 1.112.
 
     Examples
     --------
@@ -226,7 +230,7 @@ def Hf_g(CASRN='', AvailableMethods=False, Method=None):
     -----
     Sources are:
 
-        * 'Active Thermochemical Tables (g)', version 1.112 [1]_.
+        * 'ATCT_G', the Active Thermochemical Tables version 1.112.
         * 'TRC', from a 1994 compilation.
 
     Examples

@@ -21,6 +21,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
+
+__all__ = ['tabulate_solid', 'tabulate_liq', 'tabulate_gas', 
+           'tabulate_constants']
+           
 from collections import OrderedDict
 import numpy as np
 import pandas as pd

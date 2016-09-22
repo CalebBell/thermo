@@ -21,6 +21,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
+__all__ = ['CRC_inorganic_data', 'CRC_organic_data', '_VDISaturationDict', 
+           'VDI_tabular_data']
 import os
 import copy
 import pandas as pd
