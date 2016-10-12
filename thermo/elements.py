@@ -220,18 +220,6 @@ periodic_table = PeriodicTable(element_list)
 '''Single instance of the PeriodicTable class'''
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 def molecular_weight(atoms):
     r'''Calculates molecular weight of a molecule given a dictionary of its
     atoms and their counts, in the format {symbol: count}.
