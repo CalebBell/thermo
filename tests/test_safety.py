@@ -177,7 +177,7 @@ def test_Tflash():
     methods = Tflash('8006-61-9', AvailableMethods=True)
     assert methods[0:-1] == Tflash_methods
 
-    tot_default = pd.Series([Tflash(i) for i in set(IEC_2010.index + NFPA_2008.index)]).sum()
+    tot_default = pd.Series([Tflash(i) for i in set(list(IEC_2010.index) + list(NFPA_2008.index))]).sum()
     assert_allclose(tot_default, 98062.0)
 
     assert None == Tflash(CASRN='132451235-2151234-1234123')
@@ -197,7 +197,7 @@ def test_Tautoignition():
     methods = Tautoignition('8006-61-9', AvailableMethods=True)
     assert methods[0:-1] == Tautoignition_methods
 
-    tot_default = pd.Series([Tautoignition(i) for i in set(IEC_2010.index + NFPA_2008.index)]).sum()
+    tot_default = pd.Series([Tautoignition(i) for i in set(list(IEC_2010.index) + list(NFPA_2008.index))]).sum()
     assert_allclose(tot_default, 229841.29999999993)
 
     assert None == Tautoignition(CASRN='132451235-2151234-1234123')
@@ -219,7 +219,7 @@ def test_LFL():
     methods = LFL(CASRN='71-43-2', Hc=-764464, atoms={'H': 4, 'C': 1, 'O': 1}, AvailableMethods=True)
     assert methods[0:-1] == LFL_methods
 
-    tot_default = pd.Series([LFL(CASRN=i) for i in set(IEC_2010.index + NFPA_2008.index)]).sum()
+    tot_default = pd.Series([LFL(CASRN=i) for i in set(list(IEC_2010.index) + list(NFPA_2008.index))]).sum()
     assert_allclose(tot_default, 7.0637000000000008)
 
     assert None == LFL(CASRN='132451235-2151234-1234123')
@@ -240,7 +240,7 @@ def test_UFL():
     methods = UFL(CASRN='71-43-2', Hc=-764464, atoms={'H': 4, 'C': 1, 'O': 1}, AvailableMethods=True)
     assert methods[0:-1] == UFL_methods
 
-    tot_default = pd.Series([UFL(CASRN=i) for i in set(IEC_2010.index + NFPA_2008.index)]).sum()
+    tot_default = pd.Series([UFL(CASRN=i) for i in set(list(IEC_2010.index) + list(NFPA_2008.index))]).sum()
     assert_allclose(tot_default, 46.364000000000004)
 
     assert None == UFL(CASRN='132451235-2151234-1234123')

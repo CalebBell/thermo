@@ -37,4 +37,4 @@ install:
   - cmd: python setup.py install
 
 test_script:
-  - cmd: py.test --cov-report html --cov=ht 
+  - cmd: py.test --cov-report html --cov=thermo
