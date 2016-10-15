@@ -23,7 +23,6 @@ install:
   - pip install -r requirements_test.txt
   - python setup.py -q install
 script:
-  - python tests/test_doctests.py
   - cd tests
   - py.test . -v --cov-report html --cov=thermo --cov-report term-missing;
 after_success:
