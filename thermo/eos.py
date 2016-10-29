@@ -78,15 +78,15 @@ class CUBIC_EOS(object):
         else:
             raise Exception('Three roots not possible')
 
-    def set_derivs_from_phase(self, T, P, V, b, a_alpha, da_alpha_dT, d2a_alpha_dT2):
-        [dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP] = self.first_derivatives(T, V, b, a_alpha, da_alpha_dT, d2a_alpha_dT2)
-        [d2P_dT2, d2P_dV2, d2V_dT2, d2V_dP2, d2T_dV2, d2T_dP2] = self.second_derivatives(T, V, b, a_alpha, da_alpha_dT, d2a_alpha_dT2)
-        [d2V_dPdT, d2P_dTdV, d2T_dPdV] = self.second_derivatives_mixed(T, V, b, a_alpha, da_alpha_dT)
+    def set_derivs_from_phase(self, T, P, V, b, a_alpha, da_alpha_dT, d2a_alpha_dT2, quick=False):
+        if not quick:
+            [dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP] = self.first_derivatives(T, V, b, a_alpha, da_alpha_dT, d2a_alpha_dT2)
+            [d2P_dT2, d2P_dV2, d2V_dT2, d2V_dP2, d2T_dV2, d2T_dP2] = self.second_derivatives(T, V, b, a_alpha, da_alpha_dT, d2a_alpha_dT2)
+            [d2V_dPdT, d2P_dTdV, d2T_dPdV] = self.second_derivatives_mixed(T, V, b, a_alpha, da_alpha_dT)
         
         beta = isobaric_expansion(V, dV_dT)
         kappa = isothermal_compressibility(V, dV_dP)
         Cp_m_Cv = Cp_minus_Cv(T, d2P_dT2, dP_dV)
-
         
         PIP = phase_identification_parameter(V, dP_dT, dP_dV, d2P_dV2, d2P_dTdV)
         phase = phase_identification_parameter_phase(PIP)
@@ -100,22 +100,36 @@ class CUBIC_EOS(object):
         fugacity = P*exp(G_dep/(R*T))
         phi = fugacity/P
         
-        
-
-
         if phase == 'l':
-            self.beta_l, self.kappa_l, self.PIP_l, self.Cp_minus_Cv_l = beta, kappa, PIP, Cp_m_Cv
-            self.dP_dT_l, self.dP_dV_l, self.dV_dT_l, self.dV_dP_l, self.dT_dV_l, self.dT_dP_l = dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP
-            self.d2P_dT2_l, self.d2P_dV2_l, self.d2V_dT2_l, self.d2V_dP2_l, self.d2T_dV2_l, self.d2T_dP2_l = d2P_dT2, d2P_dV2, d2V_dT2, d2V_dP2, d2T_dV2, d2T_dP2
-            self.d2V_dPdT_l, self.d2P_dTdV_l, self.d2T_dPdV_l = d2V_dPdT, d2P_dTdV, d2T_dPdV
-            self.H_dep_l, self.S_dep_l = H_dep, S_dep
+            self.beta_l, self.kappa_l = beta, kappa
+            self.PIP_l, self.Cp_minus_Cv_l = PIP, Cp_m_Cv
             
+            self.dP_dT_l, self.dP_dV_l, self.dV_dT_l = dP_dT, dP_dV, dV_dT
+            self.dV_dP_l, self.dT_dV_l, self.dT_dP_l = dV_dP, dT_dV, dT_dP
+            
+            self.d2P_dT2_l, self.d2P_dV2_l, self.d2V_dT2_l = d2P_dT2, d2P_dV2, d2V_dT2
+            self.d2V_dP2_l, self.d2T_dV2_l, self.d2T_dP2_l = d2V_dP2, d2T_dV2, d2T_dP2
+            
+            self.d2V_dPdT_l, self.d2P_dTdV_l, self.d2T_dPdV_l = d2V_dPdT, d2P_dTdV, d2T_dPdV
+            
+            self.H_dep_l, self.S_dep_l, self.V_dep_l = H_dep, S_dep, V_dep, 
+            self.U_dep_l, self.G_dep_l, self.A_dep_l = U_dep, G_dep, A_dep, 
+            self.fugacity_l, self.phi_l = fugacity, phi
         else:
-            self.beta_g, self.kappa_g, self.PIP_g, self.Cp_minus_Cv_g = beta, kappa, PIP, Cp_m_Cv
-            self.dP_dT_g, self.dP_dV_g, self.dV_dT_g, self.dV_dP_g, self.dT_dV_g, self.dT_dP_g = dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP
-            self.d2P_dT2_g, self.d2P_dV2_g, self.d2V_dT2_g, self.d2V_dP2_g, self.d2T_dV2_g, self.d2T_dP2_g = d2P_dT2, d2P_dV2, d2V_dT2, d2V_dP2, d2T_dV2, d2T_dP2
+            self.beta_g, self.kappa_g = beta, kappa
+            self.PIP_g, self.Cp_minus_Cv_g = PIP, Cp_m_Cv
+            
+            self.dP_dT_g, self.dP_dV_g, self.dV_dT_g = dP_dT, dP_dV, dV_dT
+            self.dV_dP_g, self.dT_dV_g, self.dT_dP_g = dV_dP, dT_dV, dT_dP
+            
+            self.d2P_dT2_g, self.d2P_dV2_g, self.d2V_dT2_g = d2P_dT2, d2P_dV2, d2V_dT2
+            self.d2V_dP2_g, self.d2T_dV2_g, self.d2T_dP2_g = d2V_dP2, d2T_dV2, d2T_dP2
+            
             self.d2V_dPdT_g, self.d2P_dTdV_g, self.d2T_dPdV_g = d2V_dPdT, d2P_dTdV, d2T_dPdV
-            self.H_dep_g, self.S_dep_g = H_dep, S_dep
+            
+            self.H_dep_g, self.S_dep_g, self.V_dep_g = H_dep, S_dep, V_dep, 
+            self.U_dep_g, self.G_dep_g, self.A_dep_g = U_dep, G_dep, A_dep, 
+            self.fugacity_g, self.phi_g = fugacity, phi
         return phase            
 
         
@@ -127,6 +141,10 @@ class PR(CUBIC_EOS):
     
     # Constant part of `b`, (X/(X+3)).evalf(40)
     c2 = 0.0777960739038884559718447100373331839711
+    
+    def set_a_alpha(self, T):
+        self.a_alpha = self.a*(1 + self.kappa*(1-(T/self.Tc)**0.5))**2
+    
     
     def __init__(self, Tc, Pc, omega, T=None, P=None, V=None):
         self.Tc = Tc
@@ -140,27 +158,33 @@ class PR(CUBIC_EOS):
         self.b = self.c2*R*Tc/Pc
         self.kappa = 0.37464+ 1.54226*self.omega - 0.26992*self.omega**2
         
-        if T and P:
-            self.a_alpha = self.a*(1 + self.kappa*(1-(T/self.Tc)**0.5))**2
-            self.da_alpha_dT = -self.a*self.kappa*sqrt(T/self.Tc)*(self.kappa*(-sqrt(T/self.Tc) + 1.) + 1.)/T
-            self.d2a_alpha_dT2 = self.a*self.kappa*(self.kappa/self.Tc - sqrt(T/self.Tc)*(self.kappa*(sqrt(T/self.Tc) - 1.) - 1.)/T)/(2.*T)
+        if not ([T and P] or [T and V] or [P and V]):
+            raise Exception('Either T and P, or T and V, or P and V are required')
         
+        if V:
+            if P:
+                a, b, kappa = self.a, self.b, self.kappa
+                self.T = T = Tc*(-2*a*kappa*sqrt((V - b)**3*(V**2 + 2*V*b - b**2)*(P*R*Tc*V**2 + 2*P*R*Tc*V*b - P*R*Tc*b**2 - P*V*a*kappa**2 + P*a*b*kappa**2 + R*Tc*a*kappa**2 + 2*R*Tc*a*kappa + R*Tc*a))*(kappa + 1)*(R*Tc*V**2 + 2*R*Tc*V*b - R*Tc*b**2 - V*a*kappa**2 + a*b*kappa**2)**2 + (V - b)*(R**2*Tc**2*V**4 + 4*R**2*Tc**2*V**3*b + 2*R**2*Tc**2*V**2*b**2 - 4*R**2*Tc**2*V*b**3 + R**2*Tc**2*b**4 - 2*R*Tc*V**3*a*kappa**2 - 2*R*Tc*V**2*a*b*kappa**2 + 6*R*Tc*V*a*b**2*kappa**2 - 2*R*Tc*a*b**3*kappa**2 + V**2*a**2*kappa**4 - 2*V*a**2*b*kappa**4 + a**2*b**2*kappa**4)*(P*R*Tc*V**4 + 4*P*R*Tc*V**3*b + 2*P*R*Tc*V**2*b**2 - 4*P*R*Tc*V*b**3 + P*R*Tc*b**4 - P*V**3*a*kappa**2 - P*V**2*a*b*kappa**2 + 3*P*V*a*b**2*kappa**2 - P*a*b**3*kappa**2 + R*Tc*V**2*a*kappa**2 + 2*R*Tc*V**2*a*kappa + R*Tc*V**2*a + 2*R*Tc*V*a*b*kappa**2 + 4*R*Tc*V*a*b*kappa + 2*R*Tc*V*a*b - R*Tc*a*b**2*kappa**2 - 2*R*Tc*a*b**2*kappa - R*Tc*a*b**2 + V*a**2*kappa**4 + 2*V*a**2*kappa**3 + V*a**2*kappa**2 - a**2*b*kappa**4 - 2*a**2*b*kappa**3 - a**2*b*kappa**2))/((R*Tc*V**2 + 2*R*Tc*V*b - R*Tc*b**2 - V*a*kappa**2 + a*b*kappa**2)**2*(R**2*Tc**2*V**4 + 4*R**2*Tc**2*V**3*b + 2*R**2*Tc**2*V**2*b**2 - 4*R**2*Tc**2*V*b**3 + R**2*Tc**2*b**4 - 2*R*Tc*V**3*a*kappa**2 - 2*R*Tc*V**2*a*b*kappa**2 + 6*R*Tc*V*a*b**2*kappa**2 - 2*R*Tc*a*b**3*kappa**2 + V**2*a**2*kappa**4 - 2*V*a**2*b*kappa**4 + a**2*b**2*kappa**4))
+                self.set_a_alpha(T)
+            else:
+                self.set_a_alpha(T)
+                self.P = P = R*T/(V-self.b) - self.a_alpha/(V*(V+self.b)+self.b*(V-self.b))
+            Vs = [V, 1j, 1j]
+        else:
+            self.set_a_alpha(T)
             Vs = self.all_V(T, P, self.b, self.a_alpha)
-            self.set_from_PT(T, P, Vs, self.b, self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2)
+        
+        self.da_alpha_dT = -self.a*self.kappa*sqrt(T/self.Tc)*(self.kappa*(-sqrt(T/self.Tc) + 1.) + 1.)/T
+        self.d2a_alpha_dT2 = self.a*self.kappa*(self.kappa/self.Tc - sqrt(T/self.Tc)*(self.kappa*(sqrt(T/self.Tc) - 1.) - 1.)/T)/(2.*T)
 
-        elif T and V:
-            # Copy and pasted
-            self.a_alpha = self.a*(1 + self.kappa*(1-(T/self.Tc)**0.5))**2
-            self.da_alpha_dT = -self.a*self.kappa*sqrt(T/self.Tc)*(self.kappa*(-sqrt(T/self.Tc) + 1.) + 1.)/T
-            self.d2a_alpha_dT2 = self.a*self.kappa*(self.kappa/self.Tc - sqrt(T/self.Tc)*(self.kappa*(sqrt(T/self.Tc) - 1.) - 1.)/T)/(2.*T)
-
-            self.P = P = R*T/(V-self.b) - self.a_alpha/(V*(V+self.b)+self.b*(V-self.b))
-            # Only calculate for the specified V
-            self.set_from_PT(T, P, [V, 1j, 1j], self.b, self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2)
+        self.set_from_PT(T, P, Vs, self.b, self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2)
 
 
-#a = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
-#print(a.d2V_dPdT_l, a.PIP_l, a.Vl, a.Cp_minus_Cv_l)
-#
-#b = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., V=0.00013022208100139953)
-#print(b.d2V_dPdT_l, b.PIP_l, b.Vl, b.P)
+a = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+print(a.d2V_dPdT_l, a.PIP_l, a.Vl)
+
+b = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., V=0.00013022208100139953)
+print(b.d2V_dPdT_l, b.PIP_l, b.Vl, b.P)
+
+c = PR(Tc=507.6, Pc=3025000, omega=0.2975, V=0.00013022208100139953, P=1E6)
+print(c.d2V_dPdT_l, c.PIP_l, c.Vl, c.T)
