@@ -24,7 +24,10 @@ from __future__ import division
 
 __all__ = ['has_matplotlib', 'ANYMATH', 'mathlib', 'to_num', 'CAS2int', 
 'int2CAS', 'Parachor', 'property_molar_to_mass', 'property_mass_to_molar', 
-'isobaric_expansion', 'JT', 'isentropic_exponent', 'Vm_to_rho', 'rho_to_Vm', 
+'isobaric_expansion', '_isobaric_expansion', 'isothermal_compressibility', 
+'Cp_minus_Cv', 'JT', 'speed_of_sound', 'Joule_Thomson',
+'phase_identification_parameter', 'phase_identification_parameter_phase',
+'isentropic_exponent', 'Vm_to_rho', 'rho_to_Vm', 
 'Z', 'B_To_Z', 'B_from_Z', 'Z_from_virial_density_form', 
 'Z_from_virial_pressure_form', 'zs_to_ws', 'ws_to_zs', 'zs_to_Vfs', 
 'Vfs_to_zs', 'none_and_length_check', 'normalize', 'mixing_simple', 
@@ -295,6 +298,353 @@ def isobaric_expansion(V1=None, V2=None, dT=0.01):  # pragma: no cover
     V = (V1+V2)/2.
     beta = 1/V*(V2-V1)/dT
     return beta
+
+
+def _isobaric_expansion(V, dV_dT):
+    r'''Calculate the isobaric coefficient of a thermal expansion, given its 
+    molar volume at a certain `T` and `P`, and its derivative of molar volume
+    with respect to `T`.
+
+    .. math::
+        \beta = \frac{1}{V}\left(\frac{\partial V}{\partial T} \right)_P
+
+    Parameters
+    ----------
+    V : float
+        Molar volume at `T` and `P`, [m^3/mol]
+    dV_dT : float
+        Derivative of molar volume with respect to `T`, [m^3/mol/K]
+
+    Returns
+    -------
+    beta : float
+        Isobaric coefficient of a thermal expansion, [1/K]
+        
+    Notes
+    -----
+    For an ideal gas, this expression simplified to:
+    
+    .. math::
+        \beta = \frac{1}{T}
+
+    Examples
+    --------
+    Calculated for hexane from the PR EOS at 299 K and 1 MPa (liquid):
+    
+    >>> _isobaric_expansion(0.000130229900873546, 1.58875261849113e-7)
+    0.0012199599384121608
+
+    References
+    ----------
+    .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
+       New York: McGraw-Hill Professional, 2000.
+    '''
+    return dV_dT/V
+
+
+def isothermal_compressibility(V, dV_dP):
+    r'''Calculate the isothermal coefficient of a compressibility, given its 
+    molar volume at a certain `T` and `P`, and its derivative of molar volume
+    with respect to `P`.
+
+    .. math::
+        \kappa = -\frac{1}{V}\left(\frac{\partial V}{\partial P} \right)_T
+
+    Parameters
+    ----------
+    V : float
+        Molar volume at `T` and `P`, [m^3/mol]
+    dV_dP : float
+        Derivative of molar volume with respect to `P`, [m^3/mol/Pa]
+
+    Returns
+    -------
+    kappa : float
+        Isothermal coefficient of a compressibility, [1/Pa]
+        
+    Notes
+    -----
+    For an ideal gas, this expression simplified to:
+    
+    .. math::
+        \kappa = \frac{1}{P}
+
+    Examples
+    --------
+    Calculated for hexane from the PR EOS at 299 K and 1 MPa (liquid):
+    
+    >>> isothermal_compressibility(0.000130229900873546, -2.72902118209903e-13)
+    2.09554116511916e-9
+
+    References
+    ----------
+    .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
+       New York: McGraw-Hill Professional, 2000.
+    '''
+    return -dV_dP/V
+
+
+def phase_identification_parameter(V, dP_dT, dP_dV, d2P_dV2, d2P_dVdT):
+    r'''Calculate the Phase Identification Parameter developed in [1]_ for
+    the accurate and efficient determination of whether a fluid is a liquid or
+    a gas based on the results of an equation of state. For supercritical 
+    conditions, this provides a good method for choosing which property 
+    correlations to use.
+    
+    .. math::
+        \Pi = V \left[\frac{\frac{\partial^2 P}{\partial V \partial T}}
+        {\frac{\partial P }{\partial T}}- \frac{\frac{\partial^2 P}{\partial 
+        V^2}}{\frac{\partial P}{\partial V}} \right]
+
+    Parameters
+    ----------
+    V : float
+        Molar volume at `T` and `P`, [m^3/mol]
+    dP_dT : float
+        Derivative of `P` with respect to `T`, [Pa/K]
+    dP_dV : float
+        Derivative of `P` with respect to `V`, [Pa*mol/m^3]
+    d2P_dV2 : float
+        Second derivative of `P` with respect to `V`, [Pa*mol^2/m^6]
+    d2P_dVdT : float
+        Second derivative of `P` with respect to both `V` and `T`, [Pa*mol/m^3/K]
+
+    Returns
+    -------
+    PIP : float
+        Phase Identification Parameter, [-]
+        
+    Notes
+    -----
+    Heuristics were used by process simulators before the invent of this 
+    parameter. 
+    
+    The criteria for liquid is Pi > 1; for vapor, Pi <= 1.
+
+    Examples
+    --------
+    Calculated for hexane from the PR EOS at 299 K and 1 MPa (liquid):
+    
+    >>> phase_identification_parameter(0.000130229900874, 582169.397484, 
+    ... -3.66431747236e+12, 4.48067893805e+17, -20518995218.2)
+    11.33428990564796
+
+    References
+    ----------
+    .. [1] Venkatarathnam, G., and L. R. Oellrich. "Identification of the Phase
+       of a Fluid Using Partial Derivatives of Pressure, Volume, and 
+       Temperature without Reference to Saturation Properties: Applications in 
+       Phase Equilibria Calculations." Fluid Phase Equilibria 301, no. 2 
+       (February 25, 2011): 225-33. doi:10.1016/j.fluid.2010.12.001.
+    '''
+    return V*(d2P_dVdT/dP_dT - d2P_dV2/dP_dV)
+
+#phase_identification_parameter(0.000130229900874, 582169.397484, -3.66431747236e+12, 4.48067893805e+17, -20518995218.2)
+
+def phase_identification_parameter_phase(PIP):
+    r'''Uses the Phase Identification Parameter developed in [1]_ to determine
+    if a fluid is a liquid or a vapor.
+
+    The criteria for liquid is PIP > 1; for vapor, PIP <= 1.
+
+    Parameters
+    ----------
+    PIP : float
+        Phase Identification Parameter, [-]
+
+    Returns
+    -------
+    phase : bool
+        Either 'l' or 'g'
+        
+    Examples
+    --------
+    Calculated for hexane from the PR EOS at 299 K and 1 MPa (liquid):
+    
+    >>> phase_identification_parameter_phase(11.33428990564796)
+    'l'
+
+    References
+    ----------
+    .. [1] Venkatarathnam, G., and L. R. Oellrich. "Identification of the Phase
+       of a Fluid Using Partial Derivatives of Pressure, Volume, and 
+       Temperature without Reference to Saturation Properties: Applications in 
+       Phase Equilibria Calculations." Fluid Phase Equilibria 301, no. 2 
+       (February 25, 2011): 225-33. doi:10.1016/j.fluid.2010.12.001.
+    '''
+    return 'l' if PIP > 1 else 'g'
+
+
+def Cp_minus_Cv(T, d2P_dT2, dP_dV):
+    r'''Calculate the difference between a real gas's constant-pressure heat
+    capacity and constant-volume heat capacity, as given in [1]_, [2]_, and
+    [3]_. The required derivatives should be calculated with an equation of
+    state.
+
+    .. math::
+        C_p - C_v = -T\left(\frac{\partial P}{\partial T}\right)_V^2/
+        \left(\frac{\partial P}{\partial V}\right)_T
+
+    Parameters
+    ----------
+    T : float
+        Temperature of fluid [K]
+    d2P_dT2 : float
+        Second derivative of `P` with respect to `T`, [Pa/K^2]
+    dP_dV : float
+        Derivative of `P` with respect to `V`, [Pa*mol/m^3]
+
+    Returns
+    -------
+    Cp_minus_Cv : float
+        Cp - Cv for a real gas, [J/mol/K]
+        
+    Notes
+    -----
+    Equivalent expressions are:
+    
+    .. math::
+        C_p - C_v=T\left(\frac{\partial V}{\partial T}\right)_P^2/\left(
+        \frac{\partial V}{\partial P}\right)_T
+        
+        C_p - C_v = T\left(\frac{\partial P}{\partial T}\right)
+        \left(\frac{\partial V}{\partial T}\right)
+
+    Examples
+    --------
+    Calculated for hexane from the PR EOS at 299 K and 1 MPa (liquid):
+    
+    >>> Cp_minus_Cv(299, -506.20125231401465, -3665180614672.253)
+    -4.1295147594090596e-08
+
+    References
+    ----------
+    .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
+       New York: McGraw-Hill Professional, 2000.
+    .. [2] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
+       Butterworth-Heinemann, 1985.
+    .. [3] Gmehling, Jurgen, Barbel Kolbe, Michael Kleiber, and Jurgen Rarey.
+       Chemical Thermodynamics for Process Simulation. 1st edition. Weinheim: 
+       Wiley-VCH, 2012.
+    '''
+    return -T*d2P_dT2/dP_dV
+    
+    
+def speed_of_sound(V, dP_dV, Cp, Cv, MW=None):
+    r'''Calculate a real fluid's speed of sound. The required derivatives should 
+    be calculated with an equation of state, and `Cp` and `Cv` are both the
+    real fluid versions. Expression is given in [1]_ and [2]_; a unit conversion
+    is further performed to obtain a result in m/s. If MW is not provided the 
+    result is returned in units of m*kg^0.5/s/mol^0.5.
+
+    .. math::
+        w = \left[-V^2 \left(\frac{\partial P}{\partial V}\right)_T \frac{C_p}
+        {C_v}\right]^{1/2}
+        
+    Parameters
+    ----------
+    V : float
+        Molar volume of fluid, [m^3/mol]
+    dP_dV : float
+        Derivative of `P` with respect to `V`, [Pa*mol/m^3]
+    Cp : float
+        Real fluid heat capacity at constant pressure, [J/mol/K]
+    Cv : float
+        Real fluid heat capacity at constant volume, [J/mol/K]
+    MW : float, optional
+        Molecular weight, [g/mol]
+
+    Returns
+    -------
+    w : float
+        Speed of sound for a real gas, [m/s or m*kg^0.5/s/mol^0.5 or MW missing]
+        
+    Notes
+    -----
+    An alternate expression based on molar density is as follows:
+    
+    .. math::
+       w = \left[\left(\frac{\partial P}{\partial \rho}\right)_T \frac{C_p}
+       {C_v}\right]^{1/2}
+
+    The form with the unit conversion performed inside it is as follows:
+    
+    .. math::
+        w = \left[-V^2 \frac{1000}{MW}\left(\frac{\partial P}{\partial V}
+        \right)_T \frac{C_p}{C_v}\right]^{1/2}
+    
+    Examples
+    --------
+    Example from [2]_:
+    
+    >>> speed_of_sound(V=0.00229754, dP_dV=-3.5459e+08, Cp=153.235, Cv=132.435, MW=67.152)
+    179.5868138460819
+
+    References
+    ----------
+    .. [1] Gmehling, Jurgen, Barbel Kolbe, Michael Kleiber, and Jurgen Rarey.
+       Chemical Thermodynamics for Process Simulation. 1st edition. Weinheim: 
+       Wiley-VCH, 2012.
+    .. [2] Pratt, R. M. "Thermodynamic Properties Involving Derivatives: Using 
+       the Peng-Robinson Equation of State." Chemical Engineering Education 35,
+       no. 2 (March 1, 2001): 112-115. 
+    '''
+    if not MW:
+        return (-V**2*dP_dV*Cp/Cv)**0.5
+    else:
+        return (-V**2*1000./MW*dP_dV*Cp/Cv)**0.5
+
+
+def Joule_Thomson(T, V, Cp, dV_dT=None, beta=None):
+    r'''Calculate a real fluid's Joule Thomson coefficient. The required 
+    derivative should be calculated with an equation of state, and `Cp` is the
+    real fluid versions. This can either be calculated with `dV_dT` directly, 
+    or with `beta` if it is already known.
+
+    .. math::
+        \mu_{JT} = \left(\frac{\partial T}{\partial P}\right)_H = \frac{1}{C_p}
+        \left[T \left(\frac{\partial V}{\partial T}\right)_P - V\right]
+        = \frac{V}{C_p}\left(\beta T-1\right)
+        
+    Parameters
+    ----------
+    T : float
+        Temperature of fluid, [K]
+    V : float
+        Molar volume of fluid, [m^3/mol]
+    Cp : float
+        Real fluid heat capacity at constant pressure, [J/mol/K]
+    dV_dT : float, optional
+        Derivative of `V` with respect to `T`, [m^3/mol/K]
+    beta : float, optional
+        Isobaric coefficient of a thermal expansion, [1/K]
+
+    Returns
+    -------
+    mu_JT : float
+        Joule-Thomson coefficient [K/Pa]
+            
+    Examples
+    --------
+    Example from [2]_:
+    
+    >>> Joule_Thomson(T=390, V=0.00229754, Cp=153.235, dV_dT=1.226396e-05)
+    1.621956080529905e-05
+
+    References
+    ----------
+    .. [1] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
+       Butterworth-Heinemann, 1985.
+    .. [2] Pratt, R. M. "Thermodynamic Properties Involving Derivatives: Using 
+       the Peng-Robinson Equation of State." Chemical Engineering Education 35,
+       no. 2 (March 1, 2001): 112-115. 
+    '''
+    if dV_dT:
+        return (T*dV_dT - V)/Cp
+    elif beta:
+        return V/Cp*(beta*T - 1)
+    else:
+        raise Exception('Either dV_dT or beta is needed')
 
 
 def JT(T=None, V=None, Cp=None, isobaric_expansion=None):  # pragma: no cover
@@ -1466,6 +1816,7 @@ class TDependentProperty(object):
         if name is None:
             name = 'Tabular data series #' + str(len(self.tabular_data))  # Will overwrite a poorly named series
         self.tabular_data[name] = (Ts, properties)
+        # TODO set Tmin and Tmax if not set
 
         self.method = None
         self.user_methods.insert(0, name)

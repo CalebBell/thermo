@@ -395,3 +395,48 @@ def test_Z_from_virial_pressure_form():
     
     Z_calc = Z_calc = Z_from_virial_pressure_form(102671.27455742132)
     assert_allclose(Z_calc, 1)
+
+
+def test__isobaric_expansion():
+    beta = _isobaric_expansion(0.000130229900873546, 1.58875261849113e-7)
+    assert_allclose(beta, 0.0012199599384121608)
+    
+def test_isothermal_compressibility():
+    kappa = isothermal_compressibility(0.000130229900873546, -2.72902118209903e-13)
+    assert_allclose(2.09554116511916e-9, kappa)
+    
+
+def test_phase_identification_parameter():
+    PIP = phase_identification_parameter(0.000130229900874, 582169.397484, -3.66431747236e+12, 4.48067893805e+17, -20518995218.2)
+    assert_allclose(PIP, 11.33428990564796)
+    
+    PIP_phase = phase_identification_parameter_phase(11.33428990564796)
+    assert PIP_phase == 'l'
+
+def test_Cp_minus_Cv():
+    # TODO: find an example of this; this one stinks
+    # TODO http://ufdcimages.uflib.ufl.edu/AA/00/00/03/83/00150/AA00000383_00150_00112.pdf
+    d = Cp_minus_Cv(299, -506.20125231401465, -3665180614672.253)
+    assert_allclose(d, -4.1295147594090596e-08)
+
+
+def test_speed_of_sound():
+    # Matches exactly
+    w = speed_of_sound(V=0.00229754, dP_dV=-3.5459e+08, Cp=153.235, Cv=132.435, MW=67.152)
+    assert_allclose(w, 179.5868138460819)
+    
+    # No MW version
+    w = speed_of_sound(V=0.00229754, dP_dV=-3.5459e+08, Cp=153.235, Cv=132.435)
+    assert_allclose(w, 46.537593457316525)
+    
+    
+def test_mu_JT():
+    # Matches exactly
+    mu_JT = Joule_Thomson(T=390, V=0.00229754, Cp=153.235, dV_dT=1.226396e-05)
+    assert_allclose(mu_JT, 1.621956080529905e-05)
+    
+    mu_JT = Joule_Thomson(T=390, V=0.00229754, Cp=153.235, beta=0.005337865717245402)
+    assert_allclose(mu_JT, 1.621956080529905e-05)
+
+    with pytest.raises(Exception):
+        Joule_Thomson(T=390, V=0.00229754, Cp=153.235)
