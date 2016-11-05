@@ -33,7 +33,7 @@ try:
 except ImportError:  # pragma: no cover
     has_CoolProp = False
     PropsSI, PhaseSI, CP, AbstractState = [None, None, None, None]
-#has_CoolProp = True # For testing
+#has_CoolProp = False # For testing
 
 # All of these can be inputs to the PropsSI function!
 coolprop_dict = ['100-41-4', '10024-97-2', '102687-65-0', '106-42-3',

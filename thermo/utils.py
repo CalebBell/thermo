@@ -374,7 +374,7 @@ def isothermal_compressibility(V, dV_dP):
     Calculated for hexane from the PR EOS at 299 K and 1 MPa (liquid):
     
     >>> isothermal_compressibility(0.000130229900873546, -2.72902118209903e-13)
-    2.09554116511916e-9
+    2.095541165119158e-09
 
     References
     ----------

@@ -16,6 +16,7 @@ Submodules
    thermo.dippr
    thermo.electrochem
    thermo.elements
+   thermo.eos
    thermo.environment
    thermo.heat_capacity
    thermo.identifiers

@@ -21,6 +21,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 
+from thermo import eos
 from thermo import elements
 from thermo import combustion
 from thermo import critical
@@ -93,4 +94,5 @@ if __name__ == '__main__':
     doctest.testmod(elements)
     doctest.testmod(combustion)
 #    doctest.testmod(electrochem)
+    doctest.testmod(eos)
 
