@@ -271,19 +271,11 @@ class CUBIC_EOS(object):
             \phi = \frac{\text{fugacity}}{P}
             
         '''
-        if quick:
-            ([dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP], 
-                [d2P_dT2, d2P_dV2],
-                [d2V_dPdT, d2P_dTdV, d2T_dPdV],
-                [H_dep, S_dep]) = self.derivatives_and_departures(T, P, V, b, a_alpha, da_alpha_dT, d2a_alpha_dT2)
-        else:
-            [dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP] = self.first_derivatives(T, V, b, a_alpha, da_alpha_dT, d2a_alpha_dT2)
-            [d2P_dT2, d2P_dV2] = self.second_derivatives(T, V, b, a_alpha, da_alpha_dT, d2a_alpha_dT2)
-            [d2V_dPdT, d2P_dTdV, d2T_dPdV] = self.second_derivatives_mixed(T, V, b, a_alpha, da_alpha_dT)
-        
-            H_dep = P*V - R*T + sqrt(2)*catanh((V + b)*sqrt(2)/b/2).real * (da_alpha_dT*T-a_alpha)/b/2
-            S_dep = R*log(P*V/(R*T)) + (da_alpha_dT*sqrt(2)*catanh((V + b)*sqrt(2)/b/2).real - 2*R*b*(log(V) - log(V - b)))/b/2
-        
+        ([dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP], 
+            [d2P_dT2, d2P_dV2, d2V_dT2, d2V_dP2, d2T_dV2, d2T_dP2],
+            [d2V_dPdT, d2P_dTdV, d2T_dPdV],
+            [H_dep, S_dep]) = self.derivatives_and_departures(T, P, V, b, a_alpha, da_alpha_dT, d2a_alpha_dT2, quick=quick)
+                
         beta = isobaric_expansion(V, dV_dT)
         kappa = isothermal_compressibility(V, dV_dP)
         Cp_m_Cv = Cp_minus_Cv(T, d2P_dT2, dP_dV)
@@ -306,7 +298,9 @@ class CUBIC_EOS(object):
             self.dV_dP_l, self.dT_dV_l, self.dT_dP_l = dV_dP, dT_dV, dT_dP
             
             self.d2P_dT2_l, self.d2P_dV2_l = d2P_dT2, d2P_dV2
-            
+            self.d2V_dT2_l, self.d2V_dP2_l = d2V_dT2, d2V_dP2
+            self.d2T_dV2_l, self.d2T_dP2_l = d2T_dV2, d2T_dP2
+                        
             self.d2V_dPdT_l, self.d2P_dTdV_l, self.d2T_dPdV_l = d2V_dPdT, d2P_dTdV, d2T_dPdV
             
             self.H_dep_l, self.S_dep_l, self.V_dep_l = H_dep, S_dep, V_dep, 
@@ -316,9 +310,12 @@ class CUBIC_EOS(object):
             self.beta_g, self.kappa_g = beta, kappa
             self.PIP_g, self.Cp_minus_Cv_g = PIP, Cp_m_Cv
             
-            self.dP_dT_g, self.dP_dV_g = dP_dT, dP_dV
+            self.dP_dT_g, self.dP_dV_g, self.dV_dT_g = dP_dT, dP_dV, dV_dT
+            self.dV_dP_g, self.dT_dV_g, self.dT_dP_g = dV_dP, dT_dV, dT_dP
             
             self.d2P_dT2_g, self.d2P_dV2_g = d2P_dT2, d2P_dV2
+            self.d2V_dT2_g, self.d2V_dP2_g = d2V_dT2, d2V_dP2
+            self.d2T_dV2_g, self.d2T_dP2_g = d2T_dV2, d2T_dP2
             
             self.d2V_dPdT_g, self.d2P_dTdV_g, self.d2T_dPdV_g = d2V_dPdT, d2P_dTdV, d2T_dPdV
             
@@ -571,72 +568,66 @@ calculated by this method, in a user subclass.')
                     -(-3*(-3*P*b**2 - 2*R*T*b + a_alpha)/P + (P*b - R*T)**2/P**2)/(3*(-1/2 + sqrt(3)*1j/2)*((-4*(-3*(-3*P*b**2 - 2*R*T*b + a_alpha)/P + (P*b - R*T)**2/P**2)**3 + (27*(P*b**3 + R*T*b**2 - b*a_alpha)/P - 9*(P*b - R*T)*(-3*P*b**2 - 2*R*T*b + a_alpha)/P**2 + 2*(P*b - R*T)**3/P**3)**2)**0.5/2 + 27*(P*b**3 + R*T*b**2 - b*a_alpha)/(2*P) - 9*(P*b - R*T)*(-3*P*b**2 - 2*R*T*b + a_alpha)/(2*P**2) + (P*b - R*T)**3/P**3)**(1/3)) - (-1/2 + sqrt(3)*1j/2)*((-4*(-3*(-3*P*b**2 - 2*R*T*b + a_alpha)/P + (P*b - R*T)**2/P**2)**3 + (27*(P*b**3 + R*T*b**2 - b*a_alpha)/P - 9*(P*b - R*T)*(-3*P*b**2 - 2*R*T*b + a_alpha)/P**2 + 2*(P*b - R*T)**3/P**3)**2)**0.5/2 + 27*(P*b**3 + R*T*b**2 - b*a_alpha)/(2*P) - 9*(P*b - R*T)*(-3*P*b**2 - 2*R*T*b + a_alpha)/(2*P**2) + (P*b - R*T)**3/P**3)**(1/3)/3 - (P*b - R*T)/(3*P)]
     
     @staticmethod
-    def first_derivatives(T, V, b, a_alpha, da_alpha_dT, d2a_alpha_dT2):
-        dP_dT = R/(V - b) - da_alpha_dT/(V*(V + b) + b*(V - b))
-        dP_dV = -R*T/(V - b)**2 - (-2*V - 2*b)*a_alpha/(V*(V + b) + b*(V - b))**2
-        dV_dT = -dP_dT/dP_dV
-        dV_dP = -dV_dT/dP_dT # or same as dP_dV
-        dT_dV = 1./dV_dT
-        dT_dP = 1./dP_dT
-        return [dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP]
+    def derivatives_and_departures(T, P, V, b, a_alpha, da_alpha_dT, d2a_alpha_dT2, quick=True):
+        if quick:
+            x0 = V - b
+            x1 = V + b
+            x2 = V*x1 + b*x0
+            x3 = 1./x2
+            x4 = R/x0 - da_alpha_dT*x3
+            x5 = R*T
+            x6 = 1./(x0*x0)
+            x7 = x5*x6
+            x8 = 2.*x1
+            x9 = 1./(x2*x2)
+            x10 = a_alpha*x9
+            x11 = x10*x8
+            x12 = d2a_alpha_dT2*x3
+            x13 = 1./(-x11 + x7)
+            x14 = R*x6
+            x15 = da_alpha_dT*x8*x9
+            x16 = P*V
+            x17 = 1.414213562373095048801688724209698078570 # sqrt(2)
+            x18 = 1./b
+            x19 = x17*x18/2.
+            x20 = catanh(x1*x19).real
+            
+            dP_dT = x4
+            dP_dV = x11 - x7
+            d2P_dT2 = -x12
+            d2P_dV2 = -8.*a_alpha*x1*x1/(x2*x2*x2) + 2.*x10 + 2.*x5/(x0*x0*x0)
+            d2P_dTdV = -x14 + x15
+            H_dep = x16 + x19*x20*(T*da_alpha_dT - a_alpha) - x5
+            S_dep = R*log(x16/(R*T)) - x18*(2*R*b*(log(V) - log(x0)) - da_alpha_dT*x17*x20)/2.        
+        else:
+            dP_dT = R/(V - b) - da_alpha_dT/(V*(V + b) + b*(V - b))
+            dP_dV = -R*T/(V - b)**2 - (-2*V - 2*b)*a_alpha/(V*(V + b) + b*(V - b))**2
+            d2P_dT2 = -d2a_alpha_dT2/(V*(V + b) + b*(V - b))
+            d2P_dV2 = 2*R*T/(V - b)**3 - (-4*V - 4*b)*(-2*V - 2*b)*a_alpha/(V*(V + b) + b*(V - b))**3 + 2*a_alpha/(V*(V + b) + b*(V - b))**2
+            d2P_dTdV = -R/(V - b)**2 - (-2*V - 2*b)*da_alpha_dT/(V*(V + b) + b*(V - b))**2
+            H_dep = P*V - R*T + sqrt(2)*catanh((V + b)*sqrt(2)/b/2).real * (da_alpha_dT*T-a_alpha)/b/2
+            S_dep = R*log(P*V/(R*T)) + (da_alpha_dT*sqrt(2)*catanh((V + b)*sqrt(2)/b/2).real - 2*R*b*(log(V) - log(V - b)))/b/2
 
-    @staticmethod
-    def second_derivatives(T, V, b, a_alpha, da_alpha_dT, d2a_alpha_dT2):
-        # d2P_dT2 is wrong
-        d2P_dT2 = -d2a_alpha_dT2/(V*(V + b) + b*(V - b)) # 0?
-        d2P_dV2 = 2*R*T/(V - b)**3 - (-4*V - 4*b)*(-2*V - 2*b)*a_alpha/(V*(V + b) + b*(V - b))**3 + 2*a_alpha/(V*(V + b) + b*(V - b))**2 # 0?
-        return [d2P_dT2, d2P_dV2]
-        
-    @staticmethod
-    def second_derivatives_mixed(T, V, b, a_alpha, da_alpha_dT):
-        d2V_dPdT = 0 # For sure
-        d2P_dTdV = -R/(V - b)**2 - (-2*V - 2*b)*da_alpha_dT/(V*(V + b) + b*(V - b))**2
-        d2T_dPdV = 0
-        return [d2V_dPdT, d2P_dTdV, d2T_dPdV]
-    
-    @staticmethod
-    def derivatives_and_departures(T, P, V, b, a_alpha, da_alpha_dT, d2a_alpha_dT2):
-        x0 = V - b
-        x1 = V + b
-        x2 = V*x1 + b*x0
-        x3 = 1./x2
-        x4 = R/x0 - da_alpha_dT*x3
-        x5 = R*T
-        x6 = 1./(x0*x0)
-        x7 = x5*x6
-        x8 = 2.*x1
-        x9 = 1./(x2*x2)
-        x10 = a_alpha*x9
-        x11 = x10*x8
-        x12 = d2a_alpha_dT2*x3
-        x13 = 1./(-x11 + x7)
-        x14 = R*x6
-        x15 = da_alpha_dT*x8*x9
-        x16 = P*V
-        x17 = 1.414213562373095048801688724209698078570 # sqrt(2)
-        x18 = 1./b
-        x19 = x17*x18/2.
-        x20 = catanh(x1*x19).real
-
-        [dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep] = [x4,
-         x11 - x7,
-         -x12,
-         -8.*a_alpha*x1*x1/(x2*x2*x2) + 2.*x10 + 2.*x5/(x0*x0*x0),
-         -x14 + x15,
-         x16 + x19*x20*(T*da_alpha_dT - a_alpha) - x5,
-         R*log(x16/(R*T)) - x18*(2*R*b*(log(V) - log(x0)) - da_alpha_dT*x17*x20)/2.]
-        
 
         dV_dT = -dP_dT/dP_dV
         dV_dP = -dV_dT/dP_dT # or same as dP_dV
         dT_dV = 1./dV_dT
         dT_dP = 1./dP_dT
+        
+        d2V_dP2 = -d2P_dV2*dP_dV**-3
+        d2T_dP2 = -d2P_dT2*dP_dT**-3
+        
+        d2T_dV2 = (-(d2P_dV2*dP_dT - dP_dV*d2P_dTdV)*dP_dT**-2 
+                   +(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*dP_dT**-3*dP_dV)
+        d2V_dT2 = (-(d2P_dT2*dP_dV - dP_dT*d2P_dTdV)*dP_dV**-2
+                   +(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*dP_dV**-3*dP_dT)
 
-        d2V_dPdT = 0. # diff(dV_dP, T) gives a number ~1-15 ; # diff(dV_dT, P) gives 0 dead on
-        d2T_dPdV = 0. # One derivatives works; another gives 0.015ish
+        d2V_dPdT = -(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*dP_dV**-3
+        d2T_dPdV = -(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*dP_dT**-3
+
         
         return ([dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP], 
-                [d2P_dT2, d2P_dV2],
+                [d2P_dT2, d2P_dV2, d2V_dT2, d2V_dP2, d2T_dV2, d2T_dP2],
                 [d2V_dPdT, d2P_dTdV, d2T_dPdV],
                 [H_dep, S_dep])
 
@@ -908,11 +899,11 @@ class PR(CUBIC_EOS):
             return Tc*(-2*a*kappa*sqrt((V - b)**3*(V**2 + 2*V*b - b**2)*(P*R*Tc*V**2 + 2*P*R*Tc*V*b - P*R*Tc*b**2 - P*V*a*kappa**2 + P*a*b*kappa**2 + R*Tc*a*kappa**2 + 2*R*Tc*a*kappa + R*Tc*a))*(kappa + 1)*(R*Tc*V**2 + 2*R*Tc*V*b - R*Tc*b**2 - V*a*kappa**2 + a*b*kappa**2)**2 + (V - b)*(R**2*Tc**2*V**4 + 4*R**2*Tc**2*V**3*b + 2*R**2*Tc**2*V**2*b**2 - 4*R**2*Tc**2*V*b**3 + R**2*Tc**2*b**4 - 2*R*Tc*V**3*a*kappa**2 - 2*R*Tc*V**2*a*b*kappa**2 + 6*R*Tc*V*a*b**2*kappa**2 - 2*R*Tc*a*b**3*kappa**2 + V**2*a**2*kappa**4 - 2*V*a**2*b*kappa**4 + a**2*b**2*kappa**4)*(P*R*Tc*V**4 + 4*P*R*Tc*V**3*b + 2*P*R*Tc*V**2*b**2 - 4*P*R*Tc*V*b**3 + P*R*Tc*b**4 - P*V**3*a*kappa**2 - P*V**2*a*b*kappa**2 + 3*P*V*a*b**2*kappa**2 - P*a*b**3*kappa**2 + R*Tc*V**2*a*kappa**2 + 2*R*Tc*V**2*a*kappa + R*Tc*V**2*a + 2*R*Tc*V*a*b*kappa**2 + 4*R*Tc*V*a*b*kappa + 2*R*Tc*V*a*b - R*Tc*a*b**2*kappa**2 - 2*R*Tc*a*b**2*kappa - R*Tc*a*b**2 + V*a**2*kappa**4 + 2*V*a**2*kappa**3 + V*a**2*kappa**2 - a**2*b*kappa**4 - 2*a**2*b*kappa**3 - a**2*b*kappa**2))/((R*Tc*V**2 + 2*R*Tc*V*b - R*Tc*b**2 - V*a*kappa**2 + a*b*kappa**2)**2*(R**2*Tc**2*V**4 + 4*R**2*Tc**2*V**3*b + 2*R**2*Tc**2*V**2*b**2 - 4*R**2*Tc**2*V*b**3 + R**2*Tc**2*b**4 - 2*R*Tc*V**3*a*kappa**2 - 2*R*Tc*V**2*a*b*kappa**2 + 6*R*Tc*V*a*b**2*kappa**2 - 2*R*Tc*a*b**3*kappa**2 + V**2*a**2*kappa**4 - 2*V*a**2*b*kappa**4 + a**2*b**2*kappa**4))
     
     
-#a = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=400., P=1E6)
-#print(a.d2V_dPdT_g, a.V_g)
-##
-#b = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., V=0.00013022208100139953)
-#print(b.d2V_dPdT_l, b.PIP_l, b.V_l, b.P)
+a = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=400., P=1E6)
+print(a.d2V_dPdT_g, a.V_g)
 #
-#c = PR(Tc=507.6, Pc=3025000, omega=0.2975, V=0.00013022208100139953, P=1E6)
-#print(c.d2V_dPdT_l, c.PIP_l, c.V_l, c.T)
+b = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., V=0.00013022208100139953)
+print(b.d2V_dPdT_l, b.PIP_l, b.V_l, b.P)
+
+c = PR(Tc=507.6, Pc=3025000, omega=0.2975, V=0.00013022208100139953, P=1E6)
+print(c.d2V_dPdT_l, c.PIP_l, c.V_l, c.T)

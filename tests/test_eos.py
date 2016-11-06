@@ -54,10 +54,10 @@ def test_PR_with_sympy():
     
     T_l, P_l = 299, 1000000
     PR_obj_l = PR(T=T_l, P=P_l, Tc=507.6, Pc=3025000, omega=0.2975)
-#    solns = solve(PR_formula.subs({T: T_l, P:P_l}))
-#    solns = [N(i) for i in solns]
-#    V_l_sympy = float([i for i in solns if i.is_real][0])
-    V_l_sympy = 0.00013022208100139964
+    solns = solve(PR_formula.subs({T: T_l, P:P_l}))
+    solns = [N(i) for i in solns]
+    V_l_sympy = float([i for i in solns if i.is_real][0])
+#    V_l_sympy = 0.00013022208100139964
 
     assert_allclose(PR_obj_l.V_l, V_l_sympy)
 
@@ -84,7 +84,16 @@ def test_PR_with_sympy():
     dT_dP = 1/dP_dT
     assert_allclose(numeric_sub_l(dT_dP), PR_obj_l.dT_dP_l)
     
-    # Second derivatives of one variable
+    # Second derivatives of two variables, easy ones
+    
+    d2P_dTdV = diff(dP_dT, V)
+    assert_allclose(numeric_sub_l(d2P_dTdV), PR_obj_l.d2P_dTdV_l)
+    
+    d2P_dTdV = diff(dP_dV, T)
+    assert_allclose(numeric_sub_l(d2P_dTdV), PR_obj_l.d2P_dTdV_l)
+    
+    
+    # Second derivatives of one variable, easy ones
     d2P_dT2 = diff(dP_dT, T)
     assert_allclose(numeric_sub_l(d2P_dT2), PR_obj_l.d2P_dT2_l)
     d2P_dT2_maple = -506.20125231401374
@@ -94,31 +103,44 @@ def test_PR_with_sympy():
     assert_allclose(numeric_sub_l(d2P_dV2), PR_obj_l.d2P_dV2_l)
     d2P_dV2_maple = 4.482165856521206e+17
     assert_allclose(d2P_dV2_maple, PR_obj_l.d2P_dV2_l)
+        
+    # Second derivatives of one variable, Hard ones - require a complicated identity
+    d2V_dT2 = (-(d2P_dT2*dP_dV - dP_dT*d2P_dTdV)*dP_dV**-2
+              +(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*dP_dV**-3*dP_dT)
+    assert_allclose(numeric_sub_l(d2V_dT2), PR_obj_l.d2V_dT2_l)
+    d2V_dT2_maple = 1.168851368E-9
+    assert_allclose(d2V_dT2_maple, PR_obj_l.d2V_dT2_l)
     
-    
-    d2P_dTdV = diff(dP_dT, V)
-    assert_allclose(numeric_sub_l(d2P_dTdV), PR_obj_l.d2P_dTdV_l)
-    
-    d2P_dTdV = diff(dP_dV, T)
-    assert_allclose(numeric_sub_l(d2P_dTdV), PR_obj_l.d2P_dTdV_l)
-    
-    
+    d2V_dP2 = -d2P_dV2/dP_dV**3
+    assert_allclose(numeric_sub_l(d2V_dP2), PR_obj_l.d2V_dP2_l)
+    d2V_dP2_maple = 9.103361314E-21
+    assert_allclose(d2V_dP2_maple, PR_obj_l.d2V_dP2_l)
 
-#    d2V_dT2 = diff(dV_dT, T)
-#    assert_allclose(numeric_sub_l(d2V_dT2), PR_obj_l.d2V_dT2_l)
-#    d2V_dT2_maple = 1.168851368E-9
-#    
-#    d2V_dP2 = diff(dV_dP, P)
-#    assert_allclose(numeric_sub_l(d2V_dP2), PR_obj_l.d2V_dP2_l)
-#    d2V_dP2_maple = 9.103361314E-21
+
+    d2T_dP2 = -d2P_dT2*dP_dT**-3
+    assert_allclose(numeric_sub_l(d2T_dP2), PR_obj_l.d2T_dP2_l)
+    d2T_dP2_maple = 2.564684443971313e-15
+    assert_allclose(d2T_dP2_maple, PR_obj_l.d2T_dP2_l)
     
-#    d2T_dP2 = diff(dT_dP, P)
-#    assert_allclose(numeric_sub_l(d2T_dP2), PR_obj_l.d2T_dP2_l)
-#    d2T_dP2_maple = 2.564684443971313e-15
-#    assert_allclose(d2T_dP2_maple, PR_obj_l.d2T_dP2_l)
-#    
+    d2T_dV2 = (-(d2P_dV2*dP_dT - dP_dV*d2P_dTdV)*dP_dT**-2
+              +(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*dP_dT**-3*dP_dV)
+    assert_allclose(numeric_sub_l(d2T_dV2), PR_obj_l.d2T_dV2_l)
+    d2T_dV2_maple = -291578941281.8895
+    assert_allclose(d2T_dV2_maple, PR_obj_l.d2T_dV2_l)
     
-#    d2T_dV2_maple = -291578941281.8895
+    
+    # Second derivatives of two variable, Hard ones - require a complicated identity
+    d2T_dPdV = -(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*dP_dT**-3
+    assert_allclose(numeric_sub_l(d2T_dPdV), PR_obj_l.d2T_dPdV_l)
+    d2T_dPdV_maple = 0.0699417049626265
+    assert_allclose(d2T_dPdV_maple, PR_obj_l.d2T_dPdV_l)
+    
+    d2V_dPdT = -(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*dP_dV**-3
+    assert_allclose(numeric_sub_l(d2V_dPdT), PR_obj_l.d2V_dPdT_l)
+    d2V_dPdT_maple = -3.7725077598802184e-15
+    assert_allclose(d2V_dPdT_maple, PR_obj_l.d2V_dPdT_l)
+
+    
     
 def test_PR_quick():
     # Test solution for molar volumes
@@ -145,24 +167,22 @@ def test_PR_quick():
     assert_allclose(T_slow, 299)
     
     # First derivatives
-    diffs = eos.first_derivatives(eos.T, eos.V_l, eos.b, eos.a_alpha, eos.da_alpha_dT, eos.da_alpha_dT)
+    diff_slow, diff_fast = [eos.derivatives_and_departures(eos.T, eos.P, eos.V_l, eos.b, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=i)[0] for i in [False, True]]
     diffs_expect = [582232.4757941157, -3665180614672.2373, 1.588550570914177e-07, -2.7283785033590384e-13, 6295046.681608136, 1.717527004374129e-06]
-    assert_allclose(diffs, diffs_expect)
-    (diffs_fast, _, _, _) = eos.derivatives_and_departures(eos.T, eos.P, eos.V_l, eos.b, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2)
-    assert_allclose(diffs_fast, diffs_expect)
-    
+    assert_allclose(diffs_expect, diff_slow)
+    assert_allclose(diffs_expect, diff_fast)
+        
     # Second derivatives
-    diff2 = eos.second_derivatives(eos.T, eos.V_l, eos.b, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2)
-    diff2_expect = [-506.20125231401386, 4.482165856521269e+17]
-    assert_allclose(diff2_expect, diff2)
-    assert_allclose(diff2_expect, [eos.d2P_dT2_l, eos.d2P_dV2_l])
+    diff_slow, diff_fast = [eos.derivatives_and_departures(eos.T, eos.P, eos.V_l, eos.b, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=i)[1] for i in [False, True]]
+    diff2_expect = [-506.2012523140166, 4.482165856521269e+17, 1.1688513685432287e-09, 9.103361314057314e-21, -291578941282.6521, 2.564684443970742e-15]
+    assert_allclose(diff2_expect, diff_slow)
+    assert_allclose(diff2_expect, diff_fast)
     
     # Mixed second derivatives
-    second_expect = [0, -20523303691.11546, 0]
-    second_slow = eos.second_derivatives_mixed(eos.T, eos.V_l, eos.b, eos.a_alpha, eos.da_alpha_dT)
-    assert_allclose(second_expect, second_slow)
-    second_fast = [eos.d2V_dPdT_l, eos.d2P_dTdV_l, eos.d2T_dPdV_l]
-    assert_allclose(second_expect, second_fast)
+    second_expect = [-3.772507759880179e-15, -20523303691.115646, 0.06994170496262654]
+    diff_slow, diff_fast = [eos.derivatives_and_departures(eos.T, eos.P, eos.V_l, eos.b, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=i)[2] for i in [False, True]]
+    assert_allclose(second_expect, diff_slow)
+    assert_allclose(second_expect, diff_fast)
     
     # Exception tests
     a = CUBIC_EOS()
@@ -186,5 +206,5 @@ def test_PR_quick():
     assert 'g' == PR(Tc=507.6, Pc=3025000, omega=0.2975, T=499.,P=1E5).phase
 
 
-#test_PR_with_sympy()
+test_PR_with_sympy()
 test_PR_quick()
