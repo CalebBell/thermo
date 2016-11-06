@@ -70,7 +70,7 @@ class CUBIC_EOS(object):
     volumes is set to either `V_l` or `V_g` as appropriate. 
     
     `set_properties_from_solution` is a beast which calculates all relevant
-    partial derivatives and properties of the EOS. 11 derivatives and excess
+    partial derivatives and properties of the EOS. 15 derivatives and excess
     enthalpy and entropy are calculated first. If the method was called with 
     the `quick` flag, the method `derivatives_and_departures` is used; it is
     a mess derived with SymPy's `cse` function to perform the calculation
@@ -80,8 +80,8 @@ class CUBIC_EOS(object):
     from SymPy. 
 
     `set_properties_from_solution` next calculates `beta` (isobaric expansion
-    coefficient), `kappa` (isothermal compressibility), `Cp_minus_Cv`,
-    `V_dep` molar volume departure, `U_dep` internal energy departure,
+    coefficient), `kappa` (isothermal compressibility), `Cp_minus_Cv`, `Cv_dep`,
+    `Cp_dep`, `V_dep` molar volume departure, `U_dep` internal energy departure,
     `G_dep` Gibbs energy departure, `A_dep` Helmholtz energy departure,
     `fugacity`, and `phi` (fugacity coefficient). It then calculates
     `PIP` or phase identification parameter, and determines the fluid phase
@@ -295,13 +295,16 @@ class CUBIC_EOS(object):
         Excess properties
             
         .. math::
-            H_{dep} = \frac{1}{2}\,{\frac {\sqrt {2} \left(  \left(
+            H_{dep} = \int_{\infty}^V \left[T\frac{\partial P}{\partial T}_V 
+            - P\right]dV + PV - RT= \frac{1}{2}\,{\frac {\sqrt {2} \left(\left(
             {\frac {\rm d}{{\rm d}T}}{\it a\alpha} \left( T \right)  \right) 
             T-{\it a\alpha} \left( T \right)  \right) }{b}
             {\rm arctanh} \left(1/2\,{\frac { \left( V+b \right) \sqrt {2}}{b}}
             \right)} + PV - RT
 
-            S_{dep} = 0.5\,{\frac {1}{b} \left(  \left( {\frac 
+            S_{dep} = \int_{\infty}^V\left[\frac{\partial P}{\partial T} 
+            - \frac{R}{V}\right] dV + R\log\frac{PV}{RT} = 0.5\,{\frac {1}{b} 
+            \left(  \left( {\frac 
             {\rm d}{{\rm d}T}}{\it a\alpha}\left( T \right)  \right) \sqrt {2}
             {\rm arctanh} \left(0.5\,{\frac {\left( V+b \right) \sqrt {2}}{b}}
             \right)-2\,Rb \left( \ln  \left( V\right) -\ln  \left( V-b \right)
@@ -318,6 +321,14 @@ class CUBIC_EOS(object):
             \text{fugacity} = P\exp(\frac{G_{dep}}{RT})
             
             \phi = \frac{\text{fugacity}}{P}
+            
+            C_{v, dep} = T\int_\infty^V \left(\frac{\partial^2 P}{\partial 
+            T^2}\right) dV = - \frac{T}{b} \left(- \frac{\sqrt{2}}{4} \log{
+            \left (V + b + \sqrt{2} b \right )} + \frac{\sqrt{2}}{4} \log{\left
+            (V - \sqrt{2} b + b \right )}\right) \frac{d^{2} \operatorname{a 
+            \alpha}{\left (T \right )}}{d T^{2}}  
+            
+            C_{p, dep} = (C_p-C_v)_{\text{from EOS}} + C_{v, dep} - R
             
             
         References
@@ -338,7 +349,10 @@ class CUBIC_EOS(object):
                 
         beta = isobaric_expansion(V, dV_dT)
         kappa = isothermal_compressibility(V, dV_dP)
-        Cp_m_Cv = Cp_minus_Cv(T, d2P_dT2, dP_dV)
+        Cp_m_Cv = Cp_minus_Cv(T, dP_dT, dP_dV)
+        
+        Cv_dep = -T*(-sqrt(2)*log(V + b + sqrt(2)*b)/4 + sqrt(2)*log(V - sqrt(2)*b + b)/4)*d2a_alpha_dT2/b
+        Cp_dep = Cp_m_Cv + Cv_dep - R
                 
         V_dep = (V - R*T/P)        
         U_dep = H_dep - P*V_dep
@@ -366,6 +380,7 @@ class CUBIC_EOS(object):
             self.H_dep_l, self.S_dep_l, self.V_dep_l = H_dep, S_dep, V_dep, 
             self.U_dep_l, self.G_dep_l, self.A_dep_l = U_dep, G_dep, A_dep, 
             self.fugacity_l, self.phi_l = fugacity, phi
+            self.Cp_dep_l, self.Cv_dep_l = Cp_dep, Cv_dep
         else:
             self.beta_g, self.kappa_g = beta, kappa
             self.PIP_g, self.Cp_minus_Cv_g = PIP, Cp_m_Cv
@@ -382,6 +397,7 @@ class CUBIC_EOS(object):
             self.H_dep_g, self.S_dep_g, self.V_dep_g = H_dep, S_dep, V_dep, 
             self.U_dep_g, self.G_dep_g, self.A_dep_g = U_dep, G_dep, A_dep, 
             self.fugacity_g, self.phi_g = fugacity, phi
+            self.Cp_dep_g, self.Cv_dep_g = Cp_dep, Cv_dep
         return phase            
 
     def set_a_alpha_and_derivatives(self, T, quick=True):
@@ -756,7 +772,9 @@ class PR(CUBIC_EOS):
     >>> eos.kappa_l, eos.kappa_g
     (9.335721543829601e-09, 1.9710669809793286e-06)
     >>> eos.Cp_minus_Cv_l, eos.Cp_minus_Cv_g
-    (-1.3726210506942148e-07, -3.6654940389911006e-06)
+    (48.51014580740871, 44.54414603000341)
+    >>> eos.Cv_dep_l, eos.Cp_dep_l
+    (25.165377505266747, 44.50559908690951)
 
     P-T initialization, liquid phase, and round robin trip:
     
@@ -812,7 +830,7 @@ class PR(CUBIC_EOS):
 
         self.a = self.c1*R*R*Tc*Tc/Pc
         self.b = self.c2*R*Tc/Pc
-        self.kappa = 0.37464+ 1.54226*omega - 0.26992*omega*omega
+        self.kappa = 0.37464 + 1.54226*omega - 0.26992*omega*omega
         
         self.solve()
 
@@ -959,11 +977,11 @@ class PR(CUBIC_EOS):
             return Tc*(-2*a*kappa*sqrt((V - b)**3*(V**2 + 2*V*b - b**2)*(P*R*Tc*V**2 + 2*P*R*Tc*V*b - P*R*Tc*b**2 - P*V*a*kappa**2 + P*a*b*kappa**2 + R*Tc*a*kappa**2 + 2*R*Tc*a*kappa + R*Tc*a))*(kappa + 1)*(R*Tc*V**2 + 2*R*Tc*V*b - R*Tc*b**2 - V*a*kappa**2 + a*b*kappa**2)**2 + (V - b)*(R**2*Tc**2*V**4 + 4*R**2*Tc**2*V**3*b + 2*R**2*Tc**2*V**2*b**2 - 4*R**2*Tc**2*V*b**3 + R**2*Tc**2*b**4 - 2*R*Tc*V**3*a*kappa**2 - 2*R*Tc*V**2*a*b*kappa**2 + 6*R*Tc*V*a*b**2*kappa**2 - 2*R*Tc*a*b**3*kappa**2 + V**2*a**2*kappa**4 - 2*V*a**2*b*kappa**4 + a**2*b**2*kappa**4)*(P*R*Tc*V**4 + 4*P*R*Tc*V**3*b + 2*P*R*Tc*V**2*b**2 - 4*P*R*Tc*V*b**3 + P*R*Tc*b**4 - P*V**3*a*kappa**2 - P*V**2*a*b*kappa**2 + 3*P*V*a*b**2*kappa**2 - P*a*b**3*kappa**2 + R*Tc*V**2*a*kappa**2 + 2*R*Tc*V**2*a*kappa + R*Tc*V**2*a + 2*R*Tc*V*a*b*kappa**2 + 4*R*Tc*V*a*b*kappa + 2*R*Tc*V*a*b - R*Tc*a*b**2*kappa**2 - 2*R*Tc*a*b**2*kappa - R*Tc*a*b**2 + V*a**2*kappa**4 + 2*V*a**2*kappa**3 + V*a**2*kappa**2 - a**2*b*kappa**4 - 2*a**2*b*kappa**3 - a**2*b*kappa**2))/((R*Tc*V**2 + 2*R*Tc*V*b - R*Tc*b**2 - V*a*kappa**2 + a*b*kappa**2)**2*(R**2*Tc**2*V**4 + 4*R**2*Tc**2*V**3*b + 2*R**2*Tc**2*V**2*b**2 - 4*R**2*Tc**2*V*b**3 + R**2*Tc**2*b**4 - 2*R*Tc*V**3*a*kappa**2 - 2*R*Tc*V**2*a*b*kappa**2 + 6*R*Tc*V*a*b**2*kappa**2 - 2*R*Tc*a*b**3*kappa**2 + V**2*a**2*kappa**4 - 2*V*a**2*b*kappa**4 + a**2*b**2*kappa**4))
     
     
-a = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=400., P=1E6)
-print(a.d2V_dPdT_g, a.V_g)
+#a = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=400., P=1E6)
+#print(a.d2V_dPdT_g, a.V_g)
+##
+#b = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., V=0.00013022208100139953)
+#print(b.d2V_dPdT_l, b.PIP_l, b.V_l, b.P)
 #
-b = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., V=0.00013022208100139953)
-print(b.d2V_dPdT_l, b.PIP_l, b.V_l, b.P)
-
-c = PR(Tc=507.6, Pc=3025000, omega=0.2975, V=0.00013022208100139953, P=1E6)
-print(c.d2V_dPdT_l, c.PIP_l, c.V_l, c.T)
+#c = PR(Tc=507.6, Pc=3025000, omega=0.2975, V=0.00013022208100139953, P=1E6)
+#print(c.d2V_dPdT_l, c.PIP_l, c.V_l, c.T)

@@ -414,10 +414,8 @@ def test_phase_identification_parameter():
     assert PIP_phase == 'l'
 
 def test_Cp_minus_Cv():
-    # TODO: find an example of this; this one stinks
-    # TODO http://ufdcimages.uflib.ufl.edu/AA/00/00/03/83/00150/AA00000383_00150_00112.pdf
-    d = Cp_minus_Cv(299, -506.20125231401465, -3665180614672.253)
-    assert_allclose(d, -4.1295147594090596e-08)
+    d = Cp_minus_Cv(299, 582232.475794113, -3665180614672.253)
+    assert_allclose(d, 27.654681381642394)
 
 
 def test_speed_of_sound():

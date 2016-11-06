@@ -475,7 +475,7 @@ def phase_identification_parameter_phase(PIP):
     return 'l' if PIP > 1 else 'g'
 
 
-def Cp_minus_Cv(T, d2P_dT2, dP_dV):
+def Cp_minus_Cv(T, dP_dT, dP_dV):
     r'''Calculate the difference between a real gas's constant-pressure heat
     capacity and constant-volume heat capacity, as given in [1]_, [2]_, and
     [3]_. The required derivatives should be calculated with an equation of
@@ -489,8 +489,8 @@ def Cp_minus_Cv(T, d2P_dT2, dP_dV):
     ----------
     T : float
         Temperature of fluid [K]
-    d2P_dT2 : float
-        Second derivative of `P` with respect to `T`, [Pa/K^2]
+    dP_dT : float
+        Derivative of `P` with respect to `T`, [Pa/K]
     dP_dV : float
         Derivative of `P` with respect to `V`, [Pa*mol/m^3]
 
@@ -504,18 +504,21 @@ def Cp_minus_Cv(T, d2P_dT2, dP_dV):
     Equivalent expressions are:
     
     .. math::
-        C_p - C_v=T\left(\frac{\partial V}{\partial T}\right)_P^2/\left(
+        C_p - C_v= -T\left(\frac{\partial V}{\partial T}\right)_P^2/\left(
         \frac{\partial V}{\partial P}\right)_T
         
         C_p - C_v = T\left(\frac{\partial P}{\partial T}\right)
         \left(\frac{\partial V}{\partial T}\right)
 
+    Note that these are not second derivatives, only first derivatives, some
+    of which are squared.
+
     Examples
     --------
     Calculated for hexane from the PR EOS at 299 K and 1 MPa (liquid):
     
-    >>> Cp_minus_Cv(299, -506.20125231401465, -3665180614672.253)
-    -4.1295147594090596e-08
+    >>> Cp_minus_Cv(299, 582232.475794113, -3665180614672.253)
+    27.654681381642394
 
     References
     ----------
@@ -527,7 +530,7 @@ def Cp_minus_Cv(T, d2P_dT2, dP_dV):
        Chemical Thermodynamics for Process Simulation. 1st edition. Weinheim: 
        Wiley-VCH, 2012.
     '''
-    return -T*d2P_dT2/dP_dV
+    return -T*dP_dT**2/dP_dV
     
     
 def speed_of_sound(V, dP_dV, Cp, Cv, MW=None):

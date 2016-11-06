@@ -101,19 +101,19 @@ def test_PR_with_sympy():
 
     d2P_dV2 = diff(dP_dV, V)
     assert_allclose(numeric_sub_l(d2P_dV2), PR_obj_l.d2P_dV2_l)
-    d2P_dV2_maple = 4.482165856521206e+17
+    d2P_dV2_maple = 4.482165856520912834998e+17
     assert_allclose(d2P_dV2_maple, PR_obj_l.d2P_dV2_l)
         
     # Second derivatives of one variable, Hard ones - require a complicated identity
     d2V_dT2 = (-(d2P_dT2*dP_dV - dP_dT*d2P_dTdV)*dP_dV**-2
               +(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*dP_dV**-3*dP_dT)
     assert_allclose(numeric_sub_l(d2V_dT2), PR_obj_l.d2V_dT2_l)
-    d2V_dT2_maple = 1.168851368E-9
+    d2V_dT2_maple = 1.16885136854333385E-9
     assert_allclose(d2V_dT2_maple, PR_obj_l.d2V_dT2_l)
     
     d2V_dP2 = -d2P_dV2/dP_dV**3
     assert_allclose(numeric_sub_l(d2V_dP2), PR_obj_l.d2V_dP2_l)
-    d2V_dP2_maple = 9.103361314E-21
+    d2V_dP2_maple = 9.10336131405833680E-21
     assert_allclose(d2V_dP2_maple, PR_obj_l.d2V_dP2_l)
 
 
@@ -132,13 +132,15 @@ def test_PR_with_sympy():
     # Second derivatives of two variable, Hard ones - require a complicated identity
     d2T_dPdV = -(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*dP_dT**-3
     assert_allclose(numeric_sub_l(d2T_dPdV), PR_obj_l.d2T_dPdV_l)
-    d2T_dPdV_maple = 0.0699417049626265
+    d2T_dPdV_maple = 0.0699417049626260466429
     assert_allclose(d2T_dPdV_maple, PR_obj_l.d2T_dPdV_l)
     
     d2V_dPdT = -(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*dP_dV**-3
     assert_allclose(numeric_sub_l(d2V_dPdT), PR_obj_l.d2V_dPdT_l)
-    d2V_dPdT_maple = -3.7725077598802184e-15
+    d2V_dPdT_maple = -3.772507759880541967e-15
     assert_allclose(d2V_dPdT_maple, PR_obj_l.d2V_dPdT_l)
+    
+    
 
     
     
@@ -183,6 +185,10 @@ def test_PR_quick():
     diff_slow, diff_fast = [eos.derivatives_and_departures(eos.T, eos.P, eos.V_l, eos.b, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=i)[2] for i in [False, True]]
     assert_allclose(second_expect, diff_slow)
     assert_allclose(second_expect, diff_fast)
+    
+    # Test Cp_Dep, Cv_dep
+    assert_allclose(eos.Cv_dep_l, 25.165377505266747)
+    assert_allclose(eos.Cp_dep_l, 44.50559908690951)
     
     # Exception tests
     a = CUBIC_EOS()
