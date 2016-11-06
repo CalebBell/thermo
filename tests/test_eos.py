@@ -140,6 +140,9 @@ def test_PR_with_sympy():
     d2V_dPdT_maple = -3.772507759880541967e-15
     assert_allclose(d2V_dPdT_maple, PR_obj_l.d2V_dPdT_l)
     
+    # Cv integral, real slow
+    # The Cv integral is possible with a more general form, but not here
+    # The S and H integrals don't work in Sympy at present
     
 
     
