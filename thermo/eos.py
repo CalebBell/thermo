@@ -72,12 +72,9 @@ class CUBIC_EOS(object):
     `set_properties_from_solution` is a beast which calculates all relevant
     partial derivatives and properties of the EOS. 15 derivatives and excess
     enthalpy and entropy are calculated first. If the method was called with 
-    the `quick` flag, the method `derivatives_and_departures` is used; it is
-    a mess derived with SymPy's `cse` function to perform the calculation
-    as quickly as possible. Otherwise, three seperate methods 
-    `first_derivatives`, `second_derivatives`, and `second_derivatives_mixed`
-    are used to perform the calculation with independent solutions derived
-    from SymPy. 
+    the `quick` flag, the method `derivatives_and_departures` uses a mess 
+    derived with SymPy's `cse` function to perform the calculation as quickly
+    as possible. Otherwise, the independent formulas for each property are used.
 
     `set_properties_from_solution` next calculates `beta` (isobaric expansion
     coefficient), `kappa` (isothermal compressibility), `Cp_minus_Cv`, `Cv_dep`,
@@ -347,11 +344,13 @@ class CUBIC_EOS(object):
             [d2V_dPdT, d2P_dTdV, d2T_dPdV],
             [H_dep, S_dep]) = self.derivatives_and_departures(T, P, V, b, a_alpha, da_alpha_dT, d2a_alpha_dT2, quick=quick)
                 
-        beta = isobaric_expansion(V, dV_dT)
-        kappa = isothermal_compressibility(V, dV_dP)
-        Cp_m_Cv = Cp_minus_Cv(T, dP_dT, dP_dV)
+        beta = dV_dT/V # isobaric_expansion(V, dV_dT)
+        kappa = -dV_dP/V # isothermal_compressibility(V, dV_dP)
+        Cp_m_Cv = -T*dP_dT**2/dP_dV # Cp_minus_Cv(T, dP_dT, dP_dV)
         
-        Cv_dep = -T*(-sqrt(2)*log(V + b + sqrt(2)*b)/4 + sqrt(2)*log(V - sqrt(2)*b + b)/4)*d2a_alpha_dT2/b
+        
+        sqrt2 = 1.4142135623730951
+        Cv_dep = -T*(-sqrt2*log(V + (1.+sqrt2)*b)/4. + sqrt2*log(V - sqrt2*b + b)/4.)*d2a_alpha_dT2/b
         Cp_dep = Cp_m_Cv + Cv_dep - R
                 
         V_dep = (V - R*T/P)        
@@ -361,8 +360,8 @@ class CUBIC_EOS(object):
         fugacity = P*exp(G_dep/(R*T))
         phi = fugacity/P
   
-        PIP = phase_identification_parameter(V, dP_dT, dP_dV, d2P_dV2, d2P_dTdV)
-        phase = phase_identification_parameter_phase(PIP)
+        PIP = V*(d2P_dTdV/dP_dT - d2P_dV2/dP_dV) # phase_identification_parameter(V, dP_dT, dP_dV, d2P_dV2, d2P_dTdV)
+        phase = 'l' if PIP > 1 else 'g' # phase_identification_parameter_phase(PIP)
       
         if phase == 'l':
             self.beta_l, self.kappa_l = beta, kappa
@@ -609,7 +608,8 @@ calculated by this method, in a user subclass.')
             + \frac{1}{P^{3}} \left(P b - R T\right)^{3}} - \frac{1}{3 P} 
             \left(P b - R T\right)
         '''
-        T, P = complex(T), complex(P)
+#        T, P = complex(T), complex(P) # We could detect Python 3 and not do this,
+        # but there's no real performance overhead since it's python
         if quick:
             x0 = 1./P
             x1 = R*T
@@ -627,7 +627,7 @@ calculated by this method, in a user subclass.')
             x13 = 6.*x5
             x14 = 9.*x9
             x15 = x0*x2*x2
-            x16 = (13.5*x0*x10 + 4.5*x11*x2*(2.*x5 + x7 + 3.*x9) + (x11*(-4.*x0*(-x12 + x13 + x14 + x15)**3 + (27.*x10 + 2.*x11*x4 - x3*(-27.*P*x8 - 18.*R*T*b + 9.*x6))**2))**0.5/2. + x4/P**3)**(1./3.)
+            x16 = (13.5*x0*x10 + 4.5*x11*x2*(2.*x5 + x7 + 3.*x9) + (x11*(-4.*x0*(-x12 + x13 + x14 + x15)**3 + (27.*x10 + 2.*x11*x4 - x3*(-27.*P*x8 - 18.*R*T*b + 9.*x6))**2)+0j)**0.5/2. + x4/P**3+0j)**(1./3.)
             x17 = x12 - x13 - x14 - x15
             x18 = 1./x16
             x19 = -2.*x3
@@ -674,7 +674,7 @@ calculated by this method, in a user subclass.')
             d2P_dV2 = -8.*a_alpha*x1*x1/(x2*x2*x2) + 2.*x10 + 2.*x5/(x0*x0*x0)
             d2P_dTdV = -x14 + x15
             H_dep = x16 + x19*x20*(T*da_alpha_dT - a_alpha) - x5
-            S_dep = R*log(x16/(R*T)) - x18*(2*R*b*(log(V) - log(x0)) - da_alpha_dT*x17*x20)/2.        
+            S_dep = R*log(x16/(R*T)) - x18*(2*R*b*(log(V/x0)) - da_alpha_dT*x17*x20)/2.        
         else:
             dP_dT = R/(V - b) - da_alpha_dT/(V*(V + b) + b*(V - b))
             dP_dV = -R*T/(V - b)**2 - (-2*V - 2*b)*a_alpha/(V*(V + b) + b*(V - b))**2
@@ -861,14 +861,15 @@ class PR(CUBIC_EOS):
             individual formulas
         '''
         if quick:
+            Tc, kappa = self.Tc, self.kappa
             x0 = T**0.5
-            x1 = self.Tc**(-0.5)
-            x2 = self.kappa*(x0*x1 - 1.) - 1.
-            x3 = self.a*self.kappa
+            x1 = Tc**-0.5
+            x2 = kappa*(x0*x1 - 1.) - 1.
+            x3 = self.a*kappa
             
             self.a_alpha = self.a*x2*x2
             self.da_alpha_dT = x1*x2*x3/x0
-            self.d2a_alpha_dT2 = x3*(-0.5*T**(-1.5)*x1*x2 + 0.5/T/self.Tc*self.kappa)
+            self.d2a_alpha_dT2 = x3*(-0.5*T**-1.5*x1*x2 + 0.5/(T*Tc)*kappa)
         else:
             self.a_alpha = self.a*(1 + self.kappa*(1-(T/self.Tc)**0.5))**2
             self.da_alpha_dT = -self.a*self.kappa*sqrt(T/self.Tc)*(self.kappa*(-sqrt(T/self.Tc) + 1.) + 1.)/T
