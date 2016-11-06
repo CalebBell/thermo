@@ -147,14 +147,16 @@ class CUBIC_EOS(object):
     def set_properties_from_solution(self, T, P, V, b, a_alpha, da_alpha_dT, 
                                      d2a_alpha_dT2, quick=True):
         r'''Sets all interesting properties which can be calculated from an
-        EOS alone. Determins which phase the fluid is on its own; for details,
+        EOS alone. Determines which phase the fluid is on its own; for details,
         see `phase_identification_parameter`.
         
         The list of properties set is as follows, with all properties suffixed
         with '_l' or '_g'.
-        dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP, d2P_dT2, d2P_dV2, d2V_dPdT, 
-        d2P_dTdV, d2T_dPdV, H_dep, S_dep, beta, kappa, Cp_minus_Cv, V_dep, 
-        U_dep, G_dep, A_dep, fugacity, phi, and PIP.
+        
+        dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP, d2P_dT2, d2P_dV2, d2V_dT2, 
+        d2V_dP2, d2T_dV2, d2T_dP2, d2V_dPdT, d2P_dTdV, d2T_dPdV, H_dep, S_dep, 
+        beta, kappa, Cp_minus_Cv, V_dep, U_dep, G_dep, A_dep, fugacity, phi, 
+        and PIP.
 
         Parameters
         ----------
@@ -191,7 +193,7 @@ class CUBIC_EOS(object):
         `Cp_minus_Cv`; for `phase_identification_parameter`, see 
         `phase_identification_parameter`.
         
-        First derivatives; in part using the Triple Product Rule:
+        First derivatives; in part using the Triple Product Rule [2]_, [3]_:
         
         .. math::
             \left(\frac{\partial P}{\partial T}\right)_V = \frac{R}{V - b} 
@@ -217,7 +219,8 @@ class CUBIC_EOS(object):
             \left(\frac{\partial T}{\partial P}\right)_V = \frac{1}
             {\left(\frac{\partial P}{\partial T}\right)_V}
             
-        Second derivatives with respect to one variable:
+        Second derivatives with respect to one variable; those of `T` and `V`
+        use identities shown in [1]_ and verified numerically:
         
         .. math::
             \left(\frac{\partial^2 P}{\partial T^2}\right)_V =- \frac{\frac{
@@ -230,18 +233,64 @@ class CUBIC_EOS(object):
             V \left(V + b\right) + b \left(V - b\right)\right)^{3}} + \frac{2 
             \operatorname{a \alpha}{\left (T \right )}}{\left(V \left(V + 
             b\right) + b \left(V - b\right)\right)^{2}}
+            
+            \left(\frac{\partial^2 T}{\partial P^2}\right)_V = -\left(\frac{
+            \partial^2 P}{\partial T^2}\right)_V \left(\frac{\partial P}{
+            \partial T}\right)^{-3}_V
+            
+            \left(\frac{\partial^2 V}{\partial P^2}\right)_T = -\left(\frac{
+            \partial^2 P}{\partial V^2}\right)_T \left(\frac{\partial P}{
+            \partial V}\right)^{-3}_T
+            
+            \left(\frac{\partial^2 T}{\partial V^2}\right)_P = -\left[
+            \left(\frac{\partial^2 P}{\partial V^2}\right)_T
+            \left(\frac{\partial P}{\partial T}\right)_V
+            - \left(\frac{\partial P}{\partial V}\right)_T
+            \left(\frac{\partial^2 P}{\partial T \partial V}\right) \right]
+            \left(\frac{\partial P}{\partial T}\right)^{-2}_V
+            + \left[\left(\frac{\partial^2 P}{\partial T\partial V}\right)
+            \left(\frac{\partial P}{\partial T}\right)_V 
+            - \left(\frac{\partial P}{\partial V}\right)_T
+            \left(\frac{\partial^2 P}{\partial T^2}\right)_V\right]
+            \left(\frac{\partial P}{\partial T}\right)_V^{-3}
+            \left(\frac{\partial P}{\partial V}\right)_T
+
+            \left(\frac{\partial^2 V}{\partial T^2}\right)_P = -\left[
+            \left(\frac{\partial^2 P}{\partial T^2}\right)_V
+            \left(\frac{\partial P}{\partial V}\right)_T
+            - \left(\frac{\partial P}{\partial T}\right)_V
+            \left(\frac{\partial^2 P}{\partial T \partial V}\right) \right]
+            \left(\frac{\partial P}{\partial V}\right)^{-2}_T
+            + \left[\left(\frac{\partial^2 P}{\partial T\partial V}\right)
+            \left(\frac{\partial P}{\partial V}\right)_T 
+            - \left(\frac{\partial P}{\partial T}\right)_V
+            \left(\frac{\partial^2 P}{\partial V^2}\right)_T\right]
+            \left(\frac{\partial P}{\partial V}\right)_T^{-3}
+            \left(\frac{\partial P}{\partial T}\right)_V
+
                         
-        Second derivatives with respect to the other two variables:
+        Second derivatives with respect to the other two variables; those of 
+        `T` and `V` use identities shown in [1]_ and verified numerically:
 
         .. math::
-            \left(\frac{\partial^2 V}{\partial P \partial T}\right) = 0
-
-            \left(\frac{\partial^2 T}{\partial P \partial V}\right) = 0
-            
            \left(\frac{\partial^2 P}{\partial T \partial V}\right) = - \frac{R}
            {\left(V - b\right)^{2}} - \frac{\left(- 2 V - 2 b\right) \frac{d}
            {d T} \operatorname{a \alpha}{\left (T \right )}}{\left(V \left(V +
            b\right) + b \left(V - b\right)\right)^{2}}
+           
+           \left(\frac{\partial^2 T}{\partial P\partial V}\right) = 
+            - \left[\left(\frac{\partial^2 P}{\partial T \partial V}\right)
+            \left(\frac{\partial P}{\partial T}\right)_V
+            - \left(\frac{\partial P}{\partial V}\right)_T
+            \left(\frac{\partial^2 P}{\partial T^2}\right)_V
+            \right]\left(\frac{\partial P}{\partial T}\right)_V^{-3}
+
+            \left(\frac{\partial^2 V}{\partial T\partial P}\right) = 
+            - \left[\left(\frac{\partial^2 P}{\partial T \partial V}\right)
+            \left(\frac{\partial P}{\partial V}\right)_T
+            - \left(\frac{\partial P}{\partial T}\right)_V
+            \left(\frac{\partial^2 P}{\partial V^2}\right)_T
+            \right]\left(\frac{\partial P}{\partial V}\right)_T^{-3}
 
         Excess properties
             
@@ -270,6 +319,17 @@ class CUBIC_EOS(object):
             
             \phi = \frac{\text{fugacity}}{P}
             
+            
+        References
+        ----------
+        .. [1] Thorade, Matthis, and Ali Saadat. "Partial Derivatives of 
+           Thermodynamic State Properties for Dynamic Simulation." 
+           Environmental Earth Sciences 70, no. 8 (April 10, 2013): 3497-3503.
+           doi:10.1007/s12665-013-2394-z.
+        .. [2] Poling, Bruce E. The Properties of Gases and Liquids. 5th 
+           edition. New York: McGraw-Hill Professional, 2000.
+        .. [3] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
+           Butterworth-Heinemann, 1985.
         '''
         ([dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP], 
             [d2P_dT2, d2P_dV2, d2V_dT2, d2V_dP2, d2T_dV2, d2T_dP2],

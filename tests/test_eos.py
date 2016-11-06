@@ -54,10 +54,10 @@ def test_PR_with_sympy():
     
     T_l, P_l = 299, 1000000
     PR_obj_l = PR(T=T_l, P=P_l, Tc=507.6, Pc=3025000, omega=0.2975)
-    solns = solve(PR_formula.subs({T: T_l, P:P_l}))
-    solns = [N(i) for i in solns]
-    V_l_sympy = float([i for i in solns if i.is_real][0])
-#    V_l_sympy = 0.00013022208100139964
+#    solns = solve(PR_formula.subs({T: T_l, P:P_l}))
+#    solns = [N(i) for i in solns]
+#    V_l_sympy = float([i for i in solns if i.is_real][0])
+    V_l_sympy = 0.00013022208100139964
 
     assert_allclose(PR_obj_l.V_l, V_l_sympy)
 
