@@ -25,6 +25,7 @@ from __future__ import division
 #__all__ = ['CUBIC_EOS', 'PR']
 from cmath import atanh as catanh
 from scipy.constants import R
+from scipy.optimize import newton
 from thermo.utils import Cp_minus_Cv, isothermal_compressibility, phase_identification_parameter, phase_identification_parameter_phase
 from math import log, exp, sqrt
 from thermo.utils import _isobaric_expansion as isobaric_expansion 
@@ -467,149 +468,17 @@ calculated by this method, in a user subclass.')
             
         Notes
         -----
-        The very-ugly solutions are as follows. Note that using the expressions
-        directly is still faster than most numeric root finding techniques, and
-        finds all values explicitly.
+        Using explicit formulas, as can be derived in the following example,
+        is faster than most numeric root finding techniques, and
+        finds all values explicitly. It takes several seconds.
         
-        .. math::
-            V_1 = - \frac{- \frac{1}{P Tc} \left(- 9 P Tc b^{2} - 6 R T Tc b 
-            - 6 \sqrt{T} \sqrt{Tc} a \kappa^{2} - 6 \sqrt{T} \sqrt{Tc} a \kappa
-            + 3 T a \kappa^{2} + 3 Tc a \kappa^{2} + 6 Tc a \kappa + 3 Tc a
-            \right) + \frac{1}{P^{2}} \left(P b - R T\right)^{2}}{3 \sqrt[3]{
-            \frac{1}{2} \sqrt{- 4 \left(- \frac{1}{P Tc} \left(- 9 P Tc b^{2} 
-            - 6 R T Tc b - 6 \sqrt{T} \sqrt{Tc} a \kappa^{2} - 6 \sqrt{T} 
-            \sqrt{Tc} a \kappa + 3 T a \kappa^{2} + 3 Tc a \kappa^{2} + 6 Tc a 
-            \kappa + 3 Tc a\right) + \frac{1}{P^{2}} \left(P b - R T\right)^{2}
-            \right)^{3} + \left(\frac{1}{P Tc} \left(27 P Tc b^{3} + 27 R T Tc 
-            b^{2} + 54 \sqrt{T} \sqrt{Tc} a b \kappa^{2} + 54 \sqrt{T} \sqrt{
-            Tc} a b \kappa - 27 T a b \kappa^{2} - 27 Tc a b \kappa^{2} - 54 Tc
-            a b \kappa - 27 Tc a b\right) - \frac{9}{P^{2} Tc} \left(P b - R T
-            \right) \left(- 3 P Tc b^{2} - 2 R T Tc b - 2 \sqrt{T} \sqrt{Tc} a
-            \kappa^{2} - 2 \sqrt{T} \sqrt{Tc} a \kappa + T a \kappa^{2} + Tc a 
-            \kappa^{2} + 2 Tc a \kappa + Tc a\right) + \frac{2}{P^{3}} \left(P
-            b - R T\right)^{3}\right)^{2}} + \frac{1}{2 P Tc} \left(27 P Tc 
-            b^{3} + 27 R T Tc b^{2} + 54 \sqrt{T} \sqrt{Tc} a b \kappa^{2} + 54
-            \sqrt{T} \sqrt{Tc} a b \kappa - 27 T a b \kappa^{2} - 27 Tc a b 
-            \kappa^{2} - 54 Tc a b \kappa - 27 Tc a b\right) - \frac{9}{2 P^{2}
-            Tc} \left(P b - R T\right) \left(- 3 P Tc b^{2} - 2 R T Tc b - 2 
-            \sqrt{T} \sqrt{Tc} a \kappa^{2} - 2 \sqrt{T} \sqrt{Tc} a \kappa + T
-            a \kappa^{2} + Tc a \kappa^{2} + 2 Tc a \kappa + Tc a\right) + 
-            \frac{1}{P^{3}} \left(P b - R T\right)^{3}}} - \frac{1}{3} \sqrt[3]
-            {\frac{1}{2} \sqrt{- 4 \left(- \frac{1}{P Tc} \left(- 9 P Tc b^{2} 
-            - 6 R T Tc b - 6 \sqrt{T} \sqrt{Tc} a \kappa^{2} - 6 \sqrt{T} 
-            \sqrt{Tc} a \kappa + 3 T a \kappa^{2} + 3 Tc a \kappa^{2} + 6 Tc a 
-            \kappa + 3 Tc a\right) + \frac{1}{P^{2}} \left(P b - R T\right)^{2}
-            \right)^{3} + \left(\frac{1}{P Tc} \left(27 P Tc b^{3} + 27 R T Tc 
-            b^{2} + 54 \sqrt{T} \sqrt{Tc} a b \kappa^{2} + 54 \sqrt{T} 
-            \sqrt{Tc} a b \kappa - 27 T a b \kappa^{2} - 27 Tc a b \kappa^{2} 
-            - 54 Tc a b \kappa - 27 Tc a b\right) - \frac{9}{P^{2} Tc} \left(P
-            b - R T\right) \left(- 3 P Tc b^{2} - 2 R T Tc b - 2 \sqrt{T} 
-            \sqrt{Tc} a \kappa^{2} - 2 \sqrt{T} \sqrt{Tc} a \kappa + T a 
-            \kappa^{2} + Tc a \kappa^{2} + 2 Tc a \kappa + Tc a\right) 
-            + \frac{2}{P^{3}} \left(P b - R T\right)^{3}\right)^{2}} + \frac{1}
-            {2 P Tc} \left(27 P Tc b^{3} + 27 R T Tc b^{2} + 54 \sqrt{T} 
-            \sqrt{Tc} a b \kappa^{2} + 54 \sqrt{T} \sqrt{Tc} a b \kappa - 27 T 
-            a b \kappa^{2} - 27 Tc a b \kappa^{2} - 54 Tc a b \kappa - 27 Tc a 
-            b\right) - \frac{9}{2 P^{2} Tc} \left(P b - R T\right) \left(- 3 P
-            Tc b^{2} - 2 R T Tc b - 2 \sqrt{T} \sqrt{Tc} a \kappa^{2} - 2 
-            \sqrt{T} \sqrt{Tc} a \kappa + T a \kappa^{2} + Tc a \kappa^{2} + 2 
-            Tc a \kappa + Tc a\right) + \frac{1}{P^{3}} \left(P b - R T\right
-            )^{3}} - \frac{1}{3 P} \left(P b - R T\right)
-            
-            V_2 = - \frac{- \frac{1}{P Tc} \left(- 9 P Tc b^{2} - 6 R T Tc b 
-            - 6 \sqrt{T} \sqrt{Tc} a \kappa^{2} - 6 \sqrt{T} \sqrt{Tc} a \kappa
-            + 3 T a \kappa^{2} + 3 Tc a \kappa^{2} + 6 Tc a \kappa + 3 Tc a
-            \right) + \frac{1}{P^{2}} \left(P b - R T\right)^{2}}{3 \left(- 
-            \frac{1}{2} - \frac{\sqrt{3} i}{2}\right) \sqrt[3]{\frac{1}{2} 
-            \sqrt{- 4 \left(- \frac{1}{P Tc} \left(- 9 P Tc b^{2} - 6 R T Tc b
-            - 6 \sqrt{T} \sqrt{Tc} a \kappa^{2} - 6 \sqrt{T} \sqrt{Tc} a \kappa
-            + 3 T a \kappa^{2} + 3 Tc a \kappa^{2} + 6 Tc a \kappa + 3 Tc a
-            \right) + \frac{1}{P^{2}} \left(P b - R T\right)^{2}\right)^{3} 
-            + \left(\frac{1}{P Tc} \left(27 P Tc b^{3} + 27 R T Tc b^{2} + 54 
-            \sqrt{T} \sqrt{Tc} a b \kappa^{2} + 54 \sqrt{T} \sqrt{Tc} a b 
-            \kappa - 27 T a b \kappa^{2} - 27 Tc a b \kappa^{2} - 54 Tc a b 
-            \kappa - 27 Tc a b\right) - \frac{9}{P^{2} Tc} \left(P b - R T
-            \right) \left(- 3 P Tc b^{2} - 2 R T Tc b - 2 \sqrt{T} \sqrt{Tc} a 
-            \kappa^{2} - 2 \sqrt{T} \sqrt{Tc} a \kappa + T a \kappa^{2} + Tc a
-            \kappa^{2} + 2 Tc a \kappa + Tc a\right) + \frac{2}{P^{3}} \left(P 
-            b - R T\right)^{3}\right)^{2}} + \frac{1}{2 P Tc} \left(27 P Tc 
-            b^{3} + 27 R T Tc b^{2} + 54 \sqrt{T} \sqrt{Tc} a b \kappa^{2} + 54
-            \sqrt{T} \sqrt{Tc} a b \kappa - 27 T a b \kappa^{2} - 27 Tc a b 
-            \kappa^{2} - 54 Tc a b \kappa - 27 Tc a b\right) - \frac{9}{2 P^{2} 
-            Tc} \left(P b - R T\right) \left(- 3 P Tc b^{2} - 2 R T Tc b - 2 
-            \sqrt{T} \sqrt{Tc} a \kappa^{2} - 2 \sqrt{T} \sqrt{Tc} a \kappa 
-            + T a \kappa^{2} + Tc a \kappa^{2} + 2 Tc a \kappa + Tc a\right) 
-            + \frac{1}{P^{3}} \left(P b - R T\right)^{3}}} - \frac{1}{3} \left(
-            - \frac{1}{2} - \frac{\sqrt{3} i}{2}\right) \sqrt[3]{\frac{1}{2} 
-            \sqrt{- 4 \left(- \frac{1}{P Tc} \left(- 9 P Tc b^{2} - 6 R T Tc b 
-            - 6 \sqrt{T} \sqrt{Tc} a \kappa^{2} - 6 \sqrt{T} \sqrt{Tc} a \kappa
-            + 3 T a \kappa^{2} + 3 Tc a \kappa^{2} + 6 Tc a \kappa + 3 Tc a
-            \right) + \frac{1}{P^{2}} \left(P b - R T\right)^{2}\right)^{3} 
-            + \left(\frac{1}{P Tc} \left(27 P Tc b^{3} + 27 R T Tc b^{2} + 54 
-            \sqrt{T} \sqrt{Tc} a b \kappa^{2} + 54 \sqrt{T} \sqrt{Tc} a b 
-            \kappa - 27 T a b \kappa^{2} - 27 Tc a b \kappa^{2} - 54 Tc a b 
-            \kappa - 27 Tc a b\right) - \frac{9}{P^{2} Tc} \left(P b - R T
-            \right) \left(- 3 P Tc b^{2} - 2 R T Tc b - 2 \sqrt{T} \sqrt{Tc} a 
-            \kappa^{2} - 2 \sqrt{T} \sqrt{Tc} a \kappa + T a \kappa^{2} + Tc a
-            \kappa^{2} + 2 Tc a \kappa + Tc a\right) + \frac{2}{P^{3}} \left(P
-            b - R T\right)^{3}\right)^{2}} + \frac{1}{2 P Tc} \left(27 P Tc 
-            b^{3} + 27 R T Tc b^{2} + 54 \sqrt{T} \sqrt{Tc} a b \kappa^{2} + 54
-            \sqrt{T} \sqrt{Tc} a b \kappa - 27 T a b \kappa^{2} - 27 Tc a b 
-            \kappa^{2} - 54 Tc a b \kappa - 27 Tc a b\right) - \frac{9}{2 P^{2}
-            Tc} \left(P b - R T\right) \left(- 3 P Tc b^{2} - 2 R T Tc b - 2 
-            \sqrt{T} \sqrt{Tc} a \kappa^{2} - 2 \sqrt{T} \sqrt{Tc} a \kappa + T
-            a \kappa^{2} + Tc a \kappa^{2} + 2 Tc a \kappa + Tc a\right) 
-            + \frac{1}{P^{3}} \left(P b - R T\right)^{3}} - \frac{1}{3 P} 
-            \left(P b - R T\right)
-            
-            V_3 = - \frac{- \frac{1}{P Tc} \left(- 9 P Tc b^{2} - 6 R T Tc b 
-            - 6 \sqrt{T} \sqrt{Tc} a \kappa^{2} - 6 \sqrt{T} \sqrt{Tc} a \kappa
-            + 3 T a \kappa^{2} + 3 Tc a \kappa^{2} + 6 Tc a \kappa + 3 Tc a
-            \right) + \frac{1}{P^{2}} \left(P b - R T\right)^{2}}{3 \left(- 
-            \frac{1}{2} + \frac{\sqrt{3} i}{2}\right) \sqrt[3]{\frac{1}{2} 
-            \sqrt{- 4 \left(- \frac{1}{P Tc} \left(- 9 P Tc b^{2} - 6 R T Tc b
-            - 6 \sqrt{T} \sqrt{Tc} a \kappa^{2} - 6 \sqrt{T} \sqrt{Tc} a \kappa
-            + 3 T a \kappa^{2} + 3 Tc a \kappa^{2} + 6 Tc a \kappa + 3 Tc a
-            \right) + \frac{1}{P^{2}} \left(P b - R T\right)^{2}\right)^{3} 
-            + \left(\frac{1}{P Tc} \left(27 P Tc b^{3} + 27 R T Tc b^{2} + 54 
-            \sqrt{T} \sqrt{Tc} a b \kappa^{2} + 54 \sqrt{T} \sqrt{Tc} a b 
-            \kappa - 27 T a b \kappa^{2} - 27 Tc a b \kappa^{2} - 54 Tc a b 
-            \kappa - 27 Tc a b\right) - \frac{9}{P^{2} Tc} \left(P b - R T
-            \right) \left(- 3 P Tc b^{2} - 2 R T Tc b - 2 \sqrt{T} \sqrt{Tc} a 
-            \kappa^{2} - 2 \sqrt{T} \sqrt{Tc} a \kappa + T a \kappa^{2} + Tc a
-            \kappa^{2} + 2 Tc a \kappa + Tc a\right) + \frac{2}{P^{3}} \left(P 
-            b - R T\right)^{3}\right)^{2}} + \frac{1}{2 P Tc} \left(27 P Tc 
-            b^{3} + 27 R T Tc b^{2} + 54 \sqrt{T} \sqrt{Tc} a b \kappa^{2} + 54
-            \sqrt{T} \sqrt{Tc} a b \kappa - 27 T a b \kappa^{2} - 27 Tc a b 
-            \kappa^{2} - 54 Tc a b \kappa - 27 Tc a b\right) - \frac{9}{2 P^{2} 
-            Tc} \left(P b - R T\right) \left(- 3 P Tc b^{2} - 2 R T Tc b - 2 
-            \sqrt{T} \sqrt{Tc} a \kappa^{2} - 2 \sqrt{T} \sqrt{Tc} a \kappa 
-            + T a \kappa^{2} + Tc a \kappa^{2} + 2 Tc a \kappa + Tc a\right) 
-            + \frac{1}{P^{3}} \left(P b - R T\right)^{3}}} - \frac{1}{3} \left(
-            - \frac{1}{2} + \frac{\sqrt{3} i}{2}\right) \sqrt[3]{\frac{1}{2} 
-            \sqrt{- 4 \left(- \frac{1}{P Tc} \left(- 9 P Tc b^{2} - 6 R T Tc b 
-            - 6 \sqrt{T} \sqrt{Tc} a \kappa^{2} - 6 \sqrt{T} \sqrt{Tc} a \kappa
-            + 3 T a \kappa^{2} + 3 Tc a \kappa^{2} + 6 Tc a \kappa + 3 Tc a
-            \right) + \frac{1}{P^{2}} \left(P b - R T\right)^{2}\right)^{3} 
-            + \left(\frac{1}{P Tc} \left(27 P Tc b^{3} + 27 R T Tc b^{2} + 54 
-            \sqrt{T} \sqrt{Tc} a b \kappa^{2} + 54 \sqrt{T} \sqrt{Tc} a b 
-            \kappa - 27 T a b \kappa^{2} - 27 Tc a b \kappa^{2} - 54 Tc a b 
-            \kappa - 27 Tc a b\right) - \frac{9}{P^{2} Tc} \left(P b - R T
-            \right) \left(- 3 P Tc b^{2} - 2 R T Tc b - 2 \sqrt{T} \sqrt{Tc} a 
-            \kappa^{2} - 2 \sqrt{T} \sqrt{Tc} a \kappa + T a \kappa^{2} + Tc a
-            \kappa^{2} + 2 Tc a \kappa + Tc a\right) + \frac{2}{P^{3}} \left(P
-            b - R T\right)^{3}\right)^{2}} + \frac{1}{2 P Tc} \left(27 P Tc 
-            b^{3} + 27 R T Tc b^{2} + 54 \sqrt{T} \sqrt{Tc} a b \kappa^{2} + 54
-            \sqrt{T} \sqrt{Tc} a b \kappa - 27 T a b \kappa^{2} - 27 Tc a b 
-            \kappa^{2} - 54 Tc a b \kappa - 27 Tc a b\right) - \frac{9}{2 P^{2}
-            Tc} \left(P b - R T\right) \left(- 3 P Tc b^{2} - 2 R T Tc b - 2 
-            \sqrt{T} \sqrt{Tc} a \kappa^{2} - 2 \sqrt{T} \sqrt{Tc} a \kappa + T
-            a \kappa^{2} + Tc a \kappa^{2} + 2 Tc a \kappa + Tc a\right) 
-            + \frac{1}{P^{3}} \left(P b - R T\right)^{3}} - \frac{1}{3 P} 
-            \left(P b - R T\right)
+        >>> from sympy import *
+        >>> P, T, V, R, b = symbols('P, T, V, R, b')
+        >>> Tc, Pc, omega = symbols('Tc, Pc, omega')
+        >>> a_alpha = Symbol(r'a \alpha')
+        >>> CUBIC = R*T/(V-b) - a_alpha(T)/(V*(V+b)+b*(V-b)) - P
+        >>> # solve(CUBIC, V)
         '''
-#        T, P = complex(T), complex(P) # We could detect Python 3 and not do this,
-        # but there's no real performance overhead since it's python
         if quick:
             x0 = 1./P
             x1 = R*T
@@ -897,36 +766,17 @@ class PR(CUBIC_EOS):
         
         Notes
         -----
-        The exact solution is:
+        The exact solution can be derived as follows, and is excluded for 
+        breviety.
         
-        .. math::
-            T = \frac{Tc}{\left(R Tc V^{2} + 2 R Tc V b - R Tc b^{2} - V a 
-            \kappa^{2} + a b \kappa^{2}\right)^{2} \left(R^{2} Tc^{2} V^{4} 
-            + 4 R^{2} Tc^{2} V^{3} b + 2 R^{2} Tc^{2} V^{2} b^{2} - 4 R^{2} 
-            Tc^{2} V b^{3} + R^{2} Tc^{2} b^{4} - 2 R Tc V^{3} a \kappa^{2} 
-            - 2 R Tc V^{2} a b \kappa^{2} + 6 R Tc V a b^{2} \kappa^{2} - 2 R 
-            Tc a b^{3} \kappa^{2} + V^{2} a^{2} \kappa^{4} - 2 V a^{2} b 
-            \kappa^{4} + a^{2} b^{2} \kappa^{4}\right)} \left(- 2 a \kappa 
-            \sqrt{\left(V - b\right)^{3} \left(V^{2} + 2 V b - b^{2}\right) 
-            \left(P R Tc V^{2} + 2 P R Tc V b - P R Tc b^{2} - P V a \kappa^{2}
-            + P a b \kappa^{2} + R Tc a \kappa^{2} + 2 R Tc a \kappa + R Tc 
-            a\right)} \left(\kappa + 1\right) \left(R Tc V^{2} + 2 R Tc V b 
-            - R Tc b^{2} - V a \kappa^{2} + a b \kappa^{2}\right)^{2} 
-            + \left(V - b\right) \left(R^{2} Tc^{2} V^{4} + 4 R^{2} Tc^{2} 
-            V^{3} b + 2 R^{2} Tc^{2} V^{2} b^{2} - 4 R^{2} Tc^{2} V b^{3} 
-            + R^{2} Tc^{2} b^{4} - 2 R Tc V^{3} a \kappa^{2} - 2 R Tc V^{2} 
-            a b \kappa^{2} + 6 R Tc V a b^{2} \kappa^{2} - 2 R Tc a b^{3} 
-            \kappa^{2} + V^{2} a^{2} \kappa^{4} - 2 V a^{2} b \kappa^{4} 
-            + a^{2} b^{2} \kappa^{4}\right) \left(P R Tc V^{4} + 4 P R Tc 
-            V^{3} b + 2 P R Tc V^{2} b^{2} - 4 P R Tc V b^{3} + P R Tc b^{4} 
-            - P V^{3} a \kappa^{2} - P V^{2} a b \kappa^{2} + 3 P V a b^{2} 
-            \kappa^{2} - P a b^{3} \kappa^{2} + R Tc V^{2} a \kappa^{2} + 2 R 
-            Tc V^{2} a \kappa + R Tc V^{2} a + 2 R Tc V a b \kappa^{2} + 4 R 
-            Tc V a b \kappa + 2 R Tc V a b - R Tc a b^{2} \kappa^{2} - 2 R Tc 
-            a b^{2} \kappa - R Tc a b^{2} + V a^{2} \kappa^{4} + 2 V a^{2} 
-            \kappa^{3} + V a^{2} \kappa^{2} - a^{2} b \kappa^{4} - 2 a^{2} b 
-            \kappa^{3} - a^{2} b \kappa^{2}\right)\right)
+        >>> from sympy import *
+        >>> P, T, V = symbols('P, T, V')
+        >>> Tc, Pc, omega = symbols('Tc, Pc, omega')
+        >>> R, a, b, kappa = symbols('R, a, b, kappa')
         
+        >>> a_alpha = a*(1 + kappa*(1-(T/Tc)**r('0.5')))**2
+        >>> PR_formula = R*T/(V-b) - a_alpha/(V*(V+b)+b*(V-b)) - P
+        >>> #solve(PR_formula, T)
         '''
         Tc, a, b, kappa = self.Tc, self.a, self.b, self.kappa
         if quick:
@@ -986,3 +836,281 @@ class PR(CUBIC_EOS):
 #
 #c = PR(Tc=507.6, Pc=3025000, omega=0.2975, V=0.00013022208100139953, P=1E6)
 #print(c.d2V_dPdT_l, c.PIP_l, c.V_l, c.T)
+
+
+class PR78(PR):
+    r'''Class for solving a the Peng-Robinson cubic 
+    equation of state for a pure compound according to the 1978 variant.
+    Subclasses `PR`, which provides everything except the variable `kappa`.
+    Solves the EOS on initialization. See `PR` for further documentation.
+    
+    .. math::
+        P = \frac{RT}{v-b}-\frac{a\alpha(T)}{v(v+b)+b(v-b)}
+
+        a=0.45724\frac{R^2T_c^2}{P_c}
+        
+	  b=0.07780\frac{RT_c}{P_c}
+
+        \alpha(T)=[1+\kappa(1-\sqrt{T_r})]^2
+        
+        m_i = 0.37464+1.54226\omega-0.26992\omega^2 \text{ if } \omega_i
+        \le 0.491
+        
+        m_i = 0.379642 + 1.48503 \omega_i - 0.164423\omega_i^2 + 0.016666
+        \omega_i^3 \text{ if } \omega_i > 0.491
+        
+    Parameters
+    ----------
+    Tc : float
+        Critical temperature, [K]
+    Pc : float
+        Critical pressure, [Pa]
+    omega : float
+        Acentric factor, [-]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+
+    Examples
+    --------
+    P-T initialization (furfuryl alcohol), liquid phase:
+    
+    >>> eos = PR78(Tc=632, Pc=5350000, omega=0.734, T=299., P=1E6)
+    >>> eos.phase, eos.V_l, eos.H_dep_l, eos.S_dep_l
+    ('l', 8.351960066075052e-05, -63764.64948050847, -130.737108912626)
+    
+    Notes
+    -----
+    This variant is recommended over the original.
+
+    References
+    ----------
+    .. [1] Robinson, Donald B, and Ding-Yu Peng. The Characterization of the 
+       Heptanes and Heavier Fractions for the GPA Peng-Robinson Programs. 
+       Tulsa, Okla.: Gas Processors Association, 1978.
+    .. [2] Robinson, Donald B., Ding-Yu Peng, and Samuel Y-K Chung. "The 
+       Development of the Peng - Robinson Equation and Its Application to Phase
+       Equilibrium in a System Containing Methanol." Fluid Phase Equilibria 24,
+       no. 1 (January 1, 1985): 25-41. doi:10.1016/0378-3812(85)87035-7.  
+    '''
+    def __init__(self, Tc, Pc, omega, T=None, P=None, V=None):
+        self.Tc = Tc
+        self.Pc = Pc
+        self.omega = omega
+        self.T = T
+        self.P = P
+        self.V = V
+
+        self.a = self.c1*R*R*Tc*Tc/Pc
+        self.b = self.c2*R*Tc/Pc
+        if omega <= 0.491:
+            self.kappa = 0.37464 + 1.54226*omega - 0.26992*omega*omega
+        else:
+            self.kappa = 0.379642 + 1.48503*omega - 0.164423*omega**2 + 0.016666*omega**3
+
+        self.solve()
+
+
+class PRSV(PR):
+    r'''Class for solving the Peng-Robinson-Stryjek-Vera equations of state for
+    a pure compound as given in [1]_. The same as the Peng-Robinson EOS,
+    except with a different `kappa` formula and with an optional fit parameter.
+    Subclasses `PR`, which provides only several constants. See `PR` for 
+    further documentation and examples.
+    
+    .. math::
+        P = \frac{RT}{v-b}-\frac{a\alpha(T)}{v(v+b)+b(v-b)}
+
+        a=0.45724\frac{R^2T_c^2}{P_c}
+        
+	  b=0.07780\frac{RT_c}{P_c}
+
+        \alpha(T)=[1+\kappa(1-\sqrt{T_r})]^2
+        
+        \kappa = \kappa_0 + \kappa_1(1-T_r^{0.5})(0.7 - T_r)
+        
+        \kappa_0 = 0.378893 + 1.4897153\omega - 0.17131848\omega^2 
+        + 0.0196554\omega^3
+        
+    Parameters
+    ----------
+    Tc : float
+        Critical temperature, [K]
+    Pc : float
+        Critical pressure, [Pa]
+    omega : float
+        Acentric factor, [-]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+    kappa1 : float, optional
+        Fit parameter; available in [1]_ for over 90 compounds, [-]
+
+    Examples
+    --------
+    P-T initialization (hexane, with fit parameter in [1]_), liquid phase:
+    
+    >>> eos = PRSV(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, kappa1=0.05104)
+    >>> eos.phase, eos.V_l, eos.H_dep_l, eos.S_dep_l
+    ('l', 0.00013023201121018099, -31183.152982068495, -72.65773921142048)
+    
+    Notes
+    -----
+    [1]_ recommends that `kappa1` be set to 0 for Tr > 0.7. This is not done by 
+    default; the class boolean `kappa1_Tr_limit` may be set to True and the
+    problem re-solved with that specified if desired. `kappa1_Tr_limit` is not
+    supported for P-V inputs.
+    
+    Solutions for P-V solve for `T` with SciPy's `newton` solver, as there is no
+    analytical solution for `T`
+    
+    [2]_ and [3]_ are two more resources documenting the PRSV EOS. See also
+    `PRSV2`.
+
+    References
+    ----------
+    .. [1] Stryjek, R., and J. H. Vera. "PRSV: An Improved Peng-Robinson 
+       Equation of State for Pure Compounds and Mixtures." The Canadian Journal
+       of Chemical Engineering 64, no. 2 (April 1, 1986): 323-33. 
+       doi:10.1002/cjce.5450640224. 
+    .. [2] Stryjek, R., and J. H. Vera. "PRSV - An Improved Peng-Robinson 
+       Equation of State with New Mixing Rules for Strongly Nonideal Mixtures."
+       The Canadian Journal of Chemical Engineering 64, no. 2 (April 1, 1986): 
+       334-40. doi:10.1002/cjce.5450640225.  
+    .. [3] Stryjek, R., and J. H. Vera. "Vapor-liquid Equilibrium of 
+       Hydrochloric Acid Solutions with the PRSV Equation of State." Fluid 
+       Phase Equilibria 25, no. 3 (January 1, 1986): 279-90. 
+       doi:10.1016/0378-3812(86)80004-8. 
+    '''
+    kappa1_Tr_limit = False
+    def __init__(self, Tc, Pc, omega, T=None, P=None, V=None, kappa1=0):
+        self.Tc = Tc
+        self.Pc = Pc
+        self.omega = omega
+        self.T = T
+        self.P = P
+        self.V = V
+        
+        if not ((self.T and self.P) or (self.T and self.V) or (self.P and self.V)):
+            raise Exception('Either T and P, or T and V, or P and V are required')
+        
+        self.a = self.c1*R*R*Tc*Tc/Pc
+        self.b = self.c2*R*Tc/Pc
+        self.kappa0 = 0.378893 + 1.4897153*omega - 0.17131848*omega**2 + 0.0196554*omega**3
+
+        if self.V and self.P:
+            # Deal with T-solution here; does NOT support kappa1_Tr_limit.
+            self.kappa1 = kappa1
+            self.T = self.solve_T(self.P, self.V)
+            Tr = self.T/Tc
+        else:
+            Tr = self.T/Tc
+            if self.kappa1_Tr_limit and Tc > 0.7:
+                self.kappa1 = 0
+            else:
+                self.kappa1 = kappa1
+    
+        self.kappa = self.kappa0 + self.kappa1*(1 - Tr**0.5)*(0.7 - Tr)
+        self.solve()
+
+    def solve_T(self, P, V, quick=True):
+        r'''Method to calculate `T` from a specified `P` and `V` for the PRSV
+        EOS. Uses `Tc`, `a`, `b`, `kappa0`  and `kappa` as well, obtained from  
+        the class's namespace.
+
+        Parameters
+        ----------
+        P : float
+            Pressure, [Pa]
+        V : float
+            Molar volume, [m^3/mol]
+        quick : bool, optional
+            Whether to use a SymPy cse-derived expression (somewhat faster) or 
+            individual formulas.
+
+        Returns
+        -------
+        T : float
+            Temperature, [K]
+        
+        Notes
+        -----
+        Not guaranteed to produce a solution. There are actually two solution,
+        one much higher than normally desired; it is possible the solver could
+        converge on this.        
+        '''
+        Tc, a, b, kappa0, kappa1 = self.Tc, self.a, self.b, self.kappa0, self.kappa1
+        if quick:
+            x0 = V - b
+            x3 = (100.*(V*(V + b) + b*x0))
+            x4 = 10.*kappa0
+            def to_solve(T):
+                x1 = T/Tc
+                x2 = x1**0.5 - 1.
+                return (R*T/x0 - a*(x2*(x4 + kappa1*x2*(10.*x1 - 7.)) - 10.)**2/x3) - P
+        else:
+            def to_solve(T):
+                P_calc = R*T/(V - b) - a*((kappa0 + kappa1*(-(T/Tc)**0.5 + 1)*(-T/Tc + 0.7))*(-(T/Tc)**0.5 + 1) + 1)**2/(V*(V + b) + b*(V - b))
+                return P_calc - P
+        return newton(to_solve, Tc*0.5)
+
+    def set_a_alpha_and_derivatives(self, T, quick=True):
+        r'''Method to calculate `a_alpha` and its first and second
+        derivatives for the PRSV EOS.  Sets `a_alpha`, `da_alpha_dT`, and 
+        `d2a_alpha_dT2`. Uses the set values of `Tc`, `kappa0`, `kappa1`, and 
+        `a`.
+
+        The `a_alpha` function is shown below; its first and second derivatives
+        are long available through the SymPy expression under it.
+
+        .. math::
+            a\alpha = a \left(\left(\kappa_{0} + \kappa_{1} \left(- \sqrt{
+            \frac{T}{Tc}} + 1\right) \left(- \frac{T}{Tc} + \frac{7}{10}\right)
+            \right) \left(- \sqrt{\frac{T}{Tc}} + 1\right) + 1\right)^{2}
+            
+        >>> from sympy import *
+        >>> P, T, V = symbols('P, T, V')
+        >>> Tc, Pc, omega = symbols('Tc, Pc, omega')
+        >>> R, a, b, kappa0, kappa1 = symbols('R, a, b, kappa0, kappa1')
+        >>> kappa = kappa0 + kappa1*(1 - sqrt(T/Tc))*(Rational(7, 10)-T/Tc)
+        >>> a_alpha = a*(1 + kappa*(1-sqrt(T/Tc)))**2
+        >>> # diff(a_alpha, T)
+        >>> # diff(a_alpha, T, 2)
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        quick : bool, optional
+            Whether to use a SymPy cse-derived expression (3x faster) or 
+            individual formulas
+        '''
+        Tc, a, kappa0, kappa1 = self.Tc, self.a, self.kappa0, self.kappa1
+        if quick:
+            x1 = T/Tc
+            x2 = x1**0.5
+            x3 = x2 - 1.
+            x4 = 10.*x1
+            x5 = x4 - 7.
+            x6 = kappa1*x3
+            x7 = 10.*kappa0 + x5*x6
+            x8 = x3*x7
+            x9 = x8*0.1 - 1.
+            x11 = x2/T
+            x12 = 20/Tc
+            x13 = x11*x7 - x6*(x11*(-x4 + 7) + x12*(-x2 + 1))
+            x14 = x5/T
+
+            self.a_alpha = a*x9*x9
+            self.da_alpha_dT = a*x13*x9*0.1
+            self.d2a_alpha_dT2 = a*(-x11*(x8 - 10.)*(-2.*kappa1*(x12*x3 + x14*x2) + x7/T - x6*(40./Tc - x14)) + x13**2)/200.
+        else:
+            self.a_alpha = a*((kappa0 + kappa1*(-(T/Tc)**0.5 + 1)*(-T/Tc + 0.7))*(-(T/Tc)**0.5 + 1) + 1)**2
+            self.da_alpha_dT = a*((kappa0 + kappa1*(-sqrt(T/Tc) + 1)*(-T/Tc + 0.7))*(-sqrt(T/Tc) + 1) + 1)*(2*(-sqrt(T/Tc) + 1)*(-kappa1*(-sqrt(T/Tc) + 1)/Tc - kappa1*sqrt(T/Tc)*(-T/Tc + 0.7)/(2*T)) - sqrt(T/Tc)*(kappa0 + kappa1*(-sqrt(T/Tc) + 1)*(-T/Tc + 0.7))/T)
+            self.d2a_alpha_dT2 = a*((kappa0 + kappa1*(-sqrt(T/Tc) + 1)*(-T/Tc + 7/10))*(-sqrt(T/Tc) + 1) + 1)*(2*(-sqrt(T/Tc) + 1)*(kappa1*sqrt(T/Tc)/(T*Tc) + kappa1*sqrt(T/Tc)*(-T/Tc + 7/10)/(4*T**2)) - 2*sqrt(T/Tc)*(-kappa1*(-sqrt(T/Tc) + 1)/Tc - kappa1*sqrt(T/Tc)*(-T/Tc + 7/10)/(2*T))/T + sqrt(T/Tc)*(kappa0 + kappa1*(-sqrt(T/Tc) + 1)*(-T/Tc + 7/10))/(2*T**2)) + a*((-sqrt(T/Tc) + 1)*(-kappa1*(-sqrt(T/Tc) + 1)/Tc - kappa1*sqrt(T/Tc)*(-T/Tc + 7/10)/(2*T)) - sqrt(T/Tc)*(kappa0 + kappa1*(-sqrt(T/Tc) + 1)*(-T/Tc + 7/10))/(2*T))*(2*(-sqrt(T/Tc) + 1)*(-kappa1*(-sqrt(T/Tc) + 1)/Tc - kappa1*sqrt(T/Tc)*(-T/Tc + 7/10)/(2*T)) - sqrt(T/Tc)*(kappa0 + kappa1*(-sqrt(T/Tc) + 1)*(-T/Tc + 7/10))/T)

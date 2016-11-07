@@ -215,5 +215,53 @@ def test_PR_quick():
     assert 'g' == PR(Tc=507.6, Pc=3025000, omega=0.2975, T=499.,P=1E5).phase
 
 
-test_PR_with_sympy()
-test_PR_quick()
+def test_PR78():
+    eos = PR78(Tc=632, Pc=5350000, omega=0.734, T=299., P=1E6)
+    three_props = [eos.V_l, eos.H_dep_l, eos.S_dep_l]
+    expect_props = [8.351960066075052e-05, -63764.64948050847, -130.737108912626]
+    assert_allclose(three_props, expect_props)
+    
+    # Test the results are identical to PR or lower things
+    eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+    PR_props = [eos.V_l, eos.H_dep_l, eos.S_dep_l]
+    eos = PR78(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+    PR78_props = [eos.V_l, eos.H_dep_l, eos.S_dep_l]
+    assert_allclose(PR_props, PR78_props)
+
+
+def test_PRSV():
+    eos = PRSV(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, kappa1=0.05104)
+    three_props = [eos.V_l, eos.H_dep_l, eos.S_dep_l]
+    expect_props = [0.00013023201121018077, -31183.15298206854, -72.6577392114206]
+    assert_allclose(three_props, expect_props)
+    
+    # Test of a_alphas
+    a_alphas = [3.800042712044855, -0.006685730117844221, 1.789052310691778e-05]
+    eos.set_a_alpha_and_derivatives(299)
+    a_alphas_fast = [eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2]
+    assert_allclose(a_alphas, a_alphas_fast)
+    eos.set_a_alpha_and_derivatives(299, quick=False)
+    a_alphas_fast = [eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2]
+    assert_allclose(a_alphas, a_alphas_fast)
+    
+    # PR back calculation for T
+    eos = PRSV(Tc=507.6, Pc=3025000, omega=0.2975, V=0.00013023201121018077, P=1E6, kappa1=0.05104)
+    assert_allclose(eos.T, 299)
+    T_slow = eos.solve_T(P=1E6, V=0.00013023201121018077, quick=False)
+    assert_allclose(T_slow, 299)
+    
+    
+    # Test the bool to control its behavior
+    eos = PRSV(Tc=507.6, Pc=3025000, omega=0.2975, T=406.08, P=1E6, kappa1=0.05104)
+    assert_allclose(eos.kappa, 0.8068992405718729)
+    eos.kappa1_Tr_limit = True
+    eos.__init__(Tc=507.6, Pc=3025000, omega=0.2975, T=406.08, P=1E6, kappa1=0.05104)
+    assert_allclose(eos.kappa, 0.8074380841890093)
+
+    with pytest.raises(Exception):
+        PRSV(Tc=507.6, Pc=3025000, omega=0.2975, P=1E6, kappa1=0.05104)
+
+
+
+#test_PR_with_sympy()
+#test_PR_quick()
