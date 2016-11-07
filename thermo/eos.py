@@ -930,7 +930,7 @@ class PRSV(PR):
 
         \alpha(T)=[1+\kappa(1-\sqrt{T_r})]^2
         
-        \kappa = \kappa_0 + \kappa_1(1-T_r^{0.5})(0.7 - T_r)
+        \kappa = \kappa_0 + \kappa_1(1 + T_r^{0.5})(0.7 - T_r)
         
         \kappa_0 = 0.378893 + 1.4897153\omega - 0.17131848\omega^2 
         + 0.0196554\omega^3
@@ -958,7 +958,7 @@ class PRSV(PR):
     
     >>> eos = PRSV(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, kappa1=0.05104)
     >>> eos.phase, eos.V_l, eos.H_dep_l, eos.S_dep_l
-    ('l', 0.00013023201121018099, -31183.152982068495, -72.65773921142048)
+    ('l', 0.0001301268694484059, -31698.916002476708, -74.1674902435042)
     
     Notes
     -----
@@ -1016,7 +1016,7 @@ class PRSV(PR):
             else:
                 self.kappa1 = kappa1
     
-        self.kappa = self.kappa0 + self.kappa1*(1 - Tr**0.5)*(0.7 - Tr)
+        self.kappa = self.kappa0 + self.kappa1*(1 + Tr**0.5)*(0.7 - Tr)
         self.solve()
 
     def solve_T(self, P, V, quick=True):
@@ -1048,15 +1048,18 @@ class PRSV(PR):
         Tc, a, b, kappa0, kappa1 = self.Tc, self.a, self.b, self.kappa0, self.kappa1
         if quick:
             x0 = V - b
+            R_x0 = R/x0
             x3 = (100.*(V*(V + b) + b*x0))
             x4 = 10.*kappa0
+            kappa110 = kappa1*10.
+            kappa17 = kappa1*7.
             def to_solve(T):
                 x1 = T/Tc
-                x2 = x1**0.5 - 1.
-                return (R*T/x0 - a*(x2*(x4 + kappa1*x2*(10.*x1 - 7.)) - 10.)**2/x3) - P
+                x2 = x1**0.5
+                return (T*R_x0 - a*((x4 - (kappa110*x1 - kappa17)*(x2 + 1.))*(x2 - 1.) - 10.)**2/x3) - P
         else:
             def to_solve(T):
-                P_calc = R*T/(V - b) - a*((kappa0 + kappa1*(-(T/Tc)**0.5 + 1)*(-T/Tc + 0.7))*(-(T/Tc)**0.5 + 1) + 1)**2/(V*(V + b) + b*(V - b))
+                P_calc = R*T/(V - b) - a*((kappa0 + kappa1*(sqrt(T/Tc) + 1)*(-T/Tc + 7/10))*(-sqrt(T/Tc) + 1) + 1)**2/(V*(V + b) + b*(V - b))
                 return P_calc - P
         return newton(to_solve, Tc*0.5)
 
@@ -1078,7 +1081,7 @@ class PRSV(PR):
         >>> P, T, V = symbols('P, T, V')
         >>> Tc, Pc, omega = symbols('Tc, Pc, omega')
         >>> R, a, b, kappa0, kappa1 = symbols('R, a, b, kappa0, kappa1')
-        >>> kappa = kappa0 + kappa1*(1 - sqrt(T/Tc))*(Rational(7, 10)-T/Tc)
+        >>> kappa = kappa0 + kappa1*(1 + sqrt(T/Tc))*(Rational(7, 10)-T/Tc)
         >>> a_alpha = a*(1 + kappa*(1-sqrt(T/Tc)))**2
         >>> # diff(a_alpha, T)
         >>> # diff(a_alpha, T, 2)
@@ -1096,21 +1099,53 @@ class PRSV(PR):
             x1 = T/Tc
             x2 = x1**0.5
             x3 = x2 - 1.
-            x4 = 10.*x1
-            x5 = x4 - 7.
-            x6 = kappa1*x3
-            x7 = 10.*kappa0 + x5*x6
-            x8 = x3*x7
-            x9 = x8*0.1 - 1.
-            x11 = x2/T
-            x12 = 20/Tc
-            x13 = x11*x7 - x6*(x11*(-x4 + 7) + x12*(-x2 + 1))
-            x14 = x5/T
-
-            self.a_alpha = a*x9*x9
-            self.da_alpha_dT = a*x13*x9*0.1
-            self.d2a_alpha_dT2 = a*(-x11*(x8 - 10.)*(-2.*kappa1*(x12*x3 + x14*x2) + x7/T - x6*(40./Tc - x14)) + x13**2)/200.
+            x4 = 10.*x1 - 7.
+            x5 = x2 + 1.
+            x6 = 10.*kappa0 - kappa1*x4*x5
+            x7 = x3*x6
+            x8 = x7*0.1 - 1.
+            x10 = x6/T
+            x11 = kappa1*x3
+            x12 = x4/T
+            x13 = 20./Tc*x5 + x12*x2
+            x14 = -x10*x2 + x11*x13
+            self.a_alpha = a*x8*x8
+            self.da_alpha_dT = -a*x14*x8*0.1
+            self.d2a_alpha_dT2 = a*(x14*x14 - x2/T*(x7 - 10.)*(2.*kappa1*x13 + x10 + x11*(40./Tc - x12)))/200.
         else:
-            self.a_alpha = a*((kappa0 + kappa1*(-(T/Tc)**0.5 + 1)*(-T/Tc + 0.7))*(-(T/Tc)**0.5 + 1) + 1)**2
-            self.da_alpha_dT = a*((kappa0 + kappa1*(-sqrt(T/Tc) + 1)*(-T/Tc + 0.7))*(-sqrt(T/Tc) + 1) + 1)*(2*(-sqrt(T/Tc) + 1)*(-kappa1*(-sqrt(T/Tc) + 1)/Tc - kappa1*sqrt(T/Tc)*(-T/Tc + 0.7)/(2*T)) - sqrt(T/Tc)*(kappa0 + kappa1*(-sqrt(T/Tc) + 1)*(-T/Tc + 0.7))/T)
-            self.d2a_alpha_dT2 = a*((kappa0 + kappa1*(-sqrt(T/Tc) + 1)*(-T/Tc + 7/10))*(-sqrt(T/Tc) + 1) + 1)*(2*(-sqrt(T/Tc) + 1)*(kappa1*sqrt(T/Tc)/(T*Tc) + kappa1*sqrt(T/Tc)*(-T/Tc + 7/10)/(4*T**2)) - 2*sqrt(T/Tc)*(-kappa1*(-sqrt(T/Tc) + 1)/Tc - kappa1*sqrt(T/Tc)*(-T/Tc + 7/10)/(2*T))/T + sqrt(T/Tc)*(kappa0 + kappa1*(-sqrt(T/Tc) + 1)*(-T/Tc + 7/10))/(2*T**2)) + a*((-sqrt(T/Tc) + 1)*(-kappa1*(-sqrt(T/Tc) + 1)/Tc - kappa1*sqrt(T/Tc)*(-T/Tc + 7/10)/(2*T)) - sqrt(T/Tc)*(kappa0 + kappa1*(-sqrt(T/Tc) + 1)*(-T/Tc + 7/10))/(2*T))*(2*(-sqrt(T/Tc) + 1)*(-kappa1*(-sqrt(T/Tc) + 1)/Tc - kappa1*sqrt(T/Tc)*(-T/Tc + 7/10)/(2*T)) - sqrt(T/Tc)*(kappa0 + kappa1*(-sqrt(T/Tc) + 1)*(-T/Tc + 7/10))/T)
+            self.a_alpha = a*((kappa0 + kappa1*(sqrt(T/Tc) + 1)*(-T/Tc + 0.7))*(-sqrt(T/Tc) + 1) + 1)**2
+            self.da_alpha_dT = a*((kappa0 + kappa1*(sqrt(T/Tc) + 1)*(-T/Tc + 0.7))*(-sqrt(T/Tc) + 1) + 1)*(2*(-sqrt(T/Tc) + 1)*(-kappa1*(sqrt(T/Tc) + 1)/Tc + kappa1*sqrt(T/Tc)*(-T/Tc + 0.7)/(2*T)) - sqrt(T/Tc)*(kappa0 + kappa1*(sqrt(T/Tc) + 1)*(-T/Tc + 0.7))/T)
+            self.d2a_alpha_dT2 = a*((kappa1*(sqrt(T/Tc) - 1)*(20*(sqrt(T/Tc) + 1)/Tc + sqrt(T/Tc)*(10*T/Tc - 7)/T) - sqrt(T/Tc)*(10*kappa0 - kappa1*(sqrt(T/Tc) + 1)*(10*T/Tc - 7))/T)**2 - sqrt(T/Tc)*((10*kappa0 - kappa1*(sqrt(T/Tc) + 1)*(10*T/Tc - 7))*(sqrt(T/Tc) - 1) - 10)*(kappa1*(40/Tc - (10*T/Tc - 7)/T)*(sqrt(T/Tc) - 1) + 2*kappa1*(20*(sqrt(T/Tc) + 1)/Tc + sqrt(T/Tc)*(10*T/Tc - 7)/T) + (10*kappa0 - kappa1*(sqrt(T/Tc) + 1)*(10*T/Tc - 7))/T)/T)/200
+            
+            
+#            
+#class PR78(PR):
+#    def __init__(self, Tc, Pc, omega, T=None, P=None, V=None, kappa1=0):
+#        self.Tc = Tc
+#        self.Pc = Pc
+#        self.omega = omega
+#        self.T = T
+#        self.P = P
+#        self.V = V
+#        
+#        if not ((self.T and self.P) or (self.T and self.V) or (self.P and self.V)):
+#            raise Exception('Either T and P, or T and V, or P and V are required')
+#        
+#        self.a = self.c1*R*R*Tc*Tc/Pc
+#        self.b = self.c2*R*Tc/Pc
+#        self.kappa0 = 0.378893 + 1.4897153*omega - 0.17131848*omega**2 + 0.0196554*omega**3
+#
+#        if self.V and self.P:
+#            # Deal with T-solution here; does NOT support kappa1_Tr_limit.
+#            self.kappa1 = kappa1
+#            self.T = self.solve_T(self.P, self.V)
+#            Tr = self.T/Tc
+#        else:
+#            Tr = self.T/Tc
+#            if self.kappa1_Tr_limit and Tc > 0.7:
+#                self.kappa1 = 0
+#            else:
+#                self.kappa1 = kappa1
+#    
+#        self.kappa = self.kappa0 + self.kappa1*(1 - Tr**0.5)*(0.7 - Tr)
+#        self.solve()

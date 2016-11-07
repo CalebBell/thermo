@@ -232,11 +232,11 @@ def test_PR78():
 def test_PRSV():
     eos = PRSV(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, kappa1=0.05104)
     three_props = [eos.V_l, eos.H_dep_l, eos.S_dep_l]
-    expect_props = [0.00013023201121018077, -31183.15298206854, -72.6577392114206]
+    expect_props = [0.0001301268694484059, -31698.916002476708, -74.1674902435042]
     assert_allclose(three_props, expect_props)
     
     # Test of a_alphas
-    a_alphas = [3.800042712044855, -0.006685730117844221, 1.789052310691778e-05]
+    a_alphas = [3.8129831135199463, -0.006976898745266429, 2.0026547235203598e-05]
     eos.set_a_alpha_and_derivatives(299)
     a_alphas_fast = [eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2]
     assert_allclose(a_alphas, a_alphas_fast)
@@ -245,15 +245,15 @@ def test_PRSV():
     assert_allclose(a_alphas, a_alphas_fast)
     
     # PR back calculation for T
-    eos = PRSV(Tc=507.6, Pc=3025000, omega=0.2975, V=0.00013023201121018077, P=1E6, kappa1=0.05104)
+    eos = PRSV(Tc=507.6, Pc=3025000, omega=0.2975, V=0.0001301268694484059, P=1E6, kappa1=0.05104)
     assert_allclose(eos.T, 299)
-    T_slow = eos.solve_T(P=1E6, V=0.00013023201121018077, quick=False)
+    T_slow = eos.solve_T(P=1E6, V=0.0001301268694484059, quick=False)
     assert_allclose(T_slow, 299)
     
     
     # Test the bool to control its behavior
     eos = PRSV(Tc=507.6, Pc=3025000, omega=0.2975, T=406.08, P=1E6, kappa1=0.05104)
-    assert_allclose(eos.kappa, 0.8068992405718729)
+    assert_allclose(eos.kappa, 0.7977689278061457)
     eos.kappa1_Tr_limit = True
     eos.__init__(Tc=507.6, Pc=3025000, omega=0.2975, T=406.08, P=1E6, kappa1=0.05104)
     assert_allclose(eos.kappa, 0.8074380841890093)
