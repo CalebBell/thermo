@@ -487,7 +487,7 @@ calculated by this method, in a user subclass.')
         >>> #solve(CUBIC, V)
         '''
         if quick:
-            x0 = 1/P
+            x0 = 1./P
             x1 = P*b
             x2 = R*T
             x3 = P*delta
@@ -500,23 +500,22 @@ calculated by this method, in a user subclass.')
             x10 = P*epsilon
             x11 = delta*x1
             x12 = delta*x2
-            x13 = 3*a_alpha
-            x14 = 3*x10
-            x15 = 3*x11
-            x16 = 3*x12
+            x13 = 3.*a_alpha
+            x14 = 3.*x10
+            x15 = 3.*x11
+            x16 = 3.*x12
             x17 = -x1 - x2 + x3
-            x18 = x0*x17**2
-            x19 = ((-27*x0*(x6 + x7 + x8)/2 - 9*x4*x9*(-a_alpha - x10 + x11 + x12)/2 + ((x9*(-4*x0*(-x13 - x14 + x15 + x16 + x18)**3 + (-9*x0*x17*(a_alpha + x10 - x11 - x12) + 2*x17**3*x9 - 27*x6 - 27*x7 - 27*x8)**2))+0j)**0.5/2 - x4**3/P**3)+0j)**(1/3)
+            x18 = x0*x17*x17
+            x19 = ((-13.5*x0*(x6 + x7 + x8) - 4.5*x4*x9*(-a_alpha - x10 + x11 + x12) + ((x9*(-4.*x0*(-x13 - x14 + x15 + x16 + x18)**3 + (-9.*x0*x17*(a_alpha + x10 - x11 - x12) + 2.*x17**3*x9 - 27.*x6 - 27.*x7 - 27.*x8)**2))+0j)**0.5*0.5 - x4**3*P**-3)+0j)**(1./3.)
             x20 = x13 + x14 - x15 - x16 - x18
-            x21 = 1/x19
-            x22 = 2*x5
-            x23 = sqrt(3)*1j
-            x24 = x23 + 1
-            x25 = 4*x0*x20*x21
-            x26 = -x23 + 1
-            return [x0*x20*x21/3 - x19/3 + x5/3,
-                    x19*x24/6 + x22/6 - x25/(6*x24),
-                    x19*x26/6 + x22/6 - x25/(6*x26)]
+            x22 = 2.*x5
+            x23 = 1.7320508075688772j
+            x24 = x23 + 1.
+            x25 = 4.*x0*x20/x19
+            x26 = -x23 + 1.
+            return [x0*x20/(x19*3.) - x19/3. + x5/3.,
+                    x19*x24/6. + x22/6. - x25/(6.*x24),
+                    x19*x26/6. + x22/6. - x25/(6.*x26)]
         else:
             return [-(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)/(3*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)) - (sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)/3 - (-P*b + P*delta - R*T)/(3*P),
                      -(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)/(3*(-1/2 - sqrt(3)*1j/2)*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)) - (-1/2 - sqrt(3)*1j/2)*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)/3 - (-P*b + P*delta - R*T)/(3*P),
