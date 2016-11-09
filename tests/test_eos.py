@@ -171,31 +171,30 @@ def test_PR_quick():
     T_slow = eos.solve_T(P=1E6, V=0.00013022208100139953, quick=False)
     assert_allclose(T_slow, 299)
     
-    # TODO UNCOMMENT AND TEST FAST DERIVATIVES AND DEPARTURES
-#    # First derivatives
-#    diff_slow, diff_fast = [eos.derivatives_and_departures(eos.T, eos.P, eos.V_l, eos.b, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=i)[0] for i in [False, True]]
-#    diffs_expect = [582232.4757941157, -3665180614672.2373, 1.588550570914177e-07, -2.7283785033590384e-13, 6295046.681608136, 1.717527004374129e-06]
-#    assert_allclose(diffs_expect, diff_slow)
-#    assert_allclose(diffs_expect, diff_fast)
-#        
-#    # Second derivatives
-#    diff_slow, diff_fast = [eos.derivatives_and_departures(eos.T, eos.P, eos.V_l, eos.b, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=i)[1] for i in [False, True]]
-#    diff2_expect = [-506.2012523140166, 4.482165856521269e+17, 1.1688513685432287e-09, 9.103361314057314e-21, -291578941282.6521, 2.564684443970742e-15]
-#    assert_allclose(diff2_expect, diff_slow)
-#    assert_allclose(diff2_expect, diff_fast)
-#    
-#    # Mixed second derivatives
-#    second_expect = [-3.772507759880179e-15, -20523303691.115646, 0.06994170496262654]
-#    diff_slow, diff_fast = [eos.derivatives_and_departures(eos.T, eos.P, eos.V_l, eos.b, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=i)[2] for i in [False, True]]
-#    assert_allclose(second_expect, diff_slow)
-#    assert_allclose(second_expect, diff_fast)
+    
+    diffs_1 = [582232.4757941157, -3665180614672.2373, 1.588550570914177e-07, -2.7283785033590384e-13, 6295046.681608136, 1.717527004374129e-06]
+    diffs_2 = [-506.2012523140166, 4.482165856521269e+17, 1.1688513685432287e-09, 9.103361314057314e-21, -291578941282.6521, 2.564684443970742e-15]
+    diffs_mixed = [-3.772507759880179e-15, -20523303691.115646, 0.06994170496262654]
+    departures = [-31134.740290463407, -72.47559475426019, 25.165377505266793]
+    known_derivs_deps = [diffs_1, diffs_2, diffs_mixed, departures]
+    
+    # TODO ADD TRUE OPTIMZIED TEST
+    for f in [True, False]:
+        main_calcs = eos.derivatives_and_departures(eos.T, eos.P, eos.V_l, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=f)
+        
+        for i, j in zip(known_derivs_deps, main_calcs):
+            assert_allclose(i, j)
+    
+    
+    
+    
     
     # Test Cp_Dep, Cv_dep
     assert_allclose(eos.Cv_dep_l, 25.165377505266747)
     assert_allclose(eos.Cp_dep_l, 44.50559908690951)
     
     # Exception tests
-    a = CUBIC_EOS()
+    a = GCEOS()
     with pytest.raises(Exception):
         a.solve_T(P=1E6, V=0.001)
         
@@ -208,7 +207,7 @@ def test_PR_quick():
     # Integration tests
     eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299.,V=0.00013)
     fast_vars = vars(eos)
-    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=False)
+    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=False)
     slow_vars = vars(eos)
     [assert_allclose(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
 
@@ -289,7 +288,9 @@ def test_PRSV2():
     eos = PRSV2(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, kappa1=0.05104)
     three_props_PRSV2 = [eos.V_l, eos.H_dep_l, eos.S_dep_l]
     assert_allclose(three_props_PRSV, three_props_PRSV2)
-
+    
+    with pytest.raises(Exception):
+        PRSV2(Tc=507.6, Pc=3025000, omega=0.2975, T=299.) 
 
 
 

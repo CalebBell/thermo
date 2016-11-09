@@ -31,7 +31,9 @@ from math import log, exp, sqrt
 from thermo.utils import _isobaric_expansion as isobaric_expansion 
 
 
-class CUBIC_EOS(object):
+
+
+class GCEOS(object):
     r'''Class for solving a generic Pressure-explicit three-parameter cubic 
     equation of state. Does not implement any parameters itself; must be 
     subclassed by an equation of state class which uses it. Works for mixtures
@@ -40,7 +42,7 @@ class CUBIC_EOS(object):
     published.
 
     .. math::
-        P = \frac{RT}{v-b}-\frac{a\alpha(T)}{v(v+b)+b(v-b)}
+        P=\frac{RT}{V-b}-\frac{a\alpha(T)}{V^2 + \delta V + \epsilon}
 
     Main methods (in order they are called) are `solve`, `set_from_PT`,
     `volume_solutions`, `set_properties_from_solution`,  and
@@ -87,7 +89,7 @@ class CUBIC_EOS(object):
     the liquid or gas phase with the convention of adding on `_l` or `_g` to
     the variable names.
     '''
-    
+
     def solve(self):
         '''First EOS-generic method; should be called by all specific EOSs.
         For solving for `T`, the EOS must provide the method `solve_T`.
@@ -103,14 +105,12 @@ class CUBIC_EOS(object):
                 self.set_a_alpha_and_derivatives(self.T)
             else:
                 self.set_a_alpha_and_derivatives(self.T)
-                self.P = R*self.T/(self.V-self.b) - self.a_alpha/(self.V*(self.V+self.b)+self.b*(self.V-self.b))
+                self.P = R*self.T/(self.V-self.b) - self.a_alpha/(self.V*self.V + self.delta*self.V + self.epsilon)
             Vs = [self.V, 1j, 1j]
         else:
             self.set_a_alpha_and_derivatives(self.T)
-            Vs = self.volume_solutions(self.T, self.P, self.b, self.a_alpha)
-        
+            Vs = self.volume_solutions(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
         self.set_from_PT(Vs)
-
 
     def set_from_PT(self, Vs):
         '''Counts the number of real volumes in `Vs`, and determins what to do.
@@ -129,7 +129,7 @@ class CUBIC_EOS(object):
         imaginary_roots_count = len([True for i in Vs if abs(i.imag) > 1E-9]) 
         if imaginary_roots_count == 2: 
             V = [i for i in Vs if abs(i.imag) < 1E-9][0].real
-            self.phase = self.set_properties_from_solution(self.T, self.P, V, self.b, self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2)
+            self.phase = self.set_properties_from_solution(self.T, self.P, V, self.b, self.delta, self.epsilon, self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2)
             if self.phase == 'l':
                 self.V_l = V
             else:
@@ -137,13 +137,13 @@ class CUBIC_EOS(object):
         elif imaginary_roots_count == 0:
             Vs = [i.real for i in Vs]
             self.V_l, self.V_g = min(Vs), max(Vs)
-            [self.set_properties_from_solution(self.T, self.P, V, self.b, self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2) for V in [self.V_l, self.V_g]]
+            [self.set_properties_from_solution(self.T, self.P, V, self.b, self.delta, self.epsilon, self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2) for V in [self.V_l, self.V_g]]
             self.phase = 'l/g'
         else:  # pragma: no cover
             raise Exception('No real volumes calculated - look into numerical issues.')
 
-    def set_properties_from_solution(self, T, P, V, b, a_alpha, da_alpha_dT, 
-                                     d2a_alpha_dT2, quick=True):
+    def set_properties_from_solution(self, T, P, V, b, delta, epsilon, a_alpha, 
+                                     da_alpha_dT, d2a_alpha_dT2, quick=True):
         r'''Sets all interesting properties which can be calculated from an
         EOS alone. Determines which phase the fluid is on its own; for details,
         see `phase_identification_parameter`.
@@ -166,6 +166,10 @@ class CUBIC_EOS(object):
             Molar volume, [m^3/mol]
         b : float
             Coefficient calculated by EOS-specific method, [m^3/mol]
+        delta : float
+            Coefficient calculated by EOS-specific method, [m^3/mol]
+        epsilon : float
+            Coefficient calculated by EOS-specific method, [m^6/mol^2]
         a_alpha : float
             Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
         da_alpha_dT : float
@@ -194,14 +198,13 @@ class CUBIC_EOS(object):
         First derivatives; in part using the Triple Product Rule [2]_, [3]_:
         
         .. math::
-            \left(\frac{\partial P}{\partial T}\right)_V = \frac{R}{V - b} 
-            - \frac{\frac{d {a \alpha}{\left (T \right )}}{d T} }{V \left(V 
-            + b\right) + b \left(V - b\right)}
+            \left(\frac{\partial P}{\partial T}\right)_V = \frac{R}{V - b}
+            - \frac{a \frac{d \alpha{\left (T \right )}}{d T}}{V^{2} + V \delta
+            + \epsilon}
             
             \left(\frac{\partial P}{\partial V}\right)_T = - \frac{R T}{\left(
-            V - b\right)^{2}} - \frac{\left(- 2 V - 2 b\right) \operatorname{a
-            \alpha}{\left (T \right )}}{\left(V \left(V + b\right) 
-            + b \left(V - b\right)\right)^{2}}
+            V - b\right)^{2}} - \frac{a \left(- 2 V - \delta\right) \alpha{
+            \left (T \right )}}{\left(V^{2} + V \delta + \epsilon\right)^{2}}
             
             \left(\frac{\partial V}{\partial T}\right)_P =-\frac{
             \left(\frac{\partial P}{\partial T}\right)_V}{
@@ -221,16 +224,15 @@ class CUBIC_EOS(object):
         use identities shown in [1]_ and verified numerically:
         
         .. math::
-            \left(\frac{\partial^2 P}{\partial T^2}\right)_V =- \frac{\frac{
-            d^{2}}{d T^{2}}  \operatorname{a \alpha}{\left (T \right )}}{V 
-            \left(V + b\right) + b \left(V - b\right)}
+            \left(\frac{\partial^2  P}{\partial T^2}\right)_V =  - \frac{a 
+            \frac{d^{2} \alpha{\left (T \right )}}{d T^{2}}}{V^{2} + V \delta 
+            + \epsilon}
             
-            \left(\frac{\partial^2 P}{\partial V^2}\right)_T =\frac{2 R T}{
-            \left(V - b\right)^{3}} - \frac{\left(- 4 V - 4 b\right) \left(- 
-            2 V - 2 b\right) \operatorname{a \alpha}{\left (T \right )}}{\left(
-            V \left(V + b\right) + b \left(V - b\right)\right)^{3}} + \frac{2 
-            \operatorname{a \alpha}{\left (T \right )}}{\left(V \left(V + 
-            b\right) + b \left(V - b\right)\right)^{2}}
+            \left(\frac{\partial^2  P}{\partial V^2}\right)_T = 2 \left(\frac{
+            R T}{\left(V - b\right)^{3}} - \frac{a \left(2 V + \delta\right)^{
+            2} \alpha{\left (T \right )}}{\left(V^{2} + V \delta + \epsilon
+            \right)^{3}} + \frac{a \alpha{\left (T \right )}}{\left(V^{2} + V 
+            \delta + \epsilon\right)^{2}}\right)
             
             \left(\frac{\partial^2 T}{\partial P^2}\right)_V = -\left(\frac{
             \partial^2 P}{\partial T^2}\right)_V \left(\frac{\partial P}{
@@ -271,10 +273,10 @@ class CUBIC_EOS(object):
         `T` and `V` use identities shown in [1]_ and verified numerically:
 
         .. math::
-           \left(\frac{\partial^2 P}{\partial T \partial V}\right) = - \frac{R}
-           {\left(V - b\right)^{2}} - \frac{\left(- 2 V - 2 b\right) \frac{d}
-           {d T} \operatorname{a \alpha}{\left (T \right )}}{\left(V \left(V +
-           b\right) + b \left(V - b\right)\right)^{2}}
+            \left(\frac{\partial^2 P}{\partial T \partial V}\right) = - \frac{
+            R}{\left(V - b\right)^{2}} + \frac{a \left(2 V + \delta\right) 
+            \frac{d \alpha{\left (T \right )}}{d T}}{\left(V^{2} + V \delta 
+            + \epsilon\right)^{2}}
            
            \left(\frac{\partial^2 T}{\partial P\partial V}\right) = 
             - \left[\left(\frac{\partial^2 P}{\partial T \partial V}\right)
@@ -294,19 +296,18 @@ class CUBIC_EOS(object):
             
         .. math::
             H_{dep} = \int_{\infty}^V \left[T\frac{\partial P}{\partial T}_V 
-            - P\right]dV + PV - RT= \frac{1}{2}\,{\frac {\sqrt {2} \left(\left(
-            {\frac {\rm d}{{\rm d}T}}{\it a\alpha} \left( T \right)  \right) 
-            T-{\it a\alpha} \left( T \right)  \right) }{b}
-            {\rm arctanh} \left(1/2\,{\frac { \left( V+b \right) \sqrt {2}}{b}}
-            \right)} + PV - RT
+            - P\right]dV + PV - RT= P V - R T + \frac{2}{\sqrt{
+            \delta^{2} - 4 \epsilon}} \left(T a \frac{d \alpha{\left (T \right 
+            )}}{d T}  - a \alpha{\left (T \right )}\right) \operatorname{atanh}
+            {\left (\frac{2 V + \delta}{\sqrt{\delta^{2} - 4 \epsilon}} 
+            \right)}
 
             S_{dep} = \int_{\infty}^V\left[\frac{\partial P}{\partial T} 
-            - \frac{R}{V}\right] dV + R\log\frac{PV}{RT} = 0.5\,{\frac {1}{b} 
-            \left(  \left( {\frac 
-            {\rm d}{{\rm d}T}}{\it a\alpha}\left( T \right)  \right) \sqrt {2}
-            {\rm arctanh} \left(0.5\,{\frac {\left( V+b \right) \sqrt {2}}{b}}
-            \right)-2\,Rb \left( \ln  \left( V\right) -\ln  \left( V-b \right)
-            \right)  \right) }+ R\log\frac{PV}{RT}
+            - \frac{R}{V}\right] dV + R\log\frac{PV}{RT} = - R \log{\left (V 
+            \right )} + R \log{\left (\frac{P V}{R T} \right )} + R \log{\left
+            (V - b \right )} + \frac{2 a \frac{d\alpha{\left (T \right )}}{d T}
+            }{\sqrt{\delta^{2} - 4 \epsilon}} \operatorname{atanh}{\left (\frac
+            {2 V + \delta}{\sqrt{\delta^{2} - 4 \epsilon}} \right )}
         
             V_{dep} = V - \frac{RT}{P}
             
@@ -316,15 +317,19 @@ class CUBIC_EOS(object):
             
             A_{dep} = U_{dep} - T S_{dep}
             
-            \text{fugacity} = P\exp(\frac{G_{dep}}{RT})
+            \text{fugacity} = P\exp\left(\frac{G_{dep}}{RT}\right)
             
             \phi = \frac{\text{fugacity}}{P}
             
             C_{v, dep} = T\int_\infty^V \left(\frac{\partial^2 P}{\partial 
-            T^2}\right) dV = - \frac{T}{b} \left(- \frac{\sqrt{2}}{4} \log{
-            \left (V + b + \sqrt{2} b \right )} + \frac{\sqrt{2}}{4} \log{\left
-            (V - \sqrt{2} b + b \right )}\right) \frac{d^{2} \operatorname{a 
-            \alpha}{\left (T \right )}}{d T^{2}}  
+            T^2}\right) dV = - T a \left(\sqrt{\frac{1}{\delta^{2} - 4 
+            \epsilon}} \log{\left (V - \frac{\delta^{2}}{2} \sqrt{\frac{1}{
+            \delta^{2} - 4 \epsilon}} + \frac{\delta}{2} + 2 \epsilon \sqrt{
+            \frac{1}{\delta^{2} - 4 \epsilon}} \right )} - \sqrt{\frac{1}{
+            \delta^{2} - 4 \epsilon}} \log{\left (V + \frac{\delta^{2}}{2} 
+            \sqrt{\frac{1}{\delta^{2} - 4 \epsilon}} + \frac{\delta}{2} 
+            - 2 \epsilon \sqrt{\frac{1}{\delta^{2} - 4 \epsilon}} \right )}
+            \right) \frac{d^{2} \alpha{\left (T \right )} }{d T^{2}}  
             
             C_{p, dep} = (C_p-C_v)_{\text{from EOS}} + C_{v, dep} - R
             
@@ -343,7 +348,7 @@ class CUBIC_EOS(object):
         ([dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP], 
             [d2P_dT2, d2P_dV2, d2V_dT2, d2V_dP2, d2T_dV2, d2T_dP2],
             [d2V_dPdT, d2P_dTdV, d2T_dPdV],
-            [H_dep, S_dep]) = self.derivatives_and_departures(T, P, V, b, a_alpha, da_alpha_dT, d2a_alpha_dT2, quick=quick)
+            [H_dep, S_dep, Cv_dep]) = self.derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha, da_alpha_dT, d2a_alpha_dT2, quick=quick)
                 
         beta = dV_dT/V # isobaric_expansion(V, dV_dT)
         kappa = -dV_dP/V # isothermal_compressibility(V, dV_dP)
@@ -351,7 +356,6 @@ class CUBIC_EOS(object):
         
         
         sqrt2 = 1.4142135623730951
-        Cv_dep = -T*(-sqrt2*log(V + (1.+sqrt2)*b)/4. + sqrt2*log(V - sqrt2*b + b)/4.)*d2a_alpha_dT2/b
         Cp_dep = Cp_m_Cv + Cv_dep - R
                 
         V_dep = (V - R*T/P)        
@@ -441,9 +445,9 @@ should be calculated by this method, in a user subclass.')
         '''
         raise NotImplemented('A method to solve the EOS for T should be \
 calculated by this method, in a user subclass.')
-    
+
     @staticmethod
-    def volume_solutions(T, P, b, a_alpha, quick=True):
+    def volume_solutions(T, P, b, delta, epsilon, a_alpha, quick=True):
         r'''Solution of this form of the cubic EOS in terms of volumes. Returns
         three values, all with some complex part.  
 
@@ -455,6 +459,10 @@ calculated by this method, in a user subclass.')
             Pressure, [Pa]
         b : float
             Coefficient calculated by EOS-specific method, [m^3/mol]
+        delta : float
+            Coefficient calculated by EOS-specific method, [m^3/mol]
+        epsilon : float
+            Coefficient calculated by EOS-specific method, [m^6/mol^2]
         a_alpha : float
             Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
         quick : bool, optional
@@ -473,213 +481,11 @@ calculated by this method, in a user subclass.')
         finds all values explicitly. It takes several seconds.
         
         >>> from sympy import *
-        >>> P, T, V, R, b = symbols('P, T, V, R, b')
+        >>> P, T, V, R, b, a, delta, epsilon, alpha = symbols('P, T, V, R, b, a, delta, epsilon, alpha')
         >>> Tc, Pc, omega = symbols('Tc, Pc, omega')
-        >>> a_alpha = Symbol(r'a \alpha')
-        >>> CUBIC = R*T/(V-b) - a_alpha(T)/(V*(V+b)+b*(V-b)) - P
-        >>> # solve(CUBIC, V)
+        >>> CUBIC = R*T/(V-b) - a*alpha/(V*V + delta*V + epsilon) - P
+        >>> #solve(CUBIC, V)
         '''
-        if quick:
-            x0 = 1./P
-            x1 = R*T
-            x2 = P*b - x1
-            x3 = x0*x2
-            x4 = x2*x2*x2
-            x5 = b*x1
-            x6 = a_alpha
-            x7 = -x6
-            x8 = b*b
-            x9 = P*x8
-            x10 = b*(x5 + x7 + x9)
-            x11 = 1./(P*P)
-            x12 = 3.*x6
-            x13 = 6.*x5
-            x14 = 9.*x9
-            x15 = x0*x2*x2
-            x16 = (13.5*x0*x10 + 4.5*x11*x2*(2.*x5 + x7 + 3.*x9) + (x11*(-4.*x0*(-x12 + x13 + x14 + x15)**3 + (27.*x10 + 2.*x11*x4 - x3*(-27.*P*x8 - 18.*R*T*b + 9.*x6))**2)+0j)**0.5/2. + x4/P**3+0j)**(1./3.)
-            x17 = x12 - x13 - x14 - x15
-            x18 = 1./x16
-            x19 = -2.*x3
-            x20 = 1.7320508075688772j
-            x21 = x20 + 1.
-            x22 = 4.*x0*x17*x18
-            x23 = -x20 + 1.
-            return [x0*x17*x18/3. - x16/3. - x3/3.,
-                    x16*x21/6. + x19/6. - x22/(6.*x21),
-                    x16*x23/6. + x19/6. - x22/(6.*x23)]
-        else:
-            return [-(-3*(-3*P*b**2 - 2*R*T*b + a_alpha)/P + (P*b - R*T)**2/P**2)/(3*((-4*(-3*(-3*P*b**2 - 2*R*T*b + a_alpha)/P + (P*b - R*T)**2/P**2)**3 + (27*(P*b**3 + R*T*b**2 - b*a_alpha)/P - 9*(P*b - R*T)*(-3*P*b**2 - 2*R*T*b + a_alpha)/P**2 + 2*(P*b - R*T)**3/P**3)**2)**0.5/2 + 27*(P*b**3 + R*T*b**2 - b*a_alpha)/(2*P) - 9*(P*b - R*T)*(-3*P*b**2 - 2*R*T*b + a_alpha)/(2*P**2) + (P*b - R*T)**3/P**3)**(1/3)) - ((-4*(-3*(-3*P*b**2 - 2*R*T*b + a_alpha)/P + (P*b - R*T)**2/P**2)**3 + (27*(P*b**3 + R*T*b**2 - b*a_alpha)/P - 9*(P*b - R*T)*(-3*P*b**2 - 2*R*T*b + a_alpha)/P**2 + 2*(P*b - R*T)**3/P**3)**2)**0.5/2 + 27*(P*b**3 + R*T*b**2 - b*a_alpha)/(2*P) - 9*(P*b - R*T)*(-3*P*b**2 - 2*R*T*b + a_alpha)/(2*P**2) + (P*b - R*T)**3/P**3)**(1/3)/3 - (P*b - R*T)/(3*P),
-                    -(-3*(-3*P*b**2 - 2*R*T*b + a_alpha)/P + (P*b - R*T)**2/P**2)/(3*(-1/2 - sqrt(3)*1j/2)*((-4*(-3*(-3*P*b**2 - 2*R*T*b + a_alpha)/P + (P*b - R*T)**2/P**2)**3 + (27*(P*b**3 + R*T*b**2 - b*a_alpha)/P - 9*(P*b - R*T)*(-3*P*b**2 - 2*R*T*b + a_alpha)/P**2 + 2*(P*b - R*T)**3/P**3)**2)**0.5/2 + 27*(P*b**3 + R*T*b**2 - b*a_alpha)/(2*P) - 9*(P*b - R*T)*(-3*P*b**2 - 2*R*T*b + a_alpha)/(2*P**2) + (P*b - R*T)**3/P**3)**(1/3)) - (-1/2 - sqrt(3)*1j/2)*((-4*(-3*(-3*P*b**2 - 2*R*T*b + a_alpha)/P + (P*b - R*T)**2/P**2)**3 + (27*(P*b**3 + R*T*b**2 - b*a_alpha)/P - 9*(P*b - R*T)*(-3*P*b**2 - 2*R*T*b + a_alpha)/P**2 + 2*(P*b - R*T)**3/P**3)**2)**0.5/2 + 27*(P*b**3 + R*T*b**2 - b*a_alpha)/(2*P) - 9*(P*b - R*T)*(-3*P*b**2 - 2*R*T*b + a_alpha)/(2*P**2) + (P*b - R*T)**3/P**3)**(1/3)/3 - (P*b - R*T)/(3*P),
-                    -(-3*(-3*P*b**2 - 2*R*T*b + a_alpha)/P + (P*b - R*T)**2/P**2)/(3*(-1/2 + sqrt(3)*1j/2)*((-4*(-3*(-3*P*b**2 - 2*R*T*b + a_alpha)/P + (P*b - R*T)**2/P**2)**3 + (27*(P*b**3 + R*T*b**2 - b*a_alpha)/P - 9*(P*b - R*T)*(-3*P*b**2 - 2*R*T*b + a_alpha)/P**2 + 2*(P*b - R*T)**3/P**3)**2)**0.5/2 + 27*(P*b**3 + R*T*b**2 - b*a_alpha)/(2*P) - 9*(P*b - R*T)*(-3*P*b**2 - 2*R*T*b + a_alpha)/(2*P**2) + (P*b - R*T)**3/P**3)**(1/3)) - (-1/2 + sqrt(3)*1j/2)*((-4*(-3*(-3*P*b**2 - 2*R*T*b + a_alpha)/P + (P*b - R*T)**2/P**2)**3 + (27*(P*b**3 + R*T*b**2 - b*a_alpha)/P - 9*(P*b - R*T)*(-3*P*b**2 - 2*R*T*b + a_alpha)/P**2 + 2*(P*b - R*T)**3/P**3)**2)**0.5/2 + 27*(P*b**3 + R*T*b**2 - b*a_alpha)/(2*P) - 9*(P*b - R*T)*(-3*P*b**2 - 2*R*T*b + a_alpha)/(2*P**2) + (P*b - R*T)**3/P**3)**(1/3)/3 - (P*b - R*T)/(3*P)]
-    
-    @staticmethod
-    def derivatives_and_departures(T, P, V, b, a_alpha, da_alpha_dT, d2a_alpha_dT2, quick=True):
-        if quick:
-            x0 = V - b
-            x1 = V + b
-            x2 = V*x1 + b*x0
-            x3 = 1./x2
-            x4 = R/x0 - da_alpha_dT*x3
-            x5 = R*T
-            x6 = 1./(x0*x0)
-            x7 = x5*x6
-            x8 = 2.*x1
-            x9 = 1./(x2*x2)
-            x10 = a_alpha*x9
-            x11 = x10*x8
-            x12 = d2a_alpha_dT2*x3
-            x13 = 1./(-x11 + x7)
-            x14 = R*x6
-            x15 = da_alpha_dT*x8*x9
-            x16 = P*V
-            x17 = 1.414213562373095048801688724209698078570 # sqrt(2)
-            x18 = 1./b
-            x19 = x17*x18/2.
-            x20 = catanh(x1*x19).real
-            
-            dP_dT = x4
-            dP_dV = x11 - x7
-            d2P_dT2 = -x12
-            d2P_dV2 = -8.*a_alpha*x1*x1/(x2*x2*x2) + 2.*x10 + 2.*x5/(x0*x0*x0)
-            d2P_dTdV = -x14 + x15
-            H_dep = x16 + x19*x20*(T*da_alpha_dT - a_alpha) - x5
-            S_dep = R*log(x16/(R*T)) - x18*(2*R*b*(log(V/x0)) - da_alpha_dT*x17*x20)/2.        
-        else:
-            dP_dT = R/(V - b) - da_alpha_dT/(V*(V + b) + b*(V - b))
-            dP_dV = -R*T/(V - b)**2 - (-2*V - 2*b)*a_alpha/(V*(V + b) + b*(V - b))**2
-            d2P_dT2 = -d2a_alpha_dT2/(V*(V + b) + b*(V - b))
-            d2P_dV2 = 2*R*T/(V - b)**3 - (-4*V - 4*b)*(-2*V - 2*b)*a_alpha/(V*(V + b) + b*(V - b))**3 + 2*a_alpha/(V*(V + b) + b*(V - b))**2
-            d2P_dTdV = -R/(V - b)**2 - (-2*V - 2*b)*da_alpha_dT/(V*(V + b) + b*(V - b))**2
-            H_dep = P*V - R*T + sqrt(2)*catanh((V + b)*sqrt(2)/b/2).real * (da_alpha_dT*T-a_alpha)/b/2
-            S_dep = R*log(P*V/(R*T)) + (da_alpha_dT*sqrt(2)*catanh((V + b)*sqrt(2)/b/2).real - 2*R*b*(log(V) - log(V - b)))/b/2
-
-
-        dV_dT = -dP_dT/dP_dV
-        dV_dP = -dV_dT/dP_dT # or same as dP_dV
-        dT_dV = 1./dV_dT
-        dT_dP = 1./dP_dT
-        
-        d2V_dP2 = -d2P_dV2*dP_dV**-3
-        d2T_dP2 = -d2P_dT2*dP_dT**-3
-        
-        d2T_dV2 = (-(d2P_dV2*dP_dT - dP_dV*d2P_dTdV)*dP_dT**-2 
-                   +(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*dP_dT**-3*dP_dV)
-        d2V_dT2 = (-(d2P_dT2*dP_dV - dP_dT*d2P_dTdV)*dP_dV**-2
-                   +(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*dP_dV**-3*dP_dT)
-
-        d2V_dPdT = -(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*dP_dV**-3
-        d2T_dPdV = -(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*dP_dT**-3
-
-        
-        return ([dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP], 
-                [d2P_dT2, d2P_dV2, d2V_dT2, d2V_dP2, d2T_dV2, d2T_dP2],
-                [d2V_dPdT, d2P_dTdV, d2T_dPdV],
-                [H_dep, S_dep])
-
-
-class GCEOS(object):
-    def solve(self):
-        if not ((self.T and self.P) or (self.T and self.V) or (self.P and self.V)):
-            raise Exception('Either T and P, or T and V, or P and V are required')
-        
-        if self.V:
-            if self.P:
-                self.T = self.solve_T(self.P, self.V)
-                self.set_a_alpha_and_derivatives(self.T)
-            else:
-                self.set_a_alpha_and_derivatives(self.T)
-                self.P = R*self.T/(self.V-self.b) - self.a_alpha/(self.V*self.V + self.delta*self.V + self.epsilon)
-            Vs = [self.V, 1j, 1j]
-        else:
-            self.set_a_alpha_and_derivatives(self.T)
-            Vs = self.volume_solutions(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
-        self.set_from_PT(Vs)
-    def set_from_PT(self, Vs):
-        # All roots will have some imaginary component; ignore them if > 1E-9
-        imaginary_roots_count = len([True for i in Vs if abs(i.imag) > 1E-9]) 
-        if imaginary_roots_count == 2: 
-            V = [i for i in Vs if abs(i.imag) < 1E-9][0].real
-            self.phase = self.set_properties_from_solution(self.T, self.P, V, self.b, self.delta, self.epsilon, self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2)
-            if self.phase == 'l':
-                self.V_l = V
-            else:
-                self.V_g = V
-        elif imaginary_roots_count == 0:
-            Vs = [i.real for i in Vs]
-            self.V_l, self.V_g = min(Vs), max(Vs)
-            [self.set_properties_from_solution(self.T, self.P, V, self.b, self.delta, self.epsilon, self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2) for V in [self.V_l, self.V_g]]
-            self.phase = 'l/g'
-        else:  # pragma: no cover
-            raise Exception('No real volumes calculated - look into numerical issues.')
-    def set_properties_from_solution(self, T, P, V, b, delta, epsilon, a_alpha, 
-                                     da_alpha_dT, d2a_alpha_dT2, quick=False):
-        ([dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP], 
-            [d2P_dT2, d2P_dV2, d2V_dT2, d2V_dP2, d2T_dV2, d2T_dP2],
-            [d2V_dPdT, d2P_dTdV, d2T_dPdV],
-            [H_dep, S_dep, Cv_dep]) = self.derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha, da_alpha_dT, d2a_alpha_dT2, quick=quick)
-                
-        beta = dV_dT/V # isobaric_expansion(V, dV_dT)
-        kappa = -dV_dP/V # isothermal_compressibility(V, dV_dP)
-        Cp_m_Cv = -T*dP_dT**2/dP_dV # Cp_minus_Cv(T, dP_dT, dP_dV)
-        
-        
-        sqrt2 = 1.4142135623730951
-        Cp_dep = Cp_m_Cv + Cv_dep - R
-                
-        V_dep = (V - R*T/P)        
-        U_dep = H_dep - P*V_dep
-        G_dep = H_dep - T*S_dep
-        A_dep = U_dep - T*S_dep
-        fugacity = P*exp(G_dep/(R*T))
-        phi = fugacity/P
-  
-        PIP = V*(d2P_dTdV/dP_dT - d2P_dV2/dP_dV) # phase_identification_parameter(V, dP_dT, dP_dV, d2P_dV2, d2P_dTdV)
-        phase = 'l' if PIP > 1 else 'g' # phase_identification_parameter_phase(PIP)
-      
-        if phase == 'l':
-            self.beta_l, self.kappa_l = beta, kappa
-            self.PIP_l, self.Cp_minus_Cv_l = PIP, Cp_m_Cv
-            
-            self.dP_dT_l, self.dP_dV_l, self.dV_dT_l = dP_dT, dP_dV, dV_dT
-            self.dV_dP_l, self.dT_dV_l, self.dT_dP_l = dV_dP, dT_dV, dT_dP
-            
-            self.d2P_dT2_l, self.d2P_dV2_l = d2P_dT2, d2P_dV2
-            self.d2V_dT2_l, self.d2V_dP2_l = d2V_dT2, d2V_dP2
-            self.d2T_dV2_l, self.d2T_dP2_l = d2T_dV2, d2T_dP2
-                        
-            self.d2V_dPdT_l, self.d2P_dTdV_l, self.d2T_dPdV_l = d2V_dPdT, d2P_dTdV, d2T_dPdV
-            
-            self.H_dep_l, self.S_dep_l, self.V_dep_l = H_dep, S_dep, V_dep, 
-            self.U_dep_l, self.G_dep_l, self.A_dep_l = U_dep, G_dep, A_dep, 
-            self.fugacity_l, self.phi_l = fugacity, phi
-            self.Cp_dep_l, self.Cv_dep_l = Cp_dep, Cv_dep
-        else:
-            self.beta_g, self.kappa_g = beta, kappa
-            self.PIP_g, self.Cp_minus_Cv_g = PIP, Cp_m_Cv
-            
-            self.dP_dT_g, self.dP_dV_g, self.dV_dT_g = dP_dT, dP_dV, dV_dT
-            self.dV_dP_g, self.dT_dV_g, self.dT_dP_g = dV_dP, dT_dV, dT_dP
-            
-            self.d2P_dT2_g, self.d2P_dV2_g = d2P_dT2, d2P_dV2
-            self.d2V_dT2_g, self.d2V_dP2_g = d2V_dT2, d2V_dP2
-            self.d2T_dV2_g, self.d2T_dP2_g = d2T_dV2, d2T_dP2
-            
-            self.d2V_dPdT_g, self.d2P_dTdV_g, self.d2T_dPdV_g = d2V_dPdT, d2P_dTdV, d2T_dPdV
-            
-            self.H_dep_g, self.S_dep_g, self.V_dep_g = H_dep, S_dep, V_dep, 
-            self.U_dep_g, self.G_dep_g, self.A_dep_g = U_dep, G_dep, A_dep, 
-            self.fugacity_g, self.phi_g = fugacity, phi
-            self.Cp_dep_g, self.Cv_dep_g = Cp_dep, Cv_dep
-        return phase            
-    def set_a_alpha_and_derivatives(self, T, quick=True):
-        raise NotImplemented('a_alpha and its first and second derivatives \
-should be calculated by this method, in a user subclass.')
-    
-    def solve_T(self, P, V, quick=True):
-        raise NotImplemented('A method to solve the EOS for T should be \
-calculated by this method, in a user subclass.')
-    @staticmethod
-    def volume_solutions(T, P, b, delta, epsilon, a_alpha, quick=True):
         if quick:
             x0 = 1/P
             x1 = P*b
@@ -716,9 +522,33 @@ calculated by this method, in a user subclass.')
                      -(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)/(3*(-1/2 - sqrt(3)*1j/2)*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)) - (-1/2 - sqrt(3)*1j/2)*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)/3 - (-P*b + P*delta - R*T)/(3*P),
                      -(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)/(3*(-1/2 + sqrt(3)*1j/2)*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)) - (-1/2 + sqrt(3)*1j/2)*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)/3 - (-P*b + P*delta - R*T)/(3*P)]
     @staticmethod
-    def derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha, da_alpha_dT, d2a_alpha_dT2, quick=False):
+    def derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha, da_alpha_dT, d2a_alpha_dT2, quick=True):
         if quick:
-            pass
+            x0 = V - b
+            x1 = V*V + V*delta + epsilon
+            x3 = R*T
+            x4 = 1./(x0*x0)
+            x5 = 2*V + delta
+            x6 = 1./(x1*x1)
+            x7 = a_alpha*x6
+            x8 = P*V
+            x9 = delta*delta
+            x10 = -4*epsilon + x9
+            x11 = x10**-0.5
+            x12 = 2.*x11*catanh(x11*x5).real
+            x13 = x10**-0.5 
+            x14 = V + delta*0.5
+            x15 = 2.*epsilon*x13
+            x16 = x13*x9*0.5
+            dP_dT = R/x0 - da_alpha_dT/x1
+            dP_dV = -x3*x4 + x5*x7
+            d2P_dT2 = -d2a_alpha_dT2/x1
+            d2P_dV2 = -2.*a_alpha*x5**2*x1**-3 + 2.*x7 + 2.*x3*x0**-3
+            d2P_dTdV = -R*x4 + da_alpha_dT*x5*x6
+            H_dep = x12*(T*da_alpha_dT - a_alpha) - x3 + x8
+            S_dep = -R*log(V*x3/(x0*x8)) + da_alpha_dT*x12 # + R*log(x0)
+            Cv_dep = -T*d2a_alpha_dT2*x13*(-log((x14 - x15 + x16)/(x14 + x15 - x16)))
+
 
         else:
             dP_dT = R/(V - b) - da_alpha_dT/(V**2 + V*delta + epsilon)
@@ -876,7 +706,7 @@ class PR(GCEOS):
         self.b = self.c2*R*Tc/Pc
         self.kappa = 0.37464 + 1.54226*omega - 0.26992*omega*omega
         self.delta = 2*self.b
-        self.epsilon = -self.b**2
+        self.epsilon = -self.b*self.b
         
         
         self.solve()
@@ -1085,7 +915,7 @@ class PR78(PR):
         self.a = self.c1*R*R*Tc*Tc/Pc
         self.b = self.c2*R*Tc/Pc
         self.delta = 2*self.b
-        self.epsilon = -self.b**2
+        self.epsilon = -self.b*self.b
 
         if omega <= 0.491:
             self.kappa = 0.37464 + 1.54226*omega - 0.26992*omega*omega
@@ -1191,7 +1021,7 @@ class PRSV(PR):
         self.a = self.c1*R*R*Tc*Tc/Pc
         self.b = self.c2*R*Tc/Pc
         self.delta = 2*self.b
-        self.epsilon = -self.b**2
+        self.epsilon = -self.b*self.b
         self.kappa0 = 0.378893 + 1.4897153*omega - 0.17131848*omega**2 + 0.0196554*omega**3
 
         if self.V and self.P:
@@ -1389,8 +1219,8 @@ class PRSV2(PR):
         self.a = self.c1*R*R*Tc*Tc/Pc
         self.b = self.c2*R*Tc/Pc
         self.delta = 2*self.b
-        self.epsilon = -self.b**2
-        self.kappa0 = 0.378893 + 1.4897153*omega - 0.17131848*omega**2 + 0.0196554*omega**3
+        self.epsilon = -self.b*self.b
+        self.kappa0 = 0.378893 + 1.4897153*omega - 0.17131848*omega*omega + 0.0196554*omega*omega*omega
         self.kappa1, self.kappa2, self.kappa3 = kappa1, kappa2, kappa3
         
         if self.V and self.P:

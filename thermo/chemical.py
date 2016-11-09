@@ -499,26 +499,28 @@ class Chemical(object): # pragma: no cover
            'g': self.HeatCapacityGas.T_dependent_property_integral_over_T}
         
         # Integrals stored to avoid recalculation, all from T_low to T_high
-        if self.phase_ref != 'l':
-            self.H_int_l_Tm_to_Tb = integrators['l'](self.Tm, self.Tb)
-        if self.phase_ref == 's':
-            self.H_int_T_ref_s_to_Tm = integrators['s'](self.T_ref, self.Tm)
-        if self.phase_ref == 'g':
-            self.H_int_Tb_to_T_ref_g = integrators['g'](self.Tb, self.T_ref)
-        if self.phase_ref == 'l':
-            self.H_int_l_T_ref_l_to_Tb = integrators['l'](self.T_ref, self.Tb)
-            self.H_int_l_Tm_to_T_ref_l = integrators['l'](self.Tm, self.T_ref)
-
-        if self.phase_ref != 'l':
-            self.S_int_l_Tm_to_Tb = integrators_T['l'](self.Tm, self.Tb)
-        if self.phase_ref == 's':
-            self.S_int_T_ref_s_to_Tm = integrators_T['s'](self.T_ref, self.Tm)
-        if self.phase_ref == 'g':
-            self.S_int_Tb_to_T_ref_g = integrators_T['g'](self.Tb, self.T_ref)
-        if self.phase_ref == 'l':
-            self.S_int_l_T_ref_l_to_Tb = integrators_T['l'](self.T_ref, self.Tb)
-            self.S_int_l_Tm_to_T_ref_l = integrators_T['l'](self.Tm, self.T_ref)
-
+        try:
+            if self.phase_ref != 'l' and self.Tm and self.Tb:
+                self.H_int_l_Tm_to_Tb = integrators['l'](self.Tm, self.Tb)
+            if self.phase_ref == 's' and self.Tm:
+                self.H_int_T_ref_s_to_Tm = integrators['s'](self.T_ref, self.Tm)
+            if self.phase_ref == 'g' and self.Tb:
+                self.H_int_Tb_to_T_ref_g = integrators['g'](self.Tb, self.T_ref)
+            if self.phase_ref == 'l' and self.Tm and self.Tb:
+                self.H_int_l_T_ref_l_to_Tb = integrators['l'](self.T_ref, self.Tb)
+                self.H_int_l_Tm_to_T_ref_l = integrators['l'](self.Tm, self.T_ref)
+    
+            if self.phase_ref != 'l' and self.Tm and self.Tb:
+                self.S_int_l_Tm_to_Tb = integrators_T['l'](self.Tm, self.Tb)
+            if self.phase_ref == 's' and self.Tm:
+                self.S_int_T_ref_s_to_Tm = integrators_T['s'](self.T_ref, self.Tm)
+            if self.phase_ref == 'g' and self.Tb:
+                self.S_int_Tb_to_T_ref_g = integrators_T['g'](self.Tb, self.T_ref)
+            if self.phase_ref == 'l' and self.Tb and self.Tm:
+                self.S_int_l_T_ref_l_to_Tb = integrators_T['l'](self.T_ref, self.Tb)
+                self.S_int_l_Tm_to_T_ref_l = integrators_T['l'](self.Tm, self.T_ref)
+        except:
+            pass
 
     def calc_H(self, T, P):
 
