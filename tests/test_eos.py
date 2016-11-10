@@ -25,6 +25,7 @@ import pytest
 from thermo.eos import *
 
 
+@pytest.mark.slow
 @pytest.mark.sympy
 def test_PR_with_sympy():
     # Test with hexane
