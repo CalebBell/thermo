@@ -130,4 +130,4 @@ __all__.extend(viscosity.__all__)
 __all__.extend(volume.__all__)
 
 
-__version__ = '0.1.18'
+__version__ = '0.1.19'
