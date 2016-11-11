@@ -367,3 +367,25 @@ def test_RK_quick():
 
     # One gas phase property
     assert 'g' == RK(Tc=507.6, Pc=3025000, T=499.,P=1E5).phase
+
+
+
+    # Compare against some known functions
+    eos = RK(Tc=507.6, Pc=3025000, T=299., P=1E6)
+    V = eos.V_l
+    Z = eos.P*V/(R*eos.T)
+
+    phi_walas = exp(Z - 1 - log(Z*(1 - eos.b/V)) - eos.a/(eos.b*R*eos.T**1.5)*log(1 + eos.b/V))
+    phi_l_expect = 0.052632270169019224
+    assert_allclose(phi_l_expect, eos.phi_l)
+    assert_allclose(phi_walas, eos.phi_l)
+    
+    S_dep_walas = -R*(log(Z*(1 - eos.b/V)) - eos.a/(2*eos.b*R*eos.T**1.5)*log(1 + eos.b/V))
+    S_dep_expect = -63.01311649400542
+    assert_allclose(-S_dep_walas, S_dep_expect)
+    assert_allclose(S_dep_expect, eos.S_dep_l)
+    
+    H_dep_walas = R*eos.T*(1 - Z + 1.5*eos.a/(eos.b*R*eos.T**1.5)*log(1 + eos.b/V))
+    H_dep_expect = -26160.833620674082
+    assert_allclose(-H_dep_walas, H_dep_expect)
+    assert_allclose(H_dep_expect, eos.H_dep_l)

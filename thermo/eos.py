@@ -1386,9 +1386,7 @@ class VDW(GCEOS):
         Molar volume, [m^3/mol]
 
     Examples
-    --------
-    P-T initialization, liquid phase, and round robin trip:
-    
+    --------    
     >>> eos = VDW(Tc=507.6, Pc=3025000, T=299., P=1E6)
     >>> eos.phase, eos.V_l, eos.H_dep_l, eos.S_dep_l
     ('l', 0.00022332978038490077, -13385.722837649315, -32.65922018109096)
@@ -1496,6 +1494,56 @@ class VDW(GCEOS):
 
 
 class RK(GCEOS):
+    r'''Class for solving the Redlich-Kwong cubic 
+    equation of state for a pure compound. Subclasses `CUBIC_EOS`, which 
+    provides the methods for solving the EOS and calculating its assorted 
+    relevant thermodynamic properties. Solves the EOS on initialization. 
+
+    Implemented methods here are `set_a_alpha_and_derivatives`, which sets 
+    a_alpha and its first and second derivatives, and `solve_T`, which from a 
+    specified `P` and `V` obtains `T`. 
+    
+    Two of `T`, `P`, and `V` are needed to solve the EOS.
+
+    .. math::
+        P =\frac{RT}{V-b}-\frac{a}{V\sqrt{T}(V+b)}
+        
+        a=\left(\frac{R^2(T_c)^{2.5}}{9(\sqrt[3]{2}-1)P_c} \right)
+        =\frac{0.42748\cdot R^2(T_c)^{2.5}}{P_c}
+        
+        b=\left( \frac{(\sqrt[3]{2}-1)}{3}\right)\frac{RT_c}{P_c}
+        =\frac{0.08664\cdot R T_c}{P_c}
+    
+    Parameters
+    ----------
+    Tc : float
+        Critical temperature, [K]
+    Pc : float
+        Critical pressure, [Pa]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+
+    Examples
+    --------    
+    >>> eos = RK(Tc=507.6, Pc=3025000, T=299., P=1E6)
+    >>> eos.phase, eos.V_l, eos.H_dep_l, eos.S_dep_l
+    ('l', 0.00015189341729751865, -26160.833620674082, -63.01311649400543)
+
+    References
+    ----------
+    .. [1] Redlich, Otto., and J. N. S. Kwong. "On the Thermodynamics of 
+       Solutions. V. An Equation of State. Fugacities of Gaseous Solutions." 
+       Chemical Reviews 44, no. 1 (February 1, 1949): 233-44. 
+       doi:10.1021/cr60137a013.
+    .. [2] Poling, Bruce E. The Properties of Gases and Liquids. 5th 
+       edition. New York: McGraw-Hill Professional, 2000.
+    .. [3] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
+       Butterworth-Heinemann, 1985.
+    '''
     c1 = 0.4274802335403413 # 1/(9*(2**(1/3.)-1)) 
     c2 = 0.08664034996495773 # (2**(1/3.)-1)/3 
     
