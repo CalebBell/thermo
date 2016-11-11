@@ -520,8 +520,39 @@ calculated by this method, in a user subclass.')
             return [-(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)/(3*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)) - (sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)/3 - (-P*b + P*delta - R*T)/(3*P),
                      -(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)/(3*(-1/2 - sqrt(3)*1j/2)*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)) - (-1/2 - sqrt(3)*1j/2)*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)/3 - (-P*b + P*delta - R*T)/(3*P),
                      -(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)/(3*(-1/2 + sqrt(3)*1j/2)*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)) - (-1/2 + sqrt(3)*1j/2)*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)/3 - (-P*b + P*delta - R*T)/(3*P)]
+
+    def derivatives_and_departures(self, T, P, V, b, delta, epsilon, a_alpha, da_alpha_dT, d2a_alpha_dT2, quick=True):
+        
+        dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep = (
+        self.main_derivatives_and_departures(T, P, V, b, delta, epsilon, 
+                                             a_alpha, da_alpha_dT, 
+                                             d2a_alpha_dT2, quick=quick))
+
+        dV_dT = -dP_dT/dP_dV
+        dV_dP = -dV_dT/dP_dT # or same as dP_dV
+        dT_dV = 1./dV_dT
+        dT_dP = 1./dP_dT
+        
+        d2V_dP2 = -d2P_dV2*dP_dV**-3
+        d2T_dP2 = -d2P_dT2*dP_dT**-3
+        
+        d2T_dV2 = (-(d2P_dV2*dP_dT - dP_dV*d2P_dTdV)*dP_dT**-2 
+                   +(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*dP_dT**-3*dP_dV)
+        d2V_dT2 = (-(d2P_dT2*dP_dV - dP_dT*d2P_dTdV)*dP_dV**-2
+                   +(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*dP_dV**-3*dP_dT)
+
+        d2V_dPdT = -(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*dP_dV**-3
+        d2T_dPdV = -(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*dP_dT**-3
+
+        
+        return ([dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP], 
+                [d2P_dT2, d2P_dV2, d2V_dT2, d2V_dP2, d2T_dV2, d2T_dP2],
+                [d2V_dPdT, d2P_dTdV, d2T_dPdV],
+                [H_dep, S_dep, Cv_dep])
+
     @staticmethod
-    def derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha, da_alpha_dT, d2a_alpha_dT2, quick=True):
+    def main_derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha,
+                                        da_alpha_dT, d2a_alpha_dT2, quick=True):
         if quick:
             x0 = V - b
             x1 = V*V + V*delta + epsilon
@@ -545,10 +576,8 @@ calculated by this method, in a user subclass.')
             d2P_dV2 = -2.*a_alpha*x5**2*x1**-3 + 2.*x7 + 2.*x3*x0**-3
             d2P_dTdV = -R*x4 + da_alpha_dT*x5*x6
             H_dep = x12*(T*da_alpha_dT - a_alpha) - x3 + x8
-            S_dep = -R*log(V*x3/(x0*x8)) + da_alpha_dT*x12 # + R*log(x0)
+            S_dep = -R*log(V*x3/(x0*x8)) + da_alpha_dT*x12 
             Cv_dep = -T*d2a_alpha_dT2*x13*(-log((x14 - x15 + x16)/(x14 + x15 - x16)))
-
-
         else:
             dP_dT = R/(V - b) - da_alpha_dT/(V**2 + V*delta + epsilon)
             dP_dV = -R*T/(V - b)**2 - (-2*V - delta)*a_alpha/(V**2 + V*delta + epsilon)**2
@@ -558,29 +587,7 @@ calculated by this method, in a user subclass.')
             H_dep = P*V - R*T + 2*(T*da_alpha_dT - a_alpha)*catanh((2*V + delta)/sqrt(delta**2 - 4*epsilon)).real/sqrt(delta**2 - 4*epsilon)
             S_dep = -R*log(V) + R*log(P*V/(R*T)) + R*log(V - b) + 2*da_alpha_dT*catanh((2*V + delta)/sqrt(delta**2 - 4*epsilon)).real/sqrt(delta**2 - 4*epsilon)
             Cv_dep = -T*(sqrt(1/(delta**2 - 4*epsilon))*log(V - delta**2*sqrt(1/(delta**2 - 4*epsilon))/2 + delta/2 + 2*epsilon*sqrt(1/(delta**2 - 4*epsilon))) - sqrt(1/(delta**2 - 4*epsilon))*log(V + delta**2*sqrt(1/(delta**2 - 4*epsilon))/2 + delta/2 - 2*epsilon*sqrt(1/(delta**2 - 4*epsilon))))*d2a_alpha_dT2
-
-
-        dV_dT = -dP_dT/dP_dV
-        dV_dP = -dV_dT/dP_dT # or same as dP_dV
-        dT_dV = 1./dV_dT
-        dT_dP = 1./dP_dT
-        
-        d2V_dP2 = -d2P_dV2*dP_dV**-3
-        d2T_dP2 = -d2P_dT2*dP_dT**-3
-        
-        d2T_dV2 = (-(d2P_dV2*dP_dT - dP_dV*d2P_dTdV)*dP_dT**-2 
-                   +(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*dP_dT**-3*dP_dV)
-        d2V_dT2 = (-(d2P_dT2*dP_dV - dP_dT*d2P_dTdV)*dP_dV**-2
-                   +(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*dP_dV**-3*dP_dT)
-
-        d2V_dPdT = -(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*dP_dV**-3
-        d2T_dPdV = -(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*dP_dT**-3
-
-        
-        return ([dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP], 
-                [d2P_dT2, d2P_dV2, d2V_dT2, d2V_dP2, d2T_dV2, d2T_dP2],
-                [d2V_dPdT, d2P_dTdV, d2T_dPdV],
-                [H_dep, S_dep, Cv_dep])
+        return [dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep]
 
 
 class PR(GCEOS):
@@ -1342,3 +1349,232 @@ class PRSV2(PR):
             self.da_alpha_dT = a*((kappa0 + (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)*(-T/Tc + 7/10))*(-sqrt(T/Tc) + 1) + 1)*(2*(-sqrt(T/Tc) + 1)*((sqrt(T/Tc) + 1)*(-T/Tc + 7/10)*(-kappa2*(-sqrt(T/Tc) + 1)/Tc - kappa2*sqrt(T/Tc)*(-T/Tc + kappa3)/(2*T)) - (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)/Tc + sqrt(T/Tc)*(kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(-T/Tc + 7/10)/(2*T)) - sqrt(T/Tc)*(kappa0 + (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)*(-T/Tc + 7/10))/T)
             self.d2a_alpha_dT2 = a*((kappa0 + (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)*(-T/Tc + 7/10))*(-sqrt(T/Tc) + 1) + 1)*(2*(-sqrt(T/Tc) + 1)*((sqrt(T/Tc) + 1)*(-T/Tc + 7/10)*(kappa2*sqrt(T/Tc)/(T*Tc) + kappa2*sqrt(T/Tc)*(-T/Tc + kappa3)/(4*T**2)) - 2*(sqrt(T/Tc) + 1)*(-kappa2*(-sqrt(T/Tc) + 1)/Tc - kappa2*sqrt(T/Tc)*(-T/Tc + kappa3)/(2*T))/Tc + sqrt(T/Tc)*(-T/Tc + 7/10)*(-kappa2*(-sqrt(T/Tc) + 1)/Tc - kappa2*sqrt(T/Tc)*(-T/Tc + kappa3)/(2*T))/T - sqrt(T/Tc)*(kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))/(T*Tc) - sqrt(T/Tc)*(kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(-T/Tc + 7/10)/(4*T**2)) - 2*sqrt(T/Tc)*((sqrt(T/Tc) + 1)*(-T/Tc + 7/10)*(-kappa2*(-sqrt(T/Tc) + 1)/Tc - kappa2*sqrt(T/Tc)*(-T/Tc + kappa3)/(2*T)) - (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)/Tc + sqrt(T/Tc)*(kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(-T/Tc + 7/10)/(2*T))/T + sqrt(T/Tc)*(kappa0 + (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)*(-T/Tc + 7/10))/(2*T**2)) + a*((-sqrt(T/Tc) + 1)*((sqrt(T/Tc) + 1)*(-T/Tc + 7/10)*(-kappa2*(-sqrt(T/Tc) + 1)/Tc - kappa2*sqrt(T/Tc)*(-T/Tc + kappa3)/(2*T)) - (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)/Tc + sqrt(T/Tc)*(kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(-T/Tc + 7/10)/(2*T)) - sqrt(T/Tc)*(kappa0 + (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)*(-T/Tc + 7/10))/(2*T))*(2*(-sqrt(T/Tc) + 1)*((sqrt(T/Tc) + 1)*(-T/Tc + 7/10)*(-kappa2*(-sqrt(T/Tc) + 1)/Tc - kappa2*sqrt(T/Tc)*(-T/Tc + kappa3)/(2*T)) - (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)/Tc + sqrt(T/Tc)*(kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(-T/Tc + 7/10)/(2*T)) - sqrt(T/Tc)*(kappa0 + (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)*(-T/Tc + 7/10))/T)
             
+            
+            
+class VDW(GCEOS):
+    r'''Class for solving the Van der Waals cubic 
+    equation of state for a pure compound. Subclasses `CUBIC_EOS`, which 
+    provides the methods for solving the EOS and calculating its assorted 
+    relevant thermodynamic properties. Solves the EOS on initialization. 
+
+    Implemented methods here are `set_a_alpha_and_derivatives`, which sets 
+    a_alpha and its first and second derivatives, and `solve_T`, which from a 
+    specified `P` and `V` obtains `T`. `main_derivatives_and_departures` is
+    a re-implementation with VDW specific methods, as the general solution
+    has ZeroDivisionError errors.
+    
+    Two of `T`, `P`, and `V` are needed to solve the EOS.
+
+    .. math::
+        P=\frac{RT}{V-b}-\frac{a}{V^2}
+        
+        a=\frac{27}{64}\frac{(RT_c)^2}{P_c}
+
+        b=\frac{RT_c}{8P_c}
+    
+    Parameters
+    ----------
+    Tc : float
+        Critical temperature, [K]
+    Pc : float
+        Critical pressure, [Pa]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+
+    Examples
+    --------
+    P-T initialization, liquid phase, and round robin trip:
+    
+    >>> eos = VDW(Tc=507.6, Pc=3025000, T=299., P=1E6)
+    >>> eos.phase, eos.V_l, eos.H_dep_l, eos.S_dep_l
+    ('l', 0.00022332978038490077, -13385.722837649315, -32.65922018109096)
+
+    References
+    ----------
+    .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th 
+       edition. New York: McGraw-Hill Professional, 2000.
+    .. [2] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
+       Butterworth-Heinemann, 1985.
+    '''
+    def __init__(self, Tc, Pc, T=None, P=None, V=None):
+        self.Tc = Tc
+        self.Pc = Pc
+        self.T = T
+        self.P = P
+        self.V = V
+
+        self.a = 27.0/64.0*(R*Tc)**2/Pc
+        self.b = R*Tc/(8.*Pc)
+        self.delta = 0
+        self.epsilon = 0
+        self.solve()
+
+    def set_a_alpha_and_derivatives(self, T):
+        r'''Method to calculate `a_alpha` and its first and second
+        derivatives for the PR EOS.  Sets 'a_alpha', 'da_alpha_dT', and 
+        'd2a_alpha_dT2'. 
+
+        .. math::
+            a\alpha = a
+        
+            \frac{d a\alpha}{dT} = 0
+
+            \frac{d^2 a\alpha}{dT^2} = 0
+
+        Uses the set values of `Tc`, `kappa, and `a`.
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        '''
+        self.a_alpha = self.a
+        self.da_alpha_dT = 0.0
+        self.d2a_alpha_dT2 = 0.0
+
+    def solve_T(self, P, V):
+        r'''Method to calculate `T` from a specified `P` and `V` for the VDW
+        EOS. Uses `a`, and `b`, obtained from the class's namespace.
+
+        .. math::
+            T =  \frac{1}{R V^{2}} \left(P V^{2} \left(V - b\right)
+            + V a - a b\right)
+
+        Parameters
+        ----------
+        P : float
+            Pressure, [Pa]
+        V : float
+            Molar volume, [m^3/mol]
+
+        Returns
+        -------
+        T : float
+            Temperature, [K]
+        '''
+        return (P*V**2*(V - self.b) + V*self.a - self.a*self.b)/(R*V**2)
+    
+    @staticmethod
+    def main_derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha,
+                                        da_alpha_dT, d2a_alpha_dT2, quick=True):
+        '''Re-implementation of derivatives and excess property calculations, 
+        as ZeroDivisionError errors occur with the general solution. The 
+        following derivation is the source of these formulas.
+        
+        >>> from sympy import *
+        >>> P, T, V, R, b, a = symbols('P, T, V, R, b, a')
+        >>> P_vdw = R*T/(V-b) - a/(V*V)
+        >>> vdw = P_vdw - P
+        >>> 
+        >>> dP_dT = diff(vdw, T)
+        >>> dP_dV = diff(vdw, V)
+        >>> d2P_dT2 = diff(vdw, T, 2)
+        >>> d2P_dV2 = diff(vdw, V, 2)
+        >>> d2P_dTdV = diff(vdw, T, V)
+        >>> H_dep = integrate(T*dP_dT - P_vdw, (V, oo, V))
+        >>> H_dep += P*V - R*T
+        >>> S_dep = integrate(dP_dT - R/V, (V,oo,V))
+        >>> S_dep += R*log(P*V/(R*T))
+        >>> Cv_dep = T*integrate(d2P_dT2, (V,oo,V))
+        >>> 
+        >>> dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep
+        (R/(V - b), -R*T/(V - b)**2 + 2*a/V**3, 0, 2*(R*T/(V - b)**3 - 3*a/V**4), -R/(V - b)**2, P*V - R*T - a/V, R*(-log(V) + log(V - b)) + R*log(P*V/(R*T)), 0)
+        '''
+        dP_dT = R/(V - b)
+        dP_dV = -R*T/(V - b)**2 + 2*a_alpha/V**3
+        d2P_dT2 = 0
+        d2P_dV2 = 2*(R*T/(V - b)**3 - 3*a_alpha/V**4)
+        d2P_dTdV = -R/(V - b)**2
+        H_dep = P*V - R*T - a_alpha/V
+        S_dep = R*(-log(V) + log(V - b)) + R*log(P*V/(R*T))
+        Cv_dep = 0
+        return [dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep]
+
+
+class RK(GCEOS):
+    c1 = 0.4274802335403413 # 1/(9*(2**(1/3.)-1)) 
+    c2 = 0.08664034996495773 # (2**(1/3.)-1)/3 
+    
+    def __init__(self, Tc, Pc, T=None, P=None, V=None):
+        self.Tc = Tc
+        self.Pc = Pc
+        self.T = T
+        self.P = P
+        self.V = V
+
+        self.a = self.c1*R*R*Tc**2.5/Pc
+        self.b = self.c2*R*Tc/Pc
+        self.delta = self.b
+        self.epsilon = 0
+        self.solve()
+
+
+    def set_a_alpha_and_derivatives(self, T):
+        r'''Method to calculate `a_alpha` and its first and second
+        derivatives for the RK EOS.  Sets 'a_alpha', 'da_alpha_dT', and 
+        'd2a_alpha_dT2'. 
+
+        .. math::
+            a\alpha = \frac{a}{\sqrt{T}}
+        
+            \frac{d a\alpha}{dT} = - \frac{a}{2 T^{\frac{3}{2}}}
+
+            \frac{d^2 a\alpha}{dT^2} = \frac{3 a}{4 T^{\frac{5}{2}}}
+
+        Uses the set values of `a`.
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        '''
+        self.a_alpha = self.a*T**-0.5
+        self.da_alpha_dT = -0.5*self.a*T**(-1.5)
+        self.d2a_alpha_dT2 = 0.75*self.a*T**(-2.5)
+
+    def solve_T(self, P, V, quick=True):
+        r'''Method to calculate `T` from a specified `P` and `V` for the RK
+        EOS. Uses `a`, and `b`, obtained from the class's namespace.
+
+        Parameters
+        ----------
+        P : float
+            Pressure, [Pa]
+        V : float
+            Molar volume, [m^3/mol]
+        quick : bool, optional
+            Whether to use a SymPy cse-derived expression (3x faster) or 
+            individual formulas
+
+        Returns
+        -------
+        T : float
+            Temperature, [K]
+
+        Notes
+        -----
+        The exact solution can be derived as follows; it is excluded for 
+        breviety.
+        
+        >>> from sympy import *
+        >>> P, T, V, R = symbols('P, T, V, R')
+        >>> Tc, Pc = symbols('Tc, Pc')
+        >>> a, b = symbols('a, b')
+
+        >>> RK = Eq(P, R*T/(V-b) - a/sqrt(T)/(V*V + b*V))
+        >>> # solve(RK, T)
+        '''
+        a, b = self.a, self.b
+        if quick:
+            x1 = -1.j*1.7320508075688772 + 1.
+            x2 = V - b
+            x3 = x2/R
+            x4 = V + b
+            x5 = (1.7320508075688772*(x2*x2*(-4.*P*P*P*x3 + 27.*a*a/(V*V*x4*x4))/(R*R))**0.5 - 9.*a*x3/(V*x4) +0j)**(1./3.)
+            return (3.3019272488946263*(11.537996562459266*P*x3/(x1*x5) + 1.2599210498948732*x1*x5)**2/144.0).real
+        else:
+            return ((-(-1/2 + sqrt(3)*1j/2)*(sqrt(729*(-V*a + a*b)**2/(R*V**2 + R*V*b)**2 + 108*(-P*V + P*b)**3/R**3)/2 + 27*(-V*a + a*b)/(2*(R*V**2 + R*V*b))+0j)**(1/3)/3 + (-P*V + P*b)/(R*(-1/2 + sqrt(3)*1j/2)*(sqrt(729*(-V*a + a*b)**2/(R*V**2 + R*V*b)**2 + 108*(-P*V + P*b)**3/R**3)/2 + 27*(-V*a + a*b)/(2*(R*V**2 + R*V*b))+0j)**(1/3)))**2).real

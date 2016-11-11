@@ -163,8 +163,8 @@ def test_PR_quick():
     a_alphas_fast = [eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2]
     assert_allclose(a_alphas, a_alphas_fast)
     eos.set_a_alpha_and_derivatives(299, quick=False)
-    a_alphas_fast = [eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2]
-    assert_allclose(a_alphas, a_alphas_fast)
+    a_alphas_slow = [eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2]
+    assert_allclose(a_alphas, a_alphas_slow)
     
     # PR back calculation for T
     eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, V=0.00013022208100139953, P=1E6)
@@ -179,7 +179,6 @@ def test_PR_quick():
     departures = [-31134.740290463407, -72.47559475426019, 25.165377505266793]
     known_derivs_deps = [diffs_1, diffs_2, diffs_mixed, departures]
     
-    # TODO ADD TRUE OPTIMZIED TEST
     for f in [True, False]:
         main_calcs = eos.derivatives_and_departures(eos.T, eos.P, eos.V_l, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=f)
         
@@ -294,6 +293,77 @@ def test_PRSV2():
         PRSV2(Tc=507.6, Pc=3025000, omega=0.2975, T=299.) 
 
 
+def test_VDW():
+    eos = VDW(Tc=507.6, Pc=3025000, T=299., P=1E6)
+    three_props = [eos.V_l, eos.H_dep_l, eos.S_dep_l]
+    expect_props = [0.00022332978038490077, -13385.722837649315, -32.65922018109096]
+    assert_allclose(three_props, expect_props)
+    
+    # Test of a_alphas
+    a_alphas = [2.4841036545673676, 0, 0]
+    eos.set_a_alpha_and_derivatives(299)
+    a_alphas_fast = [eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2]
+    assert_allclose(a_alphas, a_alphas_fast)
+    
+    # Back calculation for T
+    eos = VDW(Tc=507.6, Pc=3025000, T=299, V=0.00022332978038490077)
+    assert_allclose(eos.P, 1E6)
+    
+    # Back calculation for P
 
-#test_PR_with_sympy()
-#test_PR_quick()
+    with pytest.raises(Exception):
+        VDW(Tc=507.6, Pc=3025000, P=1E6)
+
+
+    
+def test_RK_quick():
+    # Test solution for molar volumes
+    eos = RK(Tc=507.6, Pc=3025000, T=299., P=1E6)
+    Vs_fast = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
+    Vs_slow = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
+    Vs_expected = [(0.00015189341729751865+0j), (0.0011670650314512406+0.0011171160630875456j), (0.0011670650314512406-0.0011171160630875456j)]
+    assert_allclose(Vs_fast, Vs_expected)
+    assert_allclose(Vs_slow, Vs_expected)
+    
+    # Test of a_alphas
+    a_alphas = [3.279647547742308, -0.005484360447729613, 2.75135139518208e-05]
+    eos.set_a_alpha_and_derivatives(299)
+    a_alphas_fast = [eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2]
+    assert_allclose(a_alphas, a_alphas_fast)
+    
+    # PR back calculation for T
+    eos = RK(Tc=507.6, Pc=3025000,  V=0.00015189341729751865, P=1E6)
+    assert_allclose(eos.T, 299)
+    T_slow = eos.solve_T(P=1E6, V=0.00015189341729751865, quick=False)
+    assert_allclose(T_slow, 299)
+    
+    
+    diffs_1 = [400451.9103658808, -1773163557098.2456, 2.258403680601321e-07, -5.63963767469079e-13, 4427906.350797926, 2.49717874759626e-06]
+    diffs_2 = [-664.0592454189432, 1.5385265309755005e+17, 1.5035170900333218e-09, 2.759679192734741e-20, -130527989946.59952, 1.0340837610012813e-14]
+    diffs_mixed = [-7.870472890849004e-15, -10000515150.46239, 0.08069822580205277]
+    departures = [-26160.833620674082, -63.01311649400543, 39.8439858825612]
+    known_derivs_deps = [diffs_1, diffs_2, diffs_mixed, departures]
+    
+    for f in [True, False]:
+        main_calcs = eos.derivatives_and_departures(eos.T, eos.P, eos.V_l, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=f)
+        
+        for i, j in zip(known_derivs_deps, main_calcs):
+            assert_allclose(i, j)
+    
+    
+    
+    
+    
+    # Test Cp_Dep, Cv_dep
+    assert_allclose(eos.Cv_dep_l, 39.8439858825612)
+    assert_allclose(eos.Cp_dep_l, 58.57054992395785)
+        
+    # Integration tests
+    eos = RK(Tc=507.6, Pc=3025000, T=299.,V=0.00013)
+    fast_vars = vars(eos)
+    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=False)
+    slow_vars = vars(eos)
+    [assert_allclose(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
+
+    # One gas phase property
+    assert 'g' == RK(Tc=507.6, Pc=3025000, T=499.,P=1E5).phase
