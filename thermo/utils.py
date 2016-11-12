@@ -93,6 +93,7 @@ if ANYMATH:
     logfuncs = {1: math.log, 2: np.log, 3: scipy.log, 4: mpmath.log, 5:sympy.log, 6: umath.log}
     log10funcs = {1: math.log10, 2: np.log10, 3: scipy.log10, 4: mpmath.log, 5:lambda x : sympy.log(x, 10), 6: umath.log10} # Sympy doesn't support log10
 
+    sqrtfuncs = {1: math.sqrt, 2: np.sqrt, 3: scipy.sqrt, 4: mpmath.sqrt, 5:sympy.sqrt, 6: umath.sqrt}
     sinfuncs = {1: math.sin, 2: np.sin, 3: scipy.sin, 4: mpmath.sin, 5:sympy.sin, 6: umath.sin}
     coshfuncs = {1: math.cosh, 2: np.cosh, 3: scipy.cosh, 4: mpmath.cosh, 5:sympy.cosh, 6: umath.cosh}
     sinhfuncs = {1: math.sinh, 2: np.sinh, 3: scipy.sinh, 4: mpmath.sinh, 5:sympy.sinh, 6: umath.sinh}
@@ -114,6 +115,8 @@ if ANYMATH:
         return coshfuncs[mathlib](x)
     def sinh(x):
         return sinhfuncs[mathlib](x)
+    def sqrt(x):
+        return sqrtfuncs[mathlib](x)
 
 else:
     from math import *

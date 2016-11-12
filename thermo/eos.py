@@ -27,7 +27,7 @@ from cmath import atanh as catanh
 from scipy.constants import R
 from scipy.optimize import newton
 from thermo.utils import Cp_minus_Cv, isothermal_compressibility, phase_identification_parameter, phase_identification_parameter_phase
-from math import log, exp, sqrt
+from thermo.utils import log, exp, sqrt
 from thermo.utils import _isobaric_expansion as isobaric_expansion 
 
 
@@ -1544,7 +1544,8 @@ class RK(GCEOS):
     '''
     c1 = 0.4274802335403414043909906940611707345513 # 1/(9*(2**(1/3.)-1)) 
     c2 = 0.08664034996495772158907020242607611685675 # (2**(1/3.)-1)/3 
-
+    epsilon = 0
+    
     def __init__(self, Tc, Pc, T=None, P=None, V=None):
         self.Tc = Tc
         self.Pc = Pc
@@ -1555,7 +1556,6 @@ class RK(GCEOS):
         self.a = self.c1*R*R*Tc**2.5/Pc
         self.b = self.c2*R*Tc/Pc
         self.delta = self.b
-        self.epsilon = 0
         self.solve()
 
     def set_a_alpha_and_derivatives(self, T):
@@ -1683,7 +1683,8 @@ class SRK(GCEOS):
     '''
     c1 = 0.4274802335403414043909906940611707345513 # 1/(9*(2**(1/3.)-1)) 
     c2 = 0.08664034996495772158907020242607611685675 # (2**(1/3.)-1)/3 
-    
+    epsilon = 0
+   
     def __init__(self, Tc, Pc, omega, T=None, P=None, V=None):
         self.Tc = Tc
         self.Pc = Pc
@@ -1696,7 +1697,6 @@ class SRK(GCEOS):
         self.b = self.c2*R*Tc/Pc
         self.m = 0.480 + 1.574*omega - 0.176*omega
         self.delta = self.b
-        self.epsilon = 0
         self.solve()
 
     def set_a_alpha_and_derivatives(self, T):
@@ -1795,3 +1795,183 @@ class SRK(GCEOS):
             return -Tc*(2.*a*m*x9*(V*x21*x21*x21*(V + b)*(P*x2 + P*x7 + x17 + x18 + x22 + x23 - x24))**0.5*(m + 1.) - x20*x21*(-P*x16*x6 + x1*x22 + x10*x26 + x13*x28 - x13*x30 + x15*x23 + x15*x24 + x19*x26 + x22*x3 + x25*x5 + x25 + x27*x5 + x27 + x28*x29 + x28*x5 - x29*x30 - x30*x5))/(x20*x9)
         else:
             return Tc*(-2*a*m*sqrt(V*(V - b)**3*(V + b)*(P*R*Tc*V**2 + P*R*Tc*V*b - P*V*a*m**2 + P*a*b*m**2 + R*Tc*a*m**2 + 2*R*Tc*a*m + R*Tc*a))*(m + 1)*(R*Tc*V**2 + R*Tc*V*b - V*a*m**2 + a*b*m**2)**2 + (V - b)*(R**2*Tc**2*V**4 + 2*R**2*Tc**2*V**3*b + R**2*Tc**2*V**2*b**2 - 2*R*Tc*V**3*a*m**2 + 2*R*Tc*V*a*b**2*m**2 + V**2*a**2*m**4 - 2*V*a**2*b*m**4 + a**2*b**2*m**4)*(P*R*Tc*V**4 + 2*P*R*Tc*V**3*b + P*R*Tc*V**2*b**2 - P*V**3*a*m**2 + P*V*a*b**2*m**2 + R*Tc*V**2*a*m**2 + 2*R*Tc*V**2*a*m + R*Tc*V**2*a + R*Tc*V*a*b*m**2 + 2*R*Tc*V*a*b*m + R*Tc*V*a*b + V*a**2*m**4 + 2*V*a**2*m**3 + V*a**2*m**2 - a**2*b*m**4 - 2*a**2*b*m**3 - a**2*b*m**2))/((R*Tc*V**2 + R*Tc*V*b - V*a*m**2 + a*b*m**2)**2*(R**2*Tc**2*V**4 + 2*R**2*Tc**2*V**3*b + R**2*Tc**2*V**2*b**2 - 2*R*Tc*V**3*a*m**2 + 2*R*Tc*V*a*b**2*m**2 + V**2*a**2*m**4 - 2*V*a**2*b*m**4 + a**2*b**2*m**4))
+
+
+class APISRK(SRK):
+    r'''Class for solving the Refinery Soave-Redlich-Kwong cubic 
+    equation of state for a pure compound shown in the API Databook [1]_.
+    Subclasses `CUBIC_EOS`, which 
+    provides the methods for solving the EOS and calculating its assorted 
+    relevant thermodynamic properties. Solves the EOS on initialization. 
+
+    Implemented methods here are `set_a_alpha_and_derivatives`, which sets 
+    a_alpha and its first and second derivatives, and `solve_T`, which from a 
+    specified `P` and `V` obtains `T`. Two fit constants are used in this 
+    expresion, with an estimation scheme for the first if unavailable and the
+    second may be set to zero.
+    
+    Two of `T`, `P`, and `V` are needed to solve the EOS.
+
+    .. math::
+        P = \frac{RT}{V-b} - \frac{a\alpha(T)}{V(V+b)}
+        
+        a=\left(\frac{R^2(T_c)^{2}}{9(\sqrt[3]{2}-1)P_c} \right)
+        =\frac{0.42748\cdot R^2(T_c)^{2}}{P_c}
+    
+        b=\left( \frac{(\sqrt[3]{2}-1)}{3}\right)\frac{RT_c}{P_c}
+        =\frac{0.08664\cdot R T_c}{P_c}
+        
+        \alpha(T) = \left[1 + S_1\left(1-\sqrt{T_r}\right) + S_2\frac{1
+        - \sqrt{T_r}}{\sqrt{T_r}}\right]^2
+        
+        S_1 = 0.48508 + 1.55171\omega - 0.15613\omega^2 \text{ if unavailable }
+        
+    Parameters
+    ----------
+    Tc : float
+        Critical temperature, [K]
+    Pc : float
+        Critical pressure, [Pa]
+    omega : float, optional
+        Acentric factor, [-]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+    S1 : float, optional
+        Fit constant or estimated from acentric factor if not provided [-]
+    S1 : float, optional
+        Fit constant or 0 if not provided [-]
+
+    Examples
+    --------    
+    >>> eos = APISRK(Tc=514.0, Pc=6137000.0, S1=1.678665, S2=-0.216396, P=1E6, T=299)
+    >>> eos.phase, eos.V_l, eos.H_dep_l, eos.S_dep_l
+    ('l', 7.045692682173252e-05, -42826.2716306387, -103.6269439137981)
+
+    References
+    ----------
+    .. [1] API Technical Data Book: General Properties & Characterization.
+       American Petroleum Institute, 7E, 2005.
+    '''
+    epsilon = 0
+    
+    def __init__(self, Tc, Pc, omega=None, T=None, P=None, V=None, S1=None, S2=0):
+        self.Tc = Tc
+        self.Pc = Pc
+        self.omega = omega
+        self.T = T
+        self.P = P
+        self.V = V
+
+        if not ((self.T and self.P) or (self.T and self.V) or (self.P and self.V)):
+            raise Exception('Either T and P, or T and V, or P and V are required')
+        if S1 is None and omega is None:
+            raise Exception('Either acentric factor of S1 is required')
+
+        if S1 is None:
+            self.S1 = 0.48508 + 1.55171*omega - 0.15613*omega*omega
+        else:
+            self.S1 = S1
+        self.S2 = S2
+        self.a = self.c1*R*R*Tc*Tc/Pc
+        self.b = self.c2*R*Tc/Pc
+        self.delta = self.b
+        
+        if self.V and self.P:
+            # Deal with T-solution here
+            self.T = self.solve_T(self.P, self.V)
+        self.solve()
+
+    def set_a_alpha_and_derivatives(self, T, quick=True):
+        r'''Method to calculate `a_alpha` and its first and second
+        derivatives for the SRK EOS.  Sets 'a_alpha', 'da_alpha_dT', and 
+        'd2a_alpha_dT2'. 
+
+        .. math::
+            a\alpha(T) = a\left[1 + S_1\left(1-\sqrt{T_r}\right) + S_2\frac{1
+            - \sqrt{T_r}}{\sqrt{T_r}}\right]^2
+        
+            \frac{d a\alpha}{dT} = a\frac{Tc}{T^{2}} \left(- S_{2} \left(\sqrt{
+            \frac{T}{Tc}} - 1\right) + \sqrt{\frac{T}{Tc}} \left(S_{1} \sqrt{
+            \frac{T}{Tc}} + S_{2}\right)\right) \left(S_{2} \left(\sqrt{\frac{
+            T}{Tc}} - 1\right) + \sqrt{\frac{T}{Tc}} \left(S_{1} \left(\sqrt{
+            \frac{T}{Tc}} - 1\right) - 1\right)\right)
+
+            \frac{d^2 a\alpha}{dT^2} = a\frac{1}{2 T^{3}} \left(S_{1}^{2} T
+            \sqrt{\frac{T}{Tc}} - S_{1} S_{2} T \sqrt{\frac{T}{Tc}} + 3 S_{1}
+            S_{2} Tc \sqrt{\frac{T}{Tc}} + S_{1} T \sqrt{\frac{T}{Tc}} 
+            - 3 S_{2}^{2} Tc \sqrt{\frac{T}{Tc}} + 4 S_{2}^{2} Tc + 3 S_{2} 
+            Tc \sqrt{\frac{T}{Tc}}\right)
+
+        Uses the set values of `a`, `Tc`, and `m`.
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        '''
+        a, Tc, S1, S2 = self.a, self.Tc, self.S1, self.S2
+
+        if quick:
+            x0 = (T/Tc)**0.5
+            x1 = x0 - 1.
+            x2 = x1/x0
+            x3 = S2*x2
+            x4 = S1*x1 + x3 - 1.
+            x5 = S1*x0
+            x6 = S2 - x3 + x5
+            x7 = 3.*S2
+            self.a_alpha = a*x4*x4
+            self.da_alpha_dT = a*x4*x6/T
+            self.d2a_alpha_dT2 = a*(-x4*(-x2*x7 + x5 + x7) + x6*x6)/(2.*T*T)
+        else:
+            self.a_alpha = a*(S1*(-sqrt(T/Tc) + 1) + S2*(-sqrt(T/Tc) + 1)/sqrt(T/Tc) + 1)**2
+            self.da_alpha_dT = a*((S1*(-sqrt(T/Tc) + 1) + S2*(-sqrt(T/Tc) + 1)/sqrt(T/Tc) + 1)*(-S1*sqrt(T/Tc)/T - S2/T - S2*(-sqrt(T/Tc) + 1)/(T*sqrt(T/Tc))))
+            self.d2a_alpha_dT2 = a*(((S1*sqrt(T/Tc) + S2 - S2*(sqrt(T/Tc) - 1)/sqrt(T/Tc))**2 - (S1*sqrt(T/Tc) + 3*S2 - 3*S2*(sqrt(T/Tc) - 1)/sqrt(T/Tc))*(S1*(sqrt(T/Tc) - 1) + S2*(sqrt(T/Tc) - 1)/sqrt(T/Tc) - 1))/(2*T**2))
+
+    def solve_T(self, P, V, quick=True):
+        r'''Method to calculate `T` from a specified `P` and `V` for the API 
+        SRK EOS. Uses `a`, `b`, and `Tc` obtained from the class's namespace.
+
+        Parameters
+        ----------
+        P : float
+            Pressure, [Pa]
+        V : float
+            Molar volume, [m^3/mol]
+        quick : bool, optional
+            Whether to use a SymPy cse-derived expression (3x faster) or 
+            individual formulas
+
+        Returns
+        -------
+        T : float
+            Temperature, [K]
+
+        Notes
+        -----
+        If S2 is set to 0, the solution is the same as in the SRK EOS, and that
+        is used. Otherwise, newton's method must be used to solve for `T`. 
+        There are 8 roots of T in that case, six of them real. No guarantee can
+        be made regarding which root will be obtained.
+        '''
+        if self.S2 == 0:
+            self.m = self.S1
+            return SRK.solve_T(self, P, V, quick=quick)
+        else:
+            Tc, a, b, S1, S2 = self.Tc, self.a, self.b, self.S1, self.S2
+            if quick:
+                x2 = R/(V-b)
+                x3 = (V*(V + b))
+                def to_solve(T):
+                    x0 = (T/Tc)**0.5
+                    x1 = x0 - 1
+                    return (x2*T - a*(S1*x1 + S2*x1/x0 - 1.)**2/x3) - P
+            else:
+                def to_solve(T):
+                    P_calc = R*T/(V - b) - a*(S1*(-sqrt(T/Tc) + 1) + S2*(-sqrt(T/Tc) + 1)/sqrt(T/Tc) + 1)**2/(V*(V + b))
+                    return P_calc - P
+            return newton(to_solve, Tc*0.5)

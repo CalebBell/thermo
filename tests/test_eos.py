@@ -331,11 +331,13 @@ def test_VDW():
     a_alphas_fast = [eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2]
     assert_allclose(a_alphas, a_alphas_fast)
     
-    # Back calculation for T
+    # Back calculation for P
     eos = VDW(Tc=507.6, Pc=3025000, T=299, V=0.00022332978038490077)
     assert_allclose(eos.P, 1E6)
     
-    # Back calculation for P
+    # Back calculation for T
+    eos = VDW(Tc=507.6, Pc=3025000, P=1E6, V=0.00022332978038490077)
+    assert_allclose(eos.T, 299)
 
     with pytest.raises(Exception):
         VDW(Tc=507.6, Pc=3025000, P=1E6)
@@ -484,3 +486,68 @@ def test_SRK_quick():
     phi_l_expect = 0.02413706401859461
     assert_allclose(phi_l_expect, eos.phi_l)
     assert_allclose(phi_walas, eos.phi_l)
+
+
+def test_APISRK_quick():
+    # Test solution for molar volumes
+    eos = APISRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+    Vs_fast = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
+    Vs_slow = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
+    Vs_expected = [(0.00014681823858766455+0j), (0.0011696026208061676+0.001304203394096485j), (0.0011696026208061676-0.001304203394096485j)]
+    assert_allclose(Vs_fast, Vs_expected)
+    assert_allclose(Vs_slow, Vs_expected)
+    
+    # Test of a_alphas
+    a_alphas = [3.727474247064678, -0.0073349099227097685, 1.9482539852821945e-05]
+    eos.set_a_alpha_and_derivatives(299)
+    a_alphas_fast = [eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2]
+    assert_allclose(a_alphas, a_alphas_fast)
+    eos.set_a_alpha_and_derivatives(299, quick=False)
+    a_alphas_slow = [eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2]
+    assert_allclose(a_alphas, a_alphas_slow)
+
+    # SRK back calculation for T
+    eos = APISRK(Tc=507.6, Pc=3025000, omega=0.2975, V=0.00014681823858766455, P=1E6)
+    assert_allclose(eos.T, 299)
+    T_slow = eos.solve_T(P=1E6, V=0.00014681823858766455, quick=False)
+    assert_allclose(T_slow, 299)
+    # with a S1 set
+    eos = APISRK(Tc=514.0, Pc=6137000.0, S1=1.678665, S2=-0.216396, P=1E6, V=7.045692682173252e-05)
+    assert_allclose(eos.T, 299)
+    eos = APISRK(Tc=514.0, Pc=6137000.0, omega=0.635, S2=-0.216396, P=1E6, V=7.184691383223729e-05)
+    assert_allclose(eos.T, 299)
+    T_slow = eos.solve_T(P=1E6, V=7.184691383223729e-05, quick=False)
+    assert_allclose(T_slow, 299)
+
+    
+    eos = APISRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+    # Derivatives
+    diffs_1 = [507160.19725861016, -2694519535687.8096, 1.8821915764257067e-07, -3.7112367780430196e-13, 5312955.453232907, 1.9717635678142185e-06]
+    diffs_2 = [-495.7033432051597, 2.686049371238787e+17, 1.3462136329121424e-09, 1.3729982416974442e-20, -201893579486.30624, 3.80002419401769e-15]
+    diffs_mixed = [-4.990227751881803e-15, -14325368140.50364, 0.06593414440492529]
+    departures = [-31759.397282361704, -74.38420560550391, 28.946472091343608]
+    known_derivs_deps = [diffs_1, diffs_2, diffs_mixed, departures]
+    
+    for f in [True, False]:
+        main_calcs = eos.derivatives_and_departures(eos.T, eos.P, eos.V_l, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=f)
+        
+        for i, j in zip(known_derivs_deps, main_calcs):
+            assert_allclose(i, j)
+    
+    # Test Cp_Dep, Cv_dep
+    assert_allclose(eos.Cv_dep_l, 28.946472091343608)
+    assert_allclose(eos.Cp_dep_l, 49.17373456158243)
+        
+    # Integration tests
+    eos = APISRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299.,V=0.00013)
+    fast_vars = vars(eos)
+    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=False)
+    slow_vars = vars(eos)
+    [assert_allclose(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
+
+    # Error checking
+    with pytest.raises(Exception):
+        APISRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299.) 
+    with pytest.raises(Exception):
+        APISRK(Tc=507.6, Pc=3025000, P=1E6,  T=299.)
+    
