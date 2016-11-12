@@ -551,3 +551,67 @@ def test_APISRK_quick():
     with pytest.raises(Exception):
         APISRK(Tc=507.6, Pc=3025000, P=1E6,  T=299.)
     
+
+def test_TWUPR_quick():
+    # Test solution for molar volumes
+    eos = TWUPR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+    Vs_fast = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
+    Vs_slow = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
+    Vs_expected = [(0.0001301754975832377+0j), (0.0011236542243270918+0.0012949257976571766j), (0.0011236542243270918-0.0012949257976571766j)]
+
+    assert_allclose(Vs_fast, Vs_expected)
+    assert_allclose(Vs_slow, Vs_expected)
+    
+    # Test of a_alphas
+    a_alphas = [3.806982284033079, -0.006971709974815854, 2.3667018824561144e-05]
+    eos.set_a_alpha_and_derivatives(299)
+    a_alphas_fast = [eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2]
+    assert_allclose(a_alphas, a_alphas_fast)
+    eos.set_a_alpha_and_derivatives(299, quick=False)
+    a_alphas_slow = [eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2]
+    assert_allclose(a_alphas, a_alphas_slow)
+
+    # back calculation for T
+    eos = TWUPR(Tc=507.6, Pc=3025000, omega=0.2975, V=0.0001301754975832377, P=1E6)
+    assert_allclose(eos.T, 299)
+    T_slow = eos.solve_T(P=1E6, V=0.0001301754975832377, quick=False)
+    assert_allclose(T_slow, 299)
+
+    
+    eos = TWUPR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+    # Derivatives
+    diffs_1 = [592877.7698667891, -3683686154532.3066, 1.6094687359218388e-07, -2.7146720921640605e-13, 6213230.351611896, 1.6866883037707508e-06]
+    diffs_2 = [-708.101408196832, 4.512488462413035e+17, 1.168546207434993e-09, 9.027515426758444e-21, -280283966933.572, 3.397816790678971e-15]
+    diffs_mixed = [-3.82370615408822e-15, -20741143317.758797, 0.07152333089484428]
+    departures = [-31652.726391608117, -74.1128253091799, 35.189125483239366]
+    known_derivs_deps = [diffs_1, diffs_2, diffs_mixed, departures]
+    
+    for f in [True, False]:
+        main_calcs = eos.derivatives_and_departures(eos.T, eos.P, eos.V_l, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=f)
+        
+        for i, j in zip(known_derivs_deps, main_calcs):
+            assert_allclose(i, j)
+    
+    # Test Cp_Dep, Cv_dep
+    assert_allclose(eos.Cv_dep_l, 35.189125483239366)
+    assert_allclose(eos.Cp_dep_l, 55.40579090446679)
+        
+    # Integration tests
+    eos = TWUPR(Tc=507.6, Pc=3025000, omega=0.2975, T=299.,V=0.00013)
+    fast_vars = vars(eos)
+    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=False)
+    slow_vars = vars(eos)
+    [assert_allclose(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
+
+    # Error checking
+    with pytest.raises(Exception):
+        TWUPR(Tc=507.6, Pc=3025000, omega=0.2975, T=299.) 
+        
+    # Superctitical test
+    eos = TWUPR(Tc=507.6, Pc=3025000, omega=0.2975, T=900., P=1E6)
+    eos = TWUPR(Tc=507.6, Pc=3025000, omega=0.2975, V=0.0073716980824289815, P=1E6)
+    assert_allclose(eos.T, 900)
+    
+    
+    
+    

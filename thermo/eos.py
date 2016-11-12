@@ -1975,3 +1975,212 @@ class APISRK(SRK):
                     P_calc = R*T/(V - b) - a*(S1*(-sqrt(T/Tc) + 1) + S2*(-sqrt(T/Tc) + 1)/sqrt(T/Tc) + 1)**2/(V*(V + b))
                     return P_calc - P
             return newton(to_solve, Tc*0.5)
+
+
+class TWUPR(PR):
+    r'''Class for solving a the Peng-Robinson cubic 
+    equation of state for a pure compound. Subclasses `PR`, which 
+    provides the methods for solving the EOS and calculating its assorted 
+    relevant thermodynamic properties. Solves the EOS on initialization. 
+
+    Implemented methods here are `set_a_alpha_and_derivatives`, which sets 
+    a_alpha and its first and second derivatives, and `solve_T`, which from a 
+    specified `P` and `V` obtains `T`. `calc_alpha` is also implemented, and
+    provides a direct alpha function calculation for use by the `solve_T` 
+    method.
+    
+    Two of `T`, `P`, and `V` are needed to solve the EOS.
+
+    .. math::
+        P = \frac{RT}{v-b}-\frac{a\alpha(T)}{v(v+b)+b(v-b)}
+
+        a=0.45724\frac{R^2T_c^2}{P_c}
+        
+	  b=0.07780\frac{RT_c}{P_c}
+   
+       \alpha = \alpha^{(0)} + \omega(\alpha^{(1)}-\alpha^{(0)})
+       
+       \alpha^{(i)} = T_r^{N(M-1)}\exp[L(1-T_r^{NM})]
+      
+    For sub-critical conditions:
+    
+    L0, M0, N0 =  0.125283, 0.911807,  1.948150;
+    
+    L1, M1, N1 = 0.511614, 0.784054, 2.812520
+    
+    For supercritical conditions:
+    
+    L0, M0, N0 = 0.401219, 4.963070, -0.2;
+    
+    L1, M1, N1 = 0.024955, 1.248089, -8.  
+        
+    Parameters
+    ----------
+    Tc : float
+        Critical temperature, [K]
+    Pc : float
+        Critical pressure, [Pa]
+    omega : float
+        Acentric factor, [-]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+
+    Examples
+    --------
+    >>> eos = TWUPR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+    >>> eos.V_l, eos.H_dep_l, eos.S_dep_l
+    (0.0001301754975832377, -25137.048959073203, -52.32126198966514)
+    
+    Notes
+    -----
+    Claimed to be more accurate than the PR, PR78 and PRSV equations.
+
+    References
+    ----------
+    .. [1] Twu, Chorng H., John E. Coon, and John R. Cunningham. "A New 
+       Generalized Alpha Function for a Cubic Equation of State Part 1. 
+       Peng-Robinson Equation." Fluid Phase Equilibria 105, no. 1 (March 15, 
+       1995): 49-59. doi:10.1016/0378-3812(94)02601-V.
+    '''
+    def calc_alpha(self, Tr):
+        if Tr < 1:
+            L0, M0, N0 = 0.125283, 0.911807, 1.948150
+            L1, M1, N1 = 0.511614, 0.784054, 2.812520
+        else:
+            L0, M0, N0 = 0.401219, 4.963070, -0.2
+            L1, M1, N1 = 0.024955, 1.248089, -8.  
+        alpha0 = Tr**(N0*(M0-1.))*exp(L0*(1.-Tr**(N0*M0)))
+        alpha1 = Tr**(N1*(M1-1.))*exp(L1*(1.-Tr**(N1*M1)))
+        return alpha0 + self.omega*(alpha1 - alpha0)
+
+    def __init__(self, Tc, Pc, omega, T=None, P=None, V=None):
+        self.Tc = Tc
+        self.Pc = Pc
+        self.omega = omega
+        self.T = T
+        self.P = P
+        self.V = V
+        self.a = self.c1*R*R*Tc*Tc/Pc
+        self.b = self.c2*R*Tc/Pc
+        
+        if not ((self.T and self.P) or (self.T and self.V) or (self.P and self.V)):
+            raise Exception('Either T and P, or T and V, or P and V are required')
+        
+        if self.V and self.P:
+            self.T = self.solve_T(self.P, self.V)
+        
+        self.delta = 2*self.b
+        self.epsilon = -self.b*self.b
+        self.solve()
+
+    def set_a_alpha_and_derivatives(self, T, quick=True):
+        r'''Method to calculate `a_alpha` and its first and second
+        derivatives for the TWUPR EOS.  Sets 'a_alpha', 'da_alpha_dT', and 
+        'd2a_alpha_dT2'.
+
+        Uses the set values of `Tc`, `kappa, and `a`.
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        quick : bool, optional
+            Whether to use a SymPy cse-derived expression (3x faster) or 
+            individual formulas
+            
+        Notes
+        -----
+        The derivatives are somewhat long and are not described here for 
+        brevity; they are obtainable from the following SymPy expression.
+        
+        >>> from sympy import *
+        >>> N1, N0, M1, M0, L1, L0 = symbols('N1, N0, M1, M0, L1, L0')
+        >>> Tr = T/Tc
+        >>> alpha0 = Tr**(N0*(M0-1))*exp(L0*(1-Tr**(N0*M0)))
+        >>> alpha1 = Tr**(N1*(M1-1))*exp(L1*(1-Tr**(N1*M1)))
+        >>> alpha = alpha0 + omega*(alpha1-alpha0)
+        >>> # diff(alpha, T)
+        >>> # diff(alpha, T, T)
+        '''
+        Tc, omega, a = self.Tc, self.omega, self.a
+        Tr = T/Tc
+        if Tr < 1:
+            L0, M0, N0 = 0.125283, 0.911807, 1.948150
+            L1, M1, N1 = 0.511614, 0.784054, 2.812520
+        else:
+            L0, M0, N0 = 0.401219, 4.963070, -0.2
+            L1, M1, N1 = 0.024955, 1.248089, -8.
+        if quick:
+            x0 = T/Tc
+            x1 = M0 - 1
+            x2 = N0*x1
+            x3 = x0**x2
+            x4 = M0*N0
+            x5 = x0**x4
+            x6 = exp(-L0*(x5 - 1.))
+            x7 = x3*x6
+            x8 = M1 - 1.
+            x9 = N1*x8
+            x10 = x0**x9
+            x11 = M1*N1
+            x12 = x0**x11
+            x13 = x2*x7
+            x14 = L0*M0*N0*x3*x5*x6
+            x15 = x13 - x14
+            x16 = exp(-L1*(x12 - 1))
+            x17 = -L1*M1*N1*x10*x12*x16 + x10*x16*x9 - x13 + x14
+            x18 = N0*N0
+            x19 = x18*x3*x6
+            x20 = x1**2*x19
+            x21 = M0**2
+            x22 = L0*x18*x3*x5*x6
+            x23 = x21*x22
+            x24 = 2*M0*x1*x22
+            x25 = L0**2*x0**(2*x4)*x19*x21
+            x26 = N1**2
+            x27 = x10*x16*x26
+            x28 = M1**2
+            x29 = L1*x10*x12*x16*x26
+            self.a_alpha = a*(-omega*(-x10*exp(L1*(-x12 + 1)) + x3*exp(L0*(-x5 + 1))) + x7)
+            self.da_alpha_dT = a*(omega*x17 + x15)/T
+            self.d2a_alpha_dT2 = a*(-(omega*(-L1**2*x0**(2.*x11)*x27*x28 + 2.*M1*x29*x8 + x17 + x20 - x23 - x24 + x25 - x27*x8**2 + x28*x29) + x15 - x20 + x23 + x24 - x25)/T**2)
+        else:
+            self.a_alpha = a*self.calc_alpha(Tr)
+            self.da_alpha_dT = a*(-L0*M0*N0*(T/Tc)**(M0*N0)*(T/Tc)**(N0*(M0 - 1))*exp(L0*(-(T/Tc)**(M0*N0) + 1))/T + N0*(T/Tc)**(N0*(M0 - 1))*(M0 - 1)*exp(L0*(-(T/Tc)**(M0*N0) + 1))/T + omega*(L0*M0*N0*(T/Tc)**(M0*N0)*(T/Tc)**(N0*(M0 - 1))*exp(L0*(-(T/Tc)**(M0*N0) + 1))/T - L1*M1*N1*(T/Tc)**(M1*N1)*(T/Tc)**(N1*(M1 - 1))*exp(L1*(-(T/Tc)**(M1*N1) + 1))/T - N0*(T/Tc)**(N0*(M0 - 1))*(M0 - 1)*exp(L0*(-(T/Tc)**(M0*N0) + 1))/T + N1*(T/Tc)**(N1*(M1 - 1))*(M1 - 1)*exp(L1*(-(T/Tc)**(M1*N1) + 1))/T))
+            self.d2a_alpha_dT2 = a*((L0**2*M0**2*N0**2*(T/Tc)**(2*M0*N0)*(T/Tc)**(N0*(M0 - 1))*exp(-L0*((T/Tc)**(M0*N0) - 1)) - L0*M0**2*N0**2*(T/Tc)**(M0*N0)*(T/Tc)**(N0*(M0 - 1))*exp(-L0*((T/Tc)**(M0*N0) - 1)) - 2*L0*M0*N0**2*(T/Tc)**(M0*N0)*(T/Tc)**(N0*(M0 - 1))*(M0 - 1)*exp(-L0*((T/Tc)**(M0*N0) - 1)) + L0*M0*N0*(T/Tc)**(M0*N0)*(T/Tc)**(N0*(M0 - 1))*exp(-L0*((T/Tc)**(M0*N0) - 1)) + N0**2*(T/Tc)**(N0*(M0 - 1))*(M0 - 1)**2*exp(-L0*((T/Tc)**(M0*N0) - 1)) - N0*(T/Tc)**(N0*(M0 - 1))*(M0 - 1)*exp(-L0*((T/Tc)**(M0*N0) - 1)) - omega*(L0**2*M0**2*N0**2*(T/Tc)**(2*M0*N0)*(T/Tc)**(N0*(M0 - 1))*exp(-L0*((T/Tc)**(M0*N0) - 1)) - L0*M0**2*N0**2*(T/Tc)**(M0*N0)*(T/Tc)**(N0*(M0 - 1))*exp(-L0*((T/Tc)**(M0*N0) - 1)) - 2*L0*M0*N0**2*(T/Tc)**(M0*N0)*(T/Tc)**(N0*(M0 - 1))*(M0 - 1)*exp(-L0*((T/Tc)**(M0*N0) - 1)) + L0*M0*N0*(T/Tc)**(M0*N0)*(T/Tc)**(N0*(M0 - 1))*exp(-L0*((T/Tc)**(M0*N0) - 1)) - L1**2*M1**2*N1**2*(T/Tc)**(2*M1*N1)*(T/Tc)**(N1*(M1 - 1))*exp(-L1*((T/Tc)**(M1*N1) - 1)) + L1*M1**2*N1**2*(T/Tc)**(M1*N1)*(T/Tc)**(N1*(M1 - 1))*exp(-L1*((T/Tc)**(M1*N1) - 1)) + 2*L1*M1*N1**2*(T/Tc)**(M1*N1)*(T/Tc)**(N1*(M1 - 1))*(M1 - 1)*exp(-L1*((T/Tc)**(M1*N1) - 1)) - L1*M1*N1*(T/Tc)**(M1*N1)*(T/Tc)**(N1*(M1 - 1))*exp(-L1*((T/Tc)**(M1*N1) - 1)) + N0**2*(T/Tc)**(N0*(M0 - 1))*(M0 - 1)**2*exp(-L0*((T/Tc)**(M0*N0) - 1)) - N0*(T/Tc)**(N0*(M0 - 1))*(M0 - 1)*exp(-L0*((T/Tc)**(M0*N0) - 1)) - N1**2*(T/Tc)**(N1*(M1 - 1))*(M1 - 1)**2*exp(-L1*((T/Tc)**(M1*N1) - 1)) + N1*(T/Tc)**(N1*(M1 - 1))*(M1 - 1)*exp(-L1*((T/Tc)**(M1*N1) - 1))))/T**2)
+        
+    def solve_T(self, P, V, quick=True):
+        r'''Method to calculate `T` from a specified `P` and `V` for the Twu
+        EOS. Uses `Tc`, `a`, and `b` as well, obtained from the 
+        class's namespace.
+
+        Parameters
+        ----------
+        P : float
+            Pressure, [Pa]
+        V : float
+            Molar volume, [m^3/mol]
+        quick : bool, optional
+            Whether to use a SymPy cse-derived expression (3x faster) or 
+            individual formulas
+
+        Returns
+        -------
+        T : float
+            Temperature, [K]
+        
+        Notes
+        -----
+        There is no analytical solution for `T`. There are multiple possible 
+        solutions for `T` under certain conditions.
+        '''
+        Tc, a, b = self.Tc, self.a, self.b
+        def to_solve(T):
+            alpha = self.calc_alpha(T/Tc)
+            P_calc = R*T/(V-b) - a*alpha/(V*(V+b) + b*(V-b))
+            return P_calc - P
+        return newton(to_solve, Tc*0.5)
