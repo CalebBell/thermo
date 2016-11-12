@@ -354,8 +354,6 @@ class GCEOS(object):
         kappa = -dV_dP/V # isothermal_compressibility(V, dV_dP)
         Cp_m_Cv = -T*dP_dT**2/dP_dV # Cp_minus_Cv(T, dP_dT, dP_dV)
         
-        
-        sqrt2 = 1.4142135623730951
         Cp_dep = Cp_m_Cv + Cv_dep - R
                 
         V_dep = (V - R*T/P)        
@@ -529,7 +527,7 @@ calculated by this method, in a user subclass.')
                                              d2a_alpha_dT2, quick=quick))
 
         dV_dT = -dP_dT/dP_dV
-        dV_dP = -dV_dT/dP_dT # or same as dP_dV
+        dV_dP = -dV_dT/dP_dT 
         dT_dV = 1./dV_dT
         dT_dP = 1./dP_dT
         
@@ -573,7 +571,7 @@ calculated by this method, in a user subclass.')
             dP_dT = R/x0 - da_alpha_dT/x1
             dP_dV = -x3*x4 + x5*x7
             d2P_dT2 = -d2a_alpha_dT2/x1
-            d2P_dV2 = -2.*a_alpha*x5**2*x1**-3 + 2.*x7 + 2.*x3*x0**-3
+            d2P_dV2 = -2.*a_alpha*x5*x5*x1**-3 + 2.*x7 + 2.*x3*x0**-3
             d2P_dTdV = -R*x4 + da_alpha_dT*x5*x6
             H_dep = x12*(T*da_alpha_dT - a_alpha) - x3 + x8
             S_dep = -R*log(V*x3/(x0*x8)) + da_alpha_dT*x12 
@@ -1544,9 +1542,9 @@ class RK(GCEOS):
     .. [3] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
        Butterworth-Heinemann, 1985.
     '''
-    c1 = 0.4274802335403413 # 1/(9*(2**(1/3.)-1)) 
-    c2 = 0.08664034996495773 # (2**(1/3.)-1)/3 
-    
+    c1 = 0.4274802335403414043909906940611707345513 # 1/(9*(2**(1/3.)-1)) 
+    c2 = 0.08664034996495772158907020242607611685675 # (2**(1/3.)-1)/3 
+
     def __init__(self, Tc, Pc, T=None, P=None, V=None):
         self.Tc = Tc
         self.Pc = Pc
@@ -1559,7 +1557,6 @@ class RK(GCEOS):
         self.delta = self.b
         self.epsilon = 0
         self.solve()
-
 
     def set_a_alpha_and_derivatives(self, T):
         r'''Method to calculate `a_alpha` and its first and second
@@ -1626,3 +1623,175 @@ class RK(GCEOS):
             return (3.3019272488946263*(11.537996562459266*P*x3/(x1*x5) + 1.2599210498948732*x1*x5)**2/144.0).real
         else:
             return ((-(-1/2 + sqrt(3)*1j/2)*(sqrt(729*(-V*a + a*b)**2/(R*V**2 + R*V*b)**2 + 108*(-P*V + P*b)**3/R**3)/2 + 27*(-V*a + a*b)/(2*(R*V**2 + R*V*b))+0j)**(1/3)/3 + (-P*V + P*b)/(R*(-1/2 + sqrt(3)*1j/2)*(sqrt(729*(-V*a + a*b)**2/(R*V**2 + R*V*b)**2 + 108*(-P*V + P*b)**3/R**3)/2 + 27*(-V*a + a*b)/(2*(R*V**2 + R*V*b))+0j)**(1/3)))**2).real
+
+
+class SRK(GCEOS):
+    r'''Class for solving the Soave-Redlich-Kwong cubic 
+    equation of state for a pure compound. Subclasses `CUBIC_EOS`, which 
+    provides the methods for solving the EOS and calculating its assorted 
+    relevant thermodynamic properties. Solves the EOS on initialization. 
+
+    Implemented methods here are `set_a_alpha_and_derivatives`, which sets 
+    a_alpha and its first and second derivatives, and `solve_T`, which from a 
+    specified `P` and `V` obtains `T`. 
+    
+    Two of `T`, `P`, and `V` are needed to solve the EOS.
+
+    .. math::
+        P = \frac{RT}{V-b} - \frac{a\alpha(T)}{V(V+b)}
+        
+        a=\left(\frac{R^2(T_c)^{2}}{9(\sqrt[3]{2}-1)P_c} \right)
+        =\frac{0.42748\cdot R^2(T_c)^{2}}{P_c}
+    
+        b=\left( \frac{(\sqrt[3]{2}-1)}{3}\right)\frac{RT_c}{P_c}
+        =\frac{0.08664\cdot R T_c}{P_c}
+        
+        \alpha(T) = \left[1 + m\left(1 - \sqrt{\frac{T}{T_c}}\right)\right]^2
+        
+        m = 0.480 + 1.574\omega - 0.176\omega^2
+    
+    Parameters
+    ----------
+    Tc : float
+        Critical temperature, [K]
+    Pc : float
+        Critical pressure, [Pa]
+    omega : float
+        Acentric factor, [-]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+
+    Examples
+    --------    
+    >>> eos = SRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+    >>> eos.phase, eos.V_l, eos.H_dep_l, eos.S_dep_l
+    ('l', 0.0001473238480377508, -30917.940322270817, -72.44137873264924)
+
+    References
+    ----------
+    .. [1] Soave, Giorgio. "Equilibrium Constants from a Modified Redlich-Kwong
+       Equation of State." Chemical Engineering Science 27, no. 6 (June 1972): 
+       1197-1203. doi:10.1016/0009-2509(72)80096-4.
+    .. [2] Poling, Bruce E. The Properties of Gases and Liquids. 5th 
+       edition. New York: McGraw-Hill Professional, 2000.
+    .. [3] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
+       Butterworth-Heinemann, 1985.
+    '''
+    c1 = 0.4274802335403414043909906940611707345513 # 1/(9*(2**(1/3.)-1)) 
+    c2 = 0.08664034996495772158907020242607611685675 # (2**(1/3.)-1)/3 
+    
+    def __init__(self, Tc, Pc, omega, T=None, P=None, V=None):
+        self.Tc = Tc
+        self.Pc = Pc
+        self.omega = omega
+        self.T = T
+        self.P = P
+        self.V = V
+
+        self.a = self.c1*R*R*Tc*Tc/Pc
+        self.b = self.c2*R*Tc/Pc
+        self.m = 0.480 + 1.574*omega - 0.176*omega
+        self.delta = self.b
+        self.epsilon = 0
+        self.solve()
+
+    def set_a_alpha_and_derivatives(self, T):
+        r'''Method to calculate `a_alpha` and its first and second
+        derivatives for the SRK EOS.  Sets 'a_alpha', 'da_alpha_dT', and 
+        'd2a_alpha_dT2'. 
+
+        .. math::
+            a\alpha = a \left(m \left(- \sqrt{\frac{T}{Tc}} + 1\right)
+            + 1\right)^{2}
+        
+            \frac{d a\alpha}{dT} = \frac{a m}{T} \sqrt{\frac{T}{Tc}} \left(m
+            \left(\sqrt{\frac{T}{Tc}} - 1\right) - 1\right)
+
+            \frac{d^2 a\alpha}{dT^2} = \frac{a m \sqrt{\frac{T}{Tc}}}{2 T^{2}}
+            \left(m + 1\right)
+
+        Uses the set values of `a`, `Tc`, and `m`.
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        '''
+        a, Tc, m = self.a, self.Tc, self.m
+        sqTr = (T/Tc)**0.5
+        self.a_alpha = a*(m*(1. - sqTr) + 1.)**2
+        self.da_alpha_dT = -a*m*sqTr*(m*(-sqTr + 1.) + 1.)/T
+        self.d2a_alpha_dT2 =  a*m*sqTr*(m + 1.)/(2.*T*T)
+
+
+    def solve_T(self, P, V, quick=True):
+        r'''Method to calculate `T` from a specified `P` and `V` for the SRK
+        EOS. Uses `a`, `b`, and `Tc` obtained from the class's namespace.
+
+        Parameters
+        ----------
+        P : float
+            Pressure, [Pa]
+        V : float
+            Molar volume, [m^3/mol]
+        quick : bool, optional
+            Whether to use a SymPy cse-derived expression (3x faster) or 
+            individual formulas
+
+        Returns
+        -------
+        T : float
+            Temperature, [K]
+
+        Notes
+        -----
+        The exact solution can be derived as follows; it is excluded for 
+        breviety.
+        
+        >>> from sympy import *
+        >>> P, T, V, R, a, b, m = symbols('P, T, V, R, a, b, m')
+        >>> Tc, Pc, omega = symbols('Tc, Pc, omega')
+        >>> a_alpha = a*(1 + m*(1-sqrt(T/Tc)))**2
+        >>> SRK = R*T/(V-b) - a_alpha/(V*(V+b)) - P
+        >>> # solve(SRK, T)
+        '''
+        a, b, Tc, m = self.a, self.b, self.Tc, self.m
+        if quick:
+            x0 = R*Tc
+            x1 = V*b
+            x2 = x0*x1
+            x3 = V*V
+            x4 = x0*x3
+            x5 = m*m
+            x6 = a*x5
+            x7 = b*x6
+            x8 = V*x6
+            x9 = (x2 + x4 + x7 - x8)**2
+            x10 = x3*x3
+            x11 = R*R*Tc*Tc
+            x12 = a*a
+            x13 = x5*x5
+            x14 = x12*x13
+            x15 = b*b
+            x16 = x3*V
+            x17 = a*x0
+            x18 = x17*x5
+            x19 = 2.*b*x16
+            x20 = -2.*V*b*x14 + 2.*V*x15*x18 + x10*x11 + x11*x15*x3 + x11*x19 + x14*x15 + x14*x3 - 2*x16*x18
+            x21 = V - b
+            x22 = 2*m*x17
+            x23 = P*x4
+            x24 = P*x8
+            x25 = x1*x17
+            x26 = P*R*Tc
+            x27 = x17*x3
+            x28 = V*x12
+            x29 = 2.*m*m*m
+            x30 = b*x12
+            return -Tc*(2.*a*m*x9*(V*x21*x21*x21*(V + b)*(P*x2 + P*x7 + x17 + x18 + x22 + x23 - x24))**0.5*(m + 1.) - x20*x21*(-P*x16*x6 + x1*x22 + x10*x26 + x13*x28 - x13*x30 + x15*x23 + x15*x24 + x19*x26 + x22*x3 + x25*x5 + x25 + x27*x5 + x27 + x28*x29 + x28*x5 - x29*x30 - x30*x5))/(x20*x9)
+        else:
+            return Tc*(-2*a*m*sqrt(V*(V - b)**3*(V + b)*(P*R*Tc*V**2 + P*R*Tc*V*b - P*V*a*m**2 + P*a*b*m**2 + R*Tc*a*m**2 + 2*R*Tc*a*m + R*Tc*a))*(m + 1)*(R*Tc*V**2 + R*Tc*V*b - V*a*m**2 + a*b*m**2)**2 + (V - b)*(R**2*Tc**2*V**4 + 2*R**2*Tc**2*V**3*b + R**2*Tc**2*V**2*b**2 - 2*R*Tc*V**3*a*m**2 + 2*R*Tc*V*a*b**2*m**2 + V**2*a**2*m**4 - 2*V*a**2*b*m**4 + a**2*b**2*m**4)*(P*R*Tc*V**4 + 2*P*R*Tc*V**3*b + P*R*Tc*V**2*b**2 - P*V**3*a*m**2 + P*V*a*b**2*m**2 + R*Tc*V**2*a*m**2 + 2*R*Tc*V**2*a*m + R*Tc*V**2*a + R*Tc*V*a*b*m**2 + 2*R*Tc*V*a*b*m + R*Tc*V*a*b + V*a**2*m**4 + 2*V*a**2*m**3 + V*a**2*m**2 - a**2*b*m**4 - 2*a**2*b*m**3 - a**2*b*m**2))/((R*Tc*V**2 + R*Tc*V*b - V*a*m**2 + a*b*m**2)**2*(R**2*Tc**2*V**4 + 2*R**2*Tc**2*V**3*b + R**2*Tc**2*V**2*b**2 - 2*R*Tc*V**3*a*m**2 + 2*R*Tc*V*a*b**2*m**2 + V**2*a**2*m**4 - 2*V*a**2*b*m**4 + a**2*b**2*m**4))

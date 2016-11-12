@@ -214,6 +214,32 @@ def test_PR_quick():
     # One gas phase property
     assert 'g' == PR(Tc=507.6, Pc=3025000, omega=0.2975, T=499.,P=1E5).phase
 
+    eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+    
+    B = eos.b*eos.P/R/eos.T
+    A = eos.a_alpha*eos.P/(R*eos.T)**2
+    D = -eos.T*eos.da_alpha_dT
+    
+    V = eos.V_l
+    Z = eos.P*V/(R*eos.T)
+
+    # Compare against some known  in Walas [2] functions
+    phi_walas =  exp(Z - 1 - log(Z - B) - A/(2*2**0.5*B)*log((Z+(sqrt(2)+1)*B)/(Z-(sqrt(2)-1)*B)))
+    phi_l_expect = 0.022212524527244357
+    assert_allclose(phi_l_expect, eos.phi_l)
+    assert_allclose(phi_walas, eos.phi_l)
+    
+    # The formula given in [2]_ must be incorrect!
+#    S_dep_walas =  R*(-log(Z - B) + B*D/(2*2**0.5*A*eos.a_alpha)*log((Z+(sqrt(2)+1)*B)/(Z-(sqrt(2)-1)*B)))
+#    S_dep_expect = -72.47559475426013
+#    assert_allclose(-S_dep_walas, S_dep_expect)
+#    assert_allclose(S_dep_expect, eos.S_dep_l)
+    
+    H_dep_walas = R*eos.T*(1 - Z + A/(2*2**0.5*B)*(1 + D/eos.a_alpha)*log((Z+(sqrt(2)+1)*B)/(Z-(sqrt(2)-1)*B)))
+    H_dep_expect = -31134.740290463407
+    assert_allclose(-H_dep_walas, H_dep_expect)
+    assert_allclose(H_dep_expect, eos.H_dep_l)
+
 
 def test_PR78():
     eos = PR78(Tc=632, Pc=5350000, omega=0.734, T=299., P=1E6)
@@ -370,7 +396,7 @@ def test_RK_quick():
 
 
 
-    # Compare against some known functions
+    # Compare against some known  in Walas [2] functions
     eos = RK(Tc=507.6, Pc=3025000, T=299., P=1E6)
     V = eos.V_l
     Z = eos.P*V/(R*eos.T)
@@ -389,3 +415,72 @@ def test_RK_quick():
     H_dep_expect = -26160.833620674082
     assert_allclose(-H_dep_walas, H_dep_expect)
     assert_allclose(H_dep_expect, eos.H_dep_l)
+    
+
+
+def test_SRK_quick():
+    # Test solution for molar volumes
+    eos = SRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+    Vs_fast = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
+    Vs_slow = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
+    Vs_expected = [(0.0001473238480377508+0j), (0.0011693498160811246+0.0012837164440753675j), (0.0011693498160811246-0.0012837164440753675j)]
+    assert_allclose(Vs_fast, Vs_expected)
+    assert_allclose(Vs_slow, Vs_expected)
+    
+    # Test of a_alphas
+    a_alphas = [3.6749726003997565, -0.006994289319882769, 1.8351979227938195e-05]
+    eos.set_a_alpha_and_derivatives(299)
+    a_alphas_fast = [eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2]
+    assert_allclose(a_alphas, a_alphas_fast)
+    
+    # PR back calculation for T
+    eos = SRK(Tc=507.6, Pc=3025000, omega=0.2975, V=0.0001473238480377508, P=1E6)
+    assert_allclose(eos.T, 299)
+    T_slow = eos.solve_T(P=1E6, V=0.0001473238480377508, quick=False)
+    assert_allclose(T_slow, 299)
+    
+    # Derivatives
+    diffs_1 = [491420.1446383679, -2576742077144.926, 1.9071375012545682e-07, -3.880869602238254e-13, 5243460.41825601, 2.034918614774923e-06]
+    diffs_2 = [-464.4582107734843, 2.5298381194906086e+17, 1.3552541457017581e-09, 1.4786993572828407e-20, -195377580143.202, 3.913702219626131e-15]
+    diffs_mixed = [-5.1956264229676894e-15, -13750611691.659359, 0.06702442345732229]
+    departures = [-30917.940322270817, -72.44137873264927, 27.196322213047413]
+    known_derivs_deps = [diffs_1, diffs_2, diffs_mixed, departures]
+    
+    for f in [True, False]:
+        main_calcs = eos.derivatives_and_departures(eos.T, eos.P, eos.V_l, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=f)
+        
+        for i, j in zip(known_derivs_deps, main_calcs):
+            assert_allclose(i, j)
+    
+    # Test Cp_Dep, Cv_dep
+    assert_allclose(eos.Cv_dep_l, 27.196322213047466)
+    assert_allclose(eos.Cp_dep_l, 46.90431543572955)
+        
+    # Integration tests
+    eos = SRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299.,V=0.00013)
+    fast_vars = vars(eos)
+    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=False)
+    slow_vars = vars(eos)
+    [assert_allclose(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
+
+    
+    # Compare against some known  in Walas [2] functions
+    eos = SRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+    V = eos.V_l
+    Z = eos.P*V/(R*eos.T)
+    D = -eos.T*eos.da_alpha_dT
+    
+    S_dep_walas = R*(-log(Z*(1-eos.b/V)) + D/(eos.b*R*eos.T)*log(1 + eos.b/V))
+    S_dep_expect = -72.44137873264924
+    assert_allclose(-S_dep_walas, S_dep_expect)
+    assert_allclose(S_dep_expect, eos.S_dep_l)
+    
+    H_dep_walas = eos.T*R*(1 - Z + 1/(eos.b*R*eos.T)*(eos.a_alpha+D)*log(1 + eos.b/V))
+    H_dep_expect = -30917.9403223
+    assert_allclose(-H_dep_walas, H_dep_expect)
+    assert_allclose(H_dep_expect, eos.H_dep_l)
+
+    phi_walas = exp(Z - 1 - log(Z*(1 - eos.b/V)) - eos.a_alpha/(eos.b*R*eos.T)*log(1 + eos.b/V))
+    phi_l_expect = 0.02413706401859461
+    assert_allclose(phi_l_expect, eos.phi_l)
+    assert_allclose(phi_walas, eos.phi_l)
