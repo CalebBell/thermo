@@ -48,14 +48,15 @@ class GCEOS(object):
     `volume_solutions`, `set_properties_from_solution`,  and
     `derivatives_and_departures`. 
 
-    `solve` checks if two of `T`, `P`, and `V` were set. It solves for the 
+    `solve` calls `check_sufficient_input`, which checks if two of `T`, `P`, 
+    and `V` were set. It then solves for the 
     remaining variable. If `T` is missing, method `solve_T` is used; it is
-    parameter specific, and so must be implemented in each specific EOS.
+    parameter specific, and so must be implemented in each specific EOS. 
     If `P` is missing, it is directly calculated. If `V` is missing, it
     is calculated with the method `volume_solutions`. At this point, either
     three possible volumes or one user specified volume are known. The
     value of `a_alpha`, and its first and second temperature derivative are
-    calculated with the EOS-specific method `set_a_alpha_and_derivatives`. 
+    calculated with the EOS-specific method `a_alpha_and_derivatives`. 
 
     If `V` is not provided, `volume_solutions` calculates the three 
     possible molar volumes which are solutions to the EOS; in the single-phase 
@@ -99,7 +100,7 @@ class GCEOS(object):
     def solve(self):
         '''First EOS-generic method; should be called by all specific EOSs.
         For solving for `T`, the EOS must provide the method `solve_T`.
-        For all cases, the EOS must provide `set_a_alpha_and_derivatives`.
+        For all cases, the EOS must provide `a_alpha_and_derivatives`.
         Calls `set_from_PT` once done.
         '''
         self.check_sufficient_inputs()
@@ -107,13 +108,13 @@ class GCEOS(object):
         if self.V:
             if self.P:
                 self.T = self.solve_T(self.P, self.V)
-                self.set_a_alpha_and_derivatives(self.T)
+                self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2 = self.a_alpha_and_derivatives(self.T)
             else:
-                self.set_a_alpha_and_derivatives(self.T)
+                self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2 = self.a_alpha_and_derivatives(self.T)
                 self.P = R*self.T/(self.V-self.b) - self.a_alpha/(self.V*self.V + self.delta*self.V + self.epsilon)
             Vs = [self.V, 1j, 1j]
         else:
-            self.set_a_alpha_and_derivatives(self.T)
+            self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2 = self.a_alpha_and_derivatives(self.T)
             Vs = self.volume_solutions(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
         self.set_from_PT(Vs)
 
@@ -407,29 +408,43 @@ class GCEOS(object):
             self.Cp_dep_g, self.Cv_dep_g = Cp_dep, Cv_dep
         return phase            
 
-    def set_a_alpha_and_derivatives(self, T, quick=True):
+    def a_alpha_and_derivatives(self, T, full=True, quick=True):
         '''Dummy method to calculate `a_alpha` and its first and second
         derivatives. Should be implemented with the same function signature in 
         each EOS variant; this only raises a NotImplemented Exception.
-        Should set 'a_alpha', 'da_alpha_dT', and 'd2a_alpha_dT2'.
+        Should return 'a_alpha', 'da_alpha_dT', and 'd2a_alpha_dT2'.
 
+        For use in `solve_T`, returns only `a_alpha` if full is False.
+        
         Parameters
         ----------
         T : float
             Temperature, [K]
+        full : bool, optional
+            If False, calculates and returns only `a_alpha`
         quick : bool, optional
             Whether to use a SymPy cse-derived expression (3x faster) or 
             individual formulas
+        
+        Returns
+        -------
+        a_alpha : float
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        da_alpha_dT : float
+            Temperature derivative of coefficient calculated by EOS-specific 
+            method, [J^2/mol^2/Pa/K]
+        d2a_alpha_dT2 : float
+            Second temperature derivative of coefficient calculated by  
+            EOS-specific method, [J^2/mol^2/Pa/K**2]
         '''
         raise NotImplemented('a_alpha and its first and second derivatives \
 should be calculated by this method, in a user subclass.')
     
     def solve_T(self, P, V, quick=True):
-        '''Dummy method to calculate `T` from a specified `P` and `V`.
-        Should be implemented with the same function signature in 
-        each EOS variant; this only raises a NotImplemented Exception.
-        This will use at least `Tc` and `Pc` as well, obtained from the class's
-        namespace.
+        '''Generic method to calculate `T` from a specified `P` and `V`.
+        Provides a SciPy's `newton` solver, and iterates to solve the general
+        equation for `P`, resolving for `a_alpha` as a function of temperature
+        using `a_alpha_and_derivatives` each time.
 
         Parameters
         ----------
@@ -439,15 +454,19 @@ should be calculated by this method, in a user subclass.')
             Molar volume, [m^3/mol]
         quick : bool, optional
             Whether to use a SymPy cse-derived expression (3x faster) or 
-            individual formulas
+            individual formulas - not applicable where a numerical solver is
+            used.
 
         Returns
         -------
         T : float
             Temperature, [K]
         '''
-        raise NotImplemented('A method to solve the EOS for T should be \
-calculated by this method, in a user subclass.')
+        def to_solve(T):
+            a_alpha = self.a_alpha_and_derivatives(T, full=False)
+            P_calc = R*T/(V-self.b) - a_alpha/(V*V + self.delta*V + self.epsilon)
+            return P_calc - P
+        return newton(to_solve, self.Tc*0.5)
 
     @staticmethod
     def volume_solutions(T, P, b, delta, epsilon, a_alpha, quick=True):
@@ -599,7 +618,7 @@ class PR(GCEOS):
     provides the methods for solving the EOS and calculating its assorted 
     relevant thermodynamic properties. Solves the EOS on initialization. 
 
-    Implemented methods here are `set_a_alpha_and_derivatives`, which sets 
+    Implemented methods here are `a_alpha_and_derivatives`, which calculates 
     a_alpha and its first and second derivatives, and `solve_T`, which from a 
     specified `P` and `V` obtains `T`.
     
@@ -720,10 +739,13 @@ class PR(GCEOS):
         
         self.solve()
 
-    def set_a_alpha_and_derivatives(self, T, quick=True):
+    def a_alpha_and_derivatives(self, T, full=True, quick=True):
         r'''Method to calculate `a_alpha` and its first and second
-        derivatives for the PR EOS.  Sets 'a_alpha', 'da_alpha_dT', and 
-        'd2a_alpha_dT2'.
+        derivatives for this EOS. Returns `a_alpha`, `da_alpha_dT`, and 
+        `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more 
+        documentation. Uses the set values of `Tc`, `kappa`, and `a`. 
+        
+        For use in `solve_T`, returns only `a_alpha` if full is False.
 
         .. math::
             a\alpha = a \left(\kappa \left(- \frac{T^{0.5}}{Tc^{0.5}} 
@@ -735,31 +757,25 @@ class PR(GCEOS):
             \frac{d^2 a\alpha}{dT^2} = 0.5 a \kappa \left(- \frac{1}{T^{1.5} 
             Tc^{0.5}} \left(\kappa \left(\frac{T^{0.5}}{Tc^{0.5}} - 1\right)
             - 1\right) + \frac{\kappa}{T^{1.0} Tc^{1.0}}\right)
-
-        Uses the set values of `Tc`, `kappa, and `a`.
-
-        Parameters
-        ----------
-        T : float
-            Temperature, [K]
-        quick : bool, optional
-            Whether to use a SymPy cse-derived expression (3x faster) or 
-            individual formulas
         '''
-        if quick:
-            Tc, kappa = self.Tc, self.kappa
-            x0 = T**0.5
-            x1 = Tc**-0.5
-            x2 = kappa*(x0*x1 - 1.) - 1.
-            x3 = self.a*kappa
-            
-            self.a_alpha = self.a*x2*x2
-            self.da_alpha_dT = x1*x2*x3/x0
-            self.d2a_alpha_dT2 = x3*(-0.5*T**-1.5*x1*x2 + 0.5/(T*Tc)*kappa)
+        if not full:
+            return self.a*(1 + self.kappa*(1-(T/self.Tc)**0.5))**2
         else:
-            self.a_alpha = self.a*(1 + self.kappa*(1-(T/self.Tc)**0.5))**2
-            self.da_alpha_dT = -self.a*self.kappa*sqrt(T/self.Tc)*(self.kappa*(-sqrt(T/self.Tc) + 1.) + 1.)/T
-            self.d2a_alpha_dT2 = self.a*self.kappa*(self.kappa/self.Tc - sqrt(T/self.Tc)*(self.kappa*(sqrt(T/self.Tc) - 1.) - 1.)/T)/(2.*T)
+            if quick:
+                Tc, kappa = self.Tc, self.kappa
+                x0 = T**0.5
+                x1 = Tc**-0.5
+                x2 = kappa*(x0*x1 - 1.) - 1.
+                x3 = self.a*kappa
+                
+                a_alpha = self.a*x2*x2
+                da_alpha_dT = x1*x2*x3/x0
+                d2a_alpha_dT2 = x3*(-0.5*T**-1.5*x1*x2 + 0.5/(T*Tc)*kappa)
+            else:
+                a_alpha = self.a*(1 + self.kappa*(1-(T/self.Tc)**0.5))**2
+                da_alpha_dT = -self.a*self.kappa*sqrt(T/self.Tc)*(self.kappa*(-sqrt(T/self.Tc) + 1.) + 1.)/T
+                d2a_alpha_dT2 = self.a*self.kappa*(self.kappa/self.Tc - sqrt(T/self.Tc)*(self.kappa*(sqrt(T/self.Tc) - 1.) - 1.)/T)/(2.*T)
+            return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
     def solve_T(self, P, V, quick=True):
         r'''Method to calculate `T` from a specified `P` and `V` for the PR
@@ -1090,11 +1106,14 @@ class PRSV(PR):
                 return P_calc - P
         return newton(to_solve, Tc*0.5)
 
-    def set_a_alpha_and_derivatives(self, T, quick=True):
+    def a_alpha_and_derivatives(self, T, full=True, quick=True):
         r'''Method to calculate `a_alpha` and its first and second
-        derivatives for the PRSV EOS.  Sets `a_alpha`, `da_alpha_dT`, and 
-        `d2a_alpha_dT2`. Uses the set values of `Tc`, `kappa0`, `kappa1`, and 
-        `a`.
+        derivatives for this EOS. Returns `a_alpha`, `da_alpha_dT`, and 
+        `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more 
+        documentation. Uses the set values of `Tc`, `kappa0`, `kappa1`, and 
+        `a`. 
+        
+        For use in root-finding, returns only `a_alpha` if full is False.
 
         The `a_alpha` function is shown below; its first and second derivatives
         are long available through the SymPy expression under it.
@@ -1112,38 +1131,34 @@ class PRSV(PR):
         >>> a_alpha = a*(1 + kappa*(1-sqrt(T/Tc)))**2
         >>> # diff(a_alpha, T)
         >>> # diff(a_alpha, T, 2)
-
-        Parameters
-        ----------
-        T : float
-            Temperature, [K]
-        quick : bool, optional
-            Whether to use a SymPy cse-derived expression (3x faster) or 
-            individual formulas
         '''
         Tc, a, kappa0, kappa1 = self.Tc, self.a, self.kappa0, self.kappa1
-        if quick:
-            x1 = T/Tc
-            x2 = x1**0.5
-            x3 = x2 - 1.
-            x4 = 10.*x1 - 7.
-            x5 = x2 + 1.
-            x6 = 10.*kappa0 - kappa1*x4*x5
-            x7 = x3*x6
-            x8 = x7*0.1 - 1.
-            x10 = x6/T
-            x11 = kappa1*x3
-            x12 = x4/T
-            x13 = 20./Tc*x5 + x12*x2
-            x14 = -x10*x2 + x11*x13
-            self.a_alpha = a*x8*x8
-            self.da_alpha_dT = -a*x14*x8*0.1
-            self.d2a_alpha_dT2 = a*(x14*x14 - x2/T*(x7 - 10.)*(2.*kappa1*x13 + x10 + x11*(40./Tc - x12)))/200.
+        if not full:
+            return a*((kappa0 + kappa1*(sqrt(T/Tc) + 1)*(-T/Tc + 0.7))*(-sqrt(T/Tc) + 1) + 1)**2
         else:
-            self.a_alpha = a*((kappa0 + kappa1*(sqrt(T/Tc) + 1)*(-T/Tc + 0.7))*(-sqrt(T/Tc) + 1) + 1)**2
-            self.da_alpha_dT = a*((kappa0 + kappa1*(sqrt(T/Tc) + 1)*(-T/Tc + 0.7))*(-sqrt(T/Tc) + 1) + 1)*(2*(-sqrt(T/Tc) + 1)*(-kappa1*(sqrt(T/Tc) + 1)/Tc + kappa1*sqrt(T/Tc)*(-T/Tc + 0.7)/(2*T)) - sqrt(T/Tc)*(kappa0 + kappa1*(sqrt(T/Tc) + 1)*(-T/Tc + 0.7))/T)
-            self.d2a_alpha_dT2 = a*((kappa1*(sqrt(T/Tc) - 1)*(20*(sqrt(T/Tc) + 1)/Tc + sqrt(T/Tc)*(10*T/Tc - 7)/T) - sqrt(T/Tc)*(10*kappa0 - kappa1*(sqrt(T/Tc) + 1)*(10*T/Tc - 7))/T)**2 - sqrt(T/Tc)*((10*kappa0 - kappa1*(sqrt(T/Tc) + 1)*(10*T/Tc - 7))*(sqrt(T/Tc) - 1) - 10)*(kappa1*(40/Tc - (10*T/Tc - 7)/T)*(sqrt(T/Tc) - 1) + 2*kappa1*(20*(sqrt(T/Tc) + 1)/Tc + sqrt(T/Tc)*(10*T/Tc - 7)/T) + (10*kappa0 - kappa1*(sqrt(T/Tc) + 1)*(10*T/Tc - 7))/T)/T)/200
-            
+            if quick:
+                x1 = T/Tc
+                x2 = x1**0.5
+                x3 = x2 - 1.
+                x4 = 10.*x1 - 7.
+                x5 = x2 + 1.
+                x6 = 10.*kappa0 - kappa1*x4*x5
+                x7 = x3*x6
+                x8 = x7*0.1 - 1.
+                x10 = x6/T
+                x11 = kappa1*x3
+                x12 = x4/T
+                x13 = 20./Tc*x5 + x12*x2
+                x14 = -x10*x2 + x11*x13
+                a_alpha = a*x8*x8
+                da_alpha_dT = -a*x14*x8*0.1
+                d2a_alpha_dT2 = a*(x14*x14 - x2/T*(x7 - 10.)*(2.*kappa1*x13 + x10 + x11*(40./Tc - x12)))/200.
+            else:
+                a_alpha = a*((kappa0 + kappa1*(sqrt(T/Tc) + 1)*(-T/Tc + 0.7))*(-sqrt(T/Tc) + 1) + 1)**2
+                da_alpha_dT = a*((kappa0 + kappa1*(sqrt(T/Tc) + 1)*(-T/Tc + 0.7))*(-sqrt(T/Tc) + 1) + 1)*(2*(-sqrt(T/Tc) + 1)*(-kappa1*(sqrt(T/Tc) + 1)/Tc + kappa1*sqrt(T/Tc)*(-T/Tc + 0.7)/(2*T)) - sqrt(T/Tc)*(kappa0 + kappa1*(sqrt(T/Tc) + 1)*(-T/Tc + 0.7))/T)
+                d2a_alpha_dT2 = a*((kappa1*(sqrt(T/Tc) - 1)*(20*(sqrt(T/Tc) + 1)/Tc + sqrt(T/Tc)*(10*T/Tc - 7)/T) - sqrt(T/Tc)*(10*kappa0 - kappa1*(sqrt(T/Tc) + 1)*(10*T/Tc - 7))/T)**2 - sqrt(T/Tc)*((10*kappa0 - kappa1*(sqrt(T/Tc) + 1)*(10*T/Tc - 7))*(sqrt(T/Tc) - 1) - 10)*(kappa1*(40/Tc - (10*T/Tc - 7)/T)*(sqrt(T/Tc) - 1) + 2*kappa1*(20*(sqrt(T/Tc) + 1)/Tc + sqrt(T/Tc)*(10*T/Tc - 7)/T) + (10*kappa0 - kappa1*(sqrt(T/Tc) + 1)*(10*T/Tc - 7))/T)/T)/200
+            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+
             
 class PRSV2(PR):
     r'''Class for solving the Peng-Robinson-Stryjek-Vera 2 equations of state 
@@ -1266,6 +1281,8 @@ class PRSV2(PR):
         `T` inputs with care. This extra solution is a perfectly valid one
         however.
         '''
+        # Generic solution takes 72 vs 56 microseconds for the optimized version below
+#        return super(PR, self).solve_T(P, V, quick=quick) 
         Tc, a, b, kappa0, kappa1, kappa2, kappa3 = self.Tc, self.a, self.b, self.kappa0, self.kappa1, self.kappa2, self.kappa3
         if quick:
             x0 = V - b
@@ -1284,22 +1301,18 @@ class PRSV2(PR):
         return newton(to_solve, Tc*0.5)
 
 
-    def set_a_alpha_and_derivatives(self, T, quick=True):
+    def a_alpha_and_derivatives(self, T, full=True, quick=True):
         r'''Method to calculate `a_alpha` and its first and second
-        derivatives for the PRSV2 EOS.  Sets `a_alpha`, `da_alpha_dT`, and 
-        `d2a_alpha_dT2`. Uses the set values of `Tc`, `kappa`, `kappa0`, 
-        `kappa1`, `kappa2`, `kappa3`, and `a`.
+        derivatives for this EOS. Returns `a_alpha`, `da_alpha_dT`, and 
+        `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more 
+        documentation. Uses the set values of `Tc`, `kappa0`, `kappa1`,
+        `kappa2`, `kappa3`, and `a`. 
+        
+        For use in `solve_T`, returns only `a_alpha` if full is False.
+        
+        The first and second derivatives of `a_alpha` are available through the
+        following SymPy expression.
 
-        The `a_alpha` function is shown below; its first and second derivatives
-        are long available through the SymPy expression under it.
-
-        .. math::
-            a\alpha = a \left(\left(\kappa_{0} + \left(\kappa_{1} + \kappa_{2}
-            \left(- \sqrt{\frac{T}{Tc}} + 1\right) \left(- \frac{T}{Tc}
-            + \kappa_{3}\right)\right) \left(\sqrt{\frac{T}{Tc}} + 1\right) 
-            \left(- \frac{T}{Tc} + \frac{7}{10}\right)\right) \left(- \sqrt{
-            \frac{T}{Tc}} + 1\right) + 1\right)^{2}
-            
         >>> from sympy import *
         >>> P, T, V = symbols('P, T, V')
         >>> Tc, Pc, omega = symbols('Tc, Pc, omega')
@@ -1309,54 +1322,52 @@ class PRSV2(PR):
         >>> a_alpha = a*(1 + kappa*(1-sqrt(T/Tc)))**2
         >>> # diff(a_alpha, T)
         >>> # diff(a_alpha, T, 2)
-
-        Parameters
-        ----------
-        T : float
-            Temperature, [K]
-        quick : bool, optional
-            Whether to use a SymPy cse-derived expression (5x faster) or 
-            individual formulas
         '''
         Tc, a, kappa0, kappa1, kappa2, kappa3 = self.Tc, self.a, self.kappa0, self.kappa1, self.kappa2, self.kappa3
-        if quick:
-            x1 = T/Tc
-            x2 = sqrt(x1)
-            x3 = x2 - 1.
-            x4 = x2 + 1.
-            x5 = 10.*x1 - 7.
-            x6 = -kappa3 + x1
-            x7 = kappa1 + kappa2*x3*x6
-            x8 = x5*x7
-            x9 = 10.*kappa0 - x4*x8
-            x10 = x3*x9
-            x11 = x10*0.1 - 1.
-            x13 = x2/T
-            x14 = x7/Tc
-            x15 = kappa2*x4*x5
-            x16 = 2.*(-x2 + 1.)/Tc + x13*(kappa3 - x1)
-            x17 = -x13*x8 - x14*(20.*x2 + 20.) + x15*x16
-            x18 = x13*x9 + x17*x3
-            x19 = x2/(T*T)
-            x20 = 2.*x2/T
-            
-            self.a_alpha = a*x11*x11
-            self.da_alpha_dT = a*x11*x18*0.1
-            self.d2a_alpha_dT2 = a*(x18*x18 + (x10 - 10.)*(x17*x20 - x19*x9 + x3*(40.*kappa2/Tc*x16*x4 + kappa2*x16*x20*x5 - 40./T*x14*x2 - x15/T*x2*(4./Tc - x6/T) + x19*x8)))/200.
+        
+        if not full:
+            Tr = T/Tc
+            kappa = kappa0 + ((kappa1 + kappa2*(kappa3 - Tr)*(1 - Tr**0.5))*(1 + Tr**0.5)*(0.7 - Tr))
+            return a*(1 + kappa*(1-sqrt(T/Tc)))**2
         else:
-            self.a_alpha = a*(1 + self.kappa*(1-sqrt(T/Tc)))**2
-            self.da_alpha_dT = a*((kappa0 + (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)*(-T/Tc + 7/10))*(-sqrt(T/Tc) + 1) + 1)*(2*(-sqrt(T/Tc) + 1)*((sqrt(T/Tc) + 1)*(-T/Tc + 7/10)*(-kappa2*(-sqrt(T/Tc) + 1)/Tc - kappa2*sqrt(T/Tc)*(-T/Tc + kappa3)/(2*T)) - (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)/Tc + sqrt(T/Tc)*(kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(-T/Tc + 7/10)/(2*T)) - sqrt(T/Tc)*(kappa0 + (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)*(-T/Tc + 7/10))/T)
-            self.d2a_alpha_dT2 = a*((kappa0 + (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)*(-T/Tc + 7/10))*(-sqrt(T/Tc) + 1) + 1)*(2*(-sqrt(T/Tc) + 1)*((sqrt(T/Tc) + 1)*(-T/Tc + 7/10)*(kappa2*sqrt(T/Tc)/(T*Tc) + kappa2*sqrt(T/Tc)*(-T/Tc + kappa3)/(4*T**2)) - 2*(sqrt(T/Tc) + 1)*(-kappa2*(-sqrt(T/Tc) + 1)/Tc - kappa2*sqrt(T/Tc)*(-T/Tc + kappa3)/(2*T))/Tc + sqrt(T/Tc)*(-T/Tc + 7/10)*(-kappa2*(-sqrt(T/Tc) + 1)/Tc - kappa2*sqrt(T/Tc)*(-T/Tc + kappa3)/(2*T))/T - sqrt(T/Tc)*(kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))/(T*Tc) - sqrt(T/Tc)*(kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(-T/Tc + 7/10)/(4*T**2)) - 2*sqrt(T/Tc)*((sqrt(T/Tc) + 1)*(-T/Tc + 7/10)*(-kappa2*(-sqrt(T/Tc) + 1)/Tc - kappa2*sqrt(T/Tc)*(-T/Tc + kappa3)/(2*T)) - (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)/Tc + sqrt(T/Tc)*(kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(-T/Tc + 7/10)/(2*T))/T + sqrt(T/Tc)*(kappa0 + (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)*(-T/Tc + 7/10))/(2*T**2)) + a*((-sqrt(T/Tc) + 1)*((sqrt(T/Tc) + 1)*(-T/Tc + 7/10)*(-kappa2*(-sqrt(T/Tc) + 1)/Tc - kappa2*sqrt(T/Tc)*(-T/Tc + kappa3)/(2*T)) - (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)/Tc + sqrt(T/Tc)*(kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(-T/Tc + 7/10)/(2*T)) - sqrt(T/Tc)*(kappa0 + (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)*(-T/Tc + 7/10))/(2*T))*(2*(-sqrt(T/Tc) + 1)*((sqrt(T/Tc) + 1)*(-T/Tc + 7/10)*(-kappa2*(-sqrt(T/Tc) + 1)/Tc - kappa2*sqrt(T/Tc)*(-T/Tc + kappa3)/(2*T)) - (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)/Tc + sqrt(T/Tc)*(kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(-T/Tc + 7/10)/(2*T)) - sqrt(T/Tc)*(kappa0 + (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)*(-T/Tc + 7/10))/T)
-            
-            
-            
+            if quick:
+                x1 = T/Tc
+                x2 = sqrt(x1)
+                x3 = x2 - 1.
+                x4 = x2 + 1.
+                x5 = 10.*x1 - 7.
+                x6 = -kappa3 + x1
+                x7 = kappa1 + kappa2*x3*x6
+                x8 = x5*x7
+                x9 = 10.*kappa0 - x4*x8
+                x10 = x3*x9
+                x11 = x10*0.1 - 1.
+                x13 = x2/T
+                x14 = x7/Tc
+                x15 = kappa2*x4*x5
+                x16 = 2.*(-x2 + 1.)/Tc + x13*(kappa3 - x1)
+                x17 = -x13*x8 - x14*(20.*x2 + 20.) + x15*x16
+                x18 = x13*x9 + x17*x3
+                x19 = x2/(T*T)
+                x20 = 2.*x2/T
+                
+                a_alpha = a*x11*x11
+                da_alpha_dT = a*x11*x18*0.1
+                d2a_alpha_dT2 = a*(x18*x18 + (x10 - 10.)*(x17*x20 - x19*x9 + x3*(40.*kappa2/Tc*x16*x4 + kappa2*x16*x20*x5 - 40./T*x14*x2 - x15/T*x2*(4./Tc - x6/T) + x19*x8)))/200.
+            else:
+                a_alpha = a*(1 + self.kappa*(1-sqrt(T/Tc)))**2
+                da_alpha_dT = a*((kappa0 + (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)*(-T/Tc + 7/10))*(-sqrt(T/Tc) + 1) + 1)*(2*(-sqrt(T/Tc) + 1)*((sqrt(T/Tc) + 1)*(-T/Tc + 7/10)*(-kappa2*(-sqrt(T/Tc) + 1)/Tc - kappa2*sqrt(T/Tc)*(-T/Tc + kappa3)/(2*T)) - (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)/Tc + sqrt(T/Tc)*(kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(-T/Tc + 7/10)/(2*T)) - sqrt(T/Tc)*(kappa0 + (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)*(-T/Tc + 7/10))/T)
+                d2a_alpha_dT2 = a*((kappa0 + (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)*(-T/Tc + 7/10))*(-sqrt(T/Tc) + 1) + 1)*(2*(-sqrt(T/Tc) + 1)*((sqrt(T/Tc) + 1)*(-T/Tc + 7/10)*(kappa2*sqrt(T/Tc)/(T*Tc) + kappa2*sqrt(T/Tc)*(-T/Tc + kappa3)/(4*T**2)) - 2*(sqrt(T/Tc) + 1)*(-kappa2*(-sqrt(T/Tc) + 1)/Tc - kappa2*sqrt(T/Tc)*(-T/Tc + kappa3)/(2*T))/Tc + sqrt(T/Tc)*(-T/Tc + 7/10)*(-kappa2*(-sqrt(T/Tc) + 1)/Tc - kappa2*sqrt(T/Tc)*(-T/Tc + kappa3)/(2*T))/T - sqrt(T/Tc)*(kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))/(T*Tc) - sqrt(T/Tc)*(kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(-T/Tc + 7/10)/(4*T**2)) - 2*sqrt(T/Tc)*((sqrt(T/Tc) + 1)*(-T/Tc + 7/10)*(-kappa2*(-sqrt(T/Tc) + 1)/Tc - kappa2*sqrt(T/Tc)*(-T/Tc + kappa3)/(2*T)) - (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)/Tc + sqrt(T/Tc)*(kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(-T/Tc + 7/10)/(2*T))/T + sqrt(T/Tc)*(kappa0 + (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)*(-T/Tc + 7/10))/(2*T**2)) + a*((-sqrt(T/Tc) + 1)*((sqrt(T/Tc) + 1)*(-T/Tc + 7/10)*(-kappa2*(-sqrt(T/Tc) + 1)/Tc - kappa2*sqrt(T/Tc)*(-T/Tc + kappa3)/(2*T)) - (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)/Tc + sqrt(T/Tc)*(kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(-T/Tc + 7/10)/(2*T)) - sqrt(T/Tc)*(kappa0 + (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)*(-T/Tc + 7/10))/(2*T))*(2*(-sqrt(T/Tc) + 1)*((sqrt(T/Tc) + 1)*(-T/Tc + 7/10)*(-kappa2*(-sqrt(T/Tc) + 1)/Tc - kappa2*sqrt(T/Tc)*(-T/Tc + kappa3)/(2*T)) - (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)/Tc + sqrt(T/Tc)*(kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(-T/Tc + 7/10)/(2*T)) - sqrt(T/Tc)*(kappa0 + (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)*(-T/Tc + 7/10))/T)
+            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+
+
 class VDW(GCEOS):
     r'''Class for solving the Van der Waals cubic 
     equation of state for a pure compound. Subclasses `CUBIC_EOS`, which 
     provides the methods for solving the EOS and calculating its assorted 
     relevant thermodynamic properties. Solves the EOS on initialization. 
 
-    Implemented methods here are `set_a_alpha_and_derivatives`, which sets 
+    Implemented methods here are `a_alpha_and_derivatives`, which sets 
     a_alpha and its first and second derivatives, and `solve_T`, which from a 
     specified `P` and `V` obtains `T`. `main_derivatives_and_departures` is
     a re-implementation with VDW specific methods, as the general solution
@@ -1410,28 +1421,23 @@ class VDW(GCEOS):
         self.epsilon = 0
         self.solve()
 
-    def set_a_alpha_and_derivatives(self, T):
+    def a_alpha_and_derivatives(self, T, full=True, quick=True):
         r'''Method to calculate `a_alpha` and its first and second
-        derivatives for the PR EOS.  Sets 'a_alpha', 'da_alpha_dT', and 
-        'd2a_alpha_dT2'. 
-
+        derivatives for this EOS. Returns `a_alpha`, `da_alpha_dT`, and 
+        `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more 
+        documentation. Uses the set values of `a`.
+        
         .. math::
             a\alpha = a
         
             \frac{d a\alpha}{dT} = 0
 
             \frac{d^2 a\alpha}{dT^2} = 0
-
-        Uses the set values of `Tc`, `kappa, and `a`.
-
-        Parameters
-        ----------
-        T : float
-            Temperature, [K]
         '''
-        self.a_alpha = self.a
-        self.da_alpha_dT = 0.0
-        self.d2a_alpha_dT2 = 0.0
+        a_alpha = self.a
+        da_alpha_dT = 0.0
+        d2a_alpha_dT2 = 0.0
+        return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
     def solve_T(self, P, V):
         r'''Method to calculate `T` from a specified `P` and `V` for the VDW
@@ -1498,7 +1504,7 @@ class RK(GCEOS):
     provides the methods for solving the EOS and calculating its assorted 
     relevant thermodynamic properties. Solves the EOS on initialization. 
 
-    Implemented methods here are `set_a_alpha_and_derivatives`, which sets 
+    Implemented methods here are `a_alpha_and_derivatives`, which sets 
     a_alpha and its first and second derivatives, and `solve_T`, which from a 
     specified `P` and `V` obtains `T`. 
     
@@ -1559,28 +1565,23 @@ class RK(GCEOS):
         self.delta = self.b
         self.solve()
 
-    def set_a_alpha_and_derivatives(self, T):
+    def a_alpha_and_derivatives(self, T, full=True, quick=True):
         r'''Method to calculate `a_alpha` and its first and second
-        derivatives for the RK EOS.  Sets 'a_alpha', 'da_alpha_dT', and 
-        'd2a_alpha_dT2'. 
-
+        derivatives for this EOS. Returns `a_alpha`, `da_alpha_dT`, and 
+        `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more 
+        documentation. Uses the set values of `a`.
+        
         .. math::
             a\alpha = \frac{a}{\sqrt{T}}
         
             \frac{d a\alpha}{dT} = - \frac{a}{2 T^{\frac{3}{2}}}
 
             \frac{d^2 a\alpha}{dT^2} = \frac{3 a}{4 T^{\frac{5}{2}}}
-
-        Uses the set values of `a`.
-
-        Parameters
-        ----------
-        T : float
-            Temperature, [K]
         '''
-        self.a_alpha = self.a*T**-0.5
-        self.da_alpha_dT = -0.5*self.a*T**(-1.5)
-        self.d2a_alpha_dT2 = 0.75*self.a*T**(-2.5)
+        a_alpha = self.a*T**-0.5
+        da_alpha_dT = -0.5*self.a*T**(-1.5)
+        d2a_alpha_dT2 = 0.75*self.a*T**(-2.5)
+        return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
     def solve_T(self, P, V, quick=True):
         r'''Method to calculate `T` from a specified `P` and `V` for the RK
@@ -1632,7 +1633,7 @@ class SRK(GCEOS):
     provides the methods for solving the EOS and calculating its assorted 
     relevant thermodynamic properties. Solves the EOS on initialization. 
 
-    Implemented methods here are `set_a_alpha_and_derivatives`, which sets 
+    Implemented methods here are `a_alpha_and_derivatives`, which sets 
     a_alpha and its first and second derivatives, and `solve_T`, which from a 
     specified `P` and `V` obtains `T`. 
     
@@ -1700,11 +1701,12 @@ class SRK(GCEOS):
         self.delta = self.b
         self.solve()
 
-    def set_a_alpha_and_derivatives(self, T):
+    def a_alpha_and_derivatives(self, T, full=True, quick=True):
         r'''Method to calculate `a_alpha` and its first and second
-        derivatives for the SRK EOS.  Sets 'a_alpha', 'da_alpha_dT', and 
-        'd2a_alpha_dT2'. 
-
+        derivatives for this EOS. Returns `a_alpha`, `da_alpha_dT`, and 
+        `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more 
+        documentation. Uses the set values of `Tc`, `m`, and `a`.
+        
         .. math::
             a\alpha = a \left(m \left(- \sqrt{\frac{T}{Tc}} + 1\right)
             + 1\right)^{2}
@@ -1714,20 +1716,13 @@ class SRK(GCEOS):
 
             \frac{d^2 a\alpha}{dT^2} = \frac{a m \sqrt{\frac{T}{Tc}}}{2 T^{2}}
             \left(m + 1\right)
-
-        Uses the set values of `a`, `Tc`, and `m`.
-
-        Parameters
-        ----------
-        T : float
-            Temperature, [K]
         '''
         a, Tc, m = self.a, self.Tc, self.m
         sqTr = (T/Tc)**0.5
-        self.a_alpha = a*(m*(1. - sqTr) + 1.)**2
-        self.da_alpha_dT = -a*m*sqTr*(m*(-sqTr + 1.) + 1.)/T
-        self.d2a_alpha_dT2 =  a*m*sqTr*(m + 1.)/(2.*T*T)
-
+        a_alpha = a*(m*(1. - sqTr) + 1.)**2
+        da_alpha_dT = -a*m*sqTr*(m*(-sqTr + 1.) + 1.)/T
+        d2a_alpha_dT2 =  a*m*sqTr*(m + 1.)/(2.*T*T)
+        return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
     def solve_T(self, P, V, quick=True):
         r'''Method to calculate `T` from a specified `P` and `V` for the SRK
@@ -1805,7 +1800,7 @@ class APISRK(SRK):
     provides the methods for solving the EOS and calculating its assorted 
     relevant thermodynamic properties. Solves the EOS on initialization. 
 
-    Implemented methods here are `set_a_alpha_and_derivatives`, which sets 
+    Implemented methods here are `a_alpha_and_derivatives`, which sets 
     a_alpha and its first and second derivatives, and `solve_T`, which from a 
     specified `P` and `V` obtains `T`. Two fit constants are used in this 
     expresion, with an estimation scheme for the first if unavailable and the
@@ -1885,11 +1880,12 @@ class APISRK(SRK):
             self.T = self.solve_T(self.P, self.V)
         self.solve()
 
-    def set_a_alpha_and_derivatives(self, T, quick=True):
+    def a_alpha_and_derivatives(self, T, full=True, quick=True):
         r'''Method to calculate `a_alpha` and its first and second
-        derivatives for the SRK EOS.  Sets 'a_alpha', 'da_alpha_dT', and 
-        'd2a_alpha_dT2'. 
-
+        derivatives for this EOS. Returns `a_alpha`, `da_alpha_dT`, and 
+        `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more 
+        documentation. Uses the set values of `Tc`, `a`, `S1`, and `S2`. 
+        
         .. math::
             a\alpha(T) = a\left[1 + S_1\left(1-\sqrt{T_r}\right) + S_2\frac{1
             - \sqrt{T_r}}{\sqrt{T_r}}\right]^2
@@ -1905,32 +1901,28 @@ class APISRK(SRK):
             S_{2} Tc \sqrt{\frac{T}{Tc}} + S_{1} T \sqrt{\frac{T}{Tc}} 
             - 3 S_{2}^{2} Tc \sqrt{\frac{T}{Tc}} + 4 S_{2}^{2} Tc + 3 S_{2} 
             Tc \sqrt{\frac{T}{Tc}}\right)
-
-        Uses the set values of `a`, `Tc`, and `m`.
-
-        Parameters
-        ----------
-        T : float
-            Temperature, [K]
         '''
         a, Tc, S1, S2 = self.a, self.Tc, self.S1, self.S2
-
-        if quick:
-            x0 = (T/Tc)**0.5
-            x1 = x0 - 1.
-            x2 = x1/x0
-            x3 = S2*x2
-            x4 = S1*x1 + x3 - 1.
-            x5 = S1*x0
-            x6 = S2 - x3 + x5
-            x7 = 3.*S2
-            self.a_alpha = a*x4*x4
-            self.da_alpha_dT = a*x4*x6/T
-            self.d2a_alpha_dT2 = a*(-x4*(-x2*x7 + x5 + x7) + x6*x6)/(2.*T*T)
+        if not full:
+            return a*(S1*(-sqrt(T/Tc) + 1) + S2*(-sqrt(T/Tc) + 1)/sqrt(T/Tc) + 1)**2
         else:
-            self.a_alpha = a*(S1*(-sqrt(T/Tc) + 1) + S2*(-sqrt(T/Tc) + 1)/sqrt(T/Tc) + 1)**2
-            self.da_alpha_dT = a*((S1*(-sqrt(T/Tc) + 1) + S2*(-sqrt(T/Tc) + 1)/sqrt(T/Tc) + 1)*(-S1*sqrt(T/Tc)/T - S2/T - S2*(-sqrt(T/Tc) + 1)/(T*sqrt(T/Tc))))
-            self.d2a_alpha_dT2 = a*(((S1*sqrt(T/Tc) + S2 - S2*(sqrt(T/Tc) - 1)/sqrt(T/Tc))**2 - (S1*sqrt(T/Tc) + 3*S2 - 3*S2*(sqrt(T/Tc) - 1)/sqrt(T/Tc))*(S1*(sqrt(T/Tc) - 1) + S2*(sqrt(T/Tc) - 1)/sqrt(T/Tc) - 1))/(2*T**2))
+            if quick:
+                x0 = (T/Tc)**0.5
+                x1 = x0 - 1.
+                x2 = x1/x0
+                x3 = S2*x2
+                x4 = S1*x1 + x3 - 1.
+                x5 = S1*x0
+                x6 = S2 - x3 + x5
+                x7 = 3.*S2
+                a_alpha = a*x4*x4
+                da_alpha_dT = a*x4*x6/T
+                d2a_alpha_dT2 = a*(-x4*(-x2*x7 + x5 + x7) + x6*x6)/(2.*T*T)
+            else:
+                a_alpha = a*(S1*(-sqrt(T/Tc) + 1) + S2*(-sqrt(T/Tc) + 1)/sqrt(T/Tc) + 1)**2
+                da_alpha_dT = a*((S1*(-sqrt(T/Tc) + 1) + S2*(-sqrt(T/Tc) + 1)/sqrt(T/Tc) + 1)*(-S1*sqrt(T/Tc)/T - S2/T - S2*(-sqrt(T/Tc) + 1)/(T*sqrt(T/Tc))))
+                d2a_alpha_dT2 = a*(((S1*sqrt(T/Tc) + S2 - S2*(sqrt(T/Tc) - 1)/sqrt(T/Tc))**2 - (S1*sqrt(T/Tc) + 3*S2 - 3*S2*(sqrt(T/Tc) - 1)/sqrt(T/Tc))*(S1*(sqrt(T/Tc) - 1) + S2*(sqrt(T/Tc) - 1)/sqrt(T/Tc) - 1))/(2*T**2))
+            return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
     def solve_T(self, P, V, quick=True):
         r'''Method to calculate `T` from a specified `P` and `V` for the API 
@@ -1962,13 +1954,15 @@ class APISRK(SRK):
             self.m = self.S1
             return SRK.solve_T(self, P, V, quick=quick)
         else:
+            # Previously coded method is  63 microseconds vs 47 here
+#            return super(SRK, self).solve_T(P, V, quick=quick) 
             Tc, a, b, S1, S2 = self.Tc, self.a, self.b, self.S1, self.S2
             if quick:
                 x2 = R/(V-b)
                 x3 = (V*(V + b))
                 def to_solve(T):
                     x0 = (T/Tc)**0.5
-                    x1 = x0 - 1
+                    x1 = x0 - 1.
                     return (x2*T - a*(S1*x1 + S2*x1/x0 - 1.)**2/x3) - P
             else:
                 def to_solve(T):
@@ -1983,7 +1977,7 @@ class TWUPR(PR):
     provides the methods for solving the EOS and calculating its assorted 
     relevant thermodynamic properties. Solves the EOS on initialization. 
 
-    Implemented methods here are `set_a_alpha_and_derivatives`, which sets 
+    Implemented methods here are `a_alpha_and_derivatives`, which sets 
     a_alpha and its first and second derivatives, and `solve_T`, which from a 
     specified `P` and `V` obtains `T`. 
     
@@ -2037,6 +2031,10 @@ class TWUPR(PR):
     -----
     Claimed to be more accurate than the PR, PR78 and PRSV equations.
 
+    There is no analytical solution for `T`. There are multiple possible 
+    solutions for `T` under certain conditions; no guaranteed are provided
+    regarding which solution is obtained.
+
     References
     ----------
     .. [1] Twu, Chorng H., John E. Coon, and John R. Cunningham. "A New 
@@ -2053,67 +2051,28 @@ class TWUPR(PR):
         self.V = V
         self.a = self.c1*R*R*Tc*Tc/Pc
         self.b = self.c2*R*Tc/Pc
+        self.delta = 2*self.b
+        self.epsilon = -self.b*self.b
         self.check_sufficient_inputs()
-        
+
+        self.solve_T = super(PR, self).solve_T
+
         if self.V and self.P:
             self.T = self.solve_T(self.P, self.V)
         
-        self.delta = 2*self.b
-        self.epsilon = -self.b*self.b
         self.solve()
 
-    def set_a_alpha_and_derivatives(self, T, quick=True):
+    def a_alpha_and_derivatives(self, T, full=True, quick=True):
         r'''Method to calculate `a_alpha` and its first and second
-        derivatives for the TWUPR EOS.  Sets 'a_alpha', 'da_alpha_dT', and 
-        'd2a_alpha_dT2'.
-
-        Uses the set values of `Tc`, `omega`, and `a`. Because of its 
-        similarity for the TWUSRK EOS, this has been moved to an external
-        `TWU_a_alpha_common` function. See it for further documentation.
-
-        Parameters
-        ----------
-        T : float
-            Temperature, [K]
-        quick : bool, optional
-            Whether to use a SymPy cse-derived expression (3x faster) or 
-            individual formulas
-        '''
-        self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2 = TWU_a_alpha_common(
-        T, self.Tc, self.omega, self.a, full=True, quick=quick, method='PR')
+        derivatives for this EOS. Returns `a_alpha`, `da_alpha_dT`, and 
+        `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more 
+        documentation. Uses the set values of `Tc`, `omega`, and `a`.
         
-    def solve_T(self, P, V, quick=True):
-        r'''Method to calculate `T` from a specified `P` and `V` for the Twu
-        EOS. Uses `Tc`, `a`, and `b` as well, obtained from the 
-        class's namespace.
-
-        Parameters
-        ----------
-        P : float
-            Pressure, [Pa]
-        V : float
-            Molar volume, [m^3/mol]
-        quick : bool, optional
-            Whether to use a SymPy cse-derived expression (3x faster) or 
-            individual formulas
-
-        Returns
-        -------
-        T : float
-            Temperature, [K]
-        
-        Notes
-        -----
-        There is no analytical solution for `T`. There are multiple possible 
-        solutions for `T` under certain conditions.
+        Because of its similarity for the TWUSRK EOS, this has been moved to an 
+        external `TWU_a_alpha_common` function. See it for further 
+        documentation.
         '''
-        Tc, omega, a, b = self.Tc, self.omega, self.a, self.b
-        def to_solve(T):
-            a_alpha = TWU_a_alpha_common(T, Tc, omega, a, full=False, quick=quick, method='PR')
-            P_calc = R*T/(V-b) - a_alpha/(V*(V+b) + b*(V-b))
-            return P_calc - P
-        return newton(to_solve, Tc*0.5)
-
+        return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=full, quick=quick, method='PR')
 
 
 def TWU_a_alpha_common(T, Tc, omega, a, full=True, quick=True, method='PR'):
@@ -2226,7 +2185,7 @@ class TWUSRK(SRK):
     provides the methods for solving the EOS and calculating its assorted 
     relevant thermodynamic properties. Solves the EOS on initialization. 
 
-    Implemented methods here are `set_a_alpha_and_derivatives`, which sets 
+    Implemented methods here are `a_alpha_and_derivatives`, which sets 
     a_alpha and its first and second derivatives, and `solve_T`, which from a 
     specified `P` and `V` obtains `T`. 
     
@@ -2277,6 +2236,12 @@ class TWUSRK(SRK):
     >>> eos = TWUSRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
     >>> eos.phase, eos.V_l, eos.H_dep_l, eos.S_dep_l
     ('l', 0.00014689217317770398, -31612.591872087483, -74.02294100343829)
+    
+    Notes
+    -----
+    There is no analytical solution for `T`. There are multiple possible 
+    solutions for `T` under certain conditions; no guaranteed are provided
+    regarding which solution is obtained.
 
     References
     ----------
@@ -2298,56 +2263,24 @@ class TWUSRK(SRK):
         self.delta = self.b
         self.check_sufficient_inputs()
         
+        self.solve_T = super(SRK, self).solve_T
+        
         if self.V and self.P:
             self.T = self.solve_T(self.P, self.V)
         self.solve()
         
 
-    def set_a_alpha_and_derivatives(self, T, quick=True):
+    def a_alpha_and_derivatives(self, T, full=True, quick=True):
         r'''Method to calculate `a_alpha` and its first and second
-        derivatives for the TWUSRK EOS.  Sets 'a_alpha', 'da_alpha_dT', and 
-        'd2a_alpha_dT2'. 
-
-        Uses the set values of `Tc`, `omega`, and `a`. Because of its 
-        similarity for the TWUPR EOS, this has been moved to an external
-        `TWU_a_alpha_common` function. See it for further documentation.
-
-        Parameters
-        ----------
-        T : float
-            Temperature, [K]
-        '''
-        self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2 = TWU_a_alpha_common(
-        T, self.Tc, self.omega, self.a, full=True, quick=quick, method='SRK')
-
-    def solve_T(self, P, V, quick=True):
-        r'''Method to calculate `T` from a specified `P` and `V` for the TWUSRK
-        EOS. Uses `Tc`, `omega`, `a`, and `b` as well, obtained from the 
-        class's namespace.
-
-        Parameters
-        ----------
-        P : float
-            Pressure, [Pa]
-        V : float
-            Molar volume, [m^3/mol]
-        quick : bool, optional
-            Whether to use a SymPy cse-derived expression (3x faster) or 
-            individual formulas
-
-        Returns
-        -------
-        T : float
-            Temperature, [K]
+        derivatives for this EOS. Returns `a_alpha`, `da_alpha_dT`, and 
+        `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more 
+        documentation. Uses the set values of `Tc`, `omega`, and `a`.
         
-        Notes
-        -----
-        There is no analytical solution for `T`. There are multiple possible 
-        solutions for `T` under certain conditions.
+        Because of its similarity for the TWUPR EOS, this has been moved to an 
+        external `TWU_a_alpha_common` function. See it for further 
+        documentation.
         '''
-        Tc, omega, a, b = self.Tc, self.omega, self.a, self.b
-        def to_solve(T):
-            a_alpha = TWU_a_alpha_common(T, Tc, omega, a, full=False, quick=quick, method='SRK')
-            P_calc = R*T/(V-b) - a_alpha/(V*(V+b))
-            return P_calc - P
-        return newton(to_solve, Tc*0.5)
+        return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=full, quick=quick, method='SRK')
+
+
+
