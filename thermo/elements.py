@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['periodic_table', 'PeriodicTable', 'molecular_weight', 'mass_fractions', 
+__all__ = ['PeriodicTable', 'molecular_weight', 'mass_fractions', 
            'atom_fractions', 'similarity_variable', 'atoms_to_Hill', 
            'simple_formula_parser', 'CAS_by_number', 'periods', 'groups', 
            'blocks']
@@ -75,8 +75,8 @@ class PeriodicTable(object):
     References
     ----------
     .. [1] N M O'Boyle, M Banck, C A James, C Morley, T Vandermeersch, and
-        G R Hutchison. "Open Babel: An open chemical toolbox." J. Cheminf.
-        (2011), 3, 33. DOI:10.1186/1758-2946-3-33
+       G R Hutchison. "Open Babel: An open chemical toolbox." J. Cheminf.
+       (2011), 3, 33. DOI:10.1186/1758-2946-3-33
     '''
     __slots__ = ['number_to_elements', 'symbol_to_elements',
                  'name_to_elements', 'CAS_to_elements']

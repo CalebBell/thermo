@@ -24,6 +24,7 @@ from numpy.testing import assert_allclose
 import pytest
 
 from thermo.elements import *
+from thermo.elements import periodic_table
 
 def test_molecular_weight():
     MW_calc = molecular_weight({'H': 12, 'C': 20, 'O': 5})
