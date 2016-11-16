@@ -234,6 +234,14 @@ def test_PR_quick():
     H_dep_expect = -31134.740290463407
     assert_allclose(-H_dep_walas, H_dep_expect)
     assert_allclose(H_dep_expect, eos.H_dep_l)
+    
+    # Author's original H_dep, in [1]
+    H_dep_orig = R*eos.T*(Z-1) + (eos.T*eos.da_alpha_dT-eos.a_alpha)/(2*2**0.5*eos.b)*log((Z+2.44*B)/(Z-0.414*B))
+    assert_allclose(H_dep_orig, H_dep_expect, rtol=5E-3)
+    
+    # Author's correlation, with the correct constants this time
+    H_dep_orig = R*eos.T*(Z-1) + (eos.T*eos.da_alpha_dT-eos.a_alpha)/(2*2**0.5*eos.b)*log((Z+(sqrt(2)+1)*B)/(Z-(sqrt(2)-1)*B))
+    assert_allclose(H_dep_orig, H_dep_expect)
 
 
 def test_PR78():
