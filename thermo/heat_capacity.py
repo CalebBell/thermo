@@ -67,7 +67,7 @@ _TRC_gas_data_values = TRC_gas_data.values
 
 
 _PerryI = {}
-with open(os.path.join(folder, 'Perrys Table 2-151.csv')) as f:
+with open(os.path.join(folder, 'Perrys Table 2-151.csv'), encoding='utf-8') as f:
     '''Read in a dict of heat capacities of irnorganic and elemental solids.
     These are in section 2, table 151 in:
     Green, Don, and Robert Perry. Perry's Chemical Engineers' Handbook,
