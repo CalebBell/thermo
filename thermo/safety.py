@@ -32,6 +32,7 @@ __all__ = ['ppmv_to_mgm3', 'mgm3_to_ppmv', 'NFPA_2008', 'IEC_2010',
 
 from thermo.identifiers import CASfromAny, MW
 import os
+from io import open
 import numpy as np
 from scipy.constants import R
 import pandas as pd
@@ -161,7 +162,8 @@ IEC_2010 = pd.read_csv(os.path.join(folder, 'IS IEC 60079-20-1 2010.csv'),
 
 _OntarioExposureLimits = {}
 
-with open(os.path.join(folder, 'Ontario Exposure Limits.csv')) as f:
+
+with open(os.path.join(folder, 'Ontario Exposure Limits.csv'), encoding='utf-8') as f:
     '''Read in a dict of TWAs, STELs, and Ceiling Limits. The data source
     is the Ontario Labor Website. They have obtained their data in part from
     their own reviews, and also from ACGIH.

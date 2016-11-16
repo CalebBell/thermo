@@ -46,7 +46,7 @@ def test_OntarioExposureLimits():
 
     pts = [_OntarioExposureLimits[i]["TWA (mg/m^3)"] for i in _OntarioExposureLimits.keys()]
     tot = pd.DataFrame(pts)[0].sum()
-    assert_allclose(tot, 136383.0301838795)
+    assert_allclose(tot, 136218.50364615413)
 
     pts = [_OntarioExposureLimits[i]["STEL (ppm)"] for i in _OntarioExposureLimits.keys()]
     tot = pd.DataFrame(pts)[0].sum()
