@@ -24,7 +24,6 @@ from numpy.testing import assert_allclose
 import pytest
 import numpy as np
 from thermo.virial import *
-from sympy import symbols, Rational, diff, lambdify, integrate
 from scipy.constants import R as _R
 from scipy.integrate import quad
 
@@ -37,9 +36,9 @@ def test_BVirial_Pitzer_Curl():
     with pytest.raises(Exception):
         BVirial_Pitzer_Curl(510., 425.2, 38E5, 0.193, order=-3)
 
-@pytest.mark.slow
 @pytest.mark.sympy
 def test_BVirial_Pitzer_Curl_calculus():
+    from sympy import symbols, Rational, diff, lambdify, integrate
     # Derivatives check
     # Uses SymPy
     T, Tc, Pc, omega, R = symbols('T, Tc, Pc, omega, R')
@@ -102,9 +101,10 @@ def test_BVirial_Pitzer_Curl_calculus():
             assert_allclose(dBint, dBquad)
 
 
-@pytest.mark.slow
 @pytest.mark.sympy
 def test_BVirial_Abbott():
+    from sympy import symbols, Rational, diff, lambdify, integrate
+
     B = BVirial_Abbott(510., 425.2, 38E5, 0.193)
     assert_allclose(B, -0.00020570178037383633)
     
@@ -168,9 +168,10 @@ def test_BVirial_Abbott():
             dBquad = quad(BVirial_Abbott, T1, T2, args=(_Tc, _Pc, _omega, order+1))[0]
             assert_allclose(dBint, dBquad)
 
-@pytest.mark.slow
 @pytest.mark.sympy
 def test_BVirial_Tsonopoulos():
+    from sympy import symbols, Rational, diff, lambdify, integrate
+
     B = BVirial_Tsonopoulos(510., 425.2, 38E5, 0.193)
     assert_allclose(B, -0.00020935288308483694)
 
@@ -234,9 +235,10 @@ def test_BVirial_Tsonopoulos():
             assert_allclose(dBint, dBquad)
 
 
-@pytest.mark.slow
 @pytest.mark.sympy
 def test_BVirial_Tsonopoulos_extended():
+    from sympy import symbols, Rational, diff, lambdify, integrate
+
     B = BVirial_Tsonopoulos_extended(510., 425.2, 38E5, 0.193, species_type='normal', dipole=0)
     assert_allclose(B, -0.00020935288308483694)
 
