@@ -140,13 +140,12 @@ class GCEOS(object):
                 self.V_l = V
             else:
                 self.V_g = V
-        elif imaginary_roots_count == 0:
+        else:
+            # Even in the case of three real roots, it is still the min/max that make sense
             Vs = [i.real for i in Vs]
             self.V_l, self.V_g = min(Vs), max(Vs)
             [self.set_properties_from_solution(self.T, self.P, V, self.b, self.delta, self.epsilon, self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2) for V in [self.V_l, self.V_g]]
             self.phase = 'l/g'
-        else:  # pragma: no cover
-            raise Exception('No real volumes calculated - look into numerical issues.')
 
     def set_properties_from_solution(self, T, P, V, b, delta, epsilon, a_alpha, 
                                      da_alpha_dT, d2a_alpha_dT2, quick=True):
@@ -598,8 +597,8 @@ should be calculated by this method, in a user subclass.')
             d2P_dV2 = -2.*a_alpha*x5*x5*x1**-3 + 2.*x7 + 2.*x3*x0**-3
             d2P_dTdV = -R*x4 + da_alpha_dT*x5*x6
             H_dep = x12*(T*da_alpha_dT - a_alpha) - x3 + x8
-            S_dep = -R*log(V*x3/(x0*x8)) + da_alpha_dT*x12 
-            Cv_dep = -T*d2a_alpha_dT2*x13*(-log((x14 - x15 + x16)/(x14 + x15 - x16)))
+            S_dep = -R*log((V*x3/(x0*x8))**2)/2. + da_alpha_dT*x12  # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
+            Cv_dep = -T*d2a_alpha_dT2*x13*(-log(((x14 - x15 + x16)/(x14 + x15 - x16))**2)*0.5) # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
         else:
             dP_dT = R/(V - b) - da_alpha_dT/(V**2 + V*delta + epsilon)
             dP_dV = -R*T/(V - b)**2 - (-2*V - delta)*a_alpha/(V**2 + V*delta + epsilon)**2
