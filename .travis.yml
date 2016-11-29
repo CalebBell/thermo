@@ -1,25 +1,40 @@
-language: python
-python:
+language: c
+os:
+  - osx
+  - linux
+compiler:
+  - "2.6"
   - "2.7"
+  - "3.3"
   - "3.4"
   - "3.5"
+env:
+  - SCIPY_VER="scipy>=0.12.0" 
+matrix:
+  fast_finish: true
+  exclude:
+    - os: "osx"
+      compiler: "2.6"
+    - os: "linux"
+      compiler: "3.3"
+  include:
+    - os: "linux"
+      compiler: "2.7"
+      env: SCIPY_VER="scipy=0.12.0" 
 notifications:
   email: false
 install:
-  - sudo apt-get update
-  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-      wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
-    else
-      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-    fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then CONDA_OS='Linux'; else CONDA_OS='MacOSX'; fi;
+  - wget http://repo.continuum.io/miniconda/Miniconda-latest-${CONDA_OS}-x86_64.sh -O miniconda.sh;
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib
+  - conda create -q -n test-environment python=$CC numpy scipy matplotlib
   - source activate test-environment
+  - conda install $SCIPY_VER
   - pip install -r requirements_test.txt
   - python setup.py -q install
 script:
