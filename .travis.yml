@@ -3,7 +3,6 @@ os:
   - osx
   - linux
 compiler:
-  - "2.6"
   - "2.7"
   - "3.3"
   - "3.4"
@@ -13,8 +12,6 @@ env:
 matrix:
   fast_finish: true
   exclude:
-    - os: "osx"
-      compiler: "2.6"
     - os: "linux"
       compiler: "3.3"
   include:
