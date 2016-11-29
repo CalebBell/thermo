@@ -26,6 +26,9 @@ thermo
 .. image:: https://zenodo.org/badge/doi/10.5281/zenodo.59771.svg
    :alt: Zendo
    :target: https://zenodo.org/record/59771?ln=en
+.. image:: http://img.shields.io/appveyor/ci/calebbell/thermo.svg
+   :target: https://ci.appveyor.com/project/calebbell/thermo/branch/master
+   :alt: Build_status
 
 .. contents::
 
