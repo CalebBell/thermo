@@ -413,7 +413,7 @@ class GCEOS(object):
         each EOS variant; this only raises a NotImplemented Exception.
         Should return 'a_alpha', 'da_alpha_dT', and 'd2a_alpha_dT2'.
 
-        For use in `solve_T`, returns only `a_alpha` if full is False.
+        For use in `solve_T`, returns only `a_alpha` if `full` is False.
         
         Parameters
         ----------
@@ -441,9 +441,9 @@ should be calculated by this method, in a user subclass.')
     
     def solve_T(self, P, V, quick=True):
         '''Generic method to calculate `T` from a specified `P` and `V`.
-        Provides a SciPy's `newton` solver, and iterates to solve the general
-        equation for `P`, resolving for `a_alpha` as a function of temperature
-        using `a_alpha_and_derivatives` each time.
+        Provides SciPy's `newton` solver, and iterates to solve the general
+        equation for `P`, recalculating `a_alpha` as a function of temperature
+        using `a_alpha_and_derivatives` each iteration.
 
         Parameters
         ----------
@@ -2271,10 +2271,223 @@ class TWUSRK(SRK):
         return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=full, quick=quick, method='SRK')
 
 
-#class GCEOSMIX(GCEOS):
+class GCEOSMIX(GCEOS):
+    r'''Class for solving a generic pressure-explicit three-parameter cubic 
+    equation of state for a mixture. Does not implement any parameters itself;  
+    must be subclassed by a mixture equation of state class which subclasses it.
+    No routines for partial molar properties for a generic cubic equation of
+    state have yet been implemented, although that would be desireable. 
+    The only partial molar property which is currently used is fugacity, which
+    must be implemented in each mixture EOS that subclasses this.
+    
+    .. math::
+        P=\frac{RT}{V-b}-\frac{a\alpha(T)}{V^2 + \delta V + \epsilon}
+
+    Main methods are `fugacities`, `solve_T`, and `a_alpha_and_derivatives`.
+    
+    `fugacities` is a helper method intended as a common interface for setting
+    fugacities of each species in each phase; it calls `fugacity_coefficients`
+    to actually calculate them, but that is not implemented here. This should
+    be used when performing flash calculations, where fugacities are needed 
+    repeatedly. The fugacities change as a function of liquid/gas phase 
+    composition, but the entire EOS need not be solved to recalculate them.
+    
+    `solve_T` is a wrapper around `GCEOS`'s `solve_T`; the only difference is 
+    to use half the average mixture's critical temperature as the initial 
+    guess.
+    
+    `a_alpha_and_derivatives` implements the Van der Waals mixing rules for a
+    mixture. It calls `a_alpha_and_derivatives` from the pure-component EOS for 
+    each species via multiple inheritance.
+    '''
+    def a_alpha_and_derivatives(self, T, full=True, quick=True):
+        r'''Method to calculate `a_alpha` and its first and second
+        derivatives for an EOS with the Van der Waals mixing rules. Uses the
+        parent class's interface to compute pure component values. Returns
+        `a_alpha`, `da_alpha_dT`, and `d2a_alpha_dT2`. Calls 
+        `setup_a_alpha_and_derivatives` before calling
+        `a_alpha_and_derivatives` for each species, which typically sets `a` 
+        and `Tc`. Calls `cleanup_a_alpha_and_derivatives` to remove the set
+        properties after the calls are done.
+        
+        For use in `solve_T` this returns only `a_alpha` if `full` is False.
+        
+        .. math::
+            a \alpha = \sum_i \sum_j z_i z_j {(a\alpha)}_{ij}
+            
+            (a\alpha)_{ij} = (1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}
+        
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        full : bool, optional
+            If False, calculates and returns only `a_alpha`
+        quick : bool, optional
+            Only the quick variant is implemented; it is little faster anyhow
+        
+        Returns
+        -------
+        a_alpha : float
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        da_alpha_dT : float
+            Temperature derivative of coefficient calculated by EOS-specific 
+            method, [J^2/mol^2/Pa/K]
+        d2a_alpha_dT2 : float
+            Second temperature derivative of coefficient calculated by  
+            EOS-specific method, [J^2/mol^2/Pa/K**2]
+
+        Notes
+        -----
+        The exact expressions can be obtained with the following SymPy 
+        expression below, commented out for brevity.
+        
+        >>> from sympy import *
+        >>> a_alpha_i, a_alpha_j, kij, T = symbols('a_alpha_i, a_alpha_j, kij, T')
+        >>> a_alpha_ij = (1-kij)*sqrt(a_alpha_i(T)*a_alpha_j(T))
+        >>> #diff(a_alpha_ij, T)
+        >>> #diff(a_alpha_ij, T, T)
+        '''
+        zs, kijs = self.zs, self.kijs
+        a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
+        
+        for i in self.cmps:
+            self.setup_a_alpha_and_derivatives(i)
+            # Abuse method resolution order to call the a_alpha_and_derivatives
+            # method of the original pure EOS
+            ds = super(type(self).__mro__[1], self).a_alpha_and_derivatives(T)
+            a_alphas.append(ds[0])
+            da_alpha_dTs.append(ds[1])
+            d2a_alpha_dT2s.append(ds[2])
+        self.cleanup_a_alpha_and_derivatives()
+        
+        a_alpha, da_alpha_dT, d2a_alpha_dT2 = 0.0, 0.0, 0.0
+        self.a_alpha_ijs = [[0]*self.N for i in self.cmps]
+                
+        for i in self.cmps:
+            for j in self.cmps:
+                self.a_alpha_ijs[i][j] = (1. - kijs[i][j])*(a_alphas[i]*a_alphas[j])**0.5
+        # Needed in calculation of fugacity coefficients
+                
+        for i in self.cmps:
+            for j in self.cmps:
+                a_alpha += self.a_alpha_ijs[i][j]*zs[i]*zs[j]
+                
+        if full:
+            for i in self.cmps:
+                for j in self.cmps:
+                    da_alpha_dT += zs[i]*zs[j]*((1. - kijs[i][j])/(2*(a_alphas[i]*a_alphas[j])**0.5)
+                    *(a_alphas[i]*da_alpha_dTs[j] + a_alphas[j]*da_alpha_dTs[i]))
+                    
+                    x0 = a_alphas[i]*a_alphas[j]
+                    x1 = a_alphas[i]*da_alpha_dTs[j]
+                    x2 = a_alphas[j]*da_alpha_dTs[i]
+                    x3 = 2.*a_alphas[i]*da_alpha_dTs[j] + 2.*a_alphas[j]*da_alpha_dTs[i]
+                    d2a_alpha_dT2 += (-(x0)**0.5*(kijs[i][j] - 1.)*(x0*(
+                    2.*a_alphas[i]*d2a_alpha_dT2s[j] + 2.*a_alphas[j]*d2a_alpha_dT2s[i]
+                    + 4.*da_alpha_dTs[i]*da_alpha_dTs[j]) - x1*x3 - x2*x3 + (x1 
+                    + x2)**2)/(4.*a_alphas[i]**2*a_alphas[j]**2))*zs[i]*zs[j]
+
+        if full:
+            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+        else:
+            return a_alpha
+        
+    def fugacities(self, xs=None, ys=None):   
+        '''Helper method for calculating fugacity coefficients for any 
+        phases present, using either the overall mole fractions for both phases
+        or using specified mole fractions for each phase.
+        
+        Requires `fugacity_coefficients` to be implemented by each subclassing
+        EOS.
+        
+        In addition to setting `fugacities_l` and/or `fugacities_g`, this also
+        sets the fugacity coefficients `phis_l` and/or `phis_g`.
+        
+        .. math::
+            \hat \phi_i^g = \frac{\hat f_i^g}{x_i P}
+        
+            \hat \phi_i^l = \frac{\hat f_i^l}{x_i P}
+        
+        Parameters
+        ----------
+        xs : list[float], optional
+            Liquid-phase mole fractions of each species, [-]
+        ys : list[float], optional
+            Vapor-phase mole fractions of each species, [-]
+            
+        Notes
+        -----
+        It is helpful to check that `fugacity_coefficients` has been
+        implemented correctly using the following expression, from [1]_.
+        
+        .. math::
+            \ln \hat \phi_i = \left[\frac{\partial (n\log \phi)}{\partial 
+            n_i}\right]_{T,P,n_j,V_t}
+        
+        For reference, several expressions for fugacity of a component are as
+        follows, shown in [1]_ and [2]_.
+        
+        .. math::
+             \ln \hat \phi_i = \int_{0}^P\left(\frac{\hat V_i}
+             {RT} - \frac{1}{P}\right)dP
+
+             \ln \hat \phi_i = \int_V^\infty \left[
+             \frac{1}{RT}\frac{\partial P}{ \partial n_i}
+             - \frac{1}{V}\right] d V - \ln Z
+             
+        References
+        ----------
+        .. [1] Hu, Jiawen, Rong Wang, and Shide Mao. "Some Useful Expressions 
+           for Deriving Component Fugacity Coefficients from Mixture Fugacity 
+           Coefficient." Fluid Phase Equilibria 268, no. 1-2 (June 25, 2008): 
+           7-13. doi:10.1016/j.fluid.2008.03.007.
+        .. [2] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
+           Butterworth-Heinemann, 1985.
+        '''
+        if self.phase in ['l', 'l/g']:
+            if xs is None:
+                xs = self.zs
+            Z = self.P*self.V_l/(R*self.T)
+            self.phis_l = self.fugacity_coefficients(Z, zs=xs)
+            self.fugacities_l = [phi*x*self.P for phi, x in zip(self.phis_l, xs)]
+            self.lnphis_l = [log(i) for i in self.phis_l]
+        if self.phase in ['g', 'l/g']:
+            if ys is None:
+                ys = self.zs
+            fs, phis = [], []
+            Z = self.P*self.V_g/(R*self.T)
+            self.phis_g = self.fugacity_coefficients(Z, zs=ys)
+            self.fugacities_g = [phi*y*self.P for phi, y in zip(self.phis_g, ys)]
+            self.lnphis_g = [log(i) for i in self.phis_g]
+
+    def solve_T(self, P, V, quick=True):
+        '''Generic method to calculate `T` from a specified `P` and `V`.
+        Provides SciPy's `newton` solver, and iterates to solve the general
+        equation for `P`, recalculating `a_alpha` as a function of temperature
+        using `a_alpha_and_derivatives` each iteration.
+
+        Parameters
+        ----------
+        P : float
+            Pressure, [Pa]
+        V : float
+            Molar volume, [m^3/mol]
+        quick : bool, optional
+            Unimplemented, although it may be possible to derive explicit 
+            expressions as done for many pure-component EOS
+
+        Returns
+        -------
+        T : float
+            Temperature, [K]
+        '''
+        self.Tc = sum(self.Tcs)/self.N
+        return super(type(self).__mro__[2], self).solve_T(P=P, V=V, quick=quick)
 
 
-class PRMIX(PR):
+
+class PRMIX(GCEOSMIX, PR):
     r'''Class for solving a the Peng-Robinson cubic equation of state for a 
     mixture of any number of compounds. Subclasses `PR`. Solves the EOS on
     initialization and calculates fugacities for all components in all phases.
@@ -2345,10 +2558,6 @@ class PRMIX(PR):
        Equilibrium in a System Containing Methanol." Fluid Phase Equilibria 24,
        no. 1 (January 1, 1985): 25-41. doi:10.1016/0378-3812(85)87035-7. 
     '''
-    def solve_T(self, P, V, quick=True):
-        self.Tc = sum(self.Tcs)/self.N
-        return super(PR, self).solve_T(P=P, V=V, quick=quick)
-    
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None):
         self.N = len(Tcs)
         self.cmps = range(self.N)
@@ -2363,9 +2572,8 @@ class PRMIX(PR):
         self.P = P
         self.V = V
 
-        c1, c2 = self.c1, self.c2
-        self.ais = [c1*R*R*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
-        self.bs = [c2*R*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
+        self.ais = [self.c1*R*R*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
+        self.bs = [self.c2*R*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
         self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
         self.kappas = [0.37464 + 1.54226*omega - 0.26992*omega*omega for omega in omegas]
         
@@ -2380,71 +2588,8 @@ class PRMIX(PR):
     def cleanup_a_alpha_and_derivatives(self):
         del(self.a, self.kappa, self.Tc)
         
-        
-    def a_alpha_and_derivatives(self, T, full=True, quick=True):
-        r'''Method to calculate `a_alpha` and its first and second
-        derivatives for an EOS with the Van der Waals mixing rules. Uses the
-        parent class's interface to compute pure component values. Returns
-        `a_alpha`, `da_alpha_dT`, and 
-        `d2a_alpha_dT2`. Calls `setup_a_alpha_and_derivatives` before calling
-        `a_alpha_and_derivatives` for each species, which typically sets `a` 
-        and `Tc`. Calls `cleanup_a_alpha_and_derivatives` to remove the set
-        properties after the calls are done.
-        
-        >>> from sympy import *
-        >>> a_alpha_i, a_alpha_j, kij, T = symbols('a_alpha_i, a_alpha_j, kij, T')
-        >>> a_alpha_ij = (1-kij)*sqrt(a_alpha_i(T)*a_alpha_j(T))
-        >>> diff(a_alpha_ij, T)
-        sqrt(a_alpha_i(T)*a_alpha_j(T))*(-kij + 1)*(a_alpha_i(T)*Derivative(a_alpha_j(T), T)/2 + a_alpha_j(T)*Derivative(a_alpha_i(T), T)/2)/(a_alpha_i(T)*a_alpha_j(T))
-        >>> diff(a_alpha_ij, T, T)
-        sqrt(a_alpha_i(T)*a_alpha_j(T))*(kij - 1)*(-(a_alpha_i(T)*Derivative(a_alpha_j(T), T) + a_alpha_j(T)*Derivative(a_alpha_i(T), T))**2/(4*a_alpha_i(T)*a_alpha_j(T)) + (a_alpha_i(T)*Derivative(a_alpha_j(T), T) + a_alpha_j(T)*Derivative(a_alpha_i(T), T))*Derivative(a_alpha_j(T), T)/(2*a_alpha_j(T)) + (a_alpha_i(T)*Derivative(a_alpha_j(T), T) + a_alpha_j(T)*Derivative(a_alpha_i(T), T))*Derivative(a_alpha_i(T), T)/(2*a_alpha_i(T)) - a_alpha_i(T)*Derivative(a_alpha_j(T), T, T)/2 - a_alpha_j(T)*Derivative(a_alpha_i(T), T, T)/2 - Derivative(a_alpha_i(T), T)*Derivative(a_alpha_j(T), T))/(a_alpha_i(T)*a_alpha_j(T))
-        '''
-        zs, kijs = self.zs, self.kijs
-
-        a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
-        
-        for i in self.cmps:
-            self.setup_a_alpha_and_derivatives(i)
-            ds = super(self.__class__, self).a_alpha_and_derivatives(T) # self.__class__ = thermo.eos.PRMIX -> PR
-            a_alphas.append(ds[0])
-            da_alpha_dTs.append(ds[1])
-            d2a_alpha_dT2s.append(ds[2])
-        self.cleanup_a_alpha_and_derivatives()
-        
-        a_alpha, da_alpha_dT, d2a_alpha_dT2 = 0.0, 0.0, 0.0
-        self.a_alpha_ijs = [[0]*self.N for i in self.cmps]
-        
-        for i in self.cmps:
-            for j in self.cmps:
-                self.a_alpha_ijs[i][j] = (1. - kijs[i][j])*(a_alphas[i]*a_alphas[j])**0.5
-        # Needed in calculation of fugacity coefficients
-                
-        for i in self.cmps:
-            for j in self.cmps:
-                a_alpha += self.a_alpha_ijs[i][j]*zs[i]*zs[j]
-                
-        if full:
-            for i in self.cmps:
-                for j in self.cmps:
-                    da_alpha_dT += zs[i]*zs[j]*((1. - kijs[i][j])/(2*(a_alphas[i]*a_alphas[j])**0.5)
-                    *(a_alphas[i]*da_alpha_dTs[j] + a_alphas[j]*da_alpha_dTs[i]))
-                    
-                    x0 = a_alphas[i]*a_alphas[j]
-                    x1 = a_alphas[i]*da_alpha_dTs[j]
-                    x2 = a_alphas[j]*da_alpha_dTs[i]
-                    x3 = 2.*a_alphas[i]*da_alpha_dTs[j] + 2.*a_alphas[j]*da_alpha_dTs[i]
-                    d2a_alpha_dT2 += (-(x0)**0.5*(kijs[i][j] - 1.)*(x0*(
-                    2.*a_alphas[i]*d2a_alpha_dT2s[j] + 2.*a_alphas[j]*d2a_alpha_dT2s[i]
-                    + 4.*da_alpha_dTs[i]*da_alpha_dTs[j]) - x1*x3 - x2*x3 + (x1 
-                    + x2)**2)/(4.*a_alphas[i]**2*a_alphas[j]**2))*zs[i]*zs[j]
-
-        if full:
-            return a_alpha, da_alpha_dT, d2a_alpha_dT2
-        else:
-            return a_alpha
-
     def fugacity_coefficients(self, Z, zs):
-        A = self.a_alpha*self.P/R**2/self.T**2 # a_alpha?
+        A = self.a_alpha*self.P/R**2/self.T**2
         B = self.b*self.P/R/self.T
         phis = []
         for i in self.cmps:
@@ -2453,33 +2598,9 @@ class PRMIX(PR):
             t3 = t1 - A/(2*2**0.5*B)*(t2 - self.bs[i]/self.b)*log((Z + (sqrt(2)+1)*B)/(Z - (sqrt(2)-1)*B))
             phis.append(exp(t3))
         return phis
-        
-        
-    def fugacities(self, xs=None, ys=None):        
-        if self.phase in ['l', 'l/g']:
-            if xs is None:
-                xs = self.zs
-            Z = self.P*self.V_l/(R*self.T)
-            self.phis_l = self.fugacity_coefficients(Z, zs=xs)
-            self.fugacities_l = [phi*x*self.P for phi, x in zip(self.phis_l, xs)]
-            self.lnphis_l = [log(i) for i in self.phis_l]
-        if self.phase in ['g', 'l/g']:
-            if ys is None:
-                ys = self.zs
-            fs, phis = [], []
-            Z = self.P*self.V_g/(R*self.T)
-            self.phis_g = self.fugacity_coefficients(Z, zs=ys)
-            self.fugacities_g = [phi*y*self.P for phi, y in zip(self.phis_g, ys)]
-            self.lnphis_g = [log(i) for i in self.phis_g]
-            
     
 
-class SRKMIX(SRK):
-    def solve_T(self, P, V, quick=True):
-        # C+P
-        self.Tc = sum(self.Tcs)/self.N
-        return super(SRK, self).solve_T(P=P, V=V, quick=quick)
-    
+class SRKMIX(GCEOSMIX, SRK):    
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None):
         self.N = len(Tcs)
         self.cmps = range(self.N)
@@ -2505,59 +2626,10 @@ class SRKMIX(SRK):
         self.fugacities()
 
     def setup_a_alpha_and_derivatives(self, i):
-        # C+P
         self.a, self.m, self.Tc = self.ais[i], self.ms[i], self.Tcs[i]
     def cleanup_a_alpha_and_derivatives(self):
-        # C+P
         del(self.a, self.m, self.Tc)
         
-        
-    def a_alpha_and_derivatives(self, T, full=True, quick=True):
-        # C+P
-        zs, kijs = self.zs, self.kijs
-
-        a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
-        
-        for i in self.cmps:
-            self.setup_a_alpha_and_derivatives(i)
-            ds = super(self.__class__, self).a_alpha_and_derivatives(T) # self.__class__ = thermo.eos.PRMIX -> PR
-            a_alphas.append(ds[0])
-            da_alpha_dTs.append(ds[1])
-            d2a_alpha_dT2s.append(ds[2])
-        self.cleanup_a_alpha_and_derivatives()
-        
-        a_alpha, da_alpha_dT, d2a_alpha_dT2 = 0.0, 0.0, 0.0
-        self.a_alpha_ijs = [[0]*self.N for i in self.cmps]
-                
-        for i in self.cmps:
-            for j in self.cmps:
-                self.a_alpha_ijs[i][j] = (1. - kijs[i][j])*(a_alphas[i]*a_alphas[j])**0.5
-        # Needed in calculation of fugacity coefficients
-                
-        for i in self.cmps:
-            for j in self.cmps:
-                a_alpha += self.a_alpha_ijs[i][j]*zs[i]*zs[j]
-                
-        if full:
-            for i in self.cmps:
-                for j in self.cmps:
-                    da_alpha_dT += zs[i]*zs[j]*((1. - kijs[i][j])/(2*(a_alphas[i]*a_alphas[j])**0.5)
-                    *(a_alphas[i]*da_alpha_dTs[j] + a_alphas[j]*da_alpha_dTs[i]))
-                    
-                    x0 = a_alphas[i]*a_alphas[j]
-                    x1 = a_alphas[i]*da_alpha_dTs[j]
-                    x2 = a_alphas[j]*da_alpha_dTs[i]
-                    x3 = 2.*a_alphas[i]*da_alpha_dTs[j] + 2.*a_alphas[j]*da_alpha_dTs[i]
-                    d2a_alpha_dT2 += (-(x0)**0.5*(kijs[i][j] - 1.)*(x0*(
-                    2.*a_alphas[i]*d2a_alpha_dT2s[j] + 2.*a_alphas[j]*d2a_alpha_dT2s[i]
-                    + 4.*da_alpha_dTs[i]*da_alpha_dTs[j]) - x1*x3 - x2*x3 + (x1 
-                    + x2)**2)/(4.*a_alphas[i]**2*a_alphas[j]**2))*zs[i]*zs[j]
-
-        if full:
-            return a_alpha, da_alpha_dT, d2a_alpha_dT2
-        else:
-            return a_alpha
-
     def fugacity_coefficients(self, Z, zs):
         # Custom
         A = self.a_alpha*self.P/R**2/self.T**2 # a_alpha?
@@ -2572,21 +2644,3 @@ class SRKMIX(SRK):
             phis.append(exp(t4))
         return phis
         
-        
-    def fugacities(self, xs=None, ys=None):   
-        # C+P
-        if self.phase in ['l', 'l/g']:
-            if xs is None:
-                xs = self.zs
-            Z = self.P*self.V_l/(R*self.T)
-            self.phis_l = self.fugacity_coefficients(Z, zs=xs)
-            self.fugacities_l = [phi*x*self.P for phi, x in zip(self.phis_l, xs)]
-            self.lnphis_l = [log(i) for i in self.phis_l]
-        if self.phase in ['g', 'l/g']:
-            if ys is None:
-                ys = self.zs
-            fs, phis = [], []
-            Z = self.P*self.V_g/(R*self.T)
-            self.phis_g = self.fugacity_coefficients(Z, zs=ys)
-            self.fugacities_g = [phi*y*self.P for phi, y in zip(self.phis_g, ys)]
-            self.lnphis_g = [log(i) for i in self.phis_g]
