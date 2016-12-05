@@ -2271,4 +2271,204 @@ class TWUSRK(SRK):
         return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=full, quick=quick, method='SRK')
 
 
+#class GCEOSMIX(GCEOS):
+
+
+class PRMIX(PR):
+    r'''Class for solving a the Peng-Robinson cubic equation of state for a 
+    mixture of any number of compounds. Subclasses `PR`. Solves the EOS on
+    initialization and calculates fugacities for all components in all phases.
+
+    The implemented method here is `fugacity_coefficients`, which implements
+    the formula for fugacity coefficients in a mixture as given in [1]_.
+    Inherits the explicit solution in terms of `T` from `PR`.
+    Two of `T`, `P`, and `V` are needed to solve the EOS.
+
+    .. math::
+        P = \frac{RT}{v-b}-\frac{a\alpha(T)}{v(v+b)+b(v-b)}
+        
+        a \alpha = \sum_i \sum_j z_i z_j {(a\alpha)}_{ij}
+        
+        (a\alpha)_{ij} = (1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}
+        
+        b = \sum_i z_i b_i
+
+        a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}
+        
+	  b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
+
+        \alpha(T)_i=[1+\kappa_i(1-\sqrt{T_{r,i}})]^2
+        
+        \kappa_i=0.37464+1.54226\omega_i-0.26992\omega^2_i
+        
+    Parameters
+    ----------
+    Tcs : float
+        Critical temperatures of all compounds, [K]
+    Pcs : float
+        Critical pressures of all compounds, [Pa]
+    omegas : float
+        Acentric factors of all compounds, [-]
+    zs : float
+        Mole fractions of all species overall, [-]
+    kijs : list[list[float]]
+        n*n size list of lists with binary interaction parameters for the
+        Van der Waals mixing rules, [-]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+
+    Examples
+    --------
+    T-P initialization, nitrogen-methane at 115 K and 1 MPa:
+    
+    >>> eos = PRMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    >>> eos.V_l, eos.V_g
+    (3.625735065042031e-05, 0.0007006656856469095)
+    >>> eos.fugacities_l, eos.fugacities_g
+    ([793860.8382114634, 73468.55225303846], [436530.9247009119, 358114.63827532396])
+    
+    Notes
+    -----
+    When T is not specified, a numerical solution must be used.
+
+    References
+    ----------
+    .. [1] Peng, Ding-Yu, and Donald B. Robinson. "A New Two-Constant Equation 
+       of State." Industrial & Engineering Chemistry Fundamentals 15, no. 1 
+       (February 1, 1976): 59-64. doi:10.1021/i160057a011.
+    .. [2] Robinson, Donald B., Ding-Yu Peng, and Samuel Y-K Chung. "The 
+       Development of the Peng - Robinson Equation and Its Application to Phase
+       Equilibrium in a System Containing Methanol." Fluid Phase Equilibria 24,
+       no. 1 (January 1, 1985): 25-41. doi:10.1016/0378-3812(85)87035-7. 
+    '''
+    def solve_T(self, P, V, quick=True):
+        self.Tc = sum(self.Tcs)/self.N
+        return super(PR, self).solve_T(P=P, V=V, quick=quick)
+    
+    def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None):
+        self.N = len(Tcs)
+        self.cmps = range(self.N)
+        self.Tcs = Tcs
+        self.Pcs = Pcs
+        self.omegas = omegas
+        self.zs = zs
+        self.kijs = kijs
+        self.T = T
+        self.P = P
+        self.V = V
+
+        c1, c2 = self.c1, self.c2
+        self.ais = [c1*R*R*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
+        self.bs = [c2*R*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
+        self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
+        self.kappas = [0.37464 + 1.54226*omega - 0.26992*omega*omega for omega in omegas]
+        
+        self.delta = 2.*self.b
+        self.epsilon = -self.b*self.b
+
+        self.solve()
+        self.fugacities()
+        
+    def setup_a_alpha_and_derivatives(self, i):
+        self.a, self.kappa, self.Tc = self.ais[i], self.kappas[i], self.Tcs[i]
+    def cleanup_a_alpha_and_derivatives(self):
+        del(self.a, self.kappa, self.Tc)
+        
+        
+    def a_alpha_and_derivatives(self, T, full=True, quick=True):
+        r'''Method to calculate `a_alpha` and its first and second
+        derivatives for an EOS with the Van der Waals mixing rules. Uses the
+        parent class's interface to compute pure component values. Returns
+        `a_alpha`, `da_alpha_dT`, and 
+        `d2a_alpha_dT2`. Calls `setup_a_alpha_and_derivatives` before calling
+        `a_alpha_and_derivatives` for each species, which typically sets `a` 
+        and `Tc`. Calls `cleanup_a_alpha_and_derivatives` to remove the set
+        properties after the calls are done.
+        
+        >>> from sympy import *
+        >>> a_alpha_i, a_alpha_j, kij, T = symbols('a_alpha_i, a_alpha_j, kij, T')
+        >>> a_alpha_ij = (1-kij)*sqrt(a_alpha_i(T)*a_alpha_j(T))
+        >>> diff(a_alpha_ij, T)
+        sqrt(a_alpha_i(T)*a_alpha_j(T))*(-kij + 1)*(a_alpha_i(T)*Derivative(a_alpha_j(T), T)/2 + a_alpha_j(T)*Derivative(a_alpha_i(T), T)/2)/(a_alpha_i(T)*a_alpha_j(T))
+        >> diff(a_alpha_ij, T, T)
+        sqrt(a_alpha_i(T)*a_alpha_j(T))*(kij - 1)*(-(a_alpha_i(T)*Derivative(a_alpha_j(T), T) + a_alpha_j(T)*Derivative(a_alpha_i(T), T))**2/(4*a_alpha_i(T)*a_alpha_j(T)) + (a_alpha_i(T)*Derivative(a_alpha_j(T), T) + a_alpha_j(T)*Derivative(a_alpha_i(T), T))*Derivative(a_alpha_j(T), T)/(2*a_alpha_j(T)) + (a_alpha_i(T)*Derivative(a_alpha_j(T), T) + a_alpha_j(T)*Derivative(a_alpha_i(T), T))*Derivative(a_alpha_i(T), T)/(2*a_alpha_i(T)) - a_alpha_i(T)*Derivative(a_alpha_j(T), T, T)/2 - a_alpha_j(T)*Derivative(a_alpha_i(T), T, T)/2 - Derivative(a_alpha_i(T), T)*Derivative(a_alpha_j(T), T))/(a_alpha_i(T)*a_alpha_j(T))
+        '''
+        zs, kijs = self.zs, self.kijs
+
+        a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
+        
+        for i in self.cmps:
+            self.setup_a_alpha_and_derivatives(i)
+            ds = super(self.__class__, self).a_alpha_and_derivatives(T) # self.__class__ = thermo.eos.PRMIX -> PR
+            a_alphas.append(ds[0])
+            da_alpha_dTs.append(ds[1])
+            d2a_alpha_dT2s.append(ds[2])
+        self.cleanup_a_alpha_and_derivatives()
+        
+        a_alpha, da_alpha_dT, d2a_alpha_dT2 = 0.0, 0.0, 0.0
+        self.a_alpha_ijs = [[0]*self.N for i in self.cmps]
+        
+        for i in self.cmps:
+            for j in self.cmps:
+                self.a_alpha_ijs[i][j] = (1. - kijs[i][j])*(a_alphas[i]*a_alphas[j])**0.5
+        # Needed in calculation of fugacity coefficients
+                
+        for i in self.cmps:
+            for j in self.cmps:
+                a_alpha += self.a_alpha_ijs[i][j]*zs[i]*zs[j]
+                
+        if full:
+            for i in self.cmps:
+                for j in self.cmps:
+                    da_alpha_dT += zs[i]*zs[j]*((1. - kijs[i][j])/(2*(a_alphas[i]*a_alphas[j])**0.5)
+                    *(a_alphas[i]*da_alpha_dTs[j] + a_alphas[j]*da_alpha_dTs[i]))
+                    
+                    x0 = a_alphas[i]*a_alphas[j]
+                    x1 = a_alphas[i]*da_alpha_dTs[j]
+                    x2 = a_alphas[j]*da_alpha_dTs[i]
+                    x3 = 2.*a_alphas[i]*da_alpha_dTs[j] + 2.*a_alphas[j]*da_alpha_dTs[i]
+                    d2a_alpha_dT2 += (-(x0)**0.5*(kijs[i][j] - 1.)*(x0*(
+                    2.*a_alphas[i]*d2a_alpha_dT2s[j] + 2.*a_alphas[j]*d2a_alpha_dT2s[i]
+                    + 4.*da_alpha_dTs[i]*da_alpha_dTs[j]) - x1*x3 - x2*x3 + (x1 
+                    + x2)**2)/(4.*a_alphas[i]**2*a_alphas[j]**2))*zs[i]*zs[j]
+
+        if full:
+            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+        else:
+            return a_alpha
+
+    def fugacity_coefficients(self, Z, zs):
+        A = self.a_alpha*self.P/R**2/self.T**2 # a_alpha?
+        B = self.b*self.P/R/self.T
+        phis = []
+        for i in self.cmps:
+            t1 = self.bs[i]/self.b*(Z-1) - log(Z-B)
+            t2 = 2./self.a_alpha*sum([zs[j]*self.a_alpha_ijs[i][j] for j in self.cmps])
+            t3 = t1 - A/(2*2**0.5*B)*(t2 - self.bs[i]/self.b)*log((Z + (sqrt(2)+1)*B)/(Z - (sqrt(2)-1)*B))
+            phis.append(exp(t3))
+        return phis
+        
+        
+    def fugacities(self, xs=None, ys=None):        
+        if self.phase in ['l', 'l/g']:
+            if xs is None:
+                xs = self.zs
+            Z = self.P*self.V_l/(R*self.T)
+            self.phis_l = self.fugacity_coefficients(Z, zs=xs)
+            self.fugacities_l = [phi*x*self.P for phi, x in zip(self.phis_l, xs)]
+            self.lnphis_l = [log(i) for i in self.phis_l]
+        if self.phase in ['g', 'l/g']:
+            if ys is None:
+                ys = self.zs
+            fs, phis = [], []
+            Z = self.P*self.V_g/(R*self.T)
+            self.phis_g = self.fugacity_coefficients(Z, zs=ys)
+            self.fugacities_g = [phi*y*self.P for phi, y in zip(self.phis_g, ys)]
+            self.lnphis_g = [log(i) for i in self.phis_g]
+            
+    
 

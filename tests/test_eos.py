@@ -23,6 +23,7 @@ SOFTWARE.'''
 from numpy.testing import assert_allclose
 import pytest
 from thermo.eos import *
+from scipy.misc import derivative
 
 
 @pytest.mark.sympy
@@ -668,3 +669,52 @@ def test_TWUSRK_quick():
     eos = TWUSRK(Tc=507.6, Pc=3025000, omega=0.2975, T=900., P=1E6)
     eos = TWUSRK(Tc=507.6, Pc=3025000, omega=0.2975, V=0.007422210444471012, P=1E6)
     assert_allclose(eos.T, 900)
+
+
+def test_PRMIX_quick():
+    # Two-phase nitrogen-methane
+    eos = PRMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+
+    Vs_fast = eos.volume_solutions(115, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
+    Vs_expected = [(3.625735065042031e-05-1.8973538018496328e-19j), (0.00019383466511209503+1.6263032587282567e-19j), (0.0007006656856469095-4.743384504624082e-20j)]
+    assert_allclose(Vs_fast, Vs_expected)
+
+    # Test of a_alphas
+    a_alphas = [0.2187647518144111, -0.0006346633654774628, 3.6800240532105057e-06]
+    a_alphas_fast = eos.a_alpha_and_derivatives(115)
+    assert_allclose(a_alphas, a_alphas_fast)
+    a_alphas_slow = eos.a_alpha_and_derivatives(115, quick=False)
+    assert_allclose(a_alphas, a_alphas_slow)
+
+    # back calculation for T, both solutions
+    for V in [3.625735065042031e-05, 0.0007006656856469095]:
+        eos = PRMIX(V=V, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+        assert_allclose(eos.T, 115)
+        T_slow = eos.solve_T(P=1E6, V=V, quick=False)
+        assert_allclose(T_slow, 115)
+
+
+    # Fugacities
+    eos = PRMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    assert_allclose(eos.phis_l, [1.587721676422927, 0.14693710450607692])
+    assert_allclose(eos.phis_g, [0.8730618494018239, 0.7162292765506479])
+    assert_allclose(eos.fugacities_l, [793860.8382114634, 73468.55225303846])
+    assert_allclose(eos.fugacities_g, [436530.9247009119, 358114.63827532396])
+    
+    # Numerically test fugacities at one point
+    def numerical_fugacity_coefficient(n1, n2=0.5, switch=False, l=True):
+        if switch:
+            n1, n2 = n2, n1
+        tot = n1+n2
+        zs = [i/tot for i in [n1,n2]]
+        a = PRMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=zs, kijs=[[0,0],[0,0]])
+        phi = a.phi_l if l else a.phi_g
+        return tot*log(phi)
+
+    phis = [[derivative(numerical_fugacity_coefficient, 0.5, dx=1E-6, order=25, args=(0.5, i, j)) for i in [False, True]] for j in [False, True]]
+    assert_allclose(phis, [eos.lnphis_g, eos.lnphis_l])
+
+    # Gas phase only test point
+    a = PRMIX(T=300, P=1E7, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    assert_allclose(a.phis_g, [0.9855336740251448, 0.8338953860988254]) # Both models.
+    assert_allclose(a.phis_g, [0.9855, 0.8339], rtol=1E-4) # Calculated with thermosolver V1

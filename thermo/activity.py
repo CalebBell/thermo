@@ -44,6 +44,7 @@ def K(P, Psat, fugacity=1, gamma=1):
     >>> K(101325, 3000., fugacity=0.9, gamma=2.4)
     0.07895386133728102
     '''
+    # http://www.jmcampbell.com/tip-of-the-month/2006/09/how-to-determine-k-values/
     _K = Psat*gamma/P/fugacity
     return _K
 

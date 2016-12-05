@@ -141,20 +141,17 @@ class Chemical(object): # pragma: no cover
             self.atoms = dict(Counter(atom.GetSymbol() for atom in self.rdkitmol_Hs.GetAtoms()))
             self.charge = Chem.GetFormalCharge(self.rdkitmol)
             self.rings = Chem.Descriptors.RingCount(self.rdkitmol)
-            self.atom_fractions = atom_fractions(self.atoms)
-            self.mass_fractions = mass_fractions(self.atoms, self.MW)
-            self.similarity_variable = similarity_variable(self.atoms, self.MW)
-            self.Hill = atoms_to_Hill(self.atoms)
         except:
             self.rdkitmol = None
             self.rdkitmol_Hs = None
             self.charge = None
             self.rings = None
             self.atoms = simple_formula_parser(self.formula)
-            self.atom_fractions = atom_fractions(self.atoms)
-            self.mass_fractions = mass_fractions(self.atoms, self.MW)
-            self.similarity_variable = similarity_variable(self.atoms, self.MW)
-            self.Hill = atoms_to_Hill(self.atoms)
+        self.atom_fractions = atom_fractions(self.atoms)
+        self.mass_fractions = mass_fractions(self.atoms, self.MW)
+        self.similarity_variable = similarity_variable(self.atoms, self.MW)
+        self.Hill = atoms_to_Hill(self.atoms)
+
 
     def draw_2d(self):
         try:
