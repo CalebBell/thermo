@@ -426,26 +426,26 @@ def test_SRK_quick():
     eos = SRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
     Vs_fast = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
     Vs_slow = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
-    Vs_expected = [(0.0001473238480377508+0j), (0.0011693498160811246+0.0012837164440753675j), (0.0011693498160811246-0.0012837164440753675j)]
+    Vs_expected = [(0.00014682102759032+0j), (0.00116960122630484+0.0013040890734249049j), (0.00116960122630484-0.0013040890734249049j)]
     assert_allclose(Vs_fast, Vs_expected)
     assert_allclose(Vs_slow, Vs_expected)
     
     # Test of a_alphas
-    a_alphas = [3.6749726003997565, -0.006994289319882769, 1.8351979227938195e-05]
+    a_alphas = [3.7271789178606376, -0.007332989159328508, 1.947612023379061e-05]
     a_alphas_fast = eos.a_alpha_and_derivatives(299)
     assert_allclose(a_alphas, a_alphas_fast)
     
     # PR back calculation for T
-    eos = SRK(Tc=507.6, Pc=3025000, omega=0.2975, V=0.0001473238480377508, P=1E6)
+    eos = SRK(Tc=507.6, Pc=3025000, omega=0.2975, V=0.00014682102759032, P=1E6)
     assert_allclose(eos.T, 299)
-    T_slow = eos.solve_T(P=1E6, V=0.0001473238480377508, quick=False)
+    T_slow = eos.solve_T(P=1E6, V=0.00014682102759032, quick=False)
     assert_allclose(T_slow, 299)
     
     # Derivatives
-    diffs_1 = [491420.1446383679, -2576742077144.926, 1.9071375012545682e-07, -3.880869602238254e-13, 5243460.41825601, 2.034918614774923e-06]
-    diffs_2 = [-464.4582107734843, 2.5298381194906086e+17, 1.3552541457017581e-09, 1.4786993572828407e-20, -195377580143.202, 3.913702219626131e-15]
-    diffs_mixed = [-5.1956264229676894e-15, -13750611691.659359, 0.06702442345732229]
-    departures = [-30917.940322270817, -72.44137873264927, 27.196322213047413]
+    diffs_1 = [507071.37815795804, -2693849768980.0884, 1.8823298314439377e-07, -3.7121594957338967e-13, 5312565.222604471, 1.9721089437796854e-06]
+    diffs_2 = [-495.525429968177, 2.685153659083702e+17, 1.3462639881888625e-09, 1.3735644012106488e-20, -201856646370.53476, 3.800656805086382e-15]
+    diffs_mixed = [-4.991347301209541e-15, -14322106590.423191, 0.06594013142212454]
+    departures = [-31754.65309653571, -74.3732468359525, 28.936520816725874]
     known_derivs_deps = [diffs_1, diffs_2, diffs_mixed, departures]
     
     for f in [True, False]:
@@ -454,9 +454,6 @@ def test_SRK_quick():
         for i, j in zip(known_derivs_deps, main_calcs):
             assert_allclose(i, j)
     
-    # Test Cp_Dep, Cv_dep
-    assert_allclose(eos.Cv_dep_l, 27.196322213047466)
-    assert_allclose(eos.Cp_dep_l, 46.90431543572955)
         
     # Integration tests
     eos = SRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299.,V=0.00013)
@@ -473,17 +470,17 @@ def test_SRK_quick():
     D = -eos.T*eos.da_alpha_dT
     
     S_dep_walas = R*(-log(Z*(1-eos.b/V)) + D/(eos.b*R*eos.T)*log(1 + eos.b/V))
-    S_dep_expect = -72.44137873264924
+    S_dep_expect = -74.3732468359525
     assert_allclose(-S_dep_walas, S_dep_expect)
     assert_allclose(S_dep_expect, eos.S_dep_l)
     
     H_dep_walas = eos.T*R*(1 - Z + 1/(eos.b*R*eos.T)*(eos.a_alpha+D)*log(1 + eos.b/V))
-    H_dep_expect = -30917.9403223
+    H_dep_expect = -31754.65309653571
     assert_allclose(-H_dep_walas, H_dep_expect)
     assert_allclose(H_dep_expect, eos.H_dep_l)
 
     phi_walas = exp(Z - 1 - log(Z*(1 - eos.b/V)) - eos.a_alpha/(eos.b*R*eos.T)*log(1 + eos.b/V))
-    phi_l_expect = 0.02413706401859461
+    phi_l_expect = 0.02174822767621331
     assert_allclose(phi_l_expect, eos.phi_l)
     assert_allclose(phi_walas, eos.phi_l)
 
@@ -756,10 +753,96 @@ def test_PRMIX_VS_PR():
         
     # Integration tests
     eos = PRMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], V=0.00013, T=299)
-#    eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299.,V=0.00013)
     fast_vars = vars(eos)
     eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=False)
     slow_vars = vars(eos)
     [assert_allclose(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
 
 
+def test_SRKMIX_quick():
+    # Two-phase nitrogen-methane
+    eos = SRKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+
+    Vs_fast = eos.volume_solutions(115, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
+    Vs_expected = [(4.104755570185178e-05-1.6263032587282567e-19j), (0.0002040997573162298+1.8973538018496328e-19j), (0.0007110155639819184-4.743384504624082e-20j)]
+    assert_allclose(Vs_fast, Vs_expected)
+
+    # Test of a_alphas
+    a_alphas = [0.21053493863769052, -0.0007568158918021953, 4.650777611039976e-06]
+    a_alphas_fast = eos.a_alpha_and_derivatives(115)
+    assert_allclose(a_alphas, a_alphas_fast)
+    a_alphas_slow = eos.a_alpha_and_derivatives(115, quick=False)
+    assert_allclose(a_alphas, a_alphas_slow)
+
+    # back calculation for T, both solutions
+    for V in [4.104755570185178e-05, 0.0007110155639819184]:
+        eos = SRKMIX(V=V, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+        assert_allclose(eos.T, 115)
+        T_slow = eos.solve_T(P=1E6, V=V, quick=False)
+        assert_allclose(T_slow, 115)
+
+
+    # Fugacities
+    eos = SRKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    assert_allclose(eos.phis_l, [1.6356832861093693, 0.14476563850405255])
+    assert_allclose(eos.phis_g, [0.8842742560249208, 0.7236415842381881])
+    
+    # Numerically test fugacities at one point
+    def numerical_fugacity_coefficient(n1, n2=0.5, switch=False, l=True):
+        if switch:
+            n1, n2 = n2, n1
+        tot = n1+n2
+        zs = [i/tot for i in [n1,n2]]
+        a = SRKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=zs, kijs=[[0,0],[0,0]])
+        phi = a.phi_l if l else a.phi_g
+        return tot*log(phi)
+
+    phis = [[derivative(numerical_fugacity_coefficient, 0.5, dx=1E-6, order=25, args=(0.5, i, j)) for i in [False, True]] for j in [False, True]]
+    assert_allclose(phis, [eos.lnphis_g, eos.lnphis_l])
+
+    # Gas phase only test point
+    a = SRKMIX(T=300, P=1E7, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    assert_allclose(a.phis_g, [1.0200087028463556, 0.8717783536379076]) 
+
+
+def test_SRKMIX_vs_SRK():
+    # Copy and paste from SRK, changed to list inputs only
+    # Test solution for molar volumes
+    eos = SRKMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., P=1E6)
+    Vs_fast = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
+    Vs_slow = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
+    Vs_expected = [(0.00014682102759032+0j), (0.00116960122630484+0.0013040890734249049j), (0.00116960122630484-0.0013040890734249049j)]
+    assert_allclose(Vs_fast, Vs_expected)
+    assert_allclose(Vs_slow, Vs_expected)
+    
+    # Test of a_alphas
+    a_alphas = [3.7271789178606376, -0.007332989159328508, 1.947612023379061e-05]
+    a_alphas_fast = eos.a_alpha_and_derivatives(299)
+    assert_allclose(a_alphas, a_alphas_fast)
+    
+    # PR back calculation for T
+    eos = SRKMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], V=0.00014682102759032, P=1E6)
+    assert_allclose(eos.T, 299)
+    T_slow = eos.solve_T(P=1E6, V=0.00014682102759032, quick=False)
+    assert_allclose(T_slow, 299)
+    
+    # Derivatives
+    diffs_1 = [507071.37815795804, -2693849768980.0884, 1.8823298314439377e-07, -3.7121594957338967e-13, 5312565.222604471, 1.9721089437796854e-06]
+    diffs_2 = [-495.525429968177, 2.685153659083702e+17, 1.3462639881888625e-09, 1.3735644012106488e-20, -201856646370.53476, 3.800656805086382e-15]
+    diffs_mixed = [-4.991347301209541e-15, -14322106590.423191, 0.06594013142212454]
+    departures = [-31754.65309653571, -74.3732468359525, 28.936520816725874]
+    known_derivs_deps = [diffs_1, diffs_2, diffs_mixed, departures]
+    
+    for f in [True, False]:
+        main_calcs = eos.derivatives_and_departures(eos.T, eos.P, eos.V_l, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=f)
+        
+        for i, j in zip(known_derivs_deps, main_calcs):
+            assert_allclose(i, j)
+    
+        
+    # Integration tests
+    eos = SRKMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299.,V=0.00013)
+    fast_vars = vars(eos)
+    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=False)
+    slow_vars = vars(eos)
+    [assert_allclose(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]

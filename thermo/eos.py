@@ -1407,6 +1407,8 @@ class VDW(GCEOS):
     .. [2] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
        Butterworth-Heinemann, 1985.
     '''
+    delta = 0
+    epsilon = 0
     def __init__(self, Tc, Pc, T=None, P=None, V=None):
         self.Tc = Tc
         self.Pc = Pc
@@ -1416,8 +1418,6 @@ class VDW(GCEOS):
 
         self.a = 27.0/64.0*(R*Tc)**2/Pc
         self.b = R*Tc/(8.*Pc)
-        self.delta = 0
-        self.epsilon = 0
         self.solve()
 
     def a_alpha_and_derivatives(self, T, full=True, quick=True):
@@ -1670,7 +1670,7 @@ class SRK(GCEOS):
     --------    
     >>> eos = SRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
     >>> eos.phase, eos.V_l, eos.H_dep_l, eos.S_dep_l
-    ('l', 0.0001473238480377508, -30917.940322270817, -72.44137873264924)
+    ('l', 0.00014682102759032, -31754.65309653571, -74.3732468359525)
 
     References
     ----------
@@ -1696,7 +1696,7 @@ class SRK(GCEOS):
 
         self.a = self.c1*R*R*Tc*Tc/Pc
         self.b = self.c2*R*Tc/Pc
-        self.m = 0.480 + 1.574*omega - 0.176*omega
+        self.m = 0.480 + 1.574*omega - 0.176*omega*omega
         self.delta = self.b
         self.solve()
 
@@ -2486,7 +2486,6 @@ class GCEOSMIX(GCEOS):
         return super(type(self).__mro__[2], self).solve_T(P=P, V=V, quick=quick)
 
 
-
 class PRMIX(GCEOSMIX, PR):
     r'''Class for solving a the Peng-Robinson cubic equation of state for a 
     mixture of any number of compounds. Subclasses `PR`. Solves the EOS on
@@ -2494,7 +2493,6 @@ class PRMIX(GCEOSMIX, PR):
 
     The implemented method here is `fugacity_coefficients`, which implements
     the formula for fugacity coefficients in a mixture as given in [1]_.
-    Inherits the explicit solution in terms of `T` from `PR`.
     Two of `T`, `P`, and `V` are needed to solve the EOS.
 
     .. math::
@@ -2598,9 +2596,80 @@ class PRMIX(GCEOSMIX, PR):
             t3 = t1 - A/(2*2**0.5*B)*(t2 - self.bs[i]/self.b)*log((Z + (sqrt(2)+1)*B)/(Z - (sqrt(2)-1)*B))
             phis.append(exp(t3))
         return phis
-    
+
 
 class SRKMIX(GCEOSMIX, SRK):    
+    r'''Class for solving the Soave-Redlich-Kwong cubic equation of state for a 
+    mixture of any number of compounds. Subclasses `SRK`. Solves the EOS on
+    initialization and calculates fugacities for all components in all phases.
+
+    The implemented method here is `fugacity_coefficients`, which implements
+    the formula for fugacity coefficients in a mixture as given in [1]_.
+    Two of `T`, `P`, and `V` are needed to solve the EOS.
+
+    .. math::
+        P = \frac{RT}{V-b} - \frac{a\alpha(T)}{V(V+b)}
+        
+        a \alpha = \sum_i \sum_j z_i z_j {(a\alpha)}_{ij}
+        
+        (a\alpha)_{ij} = (1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}
+
+        b = \sum_i z_i b_i
+
+        a_i =\left(\frac{R^2(T_c)^{2}}{9(\sqrt[3]{2}-1)P_c} \right)
+        =\frac{0.42748\cdot R^2(T_c)^{2}}{P_c}
+    
+        b_i =\left( \frac{(\sqrt[3]{2}-1)}{3}\right)\frac{RT_c}{P_c}
+        =\frac{0.08664\cdot R T_c}{P_c}
+        
+        \alpha(T)_i = \left[1 + m_i\left(1 - \sqrt{\frac{T}{T_{c,i}}}\right)\right]^2
+        
+        m_i = 0.480 + 1.574\omega_i - 0.176\omega_i^2
+            
+    Parameters
+    ----------
+    Tcs : float
+        Critical temperatures of all compounds, [K]
+    Pcs : float
+        Critical pressures of all compounds, [Pa]
+    omegas : float
+        Acentric factors of all compounds, [-]
+    zs : float
+        Mole fractions of all species overall, [-]
+    kijs : list[list[float]], optional
+        n*n size list of lists with binary interaction parameters for the
+        Van der Waals mixing rules, default all 0 [-]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+
+    Examples
+    --------
+    T-P initialization, nitrogen-methane at 115 K and 1 MPa:
+    
+    >>> eos = SRKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    >>> eos.V_l, eos.V_g
+    (4.104755570185178e-05, 0.0007110155639819184)
+    >>> eos.fugacities_l, eos.fugacities_g
+    ([817841.6430546846, 72382.81925202628], [442137.1280124604, 361820.79211909405])
+    
+    Notes
+    -----
+    When T is not specified, a numerical solution must be used.
+
+    References
+    ----------
+    .. [1] Soave, Giorgio. "Equilibrium Constants from a Modified Redlich-Kwong
+       Equation of State." Chemical Engineering Science 27, no. 6 (June 1972): 
+       1197-1203. doi:10.1016/0009-2509(72)80096-4.
+    .. [2] Poling, Bruce E. The Properties of Gases and Liquids. 5th 
+       edition. New York: McGraw-Hill Professional, 2000.
+    .. [3] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
+       Butterworth-Heinemann, 1985.
+    '''
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None):
         self.N = len(Tcs)
         self.cmps = range(self.N)
@@ -2615,9 +2684,8 @@ class SRKMIX(GCEOSMIX, SRK):
         self.P = P
         self.V = V
 
-        c1, c2 = self.c1, self.c2
-        self.ais = [c1*R*R*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
-        self.bs = [c2*R*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
+        self.ais = [self.c1*R*R*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
+        self.bs = [self.c2*R*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
         self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
         self.ms = [0.480 + 1.574*omega - 0.176*omega*omega for omega in omegas]
         self.delta = self.b
@@ -2631,8 +2699,7 @@ class SRKMIX(GCEOSMIX, SRK):
         del(self.a, self.m, self.Tc)
         
     def fugacity_coefficients(self, Z, zs):
-        # Custom
-        A = self.a_alpha*self.P/R**2/self.T**2 # a_alpha?
+        A = self.a_alpha*self.P/R**2/self.T**2
         B = self.b*self.P/R/self.T
         phis = []
         for i in self.cmps:
