@@ -2355,7 +2355,8 @@ class GCEOSMIX(GCEOS):
             self.setup_a_alpha_and_derivatives(i)
             # Abuse method resolution order to call the a_alpha_and_derivatives
             # method of the original pure EOS
-            ds = super(type(self).__mro__[1], self).a_alpha_and_derivatives(T)
+            # -4 goes back from object, GCEOS, SINGLEPHASEEOS, up to GCEOSMIX
+            ds = super(type(self).__mro__[-4], self).a_alpha_and_derivatives(T)
             a_alphas.append(ds[0])
             da_alpha_dTs.append(ds[1])
             d2a_alpha_dT2s.append(ds[2])
@@ -2394,7 +2395,7 @@ class GCEOSMIX(GCEOS):
             return a_alpha
         
     def fugacities(self, xs=None, ys=None):   
-        '''Helper method for calculating fugacity coefficients for any 
+        r'''Helper method for calculating fugacity coefficients for any 
         phases present, using either the overall mole fractions for both phases
         or using specified mole fractions for each phase.
         
@@ -2462,7 +2463,7 @@ class GCEOSMIX(GCEOS):
             self.lnphis_g = [log(i) for i in self.phis_g]
 
     def solve_T(self, P, V, quick=True):
-        '''Generic method to calculate `T` from a specified `P` and `V`.
+        r'''Generic method to calculate `T` from a specified `P` and `V`.
         Provides SciPy's `newton` solver, and iterates to solve the general
         equation for `P`, recalculating `a_alpha` as a function of temperature
         using `a_alpha_and_derivatives` each iteration.
@@ -2483,7 +2484,9 @@ class GCEOSMIX(GCEOS):
             Temperature, [K]
         '''
         self.Tc = sum(self.Tcs)/self.N
-        return super(type(self).__mro__[2], self).solve_T(P=P, V=V, quick=quick)
+        # -4 goes back from object, GCEOS
+        return super(type(self).__mro__[-3], self).solve_T(P=P, V=V, quick=quick)
+
 
 
 class PRMIX(GCEOSMIX, PR):
@@ -2711,3 +2714,34 @@ class SRKMIX(GCEOSMIX, SRK):
             phis.append(exp(t4))
         return phis
         
+
+class PR78MIX(PRMIX):
+    def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None):
+        self.N = len(Tcs)
+        self.cmps = range(self.N)
+        self.Tcs = Tcs
+        self.Pcs = Pcs
+        self.omegas = omegas
+        self.zs = zs
+        if kijs is None:
+            kijs = [[0]*self.N for i in range(self.N)]
+        self.kijs = kijs
+        self.T = T
+        self.P = P
+        self.V = V
+
+        self.ais = [self.c1*R*R*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
+        self.bs = [self.c2*R*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
+        self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
+        self.kappas = []
+        for omega in omegas:
+            if omega <= 0.491:
+                self.kappas.append(0.37464 + 1.54226*omega - 0.26992*omega*omega)
+            else:
+                self.kappas.append(0.379642 + 1.48503*omega - 0.164423*omega**2 + 0.016666*omega**3)
+        
+        self.delta = 2.*self.b
+        self.epsilon = -self.b*self.b
+
+        self.solve()
+        self.fugacities()
