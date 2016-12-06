@@ -758,6 +758,12 @@ def test_PRMIX_VS_PR():
     slow_vars = vars(eos)
     [assert_allclose(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
 
+def test_PR78MIX():
+    eos = PR78MIX(Tcs=[632], Pcs=[5350000], omegas=[0.734], zs=[1], T=299., P=1E6)
+    three_props = [eos.V_l, eos.H_dep_l, eos.S_dep_l]
+    expect_props = [8.351960066075052e-05, -63764.64948050847, -130.737108912626]
+    assert_allclose(three_props, expect_props)
+
 
 def test_SRKMIX_quick():
     # Two-phase nitrogen-methane

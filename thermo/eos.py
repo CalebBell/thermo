@@ -885,10 +885,10 @@ class PR78(PR):
 
         \alpha(T)=[1+\kappa(1-\sqrt{T_r})]^2
         
-        m_i = 0.37464+1.54226\omega-0.26992\omega^2 \text{ if } \omega_i
+        \kappa_i = 0.37464+1.54226\omega_i-0.26992\omega_i^2 \text{ if } \omega_i
         \le 0.491
         
-        m_i = 0.379642 + 1.48503 \omega_i - 0.164423\omega_i^2 + 0.016666
+        \kappa_i = 0.379642 + 1.48503 \omega_i - 0.164423\omega_i^2 + 0.016666
         \omega_i^3 \text{ if } \omega_i > 0.491
         
     Parameters
@@ -2716,6 +2716,79 @@ class SRKMIX(GCEOSMIX, SRK):
         
 
 class PR78MIX(PRMIX):
+    r'''Class for solving a the Peng-Robinson cubic equation of state for a 
+    mixture of any number of compounds according to the 1978 variant. 
+    Subclasses `PR`. Solves the EOS on initialization and calculates fugacities  
+    for all components in all phases.
+
+    Two of `T`, `P`, and `V` are needed to solve the EOS.
+
+    .. math::
+        P = \frac{RT}{v-b}-\frac{a\alpha(T)}{v(v+b)+b(v-b)}
+        
+        a \alpha = \sum_i \sum_j z_i z_j {(a\alpha)}_{ij}
+        
+        (a\alpha)_{ij} = (1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}
+        
+        b = \sum_i z_i b_i
+
+        a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}
+        
+	  b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
+
+        \alpha(T)_i=[1+\kappa_i(1-\sqrt{T_{r,i}})]^2
+        
+        \kappa_i = 0.37464+1.54226\omega_i-0.26992\omega_i^2 \text{ if } \omega_i
+        \le 0.491
+        
+        \kappa_i = 0.379642 + 1.48503 \omega_i - 0.164423\omega_i^2 + 0.016666
+        \omega_i^3 \text{ if } \omega_i > 0.491
+        
+    Parameters
+    ----------
+    Tcs : float
+        Critical temperatures of all compounds, [K]
+    Pcs : float
+        Critical pressures of all compounds, [Pa]
+    omegas : float
+        Acentric factors of all compounds, [-]
+    zs : float
+        Mole fractions of all species overall, [-]
+    kijs : list[list[float]], optional
+        n*n size list of lists with binary interaction parameters for the
+        Van der Waals mixing rules, default all 0 [-]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+
+    Examples
+    --------
+    T-P initialization, nitrogen-methane at 115 K and 1 MPa, with modified
+    acentric factors to show the difference between `PRMIX`
+    
+    >>> eos = PR78MIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.6, 0.7], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    >>> eos.V_l, eos.V_g
+    (3.239642793468722e-05, 0.000504337849300222)
+    >>> eos.fugacities_l, eos.fugacities_g
+    ([833048.4511980319, 6160.908815331634], [460717.2776793947, 279598.90103207633])
+    
+    Notes
+    -----
+    This variant is recommended over the original.
+
+    References
+    ----------
+    .. [1] Peng, Ding-Yu, and Donald B. Robinson. "A New Two-Constant Equation 
+       of State." Industrial & Engineering Chemistry Fundamentals 15, no. 1 
+       (February 1, 1976): 59-64. doi:10.1021/i160057a011.
+    .. [2] Robinson, Donald B., Ding-Yu Peng, and Samuel Y-K Chung. "The 
+       Development of the Peng - Robinson Equation and Its Application to Phase
+       Equilibrium in a System Containing Methanol." Fluid Phase Equilibria 24,
+       no. 1 (January 1, 1985): 25-41. doi:10.1016/0378-3812(85)87035-7. 
+    '''
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None):
         self.N = len(Tcs)
         self.cmps = range(self.N)
