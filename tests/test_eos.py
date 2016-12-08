@@ -26,6 +26,7 @@ from thermo.eos import *
 from scipy.misc import derivative
 
 
+@pytest.mark.slow
 @pytest.mark.sympy
 def test_PR_with_sympy():
     # Test with hexane
@@ -55,9 +56,9 @@ def test_PR_with_sympy():
     
     T_l, P_l = 299, 1000000
     PR_obj_l = PR(T=T_l, P=P_l, Tc=507.6, Pc=3025000, omega=0.2975)
-#    solns = solve(PR_formula.subs({T: T_l, P:P_l}))
-#    solns = [N(i) for i in solns]
-#    V_l_sympy = float([i for i in solns if i.is_real][0])
+    solns = solve(PR_formula.subs({T: T_l, P:P_l}))
+    solns = [N(i) for i in solns]
+    V_l_sympy = float([i for i in solns if i.is_real][0])
     V_l_sympy = 0.00013022208100139964
 
     assert_allclose(PR_obj_l.V_l, V_l_sympy)
@@ -758,11 +759,28 @@ def test_PRMIX_VS_PR():
     slow_vars = vars(eos)
     [assert_allclose(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
 
+
 def test_PR78MIX():
+    # Copied and pasted example from PR78.
     eos = PR78MIX(Tcs=[632], Pcs=[5350000], omegas=[0.734], zs=[1], T=299., P=1E6)
     three_props = [eos.V_l, eos.H_dep_l, eos.S_dep_l]
     expect_props = [8.351960066075052e-05, -63764.64948050847, -130.737108912626]
     assert_allclose(three_props, expect_props)
+
+    # Fugacities
+    eos = PR78MIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.6, 0.7], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    # Numerically test fugacities at one point, with artificially high omegas
+    def numerical_fugacity_coefficient(n1, n2=0.5, switch=False, l=True):
+        if switch:
+            n1, n2 = n2, n1
+        tot = n1+n2
+        zs = [i/tot for i in [n1,n2]]
+        a = PR78MIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.6, 0.7], zs=zs, kijs=[[0,0],[0,0]])
+        phi = a.phi_l if l else a.phi_g
+        return tot*log(phi)
+
+    phis = [[derivative(numerical_fugacity_coefficient, 0.5, dx=1E-6, order=25, args=(0.5, i, j)) for i in [False, True]] for j in [False, True]]
+    assert_allclose(phis, [eos.lnphis_g, eos.lnphis_l])
 
 
 def test_SRKMIX_quick():
@@ -852,3 +870,70 @@ def test_SRKMIX_vs_SRK():
     eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=False)
     slow_vars = vars(eos)
     [assert_allclose(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
+
+
+
+def test_VDWMIX_vs_VDW():
+    eos = VDWMIX(Tcs=[507.6], Pcs=[3025000], zs=[1], T=299., P=1E6)
+    three_props = [eos.V_l, eos.H_dep_l, eos.S_dep_l]
+    expect_props = [0.00022332978038490077, -13385.722837649315, -32.65922018109096]
+    assert_allclose(three_props, expect_props)
+    
+    # Test of a_alphas
+    a_alphas = [2.4841036545673676, 0, 0]
+    a_alphas_fast = eos.a_alpha_and_derivatives(299)
+    assert_allclose(a_alphas, a_alphas_fast)
+    
+    # Back calculation for P
+    eos = VDWMIX(Tcs=[507.6], Pcs=[3025000], zs=[1], T=299, V=0.00022332978038490077)
+    assert_allclose(eos.P, 1E6)
+    
+    # Back calculation for T
+    eos = VDWMIX(Tcs=[507.6], Pcs=[3025000], zs=[1], P=1E6, V=0.00022332978038490077)
+    assert_allclose(eos.T, 299)
+
+
+def test_VDWIX_quick():
+    # Two-phase nitrogen-methane
+    eos = VDWMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+
+    Vs_fast = eos.volume_solutions(115, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
+    Vs_expected = [(5.8813678514166464e-05-2.439454888092385e-19j), (0.0001610823684175308+2.439454888092385e-19j), (0.0007770869741895237-6.776263578034403e-21j)]
+    assert_allclose(Vs_fast, Vs_expected)
+
+    # Test of a_alphas
+    a_alphas = [0.18035220037679928, 0.0, 0.0]
+    a_alphas_fast = eos.a_alpha_and_derivatives(115)
+    assert_allclose(a_alphas, a_alphas_fast)
+    a_alphas_slow = eos.a_alpha_and_derivatives(115, quick=False)
+    assert_allclose(a_alphas, a_alphas_slow)
+
+    # back calculation for T, both solutions
+    for V in [5.8813678514166464e-05, 0.0007770869741895237]:
+        eos = VDWMIX(V=V, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+        assert_allclose(eos.T, 115)
+        T_slow = eos.solve_T(P=1E6, V=V, quick=False)
+        assert_allclose(T_slow, 115)
+
+
+    # Fugacities
+    eos = VDWMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    assert_allclose(eos.phis_l, [1.7090665338410205, 0.414253699455241])
+    assert_allclose(eos.phis_g, [0.896941472676147, 0.7956530879998579])
+    
+    # Numerically test fugacities at one point
+    def numerical_fugacity_coefficient(n1, n2=0.5, switch=False, l=True):
+        if switch:
+            n1, n2 = n2, n1
+        tot = n1+n2
+        zs = [i/tot for i in [n1,n2]]
+        a = VDWMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], zs=zs, kijs=[[0,0],[0,0]])
+        phi = a.phi_l if l else a.phi_g
+        return tot*log(phi)
+
+    phis = [[derivative(numerical_fugacity_coefficient, 0.5, dx=1E-6, order=25, args=(0.5, i, j)) for i in [False, True]] for j in [False, True]]
+    assert_allclose(phis, [eos.lnphis_g, eos.lnphis_l])
+
+    # Gas phase only test point
+    a = VDWMIX(T=300, P=1E7, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    assert_allclose(a.phis_g, [0.9564004482475513, 0.8290411371501448]) 

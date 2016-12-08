@@ -90,7 +90,7 @@ def test_BVirial_Pitzer_Curl_calculus():
 
     # Check integrals using numerical methods - quad:
     for order in range(-2, 0):
-        for trial in range(100):
+        for trial in range(10):
             T1, T2 = np.random.random_integers(5, 500, 2)*np.random.rand(2)
             _Tc = np.random.choice(_Tcs)
             _Pc = np.random.choice(_Pcs)
@@ -98,7 +98,7 @@ def test_BVirial_Pitzer_Curl_calculus():
             
             dBint = BVirial_Pitzer_Curl(T2, _Tc, _Pc, _omega, order) - BVirial_Pitzer_Curl(T1, _Tc, _Pc, _omega, order)
             dBquad = quad(BVirial_Pitzer_Curl, T1, T2, args=(_Tc, _Pc, _omega, order+1))[0]
-            assert_allclose(dBint, dBquad)
+            assert_allclose(dBint, dBquad, rtol=1E-5)
 
 
 @pytest.mark.sympy
@@ -158,7 +158,7 @@ def test_BVirial_Abbott():
 
     # Check integrals using numerical methods - quad:
     for order in range(-2, 0):
-        for trial in range(100):
+        for trial in range(10):
             T1, T2 = np.random.random_integers(5, 500, 2)*np.random.rand(2)
             _Tc = np.random.choice(_Tcs)
             _Pc = np.random.choice(_Pcs)
@@ -166,7 +166,7 @@ def test_BVirial_Abbott():
             
             dBint = BVirial_Abbott(T2, _Tc, _Pc, _omega, order) - BVirial_Abbott(T1, _Tc, _Pc, _omega, order)
             dBquad = quad(BVirial_Abbott, T1, T2, args=(_Tc, _Pc, _omega, order+1))[0]
-            assert_allclose(dBint, dBquad)
+            assert_allclose(dBint, dBquad, rtol=1E-5)
 
 @pytest.mark.sympy
 def test_BVirial_Tsonopoulos():
@@ -224,7 +224,7 @@ def test_BVirial_Tsonopoulos():
 
     # Check integrals using numerical methods - quad:
     for order in range(-2, 0):
-        for trial in range(100):
+        for trial in range(10):
             T1, T2 = np.random.random_integers(5, 500, 2)*np.random.rand(2)
             _Tc = np.random.choice(_Tcs)
             _Pc = np.random.choice(_Pcs)
@@ -232,7 +232,7 @@ def test_BVirial_Tsonopoulos():
             
             dBint = BVirial_Tsonopoulos(T2, _Tc, _Pc, _omega, order) - BVirial_Tsonopoulos(T1, _Tc, _Pc, _omega, order)
             dBquad = quad(BVirial_Tsonopoulos, T1, T2, args=(_Tc, _Pc, _omega, order+1))[0]
-            assert_allclose(dBint, dBquad)
+            assert_allclose(dBint, dBquad, rtol=1E-5)
 
 
 @pytest.mark.sympy
@@ -317,7 +317,7 @@ def test_BVirial_Tsonopoulos_extended():
 
     # Check integrals using numerical methods - quad:
     for order in range(-2, 0):
-        for trial in range(100):
+        for trial in range(10):
             T1, T2 = np.random.random_integers(5, 500, 2)*np.random.rand(2)
             _Tc = np.random.choice(_Tcs)
             _Pc = np.random.choice(_Pcs)
@@ -325,4 +325,4 @@ def test_BVirial_Tsonopoulos_extended():
             
             dBint = BVirial_Tsonopoulos_extended(T2, _Tc, _Pc, _omega, a=a, b=b, order=order) - BVirial_Tsonopoulos_extended(T1, _Tc, _Pc, _omega, a=a, b=b, order=order)
             dBquad = quad(BVirial_Tsonopoulos_extended, T1, T2, args=(_Tc, _Pc, _omega, a, b, '', 0, order+1))[0]
-            assert_allclose(dBint, dBquad, rtol=5E-6)
+            assert_allclose(dBint, dBquad, rtol=3E-5)

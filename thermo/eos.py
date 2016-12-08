@@ -119,7 +119,7 @@ class GCEOS(object):
         self.set_from_PT(Vs)
 
     def set_from_PT(self, Vs):
-        '''Counts the number of real volumes in `Vs`, and determins what to do.
+        '''Counts the number of real volumes in `Vs`, and determines what to do.
         If there is only one real volume, the method 
         `set_properties_from_solution` is called with it. If there are
         two real volumes, `set_properties_from_solution` is called once with  
@@ -871,7 +871,7 @@ class PR(GCEOS):
 
 
 class PR78(PR):
-    r'''Class for solving a the Peng-Robinson cubic 
+    r'''Class for solving the Peng-Robinson cubic 
     equation of state for a pure compound according to the 1978 variant.
     Subclasses `PR`, which provides everything except the variable `kappa`.
     Solves the EOS on initialization. See `PR` for further documentation.
@@ -1968,7 +1968,7 @@ class APISRK(SRK):
 
 
 class TWUPR(PR):
-    r'''Class for solving a the Peng-Robinson cubic 
+    r'''Class for solving the Twu [1]_ variant of the Peng-Robinson cubic 
     equation of state for a pure compound. Subclasses `PR`, which 
     provides the methods for solving the EOS and calculating its assorted 
     relevant thermodynamic properties. Solves the EOS on initialization. 
@@ -2490,7 +2490,7 @@ class GCEOSMIX(GCEOS):
 
 
 class PRMIX(GCEOSMIX, PR):
-    r'''Class for solving a the Peng-Robinson cubic equation of state for a 
+    r'''Class for solving the Peng-Robinson cubic equation of state for a 
     mixture of any number of compounds. Subclasses `PR`. Solves the EOS on
     initialization and calculates fugacities for all components in all phases.
 
@@ -2524,7 +2524,7 @@ class PRMIX(GCEOSMIX, PR):
     omegas : float
         Acentric factors of all compounds, [-]
     zs : float
-        Mole fractions of all species overall, [-]
+        Overall mole fractions of all species, [-]
     kijs : list[list[float]], optional
         n*n size list of lists with binary interaction parameters for the
         Van der Waals mixing rules, default all 0 [-]
@@ -2638,7 +2638,7 @@ class SRKMIX(GCEOSMIX, SRK):
     omegas : float
         Acentric factors of all compounds, [-]
     zs : float
-        Mole fractions of all species overall, [-]
+        Overall mole fractions of all species, [-]
     kijs : list[list[float]], optional
         n*n size list of lists with binary interaction parameters for the
         Van der Waals mixing rules, default all 0 [-]
@@ -2716,7 +2716,7 @@ class SRKMIX(GCEOSMIX, SRK):
         
 
 class PR78MIX(PRMIX):
-    r'''Class for solving a the Peng-Robinson cubic equation of state for a 
+    r'''Class for solving the Peng-Robinson cubic equation of state for a 
     mixture of any number of compounds according to the 1978 variant. 
     Subclasses `PR`. Solves the EOS on initialization and calculates fugacities  
     for all components in all phases.
@@ -2753,7 +2753,7 @@ class PR78MIX(PRMIX):
     omegas : float
         Acentric factors of all compounds, [-]
     zs : float
-        Mole fractions of all species overall, [-]
+        Overall mole fractions of all species, [-]
     kijs : list[list[float]], optional
         n*n size list of lists with binary interaction parameters for the
         Van der Waals mixing rules, default all 0 [-]
@@ -2818,3 +2818,102 @@ class PR78MIX(PRMIX):
 
         self.solve()
         self.fugacities()
+
+
+
+class VDWMIX(GCEOSMIX, VDW):
+    r'''Class for solving the Van der Waals cubic equation of state for a 
+    mixture of any number of compounds. Subclasses `VDW`. Solves the EOS on
+    initialization and calculates fugacities for all components in all phases.
+
+    The implemented method here is `fugacity_coefficients`, which implements
+    the formula for fugacity coefficients in a mixture as given in [1]_.
+    Two of `T`, `P`, and `V` are needed to solve the EOS.
+
+    .. math::
+        P=\frac{RT}{V-b}-\frac{a}{V^2}
+        
+        a = \sum_i \sum_j z_i z_j {a}_{ij}
+            
+        b = \sum_i z_i b_i
+
+        a_{ij} = (1-k_{ij})\sqrt{a_{i}a_{j}}
+
+        a_i=\frac{27}{64}\frac{(RT_{c,i})^2}{P_{c,i}}
+
+        b_i=\frac{RT_{c,i}}{8P_{c,i}}
+            
+    Parameters
+    ----------
+    Tcs : float
+        Critical temperatures of all compounds, [K]
+    Pcs : float
+        Critical pressures of all compounds, [Pa]
+    zs : float
+        Overall mole fractions of all species, [-]
+    kijs : list[list[float]], optional
+        n*n size list of lists with binary interaction parameters for the
+        Van der Waals mixing rules, default all 0 [-]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+
+    Examples
+    --------
+    T-P initialization, nitrogen-methane at 115 K and 1 MPa:
+    
+    >>> eos = VDWMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    >>> eos.V_l, eos.V_g
+    (5.8813678514166464e-05, 0.0007770869741895237)
+    >>> eos.fugacities_l, eos.fugacities_g
+    ([854533.2669205102, 207126.8497276205], [448470.7363380735, 397826.5439999289])
+    
+    Notes
+    -----
+    When T is not specified, a numerical solution must be used.
+
+    References
+    ----------
+    .. [1] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
+       Butterworth-Heinemann, 1985.
+    .. [2] Poling, Bruce E. The Properties of Gases and Liquids. 5th 
+       edition. New York: McGraw-Hill Professional, 2000.
+    '''
+    def __init__(self, Tcs, Pcs, zs, kijs=None, T=None, P=None, V=None):
+        self.N = len(Tcs)
+        self.cmps = range(self.N)
+        self.Tcs = Tcs
+        self.Pcs = Pcs
+        self.zs = zs
+        if kijs is None:
+            kijs = [[0]*self.N for i in range(self.N)]
+        self.kijs = kijs
+        self.T = T
+        self.P = P
+        self.V = V
+
+        self.ais = [27.0/64.0*(R*Tc)**2/Pc for Tc, Pc in zip(Tcs, Pcs)]
+        self.bs = [R*Tc/(8.*Pc) for Tc, Pc in zip(Tcs, Pcs)]
+        self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
+        
+        self.solve()
+        self.fugacities()
+        
+    def setup_a_alpha_and_derivatives(self, i):
+        self.a = self.ais[i]
+        
+    def cleanup_a_alpha_and_derivatives(self):
+        del(self.a)
+        
+    def fugacity_coefficients(self, Z, zs):
+        phis = []
+        V = Z*R*self.T/self.P
+        for i in self.cmps:
+            phi = self.bs[i]/(V-self.b) - log(Z*(1. - self.b/V)) - 2.*(self.a_alpha*self.ais[i])**0.5/(R*self.T*V)
+            phis.append(exp(phi))
+        return phis
+
+
