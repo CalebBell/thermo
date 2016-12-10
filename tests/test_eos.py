@@ -287,6 +287,13 @@ def test_PRSV():
     eos.kappa1_Tr_limit = True
     eos.__init__(Tc=507.6, Pc=3025000, omega=0.2975, T=406.08, P=1E6, kappa1=0.05104)
     assert_allclose(eos.kappa, 0.8074380841890093)
+    
+    # Test the limit is not enforced while under Tr =0.7
+    eos = PRSV(Tc=507.6, Pc=3025000, omega=0.2975, T=304.56, P=1E6, kappa1=0.05104)
+    assert_allclose(eos.kappa, 0.8164956255888178)
+    eos.kappa1_Tr_limit = True
+    eos.__init__(Tc=507.6, Pc=3025000, omega=0.2975, T=304.56, P=1E6, kappa1=0.05104)
+    assert_allclose(eos.kappa, 0.8164956255888178)
 
     with pytest.raises(Exception):
         PRSV(Tc=507.6, Pc=3025000, omega=0.2975, P=1E6, kappa1=0.05104)
@@ -937,3 +944,355 @@ def test_VDWIX_quick():
     # Gas phase only test point
     a = VDWMIX(T=300, P=1E7, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
     assert_allclose(a.phis_g, [0.9564004482475513, 0.8290411371501448]) 
+
+
+def test_PRSVMIX_vs_PRSV():
+    eos = PRSVMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., P=1E6, kappa1s=[0.05104])
+    three_props = [eos.V_l, eos.H_dep_l, eos.S_dep_l]
+    expect_props = [0.0001301268694484059, -31698.916002476708, -74.1674902435042]
+    assert_allclose(three_props, expect_props)
+    
+    # Test of a_alphas
+    a_alphas = [3.8129831135199463, -0.006976898745266429, 2.0026547235203598e-05]
+    
+    a_alphas_fast = eos.a_alpha_and_derivatives(299)
+    assert_allclose(a_alphas, a_alphas_fast)
+    
+    a_alphas_fast = eos.a_alpha_and_derivatives(299, quick=False)
+    assert_allclose(a_alphas, a_alphas_fast)
+    
+    # PR back calculation for T
+    eos = PRSVMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], V=0.0001301268694484059, P=1E6, kappa1s=[0.05104])
+    assert_allclose(eos.T, 299)
+    T_slow = eos.solve_T(P=1E6, V=0.0001301268694484059, quick=False)
+    assert_allclose(T_slow, 299)
+    
+    
+    # Test the bool to control its behavior
+    eos = PRSVMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=406.08, P=1E6, kappa1s=[0.05104])
+    assert_allclose(eos.kappas, 0.7977689278061457)
+    eos.kappa1_Tr_limit = True
+    eos.__init__(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=406.08, P=1E6, kappa1s=[0.05104])
+    assert_allclose(eos.kappas, 0.8074380841890093)
+    
+    # Test the limit is not enforced while under Tr =0.7
+    eos = PRSVMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=304.56, P=1E6, kappa1s=[0.05104])
+    assert_allclose(eos.kappas, 0.8164956255888178)
+    eos.kappa1_Tr_limit = True
+    eos.__init__(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=304.56, P=1E6, kappa1s=[0.05104])
+    assert_allclose(eos.kappas, 0.8164956255888178)
+
+
+def test_PRSVMIX_quick():
+    # Two-phase nitrogen-methane
+    eos = PRSVMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+
+    Vs_fast = eos.volume_solutions(115, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
+    Vs_expected = [(3.623552388375633e-05-1.3552527156068805e-19j), (0.0001942800283219127+2.168404344971009e-19j), (0.0007002421492037557-4.743384504624082e-20j)]
+    assert_allclose(Vs_fast, Vs_expected)
+
+    # Test of a_alphas
+    a_alphas = [0.21897578471489654, -0.0006396067113212318, 3.7150128655294028e-06]
+    a_alphas_fast = eos.a_alpha_and_derivatives(115)
+    assert_allclose(a_alphas, a_alphas_fast)
+    a_alphas_slow = eos.a_alpha_and_derivatives(115, quick=False)
+    assert_allclose(a_alphas, a_alphas_slow)
+
+    # back calculation for T, both solutions
+    for V in [3.623552388375633e-05, 0.0007002421492037557]:
+        eos = PRSVMIX(V=V, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+        assert_allclose(eos.T, 115)
+        T_slow = eos.solve_T(P=1E6, V=V, quick=False)
+        assert_allclose(T_slow, 115)
+
+
+    # Fugacities
+    eos = PRSVMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    assert_allclose(eos.phis_l, [1.5881151663681092, 0.14570244654356812])
+    assert_allclose(eos.phis_g, [0.8731073123670093, 0.7157562213377993])
+    
+    # Numerically test fugacities at one point
+    def numerical_fugacity_coefficient(n1, n2=0.5, switch=False, l=True):
+        if switch:
+            n1, n2 = n2, n1
+        tot = n1+n2
+        zs = [i/tot for i in [n1,n2]]
+        a = PRSVMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=zs, kijs=[[0,0],[0,0]])
+        phi = a.phi_l if l else a.phi_g
+        return tot*log(phi)
+
+    phis = [[derivative(numerical_fugacity_coefficient, 0.5, dx=1E-6, order=25, args=(0.5, i, j)) for i in [False, True]] for j in [False, True]]
+    assert_allclose(phis, [eos.lnphis_g, eos.lnphis_l])
+
+    # Gas phase only test point
+    eos = PRSVMIX(T=300, P=1E7, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    assert_allclose(eos.phis_g, [0.9859363207073754, 0.8344831291870667]) 
+
+
+def test_PRSV2MIX_vs_PRSV():
+    eos = PRSV2MIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., P=1E6, kappa1s=[0.05104], kappa2s=[0.8634], kappa3s=[0.460])
+    three_props = [eos.V_l, eos.H_dep_l, eos.S_dep_l]
+    expect_props = [0.00013018821346475254, -31496.173493225753, -73.6152580115141]
+    assert_allclose(three_props, expect_props)
+    
+    # Test of PRSV2 a_alphas
+    a_alphas = [3.8054176315098256, -0.00687315871653124, 2.3078008060652167e-05]
+    
+    a_alphas_fast = eos.a_alpha_and_derivatives(299)
+    assert_allclose(a_alphas, a_alphas_fast)
+    a_alphas_fast = eos.a_alpha_and_derivatives(299, quick=False)
+    assert_allclose(a_alphas, a_alphas_fast)
+    
+    # PSRV2 back calculation for T
+    eos = PRSV2MIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], V=0.00013018821346475254, P=1E6, kappa1s=[0.05104], kappa2s=[0.8634], kappa3s=[0.460])
+    assert_allclose(eos.T, 299)
+    T_slow = eos.solve_T(P=1E6, V=0.00013018821346475254, quick=False)
+    assert_allclose(T_slow, 299)
+
+    # Check this is the same as PRSV
+    eos = PRSVMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., P=1E6, kappa1s=[0.05104])
+    three_props_PRSV = [eos.V_l, eos.H_dep_l, eos.S_dep_l]
+    eos = PRSV2MIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., P=1E6, kappa1s=[0.05104])
+    three_props_PRSV2 = [eos.V_l, eos.H_dep_l, eos.S_dep_l]
+    assert_allclose(three_props_PRSV, three_props_PRSV2)
+    
+
+def test_PRSV2MIX_quick():
+    # Two-phase nitrogen-methane
+    eos = PRSV2MIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+
+    Vs_fast = eos.volume_solutions(115, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
+    Vs_expected = [(3.623552388375633e-05-1.3552527156068805e-19j), (0.0001942800283219127+2.168404344971009e-19j), (0.0007002421492037557-4.743384504624082e-20j)]
+    assert_allclose(Vs_fast, Vs_expected)
+
+    # Test of a_alphas
+    a_alphas = [0.21897578471489654, -0.0006396067113212318, 3.7150128655294028e-06]
+    a_alphas_fast = eos.a_alpha_and_derivatives(115)
+    assert_allclose(a_alphas, a_alphas_fast)
+    a_alphas_slow = eos.a_alpha_and_derivatives(115, quick=False)
+    assert_allclose(a_alphas, a_alphas_slow)
+
+    # back calculation for T, both solutions
+    for V in [3.623552388375633e-05, 0.0007002421492037557]:
+        eos = PRSV2MIX(V=V, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+        assert_allclose(eos.T, 115)
+        T_slow = eos.solve_T(P=1E6, V=V, quick=False)
+        assert_allclose(T_slow, 115)
+
+
+    # Fugacities
+    eos = PRSV2MIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    assert_allclose(eos.phis_l, [1.5881151663681092, 0.14570244654356812])
+    assert_allclose(eos.phis_g, [0.8731073123670093, 0.7157562213377993])
+    
+    # Numerically test fugacities at one point
+    def numerical_fugacity_coefficient(n1, n2=0.5, switch=False, l=True):
+        if switch:
+            n1, n2 = n2, n1
+        tot = n1+n2
+        zs = [i/tot for i in [n1,n2]]
+        a = PRSVMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=zs, kijs=[[0,0],[0,0]])
+        phi = a.phi_l if l else a.phi_g
+        return tot*log(phi)
+
+    phis = [[derivative(numerical_fugacity_coefficient, 0.5, dx=1E-6, order=25, args=(0.5, i, j)) for i in [False, True]] for j in [False, True]]
+    assert_allclose(phis, [eos.lnphis_g, eos.lnphis_l])
+
+    # Gas phase only test point
+    eos = PRSV2MIX(T=300, P=1E7, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    assert_allclose(eos.phis_g, [0.9859363207073754, 0.8344831291870667]) 
+
+
+def test_TWUPRMIX_vs_TWUPR():
+    # Copy and pasted
+    # Test solution for molar volumes
+    eos = TWUPRMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., P=1E6)
+    Vs_fast = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
+    Vs_slow = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
+    Vs_expected = [(0.0001301754975832377+0j), (0.0011236542243270918+0.0012949257976571766j), (0.0011236542243270918-0.0012949257976571766j)]
+
+    assert_allclose(Vs_fast, Vs_expected)
+    assert_allclose(Vs_slow, Vs_expected)
+    
+    # Test of a_alphas
+    a_alphas = [3.806982284033079, -0.006971709974815854, 2.3667018824561144e-05]
+    a_alphas_fast = eos.a_alpha_and_derivatives(299)
+    assert_allclose(a_alphas, a_alphas_fast)
+    a_alphas_slow = eos.a_alpha_and_derivatives(299, quick=False)
+    assert_allclose(a_alphas, a_alphas_slow)
+
+    # back calculation for T
+    eos = TWUPRMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], V=0.0001301754975832377, P=1E6)
+    assert_allclose(eos.T, 299)
+    T_slow = eos.solve_T(P=1E6, V=0.0001301754975832377, quick=False)
+    assert_allclose(T_slow, 299)
+
+    
+    eos = TWUPRMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., P=1E6)
+    # Derivatives
+    diffs_1 = [592877.7698667891, -3683686154532.3066, 1.6094687359218388e-07, -2.7146720921640605e-13, 6213230.351611896, 1.6866883037707508e-06]
+    diffs_2 = [-708.101408196832, 4.512488462413035e+17, 1.168546207434993e-09, 9.027515426758444e-21, -280283966933.572, 3.397816790678971e-15]
+    diffs_mixed = [-3.82370615408822e-15, -20741143317.758797, 0.07152333089484428]
+    departures = [-31652.726391608117, -74.1128253091799, 35.189125483239366]
+    known_derivs_deps = [diffs_1, diffs_2, diffs_mixed, departures]
+    
+    for f in [True, False]:
+        main_calcs = eos.derivatives_and_departures(eos.T, eos.P, eos.V_l, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=f)
+        
+        for i, j in zip(known_derivs_deps, main_calcs):
+            assert_allclose(i, j)
+        
+    # Integration tests
+    eos = TWUPRMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., V=0.00013)
+    fast_vars = vars(eos)
+    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=False)
+    slow_vars = vars(eos)
+    [assert_allclose(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
+
+    # Superctitical test
+    eos = TWUPRMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=900., P=1E6)
+    eos = TWUPRMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], V=0.0073716980824289815, P=1E6)
+    assert_allclose(eos.T, 900)
+
+
+def test_TWUPRMIX_quick():
+    # Two-phase nitrogen-methane
+    eos = TWUPRMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+
+    Vs_fast = eos.volume_solutions(115, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
+    Vs_expected = [(3.62456981315702e-05-1.8973538018496328e-19j), (0.0001940721088661993+1.6263032587282567e-19j), (0.0007004398944116554-4.0657581468206416e-20j)]
+    assert_allclose(Vs_fast, Vs_expected)
+
+    # Test of a_alphas
+    a_alphas = [0.21887729989547594, -0.0006338024691450689, 3.3584606049895343e-06]
+    a_alphas_fast = eos.a_alpha_and_derivatives(115)
+    assert_allclose(a_alphas, a_alphas_fast)
+    a_alphas_slow = eos.a_alpha_and_derivatives(115, quick=False)
+    assert_allclose(a_alphas, a_alphas_slow)
+
+    # back calculation for T, both solutions
+    for V in [3.62456981315702e-05, 0.0007004398944116554]:
+        eos = TWUPRMIX(V=V, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+        assert_allclose(eos.T, 115)
+        T_slow = eos.solve_T(P=1E6, V=V, quick=False)
+        assert_allclose(T_slow, 115)
+
+
+    # Fugacities
+    eos = TWUPRMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    assert_allclose(eos.phis_l, [1.5843100443266374, 0.14661177659453567])
+    assert_allclose(eos.phis_g, [0.8729379355284885, 0.716098499114619])
+    
+    # Numerically test fugacities at one point
+    def numerical_fugacity_coefficient(n1, n2=0.5, switch=False, l=True):
+        if switch:
+            n1, n2 = n2, n1
+        tot = n1+n2
+        zs = [i/tot for i in [n1,n2]]
+        a = TWUPRMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=zs, kijs=[[0,0],[0,0]])
+        phi = a.phi_l if l else a.phi_g
+        return tot*log(phi)
+
+    phis = [[derivative(numerical_fugacity_coefficient, 0.5, dx=1E-6, order=25, args=(0.5, i, j)) for i in [False, True]] for j in [False, True]]
+    assert_allclose(phis, [eos.lnphis_g, eos.lnphis_l])
+
+    # Gas phase only test point
+    eos = TWUPRMIX(T=300, P=1E7, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    assert_allclose(eos.phis_g, [0.97697895693183, 0.8351530876083071]) 
+
+
+def test_TWUSRKMIX_vs_TWUSRK():
+    # Test solution for molar volumes
+    eos = TWUSRKMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., P=1E6)
+    Vs_fast = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
+    Vs_slow = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
+    Vs_expected = [(0.00014689217317770398+0j), (0.001169565653511148+0.0013011778220658073j), (0.001169565653511148-0.0013011778220658073j)]
+
+    assert_allclose(Vs_fast, Vs_expected)
+    assert_allclose(Vs_slow, Vs_expected)
+    
+    # Test of a_alphas
+    a_alphas = [3.71966709357206, -0.007269721309490377, 2.305588658885629e-05]
+    a_alphas_fast = eos.a_alpha_and_derivatives(299)
+    assert_allclose(a_alphas, a_alphas_fast)
+    a_alphas_slow = eos.a_alpha_and_derivatives(299, quick=False)
+    assert_allclose(a_alphas, a_alphas_slow)
+
+    # back calculation for T
+    eos = TWUSRKMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], V=0.00014689217317770398, P=1E6)
+    assert_allclose(eos.T, 299)
+    T_slow = eos.solve_T(P=1E6, V=0.00014689217317770398, quick=False)
+    assert_allclose(T_slow, 299)
+
+    
+    eos = TWUSRKMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., P=1E6)
+    # Derivatives
+    diffs_1 = [504446.40946384566, -2676841551251.3125, 1.8844836341846153e-07, -3.735745956022468e-13, 5306493.417400694, 1.982371132471449e-06]
+    diffs_2 = [-586.164516927993, 2.6624358487625542e+17, 1.308861795972448e-09, 1.3880693263695398e-20, -195576504984.95178, 4.566404923205853e-15]
+    diffs_mixed = [-5.015403880635795e-15, -14235388178.812284, 0.06816570409464781]
+    departures = [-31612.591872087483, -74.02294100343829, 34.24266185576879]
+    known_derivs_deps = [diffs_1, diffs_2, diffs_mixed, departures]
+    
+    for f in [True, False]:
+        main_calcs = eos.derivatives_and_departures(eos.T, eos.P, eos.V_l, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=f)
+        
+        for i, j in zip(known_derivs_deps, main_calcs):
+            assert_allclose(i, j)
+    
+    # Integration tests
+    eos = TWUSRKMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299.,V=0.00013)
+    fast_vars = vars(eos)
+    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=False)
+    slow_vars = vars(eos)
+    [assert_allclose(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
+
+    # Superctitical test
+    eos = TWUSRKMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=900., P=1E6)
+    eos = TWUSRKMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], V=0.007422210444471012, P=1E6)
+    assert_allclose(eos.T, 900)
+
+
+def test_TWUSRKMIX_quick():
+    # Two-phase nitrogen-methane
+    eos = TWUSRKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+
+    Vs_fast = eos.volume_solutions(115, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
+    Vs_expected = [(4.108791361639091e-05-1.0842021724855044e-19j), (0.00020336787935593015+1.8973538018496328e-19j), (0.0007117070840276789-2.0328790734103208e-20j)]
+    assert_allclose(Vs_fast, Vs_expected)
+
+    # Test of a_alphas
+    a_alphas = [0.21019046890564463, -0.0007321997444448587, 2.6003157171957985e-06]
+    a_alphas_fast = eos.a_alpha_and_derivatives(115)
+    assert_allclose(a_alphas, a_alphas_fast)
+    a_alphas_slow = eos.a_alpha_and_derivatives(115, quick=False)
+    assert_allclose(a_alphas, a_alphas_slow)
+
+    # back calculation for T, both solutions
+    for V in [4.108791361639091e-05, 0.0007117070840276789]:
+        eos = TWUSRKMIX(V=V, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+        assert_allclose(eos.T, 115)
+        T_slow = eos.solve_T(P=1E6, V=V, quick=False)
+        assert_allclose(T_slow, 115)
+
+
+    # Fugacities
+    eos = TWUSRKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    assert_allclose(eos.phis_l, [1.6193856616533904, 0.14818727763145562])
+    assert_allclose(eos.phis_g, [0.8835668629797101, 0.7249406348215529])
+    
+    # Numerically test fugacities at one point
+    def numerical_fugacity_coefficient(n1, n2=0.5, switch=False, l=True):
+        if switch:
+            n1, n2 = n2, n1
+        tot = n1+n2
+        zs = [i/tot for i in [n1,n2]]
+        a = TWUSRKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=zs, kijs=[[0,0],[0,0]])
+        phi = a.phi_l if l else a.phi_g
+        return tot*log(phi)
+
+    phis = [[derivative(numerical_fugacity_coefficient, 0.5, dx=1E-6, order=25, args=(0.5, i, j)) for i in [False, True]] for j in [False, True]]
+    assert_allclose(phis, [eos.lnphis_g, eos.lnphis_l])
+
+    # Gas phase only test point
+    eos = TWUSRKMIX(T=300, P=1E7, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    assert_allclose(eos.phis_g, [1.0172098207387374, 0.8799658237051876]) 

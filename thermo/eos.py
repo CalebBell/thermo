@@ -1053,7 +1053,7 @@ class PRSV(PR):
             Tr = self.T/Tc
         else:
             Tr = self.T/Tc
-            if self.kappa1_Tr_limit and Tc > 0.7:
+            if self.kappa1_Tr_limit and Tr > 0.7:
                 self.kappa1 = 0
             else:
                 self.kappa1 = kappa1
@@ -2352,11 +2352,11 @@ class GCEOSMIX(GCEOS):
         a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
         
         for i in self.cmps:
-            self.setup_a_alpha_and_derivatives(i)
+            self.setup_a_alpha_and_derivatives(i, T=T)
             # Abuse method resolution order to call the a_alpha_and_derivatives
             # method of the original pure EOS
             # -4 goes back from object, GCEOS, SINGLEPHASEEOS, up to GCEOSMIX
-            ds = super(type(self).__mro__[-4], self).a_alpha_and_derivatives(T)
+            ds = super(type(self).__mro__[self.a_alpha_mro], self).a_alpha_and_derivatives(T)
             a_alphas.append(ds[0])
             da_alpha_dTs.append(ds[1])
             d2a_alpha_dT2s.append(ds[2])
@@ -2547,7 +2547,7 @@ class PRMIX(GCEOSMIX, PR):
     
     Notes
     -----
-    When T is not specified, a numerical solution must be used.
+    For P-V initializations, SciPy's `newton` solver is used to find T.
 
     References
     ----------
@@ -2559,6 +2559,7 @@ class PRMIX(GCEOSMIX, PR):
        Equilibrium in a System Containing Methanol." Fluid Phase Equilibria 24,
        no. 1 (January 1, 1985): 25-41. doi:10.1016/0378-3812(85)87035-7. 
     '''
+    a_alpha_mro = -4
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None):
         self.N = len(Tcs)
         self.cmps = range(self.N)
@@ -2584,7 +2585,7 @@ class PRMIX(GCEOSMIX, PR):
         self.solve()
         self.fugacities()
         
-    def setup_a_alpha_and_derivatives(self, i):
+    def setup_a_alpha_and_derivatives(self, i, T=None):
         self.a, self.kappa, self.Tc = self.ais[i], self.kappas[i], self.Tcs[i]
     def cleanup_a_alpha_and_derivatives(self):
         del(self.a, self.kappa, self.Tc)
@@ -2661,7 +2662,7 @@ class SRKMIX(GCEOSMIX, SRK):
     
     Notes
     -----
-    When T is not specified, a numerical solution must be used.
+    For P-V initializations, SciPy's `newton` solver is used to find T.
 
     References
     ----------
@@ -2673,6 +2674,7 @@ class SRKMIX(GCEOSMIX, SRK):
     .. [3] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
        Butterworth-Heinemann, 1985.
     '''
+    a_alpha_mro = -4
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None):
         self.N = len(Tcs)
         self.cmps = range(self.N)
@@ -2696,7 +2698,7 @@ class SRKMIX(GCEOSMIX, SRK):
         self.solve()
         self.fugacities()
 
-    def setup_a_alpha_and_derivatives(self, i):
+    def setup_a_alpha_and_derivatives(self, i, T=None):
         self.a, self.m, self.Tc = self.ais[i], self.ms[i], self.Tcs[i]
     def cleanup_a_alpha_and_derivatives(self):
         del(self.a, self.m, self.Tc)
@@ -2789,6 +2791,7 @@ class PR78MIX(PRMIX):
        Equilibrium in a System Containing Methanol." Fluid Phase Equilibria 24,
        no. 1 (January 1, 1985): 25-41. doi:10.1016/0378-3812(85)87035-7. 
     '''
+    a_alpha_mro = -4
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None):
         self.N = len(Tcs)
         self.cmps = range(self.N)
@@ -2873,7 +2876,7 @@ class VDWMIX(GCEOSMIX, VDW):
     
     Notes
     -----
-    When T is not specified, a numerical solution must be used.
+    For P-V initializations, SciPy's `newton` solver is used to find T.
 
     References
     ----------
@@ -2882,6 +2885,7 @@ class VDWMIX(GCEOSMIX, VDW):
     .. [2] Poling, Bruce E. The Properties of Gases and Liquids. 5th 
        edition. New York: McGraw-Hill Professional, 2000.
     '''
+    a_alpha_mro = -4
     def __init__(self, Tcs, Pcs, zs, kijs=None, T=None, P=None, V=None):
         self.N = len(Tcs)
         self.cmps = range(self.N)
@@ -2902,7 +2906,7 @@ class VDWMIX(GCEOSMIX, VDW):
         self.solve()
         self.fugacities()
         
-    def setup_a_alpha_and_derivatives(self, i):
+    def setup_a_alpha_and_derivatives(self, i, T=None):
         self.a = self.ais[i]
         
     def cleanup_a_alpha_and_derivatives(self):
@@ -2917,3 +2921,505 @@ class VDWMIX(GCEOSMIX, VDW):
         return phis
 
 
+class PRSVMIX(PRMIX, PRSV):
+    r'''Class for solving the Peng-Robinson-Stryjek-Vera equations of state for
+    a mixture as given in [1]_.  Subclasses `PRMIX` and `PRSV`.
+    Solves the EOS on initialization and calculates fugacities for all 
+    components in all phases.
+    
+    Inherits the method of calculating fugacity coefficients from `PRMIX`.
+    Two of `T`, `P`, and `V` are needed to solve the EOS.
+    
+    .. math::
+        P = \frac{RT}{v-b}-\frac{a\alpha(T)}{v(v+b)+b(v-b)}
+        
+        a \alpha = \sum_i \sum_j z_i z_j {(a\alpha)}_{ij}
+        
+        (a\alpha)_{ij} = (1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}
+        
+        b = \sum_i z_i b_i
+
+        a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}
+        
+	  b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
+        
+        \alpha(T)_i=[1+\kappa_i(1-\sqrt{T_{r,i}})]^2
+        
+        \kappa_i = \kappa_{0,i} + \kappa_{1,i}(1 + T_{r,i}^{0.5})(0.7 - T_{r,i})
+        
+        \kappa_{0,i} = 0.378893 + 1.4897153\omega_i - 0.17131848\omega_i^2 
+        + 0.0196554\omega_i^3
+        
+    Parameters
+    ----------
+    Tcs : float
+        Critical temperatures of all compounds, [K]
+    Pcs : float
+        Critical pressures of all compounds, [Pa]
+    omegas : float
+        Acentric factors of all compounds, [-]
+    zs : float
+        Overall mole fractions of all species, [-]
+    kijs : list[list[float]], optional
+        n*n size list of lists with binary interaction parameters for the
+        Van der Waals mixing rules, default all 0 [-]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+    kappa1s : list[float], optional
+        Fit parameter; available in [1]_ for over 90 compounds, [-]
+
+    Examples
+    --------
+    P-T initialization, two-phase, nitrogen and methane
+    
+    >>> eos = PRSVMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    >>> eos.phase, eos.V_l, eos.H_dep_l, eos.S_dep_l
+    ('l/g', 3.623552388375633e-05, -6349.003406339961, -49.12403359687138)
+    
+    Notes
+    -----
+    [1]_ recommends that `kappa1` be set to 0 for Tr > 0.7. This is not done by 
+    default; the class boolean `kappa1_Tr_limit` may be set to True and the
+    problem re-solved with that specified if desired. `kappa1_Tr_limit` is not
+    supported for P-V inputs.
+    
+    For P-V initializations, SciPy's `newton` solver is used to find T.
+
+    [2]_ and [3]_ are two more resources documenting the PRSV EOS. [4]_ lists
+    `kappa` values for 69 additional compounds. See also `PRSV2`. Note that
+    tabulated `kappa` values should be used with the critical parameters used
+    in their fits. Both [1]_ and [4]_ only considered vapor pressure in fitting
+    the parameter.
+
+    References
+    ----------
+    .. [1] Stryjek, R., and J. H. Vera. "PRSV: An Improved Peng-Robinson 
+       Equation of State for Pure Compounds and Mixtures." The Canadian Journal
+       of Chemical Engineering 64, no. 2 (April 1, 1986): 323-33. 
+       doi:10.1002/cjce.5450640224. 
+    .. [2] Stryjek, R., and J. H. Vera. "PRSV - An Improved Peng-Robinson 
+       Equation of State with New Mixing Rules for Strongly Nonideal Mixtures."
+       The Canadian Journal of Chemical Engineering 64, no. 2 (April 1, 1986): 
+       334-40. doi:10.1002/cjce.5450640225.  
+    .. [3] Stryjek, R., and J. H. Vera. "Vapor-liquid Equilibrium of 
+       Hydrochloric Acid Solutions with the PRSV Equation of State." Fluid 
+       Phase Equilibria 25, no. 3 (January 1, 1986): 279-90. 
+       doi:10.1016/0378-3812(86)80004-8. 
+    .. [4] Proust, P., and J. H. Vera. "PRSV: The Stryjek-Vera Modification of 
+       the Peng-Robinson Equation of State. Parameters for Other Pure Compounds
+       of Industrial Interest." The Canadian Journal of Chemical Engineering 
+       67, no. 1 (February 1, 1989): 170-73. doi:10.1002/cjce.5450670125.
+    '''
+    a_alpha_mro = -5
+    def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None, kappa1s=None):
+        self.N = len(Tcs)
+        self.cmps = range(self.N)
+        self.Tcs = Tcs
+        self.Pcs = Pcs
+        self.omegas = omegas
+        self.zs = zs
+
+        if kijs is None:
+            kijs = [[0]*self.N for i in range(self.N)]
+        self.kijs = kijs
+
+        if kappa1s is None:
+            kappa1s = [0 for i in self.cmps]
+
+        self.T = T
+        self.P = P
+        self.V = V
+
+        self.ais = [self.c1*R*R*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
+        self.bs = [self.c2*R*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
+        self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
+        
+        self.kappa0s = [0.378893 + 1.4897153*omega - 0.17131848*omega**2 + 0.0196554*omega**3 for omega in omegas]
+        
+        self.delta = 2*self.b
+        self.epsilon = -self.b*self.b
+
+        self.check_sufficient_inputs()
+        if self.V and self.P:
+            # Deal with T-solution here; does NOT support kappa1_Tr_limit.
+            self.kappa1s = kappa1s
+            self.T = self.solve_T(self.P, self.V)
+        else:
+            self.kappa1s = [(0 if (T/Tc > 0.7 and self.kappa1_Tr_limit) else kappa1) for kappa1, Tc in zip(kappa1s, Tcs)]
+            
+        self.kappas = [kappa0 + kappa1*(1 + (self.T/Tc)**0.5)*(0.7 - (self.T/Tc)) for kappa0, kappa1, Tc in zip(self.kappa0s, self.kappa1s, self.Tcs)]
+        self.solve()
+
+        self.fugacities()
+
+    def setup_a_alpha_and_derivatives(self, i, T=None):
+        if not hasattr(self, 'kappas'):
+            self.kappas = [kappa0 + kappa1*(1 + (T/Tc)**0.5)*(0.7 - (T/Tc)) for kappa0, kappa1, Tc in zip(self.kappa0s, self.kappa1s, self.Tcs)]
+        self.a, self.kappa, self.kappa0, self.kappa1, self.Tc = self.ais[i], self.kappas[i], self.kappa0s[i], self.kappa1s[i], self.Tcs[i]
+
+    def cleanup_a_alpha_and_derivatives(self):
+        del(self.a, self.kappa, self.kappa0, self.kappa1, self.Tc)
+        
+
+class PRSV2MIX(PRMIX, PRSV2):
+    r'''Class for solving the Peng-Robinson-Stryjek-Vera 2 equations of state 
+    for a Mixture as given in [1]_.  Subclasses `PRMIX` and `PRSV2`.
+    Solves the EOS on initialization and calculates fugacities for all 
+    components in all phases.
+
+    Inherits the method of calculating fugacity coefficients from `PRMIX`.
+    Two of `T`, `P`, and `V` are needed to solve the EOS.
+    
+    .. math::
+        P = \frac{RT}{v-b}-\frac{a\alpha(T)}{v(v+b)+b(v-b)}
+        
+        a \alpha = \sum_i \sum_j z_i z_j {(a\alpha)}_{ij}
+        
+        (a\alpha)_{ij} = (1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}
+        
+        b = \sum_i z_i b_i
+
+        a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}
+        
+	  b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
+        
+        \alpha(T)_i=[1+\kappa_i(1-\sqrt{T_{r,i}})]^2
+        
+        \kappa_i = \kappa_{0,i} + [\kappa_{1,i} + \kappa_{2,i}(\kappa_{3,i} - T_{r,i})(1-T_{r,i}^{0.5})]
+        (1 + T_{r,i}^{0.5})(0.7 - T_{r,i})
+        
+        \kappa_{0,i} = 0.378893 + 1.4897153\omega_i - 0.17131848\omega_i^2 
+        + 0.0196554\omega_i^3
+        
+    Parameters
+    ----------
+    Tcs : float
+        Critical temperatures of all compounds, [K]
+    Pcs : float
+        Critical pressures of all compounds, [Pa]
+    omegas : float
+        Acentric factors of all compounds, [-]
+    zs : float
+        Overall mole fractions of all species, [-]
+    kijs : list[list[float]], optional
+        n*n size list of lists with binary interaction parameters for the
+        Van der Waals mixing rules, default all 0 [-]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+    kappa1s : list[float], optional
+        Fit parameter; available in [1]_ for over 90 compounds, [-]
+    kappa2s : list[float], optional
+        Fit parameter; available in [1]_ for over 90 compounds, [-]
+    kappa3s : list[float], optional
+        Fit parameter; available in [1]_ for over 90 compounds, [-]
+
+    Examples
+    --------
+    T-P initialization, nitrogen-methane at 115 K and 1 MPa:
+    
+    >>> eos = PRSV2MIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    >>> eos.V_l, eos.V_g
+    (3.623552388375633e-05, 0.0007002421492037557)
+    >>> eos.fugacities_l, eos.fugacities_g
+    ([794057.5831840546, 72851.22327178407], [436553.6561835047, 357878.1106688996])
+    
+    Notes
+    -----    
+    For P-V initializations, SciPy's `newton` solver is used to find T.
+
+    Note that tabulated `kappa` values should be used with the critical 
+    parameters used in their fits. [1]_ considered only vapor 
+    pressure in fitting the parameter.
+
+    References
+    ----------
+    .. [1] Stryjek, R., and J. H. Vera. "PRSV2: A Cubic Equation of State for 
+       Accurate Vapor-liquid Equilibria Calculations." The Canadian Journal of 
+       Chemical Engineering 64, no. 5 (October 1, 1986): 820-26. 
+       doi:10.1002/cjce.5450640516. 
+    '''
+    a_alpha_mro = -5
+    def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
+                 kappa1s=None, kappa2s=None, kappa3s=None):
+        self.N = len(Tcs)
+        self.cmps = range(self.N)
+        self.Tcs = Tcs
+        self.Pcs = Pcs
+        self.omegas = omegas
+        self.zs = zs
+
+        if kijs is None:
+            kijs = [[0]*self.N for i in range(self.N)]
+        self.kijs = kijs
+
+        if kappa1s is None:
+            kappa1s = [0 for i in self.cmps]
+        if kappa2s is None:
+            kappa2s = [0 for i in self.cmps]
+        if kappa3s is None:
+            kappa3s = [0 for i in self.cmps]
+
+        self.kappa1s = kappa1s
+        self.kappa2s = kappa2s
+        self.kappa3s = kappa3s
+
+        self.T = T
+        self.P = P
+        self.V = V
+
+        self.ais = [self.c1*R*R*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
+        self.bs = [self.c2*R*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
+        self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
+        
+        self.kappa0s = [0.378893 + 1.4897153*omega - 0.17131848*omega**2 + 0.0196554*omega**3 for omega in omegas]
+        
+        self.delta = 2*self.b
+        self.epsilon = -self.b*self.b
+
+        
+        if self.V and self.P:
+            self.T = self.solve_T(self.P, self.V)
+    
+        self.kappas = []
+        for Tc, kappa0, kappa1, kappa2, kappa3 in zip(Tcs, self.kappa0s, self.kappa1s, self.kappa2s, self.kappa3s):
+            Tr = self.T/Tc
+            kappa = kappa0 + ((kappa1 + kappa2*(kappa3 - Tr)*(1. - Tr**0.5))*(1. + Tr**0.5)*(0.7 - Tr))
+            self.kappas.append(kappa)
+        self.solve()
+        self.fugacities()
+        
+    def setup_a_alpha_and_derivatives(self, i, T=None):
+        if not hasattr(self, 'kappas'):
+            self.kappas = []
+            for Tc, kappa0, kappa1, kappa2, kappa3 in zip(self.Tcs, self.kappa0s, self.kappa1s, self.kappa2s, self.kappa3s):
+                Tr = T/Tc
+                kappa = kappa0 + ((kappa1 + kappa2*(kappa3 - Tr)*(1. - Tr**0.5))*(1. + Tr**0.5)*(0.7 - Tr))
+                self.kappas.append(kappa)
+
+        (self.a, self.kappa, self.kappa0, self.kappa1, self.kappa2, 
+         self.kappa3, self.Tc) = (self.ais[i], self.kappas[i], self.kappa0s[i],
+         self.kappa1s[i], self.kappa2s[i], self.kappa3s[i], self.Tcs[i])
+
+    def cleanup_a_alpha_and_derivatives(self):
+        del(self.a, self.kappa, self.kappa0, self.kappa1, self.kappa2, self.kappa3, self.Tc)
+
+
+class TWUPRMIX(PRMIX, TWUPR):
+    r'''Class for solving the Twu [1]_ variant of the Peng-Robinson cubic 
+    equation of state for a mixture. Subclasses `TWUPR`. Solves the EOS on
+    initialization and calculates fugacities for all components in all phases.
+    
+    Two of `T`, `P`, and `V` are needed to solve the EOS.
+
+    .. math::
+        P = \frac{RT}{v-b}-\frac{a\alpha(T)}{v(v+b)+b(v-b)}
+        
+        a \alpha = \sum_i \sum_j z_i z_j {(a\alpha)}_{ij}
+        
+        (a\alpha)_{ij} = (1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}
+        
+        b = \sum_i z_i b_i
+
+        a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}
+        
+	  b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
+   
+       \alpha_i = \alpha_i^{(0)} + \omega_i(\alpha_i^{(1)}-\alpha_i^{(0)})
+       
+       \alpha^{(\text{0 or 1})} = T_{r,i}^{N(M-1)}\exp[L(1-T_{r,i}^{NM})]
+      
+    For sub-critical conditions:
+    
+    L0, M0, N0 =  0.125283, 0.911807,  1.948150;
+    
+    L1, M1, N1 = 0.511614, 0.784054, 2.812520
+    
+    For supercritical conditions:
+    
+    L0, M0, N0 = 0.401219, 4.963070, -0.2;
+    
+    L1, M1, N1 = 0.024955, 1.248089, -8.  
+        
+    Parameters
+    ----------
+    Tcs : float
+        Critical temperatures of all compounds, [K]
+    Pcs : float
+        Critical pressures of all compounds, [Pa]
+    omegas : float
+        Acentric factors of all compounds, [-]
+    zs : float
+        Overall mole fractions of all species, [-]
+    kijs : list[list[float]], optional
+        n*n size list of lists with binary interaction parameters for the
+        Van der Waals mixing rules, default all 0 [-]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+
+    Examples
+    --------
+    T-P initialization, nitrogen-methane at 115 K and 1 MPa:
+    
+    >>> eos = TWUPRMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    >>> eos.V_l, eos.V_g
+    (3.62456981315702e-05, 0.0007004398944116554)
+    >>> eos.fugacities_l, eos.fugacities_g
+    ([792155.0221633187, 73305.88829726784], [436468.96776424424, 358049.2495573095])
+    
+    Notes
+    -----
+    For P-V initializations, SciPy's `newton` solver is used to find T.
+    Claimed to be more accurate than the PR, PR78 and PRSV equations.
+
+    References
+    ----------
+    .. [1] Twu, Chorng H., John E. Coon, and John R. Cunningham. "A New 
+       Generalized Alpha Function for a Cubic Equation of State Part 1. 
+       Peng-Robinson Equation." Fluid Phase Equilibria 105, no. 1 (March 15, 
+       1995): 49-59. doi:10.1016/0378-3812(94)02601-V.
+    '''
+    a_alpha_mro = -5
+    def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None):
+        self.N = len(Tcs)
+        self.cmps = range(self.N)
+        self.Tcs = Tcs
+        self.Pcs = Pcs
+        self.omegas = omegas
+        self.zs = zs
+        if kijs is None:
+            kijs = [[0]*self.N for i in range(self.N)]
+        self.kijs = kijs
+        self.T = T
+        self.P = P
+        self.V = V
+
+        self.ais = [self.c1*R*R*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
+        self.bs = [self.c2*R*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
+        self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
+        
+        self.delta = 2.*self.b
+        self.epsilon = -self.b*self.b
+        self.check_sufficient_inputs()
+
+        self.solve()
+        self.fugacities()
+
+    def setup_a_alpha_and_derivatives(self, i, T=None):
+        self.a, self.Tc, self.omega  = self.ais[i], self.Tcs[i], self.omegas[i]
+    def cleanup_a_alpha_and_derivatives(self):
+        del(self.a, self.Tc, self.omega)
+
+
+
+class TWUSRKMIX(SRKMIX, TWUSRK):
+    r'''Class for solving the Twu variant of the Soave-Redlich-Kwong cubic 
+    equation of state for a mixture. Subclasses `TWUSRK`. Solves the EOS on
+    initialization and calculates fugacities for all components in all phases.
+    
+    Two of `T`, `P`, and `V` are needed to solve the EOS.
+    
+    .. math::
+        P = \frac{RT}{V-b} - \frac{a\alpha(T)}{V(V+b)}
+        
+        a_i =\left(\frac{R^2(T_c)^{2}}{9(\sqrt[3]{2}-1)P_c} \right)
+        =\frac{0.42748\cdot R^2(T_c)^{2}}{P_c}
+    
+        b_i =\left( \frac{(\sqrt[3]{2}-1)}{3}\right)\frac{RT_c}{P_c}
+        =\frac{0.08664\cdot R T_c}{P_c}
+        
+        a \alpha = \sum_i \sum_j z_i z_j {(a\alpha)}_{ij}
+        
+        (a\alpha)_{ij} = (1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}
+        
+        b = \sum_i z_i b_i
+        
+        \alpha_i = \alpha^{(0,i)} + \omega_i(\alpha^{(1,i)}-\alpha^{(0,i)})
+       
+        \alpha^{(\text{0 or 1, i})} = T_{r,i}^{N(M-1)}\exp[L(1-T_{r,i}^{NM})]
+      
+    For sub-critical conditions:
+    
+    L0, M0, N0 =  0.141599, 0.919422, 2.496441
+    
+    L1, M1, N1 = 0.500315, 0.799457, 3.291790
+    
+    For supercritical conditions:
+    
+    L0, M0, N0 = 0.441411, 6.500018, -0.20
+    
+    L1, M1, N1 = 0.032580,  1.289098, -8.0
+    
+    Parameters
+    ----------
+    Tc : float
+        Critical temperature, [K]
+    Pc : float
+        Critical pressure, [Pa]
+    omega : float
+        Acentric factor, [-]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+
+    Examples
+    --------    
+#    >>> eos = TWUSRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+#    >>> eos.phase, eos.V_l, eos.H_dep_l, eos.S_dep_l
+#    ('l', 0.00014689217317770398, -31612.591872087483, -74.02294100343829)
+    
+    Notes
+    -----
+    For P-V initializations, SciPy's `newton` solver is used to find T.
+    Claimed to be more accurate than the SRK equation.
+
+    References
+    ----------
+    .. [1] Twu, Chorng H., John E. Coon, and John R. Cunningham. "A New 
+       Generalized Alpha Function for a Cubic Equation of State Part 2. 
+       Redlich-Kwong Equation." Fluid Phase Equilibria 105, no. 1 (March 15, 
+       1995): 61-69. doi:10.1016/0378-3812(94)02602-W.
+    '''
+    a_alpha_mro = -5
+    def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None):
+        self.N = len(Tcs)
+        self.cmps = range(self.N)
+        self.Tcs = Tcs
+        self.Pcs = Pcs
+        self.omegas = omegas
+        self.zs = zs
+        if kijs is None:
+            kijs = [[0]*self.N for i in range(self.N)]
+        self.kijs = kijs
+        self.T = T
+        self.P = P
+        self.V = V
+
+        self.ais = [self.c1*R*R*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
+        self.bs = [self.c2*R*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
+        self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
+        
+        self.delta = self.b
+        self.check_sufficient_inputs()
+
+        self.solve()
+        self.fugacities()
+
+    def setup_a_alpha_and_derivatives(self, i, T=None):
+        self.a, self.Tc, self.omega  = self.ais[i], self.Tcs[i], self.omegas[i]
+    def cleanup_a_alpha_and_derivatives(self):
+        del(self.a, self.Tc, self.omega)
