@@ -2584,11 +2584,53 @@ class PRMIX(GCEOSMIX, PR):
         self.fugacities()
         
     def setup_a_alpha_and_derivatives(self, i, T=None):
+        r'''Sets `a`, `kappa`, and `Tc` for a specific component before the 
+        pure-species EOS's `a_alpha_and_derivatives` method is called. Both are 
+        called by `GCEOSMIX.a_alpha_and_derivatives` for every component.'''
         self.a, self.kappa, self.Tc = self.ais[i], self.kappas[i], self.Tcs[i]
+
     def cleanup_a_alpha_and_derivatives(self):
+        r'''Removes properties set by `setup_a_alpha_and_derivatives`; run by
+        `GCEOSMIX.a_alpha_and_derivatives` after `a_alpha` is calculated for 
+        every component'''
         del(self.a, self.kappa, self.Tc)
         
     def fugacity_coefficients(self, Z, zs):
+        r'''Literature formula for calculating fugacity coefficients for each
+        species in a mixture. Verified numerically. Applicable to most 
+        derivatives of the Peng-Robinson equation of state as well.
+        Called by `fugacities` on initialization, or by a solver routine 
+        which is performing a flash calculation.
+        
+        .. math::
+            \ln \hat \phi_i = \frac{B_i}{B}(Z-1)-\ln(Z-B) + \frac{A}{2\sqrt{2}B}
+            \left[\frac{B_i}{B} - \frac{2}{a\alpha}\sum_i y_i(a\alpha)_{ij}\right]
+            \log\left[\frac{Z + (1+\sqrt{2})B}{Z-(\sqrt{2}-1)B}\right]
+            
+            A = \frac{(a\alpha)P}{R^2 T^2}
+            
+            B = \frac{b P}{RT}
+        
+        Parameters
+        ----------
+        Z : float
+            Compressibility of the mixture for a desired phase, [-]
+        zs : list[float], optional
+            List of mole factions, either overall or in a specific phase, [-]
+        
+        Returns
+        -------
+        phis : float
+            Fugacity coefficient for each species, [-]
+                         
+        References
+        ----------
+        .. [1] Peng, Ding-Yu, and Donald B. Robinson. "A New Two-Constant  
+           Equation of State." Industrial & Engineering Chemistry Fundamentals 
+           15, no. 1 (February 1, 1976): 59-64. doi:10.1021/i160057a011.
+        .. [2] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
+           Butterworth-Heinemann, 1985.
+        '''
         A = self.a_alpha*self.P/R**2/self.T**2
         B = self.b*self.P/R/self.T
         phis = []
@@ -2697,11 +2739,53 @@ class SRKMIX(GCEOSMIX, SRK):
         self.fugacities()
 
     def setup_a_alpha_and_derivatives(self, i, T=None):
+        r'''Sets `a`, `m`, and `Tc` for a specific component before the 
+        pure-species EOS's `a_alpha_and_derivatives` method is called. Both are 
+        called by `GCEOSMIX.a_alpha_and_derivatives` for every component.'''
         self.a, self.m, self.Tc = self.ais[i], self.ms[i], self.Tcs[i]
+
     def cleanup_a_alpha_and_derivatives(self):
+        r'''Removes properties set by `setup_a_alpha_and_derivatives`; run by
+        `GCEOSMIX.a_alpha_and_derivatives` after `a_alpha` is calculated for 
+        every component'''
         del(self.a, self.m, self.Tc)
         
     def fugacity_coefficients(self, Z, zs):
+        r'''Literature formula for calculating fugacity coefficients for each
+        species in a mixture. Verified numerically. Applicable to most 
+        derivatives of the SRK equation of state as well.
+        Called by `fugacities` on initialization, or by a solver routine 
+        which is performing a flash calculation.
+        
+        .. math::
+            \ln \hat \phi_i = \frac{B_i}{B}(Z-1) - \ln(Z-B) + \frac{A}{B}
+            \left[\frac{B_i}{B} - \frac{2}{a \alpha}\sum_i y_i(a\alpha)_{ij}
+            \right]\ln\left(1+\frac{B}{Z}\right)
+            
+            A=\frac{a\alpha P}{R^2T^2}
+            
+            B = \frac{bP}{RT}
+        
+        Parameters
+        ----------
+        Z : float
+            Compressibility of the mixture for a desired phase, [-]
+        zs : list[float], optional
+            List of mole factions, either overall or in a specific phase, [-]
+        
+        Returns
+        -------
+        phis : float
+            Fugacity coefficient for each species, [-]
+                         
+        References
+        ----------
+        .. [1] Soave, Giorgio. "Equilibrium Constants from a Modified 
+           Redlich-Kwong Equation of State." Chemical Engineering Science 27,
+           no. 6 (June 1972): 1197-1203. doi:10.1016/0009-2509(72)80096-4.
+        .. [2] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
+           Butterworth-Heinemann, 1985.
+        '''
         A = self.a_alpha*self.P/R**2/self.T**2
         B = self.b*self.P/R/self.T
         phis = []
@@ -2905,12 +2989,44 @@ class VDWMIX(GCEOSMIX, VDW):
         self.fugacities()
         
     def setup_a_alpha_and_derivatives(self, i, T=None):
+        r'''Sets `a` for a specific component before the 
+        pure-species EOS's `a_alpha_and_derivatives` method is called. Both are 
+        called by `GCEOSMIX.a_alpha_and_derivatives` for every component.'''
         self.a = self.ais[i]
         
     def cleanup_a_alpha_and_derivatives(self):
+        r'''Removes properties set by `setup_a_alpha_and_derivatives`; run by
+        `GCEOSMIX.a_alpha_and_derivatives` after `a_alpha` is calculated for 
+        every component'''
         del(self.a)
         
     def fugacity_coefficients(self, Z, zs):
+        r'''Literature formula for calculating fugacity coefficients for each
+        species in a mixture. Verified numerically.
+        Called by `fugacities` on initialization, or by a solver routine 
+        which is performing a flash calculation.
+        
+        .. math::
+            \ln \hat \phi_i = \frac{b_i}{V-b} - \ln\left[Z\left(1
+            - \frac{b}{V}\right)\right] - \frac{2\sqrt{aa_i}}{RTV}
+        
+        Parameters
+        ----------
+        Z : float
+            Compressibility of the mixture for a desired phase, [-]
+        zs : list[float], optional
+            List of mole factions, either overall or in a specific phase, [-]
+        
+        Returns
+        -------
+        phis : float
+            Fugacity coefficient for each species, [-]
+                         
+        References
+        ----------
+        .. [1] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
+           Butterworth-Heinemann, 1985.
+        '''
         phis = []
         V = Z*R*self.T/self.P
         for i in self.cmps:
@@ -3055,11 +3171,17 @@ class PRSVMIX(PRMIX, PRSV):
         self.fugacities()
 
     def setup_a_alpha_and_derivatives(self, i, T=None):
+        r'''Sets `a`, `kappa0`, `kappa1`, and `Tc` for a specific component before the 
+        pure-species EOS's `a_alpha_and_derivatives` method is called. Both are 
+        called by `GCEOSMIX.a_alpha_and_derivatives` for every component.'''
         if not hasattr(self, 'kappas'):
             self.kappas = [kappa0 + kappa1*(1 + (T/Tc)**0.5)*(0.7 - (T/Tc)) for kappa0, kappa1, Tc in zip(self.kappa0s, self.kappa1s, self.Tcs)]
         self.a, self.kappa, self.kappa0, self.kappa1, self.Tc = self.ais[i], self.kappas[i], self.kappa0s[i], self.kappa1s[i], self.Tcs[i]
 
     def cleanup_a_alpha_and_derivatives(self):
+        r'''Removes properties set by `setup_a_alpha_and_derivatives`; run by
+        `GCEOSMIX.a_alpha_and_derivatives` after `a_alpha` is calculated for 
+        every component'''
         del(self.a, self.kappa, self.kappa0, self.kappa1, self.Tc)
         
 
@@ -3195,6 +3317,10 @@ class PRSV2MIX(PRMIX, PRSV2):
         self.fugacities()
         
     def setup_a_alpha_and_derivatives(self, i, T=None):
+        r'''Sets `a`, `kappa`, `kappa0`, `kappa1`, `kappa2`, `kappa3` and `Tc`
+        for a specific component before the 
+        pure-species EOS's `a_alpha_and_derivatives` method is called. Both are 
+        called by `GCEOSMIX.a_alpha_and_derivatives` for every component.'''
         if not hasattr(self, 'kappas'):
             self.kappas = []
             for Tc, kappa0, kappa1, kappa2, kappa3 in zip(self.Tcs, self.kappa0s, self.kappa1s, self.kappa2s, self.kappa3s):
@@ -3207,6 +3333,9 @@ class PRSV2MIX(PRMIX, PRSV2):
          self.kappa1s[i], self.kappa2s[i], self.kappa3s[i], self.Tcs[i])
 
     def cleanup_a_alpha_and_derivatives(self):
+        r'''Removes properties set by `setup_a_alpha_and_derivatives`; run by
+        `GCEOSMIX.a_alpha_and_derivatives` after `a_alpha` is calculated for 
+        every component'''
         del(self.a, self.kappa, self.kappa0, self.kappa1, self.kappa2, self.kappa3, self.Tc)
 
 
@@ -3315,8 +3444,14 @@ class TWUPRMIX(PRMIX, TWUPR):
         self.fugacities()
 
     def setup_a_alpha_and_derivatives(self, i, T=None):
+        r'''Sets `a`, `omega`, and `Tc` for a specific component before the 
+        pure-species EOS's `a_alpha_and_derivatives` method is called. Both are 
+        called by `GCEOSMIX.a_alpha_and_derivatives` for every component.'''
         self.a, self.Tc, self.omega  = self.ais[i], self.Tcs[i], self.omegas[i]
     def cleanup_a_alpha_and_derivatives(self):
+        r'''Removes properties set by `setup_a_alpha_and_derivatives`; run by
+        `GCEOSMIX.a_alpha_and_derivatives` after `a_alpha` is calculated for 
+        every component'''
         del(self.a, self.Tc, self.omega)
 
 
@@ -3426,8 +3561,15 @@ class TWUSRKMIX(SRKMIX, TWUSRK):
         self.fugacities()
 
     def setup_a_alpha_and_derivatives(self, i, T=None):
+        r'''Sets `a`, `omega`, and `Tc` for a specific component before the 
+        pure-species EOS's `a_alpha_and_derivatives` method is called. Both are 
+        called by `GCEOSMIX.a_alpha_and_derivatives` for every component.'''
         self.a, self.Tc, self.omega  = self.ais[i], self.Tcs[i], self.omegas[i]
+
     def cleanup_a_alpha_and_derivatives(self):
+        r'''Removes properties set by `setup_a_alpha_and_derivatives`; run by
+        `GCEOSMIX.a_alpha_and_derivatives` after `a_alpha` is calculated for 
+        every component'''
         del(self.a, self.Tc, self.omega)
 
 
@@ -3540,6 +3682,13 @@ class APISRKMIX(SRKMIX, APISRK):
         self.fugacities()
 
     def setup_a_alpha_and_derivatives(self, i, T=None):
+        r'''Sets `a`, `S1`, `S2` and `Tc` for a specific component before the 
+        pure-species EOS's `a_alpha_and_derivatives` method is called. Both are 
+        called by `GCEOSMIX.a_alpha_and_derivatives` for every component.'''
         self.a, self.Tc, self.S1, self.S2  = self.ais[i], self.Tcs[i], self.S1s[i], self.S2s[i]
+
     def cleanup_a_alpha_and_derivatives(self):
+        r'''Removes properties set by `setup_a_alpha_and_derivatives`; run by
+        `GCEOSMIX.a_alpha_and_derivatives` after `a_alpha` is calculated for 
+        every component'''
         del(self.a, self.Tc, self.S1, self.S2)
