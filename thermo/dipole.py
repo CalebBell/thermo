@@ -22,7 +22,6 @@ SOFTWARE.'''
 
 from __future__ import division
 
-#__all__ = ['dipole'] # TODO rename file or function
 __all__ = ['dipole_moment', '_dipole_Poling', '_dipole_CCDB', '_dipole_Muller', 'dipole_methods']
 import os
 import numpy as np
@@ -64,7 +63,7 @@ def dipole_moment(CASRN='', AvailableMethods=False, Method=None):
 
     Returns
     -------
-    _dipole : float
+    dipole : float
         Dipole moment, [debye]
     methods : list, only returned if AvailableMethods == True
         List of methods which can be used to obtain dipole moment with the

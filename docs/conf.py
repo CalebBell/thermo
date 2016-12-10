@@ -203,7 +203,7 @@ html_static_path = ['_static']
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'Heat Transferdoc'
+htmlhelp_basename = 'thermo doc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -291,3 +291,25 @@ numpydoc_show_inherited_class_members = True
 numpydoc_class_members_toctree = False
 autosummary_generate = True
 
+#autodoc_default_flags = ['members', 'private-members', 'special-members',
+#                         #'undoc-members',
+#                         'show-inheritance']
+                         
+#def autodoc_skip_member(app, what, name, obj, skip, options):
+#    #exclusions = ('__doc__', '__module__', '__dict__')
+#    if hasattr(obj, 'doc') and 'Chemical Engineering Design Library' in obj.doc:
+#		print(obj.__doc__, what, name)
+#    #exclude = name in exclusions
+#    #return skip or exclude
+#    return True
+
+#def setup(app):
+#    app.connect('autodoc-skip-member', autodoc_skip_member)
+
+from sphinx.ext.autodoc import between
+
+def setup(app):
+    # Register a sphinx.ext.autodoc.between listener to ignore everything
+    # between lines that contain the word IGNORE
+    app.connect('autodoc-process-docstring', between('(^Chemical Engineering Design Library).*|(^SOFTWARE.$).*', exclude=True))
+    return app
