@@ -40,10 +40,3 @@ Submodules
    thermo.viscosity
    thermo.volume
 
-Module contents
----------------
-
-.. automodule:: thermo
-    :members:
-    :undoc-members:
-    :show-inheritance:

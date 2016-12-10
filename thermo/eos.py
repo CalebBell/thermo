@@ -1837,7 +1837,7 @@ class APISRK(SRK):
         Molar volume, [m^3/mol]
     S1 : float, optional
         Fit constant or estimated from acentric factor if not provided [-]
-    S1 : float, optional
+    S2 : float, optional
         Fit constant or 0 if not provided [-]
 
     Examples
@@ -1851,8 +1851,6 @@ class APISRK(SRK):
     .. [1] API Technical Data Book: General Properties & Characterization.
        American Petroleum Institute, 7E, 2005.
     '''
-    epsilon = 0
-    
     def __init__(self, Tc, Pc, omega=None, T=None, P=None, V=None, S1=None, S2=0):
         self.Tc = Tc
         self.Pc = Pc
@@ -1900,7 +1898,7 @@ class APISRK(SRK):
         '''
         a, Tc, S1, S2 = self.a, self.Tc, self.S1, self.S2
         if not full:
-            return a*(S1*(-sqrt(T/Tc) + 1) + S2*(-sqrt(T/Tc) + 1)/sqrt(T/Tc) + 1)**2
+            return a*(S1*(-(T/Tc)**0.5 + 1.) + S2*(-(T/Tc)**0.5 + 1)*(T/Tc)**-0.5 + 1)**2
         else:
             if quick:
                 x0 = (T/Tc)**0.5
@@ -2620,11 +2618,11 @@ class SRKMIX(GCEOSMIX, SRK):
 
         b = \sum_i z_i b_i
 
-        a_i =\left(\frac{R^2(T_c)^{2}}{9(\sqrt[3]{2}-1)P_c} \right)
-        =\frac{0.42748\cdot R^2(T_c)^{2}}{P_c}
+        a_i =\left(\frac{R^2(T_{c,i})^{2}}{9(\sqrt[3]{2}-1)P_{c,i}} \right)
+        =\frac{0.42748\cdot R^2(T_{c,i})^{2}}{P_{c,i}}
     
-        b_i =\left( \frac{(\sqrt[3]{2}-1)}{3}\right)\frac{RT_c}{P_c}
-        =\frac{0.08664\cdot R T_c}{P_c}
+        b_i =\left( \frac{(\sqrt[3]{2}-1)}{3}\right)\frac{RT_{c,i}}{P_{c,i}}
+        =\frac{0.08664\cdot R T_{c,i}}{P_{c,i}}
         
         \alpha(T)_i = \left[1 + m_i\left(1 - \sqrt{\frac{T}{T_{c,i}}}\right)\right]^2
         
@@ -3322,7 +3320,6 @@ class TWUPRMIX(PRMIX, TWUPR):
         del(self.a, self.Tc, self.omega)
 
 
-
 class TWUSRKMIX(SRKMIX, TWUSRK):
     r'''Class for solving the Twu variant of the Soave-Redlich-Kwong cubic 
     equation of state for a mixture. Subclasses `TWUSRK`. Solves the EOS on
@@ -3333,11 +3330,11 @@ class TWUSRKMIX(SRKMIX, TWUSRK):
     .. math::
         P = \frac{RT}{V-b} - \frac{a\alpha(T)}{V(V+b)}
         
-        a_i =\left(\frac{R^2(T_c)^{2}}{9(\sqrt[3]{2}-1)P_c} \right)
-        =\frac{0.42748\cdot R^2(T_c)^{2}}{P_c}
+        a_i =\left(\frac{R^2(T_{c,i})^{2}}{9(\sqrt[3]{2}-1)P_{c,i}} \right)
+        =\frac{0.42748\cdot R^2(T_{c,i})^{2}}{P_{c,i}}
     
-        b_i =\left( \frac{(\sqrt[3]{2}-1)}{3}\right)\frac{RT_c}{P_c}
-        =\frac{0.08664\cdot R T_c}{P_c}
+        b_i =\left( \frac{(\sqrt[3]{2}-1)}{3}\right)\frac{RT_{c,i}}{P_{c,i}}
+        =\frac{0.08664\cdot R T_{c,i}}{P_{c,i}}
         
         a \alpha = \sum_i \sum_j z_i z_j {(a\alpha)}_{ij}
         
@@ -3363,12 +3360,17 @@ class TWUSRKMIX(SRKMIX, TWUSRK):
     
     Parameters
     ----------
-    Tc : float
-        Critical temperature, [K]
-    Pc : float
-        Critical pressure, [Pa]
-    omega : float
-        Acentric factor, [-]
+    Tcs : float
+        Critical temperatures of all compounds, [K]
+    Pcs : float
+        Critical pressures of all compounds, [Pa]
+    omegas : float
+        Acentric factors of all compounds, [-]
+    zs : float
+        Overall mole fractions of all species, [-]
+    kijs : list[list[float]], optional
+        n*n size list of lists with binary interaction parameters for the
+        Van der Waals mixing rules, default all 0 [-]
     T : float, optional
         Temperature, [K]
     P : float, optional
@@ -3378,9 +3380,13 @@ class TWUSRKMIX(SRKMIX, TWUSRK):
 
     Examples
     --------    
-#    >>> eos = TWUSRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
-#    >>> eos.phase, eos.V_l, eos.H_dep_l, eos.S_dep_l
-#    ('l', 0.00014689217317770398, -31612.591872087483, -74.02294100343829)
+    T-P initialization, nitrogen-methane at 115 K and 1 MPa:
+    
+    >>> eos = TWUSRKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    >>> eos.V_l, eos.V_g
+    (4.108791361639091e-05, 0.0007117070840276789)
+    >>> eos.fugacities_l, eos.fugacities_g
+    ([809692.8308266952, 74093.63881572781], [441783.43148985505, 362470.31741077645])
     
     Notes
     -----
@@ -3423,3 +3429,117 @@ class TWUSRKMIX(SRKMIX, TWUSRK):
         self.a, self.Tc, self.omega  = self.ais[i], self.Tcs[i], self.omegas[i]
     def cleanup_a_alpha_and_derivatives(self):
         del(self.a, self.Tc, self.omega)
+
+
+class APISRKMIX(SRKMIX, APISRK):
+    r'''Class for solving the Refinery Soave-Redlich-Kwong cubic 
+    equation of state for a mixture of any number of compounds, as shown in the
+    API Databook [1]_. Subclasses `APISRK`. Solves the EOS on
+    initialization and calculates fugacities for all components in all phases.
+        
+    Two of `T`, `P`, and `V` are needed to solve the EOS.
+
+    .. math::
+        P = \frac{RT}{V-b} - \frac{a\alpha(T)}{V(V+b)}
+        
+        a \alpha = \sum_i \sum_j z_i z_j {(a\alpha)}_{ij}
+        
+        (a\alpha)_{ij} = (1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}
+
+        b = \sum_i z_i b_i
+
+        a_i =\left(\frac{R^2(T_{c,i})^{2}}{9(\sqrt[3]{2}-1)P_{c,i}} \right)
+        =\frac{0.42748\cdot R^2(T_{c,i})^{2}}{P_{c,i}}
+    
+        b_i =\left( \frac{(\sqrt[3]{2}-1)}{3}\right)\frac{RT_{c,i}}{P_{c,i}}
+        =\frac{0.08664\cdot R T_{c,i}}{P_{c,i}}
+        
+        \alpha(T)_i = \left[1 + S_{1,i}\left(1-\sqrt{T_{r,i}}\right) + S_{2,i}
+        \frac{1- \sqrt{T_{r,i}}}{\sqrt{T_{r,i}}}\right]^2
+        
+        S_{1,i} = 0.48508 + 1.55171\omega_i - 0.15613\omega_i^2 \text{ if S1 is not tabulated }
+        
+    Parameters
+    ----------
+    Tcs : float
+        Critical temperatures of all compounds, [K]
+    Pcs : float
+        Critical pressures of all compounds, [Pa]
+    omegas : float
+        Acentric factors of all compounds, [-]
+    zs : float
+        Overall mole fractions of all species, [-]
+    kijs : list[list[float]], optional
+        n*n size list of lists with binary interaction parameters for the
+        Van der Waals mixing rules, default all 0 [-]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+    S1s : float, optional
+        Fit constant or estimated from acentric factor if not provided [-]
+    S2s : float, optional
+        Fit constant or 0 if not provided [-]
+
+    Notes
+    -----
+    For P-V initializations, SciPy's `newton` solver is used to find T.
+
+    Examples
+    --------    
+    T-P initialization, nitrogen-methane at 115 K and 1 MPa:
+    
+    >>> eos = APISRKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    >>> eos.V_l, eos.V_g
+    (4.101590920556748e-05, 0.0007104685894929316)
+    >>> eos.fugacities_l, eos.fugacities_g
+    ([817882.3033490349, 71620.48238123364], [442158.29113191745, 361519.7987757053])
+
+    References
+    ----------
+    .. [1] API Technical Data Book: General Properties & Characterization.
+       American Petroleum Institute, 7E, 2005.
+    '''
+    a_alpha_mro = -5
+    def __init__(self, Tcs, Pcs, zs, omegas=None, kijs=None, T=None, P=None, V=None,
+                 S1s=None, S2s=None):
+        self.N = len(Tcs)
+        self.cmps = range(self.N)
+        self.Tcs = Tcs
+        self.Pcs = Pcs
+        self.omegas = omegas
+        self.zs = zs
+        if kijs is None:
+            kijs = [[0]*self.N for i in range(self.N)]
+        self.kijs = kijs
+        self.T = T
+        self.P = P
+        self.V = V
+
+        self.check_sufficient_inputs()
+
+        # Setup S1s and S2s
+        if S1s is None and omegas is None:
+            raise Exception('Either acentric factor of S1 is required')
+        if S1s is None:
+            self.S1s = [0.48508 + 1.55171*omega - 0.15613*omega*omega for omega in omegas]
+        else:
+            self.S1s = S1s
+        if S2s is None:
+            S2s = [0 for i in self.cmps]
+        self.S2s = S2s
+        
+        self.ais = [self.c1*R*R*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
+        self.bs = [self.c2*R*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
+        self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
+        self.delta = self.b
+
+        self.solve()
+        self.fugacities()
+
+    def setup_a_alpha_and_derivatives(self, i, T=None):
+        self.a, self.Tc, self.S1, self.S2  = self.ais[i], self.Tcs[i], self.S1s[i], self.S2s[i]
+    def cleanup_a_alpha_and_derivatives(self):
+        del(self.a, self.Tc, self.S1, self.S2)
