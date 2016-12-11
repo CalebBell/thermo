@@ -48,7 +48,7 @@ NONE = 'NONE'
 Hf_methods = [API_TDB]
 
 
-def Hf(CASRN='', AvailableMethods=False, Method=None):
+def Hf(CASRN, AvailableMethods=False, Method=None):
     r'''This function handles the retrieval of a chemical's standard-phase
     heat of formation. The lookup is based on CASRNs. Selects the only
     data source available ('API TDB') if the chemical is in it.
@@ -123,7 +123,7 @@ ATCT_G = 'ATCT_G'
 Hf_l_methods = [ATCT_L]
 
 
-def Hf_l(CASRN='', AvailableMethods=False, Method=None):
+def Hf_l(CASRN, AvailableMethods=False, Method=None):
     r'''This function handles the retrieval of a chemical's liquid standard
     phase heat of formation. The lookup is based on CASRNs. Selects the only
     data source available, Active Thermochemical Tables (l), if the chemical is
@@ -195,7 +195,7 @@ TRC = 'TRC'
 Hf_g_methods = [ATCT_G, TRC]
 
 
-def Hf_g(CASRN='', AvailableMethods=False, Method=None):
+def Hf_g(CASRN, AvailableMethods=False, Method=None):
     r'''This function handles the retrieval of a chemical's gas heat of
     formation. Lookup is based on CASRNs. Will automatically select a data
     source to use if no Method is provided; returns None if the data is not

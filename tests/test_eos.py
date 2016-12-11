@@ -21,8 +21,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from numpy.testing import assert_allclose
+import numpy as np
 import pytest
 from thermo.eos import *
+from thermo.utils import allclose_variable
 from scipy.misc import derivative
 from scipy.constants import R
 from math import log, exp, sqrt
@@ -678,3 +680,74 @@ def test_TWUSRK_quick():
     assert_allclose(eos.T, 900)
 
 
+@pytest.mark.slow
+def test_fuzz_dV_dT_and_d2V_dT2_derivatives():
+    from thermo import eos
+    eos_list = list(eos.__all__); eos_list.remove('GCEOS')
+    eos_list.remove('ALPHA_FUNCTIONS'); eos_list.remove('VDW')
+    
+    phase_extensions = {True: '_l', False: '_g'}
+    derivative_bases_dV_dT = {0:'V', 1:'dV_dT', 2:'d2V_dT2'}
+    
+    def dV_dT(T, P, eos, order=0, phase=True, Tc=507.6, Pc=3025000., omega=0.2975):
+        eos = globals()[eos_list[eos]](Tc=Tc, Pc=Pc, omega=omega, T=T, P=P)
+        phase_base = phase_extensions[phase]
+        attr = derivative_bases_dV_dT[order]+phase_base
+        return getattr(eos, attr)
+    
+    x, y = [], []
+    for eos in range(len(eos_list)):
+        for T in np.linspace(.1, 1000, 50):
+            for P in np.logspace(np.log10(3E4), np.log10(1E6), 50):
+                T, P = float(T), float(P)
+                for phase in [True, False]:
+                    for order in [1, 2]:
+                        try:
+                            # If dV_dx_phase doesn't exist, will simply abort and continue the loop
+                            numer = derivative(dV_dT, T, dx=1E-4, args=(P, eos, order-1, phase))
+                            ana = dV_dT(T=T, P=P, eos=eos, order=order, phase=phase)
+                        except:
+                            continue
+                        x.append(numer)
+                        y.append(ana)
+    ans = allclose_variable(x, y, limits=[.009, .05, .65, .93],rtols=[1E-5, 1E-6, 1E-9, 1E-10])
+    if not ans:
+        raise Exception('dVdT numerical derivative failing!')
+
+
+@pytest.mark.slow
+def test_fuzz_dV_dP_and_d2V_dP2_derivatives():
+    from thermo import eos
+    eos_list = list(eos.__all__); eos_list.remove('GCEOS')
+    eos_list.remove('ALPHA_FUNCTIONS'); eos_list.remove('VDW')
+    
+    phase_extensions = {True: '_l', False: '_g'}
+    derivative_bases_dV_dP = {0:'V', 1:'dV_dP', 2:'d2V_dP2'}
+    
+    def dV_dP(P, T, eos, order=0, phase=True, Tc=507.6, Pc=3025000., omega=0.2975):
+        eos = globals()[eos_list[eos]](Tc=Tc, Pc=Pc, omega=omega, T=T, P=P)
+        phase_base = phase_extensions[phase]
+        attr = derivative_bases_dV_dP[order]+phase_base
+        return getattr(eos, attr)
+    
+    
+    x, y = [], []
+    for eos in range(len(eos_list)):
+        for T in np.linspace(.1, 1000, 50):
+            for P in np.logspace(np.log10(3E4), np.log10(1E6), 50):
+                T, P = float(T), float(P)
+                for phase in [True, False]:
+                    for order in [1, 2]:
+                        try:
+                            # If dV_dx_phase doesn't exist, will simply abort and continue the loop
+                            numer = derivative(dV_dP, P, dx=15., args=(T, eos, order-1, phase))
+                            ana = dV_dP(T=T, P=P, eos=eos, order=order, phase=phase)
+                        except:
+                            continue
+                        x.append(numer)
+                        y.append(ana)
+    ans = allclose_variable(x, y, limits=[.02, .04, .04, .05, .15, .45, .95],
+                            rtols=[1E-2, 1E-3, 1E-4, 1E-5, 1E-6, 1E-7, 1E-9])
+    if not ans:
+        raise Exception('Error')
+    

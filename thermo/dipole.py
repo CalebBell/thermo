@@ -48,7 +48,7 @@ NONE = 'NONE'
 dipole_methods = [CCCBDB, MULLER, POLING]
 
 
-def dipole_moment(CASRN='', AvailableMethods=False, Method=None):
+def dipole_moment(CASRN, AvailableMethods=False, Method=None):
     r'''This function handles the retrieval of a chemical's dipole moment.
     Lookup is based on CASRNs. Will automatically select a data source to use
     if no Method is provided; returns None if the data is not available.

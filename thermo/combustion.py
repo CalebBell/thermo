@@ -25,7 +25,7 @@ from __future__ import division
 __all__ = ['Hcombustion']
 
 
-def Hcombustion(atoms=None, Hf=None, HfH2O=-285825, HfCO2=-393474,
+def Hcombustion(atoms, Hf=None, HfH2O=-285825, HfCO2=-393474,
                 HfSO2=-296800, HfBr2=30880, HfI2=62417, HfHCl=-92173,
                 HfHF=-272711, HfP4O10=-3009940, HfO2=0, HfN2=0):
     '''Calculates the heat of combustion, in J/mol.

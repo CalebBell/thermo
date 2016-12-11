@@ -32,6 +32,8 @@ from . import datasheet
 from . import electrochem
 from . import elements
 from . import environment
+from . import eos
+from . import eos_mix
 from . import heat_capacity
 from . import identifiers
 from . import law
@@ -65,6 +67,8 @@ from .datasheet import *
 from .electrochem import *
 from .elements import *
 from .environment import *
+from .eos import *
+from .eos_mix import *
 from .heat_capacity import *
 from .identifiers import *
 from .law import *
@@ -87,7 +91,7 @@ from .volume import *
 
 
 __all__ = ['activity', 'chemical', 'combustion', 'critical',
- 'dipole', 'electrochem', 'elements', 'environment',
+ 'dipole', 'electrochem', 'elements', 'environment', 'eos', 'eos_mix',
  'heat_capacity',  'identifiers', 'law', 'lennard_jones',
  'miscdata',
  'permittivity', 'phase_change', 'reaction',
@@ -109,6 +113,8 @@ __all__.extend(datasheet.__all__)
 __all__.extend(electrochem.__all__)
 __all__.extend(elements.__all__)
 __all__.extend(environment.__all__)
+__all__.extend(eos.__all__)
+__all__.extend(eos_mix.__all__)
 __all__.extend(heat_capacity.__all__)
 __all__.extend(identifiers.__all__)
 __all__.extend(law.__all__)

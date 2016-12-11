@@ -23,7 +23,7 @@ SOFTWARE.'''
 from __future__ import division
 
 __all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',  
-'APISRK', 'TWUPR', 'TWUSRK']
+'APISRK', 'TWUPR', 'TWUSRK', 'ALPHA_FUNCTIONS']
 
 from cmath import atanh as catanh
 from scipy.constants import R
@@ -611,6 +611,356 @@ should be calculated by this method, in a user subclass.')
             S_dep = -R*log(V) + R*log(P*V/(R*T)) + R*log(V - b) + 2*da_alpha_dT*catanh((2*V + delta)/sqrt(delta**2 - 4*epsilon)).real/sqrt(delta**2 - 4*epsilon)
             Cv_dep = -T*(sqrt(1/(delta**2 - 4*epsilon))*log(V - delta**2*sqrt(1/(delta**2 - 4*epsilon))/2 + delta/2 + 2*epsilon*sqrt(1/(delta**2 - 4*epsilon))) - sqrt(1/(delta**2 - 4*epsilon))*log(V + delta**2*sqrt(1/(delta**2 - 4*epsilon))/2 + delta/2 - 2*epsilon*sqrt(1/(delta**2 - 4*epsilon))))*d2a_alpha_dT2
         return [dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep]
+
+
+# No named parameters
+class ALPHA_FUNCTIONS(GCEOS):
+    r'''Basic class with a number of attached alpha functions for different
+    applications, all of which have no parameters attached. These alpha 
+    functions should be used for fitting purposes; new EOSs should have their
+    alpha functions added here. The first and second derivatives should also
+    be implemented. Efficient implementations are discouraged but possible.
+    
+    All parameters should be in `self.alpha_function_coeffs`. This object is
+    inspired by the work of [1]_, where most of the alpha functions have been
+    found.
+
+    Examples
+    --------
+    Swap out the default alpha function from the SRK EOS, replace it the same,
+    a new method that takes a manually specified coefficient.
+    
+    >>> eos = SRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+    >>> [eos.m, eos.a_alpha_and_derivatives(299)]
+    [0.9326878999999999, (3.7271789178606376, -0.007332989159328508, 1.947612023379061e-05)]
+    
+    >>> a = SRK
+    >>> a.a_alpha_and_derivatives = ALPHA_FUNCTIONS.Soave
+    >>> a.alpha_function_coeffs = [0.9326878999999999]
+    >>> a = a(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+    >>> a.a_alpha_and_derivatives(299)
+    (3.7271789178606376, -0.007332989159328508, 1.947612023379061e-05)
+
+
+    References
+    ----------
+    .. [1] Young, André F., Fernando L. P. Pessoa, and Victor R. R. Ahón. 
+       "Comparison of 20 Alpha Functions Applied in the Peng–Robinson Equation 
+       of State for Vapor Pressure Estimation." Industrial & Engineering 
+       Chemistry Research 55, no. 22 (June 8, 2016): 6506-16. 
+       doi:10.1021/acs.iecr.6b00721.
+    '''
+    
+    @staticmethod
+    def Soave(self, T, full=True, quick=True):
+        r'''Method to calculate `a_alpha` and its first and second
+        derivatives according to [1]_. Returns `a_alpha`, `da_alpha_dT`, and 
+        `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more 
+        documentation. Same as `SRK.a_alpha_and_derivatives` but slower and
+        requiring `alpha_function_coeffs` to be set. One coefficient needed.
+        
+        .. math::
+            a\alpha = a \left(c_{1} \left(- \sqrt{\frac{T}{Tc}} + 1\right)
+            + 1\right)^{2}
+
+        References
+        ----------
+        .. [1] Soave, Giorgio. "Equilibrium Constants from a Modified Redlich-
+           Kwong Equation of State." Chemical Engineering Science 27, no. 6 
+           (June 1972): 1197-1203. doi:10.1016/0009-2509(72)80096-4.
+        '''
+        c1 = self.alpha_function_coeffs[0]
+        T, Tc, a = self.T, self.Tc, self.a
+        a_alpha = a*(c1*(-sqrt(T/Tc) + 1) + 1)**2
+        if not full:
+            return a_alpha
+        else:
+            da_alpha_dT = -a*c1*sqrt(T/Tc)*(c1*(-sqrt(T/Tc) + 1) + 1)/T
+            d2a_alpha_dT2 = a*c1*(c1/Tc - sqrt(T/Tc)*(c1*(sqrt(T/Tc) - 1) - 1)/T)/(2*T)
+            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+
+    @staticmethod
+    def Heyen(self, T, full=True, quick=True):
+        r'''Method to calculate `a_alpha` and its first and second
+        derivatives according to Heyen [1]_. Returns `a_alpha`, `da_alpha_dT`,  
+        and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more 
+        documentation. Two coefficients needed.
+        
+        .. math::
+            a\alpha = a e^{c_{1} \left(- \left(\frac{T}{Tc}\right)^{c_{2}}
+            + 1\right)}
+
+        References
+        ----------
+        .. [1] Heyen, G. Liquid and Vapor Properties from a Cubic Equation of 
+           State. In "Proceedings of the 2nd International Conference on Phase 
+           Equilibria and Fluid Properties in the Chemical Industry". DECHEMA: 
+           Frankfurt, 1980; p 9-13.
+        '''
+        c1, c2 = self.alpha_function_coeffs
+        T, Tc, a = self.T, self.Tc, self.a
+        a_alpha = a*exp(c1*(1 -(T/Tc)**c2))
+        if not full:
+            return a_alpha
+        else:
+            da_alpha_dT = -a*c1*c2*(T/Tc)**c2*exp(c1*(-(T/Tc)**c2 + 1))/T
+            d2a_alpha_dT2 = a*c1*c2*(T/Tc)**c2*(c1*c2*(T/Tc)**c2 - c2 + 1)*exp(-c1*((T/Tc)**c2 - 1))/T**2
+            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+        
+    @staticmethod
+    def Harmens_Knapp(self, T, full=True, quick=True):
+        r'''Method to calculate `a_alpha` and its first and second
+        derivatives according to Harmens and Knapp [1]_. Returns `a_alpha`, 
+        `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`  
+        for more documentation. Two coefficients needed.
+        
+        .. math::
+            a\alpha = a \left(c_{1} \left(- \sqrt{\frac{T}{Tc}} + 1\right) 
+            - c_{2} \left(1 - \frac{Tc}{T}\right) + 1\right)^{2}
+
+        References
+        ----------
+        .. [1] Harmens, A., and H. Knapp. "Three-Parameter Cubic Equation of 
+           State for Normal Substances." Industrial & Engineering Chemistry 
+           Fundamentals 19, no. 3 (August 1, 1980): 291-94. 
+           doi:10.1021/i160075a010. 
+        '''
+        c1, c2 = self.alpha_function_coeffs
+        T, Tc, a = self.T, self.Tc, self.a
+        a_alpha = a*(c1*(-sqrt(T/Tc) + 1) - c2*(1 - Tc/T) + 1)**2
+        if not full:
+            return a_alpha
+        else:
+            da_alpha_dT = a*(-c1*sqrt(T/Tc)/T - 2*Tc*c2/T**2)*(c1*(-sqrt(T/Tc) + 1) - c2*(1 - Tc/T) + 1)
+            d2a_alpha_dT2 = a*((c1*sqrt(T/Tc) + 2*Tc*c2/T)**2 - (c1*sqrt(T/Tc) + 8*Tc*c2/T)*(c1*(sqrt(T/Tc) - 1) + c2*(1 - Tc/T) - 1))/(2*T**2)
+            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+
+    @staticmethod
+    def Mathias(self, T, full=True, quick=True):
+        r'''Method to calculate `a_alpha` and its first and second
+        derivatives according to Mathias [1]_. Returns `a_alpha`, 
+        `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`  
+        for more documentation. Two coefficients needed.
+        
+        .. math::
+            a\alpha = a \left(c_{1} \left(- \sqrt{\frac{T}{Tc}} + 1\right)
+            - c_{2} \left(- \frac{T}{Tc} + 0.7\right) \left(- \frac{T}{Tc} 
+            + 1\right) + 1\right)^{2}
+
+        References
+        ----------
+        .. [1] Mathias, Paul M. "A Versatile Phase Equilibrium Equation of 
+           State." Industrial & Engineering Chemistry Process Design and 
+           Development 22, no. 3 (July 1, 1983): 385-91. 
+           doi:10.1021/i200022a008. 
+        '''
+        c1, c2 = self.alpha_function_coeffs
+        T, Tc, a = self.T, self.Tc, self.a
+        a_alpha = a*(1 + c1*(1-sqrt(Tr)) -c2*(1-Tr)*(0.7-Tr))**2
+        if not full:
+            return a_alpha
+        else:
+            da_alpha_dT = a*(c1*(-sqrt(T/Tc) + 1) - c2*(-T/Tc + 0.7)*(-T/Tc + 1) + 1)*(2*c2*(-T/Tc + 0.7)/Tc + 2*c2*(-T/Tc + 1)/Tc - c1*sqrt(T/Tc)/T)
+            d2a_alpha_dT2 = a*((8*c2/Tc**2 - c1*sqrt(T/Tc)/T**2)*(c1*(sqrt(T/Tc) - 1) + c2*(T/Tc - 1)*(T/Tc - 0.7) - 1) + (2*c2*(T/Tc - 1)/Tc + 2*c2*(T/Tc - 0.7)/Tc + c1*sqrt(T/Tc)/T)**2)/2
+            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+
+    @staticmethod
+    def Mathias_Copeman(self, T, full=True, quick=True):
+        r'''Method to calculate `a_alpha` and its first and second
+        derivatives according to Mathias and Copeman [1]_. Returns `a_alpha`, 
+        `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`  
+        for more documentation. Three coefficients needed.
+        
+        .. math::
+            a\alpha = a \left(c_{1} \left(- \sqrt{\frac{T}{Tc}} + 1\right)
+            + c_{2} \left(- \sqrt{\frac{T}{Tc}} + 1\right)^{2} + c_{3} \left(
+            - \sqrt{\frac{T}{Tc}} + 1\right)^{3} + 1\right)^{2}
+
+        References
+        ----------
+        .. [1] Mathias, Paul M., and Thomas W. Copeman. "Extension of the 
+           Peng-Robinson Equation of State to Complex Mixtures: Evaluation of 
+           the Various Forms of the Local Composition Concept." Fluid Phase 
+           Equilibria 13 (January 1, 1983): 91-108. 
+           doi:10.1016/0378-3812(83)80084-3. 
+        '''
+        c1, c2, c3 = self.alpha_function_coeffs
+        T, Tc, a = self.T, self.Tc, self.a
+        a_alpha = a*(c1*(-sqrt(T/Tc) + 1) + c2*(-sqrt(T/Tc) + 1)**2 + c3*(-sqrt(T/Tc) + 1)**3 + 1)**2
+        if not full:
+            return a_alpha
+        else:
+            da_alpha_dT = a*(-c1*sqrt(T/Tc)/T - 2*c2*sqrt(T/Tc)*(-sqrt(T/Tc) + 1)/T - 3*c3*sqrt(T/Tc)*(-sqrt(T/Tc) + 1)**2/T)*(c1*(-sqrt(T/Tc) + 1) + c2*(-sqrt(T/Tc) + 1)**2 + c3*(-sqrt(T/Tc) + 1)**3 + 1)
+            d2a_alpha_dT2 = a*(T*(c1 - 2*c2*(sqrt(T/Tc) - 1) + 3*c3*(sqrt(T/Tc) - 1)**2)**2 - (2*T*(c2 - 3*c3*(sqrt(T/Tc) - 1)) + Tc*sqrt(T/Tc)*(c1 - 2*c2*(sqrt(T/Tc) - 1) + 3*c3*(sqrt(T/Tc) - 1)**2))*(c1*(sqrt(T/Tc) - 1) - c2*(sqrt(T/Tc) - 1)**2 + c3*(sqrt(T/Tc) - 1)**3 - 1))/(2*T**2*Tc)
+            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+
+    @staticmethod
+    def Gibbons_Laughton(self, T, full=True, quick=True):
+        r'''Method to calculate `a_alpha` and its first and second
+        derivatives according to Gibbons and Laughton [1]_. Returns `a_alpha`, 
+        `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`  
+        for more documentation. Two coefficients needed.
+        
+        .. math::
+            a\alpha = a c_{1} \left(\frac{T}{Tc} - 1\right) + c_{2} 
+            \left(\sqrt{\frac{T}{Tc}} - 1\right) + 1
+
+        References
+        ----------
+        .. [1] Gibbons, Richard M., and Andrew P. Laughton. "An Equation of 
+           State for Polar and Non-Polar Substances and Mixtures" 80, no. 9 
+           (January 1, 1984): 1019-38. doi:10.1039/F29848001019.
+        '''
+        c1, c2 = self.alpha_function_coeffs
+        T, Tc, a = self.T, self.Tc, self.a
+        a_alpha = a*(c1*(T/Tc - 1) + c2*(sqrt(T/Tc) - 1) + 1)
+        if not full:
+            return a_alpha
+        else:
+            da_alpha_dT = a*(c1/Tc + c2*sqrt(T/Tc)/(2*T))
+            d2a_alpha_dT2 = a*(-c2*sqrt(T/Tc)/(4*T**2))
+            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+
+    @staticmethod
+    def Soave_1984(self, T, full=True, quick=True):
+        r'''Method to calculate `a_alpha` and its first and second
+        derivatives according to [1]_. Returns `a_alpha`, `da_alpha_dT`, and 
+        `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more 
+        documentation. Two coefficients needed.
+        
+        .. math::
+            a\alpha = a c_{1} \left(- \frac{T}{Tc} + 1\right) + c_{2} \left(-1
+            + \frac{Tc}{T}\right) + 1
+
+        References
+        ----------
+        .. [1] Soave, G. "Improvement of the Van Der Waals Equation of State." 
+           Chemical Engineering Science 39, no. 2 (January 1, 1984): 357-69. 
+           doi:10.1016/0009-2509(84)80034-2.
+        '''
+        c1, c2 = self.alpha_function_coeffs[0]
+        T, Tc, a = self.T, self.Tc, self.a
+        a_alpha = a*(c1*(-T/Tc + 1) + c2*(-1 + Tc/T) + 1)
+        if not full:
+            return a_alpha
+        else:
+            da_alpha_dT = a*(-c1/Tc - Tc*c2/T**2)
+            d2a_alpha_dT2 = a*(2*Tc*c2/T**3)
+            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+    # "Stryjek-Vera" skipped, doesn't match PRSV or PRSV2
+
+    @staticmethod
+    def Yu_Lu(self, T, full=True, quick=True):
+        r'''Method to calculate `a_alpha` and its first and second
+        derivatives according to Yu and Lu [1]_. Returns `a_alpha`, 
+        `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`  
+        for more documentation. Four coefficients needed.
+        
+        .. math::
+            a\alpha = a \cdot 10^{c_{4} \left(- \frac{T}{Tc} + 1\right) \left(
+            \frac{T^{2} c_{3}}{Tc^{2}} + \frac{T c_{2}}{Tc} + c_{1}\right)}
+
+        References
+        ----------
+        .. [1] Yu, Jin-Min, and Benjamin C. -Y. Lu. "A Three-Parameter Cubic 
+           Equation of State for Asymmetric Mixture Density Calculations." 
+           Fluid Phase Equilibria 34, no. 1 (January 1, 1987): 1-19. 
+           doi:10.1016/0378-3812(87)85047-1. 
+        '''
+        c1, c2, c3, c4 = self.alpha_function_coeffs
+        T, Tc, a = self.T, self.Tc, self.a
+        a_alpha = a*10**(c4*(-T/Tc + 1)*(T**2*c3/Tc**2 + T*c2/Tc + c1))
+        if not full:
+            return a_alpha
+        else:
+            da_alpha_dT = a*(10**(c4*(-T/Tc + 1)*(T**2*c3/Tc**2 + T*c2/Tc + c1))*(c4*(-T/Tc + 1)*(2*T*c3/Tc**2 + c2/Tc) - c4*(T**2*c3/Tc**2 + T*c2/Tc + c1)/Tc)*log(10))
+            d2a_alpha_dT2 = a*(10**(-c4*(T/Tc - 1)*(T**2*c3/Tc**2 + T*c2/Tc + c1))*c4*(-4*T*c3/Tc - 2*c2 - 2*c3*(T/Tc - 1) + c4*(T**2*c3/Tc**2 + T*c2/Tc + c1 + (T/Tc - 1)*(2*T*c3/Tc + c2))**2*log(10))*log(10)/Tc**2)
+            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+
+    @staticmethod
+    def Trebble_Bishnoi(self, T, full=True, quick=True):
+        r'''Method to calculate `a_alpha` and its first and second
+        derivatives according to Trebble and Bishnoi [1]_. Returns `a_alpha`, 
+        `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`  
+        for more documentation. One coefficient needed.
+        
+        .. math::
+            a\alpha = a e^{c_{1} \left(- \frac{T}{Tc} + 1\right)}
+
+        References
+        ----------
+        .. [1] Trebble, M. A., and P. R. Bishnoi. "Development of a New Four-
+           Parameter Cubic Equation of State." Fluid Phase Equilibria 35, no. 1
+           (September 1, 1987): 1-18. doi:10.1016/0378-3812(87)80001-8.
+        '''
+        c1 = self.alpha_function_coeffs
+        T, Tc, a = self.T, self.Tc, self.a
+        a_alpha = a*exp(c1*(-T/Tc + 1))
+        if not full:
+            return a_alpha
+        else:
+            da_alpha_dT = a*-c1*exp(c1*(-T/Tc + 1))/Tc
+            d2a_alpha_dT2 = a*c1**2*exp(-c1*(T/Tc - 1))/Tc**2
+            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+            
+            
+    @staticmethod
+    def Melhem(self, T, full=True, quick=True):
+        r'''Method to calculate `a_alpha` and its first and second
+        derivatives according to Melhem et al. [1]_. Returns `a_alpha`, 
+        `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`  
+        for more documentation. Two coefficients needed.
+        
+        .. math::
+            a\alpha = a  e^{c_{1} \left(- \frac{T}{Tc} + 1\right) + c_{2} 
+            \left(- \sqrt{\frac{T}{Tc}} + 1\right)^{2}}
+
+        References
+        ----------
+        .. [1] Melhem, Georges A., Riju Saini, and Bernard M. Goodwin. "A 
+           Modified Peng-Robinson Equation of State." Fluid Phase Equilibria 
+           47, no. 2 (August 1, 1989): 189-237. 
+           doi:10.1016/0378-3812(89)80176-1. 
+        '''
+        c1, c2 = self.alpha_function_coeffs
+        T, Tc, a = self.T, self.Tc, self.a
+        a_alpha = a*exp(c1*(-T/Tc + 1) + c2*(-sqrt(T/Tc) + 1)**2)
+        if not full:
+            return a_alpha
+        else:
+            da_alpha_dT = a*((-c1/Tc - c2*sqrt(T/Tc)*(-sqrt(T/Tc) + 1)/T)*exp(c1*(-T/Tc + 1) + c2*(-sqrt(T/Tc) + 1)**2))
+            d2a_alpha_dT2 = a*(((c1/Tc - c2*sqrt(T/Tc)*(sqrt(T/Tc) - 1)/T)**2 + c2*(1/Tc - sqrt(T/Tc)*(sqrt(T/Tc) - 1)/T)/(2*T))*exp(-c1*(T/Tc - 1) + c2*(sqrt(T/Tc) - 1)**2))
+            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+
+    @staticmethod
+    def Androulakis(self, T, full=True, quick=True):
+        r'''Method to calculate `a_alpha` and its first and second
+        derivatives according to Androulakis et al. [1]_. Returns `a_alpha`, 
+        `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`  
+        for more documentation. Three coefficients needed.
+        
+        .. math::
+            a\alpha = a c_{1} \left(- \left(\frac{T}{Tc}\right)^{\frac{2}{3}}
+            + 1\right) + c_{2} \left(- \left(\frac{T}{Tc}\right)^{\frac{2}{3}} 
+            + 1\right)^{2} + c_{3} \left(- \left(\frac{T}{Tc}\right)^{
+            \frac{2}{3}} + 1\right)^{3} + 1
+
+        References
+        ----------
+        .. [1] Androulakis, I. P., N. S. Kalospiros, and D. P. Tassios. 
+           "Thermophysical Properties of Pure Polar and Nonpolar Compounds with
+           a Modified VdW-711 Equation of State." Fluid Phase Equilibria 45, 
+           no. 2 (April 1, 1989): 135-63. doi:10.1016/0378-3812(89)80254-7. 
+        '''
+        c1, c2, c3 = self.alpha_function_coeffs
+        T, Tc, a = self.T, self.Tc, self.a
+        a_alpha = a*(c1*(-(T/Tc)**(2/3) + 1) + c2*(-(T/Tc)**(2/3) + 1)**2 + c3*(-(T/Tc)**(2/3) + 1)**3 + 1)
+        if not full:
+            return a_alpha
+        else:
+            da_alpha_dT = a*(-2*c1*(T/Tc)**(2/3)/(3*T) - 4*c2*(T/Tc)**(2/3)*(-(T/Tc)**(2/3) + 1)/(3*T) - 2*c3*(T/Tc)**(2/3)*(-(T/Tc)**(2/3) + 1)**2/T)
+            d2a_alpha_dT2 = a*(2*(T/Tc)**(2/3)*(c1 + 4*c2*(T/Tc)**(2/3) - 2*c2*((T/Tc)**(2/3) - 1) - 12*c3*(T/Tc)**(2/3)*((T/Tc)**(2/3) - 1) + 3*c3*((T/Tc)**(2/3) - 1)**2)/(9*T**2))
+            return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
 
 class PR(GCEOS):

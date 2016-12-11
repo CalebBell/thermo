@@ -47,7 +47,7 @@ NONE = 'None'
 GWP_methods = [IPCC100, IPCC100SAR, IPCC20, IPCC500]
 
 
-def GWP(CASRN='', AvailableMethods=False, Method=None):
+def GWP(CASRN, AvailableMethods=False, Method=None):
     r'''This function handles the retrieval of a chemical's Global Warming
     Potential, relative to CO2. Lookup is based on CASRNs. Will automatically
     select a data source to use if no Method is provided; returns None if the
@@ -148,7 +148,7 @@ NONE = 'None'
 ODP_methods = [ODP2MAX, ODP1MAX, ODP2LOG, ODP1LOG, ODP2MIN, ODP1MIN, ODP2STR, ODP1STR]
 
 
-def ODP(CASRN='', AvailableMethods=False, Method=None):
+def ODP(CASRN, AvailableMethods=False, Method=None):
     r'''This function handles the retrieval of a chemical's Ozone Depletion
     Potential, relative to CFC-11 (trichlorofluoromethane). Lookup is based on
     CASRNs. Will automatically select a data source to use if no Method is
@@ -285,7 +285,7 @@ NONE = 'NONE'
 logP_methods = [SYRRES, CRC]
 
 
-def logP(CASRN='', AvailableMethods=False, Method=None):
+def logP(CASRN, AvailableMethods=False, Method=None):
     r'''This function handles the retrieval of a chemical's octanol-water
     partition coefficient. Lookup is based on CASRNs. Will automatically
     select a data source to use if no Method is provided; returns None if the

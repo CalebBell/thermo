@@ -59,7 +59,7 @@ NONE = 'NONE'
 Tb_methods = [CRC_INORG, CRC_ORG, YAWS, PSAT_DEFINITION]
 
 
-def Tb(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[PSAT_DEFINITION]):
+def Tb(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=[PSAT_DEFINITION]):
     r'''This function handles the retrieval of a chemical's boiling
     point. Lookup is based on CASRNs. Will automatically select a data
     source to use if no Method is provided; returns None if the data is not
@@ -173,7 +173,7 @@ OPEN_NTBKM = 'OPEN_NTBKM'
 Tm_methods = [OPEN_NTBKM, CRC_INORG, CRC_ORG]
 
 
-def Tm(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[]):
+def Tm(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=[]):
     r'''This function handles the retrieval of a chemical's melting
     point. Lookup is based on CASRNs. Will automatically select a data
     source to use if no Method is provided; returns None if the data is not

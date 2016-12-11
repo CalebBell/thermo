@@ -90,7 +90,7 @@ NONE = 'NONE'
 Tc_methods = [IUPAC, MATTHEWS, CRC, PSRK, PD, YAWS, SURF]
 
 
-def Tc(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[SURF]):
+def Tc(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=[SURF]):
     r'''This function handles the retrieval of a chemical's critical
     temperature. Lookup is based on CASRNs. Will automatically select a data
     source to use if no Method is provided; returns None if the data is not
@@ -275,7 +275,7 @@ def Tc(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[SURF]):
 Pc_methods = [IUPAC, MATTHEWS, CRC, PSRK, PD, YAWS, SURF]
 
 
-def Pc(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[SURF]):
+def Pc(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=[SURF]):
     r'''This function handles the retrieval of a chemical's critical
     pressure. Lookup is based on CASRNs. Will automatically select a data
     source to use if no Method is provided; returns None if the data is not
@@ -459,7 +459,7 @@ def Pc(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[SURF]):
 Vc_methods = [IUPAC, MATTHEWS, CRC, PSRK, YAWS, SURF]
 
 
-def Vc(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[SURF]):
+def Vc(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=[SURF]):
     r'''This function handles the retrieval of a chemical's critical
     volume. Lookup is based on CASRNs. Will automatically select a data
     source to use if no Method is provided; returns None if the data is not
@@ -634,7 +634,7 @@ COMBINED = 'COMBINED'
 Zc_methods = [IUPAC, MATTHEWS, CRC, PSRK, YAWS, COMBINED]
 
 
-def Zc(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=[COMBINED]):
+def Zc(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=[COMBINED]):
     r'''This function handles the retrieval of a chemical's critical
     compressibility. Lookup is based on CASRNs. Will automatically select a
     data source to use if no Method is provided; returns None if the data is

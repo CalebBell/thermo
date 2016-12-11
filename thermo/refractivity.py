@@ -41,7 +41,7 @@ NONE = 'NONE'
 RI_methods = [CRC]
 
 
-def refractive_index(CASRN='', T=None, AvailableMethods=False, Method=None,
+def refractive_index(CASRN, T=None, AvailableMethods=False, Method=None,
                      full_info=True):
     r'''This function handles the retrieval of a chemical's refractive
     index. Lookup is based on CASRNs. Will automatically select a data source

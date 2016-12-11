@@ -237,7 +237,7 @@ NONE = 'None'
 TWA_methods = [ONTARIO]
 
 
-def TWA(CASRN='', AvailableMethods=False, Method=None):  # pragma: no cover
+def TWA(CASRN, AvailableMethods=False, Method=None):  # pragma: no cover
     '''This function handles the retrieval of Time-Weighted Average limits on worker
     exposure to dangerous chemicals.
 
@@ -274,7 +274,7 @@ def TWA(CASRN='', AvailableMethods=False, Method=None):  # pragma: no cover
     return _TWA
 
 
-def STEL(CASRN='', AvailableMethods=False, Method=None):  # pragma: no cover
+def STEL(CASRN, AvailableMethods=False, Method=None):  # pragma: no cover
     '''This function handles the retrieval of Short-term Exposure Limit on
     worker exposure to dangerous chemicals.
 
@@ -313,7 +313,7 @@ def STEL(CASRN='', AvailableMethods=False, Method=None):  # pragma: no cover
     return _STEL
 
 
-def Ceiling(CASRN='', AvailableMethods=False, Method=None):  # pragma: no cover
+def Ceiling(CASRN, AvailableMethods=False, Method=None):  # pragma: no cover
     '''This function handles the retrieval of Ceiling limits on worker
     exposure to dangerous chemicals.
 
@@ -350,7 +350,7 @@ def Ceiling(CASRN='', AvailableMethods=False, Method=None):  # pragma: no cover
     return _Ceiling
 
 
-def Skin(CASRN='', AvailableMethods=False, Method=None):  # pragma: no cover
+def Skin(CASRN, AvailableMethods=False, Method=None):  # pragma: no cover
     '''This function handles the retrieval of whether or not a chemical can
     be absorbed through the skin, relevant to chemical safety calculations.
 
@@ -393,7 +393,7 @@ COMBINED = 'Combined'
 Carcinogen_methods = [IARC, NTP]
 
 
-def Carcinogen(CASRN='', AvailableMethods=False, Method=None):
+def Carcinogen(CASRN, AvailableMethods=False, Method=None):
     r'''Looks up if a chemical is listed as a carcinogen or not according to
     either a specifc method or with all methods.
 
@@ -490,7 +490,7 @@ NFPA = 'NFPA 497 (2008)'
 Tflash_methods = [IEC, NFPA]
 
 
-def Tflash(CASRN='', AvailableMethods=False, Method=None):
+def Tflash(CASRN, AvailableMethods=False, Method=None):
     r'''This function handles the retrieval or calculation of a chemical's
     flash point. Lookup is based on CASRNs. No predictive methods are currently
     implemented. Will automatically select a data source to use if no Method
@@ -567,7 +567,7 @@ def Tflash(CASRN='', AvailableMethods=False, Method=None):
 Tautoignition_methods = [IEC, NFPA]
 
 
-def Tautoignition(CASRN='', AvailableMethods=False, Method=None):
+def Tautoignition(CASRN, AvailableMethods=False, Method=None):
     r'''This function handles the retrieval or calculation of a chemical's
     autoifnition temperature. Lookup is based on CASRNs. No predictive methods
     are currently implemented. Will automatically select a data source to use

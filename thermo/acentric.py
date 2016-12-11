@@ -38,7 +38,7 @@ from thermo.vapor_pressure import VaporPressure
 omega_methods = ['PSRK', 'PD', 'YAWS', 'LK', 'DEFINITION']
 
 
-def omega(CASRN='', AvailableMethods=False, Method=None, IgnoreMethods=['LK', 'DEFINITION']):
+def omega(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=['LK', 'DEFINITION']):
     r'''This function handles the retrieval of a chemical's acentric factor,
     `omega`, or its calculation from correlations or directly through the
     definition of acentric factor if possible. Requires a known boiling point,
