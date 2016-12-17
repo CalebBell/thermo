@@ -149,7 +149,6 @@ def test_PR_with_sympy():
     # Cv integral, real slow
     # The Cv integral is possible with a more general form, but not here
     # The S and H integrals don't work in Sympy at present
-    
 
     
     
@@ -247,6 +246,35 @@ def test_PR_quick():
     # Author's correlation, with the correct constants this time
     H_dep_orig = R*eos.T*(Z-1) + (eos.T*eos.da_alpha_dT-eos.a_alpha)/(2*2**0.5*eos.b)*log((Z+(sqrt(2)+1)*B)/(Z-(sqrt(2)-1)*B))
     assert_allclose(H_dep_orig, H_dep_expect)
+
+
+def test_PR_Psat():
+    eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+    Cs_PR = [-3.3466262, -9.9145207E-02, 1.015969390, -1.032780679, 
+             0.2904927517, 1.64073501E-02, -9.67894565E-03, 1.74161549E-03, 
+             -1.56974110E-04, 5.87311295E-06]
+    def Psat(T, Tc, Pc, omega):
+        Tr = T/Tc
+        e = PR(Tc=Tc, Pc=Pc, omega=omega, T=T, P=1E5)
+        alpha = e.a_alpha/e.a
+        tot = 0
+        for k, Ck in enumerate(Cs_PR[0:4]):
+            tot += Ck*(alpha/Tr-1)**((k+2)/2.)
+        for k, Ck in enumerate(Cs_PR[4:]):
+            tot += Ck*(alpha/Tr-1)**(k+3)
+        P = exp(tot)*Tr*Pc
+        return P
+    
+    Ts = np.linspace(507.6*0.32, 504)
+    Psats_lit = [Psat(T, Tc=507.6, Pc=3025000, omega=0.2975) for T in Ts]
+    Psats_eos = [eos.Psat(T) for T in Ts]
+    assert_allclose(Psats_lit, Psats_eos, rtol=1.5E-3)
+    
+    # Check that fugacities exist for both phases    
+    for T, P in zip(Ts, Psats_eos):
+        eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=T, P=P)
+        assert_allclose(eos.fugacity_l, eos.fugacity_g, rtol=2E-3)
+        
 
 
 def test_PR78():
@@ -356,6 +384,34 @@ def test_VDW():
         VDW(Tc=507.6, Pc=3025000, P=1E6)
 
 
+def test_VDW_Psat():
+    eos = VDW(Tc=507.6, Pc=3025000,  T=299., P=1E6)
+    Cs_VDW = [-2.9959015, -4.281688E-2, 0.47692435, -0.35939335, -2.7490208E-3,
+              4.4205329E-2, -1.18597319E-2, 1.74962842E-3, -1.41793758E-4, 
+              4.93570180E-6]
+        
+    def Psat(T, Tc, Pc, omega):
+        Tr = T/Tc
+        e = VDW(Tc=Tc, Pc=Pc, T=T, P=1E5)
+        alpha = e.a_alpha/e.a
+        tot = 0
+        for k, Ck in enumerate(Cs_VDW[0:4]):
+            tot += Ck*(alpha/Tr-1)**((k+2)/2.)
+        for k, Ck in enumerate(Cs_VDW[4:]):
+            tot += Ck*(alpha/Tr-1)**(k+3)
+        P = exp(tot)*Tr*Pc
+        return P
+    
+    Ts = np.linspace(507.6*.32, 506)
+    Psats_lit = [Psat(T, Tc=507.6, Pc=3025000, omega=0.2975) for T in Ts]
+    Psats_eos = [eos.Psat(T) for T in Ts]
+    assert_allclose(Psats_lit, Psats_eos, rtol=2E-5)
+    
+    # Check that fugacities exist for both phases    
+    for T, P in zip(Ts, Psats_eos):
+        eos = VDW(Tc=507.6, Pc=3025000, T=T, P=P)
+        assert_allclose(eos.fugacity_l, eos.fugacity_g, rtol=1E-6)
+
     
 def test_RK_quick():
     # Test solution for molar volumes
@@ -432,6 +488,20 @@ def test_RK_quick():
     assert_allclose(H_dep_expect, eos.H_dep_l)
     
 
+def test_RK_Psat():
+    eos = RK(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+    
+    Ts = np.linspace(507.6*0.32, 504, 100)
+    Psats_eos = [eos.Psat(T) for T in Ts]
+    fugacity_ls, fugacity_gs = [], []
+    for T, P in zip(Ts, Psats_eos):
+        eos = RK(Tc=507.6, Pc=3025000, omega=0.2975, T=T, P=P)
+        fugacity_ls.append(eos.fugacity_l)
+        fugacity_gs.append(eos.fugacity_g)
+    
+    # Fit is very good
+    assert_allclose(fugacity_ls, fugacity_gs, rtol=3E-4)
+        
 
 def test_SRK_quick():
     # Test solution for molar volumes
@@ -495,6 +565,40 @@ def test_SRK_quick():
     phi_l_expect = 0.02174822767621331
     assert_allclose(phi_l_expect, eos.phi_l)
     assert_allclose(phi_walas, eos.phi_l)
+
+def test_SRK_Psat():
+    eos = SRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+    
+    # ERROR actually for RK not SRK
+    Cs_SRK = [-3.0486334, -5.2157649E-2, 0.55002312, -0.44506984, 3.1735078E-2,
+              4.1819219E-2, -1.18709865E-2, 1.79267167E-3, -1.47491666E-4, 
+              5.19352748E-6]
+              
+    def Psat(T, Tc, Pc, omega):
+        Tr = T/Tc
+        e = SRK(Tc=Tc, Pc=Pc, omega=omega, T=T, P=1E5)
+        alpha = e.a_alpha/e.a
+        tot = 0
+        for k, Ck in enumerate(Cs_SRK[0:4]):
+            tot += Ck*(alpha/Tr-1)**((k+2)/2.)
+        for k, Ck in enumerate(Cs_SRK[4:]):
+            tot += Ck*(alpha/Tr-1)**(k+3)
+        P = exp(tot)*Tr*Pc
+        return P
+    
+    Ts = np.linspace(160, 504, 100)
+    Psats_lit = [Psat(T, Tc=507.6, Pc=3025000, omega=0.2975) for T in Ts]
+    Psats_eos = [eos.Psat(T) for T in Ts]
+    assert_allclose(Psats_lit, Psats_eos, rtol=5E-2)
+    # Not sure why the fit was so poor for the original author
+
+    fugacity_ls, fugacity_gs = [], []
+    for T, P in zip(Ts, Psats_eos):
+        eos = SRK(Tc=507.6, Pc=3025000, omega=0.2975, T=T, P=P)
+        fugacity_ls.append(eos.fugacity_l)
+        fugacity_gs.append(eos.fugacity_g)
+        
+    assert allclose_variable(fugacity_ls, fugacity_gs, limits=[0, .1, .5], rtols=[3E-2, 1E-3, 3E-4])
 
 
 def test_APISRK_quick():

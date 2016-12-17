@@ -176,6 +176,7 @@ BOILING_CRITICAL = 'BOILING_CRITICAL'
 LEE_KESLER_PSAT = 'LEE_KESLER_PSAT'
 AMBROSE_WALTON = 'AMBROSE_WALTON'
 SANJARI = 'SANJARI'
+EOS = 'EOS'
 
 vapor_pressure_methods = [WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
                           COOLPROP, ANTOINE_POLING, VDI_TABULAR, AMBROSE_WALTON,
@@ -202,6 +203,8 @@ class VaporPressure(TDependentProperty):
         Acentric factor, [-]
     CASRN : str, optional
         The CAS number of the chemical
+    eos : object, optional
+        Equation of State object after :obj:`thermo.eos.GCEOS`
 
     Notes
     -----
@@ -238,6 +241,8 @@ class VaporPressure(TDependentProperty):
     **VDI_TABULAR**:
         Tabular data in [4]_ along the saturation curve; interpolation is as
         set by the user or the default.
+    **EOS**:
+        Equation of state provided by user.
 
     See Also
     --------
@@ -290,12 +295,14 @@ class VaporPressure(TDependentProperty):
                       LEE_KESLER_PSAT, BOILING_CRITICAL, SANJARI]
     '''Default rankings of the available methods.'''
 
-    def __init__(self, Tb=None, Tc=None, Pc=None, omega=None, CASRN=''):
+    def __init__(self, Tb=None, Tc=None, Pc=None, omega=None, CASRN='', 
+                 eos=None):
         self.CASRN = CASRN
         self.Tb = Tb
         self.Tc = Tc
         self.Pc = Pc
         self.omega = omega
+        self.eos = eos
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate vapor pressure

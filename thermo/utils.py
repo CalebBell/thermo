@@ -1241,6 +1241,37 @@ def allclose_variable(a, b, limits, rtols=None, atols=None):
             return False
     return True
 
+def horner(coeffs, x):
+    r'''Simple function to calculate the value of a polynomial at a specific
+    value of `x`, using the Horner evaluation scheme
+
+    Parameters
+    ----------
+    coeffs : array-like
+        Coefficients, where coeffs[0] is multiplied by the largest power of x,
+        and coeffs[-1] is added to the sum with no multiplication.
+    x : float
+        Value to evaluate the polynomial at
+
+    Returns
+    -------
+    y : float
+        Evaluated result
+
+    Notes
+    -----
+    Efficient. Faster than numpy.polyval.
+
+    Examples
+    --------
+    >>> horner([1,2,3], 3)
+    18
+    '''
+    tot = 0
+    for c in coeffs:
+        tot = tot * x + c
+    return tot
+
 
 def normalize(values):
     r'''Simple function which normalizes a series of values to be from 0 to 1,

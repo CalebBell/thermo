@@ -1679,8 +1679,8 @@ class VolumeGas(TPDependentProperty):
     under.'''
     ranked_methods = []
     '''Default rankings of the low-pressure methods.'''
-    ranked_methods_P = [PR, TSONOPOULOS_EXTENDED, TSONOPOULOS, ABBOTT,
-                        PITZER_CURL, CRC_VIRIAL, COOLPROP, IDEAL]
+    ranked_methods_P = [COOLPROP, PR, TSONOPOULOS_EXTENDED, TSONOPOULOS, ABBOTT,
+                        PITZER_CURL, CRC_VIRIAL, IDEAL]
     '''Default rankings of the pressure-dependent methods.'''
 
 

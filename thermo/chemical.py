@@ -55,6 +55,7 @@ from thermo.refractivity import refractive_index
 from thermo.electrochem import conductivity
 from thermo.elements import atom_fractions, mass_fractions, similarity_variable, atoms_to_Hill, simple_formula_parser
 from thermo.coolprop import has_CoolProp
+from thermo.eos import *
 
 from fluids.core import *
 
@@ -98,7 +99,7 @@ class Chemical(object): # pragma: no cover
     Default initialization is for 298.15 K, 1 atm.
     Goal is for, when a method fails, a warning is printed.
     '''
-
+    eos_in_a_box = []
     def __init__(self, ID, T=298.15, P=101325):
         self.ID = ID
 
@@ -118,6 +119,7 @@ class Chemical(object): # pragma: no cover
 
         self.set_constant_sources()
         self.set_constants()
+        self.set_eos(T=T, P=P)
         self.set_TP_sources()
         self.set_ref()
         
@@ -314,11 +316,21 @@ class Chemical(object): # pragma: no cover
         self.RI, self.RIT = refractive_index(CASRN=self.CAS, Method=self.RI_source)
         self.conductivity, self.conductivityT = conductivity(CASRN=self.CAS, Method=self.conductivity_source)
 
+    def set_eos(self, T, P, eos=PR):
+        if all((self.Tc, self.Pc, self.omega)):
+            self.eos = eos(T=T, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega)
+        else:
+            self.eos = GCEOS_DUMMY(T=T, P=P)
+        if self.eos_in_a_box:
+            self.eos_in_a_box.pop()
+        # Pass this mutable list to objects so if it is changed, it gets 
+        # changed in the property method too
+        self.eos_in_a_box.append(self.eos) 
 
     def set_TP_sources(self):
         # Tempearture and Pressure Denepdence
         # Get and choose initial methods
-        self.VaporPressure = VaporPressure(Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, omega=self.omega, CASRN=self.CAS)
+        self.VaporPressure = VaporPressure(Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, omega=self.omega, CASRN=self.CAS, eos=self.eos_in_a_box)
         self.Psat_298 = self.VaporPressure.T_dependent_property(298.15)
 
 
@@ -372,6 +384,7 @@ class Chemical(object): # pragma: no cover
         self.phase_STP = identify_phase(T=298.15, P=101325., Tm=self.Tm, Tb=self.Tb, Tc=self.Tc, Psat=self.Psat_298)
 
     def set_TP(self):
+        self.eos.to_TP(T=self.T, P=self.P)
         self.Psat = self.VaporPressure.T_dependent_property(T=self.T)
 
         self.Vms = self.VolumeSolid.T_dependent_property(T=self.T)
