@@ -1384,6 +1384,8 @@ class PR(GCEOS):
     # Constant part of `b`, (X/(X+3)).evalf(40)
     c2 = 0.0777960739038884559718447100373331839711
     
+    Zc = 0.30740130869870386
+    
     # Coefficients personally regressed, and tested against published solutions
     # fit with polyfit; 10th order found to be suitable and gains afterward are
     # tiny or negative
@@ -1408,7 +1410,7 @@ class PR(GCEOS):
         self.kappa = 0.37464 + 1.54226*omega - 0.26992*omega*omega
         self.delta = 2*self.b
         self.epsilon = -self.b*self.b
-        
+        self.Vc = self.Zc*R*self.Tc/self.Pc
         
         self.solve()
 
@@ -1617,6 +1619,7 @@ class PR78(PR):
         self.b = self.c2*R*Tc/Pc
         self.delta = 2*self.b
         self.epsilon = -self.b*self.b
+        self.Vc = self.Zc*R*self.Tc/self.Pc
 
         if omega <= 0.491:
             self.kappa = 0.37464 + 1.54226*omega - 0.26992*omega*omega
@@ -1722,6 +1725,7 @@ class PRSV(PR):
         self.delta = 2*self.b
         self.epsilon = -self.b*self.b
         self.kappa0 = 0.378893 + 1.4897153*omega - 0.17131848*omega**2 + 0.0196554*omega**3
+        self.Vc = self.Zc*R*self.Tc/self.Pc
 
         self.check_sufficient_inputs()
         if self.V and self.P:
@@ -1920,7 +1924,8 @@ class PRSV2(PR):
         self.epsilon = -self.b*self.b
         self.kappa0 = 0.378893 + 1.4897153*omega - 0.17131848*omega*omega + 0.0196554*omega*omega*omega
         self.kappa1, self.kappa2, self.kappa3 = kappa1, kappa2, kappa3
-        
+        self.Vc = self.Zc*R*self.Tc/self.Pc
+
         if self.V and self.P:
             # Deal with T-solution here
             self.T = self.solve_T(self.P, self.V)
@@ -2094,6 +2099,7 @@ class VDW(GCEOS):
     delta = 0
     epsilon = 0
     omega = None
+    Zc = 3/8.
 
     # Coefficients personally regressed, and tested against published solutions
     # fit with polyfit; 10th order found to be suitable and gains afterward are
@@ -2115,6 +2121,7 @@ class VDW(GCEOS):
 
         self.a = 27.0/64.0*(R*Tc)**2/Pc
         self.b = R*Tc/(8.*Pc)
+        self.Vc = self.Zc*R*self.Tc/self.Pc
         self.solve()
 
     def a_alpha_and_derivatives(self, T, full=True, quick=True):
@@ -2266,6 +2273,7 @@ class RK(GCEOS):
     c2 = 0.08664034996495772158907020242607611685675 # (2**(1/3.)-1)/3 
     epsilon = 0
     omega = None
+    Zc = 1/3.
 
     # Coefficients personally regressed, and tested against published solutions
     # fit with polyfit; 10th order found to be suitable and gains afterward are
@@ -2286,6 +2294,7 @@ class RK(GCEOS):
         self.a = self.c1*R*R*Tc**2.5/Pc
         self.b = self.c2*R*Tc/Pc
         self.delta = self.b
+        self.Vc = self.Zc*R*self.Tc/self.Pc
         self.solve()
 
     def a_alpha_and_derivatives(self, T, full=True, quick=True):
@@ -2412,6 +2421,7 @@ class SRK(GCEOS):
     c1 = 0.4274802335403414043909906940611707345513 # 1/(9*(2**(1/3.)-1)) 
     c2 = 0.08664034996495772158907020242607611685675 # (2**(1/3.)-1)/3 
     epsilon = 0
+    Zc = 1/3.
 
     # Coefficients personally regressed, and tested against published solutions
     # fit with polyfit; 10th order found to be suitable and gains afterward are
@@ -2435,6 +2445,7 @@ class SRK(GCEOS):
         self.a = self.c1*R*R*Tc*Tc/Pc
         self.b = self.c2*R*Tc/Pc
         self.m = 0.480 + 1.574*omega - 0.176*omega*omega
+        self.Vc = self.Zc*R*self.Tc/self.Pc
         self.delta = self.b
         self.solve()
 
@@ -2613,6 +2624,7 @@ class APISRK(SRK):
         self.a = self.c1*R*R*Tc*Tc/Pc
         self.b = self.c2*R*Tc/Pc
         self.delta = self.b
+        self.Vc = self.Zc*R*self.Tc/self.Pc
         
         self.solve()
 
@@ -2790,6 +2802,7 @@ class TWUPR(PR):
         self.delta = 2*self.b
         self.epsilon = -self.b*self.b
         self.check_sufficient_inputs()
+        self.Vc = self.Zc*R*self.Tc/self.Pc
 
         self.solve_T = super(PR, self).solve_T        
         self.solve()
@@ -2994,7 +3007,7 @@ class TWUSRK(SRK):
         self.b = self.c2*R*Tc/Pc
         self.delta = self.b
         self.check_sufficient_inputs()
-        
+        self.Vc = self.Zc*R*self.Tc/self.Pc
         self.solve_T = super(SRK, self).solve_T
         self.solve()
         
