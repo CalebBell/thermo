@@ -613,7 +613,6 @@ should be calculated by this method, in a user subclass.')
             Cv_dep = -T*(sqrt(1/(delta**2 - 4*epsilon))*log(V - delta**2*sqrt(1/(delta**2 - 4*epsilon))/2 + delta/2 + 2*epsilon*sqrt(1/(delta**2 - 4*epsilon))) - sqrt(1/(delta**2 - 4*epsilon))*log(V + delta**2*sqrt(1/(delta**2 - 4*epsilon))/2 + delta/2 - 2*epsilon*sqrt(1/(delta**2 - 4*epsilon))))*d2a_alpha_dT2
         return [dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep]
 
-
     def Psat(self, T, polish=False):
         r'''Generic method to calculate vapor pressure for a specified `T`.
         
@@ -647,8 +646,8 @@ should be calculated by this method, in a user subclass.')
             
         Notes
         -----
-        Equations of state derived from another but using the same form and 
-        `a` and `b` values work with the former's coefficients.
+        EOSs sharing the same `b`, `delta`, and `epsilon` have the same
+        coefficient sets.
         
         All coefficients were derived with numpy's polyfit. The intersection
         between the polynomials is continuous, but there is a step change
@@ -678,28 +677,35 @@ should be calculated by this method, in a user subclass.')
                 return err
             Psat = newton(to_solve, Psat)
         return Psat
-        
-    def V_l_sat(self, T):
-        Psat = self.Psat(T)
-        a_alpha = self.a_alpha_and_derivatives(T, full=False)
-        Vs = self.volume_solutions(T, Psat, self.b, self.delta, self.epsilon, a_alpha)
-        # Assume we can safely take the Vmax as gas, Vmin as l on the saturation line
-        Vs = [i.real for i in Vs]
-        V_l, V_g = min(Vs), max(Vs)
-        return V_l
-    
-    def V_g_sat(self, T):
-        Psat = self.Psat(T)
-        a_alpha = self.a_alpha_and_derivatives(T, full=False)
-        Vs = self.volume_solutions(T, Psat, self.b, self.delta, self.epsilon, a_alpha)
-        # Assume we can safely take the Vmax as gas, Vmin as l on the saturation line
-        Vs = [i.real for i in Vs]
-        V_l, V_g = min(Vs), max(Vs)
-        return V_g
 
     def dPsat_dT(self, T):
-        # Added for future use in calculating Hvap via the Clausius Clapeyron
-        # Equation; Derived with Sympy's diff and cse
+        r'''Generic method to calculate the temperature derivative of vapor 
+        pressure for a specified `T`. Implements the analytical derivative
+        of the two polynomials described in `Psat`.
+        
+        As with `Psat`, results above the critical temperature are meaningless. 
+        The first-order polynomial which is used to calculate it under 0.32 Tc
+        may not be physicall meaningful, due to there normally not being a 
+        volume solution to the EOS which can produce that low of a pressure.
+        
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+
+        Returns
+        -------
+        dPsat_dT : float
+            Derivative of vapor pressure with respect to temperature, [Pa/K]
+            
+        Notes
+        -----
+        There is a small step change at 0.32 Tc for all EOS due to the two
+        switch between polynomials at that point.
+        
+        Useful for calculating enthalpy of vaporization with the Clausius
+        Clapeyron Equation. Derived with SymPy's diff and cse.
+        '''
         a_alphas = self.a_alpha_and_derivatives(T)
         alpha, d_alpha_dT = a_alphas[0]/self.a, a_alphas[1]/self.a
         Tr = T/self.Tc
@@ -715,12 +721,102 @@ should be calculated by this method, in a user subclass.')
             x7 = c[6] - x1*x6
             x8 = c[7] - x1*x7
             x9 = c[8] - x1*x8
-            return self.Pc*(-(d_alpha_dT - x0)*(-c[9] + x1*x9 + x1*(-x1*(-x1*(-x1*(-x1*(-x1*(-x1*(-x1*(c[1] - 2*x2) + x3) + x4) + x5) + x6) + x7) + x8) + x9)) + 1/self.Tc)*exp(c[10] - x1*(c[9] - x1*(c[8] - x1*(c[7] - x1*(c[6] - x1*(c[5] - x1*(c[4] - x1*(c[3] - x1*(c[2] + x1*(-c[1] + x2))))))))))    
+            return self.Pc*(-(d_alpha_dT - x0)*(-c[9] + x1*x9 + x1*(-x1*(-x1*(-x1*(-x1*(-x1*(-x1*(-x1*(c[1] - 2*x2) + x3) + x4) + x5) + x6) + x7) + x8) + x9)) + 1./self.Tc)*exp(c[10] - x1*(c[9] - x1*(c[8] - x1*(c[7] - x1*(c[6] - x1*(c[5] - x1*(c[4] - x1*(c[3] - x1*(c[2] + x1*(-c[1] + x2))))))))))    
         else:
             c = self.Psat_coeffs_limiting
-            return self.Pc*T*c[0]*(self.Tc*d_alpha_dT/T - self.Tc*alpha/T**2)*exp(c[0]*(-1 + self.Tc*alpha/T) + c[1])/self.Tc + self.Pc*exp(c[0]*(-1 + self.Tc*alpha/T) + c[1])/self.Tc
+            return self.Pc*T*c[0]*(self.Tc*d_alpha_dT/T - self.Tc*alpha/(T*T))*exp(c[0]*(-1. + self.Tc*alpha/T) + c[1])/self.Tc + self.Pc*exp(c[0]*(-1. + self.Tc*alpha/T) + c[1])/self.Tc
+        
+    def V_l_sat(self, T):
+        r'''Method to calculate molar volume of the liquid phase along the
+        saturation line.
+        
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+
+        Returns
+        -------
+        V_l_sat : float
+            Liquid molar volume along the saturation line, [m^3/mol]
+            
+        Notes
+        -----
+        Computers `Psat`, and then uses `volume_solutions` to obtain the three
+        possible molar volumes. The lowest value is returned.
+        '''
+        Psat = self.Psat(T)
+        a_alpha = self.a_alpha_and_derivatives(T, full=False)
+        Vs = self.volume_solutions(T, Psat, self.b, self.delta, self.epsilon, a_alpha)
+        # Assume we can safely take the Vmax as gas, Vmin as l on the saturation line
+        Vs = [i.real for i in Vs]
+        V_l, V_g = min(Vs), max(Vs)
+        return V_l
+    
+    def V_g_sat(self, T):
+        r'''Method to calculate molar volume of the vapor phase along the
+        saturation line.
+        
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+
+        Returns
+        -------
+        V_g_sat : float
+            Gas molar volume along the saturation line, [m^3/mol]
+            
+        Notes
+        -----
+        Computers `Psat`, and then uses `volume_solutions` to obtain the three
+        possible molar volumes. The highest value is returned.
+        '''
+        Psat = self.Psat(T)
+        a_alpha = self.a_alpha_and_derivatives(T, full=False)
+        Vs = self.volume_solutions(T, Psat, self.b, self.delta, self.epsilon, a_alpha)
+        # Assume we can safely take the Vmax as gas, Vmin as l on the saturation line
+        Vs = [i.real for i in Vs]
+        V_l, V_g = min(Vs), max(Vs)
+        return V_g
     
     def Hvap(self, T):
+        r'''Method to calculate enthalpy of vaporization for a pure fluid from
+        an equation of state, without iteration.
+        
+        .. math::
+            \frac{dP^{sat}}{dT}=\frac{\Delta H_{vap}}{T(V_g - V_l)}
+        
+        Results above the critical temperature are meaningless. A first-order 
+        polynomial is used to extrapolate under 0.32 Tc; however, there is 
+        normally not a volume solution to the EOS which can produce that
+        low of a pressure.
+        
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+
+        Returns
+        -------
+        Hvap : float
+            Increase in enthalpy needed for vaporization of liquid phase along 
+            the saturation line, [J/mol]
+            
+        Notes
+        -----
+        Calculates vapor pressure and its derivative with `Psat` and `dPsat_dT`
+        as well as molar volumes of the saturation liquid and vapor phase in
+        the process.
+        
+        Very near the critical point this provides unrealistic results due to
+        `Psat`'s polynomials being insufficiently accurate.
+                    
+        References
+        ----------
+        .. [1] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
+           Butterworth-Heinemann, 1985.
+        '''
         Psat = self.Psat(T)
         dPsat_dT = self.dPsat_dT(T)
         a_alpha = self.a_alpha_and_derivatives(T, full=False)
