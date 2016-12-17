@@ -678,7 +678,59 @@ should be calculated by this method, in a user subclass.')
                 return err
             Psat = newton(to_solve, Psat)
         return Psat
+        
+    def V_l_sat(self, T):
+        Psat = self.Psat(T)
+        a_alpha = self.a_alpha_and_derivatives(T, full=False)
+        Vs = self.volume_solutions(T, Psat, self.b, self.delta, self.epsilon, a_alpha)
+        # Assume we can safely take the Vmax as gas, Vmin as l on the saturation line
+        Vs = [i.real for i in Vs]
+        V_l, V_g = min(Vs), max(Vs)
+        return V_l
+    
+    def V_g_sat(self, T):
+        Psat = self.Psat(T)
+        a_alpha = self.a_alpha_and_derivatives(T, full=False)
+        Vs = self.volume_solutions(T, Psat, self.b, self.delta, self.epsilon, a_alpha)
+        # Assume we can safely take the Vmax as gas, Vmin as l on the saturation line
+        Vs = [i.real for i in Vs]
+        V_l, V_g = min(Vs), max(Vs)
+        return V_g
 
+    def dPsat_dT(self, T):
+        # Added for future use in calculating Hvap via the Clausius Clapeyron
+        # Equation; Derived with Sympy's diff and cse
+        a_alphas = self.a_alpha_and_derivatives(T)
+        alpha, d_alpha_dT = a_alphas[0]/self.a, a_alphas[1]/self.a
+        Tr = T/self.Tc
+        if Tr >= 0.32:
+            c = self.Psat_coeffs
+            x0 = alpha/T
+            x1 = -self.Tc*x0 + 1
+            x2 = c[0]*x1
+            x3 = c[2] - x1*(c[1] - x2)
+            x4 = c[3] - x1*x3
+            x5 = c[4] - x1*x4
+            x6 = c[5] - x1*x5
+            x7 = c[6] - x1*x6
+            x8 = c[7] - x1*x7
+            x9 = c[8] - x1*x8
+            return self.Pc*(-(d_alpha_dT - x0)*(-c[9] + x1*x9 + x1*(-x1*(-x1*(-x1*(-x1*(-x1*(-x1*(-x1*(c[1] - 2*x2) + x3) + x4) + x5) + x6) + x7) + x8) + x9)) + 1/self.Tc)*exp(c[10] - x1*(c[9] - x1*(c[8] - x1*(c[7] - x1*(c[6] - x1*(c[5] - x1*(c[4] - x1*(c[3] - x1*(c[2] + x1*(-c[1] + x2))))))))))    
+        else:
+            c = self.Psat_coeffs_limiting
+            return self.Pc*T*c[0]*(self.Tc*d_alpha_dT/T - self.Tc*alpha/T**2)*exp(c[0]*(-1 + self.Tc*alpha/T) + c[1])/self.Tc + self.Pc*exp(c[0]*(-1 + self.Tc*alpha/T) + c[1])/self.Tc
+    
+    def Hvap(self, T):
+        Psat = self.Psat(T)
+        dPsat_dT = self.dPsat_dT(T)
+        a_alpha = self.a_alpha_and_derivatives(T, full=False)
+        Vs = self.volume_solutions(T, Psat, self.b, self.delta, self.epsilon, a_alpha)
+        # Assume we can safely take the Vmax as gas, Vmin as l on the saturation line
+        Vs = [i.real for i in Vs]
+        V_l, V_g = min(Vs), max(Vs)
+        return dPsat_dT*T*(V_g-V_l)
+        
+    
 
     def to_TP(self, T, P):
         if T != self.T or P != self.P:
