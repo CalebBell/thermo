@@ -92,6 +92,7 @@ class GCEOS(object):
     the liquid or gas phase with the convention of adding on `_l` or `_g` to
     the variable names.
     '''
+    kwargs = {}
     def check_sufficient_inputs(self):
         '''Method to an exception if none of the pairs (T, P), (T, V), or 
         (P, V) are given. '''
@@ -643,6 +644,23 @@ should be calculated by this method, in a user subclass.')
         -------
         Psat : float
             Vapor pressure, [Pa]
+            
+        Notes
+        -----
+        Equations of state derived from another but using the same form and 
+        `a` and `b` values work with the former's coefficients.
+        
+        All coefficients were derived with numpy's polyfit. The intersection
+        between the polynomials is continuous, but there is a step change
+        in its derivative.
+        
+        Form for the regression is inspired from [1]_.
+                    
+        References
+        ----------
+        .. [1] Soave, G. "Direct Calculation of Pure-Compound Vapour Pressures 
+           through Cubic Equations of State." Fluid Phase Equilibria 31, no. 2 
+           (January 1, 1986): 203-7. doi:10.1016/0378-3812(86)90013-0. 
         '''
         alpha = self.a_alpha_and_derivatives(T, full=False)/self.a
         Tr = T/self.Tc
@@ -664,7 +682,10 @@ should be calculated by this method, in a user subclass.')
 
     def to_TP(self, T, P):
         if T != self.T or P != self.P:
-            self.__init__(T=T, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega)
+            return self.__class__(T=T, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega, **self.kwargs)
+        else:
+            return self
+
 
 class GCEOS_DUMMY(GCEOS):
     def __init__(self, T=None, P=None, **kwargs):
@@ -1694,6 +1715,7 @@ class PRSV(PR):
         self.T = T
         self.P = P
         self.V = V
+        self.kwargs = {'kappa1': kappa1}
         
         self.a = self.c1*R*R*Tc*Tc/Pc
         self.b = self.c2*R*Tc/Pc
@@ -1890,6 +1912,7 @@ class PRSV2(PR):
         self.P = P
         self.V = V
         self.check_sufficient_inputs()
+        self.kwargs = {'kappa1': kappa1, 'kappa2': kappa2, 'kappa3': kappa3}
         
         self.a = self.c1*R*R*Tc*Tc/Pc
         self.b = self.c2*R*Tc/Pc
@@ -2576,6 +2599,7 @@ class APISRK(SRK):
         self.T = T
         self.P = P
         self.V = V
+        self.kwargs = {'S1': S1, 'S2': S2}
         self.check_sufficient_inputs()
 
         if S1 is None and omega is None:

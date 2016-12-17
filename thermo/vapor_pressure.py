@@ -180,7 +180,7 @@ EOS = 'EOS'
 
 vapor_pressure_methods = [WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
                           COOLPROP, ANTOINE_POLING, VDI_TABULAR, AMBROSE_WALTON,
-                          LEE_KESLER_PSAT, BOILING_CRITICAL, SANJARI]
+                          LEE_KESLER_PSAT, EOS, BOILING_CRITICAL, SANJARI]
 '''Holds all methods available for the VaporPressure class, for use in
 iterating over them.'''
 
@@ -292,7 +292,7 @@ class VaporPressure(TDependentProperty):
 
     ranked_methods = [WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
                       COOLPROP, ANTOINE_POLING, VDI_TABULAR, AMBROSE_WALTON,
-                      LEE_KESLER_PSAT, BOILING_CRITICAL, SANJARI]
+                      LEE_KESLER_PSAT, BOILING_CRITICAL, EOS, SANJARI]
     '''Default rankings of the available methods.'''
 
     def __init__(self, Tb=None, Tc=None, Pc=None, omega=None, CASRN='', 
@@ -393,6 +393,8 @@ class VaporPressure(TDependentProperty):
             methods.append(LEE_KESLER_PSAT)
             methods.append(AMBROSE_WALTON)
             methods.append(SANJARI)
+            if self.eos:
+                methods.append(EOS)
             Tmins.append(0.01); Tmaxs.append(self.Tc)
         self.all_methods = set(methods)
         if Tmins and Tmaxs:
@@ -440,6 +442,8 @@ class VaporPressure(TDependentProperty):
             Psat = Ambrose_Walton(T, self.Tc, self.Pc, self.omega)
         elif method == SANJARI:
             Psat = Sanjari(T, self.Tc, self.Pc, self.omega)
+        elif method == EOS:
+            Psat = self.eos[0].Psat(T)
         elif method in self.tabular_data:
             Psat = self.interpolate(T, method)
         return Psat
@@ -482,7 +486,7 @@ class VaporPressure(TDependentProperty):
         elif method == COOLPROP:
             if T < self.CP_f.Tmin or T < self.CP_f.Tt or T > self.CP_f.Tmax or T > self.CP_f.Tc:
                 return False
-        elif method in [BOILING_CRITICAL, LEE_KESLER_PSAT, AMBROSE_WALTON, SANJARI]:
+        elif method in [BOILING_CRITICAL, LEE_KESLER_PSAT, AMBROSE_WALTON, SANJARI, EOS]:
             if T > self.Tc or T < 0:
                 return False
             # No lower limit

@@ -27,7 +27,6 @@ Submodules
    thermo.miscdata
    thermo.permittivity
    thermo.phase_change
-   thermo.pr
    thermo.reaction
    thermo.refractivity
    thermo.safety

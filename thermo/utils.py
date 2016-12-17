@@ -32,7 +32,7 @@ __all__ = ['has_matplotlib', 'ANYMATH', 'mathlib', 'to_num', 'CAS2int',
 'Z_from_virial_pressure_form', 'zs_to_ws', 'ws_to_zs', 'zs_to_Vfs', 
 'Vfs_to_zs', 'none_and_length_check', 'normalize', 'mixing_simple', 
 'mixing_logarithmic', 'phase_set_property', 'TDependentProperty', 
-'TPDependentProperty', 'allclose_variable']
+'TPDependentProperty', 'allclose_variable', 'horner']
 
 from cmath import sqrt as csqrt
 import numpy as np

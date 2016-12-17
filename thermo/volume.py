@@ -655,7 +655,7 @@ def CRC_inorganic(T, rho0, k, Tm):
 
 
 COOLPROP = 'COOLPROP'
-PERRYDIPPR = "PERRYDIPPR"
+PERRYDIPPR = 'PERRYDIPPR'
 MMSNM0 = 'MMSNM0'
 MMSNM0FIT = 'MMSNM0FIT'
 VDI_TABULAR = 'VDI_TABULAR'
@@ -669,6 +669,7 @@ YAMADA_GUNN = 'YAMADA_GUNN'
 BHIRUD_NORMAL = 'BHIRUD_NORMAL'
 TOWNSEND_HALES = 'TOWNSEND_HALES'
 CAMPBELL_THODOS = 'CAMPBELL_THODOS'
+EOS = 'EOS'
 
 
 CRC_INORG_L = 'CRC_INORG_L'
@@ -682,7 +683,7 @@ volume_liquid_methods = [PERRYDIPPR, COOLPROP, MMSNM0FIT, VDI_TABULAR,
 '''Holds all low-pressure methods available for the VolumeLiquid class, for use
 in iterating over them.'''
 
-volume_liquid_methods_P = [COOLPROP, COSTALD_COMPRESSED]
+volume_liquid_methods_P = [COOLPROP, COSTALD_COMPRESSED, EOS]
 '''Holds all high-pressure methods available for the VolumeLiquid class, for
 use in iterating over them.'''
 
@@ -722,6 +723,8 @@ class VolumeLiquid(TPDependentProperty):
         Dipole, [debye]
     Psat : float or callable, optional
         Vapor pressure at a given temperature, or callable for the same [Pa]
+    eos : object, optional
+        Equation of State object after :obj:`thermo.eos.GCEOS`
 
     Notes
     -----
@@ -790,6 +793,8 @@ class VolumeLiquid(TPDependentProperty):
         Range is limited to that of the equations of state it uses, as
         described in [5]_. Very slow, but unparalled in accuracy for pressure
         dependence.
+    **EOS**:
+        Equation of state provided by user.
 
     See Also
     --------
@@ -847,15 +852,15 @@ class VolumeLiquid(TPDependentProperty):
                       HTCOSTALDFIT, RACKETTFIT, CRC_INORG_L,
                       CRC_INORG_L_CONST, MMSNM0, HTCOSTALD,
                       YEN_WOODS_SAT, RACKETT, YAMADA_GUNN,
-                      BHIRUD_NORMAL, TOWNSEND_HALES, CAMPBELL_THODOS]
+                      BHIRUD_NORMAL, TOWNSEND_HALES, CAMPBELL_THODOS, EOS]
     '''Default rankings of the low-pressure methods.'''
 
-    ranked_methods_P = [COOLPROP, COSTALD_COMPRESSED]
+    ranked_methods_P = [COOLPROP, COSTALD_COMPRESSED, EOS]
     '''Default rankings of the high-pressure methods.'''
 
 
     def __init__(self, MW=None, Tb=None, Tc=None, Pc=None, Vc=None, Zc=None,
-                 omega=None, dipole=None, Psat=None, CASRN=''):
+                 omega=None, dipole=None, Psat=None, CASRN='', eos=None):
         self.CASRN = CASRN
         self.MW = MW
         self.Tb = Tb
@@ -866,6 +871,7 @@ class VolumeLiquid(TPDependentProperty):
         self.omega = omega
         self.dipole = dipole
         self.Psat = Psat
+        self.eos = eos
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
@@ -989,6 +995,8 @@ class VolumeLiquid(TPDependentProperty):
             Tmins.append(0); Tmaxs.append(self.Tc)
         if all((self.Tc, self.Pc, self.omega)):
             methods_P.append(COSTALD_COMPRESSED)
+            if self.eos:
+                methods_P.append(EOS)
 
         if Tmins and Tmaxs:
             self.Tmin, self.Tmax = min(Tmins), max(Tmaxs)
@@ -1078,6 +1086,9 @@ class VolumeLiquid(TPDependentProperty):
             Vm = COSTALD_compressed(T, P, Psat, self.Tc, self.Pc, self.omega, Vm)
         elif method == COOLPROP:
             Vm = 1./PropsSI('DMOLAR', 'T', T, 'P', P, self.CASRN)
+        elif method == EOS:
+            self.eos[0] = self.eos[0].to_TP(T=T, P=P)
+            Vm = self.eos[0].V_l
         elif method in self.tabular_data:
             Vm = self.interpolate_P(T, P, method)
         return Vm
@@ -1174,6 +1185,9 @@ class VolumeLiquid(TPDependentProperty):
             pass
         elif method == COOLPROP:
             validity = PhaseSI('T', T, 'P', P, self.CASRN) == 'liquid'
+        elif method == EOS:
+            self.eos[0] = self.eos[0].to_TP(T=T, P=P)
+            validity = hasattr(self.eos[0], 'V_l')
         elif method in self.tabular_data:
             if not self.tabular_extrapolation_permitted:
                 Ts, Ps, properties = self.tabular_data[method]
@@ -1562,7 +1576,7 @@ def ideal_gas(T, P):
     return R*T/P
 
 
-PR = 'PR'
+#PR = 'PR'
 CRC_VIRIAL = 'CRC_VIRIAL'
 TSONOPOULOS_EXTENDED = 'TSONOPOULOS_EXTENDED'
 TSONOPOULOS = 'TSONOPOULOS'
@@ -1570,7 +1584,7 @@ ABBOTT = 'ABBOTT'
 PITZER_CURL = 'PITZER_CURL'
 IDEAL = 'IDEAL'
 NONE = 'NONE'
-volume_gas_methods = [PR, CRC_VIRIAL, TSONOPOULOS_EXTENDED, TSONOPOULOS,
+volume_gas_methods = [COOLPROP, EOS, CRC_VIRIAL, TSONOPOULOS_EXTENDED, TSONOPOULOS,
                       ABBOTT, PITZER_CURL, IDEAL]
 '''Holds all methods available for the VolumeGas class, for use in
 iterating over them.'''
@@ -1679,13 +1693,13 @@ class VolumeGas(TPDependentProperty):
     under.'''
     ranked_methods = []
     '''Default rankings of the low-pressure methods.'''
-    ranked_methods_P = [COOLPROP, PR, TSONOPOULOS_EXTENDED, TSONOPOULOS, ABBOTT,
+    ranked_methods_P = [COOLPROP, EOS, TSONOPOULOS_EXTENDED, TSONOPOULOS, ABBOTT,
                         PITZER_CURL, CRC_VIRIAL, IDEAL]
     '''Default rankings of the pressure-dependent methods.'''
 
 
     def __init__(self, CASRN='', MW=None, Tc=None, Pc=None, omega=None,
-                 dipole=None):
+                 dipole=None, eos=None):
         # Only use TPDependentPropoerty functions here
         self.CASRN = CASRN
         self.MW = MW
@@ -1693,6 +1707,7 @@ class VolumeGas(TPDependentProperty):
         self.Pc = Pc
         self.omega = omega
         self.dipole = dipole
+        self.eos = eos
 
         self.Tmin = 0
         '''Minimum temperature at which no method can calculate the
@@ -1753,8 +1768,10 @@ class VolumeGas(TPDependentProperty):
         methods_P = [IDEAL]
         # no point in getting Tmin, Tmax
         if all((self.Tc, self.Pc, self.omega)):
-            methods_P.extend([PR, TSONOPOULOS_EXTENDED, TSONOPOULOS, ABBOTT,
+            methods_P.extend([TSONOPOULOS_EXTENDED, TSONOPOULOS, ABBOTT,
                             PITZER_CURL])
+            if self.eos:
+                methods_P.append(EOS)
         if self.CASRN in CRC_virial_data.index:
             methods_P.append(CRC_VIRIAL)
             self.CRC_VIRIAL_coeffs = _CRC_virial_data_values[CRC_virial_data.index.get_loc(self.CASRN)].tolist()[1:]
@@ -1784,8 +1801,11 @@ class VolumeGas(TPDependentProperty):
         Vm : float
             Molar volume of the gas at T and P, [m^3/mol]
         '''
-        if method == PR:
-            Vm = PR_Vm(T, P, self.Tc, self.Pc, self.omega, phase='g')
+        if method == EOS:
+            self.eos[0] = self.eos[0].to_TP(T=T, P=P)
+            Vm = self.eos[0].V_g
+#        if method == PR:
+#            Vm = PR_Vm(T, P, self.Tc, self.Pc, self.omega, phase='g')
         elif method == TSONOPOULOS_EXTENDED:
             B = BVirial_Tsonopoulos_extended(T, self.Tc, self.Pc, self.omega, dipole=self.dipole)
             Vm = ideal_gas(T, P) + B
@@ -1848,10 +1868,13 @@ class VolumeGas(TPDependentProperty):
         validity = True
         if T < 0 or P < 0:
             validity = False
-        elif method in [PR, TSONOPOULOS_EXTENDED, TSONOPOULOS, ABBOTT,
+        elif method in [TSONOPOULOS_EXTENDED, TSONOPOULOS, ABBOTT,
                         PITZER_CURL, CRC_VIRIAL, IDEAL]:
             pass
             # Would be nice to have a limit on CRC_VIRIAL
+        elif method == EOS:
+            self.eos[0] = self.eos[0].to_TP(T=T, P=P)
+            validity = hasattr(self.eos[0], 'V_g')
         elif method == COOLPROP:
             validity = PhaseSI('T', T, 'P', P, self.CASRN) in ['gas', 'supercritical_gas', 'supercritical', 'supercritical_liquid']
         elif method in self.tabular_data:

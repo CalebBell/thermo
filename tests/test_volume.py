@@ -25,6 +25,7 @@ import numpy as np
 import pytest
 import pandas as pd
 from thermo.volume import *
+from thermo.eos import *
 from thermo.utils import Vm_to_rho
 from thermo.identifiers import checkCAS
 
@@ -270,9 +271,10 @@ def test_ideal_gas():
 
 @pytest.mark.meta_T_dept
 def test_VolumeGas():
-    SO2 = VolumeGas(CASRN='7446-09-5', MW=64.0638,  Tc=430.8, Pc=7884098.25, omega=0.251, dipole=1.63)
+    eos = [PR(T=300, P=1E5, Tc=430.8, Pc=7884098.25, omega=0.251)]
+    SO2 = VolumeGas(CASRN='7446-09-5', MW=64.0638,  Tc=430.8, Pc=7884098.25, omega=0.251, dipole=1.63, eos=eos)
     Vm_calcs = [(SO2.set_user_methods_P(i, forced_P=True), SO2.TP_dependent_property(305, 1E5))[1] for i in SO2.all_methods_P]
-    Vm_exp = [0.025024421772080314, 0.02499978619699621, 0.02499586901117375, 0.02499627309459868, 0.02499978619699621, 0.024971467450477493, 0.02535910239]
+    Vm_exp = [0.025024302563892417, 0.02499978619699621, 0.02499586901117375, 0.02499627309459868, 0.02499978619699621, 0.024971467450477493, 0.02535910239]
     assert_allclose(sorted(Vm_calcs), sorted(Vm_exp))
 
     # Test that methods return None

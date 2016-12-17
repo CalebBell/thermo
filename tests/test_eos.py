@@ -814,9 +814,7 @@ def test_fuzz_dV_dT_and_d2V_dT2_derivatives():
                             continue
                         x.append(numer)
                         y.append(ana)
-    ans = allclose_variable(x, y, limits=[.009, .05, .65, .93],rtols=[1E-5, 1E-6, 1E-9, 1E-10])
-    if not ans:
-        raise Exception('dVdT numerical derivative failing!')
+    assert allclose_variable(x, y, limits=[.009, .05, .65, .93],rtols=[1E-5, 1E-6, 1E-9, 1E-10])
 
 
 @pytest.mark.slow
@@ -850,8 +848,6 @@ def test_fuzz_dV_dP_and_d2V_dP2_derivatives():
                             continue
                         x.append(numer)
                         y.append(ana)
-    ans = allclose_variable(x, y, limits=[.02, .04, .04, .05, .15, .45, .95],
+    assert allclose_variable(x, y, limits=[.02, .04, .04, .05, .15, .45, .95],
                             rtols=[1E-2, 1E-3, 1E-4, 1E-5, 1E-6, 1E-7, 1E-9])
-    if not ans:
-        raise Exception('Error')
     

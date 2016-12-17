@@ -27,6 +27,10 @@ from scipy.constants import R
 from scipy.optimize import fsolve
 from numpy import roots
 from thermo.utils import log, exp
+'''
+THIS FILE IS EXTREMELY DEPRECATED! CURRENTLY ONLY USED FOR THE CASE OF GAS 
+MIXTURE VOLUMES.
+'''
 
 R = 8.3145
 

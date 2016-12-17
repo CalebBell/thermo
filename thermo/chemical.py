@@ -321,33 +321,39 @@ class Chemical(object): # pragma: no cover
             self.eos = eos(T=T, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega)
         else:
             self.eos = GCEOS_DUMMY(T=T, P=P)
+    @property
+    def eos(self):
+        return self.eos_in_a_box[0]
+    @eos.setter
+    def eos(self, eos):
         if self.eos_in_a_box:
             self.eos_in_a_box.pop()
         # Pass this mutable list to objects so if it is changed, it gets 
         # changed in the property method too
-        self.eos_in_a_box.append(self.eos) 
+        self.eos_in_a_box.append(eos) 
+            
 
     def set_TP_sources(self):
         # Tempearture and Pressure Denepdence
         # Get and choose initial methods
-        self.VaporPressure = VaporPressure(Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, omega=self.omega, CASRN=self.CAS, eos=self.eos_in_a_box)
+        self.VaporPressure = VaporPressure(Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, 
+                                           omega=self.omega, CASRN=self.CAS, 
+                                           eos=self.eos_in_a_box)
         self.Psat_298 = self.VaporPressure.T_dependent_property(298.15)
-
 
         self.VolumeLiquid = VolumeLiquid(MW=self.MW, Tb=self.Tb, Tc=self.Tc,
                           Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega,
-                          dipole=self.dipole, Psat=self.VaporPressure.T_dependent_property, CASRN=self.CAS)
+                          dipole=self.dipole, 
+                          Psat=self.VaporPressure.T_dependent_property, 
+                          eos=self.eos_in_a_box, CASRN=self.CAS)
 
         self.Vml_Tb = self.VolumeLiquid.T_dependent_property(self.Tb) if self.Tb else None
         self.Vml_Tm = self.VolumeLiquid.T_dependent_property(self.Tm) if self.Tm else None
         self.Vml_STP = self.VolumeLiquid.T_dependent_property(298.15)
 
-        # set molecular_diameter; depends on Vml_Tb, Vml_Tm
-        self.molecular_diameter_sources = molecular_diameter(Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, Vm=self.Vml_Tm, Vb=self.Vml_Tb, AvailableMethods=True, CASRN=self.CAS)
-        self.molecular_diameter_source = self.molecular_diameter_sources[0]
-        self.molecular_diameter = molecular_diameter(Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, Vm=self.Vml_Tm, Vb=self.Vml_Tb, Method=self.molecular_diameter_source, CASRN=self.CAS)
-
-        self.VolumeGas = VolumeGas(MW=self.MW, Tc=self.Tc, Pc=self.Pc, omega=self.omega, dipole=self.dipole, CASRN=self.CAS)
+        self.VolumeGas = VolumeGas(MW=self.MW, Tc=self.Tc, Pc=self.Pc, 
+                                   omega=self.omega, dipole=self.dipole, 
+                                   eos=self.eos_in_a_box, CASRN=self.CAS)
 
         self.VolumeSolid = VolumeSolid(CASRN=self.CAS, MW=self.MW, Tt=self.Tt)
 
@@ -383,8 +389,14 @@ class Chemical(object): # pragma: no cover
 
         self.phase_STP = identify_phase(T=298.15, P=101325., Tm=self.Tm, Tb=self.Tb, Tc=self.Tc, Psat=self.Psat_298)
 
+        # set molecular_diameter; depends on Vml_Tb, Vml_Tm
+        self.molecular_diameter_sources = molecular_diameter(Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, Vm=self.Vml_Tm, Vb=self.Vml_Tb, AvailableMethods=True, CASRN=self.CAS)
+        self.molecular_diameter_source = self.molecular_diameter_sources[0]
+        self.molecular_diameter = molecular_diameter(Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, Vm=self.Vml_Tm, Vb=self.Vml_Tb, Method=self.molecular_diameter_source, CASRN=self.CAS)
+
     def set_TP(self):
-        self.eos.to_TP(T=self.T, P=self.P)
+        self.eos = self.eos.to_TP(T=self.T, P=self.P)
+        self.eos_in_a_box[0] = self.eos
         self.Psat = self.VaporPressure.T_dependent_property(T=self.T)
 
         self.Vms = self.VolumeSolid.T_dependent_property(T=self.T)
