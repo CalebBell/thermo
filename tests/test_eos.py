@@ -23,6 +23,7 @@ SOFTWARE.'''
 from numpy.testing import assert_allclose
 import numpy as np
 import pytest
+from thermo import eos
 from thermo.eos import *
 from thermo.utils import allclose_variable
 from scipy.misc import derivative
@@ -775,6 +776,7 @@ def test_TWUSRK_quick():
     # Error checking
     with pytest.raises(Exception):
         TWUSRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299.) 
+    from thermo.eos import TWU_a_alpha_common
     with pytest.raises(Exception):
         TWU_a_alpha_common(299.0, 507.6, 0.2975, 2.5171086468571824, method='FAIL')
         
@@ -851,3 +853,129 @@ def test_fuzz_dV_dP_and_d2V_dP2_derivatives():
     assert allclose_variable(x, y, limits=[.02, .04, .04, .05, .15, .45, .95],
                             rtols=[1E-2, 1E-3, 1E-4, 1E-5, 1E-6, 1E-7, 1E-9])
     
+def test_fuzz_Psat():
+    from thermo import eos
+    eos_list = list(eos.__all__); eos_list.remove('GCEOS')
+    eos_list.remove('ALPHA_FUNCTIONS'); eos_list.remove('eos_list')
+    eos_list.remove('GCEOS_DUMMY')
+    
+    Tc = 507.6
+    Pc = 3025000
+    omega = 0.2975
+    # Basic test
+    e = PR(T=400, P=1E5, Tc=507.6, Pc=3025000, omega=0.2975)
+    Psats_expect = [22284.314987503185, 466204.89703879296, 2717294.407158156]
+    assert_allclose([e.Psat(300), e.Psat(400), e.Psat(500)], Psats_expect)
+    
+    
+    # Test the relative fugacity errors at the correlated Psat are small
+    x = []
+    for eos in range(len(eos_list)):
+        for T in np.linspace(0.318*Tc, Tc*.99, 100):
+            e = globals()[eos_list[eos]](Tc=Tc, Pc=Pc, omega=omega, T=T, P=1E5)
+            Psat = e.Psat(T)
+            e = e.to_TP(T, Psat)
+            rerr = (e.fugacity_l - e.fugacity_g)/e.fugacity_g
+            x.append(rerr)
+
+    # Assert the average error is under 0.01%
+    assert sum(abs(np.array(x)))/len(x) < 1E-4
+    
+    # Test Polish is working, and that its values are close to the polynomials
+    Psats_solved = []
+    Psats_poly = []
+    for eos in range(len(eos_list)):
+        for T in np.linspace(0.4*Tc, Tc*.99, 30):
+            e = globals()[eos_list[eos]](Tc=Tc, Pc=Pc, omega=omega, T=T, P=1E5)
+            Psats_poly.append(e.Psat(T))
+            Psats_solved.append(e.Psat(T, polish=True))
+    assert_allclose(Psats_solved, Psats_poly, rtol=1E-4)
+
+
+def test_fuzz_dPsat_dT():
+    from thermo import eos
+    eos_list = list(eos.__all__); eos_list.remove('GCEOS')
+    eos_list.remove('ALPHA_FUNCTIONS'); eos_list.remove('eos_list')
+    eos_list.remove('GCEOS_DUMMY')
+    
+    Tc = 507.6
+    Pc = 3025000
+    omega = 0.2975
+    
+    e = PR(T=400, P=1E5, Tc=507.6, Pc=3025000, omega=0.2975)
+    dPsats_dT_expect = [938.7777925283981, 10287.225576267781, 38814.74676693623]
+    assert_allclose([e.dPsat_dT(300), e.dPsat_dT(400), e.dPsat_dT(500)], dPsats_dT_expect)
+    
+    # Hammer the derivatives for each EOS in a wide range; most are really 
+    # accurate. There's an error around the transition between polynomials 
+    # though - to be expected; the derivatives are discontinuous there.
+    dPsats_derivative = []
+    dPsats_analytical = []
+    for eos in range(len(eos_list)):
+        for T in np.linspace(0.2*Tc, Tc*.999, 50):
+            e = globals()[eos_list[eos]](Tc=Tc, Pc=Pc, omega=omega, T=T, P=1E5)
+            anal = e.dPsat_dT(T)
+            numer = derivative(e.Psat, T, order=9)
+            dPsats_analytical.append(anal)
+            dPsats_derivative.append(numer)
+    assert allclose_variable(dPsats_derivative, dPsats_analytical, limits=[.02, .06], rtols=[1E-5, 1E-7])
+
+
+def test_Hvaps():
+    from thermo import eos
+    eos_list = list(eos.__all__); eos_list.remove('GCEOS')
+    eos_list.remove('ALPHA_FUNCTIONS'); eos_list.remove('eos_list')
+    eos_list.remove('GCEOS_DUMMY')
+    
+    Tc = 507.6
+    Pc = 3025000
+    omega = 0.2975
+
+    Hvaps = []
+    Hvaps_expect = [31084.972954722154, 31710.347354033467, 31084.972954722154, 31034.19789071903, 31034.19789071903, 13004.11417270758, 26011.811415078664, 31715.119808143718, 31591.421468940156, 31562.23507865849]
+    
+    for eos in range(len(eos_list)):
+        e = globals()[eos_list[eos]](Tc=Tc, Pc=Pc, omega=omega, T=300, P=1E5)
+        Hvaps.append(e.Hvap(300))
+    
+    assert_allclose(Hvaps, Hvaps_expect)
+
+
+
+def test_V_l_sats():
+    from thermo import eos
+    eos_list = list(eos.__all__); eos_list.remove('GCEOS')
+    eos_list.remove('ALPHA_FUNCTIONS'); eos_list.remove('eos_list')
+    eos_list.remove('GCEOS_DUMMY')
+    
+    Tc = 507.6
+    Pc = 3025000
+    omega = 0.2975
+
+    V_l_sats = []
+    V_l_sats_expect = [0.00013065653528657878, 0.00014738488907872077, 0.00013065653528657878, 0.00013068333871375792, 0.00013068333871375792, 0.000224969070438342, 0.00015267475707721884, 0.0001473819969852047, 0.00013061078627614464, 0.00014745850642321895]
+    
+    for eos in range(len(eos_list)):
+        e = globals()[eos_list[eos]](Tc=Tc, Pc=Pc, omega=omega, T=300, P=1E5)
+        V_l_sats.append(e.V_l_sat(300))
+    
+    assert_allclose(V_l_sats, V_l_sats_expect)
+
+
+def test_V_g_sats():
+    from thermo import eos
+    eos_list = list(eos.__all__); eos_list.remove('GCEOS')
+    eos_list.remove('ALPHA_FUNCTIONS'); eos_list.remove('eos_list')
+    eos_list.remove('GCEOS_DUMMY')
+    
+    Tc = 507.6
+    Pc = 3025000
+    omega = 0.2975
+    V_g_sats = []
+    V_g_sats_expect = [0.11050456752935825, 0.11367512256304214, 0.11050456752935825, 0.10979754369520009, 0.10979754369520009, 0.009465794716181445, 0.046045503417247724, 0.11374287552483693, 0.11172601823064587, 0.1119690776024331]
+    
+    for eos in range(len(eos_list)):
+        e = globals()[eos_list[eos]](Tc=Tc, Pc=Pc, omega=omega, T=300, P=1E5)
+        V_g_sats.append(e.V_g_sat(300))
+    
+    assert_allclose(V_g_sats, V_g_sats_expect)

@@ -542,7 +542,7 @@ def Miqueu(T, Tc, Vc, omega):
     Uses Avogadro's constant and the Boltsman constant.
     Internal units of volume are mL/mol and mN/m. However, either a typo
     is in the article or author's work, or my value of k is off by 10; this is
-    corrected for nonetheless.
+    corrected nonetheless.
     Created with 31 normal fluids, none polar or hydrogen bonded. Has an
     AARD of 3.5%.
 
