@@ -2064,7 +2064,7 @@ class TDependentProperty(object):
             Calculated integral of the property over the given range, 
             [`units*K`]
         '''
-        sorted_valid_methods = self.select_valid_methods(T1)
+        sorted_valid_methods = self.select_valid_methods(0.5*(T1+T2))
         for method in sorted_valid_methods:
             try:
                 return self.calculate_integral(T1, T2, method)

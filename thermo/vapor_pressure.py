@@ -55,26 +55,137 @@ AntoineExtended = pd.read_csv(os.path.join(folder, 'Antoine Extended Collection 
                               sep='\t', index_col=0)
 _AntoineExtended_values = AntoineExtended.values
 
-def Antoine(T, A, B, C, Base=10.0):
-    '''Base 10 assumed; Coefficients type Pascal assumed; Coefficients type Kelvin or Celcius assumed.
-    Alter Base to be the desired numerical base.
 
-    >>> Antoine(100.0, 8.7687, 395.744, -6.469) # methane
+def Antoine(T, A, B, C, base=10.0):
+    r'''Calculates vapor pressure of a chemical using the Antoine equation.
+    Parameters `A`, `B`, and `C` are chemical-dependent. Parameters can be 
+    found in numerous sources; however units of the coefficients used vary.
+    Originally proposed by Antoine (1888) [2]_.
+
+    .. math::
+        \log_{\text{base}} P^{\text{sat}} = A - \frac{B}{T+C}
+
+    Parameters
+    ----------
+    T : float
+        Temperature of fluid, [K]
+    A, B, C : floats
+        Regressed coefficients for Antoine equation for a chemical
+
+    Returns
+    -------
+    Psat : float
+        Vapor pressure calculated with coefficients [Pa]
+    
+    Other Parameters
+    ----------------
+    Base : float
+        Optional base of logarithm; 10 by default
+
+    Notes
+    -----
+    Assumes coefficients are for calculating vapor pressure in Pascal. 
+    Coefficients should be consistent with input temperatures in Kelvin;
+    however, if both the given temperature and units are specific to degrees
+    Celcius, the result will still be correct.
+    
+    **Converting units in input coefficients:**
+    
+        * **ln to log10**: Divide A and B by ln(10)=2.302585 to change  
+          parameters for a ln equation to a log10 equation.
+        * **log10 to ln**: Multiply A and B by ln(10)=2.302585 to change 
+          parameters for a log equation to a ln equation.
+        * **mmHg to Pa**: Add log10(101325/760)= 2.1249 to A.
+        * **kPa to Pa**: Add log_{base}(1000)= 6.908 to A for log(base)
+        * **°C to K**: Subtract 273.15 from C only!
+
+    Examples
+    --------
+    Methane, coefficients from [1]_, at 100 K:
+    
+    >>> Antoine(100.0, 8.7687, 395.744, -6.469)
     34478.367349639906
-    >>> Antoine(180.0, 8.95894, 510.595, -15.95) # CF4
+    
+    Tetrafluoromethane, coefficients from [1]_, at 180 K
+    
+    >>> Antoine(180, A=8.95894, B=510.595, C=-15.95)
     702271.0518579542
+    
+    Oxygen at 94.91 K, with coefficients from [3]_ in units of °C, mmHg, log10,
+    showing the conversion of coefficients A (mmHg to Pa) and C (°C to K)
+    
+    >>> Antoine(94.91, 6.83706+2.1249, 339.2095, 268.70-273.15)
+    162978.88655572367
+
+    References
+    ----------
+    .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
+       New York: McGraw-Hill Professional, 2000.
+    .. [2] Antoine, C. 1888. Tensions des Vapeurs: Nouvelle Relation Entre les 
+       Tensions et les Tempé. Compt.Rend. 107:681-684.
+    .. [3] Yaws, Carl L. The Yaws Handbook of Vapor Pressure: Antoine 
+       Coefficients. 1 edition. Houston, Tex: Gulf Publishing Company, 2007.
     '''
-    _Psat = Base**(A-B/(T+C))
-    return _Psat
+    return base**(A-B/(T+C))
+
+
+def TRC_Antoine_extended(T, Tc, to, A, B, C, n, E, F):
+    r'''Calculates vapor pressure of a chemical using the TRC Extended Antoine
+    equation. Parameters are chemical dependent, and said to be from the 
+    Thermodynamics Research Center (TRC) at Texas A&M. Coefficients for various
+    chemicals can be found in [1]_.
+
+    .. math::
+        \log_{10} P^{sat} = A - \frac{B}{T + C} + 0.43429x^n + Ex^8 + Fx^{12}
+        
+        x = \max \left(\frac{T-t_o-273.15}{T_c}, 0 \right)
+
+    Parameters
+    ----------
+    T : float
+        Temperature of fluid, [K]
+    A, B, C, n, E, F : floats
+        Regressed coefficients for the Antoine Extended (TRC) equation,
+        specific for each chemical, [-]
+
+    Returns
+    -------
+    Psat : float
+        Vapor pressure calculated with coefficients [Pa]
+    
+    Notes
+    -----
+    Assumes coefficients are for calculating vapor pressure in Pascal. 
+    Coefficients should be consistent with input temperatures in Kelvin;
+
+    Examples
+    --------
+    Tetrafluoromethane, coefficients from [1]_, at 180 K:
+    
+    >>> TRC_Antoine_extended(180.0, 227.51, -120., 8.95894, 510.595, -15.95, 
+    ... 2.41377, -93.74, 7425.9) 
+    706317.0898414153
+
+    References
+    ----------
+    .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
+       New York: McGraw-Hill Professional, 2000.
+    '''
+    x = max((T - to - 273.15)/Tc, 0)
+    return 10**(A - B/(T+C) + 0.43429*x**n + E*x**8 + F*x**12)
 
 
 def Wagner_original(T, Tc, Pc, a, b, c, d):
-    r'''Calculates vapor pressure using the original Wagner equation 3,6 form.
+    r'''Calculates vapor pressure using the Wagner equation (3, 6 form).
 
-    Parameters are specific to a chemical, and form of Wagner equation.
+    Requires critical temperature and pressure as well as four coefficients
+    specific to each chemical.
 
     .. math::
-        \ln P^{sat}= \ln P_c + \frac{a\tau + b \tau^{1.5} + c\tau^3 + d\tau^6} {T_r}
+        \ln P^{sat}= \ln P_c + \frac{a\tau + b \tau^{1.5} + c\tau^3 + d\tau^6}
+        {T_r}
+        
+        \tau = 1 - \frac{T}{T_c}
 
     Parameters
     ----------
@@ -85,12 +196,12 @@ def Wagner_original(T, Tc, Pc, a, b, c, d):
     Pc : float
         Critical pressure, [Pa]
     a, b, c, d : floats
-        Parameters for wagner equation. Specific to a chemical.
+        Parameters for wagner equation. Specific to each chemical. [-]
 
     Returns
     -------
-    Psat: float
-        Vapor pressure [Pa]
+    Psat : float
+        Vapor pressure at T [Pa]
 
     Notes
     -----
@@ -98,24 +209,38 @@ def Wagner_original(T, Tc, Pc, a, b, c, d):
 
     Examples
     --------
-    >>> Wagner_original(100.0, 190.53, 4596420., -6.00435, 1.1885, -0.834082, -1.22833) # CH4
+    Methane, coefficients from [2]_, at 100 K.
+
+    >>> Wagner_original(100.0, 190.53, 4596420., a=-6.00435, b=1.1885, 
+    ... c=-0.834082, d=-1.22833)
     34520.44601450496
+
+    References
+    ----------
+    .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
+       New York: McGraw-Hill Professional, 2000.
+    .. [2] McGarry, Jack. "Correlation and Prediction of the Vapor Pressures of
+       Pure Liquids over Large Pressure Ranges." Industrial & Engineering
+       Chemistry Process Design and Development 22, no. 2 (April 1, 1983):
+       313-22. doi:10.1021/i200021a023.
     '''
     Tr = T/Tc
-    tau = 1.0-Tr
-    Psat = Pc*exp((a*tau + b*tau**1.5 + c*tau**3 + d*tau**6)/Tr)
-    return Psat
+    tau = 1.0 - Tr
+    return Pc*exp((a*tau + b*tau**1.5 + c*tau**3 + d*tau**6)/Tr)
 
 
 def Wagner(T, Tc, Pc, a, b, c, d):
-    r'''Calculates vapor pressure using the Wagner equation 2.5, 5 form.
+    r'''Calculates vapor pressure using the Wagner equation (2.5, 5 form).
 
-    Parameters are specific to a chemical, and form of Wagner equation.
+    Requires critical temperature and pressure as well as four coefficients
+    specific to each chemical.
 
     .. math::
         \ln P^{sat}= \ln P_c + \frac{a\tau + b \tau^{1.5} + c\tau^{2.5}
         + d\tau^5} {T_r}
 
+        \tau = 1 - \frac{T}{T_c}
+
     Parameters
     ----------
     T : float
@@ -125,14 +250,12 @@ def Wagner(T, Tc, Pc, a, b, c, d):
     Pc : float
         Critical pressure, [Pa]
     a, b, c, d : floats
-        Parameters for wagner equation. Specific to a chemical.
-    Trange : array_like
-        Two temperatures, Tmin and Tmax, in which equation is appropriate.
+        Parameters for wagner equation. Specific to each chemical. [-]
 
     Returns
     -------
-    Psat: float
-        Vapor pressure [Pa]
+    Psat : float
+        Vapor pressure at T [Pa]
 
     Notes
     -----
@@ -140,7 +263,9 @@ def Wagner(T, Tc, Pc, a, b, c, d):
 
     Examples
     --------
-    >>> Wagner(100., 190.551, 4599200, -6.02242, 1.26652, -0.5707, -1.366) # CH4
+    Methane, coefficients from [2]_, at 100 K.
+
+    >>> Wagner(100., 190.551, 4599200, -6.02242, 1.26652, -0.5707, -1.366)
     34415.00476263708
 
     References
@@ -148,21 +273,12 @@ def Wagner(T, Tc, Pc, a, b, c, d):
     .. [1] Wagner, W. "New Vapour Pressure Measurements for Argon and Nitrogen and
        a New Method for Establishing Rational Vapour Pressure Equations."
        Cryogenics 13, no. 8 (August 1973): 470-82. doi:10.1016/0011-2275(73)90003-9
+    .. [2] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
+       New York: McGraw-Hill Professional, 2000.
     '''
     Tr = T/Tc
-    tau = 1-T/Tc
+    tau = 1.0 - T/Tc
     return Pc*exp((a*tau + b*tau**1.5 + c*tau**2.5 + d*tau**5)/Tr)
-
-
-def TRC_Antoine_extended(T, Tc, to, A, B, C, n, E, F):
-    '''
-    >>> TRC_Antoine_extended(180.0, 227.51, -120., 8.95894, 510.595, -15.95, 2.41377, -93.74, 7425.9) # CF4
-    706317.0898414153
-    '''
-    x = (T - to - 273.15)/Tc
-    x = max(0, x)
-    _Psat = 10**(A - B/(T+C) + 0.43429*x**n + E*x**8 + F*x**12)
-    return _Psat
 
 
 WAGNER_MCGARRY = 'WAGNER_MCGARRY'
@@ -189,7 +305,7 @@ class VaporPressure(TDependentProperty):
     '''Class for dealing with vapor pressure as a function of temperature.
     Consists of four coefficient-based methods and four data sources, one
     source of tabular information, four corresponding-states estimators,
-    and the external library CoolProp.
+    any provided equation of state, and the external library CoolProp.
 
     Parameters
     ----------
@@ -242,7 +358,8 @@ class VaporPressure(TDependentProperty):
         Tabular data in [4]_ along the saturation curve; interpolation is as
         set by the user or the default.
     **EOS**:
-        Equation of state provided by user.
+        Equation of state provided by user; must implement 
+        :obj:`thermo.eos.GCEOS.Psat`
 
     See Also
     --------
@@ -431,7 +548,7 @@ class VaporPressure(TDependentProperty):
             Psat = TRC_Antoine_extended(T, Tc, to, A, B, C, n, E, F)
         elif method == ANTOINE_POLING:
             A, B, C = self.ANTOINE_POLING_coefs
-            Psat = Antoine(T, A, B, C, Base=10.0)
+            Psat = Antoine(T, A, B, C, base=10.0)
         elif method == COOLPROP:
             Psat = PropsSI('P','T', T,'Q',0, self.CASRN)
         elif method == BOILING_CRITICAL:
@@ -505,7 +622,7 @@ class VaporPressure(TDependentProperty):
 
 def boiling_critical_relation(T, Tb, Tc, Pc):
     r'''Calculates vapor pressure of a fluid at arbitrary temperatures using a
-    CSP relationship as in  [1]_; requires a chemical's critical temperature
+    CSP relationship as in [1]_; requires a chemical's critical temperature
     and pressure as well as boiling point.
 
     The vapor pressure is given by:
@@ -529,7 +646,7 @@ def boiling_critical_relation(T, Tb, Tc, Pc):
     Returns
     -------
     Psat : float
-        Vapor pressure, [Pa]
+        Vapor pressure at T [Pa]
 
     Notes
     -----
@@ -551,8 +668,7 @@ def boiling_critical_relation(T, Tb, Tc, Pc):
     Tbr = Tb/Tc
     Tr = T/Tc
     h = Tbr*log(Pc/101325.)/(1 - Tbr)
-    P = exp(h*(1-1/Tr))*Pc
-    return P
+    return exp(h*(1-1/Tr))*Pc
 
 
 def Lee_Kesler(T, Tc, Pc, omega):
@@ -583,16 +699,17 @@ def Lee_Kesler(T, Tc, Pc, omega):
     Returns
     -------
     Psat : float
-        Vapor pressure, [Pa]
+        Vapor pressure at T [Pa]
 
     Notes
     -----
-    This equation appears in [1]_ in expanded form. It has been verified.
-    The reduced pressure form of the equation ensures
+    This equation appears in [1]_ in expanded form.
+    The reduced pressure form of the equation ensures predicted vapor pressure 
+    cannot surpass the critical pressure.
 
     Examples
     --------
-    Example as in [2]_; Tr rounding source of tiny deviation
+    Example from [2]_; ethylbenzene at 347.2 K.
 
     >>> Lee_Kesler(347.2, 617.1, 36E5, 0.299)
     13078.694162949312
@@ -608,8 +725,7 @@ def Lee_Kesler(T, Tc, Pc, omega):
     Tr = T/Tc
     f0 = 5.92714 - 6.09648/Tr - 1.28862*log(Tr) + 0.169347*Tr**6
     f1 = 15.2518 - 15.6875/Tr - 13.4721*log(Tr) + 0.43577*Tr**6
-    P = exp(f0 + omega*f1)*Pc
-    return P
+    return exp(f0 + omega*f1)*Pc
 
 
 def Ambrose_Walton(T, Tc, Pc, omega):
@@ -622,8 +738,6 @@ def Ambrose_Walton(T, Tc, Pc, omega):
     .. math::
         \ln P_r=f^{(0)}+\omega f^{(1)}+\omega^2f^{(2)}
 
-        \tau = 1-T_{r}
-
         f^{(0)}=\frac{-5.97616\tau + 1.29874\tau^{1.5}- 0.60394\tau^{2.5}
         -1.06841\tau^5}{T_r}
 
@@ -632,6 +746,8 @@ def Ambrose_Walton(T, Tc, Pc, omega):
 
         f^{(2)}=\frac{-0.64771\tau + 2.41539\tau^{1.5}- 4.26979\tau^{2.5}
         +3.25259\tau^5}{T_r}
+
+        \tau = 1-T_{r}
 
     Parameters
     ----------
@@ -647,41 +763,42 @@ def Ambrose_Walton(T, Tc, Pc, omega):
     Returns
     -------
     Psat : float
-        Vapor pressure, [Pa]
+        Vapor pressure at T [Pa]
 
     Notes
     -----
-
+    Somewhat more accurate than the :obj:`Lee_Kesler` formulation.
 
     Examples
     --------
-    >>> Ambrose_Walton(347.2, 617.1, 36E5, 0.299)
-    13558.913459865389
+    Example from [2]_; ethylbenzene at 347.25 K.
+
+    >>> Ambrose_Walton(347.25, 617.15, 36.09E5, 0.304)
+    13278.878504306222
 
     References
     ----------
     .. [1] Ambrose, D., and J. Walton. "Vapour Pressures up to Their Critical
        Temperatures of Normal Alkanes and 1-Alkanols." Pure and Applied
        Chemistry 61, no. 8 (1989): 1395-1403. doi:10.1351/pac198961081395.
-    .. [2] Reid, Robert C..; Prausnitz, John M.; Poling, Bruce E.
-       The Properties of Gases and Liquids. McGraw-Hill Companies, 1987.
+    .. [2] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
+       New York: McGraw-Hill Professional, 2000.
     '''
     Tr = T/Tc
     tau = 1 - T/Tc
     f0 = (-5.97616*tau + 1.29874*tau**1.5 - 0.60394*tau**2.5 - 1.06841*tau**5)/Tr
     f1 = (-5.03365*tau + 1.11505*tau**1.5 - 5.41217*tau**2.5 - 7.46628*tau**5)/Tr
     f2 = (-0.64771*tau + 2.41539*tau**1.5 - 4.26979*tau**2.5 + 3.25259*tau**5)/Tr
-    Psat = Pc*exp(f0 + omega*f1 + omega**2*f2)
-    return Psat
+    return Pc*exp(f0 + omega*f1 + omega**2*f2)
 
 
 def Sanjari(T, Tc, Pc, omega):
     r'''Calculates vapor pressure of a fluid at arbitrary temperatures using a
     CSP relationship by [1]_. Requires a chemical's critical temperature,
     pressure, and acentric factor. Although developed for refrigerants,
-    should have some generality.
+    this model should have some general predictive ability.
 
-    The vapor pressure is given by:
+    The vapor pressure of a chemical at `T` is given by:
 
     .. math::
         P^{sat} = P_c\exp(f^{(0)} + \omega f^{(1)} + \omega^2 f^{(2)})
@@ -710,7 +827,7 @@ def Sanjari(T, Tc, Pc, omega):
 
     Notes
     -----
-    a 1-12 are as follows:
+    a[1-12] are as follows:
     6.83377, -5.76051, 0.90654, -1.16906,
     5.32034, -28.1460, -58.0352, 23.57466,
     18.19967, 16.33839, 65.6995, -35.9739.
@@ -741,5 +858,4 @@ def Sanjari(T, Tc, Pc, omega):
     f0 = 6.83377 + -5.76051/Tr + 0.90654*log(Tr) + -1.16906*Tr**1.9
     f1 = 5.32034 + -28.1460/Tr + -58.0352*log(Tr) + 23.57466*Tr**1.9
     f2 = 18.19967 + 16.33839/Tr + 65.6995*log(Tr) + -35.9739*Tr**1.9
-    P = Pc*exp(f0 + omega*f1 + omega**2*f2)
-    return P
+    return Pc*exp(f0 + omega*f1 + omega**2*f2)

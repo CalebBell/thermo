@@ -27,11 +27,46 @@ import pandas as pd
 from thermo.vapor_pressure import *
 from thermo.identifiers import checkCAS
 
+### Regression equations
+
+def test_Wagner_original():
+    # Methane, coefficients from [2]_, at 100 K
+    Psat = Wagner_original(100.0, 190.53, 4596420., -6.00435, 1.1885, -0.834082, -1.22833)
+    assert_allclose(Psat, 34520.44601450496)
+
+
 def test_Wagner():
-    P = Wagner_original(100.0, 190.53, 4596420., -6.00435, 1.1885, -0.834082, -1.22833)
-    assert_allclose(P, 34520.44601450496)
+    # Methane, coefficients from [2]_, at 100 K.
+    Psat = Wagner(100., 190.551, 4599200, -6.02242, 1.26652, -0.5707, -1.366)
+    assert_allclose(Psat, 34415.00476263708)
 
 
+def test_TRC_Antoine_extended():
+    # Tetrafluoromethane, coefficients from [1]_, at 180 K:
+    Psat = TRC_Antoine_extended(180.0, 227.51, -120., 8.95894, 510.595, -15.95, 2.41377, -93.74, 7425.9)
+    assert_allclose(Psat, 706317.0898414153)
+
+    # Test x is restricted to 0
+    Psat = TRC_Antoine_extended(120.0, 227.51, -120., 8.95894, 510.595, -15.95, 2.41377, -93.74, 7425.9)
+    assert_allclose(Psat, 11265.018958511126)
+
+
+def test_Antoine():
+    # Methane, coefficients from [1]_, at 100 K:
+    Psat = Antoine(100.0, 8.7687, 395.744, -6.469)
+    assert_allclose(Psat, 34478.367349639906)
+    
+    # Tetrafluoromethane, coefficients from [1]_, at 180 K
+    Psat = Antoine(180, A=8.95894, B=510.595, C=-15.95)
+    assert_allclose(Psat, 702271.0518579542)
+    
+    # Oxygen at 94.91 K, with coefficients from [3]_ in units of °C, mmHg, log10,
+    # showing the conversion of coefficients A (mmHg to Pa) and C (°C to K)
+    Psat = Antoine(94.91, 6.83706+2.1249, 339.2095, 268.70-273.15)
+    assert_allclose(Psat, 162978.88655572367)
+
+
+### Data integrity
 def test_WagnerMcGarry():
     sums_calc = [WagnerMcGarry[i].abs().sum() for i in ['A', 'B', 'C', 'D', 'Pc', 'Tc', 'Tmin']]
     sums = [1889.3027499999998, 509.57053652899992, 1098.2766456999998, 1258.0866876, 1005210819, 129293.19100000001, 68482]
@@ -70,18 +105,29 @@ def test_AntoineExtended():
     assert AntoineExtended.index.is_unique
     assert AntoineExtended.shape == (97, 11)
     assert all([checkCAS(i) for i in AntoineExtended.index])
+    
 
-
-def test_CSP():
+### CSP relationships
+def test_boiling_critical_relation():
     P = boiling_critical_relation(347.2, 409.3, 617.1, 36E5)
     assert_allclose(P, 15209.467273093938)
 
+
+def test_Lee_Kesler():
+    # Example from [2]_; ethylbenzene at 347.2 K.
+    # Their result is 0.132 bar.
     P = Lee_Kesler(347.2, 617.1, 36E5, 0.299)
     assert_allclose(P, 13078.694162949312)
 
-    Psat = Ambrose_Walton(347.2, 617.1, 36E5, 0.299)
-    assert_allclose(Psat, 13558.913459865389)
 
+def test_Ambrose_Walton():
+    # Example from [2]_; ethylbenzene at 347.25 K.
+    # Their result is 0.1329 bar.
+    Psat = Ambrose_Walton(347.25, 617.15, 36.09E5, 0.304)
+    assert_allclose(Psat, 13278.878504306222)
+
+
+def test_Sanjari():
     P = Sanjari(347.2, 617.1, 36E5, 0.299)
     assert_allclose(P, 13651.916109552498)
 
@@ -102,6 +148,7 @@ def test_CSP():
     assert_allclose(AARD_calc, 0.00841629399152493)
 
 
+### Main predictor
 @pytest.mark.meta_T_dept
 def test_VaporPressure():
     # Ethanol, test as many methods asa possible at once

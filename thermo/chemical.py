@@ -364,9 +364,10 @@ class Chemical(object): # pragma: no cover
         self.HeatCapacityLiquid = HeatCapacityLiquid(CASRN=self.CAS, MW=self.MW, similarity_variable=self.similarity_variable, Tc=self.Tc, omega=self.omega, Cpgm=self.HeatCapacityGas.T_dependent_property)
 
         self.EnthalpyVaporization = EnthalpyVaporization(CASRN=self.CAS, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, omega=self.omega, similarity_variable=self.similarity_variable)
-        self.HvapTbm = self.EnthalpyVaporization.T_dependent_property(self.Tb) if self.Tb else None
-        self.HvapTb = property_molar_to_mass(self.HvapTbm, self.MW)
-
+        self.Hvap_Tbm = self.EnthalpyVaporization.T_dependent_property(self.Tb) if self.Tb else None
+        self.Hvap_Tb = property_molar_to_mass(self.Hvap_Tbm, self.MW)
+        
+        
         self.Hsub_methods = Hsub(MW=self.MW, AvailableMethods=True, CASRN=self.CAS)
         self.Hsub_method = self.Hsub_methods[0]
 
@@ -384,7 +385,7 @@ class Chemical(object): # pragma: no cover
 
         self.Permittivity = Permittivity(CASRN=self.CAS)
 
-        self.solubility_parameter_methods = solubility_parameter(Hvapm=self.HvapTbm, Vml=self.Vml_STP, AvailableMethods=True, CASRN=self.CAS)
+        self.solubility_parameter_methods = solubility_parameter(Hvapm=self.Hvap_Tbm, Vml=self.Vml_STP, AvailableMethods=True, CASRN=self.CAS)
         self.solubility_parameter_method = self.solubility_parameter_methods[0]
 
         self.phase_STP = identify_phase(T=298.15, P=101325., Tm=self.Tm, Tb=self.Tb, Tc=self.Tc, Psat=self.Psat_298)
@@ -522,6 +523,7 @@ class Chemical(object): # pragma: no cover
         
         # Integrals stored to avoid recalculation, all from T_low to T_high
         try:
+            # Enthalpy integrals
             if self.phase_ref != 'l' and self.Tm and self.Tb:
                 self.H_int_l_Tm_to_Tb = integrators['l'](self.Tm, self.Tb)
             if self.phase_ref == 's' and self.Tm:
@@ -532,13 +534,14 @@ class Chemical(object): # pragma: no cover
                 self.H_int_l_T_ref_l_to_Tb = integrators['l'](self.T_ref, self.Tb)
                 self.H_int_l_Tm_to_T_ref_l = integrators['l'](self.Tm, self.T_ref)
     
+            # Entropy integrals
             if self.phase_ref != 'l' and self.Tm and self.Tb:
                 self.S_int_l_Tm_to_Tb = integrators_T['l'](self.Tm, self.Tb)
             if self.phase_ref == 's' and self.Tm:
                 self.S_int_T_ref_s_to_Tm = integrators_T['s'](self.T_ref, self.Tm)
             if self.phase_ref == 'g' and self.Tb:
                 self.S_int_Tb_to_T_ref_g = integrators_T['g'](self.Tb, self.T_ref)
-            if self.phase_ref == 'l' and self.Tb and self.Tm:
+            if self.phase_ref == 'l' and self.Tm and self.Tb:
                 self.S_int_l_T_ref_l_to_Tb = integrators_T['l'](self.T_ref, self.Tb)
                 self.S_int_l_Tm_to_T_ref_l = integrators_T['l'](self.Tm, self.T_ref)
         except:
@@ -550,23 +553,31 @@ class Chemical(object): # pragma: no cover
            'l': self.HeatCapacityLiquid.T_dependent_property_integral,
            'g': self.HeatCapacityGas.T_dependent_property_integral}
         try:
+            H = self.H_ref
             if self.phase == self.phase_ref:
-                H = self.H_ref + integrators[self.phase](self.T_ref, T)
+                H += integrators[self.phase](self.T_ref, T)
+                
             elif self.phase_ref == 's' and self.phase == 'l':
-                H = self.H_ref + self.H_int_T_ref_s_to_Tm + self.Hfus + integrators['l'](self.Tm, T)
+                H += self.H_int_T_ref_s_to_Tm + self.Hfusm + integrators['l'](self.Tm, T)
+                
             elif self.phase_ref == 'l' and self.phase == 's':
-                H = self.H_ref - self.H_int_l_Tm_to_T_ref_l - self.Hfus + integrators['s'](self.Tm, T)
+                H += -self.H_int_l_Tm_to_T_ref_l - self.Hfusm + integrators['s'](self.Tm, T)
+                
             elif self.phase_ref == 'l' and self.phase == 'g':
-                H = self.H_ref + self.H_int_l_T_ref_l_to_Tb + self.Hvap_Tb + integrators['g'](self.Tb, T)
+                H += self.H_int_l_T_ref_l_to_Tb + self.Hvap_Tbm + integrators['g'](self.Tb, T)
+                
             elif self.phase_ref == 'g' and self.phase == 'l':
-                H = self.H_ref - self.H_int_Tb_to_T_ref_g - self.Hvap + integrators['l'](self.Tb, T)
+                H += -self.H_int_Tb_to_T_ref_g - self.Hvap_Tbm + integrators['l'](self.Tb, T)
+                
             elif self.phase_ref == 's' and self.phase == 'g':
-                H = self.H_ref + self.H_int_T_ref_s_to_Tm + self.Hfus + self.H_int_l_Tm_to_Tb + self.Hvap_Tb + integrators['g'](self.Tb, T)
+                H += self.H_int_T_ref_s_to_Tm + self.Hfusm + self.H_int_l_Tm_to_Tb + self.Hvap_Tbm + integrators['g'](self.Tb, T)
+                
             elif self.phase_ref == 'g' and self.phase == 's':
-                H = self.H_ref - self.H_int_Tb_to_T_ref_g - self.Hvap_Tb - self.H_int_l_Tm_to_Tb - self.Hfus + integrators['s'](self.Tm, T)
+                H += -self.H_int_Tb_to_T_ref_g - self.Hvap_Tbm - self.H_int_l_Tm_to_Tb - self.Hfusm + integrators['s'](self.Tm, T)
             else:
                 raise Exception('Unknown error')
         except:
+            print('failed')
             return None
         return H
 
@@ -578,20 +589,27 @@ class Chemical(object): # pragma: no cover
            'g': self.HeatCapacityGas.T_dependent_property_integral_over_T}
 
         try:
+            S = self.S_ref
             if self.phase == self.phase_ref:
-                S = self.S_ref + integrators_T[self.phase](self.T_ref, T)
+                S += integrators_T[self.phase](self.T_ref, T)
+                
             elif self.phase_ref == 's' and self.phase == 'l':
-                S = self.S_ref + self.H_int_T_ref_s_to_Tm + self.Hfus/self.Tm + integrators_T['l'](self.Tm, T)
+                S += self.H_int_T_ref_s_to_Tm + self.Hfusm/self.Tm + integrators_T['l'](self.Tm, T)
+                
             elif self.phase_ref == 'l' and self.phase == 's':
-                S = self.S_ref - self.H_int_l_Tm_to_T_ref_l - self.Hfus/self.Tm + integrators_T['s'](self.Tm, T)
+                S += - self.H_int_l_Tm_to_T_ref_l - self.Hfusm/self.Tm + integrators_T['s'](self.Tm, T)
+                
             elif self.phase_ref == 'l' and self.phase == 'g':
-                S = self.S_ref + self.H_int_l_T_ref_l_to_Tb + self.Hvap_Tb/self.Tb + integrators_T['g'](self.Tb, T)
+                S += self.H_int_l_T_ref_l_to_Tb + self.Hvap_Tbm/self.Tb + integrators_T['g'](self.Tb, T)
+                
             elif self.phase_ref == 'g' and self.phase == 'l':
-                S = self.S_ref - self.H_int_Tb_to_T_ref_g - self.Hvap/self.Tb + integrators_T['l'](self.Tb, T)
+                S += - self.H_int_Tb_to_T_ref_g - self.Hvapm/self.Tb + integrators_T['l'](self.Tb, T)
+                
             elif self.phase_ref == 's' and self.phase == 'g':
-                S = self.S_ref + self.H_int_T_ref_s_to_Tm + self.Hfus/self.Tm + self.H_int_l_Tm_to_Tb + self.Hvap_Tb/self.Tb + integrators_T['g'](self.Tb, T)
+                S += self.H_int_T_ref_s_to_Tm + self.Hfusm/self.Tm + self.H_int_l_Tm_to_Tb + self.Hvap_Tbm/self.Tb + integrators_T['g'](self.Tb, T)
+                
             elif self.phase_ref == 'g' and self.phase == 's':
-                S = self.S_ref - self.H_int_Tb_to_T_ref_g - self.Hvap_Tb/self.Tb - self.H_int_l_Tm_to_Tb - self.Hfus/self.Tm + integrators_T['s'](self.Tm, T)
+                S += - self.H_int_Tb_to_T_ref_g - self.Hvap_Tbm/self.Tb - self.H_int_l_Tm_to_Tb - self.Hfusm/self.Tm + integrators_T['s'](self.Tm, T)
             else:
                 raise Exception('Unknown error')
         except:
