@@ -58,6 +58,7 @@ from thermo.coolprop import has_CoolProp
 from thermo.eos import *
 
 from fluids.core import *
+from scipy.optimize import newton
 
 # RDKIT
 try:
@@ -546,6 +547,44 @@ class Chemical(object): # pragma: no cover
                 self.S_int_l_Tm_to_T_ref_l = integrators_T['l'](self.Tm, self.T_ref)
         except:
             pass
+        
+        # Excess properties stored
+        try:
+            if self.phase_ref == 'g':
+                self.eos_phase_ref = self.eos.to_TP(self.T_ref, self.P_ref)
+                self.H_dep_ref_g = self.eos_phase_ref.H_dep_g
+                self.S_dep_ref_g = self.eos_phase_ref.S_dep_g
+                
+                
+            elif self.phase_ref == 'l':
+                self.eos_phase_ref = self.eos.to_TP(self.T_ref, self.P_ref)
+                self.H_dep_ref_l = self.eos_phase_ref.H_dep_l
+                self.S_dep_ref_l = self.eos_phase_ref.S_dep_l
+                
+                self.H_dep_T_ref_Pb = self.eos.to_TP(self.T_ref, 101325).H_dep_l
+                self.S_dep_T_ref_Pb = self.eos.to_TP(self.T_ref, 101325).S_dep_l
+            
+            if self.Tb:
+                self.eos_Tb = self.eos.to_TP(self.Tb, 101325)
+                self.H_dep_Tb_Pb_g = self.eos_Tb.H_dep_g
+                self.H_dep_Tb_Pb_l = self.eos_Tb.H_dep_l
+                
+                self.H_dep_Tb_P_ref_g = self.eos.to_TP(self.Tb, self.P_ref).H_dep_g
+                self.S_dep_Tb_P_ref_g = self.eos.to_TP(self.Tb, self.P_ref).S_dep_g
+
+                
+                self.S_dep_Tb_Pb_g = self.eos_Tb.S_dep_g
+                self.S_dep_Tb_Pb_l = self.eos_Tb.S_dep_l
+                
+#            if self.Tt and self.Pt:
+#                self.eos_Tt = self.eos.to_TP(self.Tt, self.Pt)
+#                self.H_dep_Tt_g = self.eos_Tt.H_dep_g
+##                self.H_dep_Tt_l = self.eos_Tt.H_dep_l
+#                
+#                self.S_dep_Tt_g = self.eos_Tt.S_dep_g
+##                self.S_dep_Tt_l = self.eos_Tt.S_dep_l
+        except:
+            pass
 
     def calc_H(self, T, P):
 
@@ -577,9 +616,65 @@ class Chemical(object): # pragma: no cover
             else:
                 raise Exception('Unknown error')
         except:
-            print('failed')
             return None
         return H
+
+    def calc_H_excess(self, T, P):
+        H_dep = 0
+        if self.phase_ref == 'g' and self.phase == 'g':
+            H_dep += self.eos.to_TP(T, P).H_dep_g - self.H_dep_ref_g
+            
+        elif self.phase_ref == 'l' and self.phase == 'l':
+            try:
+                H_dep += self.eos.to_TP(T, P).H_dep_l - self.eos.to_TP(T, 101325).H_dep_l
+            except:
+                H_dep += 0
+            
+        elif self.phase_ref == 'g' and self.phase == 'l':
+            H_dep += self.H_dep_Tb_Pb_g - self.H_dep_Tb_P_ref_g
+            H_dep += (self.eos.to_TP(T, P).H_dep_l - self.eos.to_TP(T, 101325).H_dep_l)
+            
+        elif self.phase_ref == 'l' and self.phase == 'g':
+            H_dep += self.H_dep_T_ref_Pb - self.H_dep_ref_l
+            H_dep += (self.eos.to_TP(T, P).H_dep_g - self.H_dep_Tb_Pb_g)
+        return H_dep
+
+    def calc_S_excess(self, T, P):
+        S_dep = 0
+        if self.phase_ref == 'g' and self.phase == 'g':
+            S_dep += self.eos.to_TP(T, P).S_dep_g - self.S_dep_ref_g
+            
+        elif self.phase_ref == 'l' and self.phase == 'l':
+            try:
+                S_dep += self.eos.to_TP(T, P).S_dep_l - self.eos.to_TP(T, 101325).S_dep_l
+            except:
+                S_dep += 0
+            
+        elif self.phase_ref == 'g' and self.phase == 'l':
+            S_dep += self.S_dep_Tb_Pb_g - self.S_dep_Tb_P_ref_g
+            S_dep += (self.eos.to_TP(T, P).S_dep_l - self.eos.to_TP(T, 101325).S_dep_l)
+            
+        elif self.phase_ref == 'l' and self.phase == 'g':
+            S_dep += self.S_dep_T_ref_Pb - self.S_dep_ref_l
+            S_dep += (self.eos.to_TP(T, P).S_dep_g - self.S_dep_Tb_Pb_g)
+        return S_dep
+
+#    def calc_S_excess(self, T, P):
+#        S_dep = 0
+#        if self.phase_ref == 'g' and self.phase == 'g':
+#            S_dep += self.eos.to_TP(T, P).S_dep_g - self.S_dep_ref_g
+#            
+#        elif self.phase_ref == 'l' and self.phase == 'l':
+#            S_dep += 0 # self.eos.to_TP(T, P).S_dep_l - self.S_dep_ref_l
+#            
+#        elif self.phase_ref == 'g' and self.phase == 'l':
+#            S_dep += (self.S_dep_Tb_Pb_g - self.S_dep_ref_g) 
+#            S_dep += 0 # (self.eos.to_TP(T, P).S_dep_l - self.S_dep_Tb_l)
+#            
+#        elif self.phase_ref == 'l' and self.phase == 'g':
+#            S_dep += 0 #(self.S_dep_Tb_l - self.S_dep_ref_l)
+#            S_dep += (self.eos.to_TP(T, P).S_dep_g) # - self.S_dep_Tb_g
+#        return S_dep
 
 
     def calc_S(self, T, P):
@@ -592,35 +687,62 @@ class Chemical(object): # pragma: no cover
             S = self.S_ref
             if self.phase == self.phase_ref:
                 S += integrators_T[self.phase](self.T_ref, T)
+                if self.phase in ['l', 'g']:
+                    S += -R*log(P/self.P_ref) 
                 
             elif self.phase_ref == 's' and self.phase == 'l':
-                S += self.H_int_T_ref_s_to_Tm + self.Hfusm/self.Tm + integrators_T['l'](self.Tm, T)
+                S += self.S_int_T_ref_s_to_Tm + self.Hfusm/self.Tm + integrators_T['l'](self.Tm, T)
                 
             elif self.phase_ref == 'l' and self.phase == 's':
-                S += - self.H_int_l_Tm_to_T_ref_l - self.Hfusm/self.Tm + integrators_T['s'](self.Tm, T)
+                S += - self.S_int_l_Tm_to_T_ref_l - self.Hfusm/self.Tm + integrators_T['s'](self.Tm, T)
                 
             elif self.phase_ref == 'l' and self.phase == 'g':
-                S += self.H_int_l_T_ref_l_to_Tb + self.Hvap_Tbm/self.Tb + integrators_T['g'](self.Tb, T)
+                S += self.S_int_l_T_ref_l_to_Tb + self.Hvap_Tbm/self.Tb + integrators_T['g'](self.Tb, T) -R*log(P/self.P_ref) # TODO add to other states
                 
             elif self.phase_ref == 'g' and self.phase == 'l':
-                S += - self.H_int_Tb_to_T_ref_g - self.Hvapm/self.Tb + integrators_T['l'](self.Tb, T)
+                S += - self.S_int_Tb_to_T_ref_g - self.Hvapm/self.Tb + integrators_T['l'](self.Tb, T)
                 
             elif self.phase_ref == 's' and self.phase == 'g':
-                S += self.H_int_T_ref_s_to_Tm + self.Hfusm/self.Tm + self.H_int_l_Tm_to_Tb + self.Hvap_Tbm/self.Tb + integrators_T['g'](self.Tb, T)
+                S += self.S_int_T_ref_s_to_Tm + self.Hfusm/self.Tm + self.S_int_l_Tm_to_Tb + self.Hvap_Tbm/self.Tb + integrators_T['g'](self.Tb, T)
                 
             elif self.phase_ref == 'g' and self.phase == 's':
-                S += - self.H_int_Tb_to_T_ref_g - self.Hvap_Tbm/self.Tb - self.H_int_l_Tm_to_Tb - self.Hfusm/self.Tm + integrators_T['s'](self.Tm, T)
+                S += - self.S_int_Tb_to_T_ref_g - self.Hvap_Tbm/self.Tb - self.S_int_l_Tm_to_Tb - self.Hfusm/self.Tm + integrators_T['s'](self.Tm, T)
             else:
                 raise Exception('Unknown error')
         except:
             return None
         return S
 
+    def calculate_TH(self, T, H):
+        def to_solve(P):
+            self.calculate(T, P)
+            return self.H - H
+        return newton(to_solve, self.P)
+
+    def calculate_PH(self, P, H):
+        def to_solve(T):
+            self.calculate(T, P)
+            return self.H - H
+        return newton(to_solve, self.T)
+
+    def calculate_TS(self, T, S):
+        def to_solve(P):
+            self.calculate(T, P)
+            return self.S - S
+        return newton(to_solve, self.P)
+
+    def calculate_PS(self, P, S):
+        def to_solve(T):
+            self.calculate(T, P)
+            return self.S - S
+        return newton(to_solve, self.T)
+
+
     def set_thermo(self):
-        self.Hm = self.calc_H(self.T, self.P)
+        self.Hm = self.calc_H(self.T, self.P) + self.calc_H_excess(self.T, self.P)
         self.H = property_molar_to_mass(self.Hm, self.MW) if (self.Hm is not None) else None
         
-        self.Sm = self.calc_S(self.T, self.P)
+        self.Sm = self.calc_S(self.T, self.P) + self.calc_S_excess(self.T, self.P)
         self.S = property_molar_to_mass(self.Sm, self.MW) if (self.Sm is not None) else None
         
         self.G = self.H - self.T*self.S if (self.H is not None and self.S is not None) else None 

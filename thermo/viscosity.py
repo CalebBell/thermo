@@ -92,8 +92,9 @@ def ViswanathNatarajan2Exponential(T, C, D):
 
 def ViswanathNatarajan3(T, A, B, C):
     r'''Calculate the viscosity of a liquid using the 3-term Antoine form
-    representation developed in [1]_. Requires input coefficients. These are
-    assumed to be in cP, as all coefficients found so far are.
+    representation developed in [1]_. Requires input coefficients. The `A`
+    coefficient is assumed to yield coefficients in centipoise, as all 
+    coefficients found so far have been.
 
     .. math::
         \log_{10} \mu = A + B/(T + C)
@@ -106,11 +107,11 @@ def ViswanathNatarajan3(T, A, B, C):
     Returns
     -------
     mu : float
-        Liquid viscosity, Pa*s
+        Liquid viscosity, [Pa*s]
 
     Notes
     -----
-    More coefficients wanted.
+    No other source for these coefficients has been found.
 
     Examples
     --------
@@ -123,8 +124,8 @@ def ViswanathNatarajan3(T, A, B, C):
        Liquids. New York: Taylor & Francis, 1989
     '''
     mu = 10**(A + B/(C-T))
-    mu = mu/1000.
-    return mu
+    return mu/1000.
+
 
 
 def Letsou_Stiel(T, MW, Tc, Pc, omega):

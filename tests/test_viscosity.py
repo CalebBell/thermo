@@ -27,6 +27,7 @@ import pandas as pd
 from thermo.viscosity import *
 from thermo.identifiers import checkCAS
 
+### Check data integrity
 
 def test_Dutt_Prasad_data():
     assert all([checkCAS(i) for i in Dutt_Prasad.index])
