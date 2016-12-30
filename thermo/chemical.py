@@ -356,6 +356,8 @@ class Chemical(object): # pragma: no cover
                                    omega=self.omega, dipole=self.dipole, 
                                    eos=self.eos_in_a_box, CASRN=self.CAS)
 
+        self.Vmg_STP = self.VolumeGas.TP_dependent_property(298.15, 101325)
+
         self.VolumeSolid = VolumeSolid(CASRN=self.CAS, MW=self.MW, Tt=self.Tt)
 
         self.HeatCapacityGas = HeatCapacityGas(CASRN=self.CAS, MW=self.MW, similarity_variable=self.similarity_variable)
@@ -659,24 +661,6 @@ class Chemical(object): # pragma: no cover
             S_dep += (self.eos.to_TP(T, P).S_dep_g - self.S_dep_Tb_Pb_g)
         return S_dep
 
-#    def calc_S_excess(self, T, P):
-#        S_dep = 0
-#        if self.phase_ref == 'g' and self.phase == 'g':
-#            S_dep += self.eos.to_TP(T, P).S_dep_g - self.S_dep_ref_g
-#            
-#        elif self.phase_ref == 'l' and self.phase == 'l':
-#            S_dep += 0 # self.eos.to_TP(T, P).S_dep_l - self.S_dep_ref_l
-#            
-#        elif self.phase_ref == 'g' and self.phase == 'l':
-#            S_dep += (self.S_dep_Tb_Pb_g - self.S_dep_ref_g) 
-#            S_dep += 0 # (self.eos.to_TP(T, P).S_dep_l - self.S_dep_Tb_l)
-#            
-#        elif self.phase_ref == 'l' and self.phase == 'g':
-#            S_dep += 0 #(self.S_dep_Tb_l - self.S_dep_ref_l)
-#            S_dep += (self.eos.to_TP(T, P).S_dep_g) # - self.S_dep_Tb_g
-#        return S_dep
-
-
     def calc_S(self, T, P):
 
         integrators_T = {'s': self.HeatCapacitySolid.T_dependent_property_integral_over_T,
@@ -739,20 +723,24 @@ class Chemical(object): # pragma: no cover
 
 
     def set_thermo(self):
-        self.Hm = self.calc_H(self.T, self.P) + self.calc_H_excess(self.T, self.P)
-        self.H = property_molar_to_mass(self.Hm, self.MW) if (self.Hm is not None) else None
-        
-        self.Sm = self.calc_S(self.T, self.P) + self.calc_S_excess(self.T, self.P)
-        self.S = property_molar_to_mass(self.Sm, self.MW) if (self.Sm is not None) else None
-        
-        self.G = self.H - self.T*self.S if (self.H is not None and self.S is not None) else None 
-        self.Gm = self.Hm - self.T*self.Sm if (self.Hm is not None and self.Sm is not None) else None 
-        
-        self.Um = self.Hm - self.P*self.Vm if (self.Vm and self.Hm is not None) else None
-        self.U = property_molar_to_mass(self.Um, self.MW) if (self.Um is not None) else None
-        
-        self.Am = self.Um - self.T*self.Sm if (self.Um is not None and self.Sm is not None) else None
-        self.A = self.U - self.T*self.S if (self.U is not None and self.S is not None) else None
+        try:
+            self.Hm = self.calc_H(self.T, self.P) + self.calc_H_excess(self.T, self.P)
+            self.H = property_molar_to_mass(self.Hm, self.MW) if (self.Hm is not None) else None
+            
+            self.Sm = self.calc_S(self.T, self.P) + self.calc_S_excess(self.T, self.P)
+            self.S = property_molar_to_mass(self.Sm, self.MW) if (self.Sm is not None) else None
+            
+            self.G = self.H - self.T*self.S if (self.H is not None and self.S is not None) else None 
+            self.Gm = self.Hm - self.T*self.Sm if (self.Hm is not None and self.Sm is not None) else None 
+            
+            self.Um = self.Hm - self.P*self.Vm if (self.Vm and self.Hm is not None) else None
+            self.U = property_molar_to_mass(self.Um, self.MW) if (self.Um is not None) else None
+            
+            self.Am = self.Um - self.T*self.Sm if (self.Um is not None and self.Sm is not None) else None
+            self.A = self.U - self.T*self.S if (self.U is not None and self.S is not None) else None
+        except:
+            pass
+
 
     def __repr__(self):
         return '<Chemical [%s], T=%.2f K, P=%.0f Pa>' %(self.name, self.T, self.P)
@@ -807,6 +795,17 @@ class Mixture(object):  # pragma: no cover
                 ws = _d["ws"]
                 self.mixname = mixname
                 self.mixsource = _d["Source"]
+
+        # Handle numpy array inputs; also turn mutable inputs into copies
+
+        if zs is not None:
+            zs = list(zs)
+        if ws is not None:
+            ws = list(ws)
+        if Vfls is not None:
+            Vfls = list(Vfls)
+        if Vfgs is not None:
+            Vfgs = list(Vfgs)
 
         self.components = tuple(IDs)
         self.Chemicals = [Chemical(component, P=P, T=T) for component in self.components]
@@ -1057,6 +1056,19 @@ class Mixture(object):  # pragma: no cover
         self.sigma_methods = surface_tension_mixture(xs=self.zs, sigmas=self.sigmas, rhoms=self.rholms, CASRNs=self.CASs, AvailableMethods=True)
         self.sigma_method = self.sigma_methods[0]
 
+        # Constant properties obtained from TP
+        self.Vml_STPs = [i.Vml_STP for i in self.Chemicals]
+        self.Vmg_STPs = [i.Vmg_STP for i in self.Chemicals]
+        self.Vml_STP = volume_liquid_mixture(xs=self.zs, ws=self.ws, Vms=self.Vml_STPs, T=298.15, MWs=self.MWs, MW=self.MW, Tcs=self.Tcs, Pcs=self.Pcs, Vcs=self.Vcs, Zcs=self.Zcs, omegas=self.omegas, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, CASRNs=self.CASs, Molar=True, Method=self.Vl_method)
+        self.Vmg_STP = volume_gas_mixture(ys=self.zs, Vms=self.Vmg_STPs, T=298.15, P=101325, Tc=self.Tc, Pc=self.Pc, omega=self.omega, MW=self.MW, CASRNs=self.CASs, Method=self.Vg_method)
+
+        self.rhol_STP = Vm_to_rho(self.Vml_STP, self.MW) if self.Vml_STP else None
+        self.Zl_STP = Z(298.15, 101325, self.Vml_STP) if self.Vml_STP else None
+        self.rholm_STP = 1./self.Vml_STP if self.Vml_STP else None
+
+        self.rhog_STP = Vm_to_rho(self.Vmg_STP, self.MW) if self.Vmg_STP else None
+        self.Zg_STP = Z(298.15, 101325, self.Vmg_STP) if self.Vmg_STP else None
+        self.rhogm_STP = 1./self.Vmg_STP if self.Vmg_STP else None
 
     def set_TP(self, T=None, P=None):
         if T:
@@ -1120,36 +1132,44 @@ class Mixture(object):  # pragma: no cover
         self.alphag = thermal_diffusivity(k=self.kg, rho=self.rhog, Cp=self.Cpg) if all([self.kg, self.rhog, self.Cpg]) else None
 
     def set_phase(self):
-        self.phase_methods = identify_phase_mixture(T=self.T, P=self.P, zs=self.zs, Tcs=self.Tcs, Pcs=self.Pcs, Psats=self.Psats, CASRNs=self.CASs, AvailableMethods=True)
-        self.phase_method = self.phase_methods[0]
-        self.phase, self.xs, self.ys, self.V_over_F = identify_phase_mixture(T=self.T, P=self.P, zs=self.zs, Tcs=self.Tcs, Pcs=self.Pcs, Psats=self.Psats, CASRNs=self.CASs, Method=self.phase_method)
-        self.Pbubble_methods = Pbubble_mixture(T=self.T, zs=self.zs, Psats=self.Psats, CASRNs=self.CASs, AvailableMethods=True)
-        self.Pbubble_method = self.Pbubble_methods[0]
-        self.Pbubble = Pbubble_mixture(T=self.T, zs=self.zs, Psats=self.Psats, CASRNs=self.CASs, Method=self.Pbubble_method)
-
-        self.Pdew_methods = Pdew_mixture(T=self.T, zs=self.zs, Psats=self.Psats, CASRNs=self.CASs, AvailableMethods=True)
-        self.Pdew_method = self.Pdew_methods[0]
-        self.Pdew = Pdew_mixture(T=self.T, zs=self.zs, Psats=self.Psats, CASRNs=self.CASs, Method=self.Pdew_method)
-
-        self.rho = phase_set_property(phase=self.phase, s=self.rhos, l=self.rhol, g=self.rhog, V_over_F=self.V_over_F)
-        self.Vm = phase_set_property(phase=self.phase, s=self.Vms, l=self.Vml, g=self.Vmg, V_over_F=self.V_over_F)
-        self.Z = Z(self.T, self.P, self.Vm) if self.Vm else None
-
-        self.Cp = phase_set_property(phase=self.phase, s=self.Cps, l=self.Cpl, g=self.Cpg, V_over_F=self.V_over_F)
-        self.Cpm = phase_set_property(phase=self.phase, s=self.Cpsm, l=self.Cplm, g=self.Cpgm, V_over_F=self.V_over_F)
-
-        self.k = phase_set_property(phase=self.phase, s=self.ks, l=self.kl, g=self.kg)
-        self.mu = phase_set_property(phase=self.phase, l=self.mul, g=self.mug)
-        self.nu = phase_set_property(phase=self.phase, l=self.nul, g=self.nug)
-        self.Pr = phase_set_property(phase=self.phase, l=self.Prl, g=self.Prg)
-        self.alpha = phase_set_property(phase=self.phase, l=self.alphal, g=self.alphag)
-        self.isobaric_expansion = phase_set_property(phase=self.phase, l=self.isobaric_expansion_l, g=self.isobaric_expansion_g)
-        self.JT = phase_set_property(phase=self.phase, l=self.JTl, g=self.JTg)
-
-        if not None in self.Hs:
-            self.H = mixing_simple(self.Hs, self.ws)
-            self.Hm = property_mass_to_molar(self.H, self.MW)
+        try:
             
+            self.phase_methods = identify_phase_mixture(T=self.T, P=self.P, zs=self.zs, Tcs=self.Tcs, Pcs=self.Pcs, Psats=self.Psats, CASRNs=self.CASs, AvailableMethods=True)
+            self.phase_method = self.phase_methods[0]
+            self.phase, self.xs, self.ys, self.V_over_F = identify_phase_mixture(T=self.T, P=self.P, zs=self.zs, Tcs=self.Tcs, Pcs=self.Pcs, Psats=self.Psats, CASRNs=self.CASs, Method=self.phase_method)
+            self.Pbubble_methods = Pbubble_mixture(T=self.T, zs=self.zs, Psats=self.Psats, CASRNs=self.CASs, AvailableMethods=True)
+            self.Pbubble_method = self.Pbubble_methods[0]
+            self.Pbubble = Pbubble_mixture(T=self.T, zs=self.zs, Psats=self.Psats, CASRNs=self.CASs, Method=self.Pbubble_method)
+    
+            self.Pdew_methods = Pdew_mixture(T=self.T, zs=self.zs, Psats=self.Psats, CASRNs=self.CASs, AvailableMethods=True)
+            self.Pdew_method = self.Pdew_methods[0]
+            self.Pdew = Pdew_mixture(T=self.T, zs=self.zs, Psats=self.Psats, CASRNs=self.CASs, Method=self.Pdew_method)
+    
+            self.rho = phase_set_property(phase=self.phase, s=self.rhos, l=self.rhol, g=self.rhog, V_over_F=self.V_over_F)
+            self.Vm = phase_set_property(phase=self.phase, s=self.Vms, l=self.Vml, g=self.Vmg, V_over_F=self.V_over_F)
+            self.Z = Z(self.T, self.P, self.Vm) if self.Vm else None
+    
+            self.Cp = phase_set_property(phase=self.phase, s=self.Cps, l=self.Cpl, g=self.Cpg, V_over_F=self.V_over_F)
+            self.Cpm = phase_set_property(phase=self.phase, s=self.Cpsm, l=self.Cplm, g=self.Cpgm, V_over_F=self.V_over_F)
+    
+            self.k = phase_set_property(phase=self.phase, s=self.ks, l=self.kl, g=self.kg)
+            self.mu = phase_set_property(phase=self.phase, l=self.mul, g=self.mug)
+            self.nu = phase_set_property(phase=self.phase, l=self.nul, g=self.nug)
+            self.Pr = phase_set_property(phase=self.phase, l=self.Prl, g=self.Prg)
+            self.alpha = phase_set_property(phase=self.phase, l=self.alphal, g=self.alphag)
+            self.isobaric_expansion = phase_set_property(phase=self.phase, l=self.isobaric_expansion_l, g=self.isobaric_expansion_g)
+            self.JT = phase_set_property(phase=self.phase, l=self.JTl, g=self.JTg)
+    
+            if not None in self.Hs:
+                self.H = mixing_simple(self.Hs, self.ws)
+                self.Hm = property_mass_to_molar(self.H, self.MW)
+            
+        except:
+            pass
+
+    def calculate(self, T=None, P=None):
+        self.set_TP(T=T, P=P)
+        self.set_phase()
 
     def __repr__(self):
         return '<Mixture, components=%s, mole fractions=%s, T=%.2f K, P=%.0f \
@@ -1179,22 +1199,134 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         return Peclet_heat(V=V, L=D, rho=self.rho, Cp=self.Cp, k=self.k)
 
 
+    def calculate_TH(self, T, H):
+        def to_solve(P):
+            self.calculate(T, P)
+            return self.H - H
+        return newton(to_solve, self.P)
+
+    def calculate_PH(self, P, H):
+        def to_solve(T):
+            self.calculate(T, P)
+            return self.H - H
+        return newton(to_solve, self.T)
+
+    def calculate_TS(self, T, S):
+        def to_solve(P):
+            self.calculate(T, P)
+            return self.S - S
+        return newton(to_solve, self.P)
+
+    def calculate_PS(self, P, S):
+        def to_solve(T):
+            self.calculate(T, P)
+            return self.S - S
+        return newton(to_solve, self.T)
+
 
 class Stream(Mixture): # pragma: no cover
 
     def __init__(self, IDs, zs=None, ws=None, Vfls=None, Vfgs=None,
-                 m=None, Q=None, T=298.15, P=101325):
+                 m=None, Q=None, Ql_STP=None, Qg_STP=None, T=298.15, P=101325):
         Mixture.__init__(self, IDs, zs=zs, ws=ws, Vfls=Vfls, Vfgs=Vfgs,
                  T=T, P=P)
         # TODO: Molar total input.
-        if self.phase:
+        if m or self.phase:
             if Q:
                 self.Q = Q
                 self.m = self.rho*Q
+            elif Ql_STP:
+                self.m = self.rhol_STP*Ql_STP
+#                self.Q = self.m/self.rho
+            elif Qg_STP:
+                self.m = self.rhog_STP*Qg_STP
+#                self.Q = self.m/self.rho
             else:
                 self.m = m
-                self.Q = self.m/self.rho
+#                self.Q = self.m/self.rho
         else:
             raise Exception('phase algorithm failed')
+        if hasattr(self, 'rho') and self.rho:
+            self.Q = self.m/self.rho
+        else:
+            self.Q = None
+        
+
+    def __add__(self, other):
+        cmps = list(set((self.CASs+ other.CASs)))
+        mass = self.m + other.m
+        masses = []
+        for cmp in cmps:
+            masses.append(0)
+            if cmp in self.CASs:
+                ind = self.CASs.index(cmp)
+                masses[-1] += self.ws[ind]*self.m
+            if cmp in other.CASs:
+                ind = other.CASs.index(cmp)
+                masses[-1] += other.ws[ind]*other.m
+
+        T = min(self.T, other.T)
+        P = min(self.P, other.P)
+
+        return Stream(IDs=cmps, ws=masses, m=mass, T=T, P=P)
+
+
+
+    def __mul__(self, const):
+        # In place
+        self.m *=const
+        self.Q *= const
+        return self
+
+    def __truediv__(self, const):
+        # In place
+        self.m /=const
+        self.Q /= const
+        return self
+
+
+
+    def __sub__(self, other):
+        # Subtracts the mass flow rates in other from self and returns a new
+        # Stream instance
+    
+        # Check if all components are present in the original stream,
+        # while ignoring 0-flow streams in other
+        components_in_self = [i in self.CASs for i in other.CASs]
+        if not all(components_in_self):
+            for i, in_self in enumerate(components_in_self):
+                if not in_self and other.ws[i] > 0:
+                    raise Exception('Not all components to be removed are \
+present in the first stream; %s is not present.' %other.components[i])
+            
+        
+        # Calculate the mass flows of each species
+        ms_self = [wi*self.m for wi in self.ws]
+        ms_other = [wj*other.m for wj in other.ws]
+        
+        for i, CAS in enumerate(self.CASs):
+            if CAS in other.CASs:
+                mj = ms_other[other.CASs.index(CAS)]
+                if mj > ms_self[i]:
+                    raise Exception('Attempting to remove more %s than is in the \
+first stream.' %self.components[i])
+                ms_self[i] -= mj
+        
+        # Remove now-empty streams:
+        remaining_CASs = self.CASs
+        for i, m in enumerate(list(ms_self)):
+            if m == 0:
+                remaining_CASs.pop(i)
+                ms_self.pop(i)
+        
+        # Create the resulting stream
+        m_tot = sum(ms_self)
+        return Stream(IDs=remaining_CASs, ws=ms_self, m=m_tot, T=self.T, P=self.P)
+        
+
+
+
+
+
 
 

@@ -30,7 +30,7 @@ def test_data_IUPAC():
     assert_allclose(MW_sum,122998.43799999992)
 
     Tc_sum = _crit_IUPAC['Tc'].sum()
-    assert_allclose(Tc_sum, 460957.51300000004)
+    assert_allclose(Tc_sum, 462157.51300000004)
 
     Pc_sum = _crit_IUPAC['Pc'].sum()
     assert_allclose(Pc_sum, 2063753000.0)
