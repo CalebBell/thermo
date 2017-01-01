@@ -61,6 +61,11 @@ class CP_fluid(object):
     # calling coolprop to retrieve the data when needed
     __slots__ = ['Tmin', 'Tmax', 'Pmax', 'has_melting_line', 'Tc', 'Pc', 'Tt',
                  'omega', 'HEOS']
+    
+    def __deepcopy__(self, memo):
+        # AbstractState("HEOS", CAS) has no deep copy;
+        # fortunately, none is needed, so we can just return the existing copy
+        return self
 
     def __init__(self, Tmin, Tmax, Pmax, has_melting_line, Tc, Pc, Tt, omega,
                  HEOS):

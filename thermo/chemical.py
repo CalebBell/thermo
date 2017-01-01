@@ -127,9 +127,16 @@ class Chemical(object): # pragma: no cover
         self.calculate(T, P)
 
     def calculate(self, T=None, P=None):
+        if (hasattr(self, 'T') and T == self.T 
+            and hasattr(self, 'P') and P == self.P):
+            return None
         if T:
+            if T < 0:
+                raise Exception('Negative value specified for Chemical temperature - aborting!')
             self.T = T
         if P:
+            if P < 0:
+                raise Exception('Negative value specified for Chemical pressure - aborting!')
             self.P = P
 
         self.set_TP()
@@ -978,6 +985,9 @@ class Mixture(object):  # pragma: no cover
         self.Hs = [i.H for i in self.Chemicals]
         self.Hms = [i.Hm for i in self.Chemicals]
 
+        self.Ss = [i.S for i in self.Chemicals]
+        self.Sms = [i.Sm for i in self.Chemicals]
+
     def set_constant_sources(self):
         # Tliquidus assumes worst-case for now
         self.Tm_methods = Tliquidus(Tms=self.Tms, ws=self.ws, xs=self.zs, CASRNs=self.CASs, AvailableMethods=True)
@@ -1164,10 +1174,23 @@ class Mixture(object):  # pragma: no cover
                 self.H = mixing_simple(self.Hs, self.ws)
                 self.Hm = property_mass_to_molar(self.H, self.MW)
             
+            if not None in self.Ss:
+                # Ideal gas contribution
+                self.Sm = mixing_simple(self.Sms, self.zs) - R*sum([zi*log(zi) for zi in self.zs])
+                self.S = property_molar_to_mass(self.Sm, self.MW)
+            
         except:
             pass
 
     def calculate(self, T=None, P=None):
+        if T:
+            if T < 0:
+                raise Exception('Negative value specified for Mixture temperature - aborting!')
+            self.T = T
+        if P:
+            if P < 0:
+                raise Exception('Negative value specified for Mixture pressure - aborting!')
+
         self.set_TP(T=T, P=P)
         self.set_phase()
 
@@ -1251,6 +1274,27 @@ class Stream(Mixture): # pragma: no cover
         else:
             self.Q = None
         
+        self.n = property_molar_to_mass(self.m, self.MW)
+        self.ns = [self.n*zi for zi in self.zs]
+        if hasattr(self, 'H'):
+            self.S *= self.m
+            self.Sm *= self.n
+            self.H *= self.m
+            self.Hm *= self.n
+
+    def calculate(self, T=None, P=None):
+        self.set_TP(T=T, P=P)
+        self.set_phase()
+        if hasattr(self, 'rho') and self.rho:
+            self.Q = self.m/self.rho
+        else:
+            self.Q = None
+        if hasattr(self, 'H'):
+            self.S *= self.m
+            self.Sm *= self.n
+            self.H *= self.m
+            self.Hm *= self.n
+
 
     def __add__(self, other):
         cmps = list(set((self.CASs+ other.CASs)))
