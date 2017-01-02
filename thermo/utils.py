@@ -1541,6 +1541,13 @@ class TDependentProperty(object):
 #    Tmax = None
     ranked_methods = []
 
+    def __copy__(self):
+        return self
+
+    def __deepcopy__(self, memo):
+        # By default, share state among subsequent objects 
+        return self
+
     def set_user_methods(self, user_methods, forced=False):
         r'''Method used to select certain property methods as having a higher
         priority than were set by default. If `forced` is true, then methods

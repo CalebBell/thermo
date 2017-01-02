@@ -91,6 +91,8 @@ SUPERPRO = (298.15, 101325, 'calc', 0, 0, True) # No support for entropy found, 
 
 reference_states = [IAPWS, ASHRAE, IIR, REFPROP, CHEMSEP, PRO_II, HYSYS, 
                     UNISIM, SUPERPRO]
+_chemical_cache = {}
+
 
 class Chemical(object): # pragma: no cover
     '''Class for obtaining properties of chemicals.
@@ -106,25 +108,32 @@ class Chemical(object): # pragma: no cover
 
         # Identification
         self.CAS = CASfromAny(ID)
-        self.PubChem = PubChem(self.CAS)
-        self.MW = MW(self.CAS)
-        self.formula = formula(self.CAS)
-        self.smiles = smiles(self.CAS)
-        self.InChI = InChI(self.CAS)
-        self.InChI_Key = InChI_Key(self.CAS)
-        self.IUPAC_name = IUPAC_name(self.CAS).lower()
-        self.name = name(self.CAS).lower()
-        self.synonyms = [i.lower() for i in synonyms(self.CAS)]
-
-        self.set_structure()
-
-        self.set_constant_sources()
-        self.set_constants()
-        self.set_eos(T=T, P=P)
-        self.set_TP_sources()
-        self.set_ref()
-        
+        if self.CAS in _chemical_cache:
+            self.__dict__.update(_chemical_cache[self.CAS].__dict__)
+            self.set_eos(T=T, P=P)
+            
+        else:
+            self.PubChem = PubChem(self.CAS)
+            self.MW = MW(self.CAS)
+            self.formula = formula(self.CAS)
+            self.smiles = smiles(self.CAS)
+            self.InChI = InChI(self.CAS)
+            self.InChI_Key = InChI_Key(self.CAS)
+            self.IUPAC_name = IUPAC_name(self.CAS).lower()
+            self.name = name(self.CAS).lower()
+            self.synonyms = [i.lower() for i in synonyms(self.CAS)]
+    
+            self.set_structure()
+            self.set_constant_sources()
+            self.set_constants()
+            self.set_eos(T=T, P=P)
+            self.set_TP_sources()
+            self.set_ref()
+            _chemical_cache[self.CAS] = self
+               
         self.calculate(T, P)
+        
+        
 
     def calculate(self, T=None, P=None):
         if (hasattr(self, 'T') and T == self.T 
@@ -1100,17 +1109,18 @@ class Mixture(object):  # pragma: no cover
 
 
 #         Coefficient of isobaric_expansion_coefficient
-        for i in self.Chemicals:
-            i.calculate(self.T+0.01, self.P)
-        _Vmls_2 = [i.Vml for i in self.Chemicals]
-        _Vmgs_2 = [i.Vmg for i in self.Chemicals]
-
-        _Vml_2 = volume_liquid_mixture(xs=self.zs, ws=self.ws, Vms=_Vmls_2, T=self.T+0.01, MWs=self.MWs, MW=self.MW, Tcs=self.Tcs, Pcs=self.Pcs, Vcs=self.Vcs, Zcs=self.Zcs,  Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, omegas=self.omegas,  CASRNs=self.CASs, Molar=True, Method=self.Vl_method)
-        _Vmg_2 = volume_gas_mixture(ys=self.zs, Vms=_Vmgs_2, T=self.T+0.01, P=self.P, Tc=self.Tc, Pc=self.Pc, omega=self.omega, MW=self.MW, CASRNs=self.CASs, Method=self.Vg_method)
-        self.isobaric_expansion_l = isobaric_expansion(V1=self.Vml, dT=0.01, V2=_Vml_2)
-        self.isobaric_expansion_g = isobaric_expansion(V1=self.Vmg, dT=0.01, V2=_Vmg_2)
-        for i in self.Chemicals:
-            i.calculate(self.T, self.P)
+# Nope
+#        for i in self.Chemicals:
+#            i.calculate(self.T+0.01, self.P)
+#        _Vmls_2 = [i.Vml for i in self.Chemicals]
+#        _Vmgs_2 = [i.Vmg for i in self.Chemicals]
+#
+#        _Vml_2 = volume_liquid_mixture(xs=self.zs, ws=self.ws, Vms=_Vmls_2, T=self.T+0.01, MWs=self.MWs, MW=self.MW, Tcs=self.Tcs, Pcs=self.Pcs, Vcs=self.Vcs, Zcs=self.Zcs,  Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, omegas=self.omegas,  CASRNs=self.CASs, Molar=True, Method=self.Vl_method)
+#        _Vmg_2 = volume_gas_mixture(ys=self.zs, Vms=_Vmgs_2, T=self.T+0.01, P=self.P, Tc=self.Tc, Pc=self.Pc, omega=self.omega, MW=self.MW, CASRNs=self.CASs, Method=self.Vg_method)
+#        self.isobaric_expansion_l = isobaric_expansion(V1=self.Vml, dT=0.01, V2=_Vml_2)
+#        self.isobaric_expansion_g = isobaric_expansion(V1=self.Vmg, dT=0.01, V2=_Vmg_2)
+#        for i in self.Chemicals:
+#            i.calculate(self.T, self.P)
 
 
         self.Cpl = Cp_liq_mixture(zs=self.zs, ws=self.ws, Cps=self.Cpls, T=self.T, CASRNs=self.CASs, Method=self.Cpl_method)
@@ -1129,8 +1139,8 @@ class Mixture(object):  # pragma: no cover
 
         self.sigma = surface_tension_mixture(xs=self.zs, sigmas=self.sigmas, rhoms=self.rholms, CASRNs=self.CASs, Method=self.sigma_method)
 
-        self.JTl = JT(T=self.T, V=self.Vml, Cp=self.Cplm, isobaric_expansion=self.isobaric_expansion_l)
-        self.JTg = JT(T=self.T, V=self.Vmg, Cp=self.Cpgm, isobaric_expansion=self.isobaric_expansion_g)
+#        self.JTl = JT(T=self.T, V=self.Vml, Cp=self.Cplm, isobaric_expansion=self.isobaric_expansion_l)
+#        self.JTg = JT(T=self.T, V=self.Vmg, Cp=self.Cpgm, isobaric_expansion=self.isobaric_expansion_g)
 
         self.nul = nu_mu_converter(mu=self.mul, rho=self.rhol) if all([self.mul, self.rhol]) else None
         self.nug = nu_mu_converter(mu=self.mug, rho=self.rhog) if all([self.mug, self.rhog]) else None
@@ -1147,6 +1157,11 @@ class Mixture(object):  # pragma: no cover
             self.phase_methods = identify_phase_mixture(T=self.T, P=self.P, zs=self.zs, Tcs=self.Tcs, Pcs=self.Pcs, Psats=self.Psats, CASRNs=self.CASs, AvailableMethods=True)
             self.phase_method = self.phase_methods[0]
             self.phase, self.xs, self.ys, self.V_over_F = identify_phase_mixture(T=self.T, P=self.P, zs=self.zs, Tcs=self.Tcs, Pcs=self.Pcs, Psats=self.Psats, CASRNs=self.CASs, Method=self.phase_method)
+
+            if self.phase == 'two-phase':
+                self.wsl = zs_to_ws(self.xs, self.MWs)
+                self.wsg = zs_to_ws(self.ys, self.MWs)
+            
             self.Pbubble_methods = Pbubble_mixture(T=self.T, zs=self.zs, Psats=self.Psats, CASRNs=self.CASs, AvailableMethods=True)
             self.Pbubble_method = self.Pbubble_methods[0]
             self.Pbubble = Pbubble_mixture(T=self.T, zs=self.zs, Psats=self.Psats, CASRNs=self.CASs, Method=self.Pbubble_method)
@@ -1167,8 +1182,8 @@ class Mixture(object):  # pragma: no cover
             self.nu = phase_set_property(phase=self.phase, l=self.nul, g=self.nug)
             self.Pr = phase_set_property(phase=self.phase, l=self.Prl, g=self.Prg)
             self.alpha = phase_set_property(phase=self.phase, l=self.alphal, g=self.alphag)
-            self.isobaric_expansion = phase_set_property(phase=self.phase, l=self.isobaric_expansion_l, g=self.isobaric_expansion_g)
-            self.JT = phase_set_property(phase=self.phase, l=self.JTl, g=self.JTg)
+#            self.isobaric_expansion = phase_set_property(phase=self.phase, l=self.isobaric_expansion_l, g=self.isobaric_expansion_g)
+#            self.JT = phase_set_property(phase=self.phase, l=self.JTl, g=self.JTg)
     
             if not None in self.Hs:
                 self.H = mixing_simple(self.Hs, self.ws)
@@ -1281,6 +1296,16 @@ class Stream(Mixture): # pragma: no cover
             self.Sm *= self.n
             self.H *= self.m
             self.Hm *= self.n
+
+        if self.phase == 'two-phase':
+            self.ng = self.n*self.V_over_F
+            self.nl = self.n*(1-self.V_over_F)
+            self.ngs = [yi*self.ng for yi in self.ys]
+            self.nls = [xi*self.nl for xi in self.xs]
+            self.mgs = [ni*MWi*1E-3 for ni, MWi in zip(self.ngs, self.MWs)]
+            self.mls = [ni*MWi*1E-3 for ni, MWi in zip(self.nls, self.MWs)]
+            self.mg = sum(self.mgs)
+            self.ml = sum(self.mls)
 
     def calculate(self, T=None, P=None):
         self.set_TP(T=T, P=P)

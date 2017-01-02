@@ -1873,8 +1873,9 @@ class VolumeGas(TPDependentProperty):
             pass
             # Would be nice to have a limit on CRC_VIRIAL
         elif method == EOS:
-            self.eos[0] = self.eos[0].to_TP(T=T, P=P)
-            validity = hasattr(self.eos[0], 'V_g')
+            eos = self.eos[0]
+            if T < eos.Tc and P > eos.Psat(T):
+                validity = False
         elif method == COOLPROP:
             validity = PhaseSI('T', T, 'P', P, self.CASRN) in ['gas', 'supercritical_gas', 'supercritical', 'supercritical_liquid']
         elif method in self.tabular_data:
