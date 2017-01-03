@@ -1269,6 +1269,7 @@ class Stream(Mixture): # pragma: no cover
         Mixture.__init__(self, IDs, zs=zs, ws=ws, Vfls=Vfls, Vfgs=Vfgs,
                  T=T, P=P)
         # TODO: Molar total input.
+        # TODO: calculate Ql, Qg
         if m or self.phase:
             if Q:
                 self.Q = Q
@@ -1306,6 +1307,8 @@ class Stream(Mixture): # pragma: no cover
             self.mls = [ni*MWi*1E-3 for ni, MWi in zip(self.nls, self.MWs)]
             self.mg = sum(self.mgs)
             self.ml = sum(self.mls)
+            self.Ql = self.ml/self.rhol
+            self.Qg = self.mg/self.rhog
 
     def calculate(self, T=None, P=None):
         self.set_TP(T=T, P=P)
@@ -1320,6 +1323,17 @@ class Stream(Mixture): # pragma: no cover
             self.H *= self.m
             self.Hm *= self.n
 
+        if self.phase == 'two-phase':
+            self.ng = self.n*self.V_over_F
+            self.nl = self.n*(1-self.V_over_F)
+            self.ngs = [yi*self.ng for yi in self.ys]
+            self.nls = [xi*self.nl for xi in self.xs]
+            self.mgs = [ni*MWi*1E-3 for ni, MWi in zip(self.ngs, self.MWs)]
+            self.mls = [ni*MWi*1E-3 for ni, MWi in zip(self.nls, self.MWs)]
+            self.mg = sum(self.mgs)
+            self.ml = sum(self.mls)
+            self.Ql = self.ml/self.rhol
+            self.Qg = self.mg/self.rhog
 
     def __add__(self, other):
         cmps = list(set((self.CASs+ other.CASs)))
