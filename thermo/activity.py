@@ -211,7 +211,11 @@ def Li_Johns_Ahmadi_solution(zs, Ks):
 
     V_over_F_min = (1. - kn)/(k1 - kn)*z1
     V_over_F_max = (1. - kn)/(k1 - kn)
-    V_over_F_guess = (V_over_F_min+V_over_F_max)*0.5
+    
+    V_over_F_min2 = max(0., V_over_F_min)
+    V_over_F_max2 = min(1., V_over_F_max)
+    
+    V_over_F_guess = (V_over_F_min2 + V_over_F_max2)*0.5
     
     length = len(zs)-1
     kn_m_1 = kn-1.
@@ -220,10 +224,11 @@ def Li_Johns_Ahmadi_solution(zs, Ks):
     iterable = zip(Ks_sorted[1:length], zs_sorted[1:length])
     
     objective = lambda x1: 1. + t1*x1 + sum([(ki-kn)/(kn_m_1) * zi*k1_m_1*x1 /( (ki-1.)*z1 + (k1-ki)*x1) for ki, zi in iterable])
-    try:
-        x1 = newton(objective, V_over_F_guess)
-    except:
-        x1 = brenth(objective, V_over_F_max-1E-7, V_over_F_min+1E-7)
+#    try:
+#        x1 = newton(objective, V_over_F_guess)
+#    except:
+    # newton skips out of its specified range in some cases, finding another solution
+    x1 = brenth(objective, V_over_F_max-1E-7, V_over_F_min+1E-7)
     V_over_F = (-x1 + z1)/(x1*(k1 - 1.))
     xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]
     ys = [Ki*xi for xi, Ki in zip(xs, Ks)]
