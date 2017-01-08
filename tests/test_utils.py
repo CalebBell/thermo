@@ -148,15 +148,15 @@ def test_Parachor():
     P = Parachor(0.02117, 114.22852, 700.03, 5.2609)
     assert_allclose(P, 352.66655018657565)
 
-def test_phase_set_property():
-    assert 150 == phase_set_property(phase='s', s=150, l=10)
-    assert None == phase_set_property(phase='s', l=1560.14)
-    assert 3312 == phase_set_property(phase='g', l=1560.14, g=3312.)
-    assert 1560.14 == phase_set_property(phase='l', l=1560.14, g=3312.)
-    assert None == phase_set_property(phase='two-phase', l=1560.14, g=12421.0)
-    assert None == phase_set_property(phase=None, l=1560.14, g=12421.0)
+def test_phase_select_property():
+    assert 150 == phase_select_property(phase='s', s=150, l=10)
+    assert None == phase_select_property(phase='s', l=1560.14)
+    assert 3312 == phase_select_property(phase='g', l=1560.14, g=3312.)
+    assert 1560.14 == phase_select_property(phase='l', l=1560.14, g=3312.)
+    assert None == phase_select_property(phase='two-phase', l=1560.14, g=12421.0)
+    assert None == phase_select_property(phase=None, l=1560.14, g=12421.0)
     with pytest.raises(Exception):
-        phase_set_property(phase='notalphase', l=1560.14, g=12421.0)
+        phase_select_property(phase='notalphase', l=1560.14, g=12421.0)
 
 
 
@@ -400,8 +400,8 @@ def test_Z_from_virial_pressure_form():
     assert_allclose(Z_calc, 1)
 
 
-def test__isobaric_expansion():
-    beta = _isobaric_expansion(0.000130229900873546, 1.58875261849113e-7)
+def test_isobaric_expansion():
+    beta = isobaric_expansion(0.000130229900873546, 1.58875261849113e-7)
     assert_allclose(beta, 0.0012199599384121608)
     
 def test_isothermal_compressibility():

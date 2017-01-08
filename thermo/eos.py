@@ -30,7 +30,7 @@ from scipy.constants import R
 from scipy.optimize import newton
 from thermo.utils import Cp_minus_Cv, isothermal_compressibility, phase_identification_parameter, phase_identification_parameter_phase
 from thermo.utils import log, exp, sqrt, copysign, horner
-from thermo.utils import _isobaric_expansion as isobaric_expansion 
+from thermo.utils import isobaric_expansion 
 
 
 

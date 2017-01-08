@@ -24,14 +24,14 @@ from __future__ import division
 
 __all__ = ['has_matplotlib', 'ANYMATH', 'mathlib', 'to_num', 'CAS2int', 
 'int2CAS', 'Parachor', 'property_molar_to_mass', 'property_mass_to_molar', 
-'isobaric_expansion', '_isobaric_expansion', 'isothermal_compressibility', 
-'Cp_minus_Cv', 'JT', 'speed_of_sound', 'Joule_Thomson',
+'isobaric_expansion', 'isothermal_compressibility', 
+'Cp_minus_Cv', 'speed_of_sound', 'Joule_Thomson',
 'phase_identification_parameter', 'phase_identification_parameter_phase',
 'isentropic_exponent', 'Vm_to_rho', 'rho_to_Vm', 
 'Z', 'B_To_Z', 'B_from_Z', 'Z_from_virial_density_form', 
 'Z_from_virial_pressure_form', 'zs_to_ws', 'ws_to_zs', 'zs_to_Vfs', 
 'Vfs_to_zs', 'none_and_length_check', 'normalize', 'mixing_simple', 
-'mixing_logarithmic', 'phase_set_property', 'TDependentProperty', 
+'mixing_logarithmic', 'phase_select_property', 'TDependentProperty', 
 'TPDependentProperty', 'allclose_variable', 'horner']
 
 from cmath import sqrt as csqrt
@@ -295,15 +295,7 @@ def property_mass_to_molar(A_mass, MW):  # pragma: no cover
     return A_molar
 
 
-def isobaric_expansion(V1=None, V2=None, dT=0.01):  # pragma: no cover
-    if not (V1 and V2 and dT):
-        return None
-    V = (V1+V2)/2.
-    beta = 1/V*(V2-V1)/dT
-    return beta
-
-
-def _isobaric_expansion(V, dV_dT):
+def isobaric_expansion(V, dV_dT):
     r'''Calculate the isobaric coefficient of a thermal expansion, given its 
     molar volume at a certain `T` and `P`, and its derivative of molar volume
     with respect to `T`.
@@ -334,7 +326,7 @@ def _isobaric_expansion(V, dV_dT):
     --------
     Calculated for hexane from the PR EOS at 299 K and 1 MPa (liquid):
     
-    >>> _isobaric_expansion(0.000130229900873546, 1.58875261849113e-7)
+    >>> isobaric_expansion(0.000130229900873546, 1.58875261849113e-7)
     0.0012199599384121608
 
     References
@@ -651,13 +643,6 @@ def Joule_Thomson(T, V, Cp, dV_dT=None, beta=None):
         return V/Cp*(beta*T - 1.)
     else:
         raise Exception('Either dV_dT or beta is needed')
-
-
-def JT(T=None, V=None, Cp=None, isobaric_expansion=None):  # pragma: no cover
-    if not (T and V and Cp and isobaric_expansion):
-        return None
-    _JT = V/Cp*(T*isobaric_expansion - 1.)
-    return _JT
 
 
 def isentropic_exponent(Cp, Cv):
@@ -1374,7 +1359,7 @@ def mixing_logarithmic(fracs, props):
     return exp(sum(frac*log(prop) for frac, prop in zip(fracs, props)))
 
 
-def phase_set_property(phase=None, s=None, l=None, g=None, V_over_F=None):
+def phase_select_property(phase=None, s=None, l=None, g=None, V_over_F=None):
     r'''Determines which phase's property should be set as a default, given
     the phase a chemical is, and the property values of various phases. For the
     case of liquid-gas phase, returns None. If the property is not available
@@ -1405,7 +1390,7 @@ def phase_set_property(phase=None, s=None, l=None, g=None, V_over_F=None):
 
     Examples
     --------
-    >>> phase_set_property(phase='g', l=1560.14, g=3312.)
+    >>> phase_select_property(phase='g', l=1560.14, g=3312.)
     3312.0
     '''
     if phase == 's':
@@ -1420,8 +1405,6 @@ def phase_set_property(phase=None, s=None, l=None, g=None, V_over_F=None):
         return None
     else:
         raise Exception('Property not recognized')
-
-#print phase_set_property(phase='l', l=1560.14, g=3312.)
 
 
 TEST_METHOD_1 = 'Test method 1'
@@ -2848,3 +2831,7 @@ class TPDependentProperty(TDependentProperty):
             except:
                 pass
         return None
+
+
+
+
