@@ -22,11 +22,11 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['K', 'Rachford_Rice_flash_error', 'flash', 'dew_at_T', 
+__all__ = ['K', 'Rachford_Rice_flash_error', 'Rachford_Rice_solution', 'Li_Johns_Ahmadi_solution', 'flash', 'dew_at_T', 
            'bubble_at_T', 'identify_phase', 'mixture_phase_methods', 
            'identify_phase_mixture', 'Pbubble_mixture', 'Pdew_mixture']
 
-from scipy.optimize import fsolve
+from scipy.optimize import fsolve, newton, brenth
 from thermo.utils import exp, log
 import numpy as np
 import os
@@ -45,17 +45,190 @@ def K(P, Psat, fugacity=1, gamma=1):
     0.07895386133728102
     '''
     # http://www.jmcampbell.com/tip-of-the-month/2006/09/how-to-determine-k-values/
-    _K = Psat*gamma/P/fugacity
-    return _K
+    return Psat*gamma/P/fugacity
+
+
 
 
 
 ### Solutions using a existing algorithms
-def Rachford_Rice_flash_error(V_over_F, zs, ks):
-    total = 0
-    for i in range(len(zs)):
-        total += zs[i]*(ks[i]-1)/(1+V_over_F*(ks[i]-1))
-    return total
+def Rachford_Rice_flash_error(V_over_F, zs, Ks):
+    r'''Calculates the objective function of the Rachford-Rice flash equation.
+    This function should be called by a solver seeking a solution to a flash
+    calculation. The unknown variable is `V_over_F`, for which a solution 
+    must be between 0 and 1.
+    
+    .. math::
+        \sum_i \frac{z_i(K_i-1)}{1 + \frac{V}{F}(K_i-1)} = 0
+
+    Parameters
+    ----------
+    V_over_F : float
+        Vapor fraction guess [-]
+    zs : list[float]
+        Overall mole fractions of all species, [-]
+    Ks : list[float]
+        Equilibrium K-values, [-]
+
+    Returns
+    -------
+    error : float
+        Deviation between the objective function at the correct V_over_F
+        and the attempted V_over_F, [-]
+
+    Notes
+    -----
+    The derivation is as follows:
+    
+    .. math::
+        F z_i = L x_i + V y_i
+        
+        x_i = \frac{z_i}{1 + \frac{V}{F}(K_i-1)}
+        
+        \sum_i y_i = \sum_i K_i x_i = 1
+        
+        \sum_i(y_i - x_i)=0
+        
+        \sum_i \frac{z_i(K_i-1)}{1 + \frac{V}{F}(K_i-1)} = 0
+
+    Examples
+    --------
+    >>> Rachford_Rice_flash_error(0.5, zs=[0.5, 0.3, 0.2], 
+    ... Ks=[1.685, 0.742, 0.532])
+    0.04406445591174976
+
+    References
+    ----------
+    .. [1] Rachford, H. H. Jr, and J. D. Rice. "Procedure for Use of Electronic
+       Digital Computers in Calculating Flash Vaporization Hydrocarbon 
+       Equilibrium." Journal of Petroleum Technology 4, no. 10 (October 1, 
+       1952): 19-3. doi:10.2118/952327-G.
+    '''
+    return sum([zi*(Ki-1.)/(1.+V_over_F*(Ki-1.)) for Ki, zi in zip(Ks, zs)])
+
+
+def Rachford_Rice_solution(zs, Ks):
+    r'''Solves the objective function of the Rachford-Rice flash equation.
+    Uses the method proposed in [2]_ to obtain an initial guess.
+    
+    .. math::
+        \sum_i \frac{z_i(K_i-1)}{1 + \frac{V}{F}(K_i-1)} = 0
+
+    Parameters
+    ----------
+    zs : list[float]
+        Overall mole fractions of all species, [-]
+    Ks : list[float]
+        Equilibrium K-values, [-]
+
+    Returns
+    -------
+    V_over_F : float
+        Vapor fraction solution [-]
+    xs : list[float]
+        Mole fractions of each species in the liquid phase, [-]
+    ys : list[float]
+        Mole fractions of each species in the vapor phase, [-]
+
+    Notes
+    -----
+    The initial guess is the average of the following, as described in [2]_.
+    
+    .. math::
+        \left(\frac{V}{F}\right)_{min} = \frac{(K_{max}-K_{min})z_{of\;K_{max}} 
+        - (1-K_{min})}{(1-K_{min})(K_{max}-1)}
+
+        \left(\frac{V}{F}\right)_{max} = \frac{1}{1-K_{min}}
+    
+    Another algorithm for determining the range of the correct solution is
+    given in [3]_; [2]_ provides a narrower range however. For both cases,
+    each guess should be limited to be between 0 and 1 as they are often
+    negative or larger than 1.
+    
+    .. math::
+        \left(\frac{V}{F}\right)_{min} = \frac{1}{1-K_{max}}
+        
+        \left(\frac{V}{F}\right)_{max} = \frac{1}{1-K_{min}}
+
+    If the `newton` method does not converge, a bisection method (brenth) is 
+    used instead. However, it is somewhat slower, especially as newton will
+    attempt 50 iterations before giving up.
+
+    Examples
+    --------
+    >>> Rachford_Rice_solution(zs=[0.5, 0.3, 0.2], Ks=[1.685, 0.742, 0.532])
+    (0.6907302627738544, [0.33940869696634357, 0.3650560590371706, 0.2955352439964858], [0.5719036543882889, 0.27087159580558057, 0.15722474980613044])
+
+    References
+    ----------
+    .. [1] Rachford, H. H. Jr, and J. D. Rice. "Procedure for Use of Electronic
+       Digital Computers in Calculating Flash Vaporization Hydrocarbon 
+       Equilibrium." Journal of Petroleum Technology 4, no. 10 (October 1, 
+       1952): 19-3. doi:10.2118/952327-G.
+    .. [2] Li, Yinghui, Russell T. Johns, and Kaveh Ahmadi. "A Rapid and Robust
+       Alternative to Rachford-Rice in Flash Calculations." Fluid Phase 
+       Equilibria 316 (February 25, 2012): 85-97. 
+       doi:10.1016/j.fluid.2011.12.005.
+    .. [3] Whitson, Curtis H., and Michael L. Michelsen. "The Negative Flash." 
+       Fluid Phase Equilibria, Proceedings of the Fifth International 
+       Conference, 53 (December 1, 1989): 51-71. 
+       doi:10.1016/0378-3812(89)80072-X.
+    '''
+    # TODO binary and ternary explicit solutions
+    Kmin = min(Ks)
+    Kmax = max(Ks)
+    z_of_Kmax = zs[Ks.index(Kmax)]
+
+    V_over_F_min = ((Kmax-Kmin)*z_of_Kmax - (1.-Kmin))/((1.-Kmin)*(Kmax-1.))
+    V_over_F_max = 1./(1.-Kmin)
+        
+    V_over_F_min2 = max(0., V_over_F_min)
+    V_over_F_max2 = min(1., V_over_F_max)
+
+    x0 = (V_over_F_min2 + V_over_F_max2)*0.5
+    try:
+        # Newton's method is marginally faster than brenth
+        V_over_F = newton(Rachford_Rice_flash_error, x0=x0, args=(zs, Ks))
+    except:
+        V_over_F = brenth(Rachford_Rice_flash_error, V_over_F_max-1E-7, V_over_F_min+1E-7, args=(zs, Ks))
+    # Cases not covered by the above solvers: When all components have K > 1, or all have K < 1
+    # Should get a solution for all other cases.
+    xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]
+    ys = [Ki*xi for xi, Ki in zip(xs, Ks)]
+    return V_over_F, xs, ys
+
+
+def Li_Johns_Ahmadi_solution(zs, Ks):
+    # Re-order both Ks and Zs by K value, higher coming first
+    p = sorted(zip(Ks,zs), reverse=True)
+    Ks_sorted, zs_sorted = [K for (K,z) in p], [z for (K,z) in p]
+
+    # Largest K value and corresponding overall mole fraction
+    k1 = Ks_sorted[0]
+    z1 = zs_sorted[0]
+    # Smallest K value
+    kn = Ks_sorted[-1]
+
+    V_over_F_min = (1. - kn)/(k1 - kn)*z1
+    V_over_F_max = (1. - kn)/(k1 - kn)
+    V_over_F_guess = (V_over_F_min+V_over_F_max)*0.5
+    
+    length = len(zs)-1
+    kn_m_1 = kn-1.
+    k1_m_1 = (k1-1.)
+    t1 = (k1-kn)/(kn-1.)
+    iterable = zip(Ks_sorted[1:length], zs_sorted[1:length])
+    
+    objective = lambda x1: 1. + t1*x1 + sum([(ki-kn)/(kn_m_1) * zi*k1_m_1*x1 /( (ki-1.)*z1 + (k1-ki)*x1) for ki, zi in iterable])
+    try:
+        x1 = newton(objective, V_over_F_guess)
+    except:
+        x1 = brenth(objective, V_over_F_max-1E-7, V_over_F_min+1E-7)
+    V_over_F = (-x1 + z1)/(x1*(k1 - 1.))
+    xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]
+    ys = [Ki*xi for xi, Ki in zip(xs, Ks)]
+    return V_over_F, xs, ys
+
 
 
 def flash(P, zs, Psats, fugacities=None, gammas=None):
@@ -65,26 +238,23 @@ def flash(P, zs, Psats, fugacities=None, gammas=None):
         gammas = [1 for i in range(len(zs))]
     if not none_and_length_check((zs, Psats, fugacities, gammas)):
         raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
-    ks = [K(P, Psats[i], fugacities[i], gammas[i]) for i in range(len(zs))]
+    Ks = [K(P, Psats[i], fugacities[i], gammas[i]) for i in range(len(zs))]
 
-    def valid_range(zs, ks):
+    def valid_range(zs, Ks):
         valid = True
-        if sum([zs[i]*ks[i] for i in range(len(ks))]) < 1:
+        if sum([zs[i]*Ks[i] for i in range(len(Ks))]) < 1:
             valid = False
-        if sum([zs[i]/ks[i] for i in range(len(ks))]) < 1:
+        if sum([zs[i]/Ks[i] for i in range(len(Ks))]) < 1:
             valid = False
         return valid
-    if not valid_range(zs, ks):
+    if not valid_range(zs, Ks):
         raise Exception('Solution does not exist')
-#    zs = [0.5, 0.3, 0.2] practice solution
-#    ks = [1.685, 0.742, 0.532]
     x0 = np.array([.5])
-    V_over_F = fsolve(Rachford_Rice_flash_error, x0=x0, args=(zs, ks))[0]
+    V_over_F = fsolve(Rachford_Rice_flash_error, x0=x0, args=(zs, Ks))[0]
     if V_over_F < 0:
-#        print zs, ks
         raise Exception('V_over_F is negative!')
-    xs = [zs[i]/(1+V_over_F*(ks[i]-1)) for i in range(len(zs))]
-    ys = [ks[i]*xs[i] for i in range(len(zs))]
+    xs = [zs[i]/(1+V_over_F*(Ks[i]-1)) for i in range(len(zs))]
+    ys = [Ks[i]*xs[i] for i in range(len(zs))]
     return xs, ys, V_over_F
 
 

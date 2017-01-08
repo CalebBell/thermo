@@ -666,7 +666,12 @@ should be calculated by this method, in a user subclass.')
         x = alpha/Tr - 1.
         c = self.Psat_coeffs_limiting if Tr < 0.32 else self.Psat_coeffs
         y = horner(c, x)
-        Psat = exp(y)*Tr*self.Pc
+        try:
+            Psat = exp(y)*Tr*self.Pc
+        except OverflowError:
+            # coefficients sometimes overflow before T is lowered to 0.32Tr
+            polish = False
+            Psat = 0
         
         if polish:
             def to_solve(P):
