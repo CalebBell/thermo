@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['K', 'Rachford_Rice_flash_error', 'Rachford_Rice_solution', 'Li_Johns_Ahmadi_solution', 'flash', 'dew_at_T', 
+__all__ = ['K', 'Rachford_Rice_flash_error', 'Rachford_Rice_solution', 'Li_Johns_Ahmadi_solution', 'flash_inner_loop', 'flash', 'dew_at_T', 
            'bubble_at_T', 'identify_phase', 'mixture_phase_methods', 
            'identify_phase_mixture', 'Pbubble_mixture', 'Pdew_mixture']
 
@@ -157,7 +157,7 @@ def Rachford_Rice_solution(zs, Ks):
     Examples
     --------
     >>> Rachford_Rice_solution(zs=[0.5, 0.3, 0.2], Ks=[1.685, 0.742, 0.532])
-    (0.6907302627738544, [0.33940869696634357, 0.3650560590371706, 0.2955352439964858], [0.5719036543882889, 0.27087159580558057, 0.15722474980613044])
+    (0.6907302627738542, [0.3394086969663436, 0.3650560590371706, 0.2955352439964858], [0.571903654388289, 0.27087159580558057, 0.15722474980613044])
 
     References
     ----------
@@ -174,7 +174,6 @@ def Rachford_Rice_solution(zs, Ks):
        Conference, 53 (December 1, 1989): 51-71. 
        doi:10.1016/0378-3812(89)80072-X.
     '''
-    # TODO binary and ternary explicit solutions
     Kmin = min(Ks)
     Kmax = max(Ks)
     z_of_Kmax = zs[Ks.index(Kmax)]
@@ -189,6 +188,10 @@ def Rachford_Rice_solution(zs, Ks):
     try:
         # Newton's method is marginally faster than brenth
         V_over_F = newton(Rachford_Rice_flash_error, x0=x0, args=(zs, Ks))
+        # newton skips out of its specified range in some cases, finding another solution
+        # Check for that with asserts, and use brenth if it did
+        assert x1 >= V_over_F_min2
+        assert x1 <= V_over_F_max2
     except:
         V_over_F = brenth(Rachford_Rice_flash_error, V_over_F_max-1E-7, V_over_F_min+1E-7, args=(zs, Ks))
     # Cases not covered by the above solvers: When all components have K > 1, or all have K < 1
@@ -199,6 +202,61 @@ def Rachford_Rice_solution(zs, Ks):
 
 
 def Li_Johns_Ahmadi_solution(zs, Ks):
+    r'''Solves the objective function of the Li-Johns-Ahmadi flash equation.
+    Uses the method proposed in [1]_ to obtain an initial guess.
+    
+    .. math::
+        0 = 1 + \left(\frac{K_{max}-K_{min}}{K_{min}-1}\right)x_1 
+        + \sum_{i=2}^{n-1}\frac{K_i-K_{min}}{K_{min}-1}\left[\frac{z_i(K_{max}
+        -1)x_{max}}{(K_i-1)z_{max} + (K_{max}-K_i)x_{max}}\right]
+
+    Parameters
+    ----------
+    zs : list[float]
+        Overall mole fractions of all species, [-]
+    Ks : list[float]
+        Equilibrium K-values, [-]
+
+    Returns
+    -------
+    V_over_F : float
+        Vapor fraction solution [-]
+    xs : list[float]
+        Mole fractions of each species in the liquid phase, [-]
+    ys : list[float]
+        Mole fractions of each species in the vapor phase, [-]
+
+    Notes
+    -----
+    The initial guess is the average of the following, as described in [1]_.
+    Each guess should be limited to be between 0 and 1 as they are often
+    negative or larger than 1. `max` refers to the corresponding mole fractions
+    for the species with the largest K value.
+    
+    .. math::
+        \left(\frac{1-K_{min}}{K_{max}-K_{min}}\right)z_{max}\le x_{max} \le
+        \left(\frac{1-K_{min}}{K_{max}-K_{min}}\right)
+        
+    If the `newton` method does not converge, a bisection method (brenth) is 
+    used instead. However, it is somewhat slower, especially as newton will
+    attempt 50 iterations before giving up.
+    
+    This method does not work for problems of only two components.
+    K values are sorted internally. Has not been found to be quicker than the
+    Rachford-Rice equation.
+
+    Examples
+    --------
+    >>> Li_Johns_Ahmadi_solution(zs=[0.5, 0.3, 0.2], Ks=[1.685, 0.742, 0.532])
+    (0.6907302627738544, [0.33940869696634357, 0.3650560590371706, 0.2955352439964858], [0.5719036543882889, 0.27087159580558057, 0.15722474980613044])
+
+    References
+    ----------
+    .. [1] Li, Yinghui, Russell T. Johns, and Kaveh Ahmadi. "A Rapid and Robust
+       Alternative to Rachford-Rice in Flash Calculations." Fluid Phase 
+       Equilibria 316 (February 25, 2012): 85-97. 
+       doi:10.1016/j.fluid.2011.12.005.
+    '''
     # Re-order both Ks and Zs by K value, higher coming first
     p = sorted(zip(Ks,zs), reverse=True)
     Ks_sorted, zs_sorted = [K for (K,z) in p], [z for (K,z) in p]
@@ -224,15 +282,112 @@ def Li_Johns_Ahmadi_solution(zs, Ks):
     iterable = zip(Ks_sorted[1:length], zs_sorted[1:length])
     
     objective = lambda x1: 1. + t1*x1 + sum([(ki-kn)/(kn_m_1) * zi*k1_m_1*x1 /( (ki-1.)*z1 + (k1-ki)*x1) for ki, zi in iterable])
-#    try:
-#        x1 = newton(objective, V_over_F_guess)
-#    except:
-    # newton skips out of its specified range in some cases, finding another solution
-    x1 = brenth(objective, V_over_F_max-1E-7, V_over_F_min+1E-7)
+    try:
+        x1 = newton(objective, V_over_F_guess)
+        # newton skips out of its specified range in some cases, finding another solution
+        # Check for that with asserts, and use brenth if it did
+        assert x1 >= V_over_F_min2
+        assert x1 <= V_over_F_max2
+    except:
+        x1 = brenth(objective, V_over_F_max-1E-7, V_over_F_min+1E-7)
     V_over_F = (-x1 + z1)/(x1*(k1 - 1.))
     xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]
     ys = [Ki*xi for xi, Ki in zip(xs, Ks)]
     return V_over_F, xs, ys
+
+
+flash_inner_loop_methods = ['Analytical', 'Rachford-Rice', 'Li-Johns-Ahmadi']
+def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None):
+    r'''This function handles the solution of the inner loop of a flash
+    calculation, solving for liquid and gas mole fractions and vapor fraction
+    based on specified overall mole fractions and K values. As K values are
+    weak functions of composition, this should be called repeatedly by an outer
+    loop. Will automatically select an algorithm to use if no Method is 
+    provided. Should always provide a solution.
+
+    The automatic algorithm selection will try an analytical solution, and use
+    the Rachford-Rice method if there are 4 or more components in the mixture.
+
+    Parameters
+    ----------
+    zs : list[float]
+        Overall mole fractions of all species, [-]
+    Ks : list[float]
+        Equilibrium K-values, [-]
+
+    Returns
+    -------
+    V_over_F : float
+        Vapor fraction solution [-]
+    xs : list[float]
+        Mole fractions of each species in the liquid phase, [-]
+    ys : list[float]
+        Mole fractions of each species in the vapor phase, [-]
+    methods : list, only returned if AvailableMethods == True
+        List of methods which can be used to obtain a solution with the given 
+        inputs
+
+    Other Parameters
+    ----------------
+    Method : string, optional
+        The method name to use. Accepted methods are 'Analytical', 
+        'Rachford-Rice', and 'Li-Johns-Ahmadi'. All valid values are also held  
+        in the list `flash_inner_loop_methods`.
+    AvailableMethods : bool, optional
+        If True, function will determine which methods can be used to obtain
+        a solution for the desired chemical, and will return methods instead of
+        `V_over_F`, `xs`, and `ys`.
+
+    Notes
+    -----
+    A total of three methods are available for this function. They are:
+
+        * 'Analytical', an exact solution derived with SymPy, applicable only
+          only to mixtures of two or three components
+        * 'Rachford-Rice', which numerically solves an objective function
+          described in :obj:`Rachford_Rice_solution`.
+        * 'Li-Johns-Ahmadi', which numerically solves an objective function
+          described in :obj:`Li_Johns_Ahmadi_solution`.
+
+    Examples
+    --------
+    >>> flash_inner_loop(zs=[0.5, 0.3, 0.2], Ks=[1.685, 0.742, 0.532])
+    (0.6907302627738537, [0.3394086969663437, 0.36505605903717053, 0.29553524399648573], [0.5719036543882892, 0.2708715958055805, 0.1572247498061304])
+    '''
+    l = len(zs)
+    def list_methods():
+        methods = []
+        if l in [2,3]:
+            methods.append('Analytical')
+        if l >= 2:
+            methods.append('Rachford-Rice')
+        if l >= 3:
+            methods.append('Li-Johns-Ahmadi')
+        return methods
+    if AvailableMethods:
+        return list_methods()
+    if not Method:
+        Method = list_methods()[0]
+    if Method == 'Analytical':
+        if l == 2:
+            z1, z2 = zs
+            K1, K2 = Ks
+            V_over_F = (-K1*z1 - K2*z2 + z1 + z2)/(K1*K2*z1 + K1*K2*z2 - K1*z1 - K1*z2 - K2*z1 - K2*z2 + z1 + z2)
+        elif l == 3:
+            z1, z2, z3 = zs
+            K1, K2, K3 = Ks
+            V_over_F = (-K1*K2*z1/2 - K1*K2*z2/2 - K1*K3*z1/2 - K1*K3*z3/2 + K1*z1 + K1*z2/2 + K1*z3/2 - K2*K3*z2/2 - K2*K3*z3/2 + K2*z1/2 + K2*z2 + K2*z3/2 + K3*z1/2 + K3*z2/2 + K3*z3 - z1 - z2 - z3 - (K1**2*K2**2*z1**2 + 2*K1**2*K2**2*z1*z2 + K1**2*K2**2*z2**2 - 2*K1**2*K2*K3*z1**2 - 2*K1**2*K2*K3*z1*z2 - 2*K1**2*K2*K3*z1*z3 + 2*K1**2*K2*K3*z2*z3 - 2*K1**2*K2*z1*z2 + 2*K1**2*K2*z1*z3 - 2*K1**2*K2*z2**2 - 2*K1**2*K2*z2*z3 + K1**2*K3**2*z1**2 + 2*K1**2*K3**2*z1*z3 + K1**2*K3**2*z3**2 + 2*K1**2*K3*z1*z2 - 2*K1**2*K3*z1*z3 - 2*K1**2*K3*z2*z3 - 2*K1**2*K3*z3**2 + K1**2*z2**2 + 2*K1**2*z2*z3 + K1**2*z3**2 - 2*K1*K2**2*K3*z1*z2 + 2*K1*K2**2*K3*z1*z3 - 2*K1*K2**2*K3*z2**2 - 2*K1*K2**2*K3*z2*z3 - 2*K1*K2**2*z1**2 - 2*K1*K2**2*z1*z2 - 2*K1*K2**2*z1*z3 + 2*K1*K2**2*z2*z3 + 2*K1*K2*K3**2*z1*z2 - 2*K1*K2*K3**2*z1*z3 - 2*K1*K2*K3**2*z2*z3 - 2*K1*K2*K3**2*z3**2 + 4*K1*K2*K3*z1**2 + 4*K1*K2*K3*z1*z2 + 4*K1*K2*K3*z1*z3 + 4*K1*K2*K3*z2**2 + 4*K1*K2*K3*z2*z3 + 4*K1*K2*K3*z3**2 + 2*K1*K2*z1*z2 - 2*K1*K2*z1*z3 - 2*K1*K2*z2*z3 - 2*K1*K2*z3**2 - 2*K1*K3**2*z1**2 - 2*K1*K3**2*z1*z2 - 2*K1*K3**2*z1*z3 + 2*K1*K3**2*z2*z3 - 2*K1*K3*z1*z2 + 2*K1*K3*z1*z3 - 2*K1*K3*z2**2 - 2*K1*K3*z2*z3 + K2**2*K3**2*z2**2 + 2*K2**2*K3**2*z2*z3 + K2**2*K3**2*z3**2 + 2*K2**2*K3*z1*z2 - 2*K2**2*K3*z1*z3 - 2*K2**2*K3*z2*z3 - 2*K2**2*K3*z3**2 + K2**2*z1**2 + 2*K2**2*z1*z3 + K2**2*z3**2 - 2*K2*K3**2*z1*z2 + 2*K2*K3**2*z1*z3 - 2*K2*K3**2*z2**2 - 2*K2*K3**2*z2*z3 - 2*K2*K3*z1**2 - 2*K2*K3*z1*z2 - 2*K2*K3*z1*z3 + 2*K2*K3*z2*z3 + K3**2*z1**2 + 2*K3**2*z1*z2 + K3**2*z2**2)**0.5/2)/(K1*K2*K3*z1 + K1*K2*K3*z2 + K1*K2*K3*z3 - K1*K2*z1 - K1*K2*z2 - K1*K2*z3 - K1*K3*z1 - K1*K3*z2 - K1*K3*z3 + K1*z1 + K1*z2 + K1*z3 - K2*K3*z1 - K2*K3*z2 - K2*K3*z3 + K2*z1 + K2*z2 + K2*z3 + K3*z1 + K3*z2 + K3*z3 - z1 - z2 - z3)
+        else:
+            raise Exception('Only solutions of one or two variables are available analytically')
+        xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]
+        ys = [Ki*xi for xi, Ki in zip(xs, Ks)]
+        return V_over_F, xs, ys
+    elif Method == 'Rachford-Rice':
+        return Rachford_Rice_solution(zs=zs, Ks=Ks)
+    elif Method == 'Li-Johns-Ahmadi':
+        return Li_Johns_Ahmadi_solution(zs=zs, Ks=Ks)
+    else:
+        raise Exception('Incorrect Method input')
 
 
 

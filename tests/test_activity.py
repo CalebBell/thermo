@@ -22,8 +22,10 @@ SOFTWARE.'''
 
 from numpy.testing import assert_allclose
 import pytest
+import numpy as np
 import pandas as pd
 from thermo.activity import *
+
 
 def test_Rachford_Rice_flash_error():
     err = Rachford_Rice_flash_error(0.5, zs=[0.5, 0.3, 0.2], Ks=[1.685, 0.742, 0.532])
@@ -36,11 +38,37 @@ def test_Rachford_Rice_solution():
     assert_allclose(V_over_F, 0.6907302627738544)
     assert_allclose(xs, xs_expect)
     assert_allclose(ys, ys_expect)
+
     
+def test_flash_inner_loop():
+    V_over_F, xs, ys = flash_inner_loop(zs=[0.5, 0.3, 0.2], Ks=[1.685, 0.742, 0.532], Method='Analytical')
+    xs_expect = [0.33940869696634357, 0.3650560590371706, 0.2955352439964858]
+    ys_expect = [0.5719036543882889, 0.27087159580558057, 0.15722474980613044]
+    assert_allclose(V_over_F, 0.6907302627738544)
+    assert_allclose(xs, xs_expect)
+    assert_allclose(ys, ys_expect)
+
+#     Self created random case, twice, to force the recognition
+    V_over_F, xs, ys = flash_inner_loop(zs=[0.6, 0.4], Ks=[1.685, 0.4], Method='Analytical')
+    assert_allclose(V_over_F, 0.416058394160584)
+    V_over_F, xs, ys = flash_inner_loop(zs=[0.6, 0.4], Ks=[1.685, 0.4])
+    assert_allclose(V_over_F, 0.416058394160584)
+    
+    with pytest.raises(Exception):
+        flash_inner_loop(zs=[0.6, 0.4], Ks=[1.685, 0.4], Method='FAIL')
+    with pytest.raises(Exception):
+        flash_inner_loop(zs=[0.1, 0.2, 0.3, 0.4], Ks=[4.2, 1.75, 0.74, 0.34], Method='Analytical')
+        
+    methods = flash_inner_loop(zs=[0.1, 0.2, 0.3, 0.4], Ks=[4.2, 1.75, 0.74, 0.34], AvailableMethods=True)
+    assert methods == ['Rachford-Rice', 'Li-Johns-Ahmadi']
     
 
 def test_flash_solution_algorithms():
-    algorithms = [Rachford_Rice_solution, Li_Johns_Ahmadi_solution]
+    flash_inner_loop_RR = lambda zs, Ks: flash_inner_loop(zs=zs, Ks=Ks, Method='Rachford-Rice')
+    flash_inner_loop_LJA = lambda zs, Ks: flash_inner_loop(zs=zs, Ks=Ks, Method='Li-Johns-Ahmadi')
+    
+    algorithms = [Rachford_Rice_solution, Li_Johns_Ahmadi_solution, 
+                  flash_inner_loop, flash_inner_loop_RR, flash_inner_loop_LJA]
     for algo in algorithms:
         # Said to be in:  J.D. Seader, E.J. Henley, D.K. Roper, Separation Process Principles, third ed., John Wiley & Sons, New York, 2010.
         zs = [0.1, 0.2, 0.3, 0.4]
@@ -112,3 +140,16 @@ def test_flash_solution_algorithms():
         V_over_F, _, _ = algo(zs=zs, Ks=Ks)
         
         assert_allclose(V_over_F, 0.191698639911785)
+
+
+@pytest.mark.slow
+def test_fuss():
+#    np.random.seed(0)
+    for i in range(5000):
+        n = np.random.randint(2,100)
+        Ks = 2*np.random.random(n)
+        zs = np.random.random(n)
+        zs = zs/sum(zs)
+        if any(Ks > 1) and any(Ks < 1):
+            zs, Ks = list(zs), list(Ks)
+            flash_inner_loop(zs=zs, Ks=Ks)
