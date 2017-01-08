@@ -648,7 +648,7 @@ def Joule_Thomson(T, V, Cp, dV_dT=None, beta=None):
     if dV_dT:
         return (T*dV_dT - V)/Cp
     elif beta:
-        return V/Cp*(beta*T - 1)
+        return V/Cp*(beta*T - 1.)
     else:
         raise Exception('Either dV_dT or beta is needed')
 
@@ -1536,6 +1536,8 @@ class TDependentProperty(object):
 
     property_min = 0
     property_max = 1E4  # Arbitrary max
+    T_cached = None
+    
 
 #    Tmin = None
 #    Tmax = None
@@ -1547,6 +1549,30 @@ class TDependentProperty(object):
     def __deepcopy__(self, memo):
         # By default, share state among subsequent objects 
         return self
+
+    def __call__(self, T):
+        r'''Convenience method to calculate the property; calls 
+        :obj:`T_dependent_property`. Caches previously calculated value,
+        which is an overhead when calculating many different values of
+        a property. See :obj:`T_dependent_property` for more details as to the
+        calculation procedure.
+        
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the property, [K]
+
+        Returns
+        -------
+        prop : float
+            Calculated property, [`units`]
+        '''
+        if T == self.T_cached:
+            return self.prop_cached
+        else:
+            self.prop_cached = self.T_dependent_property(T)
+            self.T_cached = T
+            return self.prop_cached
 
     def set_user_methods(self, user_methods, forced=False):
         r'''Method used to select certain property methods as having a higher
@@ -1655,7 +1681,7 @@ class TDependentProperty(object):
         elif prop > self.property_max:
             return False
         return True
-
+        
     def T_dependent_property(self, T):
         r'''Method to calculate the property with sanity checking and without
         specifying a specific method. `select_valid_methods` is used to obtain
@@ -2256,6 +2282,33 @@ class TPDependentProperty(TDependentProperty):
     interpolation_P = None
     method_P = None
     forced_P = False
+    TP_cached = None
+
+    def __call__(self, T, P):
+        r'''Convenience method to calculate the property; calls 
+        :obj:`TP_dependent_property`. Caches previously calculated value,
+        which is an overhead when calculating many different values of
+        a property. See :obj:`TP_dependent_property` for more details as to the
+        calculation procedure.
+        
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the property, [K]
+        P : float
+            Pressure at which to calculate the property, [Pa]
+
+        Returns
+        -------
+        prop : float
+            Calculated property, [`units`]
+        '''
+        if (T, P) == self.TP_cached:
+            return self.prop_cached
+        else:
+            self.prop_cached = self.TP_or_T_dependent_property(T, P)
+            self.TP_cached = (T, P)
+            return self.prop_cached
 
     def set_user_methods_P(self, user_methods_P, forced_P=False):
         r'''Method to set the pressure-dependent property methods desired for
@@ -2358,7 +2411,7 @@ class TPDependentProperty(TDependentProperty):
         T : float
             Temperature at which to calculate the property, [K]
         P : float
-            Pressure at which to calculate the property, [Oa]
+            Pressure at which to calculate the property, [Pa]
 
         Returns
         -------
@@ -2389,6 +2442,13 @@ class TPDependentProperty(TDependentProperty):
                 pass
         # Function returns None if it does not work.
         return None
+
+    def TP_or_T_dependent_property(self, T, P):
+        prop = self.TP_dependent_property(T, P)
+        if prop is None:
+            prop = self.T_dependent_property(T)
+        return prop
+
 
     def set_tabular_data_P(self, Ts, Ps, properties, name=None, check_properties=True):
         r'''Method to set tabular data to be used for interpolation.

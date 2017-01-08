@@ -225,8 +225,10 @@ def test_TDependentProperty():
     assert [TEST_METHOD_2] == EtOH.select_valid_methods(390) # Choice 1 but only one available
 
     # Test calculate
-    # Mid, all methods
-    assert 1.9 == EtOH.T_dependent_property(300)
+    # Mid, all methods, and with __call__, twice
+    assert 1.9 == EtOH.T_dependent_property(300)    
+    assert 1.9 == EtOH(300)
+    assert 1.9 == EtOH(300)
     assert 1.9 == EtOH.calculate(300, TEST_METHOD_2)
     assert 1.6 == EtOH.calculate(300, TEST_METHOD_1)
     # High both methods
@@ -242,6 +244,7 @@ def test_TDependentProperty():
     # Lower and higher than any methods
     assert None == EtOH.T_dependent_property(150)
     assert None == EtOH.T_dependent_property(500)
+
 
     # Test some failures
     with pytest.raises(Exception):

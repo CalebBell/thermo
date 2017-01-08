@@ -219,6 +219,9 @@ class Chemical(object): # pragma: no cover
         self.Hfus_methods = Hfus(MW=self.MW, AvailableMethods=True, CASRN=self.CAS)
         self.Hfus_method = self.Hfus_methods[0]
 
+        self.Hsub_methods = Hsub(MW=self.MW, AvailableMethods=True, CASRN=self.CAS)
+        self.Hsub_method = self.Hsub_methods[0]
+
         # Fire Safety Limits
         self.Tflash_sources = Tflash(self.CAS, AvailableMethods=True)
         self.Tflash_source = self.Tflash_sources[0]
@@ -292,6 +295,9 @@ class Chemical(object): # pragma: no cover
         # Enthalpy
         self.Hfus = Hfus(MW=self.MW, Method=self.Hfus_method, CASRN=self.CAS)
         self.Hfusm = property_mass_to_molar(self.Hfus, self.MW) if self.Hfus else None
+        
+        self.Hsub = Hsub(MW=self.MW, Method=self.Hsub_method, CASRN=self.CAS)
+        self.Hsubm = property_mass_to_molar(self.Hsub, self.MW)
         
         # Chemistry
         self.Hf = Hf(CASRN=self.CAS, Method=self.Hf_source)
@@ -386,10 +392,6 @@ class Chemical(object): # pragma: no cover
         self.Hvap_Tbm = self.EnthalpyVaporization.T_dependent_property(self.Tb) if self.Tb else None
         self.Hvap_Tb = property_molar_to_mass(self.Hvap_Tbm, self.MW)
         
-        
-        self.Hsub_methods = Hsub(MW=self.MW, AvailableMethods=True, CASRN=self.CAS)
-        self.Hsub_method = self.Hsub_methods[0]
-
         self.ViscosityLiquid = ViscosityLiquid(CASRN=self.CAS, MW=self.MW, Tm=self.Tm, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, omega=self.omega, Psat=self.VaporPressure.T_dependent_property, Vml=self.VolumeLiquid.T_dependent_property)
         
         vmg_calc = lambda T : self.VolumeGas.TP_dependent_property(T, 101325)
@@ -414,15 +416,181 @@ class Chemical(object): # pragma: no cover
         self.molecular_diameter_source = self.molecular_diameter_sources[0]
         self.molecular_diameter = molecular_diameter(Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, Vm=self.Vml_Tm, Vb=self.Vml_Tb, Method=self.molecular_diameter_source, CASRN=self.CAS)
 
+
+    @property
+    def Psat(self):
+        return self.VaporPressure(self.T)
+
+    @property
+    def Vms(self):
+        return self.VolumeSolid(self.T)
+
+    @property
+    def rhos(self):
+        return Vm_to_rho(self.Vms, self.MW) if self.Vms else None
+
+    @property
+    def rhosm(self):
+        return 1./self.Vms if self.Vms else None
+
+    @property
+    def Zs(self):
+        return Z(self.T, self.P, self.Vms) if self.Vms else None
+
+    @property
+    def mul(self):
+        return self.ViscosityLiquid(self.T, self.P)
+
+    @property
+    def mug(self):
+        return self.ViscosityGas(self.T, self.P)
+
+    @property
+    def kl(self):
+        return self.ThermalConductivityLiquid(self.T, self.P)
+
+    @property
+    def kg(self):
+        return self.ThermalConductivityGas(self.T, self.P)
+
+    @property
+    def sigma(self):
+        return self.SurfaceTension(self.T)
+
+    @property
+    def permittivity(self):
+        return self.Permittivity(self.T)
+
+    @property
+    def solubility_parameter(self):
+        return solubility_parameter(T=self.T, Hvapm=self.Hvapm, Vml=self.Vml, 
+                                    Method=self.solubility_parameter_method, 
+                                    CASRN=self.CAS)
+
+    @property 
+    def Parachor(self):
+        if all((self.sigma, self.MW, self.rhol, self.rhog)):
+            return Parachor(sigma=self.sigma, MW=self.MW, rhol=self.rhol, rhog=self.rhog)
+        return None
+
+    @property
+    def JTl(self):
+        if all((self.Vml, self.Cplm, self.isobaric_expansion_l)):
+            return Joule_Thomson(T=self.T, V=self.Vml, Cp=self.Cplm, beta=self.isobaric_expansion_l)
+        return None
+    
+    @property
+    def JTg(self):
+        if all((self.Vmg, self.Cpgm, self.isobaric_expansion_g)):
+            return Joule_Thomson(T=self.T, V=self.Vmg, Cp=self.Cpgm, beta=self.isobaric_expansion_g)
+        return None
+
+    @property
+    def nul(self):
+        if all([self.mul, self.rhol]):
+            return nu_mu_converter(mu=self.mul, rho=self.rhol)
+        return None
+
+    @property
+    def nug(self):
+        if all([self.mug, self.rhog]):
+            return nu_mu_converter(mu=self.mug, rho=self.rhog)
+        return None
+
+    @property
+    def Prl(self):
+        if all([self.Cpl, self.mul, self.kl]):
+            return Prandtl(Cp=self.Cpl, mu=self.mul, k=self.kl)
+        return None
+    
+    @property
+    def Prg(self):
+        if all([self.Cpg, self.mug, self.kg]):
+            return Prandtl(Cp=self.Cpg, mu=self.mug, k=self.kg)
+        return None
+
+    @property
+    def alphal(self):
+         if all([self.kl, self.rhol, self.Cpl]):
+             return thermal_diffusivity(k=self.kl, rho=self.rhol, Cp=self.Cpl)
+         return None
+    
+    @property
+    def alphag(self):
+        if all([self.kg, self.rhog, self.Cpg]):
+            return thermal_diffusivity(k=self.kg, rho=self.rhog, Cp=self.Cpg)
+        return None
+         
+         
+    @property
+    def Cpsm(self):
+        return self.HeatCapacitySolid(self.T)
+        
+    @property
+    def Cpgm(self):
+        return self.HeatCapacityGas(self.T)
+        
+    @property
+    def Cplm(self):
+        return self.HeatCapacityLiquid(self.T)
+    
+    @property
+    def Cpl(self):
+        if self.Cplm:
+            return property_molar_to_mass(self.Cplm, self.MW)
+        return None
+    
+    @property
+    def Cps(self):
+        if self.Cpsm:
+            return property_molar_to_mass(self.Cpsm, self.MW)
+        return None
+
+    @property
+    def Cpg(self):
+        if self.Cpgm:
+            return property_molar_to_mass(self.Cpgm, self.MW)
+        return None
+     
+    @property
+    def Cvgm(self):
+        if self.Cpgm:
+            return self.Cpgm - R
+        return None
+         
+    @property
+    def Cvg(self):
+        if self.Cvgm:
+            return property_molar_to_mass(self.Cvgm, self.MW)
+        return None
+        
+    @property
+    def isentropic_exponent(self):
+        if all((self.Cpg, self.Cvg)):
+            return isentropic_exponent(self.Cpg, self.Cvg)
+        return None
+         
+    @property
+    def Hvapm(self):
+        return self.EnthalpyVaporization(self.T)
+        
+    @property
+    def Hvap(self):
+        if self.Hvapm:
+            return property_molar_to_mass(self.Hvapm, self.MW)
+        return None
+    
+         
+         
     def set_TP(self):
         self.eos = self.eos.to_TP(T=self.T, P=self.P)
         self.eos_in_a_box[0] = self.eos
-        self.Psat = self.VaporPressure.T_dependent_property(T=self.T)
+#        self.Psat = self.VaporPressure.T_dependent_property(T=self.T)
 
-        self.Vms = self.VolumeSolid.T_dependent_property(T=self.T)
-        self.rhos = Vm_to_rho(self.Vms, self.MW) if self.Vms else None
-        self.rhosm = 1/self.Vms if self.Vms else None
-        self.Zs = Z(self.T, self.P, self.Vms) if self.Vms else None
+#        self.Vms = self.VolumeSolid.T_dependent_property(T=self.T)
+#        self.rhos = Vm_to_rho(self.Vms, self.MW) if self.Vms else None
+#        self.rhosm = 1/self.Vms if self.Vms else None
+#        self.Zs = Z(self.T, self.P, self.Vms) if self.Vms else None
                 
         self.Vml = self.VolumeLiquid.TP_dependent_property(self.T, self.P)
 #        self.Vml = self.VolumeLiquid.T_dependent_property(self.T) if not self.Vml else self.Vml
@@ -445,68 +613,55 @@ class Chemical(object): # pragma: no cover
 
         self.isobaric_expansion_g = isobaric_expansion(V1=self.Vmg, dT=0.01, V2=self.VolumeGas.TP_dependent_property(T=self.T+0.01, P=self.P))
 
-        self.Cpsm = self.HeatCapacitySolid.T_dependent_property(self.T)
-        self.Cpgm = self.HeatCapacityGas.T_dependent_property(self.T)
-        self.Cplm = self.HeatCapacityLiquid.T_dependent_property(self.T)
-        
-        self.Cpl = property_molar_to_mass(self.Cplm, self.MW) if self.Cplm else None
-        self.Cps = property_molar_to_mass(self.Cpsm, self.MW) if self.Cpsm else None
-        self.Cpg = property_molar_to_mass(self.Cpgm, self.MW) if self.Cpgm else None
+#        self.Cpsm = self.HeatCapacitySolid.T_dependent_property(self.T)
+#        self.Cpgm = self.HeatCapacityGas.T_dependent_property(self.T)
+#        self.Cplm = self.HeatCapacityLiquid.T_dependent_property(self.T)
+#        
+#        self.Cpl = property_molar_to_mass(self.Cplm, self.MW) if self.Cplm else None
+#        self.Cps = property_molar_to_mass(self.Cpsm, self.MW) if self.Cpsm else None
+#        self.Cpg = property_molar_to_mass(self.Cpgm, self.MW) if self.Cpgm else None
 
-        self.Cvgm = self.Cpgm - R if self.Cpgm else None
-        self.Cvg = property_molar_to_mass(self.Cvgm, self.MW) if self.Cvgm else None
-
-        self.isentropic_exponent = isentropic_exponent(self.Cpg, self.Cvg) if all((self.Cpg, self.Cvg)) else None
-
-        self.Hvapm = self.EnthalpyVaporization.T_dependent_property(self.T)
-        self.Hvap = property_molar_to_mass(self.Hvapm, self.MW)
-
-        self.Hsub = Hsub(T=self.T, P=self.P, MW=self.MW, Method=self.Hsub_method, CASRN=self.CAS)
-        self.Hsubm = property_mass_to_molar(self.Hsub, self.MW)
-
-        self.mul = self.ViscosityLiquid.TP_dependent_property(self.T, self.P)
-        if not self.mul:
-            self.mul = self.ViscosityLiquid.T_dependent_property(self.T)
-
-        self.mug = self.ViscosityGas.TP_dependent_property(self.T, self.P)
-        if not self.mug:
-            self.mug = self.ViscosityGas.T_dependent_property(self.T)
-
-        self.kl = self.ThermalConductivityLiquid.TP_dependent_property(self.T, self.P)
-        if not self.kl:
-            self.kl = self.ThermalConductivityLiquid.T_dependent_property(self.T)
-
-        self.kg = self.ThermalConductivityGas.TP_dependent_property(self.T, self.P)
-        if not self.kg:
-            self.kg = self.ThermalConductivityGas.T_dependent_property(self.T)
-
-
-        self.sigma = self.SurfaceTension.T_dependent_property(self.T)
-        self.permittivity = self.Permittivity.T_dependent_property(self.T)
-
-        self.solubility_parameter = solubility_parameter(T=self.T, Hvapm=self.Hvapm, Vml=self.Vml, Method=self.solubility_parameter_method, CASRN=self.CAS)
-
-        self.Parachor = Parachor(sigma=self.sigma, MW=self.MW, rhol=self.rhol, 
-                                 rhog=self.rhog) if all((self.sigma, self.MW, self.rhol, self.rhog)) else None
-
-        self.JTl = JT(T=self.T, V=self.Vml, Cp=self.Cplm, isobaric_expansion=self.isobaric_expansion_l)
-        self.JTg = JT(T=self.T, V=self.Vmg, Cp=self.Cpgm, isobaric_expansion=self.isobaric_expansion_g)
-
-        self.nul = nu_mu_converter(mu=self.mul, rho=self.rhol) if all([self.mul, self.rhol]) else None
-        self.nug = nu_mu_converter(mu=self.mug, rho=self.rhog) if all([self.mug, self.rhog]) else None
-
-        self.Prl = Prandtl(Cp=self.Cpl, mu=self.mul, k=self.kl) if all([self.Cpl, self.mul, self.kl]) else None
-        self.Prg = Prandtl(Cp=self.Cpg, mu=self.mug, k=self.kg) if all([self.Cpg, self.mug, self.kg]) else None
-
-        self.alphal = thermal_diffusivity(k=self.kl, rho=self.rhol, Cp=self.Cpl) if all([self.kl, self.rhol, self.Cpl]) else None
-        self.alphag = thermal_diffusivity(k=self.kg, rho=self.rhog, Cp=self.Cpg) if all([self.kg, self.rhog, self.Cpg]) else None
-
-        self.set_phase()
+#        self.Cvgm = self.Cpgm - R if self.Cpgm else None
+#        self.Cvg = property_molar_to_mass(self.Cvgm, self.MW) if self.Cvgm else None
+#
+#        self.isentropic_exponent = isentropic_exponent(self.Cpg, self.Cvg) if all((self.Cpg, self.Cvg)) else None
+#        self.Hvapm = self.EnthalpyVaporization.T_dependent_property(self.T)
+#        self.Hvap = property_molar_to_mass(self.Hvapm, self.MW)
+#        self.mul = self.ViscosityLiquid.TP_dependent_property(self.T, self.P)
+#        if not self.mul:
+#            self.mul = self.ViscosityLiquid.T_dependent_property(self.T)
+#
+#        self.mug = self.ViscosityGas.TP_dependent_property(self.T, self.P)
+#        if not self.mug:
+#            self.mug = self.ViscosityGas.T_dependent_property(self.T)
+#
+#        self.kl = self.ThermalConductivityLiquid.TP_dependent_property(self.T, self.P)
+#        if not self.kl:
+#            self.kl = self.ThermalConductivityLiquid.T_dependent_property(self.T)
+#
+#        self.kg = self.ThermalConductivityGas.TP_dependent_property(self.T, self.P)
+#        if not self.kg:
+#            self.kg = self.ThermalConductivityGas.T_dependent_property(self.T)
+#        self.sigma = self.SurfaceTension.T_dependent_property(self.T)
+#        self.permittivity = self.Permittivity.T_dependent_property(self.T)
+#        self.solubility_parameter = solubility_parameter(T=self.T, Hvapm=self.Hvapm, Vml=self.Vml, Method=self.solubility_parameter_method, CASRN=self.CAS)
+#        self.Parachor = Parachor(sigma=self.sigma, MW=self.MW, rhol=self.rhol, 
+#                                 rhog=self.rhog) if all((self.sigma, self.MW, self.rhol, self.rhog)) else Non
+#        self.JTl = JT(T=self.T, V=self.Vml, Cp=self.Cplm, isobaric_expansion=self.isobaric_expansion_l)
+#        self.JTg = JT(T=self.T, V=self.Vmg, Cp=self.Cpgm, isobaric_expansion=self.isobaric_expansion_g)
+#        self.nul = nu_mu_converter(mu=self.mul, rho=self.rhol) if all([self.mul, self.rhol]) else None
+#        self.nug = nu_mu_converter(mu=self.mug, rho=self.rhog) if all([self.mug, self.rhog]) else None
+#        self.Prl = Prandtl(Cp=self.Cpl, mu=self.mul, k=self.kl) if all([self.Cpl, self.mul, self.kl]) else None
+#        self.Prg = Prandtl(Cp=self.Cpg, mu=self.mug, k=self.kg) if all([self.Cpg, self.mug, self.kg]) else None
+#        self.alphal = thermal_diffusivity(k=self.kl, rho=self.rhol, Cp=self.Cpl) if all([self.kl, self.rhol, self.Cpl]) else None
+#        self.alphag = thermal_diffusivity(k=self.kg, rho=self.rhog, Cp=self.Cpg) if all([self.kg, self.rhog, self.Cpg]) else None
+#        self.set_phase()
 
         return True
 
     def set_phase(self):
         self.phase = identify_phase(T=self.T, P=self.P, Tm=self.Tm, Tb=self.Tb, Tc=self.Tc, Psat=self.Psat)
+        
         self.k = phase_set_property(phase=self.phase, s=None, l=self.kl, g=self.kg) # ks not implemented
         self.rho = phase_set_property(phase=self.phase, s=self.rhos, l=self.rhol, g=self.rhog)
         self.Vm = phase_set_property(phase=self.phase, s=self.Vms, l=self.Vml, g=self.Vmg)

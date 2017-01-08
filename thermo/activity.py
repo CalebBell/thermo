@@ -399,7 +399,6 @@ def flash(P, zs, Psats, fugacities=None, gammas=None):
     if not none_and_length_check((zs, Psats, fugacities, gammas)):
         raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
     Ks = [K(P, Psats[i], fugacities[i], gammas[i]) for i in range(len(zs))]
-
     def valid_range(zs, Ks):
         valid = True
         if sum([zs[i]*Ks[i] for i in range(len(Ks))]) < 1:
@@ -409,12 +408,10 @@ def flash(P, zs, Psats, fugacities=None, gammas=None):
         return valid
     if not valid_range(zs, Ks):
         raise Exception('Solution does not exist')
-    x0 = np.array([.5])
-    V_over_F = fsolve(Rachford_Rice_flash_error, x0=x0, args=(zs, Ks))[0]
+        
+    V_over_F, xs, ys = flash_inner_loop(zs=zs, Ks=Ks)
     if V_over_F < 0:
         raise Exception('V_over_F is negative!')
-    xs = [zs[i]/(1+V_over_F*(Ks[i]-1)) for i in range(len(zs))]
-    ys = [Ks[i]*xs[i] for i in range(len(zs))]
     return xs, ys, V_over_F
 
 
