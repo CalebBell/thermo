@@ -182,7 +182,7 @@ def tabulate_constants(chemical, full=False, vertical=False):
         data['Pc, Pa'] = chem.Pc
         data['Vc, m^3/mol'] = chem.Vc
         data['Zc'] = chem.Zc
-        data['rhoC, kg/m^3'] = chem.rhoC
+        data['rhoc, kg/m^3'] = chem.rhoc
         data['Acentric factor'] = chem.omega
         data['Triple temperature, K'] = chem.Tt
         data['Triple pressure, Pa'] = chem.Pt

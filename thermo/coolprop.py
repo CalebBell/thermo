@@ -139,8 +139,8 @@ def CoolProp_T_dependent_property(T, CASRN, prop, phase):
     References
     ----------
     .. [1] Bell, Ian H., Jorrit Wronski, Sylvain Quoilin, and Vincent Lemort.
-       “Pure and Pseudo-Pure Fluid Thermophysical Property Evaluation and the
-       Open-Source Thermophysical Property Library CoolProp.” Industrial &
+       "Pure and Pseudo-Pure Fluid Thermophysical Property Evaluation and the
+       Open-Source Thermophysical Property Library CoolProp." Industrial &
        Engineering Chemistry Research 53, no. 6 (February 12, 2014):
        2498-2508. doi:10.1021/ie4033999. http://www.coolprop.org/
     '''

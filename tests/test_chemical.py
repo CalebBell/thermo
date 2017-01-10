@@ -24,6 +24,182 @@ from numpy.testing import assert_allclose
 import pytest
 from thermo.chemical import *
 
+def test_Chemical_properties():
+    w = Chemical('water')
+    assert_allclose(w.Tm, 273.15)
+    assert_allclose(w.Tb, 373.124)
+    
+    assert_allclose(w.Tc, 647.14)
+    assert_allclose(w.Pc, 22048320.0)
+    assert_allclose(w.Vc, 5.6e-05)
+    assert_allclose(w.omega, 0.344)
+    
+    assert_allclose(w.Zc, 0.2294728175007233)
+    assert_allclose(w.rhoc, 321.7014285714285)
+    assert_allclose(w.rhocm, 17857.142857142855)
+    
+    assert_allclose(w.StielPolar, 0.023222134391615246)
+    
+    pentane = Chemical('pentane')
+    assert_allclose(pentane.Tt, 143.47)
+    assert_allclose(pentane.Pt, 0.07098902774226569)
+
+    assert_allclose(pentane.Hfus, 116426.08509804323)
+    assert_allclose(pentane.Hfusm, 8400.0)
+    
+    phenol = Chemical('phenol')
+    assert_allclose(phenol.Hsub, 740612.9172243401)
+    assert_allclose(phenol.Hsubm, 69700.0)
+
+    # Hf test - always molar, TODO mass-based
+    assert_allclose(phenol.Hf, -96400.0)
+    assert_allclose(phenol.Hc, -3121919.0)
+
+    assert_allclose(phenol.Tflash, 348.15)
+    assert_allclose(phenol.Tautoignition, 868.15)
+    
+    assert_allclose(phenol.LFL, 0.013000000000000001)
+    assert_allclose(phenol.UFL, 0.095)
+
+    benzene = Chemical('benzene')
+    assert benzene.STEL == (2.5, 'ppm')
+    assert benzene.TWA == (0.5, 'ppm')
+    assert benzene.Skin
+    
+    assert Chemical('acetaldehyde').Ceiling == (25.0, 'ppm')
+    
+    d = benzene.Carcinogen 
+    assert len(d) == 2
+    assert d['National Toxicology Program 13th Report on Carcinogens'] == 'Known'
+    assert d['International Agency for Research on Cancer'] == 'Carcinogenic to humans (1)'
+
+    assert_allclose(w.dipole, 1.85)
+    assert_allclose(w.Stockmayer, 501.01)
+    
+    CH4 = Chemical('methane')
+    assert_allclose(CH4.GWP, 25.0)
+    
+    assert Chemical('Bromochlorodifluoromethane').ODP == 7.9
+    
+    assert_allclose(phenol.logP, 1.48)
+
+    l = phenol.legal_status
+    assert sorted(l.keys()) == ['DSL', 'EINECS', 'NLP', 'SPIN', 'TSCA']
+    assert sorted(l.values()) == ['LISTED', 'LISTED', 'LISTED', 'LISTED', 'UNLISTED']
+
+    e = phenol.economic_status
+    assert e == ["US public: {'Manufactured': 1338357.268, 'Imported': 3847.128, 'Exported': 337387.382}", u'1,000,000 - 10,000,000 tonnes per annum', 'OECD HPV Chemicals']
+
+    assert_allclose(benzene.conductivity, 7.6e-06)
+    assert_allclose(benzene.RI, 1.5011)
+
+
+def test_Chemical_properties_T_dependent_constants():
+    w = Chemical('water')
+    assert_allclose(w.Psat_298, 3167.418523735963)
+    
+    assert_allclose(w.Vml_Tb, 1.8797866225606777e-05)
+    assert_allclose(w.Vml_Tm, 1.3649595455749052e-05)
+    assert_allclose(w.Vml_STP, 1.3971560442954154e-05)
+    assert_allclose(w.Vmg_STP, 0.023505766772305356)
+    
+    
+    assert_allclose(w.Hvap_Tb, 2256470.870516969)
+    assert_allclose(w.Hvap_Tbm, 40650.95454420694)
+    
+    assert w.phase_STP == 'l'
+    
+    assert_allclose(w.molecular_diameter, 3.24681)
+
+def test_Chemical_properties_T_dependent():
+    # T-only dependent properties (always or at the moment)
+    # Keep the order of the tests matching the order of the code
+    w = Chemical('water', T=300, P=1E5)
+    Pd = Chemical('palladium')
+    
+    assert_allclose(w.Psat, 3533.918074415897)
+    assert_allclose(w.Hvapm, 43908.418874478055)
+    assert_allclose(w.Hvap, 2437287.6177599267)
+    
+    assert_allclose(Pd.Cpsm, 24.930765664000003) 
+    assert_allclose(w.Cplm, 75.2955317728452)
+    assert_allclose(w.Cpgm, 33.590714617128235)
+    
+    assert_allclose(Pd.Cps, 234.26767209171211)
+    assert_allclose(w.Cpl, 4179.537135856072)
+    assert_allclose(w.Cpg, 1864.5680010040496)
+    
+    assert_allclose(w.Cvgm, 25.276254817128233)
+    assert_allclose(w.Cvg, 1403.0453491218693)
+    assert_allclose(w.isentropic_exponent, 1.3289435029103198)
+    
+    assert_allclose(Pd.Vms, 8.86833333333333e-06)
+    assert_allclose(w.Vml, 1.8077520828345428e-05)
+    assert_allclose(w.Vmg, 0.02401190487463453)
+    
+    assert_allclose(Pd.rhos, 12000.000000000005)
+    assert_allclose(w.rhol, 996.5570041967351)
+    assert_allclose(w.rhog, 0.7502645081286664)
+    
+    assert_allclose(Pd.rhosm, 112760.75925577903)
+    assert_allclose(w.rholm, 55317.319752828436)
+    assert_allclose(w.rhogm, 41.646008728627386)
+    
+    assert_allclose(Pd.Zs, 0.00036248477437931853)
+    assert_allclose(w.Zl, 0.0007247422467681115)
+    assert_allclose(w.Zg, 0.9626564423998831)
+    
+    assert_allclose(w.Bvirial, -0.0009314745253654686)
+
+    assert_allclose(w.isobaric_expansion_l, 0.00027479530461365189)
+    assert_allclose(w.isobaric_expansion_g, 0.004082110714805371)
+    
+    assert_allclose(w.mul, 0.0008537426062537152)
+    assert_allclose(w.mug, 9.759577077891826e-06)
+    
+    assert_allclose(w.kl, 0.6094991151038377)
+    assert_allclose(w.kg, 0.01856292166970794)
+    
+    assert_allclose(w.sigma, 0.07176932405246211)
+    
+    assert_allclose(w.permittivity, 77.70030000000001)
+    
+    assert_allclose(w.JTl, -2.2029508371866032e-07)
+    assert_allclose(w.JTg, 0.00016057626157512468)
+    
+    assert_allclose(w.nul, 8.566921938819405e-07)
+    assert_allclose(w.nug, 1.3008181744108452e-05)
+    
+    assert_allclose(w.Prl, 5.854395582989558)
+    assert_allclose(w.Prg, 0.9803087814815961)
+    
+    assert_allclose(w.solubility_parameter, 47863.51384219548)
+    assert_allclose(w.Parachor, 52.656339998350205)
+
+def test_Chemical_properties_T_phase():
+    # T-only dependent properties (always or at the moment)
+    # Keep the order of the tests matching the order of the code
+    w = Chemical('water', T=300, P=1E5)
+    
+    assert_allclose(w.Cp, 4179.537135856072)
+    assert_allclose(w.Cpm, 75.2955317728452)
+    
+    assert_allclose(w.Vm, 1.8077520828345428e-05)
+    assert_allclose(w.rho, 996.5570041967351)
+    assert_allclose(w.rhom, 55317.319752828436)
+    assert_allclose(w.Z, 0.0007247422467681115)
+    
+    assert_allclose(w.isobaric_expansion, 0.00027479530461365189)
+    assert_allclose(w.JT, -2.2029508371866032e-07)
+
+    assert_allclose(w.mu, 0.0008537426062537152)
+    assert_allclose(w.k, 0.6094991151038377)
+    
+    assert_allclose(w.nu, 8.566921938819405e-07)
+    assert_allclose(w.alpha, 1.4633315800714463e-07)
+
+    assert_allclose(w.Pr, 5.854395582989558)
+
 def test_Mixture():
     Mixture(['water', 'ethanol'], ws=[.5, .5], T=320, P=1E5)
     Mixture(['water', 'phosphoric acid'], ws=[.5, .5], T=320, P=1E5)
