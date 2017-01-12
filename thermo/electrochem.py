@@ -149,7 +149,7 @@ def Laliberte_viscosity_i(T, w_w, v1, v2, v3, v4, v5, v6):
     --------
     >>> d =  _Laliberte_Viscosity_ParametersDict['7647-14-5']
     >>> Laliberte_viscosity_i(273.15+5, 1-0.005810, d["V1"], d["V2"], d["V3"], d["V4"], d["V5"], d["V6"] )
-    0.0042540255333087936
+    0.004254025533308794
 
     References
     ----------
@@ -385,7 +385,7 @@ def Laliberte_heat_capacity_w(T):
     Examples
     --------
     >>> Laliberte_heat_capacity_w(273.15+3.56)
-    4208.8759205525475
+    4208.875920552542
 
     References
     ----------
@@ -479,7 +479,7 @@ def Laliberte_heat_capacity(T, ws, CASRNs):
     Examples
     --------
     >>> Laliberte_heat_capacity(273.15+1.5, [0.00398447], ['7647-14-5']) #4186.0988
-    4186.566417712068
+    4186.566417712063
 
     References
     ----------

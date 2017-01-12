@@ -1764,7 +1764,7 @@ def Cv_gas_mixture(zs=None,  ws=None, Cps=None, CASRNs=None, AvailableMethods=Fa
     This API is considered experimental, and is expected to be removed in a
     future release in favor of a more complete object-oriented interface.
 
-   >>> Cv_gas_mixture(ws=[0.6, 0.3, 0.1], Cps=[1402.64, 1116.27, 1558.23])
+    >>> Cv_gas_mixture(ws=[0.6, 0.3, 0.1], Cps=[1402.64, 1116.27, 1558.23])
     1332.2880000000002
     '''
     def list_methods():

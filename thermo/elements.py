@@ -382,7 +382,7 @@ def similarity_variable(atoms, MW=None):
     Examples
     --------
     >>> similarity_variable({'H': 32, 'C': 15})
-    0.22125872677371825
+    0.2212654140784498
 
     References
     ----------

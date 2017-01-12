@@ -1316,7 +1316,7 @@ def mixing_simple(fracs, props):
     Examples
     --------
     >>> mixing_simple([0.1, 0.9], [0.01, 0.02])
-    0.019
+    0.019000000000000003
     '''
     if not none_and_length_check([fracs, props]):
         return None

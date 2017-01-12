@@ -557,7 +557,7 @@ def identify_phase_mixture(T=None, P=None, zs=None, Tcs=None, Pcs=None,
             methods.append('SUPERCRITICAL_T')
         if none_and_length_check([Pcs]) and all([P >= i for i in Pcs]):
             methods.append('SUPERCRITICAL_P')
-        if none_and_length_check((zs, Tcs)) and any([T > Tc for Tc in Tcs]):
+        if none_and_length_check([zs, Tcs]) and any([T > Tc for Tc in Tcs]):
             methods.append('IDEAL_VLE_SUPERCRITICAL')
         methods.append('NONE')
         return methods

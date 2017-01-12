@@ -335,7 +335,7 @@ def StielPolar(Tc=None, Pc=None, omega=None, CASRN='', Method=None,
     Examples
     --------
     >>> StielPolar(647.3, 22048321.0, 0.344, CASRN='7732-18-5')
-    0.02458114034873482
+    0.024581140348734376
 
     References
     ----------

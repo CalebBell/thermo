@@ -23,6 +23,7 @@ SOFTWARE.'''
 from numpy.testing import assert_allclose
 import pytest
 from thermo.chemical import *
+from thermo.identifiers import pubchem_dict
 
 def test_Chemical_properties():
     w = Chemical('water')
@@ -256,3 +257,69 @@ def test_H_Chemical():
     dH_20K_gas = w.Hm - Hm_as_vapor
     assert_allclose(dH_20K_gas, 1000*(48.9411675-48.2041134), rtol=1E-1) # Web tables, but hardly matches because of the excess
 
+
+@pytest.mark.slow
+@pytest.mark.meta_Chemical
+def test_all_chemicals():
+    for i in pubchem_dict.keys():
+        c = Chemical(i)
+        
+        # T and P dependent properties - just test they can be called
+        c.Psat
+        c.Hvapm
+        c.Hvap
+        c.Cpsm
+        c.Cplm
+        c.Cpgm
+        c.Cps
+        c.Cpl
+        c.Cpg
+        c.Cvgm
+        c.Cvg
+        c.isentropic_exponent
+        c.Vms
+        c.Vml
+        c.Vmg
+        c.rhos
+        c.rhol
+        c.rhog
+        c.rhosm
+        c.rholm
+        c.rhogm
+        c.Zs
+        c.Zl
+        c.Zg
+        c.Bvirial
+        c.isobaric_expansion_l
+        c.isobaric_expansion_g
+        c.mul
+        c.mug
+        c.kl
+        c.kg
+        c.sigma
+        c.permittivity
+        c.JTl
+        c.JTg
+        c.nul
+        c.nug
+        c.alphal
+        c.alphag
+        c.Prl
+        c.Prg
+        c.solubility_parameter
+        c.Parachor
+        
+        # Any phase dependent property
+        c.Cp
+        c.Cpm
+        c.Vm
+        c.rho
+        c.rhom
+        c.Z
+        c.isobaric_expansion
+        c.JT
+        c.mu
+        c.k
+        c.nu
+        c.alpha
+        c.Pr

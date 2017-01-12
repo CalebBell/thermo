@@ -941,7 +941,7 @@ def Missenard(T, P, Tc, Pc, kl):
     Example from [2]_, toluene; matches.
 
     >>> Missenard(304., 6330E5, 591.8, 41E5, 0.129)
-    0.21983757770696569
+    0.2198375777069657
 
     References
     ----------

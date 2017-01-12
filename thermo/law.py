@@ -171,7 +171,7 @@ def legal_status(CASRN, Method=None, AvailableMethods=False, CASi=None):
 
     Examples
     --------
-    >>>  legal_status('64-17-5')
+    >>> legal_status('64-17-5')
     {'Toxic Substances Control Act (Environmental Protection Agency)': 'Listed', 'Substances in Preparations In the Nordic countries': 'Listed', 'Domestic Substances List (Environment Canada)': 'Listed', 'European INventory of Existing Commercial chemical Substances': 'Listed', 'EINECS No-Longer Polymers': 'Unlisted'}
 
     References
@@ -293,7 +293,7 @@ def economic_status(CASRN, Method=None, AvailableMethods=False):  # pragma: no c
     future release in favor of a more complete object-oriented interface.
 
     >>> economic_status(CASRN='98-00-0')
-    ["US public: {'Manufactured': 0.0, 'Imported': 10272711.0, 'Exported': 184127.0}", '10,000 - 100,000 tonnes per annum', 'OECD HPV Chemicals']
+    ["US public: {'Manufactured': 0.0, 'Imported': 10272.711, 'Exported': 184.127}", u'10,000 - 100,000 tonnes per annum', 'OECD HPV Chemicals']
     >>> economic_status(CASRN='13775-50-3')  # SODIUM SESQUISULPHATE
     []
     >>> economic_status(CASRN='98-00-0', Method='OECD HPV Chemicals')

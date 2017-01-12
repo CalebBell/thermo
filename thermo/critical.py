@@ -1040,7 +1040,7 @@ def critical_surface(Tc=None, Pc=None, Vc=None, AvailableMethods=False,
     --------
     Decamethyltetrasiloxane [141-62-8]
 
-    >>> critical_surface(Tc=599.4, Pc=1.19E6, Method='Ihmels')
+    >>> critical_surface(Tc=599.4, Pc=1.19E6, Method='IHMELS')
     0.0010927333333333334
     '''
     def list_methods():
@@ -1619,7 +1619,7 @@ def modified_Wilson_Vc(zs, Vcs, Aijs):
 
     >>> modified_Wilson_Vc([0.4271, 0.5729], [0.000273, 0.000256],
     ... [[0, 0.6671250], [1.3939900, 0]])
-    0.00026643350327068809
+    0.0002664335032706881
 
     References
     ----------

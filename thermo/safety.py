@@ -247,7 +247,7 @@ def TWA(CASRN, AvailableMethods=False, Method=None):  # pragma: no cover
     >>> TWA('98-00-0')
     (10.0, 'ppm')
     >>> TWA('1303-00-0')
-    (5.0710500080887915e-05, 'ppm')
+    (5.0742430905659505e-05, 'ppm')
     >>> TWA('7782-42-5', AvailableMethods=True)
     ['Ontario Limits', 'None']
     '''
@@ -284,7 +284,7 @@ def STEL(CASRN, AvailableMethods=False, Method=None):  # pragma: no cover
     >>> STEL('67-64-1')
     (750.0, 'ppm')
     >>> STEL('7664-38-2')
-    (0.7485061867633451, 'ppm')
+    (0.7489774978301237, 'ppm')
     >>> STEL('55720-99-5')
     (2.0, 'mg/m^3')
     >>> STEL('86290-81-5', AvailableMethods=True)

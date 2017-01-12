@@ -87,7 +87,7 @@ def Tt(CASRN, AvailableMethods=False, Method=None):
     Ammonia
 
     >>> Tt('7664-41-7')
-    195.48
+    195.47999999999999
 
     References
     ----------

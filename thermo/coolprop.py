@@ -134,7 +134,7 @@ def CoolProp_T_dependent_property(T, CASRN, prop, phase):
     Water at STP according to IAPWS-95
 
     >>> CoolProp_T_dependent_property(298.15, '7732-18-5', 'D', 'l')
-    997.0476367603451
+    997.047636760347
 
     References
     ----------

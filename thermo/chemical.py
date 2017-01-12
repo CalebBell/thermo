@@ -102,6 +102,7 @@ class Chemical(object): # pragma: no cover
 
     Default initialization is for 298.15 K, 1 atm.
     Goal is for, when a method fails, a warning is printed.
+
     '''
     eos_in_a_box = []
     def __repr__(self):
@@ -714,38 +715,98 @@ class Chemical(object): # pragma: no cover
 
     @property
     def Cpsm(self):
+        '''Solid-phase heat capacity of the chemical at its current temperature, 
+        in units of J/mol/K. For calculation of this property at other 
+        temperatures, or specifying manually the method used to calculate it, 
+        and more - see the object oriented interface
+        :obj:`thermo.heat_capacity.HeatCapacitySolid`; each Chemical instance
+        creates one to actually perform the calculations.
+        
+        Examples
+        --------
+        >>> Chemical('palladium').Cpsm
+        24.930765664000003
+        >>> Chemical('palladium').HeatCapacitySolid.T_dependent_property(320)
+        25.098979200000002
+        >>> Chemical('palladium').HeatCapacitySolid.all_methods
+        set(["Perry's Table 2-151", 'CRC Standard Thermodynamic Properties of Chemical Substances', 'Lastovka, Fulem, Becerra and Shaw (2008)'])
+        '''
         return self.HeatCapacitySolid(self.T)
                 
     @property
     def Cplm(self):
+        '''Liquid-phase heat capacity of the chemical at its current temperature, 
+        in units of J/mol/K. For calculation of this property at other 
+        temperatures, or specifying manually the method used to calculate it, 
+        and more - see the object oriented interface
+        :obj:`thermo.heat_capacity.HeatCapacityLiquid`; each Chemical instance
+        creates one to actually perform the calculations.
+        
+        Notes
+        -----
+        Some methods give heat capacity along the saturation line, some at
+        1 atm but only up to the normal boiling point, and some give heat 
+        capacity at 1 atm up to the normal boiling point and then along the
+        saturation line. Real-liquid heat capacity is pressure dependent, but 
+        this interface is not.
+        
+        Examples
+        --------
+        >>> Chemical('water').Cplm
+        75.31462591538555
+        >>> Chemical('water').HeatCapacityLiquid.T_dependent_property(320)
+        75.25917443606316
+        >>> Chemical('water').HeatCapacityLiquid.T_dependent_property_integral(300, 320)
+        1505.0619005000553
+        '''
         return self.HeatCapacityLiquid(self.T)
     
     @property
     def Cpgm(self):
+        '''Gas-phase ideal gas heat capacity of the chemical at its current 
+        temperature, in units of J/mol/K. For calculation of this property at  
+        other temperatures, or specifying manually the method used to calculate 
+        it, and more - see the object oriented interface
+        :obj:`thermo.heat_capacity.HeatCapacityGas`; each Chemical instance
+        creates one to actually perform the calculations.
+                
+        Examples
+        --------
+        >>> Chemical('water').Cpgm
+        33.583577868850675
+        >>> Chemical('water').HeatCapacityGas.T_dependent_property(320)
+        33.67865044005934
+        >>> Chemical('water').HeatCapacityGas.T_dependent_property_integral(300, 320)
+        672.6480417968248
+        '''
         return self.HeatCapacityGas(self.T)
         
     @property
     def Cps(self):
-        if self.Cpsm:
-            return property_molar_to_mass(self.Cpsm, self.MW)
+        Cpsm = self.HeatCapacitySolid(self.T)
+        if Cpsm:
+            return property_molar_to_mass(Cpsm, self.MW)
         return None
 
     @property
     def Cpl(self):
-        if self.Cplm:
-            return property_molar_to_mass(self.Cplm, self.MW)
+        Cplm = self.HeatCapacityLiquid(self.T)
+        if Cplm:
+            return property_molar_to_mass(Cplm, self.MW)
         return None
 
     @property
     def Cpg(self):
-        if self.Cpgm:
-            return property_molar_to_mass(self.Cpgm, self.MW)
+        Cpgm = self.HeatCapacityGas(self.T)
+        if Cpgm:
+            return property_molar_to_mass(Cpgm, self.MW)
         return None
      
     @property
     def Cvgm(self):
-        if self.Cpgm:
-            return self.Cpgm - R
+        Cpgm = self.HeatCapacityGas(self.T)
+        if Cpgm:
+            return Cpgm - R
         return None
          
     @property
