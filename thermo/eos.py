@@ -870,7 +870,7 @@ class ALPHA_FUNCTIONS(GCEOS):
     [0.9326878999999999, (3.7271789178606376, -0.007332989159328508, 1.947612023379061e-05)]
     
     >>> a = SRK
-    >>> a.a_alpha_and_derivatives = ALPHA_FUNCTIONS.Soave
+    >>> a.a_alpha_and_derivatives = ALPHA_FUNCTIONS.Soave_1972
     >>> a.alpha_function_coeffs = [0.9326878999999999]
     >>> a = a(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
     >>> a.a_alpha_and_derivatives(299)

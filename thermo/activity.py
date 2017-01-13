@@ -238,6 +238,11 @@ def Li_Johns_Ahmadi_solution(zs, Ks):
     used instead. However, it is somewhat slower, especially as newton will
     attempt 50 iterations before giving up.
     
+    The range of xmin and xmax provided by the method may include negative
+    roots, which the solver may converge on. In this way this method is 
+    inferior to the Rachford-Rice equation. If such a solution is converged on,
+    :obj:`Rachford_Rice_solution` is called to solve the problem.
+    
     This method does not work for problems of only two components.
     K values are sorted internally. Has not been found to be quicker than the
     Rachford-Rice equation.
@@ -257,6 +262,7 @@ def Li_Johns_Ahmadi_solution(zs, Ks):
     # Re-order both Ks and Zs by K value, higher coming first
     p = sorted(zip(Ks,zs), reverse=True)
     Ks_sorted, zs_sorted = [K for (K,z) in p], [z for (K,z) in p]
+    
 
     # Largest K value and corresponding overall mole fraction
     k1 = Ks_sorted[0]
@@ -264,13 +270,13 @@ def Li_Johns_Ahmadi_solution(zs, Ks):
     # Smallest K value
     kn = Ks_sorted[-1]
 
-    V_over_F_min = (1. - kn)/(k1 - kn)*z1
-    V_over_F_max = (1. - kn)/(k1 - kn)
+    x_min = (1. - kn)/(k1 - kn)*z1
+    x_max = (1. - kn)/(k1 - kn)
     
-    V_over_F_min2 = max(0., V_over_F_min)
-    V_over_F_max2 = min(1., V_over_F_max)
+    x_min2 = max(0., x_min)
+    x_max2 = min(1., x_max)
     
-    V_over_F_guess = (V_over_F_min2 + V_over_F_max2)*0.5
+    x_guess = (x_min2 + x_max2)*0.5
     
     length = len(zs)-1
     kn_m_1 = kn-1.
@@ -280,14 +286,21 @@ def Li_Johns_Ahmadi_solution(zs, Ks):
     
     objective = lambda x1: 1. + t1*x1 + sum([(ki-kn)/(kn_m_1) * zi*k1_m_1*x1 /( (ki-1.)*z1 + (k1-ki)*x1) for ki, zi in iterable])
     try:
-        x1 = newton(objective, V_over_F_guess)
+        x1 = newton(objective, x_guess)
         # newton skips out of its specified range in some cases, finding another solution
         # Check for that with asserts, and use brenth if it did
-        assert x1 >= V_over_F_min2
-        assert x1 <= V_over_F_max2
+        # Must also check that V_over_F is right.
+        assert x1 >= x_min2
+        assert x1 <= x_max2
+        V_over_F = (-x1 + z1)/(x1*(k1 - 1.))
+        assert 0 <= V_over_F <= 1
     except:
-        x1 = brenth(objective, V_over_F_max-1E-7, V_over_F_min+1E-7)
-    V_over_F = (-x1 + z1)/(x1*(k1 - 1.))
+        x1 = brenth(objective, x_min, x_max)
+        V_over_F = (-x1 + z1)/(x1*(k1 - 1.))
+        try:
+            assert 0 <= V_over_F <= 1
+        except:
+            V_over_F, _, _ = Rachford_Rice_solution(zs=zs, Ks=Ks)
     xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]
     ys = [Ki*xi for xi, Ki in zip(xs, Ks)]
     return V_over_F, xs, ys

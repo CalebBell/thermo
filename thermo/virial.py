@@ -540,7 +540,7 @@ def BVirial_Tsonopoulos_extended(T, Tc, Pc, omega, a=0, b=0, species_type='',
     --------
     Example from Perry's Handbook, 8E, p2-499. Matches to a decimal place.
 
-    >>> BVirial_Tsonopoulos_extended(430., 405.65, 11.28E6, 0.252608, a=0, b=0, speciestype='ketone', dipole=1.469)
+    >>> BVirial_Tsonopoulos_extended(430., 405.65, 11.28E6, 0.252608, a=0, b=0, species_type='ketone', dipole=1.469)
     -9.679715056695323e-05
 
     References

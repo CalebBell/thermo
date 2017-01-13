@@ -1874,7 +1874,12 @@ class VolumeGas(TPDependentProperty):
             # Would be nice to have a limit on CRC_VIRIAL
         elif method == EOS:
             eos = self.eos[0]
-            if T < eos.Tc and P > eos.Psat(T):
+            # Some EOSs do not implement Psat, and so we must assume Vmg is
+            # unavailable
+            try:
+                if T < eos.Tc and P > eos.Psat(T):
+                    validity = False
+            except:
                 validity = False
         elif method == COOLPROP:
             validity = PhaseSI('T', T, 'P', P, self.CASRN) in ['gas', 'supercritical_gas', 'supercritical', 'supercritical_liquid']

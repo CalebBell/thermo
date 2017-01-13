@@ -1473,7 +1473,7 @@ class Mixture(object):  # pragma: no cover
             
             if not None in self.Ss:
                 # Ideal gas contribution
-                self.Sm = mixing_simple(self.Sms, self.zs) - R*sum([zi*log(zi) for zi in self.zs])
+                self.Sm = mixing_simple(self.Sms, self.zs) - R*sum([zi*log(zi) for zi in self.zs if zi > 0])
                 self.S = property_molar_to_mass(self.Sm, self.MW)
             
         except:
@@ -1574,7 +1574,7 @@ class Stream(Mixture): # pragma: no cover
         
         self.n = property_molar_to_mass(self.m, self.MW)
         self.ns = [self.n*zi for zi in self.zs]
-        if hasattr(self, 'H'):
+        if hasattr(self, 'H') and hasattr(self, 'S'):
             self.S *= self.m
             self.Sm *= self.n
             self.H *= self.m
@@ -1599,7 +1599,7 @@ class Stream(Mixture): # pragma: no cover
             self.Q = self.m/self.rho
         else:
             self.Q = None
-        if hasattr(self, 'H'):
+        if hasattr(self, 'H') and hasattr(self, 'S'):
             self.S *= self.m
             self.Sm *= self.n
             self.H *= self.m

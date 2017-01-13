@@ -152,8 +152,8 @@ def test_Chemical_properties_T_dependent():
     
     assert_allclose(w.Bvirial, -0.0009314745253654686)
 
-    assert_allclose(w.isobaric_expansion_l, 0.00027479530461365189)
-    assert_allclose(w.isobaric_expansion_g, 0.004082110714805371)
+    assert_allclose(w.isobaric_expansion_l, 0.00027479530461365189, rtol=1E-3)
+    assert_allclose(w.isobaric_expansion_g, 0.004082110714805371, rtol=1E-3)
     
     assert_allclose(w.mul, 0.0008537426062537152)
     assert_allclose(w.mug, 9.759577077891826e-06)
@@ -190,7 +190,7 @@ def test_Chemical_properties_T_phase():
     assert_allclose(w.rhom, 55317.319752828436)
     assert_allclose(w.Z, 0.0007247422467681115)
     
-    assert_allclose(w.isobaric_expansion, 0.00027479530461365189)
+    assert_allclose(w.isobaric_expansion, 0.00027479530461365189, rtol=1E-3)
     assert_allclose(w.JT, -2.2029508371866032e-07)
 
     assert_allclose(w.mu, 0.0008537426062537152)
@@ -205,6 +205,13 @@ def test_Mixture():
     Mixture(['water', 'ethanol'], ws=[.5, .5], T=320, P=1E5)
     Mixture(['water', 'phosphoric acid'], ws=[.5, .5], T=320, P=1E5)
     Mixture('air', T=320, P=1E5)
+ 
+def test_Stream():   
+    from scipy.constants import *
+    Stream(['H2', 'NH3', 'CO', 'Ar', 'CH4', 'N2'],
+           zs=[.7371, 0, .024, .027, .013, .2475], 
+    T=500, P=20.5E5, m=300)
+
 
 
 def test_H_Chemical():
