@@ -237,12 +237,7 @@ def Li_Johns_Ahmadi_solution(zs, Ks):
     If the `newton` method does not converge, a bisection method (brenth) is 
     used instead. However, it is somewhat slower, especially as newton will
     attempt 50 iterations before giving up.
-    
-    The range of xmin and xmax provided by the method may include negative
-    roots, which the solver may converge on. In this way this method is 
-    inferior to the Rachford-Rice equation. If such a solution is converged on,
-    :obj:`Rachford_Rice_solution` is called to solve the problem.
-    
+        
     This method does not work for problems of only two components.
     K values are sorted internally. Has not been found to be quicker than the
     Rachford-Rice equation.
@@ -282,9 +277,8 @@ def Li_Johns_Ahmadi_solution(zs, Ks):
     kn_m_1 = kn-1.
     k1_m_1 = (k1-1.)
     t1 = (k1-kn)/(kn-1.)
-    iterable = zip(Ks_sorted[1:length], zs_sorted[1:length])
     
-    objective = lambda x1: 1. + t1*x1 + sum([(ki-kn)/(kn_m_1) * zi*k1_m_1*x1 /( (ki-1.)*z1 + (k1-ki)*x1) for ki, zi in iterable])
+    objective = lambda x1: 1. + t1*x1 + sum([(ki-kn)/(kn_m_1) * zi*k1_m_1*x1 /( (ki-1.)*z1 + (k1-ki)*x1) for ki, zi in zip(Ks_sorted[1:length], zs_sorted[1:length])])
     try:
         x1 = newton(objective, x_guess)
         # newton skips out of its specified range in some cases, finding another solution
@@ -292,15 +286,10 @@ def Li_Johns_Ahmadi_solution(zs, Ks):
         # Must also check that V_over_F is right.
         assert x1 >= x_min2
         assert x1 <= x_max2
-        V_over_F = (-x1 + z1)/(x1*(k1 - 1.))
         assert 0 <= V_over_F <= 1
     except:
         x1 = brenth(objective, x_min, x_max)
-        V_over_F = (-x1 + z1)/(x1*(k1 - 1.))
-        try:
-            assert 0 <= V_over_F <= 1
-        except:
-            V_over_F, _, _ = Rachford_Rice_solution(zs=zs, Ks=Ks)
+    V_over_F = (-x1 + z1)/(x1*(k1 - 1.))
     xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]
     ys = [Ki*xi for xi, Ki in zip(xs, Ks)]
     return V_over_F, xs, ys

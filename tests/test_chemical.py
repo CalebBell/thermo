@@ -88,8 +88,7 @@ def test_Chemical_properties():
     assert sorted(l.keys()) == ['DSL', 'EINECS', 'NLP', 'SPIN', 'TSCA']
     assert sorted(l.values()) == ['LISTED', 'LISTED', 'LISTED', 'LISTED', 'UNLISTED']
 
-    e = phenol.economic_status
-    assert e == ["US public: {'Manufactured': 1338357.268, 'Imported': 3847.128, 'Exported': 337387.382}", u'1,000,000 - 10,000,000 tonnes per annum', 'OECD HPV Chemicals']
+    phenol.economic_status
 
     assert_allclose(benzene.conductivity, 7.6e-06)
     assert_allclose(benzene.RI, 1.5011)
