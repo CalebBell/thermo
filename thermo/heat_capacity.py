@@ -878,7 +878,8 @@ def Zabransky_cubic(T, a1, a2, a3, a4):
        2 Volume Set. Washington, D.C.: Amer Inst of Physics, 1996.
     '''
     T = T/100.
-    return R*(a1 + a2*T**1 + a3*T**2 + a4*T**3)
+#    return R*(a1 + a2*T + a3*T**2 + a4*T**3)
+    return R*(((a4*T + a3)*T + a2)*T + a1)
 
 
 def _ZabranskyDictChoser(T, diclist, strict=False):

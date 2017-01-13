@@ -59,6 +59,7 @@ from thermo.eos import *
 
 from fluids.core import *
 from scipy.optimize import newton
+import numpy as np
 
 # RDKIT
 try:
@@ -658,7 +659,7 @@ class Chemical(object): # pragma: no cover
     ### One phase properties - calculate lazily
     @property
     def Psat(self):
-        '''Vapor pressure of the chemical at its current temperature, in units 
+        r'''Vapor pressure of the chemical at its current temperature, in units 
         of Pa. For calculation of this property at other temperatures, 
         or specifying manually the method used to calculate it, and more - see  
         the object oriented interface :obj:`thermo.vapor_pressure.VaporPressure`;
@@ -677,7 +678,7 @@ class Chemical(object): # pragma: no cover
 
     @property
     def Hvapm(self):
-        '''Enthalpy of vaporization of the chemical at its current temperature, 
+        r'''Enthalpy of vaporization of the chemical at its current temperature, 
         in units of J/mol. For calculation of this property at other 
         temperatures, or specifying manually the method used to calculate it, 
         and more - see the object oriented interface
@@ -697,7 +698,7 @@ class Chemical(object): # pragma: no cover
         
     @property
     def Hvap(self):
-        '''Enthalpy of vaporization of the chemical at its current temperature, 
+        r'''Enthalpy of vaporization of the chemical at its current temperature, 
         in units of J/kg. 
         
         This property uses the object-oriented interface 
@@ -709,13 +710,14 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('water', T=320).Hvap
         2389540.219347256
         '''
-        if self.Hvapm:
-            return property_molar_to_mass(self.EnthalpyVaporization(self.T), self.MW)
+        Hvamp = self.Hvapm
+        if Hvamp:
+            return property_molar_to_mass(Hvamp, self.MW)
         return None
 
     @property
     def Cpsm(self):
-        '''Solid-phase heat capacity of the chemical at its current temperature, 
+        r'''Solid-phase heat capacity of the chemical at its current temperature, 
         in units of J/mol/K. For calculation of this property at other 
         temperatures, or specifying manually the method used to calculate it, 
         and more - see the object oriented interface
@@ -735,7 +737,7 @@ class Chemical(object): # pragma: no cover
                 
     @property
     def Cplm(self):
-        '''Liquid-phase heat capacity of the chemical at its current temperature, 
+        r'''Liquid-phase heat capacity of the chemical at its current temperature, 
         in units of J/mol/K. For calculation of this property at other 
         temperatures, or specifying manually the method used to calculate it, 
         and more - see the object oriented interface
@@ -763,7 +765,7 @@ class Chemical(object): # pragma: no cover
     
     @property
     def Cpgm(self):
-        '''Gas-phase ideal gas heat capacity of the chemical at its current 
+        r'''Gas-phase ideal gas heat capacity of the chemical at its current 
         temperature, in units of J/mol/K. For calculation of this property at  
         other temperatures, or specifying manually the method used to calculate 
         it, and more - see the object oriented interface
@@ -783,6 +785,23 @@ class Chemical(object): # pragma: no cover
         
     @property
     def Cps(self):
+        r'''Solid-phase heat capacity of the chemical at its current temperature, 
+        in units of J/kg/K. For calculation of this property at other 
+        temperatures, or specifying manually the method used to calculate it, 
+        and more - see the object oriented interface
+        :obj:`thermo.heat_capacity.HeatCapacitySolid`; each Chemical instance
+        creates one to actually perform the calculations. Note that that  
+        interface provides output in molar units.
+        
+        Examples
+        --------
+        >>> Chemical('palladium', T=400).Cps
+        241.63563239992484
+        >>> Pd = Chemical('palladium', T=400)
+        >>> Cpsms = [Pd.HeatCapacitySolid.T_dependent_property(T) for T in np.linspace(300,500, 5)]
+        >>> [property_molar_to_mass(Cps, Pd.MW) for Cps in Cpsms]
+        [234.40150347679008, 238.01856793835751, 241.63563239992484, 245.25269686149224, 248.86976132305958]
+        '''
         Cpsm = self.HeatCapacitySolid(self.T)
         if Cpsm:
             return property_molar_to_mass(Cpsm, self.MW)
@@ -790,6 +809,26 @@ class Chemical(object): # pragma: no cover
 
     @property
     def Cpl(self):
+        r'''Liquid-phase heat capacity of the chemical at its current temperature, 
+        in units of J/kg/K. For calculation of this property at other 
+        temperatures, or specifying manually the method used to calculate it, 
+        and more - see the object oriented interface
+        :obj:`thermo.heat_capacity.HeatCapacityLiquid`; each Chemical instance
+        creates one to actually perform the calculations. Note that that  
+        interface provides output in molar units.
+        
+        Examples
+        --------
+        >>> Chemical('water', T=320).Cpl
+        4177.518996988288
+        
+        Ideal entropy change of water from 280 K to 340 K, output converted
+        back to mass-based units of J/kg/K.
+        
+        >>> dSm = Chemical('water').HeatCapacityLiquid.T_dependent_property_integral_over_T(280, 340)
+        >>> property_molar_to_mass(dSm, Chemical('water').MW)
+        812.1024585274973
+        '''
         Cplm = self.HeatCapacityLiquid(self.T)
         if Cplm:
             return property_molar_to_mass(Cplm, self.MW)
@@ -797,6 +836,20 @@ class Chemical(object): # pragma: no cover
 
     @property
     def Cpg(self):
+        r'''Gas-phase heat capacity of the chemical at its current temperature, 
+        in units of J/kg/K. For calculation of this property at other 
+        temperatures, or specifying manually the method used to calculate it, 
+        and more - see the object oriented interface
+        :obj:`thermo.heat_capacity.HeatCapacityGas`; each Chemical instance
+        creates one to actually perform the calculations. Note that that  
+        interface provides output in molar units.
+        
+        Examples
+        --------        
+        >>> w = Chemical('water', T=520)
+        >>> w.Cpg
+        1967.6698314620658
+        '''
         Cpgm = self.HeatCapacityGas(self.T)
         if Cpgm:
             return property_molar_to_mass(Cpgm, self.MW)
@@ -804,6 +857,17 @@ class Chemical(object): # pragma: no cover
      
     @property
     def Cvgm(self):
+        r'''Gas-phase ideal-gas contant-volume heat capacity of the chemical at 
+        its current temperature, in units of J/mol/K. Subtracts R from
+        the ideal-gas heat capacity; does not include pressure-compensation 
+        from an equation of state.
+        
+        Examples
+        --------
+        >>> w = Chemical('water', T=520)
+        >>> w.Cvgm
+        27.13366316134193
+        '''
         Cpgm = self.HeatCapacityGas(self.T)
         if Cpgm:
             return Cpgm - R
@@ -811,14 +875,36 @@ class Chemical(object): # pragma: no cover
          
     @property
     def Cvg(self):
-        if self.Cvgm:
-            return property_molar_to_mass(self.Cvgm, self.MW)
+        r'''Gas-phase ideal-gas contant-volume heat capacity of the chemical at 
+        its current temperature, in units of J/kg/K. Subtracts R from
+        the ideal-gas heat capacity; does not include pressure-compensation 
+        from an equation of state.
+        
+        Examples
+        --------
+        >>> w = Chemical('water', T=520)
+        >>> w.Cvg
+        1506.1471795798861
+        '''
+        Cvgm = self.Cvgm
+        if Cvgm:
+            return property_molar_to_mass(Cvgm, self.MW)
         return None
         
     @property
     def isentropic_exponent(self):
-        if all((self.Cpg, self.Cvg)):
-            return isentropic_exponent(self.Cpg, self.Cvg)
+        r'''Gas-phase ideal-gas isentropic exponent of the chemical at its 
+        current temperature, dimensionless. Does not include  
+        pressure-compensation from an equation of state.
+                
+        Examples
+        --------
+        >>> Chemical('hydrogen').isentropic_exponent
+        1.4051947114054186
+        '''
+        Cp, Cv = self.Cpg, self.Cvg
+        if all((Cp, Cv)):
+            return isentropic_exponent(Cp, Cv)
         return None
         
     @property
@@ -835,75 +921,128 @@ class Chemical(object): # pragma: no cover
 
     @property
     def rhos(self):
-        if self.Vms:
-            return Vm_to_rho(self.Vms, self.MW)
+        Vms = self.Vms
+        if Vms:
+            return Vm_to_rho(Vms, self.MW)
         return None
 
     @property
     def rhol(self):
-        if self.Vml:
-            return Vm_to_rho(self.Vml, self.MW)
+        Vml = self.Vml
+        if Vml:
+            return Vm_to_rho(Vml, self.MW)
         return None
       
     @property
     def rhog(self):
-        if self.Vmg:
-            return Vm_to_rho(self.Vmg, self.MW)
+        Vmg = self.Vmg
+        if Vmg:
+            return Vm_to_rho(Vmg, self.MW)
         return None
 
     @property
     def rhosm(self):
-        if self.Vms:
-            return 1./self.Vms
+        Vms = self.Vms
+        if Vms:
+            return 1./Vms
         return None
 
     @property
     def rholm(self):
-        if self.Vml:
-            return 1./self.Vml 
+        Vml = self.Vml
+        if Vml:
+            return 1./Vml 
         return None
 
     @property
     def rhogm(self):
-        if self.Vmg:
-            return 1./self.Vmg
+        Vmg = self.Vmg
+        if Vmg:
+            return 1./Vmg
         return None
 
     @property
     def Zs(self):
-        if self.Vms:
-            return Z(self.T, self.P, self.Vms)
+        Vms = self.Vms
+        if Vms:
+            return Z(self.T, self.P, Vms)
         return None
 
     @property
     def Zl(self):
-        if self.Vml:
-            return Z(self.T, self.P, self.Vml)
+        Vml = self.Vml
+        if Vml:
+            return Z(self.T, self.P, Vml)
         return None
             
     @property
     def Zg(self):
-        if self.Vmg:
-            return Z(self.T, self.P, self.Vmg)
+        Vmg = self.Vmg
+        if Vmg:
+            return Z(self.T, self.P, Vmg)
         return None
 
     @property
     def Bvirial(self):
+        r'''Second virial coefficient of the gas phase of the chemical at its 
+        current temperature and pressure, in units of mol/m^3. 
+        
+        This property uses the object-oriented interface 
+        :obj:`thermo.volume.VolumeGas`, converting its result with 
+        :obj:`thermo.utils.B_from_Z`.
+                
+        Examples
+        --------
+        >>> Chemical('water').Bvirial
+        -0.0009596286322838357
+        '''
         if self.Vmg:
             return B_from_Z(self.Zg, self.T, self.P)
         return None
 
     @property
     def isobaric_expansion_l(self):
+        r'''Isobaric (constant-pressure) expansion of the liquid phase of the 
+        chemical at its current temperature and pressure, in units of 1/K.
+        
+        .. math::
+            \beta = \frac{1}{V}\left(\frac{\partial V}{\partial T} \right)_P
+
+        Utilizes the temperature-derivative method of 
+        :obj:`thermo.volume.VolumeLiquid` to perform the actual calculation.
+        The derivatives are all numerical.
+        
+        Examples
+        --------
+        >>> Chemical('dodecane', T=400).isobaric_expansion_l
+        0.0011617555762469477
+        '''
         dV_dT = self.VolumeLiquid.TP_dependent_property_derivative_T(self.T, self.P)
-        if dV_dT and self.Vml:
-            return isobaric_expansion(V=self.Vml, dV_dT=dV_dT)
+        Vm = self.Vml
+        if dV_dT and Vm:
+            return isobaric_expansion(V=Vm, dV_dT=dV_dT)
          
     @property
     def isobaric_expansion_g(self):
+        r'''Isobaric (constant-pressure) expansion of the gas phase of the 
+        chemical at its current temperature and pressure, in units of 1/K.
+        
+        .. math::
+            \beta = \frac{1}{V}\left(\frac{\partial V}{\partial T} \right)_P
+
+        Utilizes the temperature-derivative method of 
+        :obj:`thermo.VolumeGas` to perform the actual calculation.
+        The derivatives are all numerical.
+        
+        Examples
+        --------
+        >>> Chemical('Hexachlorobenzene', T=900).isobaric_expansion_g
+        0.001151869741981048
+        '''
         dV_dT = self.VolumeGas.TP_dependent_property_derivative_T(self.T, self.P)
-        if dV_dT and self.Vmg:
-            return isobaric_expansion(V=self.Vmg, dV_dT=dV_dT)
+        Vm = self.Vmg
+        if dV_dT and Vm:
+            return isobaric_expansion(V=Vm, dV_dT=dV_dT)
 
     @property
     def mul(self):
@@ -943,38 +1082,144 @@ class Chemical(object): # pragma: no cover
 
     @property
     def nul(self):
-        if all([self.mul, self.rhol]):
-            return nu_mu_converter(mu=self.mul, rho=self.rhol)
+        r'''Kinematic viscosity of the liquid phase of the chemical at its 
+        current temperature and pressure, in units of m^2/s.
+        
+        .. math::
+            \nu = \frac{\mu}{\rho}
+
+        Utilizes the temperature and pressure dependent object oriented
+        interfaces :obj:`thermo.volume.VolumeLiquid`, 
+        :obj:`thermo.viscosity.ViscosityLiquid`  to calculate the 
+        actual properties.
+        
+        Examples
+        --------
+        >>> Chemical('methane', T=110).nul
+        2.858184674118658e-07
+        '''
+        mul, rhol = self.mul, self.rhol
+        if all([mul, rhol]):
+            return nu_mu_converter(mu=mul, rho=rhol)
         return None
 
     @property
     def nug(self):
-        if all([self.mug, self.rhog]):
-            return nu_mu_converter(mu=self.mug, rho=self.rhog)
+        r'''Kinematic viscosity of the gas phase of the chemical at its 
+        current temperature and pressure, in units of m^2/s.
+        
+        .. math::
+            \nu = \frac{\mu}{\rho}
+
+        Utilizes the temperature and pressure dependent object oriented
+        interfaces :obj:`thermo.volume.VolumeGas`, 
+        :obj:`thermo.viscosity.ViscosityGas`  to calculate the 
+        actual properties.
+        
+        Examples
+        --------
+        >>> Chemical('methane', T=115).nug
+        2.5057767760931785e-06
+        '''
+        mug, rhog = self.mug, self.rhog
+        if all([mug, rhog]):
+            return nu_mu_converter(mu=mug, rho=rhog)
         return None
 
     @property
     def alphal(self):
-         if all([self.kl, self.rhol, self.Cpl]):
-             return thermal_diffusivity(k=self.kl, rho=self.rhol, Cp=self.Cpl)
-         return None
+        r'''Thermal diffusivity of the liquid phase of the chemical at its 
+        current temperature and pressure, in units of m^2/s.
+        
+        .. math::
+            \alpha = \frac{k}{\rho Cp}
+
+        Utilizes the temperature and pressure dependent object oriented
+        interfaces :obj:`thermo.volume.VolumeLiquid`, 
+        :obj:`thermo.thermal_conductivity.ThermalConductivityLiquid`,
+        and :obj:`thermo.heat_capacity.HeatCapacityLiquid` to calculate the 
+        actual properties.
+        
+        Examples
+        --------
+        >>> Chemical('nitrogen', T=70).alphal
+        9.504101801042264e-08
+        '''
+        kl, rhol, Cpl = self.kl, self.rhol, self.Cpl
+        if all([kl, rhol, Cpl]):
+            return thermal_diffusivity(k=kl, rho=rhol, Cp=Cpl)
+        return None
     
     @property
     def alphag(self):
-        if all([self.kg, self.rhog, self.Cpg]):
-            return thermal_diffusivity(k=self.kg, rho=self.rhog, Cp=self.Cpg)
+        r'''Thermal diffusivity of the gas phase of the chemical at its 
+        current temperature and pressure, in units of m^2/s.
+        
+        .. math::
+            \alpha = \frac{k}{\rho Cp}
+
+        Utilizes the temperature and pressure dependent object oriented
+        interfaces :obj:`thermo.volume.VolumeGas`, 
+        :obj:`thermo.thermal_conductivity.ThermalConductivityGas`,
+        and :obj:`thermo.heat_capacity.HeatCapacityGas` to calculate the 
+        actual properties.
+        
+        Examples
+        --------
+        >>> Chemical('ammonia').alphag
+        1.6931865425158556e-05
+        '''
+        kg, rhog, Cpg = self.kg, self.rhog, self.Cpg
+        if all([kg, rhog, Cpg]):
+            return thermal_diffusivity(k=kg, rho=rhog, Cp=Cpg)
         return None
 
     @property
     def Prl(self):
-        if all([self.Cpl, self.mul, self.kl]):
-            return Prandtl(Cp=self.Cpl, mu=self.mul, k=self.kl)
+        r'''Prandtl number of the liquid phase of the chemical at its 
+        current temperature and pressure, dimensionless.
+        
+        .. math::
+            Pr = \frac{C_p \mu}{k}
+        
+        Utilizes the temperature and pressure dependent object oriented
+        interfaces :obj:`thermo.viscosity.ViscosityLiquid`,
+        :obj:`thermo.thermal_conductivity.ThermalConductivityLiquid`,
+        and :obj:`thermo.heat_capacity.HeatCapacityLiquid` to calculate the 
+        actual properties.
+        
+        Examples
+        --------
+        >>> Chemical('nitrogen', T=70).Prl
+        2.7655015690791696
+        '''
+        Cpl, mul, kl = self.Cpl, self.mul, self.kl
+        if all([Cpl, mul, kl]):
+            return Prandtl(Cp=Cpl, mu=mul, k=kl)
         return None
 
     @property
     def Prg(self):
-        if all([self.Cpg, self.mug, self.kg]):
-            return Prandtl(Cp=self.Cpg, mu=self.mug, k=self.kg)
+        r'''Prandtl number of the gas phase of the chemical at its 
+        current temperature and pressure, dimensionless.
+        
+        .. math::
+            Pr = \frac{C_p \mu}{k}
+        
+        Utilizes the temperature and pressure dependent object oriented
+        interfaces :obj:`thermo.viscosity.ViscosityGas`,
+        :obj:`thermo.thermal_conductivity.ThermalConductivityGas`,
+        and :obj:`thermo.heat_capacity.HeatCapacityGas` to calculate the 
+        actual properties.
+        
+        Examples
+        --------
+        >>> Chemical('NH3').Prg
+        0.847263731933008
+        '''
+        Cpg, mug, kg = self.Cpg, self.mug, self.kg
+        if all([Cpg, mug, kg]):
+            return Prandtl(Cp=Cpg, mu=mug, k=kg)
         return None
 
     @property
@@ -992,36 +1237,154 @@ class Chemical(object): # pragma: no cover
     ### Single-phase properties
     @property
     def Cp(self):
+        r'''Mass heat capacity of the chemical at its current phase and
+        temperature, in units of J/kg/K.
+        
+        Utilizes the object oriented interfaces 
+        :obj:`thermo.heat_capacity.HeatCapacitySolid`,
+        :obj:`thermo.heat_capacity.HeatCapacityLiquid`,
+        and :obj:`thermo.heat_capacity.HeatCapacityGas` to perform the 
+        actual calculation of each property. Note that those interfaces provide
+        output in molar units (J/mol/K).
+        
+        Examples
+        --------
+        >>> w = Chemical('water')
+        >>> w.Cp, w.phase
+        (4180.597021827335, 'l')
+        >>> Pd = Chemical('palladium')
+        >>> Pd.Cp, Pd.phase
+        (234.26767209171211, 's')
+        '''
         return phase_select_property(phase=self.phase, s=self.Cps, l=self.Cpl, g=self.Cpg)
        
     @property
     def Cpm(self):
+        r'''Molar heat capacity of the chemical at its current phase and
+        temperature, in units of J/mol/K.
+        
+        Utilizes the object oriented interfaces 
+        :obj:`thermo.heat_capacity.HeatCapacitySolid`,
+        :obj:`thermo.heat_capacity.HeatCapacityLiquid`,
+        and :obj:`thermo.heat_capacity.HeatCapacityGas` to perform the 
+        actual calculation of each property.
+        
+        Examples
+        --------
+        >>> Chemical('cubane').Cpm
+        137.05489206785944
+        >>> Chemical('ethylbenzene', T=550, P=3E6).Cpm
+        294.1844955331004
+        '''
         return phase_select_property(phase=self.phase, s=self.Cpsm, l=self.Cplm, g=self.Cpgm)
 
     @property
     def Vm(self):
+        r'''Molar volume of the chemical at its current phase and
+        temperature and pressure, in units of m^3/mol.
+        
+        Utilizes the object oriented interfaces 
+        :obj:`thermo.volume.VolumeSolid`,
+        :obj:`thermo.volume.VolumeLiquid`,
+        and :obj:`thermo.volume.VolumeGas` to perform the 
+        actual calculation of each property.
+        
+        Examples
+        --------
+        >>> Chemical('ethylbenzene', T=550, P=3E6).Vm
+        0.00017758024401627633
+        '''
         return phase_select_property(phase=self.phase, s=self.Vms, l=self.Vml, g=self.Vmg)
     
     @property
     def rho(self):
+        r'''Mass density of the chemical at its current phase and
+        temperature and pressure, in units of kg/m^3.
+        
+        Utilizes the object oriented interfaces 
+        :obj:`thermo.volume.VolumeSolid`,
+        :obj:`thermo.volume.VolumeLiquid`,
+        and :obj:`thermo.volume.VolumeGas` to perform the 
+        actual calculation of each property. Note that those interfaces provide
+        output in units of m^3/mol.
+        
+        Examples
+        --------
+        >>> Chemical('decane', T=550, P=2E6).rho
+        498.6549441720744
+        '''
         return phase_select_property(phase=self.phase, s=self.rhos, l=self.rhol, g=self.rhog)
         
     @property
     def rhom(self):
+        r'''Molar density of the chemical at its current phase and
+        temperature and pressure, in units of mol/m^3.
+        
+        Utilizes the object oriented interfaces 
+        :obj:`thermo.volume.VolumeSolid`,
+        :obj:`thermo.volume.VolumeLiquid`,
+        and :obj:`thermo.volume.VolumeGas` to perform the 
+        actual calculation of each property. Note that those interfaces provide
+        output in units of m^3/mol.
+        
+        Examples
+        --------
+        >>> Chemical('1-hexanol').rhom
+        7853.086232143972
+        '''
         return phase_select_property(phase=self.phase, s=self.rhosm, l=self.rholm, g=self.rhogm)
         
     @property
     def Z(self):
-        if self.Vm:
-            return Z(self.T, self.P, self.Vm)
+        r'''Compressibility factor of the chemical at its current phase and
+        temperature and pressure, dimensionless.
+        
+        Examples
+        --------
+        >>> Chemical('MTBE', T=900, P=1E-2).Z
+        0.9999999999079768
+        '''
+        Vm = self.Vm
+        if Vm:
+            return Z(self.T, self.P, Vm)
         return None
        
     @property
     def isobaric_expansion(self):
+        r'''Isobaric (constant-pressure) expansion of the chemical at its
+        current phase and temperature, in units of 1/K.
+                
+        .. math::
+            \beta = \frac{1}{V}\left(\frac{\partial V}{\partial T} \right)_P
+        
+        Examples
+        --------
+        Radical change  in value just above and below the critical temperature
+        of water:
+        
+        >>> Chemical('water', T=647.1, P=22048320.0).isobaric_expansion
+        0.34074205839222449
+
+        >>> Chemical('water', T=647.2, P=22048320.0).isobaric_expansion
+        0.18143324022215077
+        '''
         return phase_select_property(phase=self.phase, l=self.isobaric_expansion_l, g=self.isobaric_expansion_g)
         
     @property
     def JT(self):
+        r'''Joule Thomson coefficient of the chemical at its
+        current phase and temperature, in units of K/Pa.
+                
+        .. math::
+            \mu_{JT} = \left(\frac{\partial T}{\partial P}\right)_H = \frac{1}{C_p}
+            \left[T \left(\frac{\partial V}{\partial T}\right)_P - V\right]
+            = \frac{V}{C_p}\left(\beta T-1\right)
+
+        Examples
+        --------
+        >>> Chemical('water').JT
+        -2.2150394958666412e-07
+        '''
         return phase_select_property(phase=self.phase, l=self.JTl, g=self.JTg)
 
     @property
@@ -1034,14 +1397,47 @@ class Chemical(object): # pragma: no cover
         
     @property
     def nu(self):
+        r'''Kinematic viscosity of the the chemical at its current temperature,
+        pressure, and phase in units of m^2/s.
+        
+        .. math::
+            \nu = \frac{\mu}{\rho}
+        
+        Examples
+        --------
+        >>> Chemical('argon').nu
+        1.3846930410865003e-05
+        '''
         return phase_select_property(phase=self.phase, l=self.nul, g=self.nug)
         
     @property
     def alpha(self):
+        r'''Thermal diffusivity of the chemical at its current temperature, 
+        pressure, and phase in units of m^2/s.
+        
+        .. math::
+            \alpha = \frac{k}{\rho Cp}
+
+        Examples
+        --------
+        >>> Chemical('furfural').alpha
+        7.672866198927953e-08
+        '''
         return phase_select_property(phase=self.phase, l=self.alphal, g=self.alphag)
         
     @property
     def Pr(self):
+        r'''Prandtl number of the chemical at its current temperature, 
+        pressure, and phase; dimensionless.
+        
+        .. math::
+            Pr = \frac{C_p \mu}{k}
+        
+        Examples
+        --------
+        >>> Chemical('acetone').Pr
+        4.450368847076066
+        '''
         return phase_select_property(phase=self.phase, l=self.Prl, g=self.Prg)
                 
     def Tsat(self, P):
