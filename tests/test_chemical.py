@@ -207,7 +207,6 @@ def test_Mixture():
     Mixture('air', T=320, P=1E5)
  
 def test_Stream():   
-    from scipy.constants import *
     Stream(['H2', 'NH3', 'CO', 'Ar', 'CH4', 'N2'],
            zs=[.7371, 0, .024, .027, .013, .2475], 
     T=500, P=20.5E5, m=300)
