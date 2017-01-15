@@ -174,7 +174,7 @@ def test_Chemical_properties_T_dependent():
     assert_allclose(w.Prg, 0.9803087814815961)
     
     assert_allclose(w.solubility_parameter, 47863.51384219548)
-    assert_allclose(w.Parachor, 52.656339998350205)
+    assert_allclose(w.Parachor, 9.363768522707514e-06)
 
 def test_Chemical_properties_T_phase():
     # T-only dependent properties (always or at the moment)
@@ -190,7 +190,7 @@ def test_Chemical_properties_T_phase():
     assert_allclose(w.Z, 0.0007247422467681115)
     
     assert_allclose(w.isobaric_expansion, 0.00027479530461365189, rtol=1E-3)
-    assert_allclose(w.JT, -2.2029508371866032e-07)
+    assert_allclose(w.JT, -2.2029508371866032e-07, rtol=1E-3)
 
     assert_allclose(w.mu, 0.0008537426062537152)
     assert_allclose(w.k, 0.6094991151038377)

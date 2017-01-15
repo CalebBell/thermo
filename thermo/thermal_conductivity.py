@@ -998,7 +998,7 @@ def DIPPR9I(ws, ks):
     ----------
     .. [1] Reid, Robert C.; Prausnitz, John M.; Poling, Bruce E. The
        Properties of Gases and Liquids. McGraw-Hill Companies, 1987.
-    .. [2]  Danner, Ronald P, and Design Institute for Physical Property Data.
+    .. [2] Danner, Ronald P, and Design Institute for Physical Property Data.
        Manual for Predicting Chemical Process Design Data. New York, N.Y, 1982.
     '''
     if not none_and_length_check([ks, ws]):  # check same-length inputs

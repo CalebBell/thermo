@@ -1619,14 +1619,45 @@ class Chemical(object): # pragma: no cover
 
     @property
     def solubility_parameter(self):
+        r'''Solubility parameter of the chemical at its 
+        current temperature and pressure, in units of Pa^0.5.
+        
+        .. math::
+            \delta = \sqrt{\frac{\Delta H_{vap} - RT}{V_m}}
+        
+        Calculated based on enthalpy of vaporization and molar volume.
+        Normally calculated at STP. For uses of this property, see
+        :obj:`thermo.solubility.solubility_parameter`.
+        
+        Examples
+        --------
+        >>> Chemical('NH3').solubility_parameter
+        24766.329043856073
+        '''
         return solubility_parameter(T=self.T, Hvapm=self.Hvapm, Vml=self.Vml, 
                                     Method=self.solubility_parameter_method, 
                                     CASRN=self.CAS)
 
     @property 
     def Parachor(self):
-        if all((self.sigma, self.MW, self.rhol, self.rhog)):
-            return Parachor(sigma=self.sigma, MW=self.MW, rhol=self.rhol, rhog=self.rhog)
+        r'''Parachor of the chemical at its 
+        current temperature and pressure, in units of N^0.25*m^2.75/mol.
+        
+        .. math::
+            P = \frac{\sigma^{0.25} MW}{\rho_L - \rho_V}
+        
+        Calculated based on surface tension, density of the liquid and gas
+        phase, and molecular weight. For uses of this property, see
+        :obj:`thermo.utils.Parachor`.
+        
+        Examples
+        --------
+        >>> Chemical('octane').Parachor
+        6.291693072841486e-05
+        '''
+        sigma, rhol, rhog = self.sigma, self.rhol, self.rhog
+        if all((sigma, rhol, rhog, self.MW)):
+            return Parachor(sigma=sigma, MW=self.MW, rhol=rhol, rhog=rhog)
         return None
     
     ### Single-phase properties

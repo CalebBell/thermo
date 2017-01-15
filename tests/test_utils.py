@@ -143,10 +143,11 @@ def test_isentropic_exponent():
     k = isentropic_exponent(33.6, 25.27)
     assert_allclose(k, 1.329639889196676)
 
+    
 def test_Parachor():
-    # TODO: replace with a test for a new function
-    P = Parachor(0.02117, 114.22852, 700.03, 5.2609)
-    assert_allclose(P, 352.66655018657565)
+    P = Parachor(100.15888, 800.8088185536124, 4.97865317223119, 0.02672166960656005)
+    assert_allclose(P, 5.088443542210164e-05)
+    
 
 def test_phase_select_property():
     assert 150 == phase_select_property(phase='s', s=150, l=10)
