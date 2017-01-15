@@ -66,8 +66,6 @@ try:
     from rdkit import Chem
     from rdkit.Chem import Descriptors
     from rdkit.Chem import AllChem
-    from rdkit.Chem import Draw
-    from rdkit.Chem.Draw import IPythonConsole
 except:  
     # pragma: no cover
     pass
@@ -106,6 +104,10 @@ class Chemical(object): # pragma: no cover
 
     '''
     eos_in_a_box = []
+    __atom_fractions = None
+    __mass_fractions = None
+    __rdkitmol = None
+    __rdkitmol_Hs = None
     def __repr__(self):
         return '<Chemical [%s], T=%.2f K, P=%.0f Pa>' %(self.name, self.T, self.P)
     
@@ -127,9 +129,11 @@ class Chemical(object): # pragma: no cover
         self.InChI_Key = InChI_Key(self.CAS)
         self.IUPAC_name = IUPAC_name(self.CAS).lower()
         self.name = name(self.CAS).lower()
-        self.synonyms = [i.lower() for i in synonyms(self.CAS)]
+        self.synonyms = synonyms(self.CAS)
 
-        self.set_structure()
+        self.atoms = simple_formula_parser(self.formula)
+        self.similarity_variable = similarity_variable(self.atoms, self.MW)
+
         self.set_constant_sources()
         self.set_constants()
         self.set_eos(T=T, P=P)
@@ -159,47 +163,75 @@ class Chemical(object): # pragma: no cover
         self.eos = self.eos.to_TP(T=self.T, P=self.P)
         self.eos_in_a_box[0] = self.eos
         self.set_thermo()
+         
 
+    def draw_2d(self, width=300, height=300, Hs=False): # pragma: no cover
+        r'''Interface for drawing a 2D image of the molecule. 
+        Requires an HTML5 browser, and the libraries RDKit and 
+        IPython. An exception is raised if either of these libraries is 
+        absent.
 
-    def set_structure(self):
+        Parameters
+        ----------
+        width : int
+            Number of pixels wide for the view
+        height : int
+            Number of pixels tall for the view
+        Hs : bool
+            Whether or not to show hydrogen
+
+        Examples
+        --------
+        >>> Chemical('decane').draw_2d()
+        '''
         try:
-            self.rdkitmol = Chem.MolFromSmiles(self.smiles)
-            self.rdkitmol_Hs = Chem.AddHs(self.rdkitmol)
-            self.atoms = dict(Counter(atom.GetSymbol() for atom in self.rdkitmol_Hs.GetAtoms()))
-            self.charge = Chem.GetFormalCharge(self.rdkitmol)
-            self.rings = Chem.Descriptors.RingCount(self.rdkitmol)
+            from rdkit.Chem import Draw
+            from rdkit.Chem.Draw import IPythonConsole
+            if Hs:
+                mol = self.rdkitmol_Hs
+            else:
+                mol = self.rdkitmol
+            return Draw.MolToImage(mol, size=(width, height))
         except:
-            self.rdkitmol = None
-            self.rdkitmol_Hs = None
-            self.charge = None
-            self.rings = None
-            self.atoms = simple_formula_parser(self.formula)
-        self.atom_fractions = atom_fractions(self.atoms)
-        self.mass_fractions = mass_fractions(self.atoms, self.MW)
-        self.similarity_variable = similarity_variable(self.atoms, self.MW)
-        self.Hill = atoms_to_Hill(self.atoms)
+            return 'Rdkit is required for this feature.'
 
+    def draw_3d(self, width=300, height=500, style='stick', Hs=True): # pragma: no cover
+        r'''Interface for drawing an interactive 3D view of the molecule. 
+        Requires an HTML5 browser, and the libraries RDKit, pymol3D, and 
+        IPython. An exception is raised if all three of these libraries are 
+        absent.
+        
+        Parameters
+        ----------
+        width : int
+            Number of pixels wide for the view
+        height : int
+            Number of pixels tall for the view
+        style : str
+            One of 'stick', 'line', 'cross', or 'sphere'
+        Hs : bool
+            Whether or not to show hydrogen
 
-    def draw_2d(self):
-        try:
-            return Draw.MolToImage(self.rdkitmol)
-        except:
-            return 'Rdkit required'
-
-    def draw_3d(self):
+        Examples
+        --------
+        >>> Chemical('cubane').draw_3d()
+        '''
         try:
             import py3Dmol
-            AllChem.EmbedMultipleConfs(self.rdkitmol_Hs)
-            mb = Chem.MolToMolBlock(self.rdkitmol_Hs)
-            p = py3Dmol.view(width=300,height=300)
+            from IPython.display import display
+            if Hs:
+                mol = self.rdkitmol_Hs
+            else:
+                mol = self.rdkitmol
+            AllChem.EmbedMultipleConfs(mol)
+            mb = Chem.MolToMolBlock(mol)
+            p = py3Dmol.view(width=width,height=height)
             p.addModel(mb,'sdf')
-            p.setStyle({'stick':{}})
-            # Styles: stick, line, cross, sphere
+            p.setStyle({style:{}})
             p.zoomTo()
-            p.show()
-            return p
+            display(p.show())
         except:
-            return 'py3Dmol and rdkit required'
+            return 'py3Dmol, RDKit, and IPython are required for this feature.'
 
     def set_constant_sources(self):
         self.Tm_sources = Tm(CASRN=self.CAS, AvailableMethods=True)
@@ -655,6 +687,136 @@ class Chemical(object): # pragma: no cover
             self.A = self.U - self.T*self.S if (self.U is not None and self.S is not None) else None
         except:
             pass
+
+    ### Temperature independent properties - calculate lazily
+    @property
+    def charge(self):
+        r'''Charge of a chemical, computed with RDKit from a chemical's SMILES.
+        If RDKit is not available, holds None.
+        
+        Examples
+        --------
+        >>> Chemical('sodium ion').charge
+        1
+        '''
+        try:
+            return Chem.GetFormalCharge(self.rdkitmol)
+        except:
+            return None
+         
+    @property
+    def rings(self):
+        r'''Number of rings in a chemical, computed with RDKit from a 
+        chemical's SMILES. If RDKit is not available, holds None.
+        
+        Examples
+        --------
+        >>> Chemical('Paclitaxel').rings
+        7
+        '''
+        try:
+            return Chem.Descriptors.RingCount(self.rdkitmol)
+        except:
+            return None
+
+    @property
+    def aromatic_rings(self):
+        r'''Number of aromatic rings in a chemical, computed with RDKit from a 
+        chemical's SMILES. If RDKit is not available, holds None.
+        
+        Examples
+        --------
+        >>> Chemical('Paclitaxel').aromatic_rings
+        3
+        '''
+        try:
+            return Chem.Descriptors.NumAromaticRings(self.rdkitmol)
+        except:
+            return None
+         
+    @property
+    def rdkitmol(self):
+        r'''RDKit object of the chemical, without hydrogen. If RDKit is not 
+        available, holds None.
+        
+        For examples of what can be done with RDKit, see
+        `their website <http://www.rdkit.org/docs/GettingStartedInPython.html>`_.
+        '''
+        if self.__rdkitmol:
+            return self.__rdkitmol
+        else:
+            try:
+                self.__rdkitmol = Chem.MolFromSmiles(self.smiles)
+                return self.__rdkitmol
+            except:
+                return None
+
+    @property
+    def rdkitmol_Hs(self):
+        r'''RDKit object of the chemical, with hydrogen. If RDKit is not 
+        available, holds None.
+        
+        For examples of what can be done with RDKit, see
+        `their website <http://www.rdkit.org/docs/GettingStartedInPython.html>`_.
+        '''
+        if self.__rdkitmol_Hs:
+            return self.__rdkitmol_Hs
+        else:
+            try:
+                self.__rdkitmol_Hs = Chem.AddHs(self.rdkitmol)
+                return self.__rdkitmol_Hs
+            except:
+                return None
+
+    @property
+    def Hill(self):
+        r'''Hill formula of a compound. For a description of the Hill system,
+        see :obj:`thermo.elements.atoms_to_Hill`.
+        
+        Examples
+        --------
+        >>> Chemical('furfuryl alcohol').Hill
+        'C5H6O2'
+        '''
+        if self.__Hill:
+            return self.__Hill
+        else:
+            self.__Hill = atoms_to_Hill(self.atoms)
+            return self.__Hill
+
+    @property
+    def atom_fractions(self):
+        r'''Dictionary of atom:fractional occurence of the elements in a 
+        chemical. Useful when performing element balances. For mass-fraction 
+        occurences, see :obj:`mass_fractions`.
+        
+        Examples
+        --------
+        >>> Chemical('Ammonium aluminium sulfate').atom_fractions
+        {'H': 0.25, 'S': 0.125, 'Al': 0.0625, 'O': 0.5, 'N': 0.0625}
+        '''
+        if self.__atom_fractions:
+            return self.__atom_fractions
+        else:
+            self.__atom_fractions = atom_fractions(self.atoms)
+            return self.__atom_fractions
+
+    @property
+    def mass_fractions(self):
+        r'''Dictionary of atom:mass-weighted fractional occurence of elements. 
+        Useful when performing mass balances. For atom-fraction occurences, see
+        :obj:`atom_fractions`.
+        
+        Examples
+        --------
+        >>> Chemical('water').mass_fractions
+        {'H': 0.11189834407236524, 'O': 0.8881016559276347}
+        '''
+        if self.__mass_fractions:
+            return self.__mass_fractions
+        else:
+            self.__mass_fractions =  mass_fractions(self.atoms, self.MW)
+            return self.__mass_fractions
 
     ### One phase properties - calculate lazily
     @property
@@ -1886,6 +2048,32 @@ class Mixture(object):  # pragma: no cover
 
         self.set_TP(T=T, P=P)
         self.set_phase()
+
+    def draw_2d(self,  Hs=False): # pragma: no cover
+        r'''Interface for drawing a 2D image of all the molecules in the 
+        mixture. Requires an HTML5 browser, and the libraries RDKit and 
+        IPython. An exception is raised if either of these libraries is 
+        absent.
+
+        Parameters
+        ----------
+        Hs : bool
+            Whether or not to show hydrogen
+
+        Examples
+        --------
+        Mixture(['natural gas']).draw_2d()
+        '''
+        try:
+            from rdkit.Chem import Draw
+            from rdkit.Chem.Draw import IPythonConsole
+            if Hs:
+                mols = [i.rdkitmol_Hs for i in self.Chemicals]
+            else:
+                mols = [i.rdkitmol for i in self.Chemicals]
+            return Draw.MolsToImage(mols)
+        except:
+            return 'Rdkit is required for this feature.'
 
     def __repr__(self):
         return '<Mixture, components=%s, mole fractions=%s, T=%.2f K, P=%.0f \
