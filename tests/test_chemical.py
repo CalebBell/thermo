@@ -164,14 +164,14 @@ def test_Chemical_properties_T_dependent():
     
     assert_allclose(w.permittivity, 77.70030000000001)
     
-    assert_allclose(w.JTl, -2.2029508371866032e-07)
-    assert_allclose(w.JTg, 0.00016057626157512468)
+    assert_allclose(w.JTl, -2.2029508371866032e-07, rtol=1E-3)
+    assert_allclose(w.JTg, 0.00016057626157512468, rtol=1E-3)
     
-    assert_allclose(w.nul, 8.566921938819405e-07)
-    assert_allclose(w.nug, 1.3008181744108452e-05)
+    assert_allclose(w.nul, 8.566921938819405e-07, rtol=1E-3)
+    assert_allclose(w.nug, 1.3008181744108452e-05, rtol=1E-3)
     
-    assert_allclose(w.Prl, 5.854395582989558)
-    assert_allclose(w.Prg, 0.9803087814815961)
+    assert_allclose(w.Prl, 5.854395582989558, rtol=1E-3)
+    assert_allclose(w.Prg, 0.9803087814815961, rtol=1E-3)
     
     assert_allclose(w.solubility_parameter, 47863.51384219548)
     assert_allclose(w.Parachor, 9.363768522707514e-06)

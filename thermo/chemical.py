@@ -402,6 +402,7 @@ class Chemical(object): # pragma: no cover
         0.024410195021818258
         '''
         return self.eos_in_a_box[0]
+
     @eos.setter
     def eos(self, eos):
         if self.eos_in_a_box:
