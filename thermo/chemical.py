@@ -108,6 +108,7 @@ class Chemical(object): # pragma: no cover
     __mass_fractions = None
     __rdkitmol = None
     __rdkitmol_Hs = None
+    __Hill = None
     def __repr__(self):
         return '<Chemical [%s], T=%.2f K, P=%.0f Pa>' %(self.name, self.T, self.P)
     
@@ -390,6 +391,16 @@ class Chemical(object): # pragma: no cover
             self.eos = GCEOS_DUMMY(T=T, P=P)
     @property
     def eos(self):
+        r'''Equation of state object held by the chemical; used to calculate
+        excess thermodynamic quantities, and also provides a vapor pressure
+        curve, enthalpy of vaporization curve, fugacity, thermodynamic partial 
+        derivatives, and more; see :obj:`thermo.eos` for a full listing.
+                
+        Examples
+        --------
+        >>> Chemical('methane').eos.V_g
+        0.024410195021818258
+        '''
         return self.eos_in_a_box[0]
     @eos.setter
     def eos(self, eos):
@@ -1200,6 +1211,18 @@ class Chemical(object): # pragma: no cover
 
     @property
     def rhosm(self):
+        r'''Molar density of the chemical in the solid phase at the
+        current temperature and pressure, in units of mol/m^3.
+        
+        Utilizes the object oriented interface and 
+        :obj:`thermo.volume.VolumeSolid` to perform the actual calculation of 
+        molar volume.
+        
+        Examples
+        --------
+        >>> Chemical('palladium').rhosm
+        112760.75925577903
+        '''
         Vms = self.Vms
         if Vms:
             return 1./Vms
@@ -1207,6 +1230,18 @@ class Chemical(object): # pragma: no cover
 
     @property
     def rholm(self):
+        r'''Molar density of the chemical in the liquid phase at the
+        current temperature and pressure, in units of mol/m^3.
+        
+        Utilizes the object oriented interface and 
+        :obj:`thermo.volume.VolumeLiquid` to perform the actual calculation of 
+        molar volume.
+        
+        Examples
+        --------
+        >>> Chemical('nitrogen', T=70).rholm
+        29937.20179186975
+        '''
         Vml = self.Vml
         if Vml:
             return 1./Vml 
@@ -1214,6 +1249,18 @@ class Chemical(object): # pragma: no cover
 
     @property
     def rhogm(self):
+        r'''Molar density of the chemical in the gas phase at the
+        current temperature and pressure, in units of mol/m^3.
+        
+        Utilizes the object oriented interface and 
+        :obj:`thermo.volume.VolumeGas` to perform the actual calculation of 
+        molar volume.
+        
+        Examples
+        --------
+        >>> Chemical('tungsten hexafluoride').rhogm
+        42.01349946063116
+        '''
         Vmg = self.Vmg
         if Vmg:
             return 1./Vmg
@@ -1221,6 +1268,18 @@ class Chemical(object): # pragma: no cover
 
     @property
     def Zs(self):
+        r'''Compressibility factor of the chemical in the solid phase at the
+        current temperature and pressure, dimensionless.
+        
+        Utilizes the object oriented interface and 
+        :obj:`thermo.volume.VolumeSolid` to perform the actual calculation of 
+        molar volume.
+        
+        Examples
+        --------
+        >>> Chemical('palladium').Z
+        0.00036248477437931853
+        '''
         Vms = self.Vms
         if Vms:
             return Z(self.T, self.P, Vms)
@@ -1228,6 +1287,18 @@ class Chemical(object): # pragma: no cover
 
     @property
     def Zl(self):
+        r'''Compressibility factor of the chemical in the liquid phase at the
+        current temperature and pressure, dimensionless.
+        
+        Utilizes the object oriented interface and 
+        :obj:`thermo.volume.VolumeLiquid` to perform the actual calculation of 
+        molar volume.
+        
+        Examples
+        --------
+        >>> Chemical('water').Zl
+        0.0007385375470263454
+        '''
         Vml = self.Vml
         if Vml:
             return Z(self.T, self.P, Vml)
@@ -1235,6 +1306,18 @@ class Chemical(object): # pragma: no cover
             
     @property
     def Zg(self):
+        r'''Compressibility factor of the chemical in the gas phase at the
+        current temperature and pressure, dimensionless.
+        
+        Utilizes the object oriented interface and 
+        :obj:`thermo.volume.VolumeGas` to perform the actual calculation of 
+        molar volume.
+        
+        Examples
+        --------
+        >>> Chemical('sulfur hexafluoride', T=700, P=1E9).Zg
+        11.140084184207813
+        '''
         Vmg = self.Vmg
         if Vmg:
             return Z(self.T, self.P, Vmg)

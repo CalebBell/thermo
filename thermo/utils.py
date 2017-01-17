@@ -768,8 +768,7 @@ def Z(T, P, V):
     .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
        New York: McGraw-Hill Professional, 2000.
     '''
-    _Z = V*P/T/R
-    return _Z
+    return V*P/T/R
 
 
 def B_To_Z(B, T, P):
