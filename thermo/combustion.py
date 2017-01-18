@@ -73,10 +73,6 @@ def Hcombustion(atoms, Hf=None, HfH2O=-285825, HfCO2=-393474,
 
     >>> Hcombustion({'H': 4, 'C': 1, 'O': 1}, Hf=-239100)
     -726024.0
-
-    References
-    ----------
-    .. [1] Definition of heat of combustion.
     '''
     if not Hf or not atoms:
         return None

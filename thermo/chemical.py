@@ -40,7 +40,7 @@ from thermo.volume import VolumeGas, VolumeLiquid, VolumeSolid, volume_liquid_mi
 from thermo.permittivity import *
 from thermo.heat_capacity import HeatCapacitySolid, HeatCapacityGas, HeatCapacityLiquid, Cp_gas_mixture, Cv_gas_mixture, Cp_liq_mixture
 from thermo.interface import SurfaceTension, surface_tension_mixture
-from thermo.viscosity import viscosity_liquid_mixture, viscosity_gas_mixture, ViscosityLiquid, ViscosityGas
+from thermo.viscosity import viscosity_liquid_mixture, viscosity_gas_mixture, ViscosityLiquid, ViscosityGas, viscosity_index
 from thermo.reaction import Hf
 from thermo.combustion import Hcombustion
 from thermo.safety import Tflash, Tautoignition, LFL, UFL, TWA, STEL, Ceiling, Skin, Carcinogen, LFL_mixture, UFL_mixture
@@ -102,6 +102,187 @@ class Chemical(object): # pragma: no cover
     Default initialization is for 298.15 K, 1 atm.
     Goal is for, when a method fails, a warning is printed.
 
+    Attributes
+    ----------
+    T : float
+        Temperature of the chemical, [K]
+    P : float
+        Pressure of the chemical, [Pa]
+    phase : str
+        Phase of the chemical; one of 's', 'l', 'g', or 'l/g'.
+    ID : str
+        User specified string by which the chemical's CAS was looked up.
+    CAS : str
+        The CAS number of the chemical.
+    PubChem : int
+        PubChem Compound identifier (CID) of the chemical; all chemicals are 
+        sourced from their database. Chemicals can be looked at online at 
+        `<https://pubchem.ncbi.nlm.nih.gov>`_.
+    MW : float
+        Molecular weight of the compound, g/mol.
+    formula : str
+        Molecular formula of the compound.
+    atoms : dict
+        dictionary of counts of individual atoms, indexed by symbol with
+        proper capitalization, [-]
+    similarity_variable : float
+        Similarity variable, see :obj:`thermo.elements.similarity_variable`  
+        for the definition, [mol/g]
+    smiles : str
+        Simplified molecular-input line-entry system representation of the 
+        compound.
+    InChI : str
+        IUPAC International Chemical Identifier of the compound.
+    InChI_Key : str
+        25-character hash of the compound's InChI. 
+    IUPAC_name : str
+        Preferred IUPAC name for a compound.
+    synonyms : list[str]
+        All synonyms for the compound found in PubChem, sorted by popularity.
+    Tm : float
+        Melting temperature [K]
+    Tb : float
+        Boiling temperature [K]
+    Tc : float
+        Critical temperature [K]
+    Pc : float
+        Critical pressure [Pa]
+    Vc : float
+        Critical volume [m^3/mol]
+    Zc : float
+        Critical compressibility [-]
+    rhoc : float
+        Critical density [kg/m^3]
+    rhocm : float
+        Critical molar density [mol/m^3]
+    omega : float
+        Acentric factor [-]
+    StielPolar : float
+        Stiel Polar factor, see :obj:`thermo.acentric.StielPolar` for 
+        the definition [-]
+    Tt : float
+        Triple temperature, [K]
+    Pt : float
+        Triple pressure, [Pa]
+    Hfus : float
+        Enthalpy of fusion [J/kg]
+    Hfusm : float
+        Molar enthalpy of fusion [J/mol]
+    Hsub : float
+        Enthalpy of sublimation [J/kg]
+    Hsubm : float
+        Molar enthalpy of sublimation [J/mol]
+    Hf : float
+        Enthalpy of formation [J/mol]
+    Hc : float
+        Molar enthalpy of combustion [J/mol]
+    Tflash : float
+        Flash point of the chemical, [K]
+    Tautoignition : float
+        Autoignition point of the chemical, [K]
+    LFL : float
+        Lower flammability limit of the gas in an atmosphere at STP, [mole fraction]
+    UFL : float
+        Upper flammability limit of the gas in an atmosphere at STP, [mole fraction]
+    TWA : tuple[quantity, unit]
+        Time-Weighted Average limit on worker exposure to dangerous chemicals.
+    STEL : tuple[quantity, unit]
+        Short-term Exposure limit on worker exposure to dangerous chemicals.
+    Ceiling : tuple[quantity, unit]
+        Ceiling limits on worker exposure to dangerous chemicals.
+    Skin : bool
+        Whether or not a chemical can be absorbed through the skin.
+    Carcinogen : str or dict
+        Carcinogen status information.
+    dipole : float
+        Dipole moment, [debye]
+    Stockmayer : float
+        Lennard-Jones depth of potential-energy minimum over k, [K]
+    molecular_diameter : float
+        Lennard-Jones molecular diameter, [Angstrom]
+    GWP : float
+        Global warming potential (default 100-year outlook), [(impact/mass chemical)/(impact/mass CO2)]
+    ODP : float
+        Ozone Depletion potential, [(impact/mass chemical)/(impact/mass CFC-11)];
+    logP : float
+        Octanol-water partition coefficient, [-]
+    legal_status : str or dict
+        Legal status information [-]
+    economic_status : list
+        Economic status information [-]
+    RI : float
+        Refractive Index on the Na D line, [-]
+    RIT : float
+        Temperature at which refractive index reading was made
+    conductivity : float
+        Electrical conductivity of the fluid, [S/m]
+    conductivityT : float
+        Temperature at which conductivity measurement was made
+    alpha
+    alphag
+    alphal
+    aromatic_rings
+    atom_fractions
+    Bvirial
+    charge
+    Cp
+    Cpg
+    Cpgm
+    Cpl
+    Cplm
+    Cpm
+    Cps
+    Cpsm
+    Cvg
+    Cvgm
+    eos
+    Hill
+    Hvap
+    Hvapm
+    isentropic_exponent
+    isobaric_expansion
+    isobaric_expansion_g
+    isobaric_expansion_l
+    JT
+    JTg
+    JTl
+    k
+    kg
+    kl
+    mass_fractions
+    mu
+    mug
+    mul
+    nu
+    nug
+    nul
+    Parachor
+    permittivity
+    Pr
+    Prg
+    Prl
+    Psat
+    rdkitmol
+    rdkitmol_Hs
+    rho
+    rhog
+    rhogm
+    rhol
+    rholm
+    rhom
+    rhos
+    rhosm
+    rings
+    sigma
+    solubility_parameter
+    Vm
+    Vmg
+    Vml
+    Vms
+    Z
+    Zg
+    Zl
+    Zs
     '''
     eos_in_a_box = []
     __atom_fractions = None
@@ -1744,6 +1925,7 @@ class Chemical(object): # pragma: no cover
             return Parachor(sigma=sigma, MW=self.MW, rhol=rhol, rhog=rhog)
         return None
     
+        
     ### Single-phase properties
     @property
     def Cp(self):

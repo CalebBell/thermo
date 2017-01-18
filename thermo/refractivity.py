@@ -57,7 +57,7 @@ def refractive_index(CASRN, T=None, AvailableMethods=False, Method=None,
     Returns
     -------
     RI : float
-        Refractive Index on Na D line, [-]
+        Refractive Index on the Na D line, [-]
     T : float, only returned if full_info == True
         Temperature at which refractive index reading was made
     methods : list, only returned if AvailableMethods == True
@@ -156,8 +156,7 @@ def polarizability_from_RI(RI, Vm):
        International Journal of Thermophysics 37, no. 7 (June 6, 2016): 1-24.
        doi:10.1007/s10765-016-2075-8.
     '''
-    alpha = 3/(4*pi*N_A)*(RI**2-1)/(RI**2+2)*Vm
-    return alpha
+    return 3/(4*pi*N_A)*(RI**2-1)/(RI**2+2)*Vm
 
 
 def molar_refractivity_from_RI(RI, Vm):
@@ -195,8 +194,7 @@ def molar_refractivity_from_RI(RI, Vm):
        International Journal of Thermophysics 37, no. 7 (June 6, 2016): 1-24.
        doi:10.1007/s10765-016-2075-8.
     '''
-    Rm = (RI**2-1)/(RI**2+2)*Vm
-    return Rm
+    return (RI**2 - 1.)/(RI**2 + 2.)*Vm
 
 
 def RI_from_molar_refractivity(Rm, Vm):

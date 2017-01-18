@@ -1883,6 +1883,10 @@ def viscosity_index(nu_40, nu_100, rounding=False):
     VI is undefined for nu_100 under 2 mm^2/s. None is returned if this is the
     case. Internal units are mm^2/s. Higher values of viscosity index suggest
     a lesser decrease in kinematic viscosity as temperature increases.
+    
+    Note that viscosity is a pressure-dependent property, and that the 
+    viscosity index is defined for a fluid at whatever pressure it is at.
+    The viscosity index is thus also a function of pressure.
 
     Examples
     --------

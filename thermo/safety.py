@@ -588,7 +588,7 @@ def Tautoignition(CASRN, AvailableMethods=False, Method=None):
 
     Returns
     -------
-    _Tautoignition : float
+    Tautoignition : float
         Autoignition point of the chemical, [K]
     methods : list, only returned if AvailableMethods == True
         List of methods which can be used to obtain Tautoignition with the
@@ -674,8 +674,8 @@ def LFL(Hc=None, atoms={}, CASRN='', AvailableMethods=False, Method=None):
 
     Returns
     -------
-    _LFL : float
-        Lower flammability limit of the gas in an atmosphere at STP, [fraction]
+    LFL : float
+        Lower flammability limit of the gas in an atmosphere at STP, [mole fraction]
     methods : list, only returned if AvailableMethods == True
         List of methods which can be used to obtain LFL with the
         given inputs
@@ -765,8 +765,8 @@ def UFL(Hc=None, atoms={}, CASRN='', AvailableMethods=False, Method=None):
 
     Returns
     -------
-    _UFL : float
-        Upper flammability limit of the gas in an atmosphere at STP, [fraction]
+    UFL : float
+        Upper flammability limit of the gas in an atmosphere at STP, [mole fraction]
     methods : list, only returned if AvailableMethods == True
         List of methods which can be used to obtain UFL with the
         given inputs

@@ -372,7 +372,7 @@ def similarity_variable(atoms, MW=None):
     Returns
     -------
     similarity_variable : float
-        similarity variable as defined in [1]_, [mol/g]
+        Similarity variable as defined in [1]_, [mol/g]
 
     Notes
     -----
