@@ -73,8 +73,8 @@ except:
 
 from collections import Counter
 
-import warnings
-warnings.filterwarnings("ignore")
+#import warnings
+#warnings.filterwarnings("ignore")
 
 
 
@@ -218,6 +218,80 @@ class Chemical(object): # pragma: no cover
         Electrical conductivity of the fluid, [S/m]
     conductivityT : float
         Temperature at which conductivity measurement was made
+    VaporPressure : object
+        Instance of :obj:`thermo.vapor_pressure.VaporPressure`, with data and
+        methods loaded for the chemical; performs the actual calculations of
+        vapor pressure of the chemical.
+    EnthalpyVaporization : object
+        Instance of :obj:`thermo.phase_change.EnthalpyVaporization`, with data 
+        and methods loaded for the chemical; performs the actual calculations 
+        of molar enthalpy of vaporization of the chemical.
+    VolumeSolid : object
+        Instance of :obj:`thermo.volume.VolumeSolid`, with data and methods
+        loaded for the chemical; performs the actual calculations of molar 
+        volume of the solid phase of the chemical.
+    VolumeLiquid : object
+        Instance of :obj:`thermo.volume.VolumeLiquid`, with data and methods
+        loaded for the chemical; performs the actual calculations of molar 
+        volume of the liquid phase of the chemical.
+    VolumeGas : object
+        Instance of :obj:`thermo.volume.VolumeGas`, with data and methods
+        loaded for the chemical; performs the actual calculations of molar 
+        volume of the gas phase of the chemical.
+    HeatCapacitySolid : object
+        Instance of :obj:`thermo.heat_capacity.HeatCapacitySolid`, with data and 
+        methods loaded for the chemical; performs the actual calculations of  
+        molar heat capacity of the solid phase of the chemical.
+    HeatCapacityLiquid : object
+        Instance of :obj:`thermo.heat_capacity.HeatCapacityLiquid`, with data and 
+        methods loaded for the chemical; performs the actual calculations of  
+        molar heat capacity of the liquid phase of the chemical.
+    HeatCapacityGas : object
+        Instance of :obj:`thermo.heat_capacity.HeatCapacityGas`, with data and 
+        methods loaded for the chemical; performs the actual calculations of  
+        molar heat capacity of the gas phase of the chemical.
+    ViscosityLiquid : object
+        Instance of :obj:`thermo.viscosity.ViscosityLiquid`, with data and
+        methods loaded for the chemical; performs the actual calculations of
+        viscosity of the liquid phase of the chemical.
+    ViscosityGas : object
+        Instance of :obj:`thermo.viscosity.ViscosityGas`, with data and
+        methods loaded for the chemical; performs the actual calculations of
+        viscosity of the gas phase of the chemical.
+    ThermalConductivityLiquid : object
+        Instance of :obj:`thermo.thermal_conductivity.ThermalConductivityLiquid`,
+        with data and methods loaded for the chemical; performs the actual 
+        calculations of thermal conductivity of the liquid phase of the 
+        chemical.
+    ThermalConductivityGas : object
+        Instance of :obj:`thermo.thermal_conductivity.ThermalConductivityGas`,
+        with data and methods loaded for the chemical; performs the actual 
+        calculations of thermal conductivity of the gas phase of the chemical.
+    SurfaceTension : object
+        Instance of :obj:`thermo.interface.SurfaceTension`, with data and
+        methods loaded for the chemical; performs the actual calculations of
+        surface tension of the chemical.
+    Permittivity : object
+        Instance of :obj:`thermo.permittivity.Permittivity`, with data and
+        methods loaded for the chemical; performs the actual calculations of
+        permittivity of the chemical.
+    Psat_298 : float
+        Vapor pressure of the chemical at 298.15 K, [Pa]
+    phase_STP : str
+        Phase of the chemical at 298.15 K and 101325 Pa; one of 's', 'l', 'g',
+        or 'l/g'.
+    Vml_Tb : float
+        Molar volume of liquid phase at the normal boiling point [m^3/mol]
+    Vml_Tm : float
+        Molar volume of liquid phase at the melting point [m^3/mol]
+    Vml_STP : float
+        Molar volume of liquid phase at 298.15 K and 101325 Pa [m^3/mol]
+    Vmg_STP : float
+        Molar volume of gas phase at 298.15 K and 101325 Pa [m^3/mol]
+    Hvap_Tbm : float
+        Molar enthalpy of vaporization at the normal boiling point [J/mol]
+    Hvap_Tb : float
+        Mass enthalpy of vaporization at the normal boiling point [J/kg]
     alpha
     alphag
     alphal
