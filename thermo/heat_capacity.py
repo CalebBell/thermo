@@ -23,7 +23,8 @@ SOFTWARE.'''
 from __future__ import division
 
 __all__ = ['Poling_data', 'TRC_gas_data', '_PerryI', 'CRC_standard_data', 
-           'Lastovka_Shaw', 'Lastovka_Shaw_integral', 'TRCCp', 
+           'Lastovka_Shaw', 'Lastovka_Shaw_integral', 
+           'Lastovka_Shaw_integral_over_T', 'TRCCp', 
            'TRCCp_integral', 'TRCCp_integral_over_T', 
            'heat_capacity_gas_methods', 'HeatCapacityGas', 
            'Rowlinson_Poling', 'Rowlinson_Bondi', 'Dadgostar_Shaw', 
@@ -122,7 +123,7 @@ def Lastovka_Shaw(T, similarity_variable, cyclic_aliphatic=False, order=0):
     variable concept and method as shown in [1]_.
 
     .. math::
-        C_p^0 = \left(A_2 + \frac{A_1 - A_2}{1 + \exp(\alpha-A_3/A_4)}\right)
+        C_p^0 = \left(A_2 + \frac{A_1 - A_2}{1 + \exp(\frac{\alpha-A_3}{A_4})}\right)
         + (B_{11} + B_{12}\alpha)\left(-\frac{(C_{11} + C_{12}\alpha)}{T}\right)^2
         \frac{\exp(-(C_{11} + C_{12}\alpha)/T)}{[1-\exp(-(C_{11}+C_{12}\alpha)/T)]^2}\\
         + (B_{21} + B_{22}\alpha)\left(-\frac{(C_{21} + C_{22}\alpha)}{T}\right)^2
@@ -171,7 +172,7 @@ def Lastovka_Shaw(T, similarity_variable, cyclic_aliphatic=False, order=0):
         A2 = 1.25
         A3 = 0.17338003 # 803 instead of 8003 in another paper
         A4 = 0.014
-        first = A2 + (A1-A2)/(1+exp((a-A3)/A4)) # One reference says exp((a-A3)/A4)
+        first = A2 + (A1-A2)/(1. + exp((a - A3)/A4))
         # Personal communication confirms the change
 
     B11 = 0.73917383
@@ -182,10 +183,9 @@ def Lastovka_Shaw(T, similarity_variable, cyclic_aliphatic=False, order=0):
     B22 = 4.35656721
     C21 = 2897.01927
     C22 = 5987.80407
-    Cp = first + (B11 + B12*a)*(-(C11+C12*a)/T)**2*exp(-(C11 + C12*a)/T)/(1-exp(-(C11+C12*a)/T))**2
-    Cp += (B21 + B22*a)*(-(C21+C22*a)/T)**2*exp(-(C21 + C22*a)/T)/(1-exp(-(C21+C22*a)/T))**2
-    Cp = Cp*1000 # J/g/K to J/kg/K
-    return Cp
+    Cp = first + (B11 + B12*a)*((C11+C12*a)/T)**2*exp(-(C11 + C12*a)/T)/(1.-exp(-(C11+C12*a)/T))**2
+    Cp += (B21 + B22*a)*((C21+C22*a)/T)**2*exp(-(C21 + C22*a)/T)/(1.-exp(-(C21+C22*a)/T))**2
+    return Cp*1000. # J/g/K to J/kg/K
 
 
 def Lastovka_Shaw_integral(T, similarity_variable, cyclic_aliphatic=False):
@@ -253,81 +253,77 @@ def Lastovka_Shaw_integral(T, similarity_variable, cyclic_aliphatic=False):
     - C22*a + (C21 + C22*a)*exp((-C21 - C22*a)/T)))
 
 
-#def Lastovka_Shaw_integral_over_T(T1, T2, similarity_variable, cyclic_aliphatic=False):
-#    r'''Calculate the integral over temperature of ideal-gas constant-pressure 
-#    heat capacitiy  with the similarity variable concept and method as shown in
-#    [1]_.
-#
-#    Parameters
-#    ----------
-#    T : float
-#        Temperature of gas [K]
-#    similarity_variable : float
-#        similarity variable as defined in [1]_, [mol/g]
-#
-#    Returns
-#    -------
-#    S : float
-#        Difference in entropy from 0 K, [J/kg/K]
-#
-#    Notes
-#    -----
-#    Original model is in terms of J/g/K. Note that the model is for predicting
-#    mass heat capacity, not molar heat capacity like most other methods!
-#    Integral was computed with SymPy.
-#
-#    See Also
-#    --------
-#    Lastovka_Shaw
-#    Lastovka_Shaw_integral
-#
-#    Examples
-#    --------
-##    >>> Lastovka_Shaw_integral(300.0, 0.1333)
-##    5283095.816018478
-#
-#    References
-#    ----------
-#    .. [1] Lastovka, Vaclav, and John M. Shaw. "Predictive Correlations for
-#       Ideal Gas Heat Capacities of Pure Hydrocarbons and Petroleum Fractions."
-#       Fluid Phase Equilibria 356 (October 25, 2013): 338-370.
-#       doi:10.1016/j.fluid.2013.07.023.
-#    '''
-#    a = similarity_variable
-#    if cyclic_aliphatic:
-#        A1 = -0.1793547
-#        A2 = 3.86944439
-#        first = A1 + A2*a
-#    else:
-#        A1 = 0.58
-#        A2 = 1.25
-#        A3 = 0.17338003 # 803 instead of 8003 in another paper
-#        A4 = 0.014
-#        first = A2 + (A1-A2)/(1.+exp((a-A3)/A4)) # One reference says exp((a-A3)/A4)
-#        # Personal communication confirms the change
-#
-#    B11 = 0.73917383
-#    B12 = 8.88308889
-#    C11 = 1188.28051
-#    C12 = 1813.04613
-#    B21 = 0.0483019
-#    B22 = 4.35656721
-#    C21 = 2897.01927
-#    C22 = 5987.80407
-##    S = (first*log(T) + (-B11 - B12*a)*log(exp((-C11 - C12*a)/T) - 1) 
-##        + (-B11*C11 - B11*C12*a - B12*C11*a - B12*C12*a**2)/(T*exp((-C11
-##        - C12*a)/T) - T) - (B11*C11 + B11*C12*a + B12*C11*a + B12*C12*a**2)/T)
-##    S += ((-B21 - B22*a)*log(exp((-C21 - C22*a)/T) - 1) + (-B21*C21 - B21*C22*a
-##        - B22*C21*a - B22*C22*a**2)/(T*exp((-C21 - C22*a)/T) - T) - (B21*C21
-##        + B21*C22*a + B22*C21*a + B22*C22*a**2)/T)
-#    S = -first*log(T1) + first*log(T2)
-#    S += -(-B11 - B12*a)*log(exp((-C11 - C12*a)/T1) - 1) + (-B11 - B12*a)*log(exp((-C11 - C12*a)/T2) - 1) + (-B11*C11 - B11*C12*a - B12*C11*a - B12*C12*a**2)/(T2*exp((-C11 - C12*a)/T2) - T2) - (-B11*C11 - B11*C12*a - B12*C11*a - B12*C12*a**2)/(T1*exp((-C11 - C12*a)/T1) - T1) - (B11*C11 + B11*C12*a + B12*C11*a + B12*C12*a**2)/T2 + (B11*C11 + B11*C12*a + B12*C11*a + B12*C12*a**2)/T1
-#    S += -(-B21 - B22*a)*log(exp((-C21 - C22*a)/T1) - 1) + (-B21 - B22*a)*log(exp((-C21 - C22*a)/T2) - 1) + (-B21*C21 - B21*C22*a - B22*C21*a - B22*C22*a**2)/(T2*exp((-C21 - C22*a)/T2) - T2) - (-B21*C21 - B21*C22*a - B22*C21*a - B22*C22*a**2)/(T1*exp((-C21 - C22*a)/T1) - T1) - (B21*C21 + B21*C22*a + B22*C21*a + B22*C22*a**2)/T2 + (B21*C21 + B21*C22*a + B22*C21*a + B22*C22*a**2)/T1
-#    return S*1000.
+def Lastovka_Shaw_integral_over_T(T, similarity_variable, cyclic_aliphatic=False):
+    r'''Calculate the integral over temperature of ideal-gas constant-pressure 
+    heat capacitiy with the similarity variable concept and method as shown in
+    [1]_.
 
+    Parameters
+    ----------
+    T : float
+        Temperature of gas [K]
+    similarity_variable : float
+        similarity variable as defined in [1]_, [mol/g]
 
+    Returns
+    -------
+    S : float
+        Difference in entropy from 0 K, [J/kg/K]
 
+    Notes
+    -----
+    Original model is in terms of J/g/K. Note that the model is for predicting
+    mass heat capacity, not molar heat capacity like most other methods!
+    Integral was computed with SymPy.
 
+    See Also
+    --------
+    Lastovka_Shaw
+    Lastovka_Shaw_integral
+
+    Examples
+    --------
+    >>> Lastovka_Shaw_integral_over_T(300.0, 0.1333)
+    3609.791928945323
+
+    References
+    ----------
+    .. [1] Lastovka, Vaclav, and John M. Shaw. "Predictive Correlations for
+       Ideal Gas Heat Capacities of Pure Hydrocarbons and Petroleum Fractions."
+       Fluid Phase Equilibria 356 (October 25, 2013): 338-370.
+       doi:10.1016/j.fluid.2013.07.023.
+    '''
+    from cmath import log, exp
+    a = similarity_variable
+    if cyclic_aliphatic:
+        A1 = -0.1793547
+        A2 = 3.86944439
+        first = A1 + A2*a
+    else:
+        A1 = 0.58
+        A2 = 1.25
+        A3 = 0.17338003 # 803 instead of 8003 in another paper
+        A4 = 0.014
+        first = A2 + (A1-A2)/(1. + exp((a - A3)/A4))
+
+    a2 = a*a
+    B11 = 0.73917383
+    B12 = 8.88308889
+    C11 = 1188.28051
+    C12 = 1813.04613
+    B21 = 0.0483019
+    B22 = 4.35656721
+    C21 = 2897.01927
+    C22 = 5987.80407
+    S = (first*log(T) + (-B11 - B12*a)*log(exp((-C11 - C12*a)/T) - 1.) 
+        + (-B11*C11 - B11*C12*a - B12*C11*a - B12*C12*a2)/(T*exp((-C11
+        - C12*a)/T) - T) - (B11*C11 + B11*C12*a + B12*C11*a + B12*C12*a2)/T)
+    S += ((-B21 - B22*a)*log(exp((-C21 - C22*a)/T) - 1.) + (-B21*C21 - B21*C22*a
+        - B22*C21*a - B22*C22*a2)/(T*exp((-C21 - C22*a)/T) - T) - (B21*C21
+        + B21*C22*a + B22*C21*a + B22*C22*a**2)/T)
+    # There is a non-real component, but it is only a function of similariy 
+    # variable and so will always cancel out.
+    return S.real*1000.
 
 
 def TRCCp(T, a0, a1, a2, a3, a4, a5, a6, a7):
@@ -442,6 +438,59 @@ def TRCCp_integral(T, a0, a1, a2, a3, a4, a5, a6, a7, I=0):
 
 
 def TRCCp_integral_over_T(T, a0, a1, a2, a3, a4, a5, a6, a7, J=0):
+    r'''Integrates ideal gas heat capacity over T using the model developed in 
+    [1]_. Best used as a delta only.
+
+    The difference in ideal-gas entropy with respect to 0 K is given by:
+
+    .. math::
+        \frac{S^\circ}{R} = J + a_0\ln T + \frac{a_1}{a_2^2}\left(1
+        + \frac{a_2}{T}\right)x(a_2) + s(T)
+
+        s(T) = \left[\left\{a_3 + \left(\frac{a_4 a_7^2 - a_5}{a_6^2}\right)
+        \left(\frac{a_7}{a_6}\right)^4\right\}\left(\frac{a_7}{a_6}\right)^2
+        \ln z + (a_3 + a_4)\ln\left(\frac{T+a_6}{a_6+a_7}\right)
+        +\sum_{i=1}^7 \left\{\left(\frac{a_4 a_7^2 - a_5}{a_6^2}\right)\left(
+        \frac{-a_7}{a_6}\right)^{6-i} - a_4\right\}\frac{y^i}{i}
+        - \left\{\frac{a_3}{a_6}(a_6 + a_7) + \frac{a_5 y^6}{7a_7(a_6+a_7)}
+        \right\}y\right]
+
+        s(T) = 0 \text{ for } T \le a_7
+        
+        z = \frac{T}{T+a_6} \cdot \frac{a_7 + a_6}{a_7}
+
+        y = \frac{T-a_7}{T+a_6} \text{ for } T > a_7 \text{ otherwise } 0
+
+    Parameters
+    ----------
+    T : float
+        Temperature [K]
+    a1-a7 : float
+        Coefficients
+    J : float, optional
+        Integral offset
+
+    Returns
+    -------
+    S-S(0) : float
+        Difference in entropy from 0 K , [J/mol/K]
+
+    Notes
+    -----
+    Analytical integral as provided in [1]_ and verified with numerical
+    integration. 
+
+    Examples
+    --------
+    >>> TRCCp_integral_over_T(300, 4.0, 124000, 245, 50.539, -49.469, 
+    ... 220440000, 560, 78)
+    213.80148972435018
+    
+    References
+    ----------
+    .. [1] Kabo, G. J., and G. N. Roganov. Thermodynamics of Organic Compounds
+       in the Gas State, Volume II: V. 2. College Station, Tex: CRC Press, 1994.
+    '''
     # Possible optimizations: pre-cache as much as possible.
     # If this were replaced by a cache, much of this would not need to be computed.
     if T <= a7:
@@ -1127,7 +1176,7 @@ def Zabransky_cubic(T, a1, a2, a3, a4):
     Examples
     --------
     >>> Zabransky_cubic(298.15, 20.9634, -10.1344, 2.8253, -0.256738)
-    75.31462591538555
+    75.31462591538556
 
     References
     ----------

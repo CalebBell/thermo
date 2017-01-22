@@ -91,6 +91,13 @@ def test_Lastovka_Shaw_integral():
     # Same, but try the correlation for cyclic aliphatic compounds
     assert_allclose(Lastovka_Shaw_integral(1000.0, 0.1333, cyclic_aliphatic=True), 6335530.860880815)
 
+def test_Lastovka_Shaw_integral_over_T():
+    dS = Lastovka_Shaw_integral_over_T(300.0, 0.1333)
+    assert_allclose(dS, 3609.791928945323)
+
+    dS = Lastovka_Shaw_integral_over_T(1000.0, 0.1333, cyclic_aliphatic=True)
+    assert_allclose(dS, 3790.4489380423597)
+
 
 def test_CRC_standard_data():
     tots_calc = [CRC_standard_data[i].abs().sum() for i in [u'Hfc', u'Gfc', u'Sc', u'Cpc', u'Hfl', u'Gfl', u'Sfl', 'Cpl', u'Hfg', u'Gfg', u'Sfg', u'Cpg']]
@@ -128,6 +135,12 @@ def test_TRCCp_integral():
     assert_allclose(dH, 10802.532600592816)
     dH = TRCCp_integral(150, 4.0, 7.65E5, 720., 3.565, -0.052, -1.55E6, 52., 201., 1.2)
     assert_allclose(dH, 5071.355751575949)
+
+
+def test_TRCCp_integral_over_T():
+    coeffs = [4.0, 124000, 245, 50.538999999999994, -49.468999999999994, 220440000, 560, 78]
+    dS = TRCCp_integral_over_T(300, *coeffs) - TRCCp_integral_over_T(200, *coeffs)
+    assert_allclose(dS, 23.44278146529652)
     
     
 @pytest.mark.meta_T_dept
