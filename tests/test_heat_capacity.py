@@ -170,6 +170,7 @@ def test_HeatCapacityGas():
 
 @pytest.mark.meta_T_dept
 def test_HeatCapacityGas_integrals():
+    # Enthalpy integrals
     EtOH = HeatCapacityGas(CASRN='64-17-5', similarity_variable=0.1953615, MW=46.06844)
     dH1 = EtOH.calculate_integral(200, 300, 'TRC Thermodynamics of Organic Compounds in the Gas State (1994)')
     assert_allclose(dH1, 5828.903671654116)
@@ -188,6 +189,31 @@ def test_HeatCapacityGas_integrals():
 
     dH5 = EtOH.calculate_integral(200, 300,'CoolProp')
     assert_allclose(dH5, 5838.118293585357)
+    
+    dH = EtOH.calculate_integral(200, 300, 'VDI Heat Atlas')
+    assert_allclose(dH, 6610.821140000002)
+    
+    # Entropy integrals
+    dS = EtOH.calculate_integral_over_T(200, 300, 'Poling et al. (2001)')
+    assert_allclose(dS, 23.53409951536522)
+        
+    dS = EtOH.calculate_integral_over_T(200, 300, 'Poling et al. (2001) constant')
+    assert_allclose(dS, 26.440379699733395)
+
+    dS = EtOH.calculate_integral_over_T(200, 300, 'TRC Thermodynamics of Organic Compounds in the Gas State (1994)')
+    assert_allclose(dS, 23.442781465296523)
+    
+    dS = EtOH.calculate_integral_over_T(200, 300, 'CRC Standard Thermodynamic Properties of Chemical Substances')
+    assert_allclose(dS, 26.59851109189558)
+    
+    dS =  EtOH.calculate_integral_over_T(200, 300, 'CoolProp')
+    assert_allclose(dS, 23.487556909586853)
+    
+    dS = EtOH.calculate_integral_over_T(200, 300, 'Lastovka and Shaw (2013)')
+    assert_allclose(dS, 24.86700348570948)
+    
+    dS = EtOH.calculate_integral_over_T(200, 300, 'VDI Heat Atlas')
+    assert_allclose(dS, 26.590569427910076)
 
 
 @pytest.mark.meta_T_dept

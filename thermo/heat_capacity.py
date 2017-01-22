@@ -616,7 +616,6 @@ class HeatCapacityGas(TDependentProperty):
     '''Maximum valid of Heat capacity; arbitrarily set. For fluids very near
     the critical point, this value can be obscenely high.'''
 
-
     ranked_methods = [TRCIG, POLING, COOLPROP, LASTOVKA_SHAW, CRCSTD, POLING_CONST, VDI_TABULAR]
     '''Default rankings of the available methods.'''
 
@@ -655,7 +654,6 @@ class HeatCapacityGas(TDependentProperty):
         filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods()
-
 
     def load_all_methods(self):
         r'''Method which picks out coefficients for the specified chemical
@@ -708,7 +706,6 @@ class HeatCapacityGas(TDependentProperty):
         if Tmins and Tmaxs:
             self.Tmin, self.Tmax = min(Tmins), max(Tmaxs)
 
-
     def calculate(self, T, method):
         r'''Method to calculate surface tension of a liquid at temperature `T`
         with a given method.
@@ -746,7 +743,6 @@ class HeatCapacityGas(TDependentProperty):
         elif method in self.tabular_data:
             Cp = self.interpolate(T, method)
         return Cp
-
 
     def test_method_validity(self, T, method):
         r'''Method to test the validity of a specified method for a given
@@ -844,48 +840,52 @@ class HeatCapacityGas(TDependentProperty):
             raise Exception('Method not valid')
 
 
-#    def calculate_integral_over_T(self, T1, T2, method):
-#        r'''Method to calculate the integral of a property over temperature
-#        with respect to temperature, using a specified method. Implements the 
-#        analytical integrals of all available methods except for tabular data.
-#        
-#        Parameters
-#        ----------
-#        T1 : float
-#            Lower limit of integration, [K]
-#        T2 : float
-#            Upper limit of integration, [K]
-#        method : str
-#            Method for which to find the integral
-#
-#        Returns
-#        -------
-#        integral : float
-#            Calculated integral of the property over the given range, 
-#            [`units`]
-#        '''
-##        if method == TRCIG:
-##            H2 = TRCCp_integral(T2, *self.TRCIG_coefs)
-##            H1 = TRCCp_integral(T1, *self.TRCIG_coefs)
-##            return H2 - H1
-##        if method == PERRY151:
-##            S2 = (self.PERRY151_const*log(T2) + self.PERRY151_lin*T2 
-##                  - self.PERRY151_quadinv/(2.*T2**2) + 0.5*self.PERRY151_quad*T2**2)
-##            S1 = (self.PERRY151_const*log(T1) + self.PERRY151_lin*T1
-##                  - self.PERRY151_quadinv/(2.*T1**2) + 0.5*self.PERRY151_quad*T1**2)
-##            return (S2 - S1)*calorie
-##        elif method == CRCSTD:
-##            S2 = self.CRCSTD_Cp*log(T2)
-##            S1 = self.CRCSTD_Cp*log(T1)
-##            return (S2 - S1)
-##        elif method == LASTOVKA_S:
-##            dS = (Lastovka_solid_integral_over_T(T2, self.similarity_variable)
-##                    - Lastovka_solid_integral_over_T(T1, self.similarity_variable))
-##            return property_mass_to_molar(dS, self.MW)
-#        elif method in self.tabular_data:
-#            return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
-#        else:
-#            raise Exception('Method not valid')
+    def calculate_integral_over_T(self, T1, T2, method):
+        r'''Method to calculate the integral of a property over temperature
+        with respect to temperature, using a specified method. Implements the 
+        analytical integrals of all available methods except for tabular data.
+        
+        Parameters
+        ----------
+        T1 : float
+            Lower limit of integration, [K]
+        T2 : float
+            Upper limit of integration, [K]
+        method : str
+            Method for which to find the integral
+
+        Returns
+        -------
+        integral : float
+            Calculated integral of the property over the given range, 
+            [`units`]
+        '''
+        if method == TRCIG:
+            S2 = TRCCp_integral_over_T(T2, *self.TRCIG_coefs)
+            S1 = TRCCp_integral_over_T(T1, *self.TRCIG_coefs)
+            return S2 - S1
+        elif method == CRCSTD:
+            S2 = self.CRCSTD_constant*log(T2)
+            S1 = self.CRCSTD_constant*log(T1)
+            return (S2 - S1)
+        elif method == POLING_CONST:
+            S2 = self.POLING_constant*log(T2)
+            S1 = self.POLING_constant*log(T1)
+            return (S2 - S1)
+        elif method == POLING:
+            A, B, C, D, E = self.POLING_coefs
+            S2 = A*log(T2) + B*T2 + C*T2**2/2 + D*T2**3/3 + E*T2**4/4
+            S1 = A*log(T1) + B*T1 + C*T1**2/2 + D*T1**3/3 + E*T1**4/4
+            return R*(S2-S1)
+        elif method == LASTOVKA_SHAW:
+            dS = (Lastovka_Shaw_integral_over_T(T2, self.similarity_variable)
+                    - Lastovka_Shaw_integral_over_T(T1, self.similarity_variable))
+            return property_mass_to_molar(dS, self.MW)
+            
+        elif method in self.tabular_data or method == COOLPROP:
+            return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
+        else:
+            raise Exception('Method not valid')
 
 
 ### Heat capacities of liquids
