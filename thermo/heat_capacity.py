@@ -23,7 +23,8 @@ SOFTWARE.'''
 from __future__ import division
 
 __all__ = ['Poling_data', 'TRC_gas_data', '_PerryI', 'CRC_standard_data', 
-           'Lastovka_Shaw', 'TRCCp', 'TRCCp_integral', 
+           'Lastovka_Shaw', 'Lastovka_Shaw_integral', 'TRCCp', 
+           'TRCCp_integral', 'TRCCp_integral_over_T', 
            'heat_capacity_gas_methods', 'HeatCapacityGas', 
            'Rowlinson_Poling', 'Rowlinson_Bondi', 'Dadgostar_Shaw', 
            'Zabransky_quasi_polynomial', 'Zabransky_cubic', 
@@ -116,7 +117,7 @@ CRC_standard_data = pd.read_csv(os.path.join(folder,
 
 ### Heat capacities of gases
 
-def Lastovka_Shaw(T, similarity_variable, cyclic_aliphatic=False):
+def Lastovka_Shaw(T, similarity_variable, cyclic_aliphatic=False, order=0):
     r'''Calculate ideal-gas constant-pressure heat capacitiy with the similarity
     variable concept and method as shown in [1]_.
 
@@ -187,6 +188,70 @@ def Lastovka_Shaw(T, similarity_variable, cyclic_aliphatic=False):
     return Cp
 
 
+def Lastovka_Shaw_integral(T, similarity_variable, cyclic_aliphatic=False):
+    r'''Calculate the integral of ideal-gas constant-pressure heat capacitiy 
+    with the similarity variable concept and method as shown in [1]_.
+
+    Parameters
+    ----------
+    T : float
+        Temperature of gas [K]
+    similarity_variable : float
+        similarity variable as defined in [1]_, [mol/g]
+
+    Returns
+    -------
+    H : float
+        Difference in enthalpy from 0 K, [J/kg]
+
+    Notes
+    -----
+    Original model is in terms of J/g/K. Note that the model is for predicting
+    mass heat capacity, not molar heat capacity like most other methods!
+    Integral was computed with SymPy.
+
+    See Also
+    --------
+    Lastovka_Shaw_integral
+
+    Examples
+    --------
+    >>> Lastovka_Shaw_integral(300.0, 0.1333)
+    5283095.816018478
+
+    References
+    ----------
+    .. [1] Lastovka, Vaclav, and John M. Shaw. "Predictive Correlations for
+       Ideal Gas Heat Capacities of Pure Hydrocarbons and Petroleum Fractions."
+       Fluid Phase Equilibria 356 (October 25, 2013): 338-370.
+       doi:10.1016/j.fluid.2013.07.023.
+    '''
+    a = similarity_variable
+    if cyclic_aliphatic:
+        A1 = -0.1793547
+        A2 = 3.86944439
+        first = A1 + A2*a
+    else:
+        A1 = 0.58
+        A2 = 1.25
+        A3 = 0.17338003 # 803 instead of 8003 in another paper
+        A4 = 0.014
+        first = A2 + (A1-A2)/(1.+exp((a-A3)/A4)) # One reference says exp((a-A3)/A4)
+        # Personal communication confirms the change
+
+    B11 = 0.73917383
+    B12 = 8.88308889
+    C11 = 1188.28051
+    C12 = 1813.04613
+    B21 = 0.0483019
+    B22 = 4.35656721
+    C21 = 2897.01927
+    C22 = 5987.80407
+    return 1000.*(T*first - (B11 + B12*a)*(-C11 - C12*a)**2/(-C11 - C12*a + (C11 
+    + C12*a)*exp((-C11 - C12*a)/T)) - (B21 + B22*a)*(-C21 - C22*a)**2/(-C21 
+    - C22*a + (C21 + C22*a)*exp((-C21 - C22*a)/T)))
+
+
 def TRCCp(T, a0, a1, a2, a3, a4, a5, a6, a7):
     r'''Calculates ideal gas heat capacity using the model developed in [1]_.
 
@@ -224,12 +289,11 @@ def TRCCp(T, a0, a1, a2, a3, a4, a5, a6, a7):
     .. [1] Kabo, G. J., and G. N. Roganov. Thermodynamics of Organic Compounds
        in the Gas State, Volume II: V. 2. College Station, Tex: CRC Press, 1994.
     '''
-    j = 8.
     if T <= a7:
         y = 0.
     else:
         y = (T - a7)/(T + a6)
-    Cp = R*(a0 + (a1/T**2)*exp(-a2/T) + a3*y**2 + (a4 - a5/(T-a7)**2 )*y**j )
+    Cp = R*(a0 + (a1/T**2)*exp(-a2/T) + a3*y**2 + (a4 - a5/(T-a7)**2 )*y**8.)
     return Cp
 
 
@@ -281,19 +345,44 @@ def TRCCp_integral(T, a0, a1, a2, a3, a4, a5, a6, a7, I=0):
     .. [1] Kabo, G. J., and G. N. Roganov. Thermodynamics of Organic Compounds
        in the Gas State, Volume II: V. 2. College Station, Tex: CRC Press, 1994.
     '''
-    y = (T - a7)/(T + a6)
     if T <= a7:
-        h = 0
+        y = 0.
+    else:
+        y = (T - a7)/(T + a6)
+    y2 = y*y
+    y4 = y2*y2
+    if T <= a7:
+        h = 0.0
     else:
         first = a6 + a7
-        second = (2.*a3 + 8.*a4)*log(1.-y)
-        third = (a3*(1 + 1/(1.-y)) + a4*(7 + 1/(1.-y)))*y
-        fourth = a4*(3*y**2 + 5/3.*y**3 + y**4 + 3/5.*y**5 + 1/3.*y**6)
-        fifth = 1/7.*(a4 - a5/((a6+a7)**2))*y**7
+        second = (2.*a3 + 8.*a4)*log(1. - y)
+        third = (a3*(1. + 1./(1. - y)) + a4*(7. + 1./(1. - y)))*y
+        fourth = a4*(3.*y2 + 5./3.*y*y2 + y4 + 0.6*y4*y + 1/3.*y4*y2)
+        fifth = 1/7.*(a4 - a5/((a6 + a7)**2))*y4*y2*y
         h = first*(second + third + fourth + fifth)
     return (a0 + a1*exp(-a2/T)/(a2*T) + I/T + h/T)*R*T
 
 
+#def TRCCp_integral_over_T(T, a0, a1, a2, a3, a4, a5, a6, a7, J=0):
+#    if T <= a7:
+#        y = 0.
+#    else:
+#        y = (T - a7)/(T + a6)
+#
+#    z = T/(T + a6)*(a7 + a6)/a7
+#    if T <= a7:
+#        s = 0.
+#    else:
+#        first = (a3 + ((a4*a7**2 - a5)/a6**2)*(a7/a6)**4)*(a7/a6)**2*log(z)
+#        second = (a3 + a4)*log((T + a6)/(a6 + a7))
+#        fourth = -(a3/a6*(a6 + a7) + a5*y**6/(7*a7*(a6 + a7)))*y
+#        third = sum([((a4*a7**2 - a5)/a6**2*(-a7/a6)**(5-i) - a4 )*y**i/i 
+#                     for i in range(1, 8)])
+#        s = first + second + third + fourth
+#    # Last line at least is correct
+#    return R*(J + a0*log(T) + a1/a2**2*(1 + a2/T)*exp(-a2/T) + s)
+    
+    
 TRCIG = 'TRC Thermodynamics of Organic Compounds in the Gas State (1994)'
 POLING = 'Poling et al. (2001)'
 POLING_CONST = 'Poling et al. (2001) constant'
@@ -507,8 +596,7 @@ class HeatCapacityGas(TDependentProperty):
             Calculated heat capacity, [J/mol/K]
         '''
         if method == TRCIG:
-            a0, a1, a2, a3, a4, a5, a6, a7 = self.TRCIG_coefs
-            Cp = TRCCp(T, a0, a1, a2, a3, a4, a5, a6, a7)
+            Cp = TRCCp(T, *self.TRCIG_coefs)
         elif method == COOLPROP:
             Cp = PropsSI('Cp0molar', 'T', T,'P', 101325.0, self.CASRN)
         elif method == POLING:
@@ -579,6 +667,92 @@ class HeatCapacityGas(TDependentProperty):
         else:
             raise Exception('Method not valid')
         return validity
+
+    def calculate_integral(self, T1, T2, method):
+        r'''Method to calculate the integral of a property with respect to
+        temperature, using a specified method. Implements the analytical
+        integrals of all available methods except for tabular data.
+        
+        Parameters
+        ----------
+        T1 : float
+            Lower limit of integration, [K]
+        T2 : float
+            Upper limit of integration, [K]
+        method : str
+            Method for which to find the integral
+
+        Returns
+        -------
+        integral : float
+            Calculated integral of the property over the given range, 
+            [`units*K`]
+        '''
+        if method == TRCIG:
+            H2 = TRCCp_integral(T2, *self.TRCIG_coefs)
+            H1 = TRCCp_integral(T1, *self.TRCIG_coefs)
+            return H2 - H1
+        elif method == POLING:
+            A, B, C, D, E = self.POLING_coefs
+            H2 = (((((0.2*E)*T2 + 0.25*D)*T2 + C/3.)*T2 + 0.5*B)*T2 + A)*T2
+            H1 = (((((0.2*E)*T1 + 0.25*D)*T1 + C/3.)*T1 + 0.5*B)*T1 + A)*T1
+            return R*(H2 - H1)
+        elif method == POLING_CONST:
+            return (T2 - T1)*self.POLING_constant
+        elif method == CRCSTD:
+            return (T2 - T1)*self.CRCSTD_constant
+        elif method == LASTOVKA_SHAW:
+            dH = (Lastovka_Shaw_integral(T2, self.similarity_variable)
+                    - Lastovka_Shaw_integral(T1, self.similarity_variable))
+            return property_mass_to_molar(dH, self.MW)
+        elif method in self.tabular_data or method == COOLPROP:
+            return float(quad(self.calculate, T1, T2, args=(method))[0])
+        else:
+            raise Exception('Method not valid')
+
+
+#    def calculate_integral_over_T(self, T1, T2, method):
+#        r'''Method to calculate the integral of a property over temperature
+#        with respect to temperature, using a specified method. Implements the 
+#        analytical integrals of all available methods except for tabular data.
+#        
+#        Parameters
+#        ----------
+#        T1 : float
+#            Lower limit of integration, [K]
+#        T2 : float
+#            Upper limit of integration, [K]
+#        method : str
+#            Method for which to find the integral
+#
+#        Returns
+#        -------
+#        integral : float
+#            Calculated integral of the property over the given range, 
+#            [`units`]
+#        '''
+##        if method == TRCIG:
+##            H2 = TRCCp_integral(T2, *self.TRCIG_coefs)
+##            H1 = TRCCp_integral(T1, *self.TRCIG_coefs)
+##            return H2 - H1
+##        if method == PERRY151:
+##            S2 = (self.PERRY151_const*log(T2) + self.PERRY151_lin*T2 
+##                  - self.PERRY151_quadinv/(2.*T2**2) + 0.5*self.PERRY151_quad*T2**2)
+##            S1 = (self.PERRY151_const*log(T1) + self.PERRY151_lin*T1
+##                  - self.PERRY151_quadinv/(2.*T1**2) + 0.5*self.PERRY151_quad*T1**2)
+##            return (S2 - S1)*calorie
+##        elif method == CRCSTD:
+##            S2 = self.CRCSTD_Cp*log(T2)
+##            S1 = self.CRCSTD_Cp*log(T1)
+##            return (S2 - S1)
+##        elif method == LASTOVKA_S:
+##            dS = (Lastovka_solid_integral_over_T(T2, self.similarity_variable)
+##                    - Lastovka_solid_integral_over_T(T1, self.similarity_variable))
+##            return property_mass_to_molar(dS, self.MW)
+#        elif method in self.tabular_data:
+#            return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
+#        else:
+#            raise Exception('Method not valid')
 
 
 ### Heat capacities of liquids
@@ -1391,12 +1565,13 @@ def Lastovka_solid_integral(T, similarity_variable):
     C2 = -0.024942
     D1 = 0.000025
     D2 = -0.000123
-    H = (T**3*(1000*D1*similarity_variable/3. 
-        + 1000*D2*similarity_variable**2/3.) + T**2*(500*C1*similarity_variable 
-        + 500*C2*similarity_variable**2)
-        + (3000*A1*R*similarity_variable*theta
-        + 3000*A2*R*similarity_variable**2*theta)/(exp(theta/T) - 1))
-    return H
+    similarity_variable2 = similarity_variable*similarity_variable
+    
+    return (T*T*T*(1000.*D1*similarity_variable/3. 
+        + 1000.*D2*similarity_variable2/3.) + T*T*(500.*C1*similarity_variable 
+        + 500.*C2*similarity_variable2)
+        + (3000.*A1*R*similarity_variable*theta
+        + 3000.*A2*R*similarity_variable2*theta)/(exp(theta/T) - 1.))
 
 
 def Lastovka_solid_integral_over_T(T, similarity_variable):
@@ -1446,14 +1621,17 @@ def Lastovka_solid_integral_over_T(T, similarity_variable):
     C2 = -0.024942
     D1 = 0.000025
     D2 = -0.000123
-    S = (-3000*R*similarity_variable*(A1 + A2*similarity_variable)*log(exp(theta/T) - 1) 
-    + T**2*(500*D1*similarity_variable + 500*D2*similarity_variable**2) 
-    + T*(1000*C1*similarity_variable + 1000*C2*similarity_variable**2) 
-    + (3000*A1*R*similarity_variable*theta 
-    + 3000*A2*R*similarity_variable**2*theta)/(T*exp(theta/T) - T) 
-    + (3000*A1*R*similarity_variable*theta 
-    + 3000*A2*R*similarity_variable**2*theta)/T)
-    return S
+    
+    sim2 = similarity_variable*similarity_variable
+    exp_theta_T = exp(theta/T)
+    
+    return (-3000.*R*similarity_variable*(A1 + A2*similarity_variable)*log(exp_theta_T - 1.) 
+    + T**2*(500.*D1*similarity_variable + 500.*D2*sim2)
+    + T*(1000.*C1*similarity_variable + 1000.*C2*sim2)
+    + (3000.*A1*R*similarity_variable*theta 
+    + 3000.*A2*R*sim2*theta)/(T*exp_theta_T - T) 
+    + (3000.*A1*R*similarity_variable*theta 
+    + 3000.*A2*R*sim2*theta)/T)
 
 
 LASTOVKA_S = 'Lastovka, Fulem, Becerra and Shaw (2008)'
@@ -1678,6 +1856,82 @@ class HeatCapacitySolid(TDependentProperty):
         else:
             raise Exception('Method not valid')
         return validity
+
+    def calculate_integral(self, T1, T2, method):
+        r'''Method to calculate the integral of a property with respect to
+        temperature, using a specified method. Implements the analytical
+        integrals of all available methods except for tabular data.
+        
+        Parameters
+        ----------
+        T1 : float
+            Lower limit of integration, [K]
+        T2 : float
+            Upper limit of integration, [K]
+        method : str
+            Method for which to find the integral
+
+        Returns
+        -------
+        integral : float
+            Calculated integral of the property over the given range, 
+            [`units*K`]
+        '''
+        if method == PERRY151:
+            H2 = (self.PERRY151_const*T2 + 0.5*self.PERRY151_lin*T2**2 
+                  - self.PERRY151_quadinv/T2 + self.PERRY151_quad*T2**3/3.)
+            H1 = (self.PERRY151_const*T1 + 0.5*self.PERRY151_lin*T1**2 
+                  - self.PERRY151_quadinv/T1 + self.PERRY151_quad*T1**3/3.)
+            return (H2-H1)*calorie
+        elif method == CRCSTD:
+            return (T2-T1)*self.CRCSTD_Cp
+        elif method == LASTOVKA_S:
+            dH = (Lastovka_solid_integral(T2, self.similarity_variable)
+                    - Lastovka_solid_integral(T1, self.similarity_variable))
+            return property_mass_to_molar(dH, self.MW)
+        elif method in self.tabular_data:
+            return float(quad(self.calculate, T1, T2, args=(method))[0])
+        else:
+            raise Exception('Method not valid')
+
+    def calculate_integral_over_T(self, T1, T2, method):
+        r'''Method to calculate the integral of a property over temperature
+        with respect to temperature, using a specified method. Implements the 
+        analytical integrals of all available methods except for tabular data.
+        
+        Parameters
+        ----------
+        T1 : float
+            Lower limit of integration, [K]
+        T2 : float
+            Upper limit of integration, [K]
+        method : str
+            Method for which to find the integral
+
+        Returns
+        -------
+        integral : float
+            Calculated integral of the property over the given range, 
+            [`units`]
+        '''
+        if method == PERRY151:
+            S2 = (self.PERRY151_const*log(T2) + self.PERRY151_lin*T2 
+                  - self.PERRY151_quadinv/(2.*T2**2) + 0.5*self.PERRY151_quad*T2**2)
+            S1 = (self.PERRY151_const*log(T1) + self.PERRY151_lin*T1
+                  - self.PERRY151_quadinv/(2.*T1**2) + 0.5*self.PERRY151_quad*T1**2)
+            return (S2 - S1)*calorie
+        elif method == CRCSTD:
+            S2 = self.CRCSTD_Cp*log(T2)
+            S1 = self.CRCSTD_Cp*log(T1)
+            return (S2 - S1)
+        elif method == LASTOVKA_S:
+            dS = (Lastovka_solid_integral_over_T(T2, self.similarity_variable)
+                    - Lastovka_solid_integral_over_T(T1, self.similarity_variable))
+            return property_mass_to_molar(dS, self.MW)
+        elif method in self.tabular_data:
+            return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
+        else:
+            raise Exception('Method not valid')
 
 
 

@@ -82,6 +82,16 @@ def test_Lastovka_Shaw():
     assert_allclose(Lastovka_Shaw(1000.0, 0.1333, cyclic_aliphatic=True), 2187.36187944884)
 
 
+def test_Lastovka_Shaw_integral():
+    # C64H52S2 (M = 885.2 alpha = 0.1333 mol/g
+    # From figure 22, part b
+    # Some examples didn't match so well; were the coefficients rounded?
+    assert_allclose(Lastovka_Shaw_integral(1000.0, 0.1333), 6615282.290516732)
+
+    # Same, but try the correlation for cyclic aliphatic compounds
+    assert_allclose(Lastovka_Shaw_integral(1000.0, 0.1333, cyclic_aliphatic=True), 6335530.860880815)
+
+
 def test_CRC_standard_data():
     tots_calc = [CRC_standard_data[i].abs().sum() for i in [u'Hfc', u'Gfc', u'Sc', u'Cpc', u'Hfl', u'Gfl', u'Sfl', 'Cpl', u'Hfg', u'Gfg', u'Sfg', u'Cpg']]
     tots = [628580900.0, 306298700.0, 68541.800000000003, 56554.400000000001, 265782700.0, 23685900.0, 61274.0, 88464.399999999994, 392946600.0, 121270700.0, 141558.29999999999, 33903.300000000003]
@@ -146,6 +156,28 @@ def test_HeatCapacityGas():
 
 
 @pytest.mark.meta_T_dept
+def test_HeatCapacityGas_integrals():
+    EtOH = HeatCapacityGas(CASRN='64-17-5', similarity_variable=0.1953615, MW=46.06844)
+    dH1 = EtOH.calculate_integral(200, 300, 'TRC Thermodynamics of Organic Compounds in the Gas State (1994)')
+    assert_allclose(dH1, 5828.903671654116)
+
+    dH2 = EtOH.calculate_integral(200, 300, 'Poling et al. (2001)')
+    assert_allclose(dH2, 5851.196044907861)
+    
+    dH3 = EtOH.calculate_integral(200, 300, 'Poling et al. (2001) constant')
+    assert_allclose(dH3, 6520.999999999999)
+    
+    dH4 = EtOH.calculate_integral(200, 300, 'CRC Standard Thermodynamic Properties of Chemical Substances')
+    assert_allclose(dH4, 6559.999999999999)
+    
+    dH4 = EtOH.calculate_integral(200, 300,'Lastovka and Shaw (2013)')
+    assert_allclose(dH4, 6183.016942750677)
+
+    dH5 = EtOH.calculate_integral(200, 300,'CoolProp')
+    assert_allclose(dH5, 5838.118293585357)
+
+
+@pytest.mark.meta_T_dept
 def test_HeatCapacitySolid():
     NaCl = HeatCapacitySolid(CASRN='7647-14-5', similarity_variable=0.0342215, MW=58.442769)
     Cps_calc =  [(NaCl.set_user_methods(i, forced=True), NaCl.T_dependent_property(298.15))[1] for i in NaCl.all_methods]
@@ -169,6 +201,46 @@ def test_HeatCapacitySolid():
 
     NaCl.tabular_extrapolation_permitted = False
     assert None == NaCl.T_dependent_property(601)
+
+
+@pytest.mark.meta_T_dept
+def test_HeatCapacitySolid_integrals():
+    # Enthalpy integrals
+    NaCl = HeatCapacitySolid(CASRN='7647-14-5', similarity_variable=0.0342215, MW=58.442769)
+    dH1 = NaCl.calculate_integral(100, 150, 'Lastovka, Fulem, Becerra and Shaw (2008)')
+    assert_allclose(dH1, 401.58058175282446)
+    
+    dH2 = NaCl.calculate_integral(100, 150, 'CRC Standard Thermodynamic Properties of Chemical Substances')
+    assert_allclose(dH2, 2525.0) # 50*50.5
+    
+    dH3 = NaCl.calculate_integral(100, 150,  "Perry's Table 2-151")
+    assert_allclose(dH3, 2367.097999999999)
+
+    # Tabular integration - not great
+    NaCl = HeatCapacitySolid(CASRN='7647-14-5', similarity_variable=0.0342215, MW=58.442769)
+    Ts = [200, 300, 400, 500, 600]
+    Cps = [12.965044960703908, 20.206353934945987, 28.261467986645872, 37.14292010552292, 46.85389719453655]
+    NaCl.set_tabular_data(Ts=Ts, properties=Cps, name='stuff')
+    dH4 = NaCl.calculate_integral(200, 300, 'stuff')
+    assert_allclose(dH4, 1651.8556007162392)
+    
+    # Entropy integrals
+    NaCl = HeatCapacitySolid(CASRN='7647-14-5', similarity_variable=0.0342215, MW=58.442769)
+    dS1 = NaCl.calculate_integral_over_T(100, 150, 'Lastovka, Fulem, Becerra and Shaw (2008)')
+    assert_allclose(dS1, 3.213071341895563)
+    
+    dS2 = NaCl.calculate_integral_over_T(100, 150,  "Perry's Table 2-151")
+    assert_allclose(dS2, 19.183508272982)
+    
+    dS3 = NaCl.calculate_integral_over_T(100, 150, 'CRC Standard Thermodynamic Properties of Chemical Substances')
+    assert_allclose(dS3, 20.4759879594623)
+    
+    NaCl = HeatCapacitySolid(CASRN='7647-14-5', similarity_variable=0.0342215, MW=58.442769)
+    Ts = [200, 300, 400, 500, 600]
+    Cps = [12.965044960703908, 20.206353934945987, 28.261467986645872, 37.14292010552292, 46.85389719453655]
+    NaCl.set_tabular_data(Ts=Ts, properties=Cps, name='stuff')
+    dS4 = NaCl.calculate_integral_over_T(100, 150, 'stuff')
+    assert_allclose(dS4, 3.00533159156869)
 
 @pytest.mark.meta_T_dept
 def test_HeatCapacityLiquid():
