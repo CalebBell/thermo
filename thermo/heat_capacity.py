@@ -865,23 +865,18 @@ class HeatCapacityGas(TDependentProperty):
             S1 = TRCCp_integral_over_T(T1, *self.TRCIG_coefs)
             return S2 - S1
         elif method == CRCSTD:
-            S2 = self.CRCSTD_constant*log(T2)
-            S1 = self.CRCSTD_constant*log(T1)
-            return (S2 - S1)
+            return self.CRCSTD_constant*log(T2/T1)
         elif method == POLING_CONST:
-            S2 = self.POLING_constant*log(T2)
-            S1 = self.POLING_constant*log(T1)
-            return (S2 - S1)
+            return self.POLING_constant*log(T2/T1)
         elif method == POLING:
             A, B, C, D, E = self.POLING_coefs
-            S2 = A*log(T2) + B*T2 + C*T2**2/2 + D*T2**3/3 + E*T2**4/4
-            S1 = A*log(T1) + B*T1 + C*T1**2/2 + D*T1**3/3 + E*T1**4/4
-            return R*(S2-S1)
+            S2 = ((((0.25*E)*T2 + D/3.)*T2 + 0.5*C)*T2 + B)*T2 
+            S1 = ((((0.25*E)*T1 + D/3.)*T1 + 0.5*C)*T1 + B)*T1
+            return R*(S2-S1 + A*log(T2/T1))
         elif method == LASTOVKA_SHAW:
             dS = (Lastovka_Shaw_integral_over_T(T2, self.similarity_variable)
-                    - Lastovka_Shaw_integral_over_T(T1, self.similarity_variable))
+                 - Lastovka_Shaw_integral_over_T(T1, self.similarity_variable))
             return property_mass_to_molar(dS, self.MW)
-            
         elif method in self.tabular_data or method == COOLPROP:
             return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
         else:
@@ -1030,6 +1025,7 @@ def Dadgostar_Shaw(T, similarity_variable):
        Liquid Hydrocarbons." Fluid Phase Equilibria 313 (January 15, 2012):
        211-226. doi:10.1016/j.fluid.2011.09.015.
     '''
+    a = similarity_variable
     a11 = -0.3416
     a12 = 2.2671
     a21 = 0.1064
@@ -1044,11 +1040,41 @@ def Dadgostar_Shaw(T, similarity_variable):
 #    constant = 3*R*(theta/T)**2*exp(theta/T)/(exp(theta/T)-1)**2
     constant = 24.5
 
-    Cp = (constant*(a11*similarity_variable + a12*similarity_variable**2)
-    + (a21*similarity_variable + a22*similarity_variable**2)*T
-    + (a31*similarity_variable + a32*similarity_variable**2)*T**2)
+    Cp = (constant*(a11*a + a12*a**2) + (a21*a + a22*a**2)*T
+          + (a31*a + a32*a**2)*T**2)
     Cp = Cp*1000 # J/g/K to J/kg/K
     return Cp
+
+
+def Dadgostar_Shaw_integral(T, similarity_variable):
+    # TODO document
+    a = similarity_variable
+    a2 = a*a
+    T2 = T*T
+    a11 = -0.3416
+    a12 = 2.2671
+    a21 = 0.1064
+    a22 = -0.3874
+    a31 = -9.8231E-05
+    a32 = 4.182E-04
+    constant = 24.5
+    H = T2*T/3.*(a2*a32 + a*a31) + T2*0.5*(a2*a22 + a*a21) + T*constant*(a2*a12 + a*a11)
+    return H*1000. # J/g/K to J/kg/K
+
+
+def Dadgostar_Shaw_integral_over_T(T, similarity_variable):
+    # TODO document
+    a = similarity_variable
+    a2 = a*a
+    a11 = -0.3416
+    a12 = 2.2671
+    a21 = 0.1064
+    a22 = -0.3874
+    a31 = -9.8231E-05
+    a32 = 4.182E-04
+    constant = 24.5
+    S = T*T*0.5*(a2*a32 + a*a31) + T*(a2*a22 + a*a21) + a*constant*(a*a12 + a11)*log(T)
+    return S*1000. # J/g/K to J/kg/K
 
 
 _ZabranskySats = {}
@@ -1357,8 +1383,9 @@ class HeatCapacityLiquid(TDependentProperty):
     ranked_methods = [ZABRANSKY_SPLINE, ZABRANSKY_QUASIPOLYNOMIAL,
                       ZABRANSKY_SPLINE_C, ZABRANSKY_QUASIPOLYNOMIAL_C,
                       ZABRANSKY_SPLINE_SAT, ZABRANSKY_QUASIPOLYNOMIAL_SAT,
-                      VDI_TABULAR, ROWLINSON_POLING, ROWLINSON_BONDI,
-                      COOLPROP, DADGOSTAR_SHAW, POLING_CONST, CRCSTD]
+                      VDI_TABULAR, DADGOSTAR_SHAW, ROWLINSON_POLING, 
+                      ROWLINSON_BONDI,
+                      COOLPROP, POLING_CONST, CRCSTD]
     '''Default rankings of the available methods.'''
 
 

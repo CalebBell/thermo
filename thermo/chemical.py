@@ -942,16 +942,19 @@ class Chemical(object): # pragma: no cover
 
     def set_thermo(self):
         try:
-            self.Hm = self.calc_H(self.T, self.P) + self.calc_H_excess(self.T, self.P)
+            self.Hm = self.calc_H(self.T, self.P)
+            self.Hm += self.calc_H_excess(self.T, self.P)
             self.H = property_molar_to_mass(self.Hm, self.MW) if (self.Hm is not None) else None
             
-            self.Sm = self.calc_S(self.T, self.P) + self.calc_S_excess(self.T, self.P)
+            self.Sm = self.calc_S(self.T, self.P) 
+            self.Sm += self.calc_S_excess(self.T, self.P)
             self.S = property_molar_to_mass(self.Sm, self.MW) if (self.Sm is not None) else None
             
             self.G = self.H - self.T*self.S if (self.H is not None and self.S is not None) else None 
             self.Gm = self.Hm - self.T*self.Sm if (self.Hm is not None and self.Sm is not None) else None 
             
-            self.Um = self.Hm - self.P*self.Vm if (self.Vm and self.Hm is not None) else None
+            Vm = self.Vm
+            self.Um = self.Hm - self.P*Vm if (Vm and self.Hm is not None) else None
             self.U = property_molar_to_mass(self.Um, self.MW) if (self.Um is not None) else None
             
             self.Am = self.Um - self.T*self.Sm if (self.Um is not None and self.Sm is not None) else None

@@ -244,15 +244,16 @@ def test_HeatCapacitySolid():
 
 @pytest.mark.meta_T_dept
 def test_HeatCapacitySolid_integrals():
+    from thermo.heat_capacity import LASTOVKA_S, PERRY151, CRCSTD
     # Enthalpy integrals
     NaCl = HeatCapacitySolid(CASRN='7647-14-5', similarity_variable=0.0342215, MW=58.442769)
-    dH1 = NaCl.calculate_integral(100, 150, 'Lastovka, Fulem, Becerra and Shaw (2008)')
+    dH1 = NaCl.calculate_integral(100, 150, LASTOVKA_S)
     assert_allclose(dH1, 401.58058175282446)
     
-    dH2 = NaCl.calculate_integral(100, 150, 'CRC Standard Thermodynamic Properties of Chemical Substances')
+    dH2 = NaCl.calculate_integral(100, 150, CRCSTD)
     assert_allclose(dH2, 2525.0) # 50*50.5
     
-    dH3 = NaCl.calculate_integral(100, 150,  "Perry's Table 2-151")
+    dH3 = NaCl.calculate_integral(100, 150,  PERRY151)
     assert_allclose(dH3, 2367.097999999999)
 
     # Tabular integration - not great
@@ -265,13 +266,13 @@ def test_HeatCapacitySolid_integrals():
     
     # Entropy integrals
     NaCl = HeatCapacitySolid(CASRN='7647-14-5', similarity_variable=0.0342215, MW=58.442769)
-    dS1 = NaCl.calculate_integral_over_T(100, 150, 'Lastovka, Fulem, Becerra and Shaw (2008)')
+    dS1 = NaCl.calculate_integral_over_T(100, 150, LASTOVKA_S)
     assert_allclose(dS1, 3.213071341895563)
     
-    dS2 = NaCl.calculate_integral_over_T(100, 150,  "Perry's Table 2-151")
+    dS2 = NaCl.calculate_integral_over_T(100, 150,  PERRY151)
     assert_allclose(dS2, 19.183508272982)
     
-    dS3 = NaCl.calculate_integral_over_T(100, 150, 'CRC Standard Thermodynamic Properties of Chemical Substances')
+    dS3 = NaCl.calculate_integral_over_T(100, 150, CRCSTD)
     assert_allclose(dS3, 20.4759879594623)
     
     NaCl = HeatCapacitySolid(CASRN='7647-14-5', similarity_variable=0.0342215, MW=58.442769)
@@ -308,3 +309,29 @@ def test_HeatCapacityLiquid():
     Cpl_calc = [(ctp.set_user_methods(i, forced=True), ctp.T_dependent_property(250))[1] for i in ctp.all_methods]
     Cpls = [134.1186283149712, 134.14961304014292]
     assert_allclose(sorted(Cpl_calc), sorted(Cpls))
+
+
+@pytest.mark.meta_T_dept
+def test_HeatCapacityLiquid_integrals():
+    from thermo.heat_capacity import CRCSTD, COOLPROP, DADGOSTAR_SHAW
+    tol = HeatCapacityLiquid(CASRN='108-88-3', MW=92.13842, Tc=591.75, 
+          omega=0.257, Cpgm=115.30398669098454, similarity_variable=0.16279853724428964)
+    dH = tol.calculate_integral(200, 300, CRCSTD)
+    assert_allclose(dH, 15730)
+    
+    dH = tol.calculate_integral(200, 300, COOLPROP)
+    assert_allclose(dH, 14501.714588188637)
+    
+    dH = tol.calculate_integral(200, 300, DADGOSTAR_SHAW)
+    assert_allclose(dH, 14395.231307169146)
+    
+    # Entropy integrals
+    dS = tol.calculate_integral_over_T(200, 300, CRCSTD)
+    assert_allclose(dS, 63.779661505414275)
+    
+    dS = tol.calculate_integral_over_T(200, 300, COOLPROP)
+    assert_allclose(dS, 58.50970500781979)
+    
+    dS = tol.calculate_integral_over_T(200, 300, DADGOSTAR_SHAW)
+    assert_allclose(dS, 57.78686119989654)
+         
