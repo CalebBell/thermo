@@ -91,7 +91,7 @@ SUPERPRO = (298.15, 101325, 'calc', 0, 0, True) # No support for entropy found, 
 
 reference_states = [IAPWS, ASHRAE, IIR, REFPROP, CHEMSEP, PRO_II, HYSYS, 
                     UNISIM, SUPERPRO]
-#_chemical_cache = {}
+_chemical_cache = {}
 
 
 class Chemical(object): # pragma: no cover
@@ -372,33 +372,32 @@ class Chemical(object): # pragma: no cover
 
         # Identification
         self.CAS = CASfromAny(ID)
-#        if self.CAS in _chemical_cache:
-#            self.__dict__.update(_chemical_cache[self.CAS].__dict__)
-#            self.set_eos(T=T, P=P)
+        if self.CAS in _chemical_cache:
+            self.__dict__.update(_chemical_cache[self.CAS].__dict__)
+            self.set_eos(T=T, P=P)
             
-#        else:
-        self.PubChem = PubChem(self.CAS)
-        self.MW = MW(self.CAS)
-        self.formula = formula(self.CAS)
-        self.smiles = smiles(self.CAS)
-        self.InChI = InChI(self.CAS)
-        self.InChI_Key = InChI_Key(self.CAS)
-        self.IUPAC_name = IUPAC_name(self.CAS).lower()
-        self.name = name(self.CAS).lower()
-        self.synonyms = synonyms(self.CAS)
-
-        self.atoms = simple_formula_parser(self.formula)
-        self.similarity_variable = similarity_variable(self.atoms, self.MW)
-
-        self.set_constant_sources()
-        self.set_constants()
-        self.set_eos(T=T, P=P)
-        self.set_TP_sources()
-        self.set_ref()
-#        _chemical_cache[self.CAS] = self
+        else:
+            self.PubChem = PubChem(self.CAS)
+            self.MW = MW(self.CAS)
+            self.formula = formula(self.CAS)
+            self.smiles = smiles(self.CAS)
+            self.InChI = InChI(self.CAS)
+            self.InChI_Key = InChI_Key(self.CAS)
+            self.IUPAC_name = IUPAC_name(self.CAS).lower()
+            self.name = name(self.CAS).lower()
+            self.synonyms = synonyms(self.CAS)
+    
+            self.atoms = simple_formula_parser(self.formula)
+            self.similarity_variable = similarity_variable(self.atoms, self.MW)
+    
+            self.set_constant_sources()
+            self.set_constants()
+            self.set_eos(T=T, P=P)
+            self.set_TP_sources()
+            self.set_ref()
+            _chemical_cache[self.CAS] = self
                
         self.calculate(T, P)
-        
         
 
     def calculate(self, T=None, P=None):

@@ -1211,8 +1211,16 @@ def Zabransky_cubic(T, a1, a2, a3, a4):
        2 Volume Set. Washington, D.C.: Amer Inst of Physics, 1996.
     '''
     T = T/100.
-#    return R*(a1 + a2*T + a3*T**2 + a4*T**3)
     return R*(((a4*T + a3)*T + a2)*T + a1)
+
+
+def Zabransky_cubic_integral(T, a1, a2, a3, a4):
+    T = T/100.
+    return R*T*(T*(T*(T*a4*0.25 + a3/3.) + a2*0.5) + a1)
+
+def Zabransky_cubic_integral_over_T(T, a1, a2, a3, a4):
+    T = T/100.
+    return R*(T*(T*(T*a4/3 + a3/2) + a2) + a1*log(T))
 
 
 def _ZabranskyDictChoser(T, diclist, strict=False):
@@ -1239,7 +1247,6 @@ def _ZabranskyDictChoser(T, diclist, strict=False):
 
 
 
-POST_CRITICAL = 'Post-critical'
 ZABRANSKY_SPLINE = 'Zabransky spline'
 ZABRANSKY_QUASIPOLYNOMIAL = 'Zabransky quasipolynomial'
 ZABRANSKY_SPLINE_C = 'Zabransky spline, C'
@@ -1309,7 +1316,7 @@ class HeatCapacityLiquid(TDependentProperty):
         :obj:`Zabransky_cubic` over short ranges with varying coefficients
         to obtain a wider range. The quasi-polynomial method use the form
         described in :obj:`Zabransky_quasi_polynomial`, more suitable for
-        extrapolation, and over then entire range. Respectively, there is data
+        extrapolation, and over their entire range. Respectively, there is data
         available for 203, and 16 chemicals. Note that these methods are for
         the saturation curve!
     **VDI_TABULAR**:
