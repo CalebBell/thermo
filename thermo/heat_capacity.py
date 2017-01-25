@@ -1047,7 +1047,44 @@ def Dadgostar_Shaw(T, similarity_variable):
 
 
 def Dadgostar_Shaw_integral(T, similarity_variable):
-    # TODO document
+    r'''Calculate the integral of liquid constant-pressure heat capacitiy 
+    with the similarity variable concept and method as shown in [1]_.
+
+    Parameters
+    ----------
+    T : float
+        Temperature of gas [K]
+    similarity_variable : float
+        similarity variable as defined in [1]_, [mol/g]
+
+    Returns
+    -------
+    H : float
+        Difference in enthalpy from 0 K, [J/kg]
+
+    Notes
+    -----
+    Original model is in terms of J/g/K. Note that the model is for predicting
+    mass heat capacity, not molar heat capacity like most other methods!
+    Integral was computed with SymPy.
+
+    See Also
+    --------
+    Dadgostar_Shaw
+    Dadgostar_Shaw_integral_over_T
+
+    Examples
+    --------
+    >>> Dadgostar_Shaw_integral(300.0, 0.1333)
+    238908.15142664989
+
+    References
+    ----------
+    .. [1] Dadgostar, Nafiseh, and John M. Shaw. "A Predictive Correlation for
+       the Constant-Pressure Specific Heat Capacity of Pure and Ill-Defined
+       Liquid Hydrocarbons." Fluid Phase Equilibria 313 (January 15, 2012):
+       211-226. doi:10.1016/j.fluid.2011.09.015.
+    '''
     a = similarity_variable
     a2 = a*a
     T2 = T*T
@@ -1063,7 +1100,44 @@ def Dadgostar_Shaw_integral(T, similarity_variable):
 
 
 def Dadgostar_Shaw_integral_over_T(T, similarity_variable):
-    # TODO document
+    r'''Calculate the integral of liquid constant-pressure heat capacitiy 
+    with the similarity variable concept and method as shown in [1]_.
+
+    Parameters
+    ----------
+    T : float
+        Temperature of gas [K]
+    similarity_variable : float
+        similarity variable as defined in [1]_, [mol/g]
+
+    Returns
+    -------
+    S : float
+        Difference in entropy from 0 K, [J/kg/K]
+
+    Notes
+    -----
+    Original model is in terms of J/g/K. Note that the model is for predicting
+    mass heat capacity, not molar heat capacity like most other methods!
+    Integral was computed with SymPy.
+
+    See Also
+    --------
+    Dadgostar_Shaw
+    Dadgostar_Shaw_integral
+
+    Examples
+    --------
+    >>> Dadgostar_Shaw_integral_over_T(300.0, 0.1333)
+    1201.1409113147927
+
+    References
+    ----------
+    .. [1] Dadgostar, Nafiseh, and John M. Shaw. "A Predictive Correlation for
+       the Constant-Pressure Specific Heat Capacity of Pure and Ill-Defined
+       Liquid Hydrocarbons." Fluid Phase Equilibria 313 (January 15, 2012):
+       211-226. doi:10.1016/j.fluid.2011.09.015.
+    '''
     a = similarity_variable
     a2 = a*a
     a11 = -0.3416
@@ -1215,10 +1289,73 @@ def Zabransky_cubic(T, a1, a2, a3, a4):
 
 
 def Zabransky_cubic_integral(T, a1, a2, a3, a4):
+    r'''Calculates the integral of liquid heat capacity using the model 
+    developed in [1]_.
+
+    Parameters
+    ----------
+    T : float
+        Temperature [K]
+    a1-a4 : float
+        Coefficients
+
+    Returns
+    -------
+    H : float
+        Difference in enthalpy from 0 K, [J/mol]
+
+    Notes
+    -----
+    The analytical integral was derived with Sympy; it is a simple polynomial.
+
+    Examples
+    --------
+    >>> Zabransky_cubic_integral(298.15, 20.9634, -10.1344, 2.8253, -0.256738)
+    310.51679845520584
+
+    References
+    ----------
+    .. [1] Zabransky, M., V. Ruzicka Jr, V. Majer, and Eugene S. Domalski.
+       Heat Capacity of Liquids: Critical Review and Recommended Values.
+       2 Volume Set. Washington, D.C.: Amer Inst of Physics, 1996.
+    '''
     T = T/100.
     return R*T*(T*(T*(T*a4*0.25 + a3/3.) + a2*0.5) + a1)
 
+
 def Zabransky_cubic_integral_over_T(T, a1, a2, a3, a4):
+    r'''Calculates the integral of liquid heat capacity over T using the model 
+    developed in [1]_.
+
+    Parameters
+    ----------
+    T : float
+        Temperature [K]
+    a1-a4 : float
+        Coefficients
+
+    Returns
+    -------
+    S : float
+        Difference in entropy from 0 K, [J/mol/K]
+
+    Notes
+    -----
+    The analytical integral was derived with Sympy; it is a simple polynomial,
+    plus a logarithm
+
+    Examples
+    --------
+    >>> Zabransky_cubic_integral_over_T(298.15, 20.9634, -10.1344, 2.8253, 
+    ... -0.256738)
+    24.73245695987246
+
+    References
+    ----------
+    .. [1] Zabransky, M., V. Ruzicka Jr, V. Majer, and Eugene S. Domalski.
+       Heat Capacity of Liquids: Critical Review and Recommended Values.
+       2 Volume Set. Washington, D.C.: Amer Inst of Physics, 1996.
+    '''
     T = T/100.
     return R*(T*(T*(T*a4/3 + a3/2) + a2) + a1*log(T))
 

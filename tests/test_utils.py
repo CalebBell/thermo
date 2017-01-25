@@ -468,3 +468,14 @@ def test_allclose_variable():
 
 def test_horner():
     assert horner([1,2,3], 3) == 18
+    
+@pytest.mark.sympy
+def test_polylog2():
+    x = polylog2(0.5)
+    assert_allclose(x, 0.5822405264516294)
+    
+    from sympy import polylog
+    xs = np.linspace(0,0.99999, 50)
+    ys_act = [float(polylog(2, x)) for x in xs]
+    ys = [polylog2(x) for x in xs]
+    assert_allclose(ys, ys_act, rtol=1E-7, atol=1E-10)
