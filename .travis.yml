@@ -21,7 +21,7 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - conda create -q -n test-environment python=$CC numpy scipy pandas matplotlib pip pytest
+  - conda create -q -n test-environment python=$CC numpy scipy pandas matplotlib pip pytest sympy
   - source activate test-environment
   - conda install $SCIPY_VER
   - pip install numpydoc fluids coolprop pytest-cov coveralls
