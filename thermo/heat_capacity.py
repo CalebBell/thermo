@@ -28,7 +28,9 @@ __all__ = ['Poling_data', 'TRC_gas_data', '_PerryI', 'CRC_standard_data',
            'TRCCp_integral', 'TRCCp_integral_over_T', 
            'heat_capacity_gas_methods', 'HeatCapacityGas', 
            'Rowlinson_Poling', 'Rowlinson_Bondi', 'Dadgostar_Shaw', 
-           'Zabransky_quasi_polynomial', 'Zabransky_cubic', 
+           'Zabransky_quasi_polynomial', 'Zabransky_quasi_polynomial_integral',
+           'Zabransky_quasi_polynomial_integral_over_T', 'Zabransky_cubic', 
+           'Zabransky_cubic_integral', 'Zabransky_cubic_integral_over_T',
            'ZABRANSKY_TO_DICT', 'heat_capacity_liquid_methods', 
            'HeatCapacityLiquid', 'Lastovka_solid', 'Lastovka_solid_integral', 
            'Lastovka_solid_integral_over_T', 'heat_capacity_solid_methods', 
@@ -36,7 +38,7 @@ __all__ = ['Poling_data', 'TRC_gas_data', '_PerryI', 'CRC_standard_data',
            'Cv_gas_mixture']
 import os
 from io import open
-from thermo.utils import log, exp
+from thermo.utils import log, exp, polylog2
 import numpy as np
 import pandas as pd
 
@@ -1248,6 +1250,96 @@ def Zabransky_quasi_polynomial(T, Tc, a1, a2, a3, a4, a5, a6):
     '''
     Tr = T/Tc
     return R*(a1*log(1-Tr) + a2/(1-Tr) + a3 + a4*Tr + a5*Tr**2 + a6*Tr**3)
+
+
+def Zabransky_quasi_polynomial_integral(T, Tc, a1, a2, a3, a4, a5, a6):
+    r'''Calculates the integral of liquid heat capacity using the  
+    quasi-polynomial model developed in [1]_.
+
+    Parameters
+    ----------
+    T : float
+        Temperature [K]
+    a1-a6 : float
+        Coefficients
+
+    Returns
+    -------
+    H : float
+        Difference in enthalpy from 0 K, [J/mol]
+
+    Notes
+    -----
+    The analytical integral was derived with SymPy; it is a simple polynomial
+    plus some logarithms.
+
+    Examples
+    --------
+    >>> H2 = Zabransky_quasi_polynomial_integral(300, 591.79, -3.12743, 
+    ... 0.0857315, 13.7282, 1.28971, 6.42297, 4.10989)
+    >>> H1 = Zabransky_quasi_polynomial_integral(200, 591.79, -3.12743, 
+    ... 0.0857315, 13.7282, 1.28971, 6.42297, 4.10989)
+    >>> H2 - H1
+    14662.026406892925
+
+    References
+    ----------
+    .. [1] Zabransky, M., V. Ruzicka Jr, V. Majer, and Eugene S. Domalski.
+       Heat Capacity of Liquids: Critical Review and Recommended Values.
+       2 Volume Set. Washington, D.C.: Amer Inst of Physics, 1996.
+    '''
+    Tc2 = Tc*Tc
+    Tc3 = Tc2*Tc
+    term = T - Tc
+    return R*(T*(T*(T*(T*a6/(4.*Tc3) + a5/(3.*Tc2)) + a4/(2.*Tc)) - a1 + a3) 
+              + T*a1*log(1. - T/Tc) - 0.5*Tc*(a1 + a2)*log(term*term))
+
+
+def Zabransky_quasi_polynomial_integral_over_T(T, Tc, a1, a2, a3, a4, a5, a6):
+    r'''Calculates the integral of liquid heat capacity over T using the 
+    quasi-polynomial model  developed in [1]_.
+
+    Parameters
+    ----------
+    T : float
+        Temperature [K]
+    a1-a6 : float
+        Coefficients
+
+    Returns
+    -------
+    S : float
+        Difference in entropy from 0 K, [J/mol/K]
+
+    Notes
+    -----
+    The analytical integral was derived with Sympy. It requires the 
+    Polylog(2,x) function, which is unimplemented in SciPy. A very accurate 
+    numerical approximation was implemented as :obj:`thermo.utils.polylog2`.
+    Relatively slow due to the use of that special function.
+
+    Examples
+    --------
+    >>> S2 = Zabransky_quasi_polynomial_integral_over_T(300, 591.79, -3.12743, 
+    ... 0.0857315, 13.7282, 1.28971, 6.42297, 4.10989)
+    >>> S1 = Zabransky_quasi_polynomial_integral_over_T(200, 591.79, -3.12743, 
+    ... 0.0857315, 13.7282, 1.28971, 6.42297, 4.10989)
+    >>> S2 - S1
+    59.16997291893654
+    
+    References
+    ----------
+    .. [1] Zabransky, M., V. Ruzicka Jr, V. Majer, and Eugene S. Domalski.
+       Heat Capacity of Liquids: Critical Review and Recommended Values.
+       2 Volume Set. Washington, D.C.: Amer Inst of Physics, 1996.
+    '''
+    term = T-Tc
+    logT = log(T)
+    Tc2 = Tc*Tc
+    Tc3 = Tc2*Tc
+    return R*(a3*logT -a1*polylog2(T/Tc) - a2*(-logT + 0.5*log(term*term))
+              + T*(T*(T*a6/(3.*Tc3) + a5/(2.*Tc2)) + a4/Tc))
+
 
 
 def Zabransky_cubic(T, a1, a2, a3, a4):

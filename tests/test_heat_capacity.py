@@ -68,8 +68,25 @@ def test_Zabransky_quasi_polynomial():
     Cp = Zabransky_quasi_polynomial(330, 591.79, -3.12743, 0.0857315, 13.7282, 1.28971, 6.42297, 4.10989)
     assert_allclose(Cp, 165.4728226923247)
 
+    H2 = Zabransky_quasi_polynomial_integral(300, 591.79, -3.12743, 0.0857315, 13.7282, 1.28971, 6.42297, 4.10989)
+    H1 = Zabransky_quasi_polynomial_integral(200, 591.79, -3.12743, 0.0857315, 13.7282, 1.28971, 6.42297, 4.10989)
+    assert_allclose(H2 - H1, 14662.026406892926)
+    
+    S2 = Zabransky_quasi_polynomial_integral_over_T(300, 591.79, -3.12743, 0.0857315, 13.7282, 1.28971, 6.42297, 4.10989)
+    S1 = Zabransky_quasi_polynomial_integral_over_T(200, 591.79, -3.12743, 0.0857315, 13.7282, 1.28971, 6.42297, 4.10989)
+    assert_allclose(S2-S1, 59.169972919442074) # result from quadrature, not the integral
+
+
+def test_Zabransky_cubic():
     Cp = Zabransky_cubic(298.15, 20.9634, -10.1344, 2.8253, -0.256738)
     assert_allclose(Cp, 75.31462591538555)
+    
+    H0 = Zabransky_cubic_integral(298.15, 20.9634, -10.1344, 2.8253, -0.256738)
+    assert_allclose(H0, 310.51679845520584)
+    
+    S0 = Zabransky_cubic_integral_over_T(298.15, 20.9634, -10.1344, 2.8253,  -0.256738)
+    assert_allclose(S0, 24.73245695987246)
+    
 
 
 def test_Lastovka_Shaw():
