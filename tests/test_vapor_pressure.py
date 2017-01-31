@@ -126,6 +126,11 @@ def test_Ambrose_Walton():
     Psat = Ambrose_Walton(347.25, 617.15, 36.09E5, 0.304)
     assert_allclose(Psat, 13278.878504306222)
 
+    
+def test_Edalat():
+    # No check data, but gives the same results as the other CSP relationships
+    Psat = Edalat(347.2, 617.1, 36E5, 0.299)
+    assert_allclose(Psat, 13461.273080743307)
 
 def test_Sanjari():
     P = Sanjari(347.2, 617.1, 36E5, 0.299)
@@ -155,7 +160,7 @@ def test_VaporPressure():
     EtOH = VaporPressure(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, CASRN='64-17-5')
     EtOH.T_dependent_property(305.)
     Psat_calcs = [(EtOH.set_user_methods(i), EtOH.T_dependent_property(305.))[1] for i in EtOH.sorted_valid_methods]
-    Psat_exp = [11579.634014300127, 11590.408779316374, 11592.205263631122, 11593.661615921257, 11690.81660829924, 11612.378633936816, 11350.156640503357, 14088.453409816764, 9210.26200064024]
+    Psat_exp = [11579.634014300127, 11590.408779316374, 11592.205263402893, 11593.661615921257, 11690.81660829924, 11612.378633936816, 11350.156640503357, 12081.738947110121, 14088.453409816764, 9210.26200064024]
     assert_allclose(Psat_calcs, Psat_exp)
 
     # Use another chemical to get in ANTOINE_EXTENDED_POLING
@@ -169,7 +174,7 @@ def test_VaporPressure():
     EtOH = VaporPressure(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, CASRN='64-17-5')
     EtOH.T_dependent_property(298.15)
     Psat_calcs = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(5000))[1] for i in EtOH.sorted_valid_methods]
-    assert [None]*8 == Psat_calcs
+    assert [None]*9 == Psat_calcs
 
     # Test interpolation, extrapolation
     w = VaporPressure(Tb=373.124, Tc=647.14, Pc=22048320.0, omega=0.344, CASRN='7732-18-5')

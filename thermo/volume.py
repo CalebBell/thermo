@@ -1484,10 +1484,12 @@ def volume_liquid_mixture(xs=None, ws=None, Vms=None, T=None, MWs=None, MW=None,
         # COSTALD method
         if T and none_and_length_check([Tcs, Vcs, omegas]):
             if CASRNs:
-                inCOSTALDDict = False
-                for i in CASRNs:
-                    if i in COSTALD_data.index: inCOSTALDDict = True
-                if inCOSTALDDict: methods.append('COSTALD Parameters')
+#                inCOSTALDDict = False
+                if all([i in COSTALD_data.index for i in CASRNs]):
+                    methods.append('COSTALD Parameters')
+#                for i in CASRNs:
+#                    if i in COSTALD_data.index: inCOSTALDDict = True
+#                if inCOSTALDDict: methods.append('COSTALD Parameters')
             methods.append('COSTALD')
         # Rackett addition
         if T and none_and_length_check([MWs, Tcs, Pcs, Zcs]) and CASRNs:

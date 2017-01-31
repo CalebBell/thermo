@@ -713,7 +713,8 @@ class Chemical(object): # pragma: no cover
         Cvgm_calc = lambda T : self.HeatCapacityGas.T_dependent_property(T) - R
         self.ThermalConductivityGas = ThermalConductivityGas(CASRN=self.CAS, MW=self.MW, Tb=self.Tb, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, dipole=self.dipole, Vmg=Vmg_atm_T_dependent, Cvgm=Cvgm_calc, mug=self.ViscosityGas.T_dependent_property)
 
-        self.SurfaceTension = SurfaceTension(CASRN=self.CAS, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, StielPolar=self.StielPolar)
+        Cpl_calc = lambda T : property_molar_to_mass(self.HeatCapacityLiquid.T_dependent_property(T), self.MW)
+        self.SurfaceTension = SurfaceTension(CASRN=self.CAS, MW=self.MW, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, StielPolar=self.StielPolar, Hvap_Tb=self.Hvap_Tb, Vml=self.VolumeLiquid.T_dependent_property, Cpl=Cpl_calc)
 
         self.Permittivity = Permittivity(CASRN=self.CAS)
 
@@ -2554,7 +2555,11 @@ class Mixture(object):  # pragma: no cover
         # Constant properties obtained from TP
         self.Vml_STPs = [i.Vml_STP for i in self.Chemicals]
         self.Vmg_STPs = [i.Vmg_STP for i in self.Chemicals]
-        self.Vml_STP = volume_liquid_mixture(xs=self.zs, ws=self.ws, Vms=self.Vml_STPs, T=298.15, MWs=self.MWs, MW=self.MW, Tcs=self.Tcs, Pcs=self.Pcs, Vcs=self.Vcs, Zcs=self.Zcs, omegas=self.omegas, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, CASRNs=self.CASs, Molar=True, Method=self.Vl_method)
+        try:
+            self.Vml_STP = volume_liquid_mixture(xs=self.zs, ws=self.ws, Vms=self.Vml_STPs, T=298.15, MWs=self.MWs, MW=self.MW, Tcs=self.Tcs, Pcs=self.Pcs, Vcs=self.Vcs, Zcs=self.Zcs, omegas=self.omegas, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, CASRNs=self.CASs, Molar=True, Method=self.Vl_method)
+        except:
+            self.Vml_STP = None
+        
         self.Vmg_STP = volume_gas_mixture(ys=self.zs, Vms=self.Vmg_STPs, T=298.15, P=101325, Tc=self.Tc, Pc=self.Pc, omega=self.omega, MW=self.MW, CASRNs=self.CASs, Method=self.Vg_method)
 
         self.rhol_STP = Vm_to_rho(self.Vml_STP, self.MW) if self.Vml_STP else None
@@ -2572,7 +2577,10 @@ class Mixture(object):  # pragma: no cover
             self.P = P
         self.set_chemical_TP()
 
-        self.Vml = volume_liquid_mixture(xs=self.zs, ws=self.ws, Vms=self.Vmls, T=self.T, MWs=self.MWs, MW=self.MW, Tcs=self.Tcs, Pcs=self.Pcs, Vcs=self.Vcs, Zcs=self.Zcs, omegas=self.omegas, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, CASRNs=self.CASs, Molar=True, Method=self.Vl_method)
+        try:
+            self.Vml = volume_liquid_mixture(xs=self.zs, ws=self.ws, Vms=self.Vmls, T=self.T, MWs=self.MWs, MW=self.MW, Tcs=self.Tcs, Pcs=self.Pcs, Vcs=self.Vcs, Zcs=self.Zcs, omegas=self.omegas, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, CASRNs=self.CASs, Molar=True, Method=self.Vl_method)
+        except:
+            self.Vml = None
         self.rhol = Vm_to_rho(self.Vml, self.MW) if self.Vml else None
         self.Zl = Z(self.T, self.P, self.Vml) if self.Vml else None
         self.rholm = 1./self.Vml if self.Vml else None

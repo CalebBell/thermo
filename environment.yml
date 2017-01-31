@@ -1,0 +1,12 @@
+name: fluids
+
+dependencies:
+  - python
+  - numpy
+  - matplotlib
+  - pandas
+  - scipy
+  - pip:
+    - fluids
+    - ht
+    - thermo

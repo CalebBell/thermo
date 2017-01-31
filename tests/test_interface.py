@@ -58,7 +58,12 @@ def test_csp():
     sigma_calc = Miqueu(300., 340.1, 0.000199, 0.1687)
     assert_allclose(sigma_calc, 0.003474099603581931)
 
+    
+def test_Aleem():
+    st = Aleem(T=90, MW=16.04246, Tb=111.6, rhol=458.7, Hvap_Tb=510870., Cpl=2465.)
+    assert_allclose(st, 0.01669970221165325)
 
+    
 def test_REFPROP():
     sigma = REFPROP(298.15, 647.096, -0.1306, 2.471, 0.2151, 1.233)
     assert_allclose(sigma, 0.07205503890847453)
@@ -106,48 +111,6 @@ def test_data():
     assert Somayajulu_data_2.index.is_unique
 
 
-def test_sigma_mixture_methods():
-    # The example is from [2]_; all results agree.
-    # The original source has not been reviewed.
-    # 16.06 mol% n-pentane, 83.94 mol% dichloromethane at 298.15 K.
-    # sigmas are 15.47 and 28.77 respectively, rhos 8.61 kmol/m^3 and 15.53 kmol/m^3
-
-    sigma = Winterfeld_Scriven_Davis([0.1606, 0.8394], [0.01547, 0.02877], [8610., 15530.])
-    assert_allclose(sigma, 0.024967388450439817)
-
-    with pytest.raises(Exception):
-        Winterfeld_Scriven_Davis([0.1606, 0.8394, 0.118], [0.01547, 0.02877], [8610., 15530.])
-
-    # Same example, with Diguilio Teja. Calculated sigmas at Tbs are
-    # 0.01424 and 0.02530.
-
-    sigma = Diguilio_Teja(T=298.15, xs=[0.1606, 0.8394], sigmas_Tb=[0.01424, 0.02530], Tbs=[309.21, 312.95], Tcs=[469.7, 508.0])
-    assert_allclose(sigma, 0.025716823875045505)
-
-    with pytest.raises(Exception):
-        Diguilio_Teja(T=298.15, xs=[0.1606, 0.8394, 0.118], sigmas_Tb=[0.01424, 0.02530], Tbs=[309.21, 312.95], Tcs=[469.7, 508.0])
-
-
-
-def test_sigma_mixture():
-    # Winterfeld_Scriven_Davis test
-    sigma = surface_tension_mixture(xs=[0.1606, 0.8394], sigmas=[0.01547, 0.02877], rhoms=[8610., 15530.])
-    assert_allclose(sigma, 0.024967388450439817)
-
-    sigma = surface_tension_mixture(T=298.15, xs=[0.1606, 0.8394], sigmas_Tb=[0.01424, 0.02530], Tbs=[309.21, 312.95], Tcs=[469.7, 508.0])
-    assert_allclose(sigma, 0.025716823875045505)
-
-    sigma = surface_tension_mixture(xs=[0.1606, 0.8394], sigmas=[0.01547, 0.02877])
-    assert_allclose(sigma, 0.02663402)
-
-    methods = surface_tension_mixture(T=298.15, xs=[0.1606, 0.8394], sigmas=[0.01547, 0.02877], rhoms=[8610., 15530.], sigmas_Tb=[0.01424, 0.02530], Tbs=[309.21, 312.95], Tcs=[469.7, 508.0], AvailableMethods=True)
-    assert methods[:-1] == surface_tension_mixture_methods
-    assert None == surface_tension_mixture(T=298.15, xs=[0.1606, 0.8394])
-    assert None == surface_tension_mixture(T=298.15, xs=[0.1606, 0.8394], sigmas=[0.01547, None])
-
-    with pytest.raises(Exception):
-        surface_tension_mixture(xs=[0.1606, 0.8394], sigmas=[0.01547, 0.02877], Method='Fail')
-
 
 @pytest.mark.meta_T_dept
 def test_SurfaceTension():
@@ -169,3 +132,53 @@ def test_SurfaceTension():
 
     with pytest.raises(Exception):
         EtOH.test_method_validity(300, 'BADMETHOD')
+
+
+
+def test_Winterfeld_Scriven_Davis():
+    # The example is from [2]_; all results agree.
+    # The original source has not been reviewed.
+    # 16.06 mol% n-pentane, 83.94 mol% dichloromethane at 298.15 K.
+    # sigmas are 15.47 and 28.77 respectively, rhos 8.61 kmol/m^3 and 15.53 kmol/m^3
+
+    sigma = Winterfeld_Scriven_Davis([0.1606, 0.8394], [0.01547, 0.02877], [8610., 15530.])
+    assert_allclose(sigma, 0.024967388450439817)
+
+    with pytest.raises(Exception):
+        Winterfeld_Scriven_Davis([0.1606, 0.8394, 0.118], [0.01547, 0.02877], [8610., 15530.])
+
+
+def test_Diguilio_Teja():
+    # Winterfeld_Scriven_Davis example, with Diguilio Teja. Calculated sigmas at Tbs are
+    # 0.01424 and 0.02530.
+    # Checked and edited 2017-01-30
+
+    sigma = Diguilio_Teja(T=298.15, xs=[0.1606, 0.8394], sigmas_Tb=[0.01424, 0.02530], Tbs=[309.21, 312.95], Tcs=[469.7, 508.0])
+    assert_allclose(sigma, 0.025716823875045505)
+
+    with pytest.raises(Exception):
+        Diguilio_Teja(T=298.15, xs=[0.1606, 0.8394, 0.118], sigmas_Tb=[0.01424, 0.02530], Tbs=[309.21, 312.95], Tcs=[469.7, 508.0])
+
+    with pytest.raises(Exception):
+         Diguilio_Teja(T=501.85, xs=[0.1606, 0.8394], sigmas_Tb=[0.01424, 0.02530], Tbs=[309.21, 312.95], Tcs=[469.7, 508.0])
+
+
+def test_sigma_mixture():
+    # Winterfeld_Scriven_Davis test
+    sigma = surface_tension_mixture(xs=[0.1606, 0.8394], sigmas=[0.01547, 0.02877], rhoms=[8610., 15530.])
+    assert_allclose(sigma, 0.024967388450439817)
+
+    sigma = surface_tension_mixture(T=298.15, xs=[0.1606, 0.8394], sigmas_Tb=[0.01424, 0.02530], Tbs=[309.21, 312.95], Tcs=[469.7, 508.0])
+    assert_allclose(sigma, 0.025716823875045505)
+
+    sigma = surface_tension_mixture(xs=[0.1606, 0.8394], sigmas=[0.01547, 0.02877])
+    assert_allclose(sigma, 0.02663402)
+
+    methods = surface_tension_mixture(T=298.15, xs=[0.1606, 0.8394], sigmas=[0.01547, 0.02877], rhoms=[8610., 15530.], sigmas_Tb=[0.01424, 0.02530], Tbs=[309.21, 312.95], Tcs=[469.7, 508.0], AvailableMethods=True)
+    assert methods[:-1] == surface_tension_mixture_methods
+    assert None == surface_tension_mixture(T=298.15, xs=[0.1606, 0.8394])
+    assert None == surface_tension_mixture(T=298.15, xs=[0.1606, 0.8394], sigmas=[0.01547, None])
+
+    with pytest.raises(Exception):
+        surface_tension_mixture(xs=[0.1606, 0.8394], sigmas=[0.01547, 0.02877], Method='Fail')
+

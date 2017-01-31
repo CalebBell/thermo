@@ -25,7 +25,7 @@ from __future__ import division
 __all__ = ['Mulero_Cachadina_data', 'Jasper_Lange_data', 'Somayajulu_data', 
            'Somayajulu_data_2', 'REFPROP', 'Somayajulu', 'Jasper', 
            'Brock_Bird', 'Pitzer', 'Sastri_Rao', 'Zuo_Stenby', 
-           'Hakim_Steinberg_Stiel', 'Miqueu', 'surface_tension_methods', 
+           'Hakim_Steinberg_Stiel', 'Miqueu', 'Aleem', 'surface_tension_methods', 
            'SurfaceTension', 'Winterfeld_Scriven_Davis', 'Diguilio_Teja', 
            'surface_tension_mixture_methods', 'surface_tension_mixture']
 
@@ -566,7 +566,69 @@ def Miqueu(T, Tc, Vc, omega):
     sigma = k*Tc*(N_A/Vc)**(2/3.)*(4.35 + 4.14*omega)*t**1.26*(1+0.19*t**0.5 - 0.25*t)*10000
     return sigma
 
+    
+def Aleem(T, MW, Tb, rhol, Hvap_Tb, Cpl):
+    r'''Calculates vapor-liquid surface tension using the correlation derived by
+    [1]_ based on critical property CSP methods.
 
+    .. math::
+        \sigma = \phi \frac{MW^{1/3}} {6N_A^{1/3}}\rho_l^{2/3}\left[H_{vap}
+        + C_{p,l}(T_b-T)\right]
+
+        \phi = 1 - 0.0047MW + 6.8\times 10^{-6} MW^2
+            
+    Parameters
+    ----------
+    T : float
+        Temperature of fluid [K]
+    MW : float
+        Molecular weight [g/mol]
+    Tb : float
+        Boiling temperature of the fluid [K]
+    rhol : float
+        Liquid density at T and P [kg/m^3]
+    Hvap_Tb : float
+        Mass enthalpy of vaporization at the normal boiling point [kg/m^3]
+    Cpl : float
+        Liquid heat capacity of the chemical at T [J/kg/K]
+
+    Returns
+    -------
+    sigma : float
+        Liquid-vapor surface tension [N/m]
+
+    Notes
+    -----
+    Internal units of molecuar weight are kg/mol. This model is dimensionally
+    consistent.
+    
+    This model does not use the critical temperature. After it predicts a 
+    surface tension of 0 at a sufficiently high temperature, it returns 
+    negative results.
+    
+    Because of its dependence on density, it has the potential to model the 
+    effect of pressure on surface tension.
+    
+    Examples
+    --------
+    Methane at 90 K
+    
+    >>> Aleem(T=90, MW=16.04246, Tb=111.6, rhol=458.7, Hvap_Tb=510870., 
+    ... Cpl=2465.)
+    0.01669970221165325
+
+    References
+    ----------
+    .. [1] Aleem, W., N. Mellon, S. Sufian, M. I. A. Mutalib, and D. Subbarao.
+       "A Model for the Estimation of Surface Tension of Pure Hydrocarbon 
+       Liquids." Petroleum Science and Technology 33, no. 23-24 (December 17, 
+       2015): 1908-15. doi:10.1080/10916466.2015.1110593.
+    '''
+    MW = MW/1000. # Use kg/mol for consistency with the other units
+    sphericity = 1. - 0.0047*MW + 6.8E-6*MW*MW
+    return sphericity*MW**(1/3.)/(6.*N_A**(1/3.))*rhol**(2/3.)*(Hvap_Tb + Cpl*(Tb-T))
+    
+    
 STREFPROP = 'REFPROP'
 SUPERCRITICAL = 'SUPERCRITICAL'
 SOMAYAJULU2 = 'SOMAYAJULU2'
@@ -578,13 +640,14 @@ BROCK_BIRD = 'BROCK_BIRD'
 SASTRI_RAO = 'SASTRI_RAO'
 PITZER = 'PITZER'
 ZUO_STENBY = 'ZUO_STENBY'
-HAKIM_STEINBERG_STIEL = 'HAKIM_STEINBERG_STIEL)'
+HAKIM_STEINBERG_STIEL = 'HAKIM_STEINBERG_STIEL'
+ALEEM = 'Aleem'
 NONE = 'NONE'
 
 
 surface_tension_methods = [STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_TABULAR,
                            JASPER, MIQUEU, BROCK_BIRD, SASTRI_RAO, PITZER,
-                           ZUO_STENBY]
+                           ZUO_STENBY, ALEEM]
 '''Holds all methods available for the SurfaceTension class, for use in
 iterating over them.'''
 
@@ -598,6 +661,8 @@ class SurfaceTension(TDependentProperty):
     ----------
     Tb : float, optional
         Boiling point, [K]
+    MW : float, optional
+        Molecular weight, [g/mol]
     Tc : float, optional
         Critical temperature, [K]
     Pc : float, optional
@@ -610,8 +675,16 @@ class SurfaceTension(TDependentProperty):
         Acentric factor, [-]
     StielPolar : float, optional
         Stiel polar factor
+    Hvap_Tb : float
+        Mass enthalpy of vaporization at the normal boiling point [kg/m^3]
     CASRN : str, optional
         The CAS number of the chemical
+    Vml : float or callable, optional
+        Liquid molar volume at a given temperature and pressure or callable
+        for the same, [m^3/mol]
+    Cpl : float or callable, optional
+        Mass heat capacity of the fluid at a pressure and temperature or 
+        or callable for the same, [J/kg/K]
 
     Notes
     -----
@@ -642,6 +715,8 @@ class SurfaceTension(TDependentProperty):
         CSP method documented in :obj:`Zuo_Stenby`; from 1997.
     **MIQUEU**:
         CSP method documented in :obj:`Miqueu`.
+    **ALEEM**:
+        CSP method documented in :obj:`Aleem`.
     **VDI_TABULAR**:
         Tabular data in [6]_ along the saturation curve; interpolation is as
         set by the user or the default.
@@ -656,6 +731,7 @@ class SurfaceTension(TDependentProperty):
     Pitzer
     Zuo_Stenby
     Miqueu
+    Aleem
 
     References
     ----------
@@ -698,11 +774,12 @@ class SurfaceTension(TDependentProperty):
 
     ranked_methods = [STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_TABULAR,
                       JASPER, MIQUEU, BROCK_BIRD, SASTRI_RAO, PITZER,
-                      ZUO_STENBY]
+                      ZUO_STENBY, ALEEM]
     '''Default rankings of the available methods.'''
 
-    def __init__(self, Tb=None, Tc=None, Pc=None, Vc=None, Zc=None, omega=None,
-                 StielPolar=None, CASRN=''):
+    def __init__(self, MW=None, Tb=None, Tc=None, Pc=None, Vc=None, Zc=None, omega=None,
+                 StielPolar=None, Hvap_Tb=None, CASRN='', Vml=None, Cpl=None):
+        self.MW = MW
         self.Tb = Tb
         self.Tc = Tc
         self.Pc = Pc
@@ -710,7 +787,10 @@ class SurfaceTension(TDependentProperty):
         self.Zc = Zc
         self.omega = omega
         self.StielPolar = StielPolar
+        self.Hvap_Tb = Hvap_Tb
         self.CASRN = CASRN
+        self.Vml = Vml
+        self.Cpl = Cpl
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
@@ -794,6 +874,8 @@ class SurfaceTension(TDependentProperty):
             methods.append(PITZER)
             methods.append(ZUO_STENBY)
             Tmins.append(0.0); Tmaxs.append(self.Tc)
+        if all((self.Tb, self.Hvap_Tb, self.MW)):
+            methods.append(ALEEM)
         self.all_methods = set(methods)
         if Tmins and Tmaxs:
             # Note: All methods work right down to 0 K.
@@ -841,6 +923,11 @@ class SurfaceTension(TDependentProperty):
             sigma = Zuo_Stenby(T, self.Tc, self.Pc, self.omega)
         elif method == MIQUEU:
             sigma = Miqueu(T, self.Tc, self.Vc, self.omega)
+        elif method == ALEEM:
+            Cpl = self.Cpl(T) if hasattr(self.Cpl, '__call__') else self.Cpl
+            Vml = self.Vml(T) if hasattr(self.Vml, '__call__') else self.Vml
+            rhol = Vm_to_rho(Vml, self.MW)
+            sigma = Aleem(T=T, MW=self.MW, Tb=self.Tb, rhol=rhol, Hvap_Tb=self.Hvap_Tb, Cpl=Cpl)
         elif method in self.tabular_data:
             sigma = self.interpolate(T, method)
         return sigma
@@ -884,6 +971,9 @@ class SurfaceTension(TDependentProperty):
         elif method in [BROCK_BIRD, SASTRI_RAO, PITZER, ZUO_STENBY, MIQUEU]:
             if T > self.Tc:
                 validity = False
+        elif method == ALEEM:
+            # TODO get the real result
+            pass
         elif method in self.tabular_data:
             # if tabular_extrapolation_permitted, good to go without checking
             if not self.tabular_extrapolation_permitted:
@@ -1000,6 +1090,10 @@ def Diguilio_Teja(T, xs, sigmas_Tb, Tbs, Tcs):
     Raises a ValueError if temperature is greater than the mixture's critical
     temperature or if the given temperature is negative, or if the mixture's
     boiling temperature is higher than its critical temperature.
+    
+    [1]_ claims a 4.63 percent average absolute error on 21 binary and 4 
+    ternary non-aqueous systems. [1]_ also considered Van der Waals mixing 
+    rules for `Tc`, but found it provided a higher error of 5.58%
 
     Examples
     --------
@@ -1017,11 +1111,13 @@ def Diguilio_Teja(T, xs, sigmas_Tb, Tbs, Tcs):
         raise Exception('Function inputs are incorrect format')
 
     Tc = mixing_simple(xs, Tcs)
+    if T > Tc:
+        raise ValueError('T > Tc according to Kays rule - model is not valid in this range.')
+    
     Tb = mixing_simple(xs, Tbs)
     sigmar = mixing_simple(xs, sigmas_Tb)
     Tst = (Tc/T - 1.)/(Tc/Tb - 1)
-    sigma = 1.002855*Tst**1.118091*(T/Tb)*sigmar
-    return sigma
+    return 1.002855*Tst**1.118091*(T/Tb)*sigmar
 
 
 WINTERFELDSCRIVENDAVIS = 'Winterfeld, Scriven, and Davis (1978)'
@@ -1124,3 +1220,63 @@ def surface_tension_mixture(T=None, xs=[], sigmas=[], rhoms=[],
     return sigma
 
 
+class SurfaceTensionMixture(TDependentProperty):
+
+    name = 'Surface tension'
+    units = 'N/m'
+    property_min = 0
+    property_max = 0.5
+                            
+                            
+    def __init__(self, MWs=[], Tbs=[], Tcs=[], CASs=[], SurfaceTensions=[], 
+                 VolumeLiquids=[]):
+        self.MWs = MWs
+        self.Tbs = Tbs
+        self.Tcs = Tcs
+        self.CASs = CASs
+        self.SurfaceTensions = SurfaceTensions
+        self.VolumeLiquids = VolumeLiquids
+                     
+
+        self.Tmin = None
+        self.Tmax = None
+
+        self.sorted_valid_methods = []
+        self.user_methods = []
+        self.all_methods = set()
+        self.load_all_methods()
+
+
+    def load_all_methods(self):
+        methods = []        
+        methods.append(SIMPLE) # Needs sigma
+        methods.append(WINTERFELDSCRIVENDAVIS) # Nothing to load, needs rhoms, sigma
+        if none_and_length_check((self.Tbs, self.Tcs)):
+            self.sigmas_Tb = [i(Tb) for i, Tb in zip(self.SurfaceTensions, self.Tbs)]
+            # Unlikely but necessary to check all values were calculable
+            if none_and_length_check([self.sigmas_Tb]):
+                methods.append(DIGUILIOTEJA)
+        self.all_methods = set(methods)
+            
+    def calculate(self, T, P, zs, ws, method):
+        if method == SIMPLE:
+            sigmas = [i(T) for i in self.SurfaceTensions]
+            return mixing_simple(zs, sigmas)
+        elif method == DIGUILIOTEJA:
+            return Diguilio_Teja(T=T, xs=zs, sigmas_Tb=self.sigmas_Tb, 
+                                 Tbs=self.Tbs, Tcs=self.Tcs)
+        elif method == WINTERFELDSCRIVENDAVIS:
+            sigmas = [i(T) for i in self.SurfaceTensions]
+            rhoms = [1./i(T, P) for i in self.VolumeLiquids]
+            return Winterfeld_Scriven_Davis(zs, sigmas, rhoms)
+        else:
+            raise Exception('Method not valid')
+
+    def test_method_validity(self, T, P, zs, ws, method):
+        # SIMPLE and WINTERFELDSCRIVENDAVIS need to calculate sigma for pure
+        # species - doesn't work above Tc for any compound.
+        # DIGUILIOTEJA needs Tcs, not sure.
+        if method in [SIMPLE, DIGUILIOTEJA, WINTERFELDSCRIVENDAVIS]:
+            return True
+        else:
+            raise Exception('Method not valid')

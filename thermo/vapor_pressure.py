@@ -26,7 +26,7 @@ __all__ = ['WagnerMcGarry', 'AntoinePoling', 'WagnerPoling', 'AntoineExtended',
            'Antoine', 'Wagner_original', 'Wagner', 'TRC_Antoine_extended', 
            'vapor_pressure_methods', 'VaporPressure', 
            'boiling_critical_relation', 'Lee_Kesler', 'Ambrose_Walton', 
-           'Sanjari']
+           'Edalat', 'Sanjari']
 
 import os
 from thermo.utils import log, exp
@@ -292,11 +292,12 @@ BOILING_CRITICAL = 'BOILING_CRITICAL'
 LEE_KESLER_PSAT = 'LEE_KESLER_PSAT'
 AMBROSE_WALTON = 'AMBROSE_WALTON'
 SANJARI = 'SANJARI'
+EDALAT = 'Edalat'
 EOS = 'EOS'
 
 vapor_pressure_methods = [WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
                           COOLPROP, ANTOINE_POLING, VDI_TABULAR, AMBROSE_WALTON,
-                          LEE_KESLER_PSAT, EOS, BOILING_CRITICAL, SANJARI]
+                          LEE_KESLER_PSAT, EDALAT, EOS, BOILING_CRITICAL, SANJARI]
 '''Holds all methods available for the VaporPressure class, for use in
 iterating over them.'''
 
@@ -354,6 +355,8 @@ class VaporPressure(TDependentProperty):
         CSP method documented in :obj:`Ambrose_Walton`.
     **SANJARI**:
         CSP method documented in :obj:`Sanjari`.
+    **EDALAT**:
+        CSP method documented in :obj:`Edalat`.
     **VDI_TABULAR**:
         Tabular data in [4]_ along the saturation curve; interpolation is as
         set by the user or the default.
@@ -371,6 +374,7 @@ class VaporPressure(TDependentProperty):
     Lee_Kesler
     Ambrose_Walton
     Sanjari
+    Edalat
 
     References
     ----------
@@ -409,7 +413,7 @@ class VaporPressure(TDependentProperty):
 
     ranked_methods = [WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
                       COOLPROP, ANTOINE_POLING, VDI_TABULAR, AMBROSE_WALTON,
-                      LEE_KESLER_PSAT, BOILING_CRITICAL, EOS, SANJARI]
+                      LEE_KESLER_PSAT, EDALAT, BOILING_CRITICAL, EOS, SANJARI]
     '''Default rankings of the available methods.'''
 
     def __init__(self, Tb=None, Tc=None, Pc=None, omega=None, CASRN='', 
@@ -510,6 +514,7 @@ class VaporPressure(TDependentProperty):
             methods.append(LEE_KESLER_PSAT)
             methods.append(AMBROSE_WALTON)
             methods.append(SANJARI)
+            methods.append(EDALAT)
             if self.eos:
                 methods.append(EOS)
             Tmins.append(0.01); Tmaxs.append(self.Tc)
@@ -559,6 +564,8 @@ class VaporPressure(TDependentProperty):
             Psat = Ambrose_Walton(T, self.Tc, self.Pc, self.omega)
         elif method == SANJARI:
             Psat = Sanjari(T, self.Tc, self.Pc, self.omega)
+        elif method == EDALAT:
+            Psat = Edalat(T, self.Tc, self.Pc, self.omega)
         elif method == EOS:
             Psat = self.eos[0].Psat(T)
         elif method in self.tabular_data:
@@ -603,7 +610,7 @@ class VaporPressure(TDependentProperty):
         elif method == COOLPROP:
             if T < self.CP_f.Tmin or T < self.CP_f.Tt or T > self.CP_f.Tmax or T > self.CP_f.Tc:
                 return False
-        elif method in [BOILING_CRITICAL, LEE_KESLER_PSAT, AMBROSE_WALTON, SANJARI, EOS]:
+        elif method in [BOILING_CRITICAL, LEE_KESLER_PSAT, AMBROSE_WALTON, SANJARI, EDALAT, EOS]:
             if T > self.Tc or T < 0:
                 return False
             # No lower limit
@@ -859,3 +866,65 @@ def Sanjari(T, Tc, Pc, omega):
     f1 = 5.32034 + -28.1460/Tr + -58.0352*log(Tr) + 23.57466*Tr**1.9
     f2 = 18.19967 + 16.33839/Tr + 65.6995*log(Tr) + -35.9739*Tr**1.9
     return Pc*exp(f0 + omega*f1 + omega**2*f2)
+
+
+def Edalat(T, Tc, Pc, omega):
+    r'''Calculates vapor pressure of a fluid at arbitrary temperatures using a
+    CSP relationship by [1]_. Requires a chemical's critical temperature,
+    pressure, and acentric factor. Claimed to have a higher accuracy than the
+    Lee-Kesler CSP relationship.
+
+    The vapor pressure of a chemical at `T` is given by:
+
+    .. math::
+        \ln(P^{sat}/P_c) = \frac{a\tau + b\tau^{1.5} + c\tau^3 + d\tau^6}
+        {1-\tau}
+        
+        a = -6.1559 - 4.0855\omega
+        
+        b = 1.5737 - 1.0540\omega - 4.4365\times 10^{-3} d
+        
+        c = -0.8747 - 7.8874\omega
+        
+        d = \frac{1}{-0.4893 - 0.9912\omega + 3.1551\omega^2}
+        
+        \tau = 1 - \frac{T}{T_c}
+        
+    Parameters
+    ----------
+    T : float
+        Temperature of fluid [K]
+    Tc : float
+        Critical temperature of fluid [K]
+    Pc : float
+        Critical pressure of fluid [Pa]
+    omega : float
+        Acentric factor [-]
+
+    Returns
+    -------
+    Psat : float
+        Vapor pressure, [Pa]
+
+    Notes
+    -----
+    [1]_ found an average error of 6.06% on 94 compounds and 1106 data points.
+    
+    Examples
+    --------
+    >>> Edalat(347.2, 617.1, 36E5, 0.299)
+    13461.273080743307
+
+    References
+    ----------
+    .. [1] Edalat, M., R. B. Bozar-Jomehri, and G. A. Mansoori. "Generalized 
+       Equation Predicts Vapor Pressure of Hydrocarbons." Oil and Gas Journal; 
+       91:5 (February 1, 1993).
+    '''
+    tau = 1. - T/Tc
+    a = -6.1559 - 4.0855*omega
+    c = -0.8747 - 7.8874*omega
+    d = 1./(-0.4893 - 0.9912*omega + 3.1551*omega**2)
+    b = 1.5737 - 1.0540*omega - 4.4365E-3*d
+    lnPr = (a*tau + b*tau**1.5 + c*tau**3 + d*tau**6)/(1.-tau)
+    return exp(lnPr)*Pc
