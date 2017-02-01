@@ -63,6 +63,11 @@ def test_Aleem():
     st = Aleem(T=90, MW=16.04246, Tb=111.6, rhol=458.7, Hvap_Tb=510870., Cpl=2465.)
     assert_allclose(st, 0.01669970221165325)
 
+    # Test the "critical" point (where the correlation predicts sigma=0)
+    st_at_Tc = Aleem(T=318.8494929006085, MW=16.04246, Tb=111.6, rhol=458.7, 
+                     Hvap_Tb=510870.,  Cpl=2465.)
+    assert_allclose(st_at_Tc, 0, atol=1E-12)
+    
     
 def test_REFPROP():
     sigma = REFPROP(298.15, 647.096, -0.1306, 2.471, 0.2151, 1.233)

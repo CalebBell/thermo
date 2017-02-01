@@ -33,7 +33,7 @@ import os
 from thermo.utils import log, exp
 
 
-from thermo.utils import mixing_simple, none_and_length_check
+from thermo.utils import mixing_simple, none_and_length_check, Vm_to_rho
 from scipy.constants import N_A, k
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
 import pandas as pd
@@ -604,10 +604,17 @@ def Aleem(T, MW, Tb, rhol, Hvap_Tb, Cpl):
     
     This model does not use the critical temperature. After it predicts a 
     surface tension of 0 at a sufficiently high temperature, it returns 
-    negative results.
+    negative results. The temperature at which this occurs (the "predicted"
+    critical temperature) can be calculated as follows:
+        
+    .. math::
+        \sigma = 0 \to T_{c,predicted} \text{ at } T_b + \frac{H_{vap}}{Cp_l}
     
     Because of its dependence on density, it has the potential to model the 
     effect of pressure on surface tension.
+    
+    Claims AAD of 4.3%. Developed for normal alkanes. Total of 472 data points. 
+    Behaves worse for higher alkanes. Behaves very poorly overall.
     
     Examples
     --------
@@ -624,6 +631,7 @@ def Aleem(T, MW, Tb, rhol, Hvap_Tb, Cpl):
        Liquids." Petroleum Science and Technology 33, no. 23-24 (December 17, 
        2015): 1908-15. doi:10.1080/10916466.2015.1110593.
     '''
+    print('T, rhol, Cpl', T, rhol, Cpl)
     MW = MW/1000. # Use kg/mol for consistency with the other units
     sphericity = 1. - 0.0047*MW + 6.8E-6*MW*MW
     return sphericity*MW**(1/3.)/(6.*N_A**(1/3.))*rhol**(2/3.)*(Hvap_Tb + Cpl*(Tb-T))
@@ -875,7 +883,12 @@ class SurfaceTension(TDependentProperty):
             methods.append(ZUO_STENBY)
             Tmins.append(0.0); Tmaxs.append(self.Tc)
         if all((self.Tb, self.Hvap_Tb, self.MW)):
-            methods.append(ALEEM)
+            # Cache Cpl at Tb for ease of calculation of Tmax
+            self.Cpl_Tb = self.Cpl(self.Tb) if hasattr(self.Cpl, '__call__') else self.Cpl
+            if self.Cpl_Tb:
+                methods.append(ALEEM)
+                # Tmin and Tmax for this method is known
+                Tmins.append(0.0); Tmaxs.append(self.Tb + self.Hvap_Tb/self.Cpl_Tb)
         self.all_methods = set(methods)
         if Tmins and Tmaxs:
             # Note: All methods work right down to 0 K.
@@ -972,8 +985,8 @@ class SurfaceTension(TDependentProperty):
             if T > self.Tc:
                 validity = False
         elif method == ALEEM:
-            # TODO get the real result
-            pass
+            if T > self.Tb + self.Hvap_Tb/self.Cpl_Tb:
+                validity = False
         elif method in self.tabular_data:
             # if tabular_extrapolation_permitted, good to go without checking
             if not self.tabular_extrapolation_permitted:
