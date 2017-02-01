@@ -138,6 +138,13 @@ def test_SurfaceTension():
     with pytest.raises(Exception):
         EtOH.test_method_validity(300, 'BADMETHOD')
 
+    # Test Aleem
+    
+    CH4 = SurfaceTension(Tb=111.65, Cpl=2465., Hvap_Tb=510870., MW=16.04246, Vml=3.497e-05)
+    assert_allclose(CH4.T_dependent_property(90), 0.016704545538936296)
+    
+    assert not CH4.test_method_validity(600, 'Aleem')
+    assert CH4.test_method_validity(100, 'Aleem')
 
 
 def test_Winterfeld_Scriven_Davis():
