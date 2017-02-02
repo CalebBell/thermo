@@ -71,5 +71,6 @@ setup(
   'Electrolytes/*', 'Environment/*', 'Heat Capacity/*', 'Identifiers/*',
   'Law/*', 'Misc/*', 'Phase Change/*', 'Reactions/*', 'Safety/*', 
   'Solubility/*', 'SurfaceTensionData/*', 'Triple Properties/*', 
+  'Thermal Conductivity/*', 
   'Vapor Pressure/*', 'Viscosity/*']}
 )
