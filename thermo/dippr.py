@@ -100,7 +100,7 @@ def EQ101(T, A, B, C, D, E):
     .. [1] Design Institute for Physical Properties, 1996. DIPPR Project 801
        DIPPR/AIChE
     '''
-    return exp(A+B/T+C*log(T)+D*T**E)
+    return exp(A + B/T + C*log(T) + D*T**E)
 
 
 def EQ102(T, A, B, C, D):
@@ -136,7 +136,7 @@ def EQ102(T, A, B, C, D):
     .. [1] Design Institute for Physical Properties, 1996. DIPPR Project 801
        DIPPR/AIChE
     '''
-    return A*T**B/(1 + C/T + D/T**2)
+    return A*T**B/(1. + C/T + D/(T*T))
 
 
 def EQ104(T, A, B, C, D, E):

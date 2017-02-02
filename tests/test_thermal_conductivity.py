@@ -23,6 +23,33 @@ SOFTWARE.'''
 from numpy.testing import assert_allclose
 import pytest
 from thermo.thermal_conductivity import *
+from thermo.identifiers import checkCAS
+
+
+def test_Perrys2_314_data():
+    # In perry's, only 102 is used. No chemicals are missing.
+    # Tmaxs all match to 5E-4. Tmins match to 1E-3.
+    assert all([checkCAS(i) for i in Perrys2_314.index])
+    tots_calc = [Perrys2_314[i].abs().sum() for i in [u'C1', u'C2', u'C3', u'C4', u'Tmin', u'Tmax']]
+    tots = [48935634.823768869, 297.41545078799999, 421906466448.71423, 232863514627157.62, 125020.26000000001, 347743.42000000004]
+    assert_allclose(tots_calc, tots)
+    
+    assert Perrys2_314.index.is_unique
+    assert Perrys2_314.shape == (345, 7)
+
+
+def test_Perrys2_315_data():
+    # From perry's - Deuterium  ,  Nitrogen trifluoride  ,  Nitrous oxide   Silicon tetrafluoride  ,  Terephthalic acid  all have no data
+    # All perry's use #100.
+    # Tmins all match at 5E-4.
+    # Tmaxs all match at 2E-3.
+    assert all([checkCAS(i) for i in Perrys2_315.index])
+    tots_calc = [Perrys2_315[i].abs().sum() for i in [u'C1', u'C2', u'C3', u'C4', u'C5', u'Tmin', u'Tmax']]
+    tots = [82.001667499999996, 0.19894598900000002, 0.0065330144999999999, 0.00046928630199999995, 1.0268010799999999e-07, 70996.369999999995, 138833.41]
+    assert_allclose(tots_calc, tots)
+    
+    assert Perrys2_315.index.is_unique
+    assert Perrys2_315.shape == (340, 8)
 
 
 def test_CSP_liq():
@@ -119,12 +146,12 @@ def test_ThermalConductivityLiquid():
 
     EtOH.T_dependent_property(305.)
     kl_calcs = [(EtOH.set_user_methods(i), EtOH.T_dependent_property(305.))[1] for i in EtOH.sorted_valid_methods]
-    kl_exp = [0.162183005823234, 0.17417420086033197, 0.20068212675966418, 0.18526367184633258, 0.18846433785041306, 0.16837295487233528, 0.16883011582627103, 0.09330268101157643, 0.028604363267557775]
+    kl_exp = [0.162183005823234, 0.16627999999999998, 0.17417420086033197, 0.20068212675966418, 0.18526367184633258, 0.18846433785041306, 0.16837295487233528, 0.16883011582627103, 0.09330268101157643, 0.028604363267557775]
     assert_allclose(kl_calcs, kl_exp)
 
     # Test that methods return None
     kl_calcs = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(5000))[1] for i in EtOH.sorted_valid_methods]
-    assert [None]*9 == kl_calcs
+    assert [None]*10 == kl_calcs
 
     EtOH.set_user_methods('VDI_TABULAR', forced=True)
     assert_allclose(EtOH.T_dependent_property(600.), 0.040117737789202995)
@@ -170,12 +197,12 @@ def test_ThermalConductivityGas():
     EtOH = ThermalConductivityGas(MW=46.06844, Tb=351.39, Tc=514.0, Pc=6137000.0, Vc=0.000168, Zc=0.2412, omega=0.635, dipole=1.44, Vmg=0.02357, Cvgm=56.98, mug=7.903e-6, CASRN='64-17-5')
     EtOH.T_dependent_property(298.15)
     kg_calcs = [(EtOH.set_user_methods(i), EtOH.T_dependent_property(298.15))[1] for i in EtOH.sorted_valid_methods]
-    kg_exp = [0.015227631457903644, 0.01494275, 0.016338750949017277, 0.014353317470206847, 0.011676848981094841, 0.01137910777526855, 0.015427444948536088, 0.012984129385510995, 0.017556325226536728]
+    kg_exp = [0.015227631457903644, 0.01520257225203181, 0.01494275, 0.016338750949017277, 0.014353317470206847, 0.011676848981094841, 0.01137910777526855, 0.015427444948536088, 0.012984129385510995, 0.017556325226536728]
     assert_allclose(kg_calcs, kg_exp)
 
     # Test that those mthods which can, do, return NoneEtOH.forced_P
-    kg_calcs = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(5E20))[1] for i in ['COOLPROP', 'VDI_TABULAR', 'GHARAGHEIZI_G', 'ELI_HANLEY', 'BAHADORI_G']]
-    assert [None]*5 == kg_calcs
+    kg_calcs = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(5E20))[1] for i in ['COOLPROP', 'DIPPR', 'VDI_TABULAR', 'GHARAGHEIZI_G', 'ELI_HANLEY', 'BAHADORI_G']]
+    assert [None]*6 == kg_calcs
 
     # Test tabular limits/extrapolation
     EtOH.set_user_methods('VDI_TABULAR', forced=True)
