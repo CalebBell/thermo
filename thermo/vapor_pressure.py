@@ -35,7 +35,7 @@ import pandas as pd
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
 from thermo.utils import TDependentProperty
 from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluids
-
+from thermo.dippr import EQ101
 
 folder = os.path.join(os.path.dirname(__file__), 'Vapor Pressure')
 
@@ -291,7 +291,7 @@ ANTOINE_POLING = 'ANTOINE_POLING'
 ANTOINE_EXTENDED_POLING = 'ANTOINE_EXTENDED_POLING'
 VDI_TABULAR = 'VDI_TABULAR'
 COOLPROP = 'COOLPROP'
-DIPPR = 'DIPPR'
+DIPPR_PERRY_8E = 'DIPPR_PERRY_8E'
 
 BOILING_CRITICAL = 'BOILING_CRITICAL'
 LEE_KESLER_PSAT = 'LEE_KESLER_PSAT'
@@ -301,7 +301,7 @@ EDALAT = 'Edalat'
 EOS = 'EOS'
 
 vapor_pressure_methods = [WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
-                          DIPPR, COOLPROP, ANTOINE_POLING, VDI_TABULAR, AMBROSE_WALTON,
+                          DIPPR_PERRY_8E, COOLPROP, ANTOINE_POLING, VDI_TABULAR, AMBROSE_WALTON,
                           LEE_KESLER_PSAT, EDALAT, EOS, BOILING_CRITICAL, SANJARI]
 '''Holds all methods available for the VaporPressure class, for use in
 iterating over them.'''
@@ -346,6 +346,10 @@ class VaporPressure(TDependentProperty):
         Standard Antoine equation, as documented in the function
         :obj:`Antoine` and with data for 325 fluids from [2]_.
         Coefficients were altered to be in units of Pa and Celcius.
+    **DIPPR_PERRY_8E**:
+        A collection of 341 coefficient sets from the DIPPR database published
+        openly in [5]_. Provides temperature limits for all its fluids. 
+        :obj:`thermo.dippr.EQ101` is used for its fluids.
     **COOLPROP**:
         CoolProp external library; with select fluids from its library.
         Range is limited to that of the equations of state it uses, as
@@ -396,6 +400,8 @@ class VaporPressure(TDependentProperty):
        2498-2508. doi:10.1021/ie4033999. http://www.coolprop.org/
     .. [4] Gesellschaft, V. D. I., ed. VDI Heat Atlas. 2nd edition.
        Berlin; New York:: Springer, 2010.
+    .. [5] Green, Don, and Robert Perry. Perry's Chemical Engineers' Handbook,
+       Eighth Edition. McGraw-Hill Professional, 2007.
     '''
     name = 'Vapor pressure'
     units = 'Pa'
@@ -417,7 +423,7 @@ class VaporPressure(TDependentProperty):
     highest known.'''
 
     ranked_methods = [WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
-                      COOLPROP, ANTOINE_POLING, VDI_TABULAR, AMBROSE_WALTON,
+                      DIPPR_PERRY_8E, COOLPROP, ANTOINE_POLING, VDI_TABULAR, AMBROSE_WALTON,
                       LEE_KESLER_PSAT, EDALAT, BOILING_CRITICAL, EOS, SANJARI]
     '''Default rankings of the available methods.'''
 
@@ -501,6 +507,11 @@ class VaporPressure(TDependentProperty):
             _, A, B, C, self.ANTOINE_POLING_Tmin, self.ANTOINE_POLING_Tmax = _AntoinePoling_values[AntoinePoling.index.get_loc(self.CASRN)].tolist()
             self.ANTOINE_POLING_coefs = [A, B, C]
             Tmins.append(self.ANTOINE_POLING_Tmin); Tmaxs.append(self.ANTOINE_POLING_Tmax)
+        if self.CASRN in Perrys2_8.index:
+            methods.append(DIPPR_PERRY_8E)
+            _, C1, C2, C3, C4, C5, self.Perrys2_8_Tmin, self.Perrys2_8_Tmax = _Perrys2_8_values[Perrys2_8.index.get_loc(self.CASRN)].tolist()
+            self.Perrys2_8_coeffs = [C1, C2, C3, C4, C5]
+            Tmins.append(self.Perrys2_8_Tmin); Tmaxs.append(self.Perrys2_8_Tmax)
         if has_CoolProp and self.CASRN in coolprop_dict:
             methods.append(COOLPROP)
             self.CP_f = coolprop_fluids[self.CASRN]
@@ -559,6 +570,8 @@ class VaporPressure(TDependentProperty):
         elif method == ANTOINE_POLING:
             A, B, C = self.ANTOINE_POLING_coefs
             Psat = Antoine(T, A, B, C, base=10.0)
+        elif method == DIPPR_PERRY_8E:
+            Psat = EQ101(T, *self.Perrys2_8_coeffs)
         elif method == COOLPROP:
             Psat = PropsSI('P','T', T,'Q',0, self.CASRN)
         elif method == BOILING_CRITICAL:
@@ -611,6 +624,9 @@ class VaporPressure(TDependentProperty):
                 return False
         elif method == ANTOINE_POLING:
             if T < self.ANTOINE_POLING_Tmin or T > self.ANTOINE_POLING_Tmax:
+                return False
+        elif method == DIPPR_PERRY_8E:
+            if T < self.Perrys2_8_Tmin or T > self.Perrys2_8_Tmax:
                 return False
         elif method == COOLPROP:
             if T < self.CP_f.Tmin or T < self.CP_f.Tt or T > self.CP_f.Tmax or T > self.CP_f.Tc:
