@@ -26,6 +26,7 @@ import numpy as np
 import pandas as pd
 from thermo.viscosity import *
 from thermo.identifiers import checkCAS
+from thermo.viscosity import COOLPROP, LUCAS
 
 ### Check data integrity
 
@@ -250,11 +251,11 @@ def test_ViscosityLiquid():
     # Ethanol compressed
     EtOH = ViscosityLiquid(MW=46.06844, Tm=159.05, Tc=514.0, Pc=6137000.0, Vc=0.000168, omega=0.635, Psat=7872.16, Vml=5.8676e-5, CASRN='64-17-5')
 
-    assert [False, True] == [EtOH.test_method_validity_P(300, P, 'COOLPROP') for P in (1E3, 1E5)]
-    assert [True, True] == [EtOH.test_method_validity_P(300, P, 'LUCAS') for P in (1E3, 1E5)]
+    assert [False, True] == [EtOH.test_method_validity_P(300, P, COOLPROP) for P in (1E3, 1E5)]
+    assert [True, True] == [EtOH.test_method_validity_P(300, P, LUCAS) for P in (1E3, 1E5)]
 
-    assert_allclose(EtOH.calculate_P(298.15, 1E6, 'LUCAS'), 0.0010880229239312313)
-    assert_allclose(EtOH.calculate_P(298.15, 1E6, 'COOLPROP'), 0.0010885493279015608)
+    assert_allclose(EtOH.calculate_P(298.15, 1E6, LUCAS), 0.0010880229239312313)
+    assert_allclose(EtOH.calculate_P(298.15, 1E6, COOLPROP), 0.0010885493279015608)
 
     EtOH = ViscosityLiquid(MW=46.06844, Tm=159.05, Tc=514.0, Pc=6137000.0, Vc=0.000168, omega=0.635, Psat=7872.16, Vml=5.8676e-5, CASRN='64-17-5')
     # Ethanol data, calculated from CoolProp
@@ -295,9 +296,9 @@ def test_ViscosityGas():
     # Ethanol compressed
     EtOH = ViscosityGas(MW=46.06844, Tc=514.0, Pc=6137000.0, Zc=0.2412, dipole=1.44, Vmg=0.02357, CASRN='64-17-5')
 
-    assert [True, False] == [EtOH.test_method_validity_P(300, P, 'COOLPROP') for P in (1E3, 1E5)]
+    assert [True, False] == [EtOH.test_method_validity_P(300, P, COOLPROP) for P in (1E3, 1E5)]
 
-    assert_allclose(EtOH.calculate_P(298.15, 1E3, 'COOLPROP'), 8.77706377246337e-06)
+    assert_allclose(EtOH.calculate_P(298.15, 1E3, COOLPROP), 8.77706377246337e-06)
 
 
     # Ethanol data, calculated from CoolProp

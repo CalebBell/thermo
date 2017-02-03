@@ -24,7 +24,14 @@ from numpy.testing import assert_allclose
 import pytest
 from thermo.thermal_conductivity import *
 from thermo.identifiers import checkCAS
-
+from thermo.thermal_conductivity import (GHARAGHEIZI_G, CHUNG, ELI_HANLEY, 
+                                        ELI_HANLEY_DENSE, CHUNG_DENSE, 
+                                        EUCKEN_MOD, EUCKEN, BAHADORI_G, 
+                                        STIEL_THODOS_DENSE, DIPPR_9B, COOLPROP,
+                                        DIPPR_PERRY_8E, VDI_TABULAR, GHARAGHEIZI_L,
+                                       SATO_RIEDEL, NICOLA, NICOLA_ORIGINAL,
+                                       SHEFFY_JOHNSON, BAHADORI_L,
+                                       LAKSHMI_PRASAD, DIPPR_9G, MISSENARD)
 
 def test_Perrys2_314_data():
     # In perry's, only 102 is used. No chemicals are missing.
@@ -153,7 +160,7 @@ def test_ThermalConductivityLiquid():
     kl_calcs = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(5000))[1] for i in EtOH.sorted_valid_methods]
     assert [None]*10 == kl_calcs
 
-    EtOH.set_user_methods('VDI_TABULAR', forced=True)
+    EtOH.set_user_methods(VDI_TABULAR, forced=True)
     assert_allclose(EtOH.T_dependent_property(600.), 0.040117737789202995)
     EtOH.tabular_extrapolation_permitted = False
     assert None == EtOH.T_dependent_property(600.)
@@ -163,14 +170,14 @@ def test_ThermalConductivityLiquid():
 
 
     # Ethanol compressed
-    assert [False, True] == [EtOH.test_method_validity_P(300, P, 'COOLPROP') for P in (1E3, 1E5)]
-    assert [True, True] == [EtOH.test_method_validity_P(300, P, 'DIPPR_9G') for P in (1E3, 1E5)]
-    assert [True, True, False] == [EtOH.test_method_validity_P(300, P, 'MISSENARD') for P in (1E3, 1E5, 1E10)]
+    assert [False, True] == [EtOH.test_method_validity_P(300, P, COOLPROP) for P in (1E3, 1E5)]
+    assert [True, True] == [EtOH.test_method_validity_P(300, P, DIPPR_9G) for P in (1E3, 1E5)]
+    assert [True, True, False] == [EtOH.test_method_validity_P(300, P, MISSENARD) for P in (1E3, 1E5, 1E10)]
 
     EtOH = ThermalConductivityLiquid(CASRN='64-17-5', MW=46.06844, Tm=159.05, Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, Hfus=4931.0)
-    assert_allclose(EtOH.calculate_P(298.15, 1E6, 'COOLPROP'), 0.1639626989794703)
-    assert_allclose(EtOH.calculate_P(298.15, 1E6, 'DIPPR_9G'), 0.1606146938795702)
-    assert_allclose(EtOH.calculate_P(298.15, 1E6, 'MISSENARD'), 0.1641582259181843)
+    assert_allclose(EtOH.calculate_P(298.15, 1E6, COOLPROP), 0.1639626989794703)
+    assert_allclose(EtOH.calculate_P(298.15, 1E6, DIPPR_9G), 0.1606146938795702)
+    assert_allclose(EtOH.calculate_P(298.15, 1E6, MISSENARD), 0.1641582259181843)
 
 
     # Ethanol data, calculated from CoolProp
@@ -189,7 +196,7 @@ def test_ThermalConductivityLiquid():
     with pytest.raises(Exception):
         EtOH.test_method_validity_P(300, 1E5, 'BADMETHOD')
 
-    assert False == EtOH.test_method_validity_P(-10, 1E5, 'DIPPR_9G')
+    assert False == EtOH.test_method_validity_P(-10, 1E5, DIPPR_9G)
 
 
 @pytest.mark.meta_T_dept
@@ -201,11 +208,11 @@ def test_ThermalConductivityGas():
     assert_allclose(kg_calcs, kg_exp)
 
     # Test that those mthods which can, do, return NoneEtOH.forced_P
-    kg_calcs = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(5E20))[1] for i in ['COOLPROP', 'DIPPR', 'VDI_TABULAR', 'GHARAGHEIZI_G', 'ELI_HANLEY', 'BAHADORI_G']]
+    kg_calcs = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(5E20))[1] for i in [COOLPROP, DIPPR_PERRY_8E, VDI_TABULAR, GHARAGHEIZI_G, ELI_HANLEY, BAHADORI_G]]
     assert [None]*6 == kg_calcs
 
     # Test tabular limits/extrapolation
-    EtOH.set_user_methods('VDI_TABULAR', forced=True)
+    EtOH.set_user_methods(VDI_TABULAR, forced=True)
     assert_allclose(EtOH.T_dependent_property(600.), 0.05755089974293061)
 
     EtOH.tabular_extrapolation_permitted = False
@@ -217,17 +224,17 @@ def test_ThermalConductivityGas():
 
     # Ethanol compressed
 
-    assert [True, False] == [EtOH.test_method_validity_P(300, P, 'COOLPROP') for P in (1E3, 1E5)]
-    assert [True, False] == [EtOH.test_method_validity_P(300, P, 'ELI_HANLEY_DENSE') for P in (1E5, -1E5)]
-    assert [True, False] == [EtOH.test_method_validity_P(300, P, 'CHUNG_DENSE') for P in (1E5, -1E5)]
-    assert [True, False] == [EtOH.test_method_validity_P(300, P, 'STIEL_THODOS_DENSE') for P in (1E5, -1E5)]
+    assert [True, False] == [EtOH.test_method_validity_P(300, P, COOLPROP) for P in (1E3, 1E5)]
+    assert [True, False] == [EtOH.test_method_validity_P(300, P, ELI_HANLEY_DENSE) for P in (1E5, -1E5)]
+    assert [True, False] == [EtOH.test_method_validity_P(300, P, CHUNG_DENSE) for P in (1E5, -1E5)]
+    assert [True, False] == [EtOH.test_method_validity_P(300, P, STIEL_THODOS_DENSE) for P in (1E5, -1E5)]
 
 
     EtOH = ThermalConductivityGas(MW=46.06844, Tb=351.39, Tc=514.0, Pc=6137000.0, Vc=0.000168, Zc=0.2412, omega=0.635, dipole=1.44, Vmg=0.02357, Cvgm=56.98, mug=7.903e-6, CASRN='64-17-5')
-    assert_allclose(EtOH.calculate_P(298.15, 1E2, 'COOLPROP'), 0.015207849649231962)
-    assert_allclose(EtOH.calculate_P(298.15, 1E6, 'ELI_HANLEY_DENSE'), 0.011210125242396791)
-    assert_allclose(EtOH.calculate_P(298.15, 1E6, 'CHUNG_DENSE'), 0.011770372068085207)
-    assert_allclose(EtOH.calculate_P(298.15, 1E6, 'STIEL_THODOS_DENSE'), 0.015447836685420897)
+    assert_allclose(EtOH.calculate_P(298.15, 1E2, COOLPROP), 0.015207849649231962)
+    assert_allclose(EtOH.calculate_P(298.15, 1E6, ELI_HANLEY_DENSE), 0.011210125242396791)
+    assert_allclose(EtOH.calculate_P(298.15, 1E6, CHUNG_DENSE), 0.011770372068085207)
+    assert_allclose(EtOH.calculate_P(298.15, 1E6, STIEL_THODOS_DENSE), 0.015447836685420897)
 
 
       # Ethanol data, calculated from CoolProp
@@ -247,7 +254,7 @@ def test_ThermalConductivityGas():
     with pytest.raises(Exception):
         EtOH.test_method_validity_P(300, 1E5, 'BADMETHOD')
 
-    assert False == EtOH.test_method_validity_P(100, 1E5, 'COOLPROP')
+    assert False == EtOH.test_method_validity_P(100, 1E5, COOLPROP)
 
 
 def test_DIPPR9I():

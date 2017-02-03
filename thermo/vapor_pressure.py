@@ -24,7 +24,7 @@ from __future__ import division
 
 __all__ = ['WagnerMcGarry', 'AntoinePoling', 'WagnerPoling', 'AntoineExtended',
            'Antoine', 'Wagner_original', 'Wagner', 'TRC_Antoine_extended', 
-           'vapor_pressure_methods', 'VaporPressure', 
+           'vapor_pressure_methods', 'VaporPressure', 'Perrys2_8',
            'boiling_critical_relation', 'Lee_Kesler', 'Ambrose_Walton', 
            'Edalat', 'Sanjari']
 
@@ -54,6 +54,10 @@ _WagnerPoling_values = WagnerPoling.values
 AntoineExtended = pd.read_csv(os.path.join(folder, 'Antoine Extended Collection Poling.csv'),
                               sep='\t', index_col=0)
 _AntoineExtended_values = AntoineExtended.values
+
+Perrys2_8 = pd.read_csv(os.path.join(folder, 'Table 2-8 Vapor Pressure of Inorganic and Organic Liquids.csv'),
+                          sep='\t', index_col=0)
+_Perrys2_8_values = Perrys2_8.values
 
 
 def Antoine(T, A, B, C, base=10.0):
@@ -287,6 +291,7 @@ ANTOINE_POLING = 'ANTOINE_POLING'
 ANTOINE_EXTENDED_POLING = 'ANTOINE_EXTENDED_POLING'
 VDI_TABULAR = 'VDI_TABULAR'
 COOLPROP = 'COOLPROP'
+DIPPR = 'DIPPR'
 
 BOILING_CRITICAL = 'BOILING_CRITICAL'
 LEE_KESLER_PSAT = 'LEE_KESLER_PSAT'
@@ -296,7 +301,7 @@ EDALAT = 'Edalat'
 EOS = 'EOS'
 
 vapor_pressure_methods = [WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
-                          COOLPROP, ANTOINE_POLING, VDI_TABULAR, AMBROSE_WALTON,
+                          DIPPR, COOLPROP, ANTOINE_POLING, VDI_TABULAR, AMBROSE_WALTON,
                           LEE_KESLER_PSAT, EDALAT, EOS, BOILING_CRITICAL, SANJARI]
 '''Holds all methods available for the VaporPressure class, for use in
 iterating over them.'''

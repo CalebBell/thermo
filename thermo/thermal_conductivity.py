@@ -431,11 +431,11 @@ BAHADORI_L = 'BAHADORI_L'
 LAKSHMI_PRASAD = 'LAKSHMI_PRASAD'
 MISSENARD = 'MISSENARD'
 NONE = 'NONE'
-DIPPR = 'DIPPR'
+DIPPR_PERRY_8E = 'DIPPR_PERRY_8E'
 NEGLIGIBLE = 'NEGLIGIBLE'
 DIPPR_9G = 'DIPPR_9G'
 
-thermal_conductivity_liquid_methods = [COOLPROP, DIPPR, VDI_TABULAR, GHARAGHEIZI_L,
+thermal_conductivity_liquid_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_TABULAR, GHARAGHEIZI_L,
                                        SATO_RIEDEL, NICOLA, NICOLA_ORIGINAL,
                                        SHEFFY_JOHNSON, BAHADORI_L,
                                        LAKSHMI_PRASAD]
@@ -500,7 +500,7 @@ class ThermalConductivityLiquid(TPDependentProperty):
         CSP method, described in :obj:`Bahadori_liquid`.
     **LAKSHMI_PRASAD**:
         CSP method, described in :obj:`Lakshmi_Prasad`.
-    **DIPPR**:
+    **DIPPR_PERRY_8E**:
         A collection of 340 coefficient sets from the DIPPR database published
         openly in [3]_. Provides temperature limits for all its fluids. 
         :obj:`thermo.dippr.EQ100` is used for its fluids.
@@ -567,7 +567,7 @@ class ThermalConductivityLiquid(TPDependentProperty):
     property_max = 10
     '''Maximum valid value of liquid thermal conductivity. Generous limit.'''
 
-    ranked_methods = [COOLPROP, DIPPR, VDI_TABULAR, GHARAGHEIZI_L,
+    ranked_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_TABULAR, GHARAGHEIZI_L,
                       SATO_RIEDEL, NICOLA, NICOLA_ORIGINAL,
                       SHEFFY_JOHNSON, BAHADORI_L, LAKSHMI_PRASAD]
     '''Default rankings of the low-pressure methods.'''
@@ -670,7 +670,7 @@ class ThermalConductivityLiquid(TPDependentProperty):
             # 50.0*(131.0*sqrt(M) + 2771.0)/(50.0*M**0.5 + 197.0)
             # where it becomes 0.
         if self.CASRN in Perrys2_315.index:
-            methods.append(DIPPR)
+            methods.append(DIPPR_PERRY_8E)
             _, C1, C2, C3, C4, C5, self.Perrys2_315_Tmin, self.Perrys2_315_Tmax = _Perrys2_315_values[Perrys2_315.index.get_loc(self.CASRN)].tolist()
             self.Perrys2_315_coeffs = [C1, C2, C3, C4, C5]
             Tmins.append(self.Perrys2_315_Tmin); Tmaxs.append(self.Perrys2_315_Tmax)
@@ -728,7 +728,7 @@ class ThermalConductivityLiquid(TPDependentProperty):
             kl = Lakshmi_Prasad(T, self.MW)
         elif method == BAHADORI_L:
             kl = Bahadori_liquid(T, self.MW)
-        elif method == DIPPR:
+        elif method == DIPPR_PERRY_8E:
             kl = EQ100(T, *self.Perrys2_315_coeffs)
         elif method == COOLPROP:
             kl = CoolProp_T_dependent_property(T, self.CASRN, 'L', 'l')
@@ -805,7 +805,7 @@ class ThermalConductivityLiquid(TPDependentProperty):
             if T > self.Tc*1.5:
                 return False
             # No lower limit, give a wide margin of acceptability here
-        elif method == DIPPR:
+        elif method == DIPPR_PERRY_8E:
             if T < self.Perrys2_315_Tmin or T > self.Perrys2_315_Tmax:
                 return False
         elif method in [BAHADORI_L, LAKSHMI_PRASAD, SHEFFY_JOHNSON]:
@@ -1609,7 +1609,9 @@ BAHADORI_G = 'BAHADORI_G'
 STIEL_THODOS_DENSE = 'STIEL_THODOS_DENSE'
 DIPPR_9B = 'DIPPR_9B'
 
-thermal_conductivity_gas_methods = [COOLPROP, DIPPR, VDI_TABULAR, GHARAGHEIZI_G,
+
+
+thermal_conductivity_gas_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_TABULAR, GHARAGHEIZI_G,
                                     DIPPR_9B, CHUNG, ELI_HANLEY, EUCKEN_MOD,
                                     EUCKEN, BAHADORI_G]
 '''Holds all low-pressure methods available for the ThermalConductivityGas
@@ -1684,7 +1686,7 @@ class ThermalConductivityGas(TPDependentProperty):
         CSP method, described in :obj:`Eucken`.
     **BAHADORI_G**:
         CSP method, described in :obj:`Bahadori_gas`.
-    **DIPPR**:
+    **DIPPR_PERRY_8E**:
         A collection of 345 coefficient sets from the DIPPR database published
         openly in [3]_. Provides temperature limits for all its fluids. 
         :obj:`thermo.dippr.EQ102` is used for its fluids.
@@ -1755,7 +1757,7 @@ class ThermalConductivityGas(TPDependentProperty):
     property_max = 10
     '''Maximum valid value of gas thermal conductivity. Generous limit.'''
 
-    ranked_methods = [COOLPROP, DIPPR, VDI_TABULAR, GHARAGHEIZI_G, DIPPR_9B,
+    ranked_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_TABULAR, GHARAGHEIZI_G, DIPPR_9B,
                       CHUNG, ELI_HANLEY, EUCKEN_MOD, EUCKEN,
                       BAHADORI_G]
     '''Default rankings of the low-pressure methods.'''
@@ -1855,7 +1857,7 @@ class ThermalConductivityGas(TPDependentProperty):
             self.CP_f = coolprop_fluids[self.CASRN]
             Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tc)
         if self.CASRN in Perrys2_314.index:
-            methods.append(DIPPR)
+            methods.append(DIPPR_PERRY_8E)
             _, C1, C2, C3, C4, self.Perrys2_314_Tmin, self.Perrys2_314_Tmax = _Perrys2_314_values[Perrys2_314.index.get_loc(self.CASRN)].tolist()
             self.Perrys2_314_coeffs = [C1, C2, C3, C4]
             Tmins.append(self.Perrys2_314_Tmin); Tmaxs.append(self.Perrys2_314_Tmax)
@@ -1930,7 +1932,7 @@ class ThermalConductivityGas(TPDependentProperty):
             Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
             mug = self.mug(T) if hasattr(self.mug, '__call__') else self.mug
             kg = Eucken(self.MW, Cvgm, mug)
-        elif method == DIPPR:
+        elif method == DIPPR_PERRY_8E:
             kg = EQ102(T, *self.Perrys2_314_coeffs)
         elif method == BAHADORI_G:
             kg = Bahadori_gas(T, self.MW)
@@ -2003,7 +2005,7 @@ class ThermalConductivityGas(TPDependentProperty):
         if method in [GHARAGHEIZI_G, DIPPR_9B, CHUNG, ELI_HANLEY, EUCKEN_MOD,
                       EUCKEN, BAHADORI_G]:
             pass
-        elif method == DIPPR:
+        elif method == DIPPR_PERRY_8E:
             if T < self.Perrys2_314_Tmin or T > self.Perrys2_314_Tmax:
                 return False
         elif method == COOLPROP:

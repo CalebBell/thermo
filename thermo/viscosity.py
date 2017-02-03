@@ -275,9 +275,9 @@ LETSOU_STIEL = 'LETSOU_STIEL'
 PRZEDZIECKI_SRIDHAR = 'PRZEDZIECKI_SRIDHAR'
 LUCAS = 'LUCAS'
 NEGLIGIBLE = 'NEGLIGIBLE'
-DIPPR = 'DIPPR'
+DIPPR_PERRY_8E = 'DIPPR_PERRY_8E'
 
-viscosity_liquid_methods = [COOLPROP, DIPPR, DUTT_PRASAD, VISWANATH_NATARAJAN_3,
+viscosity_liquid_methods = [COOLPROP, DIPPR_PERRY_8E, DUTT_PRASAD, VISWANATH_NATARAJAN_3,
                          VISWANATH_NATARAJAN_2, VISWANATH_NATARAJAN_2E,
                          VDI_TABULAR, LETSOU_STIEL, PRZEDZIECKI_SRIDHAR]
 '''Holds all low-pressure methods available for the ViscosityLiquid class, for
@@ -345,7 +345,7 @@ class ViscosityLiquid(TPDependentProperty):
         A simple function as expressed in [1]_, with data available for
         14 fluids. Temperature limits are available for all fluids. See
         :obj:`ViswanathNatarajan2Exponential` for details.
-    **DIPPR**:
+    **DIPPR_PERRY_8E**:
         A collection of 337 coefficient sets from the DIPPR database published
         openly in [4]_. Provides temperature limits for all its fluids. 
         :obj:`thermo.dippr.EQ101` is used for its fluids.
@@ -413,7 +413,7 @@ class ViscosityLiquid(TPDependentProperty):
     '''Maximum valid value of liquid viscosity. Generous limit, as
     the value is that of bitumen in a Pitch drop experiment.'''
 
-    ranked_methods = [COOLPROP, DIPPR, DUTT_PRASAD, VISWANATH_NATARAJAN_3,
+    ranked_methods = [COOLPROP, DIPPR_PERRY_8E, DUTT_PRASAD, VISWANATH_NATARAJAN_3,
                       VISWANATH_NATARAJAN_2, VISWANATH_NATARAJAN_2E,
                       VDI_TABULAR, LETSOU_STIEL, PRZEDZIECKI_SRIDHAR]
     '''Default rankings of the low-pressure methods.'''
@@ -529,7 +529,7 @@ class ViscosityLiquid(TPDependentProperty):
             self.VISWANATH_NATARAJAN_2E_coeffs = [C, D]
             Tmins.append(self.VISWANATH_NATARAJAN_2E_Tmin); Tmaxs.append(self.VISWANATH_NATARAJAN_2E_Tmax)
         if self.CASRN in Perrys2_313.index:
-            methods.append(DIPPR)
+            methods.append(DIPPR_PERRY_8E)
             _, C1, C2, C3, C4, C5, self.Perrys2_313_Tmin, self.Perrys2_313_Tmax = _Perrys2_313_values[Perrys2_313.index.get_loc(self.CASRN)].tolist()
             self.Perrys2_313_coeffs = [C1, C2, C3, C4, C5]
             Tmins.append(self.Perrys2_313_Tmin); Tmaxs.append(self.Perrys2_313_Tmax)
@@ -577,7 +577,7 @@ class ViscosityLiquid(TPDependentProperty):
         elif method == VISWANATH_NATARAJAN_2E:
             C, D = self.VISWANATH_NATARAJAN_2E_coeffs
             mu = ViswanathNatarajan2Exponential(T, C, D)
-        elif method == DIPPR:
+        elif method == DIPPR_PERRY_8E:
             mu = EQ101(T, *self.Perrys2_313_coeffs)
         elif method == COOLPROP:
             mu = CoolProp_T_dependent_property(T, self.CASRN, 'V', 'l')
@@ -625,7 +625,7 @@ class ViscosityLiquid(TPDependentProperty):
         elif method == VISWANATH_NATARAJAN_2E:
             if T < self.VISWANATH_NATARAJAN_2E_Tmin or T > self.VISWANATH_NATARAJAN_2E_Tmax:
                 return False
-        elif method == DIPPR:
+        elif method == DIPPR_PERRY_8E:
             if T < self.Perrys2_313_Tmin or T > self.Perrys2_313_Tmax:
                 return False
         elif method == COOLPROP:
@@ -1107,7 +1107,7 @@ YOON_THODOS = 'YOON_THODOS'
 STIEL_THODOS = 'STIEL_THODOS'
 LUCAS_GAS = 'LUCAS_GAS'
 
-viscosity_gas_methods = [COOLPROP, DIPPR, VDI_TABULAR, GHARAGHEIZI, YOON_THODOS,
+viscosity_gas_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_TABULAR, GHARAGHEIZI, YOON_THODOS,
                          STIEL_THODOS, LUCAS_GAS]
 '''Holds all low-pressure methods available for the ViscosityGas
 class, for use in iterating over them.'''
@@ -1164,7 +1164,7 @@ class ViscosityGas(TPDependentProperty):
         CSP method, described in :obj:`Stiel_Thodos`.
     **LUCAS_GAS**:
         CSP method, described in :obj:`lucas_gas`.
-    **DIPPR**:
+    **DIPPR_PERRY_8E**:
         A collection of 345 coefficient sets from the DIPPR database published
         openly in [3]_. Provides temperature limits for all its fluids. 
         :obj:`thermo.dippr.EQ102` is used for its fluids.
@@ -1221,7 +1221,7 @@ class ViscosityGas(TPDependentProperty):
     property_max = 1E-3
     '''Maximum valid value of gas viscosity. Might be too high, or too low.'''
 
-    ranked_methods = [COOLPROP, DIPPR, VDI_TABULAR, GHARAGHEIZI, YOON_THODOS,
+    ranked_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_TABULAR, GHARAGHEIZI, YOON_THODOS,
                       STIEL_THODOS, LUCAS_GAS]
     '''Default rankings of the low-pressure methods.'''
     ranked_methods_P = [COOLPROP]
@@ -1315,7 +1315,7 @@ class ViscosityGas(TPDependentProperty):
             self.CP_f = coolprop_fluids[self.CASRN]
             Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tmax)
         if self.CASRN in Perrys2_312.index:
-            methods.append(DIPPR)
+            methods.append(DIPPR_PERRY_8E)
             _, C1, C2, C3, C4, self.Perrys2_312_Tmin, self.Perrys2_312_Tmax = _Perrys2_312_values[Perrys2_312.index.get_loc(self.CASRN)].tolist()
             self.Perrys2_312_coeffs = [C1, C2, C3, C4]
             Tmins.append(self.Perrys2_312_Tmin); Tmaxs.append(self.Perrys2_312_Tmax)
@@ -1357,7 +1357,7 @@ class ViscosityGas(TPDependentProperty):
             mu = Gharagheizi_gas_viscosity(T, self.Tc, self.Pc, self.MW)
         elif method == COOLPROP:
             mu = CoolProp_T_dependent_property(T, self.CASRN, 'V', 'g')
-        elif method == DIPPR:
+        elif method == DIPPR_PERRY_8E:
             mu = EQ102(T, *self.Perrys2_312_coeffs)
         elif method == YOON_THODOS:
             mu = Yoon_Thodos(T, self.Tc, self.Pc, self.MW)
@@ -1400,7 +1400,7 @@ class ViscosityGas(TPDependentProperty):
             if T < 0 or T > 5000:
                 # Arbitrary limit
                 validity = False
-        elif method == DIPPR:
+        elif method == DIPPR_PERRY_8E:
             if T < self.Perrys2_312_Tmin or T > self.Perrys2_312_Tmax:
                 return False
         elif method == GHARAGHEIZI:
