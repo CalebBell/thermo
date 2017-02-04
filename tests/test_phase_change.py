@@ -27,8 +27,8 @@ from thermo.phase_change import *
 from thermo.miscdata import CRC_inorganic_data, CRC_organic_data
 from thermo.identifiers import checkCAS
 
-def test_Hvap():
 
+def test_Clapeyron():
     Hvap = Clapeyron(294.0, 466.0, 5.55E6)
     assert_allclose(Hvap, 26512.354585061985)
 
@@ -36,35 +36,50 @@ def test_Hvap():
     Hvap = Clapeyron(264.0, 466.0, 5.55E6, 0.98, 5E4)
     assert_allclose(Hvap, 23370.939650326898)
 
+    
+def test_Pitzer():
     Hvap = Pitzer(452, 645.6, 0.35017)
     assert_allclose(Hvap, 36696.736640106414)
 
+    
+def test_SMK():
     Hvap = SMK(553.15, 751.35, 0.302)
     assert_allclose(Hvap, 39866.17647797959)
 
+    
+def test_MK():
     # Problem in article for SMK function.
     Hv1 = MK(553.15, 751.35, 0.302)
     # data in [1]_., should give 26.43 KJ/mol
     Hv2 = MK(298.15, 469.69, 0.2507)
     assert_allclose([Hv1, Hv2], [38727.993546377205, 25940.979741133997])
 
+    
+def test_Velasco():
     Hv1 = Velasco(553.15, 751.35, 0.302)
     Hv2 = Velasco(333.2, 476.0, 0.5559)
     assert_allclose([Hv1, Hv2], [39524.23765810736, 33299.41734936356])
 
-def test_Hvap_Tb():
+
+def test_Riedel():
     # same problem as in Perry's examples
     Hv1 = Riedel(294.0, 466.0, 5.55E6)
     # Pyridine, 0.0% err vs. exp: 35090 J/mol; from Poling [2]_.
     Hv2 = Riedel(388.4, 620.0, 56.3E5)
     assert_allclose([Hv1, Hv2], [26828.58131384367, 35089.78989646058])
 
+    
+def test_Chen():
     Hv1 = Chen(294.0, 466.0, 5.55E6)
     assert_allclose(Hv1, 26705.893506174052)
 
+    
+def test_Liu():
     Hv1 = Liu(294.0, 466.0, 5.55E6)
     assert_allclose(Hv1, 26378.566319606754)
 
+    
+def test_Vetere():
     Hv1 = Vetere(294.0, 466.0, 5.55E6)
     assert_allclose(Hv1, 26363.430021286465)
 

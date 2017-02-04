@@ -175,8 +175,8 @@ def TRC_Antoine_extended(T, Tc, to, A, B, C, n, E, F):
     .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
        New York: McGraw-Hill Professional, 2000.
     '''
-    x = max((T - to - 273.15)/Tc, 0)
-    return 10**(A - B/(T+C) + 0.43429*x**n + E*x**8 + F*x**12)
+    x = max((T - to - 273.15)/Tc, 0.)
+    return 10.**(A - B/(T+C) + 0.43429*x**n + E*x**8 + F*x**12)
 
 
 def Wagner_original(T, Tc, Pc, a, b, c, d):

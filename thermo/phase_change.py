@@ -45,10 +45,32 @@ from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluid
 
 folder = os.path.join(os.path.dirname(__file__), 'Phase Change')
 
-### Boiling Point at 1 atm
 
 Yaws_data = pd.read_csv(os.path.join(folder,
 'Yaws Boiling Points.csv'), sep='\t', index_col=0)
+
+Tm_ON_data = pd.read_csv(os.path.join(folder, 'OpenNotebook Melting Points.csv'),
+                         sep='\t', index_col=0)
+
+GharagheiziHvap_data = pd.read_csv(os.path.join(folder, 'Ghazerati Appendix Vaporization Enthalpy.csv'),
+                                   sep='\t', index_col=0)
+
+CRCHvap_data = pd.read_csv(os.path.join(folder, 'CRC Handbook Heat of Vaporization.csv'),
+                           sep='\t', index_col=0)
+
+CRCHfus_data = pd.read_csv(os.path.join(folder, 'CRC Handbook Heat of Fusion.csv'),
+                                    sep='\t', index_col=0)
+
+GharagheiziHsub_data = pd.read_csv(os.path.join(folder, 'Ghazerati Appendix Sublimation Enthalpy.csv'),
+                                    sep='\t', index_col=0)
+
+# Oops, forgot the citical temperatures
+Perrys2_150 = pd.read_csv(os.path.join(folder, 'Table 2-150 Heats of Vaporization of Inorganic and Organic Liquids.csv'),
+                          sep='\t', index_col=0)
+_Perrys2_150_values = Perrys2_150.values
+
+
+### Boiling Point at 1 atm
 
 CRC_ORG = 'CRC_ORG'
 CRC_INORG = 'CRC_INORG'
@@ -148,25 +170,21 @@ def Tb(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=[PSAT_DEFINITIO
         Method = list_methods()[0]
 
     if Method == CRC_INORG:
-        _Tb = float(CRC_inorganic_data.at[CASRN, 'Tb'])
+        return float(CRC_inorganic_data.at[CASRN, 'Tb'])
     elif Method == CRC_ORG:
-        _Tb = float(CRC_organic_data.at[CASRN, 'Tb'])
+        return float(CRC_organic_data.at[CASRN, 'Tb'])
     elif Method == YAWS:
-        _Tb = float(Yaws_data.at[CASRN, 'Tb'])
+        return float(Yaws_data.at[CASRN, 'Tb'])
     elif Method == PSAT_DEFINITION:
-        _Tb = VaporPressure(CASRN=CASRN).solve_prop(101325.)
+        return VaporPressure(CASRN=CASRN).solve_prop(101325.)
     elif Method == NONE:
         return None
     else:
         raise Exception('Failure in in function')
-    return _Tb
 
 
 ### Melting Point
 
-
-Tm_ON_data = pd.read_csv(os.path.join(folder, 'OpenNotebook Melting Points.csv'),
-                         sep='\t', index_col=0)
 
 OPEN_NTBKM = 'OPEN_NTBKM'
 
@@ -255,16 +273,15 @@ def Tm(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=[]):
         Method = list_methods()[0]
 
     if Method == OPEN_NTBKM:
-        _Tm = float(Tm_ON_data.at[CASRN, 'Tm'])
+        return float(Tm_ON_data.at[CASRN, 'Tm'])
     elif Method == CRC_INORG:
-        _Tm = float(CRC_inorganic_data.at[CASRN, 'Tm'])
+        return float(CRC_inorganic_data.at[CASRN, 'Tm'])
     elif Method == CRC_ORG:
-        _Tm = float(CRC_organic_data.at[CASRN, 'Tm'])
+        return float(CRC_organic_data.at[CASRN, 'Tm'])
     elif Method == NONE:
-        _Tm = None
+        return None
     else:
         raise Exception('Failure in in function')
-    return _Tm
 
 
 ### Enthalpy of Vaporization at T
@@ -320,8 +337,7 @@ def Clapeyron(T, Tc, Pc, dZ=1, Psat=101325):
        New York: McGraw-Hill Professional, 2000.
     '''
     Tr = T/Tc
-    Hvap = R*T*dZ*log(Pc/Psat)/(1-Tr)
-    return Hvap
+    return R*T*dZ*log(Pc/Psat)/(1. - Tr)
 
 
 def Pitzer(T, Tc, omega):
@@ -379,8 +395,7 @@ def Pitzer(T, Tc, omega):
        Eighth Edition. McGraw-Hill Professional, 2007.
     '''
     Tr = T/Tc
-    Hvap = R*Tc * (7.08*(1-Tr)**0.354 + 10.95*omega*(1-Tr)**0.456)
-    return Hvap
+    return R*Tc * (7.08*(1. - Tr)**0.354 + 10.95*omega*(1. - Tr)**0.456)
 
 
 def SMK(T, Tc, omega):
@@ -466,16 +481,15 @@ def SMK(T, Tc, omega):
     B21 = 19.10458
     B31 = -2.795660
 
-    tau = 1.-T/Tc
-    L0 = A10*tau**(1/3.) + A20*tau**(5/6.) + A30*tau**(1-1/8.+1/3.) + \
+    tau = 1. - T/Tc
+    L0 = A10*tau**(1/3.) + A20*tau**(5/6.) + A30*tau**(1-1/8. + 1/3.) + \
         B10*tau + B20*tau**2 + B30*tau**3
 
-    L1 = A11*tau**(1/3.) + A21*tau**(5/6.0) + A31*tau**(1-1/8.+1/3.) + \
+    L1 = A11*tau**(1/3.) + A21*tau**(5/6.0) + A31*tau**(1-1/8. + 1/3.) + \
         B11*tau + B21*tau**2 + B31*tau**3
 
     domega = (omega - omegaR1)/(omegaR2 - omegaR1)
-    _hvap = R*Tc*(L0 + domega*L1)
-    return _hvap
+    return R*Tc*(L0 + domega*L1)
 
 
 def MK(T, Tc, omega):
@@ -538,7 +552,7 @@ def MK(T, Tc, omega):
           [0.4858, -145.12, 160.05],
           [-1.0880, 74.049, -50.711]]
 
-    tau = 1.-T/Tc
+    tau = 1. - T/Tc
     H0 = (bs[0][0]*tau**(0.3333) + bs[1][0]*tau**(0.8333) + bs[2][0]*tau**(1.2083) +
     bs[3][0]*tau + bs[4][0]*tau**(2) + bs[5][0]*tau**(3))*R*Tc
 
@@ -548,8 +562,7 @@ def MK(T, Tc, omega):
     H2 = (bs[0][2]*tau**(0.3333) + bs[1][2]*tau**(0.8333) + bs[2][2]*tau**(1.2083) +
     bs[3][2]*tau + bs[4][2]*tau**(2) + bs[5][2]*tau**(3))*R*Tc
 
-    _Hvap = H0 + omega*H1 + omega**2*H2
-    return _Hvap
+    return H0 + omega*H1 + omega**2*H2
 
 
 def Velasco(T, Tc, omega):
@@ -598,8 +611,7 @@ def Velasco(T, Tc, omega):
        Chemical Thermodynamics 85 (June 2015): 68-76.
        doi:10.1016/j.jct.2015.01.011.
     '''
-    _Hvap = (7.2729 + 10.4962*omega + 0.6061*omega**2)*(1-T/Tc)**0.38*R*Tc
-    return _Hvap
+    return (7.2729 + 10.4962*omega + 0.6061*omega**2)*(1-T/Tc)**0.38*R*Tc
 
 
 ### Enthalpy of Vaporization at Normal Boiling Point.
@@ -659,8 +671,7 @@ def Riedel(Tb, Tc, Pc):
     '''
     Pc = Pc/1E5  # Pa to bar
     Tbr = Tb/Tc
-    _Hvap = 1.093*Tb*R*(log(Pc)-1.013)/(0.93-Tbr)
-    return _Hvap
+    return 1.093*Tb*R*(log(Pc) - 1.013)/(0.93 - Tbr)
 
 
 def Chen(Tb, Tc, Pc):
@@ -713,8 +724,7 @@ def Chen(Tb, Tc, Pc):
     '''
     Tbr = Tb/Tc
     Pc = Pc/1E5  # Pa to bar
-    _Hvap = R*Tb*(3.978*Tbr - 3.958 + 1.555*log(Pc))/(1.07-Tbr)
-    return _Hvap
+    return R*Tb*(3.978*Tbr - 3.958 + 1.555*log(Pc))/(1.07 - Tbr)
 
 
 def Liu(Tb, Tc, Pc):
@@ -769,9 +779,8 @@ def Liu(Tb, Tc, Pc):
        184, no. 1 (February 1, 2001): 221-28. doi:10.1080/00986440108912849.
     '''
     Tbr = Tb/Tc
-    _Hvap = R*Tb*(Tb/220.)**0.0627*(1 - Tbr)**0.38*log(Pc/101325.) \
+    return R*Tb*(Tb/220.)**0.0627*(1. - Tbr)**0.38*log(Pc/101325.) \
         / (1 - Tbr + 0.38*Tbr*log(Tbr))
-    return _Hvap
 
 
 def Vetere(Tb, Tc, Pc, F=1):
@@ -829,17 +838,10 @@ def Vetere(Tb, Tc, Pc, F=1):
     taub = 1-Tb/Tc
     Pc = Pc/1E5
     term = taub**0.38*(log(Pc)-0.513 + 0.5066/Pc/Tbr**2) / (taub + F*(1-taub**0.38)*log(Tbr))
-    Hvap = R*Tb*term
-    return Hvap
+    return R*Tb*term
 
 
 ### Enthalpy of Vaporization at STP.
-
-GharagheiziHvap_data = pd.read_csv(os.path.join(folder, 'Ghazerati Appendix Vaporization Enthalpy.csv'),
-                                   sep='\t', index_col=0)
-
-CRCHvap_data = pd.read_csv(os.path.join(folder, 'CRC Handbook Heat of Vaporization.csv'),
-                           sep='\t', index_col=0)
 
 
 ### Enthalpy of Vaporization adjusted for T
@@ -864,6 +866,7 @@ SIVARAMAN_MAGEE_KOBAYASHI = 'SIVARAMAN_MAGEE_KOBAYASHI'
 VELASCO = 'VELASCO'
 PITZER = 'PITZER'
 CLAPEYRON = 'CLAPEYRON'
+DIPPR_PERRY_8E = 'DIPPR_PERRY_8E'
 
 RIEDEL = 'RIEDEL'
 CHEN = 'CHEN'
@@ -1242,22 +1245,6 @@ class EnthalpyVaporization(TDependentProperty):
 
 
 ### Heat of Fusion
-#_CRCHfusDict = {}
-#with open(os.path.join(folder,'CRC Handbook Heat of Fusion.csv')) as f:
-#    '''Read in a dict of Enthalpies of Fusion for approximately 1200
-#    chemicals from the reference:
-#    Haynes, W.M., Thomas J. Bruno, and David R. Lide. CRC Handbook of Chemistry
-#    and Physics. [Boca Raton, FL]: CRC press, 2014.
-#    '''
-#    next(f)
-#    for line in f:
-#        values = to_num(line.strip('\n').split('\t'))
-#        (CASRN, _name, _formula, _Tm, _Hfus) = values
-#        _CRCHfusDict[CASRN] = {"Name": _name,  "Hfus at melting point": _Hfus,
-#        "Formula": _formula, "Tm":_Tm}
-
-CRCHfus_data = pd.read_csv(os.path.join(folder, 'CRC Handbook Heat of Fusion.csv'),
-                                    sep='\t', index_col=0)
 
 
 def Hfus(T=298.15, P=101325, MW=None, AvailableMethods=False, Method=None, CASRN=''):  # pragma: no cover
@@ -1296,28 +1283,6 @@ def Hfus(T=298.15, P=101325, MW=None, AvailableMethods=False, Method=None, CASRN
 
 
 ### Heat of Sublimation
-
-#_GharagheiziHSubDict = {}
-#
-#with open(os.path.join(folder,'Ghazerati Appendix Sublimation Enthalpy.csv')) as f:
-#    '''Read in a dict of Enthalpies of Sublimation for organic chemicals
-#    from the article:
-#
-#    Gharagheizi, Farhad, Poorandokht Ilani-Kashkouli, William E. Acree Jr.,
-#    Amir H. Mohammadi, and Deresh Ramjugernath. "A Group Contribution Model for
-#    Determining the Sublimation Enthalpy of Organic Compounds at the Standard
-#    Reference Temperature of 298 K." Fluid Phase Equilibria 354
-#    (September 25, 2013): 265-85. doi:10.1016/j.fluid.2013.06.046.
-#    '''
-#    next(f)
-#    for line in f:
-#        values = to_num(line.strip('\n').split('\t'))
-#        (CASRN, _name, _Hsub, _Hsub_Err) = values
-#        _GharagheiziHSubDict[CASRN] = {"Name": _name,  "Hsub": _Hsub,
-#        "Hsub error": _Hsub_Err}
-
-GharagheiziHsub_data = pd.read_csv(os.path.join(folder, 'Ghazerati Appendix Sublimation Enthalpy.csv'),
-                                    sep='\t', index_col=0)
 
 
 def Hsub(T=298.15, P=101325, MW=None, AvailableMethods=False, Method=None, CASRN=''):  # pragma: no cover
