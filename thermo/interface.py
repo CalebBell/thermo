@@ -620,7 +620,7 @@ def Aleem(T, MW, Tb, rhol, Hvap_Tb, Cpl):
     --------
     Methane at 90 K
     
-    >>> Aleem(T=90, MW=16.04246, Tb=111.6, rhol=458.7, Hvap_Tb=510870., 
+    >>> Aleem(T=90, MW=16.04246, Tb=111.6, rhol=458.7, Hvap_Tb=510870.,
     ... Cpl=2465.)
     0.01669970221165325
 
@@ -631,7 +631,6 @@ def Aleem(T, MW, Tb, rhol, Hvap_Tb, Cpl):
        Liquids." Petroleum Science and Technology 33, no. 23-24 (December 17, 
        2015): 1908-15. doi:10.1080/10916466.2015.1110593.
     '''
-    print('T, rhol, Cpl', T, rhol, Cpl)
     MW = MW/1000. # Use kg/mol for consistency with the other units
     sphericity = 1. - 0.0047*MW + 6.8E-6*MW*MW
     return sphericity*MW**(1/3.)/(6.*N_A**(1/3.))*rhol**(2/3.)*(Hvap_Tb + Cpl*(Tb-T))
@@ -888,7 +887,12 @@ class SurfaceTension(TDependentProperty):
             if self.Cpl_Tb:
                 methods.append(ALEEM)
                 # Tmin and Tmax for this method is known
-                Tmins.append(0.0); Tmaxs.append(self.Tb + self.Hvap_Tb/self.Cpl_Tb)
+                Tmax_possible = self.Tb + self.Hvap_Tb/self.Cpl_Tb
+                # This method will ruin solve_prop as it is typically valid
+                # well above Tc. If Tc is available, limit it to that.
+                if self.Tc:
+                    Tmax_possible = min(self.Tc, Tmax_possible)
+                Tmins.append(0.0); Tmaxs.append(Tmax_possible)
         self.all_methods = set(methods)
         if Tmins and Tmaxs:
             # Note: All methods work right down to 0 K.
