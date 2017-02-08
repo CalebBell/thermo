@@ -337,7 +337,7 @@ CASRN	Name	Data Type	Uncertainty	Tmin	Tmax	A1-spline	A2-spline	A3-spline	A4-spli
 1454-85-9 	1-Heptadecanol 	p	III	331.1	368.8	20.22	17.6628	0	0	0	0	0	0	0	0	
 78-93-3 	2-Butanone 	p	II	190.8	353.1	18.9452	-1.36988	0.374249	0.0344146	0	0	0	0	0	0	
 78-93-3 	2-Butanone 	sat	II	190.8	353.1	19.2369	-1.73477	0.524479	0.0140535	0	0	0	0	0	0	
-78-93-3 	2-Butanone 	p	II	190.8	353.1	0	0	0	0	44.4243	2.85404	14.5175	48.1464	-12.2703	65.5486	
+78-93-3 	2-Butanone 	p	II	190.8	353.1	0	0	0	0	44.4243	2.85404	14.5175	48.1464	-12.2703	65.5486	536.78
 108-94-1 	Cyclohexanone 	C	III	244.8	308.1	17.8872	-2.43413	1.19516	0	0	0	0	0	0	0	536.78
 119-61-9 	Diphenyl methanone 	C	IV	271.4	439.7	17.4521	5.79223	0	0	0	0	0	0	0	0	
 123-73-9 	共2E兲-2-Butenal 	sat	II	300	440	0.3536	10.3196	-2.20235	0.208679	0	0	0	0	0	0	
@@ -352,7 +352,7 @@ CASRN	Name	Data Type	Uncertainty	Tmin	Tmax	A1-spline	A2-spline	A3-spline	A4-spli
 700-58-3 	Tricyclo关3.3.1.13,7兴decanone 	p	V	557.5	610	-2.85163	8.24335	0	0	0	0	0	0	0	0	
 75-98-9 	2,2-Dimethylpropanoic acid 	p	III	309	440.6	-0.234695	7.92693	0	0	0	0	0	0	0	0	
 75-98-9 	2,2-Dimethylpropanoic acid 	sat	III	309	440.6	-0.234695	7.92693	0	0	0	0	0	0	0	0	
-75-98-9 	2,2-Dimethylpropanoic acid 	p	III	309	440.6	0	0	0	-4.43164	0.315844	-6.81471	71.777	-34.7331	6.00125	633	
+75-98-9 	2,2-Dimethylpropanoic acid 	p	III	309	440.6	0	0	0	0	-4.43164	0.315844	-6.81471	71.777	-34.7331	6.00125	633
 1759-53-1 	Cyclopropane carboxylic acid 	sat	III	293	458	-1.55	6	0	0	0	0	0	0	0	0	
 1759-53-1 	Cyclopropane carboxylic acid 	C	II	293	458	0	0	0	0	-0.000274214	0.00000000046694	-1.5501	40.2602	-0.00073885	0.00000000451977	671
 110-94-1 	Pentanedioic acid 	sat	III	371	483	22.8	3.6	0	0	0	0	0	0	0	0	
@@ -616,7 +616,6 @@ CASRN	Name	Data Type	Uncertainty	Tmin	Tmax	A1-spline	A2-spline	A3-spline	A4-spli
 111-84-2	Nonane 	p	II	225	300	123.776	-101.511	36.1333	-4.07916	0	0	0	0	0	0	
 111-84-2	Nonane 	p	III	300	373.1	-83.134	105.399	-32.8368	3.58418	0	0	0	0	0	0	
 111-84-2	Nonane 	p	III	225	373.1	0	0	0	0	16.1014	13.6656	15.5105	4.74287	0	0	594.9
-124-18-5	Decane	p	III	247	462.4	0	0	0	0	-8.48603	2.0209	24.1615	8.90849	0	0	617.65
 124-18-5	Decane	p	III	247	462.4	0	0	0	0	-8.48603	2.0209	24.1615	8.90849	0	0	617.65
 4390-04-9	2,2,4,4,6,8,8-Heptamethylnonane 	p	IV	298.1	298.1	54.8662	0	0	0	0	0	0	0	0	0	
 629-78-7	Heptadecane	C	II	299	401.1	61.7907	-5.83983	2.22416	0	0	0	0	0	0	0	

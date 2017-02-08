@@ -31,6 +31,7 @@ __all__ = ['Poling_data', 'TRC_gas_data', '_PerryI', 'CRC_standard_data',
            'Zabransky_quasi_polynomial', 'Zabransky_quasi_polynomial_integral',
            'Zabransky_quasi_polynomial_integral_over_T', 'Zabransky_cubic', 
            'Zabransky_cubic_integral', 'Zabransky_cubic_integral_over_T',
+           'Zabransky_quasipolynomial', 'Zabransky_spline',
            'ZABRANSKY_TO_DICT', 'heat_capacity_liquid_methods', 
            'HeatCapacityLiquid', 'Lastovka_solid', 'Lastovka_solid_integral', 
            'Lastovka_solid_integral_over_T', 'heat_capacity_solid_methods', 
@@ -1177,6 +1178,25 @@ def _append2dict(maindict, newdict):
         data.extend([newdict])
     return data
 
+def _ZabranskyDictChoser(T, diclist, strict=False):
+    ans = None
+    if len(diclist) == 1: # one entry
+            ans = diclist[0]
+    else:
+        for data in diclist:
+            if T < data["Tmin"]: # multiple entries, under Tmin
+                ans = data
+                break
+            elif T >= data["Tmin"] and T <= data["Tmax"]: # Tmin < T < Tmax
+                ans = data
+                break
+        if not ans:
+            ans = diclist[-1] # last entry; T > Tmax, last case
+
+#    if strict:
+#        if T < ans["Tmin"] or T > ans["Tmax"]: # either side error
+#            ans = None
+    return ans
 
 with open(os.path.join(folder, 'Zabransky.csv'), encoding='utf-8') as f:
     next(f)
@@ -1207,6 +1227,319 @@ with open(os.path.join(folder, 'Zabransky.csv'), encoding='utf-8') as f:
                 _ZabranskyIsop[CASRN] = _append2dict((_ZabranskyIsop[CASRN] if CASRN in _ZabranskyIsop else []), _ZabranskyDict)
 
 
+
+
+class Zabransky_quasipolynomial(object):
+    r'''Quasi-polynomial object for calculating the heat capacity of a chemical.
+    Implements the enthalpy and entropy integrals as well.
+
+    .. math::
+        \frac{C}{R}=A_1\ln(1-T_r) + \frac{A_2}{1-T_r}
+        + \sum_{j=0}^m A_{j+3} T_r^j
+
+    Parameters
+    ----------
+    CAS : str
+        CAS number.
+    name : str
+        Name of the chemical as given in [1]_.
+    uncertainty : str
+        Uncertainty class of the heat capacity as given in [1]_.
+    Tmin : float
+        Minimum temperature any experimental data was available at.
+    Tmax : float
+        Maximum temperature any experimental data was available at.
+    Tc : float
+        Critical temperature of the chemical, as used in the formula.
+    coeffs : list[float]
+        Six coefficients for the equation.
+
+    References
+    ----------
+    .. [1] Zabransky, M., V. Ruzicka Jr, V. Majer, and Eugene S. Domalski.
+       Heat Capacity of Liquids: Critical Review and Recommended Values.
+       2 Volume Set. Washington, D.C.: Amer Inst of Physics, 1996.
+    '''
+    __slots__ = ['CAS', 'name', 'uncertainty', 'Tmin', 'Tmax', 'Tc', 'coeffs']
+    def __init__(self, CAS, name, uncertainty, Tmin, Tmax, Tc, coeffs):
+        self.CAS = CAS
+        '''CAS number.'''
+        self.name = name
+        '''Name of the chemical.'''
+        self.uncertainty = uncertainty
+        '''Uncertainty class of the heat capacity.'''
+        self.Tmin = Tmin
+        '''Minimum temperature any experimental data was available at.'''
+        self.Tmax = Tmax
+        '''Maximum temperature any experimental data was available at.'''
+        self.Tc = Tc 
+        '''Critical temperature of the chemical, as used in the formula.'''
+        self.coeffs = coeffs
+        '''Six coefficients for the equation.'''
+
+    def calculate(self, T):
+        r'''Method to actually calculate heat capacity as a function of 
+        temperature.
+            
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+
+        Returns
+        -------
+        Cp : float
+            Liquid heat capacity as T, [J/mol/K]
+        '''        
+        return Zabransky_quasi_polynomial(T, self.Tc, *self.coeffs)
+                                          
+    def integral(self, T1, T2):
+        r'''Method to compute the enthalpy integral of heat capacity from 
+         `T1` to `T2`.
+            
+        Parameters
+        ----------
+        T1 : float
+            Initial temperature, [K]
+        T2 : float
+            Final temperature, [K]
+            
+        Returns
+        -------
+        dH : float
+            Enthalpy difference between `T1` and `T2`, [J/mol]
+        '''        
+        return (Zabransky_quasi_polynomial_integral(T2, self.Tc, *self.coeffs)
+               - Zabransky_quasi_polynomial_integral(T2, self.Tc, *self.coeffs))
+    
+    def integral_over_T(self, T1, T2):
+        r'''Method to compute the entropy integral of heat capacity from 
+         `T1` to `T2`.
+            
+        Parameters
+        ----------
+        T1 : float
+            Initial temperature, [K]
+        T2 : float
+            Final temperature, [K]
+            
+        Returns
+        -------
+        dS : float
+            Entropy difference between `T1` and `T2`, [J/mol/K]
+        '''        
+        return (Zabransky_quasi_polynomial_integral_over_T(T2, self.Tc, *self.coeffs)
+               - Zabransky_quasi_polynomial_integral_over_T(T1, self.Tc, *self.coeffs))
+
+        
+class Zabransky_spline(object):
+    r'''Implementation of the cubic spline method presented in [1]_ for 
+    calculating the heat capacity of a chemical.
+    Implements the enthalpy and entropy integrals as well.
+
+    .. math::
+        \frac{C}{R}=\sum_{j=0}^3 A_{j+1} \left(\frac{T}{100}\right)^j
+
+    Parameters
+    ----------
+    CAS : str
+        CAS number.
+    name : str
+        Name of the chemical as in [1]_.
+    uncertainty : str
+        Uncertainty class of the heat capacity as in [1]_.
+
+        References
+    ----------
+    .. [1] Zabransky, M., V. Ruzicka Jr, V. Majer, and Eugene S. Domalski.
+       Heat Capacity of Liquids: Critical Review and Recommended Values.
+       2 Volume Set. Washington, D.C.: Amer Inst of Physics, 1996.
+    '''
+    __slots__ = ['Ts', 'coeff_sets', 'n', 'CAS', 'name', 'uncertainty']
+    def __init__(self, CAS, name, uncertainty):
+        self.CAS = CAS
+        '''CAS number.'''
+        self.name = name
+        '''Name of the chemical.'''
+        self.uncertainty = uncertainty
+        '''Uncertainty class of the heat capacity.'''
+        self.Ts = []
+        '''Temperatures at which the coefficient sets transition.'''
+        self.coeff_sets = []
+        '''Actual coefficients used to describe the chemical.'''
+        self.n = 0
+        '''Number of coefficient sets used to describe the chemical.'''
+        
+    def add_coeffs(self, Tmin, Tmax, coeffs):
+        '''Called internally during the parsing of the Zabransky database, to
+        add coefficients as they are read one per line'''
+        self.n += 1
+        if not self.Ts:
+            self.Ts = [Tmin, Tmax]
+            self.coeff_sets = [coeffs]
+        else:
+            for ind, T in enumerate(self.Ts):
+                if Tmin < T:
+                    # Under an existing coefficient set - assume Tmax will come from another set
+                    self.Ts.insert(ind, Tmin) 
+                    self.coeff_sets.insert(ind, coeffs)
+                    return
+            # Must be appended to end instead
+            self.Ts.append(Tmax)
+            self.coeff_sets.append(coeffs)
+       
+    def _coeff_ind_from_T(self, T):
+        '''Determines the index at which the coefficients for the current
+        temperature are stored in `coeff_sets`.
+        '''
+        # DO NOT CHANGE
+        if self.n == 1:
+            return 0
+        for i in range(self.n):
+            if T <= self.Ts[i+1]:
+                return i
+        return self.n - 1
+
+    def calculate(self, T):
+        r'''Method to actually calculate heat capacity as a function of 
+        temperature.
+            
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+
+        Returns
+        -------
+        Cp : float
+            Liquid heat capacity as T, [J/mol/K]
+        '''        
+        return Zabransky_cubic(T, *self.coeff_sets[self._coeff_ind_from_T(T)])
+
+    def calculate_integral(self, T1, T2):
+        r'''Method to compute the enthalpy integral of heat capacity from 
+        `T1` to `T2`. Analytically integrates across the piecewise spline
+        as necessary.
+            
+        Parameters
+        ----------
+        T1 : float
+            Initial temperature, [K]
+        T2 : float
+            Final temperature, [K]
+            
+        Returns
+        -------
+        dS : float
+            Enthalpy difference between `T1` and `T2`, [J/mol/K]
+        '''        
+        # Simplify the problem so we can assume T2 >= T1
+        if T2 < T1:
+            flipped = True
+            T1, T2 = T2, T1
+        else:
+            flipped = False
+        
+        # Fastest case - only one coefficient set, occurs surprisingly often
+        if self.n == 1:
+            dH = (Zabransky_cubic_integral(T2, *self.coeff_sets[0])
+                  - Zabransky_cubic_integral(T1, *self.coeff_sets[0]))
+        else:
+            ind_T1, ind_T2 = self._coeff_ind_from_T(T1), self._coeff_ind_from_T(T2)
+            # Second fastest case - both are in the same coefficient set
+            if ind_T1 == ind_T2:
+                dH = (Zabransky_cubic_integral(T2, *self.coeff_sets[ind_T2])
+                        - Zabransky_cubic_integral(T1, *self.coeff_sets[ind_T1]))
+            # Fo through the loop if we need to - inevitably slow 
+            else:
+                dH = (Zabransky_cubic_integral(self.Ts[ind_T1], *self.coeff_sets[ind_T1])
+                      - Zabransky_cubic_integral(T1, *self.coeff_sets[ind_T1]))
+                for i in range(ind_T1, ind_T2):
+                    diff =(Zabransky_cubic_integral(self.Ts[i+1], *self.coeff_sets[i])
+                          - Zabransky_cubic_integral(self.Ts[i], *self.coeff_sets[i]))
+                    dH += diff
+                end = (Zabransky_cubic_integral(T2, *self.coeff_sets[ind_T2])
+                      - Zabransky_cubic_integral(self.Ts[ind_T2], *self.coeff_sets[ind_T2]))
+                dH += end
+        return -dH if flipped else dH
+
+    def calculate_integral_over_T(self, T1, T2):
+        r'''Method to compute the entropy integral of heat capacity from 
+        `T1` to `T2`. Analytically integrates across the piecewise spline
+        as necessary.
+            
+        Parameters
+        ----------
+        T1 : float
+            Initial temperature, [K]
+        T2 : float
+            Final temperature, [K]
+            
+        Returns
+        -------
+        dS : float
+            Entropy difference between `T1` and `T2`, [J/mol/K]
+        '''        
+        # Simplify the problem so we can assume T2 >= T1
+        if T2 < T1:
+            flipped = True
+            T1, T2 = T2, T1
+        else:
+            flipped = False
+        
+        # Fastest case - only one coefficient set, occurs surprisingly often
+        if self.n == 1:
+            dS = (Zabransky_cubic_integral_over_T(T2, *self.coeff_sets[0])
+                  - Zabransky_cubic_integral_over_T(T1, *self.coeff_sets[0]))
+        else:
+            ind_T1, ind_T2 = self._coeff_ind_from_T(T1), self._coeff_ind_from_T(T2)
+            # Second fastest case - both are in the same coefficient set
+            if ind_T1 == ind_T2:
+                dS = (Zabransky_cubic_integral_over_T(T2, *self.coeff_sets[ind_T2])
+                        - Zabransky_cubic_integral_over_T(T1, *self.coeff_sets[ind_T1]))
+            # Fo through the loop if we need to - inevitably slow 
+            else:
+                dS = (Zabransky_cubic_integral_over_T(self.Ts[ind_T1], *self.coeff_sets[ind_T1])
+                      - Zabransky_cubic_integral_over_T(T1, *self.coeff_sets[ind_T1]))
+                for i in range(ind_T1, ind_T2):
+                    diff =(Zabransky_cubic_integral_over_T(self.Ts[i+1], *self.coeff_sets[i])
+                          - Zabransky_cubic_integral_over_T(self.Ts[i], *self.coeff_sets[i]))
+                    dS += diff
+                end = (Zabransky_cubic_integral_over_T(T2, *self.coeff_sets[ind_T2])
+                      - Zabransky_cubic_integral_over_T(self.Ts[ind_T2], *self.coeff_sets[ind_T2]))
+                dS += end
+        return -dS if flipped else dS
+
+zabransky_dict_sat_s = {}
+zabransky_dict_sat_p = {}
+zabransky_dict_const_s = {}
+zabransky_dict_const_p = {}
+zabransky_dict_iso_s = {}
+zabransky_dict_iso_p = {}
+
+type_to_zabransky_dict = {('C', True): zabransky_dict_const_s, 
+                       ('C', False):   zabransky_dict_const_p,
+                       ('sat', True):  zabransky_dict_sat_s,
+                       ('sat', False): zabransky_dict_sat_p,
+                       ('p', True):    zabransky_dict_iso_s,
+                       ('p', False):   zabransky_dict_iso_p}
+
+                     
+with open(os.path.join(folder, 'Zabransky.csv'), encoding='utf-8') as f:
+    next(f)
+    for line in f:
+        values = to_num(line.strip('\n').split('\t'))
+        (CAS, name, Type, uncertainty, Tmin, Tmax, a1s, a2s, a3s, a4s, a1p, a2p, a3p, a4p, a5p, a6p, Tc) = values
+        spline = bool(a1s) # False if Quasypolynomial, True if spline
+        d = type_to_zabransky_dict[(Type, spline)]
+        if spline:
+            if CAS not in d:
+                d[CAS] = Zabransky_spline(CAS, name, uncertainty)
+            d[CAS].add_coeffs(Tmin, Tmax, [a1s, a2s, a3s, a4s])
+        else:
+            # No duplicates for quasipolynomials
+            d[CAS] = Zabransky_quasipolynomial(CAS, name, uncertainty, Tmin, Tmax, 
+                                           Tc, [a1p, a2p, a3p, a4p, a5p, a6p])
 
 def Zabransky_quasi_polynomial(T, Tc, a1, a2, a3, a4, a5, a6):
     r'''Calculates liquid heat capacity using the model developed in [1]_.
@@ -1333,7 +1666,7 @@ def Zabransky_quasi_polynomial_integral_over_T(T, Tc, a1, a2, a3, a4, a5, a6):
        Heat Capacity of Liquids: Critical Review and Recommended Values.
        2 Volume Set. Washington, D.C.: Amer Inst of Physics, 1996.
     '''
-    term = T-Tc
+    term = T - Tc
     logT = log(T)
     Tc2 = Tc*Tc
     Tc3 = Tc2*Tc
@@ -1402,7 +1735,7 @@ def Zabransky_cubic_integral(T, a1, a2, a3, a4):
     Examples
     --------
     >>> Zabransky_cubic_integral(298.15, 20.9634, -10.1344, 2.8253, -0.256738)
-    310.51679845520584
+    31051.679845520586
 
     References
     ----------
@@ -1411,7 +1744,7 @@ def Zabransky_cubic_integral(T, a1, a2, a3, a4):
        2 Volume Set. Washington, D.C.: Amer Inst of Physics, 1996.
     '''
     T = T/100.
-    return R*T*(T*(T*(T*a4*0.25 + a3/3.) + a2*0.5) + a1)
+    return 100*R*T*(T*(T*(T*a4*0.25 + a3/3.) + a2*0.5) + a1)
 
 
 def Zabransky_cubic_integral_over_T(T, a1, a2, a3, a4):
@@ -1449,27 +1782,6 @@ def Zabransky_cubic_integral_over_T(T, a1, a2, a3, a4):
     '''
     T = T/100.
     return R*(T*(T*(T*a4/3 + a3/2) + a2) + a1*log(T))
-
-
-def _ZabranskyDictChoser(T, diclist, strict=False):
-    ans = None
-    if len(diclist) == 1: # one entry
-            ans = diclist[0]
-    else:
-        for data in diclist:
-            if T < data["Tmin"]: # multiple entries, under Tmin
-                ans = data
-                break
-            elif T >= data["Tmin"] and T <= data["Tmax"]: # Tmin < T < Tmax
-                ans = data
-                break
-        if not ans:
-            ans = diclist[-1] # last entry; T > Tmax, last case
-
-#    if strict:
-#        if T < ans["Tmin"] or T > ans["Tmax"]: # either side error
-#            ans = None
-    return ans
 
 
 
@@ -1844,11 +2156,11 @@ class HeatCapacityLiquid(TDependentProperty):
 
     def calculate_integral(self, T1, T2, method):
         r'''Method to calculate the integral of a property with respect to
-        temperature, using a specified method. Uses SciPy's `quad` function
-        to perform the integral, with no options.
-        
-        If the calculation does not succeed, returns the actual error
-        encountered.
+        temperature, using a specified method.  Implements the 
+        analytical integrals of all available methods except for tabular data,
+        the case of multiple coefficient sets needed to encompass the temperature
+        range of any of the ZABRANSKY methods, and the CSP methods using the
+        vapor phase properties.
 
         Parameters
         ----------
@@ -1865,15 +2177,41 @@ class HeatCapacityLiquid(TDependentProperty):
             Calculated integral of the property over the given range, 
             [`units*K`]
         '''
-        return float(quad(self.calculate, T1, T2, args=(method))[0])
+        if method in [ZABRANSKY_SPLINE, ZABRANSKY_SPLINE_C, ZABRANSKY_SPLINE_SAT]:
+            data = _ZabranskyDictChoser(T1, ZABRANSKY_TO_DICT[method][self.CASRN])
+            data2 = _ZabranskyDictChoser(T2, ZABRANSKY_TO_DICT[method][self.CASRN])
+            if data['Tmin'] == data2['Tmin']:
+                H2 = Zabransky_cubic_integral(T2, data["a1s"], data["a2s"], data["a3s"], data["a4s"])
+                H1 = Zabransky_cubic_integral(T1, data["a1s"], data["a2s"], data["a3s"], data["a4s"])
+                return H2 - H1
+            else:
+                # For the case of integrating over multiple ranges of coefficients
+                return float(quad(self.calculate, T1, T2, args=(method))[0])
+        elif method in [ZABRANSKY_QUASIPOLYNOMIAL, ZABRANSKY_QUASIPOLYNOMIAL_C, ZABRANSKY_QUASIPOLYNOMIAL_SAT]:
+            data = _ZabranskyDictChoser(T1, ZABRANSKY_TO_DICT[method][self.CASRN])
+            H2 = Zabransky_quasi_polynomial_integral(T2, data["Tc"], data["a1p"], data["a2p"], data["a3p"], data["a4p"], data["a5p"], data["a6p"])
+            H1 = Zabransky_quasi_polynomial_integral(T1, data["Tc"], data["a1p"], data["a2p"], data["a3p"], data["a4p"], data["a5p"], data["a6p"])
+            return H2 - H1
+        elif method == POLING_CONST:
+            return (T2 - T1)*self.POLING_constant
+        elif method == CRCSTD:
+            return (T2 - T1)*self.CRCSTD_constant
+        elif method == DADGOSTAR_SHAW:
+            dH = (Dadgostar_Shaw_integral(T2, self.similarity_variable)
+                    - Dadgostar_Shaw_integral(T1, self.similarity_variable))
+            return property_mass_to_molar(dH, self.MW)
+        elif method in self.tabular_data or method == COOLPROP or method in [ROWLINSON_POLING, ROWLINSON_BONDI]:
+            return float(quad(self.calculate, T1, T2, args=(method))[0])
+        else:
+            raise Exception('Method not valid')
 
     def calculate_integral_over_T(self, T1, T2, method):
         r'''Method to calculate the integral of a property over temperature
-        with respect to temperature, using a specified method. Uses SciPy's 
-        `quad` function to perform the integral, with no options.
-
-        If the calculation does not succeed, returns the actual error
-        encountered.
+        with respect to temperature, using a specified method.   Implements the 
+        analytical integrals of all available methods except for tabular data,
+        the case of multiple coefficient sets needed to encompass the temperature
+        range of any of the ZABRANSKY methods, and the CSP methods using the
+        vapor phase properties.
 
         Parameters
         ----------
@@ -1890,7 +2228,33 @@ class HeatCapacityLiquid(TDependentProperty):
             Calculated integral of the property over the given range, 
             [`units`]
         '''
-        return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
+        if method in [ZABRANSKY_SPLINE, ZABRANSKY_SPLINE_C, ZABRANSKY_SPLINE_SAT]:
+            data = _ZabranskyDictChoser(T1, ZABRANSKY_TO_DICT[method][self.CASRN])
+            data2 = _ZabranskyDictChoser(T2, ZABRANSKY_TO_DICT[method][self.CASRN])
+            if data['Tmin'] == data2['Tmin']:
+                S2 = Zabransky_cubic_integral_over_T(T2, data["a1s"], data["a2s"], data["a3s"], data["a4s"])
+                S1 = Zabransky_cubic_integral_over_T(T1, data["a1s"], data["a2s"], data["a3s"], data["a4s"])
+                return S2 - S1
+            else:
+                # For the case of integrating over multiple ranges of coefficients
+                return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
+        elif method in [ZABRANSKY_QUASIPOLYNOMIAL, ZABRANSKY_QUASIPOLYNOMIAL_C, ZABRANSKY_QUASIPOLYNOMIAL_SAT]:
+            data = _ZabranskyDictChoser(T1, ZABRANSKY_TO_DICT[method][self.CASRN])
+            S2 = Zabransky_quasi_polynomial_integral_over_T(T2, data["Tc"], data["a1p"], data["a2p"], data["a3p"], data["a4p"], data["a5p"], data["a6p"])
+            S1 = Zabransky_quasi_polynomial_integral_over_T(T1, data["Tc"], data["a1p"], data["a2p"], data["a3p"], data["a4p"], data["a5p"], data["a6p"])
+            return S2 - S1
+        elif method == POLING_CONST:
+            return self.POLING_constant*log(T2/T1)
+        elif method == CRCSTD:
+            return self.CRCSTD_constant*log(T2/T1)
+        elif method == DADGOSTAR_SHAW:
+            dS = (Dadgostar_Shaw_integral_over_T(T2, self.similarity_variable)
+                    - Dadgostar_Shaw_integral_over_T(T1, self.similarity_variable))
+            return property_mass_to_molar(dS, self.MW)
+        elif method in self.tabular_data or method == COOLPROP or method in [ROWLINSON_POLING, ROWLINSON_BONDI]:
+            return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
+        else:
+            raise Exception('Method not valid')
 
 
 ### Solid

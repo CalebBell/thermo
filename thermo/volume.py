@@ -589,18 +589,17 @@ def SNM0(T, Tc, Vc, omega, delta_SRK=None):
        doi:10.1016/j.fluid.2004.06.054
     '''
     Tr = T/Tc
-    m = 0.480 + 1.574*omega - 0.176*omega**2
-    alpha_SRK = (1 + m*(1 - Tr**0.5))**2
-    tau = 1 - Tr/alpha_SRK
+    m = 0.480 + 1.574*omega - 0.176*omega*omega
+    alpha_SRK = (1. + m*(1. - Tr**0.5))**2
+    tau = 1. - Tr/alpha_SRK
 
-    rho0 = 1 + 1.169*tau**(1/3.) + 1.818*tau**(2/3.) - 2.658*tau + 2.161*tau**(4/3.)
+    rho0 = 1. + 1.169*tau**(1/3.) + 1.818*tau**(2/3.) - 2.658*tau + 2.161*tau**(4/3.)
     V0 = 1./rho0
 
     if not delta_SRK:
-        Vs = Vc*V0
+        return Vc*V0
     else:
-        Vs = Vc*V0/(1 + delta_SRK*(alpha_SRK - 1)**(1/3.))
-    return Vs
+        return Vc*V0/(1. + delta_SRK*(alpha_SRK - 1.)**(1/3.))
 
 
 def CRC_inorganic(T, rho0, k, Tm):
