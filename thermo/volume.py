@@ -1527,7 +1527,7 @@ def volume_liquid_mixture(xs=None, ws=None, Vms=None, T=None, MWs=None, MW=None,
         rho = Laliberte_density(T, ws, wCASRNs)
         _Vm = rho_to_Vm(rho, MW)
     elif Method == 'Rackett':
-        _Vm = RackettMixture(xs, T, MWs, MW, Tcs, Pcs, Zcs)
+        _Vm = Rackett_mixture(xs, T, MWs, MW, Tcs, Pcs, Zcs)
     elif Method == 'Simple/Amgat':
         _Vm = Amgat(xs, Vms)
     elif Method == 'None':

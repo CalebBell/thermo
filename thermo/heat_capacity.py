@@ -1341,7 +1341,6 @@ def Zabransky_quasi_polynomial_integral_over_T(T, Tc, a1, a2, a3, a4, a5, a6):
               + T*(T*(T*a6/(3.*Tc3) + a5/(2.*Tc2)) + a4/Tc))
 
 
-
 def Zabransky_cubic(T, a1, a2, a3, a4):
     r'''Calculates liquid heat capacity using the model developed in [1]_.
 
@@ -1843,6 +1842,55 @@ class HeatCapacityLiquid(TDependentProperty):
             raise Exception('Method not valid')
         return validity
 
+    def calculate_integral(self, T1, T2, method):
+        r'''Method to calculate the integral of a property with respect to
+        temperature, using a specified method. Uses SciPy's `quad` function
+        to perform the integral, with no options.
+        
+        If the calculation does not succeed, returns the actual error
+        encountered.
+
+        Parameters
+        ----------
+        T1 : float
+            Lower limit of integration, [K]
+        T2 : float
+            Upper limit of integration, [K]
+        method : str
+            Method for which to find the integral
+
+        Returns
+        -------
+        integral : float
+            Calculated integral of the property over the given range, 
+            [`units*K`]
+        '''
+        return float(quad(self.calculate, T1, T2, args=(method))[0])
+
+    def calculate_integral_over_T(self, T1, T2, method):
+        r'''Method to calculate the integral of a property over temperature
+        with respect to temperature, using a specified method. Uses SciPy's 
+        `quad` function to perform the integral, with no options.
+
+        If the calculation does not succeed, returns the actual error
+        encountered.
+
+        Parameters
+        ----------
+        T1 : float
+            Lower limit of integration, [K]
+        T2 : float
+            Upper limit of integration, [K]
+        method : str
+            Method for which to find the integral
+
+        Returns
+        -------
+        integral : float
+            Calculated integral of the property over the given range, 
+            [`units`]
+        '''
+        return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
 
 
 ### Solid
