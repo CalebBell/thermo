@@ -952,16 +952,58 @@ class Chemical(object): # pragma: no cover
             
             self.G = self.H - self.T*self.S if (self.H is not None and self.S is not None) else None 
             self.Gm = self.Hm - self.T*self.Sm if (self.Hm is not None and self.Sm is not None) else None 
-            
-            Vm = self.Vm
-            self.Um = self.Hm - self.P*Vm if (Vm and self.Hm is not None) else None
-            self.U = property_molar_to_mass(self.Um, self.MW) if (self.Um is not None) else None
-            
-            self.Am = self.Um - self.T*self.Sm if (self.Um is not None and self.Sm is not None) else None
-            self.A = self.U - self.T*self.S if (self.U is not None and self.S is not None) else None
         except:
             pass
 
+    @property
+    def Um(self):
+        r'''Internal energy of the chemical at its current temperature and
+        pressure, in units of J/mol. 
+        
+        This property requires that :obj:`thermo.chemical.set_thermo` ran
+        successfully to be accurate.
+        It also depends on the molar volume of the chemical at its current
+        conditions.
+        '''
+        return self.Hm - self.P*self.Vm if (self.Vm and self.Hm is not None) else None
+    
+    @property
+    def U(self):
+        r'''Internal energy of the chemical at its current temperature and
+        pressure, in units of J/kg. 
+        
+        This property requires that :obj:`thermo.chemical.set_thermo` ran
+        successfully to be accurate.
+        It also depends on the molar volume of the chemical at its current
+        conditions.
+        '''
+        return property_molar_to_mass(self.Um, self.MW) if (self.Um is not None) else None
+    
+    @property
+    def Am(self):
+        r'''Helmholtz energy of the chemical at its current temperature and
+        pressure, in units of J/mol. 
+        
+        This property requires that :obj:`thermo.chemical.set_thermo` ran
+        successfully to be accurate.
+        It also depends on the molar volume of the chemical at its current
+        conditions.
+        '''
+        return self.Um - self.T*self.Sm if (self.Um is not None and self.Sm is not None) else None
+      
+    @property
+    def A(self):
+        r'''Helmholtz energy of the chemical at its current temperature and
+        pressure, in units of J/kg. 
+        
+        This property requires that :obj:`thermo.chemical.set_thermo` ran
+        successfully to be accurate.
+        It also depends on the molar volume of the chemical at its current
+        conditions.
+        '''
+        return self.U - self.T*self.S if (self.U is not None and self.S is not None) else None
+        
+        
     ### Temperature independent properties - calculate lazily
     @property
     def charge(self):
