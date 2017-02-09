@@ -2060,6 +2060,13 @@ class TDependentProperty(object):
         derivative : float
             Calculated derivative property, [`units/K^order`]
         '''
+        if self.method:
+            # retest within range
+            if self.test_method_validity(T, self.method):
+                try:
+                    return self.calculate_derivative(T, self.method, order)
+                except:  # pragma: no cover
+                    pass
         sorted_valid_methods = self.select_valid_methods(T)
         for method in sorted_valid_methods:
             try:
@@ -2123,7 +2130,16 @@ class TDependentProperty(object):
             Calculated integral of the property over the given range, 
             [`units*K`]
         '''
-        sorted_valid_methods = self.select_valid_methods(0.5*(T1+T2))
+        Tavg = 0.5*(T1+T2)
+        if self.method:
+            # retest within range
+            if self.test_method_validity(Tavg, self.method):
+                try:
+                    return self.calculate_integral(T1, T2, self.method)
+                except:  # pragma: no cover
+                    pass
+                
+        sorted_valid_methods = self.select_valid_methods(Tavg)
         for method in sorted_valid_methods:
             try:
                 return self.calculate_integral(T1, T2, method)
@@ -2186,7 +2202,16 @@ class TDependentProperty(object):
             Calculated integral of the property over the given range, 
             [`units`]
         '''
-        sorted_valid_methods = self.select_valid_methods(T1)
+        Tavg = 0.5*(T1+T2)
+        if self.method:
+            # retest within range
+            if self.test_method_validity(Tavg, self.method):
+                try:
+                    return self.calculate_integral_over_T(T1, T2, self.method)
+                except:  # pragma: no cover
+                    pass
+                
+        sorted_valid_methods = self.select_valid_methods(Tavg)
         for method in sorted_valid_methods:
             try:
                 return self.calculate_integral_over_T(T1, T2, method)
