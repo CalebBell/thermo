@@ -362,7 +362,7 @@ def test_HeatCapacityLiquid_integrals():
     dH = tol.calculate_integral(200, 300, ROWLINSON_BONDI)
     assert_allclose(dH, 17161.365551776624)
     
-    dH = tol.calculate_integral(200, 300, ZABRANSKY_SPLINE)
+    dH = tol.calculate_integral(200, 300, ZABRANSKY_SPLINE_C)
     assert_allclose(dH, 14588.045715211323)
     
     # Test over different coefficient sets
@@ -372,13 +372,13 @@ def test_HeatCapacityLiquid_integrals():
     dH = tol.calculate_integral(200, 300, ZABRANSKY_SPLINE_SAT)
     assert_allclose(dH, 14588.104262865752)
     
-    dH = tol.calculate_integral(200, 300, ZABRANSKY_QUASIPOLYNOMIAL)
+    dH = tol.calculate_integral(200, 300, ZABRANSKY_QUASIPOLYNOMIAL_C)
     assert_allclose(dH, 14662.026406892926)
     
-    dH = propylbenzene.calculate_integral(200, 300, ZABRANSKY_QUASIPOLYNOMIAL_C)
+    dH = propylbenzene.calculate_integral(200, 300, ZABRANSKY_QUASIPOLYNOMIAL)
     assert_allclose(dH, 19863.93768123914)
     
-    dH = propylbenzene.calculate_integral(200, 300, ZABRANSKY_SPLINE_C)
+    dH = propylbenzene.calculate_integral(200, 300, ZABRANSKY_SPLINE)
     assert_allclose(dH, 19865.17965271845)
     
     dH = ctp.calculate_integral(200, 300, ZABRANSKY_QUASIPOLYNOMIAL_SAT)
@@ -400,10 +400,10 @@ def test_HeatCapacityLiquid_integrals():
     dS = tol.calculate_integral_over_T(200, 300, ROWLINSON_BONDI)
     assert_allclose(dS, 69.73749349887285)
     
-    dS = tol.calculate_integral_over_T(200, 300, ZABRANSKY_SPLINE)
+    dS = tol.calculate_integral_over_T(200, 300, ZABRANSKY_SPLINE_C)
     assert_allclose(dS, 58.866372687623326)
     
-    dS = tol.calculate_integral_over_T(200, 300, ZABRANSKY_QUASIPOLYNOMIAL)
+    dS = tol.calculate_integral_over_T(200, 300, ZABRANSKY_QUASIPOLYNOMIAL_C)
     assert_allclose(dS, 59.169972919442074)
     
     dS = tol.calculate_integral_over_T(200, 300, ZABRANSKY_SPLINE_SAT)
@@ -412,10 +412,10 @@ def test_HeatCapacityLiquid_integrals():
     dS = tol.calculate_integral_over_T(200, 500, ZABRANSKY_SPLINE_SAT)
     assert_allclose(dS, 154.94761329230238)
     
-    dS = propylbenzene.calculate_integral_over_T(200, 300, ZABRANSKY_QUASIPOLYNOMIAL_C)
+    dS = propylbenzene.calculate_integral_over_T(200, 300, ZABRANSKY_QUASIPOLYNOMIAL)
     assert_allclose(dS, 80.13490411695314)
     
-    dS = propylbenzene.calculate_integral_over_T(200, 300, ZABRANSKY_SPLINE_C)
+    dS = propylbenzene.calculate_integral_over_T(200, 300, ZABRANSKY_SPLINE)
     assert_allclose(dS, 80.13634158499711)
 
     dS = ctp.calculate_integral_over_T(200, 300, ZABRANSKY_QUASIPOLYNOMIAL_SAT)

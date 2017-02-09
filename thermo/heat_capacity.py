@@ -1154,81 +1154,6 @@ def Dadgostar_Shaw_integral_over_T(T, similarity_variable):
     return S*1000. # J/g/K to J/kg/K
 
 
-_ZabranskySats = {}
-_ZabranskyConsts = {}
-_ZabranskyIsos = {}
-
-_ZabranskySatp = {}
-_ZabranskyConstp = {}
-_ZabranskyIsop = {}
-
-
-def _append2dict(maindict, newdict):
-    '''
-    Inputs: Dict entry or []; and the dict type
-    '''
-    data = None
-    for datum in maindict:  # list of dicts
-        if newdict["Tmin"] < datum["Tmin"]:
-            data = maindict  # list of dicts
-            data.insert(data.index(datum), newdict)
-            break
-    if not data:  # Run if Tmin never under Tmins in dict (put at end)
-        data = maindict
-        data.extend([newdict])
-    return data
-
-def _ZabranskyDictChoser(T, diclist, strict=False):
-    ans = None
-    if len(diclist) == 1: # one entry
-            ans = diclist[0]
-    else:
-        for data in diclist:
-            if T < data["Tmin"]: # multiple entries, under Tmin
-                ans = data
-                break
-            elif T >= data["Tmin"] and T <= data["Tmax"]: # Tmin < T < Tmax
-                ans = data
-                break
-        if not ans:
-            ans = diclist[-1] # last entry; T > Tmax, last case
-
-#    if strict:
-#        if T < ans["Tmin"] or T > ans["Tmax"]: # either side error
-#            ans = None
-    return ans
-
-with open(os.path.join(folder, 'Zabransky.csv'), encoding='utf-8') as f:
-    next(f)
-    for line in f:
-        values = to_num(line.strip('\n').split('\t'))
-        # s for spline, p for quasipolynomial
-        (CASRN, _name, Type, Uncertainty, Tmin, Tmax, a1s, a2s, a3s, a4s, a1p, a2p, a3p, a4p, a5p, a6p, Tc) = values
-
-        _ZabranskyDict = {"name" : _name , "Type" : Type,
-        "Uncertainty" : Uncertainty, "Tmin": Tmin, "Tmax" : Tmax, "a1s" : a1s,
-        "a2s" : a2s, "a3s": a3s, "a4s" : a4s, "a1p" : a1p, "a2p" : a2p,
-        "a3p" : a3p, "a4p" : a4p,  "a5p" : a5p, "a6p" : a6p, "Tc" : Tc }
-        # dict[CASRN] = [subdict1, subdict2] where each is sorted
-        if Type == 'sat':
-            if a1s: # sat, spline ONLY
-                _ZabranskySats[CASRN] = _append2dict((_ZabranskySats[CASRN] if CASRN in _ZabranskySats else []), _ZabranskyDict)
-            elif a1p: # sat, polynomial ONLY
-                _ZabranskySatp[CASRN] = _append2dict((_ZabranskySatp[CASRN] if CASRN in _ZabranskySatp else []), _ZabranskyDict)
-        elif Type == 'p':
-            if a1s: # sat, spline ONLY
-                _ZabranskyConsts[CASRN] = _append2dict((_ZabranskyConsts[CASRN] if CASRN in _ZabranskyConsts else []), _ZabranskyDict)
-            elif a1p: # sat, polynomial ONLY
-                _ZabranskyConstp[CASRN] = _append2dict((_ZabranskyConstp[CASRN] if CASRN in _ZabranskyConstp else []), _ZabranskyDict)
-        elif Type == 'C':
-            if a1s: # sat, spline ONLY
-                _ZabranskyIsos[CASRN] = _append2dict((_ZabranskyIsos[CASRN] if CASRN in _ZabranskyIsos else []), _ZabranskyDict)
-            elif a1p: # sat, polynomial ONLY
-                _ZabranskyIsop[CASRN] = _append2dict((_ZabranskyIsop[CASRN] if CASRN in _ZabranskyIsop else []), _ZabranskyDict)
-
-
-
-
 class Zabransky_quasipolynomial(object):
     r'''Quasi-polynomial object for calculating the heat capacity of a chemical.
     Implements the enthalpy and entropy integrals as well.
@@ -1293,7 +1218,7 @@ class Zabransky_quasipolynomial(object):
         '''        
         return Zabransky_quasi_polynomial(T, self.Tc, *self.coeffs)
                                           
-    def integral(self, T1, T2):
+    def calculate_integral(self, T1, T2):
         r'''Method to compute the enthalpy integral of heat capacity from 
          `T1` to `T2`.
             
@@ -1310,9 +1235,9 @@ class Zabransky_quasipolynomial(object):
             Enthalpy difference between `T1` and `T2`, [J/mol]
         '''        
         return (Zabransky_quasi_polynomial_integral(T2, self.Tc, *self.coeffs)
-               - Zabransky_quasi_polynomial_integral(T2, self.Tc, *self.coeffs))
+               - Zabransky_quasi_polynomial_integral(T1, self.Tc, *self.coeffs))
     
-    def integral_over_T(self, T1, T2):
+    def calculate_integral_over_T(self, T1, T2):
         r'''Method to compute the entropy integral of heat capacity from 
          `T1` to `T2`.
             
@@ -1517,6 +1442,9 @@ zabransky_dict_const_p = {}
 zabransky_dict_iso_s = {}
 zabransky_dict_iso_p = {}
 
+# C means average heat capacity values, from less rigorous experiments
+# sat means heat capacity along the saturation line
+# p means constant-pressure values, 
 type_to_zabransky_dict = {('C', True): zabransky_dict_const_s, 
                        ('C', False):   zabransky_dict_const_p,
                        ('sat', True):  zabransky_dict_sat_s,
@@ -1787,10 +1715,10 @@ def Zabransky_cubic_integral_over_T(T, a1, a2, a3, a4):
 
 
 
-ZABRANSKY_SPLINE = 'Zabransky spline'
-ZABRANSKY_QUASIPOLYNOMIAL = 'Zabransky quasipolynomial'
-ZABRANSKY_SPLINE_C = 'Zabransky spline, C'
-ZABRANSKY_QUASIPOLYNOMIAL_C = 'Zabransky quasipolynomial, C'
+ZABRANSKY_SPLINE = 'Zabransky spline, averaged heat capacity'
+ZABRANSKY_QUASIPOLYNOMIAL = 'Zabransky quasipolynomial, averaged heat capacity'
+ZABRANSKY_SPLINE_C = 'Zabransky spline, constant-pressure'
+ZABRANSKY_QUASIPOLYNOMIAL_C = 'Zabransky quasipolynomial, constant-pressure'
 ZABRANSKY_SPLINE_SAT = 'Zabransky spline, saturation'
 ZABRANSKY_QUASIPOLYNOMIAL_SAT = 'Zabransky quasipolynomial, saturation'
 ROWLINSON_POLING = 'Rowlinson and Poling (2001)'
@@ -1798,12 +1726,12 @@ ROWLINSON_BONDI = 'Rowlinson and Bondi (1969)'
 DADGOSTAR_SHAW = 'Dadgostar and Shaw (2011)'
 
 
-ZABRANSKY_TO_DICT = {ZABRANSKY_SPLINE: _ZabranskyConsts,
-                     ZABRANSKY_QUASIPOLYNOMIAL: _ZabranskyConstp,
-                     ZABRANSKY_SPLINE_C: _ZabranskyIsos,
-                     ZABRANSKY_QUASIPOLYNOMIAL_C: _ZabranskyIsop,
-                     ZABRANSKY_SPLINE_SAT: _ZabranskySats,
-                     ZABRANSKY_QUASIPOLYNOMIAL_SAT: _ZabranskySatp}
+ZABRANSKY_TO_DICT = {ZABRANSKY_SPLINE: zabransky_dict_const_s,
+                     ZABRANSKY_QUASIPOLYNOMIAL: zabransky_dict_const_p,
+                     ZABRANSKY_SPLINE_C: zabransky_dict_iso_s,
+                     ZABRANSKY_QUASIPOLYNOMIAL_C: zabransky_dict_iso_p,
+                     ZABRANSKY_SPLINE_SAT: zabransky_dict_sat_s,
+                     ZABRANSKY_QUASIPOLYNOMIAL_SAT: zabransky_dict_sat_p}
 heat_capacity_liquid_methods = [ZABRANSKY_SPLINE, ZABRANSKY_QUASIPOLYNOMIAL,
                       ZABRANSKY_SPLINE_C, ZABRANSKY_QUASIPOLYNOMIAL_C,
                       ZABRANSKY_SPLINE_SAT, ZABRANSKY_QUASIPOLYNOMIAL_SAT,
@@ -1849,7 +1777,9 @@ class HeatCapacityLiquid(TDependentProperty):
         to obtain a wider range. The quasi-polynomial methods use the form
         described in :obj:`Zabransky_quasi_polynomial`, more suitable for
         extrapolation, and over then entire range. Respectively, there is data
-        available for 588, 146, 51, and 26 chemicals.
+        available for 588, 146, 51, and 26 chemicals. 'C' denotes constant-
+        pressure data available from more precise experiments. The others
+        are heat capacity values averaged over a temperature changed.
     **ZABRANSKY_SPLINE_SAT and ZABRANSKY_QUASIPOLYNOMIAL_SAT**:
         Rigorous expressions developed in [1]_ following critical evaluation
         of the available data. The spline method use the form described in
@@ -1990,18 +1920,18 @@ class HeatCapacityLiquid(TDependentProperty):
         '''
         methods = []
         Tmins, Tmaxs = [], []
-        if self.CASRN in _ZabranskyConsts:
+        if self.CASRN in zabransky_dict_const_s:
             methods.append(ZABRANSKY_SPLINE)
-            self.ZABRANSKY_SPLINE_data = _ZabranskyConsts[self.CASRN]
-        if self.CASRN in _ZabranskyConstp:
+            self.Zabransky_spline = zabransky_dict_const_s[self.CASRN]
+        if self.CASRN in zabransky_dict_const_p:
             methods.append(ZABRANSKY_QUASIPOLYNOMIAL)
-            self.ZABRANSKY_QUASIPOLYNOMIAL_data = _ZabranskyConstp[self.CASRN]
-        if self.CASRN in _ZabranskyIsos:
+            self.Zabransky_quasipolynomial = zabransky_dict_const_p[self.CASRN]
+        if self.CASRN in zabransky_dict_iso_s:
             methods.append(ZABRANSKY_SPLINE_C)
-            self.ZABRANSKY_SPLINE_C_data = _ZabranskyIsos[self.CASRN]
-        if self.CASRN in _ZabranskyIsop:
+            self.Zabransky_spline_iso = zabransky_dict_iso_s[self.CASRN]
+        if self.CASRN in zabransky_dict_iso_p:
             methods.append(ZABRANSKY_QUASIPOLYNOMIAL_C)
-            self.ZABRANSKY_QUASIPOLYNOMIAL_C_data = _ZabranskyIsop[self.CASRN]
+            self.Zabransky_quasipolynomial_iso = zabransky_dict_iso_p[self.CASRN]
         if self.CASRN in Poling_data.index and not np.isnan(Poling_data.at[self.CASRN, 'Cpl']):
             methods.append(POLING_CONST)
             self.POLING_T = 298.15
@@ -2011,12 +1941,12 @@ class HeatCapacityLiquid(TDependentProperty):
             self.CRCSTD_T = 298.15
             self.CRCSTD_constant = float(CRC_standard_data.at[self.CASRN, 'Cpl'])
         # Saturation functions
-        if self.CASRN in _ZabranskySats:
+        if self.CASRN in zabransky_dict_sat_s:
             methods.append(ZABRANSKY_SPLINE_SAT)
-            self.ZABRANSKY_SPLINE_SAT_data = _ZabranskySats[self.CASRN]
-        if self.CASRN in _ZabranskySatp:
+            self.Zabransky_spline_sat = zabransky_dict_sat_s[self.CASRN]
+        if self.CASRN in zabransky_dict_sat_p:
             methods.append(ZABRANSKY_QUASIPOLYNOMIAL_SAT)
-            self.ZABRANSKY_QUASIPOLYNOMIAL_SAT_data = _ZabranskySatp[self.CASRN]
+            self.Zabransky_quasipolynomial_sat = zabransky_dict_sat_p[self.CASRN]
         if self.CASRN in _VDISaturationDict:
             # NOTE: VDI data is for the saturation curve, i.e. at increasing
             # pressure; it is normally substantially higher than the ideal gas
@@ -2061,42 +1991,36 @@ class HeatCapacityLiquid(TDependentProperty):
             Heat capacity of the liquid at T, [J/mol/K]
         '''
         if method == ZABRANSKY_SPLINE:
-            data = _ZabranskyDictChoser(T, self.ZABRANSKY_SPLINE_data)
-            Cp = Zabransky_cubic(T, data["a1s"], data["a2s"], data["a3s"], data["a4s"])
+            return self.Zabransky_spline.calculate(T)
         elif method == ZABRANSKY_QUASIPOLYNOMIAL:
-            data = _ZabranskyDictChoser(T, self.ZABRANSKY_QUASIPOLYNOMIAL_data)
-            Cp = Zabransky_quasi_polynomial(T, data["Tc"], data["a1p"], data["a2p"], data["a3p"], data["a4p"], data["a5p"], data["a6p"])
+            return self.Zabransky_quasipolynomial.calculate(T)
         elif method == ZABRANSKY_SPLINE_C:
-            data = _ZabranskyDictChoser(T,self.ZABRANSKY_SPLINE_C_data)
-            Cp = Zabransky_cubic(T, data["a1s"], data["a2s"], data["a3s"], data["a4s"])
+            return self.Zabransky_spline_iso.calculate(T)
         elif method == ZABRANSKY_QUASIPOLYNOMIAL_C:
-            data = _ZabranskyDictChoser(T, self.ZABRANSKY_QUASIPOLYNOMIAL_C_data)
-            Cp = Zabransky_quasi_polynomial(T, data["Tc"], data["a1p"], data["a2p"], data["a3p"], data["a4p"], data["a5p"], data["a6p"])
+            return self.Zabransky_quasipolynomial_iso.calculate(T)
         elif method == ZABRANSKY_SPLINE_SAT:
-            data = _ZabranskyDictChoser(T, self.ZABRANSKY_SPLINE_SAT_data)
-            Cp = Zabransky_cubic(T, data["a1s"], data["a2s"], data["a3s"], data["a4s"])
+            return self.Zabransky_spline_sat.calculate(T)
         elif method == ZABRANSKY_QUASIPOLYNOMIAL_SAT:
-            data = _ZabranskyDictChoser(T, self.ZABRANSKY_QUASIPOLYNOMIAL_SAT_data)
-            Cp = Zabransky_quasi_polynomial(T, data["Tc"], data["a1p"], data["a2p"], data["a3p"], data["a4p"], data["a5p"], data["a6p"])
+            return self.Zabransky_quasipolynomial_sat.calculate(T)
         elif method == COOLPROP:
-            Cp = CoolProp_T_dependent_property(T, self.CASRN , 'CPMOLAR', 'l')
+            return CoolProp_T_dependent_property(T, self.CASRN , 'CPMOLAR', 'l')
         elif method == POLING_CONST:
-            Cp = self.POLING_constant
+            return self.POLING_constant
         elif method == CRCSTD:
-            Cp = self.CRCSTD_constant
+            return self.CRCSTD_constant
         elif method == ROWLINSON_POLING:
             Cpgm = self.Cpgm(T) if hasattr(self.Cpgm, '__call__') else self.Cpgm
-            Cp = Rowlinson_Poling(T, self.Tc, self.omega, Cpgm)
+            return Rowlinson_Poling(T, self.Tc, self.omega, Cpgm)
         elif method == ROWLINSON_BONDI:
             Cpgm = self.Cpgm(T) if hasattr(self.Cpgm, '__call__') else self.Cpgm
-            Cp = Rowlinson_Bondi(T, self.Tc, self.omega, Cpgm)
+            return Rowlinson_Bondi(T, self.Tc, self.omega, Cpgm)
         elif method == DADGOSTAR_SHAW:
             Cp = Dadgostar_Shaw(T, self.similarity_variable)
-            Cp = property_mass_to_molar(Cp, self.MW)
+            return property_mass_to_molar(Cp, self.MW)
         elif method in self.tabular_data:
-            Cp = self.interpolate(T, method)
-        return Cp
-
+            return self.interpolate(T, method)
+        else:
+            raise Exception('Method not valid')
 
     def test_method_validity(self, T, method):
         r'''Method to check the validity of a method. Follows the given
@@ -2124,22 +2048,33 @@ class HeatCapacityLiquid(TDependentProperty):
             Whether or not a method is valid
         '''
         validity = True
-        if method in [ZABRANSKY_SPLINE, ZABRANSKY_QUASIPOLYNOMIAL,
-                      ZABRANSKY_SPLINE_C, ZABRANSKY_QUASIPOLYNOMIAL_C,
-                      ZABRANSKY_SPLINE_SAT, ZABRANSKY_QUASIPOLYNOMIAL_SAT]:
-            data = _ZabranskyDictChoser(T, ZABRANSKY_TO_DICT[method][self.CASRN])
-            Tmin, Tmax = data['Tmin'], data['Tmax']
-            if T < Tmin or T > Tmax:
-                validity = False
+        if method == ZABRANSKY_SPLINE:
+            if T < self.Zabransky_spline.Ts[0] or T > self.Zabransky_spline.Ts[-1]:
+                return False
+        elif method == ZABRANSKY_SPLINE_C:
+            if T < self.Zabransky_spline_iso.Ts[0] or T > self.Zabransky_spline_iso.Ts[-1]:
+                return False
+        elif method == ZABRANSKY_SPLINE_SAT:
+            if T < self.Zabransky_spline_sat.Ts[0] or T > self.Zabransky_spline_sat.Ts[-1]:
+                return False
+        elif method == ZABRANSKY_QUASIPOLYNOMIAL:
+            if T > self.Zabransky_quasipolynomial.Tc:
+                return False
+        elif method == ZABRANSKY_QUASIPOLYNOMIAL_C:
+            if T > self.Zabransky_quasipolynomial_iso.Tc:
+                return False
+        elif method == ZABRANSKY_QUASIPOLYNOMIAL_SAT:
+            if T > self.Zabransky_quasipolynomial_sat.Tc:
+                return False
         elif method == COOLPROP:
             if T <= self.CP_f.Tt or T >= self.CP_f.Tc:
-                validity = False
+                return False
         elif method == POLING_CONST:
             if T > self.POLING_T + 50 or T < self.POLING_T - 50:
-                validity = False
+                return False
         elif method == CRCSTD:
             if T > self.CRCSTD_T + 50 or T < self.CRCSTD_T - 50:
-                validity = False
+                return False
         elif method == DADGOSTAR_SHAW:
             pass # Valid everywhere
         elif method in [ROWLINSON_POLING, ROWLINSON_BONDI]:
@@ -2177,21 +2112,18 @@ class HeatCapacityLiquid(TDependentProperty):
             Calculated integral of the property over the given range, 
             [`units*K`]
         '''
-        if method in [ZABRANSKY_SPLINE, ZABRANSKY_SPLINE_C, ZABRANSKY_SPLINE_SAT]:
-            data = _ZabranskyDictChoser(T1, ZABRANSKY_TO_DICT[method][self.CASRN])
-            data2 = _ZabranskyDictChoser(T2, ZABRANSKY_TO_DICT[method][self.CASRN])
-            if data['Tmin'] == data2['Tmin']:
-                H2 = Zabransky_cubic_integral(T2, data["a1s"], data["a2s"], data["a3s"], data["a4s"])
-                H1 = Zabransky_cubic_integral(T1, data["a1s"], data["a2s"], data["a3s"], data["a4s"])
-                return H2 - H1
-            else:
-                # For the case of integrating over multiple ranges of coefficients
-                return float(quad(self.calculate, T1, T2, args=(method))[0])
-        elif method in [ZABRANSKY_QUASIPOLYNOMIAL, ZABRANSKY_QUASIPOLYNOMIAL_C, ZABRANSKY_QUASIPOLYNOMIAL_SAT]:
-            data = _ZabranskyDictChoser(T1, ZABRANSKY_TO_DICT[method][self.CASRN])
-            H2 = Zabransky_quasi_polynomial_integral(T2, data["Tc"], data["a1p"], data["a2p"], data["a3p"], data["a4p"], data["a5p"], data["a6p"])
-            H1 = Zabransky_quasi_polynomial_integral(T1, data["Tc"], data["a1p"], data["a2p"], data["a3p"], data["a4p"], data["a5p"], data["a6p"])
-            return H2 - H1
+        if method == ZABRANSKY_SPLINE:
+            return self.Zabransky_spline.calculate_integral(T1, T2)
+        elif method == ZABRANSKY_SPLINE_C:
+            return self.Zabransky_spline_iso.calculate_integral(T1, T2)
+        elif method == ZABRANSKY_SPLINE_SAT:
+            return self.Zabransky_spline_sat.calculate_integral(T1, T2)
+        elif method == ZABRANSKY_QUASIPOLYNOMIAL:
+            return self.Zabransky_quasipolynomial.calculate_integral(T1, T2)
+        elif method == ZABRANSKY_QUASIPOLYNOMIAL_C:
+            return self.Zabransky_quasipolynomial_iso.calculate_integral(T1, T2)
+        elif method == ZABRANSKY_QUASIPOLYNOMIAL_SAT:
+            return self.Zabransky_quasipolynomial_sat.calculate_integral(T1, T2)
         elif method == POLING_CONST:
             return (T2 - T1)*self.POLING_constant
         elif method == CRCSTD:
@@ -2228,21 +2160,18 @@ class HeatCapacityLiquid(TDependentProperty):
             Calculated integral of the property over the given range, 
             [`units`]
         '''
-        if method in [ZABRANSKY_SPLINE, ZABRANSKY_SPLINE_C, ZABRANSKY_SPLINE_SAT]:
-            data = _ZabranskyDictChoser(T1, ZABRANSKY_TO_DICT[method][self.CASRN])
-            data2 = _ZabranskyDictChoser(T2, ZABRANSKY_TO_DICT[method][self.CASRN])
-            if data['Tmin'] == data2['Tmin']:
-                S2 = Zabransky_cubic_integral_over_T(T2, data["a1s"], data["a2s"], data["a3s"], data["a4s"])
-                S1 = Zabransky_cubic_integral_over_T(T1, data["a1s"], data["a2s"], data["a3s"], data["a4s"])
-                return S2 - S1
-            else:
-                # For the case of integrating over multiple ranges of coefficients
-                return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
-        elif method in [ZABRANSKY_QUASIPOLYNOMIAL, ZABRANSKY_QUASIPOLYNOMIAL_C, ZABRANSKY_QUASIPOLYNOMIAL_SAT]:
-            data = _ZabranskyDictChoser(T1, ZABRANSKY_TO_DICT[method][self.CASRN])
-            S2 = Zabransky_quasi_polynomial_integral_over_T(T2, data["Tc"], data["a1p"], data["a2p"], data["a3p"], data["a4p"], data["a5p"], data["a6p"])
-            S1 = Zabransky_quasi_polynomial_integral_over_T(T1, data["Tc"], data["a1p"], data["a2p"], data["a3p"], data["a4p"], data["a5p"], data["a6p"])
-            return S2 - S1
+        if method == ZABRANSKY_SPLINE:
+            return self.Zabransky_spline.calculate_integral_over_T(T1, T2)
+        elif method == ZABRANSKY_SPLINE_C:
+            return self.Zabransky_spline_iso.calculate_integral_over_T(T1, T2)
+        elif method == ZABRANSKY_SPLINE_SAT:
+            return self.Zabransky_spline_sat.calculate_integral_over_T(T1, T2)
+        elif method == ZABRANSKY_QUASIPOLYNOMIAL:
+            return self.Zabransky_quasipolynomial.calculate_integral_over_T(T1, T2)
+        elif method == ZABRANSKY_QUASIPOLYNOMIAL_C:
+            return self.Zabransky_quasipolynomial_iso.calculate_integral_over_T(T1, T2)
+        elif method == ZABRANSKY_QUASIPOLYNOMIAL_SAT:
+            return self.Zabransky_quasipolynomial_sat.calculate_integral_over_T(T1, T2)
         elif method == POLING_CONST:
             return self.POLING_constant*log(T2/T1)
         elif method == CRCSTD:
