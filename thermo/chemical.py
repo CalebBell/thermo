@@ -847,13 +847,13 @@ class Chemical(object): # pragma: no cover
             
         elif self.phase_ref == 'l' and self.phase == 'l':
             try:
-                H_dep += self.eos.to_TP(T, P).H_dep_l - self.eos.to_TP(T, 101325).H_dep_l
+                H_dep += self.eos.to_TP(T, P).H_dep_l - self._eos_T_101325.H_dep_l
             except:
                 H_dep += 0
             
         elif self.phase_ref == 'g' and self.phase == 'l':
             H_dep += self.H_dep_Tb_Pb_g - self.H_dep_Tb_P_ref_g
-            H_dep += (self.eos.to_TP(T, P).H_dep_l - self.eos.to_TP(T, 101325).H_dep_l)
+            H_dep += (self.eos.to_TP(T, P).H_dep_l - self._eos_T_101325.H_dep_l)
             
         elif self.phase_ref == 'l' and self.phase == 'g':
             H_dep += self.H_dep_T_ref_Pb - self.H_dep_ref_l
@@ -867,13 +867,13 @@ class Chemical(object): # pragma: no cover
             
         elif self.phase_ref == 'l' and self.phase == 'l':
             try:
-                S_dep += self.eos.to_TP(T, P).S_dep_l - self.eos.to_TP(T, 101325).S_dep_l
+                S_dep += self.eos.to_TP(T, P).S_dep_l - self._eos_T_101325.S_dep_l
             except:
                 S_dep += 0
             
         elif self.phase_ref == 'g' and self.phase == 'l':
             S_dep += self.S_dep_Tb_Pb_g - self.S_dep_Tb_P_ref_g
-            S_dep += (self.eos.to_TP(T, P).S_dep_l - self.eos.to_TP(T, 101325).S_dep_l)
+            S_dep += (self.eos.to_TP(T, P).S_dep_l - self._eos_T_101325.S_dep_l)
             
         elif self.phase_ref == 'l' and self.phase == 'g':
             S_dep += self.S_dep_T_ref_Pb - self.S_dep_ref_l
@@ -942,6 +942,9 @@ class Chemical(object): # pragma: no cover
 
     def set_thermo(self):
         try:
+            self._eos_T_101325 = self.eos.to_TP(self.T, 101325)
+            
+            
             self.Hm = self.calc_H(self.T, self.P)
             self.Hm += self.calc_H_excess(self.T, self.P)
             self.H = property_molar_to_mass(self.Hm, self.MW) if (self.Hm is not None) else None
