@@ -635,14 +635,12 @@ class Chemical(object): # pragma: no cover
         self.conductivity, self.conductivityT = conductivity(CASRN=self.CAS, Method=self.conductivity_source)
 
     def set_eos(self, T, P, eos=PR):
-        if all((self.Tc, self.Pc, self.omega)):
-            try:
-                self.eos = eos(T=T, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega)
-            except:
-                # Handle overflow errors and so on
-                self.eos = GCEOS_DUMMY(T=T, P=P)
-        else:
+        try:
+            self.eos = eos(T=T, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega)
+        except:
+            # Handle overflow errors and so on
             self.eos = GCEOS_DUMMY(T=T, P=P)
+
     @property
     def eos(self):
         r'''Equation of state object held by the chemical; used to calculate

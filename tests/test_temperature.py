@@ -47,7 +47,7 @@ def test_conversion():
 
     mid_scales = ['ITS-90', 'ITS-68', 'ITS-48']
 
-    for Ti in range(100, 1000, 10):
+    for Ti in range(100, 1000, 200):
         for scale1 in mid_scales:
             for scale2 in mid_scales:
                 T = T_converter(Ti, scale1, scale2)
@@ -55,7 +55,7 @@ def test_conversion():
 
     low_scales = ['ITS-90', 'ITS-68', 'ITS-76']
 
-    for Ti in range(15, 27, 1):
+    for Ti in range(15, 27, 2):
         for scale1 in low_scales:
             for scale2 in low_scales:
                 T = T_converter(Ti, scale1, scale2)

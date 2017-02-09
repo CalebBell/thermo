@@ -853,6 +853,7 @@ def test_fuzz_dV_dP_and_d2V_dP2_derivatives():
     assert allclose_variable(x, y, limits=[.02, .04, .04, .05, .15, .45, .95],
                             rtols=[1E-2, 1E-3, 1E-4, 1E-5, 1E-6, 1E-7, 1E-9])
     
+@pytest.mark.slow
 def test_fuzz_Psat():
     from thermo import eos
     eos_list = list(eos.__all__); eos_list.remove('GCEOS')
@@ -878,20 +879,21 @@ def test_fuzz_Psat():
             rerr = (e.fugacity_l - e.fugacity_g)/e.fugacity_g
             x.append(rerr)
 
-    # Assert the average error is under 0.01%
+    # Assert the average error is under 0.04%
     assert sum(abs(np.array(x)))/len(x) < 1E-4
     
     # Test Polish is working, and that its values are close to the polynomials
     Psats_solved = []
     Psats_poly = []
     for eos in range(len(eos_list)):
-        for T in np.linspace(0.4*Tc, Tc*.99, 30):
+        for T in np.linspace(0.4*Tc, Tc*.99, 50):
             e = globals()[eos_list[eos]](Tc=Tc, Pc=Pc, omega=omega, T=T, P=1E5)
             Psats_poly.append(e.Psat(T))
             Psats_solved.append(e.Psat(T, polish=True))
     assert_allclose(Psats_solved, Psats_poly, rtol=1E-4)
 
-
+    
+@pytest.mark.slow
 def test_fuzz_dPsat_dT():
     from thermo import eos
     eos_list = list(eos.__all__); eos_list.remove('GCEOS')

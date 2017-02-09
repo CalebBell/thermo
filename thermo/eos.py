@@ -841,12 +841,12 @@ should be calculated by this method, in a user subclass.')
 
 
 class GCEOS_DUMMY(GCEOS):
+    Tc = None
+    Pc = None
+    omega = None
     def __init__(self, T=None, P=None, **kwargs):
         self.T = T
         self.P = P
-        self.Tc = None
-        self.Pc = None
-        self.omega = None
 
 # No named parameters
 class ALPHA_FUNCTIONS(GCEOS):

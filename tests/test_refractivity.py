@@ -23,6 +23,7 @@ SOFTWARE.'''
 from numpy.testing import assert_allclose
 import pytest
 import pandas as pd
+import numpy as np
 from thermo.refractivity import *
 
 def test_refractivity_CRC():
@@ -30,11 +31,12 @@ def test_refractivity_CRC():
     assert_allclose(CRC_RI_organic['RIT'].sum(), 1304152.35)
 
 def test_refractivity_general():
-    tot = sum([refractive_index(i)[0] for i in  CRC_RI_organic.index.values])
-    assert_allclose(tot, 6602.78821)
-
-    tot = pd.DataFrame([refractive_index(i)[1] for i in CRC_RI_organic.index.values])[0].sum()
-    assert_allclose(tot, 1304152.35)
+    mat = np.array([refractive_index(i) for i in  CRC_RI_organic.index.values])
+    Ts = mat[:,1]
+    # Test refractive index sum
+    assert_allclose(mat[:,0].sum(), 6602.78821)
+    # Test temperature sum
+    assert_allclose(Ts[~np.isnan(Ts)].sum(), 1304152.35)
 
     vals = refractive_index(CASRN='64-17-5')
     assert_allclose(vals, (1.3611, 293.15))
