@@ -255,9 +255,9 @@ def test_ViscosityLiquid():
         EtOH.test_method_validity(300, 'BADMETHOD')
 
     # Acetic acid to test ViswanathNatarajan2Exponential
-    acetic_acid = ViscosityLiquid(CASRN='64-19-7')
+    acetic_acid = ViscosityLiquid(CASRN='64-19-7', Tc=590.7)
     mul_calcs = [(acetic_acid.set_user_methods(i), acetic_acid.T_dependent_property(350.0))[1] for i in acetic_acid.all_methods]
-    mul_exp = [0.0005799665143154318, 0.0005089289428076254, 0.0005799665143154318, 0.0005727888422607339, 0.000587027903931889]
+    mul_exp = [0.0005744169247310638, 0.0005089289428076254, 0.0005799665143154318, 0.0005727888422607339, 0.000587027903931889]
     assert_allclose(sorted(mul_calcs), sorted(mul_exp))
     assert [None]*5 == [(acetic_acid.set_user_methods(i), acetic_acid.T_dependent_property(650.0))[1] for i in acetic_acid.all_methods]
 

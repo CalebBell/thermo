@@ -138,6 +138,24 @@ def test_Perry_l_data():
     assert_allclose(tots_calc, tots)
 
 
+def test_VDI_PPDS_2_data():
+    '''Plenty of interesting errors here.
+    The chemicals 463-58-1, 75-44-5, 75-15-0, 7446-11-9, 2551-62-4
+    do not match the tabulated data. They are all in the same section, so a
+    mixup was probably made there. The errors versus the tabulated data are
+    very large. 
+    
+    Note this table needed to have Tc and MW added to it as well, from the 
+    same source.
+    '''
+    assert all([checkCAS(i) for i in VDI_PPDS_2.index])
+    tots_calc = [VDI_PPDS_2[i].abs().sum() for i in [u'A', u'B', u'C', u'D', u'Tc', u'rhoc', u'MW']]
+    tots = [208878.27130000002, 117504.59450000001, 202008.99950000001, 85280.333600000013, 150142.28, 97269, 27786.919999999998]
+    assert_allclose(tots_calc, tots)
+    
+    assert VDI_PPDS_2.index.is_unique
+    assert VDI_PPDS_2.shape == (272, 8)
+
 def test_CRC_inorg_l_data2():
     tots_calc = [CRC_inorg_l_data[i].abs().sum() for i in ['rho', 'k', 'Tm', 'Tmax']]
     tots = [882131, 181.916, 193785.09499999997, 233338.04999999996]
@@ -183,7 +201,7 @@ def test_VolumeLiquid():
     # Ethanol, test all methods at once
     EtOH = VolumeLiquid(MW=46.06844, Tb=351.39, Tc=514.0, Pc=6137000.0, Vc=0.000168, Zc=0.24125, omega=0.635, dipole=1.44, CASRN='64-17-5')
     Vm_calcs = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(305.))[1] for i in EtOH.all_methods]
-    Vm_exp = [5.4848470492414296e-05, 5.1921776627430897e-05, 5.526836182702171e-05, 5.3338182234795054e-05, 5.912157674597306e-05, 5.7594571728502063e-05, 5.784760660832295e-05, 5.909768693432104e-05, 5.9082910221835385e-05, 5.821947224585489e-05, 5.594757794216803e-05, 5.507075716132008e-05, 5.9680793094807483e-05]
+    Vm_exp = [5.905316741206586e-05, 5.784760660832295e-05, 5.7594571728502063e-05, 5.594757794216803e-05, 5.912157674597306e-05, 5.9082910221835385e-05, 5.909768693432104e-05, 5.526836182702171e-05, 5.821947224585489e-05, 5.1921776627430897e-05, 5.9680793094807483e-05, 5.4848470492414296e-05, 5.507075716132008e-05, 5.3338182234795054e-05]
     assert_allclose(sorted(Vm_calcs), sorted(Vm_exp))
 
     # Test that methods return None
@@ -191,7 +209,7 @@ def test_VolumeLiquid():
     EtOH.T_dependent_property(305.) # Initialize the sorted_valid_methods
     EtOH.tabular_extrapolation_permitted = False
     Vml_calcs = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(600))[1] for i in EtOH.sorted_valid_methods]
-    assert [None]*13 == Vml_calcs
+    assert [None]*14 == Vml_calcs
 
     EtOH.set_user_methods('VDI_TABULAR', forced=True)
     EtOH.tabular_extrapolation_permitted = True
@@ -207,8 +225,7 @@ def test_VolumeLiquid():
     # Get MMC parameter
     SO2 = VolumeLiquid(MW=64.0638, Tb=263.1, Tc=430.8, Pc=7884098.25, Vc=0.000122, Zc=0.26853, omega=0.251, dipole=1.63, CASRN='7446-09-5')
     Vm_calcs = [(SO2.set_user_methods(i), SO2.T_dependent_property(200.))[1] for i in SO2.all_methods]
-    Vm_exp = [3.748481829074182e-05, 4.0256041843356724e-05, 3.982522377343308e-05, 4.062166881078707e-05, 4.0608189210203123e-05, 3.949103647364349e-05, 3.994849780626379e-05, 4.109189955368007e-05, 3.965944731935354e-05, 4.0948267317531393e-05, 4.0606869929178414e-05, 4.060446067691708e-05, 3.993451478384902e-05]
-
+    Vm_exp = [3.9697664371887463e-05, 3.748481829074182e-05, 4.0256041843356724e-05, 3.982522377343308e-05, 4.062166881078707e-05, 4.0608189210203123e-05, 3.949103647364349e-05, 3.994849780626379e-05, 4.109189955368007e-05, 3.965944731935354e-05, 4.0948267317531393e-05, 4.0606869929178414e-05, 4.060446067691708e-05, 3.993451478384902e-05]
     assert_allclose(sorted(Vm_calcs), sorted(Vm_exp))
 
     # Get CRC Inorganic invalid

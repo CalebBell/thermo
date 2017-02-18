@@ -98,9 +98,9 @@ def test_Chemical_properties_T_dependent_constants():
     w = Chemical('water')
     assert_allclose(w.Psat_298, 3167.418523735963)
     
-    assert_allclose(w.Vml_Tb, 1.8797866225606777e-05)
-    assert_allclose(w.Vml_Tm, 1.3649595455749052e-05)
-    assert_allclose(w.Vml_STP, 1.3971560442954154e-05)
+    assert_allclose(w.Vml_Tb, 1.8829559687798784e-05)
+    assert_allclose(w.Vml_Tm, 1.7908144191247533e-05)
+    assert_allclose(w.Vml_STP, 1.8069338439592963e-05)
     assert_allclose(w.Vmg_STP, 0.023505766772305356)
     
     

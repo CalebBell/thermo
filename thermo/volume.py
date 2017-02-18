@@ -23,6 +23,7 @@ SOFTWARE.'''
 from __future__ import division
 
 __all__ = ['COSTALD_data', 'SNM0_data', 'Perry_l_data', 'CRC_inorg_l_data', 
+'VDI_PPDS_2',
 'CRC_inorg_l_const_data', 'CRC_inorg_s_const_data', 'CRC_virial_data', 
 'Yen_Woods_saturation', 'Rackett', 'Yamada_Gunn', 'Townsend_Hales', 
 'Bhirud_normal', 'COSTALD', 'Campbell_Thodos', 'SNM0', 'CRC_inorganic', 
@@ -59,6 +60,11 @@ SNM0_data = pd.read_csv(os.path.join(folder, 'Mchaweh SN0 deltas.csv'),
 Perry_l_data = pd.read_csv(os.path.join(folder, 'Perry Parameters 105.csv'),
                            sep='\t', index_col=0)
 _Perry_l_data_values = Perry_l_data.values
+
+VDI_PPDS_2 = pd.read_csv(os.path.join(folder, 'VDI PPDS Density of Saturated Liquids.csv'),
+                          sep='\t', index_col=0)
+_VDI_PPDS_2_values = VDI_PPDS_2.values
+
 
 CRC_inorg_l_data = pd.read_csv(os.path.join(folder, 'CRC Inorganics densties of molten compounds and salts.csv'),
                                sep='\t', index_col=0)
@@ -655,6 +661,7 @@ def CRC_inorganic(T, rho0, k, Tm):
 
 COOLPROP = 'COOLPROP'
 PERRYDIPPR = 'PERRYDIPPR'
+VDI_PPDS = 'VDI_PPDS'
 MMSNM0 = 'MMSNM0'
 MMSNM0FIT = 'MMSNM0FIT'
 VDI_TABULAR = 'VDI_TABULAR'
@@ -674,7 +681,7 @@ EOS = 'EOS'
 CRC_INORG_L = 'CRC_INORG_L'
 CRC_INORG_L_CONST = 'CRC_INORG_L_CONST'
 
-volume_liquid_methods = [PERRYDIPPR, COOLPROP, MMSNM0FIT, VDI_TABULAR,
+volume_liquid_methods = [PERRYDIPPR, VDI_PPDS, COOLPROP, MMSNM0FIT, VDI_TABULAR,
                          HTCOSTALDFIT, RACKETTFIT, CRC_INORG_L,
                          CRC_INORG_L_CONST, MMSNM0, HTCOSTALD,
                          YEN_WOODS_SAT, RACKETT, YAMADA_GUNN,
@@ -847,7 +854,7 @@ class VolumeLiquid(TPDependentProperty):
     property_max = 2e-3
     '''Maximum valid value of liquid molar volume. Generous limit.'''
 
-    ranked_methods = [PERRYDIPPR, COOLPROP, MMSNM0FIT, VDI_TABULAR,
+    ranked_methods = [PERRYDIPPR, VDI_PPDS, COOLPROP, MMSNM0FIT, VDI_TABULAR,
                       HTCOSTALDFIT, RACKETTFIT, CRC_INORG_L,
                       CRC_INORG_L_CONST, MMSNM0, HTCOSTALD,
                       YEN_WOODS_SAT, RACKETT, YAMADA_GUNN,
@@ -951,6 +958,14 @@ class VolumeLiquid(TPDependentProperty):
             _, C1, C2, C3, C4, self.DIPPR_Tmin, self.DIPPR_Tmax = _Perry_l_data_values[Perry_l_data.index.get_loc(self.CASRN)].tolist()
             self.DIPPR_coeffs = [C1, C2, C3, C4]
             Tmins.append(self.DIPPR_Tmin); Tmaxs.append(self.DIPPR_Tmax)
+        if self.CASRN in VDI_PPDS_2.index:
+            methods.append(VDI_PPDS)
+            _, MW, Tc, rhoc, A, B, C, D = _VDI_PPDS_2_values[VDI_PPDS_2.index.get_loc(self.CASRN)].tolist()
+            self.VDI_PPDS_coeffs = [A, B, C, D]
+            self.VDI_PPDS_MW = MW
+            self.VDI_PPDS_Tc = Tc
+            self.VDI_PPDS_rhoc = rhoc
+            Tmaxs.append(self.VDI_PPDS_Tc)
         if self.CASRN in _VDISaturationDict:
             methods.append(VDI_TABULAR)
             Ts, props = VDI_tabular_data(self.CASRN, 'Volume (l)')
@@ -1050,6 +1065,11 @@ class VolumeLiquid(TPDependentProperty):
         elif method == CRC_INORG_L:
             rho = CRC_inorganic(T, self.CRC_INORG_L_rho, self.CRC_INORG_L_k, self.CRC_INORG_L_Tm)
             Vm = rho_to_Vm(rho, self.CRC_INORG_L_MW)
+        elif method == VDI_PPDS:
+            A, B, C, D = self.VDI_PPDS_coeffs
+            tau = 1. - T/self.VDI_PPDS_Tc
+            rho = self.VDI_PPDS_rhoc + A*tau**0.35 + B*tau**(2/3.) + C*tau + D*tau**(4/3.)
+            Vm = rho_to_Vm(rho, self.VDI_PPDS_MW)
         elif method == CRC_INORG_L_CONST:
             Vm = self.CRC_INORG_L_CONST_Vm
         elif method == COOLPROP:
@@ -1124,6 +1144,8 @@ class VolumeLiquid(TPDependentProperty):
         if method == PERRYDIPPR:
             if T < self.DIPPR_Tmin or T > self.DIPPR_Tmax:
                 validity = False
+        elif method == VDI_PPDS:
+            validity = T <= self.VDI_PPDS_Tc 
         elif method == CRC_INORG_L:
             if T < self.CRC_INORG_L_Tm or T > self.CRC_INORG_L_Tmax:
                 validity = False
