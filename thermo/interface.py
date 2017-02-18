@@ -1246,13 +1246,14 @@ class SurfaceTensionMixture(TDependentProperty):
                             
                             
     def __init__(self, MWs=[], Tbs=[], Tcs=[], CASs=[], SurfaceTensions=[], 
-                 VolumeLiquids=[]):
+                 VolumeLiquids=[], Vfls_callable=None):
         self.MWs = MWs
         self.Tbs = Tbs
         self.Tcs = Tcs
         self.CASs = CASs
         self.SurfaceTensions = SurfaceTensions
         self.VolumeLiquids = VolumeLiquids
+        self.Vfls_callable = Vfls_callable
                      
 
         self.Tmin = None

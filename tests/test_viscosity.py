@@ -96,6 +96,16 @@ def test_Perrys2_312_data():
     assert Perrys2_312.shape == (345, 7)
 
 
+def test_VDI_PPDS_7_data():
+    assert all([checkCAS(i) for i in VDI_PPDS_7.index])
+    tots_calc = [VDI_PPDS_7[i].abs().sum() for i in [u'A', u'B', u'C', u'D', u'E']]
+    tots = [507.14607000000001, 1680.7624099999998, 165461.14259999999, 46770.887000000002, 0.057384780000000003]
+    assert_allclose(tots_calc, tots)
+    
+    assert VDI_PPDS_7.index.is_unique
+    assert VDI_PPDS_7.shape == (271, 7)
+
+
 def test_ViswanathNatarajan():
     mu = ViswanathNatarajan2(348.15, -5.9719, 1007.0)
     assert_allclose(mu, 0.00045983686956829517)
@@ -224,13 +234,13 @@ def test_ViscosityLiquid():
     EtOH = ViscosityLiquid(MW=46.06844, Tm=159.05, Tc=514.0, Pc=6137000.0, Vc=0.000168, omega=0.635, Psat=7872.16, Vml=5.8676e-5, CASRN='64-17-5')
 
     mul_calcs = [(EtOH.set_user_methods(i), EtOH.T_dependent_property(298.15))[1] for i in EtOH.all_methods]
-    mul_exp = [0.0004191198228004424, 0.0010823506202025659, 0.0010720812586059742, 0.0010774308462863267, 0.0010713697500000004, 0.0031157679801337825, 0.0010823506202025659]
+    mul_exp = [0.0010623746999654108, 0.0004191198228004424, 0.0010823506202025659, 0.0010720812586059742, 0.0010713697500000004, 0.0031157679801337825, 0.0010774308462863267, 0.0010823506202025659]
     assert_allclose(sorted(mul_calcs), sorted(mul_exp))
 
     # Test that methods return None
     EtOH.tabular_extrapolation_permitted = False
     Vml_calcs = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(600))[1] for i in EtOH.all_methods]
-    assert [None]*7 == Vml_calcs
+    assert [None]*8 == Vml_calcs
 
     with pytest.raises(Exception):
         EtOH.test_method_validity(300, 'BADMETHOD')
@@ -238,9 +248,9 @@ def test_ViscosityLiquid():
     # Acetic acid to test ViswanathNatarajan2Exponential
     acetic_acid = ViscosityLiquid(CASRN='64-19-7')
     mul_calcs = [(acetic_acid.set_user_methods(i), acetic_acid.T_dependent_property(350.0))[1] for i in acetic_acid.all_methods]
-    mul_exp = [0.0005799665143154318, 0.0005089289428076254, 0.0005727888422607339, 0.000587027903931889]
+    mul_exp = [0.0005799665143154318, 0.0005089289428076254, 0.0005799665143154318, 0.0005727888422607339, 0.000587027903931889]
     assert_allclose(sorted(mul_calcs), sorted(mul_exp))
-    assert [None]*4 == [(acetic_acid.set_user_methods(i), acetic_acid.T_dependent_property(650.0))[1] for i in acetic_acid.all_methods]
+    assert [None]*5 == [(acetic_acid.set_user_methods(i), acetic_acid.T_dependent_property(650.0))[1] for i in acetic_acid.all_methods]
 
     # Test ViswanathNatarajan2 with boron trichloride
     mu = ViscosityLiquid(CASRN='10294-34-5').T_dependent_property(250)

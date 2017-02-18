@@ -23,7 +23,7 @@ SOFTWARE.'''
 from __future__ import division
 
 __all__ = ['Dutt_Prasad', 'VN3_data', 'VN2_data', 'VN2E_data', 'Perrys2_313',
-           'Perrys2_312',
+           'Perrys2_312','VDI_PPDS_7', 
 'ViswanathNatarajan2', 'ViswanathNatarajan2Exponential', 'ViswanathNatarajan3',
  'Letsou_Stiel', 'Przedziecki_Sridhar', 'viscosity_liquid_methods', 
  'viscosity_liquid_methods_P', 'ViscosityLiquid', 'ViscosityGas', 'Lucas', 
@@ -68,6 +68,11 @@ _Perrys2_313_values = Perrys2_313.values
 Perrys2_312 = pd.read_csv(os.path.join(folder, 'Table 2-312 Vapor Viscosity of Inorganic and Organic Substances.csv'),
                           sep='\t', index_col=0)
 _Perrys2_312_values = Perrys2_312.values
+
+VDI_PPDS_7 = pd.read_csv(os.path.join(folder, 'VDI PPDS Dynamic viscosity of saturated liquids polynomials.csv'),
+                          sep='\t', index_col=0)
+_VDI_PPDS_7_values = VDI_PPDS_7.values
+
 
 def ViswanathNatarajan2(T, A, B):
     '''
@@ -265,6 +270,7 @@ def Przedziecki_Sridhar(T, Tm, Tc, Pc, Vc, Vm, omega, MW):
 
 NONE = 'NONE'
 VDI_TABULAR = 'VDI_TABULAR'
+VDI_PPDS = 'VDI_PPDS'
 COOLPROP = 'COOLPROP'
 SUPERCRITICAL = 'SUPERCRITICAL'
 DUTT_PRASAD = 'DUTT_PRASAD'
@@ -277,7 +283,7 @@ LUCAS = 'LUCAS'
 NEGLIGIBLE = 'NEGLIGIBLE'
 DIPPR_PERRY_8E = 'DIPPR_PERRY_8E'
 
-viscosity_liquid_methods = [COOLPROP, DIPPR_PERRY_8E, DUTT_PRASAD, VISWANATH_NATARAJAN_3,
+viscosity_liquid_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, DUTT_PRASAD, VISWANATH_NATARAJAN_3,
                          VISWANATH_NATARAJAN_2, VISWANATH_NATARAJAN_2E,
                          VDI_TABULAR, LETSOU_STIEL, PRZEDZIECKI_SRIDHAR]
 '''Holds all low-pressure methods available for the ViscosityLiquid class, for
@@ -292,8 +298,8 @@ class ViscosityLiquid(TPDependentProperty):
     temperature and pressure.
 
     For low-pressure (at 1 atm while under the vapor pressure; along the
-    saturation line otherwise) liquids, there are five coefficient-based methods
-    from two data sources, one source of tabular information, two
+    saturation line otherwise) liquids, there are six coefficient-based methods
+    from three data sources, one source of tabular information, two
     corresponding-states estimators, and the external library CoolProp.
 
     For high-pressure liquids (also, <1 atm liquids), there is one
@@ -360,6 +366,13 @@ class ViscosityLiquid(TPDependentProperty):
     **VDI_TABULAR**:
         Tabular data in [3]_ along the saturation curve; interpolation is as
         set by the user or the default.
+    **VDI_PPDS**:
+        Coefficients for a equation form developed by the PPDS, published 
+        openly in [3]_. Provides no temperature limits, but has been designed
+        for extrapolation. Extrapolated to low temperatures it provides a 
+        smooth exponential increase. However, for some chemicals such as
+        glycerol, extrapolated to higher temperatures viscosity is predicted
+        to increase above a certain point.
 
     High pressure methods:
 
@@ -396,7 +409,7 @@ class ViscosityLiquid(TPDependentProperty):
        Eighth Edition. McGraw-Hill Professional, 2007.
     '''
     name = 'liquid viscosity'
-    units = 'Pa*S'
+    units = 'Pa*s'
     interpolation_T = None
     '''No interpolation transformation by default.'''
     interpolation_P = None
@@ -413,7 +426,7 @@ class ViscosityLiquid(TPDependentProperty):
     '''Maximum valid value of liquid viscosity. Generous limit, as
     the value is that of bitumen in a Pitch drop experiment.'''
 
-    ranked_methods = [COOLPROP, DIPPR_PERRY_8E, DUTT_PRASAD, VISWANATH_NATARAJAN_3,
+    ranked_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, DUTT_PRASAD, VISWANATH_NATARAJAN_3,
                       VISWANATH_NATARAJAN_2, VISWANATH_NATARAJAN_2E,
                       VDI_TABULAR, LETSOU_STIEL, PRZEDZIECKI_SRIDHAR]
     '''Default rankings of the low-pressure methods.'''
@@ -533,6 +546,9 @@ class ViscosityLiquid(TPDependentProperty):
             _, C1, C2, C3, C4, C5, self.Perrys2_313_Tmin, self.Perrys2_313_Tmax = _Perrys2_313_values[Perrys2_313.index.get_loc(self.CASRN)].tolist()
             self.Perrys2_313_coeffs = [C1, C2, C3, C4, C5]
             Tmins.append(self.Perrys2_313_Tmin); Tmaxs.append(self.Perrys2_313_Tmax)
+        if self.CASRN in VDI_PPDS_7.index:
+            methods.append(VDI_PPDS)
+            self.VDI_PPDS_coeffs = _VDI_PPDS_7_values[VDI_PPDS_7.index.get_loc(self.CASRN)].tolist()[2:]
         if all((self.MW, self.Tc, self.Pc, self.omega)):
             methods.append(LETSOU_STIEL)
             Tmins.append(self.Tc/4); Tmaxs.append(self.Tc) # TODO: test model at low T
@@ -586,6 +602,15 @@ class ViscosityLiquid(TPDependentProperty):
         elif method == PRZEDZIECKI_SRIDHAR:
             Vml = self.Vml(T) if hasattr(self.Vml, '__call__') else self.Vml
             mu = Przedziecki_Sridhar(T, self.Tm, self.Tc, self.Pc, self.Vc, Vml, self.omega, self.MW)
+        elif method == VDI_PPDS:
+            A, B, C, D, E = self.VDI_PPDS_coeffs
+            term = (C - T)/(T-D)
+            if term < 0:
+                term1 = -((T - C)/(T-D))**(1/3.)
+            else:
+                term1 = term**(1/3.)
+            term2 = term*term1
+            mu = E*exp(A*term1 + B*term2)
         elif method in self.tabular_data:
             mu = self.interpolate(T, method)
         return mu
@@ -635,6 +660,19 @@ class ViscosityLiquid(TPDependentProperty):
             if T > self.Tc:
                 return False
             # No lower limit
+        elif method == VDI_PPDS:
+            # If the derivative is positive, return invalid.
+            # This is very important as no maximum temperatures are specified.
+            if T > self.Tc:
+                return False
+            A, B, C, D, E = self.VDI_PPDS_coeffs
+            term = (C - T)/(T - D)
+            # Derived with sympy
+            if term > 0:
+                der = E*((-C + T)/(D - T))**(1/3.)*(A + 4*B*(-C + T)/(D - T))*(C - D)*exp(((-C + T)/(D - T))**(1/3.)*(A + B*(-C + T)/(D - T)))/(3*(C - T)*(D - T))
+            else:
+                der = E*((C - T)/(D - T))**(1/3.)*(-A*(C - D)*(D - T)**6 + B*(C - D)*(C - T)*(D - T)**5 + 3*B*(C - T)**2*(D - T)**5 - 3*B*(C - T)*(D - T)**6)*exp(-((C - T)/(D - T))**(1/3.)*(A*(D - T) - B*(C - T))/(D - T))/(3*(C - T)*(D - T)**7)
+            return der < 0
         elif method in self.tabular_data:
             # if tabular_extrapolation_permitted, good to go without checking
             if not self.tabular_extrapolation_permitted:
