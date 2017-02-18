@@ -23,7 +23,7 @@ SOFTWARE.'''
 from __future__ import division
 
 __all__ = ['Dutt_Prasad', 'VN3_data', 'VN2_data', 'VN2E_data', 'Perrys2_313',
-           'Perrys2_312','VDI_PPDS_7', 
+           'Perrys2_312','VDI_PPDS_7', 'VDI_PPDS_8',
 'ViswanathNatarajan2', 'ViswanathNatarajan2Exponential', 'ViswanathNatarajan3',
  'Letsou_Stiel', 'Przedziecki_Sridhar', 'viscosity_liquid_methods', 
  'viscosity_liquid_methods_P', 'ViscosityLiquid', 'ViscosityGas', 'Lucas', 
@@ -37,7 +37,7 @@ import numpy as np
 import pandas as pd
 
 from thermo.utils import log, exp
-from thermo.utils import none_and_length_check, mixing_simple, mixing_logarithmic, TPDependentProperty
+from thermo.utils import horner, none_and_length_check, mixing_simple, mixing_logarithmic, TPDependentProperty
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
 from thermo.electrochem import _Laliberte_Viscosity_ParametersDict, Laliberte_viscosity
 from thermo.coolprop import has_CoolProp, PropsSI, PhaseSI, coolprop_fluids, coolprop_dict, CoolProp_T_dependent_property
@@ -72,6 +72,10 @@ _Perrys2_312_values = Perrys2_312.values
 VDI_PPDS_7 = pd.read_csv(os.path.join(folder, 'VDI PPDS Dynamic viscosity of saturated liquids polynomials.csv'),
                           sep='\t', index_col=0)
 _VDI_PPDS_7_values = VDI_PPDS_7.values
+
+VDI_PPDS_8 = pd.read_csv(os.path.join(folder, 'VDI PPDS Dynamic viscosity of gases polynomials.csv'),
+                          sep='\t', index_col=0)
+_VDI_PPDS_8_values = VDI_PPDS_8.values
 
 
 def ViswanathNatarajan2(T, A, B):
@@ -663,7 +667,7 @@ class ViscosityLiquid(TPDependentProperty):
         elif method == VDI_PPDS:
             # If the derivative is positive, return invalid.
             # This is very important as no maximum temperatures are specified.
-            if T > self.Tc:
+            if self.Tc and T > self.Tc:
                 return False
             A, B, C, D, E = self.VDI_PPDS_coeffs
             term = (C - T)/(T - D)
@@ -1145,7 +1149,7 @@ YOON_THODOS = 'YOON_THODOS'
 STIEL_THODOS = 'STIEL_THODOS'
 LUCAS_GAS = 'LUCAS_GAS'
 
-viscosity_gas_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_TABULAR, GHARAGHEIZI, YOON_THODOS,
+viscosity_gas_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR, GHARAGHEIZI, YOON_THODOS,
                          STIEL_THODOS, LUCAS_GAS]
 '''Holds all low-pressure methods available for the ViscosityGas
 class, for use in iterating over them.'''
@@ -1159,7 +1163,7 @@ class ViscosityGas(TPDependentProperty):
     temperature and pressure.
 
     For gases at atmospheric pressure, there are 4 corresponding-states
-    estimators, one source of coefficient-based models, one source of tabular 
+    estimators, two sources of coefficient-based models, one source of tabular 
     information, and the external library CoolProp.
 
     For gases under the fluid's boiling point (at sub-atmospheric pressures),
@@ -1206,6 +1210,10 @@ class ViscosityGas(TPDependentProperty):
         A collection of 345 coefficient sets from the DIPPR database published
         openly in [3]_. Provides temperature limits for all its fluids. 
         :obj:`thermo.dippr.EQ102` is used for its fluids.
+    **VDI_PPDS**:
+        Coefficients for a equation form developed by the PPDS, published 
+        openly in [2]_. Provides no temperature limits, but provides reasonable
+        values at fairly high and very low temperatures.
     **COOLPROP**:
         CoolProp external library; with select fluids from its library.
         Range is limited to that of the equations of state it uses, as
@@ -1259,7 +1267,7 @@ class ViscosityGas(TPDependentProperty):
     property_max = 1E-3
     '''Maximum valid value of gas viscosity. Might be too high, or too low.'''
 
-    ranked_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_TABULAR, GHARAGHEIZI, YOON_THODOS,
+    ranked_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR, GHARAGHEIZI, YOON_THODOS,
                       STIEL_THODOS, LUCAS_GAS]
     '''Default rankings of the low-pressure methods.'''
     ranked_methods_P = [COOLPROP]
@@ -1357,6 +1365,10 @@ class ViscosityGas(TPDependentProperty):
             _, C1, C2, C3, C4, self.Perrys2_312_Tmin, self.Perrys2_312_Tmax = _Perrys2_312_values[Perrys2_312.index.get_loc(self.CASRN)].tolist()
             self.Perrys2_312_coeffs = [C1, C2, C3, C4]
             Tmins.append(self.Perrys2_312_Tmin); Tmaxs.append(self.Perrys2_312_Tmax)
+        if self.CASRN in VDI_PPDS_8.index:
+            methods.append(VDI_PPDS)
+            self.VDI_PPDS_coeffs = _VDI_PPDS_8_values[VDI_PPDS_8.index.get_loc(self.CASRN)].tolist()[1:]
+            self.VDI_PPDS_coeffs.reverse() # in format for horner's scheme
         if all([self.Tc, self.Pc, self.MW]):
             methods.append(GHARAGHEIZI)
             methods.append(YOON_THODOS)
@@ -1397,6 +1409,8 @@ class ViscosityGas(TPDependentProperty):
             mu = CoolProp_T_dependent_property(T, self.CASRN, 'V', 'g')
         elif method == DIPPR_PERRY_8E:
             mu = EQ102(T, *self.Perrys2_312_coeffs)
+        elif method == VDI_PPDS:
+            mu =  horner(self.VDI_PPDS_coeffs, T)
         elif method == YOON_THODOS:
             mu = Yoon_Thodos(T, self.Tc, self.Pc, self.MW)
         elif method == STIEL_THODOS:
@@ -1437,7 +1451,7 @@ class ViscosityGas(TPDependentProperty):
         if method in [YOON_THODOS, STIEL_THODOS, LUCAS_GAS]:
             if T < 0 or T > 5000:
                 # Arbitrary limit
-                validity = False
+                return False
         elif method == DIPPR_PERRY_8E:
             if T < self.Perrys2_312_Tmin or T > self.Perrys2_312_Tmax:
                 return False
@@ -1448,6 +1462,8 @@ class ViscosityGas(TPDependentProperty):
         elif method == COOLPROP:
             if T < self.CP_f.Tmin or T > self.CP_f.Tmax:
                 return False
+        elif method == VDI_PPDS:
+            pass # Polynomial always works
         elif method in self.tabular_data:
             # if tabular_extrapolation_permitted, good to go without checking
             if not self.tabular_extrapolation_permitted:

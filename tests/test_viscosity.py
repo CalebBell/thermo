@@ -105,6 +105,15 @@ def test_VDI_PPDS_7_data():
     assert VDI_PPDS_7.index.is_unique
     assert VDI_PPDS_7.shape == (271, 7)
 
+def test_VDI_PPDS_8_data():
+    # Coefficients for water are incorrect - obtained an average deviation of 150%!
+    assert all([checkCAS(i) for i in VDI_PPDS_8.index])
+    tots_calc = [VDI_PPDS_8[i].abs().sum() for i in [u'A', u'B', u'C', u'D', u'E']]
+    tots = [0.00032879559999999999, 9.5561339999999995e-06, 2.8377710000000001e-09, 2.8713399999999998e-12, 2.8409200000000004e-15]
+    assert_allclose(tots_calc, tots)
+    
+    assert VDI_PPDS_8.index.is_unique
+    assert VDI_PPDS_8.shape == (274, 6)
 
 def test_ViswanathNatarajan():
     mu = ViswanathNatarajan2(348.15, -5.9719, 1007.0)
@@ -290,13 +299,13 @@ def test_ViscosityGas():
     EtOH = ViscosityGas(MW=46.06844, Tc=514.0, Pc=6137000.0, Zc=0.2412, dipole=1.44, Vmg=0.02357, CASRN='64-17-5')
 
     mug_calcs = [(EtOH.set_user_methods(i), EtOH.T_dependent_property(298.15))[1] for i in EtOH.all_methods]
-    mug_exp = [7.414017252400231e-06, 8.772549629893446e-06, 8.933684639927153e-06, 8.5445e-06, 7.902892297231681e-06, 8.805532218477024e-06, 7.536618820670175e-06]
+    mug_exp = [8.934627758386856e-06, 8.933684639927153e-06, 7.414017252400231e-06, 8.772549629893446e-06, 8.5445e-06, 7.902892297231681e-06, 8.805532218477024e-06, 7.536618820670175e-06]
     assert_allclose(sorted(mug_calcs), sorted(mug_exp))
 
     # Test that methods return None
     EtOH.tabular_extrapolation_permitted = False
     mug_calcs = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(6000))[1] for i in EtOH.all_methods]
-    assert [None]*7 == mug_calcs
+    assert [None]*8 == mug_calcs
 
     with pytest.raises(Exception):
         EtOH.test_method_validity(300, 'BADMETHOD')
