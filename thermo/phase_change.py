@@ -24,7 +24,8 @@ from __future__ import division
 
 __all__ = ['Yaws_data', 'Tb_methods', 'Tb', 'Tm_ON_data', 'Tm_methods', 'Tm', 
            'Clapeyron', 'Pitzer', 'SMK', 'MK', 'Velasco', 'Riedel', 'Chen', 
-           'Liu', 'Vetere', 'GharagheiziHvap_data', 'CRCHvap_data', 'Perrys2_150', 'Watson', 
+           'Liu', 'Vetere', 'GharagheiziHvap_data', 'CRCHvap_data', 
+           'Perrys2_150', 'VDI_PPDS_4', 'Watson', 
            'enthalpy_vaporization_methods', 'EnthalpyVaporization', 
            'CRCHfus_data', 'Hfus', 'GharagheiziHsub_data', 'Hsub', 'Tliquidus']
 
@@ -37,7 +38,7 @@ import pandas as pd
 
 from thermo.miscdata import CRC_organic_data, CRC_inorganic_data
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
-from thermo.utils import property_molar_to_mass, mixing_simple, none_and_length_check, TDependentProperty
+from thermo.utils import property_molar_to_mass, property_mass_to_molar, mixing_simple, none_and_length_check, TDependentProperty
 from thermo.vapor_pressure import VaporPressure
 
 from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluids
@@ -67,6 +68,10 @@ GharagheiziHsub_data = pd.read_csv(os.path.join(folder, 'Ghazerati Appendix Subl
 Perrys2_150 = pd.read_csv(os.path.join(folder, 'Table 2-150 Heats of Vaporization of Inorganic and Organic Liquids.csv'),
                           sep='\t', index_col=0)
 _Perrys2_150_values = Perrys2_150.values
+
+VDI_PPDS_4 = pd.read_csv(os.path.join(folder, 'VDI PPDS Enthalpies of vaporization.csv'),
+                          sep='\t', index_col=0)
+_VDI_PPDS_4_values = VDI_PPDS_4.values
 
 
 ### Boiling Point at 1 atm
@@ -866,12 +871,13 @@ VELASCO = 'VELASCO'
 PITZER = 'PITZER'
 CLAPEYRON = 'CLAPEYRON'
 DIPPR_PERRY_8E = 'DIPPR_PERRY_8E'
+VDI_PPDS = 'VDI_PPDS'
 
 RIEDEL = 'RIEDEL'
 CHEN = 'CHEN'
 LIU = 'LIU'
 VETERE = 'VETERE'
-enthalpy_vaporization_methods = [DIPPR_PERRY_8E, COOLPROP, VDI_TABULAR, 
+enthalpy_vaporization_methods = [DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, VDI_TABULAR, 
                                  MORGAN_KOBAYASHI,
                       SIVARAMAN_MAGEE_KOBAYASHI, VELASCO, PITZER,
                       CRC_HVAP_TB, CRC_HVAP_298, GHARAGHEIZI_HVAP_298,
@@ -960,6 +966,9 @@ class EnthalpyVaporization(TDependentProperty):
     **VDI_TABULAR**:
         Tabular data in [4]_ along the saturation curve; interpolation is as
         set by the user or the default.
+    **VDI_PPDS**:
+        Coefficients for a equation form developed by the PPDS, published 
+        openly in [3]_. Extrapolates poorly at low temperatures.
     **DIPPR_PERRY_8E**:
         A collection of 344 coefficient sets from the DIPPR database published
         openly in [6]_. Provides temperature limits for all its fluids. 
@@ -1016,7 +1025,7 @@ class EnthalpyVaporization(TDependentProperty):
     '''Maximum valid of heat of vaporization. Set to twice the value in the
     available data.'''
 
-    ranked_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_TABULAR, MORGAN_KOBAYASHI,
+    ranked_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR, MORGAN_KOBAYASHI,
                       SIVARAMAN_MAGEE_KOBAYASHI, VELASCO, PITZER,
                       CRC_HVAP_TB, CRC_HVAP_298, GHARAGHEIZI_HVAP_298,
                       CLAPEYRON, RIEDEL, CHEN, VETERE, LIU]
@@ -1118,6 +1127,12 @@ class EnthalpyVaporization(TDependentProperty):
             _, Tc, C1, C2, C3, C4, self.Perrys2_150_Tmin, self.Perrys2_150_Tmax = _Perrys2_150_values[Perrys2_150.index.get_loc(self.CASRN)].tolist()
             self.Perrys2_150_coeffs = [Tc, C1, C2, C3, C4]
             Tmins.append(self.Perrys2_150_Tmin); Tmaxs.append(self.Perrys2_150_Tmax)
+        if self.CASRN in VDI_PPDS_4.index:
+            _,  MW, Tc, A, B, C, D, E = _VDI_PPDS_4_values[VDI_PPDS_4.index.get_loc(self.CASRN)].tolist()
+            self.VDI_PPDS_coeffs = [A, B, C, D, E]
+            self.VDI_PPDS_Tc = Tc
+            self.VDI_PPDS_MW = MW
+            methods.append(VDI_PPDS)
         self.all_methods = set(methods)
         if Tmins and Tmaxs:
             self.Tmin, self.Tmax = min(Tmins), max(Tmaxs)
@@ -1146,6 +1161,13 @@ class EnthalpyVaporization(TDependentProperty):
         elif method == DIPPR_PERRY_8E:
             Hvap = EQ106(T, *self.Perrys2_150_coeffs)
         # CSP methods
+        elif method == VDI_PPDS:
+            A, B, C, D, E = self.VDI_PPDS_coeffs
+            tau = 1. - T/self.VDI_PPDS_Tc
+            Hvap = R*self.VDI_PPDS_Tc*(A*tau**(1/3.) + B*tau**(2/3.) + C*tau
+                                       + D*tau**2 + E*tau**6)
+            # Surprise, don't actually need MW
+#            Hvap = property_mass_to_molar(Hvap, self.VDI_PPDS_MW)
         elif method == MORGAN_KOBAYASHI:
             Hvap = MK(T, self.Tc, self.omega)
         elif method == SIVARAMAN_MAGEE_KOBAYASHI:
@@ -1240,6 +1262,8 @@ class EnthalpyVaporization(TDependentProperty):
             if not self.Tc:
                 if T < 298.15 - 5 or T > 298.15 + 5:
                     validity = False
+        elif method == VDI_PPDS:
+            validity = T <= self.VDI_PPDS_Tc
         elif method in self.boiling_methods:
             if T > self.Tc:
                 validity = False

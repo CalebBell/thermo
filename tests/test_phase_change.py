@@ -160,6 +160,17 @@ def test_Perrys2_312_data():
     assert Perrys2_150.index.is_unique
     assert Perrys2_150.shape == (344, 8)
 
+def test_VDI_PPDS_4_data():
+    '''I believe there are no errors here. 
+    '''
+    assert all([checkCAS(i) for i in VDI_PPDS_4.index])
+    tots_calc = [VDI_PPDS_4[i].abs().sum() for i in [u'A', u'B', u'C', u'D', u'E', u'Tc', u'MW']]
+    tots = [1974.2929800000002, 2653.9399000000003, 2022.530649, 943.25633100000005, 3124.9258610000002, 150142.28, 27786.919999999998]
+    assert_allclose(tots_calc, tots)
+    
+    assert VDI_PPDS_4.index.is_unique
+    assert VDI_PPDS_4.shape == (272, 8)
+
 
 def test_Tb():
     # CRC_inorg, CRC org, Yaws
@@ -239,10 +250,10 @@ def test_EnthalpyVaporization():
     EtOH = EnthalpyVaporization(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, similarity_variable=0.1954, Psat=7872.2, Zg=0.9633, Zl=0.0024, CASRN='64-17-5')
 
     Hvap_calc =  [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(298.15))[1] for i in EtOH.all_methods]
-    Hvap_exp = [42829.162840789715, 41892.45710244491, 43587.11462479239, 42200.0, 40812.16639989246, 42413.51210041263, 42320.0, 37770.35479826021, 42855.01452567944, 42468.433273309995, 42541.61366696268, 44804.60063848499, 43481.092918859824, 42261.54839182171, 42946.68066040123]
+    Hvap_exp = [42429.269903954155, 42829.162840789715, 41892.45710244491, 43587.11462479239, 42200.0, 40812.16639989246, 42413.51210041263, 42320.0, 37770.35479826021, 42855.01452567944, 42468.433273309995, 42541.61366696268, 44804.60063848499, 43481.092918859824, 42261.54839182171, 42946.68066040123]
     assert_allclose(sorted(Hvap_calc), sorted(Hvap_exp))
 
-    assert [None]*15 == [(EtOH.set_user_methods(i), EtOH.T_dependent_property(5000))[1] for i in EtOH.all_methods]
+    assert [None]*16 == [(EtOH.set_user_methods(i), EtOH.T_dependent_property(5000))[1] for i in EtOH.all_methods]
 
     EtOH = EnthalpyVaporization(CASRN='64-17-5')
     Hvap_calc = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(298.15))[1] for i in ['GHARAGHEIZI_HVAP_298', 'CRC_HVAP_298', 'VDI_TABULAR', 'COOLPROP']]
