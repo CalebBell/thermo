@@ -699,7 +699,7 @@ class VolumeLiquid(TPDependentProperty):
     temperature and pressure.
 
     For low-pressure (at 1 atm while under the vapor pressure; along the
-    saturation line otherwise) liquids, there are five coefficient-based methods
+    saturation line otherwise) liquids, there are six coefficient-based methods
     from five data sources, one source of tabular information, one source of
     constant values, eight corresponding-states estimators, and the external
     library CoolProp.
@@ -746,6 +746,10 @@ class VolumeLiquid(TPDependentProperty):
         A simple polynomial as expressed in [1]_, with data available for
         344 fluids. Temperature limits are available for all fluids. Believed
         very accurate.
+    **VDI_PPDS**:
+        Coefficients for a equation form developed by the PPDS, published 
+        openly in [3]_. Valid up to the critical temperature, and extrapolates
+        to very low temperatures well.
     **MMSNM0FIT**:
         Uses a fit coefficient for better accuracy in the :obj:`SNM0` method,
         Coefficients available for 73 fluids from [2]_. Valid to the critical

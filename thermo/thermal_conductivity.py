@@ -30,7 +30,8 @@ __all__ = ['Sheffy_Johnson', 'Sato_Riedel', 'Lakshmi_Prasad',
  'Gharagheizi_gas', 'Bahadori_gas', 'thermal_conductivity_gas_methods', 
  'thermal_conductivity_gas_methods_P', 'ThermalConductivityGas', 
  'stiel_thodos_dense', 'eli_hanley_dense', 'chung_dense', 'Lindsay_Bromley', 
- 'thermal_conductivity_gas_mixture', 'Perrys2_314', 'Perrys2_315']
+ 'thermal_conductivity_gas_mixture', 'Perrys2_314', 'Perrys2_315', 'VDI_PPDS_9',
+ 'VDI_PPDS_10']
 
 import os
 import numpy as np
@@ -39,7 +40,7 @@ from scipy.constants import R
 import pandas as pd
 
 from thermo.utils import log, exp
-from thermo.utils import mixing_simple, none_and_length_check, TPDependentProperty
+from thermo.utils import mixing_simple, none_and_length_check, TPDependentProperty, horner
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
 from thermo.coolprop import has_CoolProp, coolprop_dict, coolprop_fluids, CoolProp_T_dependent_property, PropsSI, PhaseSI
 from thermo.electrochem import thermal_conductivity_Magomedov, Magomedovk_thermal_cond
@@ -55,6 +56,14 @@ _Perrys2_314_values = Perrys2_314.values
 Perrys2_315 = pd.read_csv(os.path.join(folder, 'Table 2-315 Thermal Conductivity of Inorganic and Organic Liquids.csv'),
                           sep='\t', index_col=0)
 _Perrys2_315_values = Perrys2_315.values
+
+VDI_PPDS_9 = pd.read_csv(os.path.join(folder, 'VDI PPDS Thermal conductivity of saturated liquids.csv'),
+                          sep='\t', index_col=0)
+_VDI_PPDS_9_values = VDI_PPDS_9.values
+
+VDI_PPDS_10 = pd.read_csv(os.path.join(folder, 'VDI PPDS Thermal conductivity of gases.csv'),
+                          sep='\t', index_col=0)
+_VDI_PPDS_10_values = VDI_PPDS_10.values
 
 ### Purely CSP Methods - Liquids
 
@@ -416,11 +425,11 @@ def Bahadori_liquid(T, M):
     b = A[1] + B[1]*X + C[1]*X**2 + D[1]*X**3
     c = A[2] + B[2]*X + C[2]*X**2 + D[2]*X**3
     d = A[3] + B[3]*X + C[3]*X**2 + D[3]*X**3
-    kl = a + b*Y + c*Y**2 + d*Y**3
-    return kl
+    return a + b*Y + c*Y**2 + d*Y**3
 
 
 VDI_TABULAR = 'VDI_TABULAR'
+VDI_PPDS = 'VDI_PPDS'
 COOLPROP = 'COOLPROP'
 GHARAGHEIZI_L = 'GHARAGHEIZI_L'
 NICOLA = 'NICOLA'
@@ -435,7 +444,7 @@ DIPPR_PERRY_8E = 'DIPPR_PERRY_8E'
 NEGLIGIBLE = 'NEGLIGIBLE'
 DIPPR_9G = 'DIPPR_9G'
 
-thermal_conductivity_liquid_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_TABULAR, GHARAGHEIZI_L,
+thermal_conductivity_liquid_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR, GHARAGHEIZI_L,
                                        SATO_RIEDEL, NICOLA, NICOLA_ORIGINAL,
                                        SHEFFY_JOHNSON, BAHADORI_L,
                                        LAKSHMI_PRASAD]
@@ -504,6 +513,10 @@ class ThermalConductivityLiquid(TPDependentProperty):
         A collection of 340 coefficient sets from the DIPPR database published
         openly in [3]_. Provides temperature limits for all its fluids. 
         :obj:`thermo.dippr.EQ100` is used for its fluids.
+    **VDI_PPDS**:
+        Coefficients for a equation form developed by the PPDS, published 
+        openly in [2]_. Covers a large temperature range, but does not 
+        extrapolate well at very high or very low temperatures. 271 compounds.
     **COOLPROP**:
         CoolProp external library; with select fluids from its library.
         Range is limited to that of the equations of state it uses, as
@@ -567,7 +580,7 @@ class ThermalConductivityLiquid(TPDependentProperty):
     property_max = 10
     '''Maximum valid value of liquid thermal conductivity. Generous limit.'''
 
-    ranked_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_TABULAR, GHARAGHEIZI_L,
+    ranked_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR, GHARAGHEIZI_L,
                       SATO_RIEDEL, NICOLA, NICOLA_ORIGINAL,
                       SHEFFY_JOHNSON, BAHADORI_L, LAKSHMI_PRASAD]
     '''Default rankings of the low-pressure methods.'''
@@ -674,6 +687,11 @@ class ThermalConductivityLiquid(TPDependentProperty):
             _, C1, C2, C3, C4, C5, self.Perrys2_315_Tmin, self.Perrys2_315_Tmax = _Perrys2_315_values[Perrys2_315.index.get_loc(self.CASRN)].tolist()
             self.Perrys2_315_coeffs = [C1, C2, C3, C4, C5]
             Tmins.append(self.Perrys2_315_Tmin); Tmaxs.append(self.Perrys2_315_Tmax)
+        if self.CASRN in VDI_PPDS_9.index:
+            _,  A, B, C, D, E = _VDI_PPDS_9_values[VDI_PPDS_9.index.get_loc(self.CASRN)].tolist()
+            self.VDI_PPDS_coeffs = [A, B, C, D, E]
+            self.VDI_PPDS_coeffs.reverse()
+            methods.append(VDI_PPDS)
         if all([self.MW, self.Tm]):
             methods.append(SHEFFY_JOHNSON)
             Tmins.append(0); Tmaxs.append(self.Tm + 793.65)
@@ -730,6 +748,8 @@ class ThermalConductivityLiquid(TPDependentProperty):
             kl = Bahadori_liquid(T, self.MW)
         elif method == DIPPR_PERRY_8E:
             kl = EQ100(T, *self.Perrys2_315_coeffs)
+        elif method == VDI_PPDS:
+            kl = horner(self.VDI_PPDS_coeffs, T)
         elif method == COOLPROP:
             kl = CoolProp_T_dependent_property(T, self.CASRN, 'L', 'l')
         elif method in self.tabular_data:
@@ -811,6 +831,9 @@ class ThermalConductivityLiquid(TPDependentProperty):
         elif method in [BAHADORI_L, LAKSHMI_PRASAD, SHEFFY_JOHNSON]:
             pass
             # no limits at all
+        elif method == VDI_PPDS:
+            if self.Tc and T > self.Tc:
+                return False
         elif method == COOLPROP:
             if T < self.CP_f.Tt or T > self.CP_f.Tc:
                 return False
@@ -1611,7 +1634,7 @@ DIPPR_9B = 'DIPPR_9B'
 
 
 
-thermal_conductivity_gas_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_TABULAR, GHARAGHEIZI_G,
+thermal_conductivity_gas_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR, GHARAGHEIZI_G,
                                     DIPPR_9B, CHUNG, ELI_HANLEY, EUCKEN_MOD,
                                     EUCKEN, BAHADORI_G]
 '''Holds all low-pressure methods available for the ThermalConductivityGas
@@ -1690,6 +1713,10 @@ class ThermalConductivityGas(TPDependentProperty):
         A collection of 345 coefficient sets from the DIPPR database published
         openly in [3]_. Provides temperature limits for all its fluids. 
         :obj:`thermo.dippr.EQ102` is used for its fluids.
+    **VDI_PPDS**:
+        Coefficients for a equation form developed by the PPDS, published 
+        openly in [2]_. Covers a large temperature range, but does not 
+        extrapolate well at very high or very low temperatures. 275 compounds.
     **COOLPROP**:
         CoolProp external library; with select fluids from its library.
         Range is limited to that of the equations of state it uses, as
@@ -1757,7 +1784,7 @@ class ThermalConductivityGas(TPDependentProperty):
     property_max = 10
     '''Maximum valid value of gas thermal conductivity. Generous limit.'''
 
-    ranked_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_TABULAR, GHARAGHEIZI_G, DIPPR_9B,
+    ranked_methods = [COOLPROP, VDI_PPDS, DIPPR_PERRY_8E, VDI_TABULAR, GHARAGHEIZI_G, DIPPR_9B,
                       CHUNG, ELI_HANLEY, EUCKEN_MOD, EUCKEN,
                       BAHADORI_G]
     '''Default rankings of the low-pressure methods.'''
@@ -1861,6 +1888,11 @@ class ThermalConductivityGas(TPDependentProperty):
             _, C1, C2, C3, C4, self.Perrys2_314_Tmin, self.Perrys2_314_Tmax = _Perrys2_314_values[Perrys2_314.index.get_loc(self.CASRN)].tolist()
             self.Perrys2_314_coeffs = [C1, C2, C3, C4]
             Tmins.append(self.Perrys2_314_Tmin); Tmaxs.append(self.Perrys2_314_Tmax)
+        if self.CASRN in VDI_PPDS_10.index:
+            _,  A, B, C, D, E = _VDI_PPDS_10_values[VDI_PPDS_10.index.get_loc(self.CASRN)].tolist()
+            self.VDI_PPDS_coeffs = [A, B, C, D, E]
+            self.VDI_PPDS_coeffs.reverse()
+            methods.append(VDI_PPDS)
         if all((self.MW, self.Tb, self.Pc, self.omega)):
             methods.append(GHARAGHEIZI_G)
             # Turns negative at low T; do not set Tmin
@@ -1934,6 +1966,8 @@ class ThermalConductivityGas(TPDependentProperty):
             kg = Eucken(self.MW, Cvgm, mug)
         elif method == DIPPR_PERRY_8E:
             kg = EQ102(T, *self.Perrys2_314_coeffs)
+        elif method == VDI_PPDS:
+            kg = horner(self.VDI_PPDS_coeffs, T)
         elif method == BAHADORI_G:
             kg = Bahadori_gas(T, self.MW)
         elif method == COOLPROP:
@@ -2003,7 +2037,7 @@ class ThermalConductivityGas(TPDependentProperty):
             Whether or not a method is valid
         '''
         if method in [GHARAGHEIZI_G, DIPPR_9B, CHUNG, ELI_HANLEY, EUCKEN_MOD,
-                      EUCKEN, BAHADORI_G]:
+                      EUCKEN, BAHADORI_G, VDI_PPDS]:
             pass
         elif method == DIPPR_PERRY_8E:
             if T < self.Perrys2_314_Tmin or T > self.Perrys2_314_Tmax:

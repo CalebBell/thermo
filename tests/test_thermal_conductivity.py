@@ -24,7 +24,7 @@ from numpy.testing import assert_allclose
 import pytest
 from thermo.thermal_conductivity import *
 from thermo.identifiers import checkCAS
-from thermo.thermal_conductivity import (GHARAGHEIZI_G, CHUNG, ELI_HANLEY, 
+from thermo.thermal_conductivity import (GHARAGHEIZI_G, CHUNG, ELI_HANLEY, VDI_PPDS,
                                         ELI_HANLEY_DENSE, CHUNG_DENSE, 
                                         EUCKEN_MOD, EUCKEN, BAHADORI_G, 
                                         STIEL_THODOS_DENSE, DIPPR_9B, COOLPROP,
@@ -57,6 +57,44 @@ def test_Perrys2_315_data():
     
     assert Perrys2_315.index.is_unique
     assert Perrys2_315.shape == (340, 8)
+
+
+def test_VDI_PPDS_10_data():
+    '''Average deviation of 2.4% from tabulated values. Many chemicals have
+    much higher deviations. 10% or more deviations:
+    ['75-34-3', '107-06-2', '106-93-4', '420-46-2', '71-55-6', '79-34-5', 
+    '67-72-1', '76-12-0', '76-13-1', '76-14-2', '540-54-5', '75-01-4', 
+    '75-35-4', '79-01-6', '127-18-4', '462-06-6', '108-90-7', '108-86-1', 
+    '108-41-8', '100-44-7', '108-93-0', '100-61-8', '121-69-7', '91-66-7']
+    
+    These have been checked - it appears the tabulated data is just incorrect.
+    '''
+
+    assert all([checkCAS(i) for i in VDI_PPDS_10.index])
+    tots_calc = [VDI_PPDS_10[i].abs().sum() for i in [u'A', u'B', u'C', u'D', u'E']]
+    tots = [2.2974640014599998, 0.015556001460000001, 1.9897655000000001e-05, 6.7747269999999993e-09, 2.3260109999999999e-12]
+    assert_allclose(tots_calc, tots)
+    
+    assert VDI_PPDS_10.index.is_unique
+    assert VDI_PPDS_10.shape == (275, 6)
+
+
+def test_VDI_PPDS_9_data():
+    '''Average deviation of 0.71% from tabulated values. The following have 
+    larger deviations
+        
+    ['124-18-5', '629-59-4', '629-78-7', '526-73-8', '95-63-6']
+    
+    These have been checked - it appears the tabulated data is just incorrect.
+    '''
+
+    assert all([checkCAS(i) for i in VDI_PPDS_9.index])
+    tots_calc = [VDI_PPDS_9[i].abs().sum() for i in [u'A', u'B', u'C', u'D', u'E']]
+    tots = [63.458699999999993, 0.14461469999999998, 0.00042270770000000005, 1.7062660000000002e-06, 3.2715370000000003e-09]
+    assert_allclose(tots_calc, tots)
+    
+    assert VDI_PPDS_9.index.is_unique
+    assert VDI_PPDS_9.shape == (271, 6)
 
 
 def test_CSP_liq():
@@ -153,12 +191,12 @@ def test_ThermalConductivityLiquid():
 
     EtOH.T_dependent_property(305.)
     kl_calcs = [(EtOH.set_user_methods(i), EtOH.T_dependent_property(305.))[1] for i in EtOH.sorted_valid_methods]
-    kl_exp = [0.162183005823234, 0.16627999999999998, 0.17417420086033197, 0.20068212675966418, 0.18526367184633258, 0.18846433785041306, 0.16837295487233528, 0.16883011582627103, 0.09330268101157643, 0.028604363267557775]
+    kl_exp = [0.162183005823234, 0.16627999999999998, 0.166302, 0.17417420086033197, 0.20068212675966418, 0.18526367184633258, 0.18846433785041306, 0.16837295487233528, 0.16883011582627103, 0.09330268101157643, 0.028604363267557775]
     assert_allclose(kl_calcs, kl_exp)
 
     # Test that methods return None
     kl_calcs = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(5000))[1] for i in EtOH.sorted_valid_methods]
-    assert [None]*10 == kl_calcs
+    assert [None]*11 == kl_calcs
 
     EtOH.set_user_methods(VDI_TABULAR, forced=True)
     assert_allclose(EtOH.T_dependent_property(600.), 0.040117737789202995)
@@ -204,12 +242,12 @@ def test_ThermalConductivityGas():
     EtOH = ThermalConductivityGas(MW=46.06844, Tb=351.39, Tc=514.0, Pc=6137000.0, Vc=0.000168, Zc=0.2412, omega=0.635, dipole=1.44, Vmg=0.02357, Cvgm=56.98, mug=7.903e-6, CASRN='64-17-5')
     EtOH.T_dependent_property(298.15)
     kg_calcs = [(EtOH.set_user_methods(i), EtOH.T_dependent_property(298.15))[1] for i in EtOH.sorted_valid_methods]
-    kg_exp = [0.015227631457903644, 0.01520257225203181, 0.01494275, 0.016338750949017277, 0.014353317470206847, 0.011676848981094841, 0.01137910777526855, 0.015427444948536088, 0.012984129385510995, 0.017556325226536728]
+    kg_exp = [0.015227631457903644, 0.015025094773729045, 0.01520257225203181, 0.01494275, 0.016338750949017277, 0.014353317470206847, 0.011676848981094841, 0.01137910777526855, 0.015427444948536088, 0.012984129385510995, 0.017556325226536728]
     assert_allclose(kg_calcs, kg_exp)
 
     # Test that those mthods which can, do, return NoneEtOH.forced_P
-    kg_calcs = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(5E20))[1] for i in [COOLPROP, DIPPR_PERRY_8E, VDI_TABULAR, GHARAGHEIZI_G, ELI_HANLEY, BAHADORI_G]]
-    assert [None]*6 == kg_calcs
+    kg_calcs = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(5E20))[1] for i in [COOLPROP, DIPPR_PERRY_8E, VDI_TABULAR, GHARAGHEIZI_G, ELI_HANLEY, BAHADORI_G, VDI_PPDS]]
+    assert [None]*7 == kg_calcs
 
     # Test tabular limits/extrapolation
     EtOH.set_user_methods(VDI_TABULAR, forced=True)
