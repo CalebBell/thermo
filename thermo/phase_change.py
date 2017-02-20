@@ -1133,6 +1133,7 @@ class EnthalpyVaporization(TDependentProperty):
             self.VDI_PPDS_Tc = Tc
             self.VDI_PPDS_MW = MW
             methods.append(VDI_PPDS)
+            Tmaxs.append(self.VDI_PPDS_Tc); 
         self.all_methods = set(methods)
         if Tmins and Tmaxs:
             self.Tmin, self.Tmax = min(Tmins), max(Tmaxs)

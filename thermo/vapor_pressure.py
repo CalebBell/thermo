@@ -24,7 +24,7 @@ from __future__ import division
 
 __all__ = ['WagnerMcGarry', 'AntoinePoling', 'WagnerPoling', 'AntoineExtended',
            'Antoine', 'Wagner_original', 'Wagner', 'TRC_Antoine_extended', 
-           'vapor_pressure_methods', 'VaporPressure', 'Perrys2_8',
+           'vapor_pressure_methods', 'VaporPressure', 'Perrys2_8', 'VDI_PPDS_3',
            'boiling_critical_relation', 'Lee_Kesler', 'Ambrose_Walton', 
            'Edalat', 'Sanjari']
 
@@ -58,6 +58,10 @@ _AntoineExtended_values = AntoineExtended.values
 Perrys2_8 = pd.read_csv(os.path.join(folder, 'Table 2-8 Vapor Pressure of Inorganic and Organic Liquids.csv'),
                           sep='\t', index_col=0)
 _Perrys2_8_values = Perrys2_8.values
+
+VDI_PPDS_3 = pd.read_csv(os.path.join(folder, 'VDI PPDS Boiling temperatures at different pressures.csv'),
+                          sep='\t', index_col=0)
+_VDI_PPDS_3_values = VDI_PPDS_3.values
 
 
 def Antoine(T, A, B, C, base=10.0):
@@ -292,6 +296,7 @@ ANTOINE_EXTENDED_POLING = 'ANTOINE_EXTENDED_POLING'
 VDI_TABULAR = 'VDI_TABULAR'
 COOLPROP = 'COOLPROP'
 DIPPR_PERRY_8E = 'DIPPR_PERRY_8E'
+VDI_PPDS = 'VDI_PPDS'
 
 BOILING_CRITICAL = 'BOILING_CRITICAL'
 LEE_KESLER_PSAT = 'LEE_KESLER_PSAT'
@@ -301,7 +306,7 @@ EDALAT = 'Edalat'
 EOS = 'EOS'
 
 vapor_pressure_methods = [WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
-                          DIPPR_PERRY_8E, COOLPROP, ANTOINE_POLING, VDI_TABULAR, AMBROSE_WALTON,
+                          DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, ANTOINE_POLING, VDI_TABULAR, AMBROSE_WALTON,
                           LEE_KESLER_PSAT, EDALAT, EOS, BOILING_CRITICAL, SANJARI]
 '''Holds all methods available for the VaporPressure class, for use in
 iterating over them.'''
@@ -350,6 +355,9 @@ class VaporPressure(TDependentProperty):
         A collection of 341 coefficient sets from the DIPPR database published
         openly in [5]_. Provides temperature limits for all its fluids. 
         :obj:`thermo.dippr.EQ101` is used for its fluids.
+    **VDI_PPDS**:
+        Coefficients for a equation form developed by the PPDS, published 
+        openly in [4]_. 
     **COOLPROP**:
         CoolProp external library; with select fluids from its library.
         Range is limited to that of the equations of state it uses, as
@@ -423,7 +431,7 @@ class VaporPressure(TDependentProperty):
     highest known.'''
 
     ranked_methods = [WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
-                      DIPPR_PERRY_8E, COOLPROP, ANTOINE_POLING, VDI_TABULAR, AMBROSE_WALTON,
+                      DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, ANTOINE_POLING, VDI_TABULAR, AMBROSE_WALTON,
                       LEE_KESLER_PSAT, EDALAT, BOILING_CRITICAL, EOS, SANJARI]
     '''Default rankings of the available methods.'''
 
@@ -523,6 +531,14 @@ class VaporPressure(TDependentProperty):
             self.VDI_Tmax = Ts[-1]
             self.tabular_data[VDI_TABULAR] = (Ts, props)
             Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
+        if self.CASRN in VDI_PPDS_3.index:
+            _,  Tm, Tc, Pc, A, B, C, D = _VDI_PPDS_3_values[VDI_PPDS_3.index.get_loc(self.CASRN)].tolist()
+            self.VDI_PPDS_coeffs = [A, B, C, D]
+            self.VDI_PPDS_Tc = Tc
+            self.VDI_PPDS_Tm = Tm
+            self.VDI_PPDS_Pc = Pc
+            methods.append(VDI_PPDS)
+            Tmins.append(self.VDI_PPDS_Tm); Tmaxs.append(self.VDI_PPDS_Tc)
         if all((self.Tb, self.Tc, self.Pc)):
             methods.append(BOILING_CRITICAL)
             Tmins.append(0.01); Tmaxs.append(self.Tc)
@@ -559,19 +575,18 @@ class VaporPressure(TDependentProperty):
             Vapor pressure at T, [pa]
         '''
         if method == WAGNER_MCGARRY:
-            A, B, C, D = self.WAGNER_MCGARRY_coefs
-            Psat = Wagner_original(T, self.WAGNER_MCGARRY_Tc, self.WAGNER_MCGARRY_Pc, A, B, C, D)
+            Psat = Wagner_original(T, self.WAGNER_MCGARRY_Tc, self.WAGNER_MCGARRY_Pc, *self.WAGNER_MCGARRY_coefs)
         elif method == WAGNER_POLING:
-            A, B, C, D = self.WAGNER_POLING_coefs
-            Psat = Wagner(T, self.WAGNER_POLING_Tc, self.WAGNER_POLING_Pc, A, B, C, D)
+            Psat = Wagner(T, self.WAGNER_POLING_Tc, self.WAGNER_POLING_Pc, *self.WAGNER_POLING_coefs)
         elif method == ANTOINE_EXTENDED_POLING:
-            Tc, to, A, B, C, n, E, F = self.ANTOINE_EXTENDED_POLING_coefs
-            Psat = TRC_Antoine_extended(T, Tc, to, A, B, C, n, E, F)
+            Psat = TRC_Antoine_extended(T, *self.ANTOINE_EXTENDED_POLING_coefs)
         elif method == ANTOINE_POLING:
             A, B, C = self.ANTOINE_POLING_coefs
             Psat = Antoine(T, A, B, C, base=10.0)
         elif method == DIPPR_PERRY_8E:
             Psat = EQ101(T, *self.Perrys2_8_coeffs)
+        elif method == VDI_PPDS:
+            Psat = Wagner(T, self.VDI_PPDS_Tc, self.VDI_PPDS_Pc, *self.VDI_PPDS_coeffs)
         elif method == COOLPROP:
             Psat = PropsSI('P','T', T,'Q',0, self.CASRN)
         elif method == BOILING_CRITICAL:
@@ -627,6 +642,9 @@ class VaporPressure(TDependentProperty):
                 return False
         elif method == DIPPR_PERRY_8E:
             if T < self.Perrys2_8_Tmin or T > self.Perrys2_8_Tmax:
+                return False
+        elif method == VDI_PPDS:
+            if T > self.VDI_PPDS_Tc or T < self.VDI_PPDS_Tm:
                 return False
         elif method == COOLPROP:
             if T < self.CP_f.Tmin or T < self.CP_f.Tt or T > self.CP_f.Tmax or T > self.CP_f.Tc:

@@ -106,6 +106,18 @@ def test_AntoineExtended():
     assert AntoineExtended.shape == (97, 11)
     assert all([checkCAS(i) for i in AntoineExtended.index])
     
+def test_VDI_PPDS_3_data():
+    '''I believe there are no errors here. Average temperature deviation
+    0.144% vs tabulated values. 
+    '''
+    assert all([checkCAS(i) for i in VDI_PPDS_3.index])
+    tots_calc = [VDI_PPDS_3[i].abs().sum() for i in [u'A', u'B', u'C', u'D', u'Tc', u'Pc', u'Tm']]
+    tots = [2171.4607300000002, 694.38631999999996, 931.3604499999999, 919.88944000000004, 150225.16000000003, 1265565000, 56957.849999999991]
+    assert_allclose(tots_calc, tots)
+    
+    assert VDI_PPDS_3.index.is_unique
+    assert VDI_PPDS_3.shape == (275, 8)
+
 
 ### CSP relationships
 def test_boiling_critical_relation():
@@ -160,8 +172,8 @@ def test_VaporPressure():
     EtOH = VaporPressure(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, CASRN='64-17-5')
     EtOH.T_dependent_property(305.)
     Psat_calcs = [(EtOH.set_user_methods(i), EtOH.T_dependent_property(305.))[1] for i in EtOH.sorted_valid_methods]
-    Psat_exp = [11579.634014300127, 11590.408779316374, 11659.154222044575, 11592.205263402893, 11593.661615921257, 11690.81660829924, 11612.378633936816, 11350.156640503357, 12081.738947110121, 14088.453409816764, 9210.26200064024]
-    assert_allclose(Psat_calcs, Psat_exp)
+    Psat_exp = [11579.634014300127, 11698.02742876088, 11590.408779316374, 11659.154222044575, 11592.205263402893, 11593.661615921257, 11690.81660829924, 11612.378633936816, 11350.156640503357, 12081.738947110121, 14088.453409816764, 9210.26200064024]
+    assert_allclose(sorted(Psat_calcs), sorted(Psat_exp))
 
     # Use another chemical to get in ANTOINE_EXTENDED_POLING
     a = VaporPressure(CASRN='589-81-1')
@@ -174,7 +186,7 @@ def test_VaporPressure():
     EtOH = VaporPressure(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, CASRN='64-17-5')
     EtOH.T_dependent_property(298.15)
     Psat_calcs = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(5000))[1] for i in EtOH.sorted_valid_methods]
-    assert [None]*10 == Psat_calcs
+    assert [None]*11 == Psat_calcs
 
     # Test interpolation, extrapolation
     w = VaporPressure(Tb=373.124, Tc=647.14, Pc=22048320.0, omega=0.344, CASRN='7732-18-5')
