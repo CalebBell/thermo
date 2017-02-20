@@ -25,6 +25,7 @@ import pytest
 import numpy as np
 import pandas as pd
 from thermo.interface import *
+from thermo.identifiers import checkCAS
 
 def test_csp():
     # p-dichloribenzene at 412.15 K, from DIPPR; value differs due to a slight
@@ -115,6 +116,17 @@ def test_data():
     assert Somayajulu_data_2.shape == (64, 6)
     assert Somayajulu_data_2.index.is_unique
 
+def test_VDI_PPDS_11_data():
+    '''I believe there are no errors here. 
+    '''
+    assert all([checkCAS(i) for i in VDI_PPDS_11.index])
+    tots_calc = [VDI_PPDS_11[i].abs().sum() for i in [u'A', u'B', u'C', u'D', u'E', u'Tc', u'Tm']]
+    tots = [18.495069999999998, 336.69950000000006, 6.5941200000000002, 7.7347200000000003, 6.4262199999999998, 150142.28, 56917.699999999997]
+    assert_allclose(tots_calc, tots)
+    
+    assert VDI_PPDS_11.index.is_unique
+    assert VDI_PPDS_11.shape == (272, 8)
+
 
 
 @pytest.mark.meta_T_dept
@@ -123,13 +135,13 @@ def test_SurfaceTension():
     EtOH = SurfaceTension(Tb=351.39, Tc=514.0, Pc=6137000.0, Vc=0.000168, Zc=0.24125, omega=0.635, StielPolar=-0.01266, CASRN='64-17-5')
     EtOH.T_dependent_property(305.)
     sigma_calcs = [(EtOH.set_user_methods(i), EtOH.T_dependent_property(305.))[1] for i in EtOH.sorted_valid_methods]
-    sigma_exp = [0.021222422444285592, 0.02171156653650729, 0.02171156653650729, 0.021532564572262793, 0.02140008, 0.038055725907414066, 0.03739257387107131, 0.02645171690486362, 0.03905907338532845, 0.03670733205970745]
+    sigma_exp = [0.021222422444285592, 0.02171156653650729, 0.02171156653650729, 0.021462066798796135, 0.021532564572262793, 0.02140008, 0.038055725907414066, 0.03739257387107131, 0.02645171690486362, 0.03905907338532845, 0.03670733205970745]
 
-    assert_allclose(sigma_calcs, sigma_exp)
+    assert_allclose(sorted(sigma_calcs), sorted(sigma_exp))
 
     # Test that methods return None
     sigma_calcs = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(5000))[1] for i in EtOH.sorted_valid_methods]
-    assert [None]*10 == sigma_calcs
+    assert [None]*11 == sigma_calcs
 
     EtOH.set_user_methods('VDI_TABULAR', forced=True)
     EtOH.tabular_extrapolation_permitted = False

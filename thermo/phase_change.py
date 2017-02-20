@@ -32,7 +32,7 @@ __all__ = ['Yaws_data', 'Tb_methods', 'Tb', 'Tm_ON_data', 'Tm_methods', 'Tm',
 from thermo.utils import log
 import os
 
-from scipy.constants import R
+from scipy.constants import R, pi, N_A
 import numpy as np
 import pandas as pd
 
@@ -1026,7 +1026,7 @@ class EnthalpyVaporization(TDependentProperty):
     available data.'''
 
     ranked_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR, MORGAN_KOBAYASHI,
-                      SIVARAMAN_MAGEE_KOBAYASHI, VELASCO, PITZER,
+                      SIVARAMAN_MAGEE_KOBAYASHI, VELASCO, PITZER, 
                       CRC_HVAP_TB, CRC_HVAP_298, GHARAGHEIZI_HVAP_298,
                       CLAPEYRON, RIEDEL, CHEN, VETERE, LIU]
     '''Default rankings of the available methods.'''
@@ -1109,7 +1109,7 @@ class EnthalpyVaporization(TDependentProperty):
             self.CRC_HVAP_TB_Hvap = float(CRCHvap_data.at[self.CASRN, 'HvapTb'])
         if self.CASRN in CRCHvap_data.index and not np.isnan(CRCHvap_data.at[self.CASRN, 'Hvap298']):
             methods.append(CRC_HVAP_298)
-            self.CRC_HVAP_298 = float(float(CRCHvap_data.at[self.CASRN, 'Hvap298']))
+            self.CRC_HVAP_298 = float(CRCHvap_data.at[self.CASRN, 'Hvap298'])
         if self.CASRN in GharagheiziHvap_data.index:
             methods.append(GHARAGHEIZI_HVAP_298)
             self.GHARAGHEIZI_HVAP_298_Hvap = float(GharagheiziHvap_data.at[self.CASRN, 'Hvap298'])

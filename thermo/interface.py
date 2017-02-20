@@ -23,7 +23,7 @@ SOFTWARE.'''
 from __future__ import division
 
 __all__ = ['Mulero_Cachadina_data', 'Jasper_Lange_data', 'Somayajulu_data', 
-           'Somayajulu_data_2', 'REFPROP', 'Somayajulu', 'Jasper', 
+           'VDI_PPDS_11', 'Somayajulu_data_2', 'REFPROP', 'Somayajulu', 'Jasper', 
            'Brock_Bird', 'Pitzer', 'Sastri_Rao', 'Zuo_Stenby', 
            'Hakim_Steinberg_Stiel', 'Miqueu', 'Aleem', 'surface_tension_methods', 
            'SurfaceTension', 'Winterfeld_Scriven_Davis', 'Diguilio_Teja', 
@@ -57,6 +57,11 @@ _Somayajulu_data_values = Somayajulu_data.values
 Somayajulu_data_2 = pd.read_csv(os.path.join(folder, 'SomayajuluRevised.csv'),
                       sep='\t', index_col=0)
 _Somayajulu_data_2_values = Somayajulu_data_2.values
+
+VDI_PPDS_11 = pd.read_csv(os.path.join(folder, 'VDI PPDS surface tensions.csv'),
+                          sep='\t', index_col=0)
+_VDI_PPDS_11_values = VDI_PPDS_11.values
+
 
 ### Regressed coefficient-based functions
 
@@ -649,10 +654,11 @@ PITZER = 'PITZER'
 ZUO_STENBY = 'ZUO_STENBY'
 HAKIM_STEINBERG_STIEL = 'HAKIM_STEINBERG_STIEL'
 ALEEM = 'Aleem'
+VDI_PPDS = 'VDI_PPDS'
 NONE = 'NONE'
 
 
-surface_tension_methods = [STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_TABULAR,
+surface_tension_methods = [STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_PPDS, VDI_TABULAR,
                            JASPER, MIQUEU, BROCK_BIRD, SASTRI_RAO, PITZER,
                            ZUO_STENBY, ALEEM]
 '''Holds all methods available for the SurfaceTension class, for use in
@@ -779,7 +785,7 @@ class SurfaceTension(TDependentProperty):
     '''Maximum valid value of surface tension. Set slightly above that of
     mercury.'''
 
-    ranked_methods = [STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_TABULAR,
+    ranked_methods = [STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_PPDS, VDI_TABULAR,
                       JASPER, MIQUEU, BROCK_BIRD, SASTRI_RAO, PITZER,
                       ZUO_STENBY, ALEEM]
     '''Default rankings of the available methods.'''
@@ -881,6 +887,13 @@ class SurfaceTension(TDependentProperty):
             methods.append(PITZER)
             methods.append(ZUO_STENBY)
             Tmins.append(0.0); Tmaxs.append(self.Tc)
+        if self.CASRN in VDI_PPDS_11.index:
+            _,  Tm, Tc, A, B, C, D, E = _VDI_PPDS_11_values[VDI_PPDS_11.index.get_loc(self.CASRN)].tolist()
+            self.VDI_PPDS_coeffs = [A, B, C, D, E]
+            self.VDI_PPDS_Tc = Tc
+            self.VDI_PPDS_Tm = Tm
+            methods.append(VDI_PPDS)
+            Tmins.append(self.VDI_PPDS_Tm) ; Tmaxs.append(self.VDI_PPDS_Tc); 
         if all((self.Tb, self.Hvap_Tb, self.MW)):
             # Cache Cpl at Tb for ease of calculation of Tmax
             self.Cpl_Tb = self.Cpl(self.Tb) if hasattr(self.Cpl, '__call__') else self.Cpl
@@ -922,6 +935,10 @@ class SurfaceTension(TDependentProperty):
             sigma0, n0, sigma1, n1, sigma2, n2, Tc = self.STREFPROP_coeffs
             sigma = REFPROP(T, Tc=Tc, sigma0=sigma0, n0=n0, sigma1=sigma1, n1=n1,
                             sigma2=sigma2, n2=n2)
+        elif method == VDI_PPDS:
+            A, B, C, D, E = self.VDI_PPDS_coeffs
+            Tr = T/self.VDI_PPDS_Tc
+            sigma = A*(1. - Tr)**(B + C*Tr + D*Tr**2 + E*Tr**3)
         elif method == SOMAYAJULU2:
             A, B, C = self.SOMAYAJULU2_coeffs
             sigma = Somayajulu(T, Tc=self.SOMAYAJULU2_Tc, A=A, B=B, C=C)
@@ -975,6 +992,10 @@ class SurfaceTension(TDependentProperty):
         validity = True
         if method == STREFPROP:
             if T < self.STREFPROP_Tmin or T > self.STREFPROP_Tmax:
+                validity = False
+        elif method == VDI_PPDS:
+            if T > self.VDI_PPDS_Tc:
+                # Could also check for low temp, but not necessary as it extrapolates
                 validity = False
         elif method == SOMAYAJULU2:
             if T < self.SOMAYAJULU2_Tt or T > self.SOMAYAJULU2_Tc:

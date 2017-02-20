@@ -72,10 +72,9 @@ def checkCAS(CASRN):
             if num == '-':
                 pass
             else:
-                productsum+= i*int(num)
-                i +=1
-        result = (productsum % 10 == int(check))
-        return result
+                productsum += i*int(num)
+                i += 1
+        return (productsum % 10 == int(check))
     except:
         return False
 
