@@ -25,7 +25,7 @@ from __future__ import division
 __all__ = ['Yaws_data', 'Tb_methods', 'Tb', 'Tm_ON_data', 'Tm_methods', 'Tm', 
            'Clapeyron', 'Pitzer', 'SMK', 'MK', 'Velasco', 'Riedel', 'Chen', 
            'Liu', 'Vetere', 'GharagheiziHvap_data', 'CRCHvap_data', 
-           'Perrys2_150', 'VDI_PPDS_4', 'Watson', 
+           'Perrys2_150', 'VDI_PPDS_4', 'Alibakhshi_Cs', 'Watson', 
            'enthalpy_vaporization_methods', 'EnthalpyVaporization', 
            'CRCHfus_data', 'Hfus', 'GharagheiziHsub_data', 'Hsub', 'Tliquidus']
 
@@ -72,6 +72,9 @@ _Perrys2_150_values = Perrys2_150.values
 VDI_PPDS_4 = pd.read_csv(os.path.join(folder, 'VDI PPDS Enthalpies of vaporization.csv'),
                           sep='\t', index_col=0)
 _VDI_PPDS_4_values = VDI_PPDS_4.values
+
+Alibakhshi_Cs = pd.read_csv(os.path.join(folder, 'Alibakhshi one-coefficient enthalpy of vaporization.csv'),
+                          sep='\t', index_col=0)
 
 
 ### Boiling Point at 1 atm
@@ -872,6 +875,7 @@ PITZER = 'PITZER'
 CLAPEYRON = 'CLAPEYRON'
 DIPPR_PERRY_8E = 'DIPPR_PERRY_8E'
 VDI_PPDS = 'VDI_PPDS'
+ALIBAKHSHI = 'ALIBAKHSHI'
 
 RIEDEL = 'RIEDEL'
 CHEN = 'CHEN'
@@ -879,7 +883,7 @@ LIU = 'LIU'
 VETERE = 'VETERE'
 enthalpy_vaporization_methods = [DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, VDI_TABULAR, 
                                  MORGAN_KOBAYASHI,
-                      SIVARAMAN_MAGEE_KOBAYASHI, VELASCO, PITZER,
+                      SIVARAMAN_MAGEE_KOBAYASHI, VELASCO, PITZER, ALIBAKHSHI,
                       CRC_HVAP_TB, CRC_HVAP_298, GHARAGHEIZI_HVAP_298,
                       CLAPEYRON, RIEDEL, CHEN, VETERE, LIU]
 '''Holds all methods available for the EnthalpyVaporization class, for use in
@@ -889,8 +893,8 @@ iterating over them.'''
 class EnthalpyVaporization(TDependentProperty):
     '''Class for dealing with heat of vaporization as a function of temperature.
     Consists of three constant value data sources, one source of tabular
-    information, nine corresponding-states estimators, and the external
-    library CoolProp.
+    information, three coefficient-based methods, nine corresponding-states 
+    estimators, and the external library CoolProp.
 
     Parameters
     ----------
@@ -973,6 +977,11 @@ class EnthalpyVaporization(TDependentProperty):
         A collection of 344 coefficient sets from the DIPPR database published
         openly in [6]_. Provides temperature limits for all its fluids. 
         :obj:`thermo.dippr.EQ106` is used for its fluids.
+    **ALIBAKHSHI**:
+        One-constant limited temperature range regression method presented
+        in [7]_, with constants for ~2000 chemicals from the DIPPR database.
+        Valid up to 100 K below the critical point, and 50 K under the boiling
+        point.
 
     See Also
     --------
@@ -1006,6 +1015,10 @@ class EnthalpyVaporization(TDependentProperty):
        (December 25, 2013): 279-92. doi:10.1016/j.fluid.2013.09.021.
     .. [6] Green, Don, and Robert Perry. Perry's Chemical Engineers' Handbook,
        Eighth Edition. McGraw-Hill Professional, 2007.
+    .. [7] Alibakhshi, Amin. "Enthalpy of Vaporization, Its Temperature 
+       Dependence and Correlation with Surface Tension: A Theoretical 
+       Approach." Fluid Phase Equilibria 432 (January 25, 2017): 62-69. 
+       doi:10.1016/j.fluid.2016.10.013.
     '''
     name = 'Enthalpy of vaporization'
     units = 'J/mol'
@@ -1026,7 +1039,7 @@ class EnthalpyVaporization(TDependentProperty):
     available data.'''
 
     ranked_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR, MORGAN_KOBAYASHI,
-                      SIVARAMAN_MAGEE_KOBAYASHI, VELASCO, PITZER, 
+                      SIVARAMAN_MAGEE_KOBAYASHI, VELASCO, PITZER, ALIBAKHSHI, 
                       CRC_HVAP_TB, CRC_HVAP_298, GHARAGHEIZI_HVAP_298,
                       CLAPEYRON, RIEDEL, CHEN, VETERE, LIU]
     '''Default rankings of the available methods.'''
@@ -1103,6 +1116,10 @@ class EnthalpyVaporization(TDependentProperty):
             self.VDI_Tmax = Ts[-1]
             self.tabular_data[VDI_TABULAR] = (Ts, props)
             Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
+        if self.CASRN in Alibakhshi_Cs.index and self.Tc:
+            methods.append(ALIBAKHSHI)
+            self.Alibakhshi_C = float(Alibakhshi_Cs.at[self.CASRN, 'C'])
+            Tmaxs.append( max(self.Tc-100., 0) )
         if self.CASRN in CRCHvap_data.index and not np.isnan(CRCHvap_data.at[self.CASRN, 'HvapTb']):
             methods.append(CRC_HVAP_TB)
             self.CRC_HVAP_TB_Tb = float(CRCHvap_data.at[self.CASRN, 'Tb'])
@@ -1167,8 +1184,8 @@ class EnthalpyVaporization(TDependentProperty):
             tau = 1. - T/self.VDI_PPDS_Tc
             Hvap = R*self.VDI_PPDS_Tc*(A*tau**(1/3.) + B*tau**(2/3.) + C*tau
                                        + D*tau**2 + E*tau**6)
-            # Surprise, don't actually need MW
-#            Hvap = property_mass_to_molar(Hvap, self.VDI_PPDS_MW)
+        elif method == ALIBAKHSHI:
+            Hvap = (4.5*pi*N_A)**(1/3.)*4.2E-7*(self.Tc-6.) - R/2.*T*log(T) + self.Alibakhshi_C*T
         elif method == MORGAN_KOBAYASHI:
             Hvap = MK(T, self.Tc, self.omega)
         elif method == SIVARAMAN_MAGEE_KOBAYASHI:
@@ -1271,6 +1288,11 @@ class EnthalpyVaporization(TDependentProperty):
         elif method in self.CSP_methods:
             if T > self.Tc:
                 validity = False
+        elif method == ALIBAKHSHI:
+            if T > self.Tc - 100:
+                validity = False
+#            elif (self.Tb and T < self.Tb - 50):
+#                validity = False
         elif method in self.tabular_data:
             # if tabular_extrapolation_permitted, good to go without checking
             if not self.tabular_extrapolation_permitted:

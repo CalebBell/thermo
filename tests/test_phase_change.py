@@ -160,6 +160,18 @@ def test_Perrys2_312_data():
     assert Perrys2_150.index.is_unique
     assert Perrys2_150.shape == (344, 8)
 
+
+def test_Alibakhshi_Cs_data():
+    # Oops, a bunch of these now-lonely coefficients have an invalid CAS...
+#    assert all([checkCAS(i) for i in Alibakhshi_Cs.index])
+    tots_calc = [Alibakhshi_Cs[i].abs().sum() for i in [u'C']]
+    tots = [28154.361500000003]
+    assert_allclose(tots_calc, tots)
+    
+    assert Alibakhshi_Cs.index.is_unique
+    assert Alibakhshi_Cs.shape == (1890, 2)
+
+
 def test_VDI_PPDS_4_data():
     '''I believe there are no errors here. 
     '''
@@ -245,15 +257,16 @@ def test_Tm():
 
     assert None == Tm('7732-18-5', IgnoreMethods=['CRC_ORG', 'CRC_INORG', 'OPEN_NTBKM'])
 
+
 @pytest.mark.meta_T_dept
 def test_EnthalpyVaporization():
     EtOH = EnthalpyVaporization(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, similarity_variable=0.1954, Psat=7872.2, Zg=0.9633, Zl=0.0024, CASRN='64-17-5')
 
     Hvap_calc =  [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(298.15))[1] for i in EtOH.all_methods]
-    Hvap_exp = [42429.269903954155, 42829.162840789715, 41892.45710244491, 43587.11462479239, 42200.0, 40812.16639989246, 42413.51210041263, 42320.0, 37770.35479826021, 42855.01452567944, 42468.433273309995, 42541.61366696268, 44804.60063848499, 43481.092918859824, 42261.54839182171, 42946.68066040123]
+    Hvap_exp = [39369.24571090559, 42429.269903954155, 42829.162840789715, 41892.45710244491, 43587.11462479239, 42200.0, 40812.16639989246, 42413.51210041263, 42320.0, 37770.35479826021, 42855.01452567944, 42468.433273309995, 42541.61366696268, 44804.60063848499, 43481.092918859824, 42261.54839182171, 42946.68066040123]
     assert_allclose(sorted(Hvap_calc), sorted(Hvap_exp))
 
-    assert [None]*16 == [(EtOH.set_user_methods(i), EtOH.T_dependent_property(5000))[1] for i in EtOH.all_methods]
+    assert [None]*17 == [(EtOH.set_user_methods(i), EtOH.T_dependent_property(5000))[1] for i in EtOH.all_methods]
 
     EtOH = EnthalpyVaporization(CASRN='64-17-5')
     Hvap_calc = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(298.15))[1] for i in ['GHARAGHEIZI_HVAP_298', 'CRC_HVAP_298', 'VDI_TABULAR', 'COOLPROP']]
