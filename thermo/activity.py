@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['K', 'Rachford_Rice_flash_error', 'Rachford_Rice_solution', 'Li_Johns_Ahmadi_solution', 'flash_inner_loop', 'flash', 'dew_at_T', 
+__all__ = ['K_value', 'Rachford_Rice_flash_error', 'Rachford_Rice_solution', 'Li_Johns_Ahmadi_solution', 'flash_inner_loop', 'flash', 'dew_at_T', 
            'bubble_at_T', 'identify_phase', 'mixture_phase_methods', 
            'identify_phase_mixture', 'Pbubble_mixture', 'Pdew_mixture']
 
@@ -34,16 +34,143 @@ from scipy.constants import R
 
 
 
-def K(P, Psat, fugacity=1, gamma=1):
-    '''
-    >>> K(101325, 3000.)
+def K_value(P=None, Psat=None, phi_l=None, phi_g=None, gamma=None, Poynting=1):
+    r'''Calculates the equilibrium K-value assuming Raoult's law,
+    or an equation of state model, or an activity coefficient model,
+    or a combined equation of state-activity model.
+    
+    The calculation procedure will use the most advanced approach with the 
+    provided inputs:
+        
+        * If `P`, `Psat`, `phi_l`, `phi_g`, and `gamma` are provided, use the
+          combined approach.
+        * If `P`, `Psat`, and `gamma` are provided, use the modified Raoult's
+          law.
+        * If `phi_l` and `phi_g` are provided, use the EOS only method.
+        * If `P` and `Psat` are provided, use Raoult's law.
+        
+    Definitions:
+        
+    .. math::
+        K_i=\frac{y_i}{x_i}
+        
+    Raoult's law:
+        
+    .. math::
+        K_i = \frac{P_{i}^{sat}}{P}
+        
+    Activity coefficient, no EOS (modified Raoult's law):
+        
+    .. math::
+        K_i = \frac{\gamma_i P_{i}^{sat}}{P}
+    
+    Equation of state only:
+    
+    .. math::
+        K_i = \frac{\phi_i^l}{\phi_i^v} = \frac{f_i^l}{f_i^v}
+        
+    Combined approach (liquid reference fugacity coefficient is normally 
+    calculated the saturation pressure for it as a pure species; vapor fugacity
+    coefficient calculated normally):
+        
+    .. math::
+        K_i = \frac{\gamma_i P_i^{sat} \phi_i^{l,ref}}{\phi_i^v P}
+        
+    Combined approach, with Poynting Correction Factor (liquid molar volume in
+    the integral is for i as a pure species only):
+        
+    .. math::
+        K_i = \frac{\gamma_i P_i^{sat} \phi_i^{l, ref} \exp\left[\frac{
+        \int_{P_i^{sat}}^P V_i^l dP}{RT}\right]}{\phi_i^v P}
+        
+    Parameters
+    ----------
+    P : float
+        System pressure, optional
+    Psat : float
+        Vapor pressure of species i, [Pa]
+    phi_l : float
+        Fugacity coefficient of species i in the liquid phase, either
+        at the system conditions (EOS-only case) or at the saturation pressure
+        of species i as a pure species (reference condition for the combined 
+        approach), optional [-]
+    phi_g : float
+        Fugacity coefficient of species i in the vapor phase at the system 
+        conditions, optional [-]
+    gamma : float
+        Activity coefficient of species i in the liquid phase, optional [-]
+    Poynting : float
+        Poynting correction factor, optional [-]
+
+    Returns
+    -------
+    K : float
+        Equilibrium K value of component i, calculated with an approach
+        depending on the provided inputs [-]
+
+    Notes
+    -----
+    The Poynting correction factor is normally simplified as follows, due to
+    a liquid's low pressure dependency:
+        
+    .. math::
+        K_i = \frac{\gamma_i P_i^{sat} \phi_i^{l, ref} \exp\left[\frac{V_l 
+        (P-P_i^{sat})}{RT}\right]}{\phi_i^v P}
+    
+    Examples
+    --------
+    Raoult's law:
+    
+    >>> K_value(101325, 3000.)
     0.029607698001480384
-    >>> K(101325, 3000., fugacity=0.9, gamma=2.4)
+    
+    Modified Raoult's law:
+    
+    >>> K_value(P=101325, Psat=3000, gamma=0.9)
+    0.026646928201332347
+    
+    EOS-only approach:
+    
+    >>> K_value(phi_l=1.6356, phi_g=0.88427)
+    1.8496613025433408
+    
+    Gamma-phi combined approach:
+        
+    >>> K_value(P=1E6, Psat=1938800, phi_l=1.4356, phi_g=0.88427, gamma=0.92)
+    2.8958055544121137
+    
+    Gamma-phi combined approach with a Poynting factor:
+    
+    >>> K_value(P=1E6, Psat=1938800, phi_l=1.4356, phi_g=0.88427, gamma=0.92, 
+    ... Poynting=0.999)
+    2.8929097488577016
+        
+    References
+    ----------
+    .. [1] Gmehling, Jurgen, Barbel Kolbe, Michael Kleiber, and Jurgen Rarey. 
+       Chemical Thermodynamics for Process Simulation. 1st edition. Weinheim: 
+       Wiley-VCH, 2012.
+    .. [2] Skogestad, Sigurd. Chemical and Energy Process Engineering. 1st
+       edition. Boca Raton, FL: CRC Press, 2008.
+    '''
+    '''
+    >>> K_value(101325, 3000.)
+    0.029607698001480384
+    >>> K_value(101325, 3000., fugacity=0.9, gamma=2.4)
     0.07895386133728102
     '''
-    # http://www.jmcampbell.com/tip-of-the-month/2006/09/how-to-determine-k-values/
-    return Psat*gamma/P/fugacity
-
+    try:
+        if gamma:
+            if phi_l:
+                return gamma*Psat*phi_l*Poynting/(phi_g*P)
+            return gamma*Psat/P
+        elif phi_l:
+            return phi_l/phi_g
+        return Psat/P
+    except TypeError:
+        raise Exception('Input must consist of one set from (P, Psat, phi_l, \
+phi_g, gamma), (P, Psat, gamma), (phi_l, phi_g), (P, Psat)')
+    
 
 
 
@@ -390,14 +517,14 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None):
 
 
 
-def flash(P, zs, Psats, fugacities=None, gammas=None):
-    if not fugacities:
-        fugacities = [1 for i in range(len(zs))]
-    if not gammas:
-        gammas = [1 for i in range(len(zs))]
-    if not none_and_length_check((zs, Psats, fugacities, gammas)):
+def flash(P, zs, Psats):
+#    if not fugacities:
+#        fugacities = [1 for i in range(len(zs))]
+#    if not gammas:
+#        gammas = [1 for i in range(len(zs))]
+    if not none_and_length_check((zs, Psats)):
         raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
-    Ks = [K(P, Psats[i], fugacities[i], gammas[i]) for i in range(len(zs))]
+    Ks = [K_value(P=P, Psat=Psats[i]) for i in range(len(zs))]
     def valid_range(zs, Ks):
         valid = True
         if sum([zs[i]*Ks[i] for i in range(len(Ks))]) < 1:

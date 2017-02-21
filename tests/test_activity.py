@@ -27,6 +27,33 @@ import pandas as pd
 from thermo.activity import *
 
 
+def test_K_value():
+    K = K_value(101325, 3000.)
+    assert_allclose(K, 0.029607698001480384)
+    
+    K = K_value(P=101325, Psat=3000, gamma=0.9)
+    assert_allclose(K, 0.026646928201332347)
+    
+    K = K_value(phi_l=1.6356, phi_g=0.88427)
+    assert_allclose(K, 1.8496613025433408)
+    
+    K = K_value(P=1E6, Psat=1938800, phi_l=1.4356, phi_g=0.88427, gamma=0.92)
+    assert_allclose(K, 2.8958055544121137)
+    
+    K = K_value(P=1E6, Psat=1938800, phi_l=1.4356, phi_g=0.88427, gamma=0.92, Poynting=0.999)
+    assert_allclose(K, 2.8929097488577016)
+    
+    with pytest.raises(Exception):
+        K_value(101325)
+
+    with pytest.raises(Exception):
+        K_value(101325, gamma=0.9)
+    
+    with pytest.raises(Exception):
+        K_value(P=1E6, Psat=1938800, phi_l=0.88427, gamma=0.92)
+
+
+
 def test_Rachford_Rice_flash_error():
     err = Rachford_Rice_flash_error(0.5, zs=[0.5, 0.3, 0.2], Ks=[1.685, 0.742, 0.532])
     assert_allclose(err, 0.04406445591174976)

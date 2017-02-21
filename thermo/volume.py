@@ -434,8 +434,7 @@ def COSTALD(T, Tc, Vc, omega):
         - 0.0480645*Tr**3)/(Tr - 1.00001)
     V_0 = 1 - 1.52816*(1-Tr)**(1/3.) + 1.43907*(1-Tr)**(2/3.) \
         - 0.81446*(1-Tr) + 0.190454*(1-Tr)**(4/3.)
-    Vs = Vc*V_0*(1-omega*V_delta)
-    return Vs
+    return Vc*V_0*(1-omega*V_delta)
 
 
 def Campbell_Thodos(T, Tb, Tc, Pc, M, dipole=None, hydroxyl=False):
