@@ -24,6 +24,7 @@ from numpy.testing import assert_allclose
 import pytest
 import numpy as np
 import pandas as pd
+from math import exp, log
 from thermo.activity import *
 
 
@@ -219,3 +220,110 @@ def test_identify_phase():
     # Just under the critical point
     assert 'l' == identify_phase(T=647.2, P=22048320.0, Tm=273.15, Psat=22032638.96749514, Tc=647.3)
     
+
+def test_NRTL():
+    # P05.01b VLE Behavior of Ethanol - Water Using NRTL
+    gammas = NRTL([0.252, 0.748], [[0, -0.178], [1.963, 0]], [[0, 0.2974],[.2974, 0]])
+    assert_allclose(gammas, [1.9363183763514304, 1.1537609663170014])
+
+    # Test the general form against the simpler binary form
+    def NRTL2(xs, taus, alpha): 
+        x1, x2 = xs
+        tau12, tau21 = taus
+        G12 = exp(-alpha*tau12)
+        G21 = exp(-alpha*tau21)
+        gamma1 = exp(x2**2*(tau21*(G21/(x1+x2*G21))**2 + G12*tau12/(x2+x1*G12)**2))
+        gamma2 = exp(x1**2*(tau12*(G12/(x2+x1*G12))**2 + G21*tau21/(x1+x2*G21)**2))
+        return gamma1, gamma2
+
+    gammas = NRTL2(xs=[0.252, 0.748], taus=[-0.178, 1.963], alpha=0.2974)
+    assert_allclose(gammas, [1.9363183763514304, 1.1537609663170014])
+
+
+    # Example by 
+    # https://github.com/iurisegtovich/PyTherm-applied-thermodynamics/blob/master/contents/main-lectures/GE1-NRTL-graphically.ipynb
+    tau = [[0.0, 2.291653777670652, 0.5166949715946564], [4.308652420938829, 0.0, 1.6753963198550983], [0.5527434579849811, 0.15106032392136134, 0.0]]
+    alpha = [[0.0, 0.4, 0.3], [0.4, 0.0, 0.3], [0.3, 0.3, 0.0]]
+    xs = [.1, .3, .6]
+    gammas = (NRTL(xs, tau, alpha))
+    assert_allclose(gammas, [2.7175098659360413, 2.1373006474468697, 1.085133765593844])
+    
+
+def test_Wilson():
+    # P05.01a VLE Behavior of Ethanol - Water Using Wilson
+    # http://chemthermo.ddbst.com/Problems_Solutions/Mathcad_Files/P05.01a%20VLE%20Behavior%20of%20Ethanol%20-%20Water%20Using%20Wilson.xps
+    gammas = Wilson([0.252, 0.748], [[1, 0.154], [0.888, 1]])
+    assert_allclose(gammas, [1.8814926087178843, 1.1655774931125487])
+    
+    # Test the general form against the simpler binary form
+    def Wilson2(molefracs, lambdas): 
+        x1 = molefracs[0]
+        x2 = molefracs[1]
+        l12 = lambdas[0]
+        l21 = lambdas[1]
+        gamma1 = exp(-log(x1+x2*l12) + x2*(l12/(x1+x2*l12) - l21/(x2+x1*l21)))
+        gamma2 = exp(-log(x2+x1*l21) - x1*(l12/(x1+x2*l12) - l21/(x2+x1*l21)))
+        return [gamma1, gamma2]
+    gammas = Wilson2([0.252, 0.748], [0.154, 0.888])
+
+    assert_allclose(gammas, [1.8814926087178843, 1.1655774931125487])
+    
+    # Test 3 parameter version: 
+    # 05.09 Compare Experimental VLE to Wilson Equation Results
+    # http://chemthermo.ddbst.com/Problems_Solutions/Mathcad_Files/05.09%20Compare%20Experimental%20VLE%20to%20Wilson%20Equation%20Results.xps
+    # Extra decimals obtained via the actual MathCad worksheet
+    xs = [0.229, 0.175, 0.596]
+    params = [[1, 1.1229699812593, 0.73911816162836], 
+              [3.26947621620298, 1, 1.16749678447695],
+              [0.37280197780932, 0.01917909648619, 1]]
+    gammas = Wilson(xs, params)
+    assert_allclose(gammas, [1.22339343348885, 1.10094590247015, 1.2052899281172])
+
+
+def test_UNIQUAC():
+    # P05.01c VLE Behavior of Ethanol - Water Using UNIQUAC
+    # http://chemthermo.ddbst.com/Problems_Solutions/Mathcad_Files/P05.01c%20VLE%20Behavior%20of%20Ethanol%20-%20Water%20Using%20UNIQUAC.xps
+
+    gammas = UNIQUAC(xs=[0.252, 0.748], rs=[2.1055, 0.9200], qs=[1.972, 1.400], taus=[[1.0, 1.0919744384510301], [0.37452902779205477, 1.0]])
+    assert_allclose(gammas, [2.35875137797083, 1.2442093415968987])
+
+    # Example 8.3  in [2]_ for solubility of benzene (2) in ethanol (1) at 260 K.
+    # Worked great here
+    gammas = UNIQUAC(xs=[.7566, .2434], rs=[2.1055, 3.1878], qs=[1.972, 2.4], taus=[[1.0, 1.17984681869376], [0.22826016391070073, 1.0]])
+    assert_allclose(gammas, [1.0826343452263132, 3.0176007269546083])
+
+    # Example 7.3 in [2], for electrolytes 
+    gammas = UNIQUAC(xs=[0.05, 0.025, 0.925], rs=[1., 1., 0.92], qs=[1., 1., 1.4], taus=[[1.0, 0.4052558731309731, 2.7333668483468143], [21.816716876191823, 1.0, 0.06871094878791346], [0.4790878929721784, 3.3901086879605944, 1.0]])
+    assert_allclose(gammas, [0.3838177662072466, 0.49469915162858774, 1.0204435746722416])
+
+
+    def UNIQUAC_original_form(xs, rs, qs, taus):
+        # This works too - just slower.
+        cmps = range(len(xs))
+        
+        rsxs = sum([rs[i]*xs[i] for i in cmps])
+        qsxs = sum([qs[i]*xs[i] for i in cmps])
+    
+        Phis = [rs[i]*xs[i]/rsxs for i in cmps]
+        thetas = [qs[i]*xs[i]/qsxs for i in cmps]
+    
+        ls = [5*(ri - qi) - (ri - 1.) for ri, qi in zip(rs, qs)]
+        
+        gammas = []
+        for i in cmps:
+            lngamma = (log(Phis[i]/xs[i]) + 5*qs[i]*log(thetas[i]/Phis[i]) + ls[i]
+            - Phis[i]/xs[i]*sum([xs[j]*ls[j] for j in cmps])
+            - qs[i]*log(sum([thetas[j]*taus[j][i] for j in cmps]))
+            + qs[i]
+            - qs[i]*sum([thetas[j]*taus[i][j]/sum([thetas[k]*taus[k][j] for k in cmps]) for j in cmps]))
+            gammas.append(exp(lngamma))
+        return gammas
+    
+    gammas = UNIQUAC_original_form(xs=[.7566, .2434], rs=[2.1055, 3.1878], qs=[1.972, 2.4], taus=[[1.0, 1.17984681869376], [0.22826016391070073, 1.0]])
+    assert_allclose(gammas, [1.0826343452263132, 3.0176007269546083])
+    
+    gammas = UNIQUAC_original_form(xs=[0.252, 0.748], rs=[2.1055, 0.9200], qs=[1.972, 1.400], taus=[[1.0, 1.0919744384510301], [0.37452902779205477, 1.0]])
+    assert_allclose(gammas, [2.35875137797083, 1.2442093415968987])
+    
+    gammas = UNIQUAC_original_form(xs=[0.05, 0.025, 0.925], rs=[1., 1., 0.92], qs=[1., 1., 1.4], taus=[[1.0, 0.4052558731309731, 2.7333668483468143], [21.816716876191823, 1.0, 0.06871094878791346], [0.4790878929721784, 3.3901086879605944, 1.0]])
+    assert_allclose(gammas, [0.3838177662072466, 0.49469915162858774, 1.0204435746722416])
