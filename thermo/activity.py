@@ -310,8 +310,8 @@ def Rachford_Rice_solution(zs, Ks):
         V_over_F = newton(Rachford_Rice_flash_error, x0=x0, args=(zs, Ks))
         # newton skips out of its specified range in some cases, finding another solution
         # Check for that with asserts, and use brenth if it did
-        assert x1 >= V_over_F_min2
-        assert x1 <= V_over_F_max2
+        assert V_over_F >= V_over_F_min2
+        assert V_over_F <= V_over_F_max2
     except:
         V_over_F = brenth(Rachford_Rice_flash_error, V_over_F_max-1E-7, V_over_F_min+1E-7, args=(zs, Ks))
     # Cases not covered by the above solvers: When all components have K > 1, or all have K < 1
@@ -409,10 +409,11 @@ def Li_Johns_Ahmadi_solution(zs, Ks):
         # Must also check that V_over_F is right.
         assert x1 >= x_min2
         assert x1 <= x_max2
+        V_over_F = (-x1 + z1)/(x1*(k1 - 1.))
         assert 0 <= V_over_F <= 1
     except:
         x1 = brenth(objective, x_min, x_max)
-    V_over_F = (-x1 + z1)/(x1*(k1 - 1.))
+        V_over_F = (-x1 + z1)/(x1*(k1 - 1.))
     xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]
     ys = [Ki*xi for xi, Ki in zip(xs, Ks)]
     return V_over_F, xs, ys

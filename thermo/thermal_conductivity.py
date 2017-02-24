@@ -40,7 +40,7 @@ from scipy.constants import R
 import pandas as pd
 
 from thermo.utils import log, exp
-from thermo.utils import mixing_simple, none_and_length_check, TPDependentProperty, horner
+from thermo.utils import mixing_simple, none_and_length_check, TPDependentProperty, MixtureProperty, horner
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
 from thermo.coolprop import has_CoolProp, coolprop_dict, coolprop_fluids, CoolProp_T_dependent_property, PropsSI, PhaseSI
 from thermo.electrochem import thermal_conductivity_Magomedov, Magomedovk_thermal_cond
@@ -2506,22 +2506,15 @@ def Lindsay_Bromley(T, ys, ks, mus, Tbs, MWs):
     if not none_and_length_check([ys, ks, mus, Tbs, MWs]):
         raise Exception('Function inputs are incorrect format')
 
-    Ss = [1.5*Tbs[i] for i in range(len(Tbs))]
-    Sij  = {}
-    for i in range(len(ys)):
-        for j in range(len(ys)):
-            Sij[str(i)+str(j)] = (Ss[i]*Ss[j])**0.5
-    Aij = {}
-    for i in range(len(ys)):
-        for j in range(len(ys)):
-            Aij[str(i)+str(j)] = 0.25*(1 + (mus[i]/mus[j]*(MWs[j]/MWs[i])**0.75
-            *(T+Ss[i])/(T+Ss[j]))**0.5 )**2 *(T+Sij[str(i)+str(j)])/(T+Ss[i])
-    kg = 0
-    for i in range(len(ys)):
-        denominator = sum(ys[j]*Aij[str(i)+str(j)] for j in range(len(ys)))
-        kg += ys[i]*ks[i]/denominator
+    cmps = range(len(ys))
+    Ss = [1.5*Tb for Tb in Tbs]
+    Sij = [[(Si*Sj)**0.5 for Sj in Ss] for Si in Ss]
 
-    return kg
+    Aij = [[0.25*(1. + (mus[i]/mus[j]*(MWs[j]/MWs[i])**0.75
+            *(T+Ss[i])/(T+Ss[j]))**0.5 )**2 *(T+Sij[i][j])/(T+Ss[i])
+            for j in cmps] for i in cmps]
+            
+    return sum([ys[i]*ks[i]/sum(ys[j]*Aij[i][j] for j in cmps) for i in cmps])
 
 
 
@@ -2570,4 +2563,60 @@ def thermal_conductivity_gas_mixture(T=None, ys=None, ws=None, ks=None,
 
 
 
+
+class ThermalConductivityGasMixture(MixtureProperty):
+
+    name = 'gas thermal conductivity'
+    units = 'W/m/K'
+    property_min = 0
+    '''Mimimum valid value of gas thermal conductivity.'''
+    property_max = 10
+    '''Maximum valid value of gas thermal conductivity. Generous limit.'''
+                            
+    method = None
+    forced = False
+    ranked_methods = [LINDSAY_BROMLEY, SIMPLE]
+
+    def __init__(self, MWs=[], Tbs=[], CASs=[], ThermalConductivityGases=[], 
+                 ViscosityGases=[]):
+        self.MWs = MWs
+        self.Tbs = Tbs
+        self.CASs = CASs
+        self.ThermalConductivityGases = ThermalConductivityGases
+        self.ViscosityGases = ViscosityGases                     
+
+        self.Tmin = None
+        self.Tmax = None
+
+        self.sorted_valid_methods = []
+        self.user_methods = []
+        self.all_methods = set()
+        self.load_all_methods()
+
+
+    def load_all_methods(self):
+        methods = []        
+        methods.append(SIMPLE)
+        if none_and_length_check((self.Tbs, self.MWs)):
+            methods.append(LINDSAY_BROMLEY)
+        self.all_methods = set(methods)
+        self.Tmin = max([i.Tmin for i in self.ThermalConductivityGases])
+        self.Tmax = min([i.Tmax for i in self.ThermalConductivityGases])
+        
+    def calculate(self, T, P, zs, ws, method):
+        if method == SIMPLE:
+            ks = [i(T, P) for i in self.ThermalConductivityGases]
+            return mixing_simple(zs, ks)
+        elif method == LINDSAY_BROMLEY:
+            ks = [i(T, P) for i in self.ThermalConductivityGases]
+            mus = [i(T, P) for i in self.ViscosityGases]
+            return Lindsay_Bromley(T=T, ys=zs, ks=ks, mus=mus, Tbs=self.Tbs, MWs=self.MWs)
+        else:
+            raise Exception('Method not valid')
+
+    def test_method_validity(self, T, P, zs, ws, method):
+        if method in [SIMPLE, LINDSAY_BROMLEY]:
+            return True
+        else:
+            raise Exception('Method not valid')
 

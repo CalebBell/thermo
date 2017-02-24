@@ -32,7 +32,8 @@ __all__ = ['has_matplotlib', 'ANYMATH', 'mathlib', 'to_num', 'CAS2int',
 'Z_from_virial_pressure_form', 'zs_to_ws', 'ws_to_zs', 'zs_to_Vfs', 
 'Vfs_to_zs', 'none_and_length_check', 'normalize', 'mixing_simple', 
 'mixing_logarithmic', 'phase_select_property', 'TDependentProperty', 
-'TPDependentProperty', 'allclose_variable', 'horner', 'polylog2']
+'TPDependentProperty', 'MixtureProperty', 'allclose_variable', 'horner', 
+'polylog2']
 
 from cmath import sqrt as csqrt
 import numpy as np
@@ -1640,7 +1641,7 @@ class TDependentProperty(object):
         self.sorted_valid_methods = []
 
     def select_valid_methods(self, T):
-        r'''Method to obtain a sorted list methods which are valid at `T`
+        r'''Method to obtain a sorted list of methods which are valid at `T`
         according to `test_method_validity`. Considers either only user methods
         if forced is True, or all methods. User methods are first tested
         according to their listed order, and unless forced is True, then all
@@ -1719,7 +1720,7 @@ class TDependentProperty(object):
         If `method` is set, this method is first checked for validity with
         `test_method_validity` for the specified temperature, and if it is
         valid, it is then used to calculate the property. The result is checked
-        for validity, and returned if it is valid. If either of th checks fail,
+        for validity, and returned if it is valid. If either of the checks fail,
         the function retrieves a full list of valid methods with
         `select_valid_methods` and attempts them as described above.
 
@@ -2024,10 +2025,10 @@ class TDependentProperty(object):
         ----------
         T : float
             Temperature at which to calculate the derivative, [K]
-        order : int
-            Order of the derivative, >= 1
         method : str
             Method for which to find the derivative
+        order : int
+            Order of the derivative, >= 1
 
         Returns
         -------
@@ -2373,11 +2374,11 @@ class TPDependentProperty(TDependentProperty):
         Parameters
         ----------
         user_methods_P : str or list
-            Methods by name to be considered or prefered for pressure effect
+            Methods by name to be considered or preferred for pressure effect.
         forced : bool, optional
             If True, only the user specified methods will ever be considered;
             if False other methods will be considered if no user methods
-            suceed
+            suceed.
         '''
         # Accept either a string or a list of methods, and whether
         # or not to only consider the false methods
@@ -2627,7 +2628,7 @@ class TPDependentProperty(TDependentProperty):
         temperature according to either a specified list of methods, or the 
         user methods (if set), or all methods. User-selectable number of 
         points, and pressure range. If only_valid is set,
-        `test_method_validity_P` will be used to check if each temperature in 
+        `test_method_validity_P` will be used to check if each condition in 
         the specified range is valid, and `test_property_validity` will be used
         to test the answer, and the method is allowed to fail; only the valid 
         points will be plotted. Otherwise, the result will be calculated and 
@@ -2635,11 +2636,13 @@ class TPDependentProperty(TDependentProperty):
 
         Parameters
         ----------
+        T : float
+            Temperature at which to create the plot, [K]
         Pmin : float
             Minimum pressure, to begin calculating the property, [Pa]
         Pmax : float
             Maximum pressure, to stop calculating the property, [Pa]
-        methods : list, optional
+        methods_P : list, optional
             List of methods to consider
         pts : int, optional
             A list of points to calculate the property at; if Pmin to Pmax
@@ -2699,7 +2702,7 @@ class TPDependentProperty(TDependentProperty):
         either a specified list of methods, or user methods (if set), or all
         methods. User-selectable number of points, and temperature range. If
         only_valid is set,`test_method_validity_P` will be used to check if 
-        each temperature in the specified range is valid, and
+        each condition in the specified range is valid, and
         `test_property_validity` will be used to test the answer, and the
         method is allowed to fail; only the valid points will be plotted.
         Otherwise, the result will be calculated and displayed as-is. This will
@@ -2713,7 +2716,7 @@ class TPDependentProperty(TDependentProperty):
             Minimum temperature, to begin calculating the property, [K]
         Tmax : float
             Maximum temperature, to stop calculating the property, [K]
-        methods : list, optional
+        methods_P : list, optional
             List of methods to consider
         pts : int, optional
             A list of points to calculate the property at; if Tmin to Tmax
@@ -2784,10 +2787,10 @@ class TPDependentProperty(TDependentProperty):
             Temperature at which to calculate the derivative, [K]
         P : float
             Pressure at which to calculate the derivative, [Pa]
-        order : int
-            Order of the derivative, >= 1
         method : str
             Method for which to find the derivative
+        order : int
+            Order of the derivative, >= 1
 
         Returns
         -------
@@ -2816,10 +2819,10 @@ class TPDependentProperty(TDependentProperty):
             Pressure at which to calculate the derivative, [Pa]
         T : float
             Temperature at which to calculate the derivative, [K]
-        order : int
-            Order of the derivative, >= 1
         method : str
             Method for which to find the derivative
+        order : int
+            Order of the derivative, >= 1
 
         Returns
         -------
@@ -2901,5 +2904,494 @@ class TPDependentProperty(TDependentProperty):
         return None
 
 
+class MixtureProperty(object):
+
+    name = 'Test'
+    units = 'test units'
+    property_min = 0
+    property_max = 10
+                            
+    method = None
+    forced = False
+    ranked_methods = []
+
+    def set_user_method(self, user_methods, forced=False):
+        r'''Method to set the T, P, and composition dependent property methods 
+        desired for consideration by the user. Can be used to exclude certain 
+        methods which might have unacceptable accuracy.
+
+        As a side effect, the previously selected method is removed when
+        this method is called to ensure user methods are tried in the desired
+        order.
+
+        Parameters
+        ----------
+        user_methods : str or list
+            Methods by name to be considered for calculation of the mixture
+            property, ordered by preference.
+        forced : bool, optional
+            If True, only the user specified methods will ever be considered;
+            if False, other methods will be considered if no user methods
+            suceed.
+        '''
+        # Accept either a string or a list of methods, and whether
+        # or not to only consider the false methods
+        if isinstance(user_methods, str):
+            user_methods = [user_methods]
+
+        # The user's order matters and is retained for use by select_valid_methods
+        self.user_methods = user_methods
+        self.forced = forced
+
+        # Validate that the user's specified methods are actual methods
+        if set(self.user_methods).difference(self.all_methods):
+            raise Exception("One of the given methods is not available for this mixture")
+        if not self.user_methods and self.forced:
+            raise Exception('Only user specified methods are considered when forced is True, but no methods were provided')
+
+        # Remove previously selected methods
+        self.method = None
+        self.sorted_valid_methods = []
+
+    def select_valid_methods(self, T, P, zs, ws):
+        r'''Method to obtain a sorted list of methods which are valid at `T`,
+        `P`, `zs`, `ws`, and possibly `Vfls`, according to 
+        `test_method_validity`. Considers either only user methods
+        if forced is True, or all methods. User methods are first tested
+        according to their listed order, and unless forced is True, then all
+        methods are tested and sorted by their order in `ranked_methods`.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to test the methods, [K]
+        P : float
+            Pressure at which to test the methods, [Pa]
+        zs : list[float]
+            Mole fractions of all species in the mixture, [-]
+        ws : list[float]
+            Weight fractions of all species in the mixture, [-]
+
+        Returns
+        -------
+        sorted_valid_methods : list
+            Sorted lists of methods valid at the given conditions according to
+            `test_method_validity`
+        '''
+        # Consider either only the user's methods or all methods
+        # Tabular data will be in both when inserted
+        considered_methods = list(self.user_methods) if self.forced else list(self.all_methods)
+
+        # User methods (incl. tabular data); add back later, after ranking the rest
+        if self.user_methods:
+            [considered_methods.remove(i) for i in self.user_methods]
+
+        # Index the rest of the methods by ranked_methods, and add them to a list, sorted_methods
+        preferences = sorted([self.ranked_methods.index(i) for i in considered_methods])
+        sorted_methods = [self.ranked_methods[i] for i in preferences]
+
+        # Add back the user's methods to the top, in order.
+        if self.user_methods:
+            [sorted_methods.insert(0, i) for i in reversed(self.user_methods)]
+
+        sorted_valid_methods = []
+        for method in sorted_methods:
+            if self.test_method_validity(T, P, zs, ws, method):
+                sorted_valid_methods.append(method)
+
+        return sorted_valid_methods
+
+    @classmethod
+    def test_property_validity(self, prop):
+        r'''Method to test the validity of a calculated property. Normally,
+        this method is used by a given property class, and has maximum and
+        minimum limits controlled by the variables `property_min` and
+        `property_max`.
+
+        Parameters
+        ----------
+        prop : float
+            property to be tested, [`units`]
+
+        Returns
+        -------
+        validity : bool
+            Whether or not a specifid method is valid
+        '''
+        if isinstance(prop, complex):
+            return False
+        elif prop < self.property_min:
+            return False
+        elif prop > self.property_max:
+            return False
+        return True
 
 
+    def mixture_property(self, T, P, zs, ws):
+        r'''Method to calculate the property with sanity checking and without
+        specifying a specific method. `select_valid_methods` is used to obtain
+        a sorted list of methods to try. Methods are then tried in order until
+        one succeeds. The methods are allowed to fail, and their results are
+        checked with `test_property_validity`. On success, the used method
+        is stored in the variable `method`.
+
+        If `method` is set, this method is first checked for validity with
+        `test_method_validity` for the specified temperature, and if it is
+        valid, it is then used to calculate the property. The result is checked
+        for validity, and returned if it is valid. If either of the checks fail,
+        the function retrieves a full list of valid methods with
+        `select_valid_methods` and attempts them as described above.
+
+        If no methods are found which succeed, returns None.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the property, [K]
+        P : float
+            Pressure at which to calculate the property, [Pa]
+        zs : list[float]
+            Mole fractions of all species in the mixture, [-]
+        ws : list[float]
+            Weight fractions of all species in the mixture, [-]
+
+        Returns
+        -------
+        prop : float
+            Calculated property, [`units`]
+        '''
+        # Optimistic track, with the already set method
+        if self.method:
+            # retest within range
+            if self.test_method_validity(T, P, zs, ws, self.method):
+                try:
+                    prop = self.calculate(T, P, zs, ws, self.method)
+                    if self.test_property_validity(prop):
+                        return prop
+                except:  # pragma: no cover
+                    pass
+
+        # get valid methods at conditions, and try them until one yields a valid
+        # property; store the method and return the answer
+        self.sorted_valid_methods = self.select_valid_methods(T, P, zs, ws)
+        for method in self.sorted_valid_methods:
+            try:
+                prop = self.calculate(T, P, zs, ws, method)
+                if self.test_property_validity(prop):
+                    self.method = method
+                    return prop
+            except:  # pragma: no cover
+                pass
+
+        # Function returns None if it does not work.
+        return None
+
+    def calculate_derivative_T(self, T, P, zs, ws, method, order=1):
+        r'''Method to calculate a derivative of a mixture property with respect 
+        to  temperature at constant pressure and composition
+        of a given order using a specified  method. Uses SciPy's derivative 
+        function, with a delta of 1E-6 K and a number of points equal to 
+        2*order + 1.
+
+        This method can be overwritten by subclasses who may perfer to add
+        analytical methods for some or all methods as this is much faster.
+
+        If the calculation does not succeed, returns the actual error
+        encountered.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the derivative, [K]
+        P : float
+            Pressure at which to calculate the derivative, [Pa]
+        zs : list[float]
+            Mole fractions of all species in the mixture, [-]
+        ws : list[float]
+            Weight fractions of all species in the mixture, [-]
+        method : str
+            Method for which to find the derivative
+        order : int
+            Order of the derivative, >= 1
+
+        Returns
+        -------
+        d_prop_d_T_at_P : float
+            Calculated derivative property at constant pressure, 
+            [`units/K^order`]
+        '''
+        return derivative(self.calculate, T, dx=1e-6, args=[P, zs, ws, method], n=order, order=1+order*2)
+
+    def calculate_derivative_P(self, P, T, zs, ws, method, order=1):
+        r'''Method to calculate a derivative of a mixture property with respect 
+        to pressure at constant temperature and composition
+        of a given order using a specified method. Uses SciPy's derivative 
+        function, with a delta of 0.01 Pa and a number of points equal to 
+        2*order + 1.
+
+        This method can be overwritten by subclasses who may perfer to add
+        analytical methods for some or all methods as this is much faster.
+
+        If the calculation does not succeed, returns the actual error
+        encountered.
+
+        Parameters
+        ----------
+        P : float
+            Pressure at which to calculate the derivative, [Pa]
+        T : float
+            Temperature at which to calculate the derivative, [K]
+        zs : list[float]
+            Mole fractions of all species in the mixture, [-]
+        ws : list[float]
+            Weight fractions of all species in the mixture, [-]
+        method : str
+            Method for which to find the derivative
+        order : int
+            Order of the derivative, >= 1
+
+        Returns
+        -------
+        d_prop_d_P_at_T : float
+            Calculated derivative property at constant temperature, 
+            [`units/Pa^order`]
+        '''
+        f = lambda P: self.calculate(T, P, zs, ws, method)
+        return derivative(f, P, dx=1e-2, n=order, order=1+order*2)
+
+
+    def property_derivative_T(self, T, P, zs, ws, order=1):
+        r'''Method to calculate a derivative of a mixture property with respect
+        to temperature at constant pressure and composition,
+        of a given order. Methods found valid by `select_valid_methods` are 
+        attempted until a method succeeds. If no methods are valid and succeed,
+        None is returned.
+
+        Calls `calculate_derivative_T` internally to perform the actual
+        calculation.
+        
+        .. math::
+            \text{derivative} = \frac{d (\text{property})}{d T}|_{P, z}
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the derivative, [K]
+        P : float
+            Pressure at which to calculate the derivative, [Pa]
+        zs : list[float]
+            Mole fractions of all species in the mixture, [-]
+        ws : list[float]
+            Weight fractions of all species in the mixture, [-]
+        order : int
+            Order of the derivative, >= 1
+
+        Returns
+        -------
+        d_prop_d_T_at_P : float
+            Calculated derivative property, [`units/K^order`]
+        '''
+        sorted_valid_methods = self.select_valid_methods(T, P, zs, ws)
+        for method in sorted_valid_methods:
+            try:
+                return self.calculate_derivative_T(T, P, zs, ws, method, order)
+            except:
+                pass
+        return None
+
+
+    def property_derivative_P(self, T, P, zs, ws, order=1):
+        r'''Method to calculate a derivative of a mixture property with respect
+        to pressure at constant temperature and composition,
+        of a given order. Methods found valid by `select_valid_methods` are 
+        attempted until a method succeeds. If no methods are valid and succeed,
+        None is returned.
+
+        Calls `calculate_derivative_P` internally to perform the actual
+        calculation.
+        
+        .. math::
+            \text{derivative} = \frac{d (\text{property})}{d P}|_{T, z}
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the derivative, [K]
+        P : float
+            Pressure at which to calculate the derivative, [Pa]
+        zs : list[float]
+            Mole fractions of all species in the mixture, [-]
+        ws : list[float]
+            Weight fractions of all species in the mixture, [-]
+        order : int
+            Order of the derivative, >= 1
+
+        Returns
+        -------
+        d_prop_d_P_at_T : float
+            Calculated derivative property, [`units/Pa^order`]
+        '''
+        sorted_valid_methods = self.select_valid_methods(T, P, zs, ws)
+        for method in sorted_valid_methods:
+            try:
+                return self.calculate_derivative_P(P, T, zs, ws, method, order)
+            except:
+                pass
+        return None
+
+    def plot_isotherm(self, T, zs, ws, Pmin=None, Pmax=None, methods=[], pts=50,
+                      only_valid=True):  # pragma: no cover
+        r'''Method to create a plot of the property vs pressure at a specified
+        temperature and composition according to either a specified list of 
+        methods, or the  user methods (if set), or all methods. User-selectable
+         number of  points, and pressure range. If only_valid is set,
+        `test_method_validity` will be used to check if each condition in 
+        the specified range is valid, and `test_property_validity` will be used
+        to test the answer, and the method is allowed to fail; only the valid 
+        points will be plotted. Otherwise, the result will be calculated and 
+        displayed as-is. This will not suceed if the method fails.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to create the plot, [K]
+        zs : list[float]
+            Mole fractions of all species in the mixture, [-]
+        ws : list[float]
+            Weight fractions of all species in the mixture, [-]
+        Pmin : float
+            Minimum pressure, to begin calculating the property, [Pa]
+        Pmax : float
+            Maximum pressure, to stop calculating the property, [Pa]
+        methods : list, optional
+            List of methods to consider
+        pts : int, optional
+            A list of points to calculate the property at; if Pmin to Pmax
+            covers a wide range of method validities, only a few points may end
+            up calculated for a given method so this may need to be large
+        only_valid : bool
+            If True, only plot successful methods and calculated properties,
+            and handle errors; if False, attempt calculation without any
+            checking and use methods outside their bounds
+        '''
+        # This function cannot be tested
+        if not has_matplotlib:
+            raise Exception('Optional dependency matplotlib is required for plotting')
+        if Pmin is None:
+            if self.Pmin is not None:
+                Pmin = self.Pmin
+            else:
+                raise Exception('Minimum pressure could not be auto-detected; please provide it')
+        if Pmax is None:
+            if self.Pmax is not None:
+                Pmax = self.Pmax
+            else:
+                raise Exception('Maximum pressure could not be auto-detected; please provide it')
+
+        if not methods:
+            if self.user_methods:
+                methods = self.user_methods
+            else:
+                methods = self.all_methods
+        Ps = np.linspace(Pmin, Pmax, pts)
+        for method in methods:
+            if only_valid:
+                properties, Ps2 = [], []
+                for P in Ps:
+                    if self.test_method_validity(T, P, zs, ws, method):
+                        try:
+                            p = self.calculate(T, P, zs, ws, method)
+                            if self.test_property_validity(p):
+                                properties.append(p)
+                                Ps2.append(P)
+                        except:
+                            pass
+                plt.plot(Ps2, properties, label=method)
+            else:
+                properties = [self.calculate(T, P, zs, ws, method) for P in Ps]
+                plt.plot(Ps, properties, label=method)
+        plt.legend()
+        plt.ylabel(self.name + ', ' + self.units)
+        plt.xlabel('Pressure, Pa')
+        plt.title(self.name + ' of a mixture of ' + ', '.join(self.CASs) 
+                  + ' at mole fractions of ' + ', '.join(str(round(i, 4)) for i in zs) + '.')
+        plt.show()
+
+
+    def plot_isobar(self, P, zs, ws, Tmin=None, Tmax=None, methods=[], pts=50,
+                    only_valid=True):  # pragma: no cover
+        r'''Method to create a plot of the property vs temperature at a 
+        specific pressure and composition according to
+        either a specified list of methods, or user methods (if set), or all
+        methods. User-selectable number of points, and temperature range. If
+        only_valid is set,`test_method_validity` will be used to check if 
+        each condition in the specified range is valid, and
+        `test_property_validity` will be used to test the answer, and the
+        method is allowed to fail; only the valid points will be plotted.
+        Otherwise, the result will be calculated and displayed as-is. This will
+        not suceed if the method fails.
+
+        Parameters
+        ----------
+        P : float
+            Pressure for the isobar, [Pa]
+        zs : list[float]
+            Mole fractions of all species in the mixture, [-]
+        ws : list[float]
+            Weight fractions of all species in the mixture, [-]
+        Tmin : float
+            Minimum temperature, to begin calculating the property, [K]
+        Tmax : float
+            Maximum temperature, to stop calculating the property, [K]
+        methods : list, optional
+            List of methods to consider
+        pts : int, optional
+            A list of points to calculate the property at; if Tmin to Tmax
+            covers a wide range of method validities, only a few points may end
+            up calculated for a given method so this may need to be large
+        only_valid : bool
+            If True, only plot successful methods and calculated properties,
+            and handle errors; if False, attempt calculation without any
+            checking and use methods outside their bounds
+        '''
+        if not has_matplotlib:
+            raise Exception('Optional dependency matplotlib is required for plotting')
+        if Tmin is None:
+            if self.Tmin is not None:
+                Tmin = self.Tmin
+            else:
+                raise Exception('Minimum pressure could not be auto-detected; please provide it')
+        if Tmax is None:
+            if self.Tmax is not None:
+                Tmax = self.Tmax
+            else:
+                raise Exception('Maximum pressure could not be auto-detected; please provide it')
+
+        if not methods:
+            if self.user_methods:
+                methods = self.user_methods
+            else:
+                methods = self.all_methods
+        Ts = np.linspace(Tmin, Tmax, pts)
+        for method in methods:
+            if only_valid:
+                properties, Ts2 = [], []
+                for T in Ts:
+                    if self.test_method_validity(T, P, zs, ws, method):
+                        try:
+                            p = self.calculate(T, P, zs, ws, method)
+                            if self.test_property_validity(p):
+                                properties.append(p)
+                                Ts2.append(T)
+                        except:
+                            pass
+                plt.plot(Ts2, properties, label=method)
+            else:
+                properties = [self.calculate(T, P, zs, ws, method) for T in Ts]
+                plt.plot(Ts, properties, label=method)
+        plt.legend()
+        plt.ylabel(self.name + ', ' + self.units)
+        plt.xlabel('Temperature, K')
+        plt.title(self.name + ' of a mixture of ' + ', '.join(self.CASs) 
+                  + ' at mole fractions of ' + ', '.join(str(round(i, 4)) for i in zs) + '.')
+        plt.show()

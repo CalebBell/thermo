@@ -37,7 +37,7 @@ from thermo.utils import mixing_simple, none_and_length_check, Vm_to_rho
 from scipy.constants import N_A, k
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
 import pandas as pd
-from thermo.utils import TDependentProperty
+from thermo.utils import TDependentProperty, MixtureProperty
 
 folder = os.path.join(os.path.dirname(__file__), 'SurfaceTensionData')
 
@@ -1258,14 +1258,17 @@ def surface_tension_mixture(T=None, xs=[], sigmas=[], rhoms=[],
     return sigma
 
 
-class SurfaceTensionMixture(TDependentProperty):
+class SurfaceTensionMixture(MixtureProperty):
 
     name = 'Surface tension'
     units = 'N/m'
     property_min = 0
-    property_max = 0.5
+    property_max = 10
                             
-                            
+    method = None
+    forced = False
+    ranked_methods = [WINTERFELDSCRIVENDAVIS, DIGUILIOTEJA, SIMPLE]
+
     def __init__(self, MWs=[], Tbs=[], Tcs=[], CASs=[], SurfaceTensions=[], 
                  VolumeLiquids=[], Vfls_callable=None):
         self.MWs = MWs
@@ -1292,7 +1295,6 @@ class SurfaceTensionMixture(TDependentProperty):
         methods.append(WINTERFELDSCRIVENDAVIS) # Nothing to load, needs rhoms, sigma
         if none_and_length_check((self.Tbs, self.Tcs)):
             self.sigmas_Tb = [i(Tb) for i, Tb in zip(self.SurfaceTensions, self.Tbs)]
-            # Unlikely but necessary to check all values were calculable
             if none_and_length_check([self.sigmas_Tb]):
                 methods.append(DIGUILIOTEJA)
         self.all_methods = set(methods)
@@ -1319,3 +1321,4 @@ class SurfaceTensionMixture(TDependentProperty):
             return True
         else:
             raise Exception('Method not valid')
+
