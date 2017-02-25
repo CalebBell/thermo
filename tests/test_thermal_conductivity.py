@@ -23,7 +23,9 @@ SOFTWARE.'''
 from numpy.testing import assert_allclose
 import pytest
 from thermo.thermal_conductivity import *
+from thermo.chemical import Mixture
 from thermo.identifiers import checkCAS
+from thermo.thermal_conductivity import MAGOMEDOV, DIPPR_9H, FILIPPOV, SIMPLE, ThermalConductivityLiquidMixture
 from thermo.thermal_conductivity import (GHARAGHEIZI_G, CHUNG, ELI_HANLEY, VDI_PPDS,
                                         ELI_HANLEY_DENSE, CHUNG_DENSE, 
                                         EUCKEN_MOD, EUCKEN, BAHADORI_G, 
@@ -372,7 +374,6 @@ def test_ThermalConductivityGasMixture():
 
 def test_ThermalConductivityLiquidMixture():
     from thermo.thermal_conductivity import MAGOMEDOV, DIPPR_9H, FILIPPOV, SIMPLE, ThermalConductivityLiquidMixture
-    from thermo import *
 
     m = Mixture(['ethanol', 'pentanol'], ws=[0.258, 0.742], T=298.15)
     ThermalConductivityLiquids = [i.ThermalConductivityLiquid for i in m.Chemicals]
