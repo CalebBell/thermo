@@ -295,12 +295,12 @@ def test_ThermalConductivityGas():
     assert False == EtOH.test_method_validity_P(100, 1E5, COOLPROP)
 
 
-def test_DIPPR9I():
-    k = DIPPR9I([0.258, 0.742], [0.1692, 0.1528])
+def test_DIPPR9H():
+    k = DIPPR9H([0.258, 0.742], [0.1692, 0.1528])
     assert_allclose(k, 0.15657104706719646)
 
     with pytest.raises(Exception):
-        DIPPR9I([0.258, 0.742], [0.1692])
+        DIPPR9H([0.258, 0.742], [0.1692])
 
 def test_Filippov():
     kl = Filippov([0.258, 0.742], [0.1692, 0.1528])
@@ -316,3 +316,89 @@ def test_Lindsay_Bromley():
 
     with pytest.raises(Exception):
         Lindsay_Bromley(323.15, [0.23], [1.939E-2, 1.231E-2], [1.002E-5, 1.015E-5], [248.31, 248.93], [46.07, 50.49])
+
+
+
+def test_ThermalConductivityGasMixture():
+    from thermo.chemical import Mixture
+    from thermo.thermal_conductivity import ThermalConductivityGasMixture, LINDSAY_BROMLEY, SIMPLE
+    
+    m2 = Mixture(['nitrogen', 'argon', 'oxygen'], ws=[0.7557, 0.0127, 0.2316])
+    ThermalConductivityGases = [i.ThermalConductivityGas for i in m2.Chemicals]
+    ViscosityGases = [i.ViscosityGas for i in m2.Chemicals]
+
+    kg_mix = ThermalConductivityGasMixture(MWs=m2.MWs, Tbs=m2.Tbs, CASs=m2.CASs, 
+                                      ThermalConductivityGases=ThermalConductivityGases, 
+                                      ViscosityGases=ViscosityGases)
+    
+    k = kg_mix.mixture_property(m2.T, m2.P, m2.zs, m2.ws)
+    assert_allclose(k, 0.025864474514829254) # test LINDSAY_BROMLEY and mixture property
+    # Do it twice to test the stored method
+    k = kg_mix.mixture_property(m2.T, m2.P, m2.zs, m2.ws)
+    assert_allclose(k, 0.025864474514829254) # test LINDSAY_BROMLEY and mixture property
+
+    k =  kg_mix.calculate(m2.T, m2.P, m2.zs, m2.ws, SIMPLE) # Test calculate, and simple
+    assert_allclose(k, 0.02586655464213776)
+    
+    dT1 = kg_mix.calculate_derivative_T(m2.T, m2.P, m2.zs, m2.ws, LINDSAY_BROMLEY)
+    dT2 = kg_mix.property_derivative_T(m2.T, m2.P, m2.zs, m2.ws)
+    assert_allclose([dT1, dT2], [7.3391064059347144e-05]*2)
+    
+    dP1 = kg_mix.calculate_derivative_P(m2.P, m2.T, m2.zs, m2.ws, LINDSAY_BROMLEY)
+    dP2 = kg_mix.property_derivative_P(m2.T, m2.P, m2.zs, m2.ws)
+    
+    assert_allclose([dP1, dP2], [3.5325319058809868e-10]*2)
+    
+    # Test other methods
+    
+    assert kg_mix.user_methods == []
+    assert kg_mix.all_methods == {LINDSAY_BROMLEY, SIMPLE}
+    assert kg_mix.ranked_methods == [LINDSAY_BROMLEY, SIMPLE]
+    
+    # set a method
+    kg_mix.set_user_method([SIMPLE])
+    assert None == kg_mix.method
+    k = kg_mix.mixture_property(m2.T, m2.P, m2.zs, m2.ws)
+    assert_allclose(k, 0.02586655464213776)
+    
+    # Unhappy paths
+    with pytest.raises(Exception):
+        kg_mix.calculate(m2.T, m2.P, m2.zs, m2.ws, 'BADMETHOD')
+        
+    with pytest.raises(Exception):
+        kg_mix.test_method_validity(m2.T, m2.P, m2.zs, m2.ws, 'BADMETHOD')
+
+
+
+def test_ThermalConductivityLiquidMixture():
+    from thermo.thermal_conductivity import MAGOMEDOV, DIPPR_9H, FILIPPOV, SIMPLE, ThermalConductivityLiquidMixture
+    from thermo import *
+
+    m = Mixture(['ethanol', 'pentanol'], ws=[0.258, 0.742], T=298.15)
+    ThermalConductivityLiquids = [i.ThermalConductivityLiquid for i in m.Chemicals]
+    
+    kl_mix = ThermalConductivityLiquidMixture(CASs=m.CASs, ThermalConductivityLiquids=ThermalConductivityLiquids)
+    k = kl_mix.mixture_property(m.T, m.P, m.zs, m.ws)
+    assert_allclose(k, 0.15300152782218343)
+                           
+    k = kl_mix.calculate(m.T, m.P, m.zs, m.ws, FILIPPOV)
+    assert_allclose(k, 0.15522139770330717)
+    
+    k = kl_mix.calculate(m.T, m.P, m.zs, m.ws, SIMPLE)
+    assert_allclose(k, 0.1552717795028546)
+    
+    # Test electrolytes
+    m = Mixture(['water', 'sulfuric acid'], ws=[.5, .5], T=298.15)
+    ThermalConductivityLiquids = [i.ThermalConductivityLiquid for i in m.Chemicals]
+    kl_mix = ThermalConductivityLiquidMixture(CASs=m.CASs, ThermalConductivityLiquids=ThermalConductivityLiquids)
+    k = kl_mix.mixture_property(m.T, m.P, m.zs, m.ws)
+    assert_allclose(k, 0.4677453168207703)
+    assert kl_mix.sorted_valid_methods == [MAGOMEDOV]
+                     
+
+    # Unhappy paths
+    with pytest.raises(Exception):
+        kl_mix.calculate(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
+        
+    with pytest.raises(Exception):
+        kl_mix.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')

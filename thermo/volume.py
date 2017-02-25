@@ -1334,11 +1334,9 @@ def Amgat(xs, Vms):
     >>> Amgat([0.5, 0.5], [4.057e-05, 5.861e-05])
     4.9590000000000005e-05
     '''
-    #if len(xs) != len(Vms) or len(xs) == 0: # Check if bad arguments
     if not none_and_length_check([xs, Vms]):
         raise Exception('Function inputs are incorrect format')
-    Vm = mixing_simple(xs, Vms)
-    return Vm
+    return mixing_simple(xs, Vms)
 
 
 def Rackett_mixture(T, xs, MWs, Tcs, Pcs, Zrs):
@@ -1396,7 +1394,6 @@ def Rackett_mixture(T, xs, MWs, Tcs, Pcs, Zrs):
     .. [2] Danner, Ronald P, and Design Institute for Physical Property Data.
        Manual for Predicting Chemical Process Design Data. New York, N.Y, 1982.
     '''
-#    if not length_check([xs, MWs, Tcs, Pcs, Zrs]): # Check for integers being used
     if not none_and_length_check([xs, MWs, Tcs, Pcs, Zrs]):
         raise Exception('Function inputs are incorrect format')
     Tc = mixing_simple(xs, Tcs)
@@ -1404,8 +1401,7 @@ def Rackett_mixture(T, xs, MWs, Tcs, Pcs, Zrs):
     MW = mixing_simple(xs, MWs)
     Tr = T/Tc
     bigsum = sum(xs[i]*Tcs[i]/Pcs[i]/MWs[i] for i in range(len(xs)))
-    Vm = (R*bigsum*Zr**(1+(1-Tr)**(2/7.)))*MW
-    return Vm
+    return (R*bigsum*Zr**(1. + (1. - Tr)**(2/7.)))*MW
 
 
 def COSTALD_mixture(xs, T, Tcs, Vcs, omegas):
@@ -1463,24 +1459,17 @@ def COSTALD_mixture(xs, T, Tcs, Vcs, omegas):
        Saturated Densities of Liquids and Their Mixtures." AIChE Journal
        25, no. 4 (1979): 653-663. doi:10.1002/aic.690250412
     '''
+    cmps = range(len(xs))
     if not none_and_length_check([xs, Tcs, Vcs, omegas]):
         raise Exception('Function inputs are incorrect format')
     sum1 = sum([xi*Vci for xi, Vci in zip(xs, Vcs)])
     sum2 = sum([xi*Vci**(2/3.) for xi, Vci in zip(xs, Vcs)])
     sum3 = sum([xi*Vci**(1/3.) for xi, Vci in zip(xs, Vcs)])
-    Vm = 0.25*(sum1 + 3*sum2*sum3)
-    VijTcij = {}
-    for i in range(len(xs)):
-        for j in range(len(xs)):
-            VijTcij[str(i)+str(j)] = (Tcs[i]*Tcs[j]*Vcs[i]*Vcs[j])**0.5
+    Vm = 0.25*(sum1 + 3.*sum2*sum3)
+    VijTcij = [[(Tcs[i]*Tcs[j]*Vcs[i]*Vcs[j])**0.5 for j in cmps] for i in cmps]
     omega = mixing_simple(xs, omegas)
-    Tcm = 0
-    for i in range(len(xs)):
-        for j in range(len(xs)):
-            Tcm += xs[i]*xs[j]*VijTcij[str(i)+str(j)]/Vm
-
-    Vs = COSTALD(T, Tcm, Vm, omega)
-    return Vs
+    Tcm = sum([xs[i]*xs[j]*VijTcij[i][j]/Vm for j in cmps for i in cmps])
+    return COSTALD(T, Tcm, Vm, omega)
 
 
 NONE = 'None'

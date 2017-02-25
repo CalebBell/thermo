@@ -25,7 +25,7 @@ from __future__ import division
 __all__ = ['Sheffy_Johnson', 'Sato_Riedel', 'Lakshmi_Prasad', 
 'Gharagheizi_liquid', 'Nicola_original', 'Nicola', 'Bahadori_liquid', 
 'thermal_conductivity_liquid_methods', 'ThermalConductivityLiquid', 'DIPPR9G',
- 'Missenard', 'DIPPR9I', 'Filippov', 'thermal_conductivity_liquid_mixture', 
+ 'Missenard', 'DIPPR9H', 'Filippov', 'thermal_conductivity_liquid_mixture', 
  'Eucken', 'Eucken_modified', 'DIPPR9B', 'Chung', 'eli_hanley', 
  'Gharagheizi_gas', 'Bahadori_gas', 'thermal_conductivity_gas_methods', 
  'thermal_conductivity_gas_methods_P', 'ThermalConductivityGas', 
@@ -1013,7 +1013,7 @@ def Missenard(T, P, Tc, Pc, kl):
 ### Thermal conductivity of liquid mixtures
 
 
-def DIPPR9I(ws, ks):
+def DIPPR9H(ws, ks):
     r'''Calculates thermal conductivity of a liquid mixture according to
     mixing rules in [1]_ and also in [2]_.
 
@@ -1045,7 +1045,7 @@ def DIPPR9I(ws, ks):
 
     Examples
     --------
-    >>> DIPPR9I([0.258, 0.742], [0.1692, 0.1528])
+    >>> DIPPR9H([0.258, 0.742], [0.1692, 0.1528])
     0.15657104706719646
 
     References
@@ -1057,8 +1057,7 @@ def DIPPR9I(ws, ks):
     '''
     if not none_and_length_check([ks, ws]):  # check same-length inputs
         raise Exception('Function inputs are incorrect format')
-    kl = sum(ws[i]/ks[i]**2 for i in range(len(ws)))**(-0.5)
-    return kl
+    return sum(ws[i]/ks[i]**2 for i in range(len(ws)))**(-0.5)
 
 
 def Filippov(ws, ks):
@@ -1103,12 +1102,11 @@ def Filippov(ws, ks):
     '''
     if not none_and_length_check([ks, ws], 2):  # check same-length inputs
         raise Exception('Function inputs are incorrect format')
-    kl = ws[0]*ks[0] + ws[1]*ks[1] - 0.72*ws[0]*ws[1]*(ks[1] - ks[0])
-    return kl
+    return ws[0]*ks[0] + ws[1]*ks[1] - 0.72*ws[0]*ws[1]*(ks[1] - ks[0])
 
 
 MAGOMEDOV = 'Magomedov'
-DIPPR_9I = 'DIPPR9I'
+DIPPR_9H = 'DIPPR9H'
 FILIPPOV = 'Filippov'
 SIMPLE = 'SIMPLE'
 
@@ -1122,7 +1120,7 @@ def thermal_conductivity_liquid_mixture(T=None, P=None, zs=None, ws=None,
     future release in favor of a more complete object-oriented interface.
 
     >>> thermal_conductivity_liquid_mixture(ws=[0.258, 0.742], ks=[0.1692,
-    ... 0.1528], Method='DIPPR9I')
+    ... 0.1528], Method='DIPPR9H')
     0.15657104706719646
 
     >>> thermal_conductivity_liquid_mixture(ws=[0.258, 0.742], ks=[0.1692,
@@ -1137,7 +1135,7 @@ def thermal_conductivity_liquid_mixture(T=None, P=None, zs=None, ws=None,
             if all([i in Magomedovk_thermal_cond.index for i in wCASRNs]):
                 methods.append(MAGOMEDOV)
         if none_and_length_check([ks]):
-            methods.append(DIPPR_9I)
+            methods.append(DIPPR_9H)
         if none_and_length_check([ks, ws], 2):
             methods.append(FILIPPOV)
         if none_and_length_check([ks]):
@@ -1154,8 +1152,8 @@ def thermal_conductivity_liquid_mixture(T=None, P=None, zs=None, ws=None,
 #        raise Exception('Function inputs are incorrect format')
     if Method == SIMPLE:
         _kl = mixing_simple(zs, ks)
-    elif Method == DIPPR_9I:
-        _kl = DIPPR9I(ws, ks)
+    elif Method == DIPPR_9H:
+        _kl = DIPPR9H(ws, ks)
     elif Method == FILIPPOV:
         _kl = Filippov(ws, ks)
     elif Method == MAGOMEDOV:
@@ -1173,6 +1171,73 @@ def thermal_conductivity_liquid_mixture(T=None, P=None, zs=None, ws=None,
 
 #print (thermal_conductivity_liquid_mixture(ws=[0.258, 0.742], ks=[0.1692, 0.1528]), 0)
 #print (thermal_conductivity_liquid_mixture(ws=[0.258, 0.742], ks=[0.1692, 0.1528], Method='Filippov'), 0)
+
+class ThermalConductivityLiquidMixture(MixtureProperty):
+
+    name = 'liquid thermal conductivity'
+    units = 'W/m/K'
+    property_min = 0
+    '''Mimimum valid value of liquid thermal conductivity.'''
+    property_max = 10
+    '''Maximum valid value of liquid thermal conductivity. Generous limit.'''
+                            
+    method = None
+    forced = False
+    ranked_methods = [DIPPR_9H, SIMPLE, MAGOMEDOV, FILIPPOV]
+
+    def __init__(self, CASs=[], ThermalConductivityLiquids=[]):
+        self.CASs = CASs
+        self.ThermalConductivityLiquids = ThermalConductivityLiquids
+
+        self.Tmin = None
+        self.Tmax = None
+
+        self.sorted_valid_methods = []
+        self.user_methods = []
+        self.all_methods = set()
+        self.load_all_methods()
+
+    def load_all_methods(self):
+        methods = [DIPPR_9H, SIMPLE]        
+        if len(self.CASs) == 2:
+            methods.append(FILIPPOV)
+        if '7732-18-5' in self.CASs and len(self.CASs)>1:
+            wCASs = [i for i in self.CASs if i != '7732-18-5']
+            if all([i in Magomedovk_thermal_cond.index for i in wCASs]):
+                methods.append(MAGOMEDOV)
+                self.wCASs = wCASs
+                self.index_w = self.CASs.index('7732-18-5')
+            
+        self.all_methods = set(methods)
+        self.Tmin = max([i.Tmin for i in self.ThermalConductivityLiquids])
+        self.Tmax = min([i.Tmax for i in self.ThermalConductivityLiquids])
+        
+    def calculate(self, T, P, zs, ws, method):
+        if method == SIMPLE:
+            ks = [i(T, P) for i in self.ThermalConductivityLiquids]
+            return mixing_simple(zs, ks)
+        elif method == DIPPR_9H:
+            ks = [i(T, P) for i in self.ThermalConductivityLiquids]
+            return DIPPR9H(ws, ks)
+        elif method == FILIPPOV:
+            ks = [i(T, P) for i in self.ThermalConductivityLiquids]
+            return Filippov(ws, ks)
+        elif method == MAGOMEDOV:
+            k_w = self.ThermalConductivityLiquids[self.index_w](T, P)
+            ws = list(ws) ; ws.pop(self.index_w)
+            return thermal_conductivity_Magomedov(T, P, ws, self.wCASs, k_w)
+        else:
+            raise Exception('Method not valid')
+
+    def test_method_validity(self, T, P, zs, ws, method):
+        if MAGOMEDOV in self.all_methods:
+            # If everything is an electrolyte, accept only it as a method
+            if method in self.all_methods:
+                return method == MAGOMEDOV
+        if method in [SIMPLE, DIPPR_9H, FILIPPOV]:
+            return True
+        else:
+            raise Exception('Method not valid')
 
 
 ### Thermal Conductivity of Gases
@@ -1998,12 +2063,18 @@ class ThermalConductivityGas(TPDependentProperty):
             Thermal conductivity of the gas at T and P, [W/m/K]
         '''
         if method == ELI_HANLEY_DENSE:
-            kg = eli_hanley_dense(T, self.MW, self.Tc, self.Vc, self.Zc, self.omega, self.Cvgm, self.Vmg)
+            Vmg = self.Vmg(T, P) if hasattr(self.Vmg, '__call__') else self.Vmg
+            Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
+            kg = eli_hanley_dense(T, self.MW, self.Tc, self.Vc, self.Zc, self.omega, Cvgm, Vmg)
         elif method == CHUNG_DENSE:
-            kg = chung_dense(T, self.MW, self.Tc, self.Vc, self.omega, self.Cvgm, self.Vmg, self.mug, self.dipole)
+            Vmg = self.Vmg(T, P) if hasattr(self.Vmg, '__call__') else self.Vmg
+            Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
+            mug = self.mug(T, P) if hasattr(self.mug, '__call__') else self.mug
+            kg = chung_dense(T, self.MW, self.Tc, self.Vc, self.omega, Cvgm, Vmg, mug, self.dipole)
         elif method == STIEL_THODOS_DENSE:
             kg = self.T_dependent_property(T)
-            kg = stiel_thodos_dense(T, self.MW, self.Tc, self.Pc, self.Vc, self.Zc, self.Vmg, kg)
+            Vmg = self.Vmg(T, P) if hasattr(self.Vmg, '__call__') else self.Vmg
+            kg = stiel_thodos_dense(T, self.MW, self.Tc, self.Pc, self.Vc, self.Zc, Vmg, kg)
         elif method == COOLPROP:
             kg = PropsSI('L', 'T', T, 'P', P, self.CASRN)
         elif method in self.tabular_data:
@@ -2437,8 +2508,7 @@ def chung_dense(T, MW, Tc, Vc, omega, Cvm, Vm, mu, dipole, association=0):
     G1 = (1 - 0.5*y)/(1. - y)**3
     G2 = (B1/y*(1 - exp(-B4*y)) + B2*G1*exp(B5*y) + B3*G1)/(B1*B4 + B2 + B3)
     q = 3.586E-3*(Tc/(MW/1000.))**0.5/(Vc*1E6)**(2/3.)
-    k = 31.2*mu*psi/(MW/1000.)*(G2**-1 + B6*y) + q*B7*y**2*Tr**0.5*G2
-    return k
+    return 31.2*mu*psi/(MW/1000.)*(G2**-1 + B6*y) + q*B7*y**2*Tr**0.5*G2
 
 
 ### Thermal conductivity of gas mixtures

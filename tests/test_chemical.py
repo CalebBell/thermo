@@ -158,7 +158,7 @@ def test_Chemical_properties_T_dependent():
     assert_allclose(w.mug, 9.759577077891826e-06)
     
     assert_allclose(w.kl, 0.6094991151038377)
-    assert_allclose(w.kg, 0.01856292166970794)
+    assert_allclose(w.kg, 0.018984360775888904)
     
     assert_allclose(w.sigma, 0.07176932405246211)
     
@@ -171,7 +171,7 @@ def test_Chemical_properties_T_dependent():
     assert_allclose(w.nug, 1.3008181744108452e-05, rtol=1E-3)
     
     assert_allclose(w.Prl, 5.854395582989558, rtol=1E-3)
-    assert_allclose(w.Prg, 0.9803087814815961, rtol=1E-3)
+    assert_allclose(w.Prg, 0.9585466341264076, rtol=1E-3)
     
     assert_allclose(w.solubility_parameter, 47863.51384219548)
     assert_allclose(w.Parachor, 9.363768522707514e-06)
@@ -213,6 +213,8 @@ def test_Stream():
 
 
 def test_H_Chemical():
+    from thermo import chemical
+    chemical.caching = False
     w = Chemical('water', T=298.15, P=101325.0)
     w.set_ref(T_ref=298.15, P_ref=101325, phase_ref='l', H_ref=0, S_ref=0)
     assert 0 == w.H

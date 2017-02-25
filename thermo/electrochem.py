@@ -114,8 +114,7 @@ def Laliberte_viscosity_w(T):
     '''
     t = T-273.15
     mu_w = (t + 246)/((0.05594*t+5.2842)*t + 137.37)
-    mu_w = mu_w/1000.
-    return mu_w
+    return mu_w/1000.
 
 
 def Laliberte_viscosity_i(T, w_w, v1, v2, v3, v4, v5, v6):
@@ -160,8 +159,7 @@ def Laliberte_viscosity_i(T, w_w, v1, v2, v3, v4, v5, v6):
     '''
     t = T-273.15
     mu_i = exp((v1*(1-w_w)**v2 + v3)/(v4*t+1))/(v5*(1-w_w)**v6 + 1)
-    mu_i = mu_i/1000.
-    return mu_i
+    return mu_i/1000.
 
 
 def Laliberte_viscosity(T, ws, CASRNs):
@@ -209,8 +207,7 @@ def Laliberte_viscosity(T, ws, CASRNs):
         d = _Laliberte_Viscosity_ParametersDict[CASRNs[i]]
         mu_i = Laliberte_viscosity_i(T, w_w, d["V1"], d["V2"], d["V3"], d["V4"], d["V5"], d["V6"])*1000.
         mu = mu_i**(ws[i])*mu
-    mu = mu/1000.
-    return mu
+    return mu/1000.
 
 
 ### Laliberty Density Functions
@@ -301,8 +298,7 @@ def Laliberte_density_i(T, w_w, c0, c1, c2, c3, c4):
        doi:10.1021/je8008123
     '''
     t = T - 273.15
-    rho_i = ((c0*(1 - w_w)+c1)*exp(1E-6*(t + c4)**2))/((1 - w_w) + c2 + c3*t)
-    return rho_i
+    return ((c0*(1 - w_w)+c1)*exp(1E-6*(t + c4)**2))/((1 - w_w) + c2 + c3*t)
 
 
 def Laliberte_density(T, ws, CASRNs):
@@ -349,12 +345,14 @@ def Laliberte_density(T, ws, CASRNs):
         d = _Laliberte_Density_ParametersDict[CASRNs[i]]
         rho_i = Laliberte_density_i(T, w_w, d["C0"], d["C1"], d["C2"], d["C3"], d["C4"])
         rho = rho + ws[i]/rho_i
-    rho = 1./rho
-    return rho
+    return 1./rho
 
 
 ### Laliberty Heat Capacity Functions
 
+_T_array = [-15, -10, -5, 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140]
+_Cp_array = [4294.03, 4256.88, 4233.58, 4219.44, 4204.95, 4195.45, 4189.1, 4184.8, 4181.9, 4180.02, 4178.95, 4178.86, 4178.77, 4179.56, 4180.89, 4182.77, 4185.17, 4188.1, 4191.55, 4195.52, 4200.01, 4205.02, 4210.57, 4216.64, 4223.23, 4230.36, 4238.07, 4246.37, 4255.28, 4264.84, 4275.08, 4286.04]
+Laliberte_heat_capacity_w_interp = interp1d(_T_array, _Cp_array, kind='cubic')
 
 def Laliberte_heat_capacity_w(T):
     r'''Calculate the heat capacity of water using the interpolation proposed by [1]_.
@@ -394,12 +392,7 @@ def Laliberte_heat_capacity_w(T):
        Chemical & Engineering Data 54, no. 6 (June 11, 2009): 1725-60.
        doi:10.1021/je8008123
     '''
-    t = T-273.15
-    T_array = [-15, -10, -5, 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140]
-    Cp_array = [4294.03, 4256.88, 4233.58, 4219.44, 4204.95, 4195.45, 4189.1, 4184.8, 4181.9, 4180.02, 4178.95, 4178.86, 4178.77, 4179.56, 4180.89, 4182.77, 4185.17, 4188.1, 4191.55, 4195.52, 4200.01, 4205.02, 4210.57, 4216.64, 4223.23, 4230.36, 4238.07, 4246.37, 4255.28, 4264.84, 4275.08, 4286.04]
-    interp = interp1d(T_array, Cp_array, kind='cubic')
-    Cp = float(interp(t))
-    return Cp
+    return float(Laliberte_heat_capacity_w_interp(T - 273.15))
 
 
 def Laliberte_heat_capacity_i(T, w_w, a1, a2, a3, a4, a5, a6):
@@ -442,11 +435,10 @@ def Laliberte_heat_capacity_i(T, w_w, a1, a2, a3, a4, a5, a6):
        Chemical & Engineering Data 54, no. 6 (June 11, 2009): 1725-60.
        doi:10.1021/je8008123
     '''
-    t = T-273.15
-    alpha = a2*t + a3*exp(0.01*t) + a4*(1-w_w)
-    Cp_i = a1*exp(alpha) + a5*(1-w_w)**a6
-    Cp_i = Cp_i*1000.
-    return Cp_i
+    t = T - 273.15
+    alpha = a2*t + a3*exp(0.01*t) + a4*(1. - w_w)
+    Cp_i = a1*exp(alpha) + a5*(1. - w_w)**a6
+    return Cp_i*1000.
 
 
 def Laliberte_heat_capacity(T, ws, CASRNs):
@@ -651,11 +643,6 @@ def thermal_conductivity_Magomedov(T, P, ws, CASRNs, k_w=None):
        Parameters of State." High Temperature 39, no. 2 (March 1, 2001):
        221-26. doi:10.1023/A:1017518731726.
     '''
-#    def kw_Magomedov(T, P):
-#        '''T in K, P in MPa, results in W/m/K
-#        Doesn't work.'''
-#        k = 7E-8*T**3 - 1.511E-5*T**2 + 8.802E-3*T - 0.8624 + 1.6E-6*P*T
-#        return k
     P = P/1E6
     ws = [i*100 for i in ws]
     if not k_w:
@@ -665,8 +652,7 @@ def thermal_conductivity_Magomedov(T, P, ws, CASRNs, k_w=None):
     for i, CASRN in enumerate(CASRNs):
         Ai = float(Magomedovk_thermal_cond.at[CASRN, 'Ai'])
         sum1 += Ai*(ws[i] + 2E-4*ws[i]**3)
-    k = k_w*(1 - sum1) - 2E-8*P*T*sum(ws)
-    return k
+    return k_w*(1 - sum1) - 2E-8*P*T*sum(ws)
 
 
 def ionic_strength(mis, zis):
@@ -708,8 +694,7 @@ def ionic_strength(mis, zis):
     .. [2] Gmehling, Jurgen. Chemical Thermodynamics: For Process Simulation.
        Weinheim, Germany: Wiley-VCH, 2012.
     '''
-    I = 0.5*sum([mi*zi**2 for mi, zi in zip(mis, zis)])
-    return I
+    return 0.5*sum([mi*zi*zi for mi, zi in zip(mis, zis)])
 
 
 def Kweq_1981(T, rho_w):
@@ -763,8 +748,7 @@ def Kweq_1981(T, rho_w):
     E = 13.957
     F = -1262.3
     G = 8.5641E5
-    K_w = 10**(A + B/T + C/T**2 + D/T**3 + (E + F/T + G/T**2)*log10(rho_w))
-    return K_w
+    return 10**(A + B/T + C/T**2 + D/T**3 + (E + F/T + G/T**2)*log10(rho_w))
 
 
 def Kweq_IAPWS_gas(T):

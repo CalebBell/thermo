@@ -1288,7 +1288,6 @@ class SurfaceTensionMixture(MixtureProperty):
         self.all_methods = set()
         self.load_all_methods()
 
-
     def load_all_methods(self):
         methods = []        
         methods.append(SIMPLE) # Needs sigma

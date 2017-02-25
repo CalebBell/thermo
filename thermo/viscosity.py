@@ -37,7 +37,7 @@ import numpy as np
 import pandas as pd
 
 from thermo.utils import log, exp
-from thermo.utils import horner, none_and_length_check, mixing_simple, mixing_logarithmic, TPDependentProperty
+from thermo.utils import horner, none_and_length_check, mixing_simple, mixing_logarithmic, TPDependentProperty, MixtureProperty
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
 from thermo.electrochem import _Laliberte_Viscosity_ParametersDict, Laliberte_viscosity
 from thermo.coolprop import has_CoolProp, PropsSI, PhaseSI, coolprop_fluids, coolprop_dict, CoolProp_T_dependent_property
@@ -828,8 +828,7 @@ def Lucas(T, P, Tc, Pc, omega, P_sat, mu_l):
     dPr = (P-P_sat)/Pc
     if dPr < 0:
         dPr = 0
-    mu_l_dense = (1+D*(dPr/2.118)**A)/(1+C*omega*dPr)*mu_l
-    return mu_l_dense
+    return (1. + D*(dPr/2.118)**A)/(1. + C*omega*dPr)*mu_l
 
 ### Viscosity of liquid mixtures
 
@@ -890,6 +889,66 @@ def viscosity_liquid_mixture(T=None, MW=None, zs=None, ws=None, mus=None,
         raise Exception('Failure in in function')
     return _mu
 
+class ViscosityLiquidMixture(MixtureProperty):
+    name = 'liquid viscosity'
+    units = 'Pa*s'
+    property_min = 0
+    '''Mimimum valid value of liquid viscosity.'''
+    property_max = 2E8
+    '''Maximum valid value of liquid viscosity. Generous limit, as
+    the value is that of bitumen in a Pitch drop experiment.'''
+                            
+    method = None
+    forced = False
+    ranked_methods = [LALIBERTE_MU, MIXING_LOG_MOLAR, MIXING_LOG_MASS]
+
+    def __init__(self, CASs=[], ViscosityLiquids=[]):
+        self.CASs = CASs
+        self.ViscosityLiquids = ViscosityLiquids
+
+        self.Tmin = None
+        self.Tmax = None
+
+        self.sorted_valid_methods = []
+        self.user_methods = []
+        self.all_methods = set()
+        self.load_all_methods()
+
+    def load_all_methods(self):
+        methods = [MIXING_LOG_MOLAR, MIXING_LOG_MASS]
+        if len(self.CASs) > 1 and '7732-18-5' in self.CASs:
+            wCASs = [i for i in self.CASs if i != '7732-18-5'] 
+            if all([i in _Laliberte_Viscosity_ParametersDict for i in wCASs]):
+                methods.append(LALIBERTE_MU)
+                self.wCASs = wCASs
+                self.index_w = self.CASs.index('7732-18-5')
+        self.all_methods = set(methods)
+        self.Tmin = max([i.Tmin for i in self.ViscosityLiquids])
+        self.Tmax = min([i.Tmax for i in self.ViscosityLiquids])
+        
+    def calculate(self, T, P, zs, ws, method):
+        if method == MIXING_LOG_MOLAR:
+            mus = [i(T, P) for i in self.ViscosityLiquids]
+            return mixing_logarithmic(zs, mus)
+        elif method == MIXING_LOG_MASS:
+            mus = [i(T, P) for i in self.ViscosityLiquids]
+            return mixing_logarithmic(ws, mus)
+        elif method == LALIBERTE_MU:
+            ws = list(ws) ; ws.pop(self.index_w)
+            return Laliberte_viscosity(T, ws, self.wCASs)
+        else:
+            raise Exception('Method not valid')
+
+    def test_method_validity(self, T, P, zs, ws, method):
+        if LALIBERTE_MU in self.all_methods:
+            # If everything is an electrolyte, accept only it as a method
+            if method in self.all_methods:
+                return method == LALIBERTE_MU
+        if method in self.all_methods:
+            return True
+        else:
+            raise Exception('Method not valid')
+
 
 ### Viscosity of Gases - low pressure
 
@@ -942,16 +1001,13 @@ def Yoon_Thodos(T, Tc, Pc, MW):
     '''
     Tr = T/Tc
     xi = 2173.4241*Tc**(1/6.)/(MW**0.5*Pc**(2/3.))
-
     a = 46.1
     b = 0.618
     c = 20.4
     d = -0.449
     e = 19.4
     f = -4.058
-
-    mu_g = (1 + a*Tr**b - c * exp(d*Tr) + e*exp(f*Tr))/1E8/xi
-    return mu_g
+    return (1. + a*Tr**b - c * exp(d*Tr) + e*exp(f*Tr))/(1E8*xi)
 
 
 def Stiel_Thodos(T, Tc, Pc, MW):
@@ -1088,8 +1144,7 @@ def lucas_gas(T, Tc, Pc, Zc, MW, dipole=0, CASRN=None):
     else:
         FQ = 1
     eta = (0.807*Tr**0.618 - 0.357*exp(-0.449*Tr) + 0.340*exp(-4.058*Tr) + 0.018)*Fp*FQ/xi
-    eta = eta/1E7
-    return eta
+    return eta/1E7
 
 
 def Gharagheizi_gas_viscosity(T, Tc, Pc, MW):
@@ -1140,8 +1195,7 @@ def Gharagheizi_gas_viscosity(T, Tc, Pc, MW):
     '''
     Tr = T/Tc
     mu_g = 1E-5*Pc*Tr + (0.091 - 0.477/MW)*T + MW*(1E-5*Pc - 8*MW**2/T**2)*(10.7639/Tc - 4.1929/T)
-    mu_g = 1E-7 * abs(mu_g)
-    return mu_g
+    return 1E-7 * abs(mu_g)
 
 
 GHARAGHEIZI = 'GHARAGHEIZI'
@@ -1579,9 +1633,10 @@ def Herning_Zipperer(zs, mus, MWs):
     '''
     if not none_and_length_check([zs, mus, MWs]):  # check same-length inputs
         raise Exception('Function inputs are incorrect format')
-    denominator = sum(zs[i]*MWs[i]**0.5 for i in range(len(zs)))
-    mug = sum(zs[i]*mus[i]*MWs[i]**0.5/denominator for i in range(len(zs)))
-    return mug
+    MW_roots = [MWi**0.5 for MWi in MWs]
+    denominator = sum([zi*MW_root_i for zi, MW_root_i in zip(zs, MW_roots)])
+    k = sum([zi*mui*MW_root_i for zi, mui, MW_root_i in zip(zs, mus, MW_roots)])
+    return k/denominator
 
 
 def Wilke(ys, mus, MWs):
@@ -1624,17 +1679,11 @@ def Wilke(ys, mus, MWs):
     '''
     if not none_and_length_check([ys, mus, MWs]):  # check same-length inputs
         raise Exception('Function inputs are incorrect format')
+    cmps = range(len(ys))
+    phis = [[(1 + (mus[i]/mus[j])**0.5*(MWs[j]/MWs[i])**0.25)**2/(8*(1 + MWs[i]/MWs[j]))**0.5
+                    for j in cmps] for i in cmps]
 
-    mug = 0
-    phiij = {}
-    for i in range(len(ys)):
-        for j in range(len(ys)):
-            phiij[str(i)+str(j)] = (1 + (mus[i]/mus[j])**0.5*(MWs[j]/MWs[i])**0.25)**2\
-                / (8*(1 + MWs[i]/MWs[j]))**0.5
-    for i in range(len(ys)):
-        denominator = sum(ys[j]*phiij[str(i)+str(j)] for j in range(len(ys)))
-        mug += ys[i]*mus[i]/denominator
-    return mug
+    return sum([ys[i]*mus[i]/sum([ys[j]*phis[i][j] for j in cmps]) for i in cmps])
 
 
 def Brokaw(T, ys, mus, MWs, molecular_diameters, Stockmayers):
@@ -1701,35 +1750,31 @@ def Brokaw(T, ys, mus, MWs, molecular_diameters, Stockmayers):
     .. [3] Danner, Ronald P, and Design Institute for Physical Property Data.
        Manual for Predicting Chemical Process Design Data. New York, N.Y, 1982.
     '''
+    cmps = range(len(ys))
     MDs = molecular_diameters
     if not none_and_length_check([ys, mus, MWs, molecular_diameters, Stockmayers]): # check same-length inputs
         raise Exception('Function inputs are incorrect format')
-    Tsts = [T/Stockmayers[i] for i in range(len(ys))]
-    Sij, Mij, mij, Aij, phiij = {}, {}, {}, {}, {}
-    mug = 0
-    for i in range(len(ys)):
-        for j in range(len(ys)):
-            ij = str(i)+str(j)
-            Sij[ij] = (1+(Tsts[i]*Tsts[j])**0.5 + (MDs[i]*MDs[j])/4.)/\
-            (1+Tsts[i] + (MDs[i]**2/4.))**0.5 /(1+Tsts[j] + (MDs[j]**2/4.) )**0.5
+    Tsts = [T/Stockmayer_i for Stockmayer_i in Stockmayers]
+    Sij = [[0 for i in cmps] for j in cmps]
+    Mij = [[0 for i in cmps] for j in cmps]
+    mij = [[0 for i in cmps] for j in cmps]
+    Aij = [[0 for i in cmps] for j in cmps]
+    phiij =[[0 for i in cmps] for j in cmps]
+
+    for i in cmps:
+        for j in cmps:
+            Sij[i][j] = (1+(Tsts[i]*Tsts[j])**0.5 + (MDs[i]*MDs[j])/4.)/(1 + Tsts[i] + (MDs[i]**2/4.))**0.5/(1 + Tsts[j] + (MDs[j]**2/4.))**0.5
             if MDs[i] <= 0.1 and MDs[j] <= 0.1:
-                Sij[ij] = 1
-            Mij[ij] = MWs[i]/MWs[j]
-            mij[ij] = (4./(1+Mij[str(i)+str(j)]**-1)/(1+Mij[str(i)+str(j)]))**0.25
+                Sij[i][j] = 1
+            Mij[i][j] = MWs[i]/MWs[j]
+            mij[i][j] = (4./(1+Mij[i][j]**-1)/(1+Mij[i][j]))**0.25
 
-            Aij[ij] = mij[ij]*Mij[ij]**-0.5*(1 + (Mij[ij]-Mij[ij]**0.45)/(2*(1+Mij[ij]) +
-            (1+Mij[ij]**0.45)*mij[ij]**-0.5/(1+mij[ij])))
+            Aij[i][j] = mij[i][j]*Mij[i][j]**-0.5*(1 + (Mij[i][j]-Mij[i][j]**0.45)/(2*(1+Mij[i][j]) + (1+Mij[i][j]**0.45)*mij[i][j]**-0.5/(1+mij[i][j])))
 
-            phiij[ij] = (mus[i]/mus[j])**0.5*Sij[ij]*Aij[ij]
+            phiij[i][j] = (mus[i]/mus[j])**0.5*Sij[i][j]*Aij[i][j]
 
-    for i in range(len(ys)):
-        denominator = sum(ys[j]*phiij[str(i)+str(j)] for j in range(len(ys)))
-        mug += ys[i]*mus[i]/denominator
+    return sum([ys[i]*mus[i]/sum([ys[j]*phiij[i][j] for j in cmps]) for i in cmps])
 
-    return mug
-#print Brokaw(T, ys, mus, MWs, MolecularDiameters, Stockmayers)
-
-#print Brokaw(300, [0.05, 0.95], [1.78E-5, 2.05E-5], [28.01, 32.00], MolecularDiameters, Stockmayers)
 
 BROKAW = 'Brokaw'
 HERNING_ZIPPERER = 'Herning-Zipperer'
@@ -1758,9 +1803,9 @@ def viscosity_gas_mixture(T=None, ys=None, ws=None, mus=None, MWs=None,
         if T and none_and_length_check([mus, MWs, molecular_diameters, Stockmayers]):
             methods.append(BROKAW)
         if none_and_length_check([mus]):
-            methods.append(HERNING_ZIPPERER)
             methods.append(SIMPLE)
         if none_and_length_check([mus, MWs]):
+            methods.append(HERNING_ZIPPERER)
             methods.append(WILKE)
         methods.append(NONE)
         return methods
@@ -1786,6 +1831,65 @@ def viscosity_gas_mixture(T=None, ys=None, ws=None, mus=None, MWs=None,
     else:
         raise Exception('Failure in in function')
     return _mu
+
+class ViscosityGasMixture(MixtureProperty):
+    name = 'gas viscosity'
+    units = 'Pa*s'
+    property_min = 0
+    '''Mimimum valid value of gas viscosity; limiting condition at low pressure
+    is 0.'''
+    property_max = 1E-3
+    '''Maximum valid value of gas viscosity. Might be too high, or too low.'''
+                            
+    method = None
+    forced = False
+    ranked_methods = [BROKAW, HERNING_ZIPPERER, SIMPLE, WILKE]
+
+    def __init__(self, MWs=[], molecular_diameters=[], Stockmayers=[], CASs=[], ViscosityGases=[]):
+        self.MWs = MWs
+        self.molecular_diameters = molecular_diameters
+        self.Stockmayers = Stockmayers
+        self.CASs = CASs
+        self.ViscosityGases = ViscosityGases
+
+        self.Tmin = None
+        self.Tmax = None
+
+        self.sorted_valid_methods = []
+        self.user_methods = []
+        self.all_methods = set()
+        self.load_all_methods()
+
+    def load_all_methods(self):
+        methods = [SIMPLE]        
+        if none_and_length_check((self.MWs, self.molecular_diameters, self.Stockmayers)):
+            methods.append(BROKAW)
+        if none_and_length_check([self.MWs]):
+            methods.extend([WILKE, HERNING_ZIPPERER])
+        self.all_methods = set(methods)
+        self.Tmin = max([i.Tmin for i in self.ViscosityGases])
+        self.Tmax = min([i.Tmax for i in self.ViscosityGases])
+        
+    def calculate(self, T, P, zs, ws, method):
+        if method == SIMPLE:
+            mus = [i(T, P) for i in self.ViscosityGases]
+            return mixing_simple(zs, mus)
+        elif method == HERNING_ZIPPERER:
+            mus = [i(T, P) for i in self.ViscosityGases]
+            return Herning_Zipperer(zs, mus, self.MWs)
+        elif method == WILKE:
+            mus = [i(T, P) for i in self.ViscosityGases]
+            return Wilke(zs, mus, self.MWs)
+        elif method == BROKAW:
+            return Brokaw(T, zs, mus, self.MWs, self.molecular_diameters, self.Stockmayers)
+        else:
+            raise Exception('Method not valid')
+
+    def test_method_validity(self, T, P, zs, ws, method):
+        if method in self.all_methods:
+            return True
+        else:
+            raise Exception('Method not valid')
 
 
 ### Misc functions

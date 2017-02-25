@@ -76,7 +76,7 @@ from collections import Counter
 #import warnings
 #warnings.filterwarnings("ignore")
 
-
+caching = True
 
 # Format: (T, P, phase, H, S, molar=True)
 IAPWS = (273.16, 611.655, 'l', 0.00922, 0, True) # Water; had to convert Href from mass to molar
@@ -372,30 +372,29 @@ class Chemical(object): # pragma: no cover
 
         # Identification
         self.CAS = CASfromAny(ID)
-#        if self.CAS in _chemical_cache:
-#            self.__dict__.update(_chemical_cache[self.CAS].__dict__)
-#            self.set_eos(T=T, P=P)
-#            
-#        else:
-        self.PubChem = PubChem(self.CAS)
-        self.MW = MW(self.CAS)
-        self.formula = formula(self.CAS)
-        self.smiles = smiles(self.CAS)
-        self.InChI = InChI(self.CAS)
-        self.InChI_Key = InChI_Key(self.CAS)
-        self.IUPAC_name = IUPAC_name(self.CAS).lower()
-        self.name = name(self.CAS).lower()
-        self.synonyms = synonyms(self.CAS)
-
-        self.atoms = simple_formula_parser(self.formula)
-        self.similarity_variable = similarity_variable(self.atoms, self.MW)
-
-        self.set_constant_sources()
-        self.set_constants()
-        self.set_eos(T=T, P=P)
-        self.set_TP_sources()
-        self.set_ref()
-#        _chemical_cache[self.CAS] = self
+        if self.CAS in _chemical_cache and caching:
+            self.__dict__.update(_chemical_cache[self.CAS].__dict__)
+            self.set_eos(T=T, P=P)
+        else:
+            self.PubChem = PubChem(self.CAS)
+            self.MW = MW(self.CAS)
+            self.formula = formula(self.CAS)
+            self.smiles = smiles(self.CAS)
+            self.InChI = InChI(self.CAS)
+            self.InChI_Key = InChI_Key(self.CAS)
+            self.IUPAC_name = IUPAC_name(self.CAS).lower()
+            self.name = name(self.CAS).lower()
+            self.synonyms = synonyms(self.CAS)
+    
+            self.atoms = simple_formula_parser(self.formula)
+            self.similarity_variable = similarity_variable(self.atoms, self.MW)
+    
+            self.set_constant_sources()
+            self.set_constants()
+            self.set_eos(T=T, P=P)
+            self.set_TP_sources()
+            self.set_ref()
+            _chemical_cache[self.CAS] = self
                
         self.calculate(T, P)
         
@@ -709,7 +708,7 @@ class Chemical(object): # pragma: no cover
         self.ThermalConductivityLiquid = ThermalConductivityLiquid(CASRN=self.CAS, MW=self.MW, Tm=self.Tm, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, omega=self.omega, Hfus=self.Hfusm)
 
         Cvgm_calc = lambda T : self.HeatCapacityGas.T_dependent_property(T) - R
-        self.ThermalConductivityGas = ThermalConductivityGas(CASRN=self.CAS, MW=self.MW, Tb=self.Tb, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, dipole=self.dipole, Vmg=Vmg_atm_T_dependent, Cvgm=Cvgm_calc, mug=self.ViscosityGas.T_dependent_property)
+        self.ThermalConductivityGas = ThermalConductivityGas(CASRN=self.CAS, MW=self.MW, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, dipole=self.dipole, Vmg=self.VolumeGas, Cvgm=Cvgm_calc, mug=self.ViscosityGas.T_dependent_property)
 
         Cpl_calc = lambda T : property_molar_to_mass(self.HeatCapacityLiquid.T_dependent_property(T), self.MW)
         self.SurfaceTension = SurfaceTension(CASRN=self.CAS, MW=self.MW, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, StielPolar=self.StielPolar, Hvap_Tb=self.Hvap_Tb, Vml=self.VolumeLiquid.T_dependent_property, Cpl=Cpl_calc)
@@ -2511,11 +2510,17 @@ class Mixture(object):  # pragma: no cover
         self.alphals = [i.alphal for i in self.Chemicals]
         self.alphags = [i.alphag for i in self.Chemicals]
 
-        self.Hs = [i.H for i in self.Chemicals]
-        self.Hms = [i.Hm for i in self.Chemicals]
-
-        self.Ss = [i.S for i in self.Chemicals]
-        self.Sms = [i.Sm for i in self.Chemicals]
+        try:
+            self.Hs = [i.H for i in self.Chemicals]
+            self.Hms = [i.Hm for i in self.Chemicals]
+    
+            self.Ss = [i.S for i in self.Chemicals]
+            self.Sms = [i.Sm for i in self.Chemicals]
+        except:
+            self.Hs = None
+            self.Hsm = None
+            self.Ss = None
+            self.Sms = None
 
     def set_constant_sources(self):
         # Tliquidus assumes worst-case for now
@@ -2633,21 +2638,6 @@ class Mixture(object):  # pragma: no cover
         self.Zg = Z(self.T, self.P, self.Vmg) if self.Vmg else None
         self.rhogm = 1./self.Vmg if self.Vmg else None
         self.Bvirial = B_from_Z(self.Zg, self.T, self.P) if self.Vmg else None
-
-
-#         Coefficient of isobaric_expansion_coefficient
-# Nope
-#        for i in self.Chemicals:
-#            i.calculate(self.T+0.01, self.P)
-#        _Vmls_2 = [i.Vml for i in self.Chemicals]
-#        _Vmgs_2 = [i.Vmg for i in self.Chemicals]
-#
-#        _Vml_2 = volume_liquid_mixture(xs=self.zs, ws=self.ws, Vms=_Vmls_2, T=self.T+0.01, MWs=self.MWs, MW=self.MW, Tcs=self.Tcs, Pcs=self.Pcs, Vcs=self.Vcs, Zcs=self.Zcs,  Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, omegas=self.omegas,  CASRNs=self.CASs, Molar=True, Method=self.Vl_method)
-#        _Vmg_2 = volume_gas_mixture(ys=self.zs, Vms=_Vmgs_2, T=self.T+0.01, P=self.P, Tc=self.Tc, Pc=self.Pc, omega=self.omega, MW=self.MW, CASRNs=self.CASs, Method=self.Vg_method)
-#        self.isobaric_expansion_l = isobaric_expansion(V1=self.Vml, dT=0.01, V2=_Vml_2)
-#        self.isobaric_expansion_g = isobaric_expansion(V1=self.Vmg, dT=0.01, V2=_Vmg_2)
-#        for i in self.Chemicals:
-#            i.calculate(self.T, self.P)
 
 
         self.Cpl = Cp_liq_mixture(zs=self.zs, ws=self.ws, Cps=self.Cpls, T=self.T, CASRNs=self.CASs, Method=self.Cpl_method)

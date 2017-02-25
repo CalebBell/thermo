@@ -206,3 +206,26 @@ def test_sigma_mixture():
     with pytest.raises(Exception):
         surface_tension_mixture(xs=[0.1606, 0.8394], sigmas=[0.01547, 0.02877], Method='Fail')
 
+
+def test_SurfaceTensionMixture():
+    from thermo.chemical import Mixture
+    from thermo.interface import SurfaceTensionMixture, DIGUILIOTEJA, SIMPLE, WINTERFELDSCRIVENDAVIS
+    m = Mixture(['pentane', 'dichloromethane'], zs=[.1606, .8394], T=298.15)
+    SurfaceTensions = [i.SurfaceTension for i in m.Chemicals]
+    VolumeLiquids = [i.VolumeLiquid for i in m.Chemicals]
+    
+    a = SurfaceTensionMixture(MWs=m.MWs, Tbs=m.Tbs, Tcs=m.Tcs, CASs=m.CASs, SurfaceTensions=SurfaceTensions, VolumeLiquids=VolumeLiquids)
+
+    sigma = a.mixture_property(m.T, m.P, m.zs, m.ws)
+    assert_allclose(sigma, 0.023886472131054423)
+    
+    sigma = a.calculate(m.T, m.P, m.zs, m.ws, SIMPLE)
+    assert_allclose(sigma, 0.025331490604571537)
+    
+    sigmas = [a.calculate(m.T, m.P, m.zs, m.ws, i) for i in [DIGUILIOTEJA, SIMPLE, WINTERFELDSCRIVENDAVIS]]
+    assert_allclose(sigmas, [0.025257338967448677, 0.025331490604571537, 0.023886472131054423])
+    
+    with pytest.raises(Exception):
+        a.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
+    with pytest.raises(Exception):
+        a.calculate(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
