@@ -27,7 +27,8 @@ __all__ = ['Mulero_Cachadina_data', 'Jasper_Lange_data', 'Somayajulu_data',
            'Brock_Bird', 'Pitzer', 'Sastri_Rao', 'Zuo_Stenby', 
            'Hakim_Steinberg_Stiel', 'Miqueu', 'Aleem', 'surface_tension_methods', 
            'SurfaceTension', 'Winterfeld_Scriven_Davis', 'Diguilio_Teja', 
-           'surface_tension_mixture_methods', 'surface_tension_mixture']
+           'surface_tension_mixture_methods', 'surface_tension_mixture', 
+           'SurfaceTensionMixture']
 
 import os
 from thermo.utils import log, exp
@@ -781,9 +782,9 @@ class SurfaceTension(TDependentProperty):
     property_min = 0
     '''Mimimum valid value of surface tension. This occurs at the critical
     point exactly.'''
-    property_max = 0.5
-    '''Maximum valid value of surface tension. Set slightly above that of
-    mercury.'''
+    property_max = 4.0
+    '''Maximum valid value of surface tension. Set to roughly twice that of 
+    cobalt at its melting point.'''
 
     ranked_methods = [STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_PPDS, VDI_TABULAR,
                       JASPER, MIQUEU, BROCK_BIRD, SASTRI_RAO, PITZER,
@@ -1080,11 +1081,9 @@ def Winterfeld_Scriven_Davis(xs, sigmas, rhoms):
     rhoms = [i/1E3 for i in rhoms]
     Vms = [(i)**-1 for i in rhoms]
     rho = 1./mixing_simple(xs, Vms)
-    sigma = 0
-    for i in range(len(xs)):
-        for j in range(len(xs)):
-            sigma += rho**2*xs[i]/rhoms[i]*xs[j]/rhoms[j]*(sigmas[j]*sigmas[i])**0.5
-    return sigma
+    cmps = range(len(xs))
+    return sum([rho*rho*xs[i]/rhoms[i]*xs[j]/rhoms[j]*(sigmas[j]*sigmas[i])**0.5
+                for i in cmps for j in cmps])
 
 
 def Diguilio_Teja(T, xs, sigmas_Tb, Tbs, Tcs):
@@ -1151,7 +1150,6 @@ def Diguilio_Teja(T, xs, sigmas_Tb, Tbs, Tcs):
     Tc = mixing_simple(xs, Tcs)
     if T > Tc:
         raise ValueError('T > Tc according to Kays rule - model is not valid in this range.')
-    
     Tb = mixing_simple(xs, Tbs)
     sigmar = mixing_simple(xs, sigmas_Tb)
     Tst = (Tc/T - 1.)/(Tc/Tb - 1)
@@ -1259,36 +1257,109 @@ def surface_tension_mixture(T=None, xs=[], sigmas=[], rhoms=[],
 
 
 class SurfaceTensionMixture(MixtureProperty):
+    '''Class for dealing with surface tension of a mixture as a function of 
+    temperature, pressure, and composition.
+    Consists of two mixing rules specific to surface tension, and mole
+    weighted averaging. 
+         
+    Prefered method is :obj:`Winterfeld_Scriven_Davis` which requires mole
+    fractions, pure component surface tensions, and the molar density of each
+    pure component. :obj:`Diguilio_Teja` is of similar accuracy, but requires
+    the surface tensions of pure components at their boiling points, as well
+    as boiling points and critical points and mole fractions. An ideal mixing
+    rule based on mole fractions, **SIMPLE**, is also available and is still
+    relatively accurate.
+        
+    Parameters
+    ----------
+    MWs : list[float], optional
+        Molecular weights of all species in the mixture, [g/mol]
+    Tbs : list[float], optional
+        Boiling points of all species in the mixture, [K]
+    Tcs : list[float], optional
+        Critical temperatures of all species in the mixture, [K]
+    CASs : str, optional
+        The CAS numbers of all species in the mixture
+    SurfaceTensions : list[SurfaceTension], optional
+        SurfaceTension objects created for all species in the mixture, normally 
+        created by :obj:`thermo.chemical.Chemical`.
+    VolumeLiquids : list[VolumeLiquid], optional
+        VolumeLiquid objects created for all species in the mixture, normally 
+        created by :obj:`thermo.chemical.Chemical`.
+
+    Notes
+    -----
+    To iterate over all methods, use the list stored in
+    :obj:`surface_tension_mixture_methods`.
+
+    **WINTERFELDSCRIVENDAVIS**:
+        Mixing rule described in :obj:`Winterfeld_Scriven_Davis`.
+    **DIGUILIOTEJA**:
+        Mixing rule described in :obj:`Diguilio_Teja`.
+    **SIMPLE**:
+        Mixing rule described in :obj:`thermo.utils.mixing_simple`.
+
+    See Also
+    --------
+    Winterfeld_Scriven_Davis
+    Diguilio_Teja
+
+    References
+    ----------
+    .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
+       New York: McGraw-Hill Professional, 2000.
+    '''
 
     name = 'Surface tension'
     units = 'N/m'
     property_min = 0
-    property_max = 10
+    '''Mimimum valid value of surface tension. This occurs at the critical
+    point exactly.'''
+    property_max = 4.0
+    '''Maximum valid value of surface tension. Set to roughly twice that of 
+    cobalt at its melting point.'''
                             
-    method = None
-    forced = False
     ranked_methods = [WINTERFELDSCRIVENDAVIS, DIGUILIOTEJA, SIMPLE]
 
     def __init__(self, MWs=[], Tbs=[], Tcs=[], CASs=[], SurfaceTensions=[], 
-                 VolumeLiquids=[], Vfls_callable=None):
+                 VolumeLiquids=[]):
         self.MWs = MWs
         self.Tbs = Tbs
         self.Tcs = Tcs
         self.CASs = CASs
         self.SurfaceTensions = SurfaceTensions
         self.VolumeLiquids = VolumeLiquids
-        self.Vfls_callable = Vfls_callable
-                     
 
         self.Tmin = None
+        '''Minimum temperature at which no method can calculate the
+        surface tension under.'''
         self.Tmax = None
+        '''Maximum temperature at which no method can calculate the
+        surface tension above.'''
 
         self.sorted_valid_methods = []
+        '''sorted_valid_methods, list: Stored methods which were found valid
+        at a specific temperature; set by `mixture_property`.'''
         self.user_methods = []
+        '''user_methods, list: Stored methods which were specified by the user
+        in a ranked order of preference; set by `mixture_property`.'''
         self.all_methods = set()
+        '''Set of all methods available for a given set of information;
+        filled by :obj:`load_all_methods`.'''
         self.load_all_methods()
 
     def load_all_methods(self):
+        r'''Method to initialize the object by precomputing any values which
+        may be used repeatedly and by retrieving mixture-specific variables.
+        All data are stored as attributes. This method also sets :obj:`Tmin`, 
+        :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should 
+        work to calculate the property.
+
+        Called on initialization only. See the source code for the variables at
+        which the coefficients are stored. The coefficients can safely be
+        altered once the class is initialized. This method can be called again
+        to reset the parameters.
+        '''
         methods = []        
         methods.append(SIMPLE) # Needs sigma
         methods.append(WINTERFELDSCRIVENDAVIS) # Nothing to load, needs rhoms, sigma
@@ -1299,6 +1370,31 @@ class SurfaceTensionMixture(MixtureProperty):
         self.all_methods = set(methods)
             
     def calculate(self, T, P, zs, ws, method):
+        r'''Method to calculate surface tension of a liquid mixture at 
+        temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
+        `ws` with a given method.
+
+        This method has no exception handling; see `mixture_property`
+        for that.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the property, [K]
+        P : float
+            Pressure at which to calculate the property, [Pa]
+        zs : list[float]
+            Mole fractions of all species in the mixture, [-]
+        ws : list[float]
+            Weight fractions of all species in the mixture, [-]
+        method : str
+            Name of the method to use
+
+        Returns
+        -------
+        sigma : float
+            Surface tension of the liquid at given conditions, [N/m]
+        '''
         if method == SIMPLE:
             sigmas = [i(T) for i in self.SurfaceTensions]
             return mixing_simple(zs, sigmas)
@@ -1313,6 +1409,28 @@ class SurfaceTensionMixture(MixtureProperty):
             raise Exception('Method not valid')
 
     def test_method_validity(self, T, P, zs, ws, method):
+        r'''Method to test the validity of a specified method for the given
+        conditions. No methods have implemented checks or strict ranges of 
+        validity.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to check method validity, [K]
+        P : float
+            Pressure at which to check method validity, [Pa]
+        zs : list[float]
+            Mole fractions of all species in the mixture, [-]
+        ws : list[float]
+            Weight fractions of all species in the mixture, [-]
+        method : str
+            Method name to use
+
+        Returns
+        -------
+        validity : bool
+            Whether or not a specifid method is valid
+        '''
         # SIMPLE and WINTERFELDSCRIVENDAVIS need to calculate sigma for pure
         # species - doesn't work above Tc for any compound.
         # DIGUILIOTEJA needs Tcs, not sure.

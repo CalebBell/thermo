@@ -3022,6 +3022,36 @@ class MixtureProperty(object):
     forced = False
     ranked_methods = []
 
+    def __call__(self, T, P, zs, ws):
+        r'''Convenience method to calculate the property; calls 
+        :obj:`mixture_property`. Caches previously calculated value,
+        which is an overhead when calculating many different values of
+        a property. See :obj:`mixture_property` for more details as to the
+        calculation procedure.
+        
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the property, [K]
+        P : float
+            Pressure at which to calculate the property, [Pa]
+        zs : list[float]
+            Mole fractions of all species in the mixture, [-]
+        ws : list[float]
+            Weight fractions of all species in the mixture, [-]
+
+        Returns
+        -------
+        prop : float
+            Calculated property, [`units`]
+        '''
+        if (T, P, zs, ws) == self.TP_zs_ws_cached:
+            return self.prop_cached
+        else:
+            self.prop_cached = self.mixture_property(T, P, zs, ws)
+            self.TP_zs_ws_cached = (T, P, zs, ws)
+            return self.prop_cached
+
     def set_user_method(self, user_methods, forced=False):
         r'''Method to set the T, P, and composition dependent property methods 
         desired for consideration by the user. Can be used to exclude certain 
