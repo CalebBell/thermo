@@ -23,14 +23,14 @@ SOFTWARE.'''
 from __future__ import division
 
 __all__ = ['Dutt_Prasad', 'VN3_data', 'VN2_data', 'VN2E_data', 'Perrys2_313',
-           'Perrys2_312','VDI_PPDS_7', 'VDI_PPDS_8',
+'Perrys2_312','VDI_PPDS_7', 'VDI_PPDS_8',
 'ViswanathNatarajan2', 'ViswanathNatarajan2Exponential', 'ViswanathNatarajan3',
- 'Letsou_Stiel', 'Przedziecki_Sridhar', 'viscosity_liquid_methods', 
- 'viscosity_liquid_methods_P', 'ViscosityLiquid', 'ViscosityGas', 'Lucas', 
- 'viscosity_liquid_mixture', 'Yoon_Thodos', 'Stiel_Thodos', 'lucas_gas', 
- 'Gharagheizi_gas_viscosity', 'viscosity_gas_methods', 'viscosity_gas_methods_P', 
- 'Herning_Zipperer', 'Wilke', 'Brokaw', 'viscosity_gas_mixture', 
- 'viscosity_index']
+'Letsou_Stiel', 'Przedziecki_Sridhar', 'viscosity_liquid_methods', 
+'viscosity_liquid_methods_P', 'ViscosityLiquid', 'ViscosityGas', 'Lucas', 
+'viscosity_liquid_mixture', 'Yoon_Thodos', 'Stiel_Thodos', 'lucas_gas', 
+'Gharagheizi_gas_viscosity', 'viscosity_gas_methods', 'viscosity_gas_methods_P', 
+'Herning_Zipperer', 'Wilke', 'Brokaw', 'viscosity_gas_mixture', 
+'viscosity_index', 'ViscosityLiquidMixture', 'ViscosityGasMixture']
 
 import os
 import numpy as np
@@ -837,6 +837,7 @@ LALIBERTE_MU = 'Laliberte'
 MIXING_LOG_MOLAR = 'Logarithmic mixing, molar'
 MIXING_LOG_MASS = 'Logarithmic mixing, mass'
 
+viscosity_liquid_mixture_methods = [LALIBERTE_MU, MIXING_LOG_MOLAR, MIXING_LOG_MASS]
 
 def viscosity_liquid_mixture(T=None, MW=None, zs=None, ws=None, mus=None,
                              CASRNs=None, AvailableMethods=False, Method=None):  # pragma: no cover
@@ -889,7 +890,48 @@ def viscosity_liquid_mixture(T=None, MW=None, zs=None, ws=None, mus=None,
         raise Exception('Failure in in function')
     return _mu
 
+
 class ViscosityLiquidMixture(MixtureProperty):
+    '''Class for dealing with the viscosity of a liquid mixture as a   
+    function of temperature, pressure, and composition.
+    Consists of one electrolyte-specific method, and logarithmic rules based
+    on either mole fractions of mass fractions. 
+         
+    Prefered method is :obj:`mixing_logarithmic` with mole
+    fractions, or **Laliberte** if the mixture is aqueous and has electrolytes.  
+        
+    Parameters
+    ----------
+    CASs : str, optional
+        The CAS numbers of all species in the mixture
+    ViscosityLiquids : list[ViscosityLiquid], optional
+        ViscosityLiquid objects created for all species in the mixture,  
+        normally created by :obj:`thermo.chemical.Chemical`.
+
+    Notes
+    -----
+    To iterate over all methods, use the list stored in
+    :obj:`viscosity_liquid_mixture_methods`.
+
+    **LALIBERTE_MU**:
+        Electrolyte model equation with coefficients; see
+        :obj:`thermo.electrochem.Laliberte_viscosity` for more details.
+    **MIXING_LOG_MOLAR**:
+        Logarithmic mole fraction mixing rule described in 
+        :obj:`thermo.utils.mixing_logarithmic`.
+    **MIXING_LOG_MASS**:
+        Logarithmic mole fraction mixing rule described in 
+        :obj:`thermo.utils.mixing_logarithmic`.
+
+    See Also
+    --------
+    :obj:`thermo.electrochem.Laliberte_viscosity`
+
+    References
+    ----------
+    .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
+       New York: McGraw-Hill Professional, 2000.
+    '''
     name = 'liquid viscosity'
     units = 'Pa*s'
     property_min = 0
@@ -898,8 +940,6 @@ class ViscosityLiquidMixture(MixtureProperty):
     '''Maximum valid value of liquid viscosity. Generous limit, as
     the value is that of bitumen in a Pitch drop experiment.'''
                             
-    method = None
-    forced = False
     ranked_methods = [LALIBERTE_MU, MIXING_LOG_MOLAR, MIXING_LOG_MASS]
 
     def __init__(self, CASs=[], ViscosityLiquids=[]):
@@ -907,14 +947,35 @@ class ViscosityLiquidMixture(MixtureProperty):
         self.ViscosityLiquids = ViscosityLiquids
 
         self.Tmin = None
+        '''Minimum temperature at which no method can calculate the
+        thermal conductivity of a gas mixture under.'''
         self.Tmax = None
+        '''Maximum temperature at which no method can calculate the
+        thermal conductivity of a gas mixture above.'''
 
         self.sorted_valid_methods = []
+        '''sorted_valid_methods, list: Stored methods which were found valid
+        at a specific temperature; set by `mixture_property`.'''
         self.user_methods = []
+        '''user_methods, list: Stored methods which were specified by the user
+        in a ranked order of preference; set by `mixture_property`.'''
         self.all_methods = set()
+        '''Set of all methods available for a given set of information;
+        filled by :obj:`load_all_methods`.'''
         self.load_all_methods()
 
     def load_all_methods(self):
+        r'''Method to initialize the object by precomputing any values which
+        may be used repeatedly and by retrieving mixture-specific variables.
+        All data are stored as attributes. This method also sets :obj:`Tmin`, 
+        :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should 
+        work to calculate the property.
+
+        Called on initialization only. See the source code for the variables at
+        which the coefficients are stored. The coefficients can safely be
+        altered once the class is initialized. This method can be called again
+        to reset the parameters.
+        '''
         methods = [MIXING_LOG_MOLAR, MIXING_LOG_MASS]
         if len(self.CASs) > 1 and '7732-18-5' in self.CASs:
             wCASs = [i for i in self.CASs if i != '7732-18-5'] 
@@ -927,6 +988,31 @@ class ViscosityLiquidMixture(MixtureProperty):
         self.Tmax = min([i.Tmax for i in self.ViscosityLiquids])
         
     def calculate(self, T, P, zs, ws, method):
+        r'''Method to calculate viscosity of a liquid mixture at 
+        temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
+        `ws` with a given method.
+
+        This method has no exception handling; see `mixture_property`
+        for that.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the property, [K]
+        P : float
+            Pressure at which to calculate the property, [Pa]
+        zs : list[float]
+            Mole fractions of all species in the mixture, [-]
+        ws : list[float]
+            Weight fractions of all species in the mixture, [-]
+        method : str
+            Name of the method to use
+
+        Returns
+        -------
+        mu : float
+            Viscosity of the liquid mixture, [Pa*s]
+        '''
         if method == MIXING_LOG_MOLAR:
             mus = [i(T, P) for i in self.ViscosityLiquids]
             return mixing_logarithmic(zs, mus)
@@ -940,6 +1026,29 @@ class ViscosityLiquidMixture(MixtureProperty):
             raise Exception('Method not valid')
 
     def test_method_validity(self, T, P, zs, ws, method):
+        r'''Method to test the validity of a specified method for the given
+        conditions. If **Laliberte** is applicable, all other methods are 
+        returned as inapplicable. Otherwise, there are no checks or strict 
+        ranges of validity.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to check method validity, [K]
+        P : float
+            Pressure at which to check method validity, [Pa]
+        zs : list[float]
+            Mole fractions of all species in the mixture, [-]
+        ws : list[float]
+            Weight fractions of all species in the mixture, [-]
+        method : str
+            Method name to use
+
+        Returns
+        -------
+        validity : bool
+            Whether or not a specifid method is valid
+        '''
         if LALIBERTE_MU in self.all_methods:
             # If everything is an electrolyte, accept only it as a method
             if method in self.all_methods:
@@ -1780,6 +1889,8 @@ BROKAW = 'Brokaw'
 HERNING_ZIPPERER = 'Herning-Zipperer'
 WILKE = 'Wilke'
 SIMPLE = 'Simple'
+viscosity_gas_mixture_methods = [BROKAW, HERNING_ZIPPERER, WILKE, SIMPLE]
+
 
 def viscosity_gas_mixture(T=None, ys=None, ws=None, mus=None, MWs=None,
                           molecular_diameters=None, Stockmayers=None,
@@ -1833,6 +1944,47 @@ def viscosity_gas_mixture(T=None, ys=None, ws=None, mus=None, MWs=None,
     return _mu
 
 class ViscosityGasMixture(MixtureProperty):
+    '''Class for dealing with the viscosity of a gas mixture as a   
+    function of temperature, pressure, and composition.
+    Consists of three gas viscosity specific mixing rules and a mole-weighted
+    simple mixing rule.
+         
+    Prefered method is :obj:`Brokaw`.
+    
+    Parameters
+    ----------
+    CASs : str, optional
+        The CAS numbers of all species in the mixture
+    ViscosityGass : list[ViscosityGas], optional
+        ViscosityGas objects created for all species in the mixture,  
+        normally created by :obj:`thermo.chemical.Chemical`.
+
+    Notes
+    -----
+    To iterate over all methods, use the list stored in
+    :obj:`viscosity_liquid_mixture_methods`.
+
+    **Brokaw**:
+        Mixing rule described in :obj:`Brokaw`.
+    **Herning-Zipperer**:
+        Mixing rule described in :obj:`Herning_Zipperer`.
+    **Wilke**:
+        Mixing rule described in :obj:`Wilke`.
+    **SIMPLE**:
+        Mixing rule described in :obj:`thermo.utils.mixing_simple`.
+
+    See Also
+    --------
+    Brokaw
+    Herning_Zipperer
+    Wilke
+    
+
+    References
+    ----------
+    .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
+       New York: McGraw-Hill Professional, 2000.
+    '''
     name = 'gas viscosity'
     units = 'Pa*s'
     property_min = 0
@@ -1841,8 +1993,6 @@ class ViscosityGasMixture(MixtureProperty):
     property_max = 1E-3
     '''Maximum valid value of gas viscosity. Might be too high, or too low.'''
                             
-    method = None
-    forced = False
     ranked_methods = [BROKAW, HERNING_ZIPPERER, SIMPLE, WILKE]
 
     def __init__(self, MWs=[], molecular_diameters=[], Stockmayers=[], CASs=[], ViscosityGases=[]):
@@ -1853,14 +2003,35 @@ class ViscosityGasMixture(MixtureProperty):
         self.ViscosityGases = ViscosityGases
 
         self.Tmin = None
+        '''Minimum temperature at which no method can calculate the
+        viscosity of a gas mixture under.'''
         self.Tmax = None
+        '''Maximum temperature at which no method can calculate the
+        viscosity of a gas mixture above.'''
 
         self.sorted_valid_methods = []
+        '''sorted_valid_methods, list: Stored methods which were found valid
+        at a specific temperature; set by `mixture_property`.'''
         self.user_methods = []
+        '''user_methods, list: Stored methods which were specified by the user
+        in a ranked order of preference; set by `mixture_property`.'''
         self.all_methods = set()
+        '''Set of all methods available for a given set of information;
+        filled by :obj:`load_all_methods`.'''
         self.load_all_methods()
 
     def load_all_methods(self):
+        r'''Method to initialize the object by precomputing any values which
+        may be used repeatedly and by retrieving mixture-specific variables.
+        All data are stored as attributes. This method also sets :obj:`Tmin`, 
+        :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should 
+        work to calculate the property.
+
+        Called on initialization only. See the source code for the variables at
+        which the coefficients are stored. The coefficients can safely be
+        altered once the class is initialized. This method can be called again
+        to reset the parameters.
+        '''
         methods = [SIMPLE]        
         if none_and_length_check((self.MWs, self.molecular_diameters, self.Stockmayers)):
             methods.append(BROKAW)
@@ -1871,6 +2042,31 @@ class ViscosityGasMixture(MixtureProperty):
         self.Tmax = min([i.Tmax for i in self.ViscosityGases])
         
     def calculate(self, T, P, zs, ws, method):
+        r'''Method to calculate viscosity of a gas mixture at 
+        temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
+        `ws` with a given method.
+
+        This method has no exception handling; see `mixture_property`
+        for that.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the property, [K]
+        P : float
+            Pressure at which to calculate the property, [Pa]
+        zs : list[float]
+            Mole fractions of all species in the mixture, [-]
+        ws : list[float]
+            Weight fractions of all species in the mixture, [-]
+        method : str
+            Name of the method to use
+
+        Returns
+        -------
+        mu : float
+            Viscosity of gas mixture, [Pa*s]
+        '''
         if method == SIMPLE:
             mus = [i(T, P) for i in self.ViscosityGases]
             return mixing_simple(zs, mus)
@@ -1886,6 +2082,28 @@ class ViscosityGasMixture(MixtureProperty):
             raise Exception('Method not valid')
 
     def test_method_validity(self, T, P, zs, ws, method):
+        r'''Method to test the validity of a specified method for the given
+        conditions. No methods have implemented checks or strict ranges of 
+        validity.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to check method validity, [K]
+        P : float
+            Pressure at which to check method validity, [Pa]
+        zs : list[float]
+            Mole fractions of all species in the mixture, [-]
+        ws : list[float]
+            Weight fractions of all species in the mixture, [-]
+        method : str
+            Method name to use
+
+        Returns
+        -------
+        validity : bool
+            Whether or not a specifid method is valid
+        '''
         if method in self.all_methods:
             return True
         else:
