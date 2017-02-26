@@ -1978,7 +1978,6 @@ class ViscosityGasMixture(MixtureProperty):
     Brokaw
     Herning_Zipperer
     Wilke
-    
 
     References
     ----------

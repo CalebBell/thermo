@@ -47,32 +47,32 @@ folder = os.path.join(os.path.dirname(__file__), 'Critical Properties')
 # IUPAC Organic data series
 # TODO: 12E of this data http://pubsdc3.acs.org/doi/10.1021/acs.jced.5b00571
 
-_crit_IUPAC = pd.read_csv(os.path.join(folder, 'IUPACOrganicCriticalProps.csv'),
+_crit_IUPAC = pd.read_csv(os.path.join(folder, 'IUPACOrganicCriticalProps.tsv'),
                           sep='\t', index_col=0)
 
 _crit_Matthews = pd.read_csv(os.path.join(folder,
-'Mathews1972InorganicCriticalProps.csv'), sep='\t', index_col=0)
+'Mathews1972InorganicCriticalProps.tsv'), sep='\t', index_col=0)
 
 # CRC Handbook from TRC Organic data section (only in 2015)
 # No Inorganic table was taken, although it is already present;
 # data almost all from IUPAC
 _crit_CRC = pd.read_csv(os.path.join(folder,
-'CRCCriticalOrganics.csv'), sep='\t', index_col=0)
+'CRCCriticalOrganics.tsv'), sep='\t', index_col=0)
 _crit_CRC['Zc'] = pd.Series(_crit_CRC['Pc']*_crit_CRC['Vc']/_crit_CRC['Tc']/R,
  index=_crit_CRC.index)
 
 
 _crit_PSRKR4 = pd.read_csv(os.path.join(folder,
-'Appendix to PSRK Revision 4.csv'), sep='\t', index_col=0)
+'Appendix to PSRK Revision 4.tsv'), sep='\t', index_col=0)
 _crit_PSRKR4['Zc'] = pd.Series(_crit_PSRKR4['Pc']*_crit_PSRKR4['Vc']/_crit_PSRKR4['Tc']/R,
                              index=_crit_PSRKR4.index)
 
 
-_crit_PassutDanner = pd.read_csv(os.path.join(folder, 'PassutDanner1973.csv'),
+_crit_PassutDanner = pd.read_csv(os.path.join(folder, 'PassutDanner1973.tsv'),
                                  sep='\t', index_col=0)
 
 
-_crit_Yaws = pd.read_csv(os.path.join(folder, 'Yaws Collection.csv'),
+_crit_Yaws = pd.read_csv(os.path.join(folder, 'Yaws Collection.tsv'),
                          sep='\t', index_col=0)
 _crit_Yaws['Zc'] = pd.Series(_crit_Yaws['Pc']*_crit_Yaws['Vc']/_crit_Yaws['Tc']/R,
                              index=_crit_Yaws.index)
