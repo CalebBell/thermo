@@ -1110,6 +1110,7 @@ DIPPR_9H = 'DIPPR9H'
 FILIPPOV = 'Filippov'
 SIMPLE = 'SIMPLE'
 
+thermal_conductivity_liquid_mixture_methods = [MAGOMEDOV, DIPPR_9H, FILIPPOV, SIMPLE]
 
 def thermal_conductivity_liquid_mixture(T=None, P=None, zs=None, ws=None,
                                         ks=None, CASRNs=None,
@@ -1173,7 +1174,52 @@ def thermal_conductivity_liquid_mixture(T=None, P=None, zs=None, ws=None,
 #print (thermal_conductivity_liquid_mixture(ws=[0.258, 0.742], ks=[0.1692, 0.1528], Method='Filippov'), 0)
 
 class ThermalConductivityLiquidMixture(MixtureProperty):
+    '''Class for dealing with thermal conductivity of a liquid mixture as a   
+    function of temperature, pressure, and composition.
+    Consists of two mixing rule specific to liquid thremal conductivity, one
+    coefficient-based method for aqueous electrolytes, and mole weighted 
+    averaging. 
+         
+    Prefered method is :obj:`DIPPR9H` which requires mass
+    fractions, and pure component liquid thermal conductivities. This is 
+    substantially better than the ideal mixing rule based on mole fractions, 
+    **SIMPLE**. **Filippov** is of similar accuracy but applicable to binary
+    systems only.
+        
+    Parameters
+    ----------
+    CASs : str, optional
+        The CAS numbers of all species in the mixture
+    ThermalConductivityLiquids : list[ThermalConductivityLiquid], optional
+        ThermalConductivityLiquid objects created for all species in the
+        mixture, normally created by :obj:`thermo.chemical.Chemical`.
 
+    Notes
+    -----
+    To iterate over all methods, use the list stored in
+    :obj:`thermal_conductivity_liquid_mixture_methods`.
+
+    **DIPPR9H**:
+        Mixing rule described in :obj:`DIPPR9H`.
+    **Filippov**:
+        Mixing rule described in :obj:`Filippov`; for two binary systems only.
+    **Magomedov**:
+        Coefficient-based method for aqueous electrolytes only, described in
+        :obj:`thermo.electrochem.thermal_conductivity_Magomedov`.
+    **SIMPLE**:
+        Mixing rule described in :obj:`thermo.utils.mixing_simple`.
+
+    See Also
+    --------
+    DIPPR9H
+    Filippov
+    thermal_conductivity_Magomedov
+
+    References
+    ----------
+    .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
+       New York: McGraw-Hill Professional, 2000.
+    '''
     name = 'liquid thermal conductivity'
     units = 'W/m/K'
     property_min = 0
@@ -1181,8 +1227,6 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
     property_max = 10
     '''Maximum valid value of liquid thermal conductivity. Generous limit.'''
                             
-    method = None
-    forced = False
     ranked_methods = [DIPPR_9H, SIMPLE, MAGOMEDOV, FILIPPOV]
 
     def __init__(self, CASs=[], ThermalConductivityLiquids=[]):
@@ -1190,14 +1234,35 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
         self.ThermalConductivityLiquids = ThermalConductivityLiquids
 
         self.Tmin = None
+        '''Minimum temperature at which no method can calculate the
+        thermal conductivity of a liquid mixture under.'''
         self.Tmax = None
+        '''Maximum temperature at which no method can calculate the
+        thermal conductivity of a liquid mixture above.'''
 
         self.sorted_valid_methods = []
+        '''sorted_valid_methods, list: Stored methods which were found valid
+        at a specific temperature; set by `mixture_property`.'''
         self.user_methods = []
+        '''user_methods, list: Stored methods which were specified by the user
+        in a ranked order of preference; set by `mixture_property`.'''
         self.all_methods = set()
+        '''Set of all methods available for a given set of information;
+        filled by :obj:`load_all_methods`.'''
         self.load_all_methods()
 
     def load_all_methods(self):
+        r'''Method to initialize the object by precomputing any values which
+        may be used repeatedly and by retrieving mixture-specific variables.
+        All data are stored as attributes. This method also sets :obj:`Tmin`, 
+        :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should 
+        work to calculate the property.
+
+        Called on initialization only. See the source code for the variables at
+        which the coefficients are stored. The coefficients can safely be
+        altered once the class is initialized. This method can be called again
+        to reset the parameters.
+        '''
         methods = [DIPPR_9H, SIMPLE]        
         if len(self.CASs) == 2:
             methods.append(FILIPPOV)
@@ -1213,6 +1278,31 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
         self.Tmax = min([i.Tmax for i in self.ThermalConductivityLiquids])
         
     def calculate(self, T, P, zs, ws, method):
+        r'''Method to calculate thermal conductivity of a liquid mixture at 
+        temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
+        `ws` with a given method.
+
+        This method has no exception handling; see `mixture_property`
+        for that.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the property, [K]
+        P : float
+            Pressure at which to calculate the property, [Pa]
+        zs : list[float]
+            Mole fractions of all species in the mixture, [-]
+        ws : list[float]
+            Weight fractions of all species in the mixture, [-]
+        method : str
+            Name of the method to use
+
+        Returns
+        -------
+        k : float
+            Thermal conductivity of the liquid mixture, [W/m/K]
+        '''
         if method == SIMPLE:
             ks = [i(T, P) for i in self.ThermalConductivityLiquids]
             return mixing_simple(zs, ks)
@@ -1230,8 +1320,30 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
             raise Exception('Method not valid')
 
     def test_method_validity(self, T, P, zs, ws, method):
+        r'''Method to test the validity of a specified method for the given
+        conditions. If **Magomedov** is applicable (electrolyte system), no
+        other methods are considered viable. Otherwise, there are no easy
+        checks that can be performed here.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to check method validity, [K]
+        P : float
+            Pressure at which to check method validity, [Pa]
+        zs : list[float]
+            Mole fractions of all species in the mixture, [-]
+        ws : list[float]
+            Weight fractions of all species in the mixture, [-]
+        method : str
+            Method name to use
+
+        Returns
+        -------
+        validity : bool
+            Whether or not a specifid method is valid
+        '''
         if MAGOMEDOV in self.all_methods:
-            # If everything is an electrolyte, accept only it as a method
             if method in self.all_methods:
                 return method == MAGOMEDOV
         if method in [SIMPLE, DIPPR_9H, FILIPPOV]:
@@ -2681,7 +2793,6 @@ class ThermalConductivityGasMixture(MixtureProperty):
     .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
        New York: McGraw-Hill Professional, 2000.
     '''
-
     name = 'gas thermal conductivity'
     units = 'W/m/K'
     property_min = 0.
