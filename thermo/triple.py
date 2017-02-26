@@ -34,7 +34,7 @@ from thermo.vapor_pressure import VaporPressure
 folder = os.path.join(os.path.dirname(__file__), 'Triple Properties')
 
 
-Staveley_data = pd.read_csv(os.path.join(folder, 'Staveley 1981.csv'),
+Staveley_data = pd.read_csv(os.path.join(folder, 'Staveley 1981.tsv'),
                        sep='\t', index_col=0)
 
 STAVELEY = 'STAVELEY'

@@ -33,13 +33,13 @@ from thermo.heat_capacity import TRC_gas_data
 folder = os.path.join(os.path.dirname(__file__), 'Reactions')
 
 
-API_TDB_data = pd.read_csv(os.path.join(folder, 'API TDB Albahri Hf.csv'),
+API_TDB_data = pd.read_csv(os.path.join(folder, 'API TDB Albahri Hf.tsv'),
                            sep='\t', index_col=0)
 
-ATcT_l = pd.read_csv(os.path.join(folder, 'ATcT 1.112 (l).csv'),
+ATcT_l = pd.read_csv(os.path.join(folder, 'ATcT 1.112 (l).tsv'),
                      sep='\t', index_col=0)
 
-ATcT_g = pd.read_csv(os.path.join(folder, 'ATcT 1.112 (g).csv'),
+ATcT_g = pd.read_csv(os.path.join(folder, 'ATcT 1.112 (g).tsv'),
                      sep='\t', index_col=0)
 
 

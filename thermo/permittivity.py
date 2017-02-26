@@ -33,7 +33,7 @@ from thermo.utils import TDependentProperty
 folder = os.path.join(os.path.dirname(__file__), 'Electrolytes')
 
 
-CRC_Permittivity_data = pd.read_csv(os.path.join(folder, 'Permittivity (Dielectric Constant) of Liquids.csv'),
+CRC_Permittivity_data = pd.read_csv(os.path.join(folder, 'Permittivity (Dielectric Constant) of Liquids.tsv'),
                                     sep='\t', index_col=0)
 _CRC_Permittivity_data_values = CRC_Permittivity_data.values
 

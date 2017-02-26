@@ -92,7 +92,7 @@ _cas_from_iupacname_dict = {}
 pubchem_dict = {}
 
 
-with open(os.path.join(folder, 'chemical identifiers.csv')) as f:
+with open(os.path.join(folder, 'chemical identifiers.tsv')) as f:
     for line in f:
         values = line.rstrip('\n').split('\t')
         (pubchemid, CAS, formula, mw, smiles, inchi, inchikey, iupac_name, common_name) = values[0:9]
@@ -340,7 +340,7 @@ def synonyms(CASRN):
 
 
 _MixtureDict = {}
-with open(os.path.join(folder, 'Mixtures Compositions.csv')) as f:
+with open(os.path.join(folder, 'Mixtures Compositions.tsv')) as f:
     '''Read in a dict of 90 or so mixutres, their components, and synonyms.
     Small errors in mole fractions not adding to 1 are known.
     Errors in adding mass fraction are less common, present at the 5th decimal.

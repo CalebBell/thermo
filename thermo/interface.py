@@ -40,26 +40,26 @@ from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
 import pandas as pd
 from thermo.utils import TDependentProperty, MixtureProperty
 
-folder = os.path.join(os.path.dirname(__file__), 'SurfaceTensionData')
+folder = os.path.join(os.path.dirname(__file__), 'Interface')
 
 
 Mulero_Cachadina_data = pd.read_csv(os.path.join(folder,
-                        'MuleroCachadinaParameters.csv'), sep='\t', index_col=0)
+                        'MuleroCachadinaParameters.tsv'), sep='\t', index_col=0)
 _Mulero_Cachadina_data_values = Mulero_Cachadina_data.values
 
-Jasper_Lange_data = pd.read_csv(os.path.join(folder, 'Jasper-Lange.csv'),
+Jasper_Lange_data = pd.read_csv(os.path.join(folder, 'Jasper-Lange.tsv'),
                       sep='\t', index_col=0)
 _Jasper_Lange_data_values = Jasper_Lange_data.values
 
-Somayajulu_data = pd.read_csv(os.path.join(folder, 'Somayajulu.csv'),
+Somayajulu_data = pd.read_csv(os.path.join(folder, 'Somayajulu.tsv'),
                       sep='\t', index_col=0)
 _Somayajulu_data_values = Somayajulu_data.values
 
-Somayajulu_data_2 = pd.read_csv(os.path.join(folder, 'SomayajuluRevised.csv'),
+Somayajulu_data_2 = pd.read_csv(os.path.join(folder, 'SomayajuluRevised.tsv'),
                       sep='\t', index_col=0)
 _Somayajulu_data_2_values = Somayajulu_data_2.values
 
-VDI_PPDS_11 = pd.read_csv(os.path.join(folder, 'VDI PPDS surface tensions.csv'),
+VDI_PPDS_11 = pd.read_csv(os.path.join(folder, 'VDI PPDS surface tensions.tsv'),
                           sep='\t', index_col=0)
 _VDI_PPDS_11_values = VDI_PPDS_11.values
 

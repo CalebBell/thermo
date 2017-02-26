@@ -45,35 +45,35 @@ from thermo.dippr import EQ101, EQ102
 
 folder = os.path.join(os.path.dirname(__file__), 'Viscosity')
 
-Dutt_Prasad = pd.read_csv(os.path.join(folder, 'Dutt Prasad 3 term.csv'),
+Dutt_Prasad = pd.read_csv(os.path.join(folder, 'Dutt Prasad 3 term.tsv'),
                           sep='\t', index_col=0)
 _Dutt_Prasad_values = Dutt_Prasad.values
 
-VN3_data = pd.read_csv(os.path.join(folder, 'Viswanath Natarajan Dynamic 3 term.csv'),
+VN3_data = pd.read_csv(os.path.join(folder, 'Viswanath Natarajan Dynamic 3 term.tsv'),
                        sep='\t', index_col=0)
 _VN3_data_values = VN3_data.values
 
-VN2_data = pd.read_csv(os.path.join(folder, 'Viswanath Natarajan Dynamic 2 term.csv'),
+VN2_data = pd.read_csv(os.path.join(folder, 'Viswanath Natarajan Dynamic 2 term.tsv'),
                        sep='\t', index_col=0)
 _VN2_data_values = VN2_data.values
 
-VN2E_data = pd.read_csv(os.path.join(folder, 'Viswanath Natarajan Dynamic 2 term Exponential.csv'),
+VN2E_data = pd.read_csv(os.path.join(folder, 'Viswanath Natarajan Dynamic 2 term Exponential.tsv'),
                         sep='\t', index_col=0)
 _VN2E_data_values = VN2E_data.values
 
-Perrys2_313 = pd.read_csv(os.path.join(folder, 'Table 2-313 Viscosity of Inorganic and Organic Liquids.csv'),
+Perrys2_313 = pd.read_csv(os.path.join(folder, 'Table 2-313 Viscosity of Inorganic and Organic Liquids.tsv'),
                           sep='\t', index_col=0)
 _Perrys2_313_values = Perrys2_313.values
 
-Perrys2_312 = pd.read_csv(os.path.join(folder, 'Table 2-312 Vapor Viscosity of Inorganic and Organic Substances.csv'),
+Perrys2_312 = pd.read_csv(os.path.join(folder, 'Table 2-312 Vapor Viscosity of Inorganic and Organic Substances.tsv'),
                           sep='\t', index_col=0)
 _Perrys2_312_values = Perrys2_312.values
 
-VDI_PPDS_7 = pd.read_csv(os.path.join(folder, 'VDI PPDS Dynamic viscosity of saturated liquids polynomials.csv'),
+VDI_PPDS_7 = pd.read_csv(os.path.join(folder, 'VDI PPDS Dynamic viscosity of saturated liquids polynomials.tsv'),
                           sep='\t', index_col=0)
 _VDI_PPDS_7_values = VDI_PPDS_7.values
 
-VDI_PPDS_8 = pd.read_csv(os.path.join(folder, 'VDI PPDS Dynamic viscosity of gases polynomials.csv'),
+VDI_PPDS_8 = pd.read_csv(os.path.join(folder, 'VDI PPDS Dynamic viscosity of gases polynomials.tsv'),
                           sep='\t', index_col=0)
 _VDI_PPDS_8_values = VDI_PPDS_8.values
 

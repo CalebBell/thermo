@@ -51,7 +51,7 @@ _Laliberte_Heat_Capacity_ParametersDict = {}
 
 
 # Do not re-implement with Pandas, as current methodology uses these dicts in each function
-with open(os.path.join(folder, 'Laliberte2009.csv')) as f:
+with open(os.path.join(folder, 'Laliberte2009.tsv')) as f:
     next(f)
     for line in f:
         values = to_num(line.split('\t'))
@@ -70,7 +70,7 @@ with open(os.path.join(folder, 'Laliberte2009.csv')) as f:
         if a1:
             _Laliberte_Heat_Capacity_ParametersDict[CASRN] = {"Name":_name, "Formula":_formula,
             "MW":_MW, "A1":a1, "A2":a2, "A3":a3, "A4":a4, "A5":a5, "A6":a6, "Tmin":Tmin, "Tmax":Tmax, "wMax":wMax}
-Laliberte_data = pd.read_csv(os.path.join(folder, 'Laliberte2009.csv'),
+Laliberte_data = pd.read_csv(os.path.join(folder, 'Laliberte2009.tsv'),
                           sep='\t', index_col=0)
 
 
@@ -504,7 +504,7 @@ def Laliberte_heat_capacity(T, ws, CASRNs):
 ### Electrical Conductivity
 
 
-Lange_cond_pure = pd.read_csv(os.path.join(folder, 'Lange Pure Species Conductivity.csv'),
+Lange_cond_pure = pd.read_csv(os.path.join(folder, 'Lange Pure Species Conductivity.tsv'),
                           sep='\t', index_col=0)
 
 
@@ -591,7 +591,7 @@ def conductivity(CASRN=None, AvailableMethods=False, Method=None, full_info=True
         return kappa
 
 
-Magomedovk_thermal_cond = pd.read_csv(os.path.join(folder, 'Magomedov Thermal Conductivity.csv'),
+Magomedovk_thermal_cond = pd.read_csv(os.path.join(folder, 'Magomedov Thermal Conductivity.tsv'),
                           sep='\t', index_col=0)
 
 

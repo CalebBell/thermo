@@ -39,27 +39,27 @@ from thermo.dippr import EQ101
 
 folder = os.path.join(os.path.dirname(__file__), 'Vapor Pressure')
 
-WagnerMcGarry = pd.read_csv(os.path.join(folder, 'Wagner Original McGarry.csv'),
+WagnerMcGarry = pd.read_csv(os.path.join(folder, 'Wagner Original McGarry.tsv'),
                             sep='\t', index_col=0)
 _WagnerMcGarry_values = WagnerMcGarry.values
 
-AntoinePoling = pd.read_csv(os.path.join(folder, 'Antoine Collection Poling.csv'),
+AntoinePoling = pd.read_csv(os.path.join(folder, 'Antoine Collection Poling.tsv'),
                             sep='\t', index_col=0)
 _AntoinePoling_values = AntoinePoling.values
 
-WagnerPoling = pd.read_csv(os.path.join(folder, 'Wagner Collection Poling.csv'),
+WagnerPoling = pd.read_csv(os.path.join(folder, 'Wagner Collection Poling.tsv'),
                            sep='\t', index_col=0)
 _WagnerPoling_values = WagnerPoling.values
 
-AntoineExtended = pd.read_csv(os.path.join(folder, 'Antoine Extended Collection Poling.csv'),
+AntoineExtended = pd.read_csv(os.path.join(folder, 'Antoine Extended Collection Poling.tsv'),
                               sep='\t', index_col=0)
 _AntoineExtended_values = AntoineExtended.values
 
-Perrys2_8 = pd.read_csv(os.path.join(folder, 'Table 2-8 Vapor Pressure of Inorganic and Organic Liquids.csv'),
+Perrys2_8 = pd.read_csv(os.path.join(folder, 'Table 2-8 Vapor Pressure of Inorganic and Organic Liquids.tsv'),
                           sep='\t', index_col=0)
 _Perrys2_8_values = Perrys2_8.values
 
-VDI_PPDS_3 = pd.read_csv(os.path.join(folder, 'VDI PPDS Boiling temperatures at different pressures.csv'),
+VDI_PPDS_3 = pd.read_csv(os.path.join(folder, 'VDI PPDS Boiling temperatures at different pressures.tsv'),
                           sep='\t', index_col=0)
 _VDI_PPDS_3_values = VDI_PPDS_3.values
 

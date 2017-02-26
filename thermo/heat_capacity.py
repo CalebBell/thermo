@@ -59,20 +59,20 @@ folder = os.path.join(os.path.dirname(__file__), 'Heat Capacity')
 
 
 Poling_data = pd.read_csv(os.path.join(folder,
-                       'PolingDatabank.csv'), sep='\t',
+                       'PolingDatabank.tsv'), sep='\t',
                        index_col=0)
 _Poling_data_values = Poling_data.values
 
 
 TRC_gas_data = pd.read_csv(os.path.join(folder,
-                       'TRC Thermodynamics of Organic Compounds in the Gas State.csv'), sep='\t',
+                       'TRC Thermodynamics of Organic Compounds in the Gas State.tsv'), sep='\t',
                        index_col=0)
 _TRC_gas_data_values = TRC_gas_data.values
 
 
 
 _PerryI = {}
-with open(os.path.join(folder, 'Perrys Table 2-151.csv'), encoding='utf-8') as f:
+with open(os.path.join(folder, 'Perrys Table 2-151.tsv'), encoding='utf-8') as f:
     '''Read in a dict of heat capacities of irnorganic and elemental solids.
     These are in section 2, table 151 in:
     Green, Don, and Robert Perry. Perry's Chemical Engineers' Handbook,
@@ -114,7 +114,7 @@ with open(os.path.join(folder, 'Perrys Table 2-151.csv'), encoding='utf-8') as f
 #        Chemistry and Physics. [Boca Raton, FL]: CRC press, 2014.
 #        Warning: 11 duplicated chemicals are present and currently clobbered.
 CRC_standard_data = pd.read_csv(os.path.join(folder,
-                       'CRC Standard Thermodynamic Properties of Chemical Substances.csv'), sep='\t',
+                       'CRC Standard Thermodynamic Properties of Chemical Substances.tsv'), sep='\t',
                        index_col=0)
 
 
@@ -1453,7 +1453,7 @@ type_to_zabransky_dict = {('C', True): zabransky_dict_const_s,
                        ('p', False):   zabransky_dict_iso_p}
 
                      
-with open(os.path.join(folder, 'Zabransky.csv'), encoding='utf-8') as f:
+with open(os.path.join(folder, 'Zabransky.tsv'), encoding='utf-8') as f:
     next(f)
     for line in f:
         values = to_num(line.strip('\n').split('\t'))

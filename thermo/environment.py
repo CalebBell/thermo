@@ -35,9 +35,20 @@ folder = os.path.join(os.path.dirname(__file__), 'Environment')
 ### Global Warming Potentials
 
 GWP_data = pd.read_csv(os.path.join(folder,
-                       'Official Global Warming Potentials.csv'), sep='\t',
+                       'Official Global Warming Potentials.tsv'), sep='\t',
                        index_col=0)
 
+ODP_data = pd.read_csv(os.path.join(folder,
+                       'Ozone Depletion Potentials.tsv'), sep='\t',
+                       index_col=0)
+
+CRClogPDict = pd.read_csv(os.path.join(folder,
+                       'CRC logP table.tsv'), sep='\t',
+                       index_col=0)
+
+SyrresDict2 = pd.read_csv(os.path.join(folder,
+                       'Syrres logP data.csv.gz'), sep='\t',
+                       index_col=0, compression='gzip')
 
 IPCC100 = 'IPCC (2007) 100yr'
 IPCC100SAR = 'IPCC (2007) 100yr-SAR'
@@ -115,25 +126,20 @@ def GWP(CASRN, AvailableMethods=False, Method=None):
         Method = list_methods()[0]
 
     if Method == IPCC100:
-        _GWP = float(GWP_data.at[CASRN, '100yr GWP'])
+        return float(GWP_data.at[CASRN, '100yr GWP'])
     elif Method == IPCC100SAR:
-        _GWP = float(GWP_data.at[CASRN, 'SAR 100yr'])
+        return float(GWP_data.at[CASRN, 'SAR 100yr'])
     elif Method == IPCC20:
-        _GWP = float(GWP_data.at[CASRN, '20yr GWP'])
+        return float(GWP_data.at[CASRN, '20yr GWP'])
     elif Method == IPCC500:
-        _GWP = float(GWP_data.at[CASRN, '500yr GWP'])
+        return float(GWP_data.at[CASRN, '500yr GWP'])
     elif Method == NONE:
-        _GWP = None
+        return None
     else:
         raise Exception('Failure in in function')
-    return _GWP
 
 
 ### Ozone Depletion Potentials
-
-ODP_data = pd.read_csv(os.path.join(folder,
-                       'Ozone Depletion Potentials.csv'), sep='\t',
-                       index_col=0)
 
 
 ODP2MAX = 'ODP2 Max'
@@ -247,37 +253,29 @@ def ODP(CASRN, AvailableMethods=False, Method=None):
         Method = list_methods()[0]
 
     if Method == ODP2MAX:
-        _ODP = float(ODP_data.at[CASRN, 'ODP2 Max'])
+        return float(ODP_data.at[CASRN, 'ODP2 Max'])
     elif Method == ODP1MAX:
-        _ODP = float(ODP_data.at[CASRN, 'ODP1 Max'])
+        return float(ODP_data.at[CASRN, 'ODP1 Max'])
     elif Method == ODP2MIN:
-        _ODP = float(ODP_data.at[CASRN, 'ODP2 Min'])
+        return float(ODP_data.at[CASRN, 'ODP2 Min'])
     elif Method == ODP1MIN:
-        _ODP = float(ODP_data.at[CASRN, 'ODP1 Min'])
+        return float(ODP_data.at[CASRN, 'ODP1 Min'])
     elif Method == ODP2LOG:
-        _ODP = float(ODP_data.at[CASRN, 'ODP2 Design'])
+        return float(ODP_data.at[CASRN, 'ODP2 Design'])
     elif Method == ODP1LOG:
-        _ODP = float(ODP_data.at[CASRN, 'ODP1 Design'])
+        return float(ODP_data.at[CASRN, 'ODP1 Design'])
     elif Method == ODP2STR:
-        _ODP = str(ODP_data.at[CASRN, 'ODP2'])
+        return str(ODP_data.at[CASRN, 'ODP2'])
     elif Method == ODP1STR:
-        _ODP = str(ODP_data.at[CASRN, 'ODP1'])
+        return str(ODP_data.at[CASRN, 'ODP1'])
     elif Method == NONE:
-        _ODP = None
+        return None
     else:
         raise Exception('Failure in in function')
-    return _ODP
 
 
 ### log P
 
-CRClogPDict = pd.read_csv(os.path.join(folder,
-                       'CRC logP table.csv'), sep='\t',
-                       index_col=0)
-
-SyrresDict2 = pd.read_csv(os.path.join(folder,
-                       'Syrres logP data.csv.gz'), sep='\t',
-                       index_col=0, compression='gzip')
 
 SYRRES = 'SYRRES'
 CRC = 'CRC'
@@ -347,11 +345,10 @@ def logP(CASRN, AvailableMethods=False, Method=None):
         Method = list_methods()[0]
 
     if Method == CRC:
-        _logP = float(CRClogPDict.at[CASRN, 'logP'])
+        return float(CRClogPDict.at[CASRN, 'logP'])
     elif Method == SYRRES:
-        _logP = float(SyrresDict2.at[CASRN, 'logP'])
+        return float(SyrresDict2.at[CASRN, 'logP'])
     elif Method == NONE:
-        _logP = None
+        return None
     else:
         raise Exception('Failure in in function')
-    return _logP

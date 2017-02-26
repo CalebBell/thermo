@@ -49,19 +49,19 @@ from thermo.dippr import EQ100, EQ102
 
 folder = os.path.join(os.path.dirname(__file__), 'Thermal Conductivity')
 
-Perrys2_314 = pd.read_csv(os.path.join(folder, 'Table 2-314 Vapor Thermal Conductivity of Inorganic and Organic Substances.csv'),
+Perrys2_314 = pd.read_csv(os.path.join(folder, 'Table 2-314 Vapor Thermal Conductivity of Inorganic and Organic Substances.tsv'),
                           sep='\t', index_col=0)
 _Perrys2_314_values = Perrys2_314.values
 
-Perrys2_315 = pd.read_csv(os.path.join(folder, 'Table 2-315 Thermal Conductivity of Inorganic and Organic Liquids.csv'),
+Perrys2_315 = pd.read_csv(os.path.join(folder, 'Table 2-315 Thermal Conductivity of Inorganic and Organic Liquids.tsv'),
                           sep='\t', index_col=0)
 _Perrys2_315_values = Perrys2_315.values
 
-VDI_PPDS_9 = pd.read_csv(os.path.join(folder, 'VDI PPDS Thermal conductivity of saturated liquids.csv'),
+VDI_PPDS_9 = pd.read_csv(os.path.join(folder, 'VDI PPDS Thermal conductivity of saturated liquids.tsv'),
                           sep='\t', index_col=0)
 _VDI_PPDS_9_values = VDI_PPDS_9.values
 
-VDI_PPDS_10 = pd.read_csv(os.path.join(folder, 'VDI PPDS Thermal conductivity of gases.csv'),
+VDI_PPDS_10 = pd.read_csv(os.path.join(folder, 'VDI PPDS Thermal conductivity of gases.tsv'),
                           sep='\t', index_col=0)
 _VDI_PPDS_10_values = VDI_PPDS_10.values
 

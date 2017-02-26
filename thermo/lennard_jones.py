@@ -44,7 +44,7 @@ import pandas as pd
 folder = os.path.join(os.path.dirname(__file__), 'Viscosity')
 
 MagalhaesLJ_data = pd.read_csv(os.path.join(folder,
-                        'MagalhaesLJ.csv'), sep='\t', index_col=0)
+                        'MagalhaesLJ.tsv'), sep='\t', index_col=0)
 
 
 FLYNN = 'Flynn (1960)'
