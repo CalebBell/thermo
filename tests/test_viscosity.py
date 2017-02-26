@@ -27,6 +27,8 @@ import pandas as pd
 from thermo.viscosity import *
 from thermo.identifiers import checkCAS
 from thermo.viscosity import COOLPROP, LUCAS
+from thermo.chemical import Mixture
+from thermo.viscosity import LALIBERTE_MU, MIXING_LOG_MOLAR, MIXING_LOG_MASS, BROKAW, HERNING_ZIPPERER, WILKE, SIMPLE
 
 ### Check data integrity
 
@@ -336,3 +338,57 @@ def test_ViscosityGas():
 
     with pytest.raises(Exception):
         EtOH.test_method_validity_P(300, 1E5, 'BADMETHOD')
+
+
+
+def test_ViscosityLiquidMixture():
+    # DIPPR  1983 manual example
+    m = Mixture(['carbon tetrachloride', 'isopropanol'], zs=[0.5, 0.5], T=313.2)
+    
+    ViscosityLiquids = [i.ViscosityLiquid for i in m.Chemicals]
+
+    obj = ViscosityLiquidMixture(ViscosityLiquids=ViscosityLiquids, CASs=m.CASs)
+    mu = obj.mixture_property(m.T, m.P, m.zs, m.ws)
+    assert_allclose(mu, 0.0009956952502281852)
+    
+    mu = obj.calculate(m.T, m.P, m.zs, m.ws, MIXING_LOG_MOLAR)
+    assert_allclose(mu, 0.0009956952502281852)
+    mu = obj.calculate(m.T, m.P, m.zs, m.ws, MIXING_LOG_MASS)
+    assert_allclose(mu, 0.0008741268796817256)
+    
+    # Test Laliberte
+    m = Mixture(['water', 'sulfuric acid'], zs=[0.5, 0.5], T=298.15)
+    ViscosityLiquids = [i.ViscosityLiquid for i in m.Chemicals]
+    obj = ViscosityLiquidMixture(ViscosityLiquids=ViscosityLiquids, CASs=m.CASs)
+    mu = obj.mixture_property(m.T, m.P, m.zs, m.ws)
+    assert_allclose(mu, 0.024955325569420893)
+    assert obj.sorted_valid_methods == [LALIBERTE_MU]
+    
+    
+    # Unhappy paths
+    with pytest.raises(Exception):
+        obj.calculate(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
+        
+    with pytest.raises(Exception):
+        obj.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
+
+
+def test_ViscosityGasMixture():
+    # DIPPR  1983 manual example
+    m = Mixture(['dimethyl ether', 'sulfur dioxide'], zs=[.95, .05], T=308.2)
+    ViscosityGases = [i.ViscosityGas for i in m.Chemicals]
+    obj = ViscosityGasMixture(MWs=m.MWs, molecular_diameters=m.molecular_diameters, Stockmayers=m.Stockmayers, CASs=m.CASs, ViscosityGases=ViscosityGases)
+    
+    mu =  obj.mixture_property(m.T, m.P, m.zs, m.ws)
+    assert_allclose(mu, 9.637173494726528e-06)
+    
+    viscosity_gas_mixture_methods = [BROKAW, HERNING_ZIPPERER, WILKE, SIMPLE]
+    mus = [obj.calculate(m.T, m.P, m.zs, m.ws, method) for method in viscosity_gas_mixture_methods]
+    assert_allclose(mus, [9.637173494726528e-06, 9.672122280295219e-06, 9.642294904686337e-06, 9.638962759382555e-06])
+
+    # Unhappy paths
+    with pytest.raises(Exception):
+        obj.calculate(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
+        
+    with pytest.raises(Exception):
+        obj.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')

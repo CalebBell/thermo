@@ -2076,6 +2076,7 @@ class ViscosityGasMixture(MixtureProperty):
             mus = [i(T, P) for i in self.ViscosityGases]
             return Wilke(zs, mus, self.MWs)
         elif method == BROKAW:
+            mus = [i(T, P) for i in self.ViscosityGases]
             return Brokaw(T, zs, mus, self.MWs, self.molecular_diameters, self.Stockmayers)
         else:
             raise Exception('Method not valid')
