@@ -347,5 +347,36 @@ def test_COSTALD_mixture():
     with pytest.raises(Exception):
         COSTALD_mixture([0.4576, 0.5424], 298.,  [512.58],[0.000117, 5.6e-05], [0.559,0.344] )
 
+
 def test_VolumeLiquidMixture():
-    pass
+    from thermo.chemical import Mixture
+    from thermo.volume import LALIBERTE, COSTALD_MIXTURE_FIT, RACKETT_PARAMETERS, COSTALD_MIXTURE,  SIMPLE, RACKETT
+    m = Mixture(['benzene', 'toluene'], zs=[.5, .5], T=298.15, P=101325.)
+    
+    VolumeLiquids = [i.VolumeLiquid for i in m.Chemicals]
+    
+    obj = VolumeLiquidMixture(MWs=m.MWs, Tcs=m.Tcs, Pcs=m.Pcs, Vcs=m.Vcs, Zcs=m.Zcs, omegas=m.omegas, 
+                              CASs=m.CASs, VolumeLiquids=VolumeLiquids)
+    
+    Vm = obj.mixture_property(m.T, m.P, m.zs, m.ws)
+    assert_allclose(Vm, 9.8154006097783393e-05)
+    
+    Vms = [obj.calculate(m.T, m.P, m.zs, m.ws, method) for method in obj.all_methods]
+    Vms_expect = [9.814092676573469e-05, 9.737758899339708e-05, 9.8109833265793461e-05, 9.8154006097783393e-05, 9.858773618507426e-05]
+    assert_allclose(sorted(Vms), sorted(Vms_expect))
+    
+    # Test Laliberte
+    m = Mixture(['water', 'sulfuric acid'], zs=[0.01, 0.99], T=298.15)
+    VolumeLiquids = [i.VolumeLiquid for i in m.Chemicals]
+    obj = VolumeLiquidMixture(MWs=m.MWs, Tcs=m.Tcs, Pcs=m.Pcs, Vcs=m.Vcs, Zcs=m.Zcs, omegas=m.omegas, 
+                              CASs=m.CASs, VolumeLiquids=VolumeLiquids)
+    
+    Vm = obj.mixture_property(m.T, m.P, m.zs, m.ws)
+    assert_allclose(Vm, 4.824170609370422e-05)
+    
+    # Unhappy paths
+    with pytest.raises(Exception):
+        obj.calculate(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
+        
+    with pytest.raises(Exception):
+        obj.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')

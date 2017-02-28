@@ -30,7 +30,8 @@ __all__ = ['COSTALD_data', 'SNM0_data', 'Perry_l_data', 'CRC_inorg_l_data',
 'volume_liquid_methods', 'volume_liquid_methods_P', 'VolumeLiquid', 
 'COSTALD_compressed', 'Amgat', 'Rackett_mixture', 'COSTALD_mixture', 
 'volume_liquid_mixture', 'ideal_gas', 'volume_gas_methods', 'VolumeGas', 
-'volume_gas_mixture_methods', 'Goodman', 'volume_solid_methods', 'VolumeSolid']
+'volume_gas_mixture_methods', 'Goodman', 'volume_solid_methods', 'VolumeSolid',
+'VolumeLiquidMixture']
 
 import os
 import numpy as np
@@ -46,7 +47,7 @@ from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
 from thermo.dippr import EQ105
 from thermo.electrochem import _Laliberte_Density_ParametersDict, Laliberte_density
 from thermo.coolprop import has_CoolProp, PropsSI, PhaseSI, coolprop_fluids, coolprop_dict, CoolProp_T_dependent_property
-from thermo.utils import TDependentProperty, TPDependentProperty
+from thermo.utils import TDependentProperty, TPDependentProperty, MixtureProperty
 
 
 folder = os.path.join(os.path.dirname(__file__), 'Density')
@@ -1473,7 +1474,13 @@ def COSTALD_mixture(xs, T, Tcs, Vcs, omegas):
 
 
 NONE = 'None'
-
+LALIBERTE = 'Laliberte'
+COSTALD_MIXTURE = 'COSTALD mixture'
+COSTALD_MIXTURE_FIT = 'COSTALD mixture parameters'
+SIMPLE = 'SIMPLE'
+RACKETT = 'RACKETT'
+RACKETT_PARAMETERS = 'RACKETT Parameters'
+volume_liquid_mixture_methods = [LALIBERTE, COSTALD_MIXTURE_FIT, RACKETT_PARAMETERS, COSTALD, SIMPLE, RACKETT]
 
 def volume_liquid_mixture(xs=None, ws=None, Vms=None, T=None, MWs=None, MW=None,
                           Tcs=None, Pcs=None, Vcs=None, Zcs=None, omegas=None,
@@ -1493,57 +1500,53 @@ def volume_liquid_mixture(xs=None, ws=None, Vms=None, T=None, MWs=None, MW=None,
             wCASRNs = list(CASRNs)
             wCASRNs.remove('7732-18-5')
             if all([i in _Laliberte_Density_ParametersDict for i in wCASRNs]):
-                methods.append('Laliberte')
+                methods.append(LALIBERTE)
         # COSTALD method
         if T and none_and_length_check([Tcs, Vcs, omegas]):
             if CASRNs:
-#                inCOSTALDDict = False
                 if all([i in COSTALD_data.index for i in CASRNs]):
-                    methods.append('COSTALD Parameters')
-#                for i in CASRNs:
-#                    if i in COSTALD_data.index: inCOSTALDDict = True
-#                if inCOSTALDDict: methods.append('COSTALD Parameters')
-            methods.append('COSTALD')
+                    methods.append(COSTALD_MIXTURE_FIT)
+            methods.append(COSTALD_MIXTURE)
         # Rackett addition
         if none_and_length_check([Vms]):
-            methods.append('Simple/Amgat')
+            methods.append(SIMPLE)
         if T and none_and_length_check([MWs, Tcs, Pcs, Zcs]) and CASRNs:
             if all([i in COSTALD_data.index for i in CASRNs]):
-                methods.append('Rackett')
-        methods.append('None')
+                methods.append(RACKETT)
+        methods.append(NONE)
         return methods
     if AvailableMethods:
         return list_methods()
     if not Method:
         Method = list_methods()[0]
     # This is the calculate, given the method section
-    if Method == 'COSTALD':
+    if Method == COSTALD_MIXTURE:
         _Vm = COSTALD_mixture(xs, T, Tcs, Vcs, omegas)
-    elif Method == 'COSTALD Parameters':
+    elif Method == COSTALD_MIXTURE_FIT:
         for i in range(len(CASRNs)):
             Vcs, omegas = list(Vcs), list(omegas) # Copy to not edit originals
             if CASRNs[i] in COSTALD_data.index:
                 Vcs[i] = COSTALD_data.at[CASRNs[i],'Vchar']
                 omegas[i] =  COSTALD_data.at[CASRNs[i],'omega_SRK']
         _Vm = COSTALD_mixture(xs, T, Tcs, Vcs, omegas)
-    elif Method == 'Rackett Parameters':
+    elif Method == RACKETT_PARAMETERS:
         Zcs = list(Zcs) # Copy to not edit originals
         for i in range(len(CASRNs)):
             if CASRNs[i] in COSTALD_data.index and not np.isnan(COSTALD_data.at[CASRNs[i],'Z_RA']):
                 Zcs[i] = COSTALD_data.at[CASRNs[i],'Z_RA']
         _Vm = Rackett_mixture(T, xs, MWs, Tcs, Pcs, Zcs)
-    elif Method == 'Laliberte':
+    elif Method == LALIBERTE:
         ws = list(ws)
         ws.remove(ws[CASRNs.index('7732-18-5')])
         wCASRNs = list(CASRNs)
         wCASRNs.remove('7732-18-5')
         rho = Laliberte_density(T, ws, wCASRNs)
         _Vm = rho_to_Vm(rho, MW)
-    elif Method == 'Rackett':
+    elif Method == RACKETT:
         _Vm = Rackett_mixture(xs, T, MWs, MW, Tcs, Pcs, Zcs)
-    elif Method == 'Simple/Amgat':
+    elif Method == SIMPLE:
         _Vm = Amgat(xs, Vms)
-    elif Method == 'None':
+    elif Method == NONE:
         return None
     else:
         raise Exception('Failure in in function')
@@ -1552,6 +1555,163 @@ def volume_liquid_mixture(xs=None, ws=None, Vms=None, T=None, MWs=None, MW=None,
     elif _Vm:
         _rho = Vm_to_rho(_Vm, MW)
         return _rho
+
+
+class VolumeLiquidMixture(MixtureProperty):
+    name = 'Liquid volume'
+    units = 'm^3/mol'
+    property_min = 0
+    '''Mimimum valid value of liquid molar volume. It should normally occur at the
+    triple point, and be well above this.'''
+    property_max = 2e-3
+    '''Maximum valid value of liquid molar volume. Generous limit.'''
+                            
+    ranked_methods = [LALIBERTE, COSTALD_MIXTURE_FIT, RACKETT_PARAMETERS, 
+                      COSTALD_MIXTURE, SIMPLE, RACKETT]
+
+    def __init__(self, MWs=[], Tcs=[], Pcs=[], Vcs=[], Zcs=[], omegas=[], 
+                 CASs=[], VolumeLiquids=[]):
+        self.MWs = MWs
+        self.Tcs = Tcs
+        self.Pcs = Pcs
+        self.Vcs = Vcs
+        self.Zcs = Zcs
+        self.omegas = omegas
+        self.CASs = CASs
+        self.VolumeLiquids = VolumeLiquids
+
+        self.Tmin = None
+        '''Minimum temperature at which no method can calculate the
+        surface tension under.'''
+        self.Tmax = None
+        '''Maximum temperature at which no method can calculate the
+        surface tension above.'''
+
+        self.sorted_valid_methods = []
+        '''sorted_valid_methods, list: Stored methods which were found valid
+        at a specific temperature; set by `mixture_property`.'''
+        self.user_methods = []
+        '''user_methods, list: Stored methods which were specified by the user
+        in a ranked order of preference; set by `mixture_property`.'''
+        self.all_methods = set()
+        '''Set of all methods available for a given set of information;
+        filled by :obj:`load_all_methods`.'''
+        self.load_all_methods()
+
+    def load_all_methods(self):
+        r'''Method to initialize the object by precomputing any values which
+        may be used repeatedly and by retrieving mixture-specific variables.
+        All data are stored as attributes. This method also sets :obj:`Tmin`, 
+        :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should 
+        work to calculate the property.
+
+        Called on initialization only. See the source code for the variables at
+        which the coefficients are stored. The coefficients can safely be
+        altered once the class is initialized. This method can be called again
+        to reset the parameters.
+        '''
+        methods = [SIMPLE]        
+        
+        if none_and_length_check([self.Tcs, self.Vcs, self.omegas, self.CASs]):
+            methods.append(COSTALD_MIXTURE)
+            if all([i in COSTALD_data.index for i in self.CASs]):
+                self.COSTALD_Vchars = [COSTALD_data.at[CAS, 'Vchar'] for CAS in self.CASs]
+                self.COSTALD_omegas = [COSTALD_data.at[CAS, 'omega_SRK'] for CAS in self.CASs]
+                methods.append(COSTALD_MIXTURE_FIT)
+            
+        if none_and_length_check([self.MWs, self.Tcs, self.Pcs, self.Zcs, self.CASs]):
+            methods.append(RACKETT)
+            if all([CAS in COSTALD_data.index for CAS in self.CASs]):
+                Z_RAs = [COSTALD_data.at[CAS, 'Z_RA'] for CAS in self.CASs]
+                if not any(np.isnan(Z_RAs)):
+                    self.Z_RAs = Z_RAs
+                    methods.append(RACKETT_PARAMETERS)
+        
+        if len(self.CASs) > 1 and '7732-18-5' in self.CASs:
+            wCASs = [i for i in self.CASs if i != '7732-18-5'] 
+            if all([i in _Laliberte_Density_ParametersDict for i in wCASs]):
+                methods.append(LALIBERTE)
+                self.wCASs = wCASs
+                self.index_w = self.CASs.index('7732-18-5')
+        self.all_methods = set(methods)
+            
+    def calculate(self, T, P, zs, ws, method):
+        r'''Method to calculate molar volume of a liquid mixture at 
+        temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
+        `ws` with a given method.
+
+        This method has no exception handling; see `mixture_property`
+        for that.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the property, [K]
+        P : float
+            Pressure at which to calculate the property, [Pa]
+        zs : list[float]
+            Mole fractions of all species in the mixture, [-]
+        ws : list[float]
+            Weight fractions of all species in the mixture, [-]
+        method : str
+            Name of the method to use
+
+        Returns
+        -------
+        Vm : float
+            Molar volume of the liquid mixture at the given conditions, 
+            [m^3/mol]
+        '''
+        if method == SIMPLE:
+            Vms = [i(T, P) for i in self.VolumeLiquids]
+            return Amgat(zs, Vms)
+        elif method == COSTALD_MIXTURE:
+            return COSTALD_mixture(zs, T, self.Tcs, self.Vcs, self.omegas)
+        elif method == COSTALD_MIXTURE_FIT:
+            return COSTALD_mixture(zs, T, self.Tcs, self.COSTALD_Vchars, self.COSTALD_omegas)
+        elif method == RACKETT:
+            return Rackett_mixture(T, zs, self.MWs, self.Tcs, self.Pcs, self.Zcs)
+        elif method == RACKETT_PARAMETERS:
+            return Rackett_mixture(T, zs, self.MWs, self.Tcs, self.Pcs, self.Z_RAs)
+        elif method == LALIBERTE:
+            ws = list(ws) ; ws.pop(self.index_w)
+            rho = Laliberte_density(T, ws, self.wCASs)
+            MW = mixing_simple(zs, self.MWs)
+            return rho_to_Vm(rho, MW)
+        else:
+            raise Exception('Method not valid')
+
+    def test_method_validity(self, T, P, zs, ws, method):
+        r'''Method to test the validity of a specified method for the given
+        conditions. No methods have implemented checks or strict ranges of 
+        validity.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to check method validity, [K]
+        P : float
+            Pressure at which to check method validity, [Pa]
+        zs : list[float]
+            Mole fractions of all species in the mixture, [-]
+        ws : list[float]
+            Weight fractions of all species in the mixture, [-]
+        method : str
+            Method name to use
+
+        Returns
+        -------
+        validity : bool
+            Whether or not a specifid method is valid
+        '''
+        if LALIBERTE in self.all_methods:
+            # If everything is an electrolyte, accept only it as a method
+            if method in self.all_methods:
+                return method == LALIBERTE
+        if method in self.all_methods:
+            return True
+        else:
+            raise Exception('Method not valid')
 
 
 ### Gases
@@ -1576,17 +1736,10 @@ def ideal_gas(T, P):
     V : float
         Gas volume, [m^3/mol]
 
-    Notes
-    -----
-
     Examples
     --------
     >>> ideal_gas(298.15, 101325.)
     0.02446539540458919
-
-    References
-    ----------
-    .. [1] Literally anything
     '''
     return R*T/P
 
@@ -1933,7 +2086,7 @@ def volume_gas_mixture(ys=None, Vms=None, T=None, P=None, Tc=None, Pc=None,
     def list_methods():
         methods = []
         if none_and_length_check([Vms]):
-            methods.append('Simple')
+            methods.append(SIMPLE)
         if T and P and Tc and Pc and omega and MW:
             methods.append(PR_PSEUDO)
         if Tc and Pc and omega:
@@ -1950,7 +2103,7 @@ def volume_gas_mixture(ys=None, Vms=None, T=None, P=None, Tc=None, Pc=None,
     if not Method:
         Method = list_methods()[0]
     # This is the calculate, given the method section
-    if Method == 'Simple':
+    if Method == SIMPLE:
         V = mixing_simple(ys, Vms)
     elif Method == PR_PSEUDO:
         V = PR_Vm(T, P, Tc, Pc, omega, phase='g')

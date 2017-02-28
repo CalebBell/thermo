@@ -313,7 +313,6 @@ def test_ViscosityGas():
         EtOH.test_method_validity(300, 'BADMETHOD')
 
 
-
     # Ethanol compressed
     EtOH = ViscosityGas(MW=46.06844, Tc=514.0, Pc=6137000.0, Zc=0.2412, dipole=1.44, Vmg=0.02357, CASRN='64-17-5')
 
@@ -363,7 +362,6 @@ def test_ViscosityLiquidMixture():
     mu = obj.mixture_property(m.T, m.P, m.zs, m.ws)
     assert_allclose(mu, 0.024955325569420893)
     assert obj.sorted_valid_methods == [LALIBERTE_MU]
-    
     
     # Unhappy paths
     with pytest.raises(Exception):
