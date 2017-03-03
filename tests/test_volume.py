@@ -359,7 +359,7 @@ def test_VolumeLiquidMixture():
                               CASs=m.CASs, VolumeLiquids=VolumeLiquids)
     
     Vm = obj.mixture_property(m.T, m.P, m.zs, m.ws)
-    assert_allclose(Vm, 9.8154006097783393e-05)
+    assert_allclose(Vm, 9.814092676573469e-05)
     
     Vms = [obj.calculate(m.T, m.P, m.zs, m.ws, method) for method in obj.all_methods]
     Vms_expect = [9.814092676573469e-05, 9.737758899339708e-05, 9.8109833265793461e-05, 9.8154006097783393e-05, 9.858773618507426e-05]

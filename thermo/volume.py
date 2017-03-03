@@ -31,7 +31,7 @@ __all__ = ['COSTALD_data', 'SNM0_data', 'Perry_l_data', 'CRC_inorg_l_data',
 'COSTALD_compressed', 'Amgat', 'Rackett_mixture', 'COSTALD_mixture', 
 'volume_liquid_mixture', 'ideal_gas', 'volume_gas_methods', 'VolumeGas', 
 'volume_gas_mixture_methods', 'Goodman', 'volume_solid_methods', 'VolumeSolid',
-'VolumeLiquidMixture']
+'VolumeLiquidMixture', 'VolumeGasMixture']
 
 import os
 import numpy as np
@@ -42,13 +42,12 @@ import pandas as pd
 from thermo.utils import log, exp
 from thermo.utils import Vm_to_rho, rho_to_Vm, mixing_simple, none_and_length_check
 from thermo.virial import BVirial_Pitzer_Curl, BVirial_Abbott, BVirial_Tsonopoulos, BVirial_Tsonopoulos_extended
-from thermo.pr import PR_Vm
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
 from thermo.dippr import EQ105
 from thermo.electrochem import _Laliberte_Density_ParametersDict, Laliberte_density
 from thermo.coolprop import has_CoolProp, PropsSI, PhaseSI, coolprop_fluids, coolprop_dict, CoolProp_T_dependent_property
 from thermo.utils import TDependentProperty, TPDependentProperty, MixtureProperty
-
+from thermo.eos import PR78
 
 folder = os.path.join(os.path.dirname(__file__), 'Density')
 
@@ -1558,6 +1557,66 @@ def volume_liquid_mixture(xs=None, ws=None, Vms=None, T=None, MWs=None, MW=None,
 
 
 class VolumeLiquidMixture(MixtureProperty):
+    '''Class for dealing with the molar volume of a liquid mixture as a   
+    function of temperature, pressure, and composition.
+    Consists of one electrolyte-specific method, four corresponding states
+    methods which do not use pure-component volumes, and one mole-weighted
+    averaging method.
+    
+    Prefered method is **SIMPLE**, or **Laliberte** if the mixture is aqueous
+    and has electrolytes.  
+        
+    Parameters
+    ----------
+    MWs : list[float], optional
+        Molecular weights of all species in the mixture, [g/mol]
+    Tcs : list[float], optional
+        Critical temperatures of all species in the mixture, [K]
+    Pcs : list[float], optional
+        Critical pressures of all species in the mixture, [Pa]
+    Vcs : list[float], optional
+        Critical molar volumes of all species in the mixture, [m^3/mol]
+    Zcs : list[float], optional
+        Critical compressibility factors of all species in the mixture, [Pa]
+    omegas : list[float], optional
+        Accentric factors of all species in the mixture, [-]                 
+    CASs : str, optional
+        The CAS numbers of all species in the mixture
+    VolumeLiquids : list[VolumeLiquid], optional
+        VolumeLiquid objects created for all species in the mixture,  
+        normally created by :obj:`thermo.chemical.Chemical`.
+                 
+    Notes
+    -----
+    To iterate over all methods, use the list stored in
+    :obj:`volume_liquid_mixture_methods`.
+
+    **Laliberte**:
+        Aqueous electrolyte model equation with coefficients; see
+        :obj:`thermo.electrochem.Laliberte_density` for more details.
+    **COSTALD mixture**:
+        CSP method described in :obj:`COSTALD_mixture`.
+    **COSTALD mixture parameters**:
+        CSP method described in :obj:`COSTALD_mixture`, with two mixture 
+        composition independent fit coefficients, `Vc` and `omega`.
+    **RACKETT**:
+        CSP method described in :obj:`Rackett_mixture`.
+    **RACKETT Parameters**:
+        CSP method described in :obj:`Rackett_mixture`, but with a mixture
+        independent fit coefficient for compressibility factor for each species.
+    **SIMPLE**:
+        Linear mole fraction mixing rule described in 
+        :obj:`thermo.utils.mixing_simple`; also known as Amgat's law.
+
+    See Also
+    --------
+    
+
+    References
+    ----------
+    .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
+       New York: McGraw-Hill Professional, 2000.
+    '''
     name = 'Liquid volume'
     units = 'm^3/mol'
     property_min = 0
@@ -1566,8 +1625,8 @@ class VolumeLiquidMixture(MixtureProperty):
     property_max = 2e-3
     '''Maximum valid value of liquid molar volume. Generous limit.'''
                             
-    ranked_methods = [LALIBERTE, COSTALD_MIXTURE_FIT, RACKETT_PARAMETERS, 
-                      COSTALD_MIXTURE, SIMPLE, RACKETT]
+    ranked_methods = [LALIBERTE, SIMPLE, COSTALD_MIXTURE_FIT, 
+                      RACKETT_PARAMETERS, COSTALD_MIXTURE, RACKETT]
 
     def __init__(self, MWs=[], Tcs=[], Pcs=[], Vcs=[], Zcs=[], omegas=[], 
                  CASs=[], VolumeLiquids=[]):
@@ -1582,10 +1641,10 @@ class VolumeLiquidMixture(MixtureProperty):
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
-        surface tension under.'''
+        liquid molar volume under.'''
         self.Tmax = None
         '''Maximum temperature at which no method can calculate the
-        surface tension above.'''
+        liquid molar volume above.'''
 
         self.sorted_valid_methods = []
         '''sorted_valid_methods, list: Stored methods which were found valid
@@ -2061,10 +2120,6 @@ class VolumeGas(TPDependentProperty):
         return validity
 
 
-#print Vm_to_rho(PR_Vm(T=21.1+273.15, P=101325, Tc=369.83, Pc=4248000, omega=0.152, phase='G'), 44.096)
-#'''1.85863708709 checked https://www.mathesongas.com/pdfs/products/Propane-Pure-Gas.pdf'''
-#
-#print
 PR_PSEUDO = 'Peng-Robinson pseudochemical'
 TSONOPOULOS_EXTENDED_PSEUDO = 'Tsonopoulos extended pseudochemical'
 TSONOPOULOS_PSEUDO = 'Tsonopoulos pseudochemical'
@@ -2087,14 +2142,14 @@ def volume_gas_mixture(ys=None, Vms=None, T=None, P=None, Tc=None, Pc=None,
         methods = []
         if none_and_length_check([Vms]):
             methods.append(SIMPLE)
-        if T and P and Tc and Pc and omega and MW:
+        if T and P and Tc and Pc and omega:
             methods.append(PR_PSEUDO)
         if Tc and Pc and omega:
             methods.append(TSONOPOULOS_EXTENDED_PSEUDO)
             methods.append(TSONOPOULOS_PSEUDO)
             methods.append(ABBOTT_PSEUDO)
             methods.append(PITZER_CURL_PSEUDO)
-        if T and P and MW:
+        if T and P:
             methods.append(IDEAL)
         methods.append(NONE)
         return methods
@@ -2106,7 +2161,7 @@ def volume_gas_mixture(ys=None, Vms=None, T=None, P=None, Tc=None, Pc=None,
     if Method == SIMPLE:
         V = mixing_simple(ys, Vms)
     elif Method == PR_PSEUDO:
-        V = PR_Vm(T, P, Tc, Pc, omega, phase='g')
+        V = PR78(T=T, P=P, Tc=Tc, Pc=Pc, omega=omega).V_g
     elif Method == TSONOPOULOS_EXTENDED_PSEUDO:
         B = BVirial_Tsonopoulos_extended(T, Tc, Pc, omega)
         V = ideal_gas(T, P) + B
@@ -2127,6 +2182,143 @@ def volume_gas_mixture(ys=None, Vms=None, T=None, P=None, Tc=None, Pc=None,
         raise Exception('Failure in in function')
     return V
 
+
+class VolumeGasMixture(MixtureProperty):
+    name = 'Gas volume'
+    units = 'm^3/mol'
+    property_min = 0
+    '''Mimimum valid value of gas molar volume. It should normally be well
+    above this.'''
+    property_max = 1E10
+    '''Maximum valid value of gas molar volume. Set roughly at an ideal gas
+    at 1 Pa and 2 billion K.'''
+                            
+    ranked_methods = [EOS, SIMPLE, TSONOPOULOS_EXTENDED_PSEUDO, 
+                      TSONOPOULOS_PSEUDO, ABBOTT_PSEUDO, PITZER_CURL_PSEUDO]
+
+    def __init__(self, Tc=None, Pc=None, omega=None, Tcs=[], Pcs=[], omegas=[], 
+                 eos=None, CASs=[], VolumeGases=[]):
+        self.Tcs = Tcs
+        self.Pcs = Pcs
+        self.omegas = omegas
+        self.Tc = Tc
+        self.Pc = Pc
+        self.omega = omega
+        self.CASs = CASs
+        self.VolumeGases = VolumeGases
+        self.eos = eos
+
+        self.Tmin = None
+        '''Minimum temperature at which no method can calculate the
+        gas molar volume under.'''
+        self.Tmax = None
+        '''Maximum temperature at which no method can calculate the
+        gas molar volume above.'''
+
+        self.sorted_valid_methods = []
+        '''sorted_valid_methods, list: Stored methods which were found valid
+        at a specific temperature; set by `mixture_property`.'''
+        self.user_methods = []
+        '''user_methods, list: Stored methods which were specified by the user
+        in a ranked order of preference; set by `mixture_property`.'''
+        self.all_methods = set()
+        '''Set of all methods available for a given set of information;
+        filled by :obj:`load_all_methods`.'''
+        self.load_all_methods()
+
+    def load_all_methods(self):
+        r'''Method to initialize the object by precomputing any values which
+        may be used repeatedly and by retrieving mixture-specific variables.
+        All data are stored as attributes. This method also sets :obj:`Tmin`, 
+        :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should 
+        work to calculate the property.
+
+        Called on initialization only. See the source code for the variables at
+        which the coefficients are stored. The coefficients can safely be
+        altered once the class is initialized. This method can be called again
+        to reset the parameters.
+        '''
+        methods = [SIMPLE, IDEAL]     
+        if all([self.Tc, self.Pc, self.omega]):
+            methods.extend([TSONOPOULOS_EXTENDED_PSEUDO, TSONOPOULOS_PSEUDO,
+                            ABBOTT_PSEUDO, PITZER_CURL_PSEUDO])
+        if none_and_length_check([self.Tcs, self.Pcs, self.omegas]):
+            methods.append(EOS)
+        self.all_methods = set(methods)
+            
+    def calculate(self, T, P, zs, ws, method):
+        r'''Method to calculate molar volume of a gas mixture at 
+        temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
+        `ws` with a given method.
+
+        This method has no exception handling; see `mixture_property`
+        for that.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the property, [K]
+        P : float
+            Pressure at which to calculate the property, [Pa]
+        zs : list[float]
+            Mole fractions of all species in the mixture, [-]
+        ws : list[float]
+            Weight fractions of all species in the mixture, [-]
+        method : str
+            Name of the method to use
+
+        Returns
+        -------
+        Vm : float
+            Molar volume of the gas mixture at the given conditions, [m^3/mol]
+        '''
+        if method == SIMPLE:
+            Vms = [i(T, P) for i in self.VolumeGas]
+            return mixing_simple(zs, Vms)
+        elif method == TSONOPOULOS_EXTENDED_PSEUDO:
+            B = BVirial_Tsonopoulos_extended(T, self.Tc, self.Pc, self.omega)
+            return ideal_gas(T, P) + B
+        elif method == TSONOPOULOS_PSEUDO:
+            B = BVirial_Tsonopoulos(T, self.Tc, self.Pc, self.omega)
+            return ideal_gas(T, P) + B
+        elif method == ABBOTT_PSEUDO:
+            B = BVirial_Abbott(T, self.Tc, self.Pc, self.omega)
+            return ideal_gas(T, P) + B
+        elif method == PITZER_CURL_PSEUDO:
+            B = BVirial_Pitzer_Curl(T, self.Tc, self.Pc, self.omega)
+            return ideal_gas(T, P) + B
+        elif method == EOS:
+            return self.eos.to_TP(T=T, P=P).V_g
+        else:
+            raise Exception('Method not valid')
+
+    def test_method_validity(self, T, P, zs, ws, method):
+        r'''Method to test the validity of a specified method for the given
+        conditions. No methods have implemented checks or strict ranges of 
+        validity.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to check method validity, [K]
+        P : float
+            Pressure at which to check method validity, [Pa]
+        zs : list[float]
+            Mole fractions of all species in the mixture, [-]
+        ws : list[float]
+            Weight fractions of all species in the mixture, [-]
+        method : str
+            Method name to use
+
+        Returns
+        -------
+        validity : bool
+            Whether or not a specifid method is valid
+        '''
+        if method in self.all_methods:
+            return True
+        else:
+            raise Exception('Method not valid')
 
 ### Solids
 

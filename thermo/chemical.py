@@ -35,12 +35,12 @@ from thermo.activity import identify_phase, identify_phase_mixture, Pbubble_mixt
 from thermo.critical import Tc, Pc, Vc, Zc, Tc_mixture, Pc_mixture, Vc_mixture
 from thermo.acentric import omega, omega_mixture, StielPolar
 from thermo.triple import Tt, Pt
-from thermo.thermal_conductivity import thermal_conductivity_liquid_mixture, thermal_conductivity_gas_mixture, ThermalConductivityLiquid, ThermalConductivityGas
-from thermo.volume import VolumeGas, VolumeLiquid, VolumeSolid, volume_liquid_mixture, volume_gas_mixture
+from thermo.thermal_conductivity import ThermalConductivityLiquid, ThermalConductivityGas, ThermalConductivityLiquidMixture, ThermalConductivityGasMixture, thermal_conductivity_liquid_mixture, thermal_conductivity_gas_mixture
+from thermo.volume import VolumeGas, VolumeLiquid, VolumeSolid, VolumeLiquidMixture, VolumeGasMixture, volume_liquid_mixture, volume_gas_mixture
 from thermo.permittivity import *
 from thermo.heat_capacity import HeatCapacitySolid, HeatCapacityGas, HeatCapacityLiquid, Cp_gas_mixture, Cv_gas_mixture, Cp_liq_mixture
-from thermo.interface import SurfaceTension, surface_tension_mixture
-from thermo.viscosity import viscosity_liquid_mixture, viscosity_gas_mixture, ViscosityLiquid, ViscosityGas, viscosity_index
+from thermo.interface import SurfaceTension, SurfaceTensionMixture, surface_tension_mixture
+from thermo.viscosity import ViscosityLiquid, ViscosityGas, ViscosityLiquidMixture, ViscosityGasMixture, viscosity_index, viscosity_liquid_mixture, viscosity_gas_mixture
 from thermo.reaction import Hf
 from thermo.combustion import Hcombustion
 from thermo.safety import Tflash, Tautoignition, LFL, UFL, TWA, STEL, Ceiling, Skin, Carcinogen, LFL_mixture, UFL_mixture
@@ -56,6 +56,7 @@ from thermo.electrochem import conductivity
 from thermo.elements import atom_fractions, mass_fractions, similarity_variable, atoms_to_Hill, simple_formula_parser
 from thermo.coolprop import has_CoolProp
 from thermo.eos import *
+from thermo.eos_mix import *
 
 from fluids.core import *
 from scipy.optimize import newton
@@ -1794,21 +1795,6 @@ class Chemical(object): # pragma: no cover
         '''
         return self.Permittivity(self.T)
 
-
-        r'''Joule Thomson coefficient of the chemical at its
-        current phase and temperature, in units of K/Pa.
-                
-        .. math::
-            \mu_{JT} = \left(\frac{\partial T}{\partial P}\right)_H = \frac{1}{C_p}
-            \left[T \left(\frac{\partial V}{\partial T}\right)_P - V\right]
-            = \frac{V}{C_p}\left(\beta T-1\right)
-
-        Examples
-        --------
-        >>> Chemical('water').JT
-        -2.2150394958666412e-07
-        '''
-
     @property
     def JTl(self):
         r'''Joule Thomson coefficient of the chemical in the liquid phase at
@@ -2332,7 +2318,6 @@ class Mixture(object):  # pragma: no cover
                 self.mixsource = _d["Source"]
 
         # Handle numpy array inputs; also turn mutable inputs into copies
-
         if zs is not None:
             zs = list(zs)
         if ws is not None:
@@ -2347,20 +2332,7 @@ class Mixture(object):  # pragma: no cover
         self.names = [i.name for i in self.Chemicals]
         self.MWs = [i.MW for i in self.Chemicals]
         self.CASs = [i.CAS for i in self.Chemicals]
-        self.PubChems = [i.PubChem for i in self.Chemicals]
-        self.formulas = [i.formula for i in self.Chemicals]
-        self.smiless = [i.smiles for i in self.Chemicals]
-        self.InChIs = [i.InChI for i in self.Chemicals]
-        self.InChI_Keys = [i.InChI_Key for i in self.Chemicals]
-        self.IUPAC_names = [i.IUPAC_name for i in self.Chemicals]
-        self.synonymss = [i.synonyms for i in self.Chemicals]
-
-        self.charges = [i.charge for i in self.Chemicals]
-        self.atomss = [i.atoms for i in self.Chemicals]
-        self.ringss = [i.rings for i in self.Chemicals]
-        self.atom_fractionss = [i.atom_fractions for i in self.Chemicals]
-        self.mass_fractionss = [i.mass_fractions for i in self.Chemicals]
-
+        
         # Required for densities for volume fractions before setting fractions
         self.set_chemical_constants()
         self.set_chemical_TP()
@@ -2412,6 +2384,8 @@ class Mixture(object):  # pragma: no cover
         self.conductivity = None
         self.Hm = None
         self.H = None
+        self.isobaric_expansion_g = None
+        self.isobaric_expansion_l = None
 
     def set_chemical_constants(self):
         self.Tms = [i.Tm for i in self.Chemicals]
@@ -2435,6 +2409,12 @@ class Mixture(object):  # pragma: no cover
         # Chemistry
         self.Hfs = [i.Hf for i in self.Chemicals]
         self.Hcs = [i.Hc for i in self.Chemicals]
+
+        self.Hfuss = [i.Hfus for i in self.Chemicals]
+        self.Hsubs = [i.Hsub for i in self.Chemicals]
+
+        self.Hfusms = [i.Hfusm for i in self.Chemicals]
+        self.Hsubms = [i.Hsubm for i in self.Chemicals]
 
         # Fire Safety Limits
         self.Tflashs = [i.Tflash for i in self.Chemicals]
@@ -2463,52 +2443,939 @@ class Mixture(object):  # pragma: no cover
         self.legal_statuses = [i.legal_status for i in self.Chemicals]
         self.economic_statuses = [i.economic_status for i in self.Chemicals]
 
+    @property
+    def PubChems(self):
+        r'''PubChem Component ID numbers for all chemicals in the mixture.
+        
+        Examples
+        --------
+        >>> Mixture(['benzene', 'toluene'], ws=[0.5, 0.5]).PubChems
+        [241, 1140]
+        '''
+        return [i.PubChem for i in self.Chemicals]
+
+    @property
+    def formulas(self):
+        r'''Chemical formulas for all chemicals in the mixture.
+        
+        Examples
+        --------
+        >>> Mixture(['ethanol', 'trichloroethylene', 'furfuryl alcohol'], 
+        ... ws=[0.5, 0.2, 0.3]).formulas
+        ['C2H6O', 'C2HCl3', 'C5H6O2']
+        '''
+        return [i.formula for i in self.Chemicals]
+
+    @property
+    def smiless(self):
+        r'''SMILES strings for all chemicals in the mixture.
+        
+        Examples
+        --------
+        >>> Mixture(['methane', 'ethane', 'propane', 'butane'], 
+        ... zs=[0.25, 0.25, 0.25, 0.25]).smiless
+        ['C', 'CC', 'CCC', 'CCCC']
+        '''
+        return [i.smiles for i in self.Chemicals]
+
+    @property
+    def InChIs(self):
+        r'''InChI strings for all chemicals in the mixture.
+        
+        Examples
+        --------
+        >>> Mixture(['methane', 'ethane', 'propane', 'butane'], 
+        ... zs=[0.25, 0.25, 0.25, 0.25]).InChIs
+        ['CH4/h1H4', 'C2H6/c1-2/h1-2H3', 'C3H8/c1-3-2/h3H2,1-2H3', 'C4H10/c1-3-4-2/h3-4H2,1-2H3']
+        '''
+        return [i.InChI for i in self.Chemicals]
+
+    @property
+    def InChI_Keys(self):
+        r'''InChI keys for all chemicals in the mixture.
+        
+        Examples
+        --------
+        >>> Mixture(['1-nonene'], zs=[1]).InChI_Keys
+        ['JRZJOMJEPLMPRA-UHFFFAOYSA-N']
+        '''
+        return [i.InChI_Key for i in self.Chemicals]
+
+    @property
+    def IUPAC_names(self):
+        r'''IUPAC names for all chemicals in the mixture.
+        
+        Examples
+        --------
+        >>> Mixture(['1-hexene', '1-nonene'], zs=[.7, .3]).IUPAC_names
+        ['hex-1-ene', 'non-1-ene']
+        '''
+        return [i.IUPAC_name for i in self.Chemicals]
+
+    @property
+    def synonymss(self):
+        r'''Lists of synonyms for all chemicals in the mixture.
+        
+        Examples
+        --------
+        >>> Mixture(['Tetradecene', 'Pentadecene'], zs=[.1, .9]).synonymss
+        [['tetradec-2-ene', 'tetradecene', '2-tetradecene', 'tetradec-2-ene', '26952-13-6', '35953-53-8', '1652-97-7'], ['pentadec-1-ene', '1-pentadecene', 'pentadecene,1-', 'pentadec-1-ene', '13360-61-7', 'pentadecene']]
+        '''
+        return [i.synonyms for i in self.Chemicals]
+
+    @property
+    def charges(self):
+        r'''Charges for all chemicals in the mixture.
+        
+        Examples
+        --------
+        >>> Mixture(['water', 'sodium ion', 'chloride ion'], zs=[.9, .05, .05]).charges
+        [0, 1, -1]
+        '''
+        return [i.charge for i in self.Chemicals]
+
+    @property
+    def atomss(self):
+        r'''List of dictionaries of atom counts for all chemicals in the mixture.
+        
+        Examples
+        --------
+        >>> Mixture(['Orotic acid', '1-octene'], zs=[.01, .99]).atomss
+        [{'N': 2}, {'O': 2}]
+        '''
+        return [i.atoms for i in self.Chemicals]
+
+    @property
+    def ringss(self):
+        r'''List of ring counts for all chemicals in the mixture.
+        
+        Examples
+        --------
+        >>> Mixture(['Docetaxel', 'Paclitaxel'], zs=[.5, .5]).ringss
+        [6, 7]
+        '''
+        return [i.rings for i in self.Chemicals]
+    
+    @property
+    def atom_fractionss(self):
+        r'''List of dictionaries of atomic fractions for all chemicals in the 
+        mixture.
+        
+        Examples
+        --------
+        >>> Mixture(['oxygen', 'nitrogen'], zs=[.5, .5]).atom_fractionss
+        [{'O': 1.0}, {'N': 1.0}]
+        '''
+        return [i.atom_fractions for i in self.Chemicals]
+
+    @property
+    def mass_fractionss(self):
+        r'''List of dictionaries of mass fractions for all chemicals in the mixture.
+        
+        Examples
+        --------
+        >>> Mixture(['oxygen', 'nitrogen'], zs=[.5, .5]).mass_fractionss
+        [{'O': 1.0}, {'N': 1.0}]
+        '''
+        return [i.mass_fractions for i in self.Chemicals]
+    
+    ### One phase properties - calculate lazily
+    @property
+    def Psats(self):
+        r'''Pure component vapor pressures of the chemicals in the mixture at 
+        its current temperature, in units of Pa.
+
+        Examples
+        --------
+        >>> Mixture(['benzene', 'toluene'], ws=[0.5, 0.5], T=320).Psats
+        [32029.25774454549, 10724.419010511821]
+        '''
+        return [i.Psat for i in self.Chemicals]
+
+    @property
+    def Hvapms(self):
+        r'''Pure component enthalpies of vaporization of the chemicals in the 
+        mixture at its current temperature, in units of J/mol. 
+        
+        Examples
+        --------
+        >>> Mixture(['benzene', 'toluene'], ws=[0.5, 0.5], T=320).Hvapms
+        [32639.806783391632, 36851.7902195611]
+        '''
+        return [i.Hvapm for i in self.Chemicals]
+
+    @property
+    def Hvaps(self):
+        r'''Enthalpy of vaporization of the chemicals in the mixture at its 
+        current temperature, in units of J/kg. 
+                
+        Examples
+        --------
+        >>> Mixture(['benzene', 'toluene'], ws=[0.5, 0.5], T=320).Hvaps
+        [417859.9144942896, 399961.16950519773]
+        '''
+        return [i.Hvap for i in self.Chemicals]
+
+    @property
+    def Cpsms(self):
+        r'''Solid-phase pure component heat capacity of the chemicals in the 
+        mixture at its current temperature, in units of J/mol/K. 
+        
+        Examples
+        --------
+        >>> Mixture(['benzene', 'toluene'], ws=[0.5, 0.5], T=320).Cpsms
+        [109.77384365511931, 135.22614707678474]
+        '''
+        return [i.Cpsm for i in self.Chemicals]
+                
+    @property
+    def Cplms(self):
+        r'''Liquid-phase pure component heat capacity of the chemicals in the
+        mixture at its current temperature, in units of J/mol/K. 
+        
+        Examples
+        --------
+        >>> Mixture(['benzene', 'toluene'], ws=[0.5, 0.5], T=320).Cplms
+        [140.9113971170526, 163.62584810669068]
+        '''
+        return [i.Cplm for i in self.Chemicals]
+
+    @property
+    def Cpgms(self):
+        r'''Gas-phase ideal gas heat capacity of the chemicals at its current 
+        temperature, in units of J/mol/K. 
+                
+        Examples
+        --------
+        >>> Mixture(['benzene', 'toluene'], ws=[0.5, 0.5], T=320).Cpgms
+        [89.55804092586159, 111.70390334788907]
+        '''
+        return [i.Cpgm for i in self.Chemicals]
+
+    @property
+    def Cpss(self):
+        r'''Solid-phase pure component heat capacity of the chemicals in the
+        mixture at its current temperature, in units of J/kg/K. 
+
+        Examples
+        --------
+        >>> Mixture(['benzene', 'toluene'], ws=[0.5, 0.5], T=320).Cpss
+        [1405.341925822248, 1467.6412627521154]
+        '''
+        return [i.Cps for i in self.Chemicals]
+
+    @property
+    def Cpls(self):
+        r'''Liquid-phase pure component heat capacity of the chemicals in the
+        mixture at its  current temperature, in units of J/kg/K.
+        
+        Examples
+        --------
+        >>> Mixture(['benzene', 'toluene'], ws=[0.5, 0.5], T=320).Cpls
+        [1803.9697581961016, 1775.869915141704]
+        '''
+        return [i.Cpl for i in self.Chemicals]
+
+    @property
+    def Cpgs(self):
+        r'''Gas-phase pure component heat capacity of the chemicals in the 
+        mixture at its current temperature, in units of J/kg/K.
+        
+        Examples
+        --------        
+        >>> Mixture(['benzene', 'toluene'], ws=[0.5, 0.5], T=320).Cpgs
+        [1146.5360555565146, 1212.3488046342566]
+        '''
+        return [i.Cpg for i in self.Chemicals]
+
+    @property
+    def Cvgms(self):
+        r'''Gas-phase pure component ideal-gas contant-volume heat capacities 
+        of the chemicals in the mixture at its current temperature, in units
+        of J/mol/K.  Subtracts R from the ideal-gas heat capacities; does not  
+        include pressure-compensation from an equation of state.
+        
+        Examples
+        --------
+        >>> Mixture(['benzene', 'toluene'], ws=[0.5, 0.5], T=320).Cvgms
+        [81.2435811258616, 103.38944354788907]
+        '''
+        return [i.Cvgm for i in self.Chemicals]
+
+    @property
+    def Cvgs(self):
+        r'''Gas-phase pure component ideal-gas contant-volume heat capacities 
+        of the chemicals in the mixture at its current temperature, in units of 
+        J/kg/K. Subtracts R from the ideal-gas heat capacity; does not include 
+        pressure-compensation from an equation of state.
+        
+        Examples
+        --------
+        >>> Mixture(['benzene', 'toluene'], ws=[0.5, 0.5], T=320).Cvgs
+        [1040.093040003431, 1122.1100117398266]
+        '''
+        return [i.Cvg for i in self.Chemicals]
+
+    @property
+    def isentropic_exponents(self):
+        r'''Gas-phase pure component ideal-gas isentropic exponent of the 
+        chemicals in the  mixture at its current temperature, dimensionless.
+         Does not include pressure-compensation from an equation of state.
+                
+        Examples
+        --------
+        >>> Mixture(['benzene', 'toluene'], ws=[0.5, 0.5], T=320).isentropic_exponents
+        [1.1023398979313739, 1.080418846592871]
+        '''
+        return [i.isentropic_exponent for i in self.Chemicals]
+        
+    @property
+    def Vmss(self):
+        r'''Pure component solid-phase molar volumes of the chemicals in the
+        mixture at its current temperature, in units of mol/m^3. 
+        
+        Examples
+        --------
+        >>> Mixture(['iron'], ws=[1], T=320).Vmss
+        [7.09593392630242e-06]
+        '''
+        return [i.Vms for i in self.Chemicals]
+
+    @property
+    def Vmls(self):
+        r'''Pure component liquid-phase molar volumes of the chemicals in the 
+        mixture at its current temperature and pressure, in units of mol/m^3. 
+        
+        Examples
+        --------
+        >>> Mixture(['benzene', 'toluene'], ws=[0.5, 0.5], T=320).Vmls
+        [9.188896727673715e-05, 0.00010946199496993461]
+        '''
+        return [i.Vml for i in self.Chemicals]
+
+    @property
+    def Vmgs(self):
+        r'''Pure component gas-phase molar volumes of the chemicals in the 
+        mixture at its current temperature and pressure, in units of mol/m^3.
+        
+        Examples
+        --------        
+        >>> Mixture(['benzene', 'toluene'], ws=[0.5, 0.5], T=320).Vmgs
+        [0.024929001982294974, 0.024150186467130488]
+        '''
+        return [i.Vmg for i in self.Chemicals]
+
+    @property
+    def rhoss(self):
+        r'''Pure component solid-phase mass density of the chemicals in the 
+        mixture at its  current temperature, in units of kg/m^3. 
+        
+        Examples
+        --------        
+        >>> Mixture(['iron'], ws=[1], T=320).rhoss
+        [7869.999999999994]
+        '''
+        return [i.rhos for i in self.Chemicals]
+
+    @property
+    def rhols(self):
+        r'''Pure-component liquid-phase mass density of the chemicals in the
+        mixture at its current temperature and pressure, in units of kg/m^3. 
+        
+        Examples
+        --------        
+        >>> Mixture(['benzene', 'toluene'], ws=[0.5, 0.5], T=320).rhols
+        [850.0676666084917, 841.7389069631628]
+        '''
+        return [i.rhol for i in self.Chemicals]
+
+    @property
+    def rhogs(self):
+        r'''Pure-component gas-phase mass densities of the chemicals in the 
+        mixture at its current temperature and pressure, in units of kg/m^3. 
+        
+        Examples
+        --------    
+        >>> Mixture(['benzene', 'toluene'], ws=[0.5, 0.5], T=320).rhogs
+        [3.1333721283939258, 3.8152260283954584]
+        '''
+        return [i.rhog for i in self.Chemicals]
+
+    @property
+    def rhosms(self):
+        r'''Pure component molar densities of the chemicals in the solid phase 
+        at the current temperature and pressure, in units of mol/m^3.
+
+        Examples
+        --------
+        >>> Mixture(['iron'], ws=[1], T=320).rhosms
+        [140925.7767033753]
+        '''
+        return [i.rhosm for i in self.Chemicals]
+
+    @property
+    def rholms(self):
+        r'''Pure component molar densities of the chemicals in the mixture in 
+        the liquid phase at the current temperature and pressure, in units of 
+        mol/m^3.
+        
+        Examples
+        --------
+        >>> Mixture(['benzene', 'toluene'], ws=[0.5, 0.5], T=320).rholms
+        [10882.699301520635, 9135.590853014008]
+        '''
+        return [i.rholm for i in self.Chemicals]
+
+    @property
+    def rhogms(self):
+        r'''Pure component molar densities of the chemicals in the gas phase at
+        the current temperature and pressure, in units of mol/m^3.
+        
+        Examples
+        --------
+        >>> Mixture(['benzene', 'toluene'], ws=[0.5, 0.5], T=320).rhogms
+        [40.11392035309789, 41.407547778608084]
+        '''
+        return [i.rhogm for i in self.Chemicals]
+
+
+    @property
+    def Zss(self):
+        r'''Pure component compressibility factors of the chemicals in the 
+        mixture in the solid phase at the current temperature and pressure,
+        dimensionless.
+        
+        Examples
+        --------
+        >>> Mixture(['palladium'], ws=[1]).Zss
+        [0.00036248477437931853]
+        '''
+        return [i.Zs for i in self.Chemicals]
+
+    @property
+    def Zls(self):
+        r'''Pure component compressibility factors of the chemicals in the 
+        liquid phase at the current temperature and pressure, dimensionless.
+        
+        Examples
+        --------
+        >>> Mixture(['benzene', 'toluene'], ws=[0.5, 0.5], T=320).Zls
+        [0.0034994191720201235, 0.004168655010037687]
+        '''
+        return [i.Zl for i in self.Chemicals]
+
+    @property
+    def Zgs(self):
+        r'''Pure component compressibility factors of the chemicals in the 
+        mixture in the gas phase at the current temperature and pressure, 
+        dimensionless.
+                
+        Examples
+        --------
+        >>> Mixture(['benzene', 'toluene'], ws=[0.5, 0.5], T=320).Zgs
+        [0.9493743379816593, 0.9197146081359057]
+        '''
+        return [i.Zg for i in self.Chemicals]
+
+    @property
+    def isobaric_expansion_ls(self):
+        r'''Pure component isobaric (constant-pressure) expansions of the 
+        chemicals in the mixture in the liquid phase at its current temperature 
+        and pressure, in units of 1/K.
+        
+        .. math::
+            \beta = \frac{1}{V}\left(\frac{\partial V}{\partial T} \right)_P
+        
+        Examples
+        --------
+        >>> Mixture(['benzene', 'toluene'], ws=[0.5, 0.5], T=320).isobaric_expansion_ls
+        [0.0012736035771253886, 0.0011234157437069571]
+        '''
+        return [i.isobaric_expansion_l for i in self.Chemicals]
+
+    @property
+    def isobaric_expansion_gs(self):
+        r'''Pure component isobaric (constant-pressure) expansions of the 
+        chemicals in the mixture in the gas phase at its current temperature 
+        and pressure, in units of 1/K.
+        
+        .. math::
+            \beta = \frac{1}{V}\left(\frac{\partial V}{\partial T} \right)_P
+        
+        Examples
+        --------
+        >>> Mixture(['benzene', 'toluene'], ws=[0.5, 0.5], T=320).isobaric_expansion_gs
+        [0.0038091518363900499, 0.0043556759306508453]
+        '''
+        return [i.isobaric_expansion_g for i in self.Chemicals]
+
+    @property
+    def muls(self):
+        r'''Pure component viscosities of the chemicals in the mixture in the 
+        liquid phase at its current temperature and pressure, in units of Pa*s. 
+        
+        Examples
+        --------
+        >>> Mixture(['benzene', 'toluene'], ws=[0.5, 0.5], T=320).muls
+        [0.00045545522798131764, 0.00043274394349114754]
+        '''
+        return [i.mul for i in self.Chemicals]
+
+    @property
+    def mugs(self):
+        r'''Pure component viscosities of the chemicals in the mixture in the 
+        gas phase at its current temperature and pressure, in units of Pa*s. 
+        
+        Examples
+        --------
+        >>> Mixture(['benzene', 'toluene'], ws=[0.5, 0.5], T=320).mugs
+        [8.082880451060605e-06, 7.442602145854158e-06]
+        '''
+        return [i.mug for i in self.Chemicals]
+
+    @property
+    def kls(self):
+        r'''Pure component thermal conductivities of the chemicals in the 
+        mixture in the liquid phase at its current temperature and pressure, in
+        units of W/m/K. 
+                
+        Examples
+        --------
+        >>> Mixture(['benzene', 'toluene'], ws=[0.5, 0.5], T=320).kls
+        [0.13391538485205587, 0.12429339088930591]
+        '''
+        return [i.kl for i in self.Chemicals]
+
+
+    @property
+    def kgs(self):
+        r'''Pure component thermal conductivies of the chemicals in the mixture
+        in the gas phase at its current temperature and pressure, in units of
+        W/m/K. 
+        
+        Examples
+        --------
+        >>> Mixture(['benzene', 'toluene'], ws=[0.5, 0.5], T=320).kgs
+        [0.011865404482987936, 0.010981336502491088]
+        '''
+        return [i.kg for i in self.Chemicals]
+
+    @property
+    def sigmas(self):
+        r'''Pure component surface tensions of the chemicals in the mixture at 
+        its current temperature, in units of N/m. 
+                
+        Examples
+        --------
+        >>> Mixture(['benzene', 'toluene'], ws=[0.5, 0.5], T=320).sigmas
+        [0.02533469712937521, 0.025254723406585546]
+        '''
+        return [i.sigma for i in self.Chemicals]
+
+    @property
+    def permittivites(self):
+        r'''Pure component relative permittivities of the chemicals in the 
+        mixture at its current temperature, dimensionless.
+        
+        Examples
+        --------
+        >>> Mixture(['benzene', 'hexane'], ws=[0.5, 0.5], T=320).permittivites
+        [2.23133472, 1.8508128]
+        '''
+        return [i.permittivity for i in self.Chemicals]
+
+    @property
+    def JTls(self):
+        r'''Pure component Joule Thomson coefficients of the chemicals in the
+        mixture in the liquid phase at its current temperature and pressure, in
+        units of K/Pa.
+        
+        .. math::
+            \mu_{JT} = \left(\frac{\partial T}{\partial P}\right)_H = \frac{1}{C_p}
+            \left[T \left(\frac{\partial V}{\partial T}\right)_P - V\right]
+            = \frac{V}{C_p}\left(\beta T-1\right)
+        
+        Examples
+        --------
+        >>> Mixture(['benzene', 'hexane'], ws=[0.5, 0.5], T=320).JTls
+        [-3.8633730709853161e-07, -3.464395792560331e-07]
+        '''
+        return [i.JTl for i in self.Chemicals]
+
+    @property
+    def JTgs(self):
+        r'''Pure component Joule Thomson coefficients of the chemicals in the
+        mixture in the gas phase at its current temperature and pressure, in
+        units of K/Pa.
+        
+        .. math::
+            \mu_{JT} = \left(\frac{\partial T}{\partial P}\right)_H = \frac{1}{C_p}
+            \left[T \left(\frac{\partial V}{\partial T}\right)_P - V\right]
+            = \frac{V}{C_p}\left(\beta T-1\right)
+        
+        Examples
+        --------
+        >>> Mixture(['benzene', 'hexane'], ws=[0.5, 0.5], T=320).JTgs
+        [6.0940046688790938e-05, 4.1290005523287549e-05]
+        '''
+        return [i.JTg for i in self.Chemicals]
+
+    @property
+    def nuls(self):
+        r'''Pure component kinematic viscosities of the liquid phase of the 
+        chemicals in the mixture at its current temperature and pressure, in 
+        units of m^2/s.
+        
+        .. math::
+            \nu = \frac{\mu}{\rho}
+        
+        Examples
+        --------
+        >>> Mixture(['benzene', 'hexane'], ws=[0.5, 0.5], T=320).nuls
+        [5.357870271650772e-07, 3.8129130341250897e-07]
+        '''
+        return [i.nul for i in self.Chemicals]
+
+    def nugs(self):
+        r'''Pure component kinematic viscosities of the gas phase of the 
+        chemicals in the mixture at its current temperature and pressure, in 
+        units of m^2/s.
+        
+        .. math::
+            \nu = \frac{\mu}{\rho}
+        
+        Examples
+        --------
+        >>> Mixture(['benzene', 'hexane'], ws=[0.5, 0.5], T=320).nugs
+        [2.579610757948387e-06, 1.9149095260590705e-06]
+        '''
+        return [i.nul for i in self.Chemicals]
+
+    @property
+    def alphals(self):
+        r'''Pure component thermal diffusivities of the chemicals in the 
+        mixture in the liquid phase at the current temperature and pressure, in
+        units of m^2/s.
+        
+        .. math::
+            \alpha = \frac{k}{\rho Cp}
+
+        Examples
+        --------
+        >>> Mixture(['benzene', 'hexane'], ws=[0.5, 0.5], T=320).alphals
+        [8.732683564481583e-08, 7.57355434073289e-08]
+        '''
+        return [i.alphal for i in self.Chemicals]
+
+    @property
+    def alphags(self):
+        r'''Pure component thermal diffusivities of the chemicals in the 
+        mixture in the gas phase at the current temperature and pressure, in
+        units of m^2/s.
+        
+        .. math::
+            \alpha = \frac{k}{\rho Cp}
+
+        Examples
+        --------
+        >>> Mixture(['benzene', 'hexane'], ws=[0.5, 0.5], T=320).alphags
+        [3.3028044028118324e-06, 2.4413332489215457e-06]
+        '''
+        return [i.alphag for i in self.Chemicals]
+
+    @property
+    def Prls(self):
+        r'''Pure component Prandtl numbers of the liquid phase of the chemicals 
+        in the mixture at its current temperature and pressure, dimensionless.
+        
+        .. math::
+            Pr = \frac{C_p \mu}{k}
+        
+        Examples
+        --------
+        >>> Mixture(['benzene', 'hexane'], ws=[0.5, 0.5], T=320).Prls
+        [6.13542244155373, 5.034509376420631]
+        '''
+        return [i.Prl for i in self.Chemicals]
+
+    @property
+    def Prgs(self):
+        r'''Pure component Prandtl numbers of the gas phase of the chemicals 
+        in the mixture at its current temperature and pressure, dimensionless.
+        
+        .. math::
+            Pr = \frac{C_p \mu}{k}
+        
+        Examples
+        --------
+        >>> Mixture(['benzene', 'hexane'], ws=[0.5, 0.5], T=320).Prgs
+        [0.7810364900059606, 0.7843703955226016]
+        '''
+        return [i.Prg for i in self.Chemicals]
+
+    @property
+    def solubility_parameters(self):
+        r'''Pure component solubility parameters of the chemicals in the  
+        mixture at its current temperature and pressure, in units of Pa^0.5.
+        
+        .. math::
+            \delta = \sqrt{\frac{\Delta H_{vap} - RT}{V_m}}
+        
+        Examples
+        --------
+        >>> Mixture(['benzene', 'hexane'], ws=[0.5, 0.5], T=320).solubility_parameters
+        [18062.51359608708, 14244.12852702228]
+        '''
+        return [i.solubility_parameter for i in self.Chemicals]
+
+    ### Overall mixture properties
+    @property
+    def JTl(self):
+        r'''Joule Thomson coefficient of the liquid phase of the mixture if one 
+        exists at its current temperature and pressure, in units of K/Pa.
+        
+        .. math::
+            \mu_{JT} = \left(\frac{\partial T}{\partial P}\right)_H = \frac{1}{C_p}
+            \left[T \left(\frac{\partial V}{\partial T}\right)_P - V\right]
+            = \frac{V}{C_p}\left(\beta T-1\right)
+        
+        Examples
+        --------
+        >>> Mixture(['dodecane'], ws=[1], T=400).JTl
+        -3.1037120844444807e-07
+        '''
+        Vml, Cplm, isobaric_expansion_l = self.Vml, self.Cplm, self.isobaric_expansion_l
+        if all((Vml, Cplm, isobaric_expansion_l)):
+            return Joule_Thomson(T=self.T, V=Vml, Cp=Cplm, beta=isobaric_expansion_l)
+        return None
+    
+    @property
+    def JTg(self):
+        r'''Joule Thomson coefficient of the gas phase of the mixture if one 
+        exists at its current temperature and pressure, in units of K/Pa.
+        
+        .. math::
+            \mu_{JT} = \left(\frac{\partial T}{\partial P}\right)_H = \frac{1}{C_p}
+            \left[T \left(\frac{\partial V}{\partial T}\right)_P - V\right]
+            = \frac{V}{C_p}\left(\beta T-1\right)
+        
+        Examples
+        --------
+        >>> Mixture(['dodecane'], ws=[1], T=400, P=1000).JTg
+        5.4089897835384913e-05
+        '''
+        Vmg, Cpgm, isobaric_expansion_g = self.Vmg, self.Cpgm, self.isobaric_expansion_g
+        if all((Vmg, Cpgm, isobaric_expansion_g)):
+            return Joule_Thomson(T=self.T, V=Vmg, Cp=Cpgm, beta=isobaric_expansion_g)
+        return None
+
+    @property
+    def nul(self):
+        r'''Kinematic viscosity of the liquid phase of the mixture if one  
+        exists at its current temperature and pressure, in units of m^2/s.
+        
+        .. math::
+            \nu = \frac{\mu}{\rho}
+        
+        Examples
+        --------
+        >>> Mixture(['methane'], ws=[1], T=110).nul
+        2.858184674118658e-07
+        '''
+        mul, rhol = self.mul, self.rhol
+        if all([mul, rhol]):
+            return nu_mu_converter(mu=mul, rho=rhol)
+        return None
+
+    @property
+    def nug(self):
+        r'''Kinematic viscosity of the gas phase of the mixture if one exists  
+        at its current temperature and pressure, in units of m^2/s.
+        
+        .. math::
+            \nu = \frac{\mu}{\rho}
+        
+        Examples
+        --------
+        >>> Mixture(['methane'], ws=[1], T=115).nug
+        2.5057767760931785e-06
+        '''
+        mug, rhog = self.mug, self.rhog
+        if all([mug, rhog]):
+            return nu_mu_converter(mu=mug, rho=rhog)
+        return None
+
+    @property
+    def alphal(self):
+        r'''Thermal diffusivity of the liquid phase of the mixture if one  
+        exists at its current temperature and pressure, in units of m^2/s.
+        
+        .. math::
+            \alpha = \frac{k}{\rho Cp}
+        
+        Examples
+        --------
+        >>> Mixture(['nitrogen'], ws=[1], T=70).alphal
+        9.504101801042264e-08
+        '''
+        kl, rhol, Cpl = self.kl, self.rhol, self.Cpl
+        if all([kl, rhol, Cpl]):
+            return thermal_diffusivity(k=kl, rho=rhol, Cp=Cpl)
+        return None
+    
+    @property
+    def alphag(self):
+        r'''Thermal diffusivity of the gas phase of the mixture if one exists at its 
+        current temperature and pressure, in units of m^2/s.
+        
+        .. math::
+            \alpha = \frac{k}{\rho Cp}
+        
+        Examples
+        --------
+        >>> Mixture(['ammonia'], ws=[1]).alphag
+        1.6931865425158556e-05
+        '''
+        kg, rhog, Cpg = self.kg, self.rhog, self.Cpg
+        if all([kg, rhog, Cpg]):
+            return thermal_diffusivity(k=kg, rho=rhog, Cp=Cpg)
+        return None
+
+    @property
+    def Prl(self):
+        r'''Prandtl number of the liquid phase of the mixture if one exists at its 
+        current temperature and pressure, dimensionless.
+        
+        .. math::
+            Pr = \frac{C_p \mu}{k}
+                
+        Examples
+        --------
+        >>> Mixture(['nitrogen'], ws=[1], T=70).Prl
+        2.7655015690791696
+        '''
+        Cpl, mul, kl = self.Cpl, self.mul, self.kl
+        if all([Cpl, mul, kl]):
+            return Prandtl(Cp=Cpl, mu=mul, k=kl)
+        return None
+
+    @property
+    def Prg(self):
+        r'''Prandtl number of the gas phase of the mixture if one exists at its 
+        current temperature and pressure, dimensionless.
+        
+        .. math::
+            Pr = \frac{C_p \mu}{k}
+                
+        Examples
+        --------
+        >>> Chemical(['NH3'], ws=[1]).Prg
+        0.847263731933008
+        '''
+        Cpg, mug, kg = self.Cpg, self.mug, self.kg
+        if all([Cpg, mug, kg]):
+            return Prandtl(Cp=Cpg, mu=mug, k=kg)
+        return None
+    
+    ### Properties from Mixture objects
+    
+    @property
+    def mul(self):
+        r'''Viscosity of the mixture in the liquid phase at its current
+        temperature, pressure, and composition in units of Pa*s. 
+        
+        For calculation of this property at other temperatures and pressures,
+        or specifying manually the method used to calculate it, and more - see 
+        the object oriented interface
+        :obj:`thermo.viscosity.ViscosityLiquidMixture`; each Mixture instance
+        creates one to actually perform the calculations.
+        
+        Examples
+        --------
+        >>> Mixture(['water'], ws=[1], T=320).mul
+        0.0005767262693751547
+        '''
+        return self.ViscosityLiquidMixture(self.T, self.P, self.zs, self.ws)
+    
+    @property
+    def mug(self):
+        r'''Viscosity of the mixture in the gas phase at its current
+        temperature, pressure, and composition in units of Pa*s. 
+        
+        For calculation of this property at other temperatures and pressures,
+        or specifying manually the method used to calculate it, and more - see 
+        the object oriented interface
+        :obj:`thermo.viscosity.ViscosityGasMixture`; each Mixture instance
+        creates one to actually perform the calculations.
+        
+        Examples
+        --------
+        >>> Mixture(['water'], ws=[1], T=500).mug
+        1.7298722343367148e-05
+        '''
+        return self.ViscosityGasMixture(self.T, self.P, self.zs, self.ws)
+
+    @property
+    def sigma(self):
+        r'''Surface tension of the mixture at its current temperature and 
+        composition, in units of N/m. 
+        
+        For calculation of this property at other temperatures,
+        or specifying manually the method used to calculate it, and more - see 
+        the object oriented interface :obj:`thermo.interface.SurfaceTensionMixture`;  
+        each Mixture instance creates one to actually perform the calculations.
+        
+        Examples
+        --------
+        >>> Mixture(['water'], ws=[1], T=300, P=1E5).sigma
+        0.07176932405246211
+        '''
+        return self.SurfaceTensionMixture(self.T, self.P, self.zs, self.ws)
+
+
+    @property
+    def kl(self):
+        r'''Thermal conductivity of the mixture in the liquid phase at its current
+        temperature, pressure, and composition in units of Pa*s. 
+        
+        For calculation of this property at other temperatures and pressures,
+        or specifying manually the method used to calculate it, and more - see 
+        the object oriented interface
+        :obj:`thermo.thermal_conductivity.ThermalConductivityLiquidMixture`; 
+        each Mixture instance creates one to actually perform the calculations.
+        
+        Examples
+        --------
+        >>> Mixture(['water'], ws=[1], T=320).kl
+        0.6369957248212118
+        '''
+        return self.ThermalConductivityLiquidMixture(self.T, self.P, self.zs, self.ws)
+
+    @property
+    def kg(self):
+        r'''Thermal conductivity of the mixture in the gas phase at its current
+        temperature, pressure, and composition in units of Pa*s. 
+        
+        For calculation of this property at other temperatures and pressures,
+        or specifying manually the method used to calculate it, and more - see 
+        the object oriented interface
+        :obj:`thermo.thermal_conductivity.ThermalConductivityGasMixture`; 
+        each Mixture instance creates one to actually perform the calculations.
+        
+        Examples
+        --------
+        >>> Mixture(['water'], ws=[1], T=500).kg
+        0.036035173297862676
+        '''
+        return self.ThermalConductivityGasMixture(self.T, self.P, self.zs, self.ws)
+
+    ### More stuff here
+
     def set_chemical_TP(self):
         # Tempearture and Pressure Denepdence
         # Get and choose initial methods
-        # TODO: Solids?
         for i in self.Chemicals:
             i.calculate(self.T, self.P)
-        self.Psats = [i.Psat for i in self.Chemicals]
-
-        self.Vmls = [i.Vml for i in self.Chemicals]
-        self.rhols = [i.rhol for i in self.Chemicals]
-        self.rholms = [i.rholm for i in self.Chemicals]
-        self.Zls = [i.Zl for i in self.Chemicals]
-        self.Vmgs = [i.Vmg for i in self.Chemicals]
-        self.rhogs = [i.rhog for i in self.Chemicals]
-        self.rhogms = [i.rhogm for i in self.Chemicals]
-        self.Zgs = [i.Zg for i in self.Chemicals]
-        self.isobaric_expansion_ls = [i.isobaric_expansion_l for i in self.Chemicals]
-        self.isobaric_expansion_gs = [i.isobaric_expansion_g for i in self.Chemicals]
-
-        self.Cpls = [i.Cpl for i in self.Chemicals]
-        self.Cpgs = [i.Cpg for i in self.Chemicals]
-        self.Cvgs = [i.Cvg for i in self.Chemicals]
-        self.Cplms = [i.Cplm for i in self.Chemicals]
-        self.Cpgms = [i.Cpgm for i in self.Chemicals]
-        self.Cvgms = [i.Cvgm for i in self.Chemicals]
-        self.isentropic_exponents = [i.isentropic_exponent for i in self.Chemicals]
-
-        self.Hvaps = [i.Hvap for i in self.Chemicals]
-        self.Hfuss = [i.Hfus for i in self.Chemicals]
-        self.Hsubs = [i.Hsub for i in self.Chemicals]
-        self.Hvapms = [i.Hvapm for i in self.Chemicals]
-        self.Hfusms = [i.Hfusm for i in self.Chemicals]
-        self.Hsubms = [i.Hsubm for i in self.Chemicals]
-
-        self.muls = [i.mul for i in self.Chemicals]
-        self.mugs = [i.mug for i in self.Chemicals]
-        self.kls = [i.kl for i in self.Chemicals]
-        self.kgs = [i.kg for i in self.Chemicals]
-        self.sigmas = [i.sigma for i in self.Chemicals]
-        self.solubility_parameters = [i.solubility_parameter for i in self.Chemicals]
-        self.permittivites = [i.permittivity for i in self.Chemicals]
-
-        self.Prls = [i.Prl for i in self.Chemicals]
-        self.Prgs = [i.Prg for i in self.Chemicals]
-        self.alphals = [i.alphal for i in self.Chemicals]
-        self.alphags = [i.alphag for i in self.Chemicals]
 
         try:
             self.Hs = [i.H for i in self.Chemicals]
@@ -2564,6 +3431,19 @@ class Mixture(object):  # pragma: no cover
 
 
     def set_TP_sources(self):
+        self.VolumeSolids = [i.VolumeSolid for i in self.Chemicals]
+        self.VolumeLiquids = [i.VolumeLiquid for i in self.Chemicals]
+        self.VolumeGases = [i.VolumeGas for i in self.Chemicals]
+        self.HeatCapacitySolids = [i.HeatCapacitySolid for i in self.Chemicals]
+        self.HeatCapacityLiquids = [i.HeatCapacityLiquid for i in self.Chemicals]
+        self.HeatCapacityGases = [i.HeatCapacityGas for i in self.Chemicals]
+        self.ViscosityLiquids = [i.ViscosityLiquid for i in self.Chemicals]
+        self.ViscosityGases = [i.ViscosityGas for i in self.Chemicals]
+        self.ThermalConductivityLiquids = [i.ThermalConductivityLiquid for i in self.Chemicals]
+        self.ThermalConductivityGases = [i.ThermalConductivityGas for i in self.Chemicals]
+        self.SurfaceTensions = [i.SurfaceTension for i in self.Chemicals]
+        self.Permittivities = [i.Permittivity for i in self.Chemicals]
+        
         # Tempearture and Pressure Denepdence
         # No vapor pressure (bubble-dew points)
 
@@ -2585,20 +3465,29 @@ class Mixture(object):  # pragma: no cover
         self.Cvg_methods = Cv_gas_mixture(zs=self.zs, ws=self.ws, Cps=self.Cvgs, CASRNs=self.CASs, AvailableMethods=True)
         self.Cvg_method = self.Cvg_methods[0]
 
-        self.mul_methods = viscosity_liquid_mixture(zs=self.zs, ws=self.ws, mus=self.muls, T=self.T, MW=self.MW, CASRNs=self.CASs, AvailableMethods=True)
-        self.mul_method = self.mul_methods[0]
 
-        self.mug_methods = viscosity_gas_mixture(T=self.T, ys=self.zs, ws=self.ws, mus=self.mugs, MWs=self.MWs, molecular_diameters=self.molecular_diameters, Stockmayers=self.Stockmayers, CASRNs=self.CASs, AvailableMethods=True)
-        self.mug_method = self.mug_methods[0]
+        self.ViscosityLiquidMixture = ViscosityLiquidMixture(CASs=self.CASs, ViscosityLiquids=self.ViscosityLiquids)
+        
+#        self.mul_methods = viscosity_liquid_mixture(zs=self.zs, ws=self.ws, mus=self.muls, T=self.T, MW=self.MW, CASRNs=self.CASs, AvailableMethods=True)
+#        self.mul_method = self.mul_methods[0]
 
-        self.kl_methods = thermal_conductivity_liquid_mixture(T=self.T, P=self.P, zs=self.zs, ws=self.ws, ks=self.kls, CASRNs=self.CASs, AvailableMethods=True)
-        self.kl_method = self.kl_methods[0]
+        self.ViscosityGasMixture = ViscosityGasMixture(MWs=self.MWs, molecular_diameters=self.molecular_diameters, Stockmayers=self.Stockmayers, CASs=self.CASs, ViscosityGases=self.ViscosityGases)
 
-        self.kg_methods = thermal_conductivity_gas_mixture(T=self.T, ys=self.zs, ws=self.ws, ks=self.kgs, mus=self.mugs, Tbs=self.Tbs, MWs=self.MWs, CASRNs=self.CASs, AvailableMethods=True)
-        self.kg_method = self.kg_methods[0]
+#        self.mug_methods = viscosity_gas_mixture(T=self.T, ys=self.zs, ws=self.ws, mus=self.mugs, MWs=self.MWs, molecular_diameters=self.molecular_diameters, Stockmayers=self.Stockmayers, CASRNs=self.CASs, AvailableMethods=True)
+#        self.mug_method = self.mug_methods[0]
 
-        self.sigma_methods = surface_tension_mixture(xs=self.zs, sigmas=self.sigmas, rhoms=self.rholms, CASRNs=self.CASs, AvailableMethods=True)
-        self.sigma_method = self.sigma_methods[0]
+        self.ThermalConductivityLiquidMixture = ThermalConductivityLiquidMixture(CASs=self.CASs, ThermalConductivityLiquids=self.ThermalConductivityLiquids)
+#        self.kl_methods = thermal_conductivity_liquid_mixture(T=self.T, P=self.P, zs=self.zs, ws=self.ws, ks=self.kls, CASRNs=self.CASs, AvailableMethods=True)
+#        self.kl_method = self.kl_methods[0]
+
+        self.ThermalConductivityGasMixture = ThermalConductivityGasMixture(MWs=self.MWs, Tbs=self.Tbs, CASs=self.CASs, ThermalConductivityGases=self.ThermalConductivityGases, ViscosityGases=self.ViscosityGases)
+#        self.kg_methods = thermal_conductivity_gas_mixture(T=self.T, ys=self.zs, ws=self.ws, ks=self.kgs, mus=self.mugs, Tbs=self.Tbs, MWs=self.MWs, CASRNs=self.CASs, AvailableMethods=True)
+#        self.kg_method = self.kg_methods[0]
+
+#        self.sigma_methods = surface_tension_mixture(xs=self.zs, sigmas=self.sigmas, rhoms=self.rholms, CASRNs=self.CASs, AvailableMethods=True)
+#        self.sigma_method = self.sigma_methods[0]
+        
+        self.SurfaceTensionMixture = SurfaceTensionMixture(MWs=self.MWs, Tbs=self.Tbs, Tcs=self.Tcs, CASs=self.CASs, SurfaceTensions=self.SurfaceTensions, VolumeLiquids=self.VolumeLiquids)
 
         # Constant properties obtained from TP
         self.Vml_STPs = [i.Vml_STP for i in self.Chemicals]
@@ -2649,28 +3538,15 @@ class Mixture(object):  # pragma: no cover
 
         self.isentropic_exponent = isentropic_exponent(self.Cpg, self.Cvg) if all((self.Cpg, self.Cvg)) else None
 
-        self.mul = viscosity_liquid_mixture(zs=self.zs, ws=self.ws, mus=self.muls, T=self.T, MW=self.MW, CASRNs=self.CASs, Method=self.mul_method)
-        self.mug = viscosity_gas_mixture(T=self.T, ys=self.zs, ws=self.ws, mus=self.mugs, MWs=self.MWs, molecular_diameters=self.molecular_diameters, Stockmayers=self.Stockmayers, CASRNs=self.CASs, Method=self.mug_method)
-        self.kl = thermal_conductivity_liquid_mixture(T=self.T, P=self.P, zs=self.zs, ws=self.ws, ks=self.kls, CASRNs=self.CASs, Method=self.kl_method)
-        self.kg = thermal_conductivity_gas_mixture(T=self.T, ys=self.zs, ws=self.ws, ks=self.kgs, mus=self.mugs, Tbs=self.Tbs, MWs=self.MWs, CASRNs=self.CASs, Method=self.kg_method)
+#        self.mul = viscosity_liquid_mixture(zs=self.zs, ws=self.ws, mus=self.muls, T=self.T, MW=self.MW, CASRNs=self.CASs, Method=self.mul_method)
+#        self.mug = viscosity_gas_mixture(T=self.T, ys=self.zs, ws=self.ws, mus=self.mugs, MWs=self.MWs, molecular_diameters=self.molecular_diameters, Stockmayers=self.Stockmayers, CASRNs=self.CASs, Method=self.mug_method)
+#        self.kl = thermal_conductivity_liquid_mixture(T=self.T, P=self.P, zs=self.zs, ws=self.ws, ks=self.kls, CASRNs=self.CASs, Method=self.kl_method)
+#        self.kg = thermal_conductivity_gas_mixture(T=self.T, ys=self.zs, ws=self.ws, ks=self.kgs, mus=self.mugs, Tbs=self.Tbs, MWs=self.MWs, CASRNs=self.CASs, Method=self.kg_method)
+#        self.sigma = surface_tension_mixture(xs=self.zs, sigmas=self.sigmas, rhoms=self.rholms, CASRNs=self.CASs, Method=self.sigma_method)
 
-        self.sigma = surface_tension_mixture(xs=self.zs, sigmas=self.sigmas, rhoms=self.rholms, CASRNs=self.CASs, Method=self.sigma_method)
-
-#        self.JTl = JT(T=self.T, V=self.Vml, Cp=self.Cplm, isobaric_expansion=self.isobaric_expansion_l)
-#        self.JTg = JT(T=self.T, V=self.Vmg, Cp=self.Cpgm, isobaric_expansion=self.isobaric_expansion_g)
-
-        self.nul = nu_mu_converter(mu=self.mul, rho=self.rhol) if all([self.mul, self.rhol]) else None
-        self.nug = nu_mu_converter(mu=self.mug, rho=self.rhog) if all([self.mug, self.rhog]) else None
-
-        self.Prl = Prandtl(Cp=self.Cpl, mu=self.mul, k=self.kl) if all([self.Cpl, self.mul, self.kl]) else None
-        self.Prg = Prandtl(Cp=self.Cpg, mu=self.mug, k=self.kg) if all([self.Cpg, self.mug, self.kg]) else None
-
-        self.alphal = thermal_diffusivity(k=self.kl, rho=self.rhol, Cp=self.Cpl) if all([self.kl, self.rhol, self.Cpl]) else None
-        self.alphag = thermal_diffusivity(k=self.kg, rho=self.rhog, Cp=self.Cpg) if all([self.kg, self.rhog, self.Cpg]) else None
 
     def set_phase(self):
         try:
-            
             self.phase_methods = identify_phase_mixture(T=self.T, P=self.P, zs=self.zs, Tcs=self.Tcs, Pcs=self.Pcs, Psats=self.Psats, CASRNs=self.CASs, AvailableMethods=True)
             self.phase_method = self.phase_methods[0]
             self.phase, self.xs, self.ys, self.V_over_F = identify_phase_mixture(T=self.T, P=self.P, zs=self.zs, Tcs=self.Tcs, Pcs=self.Pcs, Psats=self.Psats, CASRNs=self.CASs, Method=self.phase_method)

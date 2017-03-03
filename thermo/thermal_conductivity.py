@@ -601,10 +601,10 @@ class ThermalConductivityLiquid(TPDependentProperty):
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
-        property under.'''
+        liquid thermal conductivity under.'''
         self.Tmax = None
         '''Maximum temperature at which no method can calculate the
-        property above.'''
+        liquid thermal conductivity above.'''
 
         self.tabular_data = {}
         '''tabular_data, dict: Stored (Ts, properties) for any
@@ -1170,8 +1170,6 @@ def thermal_conductivity_liquid_mixture(T=None, P=None, zs=None, ws=None,
         raise Exception('Failure in in function')
     return _kl
 
-#print (thermal_conductivity_liquid_mixture(ws=[0.258, 0.742], ks=[0.1692, 0.1528]), 0)
-#print (thermal_conductivity_liquid_mixture(ws=[0.258, 0.742], ks=[0.1692, 0.1528], Method='Filippov'), 0)
 
 class ThermalConductivityLiquidMixture(MixtureProperty):
     '''Class for dealing with thermal conductivity of a liquid mixture as a   
@@ -1235,10 +1233,10 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
-        thermal conductivity of a liquid mixture under.'''
+        liquid thermal conductivity under.'''
         self.Tmax = None
         '''Maximum temperature at which no method can calculate the
-        thermal conductivity of a liquid mixture above.'''
+        liquid thermal conductivity above.'''
 
         self.sorted_valid_methods = []
         '''sorted_valid_methods, list: Stored methods which were found valid
@@ -1986,10 +1984,10 @@ class ThermalConductivityGas(TPDependentProperty):
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
-        property under.'''
+        gas thermal conductivity under.'''
         self.Tmax = None
         '''Maximum temperature at which no method can calculate the
-        property above.'''
+        gas thermal conductivity above.'''
 
         self.tabular_data = {}
         '''tabular_data, dict: Stored (Ts, properties) for any
@@ -2812,10 +2810,10 @@ class ThermalConductivityGasMixture(MixtureProperty):
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
-        thermal conductivity of a gas mixture under.'''
+        gas thermal conductivity under.'''
         self.Tmax = None
         '''Maximum temperature at which no method can calculate the
-        thermal conductivity of a gas mixture above.'''
+        gas thermal conductivity above.'''
 
         self.sorted_valid_methods = []
         '''sorted_valid_methods, list: Stored methods which were found valid

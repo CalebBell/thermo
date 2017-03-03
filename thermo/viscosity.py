@@ -454,7 +454,7 @@ class ViscosityLiquid(TPDependentProperty):
         liquid viscosity under.'''
         self.Tmax = None
         '''Maximum temperature at which no method can calculate the
-        viscosity volume above.'''
+        liquid viscosity above.'''
 
         self.tabular_data = {}
         '''tabular_data, dict: Stored (Ts, properties) for any
@@ -948,10 +948,10 @@ class ViscosityLiquidMixture(MixtureProperty):
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
-        thermal conductivity of a gas mixture under.'''
+        liquid viscosity under.'''
         self.Tmax = None
         '''Maximum temperature at which no method can calculate the
-        thermal conductivity of a gas mixture above.'''
+        liquid viscosity above.'''
 
         self.sorted_valid_methods = []
         '''sorted_valid_methods, list: Stored methods which were found valid
@@ -1448,10 +1448,10 @@ class ViscosityGas(TPDependentProperty):
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
-        property under.'''
+        gas viscosity under.'''
         self.Tmax = None
         '''Maximum temperature at which no method can calculate the
-        property above.'''
+        gas viscosity above.'''
 
 
         self.tabular_data = {}
@@ -1943,6 +1943,7 @@ def viscosity_gas_mixture(T=None, ys=None, ws=None, mus=None, MWs=None,
         raise Exception('Failure in in function')
     return _mu
 
+
 class ViscosityGasMixture(MixtureProperty):
     '''Class for dealing with the viscosity of a gas mixture as a   
     function of temperature, pressure, and composition.
@@ -1953,12 +1954,19 @@ class ViscosityGasMixture(MixtureProperty):
     
     Parameters
     ----------
+    MWs : list[float], optional
+        Molecular weights of all species in the mixture, [g/mol]
+    molecular_diameters : list[float], optional
+        Lennard-Jones molecular diameters, [Angstrom]
+    Stockmayers : list[float], optional
+        Lennard-Jones depth of potential-energy minimum over k 
+        or epsilon_k, [K]
     CASs : str, optional
         The CAS numbers of all species in the mixture
     ViscosityGass : list[ViscosityGas], optional
         ViscosityGas objects created for all species in the mixture,  
         normally created by :obj:`thermo.chemical.Chemical`.
-
+    
     Notes
     -----
     To iterate over all methods, use the list stored in
@@ -2003,10 +2011,10 @@ class ViscosityGasMixture(MixtureProperty):
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
-        viscosity of a gas mixture under.'''
+        gas viscosity under.'''
         self.Tmax = None
         '''Maximum temperature at which no method can calculate the
-        viscosity of a gas mixture above.'''
+        gas viscosity above.'''
 
         self.sorted_valid_methods = []
         '''sorted_valid_methods, list: Stored methods which were found valid

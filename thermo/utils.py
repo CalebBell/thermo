@@ -3021,6 +3021,9 @@ class MixtureProperty(object):
     method = None
     forced = False
     ranked_methods = []
+    
+    TP_zs_ws_cached = None
+    prop_cached = None
 
     def __call__(self, T, P, zs, ws):
         r'''Convenience method to calculate the property; calls 
