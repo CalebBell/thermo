@@ -204,6 +204,8 @@ def test_Mixture():
     Mixture(['water', 'ethanol'], ws=[.5, .5], T=320, P=1E5)
     Mixture(['water', 'phosphoric acid'], ws=[.5, .5], T=320, P=1E5)
     Mixture('air', T=320, P=1E5)
+    
+    Mixture(['ethanol', 'water'], ws=[0.5, 0.5], T=500)
  
 def test_Stream():   
     Stream(['H2', 'NH3', 'CO', 'Ar', 'CH4', 'N2'],

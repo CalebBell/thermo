@@ -1150,7 +1150,7 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('water').VaporPressure.T_dependent_property(320)
         10533.614271198725
         >>> Chemical('water').VaporPressure.all_methods
-        set(['BOILING_CRITICAL', 'WAGNER_MCGARRY', 'AMBROSE_WALTON', 'COOLPROP', 'LEE_KESLER_PSAT', 'EOS', 'ANTOINE_POLING', 'SANJARI'])
+        set(['VDI_PPDS', 'BOILING_CRITICAL', 'WAGNER_MCGARRY', 'AMBROSE_WALTON', 'COOLPROP', 'LEE_KESLER_PSAT', 'EOS', 'ANTOINE_POLING', 'SANJARI', 'DIPPR_PERRY_8E', 'Edalat'])
         '''
         return self.VaporPressure(self.T)
 
@@ -1170,7 +1170,7 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('water').EnthalpyVaporization.T_dependent_property(320)
         43048.23612280223
         >>> Chemical('water').EnthalpyVaporization.all_methods
-        set(['MORGAN_KOBAYASHI', 'VETERE', 'VELASCO', 'LIU', 'COOLPROP', 'CRC_HVAP_298', 'CLAPEYRON', 'SIVARAMAN_MAGEE_KOBAYASHI', 'RIEDEL', 'CHEN', 'PITZER', 'CRC_HVAP_TB'])
+        set(['VDI_PPDS', 'MORGAN_KOBAYASHI', 'VETERE', 'VELASCO', 'LIU', 'COOLPROP', 'CRC_HVAP_298', 'CLAPEYRON', 'SIVARAMAN_MAGEE_KOBAYASHI', 'ALIBAKHSHI', 'DIPPR_PERRY_8E', 'RIEDEL', 'CHEN', 'PITZER', 'CRC_HVAP_TB'])
         '''
         return self.EnthalpyVaporization(self.T)
         
@@ -1233,9 +1233,9 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('water').Cplm
-        75.31462591538555
+        75.31462591538556
         >>> Chemical('water').HeatCapacityLiquid.T_dependent_property(320)
-        75.25917443606316
+        75.2591744360631
         >>> Chemical('water').HeatCapacityLiquid.T_dependent_property_integral(300, 320)
         1505.0619005000553
         '''
@@ -1257,7 +1257,7 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('water').HeatCapacityGas.T_dependent_property(320)
         33.67865044005934
         >>> Chemical('water').HeatCapacityGas.T_dependent_property_integral(300, 320)
-        672.6480417968248
+        672.6480417835064
         '''
         return self.HeatCapacityGas(self.T)
         
@@ -1298,14 +1298,14 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('water', T=320).Cpl
-        4177.518996988288
+        4177.518996988284
         
         Ideal entropy change of water from 280 K to 340 K, output converted
         back to mass-based units of J/kg/K.
         
         >>> dSm = Chemical('water').HeatCapacityLiquid.T_dependent_property_integral_over_T(280, 340)
         >>> property_molar_to_mass(dSm, Chemical('water').MW)
-        812.1024585274973
+        812.1024585274956
         '''
         Cplm = self.HeatCapacityLiquid(self.T)
         if Cplm:
@@ -1378,7 +1378,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('hydrogen').isentropic_exponent
-        1.4051947114054186
+        1.405237786321222
         '''
         Cp, Cv = self.Cpg, self.Cvg
         if all((Cp, Cv)):
@@ -1754,7 +1754,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('water', T=320).kg
-        0.02002091939889915
+        0.021273128263091207
         '''
         return self.ThermalConductivityGas(self.T, self.P)
 
@@ -1773,7 +1773,7 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('water', T=320).sigma
         0.06855002575793023
         >>> Chemical('water', T=320).SurfaceTension.solve_prop(0.05)
-        416.83071108421825
+        416.8307110842183
         '''
         return self.SurfaceTension(self.T)
 
@@ -1883,7 +1883,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('methane', T=115).nug
-        2.5057767760931785e-06
+        2.5119305527611988e-06
         '''
         mug, rhog = self.mug, self.rhog
         if all([mug, rhog]):
@@ -2047,10 +2047,9 @@ class Chemical(object): # pragma: no cover
         --------
         >>> w = Chemical('water')
         >>> w.Cp, w.phase
-        (4180.597021827335, 'l')
-        >>> Pd = Chemical('palladium')
-        >>> Pd.Cp, Pd.phase
-        (234.26767209171211, 's')
+        (4180.597021827336, 'l')
+        >>> Chemical('palladium').Cp
+        234.26767209171211
         '''
         return phase_select_property(phase=self.phase, s=self.Cps, l=self.Cpl, g=self.Cpg)
        
@@ -2126,7 +2125,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('1-hexanol').rhom
-        7853.086232143972
+        7983.414573003429
         '''
         return phase_select_property(phase=self.phase, s=self.rhosm, l=self.rholm, g=self.rhogm)
         
@@ -2179,7 +2178,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('water').JT
-        -2.2150394958666412e-07
+        -2.2150394958666407e-07
         '''
         return phase_select_property(phase=self.phase, l=self.JTl, g=self.JTg)
 
@@ -2738,7 +2737,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         
         Examples
         --------
-        >>> Mixture(['Orotic acid', '1-octene'], zs=[.01, .99]).atomss
+        >>> Mixture(['nitrogen', 'oxygen'], zs=[.01, .99]).atomss
         [{'N': 2}, {'O': 2}]
         '''
         return [i.atoms for i in self.Chemicals]
@@ -3420,7 +3419,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['water'], ws=[1]).Zl
-        0.0007385549904798778
+        0.0007385375470263454
         '''
         Vml = self.Vml
         if Vml:
@@ -3473,7 +3472,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         
         Examples
         --------
-        >>> Mixture(['toluene', 'decane'], ws=[.9, .1], T=300)
+        >>> Mixture(['toluene', 'decane'], ws=[.9, .1], T=300).Cplm
         168.29157865567112
         '''
         return self.HeatCapacityLiquidMixture(self.T, self.P, self.zs, self.ws)
@@ -3564,7 +3563,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['water'], ws=[1], T=520).Cvgm
-        27.133663161341932
+        27.13366316134193
         '''
         Cpgm = self.HeatCapacityGasMixture(self.T, self.P, self.zs, self.ws)
         if Cpgm:
@@ -3635,7 +3634,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['dodecane'], ws=[1], T=400).JTl
-        -3.1037120844444807e-07
+        -3.193910574559279e-07
         '''
         Vml, Cplm, isobaric_expansion_l = self.Vml, self.Cplm, self.isobaric_expansion_l
         if all((Vml, Cplm, isobaric_expansion_l)):
@@ -3673,7 +3672,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['methane'], ws=[1], T=110).nul
-        2.858184674118658e-07
+        2.85818467411866e-07
         '''
         mul, rhol = self.mul, self.rhol
         if all([mul, rhol]):
@@ -3762,8 +3761,8 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
                 
         Examples
         --------
-        >>> Chemical(['NH3'], ws=[1]).Prg
-        0.847263731933008
+        >>> Mixture(['NH3'], ws=[1]).Prg
+        0.8472637319330079
         '''
         Cpg, mug, kg = self.Cpg, self.mug, self.kg
         if all([Cpg, mug, kg]):
@@ -3801,7 +3800,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['hexane'], ws=[1], T=300, P=2E5).Vmg
-        0.0124716897
+        0.010888694235142216
         '''
         return self.VolumeGasMixture(T=self.T, P=self.P, zs=self.zs, ws=self.ws)
     
@@ -3905,7 +3904,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         --------
         >>> w = Mixture(['water'], ws=[1])
         >>> w.Cp, w.phase
-        (4180.597021827335, 'l')
+        (4180.597021827336, 'l')
         >>> Pd = Mixture(['palladium'], ws=[1])
         >>> Pd.Cp, Pd.phase
         (234.26767209171211, 's')
@@ -3972,7 +3971,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['MTBE'], ws=[1], T=900, P=1E-2).Z
-        0.9999999999079768
+        0.9999999999056376
         '''
         Vm = self.Vm
         if Vm:
@@ -4024,7 +4023,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['ethanol'], ws=[1], T=400).mu
-        1.1853097849748217e-05
+        1.1853097849748213e-05
         '''
         return phase_select_property(phase=self.phase, l=self.mul, g=self.mug)
 
@@ -4123,7 +4122,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['cyclobutane'], ws=[1]).rhol_STP
-        8.143327329133706e-05
+        688.9851989526821
         '''
         Vml = self.Vml_STP
         if Vml:
@@ -4168,7 +4167,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['nitrogen'], ws=[1]).Zg_STP
-        0.9741313582196732
+        0.9995520809691023
         '''
         Vmg = self.Vmg
         if Vmg:
@@ -4199,7 +4198,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['nitrogen'], ws=[1]).rhogm_STP
-        41.52499528507661
+        40.892374850585895
         '''
         Vmg = self.Vmg_STP
         if Vmg:
