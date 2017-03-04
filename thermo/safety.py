@@ -554,14 +554,13 @@ def Tflash(CASRN, AvailableMethods=False, Method=None):
         Method = list_methods()[0]
 
     if Method == IEC:
-        _Tflash = float(IEC_2010.at[CASRN, 'Tflash'])
+        return float(IEC_2010.at[CASRN, 'Tflash'])
     elif Method == NFPA:
-        _Tflash = float(NFPA_2008.at[CASRN, "Tflash"])
+        return float(NFPA_2008.at[CASRN, "Tflash"])
     elif Method == NONE:
-        _Tflash = None
+        return None
     else:
         raise Exception('Failure in in function')
-    return _Tflash
 
 
 Tautoignition_methods = [IEC, NFPA]
@@ -631,14 +630,13 @@ def Tautoignition(CASRN, AvailableMethods=False, Method=None):
         Method = list_methods()[0]
 
     if Method == IEC:
-        _Tautoignition = float(IEC_2010.at[CASRN, 'Tautoignition'])
+        return float(IEC_2010.at[CASRN, 'Tautoignition'])
     elif Method == NFPA:
-        _Tautoignition = float(NFPA_2008.at[CASRN, 'Tautoignition'])
+        return float(NFPA_2008.at[CASRN, 'Tautoignition'])
     elif Method == NONE:
-        _Tautoignition = None
+        return None
     else:
         raise Exception('Failure in in function')
-    return _Tautoignition
 
 
 SUZUKI = 'Suzuki (1994)'
@@ -721,18 +719,17 @@ def LFL(Hc=None, atoms={}, CASRN='', AvailableMethods=False, Method=None):
         Method = list_methods()[0]
 
     if Method == IEC:
-        _LFL = float(IEC_2010.at[CASRN, 'LFL'])
+        return float(IEC_2010.at[CASRN, 'LFL'])
     elif Method == NFPA:
-        _LFL = float(NFPA_2008.at[CASRN, 'LFL'])
+        return float(NFPA_2008.at[CASRN, 'LFL'])
     elif Method == SUZUKI:
-        _LFL = Suzuki_LFL(Hc=Hc)
+        return Suzuki_LFL(Hc=Hc)
     elif Method == CROWLLOUVAR:
-        _LFL = Crowl_Louvar_LFL(atoms=atoms)
+        return Crowl_Louvar_LFL(atoms=atoms)
     elif Method == NONE:
-        _LFL = None
+        return None
     else:
         raise Exception('Failure in in function')
-    return _LFL
 
 
 UFL_methods = [IEC, NFPA, SUZUKI, CROWLLOUVAR]
@@ -812,18 +809,17 @@ def UFL(Hc=None, atoms={}, CASRN='', AvailableMethods=False, Method=None):
         Method = list_methods()[0]
 
     if Method == IEC:
-        _UFL = float(IEC_2010.at[CASRN, 'UFL'])
+        return float(IEC_2010.at[CASRN, 'UFL'])
     elif Method == NFPA:
-        _UFL = float(NFPA_2008.at[CASRN, 'UFL'])
+        return float(NFPA_2008.at[CASRN, 'UFL'])
     elif Method == SUZUKI:
-        _UFL = Suzuki_UFL(Hc=Hc)
+        return Suzuki_UFL(Hc=Hc)
     elif Method == CROWLLOUVAR:
-        _UFL = Crowl_Louvar_UFL(atoms=atoms)
+        return Crowl_Louvar_UFL(atoms=atoms)
     elif Method == NONE:
-        _UFL = None
+        return None
     else:
         raise Exception('Failure in in function')
-    return _UFL
 
 
 def fire_mixing(ys=None, FLs=None):  # pragma: no cover
@@ -840,11 +836,7 @@ def fire_mixing(ys=None, FLs=None):  # pragma: no cover
     >>> fire_mixing(ys=normalize([0.0024, 0.0061, 0.0015]), FLs=[.075, .15, .32])
     0.12927551844869378
     '''
-    tot = 0
-    for i in range(len(ys)):
-        tot += ys[i]/FLs[i]
-    _FL = 1.0/tot
-    return _FL
+    return 1./sum([yi/FLi for yi, FLi in zip(ys, FLs)])
 
 #print (fire_mixing(ys=[0.0024, 0.0061, 0.0015], FLs=[.075, .15, .32]), 0)
 inerts = {"7440-37-1": "Argon", "124-38-9": "Carbon Dioxide", "7440-59-7":
@@ -892,7 +884,7 @@ def LFL_mixture(ys=None, LFLs=None, CASRNs=None, AvailableMethods=False,
 #    if not none_and_length_check([LFLs, ys]):
 #        raise Exception('Function inputs are incorrect format')
     if Method == 'Summed Inverse':
-        _LFL = fire_mixing(ys, LFLs)
+        return fire_mixing(ys, LFLs)
     elif Method == 'Summed Inverse, inerts removed':
         CASRNs2 = list(CASRNs)
         LFLs2 = list(LFLs)
@@ -903,12 +895,11 @@ def LFL_mixture(ys=None, LFLs=None, CASRNs=None, AvailableMethods=False,
                 CASRNs2.remove(i)
                 LFLs2.pop(ind)
                 ys2.pop(ind)
-        _LFL = fire_mixing(normalize(ys2), LFLs2)
+        return fire_mixing(normalize(ys2), LFLs2)
     elif Method == 'None':
         return None
     else:
         raise Exception('Failure in in function')
-    return _LFL
 
 
 def UFL_mixture(ys=None, UFLs=None, CASRNs=None, AvailableMethods=False,
@@ -947,7 +938,7 @@ def UFL_mixture(ys=None, UFLs=None, CASRNs=None, AvailableMethods=False,
 #    if not none_and_length_check([UFLs, ys]):  # check same-length inputs
 #        raise Exception('Function inputs are incorrect format')
     if Method == 'Summed Inverse':
-        _UFL = fire_mixing(ys, UFLs)
+        return fire_mixing(ys, UFLs)
     elif Method == 'Summed Inverse, inerts removed':
         CASRNs2 = list(CASRNs)
         UFLs2 = list(UFLs)
@@ -958,12 +949,11 @@ def UFL_mixture(ys=None, UFLs=None, CASRNs=None, AvailableMethods=False,
                 CASRNs2.remove(i)
                 UFLs2.pop(ind)
                 ys2.pop(ind)
-        _UFL = fire_mixing(normalize(ys2), UFLs2)
+        return fire_mixing(normalize(ys2), UFLs2)
     elif Method == 'None':
         return None
     else:
         raise Exception('Failure in in function')
-    return _UFL
 
 
 def Suzuki_LFL(Hc=None):
@@ -1014,9 +1004,8 @@ def Suzuki_LFL(Hc=None):
        doi:10.1002/fam.810180509.
     '''
     Hc = Hc/1E6
-    LFL = -3.42/Hc + 0.569*Hc + 0.0538*Hc**2 + 1.80
-    LFL = LFL/100.
-    return LFL
+    LFL = -3.42/Hc + 0.569*Hc + 0.0538*Hc*Hc + 1.80
+    return LFL/100.
 
 
 def Suzuki_UFL(Hc=None):
@@ -1067,9 +1056,8 @@ def Suzuki_UFL(Hc=None):
        393-97. doi:10.1002/fam.810180608.
     '''
     Hc = Hc/1E6
-    UFL = 6.3*Hc + 0.567*Hc**2 + 23.5
-    UFL = UFL/100.
-    return UFL
+    UFL = 6.3*Hc + 0.567*Hc*Hc + 23.5
+    return UFL/100.
 
 
 def Crowl_Louvar_LFL(atoms):
@@ -1122,8 +1110,7 @@ def Crowl_Louvar_LFL(atoms):
         nH = atoms['H']
     if 'O' in atoms:
         nO = atoms['O']
-    LFL = 0.55/(4.76*nC + 1.19*nH - 2.38*nO + 1)
-    return LFL
+    return 0.55/(4.76*nC + 1.19*nH - 2.38*nO + 1.)
 
 
 def Crowl_Louvar_UFL(atoms):
@@ -1176,8 +1163,7 @@ def Crowl_Louvar_UFL(atoms):
         nH = atoms['H']
     if 'O' in atoms:
         nO = atoms['O']
-    UFL = 3.5/(4.76*nC + 1.19*nH - 2.38*nO + 1)
-    return UFL
+    return 3.5/(4.76*nC + 1.19*nH - 2.38*nO + 1.)
 
 
 #CAS = ['71-43-2', '8006-61-9'] # methanol, gasoline

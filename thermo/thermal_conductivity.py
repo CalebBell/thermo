@@ -25,12 +25,12 @@ from __future__ import division
 __all__ = ['Sheffy_Johnson', 'Sato_Riedel', 'Lakshmi_Prasad', 
 'Gharagheizi_liquid', 'Nicola_original', 'Nicola', 'Bahadori_liquid', 
 'thermal_conductivity_liquid_methods', 'ThermalConductivityLiquid', 'DIPPR9G',
- 'Missenard', 'DIPPR9H', 'Filippov', 'thermal_conductivity_liquid_mixture', 
+ 'Missenard', 'DIPPR9H', 'Filippov', 
  'Eucken', 'Eucken_modified', 'DIPPR9B', 'Chung', 'eli_hanley', 
  'Gharagheizi_gas', 'Bahadori_gas', 'thermal_conductivity_gas_methods', 
  'thermal_conductivity_gas_methods_P', 'ThermalConductivityGas', 
- 'stiel_thodos_dense', 'eli_hanley_dense', 'chung_dense', 'Lindsay_Bromley', 
- 'thermal_conductivity_gas_mixture', 'Perrys2_314', 'Perrys2_315', 'VDI_PPDS_9',
+ 'stiel_thodos_dense', 'eli_hanley_dense', 'chung_dense', 'Lindsay_Bromley',
+ 'Perrys2_314', 'Perrys2_315', 'VDI_PPDS_9',
  'VDI_PPDS_10', 'ThermalConductivityGasMixture']
 
 import os
@@ -1111,64 +1111,6 @@ FILIPPOV = 'Filippov'
 SIMPLE = 'SIMPLE'
 
 thermal_conductivity_liquid_mixture_methods = [MAGOMEDOV, DIPPR_9H, FILIPPOV, SIMPLE]
-
-def thermal_conductivity_liquid_mixture(T=None, P=None, zs=None, ws=None,
-                                        ks=None, CASRNs=None,
-                                        AvailableMethods=False, Method=None):  # pragma: no cover
-    '''This function handles the retrival of a mixture's liquid thermal conductivity.
-
-    This API is considered experimental, and is expected to be removed in a
-    future release in favor of a more complete object-oriented interface.
-
-    >>> thermal_conductivity_liquid_mixture(ws=[0.258, 0.742], ks=[0.1692,
-    ... 0.1528], Method='DIPPR9H')
-    0.15657104706719646
-
-    >>> thermal_conductivity_liquid_mixture(ws=[0.258, 0.742], ks=[0.1692,
-    ... 0.1528], Method='Filippov')
-    0.15929167628799998
-    '''
-    def list_methods():
-        methods = []
-        if '7732-18-5' in CASRNs and T and ws:
-            wCASRNs = list(CASRNs)
-            wCASRNs.remove('7732-18-5')
-            if all([i in Magomedovk_thermal_cond.index for i in wCASRNs]):
-                methods.append(MAGOMEDOV)
-        if none_and_length_check([ks]):
-            methods.append(DIPPR_9H)
-        if none_and_length_check([ks, ws], 2):
-            methods.append(FILIPPOV)
-        if none_and_length_check([ks]):
-            methods.append(SIMPLE)
-        methods.append(NONE)
-        return methods
-    if AvailableMethods:
-        return list_methods()
-    if not Method:
-        Method = list_methods()[0]
-    # This is the calculate, given the method section
-    if not none_and_length_check([ks, ws]):
-        return None
-#        raise Exception('Function inputs are incorrect format')
-    if Method == SIMPLE:
-        _kl = mixing_simple(zs, ks)
-    elif Method == DIPPR_9H:
-        _kl = DIPPR9H(ws, ks)
-    elif Method == FILIPPOV:
-        _kl = Filippov(ws, ks)
-    elif Method == MAGOMEDOV:
-        k_w = ks[CASRNs.index('7732-18-5')]
-        wCASRNs = list(CASRNs)
-        wCASRNs.remove('7732-18-5')
-        ws2 = list(ws)
-        ws2.pop(CASRNs.index('7732-18-5'))
-        _kl = thermal_conductivity_Magomedov(T, P, ws2, wCASRNs, k_w)
-    elif Method == NONE:
-        return None
-    else:
-        raise Exception('Failure in in function')
-    return _kl
 
 
 class ThermalConductivityLiquidMixture(MixtureProperty):
@@ -2700,49 +2642,6 @@ def Lindsay_Bromley(T, ys, ks, mus, Tbs, MWs):
 
 LINDSAY_BROMLEY = 'LINDSAY_BROMLEY'
 thermal_conductivity_gas_methods = [LINDSAY_BROMLEY, SIMPLE]
-
-def thermal_conductivity_gas_mixture(T=None, ys=None, ws=None, ks=None,
-                                     mus=None, Tbs=None, MWs=None, CASRNs=None,
-                                     AvailableMethods=False, Method=None):  # pragma: no cover
-    '''This function handles the retrival of a mixture's gas thermal conductivity.
-
-    This API is considered experimental, and is expected to be removed in a
-    future release in favor of a more complete object-oriented interface.
-
-    >>> thermal_conductivity_gas_mixture(T=323.15, ys=[0.23, 0.77],
-    ... ks=[1.939E-2, 1.231E-2], mus=[1.002E-5, 1.015E-5], Tbs=[248.31,
-    ... 248.93], MWs=[46.07, 50.49])
-    0.01390264417969313
-    '''
-    def list_methods():
-        methods = []
-        if T and none_and_length_check([ks, mus, Tbs, MWs]):
-            methods.append(LINDSAY_BROMLEY)
-        if none_and_length_check([ks]):
-            methods.append(SIMPLE)
-        methods.append(NONE)
-        return methods
-    if AvailableMethods:
-        return list_methods()
-    if not Method:
-        Method = list_methods()[0]
-    # This is the calculate, given the method section
-    if not none_and_length_check([ks, ys]):
-        return None
-#        raise Exception('Function inputs are incorrect format')
-    if Method == SIMPLE:
-        _kg = mixing_simple(ys, ks)
-    elif Method == LINDSAY_BROMLEY:
-        _kg = Lindsay_Bromley(T, ys, ks, mus, Tbs, MWs)
-    elif Method == NONE:
-        return None
-    else:
-        raise Exception('Failure in in function')
-    return _kg
-
-
-
-
 
 
 class ThermalConductivityGasMixture(MixtureProperty):

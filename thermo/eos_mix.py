@@ -30,6 +30,9 @@ from thermo.utils import log, exp, sqrt
 from thermo.utils import isobaric_expansion 
 from thermo.eos import *
 
+R2 = R*R
+two_root_two = 2*2**0.5
+root_two = sqrt(2.)
 
 class GCEOSMIX(GCEOS):
     r'''Class for solving a generic pressure-explicit three-parameter cubic 
@@ -122,34 +125,35 @@ class GCEOSMIX(GCEOS):
             d2a_alpha_dT2s.append(ds[2])
         self.cleanup_a_alpha_and_derivatives()
         
-        a_alpha, da_alpha_dT, d2a_alpha_dT2 = 0.0, 0.0, 0.0
-        self.a_alpha_ijs = [[0]*self.N for i in self.cmps]
-                
-        for i in self.cmps:
-            for j in self.cmps:
-                self.a_alpha_ijs[i][j] = (1. - kijs[i][j])*(a_alphas[i]*a_alphas[j])**0.5
+        da_alpha_dT, d2a_alpha_dT2 = 0.0, 0.0
+        
+        a_alpha_ijs = [[(1. - kijs[i][j])*(a_alphas[i]*a_alphas[j])**0.5 
+                              for j in self.cmps] for i in self.cmps]
+                                
         # Needed in calculation of fugacity coefficients
-                
-        for i in self.cmps:
-            for j in self.cmps:
-                a_alpha += self.a_alpha_ijs[i][j]*zs[i]*zs[j]
-                
+        a_alpha = sum([a_alpha_ijs[i][j]*zs[i]*zs[j]
+                      for j in self.cmps for i in self.cmps])
+        self.a_alpha_ijs = a_alpha_ijs
+        
         if full:
             for i in self.cmps:
                 for j in self.cmps:
-                    da_alpha_dT += zs[i]*zs[j]*((1. - kijs[i][j])/(2*(a_alphas[i]*a_alphas[j])**0.5)
-                    *(a_alphas[i]*da_alpha_dTs[j] + a_alphas[j]*da_alpha_dTs[i]))
-                    
-                    x0 = a_alphas[i]*a_alphas[j]
-                    x1 = a_alphas[i]*da_alpha_dTs[j]
-                    x2 = a_alphas[j]*da_alpha_dTs[i]
-                    x3 = 2.*a_alphas[i]*da_alpha_dTs[j] + 2.*a_alphas[j]*da_alpha_dTs[i]
-                    d2a_alpha_dT2 += (-(x0)**0.5*(kijs[i][j] - 1.)*(x0*(
-                    2.*a_alphas[i]*d2a_alpha_dT2s[j] + 2.*a_alphas[j]*d2a_alpha_dT2s[i]
-                    + 4.*da_alpha_dTs[i]*da_alpha_dTs[j]) - x1*x3 - x2*x3 + (x1 
-                    + x2)**2)/(4.*a_alphas[i]**2*a_alphas[j]**2))*zs[i]*zs[j]
+                    a_alphai, a_alphaj = a_alphas[i], a_alphas[j]
+                    x0 = a_alphai*a_alphaj
+                    x0_05 = x0**0.5
+                    zi_zj = zs[i]*zs[j]
 
-        if full:
+                    da_alpha_dT += zi_zj*((1. - kijs[i][j])/(2.*x0_05)
+                    *(a_alphai*da_alpha_dTs[j] + a_alphaj*da_alpha_dTs[i]))
+                    
+                    x1 = a_alphai*da_alpha_dTs[j]
+                    x2 = a_alphaj*da_alpha_dTs[i]
+                    x3 = 2.*a_alphai*da_alpha_dTs[j] + 2.*a_alphaj*da_alpha_dTs[i]
+                    d2a_alpha_dT2 += (-x0_05*(kijs[i][j] - 1.)*(x0*(
+                    2.*a_alphai*d2a_alpha_dT2s[j] + 2.*a_alphaj*d2a_alpha_dT2s[i]
+                    + 4.*da_alpha_dTs[i]*da_alpha_dTs[j]) - x1*x3 - x2*x3 + (x1 
+                    + x2)**2)/(4.*x0*x0))*zi_zj
+        
             return a_alpha, da_alpha_dT, d2a_alpha_dT2
         else:
             return a_alpha
@@ -216,7 +220,6 @@ class GCEOSMIX(GCEOS):
         if self.phase in ['g', 'l/g']:
             if ys is None:
                 ys = self.zs
-            fs, phis = [], []
             Z = self.P*self.V_g/(R*self.T)
             self.phis_g = self.fugacity_coefficients(Z, zs=ys)
             self.fugacities_g = [phi*y*self.P for phi, y in zip(self.phis_g, ys)]
@@ -246,6 +249,12 @@ class GCEOSMIX(GCEOS):
         self.Tc = sum(self.Tcs)/self.N
         # -4 goes back from object, GCEOS
         return super(type(self).__mro__[-3], self).solve_T(P=P, V=V, quick=quick)
+
+    def to_TP_zs(self, T, P, zs):
+        if T != self.T or P != self.P or zs != self.zs:
+            return self.__class__(T=T, P=P, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, zs=zs, **self.kwargs)
+        else:
+            return self
 
 
 
@@ -393,13 +402,13 @@ class PRMIX(GCEOSMIX, PR):
         .. [2] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
            Butterworth-Heinemann, 1985.
         '''
-        A = self.a_alpha*self.P/R**2/self.T**2
-        B = self.b*self.P/R/self.T
+        A = self.a_alpha*self.P/(R2*self.T*self.T)
+        B = self.b*self.P/(R*self.T)
         phis = []
         for i in self.cmps:
-            t1 = self.bs[i]/self.b*(Z-1) - log(Z-B)
+            t1 = self.bs[i]/self.b*(Z - 1.) - log(Z - B)
             t2 = 2./self.a_alpha*sum([zs[j]*self.a_alpha_ijs[i][j] for j in self.cmps])
-            t3 = t1 - A/(2*2**0.5*B)*(t2 - self.bs[i]/self.b)*log((Z + (sqrt(2)+1)*B)/(Z - (sqrt(2)-1)*B))
+            t3 = t1 - A/(two_root_two*B)*(t2 - self.bs[i]/self.b)*log((Z + (root_two + 1.)*B)/(Z - (root_two - 1.)*B))
             phis.append(exp(t3))
         return phis
 
@@ -548,7 +557,7 @@ class SRKMIX(GCEOSMIX, SRK):
         .. [2] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
            Butterworth-Heinemann, 1985.
         '''
-        A = self.a_alpha*self.P/R**2/self.T**2
+        A = self.a_alpha*self.P/R2/self.T**2
         B = self.b*self.P/R/self.T
         phis = []
         for i in self.cmps:

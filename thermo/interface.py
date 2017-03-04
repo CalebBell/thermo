@@ -27,8 +27,7 @@ __all__ = ['Mulero_Cachadina_data', 'Jasper_Lange_data', 'Somayajulu_data',
            'Brock_Bird', 'Pitzer', 'Sastri_Rao', 'Zuo_Stenby', 
            'Hakim_Steinberg_Stiel', 'Miqueu', 'Aleem', 'surface_tension_methods', 
            'SurfaceTension', 'Winterfeld_Scriven_Davis', 'Diguilio_Teja', 
-           'surface_tension_mixture_methods', 'surface_tension_mixture', 
-           'SurfaceTensionMixture']
+           'surface_tension_mixture_methods', 'SurfaceTensionMixture']
 
 import os
 from thermo.utils import log, exp
@@ -1162,98 +1161,6 @@ SIMPLE = 'Simple'
 NONE = 'None'
 
 surface_tension_mixture_methods = [WINTERFELDSCRIVENDAVIS, DIGUILIOTEJA, SIMPLE]
-
-def surface_tension_mixture(T=None, xs=[], sigmas=[], rhoms=[],
-                            Tcs=[], Tbs=[], sigmas_Tb=[], CASRNs=None,
-                            AvailableMethods=False, Method=None):
-    r'''This function handles the calculation of a mixture's surface tension.
-    Calculation is based on the surface tensions provided for each pure
-    component. Will automatically select a method to use if no Method is
-    provided; returns None if insufficient data is available.
-
-    Prefered method is `Winterfeld_Scriven_Davis` which requires mole
-    fractions, pure component surface tensions, and the molar density of each
-    pure component. `Diguilio_Teja` is of similar accuracy, but requires
-    the surface tensions of pure components at their boiling points, as well
-    as boiling points and critical points and mole fractions. An ideal mixing
-    rule based on mole fractions, `Simple`, is also available and is still
-    relatively accurate.
-
-    Examples
-    --------
-    >>> surface_tension_mixture(xs=[0.1606, 0.8394], sigmas=[0.01547, 0.02877])
-    0.02663402
-
-    Parameters
-    ----------
-    T : float, optional
-        Temperature of fluid [K]
-    xs : array-like
-        Mole fractions of all components
-    sigmas : array-like, optional
-        Surface tensions of all components, [N/m]
-    rhoms : array-like, optional
-        Molar densities of all components, [mol/m^3]
-    Tcs : array-like, optional
-        Critical temperatures of all components, [K]
-    Tbs : array-like, optional
-        Boiling temperatures of all components, [K]
-    sigmas_Tb : array-like, optional
-        Surface tensions of all components at the boiling point, [N/m]
-    CASRNs : list of strings, optional
-        CASRNs, not currently used [-]
-
-    Returns
-    -------
-    sigma : float
-        Air-liquid surface tension of mixture, [N/m]
-    methods : list, only returned if AvailableMethods == True
-        List of methods which can be used to obtain sigma with the given inputs
-
-    Other Parameters
-    ----------------
-    Method : string, optional
-        A string for the method name to use, as defined by constants in
-        surface_tension_mixture_methods
-    AvailableMethods : bool, optional
-        If True, function will determine which methods can be used to obtain
-        sigma for the desired chemical, and will return methods instead of
-        sigma
-
-    Notes
-    -----
-
-    References
-    ----------
-    .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
-       New York: McGraw-Hill Professional, 2000.
-    '''
-    def list_methods():
-        methods = []
-        if none_and_length_check([xs, sigmas, rhoms]):
-            methods.append(WINTERFELDSCRIVENDAVIS)
-        if T and none_and_length_check([xs, sigmas_Tb, Tbs, Tcs]):
-            methods.append(DIGUILIOTEJA)
-        if none_and_length_check([xs, sigmas]):
-            methods.append(SIMPLE)
-        methods.append(NONE)
-        return methods
-    if AvailableMethods:
-        return list_methods()
-    if not Method:
-        Method = list_methods()[0]
-
-    if Method == SIMPLE:
-        sigma = mixing_simple(xs, sigmas)
-    elif Method == WINTERFELDSCRIVENDAVIS:
-        sigma = Winterfeld_Scriven_Davis(xs, sigmas, rhoms)
-    elif Method == DIGUILIOTEJA:
-        sigma = Diguilio_Teja(T=T, xs=xs, sigmas_Tb=sigmas_Tb, Tbs=Tbs, Tcs=Tcs)
-    elif Method == NONE:
-        sigma = None
-    else:
-        raise Exception('Failure in in function')
-    return sigma
 
 
 class SurfaceTensionMixture(MixtureProperty):

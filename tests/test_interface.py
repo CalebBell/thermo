@@ -187,25 +187,6 @@ def test_Diguilio_Teja():
          Diguilio_Teja(T=501.85, xs=[0.1606, 0.8394], sigmas_Tb=[0.01424, 0.02530], Tbs=[309.21, 312.95], Tcs=[469.7, 508.0])
 
 
-def test_sigma_mixture():
-    # Winterfeld_Scriven_Davis test
-    sigma = surface_tension_mixture(xs=[0.1606, 0.8394], sigmas=[0.01547, 0.02877], rhoms=[8610., 15530.])
-    assert_allclose(sigma, 0.024967388450439817)
-
-    sigma = surface_tension_mixture(T=298.15, xs=[0.1606, 0.8394], sigmas_Tb=[0.01424, 0.02530], Tbs=[309.21, 312.95], Tcs=[469.7, 508.0])
-    assert_allclose(sigma, 0.025716823875045505)
-
-    sigma = surface_tension_mixture(xs=[0.1606, 0.8394], sigmas=[0.01547, 0.02877])
-    assert_allclose(sigma, 0.02663402)
-
-    methods = surface_tension_mixture(T=298.15, xs=[0.1606, 0.8394], sigmas=[0.01547, 0.02877], rhoms=[8610., 15530.], sigmas_Tb=[0.01424, 0.02530], Tbs=[309.21, 312.95], Tcs=[469.7, 508.0], AvailableMethods=True)
-    assert methods[:-1] == surface_tension_mixture_methods
-    assert None == surface_tension_mixture(T=298.15, xs=[0.1606, 0.8394])
-    assert None == surface_tension_mixture(T=298.15, xs=[0.1606, 0.8394], sigmas=[0.01547, None])
-
-    with pytest.raises(Exception):
-        surface_tension_mixture(xs=[0.1606, 0.8394], sigmas=[0.01547, 0.02877], Method='Fail')
-
 
 def test_SurfaceTensionMixture():
     from thermo.chemical import Mixture

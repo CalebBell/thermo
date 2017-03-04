@@ -35,12 +35,12 @@ from thermo.activity import identify_phase, identify_phase_mixture, Pbubble_mixt
 from thermo.critical import Tc, Pc, Vc, Zc, Tc_mixture, Pc_mixture, Vc_mixture
 from thermo.acentric import omega, omega_mixture, StielPolar
 from thermo.triple import Tt, Pt
-from thermo.thermal_conductivity import ThermalConductivityLiquid, ThermalConductivityGas, ThermalConductivityLiquidMixture, ThermalConductivityGasMixture, thermal_conductivity_liquid_mixture, thermal_conductivity_gas_mixture
-from thermo.volume import VolumeGas, VolumeLiquid, VolumeSolid, VolumeLiquidMixture, VolumeGasMixture, volume_liquid_mixture, volume_gas_mixture
+from thermo.thermal_conductivity import ThermalConductivityLiquid, ThermalConductivityGas, ThermalConductivityLiquidMixture, ThermalConductivityGasMixture
+from thermo.volume import VolumeGas, VolumeLiquid, VolumeSolid, VolumeLiquidMixture, VolumeGasMixture
 from thermo.permittivity import *
 from thermo.heat_capacity import HeatCapacitySolid, HeatCapacityGas, HeatCapacityLiquid, Cp_gas_mixture, Cv_gas_mixture, Cp_liq_mixture
-from thermo.interface import SurfaceTension, SurfaceTensionMixture, surface_tension_mixture
-from thermo.viscosity import ViscosityLiquid, ViscosityGas, ViscosityLiquidMixture, ViscosityGasMixture, viscosity_index, viscosity_liquid_mixture, viscosity_gas_mixture
+from thermo.interface import SurfaceTension, SurfaceTensionMixture
+from thermo.viscosity import ViscosityLiquid, ViscosityGas, ViscosityLiquidMixture, ViscosityGasMixture, viscosity_index
 from thermo.reaction import Hf
 from thermo.combustion import Hcombustion
 from thermo.safety import Tflash, Tautoignition, LFL, UFL, TWA, STEL, Ceiling, Skin, Carcinogen, LFL_mixture, UFL_mixture
@@ -375,7 +375,6 @@ class Chemical(object): # pragma: no cover
         self.CAS = CASfromAny(ID)
         if self.CAS in _chemical_cache and caching:
             self.__dict__.update(_chemical_cache[self.CAS].__dict__)
-            self.set_eos(T=T, P=P)
         else:
             self.PubChem = PubChem(self.CAS)
             self.MW = MW(self.CAS)
@@ -1469,7 +1468,7 @@ class Chemical(object): # pragma: no cover
         
         Examples
         --------        
-        >>> Chemical('o-xylene', T=297).rho
+        >>> Chemical('o-xylene', T=297).rhol
         876.9946785618097
         '''
         Vml = self.Vml
@@ -2303,6 +2302,12 @@ class Mixture(object):  # pragma: no cover
 
     Default initialization is for 298.15 K, 1 atm.
     '''
+    eos_in_a_box = []
+    
+    def __repr__(self):
+        return '<Mixture, components=%s, mole fractions=%s, T=%.2f K, P=%.0f \
+Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
+
     def __init__(self, IDs, zs=None, ws=None, Vfls=None, Vfgs=None,
                  T=298.15, P=101325):
         self.P = P
@@ -2336,6 +2341,7 @@ class Mixture(object):  # pragma: no cover
         # Required for densities for volume fractions before setting fractions
         self.set_chemical_constants()
         self.set_chemical_TP()
+        
         if zs:
             self.zs = zs if sum(zs) == 1 else [zi/sum(zs) for zi in zs]
             self.ws = zs_to_ws(zs, self.MWs)
@@ -2373,7 +2379,6 @@ class Mixture(object):  # pragma: no cover
         self.ks = None
         self.Vms = None
         self.rhos = None
-        self.rhol = None
         self.Cps = None
         self.Cpsm = None
         self.xs = None
@@ -2388,6 +2393,7 @@ class Mixture(object):  # pragma: no cover
         self.isobaric_expansion_l = None
 
     def set_chemical_constants(self):
+        # Set lists of everything set by Chemical.set_constants
         self.Tms = [i.Tm for i in self.Chemicals]
         self.Tbs = [i.Tb for i in self.Chemicals]
 
@@ -2406,16 +2412,16 @@ class Mixture(object):  # pragma: no cover
         self.Pts = [i.Pt for i in self.Chemicals]
         self.Tts = [i.Tt for i in self.Chemicals]
 
-        # Chemistry
-        self.Hfs = [i.Hf for i in self.Chemicals]
-        self.Hcs = [i.Hc for i in self.Chemicals]
-
+        # Enthalpy
         self.Hfuss = [i.Hfus for i in self.Chemicals]
         self.Hsubs = [i.Hsub for i in self.Chemicals]
-
         self.Hfusms = [i.Hfusm for i in self.Chemicals]
         self.Hsubms = [i.Hsubm for i in self.Chemicals]
 
+        # Chemistry
+        self.Hfs = [i.Hf for i in self.Chemicals]
+        self.Hcs = [i.Hc for i in self.Chemicals]
+        
         # Fire Safety Limits
         self.Tflashs = [i.Tflash for i in self.Chemicals]
         self.Tautoignitions = [i.Tautoignition for i in self.Chemicals]
@@ -2442,7 +2448,240 @@ class Mixture(object):  # pragma: no cover
         # Legal
         self.legal_statuses = [i.legal_status for i in self.Chemicals]
         self.economic_statuses = [i.economic_status for i in self.Chemicals]
+        
+        # Analytical
+        self.RIs = [i.RI for i in self.Chemicals]
+        self.conductivities = [i.conductivity for i in self.Chemicals]
 
+        # Constant properties obtained from TP
+        self.Vml_STPs = [i.Vml_STP for i in self.Chemicals]
+        self.Vmg_STPs = [i.Vmg_STP for i in self.Chemicals]
+
+    ### More stuff here
+
+    def set_chemical_TP(self):
+        # Tempearture and Pressure Denepdence
+        # Get and choose initial methods
+        [i.calculate(self.T, self.P) for i in self.Chemicals]
+
+        try:
+            self.Hs = [i.H for i in self.Chemicals]
+            self.Hms = [i.Hm for i in self.Chemicals]
+    
+            self.Ss = [i.S for i in self.Chemicals]
+            self.Sms = [i.Sm for i in self.Chemicals]
+            # Ignore G, A, U - which depend on molar volume
+        except:
+            self.Hs = None
+            self.Hsm = None
+            self.Ss = None
+            self.Sms = None
+
+    def set_constant_sources(self):
+        # None of this takes much time or is important
+        # Tliquidus assumes worst-case for now
+        self.Tm_methods = Tliquidus(Tms=self.Tms, ws=self.ws, xs=self.zs, CASRNs=self.CASs, AvailableMethods=True)
+        self.Tm_method = self.Tm_methods[0]
+
+        # Critical Point, Methods only for Tc, Pc, Vc
+        self.Tc_methods = Tc_mixture(Tcs=self.Tcs, zs=self.zs, CASRNs=self.CASs, AvailableMethods=True)
+        self.Tc_method = self.Tc_methods[0]
+        self.Pc_methods = Pc_mixture(Pcs=self.Pcs, zs=self.zs, CASRNs=self.CASs, AvailableMethods=True)
+        self.Pc_method = self.Pc_methods[0]
+        self.Vc_methods = Vc_mixture(Vcs=self.Vcs, zs=self.zs, CASRNs=self.CASs, AvailableMethods=True)
+        self.Vc_method = self.Vc_methods[0]
+        self.omega_methods = omega_mixture(omegas=self.omegas, zs=self.zs, CASRNs=self.CASs, AvailableMethods=True)
+        self.omega_method = self.omega_methods[0]
+
+        # No Flammability limits
+        self.LFL_methods = LFL_mixture(ys=self.zs, LFLs=self.LFLs, AvailableMethods=True)
+        self.LFL_method = self.LFL_methods[0]
+        self.UFL_methods = UFL_mixture(ys=self.zs, UFLs=self.UFLs, AvailableMethods=True)
+        self.UFL_method = self.UFL_methods[0]
+        # No triple point
+        # Mixed Hf linear
+        # Exposure limits are minimum of any of them or lower
+
+    def set_constants(self):
+        # None of this takes much time or is important
+        # Melting point
+        self.Tm = Tliquidus(Tms=self.Tms, ws=self.ws, xs=self.zs, CASRNs=self.CASs, Method=self.Tm_method)
+        # Critical Point
+        self.Tc = Tc_mixture(Tcs=self.Tcs, zs=self.zs, CASRNs=self.CASs, Method=self.Tc_method)
+        self.Pc = Pc_mixture(Pcs=self.Pcs, zs=self.zs, CASRNs=self.CASs, Method=self.Pc_method)
+        self.Vc = Vc_mixture(Vcs=self.Vcs, zs=self.zs, CASRNs=self.CASs, Method=self.Vc_method)
+        self.omega = omega_mixture(omegas=self.omegas, zs=self.zs, CASRNs=self.CASs, Method=self.omega_method)
+
+        self.Zc = Z(self.Tc, self.Pc, self.Vc) if all((self.Tc, self.Pc, self.Vc)) else None
+        self.rhoc = Vm_to_rho(self.Vc, self.MW) if self.Vc else None
+        self.rhocm = 1./self.Vc if self.Vc else None
+
+        self.LFL = LFL_mixture(ys=self.zs, LFLs=self.LFLs, Method=self.LFL_method)
+        self.UFL = UFL_mixture(ys=self.zs, UFLs=self.UFLs, Method=self.UFL_method)
+
+    def set_eos(self, T, P, eos=PRMIX):
+        try:
+            self.eos = eos(T=T, P=P, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, zs=self.zs)
+        except:
+            # Handle overflow errors and so on
+            self.eos = GCEOS_DUMMY(T=T, P=P)
+
+    @property
+    def eos(self):
+        r'''Equation of state object held by the mixture. See :
+        obj:`thermo.eos_mix` for a full listing.
+                
+        Examples
+        --------
+        '''
+        return self.eos_in_a_box[0]
+
+    @eos.setter
+    def eos(self, eos):
+        if self.eos_in_a_box:
+            self.eos_in_a_box.pop()
+        self.eos_in_a_box.append(eos) 
+
+    def set_TP_sources(self):
+        self.VolumeSolids = [i.VolumeSolid for i in self.Chemicals]
+        self.VolumeLiquids = [i.VolumeLiquid for i in self.Chemicals]
+        self.VolumeGases = [i.VolumeGas for i in self.Chemicals]
+        self.HeatCapacitySolids = [i.HeatCapacitySolid for i in self.Chemicals]
+        self.HeatCapacityLiquids = [i.HeatCapacityLiquid for i in self.Chemicals]
+        self.HeatCapacityGases = [i.HeatCapacityGas for i in self.Chemicals]
+        self.ViscosityLiquids = [i.ViscosityLiquid for i in self.Chemicals]
+        self.ViscosityGases = [i.ViscosityGas for i in self.Chemicals]
+        self.ThermalConductivityLiquids = [i.ThermalConductivityLiquid for i in self.Chemicals]
+        self.ThermalConductivityGases = [i.ThermalConductivityGas for i in self.Chemicals]
+        self.SurfaceTensions = [i.SurfaceTension for i in self.Chemicals]
+        self.Permittivities = [i.Permittivity for i in self.Chemicals]
+        
+        # Tempearture and Pressure Denepdence
+        # No vapor pressure (bubble-dew points)
+
+        self.VolumeLiquidMixture = VolumeLiquidMixture(MWs=self.MWs, Tcs=self.Tcs, Pcs=self.Pcs, Vcs=self.Vcs, Zcs=self.Zcs, omegas=self.omegas, CASs=self.CASs, VolumeLiquids=self.VolumeLiquids)
+        self.VolumeGasMixture = VolumeGasMixture(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, eos=self.eos_in_a_box, CASs=self.CASs, VolumeGases=self.VolumeGases)
+
+        # No solid density, or heat capacity
+        # No Hvap, no Hsub, no Hfus
+
+        self.Cpl_methods = Cp_liq_mixture(zs=self.zs, ws=self.ws, Cps=self.Cpls, T=self.T, CASRNs=self.CASs, AvailableMethods=True)
+        self.Cpl_method = self.Cpl_methods[0]
+
+        self.Cpg_methods = Cp_gas_mixture(zs=self.zs, ws=self.ws, Cps=self.Cpgs, CASRNs=self.CASs, AvailableMethods=True)
+        self.Cpg_method = self.Cpg_methods[0]
+
+        self.Cvg_methods = Cv_gas_mixture(zs=self.zs, ws=self.ws, Cps=self.Cvgs, CASRNs=self.CASs, AvailableMethods=True)
+        self.Cvg_method = self.Cvg_methods[0]
+
+        self.ViscosityLiquidMixture = ViscosityLiquidMixture(CASs=self.CASs, ViscosityLiquids=self.ViscosityLiquids)
+        self.ViscosityGasMixture = ViscosityGasMixture(MWs=self.MWs, molecular_diameters=self.molecular_diameters, Stockmayers=self.Stockmayers, CASs=self.CASs, ViscosityGases=self.ViscosityGases)
+        self.ThermalConductivityLiquidMixture = ThermalConductivityLiquidMixture(CASs=self.CASs, ThermalConductivityLiquids=self.ThermalConductivityLiquids)
+        self.ThermalConductivityGasMixture = ThermalConductivityGasMixture(MWs=self.MWs, Tbs=self.Tbs, CASs=self.CASs, ThermalConductivityGases=self.ThermalConductivityGases, ViscosityGases=self.ViscosityGases)
+        self.SurfaceTensionMixture = SurfaceTensionMixture(MWs=self.MWs, Tbs=self.Tbs, Tcs=self.Tcs, CASs=self.CASs, SurfaceTensions=self.SurfaceTensions, VolumeLiquids=self.VolumeLiquids)
+        
+        self.Vml_STP = self.VolumeLiquidMixture(T=298.15, P=101325., zs=self.zs, ws=self.ws)
+        self.Vmg_STP = self.VolumeGasMixture(T=298.15, P=101325, zs=self.zs, ws=self.ws)
+        
+        self.rhol_STP = Vm_to_rho(self.Vml_STP, self.MW) if self.Vml_STP else None
+        self.Zl_STP = Z(298.15, 101325, self.Vml_STP) if self.Vml_STP else None
+        self.rholm_STP = 1./self.Vml_STP if self.Vml_STP else None
+
+        self.rhog_STP = Vm_to_rho(self.Vmg_STP, self.MW) if self.Vmg_STP else None
+        self.Zg_STP = Z(298.15, 101325, self.Vmg_STP) if self.Vmg_STP else None
+        self.rhogm_STP = 1./self.Vmg_STP if self.Vmg_STP else None
+
+    def set_TP(self, T=None, P=None):
+        if T:
+            self.T = T
+        if P:
+            self.P = P
+        self.set_chemical_TP()
+        self.set_eos(T=self.T, P=self.P)
+
+#        self.rhol = Vm_to_rho(self.Vml, self.MW) if self.Vml else None
+#        self.Zl = Z(self.T, self.P, self.Vml) if self.Vml else None
+#        self.rholm = 1./self.Vml if self.Vml else None
+#
+#        self.rhog = Vm_to_rho(self.Vmg, self.MW) if self.Vmg else None
+#        self.Zg = Z(self.T, self.P, self.Vmg) if self.Vmg else None
+#        self.rhogm = 1./self.Vmg if self.Vmg else None
+#        self.Bvirial = B_from_Z(self.Zg, self.T, self.P) if self.Vmg else None
+
+        self.Cpl = Cp_liq_mixture(zs=self.zs, ws=self.ws, Cps=self.Cpls, T=self.T, CASRNs=self.CASs, Method=self.Cpl_method)
+        self.Cpg = Cp_gas_mixture(zs=self.zs, ws=self.ws, Cps=self.Cpgs, CASRNs=self.CASs, Method=self.Cpg_method)
+        self.Cvg = Cv_gas_mixture(zs=self.zs, ws=self.ws, Cps=self.Cvgs, CASRNs=self.CASs, Method=self.Cvg_method)
+        self.Cpgm = property_mass_to_molar(self.Cpg, self.MW)
+        self.Cplm = property_mass_to_molar(self.Cpl, self.MW)
+        self.Cvgm = property_mass_to_molar(self.Cvg, self.MW)
+
+        self.isentropic_exponent = isentropic_exponent(self.Cpg, self.Cvg) if all((self.Cpg, self.Cvg)) else None
+
+    def set_phase(self):
+        try:
+            self.phase_methods = identify_phase_mixture(T=self.T, P=self.P, zs=self.zs, Tcs=self.Tcs, Pcs=self.Pcs, Psats=self.Psats, CASRNs=self.CASs, AvailableMethods=True)
+            self.phase_method = self.phase_methods[0]
+            self.phase, self.xs, self.ys, self.V_over_F = identify_phase_mixture(T=self.T, P=self.P, zs=self.zs, Tcs=self.Tcs, Pcs=self.Pcs, Psats=self.Psats, CASRNs=self.CASs, Method=self.phase_method)
+
+            if self.phase == 'two-phase':
+                self.wsl = zs_to_ws(self.xs, self.MWs)
+                self.wsg = zs_to_ws(self.ys, self.MWs)
+            
+            self.Pbubble_methods = Pbubble_mixture(T=self.T, zs=self.zs, Psats=self.Psats, CASRNs=self.CASs, AvailableMethods=True)
+            self.Pbubble_method = self.Pbubble_methods[0]
+            self.Pbubble = Pbubble_mixture(T=self.T, zs=self.zs, Psats=self.Psats, CASRNs=self.CASs, Method=self.Pbubble_method)
+    
+            self.Pdew_methods = Pdew_mixture(T=self.T, zs=self.zs, Psats=self.Psats, CASRNs=self.CASs, AvailableMethods=True)
+            self.Pdew_method = self.Pdew_methods[0]
+            self.Pdew = Pdew_mixture(T=self.T, zs=self.zs, Psats=self.Psats, CASRNs=self.CASs, Method=self.Pdew_method)
+            if not None in self.Hs:
+                self.H = mixing_simple(self.Hs, self.ws)
+                self.Hm = property_mass_to_molar(self.H, self.MW)
+            
+            if not None in self.Ss:
+                # Ideal gas contribution
+                self.Sm = mixing_simple(self.Sms, self.zs) - R*sum([zi*log(zi) for zi in self.zs if zi > 0])
+                self.S = property_molar_to_mass(self.Sm, self.MW)
+        except:
+            pass
+
+    def calculate(self, T=None, P=None):
+        if T:
+            if T < 0:
+                raise Exception('Negative value specified for Mixture temperature - aborting!')
+            self.T = T
+        if P:
+            if P < 0:
+                raise Exception('Negative value specified for Mixture pressure - aborting!')
+
+        self.set_TP(T=T, P=P)
+        self.set_phase()
+
+    def calculate_TH(self, T, H):
+        def to_solve(P):
+            self.calculate(T, P)
+            return self.H - H
+        return newton(to_solve, self.P)
+
+    def calculate_PH(self, P, H):
+        def to_solve(T):
+            self.calculate(T, P)
+            return self.H - H
+        return newton(to_solve, self.T)
+
+    def calculate_TS(self, T, S):
+        def to_solve(P):
+            self.calculate(T, P)
+            return self.S - S
+        return newton(to_solve, self.P)
+
+    def calculate_PS(self, P, S):
+        def to_solve(T):
+            self.calculate(T, P)
+            return self.S - S
+        return newton(to_solve, self.T)
+
+    # Unimportant constants
     @property
     def PubChems(self):
         r'''PubChem Component ID numbers for all chemicals in the mixture.
@@ -3036,6 +3275,7 @@ class Mixture(object):  # pragma: no cover
         '''
         return [i.nul for i in self.Chemicals]
 
+    @property
     def nugs(self):
         r'''Pure component kinematic viscosities of the gas phase of the 
         chemicals in the mixture at its current temperature and pressure, in 
@@ -3129,6 +3369,142 @@ class Mixture(object):  # pragma: no cover
         return [i.solubility_parameter for i in self.Chemicals]
 
     ### Overall mixture properties
+    @property
+    def rhol(self):
+        r'''Liquid-phase mass density of the mixture at its current 
+        temperature, pressure, and composition in units of kg/m^3. For 
+        calculation of this property at other temperatures, pressures, 
+        compositions or specifying manually the method used to calculate it, 
+        and more - see the object oriented interface 
+        :obj:`thermo.volume.VolumeLiquidMixture`; each Mixture instance
+        creates one to actually perform the calculations. Note that that  
+        interface provides output in molar units.
+        
+        Examples
+        --------        
+        >>> Mixture(['o-xylene'], ws=[1], T=297).rhol
+        876.9946785618097
+        '''
+        Vml = self.Vml
+        if Vml:
+            return Vm_to_rho(Vml, self.MW)
+        return None
+      
+    @property
+    def rhog(self):
+        r'''Gas-phase mass density of the mixture at its current temperature,
+        pressure, and composition in units of kg/m^3. For calculation of this 
+        property at other temperatures, pressures, or compositions or 
+        specifying manually the method used to calculate it, and more - see the 
+        object oriented interface :obj:`thermo.volume.VolumeGasMixture`; each 
+        Mixture instance creates one to actually perform the calculations. Note 
+        that that interface provides output in molar units.
+        
+        Examples
+        --------        
+        >>> Mixture(['hexane'], ws=[1], T=300, P=2E5).rhog
+        7.914205150685313
+        '''
+        Vmg = self.Vmg
+        if Vmg:
+            return Vm_to_rho(Vmg, self.MW)
+        return None
+
+    @property
+    def rholm(self):
+        r'''Molar density of the mixture in the liquid phase at the
+        current temperature, pressure, and composition in units of mol/m^3.
+        
+        Utilizes the object oriented interface and 
+        :obj:`thermo.volume.VolumeLiquidMixture` to perform the actual 
+        calculation of molar volume.
+        
+        Examples
+        --------
+        >>> Mixture(['water'], ws=[1], T=300).rholm
+        55317.352773503124
+        '''
+        Vml = self.Vml
+        if Vml:
+            return 1./Vml 
+        return None
+
+    @property
+    def rhogm(self):
+        r'''Molar density of the mixture in the gas phase at the
+        current temperature, pressure, and composition in units of mol/m^3.
+        
+        Utilizes the object oriented interface and 
+        :obj:`thermo.volume.VolumeGasMixture` to perform the actual 
+        calculation of molar volume.
+        
+        Examples
+        --------
+        >>> Mixture(['water'], ws=[1], T=500).rhogm
+        24.467426039789093
+        '''
+        Vmg = self.Vmg
+        if Vmg:
+            return 1./Vmg
+        return None
+
+
+    @property
+    def Zl(self):
+        r'''Compressibility factor of the mixture in the liquid phase at the
+        current temperature, pressure, and composition, dimensionless.
+        
+        Utilizes the object oriented interface and 
+        :obj:`thermo.volume.VolumeLiquidMixture` to perform the actual 
+        calculation of molar volume.
+        
+        Examples
+        --------
+        >>> Mixture(['water'], ws=[1]).Zl
+        0.0007385549904798778
+        '''
+        Vml = self.Vml
+        if Vml:
+            return Z(self.T, self.P, Vml)
+        return None
+            
+    @property
+    def Zg(self):
+        r'''Compressibility factor of the mixture in the gas phase at the
+        current temperature, pressure, and composition, dimensionless.
+        
+        Utilizes the object oriented interface and 
+        :obj:`thermo.volume.VolumeGasMixture` to perform the actual calculation of 
+        molar volume.
+        
+        Examples
+        --------
+        >>> Mixture(['hexane'], ws=[1], T=300, P=1E5).Zg
+        0.9403859376888882
+        '''
+        Vmg = self.Vmg
+        if Vmg:
+            return Z(self.T, self.P, Vmg)
+        return None
+
+    @property
+    def Bvirial(self):
+        r'''Second virial coefficient of the gas phase of the mixture at its 
+        current temperature, pressure, and composition in units of mol/m^3. 
+        
+        This property uses the object-oriented interface 
+        :obj:`thermo.volume.VolumeGasMixture`, converting its result with 
+        :obj:`thermo.utils.B_from_Z`.
+                
+        Examples
+        --------
+        >>> Mixture(['hexane'], ws=[1], T=300, P=1E5).Bvirial
+        -0.0014869761738013018
+        '''
+        if self.Vmg:
+            return B_from_Z(self.Zg, self.T, self.P)
+        return None
+    
     @property
     def JTl(self):
         r'''Joule Thomson coefficient of the liquid phase of the mixture if one 
@@ -3278,6 +3654,37 @@ class Mixture(object):  # pragma: no cover
         return None
     
     ### Properties from Mixture objects
+    @property
+    def Vml(self):
+        r'''Liquid-phase molar volume of the mixture at its current
+        temperature, pressure, and composition in units of mol/m^3. For calculation of this 
+        property at other temperatures or pressures or compositions, or specifying manually the
+        method used to calculate it, and more - see the object oriented interface
+        :obj:`thermo.volume.VolumeLiquidMixture`; each Mixture instance
+        creates one to actually perform the calculations.
+        
+        Examples
+        --------
+        >>> Mixture(['cyclobutane'], ws=[1], T=225).Vml
+        7.42395423425395e-05
+        '''
+        return self.VolumeLiquidMixture(T=self.T, P=self.P, zs=self.zs, ws=self.ws)
+        
+    @property
+    def Vmg(self):
+        r'''Gas-phase molar volume of the mixture at its current
+        temperature, pressure, and composition in units of mol/m^3. For calculation of this 
+        property at other temperatures or pressures or compositions, or specifying manually the
+        method used to calculate it, and more - see the object oriented interface
+        :obj:`thermo.volume.VolumeGasMixture`; each Mixture instance
+        creates one to actually perform the calculations.
+        
+        Examples
+        --------
+        >>> Mixture(['hexane'], ws=[1], T=300, P=2E5).Vmg
+        0.0124716897
+        '''
+        return self.VolumeGasMixture(T=self.T, P=self.P, zs=self.zs, ws=self.ws)
     
     @property
     def mul(self):
@@ -3332,7 +3739,6 @@ class Mixture(object):  # pragma: no cover
         '''
         return self.SurfaceTensionMixture(self.T, self.P, self.zs, self.ws)
 
-
     @property
     def kl(self):
         r'''Thermal conductivity of the mixture in the liquid phase at its current
@@ -3369,238 +3775,201 @@ class Mixture(object):  # pragma: no cover
         '''
         return self.ThermalConductivityGasMixture(self.T, self.P, self.zs, self.ws)
 
-    ### More stuff here
-
-    def set_chemical_TP(self):
-        # Tempearture and Pressure Denepdence
-        # Get and choose initial methods
-        for i in self.Chemicals:
-            i.calculate(self.T, self.P)
-
-        try:
-            self.Hs = [i.H for i in self.Chemicals]
-            self.Hms = [i.Hm for i in self.Chemicals]
+    ### Single-phase properties
     
-            self.Ss = [i.S for i in self.Chemicals]
-            self.Sms = [i.Sm for i in self.Chemicals]
-        except:
-            self.Hs = None
-            self.Hsm = None
-            self.Ss = None
-            self.Sms = None
-
-    def set_constant_sources(self):
-        # Tliquidus assumes worst-case for now
-        self.Tm_methods = Tliquidus(Tms=self.Tms, ws=self.ws, xs=self.zs, CASRNs=self.CASs, AvailableMethods=True)
-        self.Tm_method = self.Tm_methods[0]
-
-        # Critical Point, Methods only for Tc, Pc, Vc
-        self.Tc_methods = Tc_mixture(Tcs=self.Tcs, zs=self.zs, CASRNs=self.CASs, AvailableMethods=True)
-        self.Tc_method = self.Tc_methods[0]
-        self.Pc_methods = Pc_mixture(Pcs=self.Pcs, zs=self.zs, CASRNs=self.CASs, AvailableMethods=True)
-        self.Pc_method = self.Pc_methods[0]
-        self.Vc_methods = Vc_mixture(Vcs=self.Vcs, zs=self.zs, CASRNs=self.CASs, AvailableMethods=True)
-        self.Vc_method = self.Vc_methods[0]
-        self.omega_methods = omega_mixture(omegas=self.omegas, zs=self.zs, CASRNs=self.CASs, AvailableMethods=True)
-        self.omega_method = self.omega_methods[0]
-
-        # No Flammability limits
-        self.LFL_methods = LFL_mixture(ys=self.zs, LFLs=self.LFLs, AvailableMethods=True)
-        self.LFL_method = self.LFL_methods[0]
-        self.UFL_methods = UFL_mixture(ys=self.zs, UFLs=self.UFLs, AvailableMethods=True)
-        self.UFL_method = self.UFL_methods[0]
-        # No triple point
-        # Mixed Hf linear
-        # Exposure limits are minimum of any of them or lower
-
-    def set_constants(self):
-        # Melting point
-        self.Tm = Tliquidus(Tms=self.Tms, ws=self.ws, xs=self.zs, CASRNs=self.CASs, Method=self.Tm_method)
-        # Critical Point
-        self.Tc = Tc_mixture(Tcs=self.Tcs, zs=self.zs, CASRNs=self.CASs, Method=self.Tc_method)
-        self.Pc = Pc_mixture(Pcs=self.Pcs, zs=self.zs, CASRNs=self.CASs, Method=self.Pc_method)
-        self.Vc = Vc_mixture(Vcs=self.Vcs, zs=self.zs, CASRNs=self.CASs, Method=self.Vc_method)
-        self.omega = omega_mixture(omegas=self.omegas, zs=self.zs, CASRNs=self.CASs, Method=self.omega_method)
-
-        self.Zc = Z(self.Tc, self.Pc, self.Vc) if all((self.Tc, self.Pc, self.Vc)) else None
-        self.rhoc = Vm_to_rho(self.Vc, self.MW) if self.Vc else None
-        self.rhocm = 1./self.Vc if self.Vc else None
-
-        self.LFL = LFL_mixture(ys=self.zs, LFLs=self.LFLs, Method=self.LFL_method)
-        self.UFL = UFL_mixture(ys=self.zs, UFLs=self.UFLs, Method=self.UFL_method)
-
-
-    def set_TP_sources(self):
-        self.VolumeSolids = [i.VolumeSolid for i in self.Chemicals]
-        self.VolumeLiquids = [i.VolumeLiquid for i in self.Chemicals]
-        self.VolumeGases = [i.VolumeGas for i in self.Chemicals]
-        self.HeatCapacitySolids = [i.HeatCapacitySolid for i in self.Chemicals]
-        self.HeatCapacityLiquids = [i.HeatCapacityLiquid for i in self.Chemicals]
-        self.HeatCapacityGases = [i.HeatCapacityGas for i in self.Chemicals]
-        self.ViscosityLiquids = [i.ViscosityLiquid for i in self.Chemicals]
-        self.ViscosityGases = [i.ViscosityGas for i in self.Chemicals]
-        self.ThermalConductivityLiquids = [i.ThermalConductivityLiquid for i in self.Chemicals]
-        self.ThermalConductivityGases = [i.ThermalConductivityGas for i in self.Chemicals]
-        self.SurfaceTensions = [i.SurfaceTension for i in self.Chemicals]
-        self.Permittivities = [i.Permittivity for i in self.Chemicals]
+    @property
+    def Cp(self):
+        r'''Mass heat capacity of the mixture at its current phase and
+        temperature, in units of J/kg/K.
+                
+        Examples
+        --------
+        >>> w = Mixture(['water'], ws=[1])
+        >>> w.Cp, w.phase
+        (4180.597021827335, 'l')
+        >>> Pd = Mixture(['palladium'], ws=[1])
+        >>> Pd.Cp, Pd.phase
+        (234.26767209171211, 's')
+        '''
+        return phase_select_property(phase=self.phase, s=self.Cps, l=self.Cpl, g=self.Cpg)
+       
+    @property
+    def Cpm(self):
+        r'''Molar heat capacity of the mixture at its current phase and
+        temperature, in units of J/mol/K. Available only if single phase.
         
-        # Tempearture and Pressure Denepdence
-        # No vapor pressure (bubble-dew points)
+        Examples
+        --------
+        >>> Mixture(['ethylbenzene'], ws=[1], T=550, P=3E6).Cpm
+        294.1844955331004
+        '''
+        return phase_select_property(phase=self.phase, s=self.Cpsm, l=self.Cplm, g=self.Cpgm)
 
-        self.Vl_methods = volume_liquid_mixture(xs=self.zs, ws=self.ws, Vms=self.Vmls, T=self.T, MWs=self.MWs, MW=self.MW, Tcs=self.Tcs, Pcs=self.Pcs, Vcs=self.Vcs, Zcs=self.Zcs, omegas=self.omegas, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, CASRNs=self.CASs, AvailableMethods=True)
-        self.Vl_method = self.Vl_methods[0]
-#
-        self.Vg_methods = volume_gas_mixture(ys=self.zs, Vms=self.Vmgs, T=self.T, P=self.P, Tc=self.Tc, Pc=self.Pc, omega=self.omega, MW=self.MW, CASRNs=self.CASs, AvailableMethods=True)
-        self.Vg_method = self.Vg_methods[0]
-
-        # No solid density, or heat capacity
-        # No Hvap, no Hsub, no Hfus
-
-        self.Cpl_methods = Cp_liq_mixture(zs=self.zs, ws=self.ws, Cps=self.Cpls, T=self.T, CASRNs=self.CASs, AvailableMethods=True)
-        self.Cpl_method = self.Cpl_methods[0]
-
-        self.Cpg_methods = Cp_gas_mixture(zs=self.zs, ws=self.ws, Cps=self.Cpgs, CASRNs=self.CASs, AvailableMethods=True)
-        self.Cpg_method = self.Cpg_methods[0]
-
-        self.Cvg_methods = Cv_gas_mixture(zs=self.zs, ws=self.ws, Cps=self.Cvgs, CASRNs=self.CASs, AvailableMethods=True)
-        self.Cvg_method = self.Cvg_methods[0]
-
-
-        self.ViscosityLiquidMixture = ViscosityLiquidMixture(CASs=self.CASs, ViscosityLiquids=self.ViscosityLiquids)
+    @property
+    def Vm(self):
+        r'''Molar volume of the mixture at its current phase and
+        temperature and pressure, in units of m^3/mol.
+        Available only if single phase.
         
-#        self.mul_methods = viscosity_liquid_mixture(zs=self.zs, ws=self.ws, mus=self.muls, T=self.T, MW=self.MW, CASRNs=self.CASs, AvailableMethods=True)
-#        self.mul_method = self.mul_methods[0]
-
-        self.ViscosityGasMixture = ViscosityGasMixture(MWs=self.MWs, molecular_diameters=self.molecular_diameters, Stockmayers=self.Stockmayers, CASs=self.CASs, ViscosityGases=self.ViscosityGases)
-
-#        self.mug_methods = viscosity_gas_mixture(T=self.T, ys=self.zs, ws=self.ws, mus=self.mugs, MWs=self.MWs, molecular_diameters=self.molecular_diameters, Stockmayers=self.Stockmayers, CASRNs=self.CASs, AvailableMethods=True)
-#        self.mug_method = self.mug_methods[0]
-
-        self.ThermalConductivityLiquidMixture = ThermalConductivityLiquidMixture(CASs=self.CASs, ThermalConductivityLiquids=self.ThermalConductivityLiquids)
-#        self.kl_methods = thermal_conductivity_liquid_mixture(T=self.T, P=self.P, zs=self.zs, ws=self.ws, ks=self.kls, CASRNs=self.CASs, AvailableMethods=True)
-#        self.kl_method = self.kl_methods[0]
-
-        self.ThermalConductivityGasMixture = ThermalConductivityGasMixture(MWs=self.MWs, Tbs=self.Tbs, CASs=self.CASs, ThermalConductivityGases=self.ThermalConductivityGases, ViscosityGases=self.ViscosityGases)
-#        self.kg_methods = thermal_conductivity_gas_mixture(T=self.T, ys=self.zs, ws=self.ws, ks=self.kgs, mus=self.mugs, Tbs=self.Tbs, MWs=self.MWs, CASRNs=self.CASs, AvailableMethods=True)
-#        self.kg_method = self.kg_methods[0]
-
-#        self.sigma_methods = surface_tension_mixture(xs=self.zs, sigmas=self.sigmas, rhoms=self.rholms, CASRNs=self.CASs, AvailableMethods=True)
-#        self.sigma_method = self.sigma_methods[0]
+        Examples
+        --------
+        >>> Mixture(['ethylbenzene'], ws=[1], T=550, P=3E6).Vm
+        0.00017758024401627633
+        '''
+        return phase_select_property(phase=self.phase, s=self.Vms, l=self.Vml, g=self.Vmg)
+    
+    @property
+    def rho(self):
+        r'''Mass density of the mixture at its current phase and
+        temperature and pressure, in units of kg/m^3.
+        Available only if single phase.
         
-        self.SurfaceTensionMixture = SurfaceTensionMixture(MWs=self.MWs, Tbs=self.Tbs, Tcs=self.Tcs, CASs=self.CASs, SurfaceTensions=self.SurfaceTensions, VolumeLiquids=self.VolumeLiquids)
-
-        # Constant properties obtained from TP
-        self.Vml_STPs = [i.Vml_STP for i in self.Chemicals]
-        self.Vmg_STPs = [i.Vmg_STP for i in self.Chemicals]
-        try:
-            self.Vml_STP = volume_liquid_mixture(xs=self.zs, ws=self.ws, Vms=self.Vml_STPs, T=298.15, MWs=self.MWs, MW=self.MW, Tcs=self.Tcs, Pcs=self.Pcs, Vcs=self.Vcs, Zcs=self.Zcs, omegas=self.omegas, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, CASRNs=self.CASs, Molar=True, Method=self.Vl_method)
-        except:
-            self.Vml_STP = None
+        Examples
+        --------
+        >>> Mixture(['decane'], ws=[1], T=550, P=2E6).rho
+        498.6549441720744
+        '''
+        return phase_select_property(phase=self.phase, s=self.rhos, l=self.rhol, g=self.rhog)
         
-        self.Vmg_STP = volume_gas_mixture(ys=self.zs, Vms=self.Vmg_STPs, T=298.15, P=101325, Tc=self.Tc, Pc=self.Pc, omega=self.omega, MW=self.MW, CASRNs=self.CASs, Method=self.Vg_method)
+    @property
+    def rhom(self):
+        r'''Molar density of the mixture at its current phase and
+        temperature and pressure, in units of mol/m^3.
+        Available only if single phase.
+        
+        Examples
+        --------
+        >>> Mixture(['1-hexanol'], ws=[1]).rhom
+        7853.086232143972
+        '''
+        return phase_select_property(phase=self.phase, s=self.rhosm, l=self.rholm, g=self.rhogm)
+        
+    @property
+    def Z(self):
+        r'''Compressibility factor of the mixture at its current phase and
+        temperature and pressure, dimensionless.
+        Available only if single phase.
 
-        self.rhol_STP = Vm_to_rho(self.Vml_STP, self.MW) if self.Vml_STP else None
-        self.Zl_STP = Z(298.15, 101325, self.Vml_STP) if self.Vml_STP else None
-        self.rholm_STP = 1./self.Vml_STP if self.Vml_STP else None
+        Examples
+        --------
+        >>> Mixture(['MTBE'], ws=[1], T=900, P=1E-2).Z
+        0.9999999999079768
+        '''
+        Vm = self.Vm
+        if Vm:
+            return Z(self.T, self.P, Vm)
+        return None
 
-        self.rhog_STP = Vm_to_rho(self.Vmg_STP, self.MW) if self.Vmg_STP else None
-        self.Zg_STP = Z(298.15, 101325, self.Vmg_STP) if self.Vmg_STP else None
-        self.rhogm_STP = 1./self.Vmg_STP if self.Vmg_STP else None
+    ### Single-phase properties
+       
+    @property
+    def isobaric_expansion(self):
+        r'''Isobaric (constant-pressure) expansion of the mixture at its
+        current phase, temperature, and pressure in units of 1/K.
+        Available only if single phase.
 
-    def set_TP(self, T=None, P=None):
-        if T:
-            self.T = T
-        if P:
-            self.P = P
-        self.set_chemical_TP()
+        .. math::
+            \beta = \frac{1}{V}\left(\frac{\partial V}{\partial T} \right)_P
+        
+        Examples
+        --------
+        >>> Mixture(['water'], ws=[1], T=647.1, P=22048320.0).isobaric_expansion
+        0.34074205839222449
+        '''
+        return phase_select_property(phase=self.phase, l=self.isobaric_expansion_l, g=self.isobaric_expansion_g)
+        
+    @property
+    def JT(self):
+        r'''Joule Thomson coefficient of the mixture at its
+        current phase, temperature, and pressure in units of K/Pa.
+        Available only if single phase.
 
-        try:
-            self.Vml = volume_liquid_mixture(xs=self.zs, ws=self.ws, Vms=self.Vmls, T=self.T, MWs=self.MWs, MW=self.MW, Tcs=self.Tcs, Pcs=self.Pcs, Vcs=self.Vcs, Zcs=self.Zcs, omegas=self.omegas, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, CASRNs=self.CASs, Molar=True, Method=self.Vl_method)
-        except:
-            self.Vml = None
-        self.rhol = Vm_to_rho(self.Vml, self.MW) if self.Vml else None
-        self.Zl = Z(self.T, self.P, self.Vml) if self.Vml else None
-        self.rholm = 1./self.Vml if self.Vml else None
+        .. math::
+            \mu_{JT} = \left(\frac{\partial T}{\partial P}\right)_H = \frac{1}{C_p}
+            \left[T \left(\frac{\partial V}{\partial T}\right)_P - V\right]
+            = \frac{V}{C_p}\left(\beta T-1\right)
 
-        self.Vmg = volume_gas_mixture(ys=self.zs, Vms=self.Vmgs, T=self.T, P=self.P, Tc=self.Tc, Pc=self.Pc, omega=self.omega, MW=self.MW, CASRNs=self.CASs, Method=self.Vg_method)
-        self.rhog = Vm_to_rho(self.Vmg, self.MW) if self.Vmg else None
-        self.Zg = Z(self.T, self.P, self.Vmg) if self.Vmg else None
-        self.rhogm = 1./self.Vmg if self.Vmg else None
-        self.Bvirial = B_from_Z(self.Zg, self.T, self.P) if self.Vmg else None
+        Examples
+        --------
+        >>> Mixture(['water'], ws=[1]).JT
+        -2.2150394958666412e-07
+        '''
+        return phase_select_property(phase=self.phase, l=self.JTl, g=self.JTg)
 
+    @property
+    def mu(self):
+        r'''Viscosity of the mixture at its current phase, temperature, and
+        pressure in units of Pa*s.
+        Available only if single phase.
 
-        self.Cpl = Cp_liq_mixture(zs=self.zs, ws=self.ws, Cps=self.Cpls, T=self.T, CASRNs=self.CASs, Method=self.Cpl_method)
-        self.Cpg = Cp_gas_mixture(zs=self.zs, ws=self.ws, Cps=self.Cpgs, CASRNs=self.CASs, Method=self.Cpg_method)
-        self.Cvg = Cv_gas_mixture(zs=self.zs, ws=self.ws, Cps=self.Cvgs, CASRNs=self.CASs, Method=self.Cvg_method)
-        self.Cpgm = property_mass_to_molar(self.Cpg, self.MW)
-        self.Cplm = property_mass_to_molar(self.Cpl, self.MW)
-        self.Cvgm = property_mass_to_molar(self.Cvg, self.MW)
+        Examples
+        --------
+        >>> Mixture(['ethanol'], ws=[1], T=400).mu
+        1.1853097849748217e-05
+        '''
+        return phase_select_property(phase=self.phase, l=self.mul, g=self.mug)
 
-        self.isentropic_exponent = isentropic_exponent(self.Cpg, self.Cvg) if all((self.Cpg, self.Cvg)) else None
+    @property
+    def k(self):
+        r'''Thermal conductivity of the mixture at its current phase,
+        temperature, and pressure in units of W/m/K.
+        Available only if single phase.
 
-#        self.mul = viscosity_liquid_mixture(zs=self.zs, ws=self.ws, mus=self.muls, T=self.T, MW=self.MW, CASRNs=self.CASs, Method=self.mul_method)
-#        self.mug = viscosity_gas_mixture(T=self.T, ys=self.zs, ws=self.ws, mus=self.mugs, MWs=self.MWs, molecular_diameters=self.molecular_diameters, Stockmayers=self.Stockmayers, CASRNs=self.CASs, Method=self.mug_method)
-#        self.kl = thermal_conductivity_liquid_mixture(T=self.T, P=self.P, zs=self.zs, ws=self.ws, ks=self.kls, CASRNs=self.CASs, Method=self.kl_method)
-#        self.kg = thermal_conductivity_gas_mixture(T=self.T, ys=self.zs, ws=self.ws, ks=self.kgs, mus=self.mugs, Tbs=self.Tbs, MWs=self.MWs, CASRNs=self.CASs, Method=self.kg_method)
-#        self.sigma = surface_tension_mixture(xs=self.zs, sigmas=self.sigmas, rhoms=self.rholms, CASRNs=self.CASs, Method=self.sigma_method)
+        Examples
+        --------
+        >>> Mixture(['ethanol'], ws=[1], T=300).kl
+        0.16313594741877802
+        '''
+        return phase_select_property(phase=self.phase, s=None, l=self.kl, g=self.kg)
+        
+    @property
+    def nu(self):
+        r'''Kinematic viscosity of the the mixture at its current temperature,
+        pressure, and phase in units of m^2/s.
+        Available only if single phase.
 
+        .. math::
+            \nu = \frac{\mu}{\rho}
+        
+        Examples
+        --------
+        >>> Mixture(['argon'], ws=[1]).nu
+        1.3846930410865003e-05
+        '''
+        return phase_select_property(phase=self.phase, l=self.nul, g=self.nug)
+        
+    @property
+    def alpha(self):
+        r'''Thermal diffusivity of the mixture at its current temperature, 
+        pressure, and phase in units of m^2/s.
+        Available only if single phase.
 
-    def set_phase(self):
-        try:
-            self.phase_methods = identify_phase_mixture(T=self.T, P=self.P, zs=self.zs, Tcs=self.Tcs, Pcs=self.Pcs, Psats=self.Psats, CASRNs=self.CASs, AvailableMethods=True)
-            self.phase_method = self.phase_methods[0]
-            self.phase, self.xs, self.ys, self.V_over_F = identify_phase_mixture(T=self.T, P=self.P, zs=self.zs, Tcs=self.Tcs, Pcs=self.Pcs, Psats=self.Psats, CASRNs=self.CASs, Method=self.phase_method)
+        .. math::
+            \alpha = \frac{k}{\rho Cp}
 
-            if self.phase == 'two-phase':
-                self.wsl = zs_to_ws(self.xs, self.MWs)
-                self.wsg = zs_to_ws(self.ys, self.MWs)
-            
-            self.Pbubble_methods = Pbubble_mixture(T=self.T, zs=self.zs, Psats=self.Psats, CASRNs=self.CASs, AvailableMethods=True)
-            self.Pbubble_method = self.Pbubble_methods[0]
-            self.Pbubble = Pbubble_mixture(T=self.T, zs=self.zs, Psats=self.Psats, CASRNs=self.CASs, Method=self.Pbubble_method)
-    
-            self.Pdew_methods = Pdew_mixture(T=self.T, zs=self.zs, Psats=self.Psats, CASRNs=self.CASs, AvailableMethods=True)
-            self.Pdew_method = self.Pdew_methods[0]
-            self.Pdew = Pdew_mixture(T=self.T, zs=self.zs, Psats=self.Psats, CASRNs=self.CASs, Method=self.Pdew_method)
-    
-            self.rho = phase_select_property(phase=self.phase, s=self.rhos, l=self.rhol, g=self.rhog, V_over_F=self.V_over_F)
-            self.Vm = phase_select_property(phase=self.phase, s=self.Vms, l=self.Vml, g=self.Vmg, V_over_F=self.V_over_F)
-            self.Z = Z(self.T, self.P, self.Vm) if self.Vm else None
-    
-            self.Cp = phase_select_property(phase=self.phase, s=self.Cps, l=self.Cpl, g=self.Cpg, V_over_F=self.V_over_F)
-            self.Cpm = phase_select_property(phase=self.phase, s=self.Cpsm, l=self.Cplm, g=self.Cpgm, V_over_F=self.V_over_F)
-    
-            self.k = phase_select_property(phase=self.phase, s=self.ks, l=self.kl, g=self.kg)
-            self.mu = phase_select_property(phase=self.phase, l=self.mul, g=self.mug)
-            self.nu = phase_select_property(phase=self.phase, l=self.nul, g=self.nug)
-            self.Pr = phase_select_property(phase=self.phase, l=self.Prl, g=self.Prg)
-            self.alpha = phase_select_property(phase=self.phase, l=self.alphal, g=self.alphag)
-#            self.isobaric_expansion = phase_select_property(phase=self.phase, l=self.isobaric_expansion_l, g=self.isobaric_expansion_g)
-#            self.JT = phase_select_property(phase=self.phase, l=self.JTl, g=self.JTg)
-    
-            if not None in self.Hs:
-                self.H = mixing_simple(self.Hs, self.ws)
-                self.Hm = property_mass_to_molar(self.H, self.MW)
-            
-            if not None in self.Ss:
-                # Ideal gas contribution
-                self.Sm = mixing_simple(self.Sms, self.zs) - R*sum([zi*log(zi) for zi in self.zs if zi > 0])
-                self.S = property_molar_to_mass(self.Sm, self.MW)
-            
-        except:
-            pass
+        Examples
+        --------
+        >>> Mixture(['furfural'], ws=[1]).alpha
+        7.672866198927953e-08
+        '''
+        return phase_select_property(phase=self.phase, l=self.alphal, g=self.alphag)
+        
+    @property
+    def Pr(self):
+        r'''Prandtl number of the mixture at its current temperature, 
+        pressure, and phase; dimensionless.
+        Available only if single phase.
 
-    def calculate(self, T=None, P=None):
-        if T:
-            if T < 0:
-                raise Exception('Negative value specified for Mixture temperature - aborting!')
-            self.T = T
-        if P:
-            if P < 0:
-                raise Exception('Negative value specified for Mixture pressure - aborting!')
+        .. math::
+            Pr = \frac{C_p \mu}{k}
+        
+        Examples
+        --------
+        >>> Mixture(['acetone'], ws=[1]).Pr
+        4.450368847076066
+        '''
+        return phase_select_property(phase=self.phase, l=self.Prl, g=self.Prg)
 
-        self.set_TP(T=T, P=P)
-        self.set_phase()
 
     def draw_2d(self,  Hs=False): # pragma: no cover
         r'''Interface for drawing a 2D image of all the molecules in the 
@@ -3628,10 +3997,6 @@ class Mixture(object):  # pragma: no cover
         except:
             return 'Rdkit is required for this feature.'
 
-    def __repr__(self):
-        return '<Mixture, components=%s, mole fractions=%s, T=%.2f K, P=%.0f \
-Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
-
 
     def Reynolds(self, V=None, D=None):
         return Reynolds(V=V, D=D, rho=self.rho, mu=self.mu)
@@ -3655,30 +4020,6 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     def Peclet_heat(self, V=None, D=None):
         return Peclet_heat(V=V, L=D, rho=self.rho, Cp=self.Cp, k=self.k)
 
-
-    def calculate_TH(self, T, H):
-        def to_solve(P):
-            self.calculate(T, P)
-            return self.H - H
-        return newton(to_solve, self.P)
-
-    def calculate_PH(self, P, H):
-        def to_solve(T):
-            self.calculate(T, P)
-            return self.H - H
-        return newton(to_solve, self.T)
-
-    def calculate_TS(self, T, S):
-        def to_solve(P):
-            self.calculate(T, P)
-            return self.S - S
-        return newton(to_solve, self.P)
-
-    def calculate_PS(self, P, S):
-        def to_solve(T):
-            self.calculate(T, P)
-            return self.S - S
-        return newton(to_solve, self.T)
 
 
 class Stream(Mixture): # pragma: no cover

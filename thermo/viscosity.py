@@ -27,9 +27,9 @@ __all__ = ['Dutt_Prasad', 'VN3_data', 'VN2_data', 'VN2E_data', 'Perrys2_313',
 'ViswanathNatarajan2', 'ViswanathNatarajan2Exponential', 'ViswanathNatarajan3',
 'Letsou_Stiel', 'Przedziecki_Sridhar', 'viscosity_liquid_methods', 
 'viscosity_liquid_methods_P', 'ViscosityLiquid', 'ViscosityGas', 'Lucas', 
-'viscosity_liquid_mixture', 'Yoon_Thodos', 'Stiel_Thodos', 'lucas_gas', 
+'Yoon_Thodos', 'Stiel_Thodos', 'lucas_gas', 
 'Gharagheizi_gas_viscosity', 'viscosity_gas_methods', 'viscosity_gas_methods_P', 
-'Herning_Zipperer', 'Wilke', 'Brokaw', 'viscosity_gas_mixture', 
+'Herning_Zipperer', 'Wilke', 'Brokaw', 
 'viscosity_index', 'ViscosityLiquidMixture', 'ViscosityGasMixture']
 
 import os
@@ -838,57 +838,6 @@ MIXING_LOG_MOLAR = 'Logarithmic mixing, molar'
 MIXING_LOG_MASS = 'Logarithmic mixing, mass'
 
 viscosity_liquid_mixture_methods = [LALIBERTE_MU, MIXING_LOG_MOLAR, MIXING_LOG_MASS]
-
-def viscosity_liquid_mixture(T=None, MW=None, zs=None, ws=None, mus=None,
-                             CASRNs=None, AvailableMethods=False, Method=None):  # pragma: no cover
-    '''This function handles the retrival of a mixture's liquid viscosity.
-
-    This API is considered experimental, and is expected to be removed in a
-    future release in favor of a more complete object-oriented interface.
-
-    >>> viscosity_liquid_mixture(zs=[0.5, 0.5], mus=[7.413E-4, 1.3388E-3],
-    ... Method='Logarithmic mixing, molar')
-    0.0009962190722928369
-    >>> viscosity_liquid_mixture(T=278.15, ws=[0.99419, 0.005810],
-    ... CASRNs=['7732-18-5', '7647-14-5'])
-    0.0015285828581961414
-    '''
-    def list_methods():
-        methods = []
-        if CASRNs and len(CASRNs) > 1 and '7732-18-5' in CASRNs and T and ws:
-            wCASRNs = list(CASRNs)
-            wCASRNs.remove('7732-18-5')
-            if all([i in _Laliberte_Viscosity_ParametersDict for i in wCASRNs]):
-                methods.append(LALIBERTE_MU)
-        if none_and_length_check([mus]):
-            methods.append(MIXING_LOG_MOLAR)
-            methods.append(MIXING_LOG_MASS)
-        methods.append(NONE)
-        return methods
-    if AvailableMethods:
-        return list_methods()
-    if not Method:
-        Method = list_methods()[0]
-    # This is the calculate, given the method section
-    if Method == MIXING_LOG_MOLAR:
-        if not none_and_length_check([mus, zs]):  # check same-length inputs
-            raise Exception('Function inputs are incorrect format')
-        _mu = mixing_logarithmic(zs, mus)
-    elif Method == MIXING_LOG_MASS:
-        if not none_and_length_check([mus, zs]):  # check same-length inputs
-            raise Exception('Function inputs are incorrect format')
-        _mu = mixing_logarithmic(ws, mus)
-    elif Method == LALIBERTE_MU:
-        ws = list(ws)
-        ws.remove(ws[CASRNs.index('7732-18-5')])
-        wCASRNs = list(CASRNs)
-        wCASRNs.remove('7732-18-5')
-        _mu = Laliberte_viscosity(T, ws, wCASRNs)
-    elif Method == NONE:
-        return None
-    else:
-        raise Exception('Failure in in function')
-    return _mu
 
 
 class ViscosityLiquidMixture(MixtureProperty):
@@ -1890,58 +1839,6 @@ HERNING_ZIPPERER = 'Herning-Zipperer'
 WILKE = 'Wilke'
 SIMPLE = 'Simple'
 viscosity_gas_mixture_methods = [BROKAW, HERNING_ZIPPERER, WILKE, SIMPLE]
-
-
-def viscosity_gas_mixture(T=None, ys=None, ws=None, mus=None, MWs=None,
-                          molecular_diameters=None, Stockmayers=None,
-                          CASRNs=None, AvailableMethods=False, Method=None):  # pragma: no cover
-    '''This function handles the retrival of a mixture's gas viscosity.
-
-    This API is considered experimental, and is expected to be removed in a
-    future release in favor of a more complete object-oriented interface.
-
-    >>> viscosity_gas_mixture(T=308.2, ys=[0.05, 0.95], mus=[1.34E-5, 9.5029E-6], MWs=[64.06, 46.07], molecular_diameters=[0.42, 0.19], Stockmayers=[347, 432])
-    9.699085099801568e-06
-    >>> viscosity_gas_mixture(ys=[0.05, 0.95], mus=[1.34E-5, 9.5029E-6], MWs=[64.06, 46.07], Method='Herning-Zipperer')
-    9.730630997268096e-06
-    >>> viscosity_gas_mixture(ys=[0.05, 0.95], mus=[1.34E-5, 9.5029E-6], Method='Simple')
-    9.697755e-06
-    >>> viscosity_gas_mixture(ys=[0.05, 0.95], mus=[1.34E-5, 9.5029E-6], MWs=[64.06, 46.07], Method='Wilke')
-    9.701614885866193e-06
-    '''
-    def list_methods():
-        methods = []
-        if T and none_and_length_check([mus, MWs, molecular_diameters, Stockmayers]):
-            methods.append(BROKAW)
-        if none_and_length_check([mus]):
-            methods.append(SIMPLE)
-        if none_and_length_check([mus, MWs]):
-            methods.append(HERNING_ZIPPERER)
-            methods.append(WILKE)
-        methods.append(NONE)
-        return methods
-    if AvailableMethods:
-        return list_methods()
-    if not Method:
-        Method = list_methods()[0]
-    # This is the calculate, given the method section
-    if not none_and_length_check([mus, ys]): # check same-length inputs
-        # Deal with the lack of available data
-        return None
-#        raise Exception('Function inputs are incorrect format')
-    if Method == HERNING_ZIPPERER:
-        _mu = Herning_Zipperer(ys, mus, MWs)
-    elif Method == BROKAW:
-        _mu = Brokaw(T, ys, mus, MWs, molecular_diameters, Stockmayers)
-    elif Method == SIMPLE:
-        _mu = mixing_simple(ys, mus)
-    elif Method == WILKE:
-        _mu = Wilke(ys, mus, MWs)
-    elif Method == NONE:
-        return None
-    else:
-        raise Exception('Failure in in function')
-    return _mu
 
 
 class ViscosityGasMixture(MixtureProperty):

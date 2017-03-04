@@ -29,7 +29,7 @@ __all__ = ['COSTALD_data', 'SNM0_data', 'Perry_l_data', 'CRC_inorg_l_data',
 'Bhirud_normal', 'COSTALD', 'Campbell_Thodos', 'SNM0', 'CRC_inorganic', 
 'volume_liquid_methods', 'volume_liquid_methods_P', 'VolumeLiquid', 
 'COSTALD_compressed', 'Amgat', 'Rackett_mixture', 'COSTALD_mixture', 
-'volume_liquid_mixture', 'ideal_gas', 'volume_gas_methods', 'VolumeGas', 
+'ideal_gas', 'volume_gas_methods', 'VolumeGas', 
 'volume_gas_mixture_methods', 'Goodman', 'volume_solid_methods', 'VolumeSolid',
 'VolumeLiquidMixture', 'VolumeGasMixture']
 
@@ -1479,81 +1479,7 @@ COSTALD_MIXTURE_FIT = 'COSTALD mixture parameters'
 SIMPLE = 'SIMPLE'
 RACKETT = 'RACKETT'
 RACKETT_PARAMETERS = 'RACKETT Parameters'
-volume_liquid_mixture_methods = [LALIBERTE, COSTALD_MIXTURE_FIT, RACKETT_PARAMETERS, COSTALD, SIMPLE, RACKETT]
-
-def volume_liquid_mixture(xs=None, ws=None, Vms=None, T=None, MWs=None, MW=None,
-                          Tcs=None, Pcs=None, Vcs=None, Zcs=None, omegas=None,
-                          Tc=None, Pc=None, Vc=None, Zc=None, omega=None,
-                          CASRNs=None, AvailableMethods=False, Method=None,
-                          Molar=False):  # pragma: no cover
-    '''This function handles the retrival of a liquid mixture's density.
-
-    This API is considered experimental, and is expected to be removed in a
-    future release in favor of a more complete object-oriented interface.
-    '''
-    def list_methods():
-        methods = []
-
-        # Laliberte method
-        if CASRNs and len(CASRNs) > 1 and '7732-18-5' in CASRNs and T and ws:
-            wCASRNs = list(CASRNs)
-            wCASRNs.remove('7732-18-5')
-            if all([i in _Laliberte_Density_ParametersDict for i in wCASRNs]):
-                methods.append(LALIBERTE)
-        # COSTALD method
-        if T and none_and_length_check([Tcs, Vcs, omegas]):
-            if CASRNs:
-                if all([i in COSTALD_data.index for i in CASRNs]):
-                    methods.append(COSTALD_MIXTURE_FIT)
-            methods.append(COSTALD_MIXTURE)
-        # Rackett addition
-        if none_and_length_check([Vms]):
-            methods.append(SIMPLE)
-        if T and none_and_length_check([MWs, Tcs, Pcs, Zcs]) and CASRNs:
-            if all([i in COSTALD_data.index for i in CASRNs]):
-                methods.append(RACKETT)
-        methods.append(NONE)
-        return methods
-    if AvailableMethods:
-        return list_methods()
-    if not Method:
-        Method = list_methods()[0]
-    # This is the calculate, given the method section
-    if Method == COSTALD_MIXTURE:
-        _Vm = COSTALD_mixture(xs, T, Tcs, Vcs, omegas)
-    elif Method == COSTALD_MIXTURE_FIT:
-        for i in range(len(CASRNs)):
-            Vcs, omegas = list(Vcs), list(omegas) # Copy to not edit originals
-            if CASRNs[i] in COSTALD_data.index:
-                Vcs[i] = COSTALD_data.at[CASRNs[i],'Vchar']
-                omegas[i] =  COSTALD_data.at[CASRNs[i],'omega_SRK']
-        _Vm = COSTALD_mixture(xs, T, Tcs, Vcs, omegas)
-    elif Method == RACKETT_PARAMETERS:
-        Zcs = list(Zcs) # Copy to not edit originals
-        for i in range(len(CASRNs)):
-            if CASRNs[i] in COSTALD_data.index and not np.isnan(COSTALD_data.at[CASRNs[i],'Z_RA']):
-                Zcs[i] = COSTALD_data.at[CASRNs[i],'Z_RA']
-        _Vm = Rackett_mixture(T, xs, MWs, Tcs, Pcs, Zcs)
-    elif Method == LALIBERTE:
-        ws = list(ws)
-        ws.remove(ws[CASRNs.index('7732-18-5')])
-        wCASRNs = list(CASRNs)
-        wCASRNs.remove('7732-18-5')
-        rho = Laliberte_density(T, ws, wCASRNs)
-        _Vm = rho_to_Vm(rho, MW)
-    elif Method == RACKETT:
-        _Vm = Rackett_mixture(xs, T, MWs, MW, Tcs, Pcs, Zcs)
-    elif Method == SIMPLE:
-        _Vm = Amgat(xs, Vms)
-    elif Method == NONE:
-        return None
-    else:
-        raise Exception('Failure in in function')
-    if Molar:
-        return _Vm
-    elif _Vm:
-        _rho = Vm_to_rho(_Vm, MW)
-        return _rho
+volume_liquid_mixture_methods = [LALIBERTE, SIMPLE, COSTALD_MIXTURE_FIT, RACKETT_PARAMETERS, COSTALD, RACKETT]
 
 
 class VolumeLiquidMixture(MixtureProperty):
@@ -1966,11 +1892,9 @@ class VolumeGas(TPDependentProperty):
         if an interpolation transform is altered, the old interpolator which
         had been created is no longer used.'''
 
-#        self.sorted_valid_methods = []
         self.sorted_valid_methods_P = []
         '''sorted_valid_methods_P, list: Stored methods which were found valid
         at a specific temperature; set by `TP_dependent_property`.'''
-#        self.user_methods = []
         self.user_methods_P = []
         '''user_methods_P, list: Stored methods which were specified by the user
         in a ranked order of preference; set by `TP_dependent_property`.'''
@@ -2031,8 +1955,6 @@ class VolumeGas(TPDependentProperty):
         if method == EOS:
             self.eos[0] = self.eos[0].to_TP(T=T, P=P)
             Vm = self.eos[0].V_g
-#        if method == PR:
-#            Vm = PR_Vm(T, P, self.Tc, self.Pc, self.omega, phase='g')
         elif method == TSONOPOULOS_EXTENDED:
             B = BVirial_Tsonopoulos_extended(T, self.Tc, self.Pc, self.omega, dipole=self.dipole)
             Vm = ideal_gas(T, P) + B
@@ -2120,67 +2042,8 @@ class VolumeGas(TPDependentProperty):
         return validity
 
 
-PR_PSEUDO = 'Peng-Robinson pseudochemical'
-TSONOPOULOS_EXTENDED_PSEUDO = 'Tsonopoulos extended pseudochemical'
-TSONOPOULOS_PSEUDO = 'Tsonopoulos pseudochemical'
-ABBOTT_PSEUDO = 'Abbott pseudochemical'
-PITZER_CURL_PSEUDO = 'Pitzer-Curl pseudochemical'
-volume_gas_mixture_methods = [PR_PSEUDO, TSONOPOULOS_EXTENDED_PSEUDO,
-                              TSONOPOULOS_PSEUDO, ABBOTT_PSEUDO,
-                              PITZER_CURL_PSEUDO, IDEAL]
+volume_gas_mixture_methods = [EOS, SIMPLE, IDEAL]
 
-
-def volume_gas_mixture(ys=None, Vms=None, T=None, P=None, Tc=None, Pc=None,
-                        omega=None, MW=None, CASRNs=None,
-                        AvailableMethods=False, Method=None):  # pragma: no cover
-    '''This function handles the retrival of a gas mixture's density.
-
-    This API is considered experimental, and is expected to be removed in a
-    future release in favor of a more complete object-oriented interface.
-    '''
-    def list_methods():
-        methods = []
-        if none_and_length_check([Vms]):
-            methods.append(SIMPLE)
-        if T and P and Tc and Pc and omega:
-            methods.append(PR_PSEUDO)
-        if Tc and Pc and omega:
-            methods.append(TSONOPOULOS_EXTENDED_PSEUDO)
-            methods.append(TSONOPOULOS_PSEUDO)
-            methods.append(ABBOTT_PSEUDO)
-            methods.append(PITZER_CURL_PSEUDO)
-        if T and P:
-            methods.append(IDEAL)
-        methods.append(NONE)
-        return methods
-    if AvailableMethods:
-        return list_methods()
-    if not Method:
-        Method = list_methods()[0]
-    # This is the calculate, given the method section
-    if Method == SIMPLE:
-        V = mixing_simple(ys, Vms)
-    elif Method == PR_PSEUDO:
-        V = PR78(T=T, P=P, Tc=Tc, Pc=Pc, omega=omega).V_g
-    elif Method == TSONOPOULOS_EXTENDED_PSEUDO:
-        B = BVirial_Tsonopoulos_extended(T, Tc, Pc, omega)
-        V = ideal_gas(T, P) + B
-    elif Method == TSONOPOULOS_PSEUDO:
-        B = BVirial_Tsonopoulos(T, Tc, Pc, omega)
-        V = ideal_gas(T, P) + B
-    elif Method == ABBOTT_PSEUDO:
-        B = BVirial_Abbott(T, Tc, Pc, omega)
-        V = ideal_gas(T, P) + B
-    elif Method == PITZER_CURL_PSEUDO:
-        B = BVirial_Pitzer_Curl(T, Tc, Pc, omega)
-        V = ideal_gas(T, P) + B
-    elif Method == IDEAL:
-        V = ideal_gas(T, P)
-    elif Method == NONE:
-        V = None
-    else:
-        raise Exception('Failure in in function')
-    return V
 
 
 class VolumeGasMixture(MixtureProperty):
@@ -2193,17 +2056,13 @@ class VolumeGasMixture(MixtureProperty):
     '''Maximum valid value of gas molar volume. Set roughly at an ideal gas
     at 1 Pa and 2 billion K.'''
                             
-    ranked_methods = [EOS, SIMPLE, TSONOPOULOS_EXTENDED_PSEUDO, 
-                      TSONOPOULOS_PSEUDO, ABBOTT_PSEUDO, PITZER_CURL_PSEUDO]
+    ranked_methods = [EOS, SIMPLE, IDEAL]
 
-    def __init__(self, Tc=None, Pc=None, omega=None, Tcs=[], Pcs=[], omegas=[], 
-                 eos=None, CASs=[], VolumeGases=[]):
+    def __init__(self, Tcs=[], Pcs=[], omegas=[], eos=None, CASs=[], 
+                 VolumeGases=[]):
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.omegas = omegas
-        self.Tc = Tc
-        self.Pc = Pc
-        self.omega = omega
         self.CASs = CASs
         self.VolumeGases = VolumeGases
         self.eos = eos
@@ -2239,13 +2098,12 @@ class VolumeGasMixture(MixtureProperty):
         to reset the parameters.
         '''
         methods = [SIMPLE, IDEAL]     
-        if all([self.Tc, self.Pc, self.omega]):
-            methods.extend([TSONOPOULOS_EXTENDED_PSEUDO, TSONOPOULOS_PSEUDO,
-                            ABBOTT_PSEUDO, PITZER_CURL_PSEUDO])
+        if self.eos:
+            methods.append(EOS)
         if none_and_length_check([self.Tcs, self.Pcs, self.omegas]):
             methods.append(EOS)
         self.all_methods = set(methods)
-            
+        
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate molar volume of a gas mixture at 
         temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
@@ -2275,20 +2133,11 @@ class VolumeGasMixture(MixtureProperty):
         if method == SIMPLE:
             Vms = [i(T, P) for i in self.VolumeGas]
             return mixing_simple(zs, Vms)
-        elif method == TSONOPOULOS_EXTENDED_PSEUDO:
-            B = BVirial_Tsonopoulos_extended(T, self.Tc, self.Pc, self.omega)
-            return ideal_gas(T, P) + B
-        elif method == TSONOPOULOS_PSEUDO:
-            B = BVirial_Tsonopoulos(T, self.Tc, self.Pc, self.omega)
-            return ideal_gas(T, P) + B
-        elif method == ABBOTT_PSEUDO:
-            B = BVirial_Abbott(T, self.Tc, self.Pc, self.omega)
-            return ideal_gas(T, P) + B
-        elif method == PITZER_CURL_PSEUDO:
-            B = BVirial_Pitzer_Curl(T, self.Tc, self.Pc, self.omega)
-            return ideal_gas(T, P) + B
+        elif method == IDEAL:
+            return ideal_gas(T, P)
         elif method == EOS:
-            return self.eos.to_TP(T=T, P=P).V_g
+            self.eos[0] = self.eos[0].to_TP_zs(T=T, P=P, zs=zs)
+            return self.eos[0].V_g
         else:
             raise Exception('Method not valid')
 

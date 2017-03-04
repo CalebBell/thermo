@@ -26,7 +26,6 @@ from thermo import elements
 from thermo import combustion
 from thermo import critical
 from thermo import triple
-from thermo import pr
 from thermo import virial
 from thermo import activity
 from thermo import vapor_pressure
@@ -69,7 +68,6 @@ if __name__ == '__main__':
     import doctest
     doctest.testmod(critical)
     doctest.testmod(triple)
-    doctest.testmod(pr)
     doctest.testmod(virial)
 #    doctest.testmod(adsorption)
 #    doctest.testmod(activity)

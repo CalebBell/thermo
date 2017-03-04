@@ -3537,7 +3537,7 @@ class MixtureProperty(object):
         plt.show()
 
 
-    def plot_property(self, zs, ws, Tmin=None, Tmax=None, Pmin=None, Pmax=None, 
+    def plot_property(self, zs, ws, Tmin=None, Tmax=None, Pmin=1E5, Pmax=1E6, 
                       methods=[], pts=15, only_valid=True):  # pragma: no cover
         r'''Method to create a plot of the property vs temperature and pressure 
         according to either a specified list of methods, or user methods (if 
