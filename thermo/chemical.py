@@ -2383,7 +2383,6 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         self.ys = None
         self.phase = None
         self.V_over_F = None
-        self.isentropic_exponent = None
         self.conductivity = None
         self.Hm = None
         self.H = None
@@ -2538,7 +2537,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     def eos(self, eos):
         if self.eos_in_a_box:
             self.eos_in_a_box.pop()
-        self.eos_in_a_box.append(eos) 
+        self.eos_in_a_box.append(eos)
 
     def set_TP_sources(self):
         self.VolumeSolids = [i.VolumeSolid for i in self.Chemicals]
@@ -2554,35 +2553,21 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         self.SurfaceTensions = [i.SurfaceTension for i in self.Chemicals]
         self.Permittivities = [i.Permittivity for i in self.Chemicals]
         
-        # Tempearture and Pressure Denepdence
-        # No vapor pressure (bubble-dew points)
-
         self.VolumeLiquidMixture = VolumeLiquidMixture(MWs=self.MWs, Tcs=self.Tcs, Pcs=self.Pcs, Vcs=self.Vcs, Zcs=self.Zcs, omegas=self.omegas, CASs=self.CASs, VolumeLiquids=self.VolumeLiquids)
         self.VolumeGasMixture = VolumeGasMixture(eos=self.eos_in_a_box, CASs=self.CASs, VolumeGases=self.VolumeGases)
 
-        # No solid density, or heat capacity
-        # No Hvap, no Hsub, no Hfus
         self.HeatCapacityLiquidMixture = HeatCapacityLiquidMixture(MWs=self.MWs, CASs=self.CASs, HeatCapacityLiquids=self.HeatCapacityLiquids)
         self.HeatCapacityGasMixture = HeatCapacityGasMixture(CASs=self.CASs, HeatCapacityGases=self.HeatCapacityGases)
         self.HeatCapacitySolidMixture = HeatCapacitySolidMixture(CASs=self.CASs, HeatCapacitySolids=self.HeatCapacitySolids)
 
         self.ViscosityLiquidMixture = ViscosityLiquidMixture(CASs=self.CASs, ViscosityLiquids=self.ViscosityLiquids)
         self.ViscosityGasMixture = ViscosityGasMixture(MWs=self.MWs, molecular_diameters=self.molecular_diameters, Stockmayers=self.Stockmayers, CASs=self.CASs, ViscosityGases=self.ViscosityGases)
+        
         self.ThermalConductivityLiquidMixture = ThermalConductivityLiquidMixture(CASs=self.CASs, ThermalConductivityLiquids=self.ThermalConductivityLiquids)
         self.ThermalConductivityGasMixture = ThermalConductivityGasMixture(MWs=self.MWs, Tbs=self.Tbs, CASs=self.CASs, ThermalConductivityGases=self.ThermalConductivityGases, ViscosityGases=self.ViscosityGases)
+        
         self.SurfaceTensionMixture = SurfaceTensionMixture(MWs=self.MWs, Tbs=self.Tbs, Tcs=self.Tcs, CASs=self.CASs, SurfaceTensions=self.SurfaceTensions, VolumeLiquids=self.VolumeLiquids)
         
-        self.Vml_STP = self.VolumeLiquidMixture(T=298.15, P=101325., zs=self.zs, ws=self.ws)
-        self.Vmg_STP = self.VolumeGasMixture(T=298.15, P=101325, zs=self.zs, ws=self.ws)
-        
-        self.rhol_STP = Vm_to_rho(self.Vml_STP, self.MW) if self.Vml_STP else None
-        self.Zl_STP = Z(298.15, 101325, self.Vml_STP) if self.Vml_STP else None
-        self.rholm_STP = 1./self.Vml_STP if self.Vml_STP else None
-
-        self.rhog_STP = Vm_to_rho(self.Vmg_STP, self.MW) if self.Vmg_STP else None
-        self.Zg_STP = Z(298.15, 101325, self.Vmg_STP) if self.Vmg_STP else None
-        self.rhogm_STP = 1./self.Vmg_STP if self.Vmg_STP else None
-
     def set_TP(self, T=None, P=None):
         if T:
             self.T = T
@@ -2590,15 +2575,6 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
             self.P = P
         self.set_chemical_TP()
         self.set_eos(T=self.T, P=self.P)
-
-#        self.Cpl = Cp_liq_mixture(zs=self.zs, ws=self.ws, Cps=self.Cpls, T=self.T, CASRNs=self.CASs, Method=self.Cpl_method)
-#        self.Cpg = Cp_gas_mixture(zs=self.zs, ws=self.ws, Cps=self.Cpgs, CASRNs=self.CASs, Method=self.Cpg_method)
-#        self.Cvg = Cv_gas_mixture(zs=self.zs, ws=self.ws, Cps=self.Cvgs, CASRNs=self.CASs, Method=self.Cvg_method)
-#        self.Cpgm = property_mass_to_molar(self.Cpg, self.MW)
-#        self.Cplm = property_mass_to_molar(self.Cpl, self.MW)
-#        self.Cvgm = property_mass_to_molar(self.Cvg, self.MW)
-
-        self.isentropic_exponent = isentropic_exponent(self.Cpg, self.Cvg) if all((self.Cpg, self.Cvg)) else None
 
     def set_phase(self):
         try:
@@ -3613,6 +3589,22 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         return None
 
     @property
+    def isentropic_exponent(self):
+        r'''Gas-phase ideal-gas isentropic exponent of the mixture at its 
+        current temperature, dimensionless. Does not include  
+        pressure-compensation from an equation of state.
+                
+        Examples
+        --------
+        >>> Mixture(['hydrogen'], ws=[1]).isentropic_exponent
+        1.405237786321222
+        '''
+        Cp, Cv = self.Cpg, self.Cvg
+        if Cp and Cv:
+            return isentropic_exponent(Cp, Cv)
+        return None
+
+    @property
     def Bvirial(self):
         r'''Second virial coefficient of the gas phase of the mixture at its 
         current temperature, pressure, and composition in units of mol/m^3. 
@@ -4097,6 +4089,122 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         '''
         return phase_select_property(phase=self.phase, l=self.Prl, g=self.Prg)
 
+    ### Standard state properties
+    
+    @property
+    def Vml_STP(self):
+        r'''Liquid-phase molar volume of the mixture at 298.15 K and 101.325 kPa,
+        and the current composition in units of mol/m^3. 
+
+        Examples
+        --------
+        >>> Mixture(['cyclobutane'], ws=[1]).Vml_STP
+        8.143327329133706e-05
+        '''
+        return self.VolumeLiquidMixture(T=298.15, P=101325, zs=self.zs, ws=self.ws)
+
+    @property
+    def Vmg_STP(self):
+        r'''Gas-phase molar volume of the mixture at 298.15 K and 101.325 kPa,
+        and the current composition in units of mol/m^3. 
+
+        Examples
+        --------
+        >>> Mixture(['nitrogen'], ws=[1]).Vmg_STP
+        0.023832508854853822
+        '''
+        return self.VolumeGasMixture(T=298.15, P=101325, zs=self.zs, ws=self.ws)
+
+    @property
+    def rhol_STP(self):
+        r'''Liquid-phase mass density of the mixture at 298.15 K and 101.325 kPa,
+        and the current composition in units of kg/m^3. 
+
+        Examples
+        --------
+        >>> Mixture(['cyclobutane'], ws=[1]).rhol_STP
+        8.143327329133706e-05
+        '''
+        Vml = self.Vml_STP
+        if Vml:
+            return Vm_to_rho(Vml, self.MW)
+        return None
+
+    @property
+    def rhog_STP(self):
+        r'''Gas-phase mass density of the mixture at 298.15 K and 101.325 kPa,
+        and the current composition in units of kg/m^3. 
+
+        Examples
+        --------
+        >>> Mixture(['nitrogen'], ws=[1]).rhog_STP
+        1.145534453639403
+        '''
+        Vmg = self.Vmg_STP
+        if Vmg:
+            return Vm_to_rho(Vmg, self.MW)
+        return None
+
+    @property
+    def Zl_STP(self):
+        r'''Liquid-phase compressibility factor of the mixture at 298.15 K and 101.325 kPa,
+        and the current composition, dimensionless. 
+
+        Examples
+        --------
+        >>> Mixture(['cyclobutane'], ws=[1]).Zl_STP
+        0.0033285083663950068
+        '''
+        Vml = self.Vml
+        if Vml:
+            return Z(self.T, self.P, Vml)
+        return None
+
+    @property
+    def Zg_STP(self):
+        r'''Gas-phase compressibility factor of the mixture at 298.15 K and 101.325 kPa,
+        and the current composition, dimensionless. 
+
+        Examples
+        --------
+        >>> Mixture(['nitrogen'], ws=[1]).Zg_STP
+        0.9741313582196732
+        '''
+        Vmg = self.Vmg
+        if Vmg:
+            return Z(self.T, self.P, Vmg)
+        return None
+
+    @property
+    def rholm_STP(self):
+        r'''Molar density of the mixture in the liquid phase at 298.15 K and 101.325 kPa,
+        and the current composition, in units of mol/m^3.
+        
+        Examples
+        --------
+        >>> Mixture(['water'], ws=[1]).rholm_STP
+        55344.59086372442
+        '''
+        Vml = self.Vml_STP
+        if Vml:
+            return 1./Vml 
+        return None
+
+
+    @property
+    def rhogm_STP(self):
+        r'''Molar density of the mixture in the gas phase at 298.15 K and 101.325 kPa,
+        and the current composition, in units of mol/m^3.
+        
+        Examples
+        --------
+        >>> Mixture(['nitrogen'], ws=[1]).rhogm_STP
+        41.52499528507661
+        '''
+        Vmg = self.Vmg_STP
+        if Vmg:
+            return 1./Vmg
+        return None
 
     def draw_2d(self,  Hs=False): # pragma: no cover
         r'''Interface for drawing a 2D image of all the molecules in the 
