@@ -38,7 +38,7 @@ from thermo.triple import Tt, Pt
 from thermo.thermal_conductivity import ThermalConductivityLiquid, ThermalConductivityGas, ThermalConductivityLiquidMixture, ThermalConductivityGasMixture
 from thermo.volume import VolumeGas, VolumeLiquid, VolumeSolid, VolumeLiquidMixture, VolumeGasMixture
 from thermo.permittivity import *
-from thermo.heat_capacity import HeatCapacitySolid, HeatCapacityGas, HeatCapacityLiquid, HeatCapacitySolidMixture, HeatCapacityGasMixture, Cp_liq_mixture
+from thermo.heat_capacity import HeatCapacitySolid, HeatCapacityGas, HeatCapacityLiquid, HeatCapacitySolidMixture, HeatCapacityGasMixture, HeatCapacityLiquidMixture
 from thermo.interface import SurfaceTension, SurfaceTensionMixture
 from thermo.viscosity import ViscosityLiquid, ViscosityGas, ViscosityLiquidMixture, ViscosityGasMixture, viscosity_index
 from thermo.reaction import Hf
@@ -2562,17 +2562,8 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
 
         # No solid density, or heat capacity
         # No Hvap, no Hsub, no Hfus
-
-        self.Cpl_methods = Cp_liq_mixture(zs=self.zs, ws=self.ws, Cps=self.Cpls, T=self.T, CASRNs=self.CASs, AvailableMethods=True)
-        self.Cpl_method = self.Cpl_methods[0]
-        
+        self.HeatCapacityLiquidMixture = HeatCapacityLiquidMixture(MWs=self.MWs, CASs=self.CASs, HeatCapacityLiquids=self.HeatCapacityLiquids)
         self.HeatCapacityGasMixture = HeatCapacityGasMixture(CASs=self.CASs, HeatCapacityGases=self.HeatCapacityGases)
-
-#        self.Cpg_methods = Cp_gas_mixture(zs=self.zs, ws=self.ws, Cps=self.Cpgs, CASRNs=self.CASs, AvailableMethods=True)
-#        self.Cpg_method = self.Cpg_methods[0]
-#        self.Cvg_methods = Cv_gas_mixture(zs=self.zs, ws=self.ws, Cps=self.Cvgs, CASRNs=self.CASs, AvailableMethods=True)
-#        self.Cvg_method = self.Cvg_methods[0]
-        
         self.HeatCapacitySolidMixture = HeatCapacitySolidMixture(CASs=self.CASs, HeatCapacitySolids=self.HeatCapacitySolids)
 
         self.ViscosityLiquidMixture = ViscosityLiquidMixture(CASs=self.CASs, ViscosityLiquids=self.ViscosityLiquids)
@@ -2600,11 +2591,11 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         self.set_chemical_TP()
         self.set_eos(T=self.T, P=self.P)
 
-        self.Cpl = Cp_liq_mixture(zs=self.zs, ws=self.ws, Cps=self.Cpls, T=self.T, CASRNs=self.CASs, Method=self.Cpl_method)
+#        self.Cpl = Cp_liq_mixture(zs=self.zs, ws=self.ws, Cps=self.Cpls, T=self.T, CASRNs=self.CASs, Method=self.Cpl_method)
 #        self.Cpg = Cp_gas_mixture(zs=self.zs, ws=self.ws, Cps=self.Cpgs, CASRNs=self.CASs, Method=self.Cpg_method)
 #        self.Cvg = Cv_gas_mixture(zs=self.zs, ws=self.ws, Cps=self.Cvgs, CASRNs=self.CASs, Method=self.Cvg_method)
 #        self.Cpgm = property_mass_to_molar(self.Cpg, self.MW)
-        self.Cplm = property_mass_to_molar(self.Cpl, self.MW)
+#        self.Cplm = property_mass_to_molar(self.Cpl, self.MW)
 #        self.Cvgm = property_mass_to_molar(self.Cvg, self.MW)
 
         self.isentropic_exponent = isentropic_exponent(self.Cpg, self.Cvg) if all((self.Cpg, self.Cvg)) else None
@@ -3496,6 +3487,22 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         return self.HeatCapacitySolidMixture(self.T, self.P, self.zs, self.ws)
 
     @property
+    def Cplm(self):
+        r'''Liquid-phase heat capacity of the mixture at its current 
+        temperature and composition, in units of J/mol/K. For calculation of 
+        this property at other temperatures or compositions, or specifying 
+        manually the method used to calculate it, and more - see the object 
+        oriented interface :obj:`thermo.heat_capacity.HeatCapacityLiquidMixture`; 
+        each Mixture instance creates one to actually perform the calculations.
+        
+        Examples
+        --------
+        >>> Mixture(['toluene', 'decane'], ws=[.9, .1], T=300)
+        168.29157865567112
+        '''
+        return self.HeatCapacityLiquidMixture(self.T, self.P, self.zs, self.ws)
+
+    @property
     def Cpgm(self):
         r'''Gas-phase heat capacity of the mixture at its current temperature 
         and composition, in units of J/mol/K. For calculation of this property
@@ -3529,6 +3536,26 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Cpsm = self.HeatCapacitySolidMixture(self.T, self.P, self.zs, self.ws)
         if Cpsm:
             return property_molar_to_mass(Cpsm, self.MW)
+        return None
+
+    @property
+    def Cpl(self):
+        r'''Liquid-phase heat capacity of the mixture at its current 
+        temperature and composition, in units of J/kg/K. For calculation of 
+        this property at other temperatures or compositions, or specifying 
+        manually the method used to calculate it, and more - see the object 
+        oriented interface :obj:`thermo.heat_capacity.HeatCapacityLiquidMixture`; 
+        each Mixture instance creates one to actually perform the calculations. 
+        Note that that interface provides output in molar units.
+        
+        Examples
+        --------
+        >>> Mixture(['water', 'sodium chloride'], ws=[.9, .1], T=301.5).Cpl
+        3735.460407940075
+        '''
+        Cplm = self.HeatCapacityLiquidMixture(self.T, self.P, self.zs, self.ws)
+        if Cplm:
+            return property_molar_to_mass(Cplm, self.MW)
         return None
 
     @property

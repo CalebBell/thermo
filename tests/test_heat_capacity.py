@@ -556,3 +556,28 @@ def test_HeatCapacityGasMixture():
         obj.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
 
 
+def test_HeatCapacityLiquidMixture():
+    from thermo import Mixture
+    from thermo.heat_capacity import HeatCapacityLiquidMixture, SIMPLE
+    
+    m = Mixture(['water', 'sodium chloride'], ws=[.9, .1], T=301.5)
+    obj = HeatCapacityLiquidMixture(MWs=m.MWs, CASs=m.CASs, HeatCapacityLiquids=m.HeatCapacityLiquids)
+    
+    Cp = obj(m.T, m.P, m.zs, m.ws)
+    assert_allclose(Cp, 72.29643435124115)
+    
+    Cp = obj.calculate(m.T, m.P, m.zs, m.ws, SIMPLE)
+    assert_allclose(Cp, 78.90470515935154)
+    
+    m = Mixture(['toluene', 'decane'], ws=[.9, .1], T=300)
+    obj = HeatCapacityLiquidMixture(CASs=m.CASs, HeatCapacityLiquids=m.HeatCapacityLiquids)
+    assert_allclose(obj(m.T, m.P, m.zs, m.ws), 168.29157865567112)
+
+    # Unhappy paths
+    with pytest.raises(Exception):
+        obj.calculate(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
+        
+    with pytest.raises(Exception):
+        obj.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
+
+
