@@ -518,4 +518,21 @@ def test_Zabransky_dicts():
     for i in range(len(spline_dicts)):
         tot = [np.sum([np.sum(np.abs(getattr(k, j))) for k in spline_dicts[i].values()]) for j in attrs]
         assert_allclose(tot, sums[i])
+
+
+def test_HeatCapacitySolidMixture():
+    from thermo import Mixture
+    from thermo.heat_capacity import HeatCapacitySolidMixture
+    
+    m = Mixture(['silver', 'platinum'], ws=[0.95, 0.05])
+    obj = HeatCapacitySolidMixture(CASs=m.CASs, HeatCapacitySolids=m.HeatCapacitySolids)
+    
+    Cp = obj(m.T, m.P, m.zs, m.ws)
+    assert_allclose(Cp, 25.32745719036059)
+
+    # Unhappy paths
+    with pytest.raises(Exception):
+        obj.calculate(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
         
+    with pytest.raises(Exception):
+        obj.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')

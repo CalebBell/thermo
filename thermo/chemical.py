@@ -38,7 +38,7 @@ from thermo.triple import Tt, Pt
 from thermo.thermal_conductivity import ThermalConductivityLiquid, ThermalConductivityGas, ThermalConductivityLiquidMixture, ThermalConductivityGasMixture
 from thermo.volume import VolumeGas, VolumeLiquid, VolumeSolid, VolumeLiquidMixture, VolumeGasMixture
 from thermo.permittivity import *
-from thermo.heat_capacity import HeatCapacitySolid, HeatCapacityGas, HeatCapacityLiquid, Cp_gas_mixture, Cv_gas_mixture, Cp_liq_mixture
+from thermo.heat_capacity import HeatCapacitySolid, HeatCapacityGas, HeatCapacityLiquid, HeatCapacitySolidMixture, Cp_gas_mixture, Cv_gas_mixture, Cp_liq_mixture
 from thermo.interface import SurfaceTension, SurfaceTensionMixture
 from thermo.viscosity import ViscosityLiquid, ViscosityGas, ViscosityLiquidMixture, ViscosityGasMixture, viscosity_index
 from thermo.reaction import Hf
@@ -2379,8 +2379,6 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         self.ks = None
         self.Vms = None
         self.rhos = None
-        self.Cps = None
-        self.Cpsm = None
         self.xs = None
         self.ys = None
         self.phase = None
@@ -2573,6 +2571,8 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
 
         self.Cvg_methods = Cv_gas_mixture(zs=self.zs, ws=self.ws, Cps=self.Cvgs, CASRNs=self.CASs, AvailableMethods=True)
         self.Cvg_method = self.Cvg_methods[0]
+        
+        self.HeatCapacitySolidMixture = HeatCapacitySolidMixture(CASs=self.CASs, HeatCapacitySolids=self.HeatCapacitySolids)
 
         self.ViscosityLiquidMixture = ViscosityLiquidMixture(CASs=self.CASs, ViscosityLiquids=self.ViscosityLiquids)
         self.ViscosityGasMixture = ViscosityGasMixture(MWs=self.MWs, molecular_diameters=self.molecular_diameters, Stockmayers=self.Stockmayers, CASs=self.CASs, ViscosityGases=self.ViscosityGases)
@@ -3474,8 +3474,8 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         current temperature, pressure, and composition, dimensionless.
         
         Utilizes the object oriented interface and 
-        :obj:`thermo.volume.VolumeGasMixture` to perform the actual calculation of 
-        molar volume.
+        :obj:`thermo.volume.VolumeGasMixture` to perform the actual calculation  
+        of molar volume.
         
         Examples
         --------
@@ -3485,6 +3485,42 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Vmg = self.Vmg
         if Vmg:
             return Z(self.T, self.P, Vmg)
+        return None
+
+    @property
+    def Cpsm(self):
+        r'''Solid-phase heat capacity of the mixture at its current temperature 
+        and composition, in units of J/mol/K. For calculation of this property 
+        at other temperatures or compositions, or specifying manually the 
+        method used to calculate it, and more - see the object oriented 
+        interface :obj:`thermo.heat_capacity.HeatCapacitySolidMixture`; each 
+        Mixture instance creates one to actually perform the calculations.
+        
+        Examples
+        --------
+        >>> Mixture(['silver', 'platinum'], ws=[0.95, 0.05]).Cpsm
+        25.32745719036059
+        '''
+        return self.HeatCapacitySolidMixture(self.T, self.P, self.zs, self.ws)
+
+    @property
+    def Cps(self):
+        r'''Solid-phase heat capacity of the mixture at its current temperature 
+        and composition, in units of J/kg/K. For calculation of this property 
+        at other temperatures or compositions, or specifying manually the 
+        method used to calculate it,  and more - see the object oriented 
+        interface :obj:`thermo.heat_capacity.HeatCapacitySolidMixture`; each 
+        Mixture instance creates one to actually perform the calculations. Note
+        that that interface provides output in molar units.
+        
+        Examples
+        --------
+        >>> Mixture(['silver', 'platinum'], ws=[0.95, 0.05]).Cps
+        229.55145722105294
+        '''
+        Cpsm = self.HeatCapacitySolidMixture(self.T, self.P, self.zs, self.ws)
+        if Cpsm:
+            return property_molar_to_mass(Cpsm, self.MW)
         return None
 
     @property
@@ -3601,8 +3637,8 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     
     @property
     def alphag(self):
-        r'''Thermal diffusivity of the gas phase of the mixture if one exists at its 
-        current temperature and pressure, in units of m^2/s.
+        r'''Thermal diffusivity of the gas phase of the mixture if one exists  
+        at its current temperature and pressure, in units of m^2/s.
         
         .. math::
             \alpha = \frac{k}{\rho Cp}
@@ -3619,8 +3655,8 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
 
     @property
     def Prl(self):
-        r'''Prandtl number of the liquid phase of the mixture if one exists at its 
-        current temperature and pressure, dimensionless.
+        r'''Prandtl number of the liquid phase of the mixture if one exists at  
+        its current temperature and pressure, dimensionless.
         
         .. math::
             Pr = \frac{C_p \mu}{k}
@@ -3657,9 +3693,10 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Vml(self):
         r'''Liquid-phase molar volume of the mixture at its current
-        temperature, pressure, and composition in units of mol/m^3. For calculation of this 
-        property at other temperatures or pressures or compositions, or specifying manually the
-        method used to calculate it, and more - see the object oriented interface
+        temperature, pressure, and composition in units of mol/m^3. For 
+        calculation of this property at other temperatures or pressures or 
+        compositions, or specifying manually the method used to calculate it,
+        and more - see the object oriented interface
         :obj:`thermo.volume.VolumeLiquidMixture`; each Mixture instance
         creates one to actually perform the calculations.
         
@@ -3673,9 +3710,10 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Vmg(self):
         r'''Gas-phase molar volume of the mixture at its current
-        temperature, pressure, and composition in units of mol/m^3. For calculation of this 
-        property at other temperatures or pressures or compositions, or specifying manually the
-        method used to calculate it, and more - see the object oriented interface
+        temperature, pressure, and composition in units of mol/m^3. For 
+        calculation of this property at other temperatures or pressures or 
+        compositions, or specifying manually the method used to calculate it, 
+        and more - see the object oriented interface
         :obj:`thermo.volume.VolumeGasMixture`; each Mixture instance
         creates one to actually perform the calculations.
         
