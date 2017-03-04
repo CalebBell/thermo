@@ -828,8 +828,6 @@ def fire_mixing(ys=None, FLs=None):  # pragma: no cover
     Fundamentals with Applications. 2E. Upper Saddle River, N.J:
     Prentice Hall, 2001.
 
-    This API is considered experimental, and is expected to be removed in a
-    future release in favor of a more complete object-oriented interface.
 
     >>> fire_mixing(ys=normalize([0.0024, 0.0061, 0.0015]), FLs=[.012, .053, .031])
     0.02751172136637643

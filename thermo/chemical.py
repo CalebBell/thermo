@@ -2344,23 +2344,17 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         if zs:
             self.zs = zs if sum(zs) == 1 else [zi/sum(zs) for zi in zs]
             self.ws = zs_to_ws(zs, self.MWs)
-            self.Vfls = zs_to_Vfs(self.zs, self.Vmls) if none_and_length_check([self.Vmls]) else None
-            self.Vfgs = zs_to_Vfs(self.zs, self.Vmgs) if none_and_length_check([self.Vmgs]) else None
         elif ws:
             self.ws = ws if sum(ws) == 1 else [wi/sum(ws) for wi in ws]
             self.zs = ws_to_zs(ws, self.MWs)
-            self.Vfls = zs_to_Vfs(self.zs, self.Vmls) if none_and_length_check([self.Vmls]) else None
-            self.Vfgs = zs_to_Vfs(self.zs, self.Vmgs) if none_and_length_check([self.Vmgs]) else None
         elif Vfls:
-            self.Vfls = Vfls if sum(Vfls) == 1 else [Vfli/sum(Vfls) for Vfli in Vfls]
+            Vfls = Vfls if sum(Vfls) == 1 else [Vfli/sum(Vfls) for Vfli in Vfls]
             self.zs = Vfs_to_zs(Vfls, self.Vmls)
             self.ws = zs_to_ws(self.zs, self.MWs)
-            self.Vfgs = zs_to_Vfs(self.zs, self.Vmgs) if none_and_length_check([self.Vmgs]) else None
         elif Vfgs:
-            self.Vfgs = Vfgs if sum(Vfgs) == 1 else [Vfgi/sum(Vfgs) for Vfgi in Vfgs]
+            Vfgs = Vfgs if sum(Vfgs) == 1 else [Vfgi/sum(Vfgs) for Vfgi in Vfgs]
             self.zs = Vfs_to_zs(Vfgs, self.Vmgs)
             self.ws = zs_to_ws(self.zs, self.MWs)
-            self.Vfls = zs_to_Vfs(self.zs, self.Vmls) if none_and_length_check([self.Vmls]) else None
         else:
             raise Exception('No composition provided')
 
@@ -2372,6 +2366,36 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         self.set_TP_sources()
         self.set_TP()
         self.set_phase()
+
+    def Vfls(self):
+        r'''Volume fractions of all species in the liquid phase at the current
+        temperature and pressure. Note this is a method, not a property.
+        Volume fractions are calculated based on pure species volumes only.
+        
+        Examples
+        --------
+        >>> Mixture(['hexane', 'pentane'], zs=[.5, .5], T=315).Vfls()
+        [0.5299671144566751, 0.47003288554332484]
+        '''
+        Vmls = self.Vmls
+        if none_and_length_check([Vmls]):
+            return zs_to_Vfs(self.zs, Vmls)
+        return None
+
+    def Vfgs(self):
+        r'''Volume fractions of all species in the gas phase at the current
+        temperature and pressure. Note this is a method, not a property.
+        Volume fractions are calculated based on pure species volumes only.
+        
+        Examples
+        --------
+        >>> Mixture(['sulfur hexafluoride', 'methane'], zs=[.2, .9], T=315).Vfgs()
+        [0.18062059238682632, 0.8193794076131737]
+        '''
+        Vmgs = self.Vmgs
+        if none_and_length_check([Vmgs]):
+            return zs_to_Vfs(self.zs, Vmgs)
+        return None
 
     def set_none(self):
         # Null values as necessary
@@ -2767,6 +2791,26 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         return [i.atom_fractions for i in self.Chemicals]
 
     @property
+    def atom_fractions(self):
+        r'''Dictionary of atomic fractions for each atom in the mixture.
+        
+        Examples
+        --------
+        >>> Mixture(['CO2', 'O2'], zs=[0.5, 0.5]).atom_fractions
+        {'C': 0.2, 'O': 0.8}
+        '''
+        things = dict()
+        for zi, atoms in zip(self.zs, self.atomss):
+            for atom, count in atoms.iteritems():
+                if atom in things:
+                    things[atom] += zi*count
+                else:
+                    things[atom] = zi*count
+        
+        tot = sum(things.values())
+        return {atom : value/tot for atom, value in things.iteritems()}
+
+    @property
     def mass_fractionss(self):
         r'''List of dictionaries of mass fractions for all chemicals in the mixture.
         
@@ -2776,7 +2820,25 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         [{'O': 1.0}, {'N': 1.0}]
         '''
         return [i.mass_fractions for i in self.Chemicals]
-    
+
+    @property
+    def mass_fractions(self):
+        r'''Dictionary of mass fractions for each atom in the mixture.
+        
+        Examples
+        --------
+        >>> Mixture(['CO2', 'O2'], zs=[0.5, 0.5]).mass_fractions
+        {'C': 0.15801826905745822, 'O': 0.8419817309425419}
+        '''
+        things = dict()
+        for zi, atoms in zip(self.zs, self.atomss):
+            for atom, count in atoms.iteritems():
+                if atom in things:
+                    things[atom] += zi*count
+                else:
+                    things[atom] = zi*count
+        return mass_fractions(things)
+
     ### One phase properties - calculate lazily
     @property
     def Psats(self):
