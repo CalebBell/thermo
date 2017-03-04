@@ -35,8 +35,7 @@ __all__ = ['Poling_data', 'TRC_gas_data', '_PerryI', 'CRC_standard_data',
            'ZABRANSKY_TO_DICT', 'heat_capacity_liquid_methods', 
            'HeatCapacityLiquid', 'Lastovka_solid', 'Lastovka_solid_integral', 
            'Lastovka_solid_integral_over_T', 'heat_capacity_solid_methods', 
-           'HeatCapacitySolid', 'Cp_liq_mixture', 
-           'Cv_gas_mixture', 'HeatCapacitySolidMixture', 
+           'HeatCapacitySolid', 'Cp_liq_mixture', 'HeatCapacitySolidMixture', 
            'HeatCapacityGasMixture']
 import os
 from io import open
@@ -2714,39 +2713,6 @@ def Cp_liq_mixture(zs=None, ws=None, Cps=None, T=None, CASRNs=None, AvailableMet
         wCASRNs = list(CASRNs)
         wCASRNs.remove('7732-18-5')
         _cp = Laliberte_heat_capacity(T, ws, wCASRNs)
-    elif Method == 'None':
-        return None
-    else:
-        raise Exception('Failure in in function')
-    return _cp
-
-
-def Cv_gas_mixture(zs=None,  ws=None, Cps=None, CASRNs=None, AvailableMethods=False, Method=None):  # pragma: no cover
-    '''This function handles the retrival of a mixture's gas constant
-    volume heat capacity.
-
-    This API is considered experimental, and is expected to be removed in a
-    future release in favor of a more complete object-oriented interface.
-
-    >>> Cv_gas_mixture(ws=[0.6, 0.3, 0.1], Cps=[1402.64, 1116.27, 1558.23])
-    1332.2880000000002
-    '''
-    def list_methods():
-        methods = []
-        if none_and_length_check([Cps]):
-            methods.append('Simple')
-        methods.append('None')
-        return methods
-    if AvailableMethods:
-        return list_methods()
-    if not Method:
-        Method = list_methods()[0]
-    # This is the calculate, given the method section
-    if not none_and_length_check((Cps, ws)): # check same-length inputs
-        return None
-#        raise Exception('Function inputs are incorrect format')
-    if Method == 'Simple':
-        _cp = mixing_simple(ws, Cps)
     elif Method == 'None':
         return None
     else:

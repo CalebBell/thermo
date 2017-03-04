@@ -38,7 +38,7 @@ from thermo.triple import Tt, Pt
 from thermo.thermal_conductivity import ThermalConductivityLiquid, ThermalConductivityGas, ThermalConductivityLiquidMixture, ThermalConductivityGasMixture
 from thermo.volume import VolumeGas, VolumeLiquid, VolumeSolid, VolumeLiquidMixture, VolumeGasMixture
 from thermo.permittivity import *
-from thermo.heat_capacity import HeatCapacitySolid, HeatCapacityGas, HeatCapacityLiquid, HeatCapacitySolidMixture, HeatCapacityGasMixture, Cv_gas_mixture, Cp_liq_mixture
+from thermo.heat_capacity import HeatCapacitySolid, HeatCapacityGas, HeatCapacityLiquid, HeatCapacitySolidMixture, HeatCapacityGasMixture, Cp_liq_mixture
 from thermo.interface import SurfaceTension, SurfaceTensionMixture
 from thermo.viscosity import ViscosityLiquid, ViscosityGas, ViscosityLiquidMixture, ViscosityGasMixture, viscosity_index
 from thermo.reaction import Hf
@@ -2570,9 +2570,8 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
 
 #        self.Cpg_methods = Cp_gas_mixture(zs=self.zs, ws=self.ws, Cps=self.Cpgs, CASRNs=self.CASs, AvailableMethods=True)
 #        self.Cpg_method = self.Cpg_methods[0]
-
-        self.Cvg_methods = Cv_gas_mixture(zs=self.zs, ws=self.ws, Cps=self.Cvgs, CASRNs=self.CASs, AvailableMethods=True)
-        self.Cvg_method = self.Cvg_methods[0]
+#        self.Cvg_methods = Cv_gas_mixture(zs=self.zs, ws=self.ws, Cps=self.Cvgs, CASRNs=self.CASs, AvailableMethods=True)
+#        self.Cvg_method = self.Cvg_methods[0]
         
         self.HeatCapacitySolidMixture = HeatCapacitySolidMixture(CASs=self.CASs, HeatCapacitySolids=self.HeatCapacitySolids)
 
@@ -2603,10 +2602,10 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
 
         self.Cpl = Cp_liq_mixture(zs=self.zs, ws=self.ws, Cps=self.Cpls, T=self.T, CASRNs=self.CASs, Method=self.Cpl_method)
 #        self.Cpg = Cp_gas_mixture(zs=self.zs, ws=self.ws, Cps=self.Cpgs, CASRNs=self.CASs, Method=self.Cpg_method)
-        self.Cvg = Cv_gas_mixture(zs=self.zs, ws=self.ws, Cps=self.Cvgs, CASRNs=self.CASs, Method=self.Cvg_method)
+#        self.Cvg = Cv_gas_mixture(zs=self.zs, ws=self.ws, Cps=self.Cvgs, CASRNs=self.CASs, Method=self.Cvg_method)
 #        self.Cpgm = property_mass_to_molar(self.Cpg, self.MW)
         self.Cplm = property_mass_to_molar(self.Cpl, self.MW)
-        self.Cvgm = property_mass_to_molar(self.Cvg, self.MW)
+#        self.Cvgm = property_mass_to_molar(self.Cvg, self.MW)
 
         self.isentropic_exponent = isentropic_exponent(self.Cpg, self.Cvg) if all((self.Cpg, self.Cvg)) else None
 
@@ -3550,6 +3549,40 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Cpgm = self.HeatCapacityGasMixture(self.T, self.P, self.zs, self.ws)
         if Cpgm:
             return property_molar_to_mass(Cpgm, self.MW)
+        return None
+
+    @property
+    def Cvgm(self):
+        r'''Gas-phase ideal-gas contant-volume heat capacity of the mixture at 
+        its current temperature and composition, in units of J/mol/K. Subtracts R from
+        the ideal-gas heat capacity; does not include pressure-compensation 
+        from an equation of state.
+        
+        Examples
+        --------
+        >>> Mixture(['water'], ws=[1], T=520).Cvgm
+        27.133663161341932
+        '''
+        Cpgm = self.HeatCapacityGasMixture(self.T, self.P, self.zs, self.ws)
+        if Cpgm:
+            return Cpgm - R
+        return None
+         
+    @property
+    def Cvg(self):
+        r'''Gas-phase ideal-gas contant-volume heat capacity of the mixture at 
+        its current temperature, in units of J/kg/K. Subtracts R from
+        the ideal-gas heat capacity; does not include pressure-compensation 
+        from an equation of state.
+        
+        Examples
+        --------
+        >>> Mixture(['water'], ws=[1], T=520).Cvg
+        1506.1471795798861
+        '''
+        Cvgm = self.Cvgm
+        if Cvgm:
+            return property_molar_to_mass(Cvgm, self.MW)
         return None
 
     @property
