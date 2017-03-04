@@ -933,8 +933,12 @@ class ViscosityLiquidMixture(MixtureProperty):
                 self.wCASs = wCASs
                 self.index_w = self.CASs.index('7732-18-5')
         self.all_methods = set(methods)
-        self.Tmin = max([i.Tmin for i in self.ViscosityLiquids])
-        self.Tmax = min([i.Tmax for i in self.ViscosityLiquids])
+        Tmins = [i.Tmin for i in self.ViscosityLiquids if i.Tmin]
+        Tmaxs = [i.Tmax for i in self.ViscosityLiquids if i.Tmax]
+        if Tmins:
+            self.Tmin = max(Tmins)
+        if Tmaxs:
+            self.Tmax = max(Tmaxs)
         
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate viscosity of a liquid mixture at 
@@ -1942,8 +1946,12 @@ class ViscosityGasMixture(MixtureProperty):
         if none_and_length_check([self.MWs]):
             methods.extend([WILKE, HERNING_ZIPPERER])
         self.all_methods = set(methods)
-        self.Tmin = max([i.Tmin for i in self.ViscosityGases])
-        self.Tmax = min([i.Tmax for i in self.ViscosityGases])
+        Tmins = [i.Tmin for i in self.ViscosityGases if i.Tmin]
+        Tmaxs = [i.Tmax for i in self.ViscosityGases if i.Tmax]
+        if Tmins:
+            self.Tmin = max(Tmins)
+        if Tmaxs:
+            self.Tmax = max(Tmaxs)
         
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate viscosity of a gas mixture at 

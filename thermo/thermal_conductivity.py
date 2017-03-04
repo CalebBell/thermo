@@ -1214,8 +1214,12 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
                 self.index_w = self.CASs.index('7732-18-5')
             
         self.all_methods = set(methods)
-        self.Tmin = max([i.Tmin for i in self.ThermalConductivityLiquids])
-        self.Tmax = min([i.Tmax for i in self.ThermalConductivityLiquids])
+        Tmins = [i.Tmin for i in self.ThermalConductivityLiquids if i.Tmin]
+        Tmaxs = [i.Tmax for i in self.ThermalConductivityLiquids if i.Tmax]
+        if Tmins:
+            self.Tmin = max(Tmins)
+        if Tmaxs:
+            self.Tmax = max(Tmaxs)
         
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate thermal conductivity of a liquid mixture at 
@@ -2743,9 +2747,13 @@ class ThermalConductivityGasMixture(MixtureProperty):
         if none_and_length_check((self.Tbs, self.MWs)):
             methods.append(LINDSAY_BROMLEY)
         self.all_methods = set(methods)
-        self.Tmin = max([i.Tmin for i in self.ThermalConductivityGases])
-        self.Tmax = min([i.Tmax for i in self.ThermalConductivityGases])
-        
+        Tmins = [i.Tmin for i in self.ThermalConductivityGases if i.Tmin]
+        Tmaxs = [i.Tmax for i in self.ThermalConductivityGases if i.Tmax]
+        if Tmins:
+            self.Tmin = max(Tmins)
+        if Tmaxs:
+            self.Tmax = max(Tmaxs)
+
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate thermal conductivity of a gas mixture at 
         temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
