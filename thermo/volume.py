@@ -30,8 +30,9 @@ __all__ = ['COSTALD_data', 'SNM0_data', 'Perry_l_data', 'CRC_inorg_l_data',
 'volume_liquid_methods', 'volume_liquid_methods_P', 'VolumeLiquid', 
 'COSTALD_compressed', 'Amgat', 'Rackett_mixture', 'COSTALD_mixture', 
 'ideal_gas', 'volume_gas_methods', 'VolumeGas', 
-'volume_gas_mixture_methods', 'Goodman', 'volume_solid_methods', 'VolumeSolid',
-'VolumeLiquidMixture', 'VolumeGasMixture']
+'volume_gas_mixture_methods', 'volume_solid_mixture_methods', 'Goodman',
+ 'volume_solid_methods', 'VolumeSolid',
+'VolumeLiquidMixture', 'VolumeGasMixture', 'VolumeSolidMixture']
 
 import os
 import numpy as np
@@ -2443,3 +2444,137 @@ class VolumeSolid(TDependentProperty):
         else:
             raise Exception('Method not valid')
         return validity
+
+
+volume_solid_mixture_methods = [SIMPLE]
+
+class VolumeSolidMixture(MixtureProperty):
+    '''Class for dealing with the molar volume of a solid mixture as a   
+    function of temperature, pressure, and composition.
+    Consists of only mole-weighted averaging.
+            
+    Parameters
+    ----------
+    CASs : list[str], optional
+        The CAS numbers of all species in the mixture
+    VolumeSolids : list[VolumeSolid], optional
+        VolumeSolid objects created for all species in the mixture,  
+        normally created by :obj:`thermo.chemical.Chemical`.
+                 
+    Notes
+    -----
+    To iterate over all methods, use the list stored in
+    :obj:`volume_solid_mixture_methods`.
+
+    **SIMPLE**:
+        Linear mole fraction mixing rule described in 
+        :obj:`thermo.utils.mixing_simple`.
+    '''
+    name = 'Solid molar volume'
+    units = 'm^3/mol'
+    property_min = 0
+    '''Molar volume cannot be under 0.'''
+    property_max = 2e-3
+    '''Maximum value of Heat capacity; arbitrarily set to 0.002, as the largest
+    in the data is 0.00136.'''
+                            
+    ranked_methods = [SIMPLE]
+
+    def __init__(self, CASs=[], VolumeSolids=[]):
+        self.CASs = CASs
+        self.VolumeSolids = VolumeSolids
+
+        self.Tmin = 0
+        '''Minimum temperature at which no method can calculate the
+        solid molar volume under.'''
+        self.Tmax = 1E4
+        '''Maximum temperature at which no method can calculate the
+        solid molar volume above; assumed 10 000 K even under ultra-high 
+        pressure.'''
+
+        self.sorted_valid_methods = []
+        '''sorted_valid_methods, list: Stored methods which were found valid
+        at a specific temperature; set by `mixture_property`.'''
+        self.user_methods = []
+        '''user_methods, list: Stored methods which were specified by the user
+        in a ranked order of preference; set by `mixture_property`.'''
+        self.all_methods = set()
+        '''Set of all methods available for a given set of information;
+        filled by :obj:`load_all_methods`.'''
+        self.load_all_methods()
+
+    def load_all_methods(self):
+        r'''Method to initialize the object by precomputing any values which
+        may be used repeatedly and by retrieving mixture-specific variables.
+        All data are stored as attributes. This method also sets :obj:`Tmin`, 
+        :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should 
+        work to calculate the property.
+
+        Called on initialization only. See the source code for the variables at
+        which the coefficients are stored. The coefficients can safely be
+        altered once the class is initialized. This method can be called again
+        to reset the parameters.
+        '''
+        methods = [SIMPLE]     
+        self.all_methods = set(methods)
+        
+    def calculate(self, T, P, zs, ws, method):
+        r'''Method to calculate molar volume of a solid mixture at 
+        temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
+        `ws` with a given method.
+
+        This method has no exception handling; see `mixture_property`
+        for that.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the property, [K]
+        P : float
+            Pressure at which to calculate the property, [Pa]
+        zs : list[float]
+            Mole fractions of all species in the mixture, [-]
+        ws : list[float]
+            Weight fractions of all species in the mixture, [-]
+        method : str
+            Name of the method to use
+
+        Returns
+        -------
+        Vm : float
+            Molar volume of the solid mixture at the given conditions,
+            [m^3/mol]
+        '''
+        if method == SIMPLE:
+            Vms = [i(T, P) for i in self.VolumeSolids]
+            return mixing_simple(zs, Vms)
+        else:
+            raise Exception('Method not valid')
+
+    def test_method_validity(self, T, P, zs, ws, method):
+        r'''Method to test the validity of a specified method for the given
+        conditions. No methods have implemented checks or strict ranges of 
+        validity.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to check method validity, [K]
+        P : float
+            Pressure at which to check method validity, [Pa]
+        zs : list[float]
+            Mole fractions of all species in the mixture, [-]
+        ws : list[float]
+            Weight fractions of all species in the mixture, [-]
+        method : str
+            Method name to use
+
+        Returns
+        -------
+        validity : bool
+            Whether or not a specifid method is valid
+        '''
+        if method in self.all_methods:
+            return True
+        else:
+            raise Exception('Method not valid')

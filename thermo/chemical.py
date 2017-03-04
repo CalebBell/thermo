@@ -36,7 +36,7 @@ from thermo.critical import Tc, Pc, Vc, Zc, Tc_mixture, Pc_mixture, Vc_mixture
 from thermo.acentric import omega, omega_mixture, StielPolar
 from thermo.triple import Tt, Pt
 from thermo.thermal_conductivity import ThermalConductivityLiquid, ThermalConductivityGas, ThermalConductivityLiquidMixture, ThermalConductivityGasMixture
-from thermo.volume import VolumeGas, VolumeLiquid, VolumeSolid, VolumeLiquidMixture, VolumeGasMixture
+from thermo.volume import VolumeGas, VolumeLiquid, VolumeSolid, VolumeLiquidMixture, VolumeGasMixture, VolumeSolidMixture
 from thermo.permittivity import *
 from thermo.heat_capacity import HeatCapacitySolid, HeatCapacityGas, HeatCapacityLiquid, HeatCapacitySolidMixture, HeatCapacityGasMixture, HeatCapacityLiquidMixture
 from thermo.interface import SurfaceTension, SurfaceTensionMixture
@@ -2552,6 +2552,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         self.SurfaceTensions = [i.SurfaceTension for i in self.Chemicals]
         self.Permittivities = [i.Permittivity for i in self.Chemicals]
         
+        self.VolumeSolidMixture = VolumeSolidMixture(CASs=self.CASs, VolumeSolids=self.VolumeSolids)
         self.VolumeLiquidMixture = VolumeLiquidMixture(MWs=self.MWs, Tcs=self.Tcs, Pcs=self.Pcs, Vcs=self.Vcs, Zcs=self.Zcs, omegas=self.omegas, CASs=self.CASs, VolumeLiquids=self.VolumeLiquids)
         self.VolumeGasMixture = VolumeGasMixture(eos=self.eos_in_a_box, CASs=self.CASs, VolumeGases=self.VolumeGases)
 
