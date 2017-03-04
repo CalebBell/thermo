@@ -1185,7 +1185,7 @@ class SurfaceTensionMixture(MixtureProperty):
         Boiling points of all species in the mixture, [K]
     Tcs : list[float], optional
         Critical temperatures of all species in the mixture, [K]
-    CASs : str, optional
+    CASs : list[str], optional
         The CAS numbers of all species in the mixture
     SurfaceTensions : list[SurfaceTension], optional
         SurfaceTension objects created for all species in the mixture, normally 

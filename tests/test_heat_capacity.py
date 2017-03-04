@@ -536,3 +536,23 @@ def test_HeatCapacitySolidMixture():
         
     with pytest.raises(Exception):
         obj.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
+
+
+def test_HeatCapacityGasMixture():
+    from thermo import Mixture
+    from thermo.heat_capacity import HeatCapacityGasMixture
+    
+    m = Mixture(['oxygen', 'nitrogen'], ws=[.4, .6], T=350, P=1E6)
+    obj = HeatCapacityGasMixture(CASs=m.CASs, HeatCapacityGases=m.HeatCapacityGases)
+    
+    Cp = obj(m.T, m.P, m.zs, m.ws)
+    assert_allclose(Cp, 29.361044582498046)
+
+    # Unhappy paths
+    with pytest.raises(Exception):
+        obj.calculate(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
+        
+    with pytest.raises(Exception):
+        obj.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
+
+

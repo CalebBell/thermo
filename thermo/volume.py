@@ -1506,7 +1506,7 @@ class VolumeLiquidMixture(MixtureProperty):
         Critical compressibility factors of all species in the mixture, [Pa]
     omegas : list[float], optional
         Accentric factors of all species in the mixture, [-]                 
-    CASs : str, optional
+    CASs : list[str], optional
         The CAS numbers of all species in the mixture
     VolumeLiquids : list[VolumeLiquid], optional
         VolumeLiquid objects created for all species in the mixture,  
@@ -2057,7 +2057,7 @@ class VolumeGasMixture(MixtureProperty):
         
     Parameters
     ----------
-    CASs : str, optional
+    CASs : list[str], optional
         The CAS numbers of all species in the mixture
     VolumeGases : list[VolumeGas], optional
         VolumeGas objects created for all species in the mixture,  

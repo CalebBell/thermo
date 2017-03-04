@@ -851,7 +851,7 @@ class ViscosityLiquidMixture(MixtureProperty):
         
     Parameters
     ----------
-    CASs : str, optional
+    CASs : list[str], optional
         The CAS numbers of all species in the mixture
     ViscosityLiquids : list[ViscosityLiquid], optional
         ViscosityLiquid objects created for all species in the mixture,  
@@ -1862,7 +1862,7 @@ class ViscosityGasMixture(MixtureProperty):
     Stockmayers : list[float], optional
         Lennard-Jones depth of potential-energy minimum over k 
         or epsilon_k, [K]
-    CASs : str, optional
+    CASs : list[str], optional
         The CAS numbers of all species in the mixture
     ViscosityGass : list[ViscosityGas], optional
         ViscosityGas objects created for all species in the mixture,  

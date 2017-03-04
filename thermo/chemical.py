@@ -38,7 +38,7 @@ from thermo.triple import Tt, Pt
 from thermo.thermal_conductivity import ThermalConductivityLiquid, ThermalConductivityGas, ThermalConductivityLiquidMixture, ThermalConductivityGasMixture
 from thermo.volume import VolumeGas, VolumeLiquid, VolumeSolid, VolumeLiquidMixture, VolumeGasMixture
 from thermo.permittivity import *
-from thermo.heat_capacity import HeatCapacitySolid, HeatCapacityGas, HeatCapacityLiquid, HeatCapacitySolidMixture, Cp_gas_mixture, Cv_gas_mixture, Cp_liq_mixture
+from thermo.heat_capacity import HeatCapacitySolid, HeatCapacityGas, HeatCapacityLiquid, HeatCapacitySolidMixture, HeatCapacityGasMixture, Cv_gas_mixture, Cp_liq_mixture
 from thermo.interface import SurfaceTension, SurfaceTensionMixture
 from thermo.viscosity import ViscosityLiquid, ViscosityGas, ViscosityLiquidMixture, ViscosityGasMixture, viscosity_index
 from thermo.reaction import Hf
@@ -2565,9 +2565,11 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
 
         self.Cpl_methods = Cp_liq_mixture(zs=self.zs, ws=self.ws, Cps=self.Cpls, T=self.T, CASRNs=self.CASs, AvailableMethods=True)
         self.Cpl_method = self.Cpl_methods[0]
+        
+        self.HeatCapacityGasMixture = HeatCapacityGasMixture(CASs=self.CASs, HeatCapacityGases=self.HeatCapacityGases)
 
-        self.Cpg_methods = Cp_gas_mixture(zs=self.zs, ws=self.ws, Cps=self.Cpgs, CASRNs=self.CASs, AvailableMethods=True)
-        self.Cpg_method = self.Cpg_methods[0]
+#        self.Cpg_methods = Cp_gas_mixture(zs=self.zs, ws=self.ws, Cps=self.Cpgs, CASRNs=self.CASs, AvailableMethods=True)
+#        self.Cpg_method = self.Cpg_methods[0]
 
         self.Cvg_methods = Cv_gas_mixture(zs=self.zs, ws=self.ws, Cps=self.Cvgs, CASRNs=self.CASs, AvailableMethods=True)
         self.Cvg_method = self.Cvg_methods[0]
@@ -2599,19 +2601,10 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         self.set_chemical_TP()
         self.set_eos(T=self.T, P=self.P)
 
-#        self.rhol = Vm_to_rho(self.Vml, self.MW) if self.Vml else None
-#        self.Zl = Z(self.T, self.P, self.Vml) if self.Vml else None
-#        self.rholm = 1./self.Vml if self.Vml else None
-#
-#        self.rhog = Vm_to_rho(self.Vmg, self.MW) if self.Vmg else None
-#        self.Zg = Z(self.T, self.P, self.Vmg) if self.Vmg else None
-#        self.rhogm = 1./self.Vmg if self.Vmg else None
-#        self.Bvirial = B_from_Z(self.Zg, self.T, self.P) if self.Vmg else None
-
         self.Cpl = Cp_liq_mixture(zs=self.zs, ws=self.ws, Cps=self.Cpls, T=self.T, CASRNs=self.CASs, Method=self.Cpl_method)
-        self.Cpg = Cp_gas_mixture(zs=self.zs, ws=self.ws, Cps=self.Cpgs, CASRNs=self.CASs, Method=self.Cpg_method)
+#        self.Cpg = Cp_gas_mixture(zs=self.zs, ws=self.ws, Cps=self.Cpgs, CASRNs=self.CASs, Method=self.Cpg_method)
         self.Cvg = Cv_gas_mixture(zs=self.zs, ws=self.ws, Cps=self.Cvgs, CASRNs=self.CASs, Method=self.Cvg_method)
-        self.Cpgm = property_mass_to_molar(self.Cpg, self.MW)
+#        self.Cpgm = property_mass_to_molar(self.Cpg, self.MW)
         self.Cplm = property_mass_to_molar(self.Cpl, self.MW)
         self.Cvgm = property_mass_to_molar(self.Cvg, self.MW)
 
@@ -3504,6 +3497,22 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         return self.HeatCapacitySolidMixture(self.T, self.P, self.zs, self.ws)
 
     @property
+    def Cpgm(self):
+        r'''Gas-phase heat capacity of the mixture at its current temperature 
+        and composition, in units of J/mol/K. For calculation of this property
+        at other temperatures or compositions, or specifying manually the 
+        method used to calculate it, and more - see the object oriented 
+        interface :obj:`thermo.heat_capacity.HeatCapacityGasMixture`; each 
+        Mixture instance creates one to actually perform the calculations.
+        
+        Examples
+        --------
+        >>> Mixture(['oxygen', 'nitrogen'], ws=[.4, .6], T=350, P=1E6).Cpgm
+        29.361044582498046
+        '''
+        return self.HeatCapacityGasMixture(self.T, self.P, self.zs, self.ws)
+
+    @property
     def Cps(self):
         r'''Solid-phase heat capacity of the mixture at its current temperature 
         and composition, in units of J/kg/K. For calculation of this property 
@@ -3521,6 +3530,26 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Cpsm = self.HeatCapacitySolidMixture(self.T, self.P, self.zs, self.ws)
         if Cpsm:
             return property_molar_to_mass(Cpsm, self.MW)
+        return None
+
+    @property
+    def Cpg(self):
+        r'''Gas-phase heat capacity of the mixture at its current temperature ,
+        and composition in units of J/kg/K. For calculation of this property at  
+        other temperatures or compositions, or specifying manually the method 
+        used to calculate it, and more - see the object oriented interface
+        :obj:`thermo.heat_capacity.HeatCapacityGasMixture`; each Mixture 
+        instance creates one to actually perform the calculations. Note that   
+        that interface provides output in molar units.
+        
+        Examples
+        --------
+        >>> Mixture(['oxygen', 'nitrogen'], ws=[.4, .6], T=350, P=1E6).Cpg
+        995.8911053614883
+        '''
+        Cpgm = self.HeatCapacityGasMixture(self.T, self.P, self.zs, self.ws)
+        if Cpgm:
+            return property_molar_to_mass(Cpgm, self.MW)
         return None
 
     @property

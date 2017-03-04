@@ -469,8 +469,8 @@ class ThermalConductivityLiquid(TPDependentProperty):
 
     Parameters
     ----------
-    CASRN : str, optional
-        The CAS number of the chemical
+    CASs : list[str], optional
+        The CAS numbers of all species in the mixture
     MW : float, optional
         Molecular weight, [g/mol]
     Tm : float, optional
@@ -1779,8 +1779,8 @@ class ThermalConductivityGas(TPDependentProperty):
 
     Parameters
     ----------
-    CASRN : str, optional
-        The CAS number of the chemical
+    CASs : list[str], optional
+        The CAS numbers of all species in the mixture
     MW : float, optional
         Molecular weight, [g/mol]
     Tb : float, optional

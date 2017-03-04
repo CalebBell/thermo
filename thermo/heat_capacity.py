@@ -35,8 +35,9 @@ __all__ = ['Poling_data', 'TRC_gas_data', '_PerryI', 'CRC_standard_data',
            'ZABRANSKY_TO_DICT', 'heat_capacity_liquid_methods', 
            'HeatCapacityLiquid', 'Lastovka_solid', 'Lastovka_solid_integral', 
            'Lastovka_solid_integral_over_T', 'heat_capacity_solid_methods', 
-           'HeatCapacitySolid', 'Cp_liq_mixture', 'Cp_gas_mixture', 
-           'Cv_gas_mixture', 'HeatCapacitySolidMixture']
+           'HeatCapacitySolid', 'Cp_liq_mixture', 
+           'Cv_gas_mixture', 'HeatCapacitySolidMixture', 
+           'HeatCapacityGasMixture']
 import os
 from io import open
 from thermo.utils import log, exp, polylog2
@@ -2720,38 +2721,6 @@ def Cp_liq_mixture(zs=None, ws=None, Cps=None, T=None, CASRNs=None, AvailableMet
     return _cp
 
 
-def Cp_gas_mixture(zs=None, ws=None, Cps=None, CASRNs=None, AvailableMethods=False, Method=None):  # pragma: no cover
-    '''This function handles the retrival of a mixture's gas heat capacity.
-
-    This API is considered experimental, and is expected to be removed in a
-    future release in favor of a more complete object-oriented interface.
-
-    >>> Cp_gas_mixture(ws=[0.6, 0.3, 0.1], Cps=[1864.17, 1375.76, 1654.71])
-    1696.701
-    '''
-    def list_methods():
-        methods = []
-        if none_and_length_check([Cps]):
-            methods.append('Simple')
-        methods.append('None')
-        return methods
-    if AvailableMethods:
-        return list_methods()
-    if not Method:
-        Method = list_methods()[0]
-    # This is the calculate, given the method section
-    if not none_and_length_check([Cps, ws]): # check same-length inputs
-        return None
-#        raise Exception('Function inputs are incorrect format')
-    if Method == 'Simple':
-        _cp = mixing_simple(ws, Cps)
-    elif Method == 'None':
-        return None
-    else:
-        raise Exception('Failure in in function')
-    return _cp
-
-
 def Cv_gas_mixture(zs=None,  ws=None, Cps=None, CASRNs=None, AvailableMethods=False, Method=None):  # pragma: no cover
     '''This function handles the retrival of a mixture's gas constant
     volume heat capacity.
@@ -2792,7 +2761,7 @@ class HeatCapacitySolidMixture(MixtureProperty):
                  
     Parameters
     ----------
-    CASs : str, optional
+    CASs : list[str], optional
         The CAS numbers of all species in the mixture
     HeatCapacitySolids : list[HeatCapacitySolid], optional
         HeatCapacitySolid objects created for all species in the mixture,  
@@ -2881,6 +2850,136 @@ class HeatCapacitySolidMixture(MixtureProperty):
         if method == SIMPLE:
             Cpsms = [i(T) for i in self.HeatCapacitySolids]
             return mixing_simple(zs, Cpsms)
+        else:
+            raise Exception('Method not valid')
+
+    def test_method_validity(self, T, P, zs, ws, method):
+        r'''Method to test the validity of a specified method for the given
+        conditions. No methods have implemented checks or strict ranges of 
+        validity.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to check method validity, [K]
+        P : float
+            Pressure at which to check method validity, [Pa]
+        zs : list[float]
+            Mole fractions of all species in the mixture, [-]
+        ws : list[float]
+            Weight fractions of all species in the mixture, [-]
+        method : str
+            Method name to use
+
+        Returns
+        -------
+        validity : bool
+            Whether or not a specifid method is valid
+        '''
+        if method in self.all_methods:
+            return True
+        else:
+            raise Exception('Method not valid')
+
+
+class HeatCapacityGasMixture(MixtureProperty):
+    '''Class for dealing with the gas heat capacity of a mixture as a function  
+    of temperature, pressure, and composition. Consists only of mole weighted 
+    averaging.
+                 
+    Parameters
+    ----------
+    CASs : list[str], optional
+        The CAS numbers of all species in the mixture
+    HeatCapacityGases : list[HeatCapacityGas], optional
+        HeatCapacityGas objects created for all species in the mixture,  
+        normally created by :obj:`thermo.chemical.Chemical`.
+
+    Notes
+    -----
+    To iterate over all methods, use the list stored in
+    :obj:`heat_capacity_gas_mixture_methods`.
+
+    **SIMPLE**:
+        Mixing rule described in :obj:`thermo.utils.mixing_simple`.
+    '''
+    name = 'Gas heat capacity'
+    units = 'J/mol'
+    property_min = 0
+    '''Heat capacities have a minimum value of 0 at 0 K.'''
+    property_max = 1E4
+    '''Maximum valid of Heat capacity; arbitrarily set. For fluids very near
+    the critical point, this value can be obscenely high.'''
+                            
+    ranked_methods = [SIMPLE]
+
+    def __init__(self, CASs=[], HeatCapacityGases=[]):
+        self.CASs = CASs
+        self.HeatCapacityGases = HeatCapacityGases
+
+        self.Tmin = None
+        '''Minimum temperature at which no method can calculate the
+        heat capacity under.'''
+        self.Tmax = None
+        '''Maximum temperature at which no method can calculate the
+        heat capacity above.'''
+
+        self.sorted_valid_methods = []
+        '''sorted_valid_methods, list: Stored methods which were found valid
+        at a specific temperature; set by `mixture_property`.'''
+        self.user_methods = []
+        '''user_methods, list: Stored methods which were specified by the user
+        in a ranked order of preference; set by `mixture_property`.'''
+        self.all_methods = set()
+        '''Set of all methods available for a given set of information;
+        filled by :obj:`load_all_methods`.'''
+        self.load_all_methods()
+
+    def load_all_methods(self):
+        r'''Method to initialize the object by precomputing any values which
+        may be used repeatedly and by retrieving mixture-specific variables.
+        All data are stored as attributes. This method also sets :obj:`Tmin`, 
+        :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should 
+        work to calculate the property.
+
+        Called on initialization only. See the source code for the variables at
+        which the coefficients are stored. The coefficients can safely be
+        altered once the class is initialized. This method can be called again
+        to reset the parameters.
+        '''
+        methods = [SIMPLE]        
+        self.all_methods = set(methods)
+            
+    def calculate(self, T, P, zs, ws, method):
+        r'''Method to calculate heat capacity of a gas mixture at 
+        temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
+        `ws` with a given method.
+
+        This method has no exception handling; see `mixture_property`
+        for that.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the property, [K]
+        P : float
+            Pressure at which to calculate the property, [Pa]
+        zs : list[float]
+            Mole fractions of all species in the mixture, [-]
+        ws : list[float]
+            Weight fractions of all species in the mixture, [-]
+        method : str
+            Name of the method to use
+
+        Returns
+        -------
+        Cpgm : float
+            Molar heat capacity of the gas mixture at the given conditions,
+            [J/mol]
+        '''
+        if method == SIMPLE:
+            Cpgms = [i(T) for i in self.HeatCapacityGases]
+            return mixing_simple(zs, Cpgms)
         else:
             raise Exception('Method not valid')
 
