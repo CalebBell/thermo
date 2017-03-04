@@ -2560,7 +2560,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         # No vapor pressure (bubble-dew points)
 
         self.VolumeLiquidMixture = VolumeLiquidMixture(MWs=self.MWs, Tcs=self.Tcs, Pcs=self.Pcs, Vcs=self.Vcs, Zcs=self.Zcs, omegas=self.omegas, CASs=self.CASs, VolumeLiquids=self.VolumeLiquids)
-        self.VolumeGasMixture = VolumeGasMixture(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, eos=self.eos_in_a_box, CASs=self.CASs, VolumeGases=self.VolumeGases)
+        self.VolumeGasMixture = VolumeGasMixture(eos=self.eos_in_a_box, CASs=self.CASs, VolumeGases=self.VolumeGases)
 
         # No solid density, or heat capacity
         # No Hvap, no Hsub, no Hfus

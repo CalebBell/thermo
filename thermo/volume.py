@@ -2047,6 +2047,51 @@ volume_gas_mixture_methods = [EOS, SIMPLE, IDEAL]
 
 
 class VolumeGasMixture(MixtureProperty):
+    '''Class for dealing with the molar volume of a gas mixture as a   
+    function of temperature, pressure, and composition.
+    Consists of an equation of state, the ideal gas law, and one mole-weighted
+    averaging method.
+    
+    Prefered method is **EOS**, or **IDEAL** if critical properties of
+    components are unavailable.
+        
+    Parameters
+    ----------
+    CASs : str, optional
+        The CAS numbers of all species in the mixture
+    VolumeGases : list[VolumeGas], optional
+        VolumeGas objects created for all species in the mixture,  
+        normally created by :obj:`thermo.chemical.Chemical`.
+    eos : container[EOS Object], optional
+        Equation of state object, normally created by 
+        :obj:`thermo.chemical.Mixture`.
+                 
+    Notes
+    -----
+    To iterate over all methods, use the list stored in
+    :obj:`volume_gas_mixture_methods`.
+
+    **EOS**:
+        Equation of State object, normally provided by 
+        :obj:`thermo.chemical.Mixture`. See :obj:`thermo.eos_mix` for more 
+        details.
+    **SIMPLE**:
+        Linear mole fraction mixing rule described in 
+        :obj:`thermo.utils.mixing_simple`; more correct than the ideal gas
+        law.
+    **IDEAL**:
+        The ideal gas law.
+
+    See Also
+    --------
+    ideal_gas
+    :obj:`thermo.eos_mix`
+
+    References
+    ----------
+    .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
+       New York: McGraw-Hill Professional, 2000.
+    '''
     name = 'Gas volume'
     units = 'm^3/mol'
     property_min = 0
@@ -2058,11 +2103,7 @@ class VolumeGasMixture(MixtureProperty):
                             
     ranked_methods = [EOS, SIMPLE, IDEAL]
 
-    def __init__(self, Tcs=[], Pcs=[], omegas=[], eos=None, CASs=[], 
-                 VolumeGases=[]):
-        self.Tcs = Tcs
-        self.Pcs = Pcs
-        self.omegas = omegas
+    def __init__(self, eos=None, CASs=[], VolumeGases=[]):
         self.CASs = CASs
         self.VolumeGases = VolumeGases
         self.eos = eos
@@ -2100,8 +2141,6 @@ class VolumeGasMixture(MixtureProperty):
         methods = [SIMPLE, IDEAL]     
         if self.eos:
             methods.append(EOS)
-        if none_and_length_check([self.Tcs, self.Pcs, self.omegas]):
-            methods.append(EOS)
         self.all_methods = set(methods)
         
     def calculate(self, T, P, zs, ws, method):
@@ -2131,7 +2170,7 @@ class VolumeGasMixture(MixtureProperty):
             Molar volume of the gas mixture at the given conditions, [m^3/mol]
         '''
         if method == SIMPLE:
-            Vms = [i(T, P) for i in self.VolumeGas]
+            Vms = [i(T, P) for i in self.VolumeGases]
             return mixing_simple(zs, Vms)
         elif method == IDEAL:
             return ideal_gas(T, P)

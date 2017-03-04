@@ -380,3 +380,21 @@ def test_VolumeLiquidMixture():
         
     with pytest.raises(Exception):
         obj.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
+
+
+def test_VolumeGasMixture():
+    from thermo.chemical import Mixture
+    from thermo.volume import VolumeGasMixture, EOS, SIMPLE, IDEAL
+    m = Mixture(['oxygen', 'nitrogen'], zs=[.5, .5], T=298.15, P=1E6)
+    obj = VolumeGasMixture(CASs=m.CASs, VolumeGases=m.VolumeGases, eos=m.eos_in_a_box)
+    
+    assert_allclose(obj.mixture_property(m.T, m.P, m.zs, m.ws), 0.0024628053244477232)
+    assert_allclose(obj.calculate(m.T, m.P, m.zs, m.ws, SIMPLE), 0.002468989614515616)
+    assert_allclose(obj.calculate(m.T, m.P, m.zs, m.ws, IDEAL), 0.0024789561893699998)
+
+    # Unhappy paths
+    with pytest.raises(Exception):
+        obj.calculate(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
+        
+    with pytest.raises(Exception):
+        obj.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
