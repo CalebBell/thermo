@@ -123,7 +123,7 @@ CRC_standard_data = pd.read_csv(os.path.join(folder,
 
 ### Heat capacities of gases
 
-def Lastovka_Shaw(T, similarity_variable, cyclic_aliphatic=False, order=0):
+def Lastovka_Shaw(T, similarity_variable, cyclic_aliphatic=False):
     r'''Calculate ideal-gas constant-pressure heat capacitiy with the similarity
     variable concept and method as shown in [1]_.
 

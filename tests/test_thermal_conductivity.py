@@ -194,7 +194,7 @@ def test_ThermalConductivityLiquid():
     EtOH.T_dependent_property(305.)
     kl_calcs = [(EtOH.set_user_methods(i), EtOH.T_dependent_property(305.))[1] for i in EtOH.sorted_valid_methods]
     kl_exp = [0.162183005823234, 0.16627999999999998, 0.166302, 0.17417420086033197, 0.20068212675966418, 0.18526367184633258, 0.18846433785041306, 0.16837295487233528, 0.16883011582627103, 0.09330268101157643, 0.028604363267557775]
-    assert_allclose(kl_calcs, kl_exp)
+    assert_allclose(sorted(kl_calcs), sorted(kl_exp))
 
     # Test that methods return None
     kl_calcs = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(5000))[1] for i in EtOH.sorted_valid_methods]
@@ -349,7 +349,7 @@ def test_ThermalConductivityGasMixture():
     dP1 = kg_mix.calculate_derivative_P(m2.P, m2.T, m2.zs, m2.ws, LINDSAY_BROMLEY)
     dP2 = kg_mix.property_derivative_P(m2.T, m2.P, m2.zs, m2.ws)
     
-    assert_allclose([dP1, dP2], [3.5325319058809868e-10]*2)
+    assert_allclose([dP1, dP2], [3.5325319058809868e-10]*2, rtol=1E-4)
     
     # Test other methods
     

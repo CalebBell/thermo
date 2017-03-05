@@ -195,8 +195,7 @@ def Lakshmi_Prasad(T, M):
        Thermal Conductivity of Pure Liquids." The Chemical Engineering Journal
        48, no. 3 (April 1992): 211-14. doi:10.1016/0300-9467(92)80037-B
     '''
-    kl = 0.0655 - 0.0005*T + (1.3855 - 0.00197*T)/M**0.5
-    return kl
+    return 0.0655 - 0.0005*T + (1.3855 - 0.00197*T)/M**0.5
 
 
 def Gharagheizi_liquid(T, M, Tb, Pc, omega):
@@ -444,10 +443,11 @@ DIPPR_PERRY_8E = 'DIPPR_PERRY_8E'
 NEGLIGIBLE = 'NEGLIGIBLE'
 DIPPR_9G = 'DIPPR_9G'
 
-thermal_conductivity_liquid_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR, GHARAGHEIZI_L,
-                                       SATO_RIEDEL, NICOLA, NICOLA_ORIGINAL,
-                                       SHEFFY_JOHNSON, BAHADORI_L,
-                                       LAKSHMI_PRASAD]
+thermal_conductivity_liquid_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, 
+                                       VDI_TABULAR, GHARAGHEIZI_L, 
+                                       SHEFFY_JOHNSON, SATO_RIEDEL,
+                                       LAKSHMI_PRASAD, BAHADORI_L,
+                                       NICOLA, NICOLA_ORIGINAL]
 '''Holds all low-pressure methods available for the ThermalConductivityLiquid
 class, for use in iterating over them.'''
 
@@ -580,9 +580,9 @@ class ThermalConductivityLiquid(TPDependentProperty):
     property_max = 10
     '''Maximum valid value of liquid thermal conductivity. Generous limit.'''
 
-    ranked_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR, GHARAGHEIZI_L,
-                      SATO_RIEDEL, NICOLA, NICOLA_ORIGINAL,
-                      SHEFFY_JOHNSON, BAHADORI_L, LAKSHMI_PRASAD]
+    ranked_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR,
+                      GHARAGHEIZI_L, SHEFFY_JOHNSON, SATO_RIEDEL, 
+                      LAKSHMI_PRASAD, BAHADORI_L, NICOLA, NICOLA_ORIGINAL]
     '''Default rankings of the low-pressure methods.'''
     ranked_methods_P = [COOLPROP, DIPPR_9G, MISSENARD]
     '''Default rankings of the high-pressure methods.'''
