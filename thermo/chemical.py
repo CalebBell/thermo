@@ -2367,35 +2367,6 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         self.set_TP()
         self.set_phase()
 
-    def Vfls(self):
-        r'''Volume fractions of all species in the liquid phase at the current
-        temperature and pressure. Note this is a method, not a property.
-        Volume fractions are calculated based on pure species volumes only.
-        
-        Examples
-        --------
-        >>> Mixture(['hexane', 'pentane'], zs=[.5, .5], T=315).Vfls()
-        [0.5299671144566751, 0.47003288554332484]
-        '''
-        Vmls = self.Vmls
-        if none_and_length_check([Vmls]):
-            return zs_to_Vfs(self.zs, Vmls)
-        return None
-
-    def Vfgs(self):
-        r'''Volume fractions of all species in the gas phase at the current
-        temperature and pressure. Note this is a method, not a property.
-        Volume fractions are calculated based on pure species volumes only.
-        
-        Examples
-        --------
-        >>> Mixture(['sulfur hexafluoride', 'methane'], zs=[.2, .9], T=315).Vfgs()
-        [0.18062059238682632, 0.8193794076131737]
-        '''
-        Vmgs = self.Vmgs
-        if none_and_length_check([Vmgs]):
-            return zs_to_Vfs(self.zs, Vmgs)
-        return None
 
     def set_none(self):
         # Null values as necessary
@@ -2663,6 +2634,36 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
             self.calculate(T, P)
             return self.S - S
         return newton(to_solve, self.T)
+
+    def Vfls(self):
+        r'''Volume fractions of all species in the liquid phase at the current
+        temperature and pressure. Note this is a method, not a property.
+        Volume fractions are calculated based on pure species volumes only.
+        
+        Examples
+        --------
+        >>> Mixture(['hexane', 'pentane'], zs=[.5, .5], T=315).Vfls()
+        [0.5299671144566751, 0.47003288554332484]
+        '''
+        Vmls = self.Vmls
+        if none_and_length_check([Vmls]):
+            return zs_to_Vfs(self.zs, Vmls)
+        return None
+
+    def Vfgs(self):
+        r'''Volume fractions of all species in the gas phase at the current
+        temperature and pressure. Note this is a method, not a property.
+        Volume fractions are calculated based on pure species volumes only.
+        
+        Examples
+        --------
+        >>> Mixture(['sulfur hexafluoride', 'methane'], zs=[.2, .9], T=315).Vfgs()
+        [0.18062059238682632, 0.8193794076131737]
+        '''
+        Vmgs = self.Vmgs
+        if none_and_length_check([Vmgs]):
+            return zs_to_Vfs(self.zs, Vmgs)
+        return None
 
     # Unimportant constants
     @property
