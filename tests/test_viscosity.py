@@ -129,6 +129,7 @@ def test_ViswanathNatarajan():
 
 
 def test_Letsou_Stiel():
+    # Checked 2017-03-05
     mu = Letsou_Stiel(400., 46.07, 516.25, 6.383E6, 0.6371)
     assert_allclose(mu, 0.0002036150875308151)
 

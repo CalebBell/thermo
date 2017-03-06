@@ -140,9 +140,8 @@ def ViswanathNatarajan3(T, A, B, C):
     .. [1] Viswanath, Dabir S., and G. Natarajan. Databook On The Viscosity Of
        Liquids. New York: Taylor & Francis, 1989
     '''
-    mu = 10**(A + B/(C-T))
+    mu = 10**(A + B/(C - T))
     return mu/1000.
-
 
 
 def Letsou_Stiel(T, MW, Tc, Pc, omega):
@@ -202,8 +201,7 @@ def Letsou_Stiel(T, MW, Tc, Pc, omega):
     xi0 = (1.5174-2.135*Tr + 0.75*Tr**2)*1E-5
     xi1 = (4.2552-7.674*Tr + 3.4*Tr**2)*1E-5
     xi = 2173.424*Tc**(1/6.)/(MW**0.5*Pc**(2/3.))
-    mu_l = (xi0 + omega*xi1)/xi
-    return mu_l
+    return (xi0 + omega*xi1)/xi
 
 
 def Przedziecki_Sridhar(T, Tm, Tc, Pc, Vc, Vm, omega, MW):
@@ -268,8 +266,7 @@ def Przedziecki_Sridhar(T, Tm, Tc, Pc, Vc, Vm, omega, MW):
 
     Vo = 0.0085*omega*Tc - 2.02 + Vm/(0.342*(Tm/Tc) + 0.894)  # checked
     E = -1.12 + Vc/(12.94 + 0.1*MW - 0.23*Pc + 0.0424*Tm - 11.58*(Tm/Tc))
-    mu_l = Vo/(E*(V-Vo))/1000.
-    return mu_l
+    return Vo/(E*(V-Vo))/1000.
 
 
 NONE = 'NONE'

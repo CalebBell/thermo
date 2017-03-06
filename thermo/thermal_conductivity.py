@@ -106,8 +106,7 @@ def Sheffy_Johnson(T, M, Tm):
        Liquids at High Temperatures." Journal of Chemical & Engineering Data
        6, no. 2 (April 1, 1961): 245-49. doi:10.1021/je60010a019
     '''
-    kl = 1.951 * (1-0.00126*(T-Tm)) / (Tm**0.216*M**0.3)
-    return kl
+    return 1.951*(1 - 0.00126*(T - Tm))/(Tm**0.216*M**0.3)
 
 
 def Sato_Riedel(T, M, Tb, Tc):
@@ -154,8 +153,7 @@ def Sato_Riedel(T, M, Tb, Tc):
     '''
     Tr = T/Tc
     Tbr = Tb/Tc
-    k = 1.1053 * (3. + 20.*(1-Tr)**(2/3.0)) / M**0.5 / (3+20.*(1-Tbr)**(2/3.0))
-    return k
+    return 1.1053*(3. + 20.*(1 - Tr)**(2/3.))*M**-0.5/(3. + 20.*(1 - Tbr)**(2/3.))
 
 
 def Lakshmi_Prasad(T, M):
@@ -195,7 +193,7 @@ def Lakshmi_Prasad(T, M):
        Thermal Conductivity of Pure Liquids." The Chemical Engineering Journal
        48, no. 3 (April 1992): 211-14. doi:10.1016/0300-9467(92)80037-B
     '''
-    return 0.0655 - 0.0005*T + (1.3855 - 0.00197*T)/M**0.5
+    return 0.0655 - 0.0005*T + (1.3855 - 0.00197*T)*M**-0.5
 
 
 def Gharagheizi_liquid(T, M, Tb, Pc, omega):
@@ -253,10 +251,10 @@ def Gharagheizi_liquid(T, M, Tb, Pc, omega):
         AIChE Journal 59, no. 5 (May 1, 2013): 1702-8. doi:10.1002/aic.13938
     '''
     Pc = Pc/1E5
-    B = 16.0407*M + 2*Tb - 27.9074
-    A = 3.8588*M**8 * (1.0045*B + 6.5152*M - 8.9756)
-    kl = 1E-4*(10*omega + 2*Pc - 2*T + 4 + 1.908*(Tb + 1.009*B**2/M**2)
-        + 3.9287*M**4/B**4 + A/B**8)
+    B = 16.0407*M + 2.*Tb - 27.9074
+    A = 3.8588*M**8*(1.0045*B + 6.5152*M - 8.9756)
+    kl = 1E-4*(10.*omega + 2.*Pc - 2.*T + 4. + 1.908*(Tb + 1.009*B*B/(M*M))
+        + 3.9287*M**4*B**-4 + A*B**-8)
     return kl
 
 
@@ -312,8 +310,7 @@ def Nicola_original(T, M, Tc, omega, Hfus):
     '''
     Tr = T/Tc
     Hfus = Hfus*1000
-    kl = -0.5694 - 0.1436*Tr + 5.4893E-10*Hfus + 0.0508*omega + (1/M)**0.0622
-    return kl
+    return -0.5694 - 0.1436*Tr + 5.4893E-10*Hfus + 0.0508*omega + (1./M)**0.0622
 
 
 def Nicola(T, M, Tc, Pc, omega):
@@ -365,8 +362,7 @@ def Nicola(T, M, Tc, Pc, omega):
     '''
     Tr = T/Tc
     Pc = Pc/1E5
-    kl = 0.5147*(-0.2537*Tr + 0.0017*Pc + 0.1501*omega + (1./M)**0.2999)
-    return kl
+    return 0.5147*(-0.2537*Tr + 0.0017*Pc + 0.1501*omega + (1./M)**0.2999)
 
 
 def Bahadori_liquid(T, M):
@@ -418,8 +414,7 @@ def Bahadori_liquid(T, M):
     B = [1.565612E-2, -1.55833E-4, 5.051114E-7, -4.68030E-10]
     C = [-1.80304E-4, 1.758693E-6, -5.55224E-9, 5.201365E-12]
     D = [5.880443E-7, -5.65898E-9, 1.764384E-11, -1.65944E-14]
-    X = M
-    Y = T
+    X, Y = M, T
     a = A[0] + B[0]*X + C[0]*X**2 + D[0]*X**3
     b = A[1] + B[1]*X + C[1]*X**2 + D[1]*X**3
     c = A[2] + B[2]*X + C[2]*X**2 + D[2]*X**3
@@ -946,8 +941,7 @@ def DIPPR9G(T, P, Tc, Pc, kl):
     '''
     Tr = T/Tc
     Pr = P/Pc
-    kl_dense = kl*(0.98 + 0.0079*Pr*Tr**1.4 + 0.63*Tr**1.2*(Pr/(30+Pr)))
-    return kl_dense
+    return kl*(0.98 + 0.0079*Pr*Tr**1.4 + 0.63*Tr**1.2*(Pr/(30. + Pr)))
 
 
 Trs_Missenard = [0.8, 0.7, 0.6, 0.5]
@@ -1007,8 +1001,7 @@ def Missenard(T, P, Tc, Pc, kl):
     Tr = T/Tc
     Pr = P/Pc
     Q = float(Qfunc_Missenard(Pr, Tr))
-    kl_dense = kl*(1 + Q*Pr**0.7)
-    return kl_dense
+    return kl*(1. + Q*Pr**0.7)
 
 ### Thermal conductivity of liquid mixtures
 
@@ -1338,8 +1331,7 @@ def Eucken(MW, Cvm, mu):
        Properties of Gases and Liquids. McGraw-Hill Companies, 1987.
     '''
     MW = MW/1000.
-    kg = (1 + 9/4./(Cvm/R))*mu*Cvm/MW
-    return kg
+    return (1. + 9/4./(Cvm/R))*mu*Cvm/MW
 
 
 def Eucken_modified(MW, Cvm, mu):
@@ -1382,8 +1374,7 @@ def Eucken_modified(MW, Cvm, mu):
        Properties of Gases and Liquids. McGraw-Hill Companies, 1987.
     '''
     MW = MW/1000.
-    kg = (1.32 + 1.77/(Cvm/R))*mu*Cvm/MW
-    return kg
+    return (1.32 + 1.77/(Cvm/R))*mu*Cvm/MW
 
 
 def DIPPR9B(T, MW, Cvm, mu, Tc=None, chemtype=None):
@@ -1451,15 +1442,14 @@ def DIPPR9B(T, MW, Cvm, mu, Tc=None, chemtype=None):
     if not chemtype:
         chemtype = 'linear'
     if chemtype == 'monoatomic':
-        k = 2.5*mu*Cvm/MW
+        return 2.5*mu*Cvm/MW
     elif chemtype == 'linear':
         Tr = T/Tc
-        k = mu/MW*(1.30*Cvm + 14644 - 2928.80/Tr)
+        return mu/MW*(1.30*Cvm + 14644 - 2928.80/Tr)
     elif chemtype == 'nonlinear':
-        k = mu/MW*(1.15*Cvm + 16903.36)
+        return mu/MW*(1.15*Cvm + 16903.36)
     else:
         raise Exception('Specified chemical type is not an option')
-    return k
 
 
 def Chung(T, MW, Tc, omega, Cvm, mu):
@@ -1523,9 +1513,9 @@ def Chung(T, MW, Tc, omega, Cvm, mu):
     alpha = Cvm/R - 1.5
     beta = 0.7862 - 0.7109*omega + 1.3168*omega**2
     Z = 2 + 10.5*(T/Tc)**2
-    psi = 1 + alpha*((0.215 + 0.28288*alpha - 1.061*beta + 0.26665*Z)/(0.6366 + beta*Z + 1.061*alpha*beta))
-    k = 3.75*psi/(Cvm/R)/MW*mu*Cvm
-    return k
+    psi = 1 + alpha*((0.215 + 0.28288*alpha - 1.061*beta + 0.26665*Z)
+                      /(0.6366 + beta*Z + 1.061*alpha*beta))
+    return 3.75*psi/(Cvm/R)/MW*mu*Cvm
 
 
 def eli_hanley(T, MW, Tc, Vc, Zc, omega, Cvm):
@@ -1602,24 +1592,23 @@ def eli_hanley(T, MW, Tc, Vc, Zc, omega, Cvm):
     .. [2] Reid, Robert C.; Prausnitz, John M.; Poling, Bruce E.
        Properties of Gases and Liquids. McGraw-Hill Companies, 1987.
     '''
-    Cs = [2.907741307E6, -3.312874033E6, 1.608101838E6, -4.331904871E5, 7.062481330E4, -7.116620750E3, 4.325174400E2, -1.445911210E1, 2.037119479E-1]
+    Cs = [2.907741307E6, -3.312874033E6, 1.608101838E6, -4.331904871E5, 
+          7.062481330E4, -7.116620750E3, 4.325174400E2, -1.445911210E1, 2.037119479E-1]
 
     Tr = T/Tc
-    if Tr > 2:
-        Tr = 2
+    if Tr > 2: Tr = 2
     theta = 1 + (omega - 0.011)*(0.56553 - 0.86276*log(Tr) - 0.69852/Tr)
     psi = (1 + (omega-0.011)*(0.38560 - 1.1617*log(Tr)))*0.288/Zc
     f = Tc/190.4*theta
     h = Vc/9.92E-5*psi
     T0 = T/f
-    eta0 = 1E-7*sum([Cs[i]*T0**((i+1-4)/3.) for i in range(len(Cs))])
+    eta0 = 1E-7*sum([Ci*T0**((i+1. - 4.)/3.) for i, Ci in enumerate(Cs)])
     k0 = 1944*eta0
 
-    H = (16.04/MW)**0.5*f**0.5/h**(2/3.)
+    H = (16.04/MW)**0.5*f**0.5*h**(-2/3.)
     etas = eta0*H*MW/16.04
     ks = k0*H
-    k = ks + etas/(MW/1000.)*1.32*(Cvm-3*R/2.)
-    return k
+    return ks + etas/(MW/1000.)*1.32*(Cvm - 1.5*R)
 
 
 def Gharagheizi_gas(T, MW, Tb, Pc, omega):
@@ -1679,10 +1668,9 @@ def Gharagheizi_gas(T, MW, Tb, Pc, omega):
        AIChE Journal 59, no. 5 (May 1, 2013): 1702-8. doi:10.1002/aic.13938
     '''
     Pc = Pc/1E4
-    B = T + (2*omega + 2*T - 2*T*(2*omega+3.2825)/Tb + 3.2825)/(2*omega + T - T*(2*omega+3.2825)/Tb + 3.2825) - T*(2*omega+3.2825)/Tb
+    B = T + (2.*omega + 2.*T - 2.*T*(2.*omega + 3.2825)/Tb + 3.2825)/(2*omega + T - T*(2*omega+3.2825)/Tb + 3.2825) - T*(2*omega+3.2825)/Tb
     A = (2*omega + T - T*(2*omega + 3.2825)/Tb + 3.2825)/(0.1*MW*Pc*T) * (3.9752*omega + 0.1*Pc + 1.9876*B + 6.5243)**2
-    k = 7.9505E-4 + 3.989E-5*T - 5.419E-5*MW+3.989E-5*A
-    return k
+    return 7.9505E-4 + 3.989E-5*T - 5.419E-5*MW + 3.989E-5*A
 
 
 def Bahadori_gas(T, MW):
@@ -1732,14 +1720,12 @@ def Bahadori_gas(T, MW):
     B = [-2.9624238519E-3, 2.67956145820E-4, -6.40171884139E-6, 4.48579040207E-8]
     C = [7.54249790107E-6, -6.46636219509E-7, 1.5124510261E-8, -1.0376480449E-10]
     D = [-6.0988433456E-9, 5.20752132076E-10, -1.19425545729E-11, 8.0136464085E-14]
-    X = T
-    Y = MW
+    X, Y = T, MW
     a = A[0] + B[0]*X + C[0]*X**2 + D[0]*X**3
     b = A[1] + B[1]*X + C[1]*X**2 + D[1]*X**3
     c = A[2] + B[2]*X + C[2]*X**2 + D[2]*X**3
     d = A[3] + B[3]*X + C[3]*X**2 + D[3]*X**3
-    kg = a + b*Y + c*Y**2 + d*Y**3
-    return kg
+    return a + b*Y + c*Y**2 + d*Y**3
 
 
 GHARAGHEIZI_G = 'GHARAGHEIZI_G'
