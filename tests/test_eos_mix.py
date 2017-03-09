@@ -75,6 +75,25 @@ def test_PRMIX_quick():
     a = PRMIX(T=300, P=1E7, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
     assert_allclose(a.phis_g, [0.9855336740251448, 0.8338953860988254]) # Both models.
     assert_allclose(a.phis_g, [0.9855, 0.8339], rtol=1E-4) # Calculated with thermosolver V1
+    
+    # Test against PrFug.xlsx
+    # chethermo (Elliott, Richard and Lira, Carl T. - 2012 - Introductory Chemical Engineering Thermodynamics)
+    kijs = [[0, 0.00076, 0.00171], [0.00076, 0, 0.00061], [0.00171, 0.00061, 0]]
+    e = PRMIX(Tcs=[469.7, 507.4, 540.3], zs=[0.8168, 0.1501, 0.0331], 
+              omegas=[0.249, 0.305, 0.349], Pcs=[3.369E6, 3.012E6, 2.736E6],
+              T=322.29, P=101325, kijs=kijs)
+    assert_allclose(e.V_g, 0.0254513065119208)
+    assert_allclose(e.V_l, 0.00012128148428794801)
+    
+    assert_allclose(e.fugacity_g, 97639.120236046)
+    assert_allclose(e.fugacity_l, 117178.31044886599, rtol=5E-5)
+    
+    assert_allclose(e.fugacities_g, [79987.657739064, 14498.518199677, 3155.0680076450003])
+    assert_allclose(e.fugacities_l, [120163.95699262699, 7637.916974562, 620.954835936], rtol=5E-5)
+    
+    assert_allclose(e.phis_g, [0.966475030274237, 0.953292801077091, 0.940728104174207])
+    assert_allclose(e.phis_l, [1.45191729893103, 0.502201064053298, 0.185146457753801], rtol=1E-4)
+    
 
 def test_PRMIX_VS_PR():
     # Test solution for molar volumes

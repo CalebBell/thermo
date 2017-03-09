@@ -247,6 +247,30 @@ def test_PR_quick():
     # Author's correlation, with the correct constants this time
     H_dep_orig = R*eos.T*(Z-1) + (eos.T*eos.da_alpha_dT-eos.a_alpha)/(2*2**0.5*eos.b)*log((Z+(sqrt(2)+1)*B)/(Z-(sqrt(2)-1)*B))
     assert_allclose(H_dep_orig, H_dep_expect)
+    
+    # Test against Preos.xlsx
+    # chethermo (Elliott, Richard and Lira, Carl T. - 2012 - Introductory Chemical Engineering Thermodynamics)
+    # Propane
+    e = PR(Tc=369.8, Pc=4.249E6, omega=0.152, T=298, P=1E5)
+    assert_allclose(e.V_g, 0.0243660258924206)
+    assert_allclose(e.V_l, 8.68172131076956e-05)
+    
+    
+    # The following are imprecise as the approximate constants 2.414 etc were
+    # used in chetherm
+    assert_allclose(e.fugacity_g, 98364.041542871, rtol=1E-5)
+    # not sure the problem with precision with the liquid
+    assert_allclose(e.fugacity_l, 781433.379991859, rtol=1E-2)
+    
+    assert_allclose(e.H_dep_g, -111.990562846069)
+    assert_allclose(e.H_dep_l, -16112.7239108382, rtol=1E-5)
+
+    assert_allclose(e.U_dep_g, -70.8841316881251)
+    assert_allclose(e.U_dep_l, -13643.6966117489, rtol=1E-5)
+    
+    assert_allclose(e.S_dep_g, -0.238638957275652)
+    assert_allclose(e.S_dep_l, -71.158231517264, rtol=1E-6)
+    
 
 
 def test_PR_Psat():

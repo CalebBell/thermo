@@ -373,7 +373,7 @@ class Chemical(object): # pragma: no cover
 
         # Identification
         self.CAS = CASfromAny(ID)
-        if self.CAS in _chemical_cache and caching:
+        if self.CAS in _chemical_cache and caching and len(_chemical_cache) < 1000:
             self.__dict__.update(_chemical_cache[self.CAS].__dict__)
         else:
             self.PubChem = PubChem(self.CAS)
