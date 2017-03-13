@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2016, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2017, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -35,6 +35,7 @@ def test_UNIFAC():
     gammas_0522A = UNIFAC(chemgroups=[{1:2, 2:4}, {1:1, 2:1, 18:1}], T=60+273.15, xs=[0.5, 0.5])
     assert_allclose(gammas_0522A, [1.4276025835624173, 1.3646545010104225])
     assert_allclose(gammas_0522A, [1.428, 1.365], atol=0.001)
+    assert_allclose(gammas_0522A, [1.4276, 1.36466], atol=0.0001) # Another calculator
     
     
     # Example 4.14 Activity Coefficients of Ethanol + Benzene with the UNIFAC method
@@ -67,3 +68,57 @@ def test_UNIFAC():
     gammas_ACTCOEFF_5 = UNIFAC(chemgroups=[{1:2, 3:1, 14:1}, {16:1}, {1:1, 2:1, 42:1}, {1:1, 2:1, 14:1}, {1:2, 2:3}], T=80.37+273.15, xs=[.1, .05, .1, .25, .5])
     gammas_ACTCOEFF_5_expect = [1.2773557137580500, 8.017146862811100, 1.1282116576861800, 1.485860948162550, 1.757426505841570]
     assert_allclose(gammas_ACTCOEFF_5, gammas_ACTCOEFF_5_expect)
+
+
+    # Acetone and Pentane at 307 K and x1 = 0.047
+    # Example 8-12 in Poling et al., 5E
+    gammas_Poling_5e = UNIFAC(chemgroups=[{1:1, 18:1}, {1:2, 2:3}], T=307, xs=[0.047, 0.953])
+    gammas_Poling_known = [4.992034311484559, 1.00526021118788]
+    assert_allclose(gammas_Poling_5e, gammas_Poling_known)
+    assert_allclose(gammas_Poling_5e, [4.99, 1.005], atol=0.003)
+    
+    gammas_Poling_with_cache = UNIFAC(chemgroups=[{1:1, 18:1}, {1:2, 2:3}], T=307, xs=[0.047, 0.953], cached=([2.5735, 3.8254], [2.336, 3.316], {1: 3, 18: 1, 2: 3}))
+    assert_allclose(gammas_Poling_with_cache, gammas_Poling_known)
+    # Test the caching
+
+
+def test_UNIFAC_modified_2006():
+    # 11.02 Azeotropic Points in the Quaternary System Benzene - Cyclohexane - Acetone - Ethanol Using Mod. UNIFAC-1.xps
+    gammas_1102_1 = UNIFAC(chemgroups=[{9:6}, {78:6}, {1:1, 18:1}, {1:1, 2:1, 14:1}], T=373.15, xs=[0.2, 0.3, 0.2, 0.2],
+                             UFSG=DOUFSG, UFIP=DOUFIP2006, modified=True)
+    # Values in .xps
+    gammas_1102_1_known = [1.18643111, 1.44028013, 1.20447983, 1.97207061]
+    assert_allclose(gammas_1102_1, gammas_1102_1_known)
+    # Recalculated values with more precision, still matching exactly
+    gammas_1102_1_known2 = [1.18643111370682970, 1.44028013391119700, 1.20447983349960850, 1.97207060902998130]
+    assert_allclose(gammas_1102_1, gammas_1102_1_known2, rtol=1E-14)
+    # 290 K, x3=0.3 to balance
+    gammas_1102_2 = UNIFAC(chemgroups=[{9:6}, {78:6}, {1:1, 18:1}, {1:1, 2:1, 14:1}], T=290, xs=[0.2, 0.3, 0.3, 0.2],
+                             UFSG=DOUFSG, UFIP=DOUFIP2006, modified=True)
+    gammas_1102_2_known = [1.2555831362844658, 2.002790560351622, 1.313653013490284, 2.4472442902051923]
+    assert_allclose(gammas_1102_2_known, gammas_1102_2, rtol=1E-13)
+    
+    # 0.01 mole fractions except last, 250 K
+    gammas_1102_3 = UNIFAC(chemgroups=[{9:6}, {78:6}, {1:1, 18:1}, {1:1, 2:1, 14:1}], T=250, xs=[0.01, 0.01, 0.01, 0.97], UFSG=DOUFSG, UFIP=DOUFIP2006, modified=True)
+    gammas_1102_3_known = [6.233033961983859, 10.01994111294437, 3.376394671321658, 1.00137007335149700]
+    assert_allclose(gammas_1102_3_known, gammas_1102_3, rtol=1E-13)
+
+
+def test_UNIFAC_misc():
+    from scipy.misc import derivative
+    from scipy.constants import R
+    from math import log
+    T = 273.15 + 60
+    
+    def gE_T(T):
+        xs = [0.5, 0.5]
+        gammas = UNIFAC(chemgroups=[{1:2, 2:4}, {1:1, 2:1, 18:1}], T=T, xs=xs)
+        return R*T*sum(xi*log(gamma) for xi, gamma in zip(xs, gammas))
+    
+    def hE_T(T):
+        to_diff = lambda T: gE_T(T)/T
+        return -derivative(to_diff, T,dx=1E-5, order=7)*T**2
+
+    # A source gives 854.758 for hE, matching to within a gas constant
+    assert_allclose(hE_T(T), 854.771631451345)
+    assert_allclose(gE_T(T), 923.6408846044955)

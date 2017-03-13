@@ -48,6 +48,7 @@ from . import solubility
 from . import interface
 from . import thermal_conductivity
 from . import triple
+from . import unifac
 from . import utils
 from . import vapor_pressure
 from . import virial
@@ -83,6 +84,7 @@ from .solubility import *
 from .interface import *
 from .thermal_conductivity import *
 from .triple import *
+from .unifac import *
 from .utils import *
 from .vapor_pressure import *
 from .virial import *
@@ -98,7 +100,7 @@ __all__ = ['activity', 'chemical', 'combustion', 'critical',
  'refractivity', 'safety', 'solubility', 'interface',
  'thermal_conductivity', 'triple', 'utils',
  'vapor_pressure', 'virial', 'viscosity', 'volume', 'acentric', 'coolprop', 
- 'datasheet', 'dippr']
+ 'datasheet', 'dippr', 'unifac']
 
 
 __all__.extend(acentric.__all__)
@@ -130,6 +132,7 @@ __all__.extend(interface.__all__)
 __all__.extend(thermal_conductivity.__all__)
 __all__.extend(triple.__all__)
 __all__.extend(utils.__all__)
+__all__.extend(unifac.__all__)
 __all__.extend(vapor_pressure.__all__)
 __all__.extend(virial.__all__)
 __all__.extend(viscosity.__all__)

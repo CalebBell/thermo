@@ -22,17 +22,22 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['UNIFAC', 'UNIFAC_psi']
+__all__ = ['UNIFAC', 'UNIFAC_psi', 'DOUFMG', 'DOUFSG', 'UFSG', 'UFMG', 
+           'DOUFIP2016', 'DOUFIP2006', 'UFIP']
 import os
 from thermo.utils import log, exp
 
 folder = os.path.join(os.path.dirname(__file__), 'Phase Change')
 
-def UNIFAC_psi(subgroup1, subgroup2, T, UFSG, UFIP, advanced=False):
+def UNIFAC_psi(T, subgroup1, subgroup2, UFSG, UFIP, modified=False):
     main1 = UFSG[subgroup1].group_id
     main2 = UFSG[subgroup2].group_id
-    if advanced:
-        return 'TODO'
+    if modified:
+        try:
+            a, b, c = UFIP[main1][main2]
+        except:
+            return 1.
+        return exp((-a -b*T - c*T**2)/T)
     else:
         try:
             return exp(-UFIP[main1][main2]/T)
@@ -50,14 +55,30 @@ class UNIFAC_subgroup(object):
         self.Q = Q
 
 UFIP = {i: {} for i in list(range(1, 52)) + [55, 84, 85]}
-
 with open(os.path.join(folder, 'UNIFAC original interaction parameters.tsv')) as f:
     for line in f:
         maingroup1, maingroup2, interaction_parameter = line.strip('\n').split('\t')
+        # Index by both int, order maters, to only one parameter.
         UFIP[int(maingroup1)][int(maingroup2)] = float(interaction_parameter)
 
-UFMG = {}
+DOUFIP2006 = {i: {} for i in list(range(1, 51)) + [52, 53, 55, 56, 61, 77, 84, 85, 87, 89, 90, 91, 93, 98, 99]}
+# Some of the groups have no public parameters unfortunately
+with open(os.path.join(folder, 'UNIFAC modified Dortmund interaction parameters 2006.tsv')) as f:
+    for line in f:
+        maingroup1, maingroup2, a, b, c = line.strip('\n').split('\t')
+        DOUFIP2006[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
+
+DOUFIP2016 = {i: {} for i in list(range(1, 51)) + [52, 53, 55, 56, 61, 77, 84, 85, 87, 89, 90, 91, 93, 98, 99]}
+# Some of the groups have no public parameters unfortunately
+with open(os.path.join(folder, 'UNIFAC modified Dortmund interaction parameters.tsv')) as f:
+    for line in f:
+        maingroup1, maingroup2, a, b, c = line.strip('\n').split('\t')
+        DOUFIP2016[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
+
+
+# http://www.ddbst.com/published-parameters-unifac.html#ListOfMainGroups
 #UFMG[No.] = ('Maingroup Name', subgroups)
+UFMG = {}
 UFMG[1] = ('CH2', (1, 2, 3, 4))
 UFMG[2] = ('C=C', (5, 6, 7, 8, 70))
 UFMG[3] = ('ACH', (9, 10))
@@ -115,6 +136,8 @@ UFMG[85] = ('BTI', (179))
 
 
 UFSG = {}
+# UFSG[subgroup ID] = (subgroup formula, main group ID, subgroup R, subgroup Q)
+# http://www.ddbst.com/published-parameters-unifac.html
 UFSG[1] = UNIFAC_subgroup('CH3', 1, 'CH2', 0.9011, 0.848)
 UFSG[2] = UNIFAC_subgroup('CH2', 1, 'CH2', 0.6744, 0.54)
 UFSG[3] = UNIFAC_subgroup('CH', 1, 'CH2', 0.4469, 0.228)
@@ -230,7 +253,189 @@ UFSG[178] = UNIFAC_subgroup('IMIDAZOL', 84, 'IMIDAZOL', 2.026, 0.868)
 UFSG[179] = UNIFAC_subgroup('BTI', 85, 'BTI', 5.774, 4.932)
 
 
-def UNIFAC(chemgroups, T, xs, cached=None, UFSG=UFSG, UFIP=UFIP):
+# http://www.ddbst.com/PublishedParametersUNIFACDO.html#ListOfSubGroupsAndTheirGroupSurfacesAndVolumes
+#  subgroup = (subgroup, #maingroup, maingroup, R, Q)
+DOUFSG = {}
+DOUFSG[1] = UNIFAC_subgroup('CH3', 1, 'CH2', 0.6325, 1.0608)
+DOUFSG[2] = UNIFAC_subgroup('CH2', 1, 'CH2', 0.6325, 0.7081)
+DOUFSG[3] = UNIFAC_subgroup('CH', 1, 'CH2', 0.6325, 0.3554)
+DOUFSG[4] = UNIFAC_subgroup('C', 1, 'CH2', 0.6325, 0)
+DOUFSG[5] = UNIFAC_subgroup('CH2=CH', 2, 'C=C', 1.2832, 1.6016)
+DOUFSG[6] = UNIFAC_subgroup('CH=CH', 2, 'C=C', 1.2832, 1.2489)
+DOUFSG[7] = UNIFAC_subgroup('CH2=C', 2, 'C=C', 1.2832, 1.2489)
+DOUFSG[8] = UNIFAC_subgroup('CH=C', 2, 'C=C', 1.2832, 0.8962)
+DOUFSG[9] = UNIFAC_subgroup('ACH', 3, 'ACH', 0.3763, 0.4321)
+DOUFSG[10] = UNIFAC_subgroup('AC', 3, 'ACH', 0.3763, 0.2113)
+DOUFSG[11] = UNIFAC_subgroup('ACCH3', 4, 'ACCH2', 0.91, 0.949)
+DOUFSG[12] = UNIFAC_subgroup('ACCH2', 4, 'ACCH2', 0.91, 0.7962)
+DOUFSG[13] = UNIFAC_subgroup('ACCH', 4, 'ACCH2', 0.91, 0.3769)
+DOUFSG[14] = UNIFAC_subgroup('OH(P)', 5, 'OH', 1.2302, 0.8927)
+DOUFSG[15] = UNIFAC_subgroup('CH3OH', 6, 'CH3OH', 0.8585, 0.9938)
+DOUFSG[16] = UNIFAC_subgroup('H2O', 7, 'H2O', 1.7334, 2.4561)
+DOUFSG[17] = UNIFAC_subgroup('ACOH', 8, 'ACOH', 1.08, 0.975)
+DOUFSG[18] = UNIFAC_subgroup('CH3CO', 9, 'CH2CO', 1.7048, 1.67)
+DOUFSG[19] = UNIFAC_subgroup('CH2CO', 9, 'CH2CO', 1.7048, 1.5542)
+DOUFSG[20] = UNIFAC_subgroup('CHO', 10, 'CHO', 0.7173, 0.771)
+DOUFSG[21] = UNIFAC_subgroup('CH3COO', 11, 'CCOO', 1.27, 1.6286)
+DOUFSG[22] = UNIFAC_subgroup('CH2COO', 11, 'CCOO', 1.27, 1.4228)
+DOUFSG[23] = UNIFAC_subgroup('HCOO', 12, 'HCOO', 1.9, 1.8)
+DOUFSG[24] = UNIFAC_subgroup('CH3O', 13, 'CH2O', 1.1434, 1.6022)
+DOUFSG[25] = UNIFAC_subgroup('CH2O', 13, 'CH2O', 1.1434, 1.2495)
+DOUFSG[26] = UNIFAC_subgroup('CHO', 13, 'CH2O', 1.1434, 0.8968)
+DOUFSG[27] = UNIFAC_subgroup('THF', 43, 'CY-CH2O', 1.7023, 1.8784)
+DOUFSG[28] = UNIFAC_subgroup('CH3NH2', 14, 'CH2NH2', 1.6607, 1.6904)
+DOUFSG[29] = UNIFAC_subgroup('CH2NH2', 14, 'CH2NH2', 1.6607, 1.3377)
+DOUFSG[30] = UNIFAC_subgroup('CHNH2', 14, 'CH2NH2', 1.6607, 0.985)
+DOUFSG[31] = UNIFAC_subgroup('CH3NH', 15, 'CH2NH', 1.368, 1.4332)
+DOUFSG[32] = UNIFAC_subgroup('CH2NH', 15, 'CH2NH', 1.368, 1.0805)
+DOUFSG[33] = UNIFAC_subgroup('CHNH', 15, 'CH2NH', 1.368, 0.7278)
+DOUFSG[34] = UNIFAC_subgroup('CH3N', 16, '(C)3N', 1.0746, 1.176)
+DOUFSG[35] = UNIFAC_subgroup('CH2N', 16, '(C)3N', 1.0746, 0.824)
+DOUFSG[36] = UNIFAC_subgroup('ACNH2', 17, 'ACNH2', 1.1849, 0.8067)
+DOUFSG[37] = UNIFAC_subgroup('AC2H2N', 18, 'PYRIDINE', 1.4578, 0.9022)
+DOUFSG[38] = UNIFAC_subgroup('AC2HN', 18, 'PYRIDINE', 1.2393, 0.633)
+DOUFSG[39] = UNIFAC_subgroup('AC2N', 18, 'PYRIDINE', 1.0731, 0.353)
+DOUFSG[40] = UNIFAC_subgroup('CH3CN', 19, 'CH2CN', 1.5575, 1.5193)
+DOUFSG[41] = UNIFAC_subgroup('CH2CN', 19, 'CH2CN', 1.5575, 1.1666)
+DOUFSG[42] = UNIFAC_subgroup('COOH', 20, 'COOH', 0.8, 0.9215)
+DOUFSG[43] = UNIFAC_subgroup('HCOOH', 44, 'HCOOH', 0.8, 1.2742)
+DOUFSG[44] = UNIFAC_subgroup('CH2CL', 21, 'CCL', 0.9919, 1.3654)
+DOUFSG[45] = UNIFAC_subgroup('CHCL', 21, 'CCL', 0.9919, 1.0127)
+DOUFSG[46] = UNIFAC_subgroup('CCL', 21, 'CCL', 0.9919, 0.66)
+DOUFSG[47] = UNIFAC_subgroup('CH2CL2', 22, 'CCL2', 1.8, 2.5)
+DOUFSG[48] = UNIFAC_subgroup('CHCL2', 22, 'CCL2', 1.8, 2.1473)
+DOUFSG[49] = UNIFAC_subgroup('CCL2', 22, 'CCL2', 1.8, 1.7946)
+DOUFSG[50] = UNIFAC_subgroup('CHCL3', 45, 'CHCL3', 2.45, 2.8912)
+DOUFSG[51] = UNIFAC_subgroup('CCL3', 23, 'CCL3', 2.65, 2.3778)
+DOUFSG[52] = UNIFAC_subgroup('CCL4', 24, 'CCL4', 2.618, 3.1836)
+DOUFSG[53] = UNIFAC_subgroup('ACCL', 25, 'ACCL', 0.5365, 0.3177)
+DOUFSG[54] = UNIFAC_subgroup('CH3NO2', 26, 'CNO2', 2.644, 2.5)
+DOUFSG[55] = UNIFAC_subgroup('CH2NO2', 26, 'CNO2', 2.5, 2.304)
+DOUFSG[56] = UNIFAC_subgroup('CHNO2', 26, 'CNO2', 2.887, 2.241)
+DOUFSG[57] = UNIFAC_subgroup('ACNO2', 27, 'ACNO2', 0.4656, 0.3589)
+DOUFSG[58] = UNIFAC_subgroup('CS2', 28, 'CS2', 1.24, 1.068)
+DOUFSG[59] = UNIFAC_subgroup('CH3SH', 29, 'CH3SH', 1.289, 1.762)
+DOUFSG[60] = UNIFAC_subgroup('CH2SH', 29, 'CH3SH', 1.535, 1.316)
+DOUFSG[61] = UNIFAC_subgroup('FURFURAL', 30, 'FURFURAL', 1.299, 1.289)
+DOUFSG[62] = UNIFAC_subgroup('DOH', 31, 'DOH', 2.088, 2.4)
+DOUFSG[63] = UNIFAC_subgroup('I', 32, 'I', 1.076, 0.9169)
+DOUFSG[64] = UNIFAC_subgroup('BR', 33, 'BR', 1.209, 1.4)
+DOUFSG[65] = UNIFAC_subgroup('CH=-C', 34, 'C=-C', 0.9214, 1.3)
+DOUFSG[66] = UNIFAC_subgroup('C=-C', 34, 'C=-C', 1.303, 1.132)
+DOUFSG[67] = UNIFAC_subgroup('DMSO', 35, 'DMSO', 3.6, 2.692)
+DOUFSG[68] = UNIFAC_subgroup('ACRY', 36, 'ACRY', 1, 0.92)
+DOUFSG[69] = UNIFAC_subgroup('CL-(C=C)', 37, 'CLCC', 0.5229, 0.7391)
+DOUFSG[70] = UNIFAC_subgroup('C=C', 2, 'C=C', 1.2832, 0.4582)
+DOUFSG[71] = UNIFAC_subgroup('ACF', 38, 'ACF', 0.8814, 0.7269)
+DOUFSG[72] = UNIFAC_subgroup('DMF', 39, 'DMF', 2, 2.093)
+DOUFSG[73] = UNIFAC_subgroup('HCON(..', 39, 'DMF', 2.381, 1.522)
+DOUFSG[74] = UNIFAC_subgroup('CF3', 40, 'CF2', 1.284, 1.266)
+DOUFSG[75] = UNIFAC_subgroup('CF2', 40, 'CF2', 1.284, 1.098)
+DOUFSG[76] = UNIFAC_subgroup('CF', 40, 'CF2', 0.8215, 0.5135)
+DOUFSG[77] = UNIFAC_subgroup('COO', 41, 'COO', 1.6, 0.9)
+DOUFSG[78] = UNIFAC_subgroup('CY-CH2', 42, 'CY-CH2', 0.7136, 0.8635)
+DOUFSG[79] = UNIFAC_subgroup('CY-CH', 42, 'CY-CH2', 0.3479, 0.1071)
+DOUFSG[80] = UNIFAC_subgroup('CY-C', 42, 'CY-CH2', 0.347, 0)
+DOUFSG[81] = UNIFAC_subgroup('OH(S)', 5, 'OH', 1.063, 0.8663)
+DOUFSG[82] = UNIFAC_subgroup('OH(T)', 5, 'OH', 0.6895, 0.8345)
+DOUFSG[83] = UNIFAC_subgroup('CY-CH2O', 43, 'CY-CH2O', 1.4046, 1.4)
+DOUFSG[84] = UNIFAC_subgroup('TRIOXAN', 43, 'CY-CH2O', 1.0413, 1.0116)
+DOUFSG[85] = UNIFAC_subgroup('CNH2', 14, 'CH2NH2', 1.6607, 0.985)
+DOUFSG[86] = UNIFAC_subgroup('NMP', 46, 'CY-CONC', 3.981, 3.2)
+DOUFSG[87] = UNIFAC_subgroup('NEP', 46, 'CY-CONC', 3.7543, 2.892)
+DOUFSG[88] = UNIFAC_subgroup('NIPP', 46, 'CY-CONC', 3.5268, 2.58)
+DOUFSG[89] = UNIFAC_subgroup('NTBP', 46, 'CY-CONC', 3.2994, 2.352)
+DOUFSG[91] = UNIFAC_subgroup('CONH2', 47, 'CONR', 1.4515, 1.248)
+DOUFSG[92] = UNIFAC_subgroup('CONHCH3', 47, 'CONR', 1.5, 1.08)
+DOUFSG[100] = UNIFAC_subgroup('CONHCH2', 47, 'CONR', 1.5, 1.08)
+DOUFSG[101] = UNIFAC_subgroup('AM(CH3)2', 48, 'CONR2', 2.4748, 1.9643)
+DOUFSG[102] = UNIFAC_subgroup('AMCH3CH2', 48, 'CONR2', 2.2739, 1.5754)
+DOUFSG[103] = UNIFAC_subgroup('AM(CH2)2', 48, 'CONR2', 2.0767, 1.1866)
+DOUFSG[104] = UNIFAC_subgroup('AC2H2S', 52, 'ACS', 1.7943, 1.34)
+DOUFSG[105] = UNIFAC_subgroup('AC2HS', 52, 'ACS', 1.6282, 1.06)
+DOUFSG[106] = UNIFAC_subgroup('AC2S', 52, 'ACS', 1.4621, 0.78)
+DOUFSG[107] = UNIFAC_subgroup('H2COCH', 53, 'EPOXIDES', 1.3601, 1.8031)
+DOUFSG[108] = UNIFAC_subgroup('COCH', 53, 'EPOXIDES', 0.683, 0.3418)
+DOUFSG[109] = UNIFAC_subgroup('HCOCH', 53, 'EPOXIDES', 0.9104, 0.6538)
+DOUFSG[110] = UNIFAC_subgroup('(CH2)2SU', 56, 'SULFONE', 2.687, 2.12)
+DOUFSG[111] = UNIFAC_subgroup('CH2SUCH', 56, 'SULFONE', 2.46, 1.808)
+DOUFSG[112] = UNIFAC_subgroup('(CH3)2CB', 55, 'CARBONAT', 2.42, 2.4976)
+DOUFSG[113] = UNIFAC_subgroup('(CH2)2CB', 55, 'CARBONAT', 2.42, 2.0018)
+DOUFSG[114] = UNIFAC_subgroup('CH2CH3CB', 55, 'CARBONAT', 2.42, 2.2497)
+DOUFSG[119] = UNIFAC_subgroup('H2COCH2', 53, 'EPOXIDES', 1.063, 1.123)
+DOUFSG[153] = UNIFAC_subgroup('H2COC', 53, 'EPOXIDES', 0.9104, 0.6538)
+DOUFSG[178] = UNIFAC_subgroup('C3H2N2+', 84, 'IMIDAZOL', 1.7989, 0.64)
+DOUFSG[179] = UNIFAC_subgroup('BTI-', 85, 'BTI', 5.8504, 5.7513)
+DOUFSG[184] = UNIFAC_subgroup('C3H3N2+', 84, 'IMIDAZOL', 2.411, 2.409)
+DOUFSG[189] = UNIFAC_subgroup('C4H8N+', 87, 'PYRROL', 2.7986, 2.7744)
+DOUFSG[195] = UNIFAC_subgroup('BF4-', 89, 'BF4', 4.62, 1.1707)
+DOUFSG[196] = UNIFAC_subgroup('C5H5N+', 90, 'PYRIDIN', 2.4878, 2.474)
+DOUFSG[197] = UNIFAC_subgroup('OTF-', 91, 'OTF', 3.3854, 2.009)
+
+#  subgroup = (group, (subgroup ids))
+# http://www.ddbst.com/PublishedParametersUNIFACDO.html#ListOfMainGroups
+DOUFMG = {}
+DOUFMG[1] = ('CH2', (1, 2, 3, 4))
+DOUFMG[2] = ('C=C', (5, 6, 7, 8, 70))
+DOUFMG[3] = ('ACH', (9, 10))
+DOUFMG[4] = ('ACCH2', (11, 12, 13))
+DOUFMG[5] = ('OH', (14, 81, 82))
+DOUFMG[6] = ('CH3OH', (15))
+DOUFMG[7] = ('H2O', (16))
+DOUFMG[8] = ('ACOH', (17))
+DOUFMG[9] = ('CH2CO', (18, 19))
+DOUFMG[10] = ('CHO', (20))
+DOUFMG[11] = ('CCOO', (21, 22))
+DOUFMG[12] = ('HCOO', (23))
+DOUFMG[13] = ('CH2O', (24, 25, 26))
+DOUFMG[14] = ('CH2NH2', (28, 29, 30, 85))
+DOUFMG[15] = ('CH2NH', (31, 32, 33))
+DOUFMG[16] = ('(C)3N', (34, 35))
+DOUFMG[17] = ('ACNH2', (36))
+DOUFMG[18] = ('PYRIDINE', (37, 38, 39))
+DOUFMG[19] = ('CH2CN', (40, 41))
+DOUFMG[20] = ('COOH', (42))
+DOUFMG[21] = ('CCL', (44, 45, 46))
+DOUFMG[22] = ('CCL2', (47, 48, 49))
+DOUFMG[23] = ('CCL3', (51))
+DOUFMG[24] = ('CCL4', (52))
+DOUFMG[25] = ('ACCL', (53))
+DOUFMG[26] = ('CNO2', (54, 55, 56))
+DOUFMG[27] = ('ACNO2', (57))
+DOUFMG[28] = ('CS2', (58))
+DOUFMG[29] = ('CH3SH', (59, 60))
+DOUFMG[30] = ('FURFURAL', (61))
+DOUFMG[31] = ('DOH', (62))
+DOUFMG[32] = ('I', (63))
+DOUFMG[33] = ('BR', (64))
+DOUFMG[34] = ('C=-C', (65, 66))
+DOUFMG[35] = ('DMSO', (67))
+DOUFMG[36] = ('ACRY', (68))
+DOUFMG[37] = ('CLCC', (69))
+DOUFMG[38] = ('ACF', (71))
+DOUFMG[39] = ('DMF', (72, 73))
+DOUFMG[40] = ('CF2', (74, 75, 76))
+DOUFMG[41] = ('COO', (77))
+DOUFMG[42] = ('CY-CH2', (78, 79, 80))
+DOUFMG[43] = ('CY-CH2O', (27, 83, 84))
+DOUFMG[44] = ('HCOOH', (43))
+DOUFMG[45] = ('CHCL3', (50))
+DOUFMG[46] = ('CY-CONC', (86, 87, 88, 89))
+DOUFMG[47] = ('CONR', (91, 92, 100))
+DOUFMG[48] = ('CONR2', (101, 102, 103))
+DOUFMG[52] = ('ACS', (104, 105, 106))
+DOUFMG[53] = ('EPOXIDES', (107, 108, 109, 119, 153))
+DOUFMG[55] = ('CARBONAT', (112, 113, 114))
+DOUFMG[56] = ('SULFONE', (110, 111))
+DOUFMG[84] = ('IMIDAZOL', (178, 184))
+DOUFMG[85] = ('BTI', (179))
+DOUFMG[87] = ('PYRROL', (189))
+DOUFMG[89] = ('BF4', (195))
+DOUFMG[90] = ('PYRIDIN', (196))
+DOUFMG[91] = ('OTF', (197))
+
+
+def UNIFAC(T, xs, chemgroups, cached=None, UFSG=UFSG, UFIP=UFIP, modified=False):
     cmps = range(len(xs))
 
     # Obtain r and q values using the subgroup values
@@ -254,7 +459,6 @@ def UNIFAC(chemgroups, T, xs, cached=None, UFSG=UFSG, UFIP=UFIP):
                     group_counts[group] += count
                 else:
                     group_counts[group] = count
-
     else:
         rs, qs, group_counts = cached
 
@@ -272,17 +476,21 @@ def UNIFAC(chemgroups, T, xs, cached=None, UFSG=UFSG, UFIP=UFIP):
     qsxs = sum([qs[i]*xs[i] for i in cmps])
     Fis = [qs[i]/qsxs for i in cmps]
 
-    loggammacs = [1. - Vis[i] + log(Vis[i]) - 5.*qs[i]*(1. - Vis[i]/Fis[i]
-                  + log(Vis[i]/Fis[i])) for i in cmps]
+    if modified:
+        rsxs2 = sum([rs[i]**0.75*xs[i] for i in cmps])
+        Vis2 = [rs[i]**0.75/rsxs2 for i in cmps]
+        loggammacs = [1. - Vis2[i] + log(Vis2[i]) - 5.*qs[i]*(1. - Vis[i]/Fis[i]
+                      + log(Vis[i]/Fis[i])) for i in cmps]
+    else:
+        loggammacs = [1. - Vis[i] + log(Vis[i]) - 5.*qs[i]*(1. - Vis[i]/Fis[i]
+                      + log(Vis[i]/Fis[i])) for i in cmps]
 
     Q_sum_term = sum([UFSG[group].Q*group_count_xs[group] for group in group_counts])
     area_fractions = {group: UFSG[group].Q*group_count_xs[group]/Q_sum_term
                       for group in group_counts.keys()}
 
-
-    UNIFAC_psis = {k: {m:(UNIFAC_psi(m, k, T, UFSG, UFIP))
+    UNIFAC_psis = {k: {m:(UNIFAC_psi(T, m, k, UFSG, UFIP, modified=modified))
                    for m in group_counts} for k in group_counts}
-
 
     loggamma_groups = {}
     for k in group_counts:
