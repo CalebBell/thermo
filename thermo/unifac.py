@@ -23,7 +23,9 @@ SOFTWARE.'''
 from __future__ import division
 
 __all__ = ['UNIFAC', 'UNIFAC_psi', 'DOUFMG', 'DOUFSG', 'UFSG', 'UFMG', 
-           'DOUFIP2016', 'DOUFIP2006', 'UFIP']
+           'DOUFIP2016', 'DOUFIP2006', 'UFIP', 'DDBST_UNIFAC_assignments', 
+           'DDBST_MODIFIED_UNIFAC_assignments', 'DDBST_PSRK_assignments',
+           'UNIFAC_RQ', 'Van_der_Waals_volume', 'Van_der_Waals_area']
 import os
 from thermo.utils import log, exp
 
@@ -37,7 +39,7 @@ def UNIFAC_psi(T, subgroup1, subgroup2, UFSG, UFIP, modified=False):
             a, b, c = UFIP[main1][main2]
         except:
             return 1.
-        return exp((-a -b*T - c*T**2)/T)
+        return exp((-a -b*T - c*T*T)/T)
     else:
         try:
             return exp(-UFIP[main1][main2]/T)
@@ -717,12 +719,150 @@ with open(os.path.join(folder, 'UNIFAC modified NIST 2015 interaction parameters
         maingroup1, maingroup2, a, b, c, Tmin, Tmax = line.strip('\n').split('\t')
         NISTUFIP[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
 
+DDBST_UNIFAC_assignments = {}
+DDBST_MODIFIED_UNIFAC_assignments = {}
+DDBST_PSRK_assignments = {}
+
+with open(os.path.join(folder, 'DDBST UNIFAC assignments.tsv')) as f:
+    for line in f.readlines():
+        key, valids, original, modified, PSRK = line.split('\t')
+        valids = list(map(bool, map(int, valids.split(' '))))
+        groups = []
+        for d in original, modified, PSRK:
+            d = d.split(' ')[0:-1]
+            d_data = []
+            for i in range(int(len(d)/2)):
+                d_data.append([int(d[i*2]), int(d[i*2+1])])
+            groups.append(d_data)
+        DDBST_UNIFAC_assignments[key] = (groups[0], valids[0])
+        DDBST_MODIFIED_UNIFAC_assignments[key] = (groups[1], valids[1])
+        DDBST_PSRK_assignments[key] = (groups[2], valids[2])
+
+
+def UNIFAC_RQ(groups, UFSG=UFSG):
+    r'''Calculates UNIFAC parameters R and Q for a chemical, given a dictionary
+    of its groups, as shown in [1]_. Most UNIFAC methods use the same subgroup
+    values; however, a dictionary of `UNIFAC_subgroup` instances may be 
+    specified as an optional second parameter.
+
+    .. math::
+        r_i = \sum_{k=1}^{n} \nu_k R_k 
+        
+        q_i = \sum_{k=1}^{n}\nu_k Q_k
+
+    Parameters
+    ----------
+    groups : dict[count]
+        Dictionary of numeric subgroup IDs : their counts
+    UFSG : dict[UNIFAC_subgroup]
+        Optional replacement for standard subgroups
+
+    Returns
+    -------
+    R : float
+        R UNIFAC parameter (normalized Van der Waals Volume)  [-]
+    Q : float
+        Q UNIFAC parameter (normalized Van der Waals Area)  [-]
+
+    Notes
+    -----
+    These parameters have some predictive value for other chemical properties.
+
+    Examples
+    --------
+    Hexane
+    
+    >>> UNIFAC_RQ({1:2, 2:4})
+    (4.4998000000000005, 3.856)
+    
+    References
+    ----------
+    .. [1] Gmehling, Jurgen. Chemical Thermodynamics: For Process Simulation.
+       Weinheim, Germany: Wiley-VCH, 2012.
+    '''
+    ri = 0.
+    qi = 0.
+    for group, count in groups.items():
+        ri += UFSG[group].R*count
+        qi += UFSG[group].Q*count
+    return ri, qi
+
+
+def Van_der_Waals_volume(R):
+    r'''Calculates a species Van der Waals molar volume with the UNIFAC method,
+    given a species's R parameter.
+
+    .. math::
+        V_{wk} = 15.17R_k
+        
+    Parameters
+    ----------
+    R : float
+        R UNIFAC parameter (normalized Van der Waals Volume)  [-]
+
+    Returns
+    -------
+    V_vdw : float
+        Unnormalized Van der Waals volume, [m^3/mol]
+
+    Notes
+    -----
+    The volume was originally given in cm^3/mol, but is converted to SI here.
+
+    Examples
+    --------    
+    >>> Van_der_Waals_volume(4.4998)
+    6.826196599999999e-05
+    
+    References
+    ----------
+    .. [1] Wei, James, Morton M. Denn, John H. Seinfeld, Arup Chakraborty, 
+       Jackie Ying, Nicholas Peppas, and George Stephanopoulos. Molecular 
+       Modeling and Theory in Chemical Engineering. Academic Press, 2001.
+    '''
+    return R*1.517e-05
+
+
+def Van_der_Waals_area(Q):
+    r'''Calculates a species Van der Waals molar surface area with the UNIFAC 
+    method, given a species's Q parameter.
+
+    .. math::
+        A_{wk} = 2.5\times 10^9 Q_k
+        
+    Parameters
+    ----------
+    Q : float
+        Q UNIFAC parameter (normalized Van der Waals Area)  [-]
+
+    Returns
+    -------
+    A_vdw : float
+        Unnormalized Van der Waals surface area, [m^2/mol]
+
+    Notes
+    -----
+    The volume was originally given in cm^2/mol, but is converted to SI here.
+
+    Examples
+    --------    
+    >>> Van_der_Waals_area(3.856)
+    964000.0
+    
+    References
+    ----------
+    .. [1] Wei, James, Morton M. Denn, John H. Seinfeld, Arup Chakraborty, 
+       Jackie Ying, Nicholas Peppas, and George Stephanopoulos. Molecular 
+       Modeling and Theory in Chemical Engineering. Academic Press, 2001.
+    '''
+    return Q*250000.0
+
+
 def UNIFAC(T, xs, chemgroups, cached=None, UFSG=UFSG, UFIP=UFIP, modified=False):
     cmps = range(len(xs))
 
     # Obtain r and q values using the subgroup values
     if not cached:
-        # R and Q for each chemical may be of interest as a stand-alone property
         rs = []
         qs = []
         for groups in chemgroups:

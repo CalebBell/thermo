@@ -179,3 +179,13 @@ def test_UNIFAC_misc():
     # A source gives 854.758 for hE, matching to within a gas constant
     assert_allclose(hE_T(T), 854.771631451345)
     assert_allclose(gE_T(T), 923.6408846044955)
+
+
+
+def test_Van_der_Waals_area():
+    # DIPPR and YAWS, hexane, units are good
+    assert_allclose(Van_der_Waals_area(3.856), 964000.0)
+
+def test_Van_der_Waals_volume():
+    # DIPPR and YAWS, hexane, units are good
+    assert_allclose(Van_der_Waals_volume(4.4998), 6.826196599999999e-05)

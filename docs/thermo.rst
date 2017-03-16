@@ -34,6 +34,7 @@ Submodules
    thermo.temperature
    thermo.thermal_conductivity
    thermo.triple
+   thermo.unifac
    thermo.utils
    thermo.vapor_pressure
    thermo.virial
