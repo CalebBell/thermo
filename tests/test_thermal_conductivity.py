@@ -192,9 +192,14 @@ def test_ThermalConductivityLiquid():
     EtOH = ThermalConductivityLiquid(CASRN='64-17-5', MW=46.06844, Tm=159.05, Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, Hfus=4931.0)
 
     EtOH.T_dependent_property(305.)
-    kl_calcs = [(EtOH.set_user_methods(i), EtOH.T_dependent_property(305.))[1] for i in EtOH.sorted_valid_methods]
-    kl_exp = [0.162183005823234, 0.16627999999999998, 0.166302, 0.17417420086033197, 0.20068212675966418, 0.18526367184633258, 0.18846433785041306, 0.16837295487233528, 0.16883011582627103, 0.09330268101157643, 0.028604363267557775]
+    methods = list(EtOH.sorted_valid_methods)
+    methods.remove(VDI_TABULAR)
+    kl_calcs = [(EtOH.set_user_methods(i), EtOH.T_dependent_property(305.))[1] for i in methods]
+    kl_exp = [0.162183005823234, 0.16627999999999998, 0.166302, 0.20068212675966418, 0.18526367184633258, 0.18846433785041306, 0.16837295487233528, 0.16883011582627103, 0.09330268101157643, 0.028604363267557775]
     assert_allclose(sorted(kl_calcs), sorted(kl_exp))
+    
+    assert_allclose(EtOH.calculate(305., VDI_TABULAR), 0.17417420086033197, rtol=1E-4)
+    
 
     # Test that methods return None
     kl_calcs = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(5000))[1] for i in EtOH.sorted_valid_methods]

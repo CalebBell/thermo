@@ -25,6 +25,7 @@ import numpy as np
 import pytest
 import pandas as pd
 from thermo.volume import *
+from thermo.volume import VDI_TABULAR
 from thermo.eos import *
 from thermo.utils import Vm_to_rho
 from thermo.identifiers import checkCAS
@@ -200,9 +201,13 @@ def test_solids_CSP():
 def test_VolumeLiquid():
     # Ethanol, test all methods at once
     EtOH = VolumeLiquid(MW=46.06844, Tb=351.39, Tc=514.0, Pc=6137000.0, Vc=0.000168, Zc=0.24125, omega=0.635, dipole=1.44, CASRN='64-17-5')
-    Vm_calcs = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(305.))[1] for i in EtOH.all_methods]
-    Vm_exp = [5.905316741206586e-05, 5.784760660832295e-05, 5.7594571728502063e-05, 5.594757794216803e-05, 5.912157674597306e-05, 5.9082910221835385e-05, 5.909768693432104e-05, 5.526836182702171e-05, 5.821947224585489e-05, 5.1921776627430897e-05, 5.9680793094807483e-05, 5.4848470492414296e-05, 5.507075716132008e-05, 5.3338182234795054e-05]
+    methods = list(EtOH.all_methods)
+    methods.remove(VDI_TABULAR)
+    Vm_calcs = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(305.))[1] for i in methods]
+    
+    Vm_exp = [5.905316741206586e-05, 5.784760660832295e-05, 5.7594571728502063e-05, 5.594757794216803e-05, 5.912157674597306e-05, 5.9082910221835385e-05, 5.526836182702171e-05, 5.821947224585489e-05, 5.1921776627430897e-05, 5.9680793094807483e-05, 5.4848470492414296e-05, 5.507075716132008e-05, 5.3338182234795054e-05]
     assert_allclose(sorted(Vm_calcs), sorted(Vm_exp))
+    assert_allclose(EtOH.calculate(305, VDI_TABULAR), 5.909768693432104e-05,rtol=1E-4)
 
     # Test that methods return None
     EtOH = VolumeLiquid(MW=46.06844, Tb=351.39, Tc=514.0, Pc=6137000.0, Vc=0.000168, Zc=0.24125, omega=0.635, dipole=1.44, CASRN='64-17-5')
@@ -263,6 +268,7 @@ def test_VolumeLiquid():
 
     with pytest.raises(Exception):
         EtOH.test_method_validity_P(300, 1E5, 'BADMETHOD')
+
 
 @pytest.mark.meta_T_dept
 def test_VolumeSolid():

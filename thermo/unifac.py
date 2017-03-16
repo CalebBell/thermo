@@ -738,6 +738,27 @@ with open(os.path.join(folder, 'DDBST UNIFAC assignments.tsv')) as f:
         DDBST_MODIFIED_UNIFAC_assignments[key] = (groups[1], valids[1])
         DDBST_PSRK_assignments[key] = (groups[2], valids[2])
 
+def to_time():
+    # Maybe 0.5 s when all is said and reduced, using only actual groups
+    DDBST_UNIFAC_assignments = {}
+    DDBST_MODIFIED_UNIFAC_assignments = {}
+    DDBST_PSRK_assignments = {}
+    
+    with open(os.path.join(folder, 'DDBST UNIFAC assignments2.tsv')) as f:
+        for line in f.readlines():
+            key, valids, original, modified, PSRK = line.split('\t')
+            valids = [True if i == '1' else False for i in valids.split(' ')]
+            groups = []
+            for d in original, modified, PSRK:
+                d = d.rstrip().split(' ')
+                d_data = {}
+                for i in range(int(len(d)/2)):
+                    d_data[int(d[i*2])] = int(d[i*2+1])
+                groups.append(d_data)
+            DDBST_UNIFAC_assignments[key] = (groups[0], valids[0])
+            DDBST_MODIFIED_UNIFAC_assignments[key] = (groups[1], valids[1])
+            DDBST_PSRK_assignments[key] = (groups[2], valids[2])
+
 
 def UNIFAC_RQ(groups, UFSG=UFSG):
     r'''Calculates UNIFAC parameters R and Q for a chemical, given a dictionary

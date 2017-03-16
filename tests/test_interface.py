@@ -27,7 +27,7 @@ import pandas as pd
 from thermo.interface import *
 from thermo.identifiers import checkCAS
 
-def test_csp():
+def test_CSP():
     # p-dichloribenzene at 412.15 K, from DIPPR; value differs due to a slight
     # difference in method.
     sigma1 = Brock_Bird(412.15, 447.3, 685, 3.952E6)
@@ -135,7 +135,7 @@ def test_SurfaceTension():
     EtOH = SurfaceTension(Tb=351.39, Tc=514.0, Pc=6137000.0, Vc=0.000168, Zc=0.24125, omega=0.635, StielPolar=-0.01266, CASRN='64-17-5')
     EtOH.T_dependent_property(305.)
     sigma_calcs = [(EtOH.set_user_methods(i), EtOH.T_dependent_property(305.))[1] for i in EtOH.sorted_valid_methods]
-    sigma_exp = [0.021222422444285592, 0.02171156653650729, 0.02171156653650729, 0.021462066798796135, 0.021532564572262793, 0.02140008, 0.038055725907414066, 0.03739257387107131, 0.02645171690486362, 0.03905907338532845, 0.03670733205970745]
+    sigma_exp = [0.021222422444285592, 0.02171156653650729, 0.02171156653650729, 0.021462066798796135, 0.021533867879206747, 0.02140008, 0.038055725907414066, 0.03739257387107131, 0.02645171690486362, 0.03905907338532845, 0.03670733205970745]
 
     assert_allclose(sorted(sigma_calcs), sorted(sigma_exp))
 

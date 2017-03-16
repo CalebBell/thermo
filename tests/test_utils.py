@@ -321,7 +321,7 @@ def test_TDependentProperty():
     assert_allclose(1.2,  EtOH.T_dependent_property(200))
     assert_allclose(1.1, EtOH.T_dependent_property(150))
     assert_allclose(1.7, EtOH.T_dependent_property(500))
-    assert_allclose(1.35441088517, EtOH.T_dependent_property(275))
+    assert_allclose(1.35441088517, EtOH.T_dependent_property(275), rtol=1E-3)
     EtOH.tabular_extrapolation_permitted = False
     assert None == EtOH.T_dependent_property(500)
 

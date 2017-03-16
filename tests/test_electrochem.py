@@ -30,6 +30,7 @@ from thermo.identifiers import checkCAS
 from math import log10
 
 
+#@pytest.mark.scipy_019
 def test_Laliberte_viscosity_w():
     mu_w = Laliberte_viscosity_w(298)
     assert_allclose(mu_w, 0.0008932264487033279)
@@ -64,7 +65,7 @@ def test_Laliberte_density():
 
 def test_Laliberte_heat_capacity_w():
     rhow = Laliberte_heat_capacity_w(273.15+3.56)
-    assert_allclose(rhow, 4208.8759205525475)
+    assert_allclose(rhow, 4208.8759205525475, rtol=1E-6)
 
 
 def test_Laliberte_heat_capacity_i():
@@ -75,7 +76,7 @@ def test_Laliberte_heat_capacity_i():
 
 def test_Laliberte_heat_capacity():
     Cp = Laliberte_heat_capacity(273.15+1.5, [0.00398447], ['7647-14-5'])
-    assert_allclose(Cp, 4186.566417712068)
+    assert_allclose(Cp, 4186.566417712068, rtol=1E-6)
 
 
 def test_cond_pure():

@@ -164,8 +164,15 @@ def test_TRCCp_integral_over_T():
 @pytest.mark.meta_T_dept
 def test_HeatCapacityGas():
     EtOH = HeatCapacityGas(CASRN='64-17-5', similarity_variable=0.1953615, MW=46.06844)
-    Cps_calc = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(305))[1] for i in EtOH.all_methods]
-    assert_allclose(sorted(Cps_calc), sorted([66.35085001015844, 74.6763493522965, 66.40063819791762, 66.25918325111196, 71.07236200126606, 65.6, 65.21]))
+    methods = list(EtOH.all_methods)
+    methods.remove(VDI_TABULAR)
+    Cps_calc = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(305))[1] for i in methods]
+    assert_allclose(sorted(Cps_calc), sorted([66.35085001015844, 66.40063819791762, 66.25918325111196, 71.07236200126606, 65.6, 65.21]))
+
+    # VDI interpolation, treat separately due to change in behavior of scipy in 0.19
+    assert_allclose(EtOH.calculate(305, VDI_TABULAR), 74.6763493522965, rtol=1E-4)
+
+
 
     EtOH.tabular_extrapolation_permitted = False
     assert [None]*6 == [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(5000))[1] for i in [TRCIG, POLING, CRCSTD, COOLPROP, POLING_CONST, VDI_TABULAR]]
@@ -181,10 +188,10 @@ def test_HeatCapacityGas():
     props = [1.2, 1.3, 1.4, 1.5, 1.6]
     EtOH.set_tabular_data(Ts=Ts, properties=props, name='test_set')
     EtOH.forced = True
-    assert_allclose(1.35441088517, EtOH.T_dependent_property(275))
+    assert_allclose(1.35441088517, EtOH.T_dependent_property(275), rtol=2E-4)
 
     assert None == EtOH.T_dependent_property(5000)
-
+#test_HeatCapacityGas()
 
 @pytest.mark.meta_T_dept
 def test_HeatCapacityGas_integrals():
@@ -254,7 +261,7 @@ def test_HeatCapacitySolid():
     Cps = [12.965044960703908, 20.206353934945987, 28.261467986645872, 37.14292010552292, 46.85389719453655]
     NaCl.set_tabular_data(Ts=Ts, properties=Cps, name='stuff')
     NaCl.forced = True
-    assert_allclose(NaCl.T_dependent_property(275), 18.320355898506502)
+    assert_allclose(NaCl.T_dependent_property(275), 18.320355898506502, rtol=1E-5)
 
     NaCl.tabular_extrapolation_permitted = False
     assert None == NaCl.T_dependent_property(601)
@@ -280,7 +287,7 @@ def test_HeatCapacitySolid_integrals():
     Cps = [12.965044960703908, 20.206353934945987, 28.261467986645872, 37.14292010552292, 46.85389719453655]
     NaCl.set_tabular_data(Ts=Ts, properties=Cps, name='stuff')
     dH4 = NaCl.calculate_integral(200, 300, 'stuff')
-    assert_allclose(dH4, 1651.8556007162392)
+    assert_allclose(dH4, 1651.8556007162392, rtol=1E-5)
     
     # Entropy integrals
     NaCl = HeatCapacitySolid(CASRN='7647-14-5', similarity_variable=0.0342215, MW=58.442769)
@@ -306,7 +313,7 @@ def test_HeatCapacityLiquid():
     tol = HeatCapacityLiquid(CASRN='108-88-3', MW=92.13842, Tc=591.75, omega=0.257, Cpgm=115.30398669098454, similarity_variable=0.16279853724428964)
     Cpl_calc = [(tol.set_user_methods(i, forced=True), tol.T_dependent_property(330))[1] for i in tol.all_methods]
     Cpls = [165.4728226923247, 166.5239869108539, 166.52164399712314, 175.3439256239127, 166.71561127721478, 157.3, 165.4554033804999, 166.69807427725885, 157.29, 167.3380448453572]
-    assert_allclose(sorted(Cpl_calc), sorted(Cpls))
+    assert_allclose(sorted(Cpl_calc), sorted(Cpls), rtol=5e-6)
 
     assert [None]*10 == [(tol.set_user_methods(i, forced=True), tol.T_dependent_property(2000))[1] for i in tol.all_methods]
 

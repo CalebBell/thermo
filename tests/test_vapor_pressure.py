@@ -25,6 +25,7 @@ import pytest
 import numpy as np
 import pandas as pd
 from thermo.vapor_pressure import *
+from thermo.vapor_pressure import VDI_TABULAR
 from thermo.identifiers import checkCAS
 
 ### Regression equations
@@ -171,9 +172,13 @@ def test_VaporPressure():
     # Ethanol, test as many methods asa possible at once
     EtOH = VaporPressure(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, CASRN='64-17-5')
     EtOH.T_dependent_property(305.)
-    Psat_calcs = [(EtOH.set_user_methods(i), EtOH.T_dependent_property(305.))[1] for i in EtOH.sorted_valid_methods]
-    Psat_exp = [11579.634014300127, 11698.02742876088, 11590.408779316374, 11659.154222044575, 11592.205263402893, 11593.661615921257, 11690.81660829924, 11612.378633936816, 11350.156640503357, 12081.738947110121, 14088.453409816764, 9210.26200064024]
+    methods = EtOH.sorted_valid_methods
+    methods.remove(VDI_TABULAR)
+    Psat_calcs = [(EtOH.set_user_methods(i), EtOH.T_dependent_property(305.))[1] for i in methods]
+    Psat_exp = [11579.634014300127, 11698.02742876088, 11590.408779316374, 11659.154222044575, 11592.205263402893, 11593.661615921257, 11612.378633936816, 11350.156640503357, 12081.738947110121, 14088.453409816764, 9210.26200064024]
     assert_allclose(sorted(Psat_calcs), sorted(Psat_exp))
+    
+    assert_allclose(EtOH.calculate(305, VDI_TABULAR), 11690.81660829924, rtol=1E-4)
 
     # Use another chemical to get in ANTOINE_EXTENDED_POLING
     a = VaporPressure(CASRN='589-81-1')
@@ -210,3 +215,4 @@ def test_VaporPressure():
         cycloheptane.test_method_validity(300, 'BADMETHOD')
 
 
+test_VaporPressure()

@@ -286,7 +286,7 @@ def test_EnthalpyVaporization():
     props = [46461.62768429649, 44543.08561867195, 42320.381894706225, 34627.726535926406, 27634.46144486471]
     EtOH.set_tabular_data(Ts=Ts, properties=props, name='CPdata')
     EtOH.forced = True
-    assert_allclose(43499.47575887933, EtOH.T_dependent_property(275))
+    assert_allclose(43499.47575887933, EtOH.T_dependent_property(275), rtol=1E-4)
 
     EtOH.tabular_extrapolation_permitted = False
     assert None == EtOH.T_dependent_property(5000)
