@@ -719,48 +719,34 @@ with open(os.path.join(folder, 'UNIFAC modified NIST 2015 interaction parameters
         maingroup1, maingroup2, a, b, c, Tmin, Tmax = line.strip('\n').split('\t')
         NISTUFIP[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
 
+
 DDBST_UNIFAC_assignments = {}
 DDBST_MODIFIED_UNIFAC_assignments = {}
 DDBST_PSRK_assignments = {}
 
-with open(os.path.join(folder, 'DDBST UNIFAC assignments.tsv')) as f:
-    for line in f.readlines():
-        key, valids, original, modified, PSRK = line.split('\t')
-        valids = list(map(bool, map(int, valids.split(' '))))
-        groups = []
-        for d in original, modified, PSRK:
-            d = d.split(' ')[0:-1]
-            d_data = []
-            for i in range(int(len(d)/2)):
-                d_data.append([int(d[i*2]), int(d[i*2+1])])
-            groups.append(d_data)
-        DDBST_UNIFAC_assignments[key] = (groups[0], valids[0])
-        DDBST_MODIFIED_UNIFAC_assignments[key] = (groups[1], valids[1])
-        DDBST_PSRK_assignments[key] = (groups[2], valids[2])
-
-def to_time():
-    # Maybe 0.5 s when all is said and reduced, using only actual groups
-    DDBST_UNIFAC_assignments = {}
-    DDBST_MODIFIED_UNIFAC_assignments = {}
-    DDBST_PSRK_assignments = {}
-    
-    with open(os.path.join(folder, 'DDBST UNIFAC assignments2.tsv')) as f:
+def load_group_assignments_DDBST():
+    '''Data is stored in the format
+    InChI key\tbool bool bool \tsubgroup count ...\tsubgroup count \tsubgroup count...
+    where the bools refer to whether or not the original UNIFAC, modified
+    UNIFAC, and PSRK group assignments were completed correctly.
+    The subgroups and their count have an indefinite length.
+    '''
+    with open(os.path.join(folder, 'DDBST UNIFAC assignments.tsv')) as f:
+        _group_assignments = [DDBST_UNIFAC_assignments, DDBST_MODIFIED_UNIFAC_assignments, DDBST_PSRK_assignments]
         for line in f.readlines():
             key, valids, original, modified, PSRK = line.split('\t')
+            # list of whether or not each method was correctly identified or not
             valids = [True if i == '1' else False for i in valids.split(' ')]
-            groups = []
-            for d in original, modified, PSRK:
-                d = d.rstrip().split(' ')
-                d_data = {}
-                for i in range(int(len(d)/2)):
-                    d_data[int(d[i*2])] = int(d[i*2+1])
-                groups.append(d_data)
-            DDBST_UNIFAC_assignments[key] = (groups[0], valids[0])
-            DDBST_MODIFIED_UNIFAC_assignments[key] = (groups[1], valids[1])
-            DDBST_PSRK_assignments[key] = (groups[2], valids[2])
+            for groups, storage, valid in zip([original, modified, PSRK], _group_assignments, valids):
+                if valid:
+                    groups = groups.rstrip().split(' ')
+                    d_data = {}
+                    for i in range(int(len(groups)/2)):
+                        d_data[int(groups[i*2])] = int(groups[i*2+1])
+                    storage[key] = d_data
 
 
-def UNIFAC_RQ(groups, UFSG=UFSG):
+def UNIFAC_RQ(groups, subgroup_data=None):
     r'''Calculates UNIFAC parameters R and Q for a chemical, given a dictionary
     of its groups, as shown in [1]_. Most UNIFAC methods use the same subgroup
     values; however, a dictionary of `UNIFAC_subgroup` instances may be 
@@ -775,8 +761,9 @@ def UNIFAC_RQ(groups, UFSG=UFSG):
     ----------
     groups : dict[count]
         Dictionary of numeric subgroup IDs : their counts
-    UFSG : dict[UNIFAC_subgroup]
-        Optional replacement for standard subgroups
+    subgroup_data : None or dict[UNIFAC_subgroup]
+        Optional replacement for standard subgroups; leave as None to use the
+        original UNIFAC subgroup r and q values.
 
     Returns
     -------
@@ -801,6 +788,8 @@ def UNIFAC_RQ(groups, UFSG=UFSG):
     .. [1] Gmehling, Jurgen. Chemical Thermodynamics: For Process Simulation.
        Weinheim, Germany: Wiley-VCH, 2012.
     '''
+    if subgroup_data is not None:
+        UFSG = subgroup_data
     ri = 0.
     qi = 0.
     for group, count in groups.items():
@@ -879,8 +868,17 @@ def Van_der_Waals_area(Q):
     return Q*250000.0
 
 
-def UNIFAC(T, xs, chemgroups, cached=None, UFSG=UFSG, UFIP=UFIP, modified=False):
+def UNIFAC(T, xs, chemgroups, cached=None, subgroup_data=None, 
+           interaction_data=None, modified=False):
     cmps = range(len(xs))
+    if subgroup_data is None:
+        subgroups = UFSG
+    else:
+        subgroups = subgroup_data
+    if interaction_data is None:
+        interactions = UFIP
+    else:
+        interactions = interaction_data
 
     # Obtain r and q values using the subgroup values
     if not cached:
@@ -890,8 +888,8 @@ def UNIFAC(T, xs, chemgroups, cached=None, UFSG=UFSG, UFIP=UFIP, modified=False)
             ri = 0.
             qi = 0.
             for group, count in groups.items():
-                ri += UFSG[group].R*count
-                qi += UFSG[group].Q*count
+                ri += subgroups[group].R*count
+                qi += subgroups[group].Q*count
             rs.append(ri)
             qs.append(qi)
         
@@ -929,11 +927,11 @@ def UNIFAC(T, xs, chemgroups, cached=None, UFSG=UFSG, UFIP=UFIP, modified=False)
         loggammacs = [1. - Vis[i] + log(Vis[i]) - 5.*qs[i]*(1. - Vis[i]/Fis[i]
                       + log(Vis[i]/Fis[i])) for i in cmps]
 
-    Q_sum_term = sum([UFSG[group].Q*group_count_xs[group] for group in group_counts])
-    area_fractions = {group: UFSG[group].Q*group_count_xs[group]/Q_sum_term
+    Q_sum_term = sum([subgroups[group].Q*group_count_xs[group] for group in group_counts])
+    area_fractions = {group: subgroups[group].Q*group_count_xs[group]/Q_sum_term
                       for group in group_counts.keys()}
 
-    UNIFAC_psis = {k: {m:(UNIFAC_psi(T, m, k, UFSG, UFIP, modified=modified))
+    UNIFAC_psis = {k: {m:(UNIFAC_psi(T, m, k, subgroups, interactions, modified=modified))
                    for m in group_counts} for k in group_counts}
 
     loggamma_groups = {}
@@ -943,7 +941,7 @@ def UNIFAC(T, xs, chemgroups, cached=None, UFSG=UFSG, UFIP=UFIP, modified=False)
             sum1 += area_fractions[m]*UNIFAC_psis[k][m]
             sum3 = sum(area_fractions[n]*UNIFAC_psis[m][n] for n in group_counts)
             sum2 -= area_fractions[m]*UNIFAC_psis[m][k]/sum3
-        loggamma_groups[k] = UFSG[k].Q*(1. - log(sum1) + sum2)
+        loggamma_groups[k] = subgroups[k].Q*(1. - log(sum1) + sum2)
 
 
     loggammars = []
@@ -952,8 +950,8 @@ def UNIFAC(T, xs, chemgroups, cached=None, UFSG=UFSG, UFIP=UFIP, modified=False)
         chem_group_sum = sum(groups.values())
         chem_group_count_xs = {group: count/chem_group_sum for group, count in groups.items()}
                                
-        Q_sum_term = sum([UFSG[group].Q*chem_group_count_xs[group] for group in groups])
-        chem_area_fractions = {group: UFSG[group].Q*chem_group_count_xs[group]/Q_sum_term
+        Q_sum_term = sum([subgroups[group].Q*chem_group_count_xs[group] for group in groups])
+        chem_area_fractions = {group: subgroups[group].Q*chem_group_count_xs[group]/Q_sum_term
                                for group in groups.keys()}
         for k in groups:
             sum1, sum2 = 0., 0.
@@ -962,7 +960,7 @@ def UNIFAC(T, xs, chemgroups, cached=None, UFSG=UFSG, UFIP=UFIP, modified=False)
                 sum3 = sum(chem_area_fractions[n]*UNIFAC_psis[m][n] for n in groups)
                 sum2 -= chem_area_fractions[m]*UNIFAC_psis[m][k]/sum3
 
-            chem_loggamma_groups[k] = UFSG[k].Q*(1. - log(sum1) + sum2)
+            chem_loggamma_groups[k] = subgroups[k].Q*(1. - log(sum1) + sum2)
 
         tot = sum([count*(loggamma_groups[group] - chem_loggamma_groups[group])
                    for group, count in groups.items()])

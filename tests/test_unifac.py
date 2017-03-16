@@ -142,7 +142,7 @@ def test_UNIFAC():
 def test_UNIFAC_modified_2006():
     # 11.02 Azeotropic Points in the Quaternary System Benzene - Cyclohexane - Acetone - Ethanol Using Mod. UNIFAC-1.xps
     gammas_1102_1 = UNIFAC(chemgroups=[{9:6}, {78:6}, {1:1, 18:1}, {1:1, 2:1, 14:1}], T=373.15, xs=[0.2, 0.3, 0.2, 0.2],
-                             UFSG=DOUFSG, UFIP=DOUFIP2006, modified=True)
+                             subgroup_data=DOUFSG, interaction_data=DOUFIP2006, modified=True)
     # Values in .xps
     gammas_1102_1_known = [1.18643111, 1.44028013, 1.20447983, 1.97207061]
     assert_allclose(gammas_1102_1, gammas_1102_1_known)
@@ -151,12 +151,12 @@ def test_UNIFAC_modified_2006():
     assert_allclose(gammas_1102_1, gammas_1102_1_known2, rtol=1E-14)
     # 290 K, x3=0.3 to balance
     gammas_1102_2 = UNIFAC(chemgroups=[{9:6}, {78:6}, {1:1, 18:1}, {1:1, 2:1, 14:1}], T=290, xs=[0.2, 0.3, 0.3, 0.2],
-                             UFSG=DOUFSG, UFIP=DOUFIP2006, modified=True)
+                             subgroup_data=DOUFSG, interaction_data=DOUFIP2006, modified=True)
     gammas_1102_2_known = [1.2555831362844658, 2.002790560351622, 1.313653013490284, 2.4472442902051923]
     assert_allclose(gammas_1102_2_known, gammas_1102_2, rtol=1E-13)
     
     # 0.01 mole fractions except last, 250 K
-    gammas_1102_3 = UNIFAC(chemgroups=[{9:6}, {78:6}, {1:1, 18:1}, {1:1, 2:1, 14:1}], T=250, xs=[0.01, 0.01, 0.01, 0.97], UFSG=DOUFSG, UFIP=DOUFIP2006, modified=True)
+    gammas_1102_3 = UNIFAC(chemgroups=[{9:6}, {78:6}, {1:1, 18:1}, {1:1, 2:1, 14:1}], T=250, xs=[0.01, 0.01, 0.01, 0.97], subgroup_data=DOUFSG, interaction_data=DOUFIP2006, modified=True)
     gammas_1102_3_known = [6.233033961983859, 10.01994111294437, 3.376394671321658, 1.00137007335149700]
     assert_allclose(gammas_1102_3_known, gammas_1102_3, rtol=1E-13)
 
