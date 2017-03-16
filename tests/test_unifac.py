@@ -27,6 +27,63 @@ import pandas as pd
 from thermo.unifac import *
 
 
+def test_UNIFAC_data():
+    # Test the interaction pairs
+    assert len(UFIP) == 54
+    assert sum([len(i) for i in UFIP.values()]) == 1270
+    val_sum = sum([np.sum(np.abs(list(i.values()))) for i in UFIP.values()])
+    assert_allclose(val_sum, 449152.27169999998)
+    assert_allclose(UFIP[1][2], 86.02)
+    
+    for G in UFIP.keys():
+        assert G in UFMG
+        for G2 in UFIP[G].keys():
+            assert G2 in UFMG
+    
+    for G in UFSG.values():
+        assert G.main_group_id in UFMG
+        assert UFMG[G.main_group_id][0] == G.main_group
+        
+    # subgroup strings:
+    # [i.group for i in UFSG.values()]
+    # ['CH3', 'CH2', 'CH', 'C', 'CH2=CH', 'CH=CH', 'CH2=C', 'CH=C', 'ACH', 'AC', 'ACCH3', 'ACCH2', 'ACCH', 'OH', 'CH3OH', 'H2O', 'ACOH', 'CH3CO', 'CH2CO', 'CHO', 'CH3COO', 'CH2COO', 'HCOO', 'CH3O', 'CH2O', 'CHO', 'THF', 'CH3NH2', 'CH2NH2', 'CHNH2', 'CH3NH', 'CH2NH', 'CHNH', 'CH3N', 'CH2N', 'ACNH2', 'C5H5N', 'C5H4N', 'C5H3N', 'CH3CN', 'CH2CN', 'COOH', 'HCOOH', 'CH2CL', 'CHCL', 'CCL', 'CH2CL2', 'CHCL2', 'CCL2', 'CHCL3', 'CCL3', 'CCL4', 'ACCL', 'CH3NO2', 'CH2NO2', 'CHNO2', 'ACNO2', 'CS2', 'CH3SH', 'CH2SH', 'FURFURAL', 'DOH', 'I', 'BR', 'CH=-C', 'C=-C', 'DMSO', 'ACRY', 'CL-(C=C)', 'C=C', 'ACF', 'DMF', 'HCON(..', 'CF3', 'CF2', 'CF', 'COO', 'SIH3', 'SIH2', 'SIH', 'SI', 'SIH2O', 'SIHO', 'SIO', 'NMP', 'CCL3F', 'CCL2F', 'HCCL2F', 'HCCLF', 'CCLF2', 'HCCLF2', 'CCLF3', 'CCL2F2', 'AMH2', 'AMHCH3', 'AMHCH2', 'AM(CH3)2', 'AMCH3CH2', 'AM(CH2)2', 'C2H5O2', 'C2H4O2', 'CH3S', 'CH2S', 'CHS', 'MORPH', 'C4H4S', 'C4H3S', 'C4H2S', 'NCO', '(CH2)2SU', 'CH2CHSU', 'IMIDAZOL', 'BTI']
+    # Main group strings:
+    # [i[0] for i in UFMG.values()]
+    # ['CH2', 'C=C', 'ACH', 'ACCH2', 'OH', 'CH3OH', 'H2O', 'ACOH', 'CH2CO', 'CHO', 'CCOO', 'HCOO', 'CH2O', 'CNH2', 'CNH', '(C)3N', 'ACNH2', 'PYRIDINE', 'CCN', 'COOH', 'CCL', 'CCL2', 'CCL3', 'CCL4', 'ACCL', 'CNO2', 'ACNO2', 'CS2', 'CH3SH', 'FURFURAL', 'DOH', 'I', 'BR', 'C=-C', 'DMSO', 'ACRY', 'CLCC', 'ACF', 'DMF', 'CF2', 'COO', 'SIH2', 'SIO', 'NMP', 'CCLF', 'CON(AM)', 'OCCOH', 'CH2S', 'MORPH', 'THIOPHEN', 'NCO', 'SULFONES', 'IMIDAZOL', 'BTI']
+
+def test_modified_UNIFAC_data():
+    assert len(DOUFIP2006) == 61
+    assert len(DOUFIP2016) == 65
+    assert sum([len(i) for i in DOUFIP2016.values()]) == 1516
+    assert sum([len(i) for i in DOUFIP2006.values()]) == 1318
+    val_sum = np.sum(np.abs(np.vstack([np.array(list(i.values())) for i in DOUFIP2006.values() if i.values()])), axis=0)
+    assert_allclose(val_sum, [831285.1119000008, 2645.011300000001, 3.068751211])          
+    val_sum = np.sum(np.abs(np.vstack([np.array(list(i.values())) for i in DOUFIP2016.values() if i.values()])), axis=0)
+    assert_allclose(val_sum, [1011296.5521000021, 3170.4274820000005, 3.7356898600000004])          
+              
+    assert_allclose(DOUFIP2016[1][2], (189.66, -0.2723, 0.0))
+    assert_allclose(DOUFIP2006[1][2], (189.66, -0.2723, 0.0))
+
+    for G in DOUFSG.values():
+        assert G.main_group_id in DOUFMG
+        assert DOUFMG[G.main_group_id][0] == G.main_group
+ 
+    for d in [DOUFIP2006]:
+        for G in d.keys():
+            assert G in DOUFMG
+            for G2 in d[G].keys():
+                assert G2 in DOUFMG
+    # Missing some of them for DOUFIP2016 - the actual groups are known but not the numbers
+
+
+    # [i.group for i in DOUFSG.values()]
+    # ['CH3', 'CH2', 'CH', 'C', 'CH2=CH', 'CH=CH', 'CH2=C', 'CH=C', 'ACH', 'AC', 'ACCH3', 'ACCH2', 'ACCH', 'OH(P)', 'CH3OH', 'H2O', 'ACOH', 'CH3CO', 'CH2CO', 'CHO', 'CH3COO', 'CH2COO', 'HCOO', 'CH3O', 'CH2O', 'CHO', 'THF', 'CH3NH2', 'CH2NH2', 'CHNH2', 'CH3NH', 'CH2NH', 'CHNH', 'CH3N', 'CH2N', 'ACNH2', 'AC2H2N', 'AC2HN', 'AC2N', 'CH3CN', 'CH2CN', 'COOH', 'HCOOH', 'CH2CL', 'CHCL', 'CCL', 'CH2CL2', 'CHCL2', 'CCL2', 'CHCL3', 'CCL3', 'CCL4', 'ACCL', 'CH3NO2', 'CH2NO2', 'CHNO2', 'ACNO2', 'CS2', 'CH3SH', 'CH2SH', 'FURFURAL', 'DOH', 'I', 'BR', 'CH=-C', 'C=-C', 'DMSO', 'ACRY', 'CL-(C=C)', 'C=C', 'ACF', 'DMF', 'HCON(..', 'CF3', 'CF2', 'CF', 'COO', 'CY-CH2', 'CY-CH', 'CY-C', 'OH(S)', 'OH(T)', 'CY-CH2O', 'TRIOXAN', 'CNH2', 'NMP', 'NEP', 'NIPP', 'NTBP', 'CONH2', 'CONHCH3', 'CONHCH2', 'AM(CH3)2', 'AMCH3CH2', 'AM(CH2)2', 'AC2H2S', 'AC2HS', 'AC2S', 'H2COCH', 'COCH', 'HCOCH', '(CH2)2SU', 'CH2SUCH', '(CH3)2CB', '(CH2)2CB', 'CH2CH3CB', 'H2COCH2', 'CH3S', 'CH2S', 'CHS', 'H2COC', 'C3H2N2+', 'BTI-', 'C3H3N2+', 'C4H8N+', 'BF4-', 'C5H5N+', 'OTF-', '-S-S-']
+    # [i[0] for i in UFMG.values()]
+    # [i[0] for i in DOUFMG.values()]
+    # ['CH2', 'C=C', 'ACH', 'ACCH2', 'OH', 'CH3OH', 'H2O', 'ACOH', 'CH2CO', 'CHO', 'CCOO', 'HCOO', 'CH2O', 'CH2NH2', 'CH2NH', '(C)3N', 'ACNH2', 'PYRIDINE', 'CH2CN', 'COOH', 'CCL', 'CCL2', 'CCL3', 'CCL4', 'ACCL', 'CNO2', 'ACNO2', 'CS2', 'CH3SH', 'FURFURAL', 'DOH', 'I', 'BR', 'C=-C', 'DMSO', 'ACRY', 'CLCC', 'ACF', 'DMF', 'CF2', 'COO', 'CY-CH2', 'CY-CH2O', 'HCOOH', 'CHCL3', 'CY-CONC', 'CONR', 'CONR2', 'HCONR', 'ACS', 'EPOXIDES', 'CARBONAT', 'SULFONE', 'SULFIDES', 'IMIDAZOL', 'BTI', 'PYRROL', 'BF4', 'PYRIDIN', 'OTF', 'DISULFIDES']
+def test_modified_UNIFAC_NIST_data():
+    pass
+
 def test_UNIFAC():
     # Gmehling
     # 05.22 VLE of Hexane-Butanone-2 Via UNIFAC (p. 289)

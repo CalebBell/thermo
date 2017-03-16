@@ -373,7 +373,7 @@ class Chemical(object): # pragma: no cover
 
         # Identification
         self.CAS = CASfromAny(ID)
-        if self.CAS in _chemical_cache and caching and len(_chemical_cache) < 1000:
+        if self.CAS in _chemical_cache and caching:
             self.__dict__.update(_chemical_cache[self.CAS].__dict__)
         else:
             self.PubChem = PubChem(self.CAS)
@@ -394,8 +394,8 @@ class Chemical(object): # pragma: no cover
             self.set_eos(T=T, P=P)
             self.set_TP_sources()
             self.set_ref()
-            _chemical_cache[self.CAS] = self
-               
+            if len(_chemical_cache) < 1000:
+                _chemical_cache[self.CAS] = self
         self.calculate(T, P)
         
 
