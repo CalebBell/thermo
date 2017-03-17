@@ -189,3 +189,9 @@ def test_Van_der_Waals_area():
 def test_Van_der_Waals_volume():
     # DIPPR and YAWS, hexane, units are good
     assert_allclose(Van_der_Waals_volume(4.4998), 6.826196599999999e-05)
+    
+    
+def test_UNIFAC_psi():
+    assert_allclose(UNIFAC_psi(307, 18, 1, UFSG, UFIP), 0.9165248264184787)
+    
+    assert_allclose(UNIFAC_psi(373.15, 9, 78, DOUFSG, DOUFIP2006, modified=True), 1.3703140538273264)

@@ -141,7 +141,7 @@ def test_SurfaceTension():
     sigma_exp = [0.021222422444285592, 0.02171156653650729, 0.02171156653650729, 0.021462066798796135, 0.02140008, 0.038055725907414066, 0.03739257387107131, 0.02645171690486362, 0.03905907338532845, 0.03670733205970745]
 
     assert_allclose(sorted(sigma_calcs), sorted(sigma_exp))
-    assert_allclose(EtOH.calculate(305., VDI_TABULAR), 0.021533867879206747, rtol=1E-5)
+    assert_allclose(EtOH.calculate(305., VDI_TABULAR), 0.021533867879206747, rtol=1E-4)
 
     # Test that methods return None
     sigma_calcs = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(5000))[1] for i in EtOH.sorted_valid_methods]

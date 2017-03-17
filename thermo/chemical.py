@@ -32,7 +32,7 @@ from thermo.vapor_pressure import VaporPressure
 from thermo.phase_change import Tb, Tm, Hfus, Hsub, Tliquidus, EnthalpyVaporization
 from thermo.activity import identify_phase, identify_phase_mixture, Pbubble_mixture, Pdew_mixture
 
-from thermo.critical import Tc, Pc, Vc, Zc, Tc_mixture, Pc_mixture, Vc_mixture
+from thermo.critical import Tc, Pc, Vc, Tc_mixture, Pc_mixture, Vc_mixture
 from thermo.acentric import omega, omega_mixture, StielPolar
 from thermo.triple import Tt, Pt
 from thermo.thermal_conductivity import ThermalConductivityLiquid, ThermalConductivityGas, ThermalConductivityLiquidMixture, ThermalConductivityGasMixture
@@ -57,6 +57,8 @@ from thermo.elements import atom_fractions, mass_fractions, similarity_variable,
 from thermo.coolprop import has_CoolProp
 from thermo.eos import *
 from thermo.eos_mix import *
+from thermo.unifac import DDBST_UNIFAC_assignments, DDBST_MODIFIED_UNIFAC_assignments, DDBST_PSRK_assignments, load_group_assignments_DDBST, UNIFAC_RQ, Van_der_Waals_volume, Van_der_Waals_area
+
 
 from fluids.core import *
 from scipy.optimize import newton

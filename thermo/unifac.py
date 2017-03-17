@@ -25,26 +25,13 @@ from __future__ import division
 __all__ = ['UNIFAC', 'UNIFAC_psi', 'DOUFMG', 'DOUFSG', 'UFSG', 'UFMG', 
            'DOUFIP2016', 'DOUFIP2006', 'UFIP', 'DDBST_UNIFAC_assignments', 
            'DDBST_MODIFIED_UNIFAC_assignments', 'DDBST_PSRK_assignments',
-           'UNIFAC_RQ', 'Van_der_Waals_volume', 'Van_der_Waals_area']
+           'UNIFAC_RQ', 'Van_der_Waals_volume', 'Van_der_Waals_area',
+           'load_group_assignments_DDBST', 'DDBST_UNIFAC_assignments', 
+           'DDBST_MODIFIED_UNIFAC_assignments', 'DDBST_PSRK_assignments']
 import os
 from thermo.utils import log, exp
 
 folder = os.path.join(os.path.dirname(__file__), 'Phase Change')
-
-def UNIFAC_psi(T, subgroup1, subgroup2, UFSG, UFIP, modified=False):
-    main1 = UFSG[subgroup1].main_group_id
-    main2 = UFSG[subgroup2].main_group_id
-    if modified:
-        try:
-            a, b, c = UFIP[main1][main2]
-        except:
-            return 1.
-        return exp((-a -b*T - c*T*T)/T)
-    else:
-        try:
-            return exp(-UFIP[main1][main2]/T)
-        except:
-            return 1.
 
 
 class UNIFAC_subgroup(object):
@@ -731,6 +718,9 @@ def load_group_assignments_DDBST():
     UNIFAC, and PSRK group assignments were completed correctly.
     The subgroups and their count have an indefinite length.
     '''
+    # Do not allow running multiple times
+    if DDBST_UNIFAC_assignments:
+        return None
     with open(os.path.join(folder, 'DDBST UNIFAC assignments.tsv')) as f:
         _group_assignments = [DDBST_UNIFAC_assignments, DDBST_MODIFIED_UNIFAC_assignments, DDBST_PSRK_assignments]
         for line in f.readlines():
@@ -789,12 +779,14 @@ def UNIFAC_RQ(groups, subgroup_data=None):
        Weinheim, Germany: Wiley-VCH, 2012.
     '''
     if subgroup_data is not None:
-        UFSG = subgroup_data
+        subgroups = subgroup_data
+    else:
+        subgroups = UFSG
     ri = 0.
     qi = 0.
     for group, count in groups.items():
-        ri += UFSG[group].R*count
-        qi += UFSG[group].Q*count
+        ri += subgroups[group].R*count
+        qi += subgroups[group].Q*count
     return ri, qi
 
 
@@ -868,8 +860,202 @@ def Van_der_Waals_area(Q):
     return Q*250000.0
 
 
+def UNIFAC_psi(T, subgroup1, subgroup2, subgroup_data, interaction_data, 
+               modified=False):
+    r'''Calculates the interaction parameter psi(m, n) for two UNIFAC 
+    subgroups, given the system temperature, the UNIFAC subgroups considered 
+    for the variant of UNIFAC used, the interaction parameters for the 
+    variant of UNIFAC used, and whether or not the temperature dependence is 
+    modified from the original form, as shown below.
+
+    Original temperature dependence:
+        
+    .. math::
+        \Psi_{mn} = \exp\left(\frac{-a_{mn}}{T}\right)
+        
+    Modified temperature dependence:
+        
+    .. math::
+        \Psi_{mn} = \exp\left(\frac{-a_{mn} - b_{mn}T - c_{mn}T^2}{T}\right)
+        
+    Parameters
+    ----------
+    T : float
+        Temperature of the system, [K]
+    subgroup1 : int
+        First UNIFAC subgroup for identifier, [-]
+    subgroup2 : int
+        Second UNIFAC subgroup for identifier, [-]
+    subgroup_data : dict[UNIFAC_subgroup]
+        Normally provided as inputs to `UNIFAC`.
+    interaction_data : dict[dict[tuple(a_mn, b_mn, c_mn)]]
+        Normally provided as inputs to `UNIFAC`.
+    modified : bool
+        True if the modified temperature dependence is used by the interaction
+        parameters, otherwise False
+
+    Returns
+    -------
+    psi : float
+        UNIFAC interaction parameter term, [-]
+
+    Notes
+    -----
+    UNIFAC interaction parameters are asymmetric. 
+
+    Examples
+    --------
+    >>> from thermo.unifac import UFSG, UFIP, DOUFSG, DOUFIP2006
+    
+    >>> UNIFAC_psi(307, 18, 1, UFSG, UFIP)
+    0.9165248264184787
+    
+    >>> UNIFAC_psi(373.15, 9, 78, DOUFSG, DOUFIP2006, modified=True)
+    1.3703140538273264
+    
+    References
+    ----------
+    .. [1] Gmehling, Jurgen. Chemical Thermodynamics: For Process Simulation.
+       Weinheim, Germany: Wiley-VCH, 2012.
+    .. [2] Fredenslund, Aage, Russell L. Jones, and John M. Prausnitz. "Group
+       Contribution Estimation of Activity Coefficients in Nonideal Liquid 
+       Mixtures." AIChE Journal 21, no. 6 (November 1, 1975): 1086-99. 
+       doi:10.1002/aic.690210607.
+    '''
+    main1 = subgroup_data[subgroup1].main_group_id
+    main2 = subgroup_data[subgroup2].main_group_id
+    if modified:
+        try:
+            a, b, c = interaction_data[main1][main2]
+        except:
+            return 1.
+        return exp((-a/T -b - c*T))
+    else:
+        try:
+            return exp(-interaction_data[main1][main2]/T)
+        except:
+            return 1.
+
+
 def UNIFAC(T, xs, chemgroups, cached=None, subgroup_data=None, 
            interaction_data=None, modified=False):
+    r'''Calculates activity coefficients using the UNIFAC model (optionally 
+    modified), given a mixture's temperature, liquid mole fractions, 
+    and optionally the subgroup data and interaction parameter data of your 
+    choice. The default is to use the original UNIFAC model, with the latest 
+    parameters published by DDBST. The model supports modified forms (Dortmund, 
+    NIST) when the `modified` parameter is True.
+            
+    Parameters
+    ----------
+    T : float
+        Temperature of the system, [K]
+    xs : list[float]
+        Mole fractions of all species in the system in the liquid phase, [-]
+    chemgroups : list[dict]
+        List of dictionaries of subgroup IDs and their counts for all species 
+        in the mixture, [-]
+    subgroup_data : dict[UNIFAC_subgroup]
+        UNIFAC subgroup data; available dictionaries in this module are UFSG
+        (original), DOUFSG (Dortmund), or NISTUFSG ([4]_).
+    interaction_data : dict[dict[tuple(a_mn, b_mn, c_mn)]]
+        UNIFAC interaction parameter data; available dictionaries in this 
+        module are UFIP (original), DOUFIP2006 (Dortmund parameters as 
+        published by 2006), DOUFIP2016 (Dortmund parameters as published by 
+        2016), and NISTUFIP ([4]_).
+    modified : bool
+        True if using the modified form and temperature dependence, otherwise
+        False.
+
+    Returns
+    -------
+    gammas : list[float]
+        Activity coefficients of all species in the mixture, [-]
+
+    Notes
+    -----
+    The actual implementation of UNIFAC is formulated slightly different than
+    the formulas above for computational efficiency. DDBST switched to using 
+    the more efficient forms in their publication, but the numerical results
+    are identical.
+    
+    The model is as follows:
+        
+    .. math::
+        \ln \gamma_i =  \ln \gamma_i^c + \ln \gamma_i^r
+        
+    **Combinatorial component**
+    
+    .. math::
+        \ln \gamma_i^c = \ln \frac{\phi_i}{x_i} + \frac{z}{2} q_i 
+        \ln\frac{\theta_i}{\phi_i} + L_i - \frac{\phi_i}{x_i}
+        \sum_{j=1}^{n} x_j L_j
+        
+        \theta_i = \frac{x_i q_i}{\sum_{j=1}^{n} x_j q_j} 
+        
+         \phi_i = \frac{x_i r_i}{\sum_{j=1}^{n} x_j r_j}
+         
+          L_i = 5(r_i - q_i)-(r_i-1)
+   
+    **Residual component**
+    
+    .. math::
+        \ln \gamma_i^r = \sum_{k}^n \nu_k^{(i)} \left[ \ln \Gamma_k
+        - \ln \Gamma_k^{(i)} \right]
+        
+        \ln \Gamma_k = Q_k \left[1 - \ln \sum_m \Theta_m \Psi_{mk} - \sum_m 
+        \frac{\Theta_m \Psi_{km}}{\sum_n \Theta_n \Psi_{nm}}\right]
+        
+        \Theta_m = \frac{Q_m X_m}{\sum_{n} Q_n X_n}
+        
+        X_m = \frac{ \sum_j \nu^j_m x_j}{\sum_j \sum_n \nu_n^j x_j}
+        
+    **R and Q**
+    
+    .. math::
+        r_i = \sum_{k=1}^{n} \nu_k R_k 
+        
+        q_i = \sum_{k=1}^{n}\nu_k Q_k
+    
+    The newer forms of UNIFAC (Dortmund, NIST) calculate the combinatorial
+    part slightly differently:
+        
+    .. math::
+        \ln \gamma_i^c = 1 - {V'}_i + \ln({V'}_i) - 5q_i \left(1
+        - \frac{V_i}{F_i}+ \ln\left(\frac{V_i}{F_i}\right)\right)
+        
+        V'_i = \frac{r_i^{3/4}}{\sum_j r_j^{3/4}x_j}
+        
+    
+    This is more clear when looking at the full rearranged form as in [3]_.
+
+    Examples
+    --------
+    >>> UNIFAC(T=333.15, xs=[0.5, 0.5], chemgroups=[{1:2, 2:4}, {1:1, 2:1, 18:1}])
+    [1.4276025835624173, 1.3646545010104225]
+    
+    >>> UNIFAC(373.15, [0.2, 0.3, 0.2, 0.2], 
+    ... [{9:6}, {78:6}, {1:1, 18:1}, {1:1, 2:1, 14:1}],
+    ... subgroup_data=DOUFSG, interaction_data=DOUFIP2006, modified=True)
+    [1.186431113706829, 1.440280133911197, 1.204479833499608, 1.9720706090299824]
+
+    References
+    ----------
+    .. [1] Gmehling, Jurgen. Chemical Thermodynamics: For Process Simulation.
+       Weinheim, Germany: Wiley-VCH, 2012.
+    .. [2] Fredenslund, Aage, Russell L. Jones, and John M. Prausnitz. "Group
+       Contribution Estimation of Activity Coefficients in Nonideal Liquid 
+       Mixtures." AIChE Journal 21, no. 6 (November 1, 1975): 1086-99. 
+       doi:10.1002/aic.690210607.
+    .. [3] Jakob, Antje, Hans Grensemann, Jürgen Lohmann, and Jürgen Gmehling. 
+       "Further Development of Modified UNIFAC (Dortmund):  Revision and 
+       Extension 5." Industrial & Engineering Chemistry Research 45, no. 23 
+       (November 1, 2006): 7924-33. doi:10.1021/ie060355c.
+    .. [4] Kang, Jeong Won, Vladimir Diky, and Michael Frenkel. "New Modified 
+       UNIFAC Parameters Using Critically Evaluated Phase Equilibrium Data." 
+       Fluid Phase Equilibria 388 (February 25, 2015): 128-41. 
+       doi:10.1016/j.fluid.2014.12.042.
+    '''
     cmps = range(len(xs))
     if subgroup_data is None:
         subgroups = UFSG
