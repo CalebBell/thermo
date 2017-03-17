@@ -75,6 +75,7 @@ except:
 
 
 from collections import Counter
+from pprint import pprint
 
 #import warnings
 #warnings.filterwarnings("ignore")
@@ -357,6 +358,8 @@ class Chemical(object): # pragma: no cover
     UNIFAC_groups
     UNIFAC_R
     UNIFAC_Q
+    Van_der_Waals_area
+    Van_der_Waals_volume
     Vm
     Vmg
     Vml
@@ -1151,7 +1154,7 @@ class Chemical(object): # pragma: no cover
         
         Examples
         --------
-        >>> Chemical('Cumene').UNIFAC_groups
+        >>> pprint(Chemical('Cumene').UNIFAC_groups)
         {1: 2, 9: 5, 13: 1}
         '''
         if self.__UNIFAC_groups:
@@ -1171,7 +1174,7 @@ class Chemical(object): # pragma: no cover
         
         Examples
         --------
-        >>> Chemical('Cumene').UNIFAC_Dortmund_groups
+        >>> pprint(Chemical('Cumene').UNIFAC_Dortmund_groups)
         {1: 2, 9: 5, 13: 1}
         '''
         if self.__UNIFAC_Dortmund_groups:
@@ -1191,7 +1194,7 @@ class Chemical(object): # pragma: no cover
         
         Examples
         --------
-        >>> Chemical('Cumene').PSRK_groups
+        >>> pprint(Chemical('Cumene').PSRK_groups)
         {1: 2, 9: 5, 13: 1}
         '''
         if self.__PSRK_groups:
@@ -1232,6 +1235,31 @@ class Chemical(object): # pragma: no cover
             return UNIFAC_RQ(self.UNIFAC_groups)[1]
         return None
 
+    @property
+    def Van_der_Waals_volume(self):
+        r'''Unnormalized Van der Waals volume, in units of m^3/mol.
+
+        Examples
+        --------
+        >>> Chemical('hexane').Van_der_Waals_volume
+        6.8261966e-05
+        '''
+        if self.UNIFAC_R:
+            return Van_der_Waals_volume(self.UNIFAC_R)
+        return None
+  
+    @property
+    def Van_der_Waals_area(self):
+        r'''Unnormalized Van der Waals area, in units of m^2/mol.
+
+        Examples
+        --------
+        >>> Chemical('hexane').Van_der_Waals_area
+        964000.0
+        '''
+        if self.UNIFAC_Q:
+            return Van_der_Waals_area(self.UNIFAC_Q)
+        return None
 
     ### One phase properties - calculate lazily
     @property

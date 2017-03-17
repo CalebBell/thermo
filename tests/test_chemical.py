@@ -332,3 +332,11 @@ def test_all_chemicals():
         c.nu
         c.alpha
         c.Pr
+        # Some constant stuff
+        c.Van_der_Waals_area
+        c.Van_der_Waals_volume
+        c.UNIFAC_R
+        c.UNIFAC_Q
+        c.UNIFAC_groups
+        c.UNIFAC_Dortmund_groups
+        c.PSRK_groups
