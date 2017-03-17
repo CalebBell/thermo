@@ -339,6 +339,7 @@ class Chemical(object): # pragma: no cover
     Prg
     Prl
     Psat
+    PSRK_groups
     rdkitmol
     rdkitmol_Hs
     rho
@@ -352,6 +353,10 @@ class Chemical(object): # pragma: no cover
     rings
     sigma
     solubility_parameter
+    UNIFAC_Dortmund_groups
+    UNIFAC_groups
+    UNIFAC_R
+    UNIFAC_Q
     Vm
     Vmg
     Vml
@@ -364,6 +369,9 @@ class Chemical(object): # pragma: no cover
     eos_in_a_box = []
     __atom_fractions = None
     __mass_fractions = None
+    __UNIFAC_groups = None
+    __UNIFAC_Dortmund_groups = None
+    __PSRK_groups = None
     __rdkitmol = None
     __rdkitmol_Hs = None
     __Hill = None
@@ -1135,6 +1143,95 @@ class Chemical(object): # pragma: no cover
         else:
             self.__mass_fractions =  mass_fractions(self.atoms, self.MW)
             return self.__mass_fractions
+        
+    @property
+    def UNIFAC_groups(self):
+        r'''Dictionary of UNIFAC subgroup: count groups for the original
+        UNIFAC subgroups, as determined by `DDBST's online service <http://www.ddbst.com/unifacga.html>`_.
+        
+        Examples
+        --------
+        >>> Chemical('Cumene').UNIFAC_groups
+        {1: 2, 9: 5, 13: 1}
+        '''
+        if self.__UNIFAC_groups:
+            return self.__UNIFAC_groups
+        else:
+            load_group_assignments_DDBST()
+            if self.InChI_Key in DDBST_UNIFAC_assignments:
+                self.__UNIFAC_groups = DDBST_UNIFAC_assignments[self.InChI_Key]
+                return self.__UNIFAC_groups
+            else:
+                return None
+
+    @property
+    def UNIFAC_Dortmund_groups(self):
+        r'''Dictionary of Dortmund UNIFAC subgroup: count groups for the
+        Dortmund UNIFAC subgroups, as determined by `DDBST's online service <http://www.ddbst.com/unifacga.html>`_.
+        
+        Examples
+        --------
+        >>> Chemical('Cumene').UNIFAC_Dortmund_groups
+        {1: 2, 9: 5, 13: 1}
+        '''
+        if self.__UNIFAC_Dortmund_groups:
+            return self.__UNIFAC_Dortmund_groups
+        else:
+            load_group_assignments_DDBST()
+            if self.InChI_Key in DDBST_MODIFIED_UNIFAC_assignments:
+                self.__UNIFAC_Dortmund_groups = DDBST_MODIFIED_UNIFAC_assignments[self.InChI_Key]
+                return self.__UNIFAC_Dortmund_groups
+            else:
+                return None
+
+    @property
+    def PSRK_groups(self):
+        r'''Dictionary of PSRK subgroup: count groups for the PSRK subgroups, 
+        as determined by `DDBST's online service <http://www.ddbst.com/unifacga.html>`_.
+        
+        Examples
+        --------
+        >>> Chemical('Cumene').PSRK_groups
+        {1: 2, 9: 5, 13: 1}
+        '''
+        if self.__PSRK_groups:
+            return self.__PSRK_groups
+        else:
+            load_group_assignments_DDBST()
+            if self.InChI_Key in DDBST_PSRK_assignments:
+                self.__PSRK_groups = DDBST_PSRK_assignments[self.InChI_Key]
+                return self.__PSRK_groups
+            else:
+                return None
+
+    @property
+    def UNIFAC_R(self):
+        r'''UNIFAC `R` (normalized Van der Waals volume), dimensionless.
+        Used in the UNIFAC model.
+        
+        Examples
+        --------
+        >>> Chemical('benzene').UNIFAC_R
+        3.1878
+        '''
+        if self.UNIFAC_groups:
+            return UNIFAC_RQ(self.UNIFAC_groups)[0]
+        return None
+
+    @property
+    def UNIFAC_Q(self):
+        r'''UNIFAC `Q` (normalized Van der Waals area), dimensionless.
+        Used in the UNIFAC model.
+        
+        Examples
+        --------
+        >>> Chemical('decane').UNIFAC_Q
+        6.016
+        '''
+        if self.UNIFAC_groups:
+            return UNIFAC_RQ(self.UNIFAC_groups)[1]
+        return None
+
 
     ### One phase properties - calculate lazily
     @property
