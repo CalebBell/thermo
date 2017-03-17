@@ -901,7 +901,8 @@ def UNIFAC_psi(T, subgroup1, subgroup2, subgroup_data, interaction_data,
 
     Notes
     -----
-    UNIFAC interaction parameters are asymmetric. 
+    UNIFAC interaction parameters are asymmetric. No warning is raised if an
+    interaction parameter is missing.
 
     Examples
     --------
