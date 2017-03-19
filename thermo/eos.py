@@ -2945,7 +2945,7 @@ class TWUPR(PR):
         self.V = V
         self.a = self.c1*R*R*Tc*Tc/Pc
         self.b = self.c2*R*Tc/Pc
-        self.delta = 2*self.b
+        self.delta = 2.*self.b
         self.epsilon = -self.b*self.b
         self.check_sufficient_inputs()
         self.Vc = self.Zc*R*self.Tc/self.Pc

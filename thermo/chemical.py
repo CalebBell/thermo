@@ -1247,7 +1247,7 @@ class Chemical(object): # pragma: no cover
         if self.UNIFAC_R:
             return Van_der_Waals_volume(self.UNIFAC_R)
         return None
-  
+
     @property
     def Van_der_Waals_area(self):
         r'''Unnormalized Van der Waals area, in units of m^2/mol.
