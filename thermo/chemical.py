@@ -388,6 +388,7 @@ class Chemical(object): # pragma: no cover
         self.CAS = CASfromAny(ID)
         if self.CAS in _chemical_cache and caching:
             self.__dict__.update(_chemical_cache[self.CAS].__dict__)
+            self.calculate(T, P)
         else:
             self.PubChem = PubChem(self.CAS)
             self.MW = MW(self.CAS)
@@ -408,13 +409,13 @@ class Chemical(object): # pragma: no cover
             self.set_TP_sources()
             self.set_ref()
             if len(_chemical_cache) < 1000:
+                self.calculate(T, P)
                 _chemical_cache[self.CAS] = self
-        self.calculate(T, P)
+        
         
 
     def calculate(self, T=None, P=None):
-        if (hasattr(self, 'T') and T == self.T 
-            and hasattr(self, 'P') and P == self.P):
+        if (hasattr(self, 'T') and T == self.T and hasattr(self, 'P') and P == self.P):
             return None
         if T:
             if T < 0:
