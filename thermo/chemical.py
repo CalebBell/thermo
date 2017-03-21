@@ -369,7 +369,7 @@ class Chemical(object): # pragma: no cover
     Zl
     Zs
     '''
-    eos_in_a_box = []
+   
     __atom_fractions = None
     __mass_fractions = None
     __UNIFAC_groups = None
@@ -402,7 +402,8 @@ class Chemical(object): # pragma: no cover
     
             self.atoms = simple_formula_parser(self.formula)
             self.similarity_variable = similarity_variable(self.atoms, self.MW)
-    
+            
+            self.eos_in_a_box = []
             self.set_constant_sources()
             self.set_constants()
             self.set_eos(T=T, P=P)
@@ -2675,6 +2676,9 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         self.SurfaceTensions = [i.SurfaceTension for i in self.Chemicals]
         self.Permittivities = [i.Permittivity for i in self.Chemicals]
         
+        self.VaporPressures = [i.VaporPressure for i in self.Chemicals]
+        self.EnthalpyVaporizations = [i.EnthalpyVaporization for i in self.Chemicals]
+
         self.VolumeSolidMixture = VolumeSolidMixture(CASs=self.CASs, VolumeSolids=self.VolumeSolids)
         self.VolumeLiquidMixture = VolumeLiquidMixture(MWs=self.MWs, Tcs=self.Tcs, Pcs=self.Pcs, Vcs=self.Vcs, Zcs=self.Zcs, omegas=self.omegas, CASs=self.CASs, VolumeLiquids=self.VolumeLiquids)
         self.VolumeGasMixture = VolumeGasMixture(eos=self.eos_in_a_box, CASs=self.CASs, VolumeGases=self.VolumeGases)

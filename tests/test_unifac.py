@@ -95,6 +95,7 @@ def test_UNIFAC():
     assert_allclose(gammas_0522A, [1.4276, 1.36466], atol=0.0001) # Another calculator
     
     
+    
     # Example 4.14 Activity Coefficients of Ethanol + Benzene with the UNIFAC method
     # Walas, Phase Equilibria in Chemical Engineering
     gammas_414 = UNIFAC(chemgroups=[{1:1, 2:1, 14:1}, {9:6}], T=345., xs=[0.2, 0.8])
@@ -137,6 +138,10 @@ def test_UNIFAC():
     gammas_Poling_with_cache = UNIFAC(chemgroups=[{1:1, 18:1}, {1:2, 2:3}], T=307, xs=[0.047, 0.953], cached=([2.5735, 3.8254], [2.336, 3.316], {1: 3, 18: 1, 2: 3}))
     assert_allclose(gammas_Poling_with_cache, gammas_Poling_known)
     # Test the caching
+    
+    # Another case with the same mixture
+    gammas_custom = UNIFAC(chemgroups=[{1:1, 18:1}, {1:2, 2:3}], T=307, xs=[.674747, .325251])
+    assert_allclose(gammas_custom, [1.1645751997624518, 2.105331695192004])
 
 
 def test_UNIFAC_modified_2006():
@@ -195,3 +200,32 @@ def test_UNIFAC_psi():
     assert_allclose(UNIFAC_psi(307, 18, 1, UFSG, UFIP), 0.9165248264184787)
     
     assert_allclose(UNIFAC_psi(373.15, 9, 78, DOUFSG, DOUFIP2006, modified=True), 1.3703140538273264)
+    
+
+
+def test_UNIFAC_flash_1():
+    from thermo.activity import flash_inner_loop, K_value
+    def flash_UNIFAC_sequential_substitution(T, P, zs, Psats, chemgroups):
+        gammas = UNIFAC(chemgroups=chemgroups, T=T, xs=zs)
+        Ks = [K_value(P=P, Psat=Psat, gamma=gamma) for Psat, gamma in zip(Psats, gammas)]
+        V_over_F, xs, ys = flash_inner_loop(zs, Ks)
+        for i in range(100):
+            gammas = UNIFAC(chemgroups=chemgroups, T=T, xs=xs)
+            Ks = [K_value(P=P, Psat=Psat, gamma=gamma) for Psat, gamma in zip(Psats, gammas)]
+            V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks)
+            err = (sum([abs(x_new - x_old) for x_new, x_old in zip(xs_new, xs)]) +
+                  sum([abs(y_new - y_old) for y_new, y_old in zip(ys_new, ys)]))
+            xs, ys = xs_new, ys_new
+            if err < 1E-11:
+                break
+        return V_over_F, xs, ys
+
+    T = 307
+    P = 1E5
+    zs = [0.5, 0.5]
+    chemgroups = [{1:1, 18:1}, {1:2, 2:3}]
+    Psats = [44501.41359963363, 93853.94807811991]
+    ans = flash_UNIFAC_sequential_substitution(T=T, P=P, zs=zs, Psats=Psats, chemgroups=chemgroups)
+    assert_allclose(ans[0], 0.5101142364235425)
+    assert_allclose(ans[1], [0.6594292844045343, 0.34057071559546576])
+    assert_allclose(ans[2], [0.3468928503651561, 0.653107149634844])
