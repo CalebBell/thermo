@@ -383,7 +383,7 @@ def Laliberte_heat_capacity_w(T):
     Examples
     --------
     >>> Laliberte_heat_capacity_w(273.15+3.56)
-    4208.875920552542
+    4208.878020261102
 
     References
     ----------
@@ -470,8 +470,8 @@ def Laliberte_heat_capacity(T, ws, CASRNs):
 
     Examples
     --------
-    >>> Laliberte_heat_capacity(273.15+1.5, [0.00398447], ['7647-14-5']) #4186.0988
-    4186.566417712063
+    >>> Laliberte_heat_capacity(273.15+1.5, [0.00398447], ['7647-14-5']) 
+    4186.569908672113
 
     References
     ----------

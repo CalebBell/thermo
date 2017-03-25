@@ -378,6 +378,8 @@ class Chemical(object): # pragma: no cover
     __rdkitmol = None
     __rdkitmol_Hs = None
     __Hill = None
+    __legal_status = None
+    __economic_status = None
     def __repr__(self):
         return '<Chemical [%s], T=%.2f K, P=%.0f Pa>' %(self.name, self.T, self.P)
     
@@ -565,12 +567,6 @@ class Chemical(object): # pragma: no cover
         self.logP_sources = logP(CASRN=self.CAS, AvailableMethods=True)
         self.logP_source = self.logP_sources[0]
 
-        # Legal
-        self.legal_status_sources = legal_status(CASRN=self.CAS, AvailableMethods=True)
-        self.legal_status_source = self.legal_status_sources[0]
-        self.economic_status_sources = economic_status(CASRN=self.CAS, AvailableMethods=True)
-        self.economic_status_source = self.economic_status_sources[0]
-
         # Analytical
         self.RI_sources = refractive_index(CASRN=self.CAS, AvailableMethods=True)
         self.RI_source = self.RI_sources[0]
@@ -639,10 +635,6 @@ class Chemical(object): # pragma: no cover
         self.GWP = GWP(CASRN=self.CAS, Method=self.GWP_source)
         self.ODP = ODP(CASRN=self.CAS, Method=self.ODP_source)
         self.logP = logP(CASRN=self.CAS, Method=self.logP_source)
-
-        # Legal
-        self.legal_status = legal_status(self.CAS, Method=self.legal_status_source)
-        self.economic_status = economic_status(self.CAS, Method=self.economic_status_source)
 
         # Analytical
         self.RI, self.RIT = refractive_index(CASRN=self.CAS, Method=self.RI_source)
@@ -1148,7 +1140,45 @@ class Chemical(object): # pragma: no cover
         else:
             self.__mass_fractions =  mass_fractions(self.atoms, self.MW)
             return self.__mass_fractions
+
+    @property
+    def legal_status(self):
+        r'''Dictionary of legal status indicators for the chemical.
         
+        Examples
+        --------
+        >>> pprint(Chemical('benzene').legal_status)
+        {'DSL': 'LISTED',
+         'EINECS': 'LISTED',
+         'NLP': 'UNLISTED',
+         'SPIN': 'LISTED',
+         'TSCA': 'LISTED'}
+        '''
+        if self.__legal_status:
+            return self.__legal_status
+        else:
+            self.__legal_status = legal_status(self.CAS, Method='COMBINED')
+            return self.__legal_status
+
+    @property
+    def economic_status(self):
+        r'''Dictionary of economic status indicators for the chemical.
+        
+        Examples
+        --------
+        >>> pprint(Chemical('benzene').economic_status)
+        ["US public: {'Manufactured': 6165232.1, 'Imported': 463146.474, 'Exported': 271908.252}",
+         u'1,000,000 - 10,000,000 tonnes per annum',
+         u'Intermediate Use Only',
+         'OECD HPV Chemicals']
+        '''
+        if self.__economic_status:
+            return self.__economic_status
+        else:
+            self.__economic_status = economic_status(self.CAS, Method='Combined')
+            return self.__economic_status
+
+       
     @property
     def UNIFAC_groups(self):
         r'''Dictionary of UNIFAC subgroup: count groups for the original
@@ -2198,7 +2228,7 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('cubane').Cpm
         137.05489206785944
         >>> Chemical('ethylbenzene', T=550, P=3E6).Cpm
-        294.1844955331004
+        294.18449553310046
         '''
         return phase_select_property(phase=self.phase, s=self.Cpsm, l=self.Cplm, g=self.Cpgm)
 
@@ -2565,9 +2595,6 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         self.ODPs = [i.ODP for i in self.Chemicals]
         self.logPs = [i.logP for i in self.Chemicals]
 
-        # Legal
-        self.legal_statuses = [i.legal_status for i in self.Chemicals]
-        self.economic_statuses = [i.economic_status for i in self.Chemicals]
         
         # Analytical
         self.RIs = [i.RI for i in self.Chemicals]
@@ -2971,6 +2998,46 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
                 else:
                     things[atom] = zi*count
         return mass_fractions(things)
+
+
+    @property
+    def legal_statuses(self):
+        r'''List of dictionaries of the legal status for all chemicals in the 
+        mixture.
+        
+        Examples
+        --------
+        >>> pprint(Mixture(['oxygen', 'nitrogen'], zs=[.5, .5]).legal_statuses)
+        [{'DSL': 'LISTED',
+          'EINECS': 'LISTED',
+          'NLP': 'UNLISTED',
+          'SPIN': 'LISTED',
+          'TSCA': 'LISTED'},
+         {'DSL': 'LISTED',
+          'EINECS': 'LISTED',
+          'NLP': 'UNLISTED',
+          'SPIN': 'LISTED',
+          'TSCA': 'LISTED'}]
+        '''
+        return [i.legal_status for i in self.Chemicals]
+
+    @property
+    def economic_statuses(self):
+        r'''List of dictionaries of the economic status for all chemicals in  
+        the mixture.
+        
+        Examples
+        --------
+        >>> pprint(Mixture(['o-xylene', 'm-xylene'], zs=[.5, .5]).economic_statuses)
+        [["US public: {'Manufactured': 0.0, 'Imported': 0.0, 'Exported': 0.0}",
+          u'100,000 - 1,000,000 tonnes per annum',
+          'OECD HPV Chemicals'],
+         ["US public: {'Manufactured': 39.805, 'Imported': 0.0, 'Exported': 0.0}",
+          u'100,000 - 1,000,000 tonnes per annum',
+          'OECD HPV Chemicals']]
+        '''
+        return [i.economic_status for i in self.Chemicals]
+
 
     ### One phase properties - calculate lazily
     @property
@@ -3722,7 +3789,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['water', 'sodium chloride'], ws=[.9, .1], T=301.5).Cpl
-        3735.460407940075
+        3735.4604049449786
         '''
         Cplm = self.HeatCapacityLiquidMixture(self.T, self.P, self.zs, self.ws)
         if Cplm:
@@ -4115,7 +4182,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['ethylbenzene'], ws=[1], T=550, P=3E6).Cpm
-        294.1844955331004
+        294.18449553310046
         '''
         return phase_select_property(phase=self.phase, s=self.Cpsm, l=self.Cplm, g=self.Cpgm)
 

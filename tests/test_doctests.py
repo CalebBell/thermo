@@ -22,6 +22,7 @@ SOFTWARE.'''
 
 
 from thermo import eos
+from thermo import eos_mix
 from thermo import elements
 from thermo import combustion
 from thermo import critical
@@ -64,7 +65,6 @@ warnings.simplefilter("ignore") #error for error
 
 
 if __name__ == '__main__':
-    print('Testing Begins here:')
     import doctest
     doctest.testmod(critical)
     doctest.testmod(triple)
@@ -93,4 +93,5 @@ if __name__ == '__main__':
     doctest.testmod(combustion)
 #    doctest.testmod(electrochem)
     doctest.testmod(eos)
+    doctest.testmod(eos_mix)
 

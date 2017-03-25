@@ -932,7 +932,7 @@ def identify_phase_mixture(T=None, P=None, zs=None, Tcs=None, Pcs=None,
     >>> identify_phase_mixture(T=280, P=5000., zs=[0.5, 0.5], Psats=[1400, 7000])
     ('l', [0.5, 0.5], None, 0)
     >>> identify_phase_mixture(T=280, P=3000., zs=[0.5, 0.5], Psats=[1400, 7000])
-    ('two-phase', [0.7142857142857143, 0.2857142857142857], [0.33333333333333337, 0.66666666666666663], 0.5625)
+    ('two-phase', [0.7142857142857143, 0.2857142857142857], [0.33333333333333337, 0.6666666666666666], 0.5625000000000001)
     >>> identify_phase_mixture(T=280, P=800., zs=[0.5, 0.5], Psats=[1400, 7000])
     ('g', None, [0.5, 0.5], 1)
     >>> identify_phase_mixture(T=280, P=800., zs=[0.5, 0.5])
@@ -940,13 +940,13 @@ def identify_phase_mixture(T=None, P=None, zs=None, Tcs=None, Pcs=None,
     '''
     def list_methods():
         methods = []
-        if none_and_length_check((Psats, zs)):
+        if Psats and none_and_length_check((Psats, zs)):
             methods.append('IDEAL_VLE')
-        if none_and_length_check([Tcs]) and all([T >= i for i in Tcs]):
+        if Tcs and none_and_length_check([Tcs]) and all([T >= i for i in Tcs]):
             methods.append('SUPERCRITICAL_T')
-        if none_and_length_check([Pcs]) and all([P >= i for i in Pcs]):
+        if Pcs and none_and_length_check([Pcs]) and all([P >= i for i in Pcs]):
             methods.append('SUPERCRITICAL_P')
-        if none_and_length_check([zs, Tcs]) and any([T > Tc for Tc in Tcs]):
+        if Tcs and none_and_length_check([zs, Tcs]) and any([T > Tc for Tc in Tcs]):
             methods.append('IDEAL_VLE_SUPERCRITICAL')
         methods.append('NONE')
         return methods

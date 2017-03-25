@@ -992,7 +992,7 @@ def Suzuki_LFL(Hc=None):
     Pentane, 1.5 % LFL in literature
 
     >>> Suzuki_LFL(-3536600)
-    0.014276107095811811
+    0.014276107095811815
 
     References
     ----------

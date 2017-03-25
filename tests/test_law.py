@@ -26,6 +26,11 @@ from thermo.law import *
 from thermo.utils import int2CAS
 from thermo.identifiers import checkCAS
 
+load_law_data()
+load_economic_data()
+from thermo.law import DSL_data, TSCA_data, EINECS_data, SPIN_data, NLP_data
+from thermo.law import HPV_data, _EPACDRDict, _ECHATonnageDict
+
 
 @pytest.mark.slow
 def test_DSL_data():
@@ -88,7 +93,6 @@ def test_legal_status():
     EINECS = 'EINECS'
     NLP = 'NLP'
     SPIN = 'SPIN'
-    NONE = 'NONE'
     COMBINED = 'COMBINED'
     UNLISTED = 'UNLISTED'
     LISTED = 'LISTED'

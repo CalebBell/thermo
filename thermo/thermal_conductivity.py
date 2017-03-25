@@ -143,7 +143,7 @@ def Sato_Riedel(T, M, Tb, Tc):
     Examples
     --------
     >>> Sato_Riedel(300, 47, 390, 520)
-    0.2103769246133769
+    0.21037692461337687
 
     References
     ----------
@@ -1581,7 +1581,7 @@ def eli_hanley(T, MW, Tc, Vc, Zc, omega, Cvm):
 
     >>> eli_hanley(T=373.15, MW=72.151, Tc=460.4, Vc=3.06E-4, Zc=0.267,
     ... omega=0.227, Cvm=135.9)
-    0.022479517891353377
+    0.02247951789135337
 
     References
     ----------

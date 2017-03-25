@@ -465,10 +465,10 @@ class SRKMIX(GCEOSMIX, SRK):
     --------
     T-P initialization, nitrogen-methane at 115 K and 1 MPa:
     
-    >>> eos = SRKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
-    >>> eos.V_l, eos.V_g
+    >>> SRK_eos = SRKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    >>> SRK_eos.V_l, SRK_eos.V_g
     (4.104755570185178e-05, 0.0007110155639819184)
-    >>> eos.fugacities_l, eos.fugacities_g
+    >>> SRK_eos.fugacities_l, SRK_eos.fugacities_g
     ([817841.6430546846, 72382.81925202628], [442137.1280124604, 361820.79211909405])
     
     Notes

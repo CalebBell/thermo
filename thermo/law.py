@@ -25,12 +25,14 @@ from __future__ import division
 __all__ = ['DSL_data', 'CAN_DSL_flags', 'TSCA_flags', 'TSCA_data', 
            'EINECS_data', 'SPIN_data', 'NLP_data', 'legal_status_methods', 
            'legal_status', 'HPV_data', '_ECHATonnageDict', '_EPACDRDict', 
-           'economic_status', 'economic_status_methods']
+           'economic_status', 'economic_status_methods', 'load_economic_data',
+           'load_law_data']
 
 import os
 import zipfile
 from thermo.utils import to_num, CAS2int
 import pandas as pd
+from pprint import pprint
 
 
 folder = os.path.join(os.path.dirname(__file__), 'Law')
@@ -46,9 +48,6 @@ UNLISTED = 'UNLISTED'
 LISTED = 'LISTED'
 
 
-# Data is stored as integers to reduce memory usage
-DSL_data = pd.read_csv(os.path.join(folder, 'Canada Feb 11 2015 - DSL.csv.gz'),
-                       sep='\t', index_col=0, compression='gzip')
 
 
 CAN_DSL_flags = {0: LISTED,
@@ -76,20 +75,31 @@ TSCA_flags = {
     'Y2': 'exempt polymer that is a polyester and is made only from reactants included in a specified list of low-concern reactants that comprises one of the eligibility criteria for the exemption rule'
 }
 
+DSL_data, TSCA_data, EINECS_data, SPIN_data, NLP_data = [None]*5
 
-TSCA_data = pd.read_csv(os.path.join(folder, 'TSCA Inventory 2016-01.csv.gz'),
-                       sep='\t', index_col=0, compression='gzip')
+def load_law_data():
+    global DSL_data
+    if DSL_data is not None:
+        return None
+    global TSCA_data, EINECS_data, SPIN_data, NLP_data
 
-
-EINECS_data = pd.read_csv(os.path.join(folder, 'EINECS 2015-03.csv.gz'),
-                          index_col=0, compression='gzip')
-
-SPIN_data = pd.read_csv(os.path.join(folder, 'SPIN Inventory 2015-03.csv.gz'),
-                       compression='gzip', index_col=0)
-
-NLP_data = pd.read_csv(os.path.join(folder, 'EC Inventory No Longer Polymers (NLP).csv'),
-                       sep='\t', index_col=0)
-# 161162-67-6 is not a valid CAS number and was removed.
+# Data is stored as integers to reduce memory usage
+    DSL_data = pd.read_csv(os.path.join(folder, 'Canada Feb 11 2015 - DSL.csv.gz'),
+                           sep='\t', index_col=0, compression='gzip')
+    
+    TSCA_data = pd.read_csv(os.path.join(folder, 'TSCA Inventory 2016-01.csv.gz'),
+                           sep='\t', index_col=0, compression='gzip')
+    
+    
+    EINECS_data = pd.read_csv(os.path.join(folder, 'EINECS 2015-03.csv.gz'),
+                              index_col=0, compression='gzip')
+    
+    SPIN_data = pd.read_csv(os.path.join(folder, 'SPIN Inventory 2015-03.csv.gz'),
+                           compression='gzip', index_col=0)
+    
+    NLP_data = pd.read_csv(os.path.join(folder, 'EC Inventory No Longer Polymers (NLP).csv'),
+                           sep='\t', index_col=0)
+    # 161162-67-6 is not a valid CAS number and was removed.
 
 legal_status_methods = [COMBINED, DSL, TSCA, EINECS, SPIN, NLP]
 
@@ -171,8 +181,12 @@ def legal_status(CASRN, Method=None, AvailableMethods=False, CASi=None):
 
     Examples
     --------
-    >>> legal_status('64-17-5')
-    {'Toxic Substances Control Act (Environmental Protection Agency)': 'Listed', 'Substances in Preparations In the Nordic countries': 'Listed', 'Domestic Substances List (Environment Canada)': 'Listed', 'European INventory of Existing Commercial chemical Substances': 'Listed', 'EINECS No-Longer Polymers': 'Unlisted'}
+    >>> pprint(legal_status('64-17-5'))
+    {'DSL': 'LISTED',
+     'EINECS': 'LISTED',
+     'NLP': 'UNLISTED',
+     'SPIN': 'LISTED',
+     'TSCA': 'LISTED'}
 
     References
     ----------
@@ -185,6 +199,7 @@ def legal_status(CASRN, Method=None, AvailableMethods=False, CASi=None):
     .. [4] SPIN. "SPIN Substances in Products In Nordic Countries." Accessed
        March 2015. http://195.215.202.233/DotNetNuke/default.aspx.
     '''
+    load_law_data()
     if not CASi:
         CASi = CAS2int(CASRN)
     methods = [COMBINED, DSL, TSCA, EINECS, NLP, SPIN]
@@ -241,42 +256,48 @@ def legal_status(CASRN, Method=None, AvailableMethods=False, CASi=None):
 #print legal_status(CASRN='1648727-81-4')
 
 
-'''OECD are chemicals produced by and OECD members in > 1000 tonnes/year.'''
-HPV_data = pd.read_csv(os.path.join(folder, 'HPV 2015 March 3.csv'),
-                       sep='\t', index_col=0)
-# 13061-29-2 not valid and removed
 
-_ECHATonnageDict = {}
-with zipfile.ZipFile(os.path.join(folder, 'ECHA Tonnage Bands.csv.zip')) as z:
-    with z.open(z.namelist()[0]) as f:
-        for line in f.readlines():
-            # for some reason, the file must be decoded to UTF8 first
-            CAS, band = line.decode("utf-8").strip('\n').split('\t')
-            if CAS in _ECHATonnageDict:
-                if band in _ECHATonnageDict[CAS]:
-                    pass
+HPV_data, _EPACDRDict, _ECHATonnageDict = [None]*3
+                                          
+def load_economic_data():
+    global HPV_data
+    if HPV_data is not None:
+        return None
+    global _EPACDRDict, _ECHATonnageDict
+    
+    '''OECD are chemicals produced by and OECD members in > 1000 tonnes/year.'''
+    HPV_data = pd.read_csv(os.path.join(folder, 'HPV 2015 March 3.csv'),
+                           sep='\t', index_col=0)
+    # 13061-29-2 not valid and removed
+    
+    _ECHATonnageDict = {}
+    with zipfile.ZipFile(os.path.join(folder, 'ECHA Tonnage Bands.csv.zip')) as z:
+        with z.open(z.namelist()[0]) as f:
+            for line in f.readlines():
+                # for some reason, the file must be decoded to UTF8 first
+                CAS, band = line.decode("utf-8").strip('\n').split('\t')
+                if CAS in _ECHATonnageDict:
+                    if band in _ECHATonnageDict[CAS]:
+                        pass
+                    else:
+                        _ECHATonnageDict[CAS].append(band)
                 else:
-                    _ECHATonnageDict[CAS].append(band)
-            else:
-                _ECHATonnageDict[CAS] = [band]
-
-
-_EPACDRDict = {}
-with open(os.path.join(folder, 'EPA 2012 Chemical Data Reporting.csv')) as f:
-    '''EPA summed reported chemical usages. In metric tonnes/year after conversion.
-    Many producers keep their date confidential.
-    This was originally in terms of lb/year, but rounded to the nearest kg.
-
-    '''
-    next(f)
-    for line in f:
-        values = line.rstrip().split('\t')
-        CAS, manufactured, imported, exported = to_num(values)
-        _EPACDRDict[CAS] = {"Manufactured": manufactured/1000., "Imported": imported/1000.,
-                            "Exported": exported/1000.}
-#EPACDR_data = pd.read_csv(os.path.join(folder,'EPA Chemical Data Reporting - 2012.csv.gz'), sep='\t',
-#                       index_col=0, dtype={'CASRN': np.int32, 'Domestic': np.float64, 'Imported': np.float64,
-#                                          'Exported': np.float64},  compression='gzip')
+                    _ECHATonnageDict[CAS] = [band]
+    
+    
+    _EPACDRDict = {}
+    with open(os.path.join(folder, 'EPA 2012 Chemical Data Reporting.csv')) as f:
+        '''EPA summed reported chemical usages. In metric tonnes/year after conversion.
+        Many producers keep their date confidential.
+        This was originally in terms of lb/year, but rounded to the nearest kg.
+    
+        '''
+        next(f)
+        for line in f:
+            values = line.rstrip().split('\t')
+            CAS, manufactured, imported, exported = to_num(values)
+            _EPACDRDict[CAS] = {"Manufactured": manufactured/1000., "Imported": imported/1000.,
+                                "Exported": exported/1000.}
 
 
 EPACDR = 'EPA Chemical Data Reporting (2012)'
@@ -292,15 +313,19 @@ def economic_status(CASRN, Method=None, AvailableMethods=False):  # pragma: no c
     This API is considered experimental, and is expected to be removed in a
     future release in favor of a more complete object-oriented interface.
 
-    >>> economic_status(CASRN='98-00-0')
-    ["US public: {'Manufactured': 0.0, 'Imported': 10272.711, 'Exported': 184.127}", u'10,000 - 100,000 tonnes per annum', 'OECD HPV Chemicals']
+    >>> pprint(economic_status(CASRN='98-00-0'))
+    ["US public: {'Manufactured': 0.0, 'Imported': 10272.711, 'Exported': 184.127}",
+     u'10,000 - 100,000 tonnes per annum',
+     'OECD HPV Chemicals']
+
     >>> economic_status(CASRN='13775-50-3')  # SODIUM SESQUISULPHATE
     []
-    >>> economic_status(CASRN='98-00-0', Method='OECD HPV Chemicals')
+    >>> economic_status(CASRN='98-00-0', Method='OECD high production volume chemicals')
     'OECD HPV Chemicals'
-    >>> economic_status(CASRN='98-01-1', Method='ECHA Tonnages')
-    ['10,000 - 100,000 tonnes per annum']
+    >>> economic_status(CASRN='98-01-1', Method='European Chemicals Agency Total Tonnage Bands')
+    [u'10,000 - 100,000 tonnes per annum']
     '''
+    load_economic_data()
     CASi = CAS2int(CASRN)
 
     def list_methods():
