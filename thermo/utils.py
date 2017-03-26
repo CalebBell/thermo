@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['has_matplotlib', 'ANYMATH', 'mathlib', 'to_num', 'CAS2int', 
+__all__ = ['has_matplotlib', 'to_num', 'CAS2int', 
 'int2CAS', 'Parachor', 'property_molar_to_mass', 'property_mass_to_molar', 
 'isobaric_expansion', 'isothermal_compressibility', 
 'Cp_minus_Cv', 'speed_of_sound', 'Joule_Thomson',
@@ -43,89 +43,18 @@ from scipy.misc import derivative
 from scipy.integrate import quad
 from scipy.interpolate import interp1d, interp2d
 
-# __all__ may not be able to be imported due to the math library
-
 try:
     import matplotlib.pyplot as plt
     has_matplotlib = True
 except:
     has_matplotlib = False
 
-'''Experimental variable to switch math libraries to allow for computation
-with rational numbers, arbitrary precision, uncertainty propagation, or 
-arrays. Off by default; See `mathlib` to change which math library is used. 
-Must be changed in the code itself; cannot be toggled after importing.
-
-Note that due to the use of logic, support for these libraries is greatly
-varying. At this time, the use of these other library prevents the use of any
-object oriented code.
-
-Warning: If True, all the following math libraries must be available and will
- be imported:
- 
-    * numpy
-    * scipy
-    * mpmath
-    * sympy
-    * uncertainties
-'''
-ANYMATH = False
-
-'''Integer switch to change which library is used. Can be changed after import.  
-Only has an effect if `ANYMATH` was True before import. The following options  
-are available:
-    * 1 : math
-    * 2 : numpy
-    * 3 : scipy
-    * 4 : mpmath
-    * 5 : sympy
-    * 6 : uncertainties'''
-mathlib = 1
-
-if ANYMATH:
-    import math
-    import numpy as np
-    import scipy
-    import sympy
-    import mpmath
-    import uncertainties.umath as umath
-    
-    expfuncs = {1: math.exp, 2: np.exp, 3: scipy.exp, 4: mpmath.exp, 5:sympy.exp, 6: umath.exp}
-    logfuncs = {1: math.log, 2: np.log, 3: scipy.log, 4: mpmath.log, 5:sympy.log, 6: umath.log}
-    log10funcs = {1: math.log10, 2: np.log10, 3: scipy.log10, 4: mpmath.log, 5:lambda x : sympy.log(x, 10), 6: umath.log10} # Sympy doesn't support log10
-
-    sqrtfuncs = {1: math.sqrt, 2: np.sqrt, 3: scipy.sqrt, 4: mpmath.sqrt, 5:sympy.sqrt, 6: umath.sqrt}
-    sinfuncs = {1: math.sin, 2: np.sin, 3: scipy.sin, 4: mpmath.sin, 5:sympy.sin, 6: umath.sin}
-    coshfuncs = {1: math.cosh, 2: np.cosh, 3: scipy.cosh, 4: mpmath.cosh, 5:sympy.cosh, 6: umath.cosh}
-    sinhfuncs = {1: math.sinh, 2: np.sinh, 3: scipy.sinh, 4: mpmath.sinh, 5:sympy.sinh, 6: umath.sinh}
-
-    pifuncs = {1: math.pi, 2: np.pi, 3: scipy.pi, 4: mpmath.pi, 5: sympy.pi, 6: math.pi} # uncertainties doesn't support pi
-
-    pi = pifuncs[mathlib]
-
-    def exp(x):
-        return expfuncs[mathlib](x)
-    def log(x):
-        return logfuncs[mathlib](x)
-    def log10(x):
-        return log10funcs[mathlib](x)
-
-    def sin(x):
-        return sinfuncs[mathlib](x)
-    def cosh(x):
-        return coshfuncs[mathlib](x)
-    def sinh(x):
-        return sinhfuncs[mathlib](x)
-    def sqrt(x):
-        return sqrtfuncs[mathlib](x)
-
-else:
-    from math import *
-    __all__.extend(['acos', 'acosh', 'asin', 'asinh', 'atan', 'atan2', 'atanh', 
-    'ceil', 'copysign', 'cos', 'cosh', 'degrees', 'e', 'erf', 'erfc', 'exp', 
-    'expm1', 'fabs', 'factorial', 'floor', 'fmod', 'frexp', 'fsum', 'gamma', 
-    'hypot', 'isinf', 'isnan', 'ldexp', 'lgamma', 'log', 'log10', 'log1p', 'modf', 
-    'pi', 'pow', 'radians', 'sin', 'sinh', 'sqrt', 'tan', 'tanh', 'trunc'])
+from math import *
+__all__.extend(['acos', 'acosh', 'asin', 'asinh', 'atan', 'atan2', 'atanh', 
+'ceil', 'copysign', 'cos', 'cosh', 'degrees', 'e', 'erf', 'erfc', 'exp', 
+'expm1', 'fabs', 'factorial', 'floor', 'fmod', 'frexp', 'fsum', 'gamma', 
+'hypot', 'isinf', 'isnan', 'ldexp', 'lgamma', 'log', 'log10', 'log1p', 'modf', 
+'pi', 'pow', 'radians', 'sin', 'sinh', 'sqrt', 'tan', 'tanh', 'trunc'])
 
 
 def to_num(values):

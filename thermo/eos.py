@@ -520,7 +520,7 @@ should be calculated by this method, in a user subclass.')
             x6 = a_alpha*b
             x7 = epsilon*x1
             x8 = epsilon*x2
-            x9 = P**-2
+            x9 = x0*x0
             x10 = P*epsilon
             x11 = delta*x1
             x12 = delta*x2
@@ -530,16 +530,15 @@ should be calculated by this method, in a user subclass.')
             x16 = 3.*x12
             x17 = -x1 - x2 + x3
             x18 = x0*x17*x17
-            x19 = ((-13.5*x0*(x6 + x7 + x8) - 4.5*x4*x9*(-a_alpha - x10 + x11 + x12) + ((x9*(-4.*x0*(-x13 - x14 + x15 + x16 + x18)**3 + (-9.*x0*x17*(a_alpha + x10 - x11 - x12) + 2.*x17**3*x9 - 27.*x6 - 27.*x7 - 27.*x8)**2))+0j)**0.5*0.5 - x4**3*P**-3)+0j)**(1./3.)
+            x19 = ((-13.5*x0*(x6 + x7 + x8) - 4.5*x4*x9*(-a_alpha - x10 + x11 + x12) + ((x9*(-4.*x0*(-x13 - x14 + x15 + x16 + x18)**3 + (-9.*x0*x17*(a_alpha + x10 - x11 - x12) + 2.*x17*x17*x17*x9 - 27.*(x6 + x7 + x8))**2))+0j)**0.5*0.5 - x4**3*x9*x0)+0j)**(1./3.)
             x20 = x13 + x14 - x15 - x16 - x18
             x22 = 2.*x5
-            x23 = 1.7320508075688772j
-            x24 = x23 + 1.
+            x24 = 1.7320508075688772j + 1.
             x25 = 4.*x0*x20/x19
-            x26 = -x23 + 1.
-            return [x0*x20/(x19*3.) - x19/3. + x5/3.,
-                    x19*x24/6. + x22/6. - x25/(6.*x24),
-                    x19*x26/6. + x22/6. - x25/(6.*x26)]
+            x26 = -1.7320508075688772j + 1.
+            return [(x0*x20/x19 - x19 + x5)/3.,
+                    (x19*x24 + x22 - x25/x24)/6.,
+                    (x19*x26 + x22 - x25/x26)/6.]
         else:
             return [-(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)/(3*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)) - (sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)/3 - (-P*b + P*delta - R*T)/(3*P),
                      -(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)/(3*(-1/2 - sqrt(3)*1j/2)*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)) - (-1/2 - sqrt(3)*1j/2)*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)/3 - (-P*b + P*delta - R*T)/(3*P),
@@ -582,12 +581,12 @@ should be calculated by this method, in a user subclass.')
             x1 = V*V + V*delta + epsilon
             x3 = R*T
             x4 = 1./(x0*x0)
-            x5 = 2*V + delta
+            x5 = 2.*V + delta
             x6 = 1./(x1*x1)
             x7 = a_alpha*x6
             x8 = P*V
             x9 = delta*delta
-            x10 = -4*epsilon + x9
+            x10 = -4.*epsilon + x9
             x11 = x10**-0.5
             x12 = 2.*x11*catanh(x11*x5).real
             x13 = x10**-0.5 
@@ -597,10 +596,10 @@ should be calculated by this method, in a user subclass.')
             dP_dT = R/x0 - da_alpha_dT/x1
             dP_dV = -x3*x4 + x5*x7
             d2P_dT2 = -d2a_alpha_dT2/x1
-            d2P_dV2 = -2.*a_alpha*x5*x5*x1**-3 + 2.*x7 + 2.*x3*x0**-3
+            d2P_dV2 = -2.*a_alpha*x5*x5*x6/x1 + 2.*x7 + 2.*x3*x4/x0
             d2P_dTdV = -R*x4 + da_alpha_dT*x5*x6
             H_dep = x12*(T*da_alpha_dT - a_alpha) - x3 + x8
-            S_dep = -R*log((V*x3/(x0*x8))**2)/2. + da_alpha_dT*x12  # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
+            S_dep = -R*log((V*x3/(x0*x8))**2)*0.5 + da_alpha_dT*x12  # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
             Cv_dep = -T*d2a_alpha_dT2*x13*(-log(((x14 - x15 + x16)/(x14 + x15 - x16))**2)*0.5) # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
         else:
             dP_dT = R/(V - b) - da_alpha_dT/(V**2 + V*delta + epsilon)
@@ -754,9 +753,7 @@ should be calculated by this method, in a user subclass.')
         a_alpha = self.a_alpha_and_derivatives(T, full=False)
         Vs = self.volume_solutions(T, Psat, self.b, self.delta, self.epsilon, a_alpha)
         # Assume we can safely take the Vmax as gas, Vmin as l on the saturation line
-        Vs = [i.real for i in Vs]
-        V_l, V_g = min(Vs), max(Vs)
-        return V_l
+        return min([i.real for i in Vs])
     
     def V_g_sat(self, T):
         r'''Method to calculate molar volume of the vapor phase along the
@@ -781,9 +778,7 @@ should be calculated by this method, in a user subclass.')
         a_alpha = self.a_alpha_and_derivatives(T, full=False)
         Vs = self.volume_solutions(T, Psat, self.b, self.delta, self.epsilon, a_alpha)
         # Assume we can safely take the Vmax as gas, Vmin as l on the saturation line
-        Vs = [i.real for i in Vs]
-        V_l, V_g = min(Vs), max(Vs)
-        return V_g
+        return max([i.real for i in Vs])
     
     def Hvap(self, T):
         r'''Method to calculate enthalpy of vaporization for a pure fluid from
@@ -1561,7 +1556,7 @@ class PR(GCEOS):
         self.a = self.c1*R*R*Tc*Tc/Pc
         self.b = self.c2*R*Tc/Pc
         self.kappa = 0.37464 + 1.54226*omega - 0.26992*omega*omega
-        self.delta = 2*self.b
+        self.delta = 2.*self.b
         self.epsilon = -self.b*self.b
         self.Vc = self.Zc*R*self.Tc/self.Pc
         
