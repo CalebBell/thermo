@@ -26,9 +26,8 @@ __all__ = ['solubility_parameter_methods', 'solubility_parameter',
            'solubility_eutectic', 'Tm_depression_eutectic']
            
 import os
-from math import log, exp
 from thermo.utils import log, exp
-from scipy.constants import R
+from thermo.utils import R
 
 folder = os.path.join(os.path.dirname(__file__), 'Solubility')
 

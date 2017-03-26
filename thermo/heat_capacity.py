@@ -43,9 +43,8 @@ from thermo.utils import log, exp, polylog2
 import numpy as np
 import pandas as pd
 
-from scipy.constants import R, calorie
 from scipy.integrate import quad
-
+from thermo.utils import R, calorie
 from thermo.utils import (to_num, property_molar_to_mass, none_and_length_check,
                           mixing_simple, property_mass_to_molar)
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data

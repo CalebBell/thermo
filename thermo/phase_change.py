@@ -29,18 +29,16 @@ __all__ = ['Yaws_data', 'Tb_methods', 'Tb', 'Tm_ON_data', 'Tm_methods', 'Tm',
            'enthalpy_vaporization_methods', 'EnthalpyVaporization', 
            'CRCHfus_data', 'Hfus', 'GharagheiziHsub_data', 'Hsub', 'Tliquidus']
 
-from thermo.utils import log
 import os
-
-from scipy.constants import R, pi, N_A
 import numpy as np
 import pandas as pd
 
+from thermo.utils import log
+from thermo.utils import R, pi, N_A
 from thermo.miscdata import CRC_organic_data, CRC_inorganic_data
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
-from thermo.utils import property_molar_to_mass, property_mass_to_molar, mixing_simple, none_and_length_check, TDependentProperty
+from thermo.utils import property_molar_to_mass, mixing_simple, none_and_length_check, TDependentProperty
 from thermo.vapor_pressure import VaporPressure
-
 from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluids
 from thermo.dippr import EQ106
 

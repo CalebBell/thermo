@@ -30,13 +30,13 @@ __all__ = ['ppmv_to_mgm3', 'mgm3_to_ppmv', 'NFPA_2008', 'IEC_2010',
 'inerts', 'LFL_mixture', 'UFL_mixture', 'Suzuki_LFL', 'Suzuki_UFL', 
 'Crowl_Louvar_LFL', 'Crowl_Louvar_UFL']
 
-from thermo.identifiers import CASfromAny, MW
 import os
 from io import open
 import numpy as np
-from scipy.constants import R
 import pandas as pd
+from thermo.utils import R
 from thermo.utils import to_num, none_and_length_check, normalize
+from thermo.identifiers import CASfromAny, MW
 
 folder = os.path.join(os.path.dirname(__file__), 'Safety')
 

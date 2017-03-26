@@ -30,14 +30,12 @@ __all__ = ['Mulero_Cachadina_data', 'Jasper_Lange_data', 'Somayajulu_data',
            'surface_tension_mixture_methods', 'SurfaceTensionMixture']
 
 import os
-from thermo.utils import log, exp
-
-
-from thermo.utils import mixing_simple, none_and_length_check, Vm_to_rho
-from scipy.constants import N_A, k
-from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
 import pandas as pd
+from thermo.utils import log, exp
+from thermo.utils import mixing_simple, none_and_length_check, Vm_to_rho
+from thermo.utils import N_A, k
 from thermo.utils import TDependentProperty, MixtureProperty
+from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
 
 folder = os.path.join(os.path.dirname(__file__), 'Interface')
 

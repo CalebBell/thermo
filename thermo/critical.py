@@ -33,8 +33,8 @@ __all__.extend(['Tc_methods', 'Pc_methods', 'Vc_methods', 'Zc_methods',
 
 import os
 import numpy as np
-from scipy.constants import R
 import pandas as pd
+from thermo.utils import R
 from thermo.utils import log
 from thermo.utils import mixing_simple, none_and_length_check
 

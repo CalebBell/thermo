@@ -23,11 +23,10 @@ from __future__ import division
 
 __all__ = ['GCEOSMIX', 'PRMIX', 'SRKMIX', 'PR78MIX', 'VDWMIX', 'PRSVMIX', 
 'PRSV2MIX', 'TWUPRMIX', 'TWUSRKMIX', 'APISRKMIX']
-from scipy.constants import R
 from scipy.optimize import newton
-from thermo.utils import Cp_minus_Cv, isothermal_compressibility, phase_identification_parameter
+from thermo.utils import Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter
+from thermo.utils import R
 from thermo.utils import log, exp, sqrt
-from thermo.utils import isobaric_expansion 
 from thermo.eos import *
 
 R2 = R*R

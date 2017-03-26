@@ -25,10 +25,9 @@ from __future__ import division
 __all__ = ['BVirial_Pitzer_Curl', 'BVirial_Abbott', 'BVirial_Tsonopoulos',
            'BVirial_Tsonopoulos_extended']
 
-from thermo.utils import log
-from scipy.constants import R
 from scipy.misc import derivative
-
+from thermo.utils import log
+from thermo.utils import R
 
 
 ### Second Virial Coefficients

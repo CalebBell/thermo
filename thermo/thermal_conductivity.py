@@ -36,9 +36,9 @@ __all__ = ['Sheffy_Johnson', 'Sato_Riedel', 'Lakshmi_Prasad',
 import os
 import numpy as np
 from scipy.interpolate import interp2d
-from scipy.constants import R
 import pandas as pd
 
+from thermo.utils import R
 from thermo.utils import log, exp
 from thermo.utils import mixing_simple, none_and_length_check, TPDependentProperty, MixtureProperty, horner
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data

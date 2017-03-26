@@ -31,8 +31,7 @@ __all__ = ['K_value', 'Rachford_Rice_flash_error', 'Rachford_Rice_solution',
 from scipy.optimize import fsolve, newton, brenth
 from thermo.utils import exp, log
 from thermo.utils import none_and_length_check
-
-from scipy.constants import R
+from thermo.utils import R
 
 
 

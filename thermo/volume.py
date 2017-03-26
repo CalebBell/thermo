@@ -36,10 +36,10 @@ __all__ = ['COSTALD_data', 'SNM0_data', 'Perry_l_data', 'CRC_inorg_l_data',
 
 import os
 import numpy as np
-from scipy.constants import R
 from scipy.interpolate import interp1d
 import pandas as pd
 
+from thermo.utils import R
 from thermo.utils import log, exp
 from thermo.utils import Vm_to_rho, rho_to_Vm, mixing_simple, none_and_length_check
 from thermo.virial import BVirial_Pitzer_Curl, BVirial_Abbott, BVirial_Tsonopoulos, BVirial_Tsonopoulos_extended

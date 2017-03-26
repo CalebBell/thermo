@@ -33,7 +33,7 @@ __all__ = ['conductivity', 'Laliberte_density', 'Laliberte_heat_capacity',
 
 import os
 from thermo.utils import exp, log10
-from scipy.constants import e, N_A
+from thermo.utils import e, N_A
 from thermo.utils import to_num
 from scipy.interpolate import interp1d
 import pandas as pd

@@ -24,7 +24,6 @@ from __future__ import division
 
 __all__ = ['Chemical', 'Mixture', 'Stream', 'reference_states']
 
-from scipy.constants import R
 
 from thermo.identifiers import *
 from thermo.identifiers import _MixtureDict

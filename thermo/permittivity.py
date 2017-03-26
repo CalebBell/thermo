@@ -26,8 +26,8 @@ __all__ = ['CRC_Permittivity_data', 'permittivity_IAPWS', 'Permittivity']
 
 import os
 import numpy as np
-from scipy.constants import N_A, epsilon_0, k
 import pandas as pd
+from thermo.utils import N_A, epsilon_0, k
 from thermo.utils import TDependentProperty
 
 folder = os.path.join(os.path.dirname(__file__), 'Electrolytes')

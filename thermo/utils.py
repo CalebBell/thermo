@@ -37,7 +37,6 @@ __all__ = ['isobaric_expansion', 'isothermal_compressibility',
 
 from cmath import sqrt as csqrt
 import numpy as np
-from scipy.constants import R
 from scipy.optimize import brenth
 from scipy.misc import derivative
 from scipy.integrate import quad
@@ -49,12 +48,26 @@ try:
 except:
     has_matplotlib = False
 
-from math import *
+from math import (acos, acosh, asin, asinh, atan, atan2, atanh, ceil, copysign,
+                  cos, cosh, degrees, e, erf, erfc, exp, expm1, fabs, 
+                  factorial, floor, fmod, frexp, fsum, gamma, hypot, isinf, 
+                  isnan, ldexp, lgamma, log, log10, log1p, modf, pi, pow, 
+                  radians, sin, sinh, sqrt, tan, tanh, trunc)
+
 __all__.extend(['acos', 'acosh', 'asin', 'asinh', 'atan', 'atan2', 'atanh', 
 'ceil', 'copysign', 'cos', 'cosh', 'degrees', 'e', 'erf', 'erfc', 'exp', 
 'expm1', 'fabs', 'factorial', 'floor', 'fmod', 'frexp', 'fsum', 'gamma', 
 'hypot', 'isinf', 'isnan', 'ldexp', 'lgamma', 'log', 'log10', 'log1p', 'modf', 
 'pi', 'pow', 'radians', 'sin', 'sinh', 'sqrt', 'tan', 'tanh', 'trunc'])
+__all__.extend(['R', 'k', 'N_A', 'calorie', 'epsilon_0'])
+    
+# Obtained from SciPy 0.19 (2014 CODATA)
+# Included here so calculations are consistent across SciPy versions
+R = 8.3144598
+k = 1.38064852e-23
+N_A = 6.022140857e+23
+calorie = 4.184
+epsilon_0 = 8.854187817620389e-12
 
 
 def to_num(values):

@@ -29,9 +29,9 @@ __all__ = ['WagnerMcGarry', 'AntoinePoling', 'WagnerPoling', 'AntoineExtended',
            'Edalat', 'Sanjari']
 
 import os
-from thermo.utils import log, exp
 import numpy as np
 import pandas as pd
+from thermo.utils import log, exp
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
 from thermo.utils import TDependentProperty
 from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluids
