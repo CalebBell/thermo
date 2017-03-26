@@ -22,16 +22,16 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['has_matplotlib', 'to_num', 'CAS2int', 
-'int2CAS', 'Parachor', 'property_molar_to_mass', 'property_mass_to_molar', 
-'isobaric_expansion', 'isothermal_compressibility', 
+__all__ = ['isobaric_expansion', 'isothermal_compressibility', 
 'Cp_minus_Cv', 'speed_of_sound', 'Joule_Thomson',
 'phase_identification_parameter', 'phase_identification_parameter_phase',
 'isentropic_exponent', 'Vm_to_rho', 'rho_to_Vm', 
 'Z', 'B_To_Z', 'B_from_Z', 'Z_from_virial_density_form', 
 'Z_from_virial_pressure_form', 'zs_to_ws', 'ws_to_zs', 'zs_to_Vfs', 
 'Vfs_to_zs', 'none_and_length_check', 'normalize', 'mixing_simple', 
-'mixing_logarithmic', 'phase_select_property', 'TDependentProperty', 
+'mixing_logarithmic', 'has_matplotlib', 'to_num', 'CAS2int', 
+'int2CAS', 'Parachor', 'property_molar_to_mass', 'property_mass_to_molar', 
+'phase_select_property', 'TDependentProperty', 
 'TPDependentProperty', 'MixtureProperty', 'allclose_variable', 'horner', 
 'polylog2']
 
@@ -341,6 +341,10 @@ def phase_identification_parameter(V, dP_dT, dP_dV, d2P_dV2, d2P_dVdT):
     parameter. 
     
     The criteria for liquid is Pi > 1; for vapor, Pi <= 1.
+    
+    There is also a solid phase mechanism available. For solids, the Solid  
+    Phase Identification Parameter is greater than 1, like liquids; however,  
+    unlike liquids, d2P_dVdT is always >0; it is < 0 for liquids and gases.
 
     Examples
     --------
@@ -357,32 +361,55 @@ def phase_identification_parameter(V, dP_dT, dP_dV, d2P_dV2, d2P_dVdT):
        Temperature without Reference to Saturation Properties: Applications in 
        Phase Equilibria Calculations." Fluid Phase Equilibria 301, no. 2 
        (February 25, 2011): 225-33. doi:10.1016/j.fluid.2010.12.001.
+    .. [2] Jayanti, Pranava Chaitanya, and G. Venkatarathnam. "Identification
+       of the Phase of a Substance from the Derivatives of Pressure, Volume and
+       Temperature, without Prior Knowledge of Saturation Properties: Extension
+       to Solid Phase." Fluid Phase Equilibria 425 (October 15, 2016): 269-277.
+       doi:10.1016/j.fluid.2016.06.001.
     '''
     return V*(d2P_dVdT/dP_dT - d2P_dV2/dP_dV)
 
-#phase_identification_parameter(0.000130229900874, 582169.397484, -3.66431747236e+12, 4.48067893805e+17, -20518995218.2)
 
-def phase_identification_parameter_phase(PIP):
-    r'''Uses the Phase Identification Parameter developed in [1]_ to determine
-    if a fluid is a liquid or a vapor.
+def phase_identification_parameter_phase(d2P_dVdT, V=None, dP_dT=None, dP_dV=None, d2P_dV2=None):
+    r'''Uses the Phase Identification Parameter concept developed in [1]_ and [2]_ to determine
+    if a chemical is a solid, liquid, or vapor given the appropriate thermodynamic conditions.
 
     The criteria for liquid is PIP > 1; for vapor, PIP <= 1.
 
+    For solids, PIP(solid) is defined to be d2P_dVdT. If it is larger than 0, 
+    the species is a solid. It is less than 0 for all liquids and gases.
+
     Parameters
     ----------
-    PIP : float
-        Phase Identification Parameter, [-]
+    d2P_dVdT : float
+        Second derivative of `P` with respect to both `V` and `T`, [Pa*mol/m^3/K]
+    V : float, optional
+        Molar volume at `T` and `P`, [m^3/mol]
+    dP_dT : float, optional
+        Derivative of `P` with respect to `T`, [Pa/K]
+    dP_dV : float, optional
+        Derivative of `P` with respect to `V`, [Pa*mol/m^3]
+    d2P_dV2 : float, optionsl
+        Second derivative of `P` with respect to `V`, [Pa*mol^2/m^6]
 
     Returns
     -------
-    phase : bool
-        Either 'l' or 'g'
+    phase : str
+        Either 's', 'l' or 'g'
+    
+    Notes
+    -----
+    The criteria for being a solid phase is checked first, which only
+    requires d2P_dVdT. All other inputs are optional for this reason.
+    However, an exception will be raised if the other inputs become 
+    needed to determine if a species is a liquid or a gas.
         
     Examples
     --------
     Calculated for hexane from the PR EOS at 299 K and 1 MPa (liquid):
     
-    >>> phase_identification_parameter_phase(11.33428990564796)
+    >>> phase_identification_parameter_phase(-20518995218.2, 0.000130229900874, 
+    ... 582169.397484, -3.66431747236e+12, 4.48067893805e+17)
     'l'
 
     References
@@ -392,8 +419,18 @@ def phase_identification_parameter_phase(PIP):
        Temperature without Reference to Saturation Properties: Applications in 
        Phase Equilibria Calculations." Fluid Phase Equilibria 301, no. 2 
        (February 25, 2011): 225-33. doi:10.1016/j.fluid.2010.12.001.
+    .. [2] Jayanti, Pranava Chaitanya, and G. Venkatarathnam. "Identification
+       of the Phase of a Substance from the Derivatives of Pressure, Volume and
+       Temperature, without Prior Knowledge of Saturation Properties: Extension
+       to Solid Phase." Fluid Phase Equilibria 425 (October 15, 2016): 269-277.
+       doi:10.1016/j.fluid.2016.06.001.
     '''
-    return 'l' if PIP > 1 else 'g'
+    if d2P_dVdT > 0:
+        return 's'
+    else:
+        PIP = phase_identification_parameter(V=V, dP_dT=dP_dT, dP_dV=dP_dV, 
+                                             d2P_dV2=d2P_dV2, d2P_dVdT=d2P_dVdT)
+        return 'l' if PIP > 1 else 'g'
 
 
 def Cp_minus_Cv(T, dP_dT, dP_dV):

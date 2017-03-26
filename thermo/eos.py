@@ -28,7 +28,7 @@ __all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',
 from cmath import atanh as catanh
 from scipy.constants import R
 from scipy.optimize import newton
-from thermo.utils import Cp_minus_Cv, isothermal_compressibility, phase_identification_parameter, phase_identification_parameter_phase
+from thermo.utils import Cp_minus_Cv, isothermal_compressibility, phase_identification_parameter
 from thermo.utils import log, exp, sqrt, copysign, horner
 from thermo.utils import isobaric_expansion 
 
@@ -360,7 +360,7 @@ class GCEOS(object):
                 
         beta = dV_dT/V # isobaric_expansion(V, dV_dT)
         kappa = -dV_dP/V # isothermal_compressibility(V, dV_dP)
-        Cp_m_Cv = -T*dP_dT**2/dP_dV # Cp_minus_Cv(T, dP_dT, dP_dV)
+        Cp_m_Cv = -T*dP_dT*dP_dT/dP_dV # Cp_minus_Cv(T, dP_dT, dP_dV)
         
         Cp_dep = Cp_m_Cv + Cv_dep - R
                 
@@ -555,7 +555,7 @@ should be calculated by this method, in a user subclass.')
         dV_dP = -dV_dT/dP_dT 
         dT_dV = 1./dV_dT
         dT_dP = 1./dP_dT
-        
+                
         d2V_dP2 = -d2P_dV2*dP_dV**-3
         d2T_dP2 = -d2P_dT2*dP_dT**-3
         

@@ -414,8 +414,9 @@ def test_phase_identification_parameter():
     PIP = phase_identification_parameter(0.000130229900874, 582169.397484, -3.66431747236e+12, 4.48067893805e+17, -20518995218.2)
     assert_allclose(PIP, 11.33428990564796)
     
-    PIP_phase = phase_identification_parameter_phase(11.33428990564796)
-    assert PIP_phase == 'l'
+    assert 'l' == phase_identification_parameter_phase(-20518995218.2, 0.000130229900874, 582169.397484, -3.66431747236e+12, 4.48067893805e+17)
+    # Artificially give a value to make it be solid
+    assert 's' == phase_identification_parameter_phase(+20518995218.2)
 
 def test_Cp_minus_Cv():
     d = Cp_minus_Cv(299, 582232.475794113, -3665180614672.253)

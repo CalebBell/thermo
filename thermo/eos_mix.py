@@ -25,7 +25,7 @@ __all__ = ['GCEOSMIX', 'PRMIX', 'SRKMIX', 'PR78MIX', 'VDWMIX', 'PRSVMIX',
 'PRSV2MIX', 'TWUPRMIX', 'TWUSRKMIX', 'APISRKMIX']
 from scipy.constants import R
 from scipy.optimize import newton
-from thermo.utils import Cp_minus_Cv, isothermal_compressibility, phase_identification_parameter, phase_identification_parameter_phase
+from thermo.utils import Cp_minus_Cv, isothermal_compressibility, phase_identification_parameter
 from thermo.utils import log, exp, sqrt
 from thermo.utils import isobaric_expansion 
 from thermo.eos import *
