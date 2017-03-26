@@ -371,8 +371,9 @@ def phase_identification_parameter(V, dP_dT, dP_dV, d2P_dV2, d2P_dVdT):
 
 
 def phase_identification_parameter_phase(d2P_dVdT, V=None, dP_dT=None, dP_dV=None, d2P_dV2=None):
-    r'''Uses the Phase Identification Parameter concept developed in [1]_ and [2]_ to determine
-    if a chemical is a solid, liquid, or vapor given the appropriate thermodynamic conditions.
+    r'''Uses the Phase Identification Parameter concept developed in [1]_ and 
+    [2]_ to determine if a chemical is a solid, liquid, or vapor given the 
+    appropriate thermodynamic conditions.
 
     The criteria for liquid is PIP > 1; for vapor, PIP <= 1.
 
