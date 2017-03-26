@@ -2423,6 +2423,42 @@ class Chemical(object): # pragma: no cover
         4.450368847076066
         '''
         return phase_select_property(phase=self.phase, l=self.Prl, g=self.Prg)
+
+    @property
+    def Poynting(self):
+        r'''Poynting correction factor for use in phase equilibria 
+        methods based on activity coefficients or other reference states.
+        Performs the shortcut calculation assuming molar volume is independent
+        of pressure.
+        
+        .. math::
+            \text{Poy} =  \exp\left[\frac{V_l (P-P^{sat})}{RT}\right]
+            
+        The full calculation normally returns values very close to the
+        approximate ones. This property is defined in terms of
+        pure components only.
+        
+        Examples
+        --------
+        >>> Chemical('pentane', T=300, P=1E7).Poynting
+        1.5743051250679803
+        
+        Notes
+        -----
+        The full equation shown below can be used as follows:
+            
+        .. math::
+            \text{Poy} = \exp\left[\frac{\int_{P_i^{sat}}^P V_i^l dP}{RT}\right]
+            
+        >>> from scipy.integrate import quad
+        >>> c = Chemical('pentane', T=300, P=1E7)
+        >>> exp(quad(lambda P : c.VolumeLiquid(c.T, P), c.Psat, c.P)[0]/R/c.T)
+        1.5821826990975127
+        '''
+        Vml, Psat = self.Vml, self.Psat
+        if Vml and Psat:
+            return exp(Vml*(self.P-Psat)/R/self.T)
+        return None
                 
     def Tsat(self, P):
         return self.VaporPressure.solve_prop(P)
@@ -3037,6 +3073,42 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
           'OECD HPV Chemicals']]
         '''
         return [i.economic_status for i in self.Chemicals]
+
+    @property
+    def UNIFAC_groups(self):
+        r'''List of dictionaries of UNIFAC subgroup: count groups for each chemical in the mixture. Uses the original
+        UNIFAC subgroups, as determined by `DDBST's online service <http://www.ddbst.com/unifacga.html>`_.
+        
+        Examples
+        --------
+        >>> pprint(Mixture(['1-pentanol', 'decane'], ws=[0.5, 0.5]).UNIFAC_groups)
+        [{1: 1, 2: 4, 14: 1}, {1: 2, 2: 8}]
+        '''
+        return [i.UNIFAC_groups for i in self.Chemicals]
+
+    @property
+    def UNIFAC_Dortmund_groups(self):
+        r'''List of dictionaries of Dortmund UNIFAC subgroup: count groups for each chemcial in the mixture. Uses the
+        Dortmund UNIFAC subgroups, as determined by `DDBST's online service <http://www.ddbst.com/unifacga.html>`_.
+        
+        Examples
+        --------
+        >>> pprint(Mixture(['1-pentanol', 'decane'], ws=[0.5, 0.5]).UNIFAC_Dortmund_groups)
+        [{1: 1, 2: 4, 14: 1}, {1: 2, 2: 8}]
+        '''
+        return [i.UNIFAC_Dortmund_groups for i in self.Chemicals]
+
+    @property
+    def PSRK_groups(self):
+        r'''List of dictionaries of PSRK subgroup: count groups for each chemical in the mixture. Uses the PSRK subgroups, 
+        as determined by `DDBST's online service <http://www.ddbst.com/unifacga.html>`_.
+        
+        Examples
+        --------
+        >>> pprint(Mixture(['1-pentanol', 'decane'], ws=[0.5, 0.5]).PSRK_groups)
+        [{1: 1, 2: 4, 14: 1}, {1: 2, 2: 8}]
+        '''
+        return [i.PSRK_groups for i in self.Chemicals]
 
 
     ### One phase properties - calculate lazily

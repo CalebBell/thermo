@@ -24,6 +24,9 @@ from numpy.testing import assert_allclose
 import pytest
 from thermo.chemical import *
 from thermo.identifiers import pubchem_dict
+from scipy.integrate import quad
+from math import *
+from scipy.constants import R
 
 def test_Chemical_properties():
     w = Chemical('water')
@@ -175,6 +178,14 @@ def test_Chemical_properties_T_dependent():
     
     assert_allclose(w.solubility_parameter, 47863.51384219548)
     assert_allclose(w.Parachor, 9.363768522707514e-06)
+    
+    # Poynting factor
+    assert_allclose(Chemical('pentane', T=300, P=1E7).Poynting, 1.5743051250679803)
+    
+    c = Chemical('pentane', T=300, P=1E7)
+    Poy = exp(quad(lambda P : c.VolumeLiquid(c.T, P), c.Psat, c.P)[0]/R/c.T)
+    assert_allclose(Poy, 1.5821826990975127)
+
 
 def test_Chemical_properties_T_phase():
     # T-only dependent properties (always or at the moment)
