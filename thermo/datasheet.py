@@ -186,7 +186,7 @@ def tabulate_constants(chemical, full=False, vertical=False):
         data['Acentric factor'] = chem.omega
         data['Triple temperature, K'] = chem.Tt
         data['Triple pressure, Pa'] = chem.Pt
-        data['Heat of vaporization at Tb, J/mol'] = chem.HvapTbm
+        data['Heat of vaporization at Tb, J/mol'] = chem.Hvap_Tbm
         data['Heat of fusion, J/mol'] = chem.Hfusm
         data['Heat of sublimation, J/mol'] = chem.Hsubm
         data['Heat of formation, J/mol'] = chem.Hf

@@ -335,6 +335,7 @@ class Chemical(object): # pragma: no cover
     nul
     Parachor
     permittivity
+    Poynting
     Pr
     Prg
     Prl

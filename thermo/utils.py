@@ -1834,6 +1834,14 @@ class TDependentProperty(object):
         plt.legend()
         plt.xlabel('Temperature, K')
         plt.show()
+        
+    def extrapolate_tabular(self, T):
+        if 'EXTRAPOLATE_TABULAR' not in self.tabular_data:
+            Ts = np.linspace(max(20, self.Tmin), self.Tmax, 200)
+            properties = [self.T_dependent_property(T) for T in Ts]
+            self.tabular_data['EXTRAPOLATE_TABULAR'] = (Ts, properties)
+        return self.interpolate(T, 'EXTRAPOLATE_TABULAR')
+
 
     def interpolate(self, T, name):
         r'''Method to perform interpolation on a given tabular data set
