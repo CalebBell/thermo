@@ -142,7 +142,10 @@ class UNIFAC_PP(object):
     def _dew_P_UNIFAC_err(self, P, T, zs, Psats, Pmax):
         # returns 0 at Pdew, higher than that everywhere else. 
         # Raises exceptions at values of P somewhat higher than Pbubble.
+        if P < 0:
+            return 1 # Ensure P does not go negative
         P = min(abs(P), Pmax) # Ensure P does not raise an exception 
+#        P = max(P, 1E-5) # Ensure P does not go negative
         # by always keeping P under Pmax- golden handles this change well
         try:
             ans = -(self._flash_sequential_substitution_dew_at_TP(T=T, P=P, zs=zs, Psats=Psats)[0]-1)
@@ -189,6 +192,16 @@ class UNIFAC_PP(object):
         Ks = self.Ks(P, Psats, gammas)
         V_over_F, xs, ys = flash_inner_loop(zs, Ks)
         for i in range(100):
+            if any(i < 0 for i in xs):
+                xs = zs
+            if any(i < 0 for i in ys):
+                ys = zs
+#            if any(i < 0 for i in xs) or any(i < 0 for i in ys):
+#                x_tot = sum(abs(i) for i in xs)
+#                y_tot = sum(abs(i) for i in ys)
+#                xs = [abs(i)/x_tot for i in xs]
+#                ys = [abs(i)/y_tot for i in ys]
+                #raise Exception('Start over')
             gammas = UNIFAC(chemgroups=self.UNIFAC_groups, T=T, xs=xs)
             Ks = self.Ks(P, Psats, gammas)
             V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks)
