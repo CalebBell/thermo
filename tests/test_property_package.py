@@ -27,10 +27,10 @@ import pandas as pd
 from thermo.property_package import *
 from thermo.chemical import Mixture
 
-def test_IdealPP():
+def test_Ideal_PP():
     m = Mixture(['ethanol', 'water'], zs=[0.5, 0.5], P=5000, T=298.15)
 
-    vodka = IdealPP(m.VaporPressures, m.Tms, m.Tcs, m.Pcs)
+    vodka = Ideal_PP(m.VaporPressures, m.Tms, m.Tcs, m.Pcs)
     # Low pressure ethanol-water ideal TP flash
     phase, xs, ys, V_over_F = vodka.flash_TP_zs(m.T, m.P, m.zs)
     V_over_F_expect = 0.49376976949268025
@@ -83,7 +83,7 @@ def test_IdealPP():
 @pytest.mark.slow
 def test_IdealPP_fuzz_TP_VF():
     m = Mixture(['ethanol', 'water'], zs=[0.5, 0.5], P=5000, T=298.15)
-    vodka = IdealPP(m.VaporPressures, m.Tms, m.Tcs, m.Pcs)
+    vodka = Ideal_PP(m.VaporPressures, m.Tms, m.Tcs, m.Pcs)
     
     for i in range(500):
         # May fail right now on the transition between vapor pressure 
