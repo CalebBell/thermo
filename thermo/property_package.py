@@ -130,9 +130,8 @@ class Ideal_PP(object):
 
 
 class UNIFAC_PP(object):
-    def _T_VF_err(self, P, T, VF, zs, Psats):
-        V_over_F, xs, ys = self._flash_sequential_substitution_TP(T=T, P=P, zs=zs, Psats=Psats)
-        return V_over_F - VF
+    __TP_cache = None
+    __TVF_solve_cache = None
 
     def _P_VF_err(self, T, P, VF, zs):
         P_calc = self.flash_TVF_zs(T=T, VF=VF, zs=zs)[-1]
@@ -172,14 +171,17 @@ class UNIFAC_PP(object):
             # negative V_over_F and negative mole fractions
             return 1
 
-    def _dew_P_UNIFAC_err_straight(self, P, T, zs, Psats, Pmax):
+    def _T_VF_err(self, P, T, zs, Psats, Pmax, V_over_F_goal=1):
         if P < 0 or P > Pmax:
             return 1 
         try:
-            V_over_F, xs, ys = self._flash_sequential_substitution_TP(T=T, P=P, zs=zs, Psats=Psats)
+            
+            V_over_F, xs, ys = self._flash_sequential_substitution_TP(T=T, P=P, zs=zs, Psats=Psats, restart=self.__TVF_solve_cache)
+
             if any(i < 0 for i in xs) or any(i < 0 for i in ys):
                 return -10000*(Pmax-P)/Pmax
-            ans = -(V_over_F-1)
+            self.__TVF_solve_cache = (V_over_F, xs, ys)
+            ans = -(V_over_F-V_over_F_goal)
             return ans
         except:
             return 1
@@ -200,11 +202,14 @@ class UNIFAC_PP(object):
         else:
             return Psats
 #
-    def _flash_sequential_substitution_TP(self, T, P, zs, Psats=None):
+    def _flash_sequential_substitution_TP(self, T, P, zs, Psats=None, restart=None):
         Psats = self._Psats(Psats=Psats, T=T)
-        gammas = UNIFAC(chemgroups=self.UNIFAC_groups, T=T, xs=zs)
-        Ks = self.Ks(P, Psats, gammas)
-        V_over_F, xs, ys = flash_inner_loop(zs, Ks)
+        if restart:
+            V_over_F, xs, ys = restart
+        else:
+            gammas = UNIFAC(chemgroups=self.UNIFAC_groups, T=T, xs=zs)
+            Ks = self.Ks(P, Psats, gammas)
+            V_over_F, xs, ys = flash_inner_loop(zs, Ks)
         for i in range(100):
             if any(i < 0 for i in xs):
                 xs = zs
@@ -221,11 +226,11 @@ class UNIFAC_PP(object):
         return V_over_F, xs, ys
 
     def flash(self, zs, T=None, P=None, VF=None):
-        if T and P:
+        if T is not None and P is not None:
             phase, xs, ys, V_over_F = self.flash_TP_zs(T=T, P=P, zs=zs)
-        elif T and VF:
+        elif T is not None and VF is not None:
             phase, xs, ys, V_over_F, P = self.flash_TVF_zs(T=T, VF=VF, zs=zs)
-        elif P and VF:
+        elif P is not None and VF is not None:
             phase, xs, ys, V_over_F, T = self.flash_PVF_zs(P=P, VF=VF, zs=zs)
         else:
             raise Exception('Unsupported flash requested')
@@ -247,7 +252,9 @@ class UNIFAC_PP(object):
         Psats = self._Psats(Psats, T)
         Pmax = self.P_bubble_at_T(T, zs, Psats)
         diff = 1E-7
-        return brenth(self._dew_P_UNIFAC_err_straight, Pmax*diff, Pmax, args=(T, zs, Psats, Pmax), rtol=1E-5)
+        P_dew = brenth(self._T_VF_err, Pmax*diff, Pmax, args=(T, zs, Psats, Pmax, 1))
+        self.__TVF_solve_cache = None
+        return P_dew
 #        try:
 #            return brent(self._dew_P_UNIFAC_err, args=(T, zs, Psats, Pmax), brack=(Pmax*diff, Pmax*(1-diff), Pmax))
 #        except:
@@ -256,14 +263,15 @@ class UNIFAC_PP(object):
     def flash_TVF_zs(self, T, VF, zs):
         assert 0 <= VF <= 1
         Psats = self._Psats(T=T)
-        Pdew = self.P_dew_at_T(T=T, zs=zs, Psats=Psats)
         Pbubble = self.P_bubble_at_T(T=T, zs=zs, Psats=Psats)
         if VF == 0:
             P = Pbubble
-        elif VF == 1:
-            P = Pdew
         else:
-            P = brenth(self._T_VF_err, Pdew, Pbubble, args=(T, VF, zs, Psats))
+            diff = 1E-7
+            Pmax = Pbubble
+            P = brenth(self._T_VF_err, Pmax*diff, Pmax, args=(T, zs, Psats, Pmax, VF))
+            self.__TVF_solve_cache = None
+#            P = brenth(self._T_VF_err, Pdew, Pbubble, args=(T, VF, zs, Psats))
         V_over_F, xs, ys = self._flash_sequential_substitution_TP(T=T, P=P, zs=zs, Psats=Psats)
         return 'l/g', xs, ys, V_over_F, P
     

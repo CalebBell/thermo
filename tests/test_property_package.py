@@ -170,15 +170,15 @@ def test_UNIFAC_PP():
     # Same flash with T-VF spec
     phase, xs, ys, V_over_F, P = vodka.flash_TVF_zs(m.T, V_over_F_expect, m.zs)
     assert phase == 'l/g'
-    assert_allclose(xs, xs_expect)
-    assert_allclose(ys, ys_expect)
-    assert_allclose(V_over_F, V_over_F_expect)
+    assert_allclose(xs, xs_expect, rtol=1E-5)
+    assert_allclose(ys, ys_expect, rtol=1E-5)
+    assert_allclose(V_over_F, V_over_F_expect, rtol=1E-5)
     # Same flash with P-VF spec
     phase, xs, ys, V_over_F, T = vodka.flash_PVF_zs(m.P, V_over_F_expect, m.zs)
     assert phase == 'l/g'
-    assert_allclose(xs, xs_expect)
-    assert_allclose(ys, ys_expect)
-    assert_allclose(V_over_F, V_over_F_expect)
+    assert_allclose(xs, xs_expect, rtol=1E-5)
+    assert_allclose(ys, ys_expect, rtol=1E-5)
+    assert_allclose(V_over_F, V_over_F_expect, rtol=1E-5)
     
     # Test the flash interface directly
     T_known = m.T
