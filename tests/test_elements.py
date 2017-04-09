@@ -73,6 +73,10 @@ def test_elements_data():
     tots_exp = [7021, 17285.2137652, 620, 895, 109.91, 144.3100000000001, 179.4300000000001, 94, 163.27000000000007, 816.4238999999999, 67.50297235000001, 7021, 7021]
     assert_allclose(tots_calc, tots_exp)
 
+def test_misc_elements():
+    assert periodic_table['H'].InChI == 'InChI=1S/H'
+    
+    assert periodic_table['H'].smiles == '[H]'
 
 def test_Hill_formula():
     Hill_formulas = {'ClNa': {'Na': 1, 'Cl': 1}, 'BrI': {'I': 1, 'Br': 1},

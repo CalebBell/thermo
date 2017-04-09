@@ -489,7 +489,7 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None):
     if AvailableMethods:
         return list_methods()
     if not Method:
-        Method = list_methods()[0]
+        Method = 'Analytical' if l < 4 else 'Rachford-Rice'
     if Method == 'Analytical':
         if l == 2:
             z1, z2 = zs

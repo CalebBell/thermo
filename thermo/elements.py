@@ -157,12 +157,17 @@ class Element(object):
     protons : int
         Number of protons
     electrons : int
-        Number of electrons of the element in the ground state 
+        Number of electrons of the element in the ground state
+    InChI : str
+        Standard InChI string of the element
+    smiles : str
+        Standard smiles string of the element
 
     '''
     __slots__ = ['number', 'symbol', 'name', 'CAS', 'MW', 'AReneg', 'rcov',
                  'rvdw', 'maxbonds', 'elneg', 'ionization', 'elaffinity',
-                 'period', 'group', 'block', 'protons', 'electrons']
+                 'period', 'group', 'block', 'protons', 'electrons', 'InChI',
+                 'smiles']
 
     def __init__(self, number, symbol, name, MW, CAS, AReneg, rcov, rvdw,
                  maxbonds, elneg, ionization, elaffinity, period, group, block):
@@ -186,6 +191,8 @@ class Element(object):
         
         self.protons = number
         self.electrons = number
+        self.InChI = 'InChI=1S/' + self.symbol
+        self.smiles = '[' + self.symbol + ']'
 
 
 element_list = []
