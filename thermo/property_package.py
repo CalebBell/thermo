@@ -25,7 +25,7 @@ from __future__ import division
 __all__ = ['Ideal_PP', 'UNIFAC_PP']
 
 import numpy as np
-from scipy.optimize import brenth, ridder, golden
+from scipy.optimize import brenth, ridder, golden, brent
 
 from thermo.utils import log
 from thermo.utils import R, pi, N_A
@@ -130,6 +130,13 @@ class Ideal_PP(object):
 
 
 class UNIFAC_PP(object):
+    def _T_VF_err(self, P, T, VF, zs, Psats):
+        V_over_F, xs, ys = self._flash_sequential_substitution_TP(T=T, P=P, zs=zs, Psats=Psats)
+        return V_over_F - VF
+
+    def _P_VF_err(self, T, P, VF, zs):
+        P_calc = self.flash_TVF_zs(T=T, VF=VF, zs=zs)[-1]
+        return P_calc- P
 
     def __init__(self, UNIFAC_groups, VaporPressures, Tms=None, Tcs=None, Pcs=None):
         self.UNIFAC_groups = UNIFAC_groups
@@ -144,17 +151,37 @@ class UNIFAC_PP(object):
         # Raises exceptions at values of P somewhat higher than Pbubble.
         if P < 0:
             return 1 # Ensure P does not go negative
-        P = min(abs(P), Pmax) # Ensure P does not raise an exception 
-#        P = max(P, 1E-5) # Ensure P does not go negative
+        if P > Pmax:
+            return 1
+        # Ensure P does not raise an exception 
         # by always keeping P under Pmax- golden handles this change well
         try:
-            ans = -(self._flash_sequential_substitution_dew_at_TP(T=T, P=P, zs=zs, Psats=Psats)[0]-1)
+            V_over_F, xs, ys = self._flash_sequential_substitution_TP(T=T, P=P, zs=zs, Psats=Psats)
+            ans = -(V_over_F-1)
+            
+#            if any(i < 0 for i in xs):
+#                return -100
+#            if any(i < 0 for i in ys):
+#                return -100
+            
             if ans < 0:
                 ans = -ans
             return ans
         except:
             # Return 1 if T went too low and the activity coefficients calculated are causing
             # negative V_over_F and negative mole fractions
+            return 1
+
+    def _dew_P_UNIFAC_err_straight(self, P, T, zs, Psats, Pmax):
+        if P < 0 or P > Pmax:
+            return 1 
+        try:
+            V_over_F, xs, ys = self._flash_sequential_substitution_TP(T=T, P=P, zs=zs, Psats=Psats)
+            if any(i < 0 for i in xs) or any(i < 0 for i in ys):
+                return -10000*(Pmax-P)/Pmax
+            ans = -(V_over_F-1)
+            return ans
+        except:
             return 1
 
     def Ks(self, P, Psats, gammas):
@@ -173,19 +200,6 @@ class UNIFAC_PP(object):
         else:
             return Psats
 #
-#    def _flash_sequential_substitution_dew_at_TP(self, T, P, zs, Psats):
-#        gammas = UNIFAC(chemgroups=self.UNIFAC_groups, T=T, xs=zs)
-#        Ks = self.Ks(P, Psats, gammas)
-#        V_over_F, xs, _ = flash_inner_loop(zs, Ks)
-#        for i in range(100):
-#            gammas = UNIFAC(chemgroups=self.UNIFAC_groups, T=T, xs=xs)
-#            Ks = self.Ks(P, Psats, gammas)
-#            V_over_F, xs_new, _ = flash_inner_loop(zs, Ks)
-#            err = sum([abs(x_new - x_old) for x_new, x_old in zip(xs_new, xs)])
-#            if err < 1E-7:
-#                break
-#        return V_over_F, xs, zs
-
     def _flash_sequential_substitution_TP(self, T, P, zs, Psats=None):
         Psats = self._Psats(Psats=Psats, T=T)
         gammas = UNIFAC(chemgroups=self.UNIFAC_groups, T=T, xs=zs)
@@ -196,12 +210,6 @@ class UNIFAC_PP(object):
                 xs = zs
             if any(i < 0 for i in ys):
                 ys = zs
-#            if any(i < 0 for i in xs) or any(i < 0 for i in ys):
-#                x_tot = sum(abs(i) for i in xs)
-#                y_tot = sum(abs(i) for i in ys)
-#                xs = [abs(i)/x_tot for i in xs]
-#                ys = [abs(i)/y_tot for i in ys]
-                #raise Exception('Start over')
             gammas = UNIFAC(chemgroups=self.UNIFAC_groups, T=T, xs=xs)
             Ks = self.Ks(P, Psats, gammas)
             V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks)
@@ -238,15 +246,13 @@ class UNIFAC_PP(object):
     def P_dew_at_T(self, T, zs, Psats=None):
         Psats = self._Psats(Psats, T)
         Pmax = self.P_bubble_at_T(T, zs, Psats)
-        diff = 1E-8
-        return golden(self._dew_P_UNIFAC_err, args=(T, zs, Psats, Pmax), brack=(Pmax, Pmax*(1-diff)))
-    
-    def _T_VF_err(self, P, T, VF, zs, Psats):
-#        print(T, P, zs, Psats, VF)
-        V_over_F, xs, ys = self._flash_sequential_substitution_TP(T=T, P=P, zs=zs, Psats=Psats)
-#        print(V_over_F)
-        return V_over_F - VF
-    
+        diff = 1E-7
+        return brenth(self._dew_P_UNIFAC_err_straight, Pmax*diff, Pmax, args=(T, zs, Psats, Pmax), rtol=1E-5)
+#        try:
+#            return brent(self._dew_P_UNIFAC_err, args=(T, zs, Psats, Pmax), brack=(Pmax*diff, Pmax*(1-diff), Pmax))
+#        except:
+#        return golden(self._dew_P_UNIFAC_err, args=(T, zs, Psats, Pmax), brack=(Pmax, Pmax*(1-diff)))
+#        
     def flash_TVF_zs(self, T, VF, zs):
         assert 0 <= VF <= 1
         Psats = self._Psats(T=T)
@@ -263,25 +269,20 @@ class UNIFAC_PP(object):
     
     def flash_TP_zs(self, T, P, zs):
         Psats = self._Psats(T=T)
-        Pdew = self.P_dew_at_T(T=T, zs=zs, Psats=Psats)
         Pbubble = self.P_bubble_at_T(T=T, zs=zs, Psats=Psats)
+        if P >= Pbubble:
+            return 'l', zs, None, 0
+        Pdew = self.P_dew_at_T(T=T, zs=zs, Psats=Psats)
         if P <= Pdew:
             # phase, ys, xs, quality
             return 'g', None, zs, 1
-        elif P >= Pbubble:
-            return 'l', zs, None, 0
         else:
             V_over_F, xs, ys = self._flash_sequential_substitution_TP(T=T, P=P, zs=zs, Psats=Psats)
             return 'l/g', xs, ys, V_over_F
     
-    def _P_VF_err(self, T, P, VF, zs):
-        P_calc = self.flash_TVF_zs(T=T, VF=VF, zs=zs)[-1]
-        return P_calc- P
    
     def flash_PVF_zs(self, P, VF, zs):
-        #return newton(self._dew_T_err, 305.1, args=(P, zs))
         T = ridder(self._P_VF_err, min(self.Tms), min(self.Tcs), args=(P, VF, zs))
         V_over_F, xs, ys = self._flash_sequential_substitution_TP(T=T, P=P, zs=zs)
         return 'l/g', xs, ys, V_over_F, T
 
-    _flash_sequential_substitution_dew_at_TP = _flash_sequential_substitution_TP

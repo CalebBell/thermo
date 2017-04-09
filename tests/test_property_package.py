@@ -154,3 +154,87 @@ def test_IdealPP_fuzz_TP_VF():
 
     
 
+def test_UNIFAC_PP():
+    m = Mixture(['ethanol', 'water'], zs=[0.5, 0.5], P=6500, T=298.15)
+    vodka = UNIFAC_PP(m.UNIFAC_groups, m.VaporPressures, m.Tms, m.Tcs, m.Pcs)
+
+    # Low pressure ethanol-water ideal TP flash
+    phase, xs, ys, V_over_F = vodka.flash_TP_zs(m.T, m.P, m.zs)
+    V_over_F_expect = 0.7522885045317019
+    xs_expect = [0.2761473052710751, 0.7238526947289249]
+    ys_expect = [0.5737096013588943, 0.42629039864110585]
+    assert phase == 'l/g'
+    assert_allclose(xs, xs_expect)
+    assert_allclose(ys, ys_expect)
+    assert_allclose(V_over_F, V_over_F_expect)
+    # Same flash with T-VF spec
+    phase, xs, ys, V_over_F, P = vodka.flash_TVF_zs(m.T, V_over_F_expect, m.zs)
+    assert phase == 'l/g'
+    assert_allclose(xs, xs_expect)
+    assert_allclose(ys, ys_expect)
+    assert_allclose(V_over_F, V_over_F_expect)
+    # Same flash with P-VF spec
+    phase, xs, ys, V_over_F, T = vodka.flash_PVF_zs(m.P, V_over_F_expect, m.zs)
+    assert phase == 'l/g'
+    assert_allclose(xs, xs_expect)
+    assert_allclose(ys, ys_expect)
+    assert_allclose(V_over_F, V_over_F_expect)
+    
+    # Test the flash interface directly
+    T_known = m.T
+    V_over_F_known = V_over_F_expect
+    zs = m.zs
+    
+    vodka.flash(T=T_known, VF=V_over_F_known, zs=zs)
+    
+    P_known = vodka.P
+    xs_known = vodka.xs
+    ys_known = vodka.ys
+    phase_known = vodka.phase
+    
+    # test TP flash gives the same as TVF
+    vodka.flash(T=T_known, P=P_known, zs=zs)    
+    assert_allclose(V_over_F_known, vodka.V_over_F)
+    assert_allclose(xs_known, vodka.xs)
+    assert_allclose(ys_known, vodka.ys)
+    assert vodka.phase == phase_known
+    # Test PVF flash gives same as well
+    vodka.flash(VF=V_over_F_known, P=P_known, zs=zs)
+    assert_allclose(xs_known, vodka.xs)
+    assert_allclose(ys_known, vodka.ys)
+    assert_allclose(xs_known, vodka.xs)
+    assert_allclose(T_known, vodka.T)
+    assert vodka.phase == phase_known
+
+
+@pytest.mark.slow
+def test_UNIFAC_PP_fuzz():
+    m = Mixture(['ethanol', 'water'], zs=[0.5, 0.5], P=5000, T=298.15)
+    vodka = UNIFAC_PP(m.UNIFAC_groups, m.VaporPressures, m.Tms, m.Tcs, m.Pcs)
+    
+    for i in range(500):
+        zs = [uniform(0, 1) for i in range(2)]
+        zs = [i/sum(zs) for i in zs]
+        T_known = uniform(274, 513)
+        V_over_F_known = uniform(0, 1)
+        vodka.flash(T=T_known, VF=V_over_F_known, zs=zs)
+
+        P_known = vodka.P
+        xs_known = vodka.xs
+        ys_known = vodka.ys
+        phase_known = vodka.phase
+
+        # test TP flash gives the same as TVF
+        vodka.flash(T=T_known, P=P_known, zs=zs)    
+        assert_allclose(V_over_F_known, vodka.V_over_F, rtol=1E-5)
+        assert_allclose(xs_known, vodka.xs, rtol=1E-5)
+        assert_allclose(ys_known, vodka.ys, rtol=1E-5)
+        assert vodka.phase == phase_known
+        # Test PVF flash gives same as well
+        vodka.flash(VF=V_over_F_known, P=P_known, zs=zs)
+        assert_allclose(xs_known, vodka.xs)
+        assert_allclose(ys_known, vodka.ys)
+        assert_allclose(xs_known, vodka.xs)
+        assert_allclose(T_known, vodka.T)
+        assert vodka.phase == phase_known
+
