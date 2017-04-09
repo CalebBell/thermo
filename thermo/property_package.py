@@ -113,10 +113,45 @@ class Property_Package(object):
             plt.title('xy diagram at P=%s Pa (varying T)' %P)
         plt.xlabel('Liquid mole fraction x1')
         plt.ylabel('Vapor mole fraction x1')
-        plt.plot(x1_bubble, y1_bubble, '-')
+        plt.plot(x1_bubble, y1_bubble, '-', label='liquid vs vapor composition')
+        plt.legend(loc='best')
         plt.plot([0, 1], [0, 1], '--')
         plt.axis((0,1,0,1))
         plt.show()
+        
+    def plot_TP(self, zs, Tmin=None, Tmax=None, pts=50, branches=[]):
+        import matplotlib.pyplot as plt
+        if not Tmin:
+            Tmin = min(self.Tms)
+        if not Tmax:
+            Tmax = min(self.Tcs)
+        Ts = np.linspace(Tmin, Tmax, pts)
+        P_dews = []
+        P_bubbles = []
+        branch = bool(len(branches))
+        if branch:
+            branch_Ps = [[] for i in range(len(branches))]
+        for T in Ts:
+            self.flash(T=T, VF=0, zs=zs)
+            P_bubbles.append(self.P)
+            self.flash(T=T, VF=1, zs=zs)
+            P_dews.append(self.P)
+            if branch:
+                for VF, Ps in zip(branches, branch_Ps):
+                    self.flash(T=T, VF=VF, zs=zs)
+                    Ps.append(self.P)
+        
+        plt.plot(Ts, P_dews, label='PT dew point curve')
+        plt.plot(Ts, P_bubbles, label='PT bubble point curve')
+        plt.xlabel('System temperature, K')
+        plt.ylabel('System pressure, Pa')
+        plt.title('PT system curve, zs=%s' %zs)
+        if branch:
+            for VF, Ps in zip(branches, branch_Ps):
+                plt.plot(Ts, Ps, label='PT curve for VF=%s'%VF)
+        plt.legend(loc='best')
+        plt.show()
+                
 
 
 
