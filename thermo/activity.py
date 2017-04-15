@@ -158,7 +158,7 @@ def K_value(P=None, Psat=None, phi_l=None, phi_g=None, gamma=None, Poynting=1):
         if gamma:
             if phi_l:
                 return gamma*Psat*phi_l*Poynting/(phi_g*P)
-            return gamma*Psat/P
+            return gamma*Psat*Poynting/P
         elif phi_l:
             return phi_l/phi_g
         return Psat/P

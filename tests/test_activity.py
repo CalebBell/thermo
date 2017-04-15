@@ -35,6 +35,9 @@ def test_K_value():
     K = K_value(P=101325, Psat=3000, gamma=0.9)
     assert_allclose(K, 0.026646928201332347)
     
+    K = K_value(P=101325, Psat=3000, gamma=0.9, Poynting=1.1)
+    assert_allclose(K, 0.029311621021465586)
+    
     K = K_value(phi_l=1.6356, phi_g=0.88427)
     assert_allclose(K, 1.8496613025433408)
     

@@ -22,20 +22,30 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['Ideal_PP', 'UNIFAC_PP']
+__all__ = ['Property_Package', 'Ideal_PP', 'UNIFAC_PP', 'Activity_PP', 
+           'UNIFAC_Dortmund_PP']
 
 import numpy as np
 from scipy.optimize import brenth, ridder, golden, brent
 
-from thermo.utils import log
-from thermo.utils import R, pi, N_A
+from thermo.utils import log, exp
+from thermo.utils import has_matplotlib, R, pi, N_A
 
 from thermo.activity import K_value, flash_inner_loop, dew_at_T, bubble_at_T
-from thermo.unifac import UNIFAC
-from thermo.unifac import UFSG as subgroups
+from thermo.unifac import UNIFAC, UFSG, DOUFSG, DOUFIP2006
+
+if has_matplotlib:
+    import matplotlib
+    import matplotlib.pyplot as plt
+
 
 class Property_Package(object):
     def flash(self, zs, T=None, P=None, VF=None):
+        if any(i == 0 for i in zs):
+            zs = [i if i != 0 else 1E-11 for i in zs]
+            z_tot = sum(zs)
+            zs = [i/z_tot for i in zs]
+            
         if T is not None and P is not None:
             phase, xs, ys, V_over_F = self.flash_TP_zs(T=T, P=P, zs=zs)
         elif T is not None and VF is not None:
@@ -53,7 +63,8 @@ class Property_Package(object):
         self.zs = zs
         
     def plot_Pxy(self, T, pts=30):
-        import matplotlib.pyplot as plt
+        if not has_matplotlib:
+            raise Exception('Optional dependency matplotlib is required for plotting')
         z1 = np.linspace(0, 1, pts)
         z2 = 1 - z1
         Ps_dew = []
@@ -74,7 +85,8 @@ class Property_Package(object):
         plt.show()
         
     def plot_Txy(self, P, pts=30):
-        import matplotlib.pyplot as plt
+        if not has_matplotlib:
+            raise Exception('Optional dependency matplotlib is required for plotting')
         z1 = np.linspace(0, 1, pts)
         z2 = 1 - z1
         Ts_dew = []
@@ -95,7 +107,8 @@ class Property_Package(object):
         plt.show()
         
     def plot_xy(self, P=None, T=None, pts=30):
-        import matplotlib.pyplot as plt
+        if not has_matplotlib:
+            raise Exception('Optional dependency matplotlib is required for plotting')
         z1 = np.linspace(0, 1, pts)
         z2 = 1 - z1
         y1_bubble = []
@@ -120,7 +133,8 @@ class Property_Package(object):
         plt.show()
         
     def plot_TP(self, zs, Tmin=None, Tmax=None, pts=50, branches=[]):
-        import matplotlib.pyplot as plt
+        if not has_matplotlib:
+            raise Exception('Optional dependency matplotlib is required for plotting')
         if not Tmin:
             Tmin = min(self.Tms)
         if not Tmax:
@@ -151,8 +165,78 @@ class Property_Package(object):
                 plt.plot(Ts, Ps, label='PT curve for VF=%s'%VF)
         plt.legend(loc='best')
         plt.show()
-                
+        
+    @staticmethod
+    def un_zero_zs(zs):
+        if any(i == 0 for i in zs):
+            zs = [i if i != 0 else 1E-6 for i in zs]
+            z_tot = sum(zs)
+            zs = [i/z_tot for i in zs]
+        return zs
 
+                
+    def plot_ternary(self, T, scale=10):
+        if not has_matplotlib:
+            raise Exception('Optional dependency matplotlib is required for plotting')
+        try:
+            import ternary
+        except:
+            raise Exception('Optional dependency ternary is required for ternary plotting')
+
+        P_values = []
+
+        def P_dew_at_T_zs(zs):
+            zs = self.un_zero_zs(zs)
+            self.flash(T=T, zs=zs, VF=0)
+            P_values.append(self.P)
+            return self.P
+        
+        def P_bubble_at_T_zs(zs):
+            zs = self.un_zero_zs(zs)
+            self.flash(T=T, zs=zs, VF=1)
+            return self.P
+        
+        
+        axes_colors = {'b': 'g', 'l': 'r', 'r':'b'}
+        ticks = [round(i / float(10), 1) for i in range(10+1)]
+        
+        fig, ax = plt.subplots(1, 3, gridspec_kw = {'width_ratios':[4, 4, 1]})
+        ax[0].axis("off") ; ax[1].axis("off")  ; ax[2].axis("off")
+        
+        for axis, f, i in zip(ax[0:2], [P_dew_at_T_zs, P_bubble_at_T_zs], [0, 1]):
+            figure, tax = ternary.figure(ax=axis, scale=scale)
+            figure.set_size_inches(12, 4)
+            if not i:
+                tax.heatmapf(f, boundary=True, colorbar=False, vmin=0)
+            else:
+                tax.heatmapf(f, boundary=True, colorbar=False, vmin=0, vmax=max(P_values))
+        
+            tax.boundary(linewidth=2.0)
+            tax.left_axis_label("mole fraction $x_2$", offset=0.16, color=axes_colors['l'])
+            tax.right_axis_label("mole fraction $x_1$", offset=0.16, color=axes_colors['r'])
+            tax.bottom_axis_label("mole fraction $x_3$", offset=-0.06, color=axes_colors['b'])
+        
+            tax.ticks(ticks=ticks, axis='rlb', linewidth=1, clockwise=True,
+                      axes_colors=axes_colors, offset=0.03)
+        
+            tax.gridlines(multiple=scale/10., linewidth=2,
+                          horizontal_kwargs={'color':axes_colors['b']},
+                          left_kwargs={'color':axes_colors['l']},
+                          right_kwargs={'color':axes_colors['r']},
+                          alpha=0.5)
+        
+        norm = plt.Normalize(vmin=0, vmax=max(P_values))
+        sm = plt.cm.ScalarMappable(cmap=plt.get_cmap('viridis'), norm=norm)
+        sm._A = []
+        cb = plt.colorbar(sm, ax=ax[2])
+        cb.locator = matplotlib.ticker.LinearLocator(numticks=7)
+        cb.formatter = matplotlib.ticker.ScalarFormatter()
+        cb.formatter.set_powerlimits((0, 0))
+        cb.update_ticks()
+        plt.tight_layout()
+        fig.suptitle("Bubble pressure vs composition (left) and dew pressure vs composition (right) at %s K, in Pa" %T, fontsize=14); 
+        fig.subplots_adjust(top=0.85)
+        plt.show()
 
 
 class Ideal_PP(Property_Package):
@@ -194,8 +278,6 @@ class Ideal_PP(Property_Package):
         self.Tcs = Tcs
         self.Pcs = Pcs
         
-        
-        
 
     def flash_TP_zs(self, T, P, zs):
         Psats = self._Psats(T)
@@ -234,10 +316,12 @@ class Ideal_PP(Property_Package):
         return 'l/g', xs, ys, V_over_F, T
 
 
-class UNIFAC_PP(Property_Package):
+class Activity_PP(Property_Package):
     __TP_cache = None
     __TVF_solve_cache = None
     retention = False
+    use_Poynting = False
+    use_phis = False
 
     def _P_VF_err(self, T, P, VF, zs):
         P_calc = self.flash_TVF_zs(T=T, VF=VF, zs=zs)[-1]
@@ -252,37 +336,6 @@ class UNIFAC_PP(Property_Package):
         if any(i < 0 for i in xs) or any(i < 0 for i in ys):
             return -5
         return V_over_F - VF
-
-
-    def __init__(self, UNIFAC_groups, VaporPressures, Tms=None, Tcs=None, Pcs=None):
-        self.UNIFAC_groups = UNIFAC_groups
-        self.VaporPressures = VaporPressures
-        self.Tms = Tms
-        self.Tcs = Tcs
-        self.Pcs = Pcs
-        self.cmps = range(len(VaporPressures))
-        
-        # Pre-calculate some of the inputs UNIFAC uses
-        self.rs = []
-        self.qs = []
-        for groups in self.UNIFAC_groups:
-            ri = 0.
-            qi = 0.
-            for group, count in groups.items():
-                ri += subgroups[group].R*count
-                qi += subgroups[group].Q*count
-            self.rs.append(ri)
-            self.qs.append(qi)
-        
-
-        self.group_counts = {}
-        for groups in self.UNIFAC_groups:
-            for group, count in groups.items():
-                if group in self.group_counts:
-                    self.group_counts[group] += count
-                else:
-                    self.group_counts[group] = count
-        self.UNIFAC_cached_inputs = (self.rs, self.qs, self.group_counts)
 
     def _T_VF_err(self, P, T, zs, Psats, Pmax, V_over_F_goal=1):
         if P < 0 or P > Pmax:
@@ -299,8 +352,37 @@ class UNIFAC_PP(Property_Package):
         except:
             return 1
 
-    def Ks(self, P, Psats, gammas):
-        return [K_value(P=P, Psat=Psat, gamma=gamma) for Psat, gamma in zip(Psats, gammas)]
+    def Ks(self, T, P, xs, ys, Psats):
+        gammas = self.gammas(T=T, xs=xs)
+        if self.use_phis:
+            phis_g = self.phis_g(T=T, P=P, ys=ys)
+            phis_l = self.phis_g(T=T, P=P, ys=xs)
+            if self.use_Poynting:
+                Poyntings = self.Poyntings(T=T, P=P, Psats=Psats)
+                return [K_value(P=P, Psat=Psats[i], gamma=gammas[i], 
+                                phi_l=phis_l[i], phis_g=phis_g[i], Poynting=Poyntings[i]) for i in self.cmps]
+            return [K_value(P=P, Psat=Psats[i], gamma=gammas[i], 
+                            phi_l=phis_l[i], phis_g=phis_g[i]) for i in self.cmps]
+        if self.use_Poynting:
+            Poyntings = self.Poyntings(T=T, P=P, Psats=Psats)
+            Ks = [K_value(P=P, Psat=Psats[i], gamma=gammas[i], Poynting=Poyntings[i]) for i in self.cmps]
+#            print(Ks, 'hi', Poyntings)
+            return Ks
+        Ks = [K_value(P=P, Psat=Psats[i], gamma=gammas[i]) for i in self.cmps]
+#        print(Ks, 'hi')
+        return Ks
+    
+    def Poyntings(self, T, P, Psats):
+        Vmls = [VolumeLiquid(T=T, P=P) for VolumeLiquid in self.VolumeLiquids]
+        return [exp(Vml*(P-Psat)/(R*T)) for Psat, Vml in zip(Psats, Vmls)]
+
+    def phis_g(self, T, P, ys):
+        return self.eos_mix(T=T, P=P, zs=ys, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas).phis_g
+
+    def phis_l(self, T, P, xs):
+        P_sat_eos = [i.Psat(T) for i in self.eos_pure_instances]
+        return [i.to_TP(T=T, P=Psat).phi_l for i, Psat in zip(self.eos_pure_instances, P_sat_eos)]    
+
 
     def _Psats(self, Psats=None, T=None):
         if Psats is None:
@@ -320,16 +402,14 @@ class UNIFAC_PP(Property_Package):
         if self.retention and restart:
             V_over_F, xs, ys = restart
         else:
-            gammas = UNIFAC(chemgroups=self.UNIFAC_groups, T=T, xs=zs, cached=self.UNIFAC_cached_inputs)
-            Ks = self.Ks(P, Psats, gammas)
+            Ks = self.Ks(T, P, zs, zs, Psats)
             V_over_F, xs, ys = flash_inner_loop(zs, Ks)
         for i in range(100):
             if any(i < 0 for i in xs):
                 xs = zs
             if any(i < 0 for i in ys):
                 ys = zs
-            gammas = UNIFAC(chemgroups=self.UNIFAC_groups, T=T, xs=xs, cached=self.UNIFAC_cached_inputs)
-            Ks = self.Ks(P, Psats, gammas)
+            Ks = self.Ks(T, P, xs, ys, Psats)
             V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks)
             err = (sum([abs(x_new - x_old) for x_new, x_old in zip(xs_new, xs)]) +
                   sum([abs(y_new - y_old) for y_new, y_old in zip(ys_new, ys)]))
@@ -337,30 +417,16 @@ class UNIFAC_PP(Property_Package):
             if err < 1E-7:
                 break
         return V_over_F, xs, ys
+    
 
-    def flash(self, zs, T=None, P=None, VF=None):
-        zs = [i if i != 0 else 1E-11 for i in zs]
+    
+    def gammas(self, T, xs):
+        raise Exception(NotImplemented)
 
-        if T is not None and P is not None:
-            phase, xs, ys, V_over_F = self.flash_TP_zs(T=T, P=P, zs=zs)
-        elif T is not None and VF is not None:
-            phase, xs, ys, V_over_F, P = self.flash_TVF_zs(T=T, VF=VF, zs=zs)
-        elif P is not None and VF is not None:
-            phase, xs, ys, V_over_F, T = self.flash_PVF_zs(P=P, VF=VF, zs=zs)
-        else:
-            raise Exception('Unsupported flash requested')
-        self.T = T
-        self.P = P
-        self.V_over_F = V_over_F
-        self.phase = phase
-        self.xs = xs
-        self.ys = ys
-        self.zs = zs
-        
     def P_bubble_at_T(self, T, zs, Psats=None):
         # Returns P_bubble; only thing easy to calculate
         Psats = self._Psats(Psats, T)
-        gammas = UNIFAC(chemgroups=self.UNIFAC_groups, T=T, xs=zs, cached=self.UNIFAC_cached_inputs)
+        gammas = self.gammas(T=T, xs=zs)
         return sum([gammas[i]*zs[i]*Psats[i] for i in self.cmps])
 
     def P_dew_at_T(self, T, zs, Psats=None):
@@ -415,4 +481,89 @@ class UNIFAC_PP(Property_Package):
             T = ridder(self._P_VF_err, min(self.Tms), min(self.Tcs), args=(P, VF, zs))
             V_over_F, xs, ys = self._flash_sequential_substitution_TP(T=T, P=P, zs=zs)
         return 'l/g', xs, ys, V_over_F, T
+
+
+
+class UNIFAC_PP(Activity_PP):
+    
+
+    def __init__(self, UNIFAC_groups, VaporPressures, Tms=None, Tcs=None, Pcs=None,
+                 omegas=None, VolumeLiquids=None, eos=None, eos_mix=None):
+        self.UNIFAC_groups = UNIFAC_groups
+        self.VaporPressures = VaporPressures
+        self.Tms = Tms
+        self.Tcs = Tcs
+        self.Pcs = Pcs
+        self.VolumeLiquids = VolumeLiquids
+        self.omegas = omegas
+        self.eos = eos
+        self.eos_mix = eos_mix
+        self.cmps = range(len(VaporPressures))
+
+        if eos:
+            self.eos_pure_instances = [eos(Tc=Tcs[i], Pc=Pcs[i], omega=omegas[i], T=Tcs[i]*0.5, P=Pcs[i]*0.1) for i in self.cmps]
+        
+        # Pre-calculate some of the inputs UNIFAC uses
+        self.rs = []
+        self.qs = []
+        for groups in self.UNIFAC_groups:
+            ri = 0.
+            qi = 0.
+            for group, count in groups.items():
+                ri += UFSG[group].R*count
+                qi += UFSG[group].Q*count
+            self.rs.append(ri)
+            self.qs.append(qi)
+        
+
+        self.group_counts = {}
+        for groups in self.UNIFAC_groups:
+            for group, count in groups.items():
+                if group in self.group_counts:
+                    self.group_counts[group] += count
+                else:
+                    self.group_counts[group] = count
+        self.UNIFAC_cached_inputs = (self.rs, self.qs, self.group_counts)
+
+    def gammas(self, T, xs, cached=None):
+        return UNIFAC(chemgroups=self.UNIFAC_groups, T=T, xs=xs, cached=self.UNIFAC_cached_inputs)
+
+
+
+class UNIFAC_Dortmund_PP(Activity_PP):
+
+    def __init__(self, UNIFAC_groups, VaporPressures, Tms=None, Tcs=None, Pcs=None):
+        self.UNIFAC_groups = UNIFAC_groups
+        self.VaporPressures = VaporPressures
+        self.Tms = Tms
+        self.Tcs = Tcs
+        self.Pcs = Pcs
+        self.cmps = range(len(VaporPressures))
+        
+        # Pre-calculate some of the inputs UNIFAC uses
+        self.rs = []
+        self.qs = []
+        for groups in self.UNIFAC_groups:
+            ri = 0.
+            qi = 0.
+            for group, count in groups.items():
+                ri += DOUFSG[group].R*count
+                qi += DOUFSG[group].Q*count
+            self.rs.append(ri)
+            self.qs.append(qi)
+        
+
+        self.group_counts = {}
+        for groups in self.UNIFAC_groups:
+            for group, count in groups.items():
+                if group in self.group_counts:
+                    self.group_counts[group] += count
+                else:
+                    self.group_counts[group] = count
+        self.UNIFAC_cached_inputs = (self.rs, self.qs, self.group_counts)
+
+    def gammas(self, T, xs, cached=None):
+        return UNIFAC(chemgroups=self.UNIFAC_groups, T=T, xs=xs, 
+                      cached=self.UNIFAC_cached_inputs,
+                      subgroup_data=DOUFSG, interaction_data=DOUFIP2006, modified=True)
 

@@ -52,7 +52,7 @@ from thermo.environment import GWP, ODP, logP
 from thermo.law import legal_status, economic_status
 from thermo.refractivity import refractive_index
 from thermo.electrochem import conductivity
-from thermo.elements import atom_fractions, mass_fractions, similarity_variable, atoms_to_Hill, simple_formula_parser
+from thermo.elements import atom_fractions, mass_fractions, similarity_variable, atoms_to_Hill, simple_formula_parser, molecular_weight
 from thermo.coolprop import has_CoolProp
 from thermo.eos import *
 from thermo.eos_mix import *
@@ -384,23 +384,36 @@ class Chemical(object): # pragma: no cover
         return '<Chemical [%s], T=%.2f K, P=%.0f Pa>' %(self.name, self.T, self.P)
     
     def __init__(self, ID, T=298.15, P=101325):
-        self.ID = ID
+        if isinstance(ID, dict):
+            self.CAS = ID['CASRN']
+            self.ID = self.name = ID['name']
+            self.formula = ID['formula']
+            self.MW = ID['MW'] if 'MW' in ID else molecular_weight(simple_formula_parser(self.formula))
+            self.PubChem = ID['PubChem'] if 'PubChem' in ID else None
+            self.smiles = ID['smiles'] if 'smiles' in ID else None
+            self.InChI = ID['InChI'] if 'InChI' in ID else None
+            self.InChI_Key = ID['InChI_Key'] if 'InChI_Key' in ID else None
+            self.synonyms = ID['synonyms'] if 'synonyms' in ID else None
+        else:
+            self.ID = ID
+            # Identification
+            self.CAS = CASfromAny(ID)
 
-        # Identification
-        self.CAS = CASfromAny(ID)
+        
         if self.CAS in _chemical_cache and caching:
             self.__dict__.update(_chemical_cache[self.CAS].__dict__)
             self.calculate(T, P)
         else:
-            self.PubChem = PubChem(self.CAS)
-            self.MW = MW(self.CAS)
-            self.formula = formula(self.CAS)
-            self.smiles = smiles(self.CAS)
-            self.InChI = InChI(self.CAS)
-            self.InChI_Key = InChI_Key(self.CAS)
-            self.IUPAC_name = IUPAC_name(self.CAS).lower()
-            self.name = name(self.CAS).lower()
-            self.synonyms = synonyms(self.CAS)
+            if not isinstance(ID, dict):
+                self.PubChem = PubChem(self.CAS)
+                self.MW = MW(self.CAS)
+                self.formula = formula(self.CAS)
+                self.smiles = smiles(self.CAS)
+                self.InChI = InChI(self.CAS)
+                self.InChI_Key = InChI_Key(self.CAS)
+                self.IUPAC_name = IUPAC_name(self.CAS).lower()
+                self.name = name(self.CAS).lower()
+                self.synonyms = synonyms(self.CAS)
     
             self.atoms = simple_formula_parser(self.formula)
             self.similarity_variable = similarity_variable(self.atoms, self.MW)

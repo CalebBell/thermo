@@ -160,7 +160,7 @@ def test_UNIFAC_PP():
 
     # Low pressure ethanol-water ideal TP flash
     phase, xs, ys, V_over_F = vodka.flash_TP_zs(m.T, m.P, m.zs)
-    V_over_F_expect = 0.7522885045317019
+    V_over_F_expect = 0.7522885045317019    
     xs_expect = [0.2761473052710751, 0.7238526947289249]
     ys_expect = [0.5737096013588943, 0.42629039864110585]
     assert phase == 'l/g'
@@ -237,4 +237,57 @@ def test_UNIFAC_PP_fuzz():
         assert_allclose(xs_known, vodka.xs)
         assert_allclose(T_known, vodka.T)
         assert vodka.phase == phase_known
+
+
+def test_UNIFAC_Dortmund_PP():
+    m = Mixture(['ethanol', 'water'], zs=[0.5, 0.5], P=6500, T=298.15)
+    vodka = UNIFAC_Dortmund_PP(UNIFAC_groups=m.UNIFAC_Dortmund_groups, VaporPressures=m.VaporPressures, 
+                               Tms=m.Tms, Tcs=m.Tcs, Pcs=m.Pcs)
+    # Low pressure ethanol-water ideal TP flash
+    phase, xs, ys, V_over_F = vodka.flash_TP_zs(m.T, m.P, m.zs)
+    V_over_F_expect = 0.721802969194136
+    xs_expect = [0.26331608196660095, 0.736683918033399]
+    ys_expect = [0.5912226272910779, 0.408777372708922]
+    assert phase == 'l/g'
+    assert_allclose(xs, xs_expect)
+    assert_allclose(ys, ys_expect)
+    assert_allclose(V_over_F, V_over_F_expect)
+    # Same flash with T-VF spec
+    phase, xs, ys, V_over_F, P = vodka.flash_TVF_zs(m.T, V_over_F_expect, m.zs)
+    assert phase == 'l/g'
+    assert_allclose(xs, xs_expect, rtol=1E-5)
+    assert_allclose(ys, ys_expect, rtol=1E-5)
+    assert_allclose(V_over_F, V_over_F_expect, rtol=1E-5)
+    # Same flash with P-VF spec
+    phase, xs, ys, V_over_F, T = vodka.flash_PVF_zs(m.P, V_over_F_expect, m.zs)
+    assert phase == 'l/g'
+    assert_allclose(xs, xs_expect, rtol=1E-5)
+    assert_allclose(ys, ys_expect, rtol=1E-5)
+    assert_allclose(V_over_F, V_over_F_expect, rtol=1E-5)
+    
+    # Test the flash interface directly
+    T_known = m.T
+    V_over_F_known = V_over_F_expect
+    zs = m.zs
+    
+    vodka.flash(T=T_known, VF=V_over_F_known, zs=zs)
+    
+    P_known = vodka.P
+    xs_known = vodka.xs
+    ys_known = vodka.ys
+    phase_known = vodka.phase
+    
+    # test TP flash gives the same as TVF
+    vodka.flash(T=T_known, P=P_known, zs=zs)    
+    assert_allclose(V_over_F_known, vodka.V_over_F)
+    assert_allclose(xs_known, vodka.xs)
+    assert_allclose(ys_known, vodka.ys)
+    assert vodka.phase == phase_known
+    # Test PVF flash gives same as well
+    vodka.flash(VF=V_over_F_known, P=P_known, zs=zs)
+    assert_allclose(xs_known, vodka.xs)
+    assert_allclose(ys_known, vodka.ys)
+    assert_allclose(xs_known, vodka.xs)
+    assert_allclose(T_known, vodka.T)
+    assert vodka.phase == phase_known
 
