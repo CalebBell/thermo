@@ -341,9 +341,7 @@ class Activity_PP(Property_Package):
         if P < 0 or P > Pmax:
             return 1 
         try:
-            
             V_over_F, xs, ys = self._flash_sequential_substitution_TP(T=T, P=P, zs=zs, Psats=Psats, restart=self.__TVF_solve_cache)
-
             if any(i < 0 for i in xs) or any(i < 0 for i in ys):
                 return -10000*(Pmax-P)/Pmax
             self.__TVF_solve_cache = (V_over_F, xs, ys)
@@ -356,20 +354,19 @@ class Activity_PP(Property_Package):
         gammas = self.gammas(T=T, xs=xs)
         if self.use_phis:
             phis_g = self.phis_g(T=T, P=P, ys=ys)
-            phis_l = self.phis_g(T=T, P=P, ys=xs)
+            phis_l = self.phis_l(T=T, P=P, xs=xs)
+#            print(phis_l, phis_g, [i/j for i, j in zip(phis_l, phis_g)])
             if self.use_Poynting:
                 Poyntings = self.Poyntings(T=T, P=P, Psats=Psats)
                 return [K_value(P=P, Psat=Psats[i], gamma=gammas[i], 
-                                phi_l=phis_l[i], phis_g=phis_g[i], Poynting=Poyntings[i]) for i in self.cmps]
+                                phi_l=phis_l[i], phi_g=phis_g[i], Poynting=Poyntings[i]) for i in self.cmps]
             return [K_value(P=P, Psat=Psats[i], gamma=gammas[i], 
-                            phi_l=phis_l[i], phis_g=phis_g[i]) for i in self.cmps]
+                            phi_l=phis_l[i], phi_g=phis_g[i]) for i in self.cmps]
         if self.use_Poynting:
             Poyntings = self.Poyntings(T=T, P=P, Psats=Psats)
             Ks = [K_value(P=P, Psat=Psats[i], gamma=gammas[i], Poynting=Poyntings[i]) for i in self.cmps]
-#            print(Ks, 'hi', Poyntings)
             return Ks
         Ks = [K_value(P=P, Psat=Psats[i], gamma=gammas[i]) for i in self.cmps]
-#        print(Ks, 'hi')
         return Ks
     
     def Poyntings(self, T, P, Psats):
@@ -427,7 +424,13 @@ class Activity_PP(Property_Package):
         # Returns P_bubble; only thing easy to calculate
         Psats = self._Psats(Psats, T)
         gammas = self.gammas(T=T, xs=zs)
-        return sum([gammas[i]*zs[i]*Psats[i] for i in self.cmps])
+        P = sum([gammas[i]*zs[i]*Psats[i] for i in self.cmps])
+        if self.use_Poynting:
+            # This is not really necessary; and 3 is more than enough iterations
+            for i in range(3):
+                Poyntings = self.Poyntings(T=T, P=P, Psats=Psats)
+                P = sum([gammas[i]*zs[i]*Psats[i]*Poyntings[i] for i in self.cmps])
+        return P
 
     def P_dew_at_T(self, T, zs, Psats=None):
         Psats = self._Psats(Psats, T)
