@@ -363,3 +363,4 @@ def economic_status(CASRN, Method=None, AvailableMethods=False):  # pragma: no c
     else:
         raise Exception('Failure in in function')
     return status
+

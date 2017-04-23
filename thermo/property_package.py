@@ -340,15 +340,15 @@ class Activity_PP(Property_Package):
     def _T_VF_err(self, P, T, zs, Psats, Pmax, V_over_F_goal=1):
         if P < 0 or P > Pmax:
             return 1 
-        try:
-            V_over_F, xs, ys = self._flash_sequential_substitution_TP(T=T, P=P, zs=zs, Psats=Psats, restart=self.__TVF_solve_cache)
-            if any(i < 0 for i in xs) or any(i < 0 for i in ys):
-                return -10000*(Pmax-P)/Pmax
-            self.__TVF_solve_cache = (V_over_F, xs, ys)
-            ans = -(V_over_F-V_over_F_goal)
-            return ans
-        except:
-            return 1
+#        try:
+        V_over_F, xs, ys = self._flash_sequential_substitution_TP(T=T, P=P, zs=zs, Psats=Psats, restart=self.__TVF_solve_cache)
+        if any(i < 0 for i in xs) or any(i < 0 for i in ys):
+            return -100000*(Pmax-P)/Pmax
+        self.__TVF_solve_cache = (V_over_F, xs, ys)
+        ans = -(V_over_F-V_over_F_goal)
+        return ans
+#        except:
+#            return 1
 
     def Ks(self, T, P, xs, ys, Psats):
         gammas = self.gammas(T=T, xs=xs)
@@ -425,18 +425,32 @@ class Activity_PP(Property_Package):
         Psats = self._Psats(Psats, T)
         gammas = self.gammas(T=T, xs=zs)
         P = sum([gammas[i]*zs[i]*Psats[i] for i in self.cmps])
-        if self.use_Poynting:
+        if self.use_Poynting and not self.use_phis:
             # This is not really necessary; and 3 is more than enough iterations
             for i in range(3):
                 Poyntings = self.Poyntings(T=T, P=P, Psats=Psats)
                 P = sum([gammas[i]*zs[i]*Psats[i]*Poyntings[i] for i in self.cmps])
+        elif self.use_phis:
+            for i in range(5):
+                phis_l = self.phis_l(T=T, P=P, xs=zs)
+                if self.use_Poynting:
+                    Poyntings = self.Poyntings(T=T, P=P, Psats=Psats)
+                    P = sum([gammas[i]*zs[i]*Psats[i]*Poyntings[i]*phis_l[i] for i in self.cmps])
+                else:
+                    P = sum([gammas[i]*zs[i]*Psats[i]*phis_l[i] for i in self.cmps])
+        # TODO: support equations of state, once you get that figured out.
         return P
 
     def P_dew_at_T(self, T, zs, Psats=None):
         Psats = self._Psats(Psats, T)
         Pmax = self.P_bubble_at_T(T, zs, Psats)
         diff = 1E-7
-        P_dew = brenth(self._T_VF_err, Pmax*diff, Pmax, args=(T, zs, Psats, Pmax, 1))
+        # EOSs do not solve at very low pressure
+        if self.use_phis:
+            Pmin = max(Pmax*diff, 1)
+        else:
+            Pmin = Pmax*diff
+        P_dew = brenth(self._T_VF_err, Pmin, Pmax, args=(T, zs, Psats, Pmax, 1))
         self.__TVF_solve_cache = None
         return P_dew
 #        try:
@@ -453,7 +467,13 @@ class Activity_PP(Property_Package):
         else:
             diff = 1E-7
             Pmax = Pbubble
-            P = brenth(self._T_VF_err, Pmax*diff, Pmax, args=(T, zs, Psats, Pmax, VF))
+            # EOSs do not solve at very low pressure
+            if self.use_phis:
+                Pmin = max(Pmax*diff, 1)
+            else:
+                Pmin = Pmax*diff
+
+            P = brenth(self._T_VF_err, Pmin, Pmax, args=(T, zs, Psats, Pmax, VF))
             self.__TVF_solve_cache = None
 #            P = brenth(self._T_VF_err, Pdew, Pbubble, args=(T, VF, zs, Psats))
         V_over_F, xs, ys = self._flash_sequential_substitution_TP(T=T, P=P, zs=zs, Psats=Psats)
@@ -488,7 +508,7 @@ class Activity_PP(Property_Package):
 
 
 class UNIFAC_PP(Activity_PP):
-    
+    subgroup_data = UFSG
 
     def __init__(self, UNIFAC_groups, VaporPressures, Tms=None, Tcs=None, Pcs=None,
                  omegas=None, VolumeLiquids=None, eos=None, eos_mix=None):
@@ -513,8 +533,8 @@ class UNIFAC_PP(Activity_PP):
             ri = 0.
             qi = 0.
             for group, count in groups.items():
-                ri += UFSG[group].R*count
-                qi += UFSG[group].Q*count
+                ri += self.subgroup_data[group].R*count
+                qi += self.subgroup_data[group].Q*count
             self.rs.append(ri)
             self.qs.append(qi)
         
@@ -533,37 +553,8 @@ class UNIFAC_PP(Activity_PP):
 
 
 
-class UNIFAC_Dortmund_PP(Activity_PP):
-
-    def __init__(self, UNIFAC_groups, VaporPressures, Tms=None, Tcs=None, Pcs=None):
-        self.UNIFAC_groups = UNIFAC_groups
-        self.VaporPressures = VaporPressures
-        self.Tms = Tms
-        self.Tcs = Tcs
-        self.Pcs = Pcs
-        self.cmps = range(len(VaporPressures))
-        
-        # Pre-calculate some of the inputs UNIFAC uses
-        self.rs = []
-        self.qs = []
-        for groups in self.UNIFAC_groups:
-            ri = 0.
-            qi = 0.
-            for group, count in groups.items():
-                ri += DOUFSG[group].R*count
-                qi += DOUFSG[group].Q*count
-            self.rs.append(ri)
-            self.qs.append(qi)
-        
-
-        self.group_counts = {}
-        for groups in self.UNIFAC_groups:
-            for group, count in groups.items():
-                if group in self.group_counts:
-                    self.group_counts[group] += count
-                else:
-                    self.group_counts[group] = count
-        self.UNIFAC_cached_inputs = (self.rs, self.qs, self.group_counts)
+class UNIFAC_Dortmund_PP(UNIFAC_PP):
+    subgroup_data = DOUFSG
 
     def gammas(self, T, xs, cached=None):
         return UNIFAC(chemgroups=self.UNIFAC_groups, T=T, xs=xs, 
