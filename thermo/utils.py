@@ -1831,7 +1831,7 @@ class TDependentProperty(object):
                     plt.plot(Ts, properties, label=method)
             plt.ylabel(self.name + ', ' + self.units + '/K^%d derivative of order %d' % (order, order))
             plt.title(self.name + ' derivative of order %d' % order + ' of ' + self.CASRN)
-        plt.legend()
+        plt.legend(loc='best')
         plt.xlabel('Temperature, K')
         plt.show()
         
@@ -2677,7 +2677,7 @@ class TPDependentProperty(TDependentProperty):
             else:
                 properties = [self.calculate_P(T, P, method_P) for P in Ps]
                 plt.plot(Ps, properties, label=method_P)
-        plt.legend()
+        plt.legend(loc='best')
         plt.ylabel(self.name + ', ' + self.units)
         plt.xlabel('Pressure, Pa')
         plt.title(self.name + ' of ' + self.CASRN)
@@ -2750,7 +2750,7 @@ class TPDependentProperty(TDependentProperty):
             else:
                 properties = [self.calculate_P(T, P, method_P) for T in Ts]
                 plt.plot(Ts, properties, label=method_P)
-        plt.legend()
+        plt.legend(loc='best')
         plt.ylabel(self.name + ', ' + self.units)
         plt.xlabel('Temperature, K')
         plt.title(self.name + ' of ' + self.CASRN)
@@ -3438,7 +3438,7 @@ class MixtureProperty(object):
             else:
                 properties = [self.calculate(T, P, zs, ws, method) for P in Ps]
                 plt.plot(Ps, properties, label=method)
-        plt.legend()
+        plt.legend(loc='best')
         plt.ylabel(self.name + ', ' + self.units)
         plt.xlabel('Pressure, Pa')
         plt.title(self.name + ' of a mixture of ' + ', '.join(self.CASs) 
@@ -3517,7 +3517,7 @@ class MixtureProperty(object):
             else:
                 properties = [self.calculate(T, P, zs, ws, method) for T in Ts]
                 plt.plot(Ts, properties, label=method)
-        plt.legend()
+        plt.legend(loc='best')
         plt.ylabel(self.name + ', ' + self.units)
         plt.xlabel('Temperature, K')
         plt.title(self.name + ' of a mixture of ' + ', '.join(self.CASs) 
