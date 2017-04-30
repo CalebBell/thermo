@@ -49,17 +49,17 @@ except:
     has_matplotlib = False
 
 from math import (acos, acosh, asin, asinh, atan, atan2, atanh, ceil, copysign,
-                  cos, cosh, degrees, e, erf, erfc, exp, expm1, fabs, 
-                  factorial, floor, fmod, frexp, fsum, gamma, hypot, isinf, 
-                  isnan, ldexp, lgamma, log, log10, log1p, modf, pi, pow, 
-                  radians, sin, sinh, sqrt, tan, tanh, trunc)
+                  cos, cosh, degrees, e,  exp, expm1, fabs, 
+                  factorial, floor, fmod, frexp, fsum, hypot, isinf, 
+                  isnan, ldexp, log, log10, log1p, modf, pi, pow, 
+                  radians, sin, sinh, sqrt, tan, tanh, trunc) # Not supported in Python 2.6: erf, erfc,gamma lgamma
 
 __all__.extend(['acos', 'acosh', 'asin', 'asinh', 'atan', 'atan2', 'atanh', 
-'ceil', 'copysign', 'cos', 'cosh', 'degrees', 'e', 'erf', 'erfc', 'exp', 
-'expm1', 'fabs', 'factorial', 'floor', 'fmod', 'frexp', 'fsum', 'gamma', 
-'hypot', 'isinf', 'isnan', 'ldexp', 'lgamma', 'log', 'log10', 'log1p', 'modf', 
+'ceil', 'copysign', 'cos', 'cosh', 'degrees', 'e', 'exp', 
+'expm1', 'fabs', 'factorial', 'floor', 'fmod', 'frexp', 'fsum', 
+'hypot', 'isinf', 'isnan', 'ldexp',  'log', 'log10', 'log1p', 'modf', 
 'pi', 'pow', 'radians', 'sin', 'sinh', 'sqrt', 'tan', 'tanh', 'trunc'])
-__all__.extend(['R', 'k', 'N_A', 'calorie', 'epsilon_0'])
+__all__.extend(['R', 'k', 'N_A', 'calorie', 'epsilon_0']) # 'erf', 'erfc',  'lgamma', 'gamma', 
     
 # Obtained from SciPy 0.19 (2014 CODATA)
 # Included here so calculations are consistent across SciPy versions
