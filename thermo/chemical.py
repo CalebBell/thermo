@@ -424,8 +424,8 @@ class Chemical(object): # pragma: no cover
             self.set_eos(T=T, P=P)
             self.set_TP_sources()
             self.set_ref()
+            self.calculate(T, P)
             if len(_chemical_cache) < 1000:
-                self.calculate(T, P)
                 _chemical_cache[self.CAS] = self
 
 
