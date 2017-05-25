@@ -22,10 +22,10 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['K_value', 'Rachford_Rice_flash_error', 'Rachford_Rice_solution', 
+__all__ = ['K_value', 'Rachford_Rice_flash_error', 'Rachford_Rice_solution',
            'Li_Johns_Ahmadi_solution', 'flash_inner_loop', 'NRTL', 'Wilson',
-           'UNIQUAC', 'flash', 'dew_at_T', 
-           'bubble_at_T', 'identify_phase', 'mixture_phase_methods', 
+           'UNIQUAC', 'flash', 'dew_at_T',
+           'bubble_at_T', 'identify_phase', 'mixture_phase_methods',
            'identify_phase_mixture', 'Pbubble_mixture', 'Pdew_mixture']
 
 from scipy.optimize import fsolve, newton, brenth
@@ -39,51 +39,51 @@ def K_value(P=None, Psat=None, phi_l=None, phi_g=None, gamma=None, Poynting=1):
     r'''Calculates the equilibrium K-value assuming Raoult's law,
     or an equation of state model, or an activity coefficient model,
     or a combined equation of state-activity model.
-    
-    The calculation procedure will use the most advanced approach with the 
+
+    The calculation procedure will use the most advanced approach with the
     provided inputs:
-        
+
         * If `P`, `Psat`, `phi_l`, `phi_g`, and `gamma` are provided, use the
           combined approach.
         * If `P`, `Psat`, and `gamma` are provided, use the modified Raoult's
           law.
         * If `phi_l` and `phi_g` are provided, use the EOS only method.
         * If `P` and `Psat` are provided, use Raoult's law.
-        
+
     Definitions:
-        
+
     .. math::
         K_i=\frac{y_i}{x_i}
-        
+
     Raoult's law:
-        
+
     .. math::
         K_i = \frac{P_{i}^{sat}}{P}
-        
+
     Activity coefficient, no EOS (modified Raoult's law):
-        
+
     .. math::
         K_i = \frac{\gamma_i P_{i}^{sat}}{P}
-    
+
     Equation of state only:
-    
+
     .. math::
         K_i = \frac{\phi_i^l}{\phi_i^v} = \frac{f_i^l}{f_i^v}
-        
-    Combined approach (liquid reference fugacity coefficient is normally 
+
+    Combined approach (liquid reference fugacity coefficient is normally
     calculated the saturation pressure for it as a pure species; vapor fugacity
     coefficient calculated normally):
-        
+
     .. math::
         K_i = \frac{\gamma_i P_i^{sat} \phi_i^{l,ref}}{\phi_i^v P}
-        
+
     Combined approach, with Poynting Correction Factor (liquid molar volume in
     the integral is for i as a pure species only):
-        
+
     .. math::
         K_i = \frac{\gamma_i P_i^{sat} \phi_i^{l, ref} \exp\left[\frac{
         \int_{P_i^{sat}}^P V_i^l dP}{RT}\right]}{\phi_i^v P}
-        
+
     Parameters
     ----------
     P : float
@@ -93,10 +93,10 @@ def K_value(P=None, Psat=None, phi_l=None, phi_g=None, gamma=None, Poynting=1):
     phi_l : float
         Fugacity coefficient of species i in the liquid phase, either
         at the system conditions (EOS-only case) or at the saturation pressure
-        of species i as a pure species (reference condition for the combined 
+        of species i as a pure species (reference condition for the combined
         approach), optional [-]
     phi_g : float
-        Fugacity coefficient of species i in the vapor phase at the system 
+        Fugacity coefficient of species i in the vapor phase at the system
         conditions, optional [-]
     gamma : float
         Activity coefficient of species i in the liquid phase, optional [-]
@@ -113,43 +113,43 @@ def K_value(P=None, Psat=None, phi_l=None, phi_g=None, gamma=None, Poynting=1):
     -----
     The Poynting correction factor is normally simplified as follows, due to
     a liquid's low pressure dependency:
-        
+
     .. math::
-        K_i = \frac{\gamma_i P_i^{sat} \phi_i^{l, ref} \exp\left[\frac{V_l 
+        K_i = \frac{\gamma_i P_i^{sat} \phi_i^{l, ref} \exp\left[\frac{V_l
         (P-P_i^{sat})}{RT}\right]}{\phi_i^v P}
-    
+
     Examples
     --------
     Raoult's law:
-    
+
     >>> K_value(101325, 3000.)
     0.029607698001480384
-    
+
     Modified Raoult's law:
-    
+
     >>> K_value(P=101325, Psat=3000, gamma=0.9)
     0.026646928201332347
-    
+
     EOS-only approach:
-    
+
     >>> K_value(phi_l=1.6356, phi_g=0.88427)
     1.8496613025433408
-    
+
     Gamma-phi combined approach:
-        
+
     >>> K_value(P=1E6, Psat=1938800, phi_l=1.4356, phi_g=0.88427, gamma=0.92)
     2.8958055544121137
-    
+
     Gamma-phi combined approach with a Poynting factor:
-    
-    >>> K_value(P=1E6, Psat=1938800, phi_l=1.4356, phi_g=0.88427, gamma=0.92, 
+
+    >>> K_value(P=1E6, Psat=1938800, phi_l=1.4356, phi_g=0.88427, gamma=0.92,
     ... Poynting=0.999)
     2.8929097488577016
-        
+
     References
     ----------
-    .. [1] Gmehling, Jurgen, Barbel Kolbe, Michael Kleiber, and Jurgen Rarey. 
-       Chemical Thermodynamics for Process Simulation. 1st edition. Weinheim: 
+    .. [1] Gmehling, Jurgen, Barbel Kolbe, Michael Kleiber, and Jurgen Rarey.
+       Chemical Thermodynamics for Process Simulation. 1st edition. Weinheim:
        Wiley-VCH, 2012.
     .. [2] Skogestad, Sigurd. Chemical and Energy Process Engineering. 1st
        edition. Boca Raton, FL: CRC Press, 2008.
@@ -165,7 +165,7 @@ def K_value(P=None, Psat=None, phi_l=None, phi_g=None, gamma=None, Poynting=1):
     except TypeError:
         raise Exception('Input must consist of one set from (P, Psat, phi_l, \
 phi_g, gamma), (P, Psat, gamma), (phi_l, phi_g), (P, Psat)')
-    
+
 
 
 
@@ -174,9 +174,9 @@ phi_g, gamma), (P, Psat, gamma), (phi_l, phi_g), (P, Psat)')
 def Rachford_Rice_flash_error(V_over_F, zs, Ks):
     r'''Calculates the objective function of the Rachford-Rice flash equation.
     This function should be called by a solver seeking a solution to a flash
-    calculation. The unknown variable is `V_over_F`, for which a solution 
+    calculation. The unknown variable is `V_over_F`, for which a solution
     must be between 0 and 1.
-    
+
     .. math::
         \sum_i \frac{z_i(K_i-1)}{1 + \frac{V}{F}(K_i-1)} = 0
 
@@ -198,29 +198,29 @@ def Rachford_Rice_flash_error(V_over_F, zs, Ks):
     Notes
     -----
     The derivation is as follows:
-    
+
     .. math::
         F z_i = L x_i + V y_i
-        
+
         x_i = \frac{z_i}{1 + \frac{V}{F}(K_i-1)}
-        
+
         \sum_i y_i = \sum_i K_i x_i = 1
-        
+
         \sum_i(y_i - x_i)=0
-        
+
         \sum_i \frac{z_i(K_i-1)}{1 + \frac{V}{F}(K_i-1)} = 0
 
     Examples
     --------
-    >>> Rachford_Rice_flash_error(0.5, zs=[0.5, 0.3, 0.2], 
+    >>> Rachford_Rice_flash_error(0.5, zs=[0.5, 0.3, 0.2],
     ... Ks=[1.685, 0.742, 0.532])
     0.04406445591174976
 
     References
     ----------
     .. [1] Rachford, H. H. Jr, and J. D. Rice. "Procedure for Use of Electronic
-       Digital Computers in Calculating Flash Vaporization Hydrocarbon 
-       Equilibrium." Journal of Petroleum Technology 4, no. 10 (October 1, 
+       Digital Computers in Calculating Flash Vaporization Hydrocarbon
+       Equilibrium." Journal of Petroleum Technology 4, no. 10 (October 1,
        1952): 19-3. doi:10.2118/952327-G.
     '''
     return sum([zi*(Ki-1.)/(1.+V_over_F*(Ki-1.)) for Ki, zi in zip(Ks, zs)])
@@ -229,7 +229,7 @@ def Rachford_Rice_flash_error(V_over_F, zs, Ks):
 def Rachford_Rice_solution(zs, Ks):
     r'''Solves the objective function of the Rachford-Rice flash equation.
     Uses the method proposed in [2]_ to obtain an initial guess.
-    
+
     .. math::
         \sum_i \frac{z_i(K_i-1)}{1 + \frac{V}{F}(K_i-1)} = 0
 
@@ -252,24 +252,24 @@ def Rachford_Rice_solution(zs, Ks):
     Notes
     -----
     The initial guess is the average of the following, as described in [2]_.
-    
+
     .. math::
-        \left(\frac{V}{F}\right)_{min} = \frac{(K_{max}-K_{min})z_{of\;K_{max}} 
+        \left(\frac{V}{F}\right)_{min} = \frac{(K_{max}-K_{min})z_{of\;K_{max}}
         - (1-K_{min})}{(1-K_{min})(K_{max}-1)}
 
         \left(\frac{V}{F}\right)_{max} = \frac{1}{1-K_{min}}
-    
+
     Another algorithm for determining the range of the correct solution is
     given in [3]_; [2]_ provides a narrower range however. For both cases,
     each guess should be limited to be between 0 and 1 as they are often
     negative or larger than 1.
-    
+
     .. math::
         \left(\frac{V}{F}\right)_{min} = \frac{1}{1-K_{max}}
-        
+
         \left(\frac{V}{F}\right)_{max} = \frac{1}{1-K_{min}}
 
-    If the `newton` method does not converge, a bisection method (brenth) is 
+    If the `newton` method does not converge, a bisection method (brenth) is
     used instead. However, it is somewhat slower, especially as newton will
     attempt 50 iterations before giving up.
 
@@ -281,16 +281,16 @@ def Rachford_Rice_solution(zs, Ks):
     References
     ----------
     .. [1] Rachford, H. H. Jr, and J. D. Rice. "Procedure for Use of Electronic
-       Digital Computers in Calculating Flash Vaporization Hydrocarbon 
-       Equilibrium." Journal of Petroleum Technology 4, no. 10 (October 1, 
+       Digital Computers in Calculating Flash Vaporization Hydrocarbon
+       Equilibrium." Journal of Petroleum Technology 4, no. 10 (October 1,
        1952): 19-3. doi:10.2118/952327-G.
     .. [2] Li, Yinghui, Russell T. Johns, and Kaveh Ahmadi. "A Rapid and Robust
-       Alternative to Rachford-Rice in Flash Calculations." Fluid Phase 
-       Equilibria 316 (February 25, 2012): 85-97. 
+       Alternative to Rachford-Rice in Flash Calculations." Fluid Phase
+       Equilibria 316 (February 25, 2012): 85-97.
        doi:10.1016/j.fluid.2011.12.005.
-    .. [3] Whitson, Curtis H., and Michael L. Michelsen. "The Negative Flash." 
-       Fluid Phase Equilibria, Proceedings of the Fifth International 
-       Conference, 53 (December 1, 1989): 51-71. 
+    .. [3] Whitson, Curtis H., and Michael L. Michelsen. "The Negative Flash."
+       Fluid Phase Equilibria, Proceedings of the Fifth International
+       Conference, 53 (December 1, 1989): 51-71.
        doi:10.1016/0378-3812(89)80072-X.
     '''
     Kmin = min(Ks)
@@ -299,7 +299,7 @@ def Rachford_Rice_solution(zs, Ks):
 
     V_over_F_min = ((Kmax-Kmin)*z_of_Kmax - (1.-Kmin))/((1.-Kmin)*(Kmax-1.))
     V_over_F_max = 1./(1.-Kmin)
-        
+
     V_over_F_min2 = max(0., V_over_F_min)
     V_over_F_max2 = min(1., V_over_F_max)
 
@@ -323,9 +323,9 @@ def Rachford_Rice_solution(zs, Ks):
 def Li_Johns_Ahmadi_solution(zs, Ks):
     r'''Solves the objective function of the Li-Johns-Ahmadi flash equation.
     Uses the method proposed in [1]_ to obtain an initial guess.
-    
+
     .. math::
-        0 = 1 + \left(\frac{K_{max}-K_{min}}{K_{min}-1}\right)x_1 
+        0 = 1 + \left(\frac{K_{max}-K_{min}}{K_{min}-1}\right)x_1
         + \sum_{i=2}^{n-1}\frac{K_i-K_{min}}{K_{min}-1}\left[\frac{z_i(K_{max}
         -1)x_{max}}{(K_i-1)z_{max} + (K_{max}-K_i)x_{max}}\right]
 
@@ -351,15 +351,15 @@ def Li_Johns_Ahmadi_solution(zs, Ks):
     Each guess should be limited to be between 0 and 1 as they are often
     negative or larger than 1. `max` refers to the corresponding mole fractions
     for the species with the largest K value.
-    
+
     .. math::
         \left(\frac{1-K_{min}}{K_{max}-K_{min}}\right)z_{max}\le x_{max} \le
         \left(\frac{1-K_{min}}{K_{max}-K_{min}}\right)
-        
-    If the `newton` method does not converge, a bisection method (brenth) is 
+
+    If the `newton` method does not converge, a bisection method (brenth) is
     used instead. However, it is somewhat slower, especially as newton will
     attempt 50 iterations before giving up.
-        
+
     This method does not work for problems of only two components.
     K values are sorted internally. Has not been found to be quicker than the
     Rachford-Rice equation.
@@ -372,14 +372,14 @@ def Li_Johns_Ahmadi_solution(zs, Ks):
     References
     ----------
     .. [1] Li, Yinghui, Russell T. Johns, and Kaveh Ahmadi. "A Rapid and Robust
-       Alternative to Rachford-Rice in Flash Calculations." Fluid Phase 
-       Equilibria 316 (February 25, 2012): 85-97. 
+       Alternative to Rachford-Rice in Flash Calculations." Fluid Phase
+       Equilibria 316 (February 25, 2012): 85-97.
        doi:10.1016/j.fluid.2011.12.005.
     '''
     # Re-order both Ks and Zs by K value, higher coming first
     p = sorted(zip(Ks,zs), reverse=True)
     Ks_sorted, zs_sorted = [K for (K,z) in p], [z for (K,z) in p]
-    
+
 
     # Largest K value and corresponding overall mole fraction
     k1 = Ks_sorted[0]
@@ -389,17 +389,17 @@ def Li_Johns_Ahmadi_solution(zs, Ks):
 
     x_min = (1. - kn)/(k1 - kn)*z1
     x_max = (1. - kn)/(k1 - kn)
-    
+
     x_min2 = max(0., x_min)
     x_max2 = min(1., x_max)
-    
+
     x_guess = (x_min2 + x_max2)*0.5
-    
+
     length = len(zs)-1
     kn_m_1 = kn-1.
     k1_m_1 = (k1-1.)
     t1 = (k1-kn)/(kn-1.)
-    
+
     objective = lambda x1: 1. + t1*x1 + sum([(ki-kn)/(kn_m_1) * zi*k1_m_1*x1 /( (ki-1.)*z1 + (k1-ki)*x1) for ki, zi in zip(Ks_sorted[1:length], zs_sorted[1:length])])
     try:
         x1 = newton(objective, x_guess)
@@ -424,7 +424,7 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None):
     calculation, solving for liquid and gas mole fractions and vapor fraction
     based on specified overall mole fractions and K values. As K values are
     weak functions of composition, this should be called repeatedly by an outer
-    loop. Will automatically select an algorithm to use if no Method is 
+    loop. Will automatically select an algorithm to use if no Method is
     provided. Should always provide a solution.
 
     The automatic algorithm selection will try an analytical solution, and use
@@ -446,14 +446,14 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None):
     ys : list[float]
         Mole fractions of each species in the vapor phase, [-]
     methods : list, only returned if AvailableMethods == True
-        List of methods which can be used to obtain a solution with the given 
+        List of methods which can be used to obtain a solution with the given
         inputs
 
     Other Parameters
     ----------------
     Method : string, optional
-        The method name to use. Accepted methods are 'Analytical', 
-        'Rachford-Rice', and 'Li-Johns-Ahmadi'. All valid values are also held  
+        The method name to use. Accepted methods are 'Analytical',
+        'Rachford-Rice', and 'Li-Johns-Ahmadi'. All valid values are also held
         in the list `flash_inner_loop_methods`.
     AvailableMethods : bool, optional
         If True, function will determine which methods can be used to obtain
@@ -512,22 +512,22 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None):
         raise Exception('Incorrect Method input')
 
 
-def NRTL(xs, taus, alphas): 
-    r'''Calculates the activity coefficients of each species in a mixture 
+def NRTL(xs, taus, alphas):
+    r'''Calculates the activity coefficients of each species in a mixture
     using the Non-Random Two-Liquid (NRTL) method, given their mole fractions,
     dimensionless interaction parameters, and nonrandomness constants. Those
     are normally correlated with temperature in some form, and need to be
     calculated separately.
-    
+
     .. math::
         \ln(\gamma_i)=\frac{\displaystyle\sum_{j=1}^{n}{x_{j}\tau_{ji}G_{ji}}}
         {\displaystyle\sum_{k=1}^{n}{x_{k}G_{ki}}}+\sum_{j=1}^{n}
         {\frac{x_{j}G_{ij}}{\displaystyle\sum_{k=1}^{n}{x_{k}G_{kj}}}}
         {\left ({\tau_{ij}-\frac{\displaystyle\sum_{m=1}^{n}{x_{m}\tau_{mj}
         G_{mj}}}{\displaystyle\sum_{k=1}^{n}{x_{k}G_{kj}}}}\right )}
-    
+
         G_{ij}=\text{exp}\left ({-\alpha_{ij}\tau_{ij}}\right )
-        
+
     Parameters
     ----------
     xs : list[float]
@@ -545,35 +545,35 @@ def NRTL(xs, taus, alphas):
 
     Notes
     -----
-    This model needs N^2 parameters. 
-    
+    This model needs N^2 parameters.
+
     One common temperature dependence of the nonrandomness constants is:
-        
+
     .. math::
         \alpha_{ij}=c_{ij}+d_{ij}T
-        
+
     Most correlations for the interaction parameters include some of the terms
     shown in the following form:
-        
+
     .. math::
         \tau_{ij}=A_{ij}+\frac{B_{ij}}{T}+\frac{C_{ij}}{T^{2}}+D_{ij}
         \ln{\left ({T}\right )}+E_{ij}T^{F_{ij}}
-    
+
     Examples
     --------
     Ethanol-water example, at 343.15 K and 1 MPa:
-        
-    >>> NRTL(xs=[0.252, 0.748], taus=[[0, -0.178], [1.963, 0]], 
+
+    >>> NRTL(xs=[0.252, 0.748], taus=[[0, -0.178], [1.963, 0]],
     ... alphas=[[0, 0.2974],[.2974, 0]])
     [1.9363183763514304, 1.1537609663170014]
-    
+
     References
     ----------
-    .. [1] Renon, Henri, and J. M. Prausnitz. "Local Compositions in 
-       Thermodynamic Excess Functions for Liquid Mixtures." AIChE Journal 14, 
+    .. [1] Renon, Henri, and J. M. Prausnitz. "Local Compositions in
+       Thermodynamic Excess Functions for Liquid Mixtures." AIChE Journal 14,
        no. 1 (1968): 135-144. doi:10.1002/aic.690140124.
-    .. [2] Gmehling, Jurgen, Barbel Kolbe, Michael Kleiber, and Jurgen Rarey. 
-       Chemical Thermodynamics for Process Simulation. 1st edition. Weinheim: 
+    .. [2] Gmehling, Jurgen, Barbel Kolbe, Michael Kleiber, and Jurgen Rarey.
+       Chemical Thermodynamics for Process Simulation. 1st edition. Weinheim:
        Wiley-VCH, 2012.
     '''
     gammas = []
@@ -596,15 +596,15 @@ def NRTL(xs, taus, alphas):
 
 
 def Wilson(xs, params):
-    r'''Calculates the activity coefficients of each species in a mixture 
+    r'''Calculates the activity coefficients of each species in a mixture
     using the Wilson method, given their mole fractions, and
-    dimensionless interaction parameters. Those are normally correlated with 
+    dimensionless interaction parameters. Those are normally correlated with
     temperature, and need to be calculated separately.
-    
+
     .. math::
         \ln \gamma_i = 1 - \ln \left(\sum_j^N \Lambda_{ij} x_j\right)
         -\sum_j^N \frac{\Lambda_{ji}x_j}{\displaystyle\sum_k^N \Lambda_{jk}x_k}
-        
+
     Parameters
     ----------
     xs : list[float]
@@ -620,40 +620,40 @@ def Wilson(xs, params):
 
     Notes
     -----
-    This model needs N^2 parameters. 
-    
-    The original model correlated the interaction parameters using the standard 
+    This model needs N^2 parameters.
+
+    The original model correlated the interaction parameters using the standard
     pure-component molar volumes of each species at 25°C, in the following form:
-        
+
     .. math::
         \Lambda_{ij} = \frac{V_j}{V_i} \exp\left(\frac{-\lambda_{i,j}}{RT}\right)
-    
-    However, that form has less flexibility and offered no advantage over 
+
+    However, that form has less flexibility and offered no advantage over
     using only regressed parameters.
 
     Most correlations for the interaction parameters include some of the terms
     shown in the following form:
-        
+
     .. math::
-        \ln \Lambda_{ij} =a_{ij}+\frac{b_{ij}}{T}+c_{ij}\ln T + d_{ij}T 
+        \ln \Lambda_{ij} =a_{ij}+\frac{b_{ij}}{T}+c_{ij}\ln T + d_{ij}T
         + \frac{e_{ij}}{T^2} + h_{ij}{T^2}
-        
+
     The Wilson model is not applicable to liquid-liquid systems.
-    
+
     Examples
     --------
     Ethanol-water example, at 343.15 K and 1 MPa:
-        
+
     >>> Wilson([0.252, 0.748], [[1, 0.154], [0.888, 1]])
     [1.8814926087178843, 1.1655774931125487]
-    
+
     References
     ----------
-    .. [1] Wilson, Grant M. "Vapor-Liquid Equilibrium. XI. A New Expression for 
-       the Excess Free Energy of Mixing." Journal of the American Chemical 
+    .. [1] Wilson, Grant M. "Vapor-Liquid Equilibrium. XI. A New Expression for
+       the Excess Free Energy of Mixing." Journal of the American Chemical
        Society 86, no. 2 (January 1, 1964): 127-130. doi:10.1021/ja01056a002.
-    .. [2] Gmehling, Jurgen, Barbel Kolbe, Michael Kleiber, and Jurgen Rarey. 
-       Chemical Thermodynamics for Process Simulation. 1st edition. Weinheim: 
+    .. [2] Gmehling, Jurgen, Barbel Kolbe, Michael Kleiber, and Jurgen Rarey.
+       Chemical Thermodynamics for Process Simulation. 1st edition. Weinheim:
        Wiley-VCH, 2012.
     '''
     gammas = []
@@ -663,31 +663,31 @@ def Wilson(xs, params):
         tot2 = 0.
         for j in cmps:
             tot2 += params[j][i]*xs[j]/sum([params[j][k]*xs[k] for k in cmps])
-            
+
         gamma = exp(1. - tot1 - tot2)
         gammas.append(gamma)
     return gammas
 
 
 def UNIQUAC(xs, rs, qs, taus):
-    r'''Calculates the activity coefficients of each species in a mixture 
-    using the Universal quasi-chemical (UNIQUAC) equation, given their mole 
-    fractions, `rs`, `qs`, and dimensionless interaction parameters. The 
-    interaction parameters are normally correlated with temperature, and need 
+    r'''Calculates the activity coefficients of each species in a mixture
+    using the Universal quasi-chemical (UNIQUAC) equation, given their mole
+    fractions, `rs`, `qs`, and dimensionless interaction parameters. The
+    interaction parameters are normally correlated with temperature, and need
     to be calculated separately.
-    
+
     .. math::
         \ln \gamma_i = \ln \frac{\Phi_i}{x_i} + \frac{z}{2} q_i \ln
-        \frac{\theta_i}{\Phi_i}+ l_i - \frac{\Phi_i}{x_i}\sum_j^N x_j l_j 
-        - q_i \ln\left( \sum_j^N \theta_j \tau_{ji}\right)+ q_i - q_i\sum_j^N 
+        \frac{\theta_i}{\Phi_i}+ l_i - \frac{\Phi_i}{x_i}\sum_j^N x_j l_j
+        - q_i \ln\left( \sum_j^N \theta_j \tau_{ji}\right)+ q_i - q_i\sum_j^N
         \frac{\theta_j \tau_{ij}}{\sum_k^N \theta_k \tau_{kj}}
-        
-        \theta_i = \frac{x_i q_i}{\displaystyle\sum_{j=1}^{n} x_j q_j} 
-        
+
+        \theta_i = \frac{x_i q_i}{\displaystyle\sum_{j=1}^{n} x_j q_j}
+
          \Phi_i = \frac{x_i r_i}{\displaystyle\sum_{j=1}^{n} x_j r_j}
-         
+
          l_i = \frac{z}{2}(r_i - q_i) - (r_i - 1)
-        
+
     Parameters
     ----------
     xs : list[float]
@@ -707,57 +707,57 @@ def UNIQUAC(xs, rs, qs, taus):
 
     Notes
     -----
-    This model needs N^2 parameters. 
-    
+    This model needs N^2 parameters.
+
     The original expression for the interaction parameters is as follows:
-        
+
     .. math::
         \tau_{ji} = \exp\left(\frac{-\Delta u_{ij}}{RT}\right)
-        
-    However, it is seldom used. Most correlations for the interaction 
+
+    However, it is seldom used. Most correlations for the interaction
     parameters include some of the terms shown in the following form:
-        
+
     .. math::
-        \ln \tau{ij} =a_{ij}+\frac{b_{ij}}{T}+c_{ij}\ln T + d_{ij}T 
+        \ln \tau{ij} =a_{ij}+\frac{b_{ij}}{T}+c_{ij}\ln T + d_{ij}T
         + \frac{e_{ij}}{T^2}
-        
+
     This model is recast in a slightly more computationally efficient way in
     [2]_, as shown below:
-        
+
     .. math::
         \ln \gamma_i = \ln \gamma_i^{res} + \ln \gamma_i^{comb}
-        
+
         \ln \gamma_i^{res} = q_i \left(1 - \ln\frac{\sum_j^N q_j x_j \tau_{ji}}
         {\sum_j^N q_j x_j}- \sum_j \frac{q_k x_j \tau_{ij}}{\sum_k q_k x_k
         \tau_{kj}}\right)
-    
-        \ln \gamma_i^{comb} = (1 - V_i + \ln V_i) - \frac{z}{2}q_i\left(1 - 
+
+        \ln \gamma_i^{comb} = (1 - V_i + \ln V_i) - \frac{z}{2}q_i\left(1 -
         \frac{V_i}{F_i} + \ln \frac{V_i}{F_i}\right)
-        
+
         V_i = \frac{r_i}{\sum_j^N r_j x_j}
-        
+
         F_i = \frac{q_i}{\sum_j q_j x_j}
-        
+
     Examples
     --------
     Ethanol-water example, at 343.15 K and 1 MPa:
-        
-    >>> UNIQUAC(xs=[0.252, 0.748], rs=[2.1055, 0.9200], qs=[1.972, 1.400], 
+
+    >>> UNIQUAC(xs=[0.252, 0.748], rs=[2.1055, 0.9200], qs=[1.972, 1.400],
     ... taus=[[1.0, 1.0919744384510301], [0.37452902779205477, 1.0]])
     [2.35875137797083, 1.2442093415968987]
-    
+
     References
     ----------
-    .. [1] Abrams, Denis S., and John M. Prausnitz. "Statistical Thermodynamics 
-       of Liquid Mixtures: A New Expression for the Excess Gibbs Energy of 
+    .. [1] Abrams, Denis S., and John M. Prausnitz. "Statistical Thermodynamics
+       of Liquid Mixtures: A New Expression for the Excess Gibbs Energy of
        Partly or Completely Miscible Systems." AIChE Journal 21, no. 1 (January
-       1, 1975): 116-28. doi:10.1002/aic.690210115.  
-    .. [2] Gmehling, Jurgen, Barbel Kolbe, Michael Kleiber, and Jurgen Rarey. 
-       Chemical Thermodynamics for Process Simulation. 1st edition. Weinheim: 
+       1, 1975): 116-28. doi:10.1002/aic.690210115.
+    .. [2] Gmehling, Jurgen, Barbel Kolbe, Michael Kleiber, and Jurgen Rarey.
+       Chemical Thermodynamics for Process Simulation. 1st edition. Weinheim:
        Wiley-VCH, 2012.
     .. [3] Maurer, G., and J. M. Prausnitz. "On the Derivation and Extension of
-       the Uniquac Equation." Fluid Phase Equilibria 2, no. 2 (January 1, 
-       1978): 91-99. doi:10.1016/0378-3812(78)85002-X. 
+       the Uniquac Equation." Fluid Phase Equilibria 2, no. 2 (January 1,
+       1978): 91-99. doi:10.1016/0378-3812(78)85002-X.
     '''
     cmps = range(len(xs))
     rsxs = sum([rs[i]*xs[i] for i in cmps])
@@ -793,7 +793,7 @@ def flash(P, zs, Psats):
         return valid
     if not valid_range(zs, Ks):
         raise Exception('Solution does not exist')
-        
+
     V_over_F, xs, ys = flash_inner_loop(zs=zs, Ks=Ks)
     if V_over_F < 0:
         raise Exception('V_over_F is negative!')
@@ -841,27 +841,27 @@ def bubble_at_T(zs, Psats, fugacities=None, gammas=None):
 
 
 def identify_phase(T, P, Tm=None, Tb=None, Tc=None, Psat=None):
-    r'''Determines the phase of a one-species chemical system according to 
+    r'''Determines the phase of a one-species chemical system according to
     basic rules, using whatever information is available. Considers only the
     phases liquid, solid, and gas; does not consider two-phase
-    scenarios, as should occurs between phase boundaries. 
-    
-    * If the melting temperature is known and the temperature is under or equal  
+    scenarios, as should occurs between phase boundaries.
+
+    * If the melting temperature is known and the temperature is under or equal
       to it, consider it a solid.
-    * If the critical temperature is known and the temperature is greater or 
+    * If the critical temperature is known and the temperature is greater or
       equal to it, consider it a gas.
-    * If the vapor pressure at `T` is known and the pressure is under or equal 
-      to it, consider it a gas. If the pressure is greater than the vapor 
+    * If the vapor pressure at `T` is known and the pressure is under or equal
+      to it, consider it a gas. If the pressure is greater than the vapor
       pressure, consider it a liquid.
     * If the melting temperature, critical temperature, and vapor pressure are
       not known, attempt to use the boiling point to provide phase information.
       If the pressure is between 90 kPa and 110 kPa (approximately normal),
-      consider it a liquid if it is under the boiling temperature and a gas if 
+      consider it a liquid if it is under the boiling temperature and a gas if
       above the boiling temperature.
     * If the pressure is above 110 kPa and the boiling temperature is known,
       consider it a liquid if the temperature is under the boiling temperature.
     * Return None otherwise.
-    
+
     Parameters
     ----------
     T : float
@@ -884,7 +884,7 @@ def identify_phase(T, P, Tm=None, Tb=None, Tc=None, Psat=None):
 
     Notes
     -----
-    No special attential is paid to any phase transition. For the case where 
+    No special attential is paid to any phase transition. For the case where
     the melting point is not provided, the possibility of the fluid being solid
     is simply ignored.
 
@@ -899,7 +899,7 @@ def identify_phase(T, P, Tm=None, Tb=None, Tc=None, Psat=None):
         # No special return value for the critical point
         return 'g'
     elif Psat:
-        # Do not allow co-existence of phases; transition to 'l' directly under 
+        # Do not allow co-existence of phases; transition to 'l' directly under
         if P <= Psat:
             return 'g'
         elif P > Psat:
@@ -914,7 +914,7 @@ def identify_phase(T, P, Tm=None, Tb=None, Tc=None, Psat=None):
                 return 'g'
         elif P > 1.1E5 and T <= Tb:
             # For the higher-pressure case, it is definitely liquid if under Tb
-            # Above the normal boiling point, impossible to say - return None 
+            # Above the normal boiling point, impossible to say - return None
             return 'l'
         else:
             return None
@@ -1033,6 +1033,9 @@ def Pbubble_mixture(T=None, zs=None, Psats=None, CASRNs=None,
     else:
         raise Exception('Failure in in function')
     return Pbubble
+
+
+
 
 
 def Pdew_mixture(T=None, zs=None, Psats=None, CASRNs=None,
