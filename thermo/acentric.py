@@ -23,9 +23,6 @@ SOFTWARE.'''
 # pylint: disable=no-member
 # pylint: disable=maybe-no-member
 # pylint: disable=invalid-name
-# pylint: disable=bad-whitespace
-# py lint: disable=too-many-locals
-# py lint: disable=too-many-arguments
 
 from __future__ import division
 
