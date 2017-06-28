@@ -404,9 +404,11 @@ def Li_Johns_Ahmadi_solution(zs, Ks):
     k1_m_1 = (k1-1.)
     t1 = (k1-kn)/(kn-1.)
 
-    objective = lambda x1: 1. + t1*x1 \
-        + sum([(ki-kn)/(kn_m_1) * zi*k1_m_1*x1 / ((ki-1.)*z1 + (k1-ki)*x1)
-              for ki, zi in zip(Ks_sorted[1:length], zs_sorted[1:length])])
+    objective = lambda x1: (1. + t1 * x1
+                            + sum([(ki - kn) / (kn_m_1) * zi * k1_m_1 * x1
+                            / ((ki - 1.) * z1 + (k1 - ki) * x1)
+                            for ki, zi
+                            in zip(Ks_sorted[1:length], zs_sorted[1:length])]))
     try:
         x1 = newton(objective, x_guess)
         # newton skips out of its specified range in some cases, finding
@@ -511,13 +513,14 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None):
         if l == 2:
             z1, z2 = zs
             K1, K2 = Ks
-            V_over_F = (-K1*z1 - K2*z2 + z1 + z2) \
-                / (K1*K2*z1 + K1*K2*z2 - K1*z1 - K1*z2 - K2*z1 - K2*z2
-                   + z1 + z2)
+            V_over_F = ((-K1*z1 - K2*z2 + z1 + z2)
+                        / (K1*K2*z1 + K1*K2*z2
+                           - K1*z1 - K1*z2 - K2*z1 - K2*z2
+                           + z1 + z2))
         elif l == 3:
             z1, z2, z3 = zs
             K1, K2, K3 = Ks
-            V_over_F = (-K1*K2*z1/2 - K1*K2*z2/2 - K1*K3*z1/2 - K1*K3*z3/2
+            V_over_F = ((-K1*K2*z1/2 - K1*K2*z2/2 - K1*K3*z1/2 - K1*K3*z3/2
                         + K1*z1 + K1*z2/2 + K1*z3/2 - K2*K3*z2/2 - K2*K3*z3/2
                         + K2*z1/2 + K2*z2 + K2*z3/2 + K3*z1/2 + K3*z2/2
                         + K3*z3 - z1 - z2 - z3
@@ -553,12 +556,12 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None):
                            + 2*K2*K3**2*z1*z3 - 2*K2*K3**2*z2**2
                            - 2*K2*K3**2*z2*z3 - 2*K2*K3*z1**2 - 2*K2*K3*z1*z2
                            - 2*K2*K3*z1*z3 + 2*K2*K3*z2*z3 + K3**2*z1**2
-                           + 2*K3**2*z1*z2 + K3**2*z2**2)**0.5/2) \
+                           + 2*K3**2*z1*z2 + K3**2*z2**2)**0.5/2)
                         / (K1*K2*K3*z1 + K1*K2*K3*z2 + K1*K2*K3*z3 - K1*K2*z1
                            - K1*K2*z2 - K1*K2*z3 - K1*K3*z1 - K1*K3*z2
                            - K1*K3*z3 + K1*z1 + K1*z2 + K1*z3 - K2*K3*z1
                            - K2*K3*z2 - K2*K3*z3 + K2*z1 + K2*z2 + K2*z3
-                           + K3*z1 + K3*z2 + K3*z3 - z1 - z2 - z3)
+                           + K3*z1 + K3*z2 + K3*z3 - z1 - z2 - z3))
         else:
             raise Exception('Only solutions of one or two variables are '
                             'available analytically')
@@ -872,7 +875,7 @@ def flash(P, zs, Psats):
     Ks = [K_value(P=P, Psat=Psats[i]) for i in range(len(zs))]
 
     def valid_range(zs, Ks):
-        ''' Determines if zs and Ks are valid for this calculation 
+        ''' Determines if zs and Ks are valid for this calculation
 
         Parameters
         ----------
@@ -921,7 +924,7 @@ def dew_at_T(zs, Psats, fugacities=None, gammas=None):
     if not none_and_length_check((zs, Psats, fugacities, gammas)):
         raise Exception('Input dimentions are inconsistent or some input '
                         'parameters are missing.')
-    P = (1 / sum(zs[i] * fugacities[i] / Psats[i] / gammas[i] 
+    P = (1 / sum(zs[i] * fugacities[i] / Psats[i] / gammas[i]
          for i in range(len(zs))))
     return P
 
@@ -1058,14 +1061,14 @@ def identify_phase_mixture(T=None, P=None, zs=None, Tcs=None, Pcs=None,
         methods = []
         if Psats and none_and_length_check((Psats, zs)):
             methods.append('IDEAL_VLE')
-        if Tcs and none_and_length_check([Tcs]) \
-            and all([T >= i for i in Tcs]):
+        if (Tcs and none_and_length_check([Tcs])
+            and all([T >= i for i in Tcs])):
             methods.append('SUPERCRITICAL_T')
-        if Pcs and none_and_length_check([Pcs]) \
-            and all([P >= i for i in Pcs]):
+        if (Pcs and none_and_length_check([Pcs])
+            and all([P >= i for i in Pcs])):
             methods.append('SUPERCRITICAL_P')
-        if Tcs and none_and_length_check([zs, Tcs]) \
-            and any([T > Tc for Tc in Tcs]):
+        if (Tcs and none_and_length_check([zs, Tcs])
+            and any([T > Tc for Tc in Tcs])):
             methods.append('IDEAL_VLE_SUPERCRITICAL')
         methods.append('NONE')
         return methods
@@ -1189,8 +1192,8 @@ def bubble_at_P(P, zs, vapor_pressure_eqns, fugacities=None, gammas=None):
     '''
 
     def bubble_P_error(T):
-        ''' Bubble pressure residual function for Newton's method 
-        root-finding
+        ''' Bubble pressure residual function for Newton's method
+        root-finder.
 
         Parameters
         ----------

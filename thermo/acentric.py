@@ -121,14 +121,14 @@ def omega(CASRN, AvailableMethods=False, Method=None,
         ''' List methods available for calculating a chemical's acentric
         factor, omega '''
         methods = []
-        if CASRN in _crit_PSRKR4.index \
-            and not np.isnan(_crit_PSRKR4.at[CASRN, 'omega']):
+        if (CASRN in _crit_PSRKR4.index
+            and not np.isnan(_crit_PSRKR4.at[CASRN, 'omega'])):
             methods.append('PSRK')
-        if CASRN in _crit_PassutDanner.index \
-            and not np.isnan(_crit_PassutDanner.at[CASRN, 'omega']):
+        if (CASRN in _crit_PassutDanner.index
+            and not np.isnan(_crit_PassutDanner.at[CASRN, 'omega'])):
             methods.append('PD')
-        if CASRN in _crit_Yaws.index \
-            and not np.isnan(_crit_Yaws.at[CASRN, 'omega']):
+        if (CASRN in _crit_Yaws.index
+            and not np.isnan(_crit_Yaws.at[CASRN, 'omega'])):
             methods.append('YAWS')
         Tcrit, Pcrit = Tc(CASRN), Pc(CASRN)
         if Tcrit and Pcrit:
