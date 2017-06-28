@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# -*- coding: utf-(8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -20,14 +20,14 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
+from __future__ import division
+
 __all__ = ['K_value', 'Rachford_Rice_flash_error', 'Rachford_Rice_solution',
            'Li_Johns_Ahmadi_solution', 'flash_inner_loop', 'NRTL', 'Wilson',
            'UNIQUAC', 'flash', 'dew_at_T',
            'bubble_at_T', 'identify_phase', 'mixture_phase_methods',
            'identify_phase_mixture', 'Pbubble_mixture', 'bubble_at_P',
            'Pdew_mixture']
-
-from __future__ import division
 
 from scipy.optimize import newton, brenth  # unused? fsolve
 from thermo.utils import exp, log
@@ -397,18 +397,18 @@ def Li_Johns_Ahmadi_solution(zs, Ks):
     x_min2 = max(0., x_min)
     x_max2 = min(1., x_max)
 
-    x_guess = (x_min2 + x_max2)*0.5
+    x_guess = (x_min2 + x_max2) * 0.5
 
-    length = len(zs)-1
+    length = len(zs) - 1
     kn_m_1 = kn-1.
-    k1_m_1 = (k1-1.)
-    t1 = (k1-kn)/(kn-1.)
+    k1_m_1 = (k1 - 1.)
+    t1 = (k1 - kn) / (kn - 1.)
 
     objective = lambda x1: (1. + t1 * x1
                             + sum([(ki - kn) / (kn_m_1) * zi * k1_m_1 * x1
-                            / ((ki - 1.) * z1 + (k1 - ki) * x1)
-                            for ki, zi
-                            in zip(Ks_sorted[1:length], zs_sorted[1:length])]))
+                                   / ((ki - 1.) * z1 + (k1 - ki) * x1)
+                                   for ki, zi in zip(Ks_sorted[1:length],
+                                                     zs_sorted[1:length])]))
     try:
         x1 = newton(objective, x_guess)
         # newton skips out of its specified range in some cases, finding
@@ -417,13 +417,13 @@ def Li_Johns_Ahmadi_solution(zs, Ks):
         # Must also check that V_over_F is right.
         assert x1 >= x_min2
         assert x1 <= x_max2
-        V_over_F = (-x1 + z1)/(x1*(k1 - 1.))
+        V_over_F = (z1 - x1) / (x1 * (k1 - 1.))
         assert 0 <= V_over_F <= 1
     except:
         x1 = brenth(objective, x_min, x_max)
-        V_over_F = (-x1 + z1)/(x1*(k1 - 1.))
-    xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]
-    ys = [Ki*xi for xi, Ki in zip(xs, Ks)]
+        V_over_F = (z1 - x1) / (x1 * (k1 - 1.))
+    xs = [zi / (1. + V_over_F * (Ki - 1.)) for zi, Ki in zip(zs, Ks)]
+    ys = [Ki * xi for xi, Ki in zip(xs, Ks)]
     return V_over_F, xs, ys
 
 
@@ -521,42 +521,42 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None):
             z1, z2, z3 = zs
             K1, K2, K3 = Ks
             V_over_F = ((-K1*K2*z1/2 - K1*K2*z2/2 - K1*K3*z1/2 - K1*K3*z3/2
-                        + K1*z1 + K1*z2/2 + K1*z3/2 - K2*K3*z2/2 - K2*K3*z3/2
-                        + K2*z1/2 + K2*z2 + K2*z3/2 + K3*z1/2 + K3*z2/2
-                        + K3*z3 - z1 - z2 - z3
-                        - (K1**2*K2**2*z1**2
-                           + 2*K1**2*K2**2*z1*z2 + K1**2*K2**2*z2**2
-                           - 2*K1**2*K2*K3*z1**2 - 2*K1**2*K2*K3*z1*z2
-                           - 2*K1**2*K2*K3*z1*z3 + 2*K1**2*K2*K3*z2*z3
-                           - 2*K1**2*K2*z1*z2 + 2*K1**2*K2*z1*z3
-                           - 2*K1**2*K2*z2**2 - 2*K1**2*K2*z2*z3
-                           + K1**2*K3**2*z1**2 + 2*K1**2*K3**2*z1*z3
-                           + K1**2*K3**2*z3**2 + 2*K1**2*K3*z1*z2
-                           - 2*K1**2*K3*z1*z3 - 2*K1**2*K3*z2*z3
-                           - 2*K1**2*K3*z3**2 + K1**2*z2**2 + 2*K1**2*z2*z3
-                           + K1**2*z3**2 - 2*K1*K2**2*K3*z1*z2
-                           + 2*K1*K2**2*K3*z1*z3 - 2*K1*K2**2*K3*z2**2
-                           - 2*K1*K2**2*K3*z2*z3 - 2*K1*K2**2*z1**2
-                           - 2*K1*K2**2*z1*z2 - 2*K1*K2**2*z1*z3
-                           + 2*K1*K2**2*z2*z3 + 2*K1*K2*K3**2*z1*z2
-                           - 2*K1*K2*K3**2*z1*z3 - 2*K1*K2*K3**2*z2*z3
-                           - 2*K1*K2*K3**2*z3**2 + 4*K1*K2*K3*z1**2
-                           + 4*K1*K2*K3*z1*z2 + 4*K1*K2*K3*z1*z3
-                           + 4*K1*K2*K3*z2**2 + 4*K1*K2*K3*z2*z3
-                           + 4*K1*K2*K3*z3**2 + 2*K1*K2*z1*z2
-                           - 2*K1*K2*z1*z3 - 2*K1*K2*z2*z3 - 2*K1*K2*z3**2
-                           - 2*K1*K3**2*z1**2 - 2*K1*K3**2*z1*z2
-                           - 2*K1*K3**2*z1*z3 + 2*K1*K3**2*z2*z3
-                           - 2*K1*K3*z1*z2 + 2*K1*K3*z1*z3 - 2*K1*K3*z2**2
-                           - 2*K1*K3*z2*z3 + K2**2*K3**2*z2**2
-                           + 2*K2**2*K3**2*z2*z3 + K2**2*K3**2*z3**2
-                           + 2*K2**2*K3*z1*z2 - 2*K2**2*K3*z1*z3
-                           - 2*K2**2*K3*z2*z3 - 2*K2**2*K3*z3**2 + K2**2*z1**2
-                           + 2*K2**2*z1*z3 + K2**2*z3**2 - 2*K2*K3**2*z1*z2
-                           + 2*K2*K3**2*z1*z3 - 2*K2*K3**2*z2**2
-                           - 2*K2*K3**2*z2*z3 - 2*K2*K3*z1**2 - 2*K2*K3*z1*z2
-                           - 2*K2*K3*z1*z3 + 2*K2*K3*z2*z3 + K3**2*z1**2
-                           + 2*K3**2*z1*z2 + K3**2*z2**2)**0.5/2)
+                         + K1*z1 + K1*z2/2 + K1*z3/2 - K2*K3*z2/2 - K2*K3*z3/2
+                         + K2*z1/2 + K2*z2 + K2*z3/2 + K3*z1/2 + K3*z2/2
+                         + K3*z3 - z1 - z2 - z3
+                         - (K1**2*K2**2*z1**2
+                            + 2*K1**2*K2**2*z1*z2 + K1**2*K2**2*z2**2
+                            - 2*K1**2*K2*K3*z1**2 - 2*K1**2*K2*K3*z1*z2
+                            - 2*K1**2*K2*K3*z1*z3 + 2*K1**2*K2*K3*z2*z3
+                            - 2*K1**2*K2*z1*z2 + 2*K1**2*K2*z1*z3
+                            - 2*K1**2*K2*z2**2 - 2*K1**2*K2*z2*z3
+                            + K1**2*K3**2*z1**2 + 2*K1**2*K3**2*z1*z3
+                            + K1**2*K3**2*z3**2 + 2*K1**2*K3*z1*z2
+                            - 2*K1**2*K3*z1*z3 - 2*K1**2*K3*z2*z3
+                            - 2*K1**2*K3*z3**2 + K1**2*z2**2 + 2*K1**2*z2*z3
+                            + K1**2*z3**2 - 2*K1*K2**2*K3*z1*z2
+                            + 2*K1*K2**2*K3*z1*z3 - 2*K1*K2**2*K3*z2**2
+                            - 2*K1*K2**2*K3*z2*z3 - 2*K1*K2**2*z1**2
+                            - 2*K1*K2**2*z1*z2 - 2*K1*K2**2*z1*z3
+                            + 2*K1*K2**2*z2*z3 + 2*K1*K2*K3**2*z1*z2
+                            - 2*K1*K2*K3**2*z1*z3 - 2*K1*K2*K3**2*z2*z3
+                            - 2*K1*K2*K3**2*z3**2 + 4*K1*K2*K3*z1**2
+                            + 4*K1*K2*K3*z1*z2 + 4*K1*K2*K3*z1*z3
+                            + 4*K1*K2*K3*z2**2 + 4*K1*K2*K3*z2*z3
+                            + 4*K1*K2*K3*z3**2 + 2*K1*K2*z1*z2
+                            - 2*K1*K2*z1*z3 - 2*K1*K2*z2*z3 - 2*K1*K2*z3**2
+                            - 2*K1*K3**2*z1**2 - 2*K1*K3**2*z1*z2
+                            - 2*K1*K3**2*z1*z3 + 2*K1*K3**2*z2*z3
+                            - 2*K1*K3*z1*z2 + 2*K1*K3*z1*z3 - 2*K1*K3*z2**2
+                            - 2*K1*K3*z2*z3 + K2**2*K3**2*z2**2
+                            + 2*K2**2*K3**2*z2*z3 + K2**2*K3**2*z3**2
+                            + 2*K2**2*K3*z1*z2 - 2*K2**2*K3*z1*z3
+                            - 2*K2**2*K3*z2*z3 - 2*K2**2*K3*z3**2 + K2**2*z1**2
+                            + 2*K2**2*z1*z3 + K2**2*z3**2 - 2*K2*K3**2*z1*z2
+                            + 2*K2*K3**2*z1*z3 - 2*K2*K3**2*z2**2
+                            - 2*K2*K3**2*z2*z3 - 2*K2*K3*z1**2 - 2*K2*K3*z1*z2
+                            - 2*K2*K3*z1*z3 + 2*K2*K3*z2*z3 + K3**2*z1**2
+                            + 2*K3**2*z1*z2 + K3**2*z2**2)**0.5/2)
                         / (K1*K2*K3*z1 + K1*K2*K3*z2 + K1*K2*K3*z3 - K1*K2*z1
                            - K1*K2*z2 - K1*K2*z3 - K1*K3*z1 - K1*K3*z2
                            - K1*K3*z3 + K1*z1 + K1*z2 + K1*z3 - K2*K3*z1
@@ -827,19 +827,19 @@ def UNIQUAC(xs, rs, qs, taus):
        1978): 91-99. doi:10.1016/0378-3812(78)85002-X.
     '''
     cmps = range(len(xs))
-    rsxs = sum([rs[i]*xs[i] for i in cmps])
-    phis = [rs[i]*xs[i]/rsxs for i in cmps]
-    qsxs = sum([qs[i]*xs[i] for i in cmps])
-    vs = [qs[i]*xs[i]/qsxs for i in cmps]
+    rsxs = sum([rs[i] * xs[i] for i in cmps])
+    phis = [rs[i] * xs[i] / rsxs for i in cmps]
+    qsxs = sum([qs[i] * xs[i] for i in cmps])
+    vs = [qs[i] * xs[i] / qsxs for i in cmps]
 
-    Ss = [sum([vs[j]*taus[j][i] for j in cmps]) for i in cmps]
+    Ss = [sum([vs[j] * taus[j][i] for j in cmps]) for i in cmps]
 
     loggammacs = [log(phis[i] / xs[i]) + 1 - phis[i] / xs[i]
                   - 5 * qs[i] * (log(phis[i] / vs[i]) + 1 - phis[i] / vs[i])
                   for i in cmps]
 
-    loggammars = [qs[i]*(1 - log(Ss[i]) - sum([taus[i][j]*vs[j]/Ss[j]
-                  for j in cmps])) for i in cmps]
+    loggammars = [qs[i]*(1 - log(Ss[i]) - sum([taus[i][j] * vs[j] / Ss[j]
+                                               for j in cmps])) for i in cmps]
 
     return [exp(loggammacs[i] + loggammars[i]) for i in cmps]
 
@@ -925,7 +925,7 @@ def dew_at_T(zs, Psats, fugacities=None, gammas=None):
         raise Exception('Input dimentions are inconsistent or some input '
                         'parameters are missing.')
     P = (1 / sum(zs[i] * fugacities[i] / Psats[i] / gammas[i]
-         for i in range(len(zs))))
+                 for i in range(len(zs))))
     return P
 
 
@@ -1039,7 +1039,8 @@ mixture_phase_methods = ['IDEAL_VLE', 'SUPERCRITICAL_T', 'SUPERCRITICAL_P',
 
 def identify_phase_mixture(T=None, P=None, zs=None, Tcs=None, Pcs=None,
                            Psats=None, CASRNs=None,
-                           AvailableMethods=False, Method=None):  # pragma: no cover
+                           AvailableMethods=False,
+                           Method=None):  # pragma: no cover
     # TODO: Use or delete CASRNs argument
     # TODO: Add documentation
     '''
@@ -1062,13 +1063,13 @@ def identify_phase_mixture(T=None, P=None, zs=None, Tcs=None, Pcs=None,
         if Psats and none_and_length_check((Psats, zs)):
             methods.append('IDEAL_VLE')
         if (Tcs and none_and_length_check([Tcs])
-            and all([T >= i for i in Tcs])):
+                and all([T >= i for i in Tcs])):
             methods.append('SUPERCRITICAL_T')
         if (Pcs and none_and_length_check([Pcs])
-            and all([P >= i for i in Pcs])):
+                and all([P >= i for i in Pcs])):
             methods.append('SUPERCRITICAL_P')
         if (Tcs and none_and_length_check([zs, Tcs])
-            and any([T > Tc for Tc in Tcs])):
+                and any([T > Tc for Tc in Tcs])):
             methods.append('IDEAL_VLE_SUPERCRITICAL')
         methods.append('NONE')
         return methods

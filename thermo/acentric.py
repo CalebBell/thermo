@@ -20,11 +20,11 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
+from __future__ import division
+
 __all__ = ['omega', 'LK_omega', 'omega_mixture', 'StielPolar']
 __all__.extend(['omega_methods', 'omega_mixture_methods',
                 'Stiel_polar_methods'])
-
-from __future__ import division
 
 import numpy as np
 # unused? import pandas as pd
@@ -122,13 +122,13 @@ def omega(CASRN, AvailableMethods=False, Method=None,
         factor, omega '''
         methods = []
         if (CASRN in _crit_PSRKR4.index
-            and not np.isnan(_crit_PSRKR4.at[CASRN, 'omega'])):
+                and not np.isnan(_crit_PSRKR4.at[CASRN, 'omega'])):
             methods.append('PSRK')
         if (CASRN in _crit_PassutDanner.index
-            and not np.isnan(_crit_PassutDanner.at[CASRN, 'omega'])):
+                and not np.isnan(_crit_PassutDanner.at[CASRN, 'omega'])):
             methods.append('PD')
         if (CASRN in _crit_Yaws.index
-            and not np.isnan(_crit_Yaws.at[CASRN, 'omega'])):
+                and not np.isnan(_crit_Yaws.at[CASRN, 'omega'])):
             methods.append('YAWS')
         Tcrit, Pcrit = Tc(CASRN), Pc(CASRN)
         if Tcrit and Pcrit:
@@ -206,10 +206,11 @@ def LK_omega(Tb, Tc, Pc):
        Correlation Based on Three-Parameter Corresponding States." AIChE
        Journal 21, no. 3 (1975): 510-527. doi:10.1002/aic.690210313.
     '''
-    T_br = Tb/Tc
-    omega = (log(101325.0/Pc) - 5.92714 + 6.09648/T_br + 1.28862*log(T_br) -
-             0.169347*T_br**6) / (15.2518 - 15.6875/T_br
-             - 13.4721*log(T_br) + 0.43577*T_br**6)
+    T_br = Tb / Tc
+    omega = ((log(101325.0 / Pc) - 5.92714 + 6.09648 / T_br
+              + 1.28862 * log(T_br) - 0.169347 * T_br**6)
+             / (15.2518 - 15.6875 / T_br - 13.4721 * log(T_br)
+                + 0.43577 * T_br**6))
     return omega
 
 
