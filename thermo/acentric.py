@@ -20,10 +20,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
-# pylint: disable=no-member
-# pylint: disable=maybe-no-member
-# pylint: disable=invalid-name
-
 __all__ = ['omega', 'LK_omega', 'omega_mixture', 'StielPolar']
 __all__.extend(['omega_methods', 'omega_mixture_methods',
                 'Stiel_polar_methods'])
@@ -122,6 +118,8 @@ def omega(CASRN, AvailableMethods=False, Method=None,
        Publishing, 2014.
     '''
     def list_methods():
+        ''' List methods available for calculating a chemical's acentric
+        factor, omega '''
         methods = []
         if CASRN in _crit_PSRKR4.index \
             and not np.isnan(_crit_PSRKR4.at[CASRN, 'omega']):
@@ -270,7 +268,9 @@ def omega_mixture(omegas, zs, CASRNs=None, Method=None,
        New York: McGraw-Hill Professional, 2000.
     '''
     def list_methods():
-        ''' List methods available for calculating omega '''
+        ''' List methods available for calculating a mixture's acentric
+        factor, omega '''
+
         methods = []
         if none_and_length_check([zs, omegas]):
             methods.append('SIMPLE')

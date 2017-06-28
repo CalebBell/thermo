@@ -20,12 +20,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
-# pylint: disable=no-member
-# pylint: disable=too-many-locals
-# pylint: disable=too-many-arguments
-# pylint: disable=too-many-branches
-# pylint: disable=invalid-name
-
 __all__ = ['K_value', 'Rachford_Rice_flash_error', 'Rachford_Rice_solution',
            'Li_Johns_Ahmadi_solution', 'flash_inner_loop', 'NRTL', 'Wilson',
            'UNIQUAC', 'flash', 'dew_at_T',
