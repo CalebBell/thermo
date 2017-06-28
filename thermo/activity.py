@@ -26,19 +26,19 @@ SOFTWARE.'''
 # pylint: disable=too-many-branches
 # pylint: disable=invalid-name
 
-from __future__ import division
-
-from scipy.optimize import newton, brenth  # unused? fsolve
-from thermo.utils import exp, log
-from thermo.utils import none_and_length_check
-# unused? from thermo.utils import R
-
 __all__ = ['K_value', 'Rachford_Rice_flash_error', 'Rachford_Rice_solution',
            'Li_Johns_Ahmadi_solution', 'flash_inner_loop', 'NRTL', 'Wilson',
            'UNIQUAC', 'flash', 'dew_at_T',
            'bubble_at_T', 'identify_phase', 'mixture_phase_methods',
            'identify_phase_mixture', 'Pbubble_mixture', 'bubble_at_P',
            'Pdew_mixture']
+
+from __future__ import division
+
+from scipy.optimize import newton, brenth  # unused? fsolve
+from thermo.utils import exp, log
+from thermo.utils import none_and_length_check
+# unused? from thermo.utils import R
 
 
 def K_value(P=None, Psat=None, phi_l=None, phi_g=None, gamma=None, Poynting=1):
@@ -496,7 +496,8 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None):
     l = len(zs)
 
     def list_methods():
-        ''' Internal function - TBD '''
+        ''' Lists available solution methods for determining liquid and gas mole
+        fractions and vapor fraction. '''
         methods = []
         if l in [2, 3]:
             methods.append('Analytical')
@@ -847,7 +848,26 @@ def UNIQUAC(xs, rs, qs, taus):
 
 
 def flash(P, zs, Psats):
-    ''' TBD '''
+    '''
+    Parameters
+    ----------
+    P : list[float]?
+        Pressure, [-]
+    zs : list[float]
+        Overall mole fractions of all species, [-]
+    Psats : list[float]?
+        Saturation pressure, [-]
+
+    Returns
+    -------
+    xs : list[float]
+        Mole fractions of each species in the liquid phase, [-]
+    ys : list[float]
+        Mole fractions of each species in the vapor phase, [-]
+    V_over_F : float
+        Vapor fraction solution [-]
+
+    '''
 #    if not fugacities:
 #        fugacities = [1 for i in range(len(zs))]
 #    if not gammas:
@@ -858,11 +878,25 @@ def flash(P, zs, Psats):
     Ks = [K_value(P=P, Psat=Psats[i]) for i in range(len(zs))]
 
     def valid_range(zs, Ks):
-        ''' Internal function - TBD '''
+        ''' Determines if zs and Ks are valid for this calculation 
+
+        Parameters
+        ----------
+        zs : list[float]
+            Overall mole fractions of all species, [-]
+        Ks : list[float]
+            Equilibrium K-values, [-]
+
+        Returns
+        -------
+        valid : bool
+            True if arguments are valid, False otherwise
+        '''
+
         valid = True
-        if sum([zs[i]*Ks[i] for i in range(len(Ks))]) < 1:
+        if sum([zs[i] * Ks[i] for i in range(len(Ks))]) < 1:
             valid = False
-        if sum([zs[i]/Ks[i] for i in range(len(Ks))]) < 1:
+        if sum([zs[i] / Ks[i] for i in range(len(Ks))]) < 1:
             valid = False
         return valid
 
@@ -876,6 +910,7 @@ def flash(P, zs, Psats):
 
 
 def dew_at_T(zs, Psats, fugacities=None, gammas=None):
+    # TODO: Add documentation; saturation pressure of mixture at temperature T
     '''
     >>> dew_at_T([0.5, 0.5], [1400, 7000])
     2333.3333333333335
@@ -892,11 +927,13 @@ def dew_at_T(zs, Psats, fugacities=None, gammas=None):
     if not none_and_length_check((zs, Psats, fugacities, gammas)):
         raise Exception('Input dimentions are inconsistent or some input '
                         'parameters are missing.')
-    P = 1/sum(zs[i]*fugacities[i]/Psats[i]/gammas[i] for i in range(len(zs)))
+    P = (1 / sum(zs[i] * fugacities[i] / Psats[i] / gammas[i] 
+         for i in range(len(zs))))
     return P
 
 
 def bubble_at_T(zs, Psats, fugacities=None, gammas=None):
+    # TODO: Add documentation; bubble pressure of mixture at temperature T
     '''
     >>> bubble_at_T([0.5, 0.5], [1400, 7000])
     4200.0
@@ -961,7 +998,7 @@ def identify_phase(T, P, Tm=None, Tb=None, Tc=None, Psat=None):
 
     Notes
     -----
-    No special attential is paid to any phase transition. For the case where
+    No special attention is paid to any phase transition. For the case where
     the melting point is not provided, the possibility of the fluid being solid
     is simply ignored.
 
@@ -1006,8 +1043,9 @@ mixture_phase_methods = ['IDEAL_VLE', 'SUPERCRITICAL_T', 'SUPERCRITICAL_P',
 def identify_phase_mixture(T=None, P=None, zs=None, Tcs=None, Pcs=None,
                            Psats=None, CASRNs=None,
                            AvailableMethods=False, Method=None):  # pragma: no cover
-    '''
     # TODO: Use or delete CASRNs argument
+    # TODO: Add documentation
+    '''
     >>> identify_phase_mixture(T=280, P=5000., zs=[0.5, 0.5],
     Psats=[1400, 7000])
     ('l', [0.5, 0.5], None, 0)
@@ -1022,7 +1060,7 @@ def identify_phase_mixture(T=None, P=None, zs=None, Tcs=None, Pcs=None,
     (None, None, None, None)
     '''
     def list_methods():
-        ''' Internal function - TBD '''
+        ''' List methods available to identify the phase of a mixture '''
         methods = []
         if Psats and none_and_length_check((Psats, zs)):
             methods.append('IDEAL_VLE')
@@ -1104,12 +1142,13 @@ def Pbubble_mixture(T=None, zs=None, Psats=None, CASRNs=None,
                     AvailableMethods=False, Method=None):  # pragma: no cover
     # TODO: Use or delete CASRNs argument
     # TODO: Use or delete T argument
+    # TODO: Add documentation; determine bubble pressure of a mixture
     '''
     >>> Pbubble_mixture(zs=[0.5, 0.5], Psats=[1400, 7000])
     4200.0
     '''
     def list_methods():
-        ''' Internal function - TBD '''
+        ''' List methods available for calculating bubble pressure '''
         methods = []
         if none_and_length_check((Psats, zs)):
             methods.append('IDEAL_VLE')
@@ -1156,8 +1195,20 @@ def bubble_at_P(P, zs, vapor_pressure_eqns, fugacities=None, gammas=None):
     '''
 
     def bubble_P_error(T):
-        ''' Residual function for Newton's method root-finding '''
-        Psats = [VP(T) for VP in vapor_pressure_eqns]
+        ''' Bubble pressure residual function for Newton's method 
+        root-finding
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+
+        Returns
+        -------
+        P - Pcalc : float
+            Pressure residual, [Pa]
+        '''
+
         Pcalc = bubble_at_T(zs, Psats, fugacities, gammas)
 
         return P - Pcalc
@@ -1171,12 +1222,13 @@ def Pdew_mixture(T=None, zs=None, Psats=None, CASRNs=None,
                  AvailableMethods=False, Method=None):  # pragma: no cover
     # TODO: Use or delete CASRNs argument
     # TODO: Use or delete T argument
+    # TODO: Add documentation; dew point of mixture
     '''
     >>> Pdew_mixture(zs=[0.5, 0.5], Psats=[1400, 7000])
     2333.3333333333335
     '''
     def list_methods():
-        ''' Internal function - TBD '''
+        ''' List methods availble for calculating mixture dew point '''
         methods = []
         if none_and_length_check((Psats, zs)):
             methods.append('IDEAL_VLE')

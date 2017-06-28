@@ -24,6 +24,10 @@ SOFTWARE.'''
 # pylint: disable=maybe-no-member
 # pylint: disable=invalid-name
 
+__all__ = ['omega', 'LK_omega', 'omega_mixture', 'StielPolar']
+__all__.extend(['omega_methods', 'omega_mixture_methods',
+                'Stiel_polar_methods'])
+
 from __future__ import division
 
 import numpy as np
@@ -35,9 +39,6 @@ from thermo.critical import _crit_PSRKR4, _crit_PassutDanner, _crit_Yaws
 from thermo.phase_change import Tb
 from thermo.vapor_pressure import VaporPressure
 
-__all__ = ['omega', 'LK_omega', 'omega_mixture', 'StielPolar']
-__all__.extend(['omega_methods', 'omega_mixture_methods',
-                'Stiel_polar_methods'])
 
 omega_methods = ['PSRK', 'PD', 'YAWS', 'LK', 'DEFINITION']
 
@@ -269,7 +270,7 @@ def omega_mixture(omegas, zs, CASRNs=None, Method=None,
        New York: McGraw-Hill Professional, 2000.
     '''
     def list_methods():
-        ''' Internal function - TBD '''
+        ''' List methods available for calculating omega '''
         methods = []
         if none_and_length_check([zs, omegas]):
             methods.append('SIMPLE')
@@ -361,7 +362,7 @@ def StielPolar(Tc=None, Pc=None, omega=None, CASRN='', Method=None,
        http://www.shd.org.rs/JSCS/Vol65/No12-Pdf/JSCS12-07.pdf
     '''
     def list_methods():
-        ''' Internal function - TBD '''
+        ''' List methods available for Stiel's polar factor '''
         methods = []
         if Tc and Pc and omega:
             methods.append('DEFINITION')
