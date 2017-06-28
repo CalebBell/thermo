@@ -20,13 +20,14 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
+__all__ = ['omega', 'LK_omega', 'omega_mixture', 'StielPolar']
+__all__.extend(['omega_methods', 'omega_mixture_methods',
+                'Stiel_polar_methods'])
+
 from __future__ import division
 
-__all__ = ['omega', 'LK_omega', 'omega_mixture','StielPolar']
-__all__.extend(['omega_methods', 'omega_mixture_methods', 'Stiel_polar_methods'])
-
 import numpy as np
-import pandas as pd
+# unused? import pandas as pd
 from thermo.utils import log, log10
 from thermo.utils import mixing_simple, none_and_length_check
 from thermo.critical import Tc, Pc
@@ -38,7 +39,8 @@ from thermo.vapor_pressure import VaporPressure
 omega_methods = ['PSRK', 'PD', 'YAWS', 'LK', 'DEFINITION']
 
 
-def omega(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=['LK', 'DEFINITION']):
+def omega(CASRN, AvailableMethods=False, Method=None,
+          IgnoreMethods=['LK', 'DEFINITION']):
     r'''This function handles the retrieval of a chemical's acentric factor,
     `omega`, or its calculation from correlations or directly through the
     definition of acentric factor if possible. Requires a known boiling point,
@@ -71,7 +73,7 @@ def omega(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=['LK', 'DEFI
     Other Parameters
     ----------------
     Method : string, optional
-        The method name to use. Accepted methods are 'PSRK', 'PD', 'YAWS', 
+        The method name to use. Accepted methods are 'PSRK', 'PD', 'YAWS',
         'LK', and 'DEFINITION'. All valid values are also held in the list
         omega_methods.
     AvailableMethods : bool, optional
@@ -86,7 +88,7 @@ def omega(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=['LK', 'DEFI
     -----
     A total of five sources are available for this function. They are:
 
-        * 'PSRK', a compillation of experimental and estimated data published 
+        * 'PSRK', a compillation of experimental and estimated data published
           in the Appendix of [15]_, the fourth revision of the PSRK model.
         * 'PD', an older compillation of
           data published in (Passut & Danner, 1973) [16]_.
@@ -116,19 +118,25 @@ def omega(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=['LK', 'DEFI
        Publishing, 2014.
     '''
     def list_methods():
+        ''' List methods available for calculating a chemical's acentric
+        factor, omega '''
         methods = []
-        if CASRN in _crit_PSRKR4.index and not np.isnan(_crit_PSRKR4.at[CASRN, 'omega']):
+        if (CASRN in _crit_PSRKR4.index
+            and not np.isnan(_crit_PSRKR4.at[CASRN, 'omega'])):
             methods.append('PSRK')
-        if CASRN in _crit_PassutDanner.index and not np.isnan(_crit_PassutDanner.at[CASRN, 'omega']):
+        if (CASRN in _crit_PassutDanner.index
+            and not np.isnan(_crit_PassutDanner.at[CASRN, 'omega'])):
             methods.append('PD')
-        if CASRN in _crit_Yaws.index and not np.isnan(_crit_Yaws.at[CASRN, 'omega']):
+        if (CASRN in _crit_Yaws.index
+            and not np.isnan(_crit_Yaws.at[CASRN, 'omega'])):
             methods.append('YAWS')
         Tcrit, Pcrit = Tc(CASRN), Pc(CASRN)
         if Tcrit and Pcrit:
             if Tb(CASRN):
                 methods.append('LK')
             if VaporPressure(CASRN=CASRN).T_dependent_property(Tcrit*0.7):
-                methods.append('DEFINITION')  # TODO: better integration
+                # TODO: better integration
+                methods.append('DEFINITION')
         if IgnoreMethods:
             for Method in IgnoreMethods:
                 if Method in methods:
@@ -195,13 +203,13 @@ def LK_omega(Tb, Tc, Pc):
     References
     ----------
     .. [1] Lee, Byung Ik, and Michael G. Kesler. "A Generalized Thermodynamic
-       Correlation Based on Three-Parameter Corresponding States." AIChE Journal
-       21, no. 3 (1975): 510-527. doi:10.1002/aic.690210313.
+       Correlation Based on Three-Parameter Corresponding States." AIChE
+       Journal 21, no. 3 (1975): 510-527. doi:10.1002/aic.690210313.
     '''
     T_br = Tb/Tc
     omega = (log(101325.0/Pc) - 5.92714 + 6.09648/T_br + 1.28862*log(T_br) -
-             0.169347*T_br**6)/(15.2518 - 15.6875/T_br - 13.4721*log(T_br) +
-             0.43577*T_br**6)
+             0.169347*T_br**6) / (15.2518 - 15.6875/T_br
+             - 13.4721*log(T_br) + 0.43577*T_br**6)
     return omega
 
 
@@ -210,6 +218,7 @@ omega_mixture_methods = ['SIMPLE', 'NONE']
 
 def omega_mixture(omegas, zs, CASRNs=None, Method=None,
                   AvailableMethods=False):
+    # TODO Use or remove CASRNs argument
     r'''This function handles the calculation of a mixture's acentric factor.
     Calculation is based on the omegas provided for each pure component. Will
     automatically select a method to use if no Method is provided;
@@ -259,13 +268,18 @@ def omega_mixture(omegas, zs, CASRNs=None, Method=None,
        New York: McGraw-Hill Professional, 2000.
     '''
     def list_methods():
+        ''' List methods available for calculating a mixture's acentric
+        factor, omega '''
+
         methods = []
         if none_and_length_check([zs, omegas]):
             methods.append('SIMPLE')
         methods.append('NONE')
         return methods
+
     if AvailableMethods:
         return list_methods()
+
     if not Method:
         Method = list_methods()[0]
 
@@ -344,18 +358,23 @@ def StielPolar(Tc=None, Pc=None, omega=None, CASRN='', Method=None,
        Journal 13, no. 2 (1967): 351-355. doi:10.1002/aic.690130228.
     .. [2] D, Kukoljac Miloš, and Grozdanić Dušan K. "New Values of the
        Polarity Factor." Journal of the Serbian Chemical Society 65, no. 12
-       (January 1, 2000). http://www.shd.org.rs/JSCS/Vol65/No12-Pdf/JSCS12-07.pdf
+       (January 1, 2000).
+       http://www.shd.org.rs/JSCS/Vol65/No12-Pdf/JSCS12-07.pdf
     '''
     def list_methods():
+        ''' List methods available for Stiel's polar factor '''
         methods = []
         if Tc and Pc and omega:
             methods.append('DEFINITION')
         methods.append('NONE')
         return methods
+
     if AvailableMethods:
         return list_methods()
+
     if not Method:
         Method = list_methods()[0]
+
     if Method == 'DEFINITION':
         P = VaporPressure(CASRN=CASRN).T_dependent_property(Tc*0.6)
         if not P:
@@ -368,5 +387,3 @@ def StielPolar(Tc=None, Pc=None, omega=None, CASRN='', Method=None,
     else:
         raise Exception('Failure in in function')
     return factor
-
-

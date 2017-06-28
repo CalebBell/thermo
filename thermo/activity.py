@@ -20,8 +20,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
-from __future__ import division
-
 __all__ = ['K_value', 'Rachford_Rice_flash_error', 'Rachford_Rice_solution',
            'Li_Johns_Ahmadi_solution', 'flash_inner_loop', 'NRTL', 'Wilson',
            'UNIQUAC', 'flash', 'dew_at_T',
@@ -29,11 +27,12 @@ __all__ = ['K_value', 'Rachford_Rice_flash_error', 'Rachford_Rice_solution',
            'identify_phase_mixture', 'Pbubble_mixture', 'bubble_at_P',
            'Pdew_mixture']
 
-from scipy.optimize import fsolve, newton, brenth
+from __future__ import division
+
+from scipy.optimize import newton, brenth  # unused? fsolve
 from thermo.utils import exp, log
 from thermo.utils import none_and_length_check
-from thermo.utils import R
-
+# unused? from thermo.utils import R
 
 
 def K_value(P=None, Psat=None, phi_l=None, phi_g=None, gamma=None, Poynting=1):
@@ -164,14 +163,12 @@ def K_value(P=None, Psat=None, phi_l=None, phi_g=None, gamma=None, Poynting=1):
             return phi_l/phi_g
         return Psat/P
     except TypeError:
-        raise Exception('Input must consist of one set from (P, Psat, phi_l, \
-phi_g, gamma), (P, Psat, gamma), (phi_l, phi_g), (P, Psat)')
+        raise Exception('Input must consist of one set from (P, Psat, phi_l, '
+                        'phi_g, gamma), (P, Psat, gamma), (phi_l, phi_g), '
+                        '(P, Psat)')
 
 
-
-
-
-### Solutions using a existing algorithms
+# Solutions using a existing algorithms
 def Rachford_Rice_flash_error(V_over_F, zs, Ks):
     r'''Calculates the objective function of the Rachford-Rice flash equation.
     This function should be called by a solver seeking a solution to a flash
@@ -277,7 +274,9 @@ def Rachford_Rice_solution(zs, Ks):
     Examples
     --------
     >>> Rachford_Rice_solution(zs=[0.5, 0.3, 0.2], Ks=[1.685, 0.742, 0.532])
-    (0.6907302627738542, [0.3394086969663436, 0.3650560590371706, 0.2955352439964858], [0.571903654388289, 0.27087159580558057, 0.15722474980613044])
+    (0.6907302627738542, [0.3394086969663436, 0.3650560590371706,
+     0.2955352439964858], [0.571903654388289, 0.27087159580558057,
+     0.15722474980613044])
 
     References
     ----------
@@ -308,13 +307,16 @@ def Rachford_Rice_solution(zs, Ks):
     try:
         # Newton's method is marginally faster than brenth
         V_over_F = newton(Rachford_Rice_flash_error, x0=x0, args=(zs, Ks))
-        # newton skips out of its specified range in some cases, finding another solution
+        # newton skips out of its specified range in some cases, finding
+        # another solution
         # Check for that with asserts, and use brenth if it did
         assert V_over_F >= V_over_F_min2
         assert V_over_F <= V_over_F_max2
     except:
-        V_over_F = brenth(Rachford_Rice_flash_error, V_over_F_max-1E-7, V_over_F_min+1E-7, args=(zs, Ks))
-    # Cases not covered by the above solvers: When all components have K > 1, or all have K < 1
+        V_over_F = brenth(Rachford_Rice_flash_error, V_over_F_max-1E-7,
+                          V_over_F_min+1E-7, args=(zs, Ks))
+    # Cases not covered by the above solvers: When all components have K > 1,
+    # or all have K < 1
     # Should get a solution for all other cases.
     xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]
     ys = [Ki*xi for xi, Ki in zip(xs, Ks)]
@@ -368,7 +370,9 @@ def Li_Johns_Ahmadi_solution(zs, Ks):
     Examples
     --------
     >>> Li_Johns_Ahmadi_solution(zs=[0.5, 0.3, 0.2], Ks=[1.685, 0.742, 0.532])
-    (0.6907302627738544, [0.33940869696634357, 0.3650560590371706, 0.2955352439964858], [0.5719036543882889, 0.27087159580558057, 0.15722474980613044])
+    (0.6907302627738544, [0.33940869696634357, 0.3650560590371706,
+     0.2955352439964858], [0.5719036543882889, 0.27087159580558057,
+     0.15722474980613044])
 
     References
     ----------
@@ -378,9 +382,8 @@ def Li_Johns_Ahmadi_solution(zs, Ks):
        doi:10.1016/j.fluid.2011.12.005.
     '''
     # Re-order both Ks and Zs by K value, higher coming first
-    p = sorted(zip(Ks,zs), reverse=True)
-    Ks_sorted, zs_sorted = [K for (K,z) in p], [z for (K,z) in p]
-
+    p = sorted(zip(Ks, zs), reverse=True)
+    Ks_sorted, zs_sorted = [K for (K, z) in p], [z for (K, z) in p]
 
     # Largest K value and corresponding overall mole fraction
     k1 = Ks_sorted[0]
@@ -401,10 +404,15 @@ def Li_Johns_Ahmadi_solution(zs, Ks):
     k1_m_1 = (k1-1.)
     t1 = (k1-kn)/(kn-1.)
 
-    objective = lambda x1: 1. + t1*x1 + sum([(ki-kn)/(kn_m_1) * zi*k1_m_1*x1 /( (ki-1.)*z1 + (k1-ki)*x1) for ki, zi in zip(Ks_sorted[1:length], zs_sorted[1:length])])
+    objective = lambda x1: (1. + t1 * x1
+                            + sum([(ki - kn) / (kn_m_1) * zi * k1_m_1 * x1
+                            / ((ki - 1.) * z1 + (k1 - ki) * x1)
+                            for ki, zi
+                            in zip(Ks_sorted[1:length], zs_sorted[1:length])]))
     try:
         x1 = newton(objective, x_guess)
-        # newton skips out of its specified range in some cases, finding another solution
+        # newton skips out of its specified range in some cases, finding
+        # another solution
         # Check for that with asserts, and use brenth if it did
         # Must also check that V_over_F is right.
         assert x1 >= x_min2
@@ -420,6 +428,8 @@ def Li_Johns_Ahmadi_solution(zs, Ks):
 
 
 flash_inner_loop_methods = ['Analytical', 'Rachford-Rice', 'Li-Johns-Ahmadi']
+
+
 def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None):
     r'''This function handles the solution of the inner loop of a flash
     calculation, solving for liquid and gas mole fractions and vapor fraction
@@ -475,33 +485,86 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None):
     Examples
     --------
     >>> flash_inner_loop(zs=[0.5, 0.3, 0.2], Ks=[1.685, 0.742, 0.532])
-    (0.6907302627738537, [0.3394086969663437, 0.36505605903717053, 0.29553524399648573], [0.5719036543882892, 0.2708715958055805, 0.1572247498061304])
+    (0.6907302627738537, [0.3394086969663437, 0.36505605903717053,
+     0.29553524399648573], [0.5719036543882892, 0.2708715958055805,
+     0.1572247498061304])
     '''
     l = len(zs)
+
     def list_methods():
+        ''' Lists available solution methods for determining liquid and gas mole
+        fractions and vapor fraction. '''
         methods = []
-        if l in [2,3]:
+        if l in [2, 3]:
             methods.append('Analytical')
         if l >= 2:
             methods.append('Rachford-Rice')
         if l >= 3:
             methods.append('Li-Johns-Ahmadi')
         return methods
+
     if AvailableMethods:
         return list_methods()
+
     if not Method:
         Method = 'Analytical' if l < 4 else 'Rachford-Rice'
+
     if Method == 'Analytical':
         if l == 2:
             z1, z2 = zs
             K1, K2 = Ks
-            V_over_F = (-K1*z1 - K2*z2 + z1 + z2)/(K1*K2*z1 + K1*K2*z2 - K1*z1 - K1*z2 - K2*z1 - K2*z2 + z1 + z2)
+            V_over_F = ((-K1*z1 - K2*z2 + z1 + z2)
+                        / (K1*K2*z1 + K1*K2*z2
+                           - K1*z1 - K1*z2 - K2*z1 - K2*z2
+                           + z1 + z2))
         elif l == 3:
             z1, z2, z3 = zs
             K1, K2, K3 = Ks
-            V_over_F = (-K1*K2*z1/2 - K1*K2*z2/2 - K1*K3*z1/2 - K1*K3*z3/2 + K1*z1 + K1*z2/2 + K1*z3/2 - K2*K3*z2/2 - K2*K3*z3/2 + K2*z1/2 + K2*z2 + K2*z3/2 + K3*z1/2 + K3*z2/2 + K3*z3 - z1 - z2 - z3 - (K1**2*K2**2*z1**2 + 2*K1**2*K2**2*z1*z2 + K1**2*K2**2*z2**2 - 2*K1**2*K2*K3*z1**2 - 2*K1**2*K2*K3*z1*z2 - 2*K1**2*K2*K3*z1*z3 + 2*K1**2*K2*K3*z2*z3 - 2*K1**2*K2*z1*z2 + 2*K1**2*K2*z1*z3 - 2*K1**2*K2*z2**2 - 2*K1**2*K2*z2*z3 + K1**2*K3**2*z1**2 + 2*K1**2*K3**2*z1*z3 + K1**2*K3**2*z3**2 + 2*K1**2*K3*z1*z2 - 2*K1**2*K3*z1*z3 - 2*K1**2*K3*z2*z3 - 2*K1**2*K3*z3**2 + K1**2*z2**2 + 2*K1**2*z2*z3 + K1**2*z3**2 - 2*K1*K2**2*K3*z1*z2 + 2*K1*K2**2*K3*z1*z3 - 2*K1*K2**2*K3*z2**2 - 2*K1*K2**2*K3*z2*z3 - 2*K1*K2**2*z1**2 - 2*K1*K2**2*z1*z2 - 2*K1*K2**2*z1*z3 + 2*K1*K2**2*z2*z3 + 2*K1*K2*K3**2*z1*z2 - 2*K1*K2*K3**2*z1*z3 - 2*K1*K2*K3**2*z2*z3 - 2*K1*K2*K3**2*z3**2 + 4*K1*K2*K3*z1**2 + 4*K1*K2*K3*z1*z2 + 4*K1*K2*K3*z1*z3 + 4*K1*K2*K3*z2**2 + 4*K1*K2*K3*z2*z3 + 4*K1*K2*K3*z3**2 + 2*K1*K2*z1*z2 - 2*K1*K2*z1*z3 - 2*K1*K2*z2*z3 - 2*K1*K2*z3**2 - 2*K1*K3**2*z1**2 - 2*K1*K3**2*z1*z2 - 2*K1*K3**2*z1*z3 + 2*K1*K3**2*z2*z3 - 2*K1*K3*z1*z2 + 2*K1*K3*z1*z3 - 2*K1*K3*z2**2 - 2*K1*K3*z2*z3 + K2**2*K3**2*z2**2 + 2*K2**2*K3**2*z2*z3 + K2**2*K3**2*z3**2 + 2*K2**2*K3*z1*z2 - 2*K2**2*K3*z1*z3 - 2*K2**2*K3*z2*z3 - 2*K2**2*K3*z3**2 + K2**2*z1**2 + 2*K2**2*z1*z3 + K2**2*z3**2 - 2*K2*K3**2*z1*z2 + 2*K2*K3**2*z1*z3 - 2*K2*K3**2*z2**2 - 2*K2*K3**2*z2*z3 - 2*K2*K3*z1**2 - 2*K2*K3*z1*z2 - 2*K2*K3*z1*z3 + 2*K2*K3*z2*z3 + K3**2*z1**2 + 2*K3**2*z1*z2 + K3**2*z2**2)**0.5/2)/(K1*K2*K3*z1 + K1*K2*K3*z2 + K1*K2*K3*z3 - K1*K2*z1 - K1*K2*z2 - K1*K2*z3 - K1*K3*z1 - K1*K3*z2 - K1*K3*z3 + K1*z1 + K1*z2 + K1*z3 - K2*K3*z1 - K2*K3*z2 - K2*K3*z3 + K2*z1 + K2*z2 + K2*z3 + K3*z1 + K3*z2 + K3*z3 - z1 - z2 - z3)
+            V_over_F = ((-K1*K2*z1/2 - K1*K2*z2/2 - K1*K3*z1/2 - K1*K3*z3/2
+                        + K1*z1 + K1*z2/2 + K1*z3/2 - K2*K3*z2/2 - K2*K3*z3/2
+                        + K2*z1/2 + K2*z2 + K2*z3/2 + K3*z1/2 + K3*z2/2
+                        + K3*z3 - z1 - z2 - z3
+                        - (K1**2*K2**2*z1**2
+                           + 2*K1**2*K2**2*z1*z2 + K1**2*K2**2*z2**2
+                           - 2*K1**2*K2*K3*z1**2 - 2*K1**2*K2*K3*z1*z2
+                           - 2*K1**2*K2*K3*z1*z3 + 2*K1**2*K2*K3*z2*z3
+                           - 2*K1**2*K2*z1*z2 + 2*K1**2*K2*z1*z3
+                           - 2*K1**2*K2*z2**2 - 2*K1**2*K2*z2*z3
+                           + K1**2*K3**2*z1**2 + 2*K1**2*K3**2*z1*z3
+                           + K1**2*K3**2*z3**2 + 2*K1**2*K3*z1*z2
+                           - 2*K1**2*K3*z1*z3 - 2*K1**2*K3*z2*z3
+                           - 2*K1**2*K3*z3**2 + K1**2*z2**2 + 2*K1**2*z2*z3
+                           + K1**2*z3**2 - 2*K1*K2**2*K3*z1*z2
+                           + 2*K1*K2**2*K3*z1*z3 - 2*K1*K2**2*K3*z2**2
+                           - 2*K1*K2**2*K3*z2*z3 - 2*K1*K2**2*z1**2
+                           - 2*K1*K2**2*z1*z2 - 2*K1*K2**2*z1*z3
+                           + 2*K1*K2**2*z2*z3 + 2*K1*K2*K3**2*z1*z2
+                           - 2*K1*K2*K3**2*z1*z3 - 2*K1*K2*K3**2*z2*z3
+                           - 2*K1*K2*K3**2*z3**2 + 4*K1*K2*K3*z1**2
+                           + 4*K1*K2*K3*z1*z2 + 4*K1*K2*K3*z1*z3
+                           + 4*K1*K2*K3*z2**2 + 4*K1*K2*K3*z2*z3
+                           + 4*K1*K2*K3*z3**2 + 2*K1*K2*z1*z2
+                           - 2*K1*K2*z1*z3 - 2*K1*K2*z2*z3 - 2*K1*K2*z3**2
+                           - 2*K1*K3**2*z1**2 - 2*K1*K3**2*z1*z2
+                           - 2*K1*K3**2*z1*z3 + 2*K1*K3**2*z2*z3
+                           - 2*K1*K3*z1*z2 + 2*K1*K3*z1*z3 - 2*K1*K3*z2**2
+                           - 2*K1*K3*z2*z3 + K2**2*K3**2*z2**2
+                           + 2*K2**2*K3**2*z2*z3 + K2**2*K3**2*z3**2
+                           + 2*K2**2*K3*z1*z2 - 2*K2**2*K3*z1*z3
+                           - 2*K2**2*K3*z2*z3 - 2*K2**2*K3*z3**2 + K2**2*z1**2
+                           + 2*K2**2*z1*z3 + K2**2*z3**2 - 2*K2*K3**2*z1*z2
+                           + 2*K2*K3**2*z1*z3 - 2*K2*K3**2*z2**2
+                           - 2*K2*K3**2*z2*z3 - 2*K2*K3*z1**2 - 2*K2*K3*z1*z2
+                           - 2*K2*K3*z1*z3 + 2*K2*K3*z2*z3 + K3**2*z1**2
+                           + 2*K3**2*z1*z2 + K3**2*z2**2)**0.5/2)
+                        / (K1*K2*K3*z1 + K1*K2*K3*z2 + K1*K2*K3*z3 - K1*K2*z1
+                           - K1*K2*z2 - K1*K2*z3 - K1*K3*z1 - K1*K3*z2
+                           - K1*K3*z3 + K1*z1 + K1*z2 + K1*z3 - K2*K3*z1
+                           - K2*K3*z2 - K2*K3*z3 + K2*z1 + K2*z2 + K2*z3
+                           + K3*z1 + K3*z2 + K3*z3 - z1 - z2 - z3))
         else:
-            raise Exception('Only solutions of one or two variables are available analytically')
+            raise Exception('Only solutions of one or two variables are '
+                            'available analytically')
         xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]
         ys = [Ki*xi for xi, Ki in zip(xs, Ks)]
         return V_over_F, xs, ys
@@ -537,7 +600,8 @@ def NRTL(xs, taus, alphas):
         Dimensionless interaction parameters of each compound with each other,
         [-]
     alphas : list[list[float]]
-        Nonrandomness constants of each compound interacting with each other, [-]
+        Nonrandomness constants of each compound interacting with each other,
+        [-]
 
     Returns
     -------
@@ -579,19 +643,19 @@ def NRTL(xs, taus, alphas):
     '''
     gammas = []
     cmps = range(len(xs))
-    Gs = [[exp(-alphas[i][j]*taus[i][j]) for j in cmps] for i in cmps]
+    Gs = [[exp(-alphas[i][j] * taus[i][j]) for j in cmps] for i in cmps]
     for i in cmps:
         tn1, td1, total2 = 0., 0., 0.
         for j in cmps:
             # Term 1, numerator and denominator
-            tn1 += xs[j]*taus[j][i]*Gs[j][i]
-            td1 +=  xs[j]*Gs[j][i]
+            tn1 += xs[j] * taus[j][i] * Gs[j][i]
+            td1 += xs[j] * Gs[j][i]
             # Term 2
-            tn2 = xs[j]*Gs[i][j]
-            td2 = td3 = sum([xs[k]*Gs[k][j] for k in cmps])
-            tn3 = sum([xs[m]*taus[m][j]*Gs[m][j] for m in cmps])
-            total2 += tn2/td2*(taus[i][j] - tn3/td3)
-        gamma = exp(tn1/td1 + total2)
+            tn2 = xs[j] * Gs[i][j]
+            td2 = td3 = sum([xs[k] * Gs[k][j] for k in cmps])
+            tn3 = sum([xs[m] * taus[m][j] * Gs[m][j] for m in cmps])
+            total2 += tn2 / td2*(taus[i][j] - tn3/td3)
+        gamma = exp(tn1 / td1 + total2)
         gammas.append(gamma)
     return gammas
 
@@ -624,10 +688,12 @@ def Wilson(xs, params):
     This model needs N^2 parameters.
 
     The original model correlated the interaction parameters using the standard
-    pure-component molar volumes of each species at 25°C, in the following form:
+    pure-component molar volumes of each species at 25°C, in the following
+    form:
 
     .. math::
-        \Lambda_{ij} = \frac{V_j}{V_i} \exp\left(\frac{-\lambda_{i,j}}{RT}\right)
+        \Lambda_{ij} = \frac{V_j}{V_i} \exp\left(\frac{-\lambda_{i,j}}{RT}
+        \right)
 
     However, that form has less flexibility and offered no advantage over
     using only regressed parameters.
@@ -768,8 +834,9 @@ def UNIQUAC(xs, rs, qs, taus):
 
     Ss = [sum([vs[j]*taus[j][i] for j in cmps]) for i in cmps]
 
-    loggammacs = [log(phis[i]/xs[i]) + 1 - phis[i]/xs[i]
-    - 5*qs[i]*(log(phis[i]/vs[i]) + 1 - phis[i]/vs[i]) for i in cmps]
+    loggammacs = [log(phis[i] / xs[i]) + 1 - phis[i] / xs[i]
+                  - 5 * qs[i] * (log(phis[i] / vs[i]) + 1 - phis[i] / vs[i])
+                  for i in cmps]
 
     loggammars = [qs[i]*(1 - log(Ss[i]) - sum([taus[i][j]*vs[j]/Ss[j]
                   for j in cmps])) for i in cmps]
@@ -778,20 +845,58 @@ def UNIQUAC(xs, rs, qs, taus):
 
 
 def flash(P, zs, Psats):
+    '''
+    Parameters
+    ----------
+    P : list[float]?
+        Pressure, [-]
+    zs : list[float]
+        Overall mole fractions of all species, [-]
+    Psats : list[float]?
+        Saturation pressure, [-]
+
+    Returns
+    -------
+    xs : list[float]
+        Mole fractions of each species in the liquid phase, [-]
+    ys : list[float]
+        Mole fractions of each species in the vapor phase, [-]
+    V_over_F : float
+        Vapor fraction solution [-]
+
+    '''
 #    if not fugacities:
 #        fugacities = [1 for i in range(len(zs))]
 #    if not gammas:
 #        gammas = [1 for i in range(len(zs))]
     if not none_and_length_check((zs, Psats)):
-        raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
+        raise Exception('Input dimentions are inconsistent or some input '
+                        'parameters are missing.')
     Ks = [K_value(P=P, Psat=Psats[i]) for i in range(len(zs))]
+
     def valid_range(zs, Ks):
+        ''' Determines if zs and Ks are valid for this calculation
+
+        Parameters
+        ----------
+        zs : list[float]
+            Overall mole fractions of all species, [-]
+        Ks : list[float]
+            Equilibrium K-values, [-]
+
+        Returns
+        -------
+        valid : bool
+            True if arguments are valid, False otherwise
+        '''
+
         valid = True
-        if sum([zs[i]*Ks[i] for i in range(len(Ks))]) < 1:
+        if sum([zs[i] * Ks[i] for i in range(len(Ks))]) < 1:
             valid = False
-        if sum([zs[i]/Ks[i] for i in range(len(Ks))]) < 1:
+        if sum([zs[i] / Ks[i] for i in range(len(Ks))]) < 1:
             valid = False
         return valid
+
     if not valid_range(zs, Ks):
         raise Exception('Solution does not exist')
 
@@ -801,15 +906,15 @@ def flash(P, zs, Psats):
     return xs, ys, V_over_F
 
 
-
-
 def dew_at_T(zs, Psats, fugacities=None, gammas=None):
+    # TODO: Add documentation; saturation pressure of mixture at temperature T
     '''
     >>> dew_at_T([0.5, 0.5], [1400, 7000])
     2333.3333333333335
     >>> dew_at_T([0.5, 0.5], [1400, 7000], gammas=[1.1, .75])
     2381.443298969072
-    >>> dew_at_T([0.5, 0.5], [1400, 7000], gammas=[1.1, .75], fugacities=[.995, 0.98])
+    >>> dew_at_T([0.5, 0.5], [1400, 7000], gammas=[1.1, .75],
+    fugacities=[.995, 0.98])
     2401.621874512658
     '''
     if not fugacities:
@@ -817,18 +922,22 @@ def dew_at_T(zs, Psats, fugacities=None, gammas=None):
     if not gammas:
         gammas = [1 for i in range(len(Psats))]
     if not none_and_length_check((zs, Psats, fugacities, gammas)):
-        raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
-    P = 1/sum(zs[i]*fugacities[i]/Psats[i]/gammas[i] for i in range(len(zs)))
+        raise Exception('Input dimentions are inconsistent or some input '
+                        'parameters are missing.')
+    P = (1 / sum(zs[i] * fugacities[i] / Psats[i] / gammas[i]
+         for i in range(len(zs))))
     return P
 
 
 def bubble_at_T(zs, Psats, fugacities=None, gammas=None):
+    # TODO: Add documentation; bubble pressure of mixture at temperature T
     '''
     >>> bubble_at_T([0.5, 0.5], [1400, 7000])
     4200.0
     >>> bubble_at_T([0.5, 0.5], [1400, 7000], gammas=[1.1, .75])
     3395.0
-    >>> bubble_at_T([0.5, 0.5], [1400, 7000], gammas=[1.1, .75], fugacities=[.995, 0.98])
+    >>> bubble_at_T([0.5, 0.5], [1400, 7000], gammas=[1.1, .75],
+    fugacities=[.995, 0.98])
     3452.440775305097
     '''
     if not fugacities:
@@ -836,7 +945,8 @@ def bubble_at_T(zs, Psats, fugacities=None, gammas=None):
     if not gammas:
         gammas = [1 for i in range(len(Psats))]
     if not none_and_length_check((zs, Psats, fugacities, gammas)):
-        raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
+        raise Exception('Input dimentions are inconsistent or some input '
+                        'parameters are missing.')
     P = sum(zs[i]*Psats[i]*gammas[i]/fugacities[i] for i in range(len(zs)))
     return P
 
@@ -885,7 +995,7 @@ def identify_phase(T, P, Tm=None, Tb=None, Tc=None, Psat=None):
 
     Notes
     -----
-    No special attential is paid to any phase transition. For the case where
+    No special attention is paid to any phase transition. For the case where
     the melting point is not provided, the possibility of the fluid being solid
     is simply ignored.
 
@@ -910,7 +1020,7 @@ def identify_phase(T, P, Tm=None, Tb=None, Tc=None, Psat=None):
         # Treat Tb as holding from 90 kPa to 110 kPa
         if 9E4 < P < 1.1E5:
             if T < Tb:
-                return  'l'
+                return 'l'
             else:
                 return 'g'
         elif P > 1.1E5 and T <= Tb:
@@ -923,37 +1033,52 @@ def identify_phase(T, P, Tm=None, Tb=None, Tc=None, Psat=None):
         return None
 
 
-mixture_phase_methods = ['IDEAL_VLE', 'SUPERCRITICAL_T', 'SUPERCRITICAL_P', 'IDEAL_VLE_SUPERCRITICAL']
+mixture_phase_methods = ['IDEAL_VLE', 'SUPERCRITICAL_T', 'SUPERCRITICAL_P',
+                         'IDEAL_VLE_SUPERCRITICAL']
+
 
 def identify_phase_mixture(T=None, P=None, zs=None, Tcs=None, Pcs=None,
                            Psats=None, CASRNs=None,
                            AvailableMethods=False, Method=None):  # pragma: no cover
+    # TODO: Use or delete CASRNs argument
+    # TODO: Add documentation
     '''
-    >>> identify_phase_mixture(T=280, P=5000., zs=[0.5, 0.5], Psats=[1400, 7000])
+    >>> identify_phase_mixture(T=280, P=5000., zs=[0.5, 0.5],
+    Psats=[1400, 7000])
     ('l', [0.5, 0.5], None, 0)
-    >>> identify_phase_mixture(T=280, P=3000., zs=[0.5, 0.5], Psats=[1400, 7000])
-    ('two-phase', [0.7142857142857143, 0.2857142857142857], [0.33333333333333337, 0.6666666666666666], 0.5625000000000001)
-    >>> identify_phase_mixture(T=280, P=800., zs=[0.5, 0.5], Psats=[1400, 7000])
+    >>> identify_phase_mixture(T=280, P=3000., zs=[0.5, 0.5],
+    Psats=[1400, 7000])
+    ('two-phase', [0.7142857142857143, 0.2857142857142857],
+     [0.33333333333333337, 0.6666666666666666], 0.5625000000000001)
+    >>> identify_phase_mixture(T=280, P=800., zs=[0.5, 0.5],
+    Psats=[1400, 7000])
     ('g', None, [0.5, 0.5], 1)
     >>> identify_phase_mixture(T=280, P=800., zs=[0.5, 0.5])
     (None, None, None, None)
     '''
     def list_methods():
+        ''' List methods available to identify the phase of a mixture '''
         methods = []
         if Psats and none_and_length_check((Psats, zs)):
             methods.append('IDEAL_VLE')
-        if Tcs and none_and_length_check([Tcs]) and all([T >= i for i in Tcs]):
+        if (Tcs and none_and_length_check([Tcs])
+            and all([T >= i for i in Tcs])):
             methods.append('SUPERCRITICAL_T')
-        if Pcs and none_and_length_check([Pcs]) and all([P >= i for i in Pcs]):
+        if (Pcs and none_and_length_check([Pcs])
+            and all([P >= i for i in Pcs])):
             methods.append('SUPERCRITICAL_P')
-        if Tcs and none_and_length_check([zs, Tcs]) and any([T > Tc for Tc in Tcs]):
+        if (Tcs and none_and_length_check([zs, Tcs])
+            and any([T > Tc for Tc in Tcs])):
             methods.append('IDEAL_VLE_SUPERCRITICAL')
         methods.append('NONE')
         return methods
+
     if AvailableMethods:
         return list_methods()
+
     if not Method:
         Method = list_methods()[0]
+
     # This is the calculate, given the method section
     xs, ys, phase, V_over_F = None, None, None, None
     if Method == 'IDEAL_VLE':
@@ -975,12 +1100,12 @@ def identify_phase_mixture(T=None, P=None, zs=None, Tcs=None, Pcs=None,
     elif Method == 'SUPERCRITICAL_T':
         if all([T >= i for i in Tcs]):
             phase = 'g'
-        else: # The following is nonsensical
+        else:  # The following is nonsensical
             phase = 'two-phase'
     elif Method == 'SUPERCRITICAL_P':
         if all([P >= i for i in Pcs]):
             phase = 'g'
-        else: # The following is nonsensical
+        else:  # The following is nonsensical
             phase = 'two-phase'
     elif Method == 'IDEAL_VLE_SUPERCRITICAL':
         Psats = list(Psats)
@@ -1011,21 +1136,28 @@ def identify_phase_mixture(T=None, P=None, zs=None, Tcs=None, Pcs=None,
 
 
 def Pbubble_mixture(T=None, zs=None, Psats=None, CASRNs=None,
-                   AvailableMethods=False, Method=None):  # pragma: no cover
+                    AvailableMethods=False, Method=None):  # pragma: no cover
+    # TODO: Use or delete CASRNs argument
+    # TODO: Use or delete T argument
+    # TODO: Add documentation; determine bubble pressure of a mixture
     '''
     >>> Pbubble_mixture(zs=[0.5, 0.5], Psats=[1400, 7000])
     4200.0
     '''
     def list_methods():
+        ''' List methods available for calculating bubble pressure '''
         methods = []
         if none_and_length_check((Psats, zs)):
             methods.append('IDEAL_VLE')
         methods.append('NONE')
         return methods
+
     if AvailableMethods:
         return list_methods()
+
     if not Method:
         Method = list_methods()[0]
+
     # This is the calculate, given the method section
     if Method == 'IDEAL_VLE':
         Pbubble = bubble_at_T(zs, Psats)
@@ -1060,7 +1192,20 @@ def bubble_at_P(P, zs, vapor_pressure_eqns, fugacities=None, gammas=None):
     '''
 
     def bubble_P_error(T):
-        Psats = [VP(T) for VP in vapor_pressure_eqns]
+        ''' Bubble pressure residual function for Newton's method
+        root-finder.
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+
+        Returns
+        -------
+        P - Pcalc : float
+            Pressure residual, [Pa]
+        '''
+
         Pcalc = bubble_at_T(zs, Psats, fugacities, gammas)
 
         return P - Pcalc
@@ -1072,20 +1217,27 @@ def bubble_at_P(P, zs, vapor_pressure_eqns, fugacities=None, gammas=None):
 
 def Pdew_mixture(T=None, zs=None, Psats=None, CASRNs=None,
                  AvailableMethods=False, Method=None):  # pragma: no cover
+    # TODO: Use or delete CASRNs argument
+    # TODO: Use or delete T argument
+    # TODO: Add documentation; dew point of mixture
     '''
     >>> Pdew_mixture(zs=[0.5, 0.5], Psats=[1400, 7000])
     2333.3333333333335
     '''
     def list_methods():
+        ''' List methods availble for calculating mixture dew point '''
         methods = []
         if none_and_length_check((Psats, zs)):
             methods.append('IDEAL_VLE')
         methods.append('NONE')
         return methods
+
     if AvailableMethods:
         return list_methods()
+
     if not Method:
         Method = list_methods()[0]
+
     # This is the calculate, given the method section
     if Method == 'IDEAL_VLE':
         Pdew = dew_at_T(zs, Psats)
@@ -1094,6 +1246,3 @@ def Pdew_mixture(T=None, zs=None, Psats=None, CASRNs=None,
     else:
         raise Exception('Failure in in function')
     return Pdew
-
-
-
