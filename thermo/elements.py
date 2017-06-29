@@ -22,9 +22,9 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['PeriodicTable', 'molecular_weight', 'mass_fractions', 
-           'atom_fractions', 'similarity_variable', 'atoms_to_Hill', 
-           'simple_formula_parser', 'CAS_by_number', 'periods', 'groups', 
+__all__ = ['PeriodicTable', 'molecular_weight', 'mass_fractions',
+           'atom_fractions', 'similarity_variable', 'atoms_to_Hill',
+           'simple_formula_parser', 'CAS_by_number', 'periods', 'groups',
            'blocks']
 import os
 import re
@@ -34,24 +34,67 @@ from thermo.utils import to_num
 folder = os.path.join(os.path.dirname(__file__), 'Misc')
 
 
-CAS_by_number = ['1333-74-0', '7440-59-7', '7439-93-2', '7440-41-7', '7440-42-8', '7440-44-0', '7727-37-9', '7782-44-7', '7782-41-4', '7440-01-9', '7440-23-5', '7439-95-4', '7429-90-5', '7440-21-3', '7723-14-0', '7704-34-9', '7782-50-5', '7440-37-1', '7440-09-7', '7440-70-2', '7440-20-2', '7440-32-6', '7440-62-2', '7440-47-3', '7439-96-5', '7439-89-6', '7440-48-4', '7440-02-0', '7440-50-8', '7440-66-6', '7440-55-3', '7440-56-4', '7440-38-2', '7782-49-2', '7726-95-6', '7439-90-9', '7440-17-7', '7440-24-6', '7440-65-5', '7440-67-7', '7440-03-1', '7439-98-7', '7440-26-8', '7440-18-8', '7440-16-6', '7440-05-3', '7440-22-4', '7440-43-9', '7440-74-6', '7440-31-5', '7440-36-0', '13494-80-9', '7553-56-2', '7440-63-3', '7440-46-2', '7440-39-3', '7439-91-0', '7440-45-1', '7440-10-0', '7440-00-8', '7440-12-2', '7440-19-9', '7440-53-1', '7440-54-2', '7440-27-9', '7429-91-6', '7440-60-0', '7440-52-0', '7440-30-4', '7440-64-4', '7439-94-3', '7440-58-6', '7440-25-7', '7440-33-7', '7440-15-5', '7440-04-2', '7439-88-5', '7440-06-4', '7440-57-5', '7439-97-6', '7440-28-0', '7439-92-1', '7440-69-9', '7440-08-6', '7440-68-8', '10043-92-2', '7440-73-5', '7440-14-4', '7440-34-8', '7440-29-1', '7440-13-3', '7440-61-1', '7439-99-8', '7440-07-5', '7440-35-9', '7440-51-9', '7440-40-6', '7440-71-3', '7429-92-7', '7440-72-4', '7440-11-1', '10028-14-5', '22537-19-5', '53850-36-5', '53850-35-4', '54038-81-2', '54037-14-8', '54037-57-9', '54038-01-6', '54083-77-1', '54386-24-2', '54084-26-3', '54084-70-7', '54085-16-4', '54085-64-2', '54100-71-9', '54101-14-3', '54144-19-3']
-'''CAS numbers of the elements, indexed by atomic numbers off-by-one up to 118.'''
+CAS_by_number = ['1333-74-0', '7440-59-7', '7439-93-2', '7440-41-7',
+                 '7440-42-8', '7440-44-0', '7727-37-9', '7782-44-7',
+                 '7782-41-4', '7440-01-9', '7440-23-5', '7439-95-4',
+                 '7429-90-5', '7440-21-3', '7723-14-0', '7704-34-9',
+                 '7782-50-5', '7440-37-1', '7440-09-7', '7440-70-2',
+                 '7440-20-2', '7440-32-6', '7440-62-2', '7440-47-3',
+                 '7439-96-5', '7439-89-6', '7440-48-4', '7440-02-0',
+                 '7440-50-8', '7440-66-6', '7440-55-3', '7440-56-4',
+                 '7440-38-2', '7782-49-2', '7726-95-6', '7439-90-9',
+                 '7440-17-7', '7440-24-6', '7440-65-5', '7440-67-7',
+                 '7440-03-1', '7439-98-7', '7440-26-8', '7440-18-8',
+                 '7440-16-6', '7440-05-3', '7440-22-4', '7440-43-9',
+                 '7440-74-6', '7440-31-5', '7440-36-0', '13494-80-9',
+                 '7553-56-2', '7440-63-3', '7440-46-2', '7440-39-3',
+                 '7439-91-0', '7440-45-1', '7440-10-0', '7440-00-8',
+                 '7440-12-2', '7440-19-9', '7440-53-1', '7440-54-2',
+                 '7440-27-9', '7429-91-6', '7440-60-0', '7440-52-0',
+                 '7440-30-4', '7440-64-4', '7439-94-3', '7440-58-6',
+                 '7440-25-7', '7440-33-7', '7440-15-5', '7440-04-2',
+                 '7439-88-5', '7440-06-4', '7440-57-5', '7439-97-6',
+                 '7440-28-0', '7439-92-1', '7440-69-9', '7440-08-6',
+                 '7440-68-8', '10043-92-2', '7440-73-5', '7440-14-4',
+                 '7440-34-8', '7440-29-1', '7440-13-3', '7440-61-1',
+                 '7439-99-8', '7440-07-5', '7440-35-9', '7440-51-9',
+                 '7440-40-6', '7440-71-3', '7429-92-7', '7440-72-4',
+                 '7440-11-1', '10028-14-5', '22537-19-5', '53850-36-5',
+                 '53850-35-4', '54038-81-2', '54037-14-8', '54037-57-9',
+                 '54038-01-6', '54083-77-1', '54386-24-2', '54084-26-3',
+                 '54084-70-7', '54085-16-4', '54085-64-2', '54100-71-9',
+                 '54101-14-3', '54144-19-3']
+'''CAS numbers of the elements, indexed by atomic numbers off-by-one up to
+118.'''
 
-periods = [1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7]
+periods = [1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4,
+           4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+           5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+           6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7,
+           7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+           7, 7, 7]
 '''Periods of the elements, indexed by atomic numbers off-by-one up to 118.'''
 
-groups = [1, 18, 1, 2, 13, 14, 15, 16, 17, 18, 1, 2, 13, 14, 15, 16, 17, 18, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 1, 2, None, None, None, None, None, None, None, None, None, None, None, None, None, None, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 1, 2, None, None, None, None, None, None, None, None, None, None, None, None, None, None, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+groups = [1, 18, 1, 2, 13, 14, 15, 16, 17, 18, 1, 2, 13, 14, 15, 16, 17, 18, 1,
+          2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 1, 2, 3,
+          4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 1, 2, None,
+          None, None, None, None, None, None, None, None, None, None, None,
+          None, None, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
+          1, 2, None, None, None, None, None, None, None, None, None, None,
+          None, None, None, None, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+          16, 17, 18]
 '''Groups of the elements, indexed by atomic numbers off-by-one up to 118.
 Lanthanides and Actinides are set to None.'''
 
 s_block = [1, 2, 3, 4, 11, 12, 19, 20, 37, 38, 55, 56, 87, 88]
-d_block = list(range(21, 31)) + list(range(39, 49)) + list(range(71, 81)) + list(range(103, 113))
+d_block = (list(range(21, 31)) + list(range(39, 49)) + list(range(71, 81))
+           + list(range(103, 113)))
 f_block = list(range(57, 71)) + list(range(89, 103))
-p_block = list(range(5, 11)) + list(range(13, 19)) + list(range(31, 37)) + list(range(49, 55)) + list(range(81, 87)) + list(range(113, 119))
+p_block = (list(range(5, 11)) + list(range(13, 19)) + list(range(31, 37))
+           + list(range(49, 55)) + list(range(81, 87)) + list(range(113, 119)))
 blocks = {'s': s_block, 'd': d_block, 'f': f_block, 'p': p_block}
 '''Blocks of the elements, stored in a dictionary with four keys and lists.
 Indexed by atomic numbers off-by-one up to 118.'''
-
 
 
 class PeriodicTable(object):
@@ -80,32 +123,33 @@ class PeriodicTable(object):
     '''
     __slots__ = ['number_to_elements', 'symbol_to_elements',
                  'name_to_elements', 'CAS_to_elements']
+
     def __init__(self, elements):
+        ''' Constructor '''
         self.number_to_elements = {}
         self.symbol_to_elements = {}
         self.name_to_elements = {}
         self.CAS_to_elements = {}
-    
+
         for ele in elements:
             self.number_to_elements[ele.number] = ele
             self.symbol_to_elements[ele.symbol] = ele
             self.name_to_elements[ele.name] = ele
             self.name_to_elements[ele.name.lower()] = ele
             self.CAS_to_elements[ele.CAS] = ele
-            
+
     def __contains__(self, key):
         for i in [self.symbol_to_elements, self.number_to_elements,
                   self.name_to_elements, self.CAS_to_elements]:
             if key in i:
                 return True
         return False
-        
 
     def __len__(self):
         return 118
 
     def __iter__(self):
-        return iter([self.number_to_elements[i] for i in range(1,119)])
+        return iter([self.number_to_elements[i] for i in range(1, 119)])
 
     def __getitem__(self, key):
         for i in [self.symbol_to_elements, self.number_to_elements,
@@ -170,7 +214,9 @@ class Element(object):
                  'smiles']
 
     def __init__(self, number, symbol, name, MW, CAS, AReneg, rcov, rvdw,
-                 maxbonds, elneg, ionization, elaffinity, period, group, block):
+                 maxbonds, elneg, ionization, elaffinity, period, group,
+                 block):
+        ''' Constructor '''
         self.number = number
         self.symbol = symbol
         self.name = name
@@ -188,7 +234,7 @@ class Element(object):
         self.elneg = elneg
         self.ionization = ionization
         self.elaffinity = elaffinity
-        
+
         self.protons = number
         self.electrons = number
         self.InChI = 'InChI=1S/' + self.symbol
@@ -197,13 +243,14 @@ class Element(object):
 
 element_list = []
 with open(os.path.join(folder, 'element.txt'), 'rb') as f:
-    '''Load the file from OpenBabel with element data, and store it as both a
-    list of elements first, and then as an instance of Periodic Table.'''
+    # Load the file from OpenBabel with element data, and store it as both a
+    # list of elements first, and then as an instance of Periodic Table.
     for line in f:
         line = line.decode("utf-8")
         if line[0] != '#':
             values = to_num(line.strip('\n').split('\t'))
-            number, symbol, AReneg, rcov, _, rvdw, maxbonds, MW, elneg, ionization, elaffinity, _, _, _, name = values
+            (number, symbol, AReneg, rcov, _, rvdw, maxbonds, MW, elneg,
+             ionization, elaffinity, _, _, _, name) = values
             number = int(number)
             AReneg = None if AReneg == 0 else AReneg
             rcov = None if rcov == 1.6 else rcov  # in Angstrom
@@ -303,7 +350,8 @@ def mass_fractions(atoms, MW=None):
     Examples
     --------
     >>> mass_fractions({'H': 12, 'C': 20, 'O': 5})
-    {'H': 0.03639798802478244, 'C': 0.7228692758981262, 'O': 0.24073273607709128}
+    {'H': 0.03639798802478244, 'C': 0.7228692758981262,
+     'O': 0.24073273607709128}
 
     References
     ----------
@@ -348,7 +396,8 @@ def atom_fractions(atoms):
     Examples
     --------
     >>> atom_fractions({'H': 12, 'C': 20, 'O': 5})
-    {'H': 0.32432432432432434, 'C': 0.5405405405405406, 'O': 0.13513513513513514}
+    {'H': 0.32432432432432434, 'C': 0.5405405405405406,
+     'O': 0.13513513513513514}
 
     References
     ----------
@@ -440,6 +489,7 @@ def atoms_to_Hill(atoms):
        478-94. doi:10.1021/ja02046a005.
     '''
     def str_ele_count(ele):
+        ''' Return count of elements in a compound unless the count is 1 '''
         if atoms[ele] == 1:
             count = ''
         else:
@@ -461,20 +511,21 @@ def atoms_to_Hill(atoms):
     return s
 
 
-
 _formula_p1 = re.compile(r'([A-Z][a-z]{0,2}\d*)')
 _formula_p2 = re.compile(r'([A-Z][a-z]{0,2})')
 
+
 def simple_formula_parser(formula):
-    r'''Basic formula parser, primarily for obtaining element counts from 
-    formulas as formated in PubChem. Handles formulas with integer counts, 
+    r'''Basic formula parser, primarily for obtaining element counts from
+    formulas as formated in PubChem. Handles formulas with integer counts,
     but no brackets, no hydrates, no charges, no isotopes, and no group
     multipliers.
-    
+
     Strips charges from the end of a formula first. Accepts repeated chemical
     units. Performs no sanity checking that elements are actually elements.
-    As it uses regular expressions for matching, errors are mostly just ignored.
-    
+    As it uses regular expressions for matching, errors are mostly just
+    ignored.
+
     Parameters
     ----------
     formula : str

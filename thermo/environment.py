@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['GWP', 'ODP', 'logP', 'GWP_methods', 'GWP_data', 'ODP_methods', 
+__all__ = ['GWP', 'ODP', 'logP', 'GWP_methods', 'GWP_data', 'ODP_methods',
            'ODP_data', 'logP_methods', 'CRClogPDict', 'SyrresDict2']
 
 import os
@@ -35,20 +35,20 @@ folder = os.path.join(os.path.dirname(__file__), 'Environment')
 ### Global Warming Potentials
 
 GWP_data = pd.read_csv(os.path.join(folder,
-                       'Official Global Warming Potentials.tsv'), sep='\t',
-                       index_col=0)
+                                    'Official Global Warming Potentials.tsv'),
+                       sep='\t', index_col=0)
 
 ODP_data = pd.read_csv(os.path.join(folder,
-                       'Ozone Depletion Potentials.tsv'), sep='\t',
-                       index_col=0)
+                                    'Ozone Depletion Potentials.tsv'),
+                       sep='\t', index_col=0)
 
 CRClogPDict = pd.read_csv(os.path.join(folder,
-                       'CRC logP table.tsv'), sep='\t',
-                       index_col=0)
+                                       'CRC logP table.tsv'),
+                          sep='\t', index_col=0)
 
 SyrresDict2 = pd.read_csv(os.path.join(folder,
-                       'Syrres logP data.csv.gz'), sep='\t',
-                       index_col=0, compression='gzip')
+                                       'Syrres logP data.csv.gz'),
+                          sep='\t', index_col=0, compression='gzip')
 
 IPCC100 = 'IPCC (2007) 100yr'
 IPCC100SAR = 'IPCC (2007) 100yr-SAR'
@@ -83,7 +83,7 @@ def GWP(CASRN, AvailableMethods=False, Method=None):
     ----------------
     Method : string, optional
         The method name to use. Accepted methods are IPCC (2007) 100yr',
-        'IPCC (2007) 100yr-SAR', 'IPCC (2007) 20yr', and 'IPCC (2007) 500yr'. 
+        'IPCC (2007) 100yr-SAR', 'IPCC (2007) 20yr', and 'IPCC (2007) 500yr'.
         All valid values are also held in the list GWP_methods.
     AvailableMethods : bool, optional
         If True, function will determine which methods can be used to obtain
@@ -111,6 +111,7 @@ def GWP(CASRN, AvailableMethods=False, Method=None):
        https://www.ipcc.ch/publications_and_data/ar4/wg1/en/ch2s2-10-2.html.
     '''
     def list_methods():
+        ''' List methods of obtaining global warming potential (GWP) '''
         methods = []
         if CASRN in GWP_data.index:
             methods.append(IPCC100)
@@ -151,7 +152,8 @@ ODP1MIN = 'ODP1 Min'
 ODP1STR = 'ODP1 string'
 ODP1LOG = 'ODP1 logarithmic average'
 NONE = 'None'
-ODP_methods = [ODP2MAX, ODP1MAX, ODP2LOG, ODP1LOG, ODP2MIN, ODP1MIN, ODP2STR, ODP1STR]
+ODP_methods = [ODP2MAX, ODP1MAX, ODP2LOG, ODP1LOG, ODP2MIN, ODP1MIN, ODP2STR,
+               ODP1STR]
 
 
 def ODP(CASRN, AvailableMethods=False, Method=None):
@@ -171,9 +173,9 @@ def ODP(CASRN, AvailableMethods=False, Method=None):
     Returns
     -------
     ODP : float or str
-        Ozone Depletion potential, [(impact/mass chemical)/(impact/mass CFC-11)];
-        if method selected has `string` in it, this will be returned as a
-        string regardless of if a range is given or a number
+        Ozone Depletion potential, [(impact/mass chemical)/(impact/mass
+        CFC-11)]; if method selected has `string` in it, this will be returned
+        as a string regardless of if a range is given or a number
     methods : list, only returned if AvailableMethods == True
         List of methods which can be used to obtain ODP with the
         given inputs
@@ -181,10 +183,10 @@ def ODP(CASRN, AvailableMethods=False, Method=None):
     Other Parameters
     ----------------
     Method : string, optional
-        The method name to use. Accepted methods are 'ODP2 Max', 'ODP2 Min', 
+        The method name to use. Accepted methods are 'ODP2 Max', 'ODP2 Min',
         'ODP2 string', 'ODP2 logarithmic average', and methods for older values
-        are 'ODP1 Max', 'ODP1 Min', 'ODP1 string', and 'ODP1 logarithmic average'.
-        All valid values are also held in the list ODP_methods.
+        are 'ODP1 Max', 'ODP1 Min', 'ODP1 string', and 'ODP1 logarithmic
+        average'.  All valid values are also held in the list ODP_methods.
     Method : string, optional
         A string for the method name to use, as defined by constants in
         ODP_methods
@@ -227,6 +229,7 @@ def ODP(CASRN, AvailableMethods=False, Method=None):
        https://www.wmo.int/pages/prog/arep/gaw/ozone_2010/documents/Ozone-Assessment-2010-complete.pdf
     '''
     def list_methods():
+        ''' List methods of determining ozone depletion potential (ODP) '''
         methods = []
         if CASRN in ODP_data.index:
             if not pd.isnull(ODP_data.at[CASRN, 'ODP2 Max']):
@@ -305,7 +308,7 @@ def logP(CASRN, AvailableMethods=False, Method=None):
     Other Parameters
     ----------------
     Method : string, optional
-        The method name to use. Accepted methods are 'SYRRES', or 'CRC', 
+        The method name to use. Accepted methods are 'SYRRES', or 'CRC',
         All valid values are also held in the list logP_methods.
     AvailableMethods : bool, optional
         If True, function will determine which methods can be used to obtain
@@ -332,6 +335,8 @@ def logP(CASRN, AvailableMethods=False, Method=None):
        Chemistry and Physics, 95E. Boca Raton, FL: CRC press, 2014.
     '''
     def list_methods():
+        ''' List methods of determining a species' octanol/water partition
+        coefficient '''
         methods = []
         if CASRN in CRClogPDict.index:
             methods.append(CRC)

@@ -22,7 +22,9 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['dipole_moment', '_dipole_Poling', '_dipole_CCDB', '_dipole_Muller', 'dipole_methods']
+__all__ = ['dipole_moment', '_dipole_Poling', '_dipole_CCDB', '_dipole_Muller',
+           'dipole_methods']
+
 import os
 import numpy as np
 import pandas as pd
@@ -31,13 +33,14 @@ import pandas as pd
 folder = os.path.join(os.path.dirname(__file__), 'Misc')
 
 _dipole_Poling = pd.read_csv(os.path.join(folder, 'Poling Dipole.csv'),
-                          sep='\t', index_col=0)
+                             sep='\t', index_col=0)
 
 _dipole_CCDB = pd.read_csv(os.path.join(folder, 'cccbdb.nist.gov Dipoles.csv'),
-                          sep='\t', index_col=0)
+                           sep='\t', index_col=0)
 
-_dipole_Muller = pd.read_csv(os.path.join(folder, 'Muller Supporting Info Dipoles.csv'),
-                          sep='\t', index_col=0)
+_dipole_Muller = pd.read_csv(os.path.join(folder,
+                             'Muller Supporting Info Dipoles.csv'),
+                             sep='\t', index_col=0)
 
 
 CCCBDB = 'CCCBDB'
@@ -107,12 +110,16 @@ def dipole_moment(CASRN, AvailableMethods=False, Method=None):
        New York: McGraw-Hill Professional, 2000.
     '''
     def list_methods():
+        ''' Lists methods available for calculating dipole moment '''
         methods = []
-        if CASRN in _dipole_CCDB.index and not np.isnan(_dipole_CCDB.at[CASRN, 'Dipole']):
+        if (CASRN in _dipole_CCDB.index
+                and not np.isnan(_dipole_CCDB.at[CASRN, 'Dipole'])):
             methods.append(CCCBDB)
-        if CASRN in _dipole_Muller.index and not np.isnan(_dipole_Muller.at[CASRN, 'Dipole']):
+        if (CASRN in _dipole_Muller.index
+                and not np.isnan(_dipole_Muller.at[CASRN, 'Dipole'])):
             methods.append(MULLER)
-        if CASRN in _dipole_Poling.index and not np.isnan(_dipole_Poling.at[CASRN, 'Dipole']):
+        if (CASRN in _dipole_Poling.index
+                and not np.isnan(_dipole_Poling.at[CASRN, 'Dipole'])):
             methods.append(POLING)
         methods.append(NONE)
         return methods
