@@ -22,14 +22,15 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['Tc', 'Pc', 'Vc', 'Zc', 'third_property', 'critical_surface', 
-           'Ihmels', 'Meissner', 'Grigoras', 'Li', 
-           'Chueh_Prausnitz_Tc', 'Grieves_Thodos', 'modified_Wilson_Tc', 
-           'Tc_mixture', 'Pc_mixture', 'Chueh_Prausnitz_Vc', 
+__all__ = ['Tc', 'Pc', 'Vc', 'Zc', 'third_property', 'critical_surface',
+           'Ihmels', 'Meissner', 'Grigoras', 'Li',
+           'Chueh_Prausnitz_Tc', 'Grieves_Thodos', 'modified_Wilson_Tc',
+           'Tc_mixture', 'Pc_mixture', 'Chueh_Prausnitz_Vc',
            'modified_Wilson_Vc', 'Vc_mixture']
-__all__.extend(['Tc_methods', 'Pc_methods', 'Vc_methods', 'Zc_methods', 
-                'critical_surface_methods', '_crit_IUPAC', '_crit_Matthews', 
-                '_crit_CRC', '_crit_PSRKR4', '_crit_PassutDanner', '_crit_Yaws'])
+__all__.extend(['Tc_methods', 'Pc_methods', 'Vc_methods', 'Zc_methods',
+                'critical_surface_methods', '_crit_IUPAC', '_crit_Matthews',
+                '_crit_CRC', '_crit_PSRKR4', '_crit_PassutDanner',
+                '_crit_Yaws'])
 
 import os
 import numpy as np
@@ -47,25 +48,32 @@ folder = os.path.join(os.path.dirname(__file__), 'Critical Properties')
 # IUPAC Organic data series
 # TODO: 12E of this data http://pubsdc3.acs.org/doi/10.1021/acs.jced.5b00571
 
-_crit_IUPAC = pd.read_csv(os.path.join(folder, 'IUPACOrganicCriticalProps.tsv'),
+_crit_IUPAC = pd.read_csv(os.path.join(folder,
+                                       'IUPACOrganicCriticalProps.tsv'),
                           sep='\t', index_col=0)
 
-_crit_Matthews = pd.read_csv(os.path.join(folder,
-'Mathews1972InorganicCriticalProps.tsv'), sep='\t', index_col=0)
+_crit_Matthews = pd.read_csv(
+    os.path.join(
+        folder, 'Mathews1972InorganicCriticalProps.tsv'),
+    sep='\t', index_col=0)
 
 # CRC Handbook from TRC Organic data section (only in 2015)
-# No Inorganic table was taken, although it is already present;
+# No Inorganic table was taken, alth:wough it is already present;
 # data almost all from IUPAC
 _crit_CRC = pd.read_csv(os.path.join(folder,
-'CRCCriticalOrganics.tsv'), sep='\t', index_col=0)
-_crit_CRC['Zc'] = pd.Series(_crit_CRC['Pc']*_crit_CRC['Vc']/_crit_CRC['Tc']/R,
- index=_crit_CRC.index)
+                                     'CRCCriticalOrganics.tsv'),
+                        sep='\t', index_col=0)
+_crit_CRC['Zc'] = pd.Series(_crit_CRC['Pc'] * _crit_CRC['Vc']
+                            / _crit_CRC['Tc'] / R,
+                            index=_crit_CRC.index)
 
 
 _crit_PSRKR4 = pd.read_csv(os.path.join(folder,
-'Appendix to PSRK Revision 4.tsv'), sep='\t', index_col=0)
-_crit_PSRKR4['Zc'] = pd.Series(_crit_PSRKR4['Pc']*_crit_PSRKR4['Vc']/_crit_PSRKR4['Tc']/R,
-                             index=_crit_PSRKR4.index)
+                                        'Appendix to PSRK Revision 4.tsv'),
+                           sep='\t', index_col=0)
+_crit_PSRKR4['Zc'] = pd.Series(_crit_PSRKR4['Pc'] * _crit_PSRKR4['Vc']
+                               / _crit_PSRKR4['Tc'] / R,
+                               index=_crit_PSRKR4.index)
 
 
 _crit_PassutDanner = pd.read_csv(os.path.join(folder, 'PassutDanner1973.tsv'),
@@ -74,7 +82,8 @@ _crit_PassutDanner = pd.read_csv(os.path.join(folder, 'PassutDanner1973.tsv'),
 
 _crit_Yaws = pd.read_csv(os.path.join(folder, 'Yaws Collection.tsv'),
                          sep='\t', index_col=0)
-_crit_Yaws['Zc'] = pd.Series(_crit_Yaws['Pc']*_crit_Yaws['Vc']/_crit_Yaws['Tc']/R,
+_crit_Yaws['Zc'] = pd.Series(_crit_Yaws['Pc'] * _crit_Yaws['Vc']
+                             / _crit_Yaws['Tc'] / R,
                              index=_crit_Yaws.index)
 
 ### Strings defining each method
@@ -96,7 +105,7 @@ def Tc(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=[SURF]):
     source to use if no Method is provided; returns None if the data is not
     available.
 
-    Prefered sources are 'IUPAC' for organic chemicals, and 'MATTHEWS' for 
+    Prefered sources are 'IUPAC' for organic chemicals, and 'MATTHEWS' for
     inorganic chemicals. Function has data for approximately 1000 chemicals.
 
     Parameters
@@ -114,8 +123,8 @@ def Tc(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=[SURF]):
     Other Parameters
     ----------------
     Method : string, optional
-        The method name to use. Accepted methods are 'IUPAC', 'MATTHEWS', 
-        'CRC', 'PSRK', 'PD', 'YAWS', and 'SURF'. All valid values are also held  
+        The method name to use. Accepted methods are 'IUPAC', 'MATTHEWS',
+        'CRC', 'PSRK', 'PD', 'YAWS', and 'SURF'. All valid values are also held
         in the list `Tc_methods`.
     AvailableMethods : bool, optional
         If True, function will determine which methods can be used to obtain
@@ -226,17 +235,23 @@ def Tc(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=[SURF]):
     '''
     def list_methods():
         methods = []
-        if CASRN in _crit_IUPAC.index and not np.isnan(_crit_IUPAC.at[CASRN, 'Tc']):
+        if (CASRN in _crit_IUPAC.index
+                and not np.isnan(_crit_IUPAC.at[CASRN, 'Tc'])):
             methods.append(IUPAC)
-        if CASRN in _crit_Matthews.index and not np.isnan(_crit_Matthews.at[CASRN, 'Tc']):
+        if (CASRN in _crit_Matthews.index
+                and not np.isnan(_crit_Matthews.at[CASRN, 'Tc'])):
             methods.append(MATTHEWS)
-        if CASRN in _crit_CRC.index and not np.isnan(_crit_CRC.at[CASRN, 'Tc']):
+        if (CASRN in _crit_CRC.index
+                and not np.isnan(_crit_CRC.at[CASRN, 'Tc'])):
             methods.append(CRC)
-        if CASRN in _crit_PSRKR4.index and not np.isnan(_crit_PSRKR4.at[CASRN, 'Tc']):
+        if (CASRN in _crit_PSRKR4.index
+                and not np.isnan(_crit_PSRKR4.at[CASRN, 'Tc'])):
             methods.append(PSRK)
-        if CASRN in _crit_PassutDanner.index and not np.isnan(_crit_PassutDanner.at[CASRN, 'Tc']):
+        if (CASRN in _crit_PassutDanner.index
+                and not np.isnan(_crit_PassutDanner.at[CASRN, 'Tc'])):
             methods.append(PD)
-        if CASRN in _crit_Yaws.index and not np.isnan(_crit_Yaws.at[CASRN, 'Tc']):
+        if (CASRN in _crit_Yaws.index
+                and not np.isnan(_crit_Yaws.at[CASRN, 'Tc'])):
             methods.append(YAWS)
         if CASRN:
             methods.append(SURF)
@@ -281,7 +296,7 @@ def Pc(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=[SURF]):
     source to use if no Method is provided; returns None if the data is not
     available.
 
-    Prefered sources are 'IUPAC' for organic chemicals, and 'MATTHEWS' for 
+    Prefered sources are 'IUPAC' for organic chemicals, and 'MATTHEWS' for
     inorganic chemicals. Function has data for approximately 1000 chemicals.
 
     Examples
@@ -304,8 +319,8 @@ def Pc(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=[SURF]):
     Other Parameters
     ----------------
     Method : string, optional
-        The method name to use. Accepted methods are 'IUPAC', 'MATTHEWS', 
-        'CRC', 'PSRK', 'PD', 'YAWS', and 'SURF'. All valid values are also held  
+        The method name to use. Accepted methods are 'IUPAC', 'MATTHEWS',
+        'CRC', 'PSRK', 'PD', 'YAWS', and 'SURF'. All valid values are also held
         in the list `Pc_methods`.
     AvailableMethods : bool, optional
         If True, function will determine which methods can be used to obtain
@@ -410,17 +425,23 @@ def Pc(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=[SURF]):
     '''
     def list_methods():
         methods = []
-        if CASRN in _crit_IUPAC.index and not np.isnan(_crit_IUPAC.at[CASRN, 'Pc']):
+        if (CASRN in _crit_IUPAC.index
+                and not np.isnan(_crit_IUPAC.at[CASRN, 'Pc'])):
             methods.append(IUPAC)
-        if CASRN in _crit_Matthews.index and not np.isnan(_crit_Matthews.at[CASRN, 'Pc']):
+        if (CASRN in _crit_Matthews.index
+                and not np.isnan(_crit_Matthews.at[CASRN, 'Pc'])):
             methods.append(MATTHEWS)
-        if CASRN in _crit_CRC.index and not np.isnan(_crit_CRC.at[CASRN, 'Pc']):
+        if (CASRN in _crit_CRC.index
+                and not np.isnan(_crit_CRC.at[CASRN, 'Pc'])):
             methods.append(CRC)
-        if CASRN in _crit_PSRKR4.index and not np.isnan(_crit_PSRKR4.at[CASRN, 'Pc']):
+        if (CASRN in _crit_PSRKR4.index
+                and not np.isnan(_crit_PSRKR4.at[CASRN, 'Pc'])):
             methods.append(PSRK)
-        if CASRN in _crit_PassutDanner.index and not np.isnan(_crit_PassutDanner.at[CASRN, 'Pc']):
+        if (CASRN in _crit_PassutDanner.index
+                and not np.isnan(_crit_PassutDanner.at[CASRN, 'Pc'])):
             methods.append(PD)
-        if CASRN in _crit_Yaws.index and not np.isnan(_crit_Yaws.at[CASRN, 'Pc']):
+        if (CASRN in _crit_Yaws.index
+                and not np.isnan(_crit_Yaws.at[CASRN, 'Pc'])):
             methods.append(YAWS)
         if CASRN:
             methods.append(SURF)
@@ -465,7 +486,7 @@ def Vc(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=[SURF]):
     source to use if no Method is provided; returns None if the data is not
     available.
 
-    Prefered sources are 'IUPAC' for organic chemicals, and 'MATTHEWS' for 
+    Prefered sources are 'IUPAC' for organic chemicals, and 'MATTHEWS' for
     inorganic chemicals. Function has data for approximately 1000 chemicals.
 
     Examples
@@ -488,8 +509,8 @@ def Vc(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=[SURF]):
     Other Parameters
     ----------------
     Method : string, optional
-        The method name to use. Accepted methods are 'IUPAC', 'MATTHEWS', 
-        'CRC', 'PSRK', 'YAWS', and 'SURF'. All valid values are also held  
+        The method name to use. Accepted methods are 'IUPAC', 'MATTHEWS',
+        'CRC', 'PSRK', 'YAWS', and 'SURF'. All valid values are also held
         in the list `Vc_methods`.
     AvailableMethods : bool, optional
         If True, function will determine which methods can be used to obtain
@@ -588,15 +609,20 @@ def Vc(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=[SURF]):
     '''
     def list_methods():
         methods = []
-        if CASRN in _crit_IUPAC.index and not np.isnan(_crit_IUPAC.at[CASRN, 'Vc']):
+        if (CASRN in _crit_IUPAC.index
+                and not np.isnan(_crit_IUPAC.at[CASRN, 'Vc'])):
             methods.append(IUPAC)
-        if CASRN in _crit_Matthews.index and not np.isnan(_crit_Matthews.at[CASRN, 'Vc']):
+        if (CASRN in _crit_Matthews.index
+                and not np.isnan(_crit_Matthews.at[CASRN, 'Vc'])):
             methods.append(MATTHEWS)
-        if CASRN in _crit_CRC.index and not np.isnan(_crit_CRC.at[CASRN, 'Vc']):
+        if (CASRN in _crit_CRC.index
+                and not np.isnan(_crit_CRC.at[CASRN, 'Vc'])):
             methods.append(CRC)
-        if CASRN in _crit_PSRKR4.index and not np.isnan(_crit_PSRKR4.at[CASRN, 'Vc']):
+        if (CASRN in _crit_PSRKR4.index
+                and not np.isnan(_crit_PSRKR4.at[CASRN, 'Vc'])):
             methods.append(PSRK)
-        if CASRN in _crit_Yaws.index and not np.isnan(_crit_Yaws.at[CASRN, 'Vc']):
+        if (CASRN in _crit_Yaws.index
+                and not np.isnan(_crit_Yaws.at[CASRN, 'Vc'])):
             methods.append(YAWS)
         if CASRN:
             methods.append(SURF)
@@ -640,7 +666,7 @@ def Zc(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=[COMBINED]):
     data source to use if no Method is provided; returns None if the data is
     not available.
 
-    Prefered sources are 'IUPAC' for organic chemicals, and 'MATTHEWS' for 
+    Prefered sources are 'IUPAC' for organic chemicals, and 'MATTHEWS' for
     inorganic chemicals. Function has data for approximately 1000 chemicals.
 
     Examples
@@ -663,8 +689,8 @@ def Zc(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=[COMBINED]):
     Other Parameters
     ----------------
     Method : string, optional
-        The method name to use. Accepted methods are 'IUPAC', 'MATTHEWS', 
-        'CRC', 'PSRK', 'YAWS', and 'COMBINED'. All valid values are also held  
+        The method name to use. Accepted methods are 'IUPAC', 'MATTHEWS',
+        'CRC', 'PSRK', 'YAWS', and 'COMBINED'. All valid values are also held
         in `Zc_methods`.
     AvailableMethods : bool, optional
         If True, function will determine which methods can be used to obtain
@@ -760,15 +786,20 @@ def Zc(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=[COMBINED]):
     '''
     def list_methods():
         methods = []
-        if CASRN in _crit_IUPAC.index and not np.isnan(_crit_IUPAC.at[CASRN, 'Zc']):
+        if (CASRN in _crit_IUPAC.index
+                and not np.isnan(_crit_IUPAC.at[CASRN, 'Zc'])):
             methods.append(IUPAC)
-        if CASRN in _crit_Matthews.index and not np.isnan(_crit_Matthews.at[CASRN, 'Zc']):
+        if (CASRN in _crit_Matthews.index
+                and not np.isnan(_crit_Matthews.at[CASRN, 'Zc'])):
             methods.append(MATTHEWS)
-        if CASRN in _crit_CRC.index and not np.isnan(_crit_CRC.at[CASRN, 'Zc']):
+        if (CASRN in _crit_CRC.index
+                and not np.isnan(_crit_CRC.at[CASRN, 'Zc'])):
             methods.append(CRC)
-        if CASRN in _crit_PSRKR4.index and not np.isnan(_crit_PSRKR4.at[CASRN, 'Zc']):
+        if (CASRN in _crit_PSRKR4.index
+                and not np.isnan(_crit_PSRKR4.at[CASRN, 'Zc'])):
             methods.append(PSRK)
-        if CASRN in _crit_Yaws.index and not np.isnan(_crit_Yaws.at[CASRN, 'Zc']):
+        if (CASRN in _crit_Yaws.index
+                and not np.isnan(_crit_Yaws.at[CASRN, 'Zc'])):
             methods.append(YAWS)
         if Tc(CASRN) and Vc(CASRN) and Pc(CASRN):
             methods.append(COMBINED)
@@ -1098,7 +1129,8 @@ def third_property(CASRN=None, T=False, P=False, V=False):
     Avoids recursion only by eliminating the None and critical surface options
     for calculating each critical property. So long as it never calls itself.
     Note that when used by Tc, Pc or Vc, this function results in said function
-    calling the other functions (to determine methods) and (with method specified)
+    calling the other functions (to determine methods) and (with method
+    specified)
 
     Examples
     --------
@@ -1266,20 +1298,21 @@ def Chueh_Prausnitz_Tc(zs, Tcs, Vcs, taus):
     if not none_and_length_check([zs, Tcs, Vcs]):
         raise Exception('Function inputs are incorrect format')
 
-    denominator = sum(zs[i]*Vcs[i]**(2/3.) for i in range(len(zs)))
+    denominator = sum(zs[i] * Vcs[i]**(2/3.) for i in range(len(zs)))
     Tcm = 0
     for i in range(len(zs)):
-        Tcm += zs[i]*Vcs[i]**(2/3.)*Tcs[i]/denominator
+        Tcm += zs[i] * Vcs[i]**(2/3.) * Tcs[i] / denominator
         for j in range(len(zs)):
-            Tcm += (zs[i]*Vcs[i]**(2/3.)/denominator)*(zs[j]*Vcs[j]**(2/3.)/denominator)*taus[i][j]
+            Tcm += ((zs[i] * Vcs[i]**(2/3.) / denominator)
+                    * (zs[j] * Vcs[j]**(2/3.) / denominator) * taus[i][j])
     return Tcm
 
 
-#print Chueh_Prausnitz_Tc([0.6449, 0.2359, 0.1192], [425.12, 469.7, 507.6], [0.000255, 0.000313, 0.000371], [[0, 1.92681, 6.80358], [1.92681, 0, 1.89312], [ 6.80358, 1.89312, 0]])
-#butane/pentane/hexane 0.6449/0.2359/0.1192 mixture, exp: 450.22 K.
+# print Chueh_Prausnitz_Tc([0.6449, 0.2359, 0.1192], [425.12, 469.7, 507.6], [0.000255, 0.000313, 0.000371], [[0, 1.92681, 6.80358], [1.92681, 0, 1.89312], [ 6.80358, 1.89312, 0]])
+# butane/pentane/hexane 0.6449/0.2359/0.1192 mixture, exp: 450.22 K.
 # 450.12258 is expected
 # butane/pentane 1.92681
-#butane/hexane 6.80358
+# butane/hexane 6.80358
 # pentane/hexane 1.89312
 
 
@@ -1287,7 +1320,7 @@ def Chueh_Prausnitz_Tc(zs, Tcs, Vcs, taus):
 ####
 ##print Li([0.5, 0.5], [508.1, 425.12], [0.000213, 0.000255])
 #
-#print Chueh_Prausnitz_Tc([0.5, 0.447, .053], [282.34, 562.05, 617.15], [0.0001311, 0.000256, 0.000374], [[0, 37.9570, 0], [37.9570, 0, 4.2459], [0, 4.2459, 0]])
+# print Chueh_Prausnitz_Tc([0.5, 0.447, .053], [282.34, 562.05, 617.15], [0.0001311, 0.000256, 0.000374], [[0, 37.9570, 0], [37.9570, 0, 4.2459], [0, 4.2459, 0]])
 ## ethylene, Benzene, ethylbenzene
 ##ethylene	74-85-1	1-ALKENES	0.5	benzene	71-43-2	N-ALKYLBENZENES	0.447	ethylbenzene	100-41-4	N-ALKYLBENZENES	0.053
 ##['74-85-1', '71-43-2', '100-41-4']
@@ -1333,7 +1366,9 @@ def Grieves_Thodos(zs, Tcs, Aijs):
     --------
     butane/pentane/hexane 0.6449/0.2359/0.1192 mixture, exp: 450.22 K.
 
-    >>> Grieves_Thodos([0.6449, 0.2359, 0.1192], [425.12, 469.7, 507.6], [[0, 1.2503, 1.516], [0.799807, 0, 1.23843], [0.659633, 0.807474, 0]])
+    >>> Grieves_Thodos([0.6449, 0.2359, 0.1192], [425.12, 469.7, 507.6],
+    ...                [[0, 1.2503, 1.516], [0.799807, 0, 1.23843],
+    ...                 [0.659633, 0.807474, 0]])
     450.1839618758971
 
     References
@@ -1350,24 +1385,25 @@ def Grieves_Thodos(zs, Tcs, Aijs):
         raise Exception('Function inputs are incorrect format')
     Tcm = 0
     for i in range(len(zs)):
-            Tcm += Tcs[i]/(1. + 1./zs[i]*sum(Aijs[i][j]*zs[j] for j in range(len(zs))))
+        Tcm += Tcs[i] / (1. + 1. / zs[i]
+                         * sum(Aijs[i][j] * zs[j] for j in range(len(zs))))
     return Tcm
 
-#print Grieves_Thodos([0.6449, 0.2359, 0.1192], [425.12, 469.7, 507.6], [[0, 1.2503, 1.516], [0.799807, 0, 1.23843], [0.659633, 0.807474, 0]])
-#butane/pentane/hexane 0.6449/0.2359/0.1192 mixture, exp: 450.22 K.
+# print Grieves_Thodos([0.6449, 0.2359, 0.1192], [425.12, 469.7, 507.6], [[0, 1.2503, 1.516], [0.799807, 0, 1.23843], [0.659633, 0.807474, 0]])
+# butane/pentane/hexane 0.6449/0.2359/0.1192 mixture, exp: 450.22 K.
 # 450.18396 is expected
 # butane/pentane 1.2503000	0.7998070
-#butane/hexane 1.5160000	0.6596330
+# butane/hexane 1.5160000	0.6596330
 # pentane/hexane 1.238430	0.807474
 
 
-#print Grieves_Thodos([0.5, 0.447, .053], [282.34, 562.05, 617.15], [[0, 0.8166850, 0], [0.7727120, 0, 1.5038], [0, 0.6650, 0]])
+# print Grieves_Thodos([0.5, 0.447, .053], [282.34, 562.05, 617.15], [[0, 0.8166850, 0], [0.7727120, 0, 1.5038], [0, 0.6650, 0]])
 ## ethylene, Benzene, ethylbenzene
 ## Vcs=[0.0001311, 0.000256, 0.000374]
 #
-#1.5038	0.6650 # benzene to ethylbenzene
+# 1.5038	0.6650 # benzene to ethylbenzene
 #
-#0.7727120	0.8166850 # benzene to ethylene
+# 0.7727120	0.8166850 # benzene to ethylene
 # Author claims result of 473.74.
 
 
@@ -1376,12 +1412,14 @@ def modified_Wilson_Tc(zs, Tcs, Aijs):
     mixing rules in [1]_. Equation
 
     .. math::
-        T_{cm} = \sum_i x_i T_{ci} + C\sum_i x_i \ln \left(x_i + \sum_j x_j A_{ij}\right)T_{ref}
+        T_{cm} = \sum_i x_i T_{ci} + C\sum_i x_i \ln \left(x_i + \sum_j x_j
+        A_{ij}\right)T_{ref}
 
     For a binary mxiture, this simplifies to:
 
     .. math::
-        T_{cm} = x_1 T_{c1} + x_2 T_{c2} + C[x_1 \ln(x_1 + x_2A_{12}) + x_2\ln(x_2 + x_1 A_{21})]
+        T_{cm} = x_1 T_{c1} + x_2 T_{c2} + C[x_1 \ln(x_1 + x_2A_{12}) +
+        x_2\ln(x_2 + x_1 A_{21})]
 
     Parameters
     ----------
@@ -1400,7 +1438,8 @@ def modified_Wilson_Tc(zs, Tcs, Aijs):
     Notes
     -----
     The equation and original article has been reviewed.
-    [1]_ has 75 binary systems, and additional multicomponent mixture parameters.
+    [1]_ has 75 binary systems, and additional multicomponent mixture
+    parameters.
     All parameters, even if zero, must be given to this function.
 
     2rd example is from [2]_, for:
@@ -1430,34 +1469,36 @@ def modified_Wilson_Tc(zs, Tcs, Aijs):
     C = -2500
     Tcm = sum(zs[i]*Tcs[i] for i in range(len(zs)))
     for i in range(len(zs)):
-            Tcm += C*zs[i]*log(zs[i] + sum(zs[j]*Aijs[i][j] for j in range(len(zs))))
+        Tcm += C * zs[i] * log(zs[i] + sum(zs[j] * Aijs[i][j]
+                               for j in range(len(zs))))
     return Tcm
 
-#print modified_Wilson_Tc([0.6449, 0.2359, 0.1192], [425.12, 469.7, 507.6], [[0, 1.174450, 1.274390], [0.835914, 0, 1.21038], [0.746878, 0.80677, 0]])
-#butane/pentane/hexane 0.6449/0.2359/0.1192 mixture, exp: 450.22 K.
+# print modified_Wilson_Tc([0.6449, 0.2359, 0.1192], [425.12, 469.7, 507.6], [[0, 1.174450, 1.274390], [0.835914, 0, 1.21038], [0.746878, 0.80677, 0]])
+# butane/pentane/hexane 0.6449/0.2359/0.1192 mixture, exp: 450.22 K.
 # 450.0306 is expected
 # butane/pentane  1.174450	0.835914
-#butane/hexane 1.274390	0.746878
+# butane/hexane 1.274390	0.746878
 # pentane/hexane 1.21038	0.80677
 
 
-#print modified_Wilson_Tc([0.5, 0.5], [508.1, 425.12],  [[0, 0.8359], [0, 1.1963]]) # Acetone/butane 50-50
-#print modified_Wilson_Tc([0.5, 0.447, .053], [282.34, 562.05, 617.15], [[0,1.0853, 0 ], [0.8425, 0, 1.2514], [0, 0.7688, 0]])
-#Tc exp: 486.90
+# print modified_Wilson_Tc([0.5, 0.5], [508.1, 425.12],  [[0, 0.8359], [0, 1.1963]]) # Acetone/butane 50-50
+# print modified_Wilson_Tc([0.5, 0.447, .053], [282.34, 562.05, 617.15], [[0,1.0853, 0 ], [0.8425, 0, 1.2514], [0, 0.7688, 0]])
+# Tc exp: 486.90
 # Author claims MW gives 471.49
 
 ## ethylene, Benzene, ethylbenzene
 # Vcs=[0.0001311, 0.000256, 0.000374]
-#benzene-ethylene  0.8425	1.0853
-#benzene	ethylbenzene 1.2514	0.7688
+# benzene-ethylene  0.8425	1.0853
+# benzene	ethylbenzene 1.2514	0.7688
 # ethylene-ethylbenzene   (26.166530797247095, 3.2152024634944754) CALCULATED
 
 
-#print Grieves_Thodos([0.5, 0.5], [508.1, 425.12], [[0, 0.7137], [1.6496, 0]])
-#print Grieves_Thodos([0.5, 0.5], [508.1, 425.12], [[0, 0.1305], [0.09106, 0]])
+# print Grieves_Thodos([0.5, 0.5], [508.1, 425.12], [[0, 0.7137], [1.6496, 0]])
+# print Grieves_Thodos([0.5, 0.5], [508.1, 425.12], [[0, 0.1305], [0.09106, 0]])
 
 
-def Tc_mixture(Tcs=None, zs=None, CASRNs=None, AvailableMethods=False, Method=None):  # pragma: no cover
+def Tc_mixture(Tcs=None, zs=None, CASRNs=None, AvailableMethods=False,
+               Method=None):  # pragma: no cover
     '''This function handles the retrival of a mixture's critical temperature.
 
     This API is considered experimental, and is expected to be removed in a
@@ -1487,7 +1528,8 @@ def Tc_mixture(Tcs=None, zs=None, CASRNs=None, AvailableMethods=False, Method=No
 ### Crtical Pressure of Mixtures
 
 
-def Pc_mixture(Pcs=None, zs=None, CASRNs=None, AvailableMethods=False, Method=None):  # pragma: no cover
+def Pc_mixture(Pcs=None, zs=None, CASRNs=None, AvailableMethods=False,
+               Method=None):  # pragma: no cover
     '''This function handles the retrival of a mixture's critical temperature.
 
     This API is considered experimental, and is expected to be removed in a
@@ -1521,7 +1563,8 @@ def Chueh_Prausnitz_Vc(zs, Vcs, nus):
     mixing rules in [1]_ with an interaction parameter.
 
     .. math::
-        V_{cm} = \sum_i^n \theta_i V_{ci} + \sum_i^n\sum_j^n(\theta_i \theta_j \nu_{ij})V_{ref}
+        V_{cm} = \sum_i^n \theta_i V_{ci} + \sum_i^n\sum_j^n(\theta_i \theta_j
+        \nu_{ij})V_{ref}
         \theta = \frac{x_i V_{ci}^{2/3}}{\sum_{j=1}^n x_j V_{cj}^{2/3}}
 
     Parameters
@@ -1541,14 +1584,16 @@ def Chueh_Prausnitz_Vc(zs, Vcs, nus):
     Notes
     -----
     All parameters, even if zero, must be given to this function.
-    nu parameters are in cm^3/mol, but are converted to m^3/mol inside the function
+    nu parameters are in cm^3/mol, but are converted to m^3/mol inside the
+    function
 
 
     Examples
     --------
     1-butanol/benzene 0.4271/0.5729 mixture, Vcm = 268.096 mL/mol.
 
-    >>> Chueh_Prausnitz_Vc([0.4271, 0.5729], [0.000273, 0.000256], [[0, 5.61847], [5.61847, 0]])
+    >>> Chueh_Prausnitz_Vc([0.4271, 0.5729], [0.000273, 0.000256],
+    ...                    [[0, 5.61847], [5.61847, 0]])
     0.00026620503424517445
 
     References
@@ -1565,15 +1610,16 @@ def Chueh_Prausnitz_Vc(zs, Vcs, nus):
     if not none_and_length_check([zs, Vcs]): # check same-length inputs
         raise Exception('Function inputs are incorrect format')
 
-    denominator = sum(zs[i]*Vcs[i]**(2/3.) for i in range(len(zs)))
+    denominator = sum(zs[i] * Vcs[i]**(2/3.) for i in range(len(zs)))
     Vcm = 0
     for i in range(len(zs)):
-        Vcm += zs[i]*Vcs[i]**(2/3.)*Vcs[i]/denominator
+        Vcm += zs[i] * Vcs[i]**(2/3.) * Vcs[i] / denominator
         for j in range(len(zs)):
-            Vcm += (zs[i]*Vcs[i]**(2/3.)/denominator)*(zs[j]*Vcs[j]**(2/3.)/denominator)*nus[i][j]/1E6
+            Vcm += ((zs[i] * Vcs[i]**(2/3.) / denominator)
+                    * (zs[j] * Vcs[j]**(2/3.) / denominator) * nus[i][j] / 1E6)
     return Vcm
 
-#print Chueh_Prausnitz_Vc([0.4271, 0.5729], [0.000273, 0.000256], [[0, 5.61847], [5.61847, 0]])
+# print Chueh_Prausnitz_Vc([0.4271, 0.5729], [0.000273, 0.000256], [[0, 5.61847], [5.61847, 0]])
 ## 1-butanol/benzene 0.4271/0.5729 mixture, Vcm = 268.096 mL/mol
 ## Expected result: 266.205034245174
 
@@ -1582,12 +1628,14 @@ def modified_Wilson_Vc(zs, Vcs, Aijs):
     mixing rules in [1]_ with parameters. Equation
 
     .. math::
-        V_{cm} = \sum_i x_i V_{ci} + C\sum_i x_i \ln \left(x_i + \sum_j x_j A_{ij}\right)V_{ref}
+        V_{cm} = \sum_i x_i V_{ci} + C\sum_i x_i \ln \left(x_i + \sum_j x_j
+            A_{ij}\right)V_{ref}
 
     For a binary mxiture, this simplifies to:
 
     .. math::
-        V_{cm} = x_1 V_{c1} + x_2 V_{c2} + C[x_1 \ln(x_1 + x_2A_{12}) + x_2\ln(x_2 + x_1 A_{21})]
+        V_{cm} = x_1 V_{c1} + x_2 V_{c2} + C[x_1 \ln(x_1 + x_2A_{12}) +
+            x_2\ln(x_2 + x_1 A_{21})]
 
     Parameters
     ----------
@@ -1610,7 +1658,8 @@ def modified_Wilson_Vc(zs, Vcs, Aijs):
     C = -2500
 
     All parameters, even if zero, must be given to this function.
-    nu parameters are in cm^3/mol, but are converted to m^3/mol inside the function
+    nu parameters are in cm^3/mol, but are converted to m^3/mol inside the
+    function
 
 
     Examples
@@ -1635,14 +1684,15 @@ def modified_Wilson_Vc(zs, Vcs, Aijs):
     if not none_and_length_check([zs, Vcs]): # check same-length inputs
         raise Exception('Function inputs are incorrect format')
     C = -2500
-    Vcm = sum(zs[i]*Vcs[i] for i in range(len(zs)))
+    Vcm = sum(zs[i] * Vcs[i] for i in range(len(zs)))
     for i in range(len(zs)):
-            Vcm += C*zs[i]*log(zs[i] + sum(zs[j]*Aijs[i][j] for j in range(len(zs))))/1E6
+        Vcm += (C * zs[i] * log(zs[i] + sum(zs[j] * Aijs[i][j]
+                                for j in range(len(zs)))) / 1E6)
     return Vcm
 
 
-
-def Vc_mixture(Vcs=None, zs=None, CASRNs=None, AvailableMethods=False, Method=None):  # pragma: no cover
+def Vc_mixture(Vcs=None, zs=None, CASRNs=None, AvailableMethods=False,
+    Method=None):  # pragma: no cover
     '''This function handles the retrival of a mixture's critical temperature.
 
     This API is considered experimental, and is expected to be removed in a
@@ -1652,15 +1702,19 @@ def Vc_mixture(Vcs=None, zs=None, CASRNs=None, AvailableMethods=False, Method=No
     0.0001568
     '''
     def list_methods():
+        ''' List methods of determining a mixture's critical temperature '''
         methods = []
         if none_and_length_check([Vcs]):
             methods.append('Simple')
         methods.append('None')
         return methods
+
     if AvailableMethods:
         return list_methods()
+
     if not Method:
         Method = list_methods()[0]
+
     # This is the calculate, given the method section
     if Method == 'Simple':
         return mixing_simple(zs, Vcs)
@@ -1668,5 +1722,3 @@ def Vc_mixture(Vcs=None, zs=None, CASRNs=None, AvailableMethods=False, Method=No
         return None
     else:
         raise Exception('Failure in in function')
-
-

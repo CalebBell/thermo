@@ -22,9 +22,9 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['tabulate_solid', 'tabulate_liq', 'tabulate_gas', 
+__all__ = ['tabulate_solid', 'tabulate_liq', 'tabulate_gas',
            'tabulate_constants']
-           
+
 from collections import OrderedDict
 import numpy as np
 import pandas as pd
@@ -32,6 +32,8 @@ from thermo.chemical import Chemical
 
 
 def tabulate_solid(chemical, Tmin=None, Tmax=None, pts=10):
+    ''' Create a pandas dataframe containing temperature-dependent solid
+    properties (density, constant-pressure heat capacity) '''
     chem = Chemical(chemical)
 
     (rhos, Cps) = [[] for i in range(2)]
@@ -62,6 +64,11 @@ def tabulate_solid(chemical, Tmin=None, Tmax=None, pts=10):
 
 
 def tabulate_liq(chemical, Tmin=None, Tmax=None, pts=10):
+    ''' Create a pandas dataframe containing temperature-dependent liquid
+    properties (saturation pressure, density, constant-pressure heat capacity,
+    heat of vaporization, viscosity, thermal conductivity, surface tension,
+    Prandtl number, thermal diffusivity, isobaric expansion, and
+    Joule-Thompson expansion coefficient) '''
     chem = Chemical(chemical)
 
     (rhos, Cps, mugs, kgs, Prs, alphas, isobarics, JTs, Psats, sigmas, Hvaps,
@@ -100,7 +107,7 @@ def tabulate_liq(chemical, Tmin=None, Tmax=None, pts=10):
     data['Constant-pressure heat capacity, J/kg/K'] = Cps
     data['Heat of vaporization, J/kg'] = Hvaps
     data['Viscosity, Pa*S'] = mugs
-    data['Thermal consuctivity, W/m/K'] = kgs
+    data['Thermal conductivity, W/m/K'] = kgs
     data['Surface tension, N/m'] = sigmas
     data['Prandtl number'] = Prs
     data['Thermal diffusivity, m^2/s'] = alphas
@@ -114,9 +121,16 @@ def tabulate_liq(chemical, Tmin=None, Tmax=None, pts=10):
 
 
 def tabulate_gas(chemical, Tmin=None, Tmax=None, pts=10):
+    ''' Create a pandas dataframe containing temperature-dependent gas
+    properties (density, constant-pressure heat capacity, constant-volume heat
+    capacity, viscosity, thermal conductivity, Prandtl number, thermal
+    diffusivity, isobaric expansion, isentropic exponent'] = isentropics
+    Joule-Thompson expansion coefficient) '''
     chem = Chemical(chemical)
 
-    (rhos, Cps, Cvs, mugs, kgs, Prs, alphas, isobarics, isentropics, JTs) = [[] for i in range(10)]
+    (rhos, Cps, Cvs, mugs, kgs, Prs, alphas, isobarics, isentropics, JTs) = [
+        [] for i in range(10)
+    ]
     if not Tmin:  # pragma: no cover
         if chem.Tm:
             Tmin = chem.Tm
@@ -147,7 +161,7 @@ def tabulate_gas(chemical, Tmin=None, Tmax=None, pts=10):
     data['Constant-pressure heat capacity, J/kg/K'] = Cps
     data['Constant-volume heat capacity, J/kg/K'] = Cvs
     data['Viscosity, Pa*S'] = mugs
-    data['Thermal consuctivity, W/m/K'] = kgs
+    data['Thermal conductivity, W/m/K'] = kgs
     data['Prandtl number'] = Prs
     data['Thermal diffusivity, m^2/s'] = alphas
     data['Isobaric expansion, 1/K'] = isobarics
@@ -160,6 +174,8 @@ def tabulate_gas(chemical, Tmin=None, Tmax=None, pts=10):
 
 
 def tabulate_constants(chemical, full=False, vertical=False):
+    ''' Create a pandas dataframe containing temperature-independent material
+    properties '''
     pd.set_option('display.max_rows', 100000)
     pd.set_option('display.max_columns', 100000)
 
@@ -222,16 +238,15 @@ def tabulate_constants(chemical, full=False, vertical=False):
     return df
 
 
+# chemicals = ['Sodium Hydroxide', 'sodium chloride', 'methanol',
+#              'hydrogen sulfide', 'methyl mercaptan', 'Dimethyl disulfide',
+#              'dimethyl sulfide', 'alpha-pinene', 'chlorine dioxide',
+#              'sulfuric acid', 'SODIUM CHLORATE', 'carbon dioxide', 'Cl2',
+#              'formic acid', 'sodium sulfate']
+# for i in chemicals:
+#     print tabulate_solid(i)
+#     print tabulate_liq(i)
+#     print tabulate_gas(i)
+#     tabulate_constants(i)
 
-
-#chemicals = ['Sodium Hydroxide', 'sodium chloride', 'methanol',
-#'hydrogen sulfide', 'methyl mercaptan', 'Dimethyl disulfide', 'dimethyl sulfide',
-# 'alpha-pinene', 'chlorine dioxide', 'sulfuric acid', 'SODIUM CHLORATE', 'carbon dioxide', 'Cl2', 'formic acid',
-# 'sodium sulfate']
-#for i in chemicals:
-#    print tabulate_solid(i)
-#    print tabulate_liq(i)
-#    print tabulate_gas(i)
-#    tabulate_constants(i)
-
-#tabulate_constants('Methylene blue')
+# tabulate_constants('Methylene blue')
