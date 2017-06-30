@@ -27,13 +27,16 @@ __all__ = ['EQ100', 'EQ101', 'EQ102', 'EQ104', 'EQ105', 'EQ106', 'EQ107',
 
 from thermo.utils import log, exp, sinh, cosh, atan, atanh, sqrt, tanh
 from cmath import log as clog
+from cmath import sqrt as csqrt
+from scipy.special import hyp2f1
 
 order_not_found_msg = ('Only the actual property calculation, first temperature '
                        'derivative, first temperature integral, and first '
                        'temperature integral over temperature are supported '
                        'with order=  0, 1, -1, or -1j respectively')
 
-def EQ100(T, A=0, B=0, C=0, D=0, E=0, F=0, G=0):
+
+def EQ100(T, A=0, B=0, C=0, D=0, E=0, F=0, G=0, order=0):
     r'''DIPPR Equation # 100. Used in calculating the molar heat capacities
     of liquids and solids, liquid thermal conductivity, and solid density.
     All parameters default to zero. As this is a straightforward polynomial,
@@ -49,11 +52,39 @@ def EQ100(T, A=0, B=0, C=0, D=0, E=0, F=0, G=0):
         Temperature, [K]
     A-G : float
         Parameter for the equation; chemical and property specific [-]
+    order : int, optional
+        Order of the calculation. 0 for the calculation of the result itself;
+        for 1, the first derivative of the property is returned, for
+        -1, the indefinite integral of the property with respect to temperature
+        is returned; and for -1j, the indefinite integral of the property
+        divided by temperature with respect to temperature is returned. No 
+        other integrals or derivatives are implemented, and an exception will 
+        be raised if any other order is given.
 
     Returns
     -------
     Y : float
-        Property [constant-specific]
+        Property [constant-specific; if order == 1, property/K; if order == -1,
+                  property*K; if order == -1j, unchanged from default]
+
+    Notes
+    -----
+    The derivative with respect to T, integral with respect to T, and integral
+    over T with respect to T are computed as follows. All derivatives and 
+    integrals are easily computed with SymPy.
+    
+    .. math::
+        \frac{d Y}{dT} = B + 2 C T + 3 D T^{2} + 4 E T^{3} + 5 F T^{4} 
+        + 6 G T^{5}
+        
+    .. math::
+        \int Y dT = A T + \frac{B T^{2}}{2} + \frac{C T^{3}}{3} + \frac{D 
+        T^{4}}{4} + \frac{E T^{5}}{5} + \frac{F T^{6}}{6} + \frac{G T^{7}}{7}
+        
+    .. math::
+        \int \frac{Y}{T} dT = A \log{\left (T \right )} + B T + \frac{C T^{2}}
+        {2} + \frac{D T^{3}}{3} + \frac{E T^{4}}{4} + \frac{F T^{5}}{5} 
+        + \frac{G T^{6}}{6}
 
     Examples
     --------
@@ -67,7 +98,16 @@ def EQ100(T, A=0, B=0, C=0, D=0, E=0, F=0, G=0):
     .. [1] Design Institute for Physical Properties, 1996. DIPPR Project 801
        DIPPR/AIChE
     '''
-    return A + B*T + C*T**2 + D*T**3 + E*T**4 + F*T**5 + G*T**6
+    if order == 0:
+        return A + T*(B + T*(C + T*(D + T*(E + T*(F + G*T)))))
+    elif order == 1:
+        return B + T*(2*C + T*(3*D + T*(4*E + T*(5*F + 6*G*T))))
+    elif order == -1:
+        return T*(A + T*(B/2 + T*(C/3 + T*(D/4 + T*(E/5 + T*(F/6 + G*T/7))))))
+    elif order == -1j:
+        return A*log(T) + T*(B + T*(C/2 + T*(D/3 + T*(E/4 + T*(F/5 + G*T/6)))))
+    else:
+        raise Exception(order_not_found_msg)
 
 
 def EQ101(T, A, B, C, D, E):
@@ -93,6 +133,10 @@ def EQ101(T, A, B, C, D, E):
     Y : float
         Property [constant-specific]
 
+    Notes
+    -----
+    This function is not integrable for either dT or Y/T dT.
+
     Examples
     --------
     Water vapor pressure; DIPPR coefficients normally listed in Pa.
@@ -108,7 +152,7 @@ def EQ101(T, A, B, C, D, E):
     return exp(A + B/T + C*log(T) + D*T**E)
 
 
-def EQ102(T, A, B, C, D):
+def EQ102(T, A, B, C, D, order=0):
     r'''DIPPR Equation # 102. Used in calculating vapor viscosity, vapor
     thermal conductivity, and sometimes solid heat capacity. High values of B
     raise an OverflowError.
@@ -123,15 +167,51 @@ def EQ102(T, A, B, C, D):
         Temperature, [K]
     A-D : float
         Parameter for the equation; chemical and property specific [-]
+    order : int, optional
+        Order of the calculation. 0 for the calculation of the result itself;
+        for 1, the first derivative of the property is returned, for
+        -1, the indefinite integral of the property with respect to temperature
+        is returned; and for -1j, the indefinite integral of the property
+        divided by temperature with respect to temperature is returned. No 
+        other integrals or derivatives are implemented, and an exception will 
+        be raised if any other order is given.
 
     Returns
     -------
     Y : float
-        Property [constant-specific]
+        Property [constant-specific; if order == 1, property/K; if order == -1,
+                  property*K; if order == -1j, unchanged from default]
 
+    Notes
+    -----
+    The derivative with respect to T, integral with respect to T, and integral
+    over T with respect to T are computed as follows. The first derivative is
+    easily computed; the two integrals required Rubi to perform the integration.
+    
+    .. math::
+        \frac{d Y}{dT} = \frac{A B T^{B}}{T \left(\frac{C}{T} + \frac{D}{T^{2}} 
+        + 1\right)} + \frac{A T^{B} \left(\frac{C}{T^{2}} + \frac{2 D}{T^{3}}
+        \right)}{\left(\frac{C}{T} + \frac{D}{T^{2}} + 1\right)^{2}}
+        
+    .. math::
+        \int Y dT = - \frac{2 A T^{B + 3} \operatorname{hyp2f1}{\left (1,B + 3,
+        B + 4,- \frac{2 T}{C - \sqrt{C^{2} - 4 D}} \right )}}{\left(B + 3\right) 
+        \left(C + \sqrt{C^{2} - 4 D}\right) \sqrt{C^{2} - 4 D}} + \frac{2 A 
+        T^{B + 3} \operatorname{hyp2f1}{\left (1,B + 3,B + 4,- \frac{2 T}{C 
+        + \sqrt{C^{2} - 4 D}} \right )}}{\left(B + 3\right) \left(C 
+        - \sqrt{C^{2} - 4 D}\right) \sqrt{C^{2} - 4 D}}
+        
+    .. math::
+        \int \frac{Y}{T} dT = - \frac{2 A T^{B + 2} \operatorname{hyp2f1}{\left
+        (1,B + 2,B + 3,- \frac{2 T}{C + \sqrt{C^{2} - 4 D}} \right )}}{\left(B 
+        + 2\right) \left(C + \sqrt{C^{2} - 4 D}\right) \sqrt{C^{2} - 4 D}}
+        + \frac{2 A T^{B + 2} \operatorname{hyp2f1}{\left (1,B + 2,B + 3,
+        - \frac{2 T}{C - \sqrt{C^{2} - 4 D}} \right )}}{\left(B + 2\right) 
+        \left(C - \sqrt{C^{2} - 4 D}\right) \sqrt{C^{2} - 4 D}}
+        
     Examples
     --------
-    Water vapor viscosity; DIPPR coefficients normally listed in Pa*S.
+    Water vapor viscosity; DIPPR coefficients normally listed in Pa*s.
 
     >>> EQ102(300, 1.7096E-8, 1.1146, 0, 0)
     9.860384711890639e-06
@@ -141,10 +221,27 @@ def EQ102(T, A, B, C, D):
     .. [1] Design Institute for Physical Properties, 1996. DIPPR Project 801
        DIPPR/AIChE
     '''
-    return A*T**B/(1. + C/T + D/(T*T))
+    if order == 0:
+        return A*T**B/(1. + C/T + D/(T*T))
+    elif order == 1:
+        return (A*B*T**B/(T*(C/T + D/T**2 + 1)) 
+                + A*T**B*(C/T**2 + 2*D/T**3)/(C/T + D/T**2 + 1)**2)
+    elif order == -1:
+        # imaginary part is 0
+        return (2*A*T**(3+B)*hyp2f1(1, 3+B, 4+B, -2*T/(C - csqrt(C*C 
+                - 4*D)))/((3+B)*(C - csqrt(C*C-4*D))*csqrt(C*C-4*D))
+                -2*A*T**(3+B)*hyp2f1(1, 3+B, 4+B, -2*T/(C + csqrt(C*C - 4*D)))/(
+                (3+B)*(C + csqrt(C*C-4*D))*csqrt(C*C-4*D))).real
+    elif order == -1j:
+        return (2*A*T**(2+B)*hyp2f1(1, 2+B, 3+B, -2*T/(C - csqrt(C*C - 4*D)))/(
+                (2+B)*(C - csqrt(C*C-4*D))*csqrt(C*C-4*D)) -2*A*T**(2+B)*hyp2f1(
+                1, 2+B, 3+B, -2*T/(C + csqrt(C*C - 4*D)))/((2+B)*(C + csqrt(
+                C*C-4*D))*csqrt(C*C-4*D))).real
+    else:
+        raise Exception(order_not_found_msg)
+        
 
-
-def EQ104(T, A, B, C, D, E):
+def EQ104(T, A, B, C, D, E, order=0):
     r'''DIPPR Equation #104. Often used in calculating second virial
     coefficients of gases. All 5 parameters are required.
     C, D, and E are normally large values.
@@ -158,11 +255,38 @@ def EQ104(T, A, B, C, D, E):
         Temperature, [K]
     A-E : float
         Parameter for the equation; chemical and property specific [-]
+    order : int, optional
+        Order of the calculation. 0 for the calculation of the result itself;
+        for 1, the first derivative of the property is returned, for
+        -1, the indefinite integral of the property with respect to temperature
+        is returned; and for -1j, the indefinite integral of the property
+        divided by temperature with respect to temperature is returned. No 
+        other integrals or derivatives are implemented, and an exception will 
+        be raised if any other order is given.
 
     Returns
     -------
     Y : float
-        Property [constant-specific]
+        Property [constant-specific; if order == 1, property/K; if order == -1,
+                  property*K; if order == -1j, unchanged from default]
+
+    Notes
+    -----
+    The derivative with respect to T, integral with respect to T, and integral
+    over T with respect to T are computed as follows. All expressions can be
+    obtained with SymPy readily.
+    
+    .. math::
+        \frac{d Y}{dT} = - \frac{B}{T^{2}} - \frac{3 C}{T^{4}} 
+        - \frac{8 D}{T^{9}} - \frac{9 E}{T^{10}}
+        
+    .. math::
+        \int Y dT = A T + B \log{\left (T \right )} - \frac{1}{56 T^{8}} 
+        \left(28 C T^{6} + 8 D T + 7 E\right)
+        
+    .. math::
+        \int \frac{Y}{T} dT = A \log{\left (T \right )} - \frac{1}{72 T^{9}} 
+        \left(72 B T^{8} + 24 C T^{6} + 9 D T + 8 E\right)
 
     Examples
     --------
@@ -176,7 +300,19 @@ def EQ104(T, A, B, C, D, E):
     .. [1] Design Institute for Physical Properties, 1996. DIPPR Project 801
        DIPPR/AIChE
     '''
-    return A + B/T + C/T**3. + D/T**8. + E/T**9.
+    if order == 0:
+        T2 = T*T
+        return A + (B + (C + (D + E/T)/(T2*T2*T))/T2)/T
+    elif order == 1:
+        T2 = T*T
+        T4 = T2*T2
+        return (-B + (-3*C + (-8*D - 9*E/T)/(T4*T))/T2)/T2
+    elif order == -1:
+        return A*T + B*log(T) - (28*C*T**6 + 8*D*T + 7*E)/(56*T**8)
+    elif order == -1j:
+        return A*log(T) - (72*B*T**8 + 24*C*T**6 + 9*D*T + 8*E)/(72*T**9)
+    else:
+        raise Exception(order_not_found_msg)
 
 
 def EQ105(T, A, B, C, D):
@@ -198,6 +334,11 @@ def EQ105(T, A, B, C, D):
     -------
     Y : float
         Property [constant-specific]
+        
+    Notes
+    -----
+    This expression can be integrated in terms of the incomplete gamma function
+    for dT, but for Y/T dT no integral could be found.
 
     Examples
     --------
@@ -239,9 +380,14 @@ def EQ106(T, Tc, A, B, C=0, D=0, E=0):
     Y : float
         Property [constant-specific]
 
+    Notes
+    -----
+    The integral could not be found, but the integral over T actually could,
+    again in terms of hypergeometric functions.
+
     Examples
     --------
-    Water surface tension; DIPPR coefficients normally in Pa*S.
+    Water surface tension; DIPPR coefficients normally in Pa*s.
 
     >>> EQ106(300, 647.096, 0.17766, 2.567, -3.3377, 1.9699)
     0.07231499373541
@@ -481,9 +627,10 @@ def EQ115(T, A, B, C=0, D=0, E=0):
     Y : float
         Property [constant-specific]
 
-    Examples
-    --------
+    Notes
+    -----
     No coefficients found for this expression.
+    This function is not integrable for either dT or Y/T dT.
 
     References
     ----------

@@ -173,3 +173,88 @@ def test_EQ114_more():
     with pytest.raises(Exception):
         EQ114(20., *coeffs, order=1E100)
 
+
+def test_EQ102_more():
+    # T derivative
+    coeffs = (1.7096E-8, 1.1146, 1.1, 2.1)
+    diff_1T = derivative(EQ102, 250,  dx=1E-3, order=21, args=coeffs)
+    diff_1T_analytical = EQ102(250., *coeffs, order=1)
+    assert_allclose(diff_1T, diff_1T_analytical, rtol=1E-3)
+    assert_allclose(diff_1T, 3.5861274167602139e-08)
+    
+    # Integral
+    int_250 = EQ102(250., *coeffs, order=-1) 
+    int_220 = EQ102(220., *coeffs, order=-1)
+    numerical_1T = quad(EQ102, 220, 250, args=coeffs)[0]
+    assert_allclose(int_250 - int_220, numerical_1T)
+    assert_allclose(int_250 - int_220, 0.00022428562125110119)
+    
+#     Integral over T
+    T_int_250 = EQ102(250., *coeffs, order=-1j)
+    T_int_220 = EQ102(220., *coeffs, order=-1j)
+    
+    to_int = lambda T :EQ102(T, *coeffs)/T
+    numerical_1_over_T = quad(to_int, 220, 250)[0]
+    assert_allclose(T_int_250 - T_int_220, numerical_1_over_T)
+    assert_allclose(T_int_250 - T_int_220, 9.5425212178091671e-07)
+#    
+    with pytest.raises(Exception):
+        EQ102(20., *coeffs, order=1E100)
+
+
+def test_EQ100_more():
+    # T derivative
+    coeffs = (276370., -2090.1, 8.125, -0.014116, 0.0000093701)
+    diff_1T = derivative(EQ100, 250,  dx=1E-3, order=21, args=coeffs)
+    diff_1T_analytical = EQ100(250., *coeffs, order=1)
+    assert_allclose(diff_1T, diff_1T_analytical, rtol=1E-3)
+    assert_allclose(diff_1T, -88.7187500531)
+    
+    # Integral
+    int_250 = EQ100(250., *coeffs, order=-1) 
+    int_220 = EQ100(220., *coeffs, order=-1)
+    numerical_1T = quad(EQ100, 220, 250, args=coeffs)[0]
+    assert_allclose(int_250 - int_220, numerical_1T)
+    assert_allclose(int_250 - int_220, 2381304.7021859996)
+    
+#     Integral over T
+    T_int_250 = EQ100(250., *coeffs, order=-1j)
+    T_int_220 = EQ100(220., *coeffs, order=-1j)
+    
+    to_int = lambda T :EQ100(T, *coeffs)/T
+    numerical_1_over_T = quad(to_int, 220, 250)[0]
+    assert_allclose(T_int_250 - T_int_220, numerical_1_over_T)
+    assert_allclose(T_int_250 - T_int_220, 10152.09780143667)
+
+    with pytest.raises(Exception):
+        EQ100(20., *coeffs, order=1E100)
+
+
+def test_EQ104_more():
+    # T derivative
+    coeffs = (0.02222, -26.38, -16750000, -3.894E19, 3.133E21)
+    diff_1T = derivative(EQ104, 250,  dx=1E-3, order=21, args=coeffs)
+    diff_1T_analytical = EQ104(250., *coeffs, order=1)
+    assert_allclose(diff_1T, diff_1T_analytical, rtol=1E-3)
+    assert_allclose(diff_1T, 0.0653824814073)
+    
+    # Integral
+    int_250 = EQ104(250., *coeffs, order=-1) 
+    int_220 = EQ104(220., *coeffs, order=-1)
+    numerical_1T = quad(EQ104, 220, 250, args=coeffs)[0]
+    assert_allclose(int_250 - int_220, numerical_1T)
+    assert_allclose(int_250 - int_220, -127.91851427119406)
+    
+#     Integral over T
+    T_int_250 = EQ104(250., *coeffs, order=-1j)
+    T_int_220 = EQ104(220., *coeffs, order=-1j)
+    
+    to_int = lambda T :EQ104(T, *coeffs)/T
+    numerical_1_over_T = quad(to_int, 220, 250)[0]
+    assert_allclose(T_int_250 - T_int_220, numerical_1_over_T)
+    assert_allclose(T_int_250 - T_int_220, -0.5494851210308727)
+
+    with pytest.raises(Exception):
+        EQ104(20., *coeffs, order=1E100)
+
+
