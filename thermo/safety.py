@@ -28,7 +28,7 @@ __all__ = ['ppmv_to_mgm3', 'mgm3_to_ppmv', 'NFPA_2008', 'IEC_2010',
 'Carcinogen', 'Tflash_methods', 'Tflash', 'Tautoignition_methods', 
 'Tautoignition', 'LFL_methods', 'LFL', 'UFL_methods', 'UFL', 'fire_mixing', 
 'inerts', 'LFL_mixture', 'UFL_mixture', 'Suzuki_LFL', 'Suzuki_UFL', 
-'Crowl_Louvar_LFL', 'Crowl_Louvar_UFL']
+'Crowl_Louvar_LFL', 'Crowl_Louvar_UFL', 'DIPPR_SERAT']
 
 import os
 from io import open
@@ -159,6 +159,9 @@ NFPA_2008 = pd.read_csv(os.path.join(folder, 'NFPA 497 2008.tsv'),
 
 IEC_2010 = pd.read_csv(os.path.join(folder, 'IS IEC 60079-20-1 2010.tsv'),
                        sep='\t', index_col=0)
+
+DIPPR_SERAT = pd.read_csv(os.path.join(folder, 'DIPPR Tflash Serat.csv'), 
+                          sep='\t', index_col=0)
 
 _OntarioExposureLimits = {}
 
@@ -486,8 +489,9 @@ def Carcinogen(CASRN, AvailableMethods=False, Method=None):
 
 IEC = 'IEC 60079-20-1 (2010)'
 NFPA = 'NFPA 497 (2008)'
+SERAT = 'Serat DIPPR (2017)'
 
-Tflash_methods = [IEC, NFPA]
+Tflash_methods = [IEC, NFPA, SERAT]
 
 
 def Tflash(CASRN, AvailableMethods=False, Method=None):
@@ -497,7 +501,9 @@ def Tflash(CASRN, AvailableMethods=False, Method=None):
     is provided; returns None if the data is not available.
 
     Prefered source is 'IEC 60079-20-1 (2010)' [1]_, with the secondary source
-    'NFPA 497 (2008)' [2]_ having very similar data.
+    'NFPA 497 (2008)' [2]_ having very similar data. A third source 
+    'Serat DIPPR (2017)' [3]_ provides third hand experimental but evaluated 
+    data from the DIPPR database, version unspecified, for 870 compounds.
 
     Examples
     --------
@@ -529,16 +535,22 @@ def Tflash(CASRN, AvailableMethods=False, Method=None):
 
     Notes
     -----
+    The predicted values from the DIPPR databank are also available in the
+    supporting material in [3]_, but are not included.
 
     References
     ----------
-    .. [1] IEC. “IEC 60079-20-1:2010 Explosive atmospheres - Part 20-1:
+    .. [1] IEC. "IEC 60079-20-1:2010 Explosive atmospheres - Part 20-1:
        Material characteristics for gas and vapour classification - Test
-       methods and data.” https://webstore.iec.ch/publication/635. See also
+       methods and data." https://webstore.iec.ch/publication/635. See also
        https://law.resource.org/pub/in/bis/S05/is.iec.60079.20.1.2010.pdf
     .. [2] National Fire Protection Association. NFPA 497: Recommended
        Practice for the Classification of Flammable Liquids, Gases, or Vapors
        and of Hazardous. NFPA, 2008.
+    .. [3] Serat, Fatima Zohra, Ali Mustapha Benkouider, Ahmed Yahiaoui, and 
+       Farid Bagui. "Nonlinear Group Contribution Model for the Prediction of 
+       Flash Points Using Normal Boiling Points." Fluid Phase Equilibria 449 
+       (October 15, 2017): 52-59. doi:10.1016/j.fluid.2017.06.008.
     '''
     def list_methods():
         methods = []
@@ -546,6 +558,8 @@ def Tflash(CASRN, AvailableMethods=False, Method=None):
             methods.append(IEC)
         if CASRN in NFPA_2008.index and not np.isnan(NFPA_2008.at[CASRN, 'Tflash']):
             methods.append(NFPA)
+        if CASRN in DIPPR_SERAT.index:
+            methods.append(SERAT)
         methods.append(NONE)
         return methods
     if AvailableMethods:
@@ -557,6 +571,8 @@ def Tflash(CASRN, AvailableMethods=False, Method=None):
         return float(IEC_2010.at[CASRN, 'Tflash'])
     elif Method == NFPA:
         return float(NFPA_2008.at[CASRN, "Tflash"])
+    elif Method == SERAT:
+        return float(DIPPR_SERAT.at[CASRN, "Tflash"])
     elif Method == NONE:
         return None
     else:

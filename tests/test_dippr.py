@@ -21,6 +21,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from numpy.testing import assert_allclose
+from scipy.misc import derivative
+from scipy.integrate import quad
 import pytest
 
 from thermo.dippr import *
@@ -59,3 +61,115 @@ def test_Eqs():
     # Random coefficients
     a = EQ115(300, 0.01, 0.002, 0.0003, 0.00004)
     assert_allclose(a, 37.02960772416336)
+    
+    
+def test_EQ127_more():
+    # T derivative
+    coeffs = (3.3258E4, 3.6199E4, 1.2057E3, 1.5373E7, 3.2122E3, -1.5318E7, 3.2122E3)
+    diff_1T = derivative(EQ127, 50,  dx=1E-3, order=21, args=coeffs)
+    diff_1T_analytical = EQ127(50., *coeffs, order=1)
+    assert_allclose(diff_1T, diff_1T_analytical, rtol=1E-3)
+    assert_allclose(diff_1T, 0.000313581049006)
+    
+    # Integral
+    int_50 = EQ127(50., *coeffs, order=-1) 
+    int_20 = EQ127(20., *coeffs, order=-1)
+    numerical_1T = quad(EQ127, 20, 50, args=coeffs)[0]
+    assert_allclose(int_50 - int_20, numerical_1T)
+    assert_allclose(numerical_1T, 997740.00147014)
+    
+    # Integral over T
+    T_int_50 = EQ127(50., *coeffs, order=-1j)
+    T_int_20 = EQ127(20., *coeffs, order=-1j)
+    
+    to_int = lambda T :EQ127(T, *coeffs)/T
+    numerical_1_over_T = quad(to_int, 20, 50)[0]
+    assert_allclose(T_int_50 - T_int_20, numerical_1_over_T)
+    assert_allclose(T_int_50 - T_int_20, 30473.9971912935)
+
+    with pytest.raises(Exception):
+        EQ127(20., *coeffs, order=1E100)
+
+    
+def test_EQ116_more():
+    # T derivative
+    coeffs = (647.096, 17.863, 58.606, -95.396, 213.89, -141.26)
+    diff_1T = derivative(EQ116, 50,  dx=1E-3, order=21, args=coeffs)
+    diff_1T_analytical = EQ116(50., *coeffs, order=1)
+    assert_allclose(diff_1T, diff_1T_analytical, rtol=1E-3)
+    assert_allclose(diff_1T_analytical, 0.020379262711650914)
+    
+    # Integral
+    int_50 = EQ116(50., *coeffs, order=-1) 
+    int_20 = EQ116(20., *coeffs, order=-1)
+    numerical_1T = quad(EQ116, 20, 50, args=coeffs)[0]
+    assert_allclose(int_50 - int_20, numerical_1T)
+    assert_allclose(int_50 - int_20, 1636.962423782701)
+    
+    # Integral over T
+    T_int_50 = EQ116(50., *coeffs, order=-1j)
+    T_int_20 = EQ116(20., *coeffs, order=-1j)
+    
+    to_int = lambda T :EQ116(T, *coeffs)/T
+    numerical_1_over_T = quad(to_int, 20, 50)[0]
+    assert_allclose(T_int_50 - T_int_20, numerical_1_over_T)
+    assert_allclose(T_int_50 - T_int_20, 49.95109104018752)
+    
+    with pytest.raises(Exception):
+        EQ116(20., *coeffs, order=1E100)
+    
+def test_EQ107_more():
+    # T derivative
+    coeffs = (33363., 26790., 2610.5, 8896., 1169.)
+    diff_1T = derivative(EQ107, 250,  dx=1E-3, order=21, args=coeffs)
+    diff_1T_analytical = EQ107(250., *coeffs, order=1)
+    assert_allclose(diff_1T, diff_1T_analytical, rtol=1E-3)
+    assert_allclose(diff_1T_analytical, 1.985822265543943)
+    
+    # Integral
+    int_50 = EQ107(50., *coeffs, order=-1) 
+    int_20 = EQ107(20., *coeffs, order=-1)
+    numerical_1T = quad(EQ107, 20, 50, args=coeffs)[0]
+    assert_allclose(int_50 - int_20, numerical_1T)
+    assert_allclose(numerical_1T, 1000890.0)
+    
+    # Integral over T
+    T_int_50 = EQ107(50., *coeffs, order=-1j)
+    T_int_20 = EQ107(20., *coeffs, order=-1j)
+    
+    to_int = lambda T :EQ107(T, *coeffs)/T
+    numerical_1_over_T = quad(to_int, 20, 50)[0]
+    assert_allclose(T_int_50 - T_int_20, numerical_1_over_T)
+    assert_allclose(T_int_50 - T_int_20, 30570.20768751744)
+
+
+    with pytest.raises(Exception):
+        EQ107(20., *coeffs, order=1E100)
+
+def test_EQ114_more():
+    # T derivative
+    coeffs = (33.19, 66.653, 6765.9, -123.63, 478.27)
+    diff_1T = derivative(EQ114, 20,  dx=1E-3, order=21, args=coeffs)
+    diff_1T_analytical = EQ114(20., *coeffs, order=1)
+    assert_allclose(diff_1T, diff_1T_analytical, rtol=1E-3)
+    assert_allclose(diff_1T, 1135.38618941)
+    
+    # Integral
+    int_50 = EQ114(30., *coeffs, order=-1) 
+    int_20 = EQ114(20., *coeffs, order=-1)
+    numerical_1T = quad(EQ114, 20, 30, args=coeffs)[0]
+    assert_allclose(int_50 - int_20, numerical_1T)
+    assert_allclose(int_50 - int_20, 295697.48978888744)
+    
+#     Integral over T
+    T_int_50 = EQ114(30., *coeffs, order=-1j)
+    T_int_20 = EQ114(20., *coeffs, order=-1j)
+    
+    to_int = lambda T :EQ114(T, *coeffs)/T
+    numerical_1_over_T = quad(to_int, 20, 30)[0]
+    assert_allclose(T_int_50 - T_int_20, numerical_1_over_T)
+    assert_allclose(T_int_50 - T_int_20, 11612.331762721366)
+    
+    with pytest.raises(Exception):
+        EQ114(20., *coeffs, order=1E100)
+

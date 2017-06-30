@@ -164,6 +164,12 @@ def test_IEC_2010():
     assert IEC_2010.index.is_unique
     assert IEC_2010.shape == (327, 5)
 
+def test_DIPPR_SERAT():
+    assert_allclose(DIPPR_SERAT['Tflash'].sum(), 285171.13471004181)
+
+    assert DIPPR_SERAT.index.is_unique
+    assert DIPPR_SERAT.shape == (870, 2)
+
 
 
 def test_Tflash():
@@ -174,12 +180,17 @@ def test_Tflash():
     Ts = [227.15, 262.15, 262.15]
     assert_allclose([T1, T2, T3], Ts)
 
-    methods = Tflash('8006-61-9', AvailableMethods=True)
+    methods = Tflash('110-54-3', AvailableMethods=True)
     assert methods[0:-1] == Tflash_methods
+    
+    tot1 = pd.Series([Tflash(i) for i in IEC_2010.index]).sum()
+    tot2 = pd.Series([Tflash(i) for i in NFPA_2008.index]).sum()
+    tot3 = pd.Series([Tflash(i) for i in DIPPR_SERAT.index]).sum()
+    assert_allclose([tot1, tot2, tot3], [86127.510323478724, 59397.72151504083, 286056.08653090859])
 
-    tot_default = pd.Series([Tflash(i) for i in set(list(IEC_2010.index) + list(NFPA_2008.index))]).sum()
-    assert_allclose(tot_default, 98062.0)
-
+    tot_default = pd.Series([Tflash(i) for i in set(list(IEC_2010.index) + list(NFPA_2008.index) + list(DIPPR_SERAT.index))]).sum()
+    assert_allclose(tot_default, 324881.68653090857)
+    
     assert None == Tflash(CASRN='132451235-2151234-1234123')
 
     with pytest.raises(Exception):

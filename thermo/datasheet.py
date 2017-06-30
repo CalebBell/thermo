@@ -100,7 +100,7 @@ def tabulate_liq(chemical, Tmin=None, Tmax=None, pts=10):
     data['Constant-pressure heat capacity, J/kg/K'] = Cps
     data['Heat of vaporization, J/kg'] = Hvaps
     data['Viscosity, Pa*S'] = mugs
-    data['Thermal consuctivity, W/m/K'] = kgs
+    data['Thermal conductivity, W/m/K'] = kgs
     data['Surface tension, N/m'] = sigmas
     data['Prandtl number'] = Prs
     data['Thermal diffusivity, m^2/s'] = alphas

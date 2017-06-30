@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['omega', 'LK_omega', 'omega_mixture','StielPolar']
+__all__ = ['omega', 'LK_omega', 'omega_mixture', 'StielPolar']
 __all__.extend(['omega_methods', 'omega_mixture_methods', 'Stiel_polar_methods'])
 
 import numpy as np

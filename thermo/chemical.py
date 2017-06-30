@@ -4634,6 +4634,7 @@ class Stream(Mixture): # pragma: no cover
 
         self.n = property_molar_to_mass(self.m, self.MW)
         self.ns = [self.n*zi for zi in self.zs]
+        self.ms =  [self.m*wi for wi in self.ws]
         if hasattr(self, 'H') and hasattr(self, 'S'):
             self.S *= self.m
             self.Sm *= self.n
