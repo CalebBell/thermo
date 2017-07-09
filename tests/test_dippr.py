@@ -69,7 +69,7 @@ def test_EQ127_more():
     diff_1T = derivative(EQ127, 50,  dx=1E-3, order=21, args=coeffs)
     diff_1T_analytical = EQ127(50., *coeffs, order=1)
     assert_allclose(diff_1T, diff_1T_analytical, rtol=1E-3)
-    assert_allclose(diff_1T, 0.000313581049006)
+    assert_allclose(diff_1T, 0.000313581049006, rtol=1E-4)
     
     # Integral
     int_50 = EQ127(50., *coeffs, order=-1) 
