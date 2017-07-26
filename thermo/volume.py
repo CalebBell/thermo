@@ -1314,7 +1314,7 @@ def Amgat(xs, Vms):
 
     Parameters
     ----------
-    xs: array
+    xs : array
         Mole fractions of each component, []
     Vms : array
         Molar volumes of each fluids at conditions [m^3/mol]

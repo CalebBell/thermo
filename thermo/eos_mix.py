@@ -24,14 +24,18 @@ from __future__ import division
 __all__ = ['GCEOSMIX', 'PRMIX', 'SRKMIX', 'PR78MIX', 'VDWMIX', 'PRSVMIX', 
 'PRSV2MIX', 'TWUPRMIX', 'TWUSRKMIX', 'APISRKMIX']
 from scipy.optimize import newton
+from scipy.misc import derivative
 from thermo.utils import Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter
 from thermo.utils import R
 from thermo.utils import log, exp, sqrt
 from thermo.eos import *
+import sys
 
 R2 = R*R
 two_root_two = 2*2**0.5
 root_two = sqrt(2.)
+log_min = log(sys.float_info.min)
+
 
 class GCEOSMIX(GCEOS):
     r'''Class for solving a generic pressure-explicit three-parameter cubic 
@@ -224,6 +228,65 @@ class GCEOSMIX(GCEOS):
             self.fugacities_g = [phi*y*self.P for phi, y in zip(self.phis_g, ys)]
             self.lnphis_g = [log(i) for i in self.phis_g]
 
+
+    def _dphi_dn(self, zi, i, phase):
+        z_copy = list(self.zs)
+        z_copy.pop(i)
+        z_sum = sum(z_copy) + zi
+        z_copy = [j/z_sum if j else 0 for j in z_copy]
+        z_copy.insert(i, zi)
+        
+        eos = self.to_TP_zs(self.T, self.P, z_copy)
+        if phase == 'g':
+            return eos.phis_g[i]
+        elif phase == 'l':
+            return eos.phis_l[i]
+
+    def _dfugacity_dn(self, zi, i, phase):
+        z_copy = list(self.zs)
+        z_copy.pop(i)
+        z_sum = sum(z_copy) + zi
+        z_copy = [j/z_sum if j else 0 for j in z_copy]
+        z_copy.insert(i, zi)
+        
+        eos = self.to_TP_zs(self.T, self.P, z_copy)
+        if phase == 'g':
+            return eos.fugacities_g[i]
+        elif phase == 'l':
+            return eos.fugacities_l[i]
+
+
+    def fugacities_partial_derivatives(self, xs=None, ys=None):
+        if self.phase in ['l', 'l/g']:
+            if xs is None:
+                xs = self.zs
+            self.dphis_dni_l = [derivative(self._dphi_dn, xs[i], args=[i, 'l'], dx=1E-7, n=1) for i in self.cmps]
+            self.dfugacities_dni_l = [derivative(self._dfugacity_dn, xs[i], args=[i, 'l'], dx=1E-7, n=1) for i in self.cmps]
+            self.dlnphis_dni_l = [dphi/phi for dphi, phi in zip(self.dphis_dni_l, self.phis_l)]
+        if self.phase in ['g', 'l/g']:
+            if ys is None:
+                ys = self.zs
+            self.dphis_dni_g = [derivative(self._dphi_dn, ys[i], args=[i, 'g'], dx=1E-7, n=1) for i in self.cmps]
+            self.dfugacities_dni_g = [derivative(self._dfugacity_dn, ys[i], args=[i, 'g'], dx=1E-7, n=1) for i in self.cmps]
+            self.dlnphis_dni_g = [dphi/phi for dphi, phi in zip(self.dphis_dni_g, self.phis_g)]
+            # confirmed the relationship of the above 
+            # There should be an easy way to get dfugacities_dn_g but I haven't figured it out
+
+    def fugacities_partial_derivatives_2(self, xs=None, ys=None):
+        if self.phase in ['l', 'l/g']:
+            if xs is None:
+                xs = self.zs
+            self.d2phis_dni2_l = [derivative(self._dphi_dn, xs[i], args=[i, 'l'], dx=1E-5, n=2) for i in self.cmps]
+            self.d2fugacities_dni2_l = [derivative(self._dfugacity_dn, xs[i], args=[i, 'l'], dx=1E-5, n=2) for i in self.cmps]
+            self.d2lnphis_dni2_l = [d2phi/phi  - dphi*dphi/(phi*phi) for d2phi, dphi, phi in zip(self.d2phis_dni2_l, self.dphis_dni_l, self.phis_l)]
+        if self.phase in ['g', 'l/g']:
+            if ys is None:
+                ys = self.zs
+            self.d2phis_dni2_g = [derivative(self._dphi_dn, ys[i], args=[i, 'g'], dx=1E-5, n=2) for i in self.cmps]
+            self.d2fugacities_dni2_g = [derivative(self._dfugacity_dn, ys[i], args=[i, 'g'], dx=1E-5, n=2) for i in self.cmps]
+            self.d2lnphis_dni2_g = [d2phi/phi  - dphi*dphi/(phi*phi) for d2phi, dphi, phi in zip(self.d2phis_dni2_g, self.dphis_dni_g, self.phis_g)]
+        # second derivative lns confirmed
+
     def solve_T(self, P, V, quick=True):
         r'''Generic method to calculate `T` from a specified `P` and `V`.
         Provides SciPy's `newton` solver, and iterates to solve the general
@@ -401,13 +464,17 @@ class PRMIX(GCEOSMIX, PR):
         .. [2] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
            Butterworth-Heinemann, 1985.
         '''
+        from cmath import log
         A = self.a_alpha*self.P/(R2*self.T*self.T)
         B = self.b*self.P/(R*self.T)
         phis = []
         for i in self.cmps:
-            t1 = self.bs[i]/self.b*(Z - 1.) - log(Z - B)
+            # The two log terms need to use a complex log; typically these are
+            # calculated at "liquid" volume solutions which are unstable
+            # and cannot exist
+            t1 = self.bs[i]/self.b*(Z - 1.) - log(Z - B).real
             t2 = 2./self.a_alpha*sum([zs[j]*self.a_alpha_ijs[i][j] for j in self.cmps])
-            t3 = t1 - A/(two_root_two*B)*(t2 - self.bs[i]/self.b)*log((Z + (root_two + 1.)*B)/(Z - (root_two - 1.)*B))
+            t3 = t1 - A/(two_root_two*B)*(t2 - self.bs[i]/self.b)*log((Z + (root_two + 1.)*B)/(Z - (root_two - 1.)*B)).real
             phis.append(exp(t3))
         return phis
 

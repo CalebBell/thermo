@@ -132,9 +132,17 @@ class GCEOS(object):
             Three possible molar volumes, [m^3/mol]
         '''
         # All roots will have some imaginary component; ignore them if > 1E-9
-        imaginary_roots_count = len([True for i in Vs if abs(i.imag) > 1E-9]) 
-        if imaginary_roots_count == 2: 
-            V = [i for i in Vs if abs(i.imag) < 1E-9][0].real
+        good_roots = []
+        bad_roots = []
+        for i in Vs:
+            j = i.real
+            if abs(i.imag) > 1E-9 or j < 0:
+                bad_roots.append(i)
+            else:
+                good_roots.append(j)
+                
+        if len(bad_roots) == 2: 
+            V = good_roots[0]
             self.phase = self.set_properties_from_solution(self.T, self.P, V, self.b, self.delta, self.epsilon, self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2)
             if self.phase == 'l':
                 self.V_l = V
@@ -142,8 +150,7 @@ class GCEOS(object):
                 self.V_g = V
         else:
             # Even in the case of three real roots, it is still the min/max that make sense
-            Vs = [i.real for i in Vs]
-            self.V_l, self.V_g = min(Vs), max(Vs)
+            self.V_l, self.V_g = min(good_roots), max(good_roots)
             [self.set_properties_from_solution(self.T, self.P, V, self.b, self.delta, self.epsilon, self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2) for V in [self.V_l, self.V_g]]
             self.phase = 'l/g'
 
@@ -372,6 +379,7 @@ class GCEOS(object):
         phase = 'l' if PIP > 1 else 'g' # phase_identification_parameter_phase(PIP)
       
         if phase == 'l':
+            self.Z_l = self.P*V/(R*self.T)
             self.beta_l, self.kappa_l = beta, kappa
             self.PIP_l, self.Cp_minus_Cv_l = PIP, Cp_m_Cv
             
@@ -389,6 +397,7 @@ class GCEOS(object):
             self.fugacity_l, self.phi_l = fugacity, phi
             self.Cp_dep_l, self.Cv_dep_l = Cp_dep, Cv_dep
         else:
+            self.Z_g = self.P*V/(R*self.T)
             self.beta_g, self.kappa_g = beta, kappa
             self.PIP_g, self.Cp_minus_Cv_g = PIP, Cp_m_Cv
             
