@@ -216,15 +216,13 @@ class GCEOSMIX(GCEOS):
         if self.phase in ['l', 'l/g']:
             if xs is None:
                 xs = self.zs
-            Z = self.P*self.V_l/(R*self.T)
-            self.phis_l = self.fugacity_coefficients(Z, zs=xs)
+            self.phis_l = self.fugacity_coefficients(self.Z_l, zs=xs)
             self.fugacities_l = [phi*x*self.P for phi, x in zip(self.phis_l, xs)]
             self.lnphis_l = [log(i) for i in self.phis_l]
         if self.phase in ['g', 'l/g']:
             if ys is None:
                 ys = self.zs
-            Z = self.P*self.V_g/(R*self.T)
-            self.phis_g = self.fugacity_coefficients(Z, zs=ys)
+            self.phis_g = self.fugacity_coefficients(self.Z_g, zs=ys)
             self.fugacities_g = [phi*y*self.P for phi, y in zip(self.phis_g, ys)]
             self.lnphis_g = [log(i) for i in self.phis_g]
 
@@ -286,6 +284,47 @@ class GCEOSMIX(GCEOS):
             self.d2fugacities_dni2_g = [derivative(self._dfugacity_dn, ys[i], args=[i, 'g'], dx=1E-5, n=2) for i in self.cmps]
             self.d2lnphis_dni2_g = [d2phi/phi  - dphi*dphi/(phi*phi) for d2phi, dphi, phi in zip(self.d2phis_dni2_g, self.dphis_dni_g, self.phis_g)]
         # second derivative lns confirmed
+
+    def TPD(self, Zz, Zy, zs, ys):
+#        if zs is None:
+#            zs = self.xs # liquid main phase
+#            Z_l = self.Z_l
+#        if ys is None:
+#            ys = self.ys
+#            Z_g = self.Z_g
+# Might just be easier to come up with my own criteria and analysis
+        z_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
+        y_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
+        tot = 0
+        for yi, phi_yi, zi, phi_zi in zip(ys, y_fugacity_coefficients, zs, z_fugacity_coefficients):
+            di = log(zi) + log(phi_zi)
+            tot += yi*(log(yi) + log(phi_yi) - di)
+        return tot*R*self.T
+
+    def d_TPD_dy(self, Zz, Zy, zs, ys):
+        # The gradient should be - for all variables
+        z_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
+        y_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
+        gradient = []
+        for yi, phi_yi, zi, phi_zi in zip(ys, y_fugacity_coefficients, zs, z_fugacity_coefficients):
+            hi = di = log(zi) + log(phi_zi) # same as di
+            k = log(yi) + log(phi_yi) - hi
+            Yi = exp(-k)*yi
+            gradient.append(log(phi_yi) + log(Yi) - di)
+        return gradient
+
+    def TDP_Michelsen(self, Zz, Zy, zs, ys):
+        z_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
+        y_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
+        tot = 0
+        for yi, phi_yi, zi, phi_zi in zip(ys, y_fugacity_coefficients, zs, z_fugacity_coefficients):
+            hi = di = log(zi) + log(phi_zi) # same as di
+            k = log(yi) + log(phi_yi) - hi
+            Yi = exp(-k)*yi
+            tot += Yi*(log(Yi) + log(phi_yi) - hi - 1.)
+            
+        return 1. + tot
+
 
     def solve_T(self, P, V, quick=True):
         r'''Generic method to calculate `T` from a specified `P` and `V`.
@@ -1529,3 +1568,5 @@ class APISRKMIX(SRKMIX, APISRK):
         `GCEOSMIX.a_alpha_and_derivatives` after `a_alpha` is calculated for 
         every component'''
         del(self.a, self.Tc, self.S1, self.S2)
+
+
