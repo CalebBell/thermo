@@ -4796,12 +4796,15 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         return Peclet_heat(V=V, L=D, rho=self.rho, Cp=self.Cp, k=self.k)
 
 
-
-class Stream(Mixture): # pragma: no cover
+class Stream(Mixture):
     '''Creates a Stream object which is useful for modeling mass and energy 
     balances.
     
     '''
+    def __repr__(self): # pragma: no cover
+        return '<Stream, components=%s, mole fractions=%s, mole flow=%s mol/s, T=%.2f K, P=%.0f \
+Pa>' % (self.names, [round(i,4) for i in self.zs], self.n, self.T, self.P)
+    
     def __init__(self, IDs, zs=None, ws=None, Vfls=None, Vfgs=None,
                  ns=None, ms=None, Qls=None, Qgs=None, 
                  m=None, n=None, Q=None, T=298.15, P=101325, V_TP=(None, None)):
@@ -4868,7 +4871,6 @@ class Stream(Mixture): # pragma: no cover
         self.set_extensive_flow(self.n)
         self.set_extensive_properties()
 
-            
     def set_extensive_flow(self, n=None):
         if n is None:
             n = self.n
@@ -4908,7 +4910,6 @@ class Stream(Mixture): # pragma: no cover
             self.H *= self.m
             self.Hm *= self.n
 
-
     def calculate(self, T=None, P=None):
         self.set_TP(T=T, P=P)
         self.set_phase()
@@ -4920,38 +4921,25 @@ class Stream(Mixture): # pragma: no cover
         self.set_extensive_properties()
 
     def __add__(self, other):
-        cmps = list(set((self.CASs+ other.CASs)))
-        mass = self.m + other.m
-        masses = []
+        if not isinstance(other, Stream):
+            raise Exception('Adding to a stream requires that the other object '
+                            'also be a stream.')
+        
+        cmps = sorted(list(set((self.CASs + other.CASs))))
+        mole = self.n + other.n
+        moles = []
         for cmp in cmps:
-            masses.append(0)
+            moles.append(0)
             if cmp in self.CASs:
                 ind = self.CASs.index(cmp)
-                masses[-1] += self.ws[ind]*self.m
+                moles[-1] += self.zs[ind]*self.n
             if cmp in other.CASs:
                 ind = other.CASs.index(cmp)
-                masses[-1] += other.ws[ind]*other.m
+                moles[-1] += other.zs[ind]*other.n
 
         T = min(self.T, other.T)
         P = min(self.P, other.P)
-
-        return Stream(IDs=cmps, ws=masses, m=mass, T=T, P=P)
-
-
-
-    def __mul__(self, const):
-        # In place
-        self.m *=const
-        self.Q *= const
-        return self
-
-    def __truediv__(self, const):
-        # In place
-        self.m /=const
-        self.Q /= const
-        return self
-
-
+        return Stream(IDs=cmps, ns=moles, T=T, P=P)
 
     def __sub__(self, other):
         # Subtracts the mass flow rates in other from self and returns a new
@@ -4962,38 +4950,31 @@ class Stream(Mixture): # pragma: no cover
         components_in_self = [i in self.CASs for i in other.CASs]
         if not all(components_in_self):
             for i, in_self in enumerate(components_in_self):
-                if not in_self and other.ws[i] > 0:
+                if not in_self and other.zs[i] > 0:
                     raise Exception('Not all components to be removed are \
 present in the first stream; %s is not present.' %other.components[i])
 
-
         # Calculate the mass flows of each species
-        ms_self = [wi*self.m for wi in self.ws]
-        ms_other = [wj*other.m for wj in other.ws]
+        ns_self = list(self.ns)
+        ns_other = list(other.ns)
 
         for i, CAS in enumerate(self.CASs):
             if CAS in other.CASs:
-                mj = ms_other[other.CASs.index(CAS)]
-                if mj > ms_self[i]:
+                nj = ns_other[other.CASs.index(CAS)]
+                if nj > ns_self[i]:
                     raise Exception('Attempting to remove more %s than is in the \
 first stream.' %self.components[i])
-                ms_self[i] -= mj
+                ns_self[i] -= nj
 
         # Remove now-empty streams:
         remaining_CASs = self.CASs
-        for i, m in enumerate(list(ms_self)):
-            if m == 0:
+        for i, n in enumerate(list(ns_self)):
+            if n == 0:
                 remaining_CASs.pop(i)
-                ms_self.pop(i)
+                ns_self.pop(i)
 
         # Create the resulting stream
-        m_tot = sum(ms_self)
-        return Stream(IDs=remaining_CASs, ws=ms_self, m=m_tot, T=self.T, P=self.P)
-
-
-
-
-
-
+        n_tot = sum(ns_self)
+        return Stream(IDs=remaining_CASs, ns=ns_self, T=self.T, P=self.P)
 
 

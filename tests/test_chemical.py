@@ -266,6 +266,59 @@ def test_Stream_inputs():
         # no flow rate
         Stream(['water', 'ethanol'], zs=[.5, .5], T=300, P=1E5)
 
+def test_add_streams():
+    # simple example, same components
+    ans = {'zs': [0.6, 0.4], 'ws': [0.7932081497794828, 0.20679185022051716], 'm': 0.34847176, 'n': 10}
+    prod = Stream(['water', 'ethanol'], ns=[1, 2], T=300, P=1E5) + Stream(['water', 'ethanol'], ns=[3, 4], T=300, P=1E5)
+    assert_allclose(prod.zs, ans['zs'])
+    assert_allclose(prod.ws, ans['ws'])
+    assert_allclose(prod.m, ans['m'])
+    assert_allclose(prod.n, ans['n'])
+
+    # add a not a stream
+    with pytest.raises(Exception):
+        Stream(['decane', 'octane'],  T=300, P=1E5, ns=[4, 5]) +1
+    
+    # Add two streams, check they're the same if added in a different order
+    ans = {'zs': [1/6., 1/3., 1/3., 1/6.], 
+           'ws': [0.12364762781718204, 0.3687607770917325, 0.3080280163630483, 0.1995635787280373],
+           'm': 0.92382298, 'n': 6}
+    
+    S1 = Stream(['decane', 'octane'],  T=300, P=1E5, ns=[2, 1])
+    S2 = Stream(['Dodecane', 'Tridecane'],  T=300, P=1E5, ns=[2, 1]) 
+    prod = S1 + S2
+    assert_allclose(prod.ws, ans['ws'])
+    assert_allclose(prod.zs, ans['zs'])
+    assert_allclose(prod.m, ans['m'])
+    assert_allclose(prod.n, ans['n'])
+    prod = S2 + S1
+    assert_allclose(prod.ws, ans['ws'])
+    assert_allclose(prod.zs, ans['zs'])
+    assert_allclose(prod.m, ans['m'])
+    assert_allclose(prod.n, ans['n'])
+
+
+def test_sub_streams():
+    with pytest.raises(Exception):
+        # remove a component not present
+        Stream(['water', 'ethanol'], ns=[1, 2], T=300, P=1E5) - Stream(['decane'], ns=[.5], T=300, P=1E5)
+
+    with pytest.raises(Exception):
+        # Remove too much of a component 
+        Stream(['water', 'ethanol'], ns=[1, 2], T=300, P=1E5) - Stream(['ethanol'], ns=[3], T=300, P=1E5)
+
+    # Take a component completely away
+    no_ethanol = Stream(['water', 'ethanol'], ns=[1, 2], T=300, P=1E5) - Stream(['ethanol'], ns=[2], T=300, P=1E5)
+    assert len(no_ethanol.zs) == 1
+    assert_allclose(no_ethanol.zs, 1)
+    assert_allclose(no_ethanol.n, 1)
+    assert_allclose(no_ethanol.m, 0.01801528)
+    
+    # basic case
+    m = Stream(['water', 'ethanol'], ns=[1, 2], T=300, P=1E5) - Stream(['ethanol'], ns=[1], T=300, P=1E5)
+    assert_allclose(m.ns, [1, 1])
+    
+    
 def test_H_Chemical():
     from thermo import chemical
     chemical.caching = False
