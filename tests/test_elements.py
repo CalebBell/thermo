@@ -77,6 +77,8 @@ def test_misc_elements():
     assert periodic_table['H'].InChI == 'InChI=1S/H'
     
     assert periodic_table['H'].smiles == '[H]'
+    assert periodic_table[1].smiles == '[H]'
+    assert periodic_table['1'].smiles == '[H]'
 
 def test_Hill_formula():
     Hill_formulas = {'ClNa': {'Na': 1, 'Cl': 1}, 'BrI': {'I': 1, 'Br': 1},

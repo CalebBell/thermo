@@ -22,12 +22,13 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['checkCAS', 'CASfromAny', 'PubChem', 'MW', 'formula', 'smiles', 
+__all__ = ['checkCAS', 'CAS_from_any', 'PubChem', 'MW', 'formula', 'smiles', 
            'InChI', 'InChI_Key', 'IUPAC_name', 'name', 'synonyms', 
            '_MixtureDict', 'mixture_from_any', 'cryogenics', 'dippr_compounds',
            'pubchem_dict']
 import os
 from thermo.utils import to_num
+from thermo.elements import periodic_table
 
 folder = os.path.join(os.path.dirname(__file__), 'Identifiers')
 
@@ -36,13 +37,13 @@ def checkCAS(CASRN):
 
     Parameters
     ----------
-        CASRN : string
-            A three-piece, dash-separated set of numbers
+    CASRN : string
+        A three-piece, dash-separated set of numbers
 
     Returns
     -------
-        result : bool
-            Boolean value if CASRN was valid. If parsing fails, return False also.
+    result : bool
+        Boolean value if CASRN was valid. If parsing fails, return False also.
 
     Notes
     -----
@@ -58,10 +59,6 @@ def checkCAS(CASRN):
     True
     >>> checkCAS('77332-18-5')
     False
-
-    References
-    ----------
-    TODO
     '''
     try:
         check = CASRN[-1]
@@ -130,99 +127,138 @@ del pubchemid, formula, mw, smiles, inchi, inchikey, iupac_name, \
 #print _pubchem_dict['7732-18-5']
 
 
-def CASfromAny(ID):
-    '''Input must be string
-    First check if input is InChI, best defined format
-    TODO: if int, format as rest-2digits-1digit and see if in dict. All CASs are in there.
+def CAS_from_any(ID):
+    '''Looks up the CAS number of a chemical by searching and testing for the
+    string being any of the following types of chemical identifiers:
+    
+    * Name, in IUPAC form or common form or a synonym registered in PubChem
+    * InChI name, prefixed by 'InChI=1S/' or 'InChI=1/'
+    * InChI key, prefixed by 'InChIKey='
+    * PubChem CID, prefixed by 'PubChem='
+    * SMILES (prefix with 'SMILES=' to ensure smiles parsing; ex.
+      'C' will return Carbon as it is an element whereas the SMILES 
+      interpretation for 'C' is methane)
+    * CAS number (obsolete numbers may point to the current number)    
+
+    If the input is an ID representing an element, the following additional 
+    inputs may be specified as well:
+        
+    * Atomic symbol (ex 'Na')
+    * Atomic number (as a string)
+
+    Parameters
+    ----------
+    ID : str
+        One of the name formats described above
+
+    Returns
+    -------
+    CASRN : string
+        A three-piece, dash-separated set of numbers
+
+    Notes
+    -----
+    An exception is raised if the name cannot be identified. The PubChem 
+    database includes a wide variety of other synonyms, but these may not be
+    present for all chemcials.
+
+    Examples
+    --------
+    >>> CAS_from_any('water')
+    '7732-18-5'
+    >>> CAS_from_any('InChI=1S/C2H6O/c1-2-3/h3H,2H2,1H3')
+    '64-17-5'
+    >>> CAS_from_any('CCCCCCCCCC')
+    '124-18-5'
+    >>> CAS_from_any('InChIKey=LFQSCWFLJHTTHZ-UHFFFAOYSA-N')
+    '64-17-5'
+    >>> CAS_from_any('pubchem=702')
+    '64-17-5'
+    >>> CAS_from_any('O') # only elements can be specified by symbol
+    '7782-44-7'
     '''
-    CASRN = None
     ID = ID.strip()
+    if ID in periodic_table:
+        return periodic_table[ID].CAS
     if checkCAS(ID):
-#        print 'CAS'
-        try:
-            a = pubchem_dict[ID]
-            CASRN = ID
-        except:
-            try:
-                CASRN = _cas_from_name_dict[ID]
-            except:
-                pass
+        if ID in pubchem_dict:
+            return ID
+        elif ID in _cas_from_name_dict:
+            return _cas_from_name_dict[ID] # handle the case of synonyms
+        raise Exception('A valid CAS number was recognized, but is not in the database')
+        
+    if ID in _cas_from_name_dict:
+        # Try a direct lookup with the name - the fastest
+        return _cas_from_name_dict[ID]
 
-    if type(ID) == type('') and len(ID) > 9 and not CASRN:
-        # InChI strings and keys  are not stored with format for space reasons
-        if ID[0:9] == 'InChI=1S/':
+    if len(ID) > 9:
+        if ID[0:9].lower() == 'inchi=1s/':
+        # normal upper case is 'InChI=1S/'
+            if ID[9:] in _cas_from_inchi_dict:
+                return _cas_from_inchi_dict[ID[9:]]
+            else:
+                raise Exception('A valid InChI name was recognized, but it is not in the database')
+        if ID[0:8].lower() == 'inchi=1/':
+            if ID[8:] in _cas_from_inchi_dict:
+                return _cas_from_inchi_dict[ID[8:]]
+            else:
+                raise Exception('A valid InChI name was recognized, but it is not in the database')
+        if ID[0:9].lower() == 'inchikey=':
+            if ID[9:] in _cas_from_inchikey_dict:
+                return _cas_from_inchikey_dict[ID[9:]]
+            else:
+                raise Exception('A valid InChI Key was recognized, but it is not in the database')
+    if len(ID) > 8:
+        if ID[0:8].lower() == 'pubchem=':
             try:
-                CASRN = _cas_from_inchi_dict[ID[9:]]
+                # Attempt to cast the ID to an int for lookup, may not work
+                return _cas_from_pubchem_dict[int(ID[8:])]
             except:
-                pass
+                raise Exception('A PubChem integer identifier was recognized, but it is not in the database.')
+    if len(ID) > 7:
+        if ID[0:7].lower() == 'smiles=':
+            try:
+                return _cas_from_smiles_dict[ID[7:]]
+            except:
+                raise Exception('A SMILES identifier was recognized, but it is not in the database.')
 
-        if ID[0:8] == 'InChI=1/' and not CASRN:
-            try:
-                CASRN =  _cas_from_inchi_dict[ID[8:]]
-            except:
-                pass
-
-        if ID[0:9] == 'InChIKey=' and not CASRN:
-            try:
-                CASRN = _cas_from_inchikey_dict[ID[9:]]
-            except:
-                pass
-    if type(ID) == type('') and not CASRN:
+    if ID in _cas_from_smiles_dict:
         # Parsing SMILES is an option, but this is faster
         # Pybel API also prints messages to console on failure
+        return _cas_from_smiles_dict[ID]
+    if ID.lower() in _cas_from_iupacname_dict:
+        # Not currently run as the dict is also in _names
+        return _cas_from_iupacname_dict[ID.lower()]
+    try:
+        return _cas_from_name_dict[ID.lower()]
+    except:
         try:
-            CASRN = _cas_from_smiles_dict[ID]
-        except:
-            pass
-
-    if type(ID) == type('') or type(ID) == type(1324) and not CASRN:
-        try:
-            intID = int(ID)
-            CASRN = _cas_from_pubchem_dict[intID]
-        except:
-            pass
-    if type(ID) == type('') and not CASRN:
-#        print 'Early error'
-        try:
-            CASRN = _cas_from_iupacname_dict[ID.lower()]
-
-#            print 'CASRN'
-        except:
-            pass
-    if type(ID) == type('') and not CASRN:
-        try:
-            CASRN = _cas_from_name_dict[ID.lower()]
+            ID = ID.replace(' ', '')
+            return _cas_from_name_dict[ID.lower()]
         except:
             try:
-                ID = ID.replace(' ', '')
-                CASRN = _cas_from_name_dict[ID.lower()]
+                ID = ID.replace('-', '')
+                return _cas_from_name_dict[ID.lower()]
             except:
-                try:
-                    ID = ID.replace('-', '')
-                    CASRN = _cas_from_name_dict[ID.lower()]
-                except:
-                    CASRN = None
-#            raise Exception('Not Found')
-    return CASRN
+                raise Exception('Chemical name not recognized')
 
 
 
 
 
 def PubChem(CASRN):
-    '''
-    Given a CASRN in the database, obtain the PubChem database
+    '''Given a CASRN in the database, obtain the PubChem database
     number of the compound.
 
     Parameters
     ----------
-        CASRN : string
-            Valid CAS number in PubChem database
+    CASRN : string
+        Valid CAS number in PubChem database [-]
 
     Returns
     -------
-        pubchem : int
-            PubChem database id, as an integer
+    pubchem : int
+        PubChem database id, as an integer [-]
 
     Notes
     -----
@@ -236,10 +272,8 @@ def PubChem(CASRN):
     References
     ----------
     .. [1] Pubchem.
-
     '''
-    pubchem = pubchem_dict[CASRN]['Pubchem ID']
-    return pubchem
+    return pubchem_dict[CASRN]['Pubchem ID']
 
 
 def MW(CASRN):
@@ -248,8 +282,8 @@ def MW(CASRN):
 
     Parameters
     ----------
-        CASRN : string
-            Valid CAS number in PubChem database
+    CASRN : string
+        Valid CAS number in PubChem database
 
     Returns
     -------
@@ -340,6 +374,7 @@ def synonyms(CASRN):
 
 
 _MixtureDict = {}
+_MixtureDictLookup = {}
 with open(os.path.join(folder, 'Mixtures Compositions.tsv')) as f:
     '''Read in a dict of 90 or so mixutres, their components, and synonyms.
     Small errors in mole fractions not adding to 1 are known.
@@ -360,22 +395,50 @@ with open(os.path.join(folder, 'Mixtures Compositions.tsv')) as f:
         _MixtureDict[_name] = {"CASs": _CASs, "N": N, "Source": _source,
                                "Names": _names, "ws": _ws, "zs": _zs,
                                "Synonyms": _syns}
+        for syn in _syns:
+            _MixtureDictLookup[syn] = _name
+
 
 def mixture_from_any(ID):
-    if type(ID) == type([]):
+    '''Looks up a string which may represent a mixture in the database of 
+    thermo to determine the key by which the composition of that mixture can
+    be obtained in the dictionary `_MixtureDict`.
+
+    Parameters
+    ----------
+    ID : str
+        A string or 1-element list containing the name which may represent a
+        mixture.
+
+    Returns
+    -------
+    key : str
+        Key for access to the data on the mixture in `_MixtureDict`.
+
+    Notes
+    -----
+    White space, '-', and upper case letters are removed in the search.
+
+    Examples
+    --------
+    >>> mixture_from_any('R512A')
+    'R512A'
+    >>> mixture_from_any([u'air'])
+    'Air'
+    '''
+    if type(ID) == list:
         if len(ID) == 1:
             ID = ID[0]
         else:
-            raise Exception('Input cannot be multiple components')
-    ID = ID.lower()
-    ID = ID.strip()
+            raise Exception('If the input is a list, the list must contain only one item.')
+    ID = ID.lower().strip()
     ID2 = ID.replace(' ', '')
     ID3 = ID.replace('-', '')
+    for i in [ID, ID2, ID3]:
+        if i in _MixtureDictLookup:
+            return _MixtureDictLookup[i]
+    raise Exception('Mixture name not recognized')
 
-    for i in _MixtureDict:
-        d = _MixtureDict[i]["Synonyms"]
-        if ID in d or ID2 in d or ID3 in d:
-            return i
 
 # TODO LIST OF REFRIGERANTS FOR USE IN HEAT TRANSFER CORRELATIONS
 

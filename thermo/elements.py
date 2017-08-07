@@ -98,6 +98,11 @@ class PeriodicTable(object):
                   self.name_to_elements, self.CAS_to_elements]:
             if key in i:
                 return True
+        try:
+            self.number_to_elements[int(key)]
+            return True
+        except:
+            pass
         return False
         
 
@@ -112,6 +117,10 @@ class PeriodicTable(object):
                   self.name_to_elements, self.CAS_to_elements]:
             if key in i:
                 return i[key]
+        try:
+            return self.number_to_elements[int(key)]
+        except:
+            pass
         raise KeyError('Key is not in the periodic table.')
 
     def __getattr__(self, key):

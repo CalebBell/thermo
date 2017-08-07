@@ -59,7 +59,7 @@ import numpy as np
 from numpy import linspace
 import matplotlib.pyplot as plt
 
-from thermo.identifiers import CASfromAny
+from thermo.identifiers import CAS_from_any
 #warnings.simplefilter("always") #error for error
 warnings.simplefilter("ignore") #error for error
 

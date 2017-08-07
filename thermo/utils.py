@@ -1619,6 +1619,7 @@ class TDependentProperty(object):
         # Remove previously selected methods
         self.method = None
         self.sorted_valid_methods = []
+        self.T_cached = None
 
     def select_valid_methods(self, T):
         r'''Method to obtain a sorted list of methods which are valid at `T`
@@ -2386,6 +2387,7 @@ class TPDependentProperty(TDependentProperty):
         # Remove previously selected methods
         self.method_P = None
         self.sorted_valid_methods_P = []
+        self.TP_cached = None
 
     def select_valid_methods_P(self, T, P):
         r'''Method to obtain a sorted list methods which are valid at `T`
@@ -3010,7 +3012,7 @@ class MixtureProperty(object):
     forced = False
     ranked_methods = []
     
-    TP_zs_ws_cached = None
+    TP_zs_ws_cached = (None, None, None, None)
     prop_cached = None
 
     def __call__(self, T, P, zs, ws):
@@ -3080,6 +3082,7 @@ class MixtureProperty(object):
         # Remove previously selected methods
         self.method = None
         self.sorted_valid_methods = []
+        self.TP_zs_ws_cached = (None, None, None, None)
 
     def select_valid_methods(self, T, P, zs, ws):
         r'''Method to obtain a sorted list of methods which are valid at `T`,

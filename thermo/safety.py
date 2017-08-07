@@ -36,7 +36,7 @@ import numpy as np
 import pandas as pd
 from thermo.utils import R
 from thermo.utils import to_num, none_and_length_check, normalize
-from thermo.identifiers import CASfromAny, MW
+from thermo.identifiers import CAS_from_any, MW
 
 folder = os.path.join(os.path.dirname(__file__), 'Safety')
 
@@ -139,13 +139,13 @@ def str_to_ppm_mgm3(line, CAS):  # pragma: no cover
     if 'ppm' in line:
         _ppm = float(line.split('ppm')[0])
         try:
-            _mgm3 = ppmv_to_mgm3(_ppm, MW(CASfromAny(CAS)))
+            _mgm3 = ppmv_to_mgm3(_ppm, MW(CAS_from_any(CAS)))
         except:
             _mgm3 = None
     elif 'mg/m3' in line:
         _mgm3 = float(line.split('mg/m3')[0])
         try:
-            _ppm = mgm3_to_ppmv(_mgm3, MW(CASfromAny(CAS)))
+            _ppm = mgm3_to_ppmv(_mgm3, MW(CAS_from_any(CAS)))
         except:
             _ppm = None
     if not _ppm and not _mgm3:

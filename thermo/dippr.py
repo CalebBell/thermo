@@ -91,7 +91,7 @@ def EQ100(T, A=0, B=0, C=0, D=0, E=0, F=0, G=0, order=0):
     Water liquid heat capacity; DIPPR coefficients normally listed in J/kmol/K.
 
     >>> EQ100(300, 276370., -2090.1, 8.125, -0.014116, 0.0000093701)
-    75355.81
+    75355.81000000003
 
     References
     ----------
@@ -293,7 +293,7 @@ def EQ104(T, A, B, C, D, E, order=0):
     Water second virial coefficient; DIPPR coefficients normally dimensionless.
 
     >>> EQ104(300, 0.02222, -26.38, -16750000, -3.894E19, 3.133E21)
-    -1.1204179007265151
+    -1.1204179007265156
 
     References
     ----------

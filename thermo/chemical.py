@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2016, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2016, 2017 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -98,13 +98,151 @@ _chemical_cache = {}
 
 
 class Chemical(object): # pragma: no cover
-    '''Class for obtaining properties of chemicals.
-    Considered somewhat stable, but changes to some methods are expected.
+    '''Creates a Chemical object which contains basic information such as 
+    molecular weight and the structure of the species, as well as thermodynamic
+    and transport properties as a function of temperature and pressure.
+    
+    Parameters
+    ----------
+    ID : str
+        One of the following:
+            * Name, in IUPAC form or common form or a synonym registered in PubChem
+            * InChI name, prefixed by 'InChI=1S/' or 'InChI=1/'
+            * InChI key, prefixed by 'InChIKey='
+            * PubChem CID, prefixed by 'PubChem='
+            * SMILES (prefix with 'SMILES=' to ensure smiles parsing)
+            * CAS number
+    T : float, optional
+        Temperature of the chemical (default 298.15 K), [K]
+    P : float, optional
+        Pressure of the chemical (default 101325 Pa) [Pa]
+        
+    Examples
+    --------
+    Creating chemical objects:
+    
+    >>> Chemical('hexane')
+    <Chemical [hexane], T=298.15 K, P=101325 Pa>
 
+    >>> Chemical('CCCCCCCC', T=500, P=1E7)
+    <Chemical [octane], T=500.00 K, P=10000000 Pa>
+    
+    >>> Chemical('7440-36-0', P=1000)
+    <Chemical [antimony], T=298.15 K, P=1000 Pa>
+    
+    Getting basic properties:
+        
+    >>> N2 = Chemical('Nitrogen')
+    >>> N2.Tm, N2.Tb, N2.Tc # melting, boiling, and critical points [K]
+    (63.15, 77.355, 126.2)
+    >>> N2.Pt, N2.Pc # sublimation and critical pressure [Pa]
+    (12526.9697368421, 3394387.5)
+    >>> N2.CAS, N2.formula, N2.InChI, N2.smiles, N2.atoms # CAS number, formula, InChI string, smiles string, dictionary of atomic elements and their count
+    ('7727-37-9', 'N2', 'N2/c1-2', 'N#N', {'N': 2})
+    
+    Changing the T/P of the chemical, and gettign temperature-dependent
+    properties:
+        
+    >>> N2.Cp, N2.rho, N2.mu # Heat capacity [J/kg/K], density [kg/m^3], viscosity [Pa*s]
+    (1039.4978324480921, 1.1452416223829405, 1.7804740647270688e-05)
+    >>> N2.calculate(T=65, P=1E6) # set it to a liquid at 65 K and 1 MPa
+    >>> N2.phase
+    'l'
+    >>> N2.Cp, N2.rho, N2.mu # properties are now of the liquid phase
+    (1984.9709554303004, 861.3539919443364, 0.0002857739143670701)
+    
+    Molar units are also available for properties:
+        
+    >>> N2.Cpm, N2.Vm, N2.Hvapm # heat capacity [J/mol/K], molar volume [m^3/mol], enthalpy of vaporization [J/mol]
+    (55.60578536285118, 3.252251717875631e-05, 5982.710998291719)
+    
+    A great deal of properties are available; for a complete list look at the
+    attributes list. 
+    
+    >>> N2.alpha, N2.JT # thermal diffusivity [m^2/s], Joule-Thompson coefficient [K/Pa]
+    (9.963988241081473e-08, -4.0370955160282056e-07)
+    
+    >>> N2.isentropic_exponent, N2.isobaric_expansion
+    (1.4000000000000001, 0.0047654228408661571)
+    
+    For pure species, the phase is easily identified, allowing for properties 
+    to be obtained without needing to specify the phase. However, the 
+    properties are also available in the hypothetical gas phase (when under the
+    boiling point) and in the hypothetical liquid phase (when above the boiling
+    point) as these properties are needed to evaluate mixture properties. 
+    Specify the phase of a property to be retrieved by appending 'l' or 'g' or 
+    's' to the property.
+    
+    >>> tol = Chemical('toluene')
 
-    Default initialization is for 298.15 K, 1 atm.
-    Goal is for, when a method fails, a warning is printed.
+    >>> tol.rhog, tol.Cpg, tol.kg, tol.mug
+    (4.032009635018902, 1126.5533755283168, 0.010736843919054837, 6.973325939594919e-06)
 
+    Temperature dependent properties are calculated by objects which provide 
+    many useful features related to the properties. To determine the 
+    temperature at which nitrogen has a saturation pressure of 1 MPa:
+    
+    >>> N2.VaporPressure.solve_prop(1E6)
+    103.73528598652341
+    
+    To compute an integral of the ideal-gas heat capacity of nitrogen
+    to determine the enthalpy required for a given change in temperature.
+    Note the thermodynamic objects calculate values in molar units always.
+        
+    >>> N2.HeatCapacityGas.T_dependent_property_integral(100, 120) # J/mol/K
+    582.0121860897898
+    
+    Derivatives of properties can be calculated as well, as may be needed by
+    for example heat transfer calculations:
+        
+    >>> N2.SurfaceTension.T_dependent_property_derivative(77)
+    -0.00022695346296730534
+    
+    If a property is needed at multiple temperatures or pressures, it is faster
+    to use the object directly to perform the calculation rather than setting
+    the conditions for the chemical.
+    
+    >>> [N2.VaporPressure(T) for T in range(80, 120, 10)]
+    [135987.2098445901, 357853.1185240415, 773372.8975626591, 1458809.6559246336]
+    
+    These objects are also how the methods by which the properties are 
+    calculated can be changed. To see the available methods for a property:
+        
+    >>> N2.VaporPressure.all_methods
+    set(['VDI_PPDS', 'BOILING_CRITICAL', 'WAGNER_MCGARRY', 'AMBROSE_WALTON', 'COOLPROP', 'LEE_KESLER_PSAT', 'EOS', 'ANTOINE_POLING', 'SANJARI', 'DIPPR_PERRY_8E', 'Edalat', 'WAGNER_POLING'])
+            
+    To specify the method which should be used for calculations of a property.
+    In the example below, the Lee-kesler correlation for vapor pressure is
+    specified.
+        
+    >>> N2.calculate(80)
+    >>> N2.Psat
+    136979.4840843189
+    >>> N2.VaporPressure.set_user_methods('LEE_KESLER_PSAT')
+    >>> N2.Psat
+    134987.76815364443
+    
+    For memory reduction, these objects are shared by all chemicals which are
+    the same; new instances will use the same specified methods. 
+    
+    >>> N2_2 = Chemical('nitrogen')
+    >>> N2_2.VaporPressure.user_methods
+    ['LEE_KESLER_PSAT']
+    
+    To disable this behavior, set thermo.chemical.caching to False.
+    
+    >>> thermo.chemical.caching = False
+    >>> N2_3 = Chemical('nitrogen')
+    >>> N2_3.VaporPressure.user_methods
+    []
+    
+    Properties may also be plotted via these objects:
+        
+    >>> N2.VaporPressure.plot_T_dependent_property()
+    >>> N2.VolumeLiquid.plot_isotherm(T=77, Pmin=1E5, Pmax=1E7)
+    >>> N2.VolumeLiquid.plot_isobar(P=1E6,  Tmin=66, Tmax=120)
+    >>> N2.VolumeLiquid.plot_TP_dependent_property(Tmin=60, Tmax=100,  Pmin=1E5, Pmax=1E7)
+    
     Attributes
     ----------
     T : float
@@ -122,7 +260,7 @@ class Chemical(object): # pragma: no cover
         sourced from their database. Chemicals can be looked at online at
         `<https://pubchem.ncbi.nlm.nih.gov>`_.
     MW : float
-        Molecular weight of the compound, g/mol.
+        Molecular weight of the compound, [g/mol]
     formula : str
         Molecular formula of the compound.
     atoms : dict
@@ -397,7 +535,7 @@ class Chemical(object): # pragma: no cover
         else:
             self.ID = ID
             # Identification
-            self.CAS = CASfromAny(ID)
+            self.CAS = CAS_from_any(ID)
 
 
         if self.CAS in _chemical_cache and caching:
@@ -2510,6 +2648,18 @@ class Mixture(object):  # pragma: no cover
     Default initialization is for 298.15 K, 1 atm.
     '''
     eos_in_a_box = []
+    ks = None
+    Vms = None
+    rhos = None
+    xs = None
+    ys = None
+    phase = None
+    V_over_F = None
+    conductivity = None
+    Hm = None
+    H = None
+    isobaric_expansion_g = None
+    isobaric_expansion_l = None
 
     def __repr__(self):
         return '<Mixture, components=%s, mole fractions=%s, T=%.2f K, P=%.0f \
@@ -2520,14 +2670,16 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         self.P = P
         self.T = T
 
-        if isinstance(IDs, str) or (isinstance(IDs, list) and len(IDs) == 1):
-            mixname = mixture_from_any(IDs)
-            if mixname:
+        if hasattr(IDs, 'strip') or (isinstance(IDs, list) and len(IDs) == 1):
+            try:
+                mixname = mixture_from_any(IDs)
                 _d = _MixtureDict[mixname]
                 IDs = _d["CASs"]
                 ws = _d["ws"]
                 self.mixname = mixname
                 self.mixsource = _d["Source"]
+            except:
+                pass
 
         # Handle numpy array inputs; also turn mutable inputs into copies
         if zs is not None:
@@ -2564,10 +2716,12 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
             self.zs = Vfs_to_zs(Vfgs, self.Vmgs)
             self.ws = zs_to_ws(self.zs, self.MWs)
         else:
-            raise Exception('No composition provided')
+            raise Exception('One of mole fractions `zs`, weight fractions `ws`,'
+                            ' pure component liquid volume fractions `Vfls`, or'
+                            ' pure component gas volume fractions `Vfgs` must '
+                            'be provided.')
 
         self.MW = mixing_simple(self.zs, self.MWs)
-        self.set_none()
         self.set_constant_sources()
         self.set_constants()
 
@@ -2575,21 +2729,6 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         self.set_TP()
         self.set_phase()
 
-
-    def set_none(self):
-        # Null values as necessary
-        self.ks = None
-        self.Vms = None
-        self.rhos = None
-        self.xs = None
-        self.ys = None
-        self.phase = None
-        self.V_over_F = None
-        self.conductivity = None
-        self.Hm = None
-        self.H = None
-        self.isobaric_expansion_g = None
-        self.isobaric_expansion_l = None
 
     def set_chemical_constants(self):
         # Set lists of everything set by Chemical.set_constants
