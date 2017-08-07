@@ -2638,14 +2638,53 @@ class Chemical(object): # pragma: no cover
         return Peclet_heat(V=V, L=D, rho=self.rho, Cp=self.Cp, k=self.k)
 
 
-class Mixture(object):  # pragma: no cover
-    '''Class for obtaining properties of mixtures of chemicals.
-    Must be considered unstable due to the goal of changing each of the
-    property methods into object-oriented interfaces.
+class Mixture(object): 
+    '''Creates a Mixture object which contains basic information such as 
+    molecular weight and the structure of the species, as well as thermodynamic
+    and transport properties as a function of temperature and pressure.
+    
+    The components of the mixture must be specified by specifying the names of
+    the chemicals; the composition can be specified by providing any one of the
+    following parameters:
+        
+    * Mass fractions `ws`
+    * Mole fractions `zs`
+    * Liquid volume fractions (based on pure component densities) `Vfls`
+    * Gas volume fractions (based on pure component densities) `Vfgs`
+    
+    If volume fractions are provided, by default the pure component volumes
+    are calculated at the specified `T` and `P`. To use another reference 
+    temperature and pressure specify it as a tuple for the argument `Vf_TP`. 
 
-    Most methods are relatively accurate.
-
-    Default initialization is for 298.15 K, 1 atm.
+    Parameters
+    ----------
+    IDs : list
+        List of chemical identifiers - names, CAS numbers, SMILES or InChi 
+        strings can all be recognized and may be mixed [-]
+    zs : list, optional
+        Mole fractions of all components in the mixture [-]
+    ws : list, optional
+        Mass fractions of all components in the mixture [-]
+    Vfls : list, optional
+        Volume fractions of all components as a hypothetical liquid phase based 
+        on pure component densities [-]
+    Vfgs : list, optional
+        Volume fractions of all components as a hypothetical gas phase based 
+        on pure component densities [-]
+    T : float, optional
+        Temperature of the chemical (default 298.15 K), [K]
+    P : float, optional
+        Pressure of the chemical (default 101325 Pa) [Pa]
+    Vf_TP : tuple(2, float), optional
+        The (T, P) at which the volume fractions are specified to be at, [K] 
+        and [Pa]
+    
+    Examples
+    --------
+    Creating Mixture objects:
+        
+    >>> Mixture(['water', 'ethanol'], Vfls=[.6, .4], T=300, P=1E5)
+    <Mixture, components=['water', 'ethanol'], mole fractions=[0.8299, 0.1701], T=300.00 K, P=100000 Pa>
     '''
     eos_in_a_box = []
     ks = None
@@ -2666,7 +2705,7 @@ class Mixture(object):  # pragma: no cover
 Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
 
     def __init__(self, IDs, zs=None, ws=None, Vfls=None, Vfgs=None,
-                 T=298.15, P=101325):
+                 T=298.15, P=101325, Vf_TP=(None, None)):
         self.P = P
         self.T = T
 
@@ -2700,6 +2739,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         # Required for densities for volume fractions before setting fractions
         self.set_chemical_constants()
         self.set_chemical_TP()
+        self.set_Chemical_property_objects()
 
         if zs:
             self.zs = zs if sum(zs) == 1 else [zi/sum(zs) for zi in zs]
@@ -2707,13 +2747,25 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         elif ws:
             self.ws = ws if sum(ws) == 1 else [wi/sum(ws) for wi in ws]
             self.zs = ws_to_zs(ws, self.MWs)
-        elif Vfls:
-            Vfls = Vfls if sum(Vfls) == 1 else [Vfli/sum(Vfls) for Vfli in Vfls]
-            self.zs = Vfs_to_zs(Vfls, self.Vmls)
-            self.ws = zs_to_ws(self.zs, self.MWs)
-        elif Vfgs:
-            Vfgs = Vfgs if sum(Vfgs) == 1 else [Vfgi/sum(Vfgs) for Vfgi in Vfgs]
-            self.zs = Vfs_to_zs(Vfgs, self.Vmgs)
+        elif Vfls or Vfgs:
+            T_vf, P_vf = Vf_TP
+            if T_vf is None: 
+                T_vf = T
+            if P_vf is None: 
+                P_vf = P
+
+            if Vfls:
+                Vfs = Vfls if sum(Vfls) == 1 else [Vfli/sum(Vfls) for Vfli in Vfls]
+                VolumeObjects = self.VolumeLiquids
+                Vms_TP = self.Vmls
+            else:
+                Vfs = Vfgs if sum(Vfgs) == 1 else [Vfgi/sum(Vfgs) for Vfgi in Vfgs]
+                VolumeObjects = self.VolumeGases
+                Vms_TP = self.Vmgs
+
+            if T_vf != T or P_vf != P:
+                Vms_TP = [i(T_vf, P_vf) for i in VolumeObjects]
+            self.zs = Vfs_to_zs(Vfs, Vms_TP)
             self.ws = zs_to_ws(self.zs, self.MWs)
         else:
             raise Exception('One of mole fractions `zs`, weight fractions `ws`,'
@@ -2724,8 +2776,8 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         self.MW = mixing_simple(self.zs, self.MWs)
         self.set_constant_sources()
         self.set_constants()
-
         self.set_TP_sources()
+
         self.set_TP()
         self.set_phase()
 
@@ -2877,7 +2929,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
             self.eos_in_a_box.pop()
         self.eos_in_a_box.append(eos)
 
-    def set_TP_sources(self):
+    def set_Chemical_property_objects(self):
         self.VolumeSolids = [i.VolumeSolid for i in self.Chemicals]
         self.VolumeLiquids = [i.VolumeLiquid for i in self.Chemicals]
         self.VolumeGases = [i.VolumeGas for i in self.Chemicals]
@@ -2893,6 +2945,8 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
 
         self.VaporPressures = [i.VaporPressure for i in self.Chemicals]
         self.EnthalpyVaporizations = [i.EnthalpyVaporization for i in self.Chemicals]
+
+    def set_TP_sources(self):
 
         self.VolumeSolidMixture = VolumeSolidMixture(CASs=self.CASs, VolumeSolids=self.VolumeSolids)
         self.VolumeLiquidMixture = VolumeLiquidMixture(MWs=self.MWs, Tcs=self.Tcs, Pcs=self.Pcs, Vcs=self.Vcs, Zcs=self.Zcs, omegas=self.omegas, CASs=self.CASs, VolumeLiquids=self.VolumeLiquids)
@@ -4744,25 +4798,38 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
 
 
 class Stream(Mixture): # pragma: no cover
-
+    '''Creates a Stream object which is useful for modeling mass and energy 
+    balances.
+    
+    '''
     def __init__(self, IDs, zs=None, ws=None, Vfls=None, Vfgs=None,
-                 m=None, Q=None, Ql_STP=None, Qg_STP=None, T=298.15, P=101325):
-        Mixture.__init__(self, IDs, zs=zs, ws=ws, Vfls=Vfls, Vfgs=Vfgs,
-                 T=T, P=P)
+                 ns=None, ms=None, Qls=None, Qgs=None, 
+                 m=None, Q=None, T=298.15, P=101325, V_TP=(None, None)):
+#        if ns is not None:
+#            # mole flow rate given
+#            n_tot = sum(ns)
+#            zs = [(i/n_tot if i > 0 else 0) for i in ns]
+#        if zs is None and ns:
+#            zs_input = ns
+#        else:
+        super(Stream, self).__init__(IDs, zs=zs, ws=ws, Vfls=Vfls, Vfgs=Vfgs,
+             T=T, P=P, Vf_TP=V_TP)
+        
+#        Mixture.__init__(self, )
         # TODO: Molar total input.
         # TODO: calculate Ql, Qg
         if m or self.phase:
             if Q:
                 self.Q = Q
                 self.m = self.rho*Q
+            elif m:
+                self.m = m
+#                self.Q = self.m/self.rho
             elif Ql_STP:
                 self.m = self.rhol_STP*Ql_STP
 #                self.Q = self.m/self.rho
             elif Qg_STP:
                 self.m = self.rhog_STP*Qg_STP
-#                self.Q = self.m/self.rho
-            else:
-                self.m = m
 #                self.Q = self.m/self.rho
         else:
             raise Exception('phase algorithm failed')

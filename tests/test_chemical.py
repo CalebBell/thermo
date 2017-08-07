@@ -23,6 +23,7 @@ SOFTWARE.'''
 from numpy.testing import assert_allclose
 import pytest
 from thermo.chemical import *
+import thermo
 from thermo.identifiers import pubchem_dict
 from scipy.integrate import quad
 from math import *
@@ -296,6 +297,27 @@ def test_Mixture_input_forms():
         
     Mixture(['water'], ws=[1], T=300, P=1E5)
             
+def test_Mixture_input_vfs_TP():
+    # test against the default arguments of T and P
+    m0 = Mixture(['hexane', 'decane'], Vfls=[.5, .5])
+    m1 = Mixture(['hexane', 'decane'], Vfls=[.5, .5], Vf_TP=(298.15, None))
+    m2 = Mixture(['hexane', 'decane'], Vfls=[.5, .5], Vf_TP=(298.15, None))
+    m3 = Mixture(['hexane', 'decane'], Vfls=[.5, .5], Vf_TP=(None, 101325))
+    assert_allclose(m0.zs, m1.zs)
+    assert_allclose(m0.zs, m2.zs)
+    assert_allclose(m0.zs, m3.zs)
+
+    # change T, P slightly - check that's it's still close to the result
+    # and do one rough test that the result is still working
+    m0 = Mixture(['hexane', 'decane'], Vfls=[.5, .5])
+    m1 = Mixture(['hexane', 'decane'], Vfls=[.5, .5], Vf_TP=(300, None))
+    m2 = Mixture(['hexane', 'decane'], Vfls=[.5, .5], Vf_TP=(300, 1E5))
+    m3 = Mixture(['hexane', 'decane'], Vfls=[.5, .5], Vf_TP=(None, 1E5))
+    assert_allclose(m0.zs, m1.zs, rtol=1E-3)
+    assert_allclose(m2.zs, [0.5979237361861229, 0.402076263813877], rtol=1E-4)
+    assert_allclose(m0.zs, m2.zs, rtol=1E-3)
+    assert_allclose(m0.zs, m3.zs, rtol=1E-3)
+
 
 def test_Mixture_predefined():
     for name in ['Air', 'air', u'Air', ['air']]:
