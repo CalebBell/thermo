@@ -4804,48 +4804,90 @@ class Stream(Mixture): # pragma: no cover
     '''
     def __init__(self, IDs, zs=None, ws=None, Vfls=None, Vfgs=None,
                  ns=None, ms=None, Qls=None, Qgs=None, 
-                 m=None, Q=None, T=298.15, P=101325, V_TP=(None, None)):
-#        if ns is not None:
-#            # mole flow rate given
-#            n_tot = sum(ns)
-#            zs = [(i/n_tot if i > 0 else 0) for i in ns]
-#        if zs is None and ns:
-#            zs_input = ns
-#        else:
+                 m=None, n=None, Q=None, T=298.15, P=101325, V_TP=(None, None)):
+        
+        composition_options = (zs, ws, Vfls, Vfgs, ns, ms, Qls, Qgs)
+        composition_option_count = sum(i is not None for i in composition_options)
+        if composition_option_count < 1:
+            raise Exception("No composition information is provided; one of "
+                            "'ws', 'zs', 'Vfls', 'Vfgs', 'ns', 'ms', 'Qls' or "
+                            "'Qgs' must be specified")
+        elif composition_option_count > 1:
+            raise Exception("More than one source of composition information "
+                            "is provided; only one of "
+                            "'ws', 'zs', 'Vfls', 'Vfgs', 'ns', 'ms', 'Qls' or "
+                            "'Qgs' can be specified")
+            
+        # if more than 1 of composition_options is given, raise an exception
+        flow_options = (ns, ms, Qls, Qgs, m, n, Q)
+        flow_option_count = sum(i is not None for i in flow_options)
+        if flow_option_count < 1:
+            raise Exception("No flow rate information is provided; one of "
+                            "'m', 'n', 'Q', 'ms', 'ns', 'Qls', or 'Qgs' must "
+                            "be specified")
+        elif flow_option_count > 1:
+            raise Exception("More than one source of flow rate information is "
+                            "provided; only one of "
+                            "'m', 'n', 'Q', 'ms', 'ns', 'Qls', or 'Qgs' can "
+                            "be specified")
+        
+        if ns:
+            zs = ns
+        elif ms:
+            ws = ms
+        elif Qls:
+            Vfls = Qls
+        elif Qgs:
+            Vfgs = Qgs
+        
         super(Stream, self).__init__(IDs, zs=zs, ws=ws, Vfls=Vfls, Vfgs=Vfgs,
              T=T, P=P, Vf_TP=V_TP)
-        
-#        Mixture.__init__(self, )
-        # TODO: Molar total input.
-        # TODO: calculate Ql, Qg
-        if m or self.phase:
-            if Q:
-                self.Q = Q
-                self.m = self.rho*Q
-            elif m:
-                self.m = m
-#                self.Q = self.m/self.rho
-            elif Ql_STP:
-                self.m = self.rhol_STP*Ql_STP
-#                self.Q = self.m/self.rho
-            elif Qg_STP:
-                self.m = self.rhog_STP*Qg_STP
-#                self.Q = self.m/self.rho
-        else:
-            raise Exception('phase algorithm failed')
-        if hasattr(self, 'rho') and self.rho:
-            self.Q = self.m/self.rho
-        else:
-            self.Q = None
+        if n is not None:
+            self.n = n
+        elif m is not None:
+            self.n = property_molar_to_mass(m, self.MW) # m*10000/MW
+        elif Q is not None:
+            try:
+                self.n = Q/self.Vm
+            except:
+                raise Exception('Molar volume could not be calculated to determine the flow rate of the stream.')
+        elif ns is not None:
+            self.n = sum(ns)
+        elif ms is not None:
+            self.n = property_molar_to_mass(sum(ms), self.MW)
+        elif Qls is not None:
+            try:
+                self.n = sum([Q/Vml for Q, Vml in zip(Qls, self.Vmls)])
+            except:
+                raise Exception('Liquid molar volume could not be calculated to determine the flow rate of the stream.')
+        elif Qgs is not None:
+            try:
+                self.n = sum([Q/Vmg for Q, Vmg in zip(Qgs, self.Vmgs)])
+            except:
+                raise Exception('Gas molar volume could not be calculated to determine the flow rate of the stream.')
+        self.set_extensive_flow(self.n)
+        self.set_extensive_properties()
 
-        self.n = property_molar_to_mass(self.m, self.MW)
+            
+    def set_extensive_flow(self, n=None):
+        if n is None:
+            n = self.n
+        self.n = n
+        self.m = property_mass_to_molar(self.n, self.MW)
         self.ns = [self.n*zi for zi in self.zs]
         self.ms =  [self.m*wi for wi in self.ws]
-        if hasattr(self, 'H') and hasattr(self, 'S'):
-            self.S *= self.m
-            self.Sm *= self.n
-            self.H *= self.m
-            self.Hm *= self.n
+        try:
+            self.Q = self.m/self.rho
+        except:
+            pass
+        try:
+            self.Qgs = [m/rho for m, rho in zip(self.ms, self.rhogs)]
+        except:
+            pass
+        try:
+            self.Qls = [m/rho for m, rho in zip(self.ms, self.rhols)]
+        except:
+            pass
 
         if self.phase == 'two-phase':
             self.ng = self.n*self.V_over_F
@@ -4858,6 +4900,14 @@ class Stream(Mixture): # pragma: no cover
             self.ml = sum(self.mls)
             self.Ql = self.ml/self.rhol
             self.Qg = self.mg/self.rhog
+            
+    def set_extensive_properties(self):
+        if hasattr(self, 'H') and hasattr(self, 'S'):
+            self.S *= self.m
+            self.Sm *= self.n
+            self.H *= self.m
+            self.Hm *= self.n
+
 
     def calculate(self, T=None, P=None):
         self.set_TP(T=T, P=P)
@@ -4866,23 +4916,8 @@ class Stream(Mixture): # pragma: no cover
             self.Q = self.m/self.rho
         else:
             self.Q = None
-        if hasattr(self, 'H') and hasattr(self, 'S'):
-            self.S *= self.m
-            self.Sm *= self.n
-            self.H *= self.m
-            self.Hm *= self.n
-
-        if self.phase == 'two-phase':
-            self.ng = self.n*self.V_over_F
-            self.nl = self.n*(1-self.V_over_F)
-            self.ngs = [yi*self.ng for yi in self.ys]
-            self.nls = [xi*self.nl for xi in self.xs]
-            self.mgs = [ni*MWi*1E-3 for ni, MWi in zip(self.ngs, self.MWs)]
-            self.mls = [ni*MWi*1E-3 for ni, MWi in zip(self.nls, self.MWs)]
-            self.mg = sum(self.mgs)
-            self.ml = sum(self.mls)
-            self.Ql = self.ml/self.rhol
-            self.Qg = self.mg/self.rhog
+        self.set_extensive_flow()
+        self.set_extensive_properties()
 
     def __add__(self, other):
         cmps = list(set((self.CASs+ other.CASs)))

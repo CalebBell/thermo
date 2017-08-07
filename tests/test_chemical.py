@@ -225,6 +225,46 @@ def test_Stream():
     T=500, P=20.5E5, m=300)
 
 
+def test_Stream_inputs():
+    compositions = {'zs': [0.5953064630759212, 0.4046935369240788], 'ws': [0.365177574313603, 0.634822425686397],
+                   'Vfgs': [0.6, 0.4], 'Vfls': [0.3114290329842817, 0.6885709670157184]}
+    inputs = {'m': 100, 'n': 3405.042096313374, 'Q': 0.11409951553902598}
+    flow_inputs = {'ns': [2027.0435669809347, 1377.998529332439], 'ms': [36.517757431360295, 63.482242568639705],
+                  'Qls': [0.036643922302061455, 0.08101987400787004], 'Qgs': [48.673177307086064, 32.448784871390714]}
+    
+    for key1, val1 in compositions.items():
+        for key2, val2 in inputs.items():
+            m = Stream(['water', 'ethanol'], T=300, P=1E5, **{key1:val1, key2:val2})
+            assert_allclose(m.n, inputs['n'])
+            assert_allclose(m.m, inputs['m'])
+            assert_allclose(m.Q, inputs['Q'])
+            assert_allclose(m.ns, flow_inputs['ns'])
+            assert_allclose(m.ms, flow_inputs['ms'])
+            assert_allclose(m.Qls, flow_inputs['Qls'])
+            assert_allclose(m.Qgs, flow_inputs['Qgs'])
+            
+    for key, val in flow_inputs.items():
+        m = Stream(['water', 'ethanol'], T=300, P=1E5, **{key:val})
+        assert_allclose(m.n, inputs['n'])
+        assert_allclose(m.m, inputs['m'])
+        assert_allclose(m.Q, inputs['Q'])
+        assert_allclose(m.ns, flow_inputs['ns'])
+        assert_allclose(m.ms, flow_inputs['ms'])
+        assert_allclose(m.Qls, flow_inputs['Qls'])
+        assert_allclose(m.Qgs, flow_inputs['Qgs'])
+
+    with pytest.raises(Exception):
+        # two compositions specified
+        Stream(['water', 'ethanol'], ns=[6, 4], ws=[.4, .6], T=300, P=1E5)
+    with pytest.raises(Exception):
+        # two flow rates specified
+        Stream(['water', 'ethanol'], ns=[6, 4], n=10, T=300, P=1E5)
+    with pytest.raises(Exception):
+        # no composition
+        Stream(['water', 'ethanol'], n=1, T=300, P=1E5)
+    with pytest.raises(Exception):
+        # no flow rate
+        Stream(['water', 'ethanol'], zs=[.5, .5], T=300, P=1E5)
 
 def test_H_Chemical():
     from thermo import chemical
