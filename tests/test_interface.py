@@ -193,7 +193,7 @@ def test_Diguilio_Teja():
 
 
 def test_SurfaceTensionMixture():
-    from thermo.chemical import Mixture
+    from thermo.mixture import Mixture
     from thermo.interface import SurfaceTensionMixture, DIGUILIOTEJA, SIMPLE, WINTERFELDSCRIVENDAVIS
     m = Mixture(['pentane', 'dichloromethane'], zs=[.1606, .8394], T=298.15)
     SurfaceTensions = [i.SurfaceTension for i in m.Chemicals]

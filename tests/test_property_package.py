@@ -25,7 +25,7 @@ from numpy.testing import assert_allclose
 import pytest
 import pandas as pd
 from thermo.property_package import *
-from thermo.chemical import Mixture
+from thermo.mixture import Mixture
 
 def test_Ideal_PP():
     m = Mixture(['ethanol', 'water'], zs=[0.5, 0.5], P=5000, T=298.15)

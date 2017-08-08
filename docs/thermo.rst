@@ -25,12 +25,14 @@ Submodules
    thermo.law
    thermo.lennard_jones
    thermo.miscdata
+   thermo.mixture
    thermo.permittivity
    thermo.phase_change
    thermo.reaction
    thermo.refractivity
    thermo.safety
    thermo.solubility
+   thermo.stream
    thermo.temperature
    thermo.thermal_conductivity
    thermo.triple

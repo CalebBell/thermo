@@ -39,12 +39,14 @@ from . import identifiers
 from . import law
 from . import lennard_jones
 from . import miscdata
+from . import mixture
 from . import permittivity
 from . import phase_change
 from . import reaction
 from . import refractivity
 from . import safety
 from . import solubility
+from . import stream
 from . import interface
 from . import thermal_conductivity
 from . import triple
@@ -75,12 +77,14 @@ from .identifiers import *
 from .law import *
 from .lennard_jones import *
 from .miscdata import *
+from .mixture import *
 from .permittivity import *
 from .phase_change import *
 from .reaction import *
 from .refractivity import *
 from .safety import *
 from .solubility import *
+from .stream import *
 from .interface import *
 from .thermal_conductivity import *
 from .triple import *
@@ -100,7 +104,7 @@ __all__ = ['activity', 'chemical', 'combustion', 'critical',
  'refractivity', 'safety', 'solubility', 'interface',
  'thermal_conductivity', 'triple', 'utils',
  'vapor_pressure', 'virial', 'viscosity', 'volume', 'acentric', 'coolprop', 
- 'datasheet', 'dippr', 'unifac']
+ 'datasheet', 'dippr', 'unifac', 'stream', 'mixture']
 
 
 __all__.extend(acentric.__all__)
@@ -122,12 +126,14 @@ __all__.extend(identifiers.__all__)
 __all__.extend(law.__all__)
 __all__.extend(lennard_jones.__all__)
 __all__.extend(miscdata.__all__)
+__all__.extend(mixture.__all__)
 __all__.extend(permittivity.__all__)
 __all__.extend(phase_change.__all__)
 __all__.extend(reaction.__all__)
 __all__.extend(refractivity.__all__)
 __all__.extend(safety.__all__)
 __all__.extend(solubility.__all__)
+__all__.extend(stream.__all__)
 __all__.extend(interface.__all__)
 __all__.extend(thermal_conductivity.__all__)
 __all__.extend(triple.__all__)
@@ -138,5 +144,10 @@ __all__.extend(virial.__all__)
 __all__.extend(viscosity.__all__)
 __all__.extend(volume.__all__)
 
+# backwards compatibility hack to allow thermo.chemical.Mixture to still be importable
+chemical.__dict__['Mixture'] = mixture.Mixture
+chemical.__dict__['Stream'] = stream.Stream
+# However, they cannot go in thermo.chemical's __all__ or they will appear in the
+# documentation and Sphinx currently has no wat to exclude them
 
 __version__ = '0.1.34'

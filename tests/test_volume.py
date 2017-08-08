@@ -355,7 +355,7 @@ def test_COSTALD_mixture():
 
 
 def test_VolumeLiquidMixture():
-    from thermo.chemical import Mixture
+    from thermo.mixture import Mixture
     from thermo.volume import LALIBERTE, COSTALD_MIXTURE_FIT, RACKETT_PARAMETERS, COSTALD_MIXTURE,  SIMPLE, RACKETT
     m = Mixture(['benzene', 'toluene'], zs=[.5, .5], T=298.15, P=101325.)
     
@@ -389,7 +389,7 @@ def test_VolumeLiquidMixture():
 
 
 def test_VolumeGasMixture():
-    from thermo.chemical import Mixture
+    from thermo.mixture import Mixture
     from thermo.volume import VolumeGasMixture, EOS, SIMPLE, IDEAL
     m = Mixture(['oxygen', 'nitrogen'], zs=[.5, .5], T=298.15, P=1E6)
     obj = VolumeGasMixture(CASs=m.CASs, VolumeGases=m.VolumeGases, eos=m.eos_in_a_box)

@@ -27,7 +27,7 @@ import pandas as pd
 from thermo.viscosity import *
 from thermo.identifiers import checkCAS
 from thermo.viscosity import COOLPROP, LUCAS
-from thermo.chemical import Mixture
+from thermo.mixture import Mixture
 from thermo.viscosity import LALIBERTE_MU, MIXING_LOG_MOLAR, MIXING_LOG_MASS, BROKAW, HERNING_ZIPPERER, WILKE, SIMPLE
 
 ### Check data integrity

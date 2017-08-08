@@ -26,7 +26,7 @@ import numpy as np
 import pandas as pd
 from math import exp, log
 from thermo.activity import *
-from thermo.chemical import Mixture
+from thermo.mixture import Mixture
 
 def test_K_value():
     K = K_value(101325, 3000.)

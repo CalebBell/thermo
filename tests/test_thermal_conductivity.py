@@ -23,7 +23,7 @@ SOFTWARE.'''
 from numpy.testing import assert_allclose
 import pytest
 from thermo.thermal_conductivity import *
-from thermo.chemical import Mixture
+from thermo.mixture import Mixture
 from thermo.identifiers import checkCAS
 from thermo.thermal_conductivity import MAGOMEDOV, DIPPR_9H, FILIPPOV, SIMPLE, ThermalConductivityLiquidMixture
 from thermo.thermal_conductivity import (GHARAGHEIZI_G, CHUNG, ELI_HANLEY, VDI_PPDS,
@@ -327,7 +327,6 @@ def test_Lindsay_Bromley():
 
 
 def test_ThermalConductivityGasMixture():
-    from thermo.chemical import Mixture
     from thermo.thermal_conductivity import ThermalConductivityGasMixture, LINDSAY_BROMLEY, SIMPLE
     
     m2 = Mixture(['nitrogen', 'argon', 'oxygen'], ws=[0.7557, 0.0127, 0.2316])

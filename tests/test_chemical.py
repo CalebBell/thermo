@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2016, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2016, 2017 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -212,113 +212,7 @@ def test_Chemical_properties_T_phase():
 
     assert_allclose(w.Pr, 5.854395582989558)
 
-def test_Mixture():
-    Mixture(['water', 'ethanol'], ws=[.5, .5], T=320, P=1E5)
-    Mixture(['water', 'phosphoric acid'], ws=[.5, .5], T=320, P=1E5)
-    Mixture('air', T=320, P=1E5)
-    
-    Mixture(['ethanol', 'water'], ws=[0.5, 0.5], T=500)
  
-def test_Stream():   
-    Stream(['H2', 'NH3', 'CO', 'Ar', 'CH4', 'N2'],
-           zs=[.7371, 0, .024, .027, .013, .2475], 
-    T=500, P=20.5E5, m=300)
-
-
-def test_Stream_inputs():
-    compositions = {'zs': [0.5953064630759212, 0.4046935369240788], 'ws': [0.365177574313603, 0.634822425686397],
-                   'Vfgs': [0.6, 0.4], 'Vfls': [0.3114290329842817, 0.6885709670157184]}
-    inputs = {'m': 100, 'n': 3405.042096313374, 'Q': 0.11409951553902598}
-    flow_inputs = {'ns': [2027.0435669809347, 1377.998529332439], 'ms': [36.517757431360295, 63.482242568639705],
-                  'Qls': [0.036643922302061455, 0.08101987400787004], 'Qgs': [48.673177307086064, 32.448784871390714]}
-    
-    for key1, val1 in compositions.items():
-        for key2, val2 in inputs.items():
-            m = Stream(['water', 'ethanol'], T=300, P=1E5, **{key1:val1, key2:val2})
-            assert_allclose(m.n, inputs['n'])
-            assert_allclose(m.m, inputs['m'])
-            assert_allclose(m.Q, inputs['Q'])
-            assert_allclose(m.ns, flow_inputs['ns'])
-            assert_allclose(m.ms, flow_inputs['ms'])
-            assert_allclose(m.Qls, flow_inputs['Qls'])
-            assert_allclose(m.Qgs, flow_inputs['Qgs'])
-            
-    for key, val in flow_inputs.items():
-        m = Stream(['water', 'ethanol'], T=300, P=1E5, **{key:val})
-        assert_allclose(m.n, inputs['n'])
-        assert_allclose(m.m, inputs['m'])
-        assert_allclose(m.Q, inputs['Q'])
-        assert_allclose(m.ns, flow_inputs['ns'])
-        assert_allclose(m.ms, flow_inputs['ms'])
-        assert_allclose(m.Qls, flow_inputs['Qls'])
-        assert_allclose(m.Qgs, flow_inputs['Qgs'])
-
-    with pytest.raises(Exception):
-        # two compositions specified
-        Stream(['water', 'ethanol'], ns=[6, 4], ws=[.4, .6], T=300, P=1E5)
-    with pytest.raises(Exception):
-        # two flow rates specified
-        Stream(['water', 'ethanol'], ns=[6, 4], n=10, T=300, P=1E5)
-    with pytest.raises(Exception):
-        # no composition
-        Stream(['water', 'ethanol'], n=1, T=300, P=1E5)
-    with pytest.raises(Exception):
-        # no flow rate
-        Stream(['water', 'ethanol'], zs=[.5, .5], T=300, P=1E5)
-
-def test_add_streams():
-    # simple example, same components
-    ans = {'zs': [0.6, 0.4], 'ws': [0.7932081497794828, 0.20679185022051716], 'm': 0.34847176, 'n': 10}
-    prod = Stream(['water', 'ethanol'], ns=[1, 2], T=300, P=1E5) + Stream(['water', 'ethanol'], ns=[3, 4], T=300, P=1E5)
-    assert_allclose(prod.zs, ans['zs'])
-    assert_allclose(prod.ws, ans['ws'])
-    assert_allclose(prod.m, ans['m'])
-    assert_allclose(prod.n, ans['n'])
-
-    # add a not a stream
-    with pytest.raises(Exception):
-        Stream(['decane', 'octane'],  T=300, P=1E5, ns=[4, 5]) +1
-    
-    # Add two streams, check they're the same if added in a different order
-    ans = {'zs': [1/6., 1/3., 1/3., 1/6.], 
-           'ws': [0.12364762781718204, 0.3687607770917325, 0.3080280163630483, 0.1995635787280373],
-           'm': 0.92382298, 'n': 6}
-    
-    S1 = Stream(['decane', 'octane'],  T=300, P=1E5, ns=[2, 1])
-    S2 = Stream(['Dodecane', 'Tridecane'],  T=300, P=1E5, ns=[2, 1]) 
-    prod = S1 + S2
-    assert_allclose(prod.ws, ans['ws'])
-    assert_allclose(prod.zs, ans['zs'])
-    assert_allclose(prod.m, ans['m'])
-    assert_allclose(prod.n, ans['n'])
-    prod = S2 + S1
-    assert_allclose(prod.ws, ans['ws'])
-    assert_allclose(prod.zs, ans['zs'])
-    assert_allclose(prod.m, ans['m'])
-    assert_allclose(prod.n, ans['n'])
-
-
-def test_sub_streams():
-    with pytest.raises(Exception):
-        # remove a component not present
-        Stream(['water', 'ethanol'], ns=[1, 2], T=300, P=1E5) - Stream(['decane'], ns=[.5], T=300, P=1E5)
-
-    with pytest.raises(Exception):
-        # Remove too much of a component 
-        Stream(['water', 'ethanol'], ns=[1, 2], T=300, P=1E5) - Stream(['ethanol'], ns=[3], T=300, P=1E5)
-
-    # Take a component completely away
-    no_ethanol = Stream(['water', 'ethanol'], ns=[1, 2], T=300, P=1E5) - Stream(['ethanol'], ns=[2], T=300, P=1E5)
-    assert len(no_ethanol.zs) == 1
-    assert_allclose(no_ethanol.zs, 1)
-    assert_allclose(no_ethanol.n, 1)
-    assert_allclose(no_ethanol.m, 0.01801528)
-    
-    # basic case
-    m = Stream(['water', 'ethanol'], ns=[1, 2], T=300, P=1E5) - Stream(['ethanol'], ns=[1], T=300, P=1E5)
-    assert_allclose(m.ns, [1, 1])
-    
-    
 def test_H_Chemical():
     from thermo import chemical
     chemical.caching = False
@@ -371,63 +265,6 @@ def test_H_Chemical():
     dH_20K_gas = w.Hm - Hm_as_vapor
     assert_allclose(dH_20K_gas, 1000*(48.9411675-48.2041134), rtol=1E-1) # Web tables, but hardly matches because of the excess
 
-
-def test_Mixture_input_forms():
-    # Run a test initializing a mixture from mole fractions, mass fractions,
-    # liquid fractions, gas fractions (liq/gas are with volumes of pure components at T and P)
-    kwargs = {'ws': [0.5, 0.5], 'zs': [0.7188789914193495, 0.2811210085806504],
-              'Vfls': [0.44054617180108374, 0.5594538281989162],
-              'Vfgs': [0.7229421485513368, 0.2770578514486633]}
-    for key, val in kwargs.items():
-        m = Mixture(['water', 'ethanol'], **{key:val})
-        assert_allclose(m.zs, kwargs['zs'], rtol=1E-6)
-        assert_allclose(m.zs, m.xs)
-        assert_allclose(m.Vfls(), kwargs['Vfls'], rtol=1E-5)
-        assert_allclose(m.Vfgs(), kwargs['Vfgs'])
-
-    with pytest.raises(Exception):
-        Mixture(['water', 'ethanol'])
-        
-    Mixture(['water'], ws=[1], T=300, P=1E5)
-            
-def test_Mixture_input_vfs_TP():
-    # test against the default arguments of T and P
-    m0 = Mixture(['hexane', 'decane'], Vfls=[.5, .5])
-    m1 = Mixture(['hexane', 'decane'], Vfls=[.5, .5], Vf_TP=(298.15, None))
-    m2 = Mixture(['hexane', 'decane'], Vfls=[.5, .5], Vf_TP=(298.15, None))
-    m3 = Mixture(['hexane', 'decane'], Vfls=[.5, .5], Vf_TP=(None, 101325))
-    assert_allclose(m0.zs, m1.zs)
-    assert_allclose(m0.zs, m2.zs)
-    assert_allclose(m0.zs, m3.zs)
-
-    # change T, P slightly - check that's it's still close to the result
-    # and do one rough test that the result is still working
-    m0 = Mixture(['hexane', 'decane'], Vfls=[.5, .5])
-    m1 = Mixture(['hexane', 'decane'], Vfls=[.5, .5], Vf_TP=(300, None))
-    m2 = Mixture(['hexane', 'decane'], Vfls=[.5, .5], Vf_TP=(300, 1E5))
-    m3 = Mixture(['hexane', 'decane'], Vfls=[.5, .5], Vf_TP=(None, 1E5))
-    assert_allclose(m0.zs, m1.zs, rtol=1E-3)
-    assert_allclose(m2.zs, [0.5979237361861229, 0.402076263813877], rtol=1E-4)
-    assert_allclose(m0.zs, m2.zs, rtol=1E-3)
-    assert_allclose(m0.zs, m3.zs, rtol=1E-3)
-
-
-def test_Mixture_predefined():
-    for name in ['Air', 'air', u'Air', ['air']]:
-        air = Mixture(name)
-        assert air.CASs == ['7727-37-9', '7440-37-1', '7782-44-7']
-        assert_allclose(air.zs, [0.7811979754734807, 0.009206322604387548, 0.20959570192213187], rtol=1E-4)
-        assert_allclose(air.ws, [0.7557, 0.0127, 0.2316], rtol=1E-3)
-    
-    R401A = Mixture('R401A')
-    assert R401A.CASs == ['75-45-6', '75-37-6', '2837-89-0']
-    assert_allclose(R401A.zs, [0.578852219944875, 0.18587468325478565, 0.2352730968003393], rtol=1E-4)
-    assert_allclose(R401A.ws, [0.53, 0.13, 0.34], rtol=1E-3)
-    
-    natural_gas = Mixture('Natural gas')
-    assert natural_gas.CASs == ['74-82-8', '7727-37-9', '124-38-9', '74-84-0', '74-98-6', '75-28-5', '106-97-8', '78-78-4', '109-66-0', '110-54-3']
-    assert_allclose(natural_gas.zs, [0.9652228316853225, 0.002594967217109564, 0.005955831022086067, 0.018185509193506685, 0.004595963476244077, 0.0009769695915451998, 0.001006970610302194, 0.0004729847624453981, 0.0003239924667435125, 0.0006639799746946288], rtol=1E-3)
-    assert_allclose(natural_gas.ws, [0.921761382642074, 0.004327306490959737, 0.015603023404535107, 0.03255104882657324, 0.012064018096027144, 0.0033802050703076055, 0.0034840052260078393, 0.002031403047104571, 0.001391502087253131, 0.003406105109157664], rtol=1E-4)
 
 
 

@@ -306,10 +306,20 @@ autosummary_generate = True
 #def setup(app):
 #    app.connect('autodoc-skip-member', autodoc_skip_member)
 
+#def maybe_skip_member(app, what, name, obj, skip,
+                                  #options):
+    #if name == 'Chemical':               
+        #print('hi3', dir(options['members']))
+        #print('hi2', app.config, dir(app.config) )        
+        #print app, what, name, obj, skip, options
+        #print(dir(app))
+    #return False
+    
 from sphinx.ext.autodoc import between
 
 def setup(app):
     # Register a sphinx.ext.autodoc.between listener to ignore everything
     # between lines that contain the word IGNORE
     app.connect('autodoc-process-docstring', between('(^Chemical Engineering Design Library).*|(^SOFTWARE.$).*', exclude=True))
+    #app.connect('autodoc-skip-member', maybe_skip_member)
     return app
