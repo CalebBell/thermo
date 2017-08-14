@@ -144,7 +144,13 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
                 self.mixname = mixname
                 self.mixsource = _d["Source"]
             except:
-                pass
+                if hasattr(IDs, 'strip'):
+                    IDs = [IDs]
+                    zs = [1]
+                elif isinstance(IDs, list) and len(IDs) == 1:
+                    pass
+                else:
+                    raise Exception('Could not recognize the mixture IDs')
 
         # Handle numpy array inputs; also turn mutable inputs into copies
         if zs is not None:

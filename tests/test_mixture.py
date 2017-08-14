@@ -36,6 +36,8 @@ def test_Mixture():
     Mixture('air', T=320, P=1E5)
     
     Mixture(['ethanol', 'water'], ws=[0.5, 0.5], T=500)
+    
+    Mixture('water')
 
 def test_Mixture_input_forms():
     # Run a test initializing a mixture from mole fractions, mass fractions,

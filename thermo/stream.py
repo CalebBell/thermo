@@ -31,6 +31,126 @@ class Stream(Mixture):
     '''Creates a Stream object which is useful for modeling mass and energy 
     balances.
     
+    Streams have five variables. The flow rate, composition, and components are
+    mandatory; temperature and pressure have defaults of 298.15 K and 101325 Pa.
+    
+    * The components
+    * The composition
+    * The flow rate
+    * The temperature
+    * The pressure
+
+    The composition and flow rate may be specified together or separately. The
+    options for specifying them are:
+    
+    * Mole fractions `zs`
+    * Mass fractions `ws`
+    * Liquid standard volume fractions `Vfls`
+    * Gas standard volume fractions `Vfgs`
+    * Mole flow rates `ns`
+    * Mass flow rates `ms`
+    * Liquid flow rates `Qls` (based on pure component volumes at the T and P 
+      specified by `V_TP`)
+    * Gas flow rates `Qgs` (based on pure component volumes at the T and P 
+      specified by `V_TP`)
+
+    If only the composition is specified by providing any of `zs`, `ws`, `Vfls`
+    or `Vfgs`, the flow rate must be specified by providing one of these:
+        
+    * Mole flow rate `n`
+    * Mass flow rate `m`
+    * Volumetric flow rate `Q` at the provided `T` and `P`
+    
+    Parameters
+    ----------
+    IDs : list
+        List of chemical identifiers - names, CAS numbers, SMILES or InChi 
+        strings can all be recognized and may be mixed [-]
+    zs : list, optional
+        Mole fractions of all components in the stream [-]
+    ws : list, optional
+        Mass fractions of all components in the stream [-]
+    Vfls : list, optional
+        Volume fractions of all components as a hypothetical liquid phase based 
+        on pure component densities [-]
+    Vfgs : list, optional
+        Volume fractions of all components as a hypothetical gas phase based 
+        on pure component densities [-]
+    ns : list, optional
+        Mole flow rates of each component [mol/s]
+    ms : list, optional
+        Mass flow rates of each component [kg/s]
+    Qls : list, optional
+        Liquid flow rates of all components as a hypothetical liquid phase  
+        based on pure component densities [m^3/s]
+    Qgs : list, optional
+        Gas flow rates of all components as a hypothetical gas phase  
+        based on pure component densities [m^3/s]
+    n : float, optional
+        Total mole flow rate of all components in the stream [mol/s]
+    m : float, optional
+        Total mass flow rate of all components in the stream [kg/s]
+    Q : float, optional
+        Total volumetric flow rate of all components in the stream based on the
+        temperature and pressure specified by `T` and `P` [m^3/s]
+    T : float, optional
+        Temperature of the chemical (default 298.15 K), [K]
+    P : float, optional
+        Pressure of the chemical (default 101325 Pa) [Pa]
+    Vf_TP : tuple(2, float), optional
+        The (T, P) at which the volume fractions are specified to be at, [K] 
+        and [Pa] 
+ 
+    Examples
+    --------
+    Creating Stream objects:
+        
+        
+    A stream of vodka with volume fractions 60% liquid, 40% ethanol, 1 kg/s:
+
+    >>> from thermo import Stream
+    >>> vodka = Stream(['water', 'ethanol'], Vfls=[.6, .4], T=300, P=1E5, m=1)
+    <Stream, components=['water', 'ethanol'], mole fractions=[0.8299, 0.1701], mole flow=43.8839741023 mol/s, T=300.00 K, P=100000 Pa>
+    
+    A stream of air at 400 K and 1 bar, flow rate of 1 mol/s:
+    
+    >>> air = Stream('air', T=400, P=1e5, n=1)
+    <Stream, components=['nitrogen', 'argon', 'oxygen'], mole fractions=[0.7812, 0.0092, 0.2096], mole flow=1 mol/s, T=400.00 K, P=100000 Pa>
+
+    A flow of 1 L/s of 10 wt% phosphoric acid at 320 K:
+    
+    >>> Stream(['water', 'phosphoric acid'], ws=[.9, .1], T=320, P=1E5, Q=0.001)
+    <Stream, components=['water', 'phosphoric acid'], mole fractions=[0.98, 0.02], mole flow=53.2136286991 mol/s, T=320.00 K, P=100000 Pa>
+    
+    Instead of specifying the composition and flow rate separately, they can
+    be specified as a list of flow rates in the appropriate units.
+    
+    80 kg/s of furfuryl alcohol/water solution:
+    
+    >>> Stream(['furfuryl alcohol', 'water'], ms=[50, 30])
+    <Stream, components=['furfuryl alcohol', 'water'], mole fractions=[0.2343, 0.7657], mole flow=2174.93735951 mol/s, T=298.15 K, P=101325 Pa>
+    
+    A stream of 100 mol/s of 400 K, 1 MPa argon:
+
+    >>> Stream(['argon'], ns=[100], T=400, P=1E6)
+    <Stream, components=['argon'], mole fractions=[1.0], mole flow=100 mol/s, T=400.00 K, P=1000000 Pa>
+
+    A large stream of vinegar, 8 volume %:
+        
+    >>> Stream(['Acetic acid', 'water'], Qls=[1, 1/.088])
+    <Stream, components=['acetic acid', 'water'], mole fractions=[0.0269, 0.9731], mole flow=646253.664792 mol/s, T=298.15 K, P=101325 Pa>
+
+    A very large stream of 100 m^3/s of steam at 500 K and 2 MPa:
+
+    >>> Stream(['water'], Qls=[100], T=500, P=2E6)
+    <Stream, components=['water'], mole fractions=[1.0], mole flow=4617174.33613 mol/s, T=500.00 K, P=2000000 Pa>
+
+    A real example of a stream from a pulp mill:
+        
+    >>> Stream(['Methanol', 'Sulphuric acid', 'Chlorate', 'Water', 'Chlorine dioxide', 'Sodium chloride', 'Carbon dioxide', 'Formic Acid', 'sodium sulfate', 'Chlorine'], T=365.2, P=70900, ns=[0.3361749, 11.5068909, 16.8895876, 7135.9902928, 1.8538332, 0.0480655, 0.0000000, 2.9135162, 205.7106922, 0.0012694])
+    <Stream, components=['methanol', 'sulfuric acid', 'chlorate ion', 'water', 'chlorine dioxide', 'sodium chloride', 'carbon dioxide', 'formic acid', 'sodium sulfate', 'chlorine'], mole fractions=[0.0, 0.0016, 0.0023, 0.9676, 0.0003, 0.0, 0.0, 0.0004, 0.0279, 0.0], mole flow=7375.2503227 mol/s, T=365.20 K, P=70900 Pa>
+
+    
     '''
     def __repr__(self): # pragma: no cover
         return '<Stream, components=%s, mole fractions=%s, mole flow=%s mol/s, T=%.2f K, P=%.0f \
@@ -38,11 +158,13 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.n, self.T, self.P)
     
     def __init__(self, IDs, zs=None, ws=None, Vfls=None, Vfgs=None,
                  ns=None, ms=None, Qls=None, Qgs=None, 
-                 m=None, n=None, Q=None, T=298.15, P=101325, V_TP=(None, None)):
+                 n=None, m=None, Q=None, T=298.15, P=101325, V_TP=(None, None)):
         
         composition_options = (zs, ws, Vfls, Vfgs, ns, ms, Qls, Qgs)
         composition_option_count = sum(i is not None for i in composition_options)
-        if composition_option_count < 1:
+        if hasattr(IDs, 'strip') or len(IDs) == 1:
+            pass # one component only - do not raise an exception
+        elif composition_option_count < 1:
             raise Exception("No composition information is provided; one of "
                             "'ws', 'zs', 'Vfls', 'Vfgs', 'ns', 'ms', 'Qls' or "
                             "'Qgs' must be specified")

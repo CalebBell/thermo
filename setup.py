@@ -52,10 +52,10 @@ setup(
   name = 'thermo',
   packages = ['thermo'],
   license='MIT',
-  version = '0.1.34',
+  version = '0.1.35',
   description = 'Chemical properties component of Chemical Engineering Design Library (ChEDL)',
   author = 'Caleb Bell',
-  install_requires=['fluids', 'scipy', 'pandas', 'coolprop'],
+  install_requires=['fluids', 'scipy', 'pandas'],
   extras_require = {
       'Coverage documentation':  ['wsgiref>=0.1.2', 'coverage>=4.0.3']
   },
