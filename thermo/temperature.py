@@ -185,13 +185,13 @@ def ITS90_68_difference(T):
 
     Parameters
     ----------
-        T : float
-            Temperature, ITS-90, or approximately ITS-68 [K]
+    T : float
+        Temperature, ITS-90, or approximately ITS-68 [K]
 
     Returns
     -------
-        dT : float
-            Temperature, difference between ITS-90 and ITS-68 at T [K]
+    dT : float
+        Temperature, difference between ITS-90 and ITS-68 at T [K]
 
     Notes
     -----
@@ -297,19 +297,19 @@ def T_converter(T, current, desired):
 
     Parameters
     ----------
-        T : float
-            Temperature, on `current` scale [K]
-        current : str
-            String representing the scale T is in, 'ITS-90', 'ITS-68',
-            'ITS-48', 'ITS-76', or 'ITS-27'.
-        desired : str
-            String representing the scale T will be returned in, 'ITS-90',
-            'ITS-68', 'ITS-48', 'ITS-76', or 'ITS-27'.
+    T : float
+        Temperature, on `current` scale [K]
+    current : str
+        String representing the scale T is in, 'ITS-90', 'ITS-68',
+        'ITS-48', 'ITS-76', or 'ITS-27'.
+    desired : str
+        String representing the scale T will be returned in, 'ITS-90',
+        'ITS-68', 'ITS-48', 'ITS-76', or 'ITS-27'.
 
     Returns
     -------
-        T : float
-            Temperature, on scale `desired` [K]
+    T : float
+        Temperature, on scale `desired` [K]
 
     Notes
     -----

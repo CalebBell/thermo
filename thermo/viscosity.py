@@ -30,11 +30,13 @@ __all__ = ['Dutt_Prasad', 'VN3_data', 'VN2_data', 'VN2E_data', 'Perrys2_313',
 'Yoon_Thodos', 'Stiel_Thodos', 'lucas_gas', 
 'Gharagheizi_gas_viscosity', 'viscosity_gas_methods', 'viscosity_gas_methods_P', 
 'Herning_Zipperer', 'Wilke', 'Brokaw', 
-'viscosity_index', 'ViscosityLiquidMixture', 'ViscosityGasMixture']
+'viscosity_index', 'viscosity_converter', 'ViscosityLiquidMixture', 
+'ViscosityGasMixture']
 
 import os
 import numpy as np
 import pandas as pd
+from scipy.interpolate import UnivariateSpline
 
 from thermo.utils import log, exp
 from thermo.utils import horner, none_and_length_check, mixing_simple, mixing_logarithmic, TPDependentProperty, MixtureProperty
@@ -2244,3 +2246,285 @@ def viscosity_index(nu_40, nu_100, rounding=False):
     if rounding:
         VI = _round_whole_even(VI)
     return VI
+
+
+
+
+
+# All results in units of seconds, except engler and barbey which are degrees
+# Data from Hydraulic Institute Handbook
+
+viscosity_scales = {}
+
+SSU_SSU = [31.0, 35.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 150.0, 200.0, 250.0, 300.0, 400.0, 500.0, 600.0, 700.0, 800.0, 900.0, 1000.0, 1500.0, 2000.0, 2500.0, 3000.0, 4000.0, 5000.0, 6000.0, 7000.0, 8000.0, 9000.0, 10000.0, 15000.0, 20000.0]
+SSU_nu = [1, 2.56, 4.3, 7.4, 10.3, 13.1, 15.7, 18.2, 20.6, 32.1, 43.2, 54, 65, 87.6, 110, 132, 154, 176, 198, 220, 330, 440, 550, 660, 880, 1100, 1320, 1540, 1760, 1980, 2200, 3300, 4400]
+viscosity_scales['saybolt universal'] = (SSU_SSU, SSU_nu)
+
+SSF_SSF = [12.95, 13.7, 14.44, 15.24, 19.3, 23.5, 28, 32.5, 41.9, 51.6, 61.4, 71.1, 81, 91, 100.7, 150, 200, 250, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000]
+SSF_nu = [13.1, 15.7, 18.2, 20.6, 32.1, 43.2, 54, 65, 87.6, 110, 132, 154, 176, 198, 220, 330, 440, 550, 660, 880, 1100, 1320, 1540, 1760, 1980, 2200, 3300, 4400]
+viscosity_scales['saybolt furol'] = (SSF_SSF, SSF_nu)
+
+SRS_SRS = [29, 32.1, 36.2, 44.3, 52.3, 60.9, 69.2, 77.6, 85.6, 128, 170, 212, 254, 338, 423, 508, 592, 677, 762, 896, 1270, 1690, 2120, 2540, 3380, 4230, 5080, 5920, 6770, 7620, 8460, 13700, 18400]
+SRS_nu = SSU_nu
+viscosity_scales['redwood standard'] = (SRS_SRS, SRS_nu)
+
+SRA_SRA = [5.1, 5.83, 6.77, 7.6, 8.44, 9.3, 10.12, 14.48, 18.9, 23.45, 28, 37.1, 46.2, 55.4, 64.6, 73.8, 83, 92.1, 138.2, 184.2, 230, 276, 368, 461, 553, 645, 737, 829, 921]
+SRA_nu = [4.3, 7.4, 10.3, 13.1, 15.7, 18.2, 20.6, 32.1, 43.2, 54, 65, 87.6, 110, 132, 154, 176, 198, 220, 330, 440, 550, 660, 880, 1100, 1320, 1540, 1760, 1980, 2200]
+viscosity_scales['redwood admiralty'] = (SRA_SRA, SRA_nu)
+
+Engler_degrees = [1, 1.16, 1.31, 1.58, 1.88, 2.17, 2.45, 2.73, 3.02, 4.48, 5.92, 7.35, 8.79, 11.7, 14.6, 17.5, 20.45, 23.35, 26.3, 29.2, 43.8, 58.4, 73, 87.6, 117, 146, 175, 204.5, 233.5, 263, 292, 438, 584]
+Engler_nu = SSU_nu
+viscosity_scales['engler'] = (Engler_degrees, Engler_nu)
+
+Barbey_degrees = [6200, 2420, 1440, 838, 618, 483, 404, 348, 307, 195, 144, 114, 95, 70.8, 56.4, 47, 40.3, 35.2, 31.3, 28.2, 18.7, 14.1, 11.3, 9.4, 7.05, 5.64, 4.7, 4.03, 3.52, 3.13, 2.82, 2.5, 1.4]
+Barbey_nu = SSU_nu
+viscosity_scales['barbey'] = (Barbey_degrees, Barbey_nu)
+
+PC7_PC7 = [40, 46, 52.5, 66, 79, 92, 106, 120, 135, 149]
+PC7_nu = [43.2, 54, 65, 87.6, 110, 132, 154, 176, 198, 220]
+viscosity_scales['parlin cup #7'] = (PC7_PC7, PC7_nu)
+
+PC10_PC10 = [15, 21, 25, 30, 35, 39, 41, 43, 65, 86, 108, 129, 172, 215, 258, 300, 344, 387, 430, 650, 860]
+PC10_nu = [65, 87.6, 110, 132, 154, 176, 198, 220, 330, 440, 550, 660, 880, 1100, 1320, 1540, 1760, 1980, 2200, 3300, 4400]
+viscosity_scales['parlin cup #10'] = (PC10_PC10, PC10_nu)
+
+PC15_PC15 = [6, 7.2, 7.8, 8.5, 9, 9.8, 10.7, 11.5, 15.2, 19.5, 24, 28.5, 37, 47, 57, 67, 76, 86, 96, 147, 203]
+PC15_nu = PC10_nu
+viscosity_scales['parlin cup #15'] = (PC15_PC15, PC15_nu)
+
+PC20_PC20 = [3, 3.2, 3.4, 3.6, 3.9, 4.1, 4.3, 4.5, 6.3, 7.5, 9, 11, 14, 18, 22, 25, 29, 32, 35, 53, 70]
+PC20_nu = PC10_nu
+viscosity_scales['parlin cup #20'] = (PC20_PC20, PC20_nu)
+
+FC3_FC3 = [30, 42, 50, 58, 67, 74, 82, 90, 132, 172, 218, 258, 337, 425, 520, 600, 680, 780, 850, 1280, 1715]
+FC3_nu = PC10_nu
+viscosity_scales['ford cup #3'] = (FC3_FC3, FC3_nu)
+
+FC4_FC4 = [20, 28, 34, 40, 45, 50, 57, 62, 90, 118, 147, 172, 230, 290, 350, 410, 465, 520, 575, 860, 1150]
+FC4_nu = PC10_nu
+viscosity_scales['ford cup #4'] = (FC4_FC4, FC4_nu)
+
+MM_MM = [125, 145, 165, 198, 225, 270, 320, 370, 420, 470, 515, 570, 805, 1070, 1325, 1690, 2110, 2635, 3145, 3670, 4170, 4700, 5220, 7720, 10500]
+MM_nu = [20.6, 32.1, 43.2, 54, 65, 87.6, 110, 132, 154, 176, 198, 220, 330, 440, 550, 660, 880, 1100, 1320, 1540, 1760, 1980, 2200, 3300, 4400]
+viscosity_scales['mac michael'] = (MM_MM, MM_nu)
+
+ZC1_ZC1 = [38, 47, 54, 62, 73, 90]
+ZC1_nu = [20.6, 32.1, 43.2, 54, 65, 87.6]
+viscosity_scales['zahn cup #1'] = (ZC1_ZC1, ZC1_nu)
+
+ZC2_ZC2 = [18, 20, 23, 26, 29, 37, 46, 55, 63, 72, 80, 88]
+ZC2_nu = [20.6, 32.1, 43.2, 54, 65, 87.6, 110, 132, 154, 176, 198, 220]
+viscosity_scales['zahn cup #2'] = (ZC2_ZC2, ZC2_nu)
+
+ZC3_ZC3 = [22.5, 24.5, 27, 29, 40, 51, 63, 75]
+ZC3_nu = [154, 176, 198, 220, 330, 440, 550, 660]
+viscosity_scales['zahn cup #3'] = (ZC3_ZC3, ZC3_nu)
+
+ZC4_ZC4 = [18, 20, 28, 34, 41, 48, 63, 77]
+ZC4_nu = [198, 220, 330, 440, 550, 660, 880, 1100]
+viscosity_scales['zahn cup #4'] = (ZC4_ZC4, ZC4_nu)
+
+ZC5_ZC5 = [13, 18, 24, 29, 33, 43, 50, 65, 75, 86, 96]
+ZC5_nu = [220, 330, 440, 550, 660, 880, 1100, 1320, 1540, 1760, 1980]
+viscosity_scales['zahn cup #5'] = (ZC5_ZC5, ZC5_nu)
+
+D1_D1 = [1.3, 2.3, 3.2, 4.1, 4.9, 5.7, 6.5, 10, 13.5, 16.9, 20.4, 27.4, 34.5, 41, 48, 55, 62, 69, 103, 137, 172, 206, 275, 344, 413, 481, 550, 620, 690, 1030, 1370]
+D1_nu = [4.3, 7.4, 10.3, 13.1, 15.7, 18.2, 20.6, 32.1, 43.2, 54, 65, 87.6, 110, 132, 154, 176, 198, 220, 330, 440, 550, 660, 880, 1100, 1320, 1540, 1760, 1980, 2200, 3300, 4400]
+viscosity_scales['demmier #1'] = (D1_D1, D1_nu)
+
+D10_D10 = [1, 1.4, 1.7, 2, 2.7, 3.5, 4.1, 4.8, 5.5, 6.2, 6.9, 10.3, 13.7, 17.2, 20.6, 27.5, 34.4, 41.3, 48, 55, 62, 69, 103, 137]
+D10_nu = [32.1, 43.2, 54, 65, 87.6, 110, 132, 154, 176, 198, 220, 330, 440, 550, 660, 880, 1100, 1320, 1540, 1760, 1980, 2200, 3300, 4400]
+viscosity_scales['demmier #10'] = (D10_D10, D10_nu)
+
+S100_S100 = [2.6, 3.6, 4.6, 5.5, 6.4, 7.3, 11.3, 15.2, 19, 23, 31, 39, 46, 54, 62, 70, 77, 116, 154, 193, 232, 308, 385, 462, 540, 618, 695, 770, 1160, 1540]
+S100_nu = [7.4, 10.3, 13.1, 15.7, 18.2, 20.6, 32.1, 43.2, 54, 65, 87.6, 110, 132, 154, 176, 198, 220, 330, 440, 550, 660, 880, 1100, 1320, 1540, 1760, 1980, 2200, 3300, 4400]
+viscosity_scales['stormer 100g load'] = (S100_S100, S100_nu)
+
+PLF_PLF = [7, 8, 9, 9.5, 10.8, 11.9, 12.4, 16.8, 22, 27.6, 33.7, 45, 55.8, 65.5, 77, 89, 102, 113, 172, 234]
+PLF_nu = [87.6, 110, 132, 154, 176, 198, 220, 330, 440, 550, 660, 880, 1100, 1320, 1540, 1760, 1980, 2200, 3300, 4400]
+viscosity_scales['pratt lambert f'] = (PLF_PLF, PLF_nu)
+
+viscosity_scales['kinematic viscosity'] = (SSU_nu, SSU_nu)
+
+
+viscosity_converters_to_nu = {}
+viscosity_converters_from_nu = {}
+viscosity_converter_limits = {}
+
+for key, val in viscosity_scales.items():
+    values, nus = val
+    viscosity_converter_limits[key] = (values[0], values[-1], nus[0], nus[-1])
+    values, nus = np.log(values), np.log(nus)
+    viscosity_converters_to_nu[key] = UnivariateSpline(values, nus, k=3, s=0)
+    viscosity_converters_from_nu[key] = UnivariateSpline(nus, values, k=3, s=0)
+
+# originally from  Euverard, M. R., "The Efflux Type Viscosity Cup," National 
+# Paint, Varnish, and Lacquer Association, 9 April 1948.
+# actually found in the Paint Testing Manual
+# stored are (coefficient, and minimum time (seconds))
+# some of these overlap with the tabulated values; those are used in preference
+
+viscosity_scales_linear = {
+    'american can': (3.5, 35), 
+    'astm 0.07': (1.4, 60), 
+    'astm 0.10': (4.8, 25), 
+    'astm 0.15': (21, 9), 
+    'astm 0.20': (61, 5), 
+    'astm 0.25': (140, 4), 
+    'a&w b': (18.5, 10), 
+    'a&w crucible': (11.7, 12), 
+    'caspers tin plate': (3.6, 39), 
+    'continental can': (3.3, 12), 
+    'crown cork and seal': (3.3, 12), 
+    'engler': (7.3, 18), 
+    'ford cup #3': (2.4, 34), 
+    'ford cup #4': (3.7, 23), 
+    'murphy varnish': (3.1, 24), 
+    'parlin cup #7': (1.3, 60), 
+    'parlin cup #10': (4.8, 21), 
+    'parlin cup #15': (21.5, 10), 
+    'parlin cup #20': (60, 5), 
+    'parlin cup #25': (140, 15), 
+    'parlin cup #30': (260, 10), 
+    'pratt lambert a': (0.61, 70), 
+    'pratt lambert b': (1.22, 60), 
+    'pratt lambert c': (2.43, 40), 
+    'pratt lambert d': (4.87, 25), 
+    'pratt lambert e': (9.75, 15), 
+    'pratt lambert f': (19.5, 9), 
+    'pratt lambert g': (38, 7), 
+    'pratt lambert h': (76, 5), 
+    'pratt lambert i': (152, 4), 
+    'redwood standard': (0.23, 320), 
+    'saybolt furol': (2.1, 17), 
+    'saybolt universal': (0.21, 70), 
+    'scott': (1.6, 20), 
+    'westinghouse': (3.4, 30), 
+    'zahn cup #1': (0.75, 50), 
+    'zahn cup #2': (3.1, 30), 
+    'zahn cup #3': (9.8, 25), 
+    'zahn cup #4': (12.5, 14), 
+    'zahn cup #5': (23.6, 12)
+}
+
+
+def viscosity_converter(val, old_scale, new_scale, extrapolate=False):
+    r'''Converts kinematic viscosity values from different scales which have
+    historically been used. Though they may not be in use much, some standards
+    still specify values in these scales.
+
+    Parameters
+    ----------
+    val : float
+        Viscosity value in the specified scale; [m^2/s] if 
+        'kinematic viscosity'; [degrees] if Engler or Barbey; [s] for the other
+        scales.
+    old_scale : str
+        String representing the scale that `val` is in originally.
+    new_scale : str
+        String representing the scale that `val` should be converted to.
+    extrapolate : bool
+        If True, a conversion will be performed even if outside the limits of
+        either scale; if False, and either value is outside a limit, an
+        exception will be raised.
+        
+    Returns
+    -------
+    result : float
+        Viscosity value in the specified scale; [m^2/s] if 
+        'kinematic viscosity'; [degrees] if Engler or Barbey; [s] for the other
+        scales
+
+    Notes
+    -----
+    The valid scales for this function are any of the following:
+        
+    ['a&w b', 'a&w crucible', 'american can', 'astm 0.07', 'astm 0.10', 
+    'astm 0.15', 'astm 0.20', 'astm 0.25', 'barbey', 'caspers tin plate', 
+    'continental can', 'crown cork and seal', 'demmier #1', 'demmier #10', 
+    'engler', 'ford cup #3', 'ford cup #4', 'kinematic viscosity', 
+    'mac michael', 'murphy varnish', 'parlin cup #10', 'parlin cup #15', 
+    'parlin cup #20', 'parlin cup #25', 'parlin cup #30', 'parlin cup #7', 
+    'pratt lambert a', 'pratt lambert b', 'pratt lambert c', 'pratt lambert d', 
+    'pratt lambert e', 'pratt lambert f', 'pratt lambert g', 'pratt lambert h',
+    'pratt lambert i', 'redwood admiralty', 'redwood standard', 
+    'saybolt furol', 'saybolt universal', 'scott', 'stormer 100g load', 
+    'westinghouse', 'zahn cup #1', 'zahn cup #2', 'zahn cup #3', 'zahn cup #4',
+    'zahn cup #5']
+    
+    Some of those scales are converted linearly; the rest use tabulated data
+    and splines.
+
+    Because the conversion is performed by spline functions, a re-conversion
+    of a value will not yield exactly the original value. However, it is quite
+    close.
+
+    Examples
+    --------
+    >>> viscosity_converter(8.79, 'engler', 'parlin cup #7')
+    52.7
+    >>> viscosity_converter(700, 'Saybolt Universal Seconds', 'kinematic viscosity')
+    0.00015400000000000006
+
+    References
+    ----------
+    .. [1] Hydraulic Institute. Hydraulic Institute Engineering Data Book. 
+       Cleveland, Ohio: Hydraulic Institute, 1990.
+    .. [2] Gardner/Sward. Paint Testing Manual. Physical and Chemical 
+       Examination of Paints, Varnishes, Lacquers, and Colors. 13th Edition. 
+       ASTM, 1972.
+    .. [3] Euverard, M. R., The Efflux Type Viscosity Cup. National Paint, 
+       Varnish, and Lacquer Association, 1948.
+    '''
+
+    def range_check(visc, scale):
+        scale_min, scale_max, nu_min, nu_max = viscosity_converter_limits[scale]
+        
+        if visc < scale_min*(1.-1E-7) or visc > scale_max*(1.+1E-7):
+            raise Exception('Viscosity conversion is outside the limits of the '
+                            '%s scale; given value is %s, but the range of the '
+                            'scale is from %s to %s. Set `extrapolate` to True '
+                            'to perform the conversion anyway.' %(scale, visc, scale_min, scale_max))
+
+    def range_check_linear(val, c, tmin, scale):
+        if val < tmin:
+            raise Exception('Viscosity conversion is outside the limits of the '
+                            '%s scale; given value is %s, but the minimum time '
+                            'for this scale is %s s. Set `extrapolate` to True '
+                            'to perform the conversion anyway.' %(scale, val, tmin))
+
+    old_scale = old_scale.lower().replace('degrees', '').replace('seconds', '').strip()
+    new_scale = new_scale.lower().replace('degrees', '').replace('seconds', '').strip()
+
+    # Convert to kinematic viscosity
+    if old_scale == 'kinematic viscosity':
+        val = 1E6*val # convert to centistokes, the basis of the functions
+    elif old_scale in viscosity_converters_to_nu:
+        if not extrapolate:
+            range_check(val, old_scale)
+        val = exp(viscosity_converters_to_nu[old_scale](log(val)))
+    elif old_scale in viscosity_scales_linear:
+        c, tmin = viscosity_scales_linear[old_scale]
+        if not extrapolate:
+            range_check_linear(val, c, tmin, old_scale)
+        val = c*val # convert from seconds to centistokes
+    else:
+        keys = sorted(set(list(viscosity_scales.keys()) + list(viscosity_scales_linear.keys())))
+        raise Exception('Scale "%s" not recognized - allowable values are any of %s.' %(old_scale, keys))
+
+    # Convert to desired scale
+    if new_scale == 'kinematic viscosity':
+        val = 1E-6*val # convert to m^2/s
+    elif new_scale in viscosity_converters_from_nu:
+        val = exp(viscosity_converters_from_nu[new_scale](log(val)))
+        if not extrapolate:
+            range_check(val, new_scale)
+    elif new_scale in viscosity_scales_linear:
+        c, tmin = viscosity_scales_linear[new_scale]
+        val = val/c # convert from centistokes to seconds
+        if not extrapolate:
+            range_check_linear(val, c, tmin, new_scale)
+    else:
+        keys = sorted(set(list(viscosity_scales.keys()) + list(viscosity_scales_linear.keys())))
+        raise Exception('Scale "%s" not recognized - allowable values are any of %s.' %(new_scale, keys))
+    return float(val)

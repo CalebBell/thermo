@@ -241,6 +241,64 @@ def test_viscosity_index():
     assert None == viscosity_index(3E-6, 1.5E-6)
 
 
+def test_viscosity_converter():
+    # Barbey - todo viscosity_converter(95, 'barbey', 'parlin cup #7')
+    
+    visc = viscosity_converter(8.79, 'engler', 'parlin cup #7')
+    assert_allclose(visc, 52.5)
+    
+    # seconds/degrees string inputs and capitals
+    visc = viscosity_converter(8.79, 'degrees engler', 'seconds parlin cup #7')
+    assert_allclose(visc, 52.5)
+    
+    visc = viscosity_converter(8.79, '    degrees engler', 'seconds parlin cup #7    ')
+    assert_allclose(visc, 52.5)
+    
+    visc = viscosity_converter(8.79, 'Engler', 'PARLIN cup #7')
+    assert_allclose(visc, 52.5)
+    
+    
+    visc = viscosity_converter(8.78, 'engler', 'parlin cup #7')
+    assert_allclose(visc, 52.45389001785669)
+    
+    visc = viscosity_converter(5.91, 'engler', 'parlin cup #7', True)
+    assert_allclose(visc, 39.96017612902695)
+    
+    with pytest.raises(Exception):
+        # limit is 5.92, but even that fails due to float conversion
+        viscosity_converter(5.91, 'engler', 'parlin cup #7', extrapolate=False)
+
+    viscosity_converter(5.919999, 'engler', 'parlin cup #7')
+    with pytest.raises(Exception):
+        # too little
+        viscosity_converter(5.91999, 'engler', 'parlin cup #7')
+        
+    with pytest.raises(Exception):
+        viscosity_converter(8.79, 'NOTAREALSCALE', 'kinematic viscosity')
+    with pytest.raises(Exception):
+        viscosity_converter(8.79, 'kinematic viscosity', 'NOTAREALSCALE')
+        
+    nu = viscosity_converter(8.79, 'engler', 'kinematic viscosity')
+    assert_allclose(nu, 6.5E-5)
+    
+    with pytest.raises(Exception):
+        viscosity_converter(8.79, 'pratt lambert e', 'kinematic viscosity')
+        
+    t = viscosity_converter(0.0002925, 'kinematic viscosity', 'pratt lambert g')
+    assert_allclose(t, 7.697368421052632)
+    nu = viscosity_converter(7.697368421052632, 'pratt lambert g', 'kinematic viscosity', )
+    assert_allclose(nu, .0002925)
+    
+    with pytest.raises(Exception):
+        viscosity_converter(0.00002925, 'kinematic viscosity', 'pratt lambert g')
+    viscosity_converter(0.00002925, 'kinematic viscosity', 'pratt lambert g', True)
+
+    # Too low on the input side
+    with pytest.raises(Exception):
+        viscosity_converter(6, 'pratt lambert g', 'kinematic viscosity')
+    viscosity_converter(6, 'pratt lambert g', 'kinematic viscosity', True)
+    
+    
 @pytest.mark.meta_T_dept
 def test_ViscosityLiquid():
     EtOH = ViscosityLiquid(MW=46.06844, Tm=159.05, Tc=514.0, Pc=6137000.0, Vc=0.000168, omega=0.635, Psat=7872.16, Vml=5.8676e-5, CASRN='64-17-5')
