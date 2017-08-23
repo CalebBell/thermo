@@ -1444,6 +1444,17 @@ class Chemical(object): # pragma: no cover
             return Van_der_Waals_area(self.UNIFAC_Q)
         return None
 
+    @property
+    def R_specific(self):
+        r'''Specific gas constant, in units of J/kg/K.
+
+        Examples
+        --------
+        >>> Chemical('water').R_specific
+        461.52265188218
+        '''
+        return property_molar_to_mass(R, self.MW)
+
     ### One phase properties - calculate lazily
     @property
     def Psat(self):

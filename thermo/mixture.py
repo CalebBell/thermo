@@ -748,6 +748,16 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         '''
         return [i.PSRK_groups for i in self.Chemicals]
 
+    @property
+    def R_specific(self):
+        r'''Specific gas constant of the mixture, in units of J/kg/K.
+
+        Examples
+        --------
+        >>> Mixture(['N2', 'O2'], zs=[0.79, .21]).R_specific
+        288.1928437986195
+        '''
+        return property_molar_to_mass(R, self.MW)
 
     ### One phase properties - calculate lazily
     @property

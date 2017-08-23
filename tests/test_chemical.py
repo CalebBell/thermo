@@ -65,6 +65,8 @@ def test_Chemical_properties():
     
     assert_allclose(phenol.LFL, 0.013000000000000001)
     assert_allclose(phenol.UFL, 0.095)
+    
+    assert_allclose(phenol.R_specific, 88.34714960720952)
 
     benzene = Chemical('benzene')
     assert benzene.STEL == (2.5, 'ppm')
@@ -342,3 +344,4 @@ def test_all_chemicals():
         c.UNIFAC_groups
         c.UNIFAC_Dortmund_groups
         c.PSRK_groups
+        c.R_specific

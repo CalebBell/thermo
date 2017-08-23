@@ -37,6 +37,7 @@ import os
 import numpy as np
 import pandas as pd
 from scipy.interpolate import UnivariateSpline
+from scipy.optimize import newton
 
 from thermo.utils import log, exp
 from thermo.utils import horner, none_and_length_check, mixing_simple, mixing_logarithmic, TPDependentProperty, MixtureProperty
@@ -2458,13 +2459,22 @@ def viscosity_converter(val, old_scale, new_scale, extrapolate=False):
     Because the conversion is performed by spline functions, a re-conversion
     of a value will not yield exactly the original value. However, it is quite
     close.
+    
+    The method 'Saybolt universal' has a special formula implemented for its
+    conversion, from [4]_. It is designed for maximum backwards compatibility
+    with prior experimental data. It is solved by newton's method when 
+    kinematic viscosity is desired as an output.
+    
+    .. math::
+        SUS_{eq} = 4.6324\nu_t + \frac{[1.0 + 0.03264\nu_t]}
+        {[(3930.2 + 262.7\nu_t + 23.97\nu_t^2 + 1.646\nu_t^3)\times10^{-5})]}
 
     Examples
     --------
     >>> viscosity_converter(8.79, 'engler', 'parlin cup #7')
     52.7
     >>> viscosity_converter(700, 'Saybolt Universal Seconds', 'kinematic viscosity')
-    0.00015400000000000006
+    0.00015108914751515542
 
     References
     ----------
@@ -2475,6 +2485,10 @@ def viscosity_converter(val, old_scale, new_scale, extrapolate=False):
        ASTM, 1972.
     .. [3] Euverard, M. R., The Efflux Type Viscosity Cup. National Paint, 
        Varnish, and Lacquer Association, 1948.
+    .. [4] API Technical Data Book: General Properties & Characterization.
+       American Petroleum Institute, 7E, 2005.
+    .. [5] ASTM. Standard Practice for Conversion of Kinematic Viscosity to 
+       Saybolt Universal Viscosity or to Saybolt Furol Viscosity. D 2161 - 93.
     '''
 
     def range_check(visc, scale):
@@ -2495,10 +2509,19 @@ def viscosity_converter(val, old_scale, new_scale, extrapolate=False):
 
     old_scale = old_scale.lower().replace('degrees', '').replace('seconds', '').strip()
     new_scale = new_scale.lower().replace('degrees', '').replace('seconds', '').strip()
+    
+    def Saybolt_universal_eq(nu):
+        return (4.6324*nu + (1E5 + 3264.*nu)/(nu*(nu*(1.646*nu + 23.97) 
+                                              + 262.7) + 3930.2))
 
     # Convert to kinematic viscosity
     if old_scale == 'kinematic viscosity':
         val = 1E6*val # convert to centistokes, the basis of the functions
+    elif old_scale == 'saybolt universal':
+        if not extrapolate:
+            range_check(val, old_scale)
+        to_solve = lambda nu: Saybolt_universal_eq(nu) - val
+        val = newton(to_solve, 1)
     elif old_scale in viscosity_converters_to_nu:
         if not extrapolate:
             range_check(val, old_scale)
@@ -2515,6 +2538,8 @@ def viscosity_converter(val, old_scale, new_scale, extrapolate=False):
     # Convert to desired scale
     if new_scale == 'kinematic viscosity':
         val = 1E-6*val # convert to m^2/s
+    elif new_scale == 'saybolt universal':
+        val = Saybolt_universal_eq(val)
     elif new_scale in viscosity_converters_from_nu:
         val = exp(viscosity_converters_from_nu[new_scale](log(val)))
         if not extrapolate:

@@ -21,6 +21,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from numpy.testing import assert_allclose
+from random import uniform
 import pytest
 import numpy as np
 import pandas as pd
@@ -298,7 +299,23 @@ def test_viscosity_converter():
         viscosity_converter(6, 'pratt lambert g', 'kinematic viscosity')
     viscosity_converter(6, 'pratt lambert g', 'kinematic viscosity', True)
     
+    nu = viscosity_converter(700, 'Saybolt Universal Seconds', 'kinematic viscosity')
+    assert_allclose(nu, 0.00015108914751515542)
     
+    t = viscosity_converter(0.00015108914751515542, 'kinematic viscosity', 'Saybolt Universal Seconds')
+    assert_allclose(t, 700)
+    
+    for i in range(20):
+        # fuzz the numerical solver for SUS a bit -increase to try harder, but
+        # all efforts show the function is monotonic. It turns negative at 25.5
+        # and stops working on the high side at 8000000000000. Plenty of room
+        # for newton's method to converge!
+        SUS = uniform(31, 20000)
+        nu = viscosity_converter(SUS, 'Saybolt Universal Seconds', 'kinematic viscosity')
+        SUS2 = viscosity_converter(nu, 'kinematic viscosity', 'Saybolt Universal Seconds')
+        assert_allclose(SUS, SUS2)
+
+
 @pytest.mark.meta_T_dept
 def test_ViscosityLiquid():
     EtOH = ViscosityLiquid(MW=46.06844, Tm=159.05, Tc=514.0, Pc=6137000.0, Vc=0.000168, omega=0.635, Psat=7872.16, Vml=5.8676e-5, CASRN='64-17-5')
