@@ -2472,7 +2472,7 @@ def viscosity_converter(val, old_scale, new_scale, extrapolate=False):
     Examples
     --------
     >>> viscosity_converter(8.79, 'engler', 'parlin cup #7')
-    52.7
+    52.5
     >>> viscosity_converter(700, 'Saybolt Universal Seconds', 'kinematic viscosity')
     0.00015108914751515542
 

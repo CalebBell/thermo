@@ -55,8 +55,8 @@ CAN_DSL_flags = {0: LISTED,
                  2: 'Significant New Activity (SNAc)',
                  3: 'Ministerial Condition pertaining to this substance',
                  4: 'Domestic Substances List, removed (DSL_REM)',
-                 5: 'Minister of the Environment has imposed a Ministerial \
-                 Prohibition pertaining to this substance'}
+                 5: 'Minister of the Environment has imposed a Ministerial ' 
+                    'Prohibition pertaining to this substance'}
 
 
 TSCA_flags = {

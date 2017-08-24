@@ -79,6 +79,22 @@ def test_Mixture_input_vfs_TP():
     assert_allclose(m0.zs, m3.zs, rtol=1E-3)
 
 
+def test_Mixture_calculated_Vfs():
+    # Liquid standard fractions
+    S = Mixture(['hexane', 'decane'], zs=[0.25, 0.75])
+    Vfls = S.Vfls(298.16, 101326)
+    assert_allclose(Vfls, [0.18301434895886864, 0.8169856510411313])
+    assert_allclose(S.Vfls(), [0.18301384717011993, 0.8169861528298801])
+    assert_allclose(S.Vfls(P=1E6), [0.18292777184777048, 0.8170722281522296])
+    assert_allclose(S.Vfls(T=299.15), [0.1830642468206885, 0.8169357531793114])
+    
+    # gas fractions
+    S = Mixture(['hexane', 'decane'], zs=[0.25, 0.75], T=699)
+    assert_allclose(S.Vfgs(700, 101326), [0.251236709756207, 0.748763290243793])
+    assert_allclose(S.Vfgs(), [0.25124363058052673, 0.7487563694194732])
+    assert_allclose(S.Vfgs(P=101326), [0.2512436429605387, 0.7487563570394613])
+    assert_allclose(S.Vfgs(T=699), [0.25124363058052673, 0.7487563694194732])
+
 def test_Mixture_predefined():
     for name in ['Air', 'air', u'Air', ['air']]:
         air = Mixture(name)
