@@ -31,6 +31,7 @@ __all__ = ['isobaric_expansion', 'isothermal_compressibility',
 'Vfs_to_zs', 'none_and_length_check', 'normalize', 'mixing_simple', 
 'mixing_logarithmic', 'has_matplotlib', 'to_num', 'CAS2int', 
 'int2CAS', 'Parachor', 'property_molar_to_mass', 'property_mass_to_molar', 
+'SG_to_API', 'API_to_SG',
 'phase_select_property', 'TDependentProperty', 
 'TPDependentProperty', 'MixtureProperty', 'allclose_variable', 'horner', 
 'polylog2']
@@ -232,6 +233,73 @@ def property_mass_to_molar(A_mass, MW):  # pragma: no cover
         return None
     A_molar = A_mass*MW/1000
     return A_molar
+
+def SG_to_API(SG):
+    r'''Calculates specific gravity of a liquid given its API, as shown in
+    [1]_.
+
+    .. math::
+        \text{API gravity} = \frac{141.5}{\text{SG}} - 131.5
+
+    Parameters
+    ----------
+    SG : float
+        Specific gravity of the fluid at 60 degrees Farenheight [-]
+
+    Returns
+    -------
+    API : float
+        API of the fluid [-]
+
+    Notes
+    -----
+    Defined only at 60 degrees Fahrenheit.
+
+    Examples
+    --------
+    >>> SG_to_API(0.7365)
+    60.62491513917175
+
+    References
+    ----------
+    .. [1] API Technical Data Book: General Properties & Characterization.
+    American Petroleum Institute, 7E, 2005.
+    '''
+    return 141.5/SG - 131.5
+
+
+def API_to_SG(API):
+    r'''Calculates API of a liquid given its specific gravity, as shown in
+    [1]_.
+
+    .. math::
+        \text{SG at}~60^\circ\text{F} = \frac{141.5}{\text{API gravity} +131.5}
+
+    Parameters
+    ----------
+    API : float
+        API of the fluid [-]
+
+    Returns
+    -------
+    SG : float
+        Specific gravity of the fluid at 60 degrees Farenheight [-]
+
+    Notes
+    -----
+    Defined only at 60 degrees Fahrenheit.
+
+    Examples
+    --------
+    >>> API_to_SG(60.62)
+    0.7365188423901728
+
+    References
+    ----------
+    .. [1] API Technical Data Book: General Properties & Characterization.
+    American Petroleum Institute, 7E, 2005.
+    '''
+    return 141.5/(API+131.5)
 
 
 def isobaric_expansion(V, dV_dT):
