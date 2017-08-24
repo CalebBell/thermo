@@ -450,6 +450,10 @@ def test_API_SG():
     
     API = SG_to_API(0.7365)
     assert_allclose(API, 60.62491513917175)
+    
+def test_SG():
+    sg = SG(860)
+    assert_allclose(sg, 0.8608461408159591)
 
 
 def test_allclose_variable():

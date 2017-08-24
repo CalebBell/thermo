@@ -31,7 +31,7 @@ __all__ = ['isobaric_expansion', 'isothermal_compressibility',
 'Vfs_to_zs', 'none_and_length_check', 'normalize', 'mixing_simple', 
 'mixing_logarithmic', 'has_matplotlib', 'to_num', 'CAS2int', 
 'int2CAS', 'Parachor', 'property_molar_to_mass', 'property_mass_to_molar', 
-'SG_to_API', 'API_to_SG',
+'SG_to_API', 'API_to_SG', 'SG',
 'phase_select_property', 'TDependentProperty', 
 'TPDependentProperty', 'MixtureProperty', 'allclose_variable', 'horner', 
 'polylog2']
@@ -299,7 +299,43 @@ def API_to_SG(API):
     .. [1] API Technical Data Book: General Properties & Characterization.
     American Petroleum Institute, 7E, 2005.
     '''
-    return 141.5/(API+131.5)
+    return 141.5/(API + 131.5)
+
+
+def SG(rho, rho_ref=999.0170824078306):
+    r'''Calculates the specific gravity of a substance with respect to another
+    substance; by default, this is water at 15.6 °C (60 °F). For gases, 
+    normally the reference density is 1.2 kg/m^3, that of dry air. However, in 
+    general specific gravity should always be specified with respect to the
+    temperature and pressure of its reference fluid. This can vary widely.
+    
+    .. math::
+        SG = \frac{\rho}{\rho_{ref}}
+
+    Parameters
+    ----------
+    rho : float
+        Density of the substance, [kg/m^3]
+    rho_ref : float, optional
+        Density of the reference substance, [kg/m^3]
+
+    Returns
+    -------
+    SG : float
+        Specific gravity of the substance with respect to the reference 
+        density, [-]
+
+    Notes
+    -----
+    Another common reference point is water at 4°C (rho_ref=999.9748691393087).
+    Specific gravity is often used by consumers instead of density.
+    
+    Examples
+    --------
+    >>> SG(860)
+    0.8608461408159591
+    '''
+    return rho/rho_ref
 
 
 def isobaric_expansion(V, dV_dT):
