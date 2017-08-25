@@ -2282,6 +2282,23 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
             return 1./Vmg
         return None
 
+    @property
+    def API(self):
+        r'''API gravity of the hypothetical liquid phase of the mixture, 
+        degrees. The reference condition is water at 15.6 °C (60 °F) and 1 atm 
+        (rho=999.016 kg/m^3, standardized).
+            
+        Examples
+        --------
+        >>> Mixture(['hexane', 'decane'], ws=[0.5, 0.5]).API
+        71.35326639656284
+        '''
+        Vml = self.VolumeLiquidMixture(T=288.70555555555552, P=101325, zs=self.zs, ws=self.ws)
+        if Vml:
+            rho = Vm_to_rho(Vml, self.MW)
+        sg = SG(rho, rho_ref=999.016)
+        return SG_to_API(sg)
+
     def draw_2d(self,  Hs=False): # pragma: no cover
         r'''Interface for drawing a 2D image of all the molecules in the
         mixture. Requires an HTML5 browser, and the libraries RDKit and
