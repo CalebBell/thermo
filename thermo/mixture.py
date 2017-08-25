@@ -1083,6 +1083,38 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         return [i.Zg for i in self.Chemicals]
 
     @property
+    def SGs(self):
+        r'''Specific gravity of a hypothetical solid phase of the mixture at the 
+        specified temperature and pressure, dimensionless.
+        The reference condition is water at 4 °C and 1 atm 
+        (rho=999.017 kg/m^3). The SG varries with temperature and pressure
+        but only very slightly.
+        '''
+        rhos = self.rhos
+        if rhos is not None:
+            return SG(rhos)
+        return None
+
+    @property
+    def SGl(self):
+        r'''Specific gravity of a hypothetical liquid phase of the mixture at  
+        the specified temperature and pressure, dimensionless.
+        The reference condition is water at 4 °C and 1 atm 
+        (rho=999.017 kg/m^3). For liquids, SG is defined that the reference
+        chemical's T and P are fixed, but the chemical itself varies with
+        the specified T and P.
+        
+        Examples
+        --------
+        >>> Mixture('water', ws=[1], T=365).SGl
+        0.9650065522428539
+        '''
+        rhol = self.rhol
+        if rhol is not None:
+            return SG(rhol)
+        return None
+
+    @property
     def isobaric_expansion_ls(self):
         r'''Pure component isobaric (constant-pressure) expansions of the
         chemicals in the mixture in the liquid phase at its current temperature
@@ -1813,6 +1845,25 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         return self.VolumeGasMixture(T=self.T, P=self.P, zs=self.zs, ws=self.ws)
 
     @property
+    def SGg(self):
+        r'''Specific gravity of a hypothetical gas phase of the mixture, .
+        dimensionless. The reference condition is air at 15.6 °C (60 °F) and 1  
+        atm (rho=1.223 kg/m^3). The definition for gases uses the 
+        compressibility factor of the reference gas and the mixture both at the 
+        reference conditions, not the conditions of the mixture.
+            
+        Examples
+        --------
+        >>> Mixture('argon').SGg
+        1.3800407778218216
+        '''
+        Vmg = self.VolumeGasMixture(T=288.70555555555552, P=101325, zs=self.zs, ws=self.ws)
+        if Vmg:
+            rho = Vm_to_rho(Vmg, self.MW)
+            return SG(rho, rho_ref=1.2231876628642968) # calculated with Mixture
+        return None
+
+    @property
     def mul(self):
         r'''Viscosity of the mixture in the liquid phase at its current
         temperature, pressure, and composition in units of Pa*s.
@@ -1985,6 +2036,24 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         if Vm:
             return Z(self.T, self.P, Vm)
         return None
+
+    @property
+    def SG(self):
+        r'''Specific gravity of the mixture, dimensionless. 
+        
+        For gas-phase conditions, this is calculated at 15.6 °C (60 °F) and 1 
+        atm for the mixture and the reference fluid, air. 
+        For liquid and solid phase conditions, this is calculated based on a 
+        reference fluid of water at 4°C at 1 atm, but the with the liquid or 
+        solid mixture's density at the currently specified conditions.
+
+        Examples
+        --------
+        >>> Mixture('MTBE').SG
+        0.7428160596603596
+        '''
+        return phase_select_property(phase=self.phase, s=self.SGs, l=self.SGl, g=self.SGg)
+
 
     ### Single-phase properties
 

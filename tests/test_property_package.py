@@ -124,7 +124,7 @@ def test_IdealPP_fuzz_TP_VF():
 
     names = ['hexane', '2-methylpentane', '3-methylpentane', '2,3-dimethylbutane', '2,2-dimethylbutane']
     m = Mixture(names, zs=[.2, .2, .2, .2, .2], P=1E5, T=300)
-    test_pkg = IdealPP(m.VaporPressures, m.Tms, m.Tcs, m.Pcs)
+    test_pkg = Ideal_PP(m.VaporPressures, m.Tms, m.Tcs, m.Pcs)
     for i in range(500):
         zs = [uniform(0, 1) for i in range(5)]
         zs = [i/sum(zs) for i in zs]
