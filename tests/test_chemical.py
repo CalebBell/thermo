@@ -98,6 +98,8 @@ def test_Chemical_properties():
 
     assert_allclose(benzene.conductivity, 7.6e-06)
     assert_allclose(benzene.RI, 1.5011)
+    
+    
 
 
 def test_Chemical_properties_T_dependent_constants():
@@ -302,6 +304,10 @@ def test_all_chemicals():
         c.Zs
         c.Zl
         c.Zg
+        c.SGs
+        c.SGl
+        c.SGg
+        c.SG
         c.Bvirial
         c.isobaric_expansion_l
         c.isobaric_expansion_g

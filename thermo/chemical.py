@@ -1946,6 +1946,63 @@ class Chemical(object): # pragma: no cover
         return None
 
     @property
+    def SGs(self):
+        r'''Specific gravity of the solid phase of the chemical at the 
+        specified temperature and pressure, dimensionless.
+        The reference condition is water at 4 °C and 1 atm 
+        (rho=999.017 kg/m^3). The SG varries with temperature and pressure
+        but only very slightly.
+        
+        Examples
+        --------
+        >>> Chemical('iron').SGs
+        7.87774317235069
+        '''
+        rhos = self.rhos
+        if rhos is not None:
+            return SG(rhos)
+        return None
+
+    @property
+    def SGl(self):
+        r'''Specific gravity of the liquid phase of the chemical at the 
+        specified temperature and pressure, dimensionless.
+        The reference condition is water at 4 °C and 1 atm 
+        (rho=999.017 kg/m^3). For liquids, SG is defined that the reference
+        chemical's T and P are fixed, but the chemical itself varies with
+        the specified T and P.
+        
+        Examples
+        --------
+        >>> Chemical('water', T=365).SGl
+        0.9650065522428539
+        '''
+        rhol = self.rhol
+        if rhol is not None:
+            return SG(rhol)
+        return None
+    
+    @property
+    def SGg(self):
+        r'''Specific gravity of the gas phase of the chemical, dimensionless.
+        The reference condition is air at 15.6 °C (60 °F) and 1 atm 
+        (rho=1.223 kg/m^3). The definition for gases uses the compressibility
+        factor of the reference gas and the chemical both at the reference
+        conditions, not the conditions of the chemical.
+            
+        Examples
+        --------
+        >>> Chemical('argon').SGg
+        1.3795835970877504
+        '''
+        Vmg = self.VolumeGas(T=288.70555555555552, P=101325)
+        if Vmg:
+            rho = Vm_to_rho(Vmg, self.MW)
+            return SG(rho, rho_ref=1.2231876628642968) # calculated with Mixture
+        return None
+        
+        
+    @property
     def Bvirial(self):
         r'''Second virial coefficient of the gas phase of the chemical at its
         current temperature and pressure, in units of mol/m^3.
@@ -2465,6 +2522,33 @@ class Chemical(object): # pragma: no cover
             return Z(self.T, self.P, Vm)
         return None
 
+    @property
+    def SG(self):
+        r'''Specific gravity of the chemical, dimensionless. 
+        
+        For gas-phase conditions, this is calculated at 15.6 °C (60 °F) and 1 
+        atm for the chemical and the reference fluid, air. 
+        For liquid and solid phase conditions, this is calculated based on a 
+        reference fluid of water at 4°C at 1 atm, but the with the liquid or 
+        solid chemical's density at the currently specified conditions.
+
+        Examples
+        --------
+        >>> Chemical('MTBE').SG
+        0.7428160596603596
+        '''
+        phase = self.phase
+        if phase == 'l':
+            return self.SGl
+        elif phase == 's':
+            return self.SGs
+        elif phase == 'g':
+            return self.SGg
+        rho = self.rho
+        if rho is not None:
+            return SG(rho)
+        return None
+    
     @property
     def isobaric_expansion(self):
         r'''Isobaric (constant-pressure) expansion of the chemical at its

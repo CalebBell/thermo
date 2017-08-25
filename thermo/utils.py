@@ -329,6 +329,7 @@ def SG(rho, rho_ref=999.0170824078306):
     -----
     Another common reference point is water at 4°C (rho_ref=999.9748691393087).
     Specific gravity is often used by consumers instead of density.
+    The reference for solids is normally the same as for liquids - water.
     
     Examples
     --------
