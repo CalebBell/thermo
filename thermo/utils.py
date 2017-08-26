@@ -26,7 +26,7 @@ __all__ = ['isobaric_expansion', 'isothermal_compressibility',
 'Cp_minus_Cv', 'speed_of_sound', 'Joule_Thomson',
 'phase_identification_parameter', 'phase_identification_parameter_phase',
 'isentropic_exponent', 'Vm_to_rho', 'rho_to_Vm', 
-'Z', 'B_To_Z', 'B_from_Z', 'Z_from_virial_density_form', 
+'Z', 'B_to_Z', 'B_from_Z', 'Z_from_virial_density_form', 
 'Z_from_virial_pressure_form', 'zs_to_ws', 'ws_to_zs', 'zs_to_Vfs', 
 'Vfs_to_zs', 'none_and_length_check', 'normalize', 'mixing_simple', 
 'mixing_logarithmic', 'has_matplotlib', 'to_num', 'CAS2int', 
@@ -857,7 +857,7 @@ def Z(T, P, V):
     return V*P/T/R
 
 
-def B_To_Z(B, T, P):
+def B_to_Z(B, T, P):
     r'''Calculates the compressibility factor of a gas, given its
     second virial coefficient.
 
@@ -884,7 +884,7 @@ def B_To_Z(B, T, P):
 
     Examples
     --------
-    >>> B_To_Z(-0.0015, 300, 1E5)
+    >>> B_to_Z(-0.0015, 300, 1E5)
     0.9398638020957176
 
     References

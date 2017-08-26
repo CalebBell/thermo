@@ -114,7 +114,7 @@ def test_Vfs_to_zs():
 
 
 def test_B_To_Z():
-    Z_calc = B_To_Z(-0.0015, 300, 1E5)
+    Z_calc = B_to_Z(-0.0015, 300, 1E5)
     assert_allclose(Z_calc, 0.9398638020957176)
 
 

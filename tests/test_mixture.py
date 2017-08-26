@@ -38,6 +38,12 @@ def test_Mixture():
     Mixture(['ethanol', 'water'], ws=[0.5, 0.5], T=500)
     
     Mixture('water')
+    
+    s = Mixture(['water', 'ethanol'], P=5200, zs=[0.5, 0.5])
+    assert_allclose(s.V_over_F, 0.3061646720256255, rtol=1E-3)
+    
+    s = Mixture(['water', 'ethanol'], P=5200, zs=[0.5, 0.5])
+    assert_allclose(s.quality, 0.34745483870024646, rtol=1E-3)
 
 def test_Mixture_input_forms():
     # Run a test initializing a mixture from mole fractions, mass fractions,

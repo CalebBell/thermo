@@ -436,6 +436,7 @@ class Chemical(object): # pragma: no cover
     alpha
     alphag
     alphal
+    API
     aromatic_rings
     atom_fractions
     Bvirial
@@ -490,6 +491,10 @@ class Chemical(object): # pragma: no cover
     rhos
     rhosm
     rings
+    SG
+    SGg
+    SGl
+    SGs
     sigma
     solubility_parameter
     UNIFAC_Dortmund_groups

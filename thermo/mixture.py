@@ -413,6 +413,12 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
             if self.phase == 'two-phase':
                 self.wsl = zs_to_ws(self.xs, self.MWs)
                 self.wsg = zs_to_ws(self.ys, self.MWs)
+                
+                ng = self.V_over_F
+                nl = (1. - self.V_over_F)
+                self.MWl = mixing_simple(self.xs, self.MWs)
+                self.MWg = mixing_simple(self.ys, self.MWs)
+                self.x = self.quality = ng*self.MWg/(nl*self.MWl + ng*self.MWg)
 
             self.Pbubble_methods = Pbubble_mixture(T=self.T, zs=self.zs, Psats=self.Psats, CASRNs=self.CASs, AvailableMethods=True)
             self.Pbubble_method = self.Pbubble_methods[0]
