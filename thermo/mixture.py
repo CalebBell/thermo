@@ -155,12 +155,19 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         # Handle numpy array inputs; also turn mutable inputs into copies
         if zs is not None:
             zs = list(zs)
+            length_matching = len(zs) == len(IDs)
         if ws is not None:
             ws = list(ws)
+            length_matching = len(ws) == len(IDs)
         if Vfls is not None:
             Vfls = list(Vfls)
+            length_matching = len(Vfls) == len(IDs)
         if Vfgs is not None:
             Vfgs = list(Vfgs)
+            length_matching = len(Vfgs) == len(IDs)
+        if not length_matching:
+            raise Exception('Composition is not the same length as the component identifiers')
+
 
         self.components = tuple(IDs)
         self.Chemicals = [Chemical(component, P=P, T=T) for component in self.components]
@@ -443,10 +450,13 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
             if T < 0:
                 raise Exception('Negative value specified for Mixture temperature - aborting!')
             self.T = T
+        else:
+            T = self.T
         if P:
             if P < 0:
                 raise Exception('Negative value specified for Mixture pressure - aborting!')
-
+        else:
+            P = self.P
         self.set_TP(T=T, P=P)
         self.set_phase()
 
