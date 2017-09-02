@@ -1048,9 +1048,9 @@ def bubble_at_P(P, zs, vapor_pressure_eqns, fugacities=None, gammas=None):
     vapor_pressure_eqns : list[functions]
         Temperature dependent function for each specie, Returns Psat, [Pa]
     fugacities : list[float], optional
-        fugacities of each species, defaults to list of ones[-]
+        fugacities of each species, defaults to list of ones, [-]
     gammas : list[float], optional
-        gammas of each species, defaults to list of ones[-]
+        gammas of each species, defaults to list of ones, [-]
 
     Returns
     -------

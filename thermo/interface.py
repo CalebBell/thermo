@@ -36,6 +36,7 @@ from thermo.utils import mixing_simple, none_and_length_check, Vm_to_rho
 from thermo.utils import N_A, k
 from thermo.utils import TDependentProperty, MixtureProperty
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
+from thermo.dippr import EQ106
 
 folder = os.path.join(os.path.dirname(__file__), 'Interface')
 
@@ -934,9 +935,7 @@ class SurfaceTension(TDependentProperty):
             sigma = REFPROP(T, Tc=Tc, sigma0=sigma0, n0=n0, sigma1=sigma1, n1=n1,
                             sigma2=sigma2, n2=n2)
         elif method == VDI_PPDS:
-            A, B, C, D, E = self.VDI_PPDS_coeffs
-            Tr = T/self.VDI_PPDS_Tc
-            sigma = A*(1. - Tr)**(B + C*Tr + D*Tr**2 + E*Tr**3)
+            sigma = EQ106(T, self.VDI_PPDS_Tc, *self.VDI_PPDS_coeffs)
         elif method == SOMAYAJULU2:
             A, B, C = self.SOMAYAJULU2_coeffs
             sigma = Somayajulu(T, Tc=self.SOMAYAJULU2_Tc, A=A, B=B, C=C)
@@ -1062,7 +1061,7 @@ def Winterfeld_Scriven_Davis(xs, sigmas, rhoms):
     --------
     >>> Winterfeld_Scriven_Davis([0.1606, 0.8394], [0.01547, 0.02877],
     ... [8610., 15530.])
-    0.024967388450439817
+    0.024967388450439824
 
     References
     ----------
@@ -1075,11 +1074,12 @@ def Winterfeld_Scriven_Davis(xs, sigmas, rhoms):
     '''
     if not none_and_length_check([xs, sigmas, rhoms]):
         raise Exception('Function inputs are incorrect format')
-    rhoms = [i/1E3 for i in rhoms]
-    Vms = [(i)**-1 for i in rhoms]
+    rhoms = [i*1E-3 for i in rhoms]
+    Vms = [1./i for i in rhoms]
     rho = 1./mixing_simple(xs, Vms)
     cmps = range(len(xs))
-    return sum([rho*rho*xs[i]/rhoms[i]*xs[j]/rhoms[j]*(sigmas[j]*sigmas[i])**0.5
+    rho2 = rho*rho
+    return sum([rho2*xs[i]/rhoms[i]*xs[j]/rhoms[j]*(sigmas[j]*sigmas[i])**0.5
                 for i in cmps for j in cmps])
 
 

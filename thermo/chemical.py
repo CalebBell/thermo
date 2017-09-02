@@ -91,6 +91,7 @@ PRO_II = (298.15, 101325, 'gas', 0, 0, True)
 HYSYS = (298.15, 101325, 'calc', 'Hf', 0, True)
 UNISIM = HYSYS #
 SUPERPRO = (298.15, 101325, 'calc', 0, 0, True) # No support for entropy found, 0 assumed
+# note soecifying a phase works for chemicals but not mixtures.
 
 reference_states = [IAPWS, ASHRAE, IIR, REFPROP, CHEMSEP, PRO_II, HYSYS,
                     UNISIM, SUPERPRO]
