@@ -23,7 +23,10 @@ SOFTWARE.'''
 from __future__ import division
 
 __all__ = ['has_CoolProp', 'coolprop_dict', 'CP_fluid', 'coolprop_fluids', 
-'CoolProp_T_dependent_property', 'PropsSI', 'PhaseSI', 'CP', 'AbstractState']
+'CoolProp_T_dependent_property', 'CoolProp_T_dependent_property_approximation',
+'PropsSI', 'PhaseSI', 'CP', 'AbstractState']
+import os
+import json
 
 try:
     from CoolProp.CoolProp import PropsSI, PhaseSI
@@ -34,6 +37,10 @@ except ImportError:  # pragma: no cover
     has_CoolProp = False
     PropsSI, PhaseSI, CP, AbstractState = [None, None, None, None]
 #has_CoolProp = False # For testing
+
+
+folder = os.path.join(os.path.dirname(__file__), 'Misc')
+
 
 # All of these can be inputs to the PropsSI function!
 coolprop_dict = ['100-41-4', '10024-97-2', '102687-65-0', '106-42-3',
@@ -89,6 +96,79 @@ if has_CoolProp:
                        has_melting_line=HEOS.has_melting_line(), Tc=HEOS.T_critical(), Pc=HEOS.p_critical(),
                        Tt=HEOS.Ttriple(), omega=HEOS.acentric_factor(), HEOS=HEOS)
 
+from bisect import bisect_left
+f = open(os.path.join(folder, 'CoolProp vapor properties fits.json'), 'r')
+vapor_properties = json.load(f)
+f.close()
+
+
+class MultiCheb1D(object):
+    '''Simple class to store set of coefficients for multiple chebshev 
+    approximations and perform calculations from them.
+    '''
+    def __init__(self, points, coeffs):
+        self.points = points
+        self.coeffs = coeffs
+        self.N = len(points)-1
+        
+    def __call__(self, x):
+        i = bisect_left(self.points, x)
+        if i == 0:
+            raise Exception('Requested value is  under the limits')
+        if i > self.N:
+            raise Exception('Requested value is above the limits')
+        coeffs = self.coeffs[i-1]
+        a, b = self.points[i-1], self.points[i]
+        x = (2.0*x-a-b)/(b-a)
+        return self.chebval(x, coeffs)
+                
+    @staticmethod
+    def chebval(x, c):
+        # copied from numpy's source, slightly optimized
+        # https://github.com/numpy/numpy/blob/v1.13.0/numpy/polynomial/chebyshev.py#L1093-L1177
+        x2 = 2.*x
+        c0 = c[-2]
+        c1 = c[-1]
+        for i in range(3, len(c) + 1):
+            tmp = c0
+            c0 = c[-i] - c1
+            c1 = tmp + c1*x2
+        return c0 + c1*x
+
+
+
+class CP_fluid_approximator(object):
+    '''A class to hold (and calculate) approximations for certain aspects of
+    CoolProp chemical's properties. This could apply equally well to REFPROP.
+    '''
+    __slots__ = ['Tmin', 'Tmax', 'Pmax', 'has_melting_line', 'Tc', 'Pc', 'Tt',
+                 'omega', 'HEOS', 'DMOLAR_g', 'HMOLAR_g', 'SMOLAR_g', 
+                 'SPEED_OF_SOUND_g', 'CONDUCTIVITY_g', 'VISCOSITY_g', 
+                 'CPMOLAR_g', 'CVMOLAR_g', 'DMOLAR_l', 'HMOLAR_l', 'SMOLAR_l',
+                 'SPEED_OF_SOUND_l', 'CONDUCTIVITY_l', 'VISCOSITY_l', 
+                 'CPMOLAR_l', 'CVMOLAR_l']
+    def calculate(self, T, prop, phase):
+        assert phase in ['l', 'g']
+        phase_key = '_g' if phase == 'g' else '_l'
+        name = prop + phase_key
+        try:
+            return getattr(self, name)(T)
+        except AttributeError:
+            raise Exception('Given chemical does not have a fit available for '
+                            'that property and phase')
+#        
+    
+CP_approximators = {}
+
+for CAS in coolprop_dict:
+    obj = CP_fluid_approximator()
+    CP_approximators[CAS] = obj
+    if CAS in vapor_properties:
+        for key, value in vapor_properties[CAS].items():
+            chebcoeffs, limits = value
+            approximator = MultiCheb1D([limits[0][0]] + [i[1] for i in limits], chebcoeffs)
+            setattr(obj, key+'_g', approximator)
+            
 
 def CoolProp_T_dependent_property(T, CASRN, prop, phase):
     r'''Calculates a property of a chemical in either the liquid or gas phase
@@ -97,19 +177,19 @@ def CoolProp_T_dependent_property(T, CASRN, prop, phase):
 
     Parameters
     ----------
-        T : float
-            Temperature of the fluid [K]
-        CASRN : str
-            CAS number of the fluid
-        prop : str
-            CoolProp string shortcut for desired property
-        phase : str
-            Either 'l' or 'g' for liquid or gas properties respectively
+    T : float
+        Temperature of the fluid [K]
+    CASRN : str
+        CAS number of the fluid
+    prop : str
+        CoolProp string shortcut for desired property
+    phase : str
+        Either 'l' or 'g' for liquid or gas properties respectively
 
     Returns
     -------
-        prop : float
-            Desired chemical property, [units]
+    prop : float
+        Desired chemical property, [units]
 
     Notes
     -----
@@ -168,3 +248,7 @@ def CoolProp_T_dependent_property(T, CASRN, prop, phase):
                 return PropsSI(prop, 'T', T, 'P', 101325, CASRN)
     else:
         raise Exception('Error in CoolProp property function')
+
+
+def CoolProp_T_dependent_property_approximation(T, CASRN, prop, phase):
+    pass

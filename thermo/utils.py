@@ -1913,10 +1913,10 @@ class TDependentProperty(object):
                                     Ts2.append(T)
                             except:
                                 pass
-                    plt.plot(Ts2, properties, label=method)
+                    plt.semilogy(Ts2, properties, label=method)
                 else:
                     properties = [self.calculate(T=T, method=method) for T in Ts]
-                    plt.plot(Ts, properties, label=method)
+                    plt.semilogy(Ts, properties, label=method)
             plt.ylabel(self.name + ', ' + self.units)
             plt.title(self.name + ' of ' + self.CASRN)
         elif order > 0:
@@ -1931,10 +1931,10 @@ class TDependentProperty(object):
                                 Ts2.append(T)
                             except:
                                 pass
-                    plt.plot(Ts2, properties, label=method)
+                    plt.semilogy(Ts2, properties, label=method)
                 else:
                     properties = [self.calculate_derivative(T=T, method=method, order=order) for T in Ts]
-                    plt.plot(Ts, properties, label=method)
+                    plt.semilogy(Ts, properties, label=method)
             plt.ylabel(self.name + ', ' + self.units + '/K^%d derivative of order %d' % (order, order))
             plt.title(self.name + ' derivative of order %d' % order + ' of ' + self.CASRN)
         plt.legend(loc='best')
