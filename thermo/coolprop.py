@@ -27,6 +27,9 @@ __all__ = ['has_CoolProp', 'coolprop_dict', 'CP_fluid', 'coolprop_fluids',
 'PropsSI', 'PhaseSI', 'CP', 'AbstractState']
 import os
 import json
+import numpy as np
+from numpy.testing import assert_allclose
+from bisect import bisect_left
 
 try:
     from CoolProp.CoolProp import PropsSI, PhaseSI
@@ -96,10 +99,6 @@ if has_CoolProp:
                        has_melting_line=HEOS.has_melting_line(), Tc=HEOS.T_critical(), Pc=HEOS.p_critical(),
                        Tt=HEOS.Ttriple(), omega=HEOS.acentric_factor(), HEOS=HEOS)
 
-from bisect import bisect_left
-f = open(os.path.join(folder, 'CoolProp vapor properties fits.json'), 'r')
-vapor_properties = json.load(f)
-f.close()
 
 
 class MultiCheb1D(object):
@@ -114,9 +113,14 @@ class MultiCheb1D(object):
     def __call__(self, x):
         i = bisect_left(self.points, x)
         if i == 0:
-            raise Exception('Requested value is  under the limits')
+            if x == self.points[0]:
+                # catch the case of being exactly on the lower limit
+                i = 1 
+            else:
+                raise Exception('Requested value is under the limits')
         if i > self.N:
             raise Exception('Requested value is above the limits')
+        
         coeffs = self.coeffs[i-1]
         a, b = self.points[i-1], self.points[i]
         x = (2.0*x-a-b)/(b-a)
@@ -126,6 +130,7 @@ class MultiCheb1D(object):
     def chebval(x, c):
         # copied from numpy's source, slightly optimized
         # https://github.com/numpy/numpy/blob/v1.13.0/numpy/polynomial/chebyshev.py#L1093-L1177
+        # Will not support length-1 coefficient sets, must be 2 or more
         x2 = 2.*x
         c0 = c[-2]
         c1 = c[-1]
@@ -141,12 +146,12 @@ class CP_fluid_approximator(object):
     '''A class to hold (and calculate) approximations for certain aspects of
     CoolProp chemical's properties. This could apply equally well to REFPROP.
     '''
-    __slots__ = ['Tmin', 'Tmax', 'Pmax', 'has_melting_line', 'Tc', 'Pc', 'Tt',
+    __slots__ = ['CAS', 'Tmin', 'Tmax', 'Pmax', 'has_melting_line', 'Tc', 'Pc', 'Tt',
                  'omega', 'HEOS', 'DMOLAR_g', 'HMOLAR_g', 'SMOLAR_g', 
                  'SPEED_OF_SOUND_g', 'CONDUCTIVITY_g', 'VISCOSITY_g', 
                  'CPMOLAR_g', 'CVMOLAR_g', 'DMOLAR_l', 'HMOLAR_l', 'SMOLAR_l',
                  'SPEED_OF_SOUND_l', 'CONDUCTIVITY_l', 'VISCOSITY_l', 
-                 'CPMOLAR_l', 'CVMOLAR_l']
+                 'CPMOLAR_l', 'CVMOLAR_l', 'CP0MOLAR']
     def calculate(self, T, prop, phase):
         assert phase in ['l', 'g']
         phase_key = '_g' if phase == 'g' else '_l'
@@ -156,18 +161,53 @@ class CP_fluid_approximator(object):
         except AttributeError:
             raise Exception('Given chemical does not have a fit available for '
                             'that property and phase')
+            
+    def validate_prop(self, prop, phase, evaluated_points=30):
+        phase_key = '_g' if phase == 'g' else '_l'
+        name = prop + phase_key
+        if prop in ['CP0MOLAR']:
+            name = prop
+        pts = getattr(self, name).points
+        predictor = getattr(self, name)
+        for i in range(len(pts)-1):
+            Ts = np.linspace(pts[i], pts[i+1], evaluated_points)
+#            print(Ts[0], Ts[-1])
+            prop_approx  = [predictor(T) for T in Ts]
+            prop_calc = [CoolProp_T_dependent_property(T, self.CAS, prop, phase) for T in Ts]
+#            print(prop_approx)
+#            print(prop_calc)
+            # The approximators do give differences at the very low value side
+            # so we need atol=1E-9
+#            print(prop, self.CAS, prop_approx[0], prop_calc[0])
+
+            try:
+                assert_allclose(prop_approx, prop_calc, rtol=1E-7, atol=1E-9)
+            except:
+                '''There are several cases that assert_allclose doesn't deal
+                with well for some reason. We could increase rtol, but instead
+                the relative errors are used here to check everything is as desidred. 
+                
+                Some example errors this won't trip on but assert_allclose does
+                are:
+                    
+                1.00014278827e-08
+                1.62767956613e-06
+                -0.0
+                -1.63895899641e-16
+                -4.93284549625e-15
+                '''
+                prop_calc = np.array(prop_calc)
+                prop_approx = np.array(prop_approx)
+                errs = abs((prop_calc-prop_approx)/prop_calc)
+                try:
+                    assert max(errs) < 2E-6
+                except:
+                    print('%s %s failed with mean relative error %s and maximum relative error %s' %(self.CAS, prop, str(np.mean(errs)), str(max(errs))))
+
+
+
 #        
     
-CP_approximators = {}
-
-for CAS in coolprop_dict:
-    obj = CP_fluid_approximator()
-    CP_approximators[CAS] = obj
-    if CAS in vapor_properties:
-        for key, value in vapor_properties[CAS].items():
-            chebcoeffs, limits = value
-            approximator = MultiCheb1D([limits[0][0]] + [i[1] for i in limits], chebcoeffs)
-            setattr(obj, key+'_g', approximator)
             
 
 def CoolProp_T_dependent_property(T, CASRN, prop, phase):
@@ -248,6 +288,49 @@ def CoolProp_T_dependent_property(T, CASRN, prop, phase):
                 return PropsSI(prop, 'T', T, 'P', 101325, CASRN)
     else:
         raise Exception('Error in CoolProp property function')
+
+f = open(os.path.join(folder, 'CoolProp vapor properties fits.json'), 'r')
+vapor_properties = json.load(f)
+f.close()
+
+f = open(os.path.join(folder, 'CoolProp CP0MOLAR fits.json'), 'r')
+idea_gas_heat_capacity = json.load(f)
+f.close()
+
+CP_approximators = {}
+
+for CAS in coolprop_dict:
+    obj = CP_fluid_approximator()
+    CP_approximators[CAS] = obj
+    obj.CAS = CAS
+    HEOS = AbstractState("HEOS", CAS)
+    
+    obj.Tmin = HEOS.Tmin()
+    obj.Tmax = HEOS.Tmax()
+    obj.Pmax = HEOS.pmax()
+    obj.has_melting_line = HEOS.has_melting_line()
+    obj.Tc = HEOS.T_critical()
+    obj.Pc = HEOS.p_critical(),
+    obj.Tt = HEOS.Ttriple()
+    obj.omega = HEOS.acentric_factor()
+    
+    
+    if CAS in vapor_properties:
+        for key, value in vapor_properties[CAS].items():
+            chebcoeffs, limits = value
+            limits = [limits[0][0]] + [i[1] for i in limits]
+            approximator = MultiCheb1D(limits, chebcoeffs)
+            setattr(obj, key+'_g', approximator)
+            
+    if CAS in idea_gas_heat_capacity:
+        chebcoeffs, Tmin, Tmax = idea_gas_heat_capacity[CAS]['CP0MOLAR']
+        approximator = MultiCheb1D([Tmin, Tmax], chebcoeffs)
+        setattr(obj, 'CP0MOLAR', approximator)
+    
+#        try:
+        obj.validate_prop('CP0MOLAR', 'g')
+#        except:
+#            print(CAS, 'CP0MOLAR', 'FAILED')
 
 
 def CoolProp_T_dependent_property_approximation(T, CASRN, prop, phase):

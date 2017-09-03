@@ -68,3 +68,14 @@ def test_CoolProp_T_dependent_property():
 
     rhow = CoolProp_T_dependent_property(700, '7732-18-5', 'D', 'g')
     assert_allclose(rhow, 0.3139926976198761)
+    
+    
+def test_CP_approximators():
+    from thermo.coolprop import coolprop_fluids, CP_approximators
+    for CAS in coolprop_fluids:
+        obj = CP_approximators[CAS]
+        props = ['DMOLAR', 'HMOLAR', 'SMOLAR', 'SPEED_OF_SOUND', 'CONDUCTIVITY',
+                 'VISCOSITY', 'CPMOLAR', 'CVMOLAR']
+        for prop in props:
+            if hasattr(obj, prop+'_g'):
+                obj.validate_prop(prop, 'g', evaluated_points=15)
