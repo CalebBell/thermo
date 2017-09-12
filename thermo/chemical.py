@@ -61,6 +61,7 @@ from thermo.unifac import DDBST_UNIFAC_assignments, DDBST_MODIFIED_UNIFAC_assign
 
 from fluids.core import *
 from scipy.optimize import newton
+from scipy.constants import physical_constants
 import numpy as np
 
 # RDKIT
@@ -106,7 +107,7 @@ class Chemical(object): # pragma: no cover
     Parameters
     ----------
     ID : str
-        One of the following:
+        One of the following [-]:
             * Name, in IUPAC form or common form or a synonym registered in PubChem
             * InChI name, prefixed by 'InChI=1S/' or 'InChI=1/'
             * InChI key, prefixed by 'InChIKey='
@@ -279,7 +280,7 @@ class Chemical(object): # pragma: no cover
         25-character hash of the compound's InChI.
     IUPAC_name : str
         Preferred IUPAC name for a compound.
-    synonyms : list[str]
+    synonyms : list of strings
         All synonyms for the compound found in PubChem, sorted by popularity.
     Tm : float
         Melting temperature [K]
@@ -323,9 +324,11 @@ class Chemical(object): # pragma: no cover
     Tautoignition : float
         Autoignition point of the chemical, [K]
     LFL : float
-        Lower flammability limit of the gas in an atmosphere at STP, [mole fraction]
+        Lower flammability limit of the gas in an atmosphere at STP, mole 
+        fraction [-]
     UFL : float
-        Upper flammability limit of the gas in an atmosphere at STP, [mole fraction]
+        Upper flammability limit of the gas in an atmosphere at STP, mole 
+        fraction [-]
     TWA : tuple[quantity, unit]
         Time-Weighted Average limit on worker exposure to dangerous chemicals.
     STEL : tuple[quantity, unit]
@@ -337,15 +340,17 @@ class Chemical(object): # pragma: no cover
     Carcinogen : str or dict
         Carcinogen status information.
     dipole : float
-        Dipole moment, [debye]
+        Dipole moment in debye, [3.33564095198e-30 ampere*second^2]
     Stockmayer : float
         Lennard-Jones depth of potential-energy minimum over k, [K]
     molecular_diameter : float
-        Lennard-Jones molecular diameter, [Angstrom]
+        Lennard-Jones molecular diameter, [angstrom]
     GWP : float
-        Global warming potential (default 100-year outlook), [(impact/mass chemical)/(impact/mass CO2)]
+        Global warming potential (default 100-year outlook) (impact/mass 
+        chemical)/(impact/mass CO2), [-]
     ODP : float
-        Ozone Depletion potential, [(impact/mass chemical)/(impact/mass CFC-11)];
+        Ozone Depletion potential (impact/mass chemical)/(impact/mass CFC-11),
+        [-]
     logP : float
         Octanol-water partition coefficient, [-]
     legal_status : str or dict
@@ -1122,7 +1127,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Um(self):
         r'''Internal energy of the chemical at its current temperature and
-        pressure, in units of J/mol.
+        pressure, in units of [J/mol].
 
         This property requires that :obj:`thermo.chemical.set_thermo` ran
         successfully to be accurate.
@@ -1134,7 +1139,7 @@ class Chemical(object): # pragma: no cover
     @property
     def U(self):
         r'''Internal energy of the chemical at its current temperature and
-        pressure, in units of J/kg.
+        pressure, in units of [J/kg].
 
         This property requires that :obj:`thermo.chemical.set_thermo` ran
         successfully to be accurate.
@@ -1146,7 +1151,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Am(self):
         r'''Helmholtz energy of the chemical at its current temperature and
-        pressure, in units of J/mol.
+        pressure, in units of [J/mol].
 
         This property requires that :obj:`thermo.chemical.set_thermo` ran
         successfully to be accurate.
@@ -1158,7 +1163,7 @@ class Chemical(object): # pragma: no cover
     @property
     def A(self):
         r'''Helmholtz energy of the chemical at its current temperature and
-        pressure, in units of J/kg.
+        pressure, in units of [J/kg].
 
         This property requires that :obj:`thermo.chemical.set_thermo` ran
         successfully to be accurate.
@@ -1426,7 +1431,7 @@ class Chemical(object): # pragma: no cover
 
     @property
     def Van_der_Waals_volume(self):
-        r'''Unnormalized Van der Waals volume, in units of m^3/mol.
+        r'''Unnormalized Van der Waals volume, in units of [m^3/mol].
 
         Examples
         --------
@@ -1439,7 +1444,7 @@ class Chemical(object): # pragma: no cover
 
     @property
     def Van_der_Waals_area(self):
-        r'''Unnormalized Van der Waals area, in units of m^2/mol.
+        r'''Unnormalized Van der Waals area, in units of [m^2/mol].
 
         Examples
         --------
@@ -1452,7 +1457,7 @@ class Chemical(object): # pragma: no cover
 
     @property
     def R_specific(self):
-        r'''Specific gas constant, in units of J/kg/K.
+        r'''Specific gas constant, in units of [J/kg/K].
 
         Examples
         --------
@@ -1465,7 +1470,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Psat(self):
         r'''Vapor pressure of the chemical at its current temperature, in units
-        of Pa. For calculation of this property at other temperatures,
+        of [Pa]. For calculation of this property at other temperatures,
         or specifying manually the method used to calculate it, and more - see
         the object oriented interface :obj:`thermo.vapor_pressure.VaporPressure`;
         each Chemical instance creates one to actually perform the calculations.
@@ -1484,7 +1489,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Hvapm(self):
         r'''Enthalpy of vaporization of the chemical at its current temperature,
-        in units of J/mol. For calculation of this property at other
+        in units of [J/mol]. For calculation of this property at other
         temperatures, or specifying manually the method used to calculate it,
         and more - see the object oriented interface
         :obj:`thermo.phase_change.EnthalpyVaporization`; each Chemical instance
@@ -1504,7 +1509,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Hvap(self):
         r'''Enthalpy of vaporization of the chemical at its current temperature,
-        in units of J/kg.
+        in units of [J/kg].
 
         This property uses the object-oriented interface
         :obj:`thermo.phase_change.EnthalpyVaporization`, but converts its
@@ -1523,7 +1528,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Cpsm(self):
         r'''Solid-phase heat capacity of the chemical at its current temperature,
-        in units of J/mol/K. For calculation of this property at other
+        in units of [J/mol/K]. For calculation of this property at other
         temperatures, or specifying manually the method used to calculate it,
         and more - see the object oriented interface
         :obj:`thermo.heat_capacity.HeatCapacitySolid`; each Chemical instance
@@ -1543,7 +1548,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Cplm(self):
         r'''Liquid-phase heat capacity of the chemical at its current temperature,
-        in units of J/mol/K. For calculation of this property at other
+        in units of [J/mol/K]. For calculation of this property at other
         temperatures, or specifying manually the method used to calculate it,
         and more - see the object oriented interface
         :obj:`thermo.heat_capacity.HeatCapacityLiquid`; each Chemical instance
@@ -1571,7 +1576,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Cpgm(self):
         r'''Gas-phase ideal gas heat capacity of the chemical at its current
-        temperature, in units of J/mol/K. For calculation of this property at
+        temperature, in units of [J/mol/K]. For calculation of this property at
         other temperatures, or specifying manually the method used to calculate
         it, and more - see the object oriented interface
         :obj:`thermo.heat_capacity.HeatCapacityGas`; each Chemical instance
@@ -1591,7 +1596,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Cps(self):
         r'''Solid-phase heat capacity of the chemical at its current temperature,
-        in units of J/kg/K. For calculation of this property at other
+        in units of [J/kg/K]. For calculation of this property at other
         temperatures, or specifying manually the method used to calculate it,
         and more - see the object oriented interface
         :obj:`thermo.heat_capacity.HeatCapacitySolid`; each Chemical instance
@@ -1615,7 +1620,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Cpl(self):
         r'''Liquid-phase heat capacity of the chemical at its current temperature,
-        in units of J/kg/K. For calculation of this property at other
+        in units of [J/kg/K]. For calculation of this property at other
         temperatures, or specifying manually the method used to calculate it,
         and more - see the object oriented interface
         :obj:`thermo.heat_capacity.HeatCapacityLiquid`; each Chemical instance
@@ -1642,7 +1647,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Cpg(self):
         r'''Gas-phase heat capacity of the chemical at its current temperature,
-        in units of J/kg/K. For calculation of this property at other
+        in units of [J/kg/K]. For calculation of this property at other
         temperatures, or specifying manually the method used to calculate it,
         and more - see the object oriented interface
         :obj:`thermo.heat_capacity.HeatCapacityGas`; each Chemical instance
@@ -1663,7 +1668,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Cvgm(self):
         r'''Gas-phase ideal-gas contant-volume heat capacity of the chemical at
-        its current temperature, in units of J/mol/K. Subtracts R from
+        its current temperature, in units of [J/mol/K]. Subtracts R from
         the ideal-gas heat capacity; does not include pressure-compensation
         from an equation of state.
 
@@ -1681,7 +1686,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Cvg(self):
         r'''Gas-phase ideal-gas contant-volume heat capacity of the chemical at
-        its current temperature, in units of J/kg/K. Subtracts R from
+        its current temperature, in units of [J/kg/K]. Subtracts R from
         the ideal-gas heat capacity; does not include pressure-compensation
         from an equation of state.
 
@@ -1699,7 +1704,7 @@ class Chemical(object): # pragma: no cover
     @property
     def isentropic_exponent(self):
         r'''Gas-phase ideal-gas isentropic exponent of the chemical at its
-        current temperature, dimensionless. Does not include
+        current temperature, [dimensionless]. Does not include
         pressure-compensation from an equation of state.
 
         Examples
@@ -1715,7 +1720,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Vms(self):
         r'''Solid-phase molar volume of the chemical at its current
-        temperature, in units of mol/m^3. For calculation of this property at
+        temperature, in units of [mol/m^3]. For calculation of this property at
         other temperatures, or specifying manually the method used to calculate
         it, and more - see the object oriented interface
         :obj:`thermo.volume.VolumeSolid`; each Chemical instance
@@ -1731,7 +1736,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Vml(self):
         r'''Liquid-phase molar volume of the chemical at its current
-        temperature and pressure, in units of mol/m^3. For calculation of this
+        temperature and pressure, in units of [mol/m^3]. For calculation of this
         property at other temperatures or pressures, or specifying manually the
         method used to calculate it, and more - see the object oriented interface
         :obj:`thermo.volume.VolumeLiquid`; each Chemical instance
@@ -1747,7 +1752,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Vmg(self):
         r'''Gas-phase molar volume of the chemical at its current
-        temperature and pressure, in units of mol/m^3. For calculation of this
+        temperature and pressure, in units of [mol/m^3]. For calculation of this
         property at other temperatures or pressures, or specifying manually the
         method used to calculate it, and more - see the object oriented interface
         :obj:`thermo.volume.VolumeGas`; each Chemical instance
@@ -1766,7 +1771,7 @@ class Chemical(object): # pragma: no cover
     @property
     def rhos(self):
         r'''Solid-phase mass density of the chemical at its current temperature,
-        in units of kg/m^3. For calculation of this property at
+        in units of [kg/m^3]. For calculation of this property at
         other temperatures, or specifying manually the method used
         to calculate it, and more - see the object oriented interface
         :obj:`thermo.volume.VolumeSolid`; each Chemical instance
@@ -1786,7 +1791,7 @@ class Chemical(object): # pragma: no cover
     @property
     def rhol(self):
         r'''Liquid-phase mass density of the chemical at its current
-        temperature and pressure, in units of kg/m^3. For calculation of this
+        temperature and pressure, in units of [kg/m^3]. For calculation of this
         property at other temperatures and pressures, or specifying manually
         the method used to calculate it, and more - see the object oriented
         interface :obj:`thermo.volume.VolumeLiquid`; each Chemical instance
@@ -1806,7 +1811,7 @@ class Chemical(object): # pragma: no cover
     @property
     def rhog(self):
         r'''Gas-phase mass density of the chemical at its current temperature
-        and pressure, in units of kg/m^3. For calculation of this property at
+        and pressure, in units of [kg/m^3]. For calculation of this property at
         other temperatures or pressures, or specifying manually the method used
         to calculate it, and more - see the object oriented interface
         :obj:`thermo.volume.VolumeGas`; each Chemical instance
@@ -1840,7 +1845,7 @@ class Chemical(object): # pragma: no cover
     @property
     def rhosm(self):
         r'''Molar density of the chemical in the solid phase at the
-        current temperature and pressure, in units of mol/m^3.
+        current temperature and pressure, in units of [mol/m^3].
 
         Utilizes the object oriented interface and
         :obj:`thermo.volume.VolumeSolid` to perform the actual calculation of
@@ -1859,7 +1864,7 @@ class Chemical(object): # pragma: no cover
     @property
     def rholm(self):
         r'''Molar density of the chemical in the liquid phase at the
-        current temperature and pressure, in units of mol/m^3.
+        current temperature and pressure, in units of [mol/m^3].
 
         Utilizes the object oriented interface and
         :obj:`thermo.volume.VolumeLiquid` to perform the actual calculation of
@@ -1878,7 +1883,7 @@ class Chemical(object): # pragma: no cover
     @property
     def rhogm(self):
         r'''Molar density of the chemical in the gas phase at the
-        current temperature and pressure, in units of mol/m^3.
+        current temperature and pressure, in units of [mol/m^3].
 
         Utilizes the object oriented interface and
         :obj:`thermo.volume.VolumeGas` to perform the actual calculation of
@@ -1897,7 +1902,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Zs(self):
         r'''Compressibility factor of the chemical in the solid phase at the
-        current temperature and pressure, dimensionless.
+        current temperature and pressure, [dimensionless].
 
         Utilizes the object oriented interface and
         :obj:`thermo.volume.VolumeSolid` to perform the actual calculation of
@@ -1916,7 +1921,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Zl(self):
         r'''Compressibility factor of the chemical in the liquid phase at the
-        current temperature and pressure, dimensionless.
+        current temperature and pressure, [dimensionless].
 
         Utilizes the object oriented interface and
         :obj:`thermo.volume.VolumeLiquid` to perform the actual calculation of
@@ -1935,7 +1940,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Zg(self):
         r'''Compressibility factor of the chemical in the gas phase at the
-        current temperature and pressure, dimensionless.
+        current temperature and pressure, [dimensionless].
 
         Utilizes the object oriented interface and
         :obj:`thermo.volume.VolumeGas` to perform the actual calculation of
@@ -1954,7 +1959,7 @@ class Chemical(object): # pragma: no cover
     @property
     def SGs(self):
         r'''Specific gravity of the solid phase of the chemical at the 
-        specified temperature and pressure, dimensionless.
+        specified temperature and pressure, [dimensionless].
         The reference condition is water at 4 °C and 1 atm 
         (rho=999.017 kg/m^3). The SG varries with temperature and pressure
         but only very slightly.
@@ -1972,7 +1977,7 @@ class Chemical(object): # pragma: no cover
     @property
     def SGl(self):
         r'''Specific gravity of the liquid phase of the chemical at the 
-        specified temperature and pressure, dimensionless.
+        specified temperature and pressure, [dimensionless].
         The reference condition is water at 4 °C and 1 atm 
         (rho=999.017 kg/m^3). For liquids, SG is defined that the reference
         chemical's T and P are fixed, but the chemical itself varies with
@@ -1990,7 +1995,7 @@ class Chemical(object): # pragma: no cover
     
     @property
     def SGg(self):
-        r'''Specific gravity of the gas phase of the chemical, dimensionless.
+        r'''Specific gravity of the gas phase of the chemical, [dimensionless].
         The reference condition is air at 15.6 °C (60 °F) and 1 atm 
         (rho=1.223 kg/m^3). The definition for gases uses the compressibility
         factor of the reference gas and the chemical both at the reference
@@ -2009,7 +2014,7 @@ class Chemical(object): # pragma: no cover
     
     @property
     def API(self):
-        r'''API gravity of the liquid phase of the chemical, degrees.
+        r'''API gravity of the liquid phase of the chemical, [degrees].
         The reference condition is water at 15.6 °C (60 °F) and 1 atm 
         (rho=999.016 kg/m^3, standardized).
             
@@ -2027,7 +2032,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Bvirial(self):
         r'''Second virial coefficient of the gas phase of the chemical at its
-        current temperature and pressure, in units of mol/m^3.
+        current temperature and pressure, in units of [mol/m^3].
 
         This property uses the object-oriented interface
         :obj:`thermo.volume.VolumeGas`, converting its result with
@@ -2045,7 +2050,7 @@ class Chemical(object): # pragma: no cover
     @property
     def isobaric_expansion_l(self):
         r'''Isobaric (constant-pressure) expansion of the liquid phase of the
-        chemical at its current temperature and pressure, in units of 1/K.
+        chemical at its current temperature and pressure, in units of [1/K].
 
         .. math::
             \beta = \frac{1}{V}\left(\frac{\partial V}{\partial T} \right)_P
@@ -2067,7 +2072,7 @@ class Chemical(object): # pragma: no cover
     @property
     def isobaric_expansion_g(self):
         r'''Isobaric (constant-pressure) expansion of the gas phase of the
-        chemical at its current temperature and pressure, in units of 1/K.
+        chemical at its current temperature and pressure, in units of [1/K].
 
         .. math::
             \beta = \frac{1}{V}\left(\frac{\partial V}{\partial T} \right)_P
@@ -2089,7 +2094,7 @@ class Chemical(object): # pragma: no cover
     @property
     def mul(self):
         r'''Viscosity of the chemical in the liquid phase at its current
-        temperature and pressure, in units of Pa*s.
+        temperature and pressure, in units of [Pa*s].
 
         For calculation of this property at other temperatures and pressures,
         or specifying manually the method used to calculate it, and more - see
@@ -2107,7 +2112,7 @@ class Chemical(object): # pragma: no cover
     @property
     def mug(self):
         r'''Viscosity of the chemical in the gas phase at its current
-        temperature and pressure, in units of Pa*s.
+        temperature and pressure, in units of [Pa*s].
 
         For calculation of this property at other temperatures and pressures,
         or specifying manually the method used to calculate it, and more - see
@@ -2125,7 +2130,7 @@ class Chemical(object): # pragma: no cover
     @property
     def kl(self):
         r'''Thermal conductivity of the chemical in the liquid phase at its
-        current temperature and pressure, in units of W/m/K.
+        current temperature and pressure, in units of [W/m/K].
 
         For calculation of this property at other temperatures and pressures,
         or specifying manually the method used to calculate it, and more - see
@@ -2143,7 +2148,7 @@ class Chemical(object): # pragma: no cover
     @property
     def kg(self):
         r'''Thermal conductivity of the chemical in the gas phase at its
-        current temperature and pressure, in units of W/m/K.
+        current temperature and pressure, in units of [W/m/K].
 
         For calculation of this property at other temperatures and pressures,
         or specifying manually the method used to calculate it, and more - see
@@ -2161,7 +2166,7 @@ class Chemical(object): # pragma: no cover
     @property
     def sigma(self):
         r'''Surface tension of the chemical at its current temperature, in
-        units of N/m.
+        units of [N/m].
 
         For calculation of this property at other temperatures,
         or specifying manually the method used to calculate it, and more - see
@@ -2179,8 +2184,8 @@ class Chemical(object): # pragma: no cover
 
     @property
     def permittivity(self):
-        r'''Relative permittivity of the chemical at its current temperature,
-        dimensionless.
+        r'''Relative permittivity (dielectric constant) of the chemical at its 
+        current temperature, [dimensionless].
 
         For calculation of this property at other temperatures,
         or specifying manually the method used to calculate it, and more - see
@@ -2193,11 +2198,27 @@ class Chemical(object): # pragma: no cover
         2.49775625
         '''
         return self.Permittivity(self.T)
+    
+    @property
+    def absolute_permittivity(self):
+        r'''Absolute permittivity of the chemical at its current temperature,
+        in units of [farad/meter]. Those units are equivalent to 
+        ampere^2*second^4/kg/m^3.
+
+        Examples
+        --------
+        >>> Chemical('water', T=293.15).absolute_permittivity
+        7.096684821859018e-10
+        '''
+        permittivity = self.permittivity
+        if permittivity is not None:
+            return permittivity*physical_constants['electric constant'][0]
+        return None
 
     @property
     def JTl(self):
         r'''Joule Thomson coefficient of the chemical in the liquid phase at
-        its current temperature and pressure, in units of K/Pa.
+        its current temperature and pressure, in units of [K/Pa].
 
         .. math::
             \mu_{JT} = \left(\frac{\partial T}{\partial P}\right)_H = \frac{1}{C_p}
@@ -2222,7 +2243,7 @@ class Chemical(object): # pragma: no cover
     @property
     def JTg(self):
         r'''Joule Thomson coefficient of the chemical in the gas phase at
-        its current temperature and pressure, in units of K/Pa.
+        its current temperature and pressure, in units of [K/Pa].
 
         .. math::
             \mu_{JT} = \left(\frac{\partial T}{\partial P}\right)_H = \frac{1}{C_p}
@@ -2247,7 +2268,7 @@ class Chemical(object): # pragma: no cover
     @property
     def nul(self):
         r'''Kinematic viscosity of the liquid phase of the chemical at its
-        current temperature and pressure, in units of m^2/s.
+        current temperature and pressure, in units of [m^2/s].
 
         .. math::
             \nu = \frac{\mu}{\rho}
@@ -2270,7 +2291,7 @@ class Chemical(object): # pragma: no cover
     @property
     def nug(self):
         r'''Kinematic viscosity of the gas phase of the chemical at its
-        current temperature and pressure, in units of m^2/s.
+        current temperature and pressure, in units of [m^2/s].
 
         .. math::
             \nu = \frac{\mu}{\rho}
@@ -2293,7 +2314,7 @@ class Chemical(object): # pragma: no cover
     @property
     def alphal(self):
         r'''Thermal diffusivity of the liquid phase of the chemical at its
-        current temperature and pressure, in units of m^2/s.
+        current temperature and pressure, in units of [m^2/s].
 
         .. math::
             \alpha = \frac{k}{\rho Cp}
@@ -2317,7 +2338,7 @@ class Chemical(object): # pragma: no cover
     @property
     def alphag(self):
         r'''Thermal diffusivity of the gas phase of the chemical at its
-        current temperature and pressure, in units of m^2/s.
+        current temperature and pressure, in units of [m^2/s].
 
         .. math::
             \alpha = \frac{k}{\rho Cp}
@@ -2341,7 +2362,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Prl(self):
         r'''Prandtl number of the liquid phase of the chemical at its
-        current temperature and pressure, dimensionless.
+        current temperature and pressure, [dimensionless].
 
         .. math::
             Pr = \frac{C_p \mu}{k}
@@ -2365,7 +2386,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Prg(self):
         r'''Prandtl number of the gas phase of the chemical at its
-        current temperature and pressure, dimensionless.
+        current temperature and pressure, [dimensionless].
 
         .. math::
             Pr = \frac{C_p \mu}{k}
@@ -2389,7 +2410,7 @@ class Chemical(object): # pragma: no cover
     @property
     def solubility_parameter(self):
         r'''Solubility parameter of the chemical at its
-        current temperature and pressure, in units of Pa^0.5.
+        current temperature and pressure, in units of [Pa^0.5].
 
         .. math::
             \delta = \sqrt{\frac{\Delta H_{vap} - RT}{V_m}}
@@ -2410,7 +2431,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Parachor(self):
         r'''Parachor of the chemical at its
-        current temperature and pressure, in units of N^0.25*m^2.75/mol.
+        current temperature and pressure, in units of [N^0.25*m^2.75/mol].
 
         .. math::
             P = \frac{\sigma^{0.25} MW}{\rho_L - \rho_V}
@@ -2434,7 +2455,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Cp(self):
         r'''Mass heat capacity of the chemical at its current phase and
-        temperature, in units of J/kg/K.
+        temperature, in units of [J/kg/K].
 
         Utilizes the object oriented interfaces
         :obj:`thermo.heat_capacity.HeatCapacitySolid`,
@@ -2456,7 +2477,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Cpm(self):
         r'''Molar heat capacity of the chemical at its current phase and
-        temperature, in units of J/mol/K.
+        temperature, in units of [J/mol/K].
 
         Utilizes the object oriented interfaces
         :obj:`thermo.heat_capacity.HeatCapacitySolid`,
@@ -2476,7 +2497,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Vm(self):
         r'''Molar volume of the chemical at its current phase and
-        temperature and pressure, in units of m^3/mol.
+        temperature and pressure, in units of [m^3/mol].
 
         Utilizes the object oriented interfaces
         :obj:`thermo.volume.VolumeSolid`,
@@ -2494,7 +2515,7 @@ class Chemical(object): # pragma: no cover
     @property
     def rho(self):
         r'''Mass density of the chemical at its current phase and
-        temperature and pressure, in units of kg/m^3.
+        temperature and pressure, in units of [kg/m^3].
 
         Utilizes the object oriented interfaces
         :obj:`thermo.volume.VolumeSolid`,
@@ -2513,7 +2534,7 @@ class Chemical(object): # pragma: no cover
     @property
     def rhom(self):
         r'''Molar density of the chemical at its current phase and
-        temperature and pressure, in units of mol/m^3.
+        temperature and pressure, in units of [mol/m^3].
 
         Utilizes the object oriented interfaces
         :obj:`thermo.volume.VolumeSolid`,
@@ -2532,7 +2553,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Z(self):
         r'''Compressibility factor of the chemical at its current phase and
-        temperature and pressure, dimensionless.
+        temperature and pressure, [dimensionless].
 
         Examples
         --------
@@ -2546,7 +2567,7 @@ class Chemical(object): # pragma: no cover
 
     @property
     def SG(self):
-        r'''Specific gravity of the chemical, dimensionless. 
+        r'''Specific gravity of the chemical, [dimensionless]. 
         
         For gas-phase conditions, this is calculated at 15.6 °C (60 °F) and 1 
         atm for the chemical and the reference fluid, air. 
@@ -2574,7 +2595,7 @@ class Chemical(object): # pragma: no cover
     @property
     def isobaric_expansion(self):
         r'''Isobaric (constant-pressure) expansion of the chemical at its
-        current phase and temperature, in units of 1/K.
+        current phase and temperature, in units of [1/K].
 
         .. math::
             \beta = \frac{1}{V}\left(\frac{\partial V}{\partial T} \right)_P
@@ -2595,7 +2616,7 @@ class Chemical(object): # pragma: no cover
     @property
     def JT(self):
         r'''Joule Thomson coefficient of the chemical at its
-        current phase and temperature, in units of K/Pa.
+        current phase and temperature, in units of [K/Pa].
 
         .. math::
             \mu_{JT} = \left(\frac{\partial T}{\partial P}\right)_H = \frac{1}{C_p}
@@ -2612,7 +2633,7 @@ class Chemical(object): # pragma: no cover
     @property
     def mu(self):
         r'''Viscosity of the chemical at its current phase, temperature, and
-        pressure in units of Pa*s.
+        pressure in units of [Pa*s].
 
         Utilizes the object oriented interfaces
         :obj:`thermo.viscosity.ViscosityLiquid` and
@@ -2631,7 +2652,7 @@ class Chemical(object): # pragma: no cover
     @property
     def k(self):
         r'''Thermal conductivity of the chemical at its current phase,
-        temperature, and pressure in units of W/m/K.
+        temperature, and pressure in units of [W/m/K].
 
         Utilizes the object oriented interfaces
         :obj:`thermo.thermal_conductivity.ThermalConductivityLiquid` and
@@ -2650,7 +2671,7 @@ class Chemical(object): # pragma: no cover
     @property
     def nu(self):
         r'''Kinematic viscosity of the the chemical at its current temperature,
-        pressure, and phase in units of m^2/s.
+        pressure, and phase in units of [m^2/s].
 
         .. math::
             \nu = \frac{\mu}{\rho}
@@ -2665,7 +2686,7 @@ class Chemical(object): # pragma: no cover
     @property
     def alpha(self):
         r'''Thermal diffusivity of the chemical at its current temperature,
-        pressure, and phase in units of m^2/s.
+        pressure, and phase in units of [m^2/s].
 
         .. math::
             \alpha = \frac{k}{\rho Cp}
@@ -2680,7 +2701,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Pr(self):
         r'''Prandtl number of the chemical at its current temperature,
-        pressure, and phase; dimensionless.
+        pressure, and phase; [dimensionless].
 
         .. math::
             Pr = \frac{C_p \mu}{k}
@@ -2694,10 +2715,10 @@ class Chemical(object): # pragma: no cover
 
     @property
     def Poynting(self):
-        r'''Poynting correction factor for use in phase equilibria
-        methods based on activity coefficients or other reference states.
-        Performs the shortcut calculation assuming molar volume is independent
-        of pressure.
+        r'''Poynting correction factor [dimensionless] for use in phase 
+        equilibria methods based on activity coefficients or other reference 
+        states. Performs the shortcut calculation assuming molar volume is 
+        independent of pressure.
 
         .. math::
             \text{Poy} =  \exp\left[\frac{V_l (P-P^{sat})}{RT}\right]

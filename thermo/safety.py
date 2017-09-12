@@ -28,12 +28,14 @@ __all__ = ['ppmv_to_mgm3', 'mgm3_to_ppmv', 'NFPA_2008', 'IEC_2010',
 'Carcinogen', 'Tflash_methods', 'Tflash', 'Tautoignition_methods', 
 'Tautoignition', 'LFL_methods', 'LFL', 'UFL_methods', 'UFL', 'fire_mixing', 
 'inerts', 'LFL_mixture', 'UFL_mixture', 'Suzuki_LFL', 'Suzuki_UFL', 
-'Crowl_Louvar_LFL', 'Crowl_Louvar_UFL', 'DIPPR_SERAT']
+'Crowl_Louvar_LFL', 'Crowl_Louvar_UFL', 'DIPPR_SERAT', 
+'NFPA_combustible_classification']
 
 import os
 from io import open
 import numpy as np
 import pandas as pd
+from scipy.constants import F2K
 from thermo.utils import R
 from thermo.utils import to_num, none_and_length_check, normalize
 from thermo.identifiers import CAS_from_any, MW
@@ -982,13 +984,13 @@ def Suzuki_LFL(Hc=None):
 
     Parameters
     ----------
-        Hc : float
-            Heat of combustion of gas [J/mol]
+    Hc : float
+        Heat of combustion of gas [J/mol]
 
     Returns
     -------
-        LFL : float
-            Lower flammability limit, mole fraction
+    LFL : float
+        Lower flammability limit, mole fraction [-]
 
     Notes
     -----
@@ -1033,13 +1035,13 @@ def Suzuki_UFL(Hc=None):
 
     Parameters
     ----------
-        Hc : float
-            Heat of combustion of gas [J/mol]
+    Hc : float
+        Heat of combustion of gas [J/mol]
 
     Returns
     -------
-        UFL : float
-            Upper flammability limit, mole fraction
+    UFL : float
+        Upper flammability limit, mole fraction
 
     Notes
     -----
@@ -1087,13 +1089,13 @@ def Crowl_Louvar_LFL(atoms):
 
     Parameters
     ----------
-        atoms : dict
-            Dictionary of atoms and atom counts
+    atoms : dict
+        Dictionary of atoms and atom counts
 
     Returns
     -------
-        LFL : float
-            Lower flammability limit, mole fraction
+    LFL : float
+        Lower flammability limit, mole fraction
 
     Notes
     -----
@@ -1140,13 +1142,13 @@ def Crowl_Louvar_UFL(atoms):
 
     Parameters
     ----------
-        atoms : dict
-            Dictionary of atoms and atom counts
+    atoms : dict
+        Dictionary of atoms and atom counts
 
     Returns
     -------
-        UFL : float
-            Upper flammability limit, mole fraction
+    UFL : float
+        Upper flammability limit, mole fraction
 
     Notes
     -----
@@ -1180,14 +1182,22 @@ def Crowl_Louvar_UFL(atoms):
     return 3.5/(4.76*nC + 1.19*nH - 2.38*nO + 1.)
 
 
-#CAS = ['71-43-2', '8006-61-9'] # methanol, gasoline
-#for i in CAS:
-#    print Tflash(i)
-#    print Tautoignition(i)
-#    print UFL(i)
-#    print LFL(i)
-#
-#print Tautoignition('8006-61-9', AvailableMethods=True)
+def NFPA_combustible_classification(Tflash, Tb=None, Psat_100F=None):
+    if Tflash < F2K(100):
+        if Tflash < F2K(73) and Tb < F2K(100):
+            # Also unstable flammable liquids
+            return '1A'
+        elif Tflash < F2K(73) and Tb >= F2K(100):
+            return '1B'
+        elif F2K(73) <= Tflash < F2K(100):
+            # Class IC liquids shall include those having flash points at or above 73°F (22.8°C) and below 100°F (37.8°C).
+            return '1C'
+    if F2K(100) <= Tflash < F2K(140):
+        return '2'
+    if F2K(140) <= Tflash < F2K(200):
+        return '3A'
+    if F2K(200) <= Tflash:
+        return '3B'
 
 #
 #def flammable(ys=None, LFLs=None, UFLs=None, CASRNs=None):

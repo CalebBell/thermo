@@ -171,7 +171,8 @@ def test_Chemical_properties_T_dependent():
     assert_allclose(w.sigma, 0.07176932405246211)
     
     assert_allclose(w.permittivity, 77.70030000000001)
-    
+    assert_allclose(w.absolute_permittivity, 6.879730496854497e-10)
+
     assert_allclose(w.JTl, -2.2029508371866032e-07, rtol=1E-3)
     assert_allclose(w.JTg, 0.00016057626157512468, rtol=1E-3)
     
@@ -317,6 +318,7 @@ def test_all_chemicals():
         c.kg
         c.sigma
         c.permittivity
+        c.absolute_permittivity
         c.JTl
         c.JTg
         c.nul

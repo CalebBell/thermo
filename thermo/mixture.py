@@ -105,6 +105,221 @@ class Mixture(object):
         The (T, P) at which the volume fractions are specified to be at, [K] 
         and [Pa]
     
+    
+    Attributes
+    ----------
+    Tms : list of float
+        Melting temperatures of all chemicals in the mixture, [K]
+    Tbs : list of float
+        Boiling temperatures of all chemicals in the mixture, [K]
+    Tcs : list of float
+        Critical temperatures of all chemicals in the mixture, [K]
+    Pcs : list of float
+        Critical pressures of all chemicals in the mixture, [Pa]
+    Vcs : list of float
+        Critical volumes of all chemicals in the mixture, [m^3/mol]
+    Zcs : list of float
+        Critical compressibilities of all chemicals in the mixture, [-]
+    rhocs : list of float
+        Critical densities of all chemicals in the mixture, [kg/m^3]
+    rhocms : list of float
+        Critical molar densities of all chemicals in the mixture, [mol/m^3]
+    omegas : list of float
+        Acentric factors of all chemicals in the mixture, [-]
+    StielPolars : list of float
+        Stiel Polar factors of all chemicals in the mixture, 
+        see :obj:`thermo.acentric.StielPolar` for the definition, [-]
+    Tts : list of float
+        Triple temperatures of all chemicals in the mixture, [K]
+    Pts : list of float
+        Triple pressures of all chemicals in the mixture, [Pa]
+    Hfuss : list of float
+        Enthalpy of fusions of all chemicals in the mixture, [J/kg]
+    Hfusms : list of float
+        Molar enthalpy of fusions of all chemicals in the mixture, [J/mol]
+    Hsubs : list of float
+        Enthalpy of sublimations of all chemicals in the mixture, [J/kg]
+    Hsubms : list of float
+        Molar enthalpy of sublimations of all chemicals in the mixture, [J/mol]
+    Hfs : list of float
+        Enthalpy of formations of all chemicals in the mixture, [J/mol]
+    Hcs : list of float
+        Molar enthalpy of combustions of all chemicals in the mixture, [J/mol]
+    Tflashs : list of float
+        Flash points of all chemicals in the mixture, [K]
+    Tautoignitions : list of float
+        Autoignition points of all chemicals in the mixture, [K]
+    LFLs : list of float
+        Lower flammability limits of the gases in an atmosphere at STP, mole 
+        fractions, [-]
+    UFLs : list of float
+        Upper flammability limit of the gases in an atmosphere at STP, mole 
+        fractions, [-]
+    TWAs : list of list of tuple(quantity, unit)
+        Time-Weighted Average limits on worker exposure to dangerous chemicals.
+    STELs : list of tuple(quantity, unit)
+        Short-term Exposure limits on worker exposure to dangerous chemicals.
+    Ceilings : list of tuple(quantity, unit)
+        Ceiling limits on worker exposure to dangerous chemicals.
+    Skins : list of bool
+        Whether or not each of the chemicals can be absorbed through the skin.
+    Carcinogens : list of str or dict
+        Carcinogen status information for each chemical in the mixture.
+    dipoles : list of float
+        Dipole moments of all chemicals in the mixture in debye, 
+        [3.33564095198e-30 ampere*second^2]
+    Stockmayers : list of float
+        Lennard-Jones depth of potential-energy minimum over k for all 
+        chemicals in the mixture, [K]
+    molecular_diameters : list of float
+        Lennard-Jones molecular diameters of all chemicals in the mixture,
+        [angstrom]
+    GWPs : list of float
+        Global warming potentials (default 100-year outlook) (impact/mass 
+        chemical)/(impact/mass CO2) of all chemicals in the mixture, [-]
+    ODPs : list of float
+        Ozone Depletion potentials (impact/mass chemical)/(impact/mass CFC-11),
+        of all chemicals in the mixture, [-]
+    logPs : list of float
+        Octanol-water partition coefficients of all chemicals in the mixture,
+        [-]
+    Psat_298s : list of float
+        Vapor pressure of the chemicals in the mixture at 298.15 K, [Pa]
+    phase_STPs : list of str
+        Phase of the chemicals in the mixture at 298.15 K and 101325 Pa; one of
+        's', 'l', 'g', or 'l/g'.
+    Vml_Tbs : list of float
+        Molar volumes of the chemicals in the mixture as liquids at their 
+        normal boiling points, [m^3/mol]
+    Vml_Tms : list of float
+        Molar volumes of the chemicals in the mixture as liquids at their 
+        melting points, [m^3/mol]
+    Vml_STPs : list of float
+        Molar volume of the chemicals in the mixture as liquids at 298.15 K and
+        101325 Pa, [m^3/mol]
+    Vmg_STPs : list of float
+        Molar volume of the chemicals in the mixture as gases at 298.15 K and 
+        101325 Pa, [m^3/mol]
+    Hvap_Tbms : list of float
+        Molar enthalpies of vaporization of the chemicals in the mixture at 
+        their normal boiling points, [J/mol]
+    Hvap_Tbs : list of float
+        Mass enthalpies of vaporization of the chemicals in the mixture at
+        their normal boiling points, [J/kg]
+    alpha
+    alphag
+    alphags
+    alphal
+    alphals
+    atom_fractions
+    atom_fractionss
+    atomss
+    Bvirial
+    charges
+    Cp
+    Cpg
+    Cpgm
+    Cpgms
+    Cpgs
+    Cpl
+    Cplm
+    Cplms
+    Cpls
+    Cpm
+    Cps
+    Cpsm
+    Cpsms
+    Cpss
+    Cvg
+    Cvgm
+    Cvgms
+    Cvgs
+    economic_statuses
+    eos
+    formulas
+    Hvapms
+    Hvaps
+    InChI_Keys
+    InChIs
+    isentropic_exponent
+    isentropic_exponents
+    isobaric_expansion
+    isobaric_expansion_gs
+    isobaric_expansion_ls
+    IUPAC_names
+    JT
+    JTg
+    JTgs
+    JTl
+    JTls
+    k
+    kg
+    kgs
+    kl
+    kls
+    legal_statuses
+    mass_fractions
+    mass_fractionss
+    mu
+    mug
+    mugs
+    mul
+    muls
+    nu
+    nug
+    nugs
+    nul
+    nuls
+    permittivites
+    Pr
+    Prg
+    Prgs
+    Prl
+    Prls
+    Psats
+    PSRK_groups
+    PubChems
+    rho
+    rhog
+    rhogm
+    rhogms
+    rhogm_STP
+    rhogs
+    rhog_STP
+    rhol
+    rholm
+    rholms
+    rholm_STP
+    rhols
+    rhol_STP
+    rhom
+    rhosms
+    rhoss
+    ringss
+    sigma
+    sigmas
+    smiless
+    solubility_parameters
+    synonymss
+    UNIFAC_Dortmund_groups
+    UNIFAC_groups
+    Vm
+    Vmg
+    Vmgs
+    Vmg_STP
+    Vml
+    Vmls
+    Vml_STP
+    Vmss
+    Z
+    Zg
+    Zgs
+    Zg_STP
+    Zl
+    Zls
+    Zl_STP
+    Zss
+
     Examples
     --------
     Creating Mixture objects:
@@ -156,15 +371,17 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         if zs is not None:
             zs = list(zs)
             length_matching = len(zs) == len(IDs)
-        if ws is not None:
+        elif ws is not None:
             ws = list(ws)
             length_matching = len(ws) == len(IDs)
-        if Vfls is not None:
+        elif Vfls is not None:
             Vfls = list(Vfls)
             length_matching = len(Vfls) == len(IDs)
-        if Vfgs is not None:
+        elif Vfgs is not None:
             Vfgs = list(Vfgs)
             length_matching = len(Vfgs) == len(IDs)
+        else:
+            raise Exception("One of 'zs', 'ws', 'Vfls', or 'Vfgs' is required to define the mixture")
         if not length_matching:
             raise Exception('Composition is not the same length as the component identifiers')
 
@@ -282,6 +499,13 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         # Constant properties obtained from TP
         self.Vml_STPs = [i.Vml_STP for i in self.Chemicals]
         self.Vmg_STPs = [i.Vmg_STP for i in self.Chemicals]
+
+        self.Psat_298s = [i.Psat_298 for i in self.Chemicals]
+        self.phase_STPs = [i.phase_STP for i in self.Chemicals]
+        self.Vml_Tbs = [i.Vml_Tb for i in self.Chemicals]
+        self.Vml_Tms = [i.Vml_Tm for i in self.Chemicals]
+        self.Hvap_Tbms = [i.Hvap_Tbm for i in self.Chemicals]
+        self.Hvap_Tbs = [i.Hvap_Tb for i in self.Chemicals]
 
     ### More stuff here
 
@@ -632,6 +856,18 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         return [i.charge for i in self.Chemicals]
 
     @property
+    def similarity_variables(self):
+        r'''Similarity variables for all chemicals in the mixture, see 
+        :obj:`thermo.elements.similarity_variable` for the definition, [mol/g]
+
+        Examples
+        --------
+        >>> Mixture(['benzene', 'toluene'], ws=[0.5, 0.5]).similarity_variables
+        [0.15362587797189262, 0.16279853724428964]
+        '''
+        return [i.similarity_variable for i in self.Chemicals]
+
+    @property
     def atomss(self):
         r'''List of dictionaries of atom counts for all chemicals in the mixture.
 
@@ -791,7 +1027,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
 
     @property
     def R_specific(self):
-        r'''Specific gas constant of the mixture, in units of J/kg/K.
+        r'''Specific gas constant of the mixture, in units of [J/kg/K].
 
         Examples
         --------
@@ -804,7 +1040,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Psats(self):
         r'''Pure component vapor pressures of the chemicals in the mixture at
-        its current temperature, in units of Pa.
+        its current temperature, in units of [Pa].
 
         Examples
         --------
@@ -816,7 +1052,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Hvapms(self):
         r'''Pure component enthalpies of vaporization of the chemicals in the
-        mixture at its current temperature, in units of J/mol.
+        mixture at its current temperature, in units of [J/mol].
 
         Examples
         --------
@@ -828,7 +1064,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Hvaps(self):
         r'''Enthalpy of vaporization of the chemicals in the mixture at its
-        current temperature, in units of J/kg.
+        current temperature, in units of [J/kg].
 
         Examples
         --------
@@ -840,7 +1076,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Cpsms(self):
         r'''Solid-phase pure component heat capacity of the chemicals in the
-        mixture at its current temperature, in units of J/mol/K.
+        mixture at its current temperature, in units of [J/mol/K].
 
         Examples
         --------
@@ -852,7 +1088,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Cplms(self):
         r'''Liquid-phase pure component heat capacity of the chemicals in the
-        mixture at its current temperature, in units of J/mol/K.
+        mixture at its current temperature, in units of [J/mol/K].
 
         Examples
         --------
@@ -864,7 +1100,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Cpgms(self):
         r'''Gas-phase ideal gas heat capacity of the chemicals at its current
-        temperature, in units of J/mol/K.
+        temperature, in units of [J/mol/K].
 
         Examples
         --------
@@ -876,7 +1112,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Cpss(self):
         r'''Solid-phase pure component heat capacity of the chemicals in the
-        mixture at its current temperature, in units of J/kg/K.
+        mixture at its current temperature, in units of [J/kg/K].
 
         Examples
         --------
@@ -888,7 +1124,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Cpls(self):
         r'''Liquid-phase pure component heat capacity of the chemicals in the
-        mixture at its  current temperature, in units of J/kg/K.
+        mixture at its  current temperature, in units of [J/kg/K].
 
         Examples
         --------
@@ -900,7 +1136,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Cpgs(self):
         r'''Gas-phase pure component heat capacity of the chemicals in the
-        mixture at its current temperature, in units of J/kg/K.
+        mixture at its current temperature, in units of [J/kg/K].
 
         Examples
         --------
@@ -913,7 +1149,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     def Cvgms(self):
         r'''Gas-phase pure component ideal-gas contant-volume heat capacities
         of the chemicals in the mixture at its current temperature, in units
-        of J/mol/K.  Subtracts R from the ideal-gas heat capacities; does not
+        of [J/mol/K].  Subtracts R from the ideal-gas heat capacities; does not
         include pressure-compensation from an equation of state.
 
         Examples
@@ -927,7 +1163,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     def Cvgs(self):
         r'''Gas-phase pure component ideal-gas contant-volume heat capacities
         of the chemicals in the mixture at its current temperature, in units of
-        J/kg/K. Subtracts R from the ideal-gas heat capacity; does not include
+        [J/kg/K]. Subtracts R from the ideal-gas heat capacity; does not include
         pressure-compensation from an equation of state.
 
         Examples
@@ -940,7 +1176,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def isentropic_exponents(self):
         r'''Gas-phase pure component ideal-gas isentropic exponent of the
-        chemicals in the  mixture at its current temperature, dimensionless.
+        chemicals in the  mixture at its current temperature, [dimensionless].
          Does not include pressure-compensation from an equation of state.
 
         Examples
@@ -953,7 +1189,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Vmss(self):
         r'''Pure component solid-phase molar volumes of the chemicals in the
-        mixture at its current temperature, in units of mol/m^3.
+        mixture at its current temperature, in units of [mol/m^3].
 
         Examples
         --------
@@ -965,7 +1201,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Vmls(self):
         r'''Pure component liquid-phase molar volumes of the chemicals in the
-        mixture at its current temperature and pressure, in units of mol/m^3.
+        mixture at its current temperature and pressure, in units of [mol/m^3].
 
         Examples
         --------
@@ -977,7 +1213,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Vmgs(self):
         r'''Pure component gas-phase molar volumes of the chemicals in the
-        mixture at its current temperature and pressure, in units of mol/m^3.
+        mixture at its current temperature and pressure, in units of [mol/m^3].
 
         Examples
         --------
@@ -989,7 +1225,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def rhoss(self):
         r'''Pure component solid-phase mass density of the chemicals in the
-        mixture at its  current temperature, in units of kg/m^3.
+        mixture at its  current temperature, in units of [kg/m^3].
 
         Examples
         --------
@@ -1001,7 +1237,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def rhols(self):
         r'''Pure-component liquid-phase mass density of the chemicals in the
-        mixture at its current temperature and pressure, in units of kg/m^3.
+        mixture at its current temperature and pressure, in units of [kg/m^3].
 
         Examples
         --------
@@ -1013,7 +1249,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def rhogs(self):
         r'''Pure-component gas-phase mass densities of the chemicals in the
-        mixture at its current temperature and pressure, in units of kg/m^3.
+        mixture at its current temperature and pressure, in units of [kg/m^3].
 
         Examples
         --------
@@ -1025,7 +1261,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def rhosms(self):
         r'''Pure component molar densities of the chemicals in the solid phase
-        at the current temperature and pressure, in units of mol/m^3.
+        at the current temperature and pressure, in units of [mol/m^3].
 
         Examples
         --------
@@ -1038,7 +1274,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     def rholms(self):
         r'''Pure component molar densities of the chemicals in the mixture in
         the liquid phase at the current temperature and pressure, in units of
-        mol/m^3.
+        [mol/m^3].
 
         Examples
         --------
@@ -1050,7 +1286,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def rhogms(self):
         r'''Pure component molar densities of the chemicals in the gas phase at
-        the current temperature and pressure, in units of mol/m^3.
+        the current temperature and pressure, in units of [mol/m^3].
 
         Examples
         --------
@@ -1064,7 +1300,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     def Zss(self):
         r'''Pure component compressibility factors of the chemicals in the
         mixture in the solid phase at the current temperature and pressure,
-        dimensionless.
+        [dimensionless].
 
         Examples
         --------
@@ -1076,7 +1312,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Zls(self):
         r'''Pure component compressibility factors of the chemicals in the
-        liquid phase at the current temperature and pressure, dimensionless.
+        liquid phase at the current temperature and pressure, [dimensionless].
 
         Examples
         --------
@@ -1089,7 +1325,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     def Zgs(self):
         r'''Pure component compressibility factors of the chemicals in the
         mixture in the gas phase at the current temperature and pressure,
-        dimensionless.
+        [dimensionless].
 
         Examples
         --------
@@ -1101,7 +1337,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def SGs(self):
         r'''Specific gravity of a hypothetical solid phase of the mixture at the 
-        specified temperature and pressure, dimensionless.
+        specified temperature and pressure, [dimensionless].
         The reference condition is water at 4 °C and 1 atm 
         (rho=999.017 kg/m^3). The SG varries with temperature and pressure
         but only very slightly.
@@ -1114,7 +1350,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def SGl(self):
         r'''Specific gravity of a hypothetical liquid phase of the mixture at  
-        the specified temperature and pressure, dimensionless.
+        the specified temperature and pressure, [dimensionless].
         The reference condition is water at 4 °C and 1 atm 
         (rho=999.017 kg/m^3). For liquids, SG is defined that the reference
         chemical's T and P are fixed, but the chemical itself varies with
@@ -1134,7 +1370,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     def isobaric_expansion_ls(self):
         r'''Pure component isobaric (constant-pressure) expansions of the
         chemicals in the mixture in the liquid phase at its current temperature
-        and pressure, in units of 1/K.
+        and pressure, in units of [1/K].
 
         .. math::
             \beta = \frac{1}{V}\left(\frac{\partial V}{\partial T} \right)_P
@@ -1150,7 +1386,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     def isobaric_expansion_gs(self):
         r'''Pure component isobaric (constant-pressure) expansions of the
         chemicals in the mixture in the gas phase at its current temperature
-        and pressure, in units of 1/K.
+        and pressure, in units of [1/K].
 
         .. math::
             \beta = \frac{1}{V}\left(\frac{\partial V}{\partial T} \right)_P
@@ -1165,7 +1401,8 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def muls(self):
         r'''Pure component viscosities of the chemicals in the mixture in the
-        liquid phase at its current temperature and pressure, in units of Pa*s.
+        liquid phase at its current temperature and pressure, in units of 
+        [Pa*s].
 
         Examples
         --------
@@ -1177,7 +1414,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def mugs(self):
         r'''Pure component viscosities of the chemicals in the mixture in the
-        gas phase at its current temperature and pressure, in units of Pa*s.
+        gas phase at its current temperature and pressure, in units of [Pa*s].
 
         Examples
         --------
@@ -1190,7 +1427,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     def kls(self):
         r'''Pure component thermal conductivities of the chemicals in the
         mixture in the liquid phase at its current temperature and pressure, in
-        units of W/m/K.
+        units of [W/m/K].
 
         Examples
         --------
@@ -1204,7 +1441,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     def kgs(self):
         r'''Pure component thermal conductivies of the chemicals in the mixture
         in the gas phase at its current temperature and pressure, in units of
-        W/m/K.
+        [W/m/K].
 
         Examples
         --------
@@ -1216,7 +1453,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def sigmas(self):
         r'''Pure component surface tensions of the chemicals in the mixture at
-        its current temperature, in units of N/m.
+        its current temperature, in units of [N/m].
 
         Examples
         --------
@@ -1228,7 +1465,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def permittivites(self):
         r'''Pure component relative permittivities of the chemicals in the
-        mixture at its current temperature, dimensionless.
+        mixture at its current temperature, [dimensionless].
 
         Examples
         --------
@@ -1241,7 +1478,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     def JTls(self):
         r'''Pure component Joule Thomson coefficients of the chemicals in the
         mixture in the liquid phase at its current temperature and pressure, in
-        units of K/Pa.
+        units of [K/Pa].
 
         .. math::
             \mu_{JT} = \left(\frac{\partial T}{\partial P}\right)_H = \frac{1}{C_p}
@@ -1259,7 +1496,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     def JTgs(self):
         r'''Pure component Joule Thomson coefficients of the chemicals in the
         mixture in the gas phase at its current temperature and pressure, in
-        units of K/Pa.
+        units of [K/Pa].
 
         .. math::
             \mu_{JT} = \left(\frac{\partial T}{\partial P}\right)_H = \frac{1}{C_p}
@@ -1277,7 +1514,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     def nuls(self):
         r'''Pure component kinematic viscosities of the liquid phase of the
         chemicals in the mixture at its current temperature and pressure, in
-        units of m^2/s.
+        units of [m^2/s].
 
         .. math::
             \nu = \frac{\mu}{\rho}
@@ -1293,7 +1530,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     def nugs(self):
         r'''Pure component kinematic viscosities of the gas phase of the
         chemicals in the mixture at its current temperature and pressure, in
-        units of m^2/s.
+        units of [m^2/s].
 
         .. math::
             \nu = \frac{\mu}{\rho}
@@ -1309,7 +1546,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     def alphals(self):
         r'''Pure component thermal diffusivities of the chemicals in the
         mixture in the liquid phase at the current temperature and pressure, in
-        units of m^2/s.
+        units of [m^2/s].
 
         .. math::
             \alpha = \frac{k}{\rho Cp}
@@ -1325,7 +1562,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     def alphags(self):
         r'''Pure component thermal diffusivities of the chemicals in the
         mixture in the gas phase at the current temperature and pressure, in
-        units of m^2/s.
+        units of [m^2/s].
 
         .. math::
             \alpha = \frac{k}{\rho Cp}
@@ -1340,7 +1577,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Prls(self):
         r'''Pure component Prandtl numbers of the liquid phase of the chemicals
-        in the mixture at its current temperature and pressure, dimensionless.
+        in the mixture at its current temperature and pressure, [dimensionless].
 
         .. math::
             Pr = \frac{C_p \mu}{k}
@@ -1355,7 +1592,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Prgs(self):
         r'''Pure component Prandtl numbers of the gas phase of the chemicals
-        in the mixture at its current temperature and pressure, dimensionless.
+        in the mixture at its current temperature and pressure, [dimensionless].
 
         .. math::
             Pr = \frac{C_p \mu}{k}
@@ -1370,7 +1607,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def solubility_parameters(self):
         r'''Pure component solubility parameters of the chemicals in the
-        mixture at its current temperature and pressure, in units of Pa^0.5.
+        mixture at its current temperature and pressure, in units of [Pa^0.5].
 
         .. math::
             \delta = \sqrt{\frac{\Delta H_{vap} - RT}{V_m}}
@@ -1386,7 +1623,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def rhol(self):
         r'''Liquid-phase mass density of the mixture at its current
-        temperature, pressure, and composition in units of kg/m^3. For
+        temperature, pressure, and composition in units of [kg/m^3]. For
         calculation of this property at other temperatures, pressures,
         compositions or specifying manually the method used to calculate it,
         and more - see the object oriented interface
@@ -1407,7 +1644,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def rhog(self):
         r'''Gas-phase mass density of the mixture at its current temperature,
-        pressure, and composition in units of kg/m^3. For calculation of this
+        pressure, and composition in units of [kg/m^3]. For calculation of this
         property at other temperatures, pressures, or compositions or
         specifying manually the method used to calculate it, and more - see the
         object oriented interface :obj:`thermo.volume.VolumeGasMixture`; each
@@ -1427,7 +1664,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def rholm(self):
         r'''Molar density of the mixture in the liquid phase at the
-        current temperature, pressure, and composition in units of mol/m^3.
+        current temperature, pressure, and composition in units of [mol/m^3].
 
         Utilizes the object oriented interface and
         :obj:`thermo.volume.VolumeLiquidMixture` to perform the actual
@@ -1446,7 +1683,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def rhogm(self):
         r'''Molar density of the mixture in the gas phase at the
-        current temperature, pressure, and composition in units of mol/m^3.
+        current temperature, pressure, and composition in units of [mol/m^3].
 
         Utilizes the object oriented interface and
         :obj:`thermo.volume.VolumeGasMixture` to perform the actual
@@ -1466,7 +1703,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Zl(self):
         r'''Compressibility factor of the mixture in the liquid phase at the
-        current temperature, pressure, and composition, dimensionless.
+        current temperature, pressure, and composition, [dimensionless].
 
         Utilizes the object oriented interface and
         :obj:`thermo.volume.VolumeLiquidMixture` to perform the actual
@@ -1485,7 +1722,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Zg(self):
         r'''Compressibility factor of the mixture in the gas phase at the
-        current temperature, pressure, and composition, dimensionless.
+        current temperature, pressure, and composition, [dimensionless].
 
         Utilizes the object oriented interface and
         :obj:`thermo.volume.VolumeGasMixture` to perform the actual calculation
@@ -1504,7 +1741,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Cpsm(self):
         r'''Solid-phase heat capacity of the mixture at its current temperature
-        and composition, in units of J/mol/K. For calculation of this property
+        and composition, in units of [J/mol/K]. For calculation of this property
         at other temperatures or compositions, or specifying manually the
         method used to calculate it, and more - see the object oriented
         interface :obj:`thermo.heat_capacity.HeatCapacitySolidMixture`; each
@@ -1520,7 +1757,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Cplm(self):
         r'''Liquid-phase heat capacity of the mixture at its current
-        temperature and composition, in units of J/mol/K. For calculation of
+        temperature and composition, in units of [J/mol/K]. For calculation of
         this property at other temperatures or compositions, or specifying
         manually the method used to calculate it, and more - see the object
         oriented interface :obj:`thermo.heat_capacity.HeatCapacityLiquidMixture`;
@@ -1536,7 +1773,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Cpgm(self):
         r'''Gas-phase heat capacity of the mixture at its current temperature
-        and composition, in units of J/mol/K. For calculation of this property
+        and composition, in units of [J/mol/K]. For calculation of this property
         at other temperatures or compositions, or specifying manually the
         method used to calculate it, and more - see the object oriented
         interface :obj:`thermo.heat_capacity.HeatCapacityGasMixture`; each
@@ -1552,7 +1789,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Cps(self):
         r'''Solid-phase heat capacity of the mixture at its current temperature
-        and composition, in units of J/kg/K. For calculation of this property
+        and composition, in units of [J/kg/K]. For calculation of this property
         at other temperatures or compositions, or specifying manually the
         method used to calculate it,  and more - see the object oriented
         interface :obj:`thermo.heat_capacity.HeatCapacitySolidMixture`; each
@@ -1572,7 +1809,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Cpl(self):
         r'''Liquid-phase heat capacity of the mixture at its current
-        temperature and composition, in units of J/kg/K. For calculation of
+        temperature and composition, in units of [J/kg/K]. For calculation of
         this property at other temperatures or compositions, or specifying
         manually the method used to calculate it, and more - see the object
         oriented interface :obj:`thermo.heat_capacity.HeatCapacityLiquidMixture`;
@@ -1592,7 +1829,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Cpg(self):
         r'''Gas-phase heat capacity of the mixture at its current temperature ,
-        and composition in units of J/kg/K. For calculation of this property at
+        and composition in units of [J/kg/K]. For calculation of this property at
         other temperatures or compositions, or specifying manually the method
         used to calculate it, and more - see the object oriented interface
         :obj:`thermo.heat_capacity.HeatCapacityGasMixture`; each Mixture
@@ -1612,7 +1849,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Cvgm(self):
         r'''Gas-phase ideal-gas contant-volume heat capacity of the mixture at
-        its current temperature and composition, in units of J/mol/K. Subtracts R from
+        its current temperature and composition, in units of [J/mol/K]. Subtracts R from
         the ideal-gas heat capacity; does not include pressure-compensation
         from an equation of state.
 
@@ -1629,7 +1866,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Cvg(self):
         r'''Gas-phase ideal-gas contant-volume heat capacity of the mixture at
-        its current temperature, in units of J/kg/K. Subtracts R from
+        its current temperature, in units of [J/kg/K]. Subtracts R from
         the ideal-gas heat capacity; does not include pressure-compensation
         from an equation of state.
 
@@ -1646,7 +1883,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def isentropic_exponent(self):
         r'''Gas-phase ideal-gas isentropic exponent of the mixture at its
-        current temperature, dimensionless. Does not include
+        current temperature, [dimensionless]. Does not include
         pressure-compensation from an equation of state.
 
         Examples
@@ -1662,7 +1899,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Bvirial(self):
         r'''Second virial coefficient of the gas phase of the mixture at its
-        current temperature, pressure, and composition in units of mol/m^3.
+        current temperature, pressure, and composition in units of [mol/m^3].
 
         This property uses the object-oriented interface
         :obj:`thermo.volume.VolumeGasMixture`, converting its result with
@@ -1680,7 +1917,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def JTl(self):
         r'''Joule Thomson coefficient of the liquid phase of the mixture if one
-        exists at its current temperature and pressure, in units of K/Pa.
+        exists at its current temperature and pressure, in units of [K/Pa].
 
         .. math::
             \mu_{JT} = \left(\frac{\partial T}{\partial P}\right)_H = \frac{1}{C_p}
@@ -1700,7 +1937,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def JTg(self):
         r'''Joule Thomson coefficient of the gas phase of the mixture if one
-        exists at its current temperature and pressure, in units of K/Pa.
+        exists at its current temperature and pressure, in units of [K/Pa].
 
         .. math::
             \mu_{JT} = \left(\frac{\partial T}{\partial P}\right)_H = \frac{1}{C_p}
@@ -1720,7 +1957,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def nul(self):
         r'''Kinematic viscosity of the liquid phase of the mixture if one
-        exists at its current temperature and pressure, in units of m^2/s.
+        exists at its current temperature and pressure, in units of [m^2/s].
 
         .. math::
             \nu = \frac{\mu}{\rho}
@@ -1738,7 +1975,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def nug(self):
         r'''Kinematic viscosity of the gas phase of the mixture if one exists
-        at its current temperature and pressure, in units of m^2/s.
+        at its current temperature and pressure, in units of [m^2/s].
 
         .. math::
             \nu = \frac{\mu}{\rho}
@@ -1756,7 +1993,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def alphal(self):
         r'''Thermal diffusivity of the liquid phase of the mixture if one
-        exists at its current temperature and pressure, in units of m^2/s.
+        exists at its current temperature and pressure, in units of [m^2/s].
 
         .. math::
             \alpha = \frac{k}{\rho Cp}
@@ -1774,7 +2011,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def alphag(self):
         r'''Thermal diffusivity of the gas phase of the mixture if one exists
-        at its current temperature and pressure, in units of m^2/s.
+        at its current temperature and pressure, in units of [m^2/s].
 
         .. math::
             \alpha = \frac{k}{\rho Cp}
@@ -1792,7 +2029,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Prl(self):
         r'''Prandtl number of the liquid phase of the mixture if one exists at
-        its current temperature and pressure, dimensionless.
+        its current temperature and pressure, [dimensionless].
 
         .. math::
             Pr = \frac{C_p \mu}{k}
@@ -1810,7 +2047,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Prg(self):
         r'''Prandtl number of the gas phase of the mixture if one exists at its
-        current temperature and pressure, dimensionless.
+        current temperature and pressure, [dimensionless].
 
         .. math::
             Pr = \frac{C_p \mu}{k}
@@ -1829,7 +2066,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Vml(self):
         r'''Liquid-phase molar volume of the mixture at its current
-        temperature, pressure, and composition in units of mol/m^3. For
+        temperature, pressure, and composition in units of [mol/m^3]. For
         calculation of this property at other temperatures or pressures or
         compositions, or specifying manually the method used to calculate it,
         and more - see the object oriented interface
@@ -1846,7 +2083,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Vmg(self):
         r'''Gas-phase molar volume of the mixture at its current
-        temperature, pressure, and composition in units of mol/m^3. For
+        temperature, pressure, and composition in units of [mol/m^3]. For
         calculation of this property at other temperatures or pressures or
         compositions, or specifying manually the method used to calculate it,
         and more - see the object oriented interface
@@ -1863,8 +2100,8 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def SGg(self):
         r'''Specific gravity of a hypothetical gas phase of the mixture, .
-        dimensionless. The reference condition is air at 15.6 °C (60 °F) and 1  
-        atm (rho=1.223 kg/m^3). The definition for gases uses the 
+        [dimensionless]. The reference condition is air at 15.6 °C (60 °F) and 
+        1 atm (rho=1.223 kg/m^3). The definition for gases uses the 
         compressibility factor of the reference gas and the mixture both at the 
         reference conditions, not the conditions of the mixture.
             
@@ -1882,7 +2119,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def mul(self):
         r'''Viscosity of the mixture in the liquid phase at its current
-        temperature, pressure, and composition in units of Pa*s.
+        temperature, pressure, and composition in units of [Pa*s].
 
         For calculation of this property at other temperatures and pressures,
         or specifying manually the method used to calculate it, and more - see
@@ -1900,7 +2137,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def mug(self):
         r'''Viscosity of the mixture in the gas phase at its current
-        temperature, pressure, and composition in units of Pa*s.
+        temperature, pressure, and composition in units of [Pa*s].
 
         For calculation of this property at other temperatures and pressures,
         or specifying manually the method used to calculate it, and more - see
@@ -1918,7 +2155,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def sigma(self):
         r'''Surface tension of the mixture at its current temperature and
-        composition, in units of N/m.
+        composition, in units of [N/m].
 
         For calculation of this property at other temperatures,
         or specifying manually the method used to calculate it, and more - see
@@ -1935,7 +2172,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def kl(self):
         r'''Thermal conductivity of the mixture in the liquid phase at its current
-        temperature, pressure, and composition in units of Pa*s.
+        temperature, pressure, and composition in units of [Pa*s].
 
         For calculation of this property at other temperatures and pressures,
         or specifying manually the method used to calculate it, and more - see
@@ -1953,7 +2190,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def kg(self):
         r'''Thermal conductivity of the mixture in the gas phase at its current
-        temperature, pressure, and composition in units of Pa*s.
+        temperature, pressure, and composition in units of [Pa*s].
 
         For calculation of this property at other temperatures and pressures,
         or specifying manually the method used to calculate it, and more - see
@@ -1973,7 +2210,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Cp(self):
         r'''Mass heat capacity of the mixture at its current phase and
-        temperature, in units of J/kg/K.
+        temperature, in units of [J/kg/K].
 
         Examples
         --------
@@ -1989,7 +2226,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Cpm(self):
         r'''Molar heat capacity of the mixture at its current phase and
-        temperature, in units of J/mol/K. Available only if single phase.
+        temperature, in units of [J/mol/K]. Available only if single phase.
 
         Examples
         --------
@@ -2001,7 +2238,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Vm(self):
         r'''Molar volume of the mixture at its current phase and
-        temperature and pressure, in units of m^3/mol.
+        temperature and pressure, in units of [m^3/mol].
         Available only if single phase.
 
         Examples
@@ -2014,7 +2251,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def rho(self):
         r'''Mass density of the mixture at its current phase and
-        temperature and pressure, in units of kg/m^3.
+        temperature and pressure, in units of [kg/m^3].
         Available only if single phase.
 
         Examples
@@ -2027,7 +2264,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def rhom(self):
         r'''Molar density of the mixture at its current phase and
-        temperature and pressure, in units of mol/m^3.
+        temperature and pressure, in units of [mol/m^3].
         Available only if single phase.
 
         Examples
@@ -2040,7 +2277,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Z(self):
         r'''Compressibility factor of the mixture at its current phase and
-        temperature and pressure, dimensionless.
+        temperature and pressure, [dimensionless].
         Available only if single phase.
 
         Examples
@@ -2055,7 +2292,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
 
     @property
     def SG(self):
-        r'''Specific gravity of the mixture, dimensionless. 
+        r'''Specific gravity of the mixture, [dimensionless]. 
         
         For gas-phase conditions, this is calculated at 15.6 °C (60 °F) and 1 
         atm for the mixture and the reference fluid, air. 
@@ -2076,7 +2313,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def isobaric_expansion(self):
         r'''Isobaric (constant-pressure) expansion of the mixture at its
-        current phase, temperature, and pressure in units of 1/K.
+        current phase, temperature, and pressure in units of [1/K].
         Available only if single phase.
 
         .. math::
@@ -2092,7 +2329,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def JT(self):
         r'''Joule Thomson coefficient of the mixture at its
-        current phase, temperature, and pressure in units of K/Pa.
+        current phase, temperature, and pressure in units of [K/Pa].
         Available only if single phase.
 
         .. math::
@@ -2110,7 +2347,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def mu(self):
         r'''Viscosity of the mixture at its current phase, temperature, and
-        pressure in units of Pa*s.
+        pressure in units of [Pa*s].
         Available only if single phase.
 
         Examples
@@ -2123,7 +2360,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def k(self):
         r'''Thermal conductivity of the mixture at its current phase,
-        temperature, and pressure in units of W/m/K.
+        temperature, and pressure in units of [W/m/K].
         Available only if single phase.
 
         Examples
@@ -2136,7 +2373,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def nu(self):
         r'''Kinematic viscosity of the the mixture at its current temperature,
-        pressure, and phase in units of m^2/s.
+        pressure, and phase in units of [m^2/s].
         Available only if single phase.
 
         .. math::
@@ -2152,7 +2389,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def alpha(self):
         r'''Thermal diffusivity of the mixture at its current temperature,
-        pressure, and phase in units of m^2/s.
+        pressure, and phase in units of [m^2/s].
         Available only if single phase.
 
         .. math::
@@ -2168,7 +2405,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Pr(self):
         r'''Prandtl number of the mixture at its current temperature,
-        pressure, and phase; dimensionless.
+        pressure, and phase; [dimensionless].
         Available only if single phase.
 
         .. math::
@@ -2186,7 +2423,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Vml_STP(self):
         r'''Liquid-phase molar volume of the mixture at 298.15 K and 101.325 kPa,
-        and the current composition in units of mol/m^3.
+        and the current composition in units of [mol/m^3].
 
         Examples
         --------
@@ -2198,7 +2435,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Vmg_STP(self):
         r'''Gas-phase molar volume of the mixture at 298.15 K and 101.325 kPa,
-        and the current composition in units of mol/m^3.
+        and the current composition in units of [mol/m^3].
 
         Examples
         --------
@@ -2210,7 +2447,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def rhol_STP(self):
         r'''Liquid-phase mass density of the mixture at 298.15 K and 101.325 kPa,
-        and the current composition in units of kg/m^3.
+        and the current composition in units of [kg/m^3].
 
         Examples
         --------
@@ -2225,7 +2462,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def rhog_STP(self):
         r'''Gas-phase mass density of the mixture at 298.15 K and 101.325 kPa,
-        and the current composition in units of kg/m^3.
+        and the current composition in units of [kg/m^3].
 
         Examples
         --------
@@ -2240,7 +2477,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Zl_STP(self):
         r'''Liquid-phase compressibility factor of the mixture at 298.15 K and 101.325 kPa,
-        and the current composition, dimensionless.
+        and the current composition, [dimensionless].
 
         Examples
         --------
@@ -2255,7 +2492,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Zg_STP(self):
         r'''Gas-phase compressibility factor of the mixture at 298.15 K and 101.325 kPa,
-        and the current composition, dimensionless.
+        and the current composition, [dimensionless].
 
         Examples
         --------
@@ -2270,7 +2507,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def rholm_STP(self):
         r'''Molar density of the mixture in the liquid phase at 298.15 K and 101.325 kPa,
-        and the current composition, in units of mol/m^3.
+        and the current composition, in units of [mol/m^3].
 
         Examples
         --------
@@ -2286,7 +2523,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def rhogm_STP(self):
         r'''Molar density of the mixture in the gas phase at 298.15 K and 101.325 kPa,
-        and the current composition, in units of mol/m^3.
+        and the current composition, in units of [mol/m^3].
 
         Examples
         --------
@@ -2301,7 +2538,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def API(self):
         r'''API gravity of the hypothetical liquid phase of the mixture, 
-        degrees. The reference condition is water at 15.6 °C (60 °F) and 1 atm 
+        [degrees]. The reference condition is water at 15.6 °C (60 °F) and 1 atm 
         (rho=999.016 kg/m^3, standardized).
             
         Examples

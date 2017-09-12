@@ -88,7 +88,13 @@ def dipole_moment(CASRN, AvailableMethods=False, Method=None):
         * 'MULLER', a collection of data in a
           group-contribution scheme in [2]_.
         * 'POLING', in the appendix in [3].
-
+        
+    This function returns dipole moment in units of Debye. This is actually
+    a non-SI unit; to convert to SI, multiply by 3.33564095198e-30 and its
+    units will be in ampere*second^2 or equivalently and more commonly given,
+    coulomb*second. The constant is the result of 1E-21/c, where c is the
+    speed of light.
+        
     Examples
     --------
     >>> dipole_moment(CASRN='64-17-5')
