@@ -108,6 +108,11 @@ class Mixture(object):
     
     Attributes
     ----------
+    MW : float
+        Mole-weighted average molecular weight all chemicals in the mixture, 
+        [g/mol]
+    MWs : list of float
+        Molecular weights of all chemicals in the mixture, [g/mol]
     Tms : list of float
         Melting temperatures of all chemicals in the mixture, [K]
     Tbs : list of float
