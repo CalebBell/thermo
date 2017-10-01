@@ -27,7 +27,7 @@ __all__ = ['checkCAS', 'CAS_from_any', 'PubChem', 'MW', 'formula', 'smiles',
            '_MixtureDict', 'mixture_from_any', 'cryogenics', 'dippr_compounds',
            'pubchem_dict']
 import os
-from thermo.utils import to_num
+from thermo.utils import to_num, CAS2int
 from thermo.elements import periodic_table
 
 folder = os.path.join(os.path.dirname(__file__), 'Identifiers')
@@ -77,51 +77,82 @@ def checkCAS(CASRN):
 
 
 
+smiles_dict = True
+pubchem_dict = True
+inchi_dict = True
+inchikey_dict = True
+cas_from_name_dict = True
+
+max_name_lookup = 30
+
 
 _cas_from_pubchem_dict = {}
 _cas_from_smiles_dict = {}
 _cas_from_inchi_dict = {}
 _cas_from_inchikey_dict = {}
 _cas_from_name_dict = {}
-_cas_from_iupacname_dict = {}
-
-
 pubchem_dict = {}
+
+
+class ChemicalMetadata(object):
+    __slots__ = ['pubchemid', 'formula', 'MW', 'smiles', 'InChI', 'inchikey',
+                 'iupac_name', 'common_name', 'all_names']
+    
+    def __init__(self, pubchemid, formula, MW, smiles, InChI, inchikey,
+                 iupac_name, common_name, all_names):
+        self.pubchemid = pubchemid
+        self.formula = formula
+        self.MW = MW
+        self.smiles = smiles
+        self.InChI = InChI
+        
+        self.inchikey = inchikey
+        self.iupac_name = iupac_name
+        self.common_name = common_name
+        self.all_names = all_names
+    
+    
+    
+relevant_CASs = set()
+with open(os.path.join(folder, 'Chemicals with data.csv')) as f:
+    [relevant_CASs.add(int(line)) for line in f]
 
 
 with open(os.path.join(folder, 'chemical identifiers.tsv')) as f:
     for line in f:
         values = line.rstrip('\n').split('\t')
-        (pubchemid, CAS, formula, mw, smiles, inchi, inchikey, iupac_name, common_name) = values[0:9]
-        allnames = values[7:]
+        (pubchemid, CAS, formula, MW, smiles, InChI, inchikey, iupac_name, common_name) = values[0:9]
+        all_names = values[7:]
         pubchemid = int(pubchemid)
-        mw = float(mw)
+#        CAS = int(CAS.replace('-', '')) # Store as int for easier lookup
+        
+#        if int(CAS.replace('-', '')) not in relevant_CASs:
+#            continue                
         # Create lookup dictionaries
-        _cas_from_pubchem_dict[pubchemid] = CAS
-        _cas_from_smiles_dict[smiles] = CAS
-        _cas_from_inchi_dict[inchi] = CAS
-        _cas_from_inchikey_dict[inchikey] = CAS
-        if iupac_name in _cas_from_iupacname_dict:
-            # TODO: make unnecessary by removing previously unique identifiers,
-            # which are no longer unique after making them lower case.
-            pass
-        else:
-            _cas_from_iupacname_dict[iupac_name] = CAS
-        for name in allnames:
+        for name in all_names:
             # TODO: make unnecessary by removing previously unique identifiers,
             # which are no longer unique after making them lower case.
             if name in _cas_from_name_dict:
                 pass
             else:
                 _cas_from_name_dict[name] = CAS
+                                
+        pubchem_dict[CAS] = ChemicalMetadata(pubchemid, formula, float(MW), smiles, InChI, inchikey,
+                 iupac_name, common_name, all_names)
 
-        pubchem_dict[CAS] = {'Pubchem ID': pubchemid, 'formula': formula,
-        'MW': mw, 'SMILES': smiles, 'InChI': inchi, 'InChI Key': inchikey,
-        'IUPAC name': iupac_name, 'common name': common_name, 'Names': allnames}
-#        _pubchem_info(int(pubchemid), formula, float(mw), smiles, inchi, inchikey, iupac_name, common_name, allnames)
 
-del pubchemid, formula, mw, smiles, inchi, inchikey, iupac_name, \
-    common_name, allnames, name, line, f, CAS, values
+        if pubchem_dict:
+            _cas_from_pubchem_dict[pubchemid] = CAS
+        if smiles_dict:
+            _cas_from_smiles_dict[smiles] = CAS
+        if inchi_dict:
+            _cas_from_inchi_dict[InChI] = CAS
+        if inchikey_dict:
+            _cas_from_inchikey_dict[inchikey] = CAS
+
+
+del pubchemid, formula, MW, smiles, InChI, inchikey, iupac_name, \
+    common_name, all_names, name, line, f, CAS, values
 #print len(_cas_from_name_dict)/float(len(_cas_from_pubchem_dict))
 #print _cas_from_name_dict['Water'.lower()]
 #print _pubchem_dict['7732-18-5']
@@ -226,9 +257,6 @@ def CAS_from_any(ID):
         # Parsing SMILES is an option, but this is faster
         # Pybel API also prints messages to console on failure
         return _cas_from_smiles_dict[ID]
-    if ID.lower() in _cas_from_iupacname_dict:
-        # Not currently run as the dict is also in _names
-        return _cas_from_iupacname_dict[ID.lower()]
     try:
         return _cas_from_name_dict[ID.lower()]
     except:
@@ -273,7 +301,7 @@ def PubChem(CASRN):
     ----------
     .. [1] Pubchem.
     '''
-    return pubchem_dict[CASRN]['Pubchem ID']
+    return pubchem_dict[CASRN].pubchemid
 
 
 def MW(CASRN):
@@ -287,7 +315,7 @@ def MW(CASRN):
 
     Returns
     -------
-        MolecularWeight : float
+    MolecularWeight : float
 
     Notes
     -----
@@ -304,8 +332,7 @@ def MW(CASRN):
     .. [1] Pubchem.
     '''
 
-    MolecularWeight = pubchem_dict[CASRN]['MW']
-    return MolecularWeight
+    return pubchem_dict[CASRN].MW
 
 
 def formula(CASRN):
@@ -313,8 +340,7 @@ def formula(CASRN):
     >>> formula('7732-18-5')
     'H2O'
     '''
-    Formula = pubchem_dict[CASRN]['formula']
-    return Formula
+    return pubchem_dict[CASRN].formula
 
 
 def smiles(CASRN):
@@ -322,8 +348,7 @@ def smiles(CASRN):
     >>> smiles('7732-18-5')
     'O'
     '''
-    Smiles = pubchem_dict[CASRN]['SMILES']
-    return Smiles
+    return pubchem_dict[CASRN].smiles
 
 
 def InChI(CASRN):
@@ -331,8 +356,7 @@ def InChI(CASRN):
     >>> InChI('7732-18-5')
     'H2O/h1H2'
     '''
-    inchi = pubchem_dict[CASRN]['InChI']
-    return inchi
+    return pubchem_dict[CASRN].InChI
 
 
 def InChI_Key(CASRN):
@@ -340,8 +364,7 @@ def InChI_Key(CASRN):
     >>> InChI_Key('7732-18-5')
     'XLYOFNOQVPJJNP-UHFFFAOYSA-N'
     '''
-    inchikey = pubchem_dict[CASRN]['InChI Key']
-    return inchikey
+    return pubchem_dict[CASRN].inchikey
 
 
 def IUPAC_name(CASRN):
@@ -349,7 +372,7 @@ def IUPAC_name(CASRN):
     >>> IUPAC_name('7732-18-5')
     'oxidane'
     '''
-    iupac_name = pubchem_dict[CASRN]['IUPAC name']
+    iupac_name = pubchem_dict[CASRN].iupac_name
     return iupac_name
 
 def name(CASRN):
@@ -357,8 +380,7 @@ def name(CASRN):
     >>> name('7732-18-5')
     'water'
     '''
-    common_name = pubchem_dict[CASRN]['common name']
-    return common_name
+    return pubchem_dict[CASRN].common_name
 
 
 def synonyms(CASRN):
@@ -366,8 +388,7 @@ def synonyms(CASRN):
     >>> synonyms('98-00-0')
     ['furan-2-ylmethanol', 'furfuryl alcohol', '2-furanmethanol', '2-furancarbinol', '2-furylmethanol', '2-furylcarbinol', '98-00-0', '2-furanylmethanol', 'furfuranol', 'furan-2-ylmethanol', '2-furfuryl alcohol', '5-hydroxymethylfuran', 'furfural alcohol', 'alpha-furylcarbinol', '2-hydroxymethylfuran', 'furfuralcohol', 'furylcarbinol', 'furyl alcohol', '2-(hydroxymethyl)furan', 'furan-2-yl-methanol', 'furfurylalcohol', 'furfurylcarb', 'methanol, (2-furyl)-', '2-furfurylalkohol', 'furan-2-methanol', '2-furane-methanol', '2-furanmethanol, homopolymer', '(2-furyl)methanol', '2-hydroxymethylfurane', 'furylcarbinol (van)', '2-furylmethan-1-ol', '25212-86-6', '93793-62-5', 'furanmethanol', 'polyfurfuryl alcohol', 'pffa', 'poly(furfurylalcohol)', 'poly-furfuryl alcohol', '(fur-2-yl)methanol', '.alpha.-furylcarbinol', '2-hydroxymethyl-furan', 'poly(furfuryl alcohol)', '.alpha.-furfuryl alcohol', 'agn-pc-04y237', 'h159', 'omega-hydroxypoly(furan-2,5-diylmethylene)', '(2-furyl)-methanol (furfurylalcohol)', '40795-25-3', '88161-36-8']
     '''
-    _synonyms = pubchem_dict[CASRN]['Names']
-    return _synonyms
+    return pubchem_dict[CASRN].all_names
 
 
 
@@ -453,11 +474,10 @@ cryogenics = {'132259-10-0': 'Air', '7440-37-1': 'Argon', '630-08-0':
 ### DIPPR Database, chemical list only
 # Obtained via the command:
 # list(pd.read_excel('http://www.aiche.org/sites/default/files/docs/pages/sponsor_compound_list-2014.xlsx')['Unnamed: 2'])[2:]
+# This is consistently faster than creating a list and then making the set.
 dippr_compounds = set()
 with open(os.path.join(folder, 'dippr_2014.csv')) as f:
     dippr_compounds.update(f.read().split('\n'))
-
-
 
 
 
