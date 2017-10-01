@@ -153,7 +153,7 @@ def test_IdealPP_fuzz_TP_VF():
         assert test_pkg.phase == phase_known
 
     
-
+@pytest.mark.slow
 def test_UNIFAC_PP():
     m = Mixture(['ethanol', 'water'], zs=[0.5, 0.5], P=6500, T=298.15)
     vodka = UNIFAC_PP(m.UNIFAC_groups, m.VaporPressures, m.Tms, m.Tcs, m.Pcs)
@@ -239,6 +239,7 @@ def test_UNIFAC_PP_fuzz():
         assert vodka.phase == phase_known
 
 
+@pytest.mark.slow
 def test_UNIFAC_Dortmund_PP():
     m = Mixture(['ethanol', 'water'], zs=[0.5, 0.5], P=6500, T=298.15)
     vodka = UNIFAC_Dortmund_PP(UNIFAC_groups=m.UNIFAC_Dortmund_groups, VaporPressures=m.VaporPressures, 

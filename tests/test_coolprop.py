@@ -70,6 +70,7 @@ def test_CoolProp_T_dependent_property():
     assert_allclose(rhow, 0.3139926976198761)
     
     
+@pytest.mark.slow
 def test_CP_approximators():
     from thermo.coolprop import coolprop_fluids, CP_approximators
     for CAS in coolprop_fluids:
