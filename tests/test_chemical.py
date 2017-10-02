@@ -23,6 +23,7 @@ SOFTWARE.'''
 from numpy.testing import assert_allclose
 import pytest
 from thermo.chemical import *
+from thermo.elements import periodic_table
 import thermo
 from thermo.identifiers import pubchem_db
 from scipy.integrate import quad
@@ -353,3 +354,16 @@ def test_all_chemicals():
         c.UNIFAC_Dortmund_groups
         c.PSRK_groups
         c.R_specific
+        
+        
+@pytest.mark.slow
+def test_all_element_Chemicals():
+    things = [periodic_table.CAS_to_elements, periodic_table.name_to_elements, periodic_table.symbol_to_elements]
+    failed_CASs = []
+    for thing in things:
+        for i in thing.keys():
+            try:
+                Chemical(i)
+            except:
+                failed_CASs.append(periodic_table[i].name)
+    assert 0 == len(set(failed_CASs))

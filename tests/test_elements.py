@@ -74,7 +74,7 @@ def test_elements_data():
     assert_allclose(tots_calc, tots_exp)
 
 def test_misc_elements():
-    assert periodic_table['H'].InChI == 'InChI=1S/H'
+    assert periodic_table['H'].InChI == 'H' # 'InChI=1S/
     
     assert periodic_table['H'].smiles == '[H]'
     assert periodic_table[1].smiles == '[H]'

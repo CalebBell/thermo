@@ -79,13 +79,13 @@ def test_CAS_from_any():
     assert CAS_from_any('SMILES=CCCCCCCCCC') == '124-18-5'
 
     assert CAS_from_any('S') == '7704-34-9'
-    assert CAS_from_any('O') == '7782-44-7'
+    assert CAS_from_any('O') == '17778-80-2'
 
     assert CAS_from_any('InChiKey=QVGXLLKOCUKJST-UHFFFAOYSA-N') == '17778-80-2'
     # Just because it's an element does not mean the CAS number refers to the 
     # monatomic form unfortunately - this is the CAS for Monooxygen
     
-    assert CAS_from_any('1') == '1333-74-0'
+    assert CAS_from_any('1') == '12385-13-6'
 
 
     # Unknown inchi

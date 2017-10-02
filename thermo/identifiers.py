@@ -28,7 +28,7 @@ __all__ = ['checkCAS', 'CAS_from_any', 'PubChem', 'MW', 'formula', 'smiles',
            'pubchem_db']
 import os
 from thermo.utils import to_num, CAS2int, int2CAS
-from thermo.elements import periodic_table
+from thermo.elements import periodic_table, homonuclear_elemental_gases
 
 folder = os.path.join(os.path.dirname(__file__), 'Identifiers')
 
@@ -138,7 +138,50 @@ class ChemicalMetadataDB(object):
         self.load(self.main_db, overwrite=False)
         for db in self.user_dbs:
             self.load(db, overwrite=True)
+        self.load_elements()
         
+    def load_elements(self):
+        for ele in periodic_table:
+            
+            CAS = int(ele.CAS.replace('-', '')) # Store as int for easier lookup
+            all_names = [ele.name.lower()]
+            
+            obj = ChemicalMetadata(pubchemid=None, CAS=CAS, 
+                                   formula=ele.symbol, MW=ele.MW, smiles=ele.smiles,
+                                   InChI=ele.InChI, InChI_key=ele.InChI_key,
+                                   iupac_name=ele.name.lower(), 
+                                   common_name=ele.name.lower(), 
+                                   all_names=all_names)
+            
+            
+            if self.create_InChI_key_index:
+                if ele.InChI_key in self.InChI_key_index:
+                    if ele.number not in homonuclear_elemental_gases:
+                        obj_old = self.InChI_key_index[ele.InChI_key]
+                        for name in obj_old.all_names:
+                            self.name_index[name] = obj    
+                
+                self.InChI_key_index[ele.InChI_key] = obj
+            
+            
+            
+            if self.create_CAS_index:
+                self.CAS_index[CAS] = obj
+#            if self.create_pubchem_index:
+#                self.pubchem_index[pubchemid] = obj
+            if self.create_smiles_index:
+                self.smiles_index[ele.smiles] = obj
+            if self.create_InChI_index:
+                self.InChI_index[ele.InChI] = obj
+                
+            if self.create_name_index:
+                if ele.number in homonuclear_elemental_gases:
+                    for name in all_names:
+                        self.name_index['monatomic ' + name] = obj    
+                else:
+                    for name in all_names:
+                        self.name_index[name] = obj    
+
 
     def load(self, file_name, overwrite=False):
         f = open(file_name)
@@ -215,6 +258,7 @@ class ChemicalMetadataDB(object):
         self.load(self.main_db, overwrite=False)
         for db in self.user_dbs:
             self.load(db, overwrite=True)
+        self.load_elements()
         return True
         
     def _search_autoload(self, identifier, index, autoload=True):
@@ -302,11 +346,24 @@ def CAS_from_any(ID):
     >>> CAS_from_any('pubchem=702')
     '64-17-5'
     >>> CAS_from_any('O') # only elements can be specified by symbol
-    '7782-44-7'
+    '17778-80-2'
     '''
     ID = ID.strip()
     if ID in periodic_table:
-        return periodic_table[ID].CAS
+        if periodic_table[ID].number not in homonuclear_elemental_gases:
+            return periodic_table[ID].CAS
+        else:
+            for i in [periodic_table.symbol_to_elements, 
+                      periodic_table.number_to_elements,
+                      periodic_table.CAS_to_elements]:
+                if i == periodic_table.number_to_elements:
+                    if int(ID in i):
+                        return periodic_table[int(ID)].CAS
+                    
+                else:
+                    if ID in i:
+                        return periodic_table[ID].CAS
+
     if checkCAS(ID):
         CAS_lookup = pubchem_db.search_CAS(ID)
         if CAS_lookup:
@@ -323,7 +380,6 @@ def CAS_from_any(ID):
     name_lookup = pubchem_db.search_name(ID)
     if name_lookup:
         return name_lookup.CASs
-    
     if len(ID) > 9:
         inchi_search = False
         # normal upper case is 'InChI=1S/'
