@@ -26,7 +26,6 @@ from thermo.chemical import Chemical
 from thermo.mixture import Mixture
 from thermo.stream import Stream
 import thermo
-from thermo.identifiers import pubchem_dict
 from scipy.integrate import quad
 from math import *
 from scipy.constants import R

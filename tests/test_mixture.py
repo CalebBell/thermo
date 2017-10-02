@@ -25,7 +25,6 @@ import pytest
 from thermo.chemical import *
 from thermo.mixture import Mixture
 import thermo
-from thermo.identifiers import pubchem_dict
 from scipy.integrate import quad
 from math import *
 from scipy.constants import R

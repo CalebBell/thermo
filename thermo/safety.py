@@ -38,7 +38,7 @@ import pandas as pd
 from scipy.constants import F2K
 from thermo.utils import R
 from thermo.utils import to_num, none_and_length_check, normalize
-from thermo.identifiers import CAS_from_any, MW
+from thermo.identifiers import CAS_from_any
 
 folder = os.path.join(os.path.dirname(__file__), 'Safety')
 
@@ -135,19 +135,19 @@ def mgm3_to_ppmv(mgm3, MW, T=298.15, P=101325.):
     return ppm
 
 
-def str_to_ppm_mgm3(line, CAS):  # pragma: no cover
+def str_to_ppm_mgm3(line, MW):  # pragma: no cover
     if not line:
         return None, None
     if 'ppm' in line:
         _ppm = float(line.split('ppm')[0])
         try:
-            _mgm3 = ppmv_to_mgm3(_ppm, MW(CAS_from_any(CAS)))
+            _mgm3 = ppmv_to_mgm3(_ppm, MW)
         except:
             _mgm3 = None
     elif 'mg/m3' in line:
         _mgm3 = float(line.split('mg/m3')[0])
         try:
-            _ppm = mgm3_to_ppmv(_mgm3, MW(CAS_from_any(CAS)))
+            _ppm = mgm3_to_ppmv(_mgm3, MW)
         except:
             _ppm = None
     if not _ppm and not _mgm3:
@@ -168,6 +168,33 @@ DIPPR_SERAT = pd.read_csv(os.path.join(folder, 'DIPPR Tflash Serat.csv'),
 _OntarioExposureLimits = {}
 
 
+#with open(os.path.join(folder, 'Ontario Exposure Limits.tsv'), encoding='utf-8') as f:
+#    '''Read in a dict of TWAs, STELs, and Ceiling Limits. The data source
+#    is the Ontario Labor Website. They have obtained their data in part from
+#    their own reviews, and also from ACGIH.
+#    Warning: The lowest value is taken, when multiple units or different forms
+#             of a compound are listed.
+#    Note that each province has a different set of values, but these serve
+#    as general values.
+#    '''
+#    next(f)
+#    for line in f:
+#        values = to_num(line.strip('\n').split('\t'))
+#        if values[0]:
+#            for CASRN in values[0].split(';'):
+#                _ppm_TWA, _mgm3_TWA = str_to_ppm_mgm3(values[2], CASRN.strip())
+#                _ppm_STEL, _mgm3_STEL = str_to_ppm_mgm3(values[3], CASRN.strip())
+#                _ppm_C, _mgm3_C = str_to_ppm_mgm3(values[4], CASRN.strip())
+#                if values[5] == 'Skin':
+#                    _skin = True
+#                else:
+#                    _skin = False
+#                _OntarioExposureLimits[CASRN] = {"Name": values[1],  "TWA (ppm)": _ppm_TWA,
+#                "TWA (mg/m^3)": _mgm3_TWA, "STEL (ppm)": _ppm_STEL,
+#                "STEL (mg/m^3)": _mgm3_STEL, "Ceiling (ppm)": _ppm_C,
+#                "Ceiling (mg/m^3)": _mgm3_C, "Skin":_skin}
+
+
 with open(os.path.join(folder, 'Ontario Exposure Limits.tsv'), encoding='utf-8') as f:
     '''Read in a dict of TWAs, STELs, and Ceiling Limits. The data source
     is the Ontario Labor Website. They have obtained their data in part from
@@ -180,19 +207,39 @@ with open(os.path.join(folder, 'Ontario Exposure Limits.tsv'), encoding='utf-8')
     next(f)
     for line in f:
         values = to_num(line.strip('\n').split('\t'))
+        
         if values[0]:
-            for CASRN in values[0].split(';'):
-                _ppm_TWA, _mgm3_TWA = str_to_ppm_mgm3(values[2], CASRN.strip())
-                _ppm_STEL, _mgm3_STEL = str_to_ppm_mgm3(values[3], CASRN.strip())
-                _ppm_C, _mgm3_C = str_to_ppm_mgm3(values[4], CASRN.strip())
+            if type(values[6]) == str:
+                MWs = [float(i) if i != '' else None for i in values[6].split(';')]
+            elif values[6] is None:
+                MWs = [None]
+            elif type(values[6]) == float:
+                MWs = [values[6]]
+            else:
+                MWs = [None]
+                
+            for i, CASRN in enumerate(values[0].split(';')):
+                try:
+                    MWi = MWs[i]
+                except IndexError:
+                    MWi = None
+
+
+                _ppm_TWA, _mgm3_TWA = str_to_ppm_mgm3(values[2], MWi)
+                _ppm_STEL, _mgm3_STEL = str_to_ppm_mgm3(values[3], MWi)
+                _ppm_C, _mgm3_C = str_to_ppm_mgm3(values[4], MWi)
+                                    
                 if values[5] == 'Skin':
                     _skin = True
                 else:
                     _skin = False
+                    
+                    
                 _OntarioExposureLimits[CASRN] = {"Name": values[1],  "TWA (ppm)": _ppm_TWA,
                 "TWA (mg/m^3)": _mgm3_TWA, "STEL (ppm)": _ppm_STEL,
                 "STEL (mg/m^3)": _mgm3_STEL, "Ceiling (ppm)": _ppm_C,
-                "Ceiling (mg/m^3)": _mgm3_C, "Skin":_skin}
+                "Ceiling (mg/m^3)": _mgm3_C, "Skin":_skin, "MW": MWi} 
+
 
 #TODO: Add CRC exposure limits. Note that functions should be used.
 #_CRCExposureLimits = {}

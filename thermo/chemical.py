@@ -547,6 +547,7 @@ class Chemical(object): # pragma: no cover
             self.ID = ID
             # Identification
             self.CAS = CAS_from_any(ID)
+            self.ChemicalMetadata = pubchem_db.search_CAS(self.CAS)
 
 
         if self.CAS in _chemical_cache and caching:
@@ -554,15 +555,15 @@ class Chemical(object): # pragma: no cover
             self.calculate(T, P)
         else:
             if not isinstance(ID, dict):
-                self.PubChem = PubChem(self.CAS)
-                self.MW = MW(self.CAS)
-                self.formula = formula(self.CAS)
-                self.smiles = smiles(self.CAS)
-                self.InChI = InChI(self.CAS)
-                self.InChI_Key = InChI_Key(self.CAS)
-                self.IUPAC_name = IUPAC_name(self.CAS).lower()
-                self.name = name(self.CAS).lower()
-                self.synonyms = synonyms(self.CAS)
+                self.PubChem = self.ChemicalMetadata.pubchemid
+                self.MW = self.ChemicalMetadata.MW
+                self.formula = self.ChemicalMetadata.formula
+                self.smiles = self.ChemicalMetadata.smiles
+                self.InChI = self.ChemicalMetadata.InChI
+                self.InChI_Key = self.ChemicalMetadata.InChI_key
+                self.IUPAC_name = self.ChemicalMetadata.iupac_name.lower()
+                self.name = self.ChemicalMetadata.common_name.lower()
+                self.synonyms = self.ChemicalMetadata.all_names
 
             self.atoms = simple_formula_parser(self.formula)
             self.similarity_variable = similarity_variable(self.atoms, self.MW)

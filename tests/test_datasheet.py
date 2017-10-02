@@ -24,7 +24,6 @@ import pytest
 import pandas as pd
 from thermo.datasheet import *
 from thermo.chemical import Chemical
-from thermo.identifiers import pubchem_dict
 
 # These tests slow down implementation of new methods too much.
 #@pytest.mark.meta_Chemical

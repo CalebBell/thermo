@@ -25,7 +25,7 @@ from __future__ import division
 __all__ = ['checkCAS', 'CAS_from_any', 'PubChem', 'MW', 'formula', 'smiles', 
            'InChI', 'InChI_Key', 'IUPAC_name', 'name', 'synonyms', 
            '_MixtureDict', 'mixture_from_any', 'cryogenics', 'dippr_compounds',
-           'pubchem_dict']
+           'pubchem_db']
 import os
 from thermo.utils import to_num, CAS2int, int2CAS
 from thermo.elements import periodic_table
@@ -76,30 +76,8 @@ def checkCAS(CASRN):
         return False
 
 
-
-
-
-
-
-smiles_dict = True
-pubchem_dict = True
-inchi_dict = True
-inchikey_dict = True
-cas_from_name_dict = True
-
-max_name_lookup = 30
-
-
-_cas_from_pubchem_dict = {}
-_cas_from_smiles_dict = {}
-_cas_from_inchi_dict = {}
-_cas_from_inchikey_dict = {}
-_cas_from_name_dict = {}
-pubchem_dict = {}
-
-
 class ChemicalMetadata(object):
-    __slots__ = ['pubchemid', 'formula', 'MW', 'smiles', 'InChI', 'inchikey',
+    __slots__ = ['pubchemid', 'formula', 'MW', 'smiles', 'InChI', 'InChI_key',
                  'iupac_name', 'common_name', 'all_names', 'CAS']
     def __repr__(self):
         return ('<ChemicalMetadata, name=%s, formula=%s, smiles=%s, MW=%g>'
@@ -109,7 +87,7 @@ class ChemicalMetadata(object):
     def CASs(self):
         return int2CAS(self.CAS)
     
-    def __init__(self, pubchemid, CAS, formula, MW, smiles, InChI, inchikey,
+    def __init__(self, pubchemid, CAS, formula, MW, smiles, InChI, InChI_key,
                  iupac_name, common_name, all_names):
         self.pubchemid = pubchemid
         self.CAS = CAS
@@ -118,46 +96,11 @@ class ChemicalMetadata(object):
         self.smiles = smiles
         self.InChI = InChI
         
-        self.inchikey = inchikey
+        self.InChI_key = InChI_key
         self.iupac_name = iupac_name
         self.common_name = common_name
         self.all_names = all_names
     
-
-with open(os.path.join(folder, 'chemical identifiers.tsv')) as f:
-    for line in f:
-        values = line.rstrip('\n').split('\t')
-        (pubchemid, CAS, formula, MW, smiles, InChI, inchikey, iupac_name, common_name) = values[0:9]
-        all_names = values[7:]
-        pubchemid = int(pubchemid)
-        # Create lookup dictionaries
-        for name in all_names:
-            # TODO: make unnecessary by removing previously unique identifiers,
-            # which are no longer unique after making them lower case.
-            if name in _cas_from_name_dict:
-                pass
-            else:
-                _cas_from_name_dict[name] = CAS
-                                
-        pubchem_dict[CAS] = ChemicalMetadata(pubchemid, CAS, formula, float(MW), 
-                                             smiles, InChI, inchikey,
-                                             iupac_name, common_name, all_names)
-
-
-        if pubchem_dict:
-            _cas_from_pubchem_dict[pubchemid] = CAS
-        if smiles_dict:
-            _cas_from_smiles_dict[smiles] = CAS
-        if inchi_dict:
-            _cas_from_inchi_dict[InChI] = CAS
-        if inchikey_dict:
-            _cas_from_inchikey_dict[inchikey] = CAS
-
-
-del pubchemid, formula, MW, smiles, InChI, inchikey, iupac_name, \
-    common_name, all_names, name, line, f, CAS, values
-
-
 
 class ChemicalMetadataDB(object):
     exclusion_options = [os.path.join(folder, 'dippr_2014_int.csv'),
@@ -166,7 +109,7 @@ class ChemicalMetadataDB(object):
     def __init__(self, create_pubchem_index=True, create_CAS_index=True,
                  create_name_index=True, create_smiles_index=True, 
                  create_InChI_index=True, create_InChI_key_index=True, 
-                 restrict_identifiers_file=os.path.join(folder, 'dippr_2014_int.csv'),
+                 restrict_identifiers_file=None,
                  main_db=os.path.join(folder, 'chemical identifiers.tsv'),
                  user_dbs=[]):
         self.pubchem_index = {}
@@ -202,7 +145,7 @@ class ChemicalMetadataDB(object):
         for line in f:
             # This is effectively the documentation for the file format of the file
             values = line.rstrip('\n').split('\t')
-            (pubchemid, CAS, formula, MW, smiles, InChI, inchikey, iupac_name, common_name) = values[0:9]
+            (pubchemid, CAS, formula, MW, smiles, InChI, InChI_key, iupac_name, common_name) = values[0:9]
             CAS = int(CAS.replace('-', '')) # Store as int for easier lookup
             
             # Handle the case of the db having more compounds than a user wants
@@ -214,7 +157,7 @@ class ChemicalMetadataDB(object):
             pubchemid = int(pubchemid)
 
             obj = ChemicalMetadata(pubchemid, CAS, formula, float(MW), smiles,
-                                    InChI, inchikey, iupac_name, common_name, 
+                                    InChI, InChI_key, iupac_name, common_name, 
                                     all_names)
             
             # Lookup indexes
@@ -227,7 +170,7 @@ class ChemicalMetadataDB(object):
             if self.create_InChI_index:
                 self.InChI_index[InChI] = obj
             if self.create_InChI_key_index:
-                self.InChI_key_index[inchikey] = obj
+                self.InChI_key_index[InChI_key] = obj
             if self.create_name_index:
                 if overwrite:
                     for name in all_names:
@@ -309,7 +252,7 @@ class ChemicalMetadataDB(object):
 
 
 pubchem_db = ChemicalMetadataDB(restrict_identifiers_file=os.path.join(folder, 'dippr_2014_int.csv'))
-
+#pubchem_db = ChemicalMetadataDB()
 
 
 def CAS_from_any(ID):
@@ -461,7 +404,8 @@ def PubChem(CASRN):
     ----------
     .. [1] Pubchem.
     '''
-    return pubchem_dict[CASRN].pubchemid
+    return pubchem_db.search_CAS(CASRN).pubchemid
+
 
 
 def MW(CASRN):
@@ -491,8 +435,7 @@ def MW(CASRN):
     ----------
     .. [1] Pubchem.
     '''
-
-    return pubchem_dict[CASRN].MW
+    return pubchem_db.search_CAS(CASRN).MW
 
 
 def formula(CASRN):
@@ -500,7 +443,7 @@ def formula(CASRN):
     >>> formula('7732-18-5')
     'H2O'
     '''
-    return pubchem_dict[CASRN].formula
+    return pubchem_db.search_CAS(CASRN).formula
 
 
 def smiles(CASRN):
@@ -508,7 +451,7 @@ def smiles(CASRN):
     >>> smiles('7732-18-5')
     'O'
     '''
-    return pubchem_dict[CASRN].smiles
+    return pubchem_db.search_CAS(CASRN).smiles
 
 
 def InChI(CASRN):
@@ -516,7 +459,7 @@ def InChI(CASRN):
     >>> InChI('7732-18-5')
     'H2O/h1H2'
     '''
-    return pubchem_dict[CASRN].InChI
+    return pubchem_db.search_CAS(CASRN).InChI
 
 
 def InChI_Key(CASRN):
@@ -524,7 +467,7 @@ def InChI_Key(CASRN):
     >>> InChI_Key('7732-18-5')
     'XLYOFNOQVPJJNP-UHFFFAOYSA-N'
     '''
-    return pubchem_dict[CASRN].inchikey
+    return pubchem_db.search_CAS(CASRN).InChI_key
 
 
 def IUPAC_name(CASRN):
@@ -532,15 +475,14 @@ def IUPAC_name(CASRN):
     >>> IUPAC_name('7732-18-5')
     'oxidane'
     '''
-    iupac_name = pubchem_dict[CASRN].iupac_name
-    return iupac_name
+    return pubchem_db.search_CAS(CASRN).iupac_name
 
 def name(CASRN):
     '''
     >>> name('7732-18-5')
     'water'
     '''
-    return pubchem_dict[CASRN].common_name
+    return pubchem_db.search_CAS(CASRN).common_name
 
 
 def synonyms(CASRN):
@@ -548,8 +490,7 @@ def synonyms(CASRN):
     >>> synonyms('98-00-0')
     ['furan-2-ylmethanol', 'furfuryl alcohol', '2-furanmethanol', '2-furancarbinol', '2-furylmethanol', '2-furylcarbinol', '98-00-0', '2-furanylmethanol', 'furfuranol', 'furan-2-ylmethanol', '2-furfuryl alcohol', '5-hydroxymethylfuran', 'furfural alcohol', 'alpha-furylcarbinol', '2-hydroxymethylfuran', 'furfuralcohol', 'furylcarbinol', 'furyl alcohol', '2-(hydroxymethyl)furan', 'furan-2-yl-methanol', 'furfurylalcohol', 'furfurylcarb', 'methanol, (2-furyl)-', '2-furfurylalkohol', 'furan-2-methanol', '2-furane-methanol', '2-furanmethanol, homopolymer', '(2-furyl)methanol', '2-hydroxymethylfurane', 'furylcarbinol (van)', '2-furylmethan-1-ol', '25212-86-6', '93793-62-5', 'furanmethanol', 'polyfurfuryl alcohol', 'pffa', 'poly(furfurylalcohol)', 'poly-furfuryl alcohol', '(fur-2-yl)methanol', '.alpha.-furylcarbinol', '2-hydroxymethyl-furan', 'poly(furfuryl alcohol)', '.alpha.-furfuryl alcohol', 'agn-pc-04y237', 'h159', 'omega-hydroxypoly(furan-2,5-diylmethylene)', '(2-furyl)-methanol (furfurylalcohol)', '40795-25-3', '88161-36-8']
     '''
-    return pubchem_dict[CASRN].all_names
-
+    return pubchem_db.search_CAS(CASRN).all_names
 
 
 ### DIPPR Database, chemical list only

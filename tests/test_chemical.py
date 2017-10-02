@@ -24,7 +24,7 @@ from numpy.testing import assert_allclose
 import pytest
 from thermo.chemical import *
 import thermo
-from thermo.identifiers import pubchem_dict
+from thermo.identifiers import pubchem_db
 from scipy.integrate import quad
 from math import *
 from scipy.constants import R
@@ -277,7 +277,7 @@ def test_H_Chemical():
 @pytest.mark.slow
 @pytest.mark.meta_Chemical
 def test_all_chemicals():
-    for i in pubchem_dict.keys():
+    for i in pubchem_db.CAS_index.keys():
         c = Chemical(i)
         
         # T and P dependent properties - just test they can be called
