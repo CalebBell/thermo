@@ -27,7 +27,7 @@ __all__ = ['checkCAS', 'CAS_from_any', 'PubChem', 'MW', 'formula', 'smiles',
            '_MixtureDict', 'mixture_from_any', 'cryogenics', 'dippr_compounds',
            'pubchem_dict']
 import os
-from thermo.utils import to_num, CAS2int
+from thermo.utils import to_num, CAS2int, int2CAS
 from thermo.elements import periodic_table
 
 folder = os.path.join(os.path.dirname(__file__), 'Identifiers')
@@ -77,6 +77,10 @@ def checkCAS(CASRN):
 
 
 
+
+
+
+
 smiles_dict = True
 pubchem_dict = True
 inchi_dict = True
@@ -96,11 +100,19 @@ pubchem_dict = {}
 
 class ChemicalMetadata(object):
     __slots__ = ['pubchemid', 'formula', 'MW', 'smiles', 'InChI', 'inchikey',
-                 'iupac_name', 'common_name', 'all_names']
+                 'iupac_name', 'common_name', 'all_names', 'CAS']
+    def __repr__(self):
+        return ('<ChemicalMetadata, name=%s, formula=%s, smiles=%s, MW=%g>'
+                %(self.common_name, self.formula, self.smiles, self.MW))
     
-    def __init__(self, pubchemid, formula, MW, smiles, InChI, inchikey,
+    @property
+    def CASs(self):
+        return int2CAS(self.CAS)
+    
+    def __init__(self, pubchemid, CAS, formula, MW, smiles, InChI, inchikey,
                  iupac_name, common_name, all_names):
         self.pubchemid = pubchemid
+        self.CAS = CAS
         self.formula = formula
         self.MW = MW
         self.smiles = smiles
@@ -111,12 +123,6 @@ class ChemicalMetadata(object):
         self.common_name = common_name
         self.all_names = all_names
     
-    
-    
-relevant_CASs = set()
-with open(os.path.join(folder, 'Chemicals with data.csv')) as f:
-    [relevant_CASs.add(int(line)) for line in f]
-
 
 with open(os.path.join(folder, 'chemical identifiers.tsv')) as f:
     for line in f:
@@ -124,10 +130,6 @@ with open(os.path.join(folder, 'chemical identifiers.tsv')) as f:
         (pubchemid, CAS, formula, MW, smiles, InChI, inchikey, iupac_name, common_name) = values[0:9]
         all_names = values[7:]
         pubchemid = int(pubchemid)
-#        CAS = int(CAS.replace('-', '')) # Store as int for easier lookup
-        
-#        if int(CAS.replace('-', '')) not in relevant_CASs:
-#            continue                
         # Create lookup dictionaries
         for name in all_names:
             # TODO: make unnecessary by removing previously unique identifiers,
@@ -137,8 +139,9 @@ with open(os.path.join(folder, 'chemical identifiers.tsv')) as f:
             else:
                 _cas_from_name_dict[name] = CAS
                                 
-        pubchem_dict[CAS] = ChemicalMetadata(pubchemid, formula, float(MW), smiles, InChI, inchikey,
-                 iupac_name, common_name, all_names)
+        pubchem_dict[CAS] = ChemicalMetadata(pubchemid, CAS, formula, float(MW), 
+                                             smiles, InChI, inchikey,
+                                             iupac_name, common_name, all_names)
 
 
         if pubchem_dict:
@@ -153,9 +156,160 @@ with open(os.path.join(folder, 'chemical identifiers.tsv')) as f:
 
 del pubchemid, formula, MW, smiles, InChI, inchikey, iupac_name, \
     common_name, all_names, name, line, f, CAS, values
-#print len(_cas_from_name_dict)/float(len(_cas_from_pubchem_dict))
-#print _cas_from_name_dict['Water'.lower()]
-#print _pubchem_dict['7732-18-5']
+
+
+
+class ChemicalMetadataDB(object):
+    exclusion_options = [os.path.join(folder, 'dippr_2014_int.csv'),
+                         os.path.join(folder, 'Chemicals with data.csv')]
+    
+    def __init__(self, create_pubchem_index=True, create_CAS_index=True,
+                 create_name_index=True, create_smiles_index=True, 
+                 create_InChI_index=True, create_InChI_key_index=True, 
+                 restrict_identifiers_file=os.path.join(folder, 'dippr_2014_int.csv'),
+                 main_db=os.path.join(folder, 'chemical identifiers.tsv'),
+                 user_dbs=[]):
+        self.pubchem_index = {}
+        self.smiles_index = {}
+        self.InChI_index = {}
+        self.InChI_key_index = {}
+        self.name_index = {}
+        self.CAS_index = {}
+
+
+        self.create_CAS_index = create_CAS_index
+        self.create_pubchem_index = create_pubchem_index
+        self.create_name_index = create_name_index
+        self.create_smiles_index = create_smiles_index
+        self.create_InChI_index = create_InChI_index
+        self.create_InChI_key_index = create_InChI_key_index
+        self.restrict_identifiers_file = restrict_identifiers_file
+        self.main_db = main_db
+        self.user_dbs = user_dbs
+        
+        if restrict_identifiers_file:
+            self.load_included_indentifiers(restrict_identifiers_file)
+        else:
+            self.restrict_identifiers = False
+            
+        self.load(self.main_db, overwrite=False)
+        for db in self.user_dbs:
+            self.load(db, overwrite=True)
+        
+
+    def load(self, file_name, overwrite=False):
+        f = open(file_name)
+        for line in f:
+            # This is effectively the documentation for the file format of the file
+            values = line.rstrip('\n').split('\t')
+            (pubchemid, CAS, formula, MW, smiles, InChI, inchikey, iupac_name, common_name) = values[0:9]
+            CAS = int(CAS.replace('-', '')) # Store as int for easier lookup
+            
+            # Handle the case of the db having more compounds than a user wants
+            # to keep in memory
+            if self.restrict_identifiers and CAS not in self.included_identifiers:
+                continue
+            
+            all_names = values[7:]
+            pubchemid = int(pubchemid)
+
+            obj = ChemicalMetadata(pubchemid, CAS, formula, float(MW), smiles,
+                                    InChI, inchikey, iupac_name, common_name, 
+                                    all_names)
+            
+            # Lookup indexes
+            if self.create_CAS_index:
+                self.CAS_index[CAS] = obj
+            if self.create_pubchem_index:
+                self.pubchem_index[pubchemid] = obj
+            if self.create_smiles_index:
+                self.smiles_index[smiles] = obj
+            if self.create_InChI_index:
+                self.InChI_index[InChI] = obj
+            if self.create_InChI_key_index:
+                self.InChI_key_index[inchikey] = obj
+            if self.create_name_index:
+                if overwrite:
+                    for name in all_names:
+                        self.name_index[name] = obj
+                else:
+                    for name in all_names:
+                        if name in self.name_index:
+                            pass
+                        else:
+                            self.name_index[name] = obj    
+        f.close()
+    
+    def load_included_indentifiers(self, file_name):
+        '''Loads a file with newline-separated integers representing which 
+        chemical should be kept in memory; ones not included are ignored.
+        '''
+        self.restrict_identifiers = True
+        included_identifiers = set()       
+        with open(file_name) as f:
+            [included_identifiers.add(int(line)) for line in f]
+        self.included_identifiers = included_identifiers
+        
+    @property
+    def can_autoload(self):
+        if not self.restrict_identifiers:
+            return False
+        if self.restrict_identifiers_file in self.exclusion_options:
+            return True
+        
+        
+    def autoload_next(self):
+        if self.restrict_identifiers_file == self.exclusion_options[0]:
+            self.restrict_identifiers_file = self.exclusion_options[1]
+            self.load_included_indentifiers(self.restrict_identifiers_file)
+            
+        elif self.restrict_identifiers_file == self.exclusion_options[1]:
+            self.restrict_identifiers_file = None
+            self.restrict_identifiers = False
+        else:
+            return None
+        
+        self.load(self.main_db, overwrite=False)
+        for db in self.user_dbs:
+            self.load(db, overwrite=True)
+        return True
+        
+    def _search_autoload(self, identifier, index, autoload=True):
+        if index:
+            if identifier in index:
+                return index[identifier]
+            else:
+                if autoload and self.can_autoload:
+                    self.autoload_next()
+                    return self._search_autoload(identifier, index, autoload)
+        return False
+        
+    
+    def search_pubchem(self, pubchem, autoload=True):
+        if type(pubchem) != int:
+            pubchem = int(pubchem)
+        return self._search_autoload(pubchem, self.pubchem_index, autoload=autoload)
+        
+    def search_CAS(self, CAS, autoload=True):
+        if type(CAS) != int:
+            CAS = CAS2int(CAS)
+        return self._search_autoload(CAS, self.CAS_index, autoload=autoload)
+
+    def search_smiles(self, smiles, autoload=True):
+        return self._search_autoload(smiles, self.smiles_index, autoload=autoload)
+
+    def search_InChI(self, InChI, autoload=True):
+        return self._search_autoload(InChI, self.InChI_index, autoload=autoload)
+
+    def search_InChI_key(self, InChI_key, autoload=True):
+        return self._search_autoload(InChI_key, self.InChI_key_index, autoload=autoload)
+
+    def search_name(self, name, autoload=True):
+        return self._search_autoload(name, self.name_index, autoload=autoload)
+
+
+pubchem_db = ChemicalMetadataDB(restrict_identifiers_file=os.path.join(folder, 'dippr_2014_int.csv'))
+
 
 
 def CAS_from_any(ID):
@@ -172,8 +326,7 @@ def CAS_from_any(ID):
     * CAS number (obsolete numbers may point to the current number)    
 
     If the input is an ID representing an element, the following additional 
-    inputs may be specified as well:
-        
+    inputs may be specified as 
     * Atomic symbol (ex 'Na')
     * Atomic number (as a string)
 
@@ -212,63 +365,70 @@ def CAS_from_any(ID):
     if ID in periodic_table:
         return periodic_table[ID].CAS
     if checkCAS(ID):
-        if ID in pubchem_dict:
-            return ID
-        elif ID in _cas_from_name_dict:
-            return _cas_from_name_dict[ID] # handle the case of synonyms
+        CAS_lookup = pubchem_db.search_CAS(ID)
+        if CAS_lookup:
+            return CAS_lookup.CASs
+        
+        # handle the case of synonyms
+        CAS_alternate_loopup = pubchem_db.search_name(ID)
+        if CAS_alternate_loopup:
+            return CAS_alternate_loopup.CASs
         raise Exception('A valid CAS number was recognized, but is not in the database')
         
-    if ID in _cas_from_name_dict:
-        # Try a direct lookup with the name - the fastest
-        return _cas_from_name_dict[ID]
-
+        
+    # Try a direct lookup with the name - the fastest
+    name_lookup = pubchem_db.search_name(ID)
+    if name_lookup:
+        return name_lookup.CASs
+    
     if len(ID) > 9:
-        if ID[0:9].lower() == 'inchi=1s/':
+        inchi_search = False
         # normal upper case is 'InChI=1S/'
-            if ID[9:] in _cas_from_inchi_dict:
-                return _cas_from_inchi_dict[ID[9:]]
-            else:
-                raise Exception('A valid InChI name was recognized, but it is not in the database')
-        if ID[0:8].lower() == 'inchi=1/':
-            if ID[8:] in _cas_from_inchi_dict:
-                return _cas_from_inchi_dict[ID[8:]]
+        if ID[0:9].lower() == 'inchi=1s/':
+            inchi_search = ID[9:]
+        elif ID[0:8].lower() == 'inchi=1/':
+            inchi_search = ID[8:]
+        if inchi_search:
+            inchi_lookup = pubchem_db.search_InChI(inchi_search)
+            if inchi_lookup:
+                return inchi_lookup.CASs
             else:
                 raise Exception('A valid InChI name was recognized, but it is not in the database')
         if ID[0:9].lower() == 'inchikey=':
-            if ID[9:] in _cas_from_inchikey_dict:
-                return _cas_from_inchikey_dict[ID[9:]]
+            inchi_key_lookup = pubchem_db.search_InChI_key(ID[9:])
+            if inchi_key_lookup:
+                return inchi_key_lookup.CASs
             else:
                 raise Exception('A valid InChI Key was recognized, but it is not in the database')
     if len(ID) > 8:
         if ID[0:8].lower() == 'pubchem=':
-            try:
-                # Attempt to cast the ID to an int for lookup, may not work
-                return _cas_from_pubchem_dict[int(ID[8:])]
-            except:
+            pubchem_lookup = pubchem_db.search_pubchem(ID[8:])
+            if pubchem_lookup:
+                return pubchem_lookup.CASs
+            else:
                 raise Exception('A PubChem integer identifier was recognized, but it is not in the database.')
     if len(ID) > 7:
         if ID[0:7].lower() == 'smiles=':
-            try:
-                return _cas_from_smiles_dict[ID[7:]]
-            except:
+            smiles_lookup = pubchem_db.search_smiles(ID[7:])
+            if smiles_lookup:
+                return smiles_lookup.CASs
+            else:
                 raise Exception('A SMILES identifier was recognized, but it is not in the database.')
 
-    if ID in _cas_from_smiles_dict:
-        # Parsing SMILES is an option, but this is faster
-        # Pybel API also prints messages to console on failure
-        return _cas_from_smiles_dict[ID]
-    try:
-        return _cas_from_name_dict[ID.lower()]
-    except:
-        try:
-            ID = ID.replace(' ', '')
-            return _cas_from_name_dict[ID.lower()]
-        except:
-            try:
-                ID = ID.replace('-', '')
-                return _cas_from_name_dict[ID.lower()]
-            except:
-                raise Exception('Chemical name not recognized')
+    # Try the smiles lookup anyway
+    # Parsing SMILES is an option, but this is faster
+    # Pybel API also prints messages to console on failure
+    smiles_lookup = pubchem_db.search_smiles(ID)
+    if smiles_lookup:
+        return smiles_lookup.CASs
+    
+    # Permutate through various name options
+    for name in [ID, ID.replace(' ', ''), ID.replace(' ', '').replace('-', '')]:
+        for name2 in [name, name.lower()]:
+            name_lookup = pubchem_db.search_name(name2)
+            if name_lookup:
+                return name_lookup.CASs
+    raise Exception('Chemical name not recognized')
 
 
 
@@ -392,6 +552,13 @@ def synonyms(CASRN):
 
 
 
+### DIPPR Database, chemical list only
+# Obtained via the command:
+# list(pd.read_excel('http://www.aiche.org/sites/default/files/docs/pages/sponsor_compound_list-2014.xlsx')['Unnamed: 2'])[2:]
+# This is consistently faster than creating a list and then making the set.
+dippr_compounds = set()
+with open(os.path.join(folder, 'dippr_2014.csv')) as f:
+    dippr_compounds.update(f.read().split('\n'))
 
 
 _MixtureDict = {}
@@ -468,54 +635,3 @@ cryogenics = {'132259-10-0': 'Air', '7440-37-1': 'Argon', '630-08-0':
 '7440-59-7': 'helium', '1333-74-0': 'hydrogen', '7439-90-9': 'krypton',
 '74-82-8': 'methane', '7440-01-9': 'neon', '7727-37-9': 'nitrogen',
 '7782-44-7': 'oxygen', '7440-63-3': 'xenon'}
-
-
-
-### DIPPR Database, chemical list only
-# Obtained via the command:
-# list(pd.read_excel('http://www.aiche.org/sites/default/files/docs/pages/sponsor_compound_list-2014.xlsx')['Unnamed: 2'])[2:]
-# This is consistently faster than creating a list and then making the set.
-dippr_compounds = set()
-with open(os.path.join(folder, 'dippr_2014.csv')) as f:
-    dippr_compounds.update(f.read().split('\n'))
-
-
-
-
-
-
-
-
-
-### Temporary functions which served a purpose, once
-
-
-#def mid(ID):
-#    print(CASfromAny(ID) + '\t' + ID + '\n')*20
-#
-#
-##def paste(str):
-##    from subprocess import Popen, PIPE
-##    p = Popen(['xsel', '-bi'], stdin=PIPE)
-##    p.communicate(input=str)
-#
-#
-##def cid(ID):
-##    paste((CASfromAny(ID) + '\t' + ID + '\n')*60)
-#
-#def fid(ID):
-#    a = CASfromAny(ID)
-#    paste((a + '\t' + IUPAC_name(a) + '\n')*60)
-#
-#def mancas(ID):
-#    paste((ID + '\n')*60)
-#
-#def cas(ID):
-#    a = CASfromAny(ID)
-#    paste(a)
-#
-#def autocas():
-#    while True:
-#        data = raw_input()
-#        cas(data)
-
