@@ -24,6 +24,7 @@ from numpy.testing import assert_allclose
 import pytest
 from thermo.identifiers import *
 from thermo.utils import CAS2int
+import os
 
 def test_dippr_list():
     assert 12916928773 == sum([CAS2int(i) for i in dippr_compounds])
@@ -101,3 +102,35 @@ def test_CAS_from_any():
     # unknown CAS
     with pytest.raises(Exception):
         CAS_from_any('1411769-41-9')
+        
+        
+        
+def test_db_vs_ChemSep():
+    import xml.etree.ElementTree as ET
+    folder = os.path.join(os.path.dirname(__file__), 'Data')
+
+    tree = ET.parse(os.path.join(folder, 'chemsep1.xml'))
+    root = tree.getroot()
+
+    data = {}
+    for child in root:
+        CAS = [i.attrib['value'] for i in child if i.tag == 'CAS'][0]
+        name = [i.attrib['value'] for i in child if i.tag == 'CompoundID'][0]
+        data[CAS] = name
+        
+    
+    for CAS, name in data.items():
+        hit = pubchem_db.search_CAS(CAS)
+        assert hit.CASs == CAS
+
+    for CAS, name in data.items():
+        assert CAS_from_any(CAS) == CAS
+
+    # in an ideal world, the names would match too but ~15 don't. Adding more synonyms
+    # might help.
+#    try:
+#        assert CAS_from_any(name) == CAS
+#    except:
+#        print(CAS, name)
+#
+
