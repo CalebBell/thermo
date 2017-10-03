@@ -111,7 +111,7 @@ class ChemicalMetadataDB(object):
                  create_InChI_index=True, create_InChI_key_index=True, 
                  restrict_identifiers_file=None,
                  main_db=os.path.join(folder, 'chemical identifiers.tsv'),
-                 user_dbs=[]):
+                 user_dbs=[os.path.join(folder, 'chemical identifiers example user db.tsv')]):
         self.pubchem_index = {}
         self.smiles_index = {}
         self.InChI_index = {}
