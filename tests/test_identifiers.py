@@ -116,14 +116,19 @@ def test_db_vs_ChemSep():
     for child in root:
         CAS = [i.attrib['value'] for i in child if i.tag == 'CAS'][0]
         name = [i.attrib['value'] for i in child if i.tag == 'CompoundID'][0]
-        data[CAS] = name
+        smiles = [i.attrib['value'] for i in child if i.tag == 'Smiles']
+        if smiles:
+            smiles = smiles[0]
+        else:
+            smiles = None
         
+        data[CAS] = {'name': name, 'smiles': smiles}        
     
-    for CAS, name in data.items():
+    for CAS, d in data.items():
         hit = pubchem_db.search_CAS(CAS)
         assert hit.CASs == CAS
 
-    for CAS, name in data.items():
+    for CAS, d in data.items():
         assert CAS_from_any(CAS) == CAS
 
     # in an ideal world, the names would match too but ~15 don't. Adding more synonyms
@@ -134,3 +139,6 @@ def test_db_vs_ChemSep():
 #        print(CAS, name)
 #
 
+    # In an ideal world we could also validate against their smiles
+    # but that's proving difficult due to things like 1-hexene - 
+    # is it 'CCCCC=C' or 'C=CCCCC'?

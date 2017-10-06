@@ -109,7 +109,7 @@ class ChemicalMetadataDB(object):
     def __init__(self, create_pubchem_index=True, create_CAS_index=True,
                  create_name_index=True, create_smiles_index=True, 
                  create_InChI_index=True, create_InChI_key_index=True, 
-                 restrict_identifiers_file=None,
+                 restrict_identifiers_file=None, elements=True,
                  main_db=os.path.join(folder, 'chemical identifiers.tsv'),
                  user_dbs=[os.path.join(folder, 'chemical identifiers example user db.tsv')]):
         self.pubchem_index = {}
@@ -129,6 +129,7 @@ class ChemicalMetadataDB(object):
         self.restrict_identifiers_file = restrict_identifiers_file
         self.main_db = main_db
         self.user_dbs = user_dbs
+        self.elements = elements
         
         if restrict_identifiers_file:
             self.load_included_indentifiers(restrict_identifiers_file)
@@ -141,6 +142,8 @@ class ChemicalMetadataDB(object):
         self.load_elements()
         
     def load_elements(self):
+        if not self.elements:
+            return None
         for ele in periodic_table:
             
             CAS = int(ele.CAS.replace('-', '')) # Store as int for easier lookup

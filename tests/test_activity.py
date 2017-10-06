@@ -112,6 +112,18 @@ def test_flash_inner_loop():
 
 
 def test_flash_solution_algorithms():
+    # Derive the analytical solution with:
+#    from sympy import *
+#    z1, z2, K1, K2, VF = symbols('z1, z2, K1, K2, VF')
+#    expr = z1*(K1 - 1)/(1 + VF*(K1-1)) + z2*(K2 - 1)/(1 + VF*(K2-1))
+#    solve(expr, VF)
+    
+#    from sympy import *
+#    z1, z2, z3, K1, K2, K3, VF = symbols('z1, z2, z3, K1, K2, K3, VF')
+#    expr = z1*(K1 - 1)/(1 + VF*(K1-1)) + z2*(K2 - 1)/(1 + VF*(K2-1)) + z3*(K3 - 1)/(1 + VF*(K3-1))
+#    ans = solve(expr, VF)
+
+    
     flash_inner_loop_RR = lambda zs, Ks: flash_inner_loop(zs=zs, Ks=Ks, Method='Rachford-Rice')
     flash_inner_loop_LJA = lambda zs, Ks: flash_inner_loop(zs=zs, Ks=Ks, Method='Li-Johns-Ahmadi')
 
