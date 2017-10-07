@@ -33,7 +33,7 @@ def test_dippr_list():
 
 @pytest.mark.slow
 def test_pubchem_dict():
-    assert all([checkCAS(i) for i in pubchem_dict])
+    assert all([checkCAS(i.CASs) for i in pubchem_db.CAS_index.values()])
 
 
 def test_mixture_from_any():

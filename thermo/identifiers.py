@@ -193,7 +193,6 @@ class ChemicalMetadataDB(object):
             values = line.rstrip('\n').split('\t')
             (pubchemid, CAS, formula, MW, smiles, InChI, InChI_key, iupac_name, common_name) = values[0:9]
             CAS = int(CAS.replace('-', '')) # Store as int for easier lookup
-            
             # Handle the case of the db having more compounds than a user wants
             # to keep in memory
             if self.restrict_identifiers and CAS not in self.included_identifiers:
