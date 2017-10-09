@@ -111,7 +111,8 @@ class ChemicalMetadataDB(object):
                  create_InChI_index=True, create_InChI_key_index=True, 
                  restrict_identifiers_file=None, elements=True,
                  main_db=os.path.join(folder, 'chemical identifiers.tsv'),
-                 user_dbs=[os.path.join(folder, 'chemical identifiers example user db.tsv')]):
+                 user_dbs=[os.path.join(folder, 'chemical identifiers example user db.tsv'),
+                           os.path.join(folder, 'Cation db.tsv')]):
         self.pubchem_index = {}
         self.smiles_index = {}
         self.InChI_index = {}
@@ -195,7 +196,7 @@ class ChemicalMetadataDB(object):
             CAS = int(CAS.replace('-', '')) # Store as int for easier lookup
             # Handle the case of the db having more compounds than a user wants
             # to keep in memory
-            if self.restrict_identifiers and CAS not in self.included_identifiers:
+            if self.restrict_identifiers and CAS not in self.included_identifiers and file_name not in self.user_dbs:
                 continue
             
             all_names = values[7:]

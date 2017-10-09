@@ -24,6 +24,7 @@ from numpy.testing import assert_allclose
 import pytest
 from thermo.identifiers import *
 from thermo.utils import CAS2int
+from thermo.elements import periodic_table
 import os
 
 def test_dippr_list():
@@ -104,7 +105,28 @@ def test_CAS_from_any():
         CAS_from_any('1411769-41-9')
         
         
-        
+def test_periodic_table_variants():
+    ids = [periodic_table.CAS_to_elements, periodic_table.name_to_elements, periodic_table.symbol_to_elements]
+    failed_CASs = []
+    for thing in ids:
+        for i in thing.keys():
+            try:
+                CAS_from_any(i)
+            except:
+                failed_CASs.append(periodic_table[i].name)
+    assert 0 == len(set(failed_CASs))
+    
+    # Check only the 5 known diatomics have a diff case
+    failed_CASs = []
+    for thing in ids:
+        for i in thing.keys():
+            try:
+                assert CAS_from_any(i) == periodic_table[i].CAS
+            except:
+                failed_CASs.append(periodic_table[i].name)
+    assert set(['Chlorine', 'Fluorine', 'Hydrogen', 'Nitrogen', 'Oxygen']) == set(failed_CASs)     
+    
+    
 def test_db_vs_ChemSep():
     import xml.etree.ElementTree as ET
     folder = os.path.join(os.path.dirname(__file__), 'Data')
