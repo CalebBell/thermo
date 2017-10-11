@@ -851,7 +851,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
 
     @property
     def charges(self):
-        r'''Charges for all chemicals in the mixture.
+        r'''Charges for all chemicals in the mixture, [Faraday].
 
         Examples
         --------
@@ -1041,6 +1041,19 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         '''
         return property_molar_to_mass(R, self.MW)
 
+    @property
+    def charge_balance(self):
+        r'''Charge imbalance of the mixture, in units of [Faraday].
+        Mixtures meeting the electroneutrality condition will have an imbalance
+        of 0.
+
+        Examples
+        --------
+        >>> Mixture(['Na+', 'Cl-', 'water'], zs=[.01, .01, .98]).charge_balance
+        0.0
+        '''
+        return sum([zi*ci for zi, ci in zip(self.zs, self.charges)])
+        
     ### One phase properties - calculate lazily
     @property
     def Psats(self):
