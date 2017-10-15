@@ -25,7 +25,7 @@ from __future__ import division
 __all__ = ['PeriodicTable', 'molecular_weight', 'mass_fractions', 
            'atom_fractions', 'similarity_variable', 'atoms_to_Hill', 
            'simple_formula_parser', 'CAS_by_number', 'periods', 'groups', 
-           'blocks', 'homonuclear_elemental_gases']
+           'blocks', 'homonuclear_elemental_gases', 'charge_from_formula']
 import os
 import re
 from collections import Counter
@@ -459,8 +459,8 @@ def atoms_to_Hill(atoms):
 
     References
     ----------
-    .. [1] Hill, Edwin A. “ON A SYSTEM OF INDEXING CHEMICAL LITERATURE;
-       ADOPTED BY THE CLASSIFICATION DIVISION OF THE U. S. PATENT OFFICE.1.”
+    .. [1] Hill, Edwin A."“ON A SYSTEM OF INDEXING CHEMICAL LITERATURE;
+       ADOPTED BY THE CLASSIFICATION DIVISION OF THE U. S. PATENT OFFICE.1."
        Journal of the American Chemical Society 22, no. 8 (August 1, 1900):
        478-94. doi:10.1021/ja02046a005.
     '''
@@ -528,3 +528,48 @@ def simple_formula_parser(formula):
         ele, count = _formula_p2.split(group)[1:]
         cnt[ele] += int(count) if count.isdigit() else 1
     return dict(cnt)
+
+
+def charge_from_formula(formula):
+    r'''Basic formula parser to determine the charge from a formula - given
+    that the charge is already specified as one element of the formula.
+
+    Performs no sanity checking that elements are actually elements.
+    
+    Parameters
+    ----------
+    formula : str
+        Formula string, very simply formats only, ending in one of '+x',
+        '-x', n*'+', or n*'-'. 
+
+    Returns
+    -------
+    charge : int
+        Charge of the molecule, [faraday]
+
+    Notes
+    -----
+    Brackets are handled by ignoring them.
+
+    Examples
+    --------
+    >>> charge_from_formula('Br3-')
+    -1
+    '''
+    negative = '-' in formula
+    positive = '+' in formula
+    if positive and negative:
+        raise ValueError('Both negative and positive signs were found in the formula; only one sign is allowed')
+    elif not (positive or negative):
+        return 0
+    multiplier, sign = (-1, '-') if negative else (1, '+')
+    
+    count = formula.count(sign)
+    if count == 1:
+        splits = formula.split(sign)
+        if splits[1] == '':
+            return multiplier
+        else:
+            return multiplier*int(splits[1])
+    else:
+        return multiplier*count

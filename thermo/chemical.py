@@ -52,7 +52,7 @@ from thermo.environment import GWP, ODP, logP
 from thermo.law import legal_status, economic_status
 from thermo.refractivity import refractive_index
 from thermo.electrochem import conductivity
-from thermo.elements import atom_fractions, mass_fractions, similarity_variable, atoms_to_Hill, simple_formula_parser, molecular_weight
+from thermo.elements import atom_fractions, mass_fractions, similarity_variable, atoms_to_Hill, simple_formula_parser, molecular_weight, charge_from_formula
 from thermo.coolprop import has_CoolProp
 from thermo.eos import *
 from thermo.eos_mix import *
@@ -1186,9 +1186,12 @@ class Chemical(object): # pragma: no cover
         1
         '''
         try:
-            return Chem.GetFormalCharge(self.rdkitmol)
+            if not self.rdkitmol:
+                return charge_from_formula(self.formula)
+            else:
+                return Chem.GetFormalCharge(self.rdkitmol)
         except:
-            return None
+            return charge_from_formula(self.formula)
 
     @property
     def rings(self):

@@ -96,3 +96,17 @@ def test_simple_formula_parser():
     assert simple_formula_parser('H20OCo2NaClH4P4-132') == {'P': 4, 'Co': 2, 'Cl': 1, 'H': 24, 'Na': 1, 'O': 1}
 
 
+def test_charge_from_formula():
+    assert charge_from_formula('Br3-') == -1
+    assert charge_from_formula('Br3-1') == -1
+    assert charge_from_formula('Br3-2') == -2
+    assert charge_from_formula('Br3-3') == -3
+    assert charge_from_formula('Br3+') == 1
+    assert charge_from_formula('Br3+1') == 1
+    assert charge_from_formula('Br3+2') == 2
+    assert charge_from_formula('Br3+3') == 3
+    assert charge_from_formula('Br3') == 0
+    assert charge_from_formula('Br3--') == -2
+    assert charge_from_formula('Br3(--)') == -2
+    assert charge_from_formula('Br3++') == 2
+    assert charge_from_formula('Br3(++)') == 2

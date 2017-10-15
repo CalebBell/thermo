@@ -24,9 +24,10 @@ from numpy.testing import assert_allclose
 import pytest
 import numpy as np
 import pandas as pd
+from thermo.elements import charge_from_formula
 from thermo.electrochem import *
 from thermo.electrochem import _Laliberte_Density_ParametersDict, _Laliberte_Viscosity_ParametersDict, _Laliberte_Heat_Capacity_ParametersDict
-from thermo.identifiers import checkCAS
+from thermo.identifiers import checkCAS, CAS_from_any, pubchem_db
 from math import log10
 
 
@@ -100,7 +101,19 @@ def test_conductivity():
     assert conductivity('7732-18-5', full_info=False) == 4e-06
 
 
+def test_Marcus_ion_conductivities():
+    # Check the CAS numbers are the "canonical" ones
+    assert all([CAS_from_any(i) == i for i in Marcus_ion_conductivities.index])
 
+    # Check the charges match up
+    for v, CAS in zip(Marcus_ion_conductivities['Charge'], Marcus_ion_conductivities.index):
+        assert v == charge_from_formula(pubchem_db.search_CAS(CAS).formula)
+
+    # Even check the formulas work!
+    for formula, CAS in zip(Marcus_ion_conductivities['Formula'], Marcus_ion_conductivities.index):
+        assert pubchem_db.search_CAS(CAS_from_any(formula)).CASs == CAS
+        
+    
 def test_Magomedovk_thermal_cond():
     assert all([checkCAS(i) for i in Magomedovk_thermal_cond.index])
     assert Magomedovk_thermal_cond.index.is_unique

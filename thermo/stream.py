@@ -159,7 +159,6 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.n, self.T, self.P)
     def __init__(self, IDs, zs=None, ws=None, Vfls=None, Vfgs=None,
                  ns=None, ms=None, Qls=None, Qgs=None, 
                  n=None, m=None, Q=None, T=298.15, P=101325, V_TP=(None, None)):
-        
         composition_options = (zs, ws, Vfls, Vfgs, ns, ms, Qls, Qgs)
         composition_option_count = sum(i is not None for i in composition_options)
         if hasattr(IDs, 'strip') or len(IDs) == 1:
@@ -187,13 +186,13 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.n, self.T, self.P)
                             "'m', 'n', 'Q', 'ms', 'ns', 'Qls', or 'Qgs' can "
                             "be specified")
         
-        if ns:
+        if ns is not None:
             zs = ns
-        elif ms:
+        elif ms is not None:
             ws = ms
-        elif Qls:
+        elif Qls is not None:
             Vfls = Qls
-        elif Qgs:
+        elif Qgs is not None:
             Vfgs = Qgs
         
         super(Stream, self).__init__(IDs, zs=zs, ws=ws, Vfls=Vfls, Vfgs=Vfgs,
@@ -253,8 +252,14 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.n, self.T, self.P)
             self.mls = [ni*MWi*1E-3 for ni, MWi in zip(self.nls, self.MWs)]
             self.mg = sum(self.mgs)
             self.ml = sum(self.mls)
-            self.Ql = self.ml/self.rhol
-            self.Qg = self.mg/self.rhog
+            if self.rhol:
+                self.Ql = self.ml/self.rhol 
+            else:
+                self.Ql = None
+            if self.rhog:
+                self.Qg = self.mg/self.rhog
+            else:
+                self.Qg = None
             
     def set_extensive_properties(self):
         if hasattr(self, 'H') and hasattr(self, 'S'):

@@ -29,7 +29,7 @@ __all__ = ['conductivity', 'Laliberte_density', 'Laliberte_heat_capacity',
            'Laliberte_heat_capacity_i', 'Lange_cond_pure', 
            'conductivity_methods', 'Magomedovk_thermal_cond',
            'thermal_conductivity_Magomedov', 'ionic_strength', 'Kweq_1981', 
-           'Kweq_IAPWS_gas', 'Kweq_IAPWS']
+           'Kweq_IAPWS_gas', 'Kweq_IAPWS', 'Marcus_ion_conductivities']
 
 import os
 from thermo.utils import exp, log10
@@ -589,6 +589,13 @@ def conductivity(CASRN=None, AvailableMethods=False, Method=None, full_info=True
         return kappa, T
     else:
         return kappa
+
+
+Lange_cond_pure = pd.read_csv(os.path.join(folder, 'Lange Pure Species Conductivity.tsv'),
+                          sep='\t', index_col=0)
+
+Marcus_ion_conductivities = pd.read_csv(os.path.join(folder, 'Marcus Ion Conductivities.tsv'),
+                          sep='\t', index_col=0)
 
 
 Magomedovk_thermal_cond = pd.read_csv(os.path.join(folder, 'Magomedov Thermal Conductivity.tsv'),

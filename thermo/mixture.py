@@ -851,7 +851,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
 
     @property
     def charges(self):
-        r'''Charges for all chemicals in the mixture, [Faraday].
+        r'''Charges for all chemicals in the mixture, [faraday].
 
         Examples
         --------
@@ -1043,7 +1043,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
 
     @property
     def charge_balance(self):
-        r'''Charge imbalance of the mixture, in units of [Faraday].
+        r'''Charge imbalance of the mixture, in units of [faraday].
         Mixtures meeting the electroneutrality condition will have an imbalance
         of 0.
 
