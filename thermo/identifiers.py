@@ -28,7 +28,7 @@ __all__ = ['checkCAS', 'CAS_from_any', 'PubChem', 'MW', 'formula', 'smiles',
            'pubchem_db']
 import os
 from thermo.utils import to_num, CAS2int, int2CAS
-from thermo.elements import periodic_table, homonuclear_elemental_gases
+from thermo.elements import periodic_table, homonuclear_elemental_gases, charge_from_formula
 
 folder = os.path.join(os.path.dirname(__file__), 'Identifiers')
 
@@ -82,6 +82,9 @@ class ChemicalMetadata(object):
     def __repr__(self):
         return ('<ChemicalMetadata, name=%s, formula=%s, smiles=%s, MW=%g>'
                 %(self.common_name, self.formula, self.smiles, self.MW))
+    @property
+    def charge(self):
+        return charge_from_formula(self.formula)
     
     @property
     def CASs(self):
