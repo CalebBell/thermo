@@ -29,13 +29,16 @@ __all__ = ['conductivity', 'Laliberte_density', 'Laliberte_heat_capacity',
            'Laliberte_heat_capacity_i', 'Lange_cond_pure', 
            'conductivity_methods', 'Magomedovk_thermal_cond',
            'thermal_conductivity_Magomedov', 'ionic_strength', 'Kweq_1981', 
-           'Kweq_IAPWS_gas', 'Kweq_IAPWS', 'Marcus_ion_conductivities']
+           'Kweq_IAPWS_gas', 'Kweq_IAPWS', 'Marcus_ion_conductivities',
+           'balance_ions']
 
 import os
 from thermo.utils import exp, log10
 from thermo.utils import e, N_A
-from thermo.utils import to_num
+from thermo.utils import to_num, ws_to_zs
+from thermo.identifiers import pubchem_db
 from scipy.interpolate import interp1d
+from scipy.optimize import newton
 import pandas as pd
 
 
@@ -867,3 +870,130 @@ def Kweq_IAPWS(T, rho_w):
     K_w = 10**(-1*(-2*n*(log10(1+Q)-Q/(Q+1) * rho_w *(beta0 + beta1/T + beta2*rho_w)) -
     log10(K_w_G) + 2*log10(18.015268/1000) ))
     return K_w
+
+
+
+
+Na_ion = pubchem_db.search_name('Na+')
+Cl_ion = pubchem_db.search_name('Cl-')
+
+
+def ion_balance_adjust_one(charges, zs, n_anions, n_cations, adjust):
+    def solve_one_ion(z_adjust):
+        zs[adjust] = z_adjust
+        zs[-1] = 1. - sum(zs[0:-1])
+        impacts = [zi*ci for zi, ci in zip(zs, charges)]
+        balance_error = sum(impacts)
+        return balance_error
+    
+    z_adjust = newton(solve_one_ion, zs[adjust])
+    zs[adjust] = z_adjust
+
+    anion_zs = zs[0:n_anions]
+    cation_zs = zs[n_anions:n_cations+n_anions]
+    z_water = zs[-1]
+    return anion_zs, cation_zs, z_water
+
+
+def ion_balance_dominant(impacts, balance_error, charges, zs, n_anions, 
+                         n_cations, method):
+    if method == 'dominant':
+        # Highest concentration species in the inferior type always gets adjusted, up or down regardless
+        low = min(impacts)
+        high = max(impacts)
+        if abs(low) > high:
+            adjust = impacts.index(low)
+        else:
+            adjust = impacts.index(high)
+    elif method == 'decrease dominant':        
+        if balance_error < 0:
+            # Decrease the dominant anion
+            adjust = impacts.index(min(impacts))
+        else:
+             # Decrease the dominant cation
+            adjust = impacts.index(max(impacts))
+    elif method == 'increase dominant':
+        if balance_error < 0:
+            adjust = impacts.index(max(impacts))
+        else:
+            adjust = impacts.index(min(impacts))
+    else:
+        raise Exception('Error')
+    return ion_balance_adjust_one(charges, zs, n_anions, n_cations, adjust)
+
+
+def ion_balance_proportional(anion_charges, cation_charges, zs, n_anions, 
+                             n_cations, balance_error, method):
+    anion_zs = zs[0:n_anions]
+    cation_zs = zs[n_anions:n_cations+n_anions]
+    anion_balance_error = sum([zi*ci for zi, ci in zip(anion_zs, anion_charges)])
+    cation_balance_error = sum([zi*ci for zi, ci in zip(cation_zs, cation_charges)])
+    if method == 'proportional insufficient ions increase':
+        if balance_error < 0:
+            multiplier = -anion_balance_error/cation_balance_error
+            cation_zs = [i*multiplier for i in cation_zs]
+        else:
+            multiplier = -cation_balance_error/anion_balance_error
+            anion_zs = [i*multiplier for i in anion_zs]
+    elif method == 'proportional excess ions decrease':
+        if balance_error < 0:
+            multiplier = -cation_balance_error/anion_balance_error
+            anion_zs = [i*multiplier for i in anion_zs]
+        else:
+            multiplier = -anion_balance_error/cation_balance_error
+            cation_zs = [i*multiplier for i in cation_zs]
+    elif method == 'proportional cation adjustment':
+        multiplier = -anion_balance_error/cation_balance_error
+        cation_zs = [i*multiplier for i in cation_zs]
+    elif method == 'proportional anion adjustment':
+        multiplier = -cation_balance_error/anion_balance_error
+        anion_zs = [i*multiplier for i in anion_zs]
+    else:
+        raise Exception('Error')
+    z_water = 1. - sum(anion_zs) - sum(cation_zs)
+    return anion_zs, cation_zs, z_water
+
+
+
+def balance_ions(anions, cations, anion_zs=None, cation_zs=None, anion_concs=None, 
+                 cation_concs=None, rho=997.1, method='increase dominant', selected_ion=None):
+    anions = list(anions)
+    cations = list(cations)
+    
+    MW_water = [18.01528]
+    rho = rho/1000 # Convert to kg/liter
+    n_anions = len(anions)
+    n_cations = len(cations)
+    ions = anions + cations
+    
+    anion_ws = [i*1E-6/rho for i in anion_concs]
+    cation_ws = [i*1E-6/rho for i in cation_concs]
+    w_water = 1 - sum(anion_ws) - sum(cation_ws)
+    
+    anion_charges = [i.charge for i in anions]
+    cation_charges = [i.charge for i in cations]
+    charges = anion_charges + cation_charges + [0]
+    
+    anion_MWs = [i.MW for i in anions]
+    cation_MWs = [i.MW for i in cations]
+    MWs = anion_MWs + cation_MWs + MW_water
+    
+    zs = ws_to_zs(anion_ws + cation_ws + [w_water], MWs)
+    impacts = [zi*ci for zi, ci in zip(zs, charges)]
+    balance_error = sum(impacts)
+    
+    
+    if abs(balance_error) < 1E-7:
+        return anions, cations, zs
+    if 'dominant' in method:
+        anion_zs, cation_zs, z_water = ion_balance_dominant(impacts,
+            balance_error, charges, zs, n_anions, n_cations, method)
+        return anions, cations, anion_zs, cation_zs, z_water
+    elif 'proportional' in method:
+        anion_zs, cation_zs, z_water = ion_balance_proportional(
+            anion_charges, cation_charges, zs, n_anions, n_cations,
+            balance_error, method)
+        return anions, cations, anion_zs, cation_zs, z_water
+    else:
+        raise Exception('Method not recognized')
+

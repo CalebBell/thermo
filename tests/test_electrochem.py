@@ -157,3 +157,131 @@ def test_Kweq_1981():
     # Point from IAPWS formulation, very close despite being different
     pKw = -1*log10(Kweq_1981(600, 700))
     assert_allclose(pKw, 11.274522047458206)
+    
+    
+def test_balance_ions():
+    anion_concs = [37561.09, 600.14, 0.3, 2047.49]
+    cation_concs = [0.15, 3717.44, 2.61, 364.08, 267.84, 113.34, 18908.04]
+    
+    anions = ['Cl-', 'HCO3-', 'HS-', 'SO4-2']
+    cations = ['Ba+2', 'Ca+2', 'Fe+2', 'K+', 'Mg+2', 'NH4+', 'Na+']
+    cations = [pubchem_db.search_name(i) for i in cations]
+    anions = [pubchem_db.search_name(i) for i in anions]
+    
+    
+    an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='dominant')
+    assert an_res == anions
+    assert cat_res == cations
+    dominant_an_zs = [0.01844389123949594, 0.00018264948953265628, 1.6843448929678392e-07, 0.0003957995227824709]
+    dominant_cat_zs = [2.0283448144191746e-08, 0.001722453668971278, 8.678922979921716e-07, 0.0001729226579918368, 0.0002046394845036363, 0.00011667568840362263, 0.015272747204245271]
+    assert_allclose(an_zs, dominant_an_zs, rtol=1E-4)
+    assert_allclose(cat_zs, dominant_cat_zs, rtol=1E-4)
+    assert_allclose(z_water, 0.963487164434, rtol=1E-4)
+    
+    
+    an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='decrease dominant')
+    assert an_res == anions
+    assert cat_res == cations
+    dominant_an_zs = [0.01844389123949594, 0.00018264948953265628, 1.6843448929678392e-07, 0.0003957995227824709]
+    dominant_cat_zs = [2.0283448144191746e-08, 0.001722453668971278, 8.678922979921716e-07, 0.0001729226579918368, 0.0002046394845036363, 0.00011667568840362263, 0.015272747204245271]
+    assert_allclose(z_water, 0.963487164434, rtol=1E-4)
+    
+    an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='increase dominant')
+    assert an_res == anions
+    assert cat_res == cations
+    dominant_an_zs = [0.019674097453720542, 0.00018264948953265628, 1.6843448929678392e-07, 0.0003957995227824709]
+    dominant_cat_zs = [2.0283448144191746e-08, 0.001722453668971278, 8.678922979921716e-07, 0.0001729226579918368, 0.0002046394845036363, 0.00011667568840362263, 0.016502953418469874]
+    assert_allclose(an_zs, dominant_an_zs, rtol=1E-4)
+    assert_allclose(cat_zs, dominant_cat_zs, rtol=1E-4)
+    assert_allclose(z_water, 0.961026752005, rtol=1E-4)
+    
+    
+    # Proportional
+    an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='proportional insufficient ions increase')
+    assert an_res == anions
+    assert cat_res == cations
+    dominant_an_zs = [0.019674097453720542, 0.00018264948953265628, 1.6843448929678392e-07, 0.0003957995227824709]
+    dominant_cat_zs = [2.1568463485601134e-08, 0.0018315761107652187, 9.228757953582418e-07, 0.00018387781052887865, 0.00021760399010327137, 0.00012406743208065072, 0.016240320090443242]
+    assert_allclose(an_zs, dominant_an_zs, rtol=1E-4)
+    assert_allclose(cat_zs, dominant_cat_zs, rtol=1E-4)
+    assert_allclose(z_water, 0.961148895221, rtol=1E-4)
+    
+    an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='proportional excess ions decrease')
+    assert an_res == anions
+    assert cat_res == cations
+    dominant_an_zs = [0.018501945479459977, 0.00017176751844061514, 1.583994256997263e-07, 0.0003722184058782681]
+    dominant_cat_zs = [2.0283448144191746e-08, 0.001722453668971278, 8.678922979921716e-07, 0.0001729226579918368, 0.0002046394845036363, 0.00011667568840362263, 0.015272747204245271]
+    assert_allclose(an_zs, dominant_an_zs, rtol=1E-4)
+    assert_allclose(cat_zs, dominant_cat_zs, rtol=1E-4)
+    assert_allclose(z_water, 0.963463583317, rtol=1E-4)
+    
+    # Proportional anion/cation direct adjustment
+    an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='proportional cation adjustment')
+    assert an_res == anions
+    assert cat_res == cations
+    dominant_an_zs = [0.019674097453720542, 0.00018264948953265628, 1.6843448929678392e-07, 0.0003957995227824709]
+    dominant_cat_zs = [2.1568463485601134e-08, 0.0018315761107652187, 9.228757953582418e-07, 0.00018387781052887865, 0.00021760399010327137, 0.00012406743208065072, 0.016240320090443242]
+    assert_allclose(z_water, 0.961148895221, rtol=1E-4)
+    assert_allclose(an_zs, dominant_an_zs, rtol=1E-4)
+    assert_allclose(cat_zs, dominant_cat_zs, rtol=1E-4)
+    
+    an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='proportional anion adjustment')
+    assert an_res == anions
+    assert cat_res == cations
+    dominant_an_zs = [0.018501945479459977, 0.00017176751844061514, 1.583994256997263e-07, 0.0003722184058782681]
+    dominant_cat_zs = [2.0283448144191746e-08, 0.001722453668971278, 8.678922979921716e-07, 0.0001729226579918368, 0.0002046394845036363, 0.00011667568840362263, 0.015272747204245271]
+    assert_allclose(z_water, 0.963463583317, rtol=1E-4)
+    assert_allclose(an_zs, dominant_an_zs, rtol=1E-4)
+    assert_allclose(cat_zs, dominant_cat_zs, rtol=1E-4)
+    
+    # Make there be too much Na+, back to dominant
+    anion_concs = [37561.09, 600.14, 0.3, 2047.49]
+    cation_concs = [0.15, 3717.44, 2.61, 364.08, 267.84, 113.34, 78908.04]
+    
+    an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='dominant')
+    assert an_res == anions
+    assert cat_res == cations
+    dominant_an_zs = [0.019940964959685198, 0.0001851270219252835, 1.7071920361126766e-07, 0.0004011683094195923]
+    dominant_cat_zs = [2.055858113218964e-08, 0.0017458177351430204, 8.796647441516932e-07, 0.0001752682516624798, 0.00020741529818351878, 0.00011825832516976795, 0.016726806229517385]
+    assert_allclose(an_zs, dominant_an_zs, rtol=1E-4)
+    assert_allclose(cat_zs, dominant_cat_zs, rtol=1E-4)
+    assert_allclose(z_water, 0.960498102927, rtol=1E-4)
+    
+    an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='decrease dominant')
+    assert an_res == anions
+    assert cat_res == cations
+    dominant_an_zs = [0.019940964959685198, 0.0001851270219252835, 1.7071920361126766e-07, 0.0004011683094195923]
+    dominant_cat_zs = [2.055858113218964e-08, 0.0017458177351430204, 8.796647441516932e-07, 0.0001752682516624798, 0.00020741529818351878, 0.00011825832516976795, 0.016726806229517385]
+    assert_allclose(an_zs, dominant_an_zs, rtol=1E-4)
+    assert_allclose(cat_zs, dominant_cat_zs, rtol=1E-4)
+    assert_allclose(z_water, 0.960498102927, rtol=1E-4)
+    
+    an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='increase dominant')
+    assert an_res == anions
+    assert cat_res == cations
+    dominant_an_zs = [0.06781575645277317, 0.0001851270219252835, 1.7071920361126766e-07, 0.0004011683094195923]
+    dominant_cat_zs = [2.055858113218964e-08, 0.0017458177351430204, 8.796647441516932e-07, 0.0001752682516624798, 0.00020741529818351878, 0.00011825832516976795, 0.06460159772260538]
+    assert_allclose(an_zs, dominant_an_zs, rtol=1E-4)
+    assert_allclose(cat_zs, dominant_cat_zs, rtol=1E-4)
+    assert_allclose(z_water, 0.864748519941, rtol=1E-4)
+    
+    # proportional again
+    an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='proportional insufficient ions increase')
+    assert an_res == anions
+    assert cat_res == cations
+    dominant_an_zs = [0.06555651357021297, 0.0006086105737407381, 5.612444438303e-07, 0.0013188527121718626]
+    dominant_cat_zs = [2.055858113218964e-08, 0.0017458177351430204, 8.796647441516932e-07, 0.0001752682516624798, 0.00020741529818351878, 0.00011825832516976795, 0.06460159772260538]
+    assert_allclose(an_zs, dominant_an_zs, rtol=1E-4)
+    assert_allclose(cat_zs, dominant_cat_zs, rtol=1E-4)
+    assert_allclose(z_water, 0.865666204343, rtol=1E-4)
+    
+    an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='proportional excess ions decrease')
+    assert an_res == anions
+    assert cat_res == cations
+    dominant_an_zs = [0.019940964959685198, 0.0001851270219252835, 1.7071920361126766e-07, 0.0004011683094195923]
+    dominant_cat_zs = [6.253504398746918e-09, 0.0005310424302109641, 2.675762160629857e-07, 5.331305578359546e-05, 6.309153687299677e-05, 3.597178968151982e-05, 0.01965049888057932]
+    assert_allclose(z_water, 0.959138377467, rtol=1E-4)
+    assert_allclose(an_zs, dominant_an_zs, rtol=1E-4)
+    assert_allclose(cat_zs, dominant_cat_zs, rtol=1E-4)
+
+
