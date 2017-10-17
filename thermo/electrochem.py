@@ -879,19 +879,11 @@ Cl_ion = pubchem_db.search_name('Cl-')
 
 
 def ion_balance_adjust_one(charges, zs, n_anions, n_cations, adjust):
-    def solve_one_ion(z_adjust):
-        zs[adjust] = z_adjust
-        zs[-1] = 1. - sum(zs[0:-1])
-        impacts = [zi*ci for zi, ci in zip(zs, charges)]
-        balance_error = sum(impacts)
-        return balance_error
-    
-    z_adjust = newton(solve_one_ion, zs[adjust])
-    zs[adjust] = z_adjust
-
+    main_tot = sum([zs[i]*charges[i] for i in range(len(charges)) if i != adjust])
+    zs[adjust] = -main_tot/charges[adjust]
+    z_water = 1. - sum(zs[0:-1])
     anion_zs = zs[0:n_anions]
     cation_zs = zs[n_anions:n_cations+n_anions]
-    z_water = zs[-1]
     return anion_zs, cation_zs, z_water
 
 
