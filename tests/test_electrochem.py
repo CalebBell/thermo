@@ -160,6 +160,16 @@ def test_Kweq_1981():
     
     
 def test_balance_ions():
+    
+    def check_charge_balance(an_zs, cat_zs, an_charges, cat_charges):
+        an = np.sum(np.array(an_zs)*np.array(an_charges))
+        cat = np.sum(np.array(cat_zs)*np.array(cat_charges))
+        assert_allclose(-an, cat)
+
+    Na_ion = pubchem_db.search_name('Na+')
+    Cl_ion = pubchem_db.search_name('Cl-')
+
+    
     anion_concs = [37561.09, 600.14, 0.3, 2047.49]
     cation_concs = [0.15, 3717.44, 2.61, 364.08, 267.84, 113.34, 18908.04]
     
@@ -167,7 +177,10 @@ def test_balance_ions():
     cations = ['Ba+2', 'Ca+2', 'Fe+2', 'K+', 'Mg+2', 'NH4+', 'Na+']
     cations = [pubchem_db.search_name(i) for i in cations]
     anions = [pubchem_db.search_name(i) for i in anions]
-    
+
+
+    anion_charges = [i.charge for i in anions]
+    cation_charges = [i.charge for i in cations]
     
     an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='dominant')
     assert an_res == anions
@@ -177,7 +190,7 @@ def test_balance_ions():
     assert_allclose(an_zs, dominant_an_zs, rtol=1E-4)
     assert_allclose(cat_zs, dominant_cat_zs, rtol=1E-4)
     assert_allclose(z_water, 0.963487164434, rtol=1E-4)
-    
+    check_charge_balance(an_zs, cat_zs, anion_charges, cation_charges)
     
     an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='decrease dominant')
     assert an_res == anions
@@ -185,7 +198,8 @@ def test_balance_ions():
     dominant_an_zs = [0.01844389123949594, 0.00018264948953265628, 1.6843448929678392e-07, 0.0003957995227824709]
     dominant_cat_zs = [2.0283448144191746e-08, 0.001722453668971278, 8.678922979921716e-07, 0.0001729226579918368, 0.0002046394845036363, 0.00011667568840362263, 0.015272747204245271]
     assert_allclose(z_water, 0.963487164434, rtol=1E-4)
-    
+    check_charge_balance(an_zs, cat_zs, anion_charges, cation_charges)
+
     an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='increase dominant')
     assert an_res == anions
     assert cat_res == cations
@@ -194,7 +208,7 @@ def test_balance_ions():
     assert_allclose(an_zs, dominant_an_zs, rtol=1E-4)
     assert_allclose(cat_zs, dominant_cat_zs, rtol=1E-4)
     assert_allclose(z_water, 0.961026752005, rtol=1E-4)
-    
+    check_charge_balance(an_zs, cat_zs, anion_charges, cation_charges)
     
     # Proportional
     an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='proportional insufficient ions increase')
@@ -205,7 +219,8 @@ def test_balance_ions():
     assert_allclose(an_zs, dominant_an_zs, rtol=1E-4)
     assert_allclose(cat_zs, dominant_cat_zs, rtol=1E-4)
     assert_allclose(z_water, 0.961148895221, rtol=1E-4)
-    
+    check_charge_balance(an_zs, cat_zs, anion_charges, cation_charges)
+
     an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='proportional excess ions decrease')
     assert an_res == anions
     assert cat_res == cations
@@ -214,7 +229,8 @@ def test_balance_ions():
     assert_allclose(an_zs, dominant_an_zs, rtol=1E-4)
     assert_allclose(cat_zs, dominant_cat_zs, rtol=1E-4)
     assert_allclose(z_water, 0.963463583317, rtol=1E-4)
-    
+    check_charge_balance(an_zs, cat_zs, anion_charges, cation_charges)
+
     # Proportional anion/cation direct adjustment
     an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='proportional cation adjustment')
     assert an_res == anions
@@ -224,7 +240,8 @@ def test_balance_ions():
     assert_allclose(z_water, 0.961148895221, rtol=1E-4)
     assert_allclose(an_zs, dominant_an_zs, rtol=1E-4)
     assert_allclose(cat_zs, dominant_cat_zs, rtol=1E-4)
-    
+    check_charge_balance(an_zs, cat_zs, anion_charges, cation_charges)
+
     an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='proportional anion adjustment')
     assert an_res == anions
     assert cat_res == cations
@@ -233,6 +250,103 @@ def test_balance_ions():
     assert_allclose(z_water, 0.963463583317, rtol=1E-4)
     assert_allclose(an_zs, dominant_an_zs, rtol=1E-4)
     assert_allclose(cat_zs, dominant_cat_zs, rtol=1E-4)
+    check_charge_balance(an_zs, cat_zs, anion_charges, cation_charges)
+    
+    # Na or Cl Increase
+    an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='Na or Cl increase')
+    an_res_2, cat_res_2, an_zs_2, cat_zs_2, z_water_2 = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='increase dominant')
+    assert an_res == an_res_2
+    assert cat_res == cat_res_2
+    assert_allclose(an_zs, an_zs_2)
+    assert_allclose(cat_zs, cat_zs_2)
+    assert_allclose(z_water, z_water_2)
+    check_charge_balance(an_zs, cat_zs, anion_charges, cation_charges)
+
+    # Na or Cl decrease
+    an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='Na or Cl decrease')
+    an_res_2, cat_res_2, an_zs_2, cat_zs_2, z_water_2 = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='decrease dominant')
+    assert an_res == an_res_2
+    assert cat_res == cat_res_2
+    assert_allclose(an_zs, an_zs_2)
+    assert_allclose(cat_zs, cat_zs_2)
+    assert_allclose(z_water, z_water_2)
+    check_charge_balance(an_zs, cat_zs, anion_charges, cation_charges)
+
+    # Adjust 
+    an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, selected_ion=Cl_ion, method='adjust')
+    an_res_2, cat_res_2, an_zs_2, cat_zs_2, z_water_2 = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='decrease dominant')
+    assert an_res == an_res_2
+    assert cat_res == cat_res_2
+    assert_allclose(an_zs, an_zs_2)
+    assert_allclose(cat_zs, cat_zs_2)
+    assert_allclose(z_water, z_water_2)
+    check_charge_balance(an_zs, cat_zs, anion_charges, cation_charges)
+
+    an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, selected_ion=Na_ion, method='adjust')
+    an_res_2, cat_res_2, an_zs_2, cat_zs_2, z_water_2 = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='increase dominant')
+    assert an_res == an_res_2
+    assert cat_res == cat_res_2
+    assert_allclose(an_zs, an_zs_2)
+    assert_allclose(cat_zs, cat_zs_2)
+    assert_allclose(z_water, z_water_2)
+    check_charge_balance(an_zs, cat_zs, anion_charges, cation_charges)
+
+    
+    # Increase and decrease
+    
+    an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, selected_ion=Cl_ion, method='decrease')
+    an_res_2, cat_res_2, an_zs_2, cat_zs_2, z_water_2 = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='decrease dominant')
+    assert an_res == an_res_2
+    assert cat_res == cat_res_2
+    assert_allclose(an_zs, an_zs_2)
+    assert_allclose(cat_zs, cat_zs_2)
+    assert_allclose(z_water, z_water_2)
+    check_charge_balance(an_zs, cat_zs, anion_charges, cation_charges)
+
+    an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, selected_ion=Na_ion, method='increase')
+    an_res_2, cat_res_2, an_zs_2, cat_zs_2, z_water_2 = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='increase dominant')
+    assert an_res == an_res_2
+    assert cat_res == cat_res_2
+    assert_allclose(an_zs, an_zs_2)
+    assert_allclose(cat_zs, cat_zs_2)
+    assert_allclose(z_water, z_water_2)
+    check_charge_balance(an_zs, cat_zs, anion_charges, cation_charges)
+
+    
+    # makeup options
+    an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, selected_ion=(Cl_ion, Na_ion), method='makeup')
+    an_res_2, cat_res_2, an_zs_2, cat_zs_2, z_water_2 = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='increase dominant')
+    assert an_res == an_res_2
+    assert cat_res == cat_res_2
+    assert_allclose(an_zs, an_zs_2)
+    assert_allclose(cat_zs, cat_zs_2)
+    assert_allclose(z_water, z_water_2)
+    check_charge_balance(an_zs, cat_zs, anion_charges, cation_charges)
+
+    # A few failure cases
+    with pytest.raises(Exception):
+        an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, selected_ion=Cl_ion, method='increase')
+    
+    with pytest.raises(Exception):
+        an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, selected_ion=Na_ion, method='decrease')
+    
+    with pytest.raises(Exception):
+        HS_ion = pubchem_db.search_name('HS-')
+        an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, selected_ion=HS_ion, method='adjust')
+    
+    with pytest.raises(Exception):
+        balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='NOTAREALMETHOD dominant')
+
+    with pytest.raises(Exception):
+        balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='NOTAMETHOD proportional insufficient ions increase')
+        
+    # No ion specified
+    with pytest.raises(Exception):
+        balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='increase')
+        
+    # Bad method
+    with pytest.raises(Exception):
+        balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='NOT A METHOD')
     
     # Make there be too much Na+, back to dominant
     anion_concs = [37561.09, 600.14, 0.3, 2047.49]
@@ -246,7 +360,8 @@ def test_balance_ions():
     assert_allclose(an_zs, dominant_an_zs, rtol=1E-4)
     assert_allclose(cat_zs, dominant_cat_zs, rtol=1E-4)
     assert_allclose(z_water, 0.960498102927, rtol=1E-4)
-    
+    check_charge_balance(an_zs, cat_zs, anion_charges, cation_charges)
+
     an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='decrease dominant')
     assert an_res == anions
     assert cat_res == cations
@@ -255,7 +370,8 @@ def test_balance_ions():
     assert_allclose(an_zs, dominant_an_zs, rtol=1E-4)
     assert_allclose(cat_zs, dominant_cat_zs, rtol=1E-4)
     assert_allclose(z_water, 0.960498102927, rtol=1E-4)
-    
+    check_charge_balance(an_zs, cat_zs, anion_charges, cation_charges)
+
     an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='increase dominant')
     assert an_res == anions
     assert cat_res == cations
@@ -264,7 +380,8 @@ def test_balance_ions():
     assert_allclose(an_zs, dominant_an_zs, rtol=1E-4)
     assert_allclose(cat_zs, dominant_cat_zs, rtol=1E-4)
     assert_allclose(z_water, 0.864748519941, rtol=1E-4)
-    
+    check_charge_balance(an_zs, cat_zs, anion_charges, cation_charges)
+
     # proportional again
     an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='proportional insufficient ions increase')
     assert an_res == anions
@@ -274,7 +391,8 @@ def test_balance_ions():
     assert_allclose(an_zs, dominant_an_zs, rtol=1E-4)
     assert_allclose(cat_zs, dominant_cat_zs, rtol=1E-4)
     assert_allclose(z_water, 0.865666204343, rtol=1E-4)
-    
+    check_charge_balance(an_zs, cat_zs, anion_charges, cation_charges)
+
     an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='proportional excess ions decrease')
     assert an_res == anions
     assert cat_res == cations
@@ -283,5 +401,93 @@ def test_balance_ions():
     assert_allclose(z_water, 0.959138377467, rtol=1E-4)
     assert_allclose(an_zs, dominant_an_zs, rtol=1E-4)
     assert_allclose(cat_zs, dominant_cat_zs, rtol=1E-4)
+    check_charge_balance(an_zs, cat_zs, anion_charges, cation_charges)
+    
+    # makeup options
+    an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, selected_ion=(Cl_ion, Na_ion), method='makeup')
+    an_res_2, cat_res_2, an_zs_2, cat_zs_2, z_water_2 = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='increase dominant')
+    assert an_res == an_res_2
+    assert cat_res == cat_res_2
+    assert_allclose(an_zs, an_zs_2)
+    assert_allclose(cat_zs, cat_zs_2)
+    assert_allclose(z_water, z_water_2)
+    check_charge_balance(an_zs, cat_zs, anion_charges, cation_charges)
 
+    # Na or Cl Increase
+    an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='Na or Cl increase')
+    an_res_2, cat_res_2, an_zs_2, cat_zs_2, z_water_2 = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='increase dominant')
+    assert an_res == an_res_2
+    assert cat_res == cat_res_2
+    assert_allclose(an_zs, an_zs_2)
+    assert_allclose(cat_zs, cat_zs_2)
+    assert_allclose(z_water, z_water_2)
+    check_charge_balance(an_zs, cat_zs, anion_charges, cation_charges)
 
+    # Na or Cl decrease
+    an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='Na or Cl decrease')
+    an_res_2, cat_res_2, an_zs_2, cat_zs_2, z_water_2 = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, method='decrease dominant')
+    assert an_res == an_res_2
+    assert cat_res == cat_res_2
+    assert_allclose(an_zs, an_zs_2)
+    assert_allclose(cat_zs, cat_zs_2)
+    assert_allclose(z_water, z_water_2)
+    check_charge_balance(an_zs, cat_zs, anion_charges, cation_charges)
+
+    # Test a case with adding a Cl not initially present options
+    # Note the test cases with adding ions are especially obvious the mole
+    # fractions will be different in each case due to the mole/mass fraction
+    # conversion
+    anion_concs = [600.14, 0.3, 2047.49]
+    cation_concs = [0.15, 3717.44, 2.61, 364.08, 267.84, 113.34, 18908.04]
+    
+    anions = ['HCO3-', 'HS-', 'SO4-2']
+    cations = ['Ba+2', 'Ca+2', 'Fe+2', 'K+', 'Mg+2', 'NH4+', 'Na+']
+    
+    cations = [pubchem_db.search_name(i) for i in cations]
+    anions = [pubchem_db.search_name(i) for i in anions]
+    an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, selected_ion=Cl_ion, method='increase')
+    
+    assert an_res == [pubchem_db.search_name(i) for i in  ['HCO3-', 'HS-', 'SO4-2', 'Cl-', ]]
+    assert cat_res == cations
+    dominant_an_zs = [0.00017923623007416514, 1.6528687243128162e-07, 0.0003884030254352281, 0.018099221312491646]
+    dominant_cat_zs = [1.9904401526508215e-08, 0.001690265343164992, 8.516735743447466e-07, 0.0001696911685445447, 0.00020081528736051808, 0.00011449531331449091, 0.014987337981446901]
+    assert_allclose(an_zs, dominant_an_zs, rtol=1E-4)
+    assert_allclose(cat_zs, dominant_cat_zs, rtol=1E-4)
+    assert_allclose(z_water, 0.9641694974733193, rtol=1E-4)
+    
+    
+    anion_charges = [i.charge for i in an_res]
+    cation_charges = [i.charge for i in cat_res]
+
+    check_charge_balance(an_zs, cat_zs, anion_charges, cation_charges)
+
+    
+    # Add Na+ to balance it case
+    anion_concs = [37561.09, 600.14, 0.3, 2047.49]
+    cation_concs = [0.15, 3717.44, 2.61, 364.08, 267.84, 113.34]
+    anions = ['Cl-', 'HCO3-', 'HS-', 'SO4-2']
+    cations = ['Ba+2', 'Ca+2', 'Fe+2', 'K+', 'Mg+2', 'NH4+']
+    cations = [pubchem_db.search_name(i) for i in cations]
+    anions = [pubchem_db.search_name(i) for i in anions]
+    an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, selected_ion=Na_ion, method='increase')
+    
+    assert an_res == anions
+    assert cat_res == [pubchem_db.search_name(i) for i in ['Ba+2', 'Ca+2', 'Fe+2', 'K+', 'Mg+2', 'NH4+', 'Na+']]
+    anion_charges = [i.charge for i in an_res]
+    cation_charges = [i.charge for i in cat_res]
+    dominant_an_zs = [0.019591472379087822, 0.00018188241862941595, 1.6772711696208816e-07, 0.0003941372882028963]
+    dominant_cat_zs = [2.0198263986663557e-08, 0.0017152199006479827, 8.64247420962186e-07, 0.00017219643674809882, 0.0002037800624783217, 0.00011618568689352288, 0.01643364615997587]
+    assert_allclose(an_zs, dominant_an_zs, rtol=1E-4)
+    assert_allclose(cat_zs, dominant_cat_zs, rtol=1E-4)
+    assert_allclose(z_water, 0.961190427495, rtol=1E-4)
+    check_charge_balance(an_zs, cat_zs, anion_charges, cation_charges)
+    
+    an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions=[Na_ion], cations=[Cl_ion], anion_zs=[.1], cation_zs=[.1])
+    assert an_res == [Na_ion]
+    assert cat_res == [Cl_ion]
+    assert_allclose(an_zs, [0.1])
+    assert_allclose(an_zs, [0.1])
+    assert_allclose(z_water, 0.8)
+
+    with pytest.raises(Exception):
+         balance_ions(anions=[Na_ion], cations=[Cl_ion], anion_zs=[.1])

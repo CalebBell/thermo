@@ -873,14 +873,62 @@ def Kweq_IAPWS(T, rho_w):
 
 
 
+charge_balance_methods = ['dominant', 'decrease dominant', 'increase dominant',
+                          'proportional insufficient ions increase', 
+                          'proportional excess ions decrease', 
+                          'proportional cation adjustment', 
+                          'proportional anion adjustment', 'Na or Cl increase',
+                          'Na or Cl decrease', 'adjust', 'increase', 
+                          'decrease', 'makeup']
 
-Na_ion = pubchem_db.search_name('Na+')
-Cl_ion = pubchem_db.search_name('Cl-')
+def ion_balance_adjust_wrapper(charges, zs, n_anions, n_cations,
+                               anions, cations, selected_ion, increase=None):
+    charge = selected_ion.charge
+    positive = charge > 0
+    if charge == 0:  # pragma: no cover
+        raise Exception('Cannot adjust selected compound as it has no charge!')
+    assert charge != 0.0
+    
+    if selected_ion not in anions and selected_ion not in cations:
+        if charge < 0.:
+            anions.append(selected_ion)
+            charges.insert(n_anions, charge)
+            zs.insert(n_anions, 0.)
+            n_anions += 1
+            adjust = n_anions - 1
+            anion_index = n_anions - 1
+        else:
+            cations.append(selected_ion)
+            charges.insert(-1, charge)
+            zs.insert(-1, 0.)
+            n_cations += 1
+            cation_index = n_cations - 1
+            adjust = n_anions + n_cations - 1
+        old_zi = 0
+    else:
+        if selected_ion in anions:
+            anion_index = anions.index(selected_ion)
+            old_zi = zs[anion_index]
+            adjust = anion_index
+        else:
+            cation_index = cations.index(selected_ion)
+            old_zi = zs[n_anions + cation_index]
+            adjust = n_anions + cation_index
+    anion_zs, cation_zs, z_water = ion_balance_adjust_one(charges, zs, n_anions, n_cations, adjust=adjust)
+    new_zi = cation_zs[cation_index] if positive else anion_zs[anion_index]
+    if increase == True and new_zi < old_zi:
+        raise Exception('Adjusting specified ion %s resulted in a decrease of its quantity but an increase was specified' % selected_ion.formula)
+    elif increase == False and new_zi > old_zi:
+        raise Exception('Adjusting specified ion %s resulted in a increase of its quantity but an decrease was specified' % selected_ion.formula)
+    return anion_zs, cation_zs, z_water
 
 
 def ion_balance_adjust_one(charges, zs, n_anions, n_cations, adjust):
     main_tot = sum([zs[i]*charges[i] for i in range(len(charges)) if i != adjust])
     zs[adjust] = -main_tot/charges[adjust]
+    if zs[adjust] < 0:
+        raise Exception('A negative value of %f ion mole fraction was required to balance the charge' %zs[adjust])
+    
     z_water = 1. - sum(zs[0:-1])
     anion_zs = zs[0:n_anions]
     cation_zs = zs[n_anions:n_cations+n_anions]
@@ -910,12 +958,16 @@ def ion_balance_dominant(impacts, balance_error, charges, zs, n_anions,
         else:
             adjust = impacts.index(min(impacts))
     else:
-        raise Exception('Error')
+        raise Exception('Allowable methods are %s' %charge_balance_methods)
     return ion_balance_adjust_one(charges, zs, n_anions, n_cations, adjust)
 
 
 def ion_balance_proportional(anion_charges, cation_charges, zs, n_anions, 
                              n_cations, balance_error, method):
+    '''Helper method for balance_ions for the proportional family of methods. 
+    See balance_ions for a description of the methods; parameters are fairly
+    obvious.
+    '''
     anion_zs = zs[0:n_anions]
     cation_zs = zs[n_anions:n_cations+n_anions]
     anion_balance_error = sum([zi*ci for zi, ci in zip(anion_zs, anion_charges)])
@@ -941,42 +993,106 @@ def ion_balance_proportional(anion_charges, cation_charges, zs, n_anions,
         multiplier = -cation_balance_error/anion_balance_error
         anion_zs = [i*multiplier for i in anion_zs]
     else:
-        raise Exception('Error')
+        raise Exception('Allowable methods are %s' %charge_balance_methods)
     z_water = 1. - sum(anion_zs) - sum(cation_zs)
     return anion_zs, cation_zs, z_water
 
 
 
-def balance_ions(anions, cations, anion_zs=None, cation_zs=None, anion_concs=None, 
-                 cation_concs=None, rho=997.1, method='increase dominant', selected_ion=None):
+
+def balance_ions(anions, cations, anion_zs=None, cation_zs=None, 
+                 anion_concs=None, cation_concs=None, rho_w=997.1, 
+                 method='increase dominant', selected_ion=None):
+    r'''Performs an ion balance to adjust measured experimental ion 
+    compositions to electroneutrality. Can accept either the actual mole 
+    fractions of the ions, or their concentrations in units of [mg/L] as well
+    for convinience.
+    
+    The default method will locate the most prevalent ion in the type of 
+    ion not in excess - and increase it until the two ion types balance.
+
+    Parameters
+    ----------
+    anions : list(ChemicalMetadata)
+        List of all negatively charged ions measured as being in the solution;
+        ChemicalMetadata instances or simply objects with the attributes `MW` 
+        and `charge`, [-]
+    cations : list(ChemicalMetadata)
+        List of all positively charged ions measured as being in the solution;
+        ChemicalMetadata instances or simply objects with the attributes `MW` 
+        and `charge`, [-]
+    anion_zs : list, optional
+        Mole fractions of each anion as measured in the aqueous solution, [-]
+    cation_zs : list, optional
+        Mole fractions of each cation as measured in the aqueous solution, [-]
+    anion_concs : list, optional
+        Concentrations of each anion in the aqueous solution in the units often
+        reported (for convinience only) [mg/L]
+    cation_concs : list, optional
+        Concentrations of each cation in the aqueous solution in the units 
+        often reported (for convinience only) [mg/L]
+    rho_w : float, optional
+        Density of the aqueous solutionr at the temperature and pressure the
+        anion and cation concentrations were measured (if specified), [kg/m^3]
+    method : str, optional
+        The method to use to balance the ionimbalance; one of [TODO].
+    selected_ion : ChemicalMetadata, optional
+        Some methods adjust only one user-specified ion; this is that input.
+        For the case of the 'makeup' method, this is a tuple of (anion, cation)
+        ChemicalMetadata instances and only the ion type not in excess will be
+        used.
+
+    Returns
+    -------
+
+    Notes
+    -----
+    
+
+    Examples
+    --------
+
+    References
+    ----------
+    '''
     anions = list(anions)
     cations = list(cations)
-    
-    MW_water = [18.01528]
-    rho = rho/1000 # Convert to kg/liter
     n_anions = len(anions)
     n_cations = len(cations)
     ions = anions + cations
-    
-    anion_ws = [i*1E-6/rho for i in anion_concs]
-    cation_ws = [i*1E-6/rho for i in cation_concs]
-    w_water = 1 - sum(anion_ws) - sum(cation_ws)
-    
     anion_charges = [i.charge for i in anions]
     cation_charges = [i.charge for i in cations]
     charges = anion_charges + cation_charges + [0]
+
+    MW_water = [18.01528]
+    rho_w = rho_w/1000 # Convert to kg/liter
     
-    anion_MWs = [i.MW for i in anions]
-    cation_MWs = [i.MW for i in cations]
-    MWs = anion_MWs + cation_MWs + MW_water
+    if anion_concs is not None and cation_concs is not None:
+        anion_ws = [i*1E-6/rho_w for i in anion_concs]
+        cation_ws = [i*1E-6/rho_w for i in cation_concs]
+        w_water = 1 - sum(anion_ws) - sum(cation_ws)
     
-    zs = ws_to_zs(anion_ws + cation_ws + [w_water], MWs)
+        anion_MWs = [i.MW for i in anions]
+        cation_MWs = [i.MW for i in cations]
+        MWs = anion_MWs + cation_MWs + MW_water
+        zs = ws_to_zs(anion_ws + cation_ws + [w_water], MWs)
+    else:
+        if anion_zs is None or cation_zs is None:
+            raise Exception('Either both of anion_concs and cation_concs or '
+                            'anion_zs and cation_zs must be specified.')
+        else:
+            zs = anion_zs + cation_zs
+            zs = zs + [1 - sum(zs)]
+    
     impacts = [zi*ci for zi, ci in zip(zs, charges)]
     balance_error = sum(impacts)
     
     
     if abs(balance_error) < 1E-7:
-        return anions, cations, zs
+        anion_zs = zs[0:n_anions]
+        cation_zs = zs[n_anions:n_cations+n_anions]
+        z_water = zs[-1]
+        return anions, cations, anion_zs, cation_zs, z_water
     if 'dominant' in method:
         anion_zs, cation_zs, z_water = ion_balance_dominant(impacts,
             balance_error, charges, zs, n_anions, n_cations, method)
@@ -986,6 +1102,44 @@ def balance_ions(anions, cations, anion_zs=None, cation_zs=None, anion_concs=Non
             anion_charges, cation_charges, zs, n_anions, n_cations,
             balance_error, method)
         return anions, cations, anion_zs, cation_zs, z_water
+    elif method == 'Na or Cl increase':
+        increase = True
+        if balance_error < 0:
+            selected_ion = pubchem_db.search_name('Na+')
+        else:
+            selected_ion = pubchem_db.search_name('Cl-')
+    elif method == 'Na or Cl decrease':
+        increase = False
+        if balance_error > 0:
+            selected_ion = pubchem_db.search_name('Na+')
+        else:
+            selected_ion = pubchem_db.search_name('Cl-')
+    # All of the below work with the variable selected_ion
+    elif method == 'adjust':
+        # A single ion will be increase or decreased to fix the balance automatically
+        increase = None
+    elif method == 'increase':
+        increase = True
+        # Raise exception if approach doesn't work
+    elif method == 'decrease':
+        increase = False
+        # Raise exception if approach doesn't work
+    elif method == 'makeup':
+        # selected ion starts out as a tuple in this case; always adding the compound
+        increase = True
+        if balance_error < 0:
+            selected_ion = selected_ion[1]
+        else:
+            selected_ion = selected_ion[0]
     else:
         raise Exception('Method not recognized')
+    if selected_ion is None:
+        raise Exception("For methods 'adjust', 'increase', 'decrease', and "
+                        "'makeup', an ion must be specified with the "
+                        "`selected_ion` parameter")
+        
+    anion_zs, cation_zs, z_water = ion_balance_adjust_wrapper(charges, zs, n_anions, n_cations,
+                                                              anions, cations, selected_ion, increase=increase)
+    return anions, cations, anion_zs, cation_zs, z_water
+
 
