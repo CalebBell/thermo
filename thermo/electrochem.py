@@ -1035,7 +1035,13 @@ def balance_ions(anions, cations, anion_zs=None, cation_zs=None,
         Density of the aqueous solutionr at the temperature and pressure the
         anion and cation concentrations were measured (if specified), [kg/m^3]
     method : str, optional
-        The method to use to balance the ionimbalance; one of [TODO].
+        The method to use to balance the ionimbalance; one of 'dominant', 
+        'decrease dominant', 'increase dominant',
+        'proportional insufficient ions increase', 
+        'proportional excess ions decrease', 
+        'proportional cation adjustment', 'proportional anion adjustment', 
+        'Na or Cl increase', 'Na or Cl decrease', 'adjust', 'increase', 
+        'decrease', 'makeup'].
     selected_ion : ChemicalMetadata, optional
         Some methods adjust only one user-specified ion; this is that input.
         For the case of the 'makeup' method, this is a tuple of (anion, cation)
@@ -1044,14 +1050,58 @@ def balance_ions(anions, cations, anion_zs=None, cation_zs=None,
 
     Returns
     -------
+    anions : list(ChemicalMetadata)
+        List of all negatively charged ions measured as being in the solution;
+        ChemicalMetadata instances after potentially adding in an ion which
+        was not present but specified by the user, [-]
+    cations : list(ChemicalMetadata)
+        List of all positively charged ions measured as being in the solution;
+        ChemicalMetadata instances after potentially adding in an ion which
+        was not present but specified by the user, [-]
+    anion_zs : list,
+        Mole fractions of each anion in the aqueous solution after the charge
+        balance, [-]
+    cation_zs : list
+        Mole fractions of each cation in the aqueous solution after the charge
+        balance, [-]
+    z_water : float
+        Mole fraction of the water in the solution, [-]
 
     Notes
     -----
-    
-
+    The methods perform the charge balance as follows:
+        
+    * 'dominant': 
+    * 'decrease dominant': 
+    * 'increase dominant': 
+    * 'proportional insufficient ions increase': 
+    * 'proportional excess ions decrease': 
+    * 'proportional cation adjustment': 
+    * 'proportional anion adjustment': 
+    * 'Na or Cl increase': 
+    * 'Na or Cl decrease': 
+    * 'adjust': 
+    * 'increase': 
+    * 'decrease': 
+    * 'makeup': 
+        
     Examples
     --------
-
+    
+    >>> anions_n = ['Cl-', 'HCO3-', 'SO4-2']
+    >>> cations_n = ['Na+', 'K+', 'Ca+2', 'Mg+2']
+    >>> cations = [pubchem_db.search_name(i) for i in cations_n]
+    >>> anions = [pubchem_db.search_name(i) for i in anions_n]
+    >>> an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations,
+    ... anion_zs=[0.02557, 0.00039, 0.00026], cation_zs=[0.0233, 0.00075,
+    ... 0.00262, 0.00119], method='proportional excess ions decrease')
+    >>> an_zs
+    [0.02557, 0.00039, 0.00026]
+    >>> cat_zs
+    [0.01948165456267761, 0.0006270918850647299, 0.0021906409851594564, 0.0009949857909693717]
+    >>> z_water
+    0.9504856267761288
+    
     References
     ----------
     '''
