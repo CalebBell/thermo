@@ -26,7 +26,8 @@ __all__ = ['conductivity', 'Laliberte_density', 'Laliberte_heat_capacity',
            'Laliberte_viscosity', 'Laliberte_data', 'Laliberte_viscosity_w', 
            'Laliberte_viscosity_i', 'Laliberte_density_w', 
            'Laliberte_density_i', 'Laliberte_heat_capacity_w', 
-           'Laliberte_heat_capacity_i', 'Lange_cond_pure', 
+           'Laliberte_heat_capacity_i', 'dilute_ionic_conductivity', 
+           'Lange_cond_pure', 
            'conductivity_methods', 'Magomedovk_thermal_cond',
            'thermal_conductivity_Magomedov', 'ionic_strength', 'Kweq_1981', 
            'Kweq_IAPWS_gas', 'Kweq_IAPWS', 'Marcus_ion_conductivities',
@@ -505,6 +506,60 @@ def Laliberte_heat_capacity(T, ws, CASRNs):
 
 
 ### Electrical Conductivity
+
+
+def dilute_ionic_conductivity(ionic_conductivities, zs, rhom):
+    r'''This function handles the calculation of the electrical conductivity of 
+    a dilute electrolytic aqueous solution. Requires the mole fractions of 
+    each ion, the molar density of the whole mixture, and ionic conductivity 
+    coefficients for each ion.
+    
+    .. math::
+        \lambda = \sum_i \lambda_i^\circ z_i \rho_m
+    
+    Parameters
+    ----------
+    ionic_conductivities : list[float]
+        Ionic conductivity coefficients of each ion in the mixture [m^2*S/mol]
+    zs : list[float]
+        Mole fractions of each ion in the mixture, [-]
+    rhom : float
+        Overall molar density of the solution, [mol/m^3]
+
+    Returns
+    -------
+    kappa : float
+        Electrical conductivity of the fluid, [S/m]
+
+    Notes
+    -----
+    The ionic conductivity coefficients should not be `equivalent` coefficients; 
+    for example, 0.0053 m^2*S/mol is the equivalent conductivity coefficient of
+    Mg+2, but this method expects twice its value - 0.0106. Both are reported
+    commonly in literature.
+    
+    Water can be included in this caclulation by specifying a coefficient of
+    0. The conductivity of any electrolyte eclipses its own conductivity by 
+    many orders of magnitude. Any other solvents present will affect the
+    conductivity extensively and there are few good methods to predict this 
+    effect.
+
+    Examples
+    --------
+    Complex mixture of electrolytes ['Cl-', 'HCO3-', 'SO4-2', 'Na+', 'K+', 
+    'Ca+2', 'Mg+2']:
+    
+    >>> ionic_conductivities = [0.00764, 0.00445, 0.016, 0.00501, 0.00735, 0.0119, 0.01061]
+    >>> zs = [0.03104, 0.00039, 0.00022, 0.02413, 0.0009, 0.0024, 0.00103]
+    >>> dilute_ionic_conductivity(ionic_conductivities=ionic_conductivities, zs=zs, rhom=53865.9)
+    22.05246783663
+
+    References
+    ----------
+    .. [1] Haynes, W.M., Thomas J. Bruno, and David R. Lide. CRC Handbook of
+       Chemistry and Physics, 95E. Boca Raton, FL: CRC press, 2014.
+    '''
+    return sum([ci*(zi*rhom) for zi, ci in zip(zs, ionic_conductivities)])
 
 
 Lange_cond_pure = pd.read_csv(os.path.join(folder, 'Lange Pure Species Conductivity.tsv'),
@@ -998,8 +1053,6 @@ def ion_balance_proportional(anion_charges, cation_charges, zs, n_anions,
     return anion_zs, cation_zs, z_water
 
 
-
-
 def balance_ions(anions, cations, anion_zs=None, cation_zs=None, 
                  anion_concs=None, cation_concs=None, rho_w=997.1, 
                  method='increase dominant', selected_ion=None):
@@ -1071,23 +1124,52 @@ def balance_ions(anions, cations, anion_zs=None, cation_zs=None,
     -----
     The methods perform the charge balance as follows:
         
-    * 'dominant': 
-    * 'decrease dominant': 
-    * 'increase dominant': 
-    * 'proportional insufficient ions increase': 
-    * 'proportional excess ions decrease': 
-    * 'proportional cation adjustment': 
-    * 'proportional anion adjustment': 
-    * 'Na or Cl increase': 
-    * 'Na or Cl decrease': 
-    * 'adjust': 
-    * 'increase': 
-    * 'decrease': 
-    * 'makeup': 
+    * 'dominant' : The ion with the largest mole fraction in solution has its
+      concentration adjusted up or down as necessary to balance the solution.
+    * 'decrease dominant' : The ion with the largest mole fraction in the type
+      of ion with *excess* charge has its own mole fraction decreased to balance
+      the solution.
+    * 'increase dominant' : The ion with the largest mole fraction in the type
+      of ion with *insufficient* charge has its own mole fraction decreased to 
+      balance the solution.
+    * 'proportional insufficient ions increase' : The ion charge type which is
+      present insufficiently has each of the ions mole fractions *increased*
+      proportionally until the solution is balanced.
+    * 'proportional excess ions decrease' :  The ion charge type which is
+      present in excess has each of the ions mole fractions *decreased*
+      proportionally until the solution is balanced.
+    * 'proportional cation adjustment' : All *cations* have their mole fractions
+      increased or decreased proportionally as necessary to balance the 
+      solution.
+    * 'proportional anion adjustment' : All *anions* have their mole fractions
+      increased or decreased proportionally as necessary to balance the 
+      solution.
+    * 'Na or Cl increase' : Either Na+ or Cl- is *added* to the solution until
+      the solution is balanced; the species will be added if they were not
+      present initially as well.
+    * 'Na or Cl decrease' : Either Na+ or Cl- is *removed* from the solution 
+      until the solution is balanced; the species will be added if they were 
+      not present initially as well.
+    * 'adjust' : An ion specified with the parameter `selected_ion` has its
+      mole fraction *increased or decreased* as necessary to balance the 
+      solution. An exception is raised if the specified ion alone cannot 
+      balance the solution.
+    * 'increase' : An ion specified with the parameter `selected_ion` has its
+      mole fraction *increased* as necessary to balance the 
+      solution. An exception is raised if the specified ion alone cannot 
+      balance the solution.
+    * 'decrease' : An ion specified with the parameter `selected_ion` has its
+      mole fraction *decreased* as necessary to balance the 
+      solution. An exception is raised if the specified ion alone cannot 
+      balance the solution.
+    * 'makeup' : Two ions ase specified as a tuple with the parameter 
+      `selected_ion`. Whichever ion type is present in the solution 
+      insufficiently is added; i.e. if the ions were Mg+2 and Cl-, and there
+      was too much negative charge in the solution, Mg+2 would be added until
+      the solution was balanced.
         
     Examples
     --------
-    
     >>> anions_n = ['Cl-', 'HCO3-', 'SO4-2']
     >>> cations_n = ['Na+', 'K+', 'Ca+2', 'Mg+2']
     >>> cations = [pubchem_db.search_name(i) for i in cations_n]

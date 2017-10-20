@@ -491,3 +491,10 @@ def test_balance_ions():
 
     with pytest.raises(Exception):
          balance_ions(anions=[Na_ion], cations=[Cl_ion], anion_zs=[.1])
+         
+         
+def test_dilute_ionic_conductivity():
+    ionic_conductivities = [0.00764, 0.00445, 0.016, 0.00501, 0.00735, 0.0119, 0.01061]
+    zs = [0.03104, 0.00039, 0.00022, 0.02413, 0.0009, 0.0024, 0.00103]
+    c = dilute_ionic_conductivity(ionic_conductivities=ionic_conductivities, zs=zs, rhom=53865.9)
+    assert_allclose(c, 22.05246783663)
