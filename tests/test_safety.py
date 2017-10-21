@@ -41,7 +41,7 @@ NONE = 'None'
 
 # Not passing due to differences in pandas parsing versions
 # TODO clean up file
-@pytest.mark.fail
+@pytest.mark.xfail
 def test_OntarioExposureLimits():
     from thermo.safety import _OntarioExposureLimits
     pts = [_OntarioExposureLimits[i]["TWA (ppm)"] for i in _OntarioExposureLimits.keys()]
