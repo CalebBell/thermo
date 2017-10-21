@@ -501,11 +501,18 @@ def test_dilute_ionic_conductivity():
     
     
 def test_conductivity_McCleskey():
-    cond = conductivity_McCleskey(T=293.15, M=0.045053, A_coeffs=[.03918, 3.905, 137.7], lambda_coeffs=[0.01124, 2.224, 72.36], B=3.8, multiplier=0.5)
+    cond = conductivity_McCleskey(T=293.15, M=0.045053, A_coeffs=[.03918, 3.905, 137.7], lambda_coeffs=[0.01124, 2.224, 72.36], B=3.8, multiplier=2)
     assert_allclose(cond, .8482584585108555)
     
     # CaCl2 max concentration actual point from tablbe
-    cond = conductivity_McCleskey(T=298.15, M=0.3773, A_coeffs=[.03918, 3.905, 137.7], lambda_coeffs=[0.01124, 2.224, 72.36], B=3.8, multiplier=0.5)
+    cond = conductivity_McCleskey(T=298.15, M=0.3773, A_coeffs=[.03918, 3.905, 137.7], lambda_coeffs=[0.01124, 2.224, 72.36], B=3.8, multiplier=2)
     assert_allclose(cond, 6.5740628852868)
     
-    # 65.31 exp
+    # 6.531 exp
+    
+@pytest.mark.xfail
+def test_McCleskey_data():   
+    # Need to add BaCl2 and MgCl2; also need to add a better formula searcher
+    # for small inorganics
+    for CAS, d in McCleskey_conductivities.items():
+        assert pubchem_db.search_CAS(CAS).CASs == CAS

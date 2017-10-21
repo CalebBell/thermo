@@ -31,9 +31,10 @@ __all__ = ['conductivity', 'Laliberte_density', 'Laliberte_heat_capacity',
            'conductivity_methods', 'Magomedovk_thermal_cond',
            'thermal_conductivity_Magomedov', 'ionic_strength', 'Kweq_1981', 
            'Kweq_IAPWS_gas', 'Kweq_IAPWS', 'Marcus_ion_conductivities',
-           'balance_ions']
+           'balance_ions', 'McCleskey_conductivities']
 
 import os
+from collections import namedtuple
 from thermo.utils import exp, log10
 from thermo.utils import e, N_A
 from thermo.utils import to_num, ws_to_zs, horner
@@ -562,6 +563,19 @@ def dilute_ionic_conductivity(ionic_conductivities, zs, rhom):
     return sum([ci*(zi*rhom) for zi, ci in zip(zs, ionic_conductivities)])
 
 
+McCleskey_parameters = namedtuple("McCleskey_parameters",
+                                  ["Formula", 'lambda_coeffs', 'A_coeffs', 'B', 'multiplier'])
+
+McCleskey_conductivities = {}
+with open(os.path.join(folder, 'McCleskey Electrical Conductivity.csv')) as f:
+    next(f)
+    for line in f:
+        values = line.strip().split('\t')
+        formula, CASRN, lbt2, lbt, lbc, At2, At, Ac, B, multiplier = to_num(values)
+        McCleskey_conductivities[CASRN] = McCleskey_parameters(formula, 
+            [lbt2, lbt, lbc], [At2, At, Ac], B, multiplier)
+
+
 def conductivity_McCleskey(T, M, lambda_coeffs, A_coeffs, B, multiplier, rho=1000.):
     r'''This function handles the calculation of the electrical conductivity of 
     an electrolytic aqueous solution with one electrolyte in solution. It
@@ -587,7 +601,8 @@ def conductivity_McCleskey(T, M, lambda_coeffs, A_coeffs, B, multiplier, rho=100
     T : float
         Temperature of the solution, [K]
     M : float
-        Molality of the solution with respect to one electrolyte, [mol/kg]
+        Molality of the solution with respect to one electrolyte
+        (mol solute / kg solvent), [mol/kg]
     lambda_coeffs : list[float]
         List of coefficients for the polynomial used to calculate `lambda`;
         length-3 coefficients provided in [1]_,  [-]
@@ -598,7 +613,7 @@ def conductivity_McCleskey(T, M, lambda_coeffs, A_coeffs, B, multiplier, rho=100
         Empirical constant for an electrolyte, [-]
     multiplier : float
         The multiplier to obtain the absolute conductivity from the equivalent
-        conductivity; ex 0.5 for CaCl2, [-]
+        conductivity; ex 2 for CaCl2, [-]
     rho : float, optional
         The mass density of the aqueous mixture, [kg/m^3]
 
@@ -617,7 +632,7 @@ def conductivity_McCleskey(T, M, lambda_coeffs, A_coeffs, B, multiplier, rho=100
     --------
     A 0.5 wt% solution of CaCl2, conductivity calculated in mS/cm
     >>> conductivity_McCleskey(T=293.15, M=0.045053, A_coeffs=[.03918, 3.905, 
-    ... 137.7], lambda_coeffs=[0.01124, 2.224, 72.36], B=3.8, multiplier=0.5)
+    ... 137.7], lambda_coeffs=[0.01124, 2.224, 72.36], B=3.8, multiplier=2)
     0.848258458510856
 
     References
@@ -632,7 +647,9 @@ def conductivity_McCleskey(T, M, lambda_coeffs, A_coeffs, B, multiplier, rho=100
     M_root = M**0.5
     param = lambda_coeff - A*M_root/(1. + B*M_root)
     C = M*rho/1000. # convert to mol/L to get concentration
-    return param*C/multiplier*0.1 # convert from mS/cm to S/m
+    return param*C*multiplier*0.1 # convert from mS/cm to S/m
+
+
 
 
 Lange_cond_pure = pd.read_csv(os.path.join(folder, 'Lange Pure Species Conductivity.tsv'),
