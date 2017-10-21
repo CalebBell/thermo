@@ -256,8 +256,10 @@ class ChemicalMetadataDB(object):
                             # Replace repreated chemicals
                             self.formula_index[obj.formula] = hit
                         else:
+#                            self.formula_index[obj.formula] = None
                             self.formula_index[obj.formula] = [hit, obj]
                     else:
+#                        self.formula_index[obj.formula] = None
                         self.formula_index[obj.formula].append(obj)
                 else:
                     self.formula_index[obj.formula] = obj
@@ -334,7 +336,11 @@ class ChemicalMetadataDB(object):
     def search_formula(self, formula, autoload=True):
         return self._search_autoload(formula, self.formula_index, autoload=autoload)
 
-
+#pubchem_db = ChemicalMetadataDB(restrict_identifiers_file=os.path.join(folder, 'dippr_2014_int.csv'),
+#                                create_pubchem_index=False, create_CAS_index=False,
+#                 create_name_index=False, create_smiles_index=False, 
+#                 create_InChI_index=False, create_InChI_key_index=False, 
+#                 create_formula_index=False)
 pubchem_db = ChemicalMetadataDB(restrict_identifiers_file=os.path.join(folder, 'dippr_2014_int.csv'))
 #pubchem_db = ChemicalMetadataDB()
 
@@ -354,6 +360,7 @@ def CAS_from_any(ID):
 
     If the input is an ID representing an element, the following additional 
     inputs may be specified as 
+    
     * Atomic symbol (ex 'Na')
     * Atomic number (as a string)
 

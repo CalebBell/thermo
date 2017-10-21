@@ -117,4 +117,4 @@ def test_charge_from_formula():
 
 
 def test_serialize_formula():
-    assert  serialize_formula('Pd(NH3)4+3') == 'H12N4Pd+3'
+    assert serialize_formula('Pd(NH3)4+3') == 'H12N4Pd+3'

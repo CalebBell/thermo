@@ -116,6 +116,8 @@ def test_CAS_from_any():
         
         
 def test_periodic_table_variants():
+    '''Do a lookup in the periodic table and compare vs CAS_from_any.
+    '''
     ids = [periodic_table.CAS_to_elements, periodic_table.name_to_elements, periodic_table.symbol_to_elements]
     failed_CASs = []
     for thing in ids:
@@ -136,6 +138,20 @@ def test_periodic_table_variants():
                 failed_CASs.append(periodic_table[i].name)
     assert set(['Chlorine', 'Fluorine', 'Hydrogen', 'Nitrogen', 'Oxygen']) == set(failed_CASs)     
     
+    
+    for CAS, d in periodic_table.CAS_to_elements.items():
+        assert CAS_from_any(d.smiles) == CAS
+        
+    for CAS, d in periodic_table.CAS_to_elements.items():
+        assert CAS_from_any('SMILES=' + d.smiles) == CAS
+        
+    for CAS, d in periodic_table.CAS_to_elements.items():
+        assert CAS_from_any('InChI=1S/' + d.InChI) == CAS
+        
+    for CAS, d in periodic_table.CAS_to_elements.items():
+        assert CAS_from_any('InChIKey=' + d.InChI_key) == CAS
+        
+            
     
 def test_db_vs_ChemSep():
     import xml.etree.ElementTree as ET
