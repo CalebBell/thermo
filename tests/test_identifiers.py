@@ -24,17 +24,27 @@ from numpy.testing import assert_allclose
 import pytest
 from thermo.identifiers import *
 from thermo.utils import CAS2int
-from thermo.elements import periodic_table
+from thermo.elements import periodic_table, serialize_formula
 import os
+
+# Force the whole db to load
+try:
+    Chemical('asdfadsfasdfasdf')
+except:
+    pass
 
 def test_dippr_list():
     assert 12916928773 == sum([CAS2int(i) for i in dippr_compounds])
     assert all([checkCAS(i) for i in dippr_compounds])
 
 
-@pytest.mark.slow
+#@pytest.mark.slow
 def test_pubchem_dict():
     assert all([checkCAS(i.CASs) for i in pubchem_db.CAS_index.values()])
+
+def test_database_formulas():
+    assert all([i.formula == serialize_formula(i.formula) for i in pubchem_db.CAS_index.values()])
+
 
 
 def test_mixture_from_any():
