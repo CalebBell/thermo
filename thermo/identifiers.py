@@ -28,7 +28,7 @@ __all__ = ['checkCAS', 'CAS_from_any', 'PubChem', 'MW', 'formula', 'smiles',
            'pubchem_db']
 import os
 from thermo.utils import to_num, CAS2int, int2CAS
-from thermo.elements import periodic_table, homonuclear_elemental_gases, charge_from_formula
+from thermo.elements import periodic_table, homonuclear_elemental_gases, charge_from_formula, serialize_formula
 
 folder = os.path.join(os.path.dirname(__file__), 'Identifiers')
 
@@ -78,14 +78,12 @@ def checkCAS(CASRN):
 
 class ChemicalMetadata(object):
     __slots__ = ['pubchemid', 'formula', 'MW', 'smiles', 'InChI', 'InChI_key',
-                 'iupac_name', 'common_name', 'all_names', 'CAS']
+                 'iupac_name', 'common_name', 'all_names', 'CAS', 'charge',
+                 'serialized_formula']
     def __repr__(self):
         return ('<ChemicalMetadata, name=%s, formula=%s, smiles=%s, MW=%g>'
                 %(self.common_name, self.formula, self.smiles, self.MW))
-    @property
-    def charge(self):
-        return charge_from_formula(self.formula)
-    
+        
     @property
     def CASs(self):
         return int2CAS(self.CAS)
@@ -103,6 +101,9 @@ class ChemicalMetadata(object):
         self.iupac_name = iupac_name
         self.common_name = common_name
         self.all_names = all_names
+        
+        self.charge = charge_from_formula(self.formula)
+        self.serialized_formula = serialize_formula(self.formula)
     
 
 class ChemicalMetadataDB(object):
@@ -112,6 +113,7 @@ class ChemicalMetadataDB(object):
     def __init__(self, create_pubchem_index=True, create_CAS_index=True,
                  create_name_index=True, create_smiles_index=True, 
                  create_InChI_index=True, create_InChI_key_index=True, 
+                 create_formula_index=True,
                  restrict_identifiers_file=None, elements=True,
                  main_db=os.path.join(folder, 'chemical identifiers.tsv'),
                  user_dbs=[os.path.join(folder, 'chemical identifiers example user db.tsv'),
@@ -123,7 +125,7 @@ class ChemicalMetadataDB(object):
         self.InChI_key_index = {}
         self.name_index = {}
         self.CAS_index = {}
-
+        self.formula_index = {}
 
         self.create_CAS_index = create_CAS_index
         self.create_pubchem_index = create_pubchem_index
@@ -131,6 +133,7 @@ class ChemicalMetadataDB(object):
         self.create_smiles_index = create_smiles_index
         self.create_InChI_index = create_InChI_index
         self.create_InChI_key_index = create_InChI_key_index
+        self.create_formula_index = create_formula_index
         self.restrict_identifiers_file = restrict_identifiers_file
         self.main_db = main_db
         self.user_dbs = user_dbs
@@ -190,6 +193,9 @@ class ChemicalMetadataDB(object):
                     for name in all_names:
                         self.name_index[name] = obj    
 
+            if self.create_formula_index:
+                self.formula_index[obj.serialized_formula] = obj
+
 
     def load(self, file_name, overwrite=False):
         f = open(file_name)
@@ -230,7 +236,22 @@ class ChemicalMetadataDB(object):
                         if name in self.name_index:
                             pass
                         else:
-                            self.name_index[name] = obj    
+                            self.name_index[name] = obj   
+                            
+            if self.create_formula_index:
+                if obj.serialized_formula in self.formula_index:
+                    hit = self.formula_index[obj.serialized_formula]
+                    if type(hit) != list:
+                        if hit.CAS == obj.CAS:
+                            # Replace repreated chemicals
+                            self.formula_index[obj.serialized_formula] = hit
+                        else:
+                            self.formula_index[obj.serialized_formula] = [hit, obj]
+                    else:
+                        self.formula_index[obj.serialized_formula].append(obj)
+                else:
+                    self.formula_index[obj.serialized_formula] = obj
+                    
         f.close()
     
     def load_included_indentifiers(self, file_name):
@@ -277,7 +298,6 @@ class ChemicalMetadataDB(object):
                     self.autoload_next()
                     return self._search_autoload(identifier, index, autoload)
         return False
-        
     
     def search_pubchem(self, pubchem, autoload=True):
         if type(pubchem) != int:
@@ -300,6 +320,9 @@ class ChemicalMetadataDB(object):
 
     def search_name(self, name, autoload=True):
         return self._search_autoload(name, self.name_index, autoload=autoload)
+    
+    def search_formula(self, formula, autoload=True):
+        return self._search_autoload(formula, self.formula_index, autoload=autoload)
 
 
 pubchem_db = ChemicalMetadataDB(restrict_identifiers_file=os.path.join(folder, 'dippr_2014_int.csv'))
@@ -434,6 +457,11 @@ def CAS_from_any(ID):
             name_lookup = pubchem_db.search_name(name2)
             if name_lookup:
                 return name_lookup.CASs
+            
+    formula_query = pubchem_db.search_formula(serialize_formula(ID))
+    if formula_query and type(formula_query) == ChemicalMetadata:
+        return formula_query.CASs
+            
     raise Exception('Chemical name not recognized')
 
 

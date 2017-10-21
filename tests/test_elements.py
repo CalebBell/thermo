@@ -95,7 +95,7 @@ def test_simple_formula_parser():
     formulas = ['CO2', 'H20OCo2NaClH4P4']
     results = [{'C': 1, 'O': 2},  {'P': 4, 'Co': 2, 'Cl': 1, 'H': 24, 'Na': 1, 'O': 1}]
     
-    for f in [simple_formula_parser, repeated_formula_parser]:
+    for f in [simple_formula_parser, nested_formula_parser]:
         for formula, result in zip(formulas, results):
             assert f(formula) == result
 
@@ -114,3 +114,7 @@ def test_charge_from_formula():
     assert charge_from_formula('Br3(--)') == -2
     assert charge_from_formula('Br3++') == 2
     assert charge_from_formula('Br3(++)') == 2
+
+
+def test_serialize_formula():
+    assert  serialize_formula('Pd(NH3)4+3') == 'H12N4Pd+3'

@@ -24,9 +24,10 @@ from __future__ import division
 
 __all__ = ['PeriodicTable', 'molecular_weight', 'mass_fractions', 
            'atom_fractions', 'similarity_variable', 'atoms_to_Hill', 
-           'simple_formula_parser', 'repeated_formula_parser', 'CAS_by_number',
+           'simple_formula_parser', 'nested_formula_parser', 'CAS_by_number',
            'periods', 'groups', 
-           'blocks', 'homonuclear_elemental_gases', 'charge_from_formula']
+           'blocks', 'homonuclear_elemental_gases', 'charge_from_formula',
+           'serialize_formula']
 import os
 import re
 from collections import Counter
@@ -534,7 +535,7 @@ def simple_formula_parser(formula):
 formula_token_matcher_rational = re.compile('[A-Z][a-z]?|(?:\d*[.])?\d+|\d+|[()]')
 
 
-def repeated_formula_parser(formula):
+def nested_formula_parser(formula):
     r'''Improved formula parser which handles braces and their multipliers, 
     as well as rational element counts.
 
@@ -560,7 +561,7 @@ def repeated_formula_parser(formula):
 
     Examples
     --------
-    >>> repeated_formula_parser('Pd(NH3)4.0001+2')
+    >>> nested_formula_parser('Pd(NH3)4.0001+2')
     {'H': 12.0003, 'N': 4.0001, 'Pd': 1}
     '''
     formula = formula.split('+')[0].split('-')[0]
@@ -645,3 +646,48 @@ def charge_from_formula(formula):
             return multiplier*int(splits[1])
     else:
         return multiplier*count
+
+
+def serialize_formula(formula):
+    r'''Basic formula serializer to construct a consistently-formatted formula.
+    This is necessary for handling user-supplied formulas, which are not always
+    well formatted.
+
+    Performs no sanity checking that elements are actually elements.
+    
+    Parameters
+    ----------
+    formula : str
+        Formula string as parseable by the method nested_formula_parser, [-]
+
+    Returns
+    -------
+    formula : str
+        A consistently formatted formula to describe a molecular formula, [-]
+
+    Notes
+    -----
+
+    Examples
+    --------
+    >>> serialize_formula('Pd(NH3)4+3')
+    'H12N4Pd+3'
+
+    '''
+    charge = charge_from_formula(formula)
+    element_dict = nested_formula_parser(formula)
+    base = atoms_to_Hill(element_dict)
+    if charge  == 0:
+        pass
+    elif charge > 0:
+        if charge == 1:
+            base += '+'
+        else:
+            base += '+' + str(charge)
+    elif charge < 0:
+        if charge == -1:
+            base += '-'
+        else:
+            base +=  str(charge)
+    return base
+    
