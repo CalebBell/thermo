@@ -78,8 +78,7 @@ def checkCAS(CASRN):
 
 class ChemicalMetadata(object):
     __slots__ = ['pubchemid', 'formula', 'MW', 'smiles', 'InChI', 'InChI_key',
-                 'iupac_name', 'common_name', 'all_names', 'CAS', 'charge',
-                 'serialized_formula']
+                 'iupac_name', 'common_name', 'all_names', 'CAS', 'charge']
     def __repr__(self):
         return ('<ChemicalMetadata, name=%s, formula=%s, smiles=%s, MW=%g>'
                 %(self.common_name, self.formula, self.smiles, self.MW))
@@ -103,7 +102,6 @@ class ChemicalMetadata(object):
         self.all_names = all_names
         
         self.charge = charge_from_formula(self.formula)
-        self.serialized_formula = serialize_formula(self.formula)
     
 
 class ChemicalMetadataDB(object):
@@ -194,7 +192,7 @@ class ChemicalMetadataDB(object):
                         self.name_index[name] = obj    
 
             if self.create_formula_index:
-                self.formula_index[obj.serialized_formula] = obj
+                self.formula_index[obj.formula] = obj
 
 
     def load(self, file_name, overwrite=False):
@@ -239,18 +237,18 @@ class ChemicalMetadataDB(object):
                             self.name_index[name] = obj   
                             
             if self.create_formula_index:
-                if obj.serialized_formula in self.formula_index:
-                    hit = self.formula_index[obj.serialized_formula]
+                if obj.formula in self.formula_index:
+                    hit = self.formula_index[obj.formula]
                     if type(hit) != list:
                         if hit.CAS == obj.CAS:
                             # Replace repreated chemicals
-                            self.formula_index[obj.serialized_formula] = hit
+                            self.formula_index[obj.formula] = hit
                         else:
-                            self.formula_index[obj.serialized_formula] = [hit, obj]
+                            self.formula_index[obj.formula] = [hit, obj]
                     else:
-                        self.formula_index[obj.serialized_formula].append(obj)
+                        self.formula_index[obj.formula].append(obj)
                 else:
-                    self.formula_index[obj.serialized_formula] = obj
+                    self.formula_index[obj.formula] = obj
                     
         f.close()
     
