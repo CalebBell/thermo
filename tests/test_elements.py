@@ -75,12 +75,12 @@ def test_elements_data():
 
 def test_misc_elements():
     assert periodic_table['H'].InChI == 'H' # 'InChI=1S/
-    
     assert periodic_table['H'].smiles == '[H]'
     assert periodic_table[1].smiles == '[H]'
     assert periodic_table['1'].smiles == '[H]'
     
     assert periodic_table['Fm'].InChI_key == 'MIORUQGGZCBUGO-UHFFFAOYSA-N'
+
 
 def test_Hill_formula():
     Hill_formulas = {'ClNa': {'Na': 1, 'Cl': 1}, 'BrI': {'I': 1, 'Br': 1},
@@ -92,8 +92,12 @@ def test_Hill_formula():
 
 
 def test_simple_formula_parser():
-    assert simple_formula_parser('CO2') == {'C': 1, 'O': 2}
-    assert simple_formula_parser('H20OCo2NaClH4P4-132') == {'P': 4, 'Co': 2, 'Cl': 1, 'H': 24, 'Na': 1, 'O': 1}
+    formulas = ['CO2', 'H20OCo2NaClH4P4']
+    results = [{'C': 1, 'O': 2},  {'P': 4, 'Co': 2, 'Cl': 1, 'H': 24, 'Na': 1, 'O': 1}]
+    
+    for f in [simple_formula_parser, repeated_formula_parser]:
+        for formula, result in zip(formulas, results):
+            assert f(formula) == result
 
 
 def test_charge_from_formula():

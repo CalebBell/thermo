@@ -594,7 +594,7 @@ def conductivity_McCleskey(T, M, lambda_coeffs, A_coeffs, B, multiplier, rho=100
         
     In the above equations, `t` is temperature in degrees Celcius;
     `m` is molality in mol/kg, and C is the concentration of the elctrolytes
-    in mol/kg, calculated as the product of density and molality.
+    in mol/m^3, calculated as the product of density and molality.
     
     Parameters
     ----------
@@ -631,9 +631,10 @@ def conductivity_McCleskey(T, M, lambda_coeffs, A_coeffs, B, multiplier, rho=100
     Examples
     --------
     A 0.5 wt% solution of CaCl2, conductivity calculated in mS/cm
+    
     >>> conductivity_McCleskey(T=293.15, M=0.045053, A_coeffs=[.03918, 3.905, 
     ... 137.7], lambda_coeffs=[0.01124, 2.224, 72.36], B=3.8, multiplier=2)
-    0.848258458510856
+    0.8482584585108555
 
     References
     ----------

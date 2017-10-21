@@ -24,7 +24,8 @@ from __future__ import division
 
 __all__ = ['PeriodicTable', 'molecular_weight', 'mass_fractions', 
            'atom_fractions', 'similarity_variable', 'atoms_to_Hill', 
-           'simple_formula_parser', 'CAS_by_number', 'periods', 'groups', 
+           'simple_formula_parser', 'repeated_formula_parser', 'CAS_by_number',
+           'periods', 'groups', 
            'blocks', 'homonuclear_elemental_gases', 'charge_from_formula']
 import os
 import re
@@ -528,6 +529,77 @@ def simple_formula_parser(formula):
         ele, count = _formula_p2.split(group)[1:]
         cnt[ele] += int(count) if count.isdigit() else 1
     return dict(cnt)
+
+
+formula_token_matcher_rational = re.compile('[A-Z][a-z]?|(?:\d*[.])?\d+|\d+|[()]')
+
+
+def repeated_formula_parser(formula):
+    r'''Improved formula parser which handles braces and their multipliers, 
+    as well as rational element counts.
+
+    Strips charges from the end of a formula first. Accepts repeated chemical
+    units. Performs no sanity checking that elements are actually elements.
+    As it uses regular expressions for matching, errors are mostly just ignored.
+    
+    Parameters
+    ----------
+    formula : str
+        Formula string, very simply formats only.
+
+    Returns
+    -------
+    atoms : dict
+        dictionary of counts of individual atoms, indexed by symbol with
+        proper capitalization, [-]
+
+    Notes
+    -----
+    Inspired by the approach taken by CrazyMerlyn on a reddit DailyProgrammer
+    challenge, at https://www.reddit.com/r/dailyprogrammer/comments/6eerfk/20170531_challenge_317_intermediate_counting/
+
+    Examples
+    --------
+    >>> repeated_formula_parser('Pd(NH3)4.0001+2')
+    {'H': 12.0003, 'N': 4.0001, 'Pd': 1}
+    '''
+    formula = formula.split('+')[0].split('-')[0]
+    formula = formula.replace('[', '').replace(']', '')
+    
+    stack = [[]]
+    last = stack[0]
+    tokens = formula_token_matcher_rational.findall(formula)
+    for token in tokens:
+        if token == "(":
+            stack.append([])
+            last = stack[-1]
+        elif token == ")":
+            temp_dict = {}
+            for d in last:
+                for ele, count in d.items():
+                    if ele in temp_dict:
+                        temp_dict[ele] = temp_dict[ele] + count
+                    else:
+                        temp_dict[ele] = count
+            stack.pop()
+            last = stack[-1]
+            last.append(temp_dict)
+        elif token.isalpha():
+            last.append({token: 1})
+        else:
+            v = float(token)
+            v_int = int(v)
+            if v_int == v:
+                v = v_int
+            last[-1] = {ele: count*v for ele, count in last[-1].items()}
+    ans = {}
+    for d in last:
+        for ele, count in d.items():
+            if ele in ans:
+                ans[ele] = ans[ele] + count
+            else:
+                ans[ele] = count
+    return ans
 
 
 def charge_from_formula(formula):
