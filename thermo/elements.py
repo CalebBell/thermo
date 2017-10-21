@@ -672,7 +672,6 @@ def serialize_formula(formula):
     --------
     >>> serialize_formula('Pd(NH3)4+3')
     'H12N4Pd+3'
-
     '''
     charge = charge_from_formula(formula)
     element_dict = nested_formula_parser(formula)

@@ -78,10 +78,22 @@ def checkCAS(CASRN):
 
 class ChemicalMetadata(object):
     __slots__ = ['pubchemid', 'formula', 'MW', 'smiles', 'InChI', 'InChI_key',
-                 'iupac_name', 'common_name', 'all_names', 'CAS', 'charge']
+                 'iupac_name', 'common_name', 'all_names', 'CAS', '_charge']
     def __repr__(self):
         return ('<ChemicalMetadata, name=%s, formula=%s, smiles=%s, MW=%g>'
                 %(self.common_name, self.formula, self.smiles, self.MW))
+        
+    @property
+    def charge(self):
+        '''Charge of the species as an integer. Computed as a property as most
+        species do not have a charge and so storing it would be a waste of 
+        memory.
+        '''
+        try:
+            return self._charge
+        except AttributeError:
+            self._charge = charge_from_formula(self.formula)
+            return self._charge
         
     @property
     def CASs(self):
@@ -101,7 +113,7 @@ class ChemicalMetadata(object):
         self.common_name = common_name
         self.all_names = all_names
         
-        self.charge = charge_from_formula(self.formula)
+        
     
 
 class ChemicalMetadataDB(object):
