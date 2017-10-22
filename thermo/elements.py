@@ -185,16 +185,17 @@ class Element(object):
         25-character hash of the compound's InChI.
     smiles : str
         Standard smiles string of the element
-
+    PubChem : int
+        PubChem Compound identifier (CID) of the chemical
     '''
     __slots__ = ['number', 'symbol', 'name', 'CAS', 'MW', 'AReneg', 'rcov',
                  'rvdw', 'maxbonds', 'elneg', 'ionization', 'elaffinity',
                  'period', 'group', 'block', 'protons', 'electrons', 'InChI',
-                 'InChI_key', 'smiles']
+                 'InChI_key', 'smiles', 'PubChem']
 
     def __init__(self, number, symbol, name, MW, CAS, AReneg, rcov, rvdw,
                  maxbonds, elneg, ionization, elaffinity, period, group, block,
-                 InChI_key=None):
+                 PubChem, InChI_key=None):
         self.number = number
         self.symbol = symbol
         self.name = name
@@ -218,6 +219,7 @@ class Element(object):
         self.InChI =  self.symbol # 'InChI=1S/' +
         self.InChI_key = InChI_key
         self.smiles = '[' + self.symbol + ']'
+        self.PubChem = PubChem
 
 
 element_list = []
@@ -242,13 +244,14 @@ with open(os.path.join(folder, 'element.txt'), 'rb') as f:
             period = periods[number-1]
             group = groups[number-1]
             InChI_key = InChI_keys[number-1]
+            cid = cids[number-1]
 
             ele = Element(number=number, symbol=symbol, name=name, MW=MW,
                           CAS=CAS_by_number[number-1], AReneg=AReneg,
                           rcov=rcov, rvdw=rvdw, maxbonds=maxbonds, elneg=elneg,
                           ionization=ionization, elaffinity=elaffinity,
                           block=block, period=period, group=group,
-                          InChI_key=InChI_key)
+                          InChI_key=InChI_key, PubChem=cid)
             element_list.append(ele)
 
 periodic_table = PeriodicTable(element_list)

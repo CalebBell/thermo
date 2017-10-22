@@ -167,7 +167,7 @@ class ChemicalMetadataDB(object):
             CAS = int(ele.CAS.replace('-', '')) # Store as int for easier lookup
             all_names = [ele.name.lower()]
             
-            obj = ChemicalMetadata(pubchemid=None, CAS=CAS, 
+            obj = ChemicalMetadata(pubchemid=ele.PubChem, CAS=CAS, 
                                    formula=ele.symbol, MW=ele.MW, smiles=ele.smiles,
                                    InChI=ele.InChI, InChI_key=ele.InChI_key,
                                    iupac_name=ele.name.lower(), 
@@ -188,8 +188,8 @@ class ChemicalMetadataDB(object):
             
             if self.create_CAS_index:
                 self.CAS_index[CAS] = obj
-#            if self.create_pubchem_index:
-#                self.pubchem_index[pubchemid] = obj
+            if self.create_pubchem_index:
+                self.pubchem_index[ele.PubChem] = obj
             if self.create_smiles_index:
                 self.smiles_index[ele.smiles] = obj
             if self.create_InChI_index:
