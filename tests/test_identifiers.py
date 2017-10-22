@@ -151,6 +151,17 @@ def test_periodic_table_variants():
     for CAS, d in periodic_table.CAS_to_elements.items():
         assert CAS_from_any('InChIKey=' + d.InChI_key) == CAS
         
+        
+    fail = 0
+    for CAS, d in periodic_table.CAS_to_elements.items():
+        
+        if d.PubChem != None:
+            assert CAS_from_any('PubChem=' + str(d.PubChem)) == CAS
+        else:
+            fail += 1
+    assert fail == 9
+    # 111 - 118 aren't in pubchem
+    
             
     
 def test_db_vs_ChemSep():
