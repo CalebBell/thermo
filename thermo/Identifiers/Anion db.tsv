@@ -5,6 +5,7 @@
 -1	12299-76-2	HO2Pb-	240.206	[H].[O-].[O].[Pb]	InChI=1S/2O.Pb.H/q;-1;;	ULKFIGRLEGLDII-UHFFFAOYSA-N	Plumbate (Pb(OH)O1-) (9CI)	22475-82-7
 -1	123454-39-7	FeO4-	119.841	[Fe].[O-].[O].[O].[O]	InChI=1S/Fe.4O/q;;;;-1	CBPFDEGDMCSORJ-UHFFFAOYSA-N	Ferrate (Fe(OH)O31-), (T-4)- (9CI)	
 -1	123505-69-1	FeO4-2	119.841	[Fe-].[O-].[O].[O].[O]	InChI=1S/Fe.4O/q-1;;;;-1	PQVQRYICWNJANM-UHFFFAOYSA-N	Ferrate (Fe(OH)O32-), (T-4)- (9CI)	
+-1	12447-33-5	B4HO7-	156.249	O=BOB([O-])OB([O-])OB=[OH+]	InChI=1S/B4O7/c5-1-9-3(7)11-4(8)10-2-6/q-2/p+1	QIHRQKFHRODZNP-UHFFFAOYSA-O	B4 H O7	Borate (B4O72-), hydrogen	Borate, hydrogen (8CI)	124386-10-3
 -1	12758-12-2	AlO-	42.981	[Al-].[O]			Aluminate (AlO1-) (9CI)	Aluminate(1-), oxo-	Aluminum oxide (AlO1-)	Aluminum oxide ion (AlO1-)	AlO-	AlO-1	AlO(-1)	AlO(1-)	AlO(-)
 -1	13981-20-9	O3V-	98.939	[O].[O].[O].[V-]	InChI=1S/3O.V/q;;;-1	YTVPPYMZCLYRBX-UHFFFAOYSA-N	Vanadate (VO31-) (8CI,9CI)	Metavanadate	Metavanadate(1-)	Trioxovanadate(1-)	Vanadate (VO3-)	Vanadate (VO3-) ion	16389-35-8	860440-30-8	1208105-31-0	vanadate (VO3 1-)	VO3-	VO3-1	VO3(-1)	VO3(1-)	VO3(-)	O3V-	O3V-1	O3V(-1)	O3V(1-)	O3V(-)
 -1	14259-85-9	MoO4-2	159.936	[Mo-2].[O].[O].[O].[O]	InChI=1S/Mo.4O/q-2;;;;	LYKAEQVYSKEMBJ-UHFFFAOYSA-N	Molybdate (MoO42-), (T-4)- (9CI)	Molybdate (MoO42-)	Molybdate ion (MoO42-)	Tetraoxomolybdate(2-)	82638-45-7	molybdate (MoO4 2-)	MoO4--	MoO4-2	MoO4(-2)	MoO4(2-)	MoO4(--)
