@@ -250,17 +250,20 @@ class ChemicalMetadataDB(object):
                             
             if self.create_formula_index:
                 if obj.formula in self.formula_index:
-                    hit = self.formula_index[obj.formula]
-                    if type(hit) != list:
-                        if hit.CAS == obj.CAS:
-                            # Replace repreated chemicals
-                            self.formula_index[obj.formula] = hit
-                        else:
-#                            self.formula_index[obj.formula] = None
-                            self.formula_index[obj.formula] = [hit, obj]
+                    if overwrite:
+                        self.formula_index[obj.formula] = obj
                     else:
-#                        self.formula_index[obj.formula] = None
-                        self.formula_index[obj.formula].append(obj)
+                        hit = self.formula_index[obj.formula]
+                        if type(hit) != list:
+                            if hit.CAS == obj.CAS:
+                                # Replace repreated chemicals
+                                self.formula_index[obj.formula] = hit
+                            else:
+    #                            self.formula_index[obj.formula] = None
+                                self.formula_index[obj.formula] = [hit, obj]
+                        else:
+    #                        self.formula_index[obj.formula] = None
+                            self.formula_index[obj.formula].append(obj)
                 else:
                     self.formula_index[obj.formula] = obj
                     

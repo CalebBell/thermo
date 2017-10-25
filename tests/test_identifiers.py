@@ -98,6 +98,9 @@ def test_CAS_from_any():
     # monatomic form unfortunately - this is the CAS for Monooxygen
     
     assert CAS_from_any('1') == '12385-13-6'
+    
+    
+    assert CAS_from_any('HC2O4-') == '920-52-5'
 
 
     # Unknown inchi
