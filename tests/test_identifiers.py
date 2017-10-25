@@ -114,6 +114,10 @@ def test_CAS_from_any():
     with pytest.raises(Exception):
         CAS_from_any('1411769-41-9')
         
+    with pytest.raises(Exception):
+        # This was parsed as Cerium for a little while
+        CAS_from_any('Cellulose')
+        
         
 def test_periodic_table_variants():
     '''Do a lookup in the periodic table and compare vs CAS_from_any.

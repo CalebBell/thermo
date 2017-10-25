@@ -30,6 +30,7 @@ __all__ = ['PeriodicTable', 'molecular_weight', 'mass_fractions',
            'serialize_formula']
 import os
 import re
+import string
 from collections import Counter
 from thermo.utils import to_num
 
@@ -64,6 +65,7 @@ for i, CAS in zip(homonuclear_elemental_gases, homonuclear_elemental_singlets_CA
     CAS_by_number[i-1] = CAS
 
 cids = [783, 23987, 3028194, 5460467, 5462311, 297, 222, 962, 14917, 23935, 5360545, 5462224, 5359268, 5461123, 24404, 402, 313, 23968, 5462222, 5460341, 23952, 23963, 23990, 23976, 23930, 23925, 104730, 935, 23978, 23994, 5360835, 6326954, 5359596, 6326970, 260, 5416, 5357696, 5359327, 23993, 23995, 23936, 23932, 23957, 23950, 23948, 23938, 23954, 23973, 5359967, 5352426, 5354495, 6327182, 24841, 23991, 5354618, 5355457, 23926, 23974, 23942, 23934, 23944, 23951, 23981, 23982, 23958, 23912, 23988, 23980, 23961, 23992, 23929, 23986, 23956, 23964, 23947, 23937, 23924, 23939, 23985, 23931, 5359464, 5352425, 5359367, 6328143, 5460479, 24857, 6328145, 6328144, 23965, 23960, 23945, 23989, 23933, 23940, 23966, 23979, 23971, 23997, 23913, 23998, 23943, 24822, 31192, 56951715, 56951718, 56951717, 56951713, 56951714, 56951716, None, None, None, None, None, None, None, None, None]
+
 
 class PeriodicTable(object):
     '''Periodic Table object for use in dealing with elements.
@@ -537,9 +539,9 @@ def simple_formula_parser(formula):
 
 
 formula_token_matcher_rational = re.compile('[A-Z][a-z]?|(?:\d*[.])?\d+|\d+|[()]')
+letter_set = set(string.ascii_letters)
 
-
-def nested_formula_parser(formula):
+def nested_formula_parser(formula, check=True):
     r'''Improved formula parser which handles braces and their multipliers, 
     as well as rational element counts.
 
@@ -551,6 +553,10 @@ def nested_formula_parser(formula):
     ----------
     formula : str
         Formula string, very simply formats only.
+    check : bool
+        If `check` is True, a simple check will be performed to determine if
+        a formula is not a formula and an exception will be raised if it is
+        not, [-]
 
     Returns
     -------
@@ -574,6 +580,13 @@ def nested_formula_parser(formula):
     stack = [[]]
     last = stack[0]
     tokens = formula_token_matcher_rational.findall(formula)
+    # The set of letters in the tokens should match the set of letters
+    if check:
+        token_letters = set([j for i in tokens for j in i if j in letter_set])
+        formula_letters = set(i for i in formula if i in letter_set)
+        if formula_letters != token_letters:
+            raise Exception('Input may not be a formula; extra letters were detected')
+    
     for token in tokens:
         if token == "(":
             stack.append([])

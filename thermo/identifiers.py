@@ -475,9 +475,12 @@ def CAS_from_any(ID):
             if name_lookup:
                 return name_lookup.CASs
             
-    formula_query = pubchem_db.search_formula(serialize_formula(ID))
-    if formula_query and type(formula_query) == ChemicalMetadata:
-        return formula_query.CASs
+    try:
+        formula_query = pubchem_db.search_formula(serialize_formula(ID))
+        if formula_query and type(formula_query) == ChemicalMetadata:
+            return formula_query.CASs
+    except:
+        pass
             
     raise Exception('Chemical name not recognized')
 
