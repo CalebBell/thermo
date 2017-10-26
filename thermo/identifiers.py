@@ -348,7 +348,7 @@ pubchem_db = ChemicalMetadataDB(restrict_identifiers_file=os.path.join(folder, '
 #pubchem_db = ChemicalMetadataDB()
 
 
-def CAS_from_any(ID):
+def CAS_from_any(ID, autoload=False):
     '''Looks up the CAS number of a chemical by searching and testing for the
     string being any of the following types of chemical identifiers:
     
@@ -399,6 +399,7 @@ def CAS_from_any(ID):
     '17778-80-2'
     '''
     ID = ID.strip()
+    ID_lower = ID.lower()
     if ID in periodic_table:
         if periodic_table[ID].number not in homonuclear_elemental_gases:
             return periodic_table[ID].CAS
@@ -415,50 +416,52 @@ def CAS_from_any(ID):
                         return periodic_table[ID].CAS
 
     if checkCAS(ID):
-        CAS_lookup = pubchem_db.search_CAS(ID)
+        CAS_lookup = pubchem_db.search_CAS(ID, autoload)
         if CAS_lookup:
             return CAS_lookup.CASs
         
         # handle the case of synonyms
-        CAS_alternate_loopup = pubchem_db.search_name(ID)
+        CAS_alternate_loopup = pubchem_db.search_name(ID, autoload)
         if CAS_alternate_loopup:
             return CAS_alternate_loopup.CASs
         raise Exception('A valid CAS number was recognized, but is not in the database')
         
         
     # Try a direct lookup with the name - the fastest
-    name_lookup = pubchem_db.search_name(ID)
+    name_lookup = pubchem_db.search_name(ID, autoload)
     if name_lookup:
         return name_lookup.CASs
-    if len(ID) > 9:
+    
+    ID_len = len(ID)
+    if ID_len > 9:
         inchi_search = False
         # normal upper case is 'InChI=1S/'
-        if ID[0:9].lower() == 'inchi=1s/':
+        if ID_lower[0:9] == 'inchi=1s/':
             inchi_search = ID[9:]
-        elif ID[0:8].lower() == 'inchi=1/':
+        elif ID_lower[0:8] == 'inchi=1/':
             inchi_search = ID[8:]
         if inchi_search:
-            inchi_lookup = pubchem_db.search_InChI(inchi_search)
+            inchi_lookup = pubchem_db.search_InChI(inchi_search, autoload)
             if inchi_lookup:
                 return inchi_lookup.CASs
             else:
                 raise Exception('A valid InChI name was recognized, but it is not in the database')
-        if ID[0:9].lower() == 'inchikey=':
-            inchi_key_lookup = pubchem_db.search_InChI_key(ID[9:])
+        if ID_lower[0:9] == 'inchikey=':
+            inchi_key_lookup = pubchem_db.search_InChI_key(ID[9:], autoload)
             if inchi_key_lookup:
                 return inchi_key_lookup.CASs
             else:
                 raise Exception('A valid InChI Key was recognized, but it is not in the database')
-    if len(ID) > 8:
-        if ID[0:8].lower() == 'pubchem=':
-            pubchem_lookup = pubchem_db.search_pubchem(ID[8:])
+    if ID_len > 8:
+        if ID_lower[0:8] == 'pubchem=':
+            pubchem_lookup = pubchem_db.search_pubchem(ID[8:], autoload)
             if pubchem_lookup:
                 return pubchem_lookup.CASs
             else:
                 raise Exception('A PubChem integer identifier was recognized, but it is not in the database.')
-    if len(ID) > 7:
-        if ID[0:7].lower() == 'smiles=':
-            smiles_lookup = pubchem_db.search_smiles(ID[7:])
+    if ID_len > 7:
+        if ID_lower[0:7] == 'smiles=':
+            smiles_lookup = pubchem_db.search_smiles(ID[7:], autoload)
             if smiles_lookup:
                 return smiles_lookup.CASs
             else:
@@ -467,23 +470,40 @@ def CAS_from_any(ID):
     # Try the smiles lookup anyway
     # Parsing SMILES is an option, but this is faster
     # Pybel API also prints messages to console on failure
-    smiles_lookup = pubchem_db.search_smiles(ID)
+    smiles_lookup = pubchem_db.search_smiles(ID, autoload)
     if smiles_lookup:
         return smiles_lookup.CASs
     
-    # Permutate through various name options
-    for name in [ID, ID.replace(' ', ''), ID.replace(' ', '').replace('-', '')]:
+#     Permutate through various name options
+    ID_no_space = ID.replace(' ', '')
+    ID_no_space_dash = ID_no_space.replace('-', '')
+    
+    for name in [ID, ID_no_space, ID_no_space_dash]:
         for name2 in [name, name.lower()]:
-            name_lookup = pubchem_db.search_name(name2)
+            name_lookup = pubchem_db.search_name(name2, autoload)
             if name_lookup:
                 return name_lookup.CASs
             
     try:
-        formula_query = pubchem_db.search_formula(serialize_formula(ID))
+        formula_query = pubchem_db.search_formula(serialize_formula(ID), autoload)
         if formula_query and type(formula_query) == ChemicalMetadata:
             return formula_query.CASs
     except:
         pass
+    
+    if ID[-1] == ')' and '(' in ID:#
+        # Try to matck in the form 'water (H2O)'
+        first_identifier, second_identifier = ID[0:-1].split('(', 1)
+        try:
+            CAS1 = CAS_from_any(first_identifier)
+            CAS2 = CAS_from_any(second_identifier)
+            assert CAS1 == CAS2
+            return CAS1
+        except:
+            pass
+        
+    if not autoload:
+        return CAS_from_any(ID, autoload=True)
             
     raise Exception('Chemical name not recognized')
 

@@ -101,6 +101,8 @@ def test_CAS_from_any():
     
     
     assert CAS_from_any('HC2O4-') == '920-52-5'
+    
+    assert CAS_from_any('water (H2O)') == '7732-18-5'
 
 
     # Unknown inchi
