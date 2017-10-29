@@ -2,7 +2,7 @@ numpy
 scipy
 pandas
 sympy
-fluids
+fluids>=0.1.68
 coolprop
 pytest
 pytest-cov

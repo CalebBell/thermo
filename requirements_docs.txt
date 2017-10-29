@@ -2,5 +2,5 @@ numpy
 pandas
 numpydoc
 scipy
-fluids
+fluids>=0.1.68
 coolprop
