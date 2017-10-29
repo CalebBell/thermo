@@ -26,7 +26,7 @@ __all__ = ['T_converter', 'T_scales', 'ITS90_68_difference', 'Ts_68',
 'diffs_68', 'Ts_48', 'diffs_48', 'Ts_76', 'diffs_76', 'Ts_27', 'diffs_27']
 
 import numpy as np
-from scipy.constants import C2K
+from fluids.core import C2K
 from scipy.interpolate import UnivariateSpline
 
 '''Tabulated values of T68 vs. difference as in [2]_'''

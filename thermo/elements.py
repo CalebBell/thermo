@@ -28,6 +28,7 @@ __all__ = ['PeriodicTable', 'molecular_weight', 'mass_fractions',
            'periods', 'groups', 
            'blocks', 'homonuclear_elemental_gases', 'charge_from_formula',
            'serialize_formula']
+from pprint import pprint
 import os
 import re
 import string
@@ -571,7 +572,7 @@ def nested_formula_parser(formula, check=True):
 
     Examples
     --------
-    >>> nested_formula_parser('Pd(NH3)4.0001+2')
+    >>> pprint(nested_formula_parser('Pd(NH3)4.0001+2'))
     {'H': 12.0003, 'N': 4.0001, 'Pd': 1}
     '''
     formula = formula.split('+')[0].split('-')[0]

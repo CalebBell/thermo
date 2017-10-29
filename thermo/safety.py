@@ -35,7 +35,7 @@ import os
 from io import open
 import numpy as np
 import pandas as pd
-from scipy.constants import F2K
+from fluids.core import F2K
 from thermo.utils import R
 from thermo.utils import to_num, none_and_length_check, normalize
 from thermo.identifiers import CAS_from_any

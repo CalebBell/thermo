@@ -2277,10 +2277,11 @@ Engler_degrees = [1, 1.16, 1.31, 1.58, 1.88, 2.17, 2.45, 2.73, 3.02, 4.48, 5.92,
 Engler_nu = SSU_nu
 viscosity_scales['engler'] = (Engler_degrees, Engler_nu)
 
+# Note: Barbey is decreasing not increasing
 Barbey_degrees = [6200, 2420, 1440, 838, 618, 483, 404, 348, 307, 195, 144, 114, 95, 70.8, 56.4, 47, 40.3, 35.2, 31.3, 28.2, 18.7, 14.1, 11.3, 9.4, 7.05, 5.64, 4.7, 4.03, 3.52, 3.13, 2.82, 2.5, 1.4]
 Barbey_nu = SSU_nu
 viscosity_scales['barbey'] = (Barbey_degrees, Barbey_nu)
-
+#
 PC7_PC7 = [40, 46, 52.5, 66, 79, 92, 106, 120, 135, 149]
 PC7_nu = [43.2, 54, 65, 87.6, 110, 132, 154, 176, 198, 220]
 viscosity_scales['parlin cup #7'] = (PC7_PC7, PC7_nu)
@@ -2353,11 +2354,21 @@ viscosity_converters_from_nu = {}
 viscosity_converter_limits = {}
 
 for key, val in viscosity_scales.items():
+    if key == 'barbey':
+        continue
     values, nus = val
     viscosity_converter_limits[key] = (values[0], values[-1], nus[0], nus[-1])
     values, nus = np.log(values), np.log(nus)
     viscosity_converters_to_nu[key] = UnivariateSpline(values, nus, k=3, s=0)
     viscosity_converters_from_nu[key] = UnivariateSpline(nus, values, k=3, s=0)
+
+# Barbey gets special treatment because of its reversed values
+viscosity_converter_limits['barbey'] = (Barbey_degrees[-1], Barbey_degrees[0], Barbey_nu[0], Barbey_nu[-1])
+barbey_values, barbey_nus = np.log(list(reversed(Barbey_degrees))), np.log(list(reversed(Barbey_nu)))
+viscosity_converters_to_nu['barbey'] = UnivariateSpline(barbey_values, barbey_nus, k=3, s=0)
+viscosity_converters_from_nu['barbey'] = UnivariateSpline(np.log(Barbey_nu), np.log(Barbey_degrees), k=3, s=0)
+
+    
 
 # originally from  Euverard, M. R., "The Efflux Type Viscosity Cup," National 
 # Paint, Varnish, and Lacquer Association, 9 April 1948.

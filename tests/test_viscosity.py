@@ -316,6 +316,20 @@ def test_viscosity_converter():
         assert_allclose(SUS, SUS2)
 
 
+    # Barbey custom tests
+    nu = viscosity_converter(483, 'barbey', 'kinematic viscosity')*1E6
+    assert_allclose(nu, 13.1)
+    nu = viscosity_converter(1.4, 'barbey', 'kinematic viscosity')*1E6
+    assert_allclose(nu, 4400)
+    nu = viscosity_converter(6200, 'barbey', 'kinematic viscosity')*1E6
+    assert_allclose(nu, 1)
+    nu = viscosity_converter(6300, 'barbey', 'kinematic viscosity', extrapolate=True)*1E6
+    assert_allclose(nu, 0.984, rtol=1E-3)
+    # The extrapolation when barbey is known and under 1.4 is not working and goes the wrong direction
+    # viscosity_converter(1.39999, 'barbey', 'kinematic viscosity', extrapolate=True)*1E6
+
+
+
 @pytest.mark.meta_T_dept
 def test_ViscosityLiquid():
     EtOH = ViscosityLiquid(MW=46.06844, Tm=159.05, Tc=514.0, Pc=6137000.0, Vc=0.000168, omega=0.635, Psat=7872.16, Vml=5.8676e-5, CASRN='64-17-5')
