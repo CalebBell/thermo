@@ -541,6 +541,8 @@ def simple_formula_parser(formula):
 
 formula_token_matcher_rational = re.compile('[A-Z][a-z]?|(?:\d*[.])?\d+|\d+|[()]')
 letter_set = set(string.ascii_letters)
+bracketed_charge_re = re.compile('\([+-]?\d+\)$|\(\d+[+-]?\)$|\([+-]+\)$')
+
 
 def nested_formula_parser(formula, check=True):
     r'''Improved formula parser which handles braces and their multipliers, 
@@ -575,8 +577,12 @@ def nested_formula_parser(formula, check=True):
     >>> pprint(nested_formula_parser('Pd(NH3)4.0001+2'))
     {'H': 12.0003, 'N': 4.0001, 'Pd': 1}
     '''
-    formula = formula.split('+')[0].split('-')[0]
     formula = formula.replace('[', '').replace(']', '')
+    charge_splits = bracketed_charge_re.split(formula)
+    if len(charge_splits) > 1:
+        formula = charge_splits[0]
+    else:
+        formula = formula.split('+')[0].split('-')[0]
     
     stack = [[]]
     last = stack[0]
@@ -621,6 +627,8 @@ def nested_formula_parser(formula, check=True):
     return ans
 
 
+
+
 def charge_from_formula(formula):
     r'''Basic formula parser to determine the charge from a formula - given
     that the charge is already specified as one element of the formula.
@@ -631,7 +639,8 @@ def charge_from_formula(formula):
     ----------
     formula : str
         Formula string, very simply formats only, ending in one of '+x',
-        '-x', n*'+', or n*'-'. 
+        '-x', n*'+', or n*'-' or any of them surrounded by brackets but always
+        at the end of a formula.
 
     Returns
     -------
@@ -640,11 +649,12 @@ def charge_from_formula(formula):
 
     Notes
     -----
-    Brackets are handled by ignoring them.
 
     Examples
     --------
     >>> charge_from_formula('Br3-')
+    -1
+    >>> charge_from_formula('Br3(-)')
     -1
     '''
     negative = '-' in formula
@@ -655,10 +665,16 @@ def charge_from_formula(formula):
         return 0
     multiplier, sign = (-1, '-') if negative else (1, '+')
     
+    hit = False
+    if '(' in formula:
+        hit = bracketed_charge_re.findall(formula)
+        if hit:
+            formula = hit[-1].replace('(', '').replace(')', '')
+
     count = formula.count(sign)
     if count == 1:
         splits = formula.split(sign)
-        if splits[1] == '':
+        if splits[1] == '' or splits[1] == ')':
             return multiplier
         else:
             return multiplier*int(splits[1])

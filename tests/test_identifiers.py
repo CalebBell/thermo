@@ -103,7 +103,13 @@ def test_CAS_from_any():
     assert CAS_from_any('HC2O4-') == '920-52-5'
     
     assert CAS_from_any('water (H2O)') == '7732-18-5'
-
+    
+    # Test charge interpretation
+    assert CAS_from_any('Ca+2') == '14127-61-8'
+    assert CAS_from_any('Ca++') == '14127-61-8'
+    assert CAS_from_any('Ca(++)') == '14127-61-8'
+    assert CAS_from_any('Ca(+2)') == '14127-61-8'
+    assert CAS_from_any('Ca(2+)') == '14127-61-8'
 
     # Unknown inchi
     with pytest.raises(Exception):

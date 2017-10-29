@@ -115,6 +115,14 @@ def test_charge_from_formula():
     assert charge_from_formula('Br3++') == 2
     assert charge_from_formula('Br3(++)') == 2
 
+    assert charge_from_formula('Br3(-)') == -1
+    assert charge_from_formula('Br3(-1)') == -1
+    assert charge_from_formula('Br3(-2)') == -2
+    assert charge_from_formula('Br3(-3)') == -3
+    assert charge_from_formula('Br3(+)') == 1
+    assert charge_from_formula('Br3(+1)') == 1
+    assert charge_from_formula('Br3(+2)') == 2
+    assert charge_from_formula('Br3(+3)') == 3
 
 def test_serialize_formula():
     assert serialize_formula('Pd(NH3)4+3') == 'H12N4Pd+3'

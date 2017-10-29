@@ -166,17 +166,17 @@ def test_balance_ions():
         cat = np.sum(np.array(cat_zs)*np.array(cat_charges))
         assert_allclose(-an, cat)
 
-    Na_ion = pubchem_db.search_name('Na+')
-    Cl_ion = pubchem_db.search_name('Cl-')
+    Na_ion = pubchem_db.search_formula('Na+')
+    Cl_ion = pubchem_db.search_formula('Cl-')
 
     
     anion_concs = [37561.09, 600.14, 0.3, 2047.49]
     cation_concs = [0.15, 3717.44, 2.61, 364.08, 267.84, 113.34, 18908.04]
     
-    anions = ['Cl-', 'HCO3-', 'HS-', 'SO4-2']
-    cations = ['Ba+2', 'Ca+2', 'Fe+2', 'K+', 'Mg+2', 'NH4+', 'Na+']
-    cations = [pubchem_db.search_name(i) for i in cations]
-    anions = [pubchem_db.search_name(i) for i in anions]
+    anions = ['Cl-', 'CHO3-', 'HS-', 'O4S-2']
+    cations = ['Ba+2', 'Ca+2', 'Fe+2', 'K+', 'Mg+2', 'H4N+', 'Na+']
+    cations = [pubchem_db.search_formula(i) for i in cations]
+    anions = [pubchem_db.search_formula(i) for i in anions]
 
 
     anion_charges = [i.charge for i in anions]
@@ -331,7 +331,7 @@ def test_balance_ions():
         an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, selected_ion=Na_ion, method='decrease')
     
     with pytest.raises(Exception):
-        HS_ion = pubchem_db.search_name('HS-')
+        HS_ion = pubchem_db.search_formula('HS-')
         an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, selected_ion=HS_ion, method='adjust')
     
     with pytest.raises(Exception):
@@ -440,14 +440,14 @@ def test_balance_ions():
     anion_concs = [600.14, 0.3, 2047.49]
     cation_concs = [0.15, 3717.44, 2.61, 364.08, 267.84, 113.34, 18908.04]
     
-    anions = ['HCO3-', 'HS-', 'SO4-2']
-    cations = ['Ba+2', 'Ca+2', 'Fe+2', 'K+', 'Mg+2', 'NH4+', 'Na+']
+    anions = ['CHO3-', 'HS-', 'O4S-2']
+    cations = ['Ba+2', 'Ca+2', 'Fe+2', 'K+', 'Mg+2', 'H4N+', 'Na+']
     
-    cations = [pubchem_db.search_name(i) for i in cations]
-    anions = [pubchem_db.search_name(i) for i in anions]
+    cations = [pubchem_db.search_formula(i) for i in cations]
+    anions = [pubchem_db.search_formula(i) for i in anions]
     an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, selected_ion=Cl_ion, method='increase')
     
-    assert an_res == [pubchem_db.search_name(i) for i in  ['HCO3-', 'HS-', 'SO4-2', 'Cl-', ]]
+    assert an_res == [pubchem_db.search_formula(i) for i in  ['CHO3-', 'HS-', 'O4S-2', 'Cl-', ]]
     assert cat_res == cations
     dominant_an_zs = [0.00017923623007416514, 1.6528687243128162e-07, 0.0003884030254352281, 0.018099221312491646]
     dominant_cat_zs = [1.9904401526508215e-08, 0.001690265343164992, 8.516735743447466e-07, 0.0001696911685445447, 0.00020081528736051808, 0.00011449531331449091, 0.014987337981446901]
@@ -465,14 +465,14 @@ def test_balance_ions():
     # Add Na+ to balance it case
     anion_concs = [37561.09, 600.14, 0.3, 2047.49]
     cation_concs = [0.15, 3717.44, 2.61, 364.08, 267.84, 113.34]
-    anions = ['Cl-', 'HCO3-', 'HS-', 'SO4-2']
-    cations = ['Ba+2', 'Ca+2', 'Fe+2', 'K+', 'Mg+2', 'NH4+']
-    cations = [pubchem_db.search_name(i) for i in cations]
-    anions = [pubchem_db.search_name(i) for i in anions]
+    anions = ['Cl-', 'CHO3-', 'HS-', 'O4S-2']
+    cations = ['Ba+2', 'Ca+2', 'Fe+2', 'K+', 'Mg+2', 'H4N+']
+    cations = [pubchem_db.search_formula(i) for i in cations]
+    anions = [pubchem_db.search_formula(i) for i in anions]
     an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations, anion_concs=anion_concs, cation_concs=cation_concs, selected_ion=Na_ion, method='increase')
     
     assert an_res == anions
-    assert cat_res == [pubchem_db.search_name(i) for i in ['Ba+2', 'Ca+2', 'Fe+2', 'K+', 'Mg+2', 'NH4+', 'Na+']]
+    assert cat_res == [pubchem_db.search_formula(i) for i in ['Ba+2', 'Ca+2', 'Fe+2', 'K+', 'Mg+2', 'H4N+', 'Na+']]
     anion_charges = [i.charge for i in an_res]
     cation_charges = [i.charge for i in cat_res]
     dominant_an_zs = [0.019591472379087822, 0.00018188241862941595, 1.6772711696208816e-07, 0.0003941372882028963]
