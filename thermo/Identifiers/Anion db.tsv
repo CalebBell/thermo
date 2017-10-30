@@ -45,6 +45,7 @@
 -1	41650-26-4	C6N6Ru-5	257.178	[C-]#N.[C-]#N.[C-]#N.[C-]#N.[C-]#N.[C-]#N.[Ru+]	InChI=1S/6CN.Ru/c6*1-2;/q6*-1;+1	DJFYUZMCYAXHHN-UHFFFAOYSA-N	Ruthenate(5-), hexakis(cyano-C)-, (OC-6-11)- (9CI)	C6N6Ru-----	C6N6Ru-5	C6N6Ru(-5)	C6N6Ru(5-)	C6N6Ru(-----)
 -1	53293-42-8	CrO2-	83.994	[Cr-].[O].[O]	InChI=1S/Cr.2O/q-1;;	YNSRYLTYAMOPNP-UHFFFAOYSA-N	Chromate (CrO21-) (9CI)	Chromate(1-), dioxo-	Chromite (anion)	64911-50-8	CrO2-	CrO2-1	CrO2(-1)	CrO2(1-)	CrO2(-)
 -1	54692-27-2	C6N6Ru-3	257.178	[C-]#N.[C-]#N.[C-]#N.[C-]#N.[C-]#N.[C-]#N.[Ru+3]	InChI=1S/6CN.Ru/c6*1-2;/q6*-1;+3	XFQDKRRXABUIBT-UHFFFAOYSA-N	Ruthenate(3-), hexakis(cyano-C)-, (OC-6-11)-	(OC-6-11)-Hexakis(cyano-C)ruthenate(3-)	Hexacyanoruthenate(3-)	C6N6Ru---	C6N6Ru-3	C6N6Ru(-3)	C6N6Ru(3-)	C6N6Ru(---)
+-1	54923-07-8	Tm-	168.934	[Tm-]	InChI=1S/Tm/q-1	YJPILMDURPOLSB-UHFFFAOYSA-N	Thulium, ion (Tm1-)	Tm1-
 -1	683737-82-8	O2Sb-	153.758	[O].[O].[Sb-]	InChI=1S/2O.Sb/q;;-1	SUZUPJCBYJPQMP-UHFFFAOYSA-N	Antimonate (SbO21-) (9CI)	Antimony dioxide monoanion	27264-01-3	O2Sb-	O2Sb-1	O2Sb(-1)	O2Sb(1-)	O2Sb(-)
 -1	687620-85-5	H4InO4-	182.846	[In+3].[OH-].[OH-].[OH-].[OH-]	InChI=1S/In.4H2O/h;4*1H2/q+3;;;;/p-4	JJAPGHQTQWGEHG-UHFFFAOYSA-J	Indate (In(OH)41-), (T-4)- (9CI)	H4InO4-	H4InO4-1	H4InO4(-1)	H4InO4(1-)	H4InO4(-)
 -1	70756-39-7	FeH3O3-	106.866	[OH-].[OH-].[OH-].[Fe+2]			Ferrate (Fe(OH)31-) (9CI)	Trihydroxoferrate(1-)	Trihydroxyferrate(1-)	Fe(OH)3-	Fe(OH)3-1	Fe(OH)3(-1)	Fe(OH)3(1-)	Fe(OH)3(-)	FeH3O3-	FeH3O3-1	FeH3O3(-1)	FeH3O3(1-)	FeH3O3(-)
