@@ -31,7 +31,7 @@ __all__ = ['conductivity', 'Laliberte_density', 'Laliberte_heat_capacity',
            'conductivity_methods', 'Magomedovk_thermal_cond',
            'thermal_conductivity_Magomedov', 'ionic_strength', 'Kweq_1981', 
            'Kweq_IAPWS_gas', 'Kweq_IAPWS', 'Marcus_ion_conductivities',
-           'balance_ions', 'McCleskey_conductivities']
+           'balance_ions', 'McCleskey_conductivities', 'CRC_ion_conductivities']
 
 import os
 from collections import namedtuple
@@ -746,6 +746,8 @@ Lange_cond_pure = pd.read_csv(os.path.join(folder, 'Lange Pure Species Conductiv
 Marcus_ion_conductivities = pd.read_csv(os.path.join(folder, 'Marcus Ion Conductivities.tsv'),
                           sep='\t', index_col=0)
 
+CRC_ion_conductivities = pd.read_csv(os.path.join(folder, 'CRC conductivity infinite dilution.tsv'),
+                          sep='\t', index_col=0)
 
 Magomedovk_thermal_cond = pd.read_csv(os.path.join(folder, 'Magomedov Thermal Conductivity.tsv'),
                           sep='\t', index_col=0)

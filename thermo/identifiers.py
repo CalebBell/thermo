@@ -424,6 +424,8 @@ def CAS_from_any(ID, autoload=False):
         CAS_alternate_loopup = pubchem_db.search_name(ID, autoload)
         if CAS_alternate_loopup:
             return CAS_alternate_loopup.CASs
+        if not autoload:
+            return CAS_from_any(ID, autoload=True)
         raise Exception('A valid CAS number was recognized, but is not in the database')
         
         
@@ -445,12 +447,16 @@ def CAS_from_any(ID, autoload=False):
             if inchi_lookup:
                 return inchi_lookup.CASs
             else:
+                if not autoload:
+                    return CAS_from_any(ID, autoload=True)
                 raise Exception('A valid InChI name was recognized, but it is not in the database')
         if ID_lower[0:9] == 'inchikey=':
             inchi_key_lookup = pubchem_db.search_InChI_key(ID[9:], autoload)
             if inchi_key_lookup:
                 return inchi_key_lookup.CASs
             else:
+                if not autoload:
+                    return CAS_from_any(ID, autoload=True)
                 raise Exception('A valid InChI Key was recognized, but it is not in the database')
     if ID_len > 8:
         if ID_lower[0:8] == 'pubchem=':
@@ -458,6 +464,8 @@ def CAS_from_any(ID, autoload=False):
             if pubchem_lookup:
                 return pubchem_lookup.CASs
             else:
+                if not autoload:
+                    return CAS_from_any(ID, autoload=True)
                 raise Exception('A PubChem integer identifier was recognized, but it is not in the database.')
     if ID_len > 7:
         if ID_lower[0:7] == 'smiles=':
@@ -465,6 +473,8 @@ def CAS_from_any(ID, autoload=False):
             if smiles_lookup:
                 return smiles_lookup.CASs
             else:
+                if not autoload:
+                    return CAS_from_any(ID, autoload=True)
                 raise Exception('A SMILES identifier was recognized, but it is not in the database.')
 
     # Try the smiles lookup anyway

@@ -114,6 +114,15 @@ def test_Marcus_ion_conductivities():
         assert pubchem_db.search_CAS(CAS_from_any(formula)).CASs == CAS
         
     
+def test_CRC_ion_conductivities():
+    # Check CASs match up
+    assert all([CAS_from_any(i) == i for i in CRC_ion_conductivities.index])
+    
+    # Check search by formula matches up
+    for formula, CAS in zip(CRC_ion_conductivities['Formula'], CRC_ion_conductivities.index):
+        assert pubchem_db.search_CAS(CAS_from_any(formula)).CASs == CAS
+    # Charges weren't stored
+    
 def test_Magomedovk_thermal_cond():
     assert all([checkCAS(i) for i in Magomedovk_thermal_cond.index])
     assert Magomedovk_thermal_cond.index.is_unique
