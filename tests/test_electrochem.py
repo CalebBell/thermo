@@ -123,6 +123,40 @@ def test_CRC_ion_conductivities():
         assert pubchem_db.search_CAS(CAS_from_any(formula)).CASs == CAS
     # Charges weren't stored
     
+    
+def test_CRC_aqueous_thermodynamics():
+    assert all([checkCAS(i) for i in CRC_aqueous_thermodynamics.index])
+    
+    # Check CASs match up
+    assert all([CAS_from_any(i) == i for i in CRC_aqueous_thermodynamics.index])
+    
+    # Check search by formula matches up
+    for formula, CAS in zip(CRC_aqueous_thermodynamics['Formula'], CRC_aqueous_thermodynamics.index):
+        assert pubchem_db.search_CAS(CAS_from_any(formula)).CASs == CAS
+        
+    # Check the MWs match up
+    for CAS, MW_specified in zip(CRC_aqueous_thermodynamics.index, CRC_aqueous_thermodynamics['MW']):
+        c = pubchem_db.search_CAS(CAS)
+        assert_allclose(c.MW, MW_specified, atol=0.05)
+        
+    # Checking names is an option too
+    
+    assert CRC_aqueous_thermodynamics.index.is_unique
+    assert CRC_aqueous_thermodynamics.shape == (173, 7)
+    
+    Hf_tot = CRC_aqueous_thermodynamics['Hf(aq)'].abs().sum()
+    assert_allclose(Hf_tot, 70592500.0)
+
+    Gf_tot = CRC_aqueous_thermodynamics['Gf(aq)'].abs().sum()
+    assert_allclose(Gf_tot, 80924000.0)
+    
+    S_tot = CRC_aqueous_thermodynamics['S(aq)'].abs().sum()
+    assert_allclose(S_tot, 17389.9)
+    
+    Cp_tot = CRC_aqueous_thermodynamics['Cp(aq)'].abs().sum()
+    assert_allclose(Cp_tot, 2111.5)
+
+    
 def test_Magomedovk_thermal_cond():
     assert all([checkCAS(i) for i in Magomedovk_thermal_cond.index])
     assert Magomedovk_thermal_cond.index.is_unique
