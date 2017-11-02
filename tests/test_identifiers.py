@@ -99,7 +99,7 @@ def test_CAS_from_any():
     
     assert CAS_from_any('1') == '12385-13-6'
     
-    
+
     assert CAS_from_any('HC2O4-') == '920-52-5'
     
     assert CAS_from_any('water (H2O)') == '7732-18-5'
@@ -177,7 +177,20 @@ def test_periodic_table_variants():
     assert fail == 9
     # 111 - 118 aren't in pubchem
     
-            
+    
+def test_fake_CAS_numbers():
+    '''File generated with :
+        
+known = []
+for i in reversed(range(100000)):
+    s = "20{0:0>5}000-00-0".format(i)
+    if checkCAS(s):
+        known.append(s+'\t\n')
+f = open('Fake CAS Registry.tsv', 'w')
+f.writelines(known)
+f.close()
+'''
+    # TODO
     
 def test_db_vs_ChemSep():
     import xml.etree.ElementTree as ET

@@ -139,7 +139,9 @@ def test_CRC_aqueous_thermodynamics():
         c = pubchem_db.search_CAS(CAS)
         assert_allclose(c.MW, MW_specified, atol=0.05)
         
-    # Checking names is an option too
+    # Checking names is an option too but of 173, only 162 are unique
+    # and many of the others have names that seem ambiguous for ions which can
+    # have more than one charge
     
     assert CRC_aqueous_thermodynamics.index.is_unique
     assert CRC_aqueous_thermodynamics.shape == (173, 7)
@@ -553,9 +555,11 @@ def test_conductivity_McCleskey():
     
     # 6.531 exp
     
-@pytest.mark.xfail
 def test_McCleskey_data():   
-    # Need to add BaCl2 and MgCl2; also need to add a better formula searcher
-    # for small inorganics
+    # Check the CAS lookups
     for CAS, d in McCleskey_conductivities.items():
         assert pubchem_db.search_CAS(CAS).CASs == CAS
+
+    # Check the formula lookups
+    for CAS, d in McCleskey_conductivities.items():
+        assert CAS_from_any(d.Formula) == CAS

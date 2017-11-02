@@ -33,7 +33,8 @@ from thermo.elements import periodic_table, homonuclear_elemental_gases, charge_
 folder = os.path.join(os.path.dirname(__file__), 'Identifiers')
 
 def checkCAS(CASRN):
-    '''Checks if a CAS number is valid. Crashes if not.
+    '''Checks if a CAS number is valid. Returns False if the parser cannot 
+    parse the given string..
 
     Parameters
     ----------
@@ -52,6 +53,10 @@ def checkCAS(CASRN):
     false positives.
 
     Function also does not support additional separators, apart from '-'.
+    
+    CAS numbers up to the series 1 XXX XXX-XX-X are now being issued.
+    
+    A long can hold CAS numbers up to 2 147 483-64-7
 
     Examples
     --------
@@ -128,7 +133,10 @@ class ChemicalMetadataDB(object):
                  main_db=os.path.join(folder, 'chemical identifiers.tsv'),
                  user_dbs=[os.path.join(folder, 'chemical identifiers example user db.tsv'),
                            os.path.join(folder, 'Cation db.tsv'),
-                           os.path.join(folder, 'Anion db.tsv')]):
+                           os.path.join(folder, 'Anion db.tsv'),
+                           os.path.join(folder, 'Inorganic db.tsv')]):
+        
+        
         self.pubchem_index = {}
         self.smiles_index = {}
         self.InChI_index = {}
