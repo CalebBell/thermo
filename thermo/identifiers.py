@@ -437,10 +437,6 @@ def CAS_from_any(ID, autoload=False):
         raise Exception('A valid CAS number was recognized, but is not in the database')
         
         
-    # Try a direct lookup with the name - the fastest
-    name_lookup = pubchem_db.search_name(ID, autoload)
-    if name_lookup:
-        return name_lookup.CASs
     
     ID_len = len(ID)
     if ID_len > 9:
@@ -492,6 +488,18 @@ def CAS_from_any(ID, autoload=False):
     if smiles_lookup:
         return smiles_lookup.CASs
     
+    try:
+        formula_query = pubchem_db.search_formula(serialize_formula(ID), autoload)
+        if formula_query and type(formula_query) == ChemicalMetadata:
+            return formula_query.CASs
+    except:
+        pass
+    
+    # Try a direct lookup with the name - the fastest
+    name_lookup = pubchem_db.search_name(ID, autoload)
+    if name_lookup:
+        return name_lookup.CASs
+
 #     Permutate through various name options
     ID_no_space = ID.replace(' ', '')
     ID_no_space_dash = ID_no_space.replace('-', '')
@@ -502,12 +510,6 @@ def CAS_from_any(ID, autoload=False):
             if name_lookup:
                 return name_lookup.CASs
             
-    try:
-        formula_query = pubchem_db.search_formula(serialize_formula(ID), autoload)
-        if formula_query and type(formula_query) == ChemicalMetadata:
-            return formula_query.CASs
-    except:
-        pass
     
     if ID[-1] == ')' and '(' in ID:#
         # Try to matck in the form 'water (H2O)'

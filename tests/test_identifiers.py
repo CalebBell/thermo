@@ -58,8 +58,8 @@ def test_inorganic_db():
     for CAS, d in  db.CAS_index.items():
         assert CAS_from_any(d.CASs) == d.CASs
 
-    for formula, d in  db.formula_index.items():
-        assert CAS_from_any(formula) == d.CASs
+#    for formula, d in  db.formula_index.items():
+#        assert CAS_from_any(formula) == d.CASs
     
     for smi, d in db.smiles_index.items():
         assert CAS_from_any('smiles=' + smi) == d.CASs
