@@ -31,7 +31,6 @@ from thermo.identifiers import checkCAS, CAS_from_any, pubchem_db
 from math import log10
 
 
-#@pytest.mark.scipy_019
 def test_Laliberte_viscosity_w():
     mu_w = Laliberte_viscosity_w(298)
     assert_allclose(mu_w, 0.0008932264487033279)

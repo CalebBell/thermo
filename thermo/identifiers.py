@@ -257,6 +257,8 @@ class ChemicalMetadataDB(object):
                             self.name_index[name] = obj   
                             
             if self.create_formula_index:
+                if '[2H]' in obj.smiles:
+                    continue
                 if obj.formula in self.formula_index:
                     if overwrite:
                         self.formula_index[obj.formula] = obj
