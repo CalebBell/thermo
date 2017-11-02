@@ -48,6 +48,31 @@ def test_database_formulas():
     assert all([i.formula == serialize_formula(i.formula) for i in pubchem_db.CAS_index.values()])
 
 
+def test_inorganic_db():
+    from thermo.identifiers import ChemicalMetadataDB, folder
+    from thermo.elements import nested_formula_parser, serialize_formula, molecular_weight
+    db = ChemicalMetadataDB(elements=False,
+                            main_db=os.path.join(folder, 'Inorganic db.tsv'),
+                            user_dbs=[])
+
+    for CAS, d in  db.CAS_index.items():
+        assert CAS_from_any(d.CASs) == d.CASs
+
+    for formula, d in  db.formula_index.items():
+        assert CAS_from_any(formula) == d.CASs
+    
+    for smi, d in db.smiles_index.items():
+        assert CAS_from_any('smiles=' + smi) == d.CASs
+        
+    assert all([i.formula == serialize_formula(i.formula) for i in db.CAS_index.values()])
+    assert all([checkCAS(i.CASs) for i in db.CAS_index.values()])
+
+    for i in db.CAS_index.values():
+        formula = serialize_formula(i.formula)
+        atoms = nested_formula_parser(formula, check=False)
+        mw_calc = molecular_weight(atoms)
+        assert_allclose(mw_calc, i.MW, atol=0.05)
+    
 
 def test_mixture_from_any():
     with pytest.raises(Exception):
