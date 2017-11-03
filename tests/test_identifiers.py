@@ -223,6 +223,10 @@ f.close()
     # TODO
     
 def test_db_vs_ChemSep():
+    '''The CAS numbers are checked, as are most of the chemical formulas.
+    Some chemical structural formulas aren't supported by the current formula
+    parser and are ignored; otherwise it is a very effective test.
+    '''
     import xml.etree.ElementTree as ET
     folder = os.path.join(os.path.dirname(__file__), 'Data')
 
@@ -234,13 +238,21 @@ def test_db_vs_ChemSep():
         CAS = [i.attrib['value'] for i in child if i.tag == 'CAS'][0]
         name = [i.attrib['value'] for i in child if i.tag == 'CompoundID'][0]
         smiles = [i.attrib['value'] for i in child if i.tag == 'Smiles']
-#        formula = [serialize_formula(i.attrib['value']) for i in child if i.tag == 'StructureFormula']
+        formula = [i.attrib['value'] for i in child if i.tag == 'StructureFormula'][0]
+        
+        try:
+            if '-' in formula:
+                formula = None
+            else:
+                formula = serialize_formula(formula)
+        except:
+            pass
         if smiles:
             smiles = smiles[0]
         else:
             smiles = None
         
-        data[CAS] = {'name': name, 'smiles': smiles}        
+        data[CAS] = {'name': name, 'smiles': smiles, 'formula': formula}        
     
     for CAS, d in data.items():
         hit = pubchem_db.search_CAS(CAS)
@@ -249,15 +261,23 @@ def test_db_vs_ChemSep():
     for CAS, d in data.items():
         assert CAS_from_any(CAS) == CAS
 
-    # in an ideal world, the names would match too but ~15 don't. Adding more synonyms
+    for CAS, d in data.items():
+        f = d['formula']
+        if f is None or f == '1,4-COOH(C6H4)COOH' or d['name'] == 'Air':
+            continue
+        assert pubchem_db.search_CAS(CAS).formula == f
+
+    # In an ideal world, the names would match too but ~22 don't. Adding more synonyms
     # might help.
-#    try:
-#        assert CAS_from_any(name) == CAS
-#    except:
-#        print(CAS, name)
-#
+    # Some of them are straight disagreements however
+#    for CAS, d in data.items():
+#        try:
+#            assert CAS_from_any(d['name']) == CAS
+#        except:
+#            print(CAS, d['name'])
+##
 
     # In an ideal world we could also validate against their smiles
     # but that's proving difficult due to things like 1-hexene - 
     # is it 'CCCCC=C' or 'C=CCCCC'?
-#test_db_vs_ChemSep()
+#test_db_vs_ChemSep() 
