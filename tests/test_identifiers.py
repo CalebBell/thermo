@@ -58,8 +58,11 @@ def test_inorganic_db():
     for CAS, d in  db.CAS_index.items():
         assert CAS_from_any(d.CASs) == d.CASs
 
-#    for formula, d in  db.formula_index.items():
-#        assert CAS_from_any(formula) == d.CASs
+    for formula, d in  db.formula_index.items():
+        if formula in set(['H2MgO2']):
+            # Formulas which are not unique by design
+            continue
+        assert CAS_from_any(formula) == d.CASs
     
     for smi, d in db.smiles_index.items():
         assert CAS_from_any('smiles=' + smi) == d.CASs
@@ -231,6 +234,7 @@ def test_db_vs_ChemSep():
         CAS = [i.attrib['value'] for i in child if i.tag == 'CAS'][0]
         name = [i.attrib['value'] for i in child if i.tag == 'CompoundID'][0]
         smiles = [i.attrib['value'] for i in child if i.tag == 'Smiles']
+#        formula = [serialize_formula(i.attrib['value']) for i in child if i.tag == 'StructureFormula']
         if smiles:
             smiles = smiles[0]
         else:
@@ -256,3 +260,4 @@ def test_db_vs_ChemSep():
     # In an ideal world we could also validate against their smiles
     # but that's proving difficult due to things like 1-hexene - 
     # is it 'CCCCC=C' or 'C=CCCCC'?
+#test_db_vs_ChemSep()
