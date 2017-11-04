@@ -283,7 +283,7 @@ def molecular_weight(atoms):
     -----
     Elemental data is from rdkit, with CAS numbers added. An exception is
     raised if an incorrect element symbol is given. Elements up to 118 are
-    supported.
+    supported, as are deutreium and tritium.
 
     Examples
     --------
@@ -298,6 +298,12 @@ def molecular_weight(atoms):
     for i in atoms:
         if i in periodic_table:
             MW += periodic_table[i].MW*atoms[i]
+        elif i == 'D':
+            # Hardcoded MW until an actual isotope db is created
+            MW += 2.014102*atoms[i]
+        elif i == 'T':
+            # Hardcoded MW until an actual isotope db is created
+            MW += 3.0160492*atoms[i]
         else:
             raise Exception('Molecule includes unknown atoms')
     return MW

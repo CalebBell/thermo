@@ -24,6 +24,7 @@ from numpy.testing import assert_allclose
 import pytest
 import pandas as pd
 from thermo.critical import *
+from thermo.identifiers import CAS_from_any
 
 def test_data_IUPAC():
     MW_sum = _crit_IUPAC['MW'].sum()
@@ -63,7 +64,13 @@ def test_data_Matthews():
 
     assert _crit_Matthews.shape == (120, 6)
     assert _crit_Matthews.index.is_unique
-
+    
+    for CAS, name in zip(_crit_Matthews.index, _crit_Matthews['Chemical']):
+        assert CAS_from_any(CAS) == CAS
+#        try:
+#            assert CAS_from_any(name) == CAS
+#        except:
+#            print(CAS, name)
 
 def test_data_CRC():
     Tc_sum = _crit_CRC['Tc'].sum()
