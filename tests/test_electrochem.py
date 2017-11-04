@@ -79,6 +79,25 @@ def test_Laliberte_heat_capacity():
     assert_allclose(Cp, 4186.566417712068, rtol=1E-6)
 
 
+def test_Laliberte_metadata():
+    from thermo.electrochem import _Laliberte_Density_ParametersDict, _Laliberte_Viscosity_ParametersDict, _Laliberte_Heat_Capacity_ParametersDict
+    lalib = _Laliberte_Density_ParametersDict.copy()
+    lalib.update(_Laliberte_Viscosity_ParametersDict)
+    lalib.update(_Laliberte_Heat_Capacity_ParametersDict)
+    
+    for CAS, d in lalib.items():
+        c = None
+        formula = d['Formula']
+        name = d['Name']
+        if formula not in set(['HCHO2', 'CH3CH2OH', 'HCH3CO2']):
+            assert CAS_from_any(formula) == CAS
+#        try:
+#            CAS_from_any(name)
+#        except:
+#            print(name)
+
+
+
 def test_cond_pure():
     tots_calc = [Lange_cond_pure[i].sum() for i in ['Conductivity', 'T']]
     tots = [4742961.018575863, 35024.150000000001]
