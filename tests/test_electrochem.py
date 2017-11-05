@@ -24,7 +24,7 @@ from numpy.testing import assert_allclose
 import pytest
 import numpy as np
 import pandas as pd
-from thermo.elements import charge_from_formula
+from thermo.elements import charge_from_formula, nested_formula_parser
 from thermo.electrochem import *
 from thermo.electrochem import _Laliberte_Density_ParametersDict, _Laliberte_Viscosity_ParametersDict, _Laliberte_Heat_Capacity_ParametersDict
 from thermo.identifiers import checkCAS, CAS_from_any, pubchem_db, serialize_formula
@@ -99,22 +99,53 @@ def test_Laliberte_metadata():
 
 def test_dissociation_reactions():
     from thermo.electrochem import electrolyte_dissociation_reactions as df
-    
+    from collections import Counter
+
+    # Check the chemicals match up with the database
     for name, CAS, formula in zip(df['Electrolyte name'], df['Electrolyte CAS'], df['Electrolyte Formula']):
         assert CAS_from_any(CAS) == CAS
         assert pubchem_db.search_CAS(CAS).formula == serialize_formula(formula)
 
+    # Check the anions match up with the database
     for formula, CAS, charge in zip(df['Anion formula'], df['Anion CAS'], df['Anion charge']):
         assert CAS_from_any(CAS) == CAS
         assert CAS_from_any(formula) == CAS
         assert pubchem_db.search_CAS(CAS).charge == charge
         assert pubchem_db.search_CAS(CAS).formula == serialize_formula(formula)
+        
+    # Check the cations match up with the database
     for formula, CAS, charge in zip(df['Cation formula'], df['Cation CAS'], df['Cation charge']):
         assert CAS_from_any(CAS) == CAS
         assert CAS_from_any(formula) == CAS
         assert pubchem_db.search_CAS(CAS).charge == charge    
         assert pubchem_db.search_CAS(CAS).formula == serialize_formula(formula)
 
+    # Check the charges and counts of ions sums to zero
+    for index, row in df.iterrows():
+        an_charge = row['Anion charge']
+        an_count = row['Anion count']
+        cat_charge = row['Cation charge']
+        cat_count = row['Cation count']
+        err = an_charge*an_count + cat_charge*cat_count
+        assert err == 0
+        
+    # Check the reactant counts and product counts sum to be equal and conserve
+    # moles
+    for index, row in df.iterrows():
+        elec = nested_formula_parser(row['Electrolyte Formula'])
+        cat = nested_formula_parser(row['Cation formula'])
+        cat_count = row['Cation count']
+    
+        an = nested_formula_parser(row['Anion formula'])
+        an_count = row['Anion count']
+        product_counter = Counter()
+        for _ in range(cat_count):
+            product_counter.update(cat)
+        for _ in range(an_count):
+            product_counter.update(an)
+        assert dict(product_counter.viewitems()) == elec        
+        
+        
 def test_cond_pure():
     tots_calc = [Lange_cond_pure[i].sum() for i in ['Conductivity', 'T']]
     tots = [4742961.018575863, 35024.150000000001]

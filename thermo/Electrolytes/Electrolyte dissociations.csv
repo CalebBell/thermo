@@ -159,7 +159,7 @@ Sodium Oxalate	62-76-0	Na2C2O4	C2O4-2	338-70-5	-2	1	Na+	17341-25-2	1	2
 Sodium Carbonate	497-19-8	Na2CO3	CO3-2	3812-32-6	-2	1	Na+	17341-25-2	1	2
 Sodium Chromate	7775-11-3	Na2CrO4	CrO4-2	13907-45-4	-2	1	Na+	17341-25-2	1	2
 Disodium Hydrogen Phosphate	7558-79-4	Na2HPO4	HPO4-2	14066-19-4	-2	1	Na+	17341-25-2	1	2
-Sodium Molybdate	7631-95-0	Na2MoO4	MnO4-2	14333-14-3	-2	1	Na+	17341-25-2	1	2
+Sodium Molybdate	7631-95-0	Na2MoO4	MoO4-2	14259-85-9	-2	1	Na+	17341-25-2	1	2
 Sodium Sulfide	1313-82-2	Na2S	S-2	18496-25-8	-2	1	Na+	17341-25-2	1	2
 Sodium Thiosulfate	7772-98-7	Na2S2O3	S2O3-2	14383-50-7	-2	1	Na+	17341-25-2	1	2
 Sodium Sulfite	7757-83-7	Na2SO3	SO3-2	14265-45-3	-2	1	Na+	17341-25-2	1	2
@@ -209,7 +209,7 @@ Ammonium thiocyanate	1762-95-4	NH4SCN	SCN-	302-04-5	-1	1	NH4+	14798-03-9	1	1
 Ammonium dihydrogen phosphate	7722-76-1	NH6PO4	H2PO4-	14066-20-7	-1	1	NH4+	14798-03-9	1	1
 Nickel(II) Nitrate	13138-45-9	Ni(NO3)2	NO3-	14797-55-8	-1	2	Ni+2	14701-22-5	2	1
 Nickel(II) Chloride	7718-54-9	NiCl2	Cl-	16887-00-6	-1	2	Ni+2	14701-22-5	2	1
-Nickel iodide	13462-90-3	NiI2	I-	20461-54-5	-1	1	Ni+2	14701-22-5	2	1
+Nickel iodide	13462-90-3	NiI2	I-	20461-54-5	-1	2	Ni+2	14701-22-5	2	1
 Nickel bromide	13462-88-9	NiBr2	Br-	24959-67-9	-1	2	Ni+2	14701-22-5	2	1
 Nickel(II) Sulfate	7786-81-4	NiSO4	SO4-2	14808-79-8	-2	1	Ni+2	14701-22-5	2	1
 Lead(II) Nitrate	10099-74-8	Pb(NO3)2	NO3-	14797-55-8	-1	2	Pb+2	14280-50-3	2	1
