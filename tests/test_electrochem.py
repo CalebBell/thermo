@@ -27,7 +27,7 @@ import pandas as pd
 from thermo.elements import charge_from_formula
 from thermo.electrochem import *
 from thermo.electrochem import _Laliberte_Density_ParametersDict, _Laliberte_Viscosity_ParametersDict, _Laliberte_Heat_Capacity_ParametersDict
-from thermo.identifiers import checkCAS, CAS_from_any, pubchem_db
+from thermo.identifiers import checkCAS, CAS_from_any, pubchem_db, serialize_formula
 from math import log10
 
 
@@ -97,6 +97,23 @@ def test_Laliberte_metadata():
 #            print(name)
 
 
+def test_dissociation_reactions():
+    from thermo.electrochem import electrolyte_dissociation_reactions as df
+    
+    for name, CAS, formula in zip(df['Electrolyte name'], df['Electrolyte CAS'], df['Electrolyte Formula']):
+        assert CAS_from_any(CAS) == CAS
+        assert pubchem_db.search_CAS(CAS).formula == serialize_formula(formula)
+
+    for formula, CAS, charge in zip(df['Anion formula'], df['Anion CAS'], df['Anion charge']):
+        assert CAS_from_any(CAS) == CAS
+        assert CAS_from_any(formula) == CAS
+        assert pubchem_db.search_CAS(CAS).charge == charge
+        assert pubchem_db.search_CAS(CAS).formula == serialize_formula(formula)
+    for formula, CAS, charge in zip(df['Cation formula'], df['Cation CAS'], df['Cation charge']):
+        assert CAS_from_any(CAS) == CAS
+        assert CAS_from_any(formula) == CAS
+        assert pubchem_db.search_CAS(CAS).charge == charge    
+        assert pubchem_db.search_CAS(CAS).formula == serialize_formula(formula)
 
 def test_cond_pure():
     tots_calc = [Lange_cond_pure[i].sum() for i in ['Conductivity', 'T']]
