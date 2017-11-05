@@ -100,6 +100,9 @@ def test_Laliberte_metadata():
 def test_dissociation_reactions():
     from thermo.electrochem import electrolyte_dissociation_reactions as df
     from collections import Counter
+    
+    # Check there's only one dissociation reaction for each product 
+    assert len(df['Electrolyte Formula'].values) == len(set(df['Electrolyte Formula'].values))
 
     # Check the chemicals match up with the database
     for name, CAS, formula in zip(df['Electrolyte name'], df['Electrolyte CAS'], df['Electrolyte Formula']):
@@ -143,7 +146,7 @@ def test_dissociation_reactions():
             product_counter.update(cat)
         for _ in range(an_count):
             product_counter.update(an)
-        assert dict(product_counter.viewitems()) == elec        
+        assert dict(product_counter.items()) == elec        
         
         
 def test_cond_pure():
