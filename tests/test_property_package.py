@@ -517,3 +517,66 @@ def test_IdealPPThermodynamic_binary_H():
             hand_calc =(-(1 - VF)*(pkg.xs[0]*m.EnthalpyVaporizations[0](T) + pkg.xs[1]*m.EnthalpyVaporizations[1](T)) 
                         + (z1*m.HeatCapacityGases[0].T_dependent_property_integral(298.15, T) + z2*m.HeatCapacityGases[1].T_dependent_property_integral(298.15, T)))
             assert_allclose(pkg_calc, hand_calc)
+            
+def test_IdealPPThermodynamic_nitrogen_S():
+    w = Chemical('water')
+    EnthalpyVaporization = w.EnthalpyVaporization
+    HeatCapacityGas = w.HeatCapacityGas
+    VaporPressure = w.VaporPressure
+    
+    m = Mixture(['nitrogen'], zs=[1], T=298.15)
+    pkg = IdealPPThermodynamic(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
+                  HeatCapacityLiquids=m.HeatCapacityLiquids, HeatCapacityGases=m.HeatCapacityGases,
+                  EnthalpyVaporizations=m.EnthalpyVaporizations)
+    
+    # Check the enthalpy of vaporization matches at the reference temperature for a gas
+    pkg.flash(T=298.15, P=101325, zs=m.zs)
+    S_pp = pkg.entropy_Cpg_Hvap()
+    assert_allclose(S_pp, 0, atol=1E-9)
+    
+    # Check a entropy difference vs coolprop (N2)- 1.5% error
+    pkg.flash(T=298.15, P=101325, zs=m.zs)
+    S1 = pkg.entropy_Cpg_Hvap()
+    pkg.flash(T=298.15, P=2000325, zs=m.zs)
+    S2 = pkg.entropy_Cpg_Hvap()
+    assert_allclose(S2-S1, -25.16418, rtol=0.015) # 
+    
+    # Check a entropy difference vs coolprop (N2)- 0.3% error
+    pkg.flash(T=298.15, P=101325, zs=m.zs)
+    S1 = pkg.entropy_Cpg_Hvap()
+    pkg.flash(T=298.15, P=102325, zs=m.zs)
+    S2 = pkg.entropy_Cpg_Hvap()
+     # 0.3% error with 1 kPa difference
+    assert_allclose(S2-S1, -0.08184949145277187, rtol=0.003) # PropsSI('SMOLAR', 'T', 298.15, 'P', 102325, 'N2') - PropsSI('SMOLAR', 'T', 298.15, 'P', 101325, 'N2')
+    # S2-S1
+    
+    # <2.5% error on a 10 MPa/500K N2 vs 298.15 and 1 atm vs coolprop
+    pkg.flash(T=298.15, P=101325, zs=m.zs)
+    S1 = pkg.entropy_Cpg_Hvap()
+    pkg.flash(T=500, P=1E7, zs=m.zs)
+    S2 = pkg.entropy_Cpg_Hvap()
+    assert_allclose(S2-S1, -23.549468174122012, rtol=0.026) # PropsSI('SMOLAR', 'T', 500, 'P', 1E7, 'N2') - PropsSI('SMOLAR', 'T', 298.15, 'P', 101325, 'N2')
+    
+    # Entropy change of condensation at the saturation point of 1 bar - very low error
+    pkg.flash(VF=1, P=1E5, zs=m.zs)
+    S1 = pkg.entropy_Cpg_Hvap()
+    pkg.flash(VF=0, P=1E5, zs=m.zs)
+    S2 = pkg.entropy_Cpg_Hvap()
+    # T_change = PropsSI('T', 'Q', 0, 'P', 1E5, 'N2') # 77.24349973069587
+    # dS = PropsSI('SMOLAR', 'Q', 0, 'T', T_change, 'N2') - PropsSI('SMOLAR', 'Q', 1, 'T', T_change, 'N2')
+    assert_allclose(S2 - S1, -72.28618677058911, rtol=5E-4)
+    
+    # Same test as before, 50% condensed
+    pkg.flash(VF=1, P=1E5, zs=m.zs)
+    S1 = pkg.entropy_Cpg_Hvap()
+    pkg.flash(VF=0.5, P=1E5, zs=m.zs)
+    S2 = pkg.entropy_Cpg_Hvap()
+    assert_allclose(S2 - S1, -72.28618677058911/2, rtol=5E-4)
+    
+    # Test compressing a liquid doesn't add any entropy
+    pkg.flash(VF=0, P=1E5, zs=m.zs)
+    S1 = pkg.entropy_Cpg_Hvap()
+    T = pkg.T
+    pkg.flash(T=T, P=2E5, zs=m.zs)
+    S2 = pkg.entropy_Cpg_Hvap()
+    assert_allclose(S1-S2, 0)
