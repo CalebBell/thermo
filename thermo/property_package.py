@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+  # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2017, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -277,14 +277,18 @@ class Ideal_PP(Property_Package):
         self.Tms = Tms
         self.Tcs = Tcs
         self.Pcs = Pcs
-        
+        self.N = len(VaporPressures)
+        self.cmps = range(self.N)
 
     def flash_TP_zs(self, T, P, zs):
         Psats = self._Psats(T)
-        Pdew = dew_at_T(zs, Psats)
-        Pbubble = bubble_at_T(zs, Psats)
+        if self.N == 1:
+            Pdew = Pbubble = Psats[0]
+        else:
+            Pdew = dew_at_T(zs, Psats)
+            Pbubble = bubble_at_T(zs, Psats)
         if P <= Pdew:
-            # phase, ys, xs, quality
+            # phase, ys, xs, quality - works for 1 comps too
             return 'g', None, zs, 1
         elif P >= Pbubble:
             return 'l', zs, None, 0
@@ -296,6 +300,10 @@ class Ideal_PP(Property_Package):
     def flash_TVF_zs(self, T, VF, zs):
         assert 0 <= VF <= 1
         Psats = self._Psats(T)
+        # handle one component
+        if self.N == 1:
+            return 'l/g', [1.0], [1.0], VF, Psats[0]
+        
         if VF == 0:
             P = bubble_at_T(zs, Psats)
         elif VF == 1:
@@ -309,6 +317,10 @@ class Ideal_PP(Property_Package):
     def flash_PVF_zs(self, P, VF, zs):
         assert 0 <= VF <= 1
         Tsats = self._Tsats(P)
+        # handle one component
+        if self.N == 1:
+            return 'l/g', [1.0], [1.0], VF, Tsats[0]
+        
         T = brenth(self._P_VF_err, min(Tsats)*(1+1E-7), max(Tsats)*(1-1E-7), args=(P, VF, zs))
         Psats = self._Psats(T)
         Ks = [K_value(P=P, Psat=Psat) for Psat in Psats]
@@ -521,7 +533,8 @@ class UNIFAC_PP(Activity_PP):
         self.omegas = omegas
         self.eos = eos
         self.eos_mix = eos_mix
-        self.cmps = range(len(VaporPressures))
+        self.N = len(VaporPressures)
+        self.cmps = range(self.N)
 
         if eos:
             self.eos_pure_instances = [eos(Tc=Tcs[i], Pc=Pcs[i], omega=omegas[i], T=Tcs[i]*0.5, P=Pcs[i]*0.1) for i in self.cmps]

@@ -80,6 +80,80 @@ def test_Ideal_PP():
     assert vodka.phase == phase_known
     
     
+def test_Ideal_PP_single_component():
+    m = Mixture(['water'], zs=[1], T=298.15)
+    test_pkg = Ideal_PP(m.VaporPressures, m.Tms, m.Tcs, m.Pcs)
+    
+    # T and P with TP flash
+    phase, xs, ys, V_over_F = test_pkg.flash_TP_zs(m.T, m.VaporPressures[0](298.15), m.zs)
+    V_over_F_expect = 1
+    xs_expect = None
+    ys_expect = [1]
+    assert phase == 'g'
+    assert xs == None
+    assert_allclose(ys, ys_expect)
+    assert_allclose(V_over_F, V_over_F_expect)
+    
+    phase, xs, ys, V_over_F = test_pkg.flash_TP_zs(m.T, m.VaporPressures[0](298.15)+1E-10, m.zs)
+    V_over_F_expect = 0
+    xs_expect = [1]
+    ys_expect = None
+    assert phase == 'l'
+    assert ys == None
+    assert_allclose(xs, xs_expect)
+    assert_allclose(V_over_F, V_over_F_expect)
+    
+    # TVF
+    phase, xs, ys, V_over_F, P = test_pkg.flash_TVF_zs(m.T, 1, m.zs)
+    
+    V_over_F_expect = 1
+    xs_expect = [1]
+    ys_expect = [1]
+    assert phase == 'l/g'
+    assert xs == xs_expect
+    assert_allclose(ys, ys_expect)
+    assert_allclose(V_over_F, V_over_F_expect)
+    assert_allclose(V_over_F, V_over_F_expect)
+    assert_allclose(P, 3167.418523735963, rtol=1E-3)
+    
+    phase, xs, ys, V_over_F, P = test_pkg.flash_TVF_zs(m.T, 0, m.zs)
+    
+    V_over_F_expect = 0
+    xs_expect = [1]
+    ys_expect = [1]
+    assert phase == 'l/g'
+    assert xs == xs_expect
+    assert_allclose(ys, ys_expect)
+    assert_allclose(V_over_F, V_over_F_expect)
+    assert_allclose(V_over_F, V_over_F_expect)
+    
+    
+    # PVF
+    phase, xs, ys, V_over_F, T = test_pkg.flash_PVF_zs(3167, 1, m.zs)
+    
+    V_over_F_expect = 1
+    xs_expect = [1]
+    ys_expect = [1]
+    assert phase == 'l/g'
+    assert xs == xs_expect
+    assert_allclose(ys, ys_expect)
+    assert_allclose(V_over_F, V_over_F_expect)
+    assert_allclose(V_over_F, V_over_F_expect)
+    assert_allclose(T, 298.1477829296143, rtol=1E-3)
+    
+    phase, xs, ys, V_over_F, T = test_pkg.flash_PVF_zs(3167, 0, m.zs)
+    
+    V_over_F_expect = 0
+    xs_expect = [1]
+    ys_expect = [1]
+    assert phase == 'l/g'
+    assert xs == xs_expect
+    assert_allclose(ys, ys_expect)
+    assert_allclose(V_over_F, V_over_F_expect)
+    assert_allclose(V_over_F, V_over_F_expect)
+    assert_allclose(T, 298.1477829296143, rtol=1E-3)
+
+    
 @pytest.mark.slow
 def test_IdealPP_fuzz_TP_VF():
     m = Mixture(['ethanol', 'water'], zs=[0.5, 0.5], P=5000, T=298.15)
