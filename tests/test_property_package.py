@@ -83,6 +83,19 @@ def test_Ideal_PP():
     
     with pytest.raises(Exception):
         vodka.plot_ternary(T=300)
+        
+    # Test Tdew, Tbubble, Pbubble, Pdew
+    T = 298.15
+    Pdew = vodka.Pdew(298.15, [0.5, 0.5])
+    T_recalc = vodka.Tdew(Pdew, [0.5, 0.5])
+    assert_allclose(T_recalc, T)
+    assert_allclose(Pdew, 4517, rtol=2E-3)
+
+    T2 = 294.7556209619327
+    Pbubble = vodka.Pbubble(T2, [0.5, 0.5])
+    assert_allclose(Pbubble, 4517, rtol=2E-3)
+    T2_recalc = vodka.Tbubble(4517.277960030594, [0.5, 0.5])
+    assert_allclose(T2_recalc, T2)    
     
     
 def test_Ideal_PP_single_component():

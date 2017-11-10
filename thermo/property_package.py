@@ -40,6 +40,27 @@ if has_matplotlib:
 
 
 class Property_Package(object):
+    def to(self, zs, T=None, P=None, VF=None):
+        obj = self.__class__(**self.kwargs)
+        obj.flash(T=T, P=P, VF=VF, zs=zs)
+        return obj    
+    
+    def __copy__(self):
+        obj = self.__class__(**self.kwargs)
+        return obj
+    
+    def Tdew(self, P, zs):
+        return self.to(P=P, VF=1, zs=zs).T
+    
+    def Pdew(self, T, zs):
+        return self.to(T=T, VF=1, zs=zs).P
+    
+    def Tbubble(self, P, zs):
+        return self.to(P=P, VF=0, zs=zs).T
+    
+    def Pbubble(self, T, zs):
+        return self.to(T=T, VF=0, zs=zs).P
+    
     def flash(self, zs, T=None, P=None, VF=None):
         if any(i == 0 for i in zs):
             zs = [i if i != 0 else 1E-11 for i in zs]
@@ -288,6 +309,9 @@ class Ideal_PP(Property_Package):
         self.Pcs = Pcs
         self.N = len(VaporPressures)
         self.cmps = range(self.N)
+        
+        self.kwargs = {'VaporPressures': VaporPressures,
+                       'Tms': Tms, 'Tcs': Tcs, 'Pcs': Pcs}
 
     def flash_TP_zs(self, T, P, zs):
         Psats = self._Psats(T)
@@ -352,6 +376,12 @@ class IdealPPThermodynamic(Ideal_PP):
         self.HeatCapacityGases = HeatCapacityGases
         self.EnthalpyVaporizations = EnthalpyVaporizations
         
+        self.kwargs = {'VaporPressures': VaporPressures,
+                       'Tms': Tms, 'Tbs': Tbs, 'Tcs': Tcs, 'Pcs': Pcs,
+                       'HeatCapacityLiquids': HeatCapacityLiquids, 
+                       'HeatCapacityGases': HeatCapacityGases,
+                       'EnthalpyVaporizations': EnthalpyVaporizations}
+        
     
     def enthalpy_Cpg_Hvap(self):
         # Compute the enthalpy using Hvap as the basis, with a reference ideal gas state of 298.15 K 
@@ -374,6 +404,28 @@ class IdealPPThermodynamic(Ideal_PP):
                 Hvap_contrib = -self.xs[i]*(1-self.V_over_F)*self.EnthalpyVaporizations[i](T)
                 H += (Hg298_to_T_zi + Hvap_contrib)
         return H
+
+    def entropy_Cpg_Hvap(self):
+        S = 0
+        T = self.T
+        P = self.P
+        S -= R*log(P/101325.) # Entropy does have a contribution due to pressure; chemsep checked
+        S -= R*sum([zi*log(zi) for zi in self.zs if zi > 0]) # ideal composition entropy composition; chemsep checked
+        # Both are negative
+        if self.phase == 'g':
+            for i in self.cmps:
+                S += self.HeatCapacityGases[i].T_dependent_property_integral_over_T(298.15, T)
+        elif self.phase == 'l':
+            for i in self.cmps:
+                Sg298_to_T = self.HeatCapacityGases[i].T_dependent_property_integral_over_T(298.15, T)
+                Svap = -self.EnthalpyVaporizations[i](T)/T # Do the transition at the temperature of the liquid
+                S += self.zs[i]*(Sg298_to_T + Svap)
+        elif self.phase == 'l/g':
+            for i in self.cmps:
+                Sg298_to_T_zi = self.zs[i]*self.HeatCapacityGases[i].T_dependent_property_integral_over_T(298.15, T)
+                Svap_contrib = -self.xs[i]*(1-self.V_over_F)*self.EnthalpyVaporizations[i](T)/T
+                S += (Sg298_to_T_zi + Svap_contrib)
+        return S
 
 
 class Activity_PP(Property_Package):
