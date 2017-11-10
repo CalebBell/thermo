@@ -24,7 +24,9 @@ from random import uniform
 from numpy.testing import assert_allclose
 import pytest
 import pandas as pd
+import numpy as np
 from thermo.property_package import *
+from thermo.chemical import Chemical
 from thermo.mixture import Mixture
 
 def test_Ideal_PP():
@@ -382,118 +384,123 @@ def test_plotting_failures():
         ternary.plot_xy(300)
 
 
-'''
-
-class IdealPP(Ideal_PP):
-    def __init__(self, VaporPressures=None, Tms=None, Tbs=None, Tcs=None, Pcs=None, 
-                 HeatCapacityLiquids=None, HeatCapacityGases=None,
-                EnthalpyVaporizations=None):
-        self.cmps = range(len(VaporPressures))
-        self.N = len(VaporPressures)
-        self.VaporPressures = VaporPressures
-        self.Tms = Tms
-        self.Tbs = Tbs
-        self.Tcs = Tcs
-        self.Pcs = Pcs
-        self.HeatCapacityLiquids = HeatCapacityLiquids
-        self.HeatCapacityGases = HeatCapacityGases
-        self.EnthalpyVaporizations = EnthalpyVaporizations
-        
+def test_IdealPPThermodynamic_single_component_H():
+    from numpy.testing import *
+    import numpy as np
+    w = Chemical('water')
+    EnthalpyVaporization = w.EnthalpyVaporization
+    HeatCapacityGas = w.HeatCapacityGas
+    VaporPressure = w.VaporPressure
     
-    def enthalpy_Cpg_Hvap(self):
-        # Compute the enthalpy using Hvap as the basis, with a reference ideal gas state of 298.15 K 
-        # Pressure is not used in this model
-        # Needs xs and V_over_F as well as zs and T
-        H = 0
-        T = self.T
-        if self.phase == 'g':
-            for i in self.cmps:
-                H += self.zs[i]*self.HeatCapacityGases[i].T_dependent_property_integral(298.15, T)
-        elif self.phase == 'l':
-            for i in self.cmps:
-                # No further contribution needed
-                Hg298_to_T = self.HeatCapacityGases[i].T_dependent_property_integral(298.15, T)
-                Hvap = -self.EnthalpyVaporizations[i](T) # Do the transition at the temperature of the liquid
-                H += self.zs[i]*(Hg298_to_T + Hvap)
-        elif self.phase == 'l/g':
-            for i in self.cmps:
-                Hg298_to_T_zi = self.zs[i]*self.HeatCapacityGases[i].T_dependent_property_integral(298.15, T)
-                Hvap_contrib = -self.xs[i]*(1-self.V_over_F)*self.EnthalpyVaporizations[i](T)
-                H += (Hg298_to_T_zi + Hvap_contrib)
-        return H
-                
-
-
-
-from numpy.testing import *
-import numpy as np
-w = Chemical('water')
-EnthalpyVaporization = w.EnthalpyVaporization
-HeatCapacityGas = w.HeatCapacityGas
-VaporPressure = w.VaporPressure
-
-m = Mixture(['water'], zs=[1], T=298.15)
-pkg = IdealPP(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
-              HeatCapacityLiquids=m.HeatCapacityLiquids, HeatCapacityGases=m.HeatCapacityGases,
-              EnthalpyVaporizations=m.EnthalpyVaporizations)
-
-# Check the enthalpy of vaporization matches at the reference temperature
-pkg.flash(T=298.15, P=1E5, zs=m.zs)
-H_pp = pkg.enthalpy_Cpg_Hvap()
-assert_allclose(H_pp, -EnthalpyVaporization(298.15))
-
-# Check it's pressure independent for the gas (at ref T)
-kw_options = [{'P': w.Psat}, {'P': 100}, {'P': 1E-10}, {'VF': 1}]
-for kw in kw_options:
-    pkg.flash(T=298.15, zs=m.zs, **kw)
-    H_pp = pkg.enthalpy_Cpg_Hvap()
-    assert_allclose(H_pp, 0)
-
+    m = Mixture(['water'], zs=[1], T=298.15)
+    pkg = IdealPPThermodynamic(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
+                  HeatCapacityLiquids=m.HeatCapacityLiquids, HeatCapacityGases=m.HeatCapacityGases,
+                  EnthalpyVaporizations=m.EnthalpyVaporizations)
     
-# Check it's pressure is independent (so long as it stays liquid)
-kw_options = [{'P': w.Psat+1E-4}, {'P': 1E4}, {'P': 1E10}, {'VF': 0}]
-for kw in kw_options:
-    pkg.flash(T=298.15, zs=m.zs, **kw)
+    # Check the enthalpy of vaporization matches at the reference temperature
+    pkg.flash(T=298.15, P=1E5, zs=m.zs)
     H_pp = pkg.enthalpy_Cpg_Hvap()
     assert_allclose(H_pp, -EnthalpyVaporization(298.15))
-
-# Gas heat capacity along the vapor curve (and above it)
-for T in np.linspace(w.Tm, w.Tc):
-    for kw in [{'VF': 1}, {'P': VaporPressure(T)*0.5}]:
-        pkg.flash(T=T, zs=m.zs, **kw)
+    
+    # Check it's pressure independent for the gas (at ref T)
+    kw_options = [{'P': w.Psat}, {'P': 100}, {'P': 1E-10}, {'VF': 1}]
+    for kw in kw_options:
+        pkg.flash(T=298.15, zs=m.zs, **kw)
         H_pp = pkg.enthalpy_Cpg_Hvap()
-        assert_allclose(H_pp, HeatCapacityGas.T_dependent_property_integral(298.15, T))
-
-# Gas heat capacity plus enthalpy of vaporization along the liquid
-for T in np.linspace(w.Tm, w.Tc):
-    for kw in [{'VF': 0}, {'P': VaporPressure(T)*1.1}]:
-        pkg.flash(T=T, zs=m.zs, **kw)
-        H_pp = pkg.enthalpy_Cpg_Hvap()
-        H_recalc = (HeatCapacityGas.T_dependent_property_integral(298.15, T)
-                    -EnthalpyVaporization(T))
-        assert_allclose(H_pp, H_recalc)
-
-# Just one basic case at VF = 0.5
-T = 298.15
-pkg.flash(T=T, zs=m.zs, VF=0.5)
-assert_allclose(pkg.enthalpy_Cpg_Hvap(), -0.5*EnthalpyVaporization(T))
-
-# For a variety of vapor fractions and temperatures, check the enthapy is correctly described
-for VF in np.linspace(0., 1, 20):
-    for T in np.linspace(w.Tm, w.Tc, 5):
-        pkg.flash(T=T, zs=m.zs, VF=VF)
-        pkg_calc = pkg.enthalpy_Cpg_Hvap()
-        hand_calc = -(1 - VF)*EnthalpyVaporization(T) + HeatCapacityGas.T_dependent_property_integral(298.15, T)
-        assert_allclose(pkg_calc, hand_calc)
+        assert_allclose(H_pp, 0)
+    
         
-# Check the liquid and vapor enthalpies are equal at the critical point
-T = w.Tc
-pkg.flash(T=w.Tc, zs=m.zs, VF=1)
-Hvap_Tc_1 = pkg.enthalpy_Cpg_Hvap()
-pkg.flash(T=w.Tc, zs=m.zs, VF=0)
-Hvap_Tc_0 = pkg.enthalpy_Cpg_Hvap()
-assert_allclose(Hvap_Tc_0, Hvap_Tc_1)
-pkg.flash(T=w.Tc, zs=m.zs, VF=0.5)
-Hvap_Tc_half = pkg.enthalpy_Cpg_Hvap()
-assert_allclose(Hvap_Tc_0, Hvap_Tc_half)
-'''
+    # Check it's pressure is independent (so long as it stays liquid)
+    kw_options = [{'P': w.Psat+1E-4}, {'P': 1E4}, {'P': 1E10}, {'VF': 0}]
+    for kw in kw_options:
+        pkg.flash(T=298.15, zs=m.zs, **kw)
+        H_pp = pkg.enthalpy_Cpg_Hvap()
+        assert_allclose(H_pp, -EnthalpyVaporization(298.15))
+    
+    # Gas heat capacity along the vapor curve (and above it)
+    for T in np.linspace(w.Tm, w.Tc-1):
+        for kw in [{'VF': 1}, {'P': VaporPressure(T)*0.5}]:
+            pkg.flash(T=T, zs=m.zs, **kw)
+            H_pp = pkg.enthalpy_Cpg_Hvap()
+            assert_allclose(H_pp, HeatCapacityGas.T_dependent_property_integral(298.15, T))
+    
+    # Gas heat capacity plus enthalpy of vaporization along the liquid
+    for T in np.linspace(w.Tm, w.Tc-1):
+        for kw in [{'VF': 0}, {'P': VaporPressure(T)*1.1}]:
+            pkg.flash(T=T, zs=m.zs, **kw)
+            H_pp = pkg.enthalpy_Cpg_Hvap()
+            H_recalc = (HeatCapacityGas.T_dependent_property_integral(298.15, T)
+                        -EnthalpyVaporization(T))
+            assert_allclose(H_pp, H_recalc)
+    
+    # Just one basic case at VF = 0.5
+    T = 298.15
+    pkg.flash(T=T, zs=m.zs, VF=0.5)
+    assert_allclose(pkg.enthalpy_Cpg_Hvap(), -0.5*EnthalpyVaporization(T))
+    
+    # For a variety of vapor fractions and temperatures, check the enthapy is correctly described
+    for VF in np.linspace(0., 1, 20):
+        for T in np.linspace(w.Tm, w.Tc, 5):
+            pkg.flash(T=T, zs=m.zs, VF=VF)
+            pkg_calc = pkg.enthalpy_Cpg_Hvap()
+            hand_calc = -(1 - VF)*EnthalpyVaporization(T) + HeatCapacityGas.T_dependent_property_integral(298.15, T)
+            assert_allclose(pkg_calc, hand_calc)
+            
+    # Check the liquid and vapor enthalpies are equal at the critical point
+    T = w.Tc
+    pkg.flash(T=w.Tc, zs=m.zs, VF=1)
+    Hvap_Tc_1 = pkg.enthalpy_Cpg_Hvap()
+    pkg.flash(T=w.Tc, zs=m.zs, VF=0)
+    Hvap_Tc_0 = pkg.enthalpy_Cpg_Hvap()
+    assert_allclose(Hvap_Tc_0, Hvap_Tc_1)
+    pkg.flash(T=w.Tc, zs=m.zs, VF=0.5)
+    Hvap_Tc_half = pkg.enthalpy_Cpg_Hvap()
+    assert_allclose(Hvap_Tc_0, Hvap_Tc_half)
+
+
+def test_IdealPPThermodynamic_binary_H():
+
+    m = Mixture(['water', 'ethanol'], zs=[0.3, 0.7], T=298.15)
+    pkg = IdealPPThermodynamic(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
+                  HeatCapacityLiquids=m.HeatCapacityLiquids, HeatCapacityGases=m.HeatCapacityGases,
+                  EnthalpyVaporizations=m.EnthalpyVaporizations) 
+    
+    # Check the enthalpy of vaporization matches at the reference temperature (as a liquid)
+    pkg.flash(T=298.15, P=1E5, zs=m.zs)
+    H_pp = pkg.enthalpy_Cpg_Hvap()
+    assert_allclose(H_pp, (-0.3*m.EnthalpyVaporizations[0](298.15) -0.7*m.EnthalpyVaporizations[1](298.15)))
+    # Check the enthalpy of 0 matches at the reference temperature (as a gas)
+    pkg.flash(T=298.15, VF=1, zs=m.zs)
+    assert_allclose(0, pkg.enthalpy_Cpg_Hvap(), atol=1E-9)
+    
+    # Check the gas, at various pressure but still Tref, has enthalpy of 0
+    pkg.flash(T=298.15, zs=m.zs, VF=1)
+    P_dew = pkg.P
+    kw_options = [{'P': P_dew}, {'P': 100}, {'P': 1E-10}, {'VF': 1}]
+    for kw in kw_options:
+        pkg.flash(T=298.15, zs=m.zs, **kw)
+        H_pp = pkg.enthalpy_Cpg_Hvap()
+        assert_allclose(H_pp, 0, atol=1E-7)
+    
+    # Check it's pressure is independent (so long as it stays liquid), has enthalpy of 0
+    pkg.flash(T=298.15, zs=m.zs, VF=0)
+    P_bubble = pkg.P
+    
+    kw_options = [{'P': P_bubble+1E-4}, {'P': 1E4}, {'P': 1E10}, {'VF': 0}]
+    for kw in kw_options:
+        pkg.flash(T=298.15, zs=m.zs, **kw)
+        H_pp = pkg.enthalpy_Cpg_Hvap()
+        H_handcalc = -0.3*m.EnthalpyVaporizations[0](298.15) -0.7*m.EnthalpyVaporizations[1](298.15)
+        assert_allclose(H_pp, H_handcalc)
+    
+    # For a variety of vapor fractions and temperatures, check the enthapy is correctly described
+    for VF in np.linspace(0., 1, 6):
+        for T in np.linspace(280, 400, 8):
+            z1 = uniform(0, 1)
+            z2 = 1-z1
+            zs = [z1, z2]
+            pkg.flash(T=T, zs=zs, VF=VF)
+            pkg_calc = pkg.enthalpy_Cpg_Hvap()
+            hand_calc =(-(1 - VF)*(pkg.xs[0]*m.EnthalpyVaporizations[0](T) + pkg.xs[1]*m.EnthalpyVaporizations[1](T)) 
+                        + (z1*m.HeatCapacityGases[0].T_dependent_property_integral(298.15, T) + z2*m.HeatCapacityGases[1].T_dependent_property_integral(298.15, T)))
+            assert_allclose(pkg_calc, hand_calc)

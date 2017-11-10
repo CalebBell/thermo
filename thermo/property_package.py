@@ -23,7 +23,7 @@ SOFTWARE.'''
 from __future__ import division
 
 __all__ = ['Property_Package', 'Ideal_PP', 'UNIFAC_PP', 'Activity_PP', 
-           'UNIFAC_Dortmund_PP']
+           'UNIFAC_Dortmund_PP', 'IdealPPThermodynamic']
 
 import numpy as np
 from scipy.optimize import brenth, ridder, golden, brent
@@ -335,6 +335,45 @@ class Ideal_PP(Property_Package):
         Ks = [K_value(P=P, Psat=Psat) for Psat in Psats]
         V_over_F, xs, ys = flash_inner_loop(zs=zs, Ks=Ks)
         return 'l/g', xs, ys, V_over_F, T
+
+
+class IdealPPThermodynamic(Ideal_PP):
+    def __init__(self, VaporPressures=None, Tms=None, Tbs=None, Tcs=None, Pcs=None, 
+                 HeatCapacityLiquids=None, HeatCapacityGases=None,
+                EnthalpyVaporizations=None):
+        self.cmps = range(len(VaporPressures))
+        self.N = len(VaporPressures)
+        self.VaporPressures = VaporPressures
+        self.Tms = Tms
+        self.Tbs = Tbs
+        self.Tcs = Tcs
+        self.Pcs = Pcs
+        self.HeatCapacityLiquids = HeatCapacityLiquids
+        self.HeatCapacityGases = HeatCapacityGases
+        self.EnthalpyVaporizations = EnthalpyVaporizations
+        
+    
+    def enthalpy_Cpg_Hvap(self):
+        # Compute the enthalpy using Hvap as the basis, with a reference ideal gas state of 298.15 K 
+        # Pressure is not used in this model
+        # Needs xs and V_over_F as well as zs and T
+        H = 0
+        T = self.T
+        if self.phase == 'g':
+            for i in self.cmps:
+                H += self.zs[i]*self.HeatCapacityGases[i].T_dependent_property_integral(298.15, T)
+        elif self.phase == 'l':
+            for i in self.cmps:
+                # No further contribution needed
+                Hg298_to_T = self.HeatCapacityGases[i].T_dependent_property_integral(298.15, T)
+                Hvap = -self.EnthalpyVaporizations[i](T) # Do the transition at the temperature of the liquid
+                H += self.zs[i]*(Hg298_to_T + Hvap)
+        elif self.phase == 'l/g':
+            for i in self.cmps:
+                Hg298_to_T_zi = self.zs[i]*self.HeatCapacityGases[i].T_dependent_property_integral(298.15, T)
+                Hvap_contrib = -self.xs[i]*(1-self.V_over_F)*self.EnthalpyVaporizations[i](T)
+                H += (Hg298_to_T_zi + Hvap_contrib)
+        return H
 
 
 class Activity_PP(Property_Package):
