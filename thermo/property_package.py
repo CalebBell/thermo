@@ -409,22 +409,31 @@ class IdealPPThermodynamic(Ideal_PP):
         S = 0
         T = self.T
         P = self.P
-        S -= R*log(P/101325.) # Entropy does have a contribution due to pressure; chemsep checked
         S -= R*sum([zi*log(zi) for zi in self.zs if zi > 0]) # ideal composition entropy composition; chemsep checked
-        # Both are negative
+        # Both of the mixing and vapor pressure terms have negative signs
+        # Equation 6-4.4b in Poling for the vapor pressure component
+        # For liquids above their critical temperatures, Psat is equal to the system P (COCO).
         if self.phase == 'g':
+            S -= R*log(P/101325.) # Gas-phase ideal pressure contribution (checked repeatedly)
             for i in self.cmps:
                 S += self.HeatCapacityGases[i].T_dependent_property_integral_over_T(298.15, T)
         elif self.phase == 'l':
+            Psats = self._Psats(T)
             for i in self.cmps:
                 Sg298_to_T = self.HeatCapacityGases[i].T_dependent_property_integral_over_T(298.15, T)
                 Svap = -self.EnthalpyVaporizations[i](T)/T # Do the transition at the temperature of the liquid
-                S += self.zs[i]*(Sg298_to_T + Svap)
+                S_P = -R*log(Psats[i]/101325.)
+                S += self.zs[i]*(Sg298_to_T + Svap + S_P)
         elif self.phase == 'l/g':
+            Psats = self._Psats(T)
+            S_P_vapor = -R*log(P/101325.) # Gas-phase ideal pressure contribution (checked repeatedly)
             for i in self.cmps:
                 Sg298_to_T_zi = self.zs[i]*self.HeatCapacityGases[i].T_dependent_property_integral_over_T(298.15, T)
                 Svap_contrib = -self.xs[i]*(1-self.V_over_F)*self.EnthalpyVaporizations[i](T)/T
-                S += (Sg298_to_T_zi + Svap_contrib)
+                # Pressure contributions from both phases
+                S_P_vapor_i = self.V_over_F*self.ys[i]*S_P_vapor
+                S_P_liquid_i = -R*log(Psats[i]/101325.)*(1-self.V_over_F)*self.xs[i]
+                S += (Sg298_to_T_zi + Svap_contrib + S_P_vapor_i + S_P_liquid_i)
         return S
 
 
