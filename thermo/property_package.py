@@ -65,6 +65,8 @@ class Property_Package(object):
     def plot_Pxy(self, T, pts=30):
         if not has_matplotlib:
             raise Exception('Optional dependency matplotlib is required for plotting')
+        if self.N != 2:
+            raise Exception('Pxy plotting requires a mixture of exactly two components')
         z1 = np.linspace(0, 1, pts)
         z2 = 1 - z1
         Ps_dew = []
@@ -87,6 +89,8 @@ class Property_Package(object):
     def plot_Txy(self, P, pts=30):
         if not has_matplotlib:
             raise Exception('Optional dependency matplotlib is required for plotting')
+        if self.N != 2:
+            raise Exception('Txy plotting requires a mixture of exactly two components')
         z1 = np.linspace(0, 1, pts)
         z2 = 1 - z1
         Ts_dew = []
@@ -109,6 +113,9 @@ class Property_Package(object):
     def plot_xy(self, P=None, T=None, pts=30):
         if not has_matplotlib:
             raise Exception('Optional dependency matplotlib is required for plotting')
+        if self.N != 2:
+            raise Exception('xy plotting requires a mixture of exactly two components')
+        
         z1 = np.linspace(0, 1, pts)
         z2 = 1 - z1
         y1_bubble = []
@@ -182,6 +189,8 @@ class Property_Package(object):
             import ternary
         except:
             raise Exception('Optional dependency ternary is required for ternary plotting')
+        if self.N != 3:
+            raise Exception('Ternary plotting requires a mixture of exactly three components')
 
         P_values = []
 

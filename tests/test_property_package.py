@@ -79,6 +79,9 @@ def test_Ideal_PP():
     assert_allclose(T_known, vodka.T)
     assert vodka.phase == phase_known
     
+    with pytest.raises(Exception):
+        vodka.plot_ternary(T=300)
+    
     
 def test_Ideal_PP_single_component():
     m = Mixture(['water'], zs=[1], T=298.15)
@@ -365,4 +368,17 @@ def test_UNIFAC_Dortmund_PP():
     assert_allclose(xs_known, vodka.xs)
     assert_allclose(T_known, vodka.T)
     assert vodka.phase == phase_known
+
+
+def test_plotting_failures():
+    m = Mixture(['ethanol', 'methanol', 'water'], zs=[0.3, 0.3, 0.4], P=5000, T=298.15)
+    ternary = Ideal_PP(m.VaporPressures, m.Tms, m.Tcs, m.Pcs)
+
+    with pytest.raises(Exception):
+        ternary.plot_Pxy(300)
+    with pytest.raises(Exception):
+        ternary.plot_Txy(300)
+    with pytest.raises(Exception):
+        ternary.plot_xy(300)
+
 
