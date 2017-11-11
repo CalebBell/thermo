@@ -634,5 +634,16 @@ def test_IdealPPThermodynamic_enthalpy_Cpl_Cpg_Hvap_binary():
                                  + MeOH.HeatCapacityGas.T_dependent_property_integral(T, T))
     
     dH_hand = dH_MeOH_vapor + dH_w_vapor + liq_MeOH_dH + liq_w_dH
-    
     assert_allclose(dH, dH_hand)
+    
+    # Full vapor flash, high T
+    pkg.flash(T=1200, P=1E7, zs=m.zs)
+    dH = pkg.enthalpy_Cpl_Cpg_Hvap()
+    
+    liq_w_dH = 0.3*w.HeatCapacityLiquid.T_dependent_property_integral(298.15, w.Tc)
+    liq_MeOH_dH = 0.7*MeOH.HeatCapacityLiquid.T_dependent_property_integral(298.15, MeOH.Tc)
+    dH_w_vapor = 0.3*w.HeatCapacityGas.T_dependent_property_integral(w.Tc, 1200) 
+    dH_MeOH_vapor = 0.7*MeOH.HeatCapacityGas.T_dependent_property_integral(MeOH.Tc, 1200) 
+    dH_hand = liq_w_dH + liq_MeOH_dH + dH_w_vapor  + dH_MeOH_vapor
+    
+    assert_allclose(dH_hand, dH)
