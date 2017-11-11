@@ -611,8 +611,16 @@ def test_IdealPPThermodynamic_enthalpy_Cpl_Cpg_Hvap_binary():
                +0.3*w.HeatCapacityLiquid.T_dependent_property_integral(298.15, w.Tc)
               + 0.3*w.HeatCapacityGas.T_dependent_property_integral(w.Tc, MeOH.Tc))
     assert_allclose(dH, dH_hand)
-    
-    
+    # Flash a minute amount more - check the calc still works and the value is the same
+    pkg.flash(T=MeOH.Tc, P=pkg.P*.9999999, zs=m.zs)
+    dH_minute_diff = pkg.enthalpy_Cpl_Cpg_Hvap()
+    assert_allclose(dH, dH_minute_diff)
+    # Again
+    pkg.flash(T=MeOH.Tc, VF=0.99999999, zs=m.zs)
+    dH_minute_diff = pkg.enthalpy_Cpl_Cpg_Hvap()
+    assert_allclose(dH, dH_minute_diff)
+
+    # Do a test with 65% liquid
     T = MeOH.Tc
     pkg.flash(T=T, VF=0.35, zs=m.zs)
     dH = pkg.enthalpy_Cpl_Cpg_Hvap()
