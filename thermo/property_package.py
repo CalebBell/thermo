@@ -61,6 +61,9 @@ class Property_Package(object):
     def Pbubble(self, T, zs):
         return self.to(T=T, VF=0, zs=zs).P
     
+    def _post_flash(self):
+        pass
+    
     def flash(self, zs, T=None, P=None, VF=None):
         if any(i == 0 for i in zs):
             zs = [i if i != 0 else 1E-11 for i in zs]
@@ -82,6 +85,8 @@ class Property_Package(object):
         self.xs = xs
         self.ys = ys
         self.zs = zs
+        
+        self._post_flash()
         
     def plot_Pxy(self, T, pts=30):
         if not has_matplotlib:
@@ -362,6 +367,9 @@ class Ideal_PP(Property_Package):
 
 
 class IdealPPThermodynamic(Ideal_PP):
+    T_REF_IG = 298.15
+    P_REF_IG = 101325.
+    
     def __init__(self, VaporPressures=None, Tms=None, Tbs=None, Tcs=None, Pcs=None, 
                  HeatCapacityLiquids=None, HeatCapacityGases=None,
                 EnthalpyVaporizations=None):
@@ -382,25 +390,65 @@ class IdealPPThermodynamic(Ideal_PP):
                        'HeatCapacityGases': HeatCapacityGases,
                        'EnthalpyVaporizations': EnthalpyVaporizations}
         
-    
+    def _post_flash(self):
+        # Cannot derive other properties with this
+        self.Hm = self.enthalpy_Cpg_Hvap()
+        self.Sm = self.entropy_Cpg_Hvap()
+        self.Gm = self.Hm - self.T*self.Sm if (self.Hm is not None and self.Sm is not None) else None
+
+#        self.G = self.H - self.T*self.S if (self.H is not None and self.S is not None) else None
+
+
     def enthalpy_Cpg_Hvap(self):
-        # Compute the enthalpy using Hvap as the basis, with a reference ideal gas state of 298.15 K 
-        # Pressure is not used in this model
-        # Needs xs and V_over_F as well as zs and T
+        r'''Method to calculate the enthalpy of an ideal mixture (no pressure
+        effects). This routine is based on "route A", where only the gas heat
+        capacity and enthalpy of vaporization are used.
+        
+        The reference temperature is a property of the class; it defaults to
+        298.15 K.
+        
+        For a pure gas mixture:
+            
+        .. math::
+             H = \sum_i z_i \cdot \int_{T_{ref}}^T C_{p}^{ig}(T)
+             
+        For a pure liquid mixture:
+            
+        .. math::
+             H = \sum_i z_i \left( \int_{T_{ref}}^T C_{p}^{ig}(T) + H_{vap, i}(T) \right)
+             
+        For a vapor-liquid mixture:
+            
+        .. math::
+             H = \sum_i z_i \cdot \int_{T_{ref}}^T C_{p}^{ig}(T)
+                 + \sum_i x_i\left(1 - \frac{V}{F}\right)H_{vap, i}(T)
+
+        Returns
+        -------
+        H : float
+            Enthalpy of the mixture with respect to the reference temperature,
+            [J/mol]
+            
+        Notes
+        -----
+        The object must be flashed before this routine can be used. It 
+        depends on the properties T, zs, HeatCapacityGases, 
+        EnthalpyVaporizations, and xs.
+        '''
         H = 0
         T = self.T
         if self.phase == 'g':
             for i in self.cmps:
-                H += self.zs[i]*self.HeatCapacityGases[i].T_dependent_property_integral(298.15, T)
+                H += self.zs[i]*self.HeatCapacityGases[i].T_dependent_property_integral(self.T_REF_IG, T)
         elif self.phase == 'l':
             for i in self.cmps:
                 # No further contribution needed
-                Hg298_to_T = self.HeatCapacityGases[i].T_dependent_property_integral(298.15, T)
+                Hg298_to_T = self.HeatCapacityGases[i].T_dependent_property_integral(self.T_REF_IG, T)
                 Hvap = -self.EnthalpyVaporizations[i](T) # Do the transition at the temperature of the liquid
                 H += self.zs[i]*(Hg298_to_T + Hvap)
         elif self.phase == 'l/g':
             for i in self.cmps:
-                Hg298_to_T_zi = self.zs[i]*self.HeatCapacityGases[i].T_dependent_property_integral(298.15, T)
+                Hg298_to_T_zi = self.zs[i]*self.HeatCapacityGases[i].T_dependent_property_integral(self.T_REF_IG, T)
                 Hvap_contrib = -self.xs[i]*(1-self.V_over_F)*self.EnthalpyVaporizations[i](T)
                 H += (Hg298_to_T_zi + Hvap_contrib)
         return H

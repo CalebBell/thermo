@@ -42,6 +42,7 @@ from . import miscdata
 from . import mixture
 from . import permittivity
 from . import phase_change
+from . import property_package
 from . import reaction
 from . import refractivity
 from . import safety
@@ -80,6 +81,7 @@ from .miscdata import *
 from .mixture import *
 from .permittivity import *
 from .phase_change import *
+from .property_package import *
 from .reaction import *
 from .refractivity import *
 from .safety import *
@@ -100,7 +102,7 @@ __all__ = ['activity', 'chemical', 'combustion', 'critical',
  'dipole', 'electrochem', 'elements', 'environment', 'eos', 'eos_mix',
  'heat_capacity',  'identifiers', 'law', 'lennard_jones',
  'miscdata',
- 'permittivity', 'phase_change', 'reaction',
+ 'permittivity', 'phase_change', 'property_package', 'reaction',
  'refractivity', 'safety', 'solubility', 'interface',
  'thermal_conductivity', 'triple', 'utils',
  'vapor_pressure', 'virial', 'viscosity', 'volume', 'acentric', 'coolprop', 
@@ -129,6 +131,7 @@ __all__.extend(miscdata.__all__)
 __all__.extend(mixture.__all__)
 __all__.extend(permittivity.__all__)
 __all__.extend(phase_change.__all__)
+__all__.extend(property_package.__all__)
 __all__.extend(reaction.__all__)
 __all__.extend(refractivity.__all__)
 __all__.extend(safety.__all__)
