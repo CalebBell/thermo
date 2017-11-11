@@ -40,6 +40,10 @@ if has_matplotlib:
 
 
 class Property_Package(object):
+    # Constant - if the phase fraction is this close to either the liquid or 
+    # vapor phase, round it to it
+    PHASE_ROUNDING_TOL = 1E-9 
+    
     def to(self, zs, T=None, P=None, VF=None):
         obj = self.__class__(**self.kwargs)
         obj.flash(T=T, P=P, VF=VF, zs=zs)
@@ -78,6 +82,13 @@ class Property_Package(object):
             phase, xs, ys, V_over_F, T = self.flash_PVF_zs(P=P, VF=VF, zs=zs)
         else:
             raise Exception('Unsupported flash requested')
+        # Truncate 
+        if phase  == 'l/g':
+            if V_over_F < self.PHASE_ROUNDING_TOL: # liquid
+                phase, xs, ys, V_over_F = 'l', zs, None, 0.
+            elif V_over_F > 1. - self.PHASE_ROUNDING_TOL:
+                phase, xs, ys, V_over_F = 'g', None, xs, 1.
+                
         self.T = T
         self.P = P
         self.V_over_F = V_over_F
@@ -452,6 +463,41 @@ class IdealPPThermodynamic(Ideal_PP):
                 Hvap_contrib = -self.xs[i]*(1-self.V_over_F)*self.EnthalpyVaporizations[i](T)
                 H += (Hg298_to_T_zi + Hvap_contrib)
         return H
+
+    def set_T_transitions(self, Ts):
+        if Ts == 'Tb':
+            self.T_trans = self.Tbs
+        elif Ts == 'Tc':
+            self.T_trans = self.Tcs
+        elif isinstance(Ts, float):
+            self.T_trans = [Ts]*self.N
+        else:
+            self.T_trans = Ts
+
+    def enthalpy_Cpl_Cpg_Hvap(self):
+        H = 0
+        T = self.T
+        T_trans = self.T_trans
+        
+        if self.phase == 'l':
+            for i in self.cmps:
+                H += self.zs[i]*self.HeatCapacityLiquids[i].T_dependent_property_integral(self.T_REF_IG, T)
+        elif self.phase == 'g':
+            for i in self.cmps:
+                H_to_trans = self.HeatCapacityLiquids[i].T_dependent_property_integral(self.T_REF_IG, self.T_trans[i])
+                H_trans = self.EnthalpyVaporizations[i](self.T_trans[i]) 
+                H_to_T_gas = self.HeatCapacityGases[i].T_dependent_property_integral(self.T_trans[i], T)
+                H += self.zs[i]*(H_to_trans + H_trans + H_to_T_gas)
+        elif self.phase == 'l/g':
+            for i in self.cmps:
+                H_to_T_liq = self.HeatCapacityLiquids[i].T_dependent_property_integral(self.T_REF_IG, T)
+                H_to_trans = self.HeatCapacityLiquids[i].T_dependent_property_integral(self.T_REF_IG, self.T_trans[i])
+                H_trans = self.EnthalpyVaporizations[i](self.T_trans[i])
+                H_to_T_gas = self.HeatCapacityGases[i].T_dependent_property_integral(self.T_trans[i], T)
+                H += self.V_over_F*self.ys[i]*(H_to_trans + H_trans + H_to_T_gas)
+                H += (1-self.V_over_F)*self.xs[i]*(H_to_T_liq)
+        return H
+
 
     def entropy_Cpg_Hvap(self):
         r'''Method to calculate the entropy of an ideal mixture. This routine 
