@@ -1036,8 +1036,9 @@ class EnthalpyVaporization(TDependentProperty):
     '''Maximum valid of heat of vaporization. Set to twice the value in the
     available data.'''
 
-    ranked_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR, MORGAN_KOBAYASHI,
-                      SIVARAMAN_MAGEE_KOBAYASHI, VELASCO, PITZER, ALIBAKHSHI, 
+    ranked_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, MORGAN_KOBAYASHI,
+                      SIVARAMAN_MAGEE_KOBAYASHI, VELASCO, PITZER, VDI_TABULAR, 
+                      ALIBAKHSHI, 
                       CRC_HVAP_TB, CRC_HVAP_298, GHARAGHEIZI_HVAP_298,
                       CLAPEYRON, RIEDEL, CHEN, VETERE, LIU]
     '''Default rankings of the available methods.'''
@@ -1263,7 +1264,7 @@ class EnthalpyVaporization(TDependentProperty):
         '''
         validity = True
         if method == COOLPROP:
-            if T <= self.CP_f.Tmin or T >= self.CP_f.Tc:
+            if T <= self.CP_f.Tmin or T > self.CP_f.Tc:
                 validity = False
         elif method == DIPPR_PERRY_8E:
             if T < self.Perrys2_150_Tmin or T > self.Perrys2_150_Tmax:

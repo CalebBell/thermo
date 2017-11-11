@@ -525,10 +525,6 @@ def test_IdealPPThermodynamic_binary_H():
             assert_allclose(pkg_calc, hand_calc)
             
 def test_IdealPPThermodynamic_nitrogen_S():
-    w = Chemical('water')
-    EnthalpyVaporization = w.EnthalpyVaporization
-    HeatCapacityGas = w.HeatCapacityGas
-    VaporPressure = w.VaporPressure
     
     m = Mixture(['nitrogen'], zs=[1], T=298.15)
     pkg = IdealPPThermodynamic(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
@@ -586,3 +582,49 @@ def test_IdealPPThermodynamic_nitrogen_S():
     pkg.flash(T=T, P=2E5, zs=m.zs)
     S2 = pkg.entropy_Cpg_Hvap()
     assert_allclose(S1-S2, 0)
+    
+    
+def test_IdealPPThermodynamic_enthalpy_Cpl_Cpg_Hvap_binary():
+    w = Chemical('water')
+    MeOH = Chemical('methanol')
+    
+    m = Mixture(['water', 'methanol'], zs=[0.3, 0.7], T=298.15)
+    pkg = IdealPPThermodynamic(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
+                  HeatCapacityLiquids=m.HeatCapacityLiquids, HeatCapacityGases=m.HeatCapacityGases,
+                  EnthalpyVaporizations=m.EnthalpyVaporizations) 
+    pkg.set_T_transitions('Tc')
+    
+    # Liquid change only, but to the phase change barrier
+    pkg.flash(T=298.15+200, VF=0, zs=m.zs)
+    dH = pkg.enthalpy_Cpl_Cpg_Hvap()
+    dH_hand = (0.3*w.HeatCapacityLiquid.T_dependent_property_integral(298.15, 298.15+200) 
+                 +0.7*MeOH.HeatCapacityLiquid.T_dependent_property_integral(298.15, 298.15+200))
+    assert_allclose(dH, dH_hand)
+    # Flash a minute amount - check the calc still works and the value is the same
+    pkg.flash(T=298.15+200, VF=1E-7, zs=m.zs)
+    dH = pkg.enthalpy_Cpl_Cpg_Hvap()
+    assert_allclose(dH, dH_hand, rtol=1E-6)
+    # Flash to vapor at methanol's critical point
+    pkg.flash(T=MeOH.Tc, VF=1, zs=m.zs)
+    dH = pkg.enthalpy_Cpl_Cpg_Hvap()
+    dH_hand = (0.7*MeOH.HeatCapacityLiquid.T_dependent_property_integral(298.15, MeOH.Tc) 
+               +0.3*w.HeatCapacityLiquid.T_dependent_property_integral(298.15, w.Tc)
+              + 0.3*w.HeatCapacityGas.T_dependent_property_integral(w.Tc, MeOH.Tc))
+    assert_allclose(dH, dH_hand)
+    
+    
+    T = MeOH.Tc
+    pkg.flash(T=T, VF=0.35, zs=m.zs)
+    dH = pkg.enthalpy_Cpl_Cpg_Hvap()
+    
+    liq_w_dH = pkg.xs[0]*0.65*w.HeatCapacityLiquid.T_dependent_property_integral(298.15, T)
+    liq_MeOH_dH = pkg.xs[1]*0.65*MeOH.HeatCapacityLiquid.T_dependent_property_integral(298.15, T)
+    
+    dH_w_vapor = 0.35*pkg.ys[0]*(w.HeatCapacityLiquid.T_dependent_property_integral(298.15, w.Tc) 
+                                 + w.HeatCapacityGas.T_dependent_property_integral(w.Tc, T))
+    dH_MeOH_vapor = 0.35*pkg.ys[1]*(MeOH.HeatCapacityLiquid.T_dependent_property_integral(298.15,T) 
+                                 + MeOH.HeatCapacityGas.T_dependent_property_integral(T, T))
+    
+    dH_hand = dH_MeOH_vapor + dH_w_vapor + liq_MeOH_dH + liq_w_dH
+    
+    assert_allclose(dH, dH_hand)
