@@ -87,7 +87,7 @@ class Property_Package(object):
             if V_over_F < self.PHASE_ROUNDING_TOL: # liquid
                 phase, xs, ys, V_over_F = 'l', zs, None, 0.
             elif V_over_F > 1. - self.PHASE_ROUNDING_TOL:
-                phase, xs, ys, V_over_F = 'g', None, xs, 1.
+                phase, xs, ys, V_over_F = 'g', None, zs, 1.
                 
         self.T = T
         self.P = P

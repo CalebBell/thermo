@@ -506,6 +506,7 @@ def test_IdealPPThermodynamic_binary_H():
         H_handcalc = -0.3*m.EnthalpyVaporizations[0](298.15) -0.7*m.EnthalpyVaporizations[1](298.15)
         assert_allclose(H_pp, H_handcalc)
     
+
     # For a variety of vapor fractions and temperatures, check the enthapy is correctly described
     for VF in np.linspace(0., 1, 6):
         for T in np.linspace(280, 400, 8):
@@ -514,6 +515,11 @@ def test_IdealPPThermodynamic_binary_H():
             zs = [z1, z2]
             pkg.flash(T=T, zs=zs, VF=VF)
             pkg_calc = pkg.enthalpy_Cpg_Hvap()
+            
+            # bad hack as the behavior changed after
+            if pkg.xs == None:
+                pkg.xs = pkg.zs
+            
             hand_calc =(-(1 - VF)*(pkg.xs[0]*m.EnthalpyVaporizations[0](T) + pkg.xs[1]*m.EnthalpyVaporizations[1](T)) 
                         + (z1*m.HeatCapacityGases[0].T_dependent_property_integral(298.15, T) + z2*m.HeatCapacityGases[1].T_dependent_property_integral(298.15, T)))
             assert_allclose(pkg_calc, hand_calc)

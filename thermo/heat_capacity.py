@@ -2079,7 +2079,8 @@ class HeatCapacityLiquid(TDependentProperty):
         elif method == DADGOSTAR_SHAW:
             pass # Valid everywhere
         elif method in [ROWLINSON_POLING, ROWLINSON_BONDI]:
-            pass # No limit here
+            if self.Tc and T > self.Tc:
+                return False
         elif method in self.tabular_data:
             # if tabular_extrapolation_permitted, good to go without checking
             if not self.tabular_extrapolation_permitted:
