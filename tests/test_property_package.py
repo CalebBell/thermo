@@ -584,7 +584,7 @@ def test_IdealPPThermodynamic_nitrogen_S():
     assert_allclose(S1-S2, 0)
     
     
-def test_IdealPPThermodynamic_enthalpy_Cpl_Cpg_Hvap_binary():
+def test_IdealPPThermodynamic_enthalpy_Cpl_Cpg_Hvap_binary_Tc_ref():
     w = Chemical('water')
     MeOH = Chemical('methanol')
     
@@ -647,3 +647,79 @@ def test_IdealPPThermodynamic_enthalpy_Cpl_Cpg_Hvap_binary():
     dH_hand = liq_w_dH + liq_MeOH_dH + dH_w_vapor  + dH_MeOH_vapor
     
     assert_allclose(dH_hand, dH)
+    
+    
+def test_IdealPPThermodynamic_enthalpy_Cpl_Cpg_Hvap_binary_Tb_ref():
+    w = Chemical('water')
+    MeOH = Chemical('methanol')
+    
+    m = Mixture(['water', 'methanol'], zs=[0.3, 0.7], T=298.15)
+    pkg = IdealPPThermodynamic(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
+                  HeatCapacityLiquids=m.HeatCapacityLiquids, HeatCapacityGases=m.HeatCapacityGases,
+                  EnthalpyVaporizations=m.EnthalpyVaporizations) 
+    pkg.set_T_transitions('Tb')
+
+    # Full vapor flash, high T
+    pkg.flash(T=1200, P=1E7, zs=m.zs)
+    dH = pkg.enthalpy_Cpl_Cpg_Hvap()
+    
+    liq_w_dH = 0.3*w.HeatCapacityLiquid.T_dependent_property_integral(298.15, w.Tb)
+    liq_MeOH_dH = 0.7*MeOH.HeatCapacityLiquid.T_dependent_property_integral(298.15, MeOH.Tb)
+    dH_w_vapor = 0.3*w.HeatCapacityGas.T_dependent_property_integral(w.Tb, 1200) 
+    dH_MeOH_vapor = 0.7*MeOH.HeatCapacityGas.T_dependent_property_integral(MeOH.Tb, 1200) 
+    
+    liq_w_vap = 0.3*w.EnthalpyVaporization(w.Tb)
+    liq_MeOH_vap = 0.7*MeOH.EnthalpyVaporization(MeOH.Tb)
+    
+    dH_hand = liq_w_dH + liq_MeOH_dH + liq_w_vap + liq_MeOH_vap + dH_w_vapor  + dH_MeOH_vapor
+    
+    assert_allclose(dH_hand, dH)
+    
+    # Liquid change only, but to the phase change barrier
+    pkg.flash(T=298.15+200, VF=0, zs=m.zs)
+    dH = pkg.enthalpy_Cpl_Cpg_Hvap()
+    dH_hand = (0.3*w.HeatCapacityLiquid.T_dependent_property_integral(298.15, 298.15+200) 
+                 +0.7*MeOH.HeatCapacityLiquid.T_dependent_property_integral(298.15, 298.15+200))
+    assert_allclose(dH, dH_hand)
+    # Flash a minute amount - check the calc still works and the value is the same
+    pkg.flash(T=298.15+200, VF=1E-7, zs=m.zs)
+    dH = pkg.enthalpy_Cpl_Cpg_Hvap()
+    assert_allclose(dH, dH_hand, rtol=1E-6)
+    
+    # Flash to vapor at methanol's boiling point
+    pkg.flash(T=MeOH.Tb, VF=1, zs=m.zs)
+    dH = pkg.enthalpy_Cpl_Cpg_Hvap()
+    dH_hand = (0.7*MeOH.HeatCapacityLiquid.T_dependent_property_integral(298.15, MeOH.Tb) 
+               +0.3*w.HeatCapacityLiquid.T_dependent_property_integral(298.15, w.Tb)
+              + 0.3*w.HeatCapacityGas.T_dependent_property_integral(w.Tb, MeOH.Tb)
+              + 0.3*w.EnthalpyVaporization(w.Tb)
+              + 0.7*MeOH.EnthalpyVaporization(MeOH.Tb))
+    assert_allclose(dH, dH_hand)
+    
+    # Flash a minute amount more - check the calc still works and the value is the same
+    pkg.flash(T=MeOH.Tb, P=pkg.P*.9999999, zs=m.zs)
+    dH_minute_diff = pkg.enthalpy_Cpl_Cpg_Hvap()
+    assert_allclose(dH, dH_minute_diff)
+    # Again
+    pkg.flash(T=MeOH.Tb, VF=0.99999999, zs=m.zs)
+    dH_minute_diff = pkg.enthalpy_Cpl_Cpg_Hvap()
+    assert_allclose(dH, dH_minute_diff)
+    
+    # Do a test with 65% liquid
+    T = 320
+    pkg.flash(T=T, VF=0.35, zs=m.zs)
+    dH = pkg.enthalpy_Cpl_Cpg_Hvap()
+    
+    liq_w_dH = pkg.xs[0]*0.65*w.HeatCapacityLiquid.T_dependent_property_integral(298.15, T)
+    liq_MeOH_dH = pkg.xs[1]*0.65*MeOH.HeatCapacityLiquid.T_dependent_property_integral(298.15, T)
+    
+    dH_w_vapor = 0.35*pkg.ys[0]*(w.HeatCapacityLiquid.T_dependent_property_integral(298.15, w.Tb) 
+                                 + w.HeatCapacityGas.T_dependent_property_integral(w.Tb, T))
+    dH_MeOH_vapor = 0.35*pkg.ys[1]*(MeOH.HeatCapacityLiquid.T_dependent_property_integral(298.15, MeOH.Tb) 
+                                 + MeOH.HeatCapacityGas.T_dependent_property_integral(MeOH.Tb, T))
+    
+    liq_w_vap = pkg.ys[0]*0.35*w.EnthalpyVaporization(w.Tb)
+    liq_MeOH_vap = pkg.ys[1]*0.35*MeOH.EnthalpyVaporization(MeOH.Tb)
+    
+    dH_hand = dH_MeOH_vapor + dH_w_vapor + liq_MeOH_dH + liq_w_dH + liq_MeOH_vap +liq_w_vap
+    assert_allclose(dH, dH_hand)
