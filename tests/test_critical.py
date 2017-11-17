@@ -302,6 +302,16 @@ def test_Zc_main():
         Zc(CASRN='98-01-1', Method='BADMETHOD')
 
 
+def test_Mersmann_Kind_predictor():
+    test_atoms = {'C': 10, 'H': 22}
+    
+    Vc_pred = Mersmann_Kind_predictor(test_atoms)
+    assert_allclose(Vc_pred, 0.0005851859052024729)
+    
+    with pytest.raises(Exception):
+        Mersmann_Kind_predictor( {'C': 10, 'H': 22, 'NOTANATOM': 100})
+
+
 def test_mixing_Tc():
     # Nitrogen-Argon 50/50 mixture
     Tcm =  Li([0.5, 0.5], [126.2, 150.8], [8.95e-05, 7.49e-05])
