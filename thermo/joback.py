@@ -182,8 +182,8 @@ class Joback(object):
         
     @staticmethod
     def Tb(counts):
-        r'''Joback boiling point estimation method as a function of chemical
-        structure only.
+        r'''Estimates the boiling point of an organic compound using the Joback
+        method as a function of chemical structure only.
         
         .. math::
             T_b = 198.2 + \sum_i {T_{b,i}}
@@ -212,6 +212,28 @@ class Joback(object):
     
     @staticmethod
     def Tm(counts):
+        r'''Estimates the melting point of an organic compound using the Joback
+        method as a function of chemical structure only.
+        
+        .. math::
+            T_m = 122.5 + \sum_i {T_{m,i}}
+            
+        Parameters
+        ----------
+        counts : dict
+            Dictionary of Joback groups present (numerically indexed) and their
+            counts, [-]
+
+        Returns
+        -------
+        Tm : float
+            Estimated melting temperature, [K]
+            
+        Examples
+        --------
+        >>> Joback.Tm({0: 2, 23: 1})
+        173.5
+        '''        
         tot = 0.0
         for group, count in counts.items():
             tot += joback_groups_list[group].Tm*count
