@@ -99,7 +99,7 @@ class Property_Package(object):
         
         self._post_flash()
         
-    def plot_Pxy(self, T, pts=30):
+    def plot_Pxy(self, T, pts=30): # pragma: no cover
         if not has_matplotlib:
             raise Exception('Optional dependency matplotlib is required for plotting')
         if self.N != 2:
@@ -123,7 +123,7 @@ class Property_Package(object):
         plt.legend(loc='best')
         plt.show()
         
-    def plot_Txy(self, P, pts=30):
+    def plot_Txy(self, P, pts=30): # pragma: no cover
         if not has_matplotlib:
             raise Exception('Optional dependency matplotlib is required for plotting')
         if self.N != 2:
@@ -147,7 +147,7 @@ class Property_Package(object):
         plt.legend(loc='best')
         plt.show()
         
-    def plot_xy(self, P=None, T=None, pts=30):
+    def plot_xy(self, P=None, T=None, pts=30): # pragma: no cover
         if not has_matplotlib:
             raise Exception('Optional dependency matplotlib is required for plotting')
         if self.N != 2:
@@ -176,7 +176,7 @@ class Property_Package(object):
         plt.axis((0,1,0,1))
         plt.show()
         
-    def plot_TP(self, zs, Tmin=None, Tmax=None, pts=50, branches=[]):
+    def plot_TP(self, zs, Tmin=None, Tmax=None, pts=50, branches=[]): # pragma: no cover
         if not has_matplotlib:
             raise Exception('Optional dependency matplotlib is required for plotting')
         if not Tmin:
@@ -219,7 +219,7 @@ class Property_Package(object):
         return zs
 
                 
-    def plot_ternary(self, T, scale=10):
+    def plot_ternary(self, T, scale=10): # pragma: no cover
         if not has_matplotlib:
             raise Exception('Optional dependency matplotlib is required for plotting')
         try:
@@ -621,22 +621,18 @@ class Activity_PP(Property_Package):
     def _T_VF_err(self, P, T, zs, Psats, Pmax, V_over_F_goal=1):
         if P < 0 or P > Pmax:
             return 1 
-#        try:
         V_over_F, xs, ys = self._flash_sequential_substitution_TP(T=T, P=P, zs=zs, Psats=Psats, restart=self.__TVF_solve_cache)
         if any(i < 0 for i in xs) or any(i < 0 for i in ys):
             return -100000*(Pmax-P)/Pmax
         self.__TVF_solve_cache = (V_over_F, xs, ys)
         ans = -(V_over_F-V_over_F_goal)
         return ans
-#        except:
-#            return 1
 
     def Ks(self, T, P, xs, ys, Psats):
         gammas = self.gammas(T=T, xs=xs)
         if self.use_phis:
             phis_g = self.phis_g(T=T, P=P, ys=ys)
             phis_l = self.phis_l(T=T, P=P, xs=xs)
-#            print(phis_l, phis_g, [i/j for i, j in zip(phis_l, phis_g)])
             if self.use_Poynting:
                 Poyntings = self.Poyntings(T=T, P=P, Psats=Psats)
                 return [K_value(P=P, Psat=Psats[i], gamma=gammas[i], 
@@ -699,7 +695,8 @@ class Activity_PP(Property_Package):
 
     
     def gammas(self, T, xs):
-        raise Exception(NotImplemented)
+        return [1 for i in self.N]
+#        raise Exception(NotImplemented)
 
     def P_bubble_at_T(self, T, zs, Psats=None):
         # Returns P_bubble; only thing easy to calculate

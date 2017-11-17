@@ -805,6 +805,46 @@ def Zc(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=[COMBINED]):
 rcovs_Mersmann_Kind = {'C': 0.77, 'Cl': 0.99, 'I': 1.33, 'H': 0.37, 'F': 0.71, 
                        'S': 1.04, 'O': 0.6, 'N': 0.71, 'Si': 1.17, 'Br': 1.14}
 
+rcovs_regressed =  {
+    u'Nb': 0.5139380605234125,
+    u'Ne': 0.7708216694154189,
+    u'Al': 1.004994775098707,
+    u'Re': 1.1164444694484814,
+    u'Rb': 2.9910506044828837,
+    u'Rn': 1.9283158156480653,
+    u'Xe': 1.694221043013319,
+    u'Ta': 1.1185133195453156,
+    u'Bi': 1.8436438207262267,
+    u'Br': 1.3081458724155532,
+    u'Hf': 0.8829545460486594,
+    u'Mo': 0.740396259301556,
+    u'He': 0.9808144122544257,
+    u'C': 0.6068586007600608,
+    u'B': 0.7039677272439753,
+    u'F': 0.5409105884533288,
+    u'I': 1.7262432419406561,
+    u'H': 0.33296601702348533,
+    u'K': 0.7384112258842432,
+    u'O': 0.5883254088243008,
+    u'N': 0.5467979701131293,
+    u'P': 1.0444655158949694,
+    u'Si': 1.4181434041348049,
+    u'U': 1.5530287578073485,
+    u'Sn': 1.3339487990207999,
+    u'W': 0.8355335838735266,
+    u'V': 0.6714619384794069,
+    u'Sb': 0.8840680681215854,
+    u'Se': 1.5747549515496795,
+    u'Ge': 1.0730584829731715,
+    u'Kr': 1.393999829252709,
+    u'Cl': 1.0957835025011224,
+    u'S': 1.0364452121761167,
+    u'Hg': 0.6750818243474633,
+    u'As': 0.6750687692915264,
+    u'Ar': 1.2008872952022298,
+    u'Cs': 3.433699060142929,
+    u'Zr': 0.9346554283483623}
+
 
 def Mersmann_Kind_predictor(atoms, coeff=3.645, power=0.5, 
                             covalent_radii=rcovs_Mersmann_Kind):
@@ -857,7 +897,22 @@ def Mersmann_Kind_predictor(atoms, coeff=3.645, power=0.5,
     >>> Mersmann_Kind_predictor({'C': 10, 'H': 22})
     0.0005851859052024729
     
-    This is compared against the experimental value, 0.000624 (a ~7% error)
+    This is compared against the experimental value, 0.000624 (a 6.2% relative
+    error)
+    
+    Using custom fitted coefficients we can do a bit better:
+        
+    >>> from thermo.critical import rcovs_regressed
+    >>> Mersmann_Kind_predictor(test_atoms, coeff=4.261206523632586, 
+    ... power=0.5597281770786228, covalent_radii=rcovs_regressed)
+    0.0005956871011923075
+    
+    The relative error is only 4.5% now. This is compared to an experimental 
+    uncertainty of 5.6%.
+    
+    Evaluating 1321 critical volumes in the database, the average relative
+    error is 5.0%; standard deviation 6.8%; and worst value of 79% relative
+    error for phosphorus.
     
     References
     ----------
