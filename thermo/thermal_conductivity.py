@@ -24,6 +24,7 @@ from __future__ import division
 
 __all__ = ['Sheffy_Johnson', 'Sato_Riedel', 'Lakshmi_Prasad', 
 'Gharagheizi_liquid', 'Nicola_original', 'Nicola', 'Bahadori_liquid', 
+'Mersmann_Kind_thermal_conductivity_liquid',
 'thermal_conductivity_liquid_methods', 'ThermalConductivityLiquid', 'DIPPR9G',
  'Missenard', 'DIPPR9H', 'Filippov', 
  'Eucken', 'Eucken_modified', 'DIPPR9B', 'Chung', 'eli_hanley', 
@@ -38,7 +39,7 @@ import numpy as np
 from scipy.interpolate import interp2d
 import pandas as pd
 
-from thermo.utils import R
+from thermo.utils import R, N_A, k
 from thermo.utils import log, exp
 from thermo.utils import mixing_simple, none_and_length_check, TPDependentProperty, MixtureProperty, horner
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
@@ -420,6 +421,62 @@ def Bahadori_liquid(T, M):
     c = A[2] + B[2]*X + C[2]*X**2 + D[2]*X**3
     d = A[3] + B[3]*X + C[3]*X**2 + D[3]*X**3
     return a + b*Y + c*Y**2 + d*Y**3
+
+
+def Mersmann_Kind_thermal_conductivity_liquid(T, MW, Tc, Vc, atoms):
+    r'''Estimates the thermal conductivity of organic liquid substances
+    according to the method of [1]_.
+
+    .. math::
+        \lambda^* = \frac{\lambda\cdot V_c^{2/3}\cdot T_c\cdot \text{MW}^{0.5}}
+        {(k\cdot T_c)^{1.5}\cdot N_A^{7/6}}
+
+        \lambda^* = \frac{2}{3}\left(n_a + 40\sqrt{1-T_r}\right)
+        
+    Parameters
+    ----------
+    T : float
+        Temperature of the fluid [K]
+    M : float
+        Molecular weight of the fluid [g/mol]
+    Tc : float
+        Critical temperature of the fluid [K]
+    Vc : float
+        Critical volume of the fluid [m^3/mol]
+    atoms : dict
+        Dictionary of atoms and their counts, [-]
+
+    Returns
+    -------
+    kl : float
+        Estimated liquid thermal conductivity [W/m/k]
+
+    Notes
+    -----
+    In the equation, all quantities must be in SI units but N_A is in a kmol
+    basis and Vc is in units of (m^3/kmol); this is converted internally.
+    
+    Examples
+    --------
+    Dodecane at 400 K:
+        
+    >>> Mersmann_Kind_thermal_conductivity_liquid(400, 170.33484, 658.0, 
+    ... 0.000754, {'C': 12, 'H': 26})
+    0.08952713798442789
+
+    References
+    ----------
+    .. [1] Mersmann, Alfons, and Matthias Kind. "Prediction of Mechanical and 
+       Thermal Properties of Pure Liquids, of Critical Data, and of Vapor 
+       Pressure." Industrial & Engineering Chemistry Research, January 31, 
+       2017. https://doi.org/10.1021/acs.iecr.6b04323.
+    '''
+    na = sum(atoms.values())
+    lambda_star = 2/3.*(na + 40.*(1. - T/Tc)**0.5)
+    Vc = Vc*1000 # m^3/mol to m^3/kmol
+    N_A2 = N_A*1000 # Their avogadro's constant is per kmol
+    kl = lambda_star*(k*Tc)**1.5*N_A2**(7/6.)*Vc**(-2/3.)/Tc*MW**-0.5
+    return kl
 
 
 VDI_TABULAR = 'VDI_TABULAR'
