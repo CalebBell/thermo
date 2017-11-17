@@ -24,17 +24,17 @@ from __future__ import division
 
 #__all__ = []
 from collections import namedtuple
-from thermo import to_num
+from thermo.utils import to_num, horner, exp
 
 try:
     from rdkit import Chem
     from rdkit.Chem import Descriptors
     from rdkit.Chem import AllChem
+    from rdkit.Chem import rdMolDescriptors
     hasRDKit = True
 except:
     # pragma: no cover
     hasRDKit = False
-
 
 J_BIGGS_JOBACK_SMARTS = [["Methyl","-CH3", "[CX4H3]"],
 ["SecondaryAcyclic", "-CH2-", "[!R;CX4H2]"],
@@ -123,7 +123,7 @@ O=CH- (aldehyde) 	0.0379 	0.0030 	82 	72.24 	36.90 	-162.03 	-143.48 	3.09E+1 	-
 
 joback_groups_list = []
 joback_groups_dict = {}
-JOBACK = namedtuple('JOBACK', 'i, name, Tc, Pc, Vc, Tb, Tm, Hform, Gform, Cpa, Cpb, Cpc, Cpd, Hfusion, Hvap, mua, mub')
+JOBACK = namedtuple('JOBACK', 'i, name, Tc, Pc, Vc, Tb, Tm, Hform, Gform, Cpa, Cpb, Cpc, Cpd, Hfus, Hvap, mua, mub')
 for i, line in enumerate(joback_data_txt.split('\n')):
     parsed = to_num(line.split('\t'))
     j = JOBACK(i+1, *parsed)
@@ -132,24 +132,165 @@ for i, line in enumerate(joback_data_txt.split('\n')):
 
 
 def Joback_counts(rdkitmol=None, smi=None, index='number'):
-    if rdkitmol is None and smi is not None:
-        rdkitmol = Chem.MolFromSmiles(smi)
-    else:
+    if rdkitmol is None and smi is None:
         raise Exception('Either an rdkit mol or a smiles string is required')
+    if smi is not None:
+        rdkitmol = Chem.MolFromSmiles(smi)
     
     counts = {}
     all_matches = {}
-    for i in J_BIGGS_JOBACK_SMARTS:
-        smart = i[2]
+    for i, values in enumerate(J_BIGGS_JOBACK_SMARTS):
+        smart = values[2]
         patt = Chem.MolFromSmarts(smart)
         hits = rdkitmol.GetSubstructMatches(patt)
         if hits:
             all_matches[smart] = hits
             if index == 'name':
-                counts[i[1]] = len(hits)
+                counts[values[1]] = len(hits)
             else:
                 counts[i] = len(hits)
     return counts
 
 
 #Joback_counts(smi='CC(=O)C')
+
+class Joback(object):
+    calculated_Cpig_coeffs = None
+    calculated_mul_coeffs = None
+    
+    def __init__(self, mol, atom_count=None, MW=None, Tb=None):
+        if type(mol) == Chem.rdchem.Mol:
+            self.rdkitmol = mol
+        else:
+            self.rdkitmol = Chem.MolFromSmiles(mol)
+        if atom_count is None:
+            self.rdkitmol_Hs = Chem.AddHs(self.rdkitmol)
+            self.atom_count = len(self.rdkitmol_Hs.GetAtoms())
+        else:
+            self.atom_count = atom_count
+        if MW is None:
+            self.MW = rdMolDescriptors.CalcExactMolWt(self.rdkitmol_Hs)
+        else:
+            self.MW = MW
+            
+        self.counts = Joback_counts(rdkitmol=self.rdkitmol)
+            
+        if Tb is not None:
+            self.Tb = self.Tb(self.counts)
+        else:
+            pass
+        
+    @staticmethod
+    def Tb(counts):
+        tot = 0.0
+        for group, count in counts.items():
+            tot += joback_groups_list[group].Tb*count
+        Tb = 198.0 + tot
+        return Tb
+    
+    @staticmethod
+    def Tm(counts):
+        tot = 0.0
+        for group, count in counts.items():
+            tot += joback_groups_list[group].Tm*count
+        Tm = 122.5 + tot
+        return Tm
+    
+    @staticmethod
+    def Tc(counts, Tb=None):
+        if Tb is None:
+            Tb = Joback.Tb(counts)
+        tot = 0.0
+        for group, count in counts.items():
+            tot += joback_groups_list[group].Tc*count
+        Tc = Tb/(0.584 + 0.965*tot - tot*tot)
+        return Tc
+
+    @staticmethod
+    def Pc(counts, atom_count):
+        tot = 0.0
+        for group, count in counts.items():
+            tot += joback_groups_list[group].Pc*count
+        Pc = (0.113 + 0.0032*atom_count - tot)**-2
+        return Pc*1E5 # bar to Pa
+
+    @staticmethod
+    def Vc(counts):
+        tot = 0.0
+        for group, count in counts.items():
+            tot += joback_groups_list[group].Vc*count
+        Vc = 17.5 + tot
+        return Vc*1E-6 # cm^3/mol to m^3/mol
+
+    @staticmethod
+    def Hf(counts):
+        tot = 0.0
+        for group, count in counts.items():
+            tot += joback_groups_list[group].Hform*count
+        Hf = 68.29 + tot
+        return Hf*1000 # kJ/mol to J/mol
+
+    @staticmethod
+    def Gf(counts):
+        tot = 0.0
+        for group, count in counts.items():
+            tot += joback_groups_list[group].Gform*count
+        Gf = 53.88 + tot
+        return Gf*1000 # kJ/mol to J/mol
+
+    @staticmethod
+    def Hfus(counts):
+        tot = 0.0
+        for group, count in counts.items():
+            tot += joback_groups_list[group].Hfus*count
+        Hfus = -0.88 + tot
+        return Hfus*1000 # kJ/mol to J/mol
+    
+    @staticmethod
+    def Hvap(counts):
+        tot = 0.0
+        for group, count in counts.items():
+            tot += joback_groups_list[group].Hvap*count
+        Hvap = 15.3 + tot
+        return Hvap*1000 # kJ/mol to J/mol
+    
+    @staticmethod
+    def Cpig_coeffs(counts):
+        a, b, c, d = 0.0, 0.0, 0.0, 0.0
+        for group, count in counts.items():
+            a += joback_groups_list[group].Cpa*count
+            b += joback_groups_list[group].Cpb*count
+            c += joback_groups_list[group].Cpc*count
+            d += joback_groups_list[group].Cpd*count
+        a -= 37.93
+        b += 0.210
+        c -= 3.91E-4
+        d += 2.06E-7
+        return [a, b, c, d]
+    
+    @staticmethod
+    def mul_coeffs(counts):
+        a, b = 0.0, 0.0
+        for group, count in counts.items():
+            a += joback_groups_list[group].mua*count
+            b += joback_groups_list[group].mub*count
+        a -= 597.82
+        b -= 11.202
+        return [a, b]
+    
+    def Cpig(self, T):
+        if self.calculated_Cpig_coeffs is None:
+            self.calculated_Cpig_coeffs = Joback.Cpig_coeffs(self.counts)
+        return horner(reversed(self.calculated_Cpig_coeffs), T)
+        
+    def mul(self, T):
+        if self.calculated_mul_coeffs is None:
+            self.calculated_mul_coeffs = Joback.mul_coeffs(self.counts)
+        a, b = self.calculated_mul_coeffs
+        return self.MW*exp(a/T + b)
+            
+        
+        
+        
+        
+    
