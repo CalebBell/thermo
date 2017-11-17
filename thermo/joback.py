@@ -182,6 +182,28 @@ class Joback(object):
         
     @staticmethod
     def Tb(counts):
+        r'''Joback boiling point estimation method as a function of chemical
+        structure only.
+        
+        .. math::
+            T_b = 198.2 + \sum_i {T_{b,i}}
+            
+        Parameters
+        ----------
+        counts : dict
+            Dictionary of Joback groups present (numerically indexed) and their
+            counts, [-]
+
+        Returns
+        -------
+        Tb : float
+            Estimated normal boiling temperature, [K]
+            
+        Examples
+        --------
+        >>> Joback.Tb({0: 2, 23: 1})
+        322.11
+        '''        
         tot = 0.0
         for group, count in counts.items():
             tot += joback_groups_list[group].Tb*count
