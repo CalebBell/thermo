@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = []
+#__all__ = []
 from collections import namedtuple
 from thermo import to_num
 
@@ -129,3 +129,27 @@ for i, line in enumerate(joback_data_txt.split('\n')):
     j = JOBACK(i+1, *parsed)
     joback_groups_list.append(j)
     joback_groups_dict[parsed[0]] = j
+
+
+def Joback_counts(rdkitmol=None, smi=None, index='number'):
+    if rdkitmol is None and smi is not None:
+        rdkitmol = Chem.MolFromSmiles(smi)
+    else:
+        raise Exception('Either an rdkit mol or a smiles string is required')
+    
+    counts = {}
+    all_matches = {}
+    for i in J_BIGGS_JOBACK_SMARTS:
+        smart = i[2]
+        patt = Chem.MolFromSmarts(smart)
+        hits = rdkitmol.GetSubstructMatches(patt)
+        if hits:
+            all_matches[smart] = hits
+            if index == 'name':
+                counts[i[1]] = len(hits)
+            else:
+                counts[i] = len(hits)
+    return counts
+
+
+#Joback_counts(smi='CC(=O)C')
