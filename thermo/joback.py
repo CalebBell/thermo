@@ -185,7 +185,7 @@ class Joback(object):
         tot = 0.0
         for group, count in counts.items():
             tot += joback_groups_list[group].Tb*count
-        Tb = 198.0 + tot
+        Tb = 198.2 + tot
         return Tb
     
     @staticmethod

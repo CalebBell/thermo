@@ -27,9 +27,9 @@ from thermo.joback import *
 
 def test_acetone():
     ex = Joback('CC(=O)C')
-    assert_allclose(ex.Tb(ex.counts), 321.91) # little diff
+    assert_allclose(ex.Tb(ex.counts), 322.11) 
     assert_allclose(ex.Tm(ex.counts), 173.5)
-    assert_allclose(ex.Tc(ex.counts), 500.24820491220703) # little diff
+    assert_allclose(ex.Tc(ex.counts), 500.5590049525365) 
     assert_allclose(ex.Pc(ex.counts, ex.atom_count), 4802499.604994407)
     assert_allclose(ex.Vc(ex.counts), 0.0002095)
     assert_allclose(ex.Hf(ex.counts), -217830)
