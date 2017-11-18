@@ -22,10 +22,11 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['smarts_fragment_Joback', 'Joback', 'J_BIGGS_JOBACK_SMARTS']
+__all__ = ['smarts_fragment', 'Joback', 'J_BIGGS_JOBACK_SMARTS', 
+           'J_BIGGS_JOBACK_SMARTS_id_dict']
+
 from collections import namedtuple, Counter
 from thermo.utils import to_num, horner, exp
-
 try:
     from rdkit import Chem
     from rdkit.Chem import Descriptors
@@ -80,6 +81,55 @@ J_BIGGS_JOBACK_SMARTS = [["Methyl","-CH3", "[CX4H3]"],
 ["Thioether acyclic", "-S- (nonring)", "[#16X2H0;!R]"],
 ["Thioether cyclic", "-S- (ring)", "[#16X2H0;R]"]]
 
+J_BIGGS_JOBACK_SMARTS_id_dict = {i+1: j[2] for i, j in enumerate(J_BIGGS_JOBACK_SMARTS)}
+J_BIGGS_JOBACK_SMARTS_str_dict = {i[1]: i[2] for i in J_BIGGS_JOBACK_SMARTS}
+
+# Shi Chenyang's JRGUI code indicates he left the following list of smarts in
+# favor of those above by J Biggs
+SHI_CHENYANG_JOBACK_SMARTS =  [
+("-CH3", "[CH3;A;X4;!R]"),
+("-CH2-", "[CH2;A;X4;!R]"),
+(">CH-", "[CH1;A;X4;!R]"),
+(">C<", "[CH0;A;X4;!R]"),
+("=CH2", "[CH2;A;X3;!R]"),
+("=CH-", "[CH1;A;X3;!R]"),
+("=C<", "[CH0;A;X3;!R]"),
+("=C=", "[$([CH0;A;X2;!R](=*)=*)]"),
+("≡CH", "[$([CH1;A;X2;!R]#*)]"),
+("≡C-", "[$([CH0;A;X2;!R]#*)]"),
+("-CH2- (ring)", "[CH2;A;X4;R]"),
+(">CH- (ring)", "[CH1;A;X4;R]"),
+(">C< (ring)", "[CH0;A;X4;R]"),
+("=CH- (ring)", "[CH1;X3;R]"),
+("=C< (ring)", "[CH0;X3;R]"),
+("-F", "[F]"),
+("-Cl", "[Cl]"),
+("-Br", "[Br]"),
+("-I", "[I]"),
+("-OH (alcohol)", "[O;H1;$(O-!@[C;!$(C=!@[O,N,S])])]"),
+("-OH (phenol)", "[O;H1;$(O-!@c)]"),
+("-O- (nonring)", "[OH0;X2;!R]"),
+("-O- (ring)", "[OH0;X2;R]"),
+(">C=O (nonring)", "[CH0;A;X3;!R]=O"),
+(">C=O (ring)", "[CH0;A;X3;R]=O"),
+("O=CH- (aldehyde)", "[CH;D2;$(C-!@C)](=O)"),
+("-COOH (acid)", "[$(C-!@[A;!O])](=O)([O;H,-])"),
+("-COO- (ester)", "C(=O)[OH0]"),
+("=O (other than above)", "[OX1]"),
+("-NH2", "[NH2;X3]"),
+(">NH (nonring)", "[NH1;X3;!R]"),
+(">NH (ring)", "[NH1;X3;R]"),
+(">N- (nonring)", "[NH0;X3;!R]"),
+("-N= (nonring)", "[NH0;X2;!R]"),
+("-N= (ring)", "[NH0;X2;R]"),
+("=NH", "[NH1;X2]"),
+("-CN", "C#N"),
+("-NO2", "N(=O)=O"),
+("-SH", "[SH1]"),
+("-S- (nonring)", "[SH0;!R]"),
+("-S- (ring)", "[SH0;R]")]
+SHI_CHENYANG_JOBACK_SMARTS_id_dict = {i+1: j[1] for i, j in enumerate(SHI_CHENYANG_JOBACK_SMARTS)}
+SHI_CHENYANG_JOBACK_SMARTS_str_dict = {i[0]: i[1] for i in SHI_CHENYANG_JOBACK_SMARTS}
 
 joback_data_txt = u'''-CH3 	0.0141 	-0.0012 	65 	23.58 	-5.10 	-76.45 	-43.96 	1.95E+1 	-8.08E-3 	1.53E-4 	-9.67E-8 	0.908 	2.373 	548.29 	-1.719
 -CH2- 	0.0189 	0.0000 	56 	22.88 	11.27 	-20.64 	8.42 	-9.09E-1 	9.50E-2 	-5.44E-5 	1.19E-8 	2.590 	2.226 	94.16 	-0.199
@@ -123,19 +173,65 @@ O=CH- (aldehyde) 	0.0379 	0.0030 	82 	72.24 	36.90 	-162.03 	-143.48 	3.09E+1 	-
 -S- (nonring) 	0.0119 	0.0049 	54 	68.78 	34.40 	41.87 	33.12 	1.96E+1 	-5.61E-3 	4.02E-5 	-2.76E-8 	4.130 	6.817 	n. a. 	n. a.
 -S- (ring) 	0.0019 	0.0051 	38 	52.10 	79.93 	39.10 	27.76 	1.67E+1 	4.81E-3 	2.77E-5 	-2.11E-8 	1.557 	5.984 	n. a. 	n. a.'''
 
-joback_groups_list = []
-joback_groups_dict = {}
+joback_groups_str_dict = {}
+joback_groups_id_dict = {}
 JOBACK = namedtuple('JOBACK', 'i, name, Tc, Pc, Vc, Tb, Tm, Hform, Gform, Cpa, Cpb, Cpc, Cpd, Hfus, Hvap, mua, mub')
 for i, line in enumerate(joback_data_txt.split('\n')):
     parsed = to_num(line.split('\t'))
     j = JOBACK(i+1, *parsed)
-    joback_groups_list.append(j)
-    joback_groups_dict[parsed[0]] = j
+    joback_groups_str_dict[parsed[0]] = j
+    joback_groups_id_dict[i+1] = j
 
 
+def smarts_fragment(catalog, rdkitmol=None, smi=None):
+    r'''Fragments a molecule into a set of unique groups and counts as
+    specified by the `catalog`. The molecule can either be an rdkit 
+    molecule object, or a smiles string which will be parsed by rdkit.
+    Returns a dictionary of groups and their counts according to the
+    indexes of the catalog provided.
+    
+    Parameters
+    ----------
+    catalog : dict
+        Dictionary indexed by keys pointing to smarts strings, [-] 
+    rdkitmol : mol, optional
+        Molecule as rdkit object, [-]
+    smi : str, optional
+        Smiles string representing a chemical, [-]
 
-
-def smarts_fragment_Joback(rdkitmol=None, smi=None, index='number'):
+    Returns
+    -------
+    counts : dict
+        Dictionaty of integer counts of the found groups only, indexed by
+        the same keys used by the catalog [-]
+    success : bool
+        Whether or not molecule was fully and uniquely fragmented, [-]
+    status : str
+        A string holding an explanation of why the molecule failed to be
+        fragmented, if it fails; 'OK' if it suceeds.
+        
+    Notes
+    -----
+    Raises an exception if rdkit is not installed, or `smi` or `rdkitmol` is
+    not defined.
+        
+    Examples
+    --------
+    Acetone:
+    
+    >>> smarts_fragment(catalog=J_BIGGS_JOBACK_SMARTS_id_dict, smi='CC(=O)C')
+    ({24: 1, 1: 2}, True, 'OK')
+    
+    Sodium sulfate, (Na2O4S):
+    
+    >>> smarts_fragment(catalog=J_BIGGS_JOBACK_SMARTS_id_dict, smi='[O-]S(=O)(=O)[O-].[Na+].[Na+]')
+    ({29: 4}, False, 'Did not match all atoms present')
+    
+    Propionic anhydride (C6H10O3):
+        
+    >>> smarts_fragment(catalog=J_BIGGS_JOBACK_SMARTS_id_dict, smi='CCC(=O)OC(=O)CC')
+    ({1: 2, 2: 2, 28: 2}, False, 'Matched some atoms repeatedly: [4]')        
+    '''
     if not hasRDKit:
         raise Exception(rdkit_missing)
     if rdkitmol is None and smi is None:
@@ -153,16 +249,12 @@ def smarts_fragment_Joback(rdkitmol=None, smi=None, index='number'):
     
     counts = {}
     all_matches = {}
-    for i, values in enumerate(J_BIGGS_JOBACK_SMARTS):
-        smart = values[2]
+    for key, smart in catalog.items():
         patt = Chem.MolFromSmarts(smart)
         hits = rdkitmol.GetSubstructMatches(patt)
         if hits:
             all_matches[smart] = hits
-            if index == 'name':
-                counts[values[1]] = len(hits)
-            else:
-                counts[i] = len(hits)
+            counts[key] = len(hits)
     
     matched_atoms = set()
     for i in all_matches.values():
@@ -207,7 +299,7 @@ class Joback(object):
         else:
             self.MW = MW
             
-        self.counts, self.success, self.status = smarts_fragment_Joback(rdkitmol=self.rdkitmol)
+        self.counts, self.success, self.status = smarts_fragment(J_BIGGS_JOBACK_SMARTS_id_dict, rdkitmol=self.rdkitmol)
             
         if Tb is not None:
             self.Tb_estimated = self.Tb(self.counts)
@@ -268,7 +360,7 @@ class Joback(object):
         '''        
         tot = 0.0
         for group, count in counts.items():
-            tot += joback_groups_list[group].Tb*count
+            tot += joback_groups_id_dict[group].Tb*count
         Tb = 198.2 + tot
         return Tb
     
@@ -302,7 +394,7 @@ class Joback(object):
         '''        
         tot = 0.0
         for group, count in counts.items():
-            tot += joback_groups_list[group].Tm*count
+            tot += joback_groups_id_dict[group].Tm*count
         Tm = 122.5 + tot
         return Tm
     
@@ -346,7 +438,7 @@ class Joback(object):
             Tb = Joback.Tb(counts)
         tot = 0.0
         for group, count in counts.items():
-            tot += joback_groups_list[group].Tc*count
+            tot += joback_groups_id_dict[group].Tc*count
         Tc = Tb/(0.584 + 0.965*tot - tot*tot)
         return Tc
 
@@ -387,7 +479,7 @@ class Joback(object):
         '''        
         tot = 0.0
         for group, count in counts.items():
-            tot += joback_groups_list[group].Pc*count
+            tot += joback_groups_id_dict[group].Pc*count
         Pc = (0.113 + 0.0032*atom_count - tot)**-2
         return Pc*1E5 # bar to Pa
 
@@ -424,7 +516,7 @@ class Joback(object):
         '''        
         tot = 0.0
         for group, count in counts.items():
-            tot += joback_groups_list[group].Vc*count
+            tot += joback_groups_id_dict[group].Vc*count
         Vc = 17.5 + tot
         return Vc*1E-6 # cm^3/mol to m^3/mol
 
@@ -462,7 +554,7 @@ class Joback(object):
         '''        
         tot = 0.0
         for group, count in counts.items():
-            tot += joback_groups_list[group].Hform*count
+            tot += joback_groups_id_dict[group].Hform*count
         Hf = 68.29 + tot
         return Hf*1000 # kJ/mol to J/mol
 
@@ -500,7 +592,7 @@ class Joback(object):
         '''        
         tot = 0.0
         for group, count in counts.items():
-            tot += joback_groups_list[group].Gform*count
+            tot += joback_groups_id_dict[group].Gform*count
         Gf = 53.88 + tot
         return Gf*1000 # kJ/mol to J/mol
 
@@ -539,7 +631,7 @@ class Joback(object):
         '''
         tot = 0.0
         for group, count in counts.items():
-            tot += joback_groups_list[group].Hfus*count
+            tot += joback_groups_id_dict[group].Hfus*count
         Hfus = -0.88 + tot
         return Hfus*1000 # kJ/mol to J/mol
     
@@ -578,7 +670,7 @@ class Joback(object):
         '''
         tot = 0.0
         for group, count in counts.items():
-            tot += joback_groups_list[group].Hvap*count
+            tot += joback_groups_id_dict[group].Hvap*count
         Hvap = 15.3 + tot
         return Hvap*1000 # kJ/mol to J/mol
     
@@ -622,10 +714,10 @@ class Joback(object):
         '''
         a, b, c, d = 0.0, 0.0, 0.0, 0.0
         for group, count in counts.items():
-            a += joback_groups_list[group].Cpa*count
-            b += joback_groups_list[group].Cpb*count
-            c += joback_groups_list[group].Cpc*count
-            d += joback_groups_list[group].Cpd*count
+            a += joback_groups_id_dict[group].Cpa*count
+            b += joback_groups_id_dict[group].Cpb*count
+            c += joback_groups_id_dict[group].Cpc*count
+            d += joback_groups_id_dict[group].Cpd*count
         a -= 37.93
         b += 0.210
         c -= 3.91E-4
@@ -673,8 +765,8 @@ class Joback(object):
         '''
         a, b = 0.0, 0.0
         for group, count in counts.items():
-            a += joback_groups_list[group].mua*count
-            b += joback_groups_list[group].mub*count
+            a += joback_groups_id_dict[group].mua*count
+            b += joback_groups_id_dict[group].mub*count
         a -= 597.82
         b -= 11.202
         return [a, b]
