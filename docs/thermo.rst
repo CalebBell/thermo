@@ -22,6 +22,7 @@ Submodules
    thermo.heat_capacity
    thermo.identifiers
    thermo.interface
+   thermo.joback
    thermo.law
    thermo.lennard_jones
    thermo.miscdata

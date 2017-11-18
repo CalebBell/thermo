@@ -36,6 +36,7 @@ from . import eos
 from . import eos_mix
 from . import heat_capacity
 from . import identifiers
+from . import joback
 from . import law
 from . import lennard_jones
 from . import miscdata
@@ -74,6 +75,7 @@ from .environment import *
 from .eos import *
 from .eos_mix import *
 from .heat_capacity import *
+from .joback import *
 from .identifiers import *
 from .law import *
 from .lennard_jones import *
@@ -100,7 +102,7 @@ from .volume import *
 
 __all__ = ['activity', 'chemical', 'combustion', 'critical',
  'dipole', 'electrochem', 'elements', 'environment', 'eos', 'eos_mix',
- 'heat_capacity',  'identifiers', 'law', 'lennard_jones',
+ 'heat_capacity',  'identifiers', 'joback', 'law', 'lennard_jones',
  'miscdata',
  'permittivity', 'phase_change', 'property_package', 'reaction',
  'refractivity', 'safety', 'solubility', 'interface',
@@ -125,6 +127,7 @@ __all__.extend(eos.__all__)
 __all__.extend(eos_mix.__all__)
 __all__.extend(heat_capacity.__all__)
 __all__.extend(identifiers.__all__)
+__all__.extend(joback.__all__)
 __all__.extend(law.__all__)
 __all__.extend(lennard_jones.__all__)
 __all__.extend(miscdata.__all__)

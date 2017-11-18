@@ -24,7 +24,7 @@ from numpy.testing import assert_allclose
 import pytest
 from thermo.joback import *
 
-
+@pytest.mark.rdkit
 def test_Joback_acetone():
     ex = Joback('CC(=O)C') # Acetone example
     assert_allclose(ex.Tb(ex.counts), 322.11) 

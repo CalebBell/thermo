@@ -903,7 +903,7 @@ def Mersmann_Kind_predictor(atoms, coeff=3.645, power=0.5,
     Using custom fitted coefficients we can do a bit better:
         
     >>> from thermo.critical import rcovs_regressed
-    >>> Mersmann_Kind_predictor(test_atoms, coeff=4.261206523632586, 
+    >>> Mersmann_Kind_predictor({'C': 10, 'H': 22}, coeff=4.261206523632586, 
     ... power=0.5597281770786228, covalent_radii=rcovs_regressed)
     0.0005956871011923075
     

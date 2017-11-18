@@ -230,7 +230,7 @@ def smarts_fragment(catalog, rdkitmol=None, smi=None):
     Propionic anhydride (C6H10O3):
         
     >>> smarts_fragment(catalog=J_BIGGS_JOBACK_SMARTS_id_dict, smi='CCC(=O)OC(=O)CC')
-    ({1: 2, 2: 2, 28: 2}, False, 'Matched some atoms repeatedly: [4]')        
+    ({1: 2, 2: 2, 28: 2}, False, 'Matched some atoms repeatedly: [4]')
     '''
     if not hasRDKit:
         raise Exception(rdkit_missing)
@@ -336,7 +336,7 @@ class Joback(object):
     None of the routines need to use the automatic routine; they can be used
     manually too:
         
-    >>> Joback.Tb({0: 2, 23: 1})
+    >>> Joback.Tb({1: 2, 24: 1})
     322.11
 
     References
@@ -423,7 +423,7 @@ class Joback(object):
             
         Examples
         --------
-        >>> Joback.Tb({0: 2, 23: 1})
+        >>> Joback.Tb({1: 2, 24: 1})
         322.11
         '''        
         tot = 0.0
@@ -457,7 +457,7 @@ class Joback(object):
             
         Examples
         --------
-        >>> Joback.Tm({0: 2, 23: 1})
+        >>> Joback.Tm({1: 2, 24: 1})
         173.5
         '''        
         tot = 0.0
@@ -499,7 +499,7 @@ class Joback(object):
             
         Examples
         --------
-        >>> Joback.Tc({0: 2, 23: 1}, Tb=322.11)
+        >>> Joback.Tc({1: 2, 24: 1}, Tb=322.11)
         500.5590049525365
         '''        
         if Tb is None:
@@ -542,7 +542,7 @@ class Joback(object):
             
         Examples
         --------
-        >>> Joback.Pc({0: 2, 23: 1}, 10)
+        >>> Joback.Pc({1: 2, 24: 1}, 10)
         4802499.604994407
         '''        
         tot = 0.0
@@ -579,7 +579,7 @@ class Joback(object):
             
         Examples
         --------
-        >>> Joback.Vc({0: 2, 23: 1})
+        >>> Joback.Vc({1: 2, 24: 1})
         0.0002095
         '''        
         tot = 0.0
@@ -617,7 +617,7 @@ class Joback(object):
             
         Examples
         --------
-        >>> Joback.Hf({0: 2, 23: 1})
+        >>> Joback.Hf({1: 2, 24: 1})
         -217829.99999999997
         '''        
         tot = 0.0
@@ -655,7 +655,7 @@ class Joback(object):
             
         Examples
         --------
-        >>> Joback.Gf({0: 2, 23: 1})
+        >>> Joback.Gf({1: 2, 24: 1})
         -154540.00000000003
         '''        
         tot = 0.0
@@ -694,7 +694,7 @@ class Joback(object):
             
         Examples
         --------
-        >>> Joback.Hfus({0: 2, 23: 1})
+        >>> Joback.Hfus({1: 2, 24: 1})
         5125.0
         '''
         tot = 0.0
@@ -733,7 +733,7 @@ class Joback(object):
             
         Examples
         --------
-        >>> Joback.Hvap({0: 2, 23: 1})
+        >>> Joback.Hvap({1: 2, 24: 1})
         29018.0
         '''
         tot = 0.0
@@ -773,7 +773,7 @@ class Joback(object):
             
         Examples
         --------
-        >>> c = Joback.Cpig_coeffs({0: 2, 23: 1})
+        >>> c = Joback.Cpig_coeffs({1: 2, 24: 1})
         >>> c
         [7.520000000000003, 0.26084, -0.0001207, 1.545999999999998e-08]
         >>> Cp = lambda T : c[0] + c[1]*T + c[2]*T**2 + c[3]*T**3
@@ -823,7 +823,7 @@ class Joback(object):
             
         Examples
         --------
-        >>> mu_ab = Joback.mul_coeffs({0: 2, 23: 1})
+        >>> mu_ab = Joback.mul_coeffs({1: 2, 24: 1})
         >>> mu_ab
         [839.1099999999998, -14.99]
         >>> MW = 58.041864812
