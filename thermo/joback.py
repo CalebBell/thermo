@@ -281,6 +281,74 @@ def smarts_fragment(catalog, rdkitmol=None, smi=None):
 
 
 class Joback(object):
+    r'''Class for performing chemical property estimations with the Joback
+    group contribution method as described in [1]_ and [2]_. This is a very
+    common method with low accuracy but wide applicability. This routine can be
+    used with either its own automatic fragmentation routine, or user specified
+    groups. It is applicable to organic compounds only, and has only 41 groups
+    with no interactions between them. Each method's documentation describes  
+    its accuracy.
+                
+    Parameters
+    ----------
+    mol : rdkitmol or smiles str
+        Input molecule for the analysis, [-]
+    atom_count : int, optional
+        The total number of atoms including hydrogen in the molecule; this will 
+        be counted by rdkit if it not provided, [-]
+    MW : float, optional
+        Molecular weight of the molecule; this will be calculated by rdkit if  
+        not provided, [g/mol]
+    Tb : float, optional
+        An experimentally known boiling temperature for the chemical; this 
+        increases the accuracy of the calculated critical point if provided.
+        [K]
+
+    Notes
+    -----
+    Be sure to check the status of the automatic fragmentation; not all 
+    chemicals with the Joback method are applicable.
+    
+    Approximately 68% of chemcials in the thermo database seem to be able to
+    be estimated with the Joback method.
+
+    Examples
+    --------
+    Analysis of Acetone:
+        
+    >>> J = Joback('CC(=O)C')
+    >>> J.Hfus(J.counts)
+    5125.0
+    >>> J.Cpig(350)
+    84.69109750000001
+    >>> J.status
+    'OK'
+
+    The results for propionic anhydride (if the status is not OK) should not be
+    used.
+    
+    >>> J = Joback('CCC(=O)OC(=O)CC')
+    >>> J.status
+    'Matched some atoms repeatedly: [4]'
+    >>> J.Cpig(300)
+    175.85999999999999
+    
+    None of the routines need to use the automatic routine; they can be used
+    manually too:
+        
+    >>> Joback.Tb({0: 2, 23: 1})
+    322.11
+
+    References
+    ----------
+    .. [1] Joback, Kevin G. "A Unified Approach to Physical Property Estimation
+       Using Multivariate Statistical Techniques." Thesis, Massachusetts 
+       Institute of Technology, 1984.
+    .. [2] Joback, K.G., and R.C. Reid. "Estimation of Pure-Component 
+       Properties from Group-Contributions." Chemical Engineering 
+       Communications 57, no. 1-6 (July 1, 1987): 233-43. 
+       doi:10.1080/00986448708960487.
+    '''
     calculated_Cpig_coeffs = None
     calculated_mul_coeffs = None
     
