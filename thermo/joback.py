@@ -22,8 +22,8 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['Joback_counts', 'Joback', 'J_BIGGS_JOBACK_SMARTS']
-from collections import namedtuple
+__all__ = ['smarts_fragment_Joback', 'Joback', 'J_BIGGS_JOBACK_SMARTS']
+from collections import namedtuple, Counter
 from thermo.utils import to_num, horner, exp
 
 try:
@@ -133,13 +133,23 @@ for i, line in enumerate(joback_data_txt.split('\n')):
     joback_groups_dict[parsed[0]] = j
 
 
-def Joback_counts(rdkitmol=None, smi=None, index='number'):
+
+
+def smarts_fragment_Joback(rdkitmol=None, smi=None, index='number'):
     if not hasRDKit:
         raise Exception(rdkit_missing)
     if rdkitmol is None and smi is None:
         raise Exception('Either an rdkit mol or a smiles string is required')
     if smi is not None:
         rdkitmol = Chem.MolFromSmiles(smi)
+        if rdkitmol is None:
+            status = 'Failed to construct mol'
+            success = False
+            return {}, success, status
+
+    atom_count = len(rdkitmol.GetAtoms())    
+    status = 'OK'
+    success = True
     
     counts = {}
     all_matches = {}
@@ -153,7 +163,29 @@ def Joback_counts(rdkitmol=None, smi=None, index='number'):
                 counts[values[1]] = len(hits)
             else:
                 counts[i] = len(hits)
-    return counts
+    
+    matched_atoms = set()
+    for i in all_matches.values():
+        for j in i:
+            matched_atoms.update(j)
+    if len(matched_atoms) != atom_count:
+        status = 'Did not match all atoms present'
+        success = False
+        
+    # Check the atom aount again, this time looking for duplicate matches (only if have yet to fail)
+    if success:
+        matched_atoms = []
+        for i in all_matches.values():
+            for j in i:
+                matched_atoms.extend(j)
+        if len(matched_atoms) < atom_count:
+            status = 'Matched %d of %d atoms only' %(len(matched_atoms), atom_count)
+            success = False
+        elif len(matched_atoms) > atom_count:
+            status = 'Matched some atoms repeatedly: %s' %( [i for i, c in Counter(matched_atoms).items() if c > 1])
+            success = False
+        
+    return counts, success, status
 
 
 class Joback(object):
@@ -175,12 +207,36 @@ class Joback(object):
         else:
             self.MW = MW
             
-        self.counts = Joback_counts(rdkitmol=self.rdkitmol)
+        self.counts, self.success, self.status = smarts_fragment_Joback(rdkitmol=self.rdkitmol)
             
         if Tb is not None:
-            self.Tb = self.Tb(self.counts)
+            self.Tb_estimated = self.Tb(self.counts)
         else:
-            pass
+            self.Tb_estimated = Tb
+        
+    def estimate(self):
+        '''Method to compute all available properties with the Joback method;
+        returns their results as a dict. For the tempearture dependent values
+        Cpig and mul, both the coefficients and objects to perform calculations
+        are returned.
+        '''
+        # Pre-generate the coefficients or they will not be returned
+        self.mul(300)
+        self.Cpig(300) 
+        estimates = {'Tb': self.Tb(self.counts),
+                     'Tm': self.Tm(self.counts),
+                     'Tc': self.Tc(self.counts, self.Tb_estimated),
+                     'Pc': self.Pc(self.counts, self.atom_count),
+                     'Vc': self.Vc(self.counts),
+                     'Hf': self.Hf(self.counts),
+                     'Gf': self.Gf(self.counts),
+                     'Hfus': self.Hfus(self.counts),
+                     'Hvap': self.Hvap(self.counts),
+                     'mul': self.mul,
+                     'mul_coeffs': self.calculated_mul_coeffs,
+                     'Cpig': self.Cpig,
+                     'Cpig_coeffs': self.calculated_Cpig_coeffs}
+        return estimates
         
     @staticmethod
     def Tb(counts):
