@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 from __future__ import division
 
-#__all__ = []
+__all__ = ['Joback_counts', 'Joback', 'J_BIGGS_JOBACK_SMARTS']
 from collections import namedtuple
 from thermo.utils import to_num, horner, exp
 
@@ -36,47 +36,49 @@ except:
     # pragma: no cover
     hasRDKit = False
 
+rdkit_missing = 'RDKit is not installed; it is required to use this functionality'
+
 J_BIGGS_JOBACK_SMARTS = [["Methyl","-CH3", "[CX4H3]"],
-["SecondaryAcyclic", "-CH2-", "[!R;CX4H2]"],
-["TertiaryAcyclic",">CH-", "[!R;CX4H]"],
-["QuaternaryAcyclic", ">C<", "[!R;CX4H0]"],
-["PrimaryAlkene", "=CH2", "[CX3H2]"],
-["SecondaryAlkeneAcyclic", "=CH-", "[!R;CX3H1;!$([CX3H1](=O))]"],
-["TertiaryAlkeneAcyclic", "=C<", "[$([!R;#6X3H0]);!$([!R;#6X3H0]=[#8])]"],
-["CumulativeAlkene", "=C=", "[$([CX2H0](=*)=*)]"],
-["TerminalAlkyne", u"≡CH","[$([CX2H1]#[!#7])]"],
-["InternalAlkyne",u"≡C-","[$([CX2H0]#[!#7])]"],
-["SecondaryCyclic", "-CH2- (ring)", "[R;CX4H2]"],
-["TertiaryCyclic", ">CH- (ring)", "[R;CX4H]"],
-["QuaternaryCyclic", ">C< (ring)", "[R;CX4H0]"],
-["SecondaryAlkeneCyclic", "=CH- (ring)", "[R;CX3H1,cX3H1]"],
-["TertiaryAlkeneCyclic", "=C< (ring)","[$([R;#6X3H0]);!$([R;#6X3H0]=[#8])]"],
+["Secondary acyclic", "-CH2-", "[!R;CX4H2]"],
+["Tertiary acyclic",">CH-", "[!R;CX4H]"],
+["Quaternary acyclic", ">C<", "[!R;CX4H0]"],
+["Primary alkene", "=CH2", "[CX3H2]"],
+["Secondary alkene acyclic", "=CH-", "[!R;CX3H1;!$([CX3H1](=O))]"],
+["Tertiary alkene acyclic", "=C<", "[$([!R;#6X3H0]);!$([!R;#6X3H0]=[#8])]"],
+["Cumulative alkene", "=C=", "[$([CX2H0](=*)=*)]"],
+["Terminal alkyne", u"≡CH","[$([CX2H1]#[!#7])]"],
+["Internal alkyne",u"≡C-","[$([CX2H0]#[!#7])]"],
+["Secondary cyclic", "-CH2- (ring)", "[R;CX4H2]"],
+["Tertiary cyclic", ">CH- (ring)", "[R;CX4H]"],
+["Quaternary cyclic", ">C< (ring)", "[R;CX4H0]"],
+["Secondary alkene cyclic", "=CH- (ring)", "[R;CX3H1,cX3H1]"],
+["Tertiary alkene cyclic", "=C< (ring)","[$([R;#6X3H0]);!$([R;#6X3H0]=[#8])]"],
 ["Fluoro", "-F", "[F]"],
 ["Chloro", "-Cl", "[Cl]"],
 ["Bromo", "-Br", "[Br]"],
 ["Iodo", "-I", "[I]"],
 ["Alcohol","-OH (alcohol)", "[OX2H;!$([OX2H]-[#6]=[O]);!$([OX2H]-a)]"],
 ["Phenol","-OH (phenol)", "[$([OX2H]-a)]"],
-["EtherAcyclic", "-O- (nonring)", "[OX2H0;!R;!$([OX2H0]-[#6]=[#8])]"],
-["EtherCyclic", "-O- (ring)", "[#8X2H0;R;!$([#8X2H0]~[#6]=[#8])]"],
-["CarbonylAcyclic", ">C=O (nonring)","[$([CX3H0](=[OX1]));!$([CX3](=[OX1])-[OX2]);!R]=O"],
-["CarbonylCyclic", ">C=O (ring)","[$([#6X3H0](=[OX1]));!$([#6X3](=[#8X1])~[#8X2]);R]=O"],
+["Ether acyclic", "-O- (nonring)", "[OX2H0;!R;!$([OX2H0]-[#6]=[#8])]"],
+["Ether cyclic", "-O- (ring)", "[#8X2H0;R;!$([#8X2H0]~[#6]=[#8])]"],
+["Carbonyl acyclic", ">C=O (nonring)","[$([CX3H0](=[OX1]));!$([CX3](=[OX1])-[OX2]);!R]=O"],
+["Carbonyl cyclic", ">C=O (ring)","[$([#6X3H0](=[OX1]));!$([#6X3](=[#8X1])~[#8X2]);R]=O"],
 ["Aldehyde","O=CH- (aldehyde)","[CX3H1](=O)"],
-["CarboxylicAcid", "-COOH (acid)", "[OX2H]-[C]=O"],
+["Carboxylic acid", "-COOH (acid)", "[OX2H]-[C]=O"],
 ["Ester", "-COO- (ester)", "[#6X3H0;!$([#6X3H0](~O)(~O)(~O))](=[#8X1])[#8X2H0]"],
-["OxygenDoubleBondOther", "=O (other than above)","[OX1H0;!$([OX1H0]~[#6X3]);!$([OX1H0]~[#7X3]~[#8])]"],
-["PrimaryAmino","-NH2", "[NX3H2]"],
-["SecondaryAminoAcyclic",">NH (nonring)", "[NX3H1;!R]"],
-["SecondaryAminoCyclic",">NH (ring)", "[#7X3H1;R]"],
-["TertiaryAmino", ">N- (nonring)","[#7X3H0;!$([#7](~O)~O)]"], 
-["ImineAcyclic","-N= (nonring)","[#7X2H0;!R]"],
-["ImineCyclic","-N= (ring)","[#7X2H0;R]"],
+["Oxygen double bond other", "=O (other than above)","[OX1H0;!$([OX1H0]~[#6X3]);!$([OX1H0]~[#7X3]~[#8])]"],
+["Primary amino","-NH2", "[NX3H2]"],
+["Secondary amino acyclic",">NH (nonring)", "[NX3H1;!R]"],
+["Secondary amino cyclic",">NH (ring)", "[#7X3H1;R]"],
+["Tertiary amino", ">N- (nonring)","[#7X3H0;!$([#7](~O)~O)]"], 
+["Imine acyclic","-N= (nonring)","[#7X2H0;!R]"],
+["Imine cyclic","-N= (ring)","[#7X2H0;R]"],
 ["Aldimine", "=NH", "[#7X2H1]"],
 ["Cyano", "-CN","[#6X2]#[#7X1H0]"],
 ["Nitro", "-NO2", "[$([#7X3,#7X3+][!#8])](=[O])~[O-]"],
 ["Thiol", "-SH", "[SX2H]"],
-["ThioetherAcyclic", "-S- (nonring)", "[#16X2H0;!R]"],
-["ThioetherCyclic", "-S- (ring)", "[#16X2H0;R]"]]
+["Thioether acyclic", "-S- (nonring)", "[#16X2H0;!R]"],
+["Thioether cyclic", "-S- (ring)", "[#16X2H0;R]"]]
 
 
 joback_data_txt = u'''-CH3 	0.0141 	-0.0012 	65 	23.58 	-5.10 	-76.45 	-43.96 	1.95E+1 	-8.08E-3 	1.53E-4 	-9.67E-8 	0.908 	2.373 	548.29 	-1.719
@@ -132,6 +134,8 @@ for i, line in enumerate(joback_data_txt.split('\n')):
 
 
 def Joback_counts(rdkitmol=None, smi=None, index='number'):
+    if not hasRDKit:
+        raise Exception(rdkit_missing)
     if rdkitmol is None and smi is None:
         raise Exception('Either an rdkit mol or a smiles string is required')
     if smi is not None:
@@ -186,6 +190,10 @@ class Joback(object):
         .. math::
             T_b = 198.2 + \sum_i {T_{b,i}}
             
+        For 438 compounds tested by Joback, the absolute average error was
+        12.91 K  and standard deviation was 17.85 K; the average relative error
+        was 3.6%. 
+            
         Parameters
         ----------
         counts : dict
@@ -216,6 +224,10 @@ class Joback(object):
         .. math::
             T_m = 122.5 + \sum_i {T_{m,i}}
             
+        For 388 compounds tested by Joback, the absolute average error was
+        22.6 K  and standard deviation was 24.68 K; the average relative error
+        was 11.2%. 
+
         Parameters
         ----------
         counts : dict
@@ -250,6 +262,12 @@ class Joback(object):
             T_c = T_b \left[0.584 + 0.965 \sum_i {T_{c,i}}
             - \left(\sum_i {T_{c,i}}\right)^2 \right]^{-1}
             
+        For 409 compounds tested by Joback, the absolute average error was
+        4.76 K  and standard deviation was 6.94 K; the average relative error
+        was 0.81%. 
+        
+        Appendix BI of Joback's work lists 409 estimated critical temperatures.
+        
         Parameters
         ----------
         counts : dict
@@ -289,6 +307,10 @@ class Joback(object):
         In the above equation, critical pressure is calculated in bar; it is
         converted to Pa here.
         
+        392 compounds were used by Joback in this determination, with an 
+        absolute average error of 2.06 bar, standard devaition 3.2 bar, and
+        AARE of 5.2%.
+        
         Parameters
         ----------
         counts : dict
@@ -324,6 +346,10 @@ class Joback(object):
         In the above equation, critical volume is calculated in cm^3/mol; it 
         is converted to m^3/mol here.
         
+        310 compounds were used by Joback in this determination, with an 
+        absolute average error of 7.54 cm^3/mol, standard devaition 13.16
+        cm^3/mol, and AARE of 2.27%.
+
         Parameters
         ----------
         counts : dict
@@ -357,6 +383,10 @@ class Joback(object):
             
         In the above equation, enthalpy of formation is calculated in kJ/mol;  
         it is converted to J/mol here.
+        
+        370 compounds were used by Joback in this determination, with an 
+        absolute average error of 2.2 kcal/mol, standard devaition 2.0 
+        kcal/mol, and AARE of 15.2%.
         
         Parameters
         ----------
@@ -392,6 +422,10 @@ class Joback(object):
         In the above equation, Gibbs energy of formation is calculated in 
         kJ/mol; it is converted to J/mol here.
         
+        328 compounds were used by Joback in this determination, with an 
+        absolute average error of 2.0 kcal/mol, standard devaition 4.37
+        kcal/mol, and AARE of 15.7%.
+
         Parameters
         ----------
         counts : dict
@@ -426,6 +460,10 @@ class Joback(object):
         In the above equation, enthalpy of fusion is calculated in 
         kJ/mol; it is converted to J/mol here.
         
+        For 155 compounds tested by Joback, the absolute average error was
+        485.2 cal/mol  and standard deviation was 661.4 cal/mol; the average 
+        relative error was 38.7%. 
+
         Parameters
         ----------
         counts : dict
@@ -461,6 +499,10 @@ class Joback(object):
         In the above equation, enthalpy of fusion is calculated in 
         kJ/mol; it is converted to J/mol here.
         
+        For 368 compounds tested by Joback, the absolute average error was
+        303.5 cal/mol  and standard deviation was 429 cal/mol; the average 
+        relative error was 3.88%. 
+        
         Parameters
         ----------
         counts : dict
@@ -495,6 +537,12 @@ class Joback(object):
             + \left[ \sum_i c_i - 3.91 \cdot 10^{-4} \right] T^2 
             + \left[\sum_i d_i + 2.06 \cdot 10^{-7}\right] T^3
         
+        288 compounds were used by Joback in this determination. No overall 
+        error was reported.
+
+        The ideal gas heat capacity values used in developing the heat 
+        capacity polynomials used 9 data points between 298 K and 1000 K.
+
         Parameters
         ----------
         counts : dict
@@ -538,6 +586,13 @@ class Joback(object):
             \mu_{liq} = \text{MW} \exp\left( \frac{ \sum_i \mu_a - 597.82}{T} 
             + \sum_i \mu_b - 11.202 \right)
             
+        288 compounds were used by Joback in this determination. No overall 
+        error was reported.
+
+        The liquid viscosity data used was specified to be at "several 
+        temperatures for each compound" only. A small and unspecified number
+        of compounds were used in this estimation.
+
         Parameters
         ----------
         counts : dict
