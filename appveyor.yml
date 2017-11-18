@@ -33,4 +33,4 @@ install:
   - cmd: python setup.py install
 
 test_script:
-  - cmd: py.test --cov-report html --cov=thermo -m "not slow and not sympy"
+  - cmd: py.test --cov-report html --cov=thermo -m "not slow and not sympy and not rdkit"

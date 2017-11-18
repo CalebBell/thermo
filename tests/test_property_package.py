@@ -398,8 +398,6 @@ def test_plotting_failures():
 
 
 def test_IdealPPThermodynamic_single_component_H():
-    from numpy.testing import *
-    import numpy as np
     w = Chemical('water')
     EnthalpyVaporization = w.EnthalpyVaporization
     HeatCapacityGas = w.HeatCapacityGas

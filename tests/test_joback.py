@@ -26,18 +26,23 @@ from thermo.joback import *
 
 @pytest.mark.rdkit
 def test_Joback_acetone():
-    ex = Joback('CC(=O)C') # Acetone example
-    assert_allclose(ex.Tb(ex.counts), 322.11) 
-    assert_allclose(ex.Tm(ex.counts), 173.5)
-    assert_allclose(ex.Tc(ex.counts), 500.5590049525365) 
-    assert_allclose(ex.Tc(ex.counts, 322.11), 500.5590049525365) 
-    assert_allclose(ex.Pc(ex.counts, ex.atom_count), 4802499.604994407)
-    assert_allclose(ex.Vc(ex.counts), 0.0002095)
-    assert_allclose(ex.Hf(ex.counts), -217830)
-    assert_allclose(ex.Gf(ex.counts), -154540)
-    assert_allclose(ex.Hfus(ex.counts), 5125)
-    assert_allclose(ex.Hvap(ex.counts), 29018)
-    assert_allclose(ex.Cpig_coeffs(ex.counts),[7.52, 0.26084, -0.0001207, 1.546e-08] )
-    assert_allclose(ex.Cpig(300), 75.32642000000001)
-    assert_allclose(ex.mul_coeffs(ex.counts), [839.11, -14.99])
-    assert_allclose(ex.mul(300), 0.0002940378347162687)
+    from rdkit import Chem
+    from rdkit.Chem import Descriptors
+    from rdkit.Chem import AllChem
+    from rdkit.Chem import rdMolDescriptors
+    for i in [Chem.MolFromSmiles('CC(=O)C'), 'CC(=O)C']:
+        ex = Joback(i) # Acetone example
+        assert_allclose(ex.Tb(ex.counts), 322.11) 
+        assert_allclose(ex.Tm(ex.counts), 173.5)
+        assert_allclose(ex.Tc(ex.counts), 500.5590049525365) 
+        assert_allclose(ex.Tc(ex.counts, 322.11), 500.5590049525365) 
+        assert_allclose(ex.Pc(ex.counts, ex.atom_count), 4802499.604994407)
+        assert_allclose(ex.Vc(ex.counts), 0.0002095)
+        assert_allclose(ex.Hf(ex.counts), -217830)
+        assert_allclose(ex.Gf(ex.counts), -154540)
+        assert_allclose(ex.Hfus(ex.counts), 5125)
+        assert_allclose(ex.Hvap(ex.counts), 29018)
+        assert_allclose(ex.Cpig_coeffs(ex.counts),[7.52, 0.26084, -0.0001207, 1.546e-08] )
+        assert_allclose(ex.Cpig(300), 75.32642000000001)
+        assert_allclose(ex.mul_coeffs(ex.counts), [839.11, -14.99])
+        assert_allclose(ex.mul(300), 0.0002940378347162687)

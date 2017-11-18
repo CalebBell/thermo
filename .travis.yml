@@ -29,6 +29,6 @@ install:
   - python setup.py -q install
 script:
   - cd tests
-  - py.test . -v --cov-report html --cov=thermo --cov-report term-missing -m "not meta_Chemical and not slow";
+  - py.test . -v --cov-report html --cov=thermo --cov-report term-missing -m "not meta_Chemical and not slow and not rdkit";
 after_success:
   - coveralls

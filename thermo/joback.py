@@ -26,6 +26,7 @@ __all__ = ['smarts_fragment', 'Joback', 'J_BIGGS_JOBACK_SMARTS',
            'J_BIGGS_JOBACK_SMARTS_id_dict']
 
 from collections import namedtuple, Counter
+from pprint import pprint
 from thermo.utils import to_num, horner, exp
 try:
     from rdkit import Chem
@@ -232,7 +233,7 @@ def smarts_fragment(catalog, rdkitmol=None, smi=None):
     >>> smarts_fragment(catalog=J_BIGGS_JOBACK_SMARTS_id_dict, smi='CCC(=O)OC(=O)CC')
     ({1: 2, 2: 2, 28: 2}, False, 'Matched some atoms repeatedly: [4]')
     '''
-    if not hasRDKit:
+    if not hasRDKit: # pragma: no cover
         raise Exception(rdkit_missing)
     if rdkitmol is None and smi is None:
         raise Exception('Either an rdkit mol or a smiles string is required')
@@ -287,8 +288,12 @@ class Joback(object):
     used with either its own automatic fragmentation routine, or user specified
     groups. It is applicable to organic compounds only, and has only 41 groups
     with no interactions between them. Each method's documentation describes  
-    its accuracy.
-                
+    its accuracy. The automatic fragmentation routine is possible only because
+    of the development of SMARTS expressions to match the Joback groups by 
+    Dr. Jason Biggs. The list of SMARTS expressions
+    was posted publically on the 
+    `RDKit mailing list <https://www.mail-archive.com/rdkit-discuss@lists.sourceforge.net/msg07446.html>`_. 
+                    
     Parameters
     ----------
     mol : rdkitmol or smiles str
@@ -323,6 +328,27 @@ class Joback(object):
     84.69109750000001
     >>> J.status
     'OK'
+    
+    All properties can be obtained in one go with the `estimate` method:
+        
+    >>> pprint(J.estimate()) # doctest: +ELLIPSIS
+    {'Cpig': <bound method Joback.Cpig of <thermo.joback.Joback object at 0x...>>,
+     'Cpig_coeffs': [7.520000000000003,
+                     0.26084,
+                     -0.0001207,
+                     1.545999999999998e-08],
+     'Gf': -154540.00000000003,
+     'Hf': -217829.99999999997,
+     'Hfus': 5125.0,
+     'Hvap': 29018.0,
+     'Pc': 4802499.604994407,
+     'Tb': 322.11,
+     'Tc': 500.5590049525365,
+     'Tm': 173.5,
+     'Vc': 0.0002095,
+     'mul': <bound method Joback.mul of <thermo.joback.Joback object at 0x...>>,
+     'mul_coeffs': [839.1099999999998, -14.99]}
+
 
     The results for propionic anhydride (if the status is not OK) should not be
     used.
