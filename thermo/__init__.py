@@ -156,4 +156,4 @@ chemical.__dict__['Stream'] = stream.Stream
 # However, they cannot go in thermo.chemical's __all__ or they will appear in the
 # documentation and Sphinx currently has no wat to exclude them
 
-__version__ = '0.1.38'
+__version__ = '0.1.39'

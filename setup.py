@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2016, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2016, 2017 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -52,7 +52,7 @@ setup(
   name = 'thermo',
   packages = ['thermo'],
   license='MIT',
-  version = '0.1.38',
+  version = '0.1.39',
   description = 'Chemical properties component of Chemical Engineering Design Library (ChEDL)',
   author = 'Caleb Bell',
   install_requires=['fluids>=0.1.68', 'scipy', 'pandas'],
@@ -63,7 +63,7 @@ setup(
   platforms=["Windows", "Linux", "Mac OS", "Unix"],
   author_email = 'Caleb.Andrew.Bell@gmail.com',
   url = 'https://github.com/CalebBell/thermo',
-  download_url = 'https://github.com/CalebBell/thermo/tarball/0.1.37',
+  download_url = 'https://github.com/CalebBell/thermo/tarball/0.1.39',
   keywords = ['chemical engineering', 'chemistry', 'mechanical engineering', 
   'thermodynamics', 'databases', 'cheminformatics', 'engineering','viscosity',
   'density', 'heat capacity', 'thermal conductivity', 'surface tension', 
