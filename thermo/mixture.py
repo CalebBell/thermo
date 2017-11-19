@@ -24,12 +24,18 @@ from __future__ import division
 
 __all__ = ['Mixture']
 
+import numpy as np
+from scipy.optimize import newton
+from collections import Counter, OrderedDict
+from pprint import pprint
+
+from fluids.core import *
+
 from thermo.chemical import Chemical
 from thermo.identifiers import *
 from thermo.identifiers import _MixtureDict
 from thermo.phase_change import Tliquidus
 from thermo.activity import identify_phase_mixture, Pbubble_mixture, Pdew_mixture
-
 from thermo.critical import Tc_mixture, Pc_mixture, Vc_mixture
 from thermo.acentric import omega_mixture
 from thermo.thermal_conductivity import ThermalConductivityLiquidMixture, ThermalConductivityGasMixture
@@ -45,11 +51,6 @@ from thermo.elements import atom_fractions, mass_fractions, simple_formula_parse
 from thermo.eos import *
 from thermo.eos_mix import *
 
-
-from fluids.core import *
-from scipy.optimize import newton
-import numpy as np
-
 # RDKIT
 try:
     from rdkit import Chem
@@ -60,8 +61,6 @@ except:
     pass
 
 
-from collections import Counter
-from pprint import pprint
 
 
 class Mixture(object): 
@@ -356,7 +355,7 @@ class Mixture(object):
         return '<Mixture, components=%s, mole fractions=%s, T=%.2f K, P=%.0f \
 Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
 
-    def __init__(self, IDs, zs=None, ws=None, Vfls=None, Vfgs=None,
+    def __init__(self, IDs=None, zs=None, ws=None, Vfls=None, Vfgs=None,
                  T=298.15, P=101325, Vf_TP=(None, None)):
         self.P = P
         self.T = T
@@ -380,19 +379,51 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
 
         # Handle numpy array inputs; also turn mutable inputs into copies
         if zs is not None:
-            zs = list(zs)
+            t = type(zs)
+            if t == list:
+                zs = list(zs)
+            elif t == np.ndarray:
+                zs = zs.tolist()
+            elif isinstance(zs, (OrderedDict, dict)):
+                zs = list(zs.values())
+                IDs = list(zs.keys())
             length_matching = len(zs) == len(IDs)
         elif ws is not None:
-            ws = list(ws)
+            t = type(ws)
+            if t == list:
+                ws = list(ws)
+            elif t == np.ndarray:
+                ws = ws.tolist()
+            elif isinstance(ws, (OrderedDict, dict)):
+                ws = list(ws.values())
+                IDs = list(ws.keys())
             length_matching = len(ws) == len(IDs)
         elif Vfls is not None:
-            Vfls = list(Vfls)
+            t = type(Vfls)
+            if t == list:
+                Vfls = list(Vfls)
+            elif t == np.ndarray:
+                Vfls = Vfls.tolist()
+            elif isinstance(Vfls, (OrderedDict, dict)):
+                Vfls = list(Vfls.values())
+                IDs = list(Vfls.keys())
             length_matching = len(Vfls) == len(IDs)
         elif Vfgs is not None:
-            Vfgs = list(Vfgs)
+            t = type(Vfgs)
+            if t == list:
+                Vfgs = list(Vfgs)
+            elif t == np.ndarray:
+                Vfgs = Vfgs.tolist()
+            elif isinstance(Vfgs, (OrderedDict, dict)):
+                Vfgs = list(Vfgs.values())
+                IDs = list(Vfgs.keys())
             length_matching = len(Vfgs) == len(IDs)
         else:
             raise Exception("One of 'zs', 'ws', 'Vfls', or 'Vfgs' is required to define the mixture")
+        if ((zs is not None) + (ws is not None) + (Vfgs is not None) + (Vfls is not None)) > 1:
+            raise Exception('Multiple different composition arguments were '
+                            "specified; specify only one of the arguments "
+                            "'zs', 'ws', 'Vfls', or 'Vfgs'.")
         if not length_matching:
             raise Exception('Composition is not the same length as the component identifiers')
 
