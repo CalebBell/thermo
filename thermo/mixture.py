@@ -111,6 +111,10 @@ class Mixture(object):
     MW : float
         Mole-weighted average molecular weight all chemicals in the mixture, 
         [g/mol]
+    names : list of str
+        Names of all the species in the mixture, [-]
+    CASs : list of str
+        CAS numbers of all species in the mixture, [-]
     MWs : list of float
         Molecular weights of all chemicals in the mixture, [g/mol]
     Tms : list of float
