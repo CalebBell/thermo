@@ -80,7 +80,7 @@ def test_Stream_inputs():
 
 def test_add_streams():
     # simple example, same components
-    ans = {'zs': [0.6, 0.4], 'ws': [0.7932081497794828, 0.20679185022051716], 'm': 0.34847176, 'n': 10}
+    ans = {'zs': [0.4, 0.6], 'ws': [0.20679185022051716, 0.7932081497794828], 'm': 0.34847176, 'n': 10}
     prod = Stream(['water', 'ethanol'], ns=[1, 2], T=300, P=1E5) + Stream(['water', 'ethanol'], ns=[3, 4], T=300, P=1E5)
     assert_allclose(prod.zs, ans['zs'])
     assert_allclose(prod.ws, ans['ws'])

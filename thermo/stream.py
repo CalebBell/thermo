@@ -283,7 +283,10 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.n, self.T, self.P)
             raise Exception('Adding to a stream requires that the other object '
                             'also be a stream.')
         
-        cmps = sorted(list(set((self.CASs + other.CASs))))
+        if (set(self.CASs) == set(other.CASs)) and (len(self.CASs) == len(other.CASs)):
+            cmps = self.CASs
+        else:
+            cmps = sorted(list(set((self.CASs + other.CASs))))
         mole = self.n + other.n
         moles = []
         for cmp in cmps:

@@ -59,6 +59,9 @@ def test_CSP():
 
     sigma_calc = Miqueu(300., 340.1, 0.000199, 0.1687)
     assert_allclose(sigma_calc, 0.003474099603581931)
+    
+    sigma_calc = Mersmann_Kind_surface_tension(298.15, 164.15, 328.25, 497.1, 3430000.0)
+    assert_allclose(0.016744309508833335, sigma_calc)
 
     
 def test_Aleem():
