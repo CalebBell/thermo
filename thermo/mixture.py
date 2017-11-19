@@ -170,6 +170,8 @@ class Mixture(object):
         Whether or not each of the chemicals can be absorbed through the skin.
     Carcinogens : list of str or dict
         Carcinogen status information for each chemical in the mixture.
+    Chemicals : list of Chemical instances
+        Chemical instances used in calculating mixture properties, [-]
     dipoles : list of float
         Dipole moments of all chemicals in the mixture in debye, 
         [3.33564095198e-30 ampere*second^2]
