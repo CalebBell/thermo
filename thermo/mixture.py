@@ -30,6 +30,7 @@ from collections import Counter, OrderedDict
 from pprint import pprint
 
 from fluids.core import *
+from fluids.core import Reynolds, Capillary, Weber, Bond, Grashof, Peclet_heat
 
 from thermo.chemical import Chemical
 from thermo.identifiers import *
@@ -46,7 +47,6 @@ from thermo.interface import SurfaceTensionMixture
 from thermo.viscosity import ViscosityLiquidMixture, ViscosityGasMixture
 from thermo.safety import LFL_mixture, UFL_mixture
 from thermo.utils import *
-from fluids.core import Reynolds, Capillary, Weber, Bond, Grashof, Peclet_heat
 from thermo.elements import atom_fractions, mass_fractions, simple_formula_parser, molecular_weight
 from thermo.eos import *
 from thermo.eos_mix import *
@@ -56,8 +56,7 @@ try:
     from rdkit import Chem
     from rdkit.Chem import Descriptors
     from rdkit.Chem import AllChem
-except:
-    # pragma: no cover
+except: # pragma: no cover
     pass
 
 

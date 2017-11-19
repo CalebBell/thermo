@@ -24,6 +24,7 @@ from __future__ import division
 
 __all__ = ['Stream']
  
+from collections import OrderedDict
 from thermo.utils import property_molar_to_mass, property_mass_to_molar
 from thermo.mixture import Mixture
 
@@ -63,27 +64,27 @@ class Stream(Mixture):
     
     Parameters
     ----------
-    IDs : list
+    IDs : list, optional
         List of chemical identifiers - names, CAS numbers, SMILES or InChi 
         strings can all be recognized and may be mixed [-]
-    zs : list, optional
+    zs : list or dict, optional
         Mole fractions of all components in the stream [-]
-    ws : list, optional
+    ws : list or dict, optional
         Mass fractions of all components in the stream [-]
-    Vfls : list, optional
+    Vfls : list or dict, optional
         Volume fractions of all components as a hypothetical liquid phase based 
         on pure component densities [-]
-    Vfgs : list, optional
+    Vfgs : list or dict, optional
         Volume fractions of all components as a hypothetical gas phase based 
         on pure component densities [-]
-    ns : list, optional
+    ns : list or dict, optional
         Mole flow rates of each component [mol/s]
-    ms : list, optional
+    ms : list or dict, optional
         Mass flow rates of each component [kg/s]
-    Qls : list, optional
+    Qls : list or dict, optional
         Liquid flow rates of all components as a hypothetical liquid phase  
         based on pure component densities [m^3/s]
-    Qgs : list, optional
+    Qgs : list or dict, optional
         Gas flow rates of all components as a hypothetical gas phase  
         based on pure component densities [m^3/s]
     n : float, optional
@@ -150,18 +151,33 @@ class Stream(Mixture):
     >>> Stream(['Methanol', 'Sulphuric acid', 'sodium chlorate', 'Water', 'Chlorine dioxide', 'Sodium chloride', 'Carbon dioxide', 'Formic Acid', 'sodium sulfate', 'Chlorine'], T=365.2, P=70900, ns=[0.3361749, 11.5068909, 16.8895876, 7135.9902928, 1.8538332, 0.0480655, 0.0000000, 2.9135162, 205.7106922, 0.0012694])
     <Stream, components=['methanol', 'sulfuric acid', 'sodium chlorate', 'water', 'chlorine dioxide', 'sodium chloride', 'carbon dioxide', 'formic acid', 'sodium sulfate', 'chlorine'], mole fractions=[0.0, 0.0016, 0.0023, 0.9676, 0.0003, 0.0, 0.0, 0.0004, 0.0279, 0.0], mole flow=7375.2503227 mol/s, T=365.20 K, P=70900 Pa>
 
+    For streams with large numbers of components, it may be confusing to enter
+    the composition separate from the names of the chemicals. For that case,
+    the syntax using dictionaries as follows is supported with any composition
+    specification:
     
+    >>> comp = OrderedDict([('methane', 0.96522),
+    ...                     ('nitrogen', 0.00259),
+    ...                     ('carbon dioxide', 0.00596),
+    ...                     ('ethane', 0.01819),
+    ...                     ('propane', 0.0046),
+    ...                     ('isobutane', 0.00098),
+    ...                     ('butane', 0.00101),
+    ...                     ('2-methylbutane', 0.00047),
+    ...                     ('pentane', 0.00032),
+    ...                     ('hexane', 0.00066)])
+    >>> m = Stream(ws=comp, m=33)
     '''
     def __repr__(self): # pragma: no cover
         return '<Stream, components=%s, mole fractions=%s, mole flow=%s mol/s, T=%.2f K, P=%.0f \
 Pa>' % (self.names, [round(i,4) for i in self.zs], self.n, self.T, self.P)
     
-    def __init__(self, IDs, zs=None, ws=None, Vfls=None, Vfgs=None,
+    def __init__(self, IDs=None, zs=None, ws=None, Vfls=None, Vfgs=None,
                  ns=None, ms=None, Qls=None, Qgs=None, 
                  n=None, m=None, Q=None, T=298.15, P=101325, V_TP=(None, None)):
         composition_options = (zs, ws, Vfls, Vfgs, ns, ms, Qls, Qgs)
         composition_option_count = sum(i is not None for i in composition_options)
-        if hasattr(IDs, 'strip') or len(IDs) == 1:
+        if hasattr(IDs, 'strip') or (type(IDs) == list and len(IDs) == 1):
             pass # one component only - do not raise an exception
         elif composition_option_count < 1:
             raise Exception("No composition information is provided; one of "
@@ -207,16 +223,24 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.n, self.T, self.P)
             except:
                 raise Exception('Molar volume could not be calculated to determine the flow rate of the stream.')
         elif ns is not None:
+            if isinstance(ns, (OrderedDict, dict)):
+                ns = ns.values()
             self.n = sum(ns)
         elif ms is not None:
+            if isinstance(ms, (OrderedDict, dict)):
+                ms = ms.values()
             self.n = property_molar_to_mass(sum(ms), self.MW)
         elif Qls is not None:
             try:
+                if isinstance(Qls, (OrderedDict, dict)):
+                    Qls = Qls.values()
                 self.n = sum([Q/Vml for Q, Vml in zip(Qls, self.Vmls)])
             except:
                 raise Exception('Liquid molar volume could not be calculated to determine the flow rate of the stream.')
         elif Qgs is not None:
             try:
+                if isinstance(Qgs, (OrderedDict, dict)):
+                    Qgs = Qgs.values()
                 self.n = sum([Q/Vmg for Q, Vmg in zip(Qgs, self.Vmgs)])
             except:
                 raise Exception('Gas molar volume could not be calculated to determine the flow rate of the stream.')

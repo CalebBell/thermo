@@ -21,6 +21,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from numpy.testing import assert_allclose
+from collections import OrderedDict
 import pytest
 from thermo.chemical import Chemical
 from thermo.mixture import Mixture
@@ -64,6 +65,46 @@ def test_Stream_inputs():
         assert_allclose(m.ms, flow_inputs['ms'])
         assert_allclose(m.Qls, flow_inputs['Qls'])
         assert_allclose(m.Qgs, flow_inputs['Qgs'])
+
+    # Test ordereddict input
+    IDs = ['water', 'ethanol']
+    
+    for key1, val1 in compositions.items():
+        d = OrderedDict()
+        for i, j in zip(IDs, val1):
+            d.update({i: j})
+        
+        for key2, val2 in inputs.items():
+            m = Stream(T=300, P=1E5, **{key1:d, key2:val2})
+            # Check the composition
+            assert_allclose(m.zs, compositions['zs'], rtol=1E-6)
+            assert_allclose(m.zs, m.xs)
+            assert_allclose(m.Vfls(), compositions['Vfls'], rtol=1E-5)
+            assert_allclose(m.Vfgs(), compositions['Vfgs'], rtol=1E-5)
+            
+            assert_allclose(m.n, inputs['n'])
+            assert_allclose(m.m, inputs['m'])
+            assert_allclose(m.Q, inputs['Q'])
+            assert_allclose(m.ns, flow_inputs['ns'])
+            assert_allclose(m.ms, flow_inputs['ms'])
+            assert_allclose(m.Qls, flow_inputs['Qls'])
+            assert_allclose(m.Qgs, flow_inputs['Qgs'])
+
+    # Test ordereddict input with flow rates being given as dicts
+    for key, val in flow_inputs.items():
+        d = OrderedDict()
+        for i, j in zip(IDs, val):
+            d.update({i: j})
+        
+        m = Stream(T=300, P=1E5, **{key:d})
+        assert_allclose(m.n, inputs['n'])
+        assert_allclose(m.m, inputs['m'])
+        assert_allclose(m.Q, inputs['Q'])
+        assert_allclose(m.ns, flow_inputs['ns'])
+        assert_allclose(m.ms, flow_inputs['ms'])
+        assert_allclose(m.Qls, flow_inputs['Qls'])
+        assert_allclose(m.Qgs, flow_inputs['Qgs'])
+
 
     with pytest.raises(Exception):
         # two compositions specified
