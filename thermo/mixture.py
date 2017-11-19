@@ -83,17 +83,17 @@ class Mixture(object):
 
     Parameters
     ----------
-    IDs : list
+    IDs : list, optional
         List of chemical identifiers - names, CAS numbers, SMILES or InChi 
         strings can all be recognized and may be mixed [-]
-    zs : list, optional
+    zs : list or dict, optional
         Mole fractions of all components in the mixture [-]
-    ws : list, optional
+    ws : list or dict, optional
         Mass fractions of all components in the mixture [-]
-    Vfls : list, optional
+    Vfls : list or dict, optional
         Volume fractions of all components as a hypothetical liquid phase based 
         on pure component densities [-]
-    Vfgs : list, optional
+    Vfgs : list, or dict optional
         Volume fractions of all components as a hypothetical gas phase based 
         on pure component densities [-]
     T : float, optional
@@ -336,6 +336,23 @@ class Mixture(object):
         
     >>> Mixture(['water', 'ethanol'], Vfls=[.6, .4], T=300, P=1E5)
     <Mixture, components=['water', 'ethanol'], mole fractions=[0.8299, 0.1701], T=300.00 K, P=100000 Pa>
+    
+    For mixtures with large numbers of components, it may be confusing to enter
+    the composition separate from the names of the chemicals. For that case,
+    the syntax using dictionaries as follows is supported with any composition
+    specification:
+        
+    >>> comp = OrderedDict([('methane', 0.96522),
+    ...                     ('nitrogen', 0.00259),
+    ...                     ('carbon dioxide', 0.00596),
+    ...                     ('ethane', 0.01819),
+    ...                     ('propane', 0.0046),
+    ...                     ('isobutane', 0.00098),
+    ...                     ('butane', 0.00101),
+    ...                     ('2-methylbutane', 0.00047),
+    ...                     ('pentane', 0.00032),
+    ...                     ('hexane', 0.00066)])
+    >>> m = Mixture(zs=comp)
     '''
     eos_in_a_box = []
     ks = None
@@ -371,6 +388,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
             except:
                 if hasattr(IDs, 'strip'):
                     IDs = [IDs]
+                    
                     zs = [1]
                 elif isinstance(IDs, list) and len(IDs) == 1:
                     pass
@@ -385,8 +403,8 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
             elif t == np.ndarray:
                 zs = zs.tolist()
             elif isinstance(zs, (OrderedDict, dict)):
-                zs = list(zs.values())
                 IDs = list(zs.keys())
+                zs = list(zs.values())
             length_matching = len(zs) == len(IDs)
         elif ws is not None:
             t = type(ws)
@@ -395,8 +413,8 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
             elif t == np.ndarray:
                 ws = ws.tolist()
             elif isinstance(ws, (OrderedDict, dict)):
-                ws = list(ws.values())
                 IDs = list(ws.keys())
+                ws = list(ws.values())
             length_matching = len(ws) == len(IDs)
         elif Vfls is not None:
             t = type(Vfls)
@@ -405,8 +423,8 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
             elif t == np.ndarray:
                 Vfls = Vfls.tolist()
             elif isinstance(Vfls, (OrderedDict, dict)):
-                Vfls = list(Vfls.values())
                 IDs = list(Vfls.keys())
+                Vfls = list(Vfls.values())
             length_matching = len(Vfls) == len(IDs)
         elif Vfgs is not None:
             t = type(Vfgs)
@@ -415,12 +433,14 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
             elif t == np.ndarray:
                 Vfgs = Vfgs.tolist()
             elif isinstance(Vfgs, (OrderedDict, dict)):
-                Vfgs = list(Vfgs.values())
                 IDs = list(Vfgs.keys())
+                Vfgs = list(Vfgs.values())
             length_matching = len(Vfgs) == len(IDs)
         else:
             raise Exception("One of 'zs', 'ws', 'Vfls', or 'Vfgs' is required to define the mixture")
-        if ((zs is not None) + (ws is not None) + (Vfgs is not None) + (Vfls is not None)) > 1:
+        # Do not to a test on multiple composition inputs in case the user specified
+        # a composition, plus one was set (it will be zero anyway)
+        if len(IDs) > 1 and ((zs is not None) + (ws is not None) + (Vfgs is not None) + (Vfls is not None)) > 1:
             raise Exception('Multiple different composition arguments were '
                             "specified; specify only one of the arguments "
                             "'zs', 'ws', 'Vfls', or 'Vfgs'.")

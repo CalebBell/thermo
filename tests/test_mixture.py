@@ -21,7 +21,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from numpy.testing import assert_allclose
+import numpy as np
 import pytest
+from collections import OrderedDict
 from thermo.chemical import *
 from thermo.mixture import Mixture
 import thermo
@@ -62,11 +64,46 @@ def test_Mixture_input_forms():
         assert_allclose(m.zs, m.xs)
         assert_allclose(m.Vfls(), kwargs['Vfls'], rtol=1E-5)
         assert_allclose(m.Vfgs(), kwargs['Vfgs'])
+        
+    # Ordered dict inputs
+    IDs = ['pentane', 'hexane', 'heptane']
+    kwargs = {'ws': [0.4401066297270966, 0.31540115235588945, 0.24449221791701395], 
+              'zs': [.5, .3, .2],
+              'Vfls': [0.45725229530669054, 0.3106973688150756, 0.2320503358782339],
+              'Vfgs': [0.5127892380094016, 0.2979448661739439, 0.18926589581665448]}
+    for key, val in kwargs.items():
+        d = OrderedDict()
+        for i, j in zip(IDs, val):
+            d.update({i: j})
+        
+        m = Mixture(**{key:d})
+        assert_allclose(m.zs, kwargs['zs'], rtol=1E-6)
+        assert_allclose(m.zs, m.xs)
+        assert_allclose(m.Vfls(), kwargs['Vfls'], rtol=1E-5)
+        assert_allclose(m.Vfgs(), kwargs['Vfgs'])
+        
+    # numpy array inputs
+    IDs = ['pentane', 'hexane', 'heptane']
+    kwargs = {'ws': np.array([0.4401066297270966, 0.31540115235588945, 0.24449221791701395]), 
+              'zs': np.array([.5, .3, .2]),
+              'Vfls': np.array([0.45725229530669054, 0.3106973688150756, 0.2320503358782339]),
+              'Vfgs': np.array([0.5127892380094016, 0.2979448661739439, 0.18926589581665448])}
+    
+    for key, val in kwargs.items():
+        
+        m = Mixture(IDs, **{key:val})
+        assert_allclose(m.zs, kwargs['zs'], rtol=1E-6)
+        assert_allclose(m.zs, m.xs)
+        assert_allclose(m.Vfls(), kwargs['Vfls'], rtol=1E-5)
+        assert_allclose(m.Vfgs(), kwargs['Vfgs'])
+
 
     with pytest.raises(Exception):
         Mixture(['water', 'ethanol'])
         
     Mixture(['water'], ws=[1], T=300, P=1E5)
+    
+    Mixture('water', ws=[1], T=365).SGl
             
 def test_Mixture_input_vfs_TP():
     # test against the default arguments of T and P
