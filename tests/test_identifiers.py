@@ -23,9 +23,11 @@ SOFTWARE.'''
 from numpy.testing import assert_allclose
 import pytest
 from thermo.identifiers import *
-from thermo.utils import CAS2int
+from thermo.utils import CAS2int, int2CAS
 from thermo.elements import periodic_table, serialize_formula
 import os
+from thermo.identifiers import ChemicalMetadataDB, folder
+from thermo.elements import nested_formula_parser, serialize_formula, molecular_weight
 
 # Force the whole db to load
 try:
@@ -49,38 +51,81 @@ def test_database_formulas():
     assert all([i.formula == serialize_formula(i.formula) for i in pubchem_db.CAS_index.values()])
 
 
+def test_organic_user_db():
+    db = ChemicalMetadataDB(elements=False,
+                            main_db=os.path.join(folder, 'chemical identifiers example user db.tsv'),
+                            user_dbs=[])
+    for CAS, d in  db.CAS_index.items():
+        assert CAS_from_any(d.CASs) == d.CASs
+    # Check something was loaded
+    assert len(db.CAS_index) > 100
+
+    # Check smiles are unique / can lookup by smiles
+    for smi, d in db.smiles_index.items():
+        if not smi:
+            continue
+        assert CAS_from_any('smiles=' + smi) == d.CASs
+
+    # Check formula is formatted right
+    assert all([i.formula == serialize_formula(i.formula) for i in db.CAS_index.values()])
+
+    # Check CAS validity
+    assert all([checkCAS(i.CASs) for i in db.CAS_index.values()])
+
+    # MW checker
+    for i in db.CAS_index.values():
+        formula = serialize_formula(i.formula)
+        atoms = nested_formula_parser(formula, check=False)
+        mw_calc = molecular_weight(atoms)
+        assert_allclose(mw_calc, i.MW, atol=0.05)
+
+
+    for CAS, d in db.CAS_index.items():
+        assert CAS_from_any('InChI=1S/' + d.InChI) == int2CAS(CAS)
+        
+    for CAS, d in db.CAS_index.items():
+        assert CAS_from_any('InChIKey=' + d.InChI_key) == int2CAS(CAS)
+
+    # Test the pubchem ids which aren't -1
+    for CAS, d in db.CAS_index.items():
+        if d.pubchemid != -1:
+            assert CAS_from_any('PubChem=' + str(d.pubchemid)) == int2CAS(CAS)
+
+
 def test_inorganic_db():
-    from thermo.identifiers import ChemicalMetadataDB, folder
-    from thermo.elements import nested_formula_parser, serialize_formula, molecular_weight
     db = ChemicalMetadataDB(elements=False,
                             main_db=os.path.join(folder, 'Inorganic db.tsv'),
                             user_dbs=[])
 
+    # Check CAS lookup
     for CAS, d in  db.CAS_index.items():
         assert CAS_from_any(d.CASs) == d.CASs
 
+    # Try ro check formula lookups
     for formula, d in  db.formula_index.items():
         if formula in set(['H2MgO2', 'F2N2']):
             # Formulas which are not unique by design
             continue
         assert CAS_from_any(formula) == d.CASs
     
+    # Check smiles are unique / can lookup by smiles
     for smi, d in db.smiles_index.items():
         if not smi:
             continue
         assert CAS_from_any('smiles=' + smi) == d.CASs
 
+    # Check formula is formatted right
     assert all([i.formula == serialize_formula(i.formula) for i in db.CAS_index.values()])
+
+    # Check CAS validity
     assert all([checkCAS(i.CASs) for i in db.CAS_index.values()])
 
+    # MW checker
     for i in db.CAS_index.values():
         formula = serialize_formula(i.formula)
         atoms = nested_formula_parser(formula, check=False)
         mw_calc = molecular_weight(atoms)
-        try:
-            assert_allclose(mw_calc, i.MW, atol=0.05)
-        except:
-            print(i)
+        assert_allclose(mw_calc, i.MW, atol=0.05)
     
 
 def test_mixture_from_any():
