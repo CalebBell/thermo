@@ -578,7 +578,7 @@ def test_HeatCapacityLiquidMixture():
     
     m = Mixture(['toluene', 'decane'], ws=[.9, .1], T=300)
     obj = HeatCapacityLiquidMixture(CASs=m.CASs, HeatCapacityLiquids=m.HeatCapacityLiquids)
-    assert_allclose(obj(m.T, m.P, m.zs, m.ws), 168.29157865567112)
+    assert_allclose(obj(m.T, m.P, m.zs, m.ws), 168.29157865567112, rtol=1E-4)
 
     # Unhappy paths
     with pytest.raises(Exception):

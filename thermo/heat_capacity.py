@@ -1861,9 +1861,9 @@ class HeatCapacityLiquid(TDependentProperty):
     ranked_methods = [ZABRANSKY_SPLINE, ZABRANSKY_QUASIPOLYNOMIAL,
                       ZABRANSKY_SPLINE_C, ZABRANSKY_QUASIPOLYNOMIAL_C,
                       ZABRANSKY_SPLINE_SAT, ZABRANSKY_QUASIPOLYNOMIAL_SAT,
-                      VDI_TABULAR, DADGOSTAR_SHAW, ROWLINSON_POLING, 
+                      VDI_TABULAR, COOLPROP, DADGOSTAR_SHAW, ROWLINSON_POLING, 
                       ROWLINSON_BONDI,
-                      COOLPROP, POLING_CONST, CRCSTD]
+                      POLING_CONST, CRCSTD]
     '''Default rankings of the available methods.'''
 
 

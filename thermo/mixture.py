@@ -1596,7 +1596,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['benzene', 'hexane'], ws=[0.5, 0.5], T=320).nuls
-        [5.357870271650772e-07, 3.8129130341250897e-07]
+        [5.357870271650772e-07, 3.8127962283230277e-07]
         '''
         return [i.nul for i in self.Chemicals]
 
@@ -1612,7 +1612,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['benzene', 'hexane'], ws=[0.5, 0.5], T=320).nugs
-        [2.579610757948387e-06, 1.9149095260590705e-06]
+        [5.357870271650772e-07, 3.8127962283230277e-07]
         '''
         return [i.nul for i in self.Chemicals]
 
@@ -1644,7 +1644,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['benzene', 'hexane'], ws=[0.5, 0.5], T=320).alphags
-        [3.3028044028118324e-06, 2.4413332489215457e-06]
+        [3.3028044028118324e-06, 2.4412958544059014e-06]
         '''
         return [i.alphag for i in self.Chemicals]
 
@@ -1659,7 +1659,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['benzene', 'hexane'], ws=[0.5, 0.5], T=320).Prls
-        [6.13542244155373, 5.034509376420631]
+        [6.13542244155373, 5.034355147908088]
         '''
         return [i.Prl for i in self.Chemicals]
 
@@ -1674,7 +1674,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['benzene', 'hexane'], ws=[0.5, 0.5], T=320).Prgs
-        [0.7810364900059606, 0.7843703955226016]
+        [0.7810364900059606, 0.784358381123896]
         '''
         return [i.Prg for i in self.Chemicals]
 
@@ -1728,7 +1728,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['hexane'], ws=[1], T=300, P=2E5).rhog
-        7.914205150685313
+        7.914447603999089
         '''
         Vmg = self.Vmg
         if Vmg:
@@ -1805,7 +1805,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['hexane'], ws=[1], T=300, P=1E5).Zg
-        0.9403859376888882
+        0.9403859376888885
         '''
         Vmg = self.Vmg
         if Vmg:
@@ -1824,7 +1824,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['silver', 'platinum'], ws=[0.95, 0.05]).Cpsm
-        25.32745719036059
+        25.32745796347474
         '''
         return self.HeatCapacitySolidMixture(self.T, self.P, self.zs, self.ws)
 
@@ -1840,7 +1840,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['toluene', 'decane'], ws=[.9, .1], T=300).Cplm
-        168.29157865567112
+        168.29127923518843
         '''
         return self.HeatCapacityLiquidMixture(self.T, self.P, self.zs, self.ws)
 
@@ -1873,7 +1873,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['silver', 'platinum'], ws=[0.95, 0.05]).Cps
-        229.55145722105294
+        229.55166388430328
         '''
         Cpsm = self.HeatCapacitySolidMixture(self.T, self.P, self.zs, self.ws)
         if Cpsm:
@@ -1982,7 +1982,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['hexane'], ws=[1], T=300, P=1E5).Bvirial
-        -0.0014869761738013018
+        -0.001486976173801296
         '''
         if self.Vmg:
             return B_from_Z(self.Zg, self.T, self.P)
@@ -2039,7 +2039,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['methane'], ws=[1], T=110).nul
-        2.85818467411866e-07
+        2.858088468937333e-07
         '''
         mul, rhol = self.mul, self.rhol
         if all([mul, rhol]):
@@ -2057,7 +2057,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['methane'], ws=[1], T=115).nug
-        2.5057767760931785e-06
+        2.5118460023343146e-06
         '''
         mug, rhog = self.mug, self.rhog
         if all([mug, rhog]):
@@ -2075,7 +2075,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['nitrogen'], ws=[1], T=70).alphal
-        9.504101801042264e-08
+        9.444949636299626e-08
         '''
         kl, rhol, Cpl = self.kl, self.rhol, self.Cpl
         if all([kl, rhol, Cpl]):
@@ -2093,7 +2093,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['ammonia'], ws=[1]).alphag
-        1.6931865425158556e-05
+        1.6968517002221566e-05
         '''
         kg, rhog, Cpg = self.kg, self.rhog, self.Cpg
         if all([kg, rhog, Cpg]):
@@ -2111,7 +2111,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['nitrogen'], ws=[1], T=70).Prl
-        2.7655015690791696
+        2.782821450148889
         '''
         Cpl, mul, kl = self.Cpl, self.mul, self.kl
         if all([Cpl, mul, kl]):
@@ -2331,7 +2331,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['decane'], ws=[1], T=550, P=2E6).rho
-        498.6549441720744
+        498.67008448640604
         '''
         return phase_select_property(phase=self.phase, s=self.rhos, l=self.rhol, g=self.rhog)
 
@@ -2357,7 +2357,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['MTBE'], ws=[1], T=900, P=1E-2).Z
-        0.9999999999056376
+        0.9999999999056374
         '''
         Vm = self.Vm
         if Vm:
@@ -2456,7 +2456,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['argon'], ws=[1]).nu
-        1.3846930410865003e-05
+        1.3842643382482236e-05
         '''
         return phase_select_property(phase=self.phase, l=self.nul, g=self.nug)
 
@@ -2472,7 +2472,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['furfural'], ws=[1]).alpha
-        7.672866198927953e-08
+        8.696537158635412e-08
         '''
         return phase_select_property(phase=self.phase, l=self.alphal, g=self.alphag)
 
@@ -2488,7 +2488,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['acetone'], ws=[1]).Pr
-        4.450368847076066
+        4.183039103542711
         '''
         return phase_select_property(phase=self.phase, l=self.Prl, g=self.Prg)
 
@@ -2514,7 +2514,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['nitrogen'], ws=[1]).Vmg_STP
-        0.023832508854853822
+        0.02445443688838904
         '''
         return self.VolumeGasMixture(T=298.15, P=101325, zs=self.zs, ws=self.ws)
 
@@ -2618,7 +2618,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['hexane', 'decane'], ws=[0.5, 0.5]).API
-        71.35326639656284
+        71.34707841728181
         '''
         Vml = self.VolumeLiquidMixture(T=288.70555555555552, P=101325, zs=self.zs, ws=self.ws)
         if Vml:

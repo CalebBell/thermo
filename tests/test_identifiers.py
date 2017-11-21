@@ -50,7 +50,6 @@ def test_database_formulas():
     # This worked until sisotopes were added to formulas
     assert all([i.formula == serialize_formula(i.formula) for i in pubchem_db.CAS_index.values()])
 
-
 def test_organic_user_db():
     db = ChemicalMetadataDB(elements=False,
                             main_db=os.path.join(folder, 'chemical identifiers example user db.tsv'),

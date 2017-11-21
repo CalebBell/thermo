@@ -80,7 +80,7 @@ def test_Mixture_input_forms():
         assert_allclose(m.zs, kwargs['zs'], rtol=1E-6)
         assert_allclose(m.zs, m.xs)
         assert_allclose(m.Vfls(), kwargs['Vfls'], rtol=1E-5)
-        assert_allclose(m.Vfgs(), kwargs['Vfgs'])
+        assert_allclose(m.Vfgs(), kwargs['Vfgs'], rtol=2E-5)
         
     # numpy array inputs
     IDs = ['pentane', 'hexane', 'heptane']
@@ -95,7 +95,7 @@ def test_Mixture_input_forms():
         assert_allclose(m.zs, kwargs['zs'], rtol=1E-6)
         assert_allclose(m.zs, m.xs)
         assert_allclose(m.Vfls(), kwargs['Vfls'], rtol=1E-5)
-        assert_allclose(m.Vfgs(), kwargs['Vfgs'])
+        assert_allclose(m.Vfgs(), kwargs['Vfgs'], rtol=2E-5)
 
 
     with pytest.raises(Exception):

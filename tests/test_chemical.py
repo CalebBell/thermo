@@ -40,21 +40,21 @@ def test_Chemical_properties():
     assert_allclose(w.Vc, 5.6e-05)
     assert_allclose(w.omega, 0.344)
     
-    assert_allclose(w.Zc, 0.2294728175007233)
-    assert_allclose(w.rhoc, 321.7014285714285)
-    assert_allclose(w.rhocm, 17857.142857142855)
+    assert_allclose(w.Zc, 0.2294728175007233, rtol=1E-5)
+    assert_allclose(w.rhoc, 321.7014285714285, rtol=1E-4)
+    assert_allclose(w.rhocm, 17857.142857142855, rtol=1E-4)
     
-    assert_allclose(w.StielPolar, 0.023222134391615246)
+    assert_allclose(w.StielPolar, 0.023222134391615246, rtol=1E-3)
     
     pentane = Chemical('pentane')
     assert_allclose(pentane.Tt, 143.47)
     assert_allclose(pentane.Pt, 0.07098902774226569)
 
-    assert_allclose(pentane.Hfus, 116426.08509804323)
-    assert_allclose(pentane.Hfusm, 8400.0)
+    assert_allclose(pentane.Hfus, 116426.08509804323, rtol=1E-3)
+    assert_allclose(pentane.Hfusm, 8400.0, rtol=1E-3)
     
     phenol = Chemical('phenol')
-    assert_allclose(phenol.Hsub, 740612.9172243401)
+    assert_allclose(phenol.Hsub, 740612.9172243401, rtol=1E-3)
     assert_allclose(phenol.Hsubm, 69700.0)
 
     # Hf test - always molar, TODO mass-based
@@ -67,7 +67,7 @@ def test_Chemical_properties():
     assert_allclose(phenol.LFL, 0.013000000000000001)
     assert_allclose(phenol.UFL, 0.095)
     
-    assert_allclose(phenol.R_specific, 88.34714960720952)
+    assert_allclose(phenol.R_specific, 88.34714960720952, rtol=1E-4)
 
     benzene = Chemical('benzene')
     assert benzene.STEL == (2.5, 'ppm')

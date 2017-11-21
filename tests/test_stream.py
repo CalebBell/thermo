@@ -140,15 +140,15 @@ def test_add_streams():
     S1 = Stream(['decane', 'octane'],  T=300, P=1E5, ns=[2, 1])
     S2 = Stream(['Dodecane', 'Tridecane'],  T=300, P=1E5, ns=[2, 1]) 
     prod = S1 + S2
-    assert_allclose(prod.ws, ans['ws'])
-    assert_allclose(prod.zs, ans['zs'])
-    assert_allclose(prod.m, ans['m'])
-    assert_allclose(prod.n, ans['n'])
+    assert_allclose(prod.ws, ans['ws'], rtol=2E-5)
+    assert_allclose(prod.zs, ans['zs'], rtol=2E-5)
+    assert_allclose(prod.m, ans['m'], rtol=1E-4)
+    assert_allclose(prod.n, ans['n'], rtol=2E-5)
     prod = S2 + S1
-    assert_allclose(prod.ws, ans['ws'])
-    assert_allclose(prod.zs, ans['zs'])
-    assert_allclose(prod.m, ans['m'])
-    assert_allclose(prod.n, ans['n'])
+    assert_allclose(prod.ws, ans['ws'], rtol=2E-5)
+    assert_allclose(prod.zs, ans['zs'], rtol=2E-5)
+    assert_allclose(prod.m, ans['m'], rtol=1E-4)
+    assert_allclose(prod.n, ans['n'], rtol=2E-5)
 
 
 def test_sub_streams():

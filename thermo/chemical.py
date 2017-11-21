@@ -151,18 +151,18 @@ class Chemical(object): # pragma: no cover
     >>> N2.phase
     'l'
     >>> N2.Cp, N2.rho, N2.mu # properties are now of the liquid phase
-    (1984.9709554303004, 861.3539919443364, 0.0002857739143670701)
+    (2002.8819854804037, 861.3539919443364, 0.0002857739143670701)
     
     Molar units are also available for properties:
         
     >>> N2.Cpm, N2.Vm, N2.Hvapm # heat capacity [J/mol/K], molar volume [m^3/mol], enthalpy of vaporization [J/mol]
-    (55.60578536285118, 3.252251717875631e-05, 5982.710998291719)
+    (56.10753421205674, 3.252251717875631e-05, 5982.710998291719)
     
     A great deal of properties are available; for a complete list look at the
     attributes list. 
     
     >>> N2.alpha, N2.JT # thermal diffusivity [m^2/s], Joule-Thompson coefficient [K/Pa]
-    (9.963988241081473e-08, -4.0370955160282056e-07)
+    (9.874883993253272e-08, -4.0009932695519242e-07)
     
     >>> N2.isentropic_exponent, N2.isobaric_expansion
     (1.4000000000000001, 0.0047654228408661571)
@@ -178,7 +178,7 @@ class Chemical(object): # pragma: no cover
     >>> tol = Chemical('toluene')
 
     >>> tol.rhog, tol.Cpg, tol.kg, tol.mug
-    (4.032009635018902, 1126.5533755283168, 0.010736843919054837, 6.973325939594919e-06)
+    (4.241646701894199, 1126.5533755283168, 0.00941385692301755, 6.973325939594919e-06)
 
     Temperature dependent properties are calculated by objects which provide 
     many useful features related to the properties. To determine the 
@@ -205,7 +205,7 @@ class Chemical(object): # pragma: no cover
     the conditions for the chemical.
     
     >>> [N2.VaporPressure(T) for T in range(80, 120, 10)]
-    [135987.2098445901, 357853.1185240415, 773372.8975626591, 1458809.6559246336]
+    [136979.4840843189, 360712.5746603142, 778846.276691705, 1466996.7208525643]
     
     These objects are also how the methods by which the properties are 
     calculated can be changed. To see the available methods for a property:
@@ -233,6 +233,7 @@ class Chemical(object): # pragma: no cover
     
     To disable this behavior, set thermo.chemical.caching to False.
     
+    >>> import thermo
     >>> thermo.chemical.caching = False
     >>> N2_3 = Chemical('nitrogen')
     >>> N2_3.VaporPressure.user_methods
@@ -240,10 +241,10 @@ class Chemical(object): # pragma: no cover
     
     Properties may also be plotted via these objects:
         
-    >>> N2.VaporPressure.plot_T_dependent_property()
-    >>> N2.VolumeLiquid.plot_isotherm(T=77, Pmin=1E5, Pmax=1E7)
-    >>> N2.VolumeLiquid.plot_isobar(P=1E6,  Tmin=66, Tmax=120)
-    >>> N2.VolumeLiquid.plot_TP_dependent_property(Tmin=60, Tmax=100,  Pmin=1E5, Pmax=1E7)
+    >>> N2.VaporPressure.plot_T_dependent_property() # doctest: +SKIP
+    >>> N2.VolumeLiquid.plot_isotherm(T=77, Pmin=1E5, Pmax=1E7) # doctest: +SKIP
+    >>> N2.VolumeLiquid.plot_isobar(P=1E6,  Tmin=66, Tmax=120) # doctest: +SKIP
+    >>> N2.VolumeLiquid.plot_TP_dependent_property(Tmin=60, Tmax=100,  Pmin=1E5, Pmax=1E7) # doctest: +SKIP
     
     Attributes
     ----------
@@ -616,7 +617,8 @@ class Chemical(object): # pragma: no cover
 
         Examples
         --------
-        >>> Chemical('decane').draw_2d()
+        >>> Chemical('decane').draw_2d() # doctest: +ELLIPSIS
+        <PIL.Image.Image image mode=RGBA size=300x300 at 0x...>
         '''
         try:
             from rdkit.Chem import Draw
@@ -633,7 +635,7 @@ class Chemical(object): # pragma: no cover
         r'''Interface for drawing an interactive 3D view of the molecule.
         Requires an HTML5 browser, and the libraries RDKit, pymol3D, and
         IPython. An exception is raised if all three of these libraries are
-        absent.
+        not installed.
 
         Parameters
         ----------
@@ -649,6 +651,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('cubane').draw_3d()
+        <IPython.core.display.HTML object>
         '''
         try:
             import py3Dmol
@@ -820,7 +823,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('methane').eos.V_g
-        0.024410195021818258
+        0.02441019502181826
         '''
         return self.eos_in_a_box[0]
 
@@ -2237,7 +2240,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('dodecane', T=400).JTl
-        -3.1037120844444807e-07
+        -3.0827160465192742e-07
         '''
         Vml, Cplm, isobaric_expansion_l = self.Vml, self.Cplm, self.isobaric_expansion_l
         if all((Vml, Cplm, isobaric_expansion_l)):
@@ -2285,7 +2288,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('methane', T=110).nul
-        2.858184674118658e-07
+        2.858088468937331e-07
         '''
         mul, rhol = self.mul, self.rhol
         if all([mul, rhol]):
@@ -2308,7 +2311,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('methane', T=115).nug
-        2.5119305527611988e-06
+        2.5056924327995865e-06
         '''
         mug, rhog = self.mug, self.rhog
         if all([mug, rhog]):
@@ -2332,7 +2335,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('nitrogen', T=70).alphal
-        9.504101801042264e-08
+        9.444949636299626e-08
         '''
         kl, rhol, Cpl = self.kl, self.rhol, self.Cpl
         if all([kl, rhol, Cpl]):
@@ -2380,7 +2383,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('nitrogen', T=70).Prl
-        2.7655015690791696
+        2.7828214501488886
         '''
         Cpl, mul, kl = self.Cpl, self.mul, self.kl
         if all([Cpl, mul, kl]):
@@ -2531,7 +2534,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('decane', T=550, P=2E6).rho
-        498.6549441720744
+        498.67008448640604
         '''
         return phase_select_property(phase=self.phase, s=self.rhos, l=self.rhol, g=self.rhog)
 
@@ -2698,7 +2701,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('furfural').alpha
-        7.672866198927953e-08
+        8.696537158635412e-08
         '''
         return phase_select_property(phase=self.phase, l=self.alphal, g=self.alphag)
 
@@ -2713,7 +2716,7 @@ class Chemical(object): # pragma: no cover
         Examples
         --------
         >>> Chemical('acetone').Pr
-        4.450368847076066
+        4.183039103542709
         '''
         return phase_select_property(phase=self.phase, l=self.Prl, g=self.Prg)
 
