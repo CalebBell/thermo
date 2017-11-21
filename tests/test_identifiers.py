@@ -90,6 +90,11 @@ def test_organic_user_db():
         if d.pubchemid != -1:
             assert CAS_from_any('PubChem=' + str(d.pubchemid)) == int2CAS(CAS)
 
+    CAS_lenth = len(db.CAS_index)
+    assert CAS_lenth == len(db.smiles_index)
+    assert CAS_lenth == len(db.InChI_index)
+    assert CAS_lenth == len(db.InChI_key_index)
+
 
 def test_inorganic_db():
     db = ChemicalMetadataDB(elements=False,

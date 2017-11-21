@@ -3325,7 +3325,7 @@ class MixtureProperty(object):
 
     def calculate_derivative_T(self, T, P, zs, ws, method, order=1):
         r'''Method to calculate a derivative of a mixture property with respect 
-        to  temperature at constant pressure and composition
+        to temperature at constant pressure and composition
         of a given order using a specified  method. Uses SciPy's derivative 
         function, with a delta of 1E-6 K and a number of points equal to 
         2*order + 1.

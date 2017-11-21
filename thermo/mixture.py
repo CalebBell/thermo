@@ -2344,9 +2344,9 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         Examples
         --------
         >>> Mixture(['1-hexanol'], ws=[1]).rhom
-        7853.086232143972
+        7983.414573003429
         '''
-        return phase_select_property(phase=self.phase, s=self.rhosm, l=self.rholm, g=self.rhogm)
+        return phase_select_property(phase=self.phase, s=None, l=self.rholm, g=self.rhogm)
 
     @property
     def Z(self):
