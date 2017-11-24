@@ -738,3 +738,20 @@ def test_IdealPPThermodynamic_PH():
             pkg._post_flash()
             T_calc = pkg.flash_PH_zs_bounded(P=P, Hm=pkg.Hm, zs=m.zs)
             assert_allclose(T_calc, T, rtol=1E-3)
+
+
+def test_IdealPPThermodynamic_PS():
+    m = Mixture(['pentane', 'hexane', 'octane'], zs=[.1, .4, .5], T=298.15)
+    pkg = IdealPPThermodynamic(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
+                  HeatCapacityLiquids=m.HeatCapacityLiquids, HeatCapacityGases=m.HeatCapacityGases,
+                  EnthalpyVaporizations=m.EnthalpyVaporizations)
+    Ts = np.linspace(300, 600, 10)
+    Ps = [1E3, 1E4, 1E5, 1E6]
+    
+    for P in Ps:
+        for T in Ts:
+            T = float(T)
+            pkg.flash(T=T, P=P, zs=m.zs)
+            pkg._post_flash()
+            T_calc = pkg.flash_PS_zs_bounded(P=P, Sm=pkg.Sm, zs=m.zs)
+            assert_allclose(T_calc, T, rtol=1E-3)
