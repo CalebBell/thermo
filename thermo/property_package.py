@@ -404,6 +404,29 @@ class IdealPPThermodynamic(Ideal_PP):
                        'HeatCapacityGases': HeatCapacityGases,
                        'EnthalpyVaporizations': EnthalpyVaporizations}
         
+    def flash_thermodynamic(self, zs, T=None, P=None, VF=None, Hm=None, Sm=None):
+        if any(i == 0 for i in zs):
+            zs = [i if i != 0 else 1E-11 for i in zs]
+            z_tot = sum(zs)
+            zs = [i/z_tot for i in zs]
+            
+        if T is not None and Sm is not None:
+            P = self.flash_TS_zs_bounded(T=T, Sm=Sm, zs=zs)
+        elif P is not None and Sm is not None:
+            T = flash_PS_zs_bounded(P=P, Sm=Sm, zs=zs)
+        elif P is not None and H is not None:
+            T = flash_PH_zs_bounded(P=P, Hm=Hm, zs=zs)
+        elif ((T is not None and P is not None) or
+            (T is not None and VF is not None) or
+            (P is not None and VF is not None)):
+            pass
+        else:
+            raise Exception('Flash inputs unsupported')
+
+        self.flash(zs=zs, T=T, P=P, VF=VF)
+        self._post_flash()
+            
+        
     def _post_flash(self):
         # Cannot derive other properties with this
         self.Hm = self.enthalpy_Cpg_Hvap()
