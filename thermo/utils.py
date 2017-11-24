@@ -1946,7 +1946,13 @@ class TDependentProperty(object):
         if 'EXTRAPOLATE_TABULAR' not in self.tabular_data:
             Ts = np.linspace(max(20, self.Tmin), self.Tmax, 200)
             properties = [self.T_dependent_property(T) for T in Ts]
-            self.tabular_data['EXTRAPOLATE_TABULAR'] = (Ts, properties)
+            Ts_cleaned = []
+            properties_cleaned = []
+            for T, p in zip(Ts, properties):
+                if p is not None:
+                    Ts_cleaned.append(T)
+                    properties_cleaned.append(p)
+            self.tabular_data['EXTRAPOLATE_TABULAR'] = (Ts_cleaned, properties_cleaned)
         return self.interpolate(T, 'EXTRAPOLATE_TABULAR')
 
 

@@ -303,7 +303,10 @@ class Ideal_PP(Property_Package):
         for i in self.VaporPressures:
             if T < i.Tmax:
                 i.method = None
-                Psats.append(i(T))
+                Psat = i(T)
+                if Psat is None:
+                    Psat = i.extrapolate_tabular(T)
+                Psats.append(Psat)
             else:
                 Psats.append(i.extrapolate_tabular(T))
         return Psats
@@ -455,12 +458,17 @@ class IdealPPThermodynamic(Ideal_PP):
             for i in self.cmps:
                 # No further contribution needed
                 Hg298_to_T = self.HeatCapacityGases[i].T_dependent_property_integral(self.T_REF_IG, T)
-                Hvap = -self.EnthalpyVaporizations[i](T) # Do the transition at the temperature of the liquid
-                H += self.zs[i]*(Hg298_to_T + Hvap)
+                Hvap = self.EnthalpyVaporizations[i](T) # Do the transition at the temperature of the liquid
+                if Hvap is None:
+                    Hvap = 0 # Handle the case of a package predicting a transition past the Tc
+                H += self.zs[i]*(Hg298_to_T - Hvap)
         elif self.phase == 'l/g':
             for i in self.cmps:
                 Hg298_to_T_zi = self.zs[i]*self.HeatCapacityGases[i].T_dependent_property_integral(self.T_REF_IG, T)
-                Hvap_contrib = -self.xs[i]*(1-self.V_over_F)*self.EnthalpyVaporizations[i](T)
+                Hvap = self.EnthalpyVaporizations[i](T) 
+                if Hvap is None:
+                    Hvap = 0 # Handle the case of a package predicting a transition past the Tc
+                Hvap_contrib = -self.xs[i]*(1-self.V_over_F)*Hvap
                 H += (Hg298_to_T_zi + Hvap_contrib)
         return H
 
@@ -581,7 +589,10 @@ class IdealPPThermodynamic(Ideal_PP):
             Psats = self._Psats(T)
             for i in self.cmps:
                 Sg298_to_T = self.HeatCapacityGases[i].T_dependent_property_integral_over_T(298.15, T)
-                Svap = -self.EnthalpyVaporizations[i](T)/T # Do the transition at the temperature of the liquid
+                Hvap = self.EnthalpyVaporizations[i](T)
+                if Hvap is None:
+                    Hvap = 0 # Handle the case of a package predicting a transition past the Tc
+                Svap = -Hvap/T # Do the transition at the temperature of the liquid
                 S_P = -R*log(Psats[i]/101325.)
                 S += self.zs[i]*(Sg298_to_T + Svap + S_P)
         elif self.phase == 'l/g':
@@ -589,13 +600,68 @@ class IdealPPThermodynamic(Ideal_PP):
             S_P_vapor = -R*log(P/101325.) # Gas-phase ideal pressure contribution (checked repeatedly)
             for i in self.cmps:
                 Sg298_to_T_zi = self.zs[i]*self.HeatCapacityGases[i].T_dependent_property_integral_over_T(298.15, T)
-                Svap_contrib = -self.xs[i]*(1-self.V_over_F)*self.EnthalpyVaporizations[i](T)/T
+                Hvap = self.EnthalpyVaporizations[i](T) 
+                if Hvap is None:
+                    Hvap = 0 # Handle the case of a package predicting a transition past the Tc
+
+                Svap_contrib = -self.xs[i]*(1-self.V_over_F)*Hvap/T
                 # Pressure contributions from both phases
                 S_P_vapor_i = self.V_over_F*self.ys[i]*S_P_vapor
                 S_P_liquid_i = -R*log(Psats[i]/101325.)*(1-self.V_over_F)*self.xs[i]
                 S += (Sg298_to_T_zi + Svap_contrib + S_P_vapor_i + S_P_liquid_i)
         return S
 
+    def flash_PH_zs_bounded(self, P, Hm, zs, T_low=None, T_high=None, 
+                            Hm_low=None, Hm_high=None):
+        # Begin the search at half the lowest chemical's melting point
+        if T_low is None:
+            T_low = min(self.Tms)/2 
+                
+        # Cap the T high search at 8x the highest critical point
+        # (will not work well for helium, etc.)
+        if T_high is None:
+            max_Tc = max(self.Tcs)
+            if max_Tc < 100:
+                T_high = 4000
+            else:
+                T_high = max_Tc*8
+    
+        temp_pkg_cache = []
+        def PH_error(T, P, zs, H_goal):
+            if not temp_pkg_cache:
+                temp_pkg = self.to(T=T, P=P, zs=zs)
+                temp_pkg_cache.append(temp_pkg)
+            else:
+                temp_pkg = temp_pkg_cache[0]
+                temp_pkg.flash(T=T, P=P, zs=zs)
+            temp_pkg._post_flash()
+            return temp_pkg.Hm - H_goal
+    
+        try:
+            T_goal = brenth(PH_error, T_low, T_high, args=(P, zs, Hm))
+            return T_goal
+
+        except ValueError:
+            if Hm_low is None:
+                pkg_low = self.to(T=T_low, P=P, zs=zs)
+                pkg_low._post_flash
+                Hm_low = pkg_low.Hm
+            if Hm < Hm_low:
+                raise ValueError('The requested molar enthalpy cannot be found'
+                                 ' with this bounded solver because the lower '
+                                 'temperature bound %g has an enthalpy (%g '
+                                 'J/mol) higher than that requested (%g)' %(
+                                                             T_low, Hm_low, Hm))
+            if Hm_high is None:
+                pkg_high = self.to(T=T_high, P=P, zs=zs)
+                pkg_high._post_flash()
+                Hm_high = pkg_high.Hm
+            if Hm > Hm_high:
+                raise ValueError('The requested molar enthalpy cannot be found'
+                                 ' with this bounded solver because the upper '
+                                 'temperature bound %g has an enthalpy (%g '
+                                 'J/mol) lower than that requested (%g)' %(
+                                                             T_high, Hm_high, Hm))
 
 class Activity_PP(Property_Package):
     __TP_cache = None
