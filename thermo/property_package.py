@@ -644,13 +644,13 @@ class IdealPPThermodynamic(Ideal_PP):
         except ValueError:
             if Hm_low is None:
                 pkg_low = self.to(T=T_low, P=P, zs=zs)
-                pkg_low._post_flash
+                pkg_low._post_flash()
                 Hm_low = pkg_low.Hm
             if Hm < Hm_low:
                 raise ValueError('The requested molar enthalpy cannot be found'
                                  ' with this bounded solver because the lower '
                                  'temperature bound %g K has an enthalpy (%g '
-                                 'J/mol) higher than that requested (%g)' %(
+                                 'J/mol) higher than that requested (%g J/mol)' %(
                                                              T_low, Hm_low, Hm))
             if Hm_high is None:
                 pkg_high = self.to(T=T_high, P=P, zs=zs)
@@ -660,7 +660,7 @@ class IdealPPThermodynamic(Ideal_PP):
                 raise ValueError('The requested molar enthalpy cannot be found'
                                  ' with this bounded solver because the upper '
                                  'temperature bound %g K has an enthalpy (%g '
-                                 'J/mol) lower than that requested (%g)' %(
+                                 'J/mol) lower than that requested (%g J/mol)' %(
                                                              T_high, Hm_high, Hm))
 
 
@@ -697,13 +697,13 @@ class IdealPPThermodynamic(Ideal_PP):
         except ValueError:
             if Sm_low is None:
                 pkg_low = self.to(T=T_low, P=P, zs=zs)
-                pkg_low._post_flash
+                pkg_low._post_flash()
                 Sm_low = pkg_low.Sm
             if Sm < Sm_low:
                 raise ValueError('The requested molar entropy cannot be found'
                                  ' with this bounded solver because the lower '
                                  'temperature bound %g K has an entropy (%g '
-                                 'J/mol/K) higher than that requested (%g)' %(
+                                 'J/mol/K) higher than that requested (%g J/mol/K)' %(
                                                              T_low, Sm_low, Sm))
             if Sm_high is None:
                 pkg_high = self.to(T=T_high, P=P, zs=zs)
@@ -713,9 +713,56 @@ class IdealPPThermodynamic(Ideal_PP):
                 raise ValueError('The requested molar entropy cannot be found'
                                  ' with this bounded solver because the upper '
                                  'temperature bound %g K has an entropy (%g '
-                                 'J/mol/K) lower than that requested (%g)' %(
+                                 'J/mol/K) lower than that requested (%g J/mol/K)' %(
                                                              T_high, Sm_high, Sm))
 
+    def flash_TS_zs_bounded(self, T, Sm, zs, P_low=None, P_high=None, 
+                            Sm_low=None, Sm_high=None):
+        # Begin the search at half the lowest chemical's melting point
+        if P_low is None:
+            P_low = self.Pbubble(T, zs)
+                
+        # Cap the T high search at 8x the highest critical point
+        # (will not work well for helium, etc.)
+        if P_high is None:
+            P_high = max(self.Pcs)*10
+    
+        temp_pkg_cache = []
+        def TS_error(P, T, zs, S_goal):
+            if not temp_pkg_cache:
+                temp_pkg = self.to(T=T, P=P, zs=zs)
+                temp_pkg_cache.append(temp_pkg)
+            else:
+                temp_pkg = temp_pkg_cache[0]
+                temp_pkg.flash(T=T, P=P, zs=zs)
+            temp_pkg._post_flash()
+            return temp_pkg.Sm - S_goal
+    
+        try:
+            P_goal = brenth(TS_error, P_low, P_high, args=(T, zs, Sm))
+            return P_goal
+
+        except ValueError:
+            if Sm_low is None:
+                pkg_low = self.to(T=T, P=P_low, zs=zs)
+                pkg_low._post_flash()
+                Sm_low = pkg_low.Sm
+            if Sm < Sm_low:
+                raise ValueError('The requested molar entropy cannot be found'
+                                 ' with this bounded solver because the lower '
+                                 'pressure bound %g Pa has an entropy (%g '
+                                 'J/mol/K) higher than that requested (%g J/mol/K)' %(
+                                                             P_low, Sm_low, Sm))
+            if Sm_high is None:
+                pkg_high = self.to(T=T, P=P_high, zs=zs)
+                pkg_high._post_flash()
+                Sm_high = pkg_high.Sm
+            if Sm > Sm_high:
+                raise ValueError('The requested molar entropy cannot be found'
+                                 ' with this bounded solver because the upper '
+                                 'pressure bound %g Pa has an entropy (%g '
+                                 'J/mol/K) lower than that requested (%g J/mol/K)' %(
+                                                             P_high, Sm_high, Sm))
 
 
 class Activity_PP(Property_Package):
