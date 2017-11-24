@@ -719,14 +719,12 @@ class IdealPPThermodynamic(Ideal_PP):
     def flash_TS_zs_bounded(self, T, Sm, zs, P_low=None, P_high=None, 
                             Sm_low=None, Sm_high=None):
         # Begin the search at half the lowest chemical's melting point
-        if P_low is None:
-            P_low = self.Pbubble(T, zs)
-                
-        # Cap the T high search at 8x the highest critical point
-        # (will not work well for helium, etc.)
         if P_high is None:
-            P_high = max(self.Pcs)*10
-    
+            P_high = self.Pbubble(T, zs)
+        if P_low is None:
+            P_low = 1E-5 # min pressure
+#            P_high = max(self.Pcs)*10
+
         temp_pkg_cache = []
         def TS_error(P, T, zs, S_goal):
             if not temp_pkg_cache:
@@ -747,21 +745,21 @@ class IdealPPThermodynamic(Ideal_PP):
                 pkg_low = self.to(T=T, P=P_low, zs=zs)
                 pkg_low._post_flash()
                 Sm_low = pkg_low.Sm
-            if Sm < Sm_low:
+            if Sm > Sm_low:
                 raise ValueError('The requested molar entropy cannot be found'
                                  ' with this bounded solver because the lower '
                                  'pressure bound %g Pa has an entropy (%g '
-                                 'J/mol/K) higher than that requested (%g J/mol/K)' %(
+                                 'J/mol/K) lower than that requested (%g J/mol/K)' %(
                                                              P_low, Sm_low, Sm))
             if Sm_high is None:
                 pkg_high = self.to(T=T, P=P_high, zs=zs)
                 pkg_high._post_flash()
                 Sm_high = pkg_high.Sm
-            if Sm > Sm_high:
+            if Sm < Sm_high:
                 raise ValueError('The requested molar entropy cannot be found'
                                  ' with this bounded solver because the upper '
                                  'pressure bound %g Pa has an entropy (%g '
-                                 'J/mol/K) lower than that requested (%g J/mol/K)' %(
+                                 'J/mol/K) upper than that requested (%g J/mol/K)' %(
                                                              P_high, Sm_high, Sm))
 
 
