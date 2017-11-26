@@ -688,6 +688,58 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
 
         self.SurfaceTensionMixture = SurfaceTensionMixture(MWs=self.MWs, Tbs=self.Tbs, Tcs=self.Tcs, CASs=self.CASs, SurfaceTensions=self.SurfaceTensions, VolumeLiquids=self.VolumeLiquids)
 
+
+    def set_property_package(self):
+        from thermo.property_package import IdealPPThermodynamic
+        self.property_package = IdealPPThermodynamic(VaporPressures=self.VaporPressures,
+                                                     Tms=self.Tms, Tbs=self.Tbs,
+                                                     Tcs=self.Tcs, Pcs=self.Pcs,
+                                                     HeatCapacityLiquids=self.HeatCapacityLiquids,
+                                                     HeatCapacityGases=self.HeatCapacityGases,
+                                                     EnthalpyVaporizations=self.EnthalpyVaporizations)
+        
+        
+    def flash(self, T=None, P=None, VF=None, Hm=None, Sm=None):
+        '''
+        from thermo import *
+
+        a = Mixture(['water', 'ethanol'], T=300, zs=[.5, .5])
+        a.set_property_package()
+        a.flash(T=400, Sm=-40.546326368170675)
+        a.V_over_F'''
+        # TODO check if the input values are the same as the current ones
+        self.property_package.flash_thermodynamic(zs=self.zs, T=T, P=P, VF=VF, Hm=Hm, Sm=Sm)
+        self.T = self.property_package.T
+        self.P = self.property_package.P
+        self.V_over_F = self.property_package.V_over_F
+        self.xs = self.property_package.xs
+        self.ys = self.property_package.ys
+        self.phase = self.property_package.phase
+        
+        self.Hm = self.property_package.Hm
+        self.Sm = self.property_package.Sm
+        self.Gm = self.property_package.Gm
+        
+        self.H = property_molar_to_mass(self.Hm, self.MW)
+        self.S = property_molar_to_mass(self.Sm, self.MW)
+        self.G = property_molar_to_mass(self.Gm, self.MW)
+        
+
+        # Not strictly necessary
+        [i.calculate(self.T, self.P) for i in self.Chemicals]
+        self.set_eos(T=self.T, P=self.P)
+
+        if self.phase == 'two-phase':
+            self.wsl = zs_to_ws(self.xs, self.MWs)
+            self.wsg = zs_to_ws(self.ys, self.MWs)
+            
+            ng = self.V_over_F
+            nl = (1. - self.V_over_F)
+            self.MWl = mixing_simple(self.xs, self.MWs)
+            self.MWg = mixing_simple(self.ys, self.MWs)
+            self.x = self.quality = ng*self.MWg/(nl*self.MWl + ng*self.MWg)
+
+
     def set_TP(self, T=None, P=None):
         if T:
             self.T = T
