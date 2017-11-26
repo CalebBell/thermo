@@ -29,6 +29,7 @@ Submodules
    thermo.mixture
    thermo.permittivity
    thermo.phase_change
+   thermo.property_package
    thermo.reaction
    thermo.refractivity
    thermo.safety
