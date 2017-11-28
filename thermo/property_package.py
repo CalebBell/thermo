@@ -23,7 +23,8 @@ SOFTWARE.'''
 from __future__ import division
 
 __all__ = ['PropertyPackage', 'Ideal', 'Unifac', 'GammaPhi', 
-           'UnifacDortmund', 'IdealCaloric', 'GammaPhiCaloric']
+           'UnifacDortmund', 'IdealCaloric', 'GammaPhiCaloric',
+           'UnifacCaloric']
 
 import numpy as np
 from scipy.optimize import brenth, ridder, golden, brent
@@ -1182,3 +1183,18 @@ class UnifacDortmund(Unifac):
                       cached=self.UNIFAC_cached_inputs,
                       subgroup_data=DOUFSG, interaction_data=DOUFIP2006, modified=True)
 
+
+class UnifacCaloric(Unifac, GammaPhiCaloric):
+        
+    def __init__(self, VaporPressures, eos=None, **kwargs):
+        self.cmps = range(len(VaporPressures))
+        self.N = len(VaporPressures)
+        self.VaporPressures = VaporPressures
+        self.eos = eos
+        self.__dict__.update(kwargs)
+        self.kwargs = {'VaporPressures': VaporPressures, 'eos': eos}
+        self.kwargs.update(kwargs
+        
+        if eos:
+            self.eos_pure_instances = [eos(Tc=Tcs[i], Pc=Pcs[i], omega=omegas[i], T=Tcs[i]*0.5, P=Pcs[i]*0.1) for i in self.cmps]
+        
