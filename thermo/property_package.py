@@ -1148,6 +1148,9 @@ class Unifac(GammaPhi):
         if eos:
             self.eos_pure_instances = [eos(Tc=Tcs[i], Pc=Pcs[i], omega=omegas[i], T=Tcs[i]*0.5, P=Pcs[i]*0.1) for i in self.cmps]
         
+        self.cache_unifac_inputs()
+        
+    def cache_unifac_inputs(self):
         # Pre-calculate some of the inputs UNIFAC uses
         self.rs = []
         self.qs = []
@@ -1193,8 +1196,9 @@ class UnifacCaloric(Unifac, GammaPhiCaloric):
         self.eos = eos
         self.__dict__.update(kwargs)
         self.kwargs = {'VaporPressures': VaporPressures, 'eos': eos}
-        self.kwargs.update(kwargs
+        self.kwargs.update(kwargs)
         
         if eos:
-            self.eos_pure_instances = [eos(Tc=Tcs[i], Pc=Pcs[i], omega=omegas[i], T=Tcs[i]*0.5, P=Pcs[i]*0.1) for i in self.cmps]
+            self.eos_pure_instances = [eos(Tc=self.Tcs[i], Pc=self.Pcs[i], omega=self.omegas[i], T=self.Tcs[i]*0.5, P=self.Pcs[i]*0.1) for i in self.cmps]
         
+        self.cache_unifac_inputs()

@@ -805,3 +805,21 @@ def test_GammaPhiCaloricBasic():
     
     pkg.flash(zs=m.zs, T=400, VF=0.5)
     assert_allclose(pkg.P, 233084.1813331093)
+    
+    
+def test_UnifacCaloric():
+    m = Mixture(['pentane', 'hexane', 'octane'], zs=[.1, .4, .5], T=298.15)
+    pkg = UnifacCaloric(UNIFAC_groups=m.UNIFAC_groups, VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
+                  HeatCapacityLiquids=m.HeatCapacityLiquids, HeatCapacityGases=m.HeatCapacityGases,
+                  EnthalpyVaporizations=m.EnthalpyVaporizations, omegas=m.omegas, 
+                               VolumeLiquids=m.VolumeLiquids, eos=PR, eos_mix=PRMIX)
+    pkg.use_phis, pkg.use_Poynting = True, True
+    
+    pkg.flash(zs=m.zs, T=400, P=1E7) # 658E6 659E6
+    pkg.P
+    pkg.phase
+    pkg.GE_l(pkg.T, pkg.xs)
+    pkg.HE_l(pkg.T, pkg.xs)
+    pkg.CpE_l(pkg.T, pkg.xs)
+    pkg.GE_l(pkg.T, pkg.xs)
+    pkg.SE_l(pkg.T, pkg.xs)
