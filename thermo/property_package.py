@@ -27,6 +27,7 @@ __all__ = ['Property_Package', 'Ideal_PP', 'UNIFAC_PP', 'GammaPhiPP',
 
 import numpy as np
 from scipy.optimize import brenth, ridder, golden, brent
+from scipy.misc import derivative
 
 from thermo.utils import log, exp
 from thermo.utils import has_matplotlib, R, pi, N_A
@@ -885,35 +886,42 @@ class GammaPhiPP(Property_Package):
     
     def gammas(self, T, xs):
         return [1 for i in self.cmps]
-#        raise Exception(NotImplemented)
-
 
     def VE_l(self):
         return 0
     
+    def GE_l(self, T, xs):
+        gammas = self.gammas(T=T, xs=xs)
+        return R*T*sum(xi*gamma for xi, gamma in zip(xs, gammas))
+    
+    def HE_l(self, T, xs):
+        to_diff = lambda T: self.GE_l(T, xs)/T
+        return -derivative(to_diff, T)*T**2
+    
+    def CpE_l(self, T, xs):
+        to_diff = lambda T : self.HE_l(T, xs)
+        return derivative(to_diff, T)
+    
     def H_dep_g(self, T, P, ys):
+        if not self.use_phis:
+            return 0.0
         e = self.eos_mix(T=T, P=P, zs=ys, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas)
         try:
             return e.H_dep_g
         except AttributeError:
             # This really is the correct approach
             return e.H_dep_l
-#            e = self.eos_mix(T=T, P=P, zs=ys, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas)
-#            V_ideal_gas = R*T/P
-#            ans = e.derivatives_and_departures(T=e.T, P=e.P, V=V_ideal_gas, b=e.b, 
-#                                         delta=e.delta, epsilon=e.epsilon, 
-#                                         a_alpha=e.a_alpha, da_alpha_dT=e.da_alpha_dT, 
-#                                         d2a_alpha_dT2=e.d2a_alpha_dT2, quick=True)          
-#            ([dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP], 
-#                            [d2P_dT2, d2P_dV2, d2V_dT2, d2V_dP2, d2T_dV2, d2T_dP2],
-#                            [d2V_dPdT, d2P_dTdV, d2T_dPdV],
-#                            [H_dep, S_dep, Cv_dep]) = ans
-#            return H_dep
-
 
     
     def S_dep_g(self, T, P, ys):
-        return self.eos_mix(T=T, P=P, zs=ys, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas).S_dep_g
+        if not self.use_phis:
+            return 0.0
+        e = self.eos_mix(T=T, P=P, zs=ys, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas)
+        try:
+            return e.S_dep_g
+        except AttributeError:
+            # This really is the correct approach
+            return e.S_dep_l
     
 
     def P_bubble_at_T(self, T, zs, Psats=None):
