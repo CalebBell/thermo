@@ -115,7 +115,7 @@ class GCEOS(object):
             Vs = [self.V, 1j, 1j]
         else:
             self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2 = self.a_alpha_and_derivatives(self.T)
-            Vs = self.volume_solutions(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
+            self.raw_volumes = Vs = self.volume_solutions(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
         self.set_from_PT(Vs)
 
     def set_from_PT(self, Vs):

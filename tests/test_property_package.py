@@ -26,6 +26,9 @@ import pytest
 import pandas as pd
 import numpy as np
 from thermo.property_package import *
+from thermo.eos import *
+from thermo.eos_mix import *
+
 from thermo.chemical import Chemical
 from thermo.mixture import Mixture
 
@@ -299,6 +302,21 @@ def test_UNIFAC_PP():
     assert vodka.phase == phase_known
 
 
+def test_UNIFAC_PP_EOS_POY():
+    m = Mixture(['pentane', 'hexane', 'octane'], zs=[.1, .4, .5], T=298.15)
+    pkg = UNIFAC_PP(UNIFAC_groups=m.UNIFAC_groups, VaporPressures=m.VaporPressures, Tms=m.Tms, Tcs=m.Tcs, Pcs=m.Pcs,
+                    omegas=m.omegas, VolumeLiquids=m.VolumeLiquids, eos=PR, eos_mix=PRMIX)
+    pkg.use_phis, pkg.use_Poynting = True, True
+    
+    pkg.flash(zs=m.zs, T=400, VF=0.5)
+    xs_expect = [0.04428613261665119, 0.28125472768746834, 0.6744591396958806]
+    ys_expect = [0.15571386738334897, 0.518745272312532, 0.32554086030411905]
+    assert pkg.phase == 'l/g'
+    assert_allclose(pkg.xs, xs_expect)
+    assert_allclose(pkg.ys, ys_expect)
+    
+    assert_allclose(pkg.P, 230201.5387679756)
+    
 @pytest.mark.slow
 def test_UNIFAC_PP_fuzz():
     m = Mixture(['ethanol', 'water'], zs=[0.5, 0.5], P=5000, T=298.15)
@@ -773,3 +791,17 @@ def test_IdealPPThermodynamic_TS():
             P = pkg.P
             P_calc = pkg.flash_TS_zs_bounded(T=T, Sm=pkg.Sm, zs=m.zs)
             assert_allclose(P_calc, P, rtol=1E-3)
+
+
+
+def test_GammaPhiPPThermodynamic():
+    m = Mixture(['pentane', 'hexane', 'octane'], zs=[.1, .4, .5], T=298.15)
+    pkg = GammaPhiPPThermodynamic(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
+                  HeatCapacityLiquids=m.HeatCapacityLiquids, HeatCapacityGases=m.HeatCapacityGases,
+                  EnthalpyVaporizations=m.EnthalpyVaporizations, omegas=m.omegas, 
+                               VolumeLiquids=m.VolumeLiquids, eos=PR, eos_mix=PRMIX)
+    pkg.use_phis, pkg.use_Poynting = True, True
+    
+    
+    pkg.flash(zs=m.zs, T=400, VF=0.5)
+    assert_allclose(pkg.P, 233084.1813331093)

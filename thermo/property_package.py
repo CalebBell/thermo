@@ -22,8 +22,8 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['Property_Package', 'Ideal_PP', 'UNIFAC_PP', 'Activity_PP', 
-           'UNIFAC_Dortmund_PP', 'IdealPPThermodynamic']
+__all__ = ['Property_Package', 'Ideal_PP', 'UNIFAC_PP', 'GammaPhiPP', 
+           'UNIFAC_Dortmund_PP', 'IdealPPThermodynamic', 'GammaPhiPPThermodynamic']
 
 import numpy as np
 from scipy.optimize import brenth, ridder, golden, brent
@@ -786,7 +786,7 @@ class IdealPPThermodynamic(Ideal_PP):
                                                              P_high, Sm_high, Sm))
 
 
-class Activity_PP(Property_Package):
+class GammaPhiPP(Property_Package):
     __TP_cache = None
     __TVF_solve_cache = None
     retention = False
@@ -884,8 +884,37 @@ class Activity_PP(Property_Package):
 
     
     def gammas(self, T, xs):
-        return [1 for i in self.N]
+        return [1 for i in self.cmps]
 #        raise Exception(NotImplemented)
+
+
+    def VE_l(self):
+        return 0
+    
+    def H_dep_g(self, T, P, ys):
+        e = self.eos_mix(T=T, P=P, zs=ys, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas)
+        try:
+            return e.H_dep_g
+        except AttributeError:
+            # This really is the correct approach
+            return e.H_dep_l
+#            e = self.eos_mix(T=T, P=P, zs=ys, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas)
+#            V_ideal_gas = R*T/P
+#            ans = e.derivatives_and_departures(T=e.T, P=e.P, V=V_ideal_gas, b=e.b, 
+#                                         delta=e.delta, epsilon=e.epsilon, 
+#                                         a_alpha=e.a_alpha, da_alpha_dT=e.da_alpha_dT, 
+#                                         d2a_alpha_dT2=e.d2a_alpha_dT2, quick=True)          
+#            ([dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP], 
+#                            [d2P_dT2, d2P_dV2, d2V_dT2, d2V_dP2, d2T_dV2, d2T_dP2],
+#                            [d2V_dPdT, d2P_dTdV, d2T_dPdV],
+#                            [H_dep, S_dep, Cv_dep]) = ans
+#            return H_dep
+
+
+    
+    def S_dep_g(self, T, P, ys):
+        return self.eos_mix(T=T, P=P, zs=ys, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas).S_dep_g
+    
 
     def P_bubble_at_T(self, T, zs, Psats=None):
         # Returns P_bubble; only thing easy to calculate
@@ -973,8 +1002,45 @@ class Activity_PP(Property_Package):
         return 'l/g', xs, ys, V_over_F, T
 
 
+class GammaPhiPPThermodynamic(GammaPhiPP, IdealPPThermodynamic):
+    
+    def _post_flash(self):
+        pass
+    
+    def __init__(self, VaporPressures=None, Tms=None, Tbs=None, Tcs=None, 
+                 Pcs=None, omegas=None, VolumeLiquids=None, eos=None, 
+                 eos_mix=None, HeatCapacityLiquids=None, HeatCapacityGases=None,
+                 EnthalpyVaporizations=None):
+        self.cmps = range(len(VaporPressures))
+        self.N = len(VaporPressures)
+        self.VaporPressures = VaporPressures
+        self.omegas = omegas
+        
+        self.Tms = Tms
+        self.Tbs = Tbs
+        self.Tcs = Tcs
+        self.Pcs = Pcs
+        self.HeatCapacityLiquids = HeatCapacityLiquids
+        self.HeatCapacityGases = HeatCapacityGases
+        self.EnthalpyVaporizations = EnthalpyVaporizations
+        self.VolumeLiquids = VolumeLiquids
+        self.eos = eos
+        self.eos_mix = eos_mix
+        
+        if eos:
+            self.eos_pure_instances = [eos(Tc=Tcs[i], Pc=Pcs[i], omega=omegas[i], T=Tcs[i]*0.5, P=Pcs[i]*0.1) for i in self.cmps]
+        
+        self.kwargs = {'VaporPressures': VaporPressures,
+                       'Tms': Tms, 'Tbs': Tbs, 'Tcs': Tcs, 'Pcs': Pcs,
+                       'HeatCapacityLiquids': HeatCapacityLiquids, 
+                       'HeatCapacityGases': HeatCapacityGases,
+                       'EnthalpyVaporizations': EnthalpyVaporizations,
+                       'VolumeLiquids': VolumeLiquids,
+                       'eos': eos, 'eos_mix': eos_mix,
+                       'omegas': omegas}
 
-class UNIFAC_PP(Activity_PP):
+
+class UNIFAC_PP(GammaPhiPP):
     subgroup_data = UFSG
 
     def __init__(self, UNIFAC_groups, VaporPressures, Tms=None, Tcs=None, Pcs=None,
@@ -1021,7 +1087,7 @@ class UNIFAC_PP(Activity_PP):
 
 
 
-class UNIFAC_Dortmund_PP(UNIFAC_PP):
+class UNIFAC_Dortmund_PP(GammaPhiPP):
     subgroup_data = DOUFSG
 
     def gammas(self, T, xs, cached=None):
