@@ -898,6 +898,9 @@ class GammaPhiPP(Property_Package):
         to_diff = lambda T: self.GE_l(T, xs)/T
         return -derivative(to_diff, T)*T**2
     
+    def SE_l(self, T, xs):
+        return (self.HE_l(T, xs) - self.GE_l(T, xs))/T
+    
     def CpE_l(self, T, xs):
         to_diff = lambda T : self.HE_l(T, xs)
         return derivative(to_diff, T)
