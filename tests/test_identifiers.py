@@ -20,6 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
+import pandas as pd
 from numpy.testing import assert_allclose
 import pytest
 from thermo.identifiers import *
@@ -28,6 +29,7 @@ from thermo.elements import periodic_table, serialize_formula
 import os
 from thermo.identifiers import ChemicalMetadataDB, folder
 from thermo.elements import nested_formula_parser, serialize_formula, molecular_weight
+from thermo.chemical import Chemical
 
 # Force the whole db to load
 try:
@@ -39,6 +41,21 @@ def test_dippr_list():
     # TODO CASs formulas
     assert 12916928773 == sum([CAS2int(i) for i in dippr_compounds])
     assert all([checkCAS(i) for i in dippr_compounds])
+
+
+@pytest.mark.slow
+def test_dippr_2016_matched_meta():
+    df2 = pd.read_excel('https://www.aiche.org/sites/default/files/docs/pages/dippr_compound_list_2016.xlsx')
+    names = df2['Name'].tolist()
+    CASs = df2['CASN'].tolist()
+    for i, CAS in enumerate(CASs):
+        if CAS in ['16462-44-5', '75899-69-3']:
+            # CELLOBIOSE (not the latest CAS, now is 528-50-7)
+            # TRIPROPYLENE GLYCOL MONOETHYL ETHER (cannot find structure)
+            continue
+        assert CAS_from_any(CAS) == CAS
+
+    # TODO names?
 
 
 #@pytest.mark.slow
