@@ -32,10 +32,10 @@ from thermo.eos_mix import *
 from thermo.chemical import Chemical
 from thermo.mixture import Mixture
 
-def test_Ideal_PP():
+def test_Ideal():
     m = Mixture(['ethanol', 'water'], zs=[0.5, 0.5], P=5000, T=298.15)
 
-    vodka = Ideal_PP(m.VaporPressures, m.Tms, m.Tcs, m.Pcs)
+    vodka = Ideal(m.VaporPressures, m.Tms, m.Tcs, m.Pcs)
     # Low pressure ethanol-water ideal TP flash
     phase, xs, ys, V_over_F = vodka.flash_TP_zs(m.T, m.P, m.zs)
     V_over_F_expect = 0.49376976949268025
@@ -101,9 +101,9 @@ def test_Ideal_PP():
     assert_allclose(T2_recalc, T2)    
     
     
-def test_Ideal_PP_single_component():
+def test_Ideal_single_component():
     m = Mixture(['water'], zs=[1], T=298.15)
-    test_pkg = Ideal_PP(m.VaporPressures, m.Tms, m.Tcs, m.Pcs)
+    test_pkg = Ideal(m.VaporPressures, m.Tms, m.Tcs, m.Pcs)
     
     # T and P with TP flash
     phase, xs, ys, V_over_F = test_pkg.flash_TP_zs(m.T, m.VaporPressures[0](298.15), m.zs)
@@ -178,7 +178,7 @@ def test_Ideal_PP_single_component():
 @pytest.mark.slow
 def test_IdealPP_fuzz_TP_VF():
     m = Mixture(['ethanol', 'water'], zs=[0.5, 0.5], P=5000, T=298.15)
-    vodka = Ideal_PP(m.VaporPressures, m.Tms, m.Tcs, m.Pcs)
+    vodka = Ideal(m.VaporPressures, m.Tms, m.Tcs, m.Pcs)
     
     for i in range(500):
         # May fail right now on the transition between vapor pressure 
@@ -219,7 +219,7 @@ def test_IdealPP_fuzz_TP_VF():
 
     names = ['hexane', '2-methylpentane', '3-methylpentane', '2,3-dimethylbutane', '2,2-dimethylbutane']
     m = Mixture(names, zs=[.2, .2, .2, .2, .2], P=1E5, T=300)
-    test_pkg = Ideal_PP(m.VaporPressures, m.Tms, m.Tcs, m.Pcs)
+    test_pkg = Ideal(m.VaporPressures, m.Tms, m.Tcs, m.Pcs)
     for i in range(500):
         zs = [uniform(0, 1) for i in range(5)]
         zs = [i/sum(zs) for i in zs]
@@ -249,9 +249,9 @@ def test_IdealPP_fuzz_TP_VF():
 
     
 @pytest.mark.slow
-def test_UNIFAC_PP():
+def test_Unifac():
     m = Mixture(['ethanol', 'water'], zs=[0.5, 0.5], P=6500, T=298.15)
-    vodka = UNIFAC_PP(m.UNIFAC_groups, m.VaporPressures, m.Tms, m.Tcs, m.Pcs)
+    vodka = Unifac(m.UNIFAC_groups, m.VaporPressures, m.Tms, m.Tcs, m.Pcs)
 
     # Low pressure ethanol-water ideal TP flash
     phase, xs, ys, V_over_F = vodka.flash_TP_zs(m.T, m.P, m.zs)
@@ -302,9 +302,9 @@ def test_UNIFAC_PP():
     assert vodka.phase == phase_known
 
 
-def test_UNIFAC_PP_EOS_POY():
+def test_Unifac_EOS_POY():
     m = Mixture(['pentane', 'hexane', 'octane'], zs=[.1, .4, .5], T=298.15)
-    pkg = UNIFAC_PP(UNIFAC_groups=m.UNIFAC_groups, VaporPressures=m.VaporPressures, Tms=m.Tms, Tcs=m.Tcs, Pcs=m.Pcs,
+    pkg = Unifac(UNIFAC_groups=m.UNIFAC_groups, VaporPressures=m.VaporPressures, Tms=m.Tms, Tcs=m.Tcs, Pcs=m.Pcs,
                     omegas=m.omegas, VolumeLiquids=m.VolumeLiquids, eos=PR, eos_mix=PRMIX)
     pkg.use_phis, pkg.use_Poynting = True, True
     
@@ -318,9 +318,9 @@ def test_UNIFAC_PP_EOS_POY():
     assert_allclose(pkg.P, 230201.5387679756)
     
 @pytest.mark.slow
-def test_UNIFAC_PP_fuzz():
+def test_Unifac_fuzz():
     m = Mixture(['ethanol', 'water'], zs=[0.5, 0.5], P=5000, T=298.15)
-    vodka = UNIFAC_PP(m.UNIFAC_groups, m.VaporPressures, m.Tms, m.Tcs, m.Pcs)
+    vodka = Unifac(m.UNIFAC_groups, m.VaporPressures, m.Tms, m.Tcs, m.Pcs)
     
     for i in range(500):
         zs = [uniform(0, 1) for i in range(2)]
@@ -350,9 +350,9 @@ def test_UNIFAC_PP_fuzz():
 
 
 @pytest.mark.slow
-def test_UNIFAC_Dortmund_PP():
+def test_UnifacDortmund():
     m = Mixture(['ethanol', 'water'], zs=[0.5, 0.5], P=6500, T=298.15)
-    vodka = UNIFAC_Dortmund_PP(UNIFAC_groups=m.UNIFAC_Dortmund_groups, VaporPressures=m.VaporPressures, 
+    vodka = UnifacDortmund(UNIFAC_groups=m.UNIFAC_Dortmund_groups, VaporPressures=m.VaporPressures, 
                                Tms=m.Tms, Tcs=m.Tcs, Pcs=m.Pcs)
     # Low pressure ethanol-water ideal TP flash
     phase, xs, ys, V_over_F = vodka.flash_TP_zs(m.T, m.P, m.zs)
@@ -405,7 +405,7 @@ def test_UNIFAC_Dortmund_PP():
 
 def test_plotting_failures():
     m = Mixture(['ethanol', 'methanol', 'water'], zs=[0.3, 0.3, 0.4], P=5000, T=298.15)
-    ternary = Ideal_PP(m.VaporPressures, m.Tms, m.Tcs, m.Pcs)
+    ternary = Ideal(m.VaporPressures, m.Tms, m.Tcs, m.Pcs)
 
     with pytest.raises(Exception):
         ternary.plot_Pxy(300)
@@ -415,14 +415,14 @@ def test_plotting_failures():
         ternary.plot_xy(300)
 
 
-def test_IdealPPThermodynamic_single_component_H():
+def test_IdealCaloric_single_component_H():
     w = Chemical('water')
     EnthalpyVaporization = w.EnthalpyVaporization
     HeatCapacityGas = w.HeatCapacityGas
     VaporPressure = w.VaporPressure
     
     m = Mixture(['water'], zs=[1], T=298.15)
-    pkg = IdealPPThermodynamic(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
+    pkg = IdealCaloric(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
                   HeatCapacityLiquids=m.HeatCapacityLiquids, HeatCapacityGases=m.HeatCapacityGases,
                   EnthalpyVaporizations=m.EnthalpyVaporizations)
     
@@ -487,10 +487,10 @@ def test_IdealPPThermodynamic_single_component_H():
     assert_allclose(Hvap_Tc_0, Hvap_Tc_half)
 
 
-def test_IdealPPThermodynamic_binary_H():
+def test_IdealCaloric_binary_H():
 
     m = Mixture(['water', 'ethanol'], zs=[0.3, 0.7], T=298.15)
-    pkg = IdealPPThermodynamic(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
+    pkg = IdealCaloric(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
                   HeatCapacityLiquids=m.HeatCapacityLiquids, HeatCapacityGases=m.HeatCapacityGases,
                   EnthalpyVaporizations=m.EnthalpyVaporizations) 
     
@@ -540,10 +540,10 @@ def test_IdealPPThermodynamic_binary_H():
                         + (z1*m.HeatCapacityGases[0].T_dependent_property_integral(298.15, T) + z2*m.HeatCapacityGases[1].T_dependent_property_integral(298.15, T)))
             assert_allclose(pkg_calc, hand_calc)
             
-def test_IdealPPThermodynamic_nitrogen_S():
+def test_IdealCaloric_nitrogen_S():
     
     m = Mixture(['nitrogen'], zs=[1], T=298.15)
-    pkg = IdealPPThermodynamic(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
+    pkg = IdealCaloric(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
                   HeatCapacityLiquids=m.HeatCapacityLiquids, HeatCapacityGases=m.HeatCapacityGases,
                   EnthalpyVaporizations=m.EnthalpyVaporizations)
     
@@ -600,12 +600,12 @@ def test_IdealPPThermodynamic_nitrogen_S():
     assert_allclose(S1-S2, 0)
     
     
-def test_IdealPPThermodynamic_enthalpy_Cpl_Cpg_Hvap_binary_Tc_ref():
+def test_IdealCaloric_enthalpy_Cpl_Cpg_Hvap_binary_Tc_ref():
     w = Chemical('water')
     MeOH = Chemical('methanol')
     
     m = Mixture(['water', 'methanol'], zs=[0.3, 0.7], T=298.15)
-    pkg = IdealPPThermodynamic(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
+    pkg = IdealCaloric(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
                   HeatCapacityLiquids=m.HeatCapacityLiquids, HeatCapacityGases=m.HeatCapacityGases,
                   EnthalpyVaporizations=m.EnthalpyVaporizations) 
     pkg.set_T_transitions('Tc')
@@ -665,12 +665,12 @@ def test_IdealPPThermodynamic_enthalpy_Cpl_Cpg_Hvap_binary_Tc_ref():
     assert_allclose(dH_hand, dH)
     
     
-def test_IdealPPThermodynamic_enthalpy_Cpl_Cpg_Hvap_binary_Tb_ref():
+def test_IdealCaloric_enthalpy_Cpl_Cpg_Hvap_binary_Tb_ref():
     w = Chemical('water')
     MeOH = Chemical('methanol')
     
     m = Mixture(['water', 'methanol'], zs=[0.3, 0.7], T=298.15)
-    pkg = IdealPPThermodynamic(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
+    pkg = IdealCaloric(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
                   HeatCapacityLiquids=m.HeatCapacityLiquids, HeatCapacityGases=m.HeatCapacityGases,
                   EnthalpyVaporizations=m.EnthalpyVaporizations) 
     pkg.set_T_transitions('Tb')
@@ -741,9 +741,9 @@ def test_IdealPPThermodynamic_enthalpy_Cpl_Cpg_Hvap_binary_Tb_ref():
     assert_allclose(dH, dH_hand)
 
 
-def test_IdealPPThermodynamic_PH():
+def test_IdealCaloric_PH():
     m = Mixture(['pentane', 'hexane', 'octane'], zs=[.1, .4, .5], T=298.15)
-    pkg = IdealPPThermodynamic(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
+    pkg = IdealCaloric(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
                   HeatCapacityLiquids=m.HeatCapacityLiquids, HeatCapacityGases=m.HeatCapacityGases,
                   EnthalpyVaporizations=m.EnthalpyVaporizations)
     Ts = np.linspace(300, 600, 10)
@@ -758,9 +758,9 @@ def test_IdealPPThermodynamic_PH():
             assert_allclose(T_calc, T, rtol=1E-3)
 
 
-def test_IdealPPThermodynamic_PS():
+def test_IdealCaloric_PS():
     m = Mixture(['pentane', 'hexane', 'octane'], zs=[.1, .4, .5], T=298.15)
-    pkg = IdealPPThermodynamic(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
+    pkg = IdealCaloric(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
                   HeatCapacityLiquids=m.HeatCapacityLiquids, HeatCapacityGases=m.HeatCapacityGases,
                   EnthalpyVaporizations=m.EnthalpyVaporizations)
     Ts = np.linspace(300, 600, 10)
@@ -775,9 +775,9 @@ def test_IdealPPThermodynamic_PS():
             assert_allclose(T_calc, T, rtol=1E-3)
             
             
-def test_IdealPPThermodynamic_TS():
+def test_IdealCaloric_TS():
     m = Mixture(['pentane', 'hexane', 'octane'], zs=[.1, .4, .5], T=298.15)
-    pkg = IdealPPThermodynamic(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
+    pkg = IdealCaloric(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
                   HeatCapacityLiquids=m.HeatCapacityLiquids, HeatCapacityGases=m.HeatCapacityGases,
                   EnthalpyVaporizations=m.EnthalpyVaporizations)
     Ts = np.linspace(300, 400, 10)
@@ -794,9 +794,9 @@ def test_IdealPPThermodynamic_TS():
 
 
 
-def test_GammaPhiPPThermodynamic():
+def test_GammaPhiCaloricBasic():
     m = Mixture(['pentane', 'hexane', 'octane'], zs=[.1, .4, .5], T=298.15)
-    pkg = GammaPhiPPThermodynamic(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
+    pkg = GammaPhiCaloric(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
                   HeatCapacityLiquids=m.HeatCapacityLiquids, HeatCapacityGases=m.HeatCapacityGases,
                   EnthalpyVaporizations=m.EnthalpyVaporizations, omegas=m.omegas, 
                                VolumeLiquids=m.VolumeLiquids, eos=PR, eos_mix=PRMIX)

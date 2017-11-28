@@ -22,8 +22,8 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['Property_Package', 'Ideal_PP', 'UNIFAC_PP', 'GammaPhiPP', 
-           'UNIFAC_Dortmund_PP', 'IdealPPThermodynamic', 'GammaPhiPPThermodynamic']
+__all__ = ['PropertyPackage', 'Ideal', 'Unifac', 'GammaPhi', 
+           'UnifacDortmund', 'IdealCaloric', 'GammaPhiCaloric']
 
 import numpy as np
 from scipy.optimize import brenth, ridder, golden, brent
@@ -40,7 +40,7 @@ if has_matplotlib:
     import matplotlib.pyplot as plt
 
 
-class Property_Package(object):
+class PropertyPackage(object):
     # Constant - if the phase fraction is this close to either the liquid or 
     # vapor phase, round it to it
     PHASE_ROUNDING_TOL = 1E-9 
@@ -286,7 +286,7 @@ class Property_Package(object):
         plt.show()
 
 
-class Ideal_PP(Property_Package):
+class Ideal(PropertyPackage):
     def _T_VF_err(self, P, VF, zs, Psats):
         Ks = [K_value(P=P, Psat=Psat) for Psat in Psats]
         return flash_inner_loop(zs=zs, Ks=Ks)[0] - VF
@@ -381,13 +381,13 @@ class Ideal_PP(Property_Package):
         return 'l/g', xs, ys, V_over_F, T
 
 
-class IdealPPThermodynamic(Ideal_PP):
+class IdealCaloric(Ideal):
     T_REF_IG = 298.15
     P_REF_IG = 101325.
     
     def __init__(self, VaporPressures=None, Tms=None, Tbs=None, Tcs=None, Pcs=None, 
                  HeatCapacityLiquids=None, HeatCapacityGases=None,
-                EnthalpyVaporizations=None):
+                 EnthalpyVaporizations=None):
         self.cmps = range(len(VaporPressures))
         self.N = len(VaporPressures)
         self.VaporPressures = VaporPressures
@@ -787,7 +787,7 @@ class IdealPPThermodynamic(Ideal_PP):
                                                              P_high, Sm_high, Sm))
 
 
-class GammaPhiPP(Property_Package):
+class GammaPhi(PropertyPackage):
     __TP_cache = None
     __TVF_solve_cache = None
     retention = False
@@ -888,9 +888,85 @@ class GammaPhiPP(Property_Package):
         return [1 for i in self.cmps]
 
     def VE_l(self):
-        return 0
+        r'''Calculates the excess volume of a liquid phase using an
+        activity coefficient model as shown in [1]_ and [2]_.
+            
+        .. math::
+            v^E = \left(\frac{\partial g^E}{\partial P}\right)_{T, xi, xj...} 
+            
+        In practice, this returns 0 as no pressure-dependent activity models
+        are available.
+            
+        Returns
+        -------
+        VE : float
+            Excess volume of the liquid phase (0), [m^3/mol]
+    
+        Notes
+        -----
+        The relationship for partial excess molar volume is as follows:
+            
+        .. math::
+            \frac{\bar v_i^E}{RT} = \left(\frac{\partial \ln \gamma_i}
+            {\partial P}\right)_T
+            
+            
+        References
+        ----------
+        .. [1] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
+           Butterworth-Heinemann, 1985.
+        .. [2] Gmehling, Jurgen. Chemical Thermodynamics: For Process 
+           Simulation. Weinheim, Germany: Wiley-VCH, 2012.
+        '''
+        return 0.0
     
     def GE_l(self, T, xs):
+        r'''Calculates the excess Gibbs energy of a liquid phase using an
+        activity coefficient model as shown in [1]_ and [2]_.
+            
+        .. math::
+            g_E = RT\sum_i x_i \ln \gamma_i
+            
+        Parameters
+        ----------
+        T : float
+            Temperature of the system, [K]
+        xs : list[float]
+            Mole fractions of the liquid phase of the system, [-]
+    
+        Returns
+        -------
+        GE : float
+            Excess Gibbs energy of the liquid phase, [J/mol]
+    
+        Notes
+        -----
+        It is possible to directly calculate GE in some activity coefficient 
+        models, without calculating individual activity coefficients of the
+        species.
+        
+        Note also the relationship of the expressions for partial excess Gibbs 
+        energies:
+            
+        .. math::
+            \bar g_i^E = RT\ln(\gamma_i)
+        
+            g^E = \sum_i x_i \bar g_i^E
+            
+        Most activity coefficient models are pressure independent, which leads
+        to the relationship where excess Helmholtz energy is the same as the
+        excess Gibbs energy.
+        
+        .. math::
+            G^E = A^E
+            
+        References
+        ----------
+        .. [1] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
+           Butterworth-Heinemann, 1985.
+        .. [2] Gmehling, Jurgen. Chemical Thermodynamics: For Process 
+           Simulation. Weinheim, Germany: Wiley-VCH, 2012.
+        '''
         gammas = self.gammas(T=T, xs=xs)
         return R*T*sum(xi*gamma for xi, gamma in zip(xs, gammas))
     
@@ -1013,7 +1089,7 @@ class GammaPhiPP(Property_Package):
         return 'l/g', xs, ys, V_over_F, T
 
 
-class GammaPhiPPThermodynamic(GammaPhiPP, IdealPPThermodynamic):
+class GammaPhiCaloric(GammaPhi, IdealCaloric):
     
     def _post_flash(self):
         pass
@@ -1051,7 +1127,7 @@ class GammaPhiPPThermodynamic(GammaPhiPP, IdealPPThermodynamic):
                        'omegas': omegas}
 
 
-class UNIFAC_PP(GammaPhiPP):
+class Unifac(GammaPhi):
     subgroup_data = UFSG
 
     def __init__(self, UNIFAC_groups, VaporPressures, Tms=None, Tcs=None, Pcs=None,
@@ -1098,7 +1174,7 @@ class UNIFAC_PP(GammaPhiPP):
 
 
 
-class UNIFAC_Dortmund_PP(GammaPhiPP):
+class UnifacDortmund(Unifac):
     subgroup_data = DOUFSG
 
     def gammas(self, T, xs, cached=None):
