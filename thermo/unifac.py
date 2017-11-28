@@ -37,6 +37,10 @@ folder = os.path.join(os.path.dirname(__file__), 'Phase Change')
 
 class UNIFAC_subgroup(object):
     __slots__ = ['group', 'main_group_id', 'main_group', 'R', 'Q']
+    
+    def __repr__(self):
+        return '<%s>' %self.group
+        
     def __init__(self, group, main_group_id, main_group, R, Q):
         self.group = group
         self.main_group_id = main_group_id

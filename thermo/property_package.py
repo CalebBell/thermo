@@ -406,7 +406,7 @@ class IdealCaloric(Ideal):
                        'HeatCapacityGases': HeatCapacityGases,
                        'EnthalpyVaporizations': EnthalpyVaporizations}
         
-    def flash_thermodynamic(self, zs, T=None, P=None, VF=None, Hm=None, Sm=None):
+    def flash_caloric(self, zs, T=None, P=None, VF=None, Hm=None, Sm=None):
         if any(i == 0 for i in zs):
             zs = [i if i != 0 else 1E-11 for i in zs]
             z_tot = sum(zs)

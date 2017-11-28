@@ -699,7 +699,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
                                                      EnthalpyVaporizations=self.EnthalpyVaporizations)
         
         
-    def flash(self, T=None, P=None, VF=None, Hm=None, Sm=None):
+    def flash_caloric(self, T=None, P=None, VF=None, Hm=None, Sm=None):
         '''
         from thermo import *
 
@@ -708,7 +708,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         a.flash(T=400, Sm=-40.546326368170675)
         a.V_over_F'''
         # TODO check if the input values are the same as the current ones
-        self.property_package.flash_thermodynamic(zs=self.zs, T=T, P=P, VF=VF, Hm=Hm, Sm=Sm)
+        self.property_package.flash_caloric(zs=self.zs, T=T, P=P, VF=VF, Hm=Hm, Sm=Sm)
         self.T = self.property_package.T
         self.P = self.property_package.P
         self.V_over_F = self.property_package.V_over_F

@@ -40,6 +40,11 @@ except:
 
 rdkit_missing = 'RDKit is not installed; it is required to use this functionality'
 
+
+# See https://www.atmos-chem-phys.net/16/4401/2016/acp-16-4401-2016.pdf for more
+# smarts patterns
+
+
 J_BIGGS_JOBACK_SMARTS = [["Methyl","-CH3", "[CX4H3]"],
 ["Secondary acyclic", "-CH2-", "[!R;CX4H2]"],
 ["Tertiary acyclic",">CH-", "[!R;CX4H]"],
