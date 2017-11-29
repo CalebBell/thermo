@@ -823,3 +823,23 @@ def test_UnifacCaloric():
     pkg.CpE_l(pkg.T, pkg.xs)
     pkg.GE_l(pkg.T, pkg.xs)
     pkg.SE_l(pkg.T, pkg.xs)
+
+
+    # DDBST test question    
+    m = Mixture(['hexane', '2-Butanone'], zs=[.5, .5], T=273.15 + 60)
+    pkg = UnifacCaloric(UNIFAC_groups=m.UNIFAC_groups, VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
+                  HeatCapacityLiquids=m.HeatCapacityLiquids, HeatCapacityGases=m.HeatCapacityGases,
+                  EnthalpyVaporizations=m.EnthalpyVaporizations, omegas=m.omegas, 
+                               VolumeLiquids=m.VolumeLiquids, eos=PR, eos_mix=PRMIX)
+    pkg.use_phis, pkg.use_Poynting = False, False
+    
+    pkg.flash(zs=m.zs, T=273.15 + 60, P=3E5)
+    GE = pkg.GE_l(pkg.T, pkg.xs)
+    assert_allclose(GE, 923.6408846044955, rtol=1E-3)
+    HE = pkg.HE_l(pkg.T, pkg.xs)
+    assert_allclose(HE, 854.77487867139587, rtol=1E-3)    
+    
+    # Numeric CpE_l test
+    deltaH = pkg.HE_l(pkg.T+0.01, pkg.xs) - pkg.HE_l(pkg.T, pkg.xs)
+    assert_allclose(deltaH, pkg.CpE_l(pkg.T, pkg.xs)*0.01, rtol=1E-4)
+    

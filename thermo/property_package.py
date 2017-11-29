@@ -969,16 +969,139 @@ class GammaPhi(PropertyPackage):
            Simulation. Weinheim, Germany: Wiley-VCH, 2012.
         '''
         gammas = self.gammas(T=T, xs=xs)
-        return R*T*sum(xi*gamma for xi, gamma in zip(xs, gammas))
-    
+        return R*T*sum(xi*log(gamma) for xi, gamma in zip(xs, gammas))
+
     def HE_l(self, T, xs):
+        r'''Calculates the excess enthalpy of a liquid phase using an
+        activity coefficient model as shown in [1]_ and [2]_.
+            
+        .. math::
+            \frac{-h^E}{T^2} = \frac{\partial (g^E/T)}{\partial T}
+            
+        Parameters
+        ----------
+        T : float
+            Temperature of the system, [K]
+        xs : list[float]
+            Mole fractions of the liquid phase of the system, [-]
+    
+        Returns
+        -------
+        HE : float
+            Excess enthalpy of the liquid phase, [J/mol]
+    
+        Notes
+        -----
+        It is possible to obtain analytical results for some activity 
+        coefficient models; this method provides only the `derivative`
+        method of scipy with its default parameters to obtain a numerical
+        result.
+        
+        Note also the relationship of the expressions for partial excess 
+        enthalpy:
+            
+        .. math::
+            \left(\frac{\partial \ln \gamma_i}{\partial (1/T))}\right) 
+                = \frac{\bar h_i^E}{R}    
+                
+            \left(\frac{\partial \ln \gamma_i}{\partial T}\right)
+            = -\frac{\bar h_i^E}{RT^2}
+
+            
+        Most activity coefficient models are pressure independent, so the Gibbs
+        Duhem expression only has a temperature relevance.
+        
+        .. math::
+            \sum_i x_i d \ln \gamma_i = - \frac{H^{E}}{RT^2} dT 
+            + \frac{V^E}{RT} dP
+            
+        References
+        ----------
+        .. [1] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
+           Butterworth-Heinemann, 1985.
+        .. [2] Gmehling, Jurgen. Chemical Thermodynamics: For Process 
+           Simulation. Weinheim, Germany: Wiley-VCH, 2012.
+        '''
         to_diff = lambda T: self.GE_l(T, xs)/T
         return -derivative(to_diff, T)*T**2
     
     def SE_l(self, T, xs):
+        r'''Calculates the excess entropy of a liquid phase using an
+        activity coefficient model as shown in [1]_ and [2]_.
+            
+        .. math::
+            s^E = \frac{h^E - g^E }{T} 
+            
+        Parameters
+        ----------
+        T : float
+            Temperature of the system, [K]
+        xs : list[float]
+            Mole fractions of the liquid phase of the system, [-]
+    
+        Returns
+        -------
+        SE : float
+            Excess entropy of the liquid phase, [J/mol/K]
+    
+        Notes
+        -----
+        It is possible to obtain analytical results for some activity 
+        coefficient models; this method provides only the `derivative`
+        method of scipy with its default parameters to obtain a numerical
+        result for the excess enthalpy, although the excess Gibbs energy
+        is exact.
+        
+        Note also the relationship of the expressions for partial excess 
+        entropy: 
+            
+        .. math::
+            S_i^E = -R\left(T \frac{\partial \ln \gamma_i}{\partial T}
+            + \ln \gamma_i\right)
+
+            
+        References
+        ----------
+        .. [1] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
+           Butterworth-Heinemann, 1985.
+        .. [2] Gmehling, Jurgen. Chemical Thermodynamics: For Process 
+           Simulation. Weinheim, Germany: Wiley-VCH, 2012.
+        '''
         return (self.HE_l(T, xs) - self.GE_l(T, xs))/T
     
     def CpE_l(self, T, xs):
+        r'''Calculates the excess heat capacity of a liquid phase using an
+        activity coefficient model as shown in [1]_ and [2]_.
+            
+        .. math::
+             C_{p,l}^E = \left(\frac{\partial H^E}{\partial T}\right)_{p, x}
+            
+        Parameters
+        ----------
+        T : float
+            Temperature of the system, [K]
+        xs : list[float]
+            Mole fractions of the liquid phase of the system, [-]
+    
+        Returns
+        -------
+        CpE : float
+            Excess heat capacity of the liquid phase, [J/mol/K]
+    
+        Notes
+        -----
+        This method provides only the `derivative`
+        method of scipy with its default parameters to obtain a numerical
+        result for the excess enthalpy as well as the derivative of excess
+        enthalpy.
+                    
+        References
+        ----------
+        .. [1] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
+           Butterworth-Heinemann, 1985.
+        .. [2] Gmehling, Jurgen. Chemical Thermodynamics: For Process 
+           Simulation. Weinheim, Germany: Wiley-VCH, 2012.
+        '''
         to_diff = lambda T : self.HE_l(T, xs)
         return derivative(to_diff, T)
     
@@ -1003,6 +1126,19 @@ class GammaPhi(PropertyPackage):
             # This really is the correct approach
             return e.S_dep_l
     
+    def enthalpy_excess(self, T, P, V_over_F, xs, ys):
+        # Does this handle the transition without a discontinuity?
+        H = 0
+        if self.phase == 'g':
+            H += self.H_dep_g(T=T, P=P, ys=ys)
+        elif self.phase == 'l':
+            H += self.HE_l(T=T, xs=xs)
+        elif self.phase == 'l/g':
+            HE_l = self.HE_l(T=T, xs=xs)
+            HE_g = self.H_dep_g(T=T, P=P, ys=ys)
+            H += (1. - V_over_F)*HE_l + HE_g*V_over_F
+        return H
+
 
     def P_bubble_at_T(self, T, zs, Psats=None):
         # Returns P_bubble; only thing easy to calculate
