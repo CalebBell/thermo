@@ -29,7 +29,7 @@ __all__ = ['isobaric_expansion', 'isothermal_compressibility',
 'Z', 'B_to_Z', 'B_from_Z', 'Z_from_virial_density_form', 
 'Z_from_virial_pressure_form', 'zs_to_ws', 'ws_to_zs', 'zs_to_Vfs', 
 'Vfs_to_zs', 'none_and_length_check', 'normalize', 'mixing_simple', 
-'mixing_logarithmic', 'has_matplotlib', 'to_num', 'CAS2int', 
+'mixing_logarithmic', 'has_matplotlib', 'to_num', 'CAS2int', 'sorted_CAS_key',
 'int2CAS', 'Parachor', 'property_molar_to_mass', 'property_mass_to_molar', 
 'SG_to_API', 'API_to_SG', 'SG',
 'phase_select_property', 'TDependentProperty', 
@@ -159,6 +159,11 @@ def int2CAS(i):
     '''
     i = str(i)
     return i[:-3]+'-'+i[-3:-1]+'-'+i[-1]
+
+
+def sorted_CAS_key(CASs):
+    int_CASs = [CAS2int(i) for i in CASs]
+    return tuple(CAS for _, CAS in sorted(zip(int_CASs,CASs)))
 
 
 def Parachor(MW, rhol, rhog, sigma):
