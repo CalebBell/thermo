@@ -106,6 +106,22 @@ class InteractionParameterDB(object):
         table = self.get_tables_with_type(ip_type)[0]
         return self.get_ip_specific(table, CASs, ip)
     
+    def get_ip_symmetric_matrix(self, name, CASs, ip):
+        table = self.tables[name]
+        N = len(CASs)
+        values = [[None for i in range(N)] for j in range(N)]
+        for i in range(N):
+            for j in range(N):
+                if i == j:
+                    i_ip = 0.0
+                elif values[j][i] is not None:
+                    continue # already set
+                else:
+                    i_ip = self.get_ip_specific(name, [CASs[i], CASs[j]], ip)
+                values[i][j] = values[j][i] = i_ip
+        return np.array(values)
+        
+    
 db = InteractionParameterDB()
 db.load_json(os.path.join(chemsep_db_path, 'pr.json'), 'ChemSep PR')
 db.validate_table('ChemSep PR')
@@ -116,3 +132,6 @@ db.has_ip_specific('ChemSep PR', ['124-38-9', '67-56-1'], 'kij')
 db.get_tables_with_type('PR kij')
 
 db.get_ip_automatic(['124-38-9', '67-56-1'], 'PR kij', 'kij')
+# C1 - C4 IPs
+ans = db.get_ip_symmetric_matrix('ChemSep PR', ['74-82-8', '74-84-0', '74-98-6', '106-97-8'], 'kij')
+print(ans)
