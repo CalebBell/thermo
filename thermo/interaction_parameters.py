@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['InteractionParameterDB']
+__all__ = ['InteractionParameterDB', 'IPDB']
 
 import os
 import json
@@ -122,7 +122,8 @@ class InteractionParameterDB(object):
         return np.array(values)
         
     
-ip_files = {'ChemSep PR': os.path.join(chemsep_db_path, 'pr.json')}
+ip_files = {'ChemSep PR': os.path.join(chemsep_db_path, 'pr.json'),
+            'ChemSep NRTL': os.path.join(chemsep_db_path, 'nrtl.json')}
 
 IPDB = InteractionParameterDB()
 for name, file in ip_files.items():
@@ -131,14 +132,16 @@ for name, file in ip_files.items():
 
 
     
-db.validate_table('ChemSep PR')
-db.get_ip_specific('ChemSep PR', ['124-38-9', '67-56-1'], 'kij')
-db.get_ip_specific('ChemSep PR', ['1249-38-9', '67-56-1'], 'kij')
-db.has_ip_specific('ChemSep PR', ['1249-38-9', '67-56-1'], 'kij')
-db.has_ip_specific('ChemSep PR', ['124-38-9', '67-56-1'], 'kij')
-db.get_tables_with_type('PR kij')
+IPDB.validate_table('ChemSep PR')
+IPDB.validate_table('ChemSep NRTL')
 
-db.get_ip_automatic(['124-38-9', '67-56-1'], 'PR kij', 'kij')
+IPDB.get_ip_specific('ChemSep PR', ['124-38-9', '67-56-1'], 'kij')
+IPDB.get_ip_specific('ChemSep PR', ['1249-38-9', '67-56-1'], 'kij')
+IPDB.has_ip_specific('ChemSep PR', ['1249-38-9', '67-56-1'], 'kij')
+IPDB.has_ip_specific('ChemSep PR', ['124-38-9', '67-56-1'], 'kij')
+IPDB.get_tables_with_type('PR kij')
+
+IPDB.get_ip_automatic(['124-38-9', '67-56-1'], 'PR kij', 'kij')
 # C1 - C4 IPs
-ans = db.get_ip_symmetric_matrix('ChemSep PR', ['74-82-8', '74-84-0', '74-98-6', '106-97-8'], 'kij')
+ans = IPDB.get_ip_symmetric_matrix('ChemSep PR', ['74-82-8', '74-84-0', '74-98-6', '106-97-8'], 'kij')
 print(ans)
