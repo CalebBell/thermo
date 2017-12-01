@@ -323,7 +323,8 @@ class Ideal(PropertyPackage):
                 Tsats.append(brenth(error, i.Tmax, i.Tmax*5))
         return Tsats
                 
-    def __init__(self, VaporPressures=None, Tms=None, Tcs=None, Pcs=None):
+    def __init__(self, VaporPressures=None, Tms=None, Tcs=None, Pcs=None, 
+                 **kwargs):
         self.VaporPressures = VaporPressures
         self.Tms = Tms
         self.Tcs = Tcs
@@ -388,7 +389,7 @@ class IdealCaloric(Ideal):
     
     def __init__(self, VaporPressures=None, Tms=None, Tbs=None, Tcs=None, Pcs=None, 
                  HeatCapacityLiquids=None, HeatCapacityGases=None,
-                 EnthalpyVaporizations=None):
+                 EnthalpyVaporizations=None, **kwargs):
         self.cmps = range(len(VaporPressures))
         self.N = len(VaporPressures)
         self.VaporPressures = VaporPressures
@@ -795,7 +796,8 @@ class GammaPhi(PropertyPackage):
     use_Poynting = False
     use_phis = False
 
-    def __init__(self, VaporPressures=None, Tms=None, Tcs=None, Pcs=None):
+    def __init__(self, VaporPressures=None, Tms=None, Tcs=None, Pcs=None, 
+                 **kwargs):
         self.VaporPressures = VaporPressures
         self.Tms = Tms
         self.Tcs = Tcs
@@ -1277,7 +1279,7 @@ class GammaPhiCaloric(GammaPhi, IdealCaloric):
     def __init__(self, VaporPressures=None, Tms=None, Tbs=None, Tcs=None, 
                  Pcs=None, omegas=None, VolumeLiquids=None, eos=None, 
                  eos_mix=None, HeatCapacityLiquids=None, HeatCapacityGases=None,
-                 EnthalpyVaporizations=None):
+                 EnthalpyVaporizations=None, **kwargs):
         self.cmps = range(len(VaporPressures))
         self.N = len(VaporPressures)
         self.VaporPressures = VaporPressures
@@ -1311,7 +1313,7 @@ class Unifac(GammaPhi):
     subgroup_data = UFSG
 
     def __init__(self, UNIFAC_groups, VaporPressures, Tms=None, Tcs=None, Pcs=None,
-                 omegas=None, VolumeLiquids=None, eos=None, eos_mix=None):
+                 omegas=None, VolumeLiquids=None, eos=None, eos_mix=None, **kwargs):
         self.UNIFAC_groups = UNIFAC_groups
         self.VaporPressures = VaporPressures
         self.Tms = Tms
