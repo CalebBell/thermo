@@ -843,3 +843,13 @@ def test_UnifacCaloric():
     deltaH = pkg.HE_l(pkg.T+0.01, pkg.xs) - pkg.HE_l(pkg.T, pkg.xs)
     assert_allclose(deltaH, pkg.CpE_l(pkg.T, pkg.xs)*0.01, rtol=1E-4)
     
+    
+    
+def test_UnifacDortmundCaloric():
+    m = Mixture(['hexane', '2-Butanone'], zs=[.5, .5], T=273.15 + 60)
+    pkg2 = UnifacDortmundCaloric(UNIFAC_groups=m.UNIFAC_Dortmund_groups, VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
+              HeatCapacityLiquids=m.HeatCapacityLiquids, HeatCapacityGases=m.HeatCapacityGases,
+              EnthalpyVaporizations=m.EnthalpyVaporizations, omegas=m.omegas, 
+                           VolumeLiquids=m.VolumeLiquids, eos=PR, eos_mix=PRMIX)
+
+    pkg2.flash(VF=0.5, T=350, zs=m.zs)
