@@ -559,9 +559,16 @@ def NRTL(xs, taus, alphas):
     .. math::
         \tau_{ij}=A_{ij}+\frac{B_{ij}}{T}+\frac{C_{ij}}{T^{2}}+D_{ij}
         \ln{\left ({T}\right )}+E_{ij}T^{F_{ij}}
+        
+    The original form of this model used the temperature dependence of taus in 
+    the form (values can be found in the literature, often with units of
+    calories/mol):
+        
+    .. math::
+        \tau_{ij}=\frac{b_{ij}}{RT}
 
     For this model to produce ideal acitivty coefficients (gammas = 1),
-    all interaction parameters should be 1; the value of alpha does not impact
+    all interaction parameters should be 0; the value of alpha does not impact
     the calculation when that is the case.
 
     Examples

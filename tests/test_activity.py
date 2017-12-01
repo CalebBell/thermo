@@ -20,11 +20,12 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
+from math import exp, log
 from numpy.testing import assert_allclose
 import pytest
 import numpy as np
 import pandas as pd
-from math import exp, log
+from scipy.constants import calorie, R
 from thermo.activity import *
 from thermo.mixture import Mixture
 
@@ -284,6 +285,17 @@ def test_NRTL():
     gammas = NRTL([0.252, 0.748], [[0, 0], [0, 0]], [[0, 0.5],[.9, 0]])
     assert_allclose(gammas, [1, 1])
     # alpha does not matter
+
+    # Test vs chemsep parameters, same water ethanol T and P
+    T = 343.15
+    b12 = -57.9601*calorie
+    b21 = 1241.7396*calorie
+    tau12 = b12/(R*T)
+    tau21 = b21/(R*T)
+
+    gammas = NRTL(xs=[0.252, 0.748], taus=[[0, tau12], [tau21, 0]],
+    alphas=[[0, 0.2937],[.2937, 0]])
+    assert_allclose(gammas, [1.985383753878832, 1.1463808401733069])
 
 
 def test_Wilson():
