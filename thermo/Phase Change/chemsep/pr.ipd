@@ -212,7 +212,7 @@ Comment=DECHEMA Peng-Robinson EOS data
 124-38-9        74-98-6   .1241  Carbon Dioxide/Propane T=252.95-273.15K p596
 124-38-9        74-98-6   .474e-1  Carbon Dioxide/Propane p598
 124-38-9        75-28-5   .1300  Carbon Dioxide/Isobutane T=310.93-394.26K p601
-124-38-9        75-28-5   .1174  Carbon Dioxide/Isobutane P=273.15K p603
+124-38-9        75-28-5   .1174  Carbon Dioxide/Isobutane T=273.15K p603
 124-38-9        106-98-9  .593e-1  Carbon Dioxide/1-Butene p605
 124-38-9        106-97-8  .1352  Carbon Dioxide/n-Butane T=310.93-410.93K p607
 124-38-9        106-97-8  .1415  Carbon Dioxide/n-Butane T=227.98-283.15K p609
