@@ -560,6 +560,10 @@ def NRTL(xs, taus, alphas):
         \tau_{ij}=A_{ij}+\frac{B_{ij}}{T}+\frac{C_{ij}}{T^{2}}+D_{ij}
         \ln{\left ({T}\right )}+E_{ij}T^{F_{ij}}
 
+    For this model to produce ideal acitivty coefficients (gammas = 1),
+    all interaction parameters should be 1; the value of alpha does not impact
+    the calculation when that is the case.
+
     Examples
     --------
     Ethanol-water example, at 343.15 K and 1 MPa:
@@ -640,6 +644,9 @@ def Wilson(xs, params):
         + \frac{e_{ij}}{T^2} + h_{ij}{T^2}
 
     The Wilson model is not applicable to liquid-liquid systems.
+    
+    For this model to produce ideal acitivty coefficients (gammas = 1),
+    all interaction parameters should be 1.
 
     Examples
     --------
@@ -739,6 +746,10 @@ def UNIQUAC(xs, rs, qs, taus):
 
         F_i = \frac{q_i}{\sum_j q_j x_j}
 
+
+    There is no global set of parameters which will make this model yield
+    ideal acitivty coefficients (gammas = 1) for this model.
+    
     Examples
     --------
     Ethanol-water example, at 343.15 K and 1 MPa:

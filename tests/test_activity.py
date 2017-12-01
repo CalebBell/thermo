@@ -280,6 +280,11 @@ def test_NRTL():
     gammas = (NRTL(xs, tau, alpha))
     assert_allclose(gammas, [2.7175098659360413, 2.1373006474468697, 1.085133765593844])
 
+    # Test the values which give activity coefficients of 1:
+    gammas = NRTL([0.252, 0.748], [[0, 0], [0, 0]], [[0, 0.5],[.9, 0]])
+    assert_allclose(gammas, [1, 1])
+    # alpha does not matter
+
 
 def test_Wilson():
     # P05.01a VLE Behavior of Ethanol - Water Using Wilson
@@ -310,6 +315,10 @@ def test_Wilson():
               [0.37280197780932, 0.01917909648619, 1]]
     gammas = Wilson(xs, params)
     assert_allclose(gammas, [1.22339343348885, 1.10094590247015, 1.2052899281172])
+
+    # Test the values which produce gamma = 1
+    gammas = Wilson([0.252, 0.748], [[1, 1], [1, 1]])
+    assert_allclose(gammas, [1, 1])
 
 
 def test_UNIQUAC():

@@ -122,8 +122,15 @@ class InteractionParameterDB(object):
         return np.array(values)
         
     
-db = InteractionParameterDB()
-db.load_json(os.path.join(chemsep_db_path, 'pr.json'), 'ChemSep PR')
+ip_files = {'ChemSep PR': os.path.join(chemsep_db_path, 'pr.json')}
+
+IPDB = InteractionParameterDB()
+for name, file in ip_files.items():
+    IPDB.load_json(file, name)
+
+
+
+    
 db.validate_table('ChemSep PR')
 db.get_ip_specific('ChemSep PR', ['124-38-9', '67-56-1'], 'kij')
 db.get_ip_specific('ChemSep PR', ['1249-38-9', '67-56-1'], 'kij')
