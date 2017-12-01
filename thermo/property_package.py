@@ -795,6 +795,17 @@ class GammaPhi(PropertyPackage):
     use_Poynting = False
     use_phis = False
 
+    def __init__(self, VaporPressures=None, Tms=None, Tcs=None, Pcs=None):
+        self.VaporPressures = VaporPressures
+        self.Tms = Tms
+        self.Tcs = Tcs
+        self.Pcs = Pcs
+        self.N = len(VaporPressures)
+        self.cmps = range(self.N)
+        
+        self.kwargs = {'VaporPressures': VaporPressures,
+                       'Tms': Tms, 'Tcs': Tcs, 'Pcs': Pcs}
+
     def _P_VF_err(self, T, P, VF, zs):
         P_calc = self.flash_TVF_zs(T=T, VF=VF, zs=zs)[-1]
         return P_calc- P

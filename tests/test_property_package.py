@@ -792,7 +792,19 @@ def test_IdealCaloric_TS():
             P_calc = pkg.flash_TS_zs_bounded(T=T, Sm=pkg.Sm, zs=m.zs)
             assert_allclose(P_calc, P, rtol=1E-3)
 
-
+def test_GammaPhiBasic():
+    # For the base mixture which assumes activity coefficients are one,
+    # Check there is no excess enthalpy or entropy.
+    m = Mixture(['hexane', '2-Butanone'], zs=[.5, .5], T=273.15 + 60)
+    a = GammaPhi(VaporPressures=m.VaporPressures, Tms=m.Tms, Tcs=m.Tcs, Pcs=m.Pcs)
+    ge = a.GE_l( 400., [.5, .5])
+    assert_allclose(ge, 0)
+    
+    he = a.HE_l( 400., [.5, .5])
+    assert_allclose(he, 0)
+    
+    se = a.SE_l( 400., [.5, .5])
+    assert_allclose(se, 0)
 
 def test_GammaPhiCaloricBasic():
     m = Mixture(['pentane', 'hexane', 'octane'], zs=[.1, .4, .5], T=298.15)
