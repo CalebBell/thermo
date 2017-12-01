@@ -792,6 +792,7 @@ def test_IdealCaloric_TS():
             P_calc = pkg.flash_TS_zs_bounded(T=T, Sm=pkg.Sm, zs=m.zs)
             assert_allclose(P_calc, P, rtol=1E-3)
 
+
 def test_GammaPhiBasic():
     # For the base mixture which assumes activity coefficients are one,
     # Check there is no excess enthalpy or entropy.
@@ -805,6 +806,7 @@ def test_GammaPhiBasic():
     
     se = a.SE_l( 400., [.5, .5])
     assert_allclose(se, 0)
+
 
 def test_GammaPhiCaloricBasic():
     m = Mixture(['pentane', 'hexane', 'octane'], zs=[.1, .4, .5], T=298.15)
@@ -865,3 +867,15 @@ def test_UnifacDortmundCaloric():
                            VolumeLiquids=m.VolumeLiquids, eos=PR, eos_mix=PRMIX)
 
     pkg2.flash(VF=0.5, T=350, zs=m.zs)
+
+
+def test_Act_infinite():
+    m = Mixture(['ethanol', 'water'], zs=[.5, .5], T=273.15 + 60)
+    pkg2 = UnifacDortmundCaloric(UNIFAC_groups=m.UNIFAC_Dortmund_groups, VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
+              HeatCapacityLiquids=m.HeatCapacityLiquids, HeatCapacityGases=m.HeatCapacityGases,
+              EnthalpyVaporizations=m.EnthalpyVaporizations, omegas=m.omegas, 
+                           VolumeLiquids=m.VolumeLiquids, eos=PR, eos_mix=PRMIX)
+    water_in_ethanol = pkg2.gammas_infinite_dilution( 298.15)[1]
+    assert_allclose(water_in_ethanol, 2.611252717452456) # 3.28 in ddbst free data
+    ethanol_in_water = pkg2.gammas_infinite_dilution( 283.15)[0]
+    assert_allclose(ethanol_in_water, 4.401784691406401) #  3.1800  with OTHR method or 4.3800 with another method

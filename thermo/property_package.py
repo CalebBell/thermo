@@ -1119,7 +1119,13 @@ class GammaPhi(PropertyPackage):
         return derivative(to_diff, T)
     
     def gammas_infinite_dilution(self, T):
-        pass
+        gamma_infs = []
+        for i in self.cmps:
+            xs = [1./(self.N - 1)]*self.N
+            xs[i] = 0
+            gamma_inf = self.gammas(T=T, xs=xs)[i]
+            gamma_infs.append(gamma_inf)
+        return gamma_infs
     
     def H_dep_g(self, T, P, ys):
         if not self.use_phis:
