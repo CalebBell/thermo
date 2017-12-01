@@ -60,6 +60,7 @@ folder = os.path.join(os.path.dirname(__file__), 'Solubility')
 ##    plt.show()
 #    return m
 
+# Reference 2521 of acp-15-4399-2015 might be the best source
 
 #MSO2 = 64.0638
 #print fit_m('1310-73-2', 40)

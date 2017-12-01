@@ -415,9 +415,9 @@ class IdealCaloric(Ideal):
         if T is not None and Sm is not None:
             P = self.flash_TS_zs_bounded(T=T, Sm=Sm, zs=zs)
         elif P is not None and Sm is not None:
-            T = flash_PS_zs_bounded(P=P, Sm=Sm, zs=zs)
-        elif P is not None and H is not None:
-            T = flash_PH_zs_bounded(P=P, Hm=Hm, zs=zs)
+            T = self.flash_PS_zs_bounded(P=P, Sm=Sm, zs=zs)
+        elif P is not None and Hm is not None:
+            T = self.flash_PH_zs_bounded(P=P, Hm=Hm, zs=zs)
         elif ((T is not None and P is not None) or
             (T is not None and VF is not None) or
             (P is not None and VF is not None)):
@@ -611,7 +611,7 @@ class IdealCaloric(Ideal):
             for i in self.cmps:
                 S += self.HeatCapacityGases[i].T_dependent_property_integral_over_T(298.15, T)
         elif self.phase == 'l':
-            Psats = self._Psats(T)
+            Psats = self._Psats(T=T)
             for i in self.cmps:
                 Sg298_to_T = self.HeatCapacityGases[i].T_dependent_property_integral_over_T(298.15, T)
                 Hvap = self.EnthalpyVaporizations[i](T)
@@ -621,7 +621,7 @@ class IdealCaloric(Ideal):
                 S_P = -R*log(Psats[i]/101325.)
                 S += self.zs[i]*(Sg298_to_T + Svap + S_P)
         elif self.phase == 'l/g':
-            Psats = self._Psats(T)
+            Psats = self._Psats(T=T)
             S_P_vapor = -R*log(P/101325.) # Gas-phase ideal pressure contribution (checked repeatedly)
             for i in self.cmps:
                 Sg298_to_T_zi = self.zs[i]*self.HeatCapacityGases[i].T_dependent_property_integral_over_T(298.15, T)
@@ -845,6 +845,7 @@ class GammaPhi(PropertyPackage):
         return self.eos_mix(T=T, P=P, zs=ys, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas).phis_g
 
     def phis_l(self, T, P, xs):
+#        return [1 for i in xs] # Most models seem to assume this
         P_sat_eos = [i.Psat(T) for i in self.eos_pure_instances]
         return [i.to_TP(T=T, P=Psat).phi_l for i, Psat in zip(self.eos_pure_instances, P_sat_eos)]    
 
@@ -973,7 +974,8 @@ class GammaPhi(PropertyPackage):
 
     def HE_l(self, T, xs):
         r'''Calculates the excess enthalpy of a liquid phase using an
-        activity coefficient model as shown in [1]_ and [2]_.
+        activity coefficient model as shown in [1]_ and [2]_. This is an 
+        expression of the Gibbs-Helmholz relation.
             
         .. math::
             \frac{-h^E}{T^2} = \frac{\partial (g^E/T)}{\partial T}
@@ -1105,6 +1107,9 @@ class GammaPhi(PropertyPackage):
         to_diff = lambda T : self.HE_l(T, xs)
         return derivative(to_diff, T)
     
+    def gammas_infinite_dilution(self, T):
+        pass
+    
     def H_dep_g(self, T, P, ys):
         if not self.use_phis:
             return 0.0
@@ -1138,6 +1143,20 @@ class GammaPhi(PropertyPackage):
             HE_g = self.H_dep_g(T=T, P=P, ys=ys)
             H += (1. - V_over_F)*HE_l + HE_g*V_over_F
         return H
+
+
+    def entropy_excess(self, T, P, V_over_F, xs, ys):
+        # Does this handle the transition without a discontinuity?
+        S = 0
+        if self.phase == 'g':
+            S += self.S_dep_g(T=T, P=P, ys=ys)
+        elif self.phase == 'l':
+            S += self.SE_l(T=T, xs=xs)
+        elif self.phase == 'l/g':
+            SE_l = self.SE_l(T=T, xs=xs)
+            SE_g = self.S_dep_g(T=T, P=P, ys=ys)
+            S += (1. - V_over_F)*SE_l + SE_g*V_over_F
+        return S
 
 
     def P_bubble_at_T(self, T, zs, Psats=None):
@@ -1229,7 +1248,14 @@ class GammaPhi(PropertyPackage):
 class GammaPhiCaloric(GammaPhi, IdealCaloric):
     
     def _post_flash(self):
-        pass
+        # Cannot derive other properties with this
+        self.Hm = self.enthalpy_Cpg_Hvap() + self.enthalpy_excess(T=self.T, P=self.P, V_over_F=self.V_over_F, xs=self.xs, ys=self.ys)
+        self.Sm = self.entropy_Cpg_Hvap() + self.entropy_excess(T=self.T, P=self.P, V_over_F=self.V_over_F, xs=self.xs, ys=self.ys)
+        
+        self.Gm = self.Hm - self.T*self.Sm if (self.Hm is not None and self.Sm is not None) else None
+
+
+
     
     def __init__(self, VaporPressures=None, Tms=None, Tbs=None, Tcs=None, 
                  Pcs=None, omegas=None, VolumeLiquids=None, eos=None, 
