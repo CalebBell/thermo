@@ -106,7 +106,7 @@ class InteractionParameterDB(object):
         table = self.get_tables_with_type(ip_type)[0]
         return self.get_ip_specific(table, CASs, ip)
     
-    def get_ip_symmetric_matrix(self, name, CASs, ip):
+    def get_ip_symmetric_matrix(self, name, CASs, ip, T=298.15):
         table = self.tables[name]
         N = len(CASs)
         values = [[None for i in range(N)] for j in range(N)]
@@ -121,6 +121,19 @@ class InteractionParameterDB(object):
                 values[i][j] = values[j][i] = i_ip
         return np.array(values)
         
+    def get_ip_asymmetric_matrix(self, name, CASs, ip, T=298.15):
+        table = self.tables[name]
+        N = len(CASs)
+        values = [[None for i in range(N)] for j in range(N)]
+        for i in range(N):
+            for j in range(N):
+                if i == j:
+                    i_ip = 0.0
+                else:
+                    i_ip = self.get_ip_specific(name, [CASs[i], CASs[j]], ip)
+                values[i][j] = i_ip
+        return np.array(values)
+    
     
 ip_files = {'ChemSep PR': os.path.join(chemsep_db_path, 'pr.json'),
             'ChemSep NRTL': os.path.join(chemsep_db_path, 'nrtl.json')}
@@ -130,18 +143,13 @@ for name, file in ip_files.items():
     IPDB.load_json(file, name)
 
 
-
+# Nothing wrong with storing alpha twice...
     
-IPDB.validate_table('ChemSep PR')
-IPDB.validate_table('ChemSep NRTL')
+#
+# TODO change above models to include T dependence; need a model which has it though!
+# That probably means a user db
 
-IPDB.get_ip_specific('ChemSep PR', ['124-38-9', '67-56-1'], 'kij')
-IPDB.get_ip_specific('ChemSep PR', ['1249-38-9', '67-56-1'], 'kij')
-IPDB.has_ip_specific('ChemSep PR', ['1249-38-9', '67-56-1'], 'kij')
-IPDB.has_ip_specific('ChemSep PR', ['124-38-9', '67-56-1'], 'kij')
-IPDB.get_tables_with_type('PR kij')
+##ans = IPDB.get_ip_asymmetric_matrix('ChemSep NRTL', ['64-17-5', '7732-18-5'], 'bij')
+#ans = IPDB.get_ip_asymmetric_matrix('ChemSep NRTL', ['64-17-5', '7732-18-5', '67-56-1'], 'alphaij')
+## alphas are good too.
 
-IPDB.get_ip_automatic(['124-38-9', '67-56-1'], 'PR kij', 'kij')
-# C1 - C4 IPs
-ans = IPDB.get_ip_symmetric_matrix('ChemSep PR', ['74-82-8', '74-84-0', '74-98-6', '106-97-8'], 'kij')
-print(ans)
