@@ -171,7 +171,8 @@ def preprocess_mixture_composition(IDs=None, zs=None, ws=None, Vfls=None,
 class Mixture(object): 
     '''Creates a Mixture object which contains basic information such as 
     molecular weight and the structure of the species, as well as thermodynamic
-    and transport properties as a function of temperature and pressure.
+    and transport properties as a function of two of the varables temperature,
+    pressure, vapor fraction, enthalpy, or entropy.
     
     The components of the mixture must be specified by specifying the names of
     the chemicals; the composition can be specified by providing any one of the
@@ -185,6 +186,10 @@ class Mixture(object):
     If volume fractions are provided, by default the pure component volumes
     are calculated at the specified `T` and `P`. To use another reference 
     temperature and pressure specify it as a tuple for the argument `Vf_TP`. 
+    
+    If no thermodynamic conditions are specified, or if only one of T and P
+    are specifed without another thermodynamic variable as well, the T and P
+    298.15 K and/or 101325 Pa will be set instead of the missing variables.
 
     Parameters
     ----------
@@ -202,13 +207,26 @@ class Mixture(object):
         Volume fractions of all components as a hypothetical gas phase based 
         on pure component densities [-]
     T : float, optional
-        Temperature of the chemical (default 298.15 K), [K]
+        Temperature of the mixture (default 298.15 K), [K]
     P : float, optional
-        Pressure of the chemical (default 101325 Pa) [Pa]
+        Pressure of the mixture (default 101325 Pa) [Pa]
+    VF : float, optional
+        Vapor fraction (mole basis) of the mixture, [-]
+    Hm : float, optional
+        Molar enthalpy of the mixture, [J/mol]
+    H : float, optional
+        Mass enthalpy of the mixture, [J/kg]
+    Sm : float, optional
+        Molar entropy of the mixture, [J/mol/K]
+    S : float, optional
+        Mass entropy of the mixture, [J/kg/K]
+    pkg : object 
+        The thermodynamic property package to use for flash calculations;
+        one of the caloric packages in :obj:`thermo.property_package`;
+        defaults to the ideal model [-]
     Vf_TP : tuple(2, float), optional
         The (T, P) at which the volume fractions are specified to be at, [K] 
         and [Pa]
-    
     
     Attributes
     ----------
@@ -328,6 +346,8 @@ class Mixture(object):
     alphags
     alphal
     alphals
+    A
+    Am
     atom_fractions
     atom_fractionss
     atomss
@@ -418,6 +438,8 @@ class Mixture(object):
     smiless
     solubility_parameters
     synonymss
+    U
+    Um
     UNIFAC_Dortmund_groups
     UNIFAC_groups
     Vm
@@ -482,8 +504,8 @@ class Mixture(object):
 Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
 
     def __init__(self, IDs=None, zs=None, ws=None, Vfls=None, Vfgs=None,
-                 T=None, P=None, Vf_TP=(None, None),
-                 pkg=None, VF=None, H=None, Hm=None, S=None, Sm=None):
+                 T=None, P=None, 
+                 VF=None, H=None, Hm=None, S=None, Sm=None, pkg=None, Vf_TP=(None, None)):
 
         # Perofrm preprocessing of the mixture composition separately so it
         # can be tested on its own
@@ -900,6 +922,54 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
             self.calculate(T, P)
             return self.S - S
         return newton(to_solve, self.T)
+
+    @property
+    def Um(self):
+        r'''Internal energy of the mixture at its current state, in units of
+        [J/mol].
+
+        This property requires that the property package of the mixture 
+        found a solution to the given state variables.
+        It also depends on the molar volume of the mixture at its current
+        conditions.
+        '''
+        return self.Hm - self.P*self.Vm if (self.Vm and self.Hm is not None) else None
+
+    @property
+    def U(self):
+        r'''Internal energy of the mixture at its current state,
+        in units of [J/kg].
+
+        This property requires that the property package of the mixture 
+        found a solution to the given state variables.
+        It also depends on the molar volume of the mixture at its current
+        conditions.
+        '''
+        return property_molar_to_mass(self.Um, self.MW) if (self.Um is not None) else None
+
+    @property
+    def Am(self):
+        r'''Helmholtz energy of the mixture at its current state, 
+        in units of [J/mol].
+
+        This property requires that the property package of the mixture 
+        found a solution to the given state variables.
+        It also depends on the molar volume of the mixture at its current
+        conditions.
+        '''
+        return self.Um - self.T*self.Sm if (self.Um is not None and self.Sm is not None) else None
+
+    @property
+    def A(self):
+        r'''Helmholtz energy of the mixture at its current state,
+        in units of [J/kg].
+
+        This property requires that the property package of the mixture 
+        found a solution to the given state variables.
+        It also depends on the molar volume of the mixture at its current
+        conditions.
+        '''
+        return self.U - self.T*self.S if (self.U is not None and self.S is not None) else None
 
     @property
     def Tdew(self):
