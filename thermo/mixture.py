@@ -74,7 +74,7 @@ def preprocess_mixture_composition(IDs=None, zs=None, ws=None, Vfls=None,
           :obj:`thermo.identifiers.mixture_from_any`; if it is, take the
           composition from that method (weight fractions will be returned).
         * If the ID is a string or a 1-length list, set the composition to
-          be pure.
+          be pure (if no other composition was specified).
         * If the composition (zs, ws, Vfls, Vfgs) is a list, turn it into a
           copy of the list to not change other instances of it.
         * If the composition is a numpy array, convert it to a list for greater
@@ -109,8 +109,8 @@ def preprocess_mixture_composition(IDs=None, zs=None, ws=None, Vfls=None,
 
                 zs = [1.0]
             elif isinstance(IDs, list) and len(IDs) == 1:
-                pass
-                zs = [1.0]
+                if zs is None and ws is None and Vfls is None and Vfgs is None:
+                    zs = [1.0]
             else:
                 raise Exception('Could not recognize the mixture IDs')
 
@@ -215,6 +215,8 @@ class Mixture(object):
     MW : float
         Mole-weighted average molecular weight all chemicals in the mixture, 
         [g/mol]
+    IDs : list of str
+        Names of all the species in the mixture as given in the input, [-]
     names : list of str
         Names of all the species in the mixture, [-]
     CASs : list of str
@@ -472,34 +474,31 @@ class Mixture(object):
     H = None
     isobaric_expansion_g = None
     isobaric_expansion_l = None
+    T_default = 298.15
+    P_default = 101325.
 
     def __repr__(self):
         return '<Mixture, components=%s, mole fractions=%s, T=%.2f K, P=%.0f \
 Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
 
     def __init__(self, IDs=None, zs=None, ws=None, Vfls=None, Vfgs=None,
-                 T=298.15, P=101325, Vf_TP=(None, None),
+                 T=None, P=None, Vf_TP=(None, None),
                  pkg=None, VF=None, H=None, Hm=None, S=None, Sm=None):
 
         # Perofrm preprocessing of the mixture composition separately so it
         # can be tested on its own
-        IDs, zs, ws, Vfls, Vfgs = preprocess_mixture_composition(IDs=IDs, zs=zs, ws=ws, Vfls=Vfls, Vfgs=Vfgs)
-
-        self.P = P
-        self.T = T
-
-        self.components = tuple(IDs)
-        T_chemical_init = T if T is not None else 298.15
-        P_chemical_init = P if P is not None else 101325.
-        self.Chemicals = [Chemical(component, P=P_chemical_init, T=T_chemical_init) for component in self.components]
-        self.names = [i.name for i in self.Chemicals]
-        self.MWs = [i.MW for i in self.Chemicals]
-        self.CASs = [i.CAS for i in self.Chemicals]
+        IDs, zs, ws, Vfls, Vfgs = preprocess_mixture_composition(IDs=IDs,
+                                                                 zs=zs, ws=ws, 
+                                                                 Vfls=Vfls,
+                                                                 Vfgs=Vfgs)
+        self.IDs = IDs
+        T_unsolved = T if T is not None else self.T_default
+        P_unsolved = P if P is not None else self.P_default
+        self.Chemicals = [Chemical(ID, P=P_unsolved, T=T_unsolved) for ID in self.IDs]
 
         # Required for densities for volume fractions before setting fractions
         self.set_chemical_constants()
         self.set_Chemical_property_objects()
-#        self.set_chemical_TP()
 
         if zs:
             self.zs = zs if sum(zs) == 1 else [zi/sum(zs) for zi in zs]
@@ -510,9 +509,9 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         elif Vfls or Vfgs:
             T_vf, P_vf = Vf_TP
             if T_vf is None: 
-                T_vf = T
+                T_vf = T_unsolved
             if P_vf is None: 
-                P_vf = P
+                P_vf = P_unsolved
 
             if Vfls:
                 Vfs = Vfls if sum(Vfls) == 1 else [Vfli/sum(Vfls) for Vfli in Vfls]
@@ -540,17 +539,32 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
 
 #        self.set_TP()
 #        self.set_phase()
-        self.set_property_package(pkg=pkg)
-        if H is not None:
-            Hm = property_mass_to_molar(H, self.MW)
-        if S is not None:
-            Sm = property_mass_to_molar(S, self.MW)
+
+        self.set_property_package(pkg=pkg)        
         
+        # To preserve backwards compatibility, mixures with no other state vars
+        # specified will have their T and P initialized to the values of
+        # T_default and P_default (but only if the values VF, Hm, H, Sm, S are
+        # None)
+        non_TP_state_vars = sum(i is not None for i in [VF, Hm, H, Sm, S])
+        if non_TP_state_vars == 0:
+            if T is None:
+                T = self.T_default
+            if P is None:
+                P = self.P_default
         
-        self.flash_caloric(T=T, P=P, VF=VF, Hm=Hm, Sm=Sm)
+        self.flash_caloric(T=T, P=P, VF=VF, Hm=Hm, Sm=Sm, H=H, S=S)
 
 
     def set_chemical_constants(self):
+        r'''Basic method which retrieves and sets constants of chemicals to be
+        accessible as lists from a Mixture object. This gets called
+        automatically on the instantiation of a new Mixture instance.
+        '''
+        self.names = [i.name for i in self.Chemicals]
+        self.MWs = [i.MW for i in self.Chemicals]
+        self.CASs = [i.CAS for i in self.Chemicals]
+        
         # Set lists of everything set by Chemical.set_constants
         self.Tms = [i.Tm for i in self.Chemicals]
         self.Tbs = [i.Tb for i in self.Chemicals]
@@ -621,23 +635,19 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
 
     ### More stuff here
 
-    def set_chemical_TP(self):
+    def set_chemical_TP(self, T=None, P=None):
+        '''Basic method to change all chemical instances to be at the T and P
+        specified. If they are not specified, the the values of the mixture
+        will be used. This is not necessary for using the Mixture instance 
+        unless values specified to chemicals are required.
+        '''
         # Tempearture and Pressure Denepdence
         # Get and choose initial methods
-        [i.calculate(self.T, self.P) for i in self.Chemicals]
-
-        try:
-            self.Hs = [i.H for i in self.Chemicals]
-            self.Hms = [i.Hm for i in self.Chemicals]
-
-            self.Ss = [i.S for i in self.Chemicals]
-            self.Sms = [i.Sm for i in self.Chemicals]
-            # Ignore G, A, U - which depend on molar volume
-        except:
-            self.Hs = None
-            self.Hsm = None
-            self.Ss = None
-            self.Sms = None
+        if T is None:
+            T = self.T
+        if P is None:
+            P = self.P
+        [i.calculate(T=T, P=P) for i in self.Chemicals]
 
     def set_constant_sources(self):
         # None of this takes much time or is important
@@ -757,7 +767,8 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
                                      eos_mix=eos_mix)        
         
         
-    def flash_caloric(self, T=None, P=None, VF=None, Hm=None, Sm=None):
+    def flash_caloric(self, T=None, P=None, VF=None, Hm=None, Sm=None,
+                      H=None, S=None):
         '''
         from thermo import *
 
@@ -766,6 +777,13 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         a.flash(T=400, Sm=-40.546326368170675)
         a.V_over_F'''
         # TODO check if the input values are the same as the current ones
+        # The property package works only on a mole-basis, so convert
+        # H or S if specified to a mole basis
+        if H is not None:
+            Hm = property_mass_to_molar(H, self.MW)
+        if S is not None:
+            Sm = property_mass_to_molar(S, self.MW)        
+        
         self.property_package.flash_caloric(zs=self.zs, T=T, P=P, VF=VF, Hm=Hm, Sm=Sm)
         self.T = self.property_package.T
         self.P = self.property_package.P

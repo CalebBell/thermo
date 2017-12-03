@@ -104,7 +104,13 @@ def test_Mixture_input_forms():
     Mixture(['water'], ws=[1], T=300, P=1E5)
     
     Mixture('water', ws=[1], T=365).SGl
+    
+    # Define the composition for a pure compound to be 1 if not specified
+    Mixture(['ethylene oxide'])
+
             
+    
+    
 def test_Mixture_input_vfs_TP():
     # test against the default arguments of T and P
     m0 = Mixture(['hexane', 'decane'], Vfls=[.5, .5])
@@ -164,3 +170,7 @@ def test_Mixture_predefined():
 def test_constant_properties():
     R_specific = Mixture(['N2', 'O2'], zs=[0.79, .21]).R_specific
     assert_allclose(R_specific, 288.1928437986195, rtol=1E-5)
+    
+def test_Mixture_VF_input():
+    test_mix = Mixture(['ethylene oxide', 'tetrahydrofuran',  'beta-propiolactone'], ws=[6021, 111569.76, 30711.21], T=400,  VF=0.5)
+    assert_allclose(test_mix.P, 370054, rtol=1E-2)

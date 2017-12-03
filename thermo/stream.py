@@ -337,7 +337,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.n, self.T, self.P)
             for i, in_self in enumerate(components_in_self):
                 if not in_self and other.zs[i] > 0:
                     raise Exception('Not all components to be removed are \
-present in the first stream; %s is not present.' %other.components[i])
+present in the first stream; %s is not present.' %other.IDs[i])
 
         # Calculate the mole flows of each species
         ns_self = list(self.ns)
@@ -353,7 +353,7 @@ present in the first stream; %s is not present.' %other.components[i])
                 relative_difference_self = abs(ns_self[i] - nj)/ns_self[i]
                 if ns_self[i] - nj < 0 and (relative_difference_product > 1E-12 or relative_difference_self > 1E-9):
                     raise Exception('Attempting to remove more %s than is in the \
-first stream.' %self.components[i])
+first stream.' %self.IDs[i])
                 if ns_self[i] - nj < 0.:
                     ns_self[i] = 0.
                 elif relative_difference_product < 1E-12:
