@@ -107,6 +107,9 @@ def test_Mixture_input_forms():
     
     # Define the composition for a pure compound to be 1 if not specified
     Mixture(['ethylene oxide'])
+    
+    # Flash failed BC P not specified - maybe should raise exception here
+    Mixture('air', VF=0.5)
 
             
     

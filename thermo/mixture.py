@@ -498,10 +498,16 @@ class Mixture(object):
     isobaric_expansion_l = None
     T_default = 298.15
     P_default = 101325.
+    autoflash = True # Whether or not to flash on init
 
     def __repr__(self):
-        return '<Mixture, components=%s, mole fractions=%s, T=%.2f K, P=%.0f \
-Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
+        txt = '<Mixture, components=%s, mole fractions=%s' % (self.names, [round(i,4) for i in self.zs])
+        # T and P may not be available if a flash has failed
+        try:
+            txt += ', T=%.2f K, P=%.0f Pa>' %(self.T, self.P)
+        except:
+            txt += ', thermodynamic conditions unknown>'
+        return txt
 
     def __init__(self, IDs=None, zs=None, ws=None, Vfls=None, Vfgs=None,
                  T=None, P=None, 
@@ -559,10 +565,6 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         self.set_constants()
         self.set_TP_sources()
 
-#        self.set_TP()
-#        self.set_phase()
-
-        self.set_property_package(pkg=pkg)        
         
         # To preserve backwards compatibility, mixures with no other state vars
         # specified will have their T and P initialized to the values of
@@ -575,7 +577,9 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
             if P is None:
                 P = self.P_default
         
-        self.flash_caloric(T=T, P=P, VF=VF, Hm=Hm, Sm=Sm, H=H, S=S)
+        self.set_property_package(pkg=pkg)
+        if self.autoflash:
+            self.flash_caloric(T=T, P=P, VF=VF, Hm=Hm, Sm=Sm, H=H, S=S)
 
 
     def set_chemical_constants(self):
@@ -807,6 +811,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
             Sm = property_mass_to_molar(S, self.MW)        
         
         self.property_package.flash_caloric(zs=self.zs, T=T, P=P, VF=VF, Hm=Hm, Sm=Sm)
+        self.status = self.property_package.status
         self.T = self.property_package.T
         self.P = self.property_package.P
         self.V_over_F = self.VF = self.property_package.V_over_F
@@ -838,90 +843,6 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         # Not strictly necessary
         [i.calculate(self.T, self.P) for i in self.Chemicals]
         self.set_eos(T=self.T, P=self.P)
-
-
-
-    def set_TP(self, T=None, P=None):
-        if T:
-            self.T = T
-        if P:
-            self.P = P
-        self.set_chemical_TP()
-        self.set_eos(T=self.T, P=self.P)
-
-    def set_phase(self):
-        try:
-            self.phase_methods = identify_phase_mixture(T=self.T, P=self.P, zs=self.zs, Tcs=self.Tcs, Pcs=self.Pcs, Psats=self.Psats, CASRNs=self.CASs, AvailableMethods=True)
-            self.phase_method = self.phase_methods[0]
-            self.phase, self.xs, self.ys, self.V_over_F = identify_phase_mixture(T=self.T, P=self.P, zs=self.zs, Tcs=self.Tcs, Pcs=self.Pcs, Psats=self.Psats, CASRNs=self.CASs, Method=self.phase_method)
-
-            if self.phase == 'two-phase':
-                self.wsl = zs_to_ws(self.xs, self.MWs)
-                self.wsg = zs_to_ws(self.ys, self.MWs)
-                
-                ng = self.V_over_F
-                nl = (1. - self.V_over_F)
-                
-                self.MWl = mixing_simple(self.xs, self.MWs)
-                self.MWg = mixing_simple(self.ys, self.MWs)
-                self.x = self.quality = ng*self.MWg/(nl*self.MWl + ng*self.MWg)
-
-            self.Pbubble_methods = Pbubble_mixture(T=self.T, zs=self.zs, Psats=self.Psats, CASRNs=self.CASs, AvailableMethods=True)
-            self.Pbubble_method = self.Pbubble_methods[0]
-            self.Pbubble = Pbubble_mixture(T=self.T, zs=self.zs, Psats=self.Psats, CASRNs=self.CASs, Method=self.Pbubble_method)
-
-            self.Pdew_methods = Pdew_mixture(T=self.T, zs=self.zs, Psats=self.Psats, CASRNs=self.CASs, AvailableMethods=True)
-            self.Pdew_method = self.Pdew_methods[0]
-            self.Pdew = Pdew_mixture(T=self.T, zs=self.zs, Psats=self.Psats, CASRNs=self.CASs, Method=self.Pdew_method)
-            if not None in self.Hs:
-                self.H = mixing_simple(self.Hs, self.ws)
-                self.Hm = property_mass_to_molar(self.H, self.MW)
-
-            if not None in self.Ss:
-                # Ideal gas contribution
-                self.Sm = mixing_simple(self.Sms, self.zs) - R*sum([zi*log(zi) for zi in self.zs if zi > 0])
-                self.S = property_molar_to_mass(self.Sm, self.MW)
-        except:
-            pass
-
-    def calculate(self, T=None, P=None):
-        if T:
-            if T < 0:
-                raise Exception('Negative value specified for Mixture temperature - aborting!')
-            self.T = T
-        else:
-            T = self.T
-        if P:
-            if P < 0:
-                raise Exception('Negative value specified for Mixture pressure - aborting!')
-        else:
-            P = self.P
-        self.set_TP(T=T, P=P)
-        self.set_phase()
-
-    def calculate_TH(self, T, H):
-        def to_solve(P):
-            self.calculate(T, P)
-            return self.H - H
-        return newton(to_solve, self.P)
-
-    def calculate_PH(self, P, H):
-        def to_solve(T):
-            self.calculate(T, P)
-            return self.H - H
-        return newton(to_solve, self.T)
-
-    def calculate_TS(self, T, S):
-        def to_solve(P):
-            self.calculate(T, P)
-            return self.S - S
-        return newton(to_solve, self.P)
-
-    def calculate_PS(self, P, S):
-        def to_solve(T):
-            self.calculate(T, P)
-            return self.S - S
-        return newton(to_solve, self.T)
 
     @property
     def Um(self):

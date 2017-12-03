@@ -211,8 +211,12 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.n, self.T, self.P)
         elif Qgs is not None:
             Vfgs = Qgs
         
+
+#        Mixture.autoflash = False
         super(Stream, self).__init__(IDs, zs=zs, ws=ws, Vfls=Vfls, Vfgs=Vfgs,
              T=T, P=P, Vf_TP=V_TP)
+#        Mixture.autoflash = True
+
         if n is not None:
             self.n = n
         elif m is not None:
@@ -269,7 +273,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.n, self.T, self.P)
 
         if self.phase == 'two-phase':
             self.ng = self.n*self.V_over_F
-            self.nl = self.n*(1-self.V_over_F)
+            self.nl = self.n*(1. - self.V_over_F)
             self.ngs = [yi*self.ng for yi in self.ys]
             self.nls = [xi*self.nl for xi in self.xs]
             self.mgs = [ni*MWi*1E-3 for ni, MWi in zip(self.ngs, self.MWs)]
@@ -286,11 +290,15 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.n, self.T, self.P)
                 self.Qg = None
             
     def set_extensive_properties(self):
-        if hasattr(self, 'H') and hasattr(self, 'S'):
-            self.S *= self.m
-            self.Sm *= self.n
+        if hasattr(self, 'Hm') and self.Hm is not None:
             self.H *= self.m
             self.Hm *= self.n
+        if hasattr(self, 'Sm') and self.Sm is not None:
+            self.S *= self.m
+            self.Sm *= self.n
+        if hasattr(self, 'Gm') and self.Sm is not None:
+            self.G *= self.m
+            self.Gm *= self.n
 
     def calculate(self, T=None, P=None):
         self.set_TP(T=T, P=P)
@@ -371,5 +379,4 @@ first stream.' %self.IDs[i])
                 CASs_product.append(CAS)
         # Create the resulting stream
         return Stream(IDs=CASs_product, ns=ns_product, T=self.T, P=self.P)
-
 
