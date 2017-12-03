@@ -31,7 +31,7 @@ __all__ = ['isobaric_expansion', 'isothermal_compressibility',
 'Vfs_to_zs', 'none_and_length_check', 'normalize', 'mixing_simple', 
 'mixing_logarithmic', 'has_matplotlib', 'to_num', 'CAS2int', 'sorted_CAS_key',
 'int2CAS', 'Parachor', 'property_molar_to_mass', 'property_mass_to_molar', 
-'SG_to_API', 'API_to_SG', 'SG',
+'SG_to_API', 'API_to_SG', 'SG', 'vapor_mass_quality',
 'phase_select_property', 'TDependentProperty', 
 'TPDependentProperty', 'MixtureProperty', 'allclose_variable', 'horner', 
 'polylog2']
@@ -239,6 +239,52 @@ def property_mass_to_molar(A_mass, MW):  # pragma: no cover
         return None
     A_molar = A_mass*MW/1000
     return A_molar
+
+
+def vapor_mass_quality(VF, MWl, MWg):
+    r'''Calculates the vapor quality on a mass basis of a two-phase mixture;
+    this is the most common definition, where 1 means a pure vapor and 0 means
+    a pure liquid. The vapor quality on a mass basis is related to the mole
+    basis vapor fraction according to the following relationship:
+    
+    .. math::
+        x = \frac{\frac{V}{F}\cdot  \text{MW}_g}
+        {(1-\frac{V}{F})\text{MW}_l + \frac{V}{F}\text{MW}_g}
+        
+    Parameters
+    ----------
+    VF : float
+        Mole-basis vapor fraction (0 = pure vapor, 1 = pure liquid), [-]
+    MWl : float
+        Average molecular weight of the liquid phase, [g/mol]
+    MWg : float
+        Average molecular weight of the vapor phase, [g/mol]
+
+    Returns
+    -------
+    quality : float
+        Vapor mass fraction of the two-phase system, [-]
+
+    Notes
+    -----
+    Other definitions of vapor fraction use an enthalpy basis instead of a mass
+    basis; still other less common ones take 1 to be the value of the
+    liquid, and 0 as pure vapor.
+
+    Examples
+    --------
+    >>> vapor_mass_quality(0.5, 60, 30)
+    0.3333333333333333
+
+    References
+    ----------
+    .. [1] Green, Don, and Robert Perry. Perry's Chemical Engineers' Handbook,
+       8E. McGraw-Hill Professional, 2007.
+    '''
+    ng = VF
+    nl = (1. - VF)
+    return ng*MWg/(nl*MWl + ng*MWg)
+
 
 def SG_to_API(SG):
     r'''Calculates specific gravity of a liquid given its API, as shown in

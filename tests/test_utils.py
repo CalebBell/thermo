@@ -127,6 +127,9 @@ def test_Z():
     Z_calc = Z(600, P=1E6, V=0.00463)
     assert_allclose(Z_calc, 0.9281019876560912)
 
+def test_vapor_mass_quality():
+    x = vapor_mass_quality(0.5, 60, 30)
+    assert_allclose(x, 1/3.)
 
 def test_Vm_to_rho():
     rho = Vm_to_rho(0.000132, 86.18)

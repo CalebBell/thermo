@@ -372,9 +372,8 @@ class Mixture(object):
 Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
 
     def __init__(self, IDs=None, zs=None, ws=None, Vfls=None, Vfgs=None,
-                 T=298.15, P=101325, Vf_TP=(None, None)):
-        self.P = P
-        self.T = T
+                 T=298.15, P=101325, Vf_TP=(None, None),
+                 pkg=None, VF=None, H=None, Hm=None, S=None, Sm=None):
 
         if hasattr(IDs, 'strip') or (isinstance(IDs, list) and len(IDs) == 1):
             try:
@@ -446,17 +445,21 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         if not length_matching:
             raise Exception('Composition is not the same length as the component identifiers')
 
+        self.P = P
+        self.T = T
 
         self.components = tuple(IDs)
-        self.Chemicals = [Chemical(component, P=P, T=T) for component in self.components]
+        T_chemical_init = T if T is not None else 298.15
+        P_chemical_init = P if P is not None else 101325.
+        self.Chemicals = [Chemical(component, P=P_chemical_init, T=T_chemical_init) for component in self.components]
         self.names = [i.name for i in self.Chemicals]
         self.MWs = [i.MW for i in self.Chemicals]
         self.CASs = [i.CAS for i in self.Chemicals]
 
         # Required for densities for volume fractions before setting fractions
         self.set_chemical_constants()
-        self.set_chemical_TP()
         self.set_Chemical_property_objects()
+#        self.set_chemical_TP()
 
         if zs:
             self.zs = zs if sum(zs) == 1 else [zi/sum(zs) for zi in zs]
@@ -495,8 +498,16 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         self.set_constants()
         self.set_TP_sources()
 
-        self.set_TP()
-        self.set_phase()
+#        self.set_TP()
+#        self.set_phase()
+        self.set_property_package(pkg=pkg)
+        if H is not None:
+            Hm = property_mass_to_molar(H, self.MW)
+        if S is not None:
+            Sm = property_mass_to_molar(S, self.MW)
+        
+        
+        self.flash_caloric(T=T, P=P, VF=VF, Hm=Hm, Sm=Sm)
 
 
     def set_chemical_constants(self):
@@ -692,6 +703,9 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     def set_property_package(self, pkg=None):
         if pkg is None:
             from thermo.property_package import IdealCaloric as pkg
+        
+        eos_mix = type(self.eos_in_a_box[0]) if self.eos_in_a_box else PRMIX
+
         self.property_package = pkg(VaporPressures=self.VaporPressures,
                                      Tms=self.Tms, Tbs=self.Tbs,
                                      Tcs=self.Tcs, Pcs=self.Pcs,
@@ -700,7 +714,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
                                      EnthalpyVaporizations=self.EnthalpyVaporizations,
                                      UNIFAC_groups=self.UNIFAC_groups, omegas=self.omegas,
                                      VolumeLiquids=self.VolumeLiquids, eos=type(self.Chemicals[0].eos),
-                                     eos_mix=type(self.eos))        
+                                     eos_mix=eos_mix)        
         
         
     def flash_caloric(self, T=None, P=None, VF=None, Hm=None, Sm=None):
@@ -715,7 +729,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         self.property_package.flash_caloric(zs=self.zs, T=T, P=P, VF=VF, Hm=Hm, Sm=Sm)
         self.T = self.property_package.T
         self.P = self.property_package.P
-        self.V_over_F = self.property_package.V_over_F
+        self.V_over_F = self.VF = self.property_package.V_over_F
         self.xs = self.property_package.xs
         self.ys = self.property_package.ys
         self.phase = self.property_package.phase
@@ -728,20 +742,23 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         self.S = property_molar_to_mass(self.Sm, self.MW)
         self.G = property_molar_to_mass(self.Gm, self.MW)
         
+        # values are None when not in the appropriate phase
+        self.MWl = mixing_simple(self.xs, self.MWs) if self.xs is not None else None
+        self.MWg = mixing_simple(self.ys, self.MWs) if self.ys is not None else None
+        self.wsl = zs_to_ws(self.xs, self.MWs) if self.xs is not None else None
+        self.wsg = zs_to_ws(self.ys, self.MWs) if self.ys is not None else None
+        
+        if (self.MWl is not None and self.MWg is not None):
+            self.quality = self.x = vapor_mass_quality(self.V_over_F, MWl=self.MWl, MWg=self.MWg) 
+        else:
+            self.quality = self.x = None
+       
+        
 
         # Not strictly necessary
         [i.calculate(self.T, self.P) for i in self.Chemicals]
         self.set_eos(T=self.T, P=self.P)
 
-        if self.phase == 'two-phase':
-            self.wsl = zs_to_ws(self.xs, self.MWs)
-            self.wsg = zs_to_ws(self.ys, self.MWs)
-            
-            ng = self.V_over_F
-            nl = (1. - self.V_over_F)
-            self.MWl = mixing_simple(self.xs, self.MWs)
-            self.MWg = mixing_simple(self.ys, self.MWs)
-            self.x = self.quality = ng*self.MWg/(nl*self.MWl + ng*self.MWg)
 
 
     def set_TP(self, T=None, P=None):
@@ -764,6 +781,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
                 
                 ng = self.V_over_F
                 nl = (1. - self.V_over_F)
+                
                 self.MWl = mixing_simple(self.xs, self.MWs)
                 self.MWg = mixing_simple(self.ys, self.MWs)
                 self.x = self.quality = ng*self.MWg/(nl*self.MWl + ng*self.MWg)
@@ -824,6 +842,22 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
             self.calculate(T, P)
             return self.S - S
         return newton(to_solve, self.T)
+
+    @property
+    def Tdew(self):
+        return self.property_package.Tdew(P=self.P, zs=self.zs)
+    
+    @property
+    def Pdew(self):        
+        return self.property_package.Pdew(T=self.T, zs=self.zs)
+    
+    @property
+    def Tbubble(self):
+        return self.property_package.Tbubble(P=self.P, zs=self.zs)
+
+    @property
+    def Pbubble(self):
+        return self.property_package.Pbubble(T=self.T, zs=self.zs)
 
 
     def Vfls(self, T=None, P=None):
