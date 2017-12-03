@@ -171,7 +171,7 @@ def preprocess_mixture_composition(IDs=None, zs=None, ws=None, Vfls=None,
 class Mixture(object): 
     '''Creates a Mixture object which contains basic information such as 
     molecular weight and the structure of the species, as well as thermodynamic
-    and transport properties as a function of two of the varables temperature,
+    and transport properties as a function of two of the variables temperature,
     pressure, vapor fraction, enthalpy, or entropy.
     
     The components of the mixture must be specified by specifying the names of

@@ -33,14 +33,9 @@ class Stream(Mixture):
     balances.
     
     Streams have five variables. The flow rate, composition, and components are
-    mandatory; temperature and pressure have defaults of 298.15 K and 101325 Pa.
+    mandatory; and two of the variables temperature, pressure, vapor fraction, 
+    enthalpy, or entropy are required.
     
-    * The components
-    * The composition
-    * The flow rate
-    * The temperature
-    * The pressure
-
     The composition and flow rate may be specified together or separately. The
     options for specifying them are:
     
@@ -61,6 +56,9 @@ class Stream(Mixture):
     * Mole flow rate `n`
     * Mass flow rate `m`
     * Volumetric flow rate `Q` at the provided `T` and `P`
+    
+    The enthalpy or entropy, if specified, are not specific values, but 
+    extensive ones for the whole stream (units J and J/K respectively).
     
     Parameters
     ----------
@@ -95,9 +93,19 @@ class Stream(Mixture):
         Total volumetric flow rate of all components in the stream based on the
         temperature and pressure specified by `T` and `P` [m^3/s]
     T : float, optional
-        Temperature of the chemical (default 298.15 K), [K]
+        Temperature of the stream (default 298.15 K), [K]
     P : float, optional
-        Pressure of the chemical (default 101325 Pa) [Pa]
+        Pressure of the stream (default 101325 Pa) [Pa]
+    VF : float, optional
+        Vapor fraction (mole basis) of the stream, [-]
+    H : float, optional
+        Mass enthalpy of the stream, [J]
+    S : float, optional
+        Mass entropy of the stream, [J/K]
+    pkg : object 
+        The thermodynamic property package to use for flash calculations;
+        one of the caloric packages in :obj:`thermo.property_package`;
+        defaults to the ideal model [-]
     Vf_TP : tuple(2, float), optional
         The (T, P) at which the volume fractions are specified to be at, [K] 
         and [Pa] 
@@ -174,7 +182,9 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.n, self.T, self.P)
     
     def __init__(self, IDs=None, zs=None, ws=None, Vfls=None, Vfgs=None,
                  ns=None, ms=None, Qls=None, Qgs=None, 
-                 n=None, m=None, Q=None, T=298.15, P=101325, V_TP=(None, None)):
+                 n=None, m=None, Q=None, 
+                 T=None, P=None, VF=None, H=None, S=None, 
+                 V_TP=(None, None)):
         composition_options = (zs, ws, Vfls, Vfgs, ns, ms, Qls, Qgs)
         composition_option_count = sum(i is not None for i in composition_options)
         if hasattr(IDs, 'strip') or (type(IDs) == list and len(IDs) == 1):
@@ -211,11 +221,16 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.n, self.T, self.P)
         elif Qgs is not None:
             Vfgs = Qgs
         
-
-#        Mixture.autoflash = False
-        super(Stream, self).__init__(IDs, zs=zs, ws=ws, Vfls=Vfls, Vfgs=Vfgs,
-             T=T, P=P, Vf_TP=V_TP)
-#        Mixture.autoflash = True
+        if T is not None and P is not None:
+            super(Stream, self).__init__(IDs, zs=zs, ws=ws, Vfls=Vfls, Vfgs=Vfgs,
+                 T=T, P=P, Vf_TP=V_TP)
+        else:
+            Mixture.autoflash = False
+            super(Stream, self).__init__(IDs, zs=zs, ws=ws, Vfls=Vfls, Vfgs=Vfgs,
+                 Vf_TP=V_TP)
+            Mixture.autoflash = True
+                        
+        
 
         if n is not None:
             self.n = n
@@ -235,6 +250,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.n, self.T, self.P)
                 ms = ms.values()
             self.n = property_molar_to_mass(sum(ms), self.MW)
         elif Qls is not None:
+            # volume flows and total enthalpy/entropy should be disabled
             try:
                 if isinstance(Qls, (OrderedDict, dict)):
                     Qls = Qls.values()
@@ -248,6 +264,27 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.n, self.T, self.P)
                 self.n = sum([Q/Vmg for Q, Vmg in zip(Qgs, self.Vmgs)])
             except:
                 raise Exception('Gas molar volume could not be calculated to determine the flow rate of the stream.')
+        
+        
+        if T is not None and P is not None: 
+            # Complicated flashes
+            Hm, Sm = None, None
+            if H is not None:
+                Hm = H/self.n
+                H = None
+            elif S is not None:
+                Sm = S/self.n
+                S = None
+                
+            non_TP_state_vars = sum(i is not None for i in [VF, Hm, H, Sm, S])
+            if non_TP_state_vars == 0:
+                if T is None:
+                    T = self.T_default
+                if P is None:
+                    P = self.P_default
+                
+            self.flash_caloric(T=T, P=P, VF=VF, Hm=Hm, Sm=Sm)
+        
         self.set_extensive_flow(self.n)
         self.set_extensive_properties()
 
