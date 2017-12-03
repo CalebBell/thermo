@@ -1995,7 +1995,13 @@ class TDependentProperty(object):
         
     def extrapolate_tabular(self, T):
         if 'EXTRAPOLATE_TABULAR' not in self.tabular_data:
+            if self.Tmin is None or self.Tmax is None:
+                raise Exception('Could not automatically generate interpolation'
+                                ' data for property %s of %s because temperature '
+                                'limits could not be determined.' %(self.name, self.CASRN))
+            
             Ts = np.linspace(max(20, self.Tmin), self.Tmax, 200)
+            
             properties = [self.T_dependent_property(T) for T in Ts]
             Ts_cleaned = []
             properties_cleaned = []

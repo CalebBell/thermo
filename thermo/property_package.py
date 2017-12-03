@@ -413,23 +413,41 @@ class IdealCaloric(Ideal):
             z_tot = sum(zs)
             zs = [i/z_tot for i in zs]
             
-        if T is not None and Sm is not None:
-            P = self.flash_TS_zs_bounded(T=T, Sm=Sm, zs=zs)
-        elif P is not None and Sm is not None:
-            T = self.flash_PS_zs_bounded(P=P, Sm=Sm, zs=zs)
-        elif P is not None and Hm is not None:
-            T = self.flash_PH_zs_bounded(P=P, Hm=Hm, zs=zs)
-        elif ((T is not None and P is not None) or
-            (T is not None and VF is not None) or
-            (P is not None and VF is not None)):
-            pass
-        else:
-            raise Exception('Flash inputs unsupported')
+        try:
+            if T is not None and Sm is not None:
+                P = self.flash_TS_zs_bounded(T=T, Sm=Sm, zs=zs)
+            elif P is not None and Sm is not None:
+                T = self.flash_PS_zs_bounded(P=P, Sm=Sm, zs=zs)
+            elif P is not None and Hm is not None:
+                T = self.flash_PH_zs_bounded(P=P, Hm=Hm, zs=zs)
+            elif ((T is not None and P is not None) or
+                (T is not None and VF is not None) or
+                (P is not None and VF is not None)):
+                pass
+            else:
+                raise Exception('Flash inputs unsupported')
 
-        self.flash(zs=zs, T=T, P=P, VF=VF)
-        self._post_flash()
+            self.flash(zs=zs, T=T, P=P, VF=VF)
+            self._post_flash()
+            self.status = True
+        except Exception as e:
+            # Write Nones for everything here
+            self.status = e
+            self._set_failure()
             
-        
+    def _set_failure(self):
+        self.Hm = None
+        self.Sm = None
+        self.Gm = None
+        self.T = None
+        self.P = None
+        self.phase = None
+        self.V_over_F = None
+        self.xs = None
+        self.ys = None
+            
+
+
     def _post_flash(self):
         # Cannot derive other properties with this
         self.Hm = self.enthalpy_Cpg_Hvap()
