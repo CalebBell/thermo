@@ -59,7 +59,113 @@ try:
 except: # pragma: no cover
     pass
 
+def preprocess_mixture_composition(IDs=None, zs=None, ws=None, Vfls=None, 
+                                   Vfgs=None):
+    r'''Composition preprocessing function for the :obj:`thermo.mixture.Mixture`
+    class, as it had grown to the size it required its own function.
+    
+    This function accepts the possible ways of specifying composition, parses
+    and checks them to an extent, and returns the same arguments it receives.
+    
+    The tasks it performs are as follows:
+        
+        * Check if the input ID was a string, or a 1-length list, which is one
+          of the main keys or synonyms retrievable from 
+          :obj:`thermo.identifiers.mixture_from_any`; if it is, take the
+          composition from that method (weight fractions will be returned).
+        * If the ID is a string or a 1-length list, set the composition to
+          be pure.
+        * If the composition (zs, ws, Vfls, Vfgs) is a list, turn it into a
+          copy of the list to not change other instances of it.
+        * If the composition is a numpy array, convert it to a list for greater
+          speed.
+        * If the composition is a dict or OrderedDict, take the keys of it
+          as the identifiers from its keys and the composition as its values.
+          
+    If no composition has been specified after the above parsing, an exception
+    is raised. 
+    
+    If multiple ways of specifying composition were used, raise an exception.
+    
+    If the length of the specified composition is not the same as the number
+    of identifiers given, an exception is raised.
+    
+    Note this method does not normalize composition to one; or check the 
+    identifiers are valid.
+    '''
+    # Test if the input ID a string or a list
+    if hasattr(IDs, 'strip') or (isinstance(IDs, list) and len(IDs) == 1):
+        try:
+            # Assume the name was a pre-defined mixture
+            mixname = mixture_from_any(IDs)
+            _d = _MixtureDict[mixname]
+            IDs = _d["CASs"]
+            ws = _d["ws"]
+            mixname = mixname
+            mixsource = _d["Source"]
+        except:
+            if hasattr(IDs, 'strip'):
+                IDs = [IDs]
 
+                zs = [1.0]
+            elif isinstance(IDs, list) and len(IDs) == 1:
+                pass
+                zs = [1.0]
+            else:
+                raise Exception('Could not recognize the mixture IDs')
+
+    # Handle numpy array inputs; also turn mutable inputs into copies
+    if zs is not None:
+        t = type(zs)
+        if t == list:
+            zs = list(zs)
+        elif t == np.ndarray:
+            zs = zs.tolist()
+        elif isinstance(zs, (OrderedDict, dict)):
+            IDs = list(zs.keys())
+            zs = list(zs.values())
+        length_matching = len(zs) == len(IDs)
+    elif ws is not None:
+        t = type(ws)
+        if t == list:
+            ws = list(ws)
+        elif t == np.ndarray:
+            ws = ws.tolist()
+        elif isinstance(ws, (OrderedDict, dict)):
+            IDs = list(ws.keys())
+            ws = list(ws.values())
+        length_matching = len(ws) == len(IDs)
+    elif Vfls is not None:
+        t = type(Vfls)
+        if t == list:
+            Vfls = list(Vfls)
+        elif t == np.ndarray:
+            Vfls = Vfls.tolist()
+        elif isinstance(Vfls, (OrderedDict, dict)):
+            IDs = list(Vfls.keys())
+            Vfls = list(Vfls.values())
+        length_matching = len(Vfls) == len(IDs)
+    elif Vfgs is not None:
+        t = type(Vfgs)
+        if t == list:
+            Vfgs = list(Vfgs)
+        elif t == np.ndarray:
+            Vfgs = Vfgs.tolist()
+        elif isinstance(Vfgs, (OrderedDict, dict)):
+            IDs = list(Vfgs.keys())
+            Vfgs = list(Vfgs.values())
+        length_matching = len(Vfgs) == len(IDs)
+    else:
+        raise Exception("One of 'zs', 'ws', 'Vfls', or 'Vfgs' is required to define the mixture")
+    # Do not to a test on multiple composition inputs in case the user specified
+    # a composition, plus one was set (it will be zero anyway)
+    if len(IDs) > 1 and ((zs is not None) + (ws is not None) + (Vfgs is not None) + (Vfls is not None)) > 1:
+        raise Exception('Multiple different composition arguments were '
+                        "specified; specify only one of the arguments "
+                        "'zs', 'ws', 'Vfls', or 'Vfgs'.")
+    if not length_matching:
+        raise Exception('Composition is not the same length as the component identifiers')
+    return IDs, zs, ws, Vfls, Vfgs
 
 
 class Mixture(object): 
@@ -375,75 +481,9 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
                  T=298.15, P=101325, Vf_TP=(None, None),
                  pkg=None, VF=None, H=None, Hm=None, S=None, Sm=None):
 
-        if hasattr(IDs, 'strip') or (isinstance(IDs, list) and len(IDs) == 1):
-            try:
-                mixname = mixture_from_any(IDs)
-                _d = _MixtureDict[mixname]
-                IDs = _d["CASs"]
-                ws = _d["ws"]
-                self.mixname = mixname
-                self.mixsource = _d["Source"]
-            except:
-                if hasattr(IDs, 'strip'):
-                    IDs = [IDs]
-                    
-                    zs = [1]
-                elif isinstance(IDs, list) and len(IDs) == 1:
-                    pass
-                else:
-                    raise Exception('Could not recognize the mixture IDs')
-
-        # Handle numpy array inputs; also turn mutable inputs into copies
-        if zs is not None:
-            t = type(zs)
-            if t == list:
-                zs = list(zs)
-            elif t == np.ndarray:
-                zs = zs.tolist()
-            elif isinstance(zs, (OrderedDict, dict)):
-                IDs = list(zs.keys())
-                zs = list(zs.values())
-            length_matching = len(zs) == len(IDs)
-        elif ws is not None:
-            t = type(ws)
-            if t == list:
-                ws = list(ws)
-            elif t == np.ndarray:
-                ws = ws.tolist()
-            elif isinstance(ws, (OrderedDict, dict)):
-                IDs = list(ws.keys())
-                ws = list(ws.values())
-            length_matching = len(ws) == len(IDs)
-        elif Vfls is not None:
-            t = type(Vfls)
-            if t == list:
-                Vfls = list(Vfls)
-            elif t == np.ndarray:
-                Vfls = Vfls.tolist()
-            elif isinstance(Vfls, (OrderedDict, dict)):
-                IDs = list(Vfls.keys())
-                Vfls = list(Vfls.values())
-            length_matching = len(Vfls) == len(IDs)
-        elif Vfgs is not None:
-            t = type(Vfgs)
-            if t == list:
-                Vfgs = list(Vfgs)
-            elif t == np.ndarray:
-                Vfgs = Vfgs.tolist()
-            elif isinstance(Vfgs, (OrderedDict, dict)):
-                IDs = list(Vfgs.keys())
-                Vfgs = list(Vfgs.values())
-            length_matching = len(Vfgs) == len(IDs)
-        else:
-            raise Exception("One of 'zs', 'ws', 'Vfls', or 'Vfgs' is required to define the mixture")
-        # Do not to a test on multiple composition inputs in case the user specified
-        # a composition, plus one was set (it will be zero anyway)
-        if len(IDs) > 1 and ((zs is not None) + (ws is not None) + (Vfgs is not None) + (Vfls is not None)) > 1:
-            raise Exception('Multiple different composition arguments were '
-                            "specified; specify only one of the arguments "
-                            "'zs', 'ws', 'Vfls', or 'Vfgs'.")
-        if not length_matching:
-            raise Exception('Composition is not the same length as the component identifiers')
+        # Perofrm preprocessing of the mixture composition separately so it
+        # can be tested on its own
+        IDs, zs, ws, Vfls, Vfgs = preprocess_mixture_composition(IDs=IDs, zs=zs, ws=ws, Vfls=Vfls, Vfgs=Vfgs)
 
         self.P = P
         self.T = T
