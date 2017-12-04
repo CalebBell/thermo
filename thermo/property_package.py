@@ -286,6 +286,55 @@ class PropertyPackage(object):
         fig.subplots_adjust(top=0.85)
         plt.show()
 
+    def plot_TP_caloric(self, zs, Tmin=None, Tmax=None, Pmin=None, Pmax=None, 
+                        pts=15, prop='Hm'):  # pragma: no cover
+        if prop not in ['Sm', 'Gm', 'Hm']:
+            raise Exception("The only supported property plots are enthalpy "
+                            "('Hm'), entropy ('Sm'), and Gibbe energy ('Gm')")
+        prop_name = {'Hm': 'enthalpy', 'Sm': 'entropy', 'Gm': 'Gibbs energy'}[prop]
+        prop_units = {'Hm': 'J/mol', 'Sm': 'J/mol/K', 'Gm': 'J/mol'}[prop]
+
+        if not has_matplotlib:
+            raise Exception('Optional dependency matplotlib is required for plotting')
+        from mpl_toolkits.mplot3d import axes3d
+        from matplotlib.ticker import FormatStrFormatter
+        import numpy.ma as ma
+
+        if Pmin is None:
+            raise Exception('Minimum pressure could not be auto-detected; please provide it')
+        if Pmax is None:
+            raise Exception('Maximum pressure could not be auto-detected; please provide it')
+        if Tmin is None:
+            raise Exception('Minimum pressure could not be auto-detected; please provide it')
+        if Tmax is None:
+            raise Exception('Maximum pressure could not be auto-detected; please provide it')
+
+        Ps = np.linspace(Pmin, Pmax, pts)
+        Ts = np.linspace(Tmin, Tmax, pts)
+        Ts_mesh, Ps_mesh = np.meshgrid(Ts, Ps)
+        fig = plt.figure()
+        ax = fig.gca(projection='3d')
+        
+        
+        properties = []
+        for T in Ts:
+            properties2 = []
+            for P in Ps:
+                self.flash_caloric(zs=zs, T=T, P=P)
+                properties2.append(getattr(self, prop))
+            properties.append(properties2)
+                
+        ax.plot_surface(Ts_mesh, Ps_mesh, properties, cstride=1, rstride=1, alpha=0.5)
+        
+        ax.yaxis.set_major_formatter(FormatStrFormatter('%.4g'))
+        ax.zaxis.set_major_formatter(FormatStrFormatter('%.4g'))
+        ax.xaxis.set_major_formatter(FormatStrFormatter('%.4g'))
+        ax.set_xlabel('Temperature, K')
+        ax.set_ylabel('Pressure, Pa')
+        ax.set_zlabel('%s, %s' %(prop_name, prop_units))
+        plt.title('Temperature-pressure %s plot' %prop_name)
+        plt.show(block=False)
+
 
 class Ideal(PropertyPackage):
     def _T_VF_err(self, P, VF, zs, Psats):
