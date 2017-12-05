@@ -267,23 +267,14 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.n, self.T, self.P)
         
         
         if T is not None and P is not None: 
-            # Complicated flashes
-            Hm, Sm = None, None
-            if H is not None:
-                Hm = H/self.n
-                H = None
-            elif S is not None:
-                Sm = S/self.n
-                S = None
-                
-            non_TP_state_vars = sum(i is not None for i in [VF, Hm, H, Sm, S])
+            non_TP_state_vars = sum(i is not None for i in [VF, H, S])
             if non_TP_state_vars == 0:
                 if T is None:
                     T = self.T_default
                 if P is None:
                     P = self.P_default
                 
-            self.flash_caloric(T=T, P=P, VF=VF, Hm=Hm, Sm=Sm)
+        self.flash(T=T, P=P, VF=VF, H=H, S=S)
         
         self.set_extensive_flow(self.n)
         self.set_extensive_properties()
@@ -308,7 +299,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.n, self.T, self.P)
         except:
             pass
 
-        if self.phase == 'two-phase':
+        if self.phase == 'l/g':
             self.ng = self.n*self.V_over_F
             self.nl = self.n*(1. - self.V_over_F)
             self.ngs = [yi*self.ng for yi in self.ys]
@@ -326,7 +317,23 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.n, self.T, self.P)
             else:
                 self.Qg = None
             
+    def flash(self, T=None, P=None, VF=None, H=None, S=None):
+        if H is not None:
+            Hm = H/self.n
+        else:
+            Hm = None
+        if S is not None:
+            Sm = S/self.n
+        else:
+            Sm = None
+        super(Stream, self).flash_caloric(T=T, P=P, VF=VF, Hm=Hm, Sm=Sm)
+        self.set_extensive_properties()
+
+
     def set_extensive_properties(self):
+        # TODO: make sure this is called in post-flash routine
+        if not hasattr(self, 'm'):
+            return None
         if hasattr(self, 'Hm') and self.Hm is not None:
             self.H *= self.m
             self.Hm *= self.n
