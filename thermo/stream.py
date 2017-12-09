@@ -175,11 +175,17 @@ class Stream(Mixture):
     ...                     ('pentane', 0.00032),
     ...                     ('hexane', 0.00066)])
     >>> m = Stream(ws=comp, m=33)
-    '''
+    '''    
     def __repr__(self): # pragma: no cover
-        return '<Stream, components=%s, mole fractions=%s, mole flow=%s mol/s, T=%.2f K, P=%.0f \
-Pa>' % (self.names, [round(i,4) for i in self.zs], self.n, self.T, self.P)
-    
+        txt = '<Stream, components=%s, mole fractions=%s, mass flow=%s kg/s' % (self.names, [round(i,4) for i in self.zs], self.m)
+        # T and P may not be available if a flash has failed
+        try:
+            txt += ', T=%.2f K, P=%.0f Pa>' %(self.T, self.P)
+        except:
+            txt += ', thermodynamic conditions unknown>'
+        return txt
+
+
     def __init__(self, IDs=None, zs=None, ws=None, Vfls=None, Vfgs=None,
                  ns=None, ms=None, Qls=None, Qgs=None, 
                  n=None, m=None, Q=None, 
