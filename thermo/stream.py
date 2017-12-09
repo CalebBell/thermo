@@ -272,7 +272,7 @@ class Stream(Mixture):
                 raise Exception('Gas molar volume could not be calculated to determine the flow rate of the stream.')
         
         
-        if T is not None or P is not None: 
+        if T is None or P is None: 
             non_TP_state_vars = sum(i is not None for i in [VF, H, S])
             if non_TP_state_vars == 0:
                 if T is None:
