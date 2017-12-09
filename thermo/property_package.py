@@ -435,10 +435,11 @@ class Ideal(PropertyPackage):
 class IdealCaloric(Ideal):
     T_REF_IG = 298.15
     P_REF_IG = 101325.
+    P_DEPENDENT_H_LIQ = True
     
     def __init__(self, VaporPressures=None, Tms=None, Tbs=None, Tcs=None, Pcs=None, 
                  HeatCapacityLiquids=None, HeatCapacityGases=None,
-                 EnthalpyVaporizations=None, **kwargs):
+                 EnthalpyVaporizations=None, VolumeLiquids=None, **kwargs):
         self.cmps = range(len(VaporPressures))
         self.N = len(VaporPressures)
         self.VaporPressures = VaporPressures
@@ -449,12 +450,14 @@ class IdealCaloric(Ideal):
         self.HeatCapacityLiquids = HeatCapacityLiquids
         self.HeatCapacityGases = HeatCapacityGases
         self.EnthalpyVaporizations = EnthalpyVaporizations
+        self.VolumeLiquids = VolumeLiquids
         
         self.kwargs = {'VaporPressures': VaporPressures,
                        'Tms': Tms, 'Tbs': Tbs, 'Tcs': Tcs, 'Pcs': Pcs,
                        'HeatCapacityLiquids': HeatCapacityLiquids, 
                        'HeatCapacityGases': HeatCapacityGases,
-                       'EnthalpyVaporizations': EnthalpyVaporizations}
+                       'EnthalpyVaporizations': EnthalpyVaporizations, 
+                       'VolumeLiquids': VolumeLiquids}
         
     def flash_caloric(self, zs, T=None, P=None, VF=None, Hm=None, Sm=None):
         if any(i == 0 for i in zs):
@@ -507,8 +510,8 @@ class IdealCaloric(Ideal):
 
 
     def enthalpy_Cpg_Hvap(self):
-        r'''Method to calculate the enthalpy of an ideal mixture (no pressure
-        effects). This routine is based on "route A", where only the gas heat
+        r'''Method to calculate the enthalpy of an ideal mixture. This routine
+        is based on "route A", where the gas heat
         capacity and enthalpy of vaporization are used.
         
         The reference temperature is a property of the class; it defaults to
@@ -529,6 +532,11 @@ class IdealCaloric(Ideal):
         .. math::
              H = \sum_i z_i \cdot \int_{T_{ref}}^T C_{p}^{ig}(T) dT
                  + \sum_i x_i\left(1 - \frac{V}{F}\right)H_{vap, i}(T)
+                 
+        For liquids, the enthalpy contribution of pressure is:
+        
+        .. math::
+            \Delta H = \sum_i z_i (P - P_{sat, i}) V_{m, i}
 
         Returns
         -------
@@ -544,17 +552,22 @@ class IdealCaloric(Ideal):
         '''
         H = 0
         T = self.T
+        P = self.P
         if self.phase == 'g':
             for i in self.cmps:
                 H += self.zs[i]*self.HeatCapacityGases[i].T_dependent_property_integral(self.T_REF_IG, T)
         elif self.phase == 'l':
+            Psats = self._Psats(T=T)
             for i in self.cmps:
                 # No further contribution needed
                 Hg298_to_T = self.HeatCapacityGases[i].T_dependent_property_integral(self.T_REF_IG, T)
                 Hvap = self.EnthalpyVaporizations[i](T) # Do the transition at the temperature of the liquid
                 if Hvap is None:
                     Hvap = 0 # Handle the case of a package predicting a transition past the Tc
-                H += self.zs[i]*(Hg298_to_T - Hvap)
+                H_i = Hg298_to_T - Hvap 
+                if self.P_DEPENDENT_H_LIQ:
+                    H_i += (P - Psats[i])*self.VolumeLiquids[i](T, P)
+                H += self.zs[i]*(H_i) # 
         elif self.phase == 'l/g':
             for i in self.cmps:
                 Hg298_to_T_zi = self.zs[i]*self.HeatCapacityGases[i].T_dependent_property_integral(self.T_REF_IG, T)
@@ -1248,6 +1261,10 @@ class GammaPhi(PropertyPackage):
     def P_bubble_at_T(self, T, zs, Psats=None):
         # Returns P_bubble; only thing easy to calculate
         Psats = self._Psats(Psats, T)
+        # If there is one component, return at the saturation line
+        if self.N == 1:
+            return Psats[0]
+        
         gammas = self.gammas(T=T, xs=zs)
         P = sum([gammas[i]*zs[i]*Psats[i] for i in self.cmps])
         if self.use_Poynting and not self.use_phis:
@@ -1268,6 +1285,11 @@ class GammaPhi(PropertyPackage):
 
     def P_dew_at_T(self, T, zs, Psats=None):
         Psats = self._Psats(Psats, T)
+        
+        # If there is one component, return at the saturation line
+        if self.N == 1:
+            return Psats[0]
+        
         Pmax = self.P_bubble_at_T(T, zs, Psats)
         diff = 1E-7
         # EOSs do not solve at very low pressure
@@ -1286,6 +1308,11 @@ class GammaPhi(PropertyPackage):
     def flash_TVF_zs(self, T, VF, zs):
         assert 0 <= VF <= 1
         Psats = self._Psats(T=T)
+        
+        # handle one component
+        if self.N == 1:
+            return 'l/g', [1.0], [1.0], VF, Psats[0]
+        
         Pbubble = self.P_bubble_at_T(T=T, zs=zs, Psats=Psats)
         if VF == 0:
             P = Pbubble
@@ -1319,6 +1346,9 @@ class GammaPhi(PropertyPackage):
     
    
     def flash_PVF_zs(self, P, VF, zs):
+        if self.N == 1:
+            Tsats = self._Tsats(P)
+            return 'l/g', [1.0], [1.0], VF, Tsats[0]
         try:
             # In some caases, will find a false root - resort to iterations which
             # are always between Pdew and Pbubble if this happens

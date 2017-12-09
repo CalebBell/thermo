@@ -37,6 +37,11 @@ def test_Stream():
            zs=[.7371, 0, .024, .027, .013, .2475], 
     T=500, P=20.5E5, m=300)
 
+    # Test the pressure will be set if none is specified
+    obj = Stream(['methanol'], T=305, zs=[1], n=1)
+    assert obj.P == obj.P_default
+    obj = Stream(['methanol'], P=1E5, zs=[1], n=1)
+    assert obj.T == obj.T_default
 
 def test_Stream_inputs():
     compositions = {'zs': [0.5953064630759212, 0.4046935369240788], 'ws': [0.365177574313603, 0.634822425686397],

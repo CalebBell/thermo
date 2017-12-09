@@ -31,8 +31,8 @@ __all__ = ['isobaric_expansion', 'isothermal_compressibility',
 'Vfs_to_zs', 'none_and_length_check', 'normalize', 'mixing_simple', 
 'mixing_logarithmic', 'has_matplotlib', 'to_num', 'CAS2int', 'sorted_CAS_key',
 'int2CAS', 'Parachor', 'property_molar_to_mass', 'property_mass_to_molar', 
-'SG_to_API', 'API_to_SG', 'SG', 'vapor_mass_quality',
-'phase_select_property', 'TDependentProperty', 
+'SG_to_API', 'API_to_SG', 'SG', 'vapor_mass_quality', 'mix_component_flows',
+'mix_multiple_component_flows', 'phase_select_property', 'TDependentProperty', 
 'TPDependentProperty', 'MixtureProperty', 'allclose_variable', 'horner', 
 'polylog2']
 
@@ -1588,6 +1588,118 @@ def phase_select_property(phase=None, s=None, l=None, g=None, V_over_F=None):
         raise Exception('Property not recognized')
 
 
+def mix_component_flows(IDs1, IDs2, flow1, flow2, fractions1, fractions2):
+    r'''Mix two flows of potentially different chemicals of given overall flow
+    rates and flow fractions to determine the outlet components, flow rates, 
+    and compositions. The flows do not need to be of the same length.
+    
+    Parameters
+    ----------
+    IDs1 : list[str]
+        List of identifiers of the chemical species in flow one, [-]
+    IDs2 : list[str]
+        List of identifiers of the chemical species in flow two, [-]
+    flow1 : float
+        Total flow rate of the chemicals in flow one, [mol/s]
+    flow2 : float
+        Total flow rate of the chemicals in flow two, [mol/s]
+    fractions1 : list[float]
+        Mole fractions of each chemical in flow one, [-]
+    fractions2 : list[float]
+        Mole fractions of each chemical in flow two, [-]
+
+    Returns
+    -------
+    cmps : list[str]
+        List of identifiers of the chemical species in the combined flow, [-]
+    moles : list[float]
+        Flow rates of all chemical species in the combined flow, [mol/s]
+    
+    Notes
+    -----
+    Mass or volume flows and fractions can be used instead of molar ones.
+    
+    If the two flows have the same components, the output list will be in the
+    same order as the one given; otherwise they are sorted alphabetically.
+    
+    Examples
+    --------
+    >>> mix_component_flows(['7732-18-5', '64-17-5'], ['7732-18-5', '67-56-1'], 1, 1, [0.5, 0.5], [0.5, 0.5])
+    (['64-17-5', '67-56-1', '7732-18-5'], [1.0, 1.0, 2.0])
+    '''
+    if (set(IDs1) == set(IDs2)) and (len(IDs1) == len(IDs2)):
+            cmps = IDs1
+    else:
+        cmps = sorted(list(set((IDs1 + IDs2))))
+    mole = flow1 + flow2
+    moles = []
+    for cmp in cmps:
+        moles.append(0)
+        if cmp in IDs1:
+            ind = IDs1.index(cmp)
+            moles[-1] += fractions1[ind]*flow1
+        if cmp in IDs2:
+            ind = IDs2.index(cmp)
+            moles[-1] += fractions2[ind]*flow2
+    return cmps, moles
+
+
+def mix_multiple_component_flows(IDs, flows, fractions):
+    r'''Mix multiple flows of potentially different chemicals of given overall 
+    flow rates and flow fractions to determine the outlet components, flow 
+    rates,  and compositions. The flows do not need to be of the same length.
+    
+    Parameters
+    ----------
+    IDs : list[list[str]]
+        List of lists of identifiers of the chemical species in the flows, [-]
+    flows : list[float]
+        List of total flow rates of the chemicals in the streams, [mol/s]
+    fractions : list[list[float]]
+        List of lists of mole fractions of each chemical in each flow, [-]
+
+    Returns
+    -------
+    cmps : list[str]
+        List of identifiers of the chemical species in the combined flow, [-]
+    moles : list[float]
+        Flow rates of all chemical species in the combined flow, [mol/s]
+    
+    Notes
+    -----
+    Mass or volume flows and fractions can be used instead of molar ones.
+    
+    If the every flow have the same components, the output list will be in the
+    same order as the one given; otherwise they are sorted alphabetically.
+    
+    Examples
+    --------
+    >>> mix_multiple_component_flows([['7732-18-5', '64-17-5'], ['7732-18-5', '67-56-1']],
+    ... [1, 1], [[0.5, 0.5], [0.5, 0.5]])
+    (['64-17-5', '67-56-1', '7732-18-5'], [1.0, 1.0, 2.0])
+    '''
+    n_inputs = len(IDs)
+    assert n_inputs == len(flows) == len(fractions)
+    if n_inputs == 1:
+        n = flows[0]
+        return IDs[0], [zi*n for zi in fractions[0]]
+    else:
+        cmps, component_flows = mix_component_flows(IDs[0], IDs[1], flows[0], flows[1], fractions[0], fractions[1])
+        if n_inputs == 2:
+            return cmps, component_flows
+        else:
+            flow = sum(component_flows)
+            fracs = [i/flow for i in component_flows]
+            counter = 2
+            while counter != n_inputs:
+                cmps, component_flows = mix_component_flows(cmps, IDs[counter], flow, flows[counter], fracs, fractions[counter])
+                flow = sum(component_flows)
+                fracs = [i/flow for i in component_flows]
+                counter +=1 
+    return cmps, component_flows
+
+
+
 TEST_METHOD_1 = 'Test method 1'
 TEST_METHOD_2 = 'Test method 2'
 
@@ -2655,8 +2767,9 @@ class TPDependentProperty(TDependentProperty):
         return None
 
     def TP_or_T_dependent_property(self, T, P):
-        prop = self.TP_dependent_property(T, P)
-        if prop is None:
+        if P is not None:
+            prop = self.TP_dependent_property(T, P)
+        if P is None or prop is None:
             prop = self.T_dependent_property(T)
         return prop
 

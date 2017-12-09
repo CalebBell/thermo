@@ -812,33 +812,37 @@ class Mixture(object):
         
         self.property_package.flash_caloric(zs=self.zs, T=T, P=P, VF=VF, Hm=Hm, Sm=Sm)
         self.status = self.property_package.status
-        self.T = self.property_package.T
-        self.P = self.property_package.P
-        self.V_over_F = self.VF = self.property_package.V_over_F
-        self.xs = self.property_package.xs
-        self.ys = self.property_package.ys
-        self.phase = self.property_package.phase
-        
-        self.Hm = self.property_package.Hm
-        self.Sm = self.property_package.Sm
-        self.Gm = self.property_package.Gm
-        
-        self.H = property_molar_to_mass(self.Hm, self.MW)
-        self.S = property_molar_to_mass(self.Sm, self.MW)
-        self.G = property_molar_to_mass(self.Gm, self.MW)
-        
-        # values are None when not in the appropriate phase
-        self.MWl = mixing_simple(self.xs, self.MWs) if self.xs is not None else None
-        self.MWg = mixing_simple(self.ys, self.MWs) if self.ys is not None else None
-        self.wsl = zs_to_ws(self.xs, self.MWs) if self.xs is not None else None
-        self.wsg = zs_to_ws(self.ys, self.MWs) if self.ys is not None else None
-        
-        if (self.MWl is not None and self.MWg is not None):
-            self.quality = self.x = vapor_mass_quality(self.V_over_F, MWl=self.MWl, MWg=self.MWg) 
+        if self.status == True:
+            self.T = self.property_package.T
+            self.P = self.property_package.P
+            self.V_over_F = self.VF = self.property_package.V_over_F
+            self.xs = self.property_package.xs
+            self.ys = self.property_package.ys
+            self.phase = self.property_package.phase
+            
+            self.Hm = self.property_package.Hm
+            self.Sm = self.property_package.Sm
+            self.Gm = self.property_package.Gm
+            
+            self.H = property_molar_to_mass(self.Hm, self.MW)
+            self.S = property_molar_to_mass(self.Sm, self.MW)
+            self.G = property_molar_to_mass(self.Gm, self.MW)
+            
+            # values are None when not in the appropriate phase
+            self.MWl = mixing_simple(self.xs, self.MWs) if self.xs is not None else None
+            self.MWg = mixing_simple(self.ys, self.MWs) if self.ys is not None else None
+            self.wsl = zs_to_ws(self.xs, self.MWs) if self.xs is not None else None
+            self.wsg = zs_to_ws(self.ys, self.MWs) if self.ys is not None else None
+            
+            if (self.MWl is not None and self.MWg is not None):
+                self.quality = self.x = vapor_mass_quality(self.V_over_F, MWl=self.MWl, MWg=self.MWg) 
+            else:
+                self.quality = self.x = None
         else:
-            self.quality = self.x = None
-       
-        
+            # flash failed. still want to set what variables that can be set though.
+            for var in ['T', 'P', 'VF', 'Hm', 'Sm', 'H', 'S']:
+                if var is not None:
+                    setattr(self, var, locals()[var])
 
         # Not strictly necessary
         [i.calculate(self.T, self.P) for i in self.Chemicals]

@@ -515,6 +515,17 @@ should be calculated by this method, in a user subclass.')
         >>> Tc, Pc, omega = symbols('Tc, Pc, omega')
         >>> CUBIC = R*T/(V-b) - a*alpha/(V*V + delta*V + epsilon) - P
         >>> #solve(CUBIC, V)
+        
+        Note this approach does not have the same issues as formulas using trig
+        functions or numerical routines.
+        
+        References
+        ----------
+        .. [1] Zhi, Yun, and Huen Lee. "Fallibility of Analytic Roots of Cubic 
+           Equations of State in Low Temperature Region." Fluid Phase 
+           Equilibria 201, no. 2 (September 30, 2002): 287-94. 
+           https://doi.org/10.1016/S0378-3812(02)00072-9.
+
         '''
         if quick:
             x0 = 1./P

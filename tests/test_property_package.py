@@ -424,8 +424,8 @@ def test_IdealCaloric_single_component_H():
     m = Mixture(['water'], zs=[1], T=298.15)
     pkg = IdealCaloric(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
                   HeatCapacityLiquids=m.HeatCapacityLiquids, HeatCapacityGases=m.HeatCapacityGases,
-                  EnthalpyVaporizations=m.EnthalpyVaporizations)
-    
+                  EnthalpyVaporizations=m.EnthalpyVaporizations, VolumeLiquids=m.VolumeLiquids)
+    pkg.P_DEPENDENT_H_LIQ = False
     # Check the enthalpy of vaporization matches at the reference temperature
     pkg.flash(T=298.15, P=1E5, zs=m.zs)
     H_pp = pkg.enthalpy_Cpg_Hvap()
@@ -492,8 +492,9 @@ def test_IdealCaloric_binary_H():
     m = Mixture(['water', 'ethanol'], zs=[0.3, 0.7], T=298.15)
     pkg = IdealCaloric(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
                   HeatCapacityLiquids=m.HeatCapacityLiquids, HeatCapacityGases=m.HeatCapacityGases,
-                  EnthalpyVaporizations=m.EnthalpyVaporizations) 
+                  EnthalpyVaporizations=m.EnthalpyVaporizations, VolumeLiquids=m.VolumeLiquids) 
     
+    pkg.P_DEPENDENT_H_LIQ = False
     # Check the enthalpy of vaporization matches at the reference temperature (as a liquid)
     pkg.flash(T=298.15, P=1E5, zs=m.zs)
     H_pp = pkg.enthalpy_Cpg_Hvap()
@@ -545,7 +546,7 @@ def test_IdealCaloric_nitrogen_S():
     m = Mixture(['nitrogen'], zs=[1], T=298.15)
     pkg = IdealCaloric(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
                   HeatCapacityLiquids=m.HeatCapacityLiquids, HeatCapacityGases=m.HeatCapacityGases,
-                  EnthalpyVaporizations=m.EnthalpyVaporizations)
+                  EnthalpyVaporizations=m.EnthalpyVaporizations, VolumeLiquids=m.VolumeLiquids)
     
     # Check the enthalpy of vaporization matches at the reference temperature for a gas
     pkg.flash(T=298.15, P=101325, zs=m.zs)
@@ -607,7 +608,7 @@ def test_IdealCaloric_enthalpy_Cpl_Cpg_Hvap_binary_Tc_ref():
     m = Mixture(['water', 'methanol'], zs=[0.3, 0.7], T=298.15)
     pkg = IdealCaloric(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
                   HeatCapacityLiquids=m.HeatCapacityLiquids, HeatCapacityGases=m.HeatCapacityGases,
-                  EnthalpyVaporizations=m.EnthalpyVaporizations) 
+                  EnthalpyVaporizations=m.EnthalpyVaporizations, VolumeLiquids=m.VolumeLiquids) 
     pkg.set_T_transitions('Tc')
     
     # Liquid change only, but to the phase change barrier
@@ -672,7 +673,7 @@ def test_IdealCaloric_enthalpy_Cpl_Cpg_Hvap_binary_Tb_ref():
     m = Mixture(['water', 'methanol'], zs=[0.3, 0.7], T=298.15)
     pkg = IdealCaloric(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
                   HeatCapacityLiquids=m.HeatCapacityLiquids, HeatCapacityGases=m.HeatCapacityGases,
-                  EnthalpyVaporizations=m.EnthalpyVaporizations) 
+                  EnthalpyVaporizations=m.EnthalpyVaporizations, VolumeLiquids=m.VolumeLiquids) 
     pkg.set_T_transitions('Tb')
 
     # Full vapor flash, high T
@@ -745,7 +746,7 @@ def test_IdealCaloric_PH():
     m = Mixture(['pentane', 'hexane', 'octane'], zs=[.1, .4, .5], T=298.15)
     pkg = IdealCaloric(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
                   HeatCapacityLiquids=m.HeatCapacityLiquids, HeatCapacityGases=m.HeatCapacityGases,
-                  EnthalpyVaporizations=m.EnthalpyVaporizations)
+                  EnthalpyVaporizations=m.EnthalpyVaporizations, VolumeLiquids=m.VolumeLiquids)
     Ts = np.linspace(300, 600, 10)
     Ps = [1E3, 1E4, 1E5, 1E6]
     
@@ -762,7 +763,7 @@ def test_IdealCaloric_PS():
     m = Mixture(['pentane', 'hexane', 'octane'], zs=[.1, .4, .5], T=298.15)
     pkg = IdealCaloric(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
                   HeatCapacityLiquids=m.HeatCapacityLiquids, HeatCapacityGases=m.HeatCapacityGases,
-                  EnthalpyVaporizations=m.EnthalpyVaporizations)
+                  EnthalpyVaporizations=m.EnthalpyVaporizations, VolumeLiquids=m.VolumeLiquids)
     Ts = np.linspace(300, 600, 10)
     Ps = [1E3, 1E4, 1E5, 1E6]
     
@@ -779,7 +780,7 @@ def test_IdealCaloric_TS():
     m = Mixture(['pentane', 'hexane', 'octane'], zs=[.1, .4, .5], T=298.15)
     pkg = IdealCaloric(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
                   HeatCapacityLiquids=m.HeatCapacityLiquids, HeatCapacityGases=m.HeatCapacityGases,
-                  EnthalpyVaporizations=m.EnthalpyVaporizations)
+                  EnthalpyVaporizations=m.EnthalpyVaporizations, VolumeLiquids=m.VolumeLiquids)
     Ts = np.linspace(300, 400, 10)
     VFs = [1E-5, .1, .5, .99, 1]
     
@@ -820,7 +821,29 @@ def test_GammaPhiCaloricBasic():
     pkg.flash(zs=m.zs, T=400, VF=0.5)
     assert_allclose(pkg.P, 233084.1813331093)
     
+    # 1 component still needs to be able to flash
+    m = Mixture(['R-134a'], zs=[1], T=300, P=1E5)
+    m.set_property_package(GammaPhiCaloric )
     
+    # TVF flashes
+    m.property_package.flash_caloric(T=300, VF=1, zs=[1])
+    assert_allclose(m.property_package.P, m.Psats[0])
+
+    P_300 = m.property_package.P
+    m.property_package.flash_caloric(T=300, VF=0, zs=[1])
+    assert_allclose(m.property_package.P, m.Psats[0])
+    m.property_package.flash_caloric(T=300, VF=0.5, zs=[1])
+    assert_allclose(m.property_package.P, m.Psats[0])    
+    
+    # PVF flashes
+    m.property_package.flash_caloric(P=P_300, VF=1, zs=[1])
+    assert_allclose(m.property_package.T, 300.)
+    m.property_package.flash_caloric(P=P_300, VF=0, zs=[1])
+    assert_allclose(m.property_package.T, 300.)
+    m.property_package.flash_caloric(P=P_300, VF=0.5, zs=[1])
+    assert_allclose(m.property_package.T, 300.)    
+    
+
 def test_UnifacCaloric():
     m = Mixture(['pentane', 'hexane', 'octane'], zs=[.1, .4, .5], T=298.15)
     pkg = UnifacCaloric(UNIFAC_groups=m.UNIFAC_groups, VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 

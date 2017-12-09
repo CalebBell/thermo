@@ -493,3 +493,27 @@ def test_polylog2():
     ys_act = [float(polylog(2, x)) for x in xs]
     ys = [polylog2(x) for x in xs]
     assert_allclose(ys, ys_act, rtol=1E-7, atol=1E-10)
+    
+    
+def test_mix_component_flows():
+    names, flows = mix_component_flows(['7732-18-5', '64-17-5'], ['7732-18-5', '67-56-1'], 1, 1, [0.5, 0.5], [0.5, 0.5])
+    assert names == ['64-17-5', '67-56-1', '7732-18-5']
+    assert_allclose(flows, [ 0.5,  0.5,  1.])
+    
+    names, flows = mix_component_flows(['7732-18-5', '67-56-1'], ['7732-18-5', '67-56-1'], 1, 1, [0.2, 0.8], [0.3, 0.7])
+    assert names == ['7732-18-5', '67-56-1']
+    assert_allclose(flows,  [0.5, 1.5])
+    
+def test_mix_multiple_component_flows():
+    names, flows = mix_multiple_component_flows([['7732-18-5', '64-17-5'], ['7732-18-5', '67-56-1']], [1, 1], [[0.5, 0.5], [0.5, 0.5]])
+    assert names == ['64-17-5', '67-56-1', '7732-18-5']
+    assert_allclose(flows, [ 0.5,  0.5,  1.])
+    
+    args = ([['7732-18-5', '64-17-5'], ['7732-18-5', '64-17-5'], ['7732-18-5', '67-56-1'], ['7732-18-5', '67-56-1']], [1, 1, 1, 1], [[0.5, 0.5], [0.5, 0.5], [0.5, 0.5], [0.5, 0.5]])
+    names, flows = mix_multiple_component_flows(*args)
+    assert names == ['64-17-5', '67-56-1', '7732-18-5']
+    assert_allclose(flows, [1.0, 1.0, 2.0])
+
+    names, flows = mix_multiple_component_flows([['7732-18-5', '64-17-5']], [1], [[0.5 , 0.5]])
+    assert names == ['7732-18-5', '64-17-5']
+    assert_allclose(flows, [ 0.5, 0.5,])

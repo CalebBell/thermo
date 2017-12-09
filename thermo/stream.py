@@ -266,7 +266,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.n, self.T, self.P)
                 raise Exception('Gas molar volume could not be calculated to determine the flow rate of the stream.')
         
         
-        if T is not None and P is not None: 
+        if T is not None or P is not None: 
             non_TP_state_vars = sum(i is not None for i in [VF, H, S])
             if non_TP_state_vars == 0:
                 if T is None:
@@ -298,24 +298,27 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.n, self.T, self.P)
             self.Qls = [m/rho for m, rho in zip(self.ms, self.rhols)]
         except:
             pass
-
-        if self.phase == 'l/g':
-            self.ng = self.n*self.V_over_F
+        
+        if self.phase == 'l/g' or self.phase == 'l':
             self.nl = self.n*(1. - self.V_over_F)
-            self.ngs = [yi*self.ng for yi in self.ys]
             self.nls = [xi*self.nl for xi in self.xs]
-            self.mgs = [ni*MWi*1E-3 for ni, MWi in zip(self.ngs, self.MWs)]
             self.mls = [ni*MWi*1E-3 for ni, MWi in zip(self.nls, self.MWs)]
-            self.mg = sum(self.mgs)
             self.ml = sum(self.mls)
             if self.rhol:
                 self.Ql = self.ml/self.rhol 
             else:
                 self.Ql = None
+
+        if self.phase == 'l/g' or self.phase == 'g':
+            self.ng = self.n*self.V_over_F
+            self.ngs = [yi*self.ng for yi in self.ys]
+            self.mgs = [ni*MWi*1E-3 for ni, MWi in zip(self.ngs, self.MWs)]
+            self.mg = sum(self.mgs)
             if self.rhog:
                 self.Qg = self.mg/self.rhog
             else:
                 self.Qg = None
+        
             
     def flash(self, T=None, P=None, VF=None, H=None, S=None):
         if H is not None:

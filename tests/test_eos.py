@@ -271,7 +271,20 @@ def test_PR_quick():
     assert_allclose(e.S_dep_g, -0.238638957275652)
     assert_allclose(e.S_dep_l, -71.158231517264, rtol=1E-6)
     
+    # Volume solutions vs
+    # Fallibility of analytic roots of cubic equations of state in low temperature region
+    Tc = 464.80
+    Pc = 35.60E5
+    omega = 0.237
+    # Props said to be from Reid et al
+    
+    b = PR(T=114.93, P=5.7E-6, Tc=Tc, Pc=Pc, omega=omega)
+    V1, V2, V3 = b.raw_volumes
+    assert_allclose(V3.real, 1.6764E8, rtol=1E-3)
+    # Other two roots don't match
 
+    
+    
 
 def test_PR_Psat():
     eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
