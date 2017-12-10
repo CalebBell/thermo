@@ -177,7 +177,7 @@ class Stream(Mixture):
     >>> m = Stream(ws=comp, m=33)
     '''    
     def __repr__(self): # pragma: no cover
-        txt = '<Stream, components=%s, mole fractions=%s, mass flow=%s kg/s' % (self.names, [round(i,4) for i in self.zs], self.m)
+        txt = '<Stream, components=%s, mole fractions=%s, mass flow=%s kg/s, mole flow=%s mol/s' % (self.names, [round(i,4) for i in self.zs], self.m, self.n)
         # T and P may not be available if a flash has failed
         try:
             txt += ', T=%.2f K, P=%.0f Pa>' %(self.T, self.P)
