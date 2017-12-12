@@ -566,8 +566,13 @@ class IdealCaloric(Ideal):
                     Hvap = 0 # Handle the case of a package predicting a transition past the Tc
                 H_i = Hg298_to_T - Hvap 
                 if self.P_DEPENDENT_H_LIQ:
-                    H_i += (P - Psats[i])*self.VolumeLiquids[i](T, P)
-                H += self.zs[i]*(H_i) # 
+                    Vl = self.VolumeLiquids[i](T, P)
+                    if Vl is None:
+                        # Handle an inability to get a liquid volume by taking
+                        # one at the boiling point (and system P)
+                        Vl = self.VolumeLiquids[i](self.Tbs[i], P)
+                    H_i += (P - Psats[i])*Vl
+                H += self.zs[i]*(H_i) 
         elif self.phase == 'l/g':
             for i in self.cmps:
                 Hg298_to_T_zi = self.zs[i]*self.HeatCapacityGases[i].T_dependent_property_integral(self.T_REF_IG, T)
