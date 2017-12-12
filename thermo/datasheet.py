@@ -23,7 +23,7 @@ SOFTWARE.'''
 from __future__ import division
 
 __all__ = ['tabulate_solid', 'tabulate_liq', 'tabulate_gas', 
-           'tabulate_constants']
+           'tabulate_constants', 'tabulate_streams']
            
 from collections import OrderedDict
 import numpy as np
@@ -220,6 +220,87 @@ def tabulate_constants(chemical, full=False, vertical=False):
     else:
         df = pd.DataFrame.from_dict(all_chemicals, orient='index')
     return df
+
+
+def tabulate_streams(names, *args, **kwargs):
+    
+    
+    Ts = [i.T for i in args]
+    Ps = [i.P for i in args]
+    VFs = [i.V_over_F for i in args]
+    phases = [i.phase for i in args]
+    Hs = [i.H for i in args]
+    ms = [i.m for i in args]
+    ns = [i.n for i in args]
+    CASs = set()
+    IDs = {}
+    for stream in args:
+        CASs.update(stream.CASs)
+        for CAS, i in zip(stream.CASs, stream.names):
+            IDs[CAS] = i
+    CASs = list(CASs) # So it can be indexed
+        
+    mole_fractions = []
+    mole_flows = []
+    mass_fractions = []
+    mass_flows = []
+    for stream in args:
+        mole_fractions_i = []
+        mass_fractions_i = []
+        mole_flows_i = []
+        mass_flows_i = []
+        for CAS in CASs:
+            if CAS in stream.CASs:
+                ind = stream.CASs.index(CAS)
+                zi = stream.zs[ind]
+                wi = stream.ws[ind]
+                n = stream.ns[ind]
+                m = stream.ms[ind]
+            else:
+                zi, wi, n, m = 0, 0, 0, 0
+            mole_fractions_i.append(zi)
+            mass_fractions_i.append(wi)
+            mole_flows_i.append(n)
+            mass_flows_i.append(m)
+        mole_fractions.append(mole_fractions_i)
+        mass_fractions.append(mass_fractions_i)
+        mass_flows.append(mass_flows_i)
+        mole_flows.append(mole_flows_i)
+        
+    dat = OrderedDict([['Temperature, K', Ts],
+                      ['Pressure, Pa', Ps],
+                       ['Phase', phases],
+                      ['Vapor fraction', VFs],
+                      ['Enthalpy, J', Hs],
+                      ['Mass flows, kg/s', ms],
+                      ['Mole flows, mol/s', ns]])
+
+    if kwargs.get('Mole flows', True):
+        for i, CAS in enumerate(CASs):
+            s = 'Mole flow, mol/s %s' %IDs[CAS]
+            vals = [j[i] for j in mole_flows]
+            dat[s] = vals
+    
+    if kwargs.get('Mass flows', True):
+        for i, CAS in enumerate(CASs):
+            s = 'Mass flow, kg/s %s' %IDs[CAS]
+            vals = [j[i] for j in mass_flows]
+            dat[s] = vals
+
+    if kwargs.get('Mass fractions', True):
+        for i, CAS in enumerate(CASs):
+            s = 'Mass fraction %s' %IDs[CAS]
+            vals = [j[i] for j in mass_fractions]
+            dat[s] = vals
+
+    if kwargs.get('Mole fractions', True):
+        for i, CAS in enumerate(CASs):
+            s = 'Mole fraction %s' %IDs[CAS]
+            vals = [j[i] for j in mole_fractions]
+            dat[s] = vals
+
+    df = pd.DataFrame(dat, index=names)
+    return df.transpose()
 
 
 
