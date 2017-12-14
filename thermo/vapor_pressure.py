@@ -134,7 +134,7 @@ def Antoine(T, A, B, C, base=10.0):
     .. [3] Yaws, Carl L. The Yaws Handbook of Vapor Pressure: Antoine 
        Coefficients. 1 edition. Houston, Tex: Gulf Publishing Company, 2007.
     '''
-    return base**(A-B/(T+C))
+    return base**(A - B/(T + C))
 
 
 def TRC_Antoine_extended(T, Tc, to, A, B, C, n, E, F):
