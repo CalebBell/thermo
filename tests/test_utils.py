@@ -24,6 +24,7 @@ from numpy.testing import assert_allclose
 import pytest
 import numpy as np
 from thermo.utils import *
+from thermo.stream import Stream
 
 def test_to_num():
     assert to_num(['1', '1.1', '1E5', '0xB4', '']) == [1.0, 1.1, 100000.0, '0xB4', None]
@@ -517,3 +518,14 @@ def test_mix_multiple_component_flows():
     names, flows = mix_multiple_component_flows([['7732-18-5', '64-17-5']], [1], [[0.5 , 0.5]])
     assert names == ['7732-18-5', '64-17-5']
     assert_allclose(flows, [ 0.5, 0.5,])
+
+def test_assert_component_balance():
+    f1 = Stream(['water', 'ethanol', 'pentane'], zs=[.5, .4, .1], T=300, P=1E6, n=50)
+    f2 = Stream(['water', 'methanol'], zs=[.5, .5], T=300, P=9E5, n=25)
+    f3 = Stream(IDs=['109-66-0', '64-17-5', '67-56-1', '7732-18-5'], ns=[5.0, 20.0, 12.5, 37.5], T=300, P=850000)
+    
+    assert_component_balance([f1, f2], f3)
+
+    f3 = Stream(IDs=['109-66-0', '64-17-5', '67-56-1', '7732-18-5'], ns=[6.0, 20.0, 12.5, 37.5], T=300, P=850000)
+    with pytest.raises(Exception):
+        assert_component_balance([f1, f2], f3)

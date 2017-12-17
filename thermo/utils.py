@@ -32,13 +32,15 @@ __all__ = ['isobaric_expansion', 'isothermal_compressibility',
 'mixing_logarithmic', 'has_matplotlib', 'to_num', 'CAS2int', 'sorted_CAS_key',
 'int2CAS', 'Parachor', 'property_molar_to_mass', 'property_mass_to_molar', 
 'SG_to_API', 'API_to_SG', 'SG', 'vapor_mass_quality', 'mix_component_flows',
-'mix_multiple_component_flows', 'phase_select_property', 'TDependentProperty', 
+'mix_multiple_component_flows', 'assert_component_balance', 
+'phase_select_property', 'TDependentProperty', 
 'TPDependentProperty', 'MixtureProperty', 'allclose_variable', 'horner', 
 'polylog2']
 
 from cmath import sqrt as csqrt
 from bisect import bisect_left
 import numpy as np
+from numpy.testing import assert_allclose
 from scipy.optimize import brenth
 from scipy.misc import derivative
 from scipy.integrate import quad
@@ -1625,7 +1627,7 @@ def mix_component_flows(IDs1, IDs2, flow1, flow2, fractions1, fractions2):
     Examples
     --------
     >>> mix_component_flows(['7732-18-5', '64-17-5'], ['7732-18-5', '67-56-1'], 1, 1, [0.5, 0.5], [0.5, 0.5])
-    (['64-17-5', '67-56-1', '7732-18-5'], [1.0, 1.0, 2.0])
+    (['64-17-5', '67-56-1', '7732-18-5'], [0.5, 0.5, 1.0])
     '''
     if (set(IDs1) == set(IDs2)) and (len(IDs1) == len(IDs2)):
             cmps = IDs1
@@ -1676,7 +1678,7 @@ def mix_multiple_component_flows(IDs, flows, fractions):
     --------
     >>> mix_multiple_component_flows([['7732-18-5', '64-17-5'], ['7732-18-5', '67-56-1']],
     ... [1, 1], [[0.5, 0.5], [0.5, 0.5]])
-    (['64-17-5', '67-56-1', '7732-18-5'], [1.0, 1.0, 2.0])
+    (['64-17-5', '67-56-1', '7732-18-5'], [0.5, 0.5, 1.0])
     '''
     n_inputs = len(IDs)
     assert n_inputs == len(flows) == len(fractions)
@@ -1698,6 +1700,61 @@ def mix_multiple_component_flows(IDs, flows, fractions):
                 counter +=1 
     return cmps, component_flows
 
+
+def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0):
+    r'''Checks a mole balance for a group of inlet streams against outlet
+    streams. Inlets and outlets must be Stream objects. The check is performed
+    on a mole-basis; an exception is raised if the balance is not satisfied.
+    
+    Parameters
+    ----------
+    inlets : list[Stream] or Stream
+        Inlet streams to be checked, [-]
+    outlets : list[Stream] or Stream
+        Outlet streams to be checked, [-]
+    rtol : float, optional
+        Relative tolerance, [-]
+    atol : float, optional
+        Absolute tolerance, [mol/s]
+    
+    Notes
+    -----
+    No checks for zero flow are performed.
+    
+    Examples
+    --------
+    >>> from thermo.stream import Stream
+    >>> f1 = Stream(['water', 'ethanol', 'pentane'], zs=[.5, .4, .1], T=300, P=1E6, n=50)
+    >>> f2 = Stream(['water', 'methanol'], zs=[.5, .5], T=300, P=9E5, n=25)
+    >>> f3 = Stream(IDs=['109-66-0', '64-17-5', '67-56-1', '7732-18-5'], ns=[5.0, 20.0, 12.5, 37.5], T=300, P=850000)
+    >>> assert_component_balance([f1, f2], f3)
+    '''
+    try:
+        [_ for _ in inlets]
+    except TypeError:
+        inlets = [inlets]
+    try:
+        [_ for _ in outlets]
+    except TypeError:
+        outlets = [outlets]
+
+    feed_ns = [i.n for i in inlets]
+    feed_zs = [i.zs for i in inlets]
+    feed_CASs = [i.CASs for i in inlets]
+    feed_cmps, feed_mols = mix_multiple_component_flows(IDs=feed_CASs, flows=feed_ns, fractions=feed_zs)
+    feed_flows = {i:j for i, j in zip(feed_cmps, feed_mols)}
+    
+    product_ns = [i.n for i in outlets]
+    product_zs = [i.zs for i in outlets]
+    product_CASs = [i.CASs for i in outlets]
+    product_cmps, product_mols = mix_multiple_component_flows(IDs=product_CASs, flows=product_ns, fractions=product_zs)
+    product_flows = {i:j for i, j in zip(product_cmps, product_mols)}
+
+    # Fail on unmatching 
+    if set(feed_cmps) != set(product_cmps):
+        raise Exception('Product and feeds have different components in them')
+    for CAS, flow in feed_flows.items():
+        assert_allclose(flow, product_flows[CAS], rtol=rtol, atol=atol)
 
 
 TEST_METHOD_1 = 'Test method 1'
