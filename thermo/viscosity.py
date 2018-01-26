@@ -2376,6 +2376,8 @@ viscosity_converters_from_nu['barbey'] = UnivariateSpline(np.log(Barbey_nu), np.
 # stored are (coefficient, and minimum time (seconds))
 # some of these overlap with the tabulated values; those are used in preference
 
+# Note: Engler can also be reported in units of time? Would be good to have a reference.
+
 viscosity_scales_linear = {
     'american can': (3.5, 35), 
     'astm 0.07': (1.4, 60), 

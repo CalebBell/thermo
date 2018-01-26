@@ -67,6 +67,7 @@ __all__.extend(['R', 'k', 'N_A', 'calorie', 'epsilon_0']) # 'expm1', 'erf', 'erf
     
 # Obtained from SciPy 0.19 (2014 CODATA)
 # Included here so calculations are consistent across SciPy versions
+g = 9.80665
 R = 8.3144598
 k = 1.38064852e-23
 N_A = 6.022140857e+23
@@ -2824,6 +2825,8 @@ class TPDependentProperty(TDependentProperty):
         return None
 
     def TP_or_T_dependent_property(self, T, P):
+#        self.method = None
+#        self.method_P = None
         if P is not None:
             prop = self.TP_dependent_property(T, P)
         if P is None or prop is None:

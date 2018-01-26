@@ -22,11 +22,17 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['Stream']
+__all__ = ['Stream', 'EnergyTypes', 'EnergyStream']
  
+import enum
 from collections import OrderedDict
+from numbers import Number
+
 from thermo.utils import property_molar_to_mass, property_mass_to_molar
 from thermo.mixture import Mixture
+from fluids.pump import voltages_1_phase_residential, voltages_3_phase, frequencies
+
+
 
 class Stream(Mixture):
     '''Creates a Stream object which is useful for modeling mass and energy 
@@ -175,7 +181,8 @@ class Stream(Mixture):
     ...                     ('pentane', 0.00032),
     ...                     ('hexane', 0.00066)])
     >>> m = Stream(ws=comp, m=33)
-    '''    
+    '''  
+    require_all_specs = False
     def __repr__(self): # pragma: no cover
         txt = '<Stream, components=%s, mole fractions=%s, mass flow=%s kg/s, mole flow=%s mol/s' % (self.names, [round(i,4) for i in self.zs], self.m, self.n)
         # T and P may not be available if a flash has failed
@@ -195,7 +202,7 @@ class Stream(Mixture):
         composition_option_count = sum(i is not None for i in composition_options)
         if hasattr(IDs, 'strip') or (type(IDs) == list and len(IDs) == 1):
             pass # one component only - do not raise an exception
-        elif composition_option_count < 1:
+        elif composition_option_count < 1 and self.require_all_specs:
             raise Exception("No composition information is provided; one of "
                             "'ws', 'zs', 'Vfls', 'Vfgs', 'ns', 'ms', 'Qls' or "
                             "'Qgs' must be specified")
@@ -208,7 +215,7 @@ class Stream(Mixture):
         # if more than 1 of composition_options is given, raise an exception
         flow_options = (ns, ms, Qls, Qgs, m, n, Q)
         flow_option_count = sum(i is not None for i in flow_options)
-        if flow_option_count < 1:
+        if flow_option_count < 1 and self.require_all_specs:
             raise Exception("No flow rate information is provided; one of "
                             "'m', 'n', 'Q', 'ms', 'ns', 'Qls', or 'Qgs' must "
                             "be specified")
@@ -433,3 +440,32 @@ first stream.' %self.IDs[i])
         # Create the resulting stream
         return Stream(IDs=CASs_product, ns=ns_product, T=self.T, P=self.P)
 
+
+
+energy_types = {'LP_STEAM': 'Steam 50 psi',
+                'MP_STEAM': 'Steam 150 psi',
+                'HP_STEAM': 'Steam 300 psi',
+                'ELECTRICITY': 'Electricity',
+                'AC_ELECTRICITY': 'AC Electricity',
+                'DC_ELECTRICITY': 'DC Electricity'}
+for freq in frequencies:
+    for voltage in voltages_1_phase_residential:
+        energy_types['AC_ELECTRICITY_1_PHASE_%s_V_%s_Hz'% (str(voltage), str(freq))] = 'AC_ELECTRICITY 1 PHASE %s V %s Hz'% (str(voltage), str(freq))
+    for voltage in voltages_3_phase:
+        energy_types['AC_ELECTRICITY_3_PHASE_%s_V_%s_Hz'% (str(voltage), str(freq))] = 'AC_ELECTRICITY 3 PHASE %s V %s Hz'%  (str(voltage), str(freq))
+
+EnergyTypes = enum.Enum('EnergyTypes', energy_types)
+
+
+class EnergyStream(object):
+    Q = None
+    medium = None
+    def __repr__(self):
+        return '<Energy stream, Q=%g W, medium=%s>' %(self.Q, self.medium.value)
+    
+    def __init__(self, Q, medium=EnergyTypes.ELECTRICITY):
+        self.medium = medium
+        # isinstance test is slow, especially with Number - faster to check float and int first
+        if not isinstance(Q, (float, int, Number)):
+            raise Exception('Energy stream flow rate is not a flow rate')
+        self.Q = Q
