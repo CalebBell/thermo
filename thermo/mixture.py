@@ -60,7 +60,7 @@ except: # pragma: no cover
     pass
 
 def preprocess_mixture_composition(IDs=None, zs=None, ws=None, Vfls=None, 
-                                   Vfgs=None):
+                                   Vfgs=None, ignore_exceptions=False):
     r'''Composition preprocessing function for the :obj:`thermo.mixture.Mixture`
     class, as it had grown to the size it required its own function.
     
@@ -101,8 +101,6 @@ def preprocess_mixture_composition(IDs=None, zs=None, ws=None, Vfls=None,
             _d = _MixtureDict[mixname]
             IDs = _d["CASs"]
             ws = _d["ws"]
-            mixname = mixname
-            mixsource = _d["Source"]
         except:
             if hasattr(IDs, 'strip'):
                 IDs = [IDs]
@@ -112,7 +110,10 @@ def preprocess_mixture_composition(IDs=None, zs=None, ws=None, Vfls=None,
                 if zs is None and ws is None and Vfls is None and Vfgs is None:
                     zs = [1.0]
             else:
-                raise Exception('Could not recognize the mixture IDs')
+                if not ignore_exceptions:
+                    raise Exception('Could not recognize the mixture IDs')
+                else:
+                    return IDs, zs, ws, Vfls, Vfgs
 
     # Handle numpy array inputs; also turn mutable inputs into copies
     if zs is not None:
@@ -156,15 +157,17 @@ def preprocess_mixture_composition(IDs=None, zs=None, ws=None, Vfls=None,
             Vfgs = list(Vfgs.values())
         length_matching = len(Vfgs) == len(IDs)
     else:
-        raise Exception("One of 'zs', 'ws', 'Vfls', or 'Vfgs' is required to define the mixture")
+        if not ignore_exceptions:
+            raise Exception("One of 'zs', 'ws', 'Vfls', or 'Vfgs' is required to define the mixture")
     # Do not to a test on multiple composition inputs in case the user specified
     # a composition, plus one was set (it will be zero anyway)
-    if len(IDs) > 1 and ((zs is not None) + (ws is not None) + (Vfgs is not None) + (Vfls is not None)) > 1:
-        raise Exception('Multiple different composition arguments were '
-                        "specified; specify only one of the arguments "
-                        "'zs', 'ws', 'Vfls', or 'Vfgs'.")
-    if not length_matching:
-        raise Exception('Composition is not the same length as the component identifiers')
+    if not ignore_exceptions:
+        if len(IDs) > 1 and ((zs is not None) + (ws is not None) + (Vfgs is not None) + (Vfls is not None)) > 1:
+            raise Exception('Multiple different composition arguments were '
+                            "specified; specify only one of the arguments "
+                            "'zs', 'ws', 'Vfls', or 'Vfgs'.")
+        if not length_matching:
+            raise Exception('Composition is not the same length as the component identifiers')
     return IDs, zs, ws, Vfls, Vfgs
 
 

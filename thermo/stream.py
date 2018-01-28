@@ -22,17 +22,337 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['Stream', 'EnergyTypes', 'EnergyStream']
+__all__ = ['Stream', 'EnergyTypes', 'EnergyStream', 'StreamArgs']
  
 import enum
 from collections import OrderedDict
 from numbers import Number
 
 from thermo.utils import property_molar_to_mass, property_mass_to_molar
-from thermo.mixture import Mixture
+from thermo.mixture import Mixture, preprocess_mixture_composition
 from fluids.pump import voltages_1_phase_residential, voltages_3_phase, frequencies
 
 
+# Could just assume IDs is always specified and constant.
+# This might be useful for regular streams too, just to keep track of what values were specified by the user!
+# If one composition value gets set to, remove those from every other value
+
+class StreamArgs(object):
+    
+    @property
+    def IDs(self):
+        return self.specifications['IDs']
+    @IDs.setter
+    def IDs(self, IDs):
+        self.specifications['IDs'] = IDs
+
+    @property
+    def T(self):
+        return self.specifications['T']
+    @T.setter
+    def T(self, T):
+        if T is None:
+            self.specifications['T'] = T
+            return None
+        if self.specified_state_vars > 1:
+            raise Exception('Two state vars already specified; unset another first')
+        self.specifications['T'] = T
+
+    @property
+    def P(self):
+        return self.specifications['P']
+    @P.setter
+    def P(self, P):
+        if P is None:
+            self.specifications['P'] = P
+            return None
+        if self.specified_state_vars > 1:
+            raise Exception('Two state vars already specified; unset another first')
+        self.specifications['P'] = P
+
+    @property
+    def VF(self):
+        return self.specifications['VF']
+    @VF.setter
+    def VF(self, VF):
+        if VF is None:
+            self.specifications['VF'] = VF
+            return None
+        if self.specified_state_vars > 1:
+            raise Exception('Two state vars already specified; unset another first')
+        self.specifications['VF'] = VF
+
+    @property
+    def H(self):
+        return self.specifications['H']
+    @H.setter
+    def H(self, H):
+        if H is None:
+            self.specifications['H'] = H
+            return None
+        if self.specified_state_vars > 1:
+            raise Exception('Two state vars already specified; unset another first')
+        self.specifications['H'] = H
+
+    @property
+    def Hm(self):
+        return self.specifications['Hm']
+    @Hm.setter
+    def Hm(self, Hm):
+        if Hm is None:
+            self.specifications['Hm'] = Hm
+            return None
+        if self.specified_state_vars > 1:
+            raise Exception('Two state vars already specified; unset another first')
+        self.specifications['Hm'] = Hm
+
+    @property
+    def S(self):
+        return self.specifications['S']
+    @S.setter
+    def S(self, S):
+        if S is None:
+            self.specifications['S'] = S
+            return None
+        if self.specified_state_vars > 1:
+            raise Exception('Two state vars already specified; unset another first')
+        self.specifications['S'] = S
+
+    @property
+    def Sm(self):
+        return self.specifications['Sm']
+    @Sm.setter
+    def Sm(self, Sm):
+        if Sm is None:
+            self.specifications['Sm'] = Sm
+            return None
+        if self.specified_state_vars > 1:
+            raise Exception('Two state vars already specified; unset another first')
+        self.specifications['Sm'] = Sm
+
+    @property
+    def zs(self):
+        return self.specifications['zs']
+    @zs.setter
+    def zs(self, arg):
+        if arg is None:
+            self.specifications['zs'] = arg
+        else:
+            args = {'zs': arg, 'ws': None, 'Vfls': None, 'Vfgs': None, 'ns': None,
+                    'ms': None, 'Qls': None, 'Qgs': None}
+            self.specifications.update(args)
+
+    @property
+    def ws(self):
+        return self.specifications['ws']
+    @ws.setter
+    def ws(self, arg):
+        if arg is None:
+            self.specifications['ws'] = arg
+        else:
+            args = {'zs': None, 'ws': arg, 'Vfls': None, 'Vfgs': None, 'ns': None,
+                    'ms': None, 'Qls': None, 'Qgs': None}
+            self.specifications.update(args)
+
+    @property
+    def Vfls(self):
+        return self.specifications['Vfls']
+    @Vfls.setter
+    def Vfls(self, arg):
+        if arg is None:
+            self.specifications['Vfls'] = arg
+        else:
+            args = {'zs': None, 'ws': None, 'Vfls': arg, 'Vfgs': None, 'ns': None,
+                    'ms': None, 'Qls': None, 'Qgs': None}
+            self.specifications.update(args)
+
+    @property
+    def Vfgs(self):
+        return self.specifications['Vfgs']
+    @Vfgs.setter
+    def Vfgs(self, arg):
+        if arg is None:
+            self.specifications['Vfgs'] = arg
+        else:
+            args = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': arg, 'ns': None,
+                    'ms': None, 'Qls': None, 'Qgs': None}
+            self.specifications.update(args)
+
+    @property
+    def ns(self):
+        return self.specifications['ns']
+    @ns.setter
+    def ns(self, arg):
+        if arg is None:
+            self.specifications['ns'] = arg
+        else:
+            args = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None, 
+                    'ns': arg, 'ms': None, 'Qls': None, 'Qgs': None,
+                    'n': None, 'm': None, 'Q': None}
+            self.specifications.update(args)
+
+    @property
+    def ms(self):
+        return self.specifications['ms']
+    @ms.setter
+    def ms(self, arg):
+        if arg is None:
+            self.specifications['ms'] = arg
+        else:
+            args = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None, 
+                    'ns': None, 'ms': arg, 'Qls': None, 'Qgs': None,
+                    'n': None, 'm': None, 'Q': None}
+            self.specifications.update(args)
+
+    @property
+    def Qls(self):
+        return self.specifications['Qls']
+    @Qls.setter
+    def Qls(self, arg):
+        if arg is None:
+            self.specifications['Qls'] = arg
+        else:
+            args = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None, 
+                    'ns': None, 'ms': None, 'Qls': arg, 'Qgs': None,
+                    'n': None, 'm': None, 'Q': None}
+            self.specifications.update(args)
+
+    @property
+    def Qgs(self):
+        return self.specifications['Qgs']
+    @Qgs.setter
+    def Qgs(self, arg):
+        if arg is None:
+            self.specifications['Qgs'] = arg
+        else:
+            args = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None, 
+                    'ns': None, 'ms': None, 'Qls': None, 'Qgs': arg,
+                    'n': None, 'm': None, 'Q': None}
+            self.specifications.update(args)
+
+    @property
+    def m(self):
+        return self.specifications['m']
+    @m.setter
+    def m(self, arg):
+        if arg is None:
+            self.specifications['m'] = arg
+        else:
+            args = {'ns': None, 'ms': None, 'Qls': None, 'Qgs': None,
+                    'n': None, 'm': arg, 'Q': None}
+            self.specifications.update(args)
+
+    @property
+    def n(self):
+        return self.specifications['n']
+    @n.setter
+    def n(self, arg):
+        if arg is None:
+            self.specifications['n'] = arg
+        else:
+            args = {'ns': None, 'ms': None, 'Qls': None, 'Qgs': None,
+                    'n': arg, 'm': None, 'Q': None}
+            self.specifications.update(args)
+    
+    @property
+    def Q(self):
+        return self.specifications['Q']
+    @Q.setter
+    def Q(self, arg):
+        if arg is None:
+            self.specifications['Q'] = arg
+        else:
+            args = {'ns': None, 'ms': None, 'Qls': None, 'Qgs': None,
+                    'n': None, 'm': None, 'Q': arg}
+            self.specifications.update(args)
+
+    def __init__(self, IDs=None, zs=None, ws=None, Vfls=None, Vfgs=None,
+                 T=None, P=None, 
+                 VF=None, H=None, Hm=None, S=None, Sm=None,
+                 ns=None, ms=None, Qls=None, Qgs=None, m=None, n=None, Q=None):
+        self.specifications = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None, 
+                               'ns': None, 'ms': None, 'Qls': None, 'Qgs': None,
+                               'n': None, 'm': None, 'Q': None,
+                               'T': None, 'P': None, 'VF': None, 'H': None,
+                               'Hm': None, 'S': None, 'Sm': None}
+        
+        self.IDs = IDs
+        self.zs = zs
+        self.ws = ws
+        self.Vfls = Vfls
+        self.Vfgs = Vfgs
+        self.T = T
+        self.P = P
+        self.VF = VF
+        self.H = H
+        self.Hm = Hm
+        self.S = S
+        self.Sm = Sm
+        
+        self.ns = ns
+        self.ms = ms
+        self.Qls = Qls
+        self.Qgs = Qgs
+        self.m = m
+        self.n = n
+        self.Q = Q
+        self.V_TP = (None, None)
+    
+    
+    @property
+    def specified_composition_vars(self):
+        IDs, zs, ws, Vfls, Vfgs = preprocess_mixture_composition(IDs=self.IDs,
+                                zs=self.zs, ws=self.ws, Vfls=self.Vfls, 
+                                Vfgs=self.Vfgs, ignore_exceptions=True)
+        
+        return sum(i is not None for i in (zs, ws, Vfls, Vfgs, self.ns, self.ms, self.Qls, self.Qgs))
+
+    @property
+    def composition_specified(self):
+        IDs, zs, ws, Vfls, Vfgs = preprocess_mixture_composition(IDs=self.IDs,
+                                zs=self.zs, ws=self.ws, Vfls=self.Vfls, 
+                                Vfgs=self.Vfgs, ignore_exceptions=True)
+        
+        specified_vals = (i is not None for i in (zs, ws, Vfls, Vfgs, self.ns, self.ms, self.Qls, self.Qgs))
+        if any(specified_vals) and IDs:
+            return True
+        return False
+    
+    @property
+    def specified_state_vars(self):
+        return sum(i is not None for i in (self.T, self.P, self.VF, self.Hm, self.H, self.Sm, self.S))
+    
+    @property
+    def state_specified(self):
+        state_vars = (i is not None for i in (self.T, self.P, self.VF, self.Hm, self.H, self.Sm, self.S))
+        if sum(state_vars) == 2:
+            return True
+        return False
+    
+    @property
+    def specified_flow_vars(self):
+        return sum(i is not None for i in (self.ns, self.ms, self.Qls, self.Qgs, self.m, self.n, self.Q))
+
+    @property
+    def flow_specified(self):
+        flow_vars = (i is not None for i in (self.ns, self.ms, self.Qls, self.Qgs, self.m, self.n, self.Q))
+        if sum(flow_vars) == 1:
+            return True
+        return False
+        
+    def update(self, **kwargs):
+        for key, value in kwargs:
+            setattr(self, key, value)
+    
+    @property
+    def stream(self):
+        if self.composition_specified and self.state_specified and self.flow_specified:
+            return Stream(IDs=self.IDs, zs=self.zs, ws=self.ws, Vfls=self.Vfls, Vfgs=self.Vfgs,
+                 ns=self.ns, ms=self.ms, Qls=self.Qls, Qgs=self.Qgs, 
+                 n=self.n, m=self.m, Q=self.Q, 
+                 T=self.T, P=self.P, VF=self.VF, H=self.H, S=self.S, 
+                 V_TP=self.V_TP)
+        
 
 class Stream(Mixture):
     '''Creates a Stream object which is useful for modeling mass and energy 
@@ -181,8 +501,7 @@ class Stream(Mixture):
     ...                     ('pentane', 0.00032),
     ...                     ('hexane', 0.00066)])
     >>> m = Stream(ws=comp, m=33)
-    '''  
-    require_all_specs = False
+    '''    
     def __repr__(self): # pragma: no cover
         txt = '<Stream, components=%s, mole fractions=%s, mass flow=%s kg/s, mole flow=%s mol/s' % (self.names, [round(i,4) for i in self.zs], self.m, self.n)
         # T and P may not be available if a flash has failed
@@ -202,7 +521,7 @@ class Stream(Mixture):
         composition_option_count = sum(i is not None for i in composition_options)
         if hasattr(IDs, 'strip') or (type(IDs) == list and len(IDs) == 1):
             pass # one component only - do not raise an exception
-        elif composition_option_count < 1 and self.require_all_specs:
+        elif composition_option_count < 1:
             raise Exception("No composition information is provided; one of "
                             "'ws', 'zs', 'Vfls', 'Vfgs', 'ns', 'ms', 'Qls' or "
                             "'Qgs' must be specified")
@@ -215,7 +534,7 @@ class Stream(Mixture):
         # if more than 1 of composition_options is given, raise an exception
         flow_options = (ns, ms, Qls, Qgs, m, n, Q)
         flow_option_count = sum(i is not None for i in flow_options)
-        if flow_option_count < 1 and self.require_all_specs:
+        if flow_option_count < 1:
             raise Exception("No flow rate information is provided; one of "
                             "'m', 'n', 'Q', 'ms', 'ns', 'Qls', or 'Qgs' must "
                             "be specified")
