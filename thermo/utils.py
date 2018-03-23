@@ -3559,6 +3559,38 @@ class MixtureProperty(object):
         # Function returns None if it does not work.
         return None
 
+    def excess_property(self, T, P, zs, ws):
+        r'''Method to calculate the excess property with sanity checking and 
+        without specifying a specific method. This requires the calculation of
+        the property as a function of composition at the limiting concentration
+        of each component.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the excess property, [K]
+        P : float
+            Pressure at which to calculate the excess property, [Pa]
+        zs : list[float]
+            Mole fractions of all species in the mixture, [-]
+        ws : list[float]
+            Weight fractions of all species in the mixture, [-]
+
+        Returns
+        -------
+        excess_prop : float
+            Calculated excess property, [`units`]
+        '''
+        N = len(zs)
+        prop = self.mixture_property(T, P, zs, ws)
+        tot = 0.0
+        for i in range(N):
+            zs2, ws2 = [0.0]*N, [0.0]*N
+            zs2[i], ws2[i] = 1.0, 1.0
+            tot += zs[i]*self.mixture_property(T, P, zs2, ws2)
+        return prop - tot
+    
+    
     def calculate_derivative_T(self, T, P, zs, ws, method, order=1):
         r'''Method to calculate a derivative of a mixture property with respect 
         to temperature at constant pressure and composition

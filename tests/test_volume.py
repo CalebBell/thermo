@@ -386,6 +386,12 @@ def test_VolumeLiquidMixture():
         
     with pytest.raises(Exception):
         obj.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
+    
+    # Excess volume
+    # Vs -7.5E-7 in ddbst http://www.ddbst.com/en/EED/VE/VE0%20Ethanol%3BWater.php
+    drink = Mixture(['water', 'ethanol'], zs=[1- 0.15600,  0.15600], T=298.15, P=101325)
+    V_Ex = drink.VolumeLiquidMixture.excess_property(drink.T, drink.P, drink.zs, drink.ws)
+    assert_allclose(V_Ex, -7.242450496000289e-07, rtol=.05)
 
 
 def test_VolumeGasMixture():
