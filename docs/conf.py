@@ -71,7 +71,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'thermo'
-copyright = u'2016-2017, Caleb Bell <Caleb.Andrew.Bell@gmail.com>'
+copyright = u'2016-2018, Caleb Bell <Caleb.Andrew.Bell@gmail.com>'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -94,7 +94,7 @@ release = '0.1'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['_build']
+exclude_patterns = ['_build', '**.ipynb_checkpoints']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.

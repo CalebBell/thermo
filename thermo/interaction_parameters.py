@@ -149,7 +149,7 @@ for name, file in ip_files.items():
 # TODO change above models to include T dependence; need a model which has it though!
 # That probably means a user db
 
-##ans = IPDB.get_ip_asymmetric_matrix('ChemSep NRTL', ['64-17-5', '7732-18-5'], 'bij')
+#ans = IPDB.get_ip_asymmetric_matrix('ChemSep NRTL', ['64-17-5', '7732-18-5'], 'bij')
 #ans = IPDB.get_ip_asymmetric_matrix('ChemSep NRTL', ['64-17-5', '7732-18-5', '67-56-1'], 'alphaij')
 ## alphas are good too.
 

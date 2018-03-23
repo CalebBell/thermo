@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2016, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2016, 207, 2018 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -28,7 +28,8 @@ __all__ = ['Mulero_Cachadina_data', 'Jasper_Lange_data', 'Somayajulu_data',
            'Mersmann_Kind_surface_tension',
            'Hakim_Steinberg_Stiel', 'Miqueu', 'Aleem', 'surface_tension_methods', 
            'SurfaceTension', 'Winterfeld_Scriven_Davis', 'Diguilio_Teja', 
-           'surface_tension_mixture_methods', 'SurfaceTensionMixture']
+           'surface_tension_mixture_methods', 'SurfaceTensionMixture',
+           'Meybodi_Daryasafar_Karimi']
 
 import os
 import pandas as pd
@@ -1401,3 +1402,62 @@ class SurfaceTensionMixture(MixtureProperty):
         else:
             raise Exception('Method not valid')
 
+
+### Water-hydrocarbon interfacial tensions
+
+
+def Meybodi_Daryasafar_Karimi(rho_water, rho_oil, T, Tc):
+    r'''Calculates the interfacial tension between water and a hydrocabon
+    liquid according to the correlation of [1]_.
+    
+    .. math::
+        \gamma_{hw} = \left(\frac{A_1 + A_2 \Delta \rho + A_3\Delta\rho^2 
+        + A_4\Delta\rho^3} {A_5 + A_6\frac{T^{A_7}}{T_{c,h}} + A_8T^{A_9}}
+        \right)^{A_{10}}
+        
+    Parameters
+    ----------
+    rho_water : float
+        The density of the aqueous phase, [kg/m^3]
+    rho_oil : float
+        The density of the hydrocarbon phase, [kg/m^3]
+    T : float
+        Temperature of the fluid, [K]
+    Tc : float
+        Critical temperature of the hydrocarbon mixture, [K]
+
+    Returns
+    -------
+    sigma : float
+        Hydrocarbon-water surface tension [N/m]
+
+    Notes
+    -----
+    Internal units of the equation are g/mL and mN/m.
+    
+    Examples
+    --------
+    >>> Meybodi_Daryasafar_Karimi(980, 760, 580, 914)
+    0.02893598143089256
+    
+    References
+    ----------
+    .. [1] Kalantari Meybodi, Mahdi, Amin Daryasafar, and Masoud Karimi. 
+       "Determination of Hydrocarbon-Water Interfacial Tension Using a New 
+       Empirical Correlation."  Fluid Phase Equilibria 415 (May 15, 2016): 
+       42-50. doi:10.1016/j.fluid.2016.01.037.
+    '''
+    A1 = -1.3687340042E-1
+    A2 = -3.0391828884E-1
+    A3 = 5.6225871072E-1
+    A4 = -3.3074367079E-1
+    A5 = -3.0050179309E0
+    A6 = 5.8914210205E-5
+    A7 = -4.1388901263E0
+    A8 = 3.0084299030E0
+    A9 = -3.8203072876E-3
+    A10 = 3.5000000000E0
+    drho = abs(rho_water - rho_oil)/1000.0 # Correlation in units of g/mL
+    sigma = ((A1+ A2*drho + A3*drho**2 + A4*drho**3)
+             /(A5 + A6*T**A7/Tc + A8*T**A9))**A10
+    return sigma*1e-3 # mN/m to N/m

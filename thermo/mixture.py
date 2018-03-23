@@ -798,13 +798,13 @@ class Mixture(object):
         
     def flash_caloric(self, T=None, P=None, VF=None, Hm=None, Sm=None,
                       H=None, S=None):
-        '''
-        from thermo import *
-
-        a = Mixture(['water', 'ethanol'], T=300, zs=[.5, .5])
-        a.set_property_package(pkg=UnifacCaloric)
-        a.flash(T=400, Sm=-40.546326368170675)
-        a.V_over_F'''
+#        '''
+#        from thermo import *
+#
+#        a = Mixture(['water', 'ethanol'], T=300, zs=[.5, .5])
+#        a.set_property_package(pkg=UnifacCaloric)
+#        a.flash(T=400, Sm=-40.546326368170675)
+#        a.V_over_F'''
         # TODO check if the input values are the same as the current ones
         # The property package works only on a mole-basis, so convert
         # H or S if specified to a mole basis
@@ -901,18 +901,42 @@ class Mixture(object):
 
     @property
     def Tdew(self):
+        r'''Dew point temperature of the mixture at its current pressure and
+        composition, in units of [K].
+
+        This property requires that the property package of the mixture 
+        found a solution to the given state variables.
+        '''
         return self.property_package.Tdew(P=self.P, zs=self.zs)
     
     @property
-    def Pdew(self):        
+    def Pdew(self):     
+        r'''Dew point pressure of the mixture at its current temperature and
+        composition, in units of [Pa].
+
+        This property requires that the property package of the mixture 
+        found a solution to the given state variables.
+        '''
         return self.property_package.Pdew(T=self.T, zs=self.zs)
     
     @property
     def Tbubble(self):
+        r'''Bubble point temperature of the mixture at its current pressure and
+        composition, in units of [K].
+
+        This property requires that the property package of the mixture 
+        found a solution to the given state variables.
+        '''
         return self.property_package.Tbubble(P=self.P, zs=self.zs)
 
     @property
     def Pbubble(self):
+        r'''Bubble point pressure of the mixture at its current temperature and
+        composition, in units of [Pa].
+
+        This property requires that the property package of the mixture 
+        found a solution to the given state variables.
+        '''
         return self.property_package.Pbubble(T=self.T, zs=self.zs)
 
 

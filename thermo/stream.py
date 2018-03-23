@@ -777,6 +777,8 @@ EnergyTypes = enum.Enum('EnergyTypes', energy_types)
 
 
 class EnergyStream(object):
+    '''
+    '''
     Q = None
     medium = None
     def __repr__(self):

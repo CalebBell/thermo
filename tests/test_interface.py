@@ -217,3 +217,8 @@ def test_SurfaceTensionMixture():
         a.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
     with pytest.raises(Exception):
         a.calculate(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
+
+
+def test_Meybodi_Daryasafar_Karimi():
+    sigma = Meybodi_Daryasafar_Karimi(980, 760, 580, 914)
+    assert_allclose(sigma, 0.02893598143089256)
