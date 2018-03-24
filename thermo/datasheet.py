@@ -99,7 +99,7 @@ def tabulate_liq(chemical, Tmin=None, Tmax=None, pts=10):
     data['Density, kg/m^3'] = rhos
     data['Constant-pressure heat capacity, J/kg/K'] = Cps
     data['Heat of vaporization, J/kg'] = Hvaps
-    data['Viscosity, Pa*S'] = mugs
+    data['Viscosity, Pa*s'] = mugs
     data['Thermal conductivity, W/m/K'] = kgs
     data['Surface tension, N/m'] = sigmas
     data['Prandtl number'] = Prs
@@ -146,7 +146,7 @@ def tabulate_gas(chemical, Tmin=None, Tmax=None, pts=10):
     data['Density, kg/m^3'] = rhos
     data['Constant-pressure heat capacity, J/kg/K'] = Cps
     data['Constant-volume heat capacity, J/kg/K'] = Cvs
-    data['Viscosity, Pa*S'] = mugs
+    data['Viscosity, Pa*s'] = mugs
     data['Thermal consuctivity, W/m/K'] = kgs
     data['Prandtl number'] = Prs
     data['Thermal diffusivity, m^2/s'] = alphas

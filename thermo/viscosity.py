@@ -245,7 +245,7 @@ def Letsou_Stiel(T, MW, Tc, Pc, omega):
     Returns
     -------
     mu_l : float
-        Viscosity of liquid, [Pa*S]
+        Viscosity of liquid, [Pa*s]
 
     Notes
     -----
@@ -308,7 +308,7 @@ def Przedziecki_Sridhar(T, Tm, Tc, Pc, Vc, Vm, omega, MW):
     Returns
     -------
     mu_l : float
-        Viscosity of liquid, [Pa*S]
+        Viscosity of liquid, [Pa*s]
 
     Notes
     -----
@@ -650,7 +650,7 @@ class ViscosityLiquid(TPDependentProperty):
         Returns
         -------
         mu : float
-            Viscosity of the liquid at T and a low pressure, [Pa*S]
+            Viscosity of the liquid at T and a low pressure, [Pa*s]
         '''
         if method == DUTT_PRASAD:
             A, B, C = self.DUTT_PRASAD_coeffs
@@ -773,7 +773,7 @@ class ViscosityLiquid(TPDependentProperty):
         Returns
         -------
         mu : float
-            Viscosity of the liquid at T and P, [Pa*S]
+            Viscosity of the liquid at T and P, [Pa*s]
         '''
         if method == LUCAS:
             mu = self.T_dependent_property(T)
@@ -860,7 +860,7 @@ def Lucas(T, P, Tc, Pc, omega, P_sat, mu_l):
     P_sat : float
         Saturation pressure of the fluid [Pa]
     mu_l : float
-        Viscosity of liquid at 1 atm or saturation, [Pa*S]
+        Viscosity of liquid at 1 atm or saturation, [Pa*s]
 
     Returns
     -------
@@ -1108,7 +1108,7 @@ def Yoon_Thodos(T, Tc, Pc, MW):
     Returns
     -------
     mu_g : float
-        Viscosity of gas, [Pa*S]
+        Viscosity of gas, [Pa*s]
 
     Notes
     -----
@@ -1310,7 +1310,7 @@ def Gharagheizi_gas_viscosity(T, Tc, Pc, MW):
     Returns
     -------
     mu_g : float
-        Viscosity of gas, [Pa*S]
+        Viscosity of gas, [Pa*s]
 
     Notes
     -----
@@ -1595,7 +1595,7 @@ class ViscosityGas(TPDependentProperty):
         Returns
         -------
         mu : float
-            Viscosity of the gas at T and a low pressure, [Pa*S]
+            Viscosity of the gas at T and a low pressure, [Pa*s]
         '''
         if method == GHARAGHEIZI:
             mu = Gharagheizi_gas_viscosity(T, self.Tc, self.Pc, self.MW)
@@ -1796,16 +1796,16 @@ def Wilke(ys, mus, MWs):
     Parameters
     ----------
     ys : float
-        Mole fractions of gas components
+        Mole fractions of gas components, [-]
     mus : float
-        Gas viscosities of all components, [Pa*S]
+        Gas viscosities of all components, [Pa*s]
     MWs : float
         Molecular weights of all components, [g/mol]
 
     Returns
     -------
     mug : float
-        Viscosity of gas mixture, Pa*S]
+        Viscosity of gas mixture, [Pa*s]
 
     Notes
     -----
@@ -1861,7 +1861,7 @@ def Brokaw(T, ys, mus, MWs, molecular_diameters, Stockmayers):
     ys : float
         Mole fractions of gas components
     mus : float
-        Gas viscosities of all components, [Pa*S]
+        Gas viscosities of all components, [Pa*s]
     MWs : float
         Molecular weights of all components, [g/mol]
     molecular_diameters : float
@@ -1872,7 +1872,7 @@ def Brokaw(T, ys, mus, MWs, molecular_diameters, Stockmayers):
     Returns
     -------
     mug : float
-        Viscosity of gas mixture, [Pa*S]
+        Viscosity of gas mixture, [Pa*s]
 
     Notes
     -----

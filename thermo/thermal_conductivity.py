@@ -1365,7 +1365,7 @@ def Eucken(MW, Cvm, mu):
     Cvm : float
         Molar contant volume heat capacity of the gas [J/mol/K]
     mu : float
-        Gas viscosity [Pa*S]
+        Gas viscosity [Pa*s]
 
     Returns
     -------
@@ -1408,7 +1408,7 @@ def Eucken_modified(MW, Cvm, mu):
     Cvm : float
         Molar contant volume heat capacity of the gas [J/mol/K]
     mu : float
-        Gas viscosity [Pa*S]
+        Gas viscosity [Pa*s]
 
     Returns
     -------
@@ -1467,7 +1467,7 @@ def DIPPR9B(T, MW, Cvm, mu, Tc=None, chemtype=None):
     Cvm : float
         Molar heat capacity at constant volume of fluid, [J/mol/K]
     mu : float
-        Viscosity of gas, [Pa*S]
+        Viscosity of gas, [Pa*s]
 
     Returns
     -------
@@ -1541,7 +1541,7 @@ def Chung(T, MW, Tc, omega, Cvm, mu):
     Cvm : float
         Molar contant volume heat capacity of the gas [J/mol/K]
     mu : float
-        Gas viscosity [Pa*S]
+        Gas viscosity [Pa*s]
 
     Returns
     -------
@@ -1851,7 +1851,7 @@ class ThermalConductivityGas(TPDependentProperty):
         or callable for the same, [J/mol/K]
     mug : float or callable, optional
         Gas viscosity of the fluid at a pressure and temperature or callable
-        for the same, [Pa*S]
+        for the same, [Pa*s]
 
     Notes
     -----
@@ -2549,7 +2549,7 @@ def chung_dense(T, MW, Tc, Vc, omega, Cvm, Vm, mu, dipole, association=0):
     Vm : float
         Molar volume of the gas at T and P [m^3/mol]
     mu : float
-        Low-pressure gas viscosity [Pa*S]
+        Low-pressure gas viscosity [Pa*s]
     dipole : float
         Dipole moment [debye]
     association : float, optional
