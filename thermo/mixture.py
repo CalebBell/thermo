@@ -762,18 +762,18 @@ class Mixture(object):
 
     def set_TP_sources(self):
 
-        self.VolumeSolidMixture = VolumeSolidMixture(CASs=self.CASs, VolumeSolids=self.VolumeSolids)
+        self.VolumeSolidMixture = VolumeSolidMixture(CASs=self.CASs, MWs=self.MWs, VolumeSolids=self.VolumeSolids)
         self.VolumeLiquidMixture = VolumeLiquidMixture(MWs=self.MWs, Tcs=self.Tcs, Pcs=self.Pcs, Vcs=self.Vcs, Zcs=self.Zcs, omegas=self.omegas, CASs=self.CASs, VolumeLiquids=self.VolumeLiquids)
-        self.VolumeGasMixture = VolumeGasMixture(eos=self.eos_in_a_box, CASs=self.CASs, VolumeGases=self.VolumeGases)
+        self.VolumeGasMixture = VolumeGasMixture(eos=self.eos_in_a_box, MWs=self.MWs, CASs=self.CASs, VolumeGases=self.VolumeGases)
 
         self.HeatCapacityLiquidMixture = HeatCapacityLiquidMixture(MWs=self.MWs, CASs=self.CASs, HeatCapacityLiquids=self.HeatCapacityLiquids)
-        self.HeatCapacityGasMixture = HeatCapacityGasMixture(CASs=self.CASs, HeatCapacityGases=self.HeatCapacityGases)
-        self.HeatCapacitySolidMixture = HeatCapacitySolidMixture(CASs=self.CASs, HeatCapacitySolids=self.HeatCapacitySolids)
+        self.HeatCapacityGasMixture = HeatCapacityGasMixture(MWs=self.MWs, CASs=self.CASs, HeatCapacityGases=self.HeatCapacityGases)
+        self.HeatCapacitySolidMixture = HeatCapacitySolidMixture(MWs=self.MWs, CASs=self.CASs, HeatCapacitySolids=self.HeatCapacitySolids)
 
-        self.ViscosityLiquidMixture = ViscosityLiquidMixture(CASs=self.CASs, ViscosityLiquids=self.ViscosityLiquids)
+        self.ViscosityLiquidMixture = ViscosityLiquidMixture(MWs=self.MWs, CASs=self.CASs, ViscosityLiquids=self.ViscosityLiquids)
         self.ViscosityGasMixture = ViscosityGasMixture(MWs=self.MWs, molecular_diameters=self.molecular_diameters, Stockmayers=self.Stockmayers, CASs=self.CASs, ViscosityGases=self.ViscosityGases)
 
-        self.ThermalConductivityLiquidMixture = ThermalConductivityLiquidMixture(CASs=self.CASs, ThermalConductivityLiquids=self.ThermalConductivityLiquids)
+        self.ThermalConductivityLiquidMixture = ThermalConductivityLiquidMixture(CASs=self.CASs, MWs=self.MWs, ThermalConductivityLiquids=self.ThermalConductivityLiquids)
         self.ThermalConductivityGasMixture = ThermalConductivityGasMixture(MWs=self.MWs, Tbs=self.Tbs, CASs=self.CASs, ThermalConductivityGases=self.ThermalConductivityGases, ViscosityGases=self.ViscosityGases)
 
         self.SurfaceTensionMixture = SurfaceTensionMixture(MWs=self.MWs, Tbs=self.Tbs, Tcs=self.Tcs, CASs=self.CASs, SurfaceTensions=self.SurfaceTensions, VolumeLiquids=self.VolumeLiquids)

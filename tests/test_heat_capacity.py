@@ -532,7 +532,7 @@ def test_HeatCapacitySolidMixture():
     from thermo.heat_capacity import HeatCapacitySolidMixture
     
     m = Mixture(['silver', 'platinum'], ws=[0.95, 0.05])
-    obj = HeatCapacitySolidMixture(CASs=m.CASs, HeatCapacitySolids=m.HeatCapacitySolids)
+    obj = HeatCapacitySolidMixture(CASs=m.CASs, HeatCapacitySolids=m.HeatCapacitySolids, MWs=m.MWs)
     
     Cp = obj(m.T, m.P, m.zs, m.ws)
     assert_allclose(Cp, 25.32745719036059)
@@ -550,7 +550,7 @@ def test_HeatCapacityGasMixture():
     from thermo.heat_capacity import HeatCapacityGasMixture
     
     m = Mixture(['oxygen', 'nitrogen'], ws=[.4, .6], T=350, P=1E6)
-    obj = HeatCapacityGasMixture(CASs=m.CASs, HeatCapacityGases=m.HeatCapacityGases)
+    obj = HeatCapacityGasMixture(CASs=m.CASs, HeatCapacityGases=m.HeatCapacityGases, MWs=m.MWs)
     
     Cp = obj(m.T, m.P, m.zs, m.ws)
     assert_allclose(Cp, 29.361044582498046)

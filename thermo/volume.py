@@ -2066,7 +2066,9 @@ class VolumeGasMixture(MixtureProperty):
     eos : container[EOS Object], optional
         Equation of state object, normally created by 
         :obj:`thermo.chemical.Mixture`.
-                 
+    MWs : list[float], optional
+        Molecular weights of all species in the mixture, [g/mol]
+
     Notes
     -----
     To iterate over all methods, use the list stored in
@@ -2104,10 +2106,11 @@ class VolumeGasMixture(MixtureProperty):
                             
     ranked_methods = [EOS, SIMPLE, IDEAL]
 
-    def __init__(self, eos=None, CASs=[], VolumeGases=[]):
+    def __init__(self, eos=None, CASs=[], VolumeGases=[], MWs=[]):
         self.CASs = CASs
         self.VolumeGases = VolumeGases
         self.eos = eos
+        self.MWs = MWs
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
@@ -2211,7 +2214,7 @@ class VolumeGasMixture(MixtureProperty):
 
 ### Solids
 
-def Goodman(T, Tt, rhol):
+def Goodman(T, Tt, Vml):
     r'''Calculates solid density at T using the simple relationship
     by a member of the DIPPR.
 
@@ -2227,13 +2230,14 @@ def Goodman(T, Tt, rhol):
         Temperature of fluid [K]
     Tt : float
         Triple temperature of fluid [K]
-    rhol : float
-        Liquid density, [m^3/mol]
+    Vml : float
+        Liquid molar volume of the organic liquid at the triple point,
+        [m^3/mol]
 
     Returns
     -------
-    rhos : float
-        Solid volume, [m^3/mol]
+    Vms : float
+        Solid molar volume, [m^3/mol]
 
     Notes
     -----
@@ -2241,8 +2245,10 @@ def Goodman(T, Tt, rhol):
 
     Examples
     --------
-    >>> Goodman(281.46, 353.43, 7.6326)
-    8.797191839062899
+    Decane at 200 K:
+        
+    >>> Goodman(200, 243.225, 0.00023585)
+    0.0002053665090860923
 
     References
     ----------
@@ -2251,8 +2257,7 @@ def Goodman(T, Tt, rhol):
        Density and Liquid Density at the Triple Point." Journal of Chemical &
        Engineering Data 49, no. 6 (2004): 1512-14. doi:10.1021/je034220e.
     '''
-    rhos = (1.28 - 0.16*(T/Tt))*(rhol)
-    return rhos
+    return 1.0/((1.28 - 0.16*(T/Tt))*(1.0/Vml))
 
 
 GOODMAN = 'GOODMAN'
@@ -2460,7 +2465,9 @@ class VolumeSolidMixture(MixtureProperty):
     VolumeSolids : list[VolumeSolid], optional
         VolumeSolid objects created for all species in the mixture,  
         normally created by :obj:`thermo.chemical.Chemical`.
-                 
+    MWs : list[float], optional
+        Molecular weights of all species in the mixture, [g/mol]
+
     Notes
     -----
     To iterate over all methods, use the list stored in
@@ -2480,9 +2487,10 @@ class VolumeSolidMixture(MixtureProperty):
                             
     ranked_methods = [SIMPLE]
 
-    def __init__(self, CASs=[], VolumeSolids=[]):
+    def __init__(self, CASs=[], VolumeSolids=[], MWs=[]):
         self.CASs = CASs
         self.VolumeSolids = VolumeSolids
+        self.MWs = MWs
 
         self.Tmin = 0
         '''Minimum temperature at which no method can calculate the

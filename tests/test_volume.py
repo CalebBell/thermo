@@ -190,11 +190,8 @@ def test_CRC_virial_poly():
 
 
 def test_solids_CSP():
-    from thermo.volume import Goodman
-    V = Goodman(281.46, 353.43, 7.6326)
-    assert_allclose(V, 8.797191839062899)
-
-    # TODO: lots of testing
+    V = Goodman(200, 243.225, 0.00023585)
+    assert_allclose(0.0002053665090860923, V)
 
 
 @pytest.mark.meta_T_dept
@@ -398,7 +395,7 @@ def test_VolumeGasMixture():
     from thermo.mixture import Mixture
     from thermo.volume import VolumeGasMixture, EOS, SIMPLE, IDEAL
     m = Mixture(['oxygen', 'nitrogen'], zs=[.5, .5], T=298.15, P=1E6)
-    obj = VolumeGasMixture(CASs=m.CASs, VolumeGases=m.VolumeGases, eos=m.eos_in_a_box)
+    obj = VolumeGasMixture(CASs=m.CASs, VolumeGases=m.VolumeGases, eos=m.eos_in_a_box, MWs=m.MWs)
     
     assert_allclose(obj.mixture_property(m.T, m.P, m.zs, m.ws), 0.0024628053244477232)
     assert_allclose(obj.calculate(m.T, m.P, m.zs, m.ws, SIMPLE), 0.002468989614515616)

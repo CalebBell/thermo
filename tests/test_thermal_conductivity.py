@@ -385,7 +385,7 @@ def test_ThermalConductivityLiquidMixture():
     m = Mixture(['ethanol', 'pentanol'], ws=[0.258, 0.742], T=298.15)
     ThermalConductivityLiquids = [i.ThermalConductivityLiquid for i in m.Chemicals]
     
-    kl_mix = ThermalConductivityLiquidMixture(CASs=m.CASs, ThermalConductivityLiquids=ThermalConductivityLiquids)
+    kl_mix = ThermalConductivityLiquidMixture(CASs=m.CASs, ThermalConductivityLiquids=ThermalConductivityLiquids, MWs=m.MWs)
     k = kl_mix.mixture_property(m.T, m.P, m.zs, m.ws)
     assert_allclose(k, 0.15300152782218343)
                            
@@ -398,7 +398,7 @@ def test_ThermalConductivityLiquidMixture():
     # Test electrolytes
     m = Mixture(['water', 'sulfuric acid'], ws=[.5, .5], T=298.15)
     ThermalConductivityLiquids = [i.ThermalConductivityLiquid for i in m.Chemicals]
-    kl_mix = ThermalConductivityLiquidMixture(CASs=m.CASs, ThermalConductivityLiquids=ThermalConductivityLiquids)
+    kl_mix = ThermalConductivityLiquidMixture(CASs=m.CASs, ThermalConductivityLiquids=ThermalConductivityLiquids, MWs=m.MWs)
     k = kl_mix.mixture_property(m.T, m.P, m.zs, m.ws)
     assert_allclose(k, 0.4677453168207703)
     assert kl_mix.sorted_valid_methods == [MAGOMEDOV]

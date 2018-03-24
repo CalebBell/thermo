@@ -436,7 +436,7 @@ def test_ViscosityLiquidMixture():
     
     ViscosityLiquids = [i.ViscosityLiquid for i in m.Chemicals]
 
-    obj = ViscosityLiquidMixture(ViscosityLiquids=ViscosityLiquids, CASs=m.CASs)
+    obj = ViscosityLiquidMixture(ViscosityLiquids=ViscosityLiquids, CASs=m.CASs, MWs=m.MWs)
     mu = obj.mixture_property(m.T, m.P, m.zs, m.ws)
     assert_allclose(mu, 0.0009956952502281852)
     
@@ -448,7 +448,7 @@ def test_ViscosityLiquidMixture():
     # Test Laliberte
     m = Mixture(['water', 'sulfuric acid'], zs=[0.5, 0.5], T=298.15)
     ViscosityLiquids = [i.ViscosityLiquid for i in m.Chemicals]
-    obj = ViscosityLiquidMixture(ViscosityLiquids=ViscosityLiquids, CASs=m.CASs)
+    obj = ViscosityLiquidMixture(ViscosityLiquids=ViscosityLiquids, CASs=m.CASs, MWs=m.MWs)
     mu = obj.mixture_property(m.T, m.P, m.zs, m.ws)
     assert_allclose(mu, 0.024955325569420893)
     assert obj.sorted_valid_methods == [LALIBERTE_MU]

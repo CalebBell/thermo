@@ -2844,6 +2844,8 @@ class HeatCapacitySolidMixture(MixtureProperty):
     HeatCapacitySolids : list[HeatCapacitySolid], optional
         HeatCapacitySolid objects created for all species in the mixture,  
         normally created by :obj:`thermo.chemical.Chemical`.
+    MWs : list[float], optional
+        Molecular weights of all species in the mixture, [g/mol]
 
     Notes
     -----
@@ -2862,9 +2864,10 @@ class HeatCapacitySolidMixture(MixtureProperty):
                             
     ranked_methods = [SIMPLE]
 
-    def __init__(self, CASs=[], HeatCapacitySolids=[]):
+    def __init__(self, CASs=[], HeatCapacitySolids=[], MWs=[]):
         self.CASs = CASs
         self.HeatCapacitySolids = HeatCapacitySolids
+        self.MWs = MWs
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
@@ -2972,6 +2975,8 @@ class HeatCapacityGasMixture(MixtureProperty):
     HeatCapacityGases : list[HeatCapacityGas], optional
         HeatCapacityGas objects created for all species in the mixture,  
         normally created by :obj:`thermo.chemical.Chemical`.
+    MWs : list[float], optional
+        Molecular weights of all species in the mixture, [g/mol]
 
     Notes
     -----
@@ -2991,9 +2996,10 @@ class HeatCapacityGasMixture(MixtureProperty):
                             
     ranked_methods = [SIMPLE]
 
-    def __init__(self, CASs=[], HeatCapacityGases=[]):
+    def __init__(self, CASs=[], HeatCapacityGases=[], MWs=[]):
         self.CASs = CASs
         self.HeatCapacityGases = HeatCapacityGases
+        self.MWs = MWs
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the

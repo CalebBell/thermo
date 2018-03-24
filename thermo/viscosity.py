@@ -856,6 +856,8 @@ class ViscosityLiquidMixture(MixtureProperty):
     ViscosityLiquids : list[ViscosityLiquid], optional
         ViscosityLiquid objects created for all species in the mixture,  
         normally created by :obj:`thermo.chemical.Chemical`.
+    MWs : list[float], optional
+        Molecular weights of all species in the mixture, [g/mol]
 
     Notes
     -----
@@ -891,9 +893,10 @@ class ViscosityLiquidMixture(MixtureProperty):
                             
     ranked_methods = [LALIBERTE_MU, MIXING_LOG_MOLAR, MIXING_LOG_MASS]
 
-    def __init__(self, CASs=[], ViscosityLiquids=[]):
+    def __init__(self, CASs=[], ViscosityLiquids=[], MWs=[]):
         self.CASs = CASs
         self.ViscosityLiquids = ViscosityLiquids
+        self.MWs = MWs
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the

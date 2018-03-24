@@ -1183,6 +1183,8 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
     ThermalConductivityLiquids : list[ThermalConductivityLiquid], optional
         ThermalConductivityLiquid objects created for all species in the
         mixture, normally created by :obj:`thermo.chemical.Chemical`.
+    MWs : list[float], optional
+        Molecular weights of all species in the mixture, [g/mol]
 
     Notes
     -----
@@ -1219,9 +1221,10 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
                             
     ranked_methods = [DIPPR_9H, SIMPLE, MAGOMEDOV, FILIPPOV]
 
-    def __init__(self, CASs=[], ThermalConductivityLiquids=[]):
+    def __init__(self, CASs=[], ThermalConductivityLiquids=[], MWs=[]):
         self.CASs = CASs
         self.ThermalConductivityLiquids = ThermalConductivityLiquids
+        self.MWs = MWs
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
