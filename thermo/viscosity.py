@@ -24,9 +24,9 @@ from __future__ import division
 
 __all__ = ['Dutt_Prasad', 'VN3_data', 'VN2_data', 'VN2E_data', 'Perrys2_313',
 'Perrys2_312','VDI_PPDS_7', 'VDI_PPDS_8',
-'ViswanathNatarajan3',
+'Viswanath_Natarajan_3',
 'Letsou_Stiel', 'Przedziecki_Sridhar', 
-'ViswanathNatarajan2', 'Viswanath_Natarajan_2_exponential',
+'Viswanath_Natarajan_2', 'Viswanath_Natarajan_2_exponential',
 'viscosity_liquid_methods', 
 'viscosity_liquid_methods_P', 'ViscosityLiquid', 'ViscosityGas', 'Lucas', 
 'Yoon_Thodos', 'Stiel_Thodos', 'lucas_gas', 
@@ -41,7 +41,7 @@ import pandas as pd
 from scipy.interpolate import UnivariateSpline
 from scipy.optimize import newton
 
-from thermo.utils import log, exp
+from thermo.utils import log, exp, log10
 from thermo.utils import horner, none_and_length_check, mixing_simple, mixing_logarithmic, TPDependentProperty, MixtureProperty
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
 from thermo.electrochem import _Laliberte_Viscosity_ParametersDict, Laliberte_viscosity
@@ -83,23 +83,46 @@ VDI_PPDS_8 = pd.read_csv(os.path.join(folder, 'VDI PPDS Dynamic viscosity of gas
 _VDI_PPDS_8_values = VDI_PPDS_8.values
 
 
-def ViswanathNatarajan2(T, A, B):
-    '''
-    This function is known to produce values 10 times too low.
-    The author's data must have an error.
-    I have adjusted it to fix this.
+def Viswanath_Natarajan_2(T, A, B):
+    r'''Calculate the viscosity of a liquid using the 2-term form
+    representation developed in [1]_. Requires input coefficients. The `A`
+    coefficient is assumed to yield coefficients in Pa*s; if it yields
+    values in 1E-3 Pa*s, remove log(100) for A.
 
-    # DDBST has 0.0004580 as a value at this temperature
+    .. math::
+        \mu = \exp\left(A + \frac{B}{T}\right)
+        
+    Parameters
+    ----------
+    T : float
+        Temperature of fluid [K]
+    A : float
+        Coefficient, [-]
+    B : float
+        Coefficient, [K]
+
+    Returns
+    -------
+    mu : float
+        Liquid viscosity, [Pa*s]
+
+    Notes
+    -----
+    No other source for these coefficients than [1]_ has been found.
+
+    Examples
+    --------
+    DDBST has 0.0004580 as a value at this temperature for 1-Butanol.
     
-    >>> ViswanathNatarajan2(348.15, -5.9719, 1007.0)
+    >>> Viswanath_Natarajan_2(348.15, -5.9719+log(100), 1007.0)
     0.00045983686956829517
+    
+    References
+    ----------
+    .. [1] Viswanath, Dabir S., and G. Natarajan. Databook On The Viscosity Of
+       Liquids. New York: Taylor & Francis, 1989
     '''
-    mu = exp(A + B/T)
-    mu = mu/1000.
-    mu = mu*10
-    return mu
-
-#print(ViswanathNatarajan2(298.15, -5.1466, 625.44))
+    return exp(A + B/T)
 
 
 def Viswanath_Natarajan_2_exponential(T, C, D):
@@ -150,12 +173,12 @@ def Viswanath_Natarajan_2_exponential(T, C, D):
     return C*T**D
 
 
-def ViswanathNatarajan3(T, A, B, C):
+def Viswanath_Natarajan_3(T, A, B, C):
     r'''Calculate the viscosity of a liquid using the 3-term Antoine form
-    representation developed in [1]_. Requires input coefficients. The `A`
-    coefficient is assumed to yield coefficients in centipoise, as all 
-    coefficients found so far have been.
-
+    representation developed in [1]_. Requires input coefficients. If the
+    coefficients do not yield viscosity in Pa*s, but rather cP, remove 
+    log10(1000) from `A`.
+    
     .. math::
         \log_{10} \mu = A + B/(T + C)
 
@@ -163,6 +186,12 @@ def ViswanathNatarajan3(T, A, B, C):
     ----------
     T : float
         Temperature of fluid [K]
+    A : float
+        Coefficient, [-]
+    B : float
+        Coefficient, [K]
+    C : float
+        Coefficient, [K]
 
     Returns
     -------
@@ -175,7 +204,7 @@ def ViswanathNatarajan3(T, A, B, C):
 
     Examples
     --------
-    >>> ViswanathNatarajan3(298.15, -2.7173, -1071.18, -129.51)
+    >>> Viswanath_Natarajan_3(298.15, -2.7173-log10(1000), -1071.18, -129.51)
     0.0006129806445142112
 
     References
@@ -183,8 +212,7 @@ def ViswanathNatarajan3(T, A, B, C):
     .. [1] Viswanath, Dabir S., and G. Natarajan. Databook On The Viscosity Of
        Liquids. New York: Taylor & Francis, 1989
     '''
-    mu = 10**(A + B/(C - T))
-    return mu/1000.
+    return 10**(A + B/(C - T))
 
 
 def Letsou_Stiel(T, MW, Tc, Pc, omega):
@@ -382,15 +410,15 @@ class ViscosityLiquid(TPDependentProperty):
     **DUTT_PRASAD**:
         A simple function as expressed in [1]_, with data available for
         100 fluids. Temperature limits are available for all fluids. See
-        :obj:`ViswanathNatarajan3` for details.
+        :obj:`Viswanath_Natarajan_3` for details.
     **VISWANATH_NATARAJAN_3**:
         A simple function as expressed in [1]_, with data available for
         432 fluids. Temperature limits are available for all fluids. See
-        :obj:`ViswanathNatarajan3` for details.
+        :obj:`Viswanath_Natarajan_3` for details.
     **VN2_data**:
         A simple function as expressed in [1]_, with data available for
         135 fluids. Temperature limits are available for all fluids. See
-        :obj:`ViswanathNatarajan2` for details.
+        :obj:`Viswanath_Natarajan_2` for details.
     **VISWANATH_NATARAJAN_2E**:
         A simple function as expressed in [1]_, with data available for
         14 fluids. Temperature limits are available for all fluids. See
@@ -431,8 +459,8 @@ class ViscosityLiquid(TPDependentProperty):
 
     See Also
     --------
-    ViswanathNatarajan3
-    ViswanathNatarajan2
+    Viswanath_Natarajan_3
+    Viswanath_Natarajan_2
     Viswanath_Natarajan_2_exponential
     Letsou_Stiel
     Przedziecki_Sridhar
@@ -568,17 +596,17 @@ class ViscosityLiquid(TPDependentProperty):
         if self.CASRN in Dutt_Prasad.index:
             methods.append(DUTT_PRASAD)
             _, A, B, C, self.DUTT_PRASAD_Tmin, self.DUTT_PRASAD_Tmax = _Dutt_Prasad_values[Dutt_Prasad.index.get_loc(self.CASRN)].tolist()
-            self.DUTT_PRASAD_coeffs = [A, B, C]
+            self.DUTT_PRASAD_coeffs = [A - 3.0, B, C]
             Tmins.append(self.DUTT_PRASAD_Tmin); Tmaxs.append(self.DUTT_PRASAD_Tmax)
         if self.CASRN in VN3_data.index:
             methods.append(VISWANATH_NATARAJAN_3)
             _, _, A, B, C, self.VISWANATH_NATARAJAN_3_Tmin, self.VISWANATH_NATARAJAN_3_Tmax = _VN3_data_values[VN3_data.index.get_loc(self.CASRN)].tolist()
-            self.VISWANATH_NATARAJAN_3_coeffs = [A, B, C]
+            self.VISWANATH_NATARAJAN_3_coeffs = [A - 3.0, B, C]
             Tmins.append(self.VISWANATH_NATARAJAN_3_Tmin); Tmaxs.append(self.VISWANATH_NATARAJAN_3_Tmax)
         if self.CASRN in VN2_data.index:
             methods.append(VISWANATH_NATARAJAN_2)
             _, _, A, B, self.VISWANATH_NATARAJAN_2_Tmin, self.VISWANATH_NATARAJAN_2_Tmax = _VN2_data_values[VN2_data.index.get_loc(self.CASRN)].tolist()
-            self.VISWANATH_NATARAJAN_2_coeffs = [A, B]
+            self.VISWANATH_NATARAJAN_2_coeffs = [A - 4.605170185988092, B] # log(100), 4.605170185988092
             Tmins.append(self.VISWANATH_NATARAJAN_2_Tmin); Tmaxs.append(self.VISWANATH_NATARAJAN_2_Tmax)
         if self.CASRN in VN2E_data.index:
             methods.append(VISWANATH_NATARAJAN_2E)
@@ -627,13 +655,13 @@ class ViscosityLiquid(TPDependentProperty):
         '''
         if method == DUTT_PRASAD:
             A, B, C = self.DUTT_PRASAD_coeffs
-            mu = ViswanathNatarajan3(T, A, B, C, )
+            mu = Viswanath_Natarajan_3(T, A, B, C, )
         elif method == VISWANATH_NATARAJAN_3:
             A, B, C = self.VISWANATH_NATARAJAN_3_coeffs
-            mu = ViswanathNatarajan3(T, A, B, C)
+            mu = Viswanath_Natarajan_3(T, A, B, C)
         elif method == VISWANATH_NATARAJAN_2:
             A, B = self.VISWANATH_NATARAJAN_2_coeffs
-            mu = ViswanathNatarajan2(T, self.VISWANATH_NATARAJAN_2_coeffs[0], self.VISWANATH_NATARAJAN_2_coeffs[1])
+            mu = Viswanath_Natarajan_2(T, self.VISWANATH_NATARAJAN_2_coeffs[0], self.VISWANATH_NATARAJAN_2_coeffs[1])
         elif method == VISWANATH_NATARAJAN_2E:
             C, D = self.VISWANATH_NATARAJAN_2E_coeffs
             mu = Viswanath_Natarajan_2_exponential(T, C, D)

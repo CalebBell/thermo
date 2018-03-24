@@ -23,6 +23,7 @@ SOFTWARE.'''
 from numpy.testing import assert_allclose
 from random import uniform
 import pytest
+from math import log, log10
 import numpy as np
 import pandas as pd
 from thermo.viscosity import *
@@ -119,13 +120,13 @@ def test_VDI_PPDS_8_data():
     assert VDI_PPDS_8.shape == (274, 6)
 
 def test_ViswanathNatarajan():
-    mu = ViswanathNatarajan2(348.15, -5.9719, 1007.0)
+    mu = Viswanath_Natarajan_2(348.15, -5.9719-log(100), 1007.0)
     assert_allclose(mu, 0.00045983686956829517)
 
     mu = Viswanath_Natarajan_2_exponential(298.15, 4900800,  -3.8075)
     assert_allclose(mu, 0.0018571903840928496)
 
-    mu = ViswanathNatarajan3(298.15, -2.7173, -1071.18, -129.51)
+    mu = Viswanath_Natarajan_3(298.15, -2.7173-log10(1000), -1071.18, -129.51)
     assert_allclose(mu, 0.0006129806445142112)
 
 
@@ -353,7 +354,7 @@ def test_ViscosityLiquid():
     assert_allclose(sorted(mul_calcs), sorted(mul_exp))
     assert [None]*5 == [(acetic_acid.set_user_methods(i), acetic_acid.T_dependent_property(650.0))[1] for i in acetic_acid.all_methods]
 
-    # Test ViswanathNatarajan2 with boron trichloride
+    # Test Viswanath_Natarajan_2 with boron trichloride
     mu = ViscosityLiquid(CASRN='10294-34-5').T_dependent_property(250)
     assert_allclose(mu, 0.0003389255178814321)
     assert None == ViscosityLiquid(CASRN='10294-34-5').T_dependent_property(350)
