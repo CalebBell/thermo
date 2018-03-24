@@ -3578,6 +3578,9 @@ class MixtureProperty(object):
         without specifying a specific method. This requires the calculation of
         the property as a function of composition at the limiting concentration
         of each component. One or both of `zs` and `ws` are required.
+        
+        .. math::
+            m^E = m_{mixing} = m - \sum_i m_{i, pure}\cdot z_i
 
         Parameters
         ----------
@@ -3610,6 +3613,10 @@ class MixtureProperty(object):
         r'''Method to calculate the partial molar property with sanity checking  
         and without specifying a specific method for the specified compound
         index and composition.
+        
+        .. math::
+            \bar m_i = \left( \frac{\partial (n_T m)} {\partial n_i}
+            \right)_{T, P, n_{j\ne i}}
 
         Parameters
         ----------
