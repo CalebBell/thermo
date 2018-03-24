@@ -1736,26 +1736,28 @@ class ViscosityGas(TPDependentProperty):
 
 ### Viscosity of gas mixtures
 
+
 def Herning_Zipperer(zs, mus, MWs):
     r'''Calculates viscosity of a gas mixture according to
     mixing rules in [1]_.
 
     .. math::
-        TODO
+        \mu = \frac{\sum x_i \mu_i \sqrt{MW_i}}
+        {\sum x_i \sqrt{MW_i}}
 
     Parameters
     ----------
     zs : float
-        Mole fractions of components
+        Mole fractions of components, [-]
     mus : float
-        Gas viscosities of all components, [Pa*S]
+        Gas viscosities of all components, [Pa*s]
     MWs : float
         Molecular weights of all components, [g/mol]
 
     Returns
     -------
     mug : float
-        Viscosity of gas mixture, Pa*S]
+        Viscosity of gas mixture, [Pa*s]
 
     Notes
     -----
@@ -1764,6 +1766,8 @@ def Herning_Zipperer(zs, mus, MWs):
 
     Examples
     --------
+    >>> Herning_Zipperer([0.5, 0.25, 0.25], [1.78e-05, 1.12e-05, 9.35e-06], [28.0134, 16.043, 30.07])
+    1.4174908599465168e-05
 
     References
     ----------
@@ -1815,7 +1819,9 @@ def Wilke(ys, mus, MWs):
 
     References
     ----------
-    .. [1] TODO
+    .. [1] Wilke, C. R. "A Viscosity Equation for Gas Mixtures." The Journal of
+       Chemical Physics 18, no. 4 (April 1, 1950): 517-19. 
+       https://doi.org/10.1063/1.1747673.
     '''
     if not none_and_length_check([ys, mus, MWs]):  # check same-length inputs
         raise Exception('Function inputs are incorrect format')

@@ -2627,6 +2627,8 @@ def Lindsay_Bromley(T, ys, ks, mus, Tbs, MWs):
         \right]^{0.5} \right\}^2 \left( \frac{T+S_{ij}}{T+S_i}\right)
 
         S_{ij} = S_{ji} = (S_i S_j)^{0.5}
+        
+        S_i = 1.5 T_b
 
     Parameters
     ----------
@@ -2637,7 +2639,7 @@ def Lindsay_Bromley(T, ys, ks, mus, Tbs, MWs):
     ks : float
         Liquid thermal conductivites of all components, [W/m/K]
     mus : float
-        Gas viscosities of all components, [Pa*S]
+        Gas viscosities of all components, [Pa*s]
     Tbs : float
         Boiling points of all components, [K]
     MWs : float
@@ -2659,8 +2661,6 @@ def Lindsay_Bromley(T, ys, ks, mus, Tbs, MWs):
     Average deviations of 4-5% for 77 binary mixtures reviewed in [2]_, from
     1342 points; also six ternary mixtures (70  points); max deviation observed
     was 40%. (DIPPR)
-
-    TODO: Finish documenting this.
 
     Examples
     --------

@@ -133,6 +133,7 @@ def Somayajulu(T, Tc, A, B, C):
 
     .. math::
         \sigma=aX^{5/4}+bX^{9/4}+cX^{13/4}
+        
         X=(T_c-T)/T_c
 
     Parameters

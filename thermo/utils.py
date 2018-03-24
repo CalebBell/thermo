@@ -1554,18 +1554,18 @@ def phase_select_property(phase=None, s=None, l=None, g=None, V_over_F=None):
     phase : str
         One of {'s', 'l', 'g', 'two-phase'}
     s : float
-        Solid-phase property
+        Solid-phase property, [`prop`]
     l : float
-        Liquid-phase property
+        Liquid-phase property, [`prop`]
     g : float
-        Gas-phase property
+        Gas-phase property, [`prop`]
     V_over_F : float
-        Vapor phase fraction
+        Vapor phase fraction, [-]
 
     Returns
     -------
     prop : float
-        The selected/calculated property for the relevant phase
+        The selected/calculated property for the relevant phase, [`prop`]
 
     Notes
     -----
@@ -1583,10 +1583,8 @@ def phase_select_property(phase=None, s=None, l=None, g=None, V_over_F=None):
         return l
     elif phase == 'g':
         return g
-    elif phase == 'two-phase':
-        return None  #TODO: all two-phase properties?
-    elif phase is None:
-        return None
+    elif phase is None or phase == 'two-phase':
+        return None  
     else:
         raise Exception('Property not recognized')
 
@@ -2290,7 +2288,6 @@ class TDependentProperty(object):
         if name is None:
             name = 'Tabular data series #' + str(len(self.tabular_data))  # Will overwrite a poorly named series
         self.tabular_data[name] = (Ts, properties)
-        # TODO set Tmin and Tmax if not set
 
         self.method = None
         self.user_methods.insert(0, name)

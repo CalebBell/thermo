@@ -128,7 +128,7 @@ def omega(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=['LK', 'DEFI
             if Tb(CASRN):
                 methods.append('LK')
             if VaporPressure(CASRN=CASRN).T_dependent_property(Tcrit*0.7):
-                methods.append('DEFINITION')  # TODO: better integration
+                methods.append('DEFINITION') 
         if IgnoreMethods:
             for Method in IgnoreMethods:
                 if Method in methods:
