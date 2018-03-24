@@ -24,8 +24,10 @@ from __future__ import division
 
 __all__ = ['Dutt_Prasad', 'VN3_data', 'VN2_data', 'VN2E_data', 'Perrys2_313',
 'Perrys2_312','VDI_PPDS_7', 'VDI_PPDS_8',
-'ViswanathNatarajan2', 'ViswanathNatarajan2Exponential', 'ViswanathNatarajan3',
-'Letsou_Stiel', 'Przedziecki_Sridhar', 'viscosity_liquid_methods', 
+'ViswanathNatarajan3',
+'Letsou_Stiel', 'Przedziecki_Sridhar', 
+'ViswanathNatarajan2', 'Viswanath_Natarajan_2_exponential',
+'viscosity_liquid_methods', 
 'viscosity_liquid_methods_P', 'ViscosityLiquid', 'ViscosityGas', 'Lucas', 
 'Yoon_Thodos', 'Stiel_Thodos', 'lucas_gas', 
 'Gharagheizi_gas_viscosity', 'viscosity_gas_methods', 'viscosity_gas_methods_P', 
@@ -88,6 +90,7 @@ def ViswanathNatarajan2(T, A, B):
     I have adjusted it to fix this.
 
     # DDBST has 0.0004580 as a value at this temperature
+    
     >>> ViswanathNatarajan2(348.15, -5.9719, 1007.0)
     0.00045983686956829517
     '''
@@ -99,15 +102,52 @@ def ViswanathNatarajan2(T, A, B):
 #print(ViswanathNatarajan2(298.15, -5.1466, 625.44))
 
 
-def ViswanathNatarajan2Exponential(T, C, D):
-    '''
-    This function is genuinely bad at what it does.
+def Viswanath_Natarajan_2_exponential(T, C, D):
+    r'''Calculate the viscosity of a liquid using the 2-term exponential form
+    representation developed in [1]_. Requires input coefficients. The `A`
+    coefficient is assumed to yield coefficients in Pa*s, as all 
+    coefficients found so far have been.
 
-    >>> ViswanathNatarajan2Exponential(298.15, 4900800,  -3.8075)
-    0.0018571903840928496
+    .. math::
+        \mu = C T^D
+
+    Parameters
+    ----------
+    T : float
+        Temperature of fluid [K]
+    C : float
+        Linear coefficient, [Pa*s]
+    D : float
+        Exponential coefficient, [-]
+
+    Returns
+    -------
+    mu : float
+        Liquid viscosity, [Pa*s]
+
+    Notes
+    -----
+    No other source for these coefficients has been found.
+
+    Examples
+    --------
+    >>> Ts = [283.15, 288.15, 303.15, 349.65]
+    >>> mus = [2.2173, 2.1530, 1.741, 1.0091] # in cP
+    >>> Viswanath_Natarajan_2_exponential(288.15, 4900800, -3.8075)
+    0.002114798866203873
+    
+    Calculation of the AARD of the fit (1% is the value stated in [1]_.:
+        
+    >>> mu_calc = [Viswanath_Natarajan_2_exponential(T, 4900800, -3.8075) for T in Ts]
+    >>> np.mean([abs((mu - mu_i*1000)/mu) for mu, mu_i in zip(mus, mu_calc)])
+    0.010467928813061298
+    
+    References
+    ----------
+    .. [1] Viswanath, Dabir S., and G. Natarajan. Databook On The Viscosity Of
+       Liquids. New York: Taylor & Francis, 1989
     '''
-    mu = C*T**D
-    return mu
+    return C*T**D
 
 
 def ViswanathNatarajan3(T, A, B, C):
@@ -354,7 +394,7 @@ class ViscosityLiquid(TPDependentProperty):
     **VISWANATH_NATARAJAN_2E**:
         A simple function as expressed in [1]_, with data available for
         14 fluids. Temperature limits are available for all fluids. See
-        :obj:`ViswanathNatarajan2Exponential` for details.
+        :obj:`Viswanath_Natarajan_2_exponential` for details.
     **DIPPR_PERRY_8E**:
         A collection of 337 coefficient sets from the DIPPR database published
         openly in [4]_. Provides temperature limits for all its fluids. 
@@ -393,7 +433,7 @@ class ViscosityLiquid(TPDependentProperty):
     --------
     ViswanathNatarajan3
     ViswanathNatarajan2
-    ViswanathNatarajan2Exponential
+    Viswanath_Natarajan_2_exponential
     Letsou_Stiel
     Przedziecki_Sridhar
     Lucas
@@ -596,7 +636,7 @@ class ViscosityLiquid(TPDependentProperty):
             mu = ViswanathNatarajan2(T, self.VISWANATH_NATARAJAN_2_coeffs[0], self.VISWANATH_NATARAJAN_2_coeffs[1])
         elif method == VISWANATH_NATARAJAN_2E:
             C, D = self.VISWANATH_NATARAJAN_2E_coeffs
-            mu = ViswanathNatarajan2Exponential(T, C, D)
+            mu = Viswanath_Natarajan_2_exponential(T, C, D)
         elif method == DIPPR_PERRY_8E:
             mu = EQ101(T, *self.Perrys2_313_coeffs)
         elif method == COOLPROP:

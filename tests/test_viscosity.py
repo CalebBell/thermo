@@ -122,7 +122,7 @@ def test_ViswanathNatarajan():
     mu = ViswanathNatarajan2(348.15, -5.9719, 1007.0)
     assert_allclose(mu, 0.00045983686956829517)
 
-    mu = ViswanathNatarajan2Exponential(298.15, 4900800,  -3.8075)
+    mu = Viswanath_Natarajan_2_exponential(298.15, 4900800,  -3.8075)
     assert_allclose(mu, 0.0018571903840928496)
 
     mu = ViswanathNatarajan3(298.15, -2.7173, -1071.18, -129.51)
@@ -346,7 +346,7 @@ def test_ViscosityLiquid():
     with pytest.raises(Exception):
         EtOH.test_method_validity(300, 'BADMETHOD')
 
-    # Acetic acid to test ViswanathNatarajan2Exponential
+    # Acetic acid to test Viswanath_Natarajan_2_exponential
     acetic_acid = ViscosityLiquid(CASRN='64-19-7', Tc=590.7)
     mul_calcs = [(acetic_acid.set_user_methods(i), acetic_acid.T_dependent_property(350.0))[1] for i in acetic_acid.all_methods]
     mul_exp = [0.0005744169247310638, 0.0005089289428076254, 0.0005799665143154318, 0.0005727888422607339, 0.000587027903931889]

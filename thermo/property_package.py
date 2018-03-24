@@ -491,6 +491,7 @@ class IdealCaloric(Ideal):
         self.Hm = None
         self.Sm = None
         self.Gm = None
+        self.chemical_potential = None
         self.T = None
         self.P = None
         self.phase = None
