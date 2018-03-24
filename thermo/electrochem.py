@@ -113,12 +113,12 @@ def Laliberte_viscosity_w(T):
     Parameters
     ----------
     T : float
-        Temperature of fluid [K]
+        Temperature of fluid, [K]
 
     Returns
     -------
     mu_w : float
-        Water viscosity, Pa*s
+        Water viscosity, [Pa*s]
 
     Notes
     -----
@@ -153,16 +153,16 @@ def Laliberte_viscosity_i(T, w_w, v1, v2, v3, v4, v5, v6):
     Parameters
     ----------
     T : float
-        Temperature of fluid [K]
+        Temperature of fluid, [K]
     w_w : float
-        Weight fraction of water in the solution
+        Weight fraction of water in the solution, [-]
     v1-v6 : floats
         Function fit parameters
 
     Returns
     -------
     mu_i : float
-        Solute partial viscosity, Pa*s
+        Solute partial viscosity, [Pa*s]
 
     Notes
     -----
@@ -182,14 +182,15 @@ def Laliberte_viscosity_i(T, w_w, v1, v2, v3, v4, v5, v6):
        Chemical & Engineering Data 54, no. 6 (June 11, 2009): 1725-60.
        doi:10.1021/je8008123
     '''
-    t = T-273.15
-    mu_i = exp((v1*(1-w_w)**v2 + v3)/(v4*t+1))/(v5*(1-w_w)**v6 + 1)
+    t = T - 273.15
+    mu_i = exp((v1*(1.0 - w_w)**v2 + v3)/(v4*t + 1.0))/(v5*(1.0 - w_w)**v6 + 1.0)
     return mu_i/1000.
 
 
 def Laliberte_viscosity(T, ws, CASRNs):
-    r'''Calculate the viscosity of an aqueous mixture using the form proposed by [1]_.
-    Parameters are loaded by the function as needed. Units are Kelvin and Pa*s.
+    r'''Calculate the viscosity of an aqueous mixture using the form proposed 
+    by [1]_. Parameters are loaded by the function as needed. Units are Kelvin 
+    and Pa*s.
 
     .. math::
         \mu_m = \mu_w^{w_w} \Pi\mu_i^{w_i}
@@ -197,21 +198,22 @@ def Laliberte_viscosity(T, ws, CASRNs):
     Parameters
     ----------
     T : float
-        Temperature of fluid [K]
+        Temperature of fluid, [K]
     ws : array
-        Weight fractions of fluid components other than water
+        Weight fractions of fluid components other than water, [-]
     CASRNs : array
-        CAS numbers of the fluid components other than water
+        CAS numbers of the fluid components other than water, [-]
 
     Returns
     -------
     mu_i : float
-        Solute partial viscosity, Pa*s
+        Solute partial viscosity, [Pa*s]
 
     Notes
     -----
     Temperature range check is not used here.
-    Check is performed using NaCl at 5 degC from the first value in [1]_'s spreadsheet.
+    Check is performed using NaCl at 5 degC from the first value in [1]_'s 
+    spreadsheet.
 
     Examples
     --------
@@ -226,7 +228,7 @@ def Laliberte_viscosity(T, ws, CASRNs):
        doi:10.1021/je8008123
     '''
     mu_w = Laliberte_viscosity_w(T)*1000.
-    w_w = 1 - sum(ws)
+    w_w = 1.0 - sum(ws)
     mu = mu_w**(w_w)
     for i in range(len(CASRNs)):
         d = _Laliberte_Viscosity_ParametersDict[CASRNs[i]]
@@ -239,7 +241,7 @@ def Laliberte_viscosity(T, ws, CASRNs):
 
 def Laliberte_density_w(T):
     r'''Calculate the density of water using the form proposed by [1]_.
-    No parameters are needed, just a temperature. Units are Kelvin and kg/m^3h.
+    No parameters are needed, just a temperature. Units are Kelvin and kg/m^3.
 
     .. math::
         \rho_w = \frac{\left\{\left([(-2.8054253\times 10^{-10}\cdot t +
@@ -284,7 +286,8 @@ def Laliberte_density_w(T):
 
 def Laliberte_density_i(T, w_w, c0, c1, c2, c3, c4):
     r'''Calculate the density of a solute using the form proposed by Laliberte [1]_.
-    Parameters are needed, and a temperature, and water fraction. Units are Kelvin and Pa*s.
+    Parameters are needed, and a temperature, and water fraction. Units are 
+    Kelvin and Pa*s.
 
     .. math::
         \rho_{app,i} = \frac{(c_0[1-w_w]+c_1)\exp(10^{-6}[t+c_4]^2)}
@@ -295,9 +298,9 @@ def Laliberte_density_i(T, w_w, c0, c1, c2, c3, c4):
     T : float
         Temperature of fluid [K]
     w_w : float
-        Weight fraction of water in the solution
+        Weight fraction of water in the solution, [-]
     c0-c4 : floats
-        Function fit parameters
+        Function fit parameters, [-]
 
     Returns
     -------
@@ -306,8 +309,7 @@ def Laliberte_density_i(T, w_w, c0, c1, c2, c3, c4):
 
     Notes
     -----
-    Temperature range check is TODO
-
+    Temperature range check is not used here.
 
     Examples
     --------
@@ -380,8 +382,8 @@ _Cp_array = [4294.03, 4256.88, 4233.58, 4219.44, 4204.95, 4195.45, 4189.1, 4184.
 Laliberte_heat_capacity_w_interp = interp1d(_T_array, _Cp_array, kind='cubic')
 
 def Laliberte_heat_capacity_w(T):
-    r'''Calculate the heat capacity of water using the interpolation proposed by [1]_.
-    No parameters are needed, just a temperature.
+    r'''Calculate the heat capacity of water using the interpolation proposed
+     by [1]_. No parameters are needed, just a temperature.
 
     .. math::
         Cp_w = Cp_1 + (Cp_2-Cp_1) \left( \frac{t-t_1}{t_2-t_1}\right)
@@ -401,7 +403,7 @@ def Laliberte_heat_capacity_w(T):
     Notes
     -----
     Units are Kelvin and J/kg/K.
-    Original source not cited
+    Original source not cited.
     No temperature range is used.
     The original equation is not used, but rather a cubic scipy interpolation routine.
 
@@ -445,7 +447,7 @@ def Laliberte_heat_capacity_i(T, w_w, a1, a2, a3, a4, a5, a6):
     Notes
     -----
     Units are Kelvin and J/kg/K.
-    Temperature range check is TODO
+    Temperature range check is not used here.
 
     Examples
     --------
@@ -472,8 +474,8 @@ def Laliberte_heat_capacity(T, ws, CASRNs):
     Parameters are loaded by the function as needed.
 
     .. math::
-        TODO
-
+        Cp_m = w_w Cp_w + \sum w_i Cp_i
+        
     Parameters
     ----------
     T : float
