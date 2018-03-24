@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2016, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2016, 2017, 2018 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -313,9 +313,8 @@ def Przedziecki_Sridhar(T, Tm, Tc, Pc, Vc, Vm, omega, MW):
     Notes
     -----
     A test by Reid (1983) is used, but only mostly correct.
-    This function is not recommended. Its use has been removed from the Liquid Viscosity function.
+    This function is not recommended.
     Internal units are bar and mL/mol.
-    TODO: Test again with data from 5th ed table.
 
     Examples
     --------
@@ -1147,8 +1146,17 @@ def Stiel_Thodos(T, Tc, Pc, MW):
     r'''Calculates the viscosity of a gas using an emperical formula
     developed in [1]_.
 
+    if :math:`T_r > 1.5`:
+        
     .. math::
-        TODO
+        \mu_g = 17.78\times 10^{-5} (4.58T_r - 1.67)^{0.625}/\xi
+    
+    else:
+    
+    .. math::
+        \mu_g = 34\times 10^{-5} T_r^{0.94}/\xi
+
+        \xi = \frac{T_c^{(1/6)}}{\sqrt{MW} P_c^{2/3}}
 
     Parameters
     ----------
@@ -1164,11 +1172,10 @@ def Stiel_Thodos(T, Tc, Pc, MW):
     Returns
     -------
     mu_g : float
-        Viscosity of gas, [Pa*S]
+        Viscosity of gas, [Pa*s]
 
     Notes
     -----
-    Untested.
     Claimed applicability from 0.2 to 5 atm.
     Developed with data from 52 nonpolar, and 53 polar gases.
     internal units are poise and atm.
