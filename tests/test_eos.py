@@ -282,8 +282,11 @@ def test_PR_quick():
     V1, V2, V3 = b.raw_volumes
     assert_allclose(V3.real, 1.6764E8, rtol=1E-3)
     # Other two roots don't match
-
     
+    # Example 05.11 Liquid Density using the Peng-Robinson EOS in Chemical Thermodynamics for Process Simulation
+    V_l = PR(T=353.85, P=101325, Tc=553.60, Pc=40.750E5, omega=.2092).V_l
+    assert_allclose(V_l, 0.00011087, atol=1e-8)
+    # Matches to rounding
     
 
 def test_PR_Psat():
