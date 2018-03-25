@@ -100,6 +100,31 @@ def test_Ideal():
     T2_recalc = vodka.Tbubble(4517.277960030594, [0.5, 0.5])
     assert_allclose(T2_recalc, T2)    
     
+    vodka.flash(P=5000, VF=0, zs=[1, 0])
+    vodka.flash(P=5000, VF=0, zs=[1, 0])
+    vodka.flash(P=5000, VF=1, zs=[0, 1])
+    vodka.flash(P=5000, VF=1, zs=[0, 1])
+    
+def test_Ideal_composition_zeros():
+    m = Mixture(['ethanol', 'water'], zs=[0.5, 0.5], P=5000, T=298.15)
+
+    vodka = Ideal(m.VaporPressures, m.Tms, m.Tcs, m.Pcs)
+
+    # Test zero composition components - Pressure
+    vodka.flash(P=5000, VF=0, zs=[1, 0])
+    P = .1
+    for k in range(0, 7):
+        P *= 10
+        for VF in (0, 0.3, 1):
+            for zs in ([1, 0], [0, 1]):
+                vodka.flash(P=P, VF=VF, zs=zs)
+
+    # Test zero composition components - Temperature
+    for VF in (0, 0.3, 1):
+        for zs in ([1, 0], [0, 1]):
+            vodka.flash(T=300, VF=VF, zs=zs)
+    
+    
     
 def test_Ideal_single_component():
     m = Mixture(['water'], zs=[1], T=298.15)
@@ -174,7 +199,15 @@ def test_Ideal_single_component():
     assert_allclose(V_over_F, V_over_F_expect)
     assert_allclose(T, 298.1477829296143, rtol=1E-3)
 
-    
+
+#import matplotlib.pyplot as plt
+#@pytest.mark.mpl_image_compare
+#def test_Ideal_matplotlib():
+#    m = Mixture(['ethanol', 'water'], zs=[0.5, 0.5], P=5000, T=298.15)
+#    vodka = Ideal(m.VaporPressures, m.Tms, m.Tcs, m.Pcs)
+#    return vodka.plot_Pxy(T=300, pts=30, display=False)
+
+
 @pytest.mark.slow
 def test_IdealPP_fuzz_TP_VF():
     m = Mixture(['ethanol', 'water'], zs=[0.5, 0.5], P=5000, T=298.15)

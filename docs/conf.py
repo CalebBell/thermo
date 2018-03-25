@@ -290,6 +290,9 @@ numpydoc_show_class_members = True
 numpydoc_show_inherited_class_members = True
 numpydoc_class_members_toctree = False
 autosummary_generate = True
+add_function_parentheses = False
+autodoc_default_flags = ['undoc-members', 'show-inheritance']
+
 
 #autodoc_default_flags = ['members', 'private-members', 'special-members',
 #                         #'undoc-members',

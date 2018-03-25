@@ -1,6 +1,6 @@
   # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2017, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2017, 2018 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -18,7 +18,23 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+
+.. contents:: :local:
+
+Property Package Base Class
+---------------------------
+.. autoclass:: PropertyPackage
+    :members:
+
+Ideal Property Package
+----------------------
+.. autoclass:: Ideal
+    :members:
+
+.. autoclass:: IdealCaloric
+    :members:
+'''
 
 from __future__ import division
 
@@ -45,6 +61,7 @@ class PropertyPackage(object):
     # Constant - if the phase fraction is this close to either the liquid or 
     # vapor phase, round it to it
     PHASE_ROUNDING_TOL = 1E-9 
+    SUPPORTS_ZERO_FRACTIONS = True
     
     def to(self, zs, T=None, P=None, VF=None):
         obj = self.__class__(**self.kwargs)
@@ -71,7 +88,7 @@ class PropertyPackage(object):
         pass
     
     def flash(self, zs, T=None, P=None, VF=None):
-        if any(i == 0 for i in zs):
+        if not self.SUPPORTS_ZERO_FRACTIONS and any(i == 0 for i in zs):
             zs = [i if i != 0 else 1E-11 for i in zs]
             z_tot = sum(zs)
             zs = [i/z_tot for i in zs]
@@ -101,7 +118,7 @@ class PropertyPackage(object):
         
         self._post_flash()
         
-    def plot_Pxy(self, T, pts=30): # pragma: no cover
+    def plot_Pxy(self, T, pts=30, display=True): # pragma: no cover
         if not has_matplotlib:
             raise Exception('Optional dependency matplotlib is required for plotting')
         if self.N != 2:
@@ -123,9 +140,12 @@ class PropertyPackage(object):
         plt.xlabel('Mole fraction x1')
         plt.ylabel('System pressure, Pa')
         plt.legend(loc='best')
-        plt.show()
+        if display:
+            plt.show()
+        else:
+            return plt
         
-    def plot_Txy(self, P, pts=30): # pragma: no cover
+    def plot_Txy(self, P, pts=30, display=True): # pragma: no cover
         if not has_matplotlib:
             raise Exception('Optional dependency matplotlib is required for plotting')
         if self.N != 2:
@@ -147,9 +167,12 @@ class PropertyPackage(object):
         plt.xlabel('Mole fraction x1')
         plt.ylabel('System temperature, K')
         plt.legend(loc='best')
-        plt.show()
+        if display:
+            plt.show()
+        else:
+            return plt
         
-    def plot_xy(self, P=None, T=None, pts=30): # pragma: no cover
+    def plot_xy(self, P=None, T=None, pts=30, display=True): # pragma: no cover
         if not has_matplotlib:
             raise Exception('Optional dependency matplotlib is required for plotting')
         if self.N != 2:
@@ -176,7 +199,10 @@ class PropertyPackage(object):
         plt.legend(loc='best')
         plt.plot([0, 1], [0, 1], '--')
         plt.axis((0,1,0,1))
-        plt.show()
+        if display:
+            plt.show()
+        else:
+            return plt
         
     def plot_TP(self, zs, Tmin=None, Tmax=None, pts=50, branches=[]): # pragma: no cover
         if not has_matplotlib:
@@ -213,9 +239,9 @@ class PropertyPackage(object):
         plt.show()
         
     @staticmethod
-    def un_zero_zs(zs):
+    def un_zero_zs(zs, val=1e-6):
         if any(i == 0 for i in zs):
-            zs = [i if i != 0 else 1E-6 for i in zs]
+            zs = [i if i != 0 else val for i in zs]
             z_tot = sum(zs)
             zs = [i/z_tot for i in zs]
         return zs
@@ -407,7 +433,9 @@ class Ideal(PropertyPackage):
         # handle one component
         if self.N == 1:
             return 'l/g', [1.0], [1.0], VF, Psats[0]
-        
+        elif 1.0 in zs:
+            return 'l/g', list(zs), list(zs), VF, Psats[zs.index(1.0)]
+
         if VF == 0:
             P = bubble_at_T(zs, Psats)
         elif VF == 1:
@@ -421,10 +449,11 @@ class Ideal(PropertyPackage):
     def flash_PVF_zs(self, P, VF, zs):
         assert 0 <= VF <= 1
         Tsats = self._Tsats(P)
-        # handle one component
         if self.N == 1:
             return 'l/g', [1.0], [1.0], VF, Tsats[0]
-        
+        elif 1.0 in zs:
+            return 'l/g', list(zs), list(zs), VF, Tsats[zs.index(1.0)]
+
         T = brenth(self._P_VF_err, min(Tsats)*(1+1E-7), max(Tsats)*(1-1E-7), args=(P, VF, zs))
         Psats = self._Psats(T)
         Ks = [K_value(P=P, Psat=Psat) for Psat in Psats]
@@ -881,6 +910,7 @@ class GammaPhi(PropertyPackage):
     retention = False
     use_Poynting = False
     use_phis = False
+    SUPPORTS_ZERO_FRACTIONS = False
 
     def __init__(self, VaporPressures=None, Tms=None, Tcs=None, Pcs=None, 
                  **kwargs):
