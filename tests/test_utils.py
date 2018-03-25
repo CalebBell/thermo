@@ -26,9 +26,24 @@ import numpy as np
 from thermo.utils import *
 from thermo.stream import Stream
 
+
 def test_to_num():
     assert to_num(['1', '1.1', '1E5', '0xB4', '']) == [1.0, 1.1, 100000.0, '0xB4', None]
 
+
+def test_remove_zeros():
+    a = remove_zeros([0, 1e-9, 1], 1e-12)
+    assert type(a) == list
+    assert_allclose(a, [9.99999998999e-13, 9.99999998999e-10, 0.999999998999])
+    b = remove_zeros(np.array([0, 1e-9, 1]), 1e-12)
+    assert_allclose(b, [9.99999998999e-13, 9.99999998999e-10, 0.999999998999])
+    assert type(b) == np.ndarray
+    
+    assert remove_zeros([.3, .2, .5], 1e-12) == [0.3, 0.2, 0.5]
+    
+    c = remove_zeros(np.array([.3, .2, .5]), 1e-12)
+    assert_allclose(c, [.3, .2, .5])
+    assert type(c) == np.ndarray
 
 
 def test_none_and_length_check():

@@ -28,7 +28,8 @@ __all__ = ['isobaric_expansion', 'isothermal_compressibility',
 'isentropic_exponent', 'Vm_to_rho', 'rho_to_Vm', 
 'Z', 'B_to_Z', 'B_from_Z', 'Z_from_virial_density_form', 
 'Z_from_virial_pressure_form', 'zs_to_ws', 'ws_to_zs', 'zs_to_Vfs', 
-'Vfs_to_zs', 'none_and_length_check', 'normalize', 'mixing_simple', 
+'Vfs_to_zs', 'none_and_length_check', 'normalize', 'remove_zeros', 
+'mixing_simple', 
 'mixing_logarithmic', 'has_matplotlib', 'to_num', 'CAS2int', 'sorted_CAS_key',
 'int2CAS', 'Parachor', 'property_molar_to_mass', 'property_mass_to_molar', 
 'SG_to_API', 'API_to_SG', 'SG', 'vapor_mass_quality', 'mix_component_flows',
@@ -1470,6 +1471,42 @@ def normalize(values):
     '''
     tot = sum(values)
     return [i/tot for i in values]
+
+
+def remove_zeros(values, tol=1e-6):
+    r'''Simple function which removes zero values from an array, and replaces 
+    them with a user-specified value, normally a very small number. Helpful
+    for the case where a function can work with values very close to zero but
+    not quite zero. The resulting array is normalized so the sum is still one.
+    
+    Parameters
+    ----------
+    values : array-like
+        array of values
+    tol : float
+        The replacement value for zeroes
+
+    Returns
+    -------
+    fractions :  array-like
+        Array of values from 0 to 1
+
+    Notes
+    -----
+    Works on numpy arrays, and returns numpy arrays only for that case.
+
+    Examples
+    --------
+    >>> remove_zeros([0, 1e-9, 1], 1e-12)
+    [9.99999998999e-13, 9.99999998999e-10, 0.999999998999]
+    '''
+    if any(i == 0 for i in values):
+        ans = normalize([i if i != 0 else tol for i in values])
+        if type(values) != list:
+            if isinstance(values, np.ndarray):
+                return np.array(ans)
+        return ans
+    return values
 
 
 def mixing_simple(fracs, props):

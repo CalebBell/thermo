@@ -42,6 +42,7 @@ __all__ = ['PropertyPackage', 'Ideal', 'Unifac', 'GammaPhi',
            'UnifacDortmund', 'IdealCaloric', 'GammaPhiCaloric',
            'UnifacCaloric', 'UnifacDortmundCaloric']
 
+from copy import copy
 import numpy as np
 from scipy.optimize import brenth, ridder, golden, brent
 from scipy.misc import derivative
@@ -64,7 +65,7 @@ class PropertyPackage(object):
     SUPPORTS_ZERO_FRACTIONS = True
     
     def to(self, zs, T=None, P=None, VF=None):
-        obj = self.__class__(**self.kwargs)
+        obj = copy(self)
         obj.flash(T=T, P=P, VF=VF, zs=zs)
         return obj    
     
@@ -184,9 +185,9 @@ class PropertyPackage(object):
         x1_bubble = []
         for i in range(pts):
             if T:
-                self.flash(T=T, VF=0, zs=[z1[i], z2[i]])
+                self.flash(T=T, VF=self.PHASE_ROUNDING_TOL*2, zs=[z1[i], z2[i]])
             elif P:
-                self.flash(P=P, VF=0, zs=[z1[i], z2[i]])
+                self.flash(P=P, VF=self.PHASE_ROUNDING_TOL*2, zs=[z1[i], z2[i]])
             x1_bubble.append(self.xs[0])
             y1_bubble.append(self.ys[0])
         if T:
