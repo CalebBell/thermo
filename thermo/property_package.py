@@ -49,6 +49,7 @@ from scipy.misc import derivative
 
 from thermo.utils import log, exp
 from thermo.utils import has_matplotlib, R, pi, N_A
+from thermo.utils import remove_zeros
 
 from thermo.activity import K_value, flash_inner_loop, dew_at_T, bubble_at_T
 from thermo.unifac import UNIFAC, UFSG, DOUFSG, DOUFIP2006
@@ -63,7 +64,8 @@ class PropertyPackage(object):
     # vapor phase, round it to it
     PHASE_ROUNDING_TOL = 1E-9 
     SUPPORTS_ZERO_FRACTIONS = True
-    
+    zero_fraction = 1E-6
+
     def to(self, zs, T=None, P=None, VF=None):
         obj = copy(self)
         obj.flash(T=T, P=P, VF=VF, zs=zs)
@@ -239,14 +241,6 @@ class PropertyPackage(object):
         plt.legend(loc='best')
         plt.show()
         
-    @staticmethod
-    def un_zero_zs(zs, val=1e-6):
-        if any(i == 0 for i in zs):
-            zs = [i if i != 0 else val for i in zs]
-            z_tot = sum(zs)
-            zs = [i/z_tot for i in zs]
-        return zs
-
                 
     def plot_ternary(self, T, scale=10): # pragma: no cover
         if not has_matplotlib:
@@ -261,13 +255,13 @@ class PropertyPackage(object):
         P_values = []
 
         def P_dew_at_T_zs(zs):
-            zs = self.un_zero_zs(zs)
+            zs = remove_zeros(zs, self.zero_fraction)
             self.flash(T=T, zs=zs, VF=0)
             P_values.append(self.P)
             return self.P
         
         def P_bubble_at_T_zs(zs):
-            zs = self.un_zero_zs(zs)
+            zs = remove_zeros(zs, 1e-6)
             self.flash(T=T, zs=zs, VF=1)
             return self.P
         
@@ -490,6 +484,8 @@ class IdealCaloric(Ideal):
                        'VolumeLiquids': VolumeLiquids}
         
     def flash_caloric(self, zs, T=None, P=None, VF=None, Hm=None, Sm=None):
+        if not self.SUPPORTS_ZERO_FRACTIONS:
+            zs = remove_zeros(zs, 1e-11)
         if any(i == 0 for i in zs):
             zs = [i if i != 0 else 1E-11 for i in zs]
             z_tot = sum(zs)
