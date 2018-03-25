@@ -841,6 +841,20 @@ def test_GammaPhiBasic():
     se = a.SE_l( 400., [.5, .5])
     assert_allclose(se, 0)
 
+def test_PartialPropertyIdeal():
+    m = Mixture(['ethanol', 'water'], zs=[0.5, 0.5], P=5000, T=298.15)
+    
+    pkg = IdealCaloric(VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, Tcs=m.Tcs, Pcs=m.Pcs, 
+                  HeatCapacityLiquids=m.HeatCapacityLiquids, HeatCapacityGases=m.HeatCapacityGases,
+                  EnthalpyVaporizations=m.EnthalpyVaporizations, VolumeLiquids=m.VolumeLiquids)
+    
+    a = pkg.partial_property(T=m.T, P=m.P, i=0, zs=[0, 1], prop='Hm')
+    assert_allclose(a, -42413.680464960635)
+    a = pkg.partial_property(T=m.T, P=m.P, i=1, zs=[0, 1], prop='Hm')
+    assert_allclose(a, -43987.417546304641)
+    a = pkg.partial_property(T=m.T, P=m.P, i=1, zs=[.5, .5], prop='Hm')
+    assert_allclose(a, -118882.74138254928)
+
 
 def test_GammaPhiCaloricBasic():
     m = Mixture(['pentane', 'hexane', 'octane'], zs=[.1, .4, .5], T=298.15)

@@ -49,7 +49,7 @@ from scipy.misc import derivative
 
 from thermo.utils import log, exp
 from thermo.utils import has_matplotlib, R, pi, N_A
-from thermo.utils import remove_zeros
+from thermo.utils import remove_zeros, normalize
 
 from thermo.activity import K_value, flash_inner_loop, dew_at_T, bubble_at_T
 from thermo.unifac import UNIFAC, UFSG, DOUFSG, DOUFIP2006
@@ -91,10 +91,8 @@ class PropertyPackage(object):
         pass
     
     def flash(self, zs, T=None, P=None, VF=None):
-        if not self.SUPPORTS_ZERO_FRACTIONS and any(i == 0 for i in zs):
-            zs = [i if i != 0 else 1E-11 for i in zs]
-            z_tot = sum(zs)
-            zs = [i/z_tot for i in zs]
+        if not self.SUPPORTS_ZERO_FRACTIONS:
+            zs = remove_zeros(zs, 1e-11)
             
         if T is not None and P is not None:
             phase, xs, ys, V_over_F = self.flash_TP_zs(T=T, P=P, zs=zs)
@@ -485,11 +483,7 @@ class IdealCaloric(Ideal):
         
     def flash_caloric(self, zs, T=None, P=None, VF=None, Hm=None, Sm=None):
         if not self.SUPPORTS_ZERO_FRACTIONS:
-            zs = remove_zeros(zs, 1e-11)
-        if any(i == 0 for i in zs):
-            zs = [i if i != 0 else 1E-11 for i in zs]
-            z_tot = sum(zs)
-            zs = [i/z_tot for i in zs]
+            zs = remove_zeros(zs, self.zero_fraction)
             
         try:
             if T is not None and Sm is not None:
@@ -533,7 +527,45 @@ class IdealCaloric(Ideal):
         self.Sm = self.entropy_Cpg_Hvap()
         self.Gm = self.Hm - self.T*self.Sm if (self.Hm is not None and self.Sm is not None) else None
 
-#        self.G = self.H - self.T*self.S if (self.H is not None and self.S is not None) else None
+    def partial_property(self, T, P, i, zs, prop='Hm'):
+        r'''Method to calculate the partial molar property for entropy,
+        enthalpy, or gibbs energy. Note the partial gibbs energy is known
+        as chemical potential as well.
+        
+        .. math::
+            \bar m_i = \left( \frac{\partial (n_T m)} {\partial n_i}
+            \right)_{T, P, n_{j\ne i}}
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the partial property, [K]
+        P : float
+            Pressure at which to calculate the partial property, [Pa]
+        i : int
+            Compound index, [-]
+        zs : list[float], optional
+            Mole fractions of all species in the mixture, [-]
+
+        Returns
+        -------
+        partial_prop : float
+            Calculated partial property, [`units`]
+        '''
+        if prop not in ('Sm', 'Gm', 'Hm'):
+            raise Exception("The only supported property plots are enthalpy "
+                            "('Hm'), entropy ('Sm'), and Gibbe energy ('Gm')")
+        
+        def prop_extensive(ni, ns, i):
+            ns[i] = ni
+            n_tot = sum(ns)
+            zs = normalize(ns)
+            obj = self.to(T=T, P=P, zs=zs)
+            obj.flash_caloric(T=T, P=P, zs=zs)
+            property_value = getattr(obj, prop)
+            return property_value*n_tot
+        return derivative(prop_extensive, zs[i], dx=1E-6, args=[list(zs), i])
+
 
 
     def enthalpy_Cpg_Hvap(self):
