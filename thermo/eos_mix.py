@@ -287,13 +287,47 @@ class GCEOSMIX(GCEOS):
         # second derivative lns confirmed
 
     def TPD(self, Zz, Zy, zs, ys):
-#        if zs is None:
-#            zs = self.xs # liquid main phase
-#            Z_l = self.Z_l
-#        if ys is None:
-#            ys = self.ys
-#            Z_g = self.Z_g
-# Might just be easier to come up with my own criteria and analysis
+        r'''Helper method for calculating the Tangent Plane Distance function
+        according to the original Michelsen definition. More advanced 
+        transformations of the TPD function are available in the literature for
+        performing calculations. This method does not alter the state of the 
+        object.
+        
+        .. math::
+            \text{TPD}(y) =  \sum_{j=1}^n y_j(\mu_j (y) - \mu_j(z))
+            = RT \sum_i y_i\left(\log(y_i) + \log(\phi_i(y)) - d_i(z)\right)
+            
+        Parameters
+        ----------
+        Zz : float
+            Compressibility factor of the phase undergoing stability testing, 
+            [-]
+        Zy : float
+            Compressibility factor of the trial phase, [-]
+        zs : list[float]
+            Mole fraction composition of the phase undergoing stability 
+            testing, [-]
+        ys : list[float]
+            Mole fraction trial phase composition, [-]
+        
+        Returns
+        -------
+        TBP : float
+            Original Tangent Plane Distance function, [J/mol]
+            
+        Notes
+        -----
+        A dimensionless version of this is often used as well, divided by
+        RT.
+        
+        References
+        ----------
+        .. [1] Michelsen, Michael L. "The Isothermal Flash Problem. Part I. 
+           Stability." Fluid Phase Equilibria 9, no. 1 (December 1982): 1-19.
+        .. [2] Hoteit, Hussein, and Abbas Firoozabadi. "Simple Phase Stability
+           -Testing Algorithm in the Reduction Method." AIChE Journal 52, no. 
+           8 (August 1, 2006): 2909-20.
+        '''
         z_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
         y_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
         tot = 0
@@ -315,12 +349,15 @@ class GCEOSMIX(GCEOS):
         return gradient
 
     def TDP_Michelsen(self, Zz, Zy, zs, ys):
+        
         z_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
         y_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
         tot = 0
         for yi, phi_yi, zi, phi_zi in zip(ys, y_fugacity_coefficients, zs, z_fugacity_coefficients):
             hi = di = log(zi) + log(phi_zi) # same as di
+            
             k = log(yi) + log(phi_yi) - hi
+            # Michaelsum doesn't do the exponents.
             Yi = exp(-k)*yi
             tot += Yi*(log(Yi) + log(phi_yi) - hi - 1.)
             

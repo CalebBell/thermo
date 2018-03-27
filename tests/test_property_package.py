@@ -350,6 +350,7 @@ def test_Unifac_EOS_POY():
     
     assert_allclose(pkg.P, 230201.5387679756)
     
+@pytest.mark.fuzz
 @pytest.mark.slow
 def test_Unifac_fuzz():
     m = Mixture(['ethanol', 'water'], zs=[0.5, 0.5], P=5000, T=298.15)
@@ -849,11 +850,11 @@ def test_PartialPropertyIdeal():
                   EnthalpyVaporizations=m.EnthalpyVaporizations, VolumeLiquids=m.VolumeLiquids)
     
     a = pkg.partial_property(T=m.T, P=m.P, i=0, zs=[0, 1], prop='Hm')
-    assert_allclose(a, -42413.680464960635)
+    assert_allclose(a, -42413.680464960635, rtol=2e-3)
     a = pkg.partial_property(T=m.T, P=m.P, i=1, zs=[0, 1], prop='Hm')
-    assert_allclose(a, -43987.417546304641)
+    assert_allclose(a, -43987.417546304641, rtol=2e-3)
     a = pkg.partial_property(T=m.T, P=m.P, i=1, zs=[.5, .5], prop='Hm')
-    assert_allclose(a, -118882.74138254928)
+    assert_allclose(a, -118882.74138254928, rtol=2e-3)
 
 
 def test_GammaPhiCaloricBasic():
@@ -866,7 +867,7 @@ def test_GammaPhiCaloricBasic():
     
     
     pkg.flash(zs=m.zs, T=400, VF=0.5)
-    assert_allclose(pkg.P, 233084.1813331093)
+    assert_allclose(pkg.P, 233084.1813331093, rtol=2e-3)
     
     # 1 component still needs to be able to flash
     m = Mixture(['R-134a'], zs=[1], T=300, P=1E5)

@@ -763,7 +763,7 @@ should be calculated by this method, in a user subclass.')
             
         Notes
         -----
-        Computers `Psat`, and then uses `volume_solutions` to obtain the three
+        Computes `Psat`, and then uses `volume_solutions` to obtain the three
         possible molar volumes. The lowest value is returned.
         '''
         Psat = self.Psat(T)
@@ -788,7 +788,7 @@ should be calculated by this method, in a user subclass.')
             
         Notes
         -----
-        Computers `Psat`, and then uses `volume_solutions` to obtain the three
+        Computes `Psat`, and then uses `volume_solutions` to obtain the three
         possible molar volumes. The highest value is returned.
         '''
         Psat = self.Psat(T)

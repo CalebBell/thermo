@@ -95,6 +95,14 @@ def test_PRMIX_quick():
     assert_allclose(e.phis_l, [1.45191729893103, 0.502201064053298, 0.185146457753801], rtol=1E-4)
     
 
+def test_TPD_stuff():
+    # Two-phase nitrogen-methane
+    eos = PRMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    # Get a negative TPD proving there is a phase split
+    TPD = eos.TPD(eos.Z_g, eos.Z_l, eos.zs, eos.zs)
+    assert_allclose(TPD, -471.36283584737305)
+    
+    
 def test_PRMIX_VS_PR():
     # Test solution for molar volumes
     eos = PRMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., P=1E6)
