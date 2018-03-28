@@ -330,6 +330,7 @@ class GCEOSMIX(GCEOS):
         '''
         z_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
         y_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
+        
         tot = 0
         for yi, phi_yi, zi, phi_zi in zip(ys, y_fugacity_coefficients, zs, z_fugacity_coefficients):
             di = log(zi) + log(phi_zi)

@@ -94,6 +94,29 @@ def test_PRMIX_quick():
     assert_allclose(e.phis_g, [0.966475030274237, 0.953292801077091, 0.940728104174207])
     assert_allclose(e.phis_l, [1.45191729893103, 0.502201064053298, 0.185146457753801], rtol=1E-4)
     
+    
+    # CH4-H2S mixture - no gas kij
+    # checked values - accurate to with a gas constant for a standard PR EOS
+    # These are very very good values confirming fugacity and fugacity coefficients are correct!
+    ks = [[0,.0],[0.0,0]]
+    eos = PRMIX(T=190.0, P=40.53e5, Tcs=[190.63, 373.55], Pcs=[46.17E5, 90.07E5], omegas=[0.01, 0.1], zs=[0.5, 0.5], kijs=ks)
+    assert_allclose(eos.phis_l, [1.227364, 0.0114921], rtol=4e-4)
+    assert_allclose(eos.fugacities_l, [2487250, 23288.73], rtol=3e-4)
+
+    # CH4-H2S mixture - with kij - two phase, vapor frac 0.44424170
+    # TODO use this as a test case
+    # checked values - accurate to with a gas constant for a standard PR EOS
+    ks = [[0,.083],[0.083,0]]
+    xs = [0.1164203, 0.8835797]
+    ys = [0.9798684, 0.0201315]
+
+    eos = PRMIX(T=190.0, P=40.53e5, Tcs=[190.63, 373.55], Pcs=[46.17E5, 90.07E5], omegas=[0.01, 0.1], zs=xs, kijs=ks)
+    assert_allclose([5.767042, 0.00774973], eos.phis_l, rtol=4e-4)
+    assert_allclose([2721190, 27752.94], eos.fugacities_l, rtol=4e-4)
+    eos = PRMIX(T=190.0, P=40.53e5, Tcs=[190.63, 373.55], Pcs=[46.17E5, 90.07E5], omegas=[0.01, 0.1], zs=ys, kijs=ks)
+    assert_allclose([0.685195, 0.3401376], eos.phis_g, rtol=4e-4)
+    assert_allclose([2721190, 27752.94], eos.fugacities_g, rtol=4e-4)
+
 
 def test_TPD_stuff():
     # Two-phase nitrogen-methane
