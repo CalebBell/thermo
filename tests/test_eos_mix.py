@@ -25,6 +25,7 @@ import pytest
 from thermo.eos import *
 from thermo.eos_mix import *
 from scipy.misc import derivative
+from scipy.optimize import minimize
 from math import log, exp, sqrt
 
 
@@ -116,8 +117,19 @@ def test_PRMIX_quick():
     eos = PRMIX(T=190.0, P=40.53e5, Tcs=[190.63, 373.55], Pcs=[46.17E5, 90.07E5], omegas=[0.01, 0.1], zs=ys, kijs=ks)
     assert_allclose([0.685195, 0.3401376], eos.phis_g, rtol=4e-4)
     assert_allclose([2721190, 27752.94], eos.fugacities_g, rtol=4e-4)
-
-
+    
+    # Check the kij can get copied
+    kijs = [[0,.083],[0.083,0]]
+    eos = PRMIX(T=190.0, P=40.53e5, Tcs=[190.6, 373.2], Pcs=[46e5, 89.4e5], omegas=[0.011, .097], zs=[.5, .5], kijs=kijs)
+    eos2 = eos.to_TP_zs(T=200, P=5e6, zs=eos.zs)
+    assert_allclose(eos2.kijs, kijs)
+    assert_allclose(eos.T, 190)
+    assert_allclose(eos.P, 40.53e5)
+    assert_allclose(eos2.T, 200)
+    assert_allclose(eos2.P, 5e6)
+    assert eos.V_l != eos2.V_l
+    
+    
 def test_TPD_stuff():
     # Two-phase nitrogen-methane
     eos = PRMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
@@ -125,6 +137,75 @@ def test_TPD_stuff():
     TPD = eos.TPD(eos.Z_g, eos.Z_l, eos.zs, eos.zs)
     assert_allclose(TPD, -471.36283584737305)
     
+def test_Stateva_Tsvetkov_TPDF_SRKMIX_CH4_H2S():
+    '''Data and examples from 
+    Ivanov, Boyan B., Anatolii A. Galushko, and Roumiana P. Stateva. "Phase 
+    Stability Analysis with Equations of State-A Fresh Look from a Different 
+    Perspective." Industrial & Engineering Chemistry Research 52, no. 32 
+    (August 14, 2013): 11208-23. https://doi.org/10.1021/ie401072x.
+    
+    Some of the points are a little off - explained by differences in the
+    a, b values of the SRK c1, and c2 values, as well as the gas constant; this
+    is a very sensitive calculation. However, all the trivial points match
+    exactly, and no *extra* roots could be found at all.
+    
+    This is all believe to be correct.
+    Note: future scipy.minimize behavior might make some guesses converge elsewhere.
+    
+    This example is the closest - other examples do not match so well, though
+    there is no reason for that! Perhaps this is the "easiest" case.
+    
+    '''
+    all_zs = [[0.9885, 0.0115], [0.9813, 0.0187], [0.93, 0.07], 
+          [.5, .5], [0.112, 0.888], [.11, .89]]
+    all_guesses = [[[0.98]], # No other answers close to zero found
+               [[0.98], [.11], [.5, .6], [0.9, 0.91]],
+               [[.92], [.12], [0.5], [0.98]],
+               [[.47, .49, .499], [.11], [.92], [0.98]],
+               [[0.11], [.505, .52], [0.9], [0.98]],
+               [[.12], [0.5], [0.9], [0.98]]
+              ]
+    all_expected = [[.9885],
+                [0.9813, 0.10653187, 0.52105697, 0.92314194],
+               [.93, 0.11616261, 0.48903294, 0.98217018],
+                [0.5, 0.11339494, 0.92685263, 0.98162794],
+                [0.112, 0.50689794, 0.9243395, 0.98114659],
+                [.11, 0.51373521, 0.92278719, 0.9809485]
+               ]
+    
+    for i in range(len(all_zs)):
+        zs = all_zs[i]
+        kijs = [[0,.08],[0.08,0]]
+        eos = SRKMIX(T=190.0, P=40.53e5, Tcs=[190.6, 373.2], Pcs=[46e5, 89.4e5], omegas=[0.008, .1], zs=zs, kijs=kijs)
+        Z_eos = eos.Z_g if hasattr(eos, 'Z_g') else eos.Z_l
+    
+        prefer = 'Z_l' if hasattr(eos, 'Z_g') else 'Z_g'
+        alt = 'Z_g' if hasattr(eos, 'Z_g') else 'Z_l'
+        # Both vapor liquid and liquid liquid conditions occur
+    
+        def func(z1):
+            zs_trial = [z1, 1-z1]
+            eos2 = eos.to_TP_zs(T=eos.T, P=eos.P, zs=zs_trial)
+            try:
+                if eos2.G_dep_l < eos2.G_dep_g:
+                    Z_trial = eos2.Z_l
+                else:
+                    Z_trial = eos2.Z_g
+            except:
+                try:
+                    Z_trial = getattr(eos2, alt)
+                except:
+                    Z_trial = getattr(eos2, prefer)
+    
+            TPD = eos.Stateva_Tsvetkov_TPDF(Z_eos, Z_trial, eos.zs, zs_trial)
+            return abs(TPD)
+        guesses = all_guesses[i]
+        expected = all_expected[i]
+        for j in range(len(expected)):
+            for k in range(len(guesses[j])):
+                ans = minimize(func, guesses[j][k], bounds=[(1e-9, 1-1e-6)])
+                assert_allclose(float(ans['x']), expected[j], rtol=1e-6)        
+
     
 def test_PRMIX_VS_PR():
     # Test solution for molar volumes

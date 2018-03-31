@@ -26,7 +26,7 @@ __all__ = ['GCEOSMIX', 'PRMIX', 'SRKMIX', 'PR78MIX', 'VDWMIX', 'PRSVMIX',
 import numpy as np
 from scipy.optimize import newton
 from scipy.misc import derivative
-from thermo.utils import Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter
+from thermo.utils import normalize, Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter
 from thermo.utils import R
 from thermo.utils import log, exp, sqrt
 from thermo.eos import *
@@ -297,6 +297,8 @@ class GCEOSMIX(GCEOS):
             \text{TPD}(y) =  \sum_{j=1}^n y_j(\mu_j (y) - \mu_j(z))
             = RT \sum_i y_i\left(\log(y_i) + \log(\phi_i(y)) - d_i(z)\right)
             
+            d_i(z) = \ln z_i + \ln \phi_i(z)
+            
         Parameters
         ----------
         Zz : float
@@ -336,6 +338,75 @@ class GCEOSMIX(GCEOS):
             di = log(zi) + log(phi_zi)
             tot += yi*(log(yi) + log(phi_yi) - di)
         return tot*R*self.T
+    
+    def Stateva_Tsvetkov_TPDF(self, Zz, Zy, zs, ys):
+        r'''Modified Tangent Plane Distance function according to [1]_ and
+        [2]_. The stationary points of a system are all zeros of this function;
+        so once all zeroes have been located, the stability can be evaluated
+        at the stationary points only. It may be required to use multiple 
+        guesses to find all stationary points, and there is no method of
+        confirming all points have been found.
+        
+        This method does not alter the state of the object.
+        
+        .. math::
+            \phi(y) = \sum_i^{N} (k_{i+1}(y) - k_i(y))^2
+            
+            k_i(y) = \ln \phi_i(y) + \ln(y_i) - d_i
+            
+            k_{N+1}(y) = k_1(y)
+
+            d_i(z) = \ln z_i + \ln \phi_i(z)
+            
+        Parameters
+        ----------
+        Zz : float
+            Compressibility factor of the phase undergoing stability testing, 
+            [-]
+        Zy : float
+            Compressibility factor of the trial phase, [-]
+        zs : list[float]
+            Mole fraction composition of the phase undergoing stability 
+            testing, [-]
+        ys : list[float]
+            Mole fraction trial phase composition, [-]
+        
+        Returns
+        -------
+        TPDF_Stateva_Tsvetkov : float
+            Modified Tangent Plane Distance function according to [1]_, [-]
+            
+        Notes
+        -----
+        In [1]_, a typo omitted the squaring of the expression. This method
+        produces very interesting plots matching the shapes given in 
+        literature.
+        
+        References
+        ----------
+        .. [1] Ivanov, Boyan B., Anatolii A. Galushko, and Roumiana P. Stateva.
+           "Phase Stability Analysis with Equations of State-A Fresh Look from 
+           a Different Perspective." Industrial & Engineering Chemistry 
+           Research 52, no. 32 (August 14, 2013): 11208-23.
+        .. [2] Stateva, Roumiana P., and Stefan G. Tsvetkov. "A Diverse 
+           Approach for the Solution of the Isothermal Multiphase Flash 
+           Problem. Application to Vapor-Liquid-Liquid Systems." The Canadian
+           Journal of Chemical Engineering 72, no. 4 (August 1, 1994): 722-34.
+        '''
+        z_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
+        y_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
+        
+        kis = []
+        for yi, phi_yi, zi, phi_zi in zip(ys, y_fugacity_coefficients, zs, z_fugacity_coefficients):
+            di = log(zi) + log(phi_zi)
+            ki = (log(yi) + log(phi_yi) - di)
+            kis.append(ki)
+        kis.append(kis[0])
+
+        tot = 0
+        for i in range(self.N):
+            tot += (kis[i+1] - kis[i])**2
+        return tot
 
     def d_TPD_dy(self, Zz, Zy, zs, ys):
         # The gradient should be - for all variables
@@ -348,6 +419,23 @@ class GCEOSMIX(GCEOS):
             Yi = exp(-k)*yi
             gradient.append(log(phi_yi) + log(Yi) - di)
         return gradient
+
+    def d_TPD_dy_APPLE(self, Zz, Zy, zs, alphas):
+        # THIS IS WORKING
+        # Input Ys- convert derivative to
+        Ys = [(alph/2.)**2 for alph in alphas]
+        ys = normalize(Ys)
+        z_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
+        y_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
+        # X is Y, mole number
+
+        tot = 0
+        for Yi, phi_yi, zi, phi_zi in zip(Ys, y_fugacity_coefficients, zs, z_fugacity_coefficients):
+            di = log(zi) + log(phi_zi)
+            diff = Yi**0.5*(log(Yi) + log(phi_yi) - di)
+            tot += abs(diff)
+        return tot
+
 
     def TDP_Michelsen(self, Zz, Zy, zs, ys):
         
@@ -363,6 +451,25 @@ class GCEOSMIX(GCEOS):
             tot += Yi*(log(Yi) + log(phi_yi) - hi - 1.)
             
         return 1. + tot
+
+    def TDP_Michelsen_modified(self, Zz, Zy, zs, Ys):
+        # https://www.e-education.psu.edu/png520/m17_p7.html
+        # Might as well continue
+        Ys = [abs(float(Yi)) for Yi in Ys]
+        # Ys only need to be positive
+        ys = normalize(Ys)
+        
+        z_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
+        y_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
+        
+        tot = 0
+        for Yi, phi_yi, yi, zi, phi_zi in zip(Ys, y_fugacity_coefficients, ys, zs, z_fugacity_coefficients):
+            hi = di = log(zi) + log(phi_zi) # same as di
+            tot += Yi*(log(Yi) + log(phi_yi) - di - 1.)
+        return (1. + tot)
+    # Another formulation, returns the same answers.
+#            tot += yi*(log(sum(Ys)) +log(yi)+ log(phi_yi) - di - 1.)
+#        return (1. + sum(Ys)*tot)*1e15
 
 
     def solve_T(self, P, V, quick=True):
@@ -479,6 +586,7 @@ class PRMIX(GCEOSMIX, PR):
         if kijs is None:
             kijs = [[0]*self.N for i in range(self.N)]
         self.kijs = kijs
+        self.kwargs = {'kijs': kijs}
         self.T = T
         self.P = P
         self.V = V
@@ -640,6 +748,7 @@ class SRKMIX(GCEOSMIX, SRK):
         if kijs is None:
             kijs = [[0]*self.N for i in range(self.N)]
         self.kijs = kijs
+        self.kwargs = {'kijs': kijs}
         self.T = T
         self.P = P
         self.V = V
@@ -799,6 +908,7 @@ class PR78MIX(PRMIX):
         if kijs is None:
             kijs = [[0]*self.N for i in range(self.N)]
         self.kijs = kijs
+        self.kwargs = {'kijs': kijs}
         self.T = T
         self.P = P
         self.V = V
@@ -892,6 +1002,7 @@ class VDWMIX(GCEOSMIX, VDW):
         if kijs is None:
             kijs = [[0]*self.N for i in range(self.N)]
         self.kijs = kijs
+        self.kwargs = {'kijs': kijs}
         self.T = T
         self.P = P
         self.V = V
@@ -1058,7 +1169,7 @@ class PRSVMIX(PRMIX, PRSV):
 
         if kappa1s is None:
             kappa1s = [0 for i in self.cmps]
-
+        self.kwargs = {'kijs': kijs, 'kappa1s': kappa1s}
         self.T = T
         self.P = P
         self.V = V
@@ -1201,7 +1312,7 @@ class PRSV2MIX(PRMIX, PRSV2):
             kappa2s = [0 for i in self.cmps]
         if kappa3s is None:
             kappa3s = [0 for i in self.cmps]
-
+        self.kwargs = {'kijs': kijs, 'kappa1s': kappa1s, 'kappa2s': kappa2s, 'kappa3s': kappa3s}
         self.kappa1s = kappa1s
         self.kappa2s = kappa2s
         self.kappa3s = kappa3s
@@ -1343,6 +1454,7 @@ class TWUPRMIX(PRMIX, TWUPR):
         if kijs is None:
             kijs = [[0]*self.N for i in range(self.N)]
         self.kijs = kijs
+        self.kwargs = {'kijs': kijs}
         self.T = T
         self.P = P
         self.V = V
@@ -1461,6 +1573,7 @@ class TWUSRKMIX(SRKMIX, TWUSRK):
         if kijs is None:
             kijs = [[0]*self.N for i in range(self.N)]
         self.kijs = kijs
+        self.kwargs = {'kijs': kijs}
         self.T = T
         self.P = P
         self.V = V
@@ -1571,6 +1684,7 @@ class APISRKMIX(SRKMIX, APISRK):
         if kijs is None:
             kijs = [[0]*self.N for i in range(self.N)]
         self.kijs = kijs
+        self.kwargs = {'kijs': kijs}
         self.T = T
         self.P = P
         self.V = V
