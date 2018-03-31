@@ -302,13 +302,13 @@ class GCEOSMIX(GCEOS):
         Parameters
         ----------
         Zz : float
-            Compressibility factor of the phase undergoing stability testing, 
-            [-]
+            Compressibility factor of the phase undergoing stability testing
+            (`test` phase), [-]
         Zy : float
             Compressibility factor of the trial phase, [-]
         zs : list[float]
             Mole fraction composition of the phase undergoing stability 
-            testing, [-]
+            testing  (`test` phase), [-]
         ys : list[float]
             Mole fraction trial phase composition, [-]
         
@@ -361,13 +361,13 @@ class GCEOSMIX(GCEOS):
         Parameters
         ----------
         Zz : float
-            Compressibility factor of the phase undergoing stability testing, 
-            [-]
+            Compressibility factor of the phase undergoing stability testing,
+             (`test` phase), [-]
         Zy : float
             Compressibility factor of the trial phase, [-]
         zs : list[float]
             Mole fraction composition of the phase undergoing stability 
-            testing, [-]
+            testing  (`test` phase), [-]
         ys : list[float]
             Mole fraction trial phase composition, [-]
         

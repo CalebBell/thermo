@@ -137,6 +137,40 @@ def test_TPD_stuff():
     TPD = eos.TPD(eos.Z_g, eos.Z_l, eos.zs, eos.zs)
     assert_allclose(TPD, -471.36283584737305)
     
+    
+
+def eos_Z_test_phase_stability(eos):        
+    try:
+        if eos.G_dep_l < eos.G_dep_g:
+            Z_eos = eos.Z_l
+            prefer, alt = 'Z_g', 'Z_l'
+        else:
+            Z_eos = eos.Z_g
+            prefer, alt =  'Z_l', 'Z_g'
+    except:
+        # Only one root - take it and set the prefered other phase to be a different type
+        Z_eos = eos.Z_g if hasattr(eos, 'Z_g') else eos.Z_l
+        prefer = 'Z_l' if hasattr(eos, 'Z_g') else 'Z_g'
+        alt = 'Z_g' if hasattr(eos, 'Z_g') else 'Z_l'
+    return Z_eos, prefer, alt
+
+
+def eos_Z_trial_phase_stability(eos, prefer, alt):
+    try:
+        if eos.G_dep_l < eos.G_dep_g:
+            Z_trial = eos.Z_l
+        else:
+            Z_trial = eos.Z_g
+    except:
+        # Only one phase, doesn't matter - only that phase will be returned
+        try:
+            Z_trial = getattr(eos, alt)
+        except:
+            Z_trial = getattr(eos, prefer)
+    return Z_trial
+
+
+
 def test_Stateva_Tsvetkov_TPDF_SRKMIX_CH4_H2S():
     '''Data and examples from 
     Ivanov, Boyan B., Anatolii A. Galushko, and Roumiana P. Stateva. "Phase 
@@ -177,37 +211,14 @@ def test_Stateva_Tsvetkov_TPDF_SRKMIX_CH4_H2S():
         zs = all_zs[i]
         kijs = [[0,.08],[0.08,0]]
         eos = SRKMIX(T=190.0, P=40.53e5, Tcs=[190.6, 373.2], Pcs=[46e5, 89.4e5], omegas=[0.008, .1], zs=zs, kijs=kijs)
+        Z_eos, prefer, alt = eos_Z_test_phase_stability(eos)
         
-        try:
-            if eos.G_dep_l < eos.G_dep_g:
-                Z_eos = eos.Z_l
-                prefer, alt = 'Z_g', 'Z_l'
-            else:
-                Z_eos = eos.Z_g
-                prefer, alt =  'Z_l', 'Z_g'
-        except:
-            # Only one root - take it and set the prefered other phase to be a different type
-            Z_eos = eos.Z_g if hasattr(eos, 'Z_g') else eos.Z_l
-            prefer = 'Z_l' if hasattr(eos, 'Z_g') else 'Z_g'
-            alt = 'Z_g' if hasattr(eos, 'Z_g') else 'Z_l'
-        # Both vapor liquid and liquid liquid conditions occur
-    
         def func(z1):
             zs_trial = [z1, 1-z1]
             eos2 = eos.to_TP_zs(T=eos.T, P=eos.P, zs=zs_trial)
-            try:
-                if eos2.G_dep_l < eos2.G_dep_g:
-                    Z_trial = eos2.Z_l
-                else:
-                    Z_trial = eos2.Z_g
-            except:
-                try:
-                    Z_trial = getattr(eos2, alt)
-                except:
-                    Z_trial = getattr(eos2, prefer)
-    
+            Z_trial = eos_Z_trial_phase_stability(eos2, prefer, alt)    
             TPD = eos.Stateva_Tsvetkov_TPDF(Z_eos, Z_trial, eos.zs, zs_trial)
-            return abs(TPD)
+            return TPD
         guesses = all_guesses[i]
         expected = all_expected[i]
         for j in range(len(expected)):
