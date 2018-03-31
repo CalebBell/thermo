@@ -420,7 +420,7 @@ class GCEOSMIX(GCEOS):
             gradient.append(log(phi_yi) + log(Yi) - di)
         return gradient
 
-    def stationary_point_obj_Michelsen_unconstrained(self, Zz, Zy, zs, alphas):
+    def d_TPD_Michelson_modified(self, Zz, Zy, zs, alphas):
         r'''Modified objective function for locating the minima of the
         Tangent Plane Distance function according to [1]_, also shown in [2]_
         [2]_. The stationary points of a system are all zeros of this function;
