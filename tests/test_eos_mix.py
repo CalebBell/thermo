@@ -226,6 +226,67 @@ def test_Stateva_Tsvetkov_TPDF_SRKMIX_CH4_H2S():
                 ans = minimize(func, guesses[j][k], bounds=[(1e-9, 1-1e-6)])
                 assert_allclose(float(ans['x']), expected[j], rtol=1e-6)        
 
+
+def test_Stateva_Tsvetkov_TPDF_PRMIX_Nitrogen_Methane_Ethane():
+    '''Data and examples from 
+    Ivanov, Boyan B., Anatolii A. Galushko, and Roumiana P. Stateva. "Phase 
+    Stability Analysis with Equations of State-A Fresh Look from a Different 
+    Perspective." Industrial & Engineering Chemistry Research 52, no. 32 
+    (August 14, 2013): 11208-23. https://doi.org/10.1021/ie401072x.
+    
+    Some of the points are a little off - explained by differences in the
+    a, b values of the SRK c1, and c2 values, as well as the gas constant; this
+    is a very sensitive calculation. However, all the trivial points match
+    exactly. One extra root was found for the third case.
+    
+    This is all believe to be correct.
+    Note: future scipy.minimize behavior might make some guesses converge elsewhere.
+    '''
+    # Problem 5: Nitrogen + Methane + Ethane at T = 270 K and P = 76 bar.
+    # PR
+    # Sources 8,9,11,14,17,20,43,45,46
+    T = 270.0
+    P = 76E5
+    Tcs = [126.2, 190.6, 305.4]
+    Pcs = [33.9E5, 46.0E5, 48.8E5]
+    omegas = [0.04, 0.008, 0.098]
+    kijs = [[0, 0.038, 0.08], [0.038, 0, 0.021], [0.08, 0.021, 0]]
+    all_zs = [[0.3, 0.1, 0.6],
+            [.15, .3, .55],
+            [.08, .38, .54],
+            [.05, .05, .9]]
+    
+    all_expected = [[[0.35201577,  0.10728462], [0.3, 0.1], [0.08199763,  0.04915481]],
+                    [ [0.06451677,  0.19372499], [0.17128871, 0.31864581], [0.15, 0.3] ],
+                    [[0.08,  0.38], [0.09340211,  0.40823117]],
+                    [[0.05, 0.05]]
+                   ]
+    
+    all_guesses = [[[[.35, 0.107]], [[.29,  0.107]], [[.08,  0.05]]],
+              [[[.08,  0.05]], [ [.2,  0.3]], [[.155,  0.31]]],
+               [[[.09,  0.39]], [[.2,  0.4]]],
+               [[[.01,  0.03]]]
+              ]
+    
+    for i in range(len(all_zs)):
+        zs = all_zs[i]
+        eos = PRMIX(T=T, P=P, Tcs=Tcs, Pcs=Pcs, omegas=omegas, kijs=kijs, zs=zs)
+        Z_eos, prefer, alt = eos_Z_test_phase_stability(eos)
+    
+        def func(zs):
+            zs_trial = [float(zs[0]), float(zs[1]), float(1 - sum(zs))]
+            eos2 = eos.to_TP_zs(T=eos.T, P=eos.P, zs=zs_trial)
+            Z_trial = eos_Z_trial_phase_stability(eos2, prefer, alt)
+            TPD = eos.Stateva_Tsvetkov_TPDF(Z_eos, Z_trial, eos.zs, zs_trial)
+            return TPD
+    
+        guesses = all_guesses[i]
+        expected = all_expected[i]
+        for j in range(len(expected)):
+            for k in range(len(guesses[j])):
+                ans = minimize(func, guesses[j][k], bounds=[(1e-9, .5-1e-6), (1e-9, .5-1e-6)], tol=1e-11)
+                assert_allclose(ans['x'], expected[j], rtol=5e-6)        
+
     
 def test_PRMIX_VS_PR():
     # Test solution for molar volumes
