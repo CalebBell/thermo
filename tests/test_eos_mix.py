@@ -177,10 +177,19 @@ def test_Stateva_Tsvetkov_TPDF_SRKMIX_CH4_H2S():
         zs = all_zs[i]
         kijs = [[0,.08],[0.08,0]]
         eos = SRKMIX(T=190.0, P=40.53e5, Tcs=[190.6, 373.2], Pcs=[46e5, 89.4e5], omegas=[0.008, .1], zs=zs, kijs=kijs)
-        Z_eos = eos.Z_g if hasattr(eos, 'Z_g') else eos.Z_l
-    
-        prefer = 'Z_l' if hasattr(eos, 'Z_g') else 'Z_g'
-        alt = 'Z_g' if hasattr(eos, 'Z_g') else 'Z_l'
+        
+        try:
+            if eos.G_dep_l < eos.G_dep_g:
+                Z_eos = eos.Z_l
+                prefer, alt = 'Z_g', 'Z_l'
+            else:
+                Z_eos = eos.Z_g
+                prefer, alt =  'Z_l', 'Z_g'
+        except:
+            # Only one root - take it and set the prefered other phase to be a different type
+            Z_eos = eos.Z_g if hasattr(eos, 'Z_g') else eos.Z_l
+            prefer = 'Z_l' if hasattr(eos, 'Z_g') else 'Z_g'
+            alt = 'Z_g' if hasattr(eos, 'Z_g') else 'Z_l'
         # Both vapor liquid and liquid liquid conditions occur
     
         def func(z1):
