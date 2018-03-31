@@ -335,6 +335,30 @@ def test_Unifac():
     assert vodka.phase == phase_known
 
 
+def test_NRTL_package():
+    m = Mixture(['water', 'ethanol'], zs=[1-.252, .252], T=273.15+70)
+
+    # Sample parameters from Understanding Distillation Using Column Profile Maps, First Edition.
+    #  Daniel Beneke, Mark Peters, David Glasser, and Diane Hildebrandt.
+    # Nice random example except for the poor prediction ! Dew point is good
+    # But the bubble point is 10 kPa too high.
+    # Still it is a good test of asymmetric values and the required 
+    # input form.
+    taus = [ [[], [3.458, -586.1, 0, 0, 0, 0]],
+             [[-0.801, 246.2, 0, 0, 0, 0], []]  ]
+    alphas = [[[], [0.0, 0.0]],
+              [[0.3, 0], []] ]
+    pp = Nrtl(tau_coeffs=taus, alpha_coeffs=alphas, VaporPressures=m.VaporPressures, Tms=m.Tms,
+                     Tcs=m.Tcs, Pcs=m.Pcs, omegas=m.omegas, VolumeLiquids=m.VolumeLiquids)
+    assert_allclose(pp.gammas(T=m.T, xs=m.zs), [1.1114056946393671, 2.5391220022675163], rtol=1e-6)
+    assert_allclose(pp.alphas(m.T), [[0.0, 0.0], [0.3, 0.0]])
+    assert_allclose(pp.taus(m.T), [[0.0, 1.7500005828354948], [-0.08352950604691833, 0.0]])
+    pp.flash(T=m.T, VF=0, zs=m.zs)
+    assert_allclose(pp.P, 72190.62175687613, rtol=2e-3)
+    pp.flash(T=m.T, VF=1, zs=m.zs)
+    assert_allclose(pp.P, 40485.10473289466, rtol=2e-3)
+    
+
 def test_Unifac_EOS_POY():
     m = Mixture(['pentane', 'hexane', 'octane'], zs=[.1, .4, .5], T=298.15)
     pkg = Unifac(UNIFAC_groups=m.UNIFAC_groups, VaporPressures=m.VaporPressures, Tms=m.Tms, Tcs=m.Tcs, Pcs=m.Pcs,

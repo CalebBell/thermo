@@ -40,7 +40,7 @@ from __future__ import division
 
 __all__ = ['PropertyPackage', 'Ideal', 'Unifac', 'GammaPhi', 
            'UnifacDortmund', 'IdealCaloric', 'GammaPhiCaloric',
-           'UnifacCaloric', 'UnifacDortmundCaloric']
+           'UnifacCaloric', 'UnifacDortmundCaloric', 'Nrtl']
 
 from copy import copy
 import numpy as np
@@ -51,7 +51,7 @@ from thermo.utils import log, exp
 from thermo.utils import has_matplotlib, R, pi, N_A
 from thermo.utils import remove_zeros, normalize
 
-from thermo.activity import K_value, flash_inner_loop, dew_at_T, bubble_at_T
+from thermo.activity import K_value, flash_inner_loop, dew_at_T, bubble_at_T, NRTL
 from thermo.unifac import UNIFAC, UFSG, DOUFSG, DOUFIP2006
 
 if has_matplotlib:
@@ -1471,6 +1471,60 @@ class GammaPhiCaloric(GammaPhi, IdealCaloric):
                        'omegas': omegas}
 
 
+class Nrtl(GammaPhi):
+    def taus(self, T):
+        # initialize the matrix to be zero
+        taus = [[0.0]*self.N for i in self.cmps]
+        T2 = T*T
+        logT = log(T)
+        for i in self.cmps:
+            for j in range(self.N - i):
+                if i == j:
+                    tau = 0.0
+                else:
+                    coeffs = self.tau_coeffs[i][j]
+                    tau = coeffs[0] + coeffs[1]/T + coeffs[2]*logT + coeffs[3]*T + coeffs[4]/T2  + coeffs[5]*T2
+                taus[i][j] = tau #  = taus[j][i]
+        return taus
+    
+    def alphas(self, T):
+        alphas = [[0.0]*self.N for i in self.cmps]
+        for i in self.cmps:
+            for j in range(self.N - i):
+                if i == j:
+                    alpha = 0.0
+                else:
+                    c, d = self.alpha_coeffs[i][j]
+                    alpha = c + d*T
+                alphas[i][j] = alpha #  = alphas[j][i]
+        return alphas
+    
+    
+    def __init__(self, tau_coeffs, alpha_coeffs, VaporPressures, Tms=None,
+                 Tcs=None, Pcs=None, omegas=None, VolumeLiquids=None, eos=None,
+                 eos_mix=None):
+        self.tau_coeffs = tau_coeffs
+        self.alpha_coeffs = alpha_coeffs
+        self.VaporPressures = VaporPressures
+        self.Tms = Tms
+        self.Tcs = Tcs
+        self.Pcs = Pcs
+        self.omegas = omegas
+        self.VolumeLiquids = VolumeLiquids
+        self.eos = eos
+        self.eos_mix = eos_mix
+        self.N = len(VaporPressures)
+        self.cmps = range(self.N)
+
+        if eos:
+            self.eos_pure_instances = [eos(Tc=Tcs[i], Pc=Pcs[i], omega=omegas[i], T=Tcs[i]*0.5, P=Pcs[i]*0.1) for i in self.cmps]
+
+    def gammas(self, T, xs, cached=None):
+        alphas = self.alphas(T)
+        taus = self.taus(T)
+        return NRTL(xs=xs, taus=taus, alphas=alphas)
+    
+    
 class Unifac(GammaPhi):
     subgroup_data = UFSG
 
