@@ -399,6 +399,8 @@ class GCEOSMIX(GCEOS):
         kis = []
         for yi, phi_yi, zi, phi_zi in zip(ys, y_fugacity_coefficients, zs, z_fugacity_coefficients):
             di = log(zi) + log(phi_zi)
+            if yi == 0:
+                yi = 2.2250738585072014e-308 # sys.float_info.min
             ki = (log(yi) + log(phi_yi) - di)
             kis.append(ki)
         kis.append(kis[0])
@@ -481,8 +483,9 @@ class GCEOSMIX(GCEOS):
         tot = 0
         for Yi, phi_yi, zi, phi_zi in zip(Ys, y_fugacity_coefficients, zs, z_fugacity_coefficients):
             di = log(zi) + log(phi_zi)
-            diff = Yi**0.5*(log(Yi) + log(phi_yi) - di)
-            tot += abs(diff)
+            if Yi != 0:
+                diff = Yi**0.5*(log(Yi) + log(phi_yi) - di)
+                tot += abs(diff)
         return tot
 
 
