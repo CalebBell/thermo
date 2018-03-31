@@ -420,15 +420,64 @@ class GCEOSMIX(GCEOS):
             gradient.append(log(phi_yi) + log(Yi) - di)
         return gradient
 
-    def d_TPD_dy_APPLE(self, Zz, Zy, zs, alphas):
-        # THIS IS WORKING
-        # Input Ys- convert derivative to
-        Ys = [(alph/2.)**2 for alph in alphas]
+    def stationary_point_obj_Michelsen_unconstrained(self, Zz, Zy, zs, alphas):
+        r'''Modified objective function for locating the minima of the
+        Tangent Plane Distance function according to [1]_, also shown in [2]_
+        [2]_. The stationary points of a system are all zeros of this function;
+        so once all zeroes have been located, the stability can be evaluated
+        at the stationary points only. It may be required to use multiple 
+        guesses to find all stationary points, and there is no method of
+        confirming all points have been found.
+        
+        This method does not alter the state of the object.
+        
+        .. math::
+            \frac{\partial \; TPD^*}{\partial \alpha_i} = \sqrt{Y_i} \left[
+            \ln \phi_i(Y) + \ln(Y_i) - h_i\right]
+            
+            \alpha_i = 2 \sqrt{Y_i}
+            
+            d_i(z) = \ln z_i + \ln \phi_i(z)
+            
+        Parameters
+        ----------
+        Zz : float
+            Compressibility factor of the phase undergoing stability testing,
+             (`test` phase), [-]
+        Zy : float
+            Compressibility factor of the trial phase, [-]
+        zs : list[float]
+            Mole fraction composition of the phase undergoing stability 
+            testing  (`test` phase), [-]
+        alphas : list[float]
+            Twice the square root of the mole numbers of each component,
+            [mol^0.5]
+        
+        Returns
+        -------
+        err : float
+            Error in solving for stationary points according to the modified
+            TPD method in [1]_, [-]
+            
+        Notes
+        -----
+        This method is particularly useful because it is not a constrained
+        objective function. This has been verified to return the same roots as
+        other stationary point methods.
+        
+        References
+        ----------
+        .. [1] Michelsen, Michael L. "The Isothermal Flash Problem. Part I. 
+           Stability." Fluid Phase Equilibria 9, no. 1 (December 1982): 1-19.
+        .. [2] Qiu, Lu, Yue Wang, Qi Jiao, Hu Wang, and Rolf D. Reitz. 
+           "Development of a Thermodynamically Consistent, Robust and Efficient 
+           Phase Equilibrium Solver and Its Validations." Fuel 115 (January 1, 
+           2014): 1-16
+        '''
+        Ys = [(alpha/2.)**2 for alpha in alphas]
         ys = normalize(Ys)
         z_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
         y_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
-        # X is Y, mole number
-
         tot = 0
         for Yi, phi_yi, zi, phi_zi in zip(Ys, y_fugacity_coefficients, zs, z_fugacity_coefficients):
             di = log(zi) + log(phi_zi)
