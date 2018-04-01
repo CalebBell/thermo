@@ -58,7 +58,7 @@ def test_dippr_2016_matched_meta():
     # TODO names?
 
 
-#@pytest.mark.slow
+@pytest.mark.slow
 def test_pubchem_dict():
     assert all([checkCAS(i.CASs) for i in pubchem_db.CAS_index.values()])
 
@@ -294,6 +294,7 @@ f.close()
 '''
     # TODO
     
+
 @pytest.mark.slow
 def test_db_vs_ChemSep():
     '''The CAS numbers are checked, as are most of the chemical formulas.

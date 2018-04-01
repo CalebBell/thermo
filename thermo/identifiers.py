@@ -66,17 +66,15 @@ def checkCAS(CASRN):
     False
     '''
     try:
-        check = CASRN[-1]
-        CASRN = CASRN[::-1][1:]
+        check = CASRN[-1] # Don't store the int - it is not necessary and is slower
+        CASRN = reversed(CASRN[:-1]) # reversed returns an iterator which is faster
         productsum = 0
         i = 1
         for num in CASRN:
-            if num == '-':
-                pass
-            else:
+            if num != '-':
                 productsum += i*int(num)
                 i += 1
-        return (productsum % 10 == int(check))
+        return productsum % 10 == int(check)
     except:
         return False
 
