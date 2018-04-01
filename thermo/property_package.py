@@ -1472,6 +1472,37 @@ class GammaPhiCaloric(GammaPhi, IdealCaloric):
 
 
 class Nrtl(GammaPhi):
+    def Stateva_Tsvetkov_TPDF(self, T, zs, ys):
+        z_fugacity_coefficients = self.gammas(T=T, xs=zs)
+        y_fugacity_coefficients = self.gammas(T=T, xs=ys)
+        
+        kis = []
+        for yi, phi_yi, zi, phi_zi in zip(ys, y_fugacity_coefficients, zs, z_fugacity_coefficients):
+            di = log(zi) + log(phi_zi)
+            if yi == 0:
+                yi = 2.2250738585072014e-308 # sys.float_info.min
+            ki = (log(yi) + log(phi_yi) - di)
+            kis.append(ki)
+        kis.append(kis[0])
+
+        tot = 0
+        for i in range(self.N):
+            tot += (kis[i+1] - kis[i])**2
+        return tot
+    
+    def d_TPD_Michelson_modified(self, T, zs, alphas):
+        Ys = [(alpha/2.)**2 for alpha in alphas]
+        ys = normalize(Ys)
+        z_fugacity_coefficients = self.gammas(T=T, xs=zs)
+        y_fugacity_coefficients = self.gammas(T=T, xs=ys)
+        tot = 0
+        for Yi, phi_yi, zi, phi_zi in zip(Ys, y_fugacity_coefficients, zs, z_fugacity_coefficients):
+            di = log(zi) + log(phi_zi)
+            if Yi != 0:
+                diff = Yi**0.5*(log(Yi) + log(phi_yi) - di)
+                tot += abs(diff)
+        return tot
+
     def taus(self, T):
         # initialize the matrix to be zero
         taus = [[0.0]*self.N for i in self.cmps]
