@@ -22,7 +22,8 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['K_value', 'Rachford_Rice_flash_error', 'Rachford_Rice_solution',
+__all__ = ['K_value', 'Wilson_K_value', 'Rachford_Rice_flash_error', 
+           'Rachford_Rice_solution',
            'Li_Johns_Ahmadi_solution', 'flash_inner_loop', 'NRTL', 'Wilson',
            'UNIQUAC', 'flash', 'dew_at_T',
            'bubble_at_T', 'identify_phase', 'mixture_phase_methods',
@@ -168,7 +169,57 @@ def K_value(P=None, Psat=None, phi_l=None, phi_g=None, gamma=None, Poynting=1):
 phi_g, gamma), (P, Psat, gamma), (phi_l, phi_g), (P, Psat)')
 
 
+def Wilson_K_value(T, P, Tc, Pc, omega):
+    r'''Calculates the equilibrium K-value for a component using Wilson's
+    heuristic mode. This is very useful for initialization of stability tests
+    and flashes.
+    
+    .. math::
+        K_i = \frac{P_c}{P} \exp\left(5.37(1+\omega)\left[1 - \frac{T_c}{T}
+        \right]\right)
+        
+    Parameters
+    ----------
+    T : float
+        System temperature, [K]
+    P : float
+        System pressure, [Pa]
+    Tc : float
+        Critical temperature of fluid [K]
+    Pc : float
+        Critical pressure of fluid [Pa]
+    omega : float
+        Acentric factor for fluid, [-]
 
+    Returns
+    -------
+    K : float
+        Equilibrium K value of component, calculated via the Wilson heuristic
+        [-]
+
+    Notes
+    -----
+    There has been little literature exploration of other formlulas for the
+    same purpose. This model may be useful even for activity coefficient 
+    models.
+    
+    Note the K-values are independent of composition; the correlation is
+    applicable up to 3.5 MPa.
+
+    Examples
+    --------
+    Ethane at 270 K and 76 bar:
+        
+    >>> Wilson_K_value(270.0, 7600000.0, 305.4, 4880000.0, 0.098)
+    0.2963932297479371
+    
+    References
+    ----------
+    .. [1] Wilson, Grant M. "A Modified Redlich-Kwong Equation of State, 
+       Application to General Physical Data Calculations." In 65th National 
+       AIChE Meeting, Cleveland, OH, 1969.
+    '''
+    return Pc/P*exp((5.37*(1.0 + omega)*(1.0 - Tc/T)))
 
 
 ### Solutions using a existing algorithms
@@ -849,13 +900,14 @@ def bubble_at_T(zs, Psats, fugacities=None, gammas=None):
     >>> bubble_at_T([0.5, 0.5], [1400, 7000], gammas=[1.1, .75], fugacities=[.995, 0.98])
     3452.440775305097
     '''
+    l = len(zs)
     if not fugacities:
-        fugacities = [1 for i in range(len(Psats))]
+        fugacities = [1.0]*l
     if not gammas:
-        gammas = [1 for i in range(len(Psats))]
+        gammas = [1.0]*l
     if not none_and_length_check((zs, Psats, fugacities, gammas)):
         raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
-    P = sum(zs[i]*Psats[i]*gammas[i]/fugacities[i] for i in range(len(zs)))
+    P = sum(zs[i]*Psats[i]*gammas[i]/fugacities[i] for i in range(l))
     return P
 
 
