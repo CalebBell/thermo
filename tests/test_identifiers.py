@@ -294,12 +294,20 @@ f.close()
 '''
     # TODO
     
+@pytest.mark.slow
 def test_db_vs_ChemSep():
     '''The CAS numbers are checked, as are most of the chemical formulas.
     Some chemical structural formulas aren't supported by the current formula
     parser and are ignored; otherwise it is a very effective test.
+    
+    DO NOT TRY TO OPTimizE THis FUNCTION - IT HAS ALREADY BEEN TRIED AND
+    FAILED AT. THE TIME IS ONLY TAKEN py the PARSE function.
+    
+    EVEN THAT HAS BEEN REDUCED By 80% by using cElementTree instead of 
+    ElementTree.
     '''
-    import xml.etree.ElementTree as ET
+    
+    import xml.etree.cElementTree as ET
     folder = os.path.join(os.path.dirname(__file__), 'Data')
 
     tree = ET.parse(os.path.join(folder, 'chemsep1.xml'))
@@ -307,10 +315,22 @@ def test_db_vs_ChemSep():
 
     data = {}
     for child in root:
-        CAS = [i.attrib['value'] for i in child if i.tag == 'CAS'][0]
-        name = [i.attrib['value'] for i in child if i.tag == 'CompoundID'][0]
-        smiles = [i.attrib['value'] for i in child if i.tag == 'Smiles']
-        formula = [i.attrib['value'] for i in child if i.tag == 'StructureFormula'][0]
+        CAS, name, smiles, formula = None, None, None, None
+        for i in child:
+            tag = i.tag
+            if CAS is None and tag == 'CAS':
+                CAS = i.attrib['value']
+            elif name is None and tag == 'CompoundID':
+                name = i.attrib['value']
+            elif smiles is None and tag == 'Smiles':
+                smiles = i.attrib['value']
+            elif formula is None and tag == 'StructureFormula':
+                formula = i.attrib['value']
+        
+#        CAS = [i.attrib['value'] if  ][0]
+#        name = [i.attrib['value'] for i in child if i.tag ][0]
+#        smiles = [i.attrib['value'] for i in child if i.tag == ]
+#        formula = [i.attrib['value'] for i in child if i.tag == 'StructureFormula'][0]
         
         try:
             if '-' in formula:
