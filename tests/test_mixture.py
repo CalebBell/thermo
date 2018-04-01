@@ -52,7 +52,7 @@ def test_Mixture():
     m = Mixture(['Na+', 'Cl-', 'water'], ws=[.01, .02, .97]).charge_balance
     assert_allclose(m, -0.0023550338411239182)
 
-def test_Mixture_input_forms():
+def test_Mixture_input_basics():
     # Run a test initializing a mixture from mole fractions, mass fractions,
     # liquid fractions, gas fractions (liq/gas are with volumes of pure components at T and P)
     kwargs = {'ws': [0.5, 0.5], 'zs': [0.7188789914193495, 0.2811210085806504],
@@ -65,6 +65,7 @@ def test_Mixture_input_forms():
         assert_allclose(m.Vfls(), kwargs['Vfls'], rtol=1E-5)
         assert_allclose(m.Vfgs(), kwargs['Vfgs'])
         
+def test_Mixture_input_ordered_dict():
     # Ordered dict inputs
     IDs = ['pentane', 'hexane', 'heptane']
     kwargs = {'ws': [0.4401066297270966, 0.31540115235588945, 0.24449221791701395], 
@@ -82,6 +83,7 @@ def test_Mixture_input_forms():
         assert_allclose(m.Vfls(), kwargs['Vfls'], rtol=1E-5)
         assert_allclose(m.Vfgs(), kwargs['Vfgs'], rtol=2E-5)
         
+def test_Mixture_input_np_array():
     # numpy array inputs
     IDs = ['pentane', 'hexane', 'heptane']
     kwargs = {'ws': np.array([0.4401066297270966, 0.31540115235588945, 0.24449221791701395]), 
@@ -97,6 +99,7 @@ def test_Mixture_input_forms():
         assert_allclose(m.Vfls(), kwargs['Vfls'], rtol=1E-5)
         assert_allclose(m.Vfgs(), kwargs['Vfgs'], rtol=2E-5)
 
+def test_Mixture_input_odds_and_ends():
 
     with pytest.raises(Exception):
         Mixture(['water', 'ethanol'])

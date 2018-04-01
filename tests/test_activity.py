@@ -57,6 +57,9 @@ def test_K_value():
     with pytest.raises(Exception):
         K_value(P=1E6, Psat=1938800, phi_l=0.88427, gamma=0.92)
 
+def test_Wilson_K_value():
+    K = Wilson_K_value(270.0, 7600000.0, 305.4, 4880000.0, 0.098)
+    assert_allclose(K, 0.2963932297479371)
 
 def test_bubble_at_P_with_ideal_mixing():
     '''Check to see if the bubble pressure calculated from the temperature
