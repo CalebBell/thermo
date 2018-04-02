@@ -40,18 +40,20 @@ from __future__ import division
 
 __all__ = ['PropertyPackage', 'Ideal', 'Unifac', 'GammaPhi', 
            'UnifacDortmund', 'IdealCaloric', 'GammaPhiCaloric',
-           'UnifacCaloric', 'UnifacDortmundCaloric', 'Nrtl']
+           'UnifacCaloric', 'UnifacDortmundCaloric', 'Nrtl',
+           'StabilityTester']
 
 from copy import copy
+from random import uniform
 import numpy as np
-from scipy.optimize import brenth, ridder, golden, brent
+from scipy.optimize import brenth, ridder, golden, brent, minimize
 from scipy.misc import derivative
 
 from thermo.utils import log, exp
 from thermo.utils import has_matplotlib, R, pi, N_A
 from thermo.utils import remove_zeros, normalize
 
-from thermo.activity import K_value, flash_inner_loop, dew_at_T, bubble_at_T, NRTL
+from thermo.activity import K_value, Wilson_K_value, flash_inner_loop, dew_at_T, bubble_at_T, NRTL
 from thermo.unifac import UNIFAC, UFSG, DOUFSG, DOUFIP2006
 
 if has_matplotlib:
@@ -59,6 +61,54 @@ if has_matplotlib:
     import matplotlib.pyplot as plt
 
 
+class StabilityTester(object):
+    
+    def __init__(self, Tcs, Pcs, omegas):
+        self.Tcs = Tcs
+        self.Pcs = Pcs
+        self.omegas = omegas
+        self.N = len(Tcs)
+        self.cmps = range(self.N)
+        
+    def set_unconstrained_obj(self):
+        pass
+    
+    def random_guesses(self, N=None):
+        if N is None:
+            N = self.N
+        random_guesses = [normalize([uniform(0, 1) for _ in range(self.N)])
+                          for k in range(N)]
+        return random_guesses
+        
+    def pure_guesses(self, zero_fraction=1E-6):
+        pure_guesses = [normalize([zero_fraction if j != k else 1 for j in self.cmps]) 
+                       for k in self.cmps]
+        return pure_guesses
+    
+    def Wilson_guesses(self, T, P, zs, powers=(1, -1, 1/3., -1/3.)):
+        # First K is vapor-like phase; second, liquid like 
+        Ks_Wilson = [Wilson_K_value(T=T, P=P, Tc=self.Tcs[i], Pc=self.Pcs[i], omega=self.omegas[i]) for i in self.cmps]
+        Wilson_guesses = []
+        for power in powers:
+            Ys_Wilson = [Ki**power*zi for Ki, zi in zip(Ks_Wilson, zs)]
+            Wilson_guesses.append(normalize(Ys_Wilson))
+        return Wilson_guesses
+    
+    def guesses(self, T, P, zs, pure=True, Wilson=True, random=True, 
+                zero_fraction=1E-6):
+        guesses = []
+        if Wilson:
+            guesses.extend(self.Wilson_guesses(T, P, zs))
+        if pure:
+            guesses.extend(self.pure_guesses(zero_fraction))
+        if random:
+            if random is True:
+                guesses.extend(self.random_guesses())
+            else:
+                guesses.extend(self.random_guesses(random))
+        return guesses
+    
+    
 class PropertyPackage(object):
     # Constant - if the phase fraction is this close to either the liquid or 
     # vapor phase, round it to it
