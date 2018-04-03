@@ -103,7 +103,8 @@ def Stateva_Tsvetkov_TPDF_eos(eos):
         if sum(zs_trial) >= 1:
             zs_trial = normalize(zs_trial)
         
-        zs_trial.append(1.0 - sum(zs_trial))
+        # In some cases, 1 - x < 0 
+        zs_trial.append(abs(1.0 - sum(zs_trial)))
 
         eos2 = eos.to_TP_zs(T=eos.T, P=eos.P, zs=zs_trial)
         Z_trial = eos_Z_trial_phase_stability(eos2, prefer, alt)
