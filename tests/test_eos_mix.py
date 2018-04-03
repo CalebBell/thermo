@@ -140,36 +140,6 @@ def test_TPD_stuff():
     
     
 
-def eos_Z_test_phase_stability(eos):        
-    try:
-        if eos.G_dep_l < eos.G_dep_g:
-            Z_eos = eos.Z_l
-            prefer, alt = 'Z_g', 'Z_l'
-        else:
-            Z_eos = eos.Z_g
-            prefer, alt =  'Z_l', 'Z_g'
-    except:
-        # Only one root - take it and set the prefered other phase to be a different type
-        Z_eos = eos.Z_g if hasattr(eos, 'Z_g') else eos.Z_l
-        prefer = 'Z_l' if hasattr(eos, 'Z_g') else 'Z_g'
-        alt = 'Z_g' if hasattr(eos, 'Z_g') else 'Z_l'
-    return Z_eos, prefer, alt
-
-
-def eos_Z_trial_phase_stability(eos, prefer, alt):
-    try:
-        if eos.G_dep_l < eos.G_dep_g:
-            Z_trial = eos.Z_l
-        else:
-            Z_trial = eos.Z_g
-    except:
-        # Only one phase, doesn't matter - only that phase will be returned
-        try:
-            Z_trial = getattr(eos, alt)
-        except:
-            Z_trial = getattr(eos, prefer)
-    return Z_trial
-
 
 
 all_zs_SRKMIX_CH4_H2S = [[0.9885, 0.0115], [0.9813, 0.0187], [0.93, 0.07], 

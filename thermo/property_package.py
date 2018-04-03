@@ -41,12 +41,14 @@ from __future__ import division
 __all__ = ['PropertyPackage', 'Ideal', 'Unifac', 'GammaPhi', 
            'UnifacDortmund', 'IdealCaloric', 'GammaPhiCaloric',
            'UnifacCaloric', 'UnifacDortmundCaloric', 'Nrtl',
-           'StabilityTester']
+           'StabilityTester',
+           'eos_Z_test_phase_stability', 'eos_Z_trial_phase_stability',
+           'Stateva_Tsvetkov_TPDF_eos', 'd_TPD_Michelson_modified_eos']
 
 from copy import copy
 from random import uniform
 import numpy as np
-from scipy.optimize import brenth, ridder, golden, brent, minimize
+from scipy.optimize import brenth, ridder, golden, brent, minimize, fmin_slsqp
 from scipy.misc import derivative
 
 from thermo.utils import log, exp
@@ -61,6 +63,70 @@ if has_matplotlib:
     import matplotlib.pyplot as plt
 
 
+def eos_Z_test_phase_stability(eos):        
+    try:
+        if eos.G_dep_l < eos.G_dep_g:
+            Z_eos = eos.Z_l
+            prefer, alt = 'Z_g', 'Z_l'
+        else:
+            Z_eos = eos.Z_g
+            prefer, alt =  'Z_l', 'Z_g'
+    except:
+        # Only one root - take it and set the prefered other phase to be a different type
+        Z_eos = eos.Z_g if hasattr(eos, 'Z_g') else eos.Z_l
+        prefer = 'Z_l' if hasattr(eos, 'Z_g') else 'Z_g'
+        alt = 'Z_g' if hasattr(eos, 'Z_g') else 'Z_l'
+    return Z_eos, prefer, alt
+
+
+def eos_Z_trial_phase_stability(eos, prefer, alt):
+    try:
+        if eos.G_dep_l < eos.G_dep_g:
+            Z_trial = eos.Z_l
+        else:
+            Z_trial = eos.Z_g
+    except:
+        # Only one phase, doesn't matter - only that phase will be returned
+        try:
+            Z_trial = getattr(eos, alt)
+        except:
+            Z_trial = getattr(eos, prefer)
+    return Z_trial
+
+
+def Stateva_Tsvetkov_TPDF_eos(eos):
+    Z_eos, prefer, alt = eos_Z_test_phase_stability(eos)
+
+    def obj_func_constrained(zs):
+        # zs is N -1 length
+        zs_trial = [abs(float(i)) for i in zs]
+        if sum(zs_trial) >= 1:
+            zs_trial = normalize(zs_trial)
+        
+        zs_trial.append(1.0 - sum(zs_trial))
+
+        eos2 = eos.to_TP_zs(T=eos.T, P=eos.P, zs=zs_trial)
+        Z_trial = eos_Z_trial_phase_stability(eos2, prefer, alt)
+        TPD = eos.Stateva_Tsvetkov_TPDF(Z_eos, Z_trial, eos.zs, zs_trial)
+        return TPD
+    return obj_func_constrained
+
+
+def d_TPD_Michelson_modified_eos(eos):
+    Z_eos, prefer, alt = eos_Z_test_phase_stability(eos)
+
+    def obj_func_unconstrained(alphas):
+        # zs is N -1 length
+        Ys = [(alpha/2.)**2 for alpha in alphas]
+        zs_trial = normalize(Ys)
+
+        eos2 = eos.to_TP_zs(T=eos.T, P=eos.P, zs=zs_trial)
+        Z_trial = eos_Z_trial_phase_stability(eos2, prefer, alt)
+        TPD = eos.d_TPD_Michelson_modified(Z_eos, Z_trial, eos.zs, alphas)
+        return TPD
+    return obj_func_unconstrained
+
+
 class StabilityTester(object):
     
     def __init__(self, Tcs, Pcs, omegas):
@@ -70,8 +136,68 @@ class StabilityTester(object):
         self.N = len(Tcs)
         self.cmps = range(self.N)
         
-    def set_unconstrained_obj(self):
-        pass
+    def set_d_TPD_obj_unconstrained(self, f, T, P, zs):
+        self.f_unconstrained = f
+        self.T = T
+        self.P = P
+        self.zs = zs
+    
+    def set_d_TPD_obj_constrained(self, f, T, P, zs):
+        self.f_constrained = f
+        self.T = T
+        self.P = P
+        self.zs = zs
+
+    def stationary_points_unconstrained(self, random=True, guesses=None, raw_guesses=None, 
+                                        fmin=1e-7, tol=1e-12, method='Nelder-Mead'):
+        if not raw_guesses:
+            raw_guesses = []
+        if not guesses:
+            guesses = self.guesses(T=self.T, P=self.P, zs=self.zs, random=random)
+        results = []
+        results2 = []
+        for guesses, convert in zip((raw_guesses, guesses), (False, True)):
+            for guess in guesses:
+                if convert:
+                # Convert the guess to a basis squared
+                    guess = [i**0.5*2.0 for i in guess]
+                
+                ans = minimize(self.f_unconstrained, guess, method=method, tol=tol)
+                # Convert the answer to a normal basis
+                Ys = [(alpha/2.)**2 for alpha in ans['x']]
+                ys = normalize(Ys)
+                if ans['fun'] <= fmin:
+                    results.append(ys)
+                results2.append(ans)
+        return results, results2
+
+
+    def stationary_points_constrained(self, random=True, guesses=None, 
+                                      fmin=1e-7, iter=1000, tol=1e-12, method='Nelder-Mead'):
+        if not guesses:
+            guesses = self.guesses(T=self.T, P=self.P, zs=self.zs, random=random)
+        results = []
+        def f_ieqcons(guess):
+            return 1.0 - sum(guess)
+        
+        arr = -np.ones((len(guesses[0]) - 1))
+        def fprime_ieqcons(guess):
+            return arr
+#            return [[0.0]*len(guess)]
+#            return np.ones([1, len(guess)])
+        
+        for guess in guesses:
+            
+            ans, err, _, _, _ = fmin_slsqp(self.f_constrained, x0=guess[0:-1], f_ieqcons=f_ieqcons, 
+                                          acc=tol, full_output=True, disp=False,
+                                          fprime_ieqcons=fprime_ieqcons)
+            # Convert the answer to a normal basis
+            zs = np.abs(ans).tolist()
+            zs.append(1.0 - sum(zs))
+            if err <= fmin:
+                results.append(zs)
+        return results
+
     
     def random_guesses(self, N=None):
         if N is None:
