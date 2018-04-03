@@ -398,16 +398,18 @@ class GCEOSMIX(GCEOS):
         
         kis = []
         for yi, phi_yi, zi, phi_zi in zip(ys, y_fugacity_coefficients, zs, z_fugacity_coefficients):
-            di = log(zi) + log(phi_zi)
-            if yi == 0:
-                yi = 2.2250738585072014e-308 # sys.float_info.min
-            ki = (log(yi) + log(phi_yi) - di)
+            di = log(zi*phi_zi)
+            try:
+                ki = log(yi*phi_yi) - di
+            except ValueError:
+                ki = log(1e-200*phi_yi) - di
             kis.append(ki)
         kis.append(kis[0])
 
-        tot = 0
+        tot = 0.0
         for i in range(self.N):
-            tot += (kis[i+1] - kis[i])**2
+            t = kis[i+1] - kis[i]
+            tot += t*t
         return tot
 
     def d_TPD_dy(self, Zz, Zy, zs, ys):

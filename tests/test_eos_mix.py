@@ -28,6 +28,7 @@ from thermo.eos_mix import *
 from scipy.misc import derivative
 from scipy.optimize import minimize
 from math import log, exp, sqrt
+from thermo.property_package import eos_Z_test_phase_stability, eos_Z_trial_phase_stability
 
 
 def test_PRMIX_quick():

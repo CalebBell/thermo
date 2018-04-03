@@ -174,7 +174,7 @@ class StabilityTester(object):
 
 
     def stationary_points_constrained(self, random=True, guesses=None, 
-                                      fmin=1e-7, iter=1000, tol=1e-12, method='Nelder-Mead'):
+                                      fmin=1e-7, iter=1000, tol=1e-12, method='fmin_slsqp'):
         if not guesses:
             guesses = self.guesses(T=self.T, P=self.P, zs=self.zs, random=random)
         results = []
