@@ -864,16 +864,23 @@ class SRKMIX(GCEOSMIX, SRK):
         .. [2] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
            Butterworth-Heinemann, 1985.
         '''
-        A = self.a_alpha*self.P/R2/self.T**2
-        B = self.b*self.P/R/self.T
+        
+        RT = self.T*R
+        P_RT = self.P/RT
+        A = self.a_alpha*self.P/(RT*RT)
+        B = self.b*self.P/RT
+        A_B = A/B
+        t0 = log(Z - B)
+        t3 = log(1. + B/Z)
+        Z_minus_one_over_B = (Z - 1.0)/B
+        two_over_a_alpha = 2./self.a_alpha
         phis = []
         for i in self.cmps:
-            Bi = self.bs[i]*self.P/R/self.T
-            t1 = Bi/B*(Z-1) - log(Z - B)
-            t2 = A/B*(Bi/B - 2./self.a_alpha*sum([zs[j]*self.a_alpha_ijs[i][j] for j in self.cmps]))
-            t3 = log(1. + B/Z)
-            t4 = t1 + t2*t3
-            phis.append(exp(t4))
+            Bi = self.bs[i]*P_RT
+            t1 = Bi*Z_minus_one_over_B - t0
+            l = self.a_alpha_ijs[i]
+            t2 = A_B*(Bi/B - two_over_a_alpha*sum([zs[j]*l[j] for j in self.cmps]))
+            phis.append(exp(t1 + t2*t3))
         return phis
         
 
