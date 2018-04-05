@@ -24,7 +24,7 @@ from __future__ import division
 __all__ = ['GCEOSMIX', 'PRMIX', 'SRKMIX', 'PR78MIX', 'VDWMIX', 'PRSVMIX', 
 'PRSV2MIX', 'TWUPRMIX', 'TWUSRKMIX', 'APISRKMIX']
 import numpy as np
-from scipy.optimize import newton
+from scipy.optimize import newton, minimize
 from scipy.misc import derivative
 from thermo.utils import normalize, Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter
 from thermo.utils import R
@@ -162,6 +162,30 @@ class GCEOSMIX(GCEOS):
         else:
             return a_alpha
         
+    def to_mechanical_critical_point(self):
+        Pmc = sum([self.Pcs[i]*self.zs[i] for i in self.cmps])
+        Tmc = sum([(self.Tcs[i]*self.Tcs[j])**0.5*self.zs[j]*self.zs[i] for i in self.cmps
+                  for j in self.cmps])
+        
+        # Calculate Vc using Zc at the eos level. 
+        def to_minimize(TP):
+            # Sometimes there are zero-division errors when dP_dV is literally zero
+            eos = self.to_TP_zs(T=float(TP[0]), P=float(TP[1]), zs=self.zs)
+            err = 0
+            err += abs(eos.raw_volumes[0] - eos.raw_volumes[1])
+            err += abs(eos.raw_volumes[1] - eos.raw_volumes[2])
+            return err
+        
+        # differential_evolution(to_maximize,bounds=[(400, 500), [3380688/2, 3380688*2]], popsize=100, maxiter=100)
+        
+        ans = minimize(to_minimize, [Tmc, Pmc], tol=1e-12, method='Nelder-Mead')
+        if ans['fun'] < 1E-5:
+            T, P = ans['x']
+            return self.to_TP_zs(T=float(T), P=float(P), zs=self.zs)
+        else:
+            raise Exception('Not Found', ans)
+        
+        
     def fugacities(self, xs=None, ys=None):   
         r'''Helper method for calculating fugacity coefficients for any 
         phases present, using either the overall mole fractions for both phases
@@ -214,18 +238,20 @@ class GCEOSMIX(GCEOS):
         .. [2] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
            Butterworth-Heinemann, 1985.
         '''
-        if self.phase in ['l', 'l/g']:
+        if self.phase in ('l', 'l/g'):
             if xs is None:
                 xs = self.zs
-            self.phis_l = self.fugacity_coefficients(self.Z_l, zs=xs)
-            self.fugacities_l = [phi*x*self.P for phi, x in zip(self.phis_l, xs)]
-            self.lnphis_l = [log(i) for i in self.phis_l]
-        if self.phase in ['g', 'l/g']:
+            if hasattr(self, 'Z_l'):
+                self.phis_l = self.fugacity_coefficients(self.Z_l, zs=xs)
+                self.fugacities_l = [phi*x*self.P for phi, x in zip(self.phis_l, xs)]
+                self.lnphis_l = [log(i) for i in self.phis_l]
+        if self.phase in ('g', 'l/g'):
             if ys is None:
                 ys = self.zs
-            self.phis_g = self.fugacity_coefficients(self.Z_g, zs=ys)
-            self.fugacities_g = [phi*y*self.P for phi, y in zip(self.phis_g, ys)]
-            self.lnphis_g = [log(i) for i in self.phis_g]
+            if hasattr(self, 'Z_g'):
+                self.phis_g = self.fugacity_coefficients(self.Z_g, zs=ys)
+                self.fugacities_g = [phi*y*self.P for phi, y in zip(self.phis_g, ys)]
+                self.lnphis_g = [log(i) for i in self.phis_g]
 
 
     def _dphi_dn(self, zi, i, phase):

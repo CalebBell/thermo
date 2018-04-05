@@ -376,7 +376,13 @@ class GCEOS(object):
         phi = fugacity/P
   
         PIP = V*(d2P_dTdV/dP_dT - d2P_dV2/dP_dV) # phase_identification_parameter(V, dP_dT, dP_dV, d2P_dV2, d2P_dTdV)
-        phase = 'l' if PIP > 1 else 'g' # phase_identification_parameter_phase(PIP)
+
+        if hasattr(self, 'V_l') and V == self.V_l:
+            phase = 'l'
+        elif hasattr(self, 'V_g') and V == self.V_g:
+            phase = 'g'
+        else:
+            phase = 'l' if PIP > 1 else 'g' # phase_identification_parameter_phase(PIP)
       
         if phase == 'l':
             self.Z_l = self.P*V/(R*self.T)
@@ -842,8 +848,6 @@ should be calculated by this method, in a user subclass.')
         Vs = [i.real for i in Vs]
         V_l, V_g = min(Vs), max(Vs)
         return dPsat_dT*T*(V_g-V_l)
-        
-    
 
     def to_TP(self, T, P):
         if T != self.T or P != self.P:
@@ -1558,6 +1562,12 @@ class PR(GCEOS):
     -----
     The constants in the expresions for `a` and `b` are given to full precision
     in the actual code, as derived in [3]_.
+    
+    The full expression for critical compressibility is:
+        
+    .. math::
+        Z_c = \frac{1}{32} \left(\sqrt[3]{16 \sqrt{2}-13}-\frac{7}{\sqrt[3]
+        {16 \sqrt{2}-13}}+11\right)
 
     References
     ----------
@@ -1580,7 +1590,8 @@ class PR(GCEOS):
     # Constant part of `b`, (X/(X+3)).evalf(40)
     c2 = 0.0777960739038884559718447100373331839711
     
-    Zc = 0.30740130869870386
+    # Zc is the mechanical compressibility for mixtures as well.
+    Zc = 0.3074013086987038480093850966542222720096
     
     # Coefficients personally regressed, and tested against published solutions
     # fit with polyfit; 10th order found to be suitable and gains afterward are

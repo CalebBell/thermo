@@ -28,6 +28,7 @@ from thermo.eos_mix import *
 from scipy.misc import derivative
 from scipy.optimize import minimize
 from math import log, exp, sqrt
+from thermo import Mixture
 from thermo.property_package import eos_Z_test_phase_stability, eos_Z_trial_phase_stability
 
 
@@ -130,6 +131,37 @@ def test_PRMIX_quick():
     assert_allclose(eos2.T, 200)
     assert_allclose(eos2.P, 5e6)
     assert eos.V_l != eos2.V_l
+    
+    
+    # Test high temperature fugacities
+    # Phase Identification Parameter would make both these roots the same phase
+    eos = PRMIX(T=700, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    
+    fugacities_l_expect = [55126630.003539115, 27887160.323921766]
+    assert_allclose(eos.fugacities_l, fugacities_l_expect)
+    
+    fugacities_g_expect = [501802.41653963586, 500896.73250179]
+    assert_allclose(eos.fugacities_g, fugacities_g_expect)
+    
+    
+def test_mechanical_critical_point():
+    '''Test from:
+    Watson, Harry A. J., and Paul I. Barton. "Reliable Flash Calculations: 
+    Part 3. A Nonsmooth Approach to Density Extrapolation and Pseudoproperty
+    Evaluation." Industrial & Engineering Chemistry Research, November 11, 2017.
+    '''
+    m = Mixture(['ethane', 'heptane'], zs=[.5, .5], T=300., P=1e5)
+    eos = PRMIX(T=m.T, P=m.P, Tcs=m.Tcs, Pcs=m.Pcs, omegas=m.omegas, zs=m.zs, kijs=[[0,0.0067],[0.0067,0]])
+    eos =  eos.to_mechanical_critical_point()
+    assert_allclose(eos.T, 439.18795430359467, rtol=1e-5)
+    assert_allclose(eos.P, 3380687.3020791663, rtol=1e-5)
+    assert_allclose(1/eos.V_g, 3010, rtol=1e-3) # A more correct answer
+    
+    # exact answer believed to be:
+    3011.7228497511787 # mol/m^3
+    # 439.18798489 with Tc = 439.18798489 or so.
+    
+    
     
     
 def test_TPD_stuff():
