@@ -872,6 +872,28 @@ should be calculated by this method, in a user subclass.')
         return x0*(18.0*P*x2*x5*x6 + 4.0*P*(-self.a_alpha - x3 + x4)**3 
                    - 27.0*x0*x2_2 - 4.0*x2*x5_2*x5 + x5_2*x6_2)/RT6
 
+    def V_g_extrapolated(self):
+        P_pseudo_mc = sum([self.Pcs[i]*self.zs[i] for i in self.cmps])
+        T_pseudo_mc = sum([(self.Tcs[i]*self.Tcs[j])**0.5*self.zs[j]*self.zs[i] 
+                           for i in self.cmps for j in self.cmps])
+        V_pseudo_mc = (self.Zc*R*T_pseudo_mc)/P_pseudo_mc
+        rho_pseudo_mc = 1.0/V_pseudo_mc
+        
+        P_disc = newton(self.discriminant_at_T_zs, self.P, tol=1e-7)
+        P_low = P_disc - 10.0
+        
+        eos_low = self.to_TP_zs(T=self.T, P=P_low, zs=self.zs)
+        rho_low = 1.0/eos_low.V_g
+        
+        rho0 = (rho_low + 1.4*rho_pseudo_mc)*0.5
+        
+        dP_drho = eos_low.dP_drho_g
+        rho1 = P_low*((rho_low - 1.4*rho_pseudo_mc) + P_low/dP_drho)
+        
+        rho2 = -P_low*P_low*((rho_low - 1.4*rho_pseudo_mc)*0.5 + P_low/dP_drho)
+        rho_ans = rho0 + rho1/eos_low.P + rho2/(eos_low.P*eos_low.P)
+        return 1.0/rho_ans
+        
     @property
     def dP_drho_g(self):
         return -self.V_g*self.V_g*self.dP_dV_g 

@@ -142,7 +142,9 @@ def test_PRMIX_quick():
     
     fugacities_g_expect = [501802.41653963586, 500896.73250179]
     assert_allclose(eos.fugacities_g, fugacities_g_expect)
-    
+
+
+def test_density_extrapolation():
     # Check some extra derivatives
     T = 420.0
     zs = [.5, .5]
@@ -190,6 +192,11 @@ def test_PRMIX_quick():
     assert abs(eos.raw_volumes[2].imag) < 1e-15
     # Check there is a very tiny imaginary component in the others
     assert all(abs(eos.raw_volumes[i].imag) < 1e-15 for i in (0, 1))
+    
+    
+    eos = PRMIX(T=T, P=2.8E6, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=kijs)
+    assert_allclose(eos.V_g_extrapolated(), 0.0005133247390466003)
+
 
 
 def test_mechanical_critical_point():
