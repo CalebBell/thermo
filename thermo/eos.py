@@ -857,14 +857,20 @@ should be calculated by this method, in a user subclass.')
 
     def discriminant_at_T_zs(self, P):
         # Only P is allowed to be varied
+        RT = R*self.T
+        RT6 = RT**6
         x0 = P*P
-        x1 = P*self.b + R*self.T
+        x1 = P*self.b + RT
         x2 = self.a_alpha*self.b + self.epsilon*x1
         x3 = P*self.epsilon
         x4 = self.delta*x1
         x5 = -P*self.delta + x1
         x6 = self.a_alpha + x3 - x4
-        return x0*(18*P*x2*x5*x6 + 4*P*(-self.a_alpha - x3 + x4)**3 - 27*x0*x2**2 - 4*x2*x5**3 + x5**2*x6**2)/(R**6*self.T**6)
+        x2_2 = x2*x2
+        x5_2 = x5*x5
+        x6_2 = x6*x6
+        return x0*(18.0*P*x2*x5*x6 + 4.0*P*(-self.a_alpha - x3 + x4)**3 
+                   - 27.0*x0*x2_2 - 4.0*x2*x5_2*x5 + x5_2*x6_2)/RT6
 
     @property
     def dP_drho_g(self):

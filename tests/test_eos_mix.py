@@ -26,7 +26,7 @@ from thermo.utils import normalize
 from thermo.eos import *
 from thermo.eos_mix import *
 from scipy.misc import derivative
-from scipy.optimize import minimize
+from scipy.optimize import minimize, newton
 from math import log, exp, sqrt
 from thermo import Mixture
 from thermo.property_package import eos_Z_test_phase_stability, eos_Z_trial_phase_stability
@@ -143,7 +143,55 @@ def test_PRMIX_quick():
     fugacities_g_expect = [501802.41653963586, 500896.73250179]
     assert_allclose(eos.fugacities_g, fugacities_g_expect)
     
+    # Check some extra derivatives
+    T = 420.0
+    zs = [.5, .5]
+    P = 2.7e6
+    Tcs = [305.32, 540.2]
+    Pcs = [4872000.0, 2740000.0]
+    omegas = [0.098, 0.3457]
+    kijs=[[0,0.0067],[0.0067,0]]
     
+    eos = PRMIX(T=T, P=P, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=kijs)
+    assert_allclose(eos.dP_drho_g, 77.71287762789959)
+    assert_allclose(eos.dP_drho_l, 1712.067636831951)
+    
+    # Check the discriminant is zero
+    P_transition = newton(eos.discriminant_at_T_zs, 2.7E6, tol=1e-12)
+    assert_allclose(P_transition, 2703430.005691234)
+    
+    P = P_transition + .01
+    eos = PRMIX(T=T, P=P, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=kijs)
+    assert eos.raw_volumes[0].imag == 0
+    # Check there is a small imaginary component in the others
+    assert all(abs(eos.raw_volumes[i].imag) > 1e-9 for i in (1, 2))
+    
+    P = P_transition - .01
+    eos = PRMIX(T=T, P=P, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=kijs)
+    # Check the imaginary components are infinitesimally all small (real roots)
+    assert all(abs(eos.raw_volumes[i].imag) < 1e-15 for i in (0, 1, 2))
+    
+    # See the second pressure transition place
+    P_transition = newton(eos.discriminant_at_T_zs, 1e10, tol=1e-12)
+    assert_allclose(P_transition, 110574232.59024328)
+    
+    # Below the transition point = one real root in this case.    
+    P = P_transition - .01
+    eos = PRMIX(T=T, P=P, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=kijs)
+    # Third root is the important one in this case
+    assert abs(eos.raw_volumes[2].imag) < 1e-15
+    # Check there is a small but larger imaginary component in the others
+    assert all(abs(eos.raw_volumes[i].imag) > 1e-9 for i in (0, 1))
+    
+    
+    P = P_transition + 1
+    eos = PRMIX(T=T, P=P, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=kijs)
+    # Third root is the important one in this case
+    assert abs(eos.raw_volumes[2].imag) < 1e-15
+    # Check there is a very tiny imaginary component in the others
+    assert all(abs(eos.raw_volumes[i].imag) < 1e-15 for i in (0, 1))
+
+
 def test_mechanical_critical_point():
     '''Test from:
     Watson, Harry A. J., and Paul I. Barton. "Reliable Flash Calculations: 
