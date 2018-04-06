@@ -855,6 +855,23 @@ should be calculated by this method, in a user subclass.')
         else:
             return self
 
+    def discriminant_at_T_zs(self, P):
+        # Only P is allowed to be varied
+        x0 = P*P
+        x1 = P*self.b + R*self.T
+        x2 = self.a_alpha*self.b + self.epsilon*x1
+        x3 = P*self.epsilon
+        x4 = self.delta*x1
+        x5 = -P*self.delta + x1
+        x6 = self.a_alpha + x3 - x4
+        return x0*(18*P*x2*x5*x6 + 4*P*(-self.a_alpha - x3 + x4)**3 - 27*x0*x2**2 - 4*x2*x5**3 + x5**2*x6**2)/(R**6*self.T**6)
+
+    @property
+    def dP_drho_g(self):
+        return -self.V_g*self.V_g*self.dP_dV_g 
+    @property
+    def dP_drho_l(self):
+        return -self.V_l*self.V_l*self.dP_dV_l 
 
 class GCEOS_DUMMY(GCEOS):
     Tc = None
