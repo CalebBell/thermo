@@ -906,15 +906,7 @@ should be calculated by this method, in a user subclass.')
         rho_ans = rho0 + rho1/eos_low.P + rho2/(eos_low.P*eos_low.P)
         return 1.0/rho_ans
         
-    @property
-    def dP_drho_g(self):
-        r'''Derivative of pressure with respect to molar density for the gas
-        phase, [Pa/(m^3/mol)]
-        
-        .. math::
-            \frac{\partial P}{\partial \rho} = -V^2 \frac{\partial P}{\partial V}        
-        '''
-        return -self.V_g*self.V_g*self.dP_dV_g 
+    
     @property
     def dP_drho_l(self):
         r'''Derivative of pressure with respect to molar density for the liquid
@@ -924,6 +916,37 @@ should be calculated by this method, in a user subclass.')
             \frac{\partial P}{\partial \rho} = -V^2 \frac{\partial P}{\partial V}        
         '''
         return -self.V_l*self.V_l*self.dP_dV_l 
+    
+    @property
+    def dP_drho_g(self):
+        r'''Derivative of pressure with respect to molar density for the gas
+        phase, [Pa/(m^3/mol)]
+        
+        .. math::
+            \frac{\partial P}{\partial \rho} = -V^2 \frac{\partial P}{\partial V}        
+        '''
+        return -self.V_g*self.V_g*self.dP_dV_g 
+    
+    @property
+    def drho_dP_l(self):
+        r'''Derivative of molar density with respect to pressure for the liquid
+        phase, [(m^3/mol)/Pa]
+        
+        .. math::
+            \frac{\partial \rho}{\partial P} = \frac{-1}{V^2} \frac{\partial V}{\partial P}        
+        '''
+        return -self.dV_dP_l/(self.V_l*self.V_l)
+    
+    @property
+    def drho_dP_g(self):
+        r'''Derivative of molar density with respect to pressure for the gas
+        phase, [(m^3/mol)/Pa]
+        
+        .. math::
+            \frac{\partial \rho}{\partial P} = \frac{-1}{V^2} \frac{\partial V}{\partial P}        
+        '''
+        return -self.dV_dP_g/(self.V_g*self.V_g)
+
 
 class GCEOS_DUMMY(GCEOS):
     Tc = None
