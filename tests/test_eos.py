@@ -291,12 +291,23 @@ def test_PR_quick():
 
 def test_PR_density_derivatives():
     # Test solution for molar volumes
-    eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=400., P=1E6)
+    T = 400
+    P = 1E6
+    crit_params = {'Tc': 507.6, 'Pc': 3025000.0, 'omega': 0.2975}
+    eos = PR(T=T, P=P, **crit_params)
     assert_allclose(eos.dP_drho_l, 16717.84351670736)
     assert_allclose(eos.dP_drho_g, 1086.6581965150544)
 
     assert_allclose(eos.drho_dP_g, 0.0009202525717903109)
     assert_allclose(eos.drho_dP_l, 5.981632732718351e-05)
+    
+    V = 'V_g'
+    def d_rho_dP(P):
+        return 1/getattr(PR(T=T, P=P, **crit_params), V)
+    assert_allclose(eos.drho_dP_g, derivative(d_rho_dP, P, order=3))
+    V = 'V_l'
+    assert_allclose(eos.drho_dP_l, derivative(d_rho_dP, P), rtol=1e-5)
+
 
 def test_PR_Psat():
     eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
