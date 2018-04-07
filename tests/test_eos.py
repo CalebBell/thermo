@@ -307,6 +307,20 @@ def test_PR_density_derivatives():
     assert_allclose(eos.drho_dP_g, derivative(d_rho_dP, P, order=3))
     V = 'V_l'
     assert_allclose(eos.drho_dP_l, derivative(d_rho_dP, P), rtol=1e-5)
+    
+    # f = 1/x
+    # >>> diff(diff(g(x), x)/diff(f, x), x)/diff(f, x)
+    # -x**2*(-x**2*Derivative(g(x), x, x) - 2*x*Derivative(g(x), x))
+    assert_allclose(eos.d2P_drho2_l, 22.670926496760224)
+    assert_allclose(eos.d2P_drho2_g, -4.025196625522432)
+    
+    # Numerical tests
+    assert_allclose(eos.d2rho_dP2_l, -4.852086129765671e-12)
+    assert_allclose(eos.d2rho_dP2_g, 3.136954499224254e-09)
+    V = 'V_g'
+    assert_allclose(derivative(d_rho_dP, 1e6, n=2, order=11, dx=100), 3.136954499224254e-09, rtol=1e-3)
+    V = 'V_l'
+    assert_allclose(derivative(d_rho_dP, 1e6, n=2, order=11, dx=100), -4.852086129765671e-12, rtol=1e-3)
 
 
 def test_PR_Psat():

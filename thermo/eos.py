@@ -26,7 +26,7 @@ __all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',
 'APISRK', 'TWUPR', 'TWUSRK', 'ALPHA_FUNCTIONS', 'eos_list', 'GCEOS_DUMMY']
 
 from cmath import atanh as catanh
-from scipy.optimize import newton
+from scipy.optimize import newton, brenth
 from thermo.utils import R
 from thermo.utils import Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter
 from thermo.utils import log, exp, sqrt, copysign, horner
@@ -150,6 +150,9 @@ class GCEOS(object):
                 self.V_g = V
         else:
             # Even in the case of three real roots, it is still the min/max that make sense
+            if not good_roots:
+                raise Exception('No acceptable roots were found; the roots are %s' %Vs)
+            
             self.V_l, self.V_g = min(good_roots), max(good_roots)
             [self.set_properties_from_solution(self.T, self.P, V, self.b, self.delta, self.epsilon, self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2) for V in [self.V_l, self.V_g]]
             self.phase = 'l/g'
@@ -892,10 +895,19 @@ should be calculated by this method, in a user subclass.')
         
         # Can take a while to converge
         P_disc = newton(self.discriminant_at_T_zs, self.P, tol=1e-7, maxiter=200)
-        P_low = P_disc - 10.0
-        
-        eos_low = self.to_TP_zs(T=self.T, P=P_low, zs=self.zs)
-        rho_low = 1.0/eos_low.V_g
+        if P_disc <= 0.0:
+            P_disc = newton(self.discriminant_at_T_zs, self.P*100, tol=1e-7, maxiter=200)
+#            P_max = self.P*1000
+#            P_disc = brenth(self.discriminant_at_T_zs, self.P*1e-3, P_max, rtol=1e-7, maxiter=200)
+
+        try:
+            P_low = max(P_disc - 10.0, 1e-3)
+            eos_low = self.to_TP_zs(T=self.T, P=P_low, zs=self.zs)
+            rho_low = 1.0/eos_low.V_g
+        except:
+            P_low = max(P_disc + 10.0, 1e-3)
+            eos_low = self.to_TP_zs(T=self.T, P=P_low, zs=self.zs)
+            rho_low = 1.0/eos_low.V_g
         
         rho0 = (rho_low + 1.4*rho_pseudo_mc)*0.5
         
@@ -946,8 +958,39 @@ should be calculated by this method, in a user subclass.')
             \frac{\partial \rho}{\partial P} = \frac{-1}{V^2} \frac{\partial V}{\partial P}        
         '''
         return -self.dV_dP_g/(self.V_g*self.V_g)
+    
+    @property
+    def d2P_drho2_l(self):
+        r'''Second derivative of pressure with respect to molar density for the 
+        liquid phase, [Pa/(m^3/mol)^2]
+        
+        .. math::
+            \frac{\partial^2 P}{\partial \rho^2} = -V^2\left(
+            -V^2\frac{\partial^2 P}{\partial V^2} - 2V \frac{\partial P}{\partial V}
+            \right)
+        '''
+        return -self.V_l**2*(-self.V_l**2*self.d2P_dV2_l - 2*self.V_l*self.dP_dV_l)
 
+    @property
+    def d2P_drho2_g(self):
+        r'''Second derivative of pressure with respect to molar density for the 
+        gas phase, [Pa/(m^3/mol)^2]
+        
+        .. math::
+            \frac{\partial^2 P}{\partial \rho^2} = -V^2\left(
+            -V^2\frac{\partial^2 P}{\partial V^2} - 2V \frac{\partial P}{\partial V}
+            \right)
+        '''
+        return -self.V_g**2*(-self.V_g**2*self.d2P_dV2_g - 2*self.V_g*self.dP_dV_g)
 
+    @property
+    def d2rho_dP2_l(self):
+        return -self.d2V_dP2_l/self.V_l**2 + 2*self.dV_dP_l**2/self.V_l**3
+
+    @property
+    def d2rho_dP2_g(self):
+        return -self.d2V_dP2_g/self.V_g**2 + 2*self.dV_dP_g**2/self.V_g**3
+        
 class GCEOS_DUMMY(GCEOS):
     Tc = None
     Pc = None
