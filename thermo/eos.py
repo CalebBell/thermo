@@ -382,7 +382,7 @@ class GCEOS(object):
         elif hasattr(self, 'V_g') and V == self.V_g:
             phase = 'g'
         else:
-            phase = 'l' if PIP > 1 else 'g' # phase_identification_parameter_phase(PIP)
+            phase = 'l' if PIP > 1.0 else 'g' # phase_identification_parameter_phase(PIP)
       
         if phase == 'l':
             self.Z_l = self.P*V/(R*self.T)
@@ -476,9 +476,11 @@ should be calculated by this method, in a user subclass.')
         T : float
             Temperature, [K]
         '''
+        denominator = (V*V + self.delta*V + self.epsilon)
+        V_minus_b = (V-self.b)
         def to_solve(T):
             a_alpha = self.a_alpha_and_derivatives(T, full=False)
-            P_calc = R*T/(V-self.b) - a_alpha/(V*V + self.delta*V + self.epsilon)
+            P_calc = R*T/V_minus_b - a_alpha/denominator
             return P_calc - P
         return newton(to_solve, self.Tc*0.5)
 
@@ -579,16 +581,16 @@ should be calculated by this method, in a user subclass.')
         dT_dV = 1./dV_dT
         dT_dP = 1./dP_dT
                 
-        d2V_dP2 = -d2P_dV2*dP_dV**-3
-        d2T_dP2 = -d2P_dT2*dP_dT**-3
+        d2V_dP2 = -d2P_dV2*dP_dV**-3.0
+        d2T_dP2 = -d2P_dT2*dP_dT**-3.0
         
-        d2T_dV2 = (-(d2P_dV2*dP_dT - dP_dV*d2P_dTdV)*dP_dT**-2 
-                   +(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*dP_dT**-3*dP_dV)
-        d2V_dT2 = (-(d2P_dT2*dP_dV - dP_dT*d2P_dTdV)*dP_dV**-2
-                   +(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*dP_dV**-3*dP_dT)
+        d2T_dV2 = (-(d2P_dV2*dP_dT - dP_dV*d2P_dTdV)*dP_dT**-2.0
+                   +(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*dP_dT**-3.0*dP_dV)
+        d2V_dT2 = (-(d2P_dT2*dP_dV - dP_dT*d2P_dTdV)*dP_dV**-2.0
+                   +(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*dP_dV**-3.0*dP_dT)
 
-        d2V_dPdT = -(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*dP_dV**-3
-        d2T_dPdV = -(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*dP_dT**-3
+        d2V_dPdT = -(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*dP_dV**-3.0
+        d2T_dPdV = -(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*dP_dT**-3.0
 
         
         return ([dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP], 
@@ -776,7 +778,7 @@ should be calculated by this method, in a user subclass.')
         a_alpha = self.a_alpha_and_derivatives(T, full=False)
         Vs = self.volume_solutions(T, Psat, self.b, self.delta, self.epsilon, a_alpha)
         # Assume we can safely take the Vmax as gas, Vmin as l on the saturation line
-        return min([i.real for i in Vs])
+        return min((i.real for i in Vs))
     
     def V_g_sat(self, T):
         r'''Method to calculate molar volume of the vapor phase along the
@@ -801,7 +803,7 @@ should be calculated by this method, in a user subclass.')
         a_alpha = self.a_alpha_and_derivatives(T, full=False)
         Vs = self.volume_solutions(T, Psat, self.b, self.delta, self.epsilon, a_alpha)
         # Assume we can safely take the Vmax as gas, Vmin as l on the saturation line
-        return max([i.real for i in Vs])
+        return max((i.real for i in Vs))
     
     def Hvap(self, T):
         r'''Method to calculate enthalpy of vaporization for a pure fluid from
@@ -847,7 +849,7 @@ should be calculated by this method, in a user subclass.')
         # Assume we can safely take the Vmax as gas, Vmin as l on the saturation line
         Vs = [i.real for i in Vs]
         V_l, V_g = min(Vs), max(Vs)
-        return dPsat_dT*T*(V_g-V_l)
+        return dPsat_dT*T*(V_g - V_l)
 
     def to_TP(self, T, P):
         if T != self.T or P != self.P:
@@ -879,7 +881,8 @@ should be calculated by this method, in a user subclass.')
         V_pseudo_mc = (self.Zc*R*T_pseudo_mc)/P_pseudo_mc
         rho_pseudo_mc = 1.0/V_pseudo_mc
         
-        P_disc = newton(self.discriminant_at_T_zs, self.P, tol=1e-7)
+        # Can take a while to converge
+        P_disc = newton(self.discriminant_at_T_zs, self.P, tol=1e-7, maxiter=200)
         P_low = P_disc - 10.0
         
         eos_low = self.to_TP_zs(T=self.T, P=P_low, zs=self.zs)
@@ -896,9 +899,21 @@ should be calculated by this method, in a user subclass.')
         
     @property
     def dP_drho_g(self):
+        r'''Derivative of pressure with respect to molar density for the gas
+        phase, [Pa/(m^3/mol)]
+        
+        .. math::
+            \frac{\partial P}{\partial \rho} = -V^2 \frac{\partial P}{\partial V}        
+        '''
         return -self.V_g*self.V_g*self.dP_dV_g 
     @property
     def dP_drho_l(self):
+        r'''Derivative of pressure with respect to molar density for the liquid
+        phase, [Pa/(m^3/mol)]
+        
+        .. math::
+            \frac{\partial P}{\partial \rho} = -V^2 \frac{\partial P}{\partial V}        
+        '''
         return -self.V_l*self.V_l*self.dP_dV_l 
 
 class GCEOS_DUMMY(GCEOS):

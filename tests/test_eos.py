@@ -35,7 +35,7 @@ from math import log, exp, sqrt
 @pytest.mark.sympy
 def test_PR_with_sympy():
     # Test with hexane
-    from sympy import  Rational, symbols, sqrt, solve, diff, integrate, N
+    from sympy import Rational, symbols, sqrt, solve, diff, integrate, N
 
     P, T, V = symbols('P, T, V')
     Tc = Rational('507.6')
@@ -288,6 +288,11 @@ def test_PR_quick():
     assert_allclose(V_l, 0.00011087, atol=1e-8)
     # Matches to rounding
     
+
+def test_PR_density_derivatives():
+    # Test solution for molar volumes
+    eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+
 
 def test_PR_Psat():
     eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)

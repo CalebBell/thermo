@@ -144,7 +144,7 @@ def test_PRMIX_quick():
     assert_allclose(eos.fugacities_g, fugacities_g_expect)
 
 
-def test_density_extrapolation():
+def test_derivatives_density():
     # Check some extra derivatives
     T = 420.0
     zs = [.5, .5]
@@ -157,7 +157,18 @@ def test_density_extrapolation():
     eos = PRMIX(T=T, P=P, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=kijs)
     assert_allclose(eos.dP_drho_g, 77.71287762789959)
     assert_allclose(eos.dP_drho_l, 1712.067636831951)
-    
+
+
+def test_density_extrapolation():
+    # Check some extra derivatives
+    T = 420.0
+    zs = [.5, .5]
+    P = 2.7e6
+    Tcs = [305.32, 540.2]
+    Pcs = [4872000.0, 2740000.0]
+    omegas = [0.098, 0.3457]
+    kijs=[[0,0.0067],[0.0067,0]]
+    eos = PRMIX(T=T, P=P, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=kijs)
     # Check the discriminant is zero
     P_transition = newton(eos.discriminant_at_T_zs, 2.7E6, tol=1e-12)
     assert_allclose(P_transition, 2703430.005691234)
