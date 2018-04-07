@@ -581,16 +581,25 @@ should be calculated by this method, in a user subclass.')
         dT_dV = 1./dV_dT
         dT_dP = 1./dP_dT
                 
-        d2V_dP2 = -d2P_dV2*dP_dV**-3.0
-        d2T_dP2 = -d2P_dT2*dP_dT**-3.0
         
-        d2T_dV2 = (-(d2P_dV2*dP_dT - dP_dV*d2P_dTdV)*dP_dT**-2.0
-                   +(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*dP_dT**-3.0*dP_dV)
-        d2V_dT2 = (-(d2P_dT2*dP_dV - dP_dT*d2P_dTdV)*dP_dV**-2.0
-                   +(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*dP_dV**-3.0*dP_dT)
+        inverse_dP_dV = 1.0/dP_dV
+        inverse_dP_dV2 = inverse_dP_dV*inverse_dP_dV
+        inverse_dP_dV3 = inverse_dP_dV*inverse_dP_dV2
+        
+        inverse_dP_dT = 1.0/dP_dT
+        inverse_dP_dT2 = inverse_dP_dT*inverse_dP_dT
+        inverse_dP_dT3 = inverse_dP_dT2*inverse_dP_dT
+        
+        d2V_dP2 = -d2P_dV2*inverse_dP_dV3
+        d2T_dP2 = -d2P_dT2*inverse_dP_dT3
+        
+        d2T_dV2 = (-(d2P_dV2*dP_dT - dP_dV*d2P_dTdV)*inverse_dP_dT2
+                   +(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*inverse_dP_dT3*dP_dV)
+        d2V_dT2 = (-(d2P_dT2*dP_dV - dP_dT*d2P_dTdV)*inverse_dP_dV2
+                   +(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*inverse_dP_dV3*dP_dT)
 
-        d2V_dPdT = -(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*dP_dV**-3.0
-        d2T_dPdV = -(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*dP_dT**-3.0
+        d2V_dPdT = -(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*inverse_dP_dV3
+        d2T_dPdV = -(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*inverse_dP_dT3
 
         
         return ([dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP], 
