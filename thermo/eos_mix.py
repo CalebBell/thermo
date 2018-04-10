@@ -135,7 +135,10 @@ class GCEOSMIX(GCEOS):
                               for j in self.cmps] for i in self.cmps]
                                 
         # Needed in calculation of fugacity coefficients
-        a_alpha = sum([a_alpha_ijs[i][j]*zs[i]*zs[j]
+        z_products = [[zs[i]*zs[j] for j in self.cmps] for i in self.cmps]
+        
+        
+        a_alpha = sum([a_alpha_ijs[i][j]*z_products[i][j]
                       for j in self.cmps for i in self.cmps])
         self.a_alpha_ijs = a_alpha_ijs
         
@@ -145,7 +148,7 @@ class GCEOSMIX(GCEOS):
                     a_alphai, a_alphaj = a_alphas[i], a_alphas[j]
                     x0 = a_alphai*a_alphaj
                     x0_05 = x0**0.5
-                    zi_zj = zs[i]*zs[j]
+                    zi_zj = z_products[i][j]
 
                     da_alpha_dT += zi_zj*((1. - kijs[i][j])/(2.*x0_05)
                     *(a_alphai*da_alpha_dTs[j] + a_alphaj*da_alpha_dTs[i]))
