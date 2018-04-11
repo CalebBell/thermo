@@ -67,6 +67,28 @@ class GCEOSMIX(GCEOS):
     mixture. It calls `a_alpha_and_derivatives` from the pure-component EOS for 
     each species via multiple inheritance.
     '''
+    
+    def a_alpha_and_derivatives_numpy(self, a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=True, quick=True):
+        zs, kijs = self.zs, self.kijs
+        one_minus_kijs = 1.0 - kijs
+        
+        a_alpha_ijs = (1.0 - kijs)* (np.einsum('i,j', a_alphas, a_alphas)**0.5)
+        z_products = np.einsum('i,j', zs, zs)
+        a_alpha = np.einsum('ij,ji', a_alpha_ijs, zs_product)
+
+        self.a_alpha_ijs = a_alpha_ijs.tolist()
+        
+        if full:
+            x0_05 = np.outer(a_alphas, a_alphas)**0.5
+            da_alpha_dT = (z_products*(1.0 - kijs)/(x0_05)*(np.einsum('j,i', a_alphas, da_alpha_dTs))).sum()
+            d2a_alpha_dT2 = 0.0
+        
+            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+        else:
+            return a_alpha
+
+
+
     def a_alpha_and_derivatives(self, T, full=True, quick=True):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives for an EOS with the Van der Waals mixing rules. Uses the
@@ -129,6 +151,9 @@ class GCEOSMIX(GCEOS):
             d2a_alpha_dT2s.append(ds[2])
         self.cleanup_a_alpha_and_derivatives()
         
+#        if self.N > 40:
+#            return self.a_alpha_and_derivatives_numpy(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=full, quick=quick)
+        
         da_alpha_dT, d2a_alpha_dT2 = 0.0, 0.0
         
         a_alpha_ijs = [[(1. - kijs[i][j])*(a_alphas[i]*a_alphas[j])**0.5 
@@ -138,6 +163,7 @@ class GCEOSMIX(GCEOS):
         z_products = [[zs[i]*zs[j] for j in self.cmps] for i in self.cmps]
         
         
+        # List comprehension tested to be faster
         a_alpha = sum([a_alpha_ijs[i][j]*z_products[i][j]
                       for j in self.cmps for i in self.cmps])
         self.a_alpha_ijs = a_alpha_ijs
@@ -667,7 +693,7 @@ class PRMIX(GCEOSMIX, PR):
         self.omegas = omegas
         self.zs = zs
         if kijs is None:
-            kijs = [[0]*self.N for i in range(self.N)]
+            kijs = [[0.0]*self.N for i in range(self.N)]
         self.kijs = kijs
         self.kwargs = {'kijs': kijs}
         self.T = T
