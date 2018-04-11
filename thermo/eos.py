@@ -990,7 +990,24 @@ should be calculated by this method, in a user subclass.')
     @property
     def d2rho_dP2_g(self):
         return -self.d2V_dP2_g/self.V_g**2 + 2*self.dV_dP_g**2/self.V_g**3
-        
+    
+    @property
+    def dT_drho_l(self):
+        return -self.V_l*self.V_l*self.dT_dV_l
+
+    @property
+    def dT_drho_g(self):
+        return -self.V_g*self.V_g*self.dT_dV_g
+    
+    @property
+    def d2T_drho2_l(self):
+        return -self.V_l**2*(-self.V_l**2*self.d2T_dV2_l - 2*self.V_l*self.dT_dV_l)
+    
+    @property
+    def d2T_drho2_g(self):
+        return -self.V_g**2*(-self.V_g**2*self.d2T_dV2_g - 2*self.V_g*self.dT_dV_g)
+
+
 class GCEOS_DUMMY(GCEOS):
     Tc = None
     Pc = None

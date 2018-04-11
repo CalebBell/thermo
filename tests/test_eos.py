@@ -323,6 +323,27 @@ def test_PR_density_derivatives():
     assert_allclose(derivative(d_rho_dP, 1e6, n=2, order=11, dx=100), -4.852086129765671e-12, rtol=1e-3)
 
 
+    # Analytical tests
+    assert_allclose(eos.dT_drho_l, -0.05794713637649208)  
+    assert_allclose(eos.dT_drho_g, -0.21158043223730016)
+    assert_allclose(eos.d2T_drho2_l, -2.717125158232778e-05)
+    assert_allclose(eos.d2T_drho2_g, 0.0019160971656111195)
+    
+    def dT_drho(rho):
+        return PR(V=1.0/rho, P=P, **crit_params).T
+
+    ans_numeric = derivative(dT_drho, 1/eos.V_l, n=1, dx=1e-2)
+    assert_allclose(eos.dT_drho_l, ans_numeric, rtol=1e-5)   
+    
+    ans_numeric = derivative(dT_drho, 1/eos.V_g, n=1, dx=1e-2)
+    assert_allclose(eos.dT_drho_g, ans_numeric)
+    
+    ans_numeric = derivative(dT_drho, 1/eos.V_l, n=2, dx=1, order=21)
+    assert_allclose(eos.d2T_drho2_l, ans_numeric, rtol=1e-5)
+    
+    ans_numeric = derivative(dT_drho, 1/eos.V_g, n=2, dx=1, order=3)
+    assert_allclose(eos.d2T_drho2_g, ans_numeric, rtol=1e-5)
+
 def test_PR_Psat():
     eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
     Cs_PR = [-3.3466262, -9.9145207E-02, 1.015969390, -1.032780679, 
