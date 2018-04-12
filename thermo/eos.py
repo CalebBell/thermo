@@ -918,11 +918,43 @@ should be calculated by this method, in a user subclass.')
         rho_ans = rho0 + rho1/eos_low.P + rho2/(eos_low.P*eos_low.P)
         return 1.0/rho_ans
         
+    @property
+    def rho_l(self):
+        return 1.0/self.V_l
+    
+    @property
+    def rho_g(self):
+        return 1.0/self.V_g
+    
+    @property
+    def d2V_dTdP_l(self):
+        return self.d2V_dPdT_l
+    
+    @property
+    def d2V_dTdP_g(self):
+        return self.d2V_dPdT_g
+    
+    @property
+    def d2P_dVdT_l(self):
+        return self.d2P_dTdV_l
+
+    @property
+    def d2P_dVdT_g(self):
+        return self.d2P_dTdV_g
+    
+    @property
+    def d2T_dVdP_l(self):
+        return self.d2T_dPdV_l
+    
+    @property
+    def d2T_dVdP_g(self):
+        return self.d2T_dPdV_g
+    
     
     @property
     def dP_drho_l(self):
         r'''Derivative of pressure with respect to molar density for the liquid
-        phase, [Pa/(m^3/mol)]
+        phase, [Pa/(mol/m^3)]
         
         .. math::
             \frac{\partial P}{\partial \rho} = -V^2 \frac{\partial P}{\partial V}        
@@ -932,7 +964,7 @@ should be calculated by this method, in a user subclass.')
     @property
     def dP_drho_g(self):
         r'''Derivative of pressure with respect to molar density for the gas
-        phase, [Pa/(m^3/mol)]
+        phase, [Pa/(mol/m^3)]
         
         .. math::
             \frac{\partial P}{\partial \rho} = -V^2 \frac{\partial P}{\partial V}        
@@ -942,7 +974,7 @@ should be calculated by this method, in a user subclass.')
     @property
     def drho_dP_l(self):
         r'''Derivative of molar density with respect to pressure for the liquid
-        phase, [(m^3/mol)/Pa]
+        phase, [(mol/m^3)/Pa]
         
         .. math::
             \frac{\partial \rho}{\partial P} = \frac{-1}{V^2} \frac{\partial V}{\partial P}        
@@ -952,7 +984,7 @@ should be calculated by this method, in a user subclass.')
     @property
     def drho_dP_g(self):
         r'''Derivative of molar density with respect to pressure for the gas
-        phase, [(m^3/mol)/Pa]
+        phase, [(mol/m^3)/Pa]
         
         .. math::
             \frac{\partial \rho}{\partial P} = \frac{-1}{V^2} \frac{\partial V}{\partial P}        
@@ -962,7 +994,7 @@ should be calculated by this method, in a user subclass.')
     @property
     def d2P_drho2_l(self):
         r'''Second derivative of pressure with respect to molar density for the 
-        liquid phase, [Pa/(m^3/mol)^2]
+        liquid phase, [Pa/(mol/m^3)^2]
         
         .. math::
             \frac{\partial^2 P}{\partial \rho^2} = -V^2\left(
@@ -974,7 +1006,7 @@ should be calculated by this method, in a user subclass.')
     @property
     def d2P_drho2_g(self):
         r'''Second derivative of pressure with respect to molar density for the 
-        gas phase, [Pa/(m^3/mol)^2]
+        gas phase, [Pa/(mol/m^3)^2]
         
         .. math::
             \frac{\partial^2 P}{\partial \rho^2} = -V^2\left(
@@ -985,43 +1017,189 @@ should be calculated by this method, in a user subclass.')
 
     @property
     def d2rho_dP2_l(self):
+        r'''Second derivative of molar density with respect to pressure for the 
+        liquid phase, [(mol/m^3)/Pa^2]
+        
+        .. math::
+            \frac{\partial^2 \rho}{\partial P^2} = 
+            -\frac{\partial^2 V}{\partial P^2}\frac{1}{V^2}
+            + 2 \left(\frac{\partial V}{\partial P}\right)^2\frac{1}{V^3}
+        '''
         return -self.d2V_dP2_l/self.V_l**2 + 2*self.dV_dP_l**2/self.V_l**3
 
     @property
     def d2rho_dP2_g(self):
+        r'''Second derivative of molar density with respect to pressure for the 
+        gas phase, [(mol/m^3)/Pa^2]
+        
+        .. math::
+            \frac{\partial^2 \rho}{\partial P^2} = 
+            -\frac{\partial^2 V}{\partial P^2}\frac{1}{V^2}
+            + 2 \left(\frac{\partial V}{\partial P}\right)^2\frac{1}{V^3}
+        '''
         return -self.d2V_dP2_g/self.V_g**2 + 2*self.dV_dP_g**2/self.V_g**3
+    
     
     @property
     def dT_drho_l(self):
+        r'''Derivative of temperature with respect to molar density for the 
+        liquid phase, [K/(mol/m^3)]
+        
+        .. math::
+            \frac{\partial \T}{\partial \rho} = V^2 \frac{\partial T}{\partial V}        
+        '''
         return -self.V_l*self.V_l*self.dT_dV_l
 
     @property
     def dT_drho_g(self):
+        r'''Derivative of temperature with respect to molar density for the 
+        gas phase, [K/(mol/m^3)]
+        
+        .. math::
+            \frac{\partial \T}{\partial \rho} = V^2 \frac{\partial T}{\partial V}        
+        '''
         return -self.V_g*self.V_g*self.dT_dV_g
     
     @property
     def d2T_drho2_l(self):
+        r'''Second derivative of temperature with respect to molar density for  
+        the liquid phase, [K/(mol/m^3)^2]
+        
+        .. math::
+            \frac{\partial^2 T}{\partial \rho^2} = 
+            -V^2(-V^2 \frac{\partial^2 T}{\partial V^2} -2V \frac{\partial T}{\partial V}  )
+        '''
         return -self.V_l**2*(-self.V_l**2*self.d2T_dV2_l - 2*self.V_l*self.dT_dV_l)
     
     @property
     def d2T_drho2_g(self):
+        r'''Second derivative of temperature with respect to molar density for  
+        the gas phase, [K/(mol/m^3)^2]
+        
+        .. math::
+            \frac{\partial^2 T}{\partial \rho^2} = 
+            -V^2(-V^2 \frac{\partial^2 T}{\partial V^2} -2V \frac{\partial T}{\partial V}  )
+        '''
         return -self.V_g**2*(-self.V_g**2*self.d2T_dV2_g - 2*self.V_g*self.dT_dV_g)
+
 
     @property
     def drho_dT_l(self):
+        r'''Derivative of molar density with respect to temperature for the 
+        liquid phase, [(mol/m^3)/K]
+        
+        .. math::
+            \frac{\partial \rho}{\partial T} = - \frac{1}{V^2}
+            \frac{\partial V}{\partial T}        
+        '''
         return -self.dV_dT_l/(self.V_l*self.V_l)
 
     @property
     def drho_dT_g(self):
+        r'''Derivative of molar density with respect to temperature for the 
+        gas phase, [(mol/m^3)/K]
+        
+        .. math::
+            \frac{\partial \rho}{\partial T} = - \frac{1}{V^2}
+            \frac{\partial V}{\partial T}        
+        '''
         return -self.dV_dT_g/(self.V_g*self.V_g)
     
     @property
     def d2rho_dT2_l(self):
+        r'''Second derivative of molar density with respect to temperature for  
+        the liquid phase, [(mol/m^3)/K^2]
+        
+        .. math::
+            \frac{\partial^2 \rho}{\partial T^2} = 
+            -\frac{\partial^2 V}{\partial T^2}\frac{1}{V^2}
+            + 2 \left(\frac{\partial V}{\partial T}\right)^2\frac{1}{V^3}
+        '''
         return -self.d2V_dT2_l/self.V_l**2 + 2*self.dV_dT_l**2/self.V_l**3
     
     @property
     def d2rho_dT2_g(self):
+        r'''Second derivative of molar density with respect to temperature for  
+        the gas phase, [(mol/m^3)/K^2]
+        
+        .. math::
+            \frac{\partial^2 \rho}{\partial T^2} = 
+            -\frac{\partial^2 V}{\partial T^2}\frac{1}{V^2}
+            + 2 \left(\frac{\partial V}{\partial T}\right)^2\frac{1}{V^3}
+        '''
         return -self.d2V_dT2_g/self.V_g**2 + 2*self.dV_dT_g**2/self.V_g**3
+    
+    @property
+    def d2P_dTdrho_l(self):
+        r'''Derivative of pressure with respect to molar density, and  
+        temperature for the liquid phase, [Pa/(K*mol/m^3)]
+        
+        .. math::
+            \frac{\partial^2 P}{\partial \rho\partial T} 
+            = -V^2 \frac{\partial^2 P}{\partial T \partial V}        
+        '''
+        return -(self.V_l*self.V_l)*self.d2P_dTdV_l
+
+    @property
+    def d2P_dTdrho_g(self):
+        r'''Derivative of pressure with respect to molar density, and  
+        temperature for the gas phase, [Pa/(K*mol/m^3)]
+        
+        .. math::
+            \frac{\partial^2 P}{\partial \rho\partial T} 
+            = -V^2 \frac{\partial^2 P}{\partial T \partial V}        
+        '''
+        return -(self.V_g*self.V_g)*self.d2P_dTdV_g
+
+    @property
+    def d2T_dPdrho_l(self):
+        r'''Derivative of temperature with respect to molar density, and  
+        pressure for the liquid phase, [K/(Pa*mol/m^3)]
+        
+        .. math::
+            \frac{\partial^2 T}{\partial \rho\partial P} 
+            = -V^2 \frac{\partial^2 T}{\partial P \partial V}        
+        '''
+        return -(self.V_l*self.V_l)*self.d2T_dPdV_l
+    
+    @property
+    def d2T_dPdrho_g(self):
+        r'''Derivative of temperature with respect to molar density, and  
+        pressure for the gas phase, [K/(Pa*mol/m^3)]
+        
+        .. math::
+            \frac{\partial^2 T}{\partial \rho\partial P} 
+            = -V^2 \frac{\partial^2 T}{\partial P \partial V}        
+        '''
+        return -(self.V_g*self.V_g)*self.d2T_dPdV_g
+    
+    @property
+    def d2rho_dPdT_l(self):
+        r'''Second derivative of molar density with respect to pressure
+        and temperature for the liquid phase, [(mol/m^3)/(K*Pa)]
+        
+        .. math::
+            \frac{\partial^2 \rho}{\partial T \partial P} = 
+            -\frac{\partial^2 V}{\partial T \partial P}\frac{1}{V^2}
+            + 2 \left(\frac{\partial V}{\partial T}\right)
+            \left(\frac{\partial V}{\partial P}\right)
+            \frac{1}{V^3}
+        '''
+        return -self.d2V_dPdT_l/self.V_l**2 + 2*self.dV_dT_l*self.dV_dP_l/self.V_l**3
+
+    @property
+    def d2rho_dPdT_g(self):
+        r'''Second derivative of molar density with respect to pressure
+        and temperature for the gas phase, [(mol/m^3)/(K*Pa)]
+        
+        .. math::
+            \frac{\partial^2 \rho}{\partial T \partial P} = 
+            -\frac{\partial^2 V}{\partial T \partial P}\frac{1}{V^2}
+            + 2 \left(\frac{\partial V}{\partial T}\right)
+            \left(\frac{\partial V}{\partial P}\right)
+            \frac{1}{V^3}
+        '''
+        return -self.d2V_dPdT_g/self.V_g**2 + 2*self.dV_dT_g*self.dV_dP_g/self.V_g**3
 
 
 class GCEOS_DUMMY(GCEOS):
