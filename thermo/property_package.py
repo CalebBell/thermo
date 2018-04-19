@@ -43,12 +43,13 @@ __all__ = ['PropertyPackage', 'Ideal', 'Unifac', 'GammaPhi',
            'UnifacCaloric', 'UnifacDortmundCaloric', 'Nrtl',
            'StabilityTester',
            'eos_Z_test_phase_stability', 'eos_Z_trial_phase_stability',
-           'Stateva_Tsvetkov_TPDF_eos', 'd_TPD_Michelson_modified_eos']
+           'Stateva_Tsvetkov_TPDF_eos', 'd_TPD_Michelson_modified_eos',
+           'GceosBase']
 
 from copy import copy
-from random import uniform
+from random import uniform, shuffle
 import numpy as np
-from scipy.optimize import brenth, ridder, golden, brent, minimize, fmin_slsqp
+from scipy.optimize import brenth, ridder, golden, brent, minimize, fmin_slsqp, fsolve
 from scipy.misc import derivative
 
 from thermo.utils import log, exp
@@ -56,7 +57,9 @@ from thermo.utils import has_matplotlib, R, pi, N_A
 from thermo.utils import remove_zeros, normalize
 
 from thermo.activity import K_value, Wilson_K_value, flash_inner_loop, dew_at_T, bubble_at_T, NRTL
+from thermo.activity import get_T_bub_est
 from thermo.unifac import UNIFAC, UFSG, DOUFSG, DOUFIP2006
+from thermo.eos_mix import *
 
 if has_matplotlib:
     import matplotlib
@@ -533,6 +536,8 @@ class PropertyPackage(object):
 
 
 class Ideal(PropertyPackage):
+    T_REF_IG = 298.15
+    P_REF_IG = 101325.
     def _T_VF_err(self, P, VF, zs, Psats):
         Ks = [K_value(P=P, Psat=Psat) for Psat in Psats]
         return flash_inner_loop(zs=zs, Ks=Ks)[0] - VF
@@ -632,8 +637,6 @@ class Ideal(PropertyPackage):
 
 
 class IdealCaloric(Ideal):
-    T_REF_IG = 298.15
-    P_REF_IG = 101325.
     P_DEPENDENT_H_LIQ = True
     
     def __init__(self, VaporPressures=None, Tms=None, Tbs=None, Tcs=None, Pcs=None, 
@@ -1823,3 +1826,100 @@ class UnifacDortmundCaloric(UnifacDortmund, GammaPhiCaloric):
             self.eos_pure_instances = [eos(Tc=self.Tcs[i], Pc=self.Pcs[i], omega=self.omegas[i], T=self.Tcs[i]*0.5, P=self.Pcs[i]*0.1) for i in self.cmps]
         
         self.cache_unifac_inputs()
+
+
+class GceosBase(Ideal):
+    def __init__(self, eos_mix=PRMIX, VaporPressures=None, Tms=None, Tbs=None, 
+                 Tcs=None, Pcs=None, omegas=None, kijs=None, eos_kwargs=None):
+        self.eos_mix = eos_mix
+        self.VaporPressures = VaporPressures
+        self.Tms = Tms
+        self.Tbs = Tbs
+        self.Tcs = Tcs
+        self.Pcs = Pcs
+        self.omegas = omegas
+        self.kijs = kijs
+        self.eos_kwargs = eos_kwargs if eos_kwargs is not None else {}
+        
+#        self.eos_mix_ref = self.eos_mix(T=self.T_REF_IG, P=self.P_REF_IG, Tcs=self.Tcs, Pcs=self.Pcs, kijs=self.kijs, **self.eos_kwargs)
+
+    def _err_bubble_T(self, T, P, zs, maxiter=200, xtol=1E-10):
+        T = float(T)
+        Ks = [Wilson_K_value(T, P, Tci, Pci, omega) for Pci, Tci, omega in zip(self.Pcs, self.Tcs, self.omegas)]
+        V_over_F, xs, ys = flash_inner_loop(zs, Ks)
+
+        eos_l = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
+                             zs=zs, kijs=self.kijs, T=T, P=P, **self.eos_kwargs)
+#        phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, zs)
+        phis_l = eos_l.phis_l
+
+        for i in range(maxiter):
+            eos_g = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
+                             zs=ys, kijs=self.kijs, T=T, P=P, **self.eos_kwargs)
+    
+#            phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, ys)
+            phis_g = eos_g.phis_g
+            Ks = [K_value(phi_l=l, phi_g=g) for l, g in zip(phis_l, phis_g)]
+            V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks)
+            err = (sum([abs(x_new - x_old) for x_new, x_old in zip(xs_new, xs)]) +
+                  sum([abs(y_new - y_old) for y_new, y_old in zip(ys_new, ys)]))
+            xs, ys = xs_new, ys_new
+            if err < xtol:
+                break
+        return V_over_F
+    
+    def bubble_T(self, P, zs, maxiter=200, xtol=1E-10, maxiter_initial=20, xtol_initial=1e-3):
+        guess = get_T_bub_est(P=P, zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs)
+        try:
+            # Simplest solution method
+            return float(fsolve(self._err_bubble_T, guess, factor=.1, args=(P, zs, maxiter, xtol)))
+        except:
+            pass
+
+        Tmin, Tmax = self._bracket_bubble_T(P=P, zs=zs, maxiter=maxiter_initial, xtol=xtol_initial)
+        return ridder(self._err_bubble_T, Tmin, Tmax, args=(P, zs, maxiter, xtol))
+
+
+    def _bracket_bubble_T(self, P, zs, maxiter, xtol):
+        negative_VFs = []
+        negative_Ts = []
+        positive_VFs = []
+        positive_Ts = []
+        guess = get_T_bub_est(P=P, zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs)
+        
+        eos_l = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
+                             zs=zs, kijs=self.kijs, T=self.T_REF_IG, P=P, **self.eos_kwargs)
+
+        limit_list = [(20, .9, 1.1), (10, .8, 1.2), (30, .7, 1.3), (50, .6, 1.4), (10000, .5, 1.5)]
+        for limits in limit_list:
+            pts, mult_min, mult_max = limits
+            guess_Ts = [guess*i for i in np.linspace(mult_min, mult_max, pts).tolist()]
+            shuffle(guess_Ts)
+        
+            for T in guess_Ts:
+                try:
+#                    print("Trying %f" %T)
+                    ans = eos_l._V_over_F_bubble_T_inner(T=T, P=P, zs=zs, maxiter=maxiter, xtol=xtol)
+#                    print(ans)
+                    if ans < 0:
+#                        if abs(abs) < 1:
+                        negative_VFs.append(ans)
+                        negative_Ts.append(T)
+                    else:
+                        # This is very important - but it reduces speed quite a bit
+                        if abs(ans) < 1:
+                            diff = lambda T : eos_l._V_over_F_bubble_T_inner(T=T, P=P, zs=zs)
+
+                            
+                            positive_VFs.append(ans)
+                            positive_Ts.append(T)
+                except:
+                    pass
+                if negative_Ts and positive_Ts:
+                    break
+            if negative_Ts and positive_Ts:
+                break
+        
+        T_high = positive_Ts[positive_VFs.index(min(positive_VFs))]
+        T_low = negative_Ts[negative_VFs.index(max(negative_VFs))]
+        return T_high, T_low

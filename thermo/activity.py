@@ -546,7 +546,10 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None):
         if l == 2:
             z1, z2 = zs
             K1, K2 = Ks
-            V_over_F = (-K1*z1 - K2*z2 + z1 + z2)/(K1*K2*z1 + K1*K2*z2 - K1*z1 - K1*z2 - K2*z1 - K2*z2 + z1 + z2)
+            try:
+                V_over_F = (-K1*z1 - K2*z2 + z1 + z2)/(K1*K2*z1 + K1*K2*z2 - K1*z1 - K1*z2 - K2*z1 - K2*z2 + z1 + z2)
+            except ZeroDivisionError:
+                return Rachford_Rice_solution(zs=zs, Ks=Ks)
         elif l == 3:
             z1, z2, z3 = zs
             K1, K2, K3 = Ks
@@ -1167,3 +1170,30 @@ def Pdew_mixture(T=None, zs=None, Psats=None, CASRNs=None,
 
 
 
+
+def get_T_bub_est(P, zs, Tbs, Tcs, Pcs):
+    T_bub_est = 0.7*sum([zi*Tci for zi, Tci in zip(zs, Tcs)])
+    T_LO = T_HI = 0.0
+    for i in range(1000):
+        Ks = [Pc**((1./T_bub_est - 1./Tb)/(1./Tc - 1./Tb))/P for Tb, Tc, Pc in zip(Tbs, Tcs, Pcs)]
+        y_bub_sum = sum([zi*Ki for zi, Ki in zip(zs, Ks)])
+        if y_bub_sum < 1.:
+            T_LO = T_bub_est
+            y_LO_sum = y_bub_sum - 1.
+            T_new = T_bub_est*1.1
+        elif y_bub_sum > 1.:
+            T_HI = T_bub_est
+            y_HI_sum = y_bub_sum - 1.
+            T_new = T_bub_est/1.1
+        else:
+            return T_bub_est
+        if T_LO*T_HI > 0.0:
+            T_new = (y_HI_sum*T_LO - y_LO_sum*T_HI)/(y_HI_sum - y_LO_sum)
+
+        if abs(T_bub_est - T_new) < 1E-3:
+            return T_bub_est
+        elif abs(y_bub_sum - 1.) < 1E-5:
+            return T_bub_est
+        else:
+            T_bub_est = T_new
+#get_T_bub_est(1E6, zs=[0.5, 0.5], Tbs=[194.67, 341.87], Tcs=[304.2, 507.4], Pcs=[7.38E6, 3.014E6])

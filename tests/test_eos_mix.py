@@ -242,7 +242,17 @@ def test_mechanical_critical_point():
     3011.7228497511787 # mol/m^3
     # 439.18798489 with Tc = 439.18798489 or so.
     
+def test_sequential_substitution_VL():
+    omegas = [0.2252, 0.2975]
+    Tcs = [304.2, 507.4]
+    Pcs = [7.38E6, 3.014E6]
+    kijs=[[0,0],[0,0]]
     
+    eos = PRMIX(T=313.0, P=1E6, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=[.5, .5], kijs=kijs)
+    V_over_F, xs, ys = eos.sequential_substitution_VL()
+    assert_allclose(V_over_F, 0.4128783868475084)
+    assert_allclose(xs, [0.17818473607425783, 0.8218152639257423])
+    assert_allclose(ys, [0.9576279672468324, 0.04237203275316752])    
     
     
 def test_TPD_stuff():

@@ -23,14 +23,16 @@ from __future__ import division
 
 __all__ = ['GCEOSMIX', 'PRMIX', 'SRKMIX', 'PR78MIX', 'VDWMIX', 'PRSVMIX', 
 'PRSV2MIX', 'TWUPRMIX', 'TWUSRKMIX', 'APISRKMIX']
+
+import sys
 import numpy as np
-from scipy.optimize import newton, minimize
+from scipy.optimize import newton, minimize, ridder, brent
 from scipy.misc import derivative
 from thermo.utils import normalize, Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter
 from thermo.utils import R
 from thermo.utils import log, exp, sqrt
 from thermo.eos import *
-import sys
+from thermo.activity import Wilson_K_value, K_value, flash_inner_loop
 
 R2 = R*R
 two_root_two = 2*2**0.5
@@ -611,7 +613,58 @@ class GCEOSMIX(GCEOS):
             return self.__class__(T=T, P=P, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, zs=zs, **self.kwargs)
         else:
             return self
+        
+    def sequential_substitution_VL(self, Ks_initial=None, maxiter=1000,
+                                   xtol=1E-10):
+        if Ks_initial is None:
+            Ks = [Wilson_K_value(self.T, self.P, Tci, Pci, omega)  for Pci, Tci, omega in zip(self.Pcs, self.Tcs, self.omegas)]
+        else:
+            Ks = Ks_initial
+        V_over_F, xs, ys = flash_inner_loop(self.zs, Ks)
+        for i in range(maxiter):
+            eos_g = self.to_TP_zs(T=self.T, P=self.P, zs=ys)
+            eos_l = self.to_TP_zs(T=self.T, P=self.P, zs=xs)
 
+            phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, ys)
+            phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, xs)
+            
+            Ks = [K_value(phi_l=l, phi_g=g) for l, g in zip(phis_l, phis_g)]
+            V_over_F, xs_new, ys_new = flash_inner_loop(self.zs, Ks)
+            err = (sum([abs(x_new - x_old) for x_new, x_old in zip(xs_new, xs)]) +
+                  sum([abs(y_new - y_old) for y_new, y_old in zip(ys_new, ys)]))
+            xs, ys = xs_new, ys_new
+            if err < xtol:
+                break
+        return V_over_F, xs, ys
+
+
+    def _V_over_F_bubble_T_inner(self, T, P, zs, maxiter=20, xtol=1E-3):
+        eos_l = self.to_TP_zs(T=T, P=P, zs=zs)
+        
+        if not hasattr(eos_l, 'V_l'):
+            raise ValueError('At the specified temperature, there is no liquid root')
+    
+        Ks = [Wilson_K_value(T, P, Tci, Pci, omega) for Pci, Tci, omega in zip(self.Pcs, self.Tcs, self.omegas)]
+        V_over_F, xs, ys = flash_inner_loop(zs, Ks)
+        for i in range(maxiter):
+            eos_g = self.to_TP_zs(T=T, P=P, zs=ys)
+    
+            if not hasattr(eos_g, 'V_g'):
+                phis_g = eos_g.phis_l
+                fugacities_g = eos_g.fugacities_l
+            else:
+                phis_g = eos_g.phis_g
+                fugacities_g = eos_g.fugacities_g
+            
+            Ks = [K_value(phi_l=l, phi_g=g) for l, g in zip(eos_l.phis_l, phis_g)]
+            V_over_F, xs, ys = flash_inner_loop(zs, Ks)
+            err = sum([abs(i-j) for i, j in zip(eos_l.fugacities_l, fugacities_g)])
+            if err < xtol:
+                break
+        if not hasattr(eos_g, 'V_g'):
+            raise ValueError('At the specified temperature, the solver did not converge to a vapor root')
+        return V_over_F
+#        raise Exception('Could not converge to desired tolerance')
 
 
 class PRMIX(GCEOSMIX, PR):
