@@ -666,6 +666,78 @@ class GCEOSMIX(GCEOS):
         return V_over_F
 #        raise Exception('Could not converge to desired tolerance')
 
+    def _V_over_F_dew_T_inner(self, T, P, zs, maxiter=20, xtol=1E-10):
+        eos_g = self.to_TP_zs(T=T, P=P, zs=zs)
+        if not hasattr(eos_g, 'V_g'):
+            raise ValueError('At the specified temperature, there is no vapor root')
+        
+        Ks = [Wilson_K_value(T, P, Tci, Pci, omega) for Pci, Tci, omega in zip(self.Pcs, self.Tcs, self.omegas)]
+        V_over_F, xs, ys = flash_inner_loop(zs, Ks)
+        for i in range(maxiter):
+            eos_l = self.to_TP_zs(T=T, P=P, zs=xs)
+    
+            if not hasattr(eos_l, 'V_l'):
+                phis_l = eos_l.phis_g
+                fugacities_l = eos_l.fugacities_g
+            else:
+                phis_l = eos_l.phis_l
+                fugacities_l = eos_l.fugacities_l
+    
+    
+            Ks = [K_value(phi_l=l, phi_g=g) for l, g in zip(phis_l, eos_g.phis_g)]
+            V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks)
+            err = (sum([abs(x_new - x_old) for x_new, x_old in zip(xs_new, xs)]) +
+                  sum([abs(y_new - y_old) for y_new, y_old in zip(ys_new, ys)]))
+            xs, ys = xs_new, ys_new
+            if xtol < 1E-10:
+                break
+        if not hasattr(eos_l, 'V_l'):
+            raise ValueError('At the specified temperature, the solver did not converge to a liquid root')
+        return V_over_F-1.0
+#        return abs(V_over_F-1)
+
+    def _V_over_F_dew_T_inner_accelerated(self, T, P, zs, maxiter=20, xtol=1E-10):
+        '''This is not working.
+        '''
+        eos_g = self.to_TP_zs(T=T, P=P, zs=zs)
+        if not hasattr(eos_g, 'V_g'):
+            raise ValueError('At the specified temperature, there is no vapor root')
+        
+        Ks = [Wilson_K_value(T, P, Tci, Pci, omega) for Pci, Tci, omega in zip(self.Pcs, self.Tcs, self.omegas)]
+        V_over_F_new, xs, ys = flash_inner_loop(zs, Ks)
+        for i in range(maxiter):
+            eos_l = self.to_TP_zs(T=T, P=P, zs=xs)
+    
+            if not hasattr(eos_l, 'V_l'):
+                phis_l = eos_l.phis_g
+                fugacities_l = eos_l.fugacities_g
+            else:
+                phis_l = eos_l.phis_l
+                fugacities_l = eos_l.fugacities_l
+            
+            if 0.0 < V_over_F_new < 1.0 and i > 2:
+                Rs = [K_value(phi_l=l, phi_g=g) for l, g in zip(phis_l, eos_g.phis_g)]
+                lambdas = [(Ki - 1.0)/(Ki - Rri) for Rri, Ki in zip(Rs, Ks)]
+                Ks = [Ki*Ri**lambda_i for Ki, Ri, lambda_i in zip(Ks, Rs, lambdas)]
+            else:
+                Ks = [K_value(phi_l=l, phi_g=g) for l, g in zip(phis_l, eos_g.phis_g)]
+            
+            V_over_F_new, xs_new, ys_new = flash_inner_loop(zs, Ks)
+            err_new = (sum([abs(x_new - x_old) for x_new, x_old in zip(xs_new, xs)]) +
+                  sum([abs(y_new - y_old) for y_new, y_old in zip(ys_new, ys)]))
+            xs, ys = xs_new, ys_new
+            V_over_F_old = V_over_F_new
+            if i == 0:
+                err_old = err_new
+            
+            err_old = err_new
+            if err_new < xtol:
+                break
+        if not hasattr(eos_l, 'V_l'):
+            raise ValueError('At the specified temperature, the solver did not converge to a liquid root')
+        return V_over_F_new-1.0
+#        return abs(V_over_F-1)
+
 
 class PRMIX(GCEOSMIX, PR):
     r'''Class for solving the Peng-Robinson cubic equation of state for a 

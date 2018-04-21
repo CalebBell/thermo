@@ -57,7 +57,7 @@ from thermo.utils import has_matplotlib, R, pi, N_A
 from thermo.utils import remove_zeros, normalize
 
 from thermo.activity import K_value, Wilson_K_value, flash_inner_loop, dew_at_T, bubble_at_T, NRTL
-from thermo.activity import get_T_bub_est
+from thermo.activity import get_T_bub_est, get_T_dew_est
 from thermo.unifac import UNIFAC, UFSG, DOUFSG, DOUFIP2006
 from thermo.eos_mix import *
 
@@ -1908,9 +1908,7 @@ class GceosBase(Ideal):
                     else:
                         # This is very important - but it reduces speed quite a bit
                         if abs(ans) < 1:
-                            diff = lambda T : eos_l._V_over_F_bubble_T_inner(T=T, P=P, zs=zs)
-
-                            
+#                            diff = lambda T : eos_l._V_over_F_bubble_T_inner(T=T, P=P, zs=zs)
                             positive_VFs.append(ans)
                             positive_Ts.append(T)
                 except:
@@ -1923,3 +1921,85 @@ class GceosBase(Ideal):
         T_high = positive_Ts[positive_VFs.index(min(positive_VFs))]
         T_low = negative_Ts[negative_VFs.index(max(negative_VFs))]
         return T_high, T_low
+
+
+    def _bracket_dew_T(self, P, zs, maxiter, xtol):
+        negative_VFs = []
+        negative_Ts = []
+        positive_VFs = []
+        positive_Ts = []
+        guess = get_T_dew_est(P=P, zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs)
+        
+        eos_l = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
+                             zs=zs, kijs=self.kijs, T=self.T_REF_IG, P=P, **self.eos_kwargs)
+
+        limit_list = [(30, .7, 1.3), (50, .6, 1.4), (10000, .1, 3)]
+        for limits in limit_list:
+            pts, mult_min, mult_max = limits
+            guess_Ts = [guess*i for i in np.linspace(mult_min, mult_max, pts).tolist()]
+            shuffle(guess_Ts)
+        
+            for T in guess_Ts:
+                try:
+#                    print("Trying %f" %T)
+                    ans = eos_l._V_over_F_dew_T_inner(T=T, P=P, zs=zs, maxiter=maxiter, xtol=xtol)
+#                    print(ans)
+                    if ans < 0:
+#                        if abs(abs) < 1.0:
+                        # Seems to be necessary to check the second derivative
+                        diff = lambda T : eos_l._V_over_F_dew_T_inner(T=T, P=P, zs=zs)
+                        second_derivative = derivative(diff, T, n=2, order=3)
+                        if second_derivative > 0:
+    
+                            negative_VFs.append(ans)
+                            negative_Ts.append(T)
+                    else:
+                        if abs(ans) < 1:
+                            positive_VFs.append(ans)
+                            positive_Ts.append(T)
+                except:
+                    pass
+                if negative_Ts and positive_Ts:
+                    break
+            if negative_Ts and positive_Ts:
+                break
+        
+        T_high = positive_Ts[positive_VFs.index(min(positive_VFs))]
+        T_low = negative_Ts[negative_VFs.index(max(negative_VFs))]
+        return T_high, T_low
+
+
+    def _err_dew_T(self, T, P, zs, maxiter=200, xtol=1E-10):
+        T = float(T)
+        Ks = [Wilson_K_value(T, P, Tci, Pci, omega) for Pci, Tci, omega in zip(self.Pcs, self.Tcs, self.omegas)]
+        V_over_F, xs, ys = flash_inner_loop(zs, Ks)
+
+        eos_g = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
+                             zs=zs, kijs=self.kijs, T=T, P=P, **self.eos_kwargs)
+        phis_g = eos_g.phis_g
+
+        for i in range(maxiter):
+            eos_l = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
+                             zs=xs, kijs=self.kijs, T=T, P=P, **self.eos_kwargs)
+    
+            phis_l = eos_l.phis_l
+            Ks = [K_value(phi_l=l, phi_g=g) for l, g in zip(phis_l, phis_g)]
+            V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks)
+            err = (sum([abs(x_new - x_old) for x_new, x_old in zip(xs_new, xs)]) +
+                  sum([abs(y_new - y_old) for y_new, y_old in zip(ys_new, ys)]))
+            xs, ys = xs_new, ys_new
+            if err < xtol:
+                break
+        return V_over_F - 1.0
+
+
+    def dew_T(self, P, zs, maxiter=200, xtol=1E-10, maxiter_initial=20, xtol_initial=1e-3):
+        guess = get_T_dew_est(P=P, zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs)
+#        try:
+#            # Has not yet worked yet
+#            return float(fsolve(self._err_dew_T, guess, factor=.1, args=(P, zs, maxiter, xtol)))
+#        except Exception as e:
+#            pass
+
+        Tmin, Tmax = self._bracket_dew_T(P=P, zs=zs, maxiter=maxiter_initial, xtol=xtol_initial)
+        return ridder(self._err_dew_T, Tmin, Tmax, args=(P, zs, maxiter, xtol))

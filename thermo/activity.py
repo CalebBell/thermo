@@ -1197,3 +1197,33 @@ def get_T_bub_est(P, zs, Tbs, Tcs, Pcs):
         else:
             T_bub_est = T_new
 #get_T_bub_est(1E6, zs=[0.5, 0.5], Tbs=[194.67, 341.87], Tcs=[304.2, 507.4], Pcs=[7.38E6, 3.014E6])
+
+
+def get_T_dew_est(P, zs, Tbs, Tcs, Pcs, T_bub_est=None):
+    if T_bub_est is None:
+        T_bub_est = get_T_bub_est(P, zs, Tbs, Tcs, Pcs)
+    T_dew_est = 1.1*T_bub_est
+    T_LO = T_HI = 0.0
+    for i in range(10000):
+        Ks = [Pc**((1./T_dew_est - 1./Tb)/(1./Tc - 1./Tb))/P for Tb, Tc, Pc in zip(Tbs, Tcs, Pcs)]
+        x_dew_sum = sum([zi/Ki for zi, Ki in zip(zs, Ks)])
+        if x_dew_sum < 1.:
+            T_LO = T_dew_est
+            x_LO_sum = x_dew_sum - 1.
+            T_new = T_dew_est/1.1
+        elif x_dew_sum > 1.:
+            T_HI = T_dew_est
+            x_HI_sum = x_dew_sum - 1.
+            T_new = T_dew_est*1.1
+        else:
+            return T_dew_est
+        if T_LO*T_HI > 0.0:
+            T_new = (x_HI_sum*T_LO - x_LO_sum*T_HI)/(x_HI_sum - x_LO_sum)
+
+        if abs(T_dew_est - T_new) < 1E-3:
+            return T_dew_est
+        elif abs(x_dew_sum - 1.) < 1E-5:
+            return T_dew_est
+        else:
+            T_dew_est = T_new
+#get_T_dew_est(1E6, zs=[0.5, 0.5], Tbs=[194.67, 341.87], Tcs=[304.2, 507.4], Pcs=[7.38E6, 3.014E6], T_bub_est = 290.6936541653881)
