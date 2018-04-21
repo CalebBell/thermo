@@ -1933,7 +1933,7 @@ class GceosBase(Ideal):
         eos_l = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
                              zs=zs, kijs=self.kijs, T=self.T_REF_IG, P=P, **self.eos_kwargs)
 
-        limit_list = [(30, .7, 1.3), (50, .6, 1.4), (10000, .1, 3)]
+        limit_list = [(30, .7, 1.3), (50, .6, 1.4), (250, .1, 3)]
         for limits in limit_list:
             pts, mult_min, mult_max = limits
             guess_Ts = [guess*i for i in np.linspace(mult_min, mult_max, pts).tolist()]
@@ -1949,7 +1949,7 @@ class GceosBase(Ideal):
                         # Seems to be necessary to check the second derivative
                         diff = lambda T : eos_l._V_over_F_dew_T_inner(T=T, P=P, zs=zs)
                         second_derivative = derivative(diff, T, n=2, order=3)
-                        if second_derivative > 0:
+                        if second_derivative > 0 and second_derivative < 1:
     
                             negative_VFs.append(ans)
                             negative_Ts.append(T)
