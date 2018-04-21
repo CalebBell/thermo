@@ -1923,7 +1923,7 @@ class GceosBase(Ideal):
         return T_high, T_low
 
 
-    def _bracket_dew_T(self, P, zs, maxiter, xtol):
+    def _bracket_dew_T(self, P, zs, maxiter, xtol, check=False):
         negative_VFs = []
         negative_Ts = []
         positive_VFs = []
@@ -1947,10 +1947,15 @@ class GceosBase(Ideal):
                     if ans < 0:
 #                        if abs(abs) < 1.0:
                         # Seems to be necessary to check the second derivative
-                        diff = lambda T : eos_l._V_over_F_dew_T_inner(T=T, P=P, zs=zs)
-                        second_derivative = derivative(diff, T, n=2, order=3)
-                        if second_derivative > 0 and second_derivative < 1:
-    
+                        # This should only be necessary if the first solution is not right
+                        if check:
+                            diff = lambda T : eos_l._V_over_F_dew_T_inner(T=T, P=P, zs=zs)
+                            second_derivative = derivative(diff, T, n=2, order=3)
+                            if second_derivative > 0 and second_derivative < 1:
+        
+                                negative_VFs.append(ans)
+                                negative_Ts.append(T)
+                        else:
                             negative_VFs.append(ans)
                             negative_Ts.append(T)
                     else:
@@ -2002,4 +2007,9 @@ class GceosBase(Ideal):
 #            pass
 
         Tmin, Tmax = self._bracket_dew_T(P=P, zs=zs, maxiter=maxiter_initial, xtol=xtol_initial)
+        T_calc = ridder(self._err_dew_T, Tmin, Tmax, args=(P, zs, maxiter, xtol))
+        val = self._err_dew_T(T_calc, P, zs, maxiter, xtol)
+        if abs(val) < 1:
+            return T_calc
+        Tmin, Tmax = self._bracket_dew_T(P=P, zs=zs, maxiter=maxiter_initial, xtol=xtol_initial, check=True)
         return ridder(self._err_dew_T, Tmin, Tmax, args=(P, zs, maxiter, xtol))
