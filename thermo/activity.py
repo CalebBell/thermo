@@ -1227,3 +1227,23 @@ def get_T_dew_est(P, zs, Tbs, Tcs, Pcs, T_bub_est=None):
         else:
             T_dew_est = T_new
 #get_T_dew_est(1E6, zs=[0.5, 0.5], Tbs=[194.67, 341.87], Tcs=[304.2, 507.4], Pcs=[7.38E6, 3.014E6], T_bub_est = 290.6936541653881)
+
+
+def get_P_dew_est(T, zs, Tbs, Tcs, Pcs):
+    def err(P):
+        e = get_T_dew_est(P, zs, Tbs, Tcs, Pcs) - T
+        return e
+    try:
+        return brenth(err, 1E-2, 1e8)
+    except:
+        return brenth(err, 1E-3, 1E12)
+
+
+def get_P_bub_est(T, zs, Tbs, Tcs, Pcs):
+    def err(P):
+        e = get_T_bub_est(P, zs, Tbs, Tcs, Pcs) - T
+        return e
+    try:
+        return brenth(err, 1E-2, 1e8)
+    except:
+        return brenth(err, 1E-3, 1E12)

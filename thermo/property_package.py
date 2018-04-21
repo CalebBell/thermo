@@ -57,7 +57,7 @@ from thermo.utils import has_matplotlib, R, pi, N_A
 from thermo.utils import remove_zeros, normalize
 
 from thermo.activity import K_value, Wilson_K_value, flash_inner_loop, dew_at_T, bubble_at_T, NRTL
-from thermo.activity import get_T_bub_est, get_T_dew_est
+from thermo.activity import get_T_bub_est, get_T_dew_est, get_P_dew_est, get_P_bub_est
 from thermo.unifac import UNIFAC, UFSG, DOUFSG, DOUFIP2006
 from thermo.eos_mix import *
 
@@ -1987,8 +1987,7 @@ class GceosBase(Ideal):
             eos_l = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
                              zs=xs, kijs=self.kijs, T=T, P=P, **self.eos_kwargs)
     
-            phis_l = eos_l.phis_l
-            Ks = [K_value(phi_l=l, phi_g=g) for l, g in zip(phis_l, phis_g)]
+            Ks = [K_value(phi_l=l, phi_g=g) for l, g in zip(eos_l.phis_l, phis_g)]
             V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks)
             err = (sum([abs(x_new - x_old) for x_new, x_old in zip(xs_new, xs)]) +
                   sum([abs(y_new - y_old) for y_new, y_old in zip(ys_new, ys)]))
@@ -2013,3 +2012,160 @@ class GceosBase(Ideal):
             return T_calc
         Tmin, Tmax = self._bracket_dew_T(P=P, zs=zs, maxiter=maxiter_initial, xtol=xtol_initial, check=True)
         return ridder(self._err_dew_T, Tmin, Tmax, args=(P, zs, maxiter, xtol))
+
+
+
+    def _bracket_dew_P(self, T, zs, maxiter, xtol, check=False):
+        negative_VFs = []
+        negative_Ps = []
+        positive_VFs = []
+        positive_Ps = []
+        guess = get_P_dew_est(T=T, zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs)
+        
+        eos_l = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
+                             zs=zs, kijs=self.kijs, T=T, P=self.P_REF_IG, **self.eos_kwargs)
+
+        limit_list = [(30, .7, 1.3), (50, .6, 1.4), (250, .001, 3)]
+        for limits in limit_list:
+            pts, mult_min, mult_max = limits
+            guess_Ps = [guess*10**(i) for i in np.linspace(mult_min, mult_max, pts).tolist()]
+            shuffle(guess_Ps)
+        
+            for P in guess_Ps:
+                try:
+#                    print("Trying %f" %P)
+                    ans = eos_l._V_over_F_dew_T_inner(T=T, P=P, zs=zs, maxiter=maxiter, xtol=xtol)
+#                    print(ans)
+                    if ans < 0:
+                        if abs(ans) < 1.0:
+                        # Seems to be necessary to check the second derivative
+                        # This should only be necessary if the first solution is not right
+#                        if check:
+#                            diff = lambda T : eos_l._V_over_F_dew_T_inner(T=T, P=P, zs=zs)
+#                            second_derivative = derivative(diff, T, n=2, order=3)
+#                            if second_derivative > 0 and second_derivative < 1:
+#        
+                            negative_VFs.append(ans)
+                            negative_Ps.append(P)
+#                        else:
+#                        negative_VFs.append(ans)
+#                        negative_Ps.append(P)
+                    else:
+#                        if abs(ans) < 1:
+                        positive_VFs.append(ans)
+                        positive_Ps.append(P)
+                except:
+                    pass
+                if negative_Ps and positive_Ps:
+                    break
+            if negative_Ps and positive_Ps:
+                break
+        
+        P_high = positive_Ps[positive_VFs.index(min(positive_VFs))]
+        P_low = negative_Ps[negative_VFs.index(max(negative_VFs))]
+        return P_high, P_low
+
+
+    def _err_dew_P(self, P, T, zs, maxiter=200, xtol=1E-10):
+        P = float(P)
+        Ks = [Wilson_K_value(T, P, Tci, Pci, omega) for Pci, Tci, omega in zip(self.Pcs, self.Tcs, self.omegas)]
+        V_over_F, xs, ys = flash_inner_loop(zs, Ks)
+
+        eos_g = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
+                             zs=zs, kijs=self.kijs, T=T, P=P, **self.eos_kwargs)
+        phis_g = eos_g.phis_g
+
+        for i in range(maxiter):
+            eos_l = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
+                             zs=xs, kijs=self.kijs, T=T, P=P, **self.eos_kwargs)
+    
+            Ks = [K_value(phi_l=l, phi_g=g) for l, g in zip(eos_l.phis_l, phis_g)]
+            V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks)
+            err = (sum([abs(x_new - x_old) for x_new, x_old in zip(xs_new, xs)]) +
+                  sum([abs(y_new - y_old) for y_new, y_old in zip(ys_new, ys)]))
+            xs, ys = xs_new, ys_new
+            if err < xtol:
+                break
+        return V_over_F - 1.0
+
+    def dew_P(self, T, zs, maxiter=200, xtol=1E-10, maxiter_initial=20, xtol_initial=1e-3):
+        guess = get_P_dew_est(T=T, zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs)
+#        try:
+#            # Simplest solution method
+#            return float(fsolve(self._err_dew_P, guess, factor=.1, args=(T, zs, maxiter, xtol)))
+#        except Exception as e:
+#            print(guess, e)
+#            pass
+
+        Pmin, Pmax = self._bracket_dew_P(T=T, zs=zs, maxiter=maxiter_initial, xtol=xtol_initial)
+        return ridder(self._err_dew_P, Pmin, Pmax, args=(T, zs, maxiter, xtol))
+
+
+    def _bracket_bubble_P(self, T, zs, maxiter, xtol, check=False):
+        negative_VFs = []
+        negative_Ps = []
+        positive_VFs = []
+        positive_Ps = []
+        guess = get_P_bub_est(T=T, zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs)
+        
+        eos_l = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
+                             zs=zs, kijs=self.kijs, T=T, P=self.P_REF_IG, **self.eos_kwargs)
+
+        limit_list = [(30, .7, 1.3), (50, .6, 1.4), (250, .001, 3)]
+        for limits in limit_list:
+            pts, mult_min, mult_max = limits
+            guess_Ps = [guess*10**(i) for i in np.linspace(mult_min, mult_max, pts).tolist()]
+            shuffle(guess_Ps)
+        
+            for P in guess_Ps:
+                try:
+                    ans = eos_l._V_over_F_bubble_T_inner(T=T, P=P, zs=zs, maxiter=maxiter, xtol=xtol)
+                    if ans < 0:
+                        if abs(ans) < 1.0:
+                            negative_VFs.append(ans)
+                            negative_Ps.append(P)
+                    else:
+                        positive_VFs.append(ans)
+                        positive_Ps.append(P)
+                except:
+                    pass
+                if negative_Ps and positive_Ps:
+                    break
+            if negative_Ps and positive_Ps:
+                break
+        
+        P_high = positive_Ps[positive_VFs.index(min(positive_VFs))]
+        P_low = negative_Ps[negative_VFs.index(max(negative_VFs))]
+        return P_high, P_low
+
+    def _err_bubble_P(self, P, T, zs, maxiter=200, xtol=1E-10):
+        P = float(P)
+        Ks = [Wilson_K_value(T, P, Tci, Pci, omega) for Pci, Tci, omega in zip(self.Pcs, self.Tcs, self.omegas)]
+        V_over_F, xs, ys = flash_inner_loop(zs, Ks)
+
+        eos_l = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
+                             zs=zs, kijs=self.kijs, T=T, P=P, **self.eos_kwargs)
+
+        for i in range(maxiter):
+            eos_g = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
+                             zs=ys, kijs=self.kijs, T=T, P=P, **self.eos_kwargs)
+    
+            Ks = [K_value(phi_l=l, phi_g=g) for l, g in zip(eos_g.phis_g, eos_l.phis_l)]
+            V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks)
+            err = (sum([abs(x_new - x_old) for x_new, x_old in zip(xs_new, xs)]) +
+                  sum([abs(y_new - y_old) for y_new, y_old in zip(ys_new, ys)]))
+            xs, ys = xs_new, ys_new
+            if err < xtol:
+                break
+        return V_over_F
+
+    def bubble_P(self, T, zs, maxiter=200, xtol=1E-10, maxiter_initial=20, xtol_initial=1e-3):
+        guess = get_P_bub_est(T=T, zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs)
+        try:
+            # Simplest solution method
+            return float(fsolve(self._err_bubble_P, guess, factor=.1, args=(T, zs, maxiter, xtol)))
+        except Exception as e:
+            pass
+
+        Pmin, Pmax = self._bracket_bubble_P(T=T, zs=zs, maxiter=maxiter_initial, xtol=xtol_initial)
+        return ridder(self._err_bubble_P, Pmin, Pmax, args=(T, zs, maxiter, xtol))
