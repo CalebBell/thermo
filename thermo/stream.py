@@ -300,6 +300,28 @@ class StreamArgs(object):
     
     
     @property
+    def composition_spec(self):
+        IDs, zs, ws, Vfls, Vfgs = preprocess_mixture_composition(IDs=self.IDs,
+                                zs=self.zs, ws=self.ws, Vfls=self.Vfls, 
+                                Vfgs=self.Vfgs, ignore_exceptions=True)
+        if zs is not None:
+            return 'zs', zs
+        elif ws is not None:
+            return 'ws', ws
+        elif Vfls is not None:
+            return 'Vfls', Vfls
+        elif Vfgs is not None:
+            return 'Vfgs', Vfgs
+        elif self.ns is not None:
+            return 'ns', self.ns
+        elif self.ms is not None:
+            return 'ms', self.ms
+        elif self.Qls is not None:
+            return 'Qls', self.Qls
+        elif self.Qgs is not None:
+            return 'Qgs', self.Qgs
+    
+    @property
     def specified_composition_vars(self):
         IDs, zs, ws, Vfls, Vfgs = preprocess_mixture_composition(IDs=self.IDs,
                                 zs=self.zs, ws=self.ws, Vfls=self.Vfls, 
@@ -319,6 +341,15 @@ class StreamArgs(object):
         return False
     
     @property
+    def state_specs(self):
+        specs = []
+        for var in ('T', 'P', 'VF', 'Hm', 'H', 'Sm', 'S'):
+            v = getattr(self, var)
+            if v is not None:
+                specs.append((var, v))
+        return specs
+    
+    @property
     def specified_state_vars(self):
         return sum(i is not None for i in (self.T, self.P, self.VF, self.Hm, self.H, self.Sm, self.S))
     
@@ -329,6 +360,14 @@ class StreamArgs(object):
             return True
         return False
     
+    @property
+    def flow_spec(self):
+        specs = []
+        for var in ('ns', 'ms', 'Qls', 'Qgs', 'm', 'n', 'Q'):
+            v = getattr(self, var)
+            if v is not None:
+                return var, v
+
     @property
     def specified_flow_vars(self):
         return sum(i is not None for i in (self.ns, self.ms, self.Qls, self.Qgs, self.m, self.n, self.Q))
@@ -346,7 +385,7 @@ class StreamArgs(object):
     
     @property
     def stream(self):
-        if self.composition_specified and self.state_specified and self.flow_specified:
+        if self.IDs and self.composition_specified and self.state_specified and self.flow_specified:
             return Stream(IDs=self.IDs, zs=self.zs, ws=self.ws, Vfls=self.Vfls, Vfgs=self.Vfgs,
                  ns=self.ns, ms=self.ms, Qls=self.Qls, Qgs=self.Qgs, 
                  n=self.n, m=self.m, Q=self.Q, 

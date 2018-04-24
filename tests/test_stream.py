@@ -205,3 +205,14 @@ def test_sub_streams():
     assert m.CASs == ['7732-18-5']
     
     
+    
+def test_StreamArgs():
+    s = StreamArgs(T=540)
+    s.P = 1E6
+    s.n = 2
+    s.ws = [.5, .5]
+    s.IDs = ['water', 'ethane']
+    assert s.stream is not None
+    
+    s = StreamArgs(T=540, P=1E6, n=2, ws=[.5, .5], IDs=['water', 'ethanol'])
+    assert s.stream is not None
