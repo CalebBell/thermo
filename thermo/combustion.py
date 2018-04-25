@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2016, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2016, 2017, 2018 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,52 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['Hcombustion']
+__all__ = ['Hcombustion', 'combustion_products']
+
+
+def combustion_products(atoms):
+    nC, nH, nN, nO, nS, nBr, nI, nCl, nF, nP = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+
+    if 'C' in atoms and atoms['C'] != 0:
+        nC = atoms['C']
+    else:
+        return None  # C is necessary for this formula
+    if 'H' in atoms:
+        nH = atoms['H']
+    if 'N' in atoms:
+        nN = atoms['N']
+    if 'O' in atoms:
+        nO = atoms['O']
+    if 'S' in atoms:
+        nS = atoms['S']
+    if 'Br' in atoms:
+        nBr = atoms['Br']
+    if 'I' in atoms:
+        nI = atoms['I']
+    if 'Cl' in atoms:
+        nCl = atoms['Cl']
+    if 'F' in atoms:
+        nF = atoms['F']
+    if 'P' in atoms:
+        nP = atoms['P']
+
+    nO2_req = nC + nS + nH/4. + 5*nP/4. - (nCl + nF)/4. - nO/2.
+    nCO2 = nC
+    nBr2 = nBr/2.
+    nI2 = nI/2.
+
+    nHCl = nCl
+    nHF = nF
+
+    nSO2 = nS
+
+    nN2 = nN/2.
+    nP4O10 = nP/4.
+    nH2O = (nH - nCl - nF)/2.
+    products = {'CO2': nCO2, 'Br2': nBr2, 'I2': nI2, 'HCl': nCl, 'HF': nHF, 
+                'SO2': nSO2, 'N2': nN2, 'P4O10': nP4O10, 'H2O': nH2O,
+                'O2_required': nO2_req}
+    return products
 
 
 def Hcombustion(atoms, Hf=None, HfH2O=-285825, HfCO2=-393474,

@@ -25,7 +25,7 @@ from collections import OrderedDict
 import pytest
 from thermo.chemical import Chemical
 from thermo.mixture import Mixture
-from thermo.stream import Stream
+from thermo.stream import Stream, StreamArgs
 import thermo
 from scipy.integrate import quad
 from math import *
