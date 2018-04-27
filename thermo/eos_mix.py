@@ -71,23 +71,34 @@ class GCEOSMIX(GCEOS):
     '''
     
     def a_alpha_and_derivatives_numpy(self, a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=True, quick=True):
-        zs, kijs = self.zs, self.kijs
+        zs, kijs = self.zs, np.array(self.kijs)
+        a_alphas = np.array(a_alphas)
+        da_alpha_dTs = np.array(da_alpha_dTs)
         one_minus_kijs = 1.0 - kijs
         
-        a_alpha_ijs = (1.0 - kijs)* (np.einsum('i,j', a_alphas, a_alphas)**0.5)
+        x0 = np.einsum('i,j', a_alphas, a_alphas)
+        x0_05 = x0**0.5
+        a_alpha_ijs = (one_minus_kijs)*x0_05
         z_products = np.einsum('i,j', zs, zs)
-        a_alpha = np.einsum('ij,ji', a_alpha_ijs, zs_product)
+        a_alpha = np.einsum('ij,ji', a_alpha_ijs, z_products)
 
         self.a_alpha_ijs = a_alpha_ijs.tolist()
         
-        if full:
-            x0_05 = np.outer(a_alphas, a_alphas)**0.5
-            da_alpha_dT = (z_products*(1.0 - kijs)/(x0_05)*(np.einsum('j,i', a_alphas, da_alpha_dTs))).sum()
-            d2a_alpha_dT2 = 0.0
+        if full:            
+            da_alpha_dT = (z_products*(one_minus_kijs)/(x0_05)*(np.einsum('j,i', a_alphas, da_alpha_dTs))).sum()
+            
+            term1 = -x0_05/x0*(one_minus_kijs)
+            term2 = np.einsum('i, j', a_alphas, da_alpha_dTs)
+                        
+            main3 = da_alpha_dTs/(2.0*a_alphas)*term2
+            main4 = -np.einsum('i, j', a_alphas, d2a_alpha_dT2s)
+            main6 = -0.5*np.einsum('i, j', da_alpha_dTs, da_alpha_dTs)
+            
+            d2a_alpha_dT2 = (z_products*(term1*(main3 + main4 + main6))).sum()
         
-            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+            return float(a_alpha), float(da_alpha_dT), float(d2a_alpha_dT2)
         else:
-            return a_alpha
+            return float(a_alpha)
 
 
 
@@ -153,8 +164,8 @@ class GCEOSMIX(GCEOS):
             d2a_alpha_dT2s.append(ds[2])
         self.cleanup_a_alpha_and_derivatives()
         
-#        if self.N > 40:
-#            return self.a_alpha_and_derivatives_numpy(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=full, quick=quick)
+        if self.N > 20:
+            return self.a_alpha_and_derivatives_numpy(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=full, quick=quick)
         
         da_alpha_dT, d2a_alpha_dT2 = 0.0, 0.0
         

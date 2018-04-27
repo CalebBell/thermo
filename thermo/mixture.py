@@ -1099,6 +1099,25 @@ class Mixture(object):
         return [i.similarity_variable for i in self.Chemicals]
 
     @property
+    def atoms(self):
+        r'''Mole-averaged dictionary of atom counts for all atoms of the
+        chemicals in the mixture.
+
+        Examples
+        --------
+        >>> Mixture(['nitrogen', 'oxygen'], zs=[.01, .99]).atoms
+        {'O': 1.98, 'N': 0.02}
+        '''
+        ans = {}
+        for atoms, zs_i in zip(self.atomss, self.zs):
+            for key, val in atoms.items():
+                if key in ans:
+                    ans[key] += val*zs_i
+                else:
+                    ans[key] = val*zs_i
+        return ans
+
+    @property
     def atomss(self):
         r'''List of dictionaries of atom counts for all chemicals in the mixture.
 

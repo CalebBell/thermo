@@ -25,6 +25,7 @@ from __future__ import division
 __all__ = ['Stream', 'EnergyTypes', 'EnergyStream', 'StreamArgs']
  
 import enum
+from copy import copy, deepcopy
 from collections import OrderedDict
 from numbers import Number
 
@@ -38,6 +39,9 @@ from fluids.pump import voltages_1_phase_residential, voltages_3_phase, frequenc
 # If one composition value gets set to, remove those from every other value
 
 class StreamArgs(object):
+    
+    def __copy__(self):
+        return deepcopy(self)
     
     @property
     def IDs(self):
@@ -54,7 +58,7 @@ class StreamArgs(object):
         if T is None:
             self.specifications['T'] = T
             return None
-        if self.specified_state_vars > 1:
+        if self.specified_state_vars > 1 and self.T is None:
             raise Exception('Two state vars already specified; unset another first')
         self.specifications['T'] = T
 
@@ -66,7 +70,7 @@ class StreamArgs(object):
         if P is None:
             self.specifications['P'] = P
             return None
-        if self.specified_state_vars > 1:
+        if self.specified_state_vars > 1 and self.P is None:
             raise Exception('Two state vars already specified; unset another first')
         self.specifications['P'] = P
 
@@ -78,7 +82,7 @@ class StreamArgs(object):
         if VF is None:
             self.specifications['VF'] = VF
             return None
-        if self.specified_state_vars > 1:
+        if self.specified_state_vars > 1 and self.VF is None:
             raise Exception('Two state vars already specified; unset another first')
         self.specifications['VF'] = VF
 
@@ -90,7 +94,7 @@ class StreamArgs(object):
         if H is None:
             self.specifications['H'] = H
             return None
-        if self.specified_state_vars > 1:
+        if self.specified_state_vars > 1 and self.H is None:
             raise Exception('Two state vars already specified; unset another first')
         self.specifications['H'] = H
 
@@ -102,7 +106,7 @@ class StreamArgs(object):
         if Hm is None:
             self.specifications['Hm'] = Hm
             return None
-        if self.specified_state_vars > 1:
+        if self.specified_state_vars > 1 and self.Hm is None:
             raise Exception('Two state vars already specified; unset another first')
         self.specifications['Hm'] = Hm
 
@@ -114,7 +118,7 @@ class StreamArgs(object):
         if S is None:
             self.specifications['S'] = S
             return None
-        if self.specified_state_vars > 1:
+        if self.specified_state_vars > 1 and self.S is None:
             raise Exception('Two state vars already specified; unset another first')
         self.specifications['S'] = S
 
@@ -126,7 +130,7 @@ class StreamArgs(object):
         if Sm is None:
             self.specifications['Sm'] = Sm
             return None
-        if self.specified_state_vars > 1:
+        if self.specified_state_vars > 1 and self.Sm is None:
             raise Exception('Two state vars already specified; unset another first')
         self.specifications['Sm'] = Sm
 
@@ -392,6 +396,11 @@ class StreamArgs(object):
                  T=self.T, P=self.P, VF=self.VF, H=self.H, S=self.S, 
                  V_TP=self.V_TP)
         
+    @property
+    def mixture(self):
+        if self.IDs and self.composition_specified and self.state_specified:
+            return Mixture(IDs=self.IDs, zs=self.zs, ws=self.ws, Vfls=self.Vfls, Vfgs=self.Vfgs,
+                 T=self.T, P=self.P, VF=self.VF, H=self.H, S=self.S)
 
 class Stream(Mixture):
     '''Creates a Stream object which is useful for modeling mass and energy 
