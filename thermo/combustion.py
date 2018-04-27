@@ -22,7 +22,8 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['Hcombustion', 'combustion_products']
+__all__ = ['Hcombustion', 'combustion_products', 'combustion_products_mixture']
+
 
 
 def combustion_products(atoms):
@@ -30,8 +31,8 @@ def combustion_products(atoms):
 
     if 'C' in atoms and atoms['C'] != 0:
         nC = atoms['C']
-    else:
-        return None  # C is necessary for this formula
+#    else:
+#        return None  # C is necessary for this formula
     if 'H' in atoms:
         nH = atoms['H']
     if 'N' in atoms:
@@ -67,6 +68,20 @@ def combustion_products(atoms):
     products = {'CO2': nCO2, 'Br2': nBr2, 'I2': nI2, 'HCl': nCl, 'HF': nHF, 
                 'SO2': nSO2, 'N2': nN2, 'P4O10': nP4O10, 'H2O': nH2O,
                 'O2_required': nO2_req}
+    return products
+
+
+# mixture - mole fractions and atoms
+
+def combustion_products_mixture(atoms_list, zs):
+    products = {'CO2': 0.0, 'Br2': 0.0, 'I2': 0.0, 'HCl': 0.0, 'HF': 0.0, 
+                'SO2': 0.0, 'N2': 0.0, 'P4O10': 0.0, 'H2O': 0.0,
+                'O2_required': 0.0}
+    for atoms, zs_i in zip(atoms_list, zs):
+        ans = combustion_products(atoms)
+        if ans is not None:
+            for key, val in ans.items():
+                products[key] += val*zs_i
     return products
 
 

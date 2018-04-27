@@ -839,7 +839,7 @@ class PRMIX(GCEOSMIX, PR):
         self.ais = [self.c1*R*R*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
         self.bs = [self.c2*R*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
         self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
-        self.kappas = [0.37464 + 1.54226*omega - 0.26992*omega*omega for omega in omegas]
+        self.kappas = [omega*(-0.26992*omega + 1.54226) + 0.37464 for omega in omegas]
         
         self.delta = 2.*self.b
         self.epsilon = -self.b*self.b
