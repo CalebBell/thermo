@@ -1800,6 +1800,14 @@ class UnifacDortmundCaloric(UnifacDortmund, GammaPhiCaloric):
 
 
 class GceosBase(Ideal):
+    
+    pure_guesses = True
+    Wilson_guesses = True, 
+    random_guesses = True
+    zero_fraction_guesses = 1E-6
+    stability_maxiter = 30
+    stability_xtol = 1E-12
+    
     def __init__(self, eos_mix=PRMIX, VaporPressures=None, Tms=None, Tbs=None, 
                  Tcs=None, Pcs=None, omegas=None, kijs=None, eos_kwargs=None):
         self.eos_mix = eos_mix
@@ -1812,7 +1820,49 @@ class GceosBase(Ideal):
         self.kijs = kijs
         self.eos_kwargs = eos_kwargs if eos_kwargs is not None else {}
         
+        self.stability_tester = StabilityTester(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas)
+        
+        
+        
 #        self.eos_mix_ref = self.eos_mix(T=self.T_REF_IG, P=self.P_REF_IG, Tcs=self.Tcs, Pcs=self.Pcs, kijs=self.kijs, **self.eos_kwargs)
+
+    def to_TP_zs(self, T, P, zs):
+        return self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
+                            zs=zs, kijs=self.kijs, T=T, P=P, **self.eos_kwargs)
+
+
+    def flash_TP_zs(self, T, P, zs):
+        eos = self.to_TP_zs(T=T, P=P, zs=zs)
+        stable = True
+        for Ks in self.stability_tester.guesses(T=T, P=P, zs=zs, 
+                                                   pure=self.pure_guesses,
+                                                   Wilson=self.Wilson_guesses,
+                                                   random=self.random_guesses,
+                                                   zero_fraction=self.zero_fraction_guesses):
+            stable, Ks_initial = eos.stability_Michelsen(T=T, P=P, zs=zs,
+                                                      Ks_initial=Ks, 
+                                                      maxiter=self.stability_maxiter, 
+                                                      xtol=self.stability_xtol)
+            if not stable:
+                # two phase flash with init Ks
+                break
+        if stable:
+            try:
+                if eos.G_dep_l < eos.G_dep_g:
+                    phase, xs, ys, VF = 'g', None, zs, 1
+                else:
+                    phase, xs, ys, VF = 'l', zs, None, 0
+            except:
+                # Only one root - take it and set the prefered other phase to be a different type
+                if hasattr(eos, 'Z_l'):
+                    phase, xs, ys, VF = 'l', zs, None, 0
+                else:
+                    phase, xs, ys, VF = 'g', None, zs, 1
+        else:
+            VF, xs, ys = eos.sequential_substitution_VL(Ks_initial=Ks_initial, maxiter=1000, xtol=1E-10)
+            phase = 'l/g'
+        return phase, xs, ys, VF
+
 
     def _err_bubble_T(self, T, P, zs, maxiter=200, xtol=1E-10):
         T = float(T)
