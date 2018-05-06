@@ -21,18 +21,53 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
+from pprint import pprint
 
 __all__ = ['Hcombustion', 'combustion_products', 'combustion_products_mixture']
 
 
 
 def combustion_products(atoms):
+    '''Calculates the combustion products of a molecule, given a dictionary of
+    its constituent atoms and their counts.
+    Products for non-hydrocarbons may not be correct, but are still 
+    calculated.
+
+    Parameters
+    ----------
+    atoms : dict
+        Dictionary of atoms and their counts, [-]
+
+    Returns
+    -------
+    combustion_producucts : dict
+        Dictionary of combustion products and their counts, [-]
+
+    Notes
+    -----
+    Also included in the results is the moles of O2 required per mole of
+    the mixture of the molecule.
+
+    Examples
+    --------
+    Methanol:
+
+    >>> pprint(combustion_products({'H': 4, 'C': 1, 'O': 1}))
+    {'Br2': 0.0,
+     'CO2': 1,
+     'H2O': 2.0,
+     'HCl': 0,
+     'HF': 0,
+     'I2': 0.0,
+     'N2': 0.0,
+     'O2_required': 1.5,
+     'P4O10': 0.0,
+     'SO2': 0}
+    '''
     nC, nH, nN, nO, nS, nBr, nI, nCl, nF, nP = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
     if 'C' in atoms and atoms['C'] != 0:
         nC = atoms['C']
-#    else:
-#        return None  # C is necessary for this formula
     if 'H' in atoms:
         nH = atoms['H']
     if 'N' in atoms:
@@ -74,6 +109,46 @@ def combustion_products(atoms):
 # mixture - mole fractions and atoms
 
 def combustion_products_mixture(atoms_list, zs):
+    '''Calculates the combustion products of a mixture of molecules and their,
+    mole fractions; requires a list of dictionaries of each molecule's 
+    constituent atoms and their counts.
+    Products for non-hydrocarbons may not be correct, but are still 
+    calculated.
+
+    Parameters
+    ----------
+    atoms_list : list[dict]
+        List of dictionaries of atoms and their counts, [-]
+    zs : list[float]
+        Mole fractions of each molecule in the mixture, [-]
+
+    Returns
+    -------
+    combustion_producucts : dict
+        Dictionary of combustion products and their counts, [-]
+
+    Notes
+    -----
+    Also included in the results is the moles of O2 required per mole of
+    the mixture to be burnt.
+
+    Examples
+    --------
+    Mixture of methane and ethane.
+
+    >>> combustion_products_mixture([{'H': 4, 'C': 1}, {'H': 6, 'C': 2}],
+    ... [.9, .1])
+    {'Br2': 0.0,
+     'CO2': 1.1,
+     'H2O': 2.1,
+     'HCl': 0,
+     'HF': 0,
+     'I2': 0.0,
+     'N2': 0.0,
+     'O2_required': 2.15,
+     'P4O10': 0.0,
+     'SO2': 0}
+    '''
     products = {'CO2': 0.0, 'Br2': 0.0, 'I2': 0.0, 'HCl': 0.0, 'HF': 0.0, 
                 'SO2': 0.0, 'N2': 0.0, 'P4O10': 0.0, 'H2O': 0.0,
                 'O2_required': 0.0}
