@@ -22,7 +22,8 @@ SOFTWARE.'''
 from __future__ import division
 
 __all__ = ['GCEOSMIX', 'PRMIX', 'SRKMIX', 'PR78MIX', 'VDWMIX', 'PRSVMIX', 
-'PRSV2MIX', 'TWUPRMIX', 'TWUSRKMIX', 'APISRKMIX']
+'PRSV2MIX', 'TWUPRMIX', 'TWUSRKMIX', 'APISRKMIX',
+'eos_Z_test_phase_stability', 'eos_Z_trial_phase_stability']
 
 import sys
 import numpy as np
@@ -294,6 +295,17 @@ class GCEOSMIX(GCEOS):
                 self.phis_g = self.fugacity_coefficients(self.Z_g, zs=ys)
                 self.fugacities_g = [phi*y*self.P for phi, y in zip(self.phis_g, ys)]
                 self.lnphis_g = [log(i) for i in self.phis_g]
+
+
+    def eos_fugacities_lowest_Gibbs(self):        
+        try:
+            if self.G_dep_l < self.G_dep_g:
+                return self.fugacities_l
+            else:
+                return self.fugacities_g
+        except:
+            # Only one root - take it and set the prefered other phase to be a different type
+            return self.fugacities_g if hasattr(self, 'Z_g') else self.fugacities_l
 
 
     def _dphi_dn(self, zi, i, phase):
@@ -648,6 +660,92 @@ class GCEOSMIX(GCEOS):
                 break
         return V_over_F, xs, ys
 
+    def stabiliy_iteration_Michelsen(self, T, P, zs, Ks_initial=None, maxiter=20, xtol=1E-12, liq=True):
+        # checks stability vs. the current zs, mole fractions
+        
+        eos_ref = self.to_TP_zs(T=T, P=P, zs=zs)
+        # If one phase is present - use that phase as the reference phase.
+        # Otherwise, consider the phase with the lowest Gibbs excess energy as
+        # the stable phase
+        fugacities_ref = eos_ref.eos_fugacities_lowest_Gibbs()
+
+        if Ks_initial is None:
+            Ks = [Wilson_K_value(T, P, Tci, Pci, omega)  for Pci, Tci, omega in zip(self.Pcs, self.Tcs, self.omegas)]
+        else:
+            Ks = Ks_initial
+            
+        for _ in range(maxiter):
+            if liq:
+                zs_test = [zi/Ki for zi, Ki in zip(zs, Ks)]
+            else:
+                zs_test = [zi*Ki for zi, Ki in zip(zs, Ks)]
+                
+            sum_zs_test = sum(zs_test)
+            zs_test_normalized = [zi/sum_zs_test for zi in zs_test]
+            eos_test = self.to_TP_zs(T=T, P=P, zs=zs_test_normalized)
+            fugacities_test = eos_test.eos_fugacities_lowest_Gibbs()
+            
+            if liq:
+                corrections = [fi/f_ref*sum_zs_test for fi, f_ref in zip(fugacities_test, fugacities_ref)]
+            else:
+                corrections = [f_ref/(fi*sum_zs_test) for fi, f_ref in zip(fugacities_test, fugacities_ref)]
+            Ks = [Ki*corr for Ki, corr in zip(Ks, corrections)]
+            
+            corrections_minus_1 = [corr - 1.0 for corr in corrections]
+            err = sum([ci*ci for ci in corrections_minus_1])
+            if err < xtol:
+                break
+            # It is possible to break if the trivial solution is being approached here also
+            
+        return sum_zs_test, Ks
+            
+    def stability_Michelsen(self, T, P, zs, Ks_initial=None, maxiter=20,
+                             xtol=1E-12, trivial_criteria=1E-4, 
+                             stable_criteria=1E-10):
+        
+        if Ks_initial is None:
+            Ks = [Wilson_K_value(T, P, Tci, Pci, omega)  for Pci, Tci, omega in zip(self.Pcs, self.Tcs, self.omegas)]
+        else:
+            Ks = Ks_initial
+        
+        zs_sum_g, Ks_g = self.stabiliy_iteration_Michelsen(T=T, P=P, zs=zs, Ks_initial=Ks, maxiter=maxiter, xtol=xtol, liq=False)
+        zs_sum_l, Ks_l = self.stabiliy_iteration_Michelsen(T=T, P=P, zs=zs, Ks_initial=Ks, maxiter=maxiter, xtol=xtol, liq=True)
+        
+        log_Ks_g = [log(Ki) for Ki in Ks_g]
+        log_Ks_l = [log(Ki) for Ki in Ks_l]        
+        
+        lnK_2_tot_g = sum(log_Ki*log_Ki for log_Ki in log_Ks_g)
+        lnK_2_tot_l = sum(log_Ki*log_Ki for log_Ki in log_Ks_l)        
+        
+        sum_g_criteria = zs_sum_g - 1.0
+        sum_l_criteria = zs_sum_l - 1.0
+        
+        trivial_g, trivial_l = False, False
+        if lnK_2_tot_g < trivial_criteria:
+            trivial_g = True
+        if lnK_2_tot_l < trivial_criteria:
+            trivial_l = True
+            
+        stable = False
+                    
+        # Table 4.6 Summary of Possible Phase Stability Test Results, 
+        # Phase Behavior, Whitson and Brule
+        # There is a typo where Sl appears in the vapor column; this should be
+        # liquid; as shown in https://www.e-education.psu.edu/png520/m17_p7.html
+        if trivial_g and trivial_l:
+            stable = True
+        elif sum_g_criteria < stable_criteria and trivial_l:
+            stable = True
+        elif trivial_g and sum_l_criteria < stable_criteria:
+            stable = True
+        elif sum_g_criteria < stable_criteria and sum_l_criteria < stable_criteria:
+            stable = True
+        # No need to enumerate unstable results
+        
+        if not stable:
+            Ks = [K_g*K_l for K_g, K_l in zip(Ks_g, Ks_l)]
+        return stable, Ks
+        
 
     def _V_over_F_bubble_T_inner(self, T, P, zs, maxiter=20, xtol=1E-3):
         eos_l = self.to_TP_zs(T=T, P=P, zs=zs)
@@ -836,7 +934,7 @@ class PRMIX(GCEOSMIX, PR):
         self.P = P
         self.V = V
 
-        self.ais = [self.c1*R*R*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
+        self.ais = [self.c1*R2*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
         self.bs = [self.c2*R*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
         self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
         self.kappas = [omega*(-0.26992*omega + 1.54226) + 0.37464 for omega in omegas]
@@ -998,7 +1096,7 @@ class SRKMIX(GCEOSMIX, SRK):
         self.P = P
         self.V = V
 
-        self.ais = [self.c1*R*R*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
+        self.ais = [self.c1*R2*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
         self.bs = [self.c2*R*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
         self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
         self.ms = [0.480 + 1.574*omega - 0.176*omega*omega for omega in omegas]
@@ -1975,3 +2073,32 @@ class APISRKMIX(SRKMIX, APISRK):
         del(self.a, self.Tc, self.S1, self.S2)
 
 
+def eos_Z_test_phase_stability(eos):        
+    try:
+        if eos.G_dep_l < eos.G_dep_g:
+            Z_eos = eos.Z_l
+            prefer, alt = 'Z_g', 'Z_l'
+        else:
+            Z_eos = eos.Z_g
+            prefer, alt =  'Z_l', 'Z_g'
+    except:
+        # Only one root - take it and set the prefered other phase to be a different type
+        Z_eos = eos.Z_g if hasattr(eos, 'Z_g') else eos.Z_l
+        prefer = 'Z_l' if hasattr(eos, 'Z_g') else 'Z_g'
+        alt = 'Z_g' if hasattr(eos, 'Z_g') else 'Z_l'
+    return Z_eos, prefer, alt
+
+
+def eos_Z_trial_phase_stability(eos, prefer, alt):
+    try:
+        if eos.G_dep_l < eos.G_dep_g:
+            Z_trial = eos.Z_l
+        else:
+            Z_trial = eos.Z_g
+    except:
+        # Only one phase, doesn't matter - only that phase will be returned
+        try:
+            Z_trial = getattr(eos, alt)
+        except:
+            Z_trial = getattr(eos, prefer)
+    return Z_trial
