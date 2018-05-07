@@ -1859,7 +1859,7 @@ class GceosBase(Ideal):
                 else:
                     phase, xs, ys, VF = 'g', None, zs, 1
         else:
-            VF, xs, ys = eos.sequential_substitution_VL(Ks_initial=Ks_initial, maxiter=1000, xtol=1E-10)
+            VF, xs, ys = eos.sequential_substitution_VL(Ks_initial=Ks_initial, maxiter=1000, xtol=1E-10, allow_error=False)
             phase = 'l/g'
         return phase, xs, ys, VF
 
@@ -1911,7 +1911,7 @@ class GceosBase(Ideal):
         eos_l = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
                              zs=zs, kijs=self.kijs, T=self.T_REF_IG, P=P, **self.eos_kwargs)
 
-        limit_list = [(20, .9, 1.1), (10, .8, 1.2), (30, .7, 1.3), (50, .6, 1.4), (10000, .5, 1.5)]
+        limit_list = [(20, .9, 1.1), (10, .8, 1.2), (30, .7, 1.3), (50, .6, 1.4), (2500, .2, 5)]
         for limits in limit_list:
             pts, mult_min, mult_max = limits
             guess_Ts = [guess*i for i in np.linspace(mult_min, mult_max, pts).tolist()]

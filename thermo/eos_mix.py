@@ -638,19 +638,31 @@ class GCEOSMIX(GCEOS):
             return self
         
     def sequential_substitution_VL(self, Ks_initial=None, maxiter=1000,
-                                   xtol=1E-10):
+                                   xtol=1E-10, allow_error=True):
         if Ks_initial is None:
             Ks = [Wilson_K_value(self.T, self.P, Tci, Pci, omega)  for Pci, Tci, omega in zip(self.Pcs, self.Tcs, self.omegas)]
         else:
             Ks = Ks_initial
         V_over_F, xs, ys = flash_inner_loop(self.zs, Ks)
         for i in range(maxiter):
-            eos_g = self.to_TP_zs(T=self.T, P=self.P, zs=ys)
-            eos_l = self.to_TP_zs(T=self.T, P=self.P, zs=xs)
+            if allow_error:
+                eos_g = self.to_TP_zs(T=self.T, P=self.P, zs=ys)
+                eos_l = self.to_TP_zs(T=self.T, P=self.P, zs=xs)
+    
+                phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, ys)
+                phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, xs)
+            else:
+                eos_g = self.to_TP_zs(T=self.T, P=self.P, zs=ys)
+                eos_l = self.to_TP_zs(T=self.T, P=self.P, zs=xs)
+                try:
+                    phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, ys)
+                except AttributeError:
+                    phis_g = eos_g.fugacity_coefficients(eos_g.Z_l, ys)
+                try:
+                    phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, xs)
+                except AttributeError:
+                    phis_l = eos_l.fugacity_coefficients(eos_l.Z_g, xs)
 
-            phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, ys)
-            phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, xs)
-            
             Ks = [K_value(phi_l=l, phi_g=g) for l, g in zip(phis_l, phis_g)]
             V_over_F, xs_new, ys_new = flash_inner_loop(self.zs, Ks)
             err = (sum([abs(x_new - x_old) for x_new, x_old in zip(xs_new, xs)]) +
