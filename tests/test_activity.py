@@ -84,13 +84,21 @@ def test_Rachford_Rice_flash_error():
     assert_allclose(err, 0.04406445591174976)
 
 def test_Rachford_Rice_solution():
+    xs_expect = [0.33940869696634357, 0.3650560590371706, 0.2955352439964858]
+    ys_expect = [0.5719036543882889, 0.27087159580558057, 0.15722474980613044]
+    V_over_F_expect = 0.6907302627738544
+    zs = [0.5, 0.3, 0.2]
+    Ks = [1.685, 0.742, 0.532]
     for args in [(False, False), (True, False), (True, True), (False, True)]:
-        V_over_F, xs, ys = Rachford_Rice_solution(zs=[0.5, 0.3, 0.2], Ks=[1.685, 0.742, 0.532], fprime=args[0], fprime2=args[1])
-        xs_expect = [0.33940869696634357, 0.3650560590371706, 0.2955352439964858]
-        ys_expect = [0.5719036543882889, 0.27087159580558057, 0.15722474980613044]
-        assert_allclose(V_over_F, 0.6907302627738544)
+        V_over_F, xs, ys = Rachford_Rice_solution(zs=zs, Ks=Ks, fprime=args[0], fprime2=args[1])
+        assert_allclose(V_over_F, V_over_F_expect)
         assert_allclose(xs, xs_expect)
         assert_allclose(ys, ys_expect)
+        
+    V_over_F, xs, ys = Rachford_Rice_solution_numpy(zs=zs, Ks=Ks)
+    assert_allclose(V_over_F, V_over_F_expect)
+    assert_allclose(xs, xs_expect)
+    assert_allclose(ys, ys_expect)
 
 
 def test_flash_inner_loop():
@@ -113,7 +121,10 @@ def test_flash_inner_loop():
         flash_inner_loop(zs=[0.1, 0.2, 0.3, 0.4], Ks=[4.2, 1.75, 0.74, 0.34], Method='Analytical')
 
     methods = flash_inner_loop(zs=[0.1, 0.2, 0.3, 0.4], Ks=[4.2, 1.75, 0.74, 0.34], AvailableMethods=True)
-    assert methods == ['Rachford-Rice', 'Li-Johns-Ahmadi']
+    assert methods == ['Rachford-Rice (Secant)',
+                            'Rachford-Rice (Newton-Raphson)', 
+                            'Rachford-Rice (Halley)', 'Rachford-Rice (NumPy)',
+                            'Li-Johns-Ahmadi']
 
 
 def test_flash_solution_algorithms():
@@ -129,11 +140,16 @@ def test_flash_solution_algorithms():
 #    ans = solve(expr, VF)
 
     
-    flash_inner_loop_RR = lambda zs, Ks: flash_inner_loop(zs=zs, Ks=Ks, Method='Rachford-Rice')
+    flash_inner_loop_secant = lambda zs, Ks: flash_inner_loop(zs=zs, Ks=Ks, Method='Rachford-Rice (Secant)')
+    flash_inner_loop_NR = lambda zs, Ks: flash_inner_loop(zs=zs, Ks=Ks, Method='Rachford-Rice (Newton-Raphson)')
+    flash_inner_loop_halley = lambda zs, Ks: flash_inner_loop(zs=zs, Ks=Ks, Method='Rachford-Rice (Halley)')
+    flash_inner_loop_numpy = lambda zs, Ks: flash_inner_loop(zs=zs, Ks=Ks, Method='Rachford-Rice (NumPy)')
     flash_inner_loop_LJA = lambda zs, Ks: flash_inner_loop(zs=zs, Ks=Ks, Method='Li-Johns-Ahmadi')
 
     algorithms = [Rachford_Rice_solution, Li_Johns_Ahmadi_solution,
-                  flash_inner_loop, flash_inner_loop_RR, flash_inner_loop_LJA]
+                  flash_inner_loop, flash_inner_loop_secant, 
+                  flash_inner_loop_NR, flash_inner_loop_halley, 
+                  flash_inner_loop_numpy, flash_inner_loop_LJA]
     for algo in algorithms:
         # Said to be in:  J.D. Seader, E.J. Henley, D.K. Roper, Separation Process Principles, third ed., John Wiley & Sons, New York, 2010.
         zs = [0.1, 0.2, 0.3, 0.4]

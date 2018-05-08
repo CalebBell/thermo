@@ -31,6 +31,7 @@ __all__ = ['K_value', 'Wilson_K_value', 'Rachford_Rice_flash_error',
            'Pdew_mixture', 
            'Rachford_Rice_solution_numpy']
 
+import numpy as np
 from scipy.optimize import fsolve, newton, brenth
 from thermo.utils import exp, log
 from thermo.utils import none_and_length_check
@@ -547,7 +548,10 @@ def Li_Johns_Ahmadi_solution(zs, Ks):
     return V_over_F, xs, ys
 
 
-flash_inner_loop_methods = ['Analytical', 'Rachford-Rice', 'Li-Johns-Ahmadi']
+flash_inner_loop_methods = ['Analytical', 'Rachford-Rice (Secant)',
+                            'Rachford-Rice (Newton-Raphson)', 
+                            'Rachford-Rice (Halley)', 'Rachford-Rice (NumPy)',
+                            'Li-Johns-Ahmadi']
 def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None):
     r'''This function handles the solution of the inner loop of a flash
     calculation, solving for liquid and gas mole fractions and vapor fraction
@@ -582,7 +586,9 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None):
     ----------------
     Method : string, optional
         The method name to use. Accepted methods are 'Analytical',
-        'Rachford-Rice', and 'Li-Johns-Ahmadi'. All valid values are also held
+        'Rachford-Rice (Secant)', 'Rachford-Rice (Newton-Raphson)', 
+        'Rachford-Rice (Halley)', 'Rachford-Rice (NumPy)', and 
+        'Li-Johns-Ahmadi'. All valid values are also held
         in the list `flash_inner_loop_methods`.
     AvailableMethods : bool, optional
         If True, function will determine which methods can be used to obtain
@@ -591,11 +597,13 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None):
 
     Notes
     -----
-    A total of three methods are available for this function. They are:
+    A total of six methods are available for this function. They are:
 
         * 'Analytical', an exact solution derived with SymPy, applicable only
           only to mixtures of two or three components
-        * 'Rachford-Rice', which numerically solves an objective function
+        * 'Rachford-Rice (Secant)', 'Rachford-Rice (Newton-Raphson)', 
+          'Rachford-Rice (Halley)', or 'Rachford-Rice (NumPy)',
+          which numerically solves an objective function
           described in :obj:`Rachford_Rice_solution`.
         * 'Li-Johns-Ahmadi', which numerically solves an objective function
           described in :obj:`Li_Johns_Ahmadi_solution`.
@@ -610,15 +618,21 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None):
         methods = []
         if l in [2,3]:
             methods.append('Analytical')
+        if l >= 10:
+            methods.append('Rachford-Rice (NumPy)')
         if l >= 2:
-            methods.append('Rachford-Rice')
+            methods.extend(['Rachford-Rice (Secant)',
+                            'Rachford-Rice (Newton-Raphson)', 
+                            'Rachford-Rice (Halley)'])
+            if l < 10:
+                methods.append('Rachford-Rice (NumPy)')
         if l >= 3:
             methods.append('Li-Johns-Ahmadi')
         return methods
     if AvailableMethods:
         return list_methods()
     if not Method:
-        Method = 'Analytical' if l < 4 else 'Rachford-Rice'
+        Method = 'Analytical' if l < 4 else ('Rachford-Rice (NumPy)' if l >= 10 else 'Rachford-Rice (Secant)')
     if Method == 'Analytical':
         if l == 2:
             z1, z2 = zs
@@ -636,8 +650,15 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None):
         xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]
         ys = [Ki*xi for xi, Ki in zip(xs, Ks)]
         return V_over_F, xs, ys
-    elif Method == 'Rachford-Rice':
+    elif Method == 'Rachford-Rice (NumPy)':
+        return Rachford_Rice_solution_numpy(zs=zs, Ks=Ks)
+    elif Method == 'Rachford-Rice (Secant)':
         return Rachford_Rice_solution(zs=zs, Ks=Ks)
+    elif Method == 'Rachford-Rice (Newton-Raphson)':
+        return Rachford_Rice_solution(zs=zs, Ks=Ks, fprime=True)
+    elif Method == 'Rachford-Rice (Halley)':
+        return Rachford_Rice_solution(zs=zs, Ks=Ks, fprime=True, fprime2=True)
+    
     elif Method == 'Li-Johns-Ahmadi':
         return Li_Johns_Ahmadi_solution(zs=zs, Ks=Ks)
     else:
