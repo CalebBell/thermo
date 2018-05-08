@@ -84,12 +84,13 @@ def test_Rachford_Rice_flash_error():
     assert_allclose(err, 0.04406445591174976)
 
 def test_Rachford_Rice_solution():
-    V_over_F, xs, ys = Rachford_Rice_solution(zs=[0.5, 0.3, 0.2], Ks=[1.685, 0.742, 0.532])
-    xs_expect = [0.33940869696634357, 0.3650560590371706, 0.2955352439964858]
-    ys_expect = [0.5719036543882889, 0.27087159580558057, 0.15722474980613044]
-    assert_allclose(V_over_F, 0.6907302627738544)
-    assert_allclose(xs, xs_expect)
-    assert_allclose(ys, ys_expect)
+    for args in [(False, False), (True, False), (True, True), (False, True)]:
+        V_over_F, xs, ys = Rachford_Rice_solution(zs=[0.5, 0.3, 0.2], Ks=[1.685, 0.742, 0.532], fprime=args[0], fprime2=args[1])
+        xs_expect = [0.33940869696634357, 0.3650560590371706, 0.2955352439964858]
+        ys_expect = [0.5719036543882889, 0.27087159580558057, 0.15722474980613044]
+        assert_allclose(V_over_F, 0.6907302627738544)
+        assert_allclose(xs, xs_expect)
+        assert_allclose(ys, ys_expect)
 
 
 def test_flash_inner_loop():

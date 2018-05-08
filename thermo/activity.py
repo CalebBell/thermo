@@ -28,9 +28,8 @@ __all__ = ['K_value', 'Wilson_K_value', 'Rachford_Rice_flash_error',
            'UNIQUAC', 'flash', 'dew_at_T',
            'bubble_at_T', 'identify_phase', 'mixture_phase_methods',
            'identify_phase_mixture', 'Pbubble_mixture', 'bubble_at_P',
-           'Pdew_mixture', 'Rachford_Rice_flash_error_prime', 
-           'Rachford_Rice_flash_error_prime2',
-           'Rachford_Rice_solution_numpy', 'Rachford_Rice_solution_fast']
+           'Pdew_mixture', 
+           'Rachford_Rice_solution_numpy']
 
 from scipy.optimize import fsolve, newton, brenth
 from thermo.utils import exp, log
@@ -280,18 +279,7 @@ def Rachford_Rice_flash_error(V_over_F, zs, Ks):
     return sum([zi*(Ki-1.)/(1.+V_over_F*(Ki-1.)) for Ki, zi in zip(Ks, zs)])
 
 
-def Rachford_Rice_flash_error_prime(V_over_F, zs, Ks):
-    K_minus_1 = [Ki - 1.0 for Ki in Ks]
-    denom = [V_over_F*Kim1 + 1.0 for Kim1 in K_minus_1]
-    return sum([-zi*Kim1*Kim1/(deno*deno) for Kim1, zi, deno in zip(K_minus_1, zs, denom)])
-
-def Rachford_Rice_flash_error_prime2(V_over_F, zs, Ks):
-    K_minus_1 = [Ki - 1.0 for Ki in Ks]
-    denom = [V_over_F*Kim1 + 1.0 for Kim1 in K_minus_1]
-    return sum([zi*Kim1*Kim1*(2.0*Ki-2.0)/(deno*deno*deno) for Ki, Kim1, zi, deno in zip(Ks, K_minus_1, zs, denom)])
-
-
-def Rachford_Rice_solution(zs, Ks):
+def Rachford_Rice_solution(zs, Ks, fprime=False, fprime2=False):
     r'''Solves the objective function of the Rachford-Rice flash equation.
     Uses the method proposed in [2]_ to obtain an initial guess.
 
@@ -304,7 +292,13 @@ def Rachford_Rice_solution(zs, Ks):
         Overall mole fractions of all species, [-]
     Ks : list[float]
         Equilibrium K-values, [-]
-
+    fprime : bool, optional
+        Whether or not to use the first derivative of the objective function
+        in the solver (Newton-Raphson is used) or not (secant is used), [-]
+    fprime2 : bool, optional
+        Whether or not to use the second derivative of the objective function
+        in the solver (parabolic Halley’s method is used if True) or not, [-]
+        
     Returns
     -------
     V_over_F : float
@@ -337,6 +331,20 @@ def Rachford_Rice_solution(zs, Ks):
     If the `newton` method does not converge, a bisection method (brenth) is
     used instead. However, it is somewhat slower, especially as newton will
     attempt 50 iterations before giving up.
+    
+    In all benchmarks attempted, secant method provides better performance than
+    Newton-Raphson or parabolic Halley’s method. This may not be generally
+    true; but it is for Python and SciPy's implementation. They are implemented
+    for benchmarking purposes.
+    
+    The first and second derivatives are:
+        
+    .. math::
+        \frac{d \text{ obj}}{d \frac{V}{F}} = \sum_i \frac{-z_i(K_i-1)^2}
+        {(1 + \frac{V}{F}(K_i-1))^2} 
+        
+        \frac{d^2 \text{ obj}}{d (\frac{V}{F})^2} = \sum_i \frac{2z_i(K_i-1)^3}
+        {(1 + \frac{V}{F}(K_i-1))^3} 
 
     Examples
     --------
@@ -369,35 +377,6 @@ def Rachford_Rice_solution(zs, Ks):
     V_over_F_max2 = min(1., V_over_F_max)
 
     x0 = (V_over_F_min2 + V_over_F_max2)*0.5
-    try:
-        # Newton's method is marginally faster than brenth
-        V_over_F = newton(Rachford_Rice_flash_error, x0=x0, args=(zs, Ks))
-        # newton skips out of its specified range in some cases, finding another solution
-        # Check for that with asserts, and use brenth if it did
-        assert V_over_F >= V_over_F_min2
-        assert V_over_F <= V_over_F_max2
-    except:
-        V_over_F = brenth(Rachford_Rice_flash_error, V_over_F_max-1E-7, V_over_F_min+1E-7, args=(zs, Ks))
-    # Cases not covered by the above solvers: When all components have K > 1, or all have K < 1
-    # Should get a solution for all other cases.
-    xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]
-    ys = [Ki*xi for xi, Ki in zip(xs, Ks)]
-    return V_over_F, xs, ys
-
-
-def Rachford_Rice_solution_fast(zs, Ks, fprime=False, fprime2=False):
-    Kmin = min(Ks)
-    Kmax = max(Ks)
-    z_of_Kmax = zs[Ks.index(Kmax)]
-
-    V_over_F_min = ((Kmax-Kmin)*z_of_Kmax - (1.-Kmin))/((1.-Kmin)*(Kmax-1.))
-    V_over_F_max = 1./(1.-Kmin)
-
-    V_over_F_min2 = max(0., V_over_F_min)
-    V_over_F_max2 = min(1., V_over_F_max)
-
-    x0 = (V_over_F_min2 + V_over_F_max2)*0.5
-    
     
     K_minus_1 = [Ki - 1.0 for Ki in Ks]
     zs_k_minus_1 = [zi*Kim1 for zi, Kim1 in zip(zs, K_minus_1)]
@@ -454,7 +433,6 @@ def Rachford_Rice_solution_numpy(zs, Ks):
 
     x0 = (V_over_F_min2 + V_over_F_max2)*0.5
     
-    
     K_minus_1 = Ks - 1.0
     zs_k_minus_1 = zs*K_minus_1
     def err(V_over_F):
@@ -466,7 +444,7 @@ def Rachford_Rice_solution_numpy(zs, Ks):
         
     xs = zs/(1.0 + V_over_F*K_minus_1)
     ys = Ks*xs
-    return V_over_F, xs, ys
+    return float(V_over_F), xs.tolist(), ys.tolist()
 
 
 def Li_Johns_Ahmadi_solution(zs, Ks):
