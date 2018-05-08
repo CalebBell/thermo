@@ -28,6 +28,7 @@ import pandas as pd
 from scipy.constants import calorie, R
 from thermo.activity import *
 from thermo.mixture import Mixture
+from thermo.activity import Rachford_Rice_solution_numpy
 
 def test_K_value():
     K = K_value(101325, 3000.)

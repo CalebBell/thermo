@@ -28,8 +28,7 @@ __all__ = ['K_value', 'Wilson_K_value', 'Rachford_Rice_flash_error',
            'UNIQUAC', 'flash', 'dew_at_T',
            'bubble_at_T', 'identify_phase', 'mixture_phase_methods',
            'identify_phase_mixture', 'Pbubble_mixture', 'bubble_at_P',
-           'Pdew_mixture', 
-           'Rachford_Rice_solution_numpy']
+           'Pdew_mixture']
 
 import numpy as np
 from scipy.optimize import fsolve, newton, brenth
@@ -419,6 +418,10 @@ def Rachford_Rice_solution(zs, Ks, fprime=False, fprime2=False):
 
 
 def Rachford_Rice_solution_numpy(zs, Ks):
+    '''Undocumented version of Rachford_Rice_solution which works with numpy
+    instead. Can be up to 15x faster for cases of 30000+ compounds;
+    typically 7-10 x faster.
+    '''
     zs, Ks = np.array(zs), np.array(Ks)
 
     Kmin = Ks.min()
