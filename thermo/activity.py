@@ -28,7 +28,9 @@ __all__ = ['K_value', 'Wilson_K_value', 'Rachford_Rice_flash_error',
            'UNIQUAC', 'flash', 'dew_at_T',
            'bubble_at_T', 'identify_phase', 'mixture_phase_methods',
            'identify_phase_mixture', 'Pbubble_mixture', 'bubble_at_P',
-           'Pdew_mixture']
+           'Pdew_mixture', 'Rachford_Rice_flash_error_prime', 
+           'Rachford_Rice_flash_error_prime2',
+           'Rachford_Rice_solution_numpy', 'Rachford_Rice_solution_fast']
 
 from scipy.optimize import fsolve, newton, brenth
 from thermo.utils import exp, log
@@ -278,6 +280,17 @@ def Rachford_Rice_flash_error(V_over_F, zs, Ks):
     return sum([zi*(Ki-1.)/(1.+V_over_F*(Ki-1.)) for Ki, zi in zip(Ks, zs)])
 
 
+def Rachford_Rice_flash_error_prime(V_over_F, zs, Ks):
+    K_minus_1 = [Ki - 1.0 for Ki in Ks]
+    denom = [V_over_F*Kim1 + 1.0 for Kim1 in K_minus_1]
+    return sum([-zi*Kim1*Kim1/(deno*deno) for Kim1, zi, deno in zip(K_minus_1, zs, denom)])
+
+def Rachford_Rice_flash_error_prime2(V_over_F, zs, Ks):
+    K_minus_1 = [Ki - 1.0 for Ki in Ks]
+    denom = [V_over_F*Kim1 + 1.0 for Kim1 in K_minus_1]
+    return sum([zi*Kim1*Kim1*(2.0*Ki-2.0)/(deno*deno*deno) for Ki, Kim1, zi, deno in zip(Ks, K_minus_1, zs, denom)])
+
+
 def Rachford_Rice_solution(zs, Ks):
     r'''Solves the objective function of the Rachford-Rice flash equation.
     Uses the method proposed in [2]_ to obtain an initial guess.
@@ -372,6 +385,90 @@ def Rachford_Rice_solution(zs, Ks):
     return V_over_F, xs, ys
 
 
+def Rachford_Rice_solution_fast(zs, Ks, fprime=False, fprime2=False):
+    Kmin = min(Ks)
+    Kmax = max(Ks)
+    z_of_Kmax = zs[Ks.index(Kmax)]
+
+    V_over_F_min = ((Kmax-Kmin)*z_of_Kmax - (1.-Kmin))/((1.-Kmin)*(Kmax-1.))
+    V_over_F_max = 1./(1.-Kmin)
+
+    V_over_F_min2 = max(0., V_over_F_min)
+    V_over_F_max2 = min(1., V_over_F_max)
+
+    x0 = (V_over_F_min2 + V_over_F_max2)*0.5
+    
+    
+    K_minus_1 = [Ki - 1.0 for Ki in Ks]
+    zs_k_minus_1 = [zi*Kim1 for zi, Kim1 in zip(zs, K_minus_1)]
+    
+    def err(V_over_F):
+        return sum([num/(1. + V_over_F*Kim1) for num, Kim1 in zip(zs_k_minus_1, K_minus_1)])
+    
+    if fprime or fprime2:
+        zs_k_minus_1_2 = [-first*Kim1 for first, Kim1 in zip(zs_k_minus_1, K_minus_1)]
+        def fprime_obj(V_over_F):
+            denom = [V_over_F*Kim1 + 1.0 for Kim1 in K_minus_1]
+            denom2 = [d1*d1 for d1 in denom]
+            return sum([num/deno for num, deno in zip(zs_k_minus_1_2, denom2)])
+        
+    if fprime2:
+        zs_k_minus_1_3 = [-2.0*second*Kim1 for second, Kim1 in zip(zs_k_minus_1_2, K_minus_1)]
+        def fprime2_obj(V_over_F):
+            denom = [V_over_F*Kim1 + 1.0 for Kim1 in K_minus_1]
+            denom2 = [d1*d1 for d1 in denom]
+            denom3 = [d2*d1 for d1, d2 in zip(denom, denom2)]
+            return sum([num/deno for num, deno in zip(zs_k_minus_1_3, denom3)])
+        
+    try:
+        if fprime and fprime2:
+            V_over_F = newton(err, x0, fprime=fprime_obj, fprime2=fprime2_obj)
+        elif fprime:
+            V_over_F = newton(err, x0, fprime=fprime_obj)
+        else:
+            V_over_F = newton(err, x0)
+        
+        assert V_over_F >= V_over_F_min2
+        assert V_over_F <= V_over_F_max2
+    except:
+        V_over_F = brenth(err, V_over_F_max-1E-7, V_over_F_min+1E-7)
+        
+    xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]
+    ys = [Ki*xi for xi, Ki in zip(xs, Ks)]
+    return V_over_F, xs, ys
+
+
+def Rachford_Rice_solution_numpy(zs, Ks):
+    zs, Ks = np.array(zs), np.array(Ks)
+
+    Kmin = Ks.min()
+    Kmax = Ks.max()
+    
+    z_of_Kmax = zs[Ks == Kmax][0]
+
+    V_over_F_min = ((Kmax-Kmin)*z_of_Kmax - (1.-Kmin))/((1.-Kmin)*(Kmax-1.))
+    V_over_F_max = 1./(1.-Kmin)
+
+    V_over_F_min2 = max(0., V_over_F_min)
+    V_over_F_max2 = min(1., V_over_F_max)
+
+    x0 = (V_over_F_min2 + V_over_F_max2)*0.5
+    
+    
+    K_minus_1 = Ks - 1.0
+    zs_k_minus_1 = zs*K_minus_1
+    def err(V_over_F):
+        return float((zs_k_minus_1/(1.0 + V_over_F*K_minus_1)).sum())
+    try:
+        V_over_F = newton(err, x0)
+    except:
+        V_over_F = brenth(err, V_over_F_max-1E-7, V_over_F_min+1E-7)
+        
+    xs = zs/(1.0 + V_over_F*K_minus_1)
+    ys = Ks*xs
+    return V_over_F, xs, ys
+
+
 def Li_Johns_Ahmadi_solution(zs, Ks):
     r'''Solves the objective function of the Li-Johns-Ahmadi flash equation.
     Uses the method proposed in [1]_ to obtain an initial guess.
@@ -451,8 +548,10 @@ def Li_Johns_Ahmadi_solution(zs, Ks):
     kn_m_1 = kn-1.
     k1_m_1 = (k1-1.)
     t1 = (k1-kn)/(kn-1.)
+    
+    def objective(x1):
+        return 1. + t1*x1 + sum([(ki-kn)/(kn_m_1) * zi*k1_m_1*x1 /( (ki-1.)*z1 + (k1-ki)*x1) for ki, zi in zip(Ks_sorted[1:length], zs_sorted[1:length])])
 
-    objective = lambda x1: 1. + t1*x1 + sum([(ki-kn)/(kn_m_1) * zi*k1_m_1*x1 /( (ki-1.)*z1 + (k1-ki)*x1) for ki, zi in zip(Ks_sorted[1:length], zs_sorted[1:length])])
     try:
         x1 = newton(objective, x_guess)
         # newton skips out of its specified range in some cases, finding another solution
@@ -461,7 +560,7 @@ def Li_Johns_Ahmadi_solution(zs, Ks):
         assert x1 >= x_min2
         assert x1 <= x_max2
         V_over_F = (-x1 + z1)/(x1*(k1 - 1.))
-        assert 0 <= V_over_F <= 1
+        assert 0.0 <= V_over_F <= 1.0
     except:
         x1 = brenth(objective, x_min, x_max)
         V_over_F = (-x1 + z1)/(x1*(k1 - 1.))
