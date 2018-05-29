@@ -33,7 +33,7 @@ __all__ = ['isobaric_expansion', 'isothermal_compressibility',
 'mixing_logarithmic', 'has_matplotlib', 'to_num', 'CAS2int', 'sorted_CAS_key',
 'int2CAS', 'Parachor', 'property_molar_to_mass', 'property_mass_to_molar', 
 'SG_to_API', 'API_to_SG', 'SG', 'vapor_mass_quality', 'mix_component_flows',
-'mix_multiple_component_flows', 'assert_component_balance', 
+'mix_multiple_component_flows', 'assert_component_balance', 'assert_energy_balance',
 'phase_select_property', 'TDependentProperty', 
 'TPDependentProperty', 'MixtureProperty', 'allclose_variable', 'horner', 
 'polylog2']
@@ -1791,6 +1791,37 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0):
         raise Exception('Product and feeds have different components in them')
     for CAS, flow in feed_flows.items():
         assert_allclose(flow, product_flows[CAS], rtol=rtol, atol=atol)
+
+
+def assert_energy_balance(inlets, outlets, energy_streams, rtol=1E-9, atol=0):
+    try:
+        [_ for _ in inlets]
+    except TypeError:
+        inlets = [inlets]
+    try:
+        [_ for _ in outlets]
+    except TypeError:
+        outlets = [outlets]
+    try:
+        [_ for _ in energy_streams]
+    except TypeError:
+        energy_streams = [energy_streams]
+
+    energy_in = 0.0
+    for feed in inlets:
+        energy_in += feed.energy
+    for feed in energy_streams:
+        if feed.Q >= 0:
+            energy_in += feed.Q
+        
+    energy_out = 0.0
+    for product in outlets:
+        energy_out += product.energy
+    for product in energy_streams:
+        if product.Q < 0:
+            energy_in += product.Q
+
+    assert_allclose(energy_in, energy_out, rtol=rtol, atol=atol)
 
 
 TEST_METHOD_1 = 'Test method 1'

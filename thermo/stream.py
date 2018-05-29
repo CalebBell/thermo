@@ -408,7 +408,10 @@ class Stream(Mixture):
     
     Streams have five variables. The flow rate, composition, and components are
     mandatory; and two of the variables temperature, pressure, vapor fraction, 
-    enthalpy, or entropy are required.
+    enthalpy, or entropy are required. Entropy and enthalpy may also be
+    provided in a molar basis; energy can also be provided, which when
+    combined with either a flow rate or enthalpy will calculate the other
+    variable.
     
     The composition and flow rate may be specified together or separately. The
     options for specifying them are:
@@ -430,9 +433,19 @@ class Stream(Mixture):
     * Mole flow rate `n`
     * Mass flow rate `m`
     * Volumetric flow rate `Q` at the provided `T` and `P`
+    * Energy `energy`
     
-    The enthalpy or entropy, if specified, are not specific values, but 
-    extensive ones for the whole stream (units J and J/K respectively).
+    The state variables must be two of the following. Not all combinations 
+    result in a supported flash.
+        
+    * Tempetarure `T`
+    * Pressure `P`
+    * Vapor fraction `VF`
+    * Enthalpy `H`
+    * Molar enthalpy `Hm`
+    * Entropy `S`
+    * Molar entropy `Sm`
+    * Energy `energy`
     
     Parameters
     ----------
@@ -474,8 +487,14 @@ class Stream(Mixture):
         Vapor fraction (mole basis) of the stream, [-]
     H : float, optional
         Mass enthalpy of the stream, [J]
+    Hm : float, optional
+        Molar enthalpy of the stream, [J/mol]
     S : float, optional
-        Mass entropy of the stream, [J/K]
+        Mass entropy of the stream, [J/kg/K]
+    Sm : float, optional
+        Molar entropy of the stream, [J/mol/K]
+    energy : float, optional
+        Flowing energy of the stream (`H`*`m`), [W]
     pkg : object 
         The thermodynamic property package to use for flash calculations;
         one of the caloric packages in :obj:`thermo.property_package`;
@@ -563,8 +582,9 @@ class Stream(Mixture):
     def __init__(self, IDs=None, zs=None, ws=None, Vfls=None, Vfgs=None,
                  ns=None, ms=None, Qls=None, Qgs=None, 
                  n=None, m=None, Q=None, 
-                 T=None, P=None, VF=None, H=None, S=None, 
-                 V_TP=(None, None)):
+                 T=None, P=None, VF=None, H=None, Hm=None, S=None, Sm=None,
+                 energy=None, pkg=None, V_TP=(None, None)):
+        
         composition_options = (zs, ws, Vfls, Vfgs, ns, ms, Qls, Qgs)
         composition_option_count = sum(i is not None for i in composition_options)
         if hasattr(IDs, 'strip') or (type(IDs) == list and len(IDs) == 1):
@@ -580,17 +600,22 @@ class Stream(Mixture):
                             "'Qgs' can be specified")
             
         # if more than 1 of composition_options is given, raise an exception
-        flow_options = (ns, ms, Qls, Qgs, m, n, Q)
+        flow_options = (ns, ms, Qls, Qgs, m, n, Q) # energy
         flow_option_count = sum(i is not None for i in flow_options)
+        # Energy can be used as an enthalpy spec or a flow rate spec
+        if flow_option_count > 1 and energy is not None:
+            if Hm is not None or H is not None:
+                flow_option_count -= 1
+        
         if flow_option_count < 1:
             raise Exception("No flow rate information is provided; one of "
-                            "'m', 'n', 'Q', 'ms', 'ns', 'Qls', or 'Qgs' must "
-                            "be specified")
+                            "'m', 'n', 'Q', 'ms', 'ns', 'Qls', 'Qgs' or "
+                            "'energy' must be specified")
         elif flow_option_count > 1:
             raise Exception("More than one source of flow rate information is "
                             "provided; only one of "
-                            "'m', 'n', 'Q', 'ms', 'ns', 'Qls', or 'Qgs' can "
-                            "be specified")
+                            "'m', 'n', 'Q', 'ms', 'ns', 'Qls', 'Qgs' or "
+                            "'energy' can be specified")
         
         if ns is not None:
             zs = ns
@@ -601,13 +626,15 @@ class Stream(Mixture):
         elif Qgs is not None:
             Vfgs = Qgs
         
+        # If T and P are known, only need to flash once
         if T is not None and P is not None:
             super(Stream, self).__init__(IDs, zs=zs, ws=ws, Vfls=Vfls, Vfgs=Vfgs,
-                 T=T, P=P, Vf_TP=V_TP)
+                 T=T, P=P, Vf_TP=V_TP, pkg=pkg)
         else:
+            # Initialize without a flash
             Mixture.autoflash = False
             super(Stream, self).__init__(IDs, zs=zs, ws=ws, Vfls=Vfls, Vfgs=Vfgs,
-                 Vf_TP=V_TP)
+                 Vf_TP=V_TP, pkg=pkg)
             Mixture.autoflash = True
                         
         
@@ -644,17 +671,30 @@ class Stream(Mixture):
                 self.n = sum([Q/Vmg for Q, Vmg in zip(Qgs, self.Vmgs)])
             except:
                 raise Exception('Gas molar volume could not be calculated to determine the flow rate of the stream.')
+        elif energy is not None:
+            if H is not None:
+                self.m = energy/H # Watt/(J/kg) = kg/s
+            elif Hm is not None:
+                self.n = energy/Hm # Watt/(J/kg) = mol/s
+            else:
+                raise NotImplemented
         
+        # Energy specified - calculate H or Hm
+        if energy is not None:
+            if hasattr(self, 'm'):
+                H = energy/self.m
+            if hasattr(self, 'n'):
+                Hm = energy/self.n
         
         if T is None or P is None: 
-            non_TP_state_vars = sum(i is not None for i in [VF, H, S])
+            non_TP_state_vars = sum(i is not None for i in [VF, H, Hm, S, Sm, energy])
             if non_TP_state_vars == 0:
                 if T is None:
                     T = self.T_default
                 if P is None:
                     P = self.P_default
                 
-        self.flash(T=T, P=P, VF=VF, H=H, S=S)
+        self.flash(T=T, P=P, VF=VF, H=H, Hm=Hm, S=S, Sm=Sm)
         
         self.set_extensive_flow(self.n)
         self.set_extensive_properties()
@@ -700,32 +740,21 @@ class Stream(Mixture):
                 self.Qg = None
         
             
-    def flash(self, T=None, P=None, VF=None, H=None, S=None):
+    def flash(self, T=None, P=None, VF=None, H=None, Hm=None, S=None, Sm=None):
         if H is not None:
-            Hm = H/self.n
-        else:
-            Hm = None
+            Hm = property_mass_to_molar(H, self.MW)
+
         if S is not None:
-            Sm = S/self.n
-        else:
-            Sm = None
+            Sm = property_mass_to_molar(S, self.MW)
         super(Stream, self).flash_caloric(T=T, P=P, VF=VF, Hm=Hm, Sm=Sm)
         self.set_extensive_properties()
 
 
     def set_extensive_properties(self):
-        # TODO: make sure this is called in post-flash routine
         if not hasattr(self, 'm'):
+            self.energy = None
             return None
-        if hasattr(self, 'Hm') and self.Hm is not None:
-            self.H *= self.m
-            self.Hm *= self.n
-        if hasattr(self, 'Sm') and self.Sm is not None:
-            self.S *= self.m
-            self.Sm *= self.n
-        if hasattr(self, 'Gm') and self.Sm is not None:
-            self.G *= self.m
-            self.Gm *= self.n
+        self.energy = self.H*self.m
 
     def calculate(self, T=None, P=None):
         self.set_TP(T=T, P=P)

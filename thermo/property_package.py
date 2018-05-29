@@ -1708,6 +1708,11 @@ class Nrtl(GammaPhi):
     
     
 class Unifac(GammaPhi):
+    '''
+    '''
+    # TODO: Calculate derivatives analytically via the derivatives given in the supporting information of
+    # Jäger, Andreas, Ian H. Bell, and Cornelia Breitkopf. "A Theoretically Based Departure Function for Multi-Fluid Mixture Models." Fluid Phase Equilibria 469 (August 15, 2018): 56-69. https://doi.org/10.1016/j.fluid.2018.04.015.
+
     subgroup_data = UFSG
 
     def __init__(self, UNIFAC_groups, VaporPressures, Tms=None, Tcs=None, Pcs=None,
