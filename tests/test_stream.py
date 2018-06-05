@@ -123,6 +123,16 @@ def test_Stream_inputs():
     with pytest.raises(Exception):
         # no flow rate
         Stream(['water', 'ethanol'], zs=[.5, .5], T=300, P=1E5)
+        
+        
+def test_stream_TP_Q():
+    n_known = 47.43612113350473
+    n = Stream(T=433.0, P=680E3, Q=3800.0/3600, IDs=['CO2'], zs=[1], Q_TP=(273.15, 101325, 'g')).n
+    assert_allclose(n, n_known, rtol=1e-3)
+    n = Stream(T=433.0, P=680E3, Q=3800.0/3600, IDs=['CO2'], zs=[1], Q_TP=(273.15, 101325, '')).n
+    assert_allclose(n, n_known, rtol=1e-3)
+    n = Stream(T=433.0, P=680E3, Q=3800.0/3600, IDs=['CO2'], zs=[1], Q_TP=(273.15, 101325, None)).n
+    assert_allclose(n, n_known, rtol=1e-3)
 
 def test_add_streams():
     # simple example, same components

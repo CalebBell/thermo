@@ -39,6 +39,43 @@ from fluids.pump import voltages_1_phase_residential, voltages_3_phase, frequenc
 # If one composition value gets set to, remove those from every other value
 
 class StreamArgs(object):
+    def __add__(self, b):
+        if not isinstance(b, StreamArgs):
+            raise Exception('Adding to a StreamArgs requires that the other object '
+                            'also be a StreamArgs.')
+    
+        a_flow_spec, b_flow_spec = self.flow_spec, b.flow_spec
+        a_composition_spec, b_composition_spec = self.composition_spec, b.composition_spec
+        a_state_specs, b_state_specs = self.state_specs, b.state_specs
+        
+        args = {}
+        if b.IDs:
+            args['IDs'] = b.IDs
+        elif self.IDs:
+            args['IDs'] = self.IDs
+    
+        flow_spec = b_flow_spec if b_flow_spec else a_flow_spec
+        if flow_spec:
+            args[flow_spec[0]] = flow_spec[1]
+            
+        composition_spec = b_composition_spec if b_composition_spec else a_composition_spec
+        if composition_spec:
+            args[composition_spec[0]] = composition_spec[1]
+            
+        if b_state_specs:
+            for i, j in b_state_specs:
+                args[i] = j
+            
+        c = StreamArgs(**args)
+        if b_state_specs and len(b_state_specs) < 2 and a_state_specs:
+            for i, j in a_state_specs:
+                try:
+                    setattr(c, i, j)
+                except:
+                    pass
+        
+        return c
+    
     
     def __copy__(self):
         return deepcopy(self)
@@ -423,16 +460,17 @@ class Stream(Mixture):
     * Mole flow rates `ns`
     * Mass flow rates `ms`
     * Liquid flow rates `Qls` (based on pure component volumes at the T and P 
-      specified by `V_TP`)
+      specified by `Q_TP`)
     * Gas flow rates `Qgs` (based on pure component volumes at the T and P 
-      specified by `V_TP`)
+      specified by `Q_TP`)
 
     If only the composition is specified by providing any of `zs`, `ws`, `Vfls`
     or `Vfgs`, the flow rate must be specified by providing one of these:
         
     * Mole flow rate `n`
     * Mass flow rate `m`
-    * Volumetric flow rate `Q` at the provided `T` and `P`
+    * Volumetric flow rate `Q` at the provided `T` and `P` or if specified,
+      `Q_TP`
     * Energy `energy`
     
     The state variables must be two of the following. Not all combinations 
@@ -502,6 +540,9 @@ class Stream(Mixture):
     Vf_TP : tuple(2, float), optional
         The (T, P) at which the volume fractions are specified to be at, [K] 
         and [Pa] 
+    Q_TP : tuple(3, float, float, str), optional
+        The (T, P, phase) at which the volumetric flow rate is specified to be 
+        at, [K] and [Pa]
  
     Examples
     --------
@@ -583,7 +624,7 @@ class Stream(Mixture):
                  ns=None, ms=None, Qls=None, Qgs=None, 
                  n=None, m=None, Q=None, 
                  T=None, P=None, VF=None, H=None, Hm=None, S=None, Sm=None,
-                 energy=None, pkg=None, V_TP=(None, None)):
+                 energy=None, pkg=None, V_TP=(None, None), Q_TP=(None, None, '')):
         
         composition_options = (zs, ws, Vfls, Vfgs, ns, ms, Qls, Qgs)
         composition_option_count = sum(i is not None for i in composition_options)
@@ -645,7 +686,21 @@ class Stream(Mixture):
             self.n = property_molar_to_mass(m, self.MW) # m*10000/MW
         elif Q is not None:
             try:
-                self.n = Q/self.Vm
+                if Q_TP != (None, None, ''):
+                    if len(Q_TP) == 2 or (len(Q_TP) == 3 and not Q_TP[-1]):
+                        # Calculate the phase via the property package
+                        self.property_package.flash(self.zs, T=Q_TP[0], P=Q_TP[1])
+                        phase = self.property_package.phase if self.property_package.phase in ('l', 'g') else 'g'
+                    else:
+                        phase = Q_TP[-1]
+                    if phase == 'l':
+                        Vm = self.VolumeLiquidMixture(T=Q_TP[0], P=Q_TP[1], zs=self.zs, ws=self.ws)
+                    else:
+                        Vm = self.VolumeGasMixture(T=Q_TP[0], P=Q_TP[1], zs=self.zs, ws=self.ws)
+                    
+                else:
+                    Vm = self.Vm
+                self.n = Q/Vm
             except:
                 raise Exception('Molar volume could not be calculated to determine the flow rate of the stream.')
         elif ns is not None:
