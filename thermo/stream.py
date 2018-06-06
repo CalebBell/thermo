@@ -310,7 +310,8 @@ class StreamArgs(object):
     def __init__(self, IDs=None, zs=None, ws=None, Vfls=None, Vfgs=None,
                  T=None, P=None, 
                  VF=None, H=None, Hm=None, S=None, Sm=None,
-                 ns=None, ms=None, Qls=None, Qgs=None, m=None, n=None, Q=None):
+                 ns=None, ms=None, Qls=None, Qgs=None, m=None, n=None, Q=None,
+                 Vf_TP=(None, None), Q_TP=(None, None, '')):
         self.specifications = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None, 
                                'ns': None, 'ms': None, 'Qls': None, 'Qgs': None,
                                'n': None, 'm': None, 'Q': None,
@@ -337,8 +338,9 @@ class StreamArgs(object):
         self.m = m
         self.n = n
         self.Q = Q
-        self.V_TP = (None, None)
-    
+        self.Vf_TP = Vf_TP
+        self.Q_TP = Q_TP
+            
     
     @property
     def composition_spec(self):
@@ -431,13 +433,15 @@ class StreamArgs(object):
                  ns=self.ns, ms=self.ms, Qls=self.Qls, Qgs=self.Qgs, 
                  n=self.n, m=self.m, Q=self.Q, 
                  T=self.T, P=self.P, VF=self.VF, H=self.H, S=self.S, 
-                 V_TP=self.V_TP)
+                 Hm=self.Hm, Sm=self.Sm, 
+                 Vf_TP=self.Vf_TP, Q_TP=self.Q_TP)
         
     @property
     def mixture(self):
         if self.IDs and self.composition_specified and self.state_specified:
             return Mixture(IDs=self.IDs, zs=self.zs, ws=self.ws, Vfls=self.Vfls, Vfgs=self.Vfgs,
-                 T=self.T, P=self.P, VF=self.VF, H=self.H, S=self.S)
+                 T=self.T, P=self.P, VF=self.VF, H=self.H, S=self.S, Hm=self.Hm, Sm=self.Sm, 
+                 Vf_TP=self.Vf_TP)
 
 class Stream(Mixture):
     '''Creates a Stream object which is useful for modeling mass and energy 
@@ -624,7 +628,7 @@ class Stream(Mixture):
                  ns=None, ms=None, Qls=None, Qgs=None, 
                  n=None, m=None, Q=None, 
                  T=None, P=None, VF=None, H=None, Hm=None, S=None, Sm=None,
-                 energy=None, pkg=None, V_TP=(None, None), Q_TP=(None, None, '')):
+                 energy=None, pkg=None, Vf_TP=(None, None), Q_TP=(None, None, '')):
         
         composition_options = (zs, ws, Vfls, Vfgs, ns, ms, Qls, Qgs)
         composition_option_count = sum(i is not None for i in composition_options)
@@ -670,12 +674,12 @@ class Stream(Mixture):
         # If T and P are known, only need to flash once
         if T is not None and P is not None:
             super(Stream, self).__init__(IDs, zs=zs, ws=ws, Vfls=Vfls, Vfgs=Vfgs,
-                 T=T, P=P, Vf_TP=V_TP, pkg=pkg)
+                 T=T, P=P, Vf_TP=Vf_TP, pkg=pkg)
         else:
             # Initialize without a flash
             Mixture.autoflash = False
             super(Stream, self).__init__(IDs, zs=zs, ws=ws, Vfls=Vfls, Vfgs=Vfgs,
-                 Vf_TP=V_TP, pkg=pkg)
+                 Vf_TP=Vf_TP, pkg=pkg)
             Mixture.autoflash = True
                         
         
