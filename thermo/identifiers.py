@@ -713,7 +713,7 @@ def mixture_from_any(ID):
         else:
             raise Exception('If the input is a list, the list must contain only one item.')
     ID = ID.lower().strip()
-    for i in [ID, ID.replace(' ', ''), ID.replace('-', '')]:
+    for i in (ID, ID.replace(' ', ''), ID.replace('-', '')):
         try:
             return _MixtureDictLookup[i]
         except KeyError:

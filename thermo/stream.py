@@ -88,6 +88,18 @@ class StreamArgs(object):
         self.specifications['IDs'] = IDs
 
     @property
+    def energy(self):
+        return self.specifications['energy']
+    @energy.setter
+    def energy(self, energy):
+        if energy is None:
+            self.specifications['energy'] = energy
+            return None
+        if self.specified_state_vars > 1 and self.flow_specified and self.energy is None:
+            raise Exception('Two state vars and a flow var already specified; unset another first')
+        self.specifications['energy'] = energy
+
+    @property
     def T(self):
         return self.specifications['T']
     @T.setter
@@ -311,12 +323,13 @@ class StreamArgs(object):
                  T=None, P=None, 
                  VF=None, H=None, Hm=None, S=None, Sm=None,
                  ns=None, ms=None, Qls=None, Qgs=None, m=None, n=None, Q=None,
+                 energy=None,
                  Vf_TP=(None, None), Q_TP=(None, None, '')):
         self.specifications = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None, 
                                'ns': None, 'ms': None, 'Qls': None, 'Qgs': None,
                                'n': None, 'm': None, 'Q': None,
                                'T': None, 'P': None, 'VF': None, 'H': None,
-                               'Hm': None, 'S': None, 'Sm': None}
+                               'Hm': None, 'S': None, 'Sm': None, 'energy': None}
         
         self.IDs = IDs
         self.zs = zs
@@ -338,8 +351,11 @@ class StreamArgs(object):
         self.m = m
         self.n = n
         self.Q = Q
+        self.energy = energy
         self.Vf_TP = Vf_TP
         self.Q_TP = Q_TP
+        
+        self.property_package = None
             
     
     @property
@@ -405,6 +421,7 @@ class StreamArgs(object):
     
     @property
     def flow_spec(self):
+        # TODO consider energy?
         specs = []
         for var in ('ns', 'ms', 'Qls', 'Qgs', 'm', 'n', 'Q'):
             v = getattr(self, var)
