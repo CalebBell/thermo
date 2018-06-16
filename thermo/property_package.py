@@ -636,21 +636,27 @@ class IdealCaloric(Ideal):
         if not self.SUPPORTS_ZERO_FRACTIONS:
             zs = remove_zeros(zs, self.zero_fraction)
             
+        kwargs = {'zs': zs}
         try:
             if T is not None and Sm is not None:
-                P = self.flash_TS_zs_bounded(T=T, Sm=Sm, zs=zs)
+                kwargs['T'] = T
+                kwargs.update(self.flash_TS_zs_bounded(T=T, Sm=Sm, zs=zs))
             elif P is not None and Sm is not None:
-                T = self.flash_PS_zs_bounded(P=P, Sm=Sm, zs=zs)
+                kwargs['P'] = P
+                kwargs.update(self.flash_PS_zs_bounded(P=P, Sm=Sm, zs=zs))
             elif P is not None and Hm is not None:
-                T = self.flash_PH_zs_bounded(P=P, Hm=Hm, zs=zs)
+                kwargs['P'] = P
+                kwargs.update(self.flash_PH_zs_bounded(P=P, Hm=Hm, zs=zs))
             elif ((T is not None and P is not None) or
                 (T is not None and VF is not None) or
                 (P is not None and VF is not None)):
-                pass
+                kwargs['P'] = P
+                kwargs['T'] = T
+                kwargs['VF'] = VF
             else:
                 raise Exception('Flash inputs unsupported')
 
-            self.flash(zs=zs, T=T, P=P, VF=VF)
+            self.flash(**kwargs)
             self._post_flash()
             self.status = True
         except Exception as e:
@@ -934,6 +940,8 @@ class IdealCaloric(Ideal):
 
     def flash_PH_zs_bounded(self, P, Hm, zs, T_low=None, T_high=None, 
                             Hm_low=None, Hm_high=None):
+        '''THIS DOES NOT WORK FOR PURE COMPOUNDS!!!!!!!!!!!!!
+        '''
         # Begin the search at half the lowest chemical's melting point
         if T_low is None:
             T_low = min(self.Tms)/2 
@@ -957,10 +965,24 @@ class IdealCaloric(Ideal):
                 temp_pkg.flash(T=T, P=P, zs=zs)
             temp_pkg._post_flash()
             return temp_pkg.Hm - H_goal
-    
+        
+        def PH_VF_error(VF, P, zs, H_goal):
+            if not temp_pkg_cache:
+                temp_pkg = self.to(VF=VF, P=P, zs=zs)
+                temp_pkg_cache.append(temp_pkg)
+            else:
+                temp_pkg = temp_pkg_cache[0]
+                temp_pkg.flash(VF=VF, P=P, zs=zs)
+            temp_pkg._post_flash()
+            return temp_pkg.Hm - H_goal
         try:
             T_goal = brenth(PH_error, T_low, T_high, args=(P, zs, Hm))
-            return T_goal
+            if self.N == 1:
+                err = abs(PH_error(T_goal, P, zs, Hm))
+                if err > 1E-3:
+                    VF_goal = brenth(PH_VF_error, 0, 1, args=(P, zs, Hm))
+                    return {'VF': VF_goal}
+            return {'T': T_goal}
 
         except ValueError:
             if Hm_low is None:
@@ -987,6 +1009,8 @@ class IdealCaloric(Ideal):
 
     def flash_PS_zs_bounded(self, P, Sm, zs, T_low=None, T_high=None, 
                             Sm_low=None, Sm_high=None):
+        '''THIS DOES NOT WORK FOR PURE COMPOUNDS!!!!!!!!!!!!!
+        '''
         # Begin the search at half the lowest chemical's melting point
         if T_low is None:
             T_low = min(self.Tms)/2 
@@ -1010,10 +1034,26 @@ class IdealCaloric(Ideal):
                 temp_pkg.flash(T=T, P=P, zs=zs)
             temp_pkg._post_flash()
             return temp_pkg.Sm - S_goal
-    
+        
+        def PS_VF_error(VF, P, zs, S_goal):
+            if not temp_pkg_cache:
+                temp_pkg = self.to(VF=VF, P=P, zs=zs)
+                temp_pkg_cache.append(temp_pkg)
+            else:
+                temp_pkg = temp_pkg_cache[0]
+                temp_pkg.flash(VF=VF, P=P, zs=zs)
+            temp_pkg._post_flash()
+            return temp_pkg.Sm - S_goal
         try:
             T_goal = brenth(PS_error, T_low, T_high, args=(P, zs, Sm))
-            return T_goal
+            if self.N == 1:
+                err = abs(PS_error(T_goal, P, zs, Sm))
+                if err > 1E-3:
+                    VF_goal = brenth(PS_VF_error, 0, 1, args=(P, zs, Sm))
+                    return {'VF': VF_goal}
+            
+            
+            return {'T': T_goal}
 
         except ValueError:
             if Sm_low is None:
@@ -1056,10 +1096,23 @@ class IdealCaloric(Ideal):
                 temp_pkg.flash(T=T, P=P, zs=zs)
             temp_pkg._post_flash()
             return temp_pkg.Sm - S_goal
-    
+        def TS_VF_error(VF, T, zs, S_goal):
+            if not temp_pkg_cache:
+                temp_pkg = self.to(VF=VF, P=P, zs=zs)
+                temp_pkg_cache.append(temp_pkg)
+            else:
+                temp_pkg = temp_pkg_cache[0]
+                temp_pkg.flash(VF=VF, P=P, zs=zs)
+            temp_pkg._post_flash()
+            return temp_pkg.Sm - S_goal
         try:
             P_goal = brenth(TS_error, P_low, P_high, args=(T, zs, Sm))
-            return P_goal
+            if self.N == 1:
+                err = abs(TS_error(P_goal, T, zs, Sm))
+                if err > 1E-3:
+                    VF_goal = brenth(TS_VF_error, 0, 1, args=(T, zs, Sm))
+                    return {'VF': VF_goal}
+            return {'P': P_goal}
 
         except ValueError:
             if Sm_low is None:

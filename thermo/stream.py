@@ -402,7 +402,7 @@ class StreamArgs(object):
     @property
     def state_specs(self):
         specs = []
-        for var in ('T', 'P', 'VF', 'Hm', 'H', 'Sm', 'S'):
+        for var in ('T', 'P', 'VF', 'Hm', 'H', 'Sm', 'S', 'energy'):
             v = getattr(self, var)
             if v is not None:
                 specs.append((var, v))
@@ -410,11 +410,11 @@ class StreamArgs(object):
     
     @property
     def specified_state_vars(self):
-        return sum(i is not None for i in (self.T, self.P, self.VF, self.Hm, self.H, self.Sm, self.S))
+        return sum(i is not None for i in (self.T, self.P, self.VF, self.Hm, self.H, self.Sm, self.S, self.energy))
     
     @property
     def state_specified(self):
-        state_vars = (i is not None for i in (self.T, self.P, self.VF, self.Hm, self.H, self.Sm, self.S))
+        state_vars = (i is not None for i in (self.T, self.P, self.VF, self.Hm, self.H, self.Sm, self.S, self.energy))
         if sum(state_vars) == 2:
             return True
         return False
@@ -451,7 +451,7 @@ class StreamArgs(object):
                  n=self.n, m=self.m, Q=self.Q, 
                  T=self.T, P=self.P, VF=self.VF, H=self.H, S=self.S, 
                  Hm=self.Hm, Sm=self.Sm, 
-                 Vf_TP=self.Vf_TP, Q_TP=self.Q_TP)
+                 Vf_TP=self.Vf_TP, Q_TP=self.Q_TP, energy=self.energy)
         
     @property
     def mixture(self):

@@ -814,7 +814,7 @@ def test_IdealCaloric_PH():
             pkg.flash(T=T, P=P, zs=m.zs)
             pkg._post_flash()
             T_calc = pkg.flash_PH_zs_bounded(P=P, Hm=pkg.Hm, zs=m.zs)
-            assert_allclose(T_calc, T, rtol=1E-3)
+            assert_allclose(T_calc['T'], T, rtol=1E-3)
 
 
 def test_IdealCaloric_PS():
@@ -831,7 +831,7 @@ def test_IdealCaloric_PS():
             pkg.flash(T=T, P=P, zs=m.zs)
             pkg._post_flash()
             T_calc = pkg.flash_PS_zs_bounded(P=P, Sm=pkg.Sm, zs=m.zs)
-            assert_allclose(T_calc, T, rtol=1E-3)
+            assert_allclose(T_calc['T'], T, rtol=1E-3)
             
             
 def test_IdealCaloric_TS():
@@ -849,7 +849,7 @@ def test_IdealCaloric_TS():
             pkg._post_flash()
             P = pkg.P
             P_calc = pkg.flash_TS_zs_bounded(T=T, Sm=pkg.Sm, zs=m.zs)
-            assert_allclose(P_calc, P, rtol=1E-3)
+            assert_allclose(P_calc['P'], P, rtol=1E-3)
 
 
 def test_GammaPhiBasic():
