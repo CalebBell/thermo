@@ -1081,10 +1081,12 @@ class IdealCaloric(Ideal):
                             Sm_low=None, Sm_high=None):
         # Begin the search at half the lowest chemical's melting point
         if P_high is None:
-            P_high = self.Pbubble(T, zs)
+            if self.N == 1:
+                P_high = self.Pcs[0]
+            else:
+                P_high = self.Pdew(T, zs)*100
         if P_low is None:
             P_low = 1E-5 # min pressure
-#            P_high = max(self.Pcs)*10
 
         temp_pkg_cache = []
         def TS_error(P, T, zs, S_goal):
@@ -1098,11 +1100,11 @@ class IdealCaloric(Ideal):
             return temp_pkg.Sm - S_goal
         def TS_VF_error(VF, T, zs, S_goal):
             if not temp_pkg_cache:
-                temp_pkg = self.to(VF=VF, P=P, zs=zs)
+                temp_pkg = self.to(VF=VF, T=T, zs=zs)
                 temp_pkg_cache.append(temp_pkg)
             else:
                 temp_pkg = temp_pkg_cache[0]
-                temp_pkg.flash(VF=VF, P=P, zs=zs)
+                temp_pkg.flash(VF=VF, T=T, zs=zs)
             temp_pkg._post_flash()
             return temp_pkg.Sm - S_goal
         try:

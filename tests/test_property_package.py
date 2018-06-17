@@ -799,6 +799,24 @@ def test_IdealCaloric_enthalpy_Cpl_Cpg_Hvap_binary_Tb_ref():
     dH_hand = dH_MeOH_vapor + dH_w_vapor + liq_MeOH_dH + liq_w_dH + liq_MeOH_vap +liq_w_vap
     assert_allclose(dH, dH_hand)
 
+def test_basic_pure_component_flash_consistency():
+    pts = 11
+    T = 200
+    P = 1E6
+    Mixture(['ethane'], zs=[1], VF=0.1, P=P)
+    
+    for VF in np.linspace(0, 1, pts):
+        base = Mixture(['ethane'], zs=[1], VF=VF, P=P)
+        H_solve = Mixture(['ethane'], zs=[1], Hm=base.Hm, P=P)
+        S_solve = Mixture(['ethane'], zs=[1], Sm=base.Sm, P=P)
+        assert_allclose(H_solve.VF, VF, rtol=5e-3)
+        assert_allclose(S_solve.VF, VF, rtol=5e-3)
+        
+        # T-VF
+        base = Mixture(['ethane'], zs=[1], VF=VF, T=T)
+        S_solve = Mixture(['ethane'], zs=[1], Sm=base.Sm, T=T)
+        assert_allclose(S_solve.VF, VF, rtol=5e-3)
+
 
 def test_IdealCaloric_PH():
     m = Mixture(['pentane', 'hexane', 'octane'], zs=[.1, .4, .5], T=298.15)
