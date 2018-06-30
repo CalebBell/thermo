@@ -861,9 +861,54 @@ class Stream(Mixture):
         kwargs[self.composition_spec[0]] = self.composition_spec[1]
         kwargs[self.flow_spec[0]] = self.flow_spec[1]
         return StreamArgs(**kwargs)
-            
-    def flash(self, T=None, P=None, VF=None, H=None, Hm=None, S=None, Sm=None):
-        self.specs = (T, P, VF, H, Hm, S, Sm)
+    
+    
+    # flow_spec, composition_spec are attributes already
+    @property
+    def specified_composition_vars(self):
+        return 1
+
+    @property
+    def composition_specified(self):
+        # Always needs a composition
+        return True
+    
+    @property
+    def specified_state_vars(self):
+        # Always needs two
+        return 2
+    
+    @property
+    def state_specified(self):
+        # Always needs a state
+        return True
+    
+    @property
+    def state_specs(self):
+        specs = []
+        for i, var in enumerate(('T', 'P', 'VF', 'Hm', 'H', 'Sm', 'S', 'energy')):
+            v = self.specs[i]
+            if v is not None:
+                specs.append((var, v))
+        return specs
+
+    @property
+    def specified_flow_vars(self):
+        # Always needs only one flow specified
+        return 1
+
+    @property
+    def flow_specified(self):
+        # Always needs a flow specified
+        return True
+
+        
+    def flash(self, T=None, P=None, VF=None, H=None, Hm=None, S=None, Sm=None, 
+              energy=None):
+        self.specs = (T, P, VF, H, Hm, S, Sm, energy)
+        if energy is not None:
+            H = energy/self.m
+        
         if H is not None:
             Hm = property_mass_to_molar(H, self.MW)
 
