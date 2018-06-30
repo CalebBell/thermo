@@ -799,6 +799,7 @@ def test_IdealCaloric_enthalpy_Cpl_Cpg_Hvap_binary_Tb_ref():
     dH_hand = dH_MeOH_vapor + dH_w_vapor + liq_MeOH_dH + liq_w_dH + liq_MeOH_vap +liq_w_vap
     assert_allclose(dH, dH_hand)
 
+
 def test_basic_pure_component_flash_consistency():
     pts = 11
     T = 200

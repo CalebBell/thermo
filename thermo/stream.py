@@ -38,6 +38,12 @@ from fluids.pump import voltages_1_phase_residential, voltages_3_phase, frequenc
 # This might be useful for regular streams too, just to keep track of what values were specified by the user!
 # If one composition value gets set to, remove those from every other value
 
+base_specifications = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None, 
+                       'ns': None, 'ms': None, 'Qls': None, 'Qgs': None,
+                       'n': None, 'm': None, 'Q': None,
+                       'T': None, 'P': None, 'VF': None, 'H': None,
+                       'Hm': None, 'S': None, 'Sm': None, 'energy': None}
+
 class StreamArgs(object):
     def __add__(self, b):
         if not isinstance(b, StreamArgs):
@@ -107,7 +113,7 @@ class StreamArgs(object):
         if T is None:
             self.specifications['T'] = T
             return None
-        if self.specified_state_vars > 1 and self.T is None:
+        if self.T is None and self.specified_state_vars > 1:
             raise Exception('Two state vars already specified; unset another first')
         self.specifications['T'] = T
 
@@ -119,7 +125,7 @@ class StreamArgs(object):
         if P is None:
             self.specifications['P'] = P
             return None
-        if self.specified_state_vars > 1 and self.P is None:
+        if self.P is None and self.specified_state_vars > 1:
             raise Exception('Two state vars already specified; unset another first')
         self.specifications['P'] = P
 
@@ -319,17 +325,15 @@ class StreamArgs(object):
                     'n': None, 'm': None, 'Q': arg}
             self.specifications.update(args)
 
+    def __repr__(self):
+        return '<StreamArgs, specs %s>' % self.specifications
     def __init__(self, IDs=None, zs=None, ws=None, Vfls=None, Vfgs=None,
                  T=None, P=None, 
                  VF=None, H=None, Hm=None, S=None, Sm=None,
                  ns=None, ms=None, Qls=None, Qgs=None, m=None, n=None, Q=None,
                  energy=None,
                  Vf_TP=(None, None), Q_TP=(None, None, '')):
-        self.specifications = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None, 
-                               'ns': None, 'ms': None, 'Qls': None, 'Qgs': None,
-                               'n': None, 'm': None, 'Q': None,
-                               'T': None, 'P': None, 'VF': None, 'H': None,
-                               'Hm': None, 'S': None, 'Sm': None, 'energy': None}
+        self.specifications = base_specifications.copy()
         
         self.IDs = IDs
         self.zs = zs
@@ -381,6 +385,16 @@ class StreamArgs(object):
             return 'Qgs', self.Qgs
     
     @property
+    def clean(self):
+        '''If no variables (other than IDs) have been specified, return True, 
+        otherwise return False.
+        '''
+        if self.composition_specified or self.state_specs or self.flow_specified:
+            return False
+        return True
+        
+    
+    @property
     def specified_composition_vars(self):
         IDs, zs, ws, Vfls, Vfgs = preprocess_mixture_composition(IDs=self.IDs,
                                 zs=self.zs, ws=self.ws, Vfls=self.Vfls, 
@@ -410,7 +424,9 @@ class StreamArgs(object):
     
     @property
     def specified_state_vars(self):
-        return sum(i is not None for i in (self.T, self.P, self.VF, self.Hm, self.H, self.Sm, self.S, self.energy))
+        # Slightly faster
+        return sum(self.specifications[i] is not None for i in ('T', 'P', 'VF', 'Hm', 'H', 'Sm', 'S', 'energy'))
+#        return sum(i is not None for i in (self.T, self.P, self.VF, self.Hm, self.H, self.Sm, self.S, self.energy))
     
     @property
     def state_specified(self):
@@ -647,8 +663,13 @@ class Stream(Mixture):
                  T=None, P=None, VF=None, H=None, Hm=None, S=None, Sm=None,
                  energy=None, pkg=None, Vf_TP=(None, None), Q_TP=(None, None, '')):
         
-        composition_options = (zs, ws, Vfls, Vfgs, ns, ms, Qls, Qgs)
-        composition_option_count = sum(i is not None for i in composition_options)
+        composition_options = ('zs', 'ws', 'Vfls', 'Vfgs', 'ns', 'ms', 'Qls', 'Qgs')
+        composition_option_count = 0
+        for i in composition_options:
+            if locals()[i] is not None:
+                composition_option_count += 1
+                self.composition_spec = (i, locals()[i])
+                
         if hasattr(IDs, 'strip') or (type(IDs) == list and len(IDs) == 1):
             pass # one component only - do not raise an exception
         elif composition_option_count < 1:
@@ -660,10 +681,19 @@ class Stream(Mixture):
                             "is provided; only one of "
                             "'ws', 'zs', 'Vfls', 'Vfgs', 'ns', 'ms', 'Qls' or "
                             "'Qgs' can be specified")
+        
+        
             
         # if more than 1 of composition_options is given, raise an exception
-        flow_options = (ns, ms, Qls, Qgs, m, n, Q) # energy
-        flow_option_count = sum(i is not None for i in flow_options)
+        flow_options = ('ns', 'ms', 'Qls', 'Qgs', 'm', 'n', 'Q') # energy
+        flow_option_count = 0
+        for i in flow_options:
+            if locals()[i] is not None:
+                flow_option_count += 1
+                self.flow_spec = (i, locals()[i])
+        
+        
+#        flow_option_count = sum(i is not None for i in flow_options)
         # Energy can be used as an enthalpy spec or a flow rate spec
         if flow_option_count > 1 and energy is not None:
             if Hm is not None or H is not None:
@@ -815,8 +845,25 @@ class Stream(Mixture):
             else:
                 self.Qg = None
         
+    def StreamArgs(self):
+        '''Goal to create a StreamArgs instance, with the user specified
+        variables always being here.
+        
+        The state variables are currently correctly tracked. The flow rate and
+        composition variable needs to be tracked as a function of what was
+        specified as the input variables.
+        
+        The flow rate needs to be changed wen the stream flow rate is changed.
+        Note this stores unnormalized specs, but that this is OK.
+        '''
+        kwargs = {i:j for i, j in zip(('T', 'P', 'VF', 'H', 'Hm', 'S', 'Sm'), self.specs)}
+        kwargs['IDs'] = self.IDs
+        kwargs[self.composition_spec[0]] = self.composition_spec[1]
+        kwargs[self.flow_spec[0]] = self.flow_spec[1]
+        return StreamArgs(**kwargs)
             
     def flash(self, T=None, P=None, VF=None, H=None, Hm=None, S=None, Sm=None):
+        self.specs = (T, P, VF, H, Hm, S, Sm)
         if H is not None:
             Hm = property_mass_to_molar(H, self.MW)
 
