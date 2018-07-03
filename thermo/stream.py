@@ -866,25 +866,29 @@ class Stream(Mixture):
     # flow_spec, composition_spec are attributes already
     @property
     def specified_composition_vars(self):
+        '''number of composition variables'''
         return 1
 
     @property
     def composition_specified(self):
-        # Always needs a composition
+        '''Always needs a composition'''
         return True
     
     @property
     def specified_state_vars(self):
-        # Always needs two
+        '''Always needs two states'''
         return 2
     
     @property
     def state_specified(self):
-        # Always needs a state
+        '''Always needs a state'''
         return True
     
     @property
     def state_specs(self):
+        '''Returns a list of tuples of (state_variable, state_value) representing
+        the thermodynamic state of the system.
+        '''
         specs = []
         for i, var in enumerate(('T', 'P', 'VF', 'Hm', 'H', 'Sm', 'S', 'energy')):
             v = self.specs[i]
@@ -894,12 +898,12 @@ class Stream(Mixture):
 
     @property
     def specified_flow_vars(self):
-        # Always needs only one flow specified
+        '''Always needs only one flow specified'''
         return 1
 
     @property
     def flow_specified(self):
-        # Always needs a flow specified
+        '''Always needs a flow specified'''
         return True
 
         
