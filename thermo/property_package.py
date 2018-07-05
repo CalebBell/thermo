@@ -54,7 +54,7 @@ from scipy.misc import derivative
 
 from thermo.utils import log, exp
 from thermo.utils import has_matplotlib, R, pi, N_A
-from thermo.utils import remove_zeros, normalize
+from thermo.utils import remove_zeros, normalize, Cp_minus_Cv
 
 from thermo.activity import K_value, Wilson_K_value, flash_inner_loop, dew_at_T, bubble_at_T, NRTL
 from thermo.activity import get_T_bub_est, get_T_dew_est, get_P_dew_est, get_P_bub_est
@@ -610,6 +610,44 @@ class Ideal(PropertyPackage):
 class IdealCaloric(Ideal):
     P_DEPENDENT_H_LIQ = True
     
+    @property
+    def Cplm_dep(self):
+        return 0.0
+    
+    @property
+    def Cpgm_dep(self):
+        return 0.0
+    
+    @property
+    def Cvlm_dep(self):
+        return 0.0
+    
+    @property
+    def Cvgm_dep(self):
+        return 0.0
+
+    @property
+    def Cplm(self):
+        Cp = 0.0
+        for i in self.cmps:
+            Cp += self.zs[i]*self.HeatCapacityLiquids[i].T_dependent_property(self.T)
+        return Cp
+    
+    @property
+    def Cpgm(self):
+        Cp = 0.0
+        for i in self.cmps:
+            Cp += self.zs[i]*self.HeatCapacityGases[i].T_dependent_property(self.T)
+        return Cp
+    
+    @property
+    def Cvgm(self):
+        return self.Cpgm - R
+    
+    @property
+    def Cvlm(self):
+        return self.Cplm
+    
     def __init__(self, VaporPressures=None, Tms=None, Tbs=None, Tcs=None, Pcs=None, 
                  HeatCapacityLiquids=None, HeatCapacityGases=None,
                  EnthalpyVaporizations=None, VolumeLiquids=None, **kwargs):
@@ -1137,7 +1175,10 @@ class IdealCaloric(Ideal):
                                  'pressure bound %g Pa has an entropy (%g '
                                  'J/mol/K) upper than that requested (%g J/mol/K)' %(
                                                              P_high, Sm_high, Sm))
-
+        # TODO
+        '''Cp_ideal, Cp_real, speed of sound -- or come up with a way for 
+        mixture to better make calls to the property package. Probably both.
+        '''
 
 class GammaPhi(PropertyPackage):
     __TP_cache = None
@@ -1879,12 +1920,58 @@ class GceosBase(Ideal):
         self.omegas = omegas
         self.kijs = kijs
         self.eos_kwargs = eos_kwargs if eos_kwargs is not None else {}
-        
+        self.N = len(VaporPressures)
+        self.cmps = range(self.N)
+
         self.stability_tester = StabilityTester(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas)
         
         
-        
 #        self.eos_mix_ref = self.eos_mix(T=self.T_REF_IG, P=self.P_REF_IG, Tcs=self.Tcs, Pcs=self.Pcs, kijs=self.kijs, **self.eos_kwargs)
+    @property
+    def Cplm_dep(self):
+        return self.eos_l.Cp_dep_l
+    
+    @property
+    def Cpgm_dep(self):
+        return self.eos_g.Cp_dep_g
+    
+    @property
+    def Cvlm_dep(self):
+        return self.eos_l.Cv_dep_l
+    
+    @property
+    def Cvgm_dep(self):
+        return self.eos_l.Cv_dep_g
+    
+    @property
+    def Cpgm(self):
+        Cp = 0.0
+        for i in self.cmps:
+            Cp += self.zs[i]*self.HeatCapacityGases[i].T_dependent_property(self.T)
+        return Cp + self.Cpgm_dep
+    
+    @property
+    def Cplm(self):
+        Cp = 0.0
+        for i in self.cmps:
+            Cp += self.zs[i]*self.HeatCapacityGases[i].T_dependent_property(self.T)
+        return Cp + self.Cplm_dep
+    
+    @property
+    def Cvgm(self):
+        return self.Cpgm - Cp_minus_Cv(T=self.T, dP_dT=self.dP_dT_g, dP_dV=self.dP_dV_g)
+
+    @property
+    def Cvlm(self):
+        return self.Cplm - Cp_minus_Cv(T=self.T, dP_dT=self.dP_dT_l, dP_dV=self.dP_dV_l)
+
+
+    def _post_flash(self):
+        if self.xs is not None:
+            self.eos_l = self.to_TP_zs(self.T, self.P, self.xs)
+        if self.ys is not None:
+            self.eos_g = self.to_TP_zs(self.T, self.P, self.ys)
+
 
     def to_TP_zs(self, T, P, zs):
         return self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
