@@ -418,11 +418,10 @@ def COSTALD(T, Tc, Vc, omega):
 
     Examples
     --------
-    Propane, from an example in the API Handbook
+    Propane, from an example in the API Handbook:
 
     >>> Vm_to_rho(COSTALD(272.03889, 369.83333, 0.20008161E-3, 0.1532), 44.097)
     530.3009967969841
-
 
     References
     ----------
@@ -431,11 +430,11 @@ def COSTALD(T, Tc, Vc, omega):
        25, no. 4 (1979): 653-663. doi:10.1002/aic.690250412
     '''
     Tr = T/Tc
-    V_delta = (-0.296123 + 0.386914*Tr - 0.0427258*Tr**2
-        - 0.0480645*Tr**3)/(Tr - 1.00001)
-    V_0 = 1 - 1.52816*(1-Tr)**(1/3.) + 1.43907*(1-Tr)**(2/3.) \
-        - 0.81446*(1-Tr) + 0.190454*(1-Tr)**(4/3.)
-    return Vc*V_0*(1-omega*V_delta)
+    tau = 1.0 - Tr
+    V_delta = (-0.296123 + Tr*(Tr*(-0.0480645*Tr - 0.0427258) + 0.386914))/(Tr - 1.00001)
+    V_0 = (1.0 - 1.52816*(tau)**(1/3.) + 1.43907*(tau)**(2/3.)
+           - 0.81446*(tau) + 0.190454*(tau)**(4/3.))
+    return Vc*V_0*(1.0 - omega*V_delta)
 
 
 def Campbell_Thodos(T, Tb, Tc, Pc, M, dipole=None, hydroxyl=False):
@@ -520,19 +519,19 @@ def Campbell_Thodos(T, Tb, Tc, Pc, M, dipole=None, hydroxyl=False):
     Tr = T/Tc
     Tbr = Tb/Tc
     Pc = Pc/101325.
-    s = Tbr * log(Pc)/(1-Tbr)
-    Lambda = Pc**(1/3.)/(M**0.5*Tc**(5/6.))
+    s = Tbr * log(Pc)/(1.0 - Tbr)
+    Lambda = Pc**(1.0/3.)/(M**0.5*Tc**(5/6.))
     alpha = 0.3883 - 0.0179*s
     beta = 0.00318*s - 0.0211 + 0.625*Lambda**(1.35)
-    if dipole:
-        theta = Pc*dipole**2/Tc**2
+    if dipole is not None:
+        theta = Pc*dipole*dipole/(Tc*Tc)
         alpha -= 130540 * theta**2.41
         beta += 9.74E6 * theta**3.38
     if hydroxyl:
         beta = 0.00318*s - 0.0211 + 0.625*Lambda**(1.35) + 5.90*theta**0.835
         alpha = (0.69*Tbr - 0.3342 + 5.79E-10/Tbr**32.75)*Pc**0.145
-    Zra = alpha + beta*(1-Tr)
-    Vs = R*Tc/(Pc*101325)*Zra**(1+(1-Tr)**(2/7.))
+    Zra = alpha + beta*(1.0 - Tr)
+    Vs = R*Tc/(Pc*101325.0)*Zra**(1.0 + (1.0 - Tr)**(2.0/7.))
     return Vs
 
 
@@ -596,7 +595,7 @@ def SNM0(T, Tc, Vc, omega, delta_SRK=None):
     '''
     Tr = T/Tc
     m = 0.480 + 1.574*omega - 0.176*omega*omega
-    alpha_SRK = (1. + m*(1. - Tr**0.5))**2
+    alpha_SRK = (1.0 + m*(1.0 - Tr**0.5))**2
     tau = 1. - Tr/alpha_SRK
 
     rho0 = 1. + 1.169*tau**(1/3.) + 1.818*tau**(2/3.) - 2.658*tau + 2.161*tau**(4/3.)
@@ -605,7 +604,7 @@ def SNM0(T, Tc, Vc, omega, delta_SRK=None):
     if not delta_SRK:
         return Vc*V0
     else:
-        return Vc*V0/(1. + delta_SRK*(alpha_SRK - 1.)**(1/3.))
+        return Vc*V0/(1. + delta_SRK*(alpha_SRK - 1.0)**(1.0/3.0))
 
 
 def CRC_inorganic(T, rho0, k, Tm):
@@ -1289,10 +1288,10 @@ def COSTALD_compressed(T, P, Psat, Tc, Pc, omega, Vs):
     j = 0.0861488
     k = 0.0344483
     tau = 1 - T/Tc
-    e = exp(f + g*omega + h*omega**2)
+    e = exp(f + g*omega + h*omega*omega)
     C = j + k*omega
-    B = Pc*(-1 + a*tau**(1/3.) + b*tau**(2/3.) + d*tau + e*tau**(4/3.))
-    return Vs*(1 - C*log((B + P)/(B + Psat)))
+    B = Pc*(-1.0 + a*tau**(1.0/3.) + b*tau**(2.0/3.) + d*tau + e*tau**(4.0/3.))
+    return Vs*(1.0 - C*log((B + P)/(B + Psat)))
 
 
 ### Liquid Mixtures
@@ -1402,7 +1401,7 @@ def Rackett_mixture(T, xs, MWs, Tcs, Pcs, Zrs):
     MW = mixing_simple(xs, MWs)
     Tr = T/Tc
     bigsum = sum(xs[i]*Tcs[i]/Pcs[i]/MWs[i] for i in range(len(xs)))
-    return (R*bigsum*Zr**(1. + (1. - Tr)**(2/7.)))*MW
+    return (R*bigsum*Zr**(1.0 + (1.0 - Tr)**(2.0/7.0)))*MW
 
 
 def COSTALD_mixture(xs, T, Tcs, Vcs, omegas):
@@ -1464,9 +1463,9 @@ def COSTALD_mixture(xs, T, Tcs, Vcs, omegas):
     if not none_and_length_check([xs, Tcs, Vcs, omegas]):
         raise Exception('Function inputs are incorrect format')
     sum1 = sum([xi*Vci for xi, Vci in zip(xs, Vcs)])
-    sum2 = sum([xi*Vci**(2/3.) for xi, Vci in zip(xs, Vcs)])
-    sum3 = sum([xi*Vci**(1/3.) for xi, Vci in zip(xs, Vcs)])
-    Vm = 0.25*(sum1 + 3.*sum2*sum3)
+    sum2 = sum([xi*Vci**(2.0/3.) for xi, Vci in zip(xs, Vcs)])
+    sum3 = sum([xi*Vci**(1.0/3.) for xi, Vci in zip(xs, Vcs)])
+    Vm = 0.25*(sum1 + 3.0*sum2*sum3)
     VijTcij = [[(Tcs[i]*Tcs[j]*Vcs[i]*Vcs[j])**0.5 for j in cmps] for i in cmps]
     omega = mixing_simple(xs, omegas)
     Tcm = sum([xs[i]*xs[j]*VijTcij[i][j]/Vm for j in cmps for i in cmps])
@@ -1971,7 +1970,7 @@ class VolumeGas(TPDependentProperty):
         elif method == CRC_VIRIAL:
             a1, a2, a3, a4, a5 = self.CRC_VIRIAL_coeffs
             t = 298.15/T - 1.
-            B = (a1 + a2*t + a3*t**2 + a4*t**3 + a5*t**4)/1E6
+            B = (a1 + t*(a2 + t*(a3 + t*(a4 + a5*t))))*1E-6
             Vm = ideal_gas(T, P) + B
         elif method == IDEAL:
             Vm = ideal_gas(T, P)

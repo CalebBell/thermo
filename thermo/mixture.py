@@ -840,6 +840,8 @@ class Mixture(object):
                 self.quality = self.x = vapor_mass_quality(self.V_over_F, MWl=self.MWl, MWg=self.MWg) 
             else:
                 self.quality = self.x = 1 if self.phase == 'g' else 0
+                
+            # TODO: volume fractions
         else:
             # flash failed. still want to set what variables that can be set though.
             for var in ['T', 'P', 'VF', 'Hm', 'Sm', 'H', 'S']:

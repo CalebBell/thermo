@@ -189,7 +189,7 @@ for i, line in enumerate(joback_data_txt.split('\n')):
     joback_groups_id_dict[i+1] = j
 
 
-def smarts_fragment(catalog, rdkitmol=None, smi=None):
+def smarts_fragment(catalog, rdkitmol=None, smi=None, deduplicate=True):
     r'''Fragments a molecule into a set of unique groups and counts as
     specified by the `catalog`. The molecule can either be an rdkit 
     molecule object, or a smiles string which will be parsed by rdkit.
@@ -256,11 +256,44 @@ def smarts_fragment(catalog, rdkitmol=None, smi=None):
     counts = {}
     all_matches = {}
     for key, smart in catalog.items():
-        patt = Chem.MolFromSmarts(smart)
-        hits = rdkitmol.GetSubstructMatches(patt)
+        if isinstance(smart, str):
+            patt = Chem.MolFromSmarts(smart)
+        else:
+            patt = smart
+        hits = list(rdkitmol.GetSubstructMatches(patt))
         if hits:
-            all_matches[smart] = hits
+            all_matches[key] = hits
             counts[key] = len(hits)
+        
+    # Duplicate group cleanup
+    matched_atoms = []
+    for i in all_matches.values():
+        for j in i:
+            matched_atoms.extend(j)
+    
+    if deduplicate:
+        dups = [i for i, c in Counter(matched_atoms).items() if c > 1]
+    #    print(dups, 'hi', Counter(matched_atoms).items())
+        for dup in dups:
+    #        print(dups)
+            dup_smart_matches = []
+            for group, group_match_list in all_matches.items():
+                for i, group_match_i in enumerate(group_match_list):
+                    if dup in group_match_i:
+                        dup_smart_matches.append((group, i, group_match_i, len(group_match_i)))
+            sizes = [i[3] for i in dup_smart_matches]
+            max_size = max(sizes)
+            if sizes.count(max_size) > 1:
+                # Two same size groups, continue, can't do anything
+                continue
+            else:
+                # Remove matches that are not the largest
+                max_idx = sizes.index(max_size)
+                for group, idx, positions, size in dup_smart_matches:
+                    if size != max_size:
+    #                    print('removing', group, idx)
+                        del all_matches[group][idx]
+                        counts[group] -= 1
     
     matched_atoms = set()
     for i in all_matches.values():
