@@ -531,6 +531,7 @@ class Ideal(PropertyPackage):
                     Psat = i.extrapolate_tabular(T)
                 Psats.append(Psat)
             else:
+#                print(i.CASRN)
                 Psats.append(i.extrapolate_tabular(T))
         return Psats
         

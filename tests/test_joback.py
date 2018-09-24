@@ -20,9 +20,16 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
+import os
 from numpy.testing import assert_allclose
 import pytest
 from thermo.joback import *
+from thermo.joback import J_BIGGS_JOBACK_SMARTS_id_dict
+
+from thermo.identifiers import pubchem_db
+
+folder = os.path.join(os.path.dirname(__file__), 'Data')
+
 
 @pytest.mark.rdkit
 def test_Joback_acetone():
@@ -46,3 +53,26 @@ def test_Joback_acetone():
         assert_allclose(ex.Cpig(300), 75.32642000000001)
         assert_allclose(ex.mul_coeffs(ex.counts), [839.11, -14.99])
         assert_allclose(ex.mul(300), 0.0002940378347162687)
+        
+        
+@pytest.mark.rdkit
+def test_Joback_database():
+    [pubchem_db.autoload_next() for i in range(10)]
+
+    f = open(os.path.join(folder, 'joback_log.txt'), 'w')
+    from rdkit import Chem
+    catalog = unifac_smarts = {i: Chem.MolFromSmarts(j) for i, j in J_BIGGS_JOBACK_SMARTS_id_dict.items()}
+    lines = []
+    for key in sorted(pubchem_db.CAS_index):
+        chem_info = pubchem_db.CAS_index[key]
+        try:
+            mol = Chem.MolFromSmiles(chem_info.smiles)
+            parsed = smarts_fragment(rdkitmol=mol, catalog=catalog, deduplicate=False)
+            line = '%s\t%s\t%s\t%s\n' %(parsed[2], chem_info.CASs, chem_info.smiles, parsed[0])
+        except Exception as e:
+            line = '%s\t%s\t%s\n' %(chem_info.CASs, chem_info.smiles, e)
+        lines.append(line)
+    
+    [f.write(line) for line in sorted(lines)]
+    f.close()
+        

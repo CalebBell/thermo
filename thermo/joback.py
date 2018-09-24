@@ -49,21 +49,26 @@ J_BIGGS_JOBACK_SMARTS = [["Methyl","-CH3", "[CX4H3]"],
 ["Secondary acyclic", "-CH2-", "[!R;CX4H2]"],
 ["Tertiary acyclic",">CH-", "[!R;CX4H]"],
 ["Quaternary acyclic", ">C<", "[!R;CX4H0]"],
+
 ["Primary alkene", "=CH2", "[CX3H2]"],
 ["Secondary alkene acyclic", "=CH-", "[!R;CX3H1;!$([CX3H1](=O))]"],
-["Tertiary alkene acyclic", "=C<", "[$([!R;#6X3H0]);!$([!R;#6X3H0]=[#8])]"],
+["Tertiary alkene acyclic", "=C<", "[$([!R;CX3H0]);!$([!R;CX3H0]=[#8])]"],
 ["Cumulative alkene", "=C=", "[$([CX2H0](=*)=*)]"],
 ["Terminal alkyne", u"≡CH","[$([CX2H1]#[!#7])]"],
 ["Internal alkyne",u"≡C-","[$([CX2H0]#[!#7])]"],
+
 ["Secondary cyclic", "-CH2- (ring)", "[R;CX4H2]"],
 ["Tertiary cyclic", ">CH- (ring)", "[R;CX4H]"],
 ["Quaternary cyclic", ">C< (ring)", "[R;CX4H0]"],
+
 ["Secondary alkene cyclic", "=CH- (ring)", "[R;CX3H1,cX3H1]"],
-["Tertiary alkene cyclic", "=C< (ring)","[$([R;#6X3H0]);!$([R;#6X3H0]=[#8])]"],
+["Tertiary alkene cyclic", "=C< (ring)","[$([R;CX3H0]);!$([R;CX3H0]=[#8])]"],
+
 ["Fluoro", "-F", "[F]"],
 ["Chloro", "-Cl", "[Cl]"],
 ["Bromo", "-Br", "[Br]"],
 ["Iodo", "-I", "[I]"],
+
 ["Alcohol","-OH (alcohol)", "[OX2H;!$([OX2H]-[#6]=[O]);!$([OX2H]-a)]"],
 ["Phenol","-OH (phenol)", "[$([OX2H]-a)]"],
 ["Ether acyclic", "-O- (nonring)", "[OX2H0;!R;!$([OX2H0]-[#6]=[#8])]"],
@@ -74,6 +79,7 @@ J_BIGGS_JOBACK_SMARTS = [["Methyl","-CH3", "[CX4H3]"],
 ["Carboxylic acid", "-COOH (acid)", "[OX2H]-[C]=O"],
 ["Ester", "-COO- (ester)", "[#6X3H0;!$([#6X3H0](~O)(~O)(~O))](=[#8X1])[#8X2H0]"],
 ["Oxygen double bond other", "=O (other than above)","[OX1H0;!$([OX1H0]~[#6X3]);!$([OX1H0]~[#7X3]~[#8])]"],
+
 ["Primary amino","-NH2", "[NX3H2]"],
 ["Secondary amino acyclic",">NH (nonring)", "[NX3H1;!R]"],
 ["Secondary amino cyclic",">NH (ring)", "[#7X3H1;R]"],
@@ -83,6 +89,7 @@ J_BIGGS_JOBACK_SMARTS = [["Methyl","-CH3", "[CX4H3]"],
 ["Aldimine", "=NH", "[#7X2H1]"],
 ["Cyano", "-CN","[#6X2]#[#7X1H0]"],
 ["Nitro", "-NO2", "[$([#7X3,#7X3+][!#8])](=[O])~[O-]"],
+
 ["Thiol", "-SH", "[SX2H]"],
 ["Thioether acyclic", "-S- (nonring)", "[#16X2H0;!R]"],
 ["Thioether cyclic", "-S- (ring)", "[#16X2H0;R]"]]
@@ -273,17 +280,23 @@ def smarts_fragment(catalog, rdkitmol=None, smi=None, deduplicate=True):
     
     if deduplicate:
         dups = [i for i, c in Counter(matched_atoms).items() if c > 1]
-    #    print(dups, 'hi', Counter(matched_atoms).items())
-        for dup in dups:
-    #        print(dups)
+        iteration = 0
+        while (dups and iteration < 100):
+            dup = dups[0]
+            
             dup_smart_matches = []
             for group, group_match_list in all_matches.items():
                 for i, group_match_i in enumerate(group_match_list):
                     if dup in group_match_i:
                         dup_smart_matches.append((group, i, group_match_i, len(group_match_i)))
+            
+            
             sizes = [i[3] for i in dup_smart_matches]
             max_size = max(sizes)
+#            print(sizes, 'sizes', 'dup', dup, 'working_data', dup_smart_matches)
             if sizes.count(max_size) > 1:
+                iteration += 1
+#                print('BAD')
                 # Two same size groups, continue, can't do anything
                 continue
             else:
@@ -291,9 +304,17 @@ def smarts_fragment(catalog, rdkitmol=None, smi=None, deduplicate=True):
                 max_idx = sizes.index(max_size)
                 for group, idx, positions, size in dup_smart_matches:
                     if size != max_size:
-    #                    print('removing', group, idx)
+                        # Not handling the case of multiple duplicate matches right, indexes changing!!!
                         del all_matches[group][idx]
-                        counts[group] -= 1
+                        continue
+        
+            matched_atoms = []
+            for i in all_matches.values():
+                for j in i:
+                    matched_atoms.extend(j)
+        
+            dups = [i for i, c in Counter(matched_atoms).items() if c > 1]
+            iteration += 1
     
     matched_atoms = set()
     for i in all_matches.values():

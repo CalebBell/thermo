@@ -456,10 +456,10 @@ def Li_Johns_Ahmadi_solution(zs, Ks):
     Uses the method proposed in [1]_ to obtain an initial guess.
 
     .. math::
-        0 = 1 + \left(\frac{K_{max}-K_{min}}{K_{min}-1}\right)x_1
-        + \sum_{i=2}^{n-1}\frac{K_i-K_{min}}{K_{min}-1}\left[\frac{z_i(K_{max}
-        -1)x_{max}}{(K_i-1)z_{max} + (K_{max}-K_i)x_{max}}\right]
-
+        0 = 1 + \left(\frac{K_{max}-K_{min}}{K_{min}-1}\right)x_{max} + \sum_{i=2}^{n-1}
+        \frac{K_i-K_{min}}{K_{min}-1}
+        \left[\frac{z_i(K_{max}-1)x_{max}}{(K_i-1)z_{max} + (K_{max}-K_i)x_{max}}\right]
+        
     Parameters
     ----------
     zs : list[float]

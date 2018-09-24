@@ -2236,8 +2236,11 @@ class TDependentProperty(object):
                                 ' data for property %s of %s because temperature '
                                 'limits could not be determined.' %(self.name, self.CASRN))
             
-            Ts = np.linspace(max(20, self.Tmin), self.Tmax, 200)
+            Tmin = max(20, self.Tmin)
+            if self.Tb is not None:
+                Tmin = min(Tmin, self.Tb)
             
+            Ts = np.linspace(Tmin, self.Tmax, 200)
             properties = [self.T_dependent_property(T) for T in Ts]
             Ts_cleaned = []
             properties_cleaned = []

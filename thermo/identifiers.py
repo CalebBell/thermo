@@ -432,7 +432,7 @@ def CAS_from_any(ID, autoload=False):
             return CAS_alternate_loopup.CASs
         if not autoload:
             return CAS_from_any(ID, autoload=True)
-        raise Exception('A valid CAS number was recognized, but is not in the database')
+        raise Exception('A valid CAS number (%s) was recognized, but is not in the database' %(ID))
         
         
     
@@ -451,7 +451,7 @@ def CAS_from_any(ID, autoload=False):
             else:
                 if not autoload:
                     return CAS_from_any(ID, autoload=True)
-                raise Exception('A valid InChI name was recognized, but it is not in the database')
+                raise Exception('A valid InChI name (%s) was recognized, but it is not in the database' %(inchi_search))
         if ID_lower[0:9] == 'inchikey=':
             inchi_key_lookup = pubchem_db.search_InChI_key(ID[9:], autoload)
             if inchi_key_lookup:
@@ -459,7 +459,7 @@ def CAS_from_any(ID, autoload=False):
             else:
                 if not autoload:
                     return CAS_from_any(ID, autoload=True)
-                raise Exception('A valid InChI Key was recognized, but it is not in the database')
+                raise Exception('A valid InChI Key (%s) was recognized, but it is not in the database' %(inchi_key_lookup))
     if ID_len > 8:
         if ID_lower[0:8] == 'pubchem=':
             pubchem_lookup = pubchem_db.search_pubchem(ID[8:], autoload)
@@ -468,7 +468,7 @@ def CAS_from_any(ID, autoload=False):
             else:
                 if not autoload:
                     return CAS_from_any(ID, autoload=True)
-                raise Exception('A PubChem integer identifier was recognized, but it is not in the database.')
+                raise Exception('A PubChem integer (%s) identifier was recognized, but it is not in the database.' %(ID[8:]))
     if ID_len > 7:
         if ID_lower[0:7] == 'smiles=':
             smiles_lookup = pubchem_db.search_smiles(ID[7:], autoload)
@@ -477,7 +477,7 @@ def CAS_from_any(ID, autoload=False):
             else:
                 if not autoload:
                     return CAS_from_any(ID, autoload=True)
-                raise Exception('A SMILES identifier was recognized, but it is not in the database.')
+                raise Exception('A SMILES identifier (%s) was recognized, but it is not in the database.' %(ID[7:]))
 
     # Try the smiles lookup anyway
     # Parsing SMILES is an option, but this is faster
@@ -523,7 +523,7 @@ def CAS_from_any(ID, autoload=False):
     if not autoload:
         return CAS_from_any(ID, autoload=True)
             
-    raise Exception('Chemical name not recognized')
+    raise Exception('Chemical name (%s) not recognized' %(ID))
 
 
 
