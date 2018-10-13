@@ -941,10 +941,10 @@ def UNIQUAC(xs, rs, qs, taus):
 
     Ss = [sum([vs[j]*taus[j][i] for j in cmps]) for i in cmps]
 
-    loggammacs = [log(phis[i]/xs[i]) + 1 - phis[i]/xs[i]
-    - 5*qs[i]*(log(phis[i]/vs[i]) + 1 - phis[i]/vs[i]) for i in cmps]
+    loggammacs = [log(phis[i]/xs[i]) + 1.0 - phis[i]/xs[i]
+    - 5*qs[i]*(log(phis[i]/vs[i]) + 1.0 - phis[i]/vs[i]) for i in cmps]
 
-    loggammars = [qs[i]*(1 - log(Ss[i]) - sum([taus[i][j]*vs[j]/Ss[j]
+    loggammars = [qs[i]*(1.0 - log(Ss[i]) - sum([taus[i][j]*vs[j]/Ss[j]
                   for j in cmps])) for i in cmps]
 
     return [exp(loggammacs[i] + loggammars[i]) for i in cmps]

@@ -31,7 +31,7 @@ __all__ = ['WagnerMcGarry', 'AntoinePoling', 'WagnerPoling', 'AntoineExtended',
 import os
 import numpy as np
 import pandas as pd
-from thermo.utils import log, exp
+from thermo.utils import log, exp, isnan
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
 from thermo.utils import TDependentProperty
 from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluids
@@ -502,7 +502,7 @@ class VaporPressure(TDependentProperty):
             methods.append(WAGNER_POLING)
             _, A, B, C, D, self.WAGNER_POLING_Tc, self.WAGNER_POLING_Pc, Tmin, self.WAGNER_POLING_Tmax = _WagnerPoling_values[WagnerPoling.index.get_loc(self.CASRN)].tolist()
             # Some Tmin values are missing; Arbitrary choice of 0.1 lower limit
-            self.WAGNER_POLING_Tmin = Tmin if not np.isnan(Tmin) else self.WAGNER_POLING_Tmax*0.1
+            self.WAGNER_POLING_Tmin = Tmin if not isnan(Tmin) else self.WAGNER_POLING_Tmax*0.1
             self.WAGNER_POLING_coefs = [A, B, C, D]
             Tmins.append(Tmin); Tmaxs.append(self.WAGNER_POLING_Tmax)
         if self.CASRN in AntoineExtended.index:

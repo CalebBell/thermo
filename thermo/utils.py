@@ -1390,7 +1390,7 @@ def horner(coeffs, x):
     >>> horner([1,2,3], 3)
     18
     '''
-    tot = 0
+    tot = 0.0
     for c in coeffs:
         tot = tot * x + c
     return tot

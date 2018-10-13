@@ -33,7 +33,7 @@ import os
 import numpy as np
 import pandas as pd
 
-from thermo.utils import log
+from thermo.utils import log, isnan
 from thermo.utils import R, pi, N_A
 from thermo.miscdata import CRC_organic_data, CRC_inorganic_data
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
@@ -150,9 +150,9 @@ def Tb(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=[PSAT_DEFINITIO
     '''
     def list_methods():
         methods = []
-        if CASRN in CRC_inorganic_data.index and not np.isnan(CRC_inorganic_data.at[CASRN, 'Tb']):
+        if CASRN in CRC_inorganic_data.index and not isnan(CRC_inorganic_data.at[CASRN, 'Tb']):
             methods.append(CRC_INORG)
-        if CASRN in CRC_organic_data.index and not np.isnan(CRC_organic_data.at[CASRN, 'Tb']):
+        if CASRN in CRC_organic_data.index and not isnan(CRC_organic_data.at[CASRN, 'Tb']):
             methods.append(CRC_ORG)
         if CASRN in Yaws_data.index:
             methods.append(YAWS)
@@ -262,9 +262,9 @@ def Tm(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=[]):
         methods = []
         if CASRN in Tm_ON_data.index:
             methods.append(OPEN_NTBKM)
-        if CASRN in CRC_inorganic_data.index and not np.isnan(CRC_inorganic_data.at[CASRN, 'Tm']):
+        if CASRN in CRC_inorganic_data.index and not isnan(CRC_inorganic_data.at[CASRN, 'Tm']):
             methods.append(CRC_INORG)
-        if CASRN in CRC_organic_data.index and not np.isnan(CRC_organic_data.at[CASRN, 'Tm']):
+        if CASRN in CRC_organic_data.index and not isnan(CRC_organic_data.at[CASRN, 'Tm']):
             methods.append(CRC_ORG)
         if IgnoreMethods:
             for Method in IgnoreMethods:
@@ -1119,11 +1119,11 @@ class EnthalpyVaporization(TDependentProperty):
             methods.append(ALIBAKHSHI)
             self.Alibakhshi_C = float(Alibakhshi_Cs.at[self.CASRN, 'C'])
             Tmaxs.append( max(self.Tc-100., 0) )
-        if self.CASRN in CRCHvap_data.index and not np.isnan(CRCHvap_data.at[self.CASRN, 'HvapTb']):
+        if self.CASRN in CRCHvap_data.index and not isnan(CRCHvap_data.at[self.CASRN, 'HvapTb']):
             methods.append(CRC_HVAP_TB)
             self.CRC_HVAP_TB_Tb = float(CRCHvap_data.at[self.CASRN, 'Tb'])
             self.CRC_HVAP_TB_Hvap = float(CRCHvap_data.at[self.CASRN, 'HvapTb'])
-        if self.CASRN in CRCHvap_data.index and not np.isnan(CRCHvap_data.at[self.CASRN, 'Hvap298']):
+        if self.CASRN in CRCHvap_data.index and not isnan(CRCHvap_data.at[self.CASRN, 'Hvap298']):
             methods.append(CRC_HVAP_298)
             self.CRC_HVAP_298 = float(CRCHvap_data.at[self.CASRN, 'Hvap298'])
         if self.CASRN in GharagheiziHvap_data.index:

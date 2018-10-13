@@ -37,6 +37,7 @@ import numpy as np
 import pandas as pd
 from fluids.core import F2K
 from thermo.utils import R
+from thermo.utils import isnan
 from thermo.utils import to_num, none_and_length_check, normalize
 from thermo.identifiers import CAS_from_any
 
@@ -603,9 +604,9 @@ def Tflash(CASRN, AvailableMethods=False, Method=None):
     '''
     def list_methods():
         methods = []
-        if CASRN in IEC_2010.index and not np.isnan(IEC_2010.at[CASRN, 'Tflash']):
+        if CASRN in IEC_2010.index and not isnan(IEC_2010.at[CASRN, 'Tflash']):
             methods.append(IEC)
-        if CASRN in NFPA_2008.index and not np.isnan(NFPA_2008.at[CASRN, 'Tflash']):
+        if CASRN in NFPA_2008.index and not isnan(NFPA_2008.at[CASRN, 'Tflash']):
             methods.append(NFPA)
         if CASRN in DIPPR_SERAT.index:
             methods.append(SERAT)
@@ -683,9 +684,9 @@ def Tautoignition(CASRN, AvailableMethods=False, Method=None):
     '''
     def list_methods():
         methods = []
-        if CASRN in IEC_2010.index and not np.isnan(IEC_2010.at[CASRN, 'Tautoignition']):
+        if CASRN in IEC_2010.index and not isnan(IEC_2010.at[CASRN, 'Tautoignition']):
             methods.append(IEC)
-        if CASRN in NFPA_2008.index and not np.isnan(NFPA_2008.at[CASRN, 'Tautoignition']):
+        if CASRN in NFPA_2008.index and not isnan(NFPA_2008.at[CASRN, 'Tautoignition']):
             methods.append(NFPA)
         methods.append(NONE)
         return methods
@@ -768,9 +769,9 @@ def LFL(Hc=None, atoms={}, CASRN='', AvailableMethods=False, Method=None):
     '''
     def list_methods():
         methods = []
-        if CASRN in IEC_2010.index and not np.isnan(IEC_2010.at[CASRN, 'LFL']):
+        if CASRN in IEC_2010.index and not isnan(IEC_2010.at[CASRN, 'LFL']):
             methods.append(IEC)
-        if CASRN in NFPA_2008.index and not np.isnan(NFPA_2008.at[CASRN, 'LFL']):
+        if CASRN in NFPA_2008.index and not isnan(NFPA_2008.at[CASRN, 'LFL']):
             methods.append(NFPA)
         if Hc:
             methods.append(SUZUKI)
@@ -858,9 +859,9 @@ def UFL(Hc=None, atoms={}, CASRN='', AvailableMethods=False, Method=None):
     '''
     def list_methods():
         methods = []
-        if CASRN in IEC_2010.index and not np.isnan(IEC_2010.at[CASRN, 'UFL']):
+        if CASRN in IEC_2010.index and not isnan(IEC_2010.at[CASRN, 'UFL']):
             methods.append(IEC)
-        if CASRN in NFPA_2008.index and not np.isnan(NFPA_2008.at[CASRN, 'UFL']):
+        if CASRN in NFPA_2008.index and not isnan(NFPA_2008.at[CASRN, 'UFL']):
             methods.append(NFPA)
         if Hc:
             methods.append(SUZUKI)

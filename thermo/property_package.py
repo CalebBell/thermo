@@ -242,6 +242,8 @@ class PropertyPackage(object):
         pass
     
     def flash(self, zs, T=None, P=None, VF=None):
+        '''Note: There is no caching at this layer
+        '''
         if not self.SUPPORTS_ZERO_FRACTIONS:
             zs = remove_zeros(zs, 1e-11)
             
@@ -1911,7 +1913,8 @@ class GceosBase(Ideal):
     stability_xtol = 1E-12
     
     def __init__(self, eos_mix=PRMIX, VaporPressures=None, Tms=None, Tbs=None, 
-                 Tcs=None, Pcs=None, omegas=None, kijs=None, eos_kwargs=None):
+                 Tcs=None, Pcs=None, omegas=None, kijs=None, eos_kwargs=None,
+                 **kwargs):
         self.eos_mix = eos_mix
         self.VaporPressures = VaporPressures
         self.Tms = Tms

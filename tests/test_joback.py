@@ -55,6 +55,7 @@ def test_Joback_acetone():
         assert_allclose(ex.mul(300), 0.0002940378347162687)
         
         
+@pytest.mark.slow
 @pytest.mark.rdkit
 def test_Joback_database():
     [pubchem_db.autoload_next() for i in range(10)]

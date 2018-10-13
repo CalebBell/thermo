@@ -841,7 +841,12 @@ class Mixture(object):
             else:
                 self.quality = self.x = 1 if self.phase == 'g' else 0
                 
-            # TODO: volume fractions
+            # TODO: volume fractions - attempt
+            if (self.rhol is not None and self.rhog is not None):
+                self.Vfg = vapor_mass_quality(self.quality, MWl=self.rhol, MWg=self.rhog) 
+            else:
+                self.Vfg = None
+                
         else:
             # flash failed. still want to set what variables that can be set though.
             for var in ['T', 'P', 'VF', 'Hm', 'Sm', 'H', 'S']:
@@ -2145,6 +2150,55 @@ class Mixture(object):
         return None
 
     @property
+    def speed_of_sound_g(self):
+        r'''Gas-phase speed of sound of the mixture at its
+        current temperature, [m/s].
+
+        Examples
+        --------
+        >>> Mixture(['nitrogen'], ws=[1]).speed_of_sound_g
+        351.77445481641661
+        '''
+        
+        dP_dV = 1.0/self.VolumeGasMixture.property_derivative_P(T=self.T, P=self.P, 
+                                                                zs=self.ys, ws=self.wsg, order=1)
+        
+        return speed_of_sound(V=self.Vmg, dP_dV=dP_dV, Cp=self.property_package.Cpgm, 
+                              Cv=self.property_package.Cvgm, MW=self.MW)
+
+    @property
+    def speed_of_sound_l(self):
+        r'''Liquid-phase speed of sound of the mixture at its
+        current temperature, [m/s].
+
+        Examples
+        --------
+        >>> Mixture(['toluene'], P=1E5, T=300, ws=[1]).speed_of_sound_l
+        1116.0852487852942
+        '''
+        dP_dV = 1.0/self.VolumeLiquidMixture.property_derivative_P(T=self.T, P=self.P, 
+                                                                zs=self.xs, ws=self.wsl, order=1)
+        
+        return speed_of_sound(V=self.Vml, dP_dV=dP_dV, Cp=self.property_package.Cplm, 
+                              Cv=self.property_package.Cvlm, MW=self.MW)
+    @property
+    def speed_of_sound(self):
+        r'''Bulk speed of sound of the mixture at its
+        current temperature, [m/s].
+
+        Examples
+        --------
+        >>> Mixture(['toluene'], P=1E5, VF=0.5, ws=[1]).speed_of_sound
+        478.99527258140211
+        '''
+        if self.phase == 'l':
+            return self.speed_of_sound_l
+        elif self.phase == 'g':
+            return self.speed_of_sound_g
+        elif self.phase == 'l/g':
+            return self.speed_of_sound_g*self.x + (1.0 - self.x)*self.speed_of_sound_l
+    
+    @property
     def isentropic_exponent(self):
         r'''Gas-phase ideal-gas isentropic exponent of the mixture at its
         current temperature, [dimensionless]. Does not include
@@ -2523,6 +2577,11 @@ class Mixture(object):
         >>> Mixture(['decane'], ws=[1], T=550, P=2E6).rho
         498.67008448640604
         '''
+        if self.phase == 'l/g':
+            # Volume fraction mixing rule for density
+            rhol, rhog = self.rhol, self.rhog
+            a, b = (1.0 - self.x)/rhol, self.x/rhog
+            return rhol*a/(a+b) + b/(a+b)*rhog
         return phase_select_property(phase=self.phase, s=self.rhos, l=self.rhol, g=self.rhog)
 
     @property
@@ -2536,6 +2595,11 @@ class Mixture(object):
         >>> Mixture(['1-hexanol'], ws=[1]).rhom
         7983.414573003429
         '''
+        if self.phase == 'l/g':
+            # Volume fraction mixing rule for density
+            rholm, rhogm = self.rholm, self.rhogm
+            a, b = (1.0 - self.x)/rholm, self.x/rhogm
+            return rholm*a/(a+b) + b/(a+b)*rhogm
         return phase_select_property(phase=self.phase, s=None, l=self.rholm, g=self.rhogm)
 
     @property

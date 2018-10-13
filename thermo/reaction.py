@@ -28,6 +28,7 @@ __all__ = ['API_TDB_data', 'ATcT_l', 'ATcT_g', 'Hf_methods', 'Hf',
 import os
 import numpy as np
 import pandas as pd
+from thermo.utils import isnan
 from thermo.heat_capacity import TRC_gas_data
 
 folder = os.path.join(os.path.dirname(__file__), 'Reactions')
@@ -254,7 +255,7 @@ def Hf_g(CASRN, AvailableMethods=False, Method=None):
         methods = []
         if CASRN in ATcT_g.index:
             methods.append(ATCT_G)
-        if CASRN in TRC_gas_data.index and not np.isnan(TRC_gas_data.at[CASRN, 'Hf']):
+        if CASRN in TRC_gas_data.index and not isnan(TRC_gas_data.at[CASRN, 'Hf']):
             methods.append(TRC)
         methods.append(NONE)
         return methods

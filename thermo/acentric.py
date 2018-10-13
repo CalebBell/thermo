@@ -27,7 +27,7 @@ __all__.extend(['omega_methods', 'omega_mixture_methods', 'Stiel_polar_methods']
 
 import numpy as np
 import pandas as pd
-from thermo.utils import log, log10
+from thermo.utils import log, log10, isnan
 from thermo.utils import mixing_simple, none_and_length_check
 from thermo.critical import Tc, Pc
 from thermo.critical import _crit_PSRKR4, _crit_PassutDanner, _crit_Yaws
@@ -117,11 +117,11 @@ def omega(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=['LK', 'DEFI
     '''
     def list_methods():
         methods = []
-        if CASRN in _crit_PSRKR4.index and not np.isnan(_crit_PSRKR4.at[CASRN, 'omega']):
+        if CASRN in _crit_PSRKR4.index and not isnan(_crit_PSRKR4.at[CASRN, 'omega']):
             methods.append('PSRK')
-        if CASRN in _crit_PassutDanner.index and not np.isnan(_crit_PassutDanner.at[CASRN, 'omega']):
+        if CASRN in _crit_PassutDanner.index and not isnan(_crit_PassutDanner.at[CASRN, 'omega']):
             methods.append('PD')
-        if CASRN in _crit_Yaws.index and not np.isnan(_crit_Yaws.at[CASRN, 'omega']):
+        if CASRN in _crit_Yaws.index and not isnan(_crit_Yaws.at[CASRN, 'omega']):
             methods.append('YAWS')
         Tcrit, Pcrit = Tc(CASRN), Pc(CASRN)
         if Tcrit and Pcrit:

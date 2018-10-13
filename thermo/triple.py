@@ -28,6 +28,7 @@ import os
 import numpy as np
 import pandas as pd
 
+from thermo.utils import isnan
 from thermo.phase_change import Tm
 from thermo.vapor_pressure import VaporPressure
 
@@ -171,7 +172,7 @@ def Pt(CASRN, AvailableMethods=False, Method=None):
     '''
     def list_methods():
         methods = []
-        if CASRN in Staveley_data.index and not np.isnan(Staveley_data.at[CASRN, 'Pt']):
+        if CASRN in Staveley_data.index and not isnan(Staveley_data.at[CASRN, 'Pt']):
             methods.append(STAVELEY)
         if Tt(CASRN) and VaporPressure(CASRN=CASRN).T_dependent_property(T=Tt(CASRN)):
             methods.append(DEFINITION)

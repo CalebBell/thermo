@@ -40,7 +40,7 @@ from scipy.interpolate import interp1d
 import pandas as pd
 
 from thermo.utils import R
-from thermo.utils import log, exp
+from thermo.utils import log, exp, isnan
 from thermo.utils import Vm_to_rho, rho_to_Vm, mixing_simple, none_and_length_check
 from thermo.virial import BVirial_Pitzer_Curl, BVirial_Abbott, BVirial_Tsonopoulos, BVirial_Tsonopoulos_extended
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
@@ -981,7 +981,7 @@ class VolumeLiquid(TPDependentProperty):
             self.COSTALD_Vchar = float(COSTALD_data.at[self.CASRN, 'Vchar'])
             self.COSTALD_omega_SRK = float(COSTALD_data.at[self.CASRN, 'omega_SRK'])
             Tmins.append(0); Tmaxs.append(self.Tc)
-        if self.Tc and self.Pc and self.CASRN in COSTALD_data.index and not np.isnan(COSTALD_data.at[self.CASRN, 'Z_RA']):
+        if self.Tc and self.Pc and self.CASRN in COSTALD_data.index and not isnan(COSTALD_data.at[self.CASRN, 'Z_RA']):
             methods.append(RACKETTFIT)
             self.RACKETT_Z_RA = float(COSTALD_data.at[self.CASRN, 'Z_RA'])
             Tmins.append(0); Tmaxs.append(self.Tc)

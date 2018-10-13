@@ -26,6 +26,7 @@ __all__ = ['dipole_moment', '_dipole_Poling', '_dipole_CCDB', '_dipole_Muller', 
 import os
 import numpy as np
 import pandas as pd
+from thermo.utils import isnan
 
 
 folder = os.path.join(os.path.dirname(__file__), 'Misc')
@@ -114,11 +115,11 @@ def dipole_moment(CASRN, AvailableMethods=False, Method=None):
     '''
     def list_methods():
         methods = []
-        if CASRN in _dipole_CCDB.index and not np.isnan(_dipole_CCDB.at[CASRN, 'Dipole']):
+        if CASRN in _dipole_CCDB.index and not isnan(_dipole_CCDB.at[CASRN, 'Dipole']):
             methods.append(CCCBDB)
-        if CASRN in _dipole_Muller.index and not np.isnan(_dipole_Muller.at[CASRN, 'Dipole']):
+        if CASRN in _dipole_Muller.index and not isnan(_dipole_Muller.at[CASRN, 'Dipole']):
             methods.append(MULLER)
-        if CASRN in _dipole_Poling.index and not np.isnan(_dipole_Poling.at[CASRN, 'Dipole']):
+        if CASRN in _dipole_Poling.index and not isnan(_dipole_Poling.at[CASRN, 'Dipole']):
             methods.append(POLING)
         methods.append(NONE)
         return methods

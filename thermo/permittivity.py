@@ -27,6 +27,7 @@ __all__ = ['CRC_Permittivity_data', 'permittivity_IAPWS', 'Permittivity']
 import os
 import numpy as np
 import pandas as pd
+from thermo.utils import isnan
 from thermo.utils import N_A, epsilon_0, k
 from thermo.utils import TDependentProperty
 
@@ -234,8 +235,8 @@ class Permittivity(TDependentProperty):
             _, self.CRC_CONSTANT_T, self.CRC_permittivity, A, B, C, D, Tmin, Tmax = _CRC_Permittivity_data_values[CRC_Permittivity_data.index.get_loc(self.CASRN)].tolist()
             self.CRC_Tmin = Tmin
             self.CRC_Tmax = Tmax
-            self.CRC_coeffs = [0 if np.isnan(x) else x for x in [A, B, C, D] ]
-            if not np.isnan(Tmin):
+            self.CRC_coeffs = [0 if isnan(x) else x for x in [A, B, C, D] ]
+            if not isnan(Tmin):
                 Tmins.append(Tmin); Tmaxs.append(Tmax)
             if self.CRC_coeffs[0]:
                 methods.append(CRC)
