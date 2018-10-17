@@ -27,8 +27,10 @@ __all__ = ['GCEOSMIX', 'PRMIX', 'SRKMIX', 'PR78MIX', 'VDWMIX', 'PRSVMIX',
 
 import sys
 import numpy as np
+from cmath import log as clog
 from scipy.optimize import minimize
 from scipy.misc import derivative
+from fluids.numerics import IS_PYPY
 from thermo.utils import normalize, Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter
 from thermo.utils import R
 from thermo.utils import log, exp, sqrt
@@ -165,7 +167,7 @@ class GCEOSMIX(GCEOS):
             d2a_alpha_dT2s.append(ds[2])
         self.cleanup_a_alpha_and_derivatives()
         
-        if self.N > 20:
+        if not IS_PYPY and self.N > 20:
             return self.a_alpha_and_derivatives_numpy(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=full, quick=quick)
         
         da_alpha_dT, d2a_alpha_dT2 = 0.0, 0.0
@@ -185,21 +187,33 @@ class GCEOSMIX(GCEOS):
         if full:
             for i in self.cmps:
                 for j in self.cmps:
+                    if i != j and j > i:
+                        # skip the duplicates
+                        continue
                     a_alphai, a_alphaj = a_alphas[i], a_alphas[j]
                     x0 = a_alphai*a_alphaj
                     x0_05 = x0**0.5
                     zi_zj = z_products[i][j]
-
-                    da_alpha_dT += zi_zj*((1. - kijs[i][j])/(2.*x0_05)
-                    *(a_alphai*da_alpha_dTs[j] + a_alphaj*da_alpha_dTs[i]))
                     
                     x1 = a_alphai*da_alpha_dTs[j]
                     x2 = a_alphaj*da_alpha_dTs[i]
-                    x3 = 2.*a_alphai*da_alpha_dTs[j] + 2.*a_alphaj*da_alpha_dTs[i]
-                    d2a_alpha_dT2 += (-x0_05*(kijs[i][j] - 1.)*(x0*(
+                    
+                    da_alpha_dT_ij = zi_zj*((1. - kijs[i][j])/(2.*x0_05)
+                    *(x1 + x2))
+                    
+                    x1_x2 = x1 + x2
+                    x3 = 2.0*x1_x2
+                    
+                    d2a_alpha_dT2_ij = (-x0_05*(kijs[i][j] - 1.)*(x0*(
                     2.*a_alphai*d2a_alpha_dT2s[j] + 2.*a_alphaj*d2a_alpha_dT2s[i]
-                    + 4.*da_alpha_dTs[i]*da_alpha_dTs[j]) - x1*x3 - x2*x3 + (x1 
-                    + x2)**2)/(4.*x0*x0))*zi_zj
+                    + 4.*da_alpha_dTs[i]*da_alpha_dTs[j]) - x1*x3 - x2*x3 + x1_x2*x1_x2)/(4.*x0*x0))*zi_zj
+                    
+                    if i != j:
+                        da_alpha_dT += da_alpha_dT_ij + da_alpha_dT_ij
+                        d2a_alpha_dT2 += d2a_alpha_dT2_ij + d2a_alpha_dT2_ij
+                    else:
+                        da_alpha_dT += da_alpha_dT_ij
+                        d2a_alpha_dT2 += d2a_alpha_dT2_ij
         
             return a_alpha, da_alpha_dT, d2a_alpha_dT2
         else:
@@ -951,7 +965,7 @@ class PRMIX(GCEOSMIX, PR):
         self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
         self.kappas = [omega*(-0.26992*omega + 1.54226) + 0.37464 for omega in omegas]
         
-        self.delta = 2.*self.b
+        self.delta = 2.0*self.b
         self.epsilon = -self.b*self.b
 
         self.solve()
@@ -1005,7 +1019,6 @@ class PRMIX(GCEOSMIX, PR):
         .. [2] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
            Butterworth-Heinemann, 1985.
         '''
-        from cmath import log
         A = self.a_alpha*self.P/(R2*self.T*self.T)
         B = self.b*self.P/(R*self.T)
         phis = []
@@ -1013,9 +1026,9 @@ class PRMIX(GCEOSMIX, PR):
             # The two log terms need to use a complex log; typically these are
             # calculated at "liquid" volume solutions which are unstable
             # and cannot exist
-            t1 = self.bs[i]/self.b*(Z - 1.) - log(Z - B).real
+            t1 = self.bs[i]/self.b*(Z - 1.) - clog(Z - B).real
             t2 = 2./self.a_alpha*sum([zs[j]*self.a_alpha_ijs[i][j] for j in self.cmps])
-            t3 = t1 - A/(two_root_two*B)*(t2 - self.bs[i]/self.b)*log((Z + (root_two + 1.)*B)/(Z - (root_two - 1.)*B)).real
+            t3 = t1 - A/(two_root_two*B)*(t2 - self.bs[i]/self.b)*clog((Z + (root_two + 1.)*B)/(Z - (root_two - 1.)*B)).real
             phis.append(exp(t3))
         return phis
 
