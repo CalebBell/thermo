@@ -60,7 +60,7 @@ from thermo.unifac import DDBST_UNIFAC_assignments, DDBST_MODIFIED_UNIFAC_assign
 
 
 from fluids.core import *
-from scipy.optimize import newton
+from fluids.numerics import newton
 from scipy.constants import physical_constants
 import numpy as np
 

@@ -41,7 +41,7 @@ from thermo.utils import e, N_A
 from thermo.utils import to_num, ws_to_zs, horner
 from thermo.identifiers import pubchem_db
 from scipy.interpolate import interp1d
-from scipy.optimize import newton
+from fluids.numerics import newton
 import pandas as pd
 
 

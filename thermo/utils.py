@@ -42,7 +42,7 @@ from cmath import sqrt as csqrt
 from bisect import bisect_left
 import numpy as np
 from numpy.testing import assert_allclose
-from scipy.optimize import brenth
+from fluids.numerics import brenth
 from scipy.misc import derivative
 from scipy.integrate import quad
 from scipy.interpolate import interp1d, interp2d

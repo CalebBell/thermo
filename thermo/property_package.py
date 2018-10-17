@@ -49,7 +49,8 @@ __all__ = ['PropertyPackage', 'Ideal', 'Unifac', 'GammaPhi',
 from copy import copy
 from random import uniform, shuffle
 import numpy as np
-from scipy.optimize import brenth, ridder, golden, brent, minimize, fmin_slsqp, fsolve
+from scipy.optimize import golden, brent, minimize, fmin_slsqp, fsolve
+from fluids.numerics import brenth, ridder
 from scipy.misc import derivative
 
 from thermo.utils import log, exp

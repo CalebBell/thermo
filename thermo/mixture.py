@@ -25,7 +25,7 @@ from __future__ import division
 __all__ = ['Mixture']
 
 import numpy as np
-from scipy.optimize import newton
+from fluids.numerics import newton
 from collections import Counter, OrderedDict
 from pprint import pprint
 
@@ -842,10 +842,10 @@ class Mixture(object):
                 self.quality = self.x = 1 if self.phase == 'g' else 0
                 
             # TODO: volume fractions - attempt
-            if (self.rhol is not None and self.rhog is not None):
-                self.Vfg = vapor_mass_quality(self.quality, MWl=self.rhol, MWg=self.rhog) 
-            else:
-                self.Vfg = None
+#            if (self.rhol is not None and self.rhog is not None):
+#                self.Vfg = vapor_mass_quality(self.quality, MWl=self.rhol, MWg=self.rhog) 
+#            else:
+#                self.Vfg = None
                 
         else:
             # flash failed. still want to set what variables that can be set though.

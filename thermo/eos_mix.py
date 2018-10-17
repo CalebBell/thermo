@@ -27,7 +27,7 @@ __all__ = ['GCEOSMIX', 'PRMIX', 'SRKMIX', 'PR78MIX', 'VDWMIX', 'PRSVMIX',
 
 import sys
 import numpy as np
-from scipy.optimize import newton, minimize, ridder, brent
+from scipy.optimize import minimize
 from scipy.misc import derivative
 from thermo.utils import normalize, Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter
 from thermo.utils import R

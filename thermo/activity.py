@@ -31,7 +31,7 @@ __all__ = ['K_value', 'Wilson_K_value', 'Rachford_Rice_flash_error',
            'Pdew_mixture']
 
 import numpy as np
-from scipy.optimize import fsolve, newton, brenth
+from fluids.numerics import newton, brenth
 from thermo.utils import exp, log
 from thermo.utils import none_and_length_check
 from thermo.utils import R
