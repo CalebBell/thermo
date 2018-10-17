@@ -31,6 +31,8 @@ from thermo.utils import R
 from thermo.utils import Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter
 from thermo.utils import log, exp, sqrt, copysign, horner
 
+R2 = R*R
+
 
 class GCEOS(object):
     r'''Class for solving a generic Pressure-explicit three-parameter cubic 
@@ -1873,7 +1875,7 @@ class PR(GCEOS):
     --------
     T-P initialization, and exploring each phase's properties:
     
-    >>> eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=400., P=1E6)
+    >>> eos = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=400., P=1E6)
     >>> eos.V_l, eos.V_g
     (0.00015607313188529268, 0.0021418760907613724)
     >>> eos.phase
@@ -1969,12 +1971,13 @@ class PR(GCEOS):
         self.P = P
         self.V = V
 
-        self.a = self.c1*R*R*Tc*Tc/Pc
-        self.b = self.c2*R*Tc/Pc
-        self.kappa = 0.37464 + 1.54226*omega - 0.26992*omega*omega
+        Tc_Pc = Tc/Pc
+        self.a = self.c1*R2*Tc*Tc_Pc
+        self.b = self.c2*R*Tc_Pc
+        self.kappa = omega*(-0.26992*omega + 1.54226) + 0.37464
         self.delta = 2.*self.b
         self.epsilon = -self.b*self.b
-        self.Vc = self.Zc*R*self.Tc/self.Pc
+        self.Vc = self.Zc*R*Tc_Pc
         
         self.solve()
 
@@ -1998,7 +2001,7 @@ class PR(GCEOS):
             - 1\right) + \frac{\kappa}{T^{1.0} Tc^{1.0}}\right)
         '''
         if not full:
-            return self.a*(1 + self.kappa*(1-(T/self.Tc)**0.5))**2
+            return self.a*(1.0 + self.kappa*(1.0 - (T/self.Tc)**0.5))**2
         else:
             if quick:
                 Tc, kappa = self.Tc, self.kappa
@@ -2006,10 +2009,11 @@ class PR(GCEOS):
                 x1 = Tc**-0.5
                 x2 = kappa*(x0*x1 - 1.) - 1.
                 x3 = self.a*kappa
+                x4 = x1*x2
                 
                 a_alpha = self.a*x2*x2
-                da_alpha_dT = x1*x2*x3/x0
-                d2a_alpha_dT2 = x3*(-0.5*T**-1.5*x1*x2 + 0.5/(T*Tc)*kappa)
+                da_alpha_dT = x4*x3/x0
+                d2a_alpha_dT2 = 0.5*x3*(1.0/(T*Tc)*kappa - x4/(x0*T))
             else:
                 a_alpha = self.a*(1 + self.kappa*(1-(T/self.Tc)**0.5))**2
                 da_alpha_dT = -self.a*self.kappa*sqrt(T/self.Tc)*(self.kappa*(-sqrt(T/self.Tc) + 1.) + 1.)/T
@@ -2205,7 +2209,7 @@ class PRSV(PR):
 
         a=0.45724\frac{R^2T_c^2}{P_c}
         
-	  b=0.07780\frac{RT_c}{P_c}
+        b=0.07780\frac{RT_c}{P_c}
 
         \alpha(T)=[1+\kappa(1-\sqrt{T_r})]^2
         

@@ -405,7 +405,7 @@ def test_PR_density_derivatives():
     ans_numeric = derivative(drho_dT, eos.T, n=2, dx=3e-2, args=['V_l'])
     assert_allclose(eos.d2rho_dT2_l, ans_numeric, rtol=1e-6)
     ans_numeric = derivative(drho_dT, eos.T, n=2, dx=1e-2, args=['V_g'])
-    assert_allclose(eos.d2rho_dT2_g, ans_numeric)
+    assert_allclose(eos.d2rho_dT2_g, ans_numeric, rtol=1e-6)
 
     # Sympy and numerical derivative quite agree!
     # d2P_drho_dT

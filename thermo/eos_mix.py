@@ -197,17 +197,16 @@ class GCEOSMIX(GCEOS):
                     
                     x1 = a_alphai*da_alpha_dTs[j]
                     x2 = a_alphaj*da_alpha_dTs[i]
-                    
-                    kij_m1 = kijs[i][j] - 1.0
-                    da_alpha_dT_ij = zi_zj*(-kij_m1/(2.*x0_05)
-                    *(x1 + x2))
-                    
                     x1_x2 = x1 + x2
                     x3 = 2.0*x1_x2
+
+                    kij_m1 = kijs[i][j] - 1.0
+                    da_alpha_dT_ij = zi_zj*kij_m1*x1_x2/(-2.*x0_05)
                     
-                    d2a_alpha_dT2_ij = (-x0_05*(kij_m1)*(x0*(
-                    2.*a_alphai*d2a_alpha_dT2s[j] + 2.*a_alphaj*d2a_alpha_dT2s[i]
-                    + 4.*da_alpha_dTs[i]*da_alpha_dTs[j]) - x1*x3 - x2*x3 + x1_x2*x1_x2)/(4.*x0*x0))*zi_zj
+                    
+                    d2a_alpha_dT2_ij = zi_zj*(-0.25*x0_05*kij_m1*(x0*(
+                    2.0*(a_alphai*d2a_alpha_dT2s[j] + a_alphaj*d2a_alpha_dT2s[i])
+                    + 4.*da_alpha_dTs[i]*da_alpha_dTs[j]) - x1*x3 - x2*x3 + x1_x2*x1_x2)/(x0*x0))
                     
                     if i != j:
                         da_alpha_dT += da_alpha_dT_ij + da_alpha_dT_ij
