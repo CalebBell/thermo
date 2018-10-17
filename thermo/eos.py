@@ -138,7 +138,7 @@ class GCEOS(object):
         bad_roots = []
         for i in Vs:
             j = i.real
-            if abs(i.imag) > 1E-9 or j < 0:
+            if abs(i.imag) > 1E-9 or j < 0.0:
                 bad_roots.append(i)
             else:
                 good_roots.append(j)
@@ -559,14 +559,23 @@ should be calculated by this method, in a user subclass.')
             x15 = 3.*x11
             x16 = 3.*x12
             x17 = -x1 - x2 + x3
-            x18 = x0*x17*x17
-            x19 = ((-13.5*x0*(x6 + x7 + x8) - 4.5*x4*x9*(-a_alpha - x10 + x11 + x12) + ((x9*(-4.*x0*(-x13 - x14 + x15 + x16 + x18)**3 + (-9.*x0*x17*(a_alpha + x10 - x11 - x12) + 2.*x17*x17*x17*x9 - 27.*(x6 + x7 + x8))**2))+0j)**0.5*0.5 - x4*x4*x4*x9*x0)+0j)**(1./3.)
-            x20 = x13 + x14 - x15 - x16 - x18
+            x17_2 = x17*x17
+            x18 = x0*x17_2
+            t1 = (-x13 - x14 + x15 + x16 + x18) # custom vars
+            t2 = (-9.*x0*x17*(a_alpha + x10 - x11 - x12) + 2.0*x17_2*x17*x9 
+                     - 27.*(x6 + x7 + x8))
+            
+            x4x9  = x4*x9
+            x19 = ((-13.5*x0*(x6 + x7 + x8) - 4.5*x4x9*(-a_alpha - x10 + x11 + x12)
+                    + 0.5*((x9*(-4.*x0*t1*t1*t1 + t2*t2))+0.0j)**0.5
+                    - x4*x4x9*x5)+0.0j)**(1./3.)
+            
+            x20 = -t1/x19#
             x22 = 2.*x5
             x24 = 1.7320508075688772j + 1.
-            x25 = 4.*x0*x20/x19
+            x25 = 4.*x0*x20
             x26 = -1.7320508075688772j + 1.
-            return [(x0*x20/x19 - x19 + x5)/3.,
+            return [(x0*x20 - x19 + x5)/3.,
                     (x19*x24 + x22 - x25/x24)/6.,
                     (x19*x26 + x22 - x25/x26)/6.]
         else:

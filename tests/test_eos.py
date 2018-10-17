@@ -403,7 +403,7 @@ def test_PR_density_derivatives():
     assert_allclose(eos.d2rho_dT2_g, 0.20229773878400134)
 
     ans_numeric = derivative(drho_dT, eos.T, n=2, dx=3e-2, args=['V_l'])
-    assert_allclose(eos.d2rho_dT2_l, ans_numeric, rtol=3e-7)
+    assert_allclose(eos.d2rho_dT2_l, ans_numeric, rtol=1e-6)
     ans_numeric = derivative(drho_dT, eos.T, n=2, dx=1e-2, args=['V_g'])
     assert_allclose(eos.d2rho_dT2_g, ans_numeric)
 
@@ -436,7 +436,7 @@ def test_PR_density_derivatives():
     
     
     ans_numerical = d2T_drhodP(eos.P, 1/eos.V_l)
-    assert_allclose(ans_numerical, eos.d2T_dPdrho_l, rtol=2e-5)
+    assert_allclose(ans_numerical, eos.d2T_dPdrho_l, rtol=2e-3)
     assert_allclose(eos.d2T_dPdrho_l, -1.6195720821000314e-09)
     
     ans_numerical = d2T_drhodP(eos.P, 1/eos.V_g)
@@ -455,7 +455,7 @@ def test_PR_density_derivatives():
     
     ans_numerical = drho_dT_dP(eos.T, eos.P, 'V_l')
     assert_allclose(9.663435353587354e-07, eos.d2rho_dPdT_l)
-    assert_allclose(ans_numerical, eos.d2rho_dPdT_l, rtol=1e-6)
+    assert_allclose(ans_numerical, eos.d2rho_dPdT_l, rtol=1e-5)
     
     ans_numerical = drho_dT_dP(eos.T, eos.P, 'V_g')
     assert_allclose(ans_numerical, eos.d2rho_dPdT_g, rtol=1e-6)
