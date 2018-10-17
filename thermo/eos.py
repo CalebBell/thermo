@@ -107,14 +107,14 @@ class GCEOS(object):
         '''
         self.check_sufficient_inputs()
         
-        if self.V:
-            if self.P:
+        if self.V is not None:
+            if self.P is not None:
                 self.T = self.solve_T(self.P, self.V)
                 self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2 = self.a_alpha_and_derivatives(self.T)
             else:
                 self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2 = self.a_alpha_and_derivatives(self.T)
                 self.P = R*self.T/(self.V-self.b) - self.a_alpha/(self.V*self.V + self.delta*self.V + self.epsilon)
-            Vs = [self.V, 1j, 1j]
+            Vs = [self.V, 1.0j, 1.0j]
         else:
             self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2 = self.a_alpha_and_derivatives(self.T)
             self.raw_volumes = Vs = self.volume_solutions(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
@@ -560,7 +560,7 @@ should be calculated by this method, in a user subclass.')
             x16 = 3.*x12
             x17 = -x1 - x2 + x3
             x18 = x0*x17*x17
-            x19 = ((-13.5*x0*(x6 + x7 + x8) - 4.5*x4*x9*(-a_alpha - x10 + x11 + x12) + ((x9*(-4.*x0*(-x13 - x14 + x15 + x16 + x18)**3 + (-9.*x0*x17*(a_alpha + x10 - x11 - x12) + 2.*x17*x17*x17*x9 - 27.*(x6 + x7 + x8))**2))+0j)**0.5*0.5 - x4**3*x9*x0)+0j)**(1./3.)
+            x19 = ((-13.5*x0*(x6 + x7 + x8) - 4.5*x4*x9*(-a_alpha - x10 + x11 + x12) + ((x9*(-4.*x0*(-x13 - x14 + x15 + x16 + x18)**3 + (-9.*x0*x17*(a_alpha + x10 - x11 - x12) + 2.*x17*x17*x17*x9 - 27.*(x6 + x7 + x8))**2))+0j)**0.5*0.5 - x4*x4*x4*x9*x0)+0j)**(1./3.)
             x20 = x13 + x14 - x15 - x16 - x18
             x22 = 2.*x5
             x24 = 1.7320508075688772j + 1.

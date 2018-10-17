@@ -198,13 +198,14 @@ class GCEOSMIX(GCEOS):
                     x1 = a_alphai*da_alpha_dTs[j]
                     x2 = a_alphaj*da_alpha_dTs[i]
                     
-                    da_alpha_dT_ij = zi_zj*((1. - kijs[i][j])/(2.*x0_05)
+                    kij_m1 = kijs[i][j] - 1.0
+                    da_alpha_dT_ij = zi_zj*(-kij_m1/(2.*x0_05)
                     *(x1 + x2))
                     
                     x1_x2 = x1 + x2
                     x3 = 2.0*x1_x2
                     
-                    d2a_alpha_dT2_ij = (-x0_05*(kijs[i][j] - 1.)*(x0*(
+                    d2a_alpha_dT2_ij = (-x0_05*(kij_m1)*(x0*(
                     2.*a_alphai*d2a_alpha_dT2s[j] + 2.*a_alphaj*d2a_alpha_dT2s[i]
                     + 4.*da_alpha_dTs[i]*da_alpha_dTs[j]) - x1*x3 - x2*x3 + x1_x2*x1_x2)/(4.*x0*x0))*zi_zj
                     
@@ -295,19 +296,20 @@ class GCEOSMIX(GCEOS):
         .. [2] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
            Butterworth-Heinemann, 1985.
         '''
+        P = self.P
         if self.phase in ('l', 'l/g'):
             if xs is None:
                 xs = self.zs
             if hasattr(self, 'Z_l'):
                 self.phis_l = self.fugacity_coefficients(self.Z_l, zs=xs)
-                self.fugacities_l = [phi*x*self.P for phi, x in zip(self.phis_l, xs)]
+                self.fugacities_l = [phi*x*P for phi, x in zip(self.phis_l, xs)]
                 self.lnphis_l = [log(i) for i in self.phis_l]
         if self.phase in ('g', 'l/g'):
             if ys is None:
                 ys = self.zs
             if hasattr(self, 'Z_g'):
                 self.phis_g = self.fugacity_coefficients(self.Z_g, zs=ys)
-                self.fugacities_g = [phi*y*self.P for phi, y in zip(self.phis_g, ys)]
+                self.fugacities_g = [phi*y*P for phi, y in zip(self.phis_g, ys)]
                 self.lnphis_g = [log(i) for i in self.phis_g]
 
 
@@ -960,8 +962,10 @@ class PRMIX(GCEOSMIX, PR):
         self.P = P
         self.V = V
 
-        self.ais = [self.c1*R2*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
-        self.bs = [self.c2*R*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
+        # optimization, unfortunately
+        c1R2, c2R = self.c1*R2, self.c2*R
+        self.ais = [c1R2*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
+        self.bs = [c2R*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
         self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
         self.kappas = [omega*(-0.26992*omega + 1.54226) + 0.37464 for omega in omegas]
         
@@ -1019,16 +1023,28 @@ class PRMIX(GCEOSMIX, PR):
         .. [2] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
            Butterworth-Heinemann, 1985.
         '''
+        bs, b = self.bs, self.b
         A = self.a_alpha*self.P/(R2*self.T*self.T)
-        B = self.b*self.P/(R*self.T)
+        B = b*self.P/(R*self.T)
         phis = []
+
+        x0 = clog(Z - B).real
+        Zm1 = Z - 1.0
+        
+        x1 = 2./self.a_alpha
+        x2 = A/(two_root_two*B)
+        x3 = clog((Z + (root_two + 1.)*B)/(Z - (root_two - 1.)*B)).real
+        
+
         for i in self.cmps:
             # The two log terms need to use a complex log; typically these are
             # calculated at "liquid" volume solutions which are unstable
             # and cannot exist
-            t1 = self.bs[i]/self.b*(Z - 1.) - clog(Z - B).real
-            t2 = 2./self.a_alpha*sum([zs[j]*self.a_alpha_ijs[i][j] for j in self.cmps])
-            t3 = t1 - A/(two_root_two*B)*(t2 - self.bs[i]/self.b)*clog((Z + (root_two + 1.)*B)/(Z - (root_two - 1.)*B)).real
+            a_alpha_js = self.a_alpha_ijs[i]
+            b_ratio = bs[i]/b
+            t1 = b_ratio*Zm1 - x0
+            t2 = x1*sum([zs[j]*a_alpha_js[j] for j in self.cmps])
+            t3 = t1 - x2*(t2 - b_ratio)*x3
             phis.append(exp(t3))
         return phis
 
