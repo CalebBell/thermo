@@ -639,17 +639,20 @@ should be calculated by this method, in a user subclass.')
             x10 = -4.*epsilon + x9
             x11 = x10**-0.5
             x12 = 2.*x11*catanh(x11*x5).real
-            x13 = x10**-0.5 
+            x13 = x11 # x10**-0.5 
             x14 = V + delta*0.5
             x15 = 2.*epsilon*x13
             x16 = x13*x9*0.5
+            x17 = x5*x6
             dP_dT = R/x0 - da_alpha_dT/x1
             dP_dV = -x3*x4 + x5*x7
             d2P_dT2 = -d2a_alpha_dT2/x1
-            d2P_dV2 = -2.*a_alpha*x5*x5*x6/x1 + 2.*x7 + 2.*x3*x4/x0
-            d2P_dTdV = -R*x4 + da_alpha_dT*x5*x6
+            d2P_dV2 = -2.*a_alpha*x5*x17/x1 + 2.*x7 + 2.*x3*x4/x0
+            d2P_dTdV = -R*x4 + da_alpha_dT*x17
             H_dep = x12*(T*da_alpha_dT - a_alpha) - x3 + x8
-            S_dep = -R*log((V*x3/(x0*x8))**2)*0.5 + da_alpha_dT*x12  # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
+            
+            t1 = (V*x3/(x0*x8))
+            S_dep = -R*log(t1*t1)*0.5 + da_alpha_dT*x12  # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
             Cv_dep = -T*d2a_alpha_dT2*x13*(-log(((x14 - x15 + x16)/(x14 + x15 - x16))**2)*0.5) # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
         else:
             dP_dT = R/(V - b) - da_alpha_dT/(V**2 + V*delta + epsilon)

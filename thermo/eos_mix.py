@@ -172,41 +172,69 @@ class GCEOSMIX(GCEOS):
         
         da_alpha_dT, d2a_alpha_dT2 = 0.0, 0.0
         
-        a_alpha_ijs = [[(1. - kijs[i][j])*(a_alphas[i]*a_alphas[j])**0.5 
-                              for j in self.cmps] for i in self.cmps]
-                                
-        # Needed in calculation of fugacity coefficients
+        a_alpha_ijs = [[None]*self.N for _ in self.cmps]
+#        z_products = [[None]*self.N for _ in self.cmps]
+        
+        for i in self.cmps:
+            kijs_i = kijs[i]
+            a_alpha_i = a_alphas[i]
+            a_alpha_ijs_is = a_alpha_ijs[i]
+            for j in self.cmps:
+                if j < i:
+                    continue
+                a_alpha_ijs_is[j] = a_alpha_ijs[j][i] = (1. - kijs_i[j])*(a_alpha_i*a_alphas[j])**0.5 
+#                z_products[i][j] = z_products[j][i] = zs[i]*zs[j]
+                
+        # Faster than an optimized loop in pypy even
         z_products = [[zs[i]*zs[j] for j in self.cmps] for i in self.cmps]
+
+        a_alpha = 0.0
+        for i in self.cmps:
+            a_alpha_ijs_i = a_alpha_ijs[i]
+            z_products_i = z_products[i]
+            for j in self.cmps:
+                if j < i:
+                    continue
+                elif i != j:
+                    a_alpha += 2.0*a_alpha_ijs_i[j]*z_products_i[j]
+                else:
+                    a_alpha += a_alpha_ijs_i[j]*z_products_i[j]
         
-        
-        # List comprehension tested to be faster
-        a_alpha = sum([a_alpha_ijs[i][j]*z_products[i][j]
-                      for j in self.cmps for i in self.cmps])
+        # List comprehension tested to be faster in CPython not pypy
+#        a_alpha = sum([a_alpha_ijs[i][j]*z_products[i][j]
+#                      for j in self.cmps for i in self.cmps])
         self.a_alpha_ijs = a_alpha_ijs
         
         if full:
             for i in self.cmps:
+                kijs_i = kijs[i]
+                a_alphai = a_alphas[i]
+                z_products_i = z_products[i]
+                da_alpha_dT_i = da_alpha_dTs[i]
+                d2a_alpha_dT2_i = d2a_alpha_dT2s[i]
                 for j in self.cmps:
-                    if i != j and j > i:
+                    if j > i:
                         # skip the duplicates
                         continue
-                    a_alphai, a_alphaj = a_alphas[i], a_alphas[j]
+                    a_alphaj = a_alphas[j]
                     x0 = a_alphai*a_alphaj
                     x0_05 = x0**0.5
-                    zi_zj = z_products[i][j]
+                    zi_zj = z_products_i[j]
                     
                     x1 = a_alphai*da_alpha_dTs[j]
-                    x2 = a_alphaj*da_alpha_dTs[i]
+                    x2 = a_alphaj*da_alpha_dT_i
                     x1_x2 = x1 + x2
                     x3 = 2.0*x1_x2
 
-                    kij_m1 = kijs[i][j] - 1.0
-                    da_alpha_dT_ij = zi_zj*kij_m1*x1_x2/(-2.*x0_05)
+                    kij_m1 = kijs_i[j] - 1.0
+                    
+                    zi_zj_kij_m1 = zi_zj*kij_m1
+                    da_alpha_dT_ij = zi_zj_kij_m1*x1_x2/(-2.*x0_05)
                     
                     
-                    d2a_alpha_dT2_ij = zi_zj*(-0.25*x0_05*kij_m1*(x0*(
-                    2.0*(a_alphai*d2a_alpha_dT2s[j] + a_alphaj*d2a_alpha_dT2s[i])
-                    + 4.*da_alpha_dTs[i]*da_alpha_dTs[j]) - x1*x3 - x2*x3 + x1_x2*x1_x2)/(x0*x0))
+                    d2a_alpha_dT2_ij = zi_zj_kij_m1*(-0.25*x0_05*(x0*(
+                    2.0*(a_alphai*d2a_alpha_dT2s[j] + a_alphaj*d2a_alpha_dT2_i)
+                    + 4.*da_alpha_dT_i*da_alpha_dTs[j]) - x1*x3 - x2*x3 + x1_x2*x1_x2)/(x0*x0))
                     
                     if i != j:
                         da_alpha_dT += da_alpha_dT_ij + da_alpha_dT_ij
@@ -315,12 +343,12 @@ class GCEOSMIX(GCEOS):
     def eos_fugacities_lowest_Gibbs(self):        
         try:
             if self.G_dep_l < self.G_dep_g:
-                return self.fugacities_l
+                return self.fugacities_l, 'l'
             else:
-                return self.fugacities_g
+                return self.fugacities_g, 'g'
         except:
             # Only one root - take it and set the prefered other phase to be a different type
-            return self.fugacities_g if hasattr(self, 'Z_g') else self.fugacities_l
+            return (self.fugacities_g, 'g') if hasattr(self, 'Z_g') else (self.fugacities_l, 'l')
 
 
     def _dphi_dn(self, zi, i, phase):
@@ -653,12 +681,27 @@ class GCEOSMIX(GCEOS):
             return self
         
     def sequential_substitution_VL(self, Ks_initial=None, maxiter=1000,
-                                   xtol=1E-10, allow_error=True):
+                                   xtol=1E-10, allow_error=True, Ks_extra=None):
         if Ks_initial is None:
             Ks = [Wilson_K_value(self.T, self.P, Tci, Pci, omega)  for Pci, Tci, omega in zip(self.Pcs, self.Tcs, self.omegas)]
         else:
             Ks = Ks_initial
-        V_over_F, xs, ys = flash_inner_loop(self.zs, Ks)
+#        print(self.zs, Ks)
+        xs = None
+        try:
+            V_over_F, xs, ys = flash_inner_loop(self.zs, Ks)
+        except ValueError as e:
+            if Ks_extra is not None:
+                for Ks in Ks_extra:
+                    try:
+                        V_over_F, xs, ys = flash_inner_loop(self.zs, Ks)
+                        break
+                    except ValueError as e:
+                        pass
+        if xs is None:
+            raise(e)
+        
+#        print(xs, ys,V_over_F)
         for i in range(maxiter):
             if allow_error:
                 eos_g = self.to_TP_zs(T=self.T, P=self.P, zs=ys)
@@ -678,13 +721,28 @@ class GCEOSMIX(GCEOS):
                 except AttributeError:
                     phis_l = eos_l.fugacity_coefficients(eos_l.Z_g, xs)
 
+#            print(phis_l, phis_g, 'phis')
             Ks = [K_value(phi_l=l, phi_g=g) for l, g in zip(phis_l, phis_g)]
+#            print(Ks)
+            # Hack - no idea if this will work
+            maxK = max(Ks)
+            if maxK < 1:
+                Ks[Ks.index(maxK)] = 1.1
+            minK = min(Ks)
+            if minK >= 1:
+                Ks[Ks.index(minK)] = .9
+                
+            
+#            print(self.zs, Ks, 'zs, Ks into RR')
             V_over_F, xs_new, ys_new = flash_inner_loop(self.zs, Ks)
             err = (sum([abs(x_new - x_old) for x_new, x_old in zip(xs_new, xs)]) +
                   sum([abs(y_new - y_old) for y_new, y_old in zip(ys_new, ys)]))
             xs, ys = xs_new, ys_new
+#            print(xs, ys, 'xs, ys')
             if err < xtol:
                 break
+            if i == maxiter-1:
+                raise ValueError('End of SS without convergence')
         return V_over_F, xs, ys
 
     def stabiliy_iteration_Michelsen(self, T, P, zs, Ks_initial=None, maxiter=20, xtol=1E-12, liq=True):
@@ -694,13 +752,15 @@ class GCEOSMIX(GCEOS):
         # If one phase is present - use that phase as the reference phase.
         # Otherwise, consider the phase with the lowest Gibbs excess energy as
         # the stable phase
-        fugacities_ref = eos_ref.eos_fugacities_lowest_Gibbs()
+        fugacities_ref, fugacities_ref_phase = eos_ref.eos_fugacities_lowest_Gibbs()
+#        print(fugacities_ref, fugacities_ref_phase, 'fugacities_ref, fugacities_ref_phase')
 
         if Ks_initial is None:
-            Ks = [Wilson_K_value(T, P, Tci, Pci, omega)  for Pci, Tci, omega in zip(self.Pcs, self.Tcs, self.omegas)]
+            Ks = [Wilson_K_value(T, P, Tci, Pci, omega) for Pci, Tci, omega in zip(self.Pcs, self.Tcs, self.omegas)]
         else:
             Ks = Ks_initial
             
+        same_phase_count = 0.0
         for _ in range(maxiter):
             if liq:
                 zs_test = [zi/Ki for zi, Ki in zip(zs, Ks)]
@@ -710,7 +770,13 @@ class GCEOSMIX(GCEOS):
             sum_zs_test = sum(zs_test)
             zs_test_normalized = [zi/sum_zs_test for zi in zs_test]
             eos_test = self.to_TP_zs(T=T, P=P, zs=zs_test_normalized)
-            fugacities_test = eos_test.eos_fugacities_lowest_Gibbs()
+            fugacities_test, fugacities_phase = eos_test.eos_fugacities_lowest_Gibbs()
+            if fugacities_ref_phase == fugacities_phase:
+                same_phase_count += 1.0
+            else:
+                same_phase_count = 0
+            
+#            print(fugacities_ref_phase, fugacities_phase)
             
             if liq:
                 corrections = [fi/f_ref*sum_zs_test for fi, f_ref in zip(fugacities_test, fugacities_ref)]
@@ -720,23 +786,29 @@ class GCEOSMIX(GCEOS):
             
             corrections_minus_1 = [corr - 1.0 for corr in corrections]
             err = sum([ci*ci for ci in corrections_minus_1])
+#            print(err, xtol, Ks, corrections)
+#            print('MM iter Ks =', Ks, 'zs', zs_test_normalized, 'MM err', err, xtol, _)
             if err < xtol:
                 break
+            elif same_phase_count > 5:
+                break
             # It is possible to break if the trivial solution is being approached here also
-            
-        return sum_zs_test, Ks
+            if _ == maxiter-1 and fugacities_ref_phase != fugacities_phase:
+                raise ValueError('End of stabiliy_iteration_Michelsen without convergence')
+        # Fails directly if fugacities_ref_phase == fugacities_phase
+        return sum_zs_test, Ks, fugacities_ref_phase == fugacities_phase
             
     def stability_Michelsen(self, T, P, zs, Ks_initial=None, maxiter=20,
                              xtol=1E-12, trivial_criteria=1E-4, 
-                             stable_criteria=1E-10):
-        
+                             stable_criteria=1E-7):
+#        print('MM starting, Ks=', Ks_initial)
         if Ks_initial is None:
             Ks = [Wilson_K_value(T, P, Tci, Pci, omega)  for Pci, Tci, omega in zip(self.Pcs, self.Tcs, self.omegas)]
         else:
             Ks = Ks_initial
         
-        zs_sum_g, Ks_g = self.stabiliy_iteration_Michelsen(T=T, P=P, zs=zs, Ks_initial=Ks, maxiter=maxiter, xtol=xtol, liq=False)
-        zs_sum_l, Ks_l = self.stabiliy_iteration_Michelsen(T=T, P=P, zs=zs, Ks_initial=Ks, maxiter=maxiter, xtol=xtol, liq=True)
+        zs_sum_g, Ks_g, phase_failure_g = self.stabiliy_iteration_Michelsen(T=T, P=P, zs=zs, Ks_initial=Ks, maxiter=maxiter, xtol=xtol, liq=False)
+        zs_sum_l, Ks_l, phase_failure_l = self.stabiliy_iteration_Michelsen(T=T, P=P, zs=zs, Ks_initial=Ks, maxiter=maxiter, xtol=xtol, liq=True)
         
         log_Ks_g = [log(Ki) for Ki in Ks_g]
         log_Ks_l = [log(Ki) for Ki in Ks_l]        
@@ -759,7 +831,10 @@ class GCEOSMIX(GCEOS):
         # Phase Behavior, Whitson and Brule
         # There is a typo where Sl appears in the vapor column; this should be
         # liquid; as shown in https://www.e-education.psu.edu/png520/m17_p7.html
-        if trivial_g and trivial_l:
+        
+        if phase_failure_g and phase_failure_l:
+            stable = True
+        elif trivial_g and trivial_l:
             stable = True
         elif sum_g_criteria < stable_criteria and trivial_l:
             stable = True
@@ -767,11 +842,24 @@ class GCEOSMIX(GCEOS):
             stable = True
         elif sum_g_criteria < stable_criteria and sum_l_criteria < stable_criteria:
             stable = True
+        # These last two are custom, and it is apparent since they are bad
+        # Also did not document well enough the cases they fail in
+#        elif trivial_l and sum_l_criteria < stable_criteria:
+#            stable = True
+#        elif trivial_g and sum_g_criteria < stable_criteria:
+#            stable = True
+#        else:
+#            print('lnK_2_tot_g', lnK_2_tot_g , 'lnK_2_tot_l', lnK_2_tot_l,
+#                  'sum_g_criteria', sum_g_criteria, 'sum_l_criteria', sum_l_criteria)
+
+            
+            
         # No need to enumerate unstable results
         
         if not stable:
             Ks = [K_g*K_l for K_g, K_l in zip(Ks_g, Ks_l)]
-        return stable, Ks
+#        print('MM ended', Ks, stable, Ks_g, Ks_l)
+        return stable, Ks, [Ks_g, Ks_l]
         
 
     def _V_over_F_bubble_T_inner(self, T, P, zs, maxiter=20, xtol=1E-3):
@@ -954,7 +1042,7 @@ class PRMIX(GCEOSMIX, PR):
         self.omegas = omegas
         self.zs = zs
         if kijs is None:
-            kijs = [[0.0]*self.N for i in range(self.N)]
+            kijs = [[0.0]*self.N for i in self.cmps]
         self.kijs = kijs
         self.kwargs = {'kijs': kijs}
         self.T = T
@@ -963,9 +1051,9 @@ class PRMIX(GCEOSMIX, PR):
 
         # optimization, unfortunately
         c1R2, c2R = self.c1*R2, self.c2*R
-        self.ais = [c1R2*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
-        self.bs = [c2R*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
-        self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
+        self.ais = [c1R2*Tcs[i]*Tcs[i]/Pcs[i] for i in self.cmps]
+        self.bs = [c2R*Tcs[i]/Pcs[i] for i in self.cmps]
+        self.b = sum(bi*zi for bi, zi in zip(self.bs, zs))
         self.kappas = [omega*(-0.26992*omega + 1.54226) + 0.37464 for omega in omegas]
         
         self.delta = 2.0*self.b
@@ -1044,6 +1132,10 @@ class PRMIX(GCEOSMIX, PR):
             t1 = b_ratio*Zm1 - x0
             t2 = x1*sum([zs[j]*a_alpha_js[j] for j in self.cmps])
             t3 = t1 - x2*(t2 - b_ratio)*x3
+            # Temp
+            
+            if t3 > 700.0:
+                t3 = 700
             phis.append(exp(t3))
         return phis
 

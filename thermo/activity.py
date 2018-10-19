@@ -31,10 +31,11 @@ __all__ = ['K_value', 'Wilson_K_value', 'Rachford_Rice_flash_error',
            'Pdew_mixture']
 
 import numpy as np
-from fluids.numerics import newton, brenth
+from fluids.numerics import newton, brenth, IS_PYPY, one_epsilon_larger, one_epsilon_smaller
 from thermo.utils import exp, log
 from thermo.utils import none_and_length_check
 from thermo.utils import R
+
 
 
 
@@ -370,12 +371,12 @@ def Rachford_Rice_solution(zs, Ks, fprime=False, fprime2=False):
     Kmax = max(Ks)
     z_of_Kmax = zs[Ks.index(Kmax)]
 
-    V_over_F_min = ((Kmax-Kmin)*z_of_Kmax - (1.-Kmin))/((1.-Kmin)*(Kmax-1.))
+    V_over_F_min = ((Kmax-Kmin)*z_of_Kmax - (1.- Kmin))/((1.- Kmin)*(Kmax- 1.))
     V_over_F_max = 1./(1.-Kmin)
 
-    V_over_F_min2 = max(0., V_over_F_min)
-    V_over_F_max2 = min(1., V_over_F_max)
-
+    V_over_F_min2 = V_over_F_min if V_over_F_min > 0.0 else 0.0
+    V_over_F_max2 = V_over_F_max if V_over_F_max < 1.0 else 1.0
+    
     x0 = (V_over_F_min2 + V_over_F_max2)*0.5
     
     K_minus_1 = [Ki - 1.0 for Ki in Ks]
@@ -410,8 +411,8 @@ def Rachford_Rice_solution(zs, Ks, fprime=False, fprime2=False):
         assert V_over_F >= V_over_F_min2
         assert V_over_F <= V_over_F_max2
     except:
-        V_over_F = brenth(err, V_over_F_max-1E-7, V_over_F_min+1E-7)
-        
+        V_over_F = brenth(err, V_over_F_max*one_epsilon_smaller, V_over_F_min*one_epsilon_larger)
+                
     xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]
     ys = [Ki*xi for xi, Ki in zip(xs, Ks)]
     return V_over_F, xs, ys
@@ -551,10 +552,33 @@ def Li_Johns_Ahmadi_solution(zs, Ks):
     return V_over_F, xs, ys
 
 
-flash_inner_loop_methods = ['Analytical', 'Rachford-Rice (Secant)',
-                            'Rachford-Rice (Newton-Raphson)', 
-                            'Rachford-Rice (Halley)', 'Rachford-Rice (NumPy)',
-                            'Li-Johns-Ahmadi']
+FLASH_INNER_ANALYTICAL = 'Analytical'
+FLASH_INNER_SECANT = 'Rachford-Rice (Secant)'
+FLASH_INNER_NR = 'Rachford-Rice (Newton-Raphson)'
+FLASH_INNER_HALLEY = 'Rachford-Rice (Halley)'
+FLASH_INNER_NUMPY = 'Rachford-Rice (NumPy)'
+FLASH_INNER_LJA = 'Li-Johns-Ahmadi'
+
+flash_inner_loop_methods = [FLASH_INNER_ANALYTICAL, 
+                            FLASH_INNER_SECANT, FLASH_INNER_SECANT,
+                            FLASH_INNER_NR, FLASH_INNER_HALLEY,
+                            FLASH_INNER_NUMPY, FLASH_INNER_LJA]
+
+def flash_inner_loop_list_methods(l):
+    methods = []
+    if l in (2,3):
+        methods.append(FLASH_INNER_ANALYTICAL)
+    if l >= 10 and not IS_PYPY:
+        methods.append(FLASH_INNER_NUMPY)
+    if l >= 2:
+        methods.extend([FLASH_INNER_SECANT, FLASH_INNER_NR, FLASH_INNER_HALLEY])
+        if l < 10 and not IS_PYPY:
+            methods.append(FLASH_INNER_NUMPY)
+    if l >= 3:
+        methods.append(FLASH_INNER_LJA)
+    return methods
+
+
 def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None):
     r'''This function handles the solution of the inner loop of a flash
     calculation, solving for liquid and gas mole fractions and vapor fraction
@@ -616,27 +640,16 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None):
     >>> flash_inner_loop(zs=[0.5, 0.3, 0.2], Ks=[1.685, 0.742, 0.532])
     (0.6907302627738537, [0.3394086969663437, 0.36505605903717053, 0.29553524399648573], [0.5719036543882892, 0.2708715958055805, 0.1572247498061304])
     '''
-    l = len(zs)
-    def list_methods():
-        methods = []
-        if l in [2,3]:
-            methods.append('Analytical')
-        if l >= 10:
-            methods.append('Rachford-Rice (NumPy)')
-        if l >= 2:
-            methods.extend(['Rachford-Rice (Secant)',
-                            'Rachford-Rice (Newton-Raphson)', 
-                            'Rachford-Rice (Halley)'])
-            if l < 10:
-                methods.append('Rachford-Rice (NumPy)')
-        if l >= 3:
-            methods.append('Li-Johns-Ahmadi')
-        return methods
     if AvailableMethods:
-        return list_methods()
-    if not Method:
-        Method = 'Analytical' if l < 4 else ('Rachford-Rice (NumPy)' if l >= 10 else 'Rachford-Rice (Secant)')
-    if Method == 'Analytical':
+        l = len(zs)
+        return flash_inner_loop_list_methods(l)
+    elif Method is None:
+        l = len(zs)
+        Method = FLASH_INNER_ANALYTICAL if l < 4 else (FLASH_INNER_NUMPY if (not IS_PYPY and l >= 10) else FLASH_INNER_SECANT)
+    if Method == FLASH_INNER_SECANT:
+        return Rachford_Rice_solution(zs, Ks)
+    elif Method == FLASH_INNER_ANALYTICAL:
+        l = len(zs)
         if l == 2:
             z1, z2 = zs
             K1, K2 = Ks
@@ -653,16 +666,14 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None):
         xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]
         ys = [Ki*xi for xi, Ki in zip(xs, Ks)]
         return V_over_F, xs, ys
-    elif Method == 'Rachford-Rice (NumPy)':
+    elif Method == FLASH_INNER_NUMPY:
         return Rachford_Rice_solution_numpy(zs=zs, Ks=Ks)
-    elif Method == 'Rachford-Rice (Secant)':
-        return Rachford_Rice_solution(zs=zs, Ks=Ks)
-    elif Method == 'Rachford-Rice (Newton-Raphson)':
+    elif Method == FLASH_INNER_NR:
         return Rachford_Rice_solution(zs=zs, Ks=Ks, fprime=True)
-    elif Method == 'Rachford-Rice (Halley)':
+    elif Method == FLASH_INNER_HALLEY:
         return Rachford_Rice_solution(zs=zs, Ks=Ks, fprime=True, fprime2=True)
     
-    elif Method == 'Li-Johns-Ahmadi':
+    elif Method == FLASH_INNER_LJA:
         return Li_Johns_Ahmadi_solution(zs=zs, Ks=Ks)
     else:
         raise Exception('Incorrect Method input')

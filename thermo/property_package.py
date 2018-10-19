@@ -47,7 +47,7 @@ __all__ = ['PropertyPackage', 'Ideal', 'Unifac', 'GammaPhi',
            'GceosBase']
 
 from copy import copy
-from random import uniform, shuffle
+from random import uniform, shuffle, seed
 import numpy as np
 from scipy.optimize import golden, brent, minimize, fmin_slsqp, fsolve
 from fluids.numerics import brenth, ridder
@@ -178,6 +178,7 @@ class StabilityTester(object):
     def random_guesses(self, N=None):
         if N is None:
             N = self.N
+        seed(0)
         random_guesses = [normalize([uniform(0, 1) for _ in range(self.N)])
                           for k in range(N)]
         return random_guesses
@@ -194,6 +195,7 @@ class StabilityTester(object):
         for power in powers:
             Ys_Wilson = [Ki**power*zi for Ki, zi in zip(Ks_Wilson, zs)]
             Wilson_guesses.append(normalize(Ys_Wilson))
+#            print(Ys_Wilson, normalize(Ys_Wilson))
         return Wilson_guesses
     
     def guesses(self, T, P, zs, pure=True, Wilson=True, random=True, 
@@ -208,6 +210,19 @@ class StabilityTester(object):
                 guesses.extend(self.random_guesses())
             else:
                 guesses.extend(self.random_guesses(random))
+                
+        # Guesses will go nowhere good if one ans is not under 1, one above
+        for Ks in guesses:
+            # Hack - no idea if this will work
+            maxK = max(Ks)
+            if maxK < 1:
+                Ks[Ks.index(maxK)] = 1.1
+            minK = min(Ks)
+            if minK >= 1:
+                Ks[Ks.index(minK)] = .9
+                
+#        for guess in guesses:
+#            print('hi', guess)
         return guesses
     
     
@@ -1908,10 +1923,12 @@ class GceosBase(Ideal):
     
     pure_guesses = True
     Wilson_guesses = True, 
-    random_guesses = True
+    random_guesses = 1000
     zero_fraction_guesses = 1E-6
-    stability_maxiter = 30
-    stability_xtol = 1E-12
+    stability_maxiter = 50 # 30 good professional default
+    stability_xtol = 1E-9 # 1e-12 was too strict
+    substitution_maxiter = 1000 # 
+    substitution_xtol = 1e-7 # 1e-10 too strict
     
     def __init__(self, eos_mix=PRMIX, VaporPressures=None, Tms=None, Tbs=None, 
                  Tcs=None, Pcs=None, omegas=None, kijs=None, eos_kwargs=None,
@@ -1991,7 +2008,7 @@ class GceosBase(Ideal):
                                                    Wilson=self.Wilson_guesses,
                                                    random=self.random_guesses,
                                                    zero_fraction=self.zero_fraction_guesses):
-            stable, Ks_initial = eos.stability_Michelsen(T=T, P=P, zs=zs,
+            stable, Ks_initial, Ks_extra = eos.stability_Michelsen(T=T, P=P, zs=zs,
                                                       Ks_initial=Ks, 
                                                       maxiter=self.stability_maxiter, 
                                                       xtol=self.stability_xtol)
@@ -2011,7 +2028,7 @@ class GceosBase(Ideal):
                 else:
                     phase, xs, ys, VF = 'g', None, zs, 1
         else:
-            VF, xs, ys = eos.sequential_substitution_VL(Ks_initial=Ks_initial, maxiter=1000, xtol=1E-10, allow_error=False)
+            VF, xs, ys = eos.sequential_substitution_VL(Ks_initial=Ks_initial, maxiter=self.substitution_maxiter, xtol=self.substitution_xtol, allow_error=False, Ks_extra=Ks_extra)
             phase = 'l/g'
         return phase, xs, ys, VF
 
