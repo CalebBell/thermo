@@ -844,10 +844,10 @@ class GCEOSMIX(GCEOS):
             stable = True
         # These last two are custom, and it is apparent since they are bad
         # Also did not document well enough the cases they fail in
-#        elif trivial_l and sum_l_criteria < stable_criteria:
-#            stable = True
-#        elif trivial_g and sum_g_criteria < stable_criteria:
-#            stable = True
+        elif trivial_l and sum_l_criteria < stable_criteria:
+            stable = True
+        elif trivial_g and sum_g_criteria < stable_criteria:
+            stable = True
 #        else:
 #            print('lnK_2_tot_g', lnK_2_tot_g , 'lnK_2_tot_l', lnK_2_tot_l,
 #                  'sum_g_criteria', sum_g_criteria, 'sum_l_criteria', sum_l_criteria)

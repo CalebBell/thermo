@@ -25,15 +25,14 @@ from __future__ import division
 __all__ = ['omega', 'LK_omega', 'omega_mixture', 'StielPolar']
 __all__.extend(['omega_methods', 'omega_mixture_methods', 'Stiel_polar_methods'])
 
-import numpy as np
-import pandas as pd
 from thermo.utils import log, log10, isnan
 from thermo.utils import mixing_simple, none_and_length_check
 from thermo.critical import Tc, Pc
 from thermo.critical import _crit_PSRKR4, _crit_PassutDanner, _crit_Yaws
 from thermo.phase_change import Tb
 from thermo.vapor_pressure import VaporPressure
-
+import numpy as np
+import pandas as pd
 
 omega_methods = ['PSRK', 'PD', 'YAWS', 'LK', 'DEFINITION']
 

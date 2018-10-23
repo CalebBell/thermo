@@ -50,8 +50,8 @@ from copy import copy
 from random import uniform, shuffle, seed
 import numpy as np
 from scipy.optimize import golden, brent, minimize, fmin_slsqp, fsolve
-from fluids.numerics import brenth, ridder
-from scipy.misc import derivative
+from fluids.numerics import brenth, ridder, derivative
+#from scipy.misc import derivative
 
 from thermo.utils import log, exp
 from thermo.utils import has_matplotlib, R, pi, N_A
@@ -1922,12 +1922,12 @@ class UnifacDortmundCaloric(UnifacDortmund, GammaPhiCaloric):
 class GceosBase(Ideal):
     
     pure_guesses = True
-    Wilson_guesses = True, 
-    random_guesses = 1000
+    Wilson_guesses = True
+    random_guesses = True
     zero_fraction_guesses = 1E-6
     stability_maxiter = 50 # 30 good professional default
     stability_xtol = 1E-9 # 1e-12 was too strict
-    substitution_maxiter = 1000 # 
+    substitution_maxiter =  100 # 1000 # 
     substitution_xtol = 1e-7 # 1e-10 too strict
     
     def __init__(self, eos_mix=PRMIX, VaporPressures=None, Tms=None, Tbs=None, 

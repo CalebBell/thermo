@@ -30,11 +30,11 @@ __all__ = ['K_value', 'Wilson_K_value', 'Rachford_Rice_flash_error',
            'identify_phase_mixture', 'Pbubble_mixture', 'bubble_at_P',
            'Pdew_mixture']
 
-import numpy as np
 from fluids.numerics import newton, brenth, IS_PYPY, one_epsilon_larger, one_epsilon_smaller
 from thermo.utils import exp, log
 from thermo.utils import none_and_length_check
 from thermo.utils import R
+import numpy as np
 
 
 
@@ -376,6 +376,7 @@ def Rachford_Rice_solution(zs, Ks, fprime=False, fprime2=False):
 
     V_over_F_min2 = V_over_F_min if V_over_F_min > 0.0 else 0.0
     V_over_F_max2 = V_over_F_max if V_over_F_max < 1.0 else 1.0
+#    print(V_over_F_min2, V_over_F_max2)
     
     x0 = (V_over_F_min2 + V_over_F_max2)*0.5
     
@@ -383,6 +384,7 @@ def Rachford_Rice_solution(zs, Ks, fprime=False, fprime2=False):
     zs_k_minus_1 = [zi*Kim1 for zi, Kim1 in zip(zs, K_minus_1)]
     
     def err(V_over_F):
+#        print(V_over_F)
         return sum([num/(1. + V_over_F*Kim1) for num, Kim1 in zip(zs_k_minus_1, K_minus_1)])
     
     if fprime or fprime2:
@@ -406,11 +408,13 @@ def Rachford_Rice_solution(zs, Ks, fprime=False, fprime2=False):
         elif fprime:
             V_over_F = newton(err, x0, fprime=fprime_obj)
         else:
-            V_over_F = newton(err, x0)
+            V_over_F = newton(err, x0, high=V_over_F_max*one_epsilon_smaller,
+                              low=V_over_F_min*one_epsilon_larger)
         
-        assert V_over_F >= V_over_F_min2
-        assert V_over_F <= V_over_F_max2
-    except:
+#        assert V_over_F >= V_over_F_min2
+#        assert V_over_F <= V_over_F_max2
+    except Exception as e:
+        print(zs, Ks, e)
         V_over_F = brenth(err, V_over_F_max*one_epsilon_smaller, V_over_F_min*one_epsilon_larger)
                 
     xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]

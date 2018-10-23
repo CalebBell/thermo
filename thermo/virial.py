@@ -25,7 +25,7 @@ from __future__ import division
 __all__ = ['BVirial_Pitzer_Curl', 'BVirial_Abbott', 'BVirial_Tsonopoulos',
            'BVirial_Tsonopoulos_extended']
 
-from scipy.misc import derivative
+from fluids.numerics import derivative
 from thermo.utils import log
 from thermo.utils import R
 
