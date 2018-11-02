@@ -150,10 +150,10 @@ def test_Mixture_calculated_Vfs():
     
     # gas fractions
     S = Mixture(['hexane', 'decane'], zs=[0.25, 0.75], T=699)
-    assert_allclose(S.Vfgs(700, 101326), [0.251236709756207, 0.748763290243793])
-    assert_allclose(S.Vfgs(), [0.25124363058052673, 0.7487563694194732])
-    assert_allclose(S.Vfgs(P=101326), [0.2512436429605387, 0.7487563570394613])
-    assert_allclose(S.Vfgs(T=699), [0.25124363058052673, 0.7487563694194732])
+    assert_allclose(S.Vfgs(700, 101326), [0.251236709756207, 0.748763290243793], rtol=1e-3)
+    assert_allclose(S.Vfgs(), [0.25124363058052673, 0.7487563694194732], rtol=1e-3)
+    assert_allclose(S.Vfgs(P=101326), [0.2512436429605387, 0.7487563570394613], rtol=1e-3)
+    assert_allclose(S.Vfgs(T=699), [0.25124363058052673, 0.7487563694194732], rtol=1e-3)
 
 def test_Mixture_predefined():
     for name in ['Air', 'air', u'Air', ['air']]:

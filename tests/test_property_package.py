@@ -369,10 +369,10 @@ def test_Unifac_EOS_POY():
     xs_expect = [0.04428613261665119, 0.28125472768746834, 0.6744591396958806]
     ys_expect = [0.15571386738334897, 0.518745272312532, 0.32554086030411905]
     assert pkg.phase == 'l/g'
-    assert_allclose(pkg.xs, xs_expect)
-    assert_allclose(pkg.ys, ys_expect)
+    assert_allclose(pkg.xs, xs_expect, rtol=1e-3)
+    assert_allclose(pkg.ys, ys_expect, rtol=1e-3)
     
-    assert_allclose(pkg.P, 230201.5387679756)
+    assert_allclose(pkg.P, 230201.5387679756, rtol=1e-3)
     
 @pytest.mark.fuzz
 @pytest.mark.slow

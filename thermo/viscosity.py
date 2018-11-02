@@ -38,9 +38,8 @@ __all__ = ['Dutt_Prasad', 'VN3_data', 'VN2_data', 'VN2E_data', 'Perrys2_313',
 import os
 import numpy as np
 import pandas as pd
-from fluids.core import interp
 from scipy.interpolate import UnivariateSpline
-from fluids.numerics import newton
+from fluids.numerics import newton, interp
 
 from thermo.utils import log, exp, log10
 from thermo.utils import horner, none_and_length_check, mixing_simple, mixing_logarithmic, TPDependentProperty, MixtureProperty

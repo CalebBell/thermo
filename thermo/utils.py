@@ -2106,15 +2106,15 @@ class TDependentProperty(object):
             Calculated property, [`units`]
         '''
         # Optimistic track, with the already set method
-        if self.method:
-            # retest within range
-            if self.test_method_validity(T, self.method):
-                try:
-                    prop = self.calculate(T, self.method)
-                    if self.test_property_validity(prop):
-                        return prop
-                except:  # pragma: no cover
-                    pass
+#        if self.method:
+#            # retest within range
+#            if self.test_method_validity(T, self.method):
+#                try:
+#                    prop = self.calculate(T, self.method)
+#                    if self.test_property_validity(prop):
+#                        return prop
+#                except:  # pragma: no cover
+#                    pass
 
         # get valid methods at T, and try them until one yields a valid
         # property; store the method and return the answer
@@ -2452,13 +2452,13 @@ class TDependentProperty(object):
         derivative : float
             Calculated derivative property, [`units/K^order`]
         '''
-        if self.method:
-            # retest within range
-            if self.test_method_validity(T, self.method):
-                try:
-                    return self.calculate_derivative(T, self.method, order)
-                except:  # pragma: no cover
-                    pass
+#        if self.method:
+#            # retest within range
+#            if self.test_method_validity(T, self.method):
+#                try:
+#                    return self.calculate_derivative(T, self.method, order)
+#                except:  # pragma: no cover
+#                    pass
         sorted_valid_methods = self.select_valid_methods(T)
         for method in sorted_valid_methods:
             try:
@@ -2523,13 +2523,13 @@ class TDependentProperty(object):
             [`units*K`]
         '''
         Tavg = 0.5*(T1+T2)
-        if self.method:
-            # retest within range
-            if self.test_method_validity(Tavg, self.method):
-                try:
-                    return self.calculate_integral(T1, T2, self.method)
-                except:  # pragma: no cover
-                    pass
+#        if self.method:
+#            # retest within range
+#            if self.test_method_validity(Tavg, self.method):
+#                try:
+#                    return self.calculate_integral(T1, T2, self.method)
+#                except:  # pragma: no cover
+#                    pass
                 
         sorted_valid_methods = self.select_valid_methods(Tavg)
         for method in sorted_valid_methods:
@@ -2595,13 +2595,13 @@ class TDependentProperty(object):
             [`units`]
         '''
         Tavg = 0.5*(T1+T2)
-        if self.method:
-            # retest within range
-            if self.test_method_validity(Tavg, self.method):
-                try:
-                    return self.calculate_integral_over_T(T1, T2, self.method)
-                except:  # pragma: no cover
-                    pass
+#        if self.method:
+#            # retest within range
+#            if self.test_method_validity(Tavg, self.method):
+#                try:
+#                    return self.calculate_integral_over_T(T1, T2, self.method)
+#                except:  # pragma: no cover
+#                    pass
                 
         sorted_valid_methods = self.select_valid_methods(Tavg)
         for method in sorted_valid_methods:
@@ -2863,16 +2863,16 @@ class TPDependentProperty(TDependentProperty):
             Calculated property, [`units`]
         '''
         # Optimistic track, with the already set method
-        if self.method_P:
-            # retest within range
-            if self.test_method_validity_P(T, P, self.method_P):
-                try:
-                    prop = self.calculate_P(T, P, self.method_P)
-                    if self.test_property_validity(prop):
-                        return prop
-                except:  # pragma: no cover
-                    pass
-
+#        if self.method_P:
+#            # retest within range
+#            if self.test_method_validity_P(T, P, self.method_P):
+#                try:
+#                    prop = self.calculate_P(T, P, self.method_P)
+#                    if self.test_property_validity(prop):
+#                        return prop
+#                except:  # pragma: no cover
+#                    pass
+#
         # get valid methods at T, and try them until one yields a valid
         # property; store the method_P and return the answer
         self.sorted_valid_methods_P = self.select_valid_methods_P(T, P)
@@ -3611,16 +3611,16 @@ class MixtureProperty(object):
         if zs is None or ws is None:
             zs, ws = self._complete_zs_ws(zs, ws)
         # Optimistic track, with the already set method
-        if self.method:
-            # retest within range
-            if self.test_method_validity(T, P, zs, ws, self.method):
-                try:
-                    prop = self.calculate(T, P, zs, ws, self.method)
-                    if self.test_property_validity(prop):
-                        return prop
-                except:  # pragma: no cover
-                    pass
-
+#        if self.method:
+#            # retest within range
+#            if self.test_method_validity(T, P, zs, ws, self.method):
+#                try:
+#                    prop = self.calculate(T, P, zs, ws, self.method)
+#                    if self.test_property_validity(prop):
+#                        return prop
+#                except:  # pragma: no cover
+#                    pass
+#
         # get valid methods at conditions, and try them until one yields a valid
         # property; store the method and return the answer
         self.sorted_valid_methods = self.select_valid_methods(T, P, zs, ws)

@@ -1925,8 +1925,8 @@ class GceosBase(Ideal):
     Wilson_guesses = True
     random_guesses = True
     zero_fraction_guesses = 1E-6
-    stability_maxiter = 50 # 30 good professional default
-    stability_xtol = 1E-9 # 1e-12 was too strict
+    stability_maxiter = 500 # 30 good professional default; 500 used in source DTU
+    stability_xtol = 1E-10 # 1e-12 was too strict; 1e-10 used in source DTU
     substitution_maxiter =  100 # 1000 # 
     substitution_xtol = 1e-7 # 1e-10 too strict
     

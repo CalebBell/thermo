@@ -574,7 +574,7 @@ def test_HeatCapacityLiquidMixture():
     assert_allclose(Cp, 72.29643435124115)
     
     Cp = obj.calculate(m.T, m.P, m.zs, m.ws, SIMPLE)
-    assert_allclose(Cp, 78.90470515935154)
+    assert_allclose(Cp, 73.715439, rtol=.01)
     
     m = Mixture(['toluene', 'decane'], ws=[.9, .1], T=300)
     obj = HeatCapacityLiquidMixture(CASs=m.CASs, HeatCapacityLiquids=m.HeatCapacityLiquids)
