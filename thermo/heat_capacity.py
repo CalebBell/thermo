@@ -187,8 +187,16 @@ def Lastovka_Shaw(T, similarity_variable, cyclic_aliphatic=False):
     B22 = 4.35656721
     C21 = 2897.01927
     C22 = 5987.80407
-    Cp = first + (B11 + B12*a)*((C11+C12*a)/T)**2*exp(-(C11 + C12*a)/T)/(1.-exp(-(C11+C12*a)/T))**2
-    Cp += (B21 + B22*a)*((C21+C22*a)/T)**2*exp(-(C21 + C22*a)/T)/(1.-exp(-(C21+C22*a)/T))**2
+    C11_C12a_T =(C11+C12*a)/T
+    expm_C11_C12a_T = exp(-C11_C12a_T)
+    x1 = 1.0/(1.0 - expm_C11_C12a_T)
+    
+    C21_C22a_T = (C21+C22*a)/T
+    expm_C21_C22a_T = exp(-C21_C22a_T)
+    x2 = 1.0/(1.0 - expm_C21_C22a_T)
+    
+    Cp = first + (B11 + B12*a)*(C11_C12a_T*C11_C12a_T)*expm_C11_C12a_T*x1*x1
+    Cp += (B21 + B22*a)*(C21_C22a_T*C21_C22a_T)*expm_C21_C22a_T*x2*x2
     return Cp*1000. # J/g/K to J/kg/K
 
 
@@ -252,9 +260,11 @@ def Lastovka_Shaw_integral(T, similarity_variable, cyclic_aliphatic=False):
     B22 = 4.35656721
     C21 = 2897.01927
     C22 = 5987.80407
-    return 1000.*(T*first - (B11 + B12*a)*(-C11 - C12*a)**2/(-C11 - C12*a + (C11 
-    + C12*a)*exp((-C11 - C12*a)/T)) - (B21 + B22*a)*(-C21 - C22*a)**2/(-C21 
-    - C22*a + (C21 + C22*a)*exp((-C21 - C22*a)/T)))
+    x1 = -C11 - C12*a
+    x2 = -C21 - C22*a
+    
+    return 1000.*(T*first - (B11 + B12*a)*(x1*x1)/(x1 + -x1*exp(x1/T)) 
+                  - (B21 + B22*a)*(x2*x2)/(x2 -x2*exp(x2/T)))
 
 
 def Lastovka_Shaw_integral_over_T(T, similarity_variable, cyclic_aliphatic=False):
@@ -506,7 +516,8 @@ def TRCCp_integral_over_T(T, a0, a1, a2, a3, a4, a5, a6, a7, J=0):
     else:
         y = (T - a7)/(T + a6)
 
-    z = T/(T + a6)*(a7 + a6)/a7
+    x3 = a7 + a6
+    z = T/(T + a6)*x3/a7
     if T <= a7:
         s = 0.
     else:
@@ -517,9 +528,16 @@ def TRCCp_integral_over_T(T, a0, a1, a2, a3, a4, a5, a6, a7, J=0):
         a7_a6_4 = a7_a6_2*a7_a6_2
         x1 = (a4*a72 - a5)/a62 # part of third, sum
         first = (a3 + ((a4*a72 - a5)/a62)*a7_a6_4)*a7_a6_2*log(z)
-        second = (a3 + a4)*log((T + a6)/(a6 + a7))
-        third = sum([(x1*(-a7_a6)**(6-i) - a4)*y**i/i for i in range(1, 8)])
-        fourth = -(a3/a6*(a6 + a7) + a5*y**6/(7.*a7*(a6 + a7)))*y
+        second = (a3 + a4)*log((T + a6)/(x3))
+        third = 0.0
+        y_pow = 1.0
+        a7_a6_pow = (a7_a6)**6
+
+        for i in range(1, 8):
+            y_pow = y_pow*y
+            a7_a6_pow = a7_a6_pow/-a7_a6
+            third += (x1*a7_a6_pow - a4)*y_pow/i
+        fourth = -(a3/a6*(x3) + a5*y_pow/y/(7.*a7*(x3)))*y
         s = first + second + third + fourth
     return R*(J + a0*log(T) + a1/(a2*a2)*(1. + a2/T)*exp(-a2/T) + s)
     
