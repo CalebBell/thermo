@@ -234,7 +234,8 @@ def Wagner_original(T, Tc, Pc, a, b, c, d):
     '''
     Tr = T/Tc
     tau = 1.0 - Tr
-    return Pc*exp((a*tau + b*tau**1.5 + c*tau**3 + d*tau**6)/Tr)
+    tau3 = tau*tau*tau
+    return Pc*exp((a*tau + b*tau**1.5 + c*tau3 + d*tau3*tau3)/Tr)
 
 
 def Wagner(T, Tc, Pc, a, b, c, d):
@@ -831,11 +832,14 @@ def Ambrose_Walton(T, Tc, Pc, omega):
        New York: McGraw-Hill Professional, 2000.
     '''
     Tr = T/Tc
-    tau = 1 - T/Tc
-    f0 = (-5.97616*tau + 1.29874*tau**1.5 - 0.60394*tau**2.5 - 1.06841*tau**5)/Tr
-    f1 = (-5.03365*tau + 1.11505*tau**1.5 - 5.41217*tau**2.5 - 7.46628*tau**5)/Tr
-    f2 = (-0.64771*tau + 2.41539*tau**1.5 - 4.26979*tau**2.5 + 3.25259*tau**5)/Tr
-    return Pc*exp(f0 + omega*f1 + omega**2*f2)
+    tau = 1.0 - Tr
+    tau15 = tau**1.5
+    tau25 = tau*tau15
+    tau5 = tau25*tau25
+    f0 = (-5.97616*tau + 1.29874*tau15 - 0.60394*tau25 - 1.06841*tau5)
+    f1 = (-5.03365*tau + 1.11505*tau15 - 5.41217*tau25 - 7.46628*tau5)
+    f2 = (-0.64771*tau + 2.41539*tau15 - 4.26979*tau25 + 3.25259*tau5)
+    return Pc*exp((f0 + omega*(f1 + f2*omega))/Tr)
 
 
 def Sanjari(T, Tc, Pc, omega):

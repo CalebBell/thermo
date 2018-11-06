@@ -114,12 +114,13 @@ def permittivity_IAPWS(T, rho):
     delta = rho/322.
     tau = 647.096/T
     
-    g = (1 + sum([Nh[h]*delta**ih[h]*tau**jh[h] for h in range(11)])
-        + 0.196096504426E-2*delta*(T/228. - 1)**-1.2)
+    g = 1.0  + 0.196096504426E-2*delta*(T/228. - 1)**-1.2
+    for h in range(11):
+        g += Nh[h]*delta**ih[h]*tau**jh[h] 
     
-    A = N_A*dipole**2*(rho/MW)*g/epsilon_0/k/T
-    B = N_A*polarizability*(rho/MW)/3./epsilon_0
-    epsilon = (1. + A + 5.*B + (9. + 2.*A + 18.*B + A**2 + 10.*A*B + 9.*B**2
+    A = N_A*dipole*dipole*rho*g/(epsilon_0*k*T*MW)
+    B = N_A*polarizability*rho/(3.*epsilon_0*MW)
+    epsilon = (1. + A + 5.*B + (9. + 2.*A + 18.*B + A*A + 10.*A*B + 9.*B*B
         )**0.5)/(4. - 4.*B)
     return epsilon
 
@@ -266,7 +267,7 @@ class Permittivity(TDependentProperty):
         '''
         if method == CRC:
             A, B, C, D = self.CRC_coeffs
-            epsilon = A + B*T + C*T**2 + D*T**3
+            epsilon = A + T*(B + T*(C + D*T))
         elif method == CRC_CONSTANT:
             epsilon = self.CRC_permittivity
         elif method in self.tabular_data:

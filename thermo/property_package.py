@@ -51,7 +51,6 @@ from random import uniform, shuffle, seed
 import numpy as np
 from scipy.optimize import golden, brent, minimize, fmin_slsqp, fsolve
 from fluids.numerics import brenth, ridder, derivative
-#from scipy.misc import derivative
 
 from thermo.utils import log, exp
 from thermo.utils import has_matplotlib, R, pi, N_A
@@ -1008,9 +1007,9 @@ class IdealCaloric(Ideal):
         if T_high is None:
             max_Tc = max(self.Tcs)
             if max_Tc < 100:
-                T_high = 4000
+                T_high = 4000.0
             else:
-                T_high = max_Tc*8
+                T_high = max_Tc*8.0
     
         temp_pkg_cache = []
         def PH_error(T, P, zs, H_goal):

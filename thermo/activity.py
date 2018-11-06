@@ -1000,15 +1000,37 @@ def dew_at_T(zs, Psats, fugacities=None, gammas=None):
     >>> dew_at_T([0.5, 0.5], [1400, 7000], gammas=[1.1, .75], fugacities=[.995, 0.98])
     2401.621874512658
     '''
-    if not fugacities:
-        fugacities = [1 for i in range(len(Psats))]
-    if not gammas:
-        gammas = [1 for i in range(len(Psats))]
-    if not none_and_length_check((zs, Psats, fugacities, gammas)):
-        raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
-    P = 1/sum(zs[i]*fugacities[i]/Psats[i]/gammas[i] for i in range(len(zs)))
+    if fugacities is None and gammas is None:
+        if not none_and_length_check((Psats,)):
+            raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
+        P = 1.0/sum([zs[i]/Psats[i] for i in range(len(zs))])
+    elif gammas is not None and fugacities is None:
+        if not none_and_length_check((Psats, gammas)):
+            raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
+        P = 1.0/sum([zs[i]/(Psats[i]*gammas[i]) for i in range(len(zs))])
+    elif fugacities is not None and gammas is None:
+        if not none_and_length_check((Psats, fugacities)):
+            raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
+        P = 1.0/sum([zs[i]*fugacities[i]/Psats[i] for i in range(len(zs))])
+    elif fugacities is not None and gammas is not None:
+        if not none_and_length_check((zs, Psats, fugacities, gammas)):
+            raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
+        P = 1.0/sum([zs[i]*fugacities[i]/Psats[i]/gammas[i] for i in range(len(zs))])
     return P
-
+    
+    
+    
+    
+    
+#    if not fugacities:
+#        fugacities = [1 for i in range(len(Psats))]
+#    if not gammas:
+#        gammas = [1 for i in range(len(Psats))]
+#    if not none_and_length_check((zs, Psats, fugacities, gammas)):
+#        raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
+#    P = 1/sum(zs[i]*fugacities[i]/Psats[i]/gammas[i] for i in range(len(zs)))
+#    return P
+#
 
 def bubble_at_T(zs, Psats, fugacities=None, gammas=None):
     '''
@@ -1020,13 +1042,22 @@ def bubble_at_T(zs, Psats, fugacities=None, gammas=None):
     3452.440775305097
     '''
     l = len(zs)
-    if not fugacities:
-        fugacities = [1.0]*l
-    if not gammas:
-        gammas = [1.0]*l
-    if not none_and_length_check((zs, Psats, fugacities, gammas)):
-        raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
-    P = sum(zs[i]*Psats[i]*gammas[i]/fugacities[i] for i in range(l))
+    if fugacities is None and gammas is None:
+        if not none_and_length_check((Psats,)):
+            raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
+        P = sum([zs[i]*Psats[i] for i in range(l)])
+    elif gammas is not None and fugacities is None:
+        if not none_and_length_check((Psats, gammas)):
+            raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
+        P = sum([zs[i]*Psats[i]*gammas[i] for i in range(l)])
+    elif fugacities is not None and gammas is None:
+        if not none_and_length_check((Psats, fugacities)):
+            raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
+        P = sum([zs[i]*Psats[i]/fugacities[i] for i in range(l)])
+    elif fugacities is not None and gammas is not None:
+        if not none_and_length_check((zs, Psats, fugacities, gammas)):
+            raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
+        P = sum([zs[i]*Psats[i]*gammas[i]/fugacities[i] for i in range(l)])
     return P
 
 

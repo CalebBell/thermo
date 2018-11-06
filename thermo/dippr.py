@@ -355,7 +355,7 @@ def EQ105(T, A, B, C, D):
     return A/B**(1. + (1. - T/C)**D)
 
 
-def EQ106(T, Tc, A, B, C=0, D=0, E=0):
+def EQ106(T, Tc, A, B, C=0.0, D=0.0, E=0.0):
     r'''DIPPR Equation #106. Often used in calculating liquid surface tension,
     and heat of vaporization.
     Only parameters A and B parameters are required; many fits include no

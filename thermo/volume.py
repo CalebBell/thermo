@@ -431,9 +431,10 @@ def COSTALD(T, Tc, Vc, omega):
     '''
     Tr = T/Tc
     tau = 1.0 - Tr
+    tau_cbrt = (tau)**(1/3.)
     V_delta = (-0.296123 + Tr*(Tr*(-0.0480645*Tr - 0.0427258) + 0.386914))/(Tr - 1.00001)
-    V_0 = (1.0 - 1.52816*(tau)**(1/3.) + 1.43907*(tau)**(2/3.)
-           - 0.81446*(tau) + 0.190454*(tau)**(4/3.))
+    V_0 = (1.0 - 1.52816*tau_cbrt + 1.43907*tau_cbrt*tau_cbrt
+           - 0.81446*(tau) + 0.190454*tau*tau_cbrt)
     return Vc*V_0*(1.0 - omega*V_delta)
 
 
@@ -1271,7 +1272,7 @@ def COSTALD_compressed(T, P, Psat, Tc, Pc, omega, Vs):
     Examples
     --------
     >>> COSTALD_compressed(303., 9.8E7, 85857.9, 466.7, 3640000.0, 0.281, 0.000105047)
-    9.287482879788506e-05
+    9.287482879788505e-05
 
     References
     ----------
@@ -1287,10 +1288,11 @@ def COSTALD_compressed(T, P, Psat, Tc, Pc, omega, Vs):
     h = 1.14188
     j = 0.0861488
     k = 0.0344483
-    tau = 1 - T/Tc
-    e = exp(f + g*omega + h*omega*omega)
+    tau = 1.0 - T/Tc
+    e = exp(f + omega*(g + h*omega))
     C = j + k*omega
-    B = Pc*(-1.0 + a*tau**(1.0/3.) + b*tau**(2.0/3.) + d*tau + e*tau**(4.0/3.))
+    tau13 = tau**(1.0/3.0)
+    B = Pc*(-1.0 + a*tau13 + b*tau13*tau13 + d*tau + e*tau*tau13)
     return Vs*(1.0 - C*log((B + P)/(B + Psat)))
 
 

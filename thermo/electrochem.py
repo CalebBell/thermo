@@ -280,7 +280,7 @@ def Laliberte_density_w(T):
     '''
     t = T-273.15
     rho_w = (((((-2.8054253E-10*t + 1.0556302E-7)*t - 4.6170461E-5)*t - 0.0079870401)*t + 16.945176)*t + 999.83952) \
-        / (1 + 0.01687985*t)
+        / (1.0 + 0.01687985*t)
     return rho_w
 
 
@@ -325,7 +325,8 @@ def Laliberte_density_i(T, w_w, c0, c1, c2, c3, c4):
        doi:10.1021/je8008123
     '''
     t = T - 273.15
-    return ((c0*(1 - w_w)+c1)*exp(1E-6*(t + c4)**2))/((1 - w_w) + c2 + c3*t)
+    tc4 = t + c4
+    return ((c0*(1 - w_w)+c1)*exp(1E-6*tc4*tc4))/((1.0 - w_w) + c2 + c3*t)
 
 
 def Laliberte_density(T, ws, CASRNs):
@@ -366,7 +367,7 @@ def Laliberte_density(T, ws, CASRNs):
        doi:10.1021/je8008123
     '''
     rho_w = Laliberte_density_w(T)
-    w_w = 1 - sum(ws)
+    w_w = 1.0 - sum(ws)
     rho = w_w/rho_w
     for i in range(len(CASRNs)):
         d = _Laliberte_Density_ParametersDict[CASRNs[i]]
@@ -918,7 +919,8 @@ def Kweq_1981(T, rho_w):
     E = 13.957
     F = -1262.3
     G = 8.5641E5
-    return 10**(A + B/T + C/T**2 + D/T**3 + (E + F/T + G/T**2)*log10(rho_w))
+    T2 = T*T
+    return 10**(A + B/T + C/(T2) + D/(T2*T) + (E + F/T + G/T2)*log10(rho_w))
 
 
 def Kweq_IAPWS_gas(T):
@@ -961,7 +963,8 @@ def Kweq_IAPWS_gas(T):
     gamma1 = 4.825133E4
     gamma2 = -6.770793E4
     gamma3 = 1.010210E7
-    K_w_G = 10**(-1*(gamma0 + gamma1/T + gamma2/T**2 + gamma3/T**3))
+    T2 = T*T
+    K_w_G = 10**(-(gamma0 + gamma1/T + gamma2/T2 + gamma3/(T2*T)))
     return K_w_G
 
 
@@ -1026,9 +1029,11 @@ def Kweq_IAPWS(T, rho_w):
     beta1 = -56.8534
     beta2 = -0.375754
 
-    Q = rho_w*exp(alpha0 + alpha1/T + alpha2/T**2*rho_w**(2/3.))
-    K_w = 10**(-1*(-2*n*(log10(1+Q)-Q/(Q+1) * rho_w *(beta0 + beta1/T + beta2*rho_w)) -
-    log10(K_w_G) + 2*log10(18.015268/1000) ))
+    T2 = T*T
+    Q = rho_w*exp(alpha0 + alpha1/T + alpha2/T2*rho_w**(2/3.))
+    K_w = 10.0**(-(-2.0*n*(log10(1.0 + Q)-Q/(Q + 1.0) * rho_w *(beta0 + beta1/T + beta2*rho_w)) -
+    log10(K_w_G) + -3.48871854562233))
+    # 2*log10(18.015268/1000) = -3.48871854562233
     return K_w
 
 

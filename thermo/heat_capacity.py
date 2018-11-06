@@ -371,7 +371,10 @@ def TRCCp(T, a0, a1, a2, a3, a4, a5, a6, a7):
         y = 0.
     else:
         y = (T - a7)/(T + a6)
-    Cp = R*(a0 + (a1/T**2)*exp(-a2/T) + a3*y**2 + (a4 - a5/(T-a7)**2 )*y**8.)
+    T2 = T*T
+    y2 = y*y
+    T_m_a7 = T - a7
+    Cp = R*(a0 + (a1/T2)*exp(-a2/T) + a3*y2 + (a4 - a5/(T_m_a7*T_m_a7))*y2*y2*y2*y2)
     return Cp
 
 
@@ -433,10 +436,11 @@ def TRCCp_integral(T, a0, a1, a2, a3, a4, a5, a6, a7, I=0):
         h = 0.0
     else:
         first = a6 + a7
-        second = (2.*a3 + 8.*a4)*log(1. - y)
-        third = (a3*(1. + 1./(1. - y)) + a4*(7. + 1./(1. - y)))*y
+        one_m_y = 1.0 - y
+        second = (2.*a3 + 8.*a4)*log(one_m_y)
+        third = (a3*(1. + 1./(one_m_y)) + a4*(7. + 1./(one_m_y)))*y
         fourth = a4*(3.*y2 + 5./3.*y*y2 + y4 + 0.6*y4*y + 1/3.*y4*y2)
-        fifth = 1/7.*(a4 - a5/((a6 + a7)**2))*y4*y2*y
+        fifth = 1/7.*(a4 - a5/(first*first))*y4*y2*y
         h = first*(second + third + fourth + fifth)
     return (a0 + a1*exp(-a2/T)/(a2*T) + I/T + h/T)*R*T
 
@@ -514,8 +518,8 @@ def TRCCp_integral_over_T(T, a0, a1, a2, a3, a4, a5, a6, a7, J=0):
         x1 = (a4*a72 - a5)/a62 # part of third, sum
         first = (a3 + ((a4*a72 - a5)/a62)*a7_a6_4)*a7_a6_2*log(z)
         second = (a3 + a4)*log((T + a6)/(a6 + a7))
-        fourth = -(a3/a6*(a6 + a7) + a5*y**6/(7.*a7*(a6 + a7)))*y
         third = sum([(x1*(-a7_a6)**(6-i) - a4)*y**i/i for i in range(1, 8)])
+        fourth = -(a3/a6*(a6 + a7) + a5*y**6/(7.*a7*(a6 + a7)))*y
         s = first + second + third + fourth
     return R*(J + a0*log(T) + a1/(a2*a2)*(1. + a2/T)*exp(-a2/T) + s)
     
@@ -776,21 +780,21 @@ class HeatCapacityGas(TDependentProperty):
         validity = True
         if method == TRCIG:
             if T < self.TRCIG_Tmin or T > self.TRCIG_Tmax:
-                validity = False
+                return False
         elif method == POLING:
             if T < self.POLING_Tmin or T > self.POLING_Tmax:
-                validity = False
+                return False
         elif method == POLING_CONST:
-            if T > self.POLING_T + 50 or T < self.POLING_T - 50:
-                validity = False
+            if T > self.POLING_T + 50.0 or T < self.POLING_T - 50.0:
+                return False
         elif method == CRCSTD:
-            if T > self.CRCSTD_T + 50 or T < self.CRCSTD_T - 50:
-                validity = False
+            if T > self.CRCSTD_T + 50.0 or T < self.CRCSTD_T - 50.0:
+                return False
         elif method == LASTOVKA_SHAW:
             pass # Valid everywhere
         elif method == COOLPROP:
             if T <= self.CP_f.Tmin or T >= self.CP_f.Tmax:
-                validity = False
+                return False
         elif method in self.tabular_data:
             # if tabular_extrapolation_permitted, good to go without checking
             if not self.tabular_extrapolation_permitted:

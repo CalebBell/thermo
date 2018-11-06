@@ -149,6 +149,7 @@ def combustion_products_mixture(atoms_list, zs):
      'P4O10': 0.0,
      'SO2': 0}
     '''
+    # Attempted to use a .copy() on a base dict but that was slower
     products = {'CO2': 0.0, 'Br2': 0.0, 'I2': 0.0, 'HCl': 0.0, 'HF': 0.0, 
                 'SO2': 0.0, 'N2': 0.0, 'P4O10': 0.0, 'H2O': 0.0,
                 'O2_required': 0.0}

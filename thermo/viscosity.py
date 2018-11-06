@@ -1901,11 +1901,11 @@ def Brokaw(T, ys, mus, MWs, molecular_diameters, Stockmayers):
     if not none_and_length_check([ys, mus, MWs, molecular_diameters, Stockmayers]): # check same-length inputs
         raise Exception('Function inputs are incorrect format')
     Tsts = [T/Stockmayer_i for Stockmayer_i in Stockmayers]
-    Sij = [[0 for i in cmps] for j in cmps]
-    Mij = [[0 for i in cmps] for j in cmps]
-    mij = [[0 for i in cmps] for j in cmps]
-    Aij = [[0 for i in cmps] for j in cmps]
-    phiij =[[0 for i in cmps] for j in cmps]
+    Sij = [[0. for i in cmps] for j in cmps]
+    Mij = [[0. for i in cmps] for j in cmps]
+    mij = [[0. for i in cmps] for j in cmps]
+    Aij = [[0. for i in cmps] for j in cmps]
+    phiij =[[0. for i in cmps] for j in cmps]
 
     for i in cmps:
         for j in cmps:
