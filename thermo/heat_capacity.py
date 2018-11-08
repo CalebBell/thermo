@@ -1533,7 +1533,7 @@ def Zabransky_quasi_polynomial(T, Tc, a1, a2, a3, a4, a5, a6):
        2 Volume Set. Washington, D.C.: Amer Inst of Physics, 1996.
     '''
     Tr = T/Tc
-    return R*(a1*log(1-Tr) + a2/(1-Tr) + a3 + a4*Tr + a5*Tr**2 + a6*Tr**3)
+    return R*(a1*log(1.0-Tr) + a2/(1.0-Tr) + a3 + Tr*(Tr*(Tr*a6 + a5) + a4))
 
 
 def Zabransky_quasi_polynomial_integral(T, Tc, a1, a2, a3, a4, a5, a6):

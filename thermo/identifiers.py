@@ -353,8 +353,9 @@ class ChemicalMetadataDB(object):
 pubchem_db = ChemicalMetadataDB(restrict_identifiers_file=os.path.join(folder, 'dippr_2014_int.csv'))
 #pubchem_db = ChemicalMetadataDB()
 
+CAS_from_any_cache = {}
 
-def CAS_from_any(ID, autoload=False):
+def CAS_from_any(ID, autoload=False, cache=True):
     '''Looks up the CAS number of a chemical by searching and testing for the
     string being any of the following types of chemical identifiers:
     
@@ -404,6 +405,10 @@ def CAS_from_any(ID, autoload=False):
     >>> CAS_from_any('O') # only elements can be specified by symbol
     '17778-80-2'
     '''
+    if cache and ID in CAS_from_any_cache:
+        return CAS_from_any_cache[ID]    
+    
+    ID_arg = ID
     ID = ID.strip()
     ID_lower = ID.lower()
     if ID in periodic_table:
@@ -415,21 +420,31 @@ def CAS_from_any(ID, autoload=False):
                       periodic_table.CAS_to_elements]:
                 if i == periodic_table.number_to_elements:
                     if int(ID in i):
-                        return periodic_table[int(ID)].CAS
-                    
+                        CAS = periodic_table[int(ID)].CAS
+                        if cache:
+                            CAS_from_any_cache[ID_arg] = CAS
+                        return CAS
                 else:
                     if ID in i:
-                        return periodic_table[ID].CAS
-
+                        CAS = periodic_table[ID].CAS
+                        if cache:
+                            CAS_from_any_cache[ID_arg] = CAS
+                        return CAS
     if checkCAS(ID):
         CAS_lookup = pubchem_db.search_CAS(ID, autoload)
         if CAS_lookup:
-            return CAS_lookup.CASs
-        
+            CAS = CAS_lookup.CASs
+            if cache:
+                CAS_from_any_cache[ID_arg] = CAS
+            return CAS
         # handle the case of synonyms
         CAS_alternate_loopup = pubchem_db.search_name(ID, autoload)
         if CAS_alternate_loopup:
-            return CAS_alternate_loopup.CASs
+            CAS = CAS_alternate_loopup.CASs
+            if cache:
+                CAS_from_any_cache[ID_arg] = CAS
+            return CAS
+            
         if not autoload:
             return CAS_from_any(ID, autoload=True)
         raise Exception('A valid CAS number (%s) was recognized, but is not in the database' %(ID))
@@ -447,7 +462,10 @@ def CAS_from_any(ID, autoload=False):
         if inchi_search:
             inchi_lookup = pubchem_db.search_InChI(inchi_search, autoload)
             if inchi_lookup:
-                return inchi_lookup.CASs
+                CAS = inchi_lookup.CASs
+                if cache:
+                    CAS_from_any_cache[ID_arg] = CAS
+                return CAS
             else:
                 if not autoload:
                     return CAS_from_any(ID, autoload=True)
@@ -455,16 +473,26 @@ def CAS_from_any(ID, autoload=False):
         if ID_lower[0:9] == 'inchikey=':
             inchi_key_lookup = pubchem_db.search_InChI_key(ID[9:], autoload)
             if inchi_key_lookup:
-                return inchi_key_lookup.CASs
+                CAS = inchi_key_lookup.CASs
+                if cache:
+                    CAS_from_any_cache[ID_arg] = CAS
+                return CAS
             else:
                 if not autoload:
-                    return CAS_from_any(ID, autoload=True)
+                    CAS = CAS_from_any(ID, autoload=True)
+                    if cache:
+                        CAS_from_any_cache[ID_arg] = CAS
+                    return CAS
                 raise Exception('A valid InChI Key (%s) was recognized, but it is not in the database' %(inchi_key_lookup))
     if ID_len > 8:
         if ID_lower[0:8] == 'pubchem=':
             pubchem_lookup = pubchem_db.search_pubchem(ID[8:], autoload)
             if pubchem_lookup:
-                return pubchem_lookup.CASs
+                CAS = pubchem_lookup.CASs
+                if cache:
+                    CAS_from_any_cache[ID_arg] = CAS
+                return CAS
+                
             else:
                 if not autoload:
                     return CAS_from_any(ID, autoload=True)
@@ -473,7 +501,10 @@ def CAS_from_any(ID, autoload=False):
         if ID_lower[0:7] == 'smiles=':
             smiles_lookup = pubchem_db.search_smiles(ID[7:], autoload)
             if smiles_lookup:
-                return smiles_lookup.CASs
+                CAS = smiles_lookup.CASs
+                if cache:
+                    CAS_from_any_cache[ID_arg] = CAS
+                return CAS
             else:
                 if not autoload:
                     return CAS_from_any(ID, autoload=True)
@@ -484,20 +515,29 @@ def CAS_from_any(ID, autoload=False):
     # Pybel API also prints messages to console on failure
     smiles_lookup = pubchem_db.search_smiles(ID, autoload)
     if smiles_lookup:
-        return smiles_lookup.CASs
+        CAS = smiles_lookup.CASs
+        if cache:
+            CAS_from_any_cache[ID_arg] = CAS
+        return CAS
     
     try:
         formula_query = pubchem_db.search_formula(serialize_formula(ID), autoload)
         if formula_query and type(formula_query) == ChemicalMetadata:
-            return formula_query.CASs
+            CAS = formula_query.CASs
+            if cache:
+                CAS_from_any_cache[ID_arg] = CAS
+            return CAS
     except:
         pass
     
     # Try a direct lookup with the name - the fastest
     name_lookup = pubchem_db.search_name(ID, autoload)
     if name_lookup:
-        return name_lookup.CASs
-
+        CAS = name_lookup.CASs
+        if cache:
+            CAS_from_any_cache[ID_arg] = CAS
+        return CAS
+    
 #     Permutate through various name options
     ID_no_space = ID.replace(' ', '')
     ID_no_space_dash = ID_no_space.replace('-', '')
@@ -506,8 +546,10 @@ def CAS_from_any(ID, autoload=False):
         for name2 in [name, name.lower()]:
             name_lookup = pubchem_db.search_name(name2, autoload)
             if name_lookup:
-                return name_lookup.CASs
-            
+                CAS = name_lookup.CASs
+                if cache:
+                    CAS_from_any_cache[ID_arg] = CAS
+                return CAS
     
     if ID[-1] == ')' and '(' in ID:#
         # Try to matck in the form 'water (H2O)'
@@ -516,7 +558,10 @@ def CAS_from_any(ID, autoload=False):
             CAS1 = CAS_from_any(first_identifier)
             CAS2 = CAS_from_any(second_identifier)
             assert CAS1 == CAS2
-            return CAS1
+            CAS = CAS1
+            if cache:
+                CAS_from_any_cache[ID_arg] = CAS
+            return CAS
         except:
             pass
         

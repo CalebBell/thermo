@@ -984,8 +984,8 @@ def Ihmels(Tc=None, Pc=None, Vc=None):
     References
     ----------
     .. [1] Ihmels, E. Christian. "The Critical Surface." Journal of Chemical
-           & Engineering Data 55, no. 9 (September 9, 2010): 3474-80.
-           doi:10.1021/je100167w.
+       & Engineering Data 55, no. 9 (September 9, 2010): 3474-80.
+       doi:10.1021/je100167w.
     '''
     if Tc and Vc:
         Vc = Vc*1E6  # m^3/mol to cm^3/mol
