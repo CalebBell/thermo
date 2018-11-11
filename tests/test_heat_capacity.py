@@ -146,7 +146,11 @@ def test_TRC_gas_data():
 def test_TRC_gas():
     Cps = [TRCCp(T, 4.0, 7.65E5, 720., 3.565, -0.052, -1.55E6, 52., 201.) for T in [150, 300]]
     assert_allclose(Cps, [35.584319834110346, 42.06525682312236])
-
+    
+    # Test a zero division error
+    Cp_zero = TRCCp(298, 4.0, 32753000, 892, 76.209, -0.254, -58870000, 98, 298)
+    Cp_almost_zero = TRCCp(298*(1+1e-13), 4.0, 32753000, 892, 76.209, -0.254, -58870000, 98, 298)
+    assert_allclose(Cp_zero, Cp_almost_zero)
 
 def test_TRCCp_integral():
     dH = TRCCp_integral(298.15, 4.0, 7.65E5, 720., 3.565, -0.052, -1.55E6, 52., 201., 1.2)

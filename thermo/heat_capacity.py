@@ -384,7 +384,11 @@ def TRCCp(T, a0, a1, a2, a3, a4, a5, a6, a7):
     T2 = T*T
     y2 = y*y
     T_m_a7 = T - a7
-    Cp = R*(a0 + (a1/T2)*exp(-a2/T) + a3*y2 + (a4 - a5/(T_m_a7*T_m_a7))*y2*y2*y2*y2)
+    try:
+        Cp = R*(a0 + (a1/T2)*exp(-a2/T) + a3*y2 + (a4 - a5/(T_m_a7*T_m_a7))*y2*y2*y2*y2)
+    except ZeroDivisionError:
+        # When T_m_a7 approaches 0, T = a7
+        Cp = R*(a0 + (a1/T2)*exp(-a2/T) + a3*y2 + (a4)*y2*y2*y2*y2)
     return Cp
 
 
@@ -1985,7 +1989,7 @@ class HeatCapacityLiquid(TDependentProperty):
         if has_CoolProp and self.CASRN in coolprop_dict:
             methods.append(COOLPROP)
             self.CP_f = coolprop_fluids[self.CASRN]
-            Tmins.append(self.CP_f.Tt); Tmaxs.append(self.CP_f.Tc)
+            Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tmax)
         if self.MW and self.similarity_variable:
             methods.append(DADGOSTAR_SHAW)
         self.all_methods = set(methods)
@@ -2090,7 +2094,7 @@ class HeatCapacityLiquid(TDependentProperty):
             if T > self.Zabransky_quasipolynomial_sat.Tc:
                 return False
         elif method == COOLPROP:
-            if T <= self.CP_f.Tt or T >= self.CP_f.Tc:
+            if T <= self.CP_f.Tmin or T >= self.CP_f.Tmax:
                 return False
         elif method == POLING_CONST:
             if T > self.POLING_T + 50 or T < self.POLING_T - 50:

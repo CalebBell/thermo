@@ -42,7 +42,7 @@ from cmath import sqrt as csqrt
 from bisect import bisect_left
 import numpy as np
 from numpy.testing import assert_allclose
-from fluids.numerics import brenth
+from fluids.numerics import brenth, linspace
 from scipy.misc import derivative
 from scipy.integrate import quad
 from scipy.interpolate import interp1d, interp2d
@@ -2135,7 +2135,7 @@ class TDependentProperty(object):
 #            return self.plot_T_dependent_property(Tmin=Tmin, Tmax=Tmax, methods=methods, pts=pts, only_valid=only_valid, order=order)
 
     def plot_T_dependent_property(self, Tmin=None, Tmax=None, methods=[],
-                                  pts=50, only_valid=True, order=0):  # pragma: no cover
+                                  pts=50, only_valid=True, order=0, show=True):  # pragma: no cover
         r'''Method to create a plot of the property vs temperature according to
         either a specified list of methods, or user methods (if set), or all
         methods. User-selectable number of points, and temperature range. If
@@ -2162,6 +2162,8 @@ class TDependentProperty(object):
             If True, only plot successful methods and calculated properties,
             and handle errors; if False, attempt calculation without any
             checking and use methods outside their bounds
+        show : bool
+            If True, displays the plot; otherwise, returns it
         '''
         # This function cannot be tested
         if not has_matplotlib:
@@ -2182,7 +2184,7 @@ class TDependentProperty(object):
                 methods = self.user_methods
             else:
                 methods = self.all_methods
-        Ts = np.linspace(Tmin, Tmax, pts)
+        Ts = linspace(Tmin, Tmax, pts)
         if order == 0:
             for method in methods:
                 if only_valid:
@@ -2222,7 +2224,10 @@ class TDependentProperty(object):
             plt.title(self.name + ' derivative of order %d' % order + ' of ' + self.CASRN)
         plt.legend(loc='best')
         plt.xlabel('Temperature, K')
-        plt.show()
+        if show:
+            plt.show()
+        else:
+            return plt
         
     def extrapolate_tabular(self, T):
         if 'EXTRAPOLATE_TABULAR' not in self.tabular_data:
@@ -2235,7 +2240,7 @@ class TDependentProperty(object):
             if self.Tb is not None:
                 Tmin = min(Tmin, self.Tb)
             
-            Ts = np.linspace(Tmin, self.Tmax, 200)
+            Ts = linspace(Tmin, self.Tmax, 200)
             properties = [self.T_dependent_property(T) for T in Ts]
             Ts_cleaned = []
             properties_cleaned = []
@@ -3067,7 +3072,7 @@ class TPDependentProperty(TDependentProperty):
                 methods_P = self.user_methods_P
             else:
                 methods_P = self.all_methods_P
-        Ps = np.linspace(Pmin, Pmax, pts)
+        Ps = linspace(Pmin, Pmax, pts)
         for method_P in methods_P:
             if only_valid:
                 properties, Ps2 = [], []
@@ -3140,7 +3145,7 @@ class TPDependentProperty(TDependentProperty):
                 methods_P = self.user_methods_P
             else:
                 methods_P = self.all_methods_P
-        Ts = np.linspace(Tmin, Tmax, pts)
+        Ts = linspace(Tmin, Tmax, pts)
         for method_P in methods_P:
             if only_valid:
                 properties, Ts2 = [], []
@@ -3926,7 +3931,7 @@ class MixtureProperty(object):
                 methods = self.user_methods
             else:
                 methods = self.all_methods
-        Ps = np.linspace(Pmin, Pmax, pts)
+        Ps = linspace(Pmin, Pmax, pts)
         for method in methods:
             if only_valid:
                 properties, Ps2 = [], []
@@ -4008,7 +4013,7 @@ class MixtureProperty(object):
                 methods = self.user_methods
             else:
                 methods = self.all_methods
-        Ts = np.linspace(Tmin, Tmax, pts)
+        Ts = linspace(Tmin, Tmax, pts)
         for method in methods:
             if only_valid:
                 properties, Ts2 = [], []

@@ -332,7 +332,7 @@ def Przedziecki_Sridhar(T, Tm, Tc, Pc, Vc, Vm, omega, MW):
     Tr = T/Tc
     Gamma = 0.29607 - 0.09045*Tr - 0.04842*Tr**2
     VrT = 0.33593-0.33953*Tr + 1.51941*Tr**2 - 2.02512*Tr**3 + 1.11422*Tr**4
-    V = VrT*(1-omega*Gamma)*Vc
+    V = VrT*(1.0 - omega*Gamma)*Vc
 
     Vo = 0.0085*omega*Tc - 2.02 + Vm/(0.342*(Tm/Tc) + 0.894)  # checked
     E = -1.12 + Vc/(12.94 + 0.1*MW - 0.23*Pc + 0.0424*Tm - 11.58*(Tm/Tc))
@@ -1319,6 +1319,9 @@ def Gharagheizi_gas_viscosity(T, Tc, Pc, MW):
     7% average relative deviation. Deviation should never be above 30%.
     Developed with the DIPPR database. It is believed theoretically predicted values
     are included in the correlation.
+    
+    Under 0.2Tc, this correlation has been modified to provide values at the 
+    limit.
 
     Examples
     --------
@@ -1334,8 +1337,13 @@ def Gharagheizi_gas_viscosity(T, Tc, Pc, MW):
        (February 22, 2012): 3179-85. doi:10.1021/ie202591f.
     '''
     Tr = T/Tc
+    if Tr < 0.2:
+        Tr = 0.2
+        T = 0.2*Tc
+    
     mu_g = 1E-5*Pc*Tr + (0.091 - 0.477/MW)*T + MW*(1E-5*Pc - 8*MW**2/T**2)*(10.7639/Tc - 4.1929/T)
-    return 1E-7 * abs(mu_g)
+    mu_g = 1e-7*mu_g
+    return mu_g
 
 
 GHARAGHEIZI = 'GHARAGHEIZI'
