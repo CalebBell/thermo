@@ -1821,6 +1821,7 @@ def assert_energy_balance(inlets, outlets, energy_streams, rtol=1E-9, atol=0):
 
 TEST_METHOD_1 = 'Test method 1'
 TEST_METHOD_2 = 'Test method 2'
+BESTFIT = 'Best fit'
 
 
 class TDependentProperty(object):
@@ -1932,6 +1933,7 @@ class TDependentProperty(object):
     property_min = 0
     property_max = 1E4  # Arbitrary max
     T_cached = None
+    locked = False
     
 
 #    Tmin = None
@@ -2105,6 +2107,8 @@ class TDependentProperty(object):
         prop : float
             Calculated property, [`units`]
         '''
+        if self.locked:
+            return self.calculate(T, BESTFIT)
         # Optimistic track, with the already set method
 #        if self.method:
 #            # retest within range
@@ -2527,6 +2531,9 @@ class TDependentProperty(object):
             Calculated integral of the property over the given range, 
             [`units*K`]
         '''
+        if self.locked:
+            return self.calculate_integral(T1, T2, BESTFIT)
+
         Tavg = 0.5*(T1+T2)
 #        if self.method:
 #            # retest within range
@@ -2599,6 +2606,10 @@ class TDependentProperty(object):
             Calculated integral of the property over the given range, 
             [`units`]
         '''
+        if self.locked:
+            return self.calculate_integral_over_T(T1, T2, BESTFIT)
+        
+        
         Tavg = 0.5*(T1+T2)
 #        if self.method:
 #            # retest within range

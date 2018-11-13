@@ -26,7 +26,7 @@ __all__ = ['Chemical', 'reference_states']
 
 
 from thermo.identifiers import *
-from thermo.identifiers import _MixtureDict
+from thermo.identifiers import _MixtureDict, empty_chemical_constants
 from thermo.vapor_pressure import VaporPressure
 from thermo.phase_change import Tb, Tm, Hfus, Hsub, Tliquidus, EnthalpyVaporization
 from thermo.activity import identify_phase, identify_phase_mixture, Pbubble_mixture, Pdew_mixture
@@ -97,6 +97,28 @@ SUPERPRO = (298.15, 101325, 'calc', 0, 0, True) # No support for entropy found, 
 reference_states = [IAPWS, ASHRAE, IIR, REFPROP, CHEMSEP, PRO_II, HYSYS,
                     UNISIM, SUPERPRO]
 _chemical_cache = {}
+
+property_lock = False
+
+def lock_properties(status):
+    global property_lock
+    global _chemical_cache
+    if property_lock == status:
+        return True
+    else:
+        _chemical_cache.clear()
+        property_lock = status
+        return True
+
+def get_chemical_constants(CAS, key):
+    global property_lock
+    if not property_lock:
+        return None
+    from thermo.database import loaded_chemicals
+    try:
+        return getattr(loaded_chemicals[CAS], key)
+    except KeyError:
+        return None
 
 
 class Chemical(object): # pragma: no cover
@@ -844,7 +866,8 @@ class Chemical(object): # pragma: no cover
         # Get and choose initial methods
         self.VaporPressure = VaporPressure(Tb=self.Tb, Tc=self.Tc, Pc=self.Pc,
                                            omega=self.omega, CASRN=self.CAS,
-                                           eos=self.eos_in_a_box)
+                                           eos=self.eos_in_a_box,
+                                           best_fit=get_chemical_constants(self.CAS, 'VaporPressure'))
         self.Psat_298 = self.VaporPressure.T_dependent_property(298.15)
         self.phase_STP = identify_phase(T=298.15, P=101325., Tm=self.Tm, Tb=self.Tb, Tc=self.Tc, Psat=self.Psat_298)
 
@@ -866,11 +889,11 @@ class Chemical(object): # pragma: no cover
 
         self.VolumeSolid = VolumeSolid(CASRN=self.CAS, MW=self.MW, Tt=self.Tt)
 
-        self.HeatCapacityGas = HeatCapacityGas(CASRN=self.CAS, MW=self.MW, similarity_variable=self.similarity_variable)
+        self.HeatCapacityGas = HeatCapacityGas(CASRN=self.CAS, MW=self.MW, similarity_variable=self.similarity_variable, best_fit=get_chemical_constants(self.CAS, 'HeatCapacityGas'))
 
-        self.HeatCapacitySolid = HeatCapacitySolid(MW=self.MW, similarity_variable=self.similarity_variable, CASRN=self.CAS)
+        self.HeatCapacitySolid = HeatCapacitySolid(MW=self.MW, similarity_variable=self.similarity_variable, CASRN=self.CAS, best_fit=get_chemical_constants(self.CAS, 'HeatCapacitySolid'))
 
-        self.HeatCapacityLiquid = HeatCapacityLiquid(CASRN=self.CAS, MW=self.MW, similarity_variable=self.similarity_variable, Tc=self.Tc, omega=self.omega, Cpgm=self.HeatCapacityGas.T_dependent_property)
+        self.HeatCapacityLiquid = HeatCapacityLiquid(CASRN=self.CAS, MW=self.MW, similarity_variable=self.similarity_variable, Tc=self.Tc, omega=self.omega, Cpgm=self.HeatCapacityGas.T_dependent_property, best_fit=get_chemical_constants(self.CAS, 'HeatCapacityLiquid'))
 
         self.EnthalpyVaporization = EnthalpyVaporization(CASRN=self.CAS, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, omega=self.omega, similarity_variable=self.similarity_variable)
         self.Hvap_Tbm = self.EnthalpyVaporization.T_dependent_property(self.Tb) if self.Tb else None

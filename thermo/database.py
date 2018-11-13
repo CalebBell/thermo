@@ -32,56 +32,13 @@ from thermo.utils import log, exp
 from thermo.utils import mixing_simple, none_and_length_check, Vm_to_rho
 from thermo.utils import N_A, k
 from thermo.utils import TDependentProperty, MixtureProperty
-from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
-from thermo.dippr import EQ106
+from thermo.identifiers import ChemicalConstants
+
 
 folder = os.path.join(os.path.dirname(__file__), 'Misc')
 
 
 
-class ChemicalConstants(object):
-    __slots__ = ('CAS', 'Tc', 'Pc', 'Vc', 'omega', 'Tb', 'Tm', 'Tt', 'Pt', 
-                 'Hfus', 'Hsub', 'Hf', 'dipole',
-#                 'Tmin_HeatCapacityGas', 'Tmax_HeatCapacityGas', 'coeffs_HeatCapacityGas',
-                 'HeatCapacityGas', 'HeatCapacityLiquid', 'HeatCapacitySolid',
-                 'ThermalConductivityLiquid', 'ThermalConductivityGas',
-                 'ViscosityLiquid', 'ViscosityGas',
-                 'EnthalpyVaporization', 'VaporPressure', 'VolumeLiquid'
-                 )
-
-    # Or can I store the actual objects without doing the searches?
-    def __init__(self, CAS, Tc=None, Pc=None, Vc=None, omega=None, Tb=None, 
-                 Tm=None, Tt=None, Pt=None, Hfus=None, Hsub=None, Hf=None,
-                 dipole=None,
-                 HeatCapacityGas=(), HeatCapacityLiquid=(), 
-                 HeatCapacitySolid=(), 
-                 ThermalConductivityLiquid=(), ThermalConductivityGas=(),
-                 ViscosityLiquid=(), ViscosityGas=(),
-                 EnthalpyVaporization=(), VaporPressure=(), VolumeLiquid=(),
-                 ):
-        self.CAS = CAS
-        self.Tc = Tc
-        self.Pc = Pc
-        self.Vc = Vc
-        self.omega = omega
-        self.Tb = Tb
-        self.Tm = Tm
-        self.Tt = Tt
-        self.Pt = Pt
-        self.Hfus = Hfus
-        self.Hsub = Hsub
-        self.Hf = Hf
-        self.dipole = dipole
-        self.HeatCapacityGas = HeatCapacityGas
-        self.HeatCapacityLiquid = HeatCapacityLiquid
-        self.HeatCapacitySolid = HeatCapacitySolid
-        self.ThermalConductivityLiquid = ThermalConductivityLiquid
-        self.ThermalConductivityGas = ThermalConductivityGas
-        self.ViscosityLiquid = ViscosityLiquid
-        self.ViscosityGas = ViscosityGas
-        self.EnthalpyVaporization = EnthalpyVaporization
-        self.VaporPressure = VaporPressure
-        self.VolumeLiquid = VolumeLiquid
 
 
 def loadChemicalConstants(data, rows=True):

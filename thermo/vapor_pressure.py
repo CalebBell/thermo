@@ -29,6 +29,8 @@ __all__ = ['WagnerMcGarry', 'AntoinePoling', 'WagnerPoling', 'AntoineExtended',
            'Edalat', 'Sanjari']
 
 import os
+from fluids.numerics import polyint_over_x, horner_log, horner, polyint
+
 import numpy as np
 import pandas as pd
 from thermo.utils import log, exp, isnan
@@ -305,6 +307,7 @@ AMBROSE_WALTON = 'AMBROSE_WALTON'
 SANJARI = 'SANJARI'
 EDALAT = 'Edalat'
 EOS = 'EOS'
+BESTFIT = 'Best fit'
 
 vapor_pressure_methods = [WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
                           DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, ANTOINE_POLING, VDI_TABULAR, AMBROSE_WALTON,
@@ -437,7 +440,7 @@ class VaporPressure(TDependentProperty):
     '''Default rankings of the available methods.'''
 
     def __init__(self, Tb=None, Tc=None, Pc=None, omega=None, CASRN='', 
-                 eos=None):
+                 eos=None, best_fit=None):
         self.CASRN = CASRN
         self.Tb = Tb
         self.Tc = Tc
@@ -480,6 +483,16 @@ class VaporPressure(TDependentProperty):
         filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods()
+
+        if best_fit is not None and len(best_fit) and best_fit[0] is not None:
+            self.locked = True
+            self.best_fit_Tmin = best_fit[0]
+            self.best_fit_Tmax = best_fit[1]
+            self.best_fit_coeffs = best_fit[2]
+
+            self.best_fit_int_coeffs = polyint(best_fit[2])
+            self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff = polyint_over_x(best_fit[2])
+
 
     def load_all_methods(self):
         r'''Method which picks out coefficients for the specified chemical
@@ -581,7 +594,9 @@ class VaporPressure(TDependentProperty):
         Psat : float
             Vapor pressure at T, [pa]
         '''
-        if method == WAGNER_MCGARRY:
+        if method == BESTFIT:
+            Cp = horner(self.best_fit_coeffs, T)
+        elif method == WAGNER_MCGARRY:
             Psat = Wagner_original(T, self.WAGNER_MCGARRY_Tc, self.WAGNER_MCGARRY_Pc, *self.WAGNER_MCGARRY_coefs)
         elif method == WAGNER_POLING:
             Psat = Wagner(T, self.WAGNER_POLING_Tc, self.WAGNER_POLING_Pc, *self.WAGNER_POLING_coefs)

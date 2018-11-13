@@ -25,7 +25,7 @@ from __future__ import division
 __all__ = ['checkCAS', 'CAS_from_any', 'PubChem', 'MW', 'formula', 'smiles', 
            'InChI', 'InChI_Key', 'IUPAC_name', 'name', 'synonyms', 
            '_MixtureDict', 'mixture_from_any', 'cryogenics', 'dippr_compounds',
-           'pubchem_db']
+           'pubchem_db', 'ChemicalConstants', 'empty_chemical_constants']
 import os
 from thermo.utils import to_num, CAS2int, int2CAS
 from thermo.elements import periodic_table, homonuclear_elemental_gases, charge_from_formula, serialize_formula
@@ -117,7 +117,51 @@ class ChemicalMetadata(object):
         self.all_names = all_names
         
         
-    
+class ChemicalConstants(object):
+    __slots__ = ('CAS', 'Tc', 'Pc', 'Vc', 'omega', 'Tb', 'Tm', 'Tt', 'Pt', 
+                 'Hfus', 'Hsub', 'Hf', 'dipole',
+#                 'Tmin_HeatCapacityGas', 'Tmax_HeatCapacityGas', 'coeffs_HeatCapacityGas',
+                 'HeatCapacityGas', 'HeatCapacityLiquid', 'HeatCapacitySolid',
+                 'ThermalConductivityLiquid', 'ThermalConductivityGas',
+                 'ViscosityLiquid', 'ViscosityGas',
+                 'EnthalpyVaporization', 'VaporPressure', 'VolumeLiquid'
+                 )
+
+    # Or can I store the actual objects without doing the searches?
+    def __init__(self, CAS, Tc=None, Pc=None, Vc=None, omega=None, Tb=None, 
+                 Tm=None, Tt=None, Pt=None, Hfus=None, Hsub=None, Hf=None,
+                 dipole=None,
+                 HeatCapacityGas=(), HeatCapacityLiquid=(), 
+                 HeatCapacitySolid=(), 
+                 ThermalConductivityLiquid=(), ThermalConductivityGas=(),
+                 ViscosityLiquid=(), ViscosityGas=(),
+                 EnthalpyVaporization=(), VaporPressure=(), VolumeLiquid=(),
+                 ):
+        self.CAS = CAS
+        self.Tc = Tc
+        self.Pc = Pc
+        self.Vc = Vc
+        self.omega = omega
+        self.Tb = Tb
+        self.Tm = Tm
+        self.Tt = Tt
+        self.Pt = Pt
+        self.Hfus = Hfus
+        self.Hsub = Hsub
+        self.Hf = Hf
+        self.dipole = dipole
+        self.HeatCapacityGas = HeatCapacityGas
+        self.HeatCapacityLiquid = HeatCapacityLiquid
+        self.HeatCapacitySolid = HeatCapacitySolid
+        self.ThermalConductivityLiquid = ThermalConductivityLiquid
+        self.ThermalConductivityGas = ThermalConductivityGas
+        self.ViscosityLiquid = ViscosityLiquid
+        self.ViscosityGas = ViscosityGas
+        self.EnthalpyVaporization = EnthalpyVaporization
+        self.VaporPressure = VaporPressure
+        self.VolumeLiquid = VolumeLiquid
+
+empty_chemical_constants = ChemicalConstants(None)
 
 class ChemicalMetadataDB(object):
     exclusion_options = [os.path.join(folder, 'dippr_2014_int.csv'),

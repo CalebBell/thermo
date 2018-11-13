@@ -651,7 +651,7 @@ class HeatCapacityGas(TDependentProperty):
     ranked_methods = [TRCIG, POLING, COOLPROP, LASTOVKA_SHAW, CRCSTD, POLING_CONST, VDI_TABULAR]
     '''Default rankings of the available methods.'''
 
-    def __init__(self, CASRN='', MW=None, similarity_variable=None):
+    def __init__(self, CASRN='', MW=None, similarity_variable=None, best_fit=None):
         self.CASRN = CASRN
         self.MW = MW
         self.similarity_variable = similarity_variable
@@ -686,6 +686,15 @@ class HeatCapacityGas(TDependentProperty):
         filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods()
+        
+        if best_fit is not None and len(best_fit) and best_fit[0] is not None:
+            self.locked = True
+            self.best_fit_Tmin = best_fit[0]
+            self.best_fit_Tmax = best_fit[1]
+            self.best_fit_coeffs = best_fit[2]
+
+            self.best_fit_int_coeffs = polyint(best_fit[2])
+            self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff = polyint_over_x(best_fit[2])
 
     def load_all_methods(self):
         r'''Method which picks out coefficients for the specified chemical
@@ -775,9 +784,7 @@ class HeatCapacityGas(TDependentProperty):
         elif method in self.tabular_data:
             Cp = self.interpolate(T, method)
         elif method == BESTFIT:
-            from thermo.database import loaded_chemicals
-            Tmin, Tmax, coeffs = loaded_chemicals[self.CASRN].HeatCapacityGas
-            Cp = horner(coeffs, T)
+            Cp = horner(self.best_fit_coeffs, T)
         return Cp
 
     def test_method_validity(self, T, method):
@@ -873,10 +880,7 @@ class HeatCapacityGas(TDependentProperty):
         elif method in self.tabular_data or method == COOLPROP:
             return float(quad(self.calculate, T1, T2, args=(method))[0])
         elif method == BESTFIT:
-            from thermo.database import loaded_chemicals
-            Tmin, Tmax, coeffs = loaded_chemicals[self.CASRN].HeatCapacityGas
-            coeffs_int = polyint(coeffs)
-            return horner(coeffs_int, T2) - horner(coeffs_int, T1)
+            return horner(self.best_fit_int_coeffs, T2) - horner(self.best_fit_int_coeffs, T1)
         else:
             raise Exception('Method not valid')
 
@@ -921,10 +925,8 @@ class HeatCapacityGas(TDependentProperty):
         elif method in self.tabular_data or method == COOLPROP:
             return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
         elif method == BESTFIT:
-            from thermo.database import loaded_chemicals
-            Tmin, Tmax, coeffs = loaded_chemicals[self.CASRN].HeatCapacityGas
-            coeffs, log_coeff = polyint_over_x(coeffs)
-            return horner_log(coeffs, log_coeff, T2) - horner_log(coeffs, log_coeff, T1)
+            return (horner_log(self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff, T2) 
+                    - horner_log(self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff, T1))
         else:
             raise Exception('Method not valid')
 
@@ -1910,7 +1912,7 @@ class HeatCapacityLiquid(TDependentProperty):
 
 
     def __init__(self, CASRN='', MW=None, similarity_variable=None, Tc=None,
-                 omega=None, Cpgm=None):
+                 omega=None, Cpgm=None, best_fit=None):
         self.CASRN = CASRN
         self.MW = MW
         self.Tc = Tc
@@ -1948,7 +1950,15 @@ class HeatCapacityLiquid(TDependentProperty):
         filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods()
+        
+        if best_fit is not None and len(best_fit) and best_fit[0] is not None:
+            self.locked = True
+            self.best_fit_Tmin = best_fit[0]
+            self.best_fit_Tmax = best_fit[1]
+            self.best_fit_coeffs = best_fit[2]
 
+            self.best_fit_int_coeffs = polyint(best_fit[2])
+            self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff = polyint_over_x(best_fit[2])
 
     def load_all_methods(self):
         r'''Method which picks out coefficients for the specified chemical
@@ -2062,6 +2072,8 @@ class HeatCapacityLiquid(TDependentProperty):
             return property_mass_to_molar(Cp, self.MW)
         elif method in self.tabular_data:
             return self.interpolate(T, method)
+        elif method == BESTFIT:
+            Cp = horner(self.best_fit_coeffs, T)
         else:
             raise Exception('Method not valid')
 
@@ -2178,6 +2190,8 @@ class HeatCapacityLiquid(TDependentProperty):
             return property_mass_to_molar(dH, self.MW)
         elif method in self.tabular_data or method == COOLPROP or method in [ROWLINSON_POLING, ROWLINSON_BONDI]:
             return float(quad(self.calculate, T1, T2, args=(method))[0])
+        elif method == BESTFIT:
+            return horner(self.best_fit_int_coeffs, T2) - horner(self.best_fit_int_coeffs, T1)
         else:
             raise Exception('Method not valid')
 
@@ -2226,6 +2240,9 @@ class HeatCapacityLiquid(TDependentProperty):
             return property_mass_to_molar(dS, self.MW)
         elif method in self.tabular_data or method == COOLPROP or method in [ROWLINSON_POLING, ROWLINSON_BONDI]:
             return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
+        elif method == BESTFIT:
+            return (horner_log(self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff, T2) 
+                    - horner_log(self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff, T1))
         else:
             raise Exception('Method not valid')
 
@@ -2491,7 +2508,7 @@ class HeatCapacitySolid(TDependentProperty):
     ranked_methods = [PERRY151, CRCSTD, LASTOVKA_S]
     '''Default rankings of the available methods.'''
 
-    def __init__(self, CASRN='', similarity_variable=None, MW=None):
+    def __init__(self, CASRN='', similarity_variable=None, MW=None, best_fit=None):
         self.similarity_variable = similarity_variable
         self.MW = MW
         self.CASRN = CASRN
@@ -2527,6 +2544,14 @@ class HeatCapacitySolid(TDependentProperty):
 
         self.load_all_methods()
 
+        if best_fit is not None and len(best_fit) and best_fit[0] is not None:
+            self.locked = True
+            self.best_fit_Tmin = best_fit[0]
+            self.best_fit_Tmax = best_fit[1]
+            self.best_fit_coeffs = best_fit[2]
+
+            self.best_fit_int_coeffs = polyint(best_fit[2])
+            self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff = polyint_over_x(best_fit[2])
 
     def load_all_methods(self):
         r'''Method which picks out coefficients for the specified chemical
@@ -2591,6 +2616,8 @@ class HeatCapacitySolid(TDependentProperty):
             Cp = property_mass_to_molar(Cp, self.MW)
         elif method in self.tabular_data:
             Cp = self.interpolate(T, method)
+        elif method == BESTFIT:
+            Cp = horner(self.best_fit_coeffs, T)
         return Cp
 
 
@@ -2672,6 +2699,8 @@ class HeatCapacitySolid(TDependentProperty):
             return property_mass_to_molar(dH, self.MW)
         elif method in self.tabular_data:
             return float(quad(self.calculate, T1, T2, args=(method))[0])
+        elif method == BESTFIT:
+            return horner(self.best_fit_int_coeffs, T2) - horner(self.best_fit_int_coeffs, T1)
         else:
             raise Exception('Method not valid')
 
@@ -2711,6 +2740,9 @@ class HeatCapacitySolid(TDependentProperty):
             return property_mass_to_molar(dS, self.MW)
         elif method in self.tabular_data:
             return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
+        elif method == BESTFIT:
+            return (horner_log(self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff, T2) 
+                    - horner_log(self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff, T1))
         else:
             raise Exception('Method not valid')
 

@@ -215,4 +215,3 @@ def test_VaporPressure():
         cycloheptane.test_method_validity(300, 'BADMETHOD')
 
 
-test_VaporPressure()
