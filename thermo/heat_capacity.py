@@ -42,6 +42,7 @@ from io import open
 from thermo.utils import log, exp, polylog2, isnan
 import numpy as np
 import pandas as pd
+from fluids.numerics import polyint_over_x, horner_log, horner, polyint
 
 from scipy.integrate import quad
 from thermo.utils import R, calorie
@@ -553,6 +554,7 @@ CRCSTD = 'CRC Standard Thermodynamic Properties of Chemical Substances'
 VDI_TABULAR = 'VDI Heat Atlas'
 LASTOVKA_SHAW = 'Lastovka and Shaw (2013)'
 COOLPROP = 'CoolProp'
+BESTFIT = 'Best fit'
 heat_capacity_gas_methods = [TRCIG, POLING, COOLPROP, LASTOVKA_SHAW, CRCSTD,
                              POLING_CONST, VDI_TABULAR]
 '''Holds all methods available for the HeatCapacityGas class, for use in
@@ -772,6 +774,10 @@ class HeatCapacityGas(TDependentProperty):
             Cp = property_mass_to_molar(Cp, self.MW)
         elif method in self.tabular_data:
             Cp = self.interpolate(T, method)
+        elif method == BESTFIT:
+            from thermo.database import loaded_chemicals
+            Tmin, Tmax, coeffs = loaded_chemicals[self.CASRN].HeatCapacityGas
+            Cp = horner(coeffs, T)
         return Cp
 
     def test_method_validity(self, T, method):
@@ -866,6 +872,11 @@ class HeatCapacityGas(TDependentProperty):
             return property_mass_to_molar(dH, self.MW)
         elif method in self.tabular_data or method == COOLPROP:
             return float(quad(self.calculate, T1, T2, args=(method))[0])
+        elif method == BESTFIT:
+            from thermo.database import loaded_chemicals
+            Tmin, Tmax, coeffs = loaded_chemicals[self.CASRN].HeatCapacityGas
+            coeffs_int = polyint(coeffs)
+            return horner(coeffs_int, T2) - horner(coeffs_int, T1)
         else:
             raise Exception('Method not valid')
 
@@ -909,6 +920,11 @@ class HeatCapacityGas(TDependentProperty):
             return property_mass_to_molar(dS, self.MW)
         elif method in self.tabular_data or method == COOLPROP:
             return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
+        elif method == BESTFIT:
+            from thermo.database import loaded_chemicals
+            Tmin, Tmax, coeffs = loaded_chemicals[self.CASRN].HeatCapacityGas
+            coeffs, log_coeff = polyint_over_x(coeffs)
+            return horner_log(coeffs, log_coeff, T2) - horner_log(coeffs, log_coeff, T1)
         else:
             raise Exception('Method not valid')
 

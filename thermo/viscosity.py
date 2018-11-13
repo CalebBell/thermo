@@ -1127,7 +1127,7 @@ def Yoon_Thodos(T, Tc, Pc, MW):
 
     References
     ----------
-    .. [1]  Yoon, Poong, and George Thodos. "Viscosity of Nonpolar Gaseous
+    .. [1] Yoon, Poong, and George Thodos. "Viscosity of Nonpolar Gaseous
        Mixtures at Normal Pressures." AIChE Journal 16, no. 2 (1970): 300-304.
        doi:10.1002/aic.690160225.
     '''

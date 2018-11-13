@@ -524,7 +524,7 @@ class Mixture(object):
         self.IDs = IDs
         T_unsolved = T if T is not None else self.T_default
         P_unsolved = P if P is not None else self.P_default
-        self.Chemicals = [Chemical(ID, P=P_unsolved, T=T_unsolved) for ID in self.IDs]
+        self.Chemicals = [Chemical(ID, P=P_unsolved, T=T_unsolved, autocalc=False) for ID in self.IDs]
 
         # Required for densities for volume fractions before setting fractions
         self.set_chemical_constants()

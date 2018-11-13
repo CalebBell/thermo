@@ -30,7 +30,8 @@ __all__ = ['K_value', 'Wilson_K_value', 'Rachford_Rice_flash_error',
            'identify_phase_mixture', 'Pbubble_mixture', 'bubble_at_P',
            'Pdew_mixture']
 
-from fluids.numerics import newton, brenth, IS_PYPY, one_epsilon_larger, one_epsilon_smaller
+from fluids.numerics import brenth, IS_PYPY, one_epsilon_larger, one_epsilon_smaller
+from fluids.numerics import py_newton as newton # Always use this method for advanced features
 from thermo.utils import exp, log
 from thermo.utils import none_and_length_check
 from thermo.utils import R
@@ -414,7 +415,7 @@ def Rachford_Rice_solution(zs, Ks, fprime=False, fprime2=False):
 #        assert V_over_F >= V_over_F_min2
 #        assert V_over_F <= V_over_F_max2
     except Exception as e:
-        print(zs, Ks, e)
+#        print(zs, Ks, e)
         V_over_F = brenth(err, V_over_F_max*one_epsilon_smaller, V_over_F_min*one_epsilon_larger)
                 
     xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]

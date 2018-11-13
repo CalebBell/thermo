@@ -533,7 +533,7 @@ class Chemical(object): # pragma: no cover
     def __repr__(self):
         return '<Chemical [%s], T=%.2f K, P=%.0f Pa>' %(self.name, self.T, self.P)
 
-    def __init__(self, ID, T=298.15, P=101325):
+    def __init__(self, ID, T=298.15, P=101325, autocalc=True):
         if isinstance(ID, dict):
             self.CAS = ID['CASRN']
             self.ID = self.name = ID['name']
@@ -553,8 +553,10 @@ class Chemical(object): # pragma: no cover
 
         if self.CAS in _chemical_cache and caching:
             self.__dict__.update(_chemical_cache[self.CAS].__dict__)
+            self.autocalc = autocalc
             self.calculate(T, P)
         else:
+            self.autocalc = autocalc
             if not isinstance(ID, dict):
                 self.PubChem = self.ChemicalMetadata.pubchemid
                 self.MW = self.ChemicalMetadata.MW
@@ -574,7 +576,8 @@ class Chemical(object): # pragma: no cover
             self.set_constants()
             self.set_eos(T=T, P=P)
             self.set_TP_sources()
-            self.set_ref()
+            if self.autocalc:
+                self.set_ref()
             self.calculate(T, P)
             if len(_chemical_cache) < 1000:
                 _chemical_cache[self.CAS] = self
@@ -593,11 +596,11 @@ class Chemical(object): # pragma: no cover
                 raise Exception('Negative value specified for Chemical pressure - aborting!')
             self.P = P
 
-
-        self.phase = identify_phase(T=self.T, P=self.P, Tm=self.Tm, Tb=self.Tb, Tc=self.Tc, Psat=self.Psat)
-        self.eos = self.eos.to_TP(T=self.T, P=self.P)
-        self.eos_in_a_box[0] = self.eos
-        self.set_thermo()
+        if self.autocalc:
+            self.phase = identify_phase(T=self.T, P=self.P, Tm=self.Tm, Tb=self.Tb, Tc=self.Tc, Psat=self.Psat)
+            self.eos = self.eos.to_TP(T=self.T, P=self.P)
+            self.eos_in_a_box[0] = self.eos
+            self.set_thermo()
 
 
     def draw_2d(self, width=300, height=300, Hs=False): # pragma: no cover

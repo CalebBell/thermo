@@ -1115,20 +1115,24 @@ class EnthalpyVaporization(TDependentProperty):
             self.VDI_Tmax = Ts[-1]
             self.tabular_data[VDI_TABULAR] = (Ts, props)
             Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
+            
         if self.CASRN in Alibakhshi_Cs.index and self.Tc:
             methods.append(ALIBAKHSHI)
             self.Alibakhshi_C = float(Alibakhshi_Cs.at[self.CASRN, 'C'])
             Tmaxs.append( max(self.Tc-100., 0) )
+            
         if self.CASRN in CRCHvap_data.index and not isnan(CRCHvap_data.at[self.CASRN, 'HvapTb']):
             methods.append(CRC_HVAP_TB)
             self.CRC_HVAP_TB_Tb = float(CRCHvap_data.at[self.CASRN, 'Tb'])
             self.CRC_HVAP_TB_Hvap = float(CRCHvap_data.at[self.CASRN, 'HvapTb'])
+
         if self.CASRN in CRCHvap_data.index and not isnan(CRCHvap_data.at[self.CASRN, 'Hvap298']):
             methods.append(CRC_HVAP_298)
             self.CRC_HVAP_298 = float(CRCHvap_data.at[self.CASRN, 'Hvap298'])
         if self.CASRN in GharagheiziHvap_data.index:
             methods.append(GHARAGHEIZI_HVAP_298)
             self.GHARAGHEIZI_HVAP_298_Hvap = float(GharagheiziHvap_data.at[self.CASRN, 'Hvap298'])
+
         if all((self.Tc, self.omega)):
             methods.extend(self.CSP_methods)
             Tmaxs.append(self.Tc); Tmins.append(0)
