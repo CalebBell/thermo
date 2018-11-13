@@ -594,9 +594,7 @@ class VaporPressure(TDependentProperty):
         Psat : float
             Vapor pressure at T, [pa]
         '''
-        if method == BESTFIT:
-            Cp = horner(self.best_fit_coeffs, T)
-        elif method == WAGNER_MCGARRY:
+        if method == WAGNER_MCGARRY:
             Psat = Wagner_original(T, self.WAGNER_MCGARRY_Tc, self.WAGNER_MCGARRY_Pc, *self.WAGNER_MCGARRY_coefs)
         elif method == WAGNER_POLING:
             Psat = Wagner(T, self.WAGNER_POLING_Tc, self.WAGNER_POLING_Pc, *self.WAGNER_POLING_coefs)
@@ -625,6 +623,8 @@ class VaporPressure(TDependentProperty):
             Psat = self.eos[0].Psat(T)
         elif method in self.tabular_data:
             Psat = self.interpolate(T, method)
+        elif method == BESTFIT:
+            Psat = exp(horner(self.best_fit_coeffs, T))
         return Psat
 
     def test_method_validity(self, T, method):

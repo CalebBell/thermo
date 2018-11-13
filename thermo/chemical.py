@@ -116,7 +116,10 @@ def get_chemical_constants(CAS, key):
         return None
     from thermo.database import loaded_chemicals
     try:
-        return getattr(loaded_chemicals[CAS], key)
+        Tmin, Tmax, coeffs = getattr(loaded_chemicals[CAS], key)
+        if Tmin is not None and Tmax is not None and coeffs is not None:
+            return (Tmin, Tmax, coeffs)
+        return None
     except KeyError:
         return None
 

@@ -2108,7 +2108,10 @@ class TDependentProperty(object):
             Calculated property, [`units`]
         '''
         if self.locked:
-            return self.calculate(T, BESTFIT)
+            try:
+                return self.calculate(T, BESTFIT)
+            except:
+                pass
         # Optimistic track, with the already set method
 #        if self.method:
 #            # retest within range
