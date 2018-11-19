@@ -42,7 +42,7 @@ from cmath import sqrt as csqrt
 from bisect import bisect_left
 import numpy as np
 from numpy.testing import assert_allclose
-from fluids.numerics import brenth, linspace
+from fluids.numerics import brenth, linspace, polyint, polyint_over_x
 from scipy.misc import derivative
 from scipy.integrate import quad
 from scipy.interpolate import interp1d, interp2d
@@ -1157,7 +1157,7 @@ def zs_to_ws(zs, MWs):
     >>> zs_to_ws([0.5, 0.5], [10, 20])
     [0.3333333333333333, 0.6666666666666666]
     '''
-    Mavg = sum(zi*MWi for zi, MWi in zip(zs, MWs))
+    Mavg = sum([zi*MWi for zi, MWi in zip(zs, MWs)])
     ws = [zi*MWi/Mavg for zi, MWi in zip(zs, MWs)]
     return ws
 
@@ -1191,7 +1191,7 @@ def ws_to_zs(ws, MWs):
     >>> ws_to_zs([0.3333333333333333, 0.6666666666666666], [10, 20])
     [0.5, 0.5]
     '''
-    tot = sum(w/MW for w, MW in zip(ws, MWs))
+    tot = sum([w/MW for w, MW in zip(ws, MWs)])
     zs = [w/MW/tot for w, MW in zip(ws, MWs)]
     return zs
 
@@ -1526,18 +1526,18 @@ def mixing_simple(fracs, props):
 
     Notes
     -----
-    Returns None if any fractions or properties are missing or are not of the
-    same length.
+    Returns None if there is an error, normally if one of the properties is 
+    missing or if they are not the same length as the fractions.
 
     Examples
     --------
     >>> mixing_simple([0.1, 0.9], [0.01, 0.02])
     0.019000000000000003
     '''
-    if not none_and_length_check([fracs, props]):
+    try:
+        return sum([fracs[i]*props[i] for i in range(len(fracs))])
+    except:
         return None
-    result = sum(frac*prop for frac, prop in zip(fracs, props))
-    return result
 
 
 def mixing_logarithmic(fracs, props):
@@ -1575,7 +1575,8 @@ def mixing_logarithmic(fracs, props):
     return exp(sum(frac*log(prop) for frac, prop in zip(fracs, props)))
 
 
-def phase_select_property(phase=None, s=None, l=None, g=None, V_over_F=None):
+def phase_select_property(phase=None, s=None, l=None, g=None, V_over_F=None,
+                          self=None):
     r'''Determines which phase's property should be set as a default, given
     the phase a chemical is, and the property values of various phases. For the
     case of liquid-gas phase, returns None. If the property is not available
@@ -1593,6 +1594,9 @@ def phase_select_property(phase=None, s=None, l=None, g=None, V_over_F=None):
         Gas-phase property, [`prop`]
     V_over_F : float
         Vapor phase fraction, [-]
+    self : Object, optional
+        If self is not None, the properties are assumed to be python properties
+        with a fget method available, [-]
 
     Returns
     -------
@@ -1603,6 +1607,9 @@ def phase_select_property(phase=None, s=None, l=None, g=None, V_over_F=None):
     -----
     Could calculate mole-fraction weighted properties for the two phase regime.
     Could also implement equilibria with solid phases.
+    
+    The use of self and fget ensures the properties not needed are not 
+    calculated.
 
     Examples
     --------
@@ -1610,10 +1617,16 @@ def phase_select_property(phase=None, s=None, l=None, g=None, V_over_F=None):
     3312.0
     '''
     if phase == 's':
+        if self is not None:
+            return s.fget(self)
         return s
     elif phase == 'l':
+        if self is not None:
+            return l.fget(self)
         return l
     elif phase == 'g':
+        if self is not None:
+            return g.fget(self)
         return g
     elif phase is None or phase == 'two-phase':
         return None  
@@ -2080,6 +2093,48 @@ class TDependentProperty(object):
             return False
         return True
         
+    def set_best_fit(self, best_fit):
+        if (best_fit is not None and len(best_fit) and (best_fit[0] is not None
+           and best_fit[1] is not None and  best_fit[2] is not None) 
+            and not isnan(best_fit[0]) and not isnan(best_fit[1])):
+            self.locked = True
+            self.best_fit_Tmin = best_fit[0]
+            self.best_fit_Tmax = best_fit[1]
+            self.best_fit_coeffs = best_fit[2]
+    
+            self.best_fit_int_coeffs = polyint(best_fit[2])
+            self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff = polyint_over_x(best_fit[2])
+            
+            # Extrapolation slope on high and low
+            slope_delta_T = (self.best_fit_Tmax - self.best_fit_Tmin)*.05            
+            
+            self.best_fit_Tmax_value = self.calculate(self.best_fit_Tmax, BESTFIT)
+            if self.interpolation_property is not None:
+                self.best_fit_Tmax_value = self.interpolation_property(self.best_fit_Tmax_value)
+            
+                        
+            # Calculate the average derivative for the last 5% of the curve
+            fit_value_high = self.calculate(self.best_fit_Tmax - slope_delta_T, BESTFIT)
+            if self.interpolation_property is not None:
+                fit_value_high = self.interpolation_property(fit_value_high)
+
+            self.best_fit_Tmax_slope = (self.best_fit_Tmax_value 
+                                        - fit_value_high)/slope_delta_T
+            # Extrapolation to lower T
+            self.best_fit_Tmin_value = self.calculate(self.best_fit_Tmin, BESTFIT)
+            if self.interpolation_property is not None:
+                self.best_fit_Tmin_value = self.interpolation_property(self.best_fit_Tmin_value)
+            
+            fit_value_low = self.calculate(self.best_fit_Tmin + slope_delta_T, BESTFIT)
+            if self.interpolation_property is not None:
+                fit_value_low = self.interpolation_property(fit_value_low)
+
+
+            self.best_fit_Tmin_slope = (fit_value_low 
+                                        - self.best_fit_Tmin_value)/slope_delta_T
+
+
+
     def T_dependent_property(self, T):
         r'''Method to calculate the property with sanity checking and without
         specifying a specific method. `select_valid_methods` is used to obtain
@@ -2110,7 +2165,8 @@ class TDependentProperty(object):
         if self.locked:
             try:
                 return self.calculate(T, BESTFIT)
-            except:
+            except Exception as e:
+#                print(e)
                 pass
         # Optimistic track, with the already set method
 #        if self.method:

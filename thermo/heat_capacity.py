@@ -42,7 +42,9 @@ from io import open
 from thermo.utils import log, exp, polylog2, isnan
 import numpy as np
 import pandas as pd
-from fluids.numerics import polyint_over_x, horner_log, horner, polyint
+from fluids.numerics import (polyint_over_x, horner_log, horner, polyint, 
+                             fit_integral_linear_extrapolation,
+                             fit_integral_over_T_linear_extrapolation)
 
 from scipy.integrate import quad
 from thermo.utils import R, calorie
@@ -687,14 +689,9 @@ class HeatCapacityGas(TDependentProperty):
 
         self.load_all_methods()
         
-        if best_fit is not None and len(best_fit) and best_fit[0] is not None:
-            self.locked = True
-            self.best_fit_Tmin = best_fit[0]
-            self.best_fit_Tmax = best_fit[1]
-            self.best_fit_coeffs = best_fit[2]
-
-            self.best_fit_int_coeffs = polyint(best_fit[2])
-            self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff = polyint_over_x(best_fit[2])
+        if best_fit is not None:
+            self.set_best_fit(best_fit)
+                                        
 
     def load_all_methods(self):
         r'''Method which picks out coefficients for the specified chemical
@@ -766,7 +763,14 @@ class HeatCapacityGas(TDependentProperty):
         Cp : float
             Calculated heat capacity, [J/mol/K]
         '''
-        if method == TRCIG:
+        if method == BESTFIT:
+            if T < self.best_fit_Tmin:
+                Cp = (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value
+            elif T > self.best_fit_Tmax:
+                Cp = (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
+            else:
+                Cp = horner(self.best_fit_coeffs, T)
+        elif method == TRCIG:
             Cp = TRCCp(T, *self.TRCIG_coefs)
         elif method == COOLPROP:
             Cp = PropsSI('Cp0molar', 'T', T,'P', 101325.0, self.CASRN)
@@ -783,8 +787,6 @@ class HeatCapacityGas(TDependentProperty):
             Cp = property_mass_to_molar(Cp, self.MW)
         elif method in self.tabular_data:
             Cp = self.interpolate(T, method)
-        elif method == BESTFIT:
-            Cp = horner(self.best_fit_coeffs, T)
         return Cp
 
     def test_method_validity(self, T, method):
@@ -860,7 +862,13 @@ class HeatCapacityGas(TDependentProperty):
             Calculated integral of the property over the given range, 
             [`units*K`]
         '''
-        if method == TRCIG:
+        if method == BESTFIT:
+            return fit_integral_linear_extrapolation(T1, T2, 
+                self.best_fit_int_coeffs, self.best_fit_Tmin, 
+                self.best_fit_Tmax, self.best_fit_Tmin_value, 
+                self.best_fit_Tmax_value, self.best_fit_Tmin_slope,
+                self.best_fit_Tmax_slope)
+        elif method == TRCIG:
             H2 = TRCCp_integral(T2, *self.TRCIG_coefs)
             H1 = TRCCp_integral(T1, *self.TRCIG_coefs)
             return H2 - H1
@@ -879,8 +887,6 @@ class HeatCapacityGas(TDependentProperty):
             return property_mass_to_molar(dH, self.MW)
         elif method in self.tabular_data or method == COOLPROP:
             return float(quad(self.calculate, T1, T2, args=(method))[0])
-        elif method == BESTFIT:
-            return horner(self.best_fit_int_coeffs, T2) - horner(self.best_fit_int_coeffs, T1)
         else:
             raise Exception('Method not valid')
 
@@ -905,7 +911,14 @@ class HeatCapacityGas(TDependentProperty):
             Calculated integral of the property over the given range, 
             [`units`]
         '''
-        if method == TRCIG:
+        if method == BESTFIT:
+            return fit_integral_over_T_linear_extrapolation(T1, T2, 
+                self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff,
+                self.best_fit_Tmin, self.best_fit_Tmax, 
+                self.best_fit_Tmin_value, 
+                self.best_fit_Tmax_value, self.best_fit_Tmin_slope,
+                self.best_fit_Tmax_slope)
+        elif method == TRCIG:
             S2 = TRCCp_integral_over_T(T2, *self.TRCIG_coefs)
             S1 = TRCCp_integral_over_T(T1, *self.TRCIG_coefs)
             return S2 - S1
@@ -924,9 +937,6 @@ class HeatCapacityGas(TDependentProperty):
             return property_mass_to_molar(dS, self.MW)
         elif method in self.tabular_data or method == COOLPROP:
             return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
-        elif method == BESTFIT:
-            return (horner_log(self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff, T2) 
-                    - horner_log(self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff, T1))
         else:
             raise Exception('Method not valid')
 
@@ -1951,14 +1961,8 @@ class HeatCapacityLiquid(TDependentProperty):
 
         self.load_all_methods()
         
-        if best_fit is not None and len(best_fit) and best_fit[0] is not None:
-            self.locked = True
-            self.best_fit_Tmin = best_fit[0]
-            self.best_fit_Tmax = best_fit[1]
-            self.best_fit_coeffs = best_fit[2]
-
-            self.best_fit_int_coeffs = polyint(best_fit[2])
-            self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff = polyint_over_x(best_fit[2])
+        if best_fit is not None:
+            self.set_best_fit(best_fit)
 
     def load_all_methods(self):
         r'''Method which picks out coefficients for the specified chemical
@@ -2043,7 +2047,14 @@ class HeatCapacityLiquid(TDependentProperty):
         Cp : float
             Heat capacity of the liquid at T, [J/mol/K]
         '''
-        if method == ZABRANSKY_SPLINE:
+        if method == BESTFIT:
+            if T < self.best_fit_Tmin:
+                return (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value
+            elif T > self.best_fit_Tmax:
+                return (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
+            else:
+                return horner(self.best_fit_coeffs, T)
+        elif method == ZABRANSKY_SPLINE:
             return self.Zabransky_spline.calculate(T)
         elif method == ZABRANSKY_QUASIPOLYNOMIAL:
             return self.Zabransky_quasipolynomial.calculate(T)
@@ -2072,8 +2083,6 @@ class HeatCapacityLiquid(TDependentProperty):
             return property_mass_to_molar(Cp, self.MW)
         elif method in self.tabular_data:
             return self.interpolate(T, method)
-        elif method == BESTFIT:
-            Cp = horner(self.best_fit_coeffs, T)
         else:
             raise Exception('Method not valid')
 
@@ -2168,7 +2177,13 @@ class HeatCapacityLiquid(TDependentProperty):
             Calculated integral of the property over the given range, 
             [`units*K`]
         '''
-        if method == ZABRANSKY_SPLINE:
+        if method == BESTFIT:
+            return fit_integral_linear_extrapolation(T1, T2, 
+                self.best_fit_int_coeffs, self.best_fit_Tmin, 
+                self.best_fit_Tmax, self.best_fit_Tmin_value, 
+                self.best_fit_Tmax_value, self.best_fit_Tmin_slope,
+                self.best_fit_Tmax_slope)
+        elif method == ZABRANSKY_SPLINE:
             return self.Zabransky_spline.calculate_integral(T1, T2)
         elif method == ZABRANSKY_SPLINE_C:
             return self.Zabransky_spline_iso.calculate_integral(T1, T2)
@@ -2190,8 +2205,6 @@ class HeatCapacityLiquid(TDependentProperty):
             return property_mass_to_molar(dH, self.MW)
         elif method in self.tabular_data or method == COOLPROP or method in [ROWLINSON_POLING, ROWLINSON_BONDI]:
             return float(quad(self.calculate, T1, T2, args=(method))[0])
-        elif method == BESTFIT:
-            return horner(self.best_fit_int_coeffs, T2) - horner(self.best_fit_int_coeffs, T1)
         else:
             raise Exception('Method not valid')
 
@@ -2218,7 +2231,14 @@ class HeatCapacityLiquid(TDependentProperty):
             Calculated integral of the property over the given range, 
             [`units`]
         '''
-        if method == ZABRANSKY_SPLINE:
+        if method == BESTFIT:
+            return fit_integral_over_T_linear_extrapolation(T1, T2, 
+                self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff,
+                self.best_fit_Tmin, self.best_fit_Tmax, 
+                self.best_fit_Tmin_value, 
+                self.best_fit_Tmax_value, self.best_fit_Tmin_slope,
+                self.best_fit_Tmax_slope)
+        elif method == ZABRANSKY_SPLINE:
             return self.Zabransky_spline.calculate_integral_over_T(T1, T2)
         elif method == ZABRANSKY_SPLINE_C:
             return self.Zabransky_spline_iso.calculate_integral_over_T(T1, T2)
@@ -2240,9 +2260,6 @@ class HeatCapacityLiquid(TDependentProperty):
             return property_mass_to_molar(dS, self.MW)
         elif method in self.tabular_data or method == COOLPROP or method in [ROWLINSON_POLING, ROWLINSON_BONDI]:
             return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
-        elif method == BESTFIT:
-            return (horner_log(self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff, T2) 
-                    - horner_log(self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff, T1))
         else:
             raise Exception('Method not valid')
 
@@ -2544,14 +2561,8 @@ class HeatCapacitySolid(TDependentProperty):
 
         self.load_all_methods()
 
-        if best_fit is not None and len(best_fit) and best_fit[0] is not None:
-            self.locked = True
-            self.best_fit_Tmin = best_fit[0]
-            self.best_fit_Tmax = best_fit[1]
-            self.best_fit_coeffs = best_fit[2]
-
-            self.best_fit_int_coeffs = polyint(best_fit[2])
-            self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff = polyint_over_x(best_fit[2])
+        if best_fit is not None:
+            self.set_best_fit(best_fit)
 
     def load_all_methods(self):
         r'''Method which picks out coefficients for the specified chemical
@@ -2606,7 +2617,14 @@ class HeatCapacitySolid(TDependentProperty):
         Cp : float
             Heat capacity of the solid at T, [J/mol/K]
         '''
-        if method == PERRY151:
+        if method == BESTFIT:
+            if T < self.best_fit_Tmin:
+                Cp = (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value
+            elif T > self.best_fit_Tmax:
+                Cp = (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
+            else:
+                Cp = horner(self.best_fit_coeffs, T)
+        elif method == PERRY151:
             Cp = (self.PERRY151_const + self.PERRY151_lin*T
             + self.PERRY151_quadinv/T**2 + self.PERRY151_quad*T**2)*calorie
         elif method == CRCSTD:
@@ -2616,8 +2634,6 @@ class HeatCapacitySolid(TDependentProperty):
             Cp = property_mass_to_molar(Cp, self.MW)
         elif method in self.tabular_data:
             Cp = self.interpolate(T, method)
-        elif method == BESTFIT:
-            Cp = horner(self.best_fit_coeffs, T)
         return Cp
 
 
@@ -2685,7 +2701,13 @@ class HeatCapacitySolid(TDependentProperty):
             Calculated integral of the property over the given range, 
             [`units*K`]
         '''
-        if method == PERRY151:
+        if method == BESTFIT:
+            return fit_integral_linear_extrapolation(T1, T2, 
+                self.best_fit_int_coeffs, self.best_fit_Tmin, 
+                self.best_fit_Tmax, self.best_fit_Tmin_value, 
+                self.best_fit_Tmax_value, self.best_fit_Tmin_slope,
+                self.best_fit_Tmax_slope)
+        elif method == PERRY151:
             H2 = (self.PERRY151_const*T2 + 0.5*self.PERRY151_lin*T2**2 
                   - self.PERRY151_quadinv/T2 + self.PERRY151_quad*T2**3/3.)
             H1 = (self.PERRY151_const*T1 + 0.5*self.PERRY151_lin*T1**2 
@@ -2699,8 +2721,6 @@ class HeatCapacitySolid(TDependentProperty):
             return property_mass_to_molar(dH, self.MW)
         elif method in self.tabular_data:
             return float(quad(self.calculate, T1, T2, args=(method))[0])
-        elif method == BESTFIT:
-            return horner(self.best_fit_int_coeffs, T2) - horner(self.best_fit_int_coeffs, T1)
         else:
             raise Exception('Method not valid')
 
@@ -2724,7 +2744,14 @@ class HeatCapacitySolid(TDependentProperty):
             Calculated integral of the property over the given range, 
             [`units`]
         '''
-        if method == PERRY151:
+        if method == BESTFIT:
+            return fit_integral_over_T_linear_extrapolation(T1, T2, 
+                self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff,
+                self.best_fit_Tmin, self.best_fit_Tmax, 
+                self.best_fit_Tmin_value, 
+                self.best_fit_Tmax_value, self.best_fit_Tmin_slope,
+                self.best_fit_Tmax_slope)
+        elif method == PERRY151:
             S2 = (self.PERRY151_const*log(T2) + self.PERRY151_lin*T2 
                   - self.PERRY151_quadinv/(2.*T2**2) + 0.5*self.PERRY151_quad*T2**2)
             S1 = (self.PERRY151_const*log(T1) + self.PERRY151_lin*T1
@@ -2740,9 +2767,6 @@ class HeatCapacitySolid(TDependentProperty):
             return property_mass_to_molar(dS, self.MW)
         elif method in self.tabular_data:
             return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
-        elif method == BESTFIT:
-            return (horner_log(self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff, T2) 
-                    - horner_log(self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff, T1))
         else:
             raise Exception('Method not valid')
 

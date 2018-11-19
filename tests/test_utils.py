@@ -184,7 +184,7 @@ def test_mixing_simple():
     prop = mixing_simple([0.1, 0.9], [0.01, 0.02])
     assert_allclose(prop, 0.019)
 
-    assert None == mixing_simple([0.1], [0.01, 0.02])
+    assert None == mixing_simple([0.01, 0.02], [0.1])
 
 def test_mixing_logarithmic():
     prop = mixing_logarithmic([0.1, 0.9], [0.01, 0.02])

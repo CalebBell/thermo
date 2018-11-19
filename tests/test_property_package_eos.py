@@ -32,6 +32,7 @@ from math import log, exp, sqrt
 from thermo import Mixture
 from thermo.property_package import *
 
+
 def test_bubble_T_PR():
     Ps = np.logspace(np.log10(1e3), np.log10(8e6), 100).tolist()
     # Value working for sure!
@@ -49,7 +50,8 @@ def test_bubble_T_PR():
     for P in Ps:
         bubs.append(pkg.bubble_T(P, m.zs, maxiter=20, xtol=1e-10, maxiter_initial=20, xtol_initial=1e-1))
     assert_allclose(bubs, T_bubbles_expect)
-    
+
+
 def test_C1_C10_PT_flash():
 
     m = Mixture(['methane', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10'], zs=[.1]*10, T=300, P=1E6)

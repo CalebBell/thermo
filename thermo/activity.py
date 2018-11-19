@@ -764,15 +764,20 @@ def NRTL(xs, taus, alphas):
     Gs = [[exp(-alphas[i][j]*taus[i][j]) for j in cmps] for i in cmps]
     for i in cmps:
         tn1, td1, total2 = 0., 0., 0.
+        Gsi = Gs[i]
+        tausi = taus[i]
         for j in cmps:
             # Term 1, numerator and denominator
             tn1 += xs[j]*taus[j][i]*Gs[j][i]
             td1 +=  xs[j]*Gs[j][i]
             # Term 2
-            tn2 = xs[j]*Gs[i][j]
+            tn2 = xs[j]*Gsi[j]
+            
             td2 = td3 = sum([xs[k]*Gs[k][j] for k in cmps])
+            
             tn3 = sum([xs[m]*taus[m][j]*Gs[m][j] for m in cmps])
-            total2 += tn2/td2*(taus[i][j] - tn3/td3)
+            
+            total2 += tn2/td2*(tausi[j] - tn3/td3)
         gamma = exp(tn1/td1 + total2)
         gammas.append(gamma)
     return gammas
@@ -950,20 +955,24 @@ def UNIQUAC(xs, rs, qs, taus):
        1978): 91-99. doi:10.1016/0378-3812(78)85002-X.
     '''
     cmps = range(len(xs))
-    rsxs = sum([rs[i]*xs[i] for i in cmps])
-    phis = [rs[i]*xs[i]/rsxs for i in cmps]
-    qsxs = sum([qs[i]*xs[i] for i in cmps])
-    vs = [qs[i]*xs[i]/qsxs for i in cmps]
+    rsxs = [rs[i]*xs[i] for i in cmps]
+    rsxs_sum = sum(rsxs)
+    phis = [rsxs[i]/rsxs_sum for i in cmps]
+    qsxs = [qs[i]*xs[i] for i in cmps]
+    qsxs_sum = sum(qsxs)
+    vs = [qsxs[i]/qsxs_sum for i in cmps]
 
     Ss = [sum([vs[j]*taus[j][i] for j in cmps]) for i in cmps]
+    VsSs = [vs[j]/Ss[j] for j in cmps]
 
-    loggammacs = [log(phis[i]/xs[i]) + 1.0 - phis[i]/xs[i]
-    - 5*qs[i]*(log(phis[i]/vs[i]) + 1.0 - phis[i]/vs[i]) for i in cmps]
-
-    loggammars = [qs[i]*(1.0 - log(Ss[i]) - sum([taus[i][j]*vs[j]/Ss[j]
-                  for j in cmps])) for i in cmps]
-
-    return [exp(loggammacs[i] + loggammars[i]) for i in cmps]
+    ans = []
+    for i in cmps:
+        x1 = phis[i]/xs[i]
+        x2 = phis[i]/vs[i]
+        loggammac = log(x1) + 1.0 - x1 - 5.0*qs[i]*(log(x2) + 1.0 - x2)
+        loggammar = qs[i]*(1.0 - log(Ss[i]) - sum([taus[i][j]*VsSs[j] for j in cmps]))
+        ans.append(exp(loggammac + loggammar))
+    return ans
 
 
 def flash(P, zs, Psats):
@@ -1002,22 +1011,34 @@ def dew_at_T(zs, Psats, fugacities=None, gammas=None):
     2401.621874512658
     '''
     if fugacities is None and gammas is None:
-        if not none_and_length_check((Psats,)):
-            raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
-        P = 1.0/sum([zs[i]/Psats[i] for i in range(len(zs))])
+        try:
+            return 1.0/sum([zs[i]/Psats[i] for i in range(len(zs))])
+        except Exception as e:
+            if not none_and_length_check((Psats,)):
+                raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
+            raise e
     elif gammas is not None and fugacities is None:
-        if not none_and_length_check((Psats, gammas)):
-            raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
-        P = 1.0/sum([zs[i]/(Psats[i]*gammas[i]) for i in range(len(zs))])
+        try:
+            return 1.0/sum([zs[i]/(Psats[i]*gammas[i]) for i in range(len(zs))])
+        except Exception as e:
+            if not none_and_length_check((Psats, gammas)):
+                raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
+            raise e
     elif fugacities is not None and gammas is None:
-        if not none_and_length_check((Psats, fugacities)):
-            raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
-        P = 1.0/sum([zs[i]*fugacities[i]/Psats[i] for i in range(len(zs))])
+        try:
+            return 1.0/sum([zs[i]*fugacities[i]/Psats[i] for i in range(len(zs))])
+        except Exception as e:
+            if not none_and_length_check((Psats, fugacities)):
+                raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
+            raise e
     elif fugacities is not None and gammas is not None:
-        if not none_and_length_check((zs, Psats, fugacities, gammas)):
-            raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
-        P = 1.0/sum([zs[i]*fugacities[i]/Psats[i]/gammas[i] for i in range(len(zs))])
-    return P
+        try:
+            return 1.0/sum([zs[i]*fugacities[i]/(Psats[i]*gammas[i]) for i in range(len(zs))])
+        except Exception as e:
+            if not none_and_length_check((zs, Psats, fugacities, gammas)):
+                raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
+            raise e
+    return ValueError
     
     
     
@@ -1044,22 +1065,35 @@ def bubble_at_T(zs, Psats, fugacities=None, gammas=None):
     '''
     l = len(zs)
     if fugacities is None and gammas is None:
-        if not none_and_length_check((Psats,)):
-            raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
-        P = sum([zs[i]*Psats[i] for i in range(l)])
+        try:
+            return sum([zs[i]*Psats[i] for i in range(l)])
+        except Exception as e:
+            if not none_and_length_check((Psats,)):
+                raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
+            raise e
     elif gammas is not None and fugacities is None:
-        if not none_and_length_check((Psats, gammas)):
-            raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
-        P = sum([zs[i]*Psats[i]*gammas[i] for i in range(l)])
+        try:
+            return sum([zs[i]*Psats[i]*gammas[i] for i in range(l)])
+        except Exception as e:
+            if not none_and_length_check((Psats, gammas)):
+                raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
+            raise e
     elif fugacities is not None and gammas is None:
-        if not none_and_length_check((Psats, fugacities)):
-            raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
-        P = sum([zs[i]*Psats[i]/fugacities[i] for i in range(l)])
+        try:
+            return sum([zs[i]*Psats[i]/fugacities[i] for i in range(l)])
+        except Exception as e:
+            if not none_and_length_check((Psats, fugacities)):
+                raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
+            return e
     elif fugacities is not None and gammas is not None:
-        if not none_and_length_check((zs, Psats, fugacities, gammas)):
-            raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
-        P = sum([zs[i]*Psats[i]*gammas[i]/fugacities[i] for i in range(l)])
-    return P
+        try:
+            return sum([zs[i]*Psats[i]*gammas[i]/fugacities[i] for i in range(l)])
+        except Exception as e:
+            if not none_and_length_check((zs, Psats, fugacities, gammas)):
+                raise Exception('Input dimentions are inconsistent or some input parameters are missing.')
+            return e
+    else:
+        raise ValueError
 
 
 def identify_phase(T, P, Tm=None, Tb=None, Tc=None, Psat=None):

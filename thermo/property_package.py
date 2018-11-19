@@ -541,15 +541,18 @@ class Ideal(PropertyPackage):
         # at the boundaries
         Psats = []
         for i in self.VaporPressures:
-            if T < i.Tmax:
-                i.method = None
-                Psat = i(T)
-                if Psat is None:
-                    Psat = i.extrapolate_tabular(T)
-                Psats.append(Psat)
+            if i.locked:
+                Psats.append(i(T))
             else:
-#                print(i.CASRN)
-                Psats.append(i.extrapolate_tabular(T))
+                if T < i.Tmax:
+                    i.method = None
+                    Psat = i(T)
+                    if Psat is None:
+                        Psat = i.extrapolate_tabular(T)
+                    Psats.append(Psat)
+                else:
+    #                print(i.CASRN)
+                    Psats.append(i.extrapolate_tabular(T))
         return Psats
         
     def _Tsats(self, P):
@@ -957,10 +960,10 @@ class IdealCaloric(Ideal):
         .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
            New York: McGraw-Hill Professional, 2000.
         '''
-        S = 0
+        S = 0.0
         T = self.T
         P = self.P
-        S -= R*sum([zi*log(zi) for zi in self.zs if zi > 0]) # ideal composition entropy composition; chemsep checked
+        S -= R*sum([zi*log(zi) for zi in self.zs if zi > 0.0]) # ideal composition entropy composition; chemsep checked
         # Both of the mixing and vapor pressure terms have negative signs
         # Equation 6-4.4b in Poling for the vapor pressure component
         # For liquids above their critical temperatures, Psat is equal to the system P (COCO).
@@ -974,7 +977,7 @@ class IdealCaloric(Ideal):
                 Sg298_to_T = self.HeatCapacityGases[i].T_dependent_property_integral_over_T(298.15, T)
                 Hvap = self.EnthalpyVaporizations[i](T)
                 if Hvap is None:
-                    Hvap = 0 # Handle the case of a package predicting a transition past the Tc
+                    Hvap = 0.0 # Handle the case of a package predicting a transition past the Tc
                 Svap = -Hvap/T # Do the transition at the temperature of the liquid
                 S_P = -R*log(Psats[i]/101325.)
                 S += self.zs[i]*(Sg298_to_T + Svap + S_P)
@@ -1277,11 +1280,14 @@ class GammaPhi(PropertyPackage):
         if Psats is None:
             Psats = []
             for i in self.VaporPressures:
-                if T < i.Tmax:
-                    i.method = None
+                if i.locked:
                     Psats.append(i(T))
                 else:
-                    Psats.append(i.extrapolate_tabular(T))
+                    if T < i.Tmax:
+                        i.method = None
+                        Psats.append(i(T))
+                    else:
+                        Psats.append(i.extrapolate_tabular(T))
             return Psats
         else:
             return Psats
@@ -1931,6 +1937,7 @@ class GceosBase(Ideal):
     
     def __init__(self, eos_mix=PRMIX, VaporPressures=None, Tms=None, Tbs=None, 
                  Tcs=None, Pcs=None, omegas=None, kijs=None, eos_kwargs=None,
+                 HeatCapacityGases=None,
                  **kwargs):
         self.eos_mix = eos_mix
         self.VaporPressures = VaporPressures
@@ -1943,10 +1950,14 @@ class GceosBase(Ideal):
         self.eos_kwargs = eos_kwargs if eos_kwargs is not None else {}
         self.N = len(VaporPressures)
         self.cmps = range(self.N)
+        self.HeatCapacityGases = HeatCapacityGases
 
         self.stability_tester = StabilityTester(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas)
         
-        
+        self.kwargs = kwargs
+        self.kwargs['HeatCapacityGases'] = HeatCapacityGases
+                       
+
 #        self.eos_mix_ref = self.eos_mix(T=self.T_REF_IG, P=self.P_REF_IG, Tcs=self.Tcs, Pcs=self.Pcs, kijs=self.kijs, **self.eos_kwargs)
     @property
     def Cplm_dep(self):
@@ -1980,11 +1991,11 @@ class GceosBase(Ideal):
     
     @property
     def Cvgm(self):
-        return self.Cpgm - Cp_minus_Cv(T=self.T, dP_dT=self.dP_dT_g, dP_dV=self.dP_dV_g)
+        return self.Cpgm - Cp_minus_Cv(T=self.T, dP_dT=self.eos_g.dP_dT_g, dP_dV=self.eos_g.dP_dV_g)
 
     @property
     def Cvlm(self):
-        return self.Cplm - Cp_minus_Cv(T=self.T, dP_dT=self.dP_dT_l, dP_dV=self.dP_dV_l)
+        return self.Cplm - Cp_minus_Cv(T=self.T, dP_dT=self.eos_l.dP_dT_l, dP_dV=self.eos_l.dP_dV_l)
 
 
     def _post_flash(self):

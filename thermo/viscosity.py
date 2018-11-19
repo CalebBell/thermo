@@ -1904,31 +1904,34 @@ def Brokaw(T, ys, mus, MWs, molecular_diameters, Stockmayers):
     .. [3] Danner, Ronald P, and Design Institute for Physical Property Data.
        Manual for Predicting Chemical Process Design Data. New York, N.Y, 1982.
     '''
+    N = len(ys)
     cmps = range(len(ys))
     MDs = molecular_diameters
     if not none_and_length_check([ys, mus, MWs, molecular_diameters, Stockmayers]): # check same-length inputs
         raise Exception('Function inputs are incorrect format')
     Tsts = [T/Stockmayer_i for Stockmayer_i in Stockmayers]
-    Sij = [[0. for i in cmps] for j in cmps]
-    Mij = [[0. for i in cmps] for j in cmps]
-    mij = [[0. for i in cmps] for j in cmps]
-    Aij = [[0. for i in cmps] for j in cmps]
-    phiij =[[0. for i in cmps] for j in cmps]
-
+    Tstrs = [i**0.5 for i in Tsts]
+    Aij = [[0.0]*N for j in cmps]
+    phiij =[[0.0]*N for j in cmps]
+    
     for i in cmps:
         for j in cmps:
-            Sij[i][j] = (1+(Tsts[i]*Tsts[j])**0.5 + (MDs[i]*MDs[j])/4.)/(1 + Tsts[i] + (MDs[i]**2/4.))**0.5/(1 + Tsts[j] + (MDs[j]**2/4.))**0.5
+            Sij = (1.0 +Tstrs[i]*Tstrs[j] + (MDs[i]*MDs[j])/4.)/(
+                    1.0 + Tsts[i] + (0.25*MDs[i]*MDs[i]))**0.5/(1.0 + Tsts[j]
+                    + (0.25*MDs[j]*MDs[j]))**0.5
             if MDs[i] <= 0.1 and MDs[j] <= 0.1:
-                Sij[i][j] = 1
-            Mij[i][j] = MWs[i]/MWs[j]
-            mij[i][j] = (4./(1+Mij[i][j]**-1)/(1+Mij[i][j]))**0.25
+                Sij = 1.0
+            Mij = MWs[i]/MWs[j]
+            Mij45 = Mij**0.45
+            
+            mij = (4./((1.0 + 1.0/Mij)*(1.0 + Mij)))**0.25
 
-            Aij[i][j] = mij[i][j]*Mij[i][j]**-0.5*(1 + (Mij[i][j]-Mij[i][j]**0.45)/(2*(1+Mij[i][j]) + (1+Mij[i][j]**0.45)*mij[i][j]**-0.5/(1+mij[i][j])))
+            Aij[i][j] = mij*Mij**-0.5*(1.0 + (Mij - Mij45)/(2.0*(1.0 + Mij) 
+                + (1.0 + Mij45)*mij**-0.5/(1.0 + mij)))
 
-            phiij[i][j] = (mus[i]/mus[j])**0.5*Sij[i][j]*Aij[i][j]
+            phiij[i][j] = (mus[i]/mus[j])**0.5*Sij*Aij[i][j]
 
     return sum([ys[i]*mus[i]/sum([ys[j]*phiij[i][j] for j in cmps]) for i in cmps])
-
 
 BROKAW = 'Brokaw'
 HERNING_ZIPPERER = 'Herning-Zipperer'

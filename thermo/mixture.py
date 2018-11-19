@@ -840,7 +840,16 @@ class Mixture(object):
                 self.quality = self.x = vapor_mass_quality(self.V_over_F, MWl=self.MWl, MWg=self.MWg) 
             else:
                 self.quality = self.x = 1 if self.phase == 'g' else 0
+            
+            
+            if self.xs is None:
+                self.wsl = zs_to_ws(self.ys, self.MWs)
+                self.MWl = mixing_simple(self.ys, self.MWs)
                 
+            if self.ys is None:
+                self.MWg = mixing_simple(self.xs, self.MWs)
+                self.wsg = zs_to_ws(self.xs, self.MWs)
+            
             # TODO: volume fractions - attempt
 #            if (self.rhol is not None and self.rhog is not None):
 #                self.Vfg = vapor_mass_quality(self.quality, MWl=self.rhol, MWg=self.rhog) 
@@ -855,7 +864,7 @@ class Mixture(object):
 
         # Not strictly necessary
         [i.calculate(self.T, self.P) for i in self.Chemicals]
-        self.set_eos(T=self.T, P=self.P)
+#        self.set_eos(T=self.T, P=self.P)
 
     @property
     def Um(self):
@@ -1907,7 +1916,7 @@ class Mixture(object):
         '''
         Vml = self.Vml
         if Vml:
-            return Vm_to_rho(Vml, self.MW)
+            return Vm_to_rho(Vml, self.MWl)
         return None
 
     @property
@@ -1927,7 +1936,7 @@ class Mixture(object):
         '''
         Vmg = self.Vmg
         if Vmg:
-            return Vm_to_rho(Vmg, self.MW)
+            return Vm_to_rho(Vmg, self.MWg)
         return None
 
     @property
@@ -2037,7 +2046,7 @@ class Mixture(object):
         >>> Mixture(['toluene', 'decane'], ws=[.9, .1], T=300).Cplm
         168.29127923518843
         '''
-        return self.HeatCapacityLiquidMixture(self.T, self.P, self.zs, self.ws)
+        return self.HeatCapacityLiquidMixture(self.T, self.P, self.xs, self.wsl)
 
     @property
     def Cpgm(self):
@@ -2053,7 +2062,7 @@ class Mixture(object):
         >>> Mixture(['oxygen', 'nitrogen'], ws=[.4, .6], T=350, P=1E6).Cpgm
         29.361044582498046
         '''
-        return self.HeatCapacityGasMixture(self.T, self.P, self.zs, self.ws)
+        return self.HeatCapacityGasMixture(self.T, self.P, self.ys, self.wsg)
 
     @property
     def Cps(self):
@@ -2090,9 +2099,9 @@ class Mixture(object):
         >>> Mixture(['water', 'sodium chloride'], ws=[.9, .1], T=301.5).Cpl
         3735.4604049449786
         '''
-        Cplm = self.HeatCapacityLiquidMixture(self.T, self.P, self.zs, self.ws)
+        Cplm = self.HeatCapacityLiquidMixture(self.T, self.P, self.xs, self.wsl)
         if Cplm:
-            return property_molar_to_mass(Cplm, self.MW)
+            return property_molar_to_mass(Cplm, self.MWl)
         return None
 
     @property
@@ -2110,9 +2119,9 @@ class Mixture(object):
         >>> Mixture(['oxygen', 'nitrogen'], ws=[.4, .6], T=350, P=1E6).Cpg
         995.8911053614883
         '''
-        Cpgm = self.HeatCapacityGasMixture(self.T, self.P, self.zs, self.ws)
+        Cpgm = self.HeatCapacityGasMixture(self.T, self.P, self.ys, self.wsg)
         if Cpgm:
-            return property_molar_to_mass(Cpgm, self.MW)
+            return property_molar_to_mass(Cpgm, self.MWg)
         return None
 
     @property
@@ -2127,7 +2136,7 @@ class Mixture(object):
         >>> Mixture(['water'], ws=[1], T=520).Cvgm
         27.13366316134193
         '''
-        Cpgm = self.HeatCapacityGasMixture(self.T, self.P, self.zs, self.ws)
+        Cpgm = self.HeatCapacityGasMixture(self.T, self.P, self.ys, self.wsg)
         if Cpgm:
             return Cpgm - R
         return None
@@ -2146,7 +2155,7 @@ class Mixture(object):
         '''
         Cvgm = self.Cvgm
         if Cvgm:
-            return property_molar_to_mass(Cvgm, self.MW)
+            return property_molar_to_mass(Cvgm, self.MWg)
         return None
 
     @property
@@ -2164,7 +2173,7 @@ class Mixture(object):
                                                                 zs=self.ys, ws=self.wsg, order=1)
         
         return speed_of_sound(V=self.Vmg, dP_dV=dP_dV, Cp=self.property_package.Cpgm, 
-                              Cv=self.property_package.Cvgm, MW=self.MW)
+                              Cv=self.property_package.Cvgm, MW=self.MWg)
 
     @property
     def speed_of_sound_l(self):
@@ -2180,7 +2189,7 @@ class Mixture(object):
                                                                 zs=self.xs, ws=self.wsl, order=1)
         
         return speed_of_sound(V=self.Vml, dP_dV=dP_dV, Cp=self.property_package.Cplm, 
-                              Cv=self.property_package.Cvlm, MW=self.MW)
+                              Cv=self.property_package.Cvlm, MW=self.MWl)
     @property
     def speed_of_sound(self):
         r'''Bulk speed of sound of the mixture at its
@@ -2396,7 +2405,7 @@ class Mixture(object):
         >>> Mixture(['cyclobutane'], ws=[1], T=225).Vml
         7.42395423425395e-05
         '''
-        return self.VolumeLiquidMixture(T=self.T, P=self.P, zs=self.zs, ws=self.ws)
+        return self.VolumeLiquidMixture(T=self.T, P=self.P, zs=self.xs, ws=self.wsl)
 
     @property
     def Vmg(self):
@@ -2413,7 +2422,7 @@ class Mixture(object):
         >>> Mixture(['hexane'], ws=[1], T=300, P=2E5).Vmg
         0.010888694235142216
         '''
-        return self.VolumeGasMixture(T=self.T, P=self.P, zs=self.zs, ws=self.ws)
+        return self.VolumeGasMixture(T=self.T, P=self.P, zs=self.ys, ws=self.wsg)
 
     @property
     def SGg(self):
@@ -2428,7 +2437,7 @@ class Mixture(object):
         >>> Mixture('argon').SGg
         1.3800407778218216
         '''
-        Vmg = self.VolumeGasMixture(T=288.70555555555552, P=101325, zs=self.zs, ws=self.ws)
+        Vmg = self.VolumeGasMixture(T=288.70555555555552, P=101325, zs=self.ys, ws=self.wsg)
         if Vmg:
             rho = Vm_to_rho(Vmg, self.MW)
             return SG(rho, rho_ref=1.2231876628642968) # calculated with Mixture
@@ -2450,7 +2459,7 @@ class Mixture(object):
         >>> Mixture(['water'], ws=[1], T=320).mul
         0.0005767262693751547
         '''
-        return self.ViscosityLiquidMixture(self.T, self.P, self.zs, self.ws)
+        return self.ViscosityLiquidMixture(self.T, self.P, self.xs, self.wsl)
 
     @property
     def mug(self):
@@ -2468,7 +2477,7 @@ class Mixture(object):
         >>> Mixture(['water'], ws=[1], T=500).mug
         1.7298722343367148e-05
         '''
-        return self.ViscosityGasMixture(self.T, self.P, self.zs, self.ws)
+        return self.ViscosityGasMixture(self.T, self.P, self.ys, self.wsg)
 
     @property
     def sigma(self):
@@ -2485,7 +2494,7 @@ class Mixture(object):
         >>> Mixture(['water'], ws=[1], T=300, P=1E5).sigma
         0.07176932405246211
         '''
-        return self.SurfaceTensionMixture(self.T, self.P, self.zs, self.ws)
+        return self.SurfaceTensionMixture(self.T, self.P, self.xs, self.wsl)
 
     @property
     def kl(self):
@@ -2503,7 +2512,7 @@ class Mixture(object):
         >>> Mixture(['water'], ws=[1], T=320).kl
         0.6369957248212118
         '''
-        return self.ThermalConductivityLiquidMixture(self.T, self.P, self.zs, self.ws)
+        return self.ThermalConductivityLiquidMixture(self.T, self.P, self.xs, self.wsl)
 
     @property
     def kg(self):
@@ -2521,7 +2530,7 @@ class Mixture(object):
         >>> Mixture(['water'], ws=[1], T=500).kg
         0.036035173297862676
         '''
-        return self.ThermalConductivityGasMixture(self.T, self.P, self.zs, self.ws)
+        return self.ThermalConductivityGasMixture(self.T, self.P, self.ys, self.wsg)
 
     ### Single-phase properties
 
@@ -2539,7 +2548,8 @@ class Mixture(object):
         >>> Pd.Cp, Pd.phase
         (234.26767209171211, 's')
         '''
-        return phase_select_property(phase=self.phase, s=self.Cps, l=self.Cpl, g=self.Cpg)
+        return phase_select_property(phase=self.phase, s=Mixture.Cps,
+                                     l=Mixture.Cpl, g=Mixture.Cpg, self=self)
 
     @property
     def Cpm(self):
@@ -2551,7 +2561,8 @@ class Mixture(object):
         >>> Mixture(['ethylbenzene'], ws=[1], T=550, P=3E6).Cpm
         294.18449553310046
         '''
-        return phase_select_property(phase=self.phase, s=self.Cpsm, l=self.Cplm, g=self.Cpgm)
+        return phase_select_property(phase=self.phase, s=Mixture.Cpsm, 
+                                     l=Mixture.Cplm, g=Mixture.Cpgm, self=self)
 
     @property
     def Vm(self):
@@ -2564,7 +2575,8 @@ class Mixture(object):
         >>> Mixture(['ethylbenzene'], ws=[1], T=550, P=3E6).Vm
         0.00017758024401627633
         '''
-        return phase_select_property(phase=self.phase, s=self.Vms, l=self.Vml, g=self.Vmg)
+        return phase_select_property(phase=self.phase, s=Mixture.Vms, 
+                                     l=Mixture.Vml, g=Mixture.Vmg, self=self)
 
     @property
     def rho(self):
@@ -2582,7 +2594,8 @@ class Mixture(object):
             rhol, rhog = self.rhol, self.rhog
             a, b = (1.0 - self.x)/rhol, self.x/rhog
             return rhol*a/(a+b) + b/(a+b)*rhog
-        return phase_select_property(phase=self.phase, s=self.rhos, l=self.rhol, g=self.rhog)
+        return phase_select_property(phase=self.phase, s=Mixture.rhos, 
+                                     l=Mixture.rhol, g=Mixture.rhog, self=self)
 
     @property
     def rhom(self):
@@ -2600,7 +2613,8 @@ class Mixture(object):
             rholm, rhogm = self.rholm, self.rhogm
             a, b = (1.0 - self.x)/rholm, self.x/rhogm
             return rholm*a/(a+b) + b/(a+b)*rhogm
-        return phase_select_property(phase=self.phase, s=None, l=self.rholm, g=self.rhogm)
+        return phase_select_property(phase=self.phase, s=None, l=Mixture.rholm,
+                                     g=Mixture.rhogm, self=self)
 
     @property
     def Z(self):
@@ -2633,7 +2647,8 @@ class Mixture(object):
         >>> Mixture('MTBE').SG
         0.7428160596603596
         '''
-        return phase_select_property(phase=self.phase, s=self.SGs, l=self.SGl, g=self.SGg)
+        return phase_select_property(phase=self.phase, s=Mixture.SGs, 
+                                     l=Mixture.SGl, g=Mixture.SGg, self=self)
 
 
     ### Single-phase properties
@@ -2652,7 +2667,8 @@ class Mixture(object):
         >>> Mixture(['water'], ws=[1], T=647.1, P=22048320.0).isobaric_expansion
         0.34074205839222449
         '''
-        return phase_select_property(phase=self.phase, l=self.isobaric_expansion_l, g=self.isobaric_expansion_g)
+        return phase_select_property(phase=self.phase, l=Mixture.isobaric_expansion_l,
+                                     g=Mixture.isobaric_expansion_g, self=self)
 
     @property
     def JT(self):
@@ -2670,7 +2686,8 @@ class Mixture(object):
         >>> Mixture(['water'], ws=[1]).JT
         -2.2150394958666412e-07
         '''
-        return phase_select_property(phase=self.phase, l=self.JTl, g=self.JTg)
+        return phase_select_property(phase=self.phase, l=Mixture.JTl, 
+                                     g=Mixture.JTg, self=self)
 
     @property
     def mu(self):
@@ -2683,7 +2700,8 @@ class Mixture(object):
         >>> Mixture(['ethanol'], ws=[1], T=400).mu
         1.1853097849748213e-05
         '''
-        return phase_select_property(phase=self.phase, l=self.mul, g=self.mug)
+        return phase_select_property(phase=self.phase, l=Mixture.mul, 
+                                     g=Mixture.mug, self=self)
 
     @property
     def k(self):
@@ -2696,7 +2714,8 @@ class Mixture(object):
         >>> Mixture(['ethanol'], ws=[1], T=300).kl
         0.16313594741877802
         '''
-        return phase_select_property(phase=self.phase, s=None, l=self.kl, g=self.kg)
+        return phase_select_property(phase=self.phase, s=None, l=Mixture.kl,
+                                     g=Mixture.kg, self=self)
 
     @property
     def nu(self):
@@ -2712,7 +2731,8 @@ class Mixture(object):
         >>> Mixture(['argon'], ws=[1]).nu
         1.3842643382482236e-05
         '''
-        return phase_select_property(phase=self.phase, l=self.nul, g=self.nug)
+        return phase_select_property(phase=self.phase, l=Mixture.nul,
+                                     g=Mixture.nug, self=self)
 
     @property
     def alpha(self):
@@ -2728,7 +2748,8 @@ class Mixture(object):
         >>> Mixture(['furfural'], ws=[1]).alpha
         8.696537158635412e-08
         '''
-        return phase_select_property(phase=self.phase, l=self.alphal, g=self.alphag)
+        return phase_select_property(phase=self.phase, l=Mixture.alphal, 
+                                     g=Mixture.alphag, self=self)
 
     @property
     def Pr(self):
@@ -2744,7 +2765,8 @@ class Mixture(object):
         >>> Mixture(['acetone'], ws=[1]).Pr
         4.183039103542711
         '''
-        return phase_select_property(phase=self.phase, l=self.Prl, g=self.Prg)
+        return phase_select_property(phase=self.phase, l=Mixture.Prl, 
+                                     g=Mixture.Prg, self=self)
 
     ### Standard state properties
 

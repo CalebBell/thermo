@@ -484,14 +484,8 @@ class VaporPressure(TDependentProperty):
 
         self.load_all_methods()
 
-        if best_fit is not None and len(best_fit) and best_fit[0] is not None:
-            self.locked = True
-            self.best_fit_Tmin = best_fit[0]
-            self.best_fit_Tmax = best_fit[1]
-            self.best_fit_coeffs = best_fit[2]
-
-            self.best_fit_int_coeffs = polyint(best_fit[2])
-            self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff = polyint_over_x(best_fit[2])
+        if best_fit is not None:
+            self.set_best_fit(best_fit)
 
 
     def load_all_methods(self):
@@ -594,7 +588,15 @@ class VaporPressure(TDependentProperty):
         Psat : float
             Vapor pressure at T, [pa]
         '''
-        if method == WAGNER_MCGARRY:
+        if method == BESTFIT:
+            if T < self.best_fit_Tmin:
+                Psat = (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value
+            elif T > self.best_fit_Tmax:
+                Psat = (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
+            else:
+                Psat = horner(self.best_fit_coeffs, T)
+            Psat = exp(Psat)
+        elif method == WAGNER_MCGARRY:
             Psat = Wagner_original(T, self.WAGNER_MCGARRY_Tc, self.WAGNER_MCGARRY_Pc, *self.WAGNER_MCGARRY_coefs)
         elif method == WAGNER_POLING:
             Psat = Wagner(T, self.WAGNER_POLING_Tc, self.WAGNER_POLING_Pc, *self.WAGNER_POLING_coefs)

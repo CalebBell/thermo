@@ -25,7 +25,7 @@ import numpy as np
 import pytest
 from thermo.heat_capacity import *
 from thermo.heat_capacity import TRCIG, POLING, CRCSTD, COOLPROP, POLING_CONST, VDI_TABULAR
-
+from random import uniform
 
 def test_heat_capacity_CSP():
     # Example is for cis-2-butene at 350K from Poling. It is not consistent with
@@ -592,3 +592,35 @@ def test_HeatCapacityLiquidMixture():
         obj.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
 
 
+def test_locked_integral():
+    from thermo.chemical import lock_properties, Chemical
+    from scipy.integrate import quad
+    lock_properties(True)
+    obj = Chemical('water').HeatCapacityGas
+    
+    def to_int(T):
+        return obj.calculate(T, 'Best fit')
+    for i in range(100):
+        T1 = uniform(0, 4000)
+        T2 = uniform(0, 4000)
+        quad_ans = quad(to_int, T1, T2)[0]
+        analytical_ans = obj.calculate_integral(T1, T2, "Best fit")
+        assert_allclose(quad_ans, analytical_ans, rtol=1e-6)
+    lock_properties(False)
+
+
+def test_locked_integral_over_T():
+    from thermo.chemical import lock_properties, Chemical
+    from scipy.integrate import quad
+    lock_properties(True)
+    obj = Chemical('water').HeatCapacityGas
+    
+    def to_int(T):
+        return obj.calculate(T, 'Best fit')/T
+    for i in range(100):
+        T1 = uniform(0, 4000)
+        T2 = uniform(0, 4000)
+        quad_ans = quad(to_int, T1, T2)[0]
+        analytical_ans = obj.calculate_integral_over_T(T1, T2, "Best fit")
+        assert_allclose(quad_ans, analytical_ans, rtol=1e-5)
+    lock_properties(False)

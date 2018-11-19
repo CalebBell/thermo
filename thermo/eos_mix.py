@@ -675,6 +675,7 @@ class GCEOSMIX(GCEOS):
         return super(type(self).__mro__[-3], self).solve_T(P=P, V=V, quick=quick)
 
     def to_TP_zs(self, T, P, zs):
+#        print(T, self.T, P, self.P, zs, self.zs)
         if T != self.T or P != self.P or zs != self.zs:
             return self.__class__(T=T, P=P, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, zs=zs, **self.kwargs)
         else:

@@ -867,6 +867,7 @@ class Chemical(object): # pragma: no cover
     def set_TP_sources(self):
         # Tempearture and Pressure Denepdence
         # Get and choose initial methods
+#        print(get_chemical_constants(self.CAS, 'VaporPressure'))
         self.VaporPressure = VaporPressure(Tb=self.Tb, Tc=self.Tc, Pc=self.Pc,
                                            omega=self.omega, CASRN=self.CAS,
                                            eos=self.eos_in_a_box,
@@ -2508,7 +2509,7 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('palladium').Cp
         234.26767209171211
         '''
-        return phase_select_property(phase=self.phase, s=self.Cps, l=self.Cpl, g=self.Cpg)
+        return phase_select_property(phase=self.phase, s=Chemical.Cps, l=Chemical.Cpl, g=Chemical.Cpg, self=self)
 
     @property
     def Cpm(self):
@@ -2528,7 +2529,9 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('ethylbenzene', T=550, P=3E6).Cpm
         294.18449553310046
         '''
-        return phase_select_property(phase=self.phase, s=self.Cpsm, l=self.Cplm, g=self.Cpgm)
+        return phase_select_property(phase=self.phase, s=Chemical.Cpsm, 
+                                     l=Chemical.Cplm, g=Chemical.Cpgm,
+                                     self=self)
 
     @property
     def Vm(self):
@@ -2546,7 +2549,8 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('ethylbenzene', T=550, P=3E6).Vm
         0.00017758024401627633
         '''
-        return phase_select_property(phase=self.phase, s=self.Vms, l=self.Vml, g=self.Vmg)
+        return phase_select_property(phase=self.phase, s=Chemical.Vms, 
+                                     l=Chemical.Vml, g=Chemical.Vmg, self=self)
 
     @property
     def rho(self):
@@ -2565,7 +2569,9 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('decane', T=550, P=2E6).rho
         498.67008448640604
         '''
-        return phase_select_property(phase=self.phase, s=self.rhos, l=self.rhol, g=self.rhog)
+        return phase_select_property(phase=self.phase, s=Chemical.rhos, 
+                                     l=Chemical.rhol, g=Chemical.rhog,
+                                     self=self)
 
     @property
     def rhom(self):
@@ -2584,7 +2590,9 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('1-hexanol').rhom
         7983.414573003429
         '''
-        return phase_select_property(phase=self.phase, s=self.rhosm, l=self.rholm, g=self.rhogm)
+        return phase_select_property(phase=self.phase, s=Chemical.rhosm, 
+                                     l=Chemical.rholm, g=Chemical.rhogm, 
+                                     self=self)
 
     @property
     def Z(self):
@@ -2647,7 +2655,10 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('water', T=647.2, P=22048320.0).isobaric_expansion
         0.18143324022215077
         '''
-        return phase_select_property(phase=self.phase, l=self.isobaric_expansion_l, g=self.isobaric_expansion_g)
+        return phase_select_property(phase=self.phase, 
+                                     l=Chemical.isobaric_expansion_l,
+                                     g=Chemical.isobaric_expansion_g,
+                                     self=self)
 
     @property
     def JT(self):
@@ -2664,7 +2675,8 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('water').JT
         -2.2150394958666407e-07
         '''
-        return phase_select_property(phase=self.phase, l=self.JTl, g=self.JTg)
+        return phase_select_property(phase=self.phase, l=Chemical.JTl, 
+                                     g=Chemical.JTg, self=self)
 
     @property
     def mu(self):
@@ -2683,7 +2695,8 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('ethanol', T=400).mu
         1.1853097849748217e-05
         '''
-        return phase_select_property(phase=self.phase, l=self.mul, g=self.mug)
+        return phase_select_property(phase=self.phase, l=Chemical.mul, 
+                                     g=Chemical.mug, self=self)
 
     @property
     def k(self):
@@ -2702,7 +2715,8 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('ethanol', T=400).kg
         0.026019924109310026
         '''
-        return phase_select_property(phase=self.phase, s=None, l=self.kl, g=self.kg)
+        return phase_select_property(phase=self.phase, s=None, l=Chemical.kl, 
+                                     g=Chemical.kg, self=self)
 
     @property
     def nu(self):
@@ -2717,7 +2731,8 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('argon').nu
         1.3846930410865003e-05
         '''
-        return phase_select_property(phase=self.phase, l=self.nul, g=self.nug)
+        return phase_select_property(phase=self.phase, l=Chemical.nul,
+                                     g=Chemical.nug, self=self)
 
     @property
     def alpha(self):
@@ -2732,7 +2747,8 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('furfural').alpha
         8.696537158635412e-08
         '''
-        return phase_select_property(phase=self.phase, l=self.alphal, g=self.alphag)
+        return phase_select_property(phase=self.phase, l=Chemical.alphal, 
+                                     g=Chemical.alphag, self=self)
 
     @property
     def Pr(self):
@@ -2747,7 +2763,8 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('acetone').Pr
         4.183039103542709
         '''
-        return phase_select_property(phase=self.phase, l=self.Prl, g=self.Prg)
+        return phase_select_property(phase=self.phase, l=Chemical.Prl, 
+                                     g=Chemical.Prg, self=self)
 
     @property
     def Poynting(self):
