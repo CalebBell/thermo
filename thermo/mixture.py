@@ -1008,6 +1008,8 @@ class Mixture(object):
             return zs_to_Vfs(self.zs, Vmgs)
         return None
 
+    def compound_index(self, CAS):
+        return self.CASs.index(CAS)
 
     # Unimportant constants
     @property

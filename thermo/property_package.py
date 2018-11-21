@@ -526,6 +526,14 @@ class PropertyPackage(object):
 class Ideal(PropertyPackage):
     T_REF_IG = 298.15
     P_REF_IG = 101325.
+    
+    
+    def Ks(self, T, P, zs=None):
+        Psats = self._Psats(T)
+        Ks = [K_value(P=P, Psat=Psat) for Psat in Psats]
+        return Ks
+
+
     def _T_VF_err(self, P, VF, zs, Psats):
         Ks = [K_value(P=P, Psat=Psat) for Psat in Psats]
         return flash_inner_loop(zs=zs, Ks=Ks)[0] - VF
