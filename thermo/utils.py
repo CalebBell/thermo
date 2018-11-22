@@ -1690,6 +1690,66 @@ def mix_component_flows(IDs1, IDs2, flow1, flow2, fractions1, fractions2):
     return cmps, moles
 
 
+def mix_component_partial_flows(IDs1, IDs2, ns1=None, ns2=None):
+    r'''Mix two flows of potentially different chemicals; with the feature that
+    the mole flows of either or both streams may be unknown.
+    
+    The flows do not need to be of the same length.
+    
+    Parameters
+    ----------
+    IDs1 : list[str]
+        List of identifiers of the chemical species in flow one, [-]
+    IDs2 : list[str]
+        List of identifiers of the chemical species in flow two, [-]
+    ns1 : list[float]
+        Total flow rate of the chemicals in flow one, [mol/s]
+    ns2 : list[float]
+        Total flow rate of the chemicals in flow two, [mol/s]
+
+    Returns
+    -------
+    cmps : list[str]
+        List of identifiers of the chemical species in the combined flow, [-]
+    moles : list[float]
+        Flow rates of all chemical species in the combined flow, [mol/s]
+    
+    Notes
+    -----
+    Mass or volume flows and fractions can be used instead of molar ones.
+    
+    If the two flows have the same components, the output list will be in the
+    same order as the one given; otherwise they are sorted alphabetically.
+    
+    Examples
+    --------
+    >>> mix_component_partial_flows(['7732-18-5', '64-17-5'], ['7732-18-5', '67-56-1'], [0.5, 0.5], [0.5, 0.5])
+    (['64-17-5', '67-56-1', '7732-18-5'], [0.5, 0.5, 1.0])
+    >>> mix_component_partial_flows(['7732-18-5', '64-17-5'], ['7732-18-5', '67-56-1'], None, [0.5, 0.5])
+    (['64-17-5', '67-56-1', '7732-18-5'], [0.0, 0.5, 0.5])
+    >>> mix_component_partial_flows(['7732-18-5', '64-17-5'], ['7732-18-5', '67-56-1'], [0.5, 0.5], None)
+    (['64-17-5', '67-56-1', '7732-18-5'], [0.5, 0.0, 0.5])
+    >>> mix_component_partial_flows(['7732-18-5', '64-17-5'], ['7732-18-5', '67-56-1'], None, None)
+    (['64-17-5', '67-56-1', '7732-18-5'], [0.0, 0.0, 0.0])
+    '''
+    if (set(IDs1) == set(IDs2)) and (len(IDs1) == len(IDs2)):
+        cmps = IDs1
+    else:
+        cmps = sorted(list(set((IDs1 + IDs2))))
+        
+    ns = []
+    for ID in cmps:
+        ns.append(0.0)
+        if ID in IDs1 and ns1 is not None:
+            ind = IDs1.index(ID)
+            ns[-1] += ns1[ind]
+            
+        if ID in IDs2 and ns2 is not None:
+            ind = IDs2.index(ID)
+            ns[-1] += ns2[ind]
+    return cmps, ns
+
+
 def mix_multiple_component_flows(IDs, flows, fractions):
     r'''Mix multiple flows of potentially different chemicals of given overall 
     flow rates and flow fractions to determine the outlet components, flow 
