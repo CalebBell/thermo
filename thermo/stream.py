@@ -29,7 +29,7 @@ from copy import copy, deepcopy
 from collections import OrderedDict
 from numbers import Number
 
-from thermo.utils import property_molar_to_mass, property_mass_to_molar
+from thermo.utils import property_molar_to_mass, property_mass_to_molar, solve_flow_composition_mix
 from thermo.mixture import Mixture, preprocess_mixture_composition
 from fluids.pump import voltages_1_phase_residential, voltages_3_phase, frequencies
 
@@ -197,9 +197,12 @@ class StreamArgs(object):
         if arg is None:
             self.specifications['zs'] = arg
         else:
-            args = {'zs': arg, 'ws': None, 'Vfls': None, 'Vfgs': None, 'ns': None,
-                    'ms': None, 'Qls': None, 'Qgs': None}
-            self.specifications.update(args)
+            if self.single_composition_basis:
+                args = {'zs': arg, 'ws': None, 'Vfls': None, 'Vfgs': None, 'ns': None,
+                        'ms': None, 'Qls': None, 'Qgs': None}
+                self.specifications.update(args)
+            else:
+                self.specifications['zs'] = arg
 
     @property
     def ws(self):
@@ -209,9 +212,12 @@ class StreamArgs(object):
         if arg is None:
             self.specifications['ws'] = arg
         else:
-            args = {'zs': None, 'ws': arg, 'Vfls': None, 'Vfgs': None, 'ns': None,
-                    'ms': None, 'Qls': None, 'Qgs': None}
-            self.specifications.update(args)
+            if self.single_composition_basis:
+                args = {'zs': None, 'ws': arg, 'Vfls': None, 'Vfgs': None, 'ns': None,
+                        'ms': None, 'Qls': None, 'Qgs': None}
+                self.specifications.update(args)
+            else:
+                self.specifications['ws'] = arg
 
     @property
     def Vfls(self):
@@ -221,10 +227,13 @@ class StreamArgs(object):
         if arg is None:
             self.specifications['Vfls'] = arg
         else:
-            args = {'zs': None, 'ws': None, 'Vfls': arg, 'Vfgs': None, 'ns': None,
-                    'ms': None, 'Qls': None, 'Qgs': None}
-            self.specifications.update(args)
-
+            if self.single_composition_basis:
+                args = {'zs': None, 'ws': None, 'Vfls': arg, 'Vfgs': None, 'ns': None,
+                        'ms': None, 'Qls': None, 'Qgs': None}
+                self.specifications.update(args)
+            else:
+                self.specifications['Vfls'] = arg
+                
     @property
     def Vfgs(self):
         return self.specifications['Vfgs']
@@ -233,10 +242,12 @@ class StreamArgs(object):
         if arg is None:
             self.specifications['Vfgs'] = arg
         else:
-            args = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': arg, 'ns': None,
-                    'ms': None, 'Qls': None, 'Qgs': None}
-            self.specifications.update(args)
-
+            if self.single_composition_basis:
+                args = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': arg, 'ns': None,
+                        'ms': None, 'Qls': None, 'Qgs': None}
+                self.specifications.update(args)
+            else:
+                self.specifications['Vfgs'] = arg
     @property
     def ns(self):
         return self.specifications['ns']
@@ -245,11 +256,13 @@ class StreamArgs(object):
         if arg is None:
             self.specifications['ns'] = arg
         else:
-            args = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None, 
-                    'ns': arg, 'ms': None, 'Qls': None, 'Qgs': None,
-                    'n': None, 'm': None, 'Q': None}
-            self.specifications.update(args)
-
+            if self.single_composition_basis:
+                args = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None, 
+                        'ns': arg, 'ms': None, 'Qls': None, 'Qgs': None,
+                        'n': None, 'm': None, 'Q': None}
+                self.specifications.update(args)
+            else:
+                self.specifications['ns'] = arg
     @property
     def ms(self):
         return self.specifications['ms']
@@ -258,11 +271,13 @@ class StreamArgs(object):
         if arg is None:
             self.specifications['ms'] = arg
         else:
-            args = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None, 
-                    'ns': None, 'ms': arg, 'Qls': None, 'Qgs': None,
-                    'n': None, 'm': None, 'Q': None}
-            self.specifications.update(args)
-
+            if self.single_composition_basis:
+                args = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None, 
+                        'ns': None, 'ms': arg, 'Qls': None, 'Qgs': None,
+                        'n': None, 'm': None, 'Q': None}
+                self.specifications.update(args)
+            else:
+                self.specifications['ms'] = arg
     @property
     def Qls(self):
         return self.specifications['Qls']
@@ -271,11 +286,14 @@ class StreamArgs(object):
         if arg is None:
             self.specifications['Qls'] = arg
         else:
-            args = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None, 
-                    'ns': None, 'ms': None, 'Qls': arg, 'Qgs': None,
-                    'n': None, 'm': None, 'Q': None}
-            self.specifications.update(args)
-
+            if self.single_composition_basis:
+                args = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None, 
+                        'ns': None, 'ms': None, 'Qls': arg, 'Qgs': None,
+                        'n': None, 'm': None, 'Q': None}
+                self.specifications.update(args)
+            else:
+                self.specifications['Qls'] = arg
+    
     @property
     def Qgs(self):
         return self.specifications['Qgs']
@@ -284,11 +302,14 @@ class StreamArgs(object):
         if arg is None:
             self.specifications['Qgs'] = arg
         else:
-            args = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None, 
-                    'ns': None, 'ms': None, 'Qls': None, 'Qgs': arg,
-                    'n': None, 'm': None, 'Q': None}
-            self.specifications.update(args)
-
+            if self.single_composition_basis:
+                args = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None, 
+                        'ns': None, 'ms': None, 'Qls': None, 'Qgs': arg,
+                        'n': None, 'm': None, 'Q': None}
+                self.specifications.update(args)
+            else:
+                self.specifications['Qgs'] = arg
+                
     @property
     def m(self):
         return self.specifications['m']
@@ -332,8 +353,14 @@ class StreamArgs(object):
                  VF=None, H=None, Hm=None, S=None, Sm=None,
                  ns=None, ms=None, Qls=None, Qgs=None, m=None, n=None, Q=None,
                  energy=None,
-                 Vf_TP=(None, None), Q_TP=(None, None, ''), pkg=None):
+                 Vf_TP=(None, None), Q_TP=(None, None, ''), pkg=None,
+                 single_composition_basis=True):
         self.specifications = base_specifications.copy()
+        
+        # If this is False, DO NOT CLEAR OTHER COMPOSITION / FLOW VARIABLES WHEN SETTING ONE!
+        # This makes sense for certain cases but not all.
+        self.single_composition_basis = single_composition_basis
+        
         
         self.IDs = IDs
         self.zs = zs
