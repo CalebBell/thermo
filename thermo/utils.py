@@ -1896,11 +1896,7 @@ def solve_flow_composition_mix(Fs, zs, ws, MWs):
     much simpler for that case.    
     
     This algorithm was derived using SymPy, and framed in a form which allows
-    for explicit solving. Note that a numerical solver is actually used, 
-    iterating on total mole flow rate - because it is quicker in the general 
-    case. The analytical solution's length grows O(N^2); the numerical method
-    solves the linear problem O(N) with three objective function evaluations. 
-    
+    for explicit solving.
     This is capable of solving large-scale problems i.e. with 1000 components a
     solve time is 1 ms; with 10000 it is 10 ms.
     
@@ -1950,14 +1946,17 @@ def solve_flow_composition_mix(Fs, zs, ws, MWs):
     zs_sum = sum([zs[i] for i in range(N) if zs[i] is not None])
     weight_term = sum([-ws[i]/(MWs[i]*den_bracketed) for i in range(N) if ws[i] is not None])
     
-    def to_solve(Ft):
-        num_bracketed = MW_z_sum*Ft + F_known*MW_known
-        F_weights = 0.0
-        F_weights = weight_term*num_bracketed
-        F_fracs = zs_sum*Ft
-        err = (F_known + F_fracs + F_weights) - Ft
-        return err
-    Ft = newton(to_solve, F_known)
+    
+    Ft = -F_known*(MW_known*weight_term + 1.0)/(MW_z_sum*weight_term + zs_sum - 1.0)
+    # Once the problem had been reduced by putting all variables outside the
+    # main loop, it was easy to get an analytical solution
+#    def to_solve(Ft):
+#        num_bracketed = MW_z_sum*Ft + F_known*MW_known
+#        F_weights = weight_term*num_bracketed
+#        F_fracs = zs_sum*Ft
+#        err = (F_known + F_fracs + F_weights) - Ft
+#        return err
+#    Ft = newton(to_solve, F_known)
     # For each flow, in-place replace with mole flows calculated
     
     num_bracketed = MW_z_sum*Ft + F_known*MW_known
