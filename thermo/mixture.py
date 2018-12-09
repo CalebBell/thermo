@@ -34,7 +34,7 @@ from fluids.core import Reynolds, Capillary, Weber, Bond, Grashof, Peclet_heat
 
 from thermo.chemical import Chemical
 from thermo.identifiers import *
-from thermo.identifiers import _MixtureDict
+from thermo.identifiers import _MixtureDict, IDs_to_CASs
 from thermo.phase_change import Tliquidus
 from thermo.activity import identify_phase_mixture, Pbubble_mixture, Pdew_mixture
 from thermo.critical import Tc_mixture, Pc_mixture, Vc_mixture
@@ -58,6 +58,8 @@ try:
     from rdkit.Chem import AllChem
 except: # pragma: no cover
     pass
+
+
 
 def preprocess_mixture_composition(IDs=None, zs=None, ws=None, Vfls=None, 
                                    Vfgs=None, ignore_exceptions=False):
@@ -1009,7 +1011,10 @@ class Mixture(object):
         return None
 
     def compound_index(self, CAS):
-        return self.CASs.index(CAS)
+        try:
+            return self.CASs.index(CAS)
+        except ValueError:
+            return self.CASs.index(CAS_from_any(CAS))
 
     # Unimportant constants
     @property

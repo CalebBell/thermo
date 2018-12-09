@@ -332,7 +332,7 @@ class StreamArgs(object):
                  VF=None, H=None, Hm=None, S=None, Sm=None,
                  ns=None, ms=None, Qls=None, Qgs=None, m=None, n=None, Q=None,
                  energy=None,
-                 Vf_TP=(None, None), Q_TP=(None, None, '')):
+                 Vf_TP=(None, None), Q_TP=(None, None, ''), pkg=None):
         self.specifications = base_specifications.copy()
         
         self.IDs = IDs
@@ -359,7 +359,7 @@ class StreamArgs(object):
         self.Vf_TP = Vf_TP
         self.Q_TP = Q_TP
         
-        self.property_package = None
+        self.pkg = self.property_package = pkg
             
     
     @property

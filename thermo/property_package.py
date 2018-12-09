@@ -55,11 +55,12 @@ from fluids.numerics import brenth, ridder, derivative
 from thermo.utils import log, exp
 from thermo.utils import has_matplotlib, R, pi, N_A
 from thermo.utils import remove_zeros, normalize, Cp_minus_Cv
-
+from thermo.identifiers import IDs_to_CASs
 from thermo.activity import K_value, Wilson_K_value, flash_inner_loop, dew_at_T, bubble_at_T, NRTL
 from thermo.activity import get_T_bub_est, get_T_dew_est, get_P_dew_est, get_P_bub_est
 from thermo.unifac import UNIFAC, UFSG, DOUFSG, DOUFIP2006
 from thermo.eos_mix import *
+from thermo.eos import *
 
 if has_matplotlib:
     import matplotlib
@@ -2377,3 +2378,5 @@ class GceosBase(Ideal):
 
         Pmin, Pmax = self._bracket_bubble_P(T=T, zs=zs, maxiter=maxiter_initial, xtol=xtol_initial)
         return ridder(self._err_bubble_P, Pmin, Pmax, args=(T, zs, maxiter, xtol))
+
+

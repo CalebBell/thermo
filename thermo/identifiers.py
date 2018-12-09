@@ -810,6 +810,23 @@ def mixture_from_any(ID):
     raise Exception('Mixture name not recognized')
 
 
+def IDs_to_CASs(IDs):
+    if hasattr(IDs, 'strip') or (isinstance(IDs, list) and len(IDs) == 1):
+        try:
+            # Assume the name was a pre-defined mixture
+            mixname = mixture_from_any(IDs)
+            _d = _MixtureDict[mixname]
+            CASs = _d["CASs"]
+        except:
+            if hasattr(IDs, 'strip'):
+                CASs = [IDs]
+            else:
+                raise Exception('Could not recognize the mixture IDs')
+    else:
+        CASs = [CAS_from_any(ID) for ID in IDs]
+    return CASs
+
+
 # TODO LIST OF REFRIGERANTS FOR USE IN HEAT TRANSFER CORRELATIONS
 
 cryogenics = {'132259-10-0': 'Air', '7440-37-1': 'Argon', '630-08-0':

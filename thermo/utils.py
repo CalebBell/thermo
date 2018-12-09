@@ -33,7 +33,7 @@ __all__ = ['isobaric_expansion', 'isothermal_compressibility',
 'mixing_logarithmic', 'has_matplotlib', 'to_num', 'CAS2int', 'sorted_CAS_key',
 'int2CAS', 'Parachor', 'property_molar_to_mass', 'property_mass_to_molar', 
 'SG_to_API', 'API_to_SG', 'SG', 'vapor_mass_quality', 'mix_component_flows',
-'mix_multiple_component_flows', 'assert_component_balance', 'assert_energy_balance',
+'mix_multiple_component_flows', 'mix_component_partial_flows', 'assert_component_balance', 'assert_energy_balance',
 'phase_select_property', 'TDependentProperty', 
 'TPDependentProperty', 'MixtureProperty', 'allclose_variable', 'horner', 
 'polylog2']
@@ -42,7 +42,7 @@ from cmath import sqrt as csqrt
 from bisect import bisect_left
 import numpy as np
 from numpy.testing import assert_allclose
-from fluids.numerics import brenth, linspace, polyint, polyint_over_x
+from fluids.numerics import brenth, newton, linspace, polyint, polyint_over_x
 from scipy.misc import derivative
 from scipy.integrate import quad
 from scipy.interpolate import interp1d, interp2d
@@ -1860,6 +1860,96 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0):
     for CAS, flow in feed_flows.items():
         assert_allclose(flow, product_flows[CAS], rtol=rtol, atol=atol)
 
+
+def solve_zs_ws_flow_balance(Fs, zs, ws, MWs):
+    # Fs needs to have at least one flow in it
+    # Either F, z, or w needs to be specified for every flow. 
+    # MW needs to be specified for every component.
+    zs = list(zs)
+    ws = list(ws)
+    Fs = list(Fs)
+    
+    N = len(MWs)
+    F_knowns = [F for F in Fs if F is not None]
+    MWs_known = [MW for MW in MWs if MW is not None]
+    F_known = sum(F_knowns)
+    MW_known = sum([F*MW/F_known for F, MW in zip(F_knowns, MWs)])
+    
+    if not any([i is not None for i in ws]):
+        # Only flow rates or mole fractions!
+        zs_spec = sum([zi for zi in zs if zi is not None])
+        F_act = F_known/(1.0 - zs_spec)
+        for i in range(len(Fs)):
+            if Fs[i] is None:
+                Fs[i] = zs[i]*F_act
+        return Fs
+    
+    def to_solve(Ft):
+        num_bracketed = F_known*MW_known
+        for i in range(N):
+            if zs[i] is not None:
+                num_bracketed += Ft*MWs[i]*zs[i]
+        den_bracketed = sum([w for w in ws if w is not None]) - 1
+        
+        F6_F9 = 0.0
+        
+        for i in range(N):
+            if ws[i] is not None:
+                F6_F9 += -ws[i]*num_bracketed/(MWs[i]*den_bracketed)
+        F2_F5 = 0.0
+        for i in range(N):
+            if zs[i] is not None:
+                F2_F5 += Ft*zs[i]
+        err = (F_known + F2_F5 + F6_F9) - Ft
+        return err
+    Ft = newton(to_solve, F_known)
+    # For each flow, in-place replace with mole flows calculated
+    
+    num_bracketed = F_known*MW_known
+    for i in range(N):
+        if zs[i] is not None:
+            num_bracketed += Ft*MWs[i]*zs[i]
+    den_bracketed = sum([w for w in ws if w is not None]) - 1
+    
+    
+    for i in range(N):
+        if zs[i] is not None:
+            Fs[i] = Ft*zs[i]
+        if ws[i] is not None:
+            Fs[i] = -ws[i]*num_bracketed/(MWs[i]*den_bracketed)
+    
+    return Fs
+
+
+
+'''Derived from the following sympy code:
+from sympy import *
+F1, F2, F3, F4, F5, F6, F7, F8, F9, MW1, MW2, MW3, MW4, MW5, MW6, MW7, MW8, MW9, Ft = symbols(
+    'F1, F2, F3, F4, F5, F6, F7, F8, F9, MW1, MW2, MW3, MW4, MW5, MW6, MW7, MW8, MW9, Ft')
+
+x2, x3, x4, x5 = symbols('x2, x3, x4, x5')
+w6, w7, w8, w9 = symbols('w6, w7, w8, w9')
+
+F2 = Ft*x2
+F3 = Ft*x3
+F4 = Ft*x4
+F5 = Ft*x5
+
+Eq1 = Eq(Ft, F1 + F2 + F3 + F4 + F5 + F6 + F7 + F8 + F9)
+
+den = F1/Ft*MW1 + F2/Ft*MW2 + F3/Ft*MW3 + F4/Ft*MW4 + F5/Ft*MW5 + F6/Ft*MW6 + F7/Ft*MW7 + F8/Ft*MW8 + F9/Ft*MW9
+
+Eq6 = Eq(w6, F6/Ft*MW6/(den))
+Eq7 = Eq(w7, F7/Ft*MW7/(den))
+Eq8 = Eq(w8, F8/Ft*MW8/(den))
+Eq9 = Eq(w9, F9/Ft*MW9/(den))
+
+m_ans = solve([Eq6, Eq7, Eq8, Eq9], [F6, F7, F8, F9])
+{F7: -w7*(F1*MW1 + Ft*MW2*x2 + Ft*MW3*x3 + Ft*MW4*x4 + Ft*MW5*x5)/(MW7*(w6 + w7 + w8 + w9 - 1)),
+ F6: -w6*(F1*MW1 + Ft*MW2*x2 + Ft*MW3*x3 + Ft*MW4*x4 + Ft*MW5*x5)/(MW6*(w6 + w7 + w8 + w9 - 1)),
+ F9: -w9*(F1*MW1 + Ft*MW2*x2 + Ft*MW3*x3 + Ft*MW4*x4 + Ft*MW5*x5)/(MW9*(w6 + w7 + w8 + w9 - 1)),
+ F8: -w8*(F1*MW1 + Ft*MW2*x2 + Ft*MW3*x3 + Ft*MW4*x4 + Ft*MW5*x5)/(MW8*(w6 + w7 + w8 + w9 - 1))}
+'''
 
 def assert_energy_balance(inlets, outlets, energy_streams, rtol=1E-9, atol=0):
     try:
