@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2016, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2016, 2017, 2018 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -544,3 +544,135 @@ def test_assert_component_balance():
     f3 = Stream(IDs=['109-66-0', '64-17-5', '67-56-1', '7732-18-5'], ns=[6.0, 20.0, 12.5, 37.5], T=300, P=850000)
     with pytest.raises(Exception):
         assert_component_balance([f1, f2], f3)
+
+
+def test_solve_flow_composition_mix():
+    from thermo.utils import solve_flow_composition_mix
+    Fs = [3600, None, None, None, None]
+    zs = [None, .1, .2, None, None]
+    ws = [None, None, None, .01, .02]
+    MWs = [18.01528, 46.06844, 32.04186, 72.151, 142.286]
+    Fs, zs, ws = solve_flow_composition_mix(Fs, zs, ws, MWs)
+    Fs_expect = [3600, 519.3039148597746, 1038.6078297195493, 17.44015034881175, 17.687253669610733]
+    zs_expect = [0.6932356751002142, 0.1, 0.2, 0.003358370666918819, 0.0034059542328670383]
+    ws_expect = [0.5154077420893427, 0.19012206531421305, 0.26447019259644433, 0.01, 0.02]
+    
+    assert_allclose(Fs, Fs_expect)
+    assert_allclose(ws, ws_expect)
+    assert_allclose(zs, zs_expect)
+
+
+    Fs = [3600, 519.3039148597746, None, None, None]
+    zs = [None, None, .2, None, None]
+    ws = [None, None, None, .01, .02]
+    Fs, zs, ws = solve_flow_composition_mix(Fs, zs, ws, MWs)
+    assert_allclose(Fs, Fs_expect)
+    assert_allclose(ws, ws_expect)
+    assert_allclose(zs, zs_expect)
+
+    Fs = [3600, 519.3039148597746, 1038.6078297195493, None, None]
+    zs = [None, None, None, None, None]
+    ws = [None, None, None, .01, .02]
+    Fs, zs, ws = solve_flow_composition_mix(Fs, zs, ws, MWs)
+    assert_allclose(Fs, Fs_expect)
+    assert_allclose(ws, ws_expect)
+    assert_allclose(zs, zs_expect)
+    
+    Fs = [3600, 519.3039148597746, 1038.6078297195493, None, None]
+    zs = [None, None, None, 0.003358370666918819, None]
+    ws = [None, None, None, None, .02]
+    Fs, zs, ws = solve_flow_composition_mix(Fs, zs, ws, MWs)
+    assert_allclose(Fs, Fs_expect)
+    assert_allclose(ws, ws_expect)
+    assert_allclose(zs, zs_expect)
+
+    Fs = [None, None, None, None, 17.687253669610733]
+    zs = [0.6932356751002142, .1, .2, None, None]
+    ws = [None, None, None, .01, None]
+    Fs, zs, ws = solve_flow_composition_mix(Fs, zs, ws, MWs)
+    assert_allclose(Fs, Fs_expect)
+    assert_allclose(ws, ws_expect)
+    assert_allclose(zs, zs_expect)
+
+    Fs = [None, None, None, None, 17.687253669610733]
+    zs = [0.6932356751002142, .1, .2, 0.003358370666918816, None]
+    ws = [None, None, None, None, None]
+    Fs, zs, ws = solve_flow_composition_mix(Fs, zs, ws, MWs)
+    assert_allclose(Fs, Fs_expect)
+    assert_allclose(ws, ws_expect)
+    assert_allclose(zs, zs_expect)
+
+    Fs = [3600., 519.3039148597746, None, None, 17.687253669610733]
+    zs = [None, None, .2, 0.003358370666918816, None]
+    ws = [None, None, None, None, None]
+    Fs, zs, ws = solve_flow_composition_mix(Fs, zs, ws, MWs)
+    assert_allclose(Fs, Fs_expect)
+    assert_allclose(ws, ws_expect)
+    assert_allclose(zs, zs_expect)
+    
+    Fs = [3600.0, 519.3039148597746, 1038.6078297195495, 17.440150348811738, 17.687253669610733]
+    zs = [None, None, None, None, None]
+    ws = [None, None, None, None, None]
+    Fs, zs, ws = solve_flow_composition_mix(Fs, zs, ws, MWs)
+    assert_allclose(Fs, Fs_expect)
+    assert_allclose(ws, ws_expect)
+    assert_allclose(zs, zs_expect)
+
+    # Solve a large-scale problem
+    from random import uniform, randint
+    N = 1000
+    Fs = [3600]
+    zs = [None]
+    ws = [None]
+    MWs = [18.015]
+    for i in range(1, N):
+        Fs.append(None)
+        frac = uniform(1e-3/N, 1e-2/N)
+        if randint(0, 1):
+            zs.append(frac)
+            ws.append(None)
+        else:
+            zs.append(None)
+            ws.append(frac)
+        MWs.append(uniform(100, 200))
+        
+    Fs_calc, zs_calc, ws_calc = solve_flow_composition_mix(Fs, zs, ws, MWs)
+    
+
+    '''
+    For 4 mass specs, 16 calcs; for 15 mass specs, 225 mw multipliy calcs; numerical solver is
+    needed.
+    
+    Very fast. Can cache more on the iterations.
+    
+    Does not work without at least one mole flow spec. Mass flow specs should be converted to mole flows first.
+    
+    
+    Derived from the following sympy code:
+    from sympy import *
+    F1, F2, F3, F4, F5, F6, F7, F8, F9, MW1, MW2, MW3, MW4, MW5, MW6, MW7, MW8, MW9, Ft = symbols(
+        'F1, F2, F3, F4, F5, F6, F7, F8, F9, MW1, MW2, MW3, MW4, MW5, MW6, MW7, MW8, MW9, Ft')
+    
+    x2, x3, x4, x5 = symbols('x2, x3, x4, x5')
+    w6, w7, w8, w9 = symbols('w6, w7, w8, w9')
+    
+    F2 = Ft*x2
+    F3 = Ft*x3
+    F4 = Ft*x4
+    F5 = Ft*x5
+    
+    Eq1 = Eq(Ft, F1 + F2 + F3 + F4 + F5 + F6 + F7 + F8 + F9)
+    
+    den = F1/Ft*MW1 + F2/Ft*MW2 + F3/Ft*MW3 + F4/Ft*MW4 + F5/Ft*MW5 + F6/Ft*MW6 + F7/Ft*MW7 + F8/Ft*MW8 + F9/Ft*MW9
+    
+    Eq6 = Eq(w6, F6/Ft*MW6/(den))
+    Eq7 = Eq(w7, F7/Ft*MW7/(den))
+    Eq8 = Eq(w8, F8/Ft*MW8/(den))
+    Eq9 = Eq(w9, F9/Ft*MW9/(den))
+    
+    m_ans = solve([Eq6, Eq7, Eq8, Eq9], [F6, F7, F8, F9])
+    {F7: -w7*(F1*MW1 + Ft*MW2*x2 + Ft*MW3*x3 + Ft*MW4*x4 + Ft*MW5*x5)/(MW7*(w6 + w7 + w8 + w9 - 1)),
+     F6: -w6*(F1*MW1 + Ft*MW2*x2 + Ft*MW3*x3 + Ft*MW4*x4 + Ft*MW5*x5)/(MW6*(w6 + w7 + w8 + w9 - 1)),
+     F9: -w9*(F1*MW1 + Ft*MW2*x2 + Ft*MW3*x3 + Ft*MW4*x4 + Ft*MW5*x5)/(MW9*(w6 + w7 + w8 + w9 - 1)),
+     F8: -w8*(F1*MW1 + Ft*MW2*x2 + Ft*MW3*x3 + Ft*MW4*x4 + Ft*MW5*x5)/(MW8*(w6 + w7 + w8 + w9 - 1))}
+    '''

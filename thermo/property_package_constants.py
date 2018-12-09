@@ -130,7 +130,8 @@ transfer_methods = ['set_chemical_constants', 'set_Chemical_property_objects',
 
 try:
     for method in transfer_methods:
-        PropertyPackageConstants.__dict__[method] = Mixture.__dict__[method]
+        attr = Mixture.__dict__[method]
+        setattr(PropertyPackageConstants, method, attr)
 except:
     for method in transfer_methods:
         setattr(PropertyPackageConstants, method, getattr(Mixture, method))
