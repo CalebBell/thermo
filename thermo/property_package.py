@@ -1940,6 +1940,7 @@ class UnifacDortmundCaloric(UnifacDortmund, GammaPhiCaloric):
 
 
 class GceosBase(Ideal):
+    # TODO IMPORTANT DO NOT INHERIT FROM Ideal vapor fraction flashes do not work
     
     pure_guesses = True
     Wilson_guesses = True
@@ -1978,9 +1979,39 @@ class GceosBase(Ideal):
         self.kwargs['omegas'] = omegas
         self.kwargs['kijs'] = kijs
         
+        # No `zs`
 #        self.eos_mix_ref = self.eos_mix(T=self.T_REF_IG, P=self.P_REF_IG, Tcs=self.Tcs, Pcs=self.Pcs, kijs=self.kijs, **self.eos_kwargs)
 
+    def _Psats(self, T):
+        fake_P = 1e6
+        fake_zs = [1./self.N]*self.N
+        Psats = []
+        try:
+            eos_base = self.eos_l if hasattr(self, 'eos_l') else self.eos_g
+        except:
+            eos_base = self.to_TP_zs(T=T, P=fake_P, zs=fake_zs)
+        
+        for i in self.cmps:
+            eos_pure = eos_base.to_TP_pure(T, fake_P, i)
+            Psats.append(eos_pure.Psat(T))
+        return Psats
+
+    def _Tsats(self, P):
+        fake_T = 300
+        fake_zs = [1./self.N]*self.N
+        Tsats = []
+        try:
+            eos_base = self.eos_l if hasattr(self, 'eos_l') else self.eos_g
+        except:
+            eos_base = self.to_TP_zs(T=fake_T, P=P, zs=fake_zs)
+        
+        for i in self.cmps:
+            eos_pure = eos_base.to_TP_pure(fake_T, P, i)
+            Tsats.append(eos_pure.Tsat(P))
+        return Tsats
+
     def enthalpy_eosmix(self):
+        # Believed correct
         H = 0
         T = self.T
         P = self.P
@@ -2009,6 +2040,7 @@ class GceosBase(Ideal):
 
 
     def entropy_eosmix(self):
+        # Believed correct
         S = 0.0
         T = self.T
         P = self.P
@@ -2016,20 +2048,30 @@ class GceosBase(Ideal):
         if self.phase == 'g':
             S -= R*log(P/101325.) # Not sure
             for i in self.cmps:
-                S += self.HeatCapacityGases[i].T_dependent_property_integral_over_T(self.T_REF_IG, T)
+                dS = self.HeatCapacityGases[i].T_dependent_property_integral_over_T(self.T_REF_IG, T)
+#                print(dS, 'dS', i, 'g')
+                S += self.zs[i]*dS
             S += self.eos_g.S_dep_g
+#            print('dep', self.eos_g.S_dep_g)
                 
         elif self.phase == 'l':
             S -= R*log(P/101325.)
             for i in self.cmps:
-                S += self.HeatCapacityGases[i].T_dependent_property_integral_over_T(self.T_REF_IG, T)
+                dS = self.HeatCapacityGases[i].T_dependent_property_integral_over_T(self.T_REF_IG, T)
+                S += self.zs[i]*dS
             S += self.eos_l.S_dep_l
             
         elif self.phase == 'l/g':
-            S_l, S_g =  -R*log(P/101325.), - R*log(P/101325.)
+            S_l = -R*sum([zi*log(zi) for zi in self.xs if zi > 0.0])
+            S_g = -R*sum([zi*log(zi) for zi in self.ys if zi > 0.0])
+            
+            S_l += -R*log(P/101325.)
+            S_g += - R*log(P/101325.)
             dS_integrals = []
             for i in self.cmps:
-                dS_integrals.append(self.HeatCapacityGases[i].T_dependent_property_integral_over_T(self.T_REF_IG, T))
+                dS = self.HeatCapacityGases[i].T_dependent_property_integral_over_T(self.T_REF_IG, T)
+#                print(dS, 'dS', i, 'lg')
+                dS_integrals.append(dS)
                 
             for i in self.cmps:
                 S_g += self.ys[i]*dS_integrals[i]
@@ -2037,6 +2079,7 @@ class GceosBase(Ideal):
 
             S_g += self.eos_g.S_dep_g
             S_l += self.eos_l.S_dep_l
+#            print(S_g*self.V_over_F, S_l*(1.0 - self.V_over_F), 'liq and gas tp region',  self.eos_g.S_dep_g, 'dep')
             S = S_g*self.V_over_F + S_l*(1.0 - self.V_over_F)
         return S
 

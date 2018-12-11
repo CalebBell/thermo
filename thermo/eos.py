@@ -26,7 +26,7 @@ __all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',
 'APISRK', 'TWUPR', 'TWUSRK', 'ALPHA_FUNCTIONS', 'eos_list', 'GCEOS_DUMMY']
 
 from cmath import atanh as catanh
-from fluids.numerics import newton
+from fluids.numerics import newton, brenth
 from thermo.utils import R
 from thermo.utils import Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter
 from thermo.utils import log, exp, sqrt, copysign, horner
@@ -665,6 +665,35 @@ should be calculated by this method, in a user subclass.')
             Cv_dep = -T*(sqrt(1/(delta**2 - 4*epsilon))*log(V - delta**2*sqrt(1/(delta**2 - 4*epsilon))/2 + delta/2 + 2*epsilon*sqrt(1/(delta**2 - 4*epsilon))) - sqrt(1/(delta**2 - 4*epsilon))*log(V + delta**2*sqrt(1/(delta**2 - 4*epsilon))/2 + delta/2 - 2*epsilon*sqrt(1/(delta**2 - 4*epsilon))))*d2a_alpha_dT2
         return [dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep]
 
+
+    def Tsat(self, P, polish=False):
+        r'''Generic method to calculate the temperature for a specified 
+        vapor pressure of the pure fluid.
+        This is simply a bounded solver running between `0.2Tc` and `Tc` on the
+        `Psat` method.
+        
+        Parameters
+        ----------
+        P : float
+            Vapor pressure, [Pa]
+        polish : bool, optional
+            Whether to attempt to use a numerical solver to make the solution
+            more precise or not
+
+        Returns
+        -------
+        Tsat : float
+            Temperature of saturation, [K]
+            
+        Notes
+        -----
+        It is recommended not to run with `polish=True`, as that will make the
+        calculation much slower.
+        '''
+        def to_solve(T):
+            return self.Psat(T, polish=polish) - P
+        return brenth(to_solve, 0.2*self.Tc, self.Tc)
+            
     def Psat(self, T, polish=False):
         r'''Generic method to calculate vapor pressure for a specified `T`.
         

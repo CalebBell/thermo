@@ -73,6 +73,11 @@ class GCEOSMIX(GCEOS):
     each species via multiple inheritance.
     '''
     
+    def to_TP_pure(self, T, P, i):
+        kwargs = {} # TODO write function to get those
+        return self.eos_pure(T=T, P=P, Tc=self.Tcs[i], Pc=self.Pcs[i],
+                             omega=self.omegas[i])
+    
     def a_alpha_and_derivatives_numpy(self, a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=True, quick=True):
         zs, kijs = self.zs, np.array(self.kijs)
         a_alphas = np.array(a_alphas)
@@ -1035,6 +1040,7 @@ class PRMIX(GCEOSMIX, PR):
        no. 1 (January 1, 1985): 25-41. doi:10.1016/0378-3812(85)87035-7. 
     '''
     a_alpha_mro = -4
+    eos_pure = PR
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None):
         self.N = len(Tcs)
         self.cmps = range(self.N)
@@ -1214,6 +1220,7 @@ class SRKMIX(GCEOSMIX, SRK):
        Butterworth-Heinemann, 1985.
     '''
     a_alpha_mro = -4
+    eos_pure = SRK
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None):
         self.N = len(Tcs)
         self.cmps = range(self.N)
@@ -1381,6 +1388,7 @@ class PR78MIX(PRMIX):
        no. 1 (January 1, 1985): 25-41. doi:10.1016/0378-3812(85)87035-7. 
     '''
     a_alpha_mro = -4
+    eos_pure = PR78
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None):
         self.N = len(Tcs)
         self.cmps = range(self.N)
@@ -1476,6 +1484,7 @@ class VDWMIX(GCEOSMIX, VDW):
        edition. New York: McGraw-Hill Professional, 2000.
     '''
     a_alpha_mro = -4
+    eos_pure = VDW
     def __init__(self, Tcs, Pcs, zs, kijs=None, T=None, P=None, V=None):
         self.N = len(Tcs)
         self.cmps = range(self.N)
@@ -1638,6 +1647,7 @@ class PRSVMIX(PRMIX, PRSV):
        67, no. 1 (February 1, 1989): 170-73. doi:10.1002/cjce.5450670125.
     '''
     a_alpha_mro = -5
+    eos_pure = PRSV
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None, kappa1s=None):
         self.N = len(Tcs)
         self.cmps = range(self.N)
@@ -1776,6 +1786,7 @@ class PRSV2MIX(PRMIX, PRSV2):
        doi:10.1002/cjce.5450640516. 
     '''
     a_alpha_mro = -5
+    eos_pure = PRSV2
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  kappa1s=None, kappa2s=None, kappa3s=None):
         self.N = len(Tcs)
@@ -1927,6 +1938,7 @@ class TWUPRMIX(PRMIX, TWUPR):
        1995): 49-59. doi:10.1016/0378-3812(94)02601-V.
     '''
     a_alpha_mro = -5
+    eos_pure = TWUPR
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None):
         self.N = len(Tcs)
         self.cmps = range(self.N)
@@ -2046,6 +2058,7 @@ class TWUSRKMIX(SRKMIX, TWUSRK):
        1995): 61-69. doi:10.1016/0378-3812(94)02602-W.
     '''
     a_alpha_mro = -5
+    eos_pure = TWUSRK
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None):
         self.N = len(Tcs)
         self.cmps = range(self.N)
@@ -2156,6 +2169,7 @@ class APISRKMIX(SRKMIX, APISRK):
        American Petroleum Institute, 7E, 2005.
     '''
     a_alpha_mro = -5
+    eos_pure = APISRK
     def __init__(self, Tcs, Pcs, zs, omegas=None, kijs=None, T=None, P=None, V=None,
                  S1s=None, S2s=None):
         self.N = len(Tcs)
