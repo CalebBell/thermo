@@ -50,7 +50,7 @@ from copy import copy
 from random import uniform, shuffle, seed
 import numpy as np
 from scipy.optimize import golden, brent, minimize, fmin_slsqp, fsolve
-from fluids.numerics import brenth, ridder, derivative
+from fluids.numerics import brenth, ridder, derivative, newton
 
 from thermo.utils import log, exp
 from thermo.utils import has_matplotlib, R, pi, N_A
@@ -2181,6 +2181,92 @@ class GceosBase(Ideal):
             phase = 'l/g'
         return phase, xs, ys, VF
 
+    def flash_PVF_zs(self, P, VF, zs):
+        assert 0 <= VF <= 1
+        if self.N == 1:
+            raise NotImplemented
+        elif 1.0 in zs:
+            raise NotImplemented
+        
+        # Disable bubbles and dew for now = need to refactor to get everything about them
+        if VF == 0 and False:
+            T = self.bubble_T(P=P, zs=zs)
+        elif VF == 1 and False:
+            T = self.dew_T(P=P, zs=zs)
+        else:
+            res = [None]
+            def err(T):
+                eos = self.to_TP_zs(T=T, P=P, zs=zs)
+                VF_calc, xs, ys = eos.sequential_substitution_VL(Ks_initial=None, 
+                                                                 maxiter=self.substitution_maxiter,
+                                                                 xtol=self.substitution_xtol, 
+                                                                 allow_error=False)
+                res[0] = (VF_calc, xs, ys)
+#                print(P, VF_calc - VF, res)
+                return VF_calc - VF
+            T_guess_as_pure = self.flash_PVF_zs_ideal(P=P, VF=VF, zs=zs)[4]
+            T = None
+            try:
+                T = newton(err, T_guess_as_pure)
+            except:
+                pass
+            if T is None:
+                try:
+                    T = fsolve(err, T_guess_as_pure)
+                except:
+                    pass
+#            print(P, 'worked!')
+            if T is None:
+                T = brenth(err, .9*T_guess_as_pure, 1.1*T_guess_as_pure)
+            VF, xs, ys = res[0]
+        return 'l/g', xs, ys, VF, T
+
+            
+    def flash_TVF_zs(self, T, VF, zs):
+        assert 0 <= VF <= 1
+        if self.N == 1:
+            raise NotImplemented
+            return 'l/g', [1.0], [1.0], VF, Psats[0]
+        elif 1.0 in zs:
+            raise NotImplemented
+            return 'l/g', list(zs), list(zs), VF, Psats[zs.index(1.0)]
+
+        # Disable bubbles and dew for now = need to refactor to get everything about them
+        if VF == 0 and False:
+            P = self.bubble_P(T=T, zs=zs)
+        elif VF == 1 and False:
+            P = self.dew_P(T=T, zs=zs)
+        else:
+            res = [None]
+            def err(P):
+                eos = self.to_TP_zs(T=T, P=P, zs=zs)
+                VF_calc, xs, ys = eos.sequential_substitution_VL(Ks_initial=None, 
+                                                                 maxiter=self.substitution_maxiter,
+                                                                 xtol=self.substitution_xtol, 
+                                                                 allow_error=False)
+                res[0] = (VF_calc, xs, ys)
+#                print(P, VF_calc - VF, res)
+                return VF_calc - VF
+            
+            P_guess_as_pure = self.flash_TVF_zs_ideal(T=T, VF=VF, zs=zs)[4]
+            P = None
+            try:
+                P = newton(err, P_guess_as_pure)
+            except:
+                pass
+            if P is None:
+                try:
+                    P = fsolve(err, P_guess_as_pure)
+                except:
+                    pass
+#            print(P, 'worked!')
+            if P is None:
+                P = brenth(err, .9*P_guess_as_pure, 1.1*P_guess_as_pure)
+            VF, xs, ys = res[0]
+        return 'l/g', xs, ys, VF, P
+
+
+
 
     def _err_bubble_T(self, T, P, zs, maxiter=200, xtol=1E-10):
         T = float(T)
@@ -2433,6 +2519,7 @@ class GceosBase(Ideal):
 
     def dew_P(self, T, zs, maxiter=200, xtol=1E-10, maxiter_initial=20, xtol_initial=1e-3):
 #        guess = get_P_dew_est(T=T, zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs)
+        P_guess_as_pure = None
         try:
             # Simplest solution method
             P_guess_as_pure = self.flash_TVF_zs_ideal(T=T, VF=1, zs=zs)[4]
@@ -2495,7 +2582,7 @@ class GceosBase(Ideal):
             eos_g = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
                              zs=ys, kijs=self.kijs, T=T, P=P, **self.eos_kwargs)
     
-            Ks = [K_value(phi_l=l, phi_g=g) for l, g in zip(eos_g.phis_g, eos_l.phis_l)]
+            Ks = [K_value(phi_l=l, phi_g=g) for l, g in zip(eos_l.phis_l, eos_g.phis_g)]
             V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks)
             err = (sum([abs(x_new - x_old) for x_new, x_old in zip(xs_new, xs)]) +
                   sum([abs(y_new - y_old) for y_new, y_old in zip(ys_new, ys)]))

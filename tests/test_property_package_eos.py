@@ -52,6 +52,19 @@ def test_bubble_T_PR():
     assert_allclose(bubs, T_bubbles_expect)
 
 
+def test_PR_four_bubble_dew_cases():
+    m = Mixture(['furfural', 'furfuryl alcohol'], zs=[.5, .5], T=300, P=1E6)
+    pkg = GceosBase(eos_mix=PRMIX, VaporPressures=m.VaporPressures, Tms=[235.9, 250.35], Tbs=[434.65, 441.15], 
+                    Tcs=[670.0, 632.0], Pcs=[5510000.0, 5350000.0], omegas=[0.4522, 0.734], 
+                    kijs=[[0,0],[0,0]], eos_kwargs=None,
+                 HeatCapacityGases=m.HeatCapacityGases)
+    # Strongly believed to be correct!
+    assert_allclose(pkg.bubble_T(P=1e6, zs=m.zs), 539.1838522423355, atol=.1)
+    assert_allclose(pkg.dew_T(P=1e6, zs=m.zs), 540.208169750248, atol=.1)
+    assert_allclose(pkg.dew_P(T=600, zs=m.zs), 2702616.6490743402, rtol=1e-4)
+    assert_allclose(pkg.bubble_P(T=600, zs=m.zs), 2766476.7473238516, rtol=1e-4)
+
+
 def test_C1_C10_PT_flash():
 
     m = Mixture(['methane', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10'], zs=[.1]*10, T=300, P=1E6)
