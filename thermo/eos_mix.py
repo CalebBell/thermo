@@ -687,25 +687,29 @@ class GCEOSMIX(GCEOS):
             return self
         
     def sequential_substitution_VL(self, Ks_initial=None, maxiter=1000,
-                                   xtol=1E-10, allow_error=True, Ks_extra=None):
+                                   xtol=1E-10, allow_error=True, Ks_extra=None,
+                                   xs=None, ys=None):
         if Ks_initial is None:
             Ks = [Wilson_K_value(self.T, self.P, Tci, Pci, omega)  for Pci, Tci, omega in zip(self.Pcs, self.Tcs, self.omegas)]
         else:
             Ks = Ks_initial
 #        print(self.zs, Ks)
-        xs = None
-        try:
-            V_over_F, xs, ys = flash_inner_loop(self.zs, Ks)
-        except ValueError as e:
-            if Ks_extra is not None:
-                for Ks in Ks_extra:
-                    try:
-                        V_over_F, xs, ys = flash_inner_loop(self.zs, Ks)
-                        break
-                    except ValueError as e:
-                        pass
-        if xs is None:
-            raise(e)
+        if xs is not None and ys is not None:
+            pass
+        else:
+            xs = None
+            try:
+                V_over_F, xs, ys = flash_inner_loop(self.zs, Ks)
+            except ValueError as e:
+                if Ks_extra is not None:
+                    for Ks in Ks_extra:
+                        try:
+                            V_over_F, xs, ys = flash_inner_loop(self.zs, Ks)
+                            break
+                        except ValueError as e:
+                            pass
+            if xs is None:
+                raise(e)
         
 #        print(xs, ys,V_over_F)
         for i in range(maxiter):
@@ -743,6 +747,7 @@ class GCEOSMIX(GCEOS):
             V_over_F, xs_new, ys_new = flash_inner_loop(self.zs, Ks)
             err = (sum([abs(x_new - x_old) for x_new, x_old in zip(xs_new, xs)]) +
                   sum([abs(y_new - y_old) for y_new, y_old in zip(ys_new, ys)]))
+#            print(err)
             xs, ys = xs_new, ys_new
 #            print(xs, ys, 'xs, ys')
             if err < xtol:

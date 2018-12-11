@@ -50,7 +50,7 @@ from copy import copy
 from random import uniform, shuffle, seed
 import numpy as np
 from scipy.optimize import golden, brent, minimize, fmin_slsqp, fsolve
-from fluids.numerics import brenth, ridder, derivative, newton
+from fluids.numerics import brenth, ridder, derivative, py_newton as newton
 
 from thermo.utils import log, exp
 from thermo.utils import has_matplotlib, R, pi, N_A
@@ -234,6 +234,7 @@ class PropertyPackage(object):
     PHASE_ROUNDING_TOL = 1E-9 
     SUPPORTS_ZERO_FRACTIONS = True
     zero_fraction = 1E-6
+    FLASH_VF_TOL = 1e-6
 
     T_REF_IG = 298.15
     P_REF_IG = 101325.
@@ -2200,14 +2201,16 @@ class GceosBase(Ideal):
                 VF_calc, xs, ys = eos.sequential_substitution_VL(Ks_initial=None, 
                                                                  maxiter=self.substitution_maxiter,
                                                                  xtol=self.substitution_xtol, 
-                                                                 allow_error=False)
+                                                                 allow_error=False,
+                                                                 xs=xs_guess, ys=ys_guess)
                 res[0] = (VF_calc, xs, ys)
 #                print(P, VF_calc - VF, res)
                 return VF_calc - VF
-            T_guess_as_pure = self.flash_PVF_zs_ideal(P=P, VF=VF, zs=zs)[4]
+            
+            _, xs_guess, ys_guess, _, T_guess_as_pure = self.flash_PVF_zs_ideal(P=P, VF=VF, zs=zs)
             T = None
             try:
-                T = newton(err, T_guess_as_pure)
+                T = newton(err, T_guess_as_pure, xtol=self.FLASH_VF_TOL)
             except:
                 pass
             if T is None:
@@ -2243,15 +2246,16 @@ class GceosBase(Ideal):
                 VF_calc, xs, ys = eos.sequential_substitution_VL(Ks_initial=None, 
                                                                  maxiter=self.substitution_maxiter,
                                                                  xtol=self.substitution_xtol, 
-                                                                 allow_error=False)
+                                                                 allow_error=False,
+                                                                 xs=xs_guess, ys=ys_guess)
                 res[0] = (VF_calc, xs, ys)
 #                print(P, VF_calc - VF, res)
                 return VF_calc - VF
             
-            P_guess_as_pure = self.flash_TVF_zs_ideal(T=T, VF=VF, zs=zs)[4]
+            _, xs_guess, ys_guess, _, P_guess_as_pure = self.flash_TVF_zs_ideal(T=T, VF=VF, zs=zs)
             P = None
             try:
-                P = newton(err, P_guess_as_pure)
+                P = newton(err, P_guess_as_pure, xtol=self.FLASH_VF_TOL)
             except:
                 pass
             if P is None:
