@@ -735,6 +735,9 @@ should be calculated by this method, in a user subclass.')
         in its derivative.
         
         Form for the regression is inspired from [1]_.
+        
+        No volume solution is needed when `polish=False`; the only external 
+        call is for the value of `a_alpha`.
                     
         References
         ----------

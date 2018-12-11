@@ -2299,7 +2299,12 @@ class GceosBase(Ideal):
             T_guess_as_pure = self.flash_PVF_zs_ideal(P=P, VF=0, zs=zs)[4]
     #        print('bubble T guess', T_guess_as_pure)
             # Simplest solution method
-            return float(fsolve(self._err_bubble_T, T_guess_as_pure, factor=.1, args=(P, zs, maxiter, xtol)))
+            try:
+                T = newton(self._err_bubble_T, T_guess_as_pure, args=(P, zs, maxiter, xtol))
+            except:
+                T = float(fsolve(self._err_bubble_T, T_guess_as_pure, factor=.1, args=(P, zs, maxiter, xtol)))
+#            print(T, T_guess_as_pure)
+            return T
         except Exception as e:
 #            print('bubble T - fsolve failed with:'  + str(e))
             pass
@@ -2429,8 +2434,12 @@ class GceosBase(Ideal):
 #        guess = get_T_dew_est(P=P, zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs)
         try:
             T_guess_as_pure = self.flash_PVF_zs_ideal(P=P, VF=1, zs=zs)[4]
-            # Has not yet worked yet
-            return float(fsolve(self._err_dew_T, T_guess_as_pure, factor=.1, args=(P, zs, maxiter, xtol)))
+            try:
+                T = newton(self._err_dew_T, T_guess_as_pure, args=(P, zs, maxiter, xtol))
+            except:
+                T = float(fsolve(self._err_dew_T, T_guess_as_pure, factor=.1, args=(P, zs, maxiter, xtol)))
+#            print(T, T_guess_as_pure)
+            return T
         except Exception as e:
             pass
 
@@ -2523,8 +2532,12 @@ class GceosBase(Ideal):
         try:
             # Simplest solution method
             P_guess_as_pure = self.flash_TVF_zs_ideal(T=T, VF=1, zs=zs)[4]
-
-            return float(fsolve(self._err_dew_P, P_guess_as_pure, factor=.1, args=(T, zs, maxiter, xtol)))
+            try:
+                P = newton(self._err_dew_P, P_guess_as_pure, args=(T, zs, maxiter, xtol))
+            except:
+                P = float(fsolve(self._err_dew_P, P_guess_as_pure, factor=.1, args=(T, zs, maxiter, xtol)))
+#            print(P, P_guess_as_pure)
+            return P
         except Exception as e:
             print(P_guess_as_pure, e)
             pass
@@ -2596,7 +2609,14 @@ class GceosBase(Ideal):
         try:
             # Simplest solution method
             P_guess_as_pure = self.flash_TVF_zs_ideal(T=T, VF=0, zs=zs)[4]
-            return float(fsolve(self._err_bubble_P, P_guess_as_pure, factor=.1, args=(T, zs, maxiter, xtol)))
+#            return float(fsolve(self._err_bubble_P, P_guess_as_pure, factor=.1, args=(T, zs, maxiter, xtol)))
+            # Newton is twice as fast with pypy
+            try:
+                P = float(newton(self._err_bubble_P, P_guess_as_pure, args=(T, zs, maxiter, xtol)))
+            except:
+                P = float(fsolve(self._err_bubble_P, P_guess_as_pure, factor=.1, args=(T, zs, maxiter, xtol)))
+#            print(P_guess_as_pure, P)
+            return P
         except Exception as e:
             pass
 
