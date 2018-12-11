@@ -784,11 +784,11 @@ class Ideal(PropertyPackage):
         return Ks
 
 
-    def _T_VF_err(self, P, VF, zs, Psats):
+    def _T_VF_err_ideal(self, P, VF, zs, Psats):
         Ks = [K_value(P=P, Psat=Psat) for Psat in Psats]
         return flash_inner_loop(zs=zs, Ks=Ks)[0] - VF
         
-    def _P_VF_err(self, T, P, VF, zs):
+    def _P_VF_err_ideal(self, T, P, VF, zs):
         Psats = self._Psats(T)
         Ks = [K_value(P=P, Psat=Psat) for Psat in Psats]
         return flash_inner_loop(zs=zs, Ks=Ks)[0] - VF
@@ -852,7 +852,11 @@ class Ideal(PropertyPackage):
             V_over_F, xs, ys = flash_inner_loop(zs=zs, Ks=Ks)
             return 'l/g', xs, ys, V_over_F
         
+        
     def flash_TVF_zs(self, T, VF, zs):
+        return self.flash_TVF_zs_ideal(T, VF, zs)
+    
+    def flash_TVF_zs_ideal(self, T, VF, zs):
         assert 0 <= VF <= 1
         Psats = self._Psats(T)
         # handle one component
@@ -866,12 +870,15 @@ class Ideal(PropertyPackage):
         elif VF == 1:
             P = dew_at_T(zs, Psats)
         else:
-            P = brenth(self._T_VF_err, min(Psats)*(1+1E-7), max(Psats)*(1-1E-7), args=(VF, zs, Psats))
+            P = brenth(self._T_VF_err_ideal, min(Psats)*(1+1E-7), max(Psats)*(1-1E-7), args=(VF, zs, Psats))
         Ks = [K_value(P=P, Psat=Psat) for Psat in Psats]
         V_over_F, xs, ys = flash_inner_loop(zs=zs, Ks=Ks)
         return 'l/g', xs, ys, V_over_F, P
     
     def flash_PVF_zs(self, P, VF, zs):
+        return self.flash_PVF_zs_ideal(P, VF, zs)
+    
+    def flash_PVF_zs_ideal(self, P, VF, zs):
         assert 0 <= VF <= 1
         Tsats = self._Tsats(P)
         if self.N == 1:
@@ -879,7 +886,7 @@ class Ideal(PropertyPackage):
         elif 1.0 in zs:
             return 'l/g', list(zs), list(zs), VF, Tsats[zs.index(1.0)]
 
-        T = brenth(self._P_VF_err, min(Tsats)*(1+1E-7), max(Tsats)*(1-1E-7), args=(P, VF, zs))
+        T = brenth(self._P_VF_err_ideal, min(Tsats)*(1+1E-7), max(Tsats)*(1-1E-7), args=(P, VF, zs))
         Psats = self._Psats(T)
         Ks = [K_value(P=P, Psat=Psat) for Psat in Psats]
         V_over_F, xs, ys = flash_inner_loop(zs=zs, Ks=Ks)
@@ -2201,11 +2208,14 @@ class GceosBase(Ideal):
         return V_over_F
     
     def bubble_T(self, P, zs, maxiter=200, xtol=1E-10, maxiter_initial=20, xtol_initial=1e-3):
-        guess = get_T_bub_est(P=P, zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs)
+#        guess = get_T_bub_est(P=P, zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs)
         try:
+            T_guess_as_pure = self.flash_PVF_zs_ideal(P=P, VF=0, zs=zs)[4]
+    #        print('bubble T guess', T_guess_as_pure)
             # Simplest solution method
-            return float(fsolve(self._err_bubble_T, guess, factor=.1, args=(P, zs, maxiter, xtol)))
-        except:
+            return float(fsolve(self._err_bubble_T, T_guess_as_pure, factor=.1, args=(P, zs, maxiter, xtol)))
+        except Exception as e:
+#            print('bubble T - fsolve failed with:'  + str(e))
             pass
 
         Tmin, Tmax = self._bracket_bubble_T(P=P, zs=zs, maxiter=maxiter_initial, xtol=xtol_initial)
@@ -2330,12 +2340,13 @@ class GceosBase(Ideal):
 
 
     def dew_T(self, P, zs, maxiter=200, xtol=1E-10, maxiter_initial=20, xtol_initial=1e-3):
-        guess = get_T_dew_est(P=P, zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs)
-#        try:
-#            # Has not yet worked yet
-#            return float(fsolve(self._err_dew_T, guess, factor=.1, args=(P, zs, maxiter, xtol)))
-#        except Exception as e:
-#            pass
+#        guess = get_T_dew_est(P=P, zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs)
+        try:
+            T_guess_as_pure = self.flash_PVF_zs_ideal(P=P, VF=1, zs=zs)[4]
+            # Has not yet worked yet
+            return float(fsolve(self._err_dew_T, T_guess_as_pure, factor=.1, args=(P, zs, maxiter, xtol)))
+        except Exception as e:
+            pass
 
         Tmin, Tmax = self._bracket_dew_T(P=P, zs=zs, maxiter=maxiter_initial, xtol=xtol_initial)
         T_calc = ridder(self._err_dew_T, Tmin, Tmax, args=(P, zs, maxiter, xtol))
@@ -2421,13 +2432,15 @@ class GceosBase(Ideal):
         return V_over_F - 1.0
 
     def dew_P(self, T, zs, maxiter=200, xtol=1E-10, maxiter_initial=20, xtol_initial=1e-3):
-        guess = get_P_dew_est(T=T, zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs)
-#        try:
-#            # Simplest solution method
-#            return float(fsolve(self._err_dew_P, guess, factor=.1, args=(T, zs, maxiter, xtol)))
-#        except Exception as e:
-#            print(guess, e)
-#            pass
+#        guess = get_P_dew_est(T=T, zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs)
+        try:
+            # Simplest solution method
+            P_guess_as_pure = self.flash_TVF_zs_ideal(T=T, VF=1, zs=zs)[4]
+
+            return float(fsolve(self._err_dew_P, P_guess_as_pure, factor=.1, args=(T, zs, maxiter, xtol)))
+        except Exception as e:
+            print(P_guess_as_pure, e)
+            pass
 
         Pmin, Pmax = self._bracket_dew_P(T=T, zs=zs, maxiter=maxiter_initial, xtol=xtol_initial)
         return ridder(self._err_dew_P, Pmin, Pmax, args=(T, zs, maxiter, xtol))
@@ -2492,10 +2505,11 @@ class GceosBase(Ideal):
         return V_over_F
 
     def bubble_P(self, T, zs, maxiter=200, xtol=1E-10, maxiter_initial=20, xtol_initial=1e-3):
-        guess = get_P_bub_est(T=T, zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs)
+#        guess = get_P_bub_est(T=T, zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs)
         try:
             # Simplest solution method
-            return float(fsolve(self._err_bubble_P, guess, factor=.1, args=(T, zs, maxiter, xtol)))
+            P_guess_as_pure = self.flash_TVF_zs_ideal(T=T, VF=0, zs=zs)[4]
+            return float(fsolve(self._err_bubble_P, P_guess_as_pure, factor=.1, args=(T, zs, maxiter, xtol)))
         except Exception as e:
             pass
 
