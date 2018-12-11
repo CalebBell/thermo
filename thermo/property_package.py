@@ -227,11 +227,16 @@ class StabilityTester(object):
     
     
 class PropertyPackage(object):
+    
+    
     # Constant - if the phase fraction is this close to either the liquid or 
     # vapor phase, round it to it
     PHASE_ROUNDING_TOL = 1E-9 
     SUPPORTS_ZERO_FRACTIONS = True
     zero_fraction = 1E-6
+
+    T_REF_IG = 298.15
+    P_REF_IG = 101325.
 
     def to(self, zs, T=None, P=None, VF=None):
         obj = copy(self)
@@ -524,11 +529,255 @@ class PropertyPackage(object):
         plt.show(block=False)
 
 
-class Ideal(PropertyPackage):
-    T_REF_IG = 298.15
-    P_REF_IG = 101325.
+
+    def flash_caloric(self, zs, T=None, P=None, VF=None, Hm=None, Sm=None):
+        if not self.SUPPORTS_ZERO_FRACTIONS:
+            zs = remove_zeros(zs, self.zero_fraction)
+            
+        kwargs = {'zs': zs}
+        try:
+            if T is not None and Sm is not None:
+                kwargs['T'] = T
+                kwargs.update(self.flash_TS_zs_bounded(T=T, Sm=Sm, zs=zs))
+            elif P is not None and Sm is not None:
+                kwargs['P'] = P
+                kwargs.update(self.flash_PS_zs_bounded(P=P, Sm=Sm, zs=zs))
+            elif P is not None and Hm is not None:
+                kwargs['P'] = P
+                kwargs.update(self.flash_PH_zs_bounded(P=P, Hm=Hm, zs=zs))
+            elif ((T is not None and P is not None) or
+                (T is not None and VF is not None) or
+                (P is not None and VF is not None)):
+                kwargs['P'] = P
+                kwargs['T'] = T
+                kwargs['VF'] = VF
+            else:
+                raise Exception('Flash inputs unsupported')
     
+            self.flash(**kwargs)
+            self._post_flash()
+            self.status = True
+        except Exception as e:
+            # Write Nones for everything here
+            self.status = e
+            self._set_failure()
+            
+    def _set_failure(self):
+        self.Hm = None
+        self.Sm = None
+        self.Gm = None
+        self.chemical_potential = None
+        self.T = None
+        self.P = None
+        self.phase = None
+        self.V_over_F = None
+        self.xs = None
+        self.ys = None
+            
+        
+        
+        
+    def flash_PH_zs_bounded(self, P, Hm, zs, T_low=None, T_high=None, 
+                            Hm_low=None, Hm_high=None):
+        '''THIS DOES NOT WORK FOR PURE COMPOUNDS!!!!!!!!!!!!!
+        '''
+        # Begin the search at half the lowest chemical's melting point
+        if T_low is None:
+            T_low = min(self.Tms)/2 
+                
+        # Cap the T high search at 8x the highest critical point
+        # (will not work well for helium, etc.)
+        if T_high is None:
+            max_Tc = max(self.Tcs)
+            if max_Tc < 100:
+                T_high = 4000.0
+            else:
+                T_high = max_Tc*8.0
     
+        temp_pkg_cache = []
+        def PH_error(T, P, zs, H_goal):
+            if not temp_pkg_cache:
+                temp_pkg = self.to(T=T, P=P, zs=zs)
+                temp_pkg_cache.append(temp_pkg)
+            else:
+                temp_pkg = temp_pkg_cache[0]
+                temp_pkg.flash(T=T, P=P, zs=zs)
+            temp_pkg._post_flash()
+            return temp_pkg.Hm - H_goal
+        
+        def PH_VF_error(VF, P, zs, H_goal):
+            if not temp_pkg_cache:
+                temp_pkg = self.to(VF=VF, P=P, zs=zs)
+                temp_pkg_cache.append(temp_pkg)
+            else:
+                temp_pkg = temp_pkg_cache[0]
+                temp_pkg.flash(VF=VF, P=P, zs=zs)
+            temp_pkg._post_flash()
+            return temp_pkg.Hm - H_goal
+        try:
+            T_goal = brenth(PH_error, T_low, T_high, args=(P, zs, Hm))
+            if self.N == 1:
+                err = abs(PH_error(T_goal, P, zs, Hm))
+                if err > 1E-3:
+                    VF_goal = brenth(PH_VF_error, 0, 1, args=(P, zs, Hm))
+                    return {'VF': VF_goal}
+            return {'T': T_goal}
+
+        except ValueError:
+            if Hm_low is None:
+                pkg_low = self.to(T=T_low, P=P, zs=zs)
+                pkg_low._post_flash()
+                Hm_low = pkg_low.Hm
+            if Hm < Hm_low:
+                raise ValueError('The requested molar enthalpy cannot be found'
+                                 ' with this bounded solver because the lower '
+                                 'temperature bound %g K has an enthalpy (%g '
+                                 'J/mol) higher than that requested (%g J/mol)' %(
+                                                             T_low, Hm_low, Hm))
+            if Hm_high is None:
+                pkg_high = self.to(T=T_high, P=P, zs=zs)
+                pkg_high._post_flash()
+                Hm_high = pkg_high.Hm
+            if Hm > Hm_high:
+                raise ValueError('The requested molar enthalpy cannot be found'
+                                 ' with this bounded solver because the upper '
+                                 'temperature bound %g K has an enthalpy (%g '
+                                 'J/mol) lower than that requested (%g J/mol)' %(
+                                                             T_high, Hm_high, Hm))
+
+
+    def flash_PS_zs_bounded(self, P, Sm, zs, T_low=None, T_high=None, 
+                            Sm_low=None, Sm_high=None):
+        '''THIS DOES NOT WORK FOR PURE COMPOUNDS!!!!!!!!!!!!!
+        '''
+        # Begin the search at half the lowest chemical's melting point
+        if T_low is None:
+            T_low = min(self.Tms)/2 
+                
+        # Cap the T high search at 8x the highest critical point
+        # (will not work well for helium, etc.)
+        if T_high is None:
+            max_Tc = max(self.Tcs)
+            if max_Tc < 100:
+                T_high = 4000
+            else:
+                T_high = max_Tc*8
+    
+        temp_pkg_cache = []
+        def PS_error(T, P, zs, S_goal):
+            if not temp_pkg_cache:
+                temp_pkg = self.to(T=T, P=P, zs=zs)
+                temp_pkg_cache.append(temp_pkg)
+            else:
+                temp_pkg = temp_pkg_cache[0]
+                temp_pkg.flash(T=T, P=P, zs=zs)
+            temp_pkg._post_flash()
+            return temp_pkg.Sm - S_goal
+        
+        def PS_VF_error(VF, P, zs, S_goal):
+            if not temp_pkg_cache:
+                temp_pkg = self.to(VF=VF, P=P, zs=zs)
+                temp_pkg_cache.append(temp_pkg)
+            else:
+                temp_pkg = temp_pkg_cache[0]
+                temp_pkg.flash(VF=VF, P=P, zs=zs)
+            temp_pkg._post_flash()
+            return temp_pkg.Sm - S_goal
+        try:
+            T_goal = brenth(PS_error, T_low, T_high, args=(P, zs, Sm))
+            if self.N == 1:
+                err = abs(PS_error(T_goal, P, zs, Sm))
+                if err > 1E-3:
+                    VF_goal = brenth(PS_VF_error, 0, 1, args=(P, zs, Sm))
+                    return {'VF': VF_goal}
+            
+            
+            return {'T': T_goal}
+
+        except ValueError:
+            if Sm_low is None:
+                pkg_low = self.to(T=T_low, P=P, zs=zs)
+                pkg_low._post_flash()
+                Sm_low = pkg_low.Sm
+            if Sm < Sm_low:
+                raise ValueError('The requested molar entropy cannot be found'
+                                 ' with this bounded solver because the lower '
+                                 'temperature bound %g K has an entropy (%g '
+                                 'J/mol/K) higher than that requested (%g J/mol/K)' %(
+                                                             T_low, Sm_low, Sm))
+            if Sm_high is None:
+                pkg_high = self.to(T=T_high, P=P, zs=zs)
+                pkg_high._post_flash()
+                Sm_high = pkg_high.Sm
+            if Sm > Sm_high:
+                raise ValueError('The requested molar entropy cannot be found'
+                                 ' with this bounded solver because the upper '
+                                 'temperature bound %g K has an entropy (%g '
+                                 'J/mol/K) lower than that requested (%g J/mol/K)' %(
+                                                             T_high, Sm_high, Sm))
+
+    def flash_TS_zs_bounded(self, T, Sm, zs, P_low=None, P_high=None, 
+                            Sm_low=None, Sm_high=None):
+        # Begin the search at half the lowest chemical's melting point
+        if P_high is None:
+            if self.N == 1:
+                P_high = self.Pcs[0]
+            else:
+                P_high = self.Pdew(T, zs)*100
+        if P_low is None:
+            P_low = 1E-5 # min pressure
+
+        temp_pkg_cache = []
+        def TS_error(P, T, zs, S_goal):
+            if not temp_pkg_cache:
+                temp_pkg = self.to(T=T, P=P, zs=zs)
+                temp_pkg_cache.append(temp_pkg)
+            else:
+                temp_pkg = temp_pkg_cache[0]
+                temp_pkg.flash(T=T, P=P, zs=zs)
+            temp_pkg._post_flash()
+            return temp_pkg.Sm - S_goal
+        def TS_VF_error(VF, T, zs, S_goal):
+            if not temp_pkg_cache:
+                temp_pkg = self.to(VF=VF, T=T, zs=zs)
+                temp_pkg_cache.append(temp_pkg)
+            else:
+                temp_pkg = temp_pkg_cache[0]
+                temp_pkg.flash(VF=VF, T=T, zs=zs)
+            temp_pkg._post_flash()
+            return temp_pkg.Sm - S_goal
+        try:
+            P_goal = brenth(TS_error, P_low, P_high, args=(T, zs, Sm))
+            if self.N == 1:
+                err = abs(TS_error(P_goal, T, zs, Sm))
+                if err > 1E-3:
+                    VF_goal = brenth(TS_VF_error, 0, 1, args=(T, zs, Sm))
+                    return {'VF': VF_goal}
+            return {'P': P_goal}
+
+        except ValueError:
+            if Sm_low is None:
+                pkg_low = self.to(T=T, P=P_low, zs=zs)
+                pkg_low._post_flash()
+                Sm_low = pkg_low.Sm
+            if Sm > Sm_low:
+                raise ValueError('The requested molar entropy cannot be found'
+                                 ' with this bounded solver because the lower '
+                                 'pressure bound %g Pa has an entropy (%g '
+                                 'J/mol/K) lower than that requested (%g J/mol/K)' %(
+                                                             P_low, Sm_low, Sm))
+            if Sm_high is None:
+                pkg_high = self.to(T=T, P=P_high, zs=zs)
+                pkg_high._post_flash()
+                Sm_high = pkg_high.Sm
+            if Sm < Sm_high:
+                raise ValueError('The requested molar entropy cannot be found'
+                                 ' with this bounded solver because the upper '
+                                 'pressure bound %g Pa has an entropy (%g '
+                                 'J/mol/K) upper than that requested (%g J/mol/K)' %(
+                                                             P_high, Sm_high, Sm))
+
+class Ideal(PropertyPackage):    
     def Ks(self, T, P, zs=None):
         Psats = self._Psats(T)
         Ks = [K_value(P=P, Psat=Psat) for Psat in Psats]
@@ -700,50 +949,6 @@ class IdealCaloric(Ideal):
                        'EnthalpyVaporizations': EnthalpyVaporizations, 
                        'VolumeLiquids': VolumeLiquids}
         
-    def flash_caloric(self, zs, T=None, P=None, VF=None, Hm=None, Sm=None):
-        if not self.SUPPORTS_ZERO_FRACTIONS:
-            zs = remove_zeros(zs, self.zero_fraction)
-            
-        kwargs = {'zs': zs}
-        try:
-            if T is not None and Sm is not None:
-                kwargs['T'] = T
-                kwargs.update(self.flash_TS_zs_bounded(T=T, Sm=Sm, zs=zs))
-            elif P is not None and Sm is not None:
-                kwargs['P'] = P
-                kwargs.update(self.flash_PS_zs_bounded(P=P, Sm=Sm, zs=zs))
-            elif P is not None and Hm is not None:
-                kwargs['P'] = P
-                kwargs.update(self.flash_PH_zs_bounded(P=P, Hm=Hm, zs=zs))
-            elif ((T is not None and P is not None) or
-                (T is not None and VF is not None) or
-                (P is not None and VF is not None)):
-                kwargs['P'] = P
-                kwargs['T'] = T
-                kwargs['VF'] = VF
-            else:
-                raise Exception('Flash inputs unsupported')
-
-            self.flash(**kwargs)
-            self._post_flash()
-            self.status = True
-        except Exception as e:
-            # Write Nones for everything here
-            self.status = e
-            self._set_failure()
-            
-    def _set_failure(self):
-        self.Hm = None
-        self.Sm = None
-        self.Gm = None
-        self.chemical_potential = None
-        self.T = None
-        self.P = None
-        self.phase = None
-        self.V_over_F = None
-        self.xs = None
-        self.ys = None
-            
 
 
     def _post_flash(self):
@@ -979,7 +1184,7 @@ class IdealCaloric(Ideal):
         if self.phase == 'g':
             S -= R*log(P/101325.) # Gas-phase ideal pressure contribution (checked repeatedly)
             for i in self.cmps:
-                S += self.HeatCapacityGases[i].T_dependent_property_integral_over_T(298.15, T)
+                S += self.zs[i]*self.HeatCapacityGases[i].T_dependent_property_integral_over_T(298.15, T)
         elif self.phase == 'l':
             Psats = self._Psats(T=T)
             for i in self.cmps:
@@ -1006,205 +1211,6 @@ class IdealCaloric(Ideal):
                 S += (Sg298_to_T_zi + Svap_contrib + S_P_vapor_i + S_P_liquid_i)
         return S
 
-    def flash_PH_zs_bounded(self, P, Hm, zs, T_low=None, T_high=None, 
-                            Hm_low=None, Hm_high=None):
-        '''THIS DOES NOT WORK FOR PURE COMPOUNDS!!!!!!!!!!!!!
-        '''
-        # Begin the search at half the lowest chemical's melting point
-        if T_low is None:
-            T_low = min(self.Tms)/2 
-                
-        # Cap the T high search at 8x the highest critical point
-        # (will not work well for helium, etc.)
-        if T_high is None:
-            max_Tc = max(self.Tcs)
-            if max_Tc < 100:
-                T_high = 4000.0
-            else:
-                T_high = max_Tc*8.0
-    
-        temp_pkg_cache = []
-        def PH_error(T, P, zs, H_goal):
-            if not temp_pkg_cache:
-                temp_pkg = self.to(T=T, P=P, zs=zs)
-                temp_pkg_cache.append(temp_pkg)
-            else:
-                temp_pkg = temp_pkg_cache[0]
-                temp_pkg.flash(T=T, P=P, zs=zs)
-            temp_pkg._post_flash()
-            return temp_pkg.Hm - H_goal
-        
-        def PH_VF_error(VF, P, zs, H_goal):
-            if not temp_pkg_cache:
-                temp_pkg = self.to(VF=VF, P=P, zs=zs)
-                temp_pkg_cache.append(temp_pkg)
-            else:
-                temp_pkg = temp_pkg_cache[0]
-                temp_pkg.flash(VF=VF, P=P, zs=zs)
-            temp_pkg._post_flash()
-            return temp_pkg.Hm - H_goal
-        try:
-            T_goal = brenth(PH_error, T_low, T_high, args=(P, zs, Hm))
-            if self.N == 1:
-                err = abs(PH_error(T_goal, P, zs, Hm))
-                if err > 1E-3:
-                    VF_goal = brenth(PH_VF_error, 0, 1, args=(P, zs, Hm))
-                    return {'VF': VF_goal}
-            return {'T': T_goal}
-
-        except ValueError:
-            if Hm_low is None:
-                pkg_low = self.to(T=T_low, P=P, zs=zs)
-                pkg_low._post_flash()
-                Hm_low = pkg_low.Hm
-            if Hm < Hm_low:
-                raise ValueError('The requested molar enthalpy cannot be found'
-                                 ' with this bounded solver because the lower '
-                                 'temperature bound %g K has an enthalpy (%g '
-                                 'J/mol) higher than that requested (%g J/mol)' %(
-                                                             T_low, Hm_low, Hm))
-            if Hm_high is None:
-                pkg_high = self.to(T=T_high, P=P, zs=zs)
-                pkg_high._post_flash()
-                Hm_high = pkg_high.Hm
-            if Hm > Hm_high:
-                raise ValueError('The requested molar enthalpy cannot be found'
-                                 ' with this bounded solver because the upper '
-                                 'temperature bound %g K has an enthalpy (%g '
-                                 'J/mol) lower than that requested (%g J/mol)' %(
-                                                             T_high, Hm_high, Hm))
-
-
-    def flash_PS_zs_bounded(self, P, Sm, zs, T_low=None, T_high=None, 
-                            Sm_low=None, Sm_high=None):
-        '''THIS DOES NOT WORK FOR PURE COMPOUNDS!!!!!!!!!!!!!
-        '''
-        # Begin the search at half the lowest chemical's melting point
-        if T_low is None:
-            T_low = min(self.Tms)/2 
-                
-        # Cap the T high search at 8x the highest critical point
-        # (will not work well for helium, etc.)
-        if T_high is None:
-            max_Tc = max(self.Tcs)
-            if max_Tc < 100:
-                T_high = 4000
-            else:
-                T_high = max_Tc*8
-    
-        temp_pkg_cache = []
-        def PS_error(T, P, zs, S_goal):
-            if not temp_pkg_cache:
-                temp_pkg = self.to(T=T, P=P, zs=zs)
-                temp_pkg_cache.append(temp_pkg)
-            else:
-                temp_pkg = temp_pkg_cache[0]
-                temp_pkg.flash(T=T, P=P, zs=zs)
-            temp_pkg._post_flash()
-            return temp_pkg.Sm - S_goal
-        
-        def PS_VF_error(VF, P, zs, S_goal):
-            if not temp_pkg_cache:
-                temp_pkg = self.to(VF=VF, P=P, zs=zs)
-                temp_pkg_cache.append(temp_pkg)
-            else:
-                temp_pkg = temp_pkg_cache[0]
-                temp_pkg.flash(VF=VF, P=P, zs=zs)
-            temp_pkg._post_flash()
-            return temp_pkg.Sm - S_goal
-        try:
-            T_goal = brenth(PS_error, T_low, T_high, args=(P, zs, Sm))
-            if self.N == 1:
-                err = abs(PS_error(T_goal, P, zs, Sm))
-                if err > 1E-3:
-                    VF_goal = brenth(PS_VF_error, 0, 1, args=(P, zs, Sm))
-                    return {'VF': VF_goal}
-            
-            
-            return {'T': T_goal}
-
-        except ValueError:
-            if Sm_low is None:
-                pkg_low = self.to(T=T_low, P=P, zs=zs)
-                pkg_low._post_flash()
-                Sm_low = pkg_low.Sm
-            if Sm < Sm_low:
-                raise ValueError('The requested molar entropy cannot be found'
-                                 ' with this bounded solver because the lower '
-                                 'temperature bound %g K has an entropy (%g '
-                                 'J/mol/K) higher than that requested (%g J/mol/K)' %(
-                                                             T_low, Sm_low, Sm))
-            if Sm_high is None:
-                pkg_high = self.to(T=T_high, P=P, zs=zs)
-                pkg_high._post_flash()
-                Sm_high = pkg_high.Sm
-            if Sm > Sm_high:
-                raise ValueError('The requested molar entropy cannot be found'
-                                 ' with this bounded solver because the upper '
-                                 'temperature bound %g K has an entropy (%g '
-                                 'J/mol/K) lower than that requested (%g J/mol/K)' %(
-                                                             T_high, Sm_high, Sm))
-
-    def flash_TS_zs_bounded(self, T, Sm, zs, P_low=None, P_high=None, 
-                            Sm_low=None, Sm_high=None):
-        # Begin the search at half the lowest chemical's melting point
-        if P_high is None:
-            if self.N == 1:
-                P_high = self.Pcs[0]
-            else:
-                P_high = self.Pdew(T, zs)*100
-        if P_low is None:
-            P_low = 1E-5 # min pressure
-
-        temp_pkg_cache = []
-        def TS_error(P, T, zs, S_goal):
-            if not temp_pkg_cache:
-                temp_pkg = self.to(T=T, P=P, zs=zs)
-                temp_pkg_cache.append(temp_pkg)
-            else:
-                temp_pkg = temp_pkg_cache[0]
-                temp_pkg.flash(T=T, P=P, zs=zs)
-            temp_pkg._post_flash()
-            return temp_pkg.Sm - S_goal
-        def TS_VF_error(VF, T, zs, S_goal):
-            if not temp_pkg_cache:
-                temp_pkg = self.to(VF=VF, T=T, zs=zs)
-                temp_pkg_cache.append(temp_pkg)
-            else:
-                temp_pkg = temp_pkg_cache[0]
-                temp_pkg.flash(VF=VF, T=T, zs=zs)
-            temp_pkg._post_flash()
-            return temp_pkg.Sm - S_goal
-        try:
-            P_goal = brenth(TS_error, P_low, P_high, args=(T, zs, Sm))
-            if self.N == 1:
-                err = abs(TS_error(P_goal, T, zs, Sm))
-                if err > 1E-3:
-                    VF_goal = brenth(TS_VF_error, 0, 1, args=(T, zs, Sm))
-                    return {'VF': VF_goal}
-            return {'P': P_goal}
-
-        except ValueError:
-            if Sm_low is None:
-                pkg_low = self.to(T=T, P=P_low, zs=zs)
-                pkg_low._post_flash()
-                Sm_low = pkg_low.Sm
-            if Sm > Sm_low:
-                raise ValueError('The requested molar entropy cannot be found'
-                                 ' with this bounded solver because the lower '
-                                 'pressure bound %g Pa has an entropy (%g '
-                                 'J/mol/K) lower than that requested (%g J/mol/K)' %(
-                                                             P_low, Sm_low, Sm))
-            if Sm_high is None:
-                pkg_high = self.to(T=T, P=P_high, zs=zs)
-                pkg_high._post_flash()
-                Sm_high = pkg_high.Sm
-            if Sm < Sm_high:
-                raise ValueError('The requested molar entropy cannot be found'
-                                 ' with this bounded solver because the upper '
-                                 'pressure bound %g Pa has an entropy (%g '
-                                 'J/mol/K) upper than that requested (%g J/mol/K)' %(
-                                                             P_high, Sm_high, Sm))
         # TODO
         '''Cp_ideal, Cp_real, speed of sound -- or come up with a way for 
         mixture to better make calls to the property package. Probably both.
@@ -1965,9 +1971,75 @@ class GceosBase(Ideal):
         
         self.kwargs = kwargs
         self.kwargs['HeatCapacityGases'] = HeatCapacityGases
-                       
-
+        self.kwargs['VaporPressures'] = VaporPressures
+        self.kwargs['Tms'] = Tms
+        self.kwargs['Tcs'] = Tcs
+        self.kwargs['Pcs'] = Pcs
+        self.kwargs['omegas'] = omegas
+        self.kwargs['kijs'] = kijs
+        
 #        self.eos_mix_ref = self.eos_mix(T=self.T_REF_IG, P=self.P_REF_IG, Tcs=self.Tcs, Pcs=self.Pcs, kijs=self.kijs, **self.eos_kwargs)
+
+    def enthalpy_eosmix(self):
+        H = 0
+        T = self.T
+        P = self.P
+        if self.phase == 'g':
+            for i in self.cmps:
+                H += self.zs[i]*self.HeatCapacityGases[i].T_dependent_property_integral(self.T_REF_IG, T)
+            H += self.eos_g.H_dep_g
+        elif self.phase == 'l':
+            for i in self.cmps:
+                H += self.zs[i]*self.HeatCapacityGases[i].T_dependent_property_integral(self.T_REF_IG, T)
+            H += self.eos_l.H_dep_l
+        elif self.phase == 'l/g':
+            H_l, H_g = 0.0, 0.0
+            dH_integrals = []
+            for i in self.cmps:
+                dH_integrals.append(self.HeatCapacityGases[i].T_dependent_property_integral(self.T_REF_IG, T))
+                
+            for i in self.cmps:
+                H_g += self.ys[i]*dH_integrals[i]
+                H_l += self.xs[i]*dH_integrals[i]
+
+            H_g += self.eos_g.H_dep_g
+            H_l += self.eos_l.H_dep_l
+            H = H_g*self.V_over_F + H_l*(1.0 - self.V_over_F)
+        return H
+
+
+    def entropy_eosmix(self):
+        S = 0.0
+        T = self.T
+        P = self.P
+        S -= R*sum([zi*log(zi) for zi in self.zs if zi > 0.0]) # ideal composition entropy composition
+        if self.phase == 'g':
+            S -= R*log(P/101325.) # Not sure
+            for i in self.cmps:
+                S += self.HeatCapacityGases[i].T_dependent_property_integral_over_T(self.T_REF_IG, T)
+            S += self.eos_g.S_dep_g
+                
+        elif self.phase == 'l':
+            S -= R*log(P/101325.)
+            for i in self.cmps:
+                S += self.HeatCapacityGases[i].T_dependent_property_integral_over_T(self.T_REF_IG, T)
+            S += self.eos_l.S_dep_l
+            
+        elif self.phase == 'l/g':
+            S_l, S_g =  -R*log(P/101325.), - R*log(P/101325.)
+            dS_integrals = []
+            for i in self.cmps:
+                dS_integrals.append(self.HeatCapacityGases[i].T_dependent_property_integral_over_T(self.T_REF_IG, T))
+                
+            for i in self.cmps:
+                S_g += self.ys[i]*dS_integrals[i]
+                S_l += self.xs[i]*dS_integrals[i]
+
+            S_g += self.eos_g.S_dep_g
+            S_l += self.eos_l.S_dep_l
+            S = S_g*self.V_over_F + S_l*(1.0 - self.V_over_F)
+        return S
+
     @property
     def Cplm_dep(self):
         return self.eos_l.Cp_dep_l
@@ -2012,8 +2084,14 @@ class GceosBase(Ideal):
             self.eos_l = self.to_TP_zs(self.T, self.P, self.xs)
         if self.ys is not None:
             self.eos_g = self.to_TP_zs(self.T, self.P, self.ys)
-
-
+        # Cannot derive other properties with this
+        try:
+            self.Hm = self.enthalpy_eosmix()
+            self.Sm = self.entropy_eosmix()
+            self.Gm = self.Hm - self.T*self.Sm if (self.Hm is not None and self.Sm is not None) else None
+        except:
+            pass
+    
     def to_TP_zs(self, T, P, zs):
         return self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
                             zs=zs, kijs=self.kijs, T=T, P=P, **self.eos_kwargs)
@@ -2034,12 +2112,14 @@ class GceosBase(Ideal):
             if not stable:
                 # two phase flash with init Ks
                 break
+        
+#        print(eos.G_dep_l, 'l', eos.G_dep_g, 'g', stable)
         if stable:
             try:
                 if eos.G_dep_l < eos.G_dep_g:
-                    phase, xs, ys, VF = 'g', None, zs, 1
-                else:
                     phase, xs, ys, VF = 'l', zs, None, 0
+                else:
+                    phase, xs, ys, VF = 'g', None, zs, 1
             except:
                 # Only one root - take it and set the prefered other phase to be a different type
                 if hasattr(eos, 'Z_l'):
