@@ -22,7 +22,8 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['K_value', 'Wilson_K_value', 'Rachford_Rice_flash_error', 
+__all__ = ['K_value', 'Wilson_K_value', 'flash_wilson', 'flash_Tb_Tc_Pc',
+           'Rachford_Rice_flash_error', 
            'Rachford_Rice_solution',
            'Li_Johns_Ahmadi_solution', 'flash_inner_loop', 'NRTL', 'Wilson',
            'UNIQUAC', 'flash', 'dew_at_T',
@@ -31,7 +32,7 @@ __all__ = ['K_value', 'Wilson_K_value', 'Rachford_Rice_flash_error',
            'Pdew_mixture']
 
 from fluids.numerics import brenth, IS_PYPY, one_epsilon_larger, one_epsilon_smaller
-from fluids.numerics import py_newton as newton # Always use this method for advanced features
+from fluids.numerics import brenth, py_newton as newton # Always use this method for advanced features
 from thermo.utils import exp, log
 from thermo.utils import none_and_length_check
 from thermo.utils import R
@@ -223,6 +224,317 @@ def Wilson_K_value(T, P, Tc, Pc, omega):
        AIChE Meeting, Cleveland, OH, 1969.
     '''
     return Pc/P*exp((5.37*(1.0 + omega)*(1.0 - Tc/T)))
+
+
+def flash_wilson(zs, Tcs, Pcs, omegas, T=None, P=None, VF=None):
+    r'''PVT flash model using Wilson's equation - useful for obtaining initial
+    guesses for more rigorous models, or it can be used as its own model.
+    Capable of solving with two of `T`, `P`, and `VF` for the other one;
+    that results in three solve modes, but for `VF=1` and `VF=0`, there are 
+    additional solvers; for a total of seven solvers implemented.
+    
+    This model uses `flash_inner_loop` to solve the Rachford-Rice problem.
+    
+    .. math::
+        K_i = \frac{P_c}{P} \exp\left(5.37(1+\omega)\left[1 - \frac{T_c}{T}
+        \right]\right)
+    
+    Parameters
+    ----------
+    zs : list[float]
+        Mole fractions of the phase being flashed, [-]
+    Tcs : list[float]
+        Critical temperatures of all species, [K]
+    Pcs : list[float]
+        Critical pressures of all species, [Pa]
+    omegas : list[float]
+        Acentric factors of all species, [-]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    VF : float, optional
+        Molar vapor fraction, [-]
+        
+    Returns
+    -------
+    T : float
+        Temperature, [K]
+    P : float
+        Pressure, [Pa]
+    VF : float
+        Molar vapor fraction, [-]
+    xs : list[float]
+        Mole fractions of liquid phase, [-]
+    ys : list[float]
+        Mole fractions of vapor phase, [-]
+    
+    Notes
+    -----
+    For the cases where `VF` is 1 or 0 and T is known, an explicit solution is
+    used. For the same cases where `P` and `VF` are known, there is no explicit
+    solution available.
+    
+    There is an internal `Tmax` parameter, set to 50000 K; which, in the event
+    of convergence of the Secant method, is used as a bounded for a bounded 
+    solver. It is used in the PVF solvers. This typically allows pressures
+    up to 2 GPa to be converged to. However, for narrow-boiling mixtures, the
+    PVF failure may occur at much lower pressures.
+
+    Examples
+    --------
+    >>> Tcs = [305.322, 540.13]
+    >>> Pcs = [4872200.0, 2736000.0]
+    >>> omegas = [0.099, 0.349]
+    >>> zs = [0.4, 0.6]
+    >>> flash_wilson(zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas, T=300, P=1e5)
+    (300, 100000.0, 0.42219453293637355, [0.020938815080034565, 0.9790611849199654], [0.9187741856225791, 0.08122581437742094])
+    '''
+    T_MAX = 50000
+    N = len(zs)
+    cmps = range(N)
+    # Assume T and P to begin with
+    if T is not None and P is not None:
+        Ks = [Wilson_K_value(T, P, Tc=Tcs[i], Pc=Pcs[i], omega=omegas[i]) for i in cmps]
+        return (T, P) + flash_inner_loop(zs=zs, Ks=Ks)
+    if T is not None and VF == 0:
+        P_bubble = 0.0
+        for i in cmps:
+            P_bubble += zs[i]*Pcs[i]*exp((5.37*(1.0 + omegas[i])*(1.0 - Tcs[i]/T)))
+        return flash_wilson(zs, Tcs, Pcs, omegas, T=T, P=P_bubble)
+    if T is not None and VF == 1:
+        P_dew = 0.
+        for i in cmps:
+            P_dew += zs[i]/(Pcs[i]*exp((5.37*(1.0 + omegas[i])*(1.0 - Tcs[i]/T))))
+        P_dew = 1./P_dew
+        return flash_wilson(zs, Tcs, Pcs, omegas, T=T, P=P_dew)
+    elif T is not None and VF is not None:
+        # Solve for in the middle of Pdew
+        P_low = flash_wilson(zs, Tcs, Pcs, omegas, T=T, VF=1)[1]
+        P_high = flash_wilson(zs, Tcs, Pcs, omegas, T=T, VF=0)[1]
+        info = []
+        def err(P):
+            T_calc, P_calc, VF_calc, xs, ys = flash_wilson(zs, Tcs, Pcs, omegas, T=T, P=P)
+            info[:] = T_calc, P_calc, VF_calc, xs, ys
+            return VF_calc - VF
+        P = brenth(err, P_low, P_high)
+        return tuple(info)
+    elif P is not None and VF == 1:
+        def to_solve(T_guess):
+            # Avoid some nasty unpleasantness in newton
+            T_guess = abs(T_guess)
+            P_dew = 0.
+            for i in range(len(zs)):
+                P_dew += zs[i]/(Pcs[i]*exp((5.37*(1.0 + omegas[i])*(1.0 - Tcs[i]/T_guess))))
+            P_dew = 1./P_dew
+#            print(P_dew - P, T_guess)
+            return P_dew - P
+        # 2/3 average critical point
+        T_guess = sum([.666*Tcs[i]*zs[i] for i in cmps])
+        try:
+            T_dew = abs(newton(to_solve, T_guess, maxiter=50))
+        except:
+            T_dew = None
+        if T_dew is None or T_dew > T_MAX*5.0: 
+            # Went insanely high T, bound it with brenth
+            T_low_guess = sum([.1*Tcs[i]*zs[i] for i in cmps])
+            try:
+                T_dew = brenth(to_solve, T_MAX, T_low_guess)
+            except ValueError:
+                raise Exception("Bisecting solver could not find a solution between %g K and %g K" %(T_MAX, T_low_guess))
+        return flash_wilson(zs, Tcs, Pcs, omegas, T=T_dew, P=P)
+    elif P is not None and VF == 0:
+        def to_solve(T_guess):
+            T_guess = abs(T_guess)
+            P_bubble = 0.0
+            for i in cmps:
+                P_bubble += zs[i]*Pcs[i]*exp((5.37*(1.0 + omegas[i])*(1.0 - Tcs[i]/T_guess)))
+            return P_bubble - P
+        # 2/3 average critical point
+        T_guess = sum([.55*Tcs[i]*zs[i] for i in cmps])
+        T_bubble = abs(newton(to_solve, T_guess))
+        if T_bubble > T_MAX*5.0: 
+            # Went insanely high T, bound it with brenth
+            T_low_guess = sum([.1*Tcs[i]*zs[i] for i in cmps])
+            try:
+                T_bubble = brenth(to_solve, T_MAX, T_low_guess)
+            except ValueError:
+                raise Exception("Bisecting solver could not find a solution between %g K and %g K" %(T_MAX, T_low_guess))
+            
+        return flash_wilson(zs, Tcs, Pcs, omegas, T=T_bubble, P=P)
+    elif P is not None and VF is not None:
+        # Solve for in the middle of Pdew
+        T_low = flash_wilson(zs, Tcs, Pcs, omegas, P=P, VF=1)[0]
+        T_high = flash_wilson(zs, Tcs, Pcs, omegas, P=P, VF=0)[0]
+#        print(T_low, T_high)
+        info = []
+        def err(T):
+            T_calc, P_calc, VF_calc, xs, ys = flash_wilson(zs, Tcs, Pcs, omegas, T=T, P=P)
+#            if abs(VF_calc) > 100: # Did not work at all
+#                VF_calc = abs(VF_calc)
+            info[:] = T_calc, P_calc, VF_calc, xs, ys
+#            print(T, VF_calc - VF)
+            return VF_calc - VF
+        # Nasty function for tolerance; the default works and is good enough, could remove some
+        # iterations in the fuure
+        P = brenth(err, T_low, T_high, xtol=1e-14)
+        return tuple(info)
+    else:
+        raise ValueError("Provide two of P, T, and VF")
+
+
+def flash_Tb_Tc_Pc(zs, Tbs, Tcs, Pcs, T=None, P=None, VF=None):
+    r'''PVT flash model using a model published in [1]_, which provides a PT
+    surface  using only each compound's boiling temperature and critical 
+    temperature and pressure. This is useful for obtaining initial
+    guesses for more rigorous models, or it can be used as its own model.
+    Capable of solving with two of `T`, `P`, and `VF` for the other one;
+    that results in three solve modes, but for `VF=1` and `VF=0`, there are 
+    additional solvers; for a total of seven solvers implemented.
+    
+    This model uses `flash_inner_loop` to solve the Rachford-Rice problem.
+    
+    .. math::
+        K_i = \frac{P_{c,i}^{\left(\frac{1}{T} - \frac{1}{T_{b,i}} \right) / 
+        \left(\frac{1}{T_{c,i}} - \frac{1}{T_{b,i}} \right)}}{P}
+        
+    Parameters
+    ----------
+    zs : list[float]
+        Mole fractions of the phase being flashed, [-]
+    Tbs : list[float]
+        Boiling temperatures of all species, [K]
+    Tcs : list[float]
+        Critical temperatures of all species, [K]
+    Pcs : list[float]
+        Critical pressures of all species, [Pa]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    VF : float, optional
+        Molar vapor fraction, [-]
+        
+    Returns
+    -------
+    T : float
+        Temperature, [K]
+    P : float
+        Pressure, [Pa]
+    VF : float
+        Molar vapor fraction, [-]
+    xs : list[float]
+        Mole fractions of liquid phase, [-]
+    ys : list[float]
+        Mole fractions of vapor phase, [-]
+        
+    Notes
+    -----
+    For the cases where `VF` is 1 or 0 and T is known, an explicit solution is
+    used. For the same cases where `P` and `VF` are known, there is no explicit
+    solution available.
+    
+    There is an internal `Tmax` parameter, set to 50000 K; which, in the event
+    of convergence of the Secant method, is used as a bounded for a bounded 
+    solver. It is used in the PVF solvers. This typically allows pressures
+    up to 2 MPa to be converged to. Failures may still occur for other 
+    conditions.
+
+    Examples
+    --------
+    >>> Tcs = [305.322, 540.13]
+    >>> Pcs = [4872200.0, 2736000.0]
+    >>> Tbs = [184.55, 371.53]
+    >>> zs = [0.4, 0.6]
+    >>> flash_Tb_Tc_Pc(zs=zs, Tcs=Tcs, Pcs=Pcs, Tbs=Tbs, T=300, P=1e5)
+    (300, 100000.0, 0.3807040748145384, [0.031157843036568357, 0.9688421569634317], [0.9999999998827085, 1.1729141887515062e-10])
+    '''
+    T_MAX = 50000
+    N = len(zs)
+    cmps = range(N)
+    # Assume T and P to begin with
+    if T is not None and P is not None:
+        Ks = [Pcs[i]**((1.0/T - 1.0/Tbs[i])/(1.0/Tcs[i] - 1.0/Tbs[i]))/P for i in cmps]
+        return (T, P) + flash_inner_loop(zs=zs, Ks=Ks)
+    
+    if T is not None and VF == 0:
+        P_bubble = 0.0
+        for i in cmps:
+            P_bubble += zs[i]*Pcs[i]**((1.0/T - 1.0/Tbs[i])/(1.0/Tcs[i] - 1.0/Tbs[i]))
+        return flash_Tb_Tc_Pc(zs, Tbs, Tcs, Pcs, T=T, P=P_bubble)
+    if T is not None and VF == 1:
+        # Checked to be working vs. PT implementation.
+        P_dew = 0.
+        for i in cmps:
+            P_dew += zs[i]/( Pcs[i]**((1.0/T - 1.0/Tbs[i])/(1.0/Tcs[i] - 1.0/Tbs[i])) )
+        P_dew = 1./P_dew
+        return flash_Tb_Tc_Pc(zs, Tbs, Tcs, Pcs, T=T, P=P_dew)
+    elif T is not None and VF is not None:
+        # Solve for in the middle of Pdew
+        P_low = flash_Tb_Tc_Pc(zs, Tbs, Tcs, Pcs, T=T, VF=1)[1]
+        P_high = flash_Tb_Tc_Pc(zs, Tbs, Tcs, Pcs, T=T, VF=0)[1]
+        info = []
+        def err(P):
+            T_calc, P_calc, VF_calc, xs, ys = flash_Tb_Tc_Pc(zs, Tbs, Tcs, Pcs, T=T, P=P)
+            info[:] = T_calc, P_calc, VF_calc, xs, ys
+            return VF_calc - VF
+        P = brenth(err, P_low, P_high)
+        return tuple(info)
+
+    elif P is not None and VF == 1:
+        def to_solve(T_guess):
+            T_guess = abs(T_guess)
+            P_dew = 0.
+            for i in range(len(zs)):
+                P_dew += zs[i]/( Pcs[i]**((1.0/T_guess - 1.0/Tbs[i])/(1.0/Tcs[i] - 1.0/Tbs[i])) )
+            P_dew = 1./P_dew
+            return P_dew - P
+
+        T_guess = sum([.666*Tcs[i]*zs[i] for i in cmps])
+        try:
+            T_dew = abs(newton(to_solve, T_guess, maxiter=50))
+        except:
+            T_dew = None
+        if T_dew is None or T_dew > T_MAX*5.0: 
+            # Went insanely high T, bound it with brenth
+            T_low_guess = sum([.1*Tcs[i]*zs[i] for i in cmps])
+            try:
+                T_dew = brenth(to_solve, T_MAX, T_low_guess)
+            except ValueError:
+                raise Exception("Bisecting solver could not find a solution between %g K and %g K" %(T_MAX, T_low_guess))
+        return flash_Tb_Tc_Pc(zs, Tbs, Tcs, Pcs, T=T_dew, P=P)
+    
+    elif P is not None and VF == 0:
+        def to_solve(T_guess):
+            T_guess = abs(T_guess)
+            P_bubble = 0.0
+            for i in cmps:
+                P_bubble += zs[i]*Pcs[i]**((1.0/T_guess - 1.0/Tbs[i])/(1.0/Tcs[i] - 1.0/Tbs[i]))
+            return P_bubble - P
+        # 2/3 average critical point
+        T_guess = sum([.55*Tcs[i]*zs[i] for i in cmps])
+        T_bubble = abs(newton(to_solve, T_guess))
+        if T_bubble > T_MAX*5.0: 
+            # Went insanely high T, bound it with brenth
+            T_low_guess = sum([.1*Tcs[i]*zs[i] for i in cmps])
+            try:
+                T_bubble = brenth(to_solve, T_MAX, T_low_guess)
+            except ValueError:
+                raise Exception("Bisecting solver could not find a solution between %g K and %g K" %(T_MAX, T_low_guess))
+            
+        return flash_Tb_Tc_Pc(zs, Tbs, Tcs, Pcs, T=T_bubble, P=P)
+    elif P is not None and VF is not None:
+        T_low = flash_Tb_Tc_Pc(zs, Tbs, Tcs, Pcs, P=P, VF=1)[0]
+        T_high = flash_Tb_Tc_Pc(zs, Tbs, Tcs, Pcs, P=P, VF=0)[0]
+        info = []
+        def err(T):
+            T_calc, P_calc, VF_calc, xs, ys = flash_Tb_Tc_Pc(zs, Tbs, Tcs, Pcs, T=T, P=P)
+            info[:] = T_calc, P_calc, VF_calc, xs, ys
+            return VF_calc - VF
+        P = brenth(err, T_low, T_high)
+        return tuple(info)
+    else:
+        raise ValueError("Provide two of P, T, and VF")
 
 
 ### Solutions using a existing algorithms

@@ -749,7 +749,7 @@ class GCEOSMIX(GCEOS):
                   sum([abs(y_new - y_old) for y_new, y_old in zip(ys_new, ys)]))
 #            print(err)
             xs, ys = xs_new, ys_new
-#            print(xs, ys, 'xs, ys')
+#            print('err', err, 'xs, ys', xs, ys, 'Ks', Ks)
             if err < xtol:
                 break
             if i == maxiter-1:

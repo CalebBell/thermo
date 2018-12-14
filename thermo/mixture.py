@@ -783,6 +783,11 @@ class Mixture(object):
     def set_property_package(self, pkg=None):
         if pkg is None:
             from thermo.property_package import IdealCaloric as pkg
+#            self.property_package_constants = pkg # Store for use elsewhere
+        if pkg.__class__.__name__ == 'PropertyPackageConstants':
+            self.property_package = pkg.pkg
+            self.property_package_constants = pkg # Store for use elsewhere
+            return True
         
         eos_mix = type(self.eos_in_a_box[0]) if self.eos_in_a_box else PRMIX
 

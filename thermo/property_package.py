@@ -2189,11 +2189,10 @@ class GceosBase(Ideal):
         elif 1.0 in zs:
             raise NotImplemented
         
-        # Disable bubbles and dew for now = need to refactor to get everything about them
-        if VF == 0 and False:
-            T = self.bubble_T(P=P, zs=zs)
-        elif VF == 1 and False:
-            T = self.dew_T(P=P, zs=zs)
+        if VF == 0:
+            xs, ys, VF, T = self.bubble_T(P=P, zs=zs)
+        elif VF == 1:
+            xs, ys, VF, T = self.dew_T(P=P, zs=zs)
         else:
             res = [None]
             def err(T):
@@ -2235,33 +2234,39 @@ class GceosBase(Ideal):
             return 'l/g', list(zs), list(zs), VF, Psats[zs.index(1.0)]
 
         # Disable bubbles and dew for now = need to refactor to get everything about them
-        if VF == 0 and False:
-            P = self.bubble_P(T=T, zs=zs)
-        elif VF == 1 and False:
-            P = self.dew_P(T=T, zs=zs)
+        if VF == 0:
+            xs, ys, VF, P = self.bubble_P(T=T, zs=zs)
+        elif VF == 1:
+            xs, ys, VF, P = self.dew_P(T=T, zs=zs)
         else:
             res = [None]
             def err(P):
+                P = float(P)
+#                print('P guess', P)
                 eos = self.to_TP_zs(T=T, P=P, zs=zs)
                 VF_calc, xs, ys = eos.sequential_substitution_VL(Ks_initial=None, 
                                                                  maxiter=self.substitution_maxiter,
                                                                  xtol=self.substitution_xtol, 
-                                                                 allow_error=False,
-                                                                 xs=xs_guess, ys=ys_guess)
+                                                                 allow_error=True,
+                                                                 xs=xs_guess, ys=ys_guess
+                                                                 )
                 res[0] = (VF_calc, xs, ys)
 #                print(P, VF_calc - VF, res)
                 return VF_calc - VF
             
             _, xs_guess, ys_guess, _, P_guess_as_pure = self.flash_TVF_zs_ideal(T=T, VF=VF, zs=zs)
             P = None
+#            print('P_guess_as_pure', P_guess_as_pure)
             try:
                 P = newton(err, P_guess_as_pure, xtol=self.FLASH_VF_TOL)
-            except:
+            except Exception as e:
+#                print(e, 'newton failed')
                 pass
             if P is None:
                 try:
-                    P = fsolve(err, P_guess_as_pure)
-                except:
+                    P = fsolve(err, P_guess_as_pure, xtol=self.FLASH_VF_TOL)
+                except Exception as e:
+#                    print(e, 'fsolve failed')
                     pass
 #            print(P, 'worked!')
             if P is None:
@@ -2272,7 +2277,7 @@ class GceosBase(Ideal):
 
 
 
-    def _err_bubble_T(self, T, P, zs, maxiter=200, xtol=1E-10):
+    def _err_bubble_T(self, T, P, zs, maxiter=200, xtol=1E-10, info=None):
         T = float(T)
         Ks = [Wilson_K_value(T, P, Tci, Pci, omega) for Pci, Tci, omega in zip(self.Pcs, self.Tcs, self.omegas)]
         V_over_F, xs, ys = flash_inner_loop(zs, Ks)
@@ -2295,26 +2300,33 @@ class GceosBase(Ideal):
             xs, ys = xs_new, ys_new
             if err < xtol:
                 break
+        if info is not None:
+            info[:] = xs, ys, Ks, eos_l, eos_g, V_over_F
         return V_over_F
-    
-    def bubble_T(self, P, zs, maxiter=200, xtol=1E-10, maxiter_initial=20, xtol_initial=1e-3):
-#        guess = get_T_bub_est(P=P, zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs)
+
+
+    def bubble_T(self, P, zs, maxiter=200, xtol=1E-10, maxiter_initial=20, xtol_initial=1e-3,
+                 T_guess=None):
+        info = []
         try:
-            T_guess_as_pure = self.flash_PVF_zs_ideal(P=P, VF=0, zs=zs)[4]
-    #        print('bubble T guess', T_guess_as_pure)
+            if T_guess is None:
+                T_guess = self.flash_PVF_zs_ideal(P=P, VF=0, zs=zs)[4]
+    #        print('bubble T guess', T_guess)
             # Simplest solution method
             try:
-                T = newton(self._err_bubble_T, T_guess_as_pure, args=(P, zs, maxiter, xtol))
+                T = newton(self._err_bubble_T, T_guess, args=(P, zs, maxiter, xtol, info), xtol=self.FLASH_VF_TOL)
             except:
-                T = float(fsolve(self._err_bubble_T, T_guess_as_pure, factor=.1, args=(P, zs, maxiter, xtol)))
-#            print(T, T_guess_as_pure)
-            return T
+                T = float(fsolve(self._err_bubble_T, T_guess, factor=.1, xtol=self.FLASH_VF_TOL, args=(P, zs, maxiter, xtol, info)))
+#            print(T, T_guess)
+            return info[0], info[1], info[5], T
         except Exception as e:
 #            print('bubble T - fsolve failed with:'  + str(e))
             pass
 
         Tmin, Tmax = self._bracket_bubble_T(P=P, zs=zs, maxiter=maxiter_initial, xtol=xtol_initial)
-        return ridder(self._err_bubble_T, Tmin, Tmax, args=(P, zs, maxiter, xtol))
+        T = ridder(self._err_bubble_T, Tmin, Tmax, args=(P, zs, maxiter, xtol, info))
+        return info[0], info[1], info[5], T
+
 
 
     def _bracket_bubble_T(self, P, zs, maxiter, xtol):
@@ -2411,7 +2423,7 @@ class GceosBase(Ideal):
         return T_high, T_low
 
 
-    def _err_dew_T(self, T, P, zs, maxiter=200, xtol=1E-10):
+    def _err_dew_T(self, T, P, zs, maxiter=200, xtol=1E-10, info=None):
         T = float(T)
         Ks = [Wilson_K_value(T, P, Tci, Pci, omega) for Pci, Tci, omega in zip(self.Pcs, self.Tcs, self.omegas)]
         V_over_F, xs, ys = flash_inner_loop(zs, Ks)
@@ -2431,30 +2443,36 @@ class GceosBase(Ideal):
             xs, ys = xs_new, ys_new
             if err < xtol:
                 break
+            
+        if info is not None:
+            info[:] = xs, ys, Ks, eos_l, eos_g, V_over_F
         return V_over_F - 1.0
 
 
-    def dew_T(self, P, zs, maxiter=200, xtol=1E-10, maxiter_initial=20, xtol_initial=1e-3):
-#        guess = get_T_dew_est(P=P, zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs)
+    def dew_T(self, P, zs, maxiter=200, xtol=1E-10, maxiter_initial=20, xtol_initial=1e-3,
+              T_guess=None):
+        info = []
         try:
-            T_guess_as_pure = self.flash_PVF_zs_ideal(P=P, VF=1, zs=zs)[4]
+            if T_guess is None:
+                T_guess = self.flash_PVF_zs_ideal(P=P, VF=1, zs=zs)[4]
             try:
-                T = newton(self._err_dew_T, T_guess_as_pure, args=(P, zs, maxiter, xtol))
+                T = newton(self._err_dew_T, T_guess, xtol=self.FLASH_VF_TOL, args=(P, zs, maxiter, xtol, info))
             except:
-                T = float(fsolve(self._err_dew_T, T_guess_as_pure, factor=.1, args=(P, zs, maxiter, xtol)))
-#            print(T, T_guess_as_pure)
-            return T
+                T = float(fsolve(self._err_dew_T, T_guess, factor=.1, xtol=self.FLASH_VF_TOL, args=(P, zs, maxiter, xtol, info)))
+#            print(T, T_guess)
+            return info[0], info[1], info[5], T
         except Exception as e:
             pass
 
         Tmin, Tmax = self._bracket_dew_T(P=P, zs=zs, maxiter=maxiter_initial, xtol=xtol_initial)
-        T_calc = ridder(self._err_dew_T, Tmin, Tmax, args=(P, zs, maxiter, xtol))
+        T_calc = ridder(self._err_dew_T, Tmin, Tmax, args=(P, zs, maxiter, xtol, info))
         val = self._err_dew_T(T_calc, P, zs, maxiter, xtol)
         if abs(val) < 1:
-            return T_calc
-        Tmin, Tmax = self._bracket_dew_T(P=P, zs=zs, maxiter=maxiter_initial, xtol=xtol_initial, check=True)
-        return ridder(self._err_dew_T, Tmin, Tmax, args=(P, zs, maxiter, xtol))
-
+            T = T_calc
+        else:
+            Tmin, Tmax = self._bracket_dew_T(P=P, zs=zs, maxiter=maxiter_initial, xtol=xtol_initial, check=True)
+            T=  ridder(self._err_dew_T, Tmin, Tmax, args=(P, zs, maxiter, xtol, info))
+        return info[0], info[1], info[5], T
 
 
     def _bracket_dew_P(self, T, zs, maxiter, xtol, check=False):
@@ -2508,7 +2526,7 @@ class GceosBase(Ideal):
         return P_high, P_low
 
 
-    def _err_dew_P(self, P, T, zs, maxiter=200, xtol=1E-10):
+    def _err_dew_P(self, P, T, zs, maxiter=200, xtol=1E-10, info=None):
         P = float(P)
         Ks = [Wilson_K_value(T, P, Tci, Pci, omega) for Pci, Tci, omega in zip(self.Pcs, self.Tcs, self.omegas)]
         V_over_F, xs, ys = flash_inner_loop(zs, Ks)
@@ -2528,26 +2546,32 @@ class GceosBase(Ideal):
             xs, ys = xs_new, ys_new
             if err < xtol:
                 break
+            
+        if info is not None:
+            info[:] = xs, ys, Ks, eos_l, eos_g, V_over_F
         return V_over_F - 1.0
 
-    def dew_P(self, T, zs, maxiter=200, xtol=1E-10, maxiter_initial=20, xtol_initial=1e-3):
-#        guess = get_P_dew_est(T=T, zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs)
-        P_guess_as_pure = None
+    def dew_P(self, T, zs, maxiter=200, xtol=1E-10, maxiter_initial=20, xtol_initial=1e-3,
+              P_guess=None):
+        info = []
         try:
             # Simplest solution method
-            P_guess_as_pure = self.flash_TVF_zs_ideal(T=T, VF=1, zs=zs)[4]
+            if P_guess is None:
+                P_guess = self.flash_TVF_zs_ideal(T=T, VF=1, zs=zs)[4]
+            print(P_guess)
             try:
-                P = newton(self._err_dew_P, P_guess_as_pure, args=(T, zs, maxiter, xtol))
+                P = newton(self._err_dew_P, P_guess, xtol=self.FLASH_VF_TOL, args=(T, zs, maxiter, xtol, info))
             except:
-                P = float(fsolve(self._err_dew_P, P_guess_as_pure, factor=.1, args=(T, zs, maxiter, xtol)))
+                P = float(fsolve(self._err_dew_P, P_guess, xtol=self.FLASH_VF_TOL, factor=.1, args=(T, zs, maxiter, xtol, info)))
 #            print(P, P_guess_as_pure)
-            return P
+            return info[0], info[1], info[5], P
         except Exception as e:
-            print(P_guess_as_pure, e)
+            print(P_guess, e)
             pass
 
         Pmin, Pmax = self._bracket_dew_P(T=T, zs=zs, maxiter=maxiter_initial, xtol=xtol_initial)
-        return ridder(self._err_dew_P, Pmin, Pmax, args=(T, zs, maxiter, xtol))
+        P = ridder(self._err_dew_P, Pmin, Pmax, args=(T, zs, maxiter, xtol, info))
+        return info[0], info[1], info[5], P
 
 
     def _bracket_bubble_P(self, T, zs, maxiter, xtol, check=False):
@@ -2587,8 +2611,9 @@ class GceosBase(Ideal):
         P_low = negative_Ps[negative_VFs.index(max(negative_VFs))]
         return P_high, P_low
 
-    def _err_bubble_P(self, P, T, zs, maxiter=200, xtol=1E-10):
+    def _err_bubble_P(self, P, T, zs, maxiter=200, xtol=1E-10, info=None):
         P = float(P)
+#        print('P', P)
         Ks = [Wilson_K_value(T, P, Tci, Pci, omega) for Pci, Tci, omega in zip(self.Pcs, self.Tcs, self.omegas)]
         V_over_F, xs, ys = flash_inner_loop(zs, Ks)
 
@@ -2598,33 +2623,51 @@ class GceosBase(Ideal):
         for i in range(maxiter):
             eos_g = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
                              zs=ys, kijs=self.kijs, T=T, P=P, **self.eos_kwargs)
-    
-            Ks = [K_value(phi_l=l, phi_g=g) for l, g in zip(eos_l.phis_l, eos_g.phis_g)]
+            
+#            try:
+            phis_g = eos_g.phis_g
+#            except AttributeError:
+##                print('using liquid phis to avoid failure')
+#                phis_g = eos_g.phis_l
+            Ks = [K_value(phi_l=l, phi_g=g) for l, g in zip(eos_l.phis_l, phis_g)]
+                
             V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks)
             err = (sum([abs(x_new - x_old) for x_new, x_old in zip(xs_new, xs)]) +
                   sum([abs(y_new - y_old) for y_new, y_old in zip(ys_new, ys)]))
+#            if not (any(i < 0.0 for i in xs_new) or any(i < 0.0 for i in ys_new)):
+                # No point to this check - halts convergence
             xs, ys = xs_new, ys_new
+#            print('err', err, 'xs, ys', xs, ys)
             if err < xtol:
                 break
+        
+        if info is not None:
+            info[:] = xs, ys, Ks, eos_l, eos_g, V_over_F
         return V_over_F
 
-    def bubble_P(self, T, zs, maxiter=200, xtol=1E-10, maxiter_initial=20, xtol_initial=1e-3):
+    def bubble_P(self, T, zs, maxiter=200, xtol=1E-10, maxiter_initial=20, xtol_initial=1e-3,
+                 P_guess=None):
+        info = []
 #        guess = get_P_bub_est(T=T, zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs)
         try:
             # Simplest solution method
-            P_guess_as_pure = self.flash_TVF_zs_ideal(T=T, VF=0, zs=zs)[4]
-#            return float(fsolve(self._err_bubble_P, P_guess_as_pure, factor=.1, args=(T, zs, maxiter, xtol)))
+            if P_guess is None:
+                P_guess = self.flash_TVF_zs_ideal(T=T, VF=0, zs=zs)[4]
+#            return float(fsolve(self._err_bubble_P, P_guess, factor=.1, args=(T, zs, maxiter, xtol)))
             # Newton is twice as fast with pypy
             try:
-                P = float(newton(self._err_bubble_P, P_guess_as_pure, args=(T, zs, maxiter, xtol)))
-            except:
-                P = float(fsolve(self._err_bubble_P, P_guess_as_pure, factor=.1, args=(T, zs, maxiter, xtol)))
-#            print(P_guess_as_pure, P)
-            return P
+                P = float(newton(self._err_bubble_P, P_guess, xtol=self.FLASH_VF_TOL, args=(T, zs, maxiter, xtol, info)))
+            except Exception as e:
+#                print(e)
+                P = float(fsolve(self._err_bubble_P, P_guess, xtol=self.FLASH_VF_TOL, factor=.1, args=(T, zs, maxiter, xtol, info)))
+            print(P_guess, P)
+            return info[0], info[1], info[5], P
+        
         except Exception as e:
+#            print(e)
             pass
 
         Pmin, Pmax = self._bracket_bubble_P(T=T, zs=zs, maxiter=maxiter_initial, xtol=xtol_initial)
-        return ridder(self._err_bubble_P, Pmin, Pmax, args=(T, zs, maxiter, xtol))
-
+        P = ridder(self._err_bubble_P, Pmin, Pmax, args=(T, zs, maxiter, xtol, info))
+        return info[0], info[1], info[5], P
 

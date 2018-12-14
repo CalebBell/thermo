@@ -1983,6 +1983,8 @@ class PR(GCEOS):
     
     # Constant part of `b`, (X/(X+3)).evalf(40)
     c2 = 0.0777960739038884559718447100373331839711
+
+#    c1, c2 = 0.45724, 0.07780
     
     # Zc is the mechanical compressibility for mixtures as well.
     Zc = 0.3074013086987038480093850966542222720096

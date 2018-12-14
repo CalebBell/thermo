@@ -386,7 +386,8 @@ class StreamArgs(object):
         self.Vf_TP = Vf_TP
         self.Q_TP = Q_TP
         
-        self.pkg = self.property_package = pkg
+        # pkg should be either a property package or property package constants
+        self.pkg = self.property_package = self.property_package_constants = pkg
             
     
     @property
@@ -494,14 +495,15 @@ class StreamArgs(object):
                  n=self.n, m=self.m, Q=self.Q, 
                  T=self.T, P=self.P, VF=self.VF, H=self.H, S=self.S, 
                  Hm=self.Hm, Sm=self.Sm, 
-                 Vf_TP=self.Vf_TP, Q_TP=self.Q_TP, energy=self.energy)
+                 Vf_TP=self.Vf_TP, Q_TP=self.Q_TP, energy=self.energy,
+                 pkg=self.property_package)
         
     @property
     def mixture(self):
         if self.IDs and self.composition_specified and self.state_specified:
             return Mixture(IDs=self.IDs, zs=self.zs, ws=self.ws, Vfls=self.Vfls, Vfgs=self.Vfgs,
                  T=self.T, P=self.P, VF=self.VF, H=self.H, S=self.S, Hm=self.Hm, Sm=self.Sm, 
-                 Vf_TP=self.Vf_TP)
+                 Vf_TP=self.Vf_TP, pkg=self.property_package)
 
 class Stream(Mixture):
     '''Creates a Stream object which is useful for modeling mass and energy 

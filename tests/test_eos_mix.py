@@ -1102,3 +1102,71 @@ def test_APISRKMIX_quick():
     # Gas phase only test point
     a = APISRKMIX(T=300, P=1E7, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
     assert_allclose(a.phis_g, [1.020708538988692, 0.8725461195162044]) 
+
+
+def test_fugacities_PR_vs_coolprop():
+    # Going to break when new constant is added
+    import CoolProp.CoolProp as CP
+    zs = [0.4, 0.6]
+    Tcs = [305.322, 540.13]
+    Pcs = [4872200.0, 2736000.0]
+    omegas = [0.099, 0.349]
+    kij = .0067
+    kijs = [[0,kij],[kij,0]]
+    c1, c2 = PRMIX.c1, PRMIX.c2
+    # match coolprop
+    PRMIX.c1, PRMIX.c2 = 0.45724, 0.07780
+
+    T, P = 300, 1e5
+    eos = PRMIX(T=T, P=P, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=kijs)
+
+    AS = CP.AbstractState("PR", "Ethane&Heptane")
+    AS.set_mole_fractions(zs)
+    AS.set_binary_interaction_double(0,1,"kij", kij)
+    AS.update(CP.PT_INPUTS, P, T)
+
+    fugacities_CP = [AS.fugacity(0), AS.fugacity(1)]
+    assert_allclose(fugacities_CP, eos.fugacities_g, rtol=1e-13)
+
+    T, P = 300, 1e6
+    eos = PRMIX(T=T, P=P, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=kijs)
+    AS.update(CP.PT_INPUTS, P, T)
+    fugacities_CP = [AS.fugacity(0), AS.fugacity(1)]
+    assert_allclose(fugacities_CP, eos.fugacities_l, rtol=1e-14)
+    
+    # Set the coefficients back
+    PRMIX.c1, PRMIX.c2 = c1, c2
+
+
+def test_fugacities_SRK_vs_coolprop():
+    # Going to break when new constant is added
+    import CoolProp.CoolProp as CP
+    zs = [0.4, 0.6]
+    Tcs = [305.322, 540.13]
+    Pcs = [4872200.0, 2736000.0]
+    omegas = [0.099, 0.349]
+    kij = .0067
+    kijs = [[0,kij],[kij,0]]
+    c1, c2 = SRKMIX.c1, SRKMIX.c2
+    # match coolprop
+    SRKMIX.c1, SRKMIX.c2 = 0.42747, 0.08664
+    
+    T, P = 300, 1e5
+    eos = SRKMIX(T=T, P=P, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=kijs)
+    
+    AS = CP.AbstractState("SRK", "Ethane&Heptane")
+    AS.set_mole_fractions(zs)
+    AS.set_binary_interaction_double(0,1,"kij", kij)
+    AS.update(CP.PT_INPUTS, P, T)
+    
+    fugacities_CP = [AS.fugacity(0), AS.fugacity(1)]
+    assert_allclose(fugacities_CP, eos.fugacities_g, rtol=1e-13)
+    
+    T, P = 300, 1e6
+    eos = SRKMIX(T=T, P=P, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=kijs)
+    AS.update(CP.PT_INPUTS, P, T)
+    fugacities_CP = [AS.fugacity(0), AS.fugacity(1)]
+    assert_allclose(fugacities_CP, eos.fugacities_l, rtol=1e-14)
+    
+    # Set the coefficients back
+    SRKMIX.c1, SRKMIX.c2 = c1, c2

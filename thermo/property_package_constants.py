@@ -68,6 +68,8 @@ property_package_names_to_objs = {IDEAL_PKG: IdealCaloric,
                                   NRTL_PKG: Nrtl, # Not complete  - enthalpy missing
                                   UNIFAC_PKG: UnifacCaloric,
                                   UNIFAC_DORTMUND_PKG: UnifacDortmundCaloric,
+                                  PR_PKG: GceosBase,
+                                  SRK_PKG: GceosBase,
                                  }
 
 
