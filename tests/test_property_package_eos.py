@@ -102,7 +102,7 @@ def test_ternary_4_flashes_2_algorithms():
         P_dews.append(pkg.P)
         
     assert_allclose(P_bubbles, P_bubbles_expect, rtol=5e-6)
-    assert_allclose(P_dews, P_dews_expect, rtol=5e-6)
+    assert_allclose(P_dews, P_dews_expect, rtol=5e-5)
     
     # For each point, solve it as a T problem.
     for P, T in zip(P_bubbles, Ts):
@@ -248,3 +248,234 @@ def test_failing_sequential_subs():
     pkg.to_TP_zs(T=180, P=4, zs=zs).sequential_substitution_VL(maxiter=10,xtol=1E-7)
 
 
+
+
+def test_PRMIX_pkg_H():
+    zs = [0.4, 0.6]
+    m = Mixture(['Ethane', 'Heptane'], zs=zs, T=300, P=1E6)
+    
+    kij = .0
+    kijs = [[0,kij],[kij,0]]
+    Tcs = [305.322, 540.13]
+    Pcs = [4872200.0, 2736000.0]
+    omegas = [0.099, 0.349]
+    
+    pkg = GceosBase(eos_mix=PRMIX, VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, 
+                    Tcs=Tcs, Pcs=Pcs, omegas=omegas, 
+                    kijs=kijs, eos_kwargs=None,
+                 HeatCapacityGases=m.HeatCapacityGases)
+    pkg.FLASH_VF_TOL = 1e-12
+
+    # Case  gas -gas pressure difference
+    pkg.flash(T=450, P=400, zs=m.zs)
+    H1 = pkg.Hm
+    assert pkg.phase == 'g'
+    pkg.flash(T=450, P=1e6, zs=m.zs)
+    H2 = pkg.Hm
+    assert pkg.phase == 'g'
+    assert_allclose(H1 - H2, 1638.19303081, rtol=1e-3)
+    
+    # Case gas to VF= = 0 at same T 
+    pkg.flash(T=350, P=400, zs=m.zs)
+    assert pkg.phase == 'g'
+    H1 = pkg.Hm
+    pkg.flash(T=350, VF=.5, zs=m.zs)
+    assert pkg.phase == 'l/g'
+    H2 = pkg.Hm
+    assert_allclose(H1 - H2, 16445.143155, rtol=1e-3)
+    
+    
+    # Higher pressure, less matching (gas constant diff probably; gas-liquid difference! No partial phase.)
+    pkg.flash(T=450, P=400, zs=m.zs)
+    assert pkg.phase == 'g'
+    H1 = pkg.Hm
+    pkg.flash(T=450, P=1e8, zs=m.zs)
+    assert pkg.phase == 'l'
+    H2 = pkg.Hm
+    H1 - H2
+    assert_allclose(H1 - H2, 13815.6666172, rtol=1e-3)
+    
+    # low P fluid to saturation pressure (both gas)
+    pkg.flash(T=450, P=400, zs=m.zs)
+    assert pkg.phase == 'g'
+    H1 = pkg.Hm
+    H1 = pkg.Hm
+    pkg.flash(T=450, VF=1, zs=m.zs)
+    assert pkg.phase == 'g'
+    H2 = pkg.Hm
+    H2 = pkg.Hm
+    assert_allclose(H1 - H2, 2003.84468984, rtol=1e-3)
+    
+    # low pressure gas to liquid saturated 
+    pkg.flash(T=350, P=400, zs=m.zs)
+    assert pkg.phase == 'g'
+    H1 = pkg.Hm
+    pkg.flash(T=350, VF=0, zs=m.zs)
+    assert pkg.phase == 'l'
+    H2 = pkg.Hm
+    assert_allclose(H1 - H2, 23682.3468207, rtol=1e-3)
+    
+    # High pressure liquid to partial evaporation
+    pkg.flash(T=350, P=3e6, zs=m.zs)
+    assert pkg.phase == 'l'
+    H1 = pkg.Hm
+    pkg.flash(T=350, VF=.25, zs=m.zs)
+    assert pkg.phase == 'l/g'
+    H2 = pkg.Hm
+    assert_allclose(H1 - H2, -2328.21259061, rtol=1e-3)
+    
+    # High pressure temperature change
+    pkg.flash(T=300, P=3e6, zs=m.zs)
+    assert pkg.phase == 'l'
+    H1 = pkg.Hm
+    pkg.flash(T=400, P=1e7, zs=m.zs)
+    assert pkg.phase == 'l'
+    H2 = pkg.Hm
+    assert_allclose(H1 - H2, -18470.2994798, rtol=1e-3)
+    
+    # High pressure temperature change and phase change
+    pkg.flash(T=300, P=3e6, zs=m.zs)
+    assert pkg.phase == 'l'
+    H1 = pkg.Hm
+    pkg.flash(T=400, P=1e5, zs=m.zs)
+    assert pkg.phase == 'g'
+    H2 = pkg.Hm
+    H1 - H2
+    assert_allclose(H1 - H2, -39430.7145672, rtol=1e-3)
+    
+def test_PRMIX_pkg_S():
+    zs = [0.4, 0.6]
+    m = Mixture(['Ethane', 'Heptane'], zs=zs, T=300, P=1E6)
+    
+    kij = .0
+    kijs = [[0,kij],[kij,0]]
+    Tcs = [305.322, 540.13]
+    Pcs = [4872200.0, 2736000.0]
+    omegas = [0.099, 0.349]
+    
+    pkg = GceosBase(eos_mix=PRMIX, VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, 
+                    Tcs=Tcs, Pcs=Pcs, omegas=omegas, 
+                    kijs=kijs, eos_kwargs=None,
+                 HeatCapacityGases=m.HeatCapacityGases)
+    pkg.FLASH_VF_TOL = 1e-12
+    
+    
+    # Case  gas -gas pressure difference
+    pkg.flash(T=450, P=400, zs=m.zs)
+    S1 = pkg.Sm
+    assert pkg.phase == 'g'
+    pkg.flash(T=450, P=1e6, zs=m.zs)
+    S2 = pkg.Sm
+    assert pkg.phase == 'g'
+    assert_allclose(S1 - S2, 67.59095157604824, rtol=1e-3)
+    
+    # Case gas to VF= = 0 at same T 
+    pkg.flash(T=350, P=400, zs=m.zs)
+    assert pkg.phase == 'g'
+    S1 = pkg.Sm
+    pkg.flash(T=350, VF=.5, zs=m.zs)
+    assert pkg.phase == 'l/g'
+    S2 = pkg.Sm
+    assert_allclose(S1 - S2, 96.84959621651315, rtol=1e-3)
+    
+    
+    # Higher pressure, less matching (gas constant diff probably; gas-liquid difference! No partial phase.)
+    pkg.flash(T=450, P=400, zs=m.zs)
+    assert pkg.phase == 'g'
+    S1 = pkg.Sm
+    pkg.flash(T=450, P=1e8, zs=m.zs)
+    assert pkg.phase == 'l'
+    S2 = pkg.Sm
+    S1 - S2
+    assert_allclose(S1 - S2, 128.67194096593366, rtol=1e-3)
+    
+    # low P fluid to saturation pressure (both gas)
+    pkg.flash(T=450, P=400, zs=m.zs)
+    assert pkg.phase == 'g'
+    H1 = pkg.Hm
+    S1 = pkg.Sm
+    pkg.flash(T=450, VF=1, zs=m.zs)
+    assert pkg.phase == 'g'
+    H2 = pkg.Hm
+    S2 = pkg.Sm
+    assert_allclose(S1 - S2, 69.64345358808025, rtol=1e-3)
+    
+    # low pressure gas to liquid saturated 
+    pkg.flash(T=350, P=400, zs=m.zs)
+    assert pkg.phase == 'g'
+    S1 = pkg.Sm
+    pkg.flash(T=350, VF=0, zs=m.zs)
+    assert pkg.phase == 'l'
+    S2 = pkg.Sm
+    assert_allclose(S1 - S2, 124.44419797042649, rtol=1e-3)
+    
+    # High pressure liquid to partial evaporation
+    pkg.flash(T=350, P=3e6, zs=m.zs)
+    assert pkg.phase == 'l'
+    S1 = pkg.Sm
+    pkg.flash(T=350, VF=.25, zs=m.zs)
+    assert pkg.phase == 'l/g'
+    S2 = pkg.Sm
+    assert_allclose(S1 - S2, -7.913399921816193, rtol=1e-3)
+    
+    # High pressure temperature change
+    pkg.flash(T=300, P=3e6, zs=m.zs)
+    assert pkg.phase == 'l'
+    S1 = pkg.Sm
+    pkg.flash(T=400, P=1e7, zs=m.zs)
+    assert pkg.phase == 'l'
+    S2 = pkg.Sm
+    assert_allclose(S1 - S2, -50.38050604000216, atol=1)
+    
+    # High pressure temperature change and phase change
+    pkg.flash(T=300, P=3e6, zs=m.zs)
+    assert pkg.phase == 'l'
+    S1 = pkg.Sm
+    pkg.flash(T=400, P=1e5, zs=m.zs)
+    assert pkg.phase == 'g'
+    S2 = pkg.Sm
+    S1 - S2
+    assert_allclose(S1 - S2, -124.39457107124854, atol=1)
+    
+def test_PRMIX_pkg_extras():
+    # TODO add more properties as they are added
+    zs = [0.4, 0.6]
+    m = Mixture(['Ethane', 'Heptane'], zs=zs, T=300, P=1E6)
+    
+    kij = .0
+    kijs = [[0,kij],[kij,0]]
+    Tcs = [305.322, 540.13]
+    Pcs = [4872200.0, 2736000.0]
+    omegas = [0.099, 0.349]
+    
+    pkg = GceosBase(eos_mix=PRMIX, VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, 
+                    Tcs=Tcs, Pcs=Pcs, omegas=omegas, 
+                    kijs=kijs, eos_kwargs=None,
+                 HeatCapacityGases=m.HeatCapacityGases)
+    
+    
+    pkg.flash(T=400, P=1e5, zs=m.zs)
+    assert 'g' == pkg.phase
+    
+    assert_allclose(pkg.eos_g.H_dep_g, -179.77096245871508, rtol=1e-5)
+    assert_allclose(pkg.eos_g.S_dep_g, -0.2971318950892263, rtol=1e-5)
+    assert_allclose(pkg.Hgm_dep, -179.77096245871508, rtol=5e-5)
+    assert_allclose(pkg.Sgm_dep, -0.2971318950892263, rtol=5e-5)
+    
+    assert_allclose(pkg.Cpgm, 153.32126587681677, rtol=1e-3)
+    assert_allclose(pkg.Cvgm, 144.3920626710827, rtol=1e-3) # :)
+    assert_allclose(pkg.Cpgm_dep, 0.7139646058820279, rtol=1e-5)
+    assert_allclose(pkg.Cvgm_dep, 0.09922120014794993, rtol=1e-5) #? maybe issue
+    
+    pkg.flash(T=300, P=1e7, zs=m.zs)
+    assert 'l' == pkg.phase
+    
+    assert_allclose(pkg.eos_l.H_dep_l, -25490.54123032457, rtol=5e-5)
+    assert_allclose(pkg.eos_l.S_dep_l, -48.47646403887194, rtol=5e-5)
+    assert_allclose(pkg.Hlm_dep, -25490.54123, rtol=1e-4)
+    assert_allclose(pkg.Slm_dep, -48.47646403887194, rtol=1e-4)
+    
+    assert_allclose(pkg.Cplm, 160.5756363050434, rtol=1e-3)
+    assert_allclose(pkg.Cvlm, 133.7943922248561, rtol=1e-3) # :)
+    assert_allclose(pkg.Cplm_dep, 39.8813153015303, rtol=5e-5)
+    assert_allclose(pkg.Cvlm_dep, 21.414531021342995, rtol=5e-5) #? maybe issue

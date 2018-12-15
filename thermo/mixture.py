@@ -504,6 +504,7 @@ class Mixture(object):
     T_default = 298.15
     P_default = 101325.
     autoflash = True # Whether or not to flash on init
+    property_package_constants = None
 
     def __repr__(self):
         txt = '<Mixture, components=%s, mole fractions=%s' % (self.names, [round(i,4) for i in self.zs])
