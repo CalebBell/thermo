@@ -369,19 +369,22 @@ class PropertyPackage(object):
         if self.N != 2:
             raise Exception('xy plotting requires a mixture of exactly two components')
         
-        z1 = np.linspace(0, 1, pts)
+        z1 = np.linspace(1e-8, 1-1e-8, pts)
         z2 = 1 - z1
         y1_bubble = []
         x1_bubble = []
         for i in range(pts):
-            if T is not None:
-                self.flash(T=T, VF=self.PHASE_ROUNDING_TOL*2, zs=[z1[i], z2[i]])
-#                print(T, self.xs, self.ys, self.V_over_F)
-            elif P is not None:
-                self.flash(P=P, VF=self.PHASE_ROUNDING_TOL*2, zs=[z1[i], z2[i]])
-#                print(P, self.xs, self.ys, self.V_over_F, self.zs)
-            x1_bubble.append(self.xs[0])
-            y1_bubble.append(self.ys[0])
+            try:
+                if T is not None:
+                    self.flash(T=T, VF=self.PHASE_ROUNDING_TOL*2, zs=[float(z1[i]), float(z2[i])])
+    #                print(T, self.xs, self.ys, self.V_over_F)
+                elif P is not None:
+                    self.flash(P=P, VF=self.PHASE_ROUNDING_TOL*2, zs=[float(z1[i]), float(z2[i])])
+    #                print(P, self.xs, self.ys, self.V_over_F, self.zs)
+                x1_bubble.append(self.xs[0])
+                y1_bubble.append(self.ys[0])
+            except Exception as e:
+                print('Failed on pt %d' %(i), e)
         if T:
             plt.title('xy diagram at T=%s K (varying P)' %T)
         else:
@@ -2215,8 +2218,8 @@ class GceosBase(Ideal):
         assert 0 <= VF <= 1
         if self.N == 1:
             raise NotImplemented
-        elif 1.0 in zs:
-            raise NotImplemented
+#        elif 1.0 in zs:
+#            raise NotImplemented
         
         if VF == 0:
             xs, ys, VF, T = self.bubble_T(P=P, zs=zs)
@@ -2226,6 +2229,7 @@ class GceosBase(Ideal):
             res = [None]
             def err(T):
                 eos = self.to_TP_zs(T=T, P=P, zs=zs)
+#                print(eos.zs, 'eos.zs before loop')
                 VF_calc, xs, ys = eos.sequential_substitution_VL(Ks_initial=None, 
                                                                  maxiter=self.substitution_maxiter,
                                                                  xtol=self.substitution_xtol, 
@@ -2236,6 +2240,7 @@ class GceosBase(Ideal):
                 return VF_calc - VF
             
             _, xs_guess, ys_guess, _, T_guess_as_pure = self.flash_PVF_zs_ideal(P=P, VF=VF, zs=zs)
+#            print(xs_guess, ys_guess, 'hi')
             T = None
             try:
                 T = newton(err, T_guess_as_pure, xtol=self.FLASH_VF_TOL)
@@ -2258,9 +2263,9 @@ class GceosBase(Ideal):
         if self.N == 1:
             raise NotImplemented
             return 'l/g', [1.0], [1.0], VF, Psats[0]
-        elif 1.0 in zs:
-            raise NotImplemented
-            return 'l/g', list(zs), list(zs), VF, Psats[zs.index(1.0)]
+#        elif 1.0 in zs:
+#            raise NotImplemented
+#            return 'l/g', list(zs), list(zs), VF, Psats[zs.index(1.0)]
 
         # Disable bubbles and dew for now = need to refactor to get everything about them
         if VF == 0:
@@ -2863,7 +2868,7 @@ class GceosBase(Ideal):
                                                   xs_guess=xs)
                 return info[0], info[1], info[5], P
             except Exception as e:
-                print(e, 'dew_P_Michelsen_Mollerup falure')
+#                print(e, 'dew_P_Michelsen_Mollerup falure')
                 pass
 
             # Simplest solution method
@@ -2871,15 +2876,18 @@ class GceosBase(Ideal):
                 P = newton(self._err_dew_P, P_guess, xtol=self.FLASH_VF_TOL, 
                            args=(T, zs, maxiter, xtol, info))
             except Exception as e:
-                print('newton failed dew_P', e)
+#                print('newton failed dew_P', e)
+                pass
             if P is None:
                 try:
                     P = float(fsolve(self._err_dew_P, P_guess, xtol=self.FLASH_VF_TOL,
                                      factor=.1, args=(T, zs, maxiter, xtol, info)))
                 except Exception as e:
-                    print('fsolve failed dew_P', e)
+#                    print('fsolve failed dew_P', e)
+                    pass
 #            print(P, P_guess_as_pure)
-            return info[0], info[1], info[5], P
+            if P is not None:
+                return info[0], info[1], info[5], P
 
 
         Pmin, Pmax = self._bracket_dew_P(T=T, zs=zs, maxiter=maxiter_initial, xtol=xtol_initial)
@@ -3043,7 +3051,7 @@ class GceosBase(Ideal):
                                                      ys_guess=ys)
                 return info[0], info[1], info[5], P
             except Exception as e:
-                print(e, 'bubble_P_Michelsen_Mollerup falure')
+#                print(e, 'bubble_P_Michelsen_Mollerup falure')
                 pass
         
             try:
@@ -3051,8 +3059,11 @@ class GceosBase(Ideal):
                                  args=(T, zs, maxiter, xtol, info)))
             except Exception as e:
 #                print(e)
-                P = float(fsolve(self._err_bubble_P, P_guess, xtol=self.FLASH_VF_TOL,
-                                 factor=.1, args=(T, zs, maxiter, xtol, info)))
+                try:
+                    P = float(fsolve(self._err_bubble_P, P_guess, xtol=self.FLASH_VF_TOL,
+                                     factor=.1, args=(T, zs, maxiter, xtol, info)))
+                except Exception as e:
+                    pass
 #            print(P_guess, P)
             return info[0], info[1], info[5], P
             

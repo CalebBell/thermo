@@ -191,6 +191,7 @@ class GCEOSMIX(GCEOS):
 #                z_products[i][j] = z_products[j][i] = zs[i]*zs[j]
                 
         # Faster than an optimized loop in pypy even
+#        print(self.N, self.cmps, zs)
         z_products = [[zs[i]*zs[j] for j in self.cmps] for i in self.cmps]
 
         a_alpha = 0.0
@@ -689,14 +690,14 @@ class GCEOSMIX(GCEOS):
     def sequential_substitution_VL(self, Ks_initial=None, maxiter=1000,
                                    xtol=1E-10, allow_error=True, Ks_extra=None,
                                    xs=None, ys=None):
-        if Ks_initial is None:
-            Ks = [Wilson_K_value(self.T, self.P, Tci, Pci, omega)  for Pci, Tci, omega in zip(self.Pcs, self.Tcs, self.omegas)]
-        else:
-            Ks = Ks_initial
 #        print(self.zs, Ks)
         if xs is not None and ys is not None:
             pass
         else:
+            if Ks_initial is None:
+                Ks = [Wilson_K_value(self.T, self.P, Tci, Pci, omega)  for Pci, Tci, omega in zip(self.Pcs, self.Tcs, self.omegas)]
+            else:
+                Ks = Ks_initial
             xs = None
             try:
                 V_over_F, xs, ys = flash_inner_loop(self.zs, Ks)
@@ -711,7 +712,7 @@ class GCEOSMIX(GCEOS):
             if xs is None:
                 raise(e)
         
-#        print(xs, ys,V_over_F)
+#        print(xs, ys, 'innerloop')
         for i in range(maxiter):
             if allow_error:
                 eos_g = self.to_TP_zs(T=self.T, P=self.P, zs=ys)
