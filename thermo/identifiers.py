@@ -811,6 +811,7 @@ def mixture_from_any(ID):
 
 
 def IDs_to_CASs(IDs):
+    CASs = None
     if hasattr(IDs, 'strip') or (isinstance(IDs, list) and len(IDs) == 1):
         try:
             # Assume the name was a pre-defined mixture
@@ -820,9 +821,10 @@ def IDs_to_CASs(IDs):
         except:
             if hasattr(IDs, 'strip'):
                 CASs = [IDs]
-            else:
-                raise Exception('Could not recognize the mixture IDs')
-    else:
+#            else:
+#                pass
+#                raise Exception('Could not recognize the mixture IDs')
+    if CASs is None:
         CASs = [CAS_from_any(ID) for ID in IDs]
     return CASs
 

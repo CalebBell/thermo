@@ -50,7 +50,7 @@ from copy import copy
 from random import uniform, shuffle, seed
 import numpy as np
 from scipy.optimize import golden, brent, minimize, fmin_slsqp, fsolve
-from fluids.numerics import brenth, ridder, derivative, py_newton as newton
+from fluids.numerics import brenth, ridder, derivative, py_newton as newton, linspace
 
 from thermo.utils import log, exp
 from thermo.utils import has_matplotlib, R, pi, N_A
@@ -303,22 +303,37 @@ class PropertyPackage(object):
         
         self._post_flash()
         
-    def plot_Pxy(self, T, pts=30, display=True): # pragma: no cover
-        if not has_matplotlib:
+    def plot_Pxy(self, T, pts=30, display=True, ignore_errors=True,
+                 values=False): # pragma: no cover
+        if not has_matplotlib and values is not False:
             raise Exception('Optional dependency matplotlib is required for plotting')
         if self.N != 2:
             raise Exception('Pxy plotting requires a mixture of exactly two components')
-        z1 = np.linspace(0, 1, pts)
-        z2 = 1 - z1
+        z1 = linspace(0, 1, pts)
+        z2 = [1.0 - zi for zi in z1]
         Ps_dew = []
         Ps_bubble = []
         
         for i in range(pts):
-            self.flash(T=T, VF=0, zs=[z1[i], z2[i]])
-            Ps_bubble.append(self.P)
-            self.flash(T=T, VF=1, zs=[z1[i], z2[i]])
-            Ps_dew.append(self.P)
-            
+            try:
+                self.flash(T=T, VF=0, zs=[z1[i], z2[i]])
+                Ps_bubble.append(self.P)
+            except Exception as e:
+                if ignore_errors:
+                    Ps_bubble.append(None)
+                else:
+                    raise e
+            try:
+                self.flash(T=T, VF=1, zs=[z1[i], z2[i]])
+                Ps_dew.append(self.P)
+            except Exception as e:
+                if ignore_errors:
+                    Ps_dew.append(None)
+                else:
+                    raise e
+        if values:
+            return z1, z2, Ps_bubble, Ps_dew
+
         plt.title('Pxy diagram at T=%s K' %T)
         plt.plot(z1, Ps_dew, label='Dew pressure')
         plt.plot(z1, Ps_bubble, label='Bubble pressure')
@@ -330,13 +345,14 @@ class PropertyPackage(object):
         else:
             return plt
         
-    def plot_Txy(self, P, pts=30, display=True, ignore_errors=True): # pragma: no cover
-        if not has_matplotlib:
+    def plot_Txy(self, P, pts=30, display=True, ignore_errors=True,
+                 values=False): # pragma: no cover
+        if not has_matplotlib and values is not False:
             raise Exception('Optional dependency matplotlib is required for plotting')
         if self.N != 2:
             raise Exception('Txy plotting requires a mixture of exactly two components')
-        z1 = np.linspace(0, 1, pts)
-        z2 = 1 - z1
+        z1 = linspace(0, 1, pts)
+        z2 = [1.0 - zi for zi in z1]
         Ts_dew = []
         Ts_bubble = []
         
@@ -344,14 +360,21 @@ class PropertyPackage(object):
             try:
                 self.flash(P=P, VF=0, zs=[z1[i], z2[i]])
                 Ts_bubble.append(self.T)
-            except:
-                Ts_bubble.append(None)
+            except Exception as e:
+                if ignore_errors:
+                    Ts_bubble.append(None)
+                else:
+                    raise e
             try:
                 self.flash(P=P, VF=1, zs=[z1[i], z2[i]])
                 Ts_dew.append(self.T)
-            except:
-                Ts_dew.append(None)
-            
+            except Exception as e:
+                if ignore_errors:
+                    Ts_dew.append(None)
+                else:
+                    raise e
+        if values:
+            return z1, z2, Ts_bubble, Ts_dew
         plt.title('Txy diagram at P=%s Pa' %P)
         plt.plot(z1, Ts_dew, label='Dew temperature, K')
         plt.plot(z1, Ts_bubble, label='Bubble temperature, K')
@@ -400,8 +423,9 @@ class PropertyPackage(object):
         else:
             return plt
         
-    def plot_TP(self, zs, Tmin=None, Tmax=None, pts=50, branches=[]): # pragma: no cover
-        if not has_matplotlib:
+    def plot_TP(self, zs, Tmin=None, Tmax=None, pts=50, branches=[],
+                ignore_errors=True, values=False): # pragma: no cover
+        if not has_matplotlib and not values:
             raise Exception('Optional dependency matplotlib is required for plotting')
         if not Tmin:
             Tmin = min(self.Tms)
@@ -413,16 +437,38 @@ class PropertyPackage(object):
         branch = bool(len(branches))
         if branch:
             branch_Ps = [[] for i in range(len(branches))]
+        else:
+            branch_Ps = None
         for T in Ts:
-            self.flash(T=T, VF=0, zs=zs)
-            P_bubbles.append(self.P)
-            self.flash(T=T, VF=1, zs=zs)
-            P_dews.append(self.P)
+            try:
+                self.flash(T=T, VF=0, zs=zs)
+                P_bubbles.append(self.P)
+            except Exception as e:
+                if ignore_errors:
+                    P_bubbles.append(None)
+                else:
+                    raise e
+            try:
+                self.flash(T=T, VF=1, zs=zs)
+                P_dews.append(self.P)
+            except Exception as e:
+                if ignore_errors:
+                    P_dews.append(None)
+                else:
+                    raise e
+
             if branch:
                 for VF, Ps in zip(branches, branch_Ps):
-                    self.flash(T=T, VF=VF, zs=zs)
-                    Ps.append(self.P)
-        
+                    try:
+                        self.flash(T=T, VF=VF, zs=zs)
+                        Ps.append(self.P)
+                    except Exception as e:
+                        if ignore_errors:
+                            Ps.append(None)
+                        else:
+                            raise e
+        if values:
+            return Ts, P_dews, P_bubbles, branch_Ps
         plt.plot(Ts, P_dews, label='PT dew point curve')
         plt.plot(Ts, P_bubbles, label='PT bubble point curve')
         plt.xlabel('System temperature, K')
@@ -2345,55 +2391,23 @@ class GceosBase(Ideal):
             T_guess_old = T_guess
             T_guess = T_guess - f_k/dfk_dT
             ys = [zs[i]*Ks[i] for i in cmps]
+            y_sum = sum(ys)
+            ys = [y/y_sum for y in ys]
+            
 #            print(ys, T_guess, abs(T_guess - T_guess_old), dfk_dT)
             if abs(T_guess - T_guess_old) < xtol:
                 break
             
             if info is not None:
                 info[:] = zs, ys, Ks, eos_l, eos_g, 0.0
+                
+                
+                
+        if abs(T_guess - T_guess_old) > xtol:
+            raise ValueError("Did not converge to specified tolerance")
         return T_guess
 
 
-    def dew_T_Michelsen_Mollerup(self, T_guess, P, zs, maxiter=200, 
-                                 xtol=1E-10, info=None, xs_guess=None):
-        # Does not have any formulation available
-        N = len(zs)
-        cmps = range(N)
-        
-        xs = zs if xs_guess is None else xs_guess
-        for i in range(maxiter):
-            eos_g = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
-                                 zs=zs, kijs=self.kijs, T=T_guess, P=P, **self.eos_kwargs)
-
-            eos_l = eos_g.to_TP_zs(T=eos_g.T, P=eos_g.P, zs=xs)
-            
-            ln_phis_l, ln_phis_g = eos_l.lnphis_l, eos_g.lnphis_g
-            Ks = [exp(a - b) for a, b in zip(ln_phis_l, ln_phis_g)]
-    
-            f_k = sum([zs[i]/Ks[i] for i in cmps]) - 1.0
-            
-            dT = 5e-3
-            eos2_g = eos_g.to_TP_zs(T=eos_g.T+dT, P=eos_g.P, zs=zs)
-            eos2_l = eos_g.to_TP_zs(T=eos_g.T+dT, P=eos_g.P, zs=xs)
-            
-            d_ln_phis_dT_l = [(eos2_l.lnphis_l[i] - ln_phis_l[i])/dT for i in cmps]
-            d_ln_phis_dT_g = [(eos2_g.lnphis_g[i] - ln_phis_g[i])/dT for i in cmps]
-            dfk_dT = 0.0
-            for i in cmps:
-                dfk_dT += zs[i]/Ks[i]*( d_ln_phis_dT_g[i] - d_ln_phis_dT_l[i])
-            
-            T_guess_old = T_guess
-            T_guess = T_guess - f_k/dfk_dT
-            xs = [zs[i]/Ks[i] for i in cmps]
-#            print(xs, T_guess, abs(T_guess - T_guess_old), dfk_dT)
-            if abs(T_guess - T_guess_old) < xtol:
-                break
-            
-            if info is not None:
-                info[:] = xs, zs, Ks, eos_l, eos_g, 1.0
-        return T_guess
-        
-        
 
 #    def _err_bubble_T2(self, T, P, zs, maxiter=200, xtol=1E-10, info=None,
 #                      xs_guess=None, y_guess=None):
@@ -2498,7 +2512,7 @@ class GceosBase(Ideal):
                 T = self.bubble_T_Michelsen_Mollerup(T_guess=T_guess, P=P, zs=zs, info=info, xtol=self.FLASH_VF_TOL)
                 return info[0], info[1], info[5], T
             except Exception as e:
-#                print(e, 'bubble_T_Michelsen_Mollerup falure')
+                print(e, 'bubble_T_Michelsen_Mollerup falure')
                 pass
             
             
@@ -2645,6 +2659,55 @@ class GceosBase(Ideal):
             info[:] = xs, ys, Ks, eos_l, eos_g, V_over_F
         return V_over_F - 1.0
 
+    def dew_T_Michelsen_Mollerup(self, T_guess, P, zs, maxiter=200, 
+                                 xtol=1E-10, info=None, xs_guess=None):
+        # Does not have any formulation available
+        N = len(zs)
+        cmps = range(N)
+        
+        xs = zs if xs_guess is None else xs_guess
+        for i in range(maxiter):
+            eos_g = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
+                                 zs=zs, kijs=self.kijs, T=T_guess, P=P, **self.eos_kwargs)
+
+            eos_l = eos_g.to_TP_zs(T=eos_g.T, P=eos_g.P, zs=xs)
+            
+            ln_phis_l, ln_phis_g = eos_l.lnphis_l, eos_g.lnphis_g
+            Ks = [exp(a - b) for a, b in zip(ln_phis_l, ln_phis_g)]
+    
+            f_k = sum([zs[i]/Ks[i] for i in cmps]) - 1.0
+            
+            dT = 5e-3
+            eos2_g = eos_g.to_TP_zs(T=eos_g.T+dT, P=eos_g.P, zs=zs)
+            eos2_l = eos_g.to_TP_zs(T=eos_g.T+dT, P=eos_g.P, zs=xs)
+            
+            d_ln_phis_dT_l = [(eos2_l.lnphis_l[i] - ln_phis_l[i])/dT for i in cmps]
+            d_ln_phis_dT_g = [(eos2_g.lnphis_g[i] - ln_phis_g[i])/dT for i in cmps]
+            dfk_dT = 0.0
+            for i in cmps:
+                dfk_dT += zs[i]/Ks[i]*( d_ln_phis_dT_g[i] - d_ln_phis_dT_l[i])
+            
+            T_guess_old = T_guess
+            T_guess = T_guess - f_k/dfk_dT
+            xs = [zs[i]/Ks[i] for i in cmps]
+            x_sum = sum(xs)
+            xs = [x/x_sum for x in xs]
+            
+            
+#            print(xs, T_guess, abs(T_guess - T_guess_old), dfk_dT)
+            if abs(T_guess - T_guess_old) < xtol:
+                break
+            
+            if info is not None:
+                info[:] = xs, zs, Ks, eos_l, eos_g, 1.0
+                
+        if abs(T_guess - T_guess_old) > xtol:
+            raise ValueError("Did not converge to specified tolerance")
+                
+        return T_guess
+        
+        
+
     def dew_T_guess(self, P, zs, method):
         if method == 'Wilson':
             return flash_wilson(zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, P=P, VF=1)
@@ -2678,18 +2741,23 @@ class GceosBase(Ideal):
         info = []
         for T_guess, xs, ys in self.dew_T_guesses(P=P, zs=zs, T_guess=T_guess):
             try:
-                T = self.dew_T_Michelsen_Mollerup(T_guess=T_guess, P=P, zs=zs, info=info, xtol=self.FLASH_VF_TOL)
+                T = self.dew_T_Michelsen_Mollerup(T_guess=T_guess, P=P, zs=zs, info=info,
+                                                  xtol=self.FLASH_VF_TOL, xs_guess=xs)
                 return info[0], info[1], info[5], T
             except Exception as e:
                 print(e, 'dew_T_Michelsen_Mollerup falure')
                 pass
             try:
-                if T_guess is None:
-                    T_guess = self.flash_PVF_zs_ideal(P=P, VF=1, zs=zs)[4]
                 try:
                     T = newton(self._err_dew_T, T_guess, xtol=self.FLASH_VF_TOL, args=(P, zs, maxiter, xtol, info))
-                except:
-                    T = float(fsolve(self._err_dew_T, T_guess, factor=.1, xtol=self.FLASH_VF_TOL, args=(P, zs, maxiter, xtol, info)))
+                except Exception as e:
+                    print('dew_T newton failed with %g K guess' %(T_guess), e)
+                    try:
+                        T = float(fsolve(self._err_dew_T, T_guess, factor=.1, xtol=self.FLASH_VF_TOL, args=(P, zs, maxiter, xtol, info)))
+                    except Exception as e:
+                        print('dew_T fsolve failed with %g K guess' %(T_guess), e)
+                        continue
+
     #            print(T, T_guess)
                 return info[0], info[1], info[5], T
             except Exception as e:
@@ -2801,7 +2869,7 @@ class GceosBase(Ideal):
             f_k = sum([zs[i]/Ks[i] for i in cmps]) - 1.0
             
             # Analytical derivative might help here
-            dP = min(P_guess*(1e-3), 10)
+            dP = min(P_guess*(1e-4), 10)
 #            print(dP, P_guess)
             eos2_g = eos_g.to_TP_zs(T=eos_g.T, P=eos_g.P + dP, zs=zs)
             eos2_l = eos_g.to_TP_zs(T=eos_g.T, P=eos_g.P + dP, zs=xs)
@@ -2816,8 +2884,8 @@ class GceosBase(Ideal):
             P_guess = P_guess - f_k/dfk_dP
             xs = [zs[i]/Ks[i] for i in cmps]
             
-#            x_sum = sum(xs)
-#            xs = [x/x_sum for x in xs]
+            x_sum = sum(xs)
+            xs = [x/x_sum for x in xs]
             
 #            print(xs, P_guess, abs(P_guess - P_guess_old), dfk_dP)
             if abs(P_guess - P_guess_old) < xtol:
@@ -2865,10 +2933,11 @@ class GceosBase(Ideal):
             try:
                 P = self.dew_P_Michelsen_Mollerup(P_guess=P_guess, T=T, zs=zs, 
                                                   info=info, xtol=self.FLASH_VF_TOL,
-                                                  xs_guess=xs)
+                                                  xs_guess=xs
+                                                  )
                 return info[0], info[1], info[5], P
             except Exception as e:
-#                print(e, 'dew_P_Michelsen_Mollerup falure')
+                print(e, 'dew_P_Michelsen_Mollerup falure')
                 pass
 
             # Simplest solution method
@@ -2876,14 +2945,14 @@ class GceosBase(Ideal):
                 P = newton(self._err_dew_P, P_guess, xtol=self.FLASH_VF_TOL, 
                            args=(T, zs, maxiter, xtol, info))
             except Exception as e:
-#                print('newton failed dew_P', e)
+                print('newton failed dew_P guess %g' %(P_guess), e)
                 pass
             if P is None:
                 try:
                     P = float(fsolve(self._err_dew_P, P_guess, xtol=self.FLASH_VF_TOL,
                                      factor=.1, args=(T, zs, maxiter, xtol, info)))
                 except Exception as e:
-#                    print('fsolve failed dew_P', e)
+                    print('fsolve failed dew_P %g' %(P_guess), e)
                     pass
 #            print(P, P_guess_as_pure)
             if P is not None:
@@ -2977,10 +3046,12 @@ class GceosBase(Ideal):
         for i in range(maxiter):
             eos_l = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
                                  zs=zs, kijs=self.kijs, T=T, P=P_guess, **self.eos_kwargs)
-
+            ln_phis_l = eos_l.lnphis_l# if hasattr(eos_l, 'lnphis_l') else eos_l.lnphis_g
+            # failure occurs here failrly often
             eos_g = eos_l.to_TP_zs(T=eos_l.T, P=eos_l.P, zs=ys)
             
-            ln_phis_l, ln_phis_g = eos_l.lnphis_l, eos_g.lnphis_g
+            
+            ln_phis_g = eos_g.lnphis_g# if hasattr(eos_g, 'lnphis_g') else eos_g.lnphis_l
             Ks = [exp(a - b) for a, b in zip(ln_phis_l, ln_phis_g)]
     
             f_k = sum([zs[i]*Ks[i] for i in cmps]) - 1.0
@@ -2993,8 +3064,12 @@ class GceosBase(Ideal):
             eos2_l = eos_l.to_TP_zs(T=eos_l.T, P=eos_l.P + dP, zs=zs)
             eos2_g = eos_l.to_TP_zs(T=eos_l.T, P=eos_l.P + dP, zs=ys)
             
-            d_ln_phis_dP_l = [(eos2_l.lnphis_l[i] - ln_phis_l[i])/dP for i in cmps]
-            d_ln_phis_dP_g = [(eos2_g.lnphis_g[i] - ln_phis_g[i])/dP for i in cmps]
+            ln_phis_g2 = eos2_g.lnphis_g# if hasattr(eos2_g, 'lnphis_g') else  eos2_g.lnphis_l
+            ln_phis_l2 = eos2_l.lnphis_l# if hasattr(eos2_l, 'lnphis_l') else eos2_l.lnphis_g
+            
+#            print(ln_phis_g2, ln_phis_l2, ln_phis_l, ln_phis_g)
+            d_ln_phis_dP_l = [(ln_phis_l2[i] - ln_phis_l[i])/dP for i in cmps]
+            d_ln_phis_dP_g = [(ln_phis_g2[i] - ln_phis_g[i])/dP for i in cmps]
             dfk_dP = 0.0
             for i in cmps:
                 dfk_dP += zs[i]*Ks[i]*(d_ln_phis_dP_l[i] - d_ln_phis_dP_g[i])
@@ -3011,6 +3086,9 @@ class GceosBase(Ideal):
             
             if info is not None:
                 info[:] = zs, ys, Ks, eos_l, eos_g, 0.0
+                
+        if abs(P_guess - P_guess_old) > xtol:
+            raise ValueError("Did not converge to specified tolerance")
         return P_guess
 
     def bubble_P_guess(self, T, zs, method):
@@ -3045,26 +3123,27 @@ class GceosBase(Ideal):
                  P_guess=None):
         info = []
         for P_guess, xs, ys in self.bubble_P_guesses(T=T, zs=zs, P_guess=P_guess):
+            P = None
             try:
                 P = self.bubble_P_Michelsen_Mollerup(P_guess=P_guess, T=T, zs=zs, 
                                                      info=info, xtol=self.FLASH_VF_TOL,
                                                      ys_guess=ys)
                 return info[0], info[1], info[5], P
             except Exception as e:
-#                print(e, 'bubble_P_Michelsen_Mollerup falure')
+                print(e, 'bubble_P_Michelsen_Mollerup falure')
                 pass
         
             try:
                 P = float(newton(self._err_bubble_P, P_guess, xtol=self.FLASH_VF_TOL,
                                  args=(T, zs, maxiter, xtol, info)))
             except Exception as e:
-#                print(e)
+                print('bubble_P newton failure with guess %s' %(P_guess), e)
                 try:
                     P = float(fsolve(self._err_bubble_P, P_guess, xtol=self.FLASH_VF_TOL,
                                      factor=.1, args=(T, zs, maxiter, xtol, info)))
                 except Exception as e:
-                    pass
-#            print(P_guess, P)
+                    print('bubble_P fsolve failure with guess %s' %(P_guess), e)
+                    continue
             return info[0], info[1], info[5], P
             
 

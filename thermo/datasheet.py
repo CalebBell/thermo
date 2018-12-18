@@ -222,8 +222,9 @@ def tabulate_constants(chemical, full=False, vertical=False):
     return df
 
 
-def tabulate_streams(names, *args, **kwargs):
-    
+def tabulate_streams(names=None, *args, **kwargs):
+    # Names are the names of the streams to be displayed; input
+    # strings for each of them or bad things happen!
     
     Ts = [i.T for i in args]
     Ps = [i.P for i in args]
@@ -298,8 +299,12 @@ def tabulate_streams(names, *args, **kwargs):
             s = 'Mole fraction %s' %IDs[CAS]
             vals = [j[i] for j in mole_fractions]
             dat[s] = vals
-
-    df = pd.DataFrame(dat, index=names)
+    
+#    print(dat, names)
+    if names is None:
+        df = pd.DataFrame(dat)
+    else:
+        df = pd.DataFrame(dat, index=names)
     return df.transpose()
 
 

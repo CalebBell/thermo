@@ -792,15 +792,19 @@ class Mixture(object):
         
         eos_mix = type(self.eos_in_a_box[0]) if self.eos_in_a_box else PRMIX
 
-        self.property_package = pkg(VaporPressures=self.VaporPressures,
-                                     Tms=self.Tms, Tbs=self.Tbs,
-                                     Tcs=self.Tcs, Pcs=self.Pcs,
-                                     HeatCapacityLiquids=self.HeatCapacityLiquids,
-                                     HeatCapacityGases=self.HeatCapacityGases,
-                                     EnthalpyVaporizations=self.EnthalpyVaporizations,
-                                     UNIFAC_groups=self.UNIFAC_groups, omegas=self.omegas,
-                                     VolumeLiquids=self.VolumeLiquids, eos=type(self.Chemicals[0].eos),
-                                     eos_mix=eos_mix)        
+        if type(pkg) == type:
+            self.property_package = pkg(VaporPressures=self.VaporPressures,
+                                         Tms=self.Tms, Tbs=self.Tbs,
+                                         Tcs=self.Tcs, Pcs=self.Pcs,
+                                         HeatCapacityLiquids=self.HeatCapacityLiquids,
+                                         HeatCapacityGases=self.HeatCapacityGases,
+                                         EnthalpyVaporizations=self.EnthalpyVaporizations,
+                                         UNIFAC_groups=self.UNIFAC_groups, omegas=self.omegas,
+                                         VolumeLiquids=self.VolumeLiquids, eos=type(self.Chemicals[0].eos),
+                                         eos_mix=eos_mix)        
+        else:
+            # no need to initialize, already exists
+            self.property_package = pkg
         
         
     def flash_caloric(self, T=None, P=None, VF=None, Hm=None, Sm=None,
