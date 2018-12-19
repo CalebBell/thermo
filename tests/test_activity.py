@@ -306,6 +306,10 @@ def test_NRTL():
     gammas = NRTL([0.252, 0.748], [[0, 0], [0, 0]], [[0, 0.5],[.9, 0]])
     assert_allclose(gammas, [1, 1])
     # alpha does not matter
+    
+    a = b = np.zeros((6, 6)).tolist()
+    gammas = NRTL([0., 1, 0, 0, 0, 0], a, b)
+    assert_allclose(gammas, [1,1,1,1,1,1]) 
 
     # Test vs chemsep parameters, same water ethanol T and P
     T = 343.15
@@ -538,9 +542,18 @@ def test_flash_Tb_Tc_Pc():
     for VF in (0, 1):
         with pytest.raises(Exception):
             # 0 fails ValueError, 1 fails VF is not converged
-            _, _, VF_calc, _, _ = flash_Tb_Tc_Pc(zs=zs, Tcs=Tcs, Pcs=Pcs, Tbs=Tbs, P=1e10, VF=VF)
-            assert_allclose(VF, VF_calc, atol=1e-5)
+            _, _, VF_calc, _, _ = flash_Tb_Tc_Pc(zs=zs, Tcs=Tcs, Pcs=Pcs, Tbs=Tbs, P=1e25, VF=VF)
 
     for VF in (0, 1):
         # not recommended but should work
         flash_Tb_Tc_Pc(zs=zs, Tcs=Tcs, Pcs=Pcs, Tbs=Tbs, T=1e12, VF=VF)  
+
+def test_flash_Tb_Tc_Pc_cases():
+
+    T_calc, P_calc, VF_calc, xs, ys = flash_Tb_Tc_Pc(zs=[0.7058334393128614, 0.2941665606871387],
+                                                     Tcs=[305.32, 469.7], Pcs=[4872000.0, 3370000.0],
+                                                     Tbs=[184.55, 309.21], P=6.5e6, VF=0)
+    assert_allclose(T_calc, 313.8105619996756)
+    assert_allclose(VF_calc, 0, atol=1e-12)
+    assert_allclose(xs, [0.7058334393128627, 0.29416656068713737])
+    assert_allclose(ys, [0.9999999137511981, 8.624880199749853e-08])

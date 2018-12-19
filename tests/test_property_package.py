@@ -31,6 +31,7 @@ from thermo.eos_mix import *
 
 from thermo.chemical import Chemical
 from thermo.mixture import Mixture
+from thermo.property_package_constants import PropertyPackageConstants, NRTL_PKG, PR_PKG, IDEAL_PKG
 
 def test_Ideal():
     m = Mixture(['ethanol', 'water'], zs=[0.5, 0.5], P=5000, T=298.15)
@@ -349,7 +350,10 @@ def test_NRTL_package():
     alphas = [[[], [0.0, 0.0]],
               [[0.3, 0], []] ]
     pp = Nrtl(tau_coeffs=taus, alpha_coeffs=alphas, VaporPressures=m.VaporPressures, Tms=m.Tms,
-                     Tcs=m.Tcs, Pcs=m.Pcs, omegas=m.omegas, VolumeLiquids=m.VolumeLiquids)
+                     Tcs=m.Tcs, Pcs=m.Pcs, omegas=m.omegas, VolumeLiquids=m.VolumeLiquids,
+                     HeatCapacityLiquids=m.HeatCapacityLiquids,
+                     HeatCapacityGases=m.HeatCapacityGases,
+                     EnthalpyVaporizations=m.EnthalpyVaporizations)
     assert_allclose(pp.gammas(T=m.T, xs=m.zs), [1.1114056946393671, 2.5391220022675163], rtol=1e-6)
     assert_allclose(pp.alphas(m.T), [[0.0, 0.0], [0.3, 0.0]])
     assert_allclose(pp.taus(m.T), [[0.0, 1.7500005828354948], [-0.08352950604691833, 0.0]])
@@ -358,6 +362,22 @@ def test_NRTL_package():
     pp.flash(T=m.T, VF=1, zs=m.zs)
     assert_allclose(pp.P, 40485.10473289466, rtol=2e-3)
     
+def test_NRTL_package_constants():
+    taus = [ [[], [3.458, -586.1, 0, 0, 0, 0]],
+         [[-0.801, 246.2, 0, 0, 0, 0], []]  ]
+    alphas = [[[], [0.0, 0.0]],
+              [[0.3, 0], []] ]
+    
+    IDs = ['water', 'ethanol']
+    
+    # tau_coeffs, alpha_coeffs
+    zs = [1-.252, .252]
+    pkg = PropertyPackageConstants(IDs, name=NRTL_PKG, tau_coeffs=taus, alpha_coeffs=alphas)
+    pkg.pkg.flash(zs=zs, T=300, VF=0.5)
+    pkg.pkg.phase, pkg.pkg.P
+    assert_allclose(pkg.pkg.P, 5763.42373196148, atol=20, rtol=1e-4)
+
+
 
 def test_Unifac_EOS_POY():
     m = Mixture(['pentane', 'hexane', 'octane'], zs=[.1, .4, .5], T=298.15)

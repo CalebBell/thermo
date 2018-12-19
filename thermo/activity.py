@@ -490,9 +490,10 @@ def flash_Tb_Tc_Pc(zs, Tbs, Tcs, Pcs, T=None, P=None, VF=None):
             P_dew = 1./P_dew
             return P_dew - P
 
-        T_guess = sum([.666*Tcs[i]*zs[i] for i in cmps])
+        Tc_pseudo = sum([Tcs[i]*zs[i] for i in cmps])
+        T_guess = 0.666*Tc_pseudo
         try:
-            T_dew = abs(newton(to_solve, T_guess, maxiter=50))
+            T_dew = abs(newton(to_solve, T_guess, maxiter=50)) # , high=Tc_pseudo*3
         except:
             T_dew = None
         if T_dew is None or T_dew > T_MAX*5.0: 
@@ -510,13 +511,18 @@ def flash_Tb_Tc_Pc(zs, Tbs, Tcs, Pcs, T=None, P=None, VF=None):
             P_bubble = 0.0
             for i in cmps:
                 P_bubble += zs[i]*Pcs[i]**((1.0/T_guess - 1.0/Tbs[i])/(1.0/Tcs[i] - 1.0/Tbs[i]))
+#            print(T_guess, P_bubble - P)
             return P_bubble - P
         # 2/3 average critical point
-        T_guess = sum([.55*Tcs[i]*zs[i] for i in cmps])
-        T_bubble = abs(newton(to_solve, T_guess))
-        if T_bubble > T_MAX*5.0: 
-            # Went insanely high T, bound it with brenth
-            T_low_guess = sum([.1*Tcs[i]*zs[i] for i in cmps])
+        Tc_pseudo = sum([Tcs[i]*zs[i] for i in cmps])
+        T_guess = 0.55*Tc_pseudo
+        try:
+            T_bubble = abs(newton(to_solve, T_guess)) # , high=Tc_pseudo*4
+        except:
+            T_bubble = None
+        if T_bubble is None or T_bubble > T_MAX*5.0: 
+            # Went insanely high T (or could not converge because went too high), bound it with brenth
+            T_low_guess = 0.1*Tc_pseudo
             try:
                 T_bubble = brenth(to_solve, T_MAX, T_low_guess)
             except ValueError:

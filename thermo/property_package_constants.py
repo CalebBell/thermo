@@ -58,7 +58,8 @@ UNIFAC_DORTMUND_PKG = 'Unifac Dortmund'
 PR_PKG = 'PR'
 SRK_PKG = 'SRK'
 
-property_packages = [IDEAL_PKG, NRTL_PKG, UNIFAC_PKG, UNIFAC_DORTMUND_PKG, PR_PKG, SRK_PKG]
+property_packages = [IDEAL_PKG, NRTL_PKG, UNIFAC_PKG, UNIFAC_DORTMUND_PKG, 
+                     PR_PKG, SRK_PKG]
 property_packages_cubic = [ PR_PKG, SRK_PKG]
 
 property_package_to_eos = {PR_PKG: PRMIX, SRK_PKG: SRKMIX}
@@ -77,7 +78,7 @@ class PropertyPackageConstants(object):
     '''Class to store kijs, as well as allow properties to be edited; load 
     them from the database and then be ready to store them.
     '''
-    def __init__(self, mixture, name=IDEAL_PKG):
+    def __init__(self, mixture, name=IDEAL_PKG, **kwargs):
         if isinstance(mixture, list):
             self.CASs = IDs_to_CASs(mixture)
             self.Chemicals = [Chemical(CAS) for CAS in self.CASs]
@@ -111,12 +112,18 @@ class PropertyPackageConstants(object):
                    'VolumeGases': self.VolumeGases,
                     'eos': eos, 'eosmix': eosmix,
                    }
+        pkg_args.update(kwargs) 
+        
         if self.name == UNIFAC_PKG:
             pkg_args['UNIFAC_groups'] = self.UNIFAC_groups
         elif self.name == UNIFAC_DORTMUND_PKG:
             pkg_args['UNIFAC_groups'] = self.UNIFAC_Dortmund_groups
         
         
+        
+        
+        
+#        print(pkg_args, self.pkg_obj)
         self.pkg = self.pkg_obj(**pkg_args)
         
         

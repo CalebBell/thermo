@@ -692,7 +692,10 @@ should be calculated by this method, in a user subclass.')
         '''
         def to_solve(T):
             return self.Psat(T, polish=polish) - P
-        return brenth(to_solve, 0.2*self.Tc, self.Tc)
+        try:
+            return brenth(to_solve, 0.2*self.Tc, self.Tc)
+        except:
+            return brenth(to_solve, 0.2*self.Tc, self.Tc*1.5)
             
     def Psat(self, T, polish=False):
         r'''Generic method to calculate vapor pressure for a specified `T`.

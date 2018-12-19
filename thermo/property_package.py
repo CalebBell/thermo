@@ -50,9 +50,9 @@ from copy import copy
 from random import uniform, shuffle, seed
 import numpy as np
 from scipy.optimize import golden, brent, minimize, fmin_slsqp, fsolve
-from fluids.numerics import brenth, ridder, derivative, py_newton as newton, linspace
+from fluids.numerics import brenth, ridder, derivative, py_newton as newton, linspace, logspace
 
-from thermo.utils import log, exp
+from thermo.utils import log, log10, exp, copysign
 from thermo.utils import has_matplotlib, R, pi, N_A
 from thermo.utils import remove_zeros, normalize, Cp_minus_Cv
 from thermo.identifiers import IDs_to_CASs
@@ -423,6 +423,64 @@ class PropertyPackage(object):
         else:
             return plt
         
+    def plot_PT(self, zs, Pmin=None, Pmax=None, pts=50, branches=[],
+                ignore_errors=True, values=False): # pragma: no cover
+        if not has_matplotlib and not values:
+            raise Exception('Optional dependency matplotlib is required for plotting')
+        if not Pmin:
+            Pmin = 1e4
+        if not Pmax:
+            Pmax = min(self.Pcs)
+        Ps = logspace(log10(Pmin), log10(Pmax), pts)
+        T_dews = []
+        T_bubbles = []
+        branch = bool(len(branches))
+        if branch:
+            branch_Ts = [[] for i in range(len(branches))]
+        else:
+            branch_Ts = None
+        for P in Ps:
+            try:
+                self.flash(P=P, VF=0, zs=zs)
+                T_bubbles.append(self.T)
+            except Exception as e:
+                if ignore_errors:
+                    T_bubbles.append(None)
+                else:
+                    raise e
+            try:
+                self.flash(P=P, VF=1, zs=zs)
+                T_dews.append(self.T)
+            except Exception as e:
+                if ignore_errors:
+                    T_dews.append(None)
+                else:
+                    raise e
+
+            if branch:
+                for VF, Ts in zip(branches, branch_Ts):
+                    try:
+                        self.flash(P=P, VF=VF, zs=zs)
+                        Ts.append(self.T)
+                    except Exception as e:
+                        if ignore_errors:
+                            Ts.append(None)
+                        else:
+                            raise e
+        if values:
+            return Ps, T_dews, T_bubbles, branch_Ts
+        plt.plot(Ps, T_dews, label='PT dew point curve')
+        plt.plot(Ps, T_bubbles, label='PT bubble point curve')
+        plt.xlabel('System pressure, Pa')
+        plt.ylabel('System temperature, K')
+        plt.title('PT system curve, zs=%s' %zs)
+        if branch:
+            for VF, Ts in zip(branches, branch_Ts):
+                plt.plot(Ps, Ts, label='PT curve for VF=%s'%VF)
+        plt.legend(loc='best')
+        plt.show()
+        
+        
     def plot_TP(self, zs, Tmin=None, Tmax=None, pts=50, branches=[],
                 ignore_errors=True, values=False): # pragma: no cover
         if not has_matplotlib and not values:
@@ -469,18 +527,18 @@ class PropertyPackage(object):
                             raise e
         if values:
             return Ts, P_dews, P_bubbles, branch_Ps
-        plt.plot(Ts, P_dews, label='PT dew point curve')
-        plt.plot(Ts, P_bubbles, label='PT bubble point curve')
+        plt.plot(Ts, P_dews, label='TP dew point curve')
+        plt.plot(Ts, P_bubbles, label='TP bubble point curve')
         plt.xlabel('System temperature, K')
         plt.ylabel('System pressure, Pa')
         plt.title('PT system curve, zs=%s' %zs)
         if branch:
             for VF, Ps in zip(branches, branch_Ps):
-                plt.plot(Ts, Ps, label='PT curve for VF=%s'%VF)
+                plt.plot(Ts, Ps, label='TP curve for VF=%s'%VF)
         plt.legend(loc='best')
         plt.show()
-        
-                
+
+    
     def plot_ternary(self, T, scale=10): # pragma: no cover
         if not has_matplotlib:
             raise Exception('Optional dependency matplotlib is required for plotting')
@@ -1831,7 +1889,7 @@ class GammaPhiCaloric(GammaPhi, IdealCaloric):
                        'omegas': omegas}
 
 
-class Nrtl(GammaPhi):
+class Nrtl(GammaPhiCaloric):
     def Stateva_Tsvetkov_TPDF(self, T, zs, ys):
         z_fugacity_coefficients = self.gammas(T=T, xs=zs)
         y_fugacity_coefficients = self.gammas(T=T, xs=ys)
@@ -1864,6 +1922,10 @@ class Nrtl(GammaPhi):
         return tot
 
     def taus(self, T):
+        # Zero coefficients if not specified by user
+        if self.tau_coeffs is None:
+            return self.zero_coeffs
+        
         # initialize the matrix to be zero
         taus = [[0.0]*self.N for i in self.cmps]
         T2 = T*T
@@ -1879,6 +1941,10 @@ class Nrtl(GammaPhi):
         return taus
     
     def alphas(self, T):
+        # Zero coefficients if not specified by user
+        if self.alpha_coeffs is None:
+            return self.zero_coeffs
+        
         alphas = [[0.0]*self.N for i in self.cmps]
         for i in self.cmps:
             for j in range(self.N - i):
@@ -1891,9 +1957,13 @@ class Nrtl(GammaPhi):
         return alphas
     
     
-    def __init__(self, tau_coeffs, alpha_coeffs, VaporPressures, Tms=None,
+    def __init__(self, VaporPressures, tau_coeffs=None, alpha_coeffs=None, Tms=None,
                  Tcs=None, Pcs=None, omegas=None, VolumeLiquids=None, eos=None,
-                 eos_mix=None):
+                 eos_mix=None, HeatCapacityLiquids=None,
+                 HeatCapacityGases=None,
+                 EnthalpyVaporizations=None,
+                 
+                 **kwargs):
         self.tau_coeffs = tau_coeffs
         self.alpha_coeffs = alpha_coeffs
         self.VaporPressures = VaporPressures
@@ -1906,6 +1976,16 @@ class Nrtl(GammaPhi):
         self.eos_mix = eos_mix
         self.N = len(VaporPressures)
         self.cmps = range(self.N)
+        self.kwargs = kwargs
+
+
+        self.HeatCapacityLiquids = HeatCapacityLiquids
+        self.HeatCapacityGases = HeatCapacityGases
+        self.EnthalpyVaporizations = EnthalpyVaporizations
+        
+        
+        if tau_coeffs is None or alpha_coeffs is None:
+            self.zero_coeffs = np.zeros((self.N, self.N)).tolist()
 
         if eos:
             self.eos_pure_instances = [eos(Tc=Tcs[i], Pc=Pcs[i], omega=omegas[i], T=Tcs[i]*0.5, P=Pcs[i]*0.1) for i in self.cmps]
@@ -2263,7 +2343,9 @@ class GceosBase(Ideal):
     def flash_PVF_zs(self, P, VF, zs):
         assert 0 <= VF <= 1
         if self.N == 1:
-            raise NotImplemented
+            Tsats = self._Tsats(P)
+            return 'l/g', [1.0], [1.0], VF, Tsats[0]
+#            raise NotImplemented
 #        elif 1.0 in zs:
 #            raise NotImplemented
         
@@ -2307,7 +2389,8 @@ class GceosBase(Ideal):
     def flash_TVF_zs(self, T, VF, zs):
         assert 0 <= VF <= 1
         if self.N == 1:
-            raise NotImplemented
+#            raise NotImplemented
+            Psats = self._Psats(T)
             return 'l/g', [1.0], [1.0], VF, Psats[0]
 #        elif 1.0 in zs:
 #            raise NotImplemented
@@ -2475,6 +2558,50 @@ class GceosBase(Ideal):
             info[:] = xs, ys, Ks, eos_l, eos_g, V_over_F
         return V_over_F
 
+
+    def bubble_T_growth(self, T_guess, P, zs, maxiter=200, 
+                        xtol=1E-10, info=None, ys_guess=None,
+                        factor=1.4, T_max=None, T_low_factor=0.25,
+                        min_factor=1.05):
+        if T_max is None:
+            T_max = 2*max(self.Tcs)        
+
+        while factor > min_factor:
+            T = T_guess*T_low_factor
+#            print(factor, P, P_max)
+            Ts = []
+            count = 0
+            while T < T_max:
+                if count != 0:
+                    T = Ts[-1]*factor
+                Ts.append(T)
+                count += 1
+                try:
+                    eos_l = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
+                                 zs=zs, kijs=self.kijs, T=T, P=P, **self.eos_kwargs)
+                    if not hasattr(eos_l, 'lnphis_l'):
+#                        print('Did not continue with P', P)
+                        continue
+                except Exception as e:
+                    print('Could not solve eos with P=%g' %P)
+                    continue
+                
+                try:
+                    # The root existed - try it!
+                    ans = self.bubble_T_Michelsen_Mollerup(T, P=P, zs=zs,
+                                                           ys_guess=ys_guess,
+                                                           maxiter=maxiter, 
+                                                           xtol=xtol, info=info)
+                    print('success')
+                    return ans
+                except Exception as e:
+                    pass
+#                    print('failed MM with P=%g'%(P), e)
+
+
+            factor = factor - abs(factor - 1)*.35
+        raise ValueError("Could not converge")
+
     
     def bubble_T_guess(self, P, zs, method):
         if method == 'Wilson':
@@ -2500,6 +2627,7 @@ class GceosBase(Ideal):
                     ans = self.bubble_T_guess(P=P, zs=zs, method='Tb_Tc_Pc')
                     yield ans[0], ans[3], ans[4]
             except Exception as e:
+#                print(e, i)
                 pass
             i += 1
         
@@ -2508,14 +2636,25 @@ class GceosBase(Ideal):
         info = []
         
         for T_guess, xs, ys in self.bubble_T_guesses(P=P, zs=zs, T_guess=T_guess):
+            print('sarting guess', T_guess, xs, ys)
             try:
-                T = self.bubble_T_Michelsen_Mollerup(T_guess=T_guess, P=P, zs=zs, info=info, xtol=self.FLASH_VF_TOL)
+                T = self.bubble_T_Michelsen_Mollerup(T_guess=T_guess, P=P, zs=zs,
+                                                     info=info, xtol=self.FLASH_VF_TOL)
                 return info[0], info[1], info[5], T
             except Exception as e:
                 print(e, 'bubble_T_Michelsen_Mollerup falure')
                 pass
             
-            
+            try:
+                P = self.bubble_T_growth(T_guess=T_guess, P=P, zs=zs, 
+                                                     info=info, xtol=self.FLASH_VF_TOL,
+                                                     ys_guess=ys)
+                return info[0], info[1], info[5], P
+            except Exception as e:
+                print(e, 'bubble_T_Michelsen_Mollerup falure of new method')
+                pass                
+
+
             try:
 #                print('bubble T guess', T_guess)
                 # Simplest solution method
@@ -2533,7 +2672,8 @@ class GceosBase(Ideal):
             except Exception as e:
                 print('bubble T - fsolve failed with initial guess (%g):' %(T_guess)  + str(e))
                 pass
-        1/0
+            
+#        raise ValueError("Overall bubble P loop could not find a convergent method")
         Tmin, Tmax = self._bracket_bubble_T(P=P, zs=zs, maxiter=maxiter_initial, xtol=xtol_initial)
         T = ridder(self._err_bubble_T, Tmin, Tmax, args=(P, zs, maxiter, xtol, info))
         return info[0], info[1], info[5], T
@@ -2660,35 +2800,55 @@ class GceosBase(Ideal):
         return V_over_F - 1.0
 
     def dew_T_Michelsen_Mollerup(self, T_guess, P, zs, maxiter=200, 
-                                 xtol=1E-10, info=None, xs_guess=None):
+                                 xtol=1E-10, info=None, xs_guess=None,
+                                 max_step_damping=2.0):
         # Does not have any formulation available
         N = len(zs)
         cmps = range(N)
         
         xs = zs if xs_guess is None else xs_guess
-        for i in range(maxiter):
+        dT = 5e-3
+        
+        def all_phis(T_guess):
             eos_g = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
                                  zs=zs, kijs=self.kijs, T=T_guess, P=P, **self.eos_kwargs)
-
+            ln_phis_g = eos_g.lnphis_g
             eos_l = eos_g.to_TP_zs(T=eos_g.T, P=eos_g.P, zs=xs)
+            ln_phis_l = eos_l.lnphis_l
             
-            ln_phis_l, ln_phis_g = eos_l.lnphis_l, eos_g.lnphis_g
-            Ks = [exp(a - b) for a, b in zip(ln_phis_l, ln_phis_g)]
-    
-            f_k = sum([zs[i]/Ks[i] for i in cmps]) - 1.0
-            
-            dT = 5e-3
-            eos2_g = eos_g.to_TP_zs(T=eos_g.T+dT, P=eos_g.P, zs=zs)
             eos2_l = eos_g.to_TP_zs(T=eos_g.T+dT, P=eos_g.P, zs=xs)
+            lnphis_l2 = eos2_l.lnphis_l
             
-            d_ln_phis_dT_l = [(eos2_l.lnphis_l[i] - ln_phis_l[i])/dT for i in cmps]
-            d_ln_phis_dT_g = [(eos2_g.lnphis_g[i] - ln_phis_g[i])/dT for i in cmps]
+            eos2_g = eos_g.to_TP_zs(T=eos_g.T+dT, P=eos_g.P, zs=zs)
+            lnphis_g2 = eos2_g.lnphis_g
+            return ln_phis_l, ln_phis_g, lnphis_l2, lnphis_g2, eos_l, eos_g
+        
+        successive_fails = 0
+        for i in range(maxiter):
+            try:
+                ln_phis_l, ln_phis_g, lnphis_l2, lnphis_g2, eos_l, eos_g = all_phis(T_guess)
+                successive_fails = 0
+            except:
+                successive_fails += 1
+                if successive_fails >= 2:
+                    raise ValueError("Stopped convergence procedure after multiple bad steps") 
+                T_guess = T_guess_old + copysign(min(max_step_damping, abs(step)), step)
+#                print('fail - new T guess', T_guess)
+                ln_phis_l, ln_phis_g, lnphis_l2, lnphis_g2, eos_l, eos_g = all_phis(T_guess)
+
+            Ks = [exp(a - b) for a, b in zip(ln_phis_l, ln_phis_g)]
+            f_k = sum([zs[i]/Ks[i] for i in cmps]) - 1.0
+
+            d_ln_phis_dT_l = [(lnphis_l2[i] - ln_phis_l[i])/dT for i in cmps]
+            d_ln_phis_dT_g = [(lnphis_g2[i] - ln_phis_g[i])/dT for i in cmps]
             dfk_dT = 0.0
             for i in cmps:
                 dfk_dT += zs[i]/Ks[i]*( d_ln_phis_dT_g[i] - d_ln_phis_dT_l[i])
             
             T_guess_old = T_guess
-            T_guess = T_guess - f_k/dfk_dT
+            step = -f_k/dfk_dT
+            
+            T_guess = T_guess + step # 
             xs = [zs[i]/Ks[i] for i in cmps]
             x_sum = sum(xs)
             xs = [x/x_sum for x in xs]
@@ -2706,6 +2866,54 @@ class GceosBase(Ideal):
                 
         return T_guess
         
+    
+    def dew_T_growth(self, T_guess, P, zs, maxiter=200, 
+                     xtol=1E-10, info=None, xs_guess=None,
+                     T_max=None, T_low_factor=0.9,
+                     T_step=4):
+        if T_max is None:
+            T_pseudo = sum([zi*Tci for zi, Tci in zip(zs, self.Tcs)])
+            T_max = 1.25*T_pseudo  
+        T_points = np.arange(T_low_factor*T_guess, T_max, step=T_step).tolist()
+        T_points.sort(key=lambda x: abs(x - T_guess))    
+        
+        
+        for T in T_points:
+#        while factor > min_factor:
+#            T = T_guess*T_low_factor
+#            print(T)
+#            Ts = []
+#            count = 0
+#            while T < T_max:
+#                if count != 0:
+#                    T = Ts[-1]*factor
+#                Ts.append(T)
+#                count += 1
+            try:
+                eos_g = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
+                             zs=zs, kijs=self.kijs, T=T, P=P, **self.eos_kwargs)
+                if not hasattr(eos_g, 'lnphis_g'):
+#                    print('Did not continue with T', T)
+                    continue
+            except Exception as e:
+#                print('Could not solve eos with P=%g' %P)
+                continue
+            
+            try:
+                # The root existed - try it!
+                ans = self.dew_T_Michelsen_Mollerup(T, P=P, zs=zs,
+                                                    xs_guess=xs_guess,
+                                                    maxiter=maxiter, 
+                                                    xtol=xtol, info=info)
+                print('success')
+                return ans
+            except Exception as e:
+                pass
+                print('failed MM with T=%g'%(T), e)
+
+
+#            factor = factor - abs(factor - 1)*.35
+        raise ValueError("Could not converge")
         
 
     def dew_T_guess(self, P, zs, method):
@@ -2732,6 +2940,7 @@ class GceosBase(Ideal):
                     ans = self.dew_T_guess(P=P, zs=zs, method='Tb_Tc_Pc')
                     yield ans[0], ans[3], ans[4]
             except Exception as e:
+                print(e, i)
                 pass
             i += 1
 
@@ -2747,6 +2956,16 @@ class GceosBase(Ideal):
             except Exception as e:
                 print(e, 'dew_T_Michelsen_Mollerup falure')
                 pass
+
+            try:
+                P = self.dew_T_growth(T_guess=T_guess, P=P, zs=zs, 
+                                      info=info, xtol=self.FLASH_VF_TOL,
+                                      xs_guess=xs)
+                return info[0], info[1], info[5], P
+            except Exception as e:
+                print(e, 'dew_T_Michelsen_Mollerup falure of new method')
+                pass                
+
             try:
                 try:
                     T = newton(self._err_dew_T, T_guess, xtol=self.FLASH_VF_TOL, args=(P, zs, maxiter, xtol, info))
@@ -2897,6 +3116,50 @@ class GceosBase(Ideal):
             raise ValueError("Did not converge to specified tolerance")
         return P_guess
 
+    def dew_P_growth(self, P_guess, T, zs, maxiter=200, 
+                     xtol=1E-4, info=None, xs_guess=None,
+                     factor=1.4, P_max=None, P_low_factor=0.25,
+                     min_factor=1.05):
+        if P_max is None:
+            P_max = 2*max(self.Pcs)        
+
+        while factor > min_factor:
+            P = P_guess*P_low_factor
+            print(factor, P, P_max)
+            Ps = []
+            count = 0
+            while P < P_max:
+                if count != 0:
+                    P = Ps[-1]*factor
+                Ps.append(P)
+                count += 1
+                try:
+                    eos_g = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
+                                 zs=zs, kijs=self.kijs, T=T, P=P, **self.eos_kwargs)
+                    if not hasattr(eos_g, 'lnphis_g'):
+                        print('Did not continue with P', P)
+                        continue
+                except Exception as e:
+                    print('Could not solve eos with P=%g' %P)
+                    continue
+                
+                try:
+                    # The root existed - try it!
+                    ans = self.dew_P_Michelsen_Mollerup(P, T=T, zs=zs,
+                                                        xs_guess=xs_guess,
+                                                        maxiter=maxiter, 
+                                                        xtol=xtol, info=info)
+                    print('success')
+                    return ans
+                except Exception as e:
+                    pass
+                    print('failed MM with P=%g'%(P), e)
+
+
+            factor = factor - abs(factor - 1)*.35
+        raise ValueError("Could not converge")
+
+
     def dew_P_guess(self, T, zs, method):
         if method == 'Wilson':
             return flash_wilson(zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, T=T, VF=1)
@@ -2940,6 +3203,16 @@ class GceosBase(Ideal):
                 print(e, 'dew_P_Michelsen_Mollerup falure')
                 pass
 
+#            try:
+#                P = self.dew_P_growth(P_guess=P_guess, T=T, zs=zs, 
+#                                      info=info, xtol=self.FLASH_VF_TOL,
+#                                      xs_guess=xs)
+#                return info[0], info[1], info[5], P
+#            except Exception as e:
+#                print(e, 'dew_P_Michelsen_Mollerup falure of new method')
+#                pass                
+
+
             # Simplest solution method
             try:
                 P = newton(self._err_dew_P, P_guess, xtol=self.FLASH_VF_TOL, 
@@ -2958,7 +3231,7 @@ class GceosBase(Ideal):
             if P is not None:
                 return info[0], info[1], info[5], P
 
-
+        raise ValueError("Overall bubble P loop could not find a convergent method")
         Pmin, Pmax = self._bracket_dew_P(T=T, zs=zs, maxiter=maxiter_initial, xtol=xtol_initial)
         P = ridder(self._err_dew_P, Pmin, Pmax, args=(T, zs, maxiter, xtol, info))
         return info[0], info[1], info[5], P
@@ -3091,6 +3364,51 @@ class GceosBase(Ideal):
             raise ValueError("Did not converge to specified tolerance")
         return P_guess
 
+
+    def bubble_P_growth(self, P_guess, T, zs, maxiter=200, 
+                        xtol=1E-4, info=None, ys_guess=None,
+                        factor=1.4, P_max=None, P_low_factor=0.25,
+                        min_factor=1.025):
+        if P_max is None:
+            P_max = 2*max(self.Pcs)        
+
+        while factor > min_factor:
+            P = P_guess*P_low_factor
+#            print(factor, P, P_max)
+            Ps = []
+            count = 0
+            while P < P_max:
+                if count != 0:
+                    P = Ps[-1]*factor
+                Ps.append(P)
+                count += 1
+                try:
+                    eos_l = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
+                                 zs=zs, kijs=self.kijs, T=T, P=P, **self.eos_kwargs)
+                    if not hasattr(eos_l, 'lnphis_l'):
+#                        print('Did not continue with P', P)
+                        continue
+                except Exception as e:
+                    print('Could not solve eos with P=%g' %P)
+                    continue
+                
+                try:
+                    # The root existed - try it!
+                    ans = self.bubble_P_Michelsen_Mollerup(P, T=T, zs=zs,
+                                                           ys_guess=ys_guess,
+                                                           maxiter=maxiter, 
+                                                           xtol=xtol, info=info)
+                    print('success')
+                    return ans
+                except Exception as e:
+                    pass
+#                    print('failed MM with P=%g'%(P), e)
+
+
+            factor = factor - abs(factor - 1)*.35
+        raise ValueError("Could not converge")
+
+
     def bubble_P_guess(self, T, zs, method):
         if method == 'Wilson':
             return flash_wilson(zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, T=T, VF=0)
@@ -3122,8 +3440,10 @@ class GceosBase(Ideal):
     def bubble_P(self, T, zs, maxiter=200, xtol=1E-4, maxiter_initial=20, xtol_initial=1e-3,
                  P_guess=None):
         info = []
+        maxP = max(self.Pcs)*2
         for P_guess, xs, ys in self.bubble_P_guesses(T=T, zs=zs, P_guess=P_guess):
             P = None
+            
             try:
                 P = self.bubble_P_Michelsen_Mollerup(P_guess=P_guess, T=T, zs=zs, 
                                                      info=info, xtol=self.FLASH_VF_TOL,
@@ -3132,21 +3452,35 @@ class GceosBase(Ideal):
             except Exception as e:
                 print(e, 'bubble_P_Michelsen_Mollerup falure')
                 pass
+
+            try:
+                P = self.bubble_P_growth(P_guess=P_guess, T=T, zs=zs, 
+                                                     info=info, xtol=self.FLASH_VF_TOL,
+                                                     ys_guess=ys)
+                return info[0], info[1], info[5], P
+            except Exception as e:
+                print(e, 'bubble_P_Michelsen_Mollerup falure of new method')
+                pass                
+            
         
             try:
                 P = float(newton(self._err_bubble_P, P_guess, xtol=self.FLASH_VF_TOL,
                                  args=(T, zs, maxiter, xtol, info)))
+                if P > maxP:
+                    1/0
             except Exception as e:
                 print('bubble_P newton failure with guess %s' %(P_guess), e)
                 try:
                     P = float(fsolve(self._err_bubble_P, P_guess, xtol=self.FLASH_VF_TOL,
                                      factor=.1, args=(T, zs, maxiter, xtol, info)))
+                    if P > maxP:
+                        1/0
                 except Exception as e:
                     print('bubble_P fsolve failure with guess %s' %(P_guess), e)
                     continue
             return info[0], info[1], info[5], P
             
-
+        raise ValueError("Overall bubble P loop could not find a convergent method")
         Pmin, Pmax = self._bracket_bubble_P(T=T, zs=zs, maxiter=maxiter_initial, xtol=xtol_initial)
         P = ridder(self._err_bubble_P, Pmin, Pmax, args=(T, zs, maxiter, xtol, info))
         return info[0], info[1], info[5], P
