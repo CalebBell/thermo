@@ -2441,38 +2441,68 @@ class GceosBase(Ideal):
 
 
     def bubble_T_Michelsen_Mollerup(self, T_guess, P, zs, maxiter=200, 
-                                    xtol=1E-10, info=None, ys_guess=None):
+                                    xtol=1E-10, info=None, ys_guess=None,
+                                    max_step_damping=2.0):
         # ys_guess did not help convergence at all
         N = len(zs)
         cmps = range(N)
         
+        dT = 5e-3
+            
         ys = zs if ys_guess is None else ys_guess
-        for i in range(maxiter):
+
+        def all_phis(T_guess):
+            # TODO analytical derivatives?
+            # The analytical derivatives would be nice, but they would only save time
+            # if they weren't too expensive; i.e. dZ_dT.
             eos_l = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
                                  zs=zs, kijs=self.kijs, T=T_guess, P=P, **self.eos_kwargs)
-
-            eos_g = eos_l.to_TP_zs(T=eos_l.T, P=eos_l.P, zs=ys)
+            ln_phis_l = eos_l.lnphis_l
             
-            ln_phis_l, ln_phis_g = eos_l.lnphis_l, eos_g.lnphis_g
+            eos_g = eos_l.to_TP_zs(T=eos_l.T, P=eos_l.P, zs=ys)
+            ln_phis_g = eos_g.lnphis_g
+            
+            eos2_l = eos_l.to_TP_zs(T=eos_l.T+dT, P=eos_l.P, zs=zs)
+            lnphis_l2 = eos2_l.lnphis_l
+            
+            eos2_g = eos_l.to_TP_zs(T=eos_l.T+dT, P=eos_l.P, zs=ys)
+            lnphis_g2 = eos2_g.lnphis_g
+
+            return ln_phis_l, ln_phis_g, lnphis_l2, lnphis_g2, eos_l, eos_g
+
+        T_guess_old = None
+        successive_fails = 0
+        for i in range(maxiter):
+            try:
+                ln_phis_l, ln_phis_g, lnphis_l2, lnphis_g2, eos_l, eos_g = all_phis(T_guess)
+                successive_fails = 0
+            except:
+                if T_guess_old is None:
+                    raise ValueError("Could not calculate liquid and vapor conditions at provided initial temperature %s K" %(T_guess))
+                successive_fails += 1
+                if successive_fails >= 2:
+                    raise ValueError("Stopped convergence procedure after multiple bad steps") 
+                T_guess = T_guess_old + copysign(min(max_step_damping, abs(step)), step)
+#                print('fail - new T guess', T_guess)
+                ln_phis_l, ln_phis_g, lnphis_l2, lnphis_g2, eos_l, eos_g = all_phis(T_guess)
+            
+            
+            
             Ks = [exp(a - b) for a, b in zip(ln_phis_l, ln_phis_g)]
     
             f_k = sum([zs[i]*Ks[i] for i in cmps]) - 1.0
             
-            # TODO analytical derivatives?
-            dT = 5e-3
-            # The analytical derivatives would be nice, but they would only save time
-            # if they weren't too expensive; i.e. dZ_dT.
-            eos2_l = eos_l.to_TP_zs(T=eos_l.T+dT, P=eos_l.P, zs=zs)
-            eos2_g = eos_l.to_TP_zs(T=eos_l.T+dT, P=eos_l.P, zs=ys)
             
-            d_ln_phis_dT_l = [(eos2_l.lnphis_l[i] - ln_phis_l[i])/dT for i in cmps]
-            d_ln_phis_dT_g = [(eos2_g.lnphis_g[i] - ln_phis_g[i])/dT for i in cmps]
+            d_ln_phis_dT_l = [(lnphis_l2[i] - ln_phis_l[i])/dT for i in cmps]
+            d_ln_phis_dT_g = [(lnphis_g2[i] - ln_phis_g[i])/dT for i in cmps]
             dfk_dT = 0.0
             for i in cmps:
                 dfk_dT += zs[i]*Ks[i]*(d_ln_phis_dT_l[i] - d_ln_phis_dT_g[i])
             
             T_guess_old = T_guess
-            T_guess = T_guess - f_k/dfk_dT
+            step = -f_k/dfk_dT
+            T_guess = T_guess + step # 
+            
             ys = [zs[i]*Ks[i] for i in cmps]
             y_sum = sum(ys)
             ys = [y/y_sum for y in ys]
@@ -2611,7 +2641,7 @@ class GceosBase(Ideal):
         elif method == 'IdealEOS':
             return self.flash_PVF_zs_ideal(P=P, VF=0, zs=zs)
     
-    def bubble_T_guesses(self, P, zs, T_guess):
+    def bubble_T_guesses(self, P, zs, T_guess=None):
         i = -1 if T_guess is not None else 0
         while i < 3:
             try:
@@ -2636,7 +2666,7 @@ class GceosBase(Ideal):
         info = []
         
         for T_guess, xs, ys in self.bubble_T_guesses(P=P, zs=zs, T_guess=T_guess):
-            print('sarting guess', T_guess, xs, ys)
+            print('starting guess', T_guess, xs, ys)
             try:
                 T = self.bubble_T_Michelsen_Mollerup(T_guess=T_guess, P=P, zs=zs,
                                                      info=info, xtol=self.FLASH_VF_TOL)
@@ -2801,7 +2831,7 @@ class GceosBase(Ideal):
 
     def dew_T_Michelsen_Mollerup(self, T_guess, P, zs, maxiter=200, 
                                  xtol=1E-10, info=None, xs_guess=None,
-                                 max_step_damping=2.0):
+                                 max_step_damping=2.0, near_critical=False):
         # Does not have any formulation available
         N = len(zs)
         cmps = range(N)
@@ -2812,23 +2842,44 @@ class GceosBase(Ideal):
         def all_phis(T_guess):
             eos_g = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
                                  zs=zs, kijs=self.kijs, T=T_guess, P=P, **self.eos_kwargs)
-            ln_phis_g = eos_g.lnphis_g
+            if near_critical:
+                ln_phis_g = eos_g.lnphis_g if hasattr(eos_g, 'lnphis_g') else eos_g.lnphis_l
+            else:
+                ln_phis_g = eos_g.lnphis_g
+                
+                
             eos_l = eos_g.to_TP_zs(T=eos_g.T, P=eos_g.P, zs=xs)
-            ln_phis_l = eos_l.lnphis_l
             
+            if near_critical:
+                ln_phis_l = eos_l.lnphis_l if hasattr(eos_l, 'lnphis_l') else eos_l.lnphis_g 
+            else:
+                ln_phis_l = eos_l.lnphis_l
+
             eos2_l = eos_g.to_TP_zs(T=eos_g.T+dT, P=eos_g.P, zs=xs)
-            lnphis_l2 = eos2_l.lnphis_l
+            
+            if near_critical:
+                lnphis_l2 = eos2_l.lnphis_l if hasattr(eos2_l, 'lnphis_l') else eos2_l.lnphis_g
+            else:
+                lnphis_l2 = eos2_l.lnphis_l
             
             eos2_g = eos_g.to_TP_zs(T=eos_g.T+dT, P=eos_g.P, zs=zs)
-            lnphis_g2 = eos2_g.lnphis_g
+
+            if near_critical:
+                lnphis_g2 = eos2_g.lnphis_g if hasattr(eos2_g, 'lnphis_g') else eos2_g.lnphis_l
+            else:
+                lnphis_g2 = eos2_g.lnphis_g
+                
             return ln_phis_l, ln_phis_g, lnphis_l2, lnphis_g2, eos_l, eos_g
         
+        T_guess_old = None
         successive_fails = 0
         for i in range(maxiter):
             try:
                 ln_phis_l, ln_phis_g, lnphis_l2, lnphis_g2, eos_l, eos_g = all_phis(T_guess)
                 successive_fails = 0
             except:
+                if T_guess_old is None:
+                    raise ValueError("Could not calculate liquid and vapor conditions at provided initial temperature %s K" %(T_guess))
                 successive_fails += 1
                 if successive_fails >= 2:
                     raise ValueError("Stopped convergence procedure after multiple bad steps") 
@@ -2924,7 +2975,7 @@ class GceosBase(Ideal):
         elif method == 'IdealEOS':
             return self.flash_PVF_zs_ideal(P=P, VF=1, zs=zs)
     
-    def dew_T_guesses(self, P, zs, T_guess):
+    def dew_T_guesses(self, P, zs, T_guess=None):
         i = -1 if T_guess is not None else 0
         while i < 3:
             try:
@@ -3168,7 +3219,7 @@ class GceosBase(Ideal):
         elif method == 'IdealEOS':
             return self.flash_TVF_zs_ideal(T=T, VF=1, zs=zs)
     
-    def dew_P_guesses(self, T, zs, P_guess):
+    def dew_P_guesses(self, T, zs, P_guess=None):
         i = -1 if P_guess is not None else 0
         while i < 3:
             try:
@@ -3417,7 +3468,7 @@ class GceosBase(Ideal):
         elif method == 'IdealEOS':
             return self.flash_TVF_zs_ideal(T=T, VF=0, zs=zs)
     
-    def bubble_P_guesses(self, T, zs, P_guess):
+    def bubble_P_guesses(self, T, zs, P_guess=None):
         i = -1 if P_guess is not None else 0
         while i < 3:
             try:
@@ -3485,3 +3536,127 @@ class GceosBase(Ideal):
         P = ridder(self._err_bubble_P, Pmin, Pmax, args=(T, zs, maxiter, xtol, info))
         return info[0], info[1], info[5], P
 
+ 
+    def dew_T_envelope(self, zs, P_low=1e5, P_high=None, xtol=1E-10,
+                       factor=1.02, max_step_damping=.05, min_step_termination=1,
+                       min_factor_termination=1.0000001, dP_skip_step=200):
+        factor_original = factor
+        info = []
+        xs_known = []
+        Ts_known = []
+        P_points = []
+        near_critical = False
+        for T_guess, xs, ys in self.dew_T_guesses(P=P_low, zs=zs):
+            try:
+                T_low = self.dew_T_Michelsen_Mollerup(T_guess=T_guess, P=P_low, zs=zs, info=info,
+                                                  xtol=self.FLASH_VF_TOL, xs_guess=xs,
+                                                  max_step_damping=max_step_damping)
+                xs_low, _, _, _, _, _ = info
+                xs_known.append(xs_low)
+                Ts_known.append(T_low)
+                P_points.append(P_low)
+                
+                T_prev, xs_prev = T_low, xs_low
+                
+            except Exception as e:
+#                print('dew_T_Michelsen_Mollerup falure on initialization', e)
+                pass
+        if not P_points:
+            raise ValueError("Could not solve initial point to begin dew T envelope")
+        
+        if P_high is None:
+            P_high = 1.5*max(self.Pcs)
+            
+        P_prev = P_working = P_low*factor
+        while P_working < P_high + P_working*(factor - 1):
+            info = []
+            try:
+                T = self.dew_T_Michelsen_Mollerup(T_guess=T_prev, P=P_working, zs=zs, info=info,
+                                                  xtol=self.FLASH_VF_TOL, xs_guess=xs_prev,
+                                                  max_step_damping=max_step_damping,
+                                                  near_critical=near_critical)
+                xs, _, _, _, _, _ = info
+                xs_known.append(xs)
+                Ts_known.append(T)
+                P_points.append(P_working)
+                xs_prev, T_prev, P_prev = xs, T, P_working
+                print('success on P', P_working)
+            except Exception as e:
+                factor = 1 + (factor - 1)*0.5
+                print('failed dew T at P %g with xs %s, factor now %f' %(P_working, xs_known[-1], factor), e)
+            P_working = P_prev*factor
+            if factor < min_factor_termination and P_points[-1]*(factor-1) < min_step_termination:
+                if not near_critical:
+                    factor = factor_original
+                    near_critical = True
+                else:
+                    break
+                # Is is possible to come up with a step on zs or Ts to help?
+#                P_prev = P_working = P_working + dP_skip_step
+#                N = len(zs)
+#                cmps = range(N)
+#                
+#                dP_skipped = P_working - P_points[-1]
+#                
+#                dP_prev = (P_points[-1] - P_points[-2])
+#                
+#                dT_dP = (Ts_known[-1] - Ts_known[-2])/dP_prev
+#                dx_dP = [(xs_known[-1][i] - xs_known[-2][i])/dP_prev for i in cmps]
+#                
+#                xs_prev = [max(xs_known[-1][i] + dx_dP[i]*dP_skipped, 0) for i in cmps]
+#                xs_prev_sum = sum(xs_prev)
+#                xs_prev = [xi/xs_prev_sum for xi in xs_prev]
+#                
+#                T_prev = T_prev + dT_dP*dP_skipped
+#                
+#                print('dP_skipped', dP_skipped, 'dT_dP', dT_dP, 'dx_dP', dx_dP, 'xs_prev', xs_prev, 'T_prev', T_prev)
+                
+                
+        return P_points, Ts_known, xs_known
+    
+    def bubble_T_envelope(self, zs, P_low=1e5, P_high=None, xtol=1E-10,
+                          factor=1.02, max_step_damping=.05, min_step_termination=1,
+                          min_factor_termination=1.0000001):
+        info = []
+        ys_known = []
+        Ts_known = []
+        P_points = []
+        for T_guess, xs, ys in self.bubble_T_guesses(P=P_low, zs=zs):
+            try:
+                T_low = self.bubble_T_Michelsen_Mollerup(T_guess=T_guess, P=P_low, zs=zs, info=info,
+                                                  xtol=self.FLASH_VF_TOL, ys_guess=ys,
+                                                  max_step_damping=max_step_damping)
+                _, ys_low, _, _, _, _ = info
+                ys_known.append(ys_low)
+                Ts_known.append(T_low)
+                P_points.append(P_low)
+                
+            except Exception as e:
+#                print('bubble_T_Michelsen_Mollerup falure on initialization', e)
+                pass
+        if not P_points:
+            raise ValueError("Could not solve initial point to begin bubble T envelope")
+        
+        if P_high is None:
+            P_high = 1.5*max(self.Pcs)
+            
+        P_working = P_low*factor
+        while P_working < P_high + P_working*(factor - 1):
+            info = []
+            try:
+                T = self.bubble_T_Michelsen_Mollerup(T_guess=Ts_known[-1], P=P_working, zs=zs, info=info,
+                                                  xtol=self.FLASH_VF_TOL, ys_guess=ys_known[-1],
+                                                  max_step_damping=max_step_damping)
+                _, ys, _, _, _, _ = info
+                ys_known.append(ys)
+                Ts_known.append(T)
+                P_points.append(P_working)
+#                print('success on P', P_working)
+            except Exception as e:
+                factor = 1 + (factor - 1)*0.5
+#                print('failed dew T at P %g with ys %s, factor now %f' %(P_working, ys_known[-1], factor), e)
+            P_working = P_points[-1]*factor
+            if factor < min_factor_termination and P_points[-1]*(factor-1) < min_step_termination:
+                break
+                
+        return P_points, Ts_known, ys_known
