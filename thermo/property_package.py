@@ -2442,7 +2442,7 @@ class GceosBase(Ideal):
 
     def bubble_T_Michelsen_Mollerup(self, T_guess, P, zs, maxiter=200, 
                                     xtol=1E-10, info=None, ys_guess=None,
-                                    max_step_damping=2.0):
+                                    max_step_damping=2.0, near_critical=False):
         # ys_guess did not help convergence at all
         N = len(zs)
         cmps = range(N)
@@ -2457,16 +2457,32 @@ class GceosBase(Ideal):
             # if they weren't too expensive; i.e. dZ_dT.
             eos_l = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
                                  zs=zs, kijs=self.kijs, T=T_guess, P=P, **self.eos_kwargs)
-            ln_phis_l = eos_l.lnphis_l
+
+            if near_critical:
+                ln_phis_l = eos_l.lnphis_l if hasattr(eos_l, 'lnphis_l') else eos_l.lnphis_g
+            else:
+                ln_phis_l = eos_l.lnphis_l
             
             eos_g = eos_l.to_TP_zs(T=eos_l.T, P=eos_l.P, zs=ys)
-            ln_phis_g = eos_g.lnphis_g
+            
+            if near_critical:
+                ln_phis_g = eos_g.lnphis_g if hasattr(eos_g, 'lnphis_g') else eos_g.lnphis_l
+            else:
+                ln_phis_g = eos_g.lnphis_g
             
             eos2_l = eos_l.to_TP_zs(T=eos_l.T+dT, P=eos_l.P, zs=zs)
-            lnphis_l2 = eos2_l.lnphis_l
+            
+            if near_critical:
+                lnphis_l2 = eos2_l.lnphis_l if hasattr(eos2_l, 'lnphis_l') else eos2_l.lnphis_g
+            else:
+                lnphis_l2 = eos2_l.lnphis_l
             
             eos2_g = eos_l.to_TP_zs(T=eos_l.T+dT, P=eos_l.P, zs=ys)
-            lnphis_g2 = eos2_g.lnphis_g
+            
+            if near_critical:
+                lnphis_g2 = eos2_g.lnphis_g if hasattr(eos2_g, 'lnphis_g') else eos2_g.lnphis_l
+            else:
+                lnphis_g2 = eos2_g.lnphis_g
 
             return ln_phis_l, ln_phis_g, lnphis_l2, lnphis_g2, eos_l, eos_g
 
@@ -2506,13 +2522,14 @@ class GceosBase(Ideal):
             ys = [zs[i]*Ks[i] for i in cmps]
             y_sum = sum(ys)
             ys = [y/y_sum for y in ys]
+
+            if info is not None:
+                info[:] = zs, ys, Ks, eos_l, eos_g, 0.0
             
 #            print(ys, T_guess, abs(T_guess - T_guess_old), dfk_dT)
             if abs(T_guess - T_guess_old) < xtol:
                 break
             
-            if info is not None:
-                info[:] = zs, ys, Ks, eos_l, eos_g, 0.0
                 
                 
                 
@@ -2904,13 +2921,12 @@ class GceosBase(Ideal):
             x_sum = sum(xs)
             xs = [x/x_sum for x in xs]
             
-            
+            if info is not None:
+                info[:] = xs, zs, Ks, eos_l, eos_g, 1.0
 #            print(xs, T_guess, abs(T_guess - T_guess_old), dfk_dT)
             if abs(T_guess - T_guess_old) < xtol:
                 break
             
-            if info is not None:
-                info[:] = xs, zs, Ks, eos_l, eos_g, 1.0
                 
         if abs(T_guess - T_guess_old) > xtol:
             raise ValueError("Did not converge to specified tolerance")
@@ -3156,13 +3172,14 @@ class GceosBase(Ideal):
             
             x_sum = sum(xs)
             xs = [x/x_sum for x in xs]
+
+            if info is not None:
+                info[:] = xs, zs, Ks, eos_l, eos_g, 1.0
             
 #            print(xs, P_guess, abs(P_guess - P_guess_old), dfk_dP)
             if abs(P_guess - P_guess_old) < xtol:
                 break
             
-            if info is not None:
-                info[:] = xs, zs, Ks, eos_l, eos_g, 1.0
         if abs(P_guess - P_guess_old) > xtol:
             raise ValueError("Did not converge to specified tolerance")
         return P_guess
@@ -3404,12 +3421,12 @@ class GceosBase(Ideal):
             y_sum = sum(ys)
             ys = [y/y_sum for y in ys]
             
-#            print(ys, P_guess, abs(P_guess - P_guess_old), dfk_dP)
-            if abs(P_guess - P_guess_old) < xtol:
-                break
             
             if info is not None:
                 info[:] = zs, ys, Ks, eos_l, eos_g, 0.0
+#            print(ys, P_guess, abs(P_guess - P_guess_old), dfk_dP)
+            if abs(P_guess - P_guess_old) < xtol:
+                break
                 
         if abs(P_guess - P_guess_old) > xtol:
             raise ValueError("Did not converge to specified tolerance")
@@ -3580,10 +3597,10 @@ class GceosBase(Ideal):
                 Ts_known.append(T)
                 P_points.append(P_working)
                 xs_prev, T_prev, P_prev = xs, T, P_working
-                print('success on P', P_working)
+#                print('success on P', P_working)
             except Exception as e:
                 factor = 1 + (factor - 1)*0.5
-                print('failed dew T at P %g with xs %s, factor now %f' %(P_working, xs_known[-1], factor), e)
+#                print('failed dew T at P %g with xs %s, factor now %f' %(P_working, xs_known[-1], factor), e)
             P_working = P_prev*factor
             if factor < min_factor_termination and P_points[-1]*(factor-1) < min_step_termination:
                 if not near_critical:
@@ -3613,14 +3630,16 @@ class GceosBase(Ideal):
                 
                 
         return P_points, Ts_known, xs_known
-    
+
     def bubble_T_envelope(self, zs, P_low=1e5, P_high=None, xtol=1E-10,
                           factor=1.02, max_step_damping=.05, min_step_termination=1,
                           min_factor_termination=1.0000001):
+        factor_original = factor
         info = []
         ys_known = []
         Ts_known = []
         P_points = []
+        near_critical = False
         for T_guess, xs, ys in self.bubble_T_guesses(P=P_low, zs=zs):
             try:
                 T_low = self.bubble_T_Michelsen_Mollerup(T_guess=T_guess, P=P_low, zs=zs, info=info,
@@ -3630,6 +3649,7 @@ class GceosBase(Ideal):
                 ys_known.append(ys_low)
                 Ts_known.append(T_low)
                 P_points.append(P_low)
+                T_prev, ys_prev = T_low, ys_low
                 
             except Exception as e:
 #                print('bubble_T_Michelsen_Mollerup falure on initialization', e)
@@ -3640,23 +3660,37 @@ class GceosBase(Ideal):
         if P_high is None:
             P_high = 1.5*max(self.Pcs)
             
-        P_working = P_low*factor
+        P_prev = P_working = P_low*factor
         while P_working < P_high + P_working*(factor - 1):
             info = []
             try:
-                T = self.bubble_T_Michelsen_Mollerup(T_guess=Ts_known[-1], P=P_working, zs=zs, info=info,
-                                                  xtol=self.FLASH_VF_TOL, ys_guess=ys_known[-1],
-                                                  max_step_damping=max_step_damping)
+                T = self.bubble_T_Michelsen_Mollerup(T_guess=T_prev, P=P_working, zs=zs, info=info,
+                                                  xtol=self.FLASH_VF_TOL, ys_guess=ys_prev,
+                                                  max_step_damping=max_step_damping,
+                                                  near_critical=near_critical)
                 _, ys, _, _, _, _ = info
                 ys_known.append(ys)
                 Ts_known.append(T)
                 P_points.append(P_working)
+                ys_prev, T_prev, P_prev = ys, T, P_working
 #                print('success on P', P_working)
             except Exception as e:
                 factor = 1 + (factor - 1)*0.5
-#                print('failed dew T at P %g with ys %s, factor now %f' %(P_working, ys_known[-1], factor), e)
-            P_working = P_points[-1]*factor
+#                print('failed bubble T at P %g with ys %s, factor now %f' %(P_working, ys_known[-1], factor), e)
+
+#                import sys, os
+#                exc_type, exc_obj, exc_tb = sys.exc_info()
+#                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+#                print(exc_type, fname, exc_tb.tb_lineno)
+#
+                
+            P_working = P_prev*factor
             if factor < min_factor_termination and P_points[-1]*(factor-1) < min_step_termination:
-                break
+                if not near_critical:
+                    factor = factor_original
+                    near_critical = True
+                else:
+                    break
                 
         return P_points, Ts_known, ys_known
+    
