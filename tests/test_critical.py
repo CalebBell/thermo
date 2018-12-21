@@ -199,7 +199,7 @@ def test_Tc_main():
     # Use the default method for each chemical in this file
     Tcs = [Tc(i) for i in CASs]
     Tcs_default_sum = pd.Series(Tcs).sum()
-    assert_allclose(Tcs_default_sum, 6054504.896122223)
+    assert_allclose(Tcs_default_sum, 6053723.896122222)
 
     assert_allclose(514.0, Tc(CASRN='64-17-5'))
 
@@ -255,7 +255,7 @@ def test_Vc_main():
     # Use the default method for each chemical in this file
     Vcs = [Vc(i) for i in CASs]
     Vcs_default_sum = pd.Series(Vcs).sum()
-    assert_allclose(Vcs_default_sum, 4.7958940200000004)
+    assert_allclose(Vcs_default_sum, 4.7955320200000005)
 
     assert_allclose(0.000168, Vc(CASRN='64-17-5'))
 
@@ -287,11 +287,11 @@ def test_Zc_main():
 
     assert_allclose(0.241, Zc(CASRN='64-17-5'))
 
-    assert_allclose(0.22941610667800444, Zc(CASRN='7732-18-5', Method='PSRK'))
+    assert_allclose(0.22941602891834947, Zc(CASRN='7732-18-5', Method='PSRK'))
 
     assert_allclose(0.29, Zc(CASRN='7727-37-9', Method='MATTHEWS'))
 
-    assert_allclose(0.24125051446879994, Zc(CASRN='64-17-5', Method='COMBINED'))
+    assert_allclose(0.24125043269792068, Zc(CASRN='64-17-5', Method='COMBINED'))
 
     methods = Zc(CASRN='98-01-1', AvailableMethods=True)
     assert methods == ['PSRK', 'YAWS', 'NONE']
