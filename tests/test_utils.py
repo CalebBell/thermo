@@ -136,12 +136,12 @@ def test_B_To_Z():
 
 def test_B_from_Z():
     B_calc = B_from_Z(0.94, 300, 1E5)
-    assert_allclose(B_calc, -0.0014966027640000014)
+    assert_allclose(B_calc, -0.0014966032712675846)
 
 
 def test_Z():
     Z_calc = Z(600, P=1E6, V=0.00463)
-    assert_allclose(Z_calc, 0.9281019876560912)
+    assert_allclose(Z_calc, 0.9281016730797027)
 
 def test_vapor_mass_quality():
     x = vapor_mass_quality(0.5, 60, 30)
@@ -378,16 +378,16 @@ def test_TDependentProperty():
 
 def test_Z_from_virial_density_form():
     Z_calc = Z_from_virial_density_form(300, 122057.233762653, 1E-4, 1E-5, 1E-6, 1E-7)
-    assert_allclose(Z_calc, 1.2843496002100001)
+    assert_allclose(Z_calc, 1.2843494052609186)
     
     Z_calc = Z_from_virial_density_form(300, 102031.881198762, 1e-4, 1e-5, 1e-6)
-    assert_allclose(Z_calc, 1.0736324409999995)
+    assert_allclose(Z_calc, 1.0736323841544937)
 
     Z_calc = Z_from_virial_density_form(300, 96775.8831504971, 1e-4, 1e-5)
-    assert_allclose(Z_calc, 1.0183261000000003)
+    assert_allclose(Z_calc, 1.018326089216066)
     
     Z_calc = Z_from_virial_density_form(300, 95396.3561037084, 1e-4)
-    assert_allclose(Z_calc,  1.0038100000000001)
+    assert_allclose(Z_calc,  1.003809998713499)
     
     assert_allclose(1, Z_from_virial_density_form(300, 95396.3561037084))
     

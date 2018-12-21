@@ -32,12 +32,12 @@ def test_heat_capacity_CSP():
     # the example presented. The error is in the main expressesion.
     Cp1 = Rowlinson_Poling(350.0, 435.5, 0.203, 91.21)
     Cp2 = Rowlinson_Poling(373.28, 535.55, 0.323, 119.342)
-    assert_allclose([Cp1, Cp2], [143.80194441498296, 177.62600344957252])
+    assert_allclose([Cp1, Cp2], [143.80196224081436, 177.6260232047048])
 
     # Example in VDI Heat Atlas, Example 11 in VDI D1 p 139.
     # Also formerly in ChemSep. Also in COCO.
     Cp = Rowlinson_Bondi(373.28, 535.55, 0.323, 119.342)
-    assert_allclose(Cp, 175.39760730048116)
+    assert_allclose(Cp, 175.3976263003074)
 
 
 def test_solid_models():
@@ -50,7 +50,7 @@ def test_solid_models():
     assert_allclose(dH, 283246.1242170376)
     
     dS = Lastovka_solid_integral_over_T(300, 0.2139)
-    assert_allclose(dS, 1947.553552666818)
+    assert_allclose(dS, 1947.5537561495557)
 
     Cp = Dadgostar_Shaw(355.6, 0.139)
     assert_allclose(Cp, 1802.5291501191516)
@@ -67,26 +67,26 @@ def test_solid_models():
 
 def test_Zabransky_quasi_polynomial():
     Cp = Zabransky_quasi_polynomial(330, 591.79, -3.12743, 0.0857315, 13.7282, 1.28971, 6.42297, 4.10989)
-    assert_allclose(Cp, 165.4728226923247)
+    assert_allclose(Cp, 165.472878778683)
 
     H2 = Zabransky_quasi_polynomial_integral(300, 591.79, -3.12743, 0.0857315, 13.7282, 1.28971, 6.42297, 4.10989)
     H1 = Zabransky_quasi_polynomial_integral(200, 591.79, -3.12743, 0.0857315, 13.7282, 1.28971, 6.42297, 4.10989)
-    assert_allclose(H2 - H1, 14662.026406892926)
+    assert_allclose(H2 - H1, 14662.031376528757)
     
     S2 = Zabransky_quasi_polynomial_integral_over_T(300, 591.79, -3.12743, 0.0857315, 13.7282, 1.28971, 6.42297, 4.10989)
     S1 = Zabransky_quasi_polynomial_integral_over_T(200, 591.79, -3.12743, 0.0857315, 13.7282, 1.28971, 6.42297, 4.10989)
-    assert_allclose(S2-S1, 59.169972919442074) # result from quadrature, not the integral
+    assert_allclose(S2-S1, 59.16999297436473) # result from quadrature, not the integral
 
 
 def test_Zabransky_cubic():
     Cp = Zabransky_cubic(298.15, 20.9634, -10.1344, 2.8253, -0.256738)
-    assert_allclose(Cp, 75.31462591538555)
+    assert_allclose(Cp, 75.31465144297991)
     
     H0 = Zabransky_cubic_integral(298.15, 20.9634, -10.1344, 2.8253, -0.256738)
-    assert_allclose(H0, 31051.679845520584)
+    assert_allclose(H0, 31051.690370364562)
     
     S0 = Zabransky_cubic_integral_over_T(298.15, 20.9634, -10.1344, 2.8253,  -0.256738)
-    assert_allclose(S0, 24.73245695987246)
+    assert_allclose(S0, 24.732465342840854)
     
 
 
@@ -145,7 +145,7 @@ def test_TRC_gas_data():
 
 def test_TRC_gas():
     Cps = [TRCCp(T, 4.0, 7.65E5, 720., 3.565, -0.052, -1.55E6, 52., 201.) for T in [150, 300]]
-    assert_allclose(Cps, [35.584319834110346, 42.06525682312236])
+    assert_allclose(Cps, [35.58433189527471, 42.06527108097466])
     
     # Test a zero division error
     Cp_zero = TRCCp(298, 4.0, 32753000, 892, 76.209, -0.254, -58870000, 98, 298)
@@ -154,15 +154,15 @@ def test_TRC_gas():
 
 def test_TRCCp_integral():
     dH = TRCCp_integral(298.15, 4.0, 7.65E5, 720., 3.565, -0.052, -1.55E6, 52., 201., 1.2)
-    assert_allclose(dH, 10802.532600592816)
+    assert_allclose(dH, 10802.536262068483)
     dH = TRCCp_integral(150, 4.0, 7.65E5, 720., 3.565, -0.052, -1.55E6, 52., 201., 1.2)
-    assert_allclose(dH, 5071.355751575949)
+    assert_allclose(dH, 5071.357470491908)
 
 
 def test_TRCCp_integral_over_T():
     coeffs = [4.0, 124000, 245, 50.538999999999994, -49.468999999999994, 220440000, 560, 78]
     dS = TRCCp_integral_over_T(300, *coeffs) - TRCCp_integral_over_T(200, *coeffs)
-    assert_allclose(dS, 23.44278146529652)
+    assert_allclose(dS, 23.4427894111345)
     
     
 @pytest.mark.meta_T_dept
@@ -171,7 +171,9 @@ def test_HeatCapacityGas():
     methods = list(EtOH.all_methods)
     methods.remove(VDI_TABULAR)
     Cps_calc = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(305))[1] for i in methods]
-    assert_allclose(sorted(Cps_calc), sorted([66.35085001015844, 66.40063819791762, 66.25918325111196, 71.07236200126606, 65.6, 65.21]))
+    assert_allclose(sorted(Cps_calc), 
+                    sorted([66.35085001015844, 66.40063819791762, 66.25918325111196, 71.07236200126606, 65.6, 65.21]),
+                    rtol=1e-5)
 
     # VDI interpolation, treat separately due to change in behavior of scipy in 0.19
     assert_allclose(EtOH.calculate(305, VDI_TABULAR), 74.6763493522965, rtol=1E-4)
@@ -202,10 +204,10 @@ def test_HeatCapacityGas_integrals():
     # Enthalpy integrals
     EtOH = HeatCapacityGas(CASRN='64-17-5', similarity_variable=0.1953615, MW=46.06844)
     dH1 = EtOH.calculate_integral(200, 300, 'TRC Thermodynamics of Organic Compounds in the Gas State (1994)')
-    assert_allclose(dH1, 5828.903671654116)
+    assert_allclose(dH1, 5828.905647337944)
 
     dH2 = EtOH.calculate_integral(200, 300, 'Poling et al. (2001)')
-    assert_allclose(dH2, 5851.196044907861)
+    assert_allclose(dH2, 5851.1980281476)
     
     dH3 = EtOH.calculate_integral(200, 300, 'Poling et al. (2001) constant')
     assert_allclose(dH3, 6520.999999999999)
@@ -214,32 +216,32 @@ def test_HeatCapacityGas_integrals():
     assert_allclose(dH4, 6559.999999999999)
     
     dH4 = EtOH.calculate_integral(200, 300,'Lastovka and Shaw (2013)')
-    assert_allclose(dH4, 6183.016942750677)
+    assert_allclose(dH4, 6183.016942750752, rtol=1e-5)
 
     dH5 = EtOH.calculate_integral(200, 300,'CoolProp')
-    assert_allclose(dH5, 5838.118293585357)
+    assert_allclose(dH5, 5838.118293585357, rtol=5e-5)
     
     dH = EtOH.calculate_integral(200, 300, 'VDI Heat Atlas')
     assert_allclose(dH, 6610.821140000002)
     
     # Entropy integrals
     dS = EtOH.calculate_integral_over_T(200, 300, 'Poling et al. (2001)')
-    assert_allclose(dS, 23.53409951536522)
+    assert_allclose(dS, 23.5341074921551)
         
     dS = EtOH.calculate_integral_over_T(200, 300, 'Poling et al. (2001) constant')
-    assert_allclose(dS, 26.440379699733395)
+    assert_allclose(dS, 26.4403796997334)
 
     dS = EtOH.calculate_integral_over_T(200, 300, 'TRC Thermodynamics of Organic Compounds in the Gas State (1994)')
-    assert_allclose(dS, 23.442781465296523)
+    assert_allclose(dS, 23.4427894111345)
     
     dS = EtOH.calculate_integral_over_T(200, 300, 'CRC Standard Thermodynamic Properties of Chemical Substances')
     assert_allclose(dS, 26.59851109189558)
     
     dS =  EtOH.calculate_integral_over_T(200, 300, 'CoolProp')
-    assert_allclose(dS, 23.487556909586853)
+    assert_allclose(dS, 23.487556909586853, rtol=1e-5)
     
     dS = EtOH.calculate_integral_over_T(200, 300, 'Lastovka and Shaw (2013)')
-    assert_allclose(dS, 24.86700348570948)
+    assert_allclose(dS, 24.86700348570956, rtol=1e-5)
     
     dS = EtOH.calculate_integral_over_T(200, 300, 'VDI Heat Atlas')
     assert_allclose(dS, 26.590569427910076)
@@ -332,12 +334,12 @@ def test_HeatCapacityLiquid():
 
     propylbenzene = HeatCapacityLiquid(MW=120.19158, CASRN='103-65-1', Tc=638.35)
     Cpl_calc = [(propylbenzene.set_user_methods(i, forced=True), propylbenzene.T_dependent_property(298.15))[1] for i in propylbenzene.all_methods]
-    Cpls = [214.696720482603, 214.71, 214.7, 214.6498824147387]
+    Cpls = [214.6499551694668, 214.69679325320664, 214.7, 214.71]
     assert_allclose(sorted(Cpl_calc), sorted(Cpls))
 
     ctp = HeatCapacityLiquid(MW=118.58462, CASRN='96-43-5')
     Cpl_calc = [(ctp.set_user_methods(i, forced=True), ctp.T_dependent_property(250))[1] for i in ctp.all_methods]
-    Cpls = [134.1186283149712, 134.14961304014292]
+    Cpls = [134.1186737739494, 134.1496585096233]
     assert_allclose(sorted(Cpl_calc), sorted(Cpls))
 
 
@@ -368,32 +370,32 @@ def test_HeatCapacityLiquid_integrals():
     assert_allclose(dH, 14395.231307169146)
     
     dH = tol.calculate_integral(200, 300, ROWLINSON_POLING)
-    assert_allclose(dH, 17332.445363748568)
+    assert_allclose(dH, 17332.447330329327)
     
     dH = tol.calculate_integral(200, 300, ROWLINSON_BONDI)
-    assert_allclose(dH, 17161.365551776624)
+    assert_allclose(dH, 17161.367460370562)
     
     dH = tol.calculate_integral(200, 300, ZABRANSKY_SPLINE_C)
-    assert_allclose(dH, 14588.045715211323)
+    assert_allclose(dH, 14588.050659771678)
     
     # Test over different coefficient sets
     dH = tol.calculate_integral(200, 500, ZABRANSKY_SPLINE_SAT)
-    assert_allclose(dH, 52806.40487959729)
+    assert_allclose(dH, 52806.422778119224)
     
     dH = tol.calculate_integral(200, 300, ZABRANSKY_SPLINE_SAT)
-    assert_allclose(dH, 14588.104262865752)
+    assert_allclose(dH, 14588.10920744596)
     
     dH = tol.calculate_integral(200, 300, ZABRANSKY_QUASIPOLYNOMIAL_C)
-    assert_allclose(dH, 14662.026406892926)
+    assert_allclose(dH, 14662.031376528757)
     
     dH = propylbenzene.calculate_integral(200, 300, ZABRANSKY_QUASIPOLYNOMIAL)
-    assert_allclose(dH, 19863.93768123914)
+    assert_allclose(dH, 19863.944414041936)
     
     dH = propylbenzene.calculate_integral(200, 300, ZABRANSKY_SPLINE)
-    assert_allclose(dH, 19865.17965271845)
+    assert_allclose(dH, 19865.186385942456)
     
     dH = ctp.calculate_integral(200, 300, ZABRANSKY_QUASIPOLYNOMIAL_SAT)
-    assert_allclose(dH, 13437.281657981055)
+    assert_allclose(dH, 13437.28621249451)
         
     # Entropy integrals
     dS = tol.calculate_integral_over_T(200, 300, CRCSTD)
@@ -406,40 +408,40 @@ def test_HeatCapacityLiquid_integrals():
     assert_allclose(dS, 57.78686119989654)
     
     dS = tol.calculate_integral_over_T(200, 300, ROWLINSON_POLING)
-    assert_allclose(dS, 70.42884850906293)
+    assert_allclose(dS, 70.42885653432398)
     
     dS = tol.calculate_integral_over_T(200, 300, ROWLINSON_BONDI)
-    assert_allclose(dS, 69.73749349887285)
+    assert_allclose(dS, 69.73750128980184)
     
     dS = tol.calculate_integral_over_T(200, 300, ZABRANSKY_SPLINE_C)
-    assert_allclose(dS, 58.866372687623326)
+    assert_allclose(dS, 58.866392640147374)
     
     dS = tol.calculate_integral_over_T(200, 300, ZABRANSKY_QUASIPOLYNOMIAL_C)
-    assert_allclose(dS, 59.169972919442074)
+    assert_allclose(dS, 59.16999297436473)
     
     dS = tol.calculate_integral_over_T(200, 300, ZABRANSKY_SPLINE_SAT)
-    assert_allclose(dS, 58.866460402717365)
+    assert_allclose(dS, 58.86648035527116)
          
     dS = tol.calculate_integral_over_T(200, 500, ZABRANSKY_SPLINE_SAT)
-    assert_allclose(dS, 154.94761329230238)
+    assert_allclose(dS, 154.94766581118256)
     
     dS = propylbenzene.calculate_integral_over_T(200, 300, ZABRANSKY_QUASIPOLYNOMIAL)
-    assert_allclose(dS, 80.13490411695314)
+    assert_allclose(dS, 80.13493128839104)
     
     dS = propylbenzene.calculate_integral_over_T(200, 300, ZABRANSKY_SPLINE)
-    assert_allclose(dS, 80.13634158499711)
+    assert_allclose(dS, 80.13636874689294)
 
     dS = ctp.calculate_integral_over_T(200, 300, ZABRANSKY_QUASIPOLYNOMIAL_SAT)
-    assert_allclose(dS, 54.34706623224253)
+    assert_allclose(dS, 54.34708465297109)
 
     
     
 def test_ZABRANSKY_SPLINE():
     from thermo.heat_capacity import zabransky_dict_iso_s
     d = zabransky_dict_iso_s['7732-18-5']
-    assert_allclose(d.calculate(645), 4521.766269344189)
-    assert_allclose(d.calculate(400), 76.53792824292003)
-    assert_allclose(d.calculate(250), 77.10824821982627)
+    assert_allclose(d.calculate(645), 4521.767801978968)
+    assert_allclose(d.calculate(400), 76.53795418514787)
+    assert_allclose(d.calculate(250), 77.1082743553618)
     assert_allclose(d.Ts, [273.6, 380.0, 590.0, 635.0, 644.6])
     assert_allclose(d.coeff_sets, [[20.9634, -10.1344, 2.8253, -0.256738],
                                    [-22.0666, 23.8366, -6.11445, 0.52745],
@@ -449,59 +451,59 @@ def test_ZABRANSKY_SPLINE():
     
     # Test enthalpy integrals
     
-    assert_allclose(d.calculate_integral(200, 270), 5505.732579532694)
-    assert_allclose(d.calculate_integral(200, 280), 6264.125429184165)
-    assert_allclose(d.calculate_integral(200, 380), 13817.509769449993)
-    assert_allclose(d.calculate_integral(200, 380+1E-9), 13817.509769449993)
-    assert_allclose(d.calculate_integral(300, 590-1E-9), 24309.128901680062)
-    assert_allclose(d.calculate_integral(300, 590+1E-9), 24309.128901680062)
-    assert_allclose(d.calculate_integral(200, 635-1E-9), 39698.84625418573)
-    assert_allclose(d.calculate_integral(200, 635+1E-9), 39698.84625418573)
-    assert_allclose(d.calculate_integral(200, 644.6), 76304.7781125316)
-    assert_allclose(d.calculate_integral(200, 645), 78093.6635609874)
+    assert_allclose(d.calculate_integral(200, 270), 5505.7344456789615)
+    assert_allclose(d.calculate_integral(200, 280), 6264.127552384685)
+    assert_allclose(d.calculate_integral(200, 380), 13817.514452840238)
+    assert_allclose(d.calculate_integral(200, 380+1E-9), 13817.514452916399)
+    assert_allclose(d.calculate_integral(300, 590-1E-9), 24309.137141163086)
+    assert_allclose(d.calculate_integral(300, 590+1E-9), 24309.13714137674)
+    assert_allclose(d.calculate_integral(200, 635-1E-9), 39698.85970996421)
+    assert_allclose(d.calculate_integral(200, 635+1E-9), 39698.85970642518)
+    assert_allclose(d.calculate_integral(200, 644.6), 76304.80397369813)
+    assert_allclose(d.calculate_integral(200, 645), 78093.69002487611)
     
     # Same test cases, flipped around
-    assert_allclose(d.calculate_integral(270, 200), -5505.732579532694)
-    assert_allclose(d.calculate_integral(280, 200), -6264.125429184165)
-    assert_allclose(d.calculate_integral(380, 200), -13817.509769449993)
-    assert_allclose(d.calculate_integral(380+1E-9, 200), -13817.509769449993)
-    assert_allclose(d.calculate_integral(590-1E-9, 300), -24309.128901680062)
-    assert_allclose(d.calculate_integral(590+1E-9, 300), -24309.128901680062)
-    assert_allclose(d.calculate_integral(635-1E-9, 200), -39698.84625418573)
-    assert_allclose(d.calculate_integral(635+1E-9, 200), -39698.84625418573)
-    assert_allclose(d.calculate_integral(644.6, 200), -76304.7781125316)
-    assert_allclose(d.calculate_integral(645, 200), -78093.6635609874)
+    assert_allclose(d.calculate_integral(270, 200), -5505.7344456789615)
+    assert_allclose(d.calculate_integral(280, 200), -6264.127552384685)
+    assert_allclose(d.calculate_integral(380, 200), -13817.514452840238)
+    assert_allclose(d.calculate_integral(380+1E-9, 200), -13817.514452916399)
+    assert_allclose(d.calculate_integral(590-1E-9, 300), -24309.137141163086)
+    assert_allclose(d.calculate_integral(590+1E-9, 300), -24309.13714137674)
+    assert_allclose(d.calculate_integral(635-1E-9, 200), -39698.85970996421)
+    assert_allclose(d.calculate_integral(635+1E-9, 200), -39698.85970642518)
+    assert_allclose(d.calculate_integral(644.6, 200), -76304.80397369813)
+    assert_allclose(d.calculate_integral(645, 200), -78093.69002487611)
 
     # Test entropy integrals
-    assert_allclose(d.calculate_integral_over_T(200, 270), 23.65403751138625)
-    assert_allclose(d.calculate_integral_over_T(200, 280), 26.412172179347728)
-    assert_allclose(d.calculate_integral_over_T(200, 380), 49.473623647253014)
-    assert_allclose(d.calculate_integral_over_T(200, 380+1E-9), 49.473623647253014)
-    assert_allclose(d.calculate_integral_over_T(300, 590-1E-9), 55.55836880929313)
-    assert_allclose(d.calculate_integral_over_T(300, 590+1E-9), 55.55836880929313)
-    assert_allclose(d.calculate_integral_over_T(200, 635-1E-9), 99.54361626259453)
-    assert_allclose(d.calculate_integral_over_T(200, 635+1E-9), 99.54361626259453)
-    assert_allclose(d.calculate_integral_over_T(200, 644.6), 156.74427000699035)
-    assert_allclose(d.calculate_integral_over_T(200, 645), 159.51859302013582)
+    assert_allclose(d.calculate_integral_over_T(200, 270), 23.65404552882864)
+    assert_allclose(d.calculate_integral_over_T(200, 280), 26.412181131648946)
+    assert_allclose(d.calculate_integral_over_T(200, 380), 49.473640416141926)
+    assert_allclose(d.calculate_integral_over_T(200, 380+1E-9), 49.473640416342356)
+    assert_allclose(d.calculate_integral_over_T(300, 590-1E-9), 55.558387640582296)
+    assert_allclose(d.calculate_integral_over_T(300, 590+1E-9), 55.558387640900335)
+    assert_allclose(d.calculate_integral_over_T(200, 635-1E-9), 99.5436500019074)
+    assert_allclose(d.calculate_integral_over_T(200, 635+1E-9), 99.5436500025113)
+    assert_allclose(d.calculate_integral_over_T(200, 644.6), 156.74432313471482)
+    assert_allclose(d.calculate_integral_over_T(200, 645), 159.51864708803043)
     
     # Same test cases, flipped around
-    assert_allclose(d.calculate_integral_over_T(270, 200), -23.65403751138625)
-    assert_allclose(d.calculate_integral_over_T(280, 200), -26.412172179347728)
-    assert_allclose(d.calculate_integral_over_T(380, 200), -49.473623647253014)
-    assert_allclose(d.calculate_integral_over_T(380+1E-9, 200), -49.473623647253014)
-    assert_allclose(d.calculate_integral_over_T(590-1E-9, 300), -55.55836880929313)
-    assert_allclose(d.calculate_integral_over_T(590+1E-9, 300), -55.55836880929313)
-    assert_allclose(d.calculate_integral_over_T(635-1E-9, 200), -99.54361626259453)
-    assert_allclose(d.calculate_integral_over_T(635+1E-9, 200), -99.54361626259453)
-    assert_allclose(d.calculate_integral_over_T(644.6, 200), -156.74427000699035)
-    assert_allclose(d.calculate_integral_over_T(645, 200), -159.51859302013582)
+    assert_allclose(d.calculate_integral_over_T(270, 200), -23.65404552882864)
+    assert_allclose(d.calculate_integral_over_T(280, 200), -26.412181131648946)
+    assert_allclose(d.calculate_integral_over_T(380, 200), -49.473640416141926)
+    assert_allclose(d.calculate_integral_over_T(380+1E-9, 200), -49.473640416342356)
+    assert_allclose(d.calculate_integral_over_T(590-1E-9, 300), -55.558387640582296)
+    assert_allclose(d.calculate_integral_over_T(590+1E-9, 300), -55.558387640900335)
+    assert_allclose(d.calculate_integral_over_T(635-1E-9, 200), -99.5436500019074)
+    assert_allclose(d.calculate_integral_over_T(635+1E-9, 200), -99.5436500025113)
+    assert_allclose(d.calculate_integral_over_T(644.6, 200), -156.74432313471482)
+    assert_allclose(d.calculate_integral_over_T(645, 200), -159.51864708803043)
     
     
     # Test a chemical with only one set of coefficients
     d = zabransky_dict_iso_s['2016-57-1']
-    assert_allclose(d.calculate(310), 375.54305039281155)
-    assert_allclose(d.calculate_integral(290, 340), 18857.287976064617)
-    assert_allclose(d.calculate_integral_over_T(290, 340), 59.965097029680805)
+    assert_allclose(d.calculate(310), 375.543177681642)
+    assert_allclose(d.calculate_integral(290, 340), 18857.29436766774)
+    assert_allclose(d.calculate_integral_over_T(290, 340), 59.96511735461314)
 
     
 def test_Zabransky_dicts():
@@ -557,7 +559,7 @@ def test_HeatCapacityGasMixture():
     obj = HeatCapacityGasMixture(CASs=m.CASs, HeatCapacityGases=m.HeatCapacityGases, MWs=m.MWs)
     
     Cp = obj(m.T, m.P, m.zs, m.ws)
-    assert_allclose(Cp, 29.361044582498046)
+    assert_allclose(Cp, 29.361054534307893, rtol=1e-5)
 
     # Unhappy paths
     with pytest.raises(Exception):

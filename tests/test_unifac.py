@@ -25,6 +25,7 @@ import pytest
 import numpy as np
 import pandas as pd
 from thermo.unifac import *
+from fluids.constants import R
 
 
 def test_UNIFAC_data():
@@ -168,7 +169,6 @@ def test_UNIFAC_modified_2006():
 
 def test_UNIFAC_misc():
     from scipy.misc import derivative
-    from scipy.constants import R
     from math import log
     T = 273.15 + 60
     
@@ -182,8 +182,8 @@ def test_UNIFAC_misc():
         return -derivative(to_diff, T,dx=1E-5, order=7)*T**2
 
     # A source gives 854.758 for hE, matching to within a gas constant
-    assert_allclose(hE_T(T), 854.771631451345)
-    assert_allclose(gE_T(T), 923.6408846044955)
+    assert_allclose(hE_T(T), 854.7719207160634)
+    assert_allclose(gE_T(T), 923.6411976689174)
 
 
 

@@ -25,7 +25,7 @@ from numpy.testing import assert_allclose
 import pytest
 import numpy as np
 import pandas as pd
-from scipy.constants import calorie, R
+from fluids.constants import calorie, R
 from thermo.interaction_parameters import IPDB
 
 

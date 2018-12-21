@@ -24,6 +24,8 @@ from numpy.testing import assert_allclose
 import pytest
 import pandas as pd
 from thermo.lennard_jones import *
+from fluids.constants import k
+
 
 def test_LJ_data():
     # Two instances of 174899-66-2 were present;
@@ -181,8 +183,9 @@ def test_collision_integral():
         collision_integral_Kim_Monroe(0.3, l=8, s=22)
 
 def test_Tstar():
-    Tst1 = Tstar(T=318.2, epsilon_k=308.43)
-    Tst2 = Tstar(T=318.2, epsilon=4.2583342302359994e-21)
+    const = 308.43
+    Tst1 = Tstar(T=318.2, epsilon_k=const)
+    Tst2 = Tstar(T=318.2, epsilon=const*k)
     assert_allclose([Tst1, Tst2], [1.0316765554582887]*2)
 
     with pytest.raises(Exception):

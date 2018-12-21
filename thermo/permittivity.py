@@ -101,6 +101,7 @@ def permittivity_IAPWS(T, rho):
        Water Substance for Temperatures from 238 K to 873 K and Pressures up 
        to 1000 MPa.
     '''
+    k = 1.38064852e-23
     dipole = 6.138E-30 # actual molecular dipole moment of water, in C*m
     polarizability = 1.636E-40 # actual mean molecular polarizability of water, C^2/J*m^2
     MW = 0.018015268 # molecular weight of water, kg/mol

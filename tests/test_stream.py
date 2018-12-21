@@ -29,7 +29,7 @@ from thermo.stream import Stream, StreamArgs
 import thermo
 from scipy.integrate import quad
 from math import *
-from scipy.constants import R
+from fluids.constants import R
 
 
 def test_Stream():   
@@ -55,21 +55,22 @@ def test_Stream_inputs():
             m = Stream(['water', 'ethanol'], T=300, P=1E5, **{key1:val1, key2:val2})
             assert_allclose(m.n, inputs['n'])
             assert_allclose(m.m, inputs['m'])
-            assert_allclose(m.Q, inputs['Q'])
+            assert_allclose(m.Q, inputs['Q'], rtol=1e-5)
             assert_allclose(m.ns, flow_inputs['ns'])
             assert_allclose(m.ms, flow_inputs['ms'])
-            assert_allclose(m.Qls, flow_inputs['Qls'])
-            assert_allclose(m.Qgs, flow_inputs['Qgs'])
+            assert_allclose(m.Qls, flow_inputs['Qls'], rtol=1e-5)
+            assert_allclose(m.Qgs, flow_inputs['Qgs'], rtol=1e-5)
             
     for key, val in flow_inputs.items():
         m = Stream(['water', 'ethanol'], T=300, P=1E5, **{key:val})
-        assert_allclose(m.n, inputs['n'])
-        assert_allclose(m.m, inputs['m'])
-        assert_allclose(m.Q, inputs['Q'])
-        assert_allclose(m.ns, flow_inputs['ns'])
-        assert_allclose(m.ms, flow_inputs['ms'])
-        assert_allclose(m.Qls, flow_inputs['Qls'])
-        assert_allclose(m.Qgs, flow_inputs['Qgs'])
+        other_tol = 1e-7 if key not in ('Qls', 'Qgs') else 1e-5
+        assert_allclose(m.n, inputs['n'], rtol=other_tol)
+        assert_allclose(m.m, inputs['m'], rtol=other_tol)
+        assert_allclose(m.Q, inputs['Q'], rtol=1e-5)
+        assert_allclose(m.ns, flow_inputs['ns'], rtol=other_tol)
+        assert_allclose(m.ms, flow_inputs['ms'], rtol=other_tol)
+        assert_allclose(m.Qls, flow_inputs['Qls'], rtol=1e-5)
+        assert_allclose(m.Qgs, flow_inputs['Qgs'], rtol=1e-5)
 
     # Test ordereddict input
     IDs = ['water', 'ethanol']
@@ -89,26 +90,27 @@ def test_Stream_inputs():
             
             assert_allclose(m.n, inputs['n'])
             assert_allclose(m.m, inputs['m'])
-            assert_allclose(m.Q, inputs['Q'])
+            assert_allclose(m.Q, inputs['Q'], rtol=1e-5)
             assert_allclose(m.ns, flow_inputs['ns'])
             assert_allclose(m.ms, flow_inputs['ms'])
-            assert_allclose(m.Qls, flow_inputs['Qls'])
-            assert_allclose(m.Qgs, flow_inputs['Qgs'])
+            assert_allclose(m.Qls, flow_inputs['Qls'], rtol=1e-5)
+            assert_allclose(m.Qgs, flow_inputs['Qgs'], rtol=1e-5)
 
     # Test ordereddict input with flow rates being given as dicts
     for key, val in flow_inputs.items():
+        other_tol = 1e-7 if key not in ('Qls', 'Qgs') else 1e-5
         d = OrderedDict()
         for i, j in zip(IDs, val):
             d.update({i: j})
         
         m = Stream(T=300, P=1E5, **{key:d})
-        assert_allclose(m.n, inputs['n'])
-        assert_allclose(m.m, inputs['m'])
-        assert_allclose(m.Q, inputs['Q'])
-        assert_allclose(m.ns, flow_inputs['ns'])
-        assert_allclose(m.ms, flow_inputs['ms'])
-        assert_allclose(m.Qls, flow_inputs['Qls'])
-        assert_allclose(m.Qgs, flow_inputs['Qgs'])
+        assert_allclose(m.n, inputs['n'], rtol=other_tol)
+        assert_allclose(m.m, inputs['m'], rtol=other_tol)
+        assert_allclose(m.Q, inputs['Q'], rtol=1e-5)
+        assert_allclose(m.ns, flow_inputs['ns'], rtol=other_tol)
+        assert_allclose(m.ms, flow_inputs['ms'], rtol=other_tol)
+        assert_allclose(m.Qls, flow_inputs['Qls'], rtol=1e-5)
+        assert_allclose(m.Qgs, flow_inputs['Qgs'], rtol=1e-5)
 
 
     with pytest.raises(Exception):

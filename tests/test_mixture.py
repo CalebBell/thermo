@@ -29,7 +29,7 @@ from thermo.mixture import Mixture
 import thermo
 from scipy.integrate import quad
 from math import *
-from scipy.constants import R
+from fluids.constants import R
 
 def test_Mixture():
     Mixture(['water', 'ethanol'], ws=[.5, .5], T=320, P=1E5)

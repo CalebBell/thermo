@@ -558,7 +558,7 @@ def Miqueu(T, Tc, Vc, omega):
     Bromotrifluoromethane, 2.45 mN/m
 
     >>> Miqueu(300., 340.1, 0.000199, 0.1687)
-    0.003474099603581931
+    0.003474100774091376
 
     References
     ----------

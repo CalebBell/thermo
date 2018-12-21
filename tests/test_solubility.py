@@ -30,11 +30,11 @@ def test_solubility():
     x1 = solubility_eutectic(293.15, 369.4, 18640., 0, 0, 1)
     x2 = solubility_eutectic(T=260., Tm=278.68, Hm=9952., Cpl=0, Cps=0, gamma=3.0176)
     x3 = solubility_eutectic(T=260., Tm=278.68, Hm=9952., Cpl=195, Cps=60, gamma=3.0176)
-    assert_allclose([x1, x2, x3], [0.20626904089059944, 0.24340068761677464, 0.2533343503913555])
+    assert_allclose([x1, x2, x3], [0.20626915125512824, 0.2434007130748926, 0.2533343734537043])
 
     dTm1 = Tm_depression_eutectic(353.35, 19110, 0.02)
     dTm2 = Tm_depression_eutectic(353.35, 19110, M=0.4, MW=40.)
-    assert_allclose([dTm1, dTm2], [1.0864594900639515, 0.8691675920511612])
+    assert_allclose([dTm1, dTm2], [1.0864598583150953, 0.8691678866520763])
     with pytest.raises(Exception):
         Tm_depression_eutectic(353.35, 19110)
 

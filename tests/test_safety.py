@@ -266,8 +266,8 @@ def test_UFL():
 
 def test_unit_conv_TLV():
     mgm3 = ppmv_to_mgm3(1, 40)
-    assert_allclose(mgm3, 1.6349623351068687)
+    assert_allclose(mgm3, 1.6349617809430446)
 
     ppmv = mgm3_to_ppmv(1.635, 40)
-    assert_allclose(ppmv, 1.0000230371625833)
+    assert_allclose(ppmv, 1.0000233761164334)
 

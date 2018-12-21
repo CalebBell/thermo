@@ -123,7 +123,7 @@ def test_CSP_liq():
     assert_allclose(kl, 0.14274278108272603)
     
     kl = Mersmann_Kind_thermal_conductivity_liquid(400, 170.33484, 658.0, 0.000754, {'C': 12, 'H': 26})
-    assert_allclose(kl, 0.08952713798442789)
+    assert_allclose(kl, 0.0895271829899285)
 
 
 def test_CSP_liq_dense():
@@ -187,7 +187,7 @@ def test_CSP_gas_dense():
     assert_allclose(kg, 0.06953791121177173)
 
     kg = chung_dense(T=473., MW=42.081, Tc=364.9, Vc=184.6E-6, omega=0.142, Cvm=82.67, Vm=172.1E-6, mu=134E-7, dipole=0.4)
-    assert_allclose(kg, 0.06160570379787278)
+    assert_allclose(kg, 0.06160569232570781)
 
 
 @pytest.mark.meta_T_dept
@@ -281,7 +281,7 @@ def test_ThermalConductivityGas():
     EtOH = ThermalConductivityGas(MW=46.06844, Tb=351.39, Tc=514.0, Pc=6137000.0, Vc=0.000168, Zc=0.2412, omega=0.635, dipole=1.44, Vmg=0.02357, Cvgm=56.98, mug=7.903e-6, CASRN='64-17-5')
     assert_allclose(EtOH.calculate_P(298.15, 1E2, COOLPROP), 0.015207849649231962)
     assert_allclose(EtOH.calculate_P(298.15, 1E6, ELI_HANLEY_DENSE), 0.011210125242396791)
-    assert_allclose(EtOH.calculate_P(298.15, 1E6, CHUNG_DENSE), 0.011770372068085207)
+    assert_allclose(EtOH.calculate_P(298.15, 1E6, CHUNG_DENSE), 0.011770368783141446)
     assert_allclose(EtOH.calculate_P(298.15, 1E6, STIEL_THODOS_DENSE), 0.015447836685420897)
 
 

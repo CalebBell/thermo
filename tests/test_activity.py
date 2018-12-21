@@ -25,7 +25,7 @@ from numpy.testing import assert_allclose
 import pytest
 import numpy as np
 import pandas as pd
-from scipy.constants import calorie, R
+from fluids.constants import calorie, R
 from thermo.activity import *
 from thermo.mixture import Mixture
 from thermo.activity import Rachford_Rice_solution_numpy
@@ -320,7 +320,7 @@ def test_NRTL():
 
     gammas = NRTL(xs=[0.252, 0.748], taus=[[0, tau12], [tau21, 0]],
     alphas=[[0, 0.2937],[.2937, 0]])
-    assert_allclose(gammas, [1.985383753878832, 1.1463808401733069])
+    assert_allclose(gammas, [1.9853834856640085, 1.146380779201308])
     
     
     

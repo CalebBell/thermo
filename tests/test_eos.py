@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2016, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2016, 2017, 2018 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -27,7 +27,7 @@ from thermo import eos
 from thermo.eos import *
 from thermo.utils import allclose_variable
 from scipy.misc import derivative
-from scipy.constants import R
+from fluids.constants import R
 from math import log, exp, sqrt
 
 
@@ -158,28 +158,28 @@ def test_PR_quick():
     eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
     Vs_fast = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
     Vs_slow = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
-    Vs_expected = [(0.00013022208100139953-0j), (0.001123630932618011+0.0012926962852843173j), (0.001123630932618011-0.0012926962852843173j)]
+    Vs_expected = [(0.00013022212513965863+0j), (0.001123631313468268+0.0012926967234386068j), (0.001123631313468268-0.0012926967234386068j)]
     assert_allclose(Vs_fast, Vs_expected)
     assert_allclose(Vs_slow, Vs_expected)
     
     # Test of a_alphas
-    a_alphas = [3.801259426590328, -0.006647926028616357, 1.6930127618563258e-05]
+    a_alphas = [3.801262003434438, -0.006647930535193546, 1.6930139095364687e-05]
     a_alphas_fast = eos.a_alpha_and_derivatives(299, quick=True)
     assert_allclose(a_alphas, a_alphas_fast)
     a_alphas_slow = eos.a_alpha_and_derivatives(299, quick=False)
     assert_allclose(a_alphas, a_alphas_slow)
     
     # PR back calculation for T
-    eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, V=0.00013022208100139953, P=1E6)
+    eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, V=0.00013022212513965863, P=1E6)
     assert_allclose(eos.T, 299)
-    T_slow = eos.solve_T(P=1E6, V=0.00013022208100139953, quick=False)
+    T_slow = eos.solve_T(P=1E6, V=0.00013022212513965863, quick=False)
     assert_allclose(T_slow, 299)
     
     
-    diffs_1 = [582232.4757941157, -3665180614672.2373, 1.588550570914177e-07, -2.7283785033590384e-13, 6295046.681608136, 1.717527004374129e-06]
-    diffs_2 = [-506.2012523140166, 4.482165856521269e+17, 1.1688513685432287e-09, 9.103361314057314e-21, -291578941282.6521, 2.564684443970742e-15]
-    diffs_mixed = [-3.772507759880179e-15, -20523303691.115646, 0.06994170496262654]
-    departures = [-31134.740290463407, -72.47559475426019, 25.165377505266793]
+    diffs_1 = [582232.4757941114, -3665179372374.127, 1.5885511093471238e-07, -2.7283794281321846e-13, 6295044.54792763, 1.7175270043741416e-06]
+    diffs_2 = [-506.2012523140132, 4.4821628180979494e+17, 1.1688517647207979e-09, 9.103364399605888e-21, -291578743623.6926, 2.5646844439707823e-15]
+    diffs_mixed = [-3.7725090385568464e-15, -20523296734.825127, 0.06994168125617044]
+    departures = [-31134.750843460362, -72.475619319576, 25.165386034971817]
     known_derivs_deps = [diffs_1, diffs_2, diffs_mixed, departures]
     
     for f in [True, False]:
@@ -193,8 +193,8 @@ def test_PR_quick():
     
     
     # Test Cp_Dep, Cv_dep
-    assert_allclose(eos.Cv_dep_l, 25.165377505266747)
-    assert_allclose(eos.Cp_dep_l, 44.50559908690951)
+    assert_allclose(eos.Cv_dep_l, 25.165386034971814)
+    assert_allclose(eos.Cp_dep_l, 44.505614171906245)
     
     # Exception tests
     a = GCEOS()        
@@ -225,7 +225,7 @@ def test_PR_quick():
 
     # Compare against some known  in Walas [2] functions
     phi_walas =  exp(Z - 1 - log(Z - B) - A/(2*2**0.5*B)*log((Z+(sqrt(2)+1)*B)/(Z-(sqrt(2)-1)*B)))
-    phi_l_expect = 0.022212524527244357
+    phi_l_expect = 0.022212524527244346
     assert_allclose(phi_l_expect, eos.phi_l)
     assert_allclose(phi_walas, eos.phi_l)
     
@@ -236,7 +236,7 @@ def test_PR_quick():
 #    assert_allclose(S_dep_expect, eos.S_dep_l)
     
     H_dep_walas = R*eos.T*(1 - Z + A/(2*2**0.5*B)*(1 + D/eos.a_alpha)*log((Z+(sqrt(2)+1)*B)/(Z-(sqrt(2)-1)*B)))
-    H_dep_expect = -31134.740290463407
+    H_dep_expect = -31134.750843460355
     assert_allclose(-H_dep_walas, H_dep_expect)
     assert_allclose(H_dep_expect, eos.H_dep_l)
     
@@ -252,8 +252,8 @@ def test_PR_quick():
     # chethermo (Elliott, Richard and Lira, Carl T. - 2012 - Introductory Chemical Engineering Thermodynamics)
     # Propane
     e = PR(Tc=369.8, Pc=4.249E6, omega=0.152, T=298, P=1E5)
-    assert_allclose(e.V_g, 0.0243660258924206)
-    assert_allclose(e.V_l, 8.68172131076956e-05)
+    assert_allclose(e.V_g, 0.024366034151169353)
+    assert_allclose(e.V_l, 8.681724253858589e-05)
     
     
     # The following are imprecise as the approximate constants 2.414 etc were
@@ -262,13 +262,13 @@ def test_PR_quick():
     # not sure the problem with precision with the liquid
     assert_allclose(e.fugacity_l, 781433.379991859, rtol=1E-2)
     
-    assert_allclose(e.H_dep_g, -111.990562846069)
+    assert_allclose(e.H_dep_g, -111.99060081493053)
     assert_allclose(e.H_dep_l, -16112.7239108382, rtol=1E-5)
 
-    assert_allclose(e.U_dep_g, -70.8841316881251)
+    assert_allclose(e.U_dep_g, -70.88415572220038)
     assert_allclose(e.U_dep_l, -13643.6966117489, rtol=1E-5)
     
-    assert_allclose(e.S_dep_g, -0.238638957275652)
+    assert_allclose(e.S_dep_g, -0.23863903817819482)
     assert_allclose(e.S_dep_l, -71.158231517264, rtol=1E-6)
     
     # Volume solutions vs
@@ -336,11 +336,11 @@ def test_PR_density_derivatives():
     crit_params = {'Tc': 507.6, 'Pc': 3025000.0, 'omega': 0.2975}
     eos = PR(T=T, P=P, **crit_params)
     
-    assert_allclose(eos.dP_drho_l, 16717.84351670736)
-    assert_allclose(eos.dP_drho_g, 1086.6581965150544)
+    assert_allclose(eos.dP_drho_l, 16717.849183154118)
+    assert_allclose(eos.dP_drho_g, 1086.6585648335506)
 
-    assert_allclose(eos.drho_dP_g, 0.0009202525717903109)
-    assert_allclose(eos.drho_dP_l, 5.981632732718351e-05)
+    assert_allclose(eos.drho_dP_g, 0.0009202522598744487)
+    assert_allclose(eos.drho_dP_l, 5.981630705268346e-05)
     
     V = 'V_g'
     def d_rho_dP(P):
@@ -352,12 +352,12 @@ def test_PR_density_derivatives():
     # f = 1/x
     # >>> diff(diff(g(x), x)/diff(f, x), x)/diff(f, x)
     # -x**2*(-x**2*Derivative(g(x), x, x) - 2*x*Derivative(g(x), x))
-    assert_allclose(eos.d2P_drho2_l, 22.670926496760224)
-    assert_allclose(eos.d2P_drho2_g, -4.025196625522432)
+    assert_allclose(eos.d2P_drho2_l, 22.670941865204274)
+    assert_allclose(eos.d2P_drho2_g, -4.025199354171817)
     
     # Numerical tests
-    assert_allclose(eos.d2rho_dP2_l, -4.852086129765671e-12)
-    assert_allclose(eos.d2rho_dP2_g, 3.136954499224254e-09)
+    assert_allclose(eos.d2rho_dP2_l, -4.852084485170919e-12)
+    assert_allclose(eos.d2rho_dP2_g, 3.136953435966285e-09)
     V = 'V_g'
     assert_allclose(derivative(d_rho_dP, 1e6, n=2, order=11, dx=100), 3.136954499224254e-09, rtol=1e-3)
     V = 'V_l'
@@ -365,10 +365,10 @@ def test_PR_density_derivatives():
 
 
     # dT_drho tests - analytical
-    assert_allclose(eos.dT_drho_l, -0.05794713637649208)  
-    assert_allclose(eos.dT_drho_g, -0.21158043223730016)
-    assert_allclose(eos.d2T_drho2_l, -2.717125158232778e-05)
-    assert_allclose(eos.d2T_drho2_g, 0.0019160971656111195)
+    assert_allclose(eos.dT_drho_l, -0.05794715601744427)  
+    assert_allclose(eos.dT_drho_g, -0.2115805039516506)
+    assert_allclose(eos.d2T_drho2_l, -2.7171270001507268e-05)
+    assert_allclose(eos.d2T_drho2_g, 0.0019160984645184406)
     
     def dT_drho(rho):
         return PR(V=1.0/rho, P=P, **crit_params).T
@@ -389,8 +389,8 @@ def test_PR_density_derivatives():
     def drho_dT(T, V='V_l'):
         return 1.0/getattr(PR(T=T, P=P, **crit_params), V)
     
-    assert_allclose(eos.drho_dT_g, -4.726334989610192)
-    assert_allclose(eos.drho_dT_l, -17.257108159803366)
+    assert_allclose(eos.drho_dT_g, -4.726333387638189)
+    assert_allclose(eos.drho_dT_l, -17.25710231057694)
                     
     ans_numeric = derivative(drho_dT, eos.T, n=1, dx=1e-2, args=['V_l'])
     assert_allclose(ans_numeric, eos.drho_dT_l)
@@ -399,8 +399,8 @@ def test_PR_density_derivatives():
     assert_allclose(ans_numeric, eos.drho_dT_g)
 
 
-    assert_allclose(eos.d2rho_dT2_l, -0.1396412432943539)
-    assert_allclose(eos.d2rho_dT2_g, 0.20229773878400134)
+    assert_allclose(eos.d2rho_dT2_l, -0.13964119596352564)
+    assert_allclose(eos.d2rho_dT2_g, 0.20229767021600575)
 
     ans_numeric = derivative(drho_dT, eos.T, n=2, dx=3e-2, args=['V_l'])
     assert_allclose(eos.d2rho_dT2_l, ans_numeric, rtol=1e-6)
@@ -418,11 +418,11 @@ def test_PR_density_derivatives():
         return derivative(to_diff, T, n=1, dx=.1, order=3)
     
     ans_numerical = d2P_drhodT(eos.T, 1/eos.V_l)
-    assert_allclose(eos.d2P_dTdrho_l, 121.15485928776677)
+    assert_allclose(eos.d2P_dTdrho_l, 121.15490035272644)
     assert_allclose(eos.d2P_dTdrho_l, ans_numerical)
     
     ans_numerical = d2P_drhodT(eos.T, 1/eos.V_g)
-    assert_allclose(eos.d2P_dTdrho_g, 13.513863615890978)
+    assert_allclose(eos.d2P_dTdrho_g, 13.513868196361557)
     assert_allclose(eos.d2P_dTdrho_g, ans_numerical)
 
     # Numerical derivatives agree - d2T_dPdrho_g
@@ -437,11 +437,11 @@ def test_PR_density_derivatives():
     
     ans_numerical = d2T_drhodP(eos.P, 1/eos.V_l)
     assert_allclose(ans_numerical, eos.d2T_dPdrho_l, rtol=2e-3)
-    assert_allclose(eos.d2T_dPdrho_l, -1.6195720821000314e-09)
+    assert_allclose(eos.d2T_dPdrho_l, -1.6195726310475797e-09)
     
     ans_numerical = d2T_drhodP(eos.P, 1/eos.V_g)
     assert_allclose(ans_numerical, eos.d2T_dPdrho_g)
-    assert_allclose(eos.d2T_dPdrho_g, -5.297346401885624e-07)
+    assert_allclose(eos.d2T_dPdrho_g, -5.29734819740022e-07)
 
     # drho_DT_dP derivatives
     def drho_dT(T, P, V='V_l'):
@@ -454,12 +454,12 @@ def test_PR_density_derivatives():
     
     
     ans_numerical = drho_dT_dP(eos.T, eos.P, 'V_l')
-    assert_allclose(9.663435353587354e-07, eos.d2rho_dPdT_l)
+    assert_allclose(9.66343207820545e-07, eos.d2rho_dPdT_l)
     assert_allclose(ans_numerical, eos.d2rho_dPdT_l, rtol=1e-5)
     
     ans_numerical = drho_dT_dP(eos.T, eos.P, 'V_g')
     assert_allclose(ans_numerical, eos.d2rho_dPdT_g, rtol=1e-6)
-    assert_allclose(-2.7555533392463596e-05, eos.d2rho_dPdT_g)
+    assert_allclose(-2.755552405262765e-05, eos.d2rho_dPdT_g)
 
 
 def test_PR_Psat():
@@ -494,7 +494,7 @@ def test_PR_Psat():
 def test_PR78():
     eos = PR78(Tc=632, Pc=5350000, omega=0.734, T=299., P=1E6)
     three_props = [eos.V_l, eos.H_dep_l, eos.S_dep_l]
-    expect_props = [8.351960066075052e-05, -63764.64948050847, -130.737108912626]
+    expect_props = [8.35196289693885e-05, -63764.67109328409, -130.7371532254518]
     assert_allclose(three_props, expect_props)
     
     # Test the results are identical to PR or lower things
@@ -508,11 +508,11 @@ def test_PR78():
 def test_PRSV():
     eos = PRSV(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, kappa1=0.05104)
     three_props = [eos.V_l, eos.H_dep_l, eos.S_dep_l]
-    expect_props = [0.0001301268694484059, -31698.916002476708, -74.1674902435042]
+    expect_props = [0.0001301269135543934, -31698.926746698795, -74.16751538228138]
     assert_allclose(three_props, expect_props)
     
     # Test of a_alphas
-    a_alphas = [3.8129831135199463, -0.006976898745266429, 2.0026547235203598e-05]
+    a_alphas = [3.812985698311453, -0.006976903474851659, 2.0026560811043733e-05]
     
     a_alphas_fast = eos.a_alpha_and_derivatives(299)
     assert_allclose(a_alphas, a_alphas_fast)
@@ -521,9 +521,9 @@ def test_PRSV():
     assert_allclose(a_alphas, a_alphas_fast)
     
     # PR back calculation for T
-    eos = PRSV(Tc=507.6, Pc=3025000, omega=0.2975, V=0.0001301268694484059, P=1E6, kappa1=0.05104)
+    eos = PRSV(Tc=507.6, Pc=3025000, omega=0.2975, V=0.0001301269135543934, P=1E6, kappa1=0.05104)
     assert_allclose(eos.T, 299)
-    T_slow = eos.solve_T(P=1E6, V=0.0001301268694484059, quick=False)
+    T_slow = eos.solve_T(P=1E6, V=0.0001301269135543934, quick=False)
     assert_allclose(T_slow, 299)
     
     
@@ -547,11 +547,11 @@ def test_PRSV():
 def test_PRSV2():
     eos = PRSV2(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, kappa1=0.05104, kappa2=0.8634, kappa3=0.460)
     three_props = [eos.V_l, eos.H_dep_l, eos.S_dep_l]
-    expect_props = [0.00013018821346475254, -31496.173493225753, -73.6152580115141]
+    expect_props = [0.00013018825759153257, -31496.184168729033, -73.6152829631142]
     assert_allclose(three_props, expect_props)
     
     # Test of PRSV2 a_alphas
-    a_alphas = [3.8054176315098256, -0.00687315871653124, 2.3078008060652167e-05]
+    a_alphas = [3.80542021117275, -0.006873163375791913, 2.3078023705053787e-05]
     
     a_alphas_fast = eos.a_alpha_and_derivatives(299)
     assert_allclose(a_alphas, a_alphas_fast)
@@ -559,9 +559,9 @@ def test_PRSV2():
     assert_allclose(a_alphas, a_alphas_fast)
     
     # PSRV2 back calculation for T
-    eos = PRSV2(Tc=507.6, Pc=3025000, omega=0.2975, V=0.00013018821346475254, P=1E6, kappa1=0.05104, kappa2=0.8634, kappa3=0.460)
+    eos = PRSV2(Tc=507.6, Pc=3025000, omega=0.2975, V=0.00013018825759153257, P=1E6, kappa1=0.05104, kappa2=0.8634, kappa3=0.460)
     assert_allclose(eos.T, 299)
-    T_slow = eos.solve_T(P=1E6, V=0.00013018821346475254, quick=False)
+    T_slow = eos.solve_T(P=1E6, V=0.00013018825759153257, quick=False)
     assert_allclose(T_slow, 299)
 
     # Check this is the same as PRSV
@@ -578,20 +578,20 @@ def test_PRSV2():
 def test_VDW():
     eos = VDW(Tc=507.6, Pc=3025000, T=299., P=1E6)
     three_props = [eos.V_l, eos.H_dep_l, eos.S_dep_l]
-    expect_props = [0.00022332978038490077, -13385.722837649315, -32.65922018109096]
+    expect_props = [0.00022332985608164609, -13385.727374687076, -32.65923125080434]
     assert_allclose(three_props, expect_props)
     
     # Test of a_alphas
-    a_alphas = [2.4841036545673676, 0, 0]
+    a_alphas = [2.4841053385218554, 0, 0]
     a_alphas_fast = eos.a_alpha_and_derivatives(299)
     assert_allclose(a_alphas, a_alphas_fast)
     
     # Back calculation for P
-    eos = VDW(Tc=507.6, Pc=3025000, T=299, V=0.00022332978038490077)
+    eos = VDW(Tc=507.6, Pc=3025000, T=299, V=0.00022332985608164609)
     assert_allclose(eos.P, 1E6)
     
     # Back calculation for T
-    eos = VDW(Tc=507.6, Pc=3025000, P=1E6, V=0.00022332978038490077)
+    eos = VDW(Tc=507.6, Pc=3025000, P=1E6, V=0.00022332985608164609)
     assert_allclose(eos.T, 299)
 
     with pytest.raises(Exception):

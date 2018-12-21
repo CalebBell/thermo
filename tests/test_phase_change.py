@@ -30,21 +30,21 @@ from thermo.identifiers import checkCAS
 
 def test_Clapeyron():
     Hvap = Clapeyron(294.0, 466.0, 5.55E6)
-    assert_allclose(Hvap, 26512.354585061985)
+    assert_allclose(Hvap, 26512.36357131963)
 
     # Test at 1/2 bar, sZ=0.98
     Hvap = Clapeyron(264.0, 466.0, 5.55E6, 0.98, 5E4)
-    assert_allclose(Hvap, 23370.939650326898)
+    assert_allclose(Hvap, 23370.947571814384)
 
     
 def test_Pitzer():
     Hvap = Pitzer(452, 645.6, 0.35017)
-    assert_allclose(Hvap, 36696.736640106414)
+    assert_allclose(Hvap, 36696.749078320056)
 
     
 def test_SMK():
     Hvap = SMK(553.15, 751.35, 0.302)
-    assert_allclose(Hvap, 39866.17647797959)
+    assert_allclose(Hvap, 39866.18999046232)
 
     
 def test_MK():
@@ -52,13 +52,13 @@ def test_MK():
     Hv1 = MK(553.15, 751.35, 0.302)
     # data in [1]_., should give 26.43 KJ/mol
     Hv2 = MK(298.15, 469.69, 0.2507)
-    assert_allclose([Hv1, Hv2], [38727.993546377205, 25940.979741133997])
+    assert_allclose([Hv1, Hv2], [38728.00667307733, 25940.988533726406])
 
     
 def test_Velasco():
     Hv1 = Velasco(553.15, 751.35, 0.302)
     Hv2 = Velasco(333.2, 476.0, 0.5559)
-    assert_allclose([Hv1, Hv2], [39524.23765810736, 33299.41734936356])
+    assert_allclose([Hv1, Hv2], [39524.251054691274, 33299.428636069264])
 
 
 def test_Riedel():
@@ -66,22 +66,22 @@ def test_Riedel():
     Hv1 = Riedel(294.0, 466.0, 5.55E6)
     # Pyridine, 0.0% err vs. exp: 35090 J/mol; from Poling [2]_.
     Hv2 = Riedel(388.4, 620.0, 56.3E5)
-    assert_allclose([Hv1, Hv2], [26828.58131384367, 35089.78989646058])
+    assert_allclose([Hv1, Hv2], [26828.59040728512, 35089.80179000598])
 
     
 def test_Chen():
     Hv1 = Chen(294.0, 466.0, 5.55E6)
-    assert_allclose(Hv1, 26705.893506174052)
+    assert_allclose(Hv1, 26705.902558030946)
 
     
 def test_Liu():
     Hv1 = Liu(294.0, 466.0, 5.55E6)
-    assert_allclose(Hv1, 26378.566319606754)
+    assert_allclose(Hv1, 26378.575260517395)
 
     
 def test_Vetere():
     Hv1 = Vetere(294.0, 466.0, 5.55E6)
-    assert_allclose(Hv1, 26363.430021286465)
+    assert_allclose(Hv1, 26363.43895706672)
 
 
 def test_Hvap_CRC_data():
@@ -263,7 +263,7 @@ def test_EnthalpyVaporization():
     EtOH = EnthalpyVaporization(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, similarity_variable=0.1954, Psat=7872.2, Zg=0.9633, Zl=0.0024, CASRN='64-17-5')
 
     Hvap_calc =  [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(298.15))[1] for i in EtOH.all_methods]
-    Hvap_exp = [39369.24571090559, 42429.269903954155, 42829.162840789715, 41892.45710244491, 43587.11462479239, 42200.0, 40812.16639989246, 42413.51210041263, 42320.0, 37770.35479826021, 42855.01452567944, 42468.433273309995, 42541.61366696268, 44804.60063848499, 43481.092918859824, 42261.54839182171, 42946.68066040123]
+    Hvap_exp = [37770.36760037247, 39369.24308334211, 40812.18023301473, 41892.47130172744, 42200.0, 42261.56271620627, 42320.0, 42413.51210041263, 42429.284285187256, 42468.433273309995, 42541.61366696268, 42829.177357564935, 42855.029051216996, 42946.68066040123, 43481.10765660416, 43587.12939847237, 44804.61582482704]
     assert_allclose(sorted(Hvap_calc), sorted(Hvap_exp))
 
     assert [None]*17 == [(EtOH.set_user_methods(i), EtOH.T_dependent_property(5000))[1] for i in EtOH.all_methods]
@@ -275,7 +275,7 @@ def test_EnthalpyVaporization():
 
     # Test Clapeyron, without Zl
     EtOH = EnthalpyVaporization(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, similarity_variable=0.1954, Psat=7872.2, Zg=0.9633, CASRN='64-17-5')
-    assert_allclose(EtOH.calculate(298.15, 'CLAPEYRON'), 37864.69224390057)
+    assert_allclose(EtOH.calculate(298.15, 'CLAPEYRON'), 37864.70507798813)
 
     EtOH = EnthalpyVaporization(Tb=351.39, Pc=6137000.0, omega=0.635, similarity_variable=0.1954, Psat=7872.2, Zg=0.9633, CASRN='64-17-5')
     assert EtOH.test_method_validity(351.39, 'CRC_HVAP_TB')

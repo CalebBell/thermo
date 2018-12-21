@@ -24,14 +24,14 @@ from numpy.testing import assert_allclose
 import pytest
 import numpy as np
 from thermo.virial import *
-from scipy.constants import R as _R
+from fluids.constants import R as _R
 from scipy.integrate import quad
 
 
 def test_BVirial_Pitzer_Curl():
     # doctest
     B = BVirial_Pitzer_Curl(510., 425.2, 38E5, 0.193)
-    assert_allclose(B, -0.0002084535541385102)
+    assert_allclose(B, -0.00020845362479301725)
 
     with pytest.raises(Exception):
         BVirial_Pitzer_Curl(510., 425.2, 38E5, 0.193, order=-3)

@@ -686,9 +686,12 @@ class GCEOSMIX(GCEOS):
             return self.__class__(T=T, P=P, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, zs=zs, **self.kwargs)
         else:
             return self
-        
+    
+    
+
+    
     def sequential_substitution_VL(self, Ks_initial=None, maxiter=1000,
-                                   xtol=1E-10, allow_error=True, Ks_extra=None,
+                                   xtol=1E-10, near_critical=True, Ks_extra=None,
                                    xs=None, ys=None):
 #        print(self.zs, Ks)
         if xs is not None and ys is not None:
@@ -714,41 +717,62 @@ class GCEOSMIX(GCEOS):
         
 #        print(xs, ys, 'innerloop')
         for i in range(maxiter):
-            if allow_error:
+            if not near_critical:
                 eos_g = self.to_TP_zs(T=self.T, P=self.P, zs=ys)
                 eos_l = self.to_TP_zs(T=self.T, P=self.P, zs=xs)
     
-                phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, ys)
-                phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, xs)
+                phis_g = eos_g.phis_g#fugacity_coefficients(eos_g.Z_g, ys)
+                phis_l = eos_l.phis_l#fugacity_coefficients(eos_l.Z_l, xs)
+                fugacities_l = eos_l.fugacities_l
+                fugacities_g = eos_g.fugacities_g
             else:
                 eos_g = self.to_TP_zs(T=self.T, P=self.P, zs=ys)
                 eos_l = self.to_TP_zs(T=self.T, P=self.P, zs=xs)
                 try:
-                    phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, ys)
+                    phis_g = eos_g.phis_g#fugacity_coefficients(eos_g.Z_g, ys)
+                    fugacities_g = eos_g.fugacities_g
                 except AttributeError:
-                    phis_g = eos_g.fugacity_coefficients(eos_g.Z_l, ys)
+                    phis_g = eos_g.phis_l#fugacity_coefficients(eos_g.Z_l, ys)
+                    fugacities_g = eos_g.fugacities_l
                 try:
-                    phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, xs)
+                    phis_l = eos_l.phis_l#fugacity_coefficients(eos_l.Z_l, xs)
+                    fugacities_l = eos_l.fugacities_l
                 except AttributeError:
-                    phis_l = eos_l.fugacity_coefficients(eos_l.Z_g, xs)
+                    phis_l = eos_l.phis_g#fugacity_coefficients(eos_l.Z_g, xs)
+                    fugacities_l = eos_l.fugacities_g
 
 #            print(phis_l, phis_g, 'phis')
-            Ks = [K_value(phi_l=l, phi_g=g) for l, g in zip(phis_l, phis_g)]
+            Ks = [l/g for l, g in zip(phis_l, phis_g)] # K_value(phi_l=l, phi_g=g)
 #            print(Ks)
             # Hack - no idea if this will work
-            maxK = max(Ks)
-            if maxK < 1:
-                Ks[Ks.index(maxK)] = 1.1
-            minK = min(Ks)
-            if minK >= 1:
-                Ks[Ks.index(minK)] = .9
+#            maxK = max(Ks)
+#            if maxK < 1:
+#                Ks[Ks.index(maxK)] = 1.1
+#            minK = min(Ks)
+#            if minK >= 1:
+#                Ks[Ks.index(minK)] = .9
                 
             
 #            print(self.zs, Ks, 'zs, Ks into RR')
             V_over_F, xs_new, ys_new = flash_inner_loop(self.zs, Ks)
+            
+            for xi in xs_new:
+                if xi < 0.0:
+                    xs_new_sum = sum(abs(i) for i in xs_new)
+                    xs_new = [abs(i)/xs_new_sum for i in xs_new]
+                    break
+            for yi in ys_new:
+                if yi < 0.0:
+                    ys_new_sum = sum(abs(i) for i in ys_new)
+                    ys_new = [abs(i)/ys_new_sum for i in ys_new]
+                    break
+            
+            # Claimed error function in CONVENTIONAL AND RAPID FLASH CALCULATIONS FOR THE SOAVE-REDLICH-KWONG AND PENG-ROBINSON EQUATIONS OF STATE
+#            err2 = sum([(l/g-1)**2  for l, g in zip(fugacities_l, fugacities_g)]) # Suggested tolerance 1e-15
+            
             err = (sum([abs(x_new - x_old) for x_new, x_old in zip(xs_new, xs)]) +
                   sum([abs(y_new - y_old) for y_new, y_old in zip(ys_new, ys)]))
-#            print(err)
+#            print(err, err2)
             xs, ys = xs_new, ys_new
 #            print('err', err, 'xs, ys', xs, ys, 'Ks', Ks)
             if err < xtol:
@@ -757,7 +781,8 @@ class GCEOSMIX(GCEOS):
                 raise ValueError('End of SS without convergence')
         return V_over_F, xs, ys
 
-    def stabiliy_iteration_Michelsen(self, T, P, zs, Ks_initial=None, maxiter=20, xtol=1E-12, liq=True):
+    def stabiliy_iteration_Michelsen(self, T, P, zs, Ks_initial=None, 
+                                     maxiter=20, xtol=1E-12, liq=True):
         # checks stability vs. the current zs, mole fractions
         
         eos_ref = self.to_TP_zs(T=T, P=P, zs=zs)
@@ -781,8 +806,10 @@ class GCEOSMIX(GCEOS):
                 
             sum_zs_test = sum(zs_test)
             zs_test_normalized = [zi/sum_zs_test for zi in zs_test]
+            
             eos_test = self.to_TP_zs(T=T, P=P, zs=zs_test_normalized)
             fugacities_test, fugacities_phase = eos_test.eos_fugacities_lowest_Gibbs()
+            
             if fugacities_ref_phase == fugacities_phase:
                 same_phase_count += 1.0
             else:
@@ -811,16 +838,18 @@ class GCEOSMIX(GCEOS):
         return sum_zs_test, Ks, fugacities_ref_phase == fugacities_phase
             
     def stability_Michelsen(self, T, P, zs, Ks_initial=None, maxiter=20,
-                             xtol=1E-12, trivial_criteria=1E-4, 
-                             stable_criteria=1E-7):
+                            xtol=1E-12, trivial_criteria=1E-4, 
+                            stable_criteria=1E-7):
 #        print('MM starting, Ks=', Ks_initial)
         if Ks_initial is None:
             Ks = [Wilson_K_value(T, P, Tci, Pci, omega)  for Pci, Tci, omega in zip(self.Pcs, self.Tcs, self.omegas)]
         else:
             Ks = Ks_initial
         
-        zs_sum_g, Ks_g, phase_failure_g = self.stabiliy_iteration_Michelsen(T=T, P=P, zs=zs, Ks_initial=Ks, maxiter=maxiter, xtol=xtol, liq=False)
-        zs_sum_l, Ks_l, phase_failure_l = self.stabiliy_iteration_Michelsen(T=T, P=P, zs=zs, Ks_initial=Ks, maxiter=maxiter, xtol=xtol, liq=True)
+        zs_sum_g, Ks_g, phase_failure_g = self.stabiliy_iteration_Michelsen(T=T, P=P, zs=zs, Ks_initial=Ks,
+                                                                            maxiter=maxiter, xtol=xtol, liq=False)
+        zs_sum_l, Ks_l, phase_failure_l = self.stabiliy_iteration_Michelsen(T=T, P=P, zs=zs, Ks_initial=Ks, 
+                                                                            maxiter=maxiter, xtol=xtol, liq=True)
         
         log_Ks_g = [log(Ki) for Ki in Ks_g]
         log_Ks_l = [log(Ki) for Ki in Ks_l]        
@@ -844,6 +873,8 @@ class GCEOSMIX(GCEOS):
         # There is a typo where Sl appears in the vapor column; this should be
         # liquid; as shown in https://www.e-education.psu.edu/png520/m17_p7.html
         
+#        print('phase_failure_g', phase_failure_g, 'phase_failure_l', phase_failure_l,
+#              'sum_g_criteria', sum_g_criteria, 'sum_l_criteria', sum_l_criteria)
         if phase_failure_g and phase_failure_l:
             stable = True
         elif trivial_g and trivial_l:

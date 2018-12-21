@@ -189,7 +189,7 @@ class StabilityTester(object):
                        for k in self.cmps]
         return pure_guesses
     
-    def Wilson_guesses(self, T, P, zs, powers=(1, -1, 1/3., -1/3.)):
+    def Wilson_guesses(self, T, P, zs, powers=(1, -1, 1/3., -1/3.)): # 
         # First K is vapor-like phase; second, liquid like 
         Ks_Wilson = [Wilson_K_value(T=T, P=P, Tc=self.Tcs[i], Pc=self.Pcs[i], omega=self.omegas[i]) for i in self.cmps]
         Wilson_guesses = []
@@ -201,9 +201,12 @@ class StabilityTester(object):
     
     def guesses(self, T, P, zs, pure=True, Wilson=True, random=True, 
                 zero_fraction=1E-6):
+        '''Returns mole fractions, not Ks.
+        '''
         guesses = []
         if Wilson:
             guesses.extend(self.Wilson_guesses(T, P, zs))
+#            print('Wilson_guesses raw', guesses)
         if pure:
             guesses.extend(self.pure_guesses(zero_fraction))
         if random:
@@ -213,17 +216,18 @@ class StabilityTester(object):
                 guesses.extend(self.random_guesses(random))
                 
         # Guesses will go nowhere good if one ans is not under 1, one above
-        for Ks in guesses:
-            # Hack - no idea if this will work
-            maxK = max(Ks)
-            if maxK < 1:
-                Ks[Ks.index(maxK)] = 1.1
-            minK = min(Ks)
-            if minK >= 1:
-                Ks[Ks.index(minK)] = .9
+#        for Ks in guesses:
+#            # Hack - no idea if this will work
+#            maxK = max(Ks)
+#            if maxK < 1:
+#                Ks[Ks.index(maxK)] = 1.1
+#            minK = min(Ks)
+#            if minK >= 1:
+#                Ks[Ks.index(minK)] = .9
                 
 #        for guess in guesses:
 #            print('hi', guess)
+#        print(guesses, 'these are the guesses')
         return guesses
     
     
@@ -2098,7 +2102,7 @@ class GceosBase(Ideal):
     
     pure_guesses = True
     Wilson_guesses = True
-    random_guesses = True
+    random_guesses = False
     zero_fraction_guesses = 1E-6
     stability_maxiter = 500 # 30 good professional default; 500 used in source DTU
     stability_xtol = 1E-10 # 1e-12 was too strict; 1e-10 used in source DTU
@@ -2308,19 +2312,54 @@ class GceosBase(Ideal):
 
     def flash_TP_zs(self, T, P, zs):
         eos = self.to_TP_zs(T=T, P=P, zs=zs)
+        # Fast path - try the flash
+        _, _, VF_wilson, xs_wilson, ys_wilson = flash_wilson(zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, 
+                     P=P, T=T)
+        if 1e-5 < VF_wilson < 1-1e-5:
+            try:
+                VF, xs, ys = eos.sequential_substitution_VL( 
+                                            maxiter=self.substitution_maxiter,
+                                            xtol=self.substitution_xtol, 
+                                            near_critical=False,
+                                            xs=xs_wilson, ys=ys_wilson
+                                            )
+                phase = 'l/g'
+                return phase, xs, ys, VF
+            
+            except Exception as e:
+                pass
+        
+        
+        
         stable = True
-        for Ks in self.stability_tester.guesses(T=T, P=P, zs=zs, 
+        for trial_comp in self.stability_tester.guesses(T=T, P=P, zs=zs, 
                                                    pure=self.pure_guesses,
                                                    Wilson=self.Wilson_guesses,
                                                    random=self.random_guesses,
                                                    zero_fraction=self.zero_fraction_guesses):
-            stable, Ks_initial, Ks_extra = eos.stability_Michelsen(T=T, P=P, zs=zs,
-                                                      Ks_initial=Ks, 
-                                                      maxiter=self.stability_maxiter, 
-                                                      xtol=self.stability_xtol)
             if not stable:
-                # two phase flash with init Ks
                 break
+#            print(trial_comp)
+            for Ks in ([comp_i/zi for comp_i, zi in zip(trial_comp, zs)],
+                        [zi/comp_i for comp_i, zi in zip(trial_comp, zs)]):
+    #            maxK = max(Ks)
+    #            if maxK < 1:
+    #                Ks[Ks.index(maxK)] = 1.1
+    #            minK = min(Ks)
+    #            if minK >= 1:
+    #                Ks[Ks.index(minK)] = .9
+    #            print('testing Ks', Ks)
+                
+                stable, Ks_initial, Ks_extra = eos.stability_Michelsen(T=T, P=P, zs=zs,
+                                                          Ks_initial=Ks, 
+                                                          maxiter=self.stability_maxiter, 
+                                                          xtol=self.stability_xtol)
+                if not stable:
+#                    print('found not stable with Ks:', Ks)
+                    # two phase flash with init Ks
+                    break
+                
+#                print('found stable with Ks:', Ks)
         
 #        print(eos.G_dep_l, 'l', eos.G_dep_g, 'g', stable)
         if stable:
@@ -2336,7 +2375,11 @@ class GceosBase(Ideal):
                 else:
                     phase, xs, ys, VF = 'g', None, zs, 1
         else:
-            VF, xs, ys = eos.sequential_substitution_VL(Ks_initial=Ks_initial, maxiter=self.substitution_maxiter, xtol=self.substitution_xtol, allow_error=False, Ks_extra=Ks_extra)
+            VF, xs, ys = eos.sequential_substitution_VL(Ks_initial=Ks_initial, 
+                                                        maxiter=self.substitution_maxiter,
+                                                        xtol=self.substitution_xtol, 
+                                                        near_critical=True,
+                                                        Ks_extra=Ks_extra)
             phase = 'l/g'
         return phase, xs, ys, VF
 
@@ -2361,7 +2404,7 @@ class GceosBase(Ideal):
                 VF_calc, xs, ys = eos.sequential_substitution_VL(Ks_initial=None, 
                                                                  maxiter=self.substitution_maxiter,
                                                                  xtol=self.substitution_xtol, 
-                                                                 allow_error=False,
+                                                                 near_critical=True,
                                                                  xs=xs_guess, ys=ys_guess)
                 res[0] = (VF_calc, xs, ys)
 #                print(P, VF_calc - VF, res)
@@ -2410,7 +2453,7 @@ class GceosBase(Ideal):
                 VF_calc, xs, ys = eos.sequential_substitution_VL(Ks_initial=None, 
                                                                  maxiter=self.substitution_maxiter,
                                                                  xtol=self.substitution_xtol, 
-                                                                 allow_error=True,
+                                                                 near_critical=True,
                                                                  xs=xs_guess, ys=ys_guess
                                                                  )
                 res[0] = (VF_calc, xs, ys)
@@ -2442,7 +2485,8 @@ class GceosBase(Ideal):
 
     def bubble_T_Michelsen_Mollerup(self, T_guess, P, zs, maxiter=200, 
                                     xtol=1E-10, info=None, ys_guess=None,
-                                    max_step_damping=2.0, near_critical=False):
+                                    max_step_damping=2.0, near_critical=False,
+                                    trivial_solution_tol=1e-4):
         # ys_guess did not help convergence at all
         N = len(zs)
         cmps = range(N)
@@ -2491,6 +2535,7 @@ class GceosBase(Ideal):
         for i in range(maxiter):
             try:
                 ln_phis_l, ln_phis_g, lnphis_l2, lnphis_g2, eos_l, eos_g = all_phis(T_guess)
+#                print(ln_phis_l, ln_phis_g, lnphis_l2, lnphis_g2)
                 successive_fails = 0
             except:
                 if T_guess_old is None:
@@ -2517,9 +2562,21 @@ class GceosBase(Ideal):
             
             T_guess_old = T_guess
             step = -f_k/dfk_dT
-            T_guess = T_guess + step # 
+            
+            
+            if near_critical:
+                T_guess = T_guess + copysign(min(max_step_damping, abs(step)), step)
+            else:
+                T_guess = T_guess + step
             
             ys = [zs[i]*Ks[i] for i in cmps]
+            
+            if near_critical:
+                comp_difference = sum([abs(zi - yi) for zi, yi in zip(zs, ys)])
+                if comp_difference < trivial_solution_tol:
+                    raise ValueError("Converged to trivial condition, compositions of both phases equal")
+            
+#            print(ys, 'ys raw')
             y_sum = sum(ys)
             ys = [y/y_sum for y in ys]
 
@@ -2848,7 +2905,8 @@ class GceosBase(Ideal):
 
     def dew_T_Michelsen_Mollerup(self, T_guess, P, zs, maxiter=200, 
                                  xtol=1E-10, info=None, xs_guess=None,
-                                 max_step_damping=2.0, near_critical=False):
+                                 max_step_damping=2.0, near_critical=False,
+                                 trivial_solution_tol=1e-4):
         # Does not have any formulation available
         N = len(zs)
         cmps = range(N)
@@ -2916,8 +2974,17 @@ class GceosBase(Ideal):
             T_guess_old = T_guess
             step = -f_k/dfk_dT
             
-            T_guess = T_guess + step # 
+            if near_critical:
+                T_guess = T_guess + copysign(min(max_step_damping, abs(step)), step)
+            else:
+                T_guess = T_guess + step # 
             xs = [zs[i]/Ks[i] for i in cmps]
+            
+            if near_critical:
+                comp_difference = sum([abs(zi - xi) for zi, xi in zip(zs, xs)])
+                if comp_difference < trivial_solution_tol:
+                    raise ValueError("Converged to trivial condition, compositions of both phases equal")
+            
             x_sum = sum(xs)
             xs = [x/x_sum for x in xs]
             
@@ -3652,7 +3719,7 @@ class GceosBase(Ideal):
                 T_prev, ys_prev = T_low, ys_low
                 
             except Exception as e:
-#                print('bubble_T_Michelsen_Mollerup falure on initialization', e)
+                print('bubble_T_Michelsen_Mollerup falure on initialization', e)
                 pass
         if not P_points:
             raise ValueError("Could not solve initial point to begin bubble T envelope")
