@@ -964,7 +964,11 @@ class Ideal(PropertyPackage):
         self.kwargs = {'VaporPressures': VaporPressures,
                        'Tms': Tms, 'Tcs': Tcs, 'Pcs': Pcs}
 
+
     def flash_TP_zs(self, T, P, zs):
+        return self.flash_TP_zs_ideal(T=T, P=P, zs=zs)
+
+    def flash_TP_zs_ideal(self, T, P, zs):
         Psats = self._Psats(T)
         if self.N == 1:
             Pdew = Pbubble = Psats[0]
@@ -3623,38 +3627,53 @@ class GceosBase(Ideal):
  
     def dew_T_envelope(self, zs, P_low=1e5, P_high=None, xtol=1E-10,
                        factor=1.02, max_step_damping=.05, min_step_termination=1,
-                       min_factor_termination=1.0000001, dP_skip_step=200):
+                       min_factor_termination=1.0000001, max_P_step=1e5,
+                       spec_points=None):
         factor_original = factor
         info = []
         xs_known = []
         Ts_known = []
         P_points = []
+        
         near_critical = False
+        T_low = None
         for T_guess, xs, ys in self.dew_T_guesses(P=P_low, zs=zs):
             try:
                 T_low = self.dew_T_Michelsen_Mollerup(T_guess=T_guess, P=P_low, zs=zs, info=info,
                                                   xtol=self.FLASH_VF_TOL, xs_guess=xs,
                                                   max_step_damping=max_step_damping)
                 xs_low, _, _, _, _, _ = info
-                xs_known.append(xs_low)
-                Ts_known.append(T_low)
-                P_points.append(P_low)
-                
-                T_prev, xs_prev = T_low, xs_low
                 
             except Exception as e:
 #                print('dew_T_Michelsen_Mollerup falure on initialization', e)
                 pass
-        if not P_points:
+        if T_low is None:
             raise ValueError("Could not solve initial point to begin dew T envelope")
+
+        xs_known.append(xs_low)
+        Ts_known.append(T_low)
+        P_points.append(P_low)
+        T_prev, xs_prev = T_low, xs_low
         
         if P_high is None:
             P_high = 1.5*max(self.Pcs)
-            
-        P_prev = P_working = P_low*factor
+        
+        spec_point_working = 1e100 if spec_points is None else spec_points[0]
+        if spec_point_working < P_low:
+            raise ValueError("Cannot specify a point lower than the minimum pressure")
+        if spec_point_working == P_low:
+            spec_points = spec_points[1:]
+            spec_point_working = spec_points[0]
+        
+        P_prev = P_working = min(P_low*factor, P_low + max_P_step, spec_point_working)
+        if P_prev == spec_point_working:
+            spec_point_working = spec_points[1]
+
+        
         while P_working < P_high + P_working*(factor - 1):
             info = []
             try:
+#                print('trying point', P_working)
                 T = self.dew_T_Michelsen_Mollerup(T_guess=T_prev, P=P_working, zs=zs, info=info,
                                                   xtol=self.FLASH_VF_TOL, xs_guess=xs_prev,
                                                   max_step_damping=max_step_damping,
@@ -3667,8 +3686,23 @@ class GceosBase(Ideal):
 #                print('success on P', P_working)
             except Exception as e:
                 factor = 1 + (factor - 1)*0.5
+                if P_working in spec_points:
+#                    print('failed spec point', P_working, spec_point_working, spec_points)
+                    spec_point_working = P_working
 #                print('failed dew T at P %g with xs %s, factor now %f' %(P_working, xs_known[-1], factor), e)
-            P_working = P_prev*factor
+            P_working_prev = P_working
+            P_working = min(P_prev*factor, P_prev + max_P_step, spec_point_working)
+            # Force a different pressure if the factor has changed but not enough - still spec_point_working
+            while P_working == P_working_prev:
+                factor = 1 + (factor - 1)*0.5
+                P_working = min(P_prev*factor, P_prev + max_P_step, spec_point_working)
+            
+            if P_working == spec_point_working:
+                try:
+                    spec_point_working = spec_points[spec_points.index(spec_point_working)+1]
+                except:
+                    spec_point_working = 1e100
+            
             if factor < min_factor_termination and P_points[-1]*(factor-1) < min_step_termination:
                 if not near_critical:
                     factor = factor_original
@@ -3700,34 +3734,49 @@ class GceosBase(Ideal):
 
     def bubble_T_envelope(self, zs, P_low=1e5, P_high=None, xtol=1E-10,
                           factor=1.02, max_step_damping=.05, min_step_termination=1,
-                          min_factor_termination=1.0000001):
+                          min_factor_termination=1.0000001,
+                          max_P_step=1e5, spec_points=None):
         factor_original = factor
         info = []
         ys_known = []
         Ts_known = []
         P_points = []
         near_critical = False
+        T_low = None
         for T_guess, xs, ys in self.bubble_T_guesses(P=P_low, zs=zs):
             try:
                 T_low = self.bubble_T_Michelsen_Mollerup(T_guess=T_guess, P=P_low, zs=zs, info=info,
                                                   xtol=self.FLASH_VF_TOL, ys_guess=ys,
                                                   max_step_damping=max_step_damping)
                 _, ys_low, _, _, _, _ = info
-                ys_known.append(ys_low)
-                Ts_known.append(T_low)
-                P_points.append(P_low)
-                T_prev, ys_prev = T_low, ys_low
                 
             except Exception as e:
                 print('bubble_T_Michelsen_Mollerup falure on initialization', e)
                 pass
-        if not P_points:
+        if T_low is None:
             raise ValueError("Could not solve initial point to begin bubble T envelope")
-        
+
+        ys_known.append(ys_low)
+        Ts_known.append(T_low)
+        P_points.append(P_low)
+        T_prev, ys_prev = T_low, ys_low
+
         if P_high is None:
             P_high = 1.5*max(self.Pcs)
-            
-        P_prev = P_working = P_low*factor
+                    
+        spec_point_working = 1e100 if spec_points is None else spec_points[0]
+        if spec_point_working < P_low:
+            raise ValueError("Cannot specify a point lower than the minimum pressure")
+        if spec_point_working == P_low:
+            spec_points = spec_points[1:]
+            spec_point_working = spec_points[0]
+        
+        P_prev = P_working = min(P_low*factor, P_low + max_P_step, spec_point_working)
+        if P_prev == spec_point_working:
+            spec_point_working = spec_points[1]
+        
+        
+        
         while P_working < P_high + P_working*(factor - 1):
             info = []
             try:
@@ -3743,6 +3792,9 @@ class GceosBase(Ideal):
 #                print('success on P', P_working)
             except Exception as e:
                 factor = 1 + (factor - 1)*0.5
+                if P_working in spec_points:
+                    spec_point_working = P_working                
+                
 #                print('failed bubble T at P %g with ys %s, factor now %f' %(P_working, ys_known[-1], factor), e)
 
 #                import sys, os
@@ -3750,8 +3802,21 @@ class GceosBase(Ideal):
 #                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
 #                print(exc_type, fname, exc_tb.tb_lineno)
 #
-                
-            P_working = P_prev*factor
+            P_working_prev = P_working
+            P_working = min(P_prev*factor, P_prev + max_P_step, spec_point_working)
+            # Force a different pressure if the factor has changed but not enough - still spec_point_working
+            while P_working == P_working_prev:
+                factor = 1 + (factor - 1)*0.5
+                P_working = min(P_prev*factor, P_prev + max_P_step, spec_point_working)
+            
+            if P_working == spec_point_working:
+                try:
+                    spec_point_working = spec_points[spec_points.index(spec_point_working)+1]
+                except:
+                    spec_point_working = 1e100
+            
+            
+            
             if factor < min_factor_termination and P_points[-1]*(factor-1) < min_step_termination:
                 if not near_critical:
                     factor = factor_original

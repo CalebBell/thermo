@@ -535,3 +535,104 @@ def test_azeotrope_Pxy_PR_multiT():
         Ps_dew_multi_T.append(Ps_dew)
     assert_allclose(Ps_bubble_multi_T_expect, Ps_bubble_multi_T, rtol=1e-6)
     assert_allclose(Ps_dew_multi_T_expect, Ps_dew_multi_T, rtol=1e-6)
+    
+    
+def test_phase_envelope_ethane_pentane():
+    
+    IDs = ['ethane', 'n-pentane']
+    pkg = PropertyPackageConstants(IDs, PR_PKG, kijs=[[0, 7.609447e-003], [7.609447e-003, 0]])
+    zs = [0.7058334393128614, 0.2941665606871387] # 50/50 mass basis
+    
+    max_step_damping = 100
+    P_high = 8e6
+    factor = 1.2
+    min_step_termination = 1000
+    min_factor_termination = 1.001
+    pkg.pkg.FLASH_VF_TOL = 1e-8
+    max_P_step = 1e5
+    
+    P_low = 1e5
+    spec_points = linspace(1e5, 6.8e6, 68)
+    
+    P_points, Ts_known, xs_known = pkg.pkg.dew_T_envelope(zs, P_low=P_low, P_high=P_high, xtol=1E-10,
+                           factor=factor, min_step_termination=min_step_termination,
+                          min_factor_termination=min_factor_termination,
+                          max_step_damping=max_step_damping,
+                          max_P_step=max_P_step,
+                          spec_points=spec_points)
+    
+    P_points2, Ts_known2, ys_known = pkg.pkg.bubble_T_envelope(zs, P_low=P_low, P_high=P_high, xtol=1E-10,
+                           factor=factor, min_step_termination=min_step_termination, 
+                           max_step_damping=max_step_damping,
+                           min_factor_termination=min_factor_termination,
+                           max_P_step=max_P_step, spec_points=spec_points)
+    Ps_dew_check = []
+    Ts_dew_check = []
+    Ts_dew_expect = [277.1449361694948, 293.9890986702753, 304.8763147090649, 313.1006603531763, 319.7750626828419, 325.42150966613895, 330.32990856864086, 334.6791912532372, 338.58812791519466, 342.13987634031974, 345.3950895854326, 348.39946023112896, 351.1883247302556, 353.7896091573966, 356.22578835719867, 358.51523195418594, 360.673155009561, 362.71230559820697, 364.64347249145516, 366.47586686424677, 368.21741391309746, 369.8749788315006, 371.4545441481416, 372.96135047685806, 374.40000935978657, 375.774594553273, 377.0887164639959, 378.3455832681606, 379.54805139424366, 380.698667422777, 381.7997029894565, 382.8531839253168, 383.8609145986068, 384.824498212078, 385.74535365141924, 386.6247293397855, 387.4637144549204, 388.2632477701861, 389.02412430395054, 389.7469998909282, 390.4323937166012, 391.08068879770735, 391.69213029960156, 392.2668215113749, 392.8047171889375, 393.30561384008115, 393.76913637985547, 394.19472032380185, 394.58158839582626, 394.9287200011976, 395.2348113354687, 395.4982230372662, 395.71691081859336, 395.8883324260842, 396.0093207511565, 396.0759073750358, 396.0830711573792, 396.024369487178, 395.8913790901176, 395.67280294095485, 395.3529926936849, 394.9092730479461, 394.3067055020046, 393.48636807223045, 392.33342385249546, 390.55261457054587]
+    for P_dew, T_dew in zip(P_points, Ts_known):
+        if abs(P_dew % 1e5) < 1e-5:
+            Ps_dew_check.append(P_dew)
+            Ts_dew_check.append(T_dew)
+            
+    Ps_bubble_check = []
+    Ts_bubble_check = []
+    Ts_bubble_expect = [277.1449361694948, 293.9890986702753, 304.8763147090649, 313.1006603531763, 319.7750626828419, 325.42150966613895, 330.32990856864086, 334.6791912532372, 338.58812791519466, 342.13987634031974, 345.3950895854326, 348.39946023112896, 351.1883247302556, 353.7896091573966, 356.22578835719867, 358.51523195418594, 360.673155009561, 362.71230559820697, 364.64347249145516, 366.47586686424677, 368.21741391309746, 369.8749788315006, 371.4545441481416, 372.96135047685806, 374.40000935978657, 375.774594553273, 377.0887164639959, 378.3455832681606, 379.54805139424366, 380.698667422777, 381.7997029894565, 382.8531839253168, 383.8609145986068, 384.824498212078, 385.74535365141924, 386.6247293397855, 387.4637144549204, 388.2632477701861, 389.02412430395054, 389.7469998909282, 390.4323937166012, 391.08068879770735, 391.69213029960156, 392.2668215113749, 392.8047171889375, 393.30561384008115, 393.76913637985547, 394.19472032380185, 394.58158839582626, 394.9287200011976, 395.2348113354687, 395.4982230372662, 395.71691081859336, 395.8883324260842, 396.0093207511565, 396.0759073750358, 396.0830711573792, 396.024369487178, 395.8913790901176, 395.67280294095485, 395.3529926936849, 394.9092730479461, 394.3067055020046, 393.48636807223045, 392.33342385249546, 390.55261457054587]
+    for P_bubble, T_bubble in zip(P_points, Ts_known):
+        if abs(P_bubble % 1e5) < 1e-5:
+            Ps_bubble_check.append(P_bubble)
+            Ts_bubble_check.append(T_bubble)
+            
+    assert_allclose(Ps_bubble_check, spec_points[:-2])
+    assert_allclose(Ps_dew_check, spec_points[:-2])
+    assert_allclose(Ts_dew_check, Ts_dew_expect, rtol=1e-5)
+    assert_allclose(Ts_bubble_check, Ts_bubble_expect, rtol=1e-5)
+    
+    
+def test_phase_envelope_44_components():
+    IDs = ['nitrogen', 'carbon dioxide', 'H2S', 'methane', 'ethane', 'propane', 'isobutane', 'butane', 'isopentane', 'pentane', 'Hexane', 'Heptane', 'Octane', 'Nonane', 'Decane', 'Undecane', 'Dodecane', 'Tridecane', 'Tetradecane', 'Pentadecane', 'Hexadecane', 'Heptadecane', 'Octadecane', 'Nonadecane', 'Eicosane', 'Heneicosane', 'Docosane', 'Tricosane', 'Tetracosane', 'Pentacosane', 'Hexacosane', 'Heptacosane', 'Octacosane', 'Nonacosane', 'Triacontane', 'Benzene', 'Toluene', 'Ethylbenzene', 'Xylene', '1,2,4-Trimethylbenzene', 'Cyclopentane', 'Methylcyclopentane', 'Cyclohexane', 'Methylcyclohexane']
+    zs = [9.11975115499676e-05, 9.986813065240533e-05, 0.0010137795304828892, 0.019875879000370657, 0.013528874875432457, 0.021392773691700402, 0.00845450438914824, 0.02500218071904368, 0.016114189201071587, 0.027825798446635016, 0.05583179467176313, 0.0703116540769539, 0.07830577180555454, 0.07236459223729574, 0.0774523322851419, 0.057755091407705975, 0.04030134965162674, 0.03967043780553758, 0.03514481759005302, 0.03175471055284055, 0.025411123554079325, 0.029291866298718154, 0.012084986551713202, 0.01641114551124426, 0.01572454598093482, 0.012145363820829673, 0.01103585282423499, 0.010654818322680342, 0.008777712911254239, 0.008732073853067238, 0.007445155260036595, 0.006402875549212365, 0.0052908087849774296, 0.0048199150683177075, 0.015943943854195963, 0.004452253754752775, 0.01711981267072777, 0.0024032720444511282, 0.032178399403544646, 0.0018219517069058137, 0.003403378548794345, 0.01127516775495176, 0.015133143423489698, 0.029483213283483682]
+    
+    pkg = PropertyPackageConstants(IDs, PR_PKG)
+    
+    max_step_damping = 100
+    P_low = 1e4
+    factor = 1.2
+    min_step_termination = 1000
+    min_factor_termination = 1.0002
+    pkg.pkg.FLASH_VF_TOL = 1e-8
+    P_high = 2e8
+    spec_points = linspace(1e5, 4e6, 40)
+    
+    P_points, Ts_known, xs_known = pkg.pkg.dew_T_envelope(zs, P_low=P_low, P_high=P_high, xtol=1E-10,
+                           factor=factor, min_step_termination=min_step_termination,
+                                                          min_factor_termination=min_factor_termination,
+                                                          max_step_damping=max_step_damping,
+                                                          spec_points=spec_points
+                                                         )
+    
+    P_points2, Ts_known2, ys_known = pkg.pkg.bubble_T_envelope(zs, P_low=P_low, P_high=P_high, xtol=1E-10,
+                           factor=factor, min_step_termination=min_step_termination, 
+                                                               max_step_damping=max_step_damping,
+                                                               min_factor_termination=min_factor_termination,
+                                                               spec_points=spec_points
+                                                              )
+    Ps_dew_check = []
+    Ts_dew_check = []
+    Ts_dew_expect = [585.1745093521665, 609.5133715138915, 624.6944734390993, 635.7991119723131, 644.5334850169733, 651.6941060581852, 657.7213913216676, 662.8858558611348, 667.3660286752593, 671.2860034847065, 674.7354375617153, 677.7810270676093, 680.4734809440047, 682.8519536806468, 684.9469622199979, 686.7823540873131, 688.3766543470003, 689.7439863506575, 690.8946833742955, 691.8356590318011, 692.5705695910872, 693.0997717010517, 693.4200465117376, 693.5240144469666, 693.399082494406, 693.0255964253895, 692.3734715991103, 691.3954910689196, 690.0119359589117, 688.0668235519908, 685.1543692400655, 679.0864243340858]
+    for P_dew, T_dew in zip(P_points, Ts_known):
+        if abs(P_dew % 1e5) < 1e-5:
+            Ps_dew_check.append(P_dew)
+            Ts_dew_check.append(T_dew)
+            Ps_bubble_check = []
+    
+    Ts_bubble_check = []
+    Ts_bubble_expect = [585.1745093521665, 609.5133715138915, 624.6944734390993, 635.7991119723131, 644.5334850169733, 651.6941060581852, 657.7213913216676, 662.8858558611348, 667.3660286752593, 671.2860034847065, 674.7354375617153, 677.7810270676093, 680.4734809440047, 682.8519536806468, 684.9469622199979, 686.7823540873131, 688.3766543470003, 689.7439863506575, 690.8946833742955, 691.8356590318011, 692.5705695910872, 693.0997717010517, 693.4200465117376, 693.5240144469666, 693.399082494406, 693.0255964253895, 692.3734715991103, 691.3954910689196, 690.0119359589117, 688.0668235519908, 685.1543692400655, 679.0864243340858]
+    for P_bubble, T_bubble in zip(P_points, Ts_known):
+        if abs(P_bubble % 1e5) < 1e-5:
+            Ps_bubble_check.append(P_bubble)
+            Ts_bubble_check.append(T_bubble)
+            
+    assert_allclose(Ps_bubble_check, spec_points[:-8])
+    assert_allclose(Ps_dew_check, spec_points[:-8])
+    assert_allclose(Ts_dew_check, Ts_dew_expect, rtol=1e-5)
+    assert_allclose(Ts_bubble_check, Ts_bubble_expect, rtol=1e-5)
