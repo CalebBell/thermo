@@ -689,7 +689,74 @@ class GCEOSMIX(GCEOS):
     
     
 
+    def sequential_substitution_VL_shortcut(self, Ks_initial=None, maxiter=1000,
+                                   xtol=1E-10, near_critical=True, Ks_extra=None,
+                                   xs=None, ys=None):
+        if xs is not None and ys is not None:
+            pass
+        else:
+            if Ks_initial is None:
+                Ks = [Wilson_K_value(self.T, self.P, Tci, Pci, omega)  for Pci, Tci, omega in zip(self.Pcs, self.Tcs, self.omegas)]
+            else:
+                Ks = Ks_initial
+            xs = None
+            try:
+                V_over_F, xs, ys = flash_inner_loop(self.zs, Ks)
+            except ValueError as e:
+                if Ks_extra is not None:
+                    for Ks in Ks_extra:
+                        try:
+                            V_over_F, xs, ys = flash_inner_loop(self.zs, Ks)
+                            break
+                        except ValueError as e:
+                            pass
+            if xs is None:
+                raise(e)
+                
+        eos_g = self.to_TP_zs(T=self.T, P=self.P, zs=ys)
+        eos_l = self.to_TP_zs(T=self.T, P=self.P, zs=xs)
     
+                
+        for i in range(maxiter):
+            
+            if i % 2 == 0:
+                eos_g = self.to_TP_zs(T=self.T, P=self.P, zs=ys)
+                eos_l = self.to_TP_zs(T=self.T, P=self.P, zs=xs)
+            phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, ys)
+            phis_l = eos_g.fugacity_coefficients(eos_l.Z_l, xs)
+            
+            Ks = [l/g for l, g in zip(phis_l, phis_g)] # K_value(phi_l=l, phi_g=g)
+
+            V_over_F, xs_new, ys_new = flash_inner_loop(self.zs, Ks)
+            
+            for xi in xs_new:
+                if xi < 0.0:
+                    xs_new_sum = sum(abs(i) for i in xs_new)
+                    xs_new = [abs(i)/xs_new_sum for i in xs_new]
+                    break
+            for yi in ys_new:
+                if yi < 0.0:
+                    ys_new_sum = sum(abs(i) for i in ys_new)
+                    ys_new = [abs(i)/ys_new_sum for i in ys_new]
+                    break
+            
+            # Claimed error function in CONVENTIONAL AND RAPID FLASH CALCULATIONS FOR THE SOAVE-REDLICH-KWONG AND PENG-ROBINSON EQUATIONS OF STATE
+#            err2 = sum([(l/g-1)**2  for l, g in zip(fugacities_l, fugacities_g)]) # Suggested tolerance 1e-15
+            
+            err = (sum([abs(x_new - x_old) for x_new, x_old in zip(xs_new, xs)]) +
+                  sum([abs(y_new - y_old) for y_new, y_old in zip(ys_new, ys)]))
+#            print(err, err2)
+            xs, ys = xs_new, ys_new
+            print('err', err)
+#            print('err', err, 'xs, ys', xs, ys, 'Ks', Ks)
+            if err < xtol:
+                break
+            if i == maxiter-1:
+                raise ValueError('End of SS without convergence')
+        return V_over_F, xs, ys
+
+
+
     def sequential_substitution_VL(self, Ks_initial=None, maxiter=1000,
                                    xtol=1E-10, near_critical=True, Ks_extra=None,
                                    xs=None, ys=None):
