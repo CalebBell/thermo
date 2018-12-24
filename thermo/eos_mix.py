@@ -35,7 +35,7 @@ from thermo.utils import normalize, Cp_minus_Cv, isobaric_expansion, isothermal_
 from thermo.utils import R
 from thermo.utils import log, exp, sqrt
 from thermo.eos import *
-from thermo.activity import Wilson_K_value, K_value, flash_inner_loop
+from thermo.activity import Wilson_K_value, K_value, flash_inner_loop, Rachford_Rice_flash_error
 
 R2 = R*R
 two_root_two = 2*2**0.5
@@ -687,7 +687,135 @@ class GCEOSMIX(GCEOS):
         else:
             return self
     
-    
+    def _err_VL_jacobian(self, lnKsVF, T, P, zs, near_critical=False):
+        lnKs = lnKsVF[:-1]
+        Ks = [exp(lnKi) for lnKi in lnKs]
+        VF = float(lnKsVF[-1])
+        
+        
+        xs = [zi/(1.0 + VF*(Ki - 1.0)) for zi, Ki in zip(zs, Ks)]
+        ys = [Ki*xi for Ki, xi in zip(Ks, xs)]
+
+        eos_g = self.to_TP_zs(T=T, P=P, zs=ys)
+        eos_l = self.to_TP_zs(T=T, P=P, zs=xs)
+        if not near_critical:
+            Z_g = eos_g.Z_g
+            Z_l = eos_l.Z_l
+        else:
+            eos_g = self.to_TP_zs(T=T, P=P, zs=ys)
+            eos_l = self.to_TP_zs(T=T, P=P, zs=xs)
+            try:
+                Z_g = eos_g.Z_g
+            except AttributeError:
+                Z_g = eos_g.Z_l
+            try:
+                Z_l = eos_l.Z_l
+            except AttributeError:
+                Z_l = eos_l.Z_g
+        
+        size = self.N + 1
+        J = [[None]*size for i in range(size)]
+        
+        d_lnphi_dxs = self.d_lnphi_dzs(Z_l, xs)
+        d_lnphi_dys = self.d_lnphi_dzs(Z_g, ys)
+        
+        
+        
+#        # Handle the zeros and the ones
+        # Half of this is probably wrong! Only gets set for one set of variables?
+        # Numerical jacobian not good enough to tell
+        for i in range(self.N):
+            J[i][-2] = 0.0
+            J[-2][i] = 0.0
+            
+        J[self.N][self.N] = 1.0
+        
+        # Last column except last value; believed correct except for d_lnphi_dzs
+        for i in range(self.N):
+            value = 0.0
+            for k in range(self.N-1):
+                RR_term = zs[k]*(Ks[k] - 1.0)/(1.0 + VF*(Ks[k] - 1.0))**2.0
+                # pretty sure indexing is right in the below expression
+                diff_term = d_lnphi_dxs[i][k] - Ks[k]*d_lnphi_dys[i][k]
+                value += RR_term*diff_term
+            J[i][-1] = value
+        
+        def delta(k, j):
+            if k == j:
+                return 1.0
+            return 0.0
+        
+        
+            
+        # Main body - expensive to compute! Lots of elements
+        # Can flip around the indexing of i, j on the d_lnphi_ds but still no fix
+        # unsure of correct order!
+        # Reveals bugs in d_lnphi_dxs though.
+        for i in range(self.N - 1):
+            value = 0.0
+            for j in range(self.N - 1):
+                value += delta(i, j)
+                term = zs[j]*Ks[j]/(1.0 + VF*(Ks[j] - 1.0))**2
+                value += VF*d_lnphi_dxs[i][j] - (1.0 - VF)*d_lnphi_dys[i][j]
+            
+                J[i][j] = value
+            
+        # Last row except last value  - good, working
+        bottom_row = J[-1]
+        for j in range(self.N):
+            value = 0.0
+            for k in range(self.N):
+                if k == j:
+                    RR_l = -Ks[j]*zs[k]*VF/(1.0 + VF*(Ks[k] - 1.0))**2.0
+                    RR_g = Ks[j]*(1.0 - VF)*zs[k]/(1.0 + VF*(Ks[k] - 1.0))**2.0
+                    value += RR_g - RR_l
+            bottom_row[j] = value
+
+
+
+        # Last value - good, working, being overwritten
+        dF_ncp1_dB = 0.0
+        for i in range(len(zs)):
+            Ki = Ks[i]
+            dF_ncp1_dB += -zs[i]*(Ki - 1.0)**2/(1.0 + VF*(Ki - 1.0))**2
+        J[-1][-1] = dF_ncp1_dB
+            
+            
+        return J
+            
+    def _err_VL(self, lnKsVF, T, P, zs, near_critical=False):
+        lnKs = lnKsVF[:-1]
+        Ks = [exp(lnKi) for lnKi in lnKs]
+        VF = float(lnKsVF[-1])
+        
+        
+        xs = [zi/(1.0 + VF*(Ki - 1.0)) for zi, Ki in zip(zs, Ks)]
+        ys = [Ki*xi for Ki, xi in zip(Ks, xs)]
+        
+        err_RR = Rachford_Rice_flash_error(VF, zs, Ks)
+
+        eos_g = self.to_TP_zs(T=T, P=P, zs=ys)
+        eos_l = self.to_TP_zs(T=T, P=P, zs=xs)
+        if not near_critical:
+            lnphis_g = eos_g.lnphis_g
+            lnphis_l = eos_l.lnphis_l
+        else:
+            eos_g = self.to_TP_zs(T=T, P=P, zs=ys)
+            eos_l = self.to_TP_zs(T=T, P=P, zs=xs)
+            try:
+                lnphis_g = eos_g.lnphis_g
+            except AttributeError:
+                lnphis_g = eos_g.lnphis_l
+            try:
+                lnphis_l = eos_l.lnphis_l
+            except AttributeError:
+                lnphis_l = eos_l.lnphis_g
+                
+        Fs = [lnKi - lnphi_l + lnphi_g for lnphi_l, lnphi_g, lnKi in zip(lnphis_l, lnphis_g, lnKs)]
+        Fs.append(err_RR)
+        return Fs
+        
+
 
     def sequential_substitution_VL(self, Ks_initial=None, maxiter=1000,
                                    xtol=1E-10, near_critical=True, Ks_extra=None,
@@ -1005,6 +1133,8 @@ class GCEOSMIX(GCEOS):
 #        return abs(V_over_F-1)
 
 
+
+
 class PRMIX(GCEOSMIX, PR):
     r'''Class for solving the Peng-Robinson cubic equation of state for a 
     mixture of any number of compounds. Subclasses `PR`. Solves the EOS on
@@ -1181,6 +1311,82 @@ class PRMIX(GCEOSMIX, PR):
                 t3 = 700
             phis.append(exp(t3))
         return phis
+
+    def d_lnphi_dzs(self, Z, zs):
+        cmps_m1 = range(self.N-1)
+        
+        a_alpha = self.a_alpha
+        a_alpha_ijs = self.a_alpha_ijs
+        T2 = self.T*self.T
+        b = self.b
+
+        A = a_alpha*self.P/(R2*T2)
+        B = b*self.P/(R*self.T)
+        B2 = B*B
+        Z2 = Z*Z
+        A_B = A/B
+        ZmB = Z - B
+        
+        
+        dZ_dA = (B - Z)/(3.0*Z2 - 2.0*(1.0 - B)*Z + (A - 2.0*B - 3.0*B2))
+        
+        # 2*(3.0*B + 1)*Z may or may not have Z
+        # Simple phase stability-testing algorithm in the reduction method.
+        dZ_dB = ((-Z2 + 2*(3.0*B + 1)*Z) + (A - 2.0*B - 3.0*B2))/(
+                3.0*Z2 - 2.0*(1.0 - B)*Z + (A - 2.0*B - 3.0*B2))
+
+
+        Sis = []
+        for i in range(len(zs)):
+            tot = 0.0
+            for j in range(len(zs)):
+                tot += zs[j]*a_alpha_ijs[i][j]
+            Sis.append(tot)
+            
+        Sais = [val/a_alpha for val in Sis]
+        Sbis = [bi/b for bi in self.bs]
+        
+        Snc = Sis[-1]
+        const_A = 2.0*self.P/(R2*T2)
+        dA_dzis = [const_A*(Si - Snc) for Si in Sis[:-1]]
+        
+        const_B = 2.0*self.P/(R*self.T)
+        bnc = self.bs[-1]
+        dB_dzis = [const_B*(self.bs[i] - bnc) for i in self.cmps] # Probably wrong, missing
+        
+        dZ_dzs = [dZ_dA*dA_dz_i + dZ_dB*dB_dzi for dA_dz_i, dB_dzi in zip(dA_dzis, dB_dzis)]
+        
+        t1 = (Z2 + 2.0*Z*B - B2)
+        t2 = clog((Z + (root_two + 1.)*B)/(Z - (root_two - 1.)*B)).real
+        t3 = t2*-A/(B*two_root_two)
+        t4 = -t2/(two_root_two*B)
+            
+        a_nc = a_alpha_ijs[-1][-1] # no idea if this is right
+
+        # Have some converns of what Snc really is
+        dlnphis_dzs_all = []
+        for i in range(self.N):
+            Diks = [-A_B*(2.0*Sais[i] - Sbis[i])*(Z*dB_dzis[k] - B*dZ_dzs[k])/t1
+                    for k in cmps_m1]
+            
+            Ciks = [t3*(2.0*(a_alpha_ijs[i][k] - a_nc)/a_alpha
+                        - 4.0*Sais[i]*(Sais[k] - Snc) 
+                        + Sbis[i]*(Sbis[k] - Snc))   
+                    for k in cmps_m1]
+            
+            
+            x5 = t4*(2.0*Sais[i] - Sbis[i])
+            Biks = [x5*(dA_dzis[k] - A_B*dB_dzis[k])
+                    for k in cmps_m1 ]
+            
+            Aiks = [Sbis[i]*(dZ_dzs[k] - (Sbis[k] - Snc)*(Z - 1.0))
+                    - (dZ_dzs[k] - dB_dzis[k])/ZmB 
+                    for k in cmps_m1 ]
+            
+            dlnphis_dzs = [Aik + Bik + Cik + Dik for Aik, Bik, Cik, Dik in zip(Aiks, Biks, Ciks, Diks)]
+            dlnphis_dzs_all.append(dlnphis_dzs)
+        return dlnphis_dzs_all
+        
 
 
 class SRKMIX(GCEOSMIX, SRK):    
