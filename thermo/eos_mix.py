@@ -158,47 +158,49 @@ class GCEOSMIX(GCEOS):
         >>> #diff(a_alpha_ij, T)
         >>> #diff(a_alpha_ij, T, T)
         '''
-        zs, kijs = self.zs, self.kijs
+        zs, kijs, cmps, N = self.zs, self.kijs, self.cmps, self.N
         a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
         
-        for i in self.cmps:
+        method_obj = super(type(self).__mro__[self.a_alpha_mro], self)
+        for i in cmps:
             self.setup_a_alpha_and_derivatives(i, T=T)
             # Abuse method resolution order to call the a_alpha_and_derivatives
             # method of the original pure EOS
             # -4 goes back from object, GCEOS, SINGLEPHASEEOS, up to GCEOSMIX
-            ds = super(type(self).__mro__[self.a_alpha_mro], self).a_alpha_and_derivatives(T)
+            ds = method_obj.a_alpha_and_derivatives(T)
             a_alphas.append(ds[0])
             da_alpha_dTs.append(ds[1])
             d2a_alpha_dT2s.append(ds[2])
         self.cleanup_a_alpha_and_derivatives()
         
-        if not IS_PYPY and self.N > 20:
+        if not IS_PYPY and N > 20:
             return self.a_alpha_and_derivatives_numpy(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=full, quick=quick)
         
         da_alpha_dT, d2a_alpha_dT2 = 0.0, 0.0
         
-        a_alpha_ijs = [[None]*self.N for _ in self.cmps]
+        a_alpha_ijs = [[None]*N for _ in cmps]
 #        z_products = [[None]*self.N for _ in self.cmps]
         
-        for i in self.cmps:
+        for i in cmps:
             kijs_i = kijs[i]
             a_alpha_i = a_alphas[i]
             a_alpha_ijs_is = a_alpha_ijs[i]
-            for j in self.cmps:
+            for j in cmps:
                 if j < i:
                     continue
+                # TODO store for x0_05?
                 a_alpha_ijs_is[j] = a_alpha_ijs[j][i] = (1. - kijs_i[j])*(a_alpha_i*a_alphas[j])**0.5 
 #                z_products[i][j] = z_products[j][i] = zs[i]*zs[j]
                 
         # Faster than an optimized loop in pypy even
 #        print(self.N, self.cmps, zs)
-        z_products = [[zs[i]*zs[j] for j in self.cmps] for i in self.cmps]
+        z_products = [[zs[i]*zs[j] for j in cmps] for i in cmps]
 
         a_alpha = 0.0
-        for i in self.cmps:
+        for i in cmps:
             a_alpha_ijs_i = a_alpha_ijs[i]
             z_products_i = z_products[i]
-            for j in self.cmps:
+            for j in cmps:
                 if j < i:
                     continue
                 elif i != j:
@@ -212,13 +214,13 @@ class GCEOSMIX(GCEOS):
         self.a_alpha_ijs = a_alpha_ijs
         
         if full:
-            for i in self.cmps:
+            for i in cmps:
                 kijs_i = kijs[i]
                 a_alphai = a_alphas[i]
                 z_products_i = z_products[i]
                 da_alpha_dT_i = da_alpha_dTs[i]
                 d2a_alpha_dT2_i = d2a_alpha_dT2s[i]
-                for j in self.cmps:
+                for j in cmps:
                     if j > i:
                         # skip the duplicates
                         continue
@@ -235,7 +237,7 @@ class GCEOSMIX(GCEOS):
                     kij_m1 = kijs_i[j] - 1.0
                     
                     zi_zj_kij_m1 = zi_zj*kij_m1
-                    da_alpha_dT_ij = zi_zj_kij_m1*x1_x2/(-2.*x0_05)
+                    da_alpha_dT_ij = -0.5*zi_zj_kij_m1*x1_x2/x0_05
                     
                     
                     d2a_alpha_dT2_ij = zi_zj_kij_m1*(-0.25*x0_05*(x0*(
@@ -1795,9 +1797,13 @@ class VDWMIX(GCEOSMIX, VDW):
         '''
         phis = []
         V = Z*R*self.T/self.P
-        for i in self.cmps:
-            phi = (self.bs[i]/(V-self.b) - log(Z*(1. - self.b/V))
-                  - 2.*(self.a_alpha*self.ais[i])**0.5/(R*self.T*V))
+        
+        t1 = log(Z*(1. - self.b/V))
+        t2 = 2.0/(R*self.T*V)
+        t3 = 1.0/(V - self.b)
+        a_alpha = self.a_alpha
+        for ai, bi in zip(self.ais, self.bs):
+            phi = (bi*t3 - t1 - t2*(a_alpha*ai)**0.5)
             phis.append(exp(phi))
         return phis
 

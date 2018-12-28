@@ -2725,10 +2725,10 @@ class GceosBase(Ideal):
             try:
                 if i == -1:
                     yield T_guess, None, None
-                if i == 0:
+                if i == 1:
                     ans = self.bubble_T_guess(P=P, zs=zs, method='IdealEOS')
                     yield ans[4], ans[1], ans[2]
-                if i == 1:
+                if i == 0:
                     ans = self.bubble_T_guess(P=P, zs=zs, method='Wilson')
                     yield ans[0], ans[3], ans[4]
                 if i == 2:
@@ -2744,7 +2744,7 @@ class GceosBase(Ideal):
         info = []
         
         for T_guess, xs, ys in self.bubble_T_guesses(P=P, zs=zs, T_guess=T_guess):
-            print('starting guess', T_guess, xs, ys)
+#            print('starting guess', T_guess, xs, ys)
             try:
                 T = self.bubble_T_Michelsen_Mollerup(T_guess=T_guess, P=P, zs=zs,
                                                      info=info, xtol=self.FLASH_VF_TOL)
