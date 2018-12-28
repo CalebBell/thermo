@@ -38,6 +38,9 @@ from thermo.eos import *
 from thermo.activity import Wilson_K_value, K_value, flash_inner_loop, Rachford_Rice_flash_error
 
 R2 = R*R
+R_inv = 1.0/R
+R2_inv = R_inv*R_inv
+
 two_root_two = 2*2**0.5
 root_two = sqrt(2.)
 log_min = log(sys.float_info.min)
@@ -1365,57 +1368,62 @@ class PRMIX(GCEOSMIX, PR):
             phis.append(exp(t3))
         return phis
 
-    def d_lnphis_dT(self, Z, zs):
+
+    def d_lnphis_dT(self, Z, dZ_dT, zs):
+        a_alpha_ijs, da_alpha_dT_ijs = self.a_alpha_ijs, self.da_alpha_dT_ijs
+        cmps = self.cmps
         bs, b = self.bs, self.b
-        A = self.a_alpha*self.P/(R2*self.T*self.T)
-        B = b*self.P/(R*self.T)
+        
+        T_inv = 1.0/self.T
+
+        A = self.a_alpha*self.P*R2_inv*T_inv*T_inv
+        
+        B = b*self.P*R_inv*T_inv
         d_lnphis_dT = []
         
+        x2 = T_inv*T_inv
+        x3 = R_inv
         
+        x4 = self.P*b*x3
+        x5 = x2*x4
+        x8 = x4*T_inv
         
-#([(x0, Z_f(T)),
-#  (x1, Derivative(x0, T)),
-#  (x2, T**(-2)),
-#  (x3, 1/R),
-#  (x4, P*b*x3),
-#  (x5, x2*x4),
-#  (x6, 1/T),
-#  (x7, x4*x6),
-#  (x8, a_alpha_f(T)),
-#  (x9, sqrt(2)),
-#  (x10, 1/b),
-#  (x11, sum_f(T)),
-#  (x12, 2/x8),
-#  (x13, Derivative(x8, T)),
-#  (x14, x9 + 1),
-#  (x15, x0 + x14*x7),
-#  (x16, x9 - 1),
-#  (x17, x0 - x16*x7),
-#  (x18, 1/x17),
-#  (x19, log(x15*x18)),
-#  (x20,
-#   -x10*x19*x3*x6*x8*x9*(-2*x11*x13/x8**2 + x12*Derivative(x11, T))/4 - (x1 + x5)/(x0 - x7)),
-#  
-#
-#  (x22, x11*x12),
-#  (x24, x10*x19*x2*x3*x8*x9/4),
-#  (x25, x10*x13*x19*x3*x6*x9/4),
-#  (x26,
-#   x10*x17*x3*x6*x8*x9*(x15*(-x1 - x16*x5)/x17**2 + x18*(x1 - x14*x5))/(4*x15)),
-#  
-#  (x27, b2*x10),
-#  (x28, x22 - x27),
-#  
-#  (x29, b3*x10),
-#  (x30, x22 - x29)],
-#                
-#   (x21, b1*x10),
-#  (x23, x22  -x21),
-#                
-# [x1*x21 + x20 + x23*x24 - x23*x25 - x23*x26,
-#  x1*x27 + x20 + x24*x28 - x25*x28 - x26*x28,
-#  x1*x29 + x20 + x24*x30 - x25*x30 - x26*x30])        
-
+        x10 = self.a_alpha
+        x11 = 1.0/self.a_alpha
+        x12 = self.da_alpha_dT
+        
+        x13 = root_two
+        x14 = 1.0/b
+        
+        x15 = x13 + 1.0 # root_two plus 1
+        x16 = Z + x15*x8
+        x17 = x13 - 1.0 # root two minus one
+        x18 = x16/(x17*x8 - Z)
+        x19 = log(-x18)
+        
+        x24 = x10*x13*x14*x19*x2*x3/4
+        x25 = x12*x13*x14*x19*x3*T_inv/4
+        x26 = x10*x13*x14*x3*T_inv*(-dZ_dT + x15*x5 - x18*(dZ_dT + x17*x5))/(4*x16)
+        x50 = -0.5*x13*x14*x19*x3*T_inv
+        x51 = -x11*x12
+        x52 = (dZ_dT + x5)/(x8 - Z)
+        x53 = 2.0*x11
+        
+        # Composition stuff
+        d_lnphis_dTs = []
+        for i in cmps:
+            x9 = sum([zs[j]*a_alpha_ijs[i][j] for j in cmps])
+            der_sum = sum([zs[j]*da_alpha_dT_ijs[i][j] for j in cmps])
+            
+            x20 = x50*(x51*x9 + der_sum) + x52
+            x21 = self.bs[i]*x14
+            x23 = x53*x9 - x21
+            
+            d_lhphi_dT = dZ_dT*x21 + x20 + x23*(x24 - x25 + x26)
+            d_lnphis_dTs.append(d_lhphi_dT)
+        return d_lnphis_dTs
+         
+                
 
 
     def d_lnphi_dzs(self, Z, zs):

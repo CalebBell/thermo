@@ -30,6 +30,7 @@ from scipy.optimize import minimize, newton
 from math import log, exp, sqrt
 from thermo import Mixture
 from thermo.property_package import eos_Z_test_phase_stability, eos_Z_trial_phase_stability
+import numpy as np
 
 
 def test_PRMIX_quick():
@@ -1221,3 +1222,84 @@ def test_Z_derivative_P():
     
     assert_allclose(dZ_dP_analytical, dZ_dP_numerical)
     assert_allclose(eos1.dZ_dP_l, dZ_dP_numerical)
+    
+def test_PR_d_lbphis_dT():
+    dT = 1e-6
+    T = 270.0
+    P = 76E5
+    Tcs = [126.2, 190.6, 305.4]
+    Pcs = [33.9E5, 46.0E5, 48.8E5]
+    omegas = [0.04, 0.008, 0.098]
+    kijs = [[0, 0.038, 0.08], [0.038, 0, 0.021], [0.08, 0.021, 0]]
+    zs = [0.3, 0.1, 0.6]
+    
+    eos = eos1 = PRMIX(T=T, P=P, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=kijs)
+    eos2 = PRMIX(T=T + dT, P=P, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=kijs)
+    numerical_diffs = (np.array(eos2.lnphis_g) - eos1.lnphis_g) / dT
+    
+    
+    expected_diffs = [-0.0125202946344780, -0.00154326287196778, 0.0185468995722353]
+    analytical_diffs = eos.d_lnphis_dT(Z=eos.Z_g, dZ_dT=eos.dZ_dT_g, zs=zs)
+    assert_allclose(analytical_diffs, expected_diffs, rtol=1e-11)
+    assert_allclose(expected_diffs, numerical_diffs, rtol=1e-5)
+
+@pytest.mark.sympy
+def test_PR_d_lbphis_dT_sympy():
+    from sympy import Derivative, symbols, sqrt, diff, log, N
+    from fluids.constants import R as R_num
+    T_num = 270.0
+    P_num = 76E5
+    Tcs = [126.2, 190.6, 305.4]
+    Pcs = [33.9E5, 46.0E5, 48.8E5]
+    omegas = [0.04, 0.008, 0.098]
+    kijs = [[0, 0.038, 0.08], [0.038, 0, 0.021], [0.08, 0.021, 0]]
+    zs = [0.3, 0.1, 0.6]
+    
+    eos = PRMIX(T=T_num, P=P_num, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=kijs)
+    diffs_implemented = eos.d_lnphis_dT(Z=eos.Z_g, dZ_dT=eos.dZ_dT_g, zs=zs)
+
+    # Symbolic part
+    T, P, R, a_alpha_f, b1, b2, b3, b, = symbols('T, P, R, a_alpha_f, b1, b2, b3, b')
+    Z_f, sum_f = symbols('Z_f, sum_f')
+    
+    root_two = sqrt(2)
+    two_root_two = 2*sqrt(2)
+    a_alpha, sum_fun = a_alpha_f(T), sum_f(T)
+    
+    A = a_alpha*P/(R*R*T*T)
+    B = b*P/(R*T)
+    A, B
+    
+    Z = Z_f(T) # Change to f(P) when doing others
+    
+    needed = []
+    for bi in [b1, b2, b3]:
+        t1 = bi/b*(Z - 1) - log(Z - B)
+        t2 = 2/a_alpha*sum_fun
+        t3 = t1 - A/(two_root_two*B)*(t2 - bi/b)*log((Z + (root_two + 1)*B)/(Z - (root_two - 1)*B))
+        needed.append(diff(t3, T))
+
+
+    
+    sympy_diffs = []
+    for i in range(3):
+        subs = {Derivative(Z_f(T), T): eos.dZ_dT_g, 
+                R: R_num, 'b': eos.b,
+                Z_f(T): eos.Z_g, 
+                a_alpha: eos.a_alpha, 
+                Derivative(a_alpha_f(T), T) : eos.da_alpha_dT,
+                Derivative(sum_f(T), T): sum([zs[j]*eos.da_alpha_dT_ijs[i][j] for j in eos.cmps]),
+                }
+        subs1 = {sum_f(T): sum([zs[j]*eos.a_alpha_ijs[i][j] for j in eos.cmps])}
+    
+        subs2 = {P: eos.P, 
+                 T: eos.T,
+                 {0: b1, 1:b2, 2:b3}[i]: eos.bs[i]}
+    
+        working = needed[i].subs(subs)
+        working = working.subs(subs1)
+        working = working.subs(subs2)
+        
+        sympy_diffs.append(float(N(working)))
+    
+    assert_allclose(diffs_implemented, sympy_diffs, rtol=1e-10)
