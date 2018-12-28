@@ -99,6 +99,9 @@ class GCEOSMIX(GCEOS):
             da_alpha_dT = (z_products*(one_minus_kijs)/(x0_05)*(np.einsum('j,i', a_alphas, da_alpha_dTs))).sum()
             
             term1 = -x0_05/x0*(one_minus_kijs)
+            # TODO need da_alpha_dT_ij - not sure how to incorporate
+#            self.da_alpha_dT_ij = 
+            
             term2 = np.einsum('i, j', a_alphas, da_alpha_dTs)
                         
             main3 = da_alpha_dTs/(2.0*a_alphas)*term2
