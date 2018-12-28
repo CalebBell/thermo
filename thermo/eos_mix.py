@@ -1967,6 +1967,36 @@ class VDWMIX(GCEOSMIX, VDW):
             phis.append(exp(phi))
         return phis
 
+    def d_lnphis_dT(self, Z, dZ_dT, zs):
+        a_alpha_ijs, da_alpha_dT_ijs = self.a_alpha_ijs, self.da_alpha_dT_ijs
+        cmps = self.cmps
+        T, P, ais, bs, b = self.T, self.P, self.ais, self.bs, self.b
+        
+        T_inv = 1.0/T
+        T_inv2 = T_inv*T_inv
+        A = self.a_alpha*P*R2_inv*T_inv2
+        B = b*P*R_inv*T_inv
+
+        x0 = self.a_alpha
+        x4 = 1.0/Z
+        x5 = 4.0*P*R2_inv*x4*T_inv2*T_inv
+        
+        x8 = 2*P*R2_inv*T_inv2*dZ_dT/Z**2
+        x9 = P*R2_inv*x4*T_inv2*self.da_alpha_dT/x0
+        x10 = 1.0/P
+        x11 = R*x10*(T*dZ_dT + Z)/(-R*T*x10*Z + b)**2
+        x13 = b*T_inv*R_inv
+        x14 = P*x13*x4 - 1.0
+        x15 = x4*(P*x13*(T_inv + x4*dZ_dT) - x14*dZ_dT)/x14
+        
+        # Composition stuff
+        d_lnphis_dTs = []
+        for i in cmps:
+            x1 = (ais[i]*x0)**0.5
+            d_lhphi_dT = -bs[i]*x11 + x1*x5 + x1*x8 - x1*x9 + x15
+            d_lnphis_dTs.append(d_lhphi_dT)
+        return d_lnphis_dTs
+
 
 class PRSVMIX(PRMIX, PRSV):
     r'''Class for solving the Peng-Robinson-Stryjek-Vera equations of state for
