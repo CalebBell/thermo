@@ -159,19 +159,24 @@ class GCEOSMIX(GCEOS):
         >>> #diff(a_alpha_ij, T, T)
         '''
         zs, kijs, cmps, N = self.zs, self.kijs, self.cmps, self.N
-        a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
         
-        method_obj = super(type(self).__mro__[self.a_alpha_mro], self)
-        for i in cmps:
-            self.setup_a_alpha_and_derivatives(i, T=T)
-            # Abuse method resolution order to call the a_alpha_and_derivatives
-            # method of the original pure EOS
-            # -4 goes back from object, GCEOS, SINGLEPHASEEOS, up to GCEOSMIX
-            ds = method_obj.a_alpha_and_derivatives(T)
-            a_alphas.append(ds[0])
-            da_alpha_dTs.append(ds[1])
-            d2a_alpha_dT2s.append(ds[2])
-        self.cleanup_a_alpha_and_derivatives()
+        try:
+            # TODO do not compute derivatives if full=False
+            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = self.a_alpha_and_derivatives_vectorized(T, full=True)
+        except:
+            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
+            method_obj = super(type(self).__mro__[self.a_alpha_mro], self)
+            for i in cmps:
+                self.setup_a_alpha_and_derivatives(i, T=T)
+                # Abuse method resolution order to call the a_alpha_and_derivatives
+                # method of the original pure EOS
+                # -4 goes back from object, GCEOS, SINGLEPHASEEOS, up to GCEOSMIX
+                # 
+                ds = method_obj.a_alpha_and_derivatives(T)
+                a_alphas.append(ds[0])
+                da_alpha_dTs.append(ds[1])
+                d2a_alpha_dT2s.append(ds[2])
+            self.cleanup_a_alpha_and_derivatives()
         
         if not IS_PYPY and N > 20:
             return self.a_alpha_and_derivatives_numpy(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=full, quick=quick)
@@ -180,6 +185,7 @@ class GCEOSMIX(GCEOS):
         
         a_alpha_ijs = [[None]*N for _ in cmps]
 #        z_products = [[None]*self.N for _ in self.cmps]
+        a_alpha_i_roots = [a_alpha_i**0.5 for a_alpha_i in a_alphas]
         
         if full:
             a_alpha_ij_roots = [[None]*N for _ in cmps]
@@ -191,7 +197,7 @@ class GCEOSMIX(GCEOS):
                 for j in cmps:
                     if j < i:
                         continue
-                    a_alpha_ij_roots_i[j] = (a_alpha_i*a_alphas[j])**0.5 
+                    a_alpha_ij_roots_i[j] = a_alpha_i_roots[i]*a_alpha_i_roots[j]#(a_alpha_i*a_alphas[j])**0.5 
                     a_alpha_ijs_is[j] = a_alpha_ijs[j][i] = (1. - kijs_i[j])*a_alpha_ij_roots_i[j]
         else:
             for i in cmps:
@@ -201,7 +207,7 @@ class GCEOSMIX(GCEOS):
                 for j in cmps:
                     if j < i:
                         continue
-                    a_alpha_ijs_is[j] = a_alpha_ijs[j][i] = (1. - kijs_i[j])*(a_alpha_i*a_alphas[j])**0.5 
+                    a_alpha_ijs_is[j] = a_alpha_ijs[j][i] = (1. - kijs_i[j])*a_alpha_i_roots[i]*a_alpha_i_roots[j]
                 
         # Faster than an optimized loop in pypy even
 #        print(self.N, self.cmps, zs)
@@ -223,6 +229,8 @@ class GCEOSMIX(GCEOS):
 #        a_alpha = sum([a_alpha_ijs[i][j]*z_products[i][j]
 #                      for j in self.cmps for i in self.cmps])
         self.a_alpha_ijs = a_alpha_ijs
+        
+        da_alpha_dT_ijs = self.da_alpha_dT_ijs = [[None]*N for _ in cmps]
         
         if full:
             for i in cmps:
@@ -248,11 +256,14 @@ class GCEOSMIX(GCEOS):
 
                     kij_m1 = kijs_i[j] - 1.0
                     
-                    zi_zj_kij_m1 = zi_zj*kij_m1
-                    da_alpha_dT_ij = -0.5*zi_zj_kij_m1*x1_x2/x0_05
+                    da_alpha_dT_ij = -0.5*kij_m1*x1_x2/x0_05
                     
+                    # For temperature derivatives of fugacities 
+                    da_alpha_dT_ijs[i][j] = da_alpha_dT_ijs[j][i] = da_alpha_dT_ij
+
+                    da_alpha_dT_ij *= zi_zj
                     
-                    d2a_alpha_dT2_ij = zi_zj_kij_m1*(-0.25*x0_05*(x0*(
+                    d2a_alpha_dT2_ij = zi_zj*kij_m1*(-0.25*x0_05*(x0*(
                     2.0*(a_alphai*d2a_alpha_dT2s[j] + a_alphaj*d2a_alpha_dT2_i)
                     + 4.*da_alpha_dT_i*da_alpha_dTs[j]) - x1*x3 - x2*x3 + x1_x2*x1_x2)/(x0*x0))
                     
@@ -1250,7 +1261,33 @@ class PRMIX(GCEOSMIX, PR):
 
         self.solve()
         self.fugacities()
-        
+    
+    def a_alpha_and_derivatives_vectorized(self, T, full=False, quick=True):
+        if not full:
+            return [a*(1.0 + kappa*(1.0 - (T/Tc)**0.5))**2 
+                    for a, kappa, Tc in zip(self.ais, self.kappas, self.Tcs)]
+        else:
+            x0 = T**0.5
+            x0_inv = 1.0/x0
+            x0T_inv = x0_inv/T
+            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
+            
+            for a, kappa, Tc in zip(self.ais, self.kappas, self.Tcs):
+                x1 = Tc**-0.5
+                x2 = kappa*(x0*x1 - 1.) - 1.
+                x3 = a*kappa
+                x4 = x1*x2
+                a_alphas.append(a*x2*x2)
+                da_alpha_dTs.append(x4*x3*x0_inv)
+                d2a_alpha_dT2s.append(0.5*x3*(1.0/(T*Tc)*kappa - x4*x0T_inv))
+
+            return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
+
+
+
+
+
+
     def setup_a_alpha_and_derivatives(self, i, T=None):
         r'''Sets `a`, `kappa`, and `Tc` for a specific component before the 
         pure-species EOS's `a_alpha_and_derivatives` method is called. Both are 
@@ -1304,6 +1341,9 @@ class PRMIX(GCEOSMIX, PR):
         B = b*self.P/(R*self.T)
         phis = []
 
+        # The two log terms need to use a complex log; typically these are
+        # calculated at "liquid" volume solutions which are unstable
+        # and cannot exist
         x0 = clog(Z - B).real
         Zm1 = Z - 1.0
         
@@ -1311,15 +1351,12 @@ class PRMIX(GCEOSMIX, PR):
         x2 = A/(two_root_two*B)
         x3 = clog((Z + (root_two + 1.)*B)/(Z - (root_two - 1.)*B)).real
         
-
-        for i in self.cmps:
-            # The two log terms need to use a complex log; typically these are
-            # calculated at "liquid" volume solutions which are unstable
-            # and cannot exist
+        cmps = self.cmps
+        for i in cmps:
             a_alpha_js = self.a_alpha_ijs[i]
             b_ratio = bs[i]/b
             t1 = b_ratio*Zm1 - x0
-            t2 = x1*sum([zs[j]*a_alpha_js[j] for j in self.cmps])
+            t2 = x1*sum([zs[j]*a_alpha_js[j] for j in cmps])
             t3 = t1 - x2*(t2 - b_ratio)*x3
             # Temp
             
@@ -1327,6 +1364,59 @@ class PRMIX(GCEOSMIX, PR):
                 t3 = 700
             phis.append(exp(t3))
         return phis
+
+    def d_lnphis_dT(self, Z, zs):
+        bs, b = self.bs, self.b
+        A = self.a_alpha*self.P/(R2*self.T*self.T)
+        B = b*self.P/(R*self.T)
+        d_lnphis_dT = []
+        
+        
+        
+#([(x0, Z_f(T)),
+#  (x1, Derivative(x0, T)),
+#  (x2, T**(-2)),
+#  (x3, 1/R),
+#  (x4, P*b*x3),
+#  (x5, x2*x4),
+#  (x6, 1/T),
+#  (x7, x4*x6),
+#  (x8, a_alpha_f(T)),
+#  (x9, sqrt(2)),
+#  (x10, 1/b),
+#  (x11, sum_f(T)),
+#  (x12, 2/x8),
+#  (x13, Derivative(x8, T)),
+#  (x14, x9 + 1),
+#  (x15, x0 + x14*x7),
+#  (x16, x9 - 1),
+#  (x17, x0 - x16*x7),
+#  (x18, 1/x17),
+#  (x19, log(x15*x18)),
+#  (x20,
+#   -x10*x19*x3*x6*x8*x9*(-2*x11*x13/x8**2 + x12*Derivative(x11, T))/4 - (x1 + x5)/(x0 - x7)),
+#  
+#
+#  (x22, x11*x12),
+#  (x24, x10*x19*x2*x3*x8*x9/4),
+#  (x25, x10*x13*x19*x3*x6*x9/4),
+#  (x26,
+#   x10*x17*x3*x6*x8*x9*(x15*(-x1 - x16*x5)/x17**2 + x18*(x1 - x14*x5))/(4*x15)),
+#  
+#  (x27, b2*x10),
+#  (x28, x22 - x27),
+#  
+#  (x29, b3*x10),
+#  (x30, x22 - x29)],
+#                
+#   (x21, b1*x10),
+#  (x23, x22  -x21),
+#                
+# [x1*x21 + x20 + x23*x24 - x23*x25 - x23*x26,
+#  x1*x27 + x20 + x24*x28 - x25*x28 - x26*x28,
+#  x1*x29 + x20 + x24*x30 - x25*x30 - x26*x30])        
+
+
 
     def d_lnphi_dzs(self, Z, zs):
         cmps_m1 = range(self.N-1)
@@ -1780,6 +1870,13 @@ class VDWMIX(GCEOSMIX, VDW):
         every component'''
         del(self.a)
         
+    def a_alpha_and_derivatives_vectorized(self, T, full=False, quick=True):
+        if not full:
+            return self.ais
+        else:
+            zeros = [0.0]*self.N
+            return self.ais, zeros, zeros
+        
     def fugacity_coefficients(self, Z, zs):
         r'''Literature formula for calculating fugacity coefficients for each
         species in a mixture. Verified numerically.
@@ -1956,6 +2053,9 @@ class PRSVMIX(PRMIX, PRSV):
 
         self.fugacities()
 
+    def a_alpha_and_derivatives_vectorized(self, T, full=False, quick=True):
+        raise NotImplementedError("Not Implemented")
+
     def setup_a_alpha_and_derivatives(self, i, T=None):
         r'''Sets `a`, `kappa0`, `kappa1`, and `Tc` for a specific component before the 
         pure-species EOS's `a_alpha_and_derivatives` method is called. Both are 
@@ -2125,6 +2225,8 @@ class PRSV2MIX(PRMIX, PRSV2):
         every component'''
         del(self.a, self.kappa, self.kappa0, self.kappa1, self.kappa2, self.kappa3, self.Tc)
 
+    def a_alpha_and_derivatives_vectorized(self, T, full=False, quick=True):
+        raise NotImplementedError("Not Implemented")
 
 class TWUPRMIX(PRMIX, TWUPR):
     r'''Class for solving the Twu [1]_ variant of the Peng-Robinson cubic 
@@ -2243,6 +2345,8 @@ class TWUPRMIX(PRMIX, TWUPR):
         every component'''
         del(self.a, self.Tc, self.omega)
 
+    def a_alpha_and_derivatives_vectorized(self, T, full=False, quick=True):
+        raise NotImplementedError("Not Implemented")
 
 class TWUSRKMIX(SRKMIX, TWUSRK):
     r'''Class for solving the Twu variant of the Soave-Redlich-Kwong cubic 

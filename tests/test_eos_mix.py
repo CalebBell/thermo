@@ -1179,3 +1179,45 @@ def test_fugacities_SRK_vs_coolprop():
     
     # Set the coefficients back
     SRKMIX.c1, SRKMIX.c2 = c1, c2
+
+
+def test_Z_derivative_T():
+    from fluids.constants import R
+    T = 115
+    dT = 1e-5
+    P = 1e6
+    eos1 = PRMIX(T=T, P=P, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    eos2 = PRMIX(T=T+dT, P=P, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    
+    dZ_dT_numerical = (eos2.Z_g - eos1.Z_g)/dT
+    dZ_dT_analytical = P/R*(-eos1.V_g*T**-2 + eos1.dV_dT_g/T)
+    
+    assert_allclose(dZ_dT_numerical, dZ_dT_analytical, rtol=1e-6)
+    assert_allclose(eos1.dZ_dT_g, 0.008538861194633872, rtol=1e-11)
+    
+    dZ_dT_numerical = (eos2.Z_l - eos1.Z_l)/dT
+    dZ_dT_analytical = P/R*(-eos1.V_l*T**-2 + eos1.dV_dT_l/T)
+    
+    assert_allclose(dZ_dT_numerical, dZ_dT_analytical, rtol=1e-5)
+    assert_allclose(eos1.dZ_dT_l, -5.234447550711918e-05, rtol=1e-11)
+    
+def test_Z_derivative_P():
+    from fluids.constants import R
+
+    T = 115
+    dP = 1e-2
+    P = 1e6
+    eos1 = PRMIX(T=T, P=P, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    eos2 = PRMIX(T=T, P=P + dP, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    
+    dZ_dP_numerical = (eos2.Z_g - eos1.Z_g)/dP
+    dZ_dP_analytical = 1/(T*R)*(eos1.V_g + P*eos1.dV_dP_g)
+    
+    assert_allclose(dZ_dP_analytical, dZ_dP_numerical)
+    assert_allclose(eos1.dZ_dP_g, dZ_dP_numerical)
+    
+    dZ_dP_numerical = (eos2.Z_l - eos1.Z_l)/dP
+    dZ_dP_analytical = 1/(T*R)*(eos1.V_l + P*eos1.dV_dP_l)
+    
+    assert_allclose(dZ_dP_analytical, dZ_dP_numerical)
+    assert_allclose(eos1.dZ_dP_l, dZ_dP_numerical)

@@ -33,6 +33,7 @@ from thermo.utils import log, exp, sqrt, copysign, horner
 
 R2 = R*R
 R_2 = 0.5*R
+R_inv = 1.0/R
 
 
 class GCEOS(object):
@@ -986,7 +987,26 @@ should be calculated by this method, in a user subclass.')
     @property
     def rho_g(self):
         return 1.0/self.V_g
+
+
+    @property
+    def dZ_dT_l(self):
+        T_inv = 1.0/self.T
+        return self.P*R_inv*T_inv*(self.dV_dT_l - self.V_l*T_inv)
+
+    @property
+    def dZ_dT_g(self):
+        T_inv = 1.0/self.T
+        return self.P*R_inv*T_inv*(self.dV_dT_g - self.V_g*T_inv)
     
+    @property
+    def dZ_dP_l(self):
+        return 1.0/(self.T*R)*(self.V_l + self.P*self.dV_dP_l)
+    
+    @property
+    def dZ_dP_g(self):
+        return 1.0/(self.T*R)*(self.V_g + self.P*self.dV_dP_g)
+
     @property
     def d2V_dTdP_l(self):
         return self.d2V_dPdT_l

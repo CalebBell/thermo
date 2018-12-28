@@ -2564,6 +2564,7 @@ class GceosBase(Ideal):
             for i in cmps:
                 dfk_dT += zs[i]*Ks[i]*(d_ln_phis_dT_l[i] - d_ln_phis_dT_g[i])
             
+#            print('dfk_dT', dfk_dT)
             T_guess_old = T_guess
             step = -f_k/dfk_dT
             
@@ -2587,7 +2588,7 @@ class GceosBase(Ideal):
             if info is not None:
                 info[:] = zs, ys, Ks, eos_l, eos_g, 0.0
             
-#            print(ys, T_guess, abs(T_guess - T_guess_old), dfk_dT)
+#            print(ys, T_guess, abs(T_guess - T_guess_old), dfk_dT, ys)
             if abs(T_guess - T_guess_old) < xtol:
                 break
             
@@ -2748,9 +2749,14 @@ class GceosBase(Ideal):
             try:
                 T = self.bubble_T_Michelsen_Mollerup(T_guess=T_guess, P=P, zs=zs,
                                                      info=info, xtol=self.FLASH_VF_TOL,
-                                                     near_critical=True)
+                                                     near_critical=True,
+                                                     ys_guess=ys)
                 return info[0], info[1], info[5], T
             except Exception as e:
+                import sys, os
+                exc_type, exc_obj, exc_tb = sys.exc_info()
+                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                print(exc_type, fname, exc_tb.tb_lineno)
                 print(e, 'bubble_T_Michelsen_Mollerup falure')
                 pass
             
@@ -3069,10 +3075,10 @@ class GceosBase(Ideal):
             try:
                 if i == -1:
                     yield T_guess, None, None
-                if i == 0:
+                if i == 1:
                     ans = self.dew_T_guess(P=P, zs=zs, method='IdealEOS')
                     yield ans[4], ans[1], ans[2]
-                if i == 1:
+                if i == 0:
                     ans = self.dew_T_guess(P=P, zs=zs, method='Wilson')
                     yield ans[0], ans[3], ans[4]
                 if i == 2:
