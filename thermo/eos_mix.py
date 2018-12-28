@@ -181,16 +181,27 @@ class GCEOSMIX(GCEOS):
         a_alpha_ijs = [[None]*N for _ in cmps]
 #        z_products = [[None]*self.N for _ in self.cmps]
         
-        for i in cmps:
-            kijs_i = kijs[i]
-            a_alpha_i = a_alphas[i]
-            a_alpha_ijs_is = a_alpha_ijs[i]
-            for j in cmps:
-                if j < i:
-                    continue
-                # TODO store for x0_05?
-                a_alpha_ijs_is[j] = a_alpha_ijs[j][i] = (1. - kijs_i[j])*(a_alpha_i*a_alphas[j])**0.5 
-#                z_products[i][j] = z_products[j][i] = zs[i]*zs[j]
+        if full:
+            a_alpha_ij_roots = [[None]*N for _ in cmps]
+            for i in cmps:
+                kijs_i = kijs[i]
+                a_alpha_i = a_alphas[i]
+                a_alpha_ijs_is = a_alpha_ijs[i]
+                a_alpha_ij_roots_i = a_alpha_ij_roots[i]
+                for j in cmps:
+                    if j < i:
+                        continue
+                    a_alpha_ij_roots_i[j] = (a_alpha_i*a_alphas[j])**0.5 
+                    a_alpha_ijs_is[j] = a_alpha_ijs[j][i] = (1. - kijs_i[j])*a_alpha_ij_roots_i[j]
+        else:
+            for i in cmps:
+                kijs_i = kijs[i]
+                a_alpha_i = a_alphas[i]
+                a_alpha_ijs_is = a_alpha_ijs[i]
+                for j in cmps:
+                    if j < i:
+                        continue
+                    a_alpha_ijs_is[j] = a_alpha_ijs[j][i] = (1. - kijs_i[j])*(a_alpha_i*a_alphas[j])**0.5 
                 
         # Faster than an optimized loop in pypy even
 #        print(self.N, self.cmps, zs)
@@ -220,13 +231,14 @@ class GCEOSMIX(GCEOS):
                 z_products_i = z_products[i]
                 da_alpha_dT_i = da_alpha_dTs[i]
                 d2a_alpha_dT2_i = d2a_alpha_dT2s[i]
+                a_alpha_ij_roots_i = a_alpha_ij_roots[i]
                 for j in cmps:
-                    if j > i:
+                    if j < i:
                         # skip the duplicates
                         continue
                     a_alphaj = a_alphas[j]
                     x0 = a_alphai*a_alphaj
-                    x0_05 = x0**0.5
+                    x0_05 = a_alpha_ij_roots_i[j]
                     zi_zj = z_products_i[j]
                     
                     x1 = a_alphai*da_alpha_dTs[j]

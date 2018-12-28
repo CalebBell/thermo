@@ -2747,7 +2747,8 @@ class GceosBase(Ideal):
 #            print('starting guess', T_guess, xs, ys)
             try:
                 T = self.bubble_T_Michelsen_Mollerup(T_guess=T_guess, P=P, zs=zs,
-                                                     info=info, xtol=self.FLASH_VF_TOL)
+                                                     info=info, xtol=self.FLASH_VF_TOL,
+                                                     near_critical=True)
                 return info[0], info[1], info[5], T
             except Exception as e:
                 print(e, 'bubble_T_Michelsen_Mollerup falure')
