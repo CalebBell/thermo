@@ -26,12 +26,13 @@ __all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',
 'APISRK', 'TWUPR', 'TWUSRK', 'ALPHA_FUNCTIONS', 'eos_list', 'GCEOS_DUMMY']
 
 from cmath import atanh as catanh
-from fluids.numerics import newton, brenth
+from fluids.numerics import newton, brenth, third, sixth
 from thermo.utils import R
 from thermo.utils import Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter
 from thermo.utils import log, exp, sqrt, copysign, horner
 
 R2 = R*R
+R_2 = 0.5*R
 
 
 class GCEOS(object):
@@ -368,21 +369,22 @@ class GCEOS(object):
             [d2P_dT2, d2P_dV2, d2V_dT2, d2V_dP2, d2T_dV2, d2T_dP2],
             [d2V_dPdT, d2P_dTdV, d2T_dPdV],
             [H_dep, S_dep, Cv_dep]) = self.derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha, da_alpha_dT, d2a_alpha_dT2, quick=quick)
-                
+        
+        RT = R*T
         beta = dV_dT/V # isobaric_expansion(V, dV_dT)
         kappa = -dV_dP/V # isothermal_compressibility(V, dV_dP)
-        Cp_m_Cv = -T*dP_dT*dP_dT/dP_dV # Cp_minus_Cv(T, dP_dT, dP_dV)
+        Cp_m_Cv = -T*dP_dT*dP_dT*dV_dP # Cp_minus_Cv(T, dP_dT, dP_dV)
         
         Cp_dep = Cp_m_Cv + Cv_dep - R
                 
-        V_dep = (V - R*T/P)        
+        V_dep = (V - RT/P)        
         U_dep = H_dep - P*V_dep
         G_dep = H_dep - T*S_dep
         A_dep = U_dep - T*S_dep
-        fugacity = P*exp(G_dep/(R*T))
+        fugacity = P*exp(G_dep/(RT))
         phi = fugacity/P
   
-        PIP = V*(d2P_dTdV/dP_dT - d2P_dV2/dP_dV) # phase_identification_parameter(V, dP_dT, dP_dV, d2P_dV2, d2P_dTdV)
+        PIP = V*(d2P_dTdV*dT_dP - d2P_dV2*dV_dP) # phase_identification_parameter(V, dP_dT, dP_dV, d2P_dV2, d2P_dTdV)
 
         if hasattr(self, 'V_l') and V == self.V_l:
             phase = 'l'
@@ -392,7 +394,7 @@ class GCEOS(object):
             phase = 'l' if PIP > 1.0 else 'g' # phase_identification_parameter_phase(PIP)
       
         if phase == 'l':
-            self.Z_l = self.P*V/(R*self.T)
+            self.Z_l = self.P*V/(RT)
             self.beta_l, self.kappa_l = beta, kappa
             self.PIP_l, self.Cp_minus_Cv_l = PIP, Cp_m_Cv
             
@@ -410,7 +412,7 @@ class GCEOS(object):
             self.fugacity_l, self.phi_l = fugacity, phi
             self.Cp_dep_l, self.Cv_dep_l = Cp_dep, Cv_dep
         else:
-            self.Z_g = self.P*V/(R*self.T)
+            self.Z_g = self.P*V/(RT)
             self.beta_g, self.kappa_g = beta, kappa
             self.PIP_g, self.Cp_minus_Cv_g = PIP, Cp_m_Cv
             
@@ -543,6 +545,12 @@ should be calculated by this method, in a user subclass.')
 
         '''
         if quick:
+            x24 = 1.73205080756887729352744634151j + 1.
+#            x24_inv = 0.25 - 0.433012701892219323381861585376j
+            x26 = -1.73205080756887729352744634151j + 1.
+#            x26_inv = 0.25 + 0.433012701892219323381861585376j
+            # Changing over to the inverse constants changes some dew point results
+
             x0 = 1./P
             x1 = P*b
             x2 = R*T
@@ -564,22 +572,21 @@ should be calculated by this method, in a user subclass.')
             x17_2 = x17*x17
             x18 = x0*x17_2
             t1 = (-x13 - x14 + x15 + x16 + x18) # custom vars
-            t2 = (-9.*x0*x17*(a_alpha + x10 - x11 - x12) + 2.0*x17_2*x17*x9 
+            t2 = (-9.*x0*x17*(a_alpha + x10 - x11 - x12) + 2.0*x17_2*x17*x9
                      - 27.*(x6 + x7 + x8))
             
             x4x9  = x4*x9
             x19 = ((-13.5*x0*(x6 + x7 + x8) - 4.5*x4x9*(-a_alpha - x10 + x11 + x12)
+                   - x4*x4x9*x5
                     + 0.5*((x9*(-4.*x0*t1*t1*t1 + t2*t2))+0.0j)**0.5
-                    - x4*x4x9*x5)+0.0j)**(1./3.)
+                    )+0.0j)**third
             
             x20 = -t1/x19#
             x22 = 2.*x5
-            x24 = 1.7320508075688772j + 1.
             x25 = 4.*x0*x20
-            x26 = -1.7320508075688772j + 1.
-            return [(x0*x20 - x19 + x5)/3.,
-                    (x19*x24 + x22 - x25/x24)/6.,
-                    (x19*x26 + x22 - x25/x26)/6.]
+            return ((x0*x20 - x19 + x5)*third,
+                    (x19*x24 + x22 - x25/x24)*sixth,
+                    (x19*x26 + x22 - x25/x26)*sixth)
         else:
             return [-(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)/(3*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)) - (sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)/3 - (-P*b + P*delta - R*T)/(3*P),
                      -(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)/(3*(-1/2 - sqrt(3)*1j/2)*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)) - (-1/2 - sqrt(3)*1j/2)*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)/3 - (-P*b + P*delta - R*T)/(3*P),
@@ -627,33 +634,36 @@ should be calculated by this method, in a user subclass.')
     def main_derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha,
                                         da_alpha_dT, d2a_alpha_dT2, quick=True):
         if quick:
-            x0 = V - b
-            x1 = V*V + V*delta + epsilon
+            x0 = 1.0/(V - b)
+            x1 = 1.0/(V*(V + delta) + epsilon)
             x3 = R*T
-            x4 = 1./(x0*x0)
+            x4 = x0*x0
             x5 = 2.*V + delta
-            x6 = 1./(x1*x1)
+            x6 = x1*x1
             x7 = a_alpha*x6
             x8 = P*V
             x9 = delta*delta
             x10 = -4.*epsilon + x9
             x11 = x10**-0.5
             x12 = 2.*x11*catanh(x11*x5).real
-            x13 = x11 # x10**-0.5 
-            x14 = V + delta*0.5
-            x15 = 2.*epsilon*x13
-            x16 = x13*x9*0.5
+            x14 = 0.5*x5
+            x15 = 2.*epsilon*x11
+            x16 = 0.5*x11*x9
             x17 = x5*x6
-            dP_dT = R/x0 - da_alpha_dT/x1
+            dP_dT = R*x0 - da_alpha_dT*x1
             dP_dV = -x3*x4 + x5*x7
-            d2P_dT2 = -d2a_alpha_dT2/x1
-            d2P_dV2 = -2.*a_alpha*x5*x17/x1 + 2.*x7 + 2.*x3*x4/x0
+            d2P_dT2 = -d2a_alpha_dT2*x1
+            d2P_dV2 = -2.*a_alpha*x5*x17*x1 + 2.*x7 + 2.*x3*x4*x0
             d2P_dTdV = -R*x4 + da_alpha_dT*x17
             H_dep = x12*(T*da_alpha_dT - a_alpha) - x3 + x8
             
-            t1 = (V*x3/(x0*x8))
-            S_dep = -R*log(t1*t1)*0.5 + da_alpha_dT*x12  # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
-            Cv_dep = -T*d2a_alpha_dT2*x13*(-log(((x14 - x15 + x16)/(x14 + x15 - x16))**2)*0.5) # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
+            t1 = (x3*x0/P)
+            S_dep = -R_2*log(t1*t1) + da_alpha_dT*x12  # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
+            
+            x18 = x16 - x15
+            
+            x19 = (x14 + x18)/(x14 - x18)
+            Cv_dep = -T*d2a_alpha_dT2*x11*(-log(x19*x19)*0.5) # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
         else:
             dP_dT = R/(V - b) - da_alpha_dT/(V**2 + V*delta + epsilon)
             dP_dV = -R*T/(V - b)**2 - (-2*V - delta)*a_alpha/(V**2 + V*delta + epsilon)**2
@@ -841,7 +851,7 @@ should be calculated by this method, in a user subclass.')
         a_alpha = self.a_alpha_and_derivatives(T, full=False)
         Vs = self.volume_solutions(T, Psat, self.b, self.delta, self.epsilon, a_alpha)
         # Assume we can safely take the Vmax as gas, Vmin as l on the saturation line
-        return min((i.real for i in Vs))
+        return min([i.real for i in Vs])
     
     def V_g_sat(self, T):
         r'''Method to calculate molar volume of the vapor phase along the
@@ -866,7 +876,7 @@ should be calculated by this method, in a user subclass.')
         a_alpha = self.a_alpha_and_derivatives(T, full=False)
         Vs = self.volume_solutions(T, Psat, self.b, self.delta, self.epsilon, a_alpha)
         # Assume we can safely take the Vmax as gas, Vmin as l on the saturation line
-        return max((i.real for i in Vs))
+        return max([i.real for i in Vs])
     
     def Hvap(self, T):
         r'''Method to calculate enthalpy of vaporization for a pure fluid from
@@ -2685,7 +2695,9 @@ class VDW(GCEOS):
         Pressure, [Pa]
     V : float, optional
         Molar volume, [m^3/mol]
-
+    omega : float, optional
+        Acentric factor - not used in equation of state!, [-]
+        
     Examples
     --------    
     >>> eos = VDW(Tc=507.6, Pc=3025000, T=299., P=1E6)

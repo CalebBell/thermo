@@ -1175,7 +1175,7 @@ def test_fugacities_SRK_vs_coolprop():
     eos = SRKMIX(T=T, P=P, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=kijs)
     AS.update(CP.PT_INPUTS, P, T)
     fugacities_CP = [AS.fugacity(0), AS.fugacity(1)]
-    assert_allclose(fugacities_CP, eos.fugacities_l, rtol=1e-14)
+    assert_allclose(fugacities_CP, eos.fugacities_l, rtol=1e-13)
     
     # Set the coefficients back
     SRKMIX.c1, SRKMIX.c2 = c1, c2

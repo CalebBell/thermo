@@ -784,10 +784,12 @@ class GCEOSMIX(GCEOS):
         return J
             
     def _err_VL(self, lnKsVF, T, P, zs, near_critical=False):
+        # tried autograd without luck
         lnKs = lnKsVF[:-1]
+#        Ks = np.exp(lnKs)
         Ks = [exp(lnKi) for lnKi in lnKs]
         VF = float(lnKsVF[-1])
-        
+#        VF = lnKsVF[-1]
         
         xs = [zi/(1.0 + VF*(Ki - 1.0)) for zi, Ki in zip(zs, Ks)]
         ys = [Ki*xi for Ki, xi in zip(Ks, xs)]
@@ -1703,7 +1705,9 @@ class VDWMIX(GCEOSMIX, VDW):
         Pressure, [Pa]
     V : float, optional
         Molar volume, [m^3/mol]
-
+    omegas : float, optional
+        Acentric factors of all compounds - Not used in equation of state!, [-]
+        
     Examples
     --------
     T-P initialization, nitrogen-methane at 115 K and 1 MPa:
@@ -1727,7 +1731,8 @@ class VDWMIX(GCEOSMIX, VDW):
     '''
     a_alpha_mro = -4
     eos_pure = VDW
-    def __init__(self, Tcs, Pcs, zs, kijs=None, T=None, P=None, V=None):
+    def __init__(self, Tcs, Pcs, zs, kijs=None, T=None, P=None, V=None, 
+                 omegas=None):
         self.N = len(Tcs)
         self.cmps = range(self.N)
         self.Tcs = Tcs
@@ -1745,6 +1750,7 @@ class VDWMIX(GCEOSMIX, VDW):
         self.bs = [R*Tc/(8.*Pc) for Tc, Pc in zip(Tcs, Pcs)]
         self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
         
+        self.omegas = omegas
         self.solve()
         self.fugacities()
         
@@ -1790,7 +1796,8 @@ class VDWMIX(GCEOSMIX, VDW):
         phis = []
         V = Z*R*self.T/self.P
         for i in self.cmps:
-            phi = self.bs[i]/(V-self.b) - log(Z*(1. - self.b/V)) - 2.*(self.a_alpha*self.ais[i])**0.5/(R*self.T*V)
+            phi = (self.bs[i]/(V-self.b) - log(Z*(1. - self.b/V))
+                  - 2.*(self.a_alpha*self.ais[i])**0.5/(R*self.T*V))
             phis.append(exp(phi))
         return phis
 
