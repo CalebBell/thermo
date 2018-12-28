@@ -1379,7 +1379,6 @@ class PRMIX(GCEOSMIX, PR):
         A = self.a_alpha*self.P*R2_inv*T_inv*T_inv
         
         B = b*self.P*R_inv*T_inv
-        d_lnphis_dT = []
         
         x2 = T_inv*T_inv
         x3 = R_inv
@@ -1668,6 +1667,50 @@ class SRKMIX(GCEOSMIX, SRK):
             phis.append(exp(t1 + t2*t3))
         return phis
         
+
+    def d_lnphis_dT(self, Z, dZ_dT, zs):
+        a_alpha_ijs, da_alpha_dT_ijs = self.a_alpha_ijs, self.da_alpha_dT_ijs
+        cmps = self.cmps
+        P, bs, b = self.P, self.bs, self.b
+        
+        T_inv = 1.0/self.T
+        A = self.a_alpha*P*R2_inv*T_inv*T_inv
+        B = b*P*R_inv*T_inv
+
+        x2 = T_inv*T_inv
+        x4 = P*b*R_inv
+        x6 = x4*T_inv
+        
+        x8 = self.a_alpha
+        x9 = 1.0/x8
+        x10 = self.da_alpha_dT
+        x11 = 1.0/b
+        x12 = 1.0/Z
+        x13 = x12*x6 + 1.0
+        x14 = log(x13)
+        x19 = x11*x14*x2*R_inv*x8
+        x20 = x10*x11*x14*R_inv*T_inv
+        x21 = P*x12*x2*x8*(dZ_dT*x12 + T_inv)/(R2*x13)
+        
+        x50 = -x11*x14*R_inv*T_inv
+        x51 = -2.0*x10
+        x52 = (dZ_dT + x2*x4)/(x6 - Z)
+
+        # Composition stuff
+        d_lnphis_dTs = []
+        for i in cmps:
+            x7 = sum([zs[j]*a_alpha_ijs[i][j] for j in cmps])
+            der_sum = sum([zs[j]*da_alpha_dT_ijs[i][j] for j in cmps])
+    
+            x15 = (x50*(x51*x7*x9 + 2.0*der_sum) + x52)
+
+            x16 = bs[i]*x11
+            x18 = -x16 + 2.0*x7*x9
+        
+            d_lhphi_dT = dZ_dT*x16 + x15 + x18*(x19 - x20 + x21)
+            d_lnphis_dTs.append(d_lhphi_dT)
+        return d_lnphis_dTs
+
 
 class PR78MIX(PRMIX):
     r'''Class for solving the Peng-Robinson cubic equation of state for a 
