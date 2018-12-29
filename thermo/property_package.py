@@ -2102,7 +2102,7 @@ class UnifacDortmundCaloric(UnifacDortmund, GammaPhiCaloric):
 
 
 class GceosBase(Ideal):
-    # TODO IMPORTANT DO NOT INHERIT FROM Ideal vapor fraction flashes do not work
+    # TodO move to own class
     
     pure_guesses = True
     Wilson_guesses = True
@@ -2914,6 +2914,9 @@ class GceosBase(Ideal):
                                  max_step_damping=10.0, near_critical=False,
                                  trivial_solution_tol=1e-4):
         # Does not have any formulation available
+        # According to the following, convergence does not occur with newton's method near the critical point
+        # It recommends some sort of substitution method
+        # Accelerated successive substitution schemes for bubble-point and dew-point calculations
         N = len(zs)
         cmps = range(N)
         
@@ -2965,11 +2968,12 @@ class GceosBase(Ideal):
                 ln_phis_l, ln_phis_g, d_lnphis_dT_l, d_lnphis_dT_g, eos_l, eos_g = all_phis(T_guess)
 
             Ks = [exp(a - b) for a, b in zip(ln_phis_l, ln_phis_g)]
-            f_k = sum([zs[i]/Ks[i] for i in cmps]) - 1.0
+            xs = [zs[i]/Ks[i] for i in cmps]
+            f_k = sum([xs[i] for i in cmps]) - 1.0
 
             dfk_dT = 0.0
             for i in cmps:
-                dfk_dT += zs[i]/Ks[i]*(d_lnphis_dT_g[i] - d_lnphis_dT_l[i])
+                dfk_dT += xs[i]*(d_lnphis_dT_g[i] - d_lnphis_dT_l[i])
             
             T_guess_old = T_guess
             step = -f_k/dfk_dT
@@ -2978,7 +2982,6 @@ class GceosBase(Ideal):
                 T_guess = T_guess + copysign(min(max_step_damping, abs(step)), step)
             else:
                 T_guess = T_guess + step # 
-            xs = [zs[i]/Ks[i] for i in cmps]
             
             if near_critical:
                 comp_difference = sum([abs(zi - xi) for zi, xi in zip(zs, xs)])
@@ -2990,7 +2993,7 @@ class GceosBase(Ideal):
             
             if info is not None:
                 info[:] = xs, zs, Ks, eos_l, eos_g, 1.0
-#            print(xs, T_guess, abs(T_guess - T_guess_old), dfk_dT)
+#            print(xs, T_guess, step, dfk_dT)
             if abs(T_guess - T_guess_old) < xtol:
                 break
             
@@ -3627,6 +3630,7 @@ class GceosBase(Ideal):
                        min_factor_termination=1.0000001, max_P_step=1e5,
                        spec_points=None):
         factor_original = factor
+        factor_power = 1.0
         info = []
         xs_known = []
         Ts_known = []
@@ -3670,7 +3674,7 @@ class GceosBase(Ideal):
         while P_working < P_high + P_working*(factor - 1):
             info = []
             try:
-#                print('trying point', P_working)
+#                print('trying point', P_working, 'factor', factor)
                 T = self.dew_T_Michelsen_Mollerup(T_guess=T_prev, P=P_working, zs=zs, info=info,
                                                   xtol=self.FLASH_VF_TOL, xs_guess=xs_prev,
                                                   max_step_damping=max_step_damping,
@@ -3683,16 +3687,18 @@ class GceosBase(Ideal):
 #                print('success on P', P_working)
             except Exception as e:
                 factor = 1 + (factor - 1)*0.5
-                if P_working in spec_points:
+                if spec_points is not None and P_working in spec_points:
 #                    print('failed spec point', P_working, spec_point_working, spec_points)
                     spec_point_working = P_working
 #                print('failed dew T at P %g with xs %s, factor now %f' %(P_working, xs_known[-1], factor), e)
             P_working_prev = P_working
-            P_working = min(P_prev*factor, P_prev + max_P_step, spec_point_working)
+            P_working = min(P_prev*factor**factor_power, P_prev + max_P_step, spec_point_working)
             # Force a different pressure if the factor has changed but not enough - still spec_point_working
-            while P_working == P_working_prev:
-                factor = 1 + (factor - 1)*0.5
-                P_working = min(P_prev*factor, P_prev + max_P_step, spec_point_working)
+            
+            if spec_points is not None:
+                while P_working == P_working_prev:
+                    factor = 1 + (factor - 1)*0.5
+                    P_working = min(P_prev*factor**factor_power, P_prev + max_P_step, spec_point_working)
             
             if P_working == spec_point_working:
                 try:
@@ -3706,6 +3712,17 @@ class GceosBase(Ideal):
                     near_critical = True
                 else:
                     break
+#                if factor_power < 1:
+#                    break
+#                else:
+#                    factor_power = -1
+#                    factor = 2.0*factor - 1.0
+#                    factor = 2.0*factor - 1.0
+#                    factor = 2.0*factor - 1.0
+#                    factor = min(factor, factor_original)
+                    
+                # After this fails, it would be ideal to try to keep running the envelope while decreasing pressure
+                
                 # Is is possible to come up with a step on zs or Ts to help?
 #                P_prev = P_working = P_working + dP_skip_step
 #                N = len(zs)
@@ -3734,6 +3751,7 @@ class GceosBase(Ideal):
                           min_factor_termination=1.0000001,
                           max_P_step=1e5, spec_points=None):
         factor_original = factor
+        factor_power = 1.0
         info = []
         ys_known = []
         Ts_known = []
@@ -3777,7 +3795,12 @@ class GceosBase(Ideal):
         while P_working < P_high + P_working*(factor - 1):
             info = []
             try:
-                T = self.bubble_T_Michelsen_Mollerup(T_guess=T_prev, P=P_working, zs=zs, info=info,
+#                print('trying P', P_working)
+                if factor_power == -1:
+                    T_prev_working = T_prev + 0.02
+                else:
+                    T_prev_working = T_prev
+                T = self.bubble_T_Michelsen_Mollerup(T_guess=T_prev_working, P=P_working, zs=zs, info=info,
                                                   xtol=self.FLASH_VF_TOL, ys_guess=ys_prev,
                                                   max_step_damping=max_step_damping,
                                                   near_critical=near_critical)
@@ -3787,9 +3810,13 @@ class GceosBase(Ideal):
                 P_points.append(P_working)
                 ys_prev, T_prev, P_prev = ys, T, P_working
 #                print('success on P', P_working)
+                
+                if factor_power == -1:
+                    factor = min(2.0*factor - 1.0, factor_original)
+                    # try a larger delta next time
             except Exception as e:
                 factor = 1 + (factor - 1)*0.5
-                if P_working in spec_points:
+                if spec_points is not None and P_working in spec_points:
                     spec_point_working = P_working                
                 
 #                print('failed bubble T at P %g with ys %s, factor now %f' %(P_working, ys_known[-1], factor), e)
@@ -3800,11 +3827,11 @@ class GceosBase(Ideal):
 #                print(exc_type, fname, exc_tb.tb_lineno)
 #
             P_working_prev = P_working
-            P_working = min(P_prev*factor, P_prev + max_P_step, spec_point_working)
+            P_working = min(P_prev*factor**factor_power, P_prev + max_P_step, spec_point_working)
             # Force a different pressure if the factor has changed but not enough - still spec_point_working
             while P_working == P_working_prev:
                 factor = 1 + (factor - 1)*0.5
-                P_working = min(P_prev*factor, P_prev + max_P_step, spec_point_working)
+                P_working = min(P_prev*factor**factor_power, P_prev + max_P_step, spec_point_working)
             
             if P_working == spec_point_working:
                 try:
@@ -3814,12 +3841,19 @@ class GceosBase(Ideal):
             
             
             
-            if factor < min_factor_termination and P_points[-1]*(factor-1) < min_step_termination:
+            if factor < min_factor_termination and P_points[-1]*(factor-1) < min_step_termination or P_working < P_low:
                 if not near_critical:
                     factor = factor_original
                     near_critical = True
                 else:
                     break
+#                elif factor_power < 1:
+#                    break
+#                else:
+#                    factor_power = -1
+##                    factor = 2.0*factor - 1.0
+#                    factor = factor_original
+##                    factor = min(factor, factor_original)
                 
         return P_points, Ts_known, ys_known
     

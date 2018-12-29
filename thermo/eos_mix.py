@@ -97,7 +97,8 @@ class GCEOSMIX(GCEOS):
         
         if full:            
             term0 = np.einsum('j,i', a_alphas, da_alpha_dTs)
-            da_alpha_dT = (z_products*(one_minus_kijs)/(x0_05)*(term0)).sum()
+            term7 = (one_minus_kijs)/(x0_05)
+            da_alpha_dT = (z_products*term7*(term0)).sum()
             
             term1 = -x0_05/x0*(one_minus_kijs)
             
@@ -108,7 +109,7 @@ class GCEOSMIX(GCEOS):
             main6 = -0.5*np.einsum('i, j', da_alpha_dTs, da_alpha_dTs)
             
             # Needed for fugacity temperature derivative
-            self.da_alpha_dT_ijs = (0.5*(one_minus_kijs)/(x0_05)*(term2 + term0)).tolist()
+            self.da_alpha_dT_ijs = (0.5*(term7)*(term2 + term0))
             
             d2a_alpha_dT2 = (z_products*(term1*(main3 + main4 + main6))).sum()
         
@@ -165,16 +166,14 @@ class GCEOSMIX(GCEOS):
         >>> a_alpha_ij = (1-kij)*sqrt(a_alpha_i(T)*a_alpha_j(T))
         >>> #diff(a_alpha_ij, T)
         >>> #diff(a_alpha_ij, T, T)
-        '''
-        zs, kijs, cmps, N = self.zs, self.kijs, self.cmps, self.N
-        
+        '''        
         try:
             # TODO do not compute derivatives if full=False
             a_alphas, da_alpha_dTs, d2a_alpha_dT2s = self.a_alpha_and_derivatives_vectorized(T, full=True)
         except:
             a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
             method_obj = super(type(self).__mro__[self.a_alpha_mro], self)
-            for i in cmps:
+            for i in self.cmps:
                 self.setup_a_alpha_and_derivatives(i, T=T)
                 # Abuse method resolution order to call the a_alpha_and_derivatives
                 # method of the original pure EOS
@@ -186,9 +185,12 @@ class GCEOSMIX(GCEOS):
                 d2a_alpha_dT2s.append(ds[2])
             self.cleanup_a_alpha_and_derivatives()
         
-        if not IS_PYPY and N > 20:
+        if not IS_PYPY and self.N > 20:
             return self.a_alpha_and_derivatives_numpy(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=full, quick=quick)
+        return self.a_alpha_and_derivatives_py(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=full, quick=quick)
         
+    def a_alpha_and_derivatives_py(self, a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=True, quick=True):
+        zs, kijs, cmps, N = self.zs, self.kijs, self.cmps, self.N
         da_alpha_dT, d2a_alpha_dT2 = 0.0, 0.0
         
         a_alpha_ijs = [[None]*N for _ in cmps]
