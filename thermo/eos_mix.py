@@ -43,6 +43,8 @@ R2_inv = R_inv*R_inv
 
 two_root_two = 2*2**0.5
 root_two = sqrt(2.)
+root_two_m1 = root_two - 1.0
+root_two_p1 = root_two + 1.0
 log_min = log(sys.float_info.min)
 
 
@@ -1245,14 +1247,14 @@ class PRMIX(GCEOSMIX, PR):
     a_alpha_mro = -4
     eos_pure = PR
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None):
-        self.N = len(Tcs)
+        self.N = N = len(Tcs)
         self.cmps = range(self.N)
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.omegas = omegas
         self.zs = zs
         if kijs is None:
-            kijs = [[0.0]*self.N for i in self.cmps]
+            kijs = [[0.0]*N for i in self.cmps]
         self.kijs = kijs
         self.kwargs = {'kijs': kijs}
         self.T = T
@@ -1261,13 +1263,14 @@ class PRMIX(GCEOSMIX, PR):
 
         # optimization, unfortunately
         c1R2, c2R = self.c1*R2, self.c2*R
+        # Also tried to store the inverse of Pcs, without success - slows it down
         self.ais = [c1R2*Tcs[i]*Tcs[i]/Pcs[i] for i in self.cmps]
         self.bs = [c2R*Tcs[i]/Pcs[i] for i in self.cmps]
-        self.b = sum(bi*zi for bi, zi in zip(self.bs, zs))
+        self.b = b = sum([bi*zi for bi, zi in zip(self.bs, zs)])
         self.kappas = [omega*(-0.26992*omega + 1.54226) + 0.37464 for omega in omegas]
         
-        self.delta = 2.0*self.b
-        self.epsilon = -self.b*self.b
+        self.delta = 2.0*b
+        self.epsilon = -b*b
 
         self.solve()
         self.fugacities()
@@ -1277,9 +1280,10 @@ class PRMIX(GCEOSMIX, PR):
             return [a*(1.0 + kappa*(1.0 - (T/Tc)**0.5))**2 
                     for a, kappa, Tc in zip(self.ais, self.kappas, self.Tcs)]
         else:
+            T_inv = 1.0/T
             x0 = T**0.5
             x0_inv = 1.0/x0
-            x0T_inv = x0_inv/T
+            x0T_inv = x0_inv*T_inv
             a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
             
             for a, kappa, Tc in zip(self.ais, self.kappas, self.Tcs):
@@ -1289,7 +1293,7 @@ class PRMIX(GCEOSMIX, PR):
                 x4 = x1*x2
                 a_alphas.append(a*x2*x2)
                 da_alpha_dTs.append(x4*x3*x0_inv)
-                d2a_alpha_dT2s.append(0.5*x3*(1.0/(T*Tc)*kappa - x4*x0T_inv))
+                d2a_alpha_dT2s.append(0.5*x3*(T_inv*x1*x1*kappa - x4*x0T_inv))
 
             return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
 
@@ -1441,8 +1445,34 @@ class PRMIX(GCEOSMIX, PR):
             d_lnphis_dTs.append(d_lhphi_dT)
         return d_lnphis_dTs
          
-                
+    def d_lnphis_dP(self, Z, dZ_dP, zs):
+        a_alpha = self.a_alpha
+        cmps = self.cmps
+        bs, b = self.bs, self.b
+        T_inv = 1.0/self.T
 
+        x2 = 1.0/b
+        x6 = b*R_inv*T_inv
+        x8 = self.P*x6
+        x9 = (dZ_dP - x6)/(x8 - Z)
+        x13 = Z + root_two_p1*x8
+        x15 = (a_alpha*root_two*x2*R_inv*T_inv*(dZ_dP + root_two_p1*x6 
+                + x13*(dZ_dP - root_two_m1*x6)/(root_two_m1*x8 - Z))/(4.0*x13))
+
+        try:
+            fugacity_sum_terms = self.fugacity_sum_terms
+        except AttributeError:
+            a_alpha_ijs = self.a_alpha_ijs
+            fugacity_sum_terms = [sum([zs[j]*a_alpha_ijs[i][j] for j in cmps]) for i in cmps]
+
+        x50 = -2.0/a_alpha
+        d_lnphi_dPs = []
+        for i in cmps:
+            x3 = bs[i]*x2
+            x10 = x50*fugacity_sum_terms[i]
+            d_lnphi_dP = dZ_dP*x3 + x15*(x10 + x3) + x9
+            d_lnphi_dPs.append(d_lnphi_dP)
+        return d_lnphi_dPs                            
 
     def d_lnphi_dzs(self, Z, zs):
         cmps_m1 = range(self.N-1)
