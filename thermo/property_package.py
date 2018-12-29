@@ -2489,7 +2489,7 @@ class GceosBase(Ideal):
 
     def bubble_T_Michelsen_Mollerup(self, T_guess, P, zs, maxiter=200, 
                                     xtol=1E-10, info=None, ys_guess=None,
-                                    max_step_damping=2.0, near_critical=False,
+                                    max_step_damping=5.0, near_critical=False,
                                     trivial_solution_tol=1e-4):
         # ys_guess did not help convergence at all
         N = len(zs)
@@ -2932,7 +2932,7 @@ class GceosBase(Ideal):
 
     def dew_T_Michelsen_Mollerup(self, T_guess, P, zs, maxiter=200, 
                                  xtol=1E-10, info=None, xs_guess=None,
-                                 max_step_damping=2.0, near_critical=False,
+                                 max_step_damping=10.0, near_critical=False,
                                  trivial_solution_tol=1e-4):
         # Does not have any formulation available
         N = len(zs)
@@ -2957,12 +2957,10 @@ class GceosBase(Ideal):
             else:
                 ln_phis_l = eos_l.lnphis_l
 
-            eos2_l = eos_g.to_TP_zs(T=eos_g.T+dT, P=eos_g.P, zs=xs)
+
+
+
             
-            if near_critical:
-                lnphis_l2 = eos2_l.lnphis_l if hasattr(eos2_l, 'lnphis_l') else eos2_l.lnphis_g
-            else:
-                lnphis_l2 = eos2_l.lnphis_l
             
             eos2_g = eos_g.to_TP_zs(T=eos_g.T+dT, P=eos_g.P, zs=zs)
 
@@ -2970,6 +2968,14 @@ class GceosBase(Ideal):
                 lnphis_g2 = eos2_g.lnphis_g if hasattr(eos2_g, 'lnphis_g') else eos2_g.lnphis_l
             else:
                 lnphis_g2 = eos2_g.lnphis_g
+                
+            eos2_l = eos_g.to_TP_zs(T=eos_g.T+dT, P=eos_g.P, zs=xs)
+            
+            if near_critical:
+                lnphis_l2 = eos2_l.lnphis_l if hasattr(eos2_l, 'lnphis_l') else eos2_l.lnphis_g
+            else:
+                lnphis_l2 = eos2_l.lnphis_l
+                
                 
             return ln_phis_l, ln_phis_g, lnphis_l2, lnphis_g2, eos_l, eos_g
         
@@ -3112,7 +3118,8 @@ class GceosBase(Ideal):
         for T_guess, xs, ys in self.dew_T_guesses(P=P, zs=zs, T_guess=T_guess):
             try:
                 T = self.dew_T_Michelsen_Mollerup(T_guess=T_guess, P=P, zs=zs, info=info,
-                                                  xtol=self.FLASH_VF_TOL, xs_guess=xs)
+                                                  xtol=self.FLASH_VF_TOL, xs_guess=xs,
+                                                  near_critical=True)
                 return info[0], info[1], info[5], T
             except Exception as e:
                 print(e, 'dew_T_Michelsen_Mollerup falure')

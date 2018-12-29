@@ -96,17 +96,19 @@ class GCEOSMIX(GCEOS):
         self.a_alpha_ijs = a_alpha_ijs.tolist()
         
         if full:            
-            da_alpha_dT = (z_products*(one_minus_kijs)/(x0_05)*(np.einsum('j,i', a_alphas, da_alpha_dTs))).sum()
+            term0 = np.einsum('j,i', a_alphas, da_alpha_dTs)
+            da_alpha_dT = (z_products*(one_minus_kijs)/(x0_05)*(term0)).sum()
             
             term1 = -x0_05/x0*(one_minus_kijs)
-            # TODO need da_alpha_dT_ij - not sure how to incorporate
-#            self.da_alpha_dT_ij = 
             
             term2 = np.einsum('i, j', a_alphas, da_alpha_dTs)
                         
             main3 = da_alpha_dTs/(2.0*a_alphas)*term2
             main4 = -np.einsum('i, j', a_alphas, d2a_alpha_dT2s)
             main6 = -0.5*np.einsum('i, j', da_alpha_dTs, da_alpha_dTs)
+            
+            # Needed for fugacity temperature derivative
+            self.da_alpha_dT_ijs = (0.5*(one_minus_kijs)/(x0_05)*(term2 + term0)).tolist()
             
             d2a_alpha_dT2 = (z_products*(term1*(main3 + main4 + main6))).sum()
         
@@ -1403,9 +1405,9 @@ class PRMIX(GCEOSMIX, PR):
         x18 = x16/(x17*x8 - Z)
         x19 = log(-x18)
         
-        x24 = x10*x13*x14*x19*x2*x3/4
-        x25 = x12*x13*x14*x19*x3*T_inv/4
-        x26 = x10*x13*x14*x3*T_inv*(-dZ_dT + x15*x5 - x18*(dZ_dT + x17*x5))/(4*x16)
+        x24 = 0.25*x10*x13*x14*x19*x2*x3
+        x25 = 0.25*x12*x13*x14*x19*x3*T_inv
+        x26 = 0.25*x10*x13*x14*x3*T_inv*(-dZ_dT + x15*x5 - x18*(dZ_dT + x17*x5))/(x16)
         x50 = -0.5*x13*x14*x19*x3*T_inv
         x51 = -x11*x12
         x52 = (dZ_dT + x5)/(x8 - Z)
