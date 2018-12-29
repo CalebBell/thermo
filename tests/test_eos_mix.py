@@ -1620,3 +1620,79 @@ def test_SRK_d_lnphis_dP_sympy():
     
         sympy_diffs.append(float((N(working))))
     assert_allclose(sympy_diffs, diffs_implemented, rtol=1e-11)
+
+
+def test_VDW_d_lnphis_dP():
+    dP = 1e-1
+    T = 280.0 # Need increase T a little
+    P = 76E5
+    Tcs = [126.2, 190.6, 305.4]
+    Pcs = [33.9E5, 46.0E5, 48.8E5]
+    omegas = [0.04, 0.008, 0.098]
+    kijs = [[0, 0.038, 0.08], [0.038, 0, 0.021], [0.08, 0.021, 0]]
+    zs = [0.3, 0.1, 0.6]
+    
+    eos = eos1 = VDWMIX(T=T, P=P, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=kijs)
+    eos2 = VDWMIX(T=T, P=P + dP, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=kijs)
+    numerical_diffs = (np.array(eos2.lnphis_g) - eos1.lnphis_g) / dP
+    
+    expected_diffs = [4.48757918014496e-8, -1.17254464726201e-8, -1.20732168353728e-7]
+    analytical_diffs = eos.d_lnphis_dP(Z=eos.Z_g, dZ_dP=eos.dZ_dP_g, zs=zs)
+    
+    assert_allclose(analytical_diffs, expected_diffs, rtol=1e-11)
+    assert_allclose(expected_diffs, numerical_diffs, rtol=1e-5)
+    
+@pytest.mark.sympy
+def test_VDW_d_lnphis_dP_sympy():
+    from sympy import Derivative, symbols, sqrt, diff, log, N
+    from fluids.constants import R as R_num
+
+    T_num = 280.0
+    P_num = 76E5
+    Tcs = [126.2, 190.6, 305.4]
+    Pcs = [33.9E5, 46.0E5, 48.8E5]
+    omegas = [0.04, 0.008, 0.098]
+    kijs = [[0, 0.038, 0.08], [0.038, 0, 0.021], [0.08, 0.021, 0]]
+    zs = [0.3, 0.1, 0.6]
+    
+    
+    eos = VDWMIX(T=T_num, P=P_num, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=kijs)
+    diffs_implemented = eos.d_lnphis_dP(Z=eos.Z_g, dZ_dP=eos.dZ_dP_g, zs=zs)
+
+    T, P, R, a_alpha_f, b1, b2, b3, b, = symbols('T, P, R, a_alpha_f, b1, b2, b3, b')
+    a1, a2, a3 = symbols('a1, a2, a3')
+    Z_f, sum_f = symbols('Z_f, sum_f')
+    a_alpha, sum_fun = a_alpha_f(T), sum_f(T)
+    
+    Z = Z_f(P)
+    
+    needed = []
+    for ai, bi in zip([a1, a2, a3], [b1, b2, b3]):
+        V = Z*R*T/P
+        t1 = log(Z*(1 - b/V))
+        t2 = 2/(R*T*V)
+        t3 = 1/(V - b)
+        logphi = (bi*t3 - t1 - t2*sqrt(a_alpha*ai))
+        
+        needed.append(diff(logphi, P))
+    
+    sympy_diffs = []
+    for i in range(3):
+        subs = {Derivative(Z_f(P), P): eos.dZ_dP_g, 
+                R: R_num, 'b': eos.b,
+                Z_f(P): eos.Z_g, 
+                a_alpha: eos.a_alpha, 
+                sum_f(T): sum([zs[j]*eos.a_alpha_ijs[i][j] for j in eos.cmps])
+                }
+    
+        subs2 = {P: eos.P, 
+                 T: eos.T,
+                 {0: b1, 1:b2, 2:b3}[i]: eos.bs[i],
+                {0: a1, 1:a2, 2:a3}[i]: eos.ais[i]}
+    
+        working = needed[i].subs(subs)
+        working = working.subs(subs2)
+        
+        sympy_diffs.append(float(N(working)))
+
+    assert_allclose(sympy_diffs, diffs_implemented, rtol=1e-11)

@@ -1787,9 +1787,6 @@ class SRKMIX(GCEOSMIX, SRK):
         x7 = a_alpha
         x9 = 1./Z
         x10 = a_alpha*x9*(self.P*dZ_dP*x9 - 1)*RT_inv*RT_inv/((x5*x9 + 1.0))
-
-          
-  
         try:
             fugacity_sum_terms = self.fugacity_sum_terms
         except AttributeError:
@@ -2091,6 +2088,35 @@ class VDWMIX(GCEOSMIX, VDW):
             d_lhphi_dT = -bs[i]*x11 + x1*x5 + x1*x8 - x1*x9 + x15
             d_lnphis_dTs.append(d_lhphi_dT)
         return d_lnphis_dTs
+
+    def d_lnphis_dP(self, Z, dZ_dP, zs):
+        a_alpha = self.a_alpha
+        cmps = self.cmps
+        T, P, bs, b, ais = self.T, self.P, self.bs, self.b, self.ais
+        
+        T_inv = 1.0/T
+
+        RT_inv = T_inv*R_inv
+
+
+        x3 = T_inv*T_inv
+        x5 = 1.0/Z
+        x6 = 2.0*R2_inv*x3*x5
+        x8 = 2.0*P*R2_inv*x3*dZ_dP*x5*x5
+        x9 = 1./P
+        x10 = Z*x9
+        x11 = R*T*x9*(-x10 + dZ_dP)/(-R*T*x10 + b)**2
+        x12 = P*x5
+        x13 = b*RT_inv
+        x14 = x12*x13 - 1.0
+        x15 = -x5*(-x13*(x12*dZ_dP - 1.0) + x14*dZ_dP)/x14
+
+        d_lnphi_dPs = []
+        for i in cmps:
+            x1 = (ais[i]*a_alpha)**0.5
+            d_lnphi_dP = -bs[i]*x11 - x1*x6 + x1*x8 + x15
+            d_lnphi_dPs.append(d_lnphi_dP)
+        return d_lnphi_dPs                            
 
 
 class PRSVMIX(PRMIX, PRSV):
