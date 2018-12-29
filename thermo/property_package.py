@@ -2945,6 +2945,7 @@ class GceosBase(Ideal):
             eos_g = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
                                  zs=zs, kijs=self.kijs, T=T_guess, P=P, **self.eos_kwargs)
             if near_critical:
+                
                 ln_phis_g = eos_g.lnphis_g if hasattr(eos_g, 'lnphis_g') else eos_g.lnphis_l
             else:
                 ln_phis_g = eos_g.lnphis_g
@@ -2959,6 +2960,8 @@ class GceosBase(Ideal):
 
 
 
+#                d_lnphis_dT_g = eos_g.d_lnphis_dT(eos_g.Z_g, eos_g.dZ_dT_g, ys)
+#            return ln_phis_l, ln_phis_g, d_lnphis_dT_l, d_lnphis_dT_g, eos_l, eos_g
 
             
             
@@ -2976,14 +2979,16 @@ class GceosBase(Ideal):
             else:
                 lnphis_l2 = eos2_l.lnphis_l
                 
-                
-            return ln_phis_l, ln_phis_g, lnphis_l2, lnphis_g2, eos_l, eos_g
+            d_lnphis_dT_l = [(lnphis_l2[i] - ln_phis_l[i])/dT for i in cmps]
+            d_lnphis_dT_g = [(lnphis_g2[i] - ln_phis_g[i])/dT for i in cmps]
+
+            return ln_phis_l, ln_phis_g, d_lnphis_dT_l, d_lnphis_dT_g, eos_l, eos_g
         
         T_guess_old = None
         successive_fails = 0
         for i in range(maxiter):
             try:
-                ln_phis_l, ln_phis_g, lnphis_l2, lnphis_g2, eos_l, eos_g = all_phis(T_guess)
+                ln_phis_l, ln_phis_g, d_lnphis_dT_l, d_lnphis_dT_g, eos_l, eos_g = all_phis(T_guess)
                 successive_fails = 0
             except:
                 if T_guess_old is None:
@@ -2993,16 +2998,14 @@ class GceosBase(Ideal):
                     raise ValueError("Stopped convergence procedure after multiple bad steps") 
                 T_guess = T_guess_old + copysign(min(max_step_damping, abs(step)), step)
 #                print('fail - new T guess', T_guess)
-                ln_phis_l, ln_phis_g, lnphis_l2, lnphis_g2, eos_l, eos_g = all_phis(T_guess)
+                ln_phis_l, ln_phis_g, d_lnphis_dT_l, d_lnphis_dT_g, eos_l, eos_g = all_phis(T_guess)
 
             Ks = [exp(a - b) for a, b in zip(ln_phis_l, ln_phis_g)]
             f_k = sum([zs[i]/Ks[i] for i in cmps]) - 1.0
 
-            d_ln_phis_dT_l = [(lnphis_l2[i] - ln_phis_l[i])/dT for i in cmps]
-            d_ln_phis_dT_g = [(lnphis_g2[i] - ln_phis_g[i])/dT for i in cmps]
             dfk_dT = 0.0
             for i in cmps:
-                dfk_dT += zs[i]/Ks[i]*( d_ln_phis_dT_g[i] - d_ln_phis_dT_l[i])
+                dfk_dT += zs[i]/Ks[i]*(d_lnphis_dT_g[i] - d_lnphis_dT_l[i])
             
             T_guess_old = T_guess
             step = -f_k/dfk_dT
