@@ -1771,6 +1771,41 @@ class SRKMIX(GCEOSMIX, SRK):
             d_lnphis_dTs.append(d_lhphi_dT)
         return d_lnphis_dTs
 
+    def d_lnphis_dP(self, Z, dZ_dP, zs):
+        a_alpha = self.a_alpha
+        cmps = self.cmps
+        bs, b = self.bs, self.b
+        T_inv = 1.0/self.T
+
+        RT_inv = T_inv*R_inv
+        x0 = Z
+        x1 = dZ_dP
+        x2 = 1.0/b
+        x4 = b*RT_inv
+        x5 = self.P*x4
+        x6 = (dZ_dP - x4)/(x5 - Z)
+        x7 = a_alpha
+        x9 = 1./Z
+        x10 = a_alpha*x9*(self.P*dZ_dP*x9 - 1)*RT_inv*RT_inv/((x5*x9 + 1.0))
+
+          
+  
+        try:
+            fugacity_sum_terms = self.fugacity_sum_terms
+        except AttributeError:
+            a_alpha_ijs = self.a_alpha_ijs
+            fugacity_sum_terms = [sum([zs[j]*a_alpha_ijs[i][j] for j in cmps]) for i in cmps]
+
+        x50 = 2.0/a_alpha
+        d_lnphi_dPs = []
+        for i in cmps:
+            x8 = x50*fugacity_sum_terms[i]
+            x3 = bs[i]*x2
+            d_lnphi_dP = dZ_dP*x3 + x10*(x8 - x3) + x6
+            d_lnphi_dPs.append(d_lnphi_dP)
+        return d_lnphi_dPs                            
+
+
 
 class PR78MIX(PRMIX):
     r'''Class for solving the Peng-Robinson cubic equation of state for a 
