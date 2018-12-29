@@ -3464,41 +3464,72 @@ class GceosBase(Ideal):
     def bubble_P_Michelsen_Mollerup(self, P_guess, T, zs, maxiter=200, 
                                     xtol=1E-4, info=None, ys_guess=None,
                                     near_critical=False):
-        # ys_guess did not help convergence at all
         N = len(zs)
         cmps = range(N)
-        
         ys = zs if ys_guess is None else ys_guess
-        for i in range(maxiter):
+        
+        def lnphis_and_derivatives(P_guess):
             eos_l = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
                                  zs=zs, kijs=self.kijs, T=T, P=P_guess, **self.eos_kwargs)
-            ln_phis_l = eos_l.lnphis_l# if hasattr(eos_l, 'lnphis_l') else eos_l.lnphis_g
-            # failure occurs here failrly often
+
+            if near_critical:
+                if hasattr(eos_l, 'lnphis_l'):
+                    ln_phis_l = eos_l.lnphis_l 
+                    d_lnphis_dP_l = eos_l.d_lnphis_dP(eos_l.Z_l, eos_l.dZ_dP_l, zs)
+                else:
+                    ln_phis_l = eos_l.lnphis_g
+                    d_lnphis_dP_l = eos_l.d_lnphis_dP(eos_l.Z_g, eos_l.dZ_dP_g, zs)                
+            else:
+                ln_phis_l = eos_l.lnphis_l
+                d_lnphis_dP_l = eos_l.d_lnphis_dP(eos_l.Z_l, eos_l.dZ_dP_l, zs)
+
             eos_g = eos_l.to_TP_zs(T=eos_l.T, P=eos_l.P, zs=ys)
             
+            if near_critical:
+                if hasattr(eos_g, 'lnphis_g'):
+                    ln_phis_g = eos_g.lnphis_g 
+                    d_lnphis_dP_g = eos_g.d_lnphis_dP(eos_g.Z_g, eos_g.dZ_dP_g, ys)
+                else:
+                    ln_phis_g = eos_g.lnphis_l
+                    d_lnphis_dP_g = eos_g.d_lnphis_dP(eos_g.Z_l, eos_g.dZ_dP_l, ys)
+            else:
+                ln_phis_g = eos_g.lnphis_g
+                d_lnphis_dP_g = eos_g.d_lnphis_dP(eos_g.Z_g, eos_g.dZ_dP_g, ys)
+                        
+            return ln_phis_l, ln_phis_g, d_lnphis_dP_l, d_lnphis_dP_g, eos_l, eos_g
+
+
+        for i in range(maxiter):
             
-            ln_phis_g = eos_g.lnphis_g# if hasattr(eos_g, 'lnphis_g') else eos_g.lnphis_l
+            ln_phis_l, ln_phis_g, d_lnphis_dP_l, d_lnphis_dP_g, eos_l, eos_g = lnphis_and_derivatives(P_guess)
+#            eos_l = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
+#                                 zs=zs, kijs=self.kijs, T=T, P=P_guess, **self.eos_kwargs)
+#            ln_phis_l = eos_l.lnphis_l# if hasattr(eos_l, 'lnphis_l') else eos_l.lnphis_g
+            # failure occurs here failrly often
+#            eos_g = eos_l.to_TP_zs(T=eos_l.T, P=eos_l.P, zs=ys)
+            
+            
+#            ln_phis_g = eos_g.lnphis_g# if hasattr(eos_g, 'lnphis_g') else eos_g.lnphis_l
             Ks = [exp(a - b) for a, b in zip(ln_phis_l, ln_phis_g)]
-    
             f_k = sum([zs[i]*Ks[i] for i in cmps]) - 1.0
             
             # TODO analytical derivatives?
-            dP = min(P_guess*(1e-4), 10)
+#            dP = min(P_guess*(1e-4), 10)
             # The analytical derivatives would be nice, but they would only save time
             # if they weren't too expensive; i.e. dZ_dT.
 #            print('dP', dP)
-            eos2_l = eos_l.to_TP_zs(T=eos_l.T, P=eos_l.P + dP, zs=zs)
-            eos2_g = eos_l.to_TP_zs(T=eos_l.T, P=eos_l.P + dP, zs=ys)
+#            eos2_l = eos_l.to_TP_zs(T=eos_l.T, P=eos_l.P + dP, zs=zs)
+#            eos2_g = eos_l.to_TP_zs(T=eos_l.T, P=eos_l.P + dP, zs=ys)
             
-            ln_phis_g2 = eos2_g.lnphis_g# if hasattr(eos2_g, 'lnphis_g') else  eos2_g.lnphis_l
-            ln_phis_l2 = eos2_l.lnphis_l# if hasattr(eos2_l, 'lnphis_l') else eos2_l.lnphis_g
+#            ln_phis_g2 = eos2_g.lnphis_g# if hasattr(eos2_g, 'lnphis_g') else  eos2_g.lnphis_l
+#            ln_phis_l2 = eos2_l.lnphis_l# if hasattr(eos2_l, 'lnphis_l') else eos2_l.lnphis_g
             
 #            print(ln_phis_g2, ln_phis_l2, ln_phis_l, ln_phis_g)
-            d_ln_phis_dP_l = [(ln_phis_l2[i] - ln_phis_l[i])/dP for i in cmps]
-            d_ln_phis_dP_g = [(ln_phis_g2[i] - ln_phis_g[i])/dP for i in cmps]
+#            d_ln_phis_dP_l = [(ln_phis_l2[i] - ln_phis_l[i])/dP for i in cmps]
+#            d_ln_phis_dP_g = [(ln_phis_g2[i] - ln_phis_g[i])/dP for i in cmps]
             dfk_dP = 0.0
             for i in cmps:
-                dfk_dP += zs[i]*Ks[i]*(d_ln_phis_dP_l[i] - d_ln_phis_dP_g[i])
+                dfk_dP += zs[i]*Ks[i]*(d_lnphis_dP_l[i] - d_lnphis_dP_g[i])
             
             P_guess_old = P_guess
             P_guess = P_guess - f_k/dfk_dP
