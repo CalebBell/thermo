@@ -2095,9 +2095,7 @@ class VDWMIX(GCEOSMIX, VDW):
         T, P, bs, b, ais = self.T, self.P, self.bs, self.b, self.ais
         
         T_inv = 1.0/T
-
         RT_inv = T_inv*R_inv
-
 
         x3 = T_inv*T_inv
         x5 = 1.0/Z

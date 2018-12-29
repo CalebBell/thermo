@@ -2497,10 +2497,7 @@ class GceosBase(Ideal):
                     
         ys = zs if ys_guess is None else ys_guess
 
-        def all_phis(T_guess):
-            # TODO analytical derivatives?
-            # The analytical derivatives would be nice, but they would only save time
-            # if they weren't too expensive; i.e. dZ_dT.
+        def lnphis_and_derivatives(T_guess):
             eos_l = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
                                  zs=zs, kijs=self.kijs, T=T_guess, P=P, **self.eos_kwargs)
 
@@ -2534,11 +2531,10 @@ class GceosBase(Ideal):
         successive_fails = 0
         for i in range(maxiter):
             try:
-                ln_phis_l, ln_phis_g, d_lnphis_dT_l, d_lnphis_dT_g, eos_l, eos_g = all_phis(T_guess)
-#                print(ln_phis_l, ln_phis_g, lnphis_l2, lnphis_g2)
+                ln_phis_l, ln_phis_g, d_lnphis_dT_l, d_lnphis_dT_g, eos_l, eos_g = lnphis_and_derivatives(T_guess)
                 successive_fails = 0
             except Exception as e:
-                print(e)
+#                print(e)
                 if T_guess_old is None:
                     raise ValueError("Could not calculate liquid and vapor conditions at provided initial temperature %s K" %(T_guess))
                 successive_fails += 1
@@ -2546,14 +2542,12 @@ class GceosBase(Ideal):
                     raise ValueError("Stopped convergence procedure after multiple bad steps") 
                 T_guess = T_guess_old + copysign(min(max_step_damping, abs(step)), step)
 #                print('fail - new T guess', T_guess)
-                ln_phis_l, ln_phis_g, d_lnphis_dT_l, d_lnphis_dT_g, eos_l, eos_g = all_phis(T_guess)
+                ln_phis_l, ln_phis_g, d_lnphis_dT_l, d_lnphis_dT_g, eos_l, eos_g = lnphis_and_derivatives(T_guess)
             
             
             
             Ks = [exp(a - b) for a, b in zip(ln_phis_l, ln_phis_g)]
-    
             f_k = sum([zs[i]*Ks[i] for i in cmps]) - 1.0
-            
             
             dfk_dT = 0.0
             for i in cmps:
@@ -2922,7 +2916,7 @@ class GceosBase(Ideal):
         
         xs = zs if xs_guess is None else xs_guess
         
-        def all_phis(T_guess):
+        def lnphis_and_derivatives(T_guess):
             eos_g = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
                                  zs=zs, kijs=self.kijs, T=T_guess, P=P, **self.eos_kwargs)
             if near_critical:
@@ -2955,7 +2949,7 @@ class GceosBase(Ideal):
         successive_fails = 0
         for i in range(maxiter):
             try:
-                ln_phis_l, ln_phis_g, d_lnphis_dT_l, d_lnphis_dT_g, eos_l, eos_g = all_phis(T_guess)
+                ln_phis_l, ln_phis_g, d_lnphis_dT_l, d_lnphis_dT_g, eos_l, eos_g = lnphis_and_derivatives(T_guess)
                 successive_fails = 0
             except:
                 if T_guess_old is None:
@@ -2965,7 +2959,7 @@ class GceosBase(Ideal):
                     raise ValueError("Stopped convergence procedure after multiple bad steps") 
                 T_guess = T_guess_old + copysign(min(max_step_damping, abs(step)), step)
 #                print('fail - new T guess', T_guess)
-                ln_phis_l, ln_phis_g, d_lnphis_dT_l, d_lnphis_dT_g, eos_l, eos_g = all_phis(T_guess)
+                ln_phis_l, ln_phis_g, d_lnphis_dT_l, d_lnphis_dT_g, eos_l, eos_g = lnphis_and_derivatives(T_guess)
 
             Ks = [exp(a - b) for a, b in zip(ln_phis_l, ln_phis_g)]
             xs = [zs[i]/Ks[i] for i in cmps]
@@ -3208,34 +3202,52 @@ class GceosBase(Ideal):
         return V_over_F - 1.0
 
     def dew_P_Michelsen_Mollerup(self, P_guess, T, zs, maxiter=200, 
-                                 xtol=1E-10, info=None, xs_guess=None):
-        # Does not have any formulation available
+                                 xtol=1E-10, info=None, xs_guess=None,
+                                 near_critical=False):
         N = len(zs)
         cmps = range(N)
-        
         xs = zs if xs_guess is None else xs_guess
-        for i in range(maxiter):
+        
+        def lnphis_and_derivatives(P_guess):
             eos_g = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
-                                 zs=zs, kijs=self.kijs, P=P_guess, T=T, **self.eos_kwargs)
+                                 zs=zs, kijs=self.kijs, T=T, P=P_guess, **self.eos_kwargs)
+
+            if near_critical:
+                if hasattr(eos_g, 'lnphis_g'):
+                    ln_phis_g = eos_g.lnphis_g 
+                    d_lnphis_dP_g = eos_g.d_lnphis_dP(eos_g.Z_g, eos_g.dZ_dP_g, zs)
+                else:
+                    ln_phis_g = eos_g.lnphis_l
+                    d_lnphis_dP_g = eos_g.d_lnphis_dP(eos_g.Z_l, eos_g.dZ_dP_l, zs)
+            else:
+                ln_phis_g = eos_g.lnphis_g
+                d_lnphis_dP_g = eos_g.d_lnphis_dP(eos_g.Z_g, eos_g.dZ_dP_g, zs)
 
             eos_l = eos_g.to_TP_zs(T=eos_g.T, P=eos_g.P, zs=xs)
             
-            ln_phis_l, ln_phis_g = eos_l.lnphis_l, eos_g.lnphis_g
+            if near_critical:
+                if hasattr(eos_l, 'lnphis_l'):
+                    ln_phis_l = eos_l.lnphis_l 
+                    d_lnphis_dP_l = eos_l.d_lnphis_dP(eos_l.Z_l, eos_l.dZ_dP_l, xs)
+                else:
+                    ln_phis_l = eos_l.lnphis_g
+                    d_lnphis_dP_l = eos_l.d_lnphis_dP(eos_l.Z_g, eos_l.dZ_dP_g, xs)                
+            else:
+                ln_phis_l = eos_l.lnphis_l
+                d_lnphis_dP_l = eos_l.d_lnphis_dP(eos_l.Z_l, eos_l.dZ_dP_l, xs)
+                        
+            return ln_phis_l, ln_phis_g, d_lnphis_dP_l, d_lnphis_dP_g, eos_l, eos_g
+        
+        for i in range(maxiter):
+            ln_phis_l, ln_phis_g, d_lnphis_dP_l, d_lnphis_dP_g, eos_l, eos_g = lnphis_and_derivatives(P_guess)
+            
             Ks = [exp(a - b) for a, b in zip(ln_phis_l, ln_phis_g)]
     
             f_k = sum([zs[i]/Ks[i] for i in cmps]) - 1.0
             
-            # Analytical derivative might help here
-            dP = min(P_guess*(1e-4), 10)
-#            print(dP, P_guess)
-            eos2_g = eos_g.to_TP_zs(T=eos_g.T, P=eos_g.P + dP, zs=zs)
-            eos2_l = eos_g.to_TP_zs(T=eos_g.T, P=eos_g.P + dP, zs=xs)
-            
-            d_ln_phis_dP_l = [(eos2_l.lnphis_l[i] - ln_phis_l[i])/dP for i in cmps]
-            d_ln_phis_dP_g = [(eos2_g.lnphis_g[i] - ln_phis_g[i])/dP for i in cmps]
             dfk_dP = 0.0
             for i in cmps:
-                dfk_dP += zs[i]/Ks[i]*( d_ln_phis_dP_g[i] - d_ln_phis_dP_l[i])
+                dfk_dP += zs[i]/Ks[i]*(d_lnphis_dP_g[i] - d_lnphis_dP_l[i])
             
             P_guess_old = P_guess
             P_guess = P_guess - f_k/dfk_dP
@@ -3264,7 +3276,7 @@ class GceosBase(Ideal):
 
         while factor > min_factor:
             P = P_guess*P_low_factor
-            print(factor, P, P_max)
+#            print(factor, P, P_max)
             Ps = []
             count = 0
             while P < P_max:
@@ -3287,7 +3299,8 @@ class GceosBase(Ideal):
                     ans = self.dew_P_Michelsen_Mollerup(P, T=T, zs=zs,
                                                         xs_guess=xs_guess,
                                                         maxiter=maxiter, 
-                                                        xtol=xtol, info=info)
+                                                        xtol=xtol, info=info,
+                                                        near_critical=True)
                     print('success')
                     return ans
                 except Exception as e:
@@ -3335,7 +3348,7 @@ class GceosBase(Ideal):
             try:
                 P = self.dew_P_Michelsen_Mollerup(P_guess=P_guess, T=T, zs=zs, 
                                                   info=info, xtol=self.FLASH_VF_TOL,
-                                                  xs_guess=xs
+                                                  xs_guess=xs, near_critical=True,
                                                   )
                 return info[0], info[1], info[5], P
             except Exception as e:
@@ -3449,7 +3462,8 @@ class GceosBase(Ideal):
 
 
     def bubble_P_Michelsen_Mollerup(self, P_guess, T, zs, maxiter=200, 
-                                    xtol=1E-4, info=None, ys_guess=None):
+                                    xtol=1E-4, info=None, ys_guess=None,
+                                    near_critical=False):
         # ys_guess did not help convergence at all
         N = len(zs)
         cmps = range(N)
@@ -3507,7 +3521,7 @@ class GceosBase(Ideal):
     def bubble_P_growth(self, P_guess, T, zs, maxiter=200, 
                         xtol=1E-4, info=None, ys_guess=None,
                         factor=1.4, P_max=None, P_low_factor=0.25,
-                        min_factor=1.025):
+                        min_factor=1.025, near_critical=True):
         if P_max is None:
             P_max = 2*max(self.Pcs)        
 
@@ -3536,7 +3550,8 @@ class GceosBase(Ideal):
                     ans = self.bubble_P_Michelsen_Mollerup(P, T=T, zs=zs,
                                                            ys_guess=ys_guess,
                                                            maxiter=maxiter, 
-                                                           xtol=xtol, info=info)
+                                                           xtol=xtol, info=info,
+                                                           near_critical=near_critical)
                     print('success')
                     return ans
                 except Exception as e:
@@ -3576,8 +3591,8 @@ class GceosBase(Ideal):
             i += 1
 
 
-    def bubble_P(self, T, zs, maxiter=200, xtol=1E-4, maxiter_initial=20, xtol_initial=1e-3,
-                 P_guess=None):
+    def bubble_P(self, T, zs, maxiter=200, xtol=1E-4, maxiter_initial=20,
+                 xtol_initial=1e-3, P_guess=None):
         info = []
         maxP = max(self.Pcs)*2
         for P_guess, xs, ys in self.bubble_P_guesses(T=T, zs=zs, P_guess=P_guess):
@@ -3586,7 +3601,7 @@ class GceosBase(Ideal):
             try:
                 P = self.bubble_P_Michelsen_Mollerup(P_guess=P_guess, T=T, zs=zs, 
                                                      info=info, xtol=self.FLASH_VF_TOL,
-                                                     ys_guess=ys)
+                                                     ys_guess=ys, near_critical=True)
                 return info[0], info[1], info[5], P
             except Exception as e:
                 print(e, 'bubble_P_Michelsen_Mollerup falure')

@@ -1655,7 +1655,6 @@ def test_VDW_d_lnphis_dP_sympy():
     kijs = [[0, 0.038, 0.08], [0.038, 0, 0.021], [0.08, 0.021, 0]]
     zs = [0.3, 0.1, 0.6]
     
-    
     eos = VDWMIX(T=T_num, P=P_num, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=kijs)
     diffs_implemented = eos.d_lnphis_dP(Z=eos.Z_g, dZ_dP=eos.dZ_dP_g, zs=zs)
 
