@@ -2494,9 +2494,7 @@ class GceosBase(Ideal):
         # ys_guess did not help convergence at all
         N = len(zs)
         cmps = range(N)
-        
-        dT = 5e-3
-            
+                    
         ys = zs if ys_guess is None else ys_guess
 
         def all_phis(T_guess):
@@ -2530,25 +2528,6 @@ class GceosBase(Ideal):
                 ln_phis_g = eos_g.lnphis_g
                 d_lnphis_dT_g = eos_g.d_lnphis_dT(eos_g.Z_g, eos_g.dZ_dT_g, ys)
             
-            
-            # DELETE THESE
-#            eos2_l = eos_l.to_TP_zs(T=eos_l.T+dT, P=eos_l.P, zs=zs)
-#            
-#            if near_critical:
-#                lnphis_l2 = eos2_l.lnphis_l if hasattr(eos2_l, 'lnphis_l') else eos2_l.lnphis_g
-#            else:
-#                lnphis_l2 = eos2_l.lnphis_l
-#            
-#            eos2_g = eos_l.to_TP_zs(T=eos_l.T+dT, P=eos_l.P, zs=ys)
-#            
-#            if near_critical:
-#                lnphis_g2 = eos2_g.lnphis_g if hasattr(eos2_g, 'lnphis_g') else eos2_g.lnphis_l
-#            else:
-#                lnphis_g2 = eos2_g.lnphis_g
-#
-#            d_lnphis_dT_l = [(lnphis_l2[i] - ln_phis_l[i])/dT for i in cmps]
-#            d_lnphis_dT_g = [(lnphis_g2[i] - ln_phis_g[i])/dT for i in cmps]
-
             return ln_phis_l, ln_phis_g, d_lnphis_dT_l, d_lnphis_dT_g, eos_l, eos_g
 
         T_guess_old = None
@@ -2939,48 +2918,33 @@ class GceosBase(Ideal):
         cmps = range(N)
         
         xs = zs if xs_guess is None else xs_guess
-        dT = 5e-3
         
         def all_phis(T_guess):
             eos_g = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
                                  zs=zs, kijs=self.kijs, T=T_guess, P=P, **self.eos_kwargs)
             if near_critical:
-                
-                ln_phis_g = eos_g.lnphis_g if hasattr(eos_g, 'lnphis_g') else eos_g.lnphis_l
+                if hasattr(eos_g, 'lnphis_g'):
+                    ln_phis_g = eos_g.lnphis_g 
+                    d_lnphis_dT_g = eos_g.d_lnphis_dT(eos_g.Z_g, eos_g.dZ_dT_g, zs)
+                else:
+                    ln_phis_g = eos_g.lnphis_l
+                    d_lnphis_dT_g = eos_g.d_lnphis_dT(eos_g.Z_l, eos_g.dZ_dT_l, zs)
             else:
                 ln_phis_g = eos_g.lnphis_g
-                
+                d_lnphis_dT_g = eos_g.d_lnphis_dT(eos_g.Z_g, eos_g.dZ_dT_g, zs)
                 
             eos_l = eos_g.to_TP_zs(T=eos_g.T, P=eos_g.P, zs=xs)
             
             if near_critical:
-                ln_phis_l = eos_l.lnphis_l if hasattr(eos_l, 'lnphis_l') else eos_l.lnphis_g 
+                if hasattr(eos_l, 'lnphis_l'):
+                    ln_phis_l = eos_l.lnphis_l 
+                    d_lnphis_dT_l = eos_l.d_lnphis_dT(eos_l.Z_l, eos_l.dZ_dT_l, xs)
+                else:
+                    ln_phis_l = eos_l.lnphis_g 
+                    d_lnphis_dT_l = eos_l.d_lnphis_dT(eos_l.Z_g, eos_l.dZ_dT_g, xs)
             else:
                 ln_phis_l = eos_l.lnphis_l
-
-
-
-#                d_lnphis_dT_g = eos_g.d_lnphis_dT(eos_g.Z_g, eos_g.dZ_dT_g, ys)
-#            return ln_phis_l, ln_phis_g, d_lnphis_dT_l, d_lnphis_dT_g, eos_l, eos_g
-
-            
-            
-            eos2_g = eos_g.to_TP_zs(T=eos_g.T+dT, P=eos_g.P, zs=zs)
-
-            if near_critical:
-                lnphis_g2 = eos2_g.lnphis_g if hasattr(eos2_g, 'lnphis_g') else eos2_g.lnphis_l
-            else:
-                lnphis_g2 = eos2_g.lnphis_g
-                
-            eos2_l = eos_g.to_TP_zs(T=eos_g.T+dT, P=eos_g.P, zs=xs)
-            
-            if near_critical:
-                lnphis_l2 = eos2_l.lnphis_l if hasattr(eos2_l, 'lnphis_l') else eos2_l.lnphis_g
-            else:
-                lnphis_l2 = eos2_l.lnphis_l
-                
-            d_lnphis_dT_l = [(lnphis_l2[i] - ln_phis_l[i])/dT for i in cmps]
-            d_lnphis_dT_g = [(lnphis_g2[i] - ln_phis_g[i])/dT for i in cmps]
+                d_lnphis_dT_l = eos_l.d_lnphis_dT(eos_l.Z_l, eos_l.dZ_dT_l, xs)
 
             return ln_phis_l, ln_phis_g, d_lnphis_dT_l, d_lnphis_dT_g, eos_l, eos_g
         
