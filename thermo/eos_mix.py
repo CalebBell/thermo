@@ -1349,7 +1349,6 @@ class PRMIX(GCEOSMIX, PR):
         bs, b = self.bs, self.b
         A = self.a_alpha*self.P/(R2*self.T*self.T)
         B = b*self.P/(R*self.T)
-        phis = []
 
         # The two log terms need to use a complex log; typically these are
         # calculated at "liquid" volume solutions which are unstable
@@ -1362,17 +1361,23 @@ class PRMIX(GCEOSMIX, PR):
         x3 = clog((Z + (root_two + 1.)*B)/(Z - (root_two - 1.)*B)).real
         
         cmps = self.cmps
+        phis = []
+        fugacity_sum_terms = []
+        
         for i in cmps:
             a_alpha_js = self.a_alpha_ijs[i]
             b_ratio = bs[i]/b
             t1 = b_ratio*Zm1 - x0
-            t2 = x1*sum([zs[j]*a_alpha_js[j] for j in cmps])
-            t3 = t1 - x2*(t2 - b_ratio)*x3
-            # Temp
             
+            sum_term = sum([zs[j]*a_alpha_js[j] for j in cmps])
+
+            t3 = t1 - x2*(x1*sum_term - b_ratio)*x3
+            # Temp
             if t3 > 700.0:
                 t3 = 700
             phis.append(exp(t3))
+            fugacity_sum_terms.append(sum_term)
+        self.fugacity_sum_terms = fugacity_sum_terms
         return phis
 
 
@@ -1416,9 +1421,16 @@ class PRMIX(GCEOSMIX, PR):
         x53 = 2.0*x11
         
         # Composition stuff
+        
+        try:
+            fugacity_sum_terms = self.fugacity_sum_terms
+        except AttributeError:
+            fugacity_sum_terms = [sum([zs[j]*a_alpha_ijs[i][j] for j in cmps]) for i in cmps]
+        
         d_lnphis_dTs = []
         for i in cmps:
-            x9 = sum([zs[j]*a_alpha_ijs[i][j] for j in cmps])
+            x9 = fugacity_sum_terms[i]
+#            x9 = sum([zs[j]*a_alpha_ijs[i][j] for j in cmps])
             der_sum = sum([zs[j]*da_alpha_dT_ijs[i][j] for j in cmps])
             
             x20 = x50*(x51*x9 + der_sum) + x52
@@ -1666,12 +1678,16 @@ class SRKMIX(GCEOSMIX, SRK):
         Z_minus_one_over_B = (Z - 1.0)/B
         two_over_a_alpha = 2./self.a_alpha
         phis = []
+        fugacity_sum_terms = []
         for i in self.cmps:
             Bi = self.bs[i]*P_RT
             t1 = Bi*Z_minus_one_over_B - t0
             l = self.a_alpha_ijs[i]
-            t2 = A_B*(Bi/B - two_over_a_alpha*sum([zs[j]*l[j] for j in self.cmps]))
+            sum_term = sum([zs[j]*l[j] for j in self.cmps])
+            t2 = A_B*(Bi/B - two_over_a_alpha*sum_term)
             phis.append(exp(t1 + t2*t3))
+            fugacity_sum_terms.append(sum_term)
+        self.fugacity_sum_terms = fugacity_sum_terms
         return phis
         
 
@@ -1705,8 +1721,15 @@ class SRKMIX(GCEOSMIX, SRK):
 
         # Composition stuff
         d_lnphis_dTs = []
+        
+        try:
+            fugacity_sum_terms = self.fugacity_sum_terms
+        except AttributeError:
+            fugacity_sum_terms = [sum([zs[j]*a_alpha_ijs[i][j] for j in cmps]) for i in cmps]
+
         for i in cmps:
-            x7 = sum([zs[j]*a_alpha_ijs[i][j] for j in cmps])
+            x7 = fugacity_sum_terms[i]
+#            x7 = sum([zs[j]*a_alpha_ijs[i][j] for j in cmps])
             der_sum = sum([zs[j]*da_alpha_dT_ijs[i][j] for j in cmps])
     
             x15 = (x50*(x51*x7*x9 + 2.0*der_sum) + x52)
