@@ -106,10 +106,10 @@ def test_ternary_4_flashes_2_algorithms():
     assert_allclose(P_dews, P_dews_expect[2:], rtol=5e-5)
     
     # For each point, solve it as a T problem.
-    for P, T in zip(P_bubbles[2:], Ts[2:]):
+    for P, T in zip(P_bubbles, Ts[2:]):
         pkg.flash(P=P, VF=0, zs=zs)
         assert_allclose(pkg.T, T, rtol=5e-5)
-    for P, T in zip(P_dews[1:], Ts[1:]):
+    for P, T in zip(P_dews, Ts[2:]):
         pkg.flash(P=P, VF=1, zs=zs)
         assert_allclose(pkg.T, T, rtol=5e-5)
         
@@ -123,8 +123,8 @@ def test_ternary_4_flashes_2_algorithms():
         pkg.flash(T=T, VF=1-1e-9, zs=zs)
         P_dews_almost.append(pkg.P)
     
-    assert_allclose(P_bubbles[4:], P_bubbles_almost, rtol=5e-5)
-    assert_allclose(P_dews[4:], P_dews_almost, rtol=5e-5)
+    assert_allclose(P_bubbles[2:], P_bubbles_almost, rtol=5e-5)
+    assert_allclose(P_dews[2:], P_dews_almost, rtol=5e-5)
     
     
     # Some points fail here too!

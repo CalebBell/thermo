@@ -3202,11 +3202,14 @@ class GceosBase(Ideal):
         return V_over_F - 1.0
 
     def dew_P_Michelsen_Mollerup(self, P_guess, T, zs, maxiter=200, 
-                                 xtol=1E-10, info=None, xs_guess=None,
+                                 xtol=1E-3, info=None, xs_guess=None,
                                  near_critical=False):
         N = len(zs)
         cmps = range(N)
         xs = zs if xs_guess is None else xs_guess
+        
+#        if xtol < 1e-4:
+#            xtol = 1e-3
         
         def lnphis_and_derivatives(P_guess):
             eos_g = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
@@ -3250,7 +3253,9 @@ class GceosBase(Ideal):
                 dfk_dP += zs[i]/Ks[i]*(d_lnphis_dP_g[i] - d_lnphis_dP_l[i])
             
             P_guess_old = P_guess
-            P_guess = P_guess - f_k/dfk_dP
+            
+            step = - f_k/dfk_dP
+            P_guess = P_guess + step
             xs = [zs[i]/Ks[i] for i in cmps]
             
             x_sum = sum(xs)
@@ -3259,7 +3264,7 @@ class GceosBase(Ideal):
             if info is not None:
                 info[:] = xs, zs, Ks, eos_l, eos_g, 1.0
             
-#            print(xs, P_guess, abs(P_guess - P_guess_old), dfk_dP)
+#            print(xs, P_guess, step, P_guess - P_guess_old)
             if abs(P_guess - P_guess_old) < xtol:
                 break
             
