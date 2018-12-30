@@ -2314,24 +2314,26 @@ class GceosBase(Ideal):
                             zs=zs, kijs=self.kijs, T=T, P=P, **self.eos_kwargs)
 
 
-    def flash_TP_zs(self, T, P, zs):
+    def flash_TP_zs(self, T, P, zs, Wilson_first=True):
         eos = self.to_TP_zs(T=T, P=P, zs=zs)
         # Fast path - try the flash
-        _, _, VF_wilson, xs_wilson, ys_wilson = flash_wilson(zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, 
-                     P=P, T=T)
-        if 1e-5 < VF_wilson < 1-1e-5:
-            try:
-                VF, xs, ys = eos.sequential_substitution_VL( 
-                                            maxiter=self.substitution_maxiter,
-                                            xtol=self.substitution_xtol, 
-                                            near_critical=False,
-                                            xs=xs_wilson, ys=ys_wilson
-                                            )
-                phase = 'l/g'
-                return phase, xs, ys, VF
-            
-            except Exception as e:
-                pass
+        if Wilson_first:
+            _, _, VF_wilson, xs_wilson, ys_wilson = flash_wilson(zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, 
+                         P=P, T=T)
+    #        print(VF_wilson, xs_wilson, ys_wilson, 'VF_wilson, xs_wilson, ys_wilson')
+            if 1e-5 < VF_wilson < 1-1e-5:
+                try:
+                    VF, xs, ys = eos.sequential_substitution_VL( 
+                                                maxiter=self.substitution_maxiter,
+                                                xtol=self.substitution_xtol, 
+                                                near_critical=False,
+                                                xs=xs_wilson, ys=ys_wilson
+                                                )
+                    phase = 'l/g'
+                    return phase, xs, ys, VF
+                
+                except Exception as e:
+                    pass
         
         
         
@@ -2354,6 +2356,7 @@ class GceosBase(Ideal):
     #                Ks[Ks.index(minK)] = .9
     #            print('testing Ks', Ks)
                 
+#                print(Ks)
                 stable, Ks_initial, Ks_extra = eos.stability_Michelsen(T=T, P=P, zs=zs,
                                                           Ks_initial=Ks, 
                                                           maxiter=self.stability_maxiter, 
