@@ -2479,9 +2479,9 @@ class GceosBase(Ideal):
 #            raise NotImplemented
         
         if VF == 0:
-            xs, ys, VF, T = self.bubble_T(P=P, zs=zs)
+            xs, ys, VF, T, eos_l, eos_g = self.bubble_T(P=P, zs=zs)
         elif VF == 1:
-            xs, ys, VF, T = self.dew_T(P=P, zs=zs)
+            xs, ys, VF, T, eos_l, eos_g = self.dew_T(P=P, zs=zs)
         else:
             res = [None]
             def err(T):
@@ -2492,7 +2492,7 @@ class GceosBase(Ideal):
                                                                  xtol=self.substitution_xtol, 
                                                                  near_critical=True,
                                                                  xs=xs_guess, ys=ys_guess)
-                res[0] = (VF_calc, xs, ys)
+                res[0] = (VF_calc, xs, ys, eos_l, eos_g)
 #                print(P, VF_calc - VF, res)
                 return VF_calc - VF
             
@@ -2511,7 +2511,10 @@ class GceosBase(Ideal):
 #            print(P, 'worked!')
             if T is None:
                 T = brenth(err, .9*T_guess_as_pure, 1.1*T_guess_as_pure)
-            VF, xs, ys = res[0]
+            VF, xs, ys, eos_l, eos_g = res[0]
+            
+        self.eos_l = eos_l
+        self.eos_g = eos_g
         return 'l/g', xs, ys, VF, T
 
             
@@ -2527,9 +2530,9 @@ class GceosBase(Ideal):
 
         # Disable bubbles and dew for now = need to refactor to get everything about them
         if VF == 0:
-            xs, ys, VF, P = self.bubble_P(T=T, zs=zs)
+            xs, ys, VF, P, eos_l, eos_g = self.bubble_P(T=T, zs=zs)
         elif VF == 1:
-            xs, ys, VF, P = self.dew_P(T=T, zs=zs)
+            xs, ys, VF, P, eos_l, eos_g = self.dew_P(T=T, zs=zs)
         else:
             res = [None]
             def err(P):
@@ -2542,7 +2545,7 @@ class GceosBase(Ideal):
                                                                  near_critical=True,
                                                                  xs=xs_guess, ys=ys_guess
                                                                  )
-                res[0] = (VF_calc, xs, ys)
+                res[0] = (VF_calc, xs, ys, eos_l, eos_g)
 #                print(P, VF_calc - VF, res)
                 return VF_calc - VF
             
@@ -2563,7 +2566,10 @@ class GceosBase(Ideal):
 #            print(P, 'worked!')
             if P is None:
                 P = brenth(err, .9*P_guess_as_pure, 1.1*P_guess_as_pure)
-            VF, xs, ys = res[0]
+            VF, xs, ys, eos_l, eos_g = res[0]
+            
+        self.eos_l = eos_l
+        self.eos_g = eos_g
         return 'l/g', xs, ys, VF, P
 
 
@@ -2822,7 +2828,7 @@ class GceosBase(Ideal):
                                                      info=info, xtol=self.FLASH_VF_TOL,
                                                      near_critical=True,
                                                      ys_guess=ys)
-                return info[0], info[1], info[5], T
+                return info[0], info[1], info[5], T, info[3], info[4]
             except Exception as e:
                 import sys, os
                 exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -2835,7 +2841,7 @@ class GceosBase(Ideal):
                 P = self.bubble_T_growth(T_guess=T_guess, P=P, zs=zs, 
                                                      info=info, xtol=self.FLASH_VF_TOL,
                                                      ys_guess=ys)
-                return info[0], info[1], info[5], P
+                return info[0], info[1], info[5], P, info[3], info[4]
             except Exception as e:
                 print(e, 'bubble_T_Michelsen_Mollerup falure of new method')
                 pass                
@@ -2854,15 +2860,15 @@ class GceosBase(Ideal):
                     print('bubble T - newton failed with initial guess (%g):' %(T_guess)  + str(e))
                     T = float(fsolve(self._err_bubble_T, T_guess, factor=.1, xtol=self.FLASH_VF_TOL, args=args))
     #            print(T, T_guess)
-                return info[0], info[1], info[5], T
+                return info[0], info[1], info[5], T, info[3], info[4]
             except Exception as e:
                 print('bubble T - fsolve failed with initial guess (%g):' %(T_guess)  + str(e))
                 pass
             
-#        raise ValueError("Overall bubble P loop could not find a convergent method")
+        raise ValueError("Overall bubble P loop could not find a convergent method")
         Tmin, Tmax = self._bracket_bubble_T(P=P, zs=zs, maxiter=maxiter_initial, xtol=xtol_initial)
         T = ridder(self._err_bubble_T, Tmin, Tmax, args=(P, zs, maxiter, xtol, info))
-        return info[0], info[1], info[5], T
+        return info[0], info[1], info[5], T, info[3], info[4]
 
 
 
@@ -3167,7 +3173,7 @@ class GceosBase(Ideal):
                 T = self.dew_T_Michelsen_Mollerup(T_guess=T_guess, P=P, zs=zs, info=info,
                                                   xtol=self.FLASH_VF_TOL, xs_guess=xs,
                                                   near_critical=True)
-                return info[0], info[1], info[5], T
+                return info[0], info[1], info[5], T, info[3], info[4]
             except Exception as e:
                 print(e, 'dew_T_Michelsen_Mollerup falure')
                 pass
@@ -3176,7 +3182,7 @@ class GceosBase(Ideal):
                 P = self.dew_T_growth(T_guess=T_guess, P=P, zs=zs, 
                                       info=info, xtol=self.FLASH_VF_TOL,
                                       xs_guess=xs)
-                return info[0], info[1], info[5], P
+                return info[0], info[1], info[5], P, info[3], info[4]
             except Exception as e:
                 print(e, 'dew_T_Michelsen_Mollerup falure of new method')
                 pass                
@@ -3193,7 +3199,7 @@ class GceosBase(Ideal):
                         continue
 
     #            print(T, T_guess)
-                return info[0], info[1], info[5], T
+                return info[0], info[1], info[5], T, info[3], info[4]
             except Exception as e:
                 pass
 
@@ -3438,7 +3444,7 @@ class GceosBase(Ideal):
                                                   info=info, xtol=self.FLASH_VF_TOL,
                                                   xs_guess=xs, near_critical=True,
                                                   )
-                return info[0], info[1], info[5], P
+                return info[0], info[1], info[5], P, info[3], info[4]
             except Exception as e:
                 print(e, 'dew_P_Michelsen_Mollerup falure')
                 pass
@@ -3447,7 +3453,7 @@ class GceosBase(Ideal):
 #                P = self.dew_P_growth(P_guess=P_guess, T=T, zs=zs, 
 #                                      info=info, xtol=self.FLASH_VF_TOL,
 #                                      xs_guess=xs)
-#                return info[0], info[1], info[5], P
+#                return info[0], info[1], info[5], P, info[3], info[4]
 #            except Exception as e:
 #                print(e, 'dew_P_Michelsen_Mollerup falure of new method')
 #                pass                
@@ -3469,12 +3475,12 @@ class GceosBase(Ideal):
                     pass
 #            print(P, P_guess_as_pure)
             if P is not None:
-                return info[0], info[1], info[5], P
+                return info[0], info[1], info[5], P, info[3], info[4]
 
         raise ValueError("Overall bubble P loop could not find a convergent method")
         Pmin, Pmax = self._bracket_dew_P(T=T, zs=zs, maxiter=maxiter_initial, xtol=xtol_initial)
         P = ridder(self._err_dew_P, Pmin, Pmax, args=(T, zs, maxiter, xtol, info))
-        return info[0], info[1], info[5], P
+        return info[0], info[1], info[5], P, info[3], info[4]
 
 
     def _bracket_bubble_P(self, T, zs, maxiter, xtol, check=False):
@@ -3699,7 +3705,7 @@ class GceosBase(Ideal):
                 P = self.bubble_P_Michelsen_Mollerup(P_guess=P_guess, T=T, zs=zs, 
                                                      info=info, xtol=self.FLASH_VF_TOL,
                                                      ys_guess=ys, near_critical=True)
-                return info[0], info[1], info[5], P
+                return info[0], info[1], info[5], P, info[3], info[4]
             except Exception as e:
                 print(e, 'bubble_P_Michelsen_Mollerup falure')
                 pass
@@ -3708,7 +3714,7 @@ class GceosBase(Ideal):
                 P = self.bubble_P_growth(P_guess=P_guess, T=T, zs=zs, 
                                                      info=info, xtol=self.FLASH_VF_TOL,
                                                      ys_guess=ys)
-                return info[0], info[1], info[5], P
+                return info[0], info[1], info[5], P, info[3], info[4]
             except Exception as e:
                 print(e, 'bubble_P_Michelsen_Mollerup falure of new method')
                 pass                
@@ -3729,12 +3735,12 @@ class GceosBase(Ideal):
                 except Exception as e:
                     print('bubble_P fsolve failure with guess %s' %(P_guess), e)
                     continue
-            return info[0], info[1], info[5], P
+            return info[0], info[1], info[5], P, info[3], info[4]
             
         raise ValueError("Overall bubble P loop could not find a convergent method")
         Pmin, Pmax = self._bracket_bubble_P(T=T, zs=zs, maxiter=maxiter_initial, xtol=xtol_initial)
         P = ridder(self._err_bubble_P, Pmin, Pmax, args=(T, zs, maxiter, xtol, info))
-        return info[0], info[1], info[5], P
+        return info[0], info[1], info[5], P, info[3], info[4]
 
  
     def dew_T_envelope(self, zs, P_low=1e5, P_high=None, xtol=1E-10,

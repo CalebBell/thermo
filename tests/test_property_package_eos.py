@@ -50,7 +50,7 @@ def test_bubble_T_PR():
     bubs = []
     
     for P in Ps:
-        bubs.append(pkg.bubble_T(P, m.zs, maxiter=20, xtol=1e-10, maxiter_initial=20, xtol_initial=1e-1)[-1])
+        bubs.append(pkg.bubble_T(P, m.zs, maxiter=20, xtol=1e-10, maxiter_initial=20, xtol_initial=1e-1)[-3])
     assert_allclose(bubs, T_bubbles_expect, rtol=5e-6)
 
 
@@ -61,10 +61,10 @@ def test_PR_four_bubble_dew_cases():
                     kijs=[[0,0],[0,0]], eos_kwargs=None,
                  HeatCapacityGases=m.HeatCapacityGases)
     # Strongly believed to be correct!
-    assert_allclose(pkg.bubble_T(P=1e6, zs=m.zs)[-1], 539.1838522423355, atol=.1)
-    assert_allclose(pkg.dew_T(P=1e6, zs=m.zs)[-1], 540.208169750248, atol=.1)
-    assert_allclose(pkg.dew_P(T=600, zs=m.zs)[-1], 2702616.6490743402, rtol=1e-4)
-    assert_allclose(pkg.bubble_P(T=600, zs=m.zs)[-1], 2766476.7473238516, rtol=1e-4)
+    assert_allclose(pkg.bubble_T(P=1e6, zs=m.zs)[-3], 539.1838522423355, atol=.1)
+    assert_allclose(pkg.dew_T(P=1e6, zs=m.zs)[-3], 540.208169750248, atol=.1)
+    assert_allclose(pkg.dew_P(T=600, zs=m.zs)[-3], 2702616.6490743402, rtol=1e-4)
+    assert_allclose(pkg.bubble_P(T=600, zs=m.zs)[-3], 2766476.7473238516, rtol=1e-4)
 
 
 def test_C1_C10_PT_flash():
