@@ -199,6 +199,48 @@ class StabilityTester(object):
 #            print(Ys_Wilson, normalize(Ys_Wilson))
         return Wilson_guesses
     
+    def guess_generator(self, T, P, zs, pure=True, Wilson=True, random=True, 
+                zero_fraction=1E-6):
+        i = 0
+        WILSON_MAX_GUESSES = 4
+        PURE_MAX_GUESSES = self.N
+        PURE_MAX = WILSON_MAX_GUESSES + PURE_MAX_GUESSES
+        
+        if random is True:
+            RANDOM_MAX_GUESSES = self.N
+        else:
+            RANDOM_MAX_GUESSES = random
+            
+        RANDOM_MAX = RANDOM_MAX_GUESSES + PURE_MAX
+        
+        max_guesses = RANDOM_MAX
+        
+        guesses = []
+        if Wilson:
+            guesses.extend(self.Wilson_guesses(T, P, zs))
+        if pure:
+            guesses.extend(self.pure_guesses(zero_fraction))
+        if random:
+            if random is True:
+                guesses.extend(self.random_guesses())
+            else:
+                guesses.extend(self.random_guesses(random))
+        
+        while i < max_guesses:
+            try:
+                if i < WILSON_MAX_GUESSES:
+                    yield guesses.pop(0)
+                elif i < PURE_MAX:
+                    yield guesses.pop(0)
+                elif i < RANDOM_MAX:
+                    yield guesses.pop(0)
+            except Exception as e:
+                print(e, i, 'FAILED WHEN GENERATING A STABILITY TEST GUESS')
+                pass
+            i += 1
+
+
+        
     def guesses(self, T, P, zs, pure=True, Wilson=True, random=True, 
                 zero_fraction=1E-6):
         '''Returns mole fractions, not Ks.
@@ -215,19 +257,6 @@ class StabilityTester(object):
             else:
                 guesses.extend(self.random_guesses(random))
                 
-        # Guesses will go nowhere good if one ans is not under 1, one above
-#        for Ks in guesses:
-#            # Hack - no idea if this will work
-#            maxK = max(Ks)
-#            if maxK < 1:
-#                Ks[Ks.index(maxK)] = 1.1
-#            minK = min(Ks)
-#            if minK >= 1:
-#                Ks[Ks.index(minK)] = .9
-                
-#        for guess in guesses:
-#            print('hi', guess)
-#        print(guesses, 'these are the guesses')
         return guesses
     
     
@@ -2320,30 +2349,33 @@ class GceosBase(Ideal):
         if Wilson_first:
             _, _, VF_wilson, xs_wilson, ys_wilson = flash_wilson(zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, 
                          P=P, T=T)
-            print(VF_wilson, xs_wilson, ys_wilson, 'VF_wilson, xs_wilson, ys_wilson')
+#            print(VF_wilson, xs_wilson, ys_wilson, 'VF_wilson, xs_wilson, ys_wilson')
             if 1e-5 < VF_wilson < 1-1e-5:
                 try:
-                    VF, xs, ys = eos.sequential_substitution_VL( 
+                    VF, xs, ys, eos_l, eos_g = eos.sequential_substitution_VL( 
                                                 maxiter=self.substitution_maxiter,
                                                 xtol=self.substitution_xtol, 
                                                 near_critical=True,
                                                 xs=xs_wilson, ys=ys_wilson
                                                 )
                     phase = 'l/g'
+#                    if VF < 0 or VF > 1
                     return phase, xs, ys, VF
                 
                 except Exception as e:
-                    print(e)
+#                    print(e)
                     pass
         
         
         
         stable = True
-        for trial_comp in self.stability_tester.guesses(T=T, P=P, zs=zs, 
+        guess_generator = self.stability_tester.guess_generator(T=T, P=P, zs=zs, 
                                                    pure=self.pure_guesses,
                                                    Wilson=self.Wilson_guesses,
                                                    random=self.random_guesses,
-                                                   zero_fraction=self.zero_fraction_guesses):
+                                                   zero_fraction=self.zero_fraction_guesses)
+        unstable_and_failed_SS = False
+        for trial_comp in guess_generator:
             if not stable:
                 break
 #            print(trial_comp)
@@ -2357,7 +2389,7 @@ class GceosBase(Ideal):
     #                Ks[Ks.index(minK)] = .9
     #            print('testing Ks', Ks)
                 
-                print(Ks)
+#                print(Ks)
                 stable, Ks_initial, Ks_extra = eos.stability_Michelsen(T=T, P=P, zs=zs,
                                                           Ks_initial=Ks, 
                                                           maxiter=self.stability_maxiter, 
@@ -2365,20 +2397,36 @@ class GceosBase(Ideal):
                 if not stable:
 #                    print('found not stable with Ks:', Ks)
                     # two phase flash with init Ks
-                    break
+                    
+                    try:
+                        VF, xs, ys, eos_l, eos_g = eos.sequential_substitution_VL(Ks_initial=Ks_initial, 
+                                            maxiter=self.substitution_maxiter,
+                                            xtol=self.substitution_xtol, 
+                                            near_critical=True,
+                                            Ks_extra=Ks_extra)
+                        phase = 'l/g'
+                        break
+                    except Exception as e:
+                        # K guesses were not close enough to convege or some other error happened
+#                        print('failed convergence of SS with Ks', Ks_initial, Ks_extra, e)
+                        unstable_and_failed_SS = True
+                        stable = True
                 
-                print('found stable with Ks:', Ks)
-        try:
-            print('liquid gibbs (single phase)', eos.G_dep_l)
-        except:
-            print('No liquid phase (pure)')
+#                print('found stable with Ks:', Ks)
+#        try:
+#            print('liquid gibbs (single phase)', eos.G_dep_l)
+#        except:
+#            print('No liquid phase (pure)')
             
-        try:
-            print('vapor gibbs (single phase)', eos.G_dep_g)
-        except:
-            print('No vapor phase (pure)')
-            
-        print('After stability test, stable=%g' %(stable))
+#        try:
+#            print('vapor gibbs (single phase)', eos.G_dep_g)
+#        except:
+#            print('No vapor phase (pure)')
+#            
+#        print('After stability test, stable=%g' %(stable))
+
+        if unstable_and_failed_SS:
+            raise ValueError("Flash failed - single phase detected to be unstable, but could not converge with SS")
         if stable:
             try:
                 if eos.G_dep_l < eos.G_dep_g:
@@ -2391,13 +2439,13 @@ class GceosBase(Ideal):
                     phase, xs, ys, VF = 'l', zs, None, 0
                 else:
                     phase, xs, ys, VF = 'g', None, zs, 1
-        else:
-            VF, xs, ys = eos.sequential_substitution_VL(Ks_initial=Ks_initial, 
-                                                        maxiter=self.substitution_maxiter,
-                                                        xtol=self.substitution_xtol, 
-                                                        near_critical=True,
-                                                        Ks_extra=Ks_extra)
-            phase = 'l/g'
+#        else:
+#            VF, xs, ys = eos.sequential_substitution_VL(Ks_initial=Ks_initial, 
+#                                                        maxiter=self.substitution_maxiter,
+#                                                        xtol=self.substitution_xtol, 
+#                                                        near_critical=True,
+#                                                        Ks_extra=Ks_extra)
+#            phase = 'l/g'
         return phase, xs, ys, VF
 
     def flash_PVF_zs(self, P, VF, zs):
@@ -2418,7 +2466,7 @@ class GceosBase(Ideal):
             def err(T):
                 eos = self.to_TP_zs(T=T, P=P, zs=zs)
 #                print(eos.zs, 'eos.zs before loop')
-                VF_calc, xs, ys = eos.sequential_substitution_VL(Ks_initial=None, 
+                VF_calc, xs, ys, eos_l, eos_g = eos.sequential_substitution_VL(Ks_initial=None, 
                                                                  maxiter=self.substitution_maxiter,
                                                                  xtol=self.substitution_xtol, 
                                                                  near_critical=True,
@@ -2467,7 +2515,7 @@ class GceosBase(Ideal):
                 P = float(P)
 #                print('P guess', P)
                 eos = self.to_TP_zs(T=T, P=P, zs=zs)
-                VF_calc, xs, ys = eos.sequential_substitution_VL(Ks_initial=None, 
+                VF_calc, xs, ys, eos_l, eos_g = eos.sequential_substitution_VL(Ks_initial=None, 
                                                                  maxiter=self.substitution_maxiter,
                                                                  xtol=self.substitution_xtol, 
                                                                  near_critical=True,

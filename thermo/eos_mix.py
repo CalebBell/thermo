@@ -950,7 +950,7 @@ class GCEOSMIX(GCEOS):
                 break
             if i == maxiter-1:
                 raise ValueError('End of SS without convergence')
-        return V_over_F, xs, ys
+        return V_over_F, xs, ys, eos_l, eos_g
 
     def stabiliy_iteration_Michelsen(self, T, P, zs, Ks_initial=None, 
                                      maxiter=20, xtol=1E-12, liq=True):
