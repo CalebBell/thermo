@@ -2345,12 +2345,17 @@ class GceosBase(Ideal):
 
     def flash_TP_zs(self, T, P, zs, Wilson_first=True):
         eos = self.to_TP_zs(T=T, P=P, zs=zs)
+        try:
+            G_dep_eos = min(eos.G_dep_l, eos.G_dep_g)
+        except:
+            G_dep_eos = eos.G_dep_g if hasattr(eos, 'G_dep_g') else eos.G_dep_l
+            
         # Fast path - try the flash
         if Wilson_first:
             _, _, VF_wilson, xs_wilson, ys_wilson = flash_wilson(zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, 
                          P=P, T=T)
 #            print(VF_wilson, xs_wilson, ys_wilson, 'VF_wilson, xs_wilson, ys_wilson')
-            if 1e-5 < VF_wilson < 1-1e-5:
+            if 1e-7 < VF_wilson < 1-1e-7:
                 try:
                     VF, xs, ys, eos_l, eos_g = eos.sequential_substitution_VL( 
                                                 maxiter=self.substitution_maxiter,
@@ -2359,7 +2364,16 @@ class GceosBase(Ideal):
                                                 xs=xs_wilson, ys=ys_wilson
                                                 )
                     phase = 'l/g'
-#                    if VF < 0 or VF > 1
+                    G_dep_l = eos_l.G_dep_l if hasattr(eos_l, 'G_dep_l') else eos_l.G_dep_g
+                    G_dep_g = eos_g.G_dep_g if hasattr(eos_g, 'G_dep_g') else eos_g.G_dep_l
+                
+                    G_TP = G_dep_l*(1.0 - VF) + G_dep_g*VF
+                    
+                    if VF < 0 or VF > 1 or G_TP > G_dep_eos:
+                        raise ValueError("Wilson flash converged but VF unfeasible or Gibbs energy lower than stable phase")
+                    
+                    self.eos_l = eos_l
+                    self.eos_g = eos_g
                     return phase, xs, ys, VF
                 
                 except Exception as e:
@@ -2381,13 +2395,6 @@ class GceosBase(Ideal):
 #            print(trial_comp)
             for Ks in ([comp_i/zi for comp_i, zi in zip(trial_comp, zs)],
                         [zi/comp_i for comp_i, zi in zip(trial_comp, zs)]):
-    #            maxK = max(Ks)
-    #            if maxK < 1:
-    #                Ks[Ks.index(maxK)] = 1.1
-    #            minK = min(Ks)
-    #            if minK >= 1:
-    #                Ks[Ks.index(minK)] = .9
-    #            print('testing Ks', Ks)
                 
 #                print(Ks)
                 stable, Ks_initial, Ks_extra = eos.stability_Michelsen(T=T, P=P, zs=zs,
@@ -2404,6 +2411,18 @@ class GceosBase(Ideal):
                                             xtol=self.substitution_xtol, 
                                             near_critical=True,
                                             Ks_extra=Ks_extra)
+                        
+                        
+                        G_dep_l = eos_l.G_dep_l if hasattr(eos_l, 'G_dep_l') else eos_l.G_dep_g
+                        G_dep_g = eos_g.G_dep_g if hasattr(eos_g, 'G_dep_g') else eos_g.G_dep_l
+                    
+                        G_TP = G_dep_l*(1.0 - VF) + G_dep_g*VF
+                        
+                        if VF < 0 or VF > 1 or G_TP > G_dep_eos:
+                            raise ValueError("Stability test Ks flash converged but VF unfeasible or Gibbs energy lower than stable phase")
+                        
+                        self.eos_l = eos_l
+                        self.eos_g = eos_g
                         phase = 'l/g'
                         break
                     except Exception as e:
@@ -2431,21 +2450,23 @@ class GceosBase(Ideal):
             try:
                 if eos.G_dep_l < eos.G_dep_g:
                     phase, xs, ys, VF = 'l', zs, None, 0
+                    self.eos_l = eos
+                    self.eos_g = None
                 else:
                     phase, xs, ys, VF = 'g', None, zs, 1
+                    self.eos_g = None
+                    self.eos_l = eos
             except:
                 # Only one root - take it and set the prefered other phase to be a different type
                 if hasattr(eos, 'Z_l'):
                     phase, xs, ys, VF = 'l', zs, None, 0
+                    self.eos_l = eos
+                    self.eos_g = None
                 else:
                     phase, xs, ys, VF = 'g', None, zs, 1
-#        else:
-#            VF, xs, ys = eos.sequential_substitution_VL(Ks_initial=Ks_initial, 
-#                                                        maxiter=self.substitution_maxiter,
-#                                                        xtol=self.substitution_xtol, 
-#                                                        near_critical=True,
-#                                                        Ks_extra=Ks_extra)
-#            phase = 'l/g'
+                    self.eos_g = None
+                    self.eos_l = eos
+
         return phase, xs, ys, VF
 
     def flash_PVF_zs(self, P, VF, zs):
