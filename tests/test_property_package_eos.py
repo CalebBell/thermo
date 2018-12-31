@@ -28,7 +28,7 @@ from thermo.eos import *
 from thermo.eos_mix import *
 from scipy.misc import derivative
 from scipy.optimize import minimize, newton
-from math import log, exp, sqrt
+from math import log, exp, sqrt, log10
 from thermo import Mixture
 from thermo.property_package import *
 from fluids.numerics import linspace, logspace
@@ -586,6 +586,42 @@ def test_phase_envelope_ethane_pentane():
     assert_allclose(Ps_dew_check, spec_points[:-2])
     assert_allclose(Ts_dew_check, Ts_dew_expect, rtol=1e-5)
     assert_allclose(Ts_bubble_check, Ts_bubble_expect, rtol=1e-5)
+    
+def test_ethane_pentane_TP_Tdew_Tbubble_TP():
+    IDs = ['ethane', 'n-pentane']
+    pkg = PropertyPackageConstants(IDs, PR_PKG, kijs=[[0, 7.609447e-003], [7.609447e-003, 0]])
+    zs = [0.7058334393128614, 0.2941665606871387] # 50/50 mass basis
+    pkg = pkg.pkg
+
+    VFs = []
+    all_Ts = []
+    all_Ps = []
+    P_high = 6.1e6 # goal: 6e6 It worked!
+    P_low = 1e3
+    Ps = logspace(log10(P_low), log10(P_high), 50)
+    T_lows = []
+    T_highs = []
+    
+    for P in Ps:
+        pkg.flash(P=P, VF=0, zs=zs)
+        T_low = pkg.T # 129 K
+        T_lows.append(T_low)
+        pkg.flash(P=P, VF=1, zs=zs)
+        T_high = pkg.T # 203 K
+        T_highs.append(T_high)
+        
+        for Wilson_first in (False, True):
+            VFs_working = []
+            Ts = linspace(T_low+1e-4, T_high-1e-4, 50)
+            for T in Ts:
+                ans = pkg.flash_TP_zs(P=P, T=T, zs=zs, Wilson_first=Wilson_first)
+                VFs_working.append(ans[-1])
+                if ans[0] != 'l/g':
+                    raise ValueError("Converged to single phase solution at T=%g K, P=%g Pa" %(T, P))
+    
+        VFs.append(VFs_working)
+        all_Ts.append(Ts)
+        all_Ps.append(Ps)
     
     
 def test_phase_envelope_44_components():

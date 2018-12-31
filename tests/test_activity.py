@@ -79,6 +79,18 @@ def test_bubble_at_P_with_ideal_mixing():
 
     assert_allclose(test_mix.T, bubble_temp)
 
+def test_RR_numpy():
+    Tcs = [369.83, 407.8, 425.12, 433.8, 460.4, 469.7, 507.6, 126.2, 190.56400000000002, 304.2, 305.32]
+    Pcs = [4248000.0, 3640000.0, 3796000.0, 3196000.0, 3380000.0, 3370000.0, 3025000.0, 3394387.5, 4599000.0, 7376460.0, 4872000.0]
+    omegas = [0.152, 0.17600000000000002, 0.193, 0.19699999999999998, 0.22699999999999998, 0.251, 0.2975, 0.04, 0.008, 0.2252, 0.098]
+    zs = [1.7400001740000172e-05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.004817800481780048, 0.9874633987463398, 0.006334800633480063, 0.0013666001366600135]
+    P = 1e3
+    T_dew = 98.49898995287606
+    Ks = [Wilson_K_value(T_dew, P, Tc=Tcs[i], Pc=Pcs[i], omega=omegas[i]) for i in range(len(zs))]
+    
+    from thermo.activity import Rachford_Rice_solution_numpy
+    VF, xs, ys = Rachford_Rice_solution_numpy(zs, Ks)
+    assert_allclose(VF, 1)
 
 def test_Rachford_Rice_flash_error():
     err = Rachford_Rice_flash_error(0.5, zs=[0.5, 0.3, 0.2], Ks=[1.685, 0.742, 0.532])

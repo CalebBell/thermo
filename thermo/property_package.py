@@ -2320,19 +2320,20 @@ class GceosBase(Ideal):
         if Wilson_first:
             _, _, VF_wilson, xs_wilson, ys_wilson = flash_wilson(zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, 
                          P=P, T=T)
-    #        print(VF_wilson, xs_wilson, ys_wilson, 'VF_wilson, xs_wilson, ys_wilson')
+            print(VF_wilson, xs_wilson, ys_wilson, 'VF_wilson, xs_wilson, ys_wilson')
             if 1e-5 < VF_wilson < 1-1e-5:
                 try:
                     VF, xs, ys = eos.sequential_substitution_VL( 
                                                 maxiter=self.substitution_maxiter,
                                                 xtol=self.substitution_xtol, 
-                                                near_critical=False,
+                                                near_critical=True,
                                                 xs=xs_wilson, ys=ys_wilson
                                                 )
                     phase = 'l/g'
                     return phase, xs, ys, VF
                 
                 except Exception as e:
+                    print(e)
                     pass
         
         
@@ -2356,7 +2357,7 @@ class GceosBase(Ideal):
     #                Ks[Ks.index(minK)] = .9
     #            print('testing Ks', Ks)
                 
-#                print(Ks)
+                print(Ks)
                 stable, Ks_initial, Ks_extra = eos.stability_Michelsen(T=T, P=P, zs=zs,
                                                           Ks_initial=Ks, 
                                                           maxiter=self.stability_maxiter, 
@@ -2366,9 +2367,18 @@ class GceosBase(Ideal):
                     # two phase flash with init Ks
                     break
                 
-#                print('found stable with Ks:', Ks)
-        
-#        print(eos.G_dep_l, 'l', eos.G_dep_g, 'g', stable)
+                print('found stable with Ks:', Ks)
+        try:
+            print('liquid gibbs (single phase)', eos.G_dep_l)
+        except:
+            print('No liquid phase (pure)')
+            
+        try:
+            print('vapor gibbs (single phase)', eos.G_dep_g)
+        except:
+            print('No vapor phase (pure)')
+            
+        print('After stability test, stable=%g' %(stable))
         if stable:
             try:
                 if eos.G_dep_l < eos.G_dep_g:
@@ -2908,7 +2918,7 @@ class GceosBase(Ideal):
 
     def dew_T_Michelsen_Mollerup(self, T_guess, P, zs, maxiter=200, 
                                  xtol=1E-10, info=None, xs_guess=None,
-                                 max_step_damping=10.0, near_critical=False,
+                                 max_step_damping=100.0, near_critical=False,
                                  trivial_solution_tol=1e-4):
         # Does not have any formulation available
         # According to the following, convergence does not occur with newton's method near the critical point
@@ -2975,10 +2985,12 @@ class GceosBase(Ideal):
             T_guess_old = T_guess
             step = -f_k/dfk_dT
             
+#            print(xs, T_guess, step, dfk_dT)
+            
             if near_critical:
                 T_guess = T_guess + copysign(min(max_step_damping, abs(step)), step)
             else:
-                T_guess = T_guess + step # 
+                T_guess = T_guess + step
             
             if near_critical:
                 comp_difference = sum([abs(zi - xi) for zi, xi in zip(zs, xs)])
@@ -2990,7 +3002,6 @@ class GceosBase(Ideal):
             
             if info is not None:
                 info[:] = xs, zs, Ks, eos_l, eos_g, 1.0
-#            print(xs, T_guess, step, dfk_dT)
             if abs(T_guess - T_guess_old) < xtol:
                 break
             

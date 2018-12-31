@@ -28,7 +28,9 @@ __all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',
 from cmath import atanh as catanh
 from fluids.numerics import newton, brenth, third, sixth
 from thermo.utils import R
-from thermo.utils import Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter
+from thermo.utils import (Cp_minus_Cv, isobaric_expansion, 
+                          isothermal_compressibility, 
+                          phase_identification_parameter)
 from thermo.utils import log, exp, sqrt, copysign, horner
 
 R2 = R*R

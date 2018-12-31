@@ -858,7 +858,7 @@ class GCEOSMIX(GCEOS):
 
     def sequential_substitution_VL(self, Ks_initial=None, maxiter=1000,
                                    xtol=1E-10, near_critical=True, Ks_extra=None,
-                                   xs=None, ys=None):
+                                   xs=None, ys=None, trivial_solution_tol=1e-5):
 #        print(self.zs, Ks)
         if xs is not None and ys is not None:
             pass
@@ -941,6 +941,11 @@ class GCEOSMIX(GCEOS):
 #            print(err, err2)
             xs, ys = xs_new, ys_new
 #            print('err', err, 'xs, ys', xs, ys, 'Ks', Ks)
+            if near_critical:
+                comp_difference = sum([abs(xi - yi) for xi, yi in zip(xs, ys)])
+                if comp_difference < trivial_solution_tol:
+                    raise ValueError("Converged to trivial condition, compositions of both phases equal")
+
             if err < xtol:
                 break
             if i == maxiter-1:

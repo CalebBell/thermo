@@ -768,7 +768,7 @@ def Rachford_Rice_solution_numpy(zs, Ks):
     try:
         V_over_F = newton(err, x0)
     except:
-        V_over_F = brenth(err, V_over_F_max-1E-7, V_over_F_min+1E-7)
+        V_over_F = brenth(err, V_over_F_max*one_epsilon_smaller, V_over_F_min*one_epsilon_larger)
         
     xs = zs/(1.0 + V_over_F*K_minus_1)
     ys = Ks*xs
