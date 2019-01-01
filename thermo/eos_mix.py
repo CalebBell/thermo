@@ -887,28 +887,29 @@ class GCEOSMIX(GCEOS):
                 eos_g = self.to_TP_zs(T=self.T, P=self.P, zs=ys)
                 eos_l = self.to_TP_zs(T=self.T, P=self.P, zs=xs)
     
-                phis_g = eos_g.phis_g#fugacity_coefficients(eos_g.Z_g, ys)
-                phis_l = eos_l.phis_l#fugacity_coefficients(eos_l.Z_l, xs)
+                lnphis_g = eos_g.lnphis_g#fugacity_coefficients(eos_g.Z_g, ys)
+                lnphis_l = eos_l.lnphis_l#fugacity_coefficients(eos_l.Z_l, xs)
                 fugacities_l = eos_l.fugacities_l
                 fugacities_g = eos_g.fugacities_g
             else:
                 eos_g = self.to_TP_zs(T=self.T, P=self.P, zs=ys)
                 eos_l = self.to_TP_zs(T=self.T, P=self.P, zs=xs)
                 try:
-                    phis_g = eos_g.phis_g#fugacity_coefficients(eos_g.Z_g, ys)
+                    lnphis_g = eos_g.lnphis_g#fugacity_coefficients(eos_g.Z_g, ys)
                     fugacities_g = eos_g.fugacities_g
                 except AttributeError:
-                    phis_g = eos_g.phis_l#fugacity_coefficients(eos_g.Z_l, ys)
+                    lnphis_g = eos_g.lnphis_l#fugacity_coefficients(eos_g.Z_l, ys)
                     fugacities_g = eos_g.fugacities_l
                 try:
-                    phis_l = eos_l.phis_l#fugacity_coefficients(eos_l.Z_l, xs)
+                    lnphis_l = eos_l.lnphis_l#fugacity_coefficients(eos_l.Z_l, xs)
                     fugacities_l = eos_l.fugacities_l
                 except AttributeError:
-                    phis_l = eos_l.phis_g#fugacity_coefficients(eos_l.Z_g, xs)
+                    lnphis_l = eos_l.lnphis_g#fugacity_coefficients(eos_l.Z_g, xs)
                     fugacities_l = eos_l.fugacities_g
 
 #            print(phis_l, phis_g, 'phis')
-            Ks = [l/g for l, g in zip(phis_l, phis_g)] # K_value(phi_l=l, phi_g=g)
+#             Ks = [exp(a - b) for a, b in zip(ln_phis_l, ln_phis_g)]
+            Ks = [exp(l - g) for l, g in zip(lnphis_l, lnphis_g)] # K_value(phi_l=l, phi_g=g)
 #            print(Ks)
             # Hack - no idea if this will work
 #            maxK = max(Ks)
