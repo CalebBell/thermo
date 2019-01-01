@@ -2140,8 +2140,8 @@ class GceosBase(Ideal):
     stability_maxiter = 500 # 30 good professional default; 500 used in source DTU
     stability_xtol = 1E-10 # 1e-12 was too strict; 1e-10 used in source DTU
     substitution_maxiter =  100 # 1000 # 
-    substitution_xtol = 1e-7 # 1e-10 too strict
-    
+#    substitution_xtol = 1e-7 # 1e-10 too strict
+    substitution_xtol = 1e-12 #new, fugacity ratio - root based tolerance
     def __init__(self, eos_mix=PRMIX, VaporPressures=None, Tms=None, Tbs=None, 
                  Tcs=None, Pcs=None, omegas=None, kijs=None, eos_kwargs=None,
                  HeatCapacityGases=None,
@@ -2377,7 +2377,7 @@ class GceosBase(Ideal):
                     return phase, xs, ys, VF
                 
                 except Exception as e:
-#                    print(e)
+#                    print(e, 'Wilson flash fail')
                     pass
         
         
@@ -2427,7 +2427,7 @@ class GceosBase(Ideal):
                         break
                     except Exception as e:
                         # K guesses were not close enough to convege or some other error happened
-#                        print('failed convergence of SS with Ks', Ks_initial, Ks_extra, e)
+#                        print('failed convergence of SS with Ks', Ks_initial, e)
                         unstable_and_failed_SS = True
                         stable = True
                 
