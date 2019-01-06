@@ -54,7 +54,7 @@ from fluids.numerics import brenth, ridder, derivative, py_newton as newton, lin
 
 from thermo.utils import log, log10, exp, copysign
 from thermo.utils import has_matplotlib, R, pi, N_A
-from thermo.utils import remove_zeros, normalize, Cp_minus_Cv
+from thermo.utils import remove_zeros, normalize, Cp_minus_Cv, UnconvergedError
 from thermo.identifiers import IDs_to_CASs
 from thermo.activity import K_value, Wilson_K_value, flash_inner_loop, dew_at_T, bubble_at_T, NRTL
 from thermo.activity import flash_wilson, flash_Tb_Tc_Pc
@@ -754,6 +754,7 @@ class PropertyPackage(object):
     
         temp_pkg_cache = []
         def PH_error(T, P, zs, H_goal):
+#            print(T, P, H_goal)
             if not temp_pkg_cache:
                 temp_pkg = self.to(T=T, P=P, zs=zs)
                 temp_pkg_cache.append(temp_pkg)
@@ -761,6 +762,7 @@ class PropertyPackage(object):
                 temp_pkg = temp_pkg_cache[0]
                 temp_pkg.flash(T=T, P=P, zs=zs)
             temp_pkg._post_flash()
+#            print(temp_pkg.Hm - H_goal, T, P)
             return temp_pkg.Hm - H_goal
         
         def PH_VF_error(VF, P, zs, H_goal):
@@ -2138,7 +2140,8 @@ class GceosBase(Ideal):
     random_guesses = False
     zero_fraction_guesses = 1E-6
     stability_maxiter = 500 # 30 good professional default; 500 used in source DTU
-    stability_xtol = 1E-10 # 1e-12 was too strict; 1e-10 used in source DTU
+#    stability_xtol = 5E-9 # 1e-12 was too strict; 1e-10 used in source DTU; 1e-9 set for some points near critical where convergence stopped; even some more stopped at higher Ts
+    stability_xtol = 1e-10
     substitution_maxiter =  100 # 1000 # 
 #    substitution_xtol = 1e-7 # 1e-10 too strict
     substitution_xtol = 1e-12 #new, fugacity ratio - root based tolerance
@@ -2369,7 +2372,7 @@ class GceosBase(Ideal):
                 
                     G_TP = G_dep_l*(1.0 - VF) + G_dep_g*VF
                     
-                    if VF < 0 or VF > 1 or G_TP > G_dep_eos:
+                    if VF < 0.0 or VF > 1.0 or G_TP > G_dep_eos:
                         raise ValueError("Wilson flash converged but VF unfeasible or Gibbs energy lower than stable phase")
                     
                     self.eos_l = eos_l
@@ -2397,10 +2400,13 @@ class GceosBase(Ideal):
                         [zi/comp_i for comp_i, zi in zip(trial_comp, zs)]):
                 
 #                print(Ks)
-                stable, Ks_initial, Ks_extra = eos.stability_Michelsen(T=T, P=P, zs=zs,
-                                                          Ks_initial=Ks, 
-                                                          maxiter=self.stability_maxiter, 
-                                                          xtol=self.stability_xtol)
+                try:
+                    stable, Ks_initial, Ks_extra = eos.stability_Michelsen(T=T, P=P, zs=zs,
+                                                              Ks_initial=Ks, 
+                                                              maxiter=self.stability_maxiter, 
+                                                              xtol=self.stability_xtol)
+                except UnconvergedError:
+                    pass
                 if not stable:
 #                    print('found not stable with Ks:', Ks)
                     # two phase flash with init Ks
@@ -2500,17 +2506,17 @@ class GceosBase(Ideal):
 #            print(xs_guess, ys_guess, 'hi')
             T = None
             try:
-                T = newton(err, T_guess_as_pure, xtol=self.FLASH_VF_TOL)
+                T = float(newton(err, T_guess_as_pure, tol=self.FLASH_VF_TOL))
             except:
                 pass
             if T is None:
                 try:
-                    T = fsolve(err, T_guess_as_pure)
+                    T = float(fsolve(err, T_guess_as_pure))
                 except:
                     pass
 #            print(P, 'worked!')
             if T is None:
-                T = brenth(err, .9*T_guess_as_pure, 1.1*T_guess_as_pure)
+                T = float(brenth(err, .9*T_guess_as_pure, 1.1*T_guess_as_pure))
             VF, xs, ys, eos_l, eos_g = res[0]
             
         self.eos_l = eos_l
@@ -2553,19 +2559,19 @@ class GceosBase(Ideal):
             P = None
 #            print('P_guess_as_pure', P_guess_as_pure)
             try:
-                P = newton(err, P_guess_as_pure, xtol=self.FLASH_VF_TOL)
+                P = newton(err, P_guess_as_pure, tol=self.FLASH_VF_TOL)
             except Exception as e:
 #                print(e, 'newton failed')
                 pass
             if P is None:
                 try:
-                    P = fsolve(err, P_guess_as_pure, xtol=self.FLASH_VF_TOL)
+                    P = float(fsolve(err, P_guess_as_pure, xtol=self.FLASH_VF_TOL))
                 except Exception as e:
 #                    print(e, 'fsolve failed')
                     pass
 #            print(P, 'worked!')
             if P is None:
-                P = brenth(err, .9*P_guess_as_pure, 1.1*P_guess_as_pure)
+                P = float(brenth(err, .9*P_guess_as_pure, 1.1*P_guess_as_pure))
             VF, xs, ys, eos_l, eos_g = res[0]
             
         self.eos_l = eos_l
@@ -2855,7 +2861,7 @@ class GceosBase(Ideal):
                 else:
                     args = (P, zs, maxiter, xtol, info)
                 try:
-                    T = newton(self._err_bubble_T, T_guess, args=args, xtol=self.FLASH_VF_TOL)
+                    T = newton(self._err_bubble_T, T_guess, args=args, ytol=self.FLASH_VF_TOL)
                 except Exception as e:
                     print('bubble T - newton failed with initial guess (%g):' %(T_guess)  + str(e))
                     T = float(fsolve(self._err_bubble_T, T_guess, factor=.1, xtol=self.FLASH_VF_TOL, args=args))
@@ -3189,7 +3195,7 @@ class GceosBase(Ideal):
 
             try:
                 try:
-                    T = newton(self._err_dew_T, T_guess, xtol=self.FLASH_VF_TOL, args=(P, zs, maxiter, xtol, info))
+                    T = newton(self._err_dew_T, T_guess, ytol=self.FLASH_VF_TOL, args=(P, zs, maxiter, xtol, info))
                 except Exception as e:
                     print('dew_T newton failed with %g K guess' %(T_guess), e)
                     try:
@@ -3461,7 +3467,7 @@ class GceosBase(Ideal):
 
             # Simplest solution method
             try:
-                P = newton(self._err_dew_P, P_guess, xtol=self.FLASH_VF_TOL, 
+                P = newton(self._err_dew_P, P_guess, ytol=self.FLASH_VF_TOL, 
                            args=(T, zs, maxiter, xtol, info))
             except Exception as e:
                 print('newton failed dew_P guess %g' %(P_guess), e)
@@ -3556,8 +3562,9 @@ class GceosBase(Ideal):
 
 
     def bubble_P_Michelsen_Mollerup(self, P_guess, T, zs, maxiter=200, 
-                                    xtol=1E-4, info=None, ys_guess=None,
-                                    near_critical=False):
+                                    xtol=1E-1, info=None, ys_guess=None,
+                                    near_critical=False, max_step_damping=1e9,
+                                    trivial_solution_tol=1e-4):
         N = len(zs)
         cmps = range(N)
         ys = zs if ys_guess is None else ys_guess
@@ -3604,12 +3611,25 @@ class GceosBase(Ideal):
                 dfk_dP += zs[i]*Ks[i]*(d_lnphis_dP_l[i] - d_lnphis_dP_g[i])
             
             P_guess_old = P_guess
-            P_guess = P_guess - f_k/dfk_dP
+            
+            step = - f_k/dfk_dP
+            
+            
+            if near_critical:
+                P_guess = P_guess + copysign(min(max_step_damping, abs(step)), step)
+            else:
+                P_guess = P_guess + step
+
             ys = [zs[i]*Ks[i] for i in cmps]
             y_sum = sum(ys)
             ys = [y/y_sum for y in ys]
             
-            
+            if near_critical:
+                comp_difference = sum([abs(zi - yi) for zi, yi in zip(zs, ys)])
+                if comp_difference < trivial_solution_tol:
+                    raise ValueError("Converged to trivial condition, compositions of both phases equal")
+
+
             if info is not None:
                 info[:] = zs, ys, Ks, eos_l, eos_g, 0.0
 #            print(ys, P_guess, abs(P_guess - P_guess_old), dfk_dP)
@@ -3617,7 +3637,7 @@ class GceosBase(Ideal):
                 break
                 
         if abs(P_guess - P_guess_old) > xtol:
-            raise ValueError("Did not converge to specified tolerance")
+            raise UnconvergedError("Did not converge to specified tolerance")
         return P_guess
 
 
@@ -3680,10 +3700,10 @@ class GceosBase(Ideal):
             try:
                 if i == -1:
                     yield P_guess, None, None
-                if i == 0:
+                if i == 1:
                     ans = self.bubble_P_guess(T=T, zs=zs, method='IdealEOS')
                     yield ans[4], ans[1], ans[2]
-                if i == 1:
+                if i == 0:
                     ans = self.bubble_P_guess(T=T, zs=zs, method='Wilson')
                     yield ans[1], ans[3], ans[4]
                 if i == 2:
@@ -3695,19 +3715,30 @@ class GceosBase(Ideal):
 
 
     def bubble_P(self, T, zs, maxiter=200, xtol=1E-4, maxiter_initial=20,
-                 xtol_initial=1e-3, P_guess=None):
+                 xtol_initial=1e-3, P_guess=None, max_step_damping=1e6):
+
+
+
         info = []
         maxP = max(self.Pcs)*2
         for P_guess, xs, ys in self.bubble_P_guesses(T=T, zs=zs, P_guess=P_guess):
             P = None
             
             try:
+#                print(P_guess, xs, ys, 'P_guess, xs, ys')
                 P = self.bubble_P_Michelsen_Mollerup(P_guess=P_guess, T=T, zs=zs, 
                                                      info=info, xtol=self.FLASH_VF_TOL,
-                                                     ys_guess=ys, near_critical=True)
+                                                     ys_guess=ys, near_critical=True,
+                                                     max_step_damping=max_step_damping)
                 return info[0], info[1], info[5], P, info[3], info[4]
-            except Exception as e:
-                print(e, 'bubble_P_Michelsen_Mollerup falure')
+            except:
+                import sys, os
+                exc_type, exc_obj, exc_tb = sys.exc_info()
+                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                print(exc_type, fname, exc_tb.tb_lineno)
+                
+                
+                print(exc_obj, 'bubble_P_Michelsen_Mollerup falure')
                 pass
 
             try:
@@ -3721,7 +3752,7 @@ class GceosBase(Ideal):
             
         
             try:
-                P = float(newton(self._err_bubble_P, P_guess, xtol=self.FLASH_VF_TOL,
+                P = float(newton(self._err_bubble_P, P_guess, ytol=self.FLASH_VF_TOL,
                                  args=(T, zs, maxiter, xtol, info)))
                 if P > maxP:
                     1/0
@@ -3974,4 +4005,119 @@ class GceosBase(Ideal):
 ##                    factor = min(factor, factor_original)
                 
         return P_points, Ts_known, ys_known
+    
+
+
+    def bubble_P_envelope(self, zs, T_low=200, T_high=None, xtol=10,
+                          factor=1.2, max_step_damping=1e7, min_step_termination=1e-3,
+                          min_factor_termination=1.0000001,
+                          max_T_step=20, spec_points=None):
+        factor_original = factor
+        factor_power = 1.0
+        info = []
+        ys_known = []
+        Ps_known = []
+        T_points = []
+        near_critical = False
+        P_low = None
+        for P_guess, xs, ys in self.bubble_P_guesses(T=T_low, zs=zs):
+            try:
+                P_low = self.bubble_P_Michelsen_Mollerup(P_guess=P_guess, T=T_low, zs=zs, info=info,
+                                                  xtol=xtol, ys_guess=ys,
+                                                  max_step_damping=max_step_damping)
+                _, ys_low, _, _, _, _ = info
+                
+            except Exception as e:
+                print('bubble_P_Michelsen_Mollerup falure on initialization', e)
+                pass
+        if P_low is None:
+            raise ValueError("Could not solve initial point to begin bubble T envelope")
+
+        ys_known.append(ys_low)
+        Ps_known.append(P_low)
+        T_points.append(T_low)
+        P_prev, ys_prev = P_low, ys_low
+
+        if T_high is None:
+            T_high = 1.5*max(self.Tcs)
+                    
+        spec_point_working = 1e100 if spec_points is None else spec_points[0]
+        if spec_point_working < T_low:
+            raise ValueError("Cannot specify a point lower than the minimum temperature")
+        if spec_point_working == T_low:
+            spec_points = spec_points[1:]
+            spec_point_working = spec_points[0]
+        
+        T_prev = T_working = min(T_low*factor, T_low + max_T_step, spec_point_working)
+        if T_prev == spec_point_working:
+            spec_point_working = spec_points[1]
+        
+        
+        successes = 0
+        while T_working < T_high + T_working*(factor - 1):
+            info = []
+            try:
+#                print('trying T', T_working)
+                P_prev_working = P_prev
+                P = self.bubble_P_Michelsen_Mollerup(P_guess=P_prev_working, T=T_working, zs=zs, info=info,
+                                                  xtol=xtol, ys_guess=ys_prev,
+                                                  max_step_damping=max_step_damping,
+                                                  near_critical=near_critical)
+                _, ys, _, _, _, _ = info
+                ys_known.append(ys)
+                Ps_known.append(P)
+                T_points.append(T_working)
+                ys_prev, P_prev, T_prev = ys, P, T_working
+#                print('success on P', T_working)
+                successes += 1
+                if successes > 3:
+                    factor = 2.0*factor - 1.0
+                
+                if factor_power == -1:
+                    factor = min(2.0*factor - 1.0, factor_original)
+                    # try a larger delta next time
+            except Exception as e:
+#                print(e)
+                successes = 0
+                factor = 1 + (factor - 1)*0.5
+                if spec_points is not None and T_working in spec_points:
+                    spec_point_working = T_working                
+                
+#                print('failed bubble P at T %g with ys %s, factor now %f' %(T_working, ys_known[-1], factor), e)
+
+#                import sys, os
+#                exc_type, exc_obj, exc_tb = sys.exc_info()
+#                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+#                print(exc_type, fname, exc_tb.tb_lineno)
+#
+            T_working_prev = T_working
+            T_working = min(T_prev*factor**factor_power, T_prev + max_T_step, spec_point_working)
+            # Force a different pressure if the factor has changed but not enough - still spec_point_working
+            while T_working == T_working_prev:
+                factor = 1 + (factor - 1)*0.5
+                T_working = min(T_prev*factor**factor_power, T_prev + max_T_step, spec_point_working)
+            
+            if T_working == spec_point_working:
+                try:
+                    spec_point_working = spec_points[spec_points.index(spec_point_working)+1]
+                except:
+                    spec_point_working = 1e100
+            
+            
+            
+            if factor < min_factor_termination and T_points[-1]*(factor-1) < min_step_termination or T_working < T_low:
+                if not near_critical:
+                    factor = factor_original
+                    near_critical = True
+                else:
+                    break
+#                elif factor_power < 1:
+#                    break
+#                else:
+#                    factor_power = -1
+##                    factor = 2.0*factor - 1.0
+#                    factor = factor_original
+##                    factor = min(factor, factor_original)
+                
+        return T_points, Ps_known, ys_known
     

@@ -37,7 +37,7 @@ __all__ = ['isobaric_expansion', 'isothermal_compressibility',
 'solve_flow_composition_mix', 'assert_component_balance', 'assert_energy_balance',
 'phase_select_property', 'TDependentProperty', 
 'TPDependentProperty', 'MixtureProperty', 'allclose_variable', 'horner', 
-'polylog2']
+'polylog2', 'UnconvergedError']
 
 from cmath import sqrt as csqrt
 from bisect import bisect_left
@@ -71,6 +71,9 @@ __all__.extend(['R', 'k', 'N_A', 'calorie', 'epsilon_0']) # 'expm1', 'erf', 'erf
 # Included here so calculations are consistent across SciPy versions
 from fluids.constants import g, R, k, N_A, calorie, epsilon_0
 
+class UnconvergedError(Exception):
+    '''Error raised when an iterative procedure does not converge.
+    '''
 
 def to_num(values):
     r'''Legacy function to turn a list of strings into either floats
@@ -1465,8 +1468,8 @@ def normalize(values):
     >>> normalize([3, 2, 1])
     [0.5, 0.3333333333333333, 0.16666666666666666]
     '''
-    tot = sum(values)
-    return [i/tot for i in values]
+    tot_inv = 1.0/sum(values)
+    return [i*tot_inv for i in values]
 
 
 def remove_zeros(values, tol=1e-6):

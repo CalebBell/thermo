@@ -280,8 +280,8 @@ def test_PR_quick():
     # Props said to be from Reid et al
     
     b = PR(T=114.93, P=5.7E-6, Tc=Tc, Pc=Pc, omega=omega)
-    V1, V2, V3 = b.raw_volumes
-    assert_allclose(V3.real, 1.6764E8, rtol=1E-3)
+    V_max = max([V.real for V in b.raw_volumes])
+    assert_allclose(V_max, 1.6764E8, rtol=1E-3)
     # Other two roots don't match
     
     # Example 05.11 Liquid Density using the Peng-Robinson EOS in Chemical Thermodynamics for Process Simulation

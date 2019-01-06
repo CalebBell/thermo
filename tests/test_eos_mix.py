@@ -37,9 +37,10 @@ def test_PRMIX_quick():
     # Two-phase nitrogen-methane
     eos = PRMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
 
-    Vs_fast = eos.volume_solutions(115, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_expected = [(3.625736293970586e-05-1.4456028966473392e-19j), (0.00019383473081158748+1.4456028966473392e-19j), (0.0007006659231347704-4.5175090520229353e-20j)]
-    assert_allclose(Vs_fast, Vs_expected)
+    Vs_calc = eos.sorted_volumes
+#    eos.volume_solutions(115, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
+    Vs_expected = [3.6257362939705926e-05, 0.0001938347308115875, 0.0007006659231347702]
+    assert_allclose(Vs_calc, Vs_expected)
 
     # Test of a_alphas
     a_alphas = (0.21876490011332972, -0.0006346637957108072, 3.6800265478701025e-06)
@@ -176,6 +177,9 @@ def test_many_components():
 
     V_over_F, xs, ys, eos_l, eos_g = PRMIX(T=660, P=3.2e6, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas).sequential_substitution_VL()
     assert_allclose(V_over_F, 0.27748085589254096, rtol=1e-4)
+    
+    assert_allclose(eos.mechanical_critical_point(), 
+                    (622.597863984166, 1826304.23759842))
 
 def test_derivatives_density():
     # Check some extra derivatives
@@ -249,15 +253,20 @@ def test_mechanical_critical_point():
     Part 3. A Nonsmooth Approach to Density Extrapolation and Pseudoproperty
     Evaluation." Industrial & Engineering Chemistry Research, November 11, 2017.
     '''
-    m = Mixture(['ethane', 'heptane'], zs=[.5, .5], T=300., P=1e5)
-    eos = PRMIX(T=m.T, P=m.P, Tcs=m.Tcs, Pcs=m.Pcs, omegas=m.omegas, zs=m.zs, kijs=[[0,0.0067],[0.0067,0]])
-    eos =  eos.to_mechanical_critical_point()
-    assert_allclose(eos.T, 439.18795430359467, rtol=1e-5)
-    assert_allclose(eos.P, 3380687.3020791663, rtol=1e-5)
-    assert_allclose(1/eos.V_g, 3010, rtol=1e-3) # A more correct answer
+    Tcs = [305.32, 540.2]
+    Pcs = [4872000.0, 2740000.0]
+    omegas = [0.098, 0.3457]
+    zs = [.5, .5]
+
+    eos = PRMIX(T=300, P=1e5, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=[[0,0.0067],[0.0067,0]])
+    eos = eos.to_mechanical_critical_point()
+    assert_allclose(eos.T, 439.18798438998385, rtol=1e-5)
+    assert_allclose(eos.P, 3380688.869519021, rtol=1e-5)
+    assert_allclose(1/eos.V_l, 3010, rtol=1e-3) # A more correct answer
+    assert_allclose(eos.rho_l, 3012.174720884504, rtol=1e-6)
     
     # exact answer believed to be:
-    3011.7228497511787 # mol/m^3
+#    3011.7228497511787 # mol/m^3
     # 439.18798489 with Tc = 439.18798489 or so.
     
 def test_sequential_substitution_VL():
@@ -511,10 +520,8 @@ def test_PR78MIX():
 def test_SRKMIX_quick():
     # Two-phase nitrogen-methane
     eos = SRKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
-
-    Vs_fast = eos.volume_solutions(115, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_expected = [(4.104756961475803e-05-1.0842021724855044e-19j), (0.00020409982649503516+1.4456028966473392e-19j), (0.0007110158049778292-1.807003620809174e-20j)]
-    assert_allclose(Vs_fast, Vs_expected)
+    Vs_expected = [4.104756961475809e-05, 0.0002040998264950349, 0.0007110158049778294]
+    assert_allclose(eos.sorted_volumes, Vs_expected)
 
     # Test of a_alphas
     a_alphas = (0.21053508135768303, -0.0007568164048417844, 4.650780763765838e-06)
@@ -621,10 +628,8 @@ def test_VDWMIX_vs_VDW():
 def test_VDWIX_quick():
     # Two-phase nitrogen-methane
     eos = VDWMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
-
-    Vs_fast = eos.volume_solutions(115, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_expected = [(5.881369844882989e-05-1.8070036208091741e-19j), (0.00016108242301576215+1.4456028966473392e-19j), (0.0007770872375800777-3.162256336416055e-20j)]
-    assert_allclose(Vs_fast, Vs_expected)
+    Vs_expected = [5.881369844882986e-05, 0.00016108242301576212, 0.0007770872375800778]
+    assert_allclose(eos.sorted_volumes, Vs_expected)
 
     # Test of a_alphas
     a_alphas = [0.18035232263614895, 0.0, 0.0]
@@ -704,10 +709,8 @@ def test_PRSVMIX_vs_PRSV():
 def test_PRSVMIX_quick():
     # Two-phase nitrogen-methane
     eos = PRSVMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
-
-    Vs_fast = eos.volume_solutions(115, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_expected = [(3.623553616564366e-05-1.4456028966473392e-19j), (0.00019428009417235927+1.4456028966473392e-19j), (0.0007002423865480607-2.710505431213761e-20j)]
-    assert_allclose(Vs_fast, Vs_expected)
+    Vs_expected = [3.6235536165643867e-05, 0.00019428009417235906, 0.0007002423865480607]
+    assert_allclose(eos.sorted_volumes, Vs_expected)
 
     # Test of a_alphas
     a_alphas = (0.21897593315687267, -0.0006396071449056316, 3.715015383907643e-06)
@@ -778,10 +781,8 @@ def test_PRSV2MIX_vs_PRSV():
 def test_PRSV2MIX_quick():
     # Two-phase nitrogen-methane
     eos = PRSV2MIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
-
-    Vs_fast = eos.volume_solutions(115, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_expected = [(3.623553616564366e-05-1.4456028966473392e-19j), (0.00019428009417235927+1.4456028966473392e-19j), (0.0007002423865480607-2.710505431213761e-20j)]
-    assert_allclose(Vs_fast, Vs_expected)
+    Vs_expected = [3.6235536165643867e-05, 0.00019428009417235906, 0.0007002423865480607]
+    assert_allclose(eos.sorted_volumes, Vs_expected)
 
     # Test of a_alphas
     a_alphas = (0.21897593315687267, -0.0006396071449056315, 3.715015383907642e-06)
@@ -876,10 +877,8 @@ def test_TWUPRMIX_vs_TWUPR():
 def test_TWUPRMIX_quick():
     # Two-phase nitrogen-methane
     eos = TWUPRMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
-
-    Vs_fast = eos.volume_solutions(115, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_expected = [(3.624571041690618e-05-1.264902534566422e-19j), (0.00019407217464617222+1.4456028966473392e-19j), (0.0007004401318229852-3.614007241618348e-20j)]
-    assert_allclose(Vs_fast, Vs_expected)
+    Vs_expected = [3.6245710416906234e-05, 0.00019407217464617227, 0.0007004401318229851]
+    assert_allclose(eos.sorted_volumes, Vs_expected)
 
     # Test of a_alphas
     a_alphas = (0.21887744827068994, -0.0006338028987948183, 3.358462881663777e-06)
@@ -922,12 +921,8 @@ def test_TWUPRMIX_quick():
 def test_TWUSRKMIX_vs_TWUSRK():
     # Test solution for molar volumes
     eos = TWUSRKMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., P=1E6)
-    Vs_fast = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_slow = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
-    Vs_expected = [0.00014689222296622483, (0.0011695660499307968+0.0013011782630948806j), (0.0011695660499307968-0.0013011782630948806j)]
-
-    assert_allclose(Vs_fast, Vs_expected)
-    assert_allclose(Vs_slow, Vs_expected)
+    Vs_expected = [0.00014689222296622505, (0.0011695660499307966-0.00130117826309488j), (0.0011695660499307966+0.00130117826309488j)]
+    assert_allclose(eos.sorted_volumes, Vs_expected)
     
     # Test of a_alphas
     a_alphas = (3.7196696151053654, -0.00726972623757774, 2.3055902218261955e-05)
@@ -973,10 +968,8 @@ def test_TWUSRKMIX_vs_TWUSRK():
 def test_TWUSRKMIX_quick():
     # Two-phase nitrogen-methane
     eos = TWUSRKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
-
-    Vs_fast = eos.volume_solutions(115, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_expected = [(4.108792754297647e-05-7.228014483236696e-20j), (0.00020336794828666816+7.228014483236696e-20j), (0.0007117073252579778-9.03501810404587e-21j)]
-    assert_allclose(Vs_fast, Vs_expected)
+    Vs_expected = [4.108792754297656e-05, 0.0002033679482866679, 0.000711707325257978]
+    assert_allclose(eos.sorted_volumes, Vs_expected)
 
     # Test of a_alphas
     a_alphas = (0.2101906113921238, -0.0007322002407973534, 2.600317479929538e-06)
@@ -1072,10 +1065,8 @@ def test_APISRKMIX_vs_APISRK():
 def test_APISRKMIX_quick():
     # Two-phase nitrogen-methane
     eos = APISRKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
-
-    Vs_fast = eos.volume_solutions(115, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_expected = [(4.1015923107747434e-05-7.228014483236696e-20j), (0.00020467844767642728+7.228014483236696e-20j), (0.0007104688303034478-2.710505431213761e-20j)]
-    assert_allclose(Vs_fast, Vs_expected)
+    Vs_expected = [4.10159231077475e-05, 0.000204678447676427, 0.0007104688303034479]
+    assert_allclose(eos.sorted_volumes, Vs_expected)
 
     # Test of a_alphas
     a_alphas = (0.2108068740329283, -0.0007639202977930443, 4.705536792825722e-06)

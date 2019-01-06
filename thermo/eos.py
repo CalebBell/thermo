@@ -26,7 +26,7 @@ __all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',
 'APISRK', 'TWUPR', 'TWUSRK', 'ALPHA_FUNCTIONS', 'eos_list', 'GCEOS_DUMMY']
 
 from cmath import atanh as catanh
-from fluids.numerics import newton, brenth, third, sixth
+from fluids.numerics import newton, brenth, third, sixth, roots_cubic, roots_cubic_a1, numpy as np
 from thermo.utils import R
 from thermo.utils import (Cp_minus_Cv, isobaric_expansion, 
                           isothermal_compressibility, 
@@ -159,7 +159,7 @@ class GCEOS(object):
         else:
             # Even in the case of three real roots, it is still the min/max that make sense
             if not good_roots:
-                raise Exception('No acceptable roots were found; the roots are %s' %Vs)
+                raise Exception('No acceptable roots were found; the roots are %s, a_alpha is %s, b is %s' %(str(Vs), str([self.a_alpha]), str([self.b])))
             
             self.V_l, self.V_g = min(good_roots), max(good_roots)
             [self.set_properties_from_solution(self.T, self.P, V, self.b, self.delta, self.epsilon, self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2) for V in [self.V_l, self.V_g]]
@@ -374,18 +374,23 @@ class GCEOS(object):
             [H_dep, S_dep, Cv_dep]) = self.derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha, da_alpha_dT, d2a_alpha_dT2, quick=quick)
         
         RT = R*T
-        beta = dV_dT/V # isobaric_expansion(V, dV_dT)
-        kappa = -dV_dP/V # isothermal_compressibility(V, dV_dP)
+        RT_inv = 1.0/RT
+        P_inv = 1.0/P
+        V_inv = 1.0/V
+        Z = P*V*RT_inv
+        
+        beta = dV_dT*V_inv # isobaric_expansion(V, dV_dT)
+        kappa = -dV_dP*V_inv # isothermal_compressibility(V, dV_dP)
         Cp_m_Cv = -T*dP_dT*dP_dT*dV_dP # Cp_minus_Cv(T, dP_dT, dP_dV)
         
         Cp_dep = Cp_m_Cv + Cv_dep - R
                 
-        V_dep = (V - RT/P)        
+        V_dep = V - RT*P_inv      
         U_dep = H_dep - P*V_dep
         G_dep = H_dep - T*S_dep
         A_dep = U_dep - T*S_dep
-        fugacity = P*exp(G_dep/(RT))
-        phi = fugacity/P
+        fugacity = P*exp(G_dep*RT_inv)
+        phi = fugacity*P_inv
   
         PIP = V*(d2P_dTdV*dT_dP - d2P_dV2*dV_dP) # phase_identification_parameter(V, dP_dT, dP_dV, d2P_dV2, d2P_dTdV)
 
@@ -397,7 +402,7 @@ class GCEOS(object):
             phase = 'l' if PIP > 1.0 else 'g' # phase_identification_parameter_phase(PIP)
       
         if phase == 'l':
-            self.Z_l = self.P*V/(RT)
+            self.Z_l = Z
             self.beta_l, self.kappa_l = beta, kappa
             self.PIP_l, self.Cp_minus_Cv_l = PIP, Cp_m_Cv
             
@@ -415,7 +420,7 @@ class GCEOS(object):
             self.fugacity_l, self.phi_l = fugacity, phi
             self.Cp_dep_l, self.Cv_dep_l = Cp_dep, Cv_dep
         else:
-            self.Z_g = self.P*V/(RT)
+            self.Z_g = Z
             self.beta_g, self.kappa_g = beta, kappa
             self.PIP_g, self.Cp_minus_Cv_g = PIP, Cp_m_Cv
             
@@ -547,6 +552,24 @@ should be calculated by this method, in a user subclass.')
            https://doi.org/10.1016/S0378-3812(02)00072-9.
 
         '''
+#        RT_inv = R_inv/T
+#        P_RT_inv = P*RT_inv
+#        eta = b
+#        B = b*P_RT_inv
+#        deltas = delta*P_RT_inv
+#        thetas = a_alpha*P_RT_inv*RT_inv
+#        epsilons = epsilon*P_RT_inv*P_RT_inv
+#        etas = eta*P_RT_inv
+#        
+#        a = 1.0
+#        b2 = (deltas - B - 1.0)
+#        c = (thetas + epsilons - deltas*(B + 1.0))
+#        d = -(epsilons*(B + 1.0) + thetas*etas)
+#        open('bcd.txt', 'a').write('\n%s' %(str([float(b2), float(c), float(d)])))
+        
+        
+        
+        
         x24 = 1.73205080756887729352744634151j + 1.
         x24_inv = 0.25 - 0.433012701892219323381861585376j
         x26 = -1.73205080756887729352744634151j + 1.
@@ -590,9 +613,76 @@ should be calculated by this method, in a user subclass.')
                     (x19*x24 + x22 - x25*x24_inv)*sixth,
                     (x19*x26 + x22 - x25*x26_inv)*sixth)
         else:
-            return [-(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)/(3*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)) - (sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)/3 - (-P*b + P*delta - R*T)/(3*P),
+            return (-(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)/(3*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)) - (sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)/3 - (-P*b + P*delta - R*T)/(3*P),
                      -(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)/(3*(-1/2 - sqrt(3)*1j/2)*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)) - (-1/2 - sqrt(3)*1j/2)*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)/3 - (-P*b + P*delta - R*T)/(3*P),
-                     -(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)/(3*(-1/2 + sqrt(3)*1j/2)*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)) - (-1/2 + sqrt(3)*1j/2)*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)/3 - (-P*b + P*delta - R*T)/(3*P)]
+                     -(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)/(3*(-1/2 + sqrt(3)*1j/2)*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)) - (-1/2 + sqrt(3)*1j/2)*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)/3 - (-P*b + P*delta - R*T)/(3*P))
+
+    # volume_solutions_Cardano
+    @staticmethod
+    def volume_solutions(T, P, b, delta, epsilon, a_alpha, quick=True):
+        RT_inv = R_inv/T
+        P_RT_inv = P*RT_inv
+        eta = b
+        B = b*P_RT_inv
+        deltas = delta*P_RT_inv
+        thetas = a_alpha*P_RT_inv*RT_inv
+        epsilons = epsilon*P_RT_inv*P_RT_inv
+        etas = eta*P_RT_inv
+        
+        a = 1.0
+        b = (deltas - B - 1.0)
+        c = (thetas + epsilons - deltas*(B + 1.0))
+        d = -(epsilons*(B + 1.0) + thetas*etas)
+        RT_P = R*T/P
+#        print(b, c, d)
+        roots = roots_cubic(a, b, c, d)
+#        roots = np.roots([a, b, c, d]).tolist()
+        return [V*RT_P for V in roots]
+
+    # validation method
+    @staticmethod
+    def volume_solutions_bench(T, P, b, delta, epsilon, a_alpha, quick=True):
+        RT_inv = R_inv/T
+        P_RT_inv = P*RT_inv
+        eta = b
+        B = b*P_RT_inv
+        deltas = delta*P_RT_inv
+        thetas = a_alpha*P_RT_inv*RT_inv
+        epsilons = epsilon*P_RT_inv*P_RT_inv
+        etas = eta*P_RT_inv
+        
+        a = 1.0
+        b = (deltas - B - 1.0)
+        c = (thetas + epsilons - deltas*(B + 1.0))
+        d = -(epsilons*(B + 1.0) + thetas*etas)
+        RT_P = R*T/P
+        roots = roots_cubic(a, b, c, d)
+        
+        def trim_root(x, tol=1e-6):
+            x = np.array(x)
+            vals = abs(x.imag) < abs(x.real)*tol
+            try:
+                x.imag[vals] = 0
+            except:
+                pass
+            return x     
+        
+        fast = trim_root(roots)
+        slow = trim_root(np.roots([a, b, c, d]))
+
+        fast = np.sort(fast)
+        slow = np.sort(slow)
+        if np.sign(slow[1].imag) != np.sign(fast[1].imag):
+            fast[1], fast[2] = fast[2], fast[1]
+        try:
+            from numpy.testing import assert_allclose
+            assert_allclose(fast, slow, rtol=1e-7)
+        except:
+            ratio = np.real_if_close(np.array(fast)/np.array(slow), tol=1e6)
+            print('root fail', ratio, [b, c, d])
+                
+        return [V*RT_P for V in roots]
+
 
     def derivatives_and_departures(self, T, P, V, b, delta, epsilon, a_alpha, da_alpha_dT, d2a_alpha_dT2, quick=True):
         
@@ -601,19 +691,19 @@ should be calculated by this method, in a user subclass.')
                                              a_alpha, da_alpha_dT, 
                                              d2a_alpha_dT2, quick=quick))
 
-        dV_dT = -dP_dT/dP_dV
-        dV_dP = -dV_dT/dP_dT 
-        dT_dV = 1./dV_dT
+        inverse_dP_dV = 1.0/dP_dV
         dT_dP = 1./dP_dT
+
+        dV_dT = -dP_dT*inverse_dP_dV
+        dV_dP = -dV_dT*dT_dP 
+        dT_dV = 1./dV_dT
                 
         
-        inverse_dP_dV = 1.0/dP_dV
         inverse_dP_dV2 = inverse_dP_dV*inverse_dP_dV
         inverse_dP_dV3 = inverse_dP_dV*inverse_dP_dV2
         
-        inverse_dP_dT = 1.0/dP_dT
-        inverse_dP_dT2 = inverse_dP_dT*inverse_dP_dT
-        inverse_dP_dT3 = inverse_dP_dT2*inverse_dP_dT
+        inverse_dP_dT2 = dT_dP*dT_dP
+        inverse_dP_dT3 = inverse_dP_dT2*dT_dP
         
         d2V_dP2 = -d2P_dV2*inverse_dP_dV3
         d2T_dP2 = -d2P_dT2*inverse_dP_dT3
@@ -626,57 +716,84 @@ should be calculated by this method, in a user subclass.')
         d2V_dPdT = -(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*inverse_dP_dV3
         d2T_dPdV = -(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*inverse_dP_dT3
 
-        
+        # TODO return one large tuple - quicker, constructing the lists is slow
         return ([dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP], 
                 [d2P_dT2, d2P_dV2, d2V_dT2, d2V_dP2, d2T_dV2, d2T_dP2],
                 [d2V_dPdT, d2P_dTdV, d2T_dPdV],
                 [H_dep, S_dep, Cv_dep])
 
+
+
+    @property
+    def sorted_volumes(self):
+        r'''List of lexicographically-sorted molar volumes available from the
+        root finding algorithm used to solve the PT point. The convention of 
+        sorting lexicographically comes from numpy's handling of complex 
+        numbers, which python does not define. This method was added to 
+        facilitate testing, as the volume solution method changes over time 
+        and the ordering does as well.
+
+        Examples
+        --------
+        >>> PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6).sorted_volumes
+        [(0.00013022212513965896+0j), (0.0011236313134682665-0.0012926967234386064j), (0.0011236313134682665+0.0012926967234386064j)]
+        '''
+        sort_fun = lambda x: (x.real, x.imag)
+        return sorted(self.raw_volumes, key=sort_fun)
+    
+    
     @staticmethod
     def main_derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha,
                                         da_alpha_dT, d2a_alpha_dT2, quick=True):
-        if quick:
-            x0 = 1.0/(V - b)
-            x1 = 1.0/(V*(V + delta) + epsilon)
-            x3 = R*T
-            x4 = x0*x0
-            x5 = 2.*V + delta
-            x6 = x1*x1
-            x7 = a_alpha*x6
-            x8 = P*V
-            x9 = delta*delta
-            x10 = -4.*epsilon + x9
-            x11 = x10**-0.5
-            x12 = 2.*x11*catanh(x11*x5).real
-            x14 = 0.5*x5
-            x15 = 2.*epsilon*x11
-            x16 = 0.5*x11*x9
-            x17 = x5*x6
-            dP_dT = R*x0 - da_alpha_dT*x1
-            dP_dV = -x3*x4 + x5*x7
-            d2P_dT2 = -d2a_alpha_dT2*x1
-            d2P_dV2 = -2.*a_alpha*x5*x17*x1 + 2.*x7 + 2.*x3*x4*x0
-            d2P_dTdV = -R*x4 + da_alpha_dT*x17
-            H_dep = x12*(T*da_alpha_dT - a_alpha) - x3 + x8
-            
-            t1 = (x3*x0/P)
-            S_dep = -R_2*log(t1*t1) + da_alpha_dT*x12  # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
-            
-            x18 = x16 - x15
-            
-            x19 = (x14 + x18)/(x14 - x18)
-            Cv_dep = -T*d2a_alpha_dT2*x11*(-log(x19*x19)*0.5) # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
-        else:
-            dP_dT = R/(V - b) - da_alpha_dT/(V**2 + V*delta + epsilon)
-            dP_dV = -R*T/(V - b)**2 - (-2*V - delta)*a_alpha/(V**2 + V*delta + epsilon)**2
-            d2P_dT2 = -d2a_alpha_dT2/(V**2 + V*delta + epsilon)
-            d2P_dV2 = 2*(R*T/(V - b)**3 - (2*V + delta)**2*a_alpha/(V**2 + V*delta + epsilon)**3 + a_alpha/(V**2 + V*delta + epsilon)**2)
-            d2P_dTdV = -R/(V - b)**2 + (2*V + delta)*da_alpha_dT/(V**2 + V*delta + epsilon)**2
-            H_dep = P*V - R*T + 2*(T*da_alpha_dT - a_alpha)*catanh((2*V + delta)/sqrt(delta**2 - 4*epsilon)).real/sqrt(delta**2 - 4*epsilon)
-            S_dep = -R*log(V) + R*log(P*V/(R*T)) + R*log(V - b) + 2*da_alpha_dT*catanh((2*V + delta)/sqrt(delta**2 - 4*epsilon)).real/sqrt(delta**2 - 4*epsilon)
-            Cv_dep = -T*(sqrt(1/(delta**2 - 4*epsilon))*log(V - delta**2*sqrt(1/(delta**2 - 4*epsilon))/2 + delta/2 + 2*epsilon*sqrt(1/(delta**2 - 4*epsilon))) - sqrt(1/(delta**2 - 4*epsilon))*log(V + delta**2*sqrt(1/(delta**2 - 4*epsilon))/2 + delta/2 - 2*epsilon*sqrt(1/(delta**2 - 4*epsilon))))*d2a_alpha_dT2
-        return [dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep]
+        if not quick:
+            return GCEOS.main_derivatives_and_departures(T, P, V, b, delta, 
+                                                         epsilon, a_alpha,
+                                                         da_alpha_dT,
+                                                         d2a_alpha_dT2)
+        x0 = 1.0/(V - b)
+        x1 = 1.0/(V*(V + delta) + epsilon)
+        x3 = R*T
+        x4 = x0*x0
+        x5 = 2.*V + delta
+        x6 = x1*x1
+        x7 = a_alpha*x6
+        x8 = P*V
+        x9 = delta*delta
+        x10 = -4.*epsilon + x9
+        x11 = x10**-0.5
+        x12 = 2.*x11*catanh(x11*x5).real
+        x14 = 0.5*x5
+        x15 = 2.*epsilon*x11
+        x16 = 0.5*x11*x9
+        x17 = x5*x6
+        dP_dT = R*x0 - da_alpha_dT*x1
+        dP_dV = -x3*x4 + x5*x7
+        d2P_dT2 = -d2a_alpha_dT2*x1
+        d2P_dV2 = -2.*a_alpha*x5*x17*x1 + 2.*x7 + 2.*x3*x4*x0
+        d2P_dTdV = -R*x4 + da_alpha_dT*x17
+        H_dep = x12*(T*da_alpha_dT - a_alpha) - x3 + x8
+        
+        t1 = (x3*x0/P)
+        S_dep = -R_2*log(t1*t1) + da_alpha_dT*x12  # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
+        
+        x18 = x16 - x15
+        
+        x19 = (x14 + x18)/(x14 - x18)
+        Cv_dep = -T*d2a_alpha_dT2*x11*(-log(x19*x19)*0.5) # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
+        return dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep
 
+    @staticmethod
+    def main_derivatives_and_departures_slow(T, P, V, b, delta, epsilon, a_alpha,
+                                        da_alpha_dT, d2a_alpha_dT2):
+        dP_dT = R/(V - b) - da_alpha_dT/(V**2 + V*delta + epsilon)
+        dP_dV = -R*T/(V - b)**2 - (-2*V - delta)*a_alpha/(V**2 + V*delta + epsilon)**2
+        d2P_dT2 = -d2a_alpha_dT2/(V**2 + V*delta + epsilon)
+        d2P_dV2 = 2*(R*T/(V - b)**3 - (2*V + delta)**2*a_alpha/(V**2 + V*delta + epsilon)**3 + a_alpha/(V**2 + V*delta + epsilon)**2)
+        d2P_dTdV = -R/(V - b)**2 + (2*V + delta)*da_alpha_dT/(V**2 + V*delta + epsilon)**2
+        H_dep = P*V - R*T + 2*(T*da_alpha_dT - a_alpha)*catanh((2*V + delta)/sqrt(delta**2 - 4*epsilon)).real/sqrt(delta**2 - 4*epsilon)
+        S_dep = -R*log(V) + R*log(P*V/(R*T)) + R*log(V - b) + 2*da_alpha_dT*catanh((2*V + delta)/sqrt(delta**2 - 4*epsilon)).real/sqrt(delta**2 - 4*epsilon)
+        Cv_dep = -T*(sqrt(1/(delta**2 - 4*epsilon))*log(V - delta**2*sqrt(1/(delta**2 - 4*epsilon))/2 + delta/2 + 2*epsilon*sqrt(1/(delta**2 - 4*epsilon))) - sqrt(1/(delta**2 - 4*epsilon))*log(V + delta**2*sqrt(1/(delta**2 - 4*epsilon))/2 + delta/2 - 2*epsilon*sqrt(1/(delta**2 - 4*epsilon))))*d2a_alpha_dT2
+        return dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep
 
     def Tsat(self, P, polish=False):
         r'''Generic method to calculate the temperature for a specified 
@@ -931,6 +1048,7 @@ should be calculated by this method, in a user subclass.')
             return self.__class__(T=T, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega, **self.kwargs)
         else:
             return self
+        
 
     def discriminant_at_T_zs(self, P):
         # Only P is allowed to be varied

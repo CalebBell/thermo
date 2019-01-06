@@ -30,9 +30,9 @@ import numpy as np
 from cmath import log as clog
 from scipy.optimize import minimize
 from scipy.misc import derivative
-from fluids.numerics import IS_PYPY
+from fluids.numerics import IS_PYPY, newton_system
 from thermo.utils import normalize, Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter
-from thermo.utils import R
+from thermo.utils import R, UnconvergedError
 from thermo.utils import log, exp, sqrt
 from thermo.eos import *
 from thermo.activity import Wilson_K_value, K_value, flash_inner_loop, Rachford_Rice_flash_error
@@ -290,28 +290,180 @@ class GCEOSMIX(GCEOS):
         else:
             return a_alpha
         
-    def to_mechanical_critical_point(self):
+        
+        
+    def mechanical_critical_point_f_jac(self, TP):
+        '''The criteria for c_goal and d_goal come from a cubic
+        'roots_cubic', which uses a `f`, `g`, and `h` parameter. When all of 
+        them are zero, all three roots are equal. For the eos (a=1), this
+        results in the following system of equations:
+    
+        from sympy import *
+        a = 1
+        b, c, d = symbols('b, c, d')
+        f = ((3* c / a) - ((b ** 2) / (a ** 2))) / 3
+        g = (((2 * (b ** 3)) / (a ** 3)) - ((9* b * c) / (a **2)) + (27 * d / a)) /27
+        h = ((g ** 2) / 4 + (f ** 3) / 27)z
+        solve([Eq(f, 0), Eq(g, 0), Eq(h, 0)], [b, c, d])       
+        
+        The solution (sympy struggled) is:
+        c = b^2/3
+        d = b^3/27
+        
+        These two variables switch sign at the criteria, so they work well with
+        a root finding approach.
+        
+        
+        Derived with:
+            
+        from sympy import *
+        P, T, V, R, b_eos, alpha = symbols('P, T, V, R, b_eos, alpha')
+        Tc, Pc, omega = symbols('Tc, Pc, omega')
+        delta, epsilon = symbols('delta, epsilon')
+        
+        a_alpha = alpha(T)
+        
+        eta = b_eos
+        B = b_eos*P/(R*T)
+        deltas = delta*P/(R*T)
+        thetas = a_alpha*P/(R*T)**2
+        epsilons = epsilon*(P/(R*T))**2
+        etas = eta*P/(R*T)
+        
+        b = (deltas - B - 1)
+        c = (thetas + epsilons - deltas*(B + 1))
+        d = -(epsilons*(B + 1) + thetas*etas)
+        
+        c_goal = b*b/3
+        d_goal = b*b*b/27
+        
+        F1 = c - c_goal
+        F2 = d - d_goal
+        
+        cse([F1, F2, diff(F1, T), diff(F1, P), diff(F2, T), diff(F2, P)], optimizations='basic')
+
+            
+            
+            
+            
+            
+        Performance analysis:
+            
+        77% of this is getting a_alpha and da_alpha_dT.
+        71% of the outer solver is getting f and this Jacobian.
+        Limited results from optimizing the below code, which was derived with
+        sympy.
+        '''
+        T, P = float(TP[0]), float(TP[1])
+        b_eos, delta, epsilon = self.b, self.delta, self.epsilon
+        eta = b_eos
+        
+        
+        a_alpha, da_alpha_dT, _ = self.a_alpha_and_derivatives(T, full=True)
+        
+        
+        x6 = R_inv
+        x7 = 1.0/T
+        x0 = a_alpha
+        x1 = R_inv*R_inv
+        x2 = x7*x7
+        x3 = x1*x2
+        x4 = P*P
+        x5 = epsilon*x3*x4
+        x8 = P*x6*x7
+        x9 = delta*x8
+        x10 = b_eos*x8
+        x11 = x10 + 1.0
+        x12 = x11 - x9
+        x13 = x12*x12
+        x14 = P*x2*x6
+        x15 = da_alpha_dT
+        x16 = x6*x7
+        x17 = x0*x16
+        x18 = 2.0*epsilon*x8
+        x19 = delta*x10
+        x20 = delta*x11
+        x21 = b_eos - delta
+        x22 = 2.0*x12*x21/3.0
+        x23 = P*b_eos*x0*x1*x2
+        x24 = b_eos*x5
+        x25 = x11*x18
+        x26 = x13*x21/9.0   
+        
+        
+        F1 = P*x0*x3 - x11*x9 - x13/3.0 + x5
+        F2 = -x11*x5 + x13*x12/27.0 - b_eos*x0*x4*x6*x1*x7*x2
+        dF1_dT = x14*(x15*x6 - 2.0*x17 - x18 + x19 + x20 + x22)
+        dF1_dP = x16*(x17 + x18 - x19 - x20 - x22)
+        dF2_dT = x14*(-P*b_eos*x1*x15*x7 + 3.0*x23 + x24 + x25 - x26)
+        dF2_dP = x16*(-2.0*x23 - x24 - x25 + x26)
+        
+        return [F1, F2], [[dF1_dT, dF1_dP], [dF2_dT, dF2_dP]]
+        
+        
+    def mechanical_critical_point(self):
+        r'''Method to calculate the mechanical critical point of a mixture
+        of defined composition.
+        
+        The mechanical critical point is where:
+            
+        .. math::
+            \frac{\partial P}{\partial \rho}|_T = 
+            \frac{\partial^2 P}{\partial \rho^2}|_T =  0
+            
+        Returns
+        ----------
+        T : float
+            Mechanical critical temperature, [K]
+        P : float
+            Mechanical critical temperature, [Pa]
+            
+        Notes
+        -----
+        One useful application of the mechanical critical temperature is that
+        the pahse identification approach of Venkatarathnam is valid only up to
+        it.
+        
+        Note that the equation of state, when solved at these conditions, will
+        have fairly large (1e-3 - 1e-6) results for the derivatives; but they 
+        are the minimum. This is just from floating point precision.
+        
+        It can also be checked looking at the calculated molar volumes - all 
+        three (available with `sorted_volumes`) will be very close (1e-5
+        difference in practice), again differing because of floating point
+        error.
+        
+        The algorithm here is a custom implementation, using Newton-Raphson's
+        method with the initial guesses described in [1] (mole-weighted 
+        critical pressure average, critical temperature average using a 
+        quadratic mixing rule). Normally ~4 iterations are needed to solve the
+        system. It is relatively fast, as only one evaluation of `a_alpha`
+        and `da_alpha_dT` are needed per call to function and its jacobian.        
+             
+        References
+        ----------
+        .. [1] Watson, Harry A. J., and Paul I. Barton. "Reliable Flash 
+           Calculations: Part 3. A Nonsmooth Approach to Density Extrapolation 
+           and Pseudoproperty Evaluation." Industrial & Engineering Chemistry 
+           Research, November 11, 2017.
+           https://doi.org/10.1021/acs.iecr.7b03233.
+        .. [2] Mathias P. M., Boston J. F., and Watanasiri S. "Effective
+           Utilization of Equations of State for Thermodynamic Properties in
+           Process Simulation." AIChE Journal 30, no. 2 (June 17, 2004):
+           182-86. https://doi.org/10.1002/aic.690300203.
+        '''
+        
         Pmc = sum([self.Pcs[i]*self.zs[i] for i in self.cmps])
         Tmc = sum([(self.Tcs[i]*self.Tcs[j])**0.5*self.zs[j]*self.zs[i] for i in self.cmps
                   for j in self.cmps])
+        TP, iterations = newton_system(self.mechanical_critical_point_f_jac,
+                                       x0=[Tmc, Pmc], jac=True, ytol=1e-10)
+        T, P = float(TP[0]), float(TP[1])
+        return T, P
         
-        # Calculate Vc using Zc at the eos level. 
-        def to_minimize(TP):
-            # Sometimes there are zero-division errors when dP_dV is literally zero
-            eos = self.to_TP_zs(T=float(TP[0]), P=float(TP[1]), zs=self.zs)
-            err = 0
-            err += abs(eos.raw_volumes[0] - eos.raw_volumes[1])
-            err += abs(eos.raw_volumes[1] - eos.raw_volumes[2])
-            return err
-        
-        # differential_evolution(to_maximize,bounds=[(400, 500), [3380688/2, 3380688*2]], popsize=100, maxiter=100)
-        
-        ans = minimize(to_minimize, [Tmc, Pmc], tol=1e-12, method='Nelder-Mead')
-        if ans['fun'] < 1E-5:
-            T, P = ans['x']
-            return self.to_TP_zs(T=float(T), P=float(P), zs=self.zs)
-        else:
-            raise Exception('Not Found', ans)
+    def to_mechanical_critical_point(self):
+        T, P = self.mechanical_critical_point()
+        return self.to_TP_zs(T=T, P=P, zs=self.zs)
         
         
     def fugacities(self, xs=None, ys=None):   
@@ -1103,7 +1255,7 @@ class GCEOSMIX(GCEOS):
                 break
             # It is possible to break if the trivial solution is being approached here also
             if _ == maxiter-1 and fugacities_ref_phase != fugacities_phase:
-                raise ValueError('End of stabiliy_iteration_Michelsen without convergence')
+                raise UnconvergedError('End of stabiliy_iteration_Michelsen without convergence')
         # Fails directly if fugacities_ref_phase == fugacities_phase
         return sum_zs_test, Ks, fugacities_ref_phase == fugacities_phase
             

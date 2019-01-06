@@ -115,7 +115,7 @@ def permittivity_IAPWS(T, rho):
     delta = rho/322.
     tau = 647.096/T
     
-    g = 1.0  + 0.196096504426E-2*delta*(T/228. - 1)**-1.2
+    g = 1.0  + 0.196096504426E-2*delta*(T/228. - 1.0)**-1.2
     for h in range(11):
         g += Nh[h]*delta**ih[h]*tau**jh[h] 
     
