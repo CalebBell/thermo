@@ -3624,10 +3624,10 @@ class GceosBase(Ideal):
             y_sum = sum(ys)
             ys = [y/y_sum for y in ys]
             
-            if near_critical:
-                comp_difference = sum([abs(zi - yi) for zi, yi in zip(zs, ys)])
-                if comp_difference < trivial_solution_tol:
-                    raise ValueError("Converged to trivial condition, compositions of both phases equal")
+#            if near_critical:
+#                comp_difference = sum([abs(zi - yi) for zi, yi in zip(zs, ys)])
+#                if comp_difference < trivial_solution_tol:
+#                    raise ValueError("Converged to trivial condition, compositions of both phases equal")
 
 
             if info is not None:
