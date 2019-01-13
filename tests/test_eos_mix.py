@@ -180,6 +180,16 @@ def test_many_components():
     
     assert_allclose(eos.mechanical_critical_point(), 
                     (622.597863984166, 1826304.23759842))
+    
+    
+    # Make it even slower
+    zs = [i*0.25 for i in zs]
+    zs = zs + zs + zs + zs
+    Tcs = Tcs + Tcs + Tcs + Tcs
+    Pcs = Pcs + Pcs + Pcs + Pcs
+    omegas = omegas + omegas + omegas + omegas
+    eos = PRMIX(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+
 
 def test_derivatives_density():
     # Check some extra derivatives

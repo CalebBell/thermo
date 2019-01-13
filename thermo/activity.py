@@ -602,6 +602,35 @@ def Rachford_Rice_flash_error(V_over_F, zs, Ks):
     '''
     return sum([zi*(Ki-1.)/(1.+V_over_F*(Ki-1.)) for Ki, zi in zip(Ks, zs)])
 
+def Rachford_Rice_flash_error2(betas, zs, Ks_y, Ks_z):
+    beta_y, beta_z = float(betas[0]), float(betas[1])
+    err1 = sum([zi*(Ky-1.)/(1.+beta_y*(Ky-1.) + beta_z*(Kz-1.)) for Ky, Kz, zi in zip(Ks_y, Ks_z, zs)])
+    err2 = sum([zi*(Kz-1.)/(1.+beta_y*(Ky-1.) + beta_z*(Kz-1.)) for Ky, Kz, zi in zip(Ks_y, Ks_z, zs)])
+    print('error', err1, err2)
+    return [err1, err2]
+
+def Rachford_Rice_solution2(zs, Ks_y, Ks_z, beta_y=0.5, beta_z=1e-6):
+    from scipy.optimize import fsolve, root
+    ans = fsolve(Rachford_Rice_flash_error2, x0=[beta_y, beta_z], args=(zs, Ks_y, Ks_z))
+    print('root')
+    from fluids.numerics import newton_system
+    import numdifftools as nd
+    
+#    def err(betas):
+#        return np.array(Rachford_Rice_flash_error2(betas, zs, Ks_y, Ks_z))
+#    Jfun = nd.Jacobian(err, step=1e-5, order=2, method='forward')
+#    ans = newton_system(err, x0=[beta_y, 1e-6], jac=Jfun)
+    print(ans)
+    
+#    print(root(Rachford_Rice_flash_error2, x0=[beta_y, 1e-6], args=(zs, Ks_y, Ks_z)))
+
+    
+    
+    beta_y, beta_z = float(ans[0]), float(ans[1])
+    xs = [zi/(1.+beta_y*(Ky-1.) + beta_z*(Kz-1.)) for Ky, Kz, zi in zip(Ks_y, Ks_z, zs)]
+    ys = [Ky*xi for xi, Ky in zip(xs, Ks_y)]
+    zs = [Kz*xi for xi, Kz in zip(xs, Ks_z)]
+    return beta_y, beta_z, xs, ys, zs
 
 def Rachford_Rice_solution(zs, Ks, fprime=False, fprime2=False,
                            limit=True):

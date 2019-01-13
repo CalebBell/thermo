@@ -2345,6 +2345,34 @@ class GceosBase(Ideal):
         return self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
                             zs=zs, kijs=self.kijs, T=T, P=P, **self.eos_kwargs)
 
+    def flash_TP_zs_3P(self, T, P, zs):
+        "From 5.9: Multiphase Split and Stability Analysis"
+        phase, xs, ys, beta_y = self.flash_TP_zs(T=T, P=P, zs=zs)
+        eos_l, eos_g = self.eos_l, self.eos_g
+        
+        Ks_y = [yi/xi for yi, xi in zip(ys, xs)]
+        
+        # TODO only call stability test on heavier MW phase
+        def is_stable():
+            stable, Ks_initial, Ks_extra = eos_l.stability_Michelsen(T=T, P=P, zs=zs,
+                                                      Ks_initial=None, 
+                                                      maxiter=self.stability_maxiter, 
+                                                      xtol=self.stability_xtol)
+            if not stable:
+                return stable, Ks_extra[0], xs
+            
+            stable, Ks_initial, Ks_extra = eos_l.stability_Michelsen(T=T, P=P, zs=zs,
+                                                      Ks_initial=None, 
+                                                      maxiter=self.stability_maxiter, 
+                                                      xtol=self.stability_xtol)
+            return stable, Ks_initial, ys
+        stable, Ks_z, comp_test = is_stable()
+        beta_z, _, _ = flash_inner_loop(comp_test, Ks_z)
+        print(beta_z, 'beta_z', 'beta_y', beta_y)
+        
+        print(eos_l.sequential_substitution_3P(Ks_y, Ks_z, beta_y, beta_z=0.0))
+        
+        
 
     def flash_TP_zs(self, T, P, zs, Wilson_first=True):
         eos = self.to_TP_zs(T=T, P=P, zs=zs)
@@ -2372,12 +2400,14 @@ class GceosBase(Ideal):
                 
                     G_TP = G_dep_l*(1.0 - VF) + G_dep_g*VF
                     
+#                    print(VF)
                     if VF < 0.0 or VF > 1.0 or G_TP > G_dep_eos:
                         raise ValueError("Wilson flash converged but VF unfeasible or Gibbs energy lower than stable phase")
                     
                     self.eos_l = eos_l
                     self.eos_g = eos_g
                     return phase, xs, ys, VF
+                
                 
                 except Exception as e:
 #                    print(e, 'Wilson flash fail')
@@ -2405,7 +2435,11 @@ class GceosBase(Ideal):
                                                               Ks_initial=Ks, 
                                                               maxiter=self.stability_maxiter, 
                                                               xtol=self.stability_xtol)
-                except UnconvergedError:
+#                    print(stable, Ks_initial)
+                
+                except UnconvergedError as e:
+                    print(e, 'stability failed')
+                    
                     pass
                 if not stable:
 #                    print('found not stable with Ks:', Ks)

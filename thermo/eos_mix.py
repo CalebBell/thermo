@@ -186,17 +186,22 @@ class GCEOSMIX(GCEOS):
                 da_alpha_dTs.append(ds[1])
                 d2a_alpha_dT2s.append(ds[2])
             self.cleanup_a_alpha_and_derivatives()
+            
+        self.a_alphas, self.da_alpha_dTs, self.d2a_alpha_dT2s = a_alphas, da_alpha_dTs, d2a_alpha_dT2s
         
         if not IS_PYPY and self.N > 20:
             return self.a_alpha_and_derivatives_numpy(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=full, quick=quick)
         return self.a_alpha_and_derivatives_py(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=full, quick=quick)
         
     def a_alpha_and_derivatives_py(self, a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=True, quick=True):
+        # For 44 components, takes 150 us in PyPy.; 95 in pythran. Much of that is type conversions.
+        # 4 ms pypy for 44*4, 1.3 ms for pythran, 10 ms python with numpy
+        # 2 components 1.89 pypy, pythran 1.75 us, regular python 12.7 us.
+        # 10 components - regular python 148 us, 9.81 us PyPy, 8.37 pythran in PyPy (flags have no effect; 14.3 us in regular python)
         zs, kijs, cmps, N = self.zs, self.kijs, self.cmps, self.N
         da_alpha_dT, d2a_alpha_dT2 = 0.0, 0.0
         
         a_alpha_ijs = [[None]*N for _ in cmps]
-#        z_products = [[None]*self.N for _ in self.cmps]
         a_alpha_i_roots = [a_alpha_i**0.5 for a_alpha_i in a_alphas]
         
         if full:
@@ -1006,7 +1011,21 @@ class GCEOSMIX(GCEOS):
         Fs.append(err_RR)
         return Fs
         
-
+    def sequential_substitution_3P(self, Ks_y, Ks_z, beta_y, beta_z=0.0,
+                                   
+                                   maxiter=1000,
+                                   xtol=1E-13, near_critical=True,
+                                   xs=None, ys=None, zs=None,
+                                   trivial_solution_tol=1e-5):
+        
+        
+        from thermo.activity import Rachford_Rice_solution2
+        print(Ks_y, Ks_z, beta_y, beta_z)
+        beta_y, beta_z, xs_new, ys_new, zs_new = Rachford_Rice_solution2(zs=self.zs, Ks_y=Ks_y, Ks_z=Ks_z, beta_y=beta_y, beta_z=beta_z)
+        print(beta_y, beta_z, xs_new, ys_new, zs_new)
+        
+        Ks_y = [exp(lnphi_x - lnphi_y) for lnphi_x, lnphi_y in zip(lnphis_x, lnphis_y)]
+        Ks_z = [exp(lnphi_x - lnphi_z) for lnphi_x, lnphi_z in zip(lnphis_x, lnphis_z)]
 
     def sequential_substitution_VL(self, Ks_initial=None, maxiter=1000,
                                    xtol=1E-13, near_critical=True, Ks_extra=None,
@@ -1184,7 +1203,7 @@ class GCEOSMIX(GCEOS):
                     break
             
             # Claimed error function in CONVENTIONAL AND RAPID FLASH CALCULATIONS FOR THE SOAVE-REDLICH-KWONG AND PENG-ROBINSON EQUATIONS OF STATE
-            err2 = sum([(l/g-1)**2  for l, g in zip(fugacities_l, fugacities_g)]) # Suggested tolerance 1e-15
+            err2 = sum([(l/g-1.0)**2  for l, g in zip(fugacities_l, fugacities_g)]) # Suggested tolerance 1e-15
             # This is a better metric because it does not involve  hysterisis
             
             err = (sum([abs(x_new - x_old) for x_new, x_old in zip(xs_new, xs)]) +
@@ -1196,7 +1215,7 @@ class GCEOSMIX(GCEOS):
                 comp_difference = sum([abs(xi - yi) for xi, yi in zip(xs, ys)])
                 if comp_difference < trivial_solution_tol:
                     raise ValueError("Converged to trivial condition, compositions of both phases equal")
-
+#            print(xs)
             if err2 < xtol:
                 break
             if i == maxiter-1:
@@ -1534,8 +1553,13 @@ class PRMIX(GCEOSMIX, PR):
     
     def a_alpha_and_derivatives_vectorized(self, T, full=False, quick=True):
         if not full:
-            return [a*(1.0 + kappa*(1.0 - (T/Tc)**0.5))**2 
-                    for a, kappa, Tc in zip(self.ais, self.kappas, self.Tcs)]
+            a_alphas = []
+            for a, kappa, Tc in zip(self.ais, self.kappas, self.Tcs):
+                x1 = Tc**-0.5
+                x2 = 1.0 + kappa*(1.0 - T*x1)
+                a_alphas.append(a*x2*x2)
+            
+            return a_alphas
         else:
             T_inv = 1.0/T
             x0 = T**0.5

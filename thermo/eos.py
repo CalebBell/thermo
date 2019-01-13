@@ -138,35 +138,44 @@ class GCEOS(object):
         ----------
         Vs : list[float]
             Three possible molar volumes, [m^3/mol]
+        
+        Notes
+        -----
+        An optimizatino attempt was made to remove min() and max() from this
+        function; that is indeed possible, but the check for handling if there
+        are two or three roots makes it not worth it.
         '''
         # All roots will have some imaginary component; ignore them if > 1E-9
-        good_roots = []
-        bad_roots = []
-        for i in Vs:
-            j = i.real
-            if abs(i.imag) > 1E-9 or j < 0.0:
-                bad_roots.append(i)
-            else:
-                good_roots.append(j)
-                
-        if len(bad_roots) == 2: 
-            V = good_roots[0]
-            self.phase = self.set_properties_from_solution(self.T, self.P, V, self.b, self.delta, self.epsilon, self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2)
-            if self.phase == 'l':
-                self.V_l = V
-            else:
-                self.V_g = V
+        good_roots = [i.real for i in Vs if i.imag == 0.0 and i.real > 0.0]
+        good_root_count = len(good_roots)
+        
+        if good_root_count == 1: 
+            self.phase = self.set_properties_from_solution(self.T, self.P,
+                                                           good_roots[0], self.b, 
+                                                           self.delta, self.epsilon, 
+                                                           self.a_alpha, self.da_alpha_dT,
+                                                           self.d2a_alpha_dT2)
+        elif good_root_count > 1:
+            V_l, V_g = min(good_roots), max(good_roots)
+            
+            self.set_properties_from_solution(self.T, self.P, V_l, self.b, 
+                                               self.delta, self.epsilon,
+                                               self.a_alpha, self.da_alpha_dT,
+                                               self.d2a_alpha_dT2,
+                                               force_l=True)
+            self.set_properties_from_solution(self.T, self.P, V_g, self.b, 
+                                               self.delta, self.epsilon,
+                                               self.a_alpha, self.da_alpha_dT,
+                                               self.d2a_alpha_dT2, force_g=True)
+            self.phase = 'l/g'
         else:
             # Even in the case of three real roots, it is still the min/max that make sense
-            if not good_roots:
-                raise Exception('No acceptable roots were found; the roots are %s, a_alpha is %s, b is %s' %(str(Vs), str([self.a_alpha]), str([self.b])))
-            
-            self.V_l, self.V_g = min(good_roots), max(good_roots)
-            [self.set_properties_from_solution(self.T, self.P, V, self.b, self.delta, self.epsilon, self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2) for V in [self.V_l, self.V_g]]
-            self.phase = 'l/g'
+            raise Exception('No acceptable roots were found; the roots are %s, a_alpha is %s, b is %s' %(str(Vs), str([self.a_alpha]), str([self.b])))
+
 
     def set_properties_from_solution(self, T, P, V, b, delta, epsilon, a_alpha, 
-                                     da_alpha_dT, d2a_alpha_dT2, quick=True):
+                                     da_alpha_dT, d2a_alpha_dT2, quick=True,
+                                     force_l=False, force_g=False):
         r'''Sets all interesting properties which can be calculated from an
         EOS alone. Determines which phase the fluid is on its own; for details,
         see `phase_identification_parameter`.
@@ -394,15 +403,15 @@ class GCEOS(object):
   
         PIP = V*(d2P_dTdV*dT_dP - d2P_dV2*dV_dP) # phase_identification_parameter(V, dP_dT, dP_dV, d2P_dV2, d2P_dTdV)
 
-        if hasattr(self, 'V_l') and V == self.V_l:
-            phase = 'l'
-        elif hasattr(self, 'V_g') and V == self.V_g:
-            phase = 'g'
-        else:
-            phase = 'l' if PIP > 1.0 else 'g' # phase_identification_parameter_phase(PIP)
+#        if force_l:
+#            phase = 'l'
+#        elif force_g:
+#            phase = 'g'
+#        else:
+#            phase = 'l' if PIP > 1.0 else 'g' # phase_identification_parameter_phase(PIP)
       
-        if phase == 'l':
-            self.Z_l = Z
+        if force_l or (not force_g and PIP > 1.0):
+            self.V_l, self.Z_l = V, Z
             self.beta_l, self.kappa_l = beta, kappa
             self.PIP_l, self.Cp_minus_Cv_l = PIP, Cp_m_Cv
             
@@ -419,8 +428,9 @@ class GCEOS(object):
             self.U_dep_l, self.G_dep_l, self.A_dep_l = U_dep, G_dep, A_dep, 
             self.fugacity_l, self.phi_l = fugacity, phi
             self.Cp_dep_l, self.Cv_dep_l = Cp_dep, Cv_dep
+            return 'l'
         else:
-            self.Z_g = Z
+            self.V_g, self.Z_g = V, Z
             self.beta_g, self.kappa_g = beta, kappa
             self.PIP_g, self.Cp_minus_Cv_g = PIP, Cp_m_Cv
             
@@ -437,7 +447,7 @@ class GCEOS(object):
             self.U_dep_g, self.G_dep_g, self.A_dep_g = U_dep, G_dep, A_dep, 
             self.fugacity_g, self.phi_g = fugacity, phi
             self.Cp_dep_g, self.Cv_dep_g = Cp_dep, Cv_dep
-        return phase            
+            return 'g'
 
     def a_alpha_and_derivatives(self, T, full=True, quick=True):
         '''Dummy method to calculate `a_alpha` and its first and second
@@ -622,21 +632,20 @@ should be calculated by this method, in a user subclass.')
     def volume_solutions(T, P, b, delta, epsilon, a_alpha, quick=True):
         RT_inv = R_inv/T
         P_RT_inv = P*RT_inv
-        eta = b
-        B = b*P_RT_inv
+#        eta = b
+        B = etas = b*P_RT_inv
         deltas = delta*P_RT_inv
         thetas = a_alpha*P_RT_inv*RT_inv
         epsilons = epsilon*P_RT_inv*P_RT_inv
-        etas = eta*P_RT_inv
         
-        a = 1.0
+#        a = 1.0
         b = (deltas - B - 1.0)
         c = (thetas + epsilons - deltas*(B + 1.0))
         d = -(epsilons*(B + 1.0) + thetas*etas)
-        RT_P = R*T/P
 #        print(b, c, d)
-        roots = roots_cubic(a, b, c, d)
+        roots = roots_cubic(1.0, b, c, d)
 #        roots = np.roots([a, b, c, d]).tolist()
+        RT_P = R*T/P
         return [V*RT_P for V in roots]
 
     # validation method
