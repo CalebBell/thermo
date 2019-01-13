@@ -77,6 +77,40 @@ class GCEOSMIX(GCEOS):
     mixture. It calls `a_alpha_and_derivatives` from the pure-component EOS for 
     each species via multiple inheritance.
     '''
+    nonstate_constants = ('N', 'cmps', 'Tcs', 'Pcs', 'omegas', 'kijs', 'kwargs', 'ais', 'bs')
+    
+    def fast_copy_base(self, a_alphas=False):
+        new = self.__class__.__new__(self.__class__)
+        for attr in self.nonstate_constants:
+            setattr(new, attr, getattr(self, attr))
+        for attr in self.nonstate_constants_specific:
+            setattr(new, attr, getattr(self, attr))
+        if a_alphas:
+            new.a_alphas = self.a_alphas
+            new.da_alpha_dTs = self.da_alpha_dTs
+            new.d2a_alpha_dT2s = self.d2a_alpha_dT2s
+        return new
+    
+    def to_TP_zs_fast(self, T, P, zs, only_l=False, only_g=False):
+        copy_alphas = T == self.T
+        new = self.fast_copy_base(a_alphas=copy_alphas)
+        new.T = T
+        new.P = P
+        new.V = None
+        new.zs = zs
+        new.fast_init_specific()
+        new.solve(pure_a_alphas=(not copy_alphas), only_l=only_l, only_g=only_g)
+        return new
+
+
+
+    def to_TP_zs(self, T, P, zs):
+#        print(T, self.T, P, self.P, zs, self.zs)
+        if T != self.T or P != self.P or zs != self.zs:
+            return self.__class__(T=T, P=P, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, zs=zs, **self.kwargs)
+        else:
+            return self
+    
     
     def to_TP_pure(self, T, P, i):
         kwargs = {} # TODO write function to get those
@@ -121,7 +155,8 @@ class GCEOSMIX(GCEOS):
 
 
 
-    def a_alpha_and_derivatives(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives(self, T, full=True, quick=True,
+                                pure_a_alphas=True):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives for an EOS with the Van der Waals mixing rules. Uses the
         parent class's interface to compute pure component values. Returns
@@ -146,6 +181,10 @@ class GCEOSMIX(GCEOS):
             If False, calculates and returns only `a_alpha`
         quick : bool, optional
             Only the quick variant is implemented; it is little faster anyhow
+        pure_a_alphas : bool, optional
+            Whether or not to recalculate the a_alpha terms of pure components
+            (for the case of mixtures only) which stay the same as the 
+            composition changes (i.e in a PT flash), [-]
         
         Returns
         -------
@@ -168,26 +207,29 @@ class GCEOSMIX(GCEOS):
         >>> a_alpha_ij = (1-kij)*sqrt(a_alpha_i(T)*a_alpha_j(T))
         >>> #diff(a_alpha_ij, T)
         >>> #diff(a_alpha_ij, T, T)
-        '''        
-        try:
-            # TODO do not compute derivatives if full=False
-            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = self.a_alpha_and_derivatives_vectorized(T, full=True)
-        except:
-            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
-            method_obj = super(type(self).__mro__[self.a_alpha_mro], self)
-            for i in self.cmps:
-                self.setup_a_alpha_and_derivatives(i, T=T)
-                # Abuse method resolution order to call the a_alpha_and_derivatives
-                # method of the original pure EOS
-                # -4 goes back from object, GCEOS, SINGLEPHASEEOS, up to GCEOSMIX
-                # 
-                ds = method_obj.a_alpha_and_derivatives(T)
-                a_alphas.append(ds[0])
-                da_alpha_dTs.append(ds[1])
-                d2a_alpha_dT2s.append(ds[2])
-            self.cleanup_a_alpha_and_derivatives()
-            
-        self.a_alphas, self.da_alpha_dTs, self.d2a_alpha_dT2s = a_alphas, da_alpha_dTs, d2a_alpha_dT2s
+        '''
+        if pure_a_alphas:
+            try:
+                # TODO do not compute derivatives if full=False
+                a_alphas, da_alpha_dTs, d2a_alpha_dT2s = self.a_alpha_and_derivatives_vectorized(T, full=True)
+            except:
+                a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
+                method_obj = super(type(self).__mro__[self.a_alpha_mro], self)
+                for i in self.cmps:
+                    self.setup_a_alpha_and_derivatives(i, T=T)
+                    # Abuse method resolution order to call the a_alpha_and_derivatives
+                    # method of the original pure EOS
+                    # -4 goes back from object, GCEOS, SINGLEPHASEEOS, up to GCEOSMIX
+                    # 
+                    ds = method_obj.a_alpha_and_derivatives_pure(T)
+                    a_alphas.append(ds[0])
+                    da_alpha_dTs.append(ds[1])
+                    d2a_alpha_dT2s.append(ds[2])
+                self.cleanup_a_alpha_and_derivatives()
+                
+            self.a_alphas, self.da_alpha_dTs, self.d2a_alpha_dT2s = a_alphas, da_alpha_dTs, d2a_alpha_dT2s
+        else:
+            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = self.a_alphas, self.da_alpha_dTs, self.d2a_alpha_dT2s
         
         if not IS_PYPY and self.N > 20:
             return self.a_alpha_and_derivatives_numpy(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=full, quick=quick)
@@ -528,16 +570,17 @@ class GCEOSMIX(GCEOS):
             if xs is None:
                 xs = self.zs
             if hasattr(self, 'Z_l'):
-                self.phis_l = self.fugacity_coefficients(self.Z_l, zs=xs)
+                self.lnphis_l = self.fugacity_coefficients(self.Z_l, zs=xs)
+                self.phis_l = [exp(i) for i in self.lnphis_l]
                 self.fugacities_l = [phi*x*P for phi, x in zip(self.phis_l, xs)]
-                self.lnphis_l = [log(i) for i in self.phis_l]
+
         if self.phase in ('g', 'l/g'):
             if ys is None:
                 ys = self.zs
             if hasattr(self, 'Z_g'):
-                self.phis_g = self.fugacity_coefficients(self.Z_g, zs=ys)
+                self.lnphis_g = self.fugacity_coefficients(self.Z_g, zs=ys)
+                self.phis_g = [exp(i) for i in self.lnphis_g]
                 self.fugacities_g = [phi*y*P for phi, y in zip(self.phis_g, ys)]
-                self.lnphis_g = [log(i) for i in self.phis_g]
 
 
     def eos_fugacities_lowest_Gibbs(self):        
@@ -653,13 +696,13 @@ class GCEOSMIX(GCEOS):
            -Testing Algorithm in the Reduction Method." AIChE Journal 52, no. 
            8 (August 1, 2006): 2909-20.
         '''
-        z_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
-        y_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
+        z_log_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
+        y_log_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
         
         tot = 0
-        for yi, phi_yi, zi, phi_zi in zip(ys, y_fugacity_coefficients, zs, z_fugacity_coefficients):
-            di = log(zi) + log(phi_zi)
-            tot += yi*(log(yi) + log(phi_yi) - di)
+        for yi, phi_yi, zi, phi_zi in zip(ys, y_log_fugacity_coefficients, zs, z_log_fugacity_coefficients):
+            di = log(zi) + phi_zi
+            tot += yi*(log(yi) + phi_yi - di)
         return tot*R*self.T
     
     def Stateva_Tsvetkov_TPDF(self, Zz, Zy, zs, ys):
@@ -716,16 +759,16 @@ class GCEOSMIX(GCEOS):
            Problem. Application to Vapor-Liquid-Liquid Systems." The Canadian
            Journal of Chemical Engineering 72, no. 4 (August 1, 1994): 722-34.
         '''
-        z_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
-        y_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
+        z_log_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
+        y_log_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
         
         kis = []
-        for yi, phi_yi, zi, phi_zi in zip(ys, y_fugacity_coefficients, zs, z_fugacity_coefficients):
-            di = log(zi*phi_zi)
+        for yi, phi_yi, zi, phi_zi in zip(ys, y_log_fugacity_coefficients, zs, z_log_fugacity_coefficients):
+            di = log(zi) + phi_zi
             try:
-                ki = log(yi*phi_yi) - di
+                ki = phi_yi + log(yi) - di
             except ValueError:
-                ki = log(1e-200*phi_yi) - di
+                ki = phi_yi + log(1e-200) - di
             kis.append(ki)
         kis.append(kis[0])
 
@@ -737,14 +780,14 @@ class GCEOSMIX(GCEOS):
 
     def d_TPD_dy(self, Zz, Zy, zs, ys):
         # The gradient should be - for all variables
-        z_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
-        y_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
+        z_log_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
+        y_log_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
         gradient = []
-        for yi, phi_yi, zi, phi_zi in zip(ys, y_fugacity_coefficients, zs, z_fugacity_coefficients):
-            hi = di = log(zi) + log(phi_zi) # same as di
-            k = log(yi) + log(phi_yi) - hi
+        for yi, phi_yi, zi, phi_zi in zip(ys, y_log_fugacity_coefficients, zs, z_log_fugacity_coefficients):
+            hi = di = log(zi) + phi_zi # same as di
+            k = log(yi) + phi_yi - hi
             Yi = exp(-k)*yi
-            gradient.append(log(phi_yi) + log(Yi) - di)
+            gradient.append(phi_yi + log(Yi) - di)
         return gradient
 
     def d_TPD_Michelson_modified(self, Zz, Zy, zs, alphas):
@@ -803,29 +846,29 @@ class GCEOSMIX(GCEOS):
         '''
         Ys = [(alpha/2.)**2 for alpha in alphas]
         ys = normalize(Ys)
-        z_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
-        y_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
+        z_log_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
+        y_log_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
         tot = 0
-        for Yi, phi_yi, zi, phi_zi in zip(Ys, y_fugacity_coefficients, zs, z_fugacity_coefficients):
-            di = log(zi) + log(phi_zi)
+        for Yi, phi_yi, zi, phi_zi in zip(Ys, y_log_fugacity_coefficients, zs, z_log_fugacity_coefficients):
+            di = log(zi) + phi_zi
             if Yi != 0:
-                diff = Yi**0.5*(log(Yi) + log(phi_yi) - di)
+                diff = Yi**0.5*(log(Yi) + phi_yi - di)
                 tot += abs(diff)
         return tot
 
 
     def TDP_Michelsen(self, Zz, Zy, zs, ys):
         
-        z_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
-        y_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
+        z_log_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
+        y_log_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
         tot = 0
-        for yi, phi_yi, zi, phi_zi in zip(ys, y_fugacity_coefficients, zs, z_fugacity_coefficients):
-            hi = di = log(zi) + log(phi_zi) # same as di
+        for yi, phi_yi, zi, phi_zi in zip(ys, y_log_fugacity_coefficients, zs, z_log_fugacity_coefficients):
+            hi = di = log(zi) + phi_zi # same as di
             
-            k = log(yi) + log(phi_yi) - hi
+            k = log(yi) + phi_yi - hi
             # Michaelsum doesn't do the exponents.
             Yi = exp(-k)*yi
-            tot += Yi*(log(Yi) + log(phi_yi) - hi - 1.)
+            tot += Yi*(log(Yi) + phi_yi - hi - 1.)
             
         return 1. + tot
 
@@ -836,13 +879,13 @@ class GCEOSMIX(GCEOS):
         # Ys only need to be positive
         ys = normalize(Ys)
         
-        z_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
-        y_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
+        z_log_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
+        y_log_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
         
         tot = 0
-        for Yi, phi_yi, yi, zi, phi_zi in zip(Ys, y_fugacity_coefficients, ys, zs, z_fugacity_coefficients):
-            hi = di = log(zi) + log(phi_zi) # same as di
-            tot += Yi*(log(Yi) + log(phi_yi) - di - 1.)
+        for Yi, phi_yi, yi, zi, phi_zi in zip(Ys, y_log_fugacity_coefficients, ys, zs, z_log_fugacity_coefficients):
+            hi = di = log(zi) + phi_zi # same as di
+            tot += Yi*(log(Yi) + phi_yi - di - 1.)
         return (1. + tot)
     # Another formulation, returns the same answers.
 #            tot += yi*(log(sum(Ys)) +log(yi)+ log(phi_yi) - di - 1.)
@@ -874,12 +917,6 @@ class GCEOSMIX(GCEOS):
         # -4 goes back from object, GCEOS
         return super(type(self).__mro__[-3], self).solve_T(P=P, V=V, quick=quick)
 
-    def to_TP_zs(self, T, P, zs):
-#        print(T, self.T, P, self.P, zs, self.zs)
-        if T != self.T or P != self.P or zs != self.zs:
-            return self.__class__(T=T, P=P, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, zs=zs, **self.kwargs)
-        else:
-            return self
     
     def _err_VL_jacobian(self, lnKsVF, T, P, zs, near_critical=False):
         lnKs = lnKsVF[:-1]
@@ -1058,16 +1095,24 @@ class GCEOSMIX(GCEOS):
 
         for i in range(maxiter):
             if not near_critical:
-                eos_g = self.to_TP_zs(T=self.T, P=self.P, zs=ys)
-                eos_l = self.to_TP_zs(T=self.T, P=self.P, zs=xs)
+                eos_g = self.to_TP_zs_fast(T=self.T, P=self.P, zs=ys, only_l=False, only_g=True)
+                eos_l = self.to_TP_zs_fast(T=self.T, P=self.P, zs=xs, only_l=True, only_g=False)
+                eos_g.fugacities()
+                eos_l.fugacities()
+#                eos_g = self.to_TP_zs(T=self.T, P=self.P, zs=ys)
+#                eos_l = self.to_TP_zs(T=self.T, P=self.P, zs=xs)
     
                 lnphis_g = eos_g.lnphis_g#fugacity_coefficients(eos_g.Z_g, ys)
                 lnphis_l = eos_l.lnphis_l#fugacity_coefficients(eos_l.Z_l, xs)
                 fugacities_l = eos_l.fugacities_l
                 fugacities_g = eos_g.fugacities_g
             else:
-                eos_g = self.to_TP_zs(T=self.T, P=self.P, zs=ys)
-                eos_l = self.to_TP_zs(T=self.T, P=self.P, zs=xs)
+                eos_g = self.to_TP_zs_fast(T=self.T, P=self.P, zs=ys, only_l=False, only_g=True)
+                eos_l = self.to_TP_zs_fast(T=self.T, P=self.P, zs=xs, only_l=True, only_g=False)
+                eos_g.fugacities()
+                eos_l.fugacities()
+#                eos_g = self.to_TP_zs(T=self.T, P=self.P, zs=ys)
+#                eos_l = self.to_TP_zs(T=self.T, P=self.P, zs=xs)
                 if 0:
                     if hasattr(eos_g, 'lnphis_g') and hasattr(eos_g, 'lnphis_l'):
                         if Z_l_prev is not None and Z_g_prev is not None:
@@ -1203,8 +1248,22 @@ class GCEOSMIX(GCEOS):
                     break
             
             # Claimed error function in CONVENTIONAL AND RAPID FLASH CALCULATIONS FOR THE SOAVE-REDLICH-KWONG AND PENG-ROBINSON EQUATIONS OF STATE
-            err2 = sum([(l/g-1.0)**2  for l, g in zip(fugacities_l, fugacities_g)]) # Suggested tolerance 1e-15
+            
+#            err3 = 0.0
+#            for l, g, xi, yi in zip(lnphis_l, lnphis_g, xs_new, ys_new):
+#                print(xi/yi, exp(l-g), l-g)
+#                err_i = (expm1(l-g)*xi/yi) - 1.0 # Note: expm1 is slower
+#                print(err_i, err_i*err_i, 'hi')
+#                err3 += err_i*err_i
+            
+#            err2 = sum([(exp(l-g)-1.0)**2  ]) # Suggested tolerance 1e-15
+            err2 = 0.0
+            for l, g in zip(fugacities_l, fugacities_g):
+                err_i = (l/g-1.0)
+                err2 += err_i*err_i
+           # Suggested tolerance 1e-15
             # This is a better metric because it does not involve  hysterisis
+#            print(err3, err2)
             
             err = (sum([abs(x_new - x_old) for x_new, x_old in zip(xs_new, xs)]) +
                   sum([abs(y_new - y_old) for y_new, y_old in zip(ys_new, ys)]))
@@ -1522,6 +1581,9 @@ class PRMIX(GCEOSMIX, PR):
     '''
     a_alpha_mro = -4
     eos_pure = PR
+    
+    nonstate_constants_specific = ('kappas', )
+    
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None):
         self.N = N = len(Tcs)
         self.cmps = range(self.N)
@@ -1550,7 +1612,13 @@ class PRMIX(GCEOSMIX, PR):
 
         self.solve()
         self.fugacities()
-    
+
+    def fast_init_specific(self):
+        self.b = b = sum([bi*zi for bi, zi in zip(self.bs, self.zs)])
+        self.delta = 2.0*b
+        self.epsilon = -b*b
+
+
     def a_alpha_and_derivatives_vectorized(self, T, full=False, quick=True):
         if not full:
             a_alphas = []
@@ -1620,8 +1688,8 @@ class PRMIX(GCEOSMIX, PR):
         
         Returns
         -------
-        phis : float
-            Fugacity coefficient for each species, [-]
+        log_phis : float
+            Log fugacity coefficient for each species, [-]
                          
         References
         ----------
@@ -1660,7 +1728,7 @@ class PRMIX(GCEOSMIX, PR):
             # Temp
             if t3 > 700.0:
                 t3 = 700
-            phis.append(exp(t3))
+            phis.append(t3)
             fugacity_sum_terms.append(sum_term)
         self.fugacity_sum_terms = fugacity_sum_terms
         return phis
@@ -1909,6 +1977,7 @@ class SRKMIX(GCEOSMIX, SRK):
     '''
     a_alpha_mro = -4
     eos_pure = SRK
+    nonstate_constants_specific = ('ms',)
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None):
         self.N = len(Tcs)
         self.cmps = range(self.N)
@@ -1932,6 +2001,10 @@ class SRKMIX(GCEOSMIX, SRK):
 
         self.solve()
         self.fugacities()
+
+    def fast_init_specific(self):
+        self.b = b = sum([bi*zi for bi, zi in zip(self.bs, self.zs)])
+        self.delta = self.b
 
     def setup_a_alpha_and_derivatives(self, i, T=None):
         r'''Sets `a`, `m`, and `Tc` for a specific component before the 
@@ -1970,9 +2043,9 @@ class SRKMIX(GCEOSMIX, SRK):
         
         Returns
         -------
-        phis : float
-            Fugacity coefficient for each species, [-]
-                         
+        log_phis : float
+            Log fugacity coefficient for each species, [-]
+        
         References
         ----------
         .. [1] Soave, Giorgio. "Equilibrium Constants from a Modified 
@@ -1999,7 +2072,7 @@ class SRKMIX(GCEOSMIX, SRK):
             l = self.a_alpha_ijs[i]
             sum_term = sum([zs[j]*l[j] for j in self.cmps])
             t2 = A_B*(Bi/B - two_over_a_alpha*sum_term)
-            phis.append(exp(t1 + t2*t3))
+            phis.append(t1 + t2*t3)
             fugacity_sum_terms.append(sum_term)
         self.fugacity_sum_terms = fugacity_sum_terms
         return phis
@@ -2262,6 +2335,9 @@ class VDWMIX(GCEOSMIX, VDW):
     '''
     a_alpha_mro = -4
     eos_pure = VDW
+    
+    nonstate_constants_specific = tuple()
+    
     def __init__(self, Tcs, Pcs, zs, kijs=None, T=None, P=None, V=None, 
                  omegas=None):
         self.N = len(Tcs)
@@ -2284,6 +2360,9 @@ class VDWMIX(GCEOSMIX, VDW):
         self.omegas = omegas
         self.solve()
         self.fugacities()
+
+    def fast_init_specific(self):
+        self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
         
     def setup_a_alpha_and_derivatives(self, i, T=None):
         r'''Sets `a` for a specific component before the 
@@ -2323,8 +2402,8 @@ class VDWMIX(GCEOSMIX, VDW):
         
         Returns
         -------
-        phis : float
-            Fugacity coefficient for each species, [-]
+        log_phis : float
+            Log fugacity coefficient for each species, [-]
                          
         References
         ----------
@@ -2340,7 +2419,7 @@ class VDWMIX(GCEOSMIX, VDW):
         a_alpha = self.a_alpha
         for ai, bi in zip(self.ais, self.bs):
             phi = (bi*t3 - t1 - t2*(a_alpha*ai)**0.5)
-            phis.append(exp(phi))
+            phis.append(phi)
         return phis
 
     def d_lnphis_dT(self, Z, dZ_dT, zs):
@@ -2496,6 +2575,7 @@ class PRSVMIX(PRMIX, PRSV):
     '''
     a_alpha_mro = -5
     eos_pure = PRSV
+    nonstate_constants_specific = ('kappa0s', 'kappa1s', 'kappas')
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None, kappa1s=None):
         self.N = len(Tcs)
         self.cmps = range(self.N)
@@ -2509,7 +2589,7 @@ class PRSVMIX(PRMIX, PRSV):
         self.kijs = kijs
 
         if kappa1s is None:
-            kappa1s = [0 for i in self.cmps]
+            kappa1s = [0.0 for i in self.cmps]
         self.kwargs = {'kijs': kijs, 'kappa1s': kappa1s}
         self.T = T
         self.P = P
@@ -2536,6 +2616,7 @@ class PRSVMIX(PRMIX, PRSV):
         self.solve()
 
         self.fugacities()
+
 
     def a_alpha_and_derivatives_vectorized(self, T, full=False, quick=True):
         raise NotImplementedError("Not Implemented")
@@ -2638,6 +2719,7 @@ class PRSV2MIX(PRMIX, PRSV2):
     '''
     a_alpha_mro = -5
     eos_pure = PRSV2
+    nonstate_constants_specific = ('kappa1s', 'kappa2s', 'kappa3s', 'kappa0s', 'kappas')
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  kappa1s=None, kappa2s=None, kappa3s=None):
         self.N = len(Tcs)
@@ -2792,6 +2874,7 @@ class TWUPRMIX(PRMIX, TWUPR):
     '''
     a_alpha_mro = -5
     eos_pure = TWUPR
+    
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None):
         self.N = len(Tcs)
         self.cmps = range(self.N)
@@ -3025,6 +3108,7 @@ class APISRKMIX(SRKMIX, APISRK):
     '''
     a_alpha_mro = -5
     eos_pure = APISRK
+    nonstate_constants_specific = ('S1s', 'S2s')
     def __init__(self, Tcs, Pcs, zs, omegas=None, kijs=None, T=None, P=None, V=None,
                  S1s=None, S2s=None):
         self.N = len(Tcs)
@@ -3034,7 +3118,7 @@ class APISRKMIX(SRKMIX, APISRK):
         self.omegas = omegas
         self.zs = zs
         if kijs is None:
-            kijs = [[0]*self.N for i in range(self.N)]
+            kijs = [[0.0]*self.N for i in range(self.N)]
         self.kijs = kijs
         self.kwargs = {'kijs': kijs}
         self.T = T
@@ -3051,7 +3135,7 @@ class APISRKMIX(SRKMIX, APISRK):
         else:
             self.S1s = S1s
         if S2s is None:
-            S2s = [0 for i in self.cmps]
+            S2s = [0.0 for i in self.cmps]
         self.S2s = S2s
         
         self.ais = [self.c1*R*R*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]

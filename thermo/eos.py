@@ -105,7 +105,7 @@ class GCEOS(object):
             raise Exception('Either T and P, or T and V, or P and V are required')
 
 
-    def solve(self):
+    def solve(self, pure_a_alphas=True, only_l=False, only_g=False):
         '''First EOS-generic method; should be called by all specific EOSs.
         For solving for `T`, the EOS must provide the method `solve_T`.
         For all cases, the EOS must provide `a_alpha_and_derivatives`.
@@ -116,17 +116,17 @@ class GCEOS(object):
         if self.V is not None:
             if self.P is not None:
                 self.T = self.solve_T(self.P, self.V)
-                self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2 = self.a_alpha_and_derivatives(self.T)
+                self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2 = self.a_alpha_and_derivatives(self.T, pure_a_alphas=pure_a_alphas)
             else:
-                self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2 = self.a_alpha_and_derivatives(self.T)
+                self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2 = self.a_alpha_and_derivatives(self.T, pure_a_alphas=pure_a_alphas)
                 self.P = R*self.T/(self.V-self.b) - self.a_alpha/(self.V*self.V + self.delta*self.V + self.epsilon)
             Vs = [self.V, 1.0j, 1.0j]
         else:
-            self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2 = self.a_alpha_and_derivatives(self.T)
+            self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2 = self.a_alpha_and_derivatives(self.T, pure_a_alphas=pure_a_alphas)
             self.raw_volumes = Vs = self.volume_solutions(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
-        self.set_from_PT(Vs)
+        self.set_from_PT(Vs, only_l=only_l, only_g=only_g)
 
-    def set_from_PT(self, Vs):
+    def set_from_PT(self, Vs, only_l=False, only_g=False):
         '''Counts the number of real volumes in `Vs`, and determines what to do.
         If there is only one real volume, the method 
         `set_properties_from_solution` is called with it. If there are
@@ -138,6 +138,12 @@ class GCEOS(object):
         ----------
         Vs : list[float]
             Three possible molar volumes, [m^3/mol]
+        only_l : bool
+            When true, if there is a liquid and a vapor root, only the liquid
+            root (and properties) will be set.
+        only_g : bool
+            When true, if there is a liquid and a vapor root, only the vapor
+            root (and properties) will be set.
         
         Notes
         -----
@@ -158,15 +164,17 @@ class GCEOS(object):
         elif good_root_count > 1:
             V_l, V_g = min(good_roots), max(good_roots)
             
-            self.set_properties_from_solution(self.T, self.P, V_l, self.b, 
-                                               self.delta, self.epsilon,
-                                               self.a_alpha, self.da_alpha_dT,
-                                               self.d2a_alpha_dT2,
-                                               force_l=True)
-            self.set_properties_from_solution(self.T, self.P, V_g, self.b, 
-                                               self.delta, self.epsilon,
-                                               self.a_alpha, self.da_alpha_dT,
-                                               self.d2a_alpha_dT2, force_g=True)
+            if not only_g:
+                self.set_properties_from_solution(self.T, self.P, V_l, self.b, 
+                                                   self.delta, self.epsilon,
+                                                   self.a_alpha, self.da_alpha_dT,
+                                                   self.d2a_alpha_dT2,
+                                                   force_l=True)
+            if not only_l:
+                self.set_properties_from_solution(self.T, self.P, V_g, self.b, 
+                                                   self.delta, self.epsilon,
+                                                   self.a_alpha, self.da_alpha_dT,
+                                                   self.d2a_alpha_dT2, force_g=True)
             self.phase = 'l/g'
         else:
             # Even in the case of three real roots, it is still the min/max that make sense
@@ -449,7 +457,8 @@ class GCEOS(object):
             self.Cp_dep_g, self.Cv_dep_g = Cp_dep, Cv_dep
             return 'g'
 
-    def a_alpha_and_derivatives(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives(self, T, full=True, quick=True,
+                                pure_a_alphas=True):
         '''Dummy method to calculate `a_alpha` and its first and second
         derivatives. Should be implemented with the same function signature in 
         each EOS variant; this only raises a NotImplemented Exception.
@@ -462,10 +471,14 @@ class GCEOS(object):
         T : float
             Temperature, [K]
         full : bool, optional
-            If False, calculates and returns only `a_alpha`
+            If False, calculates and returns only `a_alpha`, [-]
         quick : bool, optional
             Whether to use a SymPy cse-derived expression (3x faster) or 
-            individual formulas
+            individual formulas, [-]
+        pure_a_alphas : bool, optional
+            Whether or not to recalculate the a_alpha terms of pure components
+            (for the case of mixtures only) which stay the same as the 
+            composition changes (i.e in a PT flash), [-]
         
         Returns
         -------
@@ -478,9 +491,12 @@ class GCEOS(object):
             Second temperature derivative of coefficient calculated by  
             EOS-specific method, [J^2/mol^2/Pa/K**2]
         '''
+        return self.a_alpha_and_derivatives_pure(T=T, full=full, quick=quick)
+    
+    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
         raise NotImplemented('a_alpha and its first and second derivatives \
 should be calculated by this method, in a user subclass.')
-    
+
     def solve_T(self, P, V, quick=True):
         '''Generic method to calculate `T` from a specified `P` and `V`.
         Provides SciPy's `newton` solver, and iterates to solve the general
@@ -2179,7 +2195,7 @@ class PR(GCEOS):
         
         self.solve()
 
-    def a_alpha_and_derivatives(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives for this EOS. Returns `a_alpha`, `da_alpha_dT`, and 
         `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more 
@@ -2553,7 +2569,7 @@ class PRSV(PR):
                 return P_calc - P
         return newton(to_solve, Tc*0.5)
 
-    def a_alpha_and_derivatives(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives for this EOS. Returns `a_alpha`, `da_alpha_dT`, and 
         `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more 
@@ -2750,7 +2766,7 @@ class PRSV2(PR):
         return newton(to_solve, Tc*0.5)
 
 
-    def a_alpha_and_derivatives(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives for this EOS. Returns `a_alpha`, `da_alpha_dT`, and 
         `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more 
@@ -2893,7 +2909,7 @@ class VDW(GCEOS):
         self.Vc = self.Zc*R*self.Tc/self.Pc
         self.solve()
 
-    def a_alpha_and_derivatives(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives for this EOS. Returns `a_alpha`, `da_alpha_dT`, and 
         `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more 
@@ -3058,7 +3074,7 @@ class RK(GCEOS):
         self.Vc = self.Zc*R*self.Tc/self.Pc
         self.solve()
 
-    def a_alpha_and_derivatives(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives for this EOS. Returns `a_alpha`, `da_alpha_dT`, and 
         `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more 
@@ -3210,7 +3226,7 @@ class SRK(GCEOS):
         self.delta = self.b
         self.solve()
 
-    def a_alpha_and_derivatives(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives for this EOS. Returns `a_alpha`, `da_alpha_dT`, and 
         `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more 
@@ -3389,7 +3405,7 @@ class APISRK(SRK):
         
         self.solve()
 
-    def a_alpha_and_derivatives(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives for this EOS. Returns `a_alpha`, `da_alpha_dT`, and 
         `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more 
@@ -3568,7 +3584,7 @@ class TWUPR(PR):
         self.solve_T = super(PR, self).solve_T        
         self.solve()
 
-    def a_alpha_and_derivatives(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives for this EOS. Returns `a_alpha`, `da_alpha_dT`, and 
         `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more 
@@ -3772,7 +3788,7 @@ class TWUSRK(SRK):
         self.solve_T = super(SRK, self).solve_T
         self.solve()
         
-    def a_alpha_and_derivatives(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives for this EOS. Returns `a_alpha`, `da_alpha_dT`, and 
         `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more 

@@ -165,9 +165,9 @@ def test_PR_quick():
     
     # Test of a_alphas
     a_alphas = [3.801262003434438, -0.006647930535193546, 1.6930139095364687e-05]
-    a_alphas_fast = eos.a_alpha_and_derivatives(299, quick=True)
+    a_alphas_fast = eos.a_alpha_and_derivatives_pure(299, quick=True)
     assert_allclose(a_alphas, a_alphas_fast)
-    a_alphas_slow = eos.a_alpha_and_derivatives(299, quick=False)
+    a_alphas_slow = eos.a_alpha_and_derivatives_pure(299, quick=False)
     assert_allclose(a_alphas, a_alphas_slow)
     
     # PR back calculation for T
@@ -200,7 +200,7 @@ def test_PR_quick():
     # Exception tests
     a = GCEOS()        
     with pytest.raises(Exception):
-        a.a_alpha_and_derivatives(T=300)
+        a.a_alpha_and_derivatives_pure(T=300)
         
     with pytest.raises(Exception):
         PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299)
@@ -515,10 +515,10 @@ def test_PRSV():
     # Test of a_alphas
     a_alphas = [3.812985698311453, -0.006976903474851659, 2.0026560811043733e-05]
     
-    a_alphas_fast = eos.a_alpha_and_derivatives(299)
+    a_alphas_fast = eos.a_alpha_and_derivatives_pure(299)
     assert_allclose(a_alphas, a_alphas_fast)
     
-    a_alphas_fast = eos.a_alpha_and_derivatives(299, quick=False)
+    a_alphas_fast = eos.a_alpha_and_derivatives_pure(299, quick=False)
     assert_allclose(a_alphas, a_alphas_fast)
     
     # PR back calculation for T
@@ -554,9 +554,9 @@ def test_PRSV2():
     # Test of PRSV2 a_alphas
     a_alphas = [3.80542021117275, -0.006873163375791913, 2.3078023705053787e-05]
     
-    a_alphas_fast = eos.a_alpha_and_derivatives(299)
+    a_alphas_fast = eos.a_alpha_and_derivatives_pure(299)
     assert_allclose(a_alphas, a_alphas_fast)
-    a_alphas_fast = eos.a_alpha_and_derivatives(299, quick=False)
+    a_alphas_fast = eos.a_alpha_and_derivatives_pure(299, quick=False)
     assert_allclose(a_alphas, a_alphas_fast)
     
     # PSRV2 back calculation for T
@@ -584,7 +584,7 @@ def test_VDW():
     
     # Test of a_alphas
     a_alphas = [2.4841053385218554, 0, 0]
-    a_alphas_fast = eos.a_alpha_and_derivatives(299)
+    a_alphas_fast = eos.a_alpha_and_derivatives_pure(299)
     assert_allclose(a_alphas, a_alphas_fast)
     
     # Back calculation for P
@@ -640,7 +640,7 @@ def test_RK_quick():
     # Test of a_alphas
     a_alphas = [3.279649770989796, -0.005484364165534776, 2.7513532603017274e-05]
     
-    a_alphas_fast = eos.a_alpha_and_derivatives(299)
+    a_alphas_fast = eos.a_alpha_and_derivatives_pure(299)
     assert_allclose(a_alphas, a_alphas_fast)
     
     # PR back calculation for T
@@ -729,7 +729,7 @@ def test_SRK_quick():
     
     # Test of a_alphas
     a_alphas = [3.72718144448615, -0.007332994130304654, 1.9476133436500582e-05]
-    a_alphas_fast = eos.a_alpha_and_derivatives(299)
+    a_alphas_fast = eos.a_alpha_and_derivatives_pure(299)
     assert_allclose(a_alphas, a_alphas_fast)
     
     # PR back calculation for T
@@ -827,9 +827,9 @@ def test_APISRK_quick():
     
     # Test of a_alphas
     a_alphas = [3.727476773890392, -0.007334914894987986, 1.948255305988373e-05]
-    a_alphas_fast = eos.a_alpha_and_derivatives(299)
+    a_alphas_fast = eos.a_alpha_and_derivatives_pure(299)
     assert_allclose(a_alphas, a_alphas_fast)
-    a_alphas_slow = eos.a_alpha_and_derivatives(299, quick=False)
+    a_alphas_slow = eos.a_alpha_and_derivatives_pure(299, quick=False)
     assert_allclose(a_alphas, a_alphas_slow)
 
     # SRK back calculation for T
@@ -890,9 +890,9 @@ def test_TWUPR_quick():
     
     # Test of a_alphas
     a_alphas = [3.8069848647566698, -0.006971714700883658, 2.366703486824857e-05]
-    a_alphas_fast = eos.a_alpha_and_derivatives(299)
+    a_alphas_fast = eos.a_alpha_and_derivatives_pure(299)
     assert_allclose(a_alphas, a_alphas_fast)
-    a_alphas_slow = eos.a_alpha_and_derivatives(299, quick=False)
+    a_alphas_slow = eos.a_alpha_and_derivatives_pure(299, quick=False)
     assert_allclose(a_alphas, a_alphas_slow)
 
     # back calculation for T
@@ -950,9 +950,9 @@ def test_TWUSRK_quick():
     
     # Test of a_alphas
     a_alphas = [3.7196696151053654, -0.00726972623757774, 2.305590221826195e-05]
-    a_alphas_fast = eos.a_alpha_and_derivatives(299)
+    a_alphas_fast = eos.a_alpha_and_derivatives_pure(299)
     assert_allclose(a_alphas, a_alphas_fast)
-    a_alphas_slow = eos.a_alpha_and_derivatives(299, quick=False)
+    a_alphas_slow = eos.a_alpha_and_derivatives_pure(299, quick=False)
     assert_allclose(a_alphas, a_alphas_slow)
 
     # back calculation for T
