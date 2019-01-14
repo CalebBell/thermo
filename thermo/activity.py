@@ -1013,9 +1013,9 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
         return flash_inner_loop_list_methods(l)
     elif Method is None:
         l = len(zs)
-        Method = FLASH_INNER_ANALYTICAL if l < 4 else (FLASH_INNER_NUMPY if (not IS_PYPY and l >= 10) else FLASH_INNER_SECANT)
+        Method = FLASH_INNER_ANALYTICAL if l < 4 else (FLASH_INNER_NUMPY if (not IS_PYPY and l >= 10) else FLASH_INNER_SECANT)    
     if Method == FLASH_INNER_SECANT:
-        return Rachford_Rice_solution(zs, Ks, limit)
+        return Rachford_Rice_solution(zs, Ks, limit=limit)
     elif Method == FLASH_INNER_ANALYTICAL:
         l = len(zs)
         if l == 2:

@@ -79,26 +79,51 @@ class GCEOSMIX(GCEOS):
     '''
     nonstate_constants = ('N', 'cmps', 'Tcs', 'Pcs', 'omegas', 'kijs', 'kwargs', 'ais', 'bs')
     
-    def fast_copy_base(self, a_alphas=False):
-        new = self.__class__.__new__(self.__class__)
-        for attr in self.nonstate_constants:
-            setattr(new, attr, getattr(self, attr))
-        for attr in self.nonstate_constants_specific:
-            setattr(new, attr, getattr(self, attr))
-        if a_alphas:
-            new.a_alphas = self.a_alphas
-            new.da_alpha_dTs = self.da_alpha_dTs
-            new.d2a_alpha_dT2s = self.d2a_alpha_dT2s
-        return new
+#    def fast_copy_base(self, a_alphas=False):
+#        new = self.__class__.__new__(self.__class__)
+##        for attr in self.nonstate_constants:
+##            setattr(new, attr, getattr(self, attr))
+#        new.N = self.N
+#        new.cmps = self.cmps
+#        new.Tcs = self.Tcs
+#        new.Pcs = self.Pcs
+#        new.omegas = self.omegas
+#        new.kijs = self.kijs
+#        new.kwargs = self.kwargs
+#        new.ais = self.ais
+#        new.bs = self.bs
+#
+##        for attr in self.nonstate_constants_specific:
+##            setattr(new, attr, getattr(self, attr))
+#        if a_alphas:
+#            new.a_alphas = self.a_alphas
+#            new.da_alpha_dTs = self.da_alpha_dTs
+#            new.d2a_alpha_dT2s = self.d2a_alpha_dT2s
+#        return new
     
     def to_TP_zs_fast(self, T, P, zs, only_l=False, only_g=False):
         copy_alphas = T == self.T
-        new = self.fast_copy_base(a_alphas=copy_alphas)
+        
+        new = self.__class__.__new__(self.__class__)
+        new.N = self.N
+        new.cmps = self.cmps
+        new.Tcs = self.Tcs
+        new.Pcs = self.Pcs
+        new.omegas = self.omegas
+        new.kijs = self.kijs
+        new.kwargs = self.kwargs
+        new.ais = self.ais
+        new.bs = self.bs
+        if copy_alphas:
+            new.a_alphas = self.a_alphas
+            new.da_alpha_dTs = self.da_alpha_dTs
+            new.d2a_alpha_dT2s = self.d2a_alpha_dT2s
+        
         new.T = T
         new.P = P
         new.V = None
         new.zs = zs
-        new.fast_init_specific()
+        new.fast_init_specific(self)
         new.solve(pure_a_alphas=(not copy_alphas), only_l=only_l, only_g=only_g)
         return new
 
@@ -566,21 +591,19 @@ class GCEOSMIX(GCEOS):
            Butterworth-Heinemann, 1985.
         '''
         P = self.P
-        if self.phase in ('l', 'l/g'):
+        if self.phase in ('l', 'l/g') and hasattr(self, 'Z_l'):
             if xs is None:
                 xs = self.zs
-            if hasattr(self, 'Z_l'):
-                self.lnphis_l = self.fugacity_coefficients(self.Z_l, zs=xs)
-                self.phis_l = [exp(i) for i in self.lnphis_l]
-                self.fugacities_l = [phi*x*P for phi, x in zip(self.phis_l, xs)]
+            self.lnphis_l = self.fugacity_coefficients(self.Z_l, zs=xs)
+            self.phis_l = [exp(i) for i in self.lnphis_l]
+            self.fugacities_l = [phi*x*P for phi, x in zip(self.phis_l, xs)]
 
-        if self.phase in ('g', 'l/g'):
+        if self.phase in ('g', 'l/g') and hasattr(self, 'Z_g'):
             if ys is None:
                 ys = self.zs
-            if hasattr(self, 'Z_g'):
-                self.lnphis_g = self.fugacity_coefficients(self.Z_g, zs=ys)
-                self.phis_g = [exp(i) for i in self.lnphis_g]
-                self.fugacities_g = [phi*y*P for phi, y in zip(self.phis_g, ys)]
+            self.lnphis_g = self.fugacity_coefficients(self.Z_g, zs=ys)
+            self.phis_g = [exp(i) for i in self.lnphis_g]
+            self.fugacities_g = [phi*y*P for phi, y in zip(self.phis_g, ys)]
 
 
     def eos_fugacities_lowest_Gibbs(self):        
@@ -1613,8 +1636,12 @@ class PRMIX(GCEOSMIX, PR):
         self.solve()
         self.fugacities()
 
-    def fast_init_specific(self):
-        self.b = b = sum([bi*zi for bi, zi in zip(self.bs, self.zs)])
+    def fast_init_specific(self, other):
+        self.kappas = other.kappas
+        b = 0.0
+        for bi, zi in zip(self.bs, self.zs):
+            b += bi*zi
+        self.b = b
         self.delta = 2.0*b
         self.epsilon = -b*b
 
@@ -2001,8 +2028,9 @@ class SRKMIX(GCEOSMIX, SRK):
 
         self.solve()
         self.fugacities()
-
-    def fast_init_specific(self):
+        
+    def fast_init_specific(self, other):
+        self.ms = other.ms
         self.b = b = sum([bi*zi for bi, zi in zip(self.bs, self.zs)])
         self.delta = self.b
 
@@ -2361,7 +2389,7 @@ class VDWMIX(GCEOSMIX, VDW):
         self.solve()
         self.fugacities()
 
-    def fast_init_specific(self):
+    def fast_init_specific(self, other):
         self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
         
     def setup_a_alpha_and_derivatives(self, i, T=None):
@@ -2618,6 +2646,19 @@ class PRSVMIX(PRMIX, PRSV):
         self.fugacities()
 
 
+
+    def fast_init_specific(self, other):
+        self.kappa0s = other.kappa0s
+        self.kappa1s = other.kappa1s
+        self.kappas = other.kappas
+        b = 0.0
+        for bi, zi in zip(self.bs, self.zs):
+            b += bi*zi
+        self.b = b
+        self.delta = 2.0*b
+        self.epsilon = -b*b
+
+
     def a_alpha_and_derivatives_vectorized(self, T, full=False, quick=True):
         raise NotImplementedError("Not Implemented")
 
@@ -2768,6 +2809,20 @@ class PRSV2MIX(PRMIX, PRSV2):
             self.kappas.append(kappa)
         self.solve()
         self.fugacities()
+
+    def fast_init_specific(self, other):
+        self.kappa0s = other.kappa0s
+        self.kappa1s = other.kappa1s
+        self.kappa2s = other.kappa2s
+        self.kappa3s = other.kappa3s
+        self.kappas = other.kappas
+        b = 0.0
+        for bi, zi in zip(self.bs, self.zs):
+            b += bi*zi
+        self.b = b
+        self.delta = 2.0*b
+        self.epsilon = -b*b
+
         
     def setup_a_alpha_and_derivatives(self, i, T=None):
         r'''Sets `a`, `kappa`, `kappa0`, `kappa1`, `kappa2`, `kappa3` and `Tc`
@@ -2812,7 +2867,7 @@ class TWUPRMIX(PRMIX, TWUPR):
 
         a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}
         
-	  b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
+	    b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
    
        \alpha_i = \alpha_i^{(0)} + \omega_i(\alpha_i^{(1)}-\alpha_i^{(0)})
        
@@ -2900,6 +2955,15 @@ class TWUPRMIX(PRMIX, TWUPR):
 
         self.solve()
         self.fugacities()
+
+    def fast_init_specific(self, other):
+        b = 0.0
+        for bi, zi in zip(self.bs, self.zs):
+            b += bi*zi
+        self.b = b
+        self.delta = 2.0*b
+        self.epsilon = -b*b
+
 
     def setup_a_alpha_and_derivatives(self, i, T=None):
         r'''Sets `a`, `omega`, and `Tc` for a specific component before the 
