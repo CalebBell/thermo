@@ -48,6 +48,90 @@ root_two_p1 = root_two + 1.0
 log_min = log(sys.float_info.min)
 
 
+def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs, 
+                                 kijs):
+    # For 44 components, takes 150 us in PyPy.
+    N = len(a_alphas)
+    cmps = range(N)
+    
+    da_alpha_dT, d2a_alpha_dT2 = 0.0, 0.0
+    
+    a_alpha_ijs = [[0.0]*N for _ in cmps]
+    a_alpha_i_roots = [a_alpha_i**0.5 for a_alpha_i in a_alphas]
+    
+    a_alpha_ij_roots = [[0.0]*N for _ in cmps]
+    for i in cmps:
+        kijs_i = kijs[i]
+        a_alpha_i = a_alphas[i]
+        a_alpha_ijs_is = a_alpha_ijs[i]
+        a_alpha_ij_roots_i = a_alpha_ij_roots[i]
+        for j in cmps:
+            if j < i:
+                continue
+            a_alpha_ij_roots_i[j] = a_alpha_i_roots[i]*a_alpha_i_roots[j]
+            a_alpha_ijs_is[j] = a_alpha_ijs[j][i] = (1. - kijs_i[j])*a_alpha_ij_roots_i[j]
+            
+    z_products = [[zs[i]*zs[j] for j in cmps] for i in cmps]
+
+    a_alpha = 0.0
+    for i in cmps:
+        a_alpha_ijs_i = a_alpha_ijs[i]
+        z_products_i = z_products[i]
+        for j in cmps:
+            if j < i:
+                continue
+            elif i != j:
+                a_alpha += 2.0*a_alpha_ijs_i[j]*z_products_i[j]
+            else:
+                a_alpha += a_alpha_ijs_i[j]*z_products_i[j]
+    
+    
+    da_alpha_dT_ijs = [[0.0]*N for _ in cmps]
+    
+    for i in cmps:
+        kijs_i = kijs[i]
+        a_alphai = a_alphas[i]
+        z_products_i = z_products[i]
+        da_alpha_dT_i = da_alpha_dTs[i]
+        d2a_alpha_dT2_i = d2a_alpha_dT2s[i]
+        a_alpha_ij_roots_i = a_alpha_ij_roots[i]
+        for j in cmps:
+            if j < i:
+                # skip the duplicates
+                continue
+            a_alphaj = a_alphas[j]
+            x0 = a_alphai*a_alphaj
+            x0_05 = a_alpha_ij_roots_i[j]
+            zi_zj = z_products_i[j]
+            
+            x1 = a_alphai*da_alpha_dTs[j]
+            x2 = a_alphaj*da_alpha_dT_i
+            x1_x2 = x1 + x2
+            x3 = 2.0*x1_x2
+
+            kij_m1 = kijs_i[j] - 1.0
+            
+            da_alpha_dT_ij = -0.5*kij_m1*x1_x2/x0_05
+            
+            # For temperature derivatives of fugacities 
+            da_alpha_dT_ijs[i][j] = da_alpha_dT_ijs[j][i] = da_alpha_dT_ij
+
+            da_alpha_dT_ij *= zi_zj
+            
+            d2a_alpha_dT2_ij = zi_zj*kij_m1*(-0.25*x0_05*(x0*(
+            2.0*(a_alphai*d2a_alpha_dT2s[j] + a_alphaj*d2a_alpha_dT2_i)
+            + 4.*da_alpha_dT_i*da_alpha_dTs[j]) - x1*x3 - x2*x3 + x1_x2*x1_x2)/(x0*x0))
+            
+            if i != j:
+                da_alpha_dT += da_alpha_dT_ij + da_alpha_dT_ij
+                d2a_alpha_dT2 += d2a_alpha_dT2_ij + d2a_alpha_dT2_ij
+            else:
+                da_alpha_dT += da_alpha_dT_ij
+                d2a_alpha_dT2 += d2a_alpha_dT2_ij
+
+    return a_alpha, da_alpha_dT, d2a_alpha_dT2, da_alpha_dT_ijs, a_alpha_ijs
+
+
 class GCEOSMIX(GCEOS):
     r'''Class for solving a generic pressure-explicit three-parameter cubic 
     equation of state for a mixture. Does not implement any parameters itself;  
@@ -266,6 +350,14 @@ class GCEOSMIX(GCEOS):
         # 2 components 1.89 pypy, pythran 1.75 us, regular python 12.7 us.
         # 10 components - regular python 148 us, 9.81 us PyPy, 8.37 pythran in PyPy (flags have no effect; 14.3 us in regular python)
         zs, kijs, cmps, N = self.zs, self.kijs, self.cmps, self.N
+        if full:
+            a_alpha, da_alpha_dT, d2a_alpha_dT2, da_alpha_dT_ijs, a_alpha_ijs = a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs, kijs)
+#                ans =  pythran_test2.a_alpha_and_derivatives_py(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs, kijs)
+#                a_alpha, da_alpha_dT, d2a_alpha_dT2, da_alpha_dT_ijs, a_alpha_ijs = ans
+            self.da_alpha_dT_ijs = da_alpha_dT_ijs
+            self.a_alpha_ijs = a_alpha_ijs
+            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+
         da_alpha_dT, d2a_alpha_dT2 = 0.0, 0.0
         
         a_alpha_ijs = [[None]*N for _ in cmps]
@@ -606,15 +698,19 @@ class GCEOSMIX(GCEOS):
             self.fugacities_g = [phi*y*P for phi, y in zip(self.phis_g, ys)]
 
 
-    def eos_fugacities_lowest_Gibbs(self):        
-        try:
-            if self.G_dep_l < self.G_dep_g:
-                return self.fugacities_l, 'l'
-            else:
-                return self.fugacities_g, 'g'
+    def eos_fugacities_lowest_Gibbs(self):
+        try:        
+            try:
+                if self.G_dep_l < self.G_dep_g:
+                    return self.fugacities_l, 'l'
+                else:
+                    return self.fugacities_g, 'g'
+            except:
+                # Only one root - take it and set the prefered other phase to be a different type
+                return (self.fugacities_g, 'g') if hasattr(self, 'Z_g') else (self.fugacities_l, 'l')
         except:
-            # Only one root - take it and set the prefered other phase to be a different type
-            return (self.fugacities_g, 'g') if hasattr(self, 'Z_g') else (self.fugacities_l, 'l')
+            self.fugacities()
+            return self.eos_fugacities_lowest_Gibbs()
 
 
     def _dphi_dn(self, zi, i, phase):
@@ -1577,6 +1673,15 @@ class PRMIX(GCEOSMIX, PR):
         Pressure, [Pa]
     V : float, optional
         Molar volume, [m^3/mol]
+    fugacities : bool, optional
+        Whether or not to calculate fugacity related values (phis, log phis,
+        and fugacities); default True, [-]
+    only_l : bool, optional
+        When true, if there is a liquid and a vapor root, only the liquid
+        root (and properties) will be set; default False, [-]
+    only_g : bool, optoinal
+        When true, if there is a liquid and a vapor root, only the vapor
+        root (and properties) will be set; default False, [-]
 
     Examples
     --------
@@ -1607,7 +1712,8 @@ class PRMIX(GCEOSMIX, PR):
     
     nonstate_constants_specific = ('kappas', )
     
-    def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None):
+    def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
+                 fugacities=True, only_l=False, only_g=False):
         self.N = N = len(Tcs)
         self.cmps = range(self.N)
         self.Tcs = Tcs
@@ -1633,8 +1739,9 @@ class PRMIX(GCEOSMIX, PR):
         self.delta = 2.0*b
         self.epsilon = -b*b
 
-        self.solve()
-        self.fugacities()
+        self.solve(only_l=only_l, only_g=only_g)
+        if fugacities:
+            self.fugacities()
 
     def fast_init_specific(self, other):
         self.kappas = other.kappas
@@ -1726,37 +1833,56 @@ class PRMIX(GCEOSMIX, PR):
         .. [2] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
            Butterworth-Heinemann, 1985.
         '''
+        a_alpha = self.a_alpha
+        cmps = self.cmps
+        a_alpha_ijs = self.a_alpha_ijs
+        T_inv = 1.0/self.T
         bs, b = self.bs, self.b
-        A = self.a_alpha*self.P/(R2*self.T*self.T)
-        B = b*self.P/(R*self.T)
-
+        A = a_alpha*self.P*R2_inv*T_inv*T_inv
+        B = b*self.P*T_inv*R_inv
+        b_inv = 1.0/b
+        
         # The two log terms need to use a complex log; typically these are
         # calculated at "liquid" volume solutions which are unstable
         # and cannot exist
-        x0 = clog(Z - B).real
+        try:
+            x0 = log(Z - B)
+        except ValueError:
+            # less than zero
+            x0 = 0.0
+            
         Zm1 = Z - 1.0
-        
-        x1 = 2./self.a_alpha
+        x1 = 2./a_alpha
         x2 = A/(two_root_two*B)
-        x3 = clog((Z + (root_two + 1.)*B)/(Z - (root_two - 1.)*B)).real
-        
-        cmps = self.cmps
+        t0 = (Z + root_two_p1*B)/(Z - root_two_m1*B)
+        try:
+            x3 = log(t0)
+        except ValueError:
+            # less than zero
+            x3 = 0.0
+        x4 = x2*x3
+
         phis = []
         fugacity_sum_terms = []
         
+        
+        
         for i in cmps:
-            a_alpha_js = self.a_alpha_ijs[i]
-            b_ratio = bs[i]/b
-            t1 = b_ratio*Zm1 - x0
+            a_alpha_js = a_alpha_ijs[i]
+            b_ratio = bs[i]*b_inv 
             
-            sum_term = sum([zs[j]*a_alpha_js[j] for j in cmps])
+            sum_term = 0.0
+            for zi, a_alpha_j_i in zip(zs, a_alpha_js):
+                sum_term += zi*a_alpha_j_i
+#            sum_term = sum([zs[j]*a_alpha_js[j] for j in cmps])
 
-            t3 = t1 - x2*(x1*sum_term - b_ratio)*x3
-            # Temp
+            t3 = b_ratio*Zm1 - x0 - x4*(x1*sum_term - b_ratio)
+
             if t3 > 700.0:
-                t3 = 700
+                t3 = 700.0
             phis.append(t3)
             fugacity_sum_terms.append(sum_term)
+            
         self.fugacity_sum_terms = fugacity_sum_terms
         return phis
 
@@ -1977,6 +2103,15 @@ class SRKMIX(GCEOSMIX, SRK):
         Pressure, [Pa]
     V : float, optional
         Molar volume, [m^3/mol]
+    fugacities : bool, optional
+        Whether or not to calculate fugacity related values (phis, log phis,
+        and fugacities); default True, [-]
+    only_l : bool, optional
+        When true, if there is a liquid and a vapor root, only the liquid
+        root (and properties) will be set; default False, [-]
+    only_g : bool, optoinal
+        When true, if there is a liquid and a vapor root, only the vapor
+        root (and properties) will be set; default False, [-]
 
     Examples
     --------
@@ -2005,7 +2140,8 @@ class SRKMIX(GCEOSMIX, SRK):
     a_alpha_mro = -4
     eos_pure = SRK
     nonstate_constants_specific = ('ms',)
-    def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None):
+    def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
+                 fugacities=True, only_l=False, only_g=False):
         self.N = len(Tcs)
         self.cmps = range(self.N)
         self.Tcs = Tcs
@@ -2026,8 +2162,9 @@ class SRKMIX(GCEOSMIX, SRK):
         self.ms = [0.480 + 1.574*omega - 0.176*omega*omega for omega in omegas]
         self.delta = self.b
 
-        self.solve()
-        self.fugacities()
+        self.solve(only_l=only_l, only_g=only_g)
+        if fugacities:
+            self.fugacities()
         
     def fast_init_specific(self, other):
         self.ms = other.ms
@@ -2237,6 +2374,15 @@ class PR78MIX(PRMIX):
         Pressure, [Pa]
     V : float, optional
         Molar volume, [m^3/mol]
+    fugacities : bool, optional
+        Whether or not to calculate fugacity related values (phis, log phis,
+        and fugacities); default True, [-]
+    only_l : bool, optional
+        When true, if there is a liquid and a vapor root, only the liquid
+        root (and properties) will be set; default False, [-]
+    only_g : bool, optoinal
+        When true, if there is a liquid and a vapor root, only the vapor
+        root (and properties) will be set; default False, [-]
 
     Examples
     --------
@@ -2265,7 +2411,8 @@ class PR78MIX(PRMIX):
     '''
     a_alpha_mro = -4
     eos_pure = PR78
-    def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None):
+    def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
+                 fugacities=True, only_l=False, only_g=False):
         self.N = len(Tcs)
         self.cmps = range(self.N)
         self.Tcs = Tcs
@@ -2293,8 +2440,9 @@ class PR78MIX(PRMIX):
         self.delta = 2.*self.b
         self.epsilon = -self.b*self.b
 
-        self.solve()
-        self.fugacities()
+        self.solve(only_l=only_l, only_g=only_g)
+        if fugacities:
+            self.fugacities()
 
 
 
@@ -2339,6 +2487,15 @@ class VDWMIX(GCEOSMIX, VDW):
         Molar volume, [m^3/mol]
     omegas : float, optional
         Acentric factors of all compounds - Not used in equation of state!, [-]
+    fugacities : bool, optional
+        Whether or not to calculate fugacity related values (phis, log phis,
+        and fugacities); default True, [-]
+    only_l : bool, optional
+        When true, if there is a liquid and a vapor root, only the liquid
+        root (and properties) will be set; default False, [-]
+    only_g : bool, optoinal
+        When true, if there is a liquid and a vapor root, only the vapor
+        root (and properties) will be set; default False, [-]
         
     Examples
     --------
@@ -2367,7 +2524,7 @@ class VDWMIX(GCEOSMIX, VDW):
     nonstate_constants_specific = tuple()
     
     def __init__(self, Tcs, Pcs, zs, kijs=None, T=None, P=None, V=None, 
-                 omegas=None):
+                 omegas=None, fugacities=True, only_l=False, only_g=False):
         self.N = len(Tcs)
         self.cmps = range(self.N)
         self.Tcs = Tcs
@@ -2386,8 +2543,9 @@ class VDWMIX(GCEOSMIX, VDW):
         self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
         
         self.omegas = omegas
-        self.solve()
-        self.fugacities()
+        self.solve(only_l=only_l, only_g=only_g)
+        if fugacities:
+            self.fugacities()
 
     def fast_init_specific(self, other):
         self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
@@ -2558,6 +2716,15 @@ class PRSVMIX(PRMIX, PRSV):
         Molar volume, [m^3/mol]
     kappa1s : list[float], optional
         Fit parameter; available in [1]_ for over 90 compounds, [-]
+    fugacities : bool, optional
+        Whether or not to calculate fugacity related values (phis, log phis,
+        and fugacities); default True, [-]
+    only_l : bool, optional
+        When true, if there is a liquid and a vapor root, only the liquid
+        root (and properties) will be set; default False, [-]
+    only_g : bool, optoinal
+        When true, if there is a liquid and a vapor root, only the vapor
+        root (and properties) will be set; default False, [-]
 
     Examples
     --------
@@ -2604,7 +2771,8 @@ class PRSVMIX(PRMIX, PRSV):
     a_alpha_mro = -5
     eos_pure = PRSV
     nonstate_constants_specific = ('kappa0s', 'kappa1s', 'kappas')
-    def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None, kappa1s=None):
+    def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
+                 kappa1s=None, fugacities=True, only_l=False, only_g=False):
         self.N = len(Tcs)
         self.cmps = range(self.N)
         self.Tcs = Tcs
@@ -2641,9 +2809,10 @@ class PRSVMIX(PRMIX, PRSV):
             self.kappa1s = [(0 if (T/Tc > 0.7 and self.kappa1_Tr_limit) else kappa1) for kappa1, Tc in zip(kappa1s, Tcs)]
             
         self.kappas = [kappa0 + kappa1*(1 + (self.T/Tc)**0.5)*(0.7 - (self.T/Tc)) for kappa0, kappa1, Tc in zip(self.kappa0s, self.kappa1s, self.Tcs)]
-        self.solve()
 
-        self.fugacities()
+        self.solve(only_l=only_l, only_g=only_g)
+        if fugacities:
+            self.fugacities()
 
 
 
@@ -2732,6 +2901,15 @@ class PRSV2MIX(PRMIX, PRSV2):
         Fit parameter; available in [1]_ for over 90 compounds, [-]
     kappa3s : list[float], optional
         Fit parameter; available in [1]_ for over 90 compounds, [-]
+    fugacities : bool, optional
+        Whether or not to calculate fugacity related values (phis, log phis,
+        and fugacities); default True, [-]
+    only_l : bool, optional
+        When true, if there is a liquid and a vapor root, only the liquid
+        root (and properties) will be set; default False, [-]
+    only_g : bool, optoinal
+        When true, if there is a liquid and a vapor root, only the vapor
+        root (and properties) will be set; default False, [-]
 
     Examples
     --------
@@ -2762,7 +2940,8 @@ class PRSV2MIX(PRMIX, PRSV2):
     eos_pure = PRSV2
     nonstate_constants_specific = ('kappa1s', 'kappa2s', 'kappa3s', 'kappa0s', 'kappas')
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
-                 kappa1s=None, kappa2s=None, kappa3s=None):
+                 kappa1s=None, kappa2s=None, kappa3s=None,
+                 fugacities=True, only_l=False, only_g=False):
         self.N = len(Tcs)
         self.cmps = range(self.N)
         self.Tcs = Tcs
@@ -2807,8 +2986,9 @@ class PRSV2MIX(PRMIX, PRSV2):
             Tr = self.T/Tc
             kappa = kappa0 + ((kappa1 + kappa2*(kappa3 - Tr)*(1. - Tr**0.5))*(1. + Tr**0.5)*(0.7 - Tr))
             self.kappas.append(kappa)
-        self.solve()
-        self.fugacities()
+        self.solve(only_l=only_l, only_g=only_g)
+        if fugacities:
+            self.fugacities()
 
     def fast_init_specific(self, other):
         self.kappa0s = other.kappa0s
@@ -2904,6 +3084,15 @@ class TWUPRMIX(PRMIX, TWUPR):
         Pressure, [Pa]
     V : float, optional
         Molar volume, [m^3/mol]
+    fugacities : bool, optional
+        Whether or not to calculate fugacity related values (phis, log phis,
+        and fugacities); default True, [-]
+    only_l : bool, optional
+        When true, if there is a liquid and a vapor root, only the liquid
+        root (and properties) will be set; default False, [-]
+    only_g : bool, optoinal
+        When true, if there is a liquid and a vapor root, only the vapor
+        root (and properties) will be set; default False, [-]
 
     Examples
     --------
@@ -2930,7 +3119,8 @@ class TWUPRMIX(PRMIX, TWUPR):
     a_alpha_mro = -5
     eos_pure = TWUPR
     
-    def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None):
+    def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
+                 fugacities=True, only_l=False, only_g=False):
         self.N = len(Tcs)
         self.cmps = range(self.N)
         self.Tcs = Tcs
@@ -2953,8 +3143,9 @@ class TWUPRMIX(PRMIX, TWUPR):
         self.epsilon = -self.b*self.b
         self.check_sufficient_inputs()
 
-        self.solve()
-        self.fugacities()
+        self.solve(only_l=only_l, only_g=only_g)
+        if fugacities:
+            self.fugacities()
 
     def fast_init_specific(self, other):
         b = 0.0
@@ -3036,6 +3227,15 @@ class TWUSRKMIX(SRKMIX, TWUSRK):
         Pressure, [Pa]
     V : float, optional
         Molar volume, [m^3/mol]
+    fugacities : bool, optional
+        Whether or not to calculate fugacity related values (phis, log phis,
+        and fugacities); default True, [-]
+    only_l : bool, optional
+        When true, if there is a liquid and a vapor root, only the liquid
+        root (and properties) will be set; default False, [-]
+    only_g : bool, optoinal
+        When true, if there is a liquid and a vapor root, only the vapor
+        root (and properties) will be set; default False, [-]
 
     Examples
     --------    
@@ -3061,7 +3261,8 @@ class TWUSRKMIX(SRKMIX, TWUSRK):
     '''
     a_alpha_mro = -5
     eos_pure = TWUSRK
-    def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None):
+    def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
+                 fugacities=True, only_l=False, only_g=False):
         self.N = len(Tcs)
         self.cmps = range(self.N)
         self.Tcs = Tcs
@@ -3083,8 +3284,9 @@ class TWUSRKMIX(SRKMIX, TWUSRK):
         self.delta = self.b
         self.check_sufficient_inputs()
 
-        self.solve()
-        self.fugacities()
+        self.solve(only_l=only_l, only_g=only_g)
+        if fugacities:
+            self.fugacities()
 
     def setup_a_alpha_and_derivatives(self, i, T=None):
         r'''Sets `a`, `omega`, and `Tc` for a specific component before the 
@@ -3150,6 +3352,15 @@ class APISRKMIX(SRKMIX, APISRK):
         Fit constant or estimated from acentric factor if not provided [-]
     S2s : float, optional
         Fit constant or 0 if not provided [-]
+    fugacities : bool, optional
+        Whether or not to calculate fugacity related values (phis, log phis,
+        and fugacities); default True, [-]
+    only_l : bool, optional
+        When true, if there is a liquid and a vapor root, only the liquid
+        root (and properties) will be set; default False, [-]
+    only_g : bool, optoinal
+        When true, if there is a liquid and a vapor root, only the vapor
+        root (and properties) will be set; default False, [-]
 
     Notes
     -----
@@ -3174,7 +3385,7 @@ class APISRKMIX(SRKMIX, APISRK):
     eos_pure = APISRK
     nonstate_constants_specific = ('S1s', 'S2s')
     def __init__(self, Tcs, Pcs, zs, omegas=None, kijs=None, T=None, P=None, V=None,
-                 S1s=None, S2s=None):
+                 S1s=None, S2s=None, fugacities=True, only_l=False, only_g=False):
         self.N = len(Tcs)
         self.cmps = range(self.N)
         self.Tcs = Tcs
@@ -3207,8 +3418,9 @@ class APISRKMIX(SRKMIX, APISRK):
         self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
         self.delta = self.b
 
-        self.solve()
-        self.fugacities()
+        self.solve(only_l=only_l, only_g=only_g)
+        if fugacities:
+            self.fugacities()
 
     def setup_a_alpha_and_derivatives(self, i, T=None):
         r'''Sets `a`, `S1`, `S2` and `Tc` for a specific component before the 

@@ -24,15 +24,16 @@ from __future__ import division
 
 __all__ = ['K_value', 'Wilson_K_value', 'flash_wilson', 'flash_Tb_Tc_Pc',
            'Rachford_Rice_flash_error', 
-           'Rachford_Rice_solution',
+           'Rachford_Rice_solution', 'Rachford_Rice_polynomial',
+           'Rachford_Rice_solution_polynomial',
            'Li_Johns_Ahmadi_solution', 'flash_inner_loop', 'NRTL', 'Wilson',
            'UNIQUAC', 'flash', 'dew_at_T',
            'bubble_at_T', 'identify_phase', 'mixture_phase_methods',
            'identify_phase_mixture', 'Pbubble_mixture', 'bubble_at_P',
            'Pdew_mixture']
 
-from fluids.numerics import brenth, IS_PYPY, one_epsilon_larger, one_epsilon_smaller
-from fluids.numerics import brenth, py_newton as newton # Always use this method for advanced features
+from fluids.numerics import IS_PYPY, one_epsilon_larger, one_epsilon_smaller
+from fluids.numerics import roots_cubic, horner, brenth, py_newton as newton # Always use this method for advanced features
 from thermo.utils import exp, log
 from thermo.utils import none_and_length_check
 from thermo.utils import R
@@ -296,6 +297,10 @@ def flash_wilson(zs, Tcs, Pcs, omegas, T=None, P=None, VF=None):
     # Assume T and P to begin with
     if T is not None and P is not None:
         Ks = [Wilson_K_value(T, P, Tc=Tcs[i], Pc=Pcs[i], omega=omegas[i]) for i in cmps]
+#        minK = min(Ks)
+#        if minK >= 1.0:
+#            idx = Ks.index(minK)
+#            Ks[idx] = (1.0 - 1e-7)
         try:
             ans = (T, P) + flash_inner_loop(zs=zs, Ks=Ks)
         except:
@@ -547,7 +552,350 @@ def flash_Tb_Tc_Pc(zs, Tbs, Tcs, Pcs, T=None, P=None, VF=None):
         raise ValueError("Provide two of P, T, and VF")
 
 
-### Solutions using a existing algorithms
+def Rachford_Rice_polynomial_3(zs, Cs):
+    z0, z1, z2 = zs
+    C0, C1, C2 = Cs
+    x0 = C0*z0
+    x1 = C1*z1
+    x2 = C2*z2
+    a = C0*C1*C2*(z0 + z1 + z2)
+    return [1.0,
+            (C0*x1 + C0*x2 + C1*x0 + C1*x2 + C2*x0 + C2*x1)/a,
+            (x0 + x1 + x2)/a]
+
+def Rachford_Rice_polynomial_4(zs, Cs):
+    z0, z1, z2, z3 = zs
+    C0, C1, C2, C3 = Cs
+    x0 = C0*z0
+    x1 = C1*x0
+    x2 = C1*z1
+    x3 = C0*x2
+    x4 = C2*z2
+    x5 = C0*x4
+    x6 = C3*z3
+    x7 = C0*x6
+    x8 = C2*x0
+    x9 = C2*x2
+    x10 = C1*x4
+    x11 = C1*x6
+    a = C0*C1*C2*C3*(z0 + z1 + z2 + z3)
+    coeffs = [1.0,
+              (C1*x5 + C1*x7 + C2*x1 + C2*x11 + C2*x3 + C2*x7 
+               + C3*x1 + C3*x10 + C3*x3 + C3*x5 + C3*x8 + C3*x9)/a,
+              (C2*x6 + C3*x0 + C3*x2 + C3*x4 + x1 + x10
+               + x11 + x3 + x5 + x7 + x8 + x9)/a,
+              (x0 + x2 + x4 + x6)/a]
+    return coeffs
+
+_RR_poly_idx_cache = {}
+def _Rachford_Rice_polynomial_coeff(value, zs, Cs, N):
+    global_list = []
+    # This part can be cached, so its performance implication is small
+    # I believe for high-N, this is causing out of memory errors
+    # However, even when using yield, still out-of-memories
+    def better_recurse(prev_value, max_value, working=None):
+        if working is None:
+            working = []
+        for i in range(prev_value, max_value):
+            if N == max_value:
+#                yield working + [i]
+#                return
+                global_list.append(working + [i])
+            else:
+                better_recurse(i + 1, max_value + 1, working + [i])
+#        return global_list
+    
+    if (value, N) in _RR_poly_idx_cache:
+        global_list = _RR_poly_idx_cache[(value, N)]
+    else:
+        better_recurse(0, value)
+        _RR_poly_idx_cache[(value, N)] = global_list
+    
+#     zs_sum_mat = []
+#     Cs_inv_mat = []
+#     for i in range(N):
+#         Cs_inv_list = []
+#         zs_sum_list = []
+#         for j in range(N):
+#             if j > i:
+#                 Cs_inv_list.append(None)
+#                 zs_sum_list.append(None)
+#             else:
+#                 Cs_inv_list.append(Cs[i]*Cs[j])
+#                 zs_sum_list.append(zs[i] + zs[j])
+#         Cs_inv_mat.append(Cs_inv_list)
+#         zs_sum_mat.append(zs_sum_list)
+#     print(Cs_inv_mat)
+#     Cs_inv_mat = [[Ci*Cj for Cj in Cs] for Ci in Cs]
+#     zs_sum_mat = [[zi + zj for zj in zs] for zi in zs]
+
+    # If there were some way to use cse this might work much faster
+    c = 0.0
+    for idxs in global_list:
+        C_msum = 1.0
+        z_tot = 1.0
+        for i in idxs:
+            z_tot -= zs[i]
+            C_msum *= Cs[i]
+#         print(z_tot, C_msum, idxs)
+#         C_msum = 1.0
+#         z_tot = 1.0
+#         l_idxs = len(idxs)
+# #         # j is always larger than i only need half the matrixes
+#         for i in range(0, l_idxs-1, 2):
+#             i, j = idxs[i], idxs[i+1]
+# #             print(j, i)
+# #             print(j > i)
+#             z_tot -= zs_sum_mat[j][i]
+#             C_msum *= Cs_inv_mat[j][i]
+#         if l_idxs & 1:
+#             j = idxs[-1]
+#             z_tot -= zs[j]
+#             C_msum *= Cs[j]
+        c += z_tot*C_msum
+    return c
+
+
+def Rachford_Rice_polynomial(zs, Ks):
+    r'''Transforms the Rachford-Rice equation into a polynomial and returns
+    its coefficients.
+    A spelled-out solution is used for N from 2 to 4, derived with SymPy and
+    optimized with the common sub expression approach.
+    
+    .. warning:: For large numbers of components (>20) this model performs 
+       terribly, though with future optimization it may be possible to have 
+       better performance.
+    
+    .. math::
+        \sum_{i=1}^N z_i C_i\left[ \Pi_{j\ne i}^N \left(1 + \frac{V}{F} 
+        C_j\right)\right] = 0
+
+    .. math::        
+        C_i = K_i - 1.0
+        
+    Once the above calculation is performed, it must be rearranged into 
+    polynomial form.
+    
+    Parameters
+    ----------
+    zs : list[float]
+        Overall mole fractions of all species, [-]
+    Ks : list[float]
+        Equilibrium K-values, [-]
+        
+    Returns
+    -------
+    coeffs : float
+        Coefficients, with earlier coefficients corresponding to higher powers,
+        [-]
+
+    Notes
+    -----
+    Explicit calculations for any degree can be obtained with SymPy, changing
+    N as desired:
+        
+
+    >>> from sympy import * # doctest: +SKIP
+    >>> N = 4
+    >>> Cs = symbols('C0:' + str(N)) # doctest: +SKIP
+    >>> zs = symbols('z0:' + str(N)) # doctest: +SKIP
+    >>> alpha = symbols('alpha') # doctest: +SKIP
+    >>> tot = 0
+    >>> for i in range(N): # doctest: +SKIP
+    ...     mult_sum = 1
+    >>> for j in range(N): # doctest: +SKIP
+    ...     if j != i:
+    ...         mult_sum *= (1 + alpha*Cs[j])
+    ...     tot += zs[i]*Cs[i]*mult_sum 
+    
+    poly_expr = poly(expand(tot), alpha)
+    coeff_list = poly_expr.all_coeffs()
+    cse(coeff_list, optimizations='basic')
+    
+    [1]_ suggests a matrix-math based approach for solving the model, but that
+    has not been performed here. [1]_ also has explicit equations for 
+    up to N = 7 to derive the coefficients.
+    
+    The general form was derived to be slightly different than that in [1]_,
+    but is confirmed to also be correct as it matches other methods for solving
+    the Rachford-Rice equation.
+    
+    The first coefficient is always 1.
+    
+    
+    Examples
+    --------
+    >>> Rachford_Rice_polynomial(zs=[0.5, 0.3, 0.2], Ks=[1.685, 0.742, 0.532])
+    [1.0, -3.692652996676083, 2.073518878815093]
+
+    References
+    ----------
+    .. [1] Weigle, Brett D. "A Generalized Polynomial Form of the Objective 
+       Function in Flash Calculations." Pennsylvania State University, 1992.
+    .. [2] Warren, John H. "Explicit Determination of the Vapor Fraction in 
+       Flash Calculations." Pennsylvania State University, 1991.
+    '''
+    N = len(zs)
+    Cs = [Ki - 1.0 for Ki in Ks]
+    if N == 2:
+        C0, C1 = Cs
+        z0, z1 = zs
+        return [1.0, (C0*z0 + C1*z1)/(C0*C1*(z0 + z1))]
+    if N == 3:
+        return Rachford_Rice_polynomial_3(zs, Cs)
+    if N == 4:
+        return Rachford_Rice_polynomial_4(zs, Cs)
+    
+    
+    Cs_inv = [1.0/Ci for Ci in Cs]
+    coeffs = [1.0]
+    
+#    if N > 2:
+    c = 0.0
+    for i in range(0, N):
+        c += (1.0 - zs[i])*Cs_inv[i]
+    coeffs.append(c)
+    
+    coeffs.extend([_Rachford_Rice_polynomial_coeff(v, zs, Cs_inv, N) 
+                    for v in range(N-1, 2, -1)])
+        
+    c = 0.0
+    for i in range(0, N):
+        C_sumprod = 1.0
+        for j, C in enumerate(Cs_inv):
+            if j != i:
+                C_sumprod *= C
+        c += zs[i]*C_sumprod
+    coeffs.append(c)
+    return coeffs
+
+
+def Rachford_Rice_solution_polynomial(zs, Ks):
+    r'''Solves the Rachford-Rice equation by transforming it into a polynomial,
+    and then either analytically calculating the roots, or, using the known 
+    range the correct root is in, numerically solving for the correct
+    polynomial root. The analytical solutions are used for N from 2 to 4.
+    
+    Uses the method proposed in [2]_ to obtain an initial guess when solving
+    the polynomial for the root numerically.
+
+    .. math::
+        \sum_i \frac{z_i(K_i-1)}{1 + \frac{V}{F}(K_i-1)} = 0
+        
+    .. warning:: : Using this function with more than 20 components is likely  
+       to crash Python! This model does not work well with many components!
+    
+    This method, developed first in [3]_ and expanded in [1]_, is clever but
+    of little use for large numbers of components.
+
+    Parameters
+    ----------
+    zs : list[float]
+        Overall mole fractions of all species, [-]
+    Ks : list[float]
+        Equilibrium K-values, [-]
+        
+    Returns
+    -------
+    V_over_F : float
+        Vapor fraction solution [-]
+    xs : list[float]
+        Mole fractions of each species in the liquid phase, [-]
+    ys : list[float]
+        Mole fractions of each species in the vapor phase, [-]
+
+    Notes
+    -----
+    This approach has mostly been ignored by academia, despite some of its 
+    advantages.
+    
+    The initial guess is the average of the following, as described in [2]_.
+
+    .. math::
+        \left(\frac{V}{F}\right)_{min} = \frac{(K_{max}-K_{min})z_{of\;K_{max}}
+        - (1-K_{min})}{(1-K_{min})(K_{max}-1)}
+
+        \left(\frac{V}{F}\right)_{max} = \frac{1}{1-K_{min}}
+
+    If the `newton` method does not converge, a bisection method (brenth) is
+    used instead. However, it is somewhat slower, especially as newton will
+    attempt 50 iterations before giving up.
+    
+    
+    Examples
+    --------
+    >>> Rachford_Rice_solution_polynomial(zs=[0.5, 0.3, 0.2], Ks=[1.685, 0.742, 0.532])
+    (0.6907302627738541, [0.3394086969663436, 0.3650560590371706, 0.29553524399648573], [0.571903654388289, 0.27087159580558057, 0.1572247498061304])
+
+    References
+    ----------
+    .. [1] Weigle, Brett D. "A Generalized Polynomial Form of the Objective 
+       Function in Flash Calculations." Pennsylvania State University, 1992.
+    .. [2] Li, Yinghui, Russell T. Johns, and Kaveh Ahmadi. "A Rapid and Robust
+       Alternative to Rachford-Rice in Flash Calculations." Fluid Phase
+       Equilibria 316 (February 25, 2012): 85-97.
+       doi:10.1016/j.fluid.2011.12.005.
+    .. [3] Warren, John H. "Explicit Determination of the Vapor Fraction in 
+       Flash Calculations." Pennsylvania State University, 1991.
+    '''
+    N = len(zs)
+    if N > 30:
+        raise ValueError("Unlikely to solve")
+    poly = Rachford_Rice_polynomial(zs, Ks)
+
+    Kmin = min(Ks)
+    Kmax = max(Ks)
+    z_of_Kmax = zs[Ks.index(Kmax)]
+    V_over_F_min = ((Kmax-Kmin)*z_of_Kmax - (1.- Kmin))/((1.- Kmin)*(Kmax- 1.))
+    V_over_F_max = 1./(1.-Kmin)
+    
+    if V_over_F_min < 0.0:
+        V_over_F_min *= one_epsilon_larger
+    else:
+        V_over_F_min *= one_epsilon_smaller
+
+    if V_over_F_max < 0.0:
+        V_over_F_max *= one_epsilon_larger
+    else:
+        V_over_F_max *= one_epsilon_smaller
+    
+
+    if N > 4:
+        # For safety, obtain limits of K 
+        x0 = 0.5*(V_over_F_min + V_over_F_max)
+        def err(VF):
+            return horner(poly, VF)
+        
+        try:
+            V_over_F = newton(err, x0)
+            if V_over_F < V_over_F_min or V_over_F > V_over_F_max:
+                raise ValueError("Newton converged to another root")
+        except:
+            V_over_F = brenth(err, V_over_F_min, V_over_F_max)
+    else:
+        if N == 4:
+            coeffs = poly
+        elif N == 3:
+            coeffs = (0.0,) + tuple(poly)
+        elif N == 2:
+            coeffs = (0.0, 0.0) + tuple(poly)
+        roots = roots_cubic(*coeffs)
+        if N == 2:
+            V_over_F = roots[0]
+        else:
+            V_over_F = None
+            for root in roots:
+                if root.imag == 0.0 and V_over_F_min <= root <= V_over_F_max:
+                    V_over_F = root 
+                    break
+            if V_over_F is None:
+                raise ValueError("Bad roots", roots)
+    
+    xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]
+    ys = [Ki*xi for xi, Ki in zip(xs, Ks)]
+    return V_over_F, xs, ys
+        
+
 def Rachford_Rice_flash_error(V_over_F, zs, Ks):
     r'''Calculates the objective function of the Rachford-Rice flash equation.
     This function should be called by a solver seeking a solution to a flash
@@ -740,30 +1088,58 @@ def Rachford_Rice_solution(zs, Ks, fprime=False, fprime2=False,
     K_minus_1 = [Ki - 1.0 for Ki in Ks]
     zs_k_minus_1 = [zi*Kim1 for zi, Kim1 in zip(zs, K_minus_1)]
     
-    def err(V_over_F):
-#        print(V_over_F)
-        return sum([num/(1. + V_over_F*Kim1) for num, Kim1 in zip(zs_k_minus_1, K_minus_1)])
-    
     if fprime or fprime2:
         zs_k_minus_1_2 = [-first*Kim1 for first, Kim1 in zip(zs_k_minus_1, K_minus_1)]
-        def fprime_obj(V_over_F):
-            denom = [V_over_F*Kim1 + 1.0 for Kim1 in K_minus_1]
-            denom2 = [d1*d1 for d1 in denom]
-            return sum([num/deno for num, deno in zip(zs_k_minus_1_2, denom2)])
-        
+    
     if fprime2:
         zs_k_minus_1_3 = [-2.0*second*Kim1 for second, Kim1 in zip(zs_k_minus_1_2, K_minus_1)]
-        def fprime2_obj(V_over_F):
-            denom = [V_over_F*Kim1 + 1.0 for Kim1 in K_minus_1]
-            denom2 = [d1*d1 for d1 in denom]
-            denom3 = [d2*d1 for d1, d2 in zip(denom, denom2)]
-            return sum([num/deno for num, deno in zip(zs_k_minus_1_3, denom3)])
+        def err(V_over_F):
+            err0, err1, err2 = 0.0, 0.0, 0.0
+            for num0, num1, num2, Kim1 in zip(zs_k_minus_1, zs_k_minus_1_2, zs_k_minus_1_3, K_minus_1):
+                VF_kim1_1_inv = 1.0/(1. + V_over_F*Kim1)
+                t2 = VF_kim1_1_inv*VF_kim1_1_inv
+                err0 += num0*VF_kim1_1_inv
+                err1 += num1*t2
+                err2 += num2*t2*VF_kim1_1_inv
+            return err0, err1, err2
+    elif fprime:
+        def err(V_over_F):
+            err0, err1 = 0.0, 0.0
+            for num0, num1, Kim1 in zip(zs_k_minus_1, zs_k_minus_1_2, K_minus_1):
+                VF_kim1_1_inv = 1.0/(1. + V_over_F*Kim1)
+                err0 += num0*VF_kim1_1_inv
+                err1 += num1*VF_kim1_1_inv*VF_kim1_1_inv
+            return err0, err1
+    else:
+        def err(V_over_F):
+            return sum([num/(1. + V_over_F*Kim1) for num, Kim1 in zip(zs_k_minus_1, K_minus_1)])
+
+            
+#    if not fprime and not fprime2:
+#    def err(V_over_F):
+##        print(V_over_F)
+#        return sum([num/(1. + V_over_F*Kim1) for num, Kim1 in zip(zs_k_minus_1, K_minus_1)])
+#    
+#    if fprime or fprime2:
+#        zs_k_minus_1_2 = [-first*Kim1 for first, Kim1 in zip(zs_k_minus_1, K_minus_1)]
+#        def fprime_obj(V_over_F):
+#            denom = [V_over_F*Kim1 + 1.0 for Kim1 in K_minus_1]
+#            denom2 = [d1*d1 for d1 in denom]
+#            return sum([num/deno for num, deno in zip(zs_k_minus_1_2, denom2)])
+#        
+#    if fprime2:
+#        zs_k_minus_1_3 = [-2.0*second*Kim1 for second, Kim1 in zip(zs_k_minus_1_2, K_minus_1)]
+#        def fprime2_obj(V_over_F):
+#            denom = [V_over_F*Kim1 + 1.0 for Kim1 in K_minus_1]
+#            denom2 = [d1*d1 for d1 in denom]
+#            denom3 = [d2*d1 for d1, d2 in zip(denom, denom2)]
+#            return sum([num/deno for num, deno in zip(zs_k_minus_1_3, denom3)])
         
     try:
-        if fprime and fprime2:
-            V_over_F = newton(err, x0, fprime=fprime_obj, fprime2=fprime2_obj)
+        if fprime2:
+            V_over_F = newton(err, x0, fprime=True, fprime2=True)
         elif fprime:
-            V_over_F = newton(err, x0, fprime=fprime_obj)
+            V_over_F = newton(err, x0, fprime=True)
         else:
             V_over_F = newton(err, x0, high=V_over_F_max*one_epsilon_smaller,
                               low=V_over_F_min*one_epsilon_larger)
@@ -771,7 +1147,7 @@ def Rachford_Rice_solution(zs, Ks, fprime=False, fprime2=False,
 #        assert V_over_F >= V_over_F_min2
 #        assert V_over_F <= V_over_F_max2
     except Exception as e:
-#        print(zs, Ks, e)
+        print(zs, Ks, e)
         V_over_F = brenth(err, V_over_F_max*one_epsilon_smaller, V_over_F_min*one_epsilon_larger)
                 
     xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]
@@ -794,6 +1170,18 @@ def Rachford_Rice_solution_numpy(zs, Ks, limit=True):
     V_over_F_min = ((Kmax-Kmin)*z_of_Kmax - (1.-Kmin))/((1.-Kmin)*(Kmax-1.))
     V_over_F_max = 1./(1.-Kmin)
 
+    if V_over_F_min < 0.0:
+        V_over_F_min *= one_epsilon_larger
+    else:
+        V_over_F_min *= one_epsilon_smaller
+
+    if V_over_F_max < 0.0:
+        V_over_F_max *= one_epsilon_larger
+    else:
+        V_over_F_max *= one_epsilon_smaller
+
+#    , one_epsilon_larger
+
     if limit:
         # Range will cover a region which has the solution for 0 < VF < 1
         V_over_F_min2 = max(0., V_over_F_min)
@@ -811,7 +1199,7 @@ def Rachford_Rice_solution_numpy(zs, Ks, limit=True):
         return err
     try:
         V_over_F = newton(err, x0)
-    except:
+    except Exception as e:
         V_over_F = brenth(err, V_over_F_max*one_epsilon_smaller, V_over_F_min*one_epsilon_larger)
         
     xs = zs/(1.0 + V_over_F*K_minus_1)
@@ -925,15 +1313,17 @@ FLASH_INNER_NR = 'Rachford-Rice (Newton-Raphson)'
 FLASH_INNER_HALLEY = 'Rachford-Rice (Halley)'
 FLASH_INNER_NUMPY = 'Rachford-Rice (NumPy)'
 FLASH_INNER_LJA = 'Li-Johns-Ahmadi'
+FLASH_INNER_POLY = 'Rachford-Rice (polynomial)'
 
 flash_inner_loop_methods = [FLASH_INNER_ANALYTICAL, 
                             FLASH_INNER_SECANT, FLASH_INNER_SECANT,
                             FLASH_INNER_NR, FLASH_INNER_HALLEY,
-                            FLASH_INNER_NUMPY, FLASH_INNER_LJA]
+                            FLASH_INNER_NUMPY, FLASH_INNER_LJA,
+                            FLASH_INNER_POLY]
 
 def flash_inner_loop_list_methods(l):
     methods = []
-    if l in (2,3):
+    if l in (2, 3, 4):
         methods.append(FLASH_INNER_ANALYTICAL)
     if l >= 10 and not IS_PYPY:
         methods.append(FLASH_INNER_NUMPY)
@@ -943,6 +1333,8 @@ def flash_inner_loop_list_methods(l):
             methods.append(FLASH_INNER_NUMPY)
     if l >= 3:
         methods.append(FLASH_INNER_LJA)
+    if l < 20:
+        methods.append(FLASH_INNER_POLY)
     return methods
 
 
@@ -995,7 +1387,7 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
     A total of six methods are available for this function. They are:
 
         * 'Analytical', an exact solution derived with SymPy, applicable only
-          only to mixtures of two or three components
+          only to mixtures of two, three, or four components
         * 'Rachford-Rice (Secant)', 'Rachford-Rice (Newton-Raphson)', 
           'Rachford-Rice (Halley)', or 'Rachford-Rice (NumPy)',
           which numerically solves an objective function
@@ -1013,7 +1405,7 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
         return flash_inner_loop_list_methods(l)
     elif Method is None:
         l = len(zs)
-        Method = FLASH_INNER_ANALYTICAL if l < 4 else (FLASH_INNER_NUMPY if (not IS_PYPY and l >= 10) else FLASH_INNER_SECANT)    
+        Method = FLASH_INNER_ANALYTICAL if l < 5 else (FLASH_INNER_NUMPY if (not IS_PYPY and l >= 10) else FLASH_INNER_SECANT)    
     if Method == FLASH_INNER_SECANT:
         return Rachford_Rice_solution(zs, Ks, limit=limit)
     elif Method == FLASH_INNER_ANALYTICAL:
@@ -1022,21 +1414,31 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
             z1, z2 = zs
             K1, K2 = Ks
             try:
-                V_over_F = (-K1*z1 - K2*z2 + z1 + z2)/(K1*K2*z1 + K1*K2*z2 - K1*z1 - K1*z2 - K2*z1 - K2*z2 + z1 + z2)
+                z1z2 = z1 + z2
+                K1z1 = K1*z1
+                K2z2 = K2*z2
+                t1 = z1z2 - K1z1 - K2z2 
+                V_over_F = (t1)/(t1 + K2*K1z1 + K1*K2z2 - K1*z2 - K2*z1)
             except ZeroDivisionError:
                 return Rachford_Rice_solution(zs=zs, Ks=Ks)
         elif l == 3:
             z1, z2, z3 = zs
             K1, K2, K3 = Ks
             V_over_F = (-K1*K2*z1/2 - K1*K2*z2/2 - K1*K3*z1/2 - K1*K3*z3/2 + K1*z1 + K1*z2/2 + K1*z3/2 - K2*K3*z2/2 - K2*K3*z3/2 + K2*z1/2 + K2*z2 + K2*z3/2 + K3*z1/2 + K3*z2/2 + K3*z3 - z1 - z2 - z3 - (K1**2*K2**2*z1**2 + 2*K1**2*K2**2*z1*z2 + K1**2*K2**2*z2**2 - 2*K1**2*K2*K3*z1**2 - 2*K1**2*K2*K3*z1*z2 - 2*K1**2*K2*K3*z1*z3 + 2*K1**2*K2*K3*z2*z3 - 2*K1**2*K2*z1*z2 + 2*K1**2*K2*z1*z3 - 2*K1**2*K2*z2**2 - 2*K1**2*K2*z2*z3 + K1**2*K3**2*z1**2 + 2*K1**2*K3**2*z1*z3 + K1**2*K3**2*z3**2 + 2*K1**2*K3*z1*z2 - 2*K1**2*K3*z1*z3 - 2*K1**2*K3*z2*z3 - 2*K1**2*K3*z3**2 + K1**2*z2**2 + 2*K1**2*z2*z3 + K1**2*z3**2 - 2*K1*K2**2*K3*z1*z2 + 2*K1*K2**2*K3*z1*z3 - 2*K1*K2**2*K3*z2**2 - 2*K1*K2**2*K3*z2*z3 - 2*K1*K2**2*z1**2 - 2*K1*K2**2*z1*z2 - 2*K1*K2**2*z1*z3 + 2*K1*K2**2*z2*z3 + 2*K1*K2*K3**2*z1*z2 - 2*K1*K2*K3**2*z1*z3 - 2*K1*K2*K3**2*z2*z3 - 2*K1*K2*K3**2*z3**2 + 4*K1*K2*K3*z1**2 + 4*K1*K2*K3*z1*z2 + 4*K1*K2*K3*z1*z3 + 4*K1*K2*K3*z2**2 + 4*K1*K2*K3*z2*z3 + 4*K1*K2*K3*z3**2 + 2*K1*K2*z1*z2 - 2*K1*K2*z1*z3 - 2*K1*K2*z2*z3 - 2*K1*K2*z3**2 - 2*K1*K3**2*z1**2 - 2*K1*K3**2*z1*z2 - 2*K1*K3**2*z1*z3 + 2*K1*K3**2*z2*z3 - 2*K1*K3*z1*z2 + 2*K1*K3*z1*z3 - 2*K1*K3*z2**2 - 2*K1*K3*z2*z3 + K2**2*K3**2*z2**2 + 2*K2**2*K3**2*z2*z3 + K2**2*K3**2*z3**2 + 2*K2**2*K3*z1*z2 - 2*K2**2*K3*z1*z3 - 2*K2**2*K3*z2*z3 - 2*K2**2*K3*z3**2 + K2**2*z1**2 + 2*K2**2*z1*z3 + K2**2*z3**2 - 2*K2*K3**2*z1*z2 + 2*K2*K3**2*z1*z3 - 2*K2*K3**2*z2**2 - 2*K2*K3**2*z2*z3 - 2*K2*K3*z1**2 - 2*K2*K3*z1*z2 - 2*K2*K3*z1*z3 + 2*K2*K3*z2*z3 + K3**2*z1**2 + 2*K3**2*z1*z2 + K3**2*z2**2)**0.5/2)/(K1*K2*K3*z1 + K1*K2*K3*z2 + K1*K2*K3*z3 - K1*K2*z1 - K1*K2*z2 - K1*K2*z3 - K1*K3*z1 - K1*K3*z2 - K1*K3*z3 + K1*z1 + K1*z2 + K1*z3 - K2*K3*z1 - K2*K3*z2 - K2*K3*z3 + K2*z1 + K2*z2 + K2*z3 + K3*z1 + K3*z2 + K3*z3 - z1 - z2 - z3)
+        elif l == 4 or l == 3:
+            return Rachford_Rice_solution_polynomial(zs, Ks)
         else:
-            raise Exception('Only solutions of one or two variables are available analytically')
+            raise Exception('Only solutions for components counts 2, 3, and 4 are available analytically')
         # Need to avoid zero divisions here
-        xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks) if zi != 0.0]
+        xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)] # if zi != 0.0
         ys = [Ki*xi for xi, Ki in zip(xs, Ks)]
         return V_over_F, xs, ys
+    
     elif Method == FLASH_INNER_NUMPY:
-        return Rachford_Rice_solution_numpy(zs=zs, Ks=Ks, limit=limit)
+        try:
+            return Rachford_Rice_solution_numpy(zs=zs, Ks=Ks, limit=limit)
+        except:
+            return Rachford_Rice_solution(zs=zs, Ks=Ks, limit=limit)
     elif Method == FLASH_INNER_NR:
         return Rachford_Rice_solution(zs=zs, Ks=Ks, limit=limit, fprime=True)
     elif Method == FLASH_INNER_HALLEY:
@@ -1044,6 +1446,8 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
     
     elif Method == FLASH_INNER_LJA:
         return Li_Johns_Ahmadi_solution(zs=zs, Ks=Ks)
+    elif Method == FLASH_INNER_POLY:
+        return Rachford_Rice_solution_polynomial(zs=zs, Ks=Ks)
     else:
         raise Exception('Incorrect Method input')
 

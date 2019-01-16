@@ -112,6 +112,11 @@ def test_Rachford_Rice_solution():
     assert_allclose(V_over_F, V_over_F_expect)
     assert_allclose(xs, xs_expect)
     assert_allclose(ys, ys_expect)
+    
+    # TODO support
+#    zs, Ks =([0.10000000000000002, 0.10000000000000002, 0.10000000000000002, 0.10000000000000002, 0.10000000000000002, 0.10000000000000002, 0.10000000000000002, 0.10000000000000002, 0.10000000000000002, 0.10000000000000002], [8392.392499558426, 12360.984782058651, 13065.127660554343, 13336.292668013915, 14828.275288641305, 15830.9627719128, 17261.101575196506, 18943.481861916727, 21232.279762917482, 23663.61696650799])
+#    flash_inner_loop(zs, Ks)
+
 
 
 def test_flash_inner_loop():
@@ -119,6 +124,15 @@ def test_flash_inner_loop():
     xs_expect = [0.33940869696634357, 0.3650560590371706, 0.2955352439964858]
     ys_expect = [0.5719036543882889, 0.27087159580558057, 0.15722474980613044]
     assert_allclose(V_over_F, 0.6907302627738544)
+    assert_allclose(xs, xs_expect)
+    assert_allclose(ys, ys_expect)
+
+    zs = [0.1, 0.2, 0.3, 0.4]
+    Ks = [4.2, 1.75, 0.74, 0.34]
+    xs_expect = [0.07194096138571988, 0.18324869220986345, 0.3098180825880347, 0.4349922638163819]
+    ys_expect = [0.30215203782002353, 0.320685211367261, 0.2292653811151457, 0.14789736969756986]
+    V_over_F, xs, ys = flash_inner_loop(zs=zs, Ks=Ks, Method='Analytical')
+    assert_allclose(V_over_F, 0.12188396426827647)
     assert_allclose(xs, xs_expect)
     assert_allclose(ys, ys_expect)
 
@@ -131,13 +145,14 @@ def test_flash_inner_loop():
     with pytest.raises(Exception):
         flash_inner_loop(zs=[0.6, 0.4], Ks=[1.685, 0.4], Method='FAIL')
     with pytest.raises(Exception):
-        flash_inner_loop(zs=[0.1, 0.2, 0.3, 0.4], Ks=[4.2, 1.75, 0.74, 0.34], Method='Analytical')
+        flash_inner_loop(zs=[0.1, 0.2, 0.3, 0.3, .01], Ks=[4.2, 1.75, 0.74, 0.34, .01], Method='Analytical')
 
     methods = flash_inner_loop(zs=[0.1, 0.2, 0.3, 0.4], Ks=[4.2, 1.75, 0.74, 0.34], AvailableMethods=True)
-    assert methods == ['Rachford-Rice (Secant)',
+    assert methods == ['Analytical', 'Rachford-Rice (Secant)',
                             'Rachford-Rice (Newton-Raphson)', 
                             'Rachford-Rice (Halley)', 'Rachford-Rice (NumPy)',
-                            'Li-Johns-Ahmadi']
+                            'Li-Johns-Ahmadi',
+                             'Rachford-Rice (polynomial)']
 
 
 def test_flash_solution_algorithms():
@@ -158,12 +173,33 @@ def test_flash_solution_algorithms():
     flash_inner_loop_halley = lambda zs, Ks: flash_inner_loop(zs=zs, Ks=Ks, Method='Rachford-Rice (Halley)')
     flash_inner_loop_numpy = lambda zs, Ks: flash_inner_loop(zs=zs, Ks=Ks, Method='Rachford-Rice (NumPy)')
     flash_inner_loop_LJA = lambda zs, Ks: flash_inner_loop(zs=zs, Ks=Ks, Method='Li-Johns-Ahmadi')
+    flash_inner_loop_poly = lambda zs, Ks: flash_inner_loop(zs=zs, Ks=Ks, Method='Rachford-Rice (polynomial)')
 
     algorithms = [Rachford_Rice_solution, Li_Johns_Ahmadi_solution,
                   flash_inner_loop, flash_inner_loop_secant, 
                   flash_inner_loop_NR, flash_inner_loop_halley, 
-                  flash_inner_loop_numpy, flash_inner_loop_LJA]
+                  flash_inner_loop_numpy, flash_inner_loop_LJA,
+                  flash_inner_loop_poly]
     for algo in algorithms:
+        
+        
+        # dummpy 2 test
+        zs, Ks = [.4, .6], [2, .5]
+        V_over_F_expect = 0.2
+        xs_expect = [1/3., 2/3.]
+        V_over_F, xs, ys = algo(zs=zs, Ks=Ks)
+        assert_allclose(V_over_F, V_over_F_expect)
+        assert_allclose(xs, xs_expect)
+
+        # Dummpy 3 test
+        zs = [0.5, 0.3, 0.2]
+        Ks = [1.685, 0.742, 0.532]
+        V_over_F_expect = 0.6907302627738541
+        xs_expect = [0.3394086969663436, 0.3650560590371706, 0.29553524399648573]
+        V_over_F, xs, ys = algo(zs=zs, Ks=Ks)
+        assert_allclose(V_over_F, V_over_F_expect)
+        assert_allclose(xs, xs_expect)
+
         # Said to be in:  J.D. Seader, E.J. Henley, D.K. Roper, Separation Process Principles, third ed., John Wiley & Sons, New York, 2010.
         zs = [0.1, 0.2, 0.3, 0.4]
         Ks = [4.2, 1.75, 0.74, 0.34]
@@ -219,7 +255,7 @@ def test_flash_solution_algorithms():
         zs = [0.0112, 0.8957, 0.0526, 0.0197, 0.0068, 0.0047, 0.0038, 0.0031, 0.0024]
         V_over_F_expect = 0.964872854762834
         V_over_F, xs, ys = algo(zs=zs, Ks=Ks)
-        assert_allclose(V_over_F, V_over_F_expect, rtol=1E-11)
+        assert_allclose(V_over_F, V_over_F_expect, rtol=1E-7)
 
         # Random example from Rachford-Rice-Exercise.xls http://www.ipt.ntnu.no/~curtis/courses/PhD-PVT/PVT-HOT-Vienna-May-2016x/e-course/Day2_Part2/Exercises/Rachford-Rice-Exercise.xls
         zs = [0.001601, 0.009103, 0.364815, 0.096731, 0.069522, 0.014405, 0.039312, 0.014405, 0.014104, 0.043219, 0.111308, 0.086659, 0.065183, 0.032209, 0.037425]
@@ -504,7 +540,7 @@ def test_flash_wilson_7_pts_44_components():
     
 
 @pytest.mark.xfail
-def test_flash_wilson_failurer_singularity():
+def test_flash_wilson_failure_singularity():
     '''TODO: Singularity detection and lagrange multipliers to avoid them
     '''
     m = Mixture(['methane', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10'], zs=[.1]*10, T=300, P=1E6)
@@ -516,6 +552,8 @@ def test_flash_wilson_failurer_singularity():
     assert_allclose(VF, 0.95)
     # .9521857343693697 is where the point below lands
     flash_wilson(zs=m.zs, Tcs=m.Tcs, Pcs=m.Pcs, omegas=m.omegas, P=1e6, T=33)
+    
+    
     
 
 
@@ -569,3 +607,60 @@ def test_flash_Tb_Tc_Pc_cases():
     assert_allclose(VF_calc, 0, atol=1e-12)
     assert_allclose(xs, [0.7058334393128627, 0.29416656068713737])
     assert_allclose(ys, [0.9999999137511981, 8.624880199749853e-08])
+
+
+def test_Rachford_Rice_polynomial():
+    zs, Ks = [.4, .6], [2, .5]
+    poly = Rachford_Rice_polynomial(zs, Ks)
+    coeffs_2 = [1.0, -0.20000000000000007]
+    assert_allclose(coeffs_2, poly)
+
+    zs = [0.5, 0.3, 0.2]
+    Ks = [1.685, 0.742, 0.532]
+    coeffs_3 = [1, -3.692652996676083, 2.073518878815094]
+    poly = Rachford_Rice_polynomial(zs, Ks)
+    assert_allclose(coeffs_3, poly)
+    
+    zs = [0.2, 0.3, 0.4, 0.1]
+    Ks = [2.5250, 0.7708, 1.0660, 0.2401]
+    coeffs_4 =  [1, 5.377031669207758, -24.416684496523914, 10.647389883139642]
+    poly = Rachford_Rice_polynomial(zs, Ks)
+    assert_allclose(coeffs_4, poly)
+    
+    zs = [0.2, 0.3, 0.4, 0.05, 0.05]
+    Ks = [2.5250, 0.7708, 1.0660, 0.2401, 0.3140]
+    poly = Rachford_Rice_polynomial(zs, Ks)
+    coeffs_5 = [1.0, 3.926393887728915, -32.1738043292604, 45.82179827480925, -15.828236126660224]
+    assert_allclose(coeffs_5, poly)
+    
+    zs = [0.05, 0.10, 0.15, 0.30, 0.30, 0.10]
+    Ks = [6.0934, 2.3714, 1.3924, 1.1418, 0.6457, 0.5563]
+    coeffs_6 = [1.0, 3.9413425113979077, -9.44556472337601, -18.952349132451488, 9.04210538319183, 5.606427780744831]
+    poly = Rachford_Rice_polynomial(zs, Ks)
+    assert_allclose(coeffs_6, poly)
+    
+    Ks = [0.9, 2.7, 0.38, 0.098, 0.038, 0.024, 0.075]
+    zs = [0.0112, 0.8957, 0.0526, 0.0197, 0.0068, 0.0047, 0.0093]
+    poly = Rachford_Rice_polynomial(zs, Ks)
+    coeffs_7 = [1.0, -15.564752719919635, 68.96609128282495, -141.05508474225547, 150.04980583027202, -80.97492465198536, 17.57885132690501]
+    assert_allclose(coeffs_7, poly)
+    
+    Ks = [0.90000, 2.70000, 0.38000, 0.09800, 0.03800, 0.02400, 0.07500, 0.00019]
+    zs = [0.0112, 0.8957, 0.0526, 0.0197, 0.0068, 0.0047, 0.0038, 0.0055]
+    poly = Rachford_Rice_polynomial(zs, Ks)
+    coeffs_8 = [1.0, -16.565387656773854, 84.54011830455603, -210.05547256828095, 291.1575729888513, -231.05951648043205, 98.55989361947283, -17.577207793453983]
+    assert_allclose(coeffs_8, poly)
+    
+    # 19 takes ~1 sec
+    zs = [0.3727, 0.0772, 0.0275, 0.0071, 0.0017, 0.0028, 0.0011, 0.0015, 0.0333, 0.0320, 0.0608, 0.0571, 0.0538, 0.0509, 0.0483, 0.0460, 0.0439, 0.0420, 0.0403]
+    Ks = [7.11, 4.30, 3.96, 1.51, 1.20, 1.27, 1.16, 1.09, 0.86, 0.80, 0.73, 0.65, 0.58, 0.51, 0.45, 0.39, 0.35, 0.30, 0.26]
+    coeffs_19 = [1.0, -0.8578819552817947, -157.7870481947649, 547.7859890170784, 6926.565858999385, 
+                 -39052.793041087636, -71123.61208697906, 890809.1105085013, -1246174.7361619857, 
+                 -5633651.629883111, 21025868.75287835, -15469951.107862322, -41001954.18122998,
+                 97340936.26910116, -72754773.28565726, 4301672.656674517, 17784298.9111024,
+                 -3479139.4994188584, -1635369.1552006816]
+    
+    poly = Rachford_Rice_polynomial(zs, Ks)
+    assert_allclose(coeffs_19, poly)
+    
+    # doubling 19 runs out of ram. 

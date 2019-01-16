@@ -752,6 +752,7 @@ class PropertyPackage(object):
             else:
                 T_high = max_Tc*8.0
     
+#        print('T_low, T_high', T_low, T_high)
         temp_pkg_cache = []
         def PH_error(T, P, zs, H_goal):
 #            print(T, P, H_goal)
@@ -763,7 +764,9 @@ class PropertyPackage(object):
                 temp_pkg.flash(T=T, P=P, zs=zs)
             temp_pkg._post_flash()
 #            print(temp_pkg.Hm - H_goal, T, P)
-            return temp_pkg.Hm - H_goal
+            err = temp_pkg.Hm - H_goal
+#            print(T, err)
+            return err
         
         def PH_VF_error(VF, P, zs, H_goal):
             if not temp_pkg_cache:
@@ -2209,19 +2212,21 @@ class GceosBase(Ideal):
         H = 0
         T = self.T
         P = self.P
+        T_REF_IG = self.T_REF_IG
+        HeatCapacityGases = self.HeatCapacityGases
         if self.phase == 'g':
             for i in self.cmps:
-                H += self.zs[i]*self.HeatCapacityGases[i].T_dependent_property_integral(self.T_REF_IG, T)
+                H += self.zs[i]*HeatCapacityGases[i].T_dependent_property_integral(T_REF_IG, T)
             H += self.eos_g.H_dep_g
         elif self.phase == 'l':
             for i in self.cmps:
-                H += self.zs[i]*self.HeatCapacityGases[i].T_dependent_property_integral(self.T_REF_IG, T)
+                H += self.zs[i]*HeatCapacityGases[i].T_dependent_property_integral(T_REF_IG, T)
             H += self.eos_l.H_dep_l
         elif self.phase == 'l/g':
             H_l, H_g = 0.0, 0.0
             dH_integrals = []
             for i in self.cmps:
-                dH_integrals.append(self.HeatCapacityGases[i].T_dependent_property_integral(self.T_REF_IG, T))
+                dH_integrals.append(HeatCapacityGases[i].T_dependent_property_integral(T_REF_IG, T))
                 
             for i in self.cmps:
                 H_g += self.ys[i]*dH_integrals[i]
@@ -2238,30 +2243,37 @@ class GceosBase(Ideal):
         S = 0.0
         T = self.T
         P = self.P
-        S -= R*sum([zi*log(zi) for zi in self.zs if zi > 0.0]) # ideal composition entropy composition
+        zs = self.zs
+        HeatCapacityGases = self.HeatCapacityGases
+        
+        # Could be ordered as log(zi^zi*zj^zj... and so on.)
+        # worth checking/trying!
+        # It is faster in CPython, slower or maybe faster in PyPy - very very hard to tell.
+        S -= R*sum([zi*log(zi) for zi in zs if zi > 0.0]) # ideal composition entropy composition
         if self.phase == 'g':
             S -= R*log(P/101325.) # Not sure, but for delta S - doesn't impact what is divided by.
             for i in self.cmps:
-                dS = self.HeatCapacityGases[i].T_dependent_property_integral_over_T(self.T_REF_IG, T)
-                S += self.zs[i]*dS
+                dS = HeatCapacityGases[i].T_dependent_property_integral_over_T(self.T_REF_IG, T)
+                S += zs[i]*dS
             S += self.eos_g.S_dep_g
                 
         elif self.phase == 'l':
             S -= R*log(P/101325.)
             for i in self.cmps:
-                dS = self.HeatCapacityGases[i].T_dependent_property_integral_over_T(self.T_REF_IG, T)
-                S += self.zs[i]*dS
+                dS = HeatCapacityGases[i].T_dependent_property_integral_over_T(self.T_REF_IG, T)
+                S += zs[i]*dS
             S += self.eos_l.S_dep_l
             
         elif self.phase == 'l/g':
             S_l = -R*sum([zi*log(zi) for zi in self.xs if zi > 0.0])
             S_g = -R*sum([zi*log(zi) for zi in self.ys if zi > 0.0])
             
-            S_l += -R*log(P/101325.)
-            S_g += - R*log(P/101325.)
+            mRlogPratio =  -R*log(P/101325.)
+            S_l += mRlogPratio
+            S_g += mRlogPratio
             dS_integrals = []
             for i in self.cmps:
-                dS = self.HeatCapacityGases[i].T_dependent_property_integral_over_T(self.T_REF_IG, T)
+                dS = HeatCapacityGases[i].T_dependent_property_integral_over_T(self.T_REF_IG, T)
                 dS_integrals.append(dS)
                 
             for i in self.cmps:
@@ -2329,10 +2341,23 @@ class GceosBase(Ideal):
 
 
     def _post_flash(self):
+        # Note: compositions are not being checked!
         if self.xs is not None:
-            self.eos_l = self.to_TP_zs(self.T, self.P, self.xs)
+            try:
+                if self.eos_l.T == self.T and self.eos_l.P == self.P:
+                    pass
+                else:
+                    raise ValueError
+            except:
+                self.eos_l = self.to_TP_zs(self.T, self.P, self.xs)
         if self.ys is not None:
-            self.eos_g = self.to_TP_zs(self.T, self.P, self.ys)
+            try:
+                if self.eos_g.T == self.T and self.eos_g.P == self.P:
+                    pass
+                else:
+                    raise ValueError
+            except:
+                self.eos_g = self.to_TP_zs(self.T, self.P, self.ys)
         # Cannot derive other properties with this
         try:
             self.Hm = self.enthalpy_eosmix()
@@ -2341,9 +2366,12 @@ class GceosBase(Ideal):
         except:
             pass
     
-    def to_TP_zs(self, T, P, zs):
+    def to_TP_zs(self, T, P, zs, fugacities=True, only_l=False, only_g=False):
         return self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
-                            zs=zs, kijs=self.kijs, T=T, P=P, **self.eos_kwargs)
+                            zs=zs, kijs=self.kijs, T=T, P=P, 
+                            fugacities=fugacities, only_l=only_l,
+                            only_g=only_g, **self.eos_kwargs)
+
 
     def flash_TP_zs_3P(self, T, P, zs):
         "From 5.9: Multiphase Split and Stability Analysis"
@@ -2375,7 +2403,7 @@ class GceosBase(Ideal):
         
 
     def flash_TP_zs(self, T, P, zs, Wilson_first=True):
-        eos = self.to_TP_zs(T=T, P=P, zs=zs)
+        eos = self.to_TP_zs(T=T, P=P, zs=zs, fugacities=False)
         try:
             G_dep_eos = min(eos.G_dep_l, eos.G_dep_g)
         except:
@@ -2386,7 +2414,7 @@ class GceosBase(Ideal):
             _, _, VF_wilson, xs_wilson, ys_wilson = flash_wilson(zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, 
                          P=P, T=T)
 #            print(VF_wilson, xs_wilson, ys_wilson, 'VF_wilson, xs_wilson, ys_wilson')
-            if 1e-7 < VF_wilson < 1-1e-7:
+            if 1e-7 < VF_wilson < 1.0 - 1e-7:
                 try:
                     VF, xs, ys, eos_l, eos_g = eos.sequential_substitution_VL( 
                                                 maxiter=self.substitution_maxiter,
@@ -2395,8 +2423,14 @@ class GceosBase(Ideal):
                                                 xs=xs_wilson, ys=ys_wilson
                                                 )
                     phase = 'l/g'
-                    G_dep_l = eos_l.G_dep_l if hasattr(eos_l, 'G_dep_l') else eos_l.G_dep_g
-                    G_dep_g = eos_g.G_dep_g if hasattr(eos_g, 'G_dep_g') else eos_g.G_dep_l
+                    try:
+                        G_dep_l = eos_l.G_dep_l
+                    except AttributeError:
+                        G_dep_l = eos_l.G_dep_g
+                    try:
+                        G_dep_g = eos_g.G_dep_g
+                    except AttributeError:
+                        G_dep_g = eos_g.G_dep_l
                 
                     G_TP = G_dep_l*(1.0 - VF) + G_dep_g*VF
                     
