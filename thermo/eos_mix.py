@@ -697,6 +697,20 @@ class GCEOSMIX(GCEOS):
             self.phis_g = [exp(i) for i in self.lnphis_g]
             self.fugacities_g = [phi*y*P for phi, y in zip(self.phis_g, ys)]
 
+    def eos_lnphis_lowest_Gibbs(self):
+        try:        
+            try:
+                if self.G_dep_l < self.G_dep_g:
+                    return self.lnphis_l, 'l'
+                else:
+                    return self.lnphis_g, 'g'
+            except:
+                # Only one root - take it and set the prefered other phase to be a different type
+                return (self.lnphis_g, 'g') if hasattr(self, 'Z_g') else (self.lnphis_l, 'l')
+        except:
+            self.fugacities()
+            return self.eos_fugacities_lowest_Gibbs()
+
 
     def eos_fugacities_lowest_Gibbs(self):
         try:        
@@ -893,6 +907,27 @@ class GCEOSMIX(GCEOS):
 
         tot = 0.0
         for i in range(self.N):
+            t = kis[i+1] - kis[i]
+            tot += t*t
+        return tot
+    
+    @staticmethod
+    def Stateva_Tsvetkov_TPDF_fixed(log_phi_zs, log_phi_ys, zs, ys):
+        kis = []
+        for yi, log_phi_yi, zi, log_phi_zi in zip(ys, log_phi_ys, zs, log_phi_zs):
+            di = log_phi_zi + (log(zi) if zi > 0.0 else -690.0)
+            
+            
+            try:
+                ki = log_phi_yi + log(yi) - di
+            except ValueError:
+                # log - yi is negative; convenient to handle it to make the optimization take negative comps
+                ki = log_phi_yi + -690.0 - di
+            kis.append(ki)
+        kis.append(kis[0])
+
+        tot = 0.0
+        for i in range(len(zs)):
             t = kis[i+1] - kis[i]
             tot += t*t
         return tot
@@ -3464,3 +3499,34 @@ def eos_Z_trial_phase_stability(eos, prefer, alt):
         except:
             Z_trial = getattr(eos, prefer)
     return Z_trial
+
+
+def eos_lnphis_test_phase_stability(eos):        
+    try:
+        if eos.G_dep_l < eos.G_dep_g:
+            lnphis_eos = eos.lnphis_l
+            prefer, alt = 'lnphis_g', 'lnphis_l'
+        else:
+            lnphis_eos = eos.lnphis_g
+            prefer, alt =  'lnphis_l', 'lnphis_g'
+    except:
+        # Only one root - take it and set the prefered other phase to be a different type
+        lnphis_eos = eos.lnphis_g if hasattr(eos, 'lnphis_g') else eos.lnphis_l
+        prefer = 'lnphis_l' if hasattr(eos, 'lnphis_g') else 'lnphis_g'
+        alt = 'lnphis_g' if hasattr(eos, 'lnphis_g') else 'lnphis_l'
+    return lnphis_eos, prefer, alt
+
+
+def eos_lnphis_trial_phase_stability(eos, prefer, alt):
+    try:
+        if eos.G_dep_l < eos.G_dep_g:
+            lnphis_trial = eos.lnphis_l
+        else:
+            lnphis_trial = eos.lnphis_g
+    except:
+        # Only one phase, doesn't matter - only that phase will be returned
+        try:
+            lnphis_trial = getattr(eos, alt)
+        except:
+            lnphis_trial = getattr(eos, prefer)
+    return lnphis_trial

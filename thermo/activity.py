@@ -1112,7 +1112,8 @@ def Rachford_Rice_solution(zs, Ks, fprime=False, fprime2=False,
             return err0, err1
     else:
         def err(V_over_F):
-            return sum([num/(1. + V_over_F*Kim1) for num, Kim1 in zip(zs_k_minus_1, K_minus_1)])
+            diff =  sum([num/(1. + V_over_F*Kim1) for num, Kim1 in zip(zs_k_minus_1, K_minus_1)])
+            return diff
 
             
 #    if not fprime and not fprime2:
@@ -1147,7 +1148,6 @@ def Rachford_Rice_solution(zs, Ks, fprime=False, fprime2=False,
 #        assert V_over_F >= V_over_F_min2
 #        assert V_over_F <= V_over_F_max2
     except Exception as e:
-        print(zs, Ks, e)
         V_over_F = brenth(err, V_over_F_max*one_epsilon_smaller, V_over_F_min*one_epsilon_larger)
                 
     xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]
@@ -1196,9 +1196,11 @@ def Rachford_Rice_solution_numpy(zs, Ks, limit=True):
     zs_k_minus_1 = zs*K_minus_1
     def err(V_over_F):
         err = float((zs_k_minus_1/(1.0 + V_over_F*K_minus_1)).sum())
+        print(V_over_F, err)
         return err
     try:
-        V_over_F = newton(err, x0)
+        V_over_F = newton(err, x0, high=V_over_F_max*one_epsilon_smaller,
+                              low=V_over_F_min*one_epsilon_larger)
     except Exception as e:
         V_over_F = brenth(err, V_over_F_max*one_epsilon_smaller, V_over_F_min*one_epsilon_larger)
         

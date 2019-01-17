@@ -319,6 +319,7 @@ all_expected_SRKMIX_CH4_H2S = [[.9885],
            ]
 
 def test_Stateva_Tsvetkov_TPDF_SRKMIX_CH4_H2S():
+    # ALL WRONG - did not use two EOS correctly, did not use SHGO
     '''Data and examples from 
     Ivanov, Boyan B., Anatolii A. Galushko, and Roumiana P. Stateva. "Phase 
     Stability Analysis with Equations of State-A Fresh Look from a Different 
@@ -329,8 +330,7 @@ def test_Stateva_Tsvetkov_TPDF_SRKMIX_CH4_H2S():
     a, b values of the SRK c1, and c2 values, as well as the gas constant; this
     is a very sensitive calculation. However, all the trivial points match
     exactly, and no *extra* roots could be found at all.
-    
-    This is all believe to be correct.
+
     Note: future scipy.minimize behavior might make some guesses converge elsewhere.
     
     This example is the closest - other examples do not match so well, though
@@ -365,6 +365,7 @@ def test_Stateva_Tsvetkov_TPDF_SRKMIX_CH4_H2S():
                 assert_allclose(float(ans['x']), expected[j], rtol=1e-6)        
 
 def test_d_TPD_Michelson_modified_SRKMIX_CH4_H2S():
+    # ALL WRONG - did not use two EOS correctly, did not use SHGO
     all_guesses = [[[0.98]],
                [[0.98], [[6530, 18900]], [[59000, 53600]], [0.91]],
                [[.92], [[9, 18]], [[20, 4]], [0.98]],
@@ -406,6 +407,7 @@ def test_d_TPD_Michelson_modified_SRKMIX_CH4_H2S():
 
 
 def test_Stateva_Tsvetkov_TPDF_PRMIX_Nitrogen_Methane_Ethane():
+    # ALL WRONG - did not use two EOS correctly, did not use SHGO
     '''Data and examples from 
     Ivanov, Boyan B., Anatolii A. Galushko, and Roumiana P. Stateva. "Phase 
     Stability Analysis with Equations of State-A Fresh Look from a Different 
@@ -417,7 +419,6 @@ def test_Stateva_Tsvetkov_TPDF_PRMIX_Nitrogen_Methane_Ethane():
     is a very sensitive calculation. However, all the trivial points match
     exactly. One extra root was found for the third case.
     
-    This is all believe to be correct.
     Note: future scipy.minimize behavior might make some guesses converge elsewhere.
     '''
     # Problem 5: Nitrogen + Methane + Ethane at T = 270 K and P = 76 bar.
@@ -433,6 +434,8 @@ def test_Stateva_Tsvetkov_TPDF_PRMIX_Nitrogen_Methane_Ethane():
             [.15, .3, .55],
             [.08, .38, .54],
             [.05, .05, .9]]
+    
+#    0.13303524, 0.06779703,; 0.31165468, 0.1016158 
     
     all_expected = [[[0.35201577,  0.10728462], [0.3, 0.1], [0.08199763,  0.04915481]],
                     [ [0.06451677,  0.19372499], [0.17128871, 0.31864581], [0.15, 0.3] ],
