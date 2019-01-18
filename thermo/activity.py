@@ -26,6 +26,7 @@ __all__ = ['K_value', 'Wilson_K_value', 'flash_wilson', 'flash_Tb_Tc_Pc',
            'Rachford_Rice_flash_error', 
            'Rachford_Rice_solution', 'Rachford_Rice_polynomial',
            'Rachford_Rice_solution_polynomial',
+           'Rachford_Rice_solution2',
            'Li_Johns_Ahmadi_solution', 'flash_inner_loop', 'NRTL', 'Wilson',
            'UNIQUAC', 'flash', 'dew_at_T',
            'bubble_at_T', 'identify_phase', 'mixture_phase_methods',
@@ -33,7 +34,7 @@ __all__ = ['K_value', 'Wilson_K_value', 'flash_wilson', 'flash_Tb_Tc_Pc',
            'Pdew_mixture']
 
 from fluids.numerics import IS_PYPY, one_epsilon_larger, one_epsilon_smaller
-from fluids.numerics import roots_cubic, horner, brenth, py_newton as newton # Always use this method for advanced features
+from fluids.numerics import newton_system, roots_cubic, horner, brenth, py_newton as newton # Always use this method for advanced features
 from thermo.utils import exp, log
 from thermo.utils import none_and_length_check
 from thermo.utils import R
@@ -950,35 +951,116 @@ def Rachford_Rice_flash_error(V_over_F, zs, Ks):
     '''
     return sum([zi*(Ki-1.)/(1.+V_over_F*(Ki-1.)) for Ki, zi in zip(Ks, zs)])
 
-def Rachford_Rice_flash_error2(betas, zs, Ks_y, Ks_z):
+
+
+def Rachford_Rice_flash2_f_jac(betas, zs, Ks_y, Ks_z):
+    # In a more clever system like RR 2, can compute entire numerators before hand.
     beta_y, beta_z = float(betas[0]), float(betas[1])
-    err1 = sum([zi*(Ky-1.)/(1.+beta_y*(Ky-1.) + beta_z*(Kz-1.)) for Ky, Kz, zi in zip(Ks_y, Ks_z, zs)])
-    err2 = sum([zi*(Kz-1.)/(1.+beta_y*(Ky-1.) + beta_z*(Kz-1.)) for Ky, Kz, zi in zip(Ks_y, Ks_z, zs)])
-    print('error', err1, err2)
-    return [err1, err2]
+    F0 = 0.0
+    F1 = 0.0
+    dF0_dy = 0.0
+    dF0_dz = 0.0
+    dF1_dz = 0.0
 
-def Rachford_Rice_solution2(zs, Ks_y, Ks_z, beta_y=0.5, beta_z=1e-6):
-    from scipy.optimize import fsolve, root
-    ans = fsolve(Rachford_Rice_flash_error2, x0=[beta_y, beta_z], args=(zs, Ks_y, Ks_z))
-    print('root')
-    from fluids.numerics import newton_system
-    import numdifftools as nd
-    
-#    def err(betas):
-#        return np.array(Rachford_Rice_flash_error2(betas, zs, Ks_y, Ks_z))
-#    Jfun = nd.Jacobian(err, step=1e-5, order=2, method='forward')
-#    ans = newton_system(err, x0=[beta_y, 1e-6], jac=Jfun)
-    print(ans)
-    
-#    print(root(Rachford_Rice_flash_error2, x0=[beta_y, 1e-6], args=(zs, Ks_y, Ks_z)))
+    for zi, Ky_i, Kz_i in zip(zs, Ks_y, Ks_z):
+        Ky_m1 = (Ky_i - 1.0)
+        ziKy_m1 = zi*Ky_m1
 
+        Kz_m1 = (Kz_i - 1.0)
+        ziKz_m1 = zi*Kz_m1
+
+        denom_inv = 1.0/(1.0 + beta_y*Ky_m1 + beta_z*Kz_m1) # same in all
+        delta_F0 = ziKy_m1*denom_inv
+        delta_F1 = ziKz_m1*denom_inv
+
+        F0 += delta_F0
+        F1 += delta_F1
+        dF0_dy -= delta_F0*Ky_m1*denom_inv
+        dF0_dz -= delta_F0*Kz_m1*denom_inv
+        dF1_dz -= delta_F1*Kz_m1*denom_inv
+
+    return [F0, F1], [[dF0_dy, dF0_dz], [dF0_dz, dF1_dz]]
+
+
+def Rachford_Rice_solution2(ns, Ks_y, Ks_z, beta_y=0.5, beta_z=1e-6):
+    r'''Solves the two objective functions of the Rachford-Rice flash equation
+    for a three-phase system. Initial guesses are required for both phase 
+    fractions, `beta_y` and `beta_z`. The Newton method is used, with an
+    analytical Jacobian.
+
+    .. math::
+        F_0 = \frac{z_i (K_y -1)}{1 + \beta_y(K_y-1) + \beta_z(K_z-1)} = 0
+
+    .. math::
+        F_1 = \frac{z_i (K_z -1)}{1 + \beta_y(K_y-1) + \beta_z(K_z-1)} = 0
+        
+    Parameters
+    ----------
+    ns : list[float]
+        Overall mole fractions of all species (would be `zs` except that is
+        conventially used for one of the three phases), [-]
+    Ks_y : list[float]
+        Equilibrium K-values of `y` phase to `x` phase, [-]
+    Ks_z : list[float]
+        Equilibrium K-values of `z` phase to `x` phase, [-]
+    beta_y : float
+        Initial guess for `y` phase (between 0 and 1), [-]
+    beta_z : float
+        Initial guess for `z` phase (between 0 and 1), [-]
+        
+    Returns
+    -------
+    beta_y : float
+        Phase fraction of `y` phase, [-]
+    beta_z : float
+        Phase fraction of `z` phase, [-]
+    xs : list[float]
+        Mole fractions of each species in the `x` phase, [-]
+    ys : list[float]
+        Mole fractions of each species in the `y` phase, [-]
+    zs : list[float]
+        Mole fractions of each species in the `z` phase, [-]
     
+    Notes
+    -----
+    The elements of the Jacobian are calculated as follows:
+
+    .. math::
+        \frac{\partial F_0}{\partial \beta_y} = \frac{-z_i (K_y -1)^2}{\left(1
+        + \beta_y(K_y-1) + \beta_z(K_z-1)\right)^2}
+
+    .. math::
+        \frac{\partial F_1}{\partial \beta_z} = \frac{-z_i (K_z -1)^2}{\left(1 
+        + \beta_y(K_y-1) + \beta_z(K_z-1)\right)^2}
+
+    .. math::
+        \frac{\partial F_1}{\partial \beta_y} =  \frac{\partial F_0}{\partial
+        \beta_z}  = \frac{-z_i (K_z -1)(K_y - 1)}{\left(1 + \beta_y(K_y-1)
+        + \beta_z(K_z-1)\right)^2}
+        
+    The solution which Newton's method converges to may not be the desired one.
+        
+    Examples
+    --------
+    >>> ns = [0.204322076984, 0.070970999150, 0.267194323384, 0.296291964579, 0.067046080882, 0.062489248292, 0.031685306730]
+    >>> Ks_y = [1.23466988745, 0.89727701141, 2.29525708098, 1.58954899888, 0.23349348597, 0.02038108640, 1.40715641002]
+    >>> Ks_z = [1.52713341421, 0.02456487977, 1.46348240453, 1.16090546194, 0.24166289908, 0.14815282572, 14.3128010831]
+    >>> Rachford_Rice_solution2(ns, Ks_y, Ks_z, beta_y=.1, beta_z=.6)
+    ... (0.6868328915094766, 0.06019424397668606, [0.1712804659711611, 0.08150738616425436, 0.1393433949193188, 0.20945175387703213, 0.15668977784027893, 0.22650123851718007, 0.015225982711774586], [0.21147483364299702, 0.07313470386530294, 0.31982891387635903, 0.33293382568889657, 0.036586042443791586, 0.004616341311925655, 0.02142533917172731], [0.26156812278601893, 0.00200221914149187, 0.20392660665189805, 0.2431536850887592, 0.03786610596908295, 0.03355679851539993, 0.21792646184834918])
     
-    beta_y, beta_z = float(ans[0]), float(ans[1])
-    xs = [zi/(1.+beta_y*(Ky-1.) + beta_z*(Kz-1.)) for Ky, Kz, zi in zip(Ks_y, Ks_z, zs)]
+    References
+    ----------
+    .. [1] 
+    '''
+    (beta_y, beta_z), iter = newton_system(Rachford_Rice_flash2_f_jac, jac=True, 
+                                           x0=[beta_y, beta_z], args=(ns, Ks_y, Ks_z),
+                                          ytol=1e-10)
+
+    xs = [zi/(1.+beta_y*(Ky-1.) + beta_z*(Kz-1.)) for Ky, Kz, zi in zip(Ks_y, Ks_z, ns)]
     ys = [Ky*xi for xi, Ky in zip(xs, Ks_y)]
     zs = [Kz*xi for xi, Kz in zip(xs, Ks_z)]
     return beta_y, beta_z, xs, ys, zs
+
 
 def Rachford_Rice_solution(zs, Ks, fprime=False, fprime2=False,
                            limit=True):

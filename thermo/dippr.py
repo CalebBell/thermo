@@ -352,7 +352,7 @@ def EQ105(T, A, B, C, D):
     .. [1] Design Institute for Physical Properties, 1996. DIPPR Project 801
        DIPPR/AIChE
     '''
-    return A/B**(1. + (1. - T/C)**D)
+    return A*B**(-(1. + (1. - T/C)**D))
 
 
 def EQ106(T, Tc, A, B, C=0.0, D=0.0, E=0.0):

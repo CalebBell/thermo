@@ -274,7 +274,7 @@ def test_flash_solution_algorithms():
 
 
 @pytest.mark.slow
-def test_fuzz():
+def test_fuzz_flash_inner_loop():
 #    np.random.seed(0)
     for i in range(5000):
         n = np.random.randint(2,100)
@@ -284,6 +284,33 @@ def test_fuzz():
         if any(Ks > 1) and any(Ks < 1):
             zs, Ks = list(zs), list(Ks)
             flash_inner_loop(zs=zs, Ks=Ks)
+
+def test_Rachford_Rice_solution2():
+    from thermo.activity import Rachford_Rice_flash2_f_jac
+    zs = [0.204322076984, 0.070970999150, 0.267194323384, 0.296291964579, 0.067046080882, 0.062489248292, 0.031685306730]
+    Ks_y = [1.23466988745, 0.89727701141, 2.29525708098, 1.58954899888, 0.23349348597, 0.02038108640, 1.40715641002]
+    Ks_z = [1.52713341421, 0.02456487977, 1.46348240453, 1.16090546194, 0.24166289908, 0.14815282572, 14.3128010831]
+    betas = [0.01, .6]
+    f, jac = Rachford_Rice_flash2_f_jac(betas, zs, Ks_y, Ks_z)
+    # Obtained with numdiffftools's Jacobian function
+    fs_expect = [0.22327453005006953, -0.10530391302991113]
+    jac_expect = [[-0.7622803760231517, -0.539733935411029], [-0.539733935411029, -0.86848106463838]]
+    assert_allclose(f, fs_expect)
+    assert_allclose(jac, jac_expect)
+    
+    ans = Rachford_Rice_solution2(zs, Ks_y, Ks_z, beta_y=.1, beta_z=.6)
+    xs_expect = [0.1712804659711611, 0.08150738616425436, 0.1393433949193188, 0.20945175387703213, 0.15668977784027893, 0.22650123851718007, 0.015225982711774586]
+    ys_expect = [0.21147483364299702, 0.07313470386530294, 0.31982891387635903, 0.33293382568889657, 0.036586042443791586, 0.004616341311925655, 0.02142533917172731]
+    zs_expect = [0.26156812278601893, 0.00200221914149187, 0.20392660665189805, 0.2431536850887592, 0.03786610596908295, 0.03355679851539993, 0.21792646184834918]
+    assert_allclose([ans[0], ans[1]], [0.6868328915094766, 0.06019424397668606])
+    assert_allclose(ans[2], xs_expect)
+    assert_allclose(ans[3], ys_expect)
+    assert_allclose(ans[4], zs_expect)
+
+
+
+
+
 
 def test_identify_phase():
     # Above the melting point, higher pressure than the vapor pressure
