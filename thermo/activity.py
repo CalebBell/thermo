@@ -25,8 +25,9 @@ from __future__ import division
 __all__ = ['K_value', 'Wilson_K_value', 'flash_wilson', 'flash_Tb_Tc_Pc',
            'Rachford_Rice_flash_error', 
            'Rachford_Rice_solution', 'Rachford_Rice_polynomial',
-           'Rachford_Rice_solution_polynomial',
-           'Rachford_Rice_solution2',
+           'Rachford_Rice_solution_polynomial', 'Rachford_Rice_solution_LN2',
+           'Rachford_Rice_solution2', 'Rachford_Rice_solutionN',
+           'Rachford_Rice_flashN_f_jac', 'Rachford_Rice_flash2_f_jac',
            'Li_Johns_Ahmadi_solution', 'flash_inner_loop', 'NRTL', 'Wilson',
            'UNIQUAC', 'flash', 'dew_at_T',
            'bubble_at_T', 'identify_phase', 'mixture_phase_methods',
@@ -34,7 +35,7 @@ __all__ = ['K_value', 'Wilson_K_value', 'flash_wilson', 'flash_Tb_Tc_Pc',
            'Pdew_mixture']
 
 from fluids.numerics import IS_PYPY, one_epsilon_larger, one_epsilon_smaller
-from fluids.numerics import newton_system, roots_cubic, horner, brenth, py_newton as newton # Always use this method for advanced features
+from fluids.numerics import newton_system, roots_cubic, roots_quartic, horner, brenth, py_newton as newton # Always use this method for advanced features
 from thermo.utils import exp, log
 from thermo.utils import none_and_length_check
 from thermo.utils import R
@@ -588,6 +589,58 @@ def Rachford_Rice_polynomial_4(zs, Cs):
               (x0 + x2 + x4 + x6)/a]
     return coeffs
 
+def Rachford_Rice_polynomial_5(zs, Cs):
+    z0, z1, z2, z3, z4 = zs
+    C0, C1, C2, C3, C4 = Cs
+    x0 = C0*z0
+    x1 = C1*x0
+    x2 = C2*x1
+    x3 = C1*z1
+    x4 = C0*x3
+    x5 = C2*x4
+    x6 = C2*z2
+    x7 = C0*x6
+    x8 = C1*x7
+    x9 = C3*z3
+    x10 = C0*x9
+    x11 = C1*x10
+    x12 = C4*z4
+    x13 = C0*x12
+    x14 = C1*x13
+    x15 = C3*x1
+    x16 = C3*x4
+    x17 = C2*x0
+    x18 = C3*x17
+    x19 = C3*x7
+    x20 = C2*x10
+    x21 = C2*x13
+    x22 = C2*x3
+    x23 = C3*x22
+    x24 = C1*x6
+    x25 = C3*x24
+    x26 = C1*x9
+    x27 = C2*x26
+    x28 = C1*x12
+    x29 = C2*x28
+    x30 = C3*x0
+    x31 = C3*x3
+    x32 = C3*x6
+    x33 = C2*x9
+    x34 = C2*x12    
+    a = C0*C1*C2*C3*C4*(z0 + z1 + z2 + z3 + z4)
+    b = (C2*x11 + C2*x14 + C3*x14 + C3*x2 + C3*x21 + C3*x29 + C3*x5 + C3*x8
+         + C4*x11 + C4*x15 + C4*x16 + C4*x18 + C4*x19 + C4*x2 + C4*x20 + C4*x23
+         + C4*x25 + C4*x27 + C4*x5 + C4*x8)/a
+    c = (C3*x13 + C3*x28 + C3*x34 + C4*x1 + C4*x10 + C4*x17 + C4*x22 + C4*x24 
+         + C4*x26 + C4*x30 + C4*x31 + C4*x32 + C4*x33 + C4*x4 + C4*x7 + x11
+         + x14 + x15 + x16 + x18 + x19 + x2 + x20 + x21 + x23 + x25 + x27 
+         + x29 + x5 + x8)/a
+    d = (C3*x12 + C4*x0 + C4*x3 + C4*x6 + C4*x9 + x1 + x10 + x13 + x17 + x22 
+         + x24 + x26 + x28 + x30 + x31 + x32 + x33 + x34 + x4 + x7)/a
+    e = (x0 + x12 + x3 + x6 + x9)/a
+    return [1.0, b, c, d, e]
+
+    
 _RR_poly_idx_cache = {}
 def _Rachford_Rice_polynomial_coeff(value, zs, Cs, N):
     global_list = []
@@ -660,7 +713,7 @@ def _Rachford_Rice_polynomial_coeff(value, zs, Cs, N):
 def Rachford_Rice_polynomial(zs, Ks):
     r'''Transforms the Rachford-Rice equation into a polynomial and returns
     its coefficients.
-    A spelled-out solution is used for N from 2 to 4, derived with SymPy and
+    A spelled-out solution is used for N from 2 to 5, derived with SymPy and
     optimized with the common sub expression approach.
     
     .. warning:: For large numbers of components (>20) this model performs 
@@ -723,6 +776,7 @@ def Rachford_Rice_polynomial(zs, Ks):
     
     The first coefficient is always 1.
     
+    The approach is also discussed in [3]_, with one example.
     
     Examples
     --------
@@ -735,6 +789,11 @@ def Rachford_Rice_polynomial(zs, Ks):
        Function in Flash Calculations." Pennsylvania State University, 1992.
     .. [2] Warren, John H. "Explicit Determination of the Vapor Fraction in 
        Flash Calculations." Pennsylvania State University, 1991.
+    .. [3] Monroy-Loperena, Rosendo, and Felipe D. Vargas-Villamil. "On the
+       Determination of the Polynomial Defining of Vapor-Liquid Split of 
+       Multicomponent Mixtures." Chemical Engineering Science 56, no. 20 
+       (October 1, 2001): 5865-68.
+       https://doi.org/10.1016/S0009-2509(01)00267-6.
     '''
     N = len(zs)
     Cs = [Ki - 1.0 for Ki in Ks]
@@ -742,10 +801,12 @@ def Rachford_Rice_polynomial(zs, Ks):
         C0, C1 = Cs
         z0, z1 = zs
         return [1.0, (C0*z0 + C1*z1)/(C0*C1*(z0 + z1))]
-    if N == 3:
+    elif N == 3:
         return Rachford_Rice_polynomial_3(zs, Cs)
-    if N == 4:
+    elif N == 4:
         return Rachford_Rice_polynomial_4(zs, Cs)
+    elif N == 5:
+        return Rachford_Rice_polynomial_5(zs, Cs)
     
     
     Cs_inv = [1.0/Ci for Ci in Cs]
@@ -861,7 +922,7 @@ def Rachford_Rice_solution_polynomial(zs, Ks):
         V_over_F_max *= one_epsilon_smaller
     
 
-    if N > 4:
+    if N > 5:
         # For safety, obtain limits of K 
         x0 = 0.5*(V_over_F_min + V_over_F_max)
         def err(VF):
@@ -880,17 +941,21 @@ def Rachford_Rice_solution_polynomial(zs, Ks):
             coeffs = (0.0,) + tuple(poly)
         elif N == 2:
             coeffs = (0.0, 0.0) + tuple(poly)
-        roots = roots_cubic(*coeffs)
+        if N == 5:
+            roots = roots_quartic(*poly)
+        else:
+            roots = roots_cubic(*coeffs)
         if N == 2:
             V_over_F = roots[0]
         else:
             V_over_F = None
             for root in roots:
-                if root.imag == 0.0 and V_over_F_min <= root <= V_over_F_max:
-                    V_over_F = root 
+                if abs(root.imag) < 1e-9 and V_over_F_min <= root.real <= V_over_F_max:
+#                if root.imag == 0.0 and V_over_F_min <= root <= V_over_F_max:
+                    V_over_F = root.real
                     break
             if V_over_F is None:
-                raise ValueError("Bad roots", roots)
+                raise ValueError("Bad roots", roots, "Root should be between V_over_F_min and V_over_F_max")
     
     xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]
     ys = [Ki*xi for xi, Ki in zip(xs, Ks)]
@@ -952,6 +1017,37 @@ def Rachford_Rice_flash_error(V_over_F, zs, Ks):
     return sum([zi*(Ki-1.)/(1.+V_over_F*(Ki-1.)) for Ki, zi in zip(Ks, zs)])
 
 
+def Rachford_Rice_flashN_f_jac(betas, ns, Ks):
+    N = len(betas)
+    betas = [float(i) for i in betas]
+    Fs = [0.0]*N
+    dFs_dBetas = [[0.0]*N for i in range(N)]
+    
+    Ksm1 = [[i-1.0 for i in Ks_i] for Ks_i in Ks]
+    zsKsm1 = [[zi*Ksim1 for zi, Ksim1 in zip(ns, Ksm1i)] for Ksm1i in Ksm1]
+    
+    for i, zi in enumerate(ns):
+        denom = 1.0
+        for j, beta_i in enumerate(betas):
+            denom += beta_i*Ksm1[j][i]
+        denom_inv = 1.0/denom
+        denom_inv2 = denom_inv*denom_inv
+        
+        for j in range(N):
+            Fs[j] += zsKsm1[j][i]*denom_inv
+
+        for j in range(N):
+            for k in range(N):
+                if k <= j:
+                    term = zsKsm1[j][i]*Ksm1[k][i]*denom_inv2
+                    if k == j:
+                        dFs_dBetas[k][j] -= term
+                    else:
+                        dFs_dBetas[k][j] -= term
+                        dFs_dBetas[j][k] -= term
+
+    return Fs, dFs_dBetas
+
 
 def Rachford_Rice_flash2_f_jac(betas, zs, Ks_y, Ks_z):
     # In a more clever system like RR 2, can compute entire numerators before hand.
@@ -982,6 +1078,100 @@ def Rachford_Rice_flash2_f_jac(betas, zs, Ks_y, Ks_z):
     return [F0, F1], [[dF0_dy, dF0_dz], [dF0_dz, dF1_dz]]
 
 
+def Rachford_Rice_valid_solution_naive(ns, betas, Ks, limit_betas=False):
+    if limit_betas:
+        for beta in betas:
+            if beta < 0.0 or beta > 1.0:
+                return False
+    
+    for i, ni in enumerate(ns):
+        sum_critiria = 1.0
+        for j, beta_i in enumerate(betas):
+            sum_critiria += beta_i*(Ks[j][i] - 1.0)
+        if sum_critiria < 0.0:
+            # Will result in negative composition for xi, yi, and zi
+            return False
+    return True
+
+
+def Rachford_Rice_solutionN(ns, Ks, betas):
+    r'''Solves the (phases -1) objectives functions of the Rachford-Rice flash 
+    equation for an N-phase system. Initial guesses are required for all phase 
+    fractions except the last`. The Newton method is used, with an
+    analytical Jacobian.
+        
+    Parameters
+    ----------
+    ns : list[float]
+        Overall mole fractions of all species, [-]
+    Ks : list[list[float]]
+        Equilibrium K-values of all phases phase to the `x` phase, [-]
+    betas : list[float]
+        Phase fraction guesses for the first N - 1 phases, [-]
+        
+    Returns
+    -------
+    betas : list[float]
+        Phase fractions of the first N-1 phases, [-]
+    compositions : list[list[float]]
+        Mole fractions of each species in each phase, [-]
+    
+    Notes
+    -----
+    Besides testing with three phases, only one 5 phase problem has been solved
+    with this algorithm, from [1]_.
+    
+    Examples
+    --------
+    >>> ns = [0.204322076984, 0.070970999150, 0.267194323384, 0.296291964579, 0.067046080882, 0.062489248292, 0.031685306730]
+    >>> Ks_y = [1.23466988745, 0.89727701141, 2.29525708098, 1.58954899888, 0.23349348597, 0.02038108640, 1.40715641002]
+    >>> Ks_z = [1.52713341421, 0.02456487977, 1.46348240453, 1.16090546194, 0.24166289908, 0.14815282572, 14.3128010831]
+    >>> Rachford_Rice_solutionN(ns, [Ks_y, Ks_z], [.1, .6])
+    ... [0.6868328915094766, 0.06019424397668606], [[0.1712804659711611, 0.08150738616425436, 0.1393433949193188, 0.20945175387703213, 0.15668977784027893, 0.22650123851718007, 0.015225982711774586], [0.21147483364299702, 0.07313470386530294, 0.31982891387635903, 0.33293382568889657, 0.036586042443791586, 0.004616341311925655, 0.02142533917172731], [0.26156812278601893, 0.00200221914149187, 0.20392660665189805, 0.2431536850887592, 0.03786610596908295, 0.03355679851539993, 0.21792646184834918]])
+    
+    References
+    ----------
+    .. [1] Gao, Ran, Xiaolong Yin, and Zhiping Li. "Hybrid Newton-Successive 
+       Substitution Method for Multiphase Rachford-Rice Equations." Entropy 20,
+       no. 6 (June 2018): 452. https://doi.org/10.3390/e20060452.
+    '''
+    limit_betas = False
+    def new_betas(betas, d_betas, damping):
+        betas_test = [beta_i + d_beta*damping for beta_i, d_beta in zip(betas, d_betas)]
+        for i in range(20):
+            is_valid = Rachford_Rice_valid_solution_naive(ns, betas_test, Ks, limit_betas=limit_betas)
+            if is_valid:
+                break
+            
+            damping = 0.5*damping
+            betas_test = [beta_i + d_beta*damping for beta_i, d_beta in zip(betas, d_betas)]
+#            print('out of bounds', damping, betas_test)
+        if not is_valid:
+            raise ValueError("Should never happen - N phase RR still out of bounds after 20 iterations")
+        return betas_test
+    
+    if not Rachford_Rice_valid_solution_naive(ns, betas, Ks, limit_betas=limit_betas):
+        raise ValueError("Initial guesses will not lead to convergence")
+    
+    betas, iter = newton_system(Rachford_Rice_flashN_f_jac, jac=True, 
+                                           x0=betas, args=(ns, Ks),
+                                           ytol=1e-14, damping_func=new_betas)
+#    print(betas, iter, 'current progress')
+    comps = [[]]
+    for i, ni in enumerate(ns):
+        denom = 1.0
+        for j, beta_i in enumerate(betas):
+            denom += beta_i*(Ks[j][i]-1.0)
+        denom_inv = 1.0/denom
+        comps[0].append(ni*denom_inv)
+    
+    for Ks_j in Ks:
+        comp = [Ki*xi for Ki, xi in zip(Ks_j, comps[0])]
+        comps.append(comp)
+
+    return betas, comps
+
+
 def Rachford_Rice_solution2(ns, Ks_y, Ks_z, beta_y=0.5, beta_z=1e-6):
     r'''Solves the two objective functions of the Rachford-Rice flash equation
     for a three-phase system. Initial guesses are required for both phase 
@@ -989,10 +1179,10 @@ def Rachford_Rice_solution2(ns, Ks_y, Ks_z, beta_y=0.5, beta_z=1e-6):
     analytical Jacobian.
 
     .. math::
-        F_0 = \frac{z_i (K_y -1)}{1 + \beta_y(K_y-1) + \beta_z(K_z-1)} = 0
+        F_0 = \sum_i \frac{z_i (K_y -1)}{1 + \beta_y(K_y-1) + \beta_z(K_z-1)} = 0
 
     .. math::
-        F_1 = \frac{z_i (K_z -1)}{1 + \beta_y(K_y-1) + \beta_z(K_z-1)} = 0
+        F_1 = \sum_i \frac{z_i (K_z -1)}{1 + \beta_y(K_y-1) + \beta_z(K_z-1)} = 0
         
     Parameters
     ----------
@@ -1003,9 +1193,9 @@ def Rachford_Rice_solution2(ns, Ks_y, Ks_z, beta_y=0.5, beta_z=1e-6):
         Equilibrium K-values of `y` phase to `x` phase, [-]
     Ks_z : list[float]
         Equilibrium K-values of `z` phase to `x` phase, [-]
-    beta_y : float
+    beta_y : float, optional
         Initial guess for `y` phase (between 0 and 1), [-]
-    beta_z : float
+    beta_z : float, optional
         Initial guess for `z` phase (between 0 and 1), [-]
         
     Returns
@@ -1026,19 +1216,37 @@ def Rachford_Rice_solution2(ns, Ks_y, Ks_z, beta_y=0.5, beta_z=1e-6):
     The elements of the Jacobian are calculated as follows:
 
     .. math::
-        \frac{\partial F_0}{\partial \beta_y} = \frac{-z_i (K_y -1)^2}{\left(1
-        + \beta_y(K_y-1) + \beta_z(K_z-1)\right)^2}
+        \frac{\partial F_0}{\partial \beta_y} = \sum_i \frac{-z_i (K_y -1)^2}
+        {\left(1 + \beta_y(K_y-1) + \beta_z(K_z-1)\right)^2}
 
     .. math::
-        \frac{\partial F_1}{\partial \beta_z} = \frac{-z_i (K_z -1)^2}{\left(1 
-        + \beta_y(K_y-1) + \beta_z(K_z-1)\right)^2}
+        \frac{\partial F_1}{\partial \beta_z} = \sum_i \frac{-z_i (K_z -1)^2}
+        {\left(1  + \beta_y(K_y-1) + \beta_z(K_z-1)\right)^2}
 
     .. math::
-        \frac{\partial F_1}{\partial \beta_y} =  \frac{\partial F_0}{\partial
-        \beta_z}  = \frac{-z_i (K_z -1)(K_y - 1)}{\left(1 + \beta_y(K_y-1)
-        + \beta_z(K_z-1)\right)^2}
+        \frac{\partial F_1}{\partial \beta_y} = \sum_i \frac{\partial F_0}
+        {\partial \beta_z}  = \frac{-z_i (K_z -1)(K_y - 1)}{\left(1 
+        + \beta_y(K_y-1) + \beta_z(K_z-1)\right)^2}
         
-    The solution which Newton's method converges to may not be the desired one.
+    In general, the solution which Newton's method converges to may not be the 
+    desired one, so further constraints are required.
+    
+    Okuno's method in [1]_ provides a polygonal region where the correct answer
+    lies. It has not been implemented.
+    
+    The Leibovici and Neoschil method [4]_ provides a method to compute/update 
+    the damping parameter, which is suposed to ensure convergence. It claims to
+    be able to calculate the maximum damping factor for Newton's method, if it
+    tries to go out of bounds.
+    
+    A custom region which is believed to be the same as that of Okuno is 
+    implemented instead - the region which ensures positive compositions for
+    all compounds in all phases, but does not restrict the phase fractions to
+    be between 0 and 1 or even positive.
+    
+    With the convergence restraint, it is believed if a solution lies within
+    (0, 1) for both variables, the correct solution will be converged to so long
+    as the initial guesses are within the correct region.
         
     Examples
     --------
@@ -1050,11 +1258,48 @@ def Rachford_Rice_solution2(ns, Ks_y, Ks_z, beta_y=0.5, beta_z=1e-6):
     
     References
     ----------
-    .. [1] 
+    .. [1] Okuno, Ryosuke, Russell Johns, and Kamy Sepehrnoori. "A New 
+       Algorithm for Rachford-Rice for Multiphase Compositional Simulation." 
+       SPE Journal 15, no. 02 (June 1, 2010): 313-25. 
+       https://doi.org/10.2118/117752-PA.
+    .. [2] Li, Zhidong, and Abbas Firoozabadi. "Initialization of Phase 
+       Fractions in Rachford–Rice Equations for Robust and Efficient 
+       Three-Phase Split Calculation." Fluid Phase Equilibria 332 (October 25,
+       2012): 21-27. https://doi.org/10.1016/j.fluid.2012.06.021.
+    .. [3] Gao, Ran, Xiaolong Yin, and Zhiping Li. "Hybrid Newton-Successive 
+       Substitution Method for Multiphase Rachford-Rice Equations." Entropy 20,
+       no. 6 (June 2018): 452. https://doi.org/10.3390/e20060452.
+    .. [4] Leibovici, Claude F., and Jean Neoschil. "A Solution of 
+       Rachford-Rice Equations for Multiphase Systems." Fluid Phase Equilibria 
+       112, no. 2 (December 1, 1995): 217-21. 
+       https://doi.org/10.1016/0378-3812(95)02797-I.
     '''
-    (beta_y, beta_z), iter = newton_system(Rachford_Rice_flash2_f_jac, jac=True, 
-                                           x0=[beta_y, beta_z], args=(ns, Ks_y, Ks_z),
-                                          ytol=1e-10)
+    limit_betas = False
+    Ks = [Ks_y, Ks_z]
+    def new_betas(betas, d_betas, damping):
+        betas_test = [beta_i + d_beta*damping for beta_i, d_beta in zip(betas, d_betas)]
+        for i in range(20):
+            is_valid = Rachford_Rice_valid_solution_naive(ns, betas_test, Ks, limit_betas=limit_betas)
+            if is_valid:
+                break
+            
+            damping = 0.5*damping
+            betas_test = [beta_i + d_beta*damping for beta_i, d_beta in zip(betas, d_betas)]
+#            print('out of bounds', damping, betas_test)
+        if not is_valid:
+            raise ValueError("Should never happen - 3 phase RR still out of bounds after 20 iterations")
+        return betas_test
+    
+    if not Rachford_Rice_valid_solution_naive(ns, [beta_y, beta_z], Ks, limit_betas=limit_betas):
+        raise ValueError("Initial guesses will not lead to convergence")
+    
+    (beta_y, beta_z), iter = newton_system(Rachford_Rice_flashN_f_jac, jac=True, 
+                                           x0=[beta_y, beta_z], args=(ns, Ks),
+                                           ytol=1e-14, damping_func=new_betas)
+
+#    (beta_y, beta_z), iter = newton_system(Rachford_Rice_flash2_f_jac, jac=True, 
+#                                           x0=[beta_y, beta_z], args=(ns, Ks_y, Ks_z),
+#                                           ytol=1e-14, damping_func=new_betas)
 
     xs = [zi/(1.+beta_y*(Ky-1.) + beta_z*(Kz-1.)) for Ky, Kz, zi in zip(Ks_y, Ks_z, ns)]
     ys = [Ky*xi for xi, Ky in zip(xs, Ks_y)]
@@ -1278,7 +1523,6 @@ def Rachford_Rice_solution_numpy(zs, Ks, limit=True):
     zs_k_minus_1 = zs*K_minus_1
     def err(V_over_F):
         err = float((zs_k_minus_1/(1.0 + V_over_F*K_minus_1)).sum())
-        print(V_over_F, err)
         return err
     try:
         V_over_F = newton(err, x0, high=V_over_F_max*one_epsilon_smaller,
@@ -1289,6 +1533,141 @@ def Rachford_Rice_solution_numpy(zs, Ks, limit=True):
     xs = zs/(1.0 + V_over_F*K_minus_1)
     ys = Ks*xs
     return float(V_over_F), xs.tolist(), ys.tolist()
+
+
+def Rachford_Rice_solution_LN2(zs, Ks, guess=None):
+    r'''Solves the a objective function for the Rachford-Rice flash equation
+    according to the Leibovici and Nichita (2010) transformation (method 2).
+    This transformation makes the only zero of the function be the desired one.
+    Consequently, higher-order methods may be used to solve this equation.
+    Halley's (second derivative) method is found to be the best; typically 
+    needing ~50% fewer iterations than the RR formulation with Secant method. 
+
+    .. math::
+        H(y) = \sum_i^n \frac{z_i}{\lambda - c_i} = 0
+        
+    .. math::
+        \lambda = c_k + \frac{c_{k+1} - c_k}{1 + e^{-y}}
+        
+    .. math::
+        c_i = \frac{1}{1-K_i}
+        
+    .. math::
+        c_{k} = \left(\frac{V}{F}\right)_{min}
+        
+    .. math::
+        c_{k+1} = \left(\frac{V}{F}\right)_{max}
+        
+    Note the two different uses of `c` in the above equation, confusingly
+    given in [1]_. `lambda` is the vapor fraction.
+    
+    Once the equation has been solved for `y`, the vapor fraction can be
+    calculated outside the solver.
+        
+
+    Parameters
+    ----------
+    zs : list[float]
+        Overall mole fractions of all species, [-]
+    Ks : list[float]
+        Equilibrium K-values, [-]
+    guess : float, optional
+        Optional initial guess for vapor fraction, [-]
+        
+    Returns
+    -------
+    V_over_F : float
+        Vapor fraction solution [-]
+    xs : list[float]
+        Mole fractions of each species in the liquid phase, [-]
+    ys : list[float]
+        Mole fractions of each species in the vapor phase, [-]
+
+    Notes
+    -----
+    The initial guess is the average of the following, as described in [2]_.
+
+    .. math::
+        \left(\frac{V}{F}\right)_{min} = \frac{(K_{max}-K_{min})z_{of\;K_{max}}
+        - (1-K_{min})}{(1-K_{min})(K_{max}-1)}
+
+        \left(\frac{V}{F}\right)_{max} = \frac{1}{1-K_{min}}
+
+    The first and second derivatives are derived with sympy as follows:
+        
+    >>> from sympy import * # doctest: +SKIP
+    >>> VF_min, VF_max, ai, ci, y = symbols('VF_min, VF_max, ai, ci, y') # doctest: +SKIP
+    >>> V_over_F = (VF_min + (VF_max - VF_min)/(1 + exp(-y))) # doctest: +SKIP
+    >>> F = ai/(V_over_F - ci) # doctest: +SKIP
+    >>> terms = [F, diff(F, y), diff(F, y, 2)] # doctest: +SKIP
+    >>> cse(terms, optimizations='basic') # doctest: +SKIP
+        
+    Examples
+    --------
+    >>> Rachford_Rice_solution_LN2(zs=[0.5, 0.3, 0.2], Ks=[1.685, 0.742, 0.532])
+    (0.6907302627738541, [0.3394086969663436, 0.3650560590371706, 0.29553524399648573], [0.571903654388289, 0.27087159580558057, 0.1572247498061304])
+
+    References
+    ----------
+    .. [1] Leibovici, Claude F., and Dan Vladimir Nichita. "Iterative Solutions
+       for ∑iaiλ-ci=1 Equations." Chemical Engineering Research and Design 88, 
+       no. 5 (May 1, 2010): 602-5. https://doi.org/10.1016/j.cherd.2009.10.012.
+    .. [2] Li, Yinghui, Russell T. Johns, and Kaveh Ahmadi. "A Rapid and Robust
+       Alternative to Rachford-Rice in Flash Calculations." Fluid Phase
+       Equilibria 316 (February 25, 2012): 85-97.
+       doi:10.1016/j.fluid.2011.12.005.
+    .. [3] Billingsley, D. S. "Iterative Solution for ∑iaiλ-ci Equations." 
+       Computers & Chemical Engineering 26, no. 3 (March 15, 2002): 457-60. 
+       https://doi.org/10.1016/S0098-1354(01)00767-0.
+    '''
+    Kmin = min(Ks)
+    Kmax = max(Ks)
+    z_of_Kmax = zs[Ks.index(Kmax)]
+    
+    one_m_Kmin = 1.0 - Kmin
+    
+    V_over_F_min = ((Kmax-Kmin)*z_of_Kmax - one_m_Kmin)/((one_m_Kmin)*(Kmax- 1.))
+    V_over_F_max = 1./one_m_Kmin
+    
+    guess = 0.5*(V_over_F_min + V_over_F_max) if guess is None else guess
+    cis = [1.0/(1.0 - Ki) for Ki in Ks]
+    
+    x0 = V_over_F_max - V_over_F_min
+    def err(y):
+        x1 = exp(-y)
+        x3 = 1.0/(x1 + 1.0)
+        x6 = x0*x3*x3
+        x1x6 = x1*x6
+        t50 = V_over_F_min + x0*x3
+        t51 = 1.0 - 2.0*x1*x3
+        
+        F0, dF0, ddF0 = 0.0, 0.0, 0.0
+        for zi, ci in zip(zs, cis):
+            x5 = 1.0/(t50 - ci)
+            zix5 = zi*x5
+            F0 += zix5
+            # Func requires 1 division, 1 multiplication, 2 add
+            # 1st Deriv adds 2 mult, 1 add
+            # 3rd deriv adds 2 mult, 2 add
+            
+            x5x1x6 = x5*x1x6
+            x7 = zix5*x5x1x6
+            dF0 -= x7
+            ddF0 += x7*(t51 + 2.0*x5x1x6)      
+        
+#        print(y, F0)
+        return F0, dF0, ddF0
+    
+    # Suggests guess V_over_F_min, not using
+    guess = -log((V_over_F_max-guess)/(guess-V_over_F_min))
+    
+    # Should always converge - no poles
+    V_over_F = newton(err, guess, fprime=True, fprime2=True, ytol=1e-15)
+    V_over_F = (V_over_F_min + (V_over_F_max - V_over_F_min)/(1.0 + exp(-V_over_F)))
+    
+    xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]
+    ys = [Ki*xi for xi, Ki in zip(xs, Ks)]
+    return V_over_F, xs, ys
 
 
 def Li_Johns_Ahmadi_solution(zs, Ks):
@@ -1398,21 +1777,23 @@ FLASH_INNER_HALLEY = 'Rachford-Rice (Halley)'
 FLASH_INNER_NUMPY = 'Rachford-Rice (NumPy)'
 FLASH_INNER_LJA = 'Li-Johns-Ahmadi'
 FLASH_INNER_POLY = 'Rachford-Rice (polynomial)'
+FLASH_INNER_LN2 = 'Leibovici and Nichita 2'
+
 
 flash_inner_loop_methods = [FLASH_INNER_ANALYTICAL, 
-                            FLASH_INNER_SECANT, FLASH_INNER_SECANT,
+                            FLASH_INNER_SECANT,
                             FLASH_INNER_NR, FLASH_INNER_HALLEY,
                             FLASH_INNER_NUMPY, FLASH_INNER_LJA,
-                            FLASH_INNER_POLY]
+                            FLASH_INNER_POLY, FLASH_INNER_LN2]
 
 def flash_inner_loop_list_methods(l):
     methods = []
-    if l in (2, 3, 4):
+    if l in (2, 3, 4, 5):
         methods.append(FLASH_INNER_ANALYTICAL)
     if l >= 10 and not IS_PYPY:
         methods.append(FLASH_INNER_NUMPY)
     if l >= 2:
-        methods.extend([FLASH_INNER_SECANT, FLASH_INNER_NR, FLASH_INNER_HALLEY])
+        methods.extend([FLASH_INNER_LN2, FLASH_INNER_SECANT, FLASH_INNER_NR, FLASH_INNER_HALLEY])
         if l < 10 and not IS_PYPY:
             methods.append(FLASH_INNER_NUMPY)
     if l >= 3:
@@ -1423,7 +1804,7 @@ def flash_inner_loop_list_methods(l):
 
 
 def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
-                     limit=True):
+                     limit=True, guess=None):
     r'''This function handles the solution of the inner loop of a flash
     calculation, solving for liquid and gas mole fractions and vapor fraction
     based on specified overall mole fractions and K values. As K values are
@@ -1432,7 +1813,7 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
     provided. Should always provide a solution.
 
     The automatic algorithm selection will try an analytical solution, and use
-    the Rachford-Rice method if there are 4 or more components in the mixture.
+    the Rachford-Rice method if there are 6 or more components in the mixture.
 
     Parameters
     ----------
@@ -1440,6 +1821,8 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
         Overall mole fractions of all species, [-]
     Ks : list[float]
         Equilibrium K-values, [-]
+    guess : float, optional
+        Optional initial guess for vapor fraction, [-]
 
     Returns
     -------
@@ -1458,7 +1841,8 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
     Method : string, optional
         The method name to use. Accepted methods are 'Analytical',
         'Rachford-Rice (Secant)', 'Rachford-Rice (Newton-Raphson)', 
-        'Rachford-Rice (Halley)', 'Rachford-Rice (NumPy)', and 
+        'Rachford-Rice (Halley)', 'Rachford-Rice (NumPy)', 
+        'Leibovici and Nichita 2', 'Rachford-Rice (polynomial)', and 
         'Li-Johns-Ahmadi'. All valid values are also held
         in the list `flash_inner_loop_methods`.
     AvailableMethods : bool, optional
@@ -1468,7 +1852,7 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
 
     Notes
     -----
-    A total of six methods are available for this function. They are:
+    A total of eight methods are available for this function. They are:
 
         * 'Analytical', an exact solution derived with SymPy, applicable only
           only to mixtures of two, three, or four components
@@ -1476,6 +1860,8 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
           'Rachford-Rice (Halley)', or 'Rachford-Rice (NumPy)',
           which numerically solves an objective function
           described in :obj:`Rachford_Rice_solution`.
+        * 'Leibovici and Nichita 2', a transformation of the RR equation
+           described in :obj:`Rachford_Rice_solution_LN2`.
         * 'Li-Johns-Ahmadi', which numerically solves an objective function
           described in :obj:`Li_Johns_Ahmadi_solution`.
 
@@ -1487,10 +1873,12 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
     if AvailableMethods:
         l = len(zs)
         return flash_inner_loop_list_methods(l)
-    elif Method is None:
+    if Method is None:
         l = len(zs)
-        Method = FLASH_INNER_ANALYTICAL if l < 5 else (FLASH_INNER_NUMPY if (not IS_PYPY and l >= 10) else FLASH_INNER_SECANT)    
-    if Method == FLASH_INNER_SECANT:
+        Method = FLASH_INNER_ANALYTICAL if l < 5 else (FLASH_INNER_NUMPY if (not IS_PYPY and l >= 10) else FLASH_INNER_LN2)    
+    if Method == FLASH_INNER_LN2:
+        return Rachford_Rice_solution_LN2(zs, Ks, guess)
+    elif Method == FLASH_INNER_SECANT:
         return Rachford_Rice_solution(zs, Ks, limit=limit)
     elif Method == FLASH_INNER_ANALYTICAL:
         l = len(zs)
@@ -1506,10 +1894,11 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
             except ZeroDivisionError:
                 return Rachford_Rice_solution(zs=zs, Ks=Ks)
         elif l == 3:
+            # TODO disable
             z1, z2, z3 = zs
             K1, K2, K3 = Ks
             V_over_F = (-K1*K2*z1/2 - K1*K2*z2/2 - K1*K3*z1/2 - K1*K3*z3/2 + K1*z1 + K1*z2/2 + K1*z3/2 - K2*K3*z2/2 - K2*K3*z3/2 + K2*z1/2 + K2*z2 + K2*z3/2 + K3*z1/2 + K3*z2/2 + K3*z3 - z1 - z2 - z3 - (K1**2*K2**2*z1**2 + 2*K1**2*K2**2*z1*z2 + K1**2*K2**2*z2**2 - 2*K1**2*K2*K3*z1**2 - 2*K1**2*K2*K3*z1*z2 - 2*K1**2*K2*K3*z1*z3 + 2*K1**2*K2*K3*z2*z3 - 2*K1**2*K2*z1*z2 + 2*K1**2*K2*z1*z3 - 2*K1**2*K2*z2**2 - 2*K1**2*K2*z2*z3 + K1**2*K3**2*z1**2 + 2*K1**2*K3**2*z1*z3 + K1**2*K3**2*z3**2 + 2*K1**2*K3*z1*z2 - 2*K1**2*K3*z1*z3 - 2*K1**2*K3*z2*z3 - 2*K1**2*K3*z3**2 + K1**2*z2**2 + 2*K1**2*z2*z3 + K1**2*z3**2 - 2*K1*K2**2*K3*z1*z2 + 2*K1*K2**2*K3*z1*z3 - 2*K1*K2**2*K3*z2**2 - 2*K1*K2**2*K3*z2*z3 - 2*K1*K2**2*z1**2 - 2*K1*K2**2*z1*z2 - 2*K1*K2**2*z1*z3 + 2*K1*K2**2*z2*z3 + 2*K1*K2*K3**2*z1*z2 - 2*K1*K2*K3**2*z1*z3 - 2*K1*K2*K3**2*z2*z3 - 2*K1*K2*K3**2*z3**2 + 4*K1*K2*K3*z1**2 + 4*K1*K2*K3*z1*z2 + 4*K1*K2*K3*z1*z3 + 4*K1*K2*K3*z2**2 + 4*K1*K2*K3*z2*z3 + 4*K1*K2*K3*z3**2 + 2*K1*K2*z1*z2 - 2*K1*K2*z1*z3 - 2*K1*K2*z2*z3 - 2*K1*K2*z3**2 - 2*K1*K3**2*z1**2 - 2*K1*K3**2*z1*z2 - 2*K1*K3**2*z1*z3 + 2*K1*K3**2*z2*z3 - 2*K1*K3*z1*z2 + 2*K1*K3*z1*z3 - 2*K1*K3*z2**2 - 2*K1*K3*z2*z3 + K2**2*K3**2*z2**2 + 2*K2**2*K3**2*z2*z3 + K2**2*K3**2*z3**2 + 2*K2**2*K3*z1*z2 - 2*K2**2*K3*z1*z3 - 2*K2**2*K3*z2*z3 - 2*K2**2*K3*z3**2 + K2**2*z1**2 + 2*K2**2*z1*z3 + K2**2*z3**2 - 2*K2*K3**2*z1*z2 + 2*K2*K3**2*z1*z3 - 2*K2*K3**2*z2**2 - 2*K2*K3**2*z2*z3 - 2*K2*K3*z1**2 - 2*K2*K3*z1*z2 - 2*K2*K3*z1*z3 + 2*K2*K3*z2*z3 + K3**2*z1**2 + 2*K3**2*z1*z2 + K3**2*z2**2)**0.5/2)/(K1*K2*K3*z1 + K1*K2*K3*z2 + K1*K2*K3*z3 - K1*K2*z1 - K1*K2*z2 - K1*K2*z3 - K1*K3*z1 - K1*K3*z2 - K1*K3*z3 + K1*z1 + K1*z2 + K1*z3 - K2*K3*z1 - K2*K3*z2 - K2*K3*z3 + K2*z1 + K2*z2 + K2*z3 + K3*z1 + K3*z2 + K3*z3 - z1 - z2 - z3)
-        elif l == 4 or l == 3:
+        elif l == 3 or l == 4 or l == 5:
             return Rachford_Rice_solution_polynomial(zs, Ks)
         else:
             raise Exception('Only solutions for components counts 2, 3, and 4 are available analytically')

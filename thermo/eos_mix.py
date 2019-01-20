@@ -35,7 +35,7 @@ from thermo.utils import normalize, Cp_minus_Cv, isobaric_expansion, isothermal_
 from thermo.utils import R, UnconvergedError
 from thermo.utils import log, exp, sqrt
 from thermo.eos import *
-from thermo.activity import Wilson_K_value, K_value, flash_inner_loop, Rachford_Rice_flash_error
+from thermo.activity import Wilson_K_value, K_value, flash_inner_loop, Rachford_Rice_flash_error, Rachford_Rice_solution2
 
 R2 = R*R
 R_inv = 1.0/R
@@ -1210,9 +1210,10 @@ class GCEOSMIX(GCEOS):
                                    trivial_solution_tol=1e-5):
         
         
-        from thermo.activity import Rachford_Rice_solution2
         print(Ks_y, Ks_z, beta_y, beta_z)
-        beta_y, beta_z, xs_new, ys_new, zs_new = Rachford_Rice_solution2(zs=self.zs, Ks_y=Ks_y, Ks_z=Ks_z, beta_y=beta_y, beta_z=beta_z)
+        beta_y, beta_z, xs_new, ys_new, zs_new = Rachford_Rice_solution2(ns=self.zs, 
+                                                                         Ks_y=Ks_y, Ks_z=Ks_z,
+                                                                         beta_y=beta_y, beta_z=beta_z)
         print(beta_y, beta_z, xs_new, ys_new, zs_new)
         
         Ks_y = [exp(lnphi_x - lnphi_y) for lnphi_x, lnphi_y in zip(lnphis_x, lnphis_y)]
@@ -1222,6 +1223,7 @@ class GCEOSMIX(GCEOS):
                                    xtol=1E-13, near_critical=True, Ks_extra=None,
                                    xs=None, ys=None, trivial_solution_tol=1e-5):
 #        print(self.zs, Ks)
+        V_over_F = None
         if xs is not None and ys is not None:
             pass
         else:
@@ -1383,7 +1385,7 @@ class GCEOSMIX(GCEOS):
                 
             
 #            print(Ks, 'Ks into RR')
-            V_over_F, xs_new, ys_new = flash_inner_loop(self.zs, Ks)
+            V_over_F, xs_new, ys_new = flash_inner_loop(self.zs, Ks, guess=V_over_F)
 #            if any(i < 0 for i in xs_new):
 #                print('hil', xs_new)
 #            

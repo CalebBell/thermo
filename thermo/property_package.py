@@ -56,7 +56,7 @@ from thermo.utils import log, log10, exp, copysign
 from thermo.utils import has_matplotlib, R, pi, N_A
 from thermo.utils import remove_zeros, normalize, Cp_minus_Cv, UnconvergedError
 from thermo.identifiers import IDs_to_CASs
-from thermo.activity import K_value, Wilson_K_value, flash_inner_loop, dew_at_T, bubble_at_T, NRTL
+from thermo.activity import K_value, Wilson_K_value, flash_inner_loop, dew_at_T, bubble_at_T, NRTL, Rachford_Rice_solution2
 from thermo.activity import flash_wilson, flash_Tb_Tc_Pc
 from thermo.activity import get_T_bub_est, get_T_dew_est, get_P_dew_est, get_P_bub_est
 from thermo.unifac import UNIFAC, UFSG, DOUFSG, DOUFIP2006
@@ -2379,6 +2379,7 @@ class GceosBase(Ideal):
         eos_l, eos_g = self.eos_l, self.eos_g
         
         Ks_y = [yi/xi for yi, xi in zip(ys, xs)]
+        print('2PHASE KS', Ks_y)
         
         # TODO only call stability test on heavier MW phase
         def is_stable():
@@ -2387,18 +2388,43 @@ class GceosBase(Ideal):
                                                       maxiter=self.stability_maxiter, 
                                                       xtol=self.stability_xtol)
             if not stable:
-                return stable, Ks_extra[0], xs
-            
-            stable, Ks_initial, Ks_extra = eos_l.stability_Michelsen(T=T, P=P, zs=zs,
+                return stable, Ks_extra[-1]
+
+#            print('RESULTS ZS', stable, Ks_initial, Ks_extra)
+
+            stable, Ks_initial, Ks_extra = eos_l.stability_Michelsen(T=T, P=P, zs=ys,
                                                       Ks_initial=None, 
                                                       maxiter=self.stability_maxiter, 
                                                       xtol=self.stability_xtol)
-            return stable, Ks_initial, ys
-        stable, Ks_z, comp_test = is_stable()
-        beta_z, _, _ = flash_inner_loop(comp_test, Ks_z)
-        print(beta_z, 'beta_z', 'beta_y', beta_y)
+#            print('RESULTS YS', stable, Ks_initial, Ks_extra)
+            if not stable:
+                return stable, Ks_extra[-1]
+            
+            stable, Ks_initial, Ks_extra = eos_l.stability_Michelsen(T=T, P=P, zs=xs,
+                                                      Ks_initial=None, 
+                                                      maxiter=self.stability_maxiter, 
+                                                      xtol=self.stability_xtol)
+#            print('RESULTS XS', stable, Ks_initial, Ks_extra)
+#            print('DONE STABLE PART')
+            
+            return stable, Ks_extra[-1]
+        stable, Ks_z = is_stable()
+#        print(stable, Ks_z, comp_test)
+#        Ks_z = [zi/xi for xi, zi in zip(xs, comp_test)]
+#        print(Ks_z, Ks_y)
         
-        print(eos_l.sequential_substitution_3P(Ks_y, Ks_z, beta_y, beta_z=0.0))
+        print('DOING RR2 with Ks', Ks_y, Ks_z)
+        beta_y, beta_z, xs, ys, zs = Rachford_Rice_solution2(zs, Ks_y=Ks_y, 
+                                                             Ks_z=Ks_z)
+        print('done RR2; betas', beta_y, beta_z, 'fractions', xs, ys, zs)
+#        
+##        beta_z, _, _ = flash_inner_loop(comp_test, Ks_z)
+#        print(beta_z, 'beta_z', 'beta_y', beta_y)
+        
+# Try to hardcode them
+#        Ks_y = []
+        
+        print(eos_l.sequential_substitution_3P(Ks_y, Ks_z, beta_y, beta_z=beta_z))
         
         
 
