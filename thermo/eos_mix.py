@@ -1101,8 +1101,10 @@ class GCEOSMIX(GCEOS):
         size = self.N + 1
         J = [[None]*size for i in range(size)]
         
-        d_lnphi_dxs = self.d_lnphi_dzs(Z_l, xs)
-        d_lnphi_dys = self.d_lnphi_dzs(Z_g, ys)
+#        d_lnphi_dxs = self.d_lnphi_dzs(Z_l, xs)
+#        d_lnphi_dys = self.d_lnphi_dzs(Z_g, ys)
+        d_lnphi_dxs = eos_l.d_lnphi_dzs(Z_l, xs)
+        d_lnphi_dys = eos_g.d_lnphi_dzs(Z_g, ys)
         
         
         
@@ -1115,7 +1117,7 @@ class GCEOSMIX(GCEOS):
             
         J[self.N][self.N] = 1.0
         
-        # Last column except last value; believed correct except for d_lnphi_dzs
+        # Last column except last value; believed correct
         for i in range(self.N):
             value = 0.0
             for k in range(self.N-1):
@@ -1136,13 +1138,14 @@ class GCEOSMIX(GCEOS):
         # Can flip around the indexing of i, j on the d_lnphi_ds but still no fix
         # unsure of correct order!
         # Reveals bugs in d_lnphi_dxs though.
-        for i in range(self.N - 1):
-            value = 0.0
-            for j in range(self.N - 1):
+        for i in range(self.N): # to N is CORRECT/MATCHES JACOBIAN NUMERICALLY
+            for j in range(self.N): # to N is CORRECT/MATCHES JACOBIAN NUMERICALLY
+                value = 0.0
                 value += delta(i, j)
+#                print(i, j, value)
+                # Maybe if i == j, can skip the bit below?
                 term = zs[j]*Ks[j]/(1.0 + VF*(Ks[j] - 1.0))**2
-                value += VF*d_lnphi_dxs[i][j] - (1.0 - VF)*d_lnphi_dys[i][j]
-            
+                value += term*(VF*d_lnphi_dxs[i][j] + (1.0 - VF)*d_lnphi_dys[i][j])
                 J[i][j] = value
             
         # Last row except last value  - good, working
@@ -1169,8 +1172,11 @@ class GCEOSMIX(GCEOS):
         return J
             
     def _err_VL(self, lnKsVF, T, P, zs, near_critical=False):
+        import numpy as np
         # tried autograd without luck
         lnKs = lnKsVF[:-1]
+        if isinstance(lnKs, np.ndarray):
+            lnKs = lnKs.tolist()
 #        Ks = np.exp(lnKs)
         Ks = [exp(lnKi) for lnKi in lnKs]
         VF = float(lnKsVF[-1])
@@ -1184,6 +1190,8 @@ class GCEOSMIX(GCEOS):
         eos_g = self.to_TP_zs(T=T, P=P, zs=ys)
         eos_l = self.to_TP_zs(T=T, P=P, zs=xs)
         if not near_critical:
+            fugacities_g = eos_g.fugacities_g
+            fugacities_l = eos_l.fugacities_l
             lnphis_g = eos_g.lnphis_g
             lnphis_l = eos_l.lnphis_l
         else:
@@ -1191,13 +1199,17 @@ class GCEOSMIX(GCEOS):
             eos_l = self.to_TP_zs(T=T, P=P, zs=xs)
             try:
                 lnphis_g = eos_g.lnphis_g
+                fugacities_g = eos_g.fugacities_g
             except AttributeError:
                 lnphis_g = eos_g.lnphis_l
+                fugacities_g = eos_g.fugacities_l
             try:
                 lnphis_l = eos_l.lnphis_l
+                fugacities_l = eos_l.fugacities_l
             except AttributeError:
                 lnphis_l = eos_l.lnphis_g
-                
+                fugacities_l = eos_l.fugacities_g
+#        Fs = [fl/fg-1.0 for fl, fg in zip(fugacities_l, fugacities_g)]
         Fs = [lnKi - lnphi_l + lnphi_g for lnphi_l, lnphi_g, lnKi in zip(lnphis_l, lnphis_g, lnKs)]
         Fs.append(err_RR)
         return Fs
@@ -2013,6 +2025,8 @@ class PRMIX(GCEOSMIX, PR):
             d_lnphi_dPs.append(d_lnphi_dP)
         return d_lnphi_dPs                            
 
+
+
     def d_lnphi_dzs(self, Z, zs):
         
         # TODO try to follow "B.5.2.1 Derivatives of Fugacity Coefficient with Respect to Mole Fraction"
@@ -2091,7 +2105,63 @@ class PRMIX(GCEOSMIX, PR):
             dlnphis_dzs_all.append(dlnphis_dzs)
         return dlnphis_dzs_all
         
+    
+    def d_lnphi_dzs(self, Z, zs):
+        from thermo import normalize
+        all_diffs = []
+        
+        try:
+            if self.G_dep_l < self.G_dep_g:
+                lnphis_ref = self.lnphis_l
+            else:
+                lnphis_ref = self.lnphis_g
+        except:
+           lnphis_ref = self.lnphis_l if hasattr(self, 'G_dep_l') else self.lnphis_g
+        
+        
+        
+        
+        for i in range(len(zs)):
+            zs2 = list(zs)
+            dz = zs2[i]*1e-4
+            zs2[i] = zs2[i]+dz
+#            sum_one = sum(zs2)
+#            zs2 = normalize(zs2)
+            eos2 = self.to_TP_zs(T=self.T, P=self.P, zs=zs2)
+            
+            
 
+            diffs = []
+            for j in range(len(zs)):
+                try:
+                    dlnphis = (eos2.lnphis_g[j] - lnphis_ref[j])/dz
+                except:
+                    dlnphis = (eos2.lnphis_l[j] - lnphis_ref[j])/dz
+                diffs.append(dlnphis)
+            all_diffs.append(diffs)
+        import numpy as np
+        return np.array(all_diffs).T.tolist()
+    
+    
+    def d_lnphi_dzs(self, Z, zs):
+        import numpy as np
+        import numdifftools as nd
+        
+        def lnphis_from_zs(zs2):
+            if isinstance(zs2, np.ndarray):
+                zs2 = zs2.tolist()
+            # Last row suggests the normalization breaks everything!
+#            zs2 = normalize(zs2)
+            try:
+                return np.array(self.to_TP_zs(T=self.T, P=self.P, zs=zs2).lnphis_l)
+            except:
+                return np.array(self.to_TP_zs(T=self.T, P=self.P, zs=zs2).lnphis_g)
+    
+        Jfun_partial = nd.Jacobian(lnphis_from_zs, step=1e-7, order=2, method='forward')
+        return Jfun_partial(zs)
+    
+    
+    
 
 class SRKMIX(GCEOSMIX, SRK):    
     r'''Class for solving the Soave-Redlich-Kwong cubic equation of state for a 

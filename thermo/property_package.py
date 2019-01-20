@@ -2699,7 +2699,8 @@ class GceosBase(Ideal):
             else:
                 ln_phis_l = eos_l.lnphis_l
                 d_lnphis_dT_l = eos_l.d_lnphis_dT(eos_l.Z_l, eos_l.dZ_dT_l, zs)
-            
+
+            # TODO: fast initialization of alpha terms, preferably with fugacities            
             eos_g = eos_l.to_TP_zs(T=eos_l.T, P=eos_l.P, zs=ys)
             
             if near_critical:
@@ -3117,7 +3118,8 @@ class GceosBase(Ideal):
             else:
                 ln_phis_g = eos_g.lnphis_g
                 d_lnphis_dT_g = eos_g.d_lnphis_dT(eos_g.Z_g, eos_g.dZ_dT_g, zs)
-                
+            
+            # TODO: fast initialization of alpha terms, preferably with fugacities
             eos_l = eos_g.to_TP_zs(T=eos_g.T, P=eos_g.P, zs=xs)
             
             if near_critical:
