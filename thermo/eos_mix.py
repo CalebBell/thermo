@@ -1143,7 +1143,7 @@ class GCEOSMIX(GCEOS):
                 value = 0.0
                 value += delta(i, j)
 #                print(i, j, value)
-                # Maybe if i == j, can skip the bit below?
+                # Maybe if i == j, can skip the bit below? Tried it once and the solver never converged
                 term = zs[j]*Ks[j]/(1.0 + VF*(Ks[j] - 1.0))**2
                 value += term*(VF*d_lnphi_dxs[i][j] + (1.0 - VF)*d_lnphi_dys[i][j])
                 J[i][j] = value
@@ -2027,7 +2027,7 @@ class PRMIX(GCEOSMIX, PR):
 
 
 
-    def d_lnphi_dzs(self, Z, zs):
+    def d_lnphi_dzs_analytical0(self, Z, zs):
         
         # TODO try to follow "B.5.2.1 Derivatives of Fugacity Coefficient with Respect to Mole Fraction"
         # "Development of an Equation-of-State Thermal Flooding Simulator"
@@ -2106,7 +2106,7 @@ class PRMIX(GCEOSMIX, PR):
         return dlnphis_dzs_all
         
     
-    def d_lnphi_dzs(self, Z, zs):
+    def d_lnphi_dzs_basic_num(self, Z, zs):
         from thermo import normalize
         all_diffs = []
         
@@ -2152,16 +2152,137 @@ class PRMIX(GCEOSMIX, PR):
                 zs2 = zs2.tolist()
             # Last row suggests the normalization breaks everything!
 #            zs2 = normalize(zs2)
+            
+#            if Z == self.Z_l
+
+
             try:
                 return np.array(self.to_TP_zs(T=self.T, P=self.P, zs=zs2).lnphis_l)
             except:
                 return np.array(self.to_TP_zs(T=self.T, P=self.P, zs=zs2).lnphis_g)
     
-        Jfun_partial = nd.Jacobian(lnphis_from_zs, step=1e-7, order=2, method='forward')
+        Jfun_partial = nd.Jacobian(lnphis_from_zs, step=1e-4, order=2, method='central')
         return Jfun_partial(zs)
     
+    def d_lnphi_dzs_Varavei(self, Z, zs):
+        # Is it possible to numerically evaluate different parts to try to find the problems?
+        T, P = self.T, self.P
+        T2 = T*T
+        bs, b = self.bs, self.b
+        a_alpha = self.a_alpha
+        a_alpha_ijs = self.a_alpha_ijs
+
+        A = self.a_alpha*self.P/(R2*T2)
+        B = b*self.P/(R*T)
+        
+        a_alphas = self.a_alphas
+        
+        C = 1.0/(Z - B)
+        
+        Zm1 = Z - 1.0
+#        Dis = [bi/b*Zm1 for bi in self.bs] # not needed
+
+        G = (Z + (1.0 + root_two)*B)/(Z + (1.0 - root_two)*B)
+        
+        N = len(zs)
+        cmps = range(N)
+        
+        ln_phis = []
+        Eis = []
+        
+        for i in cmps:
+            for j in cmps:
+                a_alpha_js = a_alpha_ijs[i]
+                sum_term = 0.0
+                for zi, a_alpha_j_i in zip(zs, a_alpha_js):
+                    sum_term += zi*a_alpha_j_i
     
-    
+            E = -A/(two_root_two*B)*(2.0/a_alpha*sum_term - bs[i]/b)
+            Eis.append(E)
+
+#        for i in cmps:
+#            ln_phis.append(log(C) + Dis[i] + Eis[i]*log(G))
+#        return ln_phis
+
+        Bis = [bi*P/(R*T) for bi in bs]
+        # maybe with a 2 constant? 
+        dB_dxks = [P*bk/(R*T) for bk in bs]
+        
+        
+        # THIS IS WRONG - the sum changes w.r.t (or does it?)
+        # Believed right now?
+        const = 2.0*P/(R*T)**2
+        dA_dxks = []
+        for k in cmps:
+#            a_alpha_js = a_alpha_ijs[k]
+            sum_term = 0.0
+            for m in cmps:
+                sum_term += zs[m]*a_alpha_ijs[m][k] # index might be other way
+#            for zi, a_alpha_j_i in zip(zs, a_alpha_js):
+#                sum_term += zi*a_alpha_j_i
+            dA_dxks.append(const*sum_term)
+            
+        dF_dZ = 3.0*Z*Z - 2.0*Z*(1.0 - B) + (A - 3.0*B*B - 2.0*B)
+        
+        dZ_dxs = []
+        for i in cmps:
+            term = (((B - Z)*dA_dxks[i] 
+                    + (A - 2.0*B - 3.0*B*B + 2.0*(3.0*B + 1.0)*Z - Z*Z)*dB_dxks[i])
+                    /dF_dZ)
+            dZ_dxs.append(term)
+        
+        # function only of k
+        dC_dxs = []
+        for k in cmps:
+            term = -(dZ_dxs[k] - dB_dxks[k])/(Z-B)**2
+            dC_dxs.append(term)
+        
+        dD_dxs = [[0.0]*N for _ in cmps]
+        for i in cmps:
+            for k in cmps:
+                # not sure right order to make dD_dxs
+                term = bs[i]/(b*b)*(b*dZ_dxs[k] - bs[k]*(Z - 1.0))
+                dD_dxs[i][k] = term
+#        dD_dxs = []
+#        for i in cmps:
+#            term = bs[i]/(b*b)*(b*dZ_dxs[i] - b*(Z - 1.0))
+#            dD_dxs.append(term)
+            
+        # ? Believe this is the only one with multi indexes?
+        dE_dxs = [[0.0]*N for _ in cmps] # TODO - makes little sense. Too many i indexes.
+        t1 = 1.0/(two_root_two*a_alpha*b*B)
+        t2 = A/(a_alpha*b)
+        
+        # problem is in here?
+        for i in cmps:
+            for k in cmps:
+                # should be x_mj*a_alpha_im
+                zm_aim_tot = sum([zs[m]*a_alpha_ijs[i][m] for m in cmps])
+                
+                # maybe unisual for bs[i]?
+                first = 1.0/B*(a_alpha*bs[i] - 2.0*b*zm_aim_tot)*(B*dA_dxks[k] - A*dB_dxks[k])
+                
+                zm_amk_tot = sum([zs[m]*a_alpha_ijs[m][k] for m in cmps])
+                second = -t2*(4.0*b*b*zm_aim_tot*zm_amk_tot 
+                              - 2.0*a_alpha*b*b*a_alpha_ijs[i][k] - bs[i]*bs[k]*a_alpha**2)
+                
+                dE_dxs[i][k] = t1*(first + second)
+                
+        
+        dG_dxs = []
+        for k in cmps:
+            term = two_root_two/(Z + (1.0 - root_two)*B)**2*(Z*dB_dxks[k] - B*dZ_dxs[k])
+            dG_dxs.append(term)
+        
+        
+        dlnphis_dxs = [[0.0]*N for _ in cmps]
+        for i in cmps:
+            for k in cmps:
+                # do not know i,k order
+                dlnphi = 1.0/C*dC_dxs[k] + dD_dxs[i][k] + log(G)*dE_dxs[i][k] + Eis[i]/G*dG_dxs[k]
+                dlnphis_dxs[i][k] = dlnphi
+        return dlnphis_dxs
+        
 
 class SRKMIX(GCEOSMIX, SRK):    
     r'''Class for solving the Soave-Redlich-Kwong cubic equation of state for a 
