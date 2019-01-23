@@ -2437,8 +2437,12 @@ class GceosBase(Ideal):
             
         # Fast path - try the flash
         if Wilson_first:
-            _, _, VF_wilson, xs_wilson, ys_wilson = flash_wilson(zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, 
-                         P=P, T=T)
+            try:
+                _, _, VF_wilson, xs_wilson, ys_wilson = flash_wilson(zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, 
+                             P=P, T=T)
+            except Exception as e:
+                print('wilson flash init failed')
+                VF_wilson = -1
 #            print(VF_wilson, xs_wilson, ys_wilson, 'VF_wilson, xs_wilson, ys_wilson')
             if 1e-7 < VF_wilson < 1.0 - 1e-7:
                 try:

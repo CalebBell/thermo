@@ -1119,14 +1119,17 @@ class GCEOSMIX(GCEOS):
         J[self.N][self.N] = 1.0
         
         # Last column except last value; believed correct
+        # Was not correct when compared to numerical solution
         for i in range(self.N):
             value = 0.0
-            for k in range(self.N-1):
+            for k in range(self.N):
+                # Not N - 1 unlike that th eother thing said
                 RR_term = zs[k]*(Ks[k] - 1.0)/(1.0 + VF*(Ks[k] - 1.0))**2.0
                 # pretty sure indexing is right in the below expression
                 diff_term = d_lnphi_dxs[i][k] - Ks[k]*d_lnphi_dys[i][k]
                 value += RR_term*diff_term
             J[i][-1] = value
+#            print(value)
         
         def delta(k, j):
             if k == j:
