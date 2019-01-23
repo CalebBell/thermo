@@ -1087,8 +1087,6 @@ class GCEOSMIX(GCEOS):
             Z_g = eos_g.Z_g
             Z_l = eos_l.Z_l
         else:
-            eos_g = self.to_TP_zs(T=T, P=P, zs=ys)
-            eos_l = self.to_TP_zs(T=T, P=P, zs=xs)
             try:
                 Z_g = eos_g.Z_g
             except AttributeError:
@@ -1101,8 +1099,11 @@ class GCEOSMIX(GCEOS):
         size = self.N + 1
         J = [[None]*size for i in range(size)]
         
-#        d_lnphi_dxs = self.d_lnphi_dzs(Z_l, xs)
-#        d_lnphi_dys = self.d_lnphi_dzs(Z_g, ys)
+        
+#        d_lnphi_dzs_basic_num
+        
+#        d_lnphi_dxs = eos_l.d_lnphi_dzs_basic_num(Z_l, xs)
+#        d_lnphi_dys = eos_g.d_lnphi_dzs_basic_num(Z_g, ys)
         d_lnphi_dxs = eos_l.d_lnphi_dzs(Z_l, xs)
         d_lnphi_dys = eos_g.d_lnphi_dzs(Z_g, ys)
         
@@ -2123,7 +2124,7 @@ class PRMIX(GCEOSMIX, PR):
         
         for i in range(len(zs)):
             zs2 = list(zs)
-            dz = zs2[i]*1e-4
+            dz = 1e-7#zs2[i]*3e-
             zs2[i] = zs2[i]+dz
 #            sum_one = sum(zs2)
 #            zs2 = normalize(zs2)
@@ -2143,7 +2144,7 @@ class PRMIX(GCEOSMIX, PR):
         return np.array(all_diffs).T.tolist()
     
     
-    def d_lnphi_dzs(self, Z, zs):
+    def d_lnphi_dzs_numdifftools(self, Z, zs):
         import numpy as np
         import numdifftools as nd
         
@@ -2164,7 +2165,7 @@ class PRMIX(GCEOSMIX, PR):
         Jfun_partial = nd.Jacobian(lnphis_from_zs, step=1e-4, order=2, method='central')
         return Jfun_partial(zs)
     
-    def d_lnphi_dzs_Varavei(self, Z, zs):
+    def d_lnphi_dzs(self, Z, zs):
         # Is it possible to numerically evaluate different parts to try to find the problems?
         T, P = self.T, self.P
         T2 = T*T
@@ -2253,20 +2254,52 @@ class PRMIX(GCEOSMIX, PR):
         t1 = 1.0/(two_root_two*a_alpha*b*B)
         t2 = A/(a_alpha*b)
         
-        # problem is in here?
+        # problem is in here, tested numerically
         for i in cmps:
             for k in cmps:
-                # should be x_mj*a_alpha_im
+                # should be x_mj*a_alpha_im [i][m]
                 zm_aim_tot = sum([zs[m]*a_alpha_ijs[i][m] for m in cmps])
                 
                 # maybe unisual for bs[i]?
                 first = 1.0/B*(a_alpha*bs[i] - 2.0*b*zm_aim_tot)*(B*dA_dxks[k] - A*dB_dxks[k])
                 
+                # should be [m][k]
+#                zm_tot_3 = sum([zs[m]*a_alpha_ijs[m][i] for m in cmps])
                 zm_amk_tot = sum([zs[m]*a_alpha_ijs[m][k] for m in cmps])
-                second = -t2*(4.0*b*b*zm_aim_tot*zm_amk_tot 
+                
+                # Sign was wrong in article - should be a plus
+                second = t2*(4.0*b*b*zm_aim_tot*zm_amk_tot 
                               - 2.0*a_alpha*b*b*a_alpha_ijs[i][k] - bs[i]*bs[k]*a_alpha**2)
                 
+#                print(first, second, t1)
                 dE_dxs[i][k] = t1*(first + second)
+                
+        # With the numerical derivative substituted in, the analytical result matches the overall numerical!
+#        dEs = []
+#        from numdifftools import Gradient
+#        import numpy as np
+#        for k in range(len(zs)):
+#            def E_for_diff(zs):
+#                zs = zs.tolist()
+#                eos = self.to_TP_zs(T=T, P=P, zs=zs)
+#                bs, b = eos.bs, eos.b
+#                cmps = eos.cmps
+#                two_root_two = 2*2**0.5
+#        
+#                B = b*P/(R*T)
+#                A = eos.a_alpha*P/(R*R*T*T)
+#                
+#                a_alpha_js = eos.a_alpha_ijs[k]
+#                sum_term = 0.0
+#                for m in cmps:
+#                    sum_term += zs[m]*eos.a_alpha_ijs[k][m]
+#            
+#                E = -A/(two_root_two*B)*(2.0/eos.a_alpha*sum_term - bs[k]/b)
+#                return np.array(E)
+#        
+#            dEs_i = Gradient(E_for_diff, step=1e-6)(zs).tolist()
+#            dEs.append(dEs_i)                
+#        dE_dxs = dEs
                 
         
         dG_dxs = []
@@ -2282,7 +2315,13 @@ class PRMIX(GCEOSMIX, PR):
                 dlnphi = 1.0/C*dC_dxs[k] + dD_dxs[i][k] + log(G)*dE_dxs[i][k] + Eis[i]/G*dG_dxs[k]
                 dlnphis_dxs[i][k] = dlnphi
         return dlnphis_dxs
+#        return dlnphis_dxs, dZ_dxs, dA_dxks, dB_dxks, dC_dxs, dD_dxs, dE_dxs, dG_dxs
         
+
+#        d_lnphi_dzs = d_lnphi_dzs_Varavei
+
+
+
 
 class SRKMIX(GCEOSMIX, SRK):    
     r'''Class for solving the Soave-Redlich-Kwong cubic equation of state for a 
