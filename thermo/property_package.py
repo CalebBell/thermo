@@ -1361,12 +1361,13 @@ class IdealCaloric(Ideal):
                 S += self.zs[i]*self.HeatCapacityGases[i].T_dependent_property_integral_over_T(298.15, T)
         elif self.phase == 'l':
             Psats = self._Psats(T=T)
+            T_inv = 1.0/T
             for i in self.cmps:
                 Sg298_to_T = self.HeatCapacityGases[i].T_dependent_property_integral_over_T(298.15, T)
                 Hvap = self.EnthalpyVaporizations[i](T)
                 if Hvap is None:
                     Hvap = 0.0 # Handle the case of a package predicting a transition past the Tc
-                Svap = -Hvap/T # Do the transition at the temperature of the liquid
+                Svap = -Hvap*T_inv # Do the transition at the temperature of the liquid
                 S_P = -R*log(Psats[i]/101325.)
                 S += self.zs[i]*(Sg298_to_T + Svap + S_P)
         elif self.phase == 'l/g':

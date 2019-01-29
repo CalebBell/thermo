@@ -1648,12 +1648,12 @@ def Rachford_Rice_solution_LN2(zs, Ks, guess=None):
             F0 += zix5
             # Func requires 1 division, 1 multiplication, 2 add
             # 1st Deriv adds 2 mult, 1 add
-            # 3rd deriv adds 2 mult, 2 add
+            # 3rd deriv adds 1 mult, 3 add
             
             x5x1x6 = x5*x1x6
             x7 = zix5*x5x1x6
             dF0 -= x7
-            ddF0 += x7*(t51 + 2.0*x5x1x6)      
+            ddF0 += x7*(t51 + x5x1x6 + x5x1x6)      
         
 #        print(y, F0)
         return F0, dF0, ddF0

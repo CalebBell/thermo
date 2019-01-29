@@ -419,6 +419,34 @@ def test_Rachford_Rice_solution2():
     validate_RR_convergence(zs, [Ks_y, Ks_z], [-0.01686263291292747, -1.1254155641065355], n=n_composition_fuzz)
 
 
+    # Ks from tables 8 and 9 from Pan, Huanquan, Michael Connolly, and Hamdi
+    # Tchelepi. “Multiphase Equilibrium Calculation Framework for Compositional 
+    # Simulation of CO2 Injection in Low-Temperature Reservoirs.” Industrial &
+    # Engineering Chemistry Research, January 4, 2019. https://doi.org/10.1021/acs.iecr.8b05229.
+    # Compositions in supporting information
+    JEMA_Ks_g = [1.546336826, 2.379576919, 0.8818093562, 0.3597420492, 0.0440420288, 0.0008924834994, 1.302131664E-06]
+    JEMA_Ks_l2 = [1.544580305, 2.336017325, 0.8869147335, 0.3712005301, 0.0476811452, 0.001059266958, 1.76617359E-06]
+    
+    # CO2 first component in all lists
+    JEMA_zs = [0.0693, 0.1742, 0.1944, 0.3138, 0.1549, 0.0742]
+    JEMA_zs = [0.893] + [i*(1 - 0.893)/sum(JEMA_zs) for i in JEMA_zs]
+    # CO2 frac 0.893 according to fig. 14 label
+    beta_y, beta_z, xs, ys, zs = Rachford_Rice_solution2(JEMA_zs, JEMA_Ks_g, JEMA_Ks_l2)
+    assert_allclose(beta_y, -0.37293697094541645)
+    assert_allclose(beta_z, 1.2080206455621543)
+    
+    MSO_Ks_g = [1.420340741, 0.2964408254, 0.1805854981, 0.09303281846, 0.03891826286, 0.01263057652, 0.001106068886]
+    MSO_Ks_l2 = [1.479781968, 0.06117039468, 0.01625155948, 0.002749741486, 0.0002664184498, 1.309992275E-05, 1.928151262E-08]
+    MSO_zs =  [0.2354, 0.3295, 0.1713, 0.1099, 0.0574, 0.0965]
+    
+    MSO_zs = [0.9483] + [i*(1 - 0.9483)/sum(MSO_zs) for i in MSO_zs]
+    
+    beta_y, beta_z, xs, ys, zs = Rachford_Rice_solution2(MSO_zs, MSO_Ks_g, MSO_Ks_l2)
+    assert_allclose([beta_y, beta_z], [0.0005228950085238463, 0.857047095608143])
+
+
+
+
 def test_Rachford_Rice_solutionN():
     # 5 phase example!
     # Example 2 in Gao, Ran, Xiaolong Yin, and Zhiping Li. "Hybrid Newton-Successive 

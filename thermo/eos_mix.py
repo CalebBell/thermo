@@ -48,28 +48,47 @@ root_two_p1 = root_two + 1.0
 log_min = log(sys.float_info.min)
 
 
-def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs, 
-                                 kijs):
-    # For 44 components, takes 150 us in PyPy.
+def a_alpha_aijs_composition_independent(a_alphas, kijs):
     N = len(a_alphas)
     cmps = range(N)
     
-    da_alpha_dT, d2a_alpha_dT2 = 0.0, 0.0
-    
     a_alpha_ijs = [[0.0]*N for _ in cmps]
     a_alpha_i_roots = [a_alpha_i**0.5 for a_alpha_i in a_alphas]
+#    a_alpha_i_roots_inv = [1.0/i for i in a_alpha_i_roots] # Storing this to avoid divisions was not faster when tested
+    # Tried optimization - skip the divisions - can just store the inverses of a_alpha_i_roots and do another multiplication
+    # Store the inverses of a_alpha_ij_roots
+    a_alpha_ij_roots_inv = [[0.0]*N for _ in cmps]
     
-    a_alpha_ij_roots = [[0.0]*N for _ in cmps]
     for i in cmps:
         kijs_i = kijs[i]
         a_alpha_i = a_alphas[i]
         a_alpha_ijs_is = a_alpha_ijs[i]
-        a_alpha_ij_roots_i = a_alpha_ij_roots[i]
-        for j in cmps:
-            if j < i:
-                continue
-            a_alpha_ij_roots_i[j] = a_alpha_i_roots[i]*a_alpha_i_roots[j]
-            a_alpha_ijs_is[j] = a_alpha_ijs[j][i] = (1. - kijs_i[j])*a_alpha_ij_roots_i[j]
+        a_alpha_ij_roots_i_inv = a_alpha_ij_roots_inv[i]
+        # Using range like this saves 20% of the comp time for 44 components!
+        for j in range(i, N):
+#        for j in cmps:
+#            # TODo range
+#            if j < i:
+#                continue
+            term = a_alpha_i_roots[i]*a_alpha_i_roots[j]
+#            a_alpha_ij_roots_i_inv[j] = a_alpha_i_roots_inv[i]*a_alpha_i_roots_inv[j]#1.0/term
+            a_alpha_ij_roots_i_inv[j] = 1.0/term
+            a_alpha_ijs_is[j] = a_alpha_ijs[j][i] = (1. - kijs_i[j])*term
+    return a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv
+
+
+def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs, 
+                                 kijs, a_alpha_ijs=None, a_alpha_i_roots=None,
+                                 a_alpha_ij_roots_inv=None,
+                                 second_derivative=True):
+    # For 44 components, takes 150 us in PyPy.
+    
+    N = len(a_alphas)
+    cmps = range(N)
+    da_alpha_dT, d2a_alpha_dT2 = 0.0, 0.0
+    
+    if a_alpha_ijs is None or a_alpha_i_roots is None or a_alpha_ij_roots_inv is None:
+        a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, kijs)
             
     z_products = [[zs[i]*zs[j] for j in cmps] for i in cmps]
 
@@ -80,47 +99,53 @@ def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
         for j in cmps:
             if j < i:
                 continue
-            elif i != j:
-                a_alpha += 2.0*a_alpha_ijs_i[j]*z_products_i[j]
+            term = a_alpha_ijs_i[j]*z_products_i[j]
+            if i != j:
+                a_alpha += term + term
             else:
-                a_alpha += a_alpha_ijs_i[j]*z_products_i[j]
+                a_alpha += term
     
     
     da_alpha_dT_ijs = [[0.0]*N for _ in cmps]
+    
+    d2a_alpha_dT2_ij = 0.0
     
     for i in cmps:
         kijs_i = kijs[i]
         a_alphai = a_alphas[i]
         z_products_i = z_products[i]
         da_alpha_dT_i = da_alpha_dTs[i]
-        d2a_alpha_dT2_i = d2a_alpha_dT2s[i]
-        a_alpha_ij_roots_i = a_alpha_ij_roots[i]
+        a_alpha_ij_roots_inv_i = a_alpha_ij_roots_inv[i]
         for j in cmps:
+#        for j in range(0, i+1):
             if j < i:
-                # skip the duplicates
+#                # skip the duplicates
                 continue
             a_alphaj = a_alphas[j]
-            x0 = a_alphai*a_alphaj
-            x0_05 = a_alpha_ij_roots_i[j]
+            x0_05_inv = a_alpha_ij_roots_inv_i[j]
             zi_zj = z_products_i[j]
             
             x1 = a_alphai*da_alpha_dTs[j]
             x2 = a_alphaj*da_alpha_dT_i
             x1_x2 = x1 + x2
-            x3 = 2.0*x1_x2
+            x3 = x1_x2 + x1_x2
 
             kij_m1 = kijs_i[j] - 1.0
             
-            da_alpha_dT_ij = -0.5*kij_m1*x1_x2/x0_05
+            da_alpha_dT_ij = -0.5*kij_m1*x1_x2*x0_05_inv
             
             # For temperature derivatives of fugacities 
             da_alpha_dT_ijs[i][j] = da_alpha_dT_ijs[j][i] = da_alpha_dT_ij
 
             da_alpha_dT_ij *= zi_zj
             
-            d2a_alpha_dT2_ij = zi_zj*kij_m1*(-0.25*x0_05*(x0*(
+            
+            x0 = a_alphai*a_alphaj
+            d2a_alpha_dT2_i = d2a_alpha_dT2s[i]
+        
+            d2a_alpha_dT2_ij = zi_zj*kij_m1*(-0.25*(x0*(
             2.0*(a_alphai*d2a_alpha_dT2s[j] + a_alphaj*d2a_alpha_dT2_i)
-            + 4.*da_alpha_dT_i*da_alpha_dTs[j]) - x1*x3 - x2*x3 + x1_x2*x1_x2)/(x0*x0))
+            + 4.*da_alpha_dT_i*da_alpha_dTs[j]) - x1*x3 - x2*x3 + x1_x2*x1_x2)/(x0_05_inv*x0*x0))
             
             if i != j:
                 da_alpha_dT += da_alpha_dT_ij + da_alpha_dT_ij
@@ -130,6 +155,7 @@ def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
                 d2a_alpha_dT2 += d2a_alpha_dT2_ij
 
     return a_alpha, da_alpha_dT, d2a_alpha_dT2, da_alpha_dT_ijs, a_alpha_ijs
+
 
 
 class GCEOSMIX(GCEOS):
@@ -202,6 +228,12 @@ class GCEOSMIX(GCEOS):
             new.a_alphas = self.a_alphas
             new.da_alpha_dTs = self.da_alpha_dTs
             new.d2a_alpha_dT2s = self.d2a_alpha_dT2s
+            try:
+                new.a_alpha_ijs = self.a_alpha_ijs
+                new.a_alpha_i_roots = self.a_alpha_i_roots
+                new.a_alpha_ij_roots_inv = self.a_alpha_ij_roots_inv
+            except:
+                pass
         
         new.T = T
         new.P = P
@@ -351,7 +383,16 @@ class GCEOSMIX(GCEOS):
         # 10 components - regular python 148 us, 9.81 us PyPy, 8.37 pythran in PyPy (flags have no effect; 14.3 us in regular python)
         zs, kijs, cmps, N = self.zs, self.kijs, self.cmps, self.N
         if full:
-            a_alpha, da_alpha_dT, d2a_alpha_dT2, da_alpha_dT_ijs, a_alpha_ijs = a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs, kijs)
+            try:
+                a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv = self.a_alpha_ijs, self.a_alpha_i_roots, self.a_alpha_ij_roots_inv
+                
+            except AttributeError:
+                a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, kijs)
+                self.a_alpha_ijs, self.a_alpha_i_roots, self.a_alpha_ij_roots_inv = a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv
+
+            a_alpha, da_alpha_dT, d2a_alpha_dT2, da_alpha_dT_ijs, a_alpha_ijs = a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs, kijs,
+                                                                                                             a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv)
+#            stuff = a_alpha_and_derivatives_half(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs, kijs)
 #                ans =  pythran_test2.a_alpha_and_derivatives_py(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs, kijs)
 #                a_alpha, da_alpha_dT, d2a_alpha_dT2, da_alpha_dT_ijs, a_alpha_ijs = ans
             self.da_alpha_dT_ijs = da_alpha_dT_ijs
@@ -522,7 +563,12 @@ class GCEOSMIX(GCEOS):
         b_eos, delta, epsilon = self.b, self.delta, self.epsilon
         eta = b_eos
         
-        
+        try:
+            del self.a_alpha_ijs
+            del self.a_alpha_i_roots
+            del self.a_alpha_ij_roots_inv
+        except:
+            pass
         a_alpha, da_alpha_dT, _ = self.a_alpha_and_derivatives(T, full=True)
         
         
@@ -616,9 +662,9 @@ class GCEOSMIX(GCEOS):
            Process Simulation." AIChE Journal 30, no. 2 (June 17, 2004):
            182-86. https://doi.org/10.1002/aic.690300203.
         '''
-        
-        Pmc = sum([self.Pcs[i]*self.zs[i] for i in self.cmps])
-        Tmc = sum([(self.Tcs[i]*self.Tcs[j])**0.5*self.zs[j]*self.zs[i] for i in self.cmps
+        zs, Tcs, Pcs = self.zs, self.Tcs, self.Pcs
+        Pmc = sum([Pcs[i]*zs[i] for i in self.cmps])
+        Tmc = sum([(Tcs[i]*Tcs[j])**0.5*zs[j]*zs[i] for i in self.cmps
                   for j in self.cmps])
         TP, iterations = newton_system(self.mechanical_critical_point_f_jac,
                                        x0=[Tmc, Pmc], jac=True, ytol=1e-10)
@@ -1072,7 +1118,11 @@ class GCEOSMIX(GCEOS):
         return super(type(self).__mro__[-3], self).solve_T(P=P, V=V, quick=quick)
 
     
-    def _err_VL_jacobian(self, lnKsVF, T, P, zs, near_critical=False):
+    def _err_VL_jacobian(self, lnKsVF, T, P, zs, near_critical=False,
+                         err_also=False, info=None):
+        if info is None:
+            info = []
+        N, cmps = self.N, self.cmps
         lnKs = lnKsVF[:-1]
         Ks = [exp(lnKi) for lnKi in lnKs]
         VF = float(lnKsVF[-1])
@@ -1081,27 +1131,38 @@ class GCEOSMIX(GCEOS):
         xs = [zi/(1.0 + VF*(Ki - 1.0)) for zi, Ki in zip(zs, Ks)]
         ys = [Ki*xi for Ki, xi in zip(Ks, xs)]
 
-        eos_g = self.to_TP_zs(T=T, P=P, zs=ys)
-        eos_l = self.to_TP_zs(T=T, P=P, zs=xs)
+        eos_g = self.to_TP_zs_fast(T=T, P=P, zs=ys, only_g=True) # 
+        eos_l = self.to_TP_zs_fast(T=T, P=P, zs=xs, only_l=True) # 
+
+#        eos_g = self.to_TP_zs(T=T, P=P, zs=ys)
+#        eos_l = self.to_TP_zs(T=T, P=P, zs=xs)
         if not near_critical:
+#            lnphis_g = eos_g.lnphis_g
+#            lnphis_l = eos_l.lnphis_l
             Z_g = eos_g.Z_g
             Z_l = eos_l.Z_l
         else:
             try:
+#                lnphis_g = eos_g.lnphis_g
                 Z_g = eos_g.Z_g
             except AttributeError:
+#                lnphis_g = eos_g.lnphis_l
                 Z_g = eos_g.Z_l
             try:
+#                lnphis_l = eos_l.lnphis_l
                 Z_l = eos_l.Z_l
             except AttributeError:
+#                lnphis_l = eos_l.lnphis_g
                 Z_l = eos_l.Z_g
-        
-        size = self.N + 1
+
+        lnphis_g = eos_g.fugacity_coefficients(Z_g, ys)
+        lnphis_l = eos_l.fugacity_coefficients(Z_l, xs)
+
+        size = N + 1
         J = [[None]*size for i in range(size)]
         
         
 #        d_lnphi_dzs_basic_num
-        
 #        d_lnphi_dxs = eos_l.d_lnphi_dzs_basic_num(Z_l, xs)
 #        d_lnphi_dys = eos_g.d_lnphi_dzs_basic_num(Z_g, ys)
         d_lnphi_dxs = eos_l.d_lnphi_dzs(Z_l, xs)
@@ -1112,29 +1173,34 @@ class GCEOSMIX(GCEOS):
 #        # Handle the zeros and the ones
         # Half of this is probably wrong! Only gets set for one set of variables?
         # Numerical jacobian not good enough to tell
-        for i in range(self.N):
-            J[i][-2] = 0.0
-            J[-2][i] = 0.0
+#        for i in range(self.N):
+#            J[i][-2] = 0.0
+#            J[-2][i] = 0.0
             
-        J[self.N][self.N] = 1.0
+        J[N][N] = 1.0
         
         # Last column except last value; believed correct
         # Was not correct when compared to numerical solution
-        for i in range(self.N):
+        Ksm1 = [Ki - 1.0 for Ki in Ks]
+        RR_denoms_inv2 = []
+        for i in cmps:
+            t = 1.0 + VF*Ksm1[i]
+            RR_denoms_inv2.append(1.0/(t*t))
+            
+        RR_terms = [zs[k]*Ksm1[k]*RR_denoms_inv2[k] for k in cmps]
+        for i in cmps:
             value = 0.0
-            for k in range(self.N):
-                # Not N - 1 unlike that th eother thing said
-                RR_term = zs[k]*(Ks[k] - 1.0)/(1.0 + VF*(Ks[k] - 1.0))**2.0
+            d_lnphi_dxs_i, d_lnphi_dys_i = d_lnphi_dxs[i], d_lnphi_dys[i]
+            for k in cmps:
                 # pretty sure indexing is right in the below expression
-                diff_term = d_lnphi_dxs[i][k] - Ks[k]*d_lnphi_dys[i][k]
-                value += RR_term*diff_term
+                value += RR_terms[k]*(d_lnphi_dxs_i[k] - Ks[k]*d_lnphi_dys_i[k])
             J[i][-1] = value
 #            print(value)
         
-        def delta(k, j):
-            if k == j:
-                return 1.0
-            return 0.0
+#        def delta(k, j):
+#            if k == j:
+#                return 1.0
+#            return 0.0
         
         
             
@@ -1142,37 +1208,56 @@ class GCEOSMIX(GCEOS):
         # Can flip around the indexing of i, j on the d_lnphi_ds but still no fix
         # unsure of correct order!
         # Reveals bugs in d_lnphi_dxs though.
-        for i in range(self.N): # to N is CORRECT/MATCHES JACOBIAN NUMERICALLY
-            for j in range(self.N): # to N is CORRECT/MATCHES JACOBIAN NUMERICALLY
-                value = 0.0
-                value += delta(i, j)
+        zsKsRRinvs2 = [zs[j]*Ks[j]*RR_denoms_inv2[j] for j in cmps]
+        one_m_VF = 1.0 - VF
+        for i in cmps: # to N is CORRECT/MATCHES JACOBIAN NUMERICALLY
+            Ji = J[i]
+            d_lnphi_dxs_is, d_lnphi_dys_is = d_lnphi_dxs[i], d_lnphi_dys[i]
+            for j in cmps: # to N is CORRECT/MATCHES JACOBIAN NUMERICALLY
+                value = 1.0 if i == j else 0.0
+#                value = 0.0
+#                value += delta(i, j)
 #                print(i, j, value)
                 # Maybe if i == j, can skip the bit below? Tried it once and the solver never converged
-                term = zs[j]*Ks[j]/(1.0 + VF*(Ks[j] - 1.0))**2
-                value += term*(VF*d_lnphi_dxs[i][j] + (1.0 - VF)*d_lnphi_dys[i][j])
-                J[i][j] = value
+#                term = zs[j]*Ks[j]*RR_denoms_inv2[j]
+                value += zsKsRRinvs2[j]*(VF*d_lnphi_dxs_is[j] + one_m_VF*d_lnphi_dys_is[j])
+                Ji[j] = value
             
         # Last row except last value  - good, working
+        # Diff of RR w.r.t each log K
         bottom_row = J[-1]
-        for j in range(self.N):
-            value = 0.0
-            for k in range(self.N):
-                if k == j:
-                    RR_l = -Ks[j]*zs[k]*VF/(1.0 + VF*(Ks[k] - 1.0))**2.0
-                    RR_g = Ks[j]*(1.0 - VF)*zs[k]/(1.0 + VF*(Ks[k] - 1.0))**2.0
-                    value += RR_g - RR_l
-            bottom_row[j] = value
-
-
-
+        for j in cmps:
+#            value = 0.0
+#            RR_l = 
+#            RR_l = -Ks[j]*zs[j]*VF/(1.0 + VF*(Ks[j] - 1.0))**2.0
+#            RR_g = Ks[j]*(1.0 - VF)*zs[j]/(1.0 + VF*(Ks[j] - 1.0))**2.0
+#            value +=  #  -RR_l
+            bottom_row[j] = zsKsRRinvs2[j]*(one_m_VF) + VF*zsKsRRinvs2[j]
+        # Last row except last value  - good, working
+#        bottom_row = J[-1]
+#        for j in range(self.N):
+#            value = 0.0
+#            for k in range(self.N):
+#                if k == j:
+#                    RR_l = -Ks[j]*zs[k]*VF/(1.0 + VF*(Ks[k] - 1.0))**2.0
+#                    RR_g = Ks[j]*(1.0 - VF)*zs[k]/(1.0 + VF*(Ks[k] - 1.0))**2.0
+#                    value += RR_g - RR_l
+#            bottom_row[j] = value
+#
         # Last value - good, working, being overwritten
         dF_ncp1_dB = 0.0
-        for i in range(len(zs)):
-            Ki = Ks[i]
-            dF_ncp1_dB += -zs[i]*(Ki - 1.0)**2/(1.0 + VF*(Ki - 1.0))**2
+        for i in cmps:
+            dF_ncp1_dB -= RR_terms[i]*Ksm1[i]
         J[-1][-1] = dF_ncp1_dB
-            
-            
+        
+        info[:] = VF, xs, ys, eos_l, eos_g
+        
+        if err_also:
+            err_RR = Rachford_Rice_flash_error(VF, zs, Ks)
+            Fs = [lnKi - lnphi_l + lnphi_g for lnphi_l, lnphi_g, lnKi in zip(lnphis_l, lnphis_g, lnKs)]
+            Fs.append(err_RR)
+            return Fs, J
+
         return J
             
     def _err_VL(self, lnKsVF, T, P, zs, near_critical=False):
@@ -1191,28 +1276,23 @@ class GCEOSMIX(GCEOS):
         
         err_RR = Rachford_Rice_flash_error(VF, zs, Ks)
 
-        eos_g = self.to_TP_zs(T=T, P=P, zs=ys)
-        eos_l = self.to_TP_zs(T=T, P=P, zs=xs)
+        eos_g = self.to_TP_zs_fast(T=T, P=P, zs=ys, only_g=True) # 
+        eos_g.fugacities()
+        eos_l = self.to_TP_zs_fast(T=T, P=P, zs=xs, only_l=True) # 
+        eos_l.fugacities()
+        
         if not near_critical:
-            fugacities_g = eos_g.fugacities_g
-            fugacities_l = eos_l.fugacities_l
             lnphis_g = eos_g.lnphis_g
             lnphis_l = eos_l.lnphis_l
         else:
-            eos_g = self.to_TP_zs(T=T, P=P, zs=ys)
-            eos_l = self.to_TP_zs(T=T, P=P, zs=xs)
             try:
                 lnphis_g = eos_g.lnphis_g
-                fugacities_g = eos_g.fugacities_g
             except AttributeError:
                 lnphis_g = eos_g.lnphis_l
-                fugacities_g = eos_g.fugacities_l
             try:
                 lnphis_l = eos_l.lnphis_l
-                fugacities_l = eos_l.fugacities_l
             except AttributeError:
                 lnphis_l = eos_l.lnphis_g
-                fugacities_l = eos_l.fugacities_g
 #        Fs = [fl/fg-1.0 for fl, fg in zip(fugacities_l, fugacities_g)]
         Fs = [lnKi - lnphi_l + lnphi_g for lnphi_l, lnphi_g, lnKi in zip(lnphis_l, lnphis_g, lnKs)]
         Fs.append(err_RR)
@@ -1235,26 +1315,55 @@ class GCEOSMIX(GCEOS):
         Ks_y = [exp(lnphi_x - lnphi_y) for lnphi_x, lnphi_y in zip(lnphis_x, lnphis_y)]
         Ks_z = [exp(lnphi_x - lnphi_z) for lnphi_x, lnphi_z in zip(lnphis_x, lnphis_z)]
 
+    def newton_VL(self, Ks_initial=None, maxiter=30,
+                  ytol=1E-7, near_critical=True,
+                  xs=None, ys=None, V_over_F=None):
+        T, P, zs = self.T, self.P, self.zs
+        if xs is not None and ys is not None and V_over_F is not None:
+            pass
+        else:
+            if Ks_initial is None:
+                Ks = [Wilson_K_value(T, P, Tci, Pci, omega) for Pci, Tci, omega in zip(self.Pcs, self.Tcs, self.omegas)]
+            else:
+                Ks = Ks_initial
+            V_over_F, xs, ys = flash_inner_loop(zs, Ks)
+        
+        
+        
+        
+        lnKs_guess = [log(yi/xi) for yi, xi in zip(ys, xs)] + [V_over_F]
+        
+        info = []
+        def err_and_jacobian(lnKs_guess):
+            return self._err_VL_jacobian(lnKs_guess, T, P, zs, near_critical=True, err_also=True, info=info)
+
+        ans, count = newton_system(err_and_jacobian, jac=True, x0=lnKs_guess, ytol=ytol, maxiter=maxiter)
+        V_over_F, xs, ys, eos_l, eos_g = info
+        return V_over_F, xs, ys, eos_l, eos_g
+        
+
     def sequential_substitution_VL(self, Ks_initial=None, maxiter=1000,
                                    xtol=1E-13, near_critical=True, Ks_extra=None,
                                    xs=None, ys=None, trivial_solution_tol=1e-5):
 #        print(self.zs, Ks)
+        T, P, zs = self.T, self.P, self.zs
         V_over_F = None
         if xs is not None and ys is not None:
             pass
         else:
+            # TODO use flash_wilson here
             if Ks_initial is None:
-                Ks = [Wilson_K_value(self.T, self.P, Tci, Pci, omega) for Pci, Tci, omega in zip(self.Pcs, self.Tcs, self.omegas)]
+                Ks = [Wilson_K_value(T, P, Tci, Pci, omega) for Pci, Tci, omega in zip(self.Pcs, self.Tcs, self.omegas)]
             else:
                 Ks = Ks_initial
             xs = None
             try:
-                V_over_F, xs, ys = flash_inner_loop(self.zs, Ks)
+                V_over_F, xs, ys = flash_inner_loop(zs, Ks)
             except ValueError as e:
                 if Ks_extra is not None:
                     for Ks in Ks_extra:
                         try:
-                            V_over_F, xs, ys = flash_inner_loop(self.zs, Ks)
+                            V_over_F, xs, ys = flash_inner_loop(zs, Ks)
                             break
                         except ValueError as e:
                             pass
@@ -1262,131 +1371,119 @@ class GCEOSMIX(GCEOS):
                 raise(e)
         
 #        print(xs, ys, 'innerloop')
-        Z_l_prev = None
-        Z_g_prev = None
+#        Z_l_prev = None
+#        Z_g_prev = None
 
         for i in range(maxiter):
             if not near_critical:
-                eos_g = self.to_TP_zs_fast(T=self.T, P=self.P, zs=ys, only_l=False, only_g=True)
-                eos_l = self.to_TP_zs_fast(T=self.T, P=self.P, zs=xs, only_l=True, only_g=False)
-                eos_g.fugacities()
-                eos_l.fugacities()
-#                eos_g = self.to_TP_zs(T=self.T, P=self.P, zs=ys)
-#                eos_l = self.to_TP_zs(T=self.T, P=self.P, zs=xs)
-    
-                lnphis_g = eos_g.lnphis_g#fugacity_coefficients(eos_g.Z_g, ys)
-                lnphis_l = eos_l.lnphis_l#fugacity_coefficients(eos_l.Z_l, xs)
-                fugacities_l = eos_l.fugacities_l
-                fugacities_g = eos_g.fugacities_g
+                eos_g = self.to_TP_zs_fast(T=T, P=P, zs=ys, only_l=False, only_g=True)
+                eos_l = self.to_TP_zs_fast(T=T, P=P, zs=xs, only_l=True, only_g=False)
+                lnphis_g = eos_g.fugacity_coefficients(eos_g.Z_g, ys)
+                lnphis_l = eos_l.fugacity_coefficients(eos_l.Z_l, xs)
             else:
-                eos_g = self.to_TP_zs_fast(T=self.T, P=self.P, zs=ys, only_l=False, only_g=True)
-                eos_l = self.to_TP_zs_fast(T=self.T, P=self.P, zs=xs, only_l=True, only_g=False)
-                eos_g.fugacities()
-                eos_l.fugacities()
+                eos_g = self.to_TP_zs_fast(T=T, P=P, zs=ys, only_l=False, only_g=True)
+                eos_l = self.to_TP_zs_fast(T=T, P=P, zs=xs, only_l=True, only_g=False)                
+                try:
+                    lnphis_g = eos_g.fugacity_coefficients(eos_g.Z_g, ys)
+                except AttributeError:
+                    lnphis_g = eos_g.fugacity_coefficients(eos_g.Z_l, ys)
+                try:
+                    lnphis_l = eos_l.fugacity_coefficients(eos_l.Z_l, xs)
+                except AttributeError:
+                    lnphis_l = eos_l.fugacity_coefficients(eos_l.Z_g, xs)
+
+                
 #                eos_g = self.to_TP_zs(T=self.T, P=self.P, zs=ys)
 #                eos_l = self.to_TP_zs(T=self.T, P=self.P, zs=xs)
-                if 0:
-                    if hasattr(eos_g, 'lnphis_g') and hasattr(eos_g, 'lnphis_l'):
-                        if Z_l_prev is not None and Z_g_prev is not None:
-                            if abs(eos_g.Z_g - Z_g_prev) < abs(eos_g.Z_l - Z_g_prev):
-                                lnphis_g = eos_g.lnphis_g
-                                fugacities_g = eos_g.fugacities_g
-                                Z_g_prev = eos_g.Z_g
-                            else:
-                                lnphis_g = eos_g.lnphis_l
-                                fugacities_g = eos_g.fugacities_l
-                                Z_g_prev = eos_g.Z_l
-                        else:
-                            if eos_g.G_dep_g < eos_g.lnphis_l:
-                                lnphis_g = eos_g.lnphis_g
-                                fugacities_g = eos_g.fugacities_g
-                                Z_g_prev = eos_g.Z_g
-                            else:
-                                lnphis_g = eos_g.lnphis_l
-                                fugacities_g = eos_g.fugacities_l
-                                Z_g_prev = eos_g.Z_l
-                    else:
-                        try:
-                            lnphis_g = eos_g.lnphis_g#fugacity_coefficients(eos_g.Z_g, ys)
-                            fugacities_g = eos_g.fugacities_g
-                            Z_g_prev = eos_g.Z_g
-                        except AttributeError:
-                            lnphis_g = eos_g.lnphis_l#fugacity_coefficients(eos_g.Z_l, ys)
-                            fugacities_g = eos_g.fugacities_l
-                            Z_g_prev = eos_g.Z_l
-                    if hasattr(eos_l, 'lnphis_g') and hasattr(eos_l, 'lnphis_l'):
-                        if Z_l_prev is not None and Z_g_prev is not None:
-                            if abs(eos_l.Z_l - Z_l_prev) < abs(eos_l.Z_g - Z_l_prev):
-                                lnphis_l = eos_l.lnphis_g
-                                fugacities_l = eos_l.fugacities_g
-                                Z_l_prev = eos_l.Z_g
-                            else:
-                                lnphis_l = eos_l.lnphis_l
-                                fugacities_l = eos_l.fugacities_l
-                                Z_l_prev = eos_l.Z_l
-                        else:
-                            if eos_l.G_dep_g < eos_l.lnphis_l:
-                                lnphis_l = eos_l.lnphis_g
-                                fugacities_l = eos_l.fugacities_g
-                                Z_l_prev = eos_l.Z_g
-                            else:
-                                lnphis_l = eos_l.lnphis_l
-                                fugacities_l = eos_l.fugacities_l
-                                Z_l_prev = eos_l.Z_l
-                    else:
-                        try:
-                            lnphis_l = eos_l.lnphis_g#fugacity_coefficients(eos_l.Z_g, ys)
-                            fugacities_l = eos_l.fugacities_g
-                            Z_l_prev = eos_l.Z_g
-                        except AttributeError:
-                            lnphis_l = eos_l.lnphis_l#fugacity_coefficients(eos_l.Z_l, ys)
-                            fugacities_l = eos_l.fugacities_l
-                            Z_l_prev = eos_l.Z_l
-                elif 0:
-                    if hasattr(eos_g, 'lnphis_g') and hasattr(eos_g, 'lnphis_l'):
-                        if eos_g.G_dep_g < eos_g.lnphis_l:
-                            lnphis_g = eos_g.lnphis_g
-                            fugacities_g = eos_g.fugacities_g
-                        else:
-                            lnphis_g = eos_g.lnphis_l
-                            fugacities_g = eos_g.fugacities_l
-                    else:
-                        try:
-                            lnphis_g = eos_g.lnphis_g#fugacity_coefficients(eos_g.Z_g, ys)
-                            fugacities_g = eos_g.fugacities_g
-                        except AttributeError:
-                            lnphis_g = eos_g.lnphis_l#fugacity_coefficients(eos_g.Z_l, ys)
-                            fugacities_g = eos_g.fugacities_l
-                    
-                    if hasattr(eos_l, 'lnphis_g') and hasattr(eos_l, 'lnphis_l'):
-                        if eos_l.G_dep_g < eos_l.lnphis_l:
-                            lnphis_l = eos_l.lnphis_g
-                            fugacities_l = eos_l.fugacities_g
-                        else:
-                            lnphis_l = eos_l.lnphis_l
-                            fugacities_l = eos_l.fugacities_l
-                    else:
-                        try:
-                            lnphis_l = eos_l.lnphis_g#fugacity_coefficients(eos_l.Z_g, ys)
-                            fugacities_l = eos_l.fugacities_g
-                        except AttributeError:
-                            lnphis_l = eos_l.lnphis_l#fugacity_coefficients(eos_l.Z_l, ys)
-                            fugacities_l = eos_l.fugacities_l
-                    
-                else:
-                    try:
-                        lnphis_g = eos_g.lnphis_g#fugacity_coefficients(eos_g.Z_g, ys)
-                        fugacities_g = eos_g.fugacities_g
-                    except AttributeError:
-                        lnphis_g = eos_g.lnphis_l#fugacity_coefficients(eos_g.Z_l, ys)
-                        fugacities_g = eos_g.fugacities_l
-                    try:
-                        lnphis_l = eos_l.lnphis_l#fugacity_coefficients(eos_l.Z_l, xs)
-                        fugacities_l = eos_l.fugacities_l
-                    except AttributeError:
-                        lnphis_l = eos_l.lnphis_g#fugacity_coefficients(eos_l.Z_g, xs)
-                        fugacities_l = eos_l.fugacities_g
-
+#                if 0:
+#                    if hasattr(eos_g, 'lnphis_g') and hasattr(eos_g, 'lnphis_l'):
+#                        if Z_l_prev is not None and Z_g_prev is not None:
+#                            if abs(eos_g.Z_g - Z_g_prev) < abs(eos_g.Z_l - Z_g_prev):
+#                                lnphis_g = eos_g.lnphis_g
+#                                fugacities_g = eos_g.fugacities_g
+#                                Z_g_prev = eos_g.Z_g
+#                            else:
+#                                lnphis_g = eos_g.lnphis_l
+#                                fugacities_g = eos_g.fugacities_l
+#                                Z_g_prev = eos_g.Z_l
+#                        else:
+#                            if eos_g.G_dep_g < eos_g.lnphis_l:
+#                                lnphis_g = eos_g.lnphis_g
+#                                fugacities_g = eos_g.fugacities_g
+#                                Z_g_prev = eos_g.Z_g
+#                            else:
+#                                lnphis_g = eos_g.lnphis_l
+#                                fugacities_g = eos_g.fugacities_l
+#                                Z_g_prev = eos_g.Z_l
+#                    else:
+#                        try:
+#                            lnphis_g = eos_g.lnphis_g#fugacity_coefficients(eos_g.Z_g, ys)
+#                            fugacities_g = eos_g.fugacities_g
+#                            Z_g_prev = eos_g.Z_g
+#                        except AttributeError:
+#                            lnphis_g = eos_g.lnphis_l#fugacity_coefficients(eos_g.Z_l, ys)
+#                            fugacities_g = eos_g.fugacities_l
+#                            Z_g_prev = eos_g.Z_l
+#                    if hasattr(eos_l, 'lnphis_g') and hasattr(eos_l, 'lnphis_l'):
+#                        if Z_l_prev is not None and Z_g_prev is not None:
+#                            if abs(eos_l.Z_l - Z_l_prev) < abs(eos_l.Z_g - Z_l_prev):
+#                                lnphis_l = eos_l.lnphis_g
+#                                fugacities_l = eos_l.fugacities_g
+#                                Z_l_prev = eos_l.Z_g
+#                            else:
+#                                lnphis_l = eos_l.lnphis_l
+#                                fugacities_l = eos_l.fugacities_l
+#                                Z_l_prev = eos_l.Z_l
+#                        else:
+#                            if eos_l.G_dep_g < eos_l.lnphis_l:
+#                                lnphis_l = eos_l.lnphis_g
+#                                fugacities_l = eos_l.fugacities_g
+#                                Z_l_prev = eos_l.Z_g
+#                            else:
+#                                lnphis_l = eos_l.lnphis_l
+#                                fugacities_l = eos_l.fugacities_l
+#                                Z_l_prev = eos_l.Z_l
+#                    else:
+#                        try:
+#                            lnphis_l = eos_l.lnphis_g#fugacity_coefficients(eos_l.Z_g, ys)
+#                            fugacities_l = eos_l.fugacities_g
+#                            Z_l_prev = eos_l.Z_g
+#                        except AttributeError:
+#                            lnphis_l = eos_l.lnphis_l#fugacity_coefficients(eos_l.Z_l, ys)
+#                            fugacities_l = eos_l.fugacities_l
+#                            Z_l_prev = eos_l.Z_l
+#                elif 0:
+#                    if hasattr(eos_g, 'lnphis_g') and hasattr(eos_g, 'lnphis_l'):
+#                        if eos_g.G_dep_g < eos_g.lnphis_l:
+#                            lnphis_g = eos_g.lnphis_g
+#                            fugacities_g = eos_g.fugacities_g
+#                        else:
+#                            lnphis_g = eos_g.lnphis_l
+#                            fugacities_g = eos_g.fugacities_l
+#                    else:
+#                        try:
+#                            lnphis_g = eos_g.lnphis_g#fugacity_coefficients(eos_g.Z_g, ys)
+#                            fugacities_g = eos_g.fugacities_g
+#                        except AttributeError:
+#                            lnphis_g = eos_g.lnphis_l#fugacity_coefficients(eos_g.Z_l, ys)
+#                            fugacities_g = eos_g.fugacities_l
+#                    
+#                    if hasattr(eos_l, 'lnphis_g') and hasattr(eos_l, 'lnphis_l'):
+#                        if eos_l.G_dep_g < eos_l.lnphis_l:
+#                            lnphis_l = eos_l.lnphis_g
+#                            fugacities_l = eos_l.fugacities_g
+#                        else:
+#                            lnphis_l = eos_l.lnphis_l
+#                            fugacities_l = eos_l.fugacities_l
+#                    else:
+#                        try:
+#                            lnphis_l = eos_l.lnphis_g#fugacity_coefficients(eos_l.Z_g, ys)
+#                            fugacities_l = eos_l.fugacities_g
+#                        except AttributeError:
+#                            lnphis_l = eos_l.lnphis_l#fugacity_coefficients(eos_l.Z_l, ys)
+#                            fugacities_l = eos_l.fugacities_l
+#                    
+#                else:
 #            print(phis_l, phis_g, 'phis')
 #             Ks = [exp(a - b) for a, b in zip(ln_phis_l, ln_phis_g)]
             Ks = [exp(l - g) for l, g in zip(lnphis_l, lnphis_g)] # K_value(phi_l=l, phi_g=g)
@@ -1401,7 +1498,7 @@ class GCEOSMIX(GCEOS):
                 
             
 #            print(Ks, 'Ks into RR')
-            V_over_F, xs_new, ys_new = flash_inner_loop(self.zs, Ks, guess=V_over_F)
+            V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks, guess=V_over_F)
 #            if any(i < 0 for i in xs_new):
 #                print('hil', xs_new)
 #            
@@ -1421,24 +1518,25 @@ class GCEOSMIX(GCEOS):
             
             # Claimed error function in CONVENTIONAL AND RAPID FLASH CALCULATIONS FOR THE SOAVE-REDLICH-KWONG AND PENG-ROBINSON EQUATIONS OF STATE
             
-#            err3 = 0.0
-#            for l, g, xi, yi in zip(lnphis_l, lnphis_g, xs_new, ys_new):
-#                print(xi/yi, exp(l-g), l-g)
-#                err_i = (expm1(l-g)*xi/yi) - 1.0 # Note: expm1 is slower
-#                print(err_i, err_i*err_i, 'hi')
-#                err3 += err_i*err_i
+            err3 = 0.0
+            # Suggested tolerance 1e-15
+            for Ki, xi, yi in zip(Ks, xs, ys):
+                # equivalent of fugacity ratio
+                # Could divide by the old Ks as well.
+                err_i = Ki*xi/yi - 1.0
+                err3 += err_i*err_i
             
-#            err2 = sum([(exp(l-g)-1.0)**2  ]) # Suggested tolerance 1e-15
-            err2 = 0.0
-            for l, g in zip(fugacities_l, fugacities_g):
-                err_i = (l/g-1.0)
-                err2 += err_i*err_i
+#            err2 = sum([(exp(l-g)-1.0)**2  ]) 
+#            err2 = 0.0
+#            for l, g in zip(fugacities_l, fugacities_g):
+#                err_i = (l/g-1.0)
+#                err2 += err_i*err_i
            # Suggested tolerance 1e-15
             # This is a better metric because it does not involve  hysterisis
 #            print(err3, err2)
             
-            err = (sum([abs(x_new - x_old) for x_new, x_old in zip(xs_new, xs)]) +
-                  sum([abs(y_new - y_old) for y_new, y_old in zip(ys_new, ys)]))
+#            err = (sum([abs(x_new - x_old) for x_new, x_old in zip(xs_new, xs)]) +
+#                  sum([abs(y_new - y_old) for y_new, y_old in zip(ys_new, ys)]))
 #            print(err, err2)
             xs, ys = xs_new, ys_new
 #            print(i, 'err', err, err2, 'xs, ys', xs, ys, 'VF', V_over_F)
@@ -1447,7 +1545,7 @@ class GCEOSMIX(GCEOS):
                 if comp_difference < trivial_solution_tol:
                     raise ValueError("Converged to trivial condition, compositions of both phases equal")
 #            print(xs)
-            if err2 < xtol:
+            if err3 < xtol:
                 break
             if i == maxiter-1:
                 raise ValueError('End of SS without convergence')
@@ -1917,9 +2015,6 @@ class PRMIX(GCEOSMIX, PR):
 
         phis = []
         fugacity_sum_terms = []
-        
-        
-        
         for i in cmps:
             a_alpha_js = a_alpha_ijs[i]
             b_ratio = bs[i]*b_inv 
@@ -1931,8 +2026,9 @@ class PRMIX(GCEOSMIX, PR):
 
             t3 = b_ratio*Zm1 - x0 - x4*(x1*sum_term - b_ratio)
 
-            if t3 > 700.0:
-                t3 = 700.0
+            # Let wherever calls the exp deal with overflow
+#            if t3 > 700.0:
+#                t3 = 700.0
             phis.append(t3)
             fugacity_sum_terms.append(sum_term)
             
@@ -2172,15 +2268,24 @@ class PRMIX(GCEOSMIX, PR):
         # Is it possible to numerically evaluate different parts to try to find the problems?
         T, P = self.T, self.P
         T2 = T*T
+        T_inv = 1.0/T
+        RT_inv = R_inv*T_inv
         bs, b = self.bs, self.b
         a_alpha = self.a_alpha
         a_alpha_ijs = self.a_alpha_ijs
-
-        A = self.a_alpha*self.P/(R2*T2)
-        B = b*self.P/(R*T)
-        
         a_alphas = self.a_alphas
-        
+        fugacity_sum_terms = self.fugacity_sum_terms
+        N = len(zs)
+        cmps = range(N)
+
+        b2 = b*b
+        b_inv = 1.0/b
+        b2_inv = b_inv*b_inv
+        a_alpha2 = a_alpha*a_alpha
+
+        A = a_alpha*P*RT_inv*RT_inv
+        B = b*P*RT_inv
+        B_inv = 1.0/B
         C = 1.0/(Z - B)
         
         Zm1 = Z - 1.0
@@ -2188,137 +2293,102 @@ class PRMIX(GCEOSMIX, PR):
 
         G = (Z + (1.0 + root_two)*B)/(Z + (1.0 - root_two)*B)
         
-        N = len(zs)
-        cmps = range(N)
         
-        ln_phis = []
-        Eis = []
-        
-        for i in cmps:
-            for j in cmps:
-                a_alpha_js = a_alpha_ijs[i]
-                sum_term = 0.0
-                for zi, a_alpha_j_i in zip(zs, a_alpha_js):
-                    sum_term += zi*a_alpha_j_i
-    
-            E = -A/(two_root_two*B)*(2.0/a_alpha*sum_term - bs[i]/b)
-            Eis.append(E)
-
+        t4 = 2.0/a_alpha
+        t5 = -A/(two_root_two*B)
+        Eis = [t5*(t4*fugacity_sum_terms[i] - bs[i]*b_inv) for i in cmps]
+#        ln_phis = []
 #        for i in cmps:
 #            ln_phis.append(log(C) + Dis[i] + Eis[i]*log(G))
 #        return ln_phis
 
-        Bis = [bi*P/(R*T) for bi in bs]
+#        Bis = [bi*P/(R*T) for bi in bs]
         # maybe with a 2 constant? 
-        dB_dxks = [P*bk/(R*T) for bk in bs]
+        t6 = P*RT_inv
+        dB_dxks = [t6*bk for bk in bs]
         
         
         # THIS IS WRONG - the sum changes w.r.t (or does it?)
         # Believed right now?
-        const = 2.0*P/(R*T)**2
-        dA_dxks = []
-        for k in cmps:
-#            a_alpha_js = a_alpha_ijs[k]
-            sum_term = 0.0
-            for m in cmps:
-                sum_term += zs[m]*a_alpha_ijs[m][k] # index might be other way
-#            for zi, a_alpha_j_i in zip(zs, a_alpha_js):
-#                sum_term += zi*a_alpha_j_i
-            dA_dxks.append(const*sum_term)
+        const = (P+P)*RT_inv*RT_inv
+        dA_dxks = [const*term_i for term_i in fugacity_sum_terms]
             
-        dF_dZ = 3.0*Z*Z - 2.0*Z*(1.0 - B) + (A - 3.0*B*B - 2.0*B)
+        dF_dZ_inv = 1.0/(3.0*Z*Z - 2.0*Z*(1.0 - B) + (A - 3.0*B*B - 2.0*B))
         
-        dZ_dxs = []
-        for i in cmps:
-            term = (((B - Z)*dA_dxks[i] 
-                    + (A - 2.0*B - 3.0*B*B + 2.0*(3.0*B + 1.0)*Z - Z*Z)*dB_dxks[i])
-                    /dF_dZ)
-            dZ_dxs.append(term)
+        t15 = (A - 2.0*B - 3.0*B*B + 2.0*(3.0*B + 1.0)*Z - Z*Z)
+        BmZ = (B - Z)
+        dZ_dxs = [(BmZ*dA_dxks[i] + t15*dB_dxks[i])*dF_dZ_inv for i in cmps]
         
         # function only of k
-        dC_dxs = []
-        for k in cmps:
-            term = -(dZ_dxs[k] - dB_dxks[k])/(Z-B)**2
-            dC_dxs.append(term)
+        ZmB = Z - B
+        t20 = -1.0/(ZmB*ZmB)
+        dC_dxs = [t20*(dZ_dxs[k] - dB_dxks[k]) for k in cmps]
         
-        dD_dxs = [[0.0]*N for _ in cmps]
+        dD_dxs = []
+#        dD_dxs = [[0.0]*N for _ in cmps]
+        t55s = [b*dZ_dxs[k] - bs[k]*Zm1 for k in cmps]
         for i in cmps:
-            for k in cmps:
-                # not sure right order to make dD_dxs
-                term = bs[i]/(b*b)*(b*dZ_dxs[k] - bs[k]*(Z - 1.0))
-                dD_dxs[i][k] = term
+#            dD_dxs_i = dD_dxs[i]
+            b_term_ratio = bs[i]*b2_inv
+            dD_dxs.append([b_term_ratio*t55s[k] for k in cmps])
+#            for k in cmps:
+#                dD_dxs_i[k] = b_term_ratio*t55s[k]
 #        dD_dxs = []
 #        for i in cmps:
 #            term = bs[i]/(b*b)*(b*dZ_dxs[i] - b*(Z - 1.0))
 #            dD_dxs.append(term)
             
         # ? Believe this is the only one with multi indexes?
-        dE_dxs = [[0.0]*N for _ in cmps] # TODO - makes little sense. Too many i indexes.
         t1 = 1.0/(two_root_two*a_alpha*b*B)
-        t2 = A/(a_alpha*b)
+        t2 = t1*A/(a_alpha*b)
+        t50s = [B*dA_dxks[k] - A*dB_dxks[k] for k in cmps]
         
         # problem is in here, tested numerically
+        b_two = b + b
+        t32 = 2.0*a_alpha*b2
+        t33 = 4.0*b2
+        t34 = t1*B_inv*a_alpha
+        t35 = -t1*B_inv*b_two
+        
+        # Symmetric matrix!
+        dE_dxs = [[0.0]*N for _ in cmps] # TODO - makes little sense. Too many i indexes.
         for i in cmps:
-            for k in cmps:
-                # should be x_mj*a_alpha_im [i][m]
-                zm_aim_tot = sum([zs[m]*a_alpha_ijs[i][m] for m in cmps])
-                
-                # maybe unisual for bs[i]?
-                first = 1.0/B*(a_alpha*bs[i] - 2.0*b*zm_aim_tot)*(B*dA_dxks[k] - A*dB_dxks[k])
-                
-                # should be [m][k]
-#                zm_tot_3 = sum([zs[m]*a_alpha_ijs[m][i] for m in cmps])
-                zm_amk_tot = sum([zs[m]*a_alpha_ijs[m][k] for m in cmps])
-                
+            zm_aim_tot = fugacity_sum_terms[i]
+            t30 = t34*bs[i] + t35*zm_aim_tot
+            t31 = t33*zm_aim_tot
+            
+            dE_dxs_i = []
+            a_alpha_ijs_i = a_alpha_ijs[i]
+            for k in range(0, i+1):
                 # Sign was wrong in article - should be a plus
-                second = t2*(4.0*b*b*zm_aim_tot*zm_amk_tot 
-                              - 2.0*a_alpha*b*b*a_alpha_ijs[i][k] - bs[i]*bs[k]*a_alpha**2)
+                second = t2*(t31*fugacity_sum_terms[k] - t32*a_alpha_ijs_i[k] - bs[i]*bs[k]*a_alpha2)
+                dE_dxs[i][k] = dE_dxs[k][i] = t30*t50s[k] + second
                 
-#                print(first, second, t1)
-                dE_dxs[i][k] = t1*(first + second)
+#                dE_dxs_i.append(t1*(first + second))
+#            dE_dxs.append(dE_dxs_i)
                 
-        # With the numerical derivative substituted in, the analytical result matches the overall numerical!
-#        dEs = []
-#        from numdifftools import Gradient
-#        import numpy as np
-#        for k in range(len(zs)):
-#            def E_for_diff(zs):
-#                zs = zs.tolist()
-#                eos = self.to_TP_zs(T=T, P=P, zs=zs)
-#                bs, b = eos.bs, eos.b
-#                cmps = eos.cmps
-#                two_root_two = 2*2**0.5
-#        
-#                B = b*P/(R*T)
-#                A = eos.a_alpha*P/(R*R*T*T)
-#                
-#                a_alpha_js = eos.a_alpha_ijs[k]
-#                sum_term = 0.0
-#                for m in cmps:
-#                    sum_term += zs[m]*eos.a_alpha_ijs[k][m]
-#            
-#                E = -A/(two_root_two*B)*(2.0/eos.a_alpha*sum_term - bs[k]/b)
-#                return np.array(E)
-#        
-#            dEs_i = Gradient(E_for_diff, step=1e-6)(zs).tolist()
-#            dEs.append(dEs_i)                
-#        dE_dxs = dEs
-                
+        t59 = (Z + (1.0 - root_two)*B)
+        t60 = two_root_two/(t59*t59)
+        dG_dxs = [t60*(Z*dB_dxks[k] - B*dZ_dxs[k]) for k in cmps]
+            
         
-        dG_dxs = []
-        for k in cmps:
-            term = two_root_two/(Z + (1.0 - root_two)*B)**2*(Z*dB_dxks[k] - B*dZ_dxs[k])
-            dG_dxs.append(term)
-        
-        
-        dlnphis_dxs = [[0.0]*N for _ in cmps]
+        G_inv = 1.0/G
+        logG = log(G)
+        C_inv = 1.0/C
+        dlnphis_dxs = []
+#        dlnphis_dxs = [[0.0]*N for _ in cmps]
+        t61s = [C_inv*dC_dxi for dC_dxi in dC_dxs]
         for i in cmps:
-            for k in cmps:
-                # do not know i,k order
-                dlnphi = 1.0/C*dC_dxs[k] + dD_dxs[i][k] + log(G)*dE_dxs[i][k] + Eis[i]/G*dG_dxs[k]
-                dlnphis_dxs[i][k] = dlnphi
-        return dlnphis_dxs
-#        return dlnphis_dxs, dZ_dxs, dA_dxks, dB_dxks, dC_dxs, dD_dxs, dE_dxs, dG_dxs
+            dD_dxs_i = dD_dxs[i]
+            dE_dxs_i = dE_dxs[i]
+            E_G = Eis[i]*G_inv
+#            dlnphis_dxs_i = dlnphis_dxs[i]
+            dlnphis_dxs_i = [t61s[k] + dD_dxs_i[k] + logG*dE_dxs_i[k] + E_G*dG_dxs[k]
+                             for k in cmps]
+            dlnphis_dxs.append(dlnphis_dxs_i)
+
+#        return dlnphis_dxs
+        return dlnphis_dxs#, dZ_dxs, dA_dxks, dB_dxks, dC_dxs, dD_dxs, dE_dxs, dG_dxs
         
 
 #        d_lnphi_dzs = d_lnphi_dzs_Varavei
