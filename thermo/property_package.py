@@ -50,7 +50,7 @@ from copy import copy
 from random import uniform, shuffle, seed
 import numpy as np
 from scipy.optimize import golden, brent, minimize, fmin_slsqp, fsolve
-from fluids.numerics import brenth, ridder, derivative, py_newton as newton, linspace, logspace
+from fluids.numerics import ridder, derivative, py_newton as newton, linspace, logspace, py_brenth as brenth
 
 from thermo.utils import log, log10, exp, copysign
 from thermo.utils import has_matplotlib, R, pi, N_A
@@ -272,6 +272,7 @@ class PropertyPackage(object):
 
     T_REF_IG = 298.15
     P_REF_IG = 101325.
+    P_REF_IG_INV = 1.0/P_REF_IG
 
     def to(self, zs, T=None, P=None, VF=None):
         obj = copy(self)
@@ -2208,82 +2209,118 @@ class GceosBase(Ideal):
             Tsats.append(eos_pure.Tsat(P))
         return Tsats
 
-    def enthalpy_eosmix(self):
+    def enthalpy_eosmix(self, T, P, V_over_F, zs, xs, ys, eos_l, eos_g, phase):
         # Believed correct
-        H = 0
-        T = self.T
-        P = self.P
+        H = 0.0
+#        T = self.T
+#        P = self.P
         T_REF_IG = self.T_REF_IG
         HeatCapacityGases = self.HeatCapacityGases
-        if self.phase == 'g':
-            for i in self.cmps:
-                H += self.zs[i]*HeatCapacityGases[i].T_dependent_property_integral(T_REF_IG, T)
-            H += self.eos_g.H_dep_g
-        elif self.phase == 'l':
-            for i in self.cmps:
-                H += self.zs[i]*HeatCapacityGases[i].T_dependent_property_integral(T_REF_IG, T)
-            H += self.eos_l.H_dep_l
-        elif self.phase == 'l/g':
+        cmps = self.cmps
+        
+        if phase == 'g':
+            for zi, obj in zip(zs, HeatCapacityGases):
+                H += zi*obj.T_dependent_property(T)
+            H += eos_g.dH_dep_dT_g
+        elif phase == 'l':
+            for i in cmps:
+                H += zs[i]*HeatCapacityGases[i].T_dependent_property(T)
+            H += eos_l.dH_dep_dT_l
+        elif phase == 'l/g':
+            raise ValueError
+        return H
+
+    def enthalpy_eosmix(self, T, P, V_over_F, zs, xs, ys, eos_l, eos_g, phase):
+        # Believed correct
+        H = 0.0
+#        T = self.T
+#        P = self.P
+        T_REF_IG = self.T_REF_IG
+        HeatCapacityGases = self.HeatCapacityGases
+        cmps = self.cmps
+        
+        if phase == 'g':
+            for zi, obj in zip(zs, HeatCapacityGases):
+                H += zi*obj.T_dependent_property_integral(T_REF_IG, T)
+            H += eos_g.H_dep_g
+        elif phase == 'l':
+            for i in cmps:
+                H += zs[i]*HeatCapacityGases[i].T_dependent_property_integral(T_REF_IG, T)
+            H += eos_l.H_dep_l
+        elif phase == 'l/g':
             H_l, H_g = 0.0, 0.0
             dH_integrals = []
-            for i in self.cmps:
+            for i in cmps:
                 dH_integrals.append(HeatCapacityGases[i].T_dependent_property_integral(T_REF_IG, T))
                 
-            for i in self.cmps:
-                H_g += self.ys[i]*dH_integrals[i]
-                H_l += self.xs[i]*dH_integrals[i]
+            for i in cmps:
+                H_g += ys[i]*dH_integrals[i]
+                H_l += xs[i]*dH_integrals[i]
 
-            H_g += self.eos_g.H_dep_g
-            H_l += self.eos_l.H_dep_l
-            H = H_g*self.V_over_F + H_l*(1.0 - self.V_over_F)
+            H_g += eos_g.H_dep_g
+            H_l += eos_l.H_dep_l
+            H = H_g*V_over_F + H_l*(1.0 - V_over_F)
         return H
 
 
-    def entropy_eosmix(self):
+    # 
+    def entropy_eosmix(self, T, P, V_over_F, zs, xs, ys, eos_l, eos_g, phase):
         # Believed correct
-        S = 0.0
-        T = self.T
-        P = self.P
-        zs = self.zs
+#        T = self.T
+#        P = self.P
+#        zs = self.zs
         HeatCapacityGases = self.HeatCapacityGases
-        
+        cmps = self.cmps
+        T_REF_IG = self.T_REF_IG
+        P_REF_IG_INV = self.P_REF_IG_INV
+        S = 0.0
         # Could be ordered as log(zi^zi*zj^zj... and so on.)
         # worth checking/trying!
         # It is faster in CPython, slower or maybe faster in PyPy - very very hard to tell.
-        S -= R*sum([zi*log(zi) for zi in zs if zi > 0.0]) # ideal composition entropy composition
-        if self.phase == 'g':
-            S -= R*log(P/101325.) # Not sure, but for delta S - doesn't impact what is divided by.
-            for i in self.cmps:
-                dS = HeatCapacityGases[i].T_dependent_property_integral_over_T(self.T_REF_IG, T)
+        if phase == 'g':
+            S -= R*sum([zi*log(zi) for zi in zs if zi > 0.0]) # ideal composition entropy composition
+            S -= R*log(P*P_REF_IG_INV) # Not sure, but for delta S - doesn't impact what is divided by.
+            for i in cmps:
+                dS = HeatCapacityGases[i].T_dependent_property_integral_over_T(T_REF_IG, T)
                 S += zs[i]*dS
-            S += self.eos_g.S_dep_g
+            S += eos_g.S_dep_g
                 
-        elif self.phase == 'l':
-            S -= R*log(P/101325.)
-            for i in self.cmps:
-                dS = HeatCapacityGases[i].T_dependent_property_integral_over_T(self.T_REF_IG, T)
+        elif phase == 'l':
+            S -= R*sum([zi*log(zi) for zi in zs if zi > 0.0]) # ideal composition entropy composition
+            S -= R*log(P*P_REF_IG_INV)
+            for i in cmps:
+                dS = HeatCapacityGases[i].T_dependent_property_integral_over_T(T_REF_IG, T)
                 S += zs[i]*dS
-            S += self.eos_l.S_dep_l
+            S += eos_l.S_dep_l
             
-        elif self.phase == 'l/g':
-            S_l = -R*sum([zi*log(zi) for zi in self.xs if zi > 0.0])
-            S_g = -R*sum([zi*log(zi) for zi in self.ys if zi > 0.0])
-            
-            mRlogPratio =  -R*log(P/101325.)
+        elif phase == 'l/g':
+            S_l = 0.0
+            for xi in xs:
+                try:
+                    S_l += xi*log(xi)
+                except ValueError:
+                    pass
+            S_l *= -R
+
+            S_g = 0.0
+            for yi in ys:
+                try:
+                    S_g += yi*log(yi)
+                except ValueError:
+                    pass
+            S_g *= -R
+                        
+            mRlogPratio = -R*log(P*P_REF_IG_INV)
             S_l += mRlogPratio
             S_g += mRlogPratio
-            dS_integrals = []
-            for i in self.cmps:
-                dS = HeatCapacityGases[i].T_dependent_property_integral_over_T(self.T_REF_IG, T)
-                dS_integrals.append(dS)
-                
-            for i in self.cmps:
-                S_g += self.ys[i]*dS_integrals[i]
-                S_l += self.xs[i]*dS_integrals[i]
+            for i in cmps:
+                dS = HeatCapacityGases[i].T_dependent_property_integral_over_T(T_REF_IG, T)
+                S_g += ys[i]*dS
+                S_l += xs[i]*dS
 
-            S_g += self.eos_g.S_dep_g
-            S_l += self.eos_l.S_dep_l
-            S = S_g*self.V_over_F + S_l*(1.0 - self.V_over_F)
+            S_g += eos_g.S_dep_g
+            S_l += eos_l.S_dep_l
+            S = S_g*V_over_F + S_l*(1.0 - V_over_F)
         return S
 
     @property
@@ -2361,10 +2398,17 @@ class GceosBase(Ideal):
                 self.eos_g = self.to_TP_zs(self.T, self.P, self.ys)
         # Cannot derive other properties with this
         try:
-            self.Hm = self.enthalpy_eosmix()
-            self.Sm = self.entropy_eosmix()
+            self.Hm = self.enthalpy_eosmix(T=self.T, P=self.P, V_over_F=self.V_over_F, 
+                                          zs=self.zs, xs=self.xs, ys=self.ys, 
+                                          eos_l=self.eos_l, eos_g=self.eos_g, 
+                                          phase=self.phase)
+            self.Sm = self.entropy_eosmix(T=self.T, P=self.P, V_over_F=self.V_over_F, 
+                                          zs=self.zs, xs=self.xs, ys=self.ys, 
+                                          eos_l=self.eos_l, eos_g=self.eos_g, 
+                                          phase=self.phase)
             self.Gm = self.Hm - self.T*self.Sm if (self.Hm is not None and self.Sm is not None) else None
-        except:
+        except Exception as e:
+            print(e)
             pass
     
     def to_TP_zs(self, T, P, zs, fugacities=True, only_l=False, only_g=False):
@@ -2677,6 +2721,38 @@ class GceosBase(Ideal):
         self.eos_g = eos_g
         return 'l/g', xs, ys, VF, P
 
+
+    def PH_error_1P(self, T, P, zs, H_goal):
+        eos_phase = self.to_TP_zs(T=T, P=P, zs=zs, fugacities=False)
+        phase = eos_phase.more_stable_phase
+        if phase == 'l':
+            eos_l, eos_g = eos_phase, None
+        else:
+            eos_l, eos_g = None, eos_phase
+        H_calc = self.enthalpy_eosmix(T, P, None, zs, None, None, eos_l, eos_g, phase)
+        err = H_calc - H_goal
+#            print(T, err)
+        return err
+
+
+    def flash_PH_zs_bounded_1P(self, P, Hm, zs, T_low=None, T_high=None):
+        # Begin the search at half the lowest chemical's melting point
+        if T_low is None:
+            T_low = 0.5*min(self.Tms)
+                
+        # Cap the T high search at 8x the highest critical point
+        # (will not work well for helium, etc.)
+        if T_high is None:
+            max_Tc = max(self.Tcs)
+            if max_Tc < 100:
+                T_high = 4000.0
+            else:
+                T_high = max_Tc*8.0
+    
+
+        T_goal = brenth(self.PH_error_1P, T_low, T_high, rtol=1e-8, args=(P, zs, Hm))
+            # TODO stability test, 1 component
+        return {'T': T_goal}
 
 
 

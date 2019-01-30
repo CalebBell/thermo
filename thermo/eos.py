@@ -151,10 +151,12 @@ class GCEOS(object):
         function; that is indeed possible, but the check for handling if there
         are two or three roots makes it not worth it.
         '''
-        # All roots will have some imaginary component; ignore them if > 1E-9
         good_roots = [i.real for i in Vs if i.imag == 0.0 and i.real > 0.0]
         good_root_count = len(good_roots)
-        
+            # All roots will have some imaginary component; ignore them if > 1E-9 (when using a solver that does not strip them)
+#        good_roots = [i.real for i in Vs if abs(i.imag) < 1E-9 and i.real > 0.0]
+#        good_root_count = len(good_roots)
+            
         if good_root_count == 1: 
             self.phase = self.set_properties_from_solution(self.T, self.P,
                                                            good_roots[0], self.b, 
@@ -385,10 +387,10 @@ class GCEOS(object):
         .. [3] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
            Butterworth-Heinemann, 1985.
         '''
-        ([dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP], 
-            [d2P_dT2, d2P_dV2, d2V_dT2, d2V_dP2, d2T_dV2, d2T_dP2],
-            [d2V_dPdT, d2P_dTdV, d2T_dPdV],
-            [H_dep, S_dep, Cv_dep]) = self.derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha, da_alpha_dT, d2a_alpha_dT2, quick=quick)
+        ((dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP), 
+            (d2P_dT2, d2P_dV2, d2V_dT2, d2V_dP2, d2T_dV2, d2T_dP2),
+            (d2V_dPdT, d2P_dTdV, d2T_dPdV),
+            (H_dep, S_dep, Cv_dep)) = self.derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha, da_alpha_dT, d2a_alpha_dT2, quick=quick)
         
         RT = R*T
         RT_inv = 1.0/RT
@@ -615,25 +617,29 @@ should be calculated by this method, in a user subclass.')
             x10 = P*epsilon
             x11 = delta*x1
             x12 = delta*x2
-            x13 = 3.*a_alpha
-            x14 = 3.*x10
-            x15 = 3.*x11
-            x16 = 3.*x12
-            x17 = -x1 - x2 + x3
+#            x13 = 3.*a_alpha
+#            x14 = 3.*x10
+#            x15 = 3.*x11
+#            x16 = 3.*x12
+            x17 = -x4
             x17_2 = x17*x17
             x18 = x0*x17_2
-            t1 = (-x13 - x14 + x15 + x16 + x18) # custom vars
-            t2 = (-9.*x0*x17*(a_alpha + x10 - x11 - x12) + 2.0*x17_2*x17*x9
-                     - 27.*(x6 + x7 + x8))
+            tm1 = x12 - a_alpha + (x11  - x10)
+#            print(x11, x12, a_alpha, x10)
+            t0 = x6 + x7 + x8
+            t1 = (3.0*tm1  + x18) # custom vars
+#            t1 = (-x13 - x14 + x15 + x16 + x18) # custom vars
+            t2 = (9.*x0*x17*tm1 + 2.0*x17_2*x17*x9
+                     - 27.*t0)
             
             x4x9  = x4*x9
-            x19 = ((-13.5*x0*(x6 + x7 + x8) - 4.5*x4x9*(-a_alpha - x10 + x11 + x12)
+            x19 = ((-13.5*x0*t0 - 4.5*x4x9*tm1
                    - x4*x4x9*x5
                     + 0.5*((x9*(-4.*x0*t1*t1*t1 + t2*t2))+0.0j)**0.5
                     )+0.0j)**third
             
             x20 = -t1/x19#
-            x22 = 2.*x5
+            x22 = x5 + x5
             x25 = 4.*x0*x20
             return ((x0*x20 - x19 + x5)*third,
                     (x19*x24 + x22 - x25*x24_inv)*sixth,
@@ -775,36 +781,40 @@ should be calculated by this method, in a user subclass.')
                                                          epsilon, a_alpha,
                                                          da_alpha_dT,
                                                          d2a_alpha_dT2)
+        epsilon2 = epsilon + epsilon
         x0 = 1.0/(V - b)
         x1 = 1.0/(V*(V + delta) + epsilon)
         x3 = R*T
         x4 = x0*x0
-        x5 = 2.*V + delta
+        x5 = V + V + delta
         x6 = x1*x1
         x7 = a_alpha*x6
         x8 = P*V
         x9 = delta*delta
-        x10 = -4.*epsilon + x9
+        x10 = x9 - epsilon2 - epsilon2
         x11 = x10**-0.5
-        x12 = 2.*x11*catanh(x11*x5).real
+        x11_half = 0.5*x11
+        x12 = 2.*x11*catanh(x11*x5).real # Possible to use a catan, but then a complex division and sq root is needed too
         x14 = 0.5*x5
-        x15 = 2.*epsilon*x11
-        x16 = 0.5*x11*x9
+        x15 = epsilon2*x11
+        x16 = x11_half*x9
         x17 = x5*x6
         dP_dT = R*x0 - da_alpha_dT*x1
-        dP_dV = -x3*x4 + x5*x7
+        dP_dV = x5*x7 - x3*x4
         d2P_dT2 = -d2a_alpha_dT2*x1
-        d2P_dV2 = -2.*a_alpha*x5*x17*x1 + 2.*x7 + 2.*x3*x4*x0
-        d2P_dTdV = -R*x4 + da_alpha_dT*x17
+        
+        d2P_dV2 = (x7 + x3*x4*x0 - a_alpha*x5*x17*x1)
+        d2P_dV2 += d2P_dV2
+        
+        d2P_dTdV = da_alpha_dT*x17 - R*x4
         H_dep = x12*(T*da_alpha_dT - a_alpha) - x3 + x8
         
         t1 = (x3*x0/P)
         S_dep = -R_2*log(t1*t1) + da_alpha_dT*x12  # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
         
         x18 = x16 - x15
-        
         x19 = (x14 + x18)/(x14 - x18)
-        Cv_dep = -T*d2a_alpha_dT2*x11*(-log(x19*x19)*0.5) # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
+        Cv_dep = T*d2a_alpha_dT2*x11_half*(log(x19*x19)) # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
         return dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep
 
     @staticmethod

@@ -743,6 +743,21 @@ class GCEOSMIX(GCEOS):
             self.phis_g = [exp(i) for i in self.lnphis_g]
             self.fugacities_g = [phi*y*P for phi, y in zip(self.phis_g, ys)]
 
+    
+    @property
+    def more_stable_phase(self):
+        try:
+            if self.G_dep_l < self.G_dep_g:
+                return 'l'
+            else:
+                return 'g'
+        except:
+            try:
+                self.Z_g
+                return 'g'
+            except:
+                return 'l'
+
     def eos_lnphis_lowest_Gibbs(self):
         try:        
             try:
