@@ -4298,3 +4298,28 @@ class GceosBase(Ideal):
                 
         return T_points, Ps_known, ys_known
     
+    def Ks_and_dKs_dP(self, eos_l, eos_g, xs, ys, zs):
+        import numpy as np
+        eos_l.fugacities()
+        eos_g.fugacities()
+        
+        try:
+            lnphis_l = eos_l.lnphis_l
+            dlnphis_l_dP = eos_l.d_lnphis_dP(eos_l.Z_l, eos_l.dZ_dP_l, xs)
+        except:
+            lnphis_l = eos_l.lnphis_g
+            dlnphis_l_dP = eos_l.d_lnphis_dP(eos_l.Z_g, eos_l.dZ_dP_g, xs)
+        try:
+            lnphis_g = eos_g.lnphis_g
+            dlnphis_g_dP = eos_g.d_lnphis_dP(eos_g.Z_g, eos_g.dZ_dP_g, ys)
+        except:
+            lnphis_g = eos_g.lnphis_l
+            dlnphis_g_dP = eos_g.d_lnphis_dP(eos_g.Z_l, eos_g.dZ_dP_l, ys)
+        
+        
+        
+        Ks = np.exp(np.array(lnphis_l) - np.array(lnphis_g))
+        dKs_dP = (np.array(dlnphis_l_dP) - np.array(dlnphis_g_dP))*Ks
+#        dKs_dP = (np.array(dlnphis_g_dP) - np.array(dlnphis_l_dP))*Ks
+        return Ks, dKs_dP
+        

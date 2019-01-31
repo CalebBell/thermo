@@ -95,6 +95,7 @@ class GCEOS(object):
     the liquid or gas phase with the convention of adding on `_l` or `_g` to
     the variable names.
     '''
+    # Slots does not help performance in either implementation
     kwargs = {}
     def check_sufficient_inputs(self):
         '''Method to an exception if none of the pairs (T, P), (T, V), or 
@@ -1435,6 +1436,60 @@ should be calculated by this method, in a user subclass.')
             \frac{1}{V^3}
         '''
         return -self.d2V_dPdT_g/self.V_g**2 + 2*self.dV_dT_g*self.dV_dP_g/self.V_g**3
+
+    @property
+    def dHdep_dT_l(self):
+        r'''Derivative of departure enthalpy of vaporization with respect to 
+        temeprature for the liquid phase, [(J/mol)/K]
+        
+        .. math::
+            \frac{\partial H_{dep, l}}{\partial T} = P \frac{d}{d T} V{\left (T
+            \right )} - R + \frac{2 T}{\sqrt{\delta^{2} - 4 \epsilon}} 
+                \operatorname{atanh}{\left (\frac{\delta + 2 V{\left (T \right
+                )}}{\sqrt{\delta^{2} - 4 \epsilon}} \right )} \frac{d^{2}}{d 
+                T^{2}}  \operatorname{a \alpha}{\left (T \right )} + \frac{4
+                \left(T \frac{d}{d T} \operatorname{a \alpha}{\left (T \right
+                )} - \operatorname{a \alpha}{\left (T \right )}\right) \frac{d}
+                {d T} V{\left (T \right )}}{\left(\delta^{2} - 4 \epsilon
+                \right) \left(- \frac{\left(\delta + 2 V{\left (T \right )}
+                \right)^{2}}{\delta^{2} - 4 \epsilon} + 1\right)}
+            '''
+        x0 = self.V_l
+        x1 = self.dV_dT_l
+        x2 = self.a_alpha
+        x3 = self.delta*self.delta - 4.0*self.epsilon
+        x4 = x3**-0.5
+        x5 = self.delta + x0 + x0
+        x6 = 1.0/x3
+        return (self.P*x1 - R + 2.0*self.T*x4*catanh(x4*x5).real*self.d2a_alpha_dT2 
+                - 4.0*x1*x6*(self.T*self.da_alpha_dT - x2)/(x5*x5*x6 - 1.0))
+
+    @property
+    def dHdep_dT_g(self):
+        r'''Derivative of departure enthalpy of vaporization with respect to 
+        temeprature for the gas phase, [(J/mol)/K]
+        
+        .. math::
+            \frac{\partial H_{dep, g}}{\partial T} = P \frac{d}{d T} V{\left (T
+            \right )} - R + \frac{2 T}{\sqrt{\delta^{2} - 4 \epsilon}} 
+                \operatorname{atanh}{\left (\frac{\delta + 2 V{\left (T \right
+                )}}{\sqrt{\delta^{2} - 4 \epsilon}} \right )} \frac{d^{2}}{d 
+                T^{2}}  \operatorname{a \alpha}{\left (T \right )} + \frac{4
+                \left(T \frac{d}{d T} \operatorname{a \alpha}{\left (T \right
+                )} - \operatorname{a \alpha}{\left (T \right )}\right) \frac{d}
+                {d T} V{\left (T \right )}}{\left(\delta^{2} - 4 \epsilon
+                \right) \left(- \frac{\left(\delta + 2 V{\left (T \right )}
+                \right)^{2}}{\delta^{2} - 4 \epsilon} + 1\right)}
+            '''
+        x0 = self.V_g
+        x1 = self.dV_dT_g
+        x2 = self.a_alpha
+        x3 = self.delta*self.delta - 4.0*self.epsilon
+        x4 = x3**-0.5
+        x5 = self.delta + x0 + x0
+        x6 = 1.0/x3
+        return (self.P*x1 - R + 2.0*self.T*x4*catanh(x4*x5).real*self.d2a_alpha_dT2 
+                - 4.0*x1*x6*(self.T*self.da_alpha_dT - x2)/(x5*x5*x6 - 1.0))
 
 
 class GCEOS_DUMMY(GCEOS):

@@ -1500,7 +1500,6 @@ class GCEOSMIX(GCEOS):
 #                    
 #                else:
 #            print(phis_l, phis_g, 'phis')
-#             Ks = [exp(a - b) for a, b in zip(ln_phis_l, ln_phis_g)]
             Ks = [exp(l - g) for l, g in zip(lnphis_l, lnphis_g)] # K_value(phi_l=l, phi_g=g)
 #            print(Ks)
             # Hack - no idea if this will work
