@@ -1438,8 +1438,8 @@ should be calculated by this method, in a user subclass.')
         return -self.d2V_dPdT_g/self.V_g**2 + 2*self.dV_dT_g*self.dV_dP_g/self.V_g**3
 
     @property
-    def dHdep_dT_l(self):
-        r'''Derivative of departure enthalpy of vaporization with respect to 
+    def dH_dep_dT_l(self):
+        r'''Derivative of departure enthalpy with respect to 
         temeprature for the liquid phase, [(J/mol)/K]
         
         .. math::
@@ -1453,7 +1453,7 @@ should be calculated by this method, in a user subclass.')
                 {d T} V{\left (T \right )}}{\left(\delta^{2} - 4 \epsilon
                 \right) \left(- \frac{\left(\delta + 2 V{\left (T \right )}
                 \right)^{2}}{\delta^{2} - 4 \epsilon} + 1\right)}
-            '''
+        '''
         x0 = self.V_l
         x1 = self.dV_dT_l
         x2 = self.a_alpha
@@ -1465,8 +1465,8 @@ should be calculated by this method, in a user subclass.')
                 - 4.0*x1*x6*(self.T*self.da_alpha_dT - x2)/(x5*x5*x6 - 1.0))
 
     @property
-    def dHdep_dT_g(self):
-        r'''Derivative of departure enthalpy of vaporization with respect to 
+    def dH_dep_dT_g(self):
+        r'''Derivative of departure enthalpy with respect to 
         temeprature for the gas phase, [(J/mol)/K]
         
         .. math::
@@ -1480,7 +1480,7 @@ should be calculated by this method, in a user subclass.')
                 {d T} V{\left (T \right )}}{\left(\delta^{2} - 4 \epsilon
                 \right) \left(- \frac{\left(\delta + 2 V{\left (T \right )}
                 \right)^{2}}{\delta^{2} - 4 \epsilon} + 1\right)}
-            '''
+        '''
         x0 = self.V_g
         x1 = self.dV_dT_g
         x2 = self.a_alpha
@@ -1490,8 +1490,162 @@ should be calculated by this method, in a user subclass.')
         x6 = 1.0/x3
         return (self.P*x1 - R + 2.0*self.T*x4*catanh(x4*x5).real*self.d2a_alpha_dT2 
                 - 4.0*x1*x6*(self.T*self.da_alpha_dT - x2)/(x5*x5*x6 - 1.0))
+        
+        
+    @property
+    def dH_dep_dP_l(self):
+        r'''Derivative of departure enthalpy with respect to 
+        pressure for the liquid phase, [(J/mol)/Pa]
+        
+        .. math::
+            \frac{\partial H_{dep, l}}{\partial P} = P \frac{d}{d P} V{\left (P
+            \right )} + V{\left (P \right )} + \frac{4 \left(T \frac{d}{d T} 
+            \operatorname{a \alpha}{\left (T \right )} - \operatorname{a 
+            \alpha}{\left (T \right )}\right) \frac{d}{d P} V{\left (P \right 
+            )}}{\left(\delta^{2} - 4 \epsilon\right) \left(- \frac{\left(\delta
+            + 2 V{\left (P \right )}\right)^{2}}{\delta^{2} - 4 \epsilon} 
+            + 1\right)}
+        '''
+        x0 = self.V_l
+        x1 = self.dV_dP_l
+        x2 = 1/(self.delta*self.delta - 4.0*self.epsilon)
+        x3 = self.a_alpha
+        return self.P*x1 + x0 - 4*x1*x2*(self.T*self.da_alpha_dT - x3)/(x2*(self.delta + 2*x0)**2 - 1)
+        
+    @property
+    def dH_dep_dP_g(self):
+        r'''Derivative of departure enthalpy with respect to 
+        pressure for the gas phase, [(J/mol)/Pa]
+        
+        .. math::
+            \frac{\partial H_{dep, g}}{\partial P} = P \frac{d}{d P} V{\left (P
+            \right )} + V{\left (P \right )} + \frac{4 \left(T \frac{d}{d T} 
+            \operatorname{a \alpha}{\left (T \right )} - \operatorname{a 
+            \alpha}{\left (T \right )}\right) \frac{d}{d P} V{\left (P \right 
+            )}}{\left(\delta^{2} - 4 \epsilon\right) \left(- \frac{\left(\delta
+            + 2 V{\left (P \right )}\right)^{2}}{\delta^{2} - 4 \epsilon} 
+            + 1\right)}
+        '''
+        x0 = self.V_g
+        x1 = self.dV_dP_g
+        x2 = 1/(self.delta*self.delta - 4.0*self.epsilon)
+        x3 = self.a_alpha
+        return self.P*x1 + x0 - 4*x1*x2*(self.T*self.da_alpha_dT - x3)/(x2*(self.delta + 2*x0)**2 - 1)
 
+    @property
+    def dS_dep_dT_l(self):
+        r'''Derivative of departure entropy with respect to 
+        temperature for the liquid phase, [(J/mol)/K]
+        
+        .. math::
+            \frac{\partial S_{dep, l}}{\partial T} = - \frac{R \frac{d}{d T}
+            V{\left (T \right )}}{V{\left (T \right )}} + \frac{R \frac{d}{d T}
+            V{\left (T \right )}}{- b + V{\left (T \right )}} + \frac{4
+            \frac{d}{d T} V{\left (T \right )} \frac{d}{d T} \operatorname{a
+            \alpha}{\left (T \right )}}{\left(\delta^{2} - 4 \epsilon\right) 
+            \left(- \frac{\left(\delta + 2 V{\left (T \right )}\right)^{2}}
+            {\delta^{2} - 4 \epsilon} + 1\right)} + \frac{2 \frac{d^{2}}{d 
+            T^{2}}  \operatorname{a \alpha}{\left (T \right )}}
+            {\sqrt{\delta^{2} - 4 \epsilon}} \operatorname{atanh}{\left (\frac{
+            \delta + 2 V{\left (T \right )}}{\sqrt{\delta^{2} - 4 \epsilon}} 
+            \right )} + \frac{R^{2} T}{P V{\left (T \right )}} \left(\frac{P}
+            {R T} \frac{d}{d T} V{\left (T \right )} - \frac{P}{R T^{2}} 
+            V{\left (T \right )}\right)
+        '''
+        x0 = self.V_l
+        x1 = 1./x0
+        x2 = self.dV_dT_l
+        x3 = R*x2
+        x4 = self.a_alpha
+        x5 = self.delta*self.delta - 4.0*self.epsilon
+        x6 = x5**-0.5
+        x7 = self.delta + 2.0*x0
+        x8 = 1.0/x5
+        return (R*x1*(x2 - x0/self.T) - x1*x3 - 4.0*x2*x8*self.da_alpha_dT
+                /(x7*x7*x8 - 1.0) - x3/(self.b - x0) 
+                + 2.0*x6*catanh(x6*x7).real*self.d2a_alpha_dT2)
+    
+    @property
+    def dS_dep_dT_g(self):
+        r'''Derivative of departure entropy with respect to 
+        temperature for the gas phase, [(J/mol)/K]
+        
+        .. math::
+            \frac{\partial S_{dep, g}}{\partial T} = - \frac{R \frac{d}{d T}
+            V{\left (T \right )}}{V{\left (T \right )}} + \frac{R \frac{d}{d T}
+            V{\left (T \right )}}{- b + V{\left (T \right )}} + \frac{4
+            \frac{d}{d T} V{\left (T \right )} \frac{d}{d T} \operatorname{a
+            \alpha}{\left (T \right )}}{\left(\delta^{2} - 4 \epsilon\right) 
+            \left(- \frac{\left(\delta + 2 V{\left (T \right )}\right)^{2}}
+            {\delta^{2} - 4 \epsilon} + 1\right)} + \frac{2 \frac{d^{2}}{d 
+            T^{2}}  \operatorname{a \alpha}{\left (T \right )}}
+            {\sqrt{\delta^{2} - 4 \epsilon}} \operatorname{atanh}{\left (\frac{
+            \delta + 2 V{\left (T \right )}}{\sqrt{\delta^{2} - 4 \epsilon}} 
+            \right )} + \frac{R^{2} T}{P V{\left (T \right )}} \left(\frac{P}
+            {R T} \frac{d}{d T} V{\left (T \right )} - \frac{P}{R T^{2}} 
+            V{\left (T \right )}\right)
+        '''
+        x0 = self.V_g
+        x1 = 1./x0
+        x2 = self.dV_dT_g
+        x3 = R*x2
+        x4 = self.a_alpha
+        x5 = self.delta*self.delta - 4.0*self.epsilon
+        x6 = x5**-0.5
+        x7 = self.delta + 2.0*x0
+        x8 = 1.0/x5
+        return (R*x1*(x2 - x0/self.T) - x1*x3 - 4.0*x2*x8*self.da_alpha_dT
+                /(x7*x7*x8 - 1.0) - x3/(self.b - x0) 
+                + 2.0*x6*catanh(x6*x7).real*self.d2a_alpha_dT2)
 
+    @property
+    def dS_dep_dP_l(self):
+        r'''Derivative of departure entropy with respect to 
+        pressure for the liquid phase, [(J/mol)/Pa]
+        
+        .. math::
+            \frac{\partial S_{dep, l}}{\partial P} = - \frac{R \frac{d}{d P}
+            V{\left (P \right )}}{V{\left (P \right )}} + \frac{R \frac{d}{d P}
+            V{\left (P \right )}}{- b + V{\left (P \right )}} + \frac{4 \frac{
+            d}{d P} V{\left (P \right )} \frac{d}{d T} \operatorname{a \alpha}
+            {\left (T \right )}}{\left(\delta^{2} - 4 \epsilon\right) \left(
+            - \frac{\left(\delta + 2 V{\left (P \right )}\right)^{2}}{
+            \delta^{2} - 4 \epsilon} + 1\right)} + \frac{R^{2} T}{P V{\left (P
+            \right )}} \left(\frac{P}{R T} \frac{d}{d P} V{\left (P \right )} 
+            + \frac{V{\left (P \right )}}{R T}\right)
+        '''
+        x0 = self.V_l
+        x1 = 1.0/x0
+        x2 = self.dV_dP_l
+        x3 = R*x2
+        x4 = 1.0/(self.delta*self.delta - 4.0*self.epsilon)
+        return (-x1*x3 - 4.0*x2*x4*self.da_alpha_dT/(x4*(self.delta + 2*x0)**2 
+                - 1) - x3/(self.b - x0) + R*x1*(self.P*x2 + x0)/self.P)
+        
+    @property
+    def dS_dep_dP_g(self):
+        r'''Derivative of departure entropy with respect to 
+        pressure for the gas phase, [(J/mol)/Pa]
+        
+        .. math::
+            \frac{\partial S_{dep, g}}{\partial P} = - \frac{R \frac{d}{d P}
+            V{\left (P \right )}}{V{\left (P \right )}} + \frac{R \frac{d}{d P}
+            V{\left (P \right )}}{- b + V{\left (P \right )}} + \frac{4 \frac{
+            d}{d P} V{\left (P \right )} \frac{d}{d T} \operatorname{a \alpha}
+            {\left (T \right )}}{\left(\delta^{2} - 4 \epsilon\right) \left(
+            - \frac{\left(\delta + 2 V{\left (P \right )}\right)^{2}}{
+            \delta^{2} - 4 \epsilon} + 1\right)} + \frac{R^{2} T}{P V{\left (P
+            \right )}} \left(\frac{P}{R T} \frac{d}{d P} V{\left (P \right )} 
+            + \frac{V{\left (P \right )}}{R T}\right)
+        '''
+        x0 = self.V_g
+        x1 = 1.0/x0
+        x2 = self.dV_dP_g
+        x3 = R*x2
+        x4 = 1.0/(self.delta*self.delta - 4.0*self.epsilon)
+        return (-x1*x3 - 4.0*x2*x4*self.da_alpha_dT/(x4*(self.delta + 2*x0)**2 
+                - 1) - x3/(self.b - x0) + R*x1*(self.P*x2 + x0)/self.P)
+        
 class GCEOS_DUMMY(GCEOS):
     Tc = None
     Pc = None

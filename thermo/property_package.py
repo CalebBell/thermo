@@ -766,7 +766,7 @@ class PropertyPackage(object):
             temp_pkg._post_flash()
 #            print(temp_pkg.Hm - H_goal, T, P)
             err = temp_pkg.Hm - H_goal
-#            print(T, err)
+            print(T, err)
             return err
         
         def PH_VF_error(VF, P, zs, H_goal):
@@ -2209,7 +2209,7 @@ class GceosBase(Ideal):
             Tsats.append(eos_pure.Tsat(P))
         return Tsats
 
-    def enthalpy_eosmix(self, T, P, V_over_F, zs, xs, ys, eos_l, eos_g, phase):
+    def dH_dT(self, T, P, V_over_F, zs, xs, ys, eos_l, eos_g, phase):
         # Believed correct
         H = 0.0
 #        T = self.T
@@ -2731,8 +2731,22 @@ class GceosBase(Ideal):
             eos_l, eos_g = None, eos_phase
         H_calc = self.enthalpy_eosmix(T, P, None, zs, None, None, eos_l, eos_g, phase)
         err = H_calc - H_goal
-#            print(T, err)
+#        print(T, err)
         return err
+
+    def PH_error_and_der_1P(self, T, P, zs, H_goal):
+        eos_phase = self.to_TP_zs(T=T, P=P, zs=zs, fugacities=False)
+        phase = eos_phase.more_stable_phase
+        if phase == 'l':
+            eos_l, eos_g = eos_phase, None
+        else:
+            eos_l, eos_g = None, eos_phase
+        H_calc = self.enthalpy_eosmix(T, P, None, zs, None, None, eos_l, eos_g, phase)
+        err = H_calc - H_goal
+        
+        dErr_dT = self.dH_dT(T, P, None, zs, zs, zs, eos_l, eos_g, phase)
+        print(T, err, dErr_dT)
+        return err, dErr_dT
 
 
     def flash_PH_zs_bounded_1P(self, P, Hm, zs, T_low=None, T_high=None):
@@ -2752,6 +2766,11 @@ class GceosBase(Ideal):
 
         T_goal = brenth(self.PH_error_1P, T_low, T_high, rtol=1e-8, args=(P, zs, Hm))
             # TODO stability test, 1 component
+        return {'T': T_goal}
+
+    def flash_PH_zs_NR_1P(self, P, Hm, zs, T_guess=500.0, damping=1.0):
+        T_goal = newton(self.PH_error_and_der_1P, T_guess, args=(P, zs, Hm), fprime=True,
+                        xtol=1e-4, damping=damping)
         return {'T': T_goal}
 
 
@@ -4322,4 +4341,41 @@ class GceosBase(Ideal):
         dKs_dP = (np.array(dlnphis_l_dP) - np.array(dlnphis_g_dP))*Ks
 #        dKs_dP = (np.array(dlnphis_g_dP) - np.array(dlnphis_l_dP))*Ks
         return Ks, dKs_dP
+
+    def Ks_and_dKs_dT(self, eos_l, eos_g, xs, ys):
+        import numpy as np
+        eos_l.fugacities()
+        eos_g.fugacities()
+        
+        try:
+            lnphis_l = eos_l.lnphis_l
+            dlnphis_l_dT = eos_l.d_lnphis_dT(eos_l.Z_l, eos_l.dZ_dT_l, xs)
+        except:
+            lnphis_l = eos_l.lnphis_g
+            dlnphis_l_dT = eos_l.d_lnphis_dT(eos_l.Z_g, eos_l.dZ_dT_g, xs)
+        try:
+            lnphis_g = eos_g.lnphis_g
+            dlnphis_g_dT = eos_g.d_lnphis_dT(eos_g.Z_g, eos_g.dZ_dT_g, ys)
+        except:
+            lnphis_g = eos_g.lnphis_l
+            dlnphis_g_dT = eos_g.d_lnphis_dT(eos_g.Z_l, eos_g.dZ_dT_l, ys)
+        
+        
+        
+        Ks = np.exp(np.array(lnphis_l) - np.array(lnphis_g))
+        dKs_dT = (np.array(dlnphis_l_dT) - np.array(dlnphis_g_dT))*Ks
+#        dKs_dT = (np.array(dlnphis_g_dT) - np.array(dlnphis_l_dT))*Ks
+        return Ks, dKs_dT
+    
+    
+    def d_VF_dT(self, delta=1e-4):
+        # Not accurate enough
+        VF1 = self.V_over_F
+        zs = self.zs
+        Ks, dKs_dT = self.Ks_and_dKs_dT(self.eos_l, self.eos_g, self.xs, self.ys)
+        # Perturb the Ks
+        Ks2 = [Ki + dKi*delta for Ki, dKi in zip(Ks, dKs_dT)]
+        VF2, _, _ = flash_inner_loop(zs, Ks2, guess=VF1)
+        return (VF2 - VF1)/delta
+        
         

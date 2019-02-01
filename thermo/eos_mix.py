@@ -1350,7 +1350,9 @@ class GCEOSMIX(GCEOS):
         
         info = []
         def err_and_jacobian(lnKs_guess):
-            return self._err_VL_jacobian(lnKs_guess, T, P, zs, near_critical=True, err_also=True, info=info)
+            err =  self._err_VL_jacobian(lnKs_guess, T, P, zs, near_critical=True, err_also=True, info=info)
+#            print(lnKs_guess[-1], err)
+            return err
 
         ans, count = newton_system(err_and_jacobian, jac=True, x0=lnKs_guess, ytol=ytol, maxiter=maxiter)
         V_over_F, xs, ys, eos_l, eos_g = info
@@ -1539,6 +1541,7 @@ class GCEOSMIX(GCEOS):
                 # Could divide by the old Ks as well.
                 err_i = Ki*xi/yi - 1.0
                 err3 += err_i*err_i
+                # or use absolute for tolerance...
             
 #            err2 = sum([(exp(l-g)-1.0)**2  ]) 
 #            err2 = 0.0

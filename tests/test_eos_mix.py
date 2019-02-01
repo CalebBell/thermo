@@ -1709,35 +1709,66 @@ def test_VDW_d_lnphis_dP_sympy():
 
 
 
-def test_dHdep_dT_g():
-    IDs = ['methane', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10',
-          'C11', 'C12', 'C13', 'C14', 'C15', 'C16', 'C17', 'C18', 'C19', 'C20',
-           'C21', 'C22', 'C23', 'C24', 'C25', 'C26', 'C27', 'C28', 'C29', 'C30']
-    pkg = PropertyPackageConstants(IDs, PR_PKG)
-    pkg = pkg.pkg
-    zs = normalize([1 for _ in range(len(IDs))]) # 50/50 mass basis
+  
+def test_dS_dep_dT_liquid_and_vapor():
+    T = 115
     P = 1e6
-    T = 700.0
-    pkg.flash(T=T, P=P, zs=zs)
-    
     dT = 1e-4
-    eos1 = pkg.to_TP_zs(T=T, P=P, zs=zs)
-    eos2 = pkg.to_TP_zs(T=T+dT, P=P, zs=zs)
-    assert_allclose((eos2.H_dep_g - eos1.H_dep_g)/dT/eos1.dHdep_dT_g, 1, rtol=1e-5)
-
-
-def test_dHdep_dT_l():
-    IDs = ['methane', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10',
-          'C11', 'C12', 'C13', 'C14', 'C15', 'C16', 'C17', 'C18', 'C19', 'C20',
-           'C21', 'C22', 'C23', 'C24', 'C25', 'C26', 'C27', 'C28', 'C29', 'C30']
-    pkg = PropertyPackageConstants(IDs, PR_PKG)
-    pkg = pkg.pkg
-    zs = normalize([1 for _ in range(len(IDs))]) # 50/50 mass basis
+    zs = [0.5, 0.5]
+    eos1 = PRMIX(T=T, P=P, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011],
+                zs=zs, kijs=[[0,0],[0,0]])
+    eos2 = eos1.to_TP_zs(T=T+dT, P=P, zs=zs)
+    
+    assert_allclose((eos2.S_dep_l - eos1.S_dep_l)/dT, eos1.dS_dep_dT_l, rtol=1e-6)
+    assert_allclose(eos1.dS_dep_dT_l, 0.26620158744414335)
+    
+    assert_allclose((eos2.S_dep_g - eos1.S_dep_g)/dT, eos1.dS_dep_dT_g, rtol=1e-5)
+    assert_allclose(eos1.dS_dep_dT_g, 0.12552871992263925, rtol=1e-5)
+    
+def test_dH_dep_dT_liquid_and_vapor():
+    T = 115
     P = 1e6
-    T = 500.0
-    pkg.flash(T=T, P=P, zs=zs)
-    
     dT = 1e-4
-    eos1 = pkg.to_TP_zs(T=T, P=P, zs=zs, fugacities=False)
-    eos2 = pkg.to_TP_zs(T=T+dT, P=P, zs=zs, fugacities=False)
-    assert_allclose((eos2.H_dep_l - eos1.H_dep_l)/dT/eos1.dHdep_dT_l, 1, rtol=1e-5)
+    zs = [0.5, 0.5]
+    eos1 = PRMIX(T=T, P=P, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011],
+                zs=zs, kijs=[[0,0],[0,0]])
+    eos2 = eos1.to_TP_zs(T=T+dT, P=P, zs=zs)
+    
+    assert_allclose((eos2.H_dep_l - eos1.H_dep_l)/dT, eos1.dH_dep_dT_l, rtol=1e-6)
+    assert_allclose(eos1.dH_dep_dT_l, 30.613182556076488)
+    
+    assert_allclose((eos2.H_dep_g - eos1.H_dep_g)/dT, eos1.dH_dep_dT_g, rtol=1e-5)
+    assert_allclose(eos1.dH_dep_dT_g, 14.435802791103512, rtol=1e-5)    
+    
+    
+    
+def test_dH_dep_dP_liquid_and_vapor():
+    T = 115
+    P = 1e6
+    dP = 1e-2
+    zs = [0.5, 0.5]
+    eos1 = PRMIX(T=T, P=P, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011],
+                zs=zs, kijs=[[0,0],[0,0]])
+    eos2 = eos1.to_TP_zs(T=T, P=P+dP, zs=zs)
+    
+    assert_allclose((eos2.H_dep_l - eos1.H_dep_l)/dP, eos1.dH_dep_dP_l, rtol=1e-6)
+    assert_allclose(eos1.dH_dep_dP_l, 5.755734044915473e-06)
+    
+    assert_allclose((eos2.H_dep_g - eos1.H_dep_g)/dP, eos1.dH_dep_dP_g, rtol=1e-5)
+    assert_allclose(eos1.dH_dep_dP_g, -0.0009389226581529606, rtol=1e-5)
+    
+
+def test_dS_dep_dP_liquid_and_vapor():
+    T = 115
+    P = 1e6
+    dP = 1e-2
+    zs = [0.5, 0.5]
+    eos1 = PRMIX(T=T, P=P, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011],
+                zs=zs, kijs=[[0,0],[0,0]])
+    eos2 = eos1.to_TP_zs(T=T, P=P+dP, zs=zs)
+    
+    assert_allclose((eos2.S_dep_l - eos1.S_dep_l)/dP, eos1.dS_dep_dP_l)
+    assert_allclose(eos1.dS_dep_dP_l, 8.049231062546365e-06)
+    
+    assert_allclose((eos2.S_dep_g - eos1.S_dep_g)/dP, eos1.dS_dep_dP_g)
+    assert_allclose(eos1.dS_dep_dP_g, -5.942829393044419e-06)
