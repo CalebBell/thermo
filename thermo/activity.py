@@ -2014,8 +2014,8 @@ def NRTL(xs, taus, alphas):
             # Term 2
             tn2 = xs[j]*Gsi[j]
             
+            # TODO: Combine these two to save some multiplications
             td2 = td3 = sum([xs[k]*Gs[k][j] for k in cmps])
-            
             tn3 = sum([xs[m]*taus[m][j]*Gs[m][j] for m in cmps])
             
             total2 += tn2/td2*(tausi[j] - tn3/td3)

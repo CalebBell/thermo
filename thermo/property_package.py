@@ -986,6 +986,12 @@ class Ideal(PropertyPackage):
                 error = lambda T: i.extrapolate_tabular(T) - P
                 Tsats.append(brenth(error, i.Tmax, i.Tmax*5))
         return Tsats
+
+    def _d_Psats_dT(self, T):
+        dPsats_dT = []
+        for i in self.VaporPressures:
+            dPsats_dT.append(i.T_dependent_property_derivative(T))
+        return dPsats_dT
                 
     def __init__(self, VaporPressures=None, Tms=None, Tcs=None, Pcs=None, 
                  **kwargs):
@@ -998,6 +1004,25 @@ class Ideal(PropertyPackage):
         
         self.kwargs = {'VaporPressures': VaporPressures,
                        'Tms': Tms, 'Tcs': Tcs, 'Pcs': Pcs}
+
+    def Ks_and_dKs_dT(self, T, P, zs=None):
+        Psats = self._Psats(T)
+        dPsats_dT = self._d_Psats_dT(T)
+        P_inv = 1.0/P
+        Ks = [Psat*P_inv for Psat in Psats]
+        dKs_dT = [dPsat_dTi*P_inv for dPsat_dTi in dPsats_dT]
+        return Ks, dKs_dT
+
+    def d_VF_dT(self, delta=1e-4, full=True):
+        # Not accurate enough
+        VF1 = self.V_over_F
+        zs = self.zs
+        Ks, dKs_dT = self.Ks_and_dKs_dT(self.T, self.P, zs)
+        # Perturb the Ks
+        Ks2 = [Ki + dKi*delta for Ki, dKi in zip(Ks, dKs_dT)]
+        VF2, _, _ = flash_inner_loop(zs, Ks2, guess=VF1)
+        return (VF2 - VF1)/delta
+
 
 
     def flash_TP_zs(self, T, P, zs):
