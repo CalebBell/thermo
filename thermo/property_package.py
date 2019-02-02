@@ -2244,21 +2244,15 @@ class GceosBase(Ideal):
                 H += zi*obj.T_dependent_property_integral(T_REF_IG, T)
             H += eos_g.H_dep_g
         elif phase == 'l':
-            for i in cmps:
-                H += zs[i]*HeatCapacityGases[i].T_dependent_property_integral(T_REF_IG, T)
+            for zi, obj in zip(zs, HeatCapacityGases):
+                H += zi*obj.T_dependent_property_integral(T_REF_IG, T)
             H += eos_l.H_dep_l
         elif phase == 'l/g':
-            H_l, H_g = 0.0, 0.0
-            dH_integrals = []
-            for i in cmps:
-                dH_integrals.append(HeatCapacityGases[i].T_dependent_property_integral(T_REF_IG, T))
-                
-            for i in cmps:
-                H_g += ys[i]*dH_integrals[i]
-                H_l += xs[i]*dH_integrals[i]
-
-            H_g += eos_g.H_dep_g
-            H_l += eos_l.H_dep_l
+            H_l, H_g = eos_l.H_dep_l, eos_g.H_dep_g
+            dH_integrals = [obj.T_dependent_property_integral(T_REF_IG, T)for obj in HeatCapacityGases]
+            for xi, yi, dH in zip(xs, ys, dH_integrals):
+                H_g += yi*dH
+                H_l += xi*dH
             H = H_g*V_over_F + H_l*(1.0 - V_over_F)
         return H
 
@@ -4317,7 +4311,7 @@ class GceosBase(Ideal):
                 
         return T_points, Ps_known, ys_known
     
-    def Ks_and_dKs_dP(self, eos_l, eos_g, xs, ys, zs):
+    def Ks_and_dKs_dP(self, eos_l, eos_g, xs, ys):
         import numpy as np
         eos_l.fugacities()
         eos_g.fugacities()
@@ -4368,14 +4362,37 @@ class GceosBase(Ideal):
         return Ks, dKs_dT
     
     
-    def d_VF_dT(self, delta=1e-4):
+    def d_VF_dT(self, delta=1e-4, full=True):
         # Not accurate enough
         VF1 = self.V_over_F
         zs = self.zs
+        if full:
+            new_eos = self.to_TP_zs(T=self.T+delta, P=self.P, zs=zs)
+            # flash it
+            VF2, xs, ys, eos_l, eos_g = new_eos.sequential_substitution_VL(xs=self.xs, ys=self.ys)
+            return (VF2 - VF1)/delta
+        
+        
+        
         Ks, dKs_dT = self.Ks_and_dKs_dT(self.eos_l, self.eos_g, self.xs, self.ys)
         # Perturb the Ks
         Ks2 = [Ki + dKi*delta for Ki, dKi in zip(Ks, dKs_dT)]
         VF2, _, _ = flash_inner_loop(zs, Ks2, guess=VF1)
         return (VF2 - VF1)/delta
         
+    def d_VF_dP(self, delta=1e-4, full=True):
+        # Not accurate enough
+        VF1 = self.V_over_F
+        zs = self.zs
+        if full:
+            new_eos = self.to_TP_zs(T=self.T, P=self.P+delta, zs=zs)
+            # flash it
+            VF2, xs, ys, eos_l, eos_g = new_eos.sequential_substitution_VL(xs=self.xs, ys=self.ys)
+            return (VF2 - VF1)/delta
         
+        
+        Ks, dKs_dP = self.Ks_and_dKs_dP(self.eos_l, self.eos_g, self.xs, self.ys)
+        # Perturb the Ks
+        Ks2 = [Ki + dKi*delta for Ki, dKi in zip(Ks, dKs_dP)]
+        VF2, _, _ = flash_inner_loop(zs, Ks2, guess=VF1)
+        return (VF2 - VF1)/delta
