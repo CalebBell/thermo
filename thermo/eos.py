@@ -414,12 +414,6 @@ class GCEOS(object):
   
         PIP = V*(d2P_dTdV*dT_dP - d2P_dV2*dV_dP) # phase_identification_parameter(V, dP_dT, dP_dV, d2P_dV2, d2P_dTdV)
 
-#        if force_l:
-#            phase = 'l'
-#        elif force_g:
-#            phase = 'g'
-#        else:
-#            phase = 'l' if PIP > 1.0 else 'g' # phase_identification_parameter_phase(PIP)
       
         if force_l or (not force_g and PIP > 1.0):
             self.V_l, self.Z_l = V, Z
@@ -2446,7 +2440,7 @@ class PR(GCEOS):
                 
                 a_alpha = self.a*x2*x2
                 da_alpha_dT = x4*x3/x0
-                d2a_alpha_dT2 = 0.5*x3*(1.0/(T*Tc)*kappa - x4/(x0*T))
+                d2a_alpha_dT2 = 0.5*x3*(kappa/(T*Tc) - x4/(x0*T))
             else:
                 a_alpha = self.a*(1 + self.kappa*(1-(T/self.Tc)**0.5))**2
                 da_alpha_dT = -self.a*self.kappa*sqrt(T/self.Tc)*(self.kappa*(-sqrt(T/self.Tc) + 1.) + 1.)/T

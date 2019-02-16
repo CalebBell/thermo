@@ -24,7 +24,9 @@ from __future__ import division
 
 __all__ = ['Poling_data', 'TRC_gas_data', '_PerryI', 'CRC_standard_data', 
            'Lastovka_Shaw', 'Lastovka_Shaw_integral', 
-           'Lastovka_Shaw_integral_over_T', 'TRCCp', 
+           'Lastovka_Shaw_integral_over_T',
+           'Lastovka_Shaw_T_for_Hm', 'TRCCp',  'Dadgostar_Shaw_integral',
+           'Dadgostar_Shaw_integral_over_T',
            'TRCCp_integral', 'TRCCp_integral_over_T', 
            'heat_capacity_gas_methods', 'HeatCapacityGas', 
            'Rowlinson_Poling', 'Rowlinson_Bondi', 'Dadgostar_Shaw', 
@@ -45,6 +47,7 @@ import pandas as pd
 from fluids.numerics import (polyint_over_x, horner_log, horner, polyint, 
                              fit_integral_linear_extrapolation,
                              fit_integral_over_T_linear_extrapolation)
+from fluids.numerics import py_newton as newton, py_brenth as brenth
 
 from scipy.integrate import quad
 from thermo.utils import R, calorie
@@ -182,6 +185,7 @@ def Lastovka_Shaw(T, similarity_variable, cyclic_aliphatic=False):
         first = A2 + (A1-A2)/(1. + exp((a - A3)/A4))
         # Personal communication confirms the change
 
+    T_inv = 1.0/T
     B11 = 0.73917383
     B12 = 8.88308889
     C11 = 1188.28051
@@ -190,11 +194,11 @@ def Lastovka_Shaw(T, similarity_variable, cyclic_aliphatic=False):
     B22 = 4.35656721
     C21 = 2897.01927
     C22 = 5987.80407
-    C11_C12a_T =(C11+C12*a)/T
+    C11_C12a_T =(C11+C12*a)*T_inv
     expm_C11_C12a_T = exp(-C11_C12a_T)
     x1 = 1.0/(1.0 - expm_C11_C12a_T)
     
-    C21_C22a_T = (C21+C22*a)/T
+    C21_C22a_T = (C21+C22*a)*T_inv
     expm_C21_C22a_T = exp(-C21_C22a_T)
     x2 = 1.0/(1.0 - expm_C21_C22a_T)
     
@@ -341,6 +345,70 @@ def Lastovka_Shaw_integral_over_T(T, similarity_variable, cyclic_aliphatic=False
     # There is a non-real component, but it is only a function of similariy 
     # variable and so will always cancel out.
     return S.real*1000.
+
+
+def Lastovka_Shaw_T_for_Hm(Hm, MW, similarity_variable, T_ref=298.15, 
+                           factor=1.0):
+    r'''Calculate the integral over temperature of ideal-gas constant-pressure 
+    heat capacitiy with the similarity variable concept and method as shown in
+    [1]_.
+
+    Parameters
+    ----------
+    Hm : float
+        molar enthalpy spec, [J/mol]
+    MW : float
+        Molecular weight of the pure compound or mixture average, [g/mol]
+    similarity_variable : float
+        Similarity variable as defined in [1]_, [mol/g]
+    T_ref : float, optional
+        Reference enthlapy temperature, [K]
+    factor : float, optional
+        A factor to increase or decrease the predicted value of the 
+        method, [-]
+
+    Returns
+    -------
+    T : float
+        Temperature of gas to meet the molar enthalpy spec, [K]
+
+    Notes
+    -----
+
+    See Also
+    --------
+    Lastovka_Shaw
+    Lastovka_Shaw_integral
+    Lastovka_Shaw_integral_over_T
+
+    Examples
+    --------
+    >>> Lastovka_Shaw_T_for_Hm(Hm=55000, MW=80.0, similarity_variable=0.23)
+    600.0943429567604
+    
+    References
+    ----------
+    .. [1] Lastovka, Vaclav, and John M. Shaw. "Predictive Correlations for
+       Ideal Gas Heat Capacities of Pure Hydrocarbons and Petroleum Fractions."
+       Fluid Phase Equilibria 356 (October 25, 2013): 338-370.
+       doi:10.1016/j.fluid.2013.07.023.
+    '''
+    H_ref = Lastovka_Shaw_integral(T_ref, similarity_variable)
+    def err(T):
+        H1 = Lastovka_Shaw_integral(T, similarity_variable)
+        dH = H1 - H_ref
+        err = (property_mass_to_molar(dH, MW)*factor - Hm)
+        return err
+    try:
+        return newton(err, 500, ytol=1e-4)
+    except:
+        try:
+            return brenth(err, 1e-3, 1e5)
+        except Exception as e:
+            if err(1e-11) > 0:
+                raise ValueError("For gas only enthalpy spec to be correct, "
+                                 "model requires negative temperature")
+            raise e
 
 
 def TRCCp(T, a0, a1, a2, a3, a4, a5, a6, a7):

@@ -1,6 +1,6 @@
   # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2017, 2018 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2017, 2018, 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -50,24 +50,32 @@ from copy import copy
 from random import uniform, shuffle, seed
 import numpy as np
 from scipy.optimize import golden, brent, minimize, fmin_slsqp, fsolve
-from fluids.numerics import ridder, derivative, py_newton as newton, linspace, logspace, py_brenth as brenth
+from fluids.numerics import ridder, derivative, py_newton as newton, linspace, logspace, py_brenth as brenth, py_solve, oscillation_checker
 
 from thermo.utils import log, log10, exp, copysign
 from thermo.utils import has_matplotlib, R, pi, N_A
-from thermo.utils import remove_zeros, normalize, Cp_minus_Cv, UnconvergedError
+from thermo.utils import remove_zeros, normalize, Cp_minus_Cv, UnconvergedError, mixing_simple, property_mass_to_molar
+from thermo.elements import mixture_atomic_composition, similarity_variable
 from thermo.identifiers import IDs_to_CASs
 from thermo.activity import K_value, Wilson_K_value, flash_inner_loop, dew_at_T, bubble_at_T, NRTL, Rachford_Rice_solution2
-from thermo.activity import flash_wilson, flash_Tb_Tc_Pc
+from thermo.activity import flash_wilson, flash_Tb_Tc_Pc, Rachford_Rice_flash_error
 from thermo.activity import get_T_bub_est, get_T_dew_est, get_P_dew_est, get_P_bub_est
 from thermo.unifac import UNIFAC, UFSG, DOUFSG, DOUFIP2006
 from thermo.eos_mix import *
 from thermo.eos import *
+from thermo.heat_capacity import Lastovka_Shaw_T_for_Hm, Dadgostar_Shaw_integral
+from thermo.phase_change import SMK
+
+
 
 if has_matplotlib:
     import matplotlib
     import matplotlib.pyplot as plt
 
 
+DIRECT_1P = 'Direct 1 Phase'
+DIRECT_2P = 'Direct 2 Phase'
+RIGOROUS_BISECTION = 'Bisection'
 
 
 def Stateva_Tsvetkov_TPDF_eos(eos):
@@ -713,6 +721,18 @@ class PropertyPackage(object):
             else:
                 raise Exception('Flash inputs unsupported')
     
+    
+#            ''' The routine needs to be upgraded to set these properties
+#                self.T = T
+#                self.P = P
+#                self.V_over_F = V_over_F
+#                self.phase = phase
+#                self.xs = xs
+#                self.ys = ys
+#                self.zs = zs
+#            '''
+#            self.__dict__.update(kwargs)
+    
             self.flash(**kwargs)
             self._post_flash()
             self.status = True
@@ -1126,6 +1146,25 @@ class IdealCaloric(Ideal):
     @property
     def Cvlm(self):
         return self.Cplm
+
+
+    def Hg_ideal(self, T, zs):
+        H = 0.0
+        T_REF_IG = self.T_REF_IG
+        HeatCapacityGases = self.HeatCapacityGases
+        cmps = self.cmps
+        for zi, obj in zip(zs, HeatCapacityGases):
+            H += zi*obj.T_dependent_property_integral(T_REF_IG, T)
+        return H
+            
+            
+    def Cpg_ideal(self, T, zs):
+        Cp = 0.0
+        HeatCapacityGases = self.HeatCapacityGases
+        for zi, HeatCapacityGas in zip(zs, HeatCapacityGases):
+            Cp += zi*HeatCapacityGas.T_dependent_property(T)
+        return Cp
+
     
     def __init__(self, VaporPressures=None, Tms=None, Tbs=None, Tcs=None, Pcs=None, 
                  HeatCapacityLiquids=None, HeatCapacityGases=None,
@@ -2177,7 +2216,7 @@ class GceosBase(Ideal):
     substitution_xtol = 1e-12 #new, fugacity ratio - root based tolerance
     def __init__(self, eos_mix=PRMIX, VaporPressures=None, Tms=None, Tbs=None, 
                  Tcs=None, Pcs=None, omegas=None, kijs=None, eos_kwargs=None,
-                 HeatCapacityGases=None,
+                 HeatCapacityGases=None, MWs=None, atomss=None,
                  **kwargs):
         self.eos_mix = eos_mix
         self.VaporPressures = VaporPressures
@@ -2202,6 +2241,9 @@ class GceosBase(Ideal):
         self.kwargs['Pcs'] = Pcs
         self.kwargs['omegas'] = omegas
         self.kwargs['kijs'] = kijs
+        
+        self.MWs = MWs
+        self.atomss = atomss
         
         # No `zs`
 #        self.eos_mix_ref = self.eos_mix(T=self.T_REF_IG, P=self.P_REF_IG, Tcs=self.Tcs, Pcs=self.Pcs, kijs=self.kijs, **self.eos_kwargs)
@@ -2254,6 +2296,8 @@ class GceosBase(Ideal):
         elif phase == 'l/g':
             raise ValueError
         return H
+    
+    
 
     def enthalpy_eosmix(self, T, P, V_over_F, zs, xs, ys, eos_l, eos_g, phase):
         # Believed correct
@@ -2273,7 +2317,16 @@ class GceosBase(Ideal):
                 H += zi*obj.T_dependent_property_integral(T_REF_IG, T)
             H += eos_l.H_dep_l
         elif phase == 'l/g':
-            H_l, H_g = eos_l.H_dep_l, eos_g.H_dep_g
+            try:
+                H_l = eos_l.H_dep_l
+            except AttributeError:
+                H_l = eos_l.H_dep_g
+            
+            try:
+                H_g = eos_g.H_dep_g
+            except:
+                H_g = eos_g.H_dep_l
+            
             dH_integrals = [obj.T_dependent_property_integral(T_REF_IG, T)for obj in HeatCapacityGases]
             for xi, yi, dH in zip(xs, ys, dH_integrals):
                 H_g += yi*dH
@@ -2493,6 +2546,7 @@ class GceosBase(Ideal):
         
 
     def flash_TP_zs(self, T, P, zs, Wilson_first=True):
+        info = []
         eos = self.to_TP_zs(T=T, P=P, zs=zs, fugacities=False)
         try:
             G_dep_eos = min(eos.G_dep_l, eos.G_dep_g)
@@ -2505,7 +2559,7 @@ class GceosBase(Ideal):
                 _, _, VF_wilson, xs_wilson, ys_wilson = flash_wilson(zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, 
                              P=P, T=T)
             except Exception as e:
-                print('wilson flash init failed')
+#                print('wilson flash init failed')
                 VF_wilson = -1
 #            print(VF_wilson, xs_wilson, ys_wilson, 'VF_wilson, xs_wilson, ys_wilson')
             if 1e-7 < VF_wilson < 1.0 - 1e-7:
@@ -2514,7 +2568,8 @@ class GceosBase(Ideal):
                                                 maxiter=self.substitution_maxiter,
                                                 xtol=self.substitution_xtol, 
                                                 near_critical=True,
-                                                xs=xs_wilson, ys=ys_wilson
+                                                xs=xs_wilson, ys=ys_wilson,
+                                                info=info
                                                 )
                     phase = 'l/g'
                     try:
@@ -2534,11 +2589,12 @@ class GceosBase(Ideal):
                     
                     self.eos_l = eos_l
                     self.eos_g = eos_g
+                    self.info = info
                     return phase, xs, ys, VF
                 
                 
                 except Exception as e:
-#                    print(e, 'Wilson flash fail')
+                    print(e, 'Wilson flash fail')
                     pass
         
         
@@ -2578,7 +2634,8 @@ class GceosBase(Ideal):
                                             maxiter=self.substitution_maxiter,
                                             xtol=self.substitution_xtol, 
                                             near_critical=True,
-                                            Ks_extra=Ks_extra)
+                                            Ks_extra=Ks_extra,
+                                            info=info)
                         
                         
                         G_dep_l = eos_l.G_dep_l if hasattr(eos_l, 'G_dep_l') else eos_l.G_dep_g
@@ -2634,6 +2691,7 @@ class GceosBase(Ideal):
                     phase, xs, ys, VF = 'g', None, zs, 1
                     self.eos_g = None
                     self.eos_l = eos
+        self.info = info
 
         return phase, xs, ys, VF
 
@@ -2740,6 +2798,300 @@ class GceosBase(Ideal):
         self.eos_g = eos_g
         return 'l/g', xs, ys, VF, P
 
+    def PH_Michelson(self, T_guess, P, zs, H_goal, maxiter=100, tol=1e-6,
+                     VF_guess_init=None, damping=1.0, analytical=True):
+        
+        Ks = [Wilson_K_value(T_guess, P, Tci, Pci, omega) for Pci, Tci, omega in
+              zip(self.Pcs, self.Tcs, self.omegas)]
+        V_over_F, xs, ys = flash_inner_loop(zs=zs, Ks=Ks)
+        if VF_guess_init is not None:
+            V_over_F = VF_guess_init
+
+        store = {}
+        store['xs'] = xs
+        store['ys'] = ys
+        def err_fun(T_V_over_F, zs, Ks, jac=True):
+#            print('calling', Ks)
+            T, V_over_F = float(T_V_over_F[0]), float(T_V_over_F[1])
+            
+            V_over_F2, xs, ys = flash_inner_loop(zs=zs, Ks=Ks)
+
+            eos_l = self.to_TP_zs(T=T, P=P, zs=xs, fugacities=True)
+            eos_g = self.to_TP_zs(T=T, P=P, zs=ys, fugacities=True)
+
+            # Calculate the enthalpy
+            H_calc = self.enthalpy_eosmix(T_guess, P, V_over_F, zs, xs, ys, eos_l, eos_g, 'l/g')        
+            g2 = H_calc - H_goal
+            
+            lnphis_l = eos_l.eos_lnphis_lowest_Gibbs()[0]
+            lnphis_g = eos_g.eos_lnphis_lowest_Gibbs()[0]
+            
+            Ks = [exp(l - g) for l, g in zip(lnphis_l, lnphis_g)]
+            g1 = Rachford_Rice_flash_error(V_over_F, zs, Ks)
+            
+            store['eos_l'] = eos_l
+            store['eos_g'] = eos_g
+            store['Ks'] = Ks
+            store['xs'] = xs
+            store['ys'] = ys
+            
+            ts = [1.0 + V_over_F*(Ki - 1.0) for Ki in Ks]
+            
+            
+            d_RR1_d_beta1 = 0.0
+            for ti, zi, Ki in zip(ts, zs, Ks):
+                d_RR1_d_beta1 -= zi/(ti*ti)*(Ki - 1.0)*(Ki - 1.0)
+                
+            _, dKs_dT = self.Ks_and_dKs_dT(eos_l, eos_g, xs, ys)
+
+            d_RR1_dT = 0.0
+            for dK_dT, ti, zi, Ki in zip(dKs_dT, ts, zs, Ks):
+                d_RR1_dT += zi/(ti*ti)*(ti*Ki*dK_dT - V_over_F*Ki*(Ki - 1.0)*dK_dT)
+                
+            d_H_d_beta = (self.enthalpy_eosmix(T_guess, P, V_over_F, ys, ys, ys, eos_l, eos_g, 'g')
+            - self.enthalpy_eosmix(T_guess, P, V_over_F, xs, xs, xs, eos_l, eos_g, 'l'))
+            
+            
+            dH_dep_dT_g = eos_g.dH_dep_dT_g
+            dH_dep_dT_l = eos_l.dH_dep_dT_l
+            
+            tot1, tot2 = 0.0, 0.0
+#            d_beta_d_T = 0.0
+            for dK_dT, ti, zi, Ki in zip(dKs_dT, ts, zs, Ks):
+                tot1 += zi*dK_dT
+                tot2 += (1.0 - Ki)*(1.0 - Ki)*zi
+                
+            d_beta_d_T = tot1/tot2
+            
+            
+            # It is believed this is wrong! Need a set of dx_dT for liquid phase!
+            dx_dTs = []
+            for dK_dT, ti, zi, Ki in zip(dKs_dT, ts, zs, Ks):
+                dxi_dT = (zi*dK_dT*ti - zi*Ki*(d_beta_d_T*(Ki - 1.0) + V_over_F*dK_dT))/(ti*ti)
+                dx_dTs.append(dxi_dT)
+
+
+            T_REF_IG = self.T_REF_IG
+            HeatCapacityGases = self.HeatCapacityGases
+            
+            
+            d_H_dT = 0.0
+            tot1, tot2, tot3, tot4  = 0.0, 0.0, 0.0, 0.0
+            
+            
+            for dK_dT, ti, zi, Ki, dx_dT, obj, xi, yi in zip(dKs_dT, ts, zs, Ks, dx_dTs, HeatCapacityGases, xs, ys):
+                tot1 += dx_dT*obj.T_dependent_property_integral(T_REF_IG, T)/H_goal
+                tot2 += xi/H_goal*obj.T_dependent_property(T)
+
+                tot3 += dx_dT*obj.T_dependent_property_integral(T_REF_IG, T)/H_goal
+                tot4 += yi/H_goal*obj.T_dependent_property(T)
+                
+                
+                
+            d_H_dT = (V_over_F*(tot1 + tot2 + dH_dep_dT_g) 
+                      + (1.0 - V_over_F)*(tot3 + tot4 + dH_dep_dT_l))
+            
+            store['dKs_dT'] = dKs_dT
+#            Hg_ideal(self, T, zs), Cpg_ideal(self, T, zs)
+            
+            
+
+#            jacobian = [[d_RR1_d_beta1, d_RR1_dT], [d_H_d_beta, d_H_dT]]
+            jacobian = [[d_RR1_dT, d_RR1_d_beta1], [d_H_dT, d_H_d_beta]]
+#            print(jacobian)
+            if jac:
+                return [g1, g2], jacobian
+
+            return [g1, g2]
+        
+        def to_Jac(T_V_over_F):
+            import numpy as np
+#            print('calling for jac')
+            return np.array(err_fun(T_V_over_F, zs, Ks, jac=False))
+        
+        Ts_attempt = [T_guess]
+        VFs_attempt = [V_over_F]
+        iter = 0
+        
+        while iter < maxiter:
+            fcur, j_analytical = err_fun([T_guess, V_over_F], zs, Ks, jac=True)
+            
+            err =  abs(fcur[0]) + abs(fcur[1])
+            print(T_guess, V_over_F, fcur)
+            
+            if err < tol:
+                break
+            
+            if not analytical:
+                try:
+                    from numdifftools.core import Jacobian
+                except:
+                    pass
+
+                j_obj = Jacobian(to_Jac, step=1e-4)
+                j = j_obj([T_guess, V_over_F])
+    #            print(fcur, j)
+    #            print(j/j_analytical, 'hi')
+    #            print(j)
+    #            print(j_analytical)
+            
+            if analytical:
+                j = j_analytical
+            
+            
+#            break
+            dx = py_solve(j, [-v for v in fcur])
+            T_guess, V_over_F = [xi + dxi*damping for xi, dxi in zip([T_guess, V_over_F], dx)]
+            
+            dKs_dT = store['dKs_dT']
+#            _, dKs_dT = self.Ks_and_dKs_dT(store['eos_l'], store['eos_g'], store['xs'], store['ys'])
+            
+            dT = T_guess - Ts_attempt[-1]
+            Ks = store['Ks']
+            
+            
+            # diff(log(f(x)), y) = Derivative(f(x), x)/f(x)
+            Ks = [exp(log(K) + dK_dT/K*dT) for K, dK_dT in zip(Ks, dKs_dT)]
+            
+            Ts_attempt.append(T_guess)
+            VFs_attempt.append(V_over_F)
+            
+            iter += 1
+        # What needs to be returned?
+        eos_l = store['eos_l']
+        eos_g = store['eos_g']
+        xs = store['xs']
+        ys = store['ys']
+        
+        self.eos_l, self.eos_g = eos_l, eos_g
+        return 'l/g', xs, ys, V_over_F, T_guess
+
+    def PH_Agarwal(self, T_guess, P, zs, H_goal, maxiter=100, tol=1e-6,
+                     VF_guess_init=None, damping=1.0):
+        import numpy as np
+        from numdifftools.core import Jacobian
+        from fluids.numerics import py_solve
+        
+        Ks = [Wilson_K_value(T_guess, P, Tci, Pci, omega) for Pci, Tci, omega in
+              zip(self.Pcs, self.Tcs, self.omegas)]
+        V_over_F, xs, ys = flash_inner_loop(zs=zs, Ks=Ks)
+        if VF_guess_init is not None:
+            V_over_F = VF_guess_init
+
+        store = {}
+        Ks_prev = []
+        fs_prev = []
+        
+        eos_l = self.to_TP_zs(T=T, P=P, zs=xs, fugacities=True)
+        eos_g = self.to_TP_zs(T=T, P=P, zs=ys, fugacities=True)
+
+        # Calculate the enthalpy
+        H_calc = self.enthalpy_eosmix(T_guess, P, V_over_F, zs, xs, ys, eos_l, eos_g, 'l/g')        
+        g2 = H_calc - H_goal
+
+        # Step 5            
+        lnphis_l = eos_l.eos_lnphis_lowest_Gibbs()[0]
+        lnphis_g = eos_g.eos_lnphis_lowest_Gibbs()[0]
+        Cp_l = self.dH_dT(T, P, V_over_F, zs, xs, ys, eos_l, eos_g, 'l')
+        Cp_g = self.dH_dT(T, P, V_over_F, zs, xs, ys, eos_l, eos_g, 'g')
+        
+        # Step 6            
+        fs = []
+        for lnphi_l, lnphi_g, xi, yi in zip(lnphis_l, lnphis_g, xs, ys):
+            fs.append(lnphi_g + log(yi) - lnphi_l - log(xi))
+        
+        # Step 7
+        T_guess = T_guess - g2/(V_over_F*Cp_g + (1.0 - V_over_F)*Cp_l)
+        
+        Ks = [exp(l - g) for l, g in zip(lnphis_l, lnphis_g)]
+        V_over_F, xs, ys = flash_inner_loop(zs=zs, Ks=Ks)
+        
+        def err_fun(T_V_over_F, zs, Ks):
+#            print('calling', Ks)
+            T, V_over_F = float(T_V_over_F[0]), float(T_V_over_F[1])
+            
+            # step 8
+            V_over_F, xs, ys = flash_inner_loop(zs=zs, Ks=Ks)
+
+            # Step 9
+            eos_l = self.to_TP_zs(T=T, P=P, zs=xs, fugacities=True)
+            eos_g = self.to_TP_zs(T=T, P=P, zs=ys, fugacities=True)
+            H_calc = self.enthalpy_eosmix(T_guess, P, V_over_F, zs, xs, ys, eos_l, eos_g, 'l/g')        
+            g2 = H_calc - H_goal
+
+            # Step 10            
+            lnphis_l = eos_l.eos_lnphis_lowest_Gibbs()[0]
+            lnphis_g = eos_g.eos_lnphis_lowest_Gibbs()[0]
+            
+            fs_prev = fs
+            fs = []
+            for lnphi_l, lnphi_g, xi, yi in zip(lnphis_l, lnphis_g, xs, ys):
+                fs.append(lnphi_g + log(yi) - lnphi_l - log(xi))
+            
+            Ks_prev = Ks
+            Ks = [exp(l - g) for l, g in zip(lnphis_l, lnphis_g)]
+            # Step 11
+            Ks05 = []
+            for K, K_prev, dK_dT, f, f_prev in zip(Ks, Ks_prev, dKs_dT, fs, fs_prev):
+                lnK05 = log(K) + (log(K) - log(K_prev))*f_prev/((log(K) - log(K_prev))*(f - f_prev))*f
+                Ks05.append(exp(lnK05))
+            
+            # Jacobian is supposed to be constructed based on the Ks05 and so on
+            # Nothing fundamentally better anout this update; just a little cleverer.
+            V_over_F_05, xs_05, ys_05 = flash_inner_loop(zs=zs, Ks=Ks05)
+            
+            
+            g1 = Rachford_Rice_flash_error(V_over_F_05, zs, Ks05)
+            
+            store['eos_l'] = eos_l
+            store['eos_g'] = eos_g
+            store['Ks'] = Ks
+            store['xs'] = xs
+            store['ys'] = ys
+
+            return [g1, g2]
+        
+        def to_Jac(T_V_over_F):
+#            print('calling for jac')
+            return np.array(err_fun(T_V_over_F, zs, Ks))
+        
+        Ts_attempt = [T_guess]
+        VFs_attempt = [V_over_F]
+        iter = 0
+        
+        while iter < maxiter:
+            fcur = err_fun([T_guess, V_over_F], zs, Ks)
+            
+            err =  abs(fcur[0]) + abs(fcur[1])
+            print(T_guess, V_over_F, fcur)
+            
+            if err < tol:
+                break
+            
+            j_obj = Jacobian(to_Jac, step=1e-4)
+            j = j_obj([T_guess, V_over_F])
+            
+            
+            break
+        
+        
+        
+            dx = py_solve(j, [-v for v in fcur])
+            T_guess, V_over_F = [xi + dxi*damping for xi, dxi in zip([T_guess, V_over_F], dx)]
+            
+            _, dKs_dT = self.Ks_and_dKs_dT(store['eos_l'], store['eos_g'], store['xs'], store['ys'])
+            
+            dT = T_guess - Ts_attempt[-1]
+            Ks = store['Ks']
+            
+            
+            # diff(log(f(x)), y) = Derivative(f(x), x)/f(x)
+            Ks = [exp(log(K) + dK_dT/K*dT) for K, dK_dT in zip(Ks, dKs_dT)]
+            
+            Ts_attempt.append(T_guess)
+            VFs_attempt.append(V_over_F)
+            
+
 
     def PH_error_1P(self, T, P, zs, H_goal):
         eos_phase = self.to_TP_zs(T=T, P=P, zs=zs, fugacities=False)
@@ -2753,7 +3105,7 @@ class GceosBase(Ideal):
 #        print(T, err)
         return err
 
-    def PH_error_and_der_1P(self, T, P, zs, H_goal):
+    def PH_error_and_der_1P(self, T, P, zs, H_goal, info=None):
         eos_phase = self.to_TP_zs(T=T, P=P, zs=zs, fugacities=False)
         phase = eos_phase.more_stable_phase
         if phase == 'l':
@@ -2764,7 +3116,9 @@ class GceosBase(Ideal):
         err = H_calc - H_goal
         
         dErr_dT = self.dH_dT(T, P, None, zs, zs, zs, eos_l, eos_g, phase)
-        print(T, err, dErr_dT)
+#        print(T, err, dErr_dT)
+        if info is not None:
+            info[:] = (eos_phase, phase, err, dErr_dT)
         return err, dErr_dT
 
 
@@ -2792,6 +3146,102 @@ class GceosBase(Ideal):
                         xtol=1e-4, damping=damping)
         return {'T': T_goal}
 
+
+    def PH_T_guesses(self, P, Hm, zs, T_guess=None):
+        i = -1 if T_guess is not None else 0
+        while i < 3:
+            try:
+                if i == -1:
+                    yield T_guess
+                elif i == 0:
+                    MW = mixing_simple(zs, self.MWs)
+                    atoms = mixture_atomic_composition(self.atomss, zs)
+                    sv = similarity_variable(atoms, MW=MW)
+                    yield Lastovka_Shaw_T_for_Hm(Hm=Hm, MW=MW, similarity_variable=sv)
+                elif i == 1:
+                    Tc = mixing_simple(zs, self.Tcs)
+                    omega = mixing_simple(zs, self.omegas)
+                    def Dadgostar_Shaw_T_guess(Hm, MW, similarity_variable, Tc, omega, 
+                                               T_ref=298.15, factor=1.0):
+                        H_ref = Dadgostar_Shaw_integral(T_ref, similarity_variable)
+                        def err(T):
+                            Hvap = SMK(T, Tc, omega)
+                            H1 = Dadgostar_Shaw_integral(T, similarity_variable)
+                            dH = H1 - H_ref
+                            # Limitation to higher T unfortunately
+                            return ((property_mass_to_molar(dH, MW)*factor - Hvap) - Hm)
+                        return newton(err, 100, high=Tc)
+                    
+                    T_guess = Dadgostar_Shaw_T_guess(Hm, MW, sv, Tc, omega, factor=1)
+                    yield T_guess
+                elif i == 2:
+                    yield 298.15
+                    
+            # with Hvap and Cpl can get another guess - but is a little more complicated
+            except Exception as e:
+#                print(e)
+                pass
+            i += 1
+
+
+    def flash_PH_1P(self, P, Hm, zs, T_guess=None, minimum_progress=0.3):
+        guesses = []
+        calcs = {}
+        guess_generator = self.PH_T_guesses(P, Hm, zs, T_guess=T_guess)
+        
+        checker = oscillation_checker(minimum_progress)
+        def to_solve(T):
+            info = []
+            if T in calcs:
+                return calcs[T][-2:]
+            
+            err_and_der = self.PH_error_and_der_1P(T, P, zs, Hm, info=info)
+            
+            calcs[T] = info
+            
+            oscillating = checker(T, err_and_der[0])
+            if oscillating:
+                raise ValueError("Oscillating")
+#            print(T, err_and_der[0], 'T and err')
+            return err_and_der
+        
+        # Future work: brenth?
+        # Oscillation - quit right away?
+        ans = None
+        for T_guess in guess_generator:
+            guesses.append(T_guess)
+            
+            try:
+                ans = newton(to_solve, T_guess, fprime=True, require_eval=True)
+#                print(ans, 'done')
+                break
+            except Exception as e:
+                print(e)
+                continue
+        if ans is None:
+            raise ValueError("Could not converge 1 phase")
+
+        info = calcs[ans]
+        return ans, info[1], info[0]
+        
+
+    def flash_PH_zs(P, Hm, zs, T_guess=None, xs_guess=None, ys_guess=None,
+                 algorithms=[DIRECT_1P, DIRECT_2P, RIGOROUS_BISECTION],
+                 maxaiter=100, tol=1e-4, damping=1):
+        for algorithm in algorithms:
+            try:
+                if algorithm == DIRECT_1P:
+                    T, eos = self.flash_PH_1P(P, Hm, zs, T_guess)
+                    # A stability test is REQUIRED!
+                    # Try to refactor some of the code from the PT flash.
+                elif algorithm == DIRECT_2P:
+                    if T_guess is None:
+                        T_guess = 298.15
+                    phase, xs, ys, V_over_F, T_guess = self.PH_Michelson(T_guess, P, zs, Hm, maxiter=maxiter, tol=tol,
+                                                                         VF_guess_init=None, damping=damping, analytical=True)
+                    
+            except:
+                pass
 
 
     def bubble_T_Michelsen_Mollerup(self, T_guess, P, zs, maxiter=200, 
@@ -4362,7 +4812,6 @@ class GceosBase(Ideal):
         return Ks, dKs_dP
 
     def Ks_and_dKs_dT(self, eos_l, eos_g, xs, ys):
-        import numpy as np
         eos_l.fugacities()
         eos_g.fugacities()
         
@@ -4380,9 +4829,10 @@ class GceosBase(Ideal):
             dlnphis_g_dT = eos_g.d_lnphis_dT(eos_g.Z_l, eos_g.dZ_dT_l, ys)
         
         
-        
-        Ks = np.exp(np.array(lnphis_l) - np.array(lnphis_g))
-        dKs_dT = (np.array(dlnphis_l_dT) - np.array(dlnphis_g_dT))*Ks
+        Ks = [exp(l - g) for l, g in zip(lnphis_l, lnphis_g)]
+        dKs_dT = [(l - g)*Ki for l, g, Ki in zip(dlnphis_l_dT, dlnphis_g_dT, Ks)]
+
+#        dKs_dT = (np.array(dlnphis_l_dT) - np.array(dlnphis_g_dT))*Ks
 #        dKs_dT = (np.array(dlnphis_g_dT) - np.array(dlnphis_l_dT))*Ks
         return Ks, dKs_dT
     

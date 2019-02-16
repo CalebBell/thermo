@@ -111,6 +111,8 @@ class PropertyPackageConstants(object):
                    'VolumeLiquids': self.VolumeLiquids,
                    'VolumeGases': self.VolumeGases,
                     'eos': eos, 'eosmix': eosmix,
+                    'MWs': self.MWs,
+                    'atomss': self.atomss
                    }
         pkg_args.update(kwargs) 
         

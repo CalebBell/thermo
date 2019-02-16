@@ -23,7 +23,8 @@ SOFTWARE.'''
 from __future__ import division
 
 __all__ = ['PeriodicTable', 'molecular_weight', 'mass_fractions', 
-           'atom_fractions', 'similarity_variable', 'atoms_to_Hill', 
+           'atom_fractions','mixture_atomic_composition',
+           'similarity_variable', 'atoms_to_Hill', 
            'simple_formula_parser', 'nested_formula_parser', 'CAS_by_number',
            'periods', 'groups', 
            'blocks', 'homonuclear_elemental_gases', 'charge_from_formula',
@@ -399,6 +400,41 @@ def atom_fractions(atoms):
     for i in atoms:
         afracs[i] = atoms[i]/count
     return afracs
+
+
+def mixture_atomic_composition(atomss, zs):
+    r'''Simple function to calculate the atomic average composition of a
+    mixture, using the mole fractions of each species and their own atomic 
+    compositions.
+    
+    Parameters
+    ----------
+    atomss : list[dict[(str, int)]]
+        List of dictionaries of atomic compositions, [-]
+    zs : list[float]
+        Mole fractions of each component, [-]
+
+    Returns
+    -------
+    atoms : dict[(str, int)]
+        Atomic composition
+
+    Notes
+    -----
+
+    Examples
+    --------
+    >>> mixture_atomic_composition([{'O': 2}, {'N': 1, 'O': 2}, {'C': 1, 'H': 4}], [0.95, 0.025, .025])
+    {'C': 0.025, 'H': 0.1, 'N': 0.025, 'O': 1.95}
+    '''
+    ans = {}
+    for atoms, zs_i in zip(atomss, zs):
+        for key, val in atoms.items():
+            if key in ans:
+                ans[key] += val*zs_i
+            else:
+                ans[key] = val*zs_i
+    return ans
 
 
 def similarity_variable(atoms, MW=None):

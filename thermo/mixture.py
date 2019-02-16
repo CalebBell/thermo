@@ -47,7 +47,7 @@ from thermo.interface import SurfaceTensionMixture
 from thermo.viscosity import ViscosityLiquidMixture, ViscosityGasMixture
 from thermo.safety import LFL_mixture, UFL_mixture
 from thermo.utils import *
-from thermo.elements import atom_fractions, mass_fractions, simple_formula_parser, molecular_weight
+from thermo.elements import atom_fractions, mass_fractions, simple_formula_parser, molecular_weight, mixture_atomic_composition
 from thermo.eos import *
 from thermo.eos_mix import *
 
@@ -1140,14 +1140,7 @@ class Mixture(object):
         >>> Mixture(['nitrogen', 'oxygen'], zs=[.01, .99]).atoms
         {'O': 1.98, 'N': 0.02}
         '''
-        ans = {}
-        for atoms, zs_i in zip(self.atomss, self.zs):
-            for key, val in atoms.items():
-                if key in ans:
-                    ans[key] += val*zs_i
-                else:
-                    ans[key] = val*zs_i
-        return ans
+        return mixture_atomic_composition(self.atomss, self.zs)
 
     @property
     def atomss(self):

@@ -26,6 +26,8 @@ import pytest
 from thermo.heat_capacity import *
 from thermo.heat_capacity import TRCIG, POLING, CRCSTD, COOLPROP, POLING_CONST, VDI_TABULAR
 from random import uniform
+from math import *
+from fluids.numerics import linspace, logspace
 
 def test_heat_capacity_CSP():
     # Example is for cis-2-butene at 350K from Poling. It is not consistent with
@@ -116,6 +118,34 @@ def test_Lastovka_Shaw_integral_over_T():
     dS = Lastovka_Shaw_integral_over_T(1000.0, 0.1333, cyclic_aliphatic=True)
     assert_allclose(dS, 3790.4489380423597)
 
+def test_Lastovka_Shaw_T_for_Hm():
+    sv, MW, Hm = 0.05, 12.0, 3727593.7203149837
+    T = Lastovka_Shaw_T_for_Hm(Hm=Hm, MW=MW, similarity_variable=sv)
+    assert_allclose(T, 153731.155415042)
+    
+    T = Lastovka_Shaw_T_for_Hm(Hm=55000, MW=80.0, similarity_variable=0.23)
+    assert_allclose(T, 600.0943429567604)
+    
+#@pytest.mark.fuzz
+def test_Lastovka_Shaw_T_for_Hm_fuzz():
+    T_ref = 298.15
+    factor = 1.0
+    
+    # Originally tested with 50 points in everything
+    similarity_variables = linspace(.05, .5, 8)
+    MWs = linspace(12, 1200, 8)
+    Hms = [-i for i in logspace(log10(1e4), log10(1), 15)] + logspace(log10(1), log10(1e7), 15)
+    
+    for sv in similarity_variables:
+        for MW in MWs:
+            for Hm in Hms:
+                try:
+                    Lastovka_Shaw_T_for_Hm(Hm=Hm, MW=MW, similarity_variable=sv, T_ref=T_ref)
+                except Exception as e:
+                    if 'negative temperature' in str(e):
+                        continue
+    #                 print(sv, MW, Hm, e)
+    
 
 def test_CRC_standard_data():
     tots_calc = [CRC_standard_data[i].abs().sum() for i in [u'Hfc', u'Gfc', u'Sc', u'Cpc', u'Hfl', u'Gfl', u'Sfl', 'Cpl', u'Hfg', u'Gfg', u'Sfg', u'Cpg']]

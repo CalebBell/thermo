@@ -35,7 +35,7 @@ __all__ = ['K_value', 'Wilson_K_value', 'flash_wilson', 'flash_Tb_Tc_Pc',
            'Pdew_mixture']
 
 from fluids.numerics import IS_PYPY, one_epsilon_larger, one_epsilon_smaller
-from fluids.numerics import newton_system, roots_cubic, roots_quartic, horner, brenth, py_newton as newton # Always use this method for advanced features
+from fluids.numerics import newton_system, roots_cubic, roots_quartic, horner, py_brenth as brenth, py_newton as newton, oscillation_checker # Always use this method for advanced features
 from thermo.utils import exp, log
 from thermo.utils import none_and_length_check
 from thermo.utils import R
@@ -298,15 +298,9 @@ def flash_wilson(zs, Tcs, Pcs, omegas, T=None, P=None, VF=None):
     cmps = range(N)
     # Assume T and P to begin with
     if T is not None and P is not None:
-        Ks = [Wilson_K_value(T, P, Tc=Tcs[i], Pc=Pcs[i], omega=omegas[i]) for i in cmps]
-#        minK = min(Ks)
-#        if minK >= 1.0:
-#            idx = Ks.index(minK)
-#            Ks[idx] = (1.0 - 1e-7)
-        try:
-            ans = (T, P) + flash_inner_loop(zs=zs, Ks=Ks)
-        except:
-            ans = (T, P) + flash_inner_loop(zs=zs, Ks=Ks, limit=False)
+        P_inv, T_inv = 1.0/P, 1.0/T
+        Ks = [Pcs[i]*P_inv*exp((5.37*(1.0 + omegas[i])*(1.0 - Tcs[i]*T_inv))) for i in cmps]
+        ans = (T, P) + flash_inner_loop(zs=zs, Ks=Ks)
         return ans
     if T is not None and VF == 0:
         P_bubble = 0.0
@@ -318,17 +312,19 @@ def flash_wilson(zs, Tcs, Pcs, omegas, T=None, P=None, VF=None):
         for i in cmps:
             P_dew += zs[i]/(Pcs[i]*exp((5.37*(1.0 + omegas[i])*(1.0 - Tcs[i]/T))))
         P_dew = 1./P_dew
+#        print(P_dew)
         return flash_wilson(zs, Tcs, Pcs, omegas, T=T, P=P_dew)
     elif T is not None and VF is not None:
         # Solve for in the middle of Pdew
         P_low = flash_wilson(zs, Tcs, Pcs, omegas, T=T, VF=1)[1]
         P_high = flash_wilson(zs, Tcs, Pcs, omegas, T=T, VF=0)[1]
         info = []
-        def err(P):
+        def to_solve(P):
             T_calc, P_calc, VF_calc, xs, ys = flash_wilson(zs, Tcs, Pcs, omegas, T=T, P=P)
             info[:] = T_calc, P_calc, VF_calc, xs, ys
-            return VF_calc - VF
-        P = brenth(err, P_low, P_high)
+            err = VF_calc - VF
+            return err
+        P = brenth(to_solve, P_low, P_high)
         return tuple(info)
     elif P is not None and VF == 1:
         def to_solve(T_guess):
@@ -343,8 +339,9 @@ def flash_wilson(zs, Tcs, Pcs, omegas, T=None, P=None, VF=None):
         # 2/3 average critical point
         T_guess = sum([.666*Tcs[i]*zs[i] for i in cmps])
         try:
-            T_dew = abs(newton(to_solve, T_guess, maxiter=50))
-        except:
+            T_dew = abs(newton(to_solve, T_guess, maxiter=50, ytol=1e-2))
+        except Exception as e:
+            print(e)
             T_dew = None
         if T_dew is None or T_dew > T_MAX*5.0: 
             # Went insanely high T, bound it with brenth
@@ -363,8 +360,11 @@ def flash_wilson(zs, Tcs, Pcs, omegas, T=None, P=None, VF=None):
             return P_bubble - P
         # 2/3 average critical point
         T_guess = sum([.55*Tcs[i]*zs[i] for i in cmps])
-        T_bubble = abs(newton(to_solve, T_guess))
-        if T_bubble > T_MAX*5.0: 
+        try:
+            T_bubble = abs(newton(to_solve, T_guess, maxiter=50, ytol=1e-2))
+        except Exception as e:
+            T_bubble = None
+        if T_bubble is None or T_bubble > T_MAX*5.0: 
             # Went insanely high T, bound it with brenth
             T_low_guess = sum([.1*Tcs[i]*zs[i] for i in cmps])
             try:
@@ -466,7 +466,7 @@ def flash_Tb_Tc_Pc(zs, Tbs, Tcs, Pcs, T=None, P=None, VF=None):
     # Assume T and P to begin with
     if T is not None and P is not None:
         Ks = [Pcs[i]**((1.0/T - 1.0/Tbs[i])/(1.0/Tcs[i] - 1.0/Tbs[i]))/P for i in cmps]
-        return (T, P) + flash_inner_loop(zs=zs, Ks=Ks)
+        return (T, P) + flash_inner_loop(zs=zs, Ks=Ks, check=True)
     
     if T is not None and VF == 0:
         P_bubble = 0.0
@@ -493,23 +493,29 @@ def flash_Tb_Tc_Pc(zs, Tbs, Tcs, Pcs, T=None, P=None, VF=None):
         return tuple(info)
 
     elif P is not None and VF == 1:
+        checker = oscillation_checker()
         def to_solve(T_guess):
             T_guess = abs(T_guess)
             P_dew = 0.
             for i in range(len(zs)):
                 P_dew += zs[i]/( Pcs[i]**((1.0/T_guess - 1.0/Tbs[i])/(1.0/Tcs[i] - 1.0/Tbs[i])) )
             P_dew = 1./P_dew
-            return P_dew - P
+            err = P_dew - P
+            if checker(T_guess, err):
+                raise ValueError("Oscillation")
+#            print(T_guess, err)
+            return err
 
         Tc_pseudo = sum([Tcs[i]*zs[i] for i in cmps])
         T_guess = 0.666*Tc_pseudo
         try:
-            T_dew = abs(newton(to_solve, T_guess, maxiter=50)) # , high=Tc_pseudo*3
+            T_dew = abs(newton(to_solve, T_guess, maxiter=50, ytol=1e-2)) # , high=Tc_pseudo*3
         except:
             T_dew = None
         if T_dew is None or T_dew > T_MAX*5.0: 
             # Went insanely high T, bound it with brenth
             T_low_guess = sum([.1*Tcs[i]*zs[i] for i in cmps])
+            checker = oscillation_checker(both_sides=True, minimum_progress=.05)
             try:
                 T_dew = brenth(to_solve, T_MAX, T_low_guess)
             except ValueError:
@@ -517,19 +523,27 @@ def flash_Tb_Tc_Pc(zs, Tbs, Tcs, Pcs, T=None, P=None, VF=None):
         return flash_Tb_Tc_Pc(zs, Tbs, Tcs, Pcs, T=T_dew, P=P)
     
     elif P is not None and VF == 0:
+        checker = oscillation_checker()
         def to_solve(T_guess):
             T_guess = abs(T_guess)
             P_bubble = 0.0
             for i in cmps:
                 P_bubble += zs[i]*Pcs[i]**((1.0/T_guess - 1.0/Tbs[i])/(1.0/Tcs[i] - 1.0/Tbs[i]))
-#            print(T_guess, P_bubble - P)
-            return P_bubble - P
+            
+            err = P_bubble - P
+            if checker(T_guess, err):
+                raise ValueError("Oscillation")
+
+#            print(T_guess, err)
+            return err
         # 2/3 average critical point
         Tc_pseudo = sum([Tcs[i]*zs[i] for i in cmps])
         T_guess = 0.55*Tc_pseudo
         try:
-            T_bubble = abs(newton(to_solve, T_guess)) # , high=Tc_pseudo*4
-        except:
+            T_bubble = abs(newton(to_solve, T_guess, maxiter=50, ytol=1e-2)) # , high=Tc_pseudo*4
+        except Exception as e:
+#            print(e)
+            checker = oscillation_checker(both_sides=True, minimum_progress=.05)
             T_bubble = None
         if T_bubble is None or T_bubble > T_MAX*5.0: 
             # Went insanely high T (or could not converge because went too high), bound it with brenth
@@ -1414,13 +1428,17 @@ def Rachford_Rice_solution(zs, Ks, fprime=False, fprime2=False,
     
     K_minus_1 = [Ki - 1.0 for Ki in Ks]
     zs_k_minus_1 = [zi*Kim1 for zi, Kim1 in zip(zs, K_minus_1)]
+
+    def err(V_over_F):
+        diff =  sum([num/(1. + V_over_F*Kim1) for num, Kim1 in zip(zs_k_minus_1, K_minus_1)])
+        return diff
     
     if fprime or fprime2:
         zs_k_minus_1_2 = [-first*Kim1 for first, Kim1 in zip(zs_k_minus_1, K_minus_1)]
     
     if fprime2:
         zs_k_minus_1_3 = [-2.0*second*Kim1 for second, Kim1 in zip(zs_k_minus_1_2, K_minus_1)]
-        def err(V_over_F):
+        def err2(V_over_F):
             err0, err1, err2 = 0.0, 0.0, 0.0
             for num0, num1, num2, Kim1 in zip(zs_k_minus_1, zs_k_minus_1_2, zs_k_minus_1_3, K_minus_1):
                 VF_kim1_1_inv = 1.0/(1. + V_over_F*Kim1)
@@ -1428,19 +1446,17 @@ def Rachford_Rice_solution(zs, Ks, fprime=False, fprime2=False,
                 err0 += num0*VF_kim1_1_inv
                 err1 += num1*t2
                 err2 += num2*t2*VF_kim1_1_inv
+#            print(err0, err1, err2)
             return err0, err1, err2
     elif fprime:
-        def err(V_over_F):
+        def err1(V_over_F):
             err0, err1 = 0.0, 0.0
             for num0, num1, Kim1 in zip(zs_k_minus_1, zs_k_minus_1_2, K_minus_1):
                 VF_kim1_1_inv = 1.0/(1. + V_over_F*Kim1)
                 err0 += num0*VF_kim1_1_inv
                 err1 += num1*VF_kim1_1_inv*VF_kim1_1_inv
+#            print(err0, V_over_F)
             return err0, err1
-    else:
-        def err(V_over_F):
-            diff =  sum([num/(1. + V_over_F*Kim1) for num, Kim1 in zip(zs_k_minus_1, K_minus_1)])
-            return diff
 
             
 #    if not fprime and not fprime2:
@@ -1464,18 +1480,22 @@ def Rachford_Rice_solution(zs, Ks, fprime=False, fprime2=False,
 #            return sum([num/deno for num, deno in zip(zs_k_minus_1_3, denom3)])
         
     try:
+        low, high = V_over_F_min*one_epsilon_larger, V_over_F_max*one_epsilon_smaller
         if fprime2:
-            V_over_F = newton(err, x0, fprime=True, fprime2=True)
+            V_over_F = newton(err2, x0, ytol=1e-5, fprime=True, fprime2=True,
+                              high=high, low=low)
         elif fprime:
-            V_over_F = newton(err, x0, fprime=True)
+            V_over_F = newton(err1, x0, ytol=1e-12, fprime=True, high=high,
+                              low=low)
         else:
-            V_over_F = newton(err, x0, high=V_over_F_max*one_epsilon_smaller,
-                              low=V_over_F_min*one_epsilon_larger)
+#            print(V_over_F_max, V_over_F_min)
+            V_over_F = newton(err, x0, ytol=1e-5, high=high,
+                              low=low)
         
 #        assert V_over_F >= V_over_F_min2
 #        assert V_over_F <= V_over_F_max2
     except Exception as e:
-        V_over_F = brenth(err, V_over_F_max*one_epsilon_smaller, V_over_F_min*one_epsilon_larger)
+        V_over_F = brenth(err, low, high)
                 
     xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]
     ys = [Ki*xi for xi, Ki in zip(xs, Ks)]
@@ -1526,7 +1546,7 @@ def Rachford_Rice_solution_numpy(zs, Ks, limit=True):
         return err
     try:
         V_over_F = newton(err, x0, high=V_over_F_max*one_epsilon_smaller,
-                              low=V_over_F_min*one_epsilon_larger)
+                          low=V_over_F_min*one_epsilon_larger, ytol=1e-5)
     except Exception as e:
         V_over_F = brenth(err, V_over_F_max*one_epsilon_smaller, V_over_F_min*one_epsilon_larger)
         
@@ -1626,7 +1646,7 @@ def Rachford_Rice_solution_LN2(zs, Ks, guess=None):
     
     one_m_Kmin = 1.0 - Kmin
     
-    V_over_F_min = ((Kmax-Kmin)*z_of_Kmax - one_m_Kmin)/((one_m_Kmin)*(Kmax- 1.))
+    V_over_F_min = ((Kmax-Kmin)*z_of_Kmax - one_m_Kmin)/((one_m_Kmin)*(Kmax - 1.))
     V_over_F_max = 1./one_m_Kmin
     
     guess = 0.5*(V_over_F_min + V_over_F_max) if guess is None else guess
@@ -1662,7 +1682,15 @@ def Rachford_Rice_solution_LN2(zs, Ks, guess=None):
     guess = -log((V_over_F_max-guess)/(guess-V_over_F_min))
     
     # Should always converge - no poles
-    V_over_F = newton(err, guess, fprime=True, fprime2=True, ytol=1e-15)
+    try:
+        V_over_F = newton(err, guess, fprime=True, fprime2=True, ytol=1e-15)
+    except Exception as e:
+#        print(e)
+        low, high = V_over_F_min + 1e-8, V_over_F_max-1e-8
+        low = -log((V_over_F_max-low)/(low-V_over_F_min))
+        high = -log((V_over_F_max-high)/(high-V_over_F_min))
+        
+        V_over_F = brenth(lambda x: err(x)[0], low, high)
     V_over_F = (V_over_F_min + (V_over_F_max - V_over_F_min)/(1.0 + exp(-V_over_F)))
     
     xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]
@@ -1670,7 +1698,7 @@ def Rachford_Rice_solution_LN2(zs, Ks, guess=None):
     return V_over_F, xs, ys
 
 
-def Li_Johns_Ahmadi_solution(zs, Ks):
+def Li_Johns_Ahmadi_solution(zs, Ks, guess=None):
     r'''Solves the objective function of the Li-Johns-Ahmadi flash equation.
     Uses the method proposed in [1]_ to obtain an initial guess.
 
@@ -1737,33 +1765,70 @@ def Li_Johns_Ahmadi_solution(zs, Ks):
     # Smallest K value
     kn = Ks_sorted[-1]
 
-    x_min = (1. - kn)/(k1 - kn)*z1
     x_max = (1. - kn)/(k1 - kn)
+    x_min = x_max*z1
 
-    x_min2 = max(0., x_min)
-    x_max2 = min(1., x_max)
-
-    x_guess = (x_min2 + x_max2)*0.5
-
+    if x_min < 0.0:
+        x_min2 = 0.0
+    else:
+        x_min2 = x_min
+        
+    if x_max > 1.0:
+        x_max2 = 1.0
+    else:
+        x_max2 = x_max
+    
     length = len(zs)-1
-    kn_m_1 = kn-1.
-    k1_m_1 = (k1-1.)
-    t1 = (k1-kn)/(kn-1.)
+    kn_m_1 = kn - 1.0
+    k1_m_1 = (k1 - 1.0)
+    kn_m_1_inv = 1.0/kn_m_1
+    t1 = (k1 - kn)*kn_m_1_inv
+
+    x_guess = (x_min2 + x_max2)*0.5 if guess is None else z1/(guess*k1_m_1 + 1.0)
+
+    Ks_iter = Ks_sorted[1:length]
+    zs_iter = zs_sorted[1:length]
+    
+    
+    terms_2, terms_3 = [], []
+    for ki, zi in zip(Ks_iter, zs_iter):
+        term_1 = 1.0/((ki-kn)*kn_m_1_inv*zi*k1_m_1)
+        terms_2.append((ki - 1.0)*z1*term_1)
+        terms_3.append((k1 - ki)*term_1)
+        
+        
+        
+#    terms_1 = [(ki-kn)*kn_m_1_inv*zi*k1_m_1 for ki, zi in zip(Ks_iter, zs_iter)]
+#    terms_2 = [(ki - 1.0)*z1 for ki in Ks_iter]
+#    terms_3 = []
     
     def objective(x1):
-        return 1. + t1*x1 + sum([(ki-kn)/(kn_m_1) * zi*k1_m_1*x1 /( (ki-1.)*z1 + (k1-ki)*x1) for ki, zi in zip(Ks_sorted[1:length], zs_sorted[1:length])])
+        err = 1. + t1*x1
+        for term2, term3 in zip(terms_2, terms_3):
+            # evaluations: 2 mult, 1 div, 2 add
+            err += x1/(term2 + term3*x1)
+#        for ki, zi, term1, term2 in zip(Ks_iter, zs_iter, terms_1, terms_2):
+#            # evaluations: 2 mult, 1 div, 2 add
+#            err += term1*x1/(term2 + (k1-ki)*x1)
+#        print(err, x1)
+        return err
 
     try:
-        x1 = newton(objective, x_guess)
+        x1 = newton(objective, x_guess, low=x_min, high=x_max, ytol=1e-13)
         # newton skips out of its specified range in some cases, finding another solution
         # Check for that with asserts, and use brenth if it did
         # Must also check that V_over_F is right.
-        assert x1 >= x_min2
-        assert x1 <= x_max2
-        V_over_F = (-x1 + z1)/(x1*(k1 - 1.))
-        assert 0.0 <= V_over_F <= 1.0
-    except:
-        x1 = brenth(objective, x_min, x_max)
+        V_over_F = (z1 - x1)/(x1*k1_m_1)
+#        print('V_over_F', V_over_F)
+        
+        assert x1 >= x_min
+        assert x1 <= x_max
+#        assert 0.0 <= V_over_F <= 1.0
+    except Exception as e:
+#        print('using bounding')
+#        from fluids.numerics import py_bisect as bisect
+#        x1 = bisect(objective, x_min, x_max, ytol=1e-12)
+        x1 = brenth(objective, x_min, x_max) # , xtol=1e-12, rtol=0
         V_over_F = (-x1 + z1)/(x1*(k1 - 1.))
     xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]
     ys = [Ki*xi for xi, Ki in zip(xs, Ks)]
@@ -1804,7 +1869,7 @@ def flash_inner_loop_list_methods(l):
 
 
 def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
-                     limit=True, guess=None):
+                     limit=True, guess=None, check=False):
     r'''This function handles the solution of the inner loop of a flash
     calculation, solving for liquid and gas mole fractions and vapor fraction
     based on specified overall mole fractions and K values. As K values are
@@ -1823,6 +1888,9 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
         Equilibrium K-values, [-]
     guess : float, optional
         Optional initial guess for vapor fraction, [-]
+    check : bool, optional
+        Whether or not to check the K values to ensure a positive-composition
+        solution exists, [-]
 
     Returns
     -------
@@ -1876,6 +1944,18 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
     if Method is None:
         l = len(zs)
         Method = FLASH_INNER_ANALYTICAL if l < 5 else (FLASH_INNER_NUMPY if (not IS_PYPY and l >= 10) else FLASH_INNER_LN2)    
+    if check:
+        K_low, K_high = False, False
+        for K in Ks:
+            if K > 1.0:
+                K_high = True
+            else:
+                K_low = True
+            if K_high and K_low:
+                break
+        if not K_low or not K_high:
+            raise ValueError("For provided K values, there is no positive-composition solution; Ks=%s" %(Ks))
+
     if Method == FLASH_INNER_LN2:
         return Rachford_Rice_solution_LN2(zs, Ks, guess)
     elif Method == FLASH_INNER_SECANT:

@@ -1361,7 +1361,7 @@ class GCEOSMIX(GCEOS):
 
     def sequential_substitution_VL(self, Ks_initial=None, maxiter=1000,
                                    xtol=1E-13, near_critical=True, Ks_extra=None,
-                                   xs=None, ys=None, trivial_solution_tol=1e-5):
+                                   xs=None, ys=None, trivial_solution_tol=1e-5, info=None):
 #        print(self.zs, Ks)
         T, P, zs = self.T, self.P, self.zs
         V_over_F = None
@@ -1566,6 +1566,9 @@ class GCEOSMIX(GCEOS):
                 break
             if i == maxiter-1:
                 raise ValueError('End of SS without convergence')
+        
+        if info is not None:
+            info[:] = (i, err3)
         return V_over_F, xs, ys, eos_l, eos_g
 
     def stabiliy_iteration_Michelsen(self, T, P, zs, Ks_initial=None, 
