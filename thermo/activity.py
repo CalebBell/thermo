@@ -341,7 +341,7 @@ def flash_wilson(zs, Tcs, Pcs, omegas, T=None, P=None, VF=None):
         try:
             T_dew = abs(newton(to_solve, T_guess, maxiter=50, ytol=1e-2))
         except Exception as e:
-            print(e)
+#            print(e)
             T_dew = None
         if T_dew is None or T_dew > T_MAX*5.0: 
             # Went insanely high T, bound it with brenth
@@ -1683,10 +1683,10 @@ def Rachford_Rice_solution_LN2(zs, Ks, guess=None):
     
     # Should always converge - no poles
     try:
-        V_over_F = newton(err, guess, fprime=True, fprime2=True, ytol=1e-15)
+        V_over_F = newton(err, guess, fprime=True, fprime2=True, ytol=1e-8)
     except Exception as e:
 #        print(e)
-        low, high = V_over_F_min + 1e-8, V_over_F_max-1e-8
+        low, high = V_over_F_min + 1e-8, V_over_F_max - 1e-8
         low = -log((V_over_F_max-low)/(low-V_over_F_min))
         high = -log((V_over_F_max-high)/(high-V_over_F_min))
         
@@ -1995,7 +1995,8 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
     elif Method == FLASH_INNER_NR:
         return Rachford_Rice_solution(zs=zs, Ks=Ks, limit=limit, fprime=True)
     elif Method == FLASH_INNER_HALLEY:
-        return Rachford_Rice_solution(zs=zs, Ks=Ks, limit=limit, fprime=True, fprime2=True)
+        return Rachford_Rice_solution(zs=zs, Ks=Ks, limit=limit, fprime=True, 
+                                      fprime2=True)
     
     elif Method == FLASH_INNER_LJA:
         return Li_Johns_Ahmadi_solution(zs=zs, Ks=Ks)
