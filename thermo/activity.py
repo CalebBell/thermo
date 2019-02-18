@@ -1656,9 +1656,11 @@ def Rachford_Rice_solution_LN2(zs, Ks, guess=None):
     def err(y):
         x1 = exp(-y)
         x3 = 1.0/(x1 + 1.0)
-        x6 = x0*x3*x3
+        x0x3 = x0*x3
+        
+        x6 = x0x3*x3
         x1x6 = x1*x6
-        t50 = V_over_F_min + x0*x3
+        t50 = V_over_F_min + x0x3
         t51 = 1.0 - 2.0*x1*x3
         
         F0, dF0, ddF0 = 0.0, 0.0, 0.0
@@ -1675,7 +1677,6 @@ def Rachford_Rice_solution_LN2(zs, Ks, guess=None):
             dF0 -= x7
             ddF0 += x7*(t51 + x5x1x6 + x5x1x6)      
         
-#        print(y, F0)
         return F0, dF0, ddF0
     
     # Suggests guess V_over_F_min, not using
@@ -1685,7 +1686,6 @@ def Rachford_Rice_solution_LN2(zs, Ks, guess=None):
     try:
         V_over_F = newton(err, guess, fprime=True, fprime2=True, ytol=1e-8)
     except Exception as e:
-#        print(e)
         low, high = V_over_F_min + 1e-8, V_over_F_max - 1e-8
         low = -log((V_over_F_max-low)/(low-V_over_F_min))
         high = -log((V_over_F_max-high)/(high-V_over_F_min))

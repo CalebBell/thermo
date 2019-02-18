@@ -2288,11 +2288,17 @@ class GceosBase(Ideal):
         if phase == 'g':
             for zi, obj in zip(zs, HeatCapacityGases):
                 H += zi*obj.T_dependent_property(T)
-            H += eos_g.dH_dep_dT_g
+            try:
+                H += eos_g.dH_dep_dT_g
+            except AttributeError:
+                H += eos_g.dH_dep_dT_l
         elif phase == 'l':
             for i in cmps:
                 H += zs[i]*HeatCapacityGases[i].T_dependent_property(T)
-            H += eos_l.dH_dep_dT_l
+            try:
+                H += eos_l.dH_dep_dT_l
+            except AttributeError:
+                H += eos_l.dH_dep_dT_g
         elif phase == 'l/g':
             raise ValueError
         return H
@@ -2311,11 +2317,17 @@ class GceosBase(Ideal):
         if phase == 'g':
             for zi, obj in zip(zs, HeatCapacityGases):
                 H += zi*obj.T_dependent_property_integral(T_REF_IG, T)
-            H += eos_g.H_dep_g
+            try:
+                H += eos_g.H_dep_g
+            except AttributeError:
+                H += eos_g.H_dep_l
         elif phase == 'l':
             for zi, obj in zip(zs, HeatCapacityGases):
                 H += zi*obj.T_dependent_property_integral(T_REF_IG, T)
-            H += eos_l.H_dep_l
+            try:
+                H += eos_l.H_dep_l
+            except AttributeError:
+                H += eos_l.H_dep_g
         elif phase == 'l/g':
             try:
                 H_l = eos_l.H_dep_l
@@ -2324,7 +2336,7 @@ class GceosBase(Ideal):
             
             try:
                 H_g = eos_g.H_dep_g
-            except:
+            except AttributeError:
                 H_g = eos_g.H_dep_l
             
             dH_integrals = [obj.T_dependent_property_integral(T_REF_IG, T)for obj in HeatCapacityGases]
@@ -2449,6 +2461,52 @@ class GceosBase(Ideal):
     def Cvlm(self):
         return self.Cplm - Cp_minus_Cv(T=self.T, dP_dT=self.eos_l.dP_dT_l, dP_dV=self.eos_l.dP_dV_l)
 
+    def flash_caloric(self, zs, T=None, P=None, VF=None, Hm=None, Sm=None):
+        if not self.SUPPORTS_ZERO_FRACTIONS:
+            zs = remove_zeros(zs, self.zero_fraction)
+        self.zs = zs
+            
+        try:
+            if T is not None and Sm is not None:
+                # TS
+                pass
+            elif P is not None and Sm is not None:
+                pass
+                # PS
+            elif P is not None and Hm is not None:
+                phase, xs, ys, V_over_F, T = self.flash_PH_zs(P, Hm, zs)
+                # PH
+
+            elif ((T is not None and P is not None) or
+                (T is not None and VF is not None) or
+                (P is not None and VF is not None)):
+                  # non thermo flashes
+                  pass
+            else:
+                raise Exception('Flash inputs unsupported')
+    
+            self.T = T
+            self.V_over_F = V_over_F
+            self.xs = xs
+            self.ys = ys
+            self.phase = phase
+    
+#            ''' The routine needs to be upgraded to set these properties
+#                self.T = T
+#                self.P = P
+#                self.V_over_F = V_over_F
+#                self.phase = phase
+#                self.xs = xs
+#                self.ys = ys
+#                self.zs = zs
+#            '''
+            self._post_flash()
+            self.status = True
+        except Exception as e:
+            # Write Nones for everything here
+            self.status = e
+            self._set_failure()
+
 
     def _post_flash(self):
         # Note: compositions are not being checked!
@@ -2544,6 +2602,32 @@ class GceosBase(Ideal):
         print(eos_l.sequential_substitution_3P(Ks_y, Ks_z, beta_y, beta_z=beta_z))
         
         
+    def stability_test_VL(self, T, P, zs, require_convergence=False,
+                          eos=None):
+        if eos is None:
+            eos = self.to_TP_zs(T=T, P=P, zs=zs, fugacities=False)
+        
+        stable = True
+        guess_generator = self.stability_tester.guess_generator(T=T, P=P, zs=zs, 
+                                                   pure=self.pure_guesses,
+                                                   Wilson=self.Wilson_guesses,
+                                                   random=self.random_guesses,
+                                                   zero_fraction=self.zero_fraction_guesses)
+        for trial_comp in guess_generator:
+            for Ks in ([comp_i/zi for comp_i, zi in zip(trial_comp, zs)],
+                        [zi/comp_i for comp_i, zi in zip(trial_comp, zs)]):
+                try:
+                    stable, Ks_initial, Ks_extra = eos.stability_Michelsen(T=T, P=P, zs=zs,
+                                                              Ks_initial=Ks, 
+                                                              maxiter=self.stability_maxiter, 
+                                                              xtol=self.stability_xtol)
+                except UnconvergedError as e:
+                    if require_convergence:
+                        raise e
+                if not stable:
+                    return stable, Ks_initial, Ks_extra
+        return stable, None, None
+
 
     def flash_TP_zs(self, T, P, zs, Wilson_first=True):
         info = []
@@ -2799,7 +2883,8 @@ class GceosBase(Ideal):
         return 'l/g', xs, ys, VF, P
 
     def PH_Michelson(self, T_guess, P, zs, H_goal, maxiter=100, tol=1e-6,
-                     VF_guess_init=None, damping=1.0, analytical=True):
+                     VF_guess_init=None, damping=1.0, analytical=True,
+                     max_T_step=30):
         
         Ks = [Wilson_K_value(T_guess, P, Tci, Pci, omega) for Pci, Tci, omega in
               zip(self.Pcs, self.Tcs, self.omegas)]
@@ -2811,16 +2896,55 @@ class GceosBase(Ideal):
         store['xs'] = xs
         store['ys'] = ys
         def err_fun(T_V_over_F, zs, Ks, jac=True):
-#            print('calling', Ks)
             T, V_over_F = float(T_V_over_F[0]), float(T_V_over_F[1])
-            
-            V_over_F2, xs, ys = flash_inner_loop(zs=zs, Ks=Ks)
+#            print('calling', T, V_over_F)
+#            print('Ks', Ks)
+            try:
+                V_over_F2, xs, ys = flash_inner_loop(zs=zs, Ks=Ks, check=True)
+            except:
+                # Likely proceeded to Ks which have no solution
+                Ks = [Wilson_K_value(T, P, Tci, Pci, omega) for Pci, Tci, omega in
+                      zip(self.Pcs, self.Tcs, self.omegas)]
+                V_over_F2, xs, ys = flash_inner_loop(zs=zs, Ks=Ks, check=True)
 
+#            print(xs, ys, 'xs and ys')
             eos_l = self.to_TP_zs(T=T, P=P, zs=xs, fugacities=True)
             eos_g = self.to_TP_zs(T=T, P=P, zs=ys, fugacities=True)
 
-            # Calculate the enthalpy
-            H_calc = self.enthalpy_eosmix(T_guess, P, V_over_F, zs, xs, ys, eos_l, eos_g, 'l/g')        
+            # Calculate the enthalpy - TODO do it here!
+            T_REF_IG = self.T_REF_IG
+            HeatCapacityGases = self.HeatCapacityGases
+            dH_integrals = Hils = Higs = [obj.T_dependent_property_integral(T_REF_IG, T) for obj in HeatCapacityGases]
+            Cpls = Cpgs = [obj.T_dependent_property(T) for obj in HeatCapacityGases]
+            
+            try:
+                H_dep_g = eos_g.H_dep_g
+            except AttributeError:
+                H_dep_g = eos_g.H_dep_l
+            try:
+                H_dep_l = eos_l.H_dep_l
+            except AttributeError:
+                H_dep_l = eos_l.H_dep_g
+
+            try:
+                dH_dep_dT_g = eos_g.dH_dep_dT_g
+            except AttributeError:
+                dH_dep_dT_g = eos_g.dH_dep_dT_l
+            try:
+                dH_dep_dT_l = eos_l.dH_dep_dT_l
+            except AttributeError:
+                dH_dep_dT_l = eos_l.dH_dep_dT_g
+                
+            H_g, H_l = H_dep_g, H_dep_l
+            for xi, yi, dH in zip(xs, ys, dH_integrals):
+                H_g += yi*dH
+                H_l += xi*dH
+            H_calc = H_g*V_over_F + H_l*(1.0 - V_over_F)
+
+
+
+#            H_calc = self.enthalpy_eosmix(T, P, V_over_F, zs, xs, ys, eos_l, eos_g, 'l/g')    
+#            print(H_calc2, H_calc, T)
             g2 = H_calc - H_goal
             
             lnphis_l = eos_l.eos_lnphis_lowest_Gibbs()[0]
@@ -2828,6 +2952,8 @@ class GceosBase(Ideal):
             
             Ks = [exp(l - g) for l, g in zip(lnphis_l, lnphis_g)]
             g1 = Rachford_Rice_flash_error(V_over_F, zs, Ks)
+            
+#            print(T, V_over_F)
             
             store['eos_l'] = eos_l
             store['eos_g'] = eos_g
@@ -2844,52 +2970,153 @@ class GceosBase(Ideal):
                 
             _, dKs_dT = self.Ks_and_dKs_dT(eos_l, eos_g, xs, ys)
 
+            # Derived as follows:
+            '''
+            from sympy import *
+            zi, Ki, VF, T = symbols('zi, Ki, VF, T ')
+            expr = zi*(Ki(T)-1)/(1+VF*(Ki(T)-1))
+            simplify(diff(expr, T))
+            '''
             d_RR1_dT = 0.0
-            for dK_dT, ti, zi, Ki in zip(dKs_dT, ts, zs, Ks):
-                d_RR1_dT += zi/(ti*ti)*(ti*Ki*dK_dT - V_over_F*Ki*(Ki - 1.0)*dK_dT)
+            for dK_dTi, ti, zi, Ki in zip(dKs_dT, ts, zs, Ks):
+                den_inv = 1.0/(V_over_F*(Ki - 1.0) + 1.0)
+#                zi*dK_dTi/(VF*(Ki - 1) + 1)**2
+                d_RR1_dT +=zi*dK_dTi*den_inv*den_inv
                 
-            d_H_d_beta = (self.enthalpy_eosmix(T_guess, P, V_over_F, ys, ys, ys, eos_l, eos_g, 'g')
-            - self.enthalpy_eosmix(T_guess, P, V_over_F, xs, xs, xs, eos_l, eos_g, 'l'))
-            
-            
-            dH_dep_dT_g = eos_g.dH_dep_dT_g
-            dH_dep_dT_l = eos_l.dH_dep_dT_l
-            
-            tot1, tot2 = 0.0, 0.0
-#            d_beta_d_T = 0.0
-            for dK_dT, ti, zi, Ki in zip(dKs_dT, ts, zs, Ks):
-                tot1 += zi*dK_dT
-                tot2 += (1.0 - Ki)*(1.0 - Ki)*zi
+#                d_RR1_dT += zi/(ti*ti)*(ti*Ki*dK_dTi - V_over_F*Ki*(Ki - 1.0)*dK_dTi)
                 
-            d_beta_d_T = tot1/tot2
+#                d_RR1_dT += -V_over_F*zi*(Ki - 1.)*dK_dTi/(V_over_F*(Ki - 1.) + 1.)**2 + zi*dK_dTi/(V_over_F*(Ki - 1.) + 1.)
+            
+#            print('start2')
+            '''Confirmed easily!
+            from sympy import *
+            zi, Ki, VF, T = symbols('zi, Ki, VF, T ')
+            x1, x2, y1, y2, H1l, H2l, H1g, H2g, Hdepl, Hdepg = symbols('x1, x2, y1, y2, H1l, H2l, H1g, H2g, Hdepl, Hdepg')
+            expr = VF(T)*(Hdepg(T) + H1g(T)*y1(T) + H2g(T)*y2(T)) + (1 - VF(T))*(Hdepl(T) + H1l(T)*x1(T) + H2l(T)*x2(T))
+            diff(expr, VF(T))
+            '''
+#            d_H_d_beta = (self.enthalpy_eosmix(T, P, V_over_F, ys, ys, ys, eos_l, eos_g, 'g')
+#                          - self.enthalpy_eosmix(T, P, V_over_F, xs, xs, xs, eos_l, eos_g, 'l'))
+#            print('end2')
+            d_H_d_beta = H_g- H_l
+
+
+
+            
+            # This is simply not correct!
+            # Actually, this is not even used.
+#            tot1, tot2 = 0.0, 0.0
+##            d_beta_d_T = 0.0
+#            for dK_dT, zi, Ki in zip(dKs_dT, zs, Ks):
+#                tot1 += zi*dK_dT
+#                tot2 += (1.0 - Ki)*(1.0 - Ki)*zi
+#                
+#            d_beta_d_T = tot1/tot2
+#            d_beta_d_T2 = -d_beta_d_T
+            
+            delta = 1e-3
+            Ks_perturb = [Ki + dKi*delta for Ki, dKi in zip(Ks, dKs_dT)]
+            VF_perturb, xs2, ys2 = flash_inner_loop(zs, Ks_perturb, guess=V_over_F)
+            d_beta_d_T = (VF_perturb - V_over_F)/delta
+            d_beta_d_T2 = -d_beta_d_T
             
             
+            
+            # Take the composition derivatives from the RR
+            dx_dTs = [(x2 - x1)/delta for x1, x2 in zip(xs, xs2)]
+            dy_dTs = [(y2 - y1)/delta for y1, y2 in zip(ys, ys2)]
+
+
             # It is believed this is wrong! Need a set of dx_dT for liquid phase!
-            dx_dTs = []
-            for dK_dT, ti, zi, Ki in zip(dKs_dT, ts, zs, Ks):
-                dxi_dT = (zi*dK_dT*ti - zi*Ki*(d_beta_d_T*(Ki - 1.0) + V_over_F*dK_dT))/(ti*ti)
-                dx_dTs.append(dxi_dT)
+#            print('TO TEST', Ks, dKs_dT, V_over_F, d_beta_d_T)
+#            dy_dTs = []
+#            for dK_dT, ti, zi, Ki in zip(dKs_dT, ts, zs, Ks):
+#                dyi_dT = (zi*dK_dT*ti - zi*Ki*(d_beta_d_T*(Ki - 1.0) + V_over_F*dK_dT))/(ti*ti)
+#                dy_dTs.append(dyi_dT)
+#
+#            dx_dTs = []
+#            for dK_dT, ti, zi, Ki in zip(dKs_dT, ts, zs, Ks):
+#                dxi_dT = (zi*dK_dT*ti - zi*Ki*(d_beta_d_T2*(Ki - 1.0) + V_over_F*dK_dT))/(ti*ti)
+#                dx_dTs.append(dxi_dT)
+##
+#            dx_dTs2 = []
+#            dy_dTs2 = []
+#            for Ki, dK_dTi, zi in zip(Ks, dKs_dT, zs):
+#                x0 = V_over_F
+#                x1 = Ki
+#                x2 = x1 - 1.0
+#                x3 = x0*x2 + 1.0
+#                x4 = zi/x3**2
+#                x5 = dK_dTi
+#                x6 = x0*x5 + x2*d_beta_d_T
+#                dx_dTs2.append(-x4*x6)
+#                dy_dTs2.append(-x1*x6 + x3*x5)
+#            dx_dTs, dy_dTs = dx_dTs2, dy_dTs2
+#            print(dx_dTs, dx_dTs2)
+#            print(dy_dTs, dy_dTs2)
 
 
-            T_REF_IG = self.T_REF_IG
-            HeatCapacityGases = self.HeatCapacityGases
+
+
+
+
+
+
+            tot1 = 0.0 # sum Hi(L)*dxi/dT
+            tot2 = 0.0 # sum xi*dHil_dT = xi*Cpl
+            
+            tot3 = 0.0 # sum Hi(g)*dyi_dT
+            tot4 = 0.0 # sum yi*dHig_dT = yi*Cpg
+            
+            # tot5 and tot6 are zero in the first point because of starting at the reference point
+            tot5 = 0.0 # sum Hi(g)*yi
+            tot6 = 0.0 # sum Hil*xi
+            for xi, yi, Hil, Hig, Cpl, Cpg, dxi_dT, dyi_dT in zip(xs, ys, Hils, Higs, Cpls, Cpgs, dx_dTs, dy_dTs):
+                tot1 += Hil*dxi_dT
+                tot2 += xi*Cpl
+                
+                tot3 += Hig*dyi_dT
+                tot4 += yi*Cpg
+                
+#                print(Hig*yi, Hil*xi, xi, yi, Hig, Hil, 'in loop')
+                tot5 += Hig*yi
+                tot6 += Hil*xi
+                
+#            print(d_beta_d_T*(tot5 + H_dep_g), d_beta_d_T*(tot6 + H_dep_l), tot5, H_dep_g, tot6, H_dep_l)
+            d_H_dT = ((1.0 - V_over_F)*(tot1 + tot2 + dH_dep_dT_l)
+#                       + d_beta_d_T*(tot5 + H_dep_g)
+#                       - d_beta_d_T*(tot6 + H_dep_l)
+                       + V_over_F*(tot3 + tot4 + dH_dep_dT_g))
+            
+            # Can I finite difference d_H_dT using the xs2, ys2, dH_dep_l and g?
+            
+
             
             
-            d_H_dT = 0.0
             tot1, tot2, tot3, tot4  = 0.0, 0.0, 0.0, 0.0
             
-            
-            for dK_dT, ti, zi, Ki, dx_dT, obj, xi, yi in zip(dKs_dT, ts, zs, Ks, dx_dTs, HeatCapacityGases, xs, ys):
-                tot1 += dx_dT*obj.T_dependent_property_integral(T_REF_IG, T)/H_goal
-                tot2 += xi/H_goal*obj.T_dependent_property(T)
+            # If H_goal is not used as part of the expression, it is the same as one of the ones above
+            H_goal_inv = 1.0/H_goal
+#            H_goal_inv = 1.0
+            for dK_dT, ti, zi, Ki, dx_dT, dy_dT, obj, xi, yi in zip(dKs_dT, ts, zs, Ks, dx_dTs, dy_dTs, HeatCapacityGases, xs, ys):
+                x1 = obj.T_dependent_property_integral(T_REF_IG, T)*H_goal_inv
+                x2 = obj.T_dependent_property(T)
+                
+                tot1 += dx_dT*x1
+                tot2 += xi*H_goal_inv*x2
 
-                tot3 += dx_dT*obj.T_dependent_property_integral(T_REF_IG, T)/H_goal
-                tot4 += yi/H_goal*obj.T_dependent_property(T)
+                tot3 += dy_dT*x1
+                tot4 += yi*H_goal_inv*x2
                 
                 
                 
-            d_H_dT = (V_over_F*(tot1 + tot2 + dH_dep_dT_g) 
-                      + (1.0 - V_over_F)*(tot3 + tot4 + dH_dep_dT_l))
+            d_H_dT2 = (V_over_F*(tot3 + tot4 + dH_dep_dT_g) 
+            
+#                       + d_beta_d_T*(tot5 + H_dep_g)
+#                       - d_beta_d_T*(tot6 + H_dep_l)
+            
+                      + (1.0 - V_over_F)*(tot1 + tot2 + dH_dep_dT_l))
+#            print(d_H_dT, d_H_dT2, 'two values')
             
             store['dKs_dT'] = dKs_dT
 #            Hg_ideal(self, T, zs), Cpg_ideal(self, T, zs)
@@ -2912,12 +3139,13 @@ class GceosBase(Ideal):
         Ts_attempt = [T_guess]
         VFs_attempt = [V_over_F]
         iter = 0
+        analytical = False
         
         while iter < maxiter:
             fcur, j_analytical = err_fun([T_guess, V_over_F], zs, Ks, jac=True)
             
             err =  abs(fcur[0]) + abs(fcur[1])
-            print(T_guess, V_over_F, fcur)
+#            print(T_guess, V_over_F, fcur)
             
             if err < tol:
                 break
@@ -2928,10 +3156,12 @@ class GceosBase(Ideal):
                 except:
                     pass
 
-                j_obj = Jacobian(to_Jac, step=1e-4)
+                j_obj = Jacobian(to_Jac, step=1e-5)
                 j = j_obj([T_guess, V_over_F])
-    #            print(fcur, j)
-    #            print(j/j_analytical, 'hi')
+                print('CURRENT ERROR', fcur)
+                print('ANALYTICAL JACOBIAN', j_analytical)
+                print('NUMERICAL JACOBIAN', j.tolist())
+                print('JACOBIAN RATIO', (j/j_analytical).tolist())
     #            print(j)
     #            print(j_analytical)
             
@@ -2940,8 +3170,23 @@ class GceosBase(Ideal):
             
             
 #            break
+                
             dx = py_solve(j, [-v for v in fcur])
-            T_guess, V_over_F = [xi + dxi*damping for xi, dxi in zip([T_guess, V_over_F], dx)]
+            # The damping actually makes it take fewer iterations 
+#            if abs(dx[0]) < 2 :
+#                damping = 1
+            T_step = dx[0]*damping
+            if abs(T_step) > max_T_step:
+                T_step = copysign(max_T_step, T_step)
+            T_guess = T_guess + T_step
+                
+            V_over_F = V_over_F + dx[1]
+
+
+#            T_guess2, V_over_F = [xi + dxi*damping for xi, dxi in zip([T_guess, V_over_F], dx)]
+#            if abs(T_guess - T_guess2) > max_T_step:
+#                T_guess2 = 
+            
             
             dKs_dT = store['dKs_dT']
 #            _, dKs_dT = self.Ks_and_dKs_dT(store['eos_l'], store['eos_g'], store['xs'], store['ys'])
@@ -2957,6 +3202,8 @@ class GceosBase(Ideal):
             VFs_attempt.append(V_over_F)
             
             iter += 1
+        if iter == maxiter:
+            raise ValueError("Did not converge PH 2 phase flash")
         # What needs to be returned?
         eos_l = store['eos_l']
         eos_g = store['eos_g']
@@ -2964,6 +3211,7 @@ class GceosBase(Ideal):
         ys = store['ys']
         
         self.eos_l, self.eos_g = eos_l, eos_g
+        print(iter)
         return 'l/g', xs, ys, V_over_F, T_guess
 
     def PH_Agarwal(self, T_guess, P, zs, H_goal, maxiter=100, tol=1e-6,
@@ -3063,7 +3311,7 @@ class GceosBase(Ideal):
             fcur = err_fun([T_guess, V_over_F], zs, Ks)
             
             err =  abs(fcur[0]) + abs(fcur[1])
-            print(T_guess, V_over_F, fcur)
+#            print(T_guess, V_over_F, fcur)
             
             if err < tol:
                 break
@@ -3112,6 +3360,7 @@ class GceosBase(Ideal):
             eos_l, eos_g = eos_phase, None
         else:
             eos_l, eos_g = None, eos_phase
+            
         H_calc = self.enthalpy_eosmix(T, P, None, zs, None, None, eos_l, eos_g, phase)
         err = H_calc - H_goal
         
@@ -3216,31 +3465,63 @@ class GceosBase(Ideal):
 #                print(ans, 'done')
                 break
             except Exception as e:
-                print(e)
                 continue
         if ans is None:
             raise ValueError("Could not converge 1 phase")
+
+
+
+
 
         info = calcs[ans]
         return ans, info[1], info[0]
         
 
-    def flash_PH_zs(P, Hm, zs, T_guess=None, xs_guess=None, ys_guess=None,
+    def flash_PH_zs(self, P, Hm, zs, T_guess=None, xs_guess=None, ys_guess=None,
                  algorithms=[DIRECT_1P, DIRECT_2P, RIGOROUS_BISECTION],
-                 maxaiter=100, tol=1e-4, damping=1):
+                 maxiter=100, tol=1e-4, damping=0.5):
+        '''Write some documentation
+        '''
         for algorithm in algorithms:
             try:
                 if algorithm == DIRECT_1P:
-                    T, eos = self.flash_PH_1P(P, Hm, zs, T_guess)
-                    # A stability test is REQUIRED!
+                    T, phase, eos = self.flash_PH_1P(P, Hm, zs, T_guess)
+                    try:
+                        if eos.G_dep_l < eos.G_dep_g:
+                            xs, ys, V_over_F = zs, None, 0.0
+                            self.eos_l = eos
+                        else:
+                            xs, ys, V_over_F = None, zs, 1.0
+                            self.eos_g = eos
+                    except:
+                        if hasattr(eos, 'G_dep_g'):
+                            xs, ys, V_over_F = None, zs, 1.0
+                            self.eos_g = eos
+                        else:
+                            xs, ys, V_over_F = zs, None, 0.0
+                            self.eos_l = eos
+                            
+#                    print('Single phase T solution', T)
+                    stable, _, _ = self.stability_test_VL(T, P, zs, eos=eos)
+                    if not stable:
+                        raise ValueError("One phase solution is unstable")
+                    return phase, xs, ys, V_over_F, T
+
+                    
+                    # A stability test is REQUIRED! Very important!
                     # Try to refactor some of the code from the PT flash.
                 elif algorithm == DIRECT_2P:
                     if T_guess is None:
                         T_guess = 298.15
-                    phase, xs, ys, V_over_F, T_guess = self.PH_Michelson(T_guess, P, zs, Hm, maxiter=maxiter, tol=tol,
-                                                                         VF_guess_init=None, damping=damping, analytical=True)
+                    phase, xs, ys, V_over_F, T = self.PH_Michelson(T_guess, P, zs, Hm, maxiter=maxiter, tol=tol,
+                                                                   VF_guess_init=None, damping=damping, analytical=True)
+                    return phase, xs, ys, V_over_F, T
                     
-            except:
+                    
+                    
+                    # should return phase, xs, ys, V_over_F, T
+            except Exception as e:
+                print(e)
                 pass
 
 
@@ -4812,22 +5093,24 @@ class GceosBase(Ideal):
         return Ks, dKs_dP
 
     def Ks_and_dKs_dT(self, eos_l, eos_g, xs, ys):
-        eos_l.fugacities()
-        eos_g.fugacities()
         
         try:
-            lnphis_l = eos_l.lnphis_l
-            dlnphis_l_dT = eos_l.d_lnphis_dT(eos_l.Z_l, eos_l.dZ_dT_l, xs)
+            try:
+                lnphis_l = eos_l.lnphis_l
+                dlnphis_l_dT = eos_l.d_lnphis_dT(eos_l.Z_l, eos_l.dZ_dT_l, xs)
+            except:
+                lnphis_l = eos_l.lnphis_g
+                dlnphis_l_dT = eos_l.d_lnphis_dT(eos_l.Z_g, eos_l.dZ_dT_g, xs)
+            try:
+                lnphis_g = eos_g.lnphis_g
+                dlnphis_g_dT = eos_g.d_lnphis_dT(eos_g.Z_g, eos_g.dZ_dT_g, ys)
+            except:
+                lnphis_g = eos_g.lnphis_l
+                dlnphis_g_dT = eos_g.d_lnphis_dT(eos_g.Z_l, eos_g.dZ_dT_l, ys)
         except:
-            lnphis_l = eos_l.lnphis_g
-            dlnphis_l_dT = eos_l.d_lnphis_dT(eos_l.Z_g, eos_l.dZ_dT_g, xs)
-        try:
-            lnphis_g = eos_g.lnphis_g
-            dlnphis_g_dT = eos_g.d_lnphis_dT(eos_g.Z_g, eos_g.dZ_dT_g, ys)
-        except:
-            lnphis_g = eos_g.lnphis_l
-            dlnphis_g_dT = eos_g.d_lnphis_dT(eos_g.Z_l, eos_g.dZ_dT_l, ys)
-        
+            eos_l.fugacities()
+            eos_g.fugacities()
+            return self.Ks_and_dKs_dT(eos_l, eos_g, xs, ys)
         
         Ks = [exp(l - g) for l, g in zip(lnphis_l, lnphis_g)]
         dKs_dT = [(l - g)*Ki for l, g, Ki in zip(dlnphis_l_dT, dlnphis_g_dT, Ks)]
