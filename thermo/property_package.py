@@ -50,7 +50,7 @@ from copy import copy
 from random import uniform, shuffle, seed
 import numpy as np
 from scipy.optimize import golden, brent, minimize, fmin_slsqp, fsolve
-from fluids.numerics import ridder, derivative, py_newton as newton, linspace, logspace, py_brenth as brenth, py_solve, oscillation_checker
+from fluids.numerics import ridder, derivative, py_newton as newton, linspace, logspace, py_brenth as brenth, py_solve, oscillation_checker, secant
 
 from thermo.utils import log, log10, exp, copysign
 from thermo.utils import has_matplotlib, R, pi, N_A
@@ -63,7 +63,7 @@ from thermo.activity import get_T_bub_est, get_T_dew_est, get_P_dew_est, get_P_b
 from thermo.unifac import UNIFAC, UFSG, DOUFSG, DOUFIP2006
 from thermo.eos_mix import *
 from thermo.eos import *
-from thermo.heat_capacity import Lastovka_Shaw_T_for_Hm, Dadgostar_Shaw_integral
+from thermo.heat_capacity import Lastovka_Shaw_T_for_Hm, Dadgostar_Shaw_integral, Lastovka_Shaw_integral
 from thermo.phase_change import SMK
 
 
@@ -2678,7 +2678,7 @@ class GceosBase(Ideal):
                 
                 
                 except Exception as e:
-                    print(e, 'Wilson flash fail')
+#                    print(e, 'Wilson flash fail')
                     pass
         
         
@@ -2906,6 +2906,9 @@ class GceosBase(Ideal):
                 Ks = [Wilson_K_value(T, P, Tci, Pci, omega) for Pci, Tci, omega in
                       zip(self.Pcs, self.Tcs, self.omegas)]
                 V_over_F2, xs, ys = flash_inner_loop(zs=zs, Ks=Ks, check=True)
+#            print(Ks)
+#            xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)] # if zi != 0.0
+#            ys = [Ki*xi for xi, Ki in zip(xs, Ks)]
 
 #            print(xs, ys, 'xs and ys')
             eos_l = self.to_TP_zs(T=T, P=P, zs=xs, fugacities=True)
@@ -2998,7 +3001,7 @@ class GceosBase(Ideal):
 #            d_H_d_beta = (self.enthalpy_eosmix(T, P, V_over_F, ys, ys, ys, eos_l, eos_g, 'g')
 #                          - self.enthalpy_eosmix(T, P, V_over_F, xs, xs, xs, eos_l, eos_g, 'l'))
 #            print('end2')
-            d_H_d_beta = H_g- H_l
+            d_H_d_beta = H_g - H_l
 
 
 
@@ -3089,18 +3092,14 @@ class GceosBase(Ideal):
                        + V_over_F*(tot3 + tot4 + dH_dep_dT_g))
             
             # Can I finite difference d_H_dT using the xs2, ys2, dH_dep_l and g?
-            
-
-            
-            
             tot1, tot2, tot3, tot4  = 0.0, 0.0, 0.0, 0.0
             
             # If H_goal is not used as part of the expression, it is the same as one of the ones above
             H_goal_inv = 1.0/H_goal
 #            H_goal_inv = 1.0
-            for dK_dT, ti, zi, Ki, dx_dT, dy_dT, obj, xi, yi in zip(dKs_dT, ts, zs, Ks, dx_dTs, dy_dTs, HeatCapacityGases, xs, ys):
-                x1 = obj.T_dependent_property_integral(T_REF_IG, T)*H_goal_inv
-                x2 = obj.T_dependent_property(T)
+            for dK_dT, ti, zi, Ki, dx_dT, dy_dT, obj, xi, yi, dH, Cp in zip(dKs_dT, ts, zs, Ks, dx_dTs, dy_dTs, HeatCapacityGases, xs, ys, dH_integrals, Cpls):
+                x1 = dH*H_goal_inv
+                x2 = Cp
                 
                 tot1 += dx_dT*x1
                 tot2 += xi*H_goal_inv*x2
@@ -3110,7 +3109,7 @@ class GceosBase(Ideal):
                 
                 
                 
-            d_H_dT2 = (V_over_F*(tot3 + tot4 + dH_dep_dT_g) 
+            d_H_dT = (V_over_F*(tot3 + tot4 + dH_dep_dT_g) 
             
 #                       + d_beta_d_T*(tot5 + H_dep_g)
 #                       - d_beta_d_T*(tot6 + H_dep_l)
@@ -3139,7 +3138,7 @@ class GceosBase(Ideal):
         Ts_attempt = [T_guess]
         VFs_attempt = [V_over_F]
         iter = 0
-        analytical = False
+#        analytical = False
         
         while iter < maxiter:
             fcur, j_analytical = err_fun([T_guess, V_over_F], zs, Ks, jac=True)
@@ -3150,19 +3149,19 @@ class GceosBase(Ideal):
             if err < tol:
                 break
             
-            if not analytical:
-                try:
-                    from numdifftools.core import Jacobian
-                except:
-                    pass
-
-                j_obj = Jacobian(to_Jac, step=1e-5)
-                j = j_obj([T_guess, V_over_F])
-                print('CURRENT ERROR', fcur)
-                print('ANALYTICAL JACOBIAN', j_analytical)
-                print('NUMERICAL JACOBIAN', j.tolist())
-                print('JACOBIAN RATIO', (j/j_analytical).tolist())
-    #            print(j)
+#            if not analytical:
+#            try:
+#                from numdifftools.core import Jacobian
+#            except:
+#                pass
+#
+#            j_obj = Jacobian(to_Jac, step=1e-5)
+#            j = j_obj([T_guess, V_over_F])
+#            print('CURRENT ERROR', fcur)
+#            print('ANALYTICAL JACOBIAN', j_analytical)
+#            print('NUMERICAL JACOBIAN', j.tolist())
+#            print('JACOBIAN RATIO', (j/j_analytical).tolist())
+#    #            print(j)
     #            print(j_analytical)
             
             if analytical:
@@ -3211,7 +3210,7 @@ class GceosBase(Ideal):
         ys = store['ys']
         
         self.eos_l, self.eos_g = eos_l, eos_g
-        print(iter)
+#        print(iter)
         return 'l/g', xs, ys, V_over_F, T_guess
 
     def PH_Agarwal(self, T_guess, P, zs, H_goal, maxiter=100, tol=1e-6,
@@ -3396,7 +3395,7 @@ class GceosBase(Ideal):
         return {'T': T_goal}
 
 
-    def PH_T_guesses(self, P, Hm, zs, T_guess=None):
+    def PH_T_guesses_1P(self, P, Hm, zs, T_guess=None):
         i = -1 if T_guess is not None else 0
         while i < 3:
             try:
@@ -3431,12 +3430,57 @@ class GceosBase(Ideal):
 #                print(e)
                 pass
             i += 1
+    
+    def PH_T_guesses_2P(self, P, Hm, zs, T_guess=None):
+        i = -1 if T_guess is not None else 0
+        while i < 3:
+            try:
+                if i == -1:
+                    yield T_guess
+                elif i == 0:
+                    MW = mixing_simple(zs, self.MWs)
+                    atoms = mixture_atomic_composition(self.atomss, zs)
+                    sv = similarity_variable(atoms, MW=MW)
+                                        
+                    def approx_H(Hm, P, MW, similarity_variable, Tcs, Pcs, omegas,
+                                 T_ref=298.15, 
+                                 factor=1.0):
+                        Tc = mixing_simple(zs, Tcs)
+                        omega = mixing_simple(zs, omegas)
+                        H_ref_LS = Lastovka_Shaw_integral(T_ref, similarity_variable)
+                        H_ref_DS = Dadgostar_Shaw_integral(T_ref, similarity_variable)
+                        def Hm_approx_basic(T, V_over_F):
+                            H1 = Lastovka_Shaw_integral(T, similarity_variable)
+                            dH = H1 - H_ref_LS
+                            H_gas = property_mass_to_molar(dH, MW)*factor
+                            Hvap = SMK(T, Tc, omega)
+                            H1 = Dadgostar_Shaw_integral(T, similarity_variable)
+                            dH = H1 - H_ref_DS
+                            H_liq = property_mass_to_molar(dH, MW)*factor
+                    
+                            return H_gas*V_over_F + (1.0 - V_over_F)*(H_liq - Hvap)
+                        
+                        def to_solve(T):
+                            _, _, VF, _, _ = flash_wilson(zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas, T=T, P=P)
+                            H_calc = Hm_approx_basic(T=T, V_over_F=VF)
+                            return H_calc - Hm
+                        return secant(to_solve, 300, xtol=None, ytol=10)
+                    
+                    yield approx_H(Hm, P, MW, sv, self.Tcs, self.Pcs, self.omegas)
+                elif i == 1:
+                    yield 298.15
+                    
+            # with Hvap and Cpl can get another guess - but is a little more complicated
+            except Exception as e:
+                print(e)
+                pass
+            i += 1
 
 
     def flash_PH_1P(self, P, Hm, zs, T_guess=None, minimum_progress=0.3):
         guesses = []
         calcs = {}
-        guess_generator = self.PH_T_guesses(P, Hm, zs, T_guess=T_guess)
+        guess_generator = self.PH_T_guesses_1P(P, Hm, zs, T_guess=T_guess)
         
         checker = oscillation_checker(minimum_progress)
         def to_solve(T):
@@ -3482,6 +3526,8 @@ class GceosBase(Ideal):
                  maxiter=100, tol=1e-4, damping=0.5):
         '''Write some documentation
         '''
+        eos_1P = None
+        single_phase_data = None
         for algorithm in algorithms:
             try:
                 if algorithm == DIRECT_1P:
@@ -3500,7 +3546,8 @@ class GceosBase(Ideal):
                         else:
                             xs, ys, V_over_F = zs, None, 0.0
                             self.eos_l = eos
-                            
+                    eos_1P = eos
+                    single_phase_data = phase, xs, ys, V_over_F, T
 #                    print('Single phase T solution', T)
                     stable, _, _ = self.stability_test_VL(T, P, zs, eos=eos)
                     if not stable:
@@ -3511,17 +3558,50 @@ class GceosBase(Ideal):
                     # A stability test is REQUIRED! Very important!
                     # Try to refactor some of the code from the PT flash.
                 elif algorithm == DIRECT_2P:
+                    guess_generator = self.PH_T_guesses_2P(P, Hm, zs, T_guess=T_guess)
+
                     if T_guess is None:
-                        T_guess = 298.15
+                        T_guess = next(guess_generator)
+#                    print('T_guess', T_guess)
                     phase, xs, ys, V_over_F, T = self.PH_Michelson(T_guess, P, zs, Hm, maxiter=maxiter, tol=tol,
                                                                    VF_guess_init=None, damping=damping, analytical=True)
+                    if eos_1P is not None:
+                        H_1P = self.enthalpy_eosmix(single_phase_data[-1], P, single_phase_data[-2], zs, single_phase_data[-4], single_phase_data[-3], eos_1P, eos_1P, single_phase_data[0])
+                        H_2P = self.enthalpy_eosmix(T, P, V_over_F, zs, xs, ys, self.eos_l, self.eos_g, phase)
+                        
+                        S_1P = self.entropy_eosmix(single_phase_data[-1], P, single_phase_data[-2], zs, single_phase_data[-4], single_phase_data[-3], eos_1P, eos_1P, single_phase_data[0])
+                        S_2P = self.entropy_eosmix(T, P, V_over_F, zs, xs, ys, self.eos_l, self.eos_g, phase)
+                        
+                        G_1P = H_1P - single_phase_data[-1]*S_1P
+                        G_2P = H_2P - T*S_2P
+                        
+#                        print(T, V_over_F, S_1P, S_2P, G_1P, G_2P)
+                        if (S_1P > S_2P and G_1P < G_2P) or V_over_F > 1 or V_over_F < 0:
+#                        try:
+#                            G_1P = eos_1P.G_dep_l if eos_1P.G_dep_l < eos_1P.G_dep_g else eos_1P.G_dep_g
+#                        except:
+#                            G_1P = eos_1P.G_dep_g if hasattr(eos, 'G_dep_g') else eos_1P.G_dep_l
+#
+#                        try:
+#                            G_l = self.eos_l.G_dep_l if self.eos_l.G_dep_l < self.eos_l.G_dep_g else self.eos_l.G_dep_g
+#                        except:
+#                            G_l = self.eos_l.G_dep_g if hasattr(eos, 'G_dep_g') else self.eos_l.G_dep_l
+#
+#                        try:
+#                            G_g = self.eos_g.G_dep_l if self.eos_g.G_dep_l < self.eos_g.G_dep_g else self.eos_g.G_dep_g
+#                        except:
+#                            G_g = self.eos_g.G_dep_g if hasattr(eos, 'G_dep_g') else self.eos_g.G_dep_l
+#                    
+#                        if G_1P < (1 - V_over_F)*G_l + V_over_F*G_g:
+                            return single_phase_data
+                    
                     return phase, xs, ys, V_over_F, T
                     
                     
                     
                     # should return phase, xs, ys, V_over_F, T
             except Exception as e:
-                print(e)
+#                print(e)
                 pass
 
 
