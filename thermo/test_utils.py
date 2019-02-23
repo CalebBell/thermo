@@ -58,17 +58,47 @@ def pkg_tabular_data_TP(IDs, pkg_ID, zs, P_pts=50, T_pts=50, T_min=None,
             data_row.append(row)
         data.append(data_row)
     
-    metadata = {'spec':'T,P', 'pkg': pkg_ID, 'zs': zs, 'IDs': IDs,
+    metadata = {'spec':('T', 'P'), 'pkg': pkg_ID, 'zs': zs, 'IDs': IDs,
                 'T_min': T_min, 'T_max': T_max, 'P_min': P_min, 'P_max': P_max,
                 'Ts': Ts, 'Ps': Ps}
     
-    data_json = {}
-    for row, T in zip(data, Ts):
-        for i, P in enumerate(Ps):
-            data_json[(T, P)] = {k: v for k, v in zip(attrs, row[i])}
-    
-    json_result = {'metadata': metadata, 'data': data_json}
     return Ts, Ps, data, metadata
+
+
+def pkg_tabular_data_TVF(IDs, pkg_ID, zs, VF_pts=50, T_pts=50, T_min=None,
+                         T_max=None, VF_min=None, VF_max=None, attrs=default_attrs):
+    pkg = PropertyPackageConstants(IDs, pkg_ID)
+    
+    if T_min is None:
+        T_min = min(i for i in pkg.Tms if i is not None)
+    if T_max is None:
+        if pkg.pkg.N == 1:
+            T_max = pkg.Tcs[0]
+        else:
+            T_max = max(i for i in pkg.Tcs if i is not None)*2
+    
+    if VF_min is None:
+        VF_min = 0.0
+    if VF_max is None:
+        VF_max = 1.0
+
+    Ts = linspace(T_min, T_max, T_pts)
+    VFs = linspace(VF_min, VF_max, VF_pts)
+    data = []
+    for T in Ts:
+        data_row = []
+        for VF in VFs:
+            pkg.pkg.flash(T=T, VF=VF, zs=zs)
+            row = tuple(getattr(pkg.pkg, s) for s in attrs)
+            data_row.append(row)
+        data.append(data_row)
+    
+    metadata = {'spec':('T', 'VF'), 'pkg': pkg_ID, 'zs': zs, 'IDs': IDs,
+                'T_min': T_min, 'T_max': T_max, 'VF_min': VF_min, 'VF_max': VF_max,
+                'Ts': Ts, 'VFs': VFs}
+    
+    
+    return Ts, VFs, data, metadata
 
 
 def save_tabular_data_as_json(specs0, specs1, metadata, data, attrs, path):
@@ -118,3 +148,6 @@ def save_tabular_data_as_json(specs0, specs1, metadata, data, attrs, path):
     json.dump(json_result, fp, sort_keys=True, indent=2)
     fp.close()
     return True
+
+tabular_data_functions = {'TP': pkg_tabular_data_TP,
+                          'TVF': pkg_tabular_data_TVF}

@@ -26,7 +26,7 @@ __all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',
 'APISRK', 'TWUPR', 'TWUSRK', 'ALPHA_FUNCTIONS', 'eos_list', 'GCEOS_DUMMY']
 
 from cmath import atanh as catanh
-from fluids.numerics import newton, brenth, third, sixth, roots_cubic, roots_cubic_a1, numpy as np
+from fluids.numerics import brenth, third, sixth, roots_cubic, roots_cubic_a1, numpy as np, py_newton as newton
 from thermo.utils import R
 from thermo.utils import (Cp_minus_Cv, isobaric_expansion, 
                           isothermal_compressibility, 
@@ -923,10 +923,22 @@ should be calculated by this method, in a user subclass.')
             def to_solve(P):
                 # For use by newton. Only supports initialization with Tc, Pc and omega
                 # ~200x slower and not guaranteed to converge
+#                print('P', P)
                 e = self.__class__(Tc=self.Tc, Pc=self.Pc, omega=self.omega, T=T, P=P)
-                err = e.fugacity_l - e.fugacity_g
+                try:
+                    fugacity_l = e.fugacity_l
+                except AttributeError:
+                    return -self.Pc
+                
+                try:
+                    fugacity_g = e.fugacity_g
+                except AttributeError:
+                    return self.Pc
+                
+                err = fugacity_l - fugacity_g
+#                print('err', err)
                 return err
-            Psat = newton(to_solve, Psat)
+            Psat = newton(to_solve, Psat, high=self.Pc, ytol=1e-2)
         return Psat
 
     def dPsat_dT(self, T):
@@ -1640,6 +1652,53 @@ should be calculated by this method, in a user subclass.')
         return (-x1*x3 - 4.0*x2*x4*self.da_alpha_dT/(x4*(self.delta + 2*x0)**2 
                 - 1) - x3/(self.b - x0) + R*x1*(self.P*x2 + x0)/self.P)
         
+    @property
+    def dfugacity_dT_l(self):
+        r'''Derivative of fugacity with respect to pressure for the liquid 
+        phase, [Pa/K]
+        
+        .. math::
+            \frac{\partial (\text{fugacity})_{l}}{\partial T} = P \left(\frac{1}
+            {R T} \left(- T \frac{\partial}{\partial T} \operatorname{S_{dep}}
+            {\left (T,P \right )} - \operatorname{S_{dep}}{\left (T,P \right )}
+            + \frac{\partial}{\partial T} \operatorname{H_{dep}}{\left (T,P
+            \right )}\right) - \frac{1}{R T^{2}} \left(- T \operatorname{
+                S_{dep}}{\left (T,P \right )} + \operatorname{H_{dep}}{\left
+                (T,P \right )}\right)\right) e^{\frac{1}{R T} \left(- T 
+                \operatorname{S_{dep}}{\left (T,P \right )} + \operatorname
+                {H_{dep}}{\left (T,P \right )}\right)}
+        '''
+        T, P = self.T, self.P
+        T_inv = 1.0/T
+        S_dep_l = self.S_dep_l
+        x4 = R_inv*(self.H_dep_l - T*S_dep_l)
+        return P*(T_inv*R_inv*(self.dH_dep_dT_l - T*self.dS_dep_dT_l - S_dep_l) 
+                  - x4*T_inv*T_inv)*exp(T_inv*x4)
+ 
+    @property
+    def dfugacity_dT_g(self):
+        r'''Derivative of fugacity with respect to pressure for the gas 
+        phase, [Pa/K]
+        
+        .. math::
+            \frac{\partial (\text{fugacity})_{g}}{\partial T} = P \left(\frac{1}
+            {R T} \left(- T \frac{\partial}{\partial T} \operatorname{S_{dep}}
+            {\left (T,P \right )} - \operatorname{S_{dep}}{\left (T,P \right )}
+            + \frac{\partial}{\partial T} \operatorname{H_{dep}}{\left (T,P
+            \right )}\right) - \frac{1}{R T^{2}} \left(- T \operatorname{
+                S_{dep}}{\left (T,P \right )} + \operatorname{H_{dep}}{\left
+                (T,P \right )}\right)\right) e^{\frac{1}{R T} \left(- T 
+                \operatorname{S_{dep}}{\left (T,P \right )} + \operatorname
+                {H_{dep}}{\left (T,P \right )}\right)}
+        '''
+        T, P = self.T, self.P
+        T_inv = 1.0/T
+        S_dep_g = self.S_dep_g
+        x4 = R_inv*(self.H_dep_g - T*S_dep_g)
+        return P*(T_inv*R_inv*(self.dH_dep_dT_g - T*self.dS_dep_dT_g - S_dep_g) 
+                  - x4*T_inv*T_inv)*exp(T_inv*x4)
+
+
 class GCEOS_DUMMY(GCEOS):
     Tc = None
     Pc = None

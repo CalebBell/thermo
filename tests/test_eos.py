@@ -1195,3 +1195,16 @@ def test_V_g_sats():
         V_g_sats.append(e.V_g_sat(300))
     
     assert_allclose(V_g_sats, V_g_sats_expect)
+
+def test_dfugacity_dT_l_dfugacity_dT_g():
+    T = 400
+    delta = 1e-5
+    eos1 = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=T, P=1E6)
+    eos2 = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=T +delta, P=1E6)
+    numerical = (eos2.fugacity_l - eos1.fugacity_l)/delta
+    analytical = eos1.dfugacity_dT_l
+    assert_allclose(numerical, analytical)
+    
+    numerical = (eos2.fugacity_g - eos1.fugacity_g)/delta
+    analytical = eos1.dfugacity_dT_g
+    assert_allclose(numerical, analytical)

@@ -35,10 +35,11 @@ pure_cases = []
 
 pure_case_compounds = ['water', 'methane', 'ethane', 'ammonia', 'nitrogen', 'oxygen']
 pure_case_packages = [SRK_PKG, PR_PKG]
+functions = ['TVF', 'TP']
 
 for pkg in pure_case_packages:
     for compound in pure_case_compounds:
-        case = {'IDs': [compound], 'pkg_ID': pkg, 'zs': [1.0]}
+        case = {'IDs': [compound], 'pkg_ID': pkg, 'zs': [1.0], 'types': functions}
         pure_cases.append(case)
 
 pure_cases_custom = []
@@ -48,21 +49,24 @@ pure_cases.extend(pure_cases_custom)
 pure_path = os.path.join(os.path.dirname(__file__), '../surfaces/TP tabular data pure')
 
 
-
 def export_all_pure_cases(verbose=False):
     for pure_case in pure_cases:
-        Ts, Ps, data, metadata = pkg_tabular_data_TP(**pure_case)
-        case_name = '%s %s %s' %(pure_case['IDs'], pure_case['zs'], pure_case['pkg_ID'])
-        file_name = os.path.join(pure_path, case_name)
-        if 'attrs' in pure_cases:
-            attrs = pure_cases['attrs']
-        else:
-            attrs = default_attrs
-        save_tabular_data_as_json(Ts, Ps, metadata, data, attrs, file_name)
-        if verbose:
-            print('Finished %s' %(case_name))
+        for func_str in pure_case['types']:
+            tabular_data_function = tabular_data_functions[func_str]
+            kwargs = dict(pure_case)
+            del kwargs['types']
+            specs0, specs1, data, metadata = tabular_data_function(**kwargs)
+            case_name = '%s %s %s %s' %(pure_case['IDs'], pure_case['zs'], pure_case['pkg_ID'], func_str)
+            file_name = os.path.join(pure_path, case_name)
+            if 'attrs' in pure_cases:
+                attrs = pure_cases['attrs']
+            else:
+                attrs = default_attrs
+            save_tabular_data_as_json(specs0, specs1, metadata, data, attrs, file_name)
+            if verbose:
+                print('Finished %s' %(case_name))
+        
     
 
-
 if __name__ == '__main__':
-    export_all_pure_cases()
+    export_all_pure_cases(verbose=True)

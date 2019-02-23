@@ -2260,7 +2260,6 @@ class GceosBase(Ideal):
             except AttributeError:
                 eos_base = self.eos_g
         except:
-            print('could not fine')
             eos_base = self.to_TP_zs(T=T, P=fake_P, zs=fake_zs)
         
         for i in self.cmps:
@@ -2320,14 +2319,14 @@ class GceosBase(Ideal):
         HeatCapacityGases = self.HeatCapacityGases
         cmps = self.cmps
         
-        if phase == 'g':
+        if phase == 'g' or V_over_F == 1.0:
             for zi, obj in zip(zs, HeatCapacityGases):
                 H += zi*obj.T_dependent_property_integral(T_REF_IG, T)
             try:
                 H += eos_g.H_dep_g
             except AttributeError:
                 H += eos_g.H_dep_l
-        elif phase == 'l':
+        elif phase == 'l' or V_over_F == 0.0:
             for zi, obj in zip(zs, HeatCapacityGases):
                 H += zi*obj.T_dependent_property_integral(T_REF_IG, T)
             try:
@@ -2367,7 +2366,7 @@ class GceosBase(Ideal):
         # Could be ordered as log(zi^zi*zj^zj... and so on.)
         # worth checking/trying!
         # It is faster in CPython, slower or maybe faster in PyPy - very very hard to tell.
-        if phase == 'g':
+        if phase == 'g' or V_over_F == 1.0:
             S -= R*sum([zi*log(zi) for zi in zs if zi > 0.0]) # ideal composition entropy composition
             S -= R*log(P*P_REF_IG_INV) # Not sure, but for delta S - doesn't impact what is divided by.
             for i in cmps:
@@ -2375,7 +2374,7 @@ class GceosBase(Ideal):
                 S += zs[i]*dS
             S += eos_g.S_dep_g
                 
-        elif phase == 'l':
+        elif phase == 'l' or V_over_F == 0.0:
             S -= R*sum([zi*log(zi) for zi in zs if zi > 0.0]) # ideal composition entropy composition
             S -= R*log(P*P_REF_IG_INV)
             for i in cmps:
