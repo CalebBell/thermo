@@ -61,7 +61,7 @@ SRK_PKG = 'SRK'
 
 property_packages = [IDEAL_PKG, NRTL_PKG, UNIFAC_PKG, UNIFAC_DORTMUND_PKG, 
                      PR_PKG, SRK_PKG]
-property_packages_cubic = [ PR_PKG, SRK_PKG]
+property_packages_cubic = [PR_PKG, SRK_PKG]
 
 property_package_to_eos = {PR_PKG: PRMIX, SRK_PKG: SRKMIX}
 property_package_to_eos_pures = {PR_PKG: PR, SRK_PKG: SRK}
