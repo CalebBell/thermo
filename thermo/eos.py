@@ -1654,7 +1654,7 @@ should be calculated by this method, in a user subclass.')
         
     @property
     def dfugacity_dT_l(self):
-        r'''Derivative of fugacity with respect to pressure for the liquid 
+        r'''Derivative of fugacity with respect to temperature for the liquid 
         phase, [Pa/K]
         
         .. math::
@@ -1677,7 +1677,7 @@ should be calculated by this method, in a user subclass.')
  
     @property
     def dfugacity_dT_g(self):
-        r'''Derivative of fugacity with respect to pressure for the gas 
+        r'''Derivative of fugacity with respect to temperature for the gas 
         phase, [Pa/K]
         
         .. math::
@@ -1697,6 +1697,46 @@ should be calculated by this method, in a user subclass.')
         x4 = R_inv*(self.H_dep_g - T*S_dep_g)
         return P*(T_inv*R_inv*(self.dH_dep_dT_g - T*self.dS_dep_dT_g - S_dep_g) 
                   - x4*T_inv*T_inv)*exp(T_inv*x4)
+
+    @property
+    def dfugacity_dP_l(self):
+        r'''Derivative of fugacity with respect to pressure for the liquid 
+        phase, [-]
+        
+        .. math::
+            \frac{\partial (\text{fugacity})_{l}}{\partial P} = \frac{P}{R T} 
+            \left(- T \frac{\partial}{\partial P} \operatorname{S_{dep}}{\left
+            (T,P \right )} + \frac{\partial}{\partial P} \operatorname{H_{dep}}
+            {\left (T,P \right )}\right) e^{\frac{1}{R T} \left(- T
+            \operatorname{S_{dep}}{\left (T,P \right )} + \operatorname{
+            H_{dep}}{\left (T,P \right )}\right)} + e^{\frac{1}{R T}
+            \left(- T \operatorname{S_{dep}}{\left (T,P \right )} 
+            + \operatorname{H_{dep}}{\left (T,P \right )}\right)}
+        '''
+        T, P = self.T, self.P
+        x0 = 1.0/(R*T)
+        return (1.0 - P*x0*(T*self.dS_dep_dP_l - self.dH_dep_dP_l))*exp(
+                -x0*(T*self.S_dep_l - self.H_dep_l))
+
+    @property
+    def dfugacity_dP_g(self):
+        r'''Derivative of fugacity with respect to pressure for the gas 
+        phase, [-]
+        
+        .. math::
+            \frac{\partial (\text{fugacity})_{g}}{\partial P} = \frac{P}{R T} 
+            \left(- T \frac{\partial}{\partial P} \operatorname{S_{dep}}{\left
+            (T,P \right )} + \frac{\partial}{\partial P} \operatorname{H_{dep}}
+            {\left (T,P \right )}\right) e^{\frac{1}{R T} \left(- T
+            \operatorname{S_{dep}}{\left (T,P \right )} + \operatorname{
+            H_{dep}}{\left (T,P \right )}\right)} + e^{\frac{1}{R T}
+            \left(- T \operatorname{S_{dep}}{\left (T,P \right )} 
+            + \operatorname{H_{dep}}{\left (T,P \right )}\right)}
+        '''
+        T, P = self.T, self.P
+        x0 = 1.0/(R*T)
+        return (1.0 - P*x0*(T*self.dS_dep_dP_g - self.dH_dep_dP_g))*exp(
+                -x0*(T*self.S_dep_g - self.H_dep_g))
 
 
 class GCEOS_DUMMY(GCEOS):

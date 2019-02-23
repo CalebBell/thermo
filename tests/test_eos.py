@@ -1208,3 +1208,16 @@ def test_dfugacity_dT_l_dfugacity_dT_g():
     numerical = (eos2.fugacity_g - eos1.fugacity_g)/delta
     analytical = eos1.dfugacity_dT_g
     assert_allclose(numerical, analytical)
+    
+def test_dfugacity_dP_l_dfugacity_dP_g():
+    T = 400
+    delta = 1
+    eos1 = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=T, P=1E6)
+    eos2 = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=T, P=1E6+delta)
+    numerical = (eos2.fugacity_l - eos1.fugacity_l)/delta
+    analytical = eos1.dfugacity_dP_l
+    assert_allclose(numerical, analytical)
+    
+    numerical = (eos2.fugacity_g - eos1.fugacity_g)/delta
+    analytical = eos1.dfugacity_dP_g
+    assert_allclose(numerical, analytical, rtol=1e-6)
