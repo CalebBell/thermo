@@ -25,7 +25,8 @@ SOFTWARE.
 
 from __future__ import division
 
-__all__ = ['']
+__all__ = ['PropertyPackageConstants', 'IDEAL_PKG', 'NRTL_PKG', 'UNIFAC_PKG', 
+           'UNIFAC_DORTMUND_PKG', 'PR_PKG', 'SRK_PKG']
 
 from copy import copy
 from random import uniform, shuffle, seed
@@ -87,20 +88,19 @@ class PropertyPackageConstants(object):
         self.name = name
         
         if name not in property_packages_cubic:
-            eosmix = PRMIX
+            eos_mix = PRMIX
             eos = PR
         else:
-            eosmix = property_package_to_eos[name]
+            eos_mix = property_package_to_eos[name]
             eos = property_package_to_eos_pures[name]
             
-        self.eos_in_a_box = [eosmix]
+        self.eos_in_a_box = [eos_mix]
         
         self.pkg_obj = property_package_names_to_objs[self.name]
                 
         self.set_chemical_constants()
         self.set_Chemical_property_objects()
         self.set_TP_sources()
-        
         
         pkg_args = {'VaporPressures': self.VaporPressures,
                    'Tms': self.Tms, 'Tbs': self.Tbs, 'Tcs': self.Tcs,
@@ -110,7 +110,7 @@ class PropertyPackageConstants(object):
                    'EnthalpyVaporizations': self.EnthalpyVaporizations,
                    'VolumeLiquids': self.VolumeLiquids,
                    'VolumeGases': self.VolumeGases,
-                    'eos': eos, 'eosmix': eosmix,
+                    'eos': eos, 'eos_mix': eos_mix,
                     'MWs': self.MWs,
                     'atomss': self.atomss
                    }

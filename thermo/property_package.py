@@ -2616,6 +2616,7 @@ class GceosBase(Ideal):
         for trial_comp in guess_generator:
             for Ks in ([comp_i/zi for comp_i, zi in zip(trial_comp, zs)],
                         [zi/comp_i for comp_i, zi in zip(trial_comp, zs)]):
+                # No Ks are duplicated as of 2019-02-18
                 try:
                     stable, Ks_initial, Ks_extra = eos.stability_Michelsen(T=T, P=P, zs=zs,
                                                               Ks_initial=Ks, 
@@ -2875,7 +2876,11 @@ class GceosBase(Ideal):
                     pass
 #            print(P, 'worked!')
             if P is None:
-                P = float(brenth(err, .9*P_guess_as_pure, 1.1*P_guess_as_pure))
+                try:
+                    P = float(brenth(err, .9*P_guess_as_pure, 1.1*P_guess_as_pure))
+                except Exception as e:
+                    pass
+                    # Compute the dew and bubble points
             VF, xs, ys, eos_l, eos_g = res[0]
             
         self.eos_l = eos_l
@@ -3180,6 +3185,12 @@ class GceosBase(Ideal):
             T_guess = T_guess + T_step
                 
             V_over_F = V_over_F + dx[1]
+            # Try to reduce overstepping?
+#            if V_over_F < 0:
+#                V_over_F = 0.5*V_over_F
+#            elif V_over_F > 1:
+#                V_over_F = 1 + 0.5*(V_over_F % 1)
+                
 
 
 #            T_guess2, V_over_F = [xi + dxi*damping for xi, dxi in zip([T_guess, V_over_F], dx)]
@@ -3450,14 +3461,23 @@ class GceosBase(Ideal):
                         H_ref_LS = Lastovka_Shaw_integral(T_ref, similarity_variable)
                         H_ref_DS = Dadgostar_Shaw_integral(T_ref, similarity_variable)
                         def Hm_approx_basic(T, V_over_F):
+                            if V_over_F > 1:
+                                V_over_F = 1
+                            elif V_over_F < 0:
+                                V_over_F = 0
                             H1 = Lastovka_Shaw_integral(T, similarity_variable)
                             dH = H1 - H_ref_LS
                             H_gas = property_mass_to_molar(dH, MW)*factor
-                            Hvap = SMK(T, Tc, omega)
-                            H1 = Dadgostar_Shaw_integral(T, similarity_variable)
-                            dH = H1 - H_ref_DS
-                            H_liq = property_mass_to_molar(dH, MW)*factor
-                    
+                            
+                            if V_over_F < 1:
+                                Hvap = SMK(T, Tc, omega)
+                                H1 = Dadgostar_Shaw_integral(T, similarity_variable)
+                                dH = H1 - H_ref_DS
+                                H_liq = property_mass_to_molar(dH, MW)*factor
+                            else:
+                                H_liq = 0
+                                Hvap = 0
+                        
                             return H_gas*V_over_F + (1.0 - V_over_F)*(H_liq - Hvap)
                         
                         def to_solve(T):
@@ -4658,7 +4678,7 @@ class GceosBase(Ideal):
 
             if info is not None:
                 info[:] = zs, ys, Ks, eos_l, eos_g, 0.0
-#            print(ys, P_guess, abs(P_guess - P_guess_old), dfk_dP)
+            print(ys, P_guess, abs(P_guess - P_guess_old), dfk_dP)
             if abs(P_guess - P_guess_old) < xtol:
                 break
                 
@@ -4726,10 +4746,10 @@ class GceosBase(Ideal):
             try:
                 if i == -1:
                     yield P_guess, None, None
-                if i == 1:
+                if i == 0:
                     ans = self.bubble_P_guess(T=T, zs=zs, method='IdealEOS')
                     yield ans[4], ans[1], ans[2]
-                if i == 0:
+                if i == 1:
                     ans = self.bubble_P_guess(T=T, zs=zs, method='Wilson')
                     yield ans[1], ans[3], ans[4]
                 if i == 2:

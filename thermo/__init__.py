@@ -36,6 +36,7 @@ from . import eos
 from . import eos_mix
 from . import heat_capacity
 from . import identifiers
+from . import interaction_parameters
 from . import joback
 from . import law
 from . import lennard_jones
@@ -44,6 +45,7 @@ from . import mixture
 from . import permittivity
 from . import phase_change
 from . import property_package
+from . import property_package_constants
 from . import reaction
 from . import refractivity
 from . import safety
@@ -77,6 +79,7 @@ from .eos_mix import *
 from .heat_capacity import *
 from .joback import *
 from .identifiers import *
+from .interaction_parameters import *
 from .law import *
 from .lennard_jones import *
 from .miscdata import *
@@ -84,6 +87,7 @@ from .mixture import *
 from .permittivity import *
 from .phase_change import *
 from .property_package import *
+from .property_package_constants import *
 from .reaction import *
 from .refractivity import *
 from .safety import *
@@ -105,10 +109,10 @@ __all__ = ['activity', 'chemical', 'combustion', 'critical',
  'heat_capacity',  'identifiers', 'joback', 'law', 'lennard_jones',
  'miscdata',
  'permittivity', 'phase_change', 'property_package', 'reaction',
- 'refractivity', 'safety', 'solubility', 'interface',
+ 'refractivity', 'safety', 'solubility', 'interface', 'interaction_parameters',
  'thermal_conductivity', 'triple', 'utils',
  'vapor_pressure', 'virial', 'viscosity', 'volume', 'acentric', 'coolprop', 
- 'datasheet', 'dippr', 'unifac', 'stream', 'mixture']
+ 'datasheet', 'dippr', 'unifac', 'stream', 'mixture', 'property_package_constants']
 
 
 __all__.extend(acentric.__all__)
@@ -127,6 +131,7 @@ __all__.extend(eos.__all__)
 __all__.extend(eos_mix.__all__)
 __all__.extend(heat_capacity.__all__)
 __all__.extend(identifiers.__all__)
+__all__.extend(interaction_parameters.__all__)
 __all__.extend(joback.__all__)
 __all__.extend(law.__all__)
 __all__.extend(lennard_jones.__all__)
@@ -149,6 +154,7 @@ __all__.extend(vapor_pressure.__all__)
 __all__.extend(virial.__all__)
 __all__.extend(viscosity.__all__)
 __all__.extend(volume.__all__)
+__all__.extend(property_package_constants.__all__)
 
 # backwards compatibility hack to allow thermo.chemical.Mixture to still be importable
 chemical.__dict__['Mixture'] = mixture.Mixture
