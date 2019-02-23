@@ -2217,6 +2217,7 @@ class GceosBase(Ideal):
     def __init__(self, eos_mix=PRMIX, VaporPressures=None, Tms=None, Tbs=None, 
                  Tcs=None, Pcs=None, omegas=None, kijs=None, eos_kwargs=None,
                  HeatCapacityGases=None, MWs=None, atomss=None,
+                 eos=None,
                  **kwargs):
         self.eos_mix = eos_mix
         self.VaporPressures = VaporPressures
@@ -2227,6 +2228,7 @@ class GceosBase(Ideal):
         self.omegas = omegas
         self.kijs = kijs
         self.eos_kwargs = eos_kwargs if eos_kwargs is not None else {}
+        self.eos = eos
         self.N = len(VaporPressures)
         self.cmps = range(self.N)
         self.HeatCapacityGases = HeatCapacityGases
@@ -2249,12 +2251,16 @@ class GceosBase(Ideal):
 #        self.eos_mix_ref = self.eos_mix(T=self.T_REF_IG, P=self.P_REF_IG, Tcs=self.Tcs, Pcs=self.Pcs, kijs=self.kijs, **self.eos_kwargs)
 
     def _Psats(self, T):
-        fake_P = 1e6
+        fake_P = 1e7 # Try to avoid two solutions (slower)
         fake_zs = [1./self.N]*self.N
         Psats = []
         try:
-            eos_base = self.eos_l if hasattr(self, 'eos_l') else self.eos_g
+            try:
+                eos_base = self.eos_l
+            except AttributeError:
+                eos_base = self.eos_g
         except:
+            print('could not fine')
             eos_base = self.to_TP_zs(T=T, P=fake_P, zs=fake_zs)
         
         for i in self.cmps:
@@ -2781,11 +2787,12 @@ class GceosBase(Ideal):
         return phase, xs, ys, VF
 
     def flash_PVF_zs(self, P, VF, zs):
-        assert 0 <= VF <= 1
+        if not 0 <= VF <= 1:
+            raise ValueError("Vapor fraction out of range 0 to 1")
         if self.N == 1:
-            Tsats = self._Tsats(P)
+            Tsat = self._Tsats(P)[0]
+            self.eos_l = self.eos_g = self.to_TP_zs(T=Tsat, P=P, zs=zs)
             return 'l/g', [1.0], [1.0], VF, Tsats[0]
-#            raise NotImplemented
 #        elif 1.0 in zs:
 #            raise NotImplemented
         
@@ -2830,11 +2837,12 @@ class GceosBase(Ideal):
 
             
     def flash_TVF_zs(self, T, VF, zs):
-        assert 0 <= VF <= 1
+        if not 0 <= VF <= 1:
+            raise ValueError("Vapor fraction out of range 0 to 1")
         if self.N == 1:
-#            raise NotImplemented
-            Psats = self._Psats(T)
-            return 'l/g', [1.0], [1.0], VF, Psats[0]
+            Psat = self._Psats(T)[0]
+            self.eos_l = self.eos_g = self.to_TP_zs(T=T, P=Psat, zs=zs)
+            return 'l/g', [1.0], [1.0], VF, Psat
 #        elif 1.0 in zs:
 #            raise NotImplemented
 #            return 'l/g', list(zs), list(zs), VF, Psats[zs.index(1.0)]
