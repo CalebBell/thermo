@@ -188,7 +188,7 @@ class GCEOSMIX(GCEOS):
     each species via multiple inheritance.
     '''
     nonstate_constants = ('N', 'cmps', 'Tcs', 'Pcs', 'omegas', 'kijs', 'kwargs', 'ais', 'bs')
-    
+    multicomponent = True
 #    def fast_copy_base(self, a_alphas=False):
 #        new = self.__class__.__new__(self.__class__)
 ##        for attr in self.nonstate_constants:

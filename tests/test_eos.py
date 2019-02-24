@@ -29,6 +29,7 @@ from thermo.utils import allclose_variable
 from scipy.misc import derivative
 from fluids.constants import R
 from math import log, exp, sqrt
+from fluids.numerics import linspace
 
 
 @pytest.mark.slow
@@ -1148,7 +1149,9 @@ def test_Hvaps():
     omega = 0.2975
 
     Hvaps = []
-    Hvaps_expect = [31084.983490850733, 31710.358102130172, 31084.98349085074, 31034.20840963749, 31034.20840963749, 13004.118580400604, 26011.82023167917, 31715.130557858054, 31591.432176727412, 31562.24577655315]
+    Hvaps_expect = [31084.390467243633, 31710.39260707371, 31084.39046724364, 31033.607649042297, 
+                    31033.607649042297, 13004.118358085469, 26012.12168685149, 31715.165529182825, 
+                    31590.84480985536, 31562.268466795715]
     
     for eos in range(len(eos_list)):
         e = globals()[eos_list[eos]](Tc=Tc, Pc=Pc, omega=omega, T=300, P=1E5)
@@ -1169,7 +1172,7 @@ def test_V_l_sats():
     omega = 0.2975
 
     V_l_sats = []
-    V_l_sats_expect = [0.00013065657957196664, 0.00014738493903429054, 0.00013065657957196664, 0.00013068338300846935, 0.00013068338300846935, 0.00022496914669071998, 0.0001526748088257479, 0.00014738204693974985, 0.00013061083054616748, 0.00014745855640370398]
+    V_l_sats_expect = [0.00013065657945228706, 0.0001473849390433038, 0.00013065657945228706, 0.0001306833828856586, 0.0001306833828856586, 0.00022496914668396754, 0.00015267480918174935, 0.00014738204694914823, 0.00013061083043122885, 0.00014745855640970563]
     
     for eos in range(len(eos_list)):
         e = globals()[eos_list[eos]](Tc=Tc, Pc=Pc, omega=omega, T=300, P=1E5)
@@ -1188,7 +1191,7 @@ def test_V_g_sats():
     Pc = 3025000
     omega = 0.2975
     V_g_sats = []
-    V_g_sats_expect = [0.11050460498444403, 0.11367516109277499, 0.11050460498444403, 0.10979758091064296, 0.10979758091064296, 0.009465797924575097, 0.04604551902418885, 0.11374291407753441, 0.11172605609973751, 0.1119691155539088]
+    V_g_sats_expect = [0.11050249932591111, 0.11367528462558969, 0.11050249932591111, 0.1097954579773439, 0.1097954579773439, 0.009465797766589464, 0.046046050884104774, 0.11374303933593542, 0.11172398125011096, 0.11196919594301445]
     
     for eos in range(len(eos_list)):
         e = globals()[eos_list[eos]](Tc=Tc, Pc=Pc, omega=omega, T=300, P=1E5)
@@ -1221,3 +1224,37 @@ def test_dfugacity_dP_l_dfugacity_dP_g():
     numerical = (eos2.fugacity_g - eos1.fugacity_g)/delta
     analytical = eos1.dfugacity_dP_g
     assert_allclose(numerical, analytical, rtol=1e-6)
+    
+    
+#@pytest.mark.xfail
+def test_failure_dP_dV_zero_division():
+    Tc = 507.6
+    Pc = 3025000.
+    omega = 0.2975
+    SRK(T=507.5999979692211, P=3024999.9164836705, Tc=Tc, Pc=Pc, omega=omega)
+
+def test_Psat_correlations():
+    for EOS in [PR, SRK, RK, VDW]:
+        eos = EOS(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+        Ts = linspace(eos.Tc*0.32, eos.Tc, 100) + linspace(eos.Tc*.999, eos.Tc, 100)
+        Psats_correlation = []
+        Psats_numerical = []
+        for T in Ts:
+            Psats_correlation.append(eos.Psat(T, polish=False))
+            Psats_numerical.append(eos.Psat(T, polish=True))
+    
+        # PR - tested up to 1 million points (many fits are much better than 1e-8)
+        assert_allclose(Psats_correlation, Psats_numerical, rtol=1e-8)
+
+    # Other EOSs are covered, not sure what points need 1e-6 but generally they are perfect
+    for EOS in [PR78, PRSV, PRSV2, APISRK, TWUPR, TWUSRK]:
+        eos = EOS(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+        Ts = linspace(eos.Tc*0.32, eos.Tc, 100) + linspace(eos.Tc*.999, eos.Tc, 100)
+        Psats_correlation = []
+        Psats_numerical = []
+        for T in Ts:
+            Psats_correlation.append(eos.Psat(T, polish=False))
+            Psats_numerical.append(eos.Psat(T, polish=True))
+    
+        # PR - tested up to 1 million points
+        assert_allclose(Psats_correlation, Psats_numerical, rtol=1e-6)

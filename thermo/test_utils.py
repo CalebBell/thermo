@@ -88,8 +88,13 @@ def pkg_tabular_data_TVF(IDs, pkg_ID, zs, VF_pts=50, T_pts=50, T_min=None,
     for T in Ts:
         data_row = []
         for VF in VFs:
-            pkg.pkg.flash(T=T, VF=VF, zs=zs)
-            row = tuple(getattr(pkg.pkg, s) for s in attrs)
+#            print(T, VF)
+            try:
+                pkg.pkg.flash(T=T, VF=VF, zs=zs)
+                row = tuple(getattr(pkg.pkg, s) for s in attrs)
+            except Exception as e:
+                row = tuple(None for s in attrs)
+                print(e, T, VF, IDs, pkg_ID, zs)
             data_row.append(row)
         data.append(data_row)
     

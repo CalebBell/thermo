@@ -2789,6 +2789,9 @@ class GceosBase(Ideal):
         if not 0 <= VF <= 1:
             raise ValueError("Vapor fraction out of range 0 to 1")
         if self.N == 1:
+            # Do not allow above critical point!
+            if P > self.Pcs[0]:
+                raise ValueError("Pressure is greater than critical pressure")
             Tsat = self._Tsats(P)[0]
             self.eos_l = self.eos_g = self.to_TP_zs(T=Tsat, P=P, zs=zs)
             return 'l/g', [1.0], [1.0], VF, Tsats[0]
@@ -2839,6 +2842,8 @@ class GceosBase(Ideal):
         if not 0 <= VF <= 1:
             raise ValueError("Vapor fraction out of range 0 to 1")
         if self.N == 1:
+            if T > self.Tcs[0]:
+                raise ValueError("Temperature is greater than critical Temperature")
             Psat = self._Psats(T)[0]
             self.eos_l = self.eos_g = self.to_TP_zs(T=T, P=Psat, zs=zs)
             return 'l/g', [1.0], [1.0], VF, Psat

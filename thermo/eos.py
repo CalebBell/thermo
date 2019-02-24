@@ -26,7 +26,9 @@ __all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',
 'APISRK', 'TWUPR', 'TWUSRK', 'ALPHA_FUNCTIONS', 'eos_list', 'GCEOS_DUMMY']
 
 from cmath import atanh as catanh
-from fluids.numerics import brenth, third, sixth, roots_cubic, roots_cubic_a1, numpy as np, py_newton as newton, py_bisect as bisect
+from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
+                             roots_cubic_a1, numpy as np, py_newton as newton,
+                             py_bisect as bisect, inf)
 from thermo.utils import R
 from thermo.utils import (Cp_minus_Cv, isobaric_expansion, 
                           isothermal_compressibility, 
@@ -97,6 +99,8 @@ class GCEOS(object):
     '''
     # Slots does not help performance in either implementation
     kwargs = {}
+    N = 1
+    multicomponent = False
     def check_sufficient_inputs(self):
         '''Method to an exception if none of the pairs (T, P), (T, V), or 
         (P, V) are given. '''
@@ -164,6 +168,21 @@ class GCEOS(object):
                                                            self.delta, self.epsilon, 
                                                            self.a_alpha, self.da_alpha_dT,
                                                            self.d2a_alpha_dT2)
+            
+            if self.N == 1 and (
+                    (self.multicomponent and (self.Tcs[0] == self.T and self.Pcs[0] == self.P))
+                    or (not self.multicomponent and self.Tc == self.T and self.Pc == self.P)):
+                
+                force_l = not self.phase == 'l'
+                force_g = not self.phase == 'g'
+                self.set_properties_from_solution(self.T, self.P,
+                                                  good_roots[0], self.b, 
+                                                  self.delta, self.epsilon, 
+                                                  self.a_alpha, self.da_alpha_dT,
+                                                  self.d2a_alpha_dT2,
+                                                  force_l=force_l,
+                                                  force_g=force_g)
+                self.phase = 'l/g'
         elif good_root_count > 1:
             V_l, V_g = min(good_roots), max(good_roots)
             
@@ -716,8 +735,10 @@ should be calculated by this method, in a user subclass.')
         self.main_derivatives_and_departures(T, P, V, b, delta, epsilon, 
                                              a_alpha, da_alpha_dT, 
                                              d2a_alpha_dT2, quick=quick))
-
-        inverse_dP_dV = 1.0/dP_dV
+        try:
+            inverse_dP_dV = 1.0/dP_dV
+        except ZeroDivisionError:
+            inverse_dP_dV = inf
         dT_dP = 1./dP_dT
 
         dV_dT = -dP_dT*inverse_dP_dV
@@ -907,17 +928,28 @@ should be calculated by this method, in a user subclass.')
            through Cubic Equations of State." Fluid Phase Equilibria 31, no. 2 
            (January 1, 1986): 203-7. doi:10.1016/0378-3812(86)90013-0. 
         '''
+        if T == self.Tc:
+            return self.Pc
         alpha = self.a_alpha_and_derivatives(T, full=False)/self.a
         Tr = T/self.Tc
         x = alpha/Tr - 1.
-        c = self.Psat_coeffs_limiting if Tr < 0.32 else self.Psat_coeffs
-        y = horner(c, x)
-        try:
-            Psat = exp(y)*Tr*self.Pc
-        except OverflowError:
-            # coefficients sometimes overflow before T is lowered to 0.32Tr
-            polish = False
-            Psat = 0
+        
+#        Psat_cheb_coeffs, Psat_cheb_constant_factor
+                
+        if Tr > 0.999:
+            y = horner(self.Psat_coeffs_critical, x)
+            Psat = y*Tr*self.Pc
+        else:
+            if Tr < 0.32:
+                y = horner(self.Psat_coeffs_limiting, x)
+            else:
+                y = chebval(self.Psat_cheb_constant_factor[1]*(x + self.Psat_cheb_constant_factor[0]), self.Psat_cheb_coeffs)
+            try:
+                Psat = exp(y)*Tr*self.Pc
+            except OverflowError:
+                # coefficients sometimes overflow before T is lowered to 0.32Tr
+                polish = False # There is no solution available to polish
+                Psat = 0
         
         if polish:
             if T > self.Tc:
@@ -943,8 +975,6 @@ should be calculated by this method, in a user subclass.')
                 d_err_d_P = e.dfugacity_dP_l - e.dfugacity_dP_g
 #                print('err', err, 'd_err_d_P', d_err_d_P, 'P', P)
                 return err, d_err_d_P
-            if P_guess is not None:
-                Psat = P_guess
             try:
                 Psat = newton(to_solve_newton, Psat, high=self.Pc, fprime=True, 
                               xtol=1e-12, ytol=1e-6, require_eval=False)
@@ -2504,17 +2534,23 @@ class PR(GCEOS):
     
     # Zc is the mechanical compressibility for mixtures as well.
     Zc = 0.3074013086987038480093850966542222720096
-    
-    # Coefficients personally regressed, and tested against published solutions
-    # fit with polyfit; 10th order found to be suitable and gains afterward are
-    # tiny or negative
-    Psat_coeffs = [9.6892347815183776e-06, -0.00024435820311453189, 
-                   0.0026885427128470565, -0.017049496987961255, 
-                   0.06971001627679084, -0.19625435197107072, 
-                   0.39857709528021257, -0.58702135332167182, 
-                   0.51634619102133028, -3.3504109815148495, 
-                   -0.00013358770454510461]
+
     Psat_coeffs_limiting = [-3.4758880164801873, 0.7675486448347723]
+    
+    Psat_coeffs_critical = [13.906174756604267, -8.978515559640332, 
+                            6.191494729386664, -3.3553014047359286,
+                            1.0000000000011509]
+    
+    Psat_cheb_coeffs = [-7.693430141477579, -7.792157693145173, -0.12584439451814622, 0.0045868660863990305,
+                        0.011902728116315585, -0.00809984848593371, 0.0035807374586641324, -0.001285457896498948,
+                        0.0004379441379448949, -0.0001701325511665626, 7.889450459420399e-05, -3.842330780886875e-05, 
+                        1.7884847876342805e-05, -7.9432179091441e-06, 3.51726370898656e-06, -1.6108797741557683e-06, 
+                        7.625638345550717e-07, -3.6453554523813245e-07, 1.732454904858089e-07, -8.195124459058523e-08, 
+                        3.8929380082904216e-08, -1.8668536344161905e-08, 9.021955971552252e-09, -4.374277331168795e-09,
+                        2.122697092724708e-09, -1.0315557015083254e-09, 5.027805333255708e-10, -2.4590905784642285e-10, 
+                        1.206301486380689e-10, -5.932583414867791e-11, 2.9274476912683964e-11, -1.4591650777202522e-11, 
+                        7.533835507484918e-12, -4.377200831613345e-12, 1.7413208326438542e-12]
+    Psat_cheb_constant_factor = (-2.355355160853182, 0.42489124941587103)
 
     def __init__(self, Tc, Pc, omega, T=None, P=None, V=None):
         self.Tc = Tc
@@ -3223,19 +3259,24 @@ class VDW(GCEOS):
     epsilon = 0
     omega = None
     Zc = 3/8.
-
-    # Coefficients personally regressed, and tested against published solutions
-    # fit with polyfit; 10th order found to be suitable and gains afterward are
-    # tiny or negative
-    Psat_coeffs = [0.00016085874036294383, -0.0020147694986371641, 
-                   0.011302214511559567, -0.037903025677446814, 
-                   0.086735406241856494, -0.15182421588718523, 
-                   0.23310737420980204, -0.32912533484896433, 
-                   0.29955810023815194, -2.9999750707517197, 
-                   -3.6235991987648481e-07]
+    
     Psat_coeffs_limiting = [-3.0232164484175756, 0.20980668241160666]
     
-    
+    Psat_coeffs_critical = [9.575399398167086, -5.742004486758378, 
+                            4.8000085098196745, -3.000000002903554,
+                            1.0000000000002651]
+
+    Psat_cheb_coeffs = [-3.0938407448693392, -3.095844800654779, -0.01852425171597184, -0.009132810281704463,
+                        0.0034478548769173167, -0.0007513250489879469, 0.0001425235859202672, -3.18455900032599e-05, 
+                        8.318773833859442e-06, -2.125810773856036e-06, 5.171012493290658e-07, -1.2777009201877978e-07, 
+                        3.285945705657834e-08, -8.532047244427343e-09, 2.196978792832582e-09, -5.667409821199761e-10,
+                        1.4779624173003134e-10, -3.878590467732996e-11, 1.0181633097391951e-11, -2.67662653922595e-12, 
+                        7.053635426397184e-13, -1.872821965868618e-13, 4.9443291800198297e-14, -1.2936198878592264e-14,
+                        2.9072203628840998e-15, -4.935694864968698e-16, 2.4160767787481663e-15, 8.615748088927622e-16, 
+                        -5.198342841253312e-16, -2.19739320055784e-15, -1.0876309618559898e-15, 7.727786509661994e-16,
+                        7.958450521858285e-16, 2.088444434750203e-17, -1.3864912907016191e-16]
+    Psat_cheb_constant_factor = (-1.0630005005005003, 0.9416200294550813)
+        
     def __init__(self, Tc, Pc, T=None, P=None, V=None, omega=None):
         self.Tc = Tc
         self.Pc = Pc
@@ -3391,14 +3432,22 @@ class RK(GCEOS):
     omega = None
     Zc = 1/3.
 
-    # Coefficients personally regressed, and tested against published solutions
-    # fit with polyfit; 10th order found to be suitable and gains afterward are
-    # tiny or negative
-    Psat_coeffs = [704544.24412816577, 3561602.0999577316, 6656106.8246219782, 
-                   4335693.4538969155, -2349194.3033746872, 
-                   -4335442.8251242582, 326862.94121967856, 4024294.3438453656,
-                   3188268.8928488772, 1083057.9018650202, 142620.21200653521]
     Psat_coeffs_limiting = [-72.700288369511583, -68.76714163049]
+    Psat_coeffs_critical = [1129250.3276866912, 4246321.053155941,
+                            5988691.4873851035, 3754317.4112657467, 
+                            882716.2189281426]
+
+    Psat_cheb_coeffs = [-6.8488798834192215, -6.93992806360099, -0.11216113842675507, 0.0022494496508455135, 
+                        0.00995148012561513, -0.005789786392208277, 0.0021454644555051177, -0.0006192510387981658,
+                        0.00016870584348326536, -5.828094356536212e-05, 2.5829410448955883e-05, -1.1312372380559225e-05,
+                        4.374040785359406e-06, -1.5546789700246184e-06, 5.666723613325655e-07, -2.2701147218271074e-07,
+                        9.561199996134724e-08, -3.934646467524511e-08, 1.55272396700466e-08, -6.061097474369418e-09,
+                        2.4289648176102022e-09, -1.0031987621530753e-09, 4.168016003137324e-10, -1.7100917451312765e-10,
+                        6.949731049432813e-11, -2.8377758503521713e-11, 1.1741734564892428e-11, -4.891469634936765e-12, 
+                        2.0373765879672795e-12, -8.507821454718095e-13, 3.4975627537410514e-13, -1.4468659018281038e-13,
+                        6.536766028637786e-14, -2.7636123641275323e-14, 1.105377996166862e-14]
+    Psat_cheb_constant_factor = (0.8551757791729341, 9.962912449541513)
+
 
     def __init__(self, Tc, Pc, T=None, P=None, V=None, omega=None):
         self.Tc = Tc
@@ -3539,16 +3588,23 @@ class SRK(GCEOS):
     epsilon = 0
     Zc = 1/3.
 
-    # Coefficients personally regressed, and tested against published solutions
-    # fit with polyfit; 10th order found to be suitable and gains afterward are
-    # tiny or negative
-    Psat_coeffs = [3.2606704044732426e-06, -8.4948284125616183e-05, 
-                   0.00096619488646838912, -0.0063685162795048839, 
-                   0.027478137804348456, -0.084187977198985922, 
-                   0.19421926832038514, -0.33318228306947267, 
-                   0.32096274163660671, -3.0522790305186756, 
-                   -3.6895279306603668e-05]
     Psat_coeffs_limiting = [-3.2308843103522107, 0.7210534170705403]
+    
+    Psat_coeffs_critical = [9.374273428735918, -6.15924292062784,
+                            4.995561268009732, -3.0536215892966374, 
+                            1.0000000000023588]
+
+    Psat_cheb_coeffs = [-7.871741490227961, -7.989748461289071, -0.1356344797770207, 0.009506579247579184,
+                        0.009624489219138763, -0.007066708482598217, 0.003075503887853841, -0.001012177935988426,
+                        0.00028619693856193646, -8.960150789432905e-05, 3.8678642545223406e-05, -1.903594210476056e-05,
+                        8.531492278109217e-06, -3.345456890803595e-06, 1.2311165149343946e-06, -4.784033464026011e-07,
+                        2.0716513992539553e-07, -9.365210448247373e-08, 4.088078067054522e-08, -1.6950725229317957e-08,
+                        6.9147476960875615e-09, -2.9036036947212296e-09, 1.2683728020787197e-09, -5.610046772833513e-10,
+                        2.444858416194781e-10, -1.0465240317131946e-10, 4.472305869824417e-11, -1.9380782026977295e-11,
+                        8.525075935982007e-12, -3.770209730351304e-12, 1.6512636527230007e-12, -7.22057288092548e-13,
+                        3.2921267708457824e-13, -1.616661448808343e-13, 6.227456701354828e-14]
+    Psat_cheb_constant_factor = (-2.5857326352412238, 0.38702722494279784)
+
 
     def __init__(self, Tc, Pc, omega, T=None, P=None, V=None):
         self.Tc = Tc
