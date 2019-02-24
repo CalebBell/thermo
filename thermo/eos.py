@@ -26,7 +26,7 @@ __all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',
 'APISRK', 'TWUPR', 'TWUSRK', 'ALPHA_FUNCTIONS', 'eos_list', 'GCEOS_DUMMY']
 
 from cmath import atanh as catanh
-from fluids.numerics import brenth, third, sixth, roots_cubic, roots_cubic_a1, numpy as np, py_newton as newton
+from fluids.numerics import brenth, third, sixth, roots_cubic, roots_cubic_a1, numpy as np, py_newton as newton, py_bisect as bisect
 from thermo.utils import R
 from thermo.utils import (Cp_minus_Cv, isobaric_expansion, 
                           isothermal_compressibility, 
@@ -920,25 +920,52 @@ should be calculated by this method, in a user subclass.')
             Psat = 0
         
         if polish:
-            def to_solve(P):
+            if T > self.Tc:
+                raise ValueError("Cannot solve for equifugacity condition "
+                                 "beyond critical temperature")
+            def to_solve_newton(P):
                 # For use by newton. Only supports initialization with Tc, Pc and omega
-                # ~200x slower and not guaranteed to converge
-#                print('P', P)
+                # ~200x slower and not guaranteed to converge (primary issue is one phase)
+                # not existing
                 e = self.__class__(Tc=self.Tc, Pc=self.Pc, omega=self.omega, T=T, P=P)
                 try:
                     fugacity_l = e.fugacity_l
-                except AttributeError:
-                    return -self.Pc
+                except AttributeError as e:
+                    raise e
                 
                 try:
                     fugacity_g = e.fugacity_g
-                except AttributeError:
-                    return self.Pc
+                except AttributeError as e:
+                    raise e
                 
                 err = fugacity_l - fugacity_g
-#                print('err', err)
-                return err
-            Psat = newton(to_solve, Psat, high=self.Pc, ytol=1e-2)
+                
+                d_err_d_P = e.dfugacity_dP_l - e.dfugacity_dP_g
+#                print('err', err, 'd_err_d_P', d_err_d_P, 'P', P)
+                return err, d_err_d_P
+            if P_guess is not None:
+                Psat = P_guess
+            try:
+                Psat = newton(to_solve_newton, Psat, high=self.Pc, fprime=True, 
+                              xtol=1e-12, ytol=1e-6, require_eval=False)
+            except:
+                def to_solve_bisect(P):
+                    e = self.__class__(Tc=self.Tc, Pc=self.Pc, omega=self.omega, T=T, P=P)
+                    try:
+                        fugacity_l = e.fugacity_l
+                    except AttributeError as e:
+                        return 1e20
+                    
+                    try:
+                        fugacity_g = e.fugacity_g
+                    except AttributeError as e:
+                        return -1e20
+                    err = fugacity_l - fugacity_g
+#                    print(err, 'err', 'P', P)
+                    return err
+                Psat = bisect(to_solve_bisect, .98*Psat, 1.02*Psat, 
+                              maxiter=1000)
+                    
         return Psat
 
     def dPsat_dT(self, T):
