@@ -1108,7 +1108,6 @@ def test_fuzz_Psat():
     assert_allclose(Psats_solved, Psats_poly, rtol=1E-4)
 
     
-@pytest.mark.slow
 def test_fuzz_dPsat_dT():
     from thermo import eos
     eos_list = list(eos.__all__); eos_list.remove('GCEOS')
@@ -1122,7 +1121,19 @@ def test_fuzz_dPsat_dT():
     e = PR(T=400, P=1E5, Tc=507.6, Pc=3025000, omega=0.2975)
     dPsats_dT_expect = [938.7777925283981, 10287.225576267781, 38814.74676693623]
     assert_allclose([e.dPsat_dT(300), e.dPsat_dT(400), e.dPsat_dT(500)], dPsats_dT_expect)
+
+#@pytest.mark.slow
+def test_fuzz_dPsat_dT():
+    from thermo import eos
+    eos_list = list(eos.__all__); eos_list.remove('GCEOS')
+    eos_list.remove('ALPHA_FUNCTIONS'); eos_list.remove('eos_list')
+    eos_list.remove('GCEOS_DUMMY')
     
+    Tc = 507.6
+    Pc = 3025000
+    omega = 0.2975
+    
+    e = PR(T=400, P=1E5, Tc=507.6, Pc=3025000, omega=0.2975)    
     # Hammer the derivatives for each EOS in a wide range; most are really 
     # accurate. There's an error around the transition between polynomials 
     # though - to be expected; the derivatives are discontinuous there.

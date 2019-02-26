@@ -28,7 +28,7 @@ __all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',
 from cmath import atanh as catanh
 from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              roots_cubic_a1, numpy as np, py_newton as newton,
-                             py_bisect as bisect, inf)
+                             py_bisect as bisect, inf, polyder, chebder)
 from thermo.utils import R
 from thermo.utils import (Cp_minus_Cv, isobaric_expansion, 
                           isothermal_compressibility, 
@@ -1027,25 +1027,28 @@ should be calculated by this method, in a user subclass.')
         Clapeyron Equation. Derived with SymPy's diff and cse.
         '''
         a_alphas = self.a_alpha_and_derivatives(T)
-        alpha, d_alpha_dT = a_alphas[0]/self.a, a_alphas[1]/self.a
-        Tr = T/self.Tc
-        if Tr >= 0.32:
-            c = self.Psat_coeffs
-            x0 = alpha/T
-            x1 = -self.Tc*x0 + 1
-            x2 = c[0]*x1
-            x3 = c[2] - x1*(c[1] - x2)
-            x4 = c[3] - x1*x3
-            x5 = c[4] - x1*x4
-            x6 = c[5] - x1*x5
-            x7 = c[6] - x1*x6
-            x8 = c[7] - x1*x7
-            x9 = c[8] - x1*x8
-            return self.Pc*(-(d_alpha_dT - x0)*(-c[9] + x1*x9 + x1*(-x1*(-x1*(-x1*(-x1*(-x1*(-x1*(-x1*(c[1] - 2*x2) + x3) + x4) + x5) + x6) + x7) + x8) + x9)) + 1./self.Tc)*exp(c[10] - x1*(c[9] - x1*(c[8] - x1*(c[7] - x1*(c[6] - x1*(c[5] - x1*(c[4] - x1*(c[3] - x1*(c[2] + x1*(-c[1] + x2))))))))))    
-        else:
+        Tc, alpha, d_alpha_dT = self.Tc, a_alphas[0]/self.a, a_alphas[1]/self.a
+        Tr = T/Tc
+        Pc = self.Pc
+        if Tr < 0.32:
             c = self.Psat_coeffs_limiting
             return self.Pc*T*c[0]*(self.Tc*d_alpha_dT/T - self.Tc*alpha/(T*T))*exp(c[0]*(-1. + self.Tc*alpha/T) + c[1])/self.Tc + self.Pc*exp(c[0]*(-1. + self.Tc*alpha/T) + c[1])/self.Tc
-        
+        elif Tr > 0.999:
+            x = alpha/Tr - 1.
+            y = horner(self.Psat_coeffs_critical, x)
+            dy_dT = (Tc*d_alpha_dT/T - Tc*alpha/T**2)*horner(reversed(polyder(reversed(self.Psat_coeffs_critical))), x)
+            return self.Pc*(T*dy_dT/Tc + y/Tc)
+        else:
+            x = alpha/Tr - 1.
+            y = chebval(self.Psat_cheb_constant_factor[1]*(x + self.Psat_cheb_constant_factor[0]), self.Psat_cheb_coeffs)
+            
+            exp_y = exp(y)
+            dy_dT = (Tc*d_alpha_dT/T - Tc*alpha/T**2)*chebval(
+                     self.Psat_cheb_constant_factor[1]*(x + self.Psat_cheb_constant_factor[0]),
+                     chebder(self.Psat_cheb_coeffs))*self.Psat_cheb_constant_factor[1]
+            Psat = Pc*T*exp_y*dy_dT/Tc + Pc*exp_y/Tc
+            return Psat
+            
     def V_l_sat(self, T):
         r'''Method to calculate molar volume of the liquid phase along the
         saturation line.

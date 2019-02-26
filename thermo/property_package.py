@@ -2256,8 +2256,10 @@ class GceosBase(Ideal):
         Psats = []
         try:
             try:
+                assert self.eos_l is not None
                 eos_base = self.eos_l
             except AttributeError:
+                assert self.eos_g is not None
                 eos_base = self.eos_g
         except:
             eos_base = self.to_TP_zs(T=T, P=fake_P, zs=fake_zs)
@@ -2272,7 +2274,12 @@ class GceosBase(Ideal):
         fake_zs = [1./self.N]*self.N
         Tsats = []
         try:
-            eos_base = self.eos_l if hasattr(self, 'eos_l') else self.eos_g
+            try:
+                assert self.eos_l is not None
+                eos_base = self.eos_l
+            except AttributeError:
+                assert self.eos_g is not None
+                eos_base = self.eos_g
         except:
             eos_base = self.to_TP_zs(T=fake_T, P=P, zs=fake_zs)
         
@@ -2638,6 +2645,22 @@ class GceosBase(Ideal):
     def flash_TP_zs(self, T, P, zs, Wilson_first=True):
         info = []
         eos = self.to_TP_zs(T=T, P=P, zs=zs, fugacities=False)
+        if self.N == 1:
+            if eos.phase == 'l/g':
+                liq = eos.G_dep_l < eos.G_dep_g
+            else:
+                liq = eos.phase == 'l'
+            if liq:
+                self.eos_l = eos
+                self.eos_g = None
+                self.info = info
+                return 'l', [1.0], None, 0.0
+            else:
+                self.eos_l = None
+                self.eos_g = eos
+                self.info = info
+                return 'g', None, [1.0], 1.0
+        
         try:
             G_dep_eos = min(eos.G_dep_l, eos.G_dep_g)
         except:
@@ -2794,7 +2817,7 @@ class GceosBase(Ideal):
                 raise ValueError("Pressure is greater than critical pressure")
             Tsat = self._Tsats(P)[0]
             self.eos_l = self.eos_g = self.to_TP_zs(T=Tsat, P=P, zs=zs)
-            return 'l/g', [1.0], [1.0], VF, Tsats[0]
+            return 'l/g', [1.0], [1.0], VF, Tsat
 #        elif 1.0 in zs:
 #            raise NotImplemented
         
@@ -3361,7 +3384,6 @@ class GceosBase(Ideal):
             Ts_attempt.append(T_guess)
             VFs_attempt.append(V_over_F)
             
-
 
     def PH_error_1P(self, T, P, zs, H_goal):
         eos_phase = self.to_TP_zs(T=T, P=P, zs=zs, fugacities=False)
