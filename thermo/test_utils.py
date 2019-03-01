@@ -105,6 +105,88 @@ def pkg_tabular_data_TVF(IDs, pkg_ID, zs, VF_pts=50, T_pts=50, T_min=None,
     
     return Ts, VFs, data, metadata
 
+def pkg_tabular_data_PVF(IDs, pkg_ID, zs, VF_pts=50, P_pts=50, P_min=None,
+                         P_max=None, VF_min=None, VF_max=None, attrs=default_attrs):
+    pkg = PropertyPackageConstants(IDs, pkg_ID)
+    
+    if P_min is None:
+        P_min = 100.0
+    if P_max is None:
+        if pkg.pkg.N == 1:
+            P_max = pkg.Pcs[0]
+        else:
+            P_max = max(i for i in pkg.Pcs if i is not None)*2
+    
+    if VF_min is None:
+        VF_min = 0.0
+    if VF_max is None:
+        VF_max = 1.0
+
+    Ps = linspace(P_min, P_max, P_pts)
+    VFs = linspace(VF_min, VF_max, VF_pts)
+    data = []
+    for P in Ps:
+        data_row = []
+        for VF in VFs:
+#            print(P, VF)
+            try:
+                pkg.pkg.flash(P=P, VF=VF, zs=zs)
+                row = tuple(getattr(pkg.pkg, s) for s in attrs)
+            except Exception as e:
+                row = tuple(None for s in attrs)
+                print(e, P, VF, IDs, pkg_ID, zs)
+            data_row.append(row)
+        data.append(data_row)
+    
+    metadata = {'spec':('P', 'VF'), 'pkg': pkg_ID, 'zs': zs, 'IDs': IDs,
+                'P_min': P_min, 'P_max': P_max, 'VF_min': VF_min, 'VF_max': VF_max,
+                'Ps': Ps, 'VFs': VFs}
+    
+    
+    return Ps, VFs, data, metadata
+
+
+def pkg_tabular_data_PH(IDs, pkg_ID, zs, P_pts=50, H_pts=50, H_min=None,
+                        H_max=None, P_min=None, P_max=None, attrs=default_attrs):
+    pkg = PropertyPackageConstants(IDs, pkg_ID).pkg
+
+    
+    if P_min is None:
+        P_min = 100
+    if P_max is None:
+        P_max = max(i for i in pkg.Pcs if i is not None)*2
+
+    if H_min is None or H_max is None:
+        T_min = min(i for i in pkg.Tms if i is not None)
+        T_max = max(i for i in pkg.Tcs if i is not None)*2
+        
+        Hm_range = []
+        for P in (P_min, P_max):
+            for T in (T_min, T_max):
+                pkg.flash(T=T, P=P, zs=zs)
+                Hm_range.append(pkg.Hm)
+    
+        if H_min is None:
+            H_min = min(Hm_range)
+        if H_max is None:
+            H_max = max(Hm_range)   
+
+    Hs = linspace(H_min, H_max, H_pts)
+    Ps = logspace(log10(P_min), log10(P_max), P_pts)
+    data = []
+    for H in Hs:
+        data_row = []
+        for P in Ps:
+            pkg.flash_caloric(Hm=H, P=P, zs=zs)
+            row = tuple(getattr(pkg, s) for s in attrs)
+            data_row.append(row)
+        data.append(data_row)
+    
+    metadata = {'spec':('P', 'H'), 'pkg': pkg_ID, 'zs': zs, 'IDs': IDs,
+                'H_min': H_min, 'H_max': H_max, 'P_min': P_min, 'P_max': P_max,
+                'Hs': Hs, 'Ps': Ps}
+    
+    return Hs, Ps, data, metadata
 
 def save_tabular_data_as_json(specs0, specs1, metadata, data, attrs, path):
     r'''Saves tabular data from a property package to a json file for testing,
@@ -155,4 +237,6 @@ def save_tabular_data_as_json(specs0, specs1, metadata, data, attrs, path):
     return True
 
 tabular_data_functions = {'TP': pkg_tabular_data_TP,
-                          'TVF': pkg_tabular_data_TVF}
+                          'TVF': pkg_tabular_data_TVF,
+                          'PVF': pkg_tabular_data_PVF,
+                          'PH': pkg_tabular_data_PH}

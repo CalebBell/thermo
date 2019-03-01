@@ -35,7 +35,8 @@ pure_cases = []
 
 pure_case_compounds = ['water', 'methane', 'ethane', 'ammonia', 'nitrogen', 'oxygen']
 pure_case_packages = [SRK_PKG, PR_PKG]
-functions = ['TVF', 'TP']
+functions = ['TVF', 'PVF', 'TP', 'PH']
+functions = ['PH']
 
 for pkg in pure_case_packages:
     for compound in pure_case_compounds:

@@ -2247,46 +2247,74 @@ class GceosBase(Ideal):
         self.MWs = MWs
         self.atomss = atomss
         
+        if atomss is not None:
+            self.n_atoms = [sum(i.values()) for i in atomss]
+        
         # No `zs`
 #        self.eos_mix_ref = self.eos_mix(T=self.T_REF_IG, P=self.P_REF_IG, Tcs=self.Tcs, Pcs=self.Pcs, kijs=self.kijs, **self.eos_kwargs)
+    def eos_pure_ref(self, i=None):
+        try:
+            if i is None:
+                return self.eos_pure_refs
+            else:
+                return self.eos_pure_refs[i]
+        except:
+            fake_T = 298.15
+            fake_P = 101325.0
+            fake_zs = [1./self.N]*self.N
+            eos_base = self.to_TP_zs(T=fake_T, P=fake_P, zs=fake_zs)
+            eos_pure_refs = []
+            for idx in self.cmps:
+                eos_pure = eos_base.to_TP_pure(fake_T, fake_P, idx)
+                
+                eos_pure_refs.append(eos_pure)
+            self.eos_pure_refs = eos_pure_refs
+            
+            if i is None:
+                return self.eos_pure_refs
+            else:
+                return self.eos_pure_refs[i]
 
     def _Psats(self, T):
-        fake_P = 1e7 # Try to avoid two solutions (slower)
-        fake_zs = [1./self.N]*self.N
-        Psats = []
-        try:
-            try:
-                assert self.eos_l is not None
-                eos_base = self.eos_l
-            except AttributeError:
-                assert self.eos_g is not None
-                eos_base = self.eos_g
-        except:
-            eos_base = self.to_TP_zs(T=T, P=fake_P, zs=fake_zs)
+#        fake_P = 1e7 # Try to avoid two solutions (slower)
+#        fake_zs = [1./self.N]*self.N
+#        Psats = []
+#        try:
+#            try:
+#                assert self.eos_l is not None
+#                eos_base = self.eos_l
+#            except AttributeError:
+#                assert self.eos_g is not None
+#                eos_base = self.eos_g
+#        except:
+#            eos_base = self.to_TP_zs(T=T, P=fake_P, zs=fake_zs)
         
-        for i in self.cmps:
-            eos_pure = eos_base.to_TP_pure(T, fake_P, i)
-            Psats.append(eos_pure.Psat(T))
-        return Psats
+#        for i in self.cmps:
+#            eos_pure = eos_base.to_TP_pure(T, fake_P, i)
+#            Psats.append(eos_pure.Psat(T))
+        return [eos.Psat(T) for eos in self.eos_pure_ref()]
+#        return Psats
 
     def _Tsats(self, P):
-        fake_T = 300
-        fake_zs = [1./self.N]*self.N
-        Tsats = []
-        try:
-            try:
-                assert self.eos_l is not None
-                eos_base = self.eos_l
-            except AttributeError:
-                assert self.eos_g is not None
-                eos_base = self.eos_g
-        except:
-            eos_base = self.to_TP_zs(T=fake_T, P=P, zs=fake_zs)
-        
-        for i in self.cmps:
-            eos_pure = eos_base.to_TP_pure(fake_T, P, i)
-            Tsats.append(eos_pure.Tsat(P))
-        return Tsats
+        return [eos.Tsat(P) for eos in self.eos_pure_ref()]
+
+#        fake_T = 300
+#        fake_zs = [1./self.N]*self.N
+#        Tsats = []
+#        try:
+#            try:
+#                assert self.eos_l is not None
+#                eos_base = self.eos_l
+#            except AttributeError:
+#                assert self.eos_g is not None
+#                eos_base = self.eos_g
+#        except:
+#            eos_base = self.to_TP_zs(T=fake_T, P=P, zs=fake_zs)
+#        
+#        for i in self.cmps:
+#            eos_pure = eos_base.to_TP_pure(fake_T, P, i)
+#            Tsats.append(eos_pure.Tsat(P))
+#        return Tsats
 
     def dH_dT(self, T, P, V_over_F, zs, xs, ys, eos_l, eos_g, phase):
         # Believed correct
@@ -2300,13 +2328,17 @@ class GceosBase(Ideal):
         if phase == 'g':
             for zi, obj in zip(zs, HeatCapacityGases):
                 H += zi*obj.T_dependent_property(T)
+#                print(H, 'Cpg')
             try:
+#                print('returning liquid', eos_g.dH_dep_dT_g)
                 H += eos_g.dH_dep_dT_g
             except AttributeError:
                 H += eos_g.dH_dep_dT_l
         elif phase == 'l':
-            for i in cmps:
-                H += zs[i]*HeatCapacityGases[i].T_dependent_property(T)
+            for zi, obj in zip(zs, HeatCapacityGases):
+                H += zi*obj.T_dependent_property(T)
+                # Be careful Cp is continuous
+#                print(H, 'Cpg')
             try:
                 H += eos_l.dH_dep_dT_l
             except AttributeError:
@@ -2486,7 +2518,7 @@ class GceosBase(Ideal):
                 pass
                 # PS
             elif P is not None and Hm is not None:
-                phase, xs, ys, V_over_F, T = self.flash_PH_zs(P, Hm, zs)
+                phase, xs, ys, VF, T = self.flash_PH_zs(P, Hm, zs)
                 # PH
 
             elif ((T is not None and P is not None) or
@@ -2496,12 +2528,14 @@ class GceosBase(Ideal):
                   pass
             else:
                 raise Exception('Flash inputs unsupported')
-    
+            self.P = P
             self.T = T
-            self.V_over_F = V_over_F
+            self.V_over_F = VF
             self.xs = xs
             self.ys = ys
             self.phase = phase
+            self.Hm = Hm
+            self.Sm = Sm
     
 #            ''' The routine needs to be upgraded to set these properties
 #                self.T = T
@@ -2816,7 +2850,7 @@ class GceosBase(Ideal):
             if P > self.Pcs[0]:
                 raise ValueError("Pressure is greater than critical pressure")
             Tsat = self._Tsats(P)[0]
-            self.eos_l = self.eos_g = self.to_TP_zs(T=Tsat, P=P, zs=zs)
+            self.eos_l = self.eos_g = self.to_TP_zs(T=Tsat, P=P, zs=zs, fugacities=False)
             return 'l/g', [1.0], [1.0], VF, Tsat
 #        elif 1.0 in zs:
 #            raise NotImplemented
@@ -2868,13 +2902,11 @@ class GceosBase(Ideal):
             if T > self.Tcs[0]:
                 raise ValueError("Temperature is greater than critical Temperature")
             Psat = self._Psats(T)[0]
-            self.eos_l = self.eos_g = self.to_TP_zs(T=T, P=Psat, zs=zs)
+            self.eos_l = self.eos_g = self.to_TP_zs(T=T, P=Psat, zs=zs, fugacities=False)
             return 'l/g', [1.0], [1.0], VF, Psat
 #        elif 1.0 in zs:
 #            raise NotImplemented
 #            return 'l/g', list(zs), list(zs), VF, Psats[zs.index(1.0)]
-
-        # Disable bubbles and dew for now = need to refactor to get everything about them
         if VF == 0:
             xs, ys, VF, P, eos_l, eos_g = self.bubble_P(T=T, zs=zs)
         elif VF == 1:
@@ -3398,7 +3430,11 @@ class GceosBase(Ideal):
         return err
 
     def PH_error_and_der_1P(self, T, P, zs, H_goal, info=None):
-        eos_phase = self.to_TP_zs(T=T, P=P, zs=zs, fugacities=False)
+#        print(T, 'T')
+        if self.N == 1:
+            eos_phase = self.eos_pure_ref(0).to_TP(T=T, P=P)
+        else:
+            eos_phase = self.to_TP_zs(T=T, P=P, zs=zs, fugacities=False)
         phase = eos_phase.more_stable_phase
         if phase == 'l':
             eos_l, eos_g = eos_phase, None
@@ -3409,7 +3445,7 @@ class GceosBase(Ideal):
         err = H_calc - H_goal
         
         dErr_dT = self.dH_dT(T, P, None, zs, zs, zs, eos_l, eos_g, phase)
-#        print(T, err, dErr_dT)
+#        print(T, err, dErr_dT, 'dErr_dT')
         if info is not None:
             info[:] = (eos_phase, phase, err, dErr_dT)
         return err, dErr_dT
@@ -3448,8 +3484,7 @@ class GceosBase(Ideal):
                     yield T_guess
                 elif i == 0:
                     MW = mixing_simple(zs, self.MWs)
-                    atoms = mixture_atomic_composition(self.atomss, zs)
-                    sv = similarity_variable(atoms, MW=MW)
+                    sv = mixing_simple(zs, self.n_atoms)/MW
                     yield Lastovka_Shaw_T_for_Hm(Hm=Hm, MW=MW, similarity_variable=sv)
                 elif i == 1:
                     Tc = mixing_simple(zs, self.Tcs)
@@ -3484,8 +3519,7 @@ class GceosBase(Ideal):
                     yield T_guess
                 elif i == 0:
                     MW = mixing_simple(zs, self.MWs)
-                    atoms = mixture_atomic_composition(self.atomss, zs)
-                    sv = similarity_variable(atoms, MW=MW)
+                    sv = mixing_simple(zs, self.n_atoms)/MW
                                         
                     def approx_H(Hm, P, MW, similarity_variable, Tcs, Pcs, omegas,
                                  T_ref=298.15, 
@@ -3530,49 +3564,99 @@ class GceosBase(Ideal):
                 pass
             i += 1
 
+    def flash_PH_2P_N1(self, P, Hm, zs):
+        # Solves only when two phase
+        _, _, _, _, T = self.flash_PVF_zs(P, 1.0, zs)
+        eos_l, eos_g = self.eos_l, self.eos_g
+        H_l = self.enthalpy_eosmix(T, P, 0.0, zs, zs, zs, eos_l, eos_g, 'l')
+        H_g = self.enthalpy_eosmix(T, P, 1.0, zs, zs, zs, eos_l, eos_g, 'g')
+        VF = (Hm - H_l)/(H_g - H_l)
+
+        return T, 'l/g', eos_l, VF
 
     def flash_PH_1P(self, P, Hm, zs, T_guess=None, minimum_progress=0.3):
+#        print('starting')
         guesses = []
         calcs = {}
         guess_generator = self.PH_T_guesses_1P(P, Hm, zs, T_guess=T_guess)
-        
         checker = oscillation_checker(minimum_progress)
-        def to_solve(T):
+        def to_solve(T, der=True):
+#            print(T)
             info = []
             if T in calcs:
-                return calcs[T][-2:]
+                if der:
+                    return calcs[T][-2:]
+                else:
+                    return calcs[T][-2]
             
             err_and_der = self.PH_error_and_der_1P(T, P, zs, Hm, info=info)
             
             calcs[T] = info
             
             oscillating = checker(T, err_and_der[0])
+#            print(T, err_and_der[0], oscillating, 'T and err and oscillating')
             if oscillating:
                 raise ValueError("Oscillating")
-#            print(T, err_and_der[0], 'T and err')
+            if not der:
+                return err_and_der[0]
             return err_and_der
         
         # Future work: brenth?
         # Oscillation - quit right away?
         ans = None
-        for T_guess in guess_generator:
-            guesses.append(T_guess)
+#        print('starting guess')
+        for T_trial in guess_generator:
+            
+            guesses.append(T_trial)
+#            print('guess', T_trial)
             
             try:
-                ans = newton(to_solve, T_guess, fprime=True, require_eval=True)
-#                print(ans, 'done')
+                # Need to add damping function which does not let a negative step go more than .75
+                # to absolute zero
+                def damping_func(x, step, damping=1.0):
+                    if x + step < 0:
+                        step = -0.5*x
+#                        print('damping')
+                    return x + step*damping
+#                print('starting newton')
+                ans = newton(to_solve, T_trial, fprime=True, require_eval=True,
+                             damping_func=damping_func, maxiter=100)
+#                print('done newton', ans)
                 break
             except Exception as e:
+                print(e, 'newton failed')
+                
+                if self.N == 1:
+                    T, phase, eos, VF = self.flash_PH_2P_N1(P, Hm, zs)
+#                    print('VF', VF)
+                    checker.minimum_progress = 0.0
+                    if VF < 0 or VF > 1:
+                        # Use a bounded solver; will have data available in the oscillation checker
+                        if VF < 0:
+                            last_limit = checker.xs_neg[-1]
+                        else:
+                            last_limit = checker.xs_pos[-1]
+                        try:
+                            ans = brenth(to_solve, T, last_limit, args=(False,))
+                        except Exception as e:
+                            print(e)
+#                        print('done', ans)
+                        break 
+                            
+                            
+#                        raise ValueError("Two phase one component solution calculated an unphysical vapor faction")
+                    else:
+                        return T, phase, eos, VF
+                    # probably oscillating, call a special function which 
+                    # does a dew T calc, and calculates
+#                print(e, 'newton failed')
+                checker.clear()
                 continue
         if ans is None:
             raise ValueError("Could not converge 1 phase")
 
-
-
-
-
         info = calcs[ans]
-        return ans, info[1], info[0]
+        return ans, info[1], info[0], None
         
 
     def flash_PH_zs(self, P, Hm, zs, T_guess=None, xs_guess=None, ys_guess=None,
@@ -3585,7 +3669,11 @@ class GceosBase(Ideal):
         for algorithm in algorithms:
             try:
                 if algorithm == DIRECT_1P:
-                    T, phase, eos = self.flash_PH_1P(P, Hm, zs, T_guess)
+                    T, phase, eos, V_over_F = self.flash_PH_1P(P, Hm, zs, T_guess)
+#                    print('done flash_PH_1P', V_over_F)
+                    if V_over_F is not None:
+                        # Must be a two phase, 1 component solution
+                        return phase, [1.0], [1.0], V_over_F, T
                     try:
                         if eos.G_dep_l < eos.G_dep_g:
                             xs, ys, V_over_F = zs, None, 0.0
@@ -3603,7 +3691,10 @@ class GceosBase(Ideal):
                     eos_1P = eos
                     single_phase_data = phase, xs, ys, V_over_F, T
 #                    print('Single phase T solution', T)
-                    stable, _, _ = self.stability_test_VL(T, P, zs, eos=eos)
+                    if self.N > 1:
+                        stable, _, _ = self.stability_test_VL(T, P, zs, eos=eos)
+                    else:
+                        stable = True
                     if not stable:
                         raise ValueError("One phase solution is unstable")
                     return phase, xs, ys, V_over_F, T

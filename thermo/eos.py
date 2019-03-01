@@ -871,11 +871,24 @@ should be calculated by this method, in a user subclass.')
         calculation much slower.
         '''
         def to_solve(T):
-            return self.Psat(T, polish=polish) - P
+            err = self.Psat(T, polish=polish) - P
+#            print(err, T)
+#            derr_dT = self.dPsat_dT(T)
+            return err#, derr_dT
+#            return copysign(log(abs(err)), err)
+        # Outstanding improvements to do: Better guess; get NR working;
+        # see if there is a general curve
+        
+        guess = -5.4*self.Tc/(1.0*log(P/self.Pc) - 5.4)
+#        return newton(to_solve, guess, fprime=True, ytol=1e-6, high=self.Pc)
+#        return newton(to_solve, guess, ytol=1e-6, high=self.Pc)
         try:
-            return brenth(to_solve, 0.2*self.Tc, self.Tc)
+            return brenth(to_solve, max(guess*.7, 0.2*self.Tc), min(self.Tc, guess*1.3))
         except:
-            return brenth(to_solve, 0.2*self.Tc, self.Tc*1.5)
+            try:
+                return brenth(to_solve, 0.2*self.Tc, self.Tc)
+            except:
+                return brenth(to_solve, 0.2*self.Tc, self.Tc*1.5)
             
     def Psat(self, T, polish=False):
         r'''Generic method to calculate vapor pressure for a specified `T`.
@@ -912,11 +925,7 @@ should be calculated by this method, in a user subclass.')
         -----
         EOSs sharing the same `b`, `delta`, and `epsilon` have the same
         coefficient sets.
-        
-        All coefficients were derived with numpy's polyfit. The intersection
-        between the polynomials is continuous, but there is a step change
-        in its derivative.
-        
+                
         Form for the regression is inspired from [1]_.
         
         No volume solution is needed when `polish=False`; the only external 
@@ -933,9 +942,7 @@ should be calculated by this method, in a user subclass.')
         alpha = self.a_alpha_and_derivatives(T, full=False)/self.a
         Tr = T/self.Tc
         x = alpha/Tr - 1.
-        
-#        Psat_cheb_coeffs, Psat_cheb_constant_factor
-                
+                        
         if Tr > 0.999:
             y = horner(self.Psat_coeffs_critical, x)
             Psat = y*Tr*self.Pc
@@ -1001,7 +1008,7 @@ should be calculated by this method, in a user subclass.')
     def dPsat_dT(self, T):
         r'''Generic method to calculate the temperature derivative of vapor 
         pressure for a specified `T`. Implements the analytical derivative
-        of the two polynomials described in `Psat`.
+        of the three polynomials described in `Psat`.
         
         As with `Psat`, results above the critical temperature are meaningless. 
         The first-order polynomial which is used to calculate it under 0.32 Tc
@@ -1028,27 +1035,34 @@ should be calculated by this method, in a user subclass.')
         '''
         a_alphas = self.a_alpha_and_derivatives(T)
         Tc, alpha, d_alpha_dT = self.Tc, a_alphas[0]/self.a, a_alphas[1]/self.a
-        Tr = T/Tc
+        Tc_inv = 1.0/Tc
+        T_inv = 1.0/T
+        Tr = T*Tc_inv
         Pc = self.Pc
         if Tr < 0.32:
             c = self.Psat_coeffs_limiting
-            return self.Pc*T*c[0]*(self.Tc*d_alpha_dT/T - self.Tc*alpha/(T*T))*exp(c[0]*(-1. + self.Tc*alpha/T) + c[1])/self.Tc + self.Pc*exp(c[0]*(-1. + self.Tc*alpha/T) + c[1])/self.Tc
+            return self.Pc*T*c[0]*(self.Tc*d_alpha_dT/T - self.Tc*alpha/(T*T)
+                              )*exp(c[0]*(-1. + self.Tc*alpha/T) + c[1]
+                              )/self.Tc + self.Pc*exp(c[0]*(-1.
+                              + self.Tc*alpha/T) + c[1])/self.Tc
         elif Tr > 0.999:
             x = alpha/Tr - 1.
             y = horner(self.Psat_coeffs_critical, x)
-            dy_dT = (Tc*d_alpha_dT/T - Tc*alpha/T**2)*horner(reversed(polyder(reversed(self.Psat_coeffs_critical))), x)
-            return self.Pc*(T*dy_dT/Tc + y/Tc)
+            dy_dT = T_inv*(Tc*d_alpha_dT - Tc*alpha*T_inv)*horner(self.Psat_coeffs_critical_der, x)
+            return self.Pc*(T*dy_dT*Tc_inv + y*Tc_inv)
         else:
             x = alpha/Tr - 1.
-            y = chebval(self.Psat_cheb_constant_factor[1]*(x + self.Psat_cheb_constant_factor[0]), self.Psat_cheb_coeffs)
+            arg = (self.Psat_cheb_constant_factor[1]*(x + self.Psat_cheb_constant_factor[0]))
+            y = chebval(arg, self.Psat_cheb_coeffs)
             
             exp_y = exp(y)
-            dy_dT = (Tc*d_alpha_dT/T - Tc*alpha/T**2)*chebval(
-                     self.Psat_cheb_constant_factor[1]*(x + self.Psat_cheb_constant_factor[0]),
-                     chebder(self.Psat_cheb_coeffs))*self.Psat_cheb_constant_factor[1]
-            Psat = Pc*T*exp_y*dy_dT/Tc + Pc*exp_y/Tc
+            dy_dT = T_inv*(Tc*d_alpha_dT - Tc*alpha*T_inv)*chebval(arg,
+                     self.Psat_cheb_coeffs_der)*self.Psat_cheb_constant_factor[1]
+            Psat = Pc*T*exp_y*dy_dT*Tc_inv + Pc*exp_y*Tc_inv
             return Psat
-            
+        
+        
+        
     def V_l_sat(self, T):
         r'''Method to calculate molar volume of the liquid phase along the
         saturation line.
@@ -1150,6 +1164,21 @@ should be calculated by this method, in a user subclass.')
             return self.__class__(T=T, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega, **self.kwargs)
         else:
             return self
+
+    @property
+    def more_stable_phase(self):
+        try:
+            if self.G_dep_l < self.G_dep_g:
+                return 'l'
+            else:
+                return 'g'
+        except:
+            try:
+                self.Z_g
+                return 'g'
+            except:
+                return 'l'
+
         
 
     def discriminant_at_T_zs(self, P):
@@ -2553,7 +2582,10 @@ class PR(GCEOS):
                         2.122697092724708e-09, -1.0315557015083254e-09, 5.027805333255708e-10, -2.4590905784642285e-10, 
                         1.206301486380689e-10, -5.932583414867791e-11, 2.9274476912683964e-11, -1.4591650777202522e-11, 
                         7.533835507484918e-12, -4.377200831613345e-12, 1.7413208326438542e-12]
+    Psat_cheb_coeffs_der = chebder(Psat_cheb_coeffs)
+    Psat_coeffs_critical_der = polyder(Psat_coeffs_critical[::-1])[::-1]
     Psat_cheb_constant_factor = (-2.355355160853182, 0.42489124941587103)
+    
 
     def __init__(self, Tc, Pc, omega, T=None, P=None, V=None):
         self.Tc = Tc
@@ -3279,7 +3311,9 @@ class VDW(GCEOS):
                         -5.198342841253312e-16, -2.19739320055784e-15, -1.0876309618559898e-15, 7.727786509661994e-16,
                         7.958450521858285e-16, 2.088444434750203e-17, -1.3864912907016191e-16]
     Psat_cheb_constant_factor = (-1.0630005005005003, 0.9416200294550813)
-        
+    Psat_cheb_coeffs_der = chebder(Psat_cheb_coeffs)
+    Psat_coeffs_critical_der = polyder(Psat_coeffs_critical[::-1])[::-1]
+
     def __init__(self, Tc, Pc, T=None, P=None, V=None, omega=None):
         self.Tc = Tc
         self.Pc = Pc
@@ -3450,7 +3484,8 @@ class RK(GCEOS):
                         2.0373765879672795e-12, -8.507821454718095e-13, 3.4975627537410514e-13, -1.4468659018281038e-13,
                         6.536766028637786e-14, -2.7636123641275323e-14, 1.105377996166862e-14]
     Psat_cheb_constant_factor = (0.8551757791729341, 9.962912449541513)
-
+    Psat_cheb_coeffs_der = chebder(Psat_cheb_coeffs)
+    Psat_coeffs_critical_der = polyder(Psat_coeffs_critical[::-1])[::-1]
 
     def __init__(self, Tc, Pc, T=None, P=None, V=None, omega=None):
         self.Tc = Tc
@@ -3607,7 +3642,8 @@ class SRK(GCEOS):
                         8.525075935982007e-12, -3.770209730351304e-12, 1.6512636527230007e-12, -7.22057288092548e-13,
                         3.2921267708457824e-13, -1.616661448808343e-13, 6.227456701354828e-14]
     Psat_cheb_constant_factor = (-2.5857326352412238, 0.38702722494279784)
-
+    Psat_cheb_coeffs_der = chebder(Psat_cheb_coeffs)
+    Psat_coeffs_critical_der = polyder(Psat_coeffs_critical[::-1])[::-1]
 
     def __init__(self, Tc, Pc, omega, T=None, P=None, V=None):
         self.Tc = Tc
