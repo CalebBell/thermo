@@ -3470,11 +3470,6 @@ class GceosBase(Ideal):
             # TODO stability test, 1 component
         return {'T': T_goal}
 
-    def flash_PH_zs_NR_1P(self, P, Hm, zs, T_guess=500.0, damping=1.0):
-        T_goal = newton(self.PH_error_and_der_1P, T_guess, args=(P, zs, Hm), fprime=True,
-                        xtol=1e-4, damping=damping)
-        return {'T': T_goal}
-
 
     def PH_T_guesses_1P(self, P, Hm, zs, T_guess=None):
         i = -1 if T_guess is not None else 0
@@ -3624,7 +3619,8 @@ class GceosBase(Ideal):
 #                print('done newton', ans)
                 break
             except Exception as e:
-                print(e, 'newton failed')
+                pass
+#                print(e, 'newton failed')
                 
                 if self.N == 1:
                     T, phase, eos, VF = self.flash_PH_2P_N1(P, Hm, zs)
@@ -3639,7 +3635,8 @@ class GceosBase(Ideal):
                         try:
                             ans = brenth(to_solve, T, last_limit, args=(False,))
                         except Exception as e:
-                            print(e)
+                            pass
+#                            print(e)
 #                        print('done', ans)
                         break 
                             
@@ -3678,16 +3675,20 @@ class GceosBase(Ideal):
                         if eos.G_dep_l < eos.G_dep_g:
                             xs, ys, V_over_F = zs, None, 0.0
                             self.eos_l = eos
+                            self.eos_g = None
                         else:
                             xs, ys, V_over_F = None, zs, 1.0
                             self.eos_g = eos
+                            self.eos_l = None
                     except:
                         if hasattr(eos, 'G_dep_g'):
                             xs, ys, V_over_F = None, zs, 1.0
                             self.eos_g = eos
+                            self.eos_l = None
                         else:
                             xs, ys, V_over_F = zs, None, 0.0
                             self.eos_l = eos
+                            self.eos_g = None
                     eos_1P = eos
                     single_phase_data = phase, xs, ys, V_over_F, T
 #                    print('Single phase T solution', T)

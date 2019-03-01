@@ -177,6 +177,7 @@ def pkg_tabular_data_PH(IDs, pkg_ID, zs, P_pts=50, H_pts=50, H_min=None,
     for H in Hs:
         data_row = []
         for P in Ps:
+            print(P, H, IDs, zs)
             pkg.flash_caloric(Hm=H, P=P, zs=zs)
             row = tuple(getattr(pkg, s) for s in attrs)
             data_row.append(row)
