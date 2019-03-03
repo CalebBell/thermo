@@ -189,6 +189,51 @@ def pkg_tabular_data_PH(IDs, pkg_ID, zs, P_pts=50, H_pts=50, H_min=None,
     
     return Hs, Ps, data, metadata
 
+
+def pkg_tabular_data_PS(IDs, pkg_ID, zs, P_pts=50, S_pts=50, S_min=None,
+                        S_max=None, P_min=None, P_max=None, attrs=default_attrs):
+    pkg = PropertyPackageConstants(IDs, pkg_ID).pkg
+
+    
+    if P_min is None:
+        P_min = 100
+    if P_max is None:
+        P_max = max(i for i in pkg.Pcs if i is not None)*2
+
+    if S_min is None or S_max is None:
+        T_min = min(i for i in pkg.Tms if i is not None)
+        T_max = max(i for i in pkg.Tcs if i is not None)*2
+        
+        Sm_range = []
+        for P in (P_min, P_max):
+            for T in (T_min, T_max):
+                pkg.flash(T=T, P=P, zs=zs)
+                Sm_range.append(pkg.Sm)
+    
+        if S_min is None:
+            S_min = min(Sm_range)
+        if S_max is None:
+            S_max = max(Sm_range)   
+
+    Ss = linspace(S_min, S_max, S_pts)
+    Ps = logspace(log10(P_min), log10(P_max), P_pts)
+    data = []
+    for S in Ss:
+        data_row = []
+        for P in Ps:
+#            print(P, S, IDs, zs)
+            pkg.flash_caloric(Sm=S, P=P, zs=zs)
+            row = tuple(getattr(pkg, s) for s in attrs)
+            data_row.append(row)
+        data.append(data_row)
+    
+    metadata = {'spec':('P', 'S'), 'pkg': pkg_ID, 'zs': zs, 'IDs': IDs,
+                'S_min': S_min, 'S_max': S_max, 'P_min': P_min, 'P_max': P_max,
+                'Ss': Ss, 'Ps': Ps}
+    
+    return Ss, Ps, data, metadata
+
+
 def save_tabular_data_as_json(specs0, specs1, metadata, data, attrs, path):
     r'''Saves tabular data from a property package to a json file for testing,
     plotting, and storage.
@@ -240,4 +285,5 @@ def save_tabular_data_as_json(specs0, specs1, metadata, data, attrs, path):
 tabular_data_functions = {'TP': pkg_tabular_data_TP,
                           'TVF': pkg_tabular_data_TVF,
                           'PVF': pkg_tabular_data_PVF,
-                          'PH': pkg_tabular_data_PH}
+                          'PH': pkg_tabular_data_PH,
+                          'PS': pkg_tabular_data_PS}

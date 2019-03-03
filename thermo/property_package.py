@@ -68,7 +68,7 @@ from thermo.activity import get_T_bub_est, get_T_dew_est, get_P_dew_est, get_P_b
 from thermo.unifac import UNIFAC, UFSG, DOUFSG, DOUFIP2006
 from thermo.eos_mix import *
 from thermo.eos import *
-from thermo.heat_capacity import Lastovka_Shaw_T_for_Hm, Lastovka_Shaw_T_for_Sm, Dadgostar_Shaw_integral, Lastovka_Shaw_integral
+from thermo.heat_capacity import Lastovka_Shaw_T_for_Hm, Lastovka_Shaw_T_for_Sm, Dadgostar_Shaw_integral_over_T, Dadgostar_Shaw_integral, Lastovka_Shaw_integral
 from thermo.phase_change import SMK
 
 
@@ -3459,21 +3459,29 @@ class GceosBase(Ideal):
             VFs_attempt.append(V_over_F)
             
 
-    def PH_error_1P(self, T, P, zs, H_goal, info=None):
-        eos_phase = self.to_TP_zs(T=T, P=P, zs=zs, fugacities=False)
+    def P_HS_error_1P(self, T, P, zs, H_goal=None, S_goal=None, info=None):
+        if self.N == 1:
+            eos_phase = self.eos_pure_ref(0).to_TP(T=T, P=P)
+        else:
+            eos_phase = self.to_TP_zs(T=T, P=P, zs=zs, fugacities=False)
         phase = eos_phase.more_stable_phase
         if phase == 'l':
             eos_l, eos_g = eos_phase, None
         else:
             eos_l, eos_g = None, eos_phase
-        H_calc = self.enthalpy_eosmix(T, P, None, zs, None, None, eos_l, eos_g, phase)
-        err = H_calc - H_goal
+        if H_goal is not None:
+            H_calc = self.enthalpy_eosmix(T, P, None, zs, None, None, eos_l, eos_g, phase)
+            err = H_calc - H_goal
+        else:
+            S_calc = self.entropy_eosmix(T, P, None, zs, None, None, eos_l, eos_g, phase)
+            err = S_calc - S_goal
+            
         if info is not None:
             info[:] = (eos_phase, phase, err)
 #        print(T, err, info)
         return err
 
-    def PH_error_and_der_1P(self, T, P, zs, H_goal, info=None):
+    def P_HS_error_and_der_1P(self, T, P, zs, H_goal=None, S_goal=None, info=None):
 #        print(T, 'T')
         if self.N == 1:
             eos_phase = self.eos_pure_ref(0).to_TP(T=T, P=P)
@@ -3484,11 +3492,14 @@ class GceosBase(Ideal):
             eos_l, eos_g = eos_phase, None
         else:
             eos_l, eos_g = None, eos_phase
-            
-        H_calc = self.enthalpy_eosmix(T, P, None, zs, None, None, eos_l, eos_g, phase)
-        err = H_calc - H_goal
-        
-        dErr_dT = self.dH_dT(T, P, None, zs, zs, zs, eos_l, eos_g, phase)
+        if H_goal is not None:
+            H_calc = self.enthalpy_eosmix(T, P, None, zs, None, None, eos_l, eos_g, phase)
+            err = H_calc - H_goal
+            dErr_dT = self.dH_dT(T, P, None, zs, zs, zs, eos_l, eos_g, phase)
+        else:
+            S_calc = self.entropy_eosmix(T, P, None, zs, None, None, eos_l, eos_g, phase)
+            err = S_calc - S_goal
+            dErr_dT = self.dS_dT(T, P, None, zs, zs, zs, eos_l, eos_g, phase)
 #        print(T, err, dErr_dT, 'dErr_dT')
         if info is not None:
             info[:] = (eos_phase, phase, err, dErr_dT)
@@ -3510,7 +3521,7 @@ class GceosBase(Ideal):
                 T_high = max_Tc*8.0
         info = []
 
-        T = brenth(self.PH_error_1P, T_low, T_high, rtol=1e-8, args=(P, zs, Hm, info))
+        T = brenth(self.P_HS_error_1P, T_low, T_high, rtol=1e-8, args=(P, zs, Hm, None, info))
             # TODO stability test, 1 component
         return T, info[1], info[0], None
 
@@ -3524,7 +3535,9 @@ class GceosBase(Ideal):
                 elif i == 0:
                     MW = mixing_simple(zs, self.MWs)
                     sv = mixing_simple(zs, self.n_atoms)/MW
-                    yield Lastovka_Shaw_T_for_Hm(Hm=Hm, MW=MW, similarity_variable=sv)
+                    T_calc = Lastovka_Shaw_T_for_Hm(Hm=Hm, MW=MW, similarity_variable=sv)
+                    if 1 or T_calc > 0.0:
+                        yield T_calc
                 elif i == 1:
                     Tc = mixing_simple(zs, self.Tcs)
                     omega = mixing_simple(zs, self.omegas)
@@ -3539,8 +3552,9 @@ class GceosBase(Ideal):
                             return ((property_mass_to_molar(dH, MW)*factor - Hvap) - Hm)
                         return newton(err, 100, high=Tc)
                     
-                    T_guess = Dadgostar_Shaw_T_guess(Hm, MW, sv, Tc, omega, factor=1)
-                    yield T_guess
+                    T_calc = Dadgostar_Shaw_T_guess(Hm, MW, sv, Tc, omega, factor=1)
+                    if 1 or T_calc > 0.0:
+                        yield T_calc
                 elif i == 2:
                     yield 298.15
                     
@@ -3549,6 +3563,48 @@ class GceosBase(Ideal):
 #                print(e)
                 pass
             i += 1
+
+    def PS_T_guesses_1P(self, P, Sm, zs, T_guess=None):
+        i = -1 if T_guess is not None else 0
+        
+        Sm -= R*sum([zi*log(zi) for zi in zs if zi > 0.0]) # ideal composition entropy composition
+        Sm -= R*log(P*self.P_REF_IG_INV)
+    
+        while i < 3:
+            try:
+                if i == -1:
+                    yield T_guess
+                elif i == 0:
+                    MW = mixing_simple(zs, self.MWs)
+                    sv = mixing_simple(zs, self.n_atoms)/MW
+                    T =  Lastovka_Shaw_T_for_Sm(Sm=Sm, MW=MW, similarity_variable=sv)
+                    if T > 0.0:
+                        yield T
+                elif i == 1:
+                    Tc = mixing_simple(zs, self.Tcs)
+                    omega = mixing_simple(zs, self.omegas)
+                    def Dadgostar_Shaw_T_guess(Sm, MW, similarity_variable, Tc, omega, 
+                                               T_ref=298.15, factor=1.0):
+                        S_ref = Dadgostar_Shaw_integral_over_T(T_ref, similarity_variable)
+                        def err(T):
+                            Hvap = SMK(T, Tc, omega)
+                            S1 = Dadgostar_Shaw_integral_over_T(T, similarity_variable)
+                            dS = S1 - S_ref
+                            # Limitation to higher T unfortunately
+                            return ((property_mass_to_molar(dS, MW)*factor - Hvap/T) - Sm)
+                        return newton(err, 100, high=Tc)
+                    
+                    T = Dadgostar_Shaw_T_guess(Sm, MW, sv, Tc, omega, factor=1)
+                    if T > 0.0:
+                        yield T
+                elif i == 2:
+                    yield 298.15
+                    
+            except Exception as e:
+#                print(e)
+                pass
+            i += 1
+
     
     def PH_T_guesses_2P(self, P, Hm, zs, T_guess=None):
         i = -1 if T_guess is not None else 0
@@ -3603,18 +3659,25 @@ class GceosBase(Ideal):
                 pass
             i += 1
 
-    def flash_PH_2P_N1(self, P, Hm, zs):
+    def flash_P_HS_2P_N1(self, P, zs, Hm=None, Sm=None):
         # Solves only when two phase
         _, _, _, _, T = self.flash_PVF_zs(P, 1.0, zs)
         eos_l, eos_g = self.eos_l, self.eos_g
-        H_l = self.enthalpy_eosmix(T, P, 0.0, zs, zs, zs, eos_l, eos_g, 'l')
-        H_g = self.enthalpy_eosmix(T, P, 1.0, zs, zs, zs, eos_l, eos_g, 'g')
-        VF = (Hm - H_l)/(H_g - H_l)
+        if Hm is not None:
+            H_l = self.enthalpy_eosmix(T, P, 0.0, zs, zs, zs, eos_l, eos_g, 'l')
+            H_g = self.enthalpy_eosmix(T, P, 1.0, zs, zs, zs, eos_l, eos_g, 'g')
+            VF = (Hm - H_l)/(H_g - H_l)
+        else:
+            S_l = self.entropy_eosmix(T, P, 0.0, zs, zs, zs, eos_l, eos_g, 'l')
+            S_g = self.entropy_eosmix(T, P, 1.0, zs, zs, zs, eos_l, eos_g, 'g')
+            VF = (Sm - S_l)/(S_g - S_l)
 
         return T, 'l/g', eos_l, VF
 
-    def flash_PH_1P(self, P, Hm, zs, T_guess=None, minimum_progress=0.3):
-        r'''One phase direct solution to the pressure-enthalpy flash problem.
+    def flash_P_HS_1P(self, P, zs, Hm=None, Sm=None, T_guess=None, 
+                      minimum_progress=0.3):
+        r'''One phase direct solution to the pressure-enthalpy 
+        or pressure-entropy flash problem.
         
         The algorithm used is:
             * Obtain a temperature guess
@@ -3634,11 +3697,16 @@ class GceosBase(Ideal):
         available guesses have been attempted.
             
         '''
+        solve_H = Hm is not None
         guesses = []
-        guess_generator = self.PH_T_guesses_1P(P, Hm, zs, T_guess=T_guess)
+        if solve_H:
+            guess_generator = self.PH_T_guesses_1P(P, Hm, zs, T_guess=T_guess)
+        else:
+            guess_generator = self.PS_T_guesses_1P(P, Sm, zs, T_guess=T_guess)
+            
         info = []
         def to_solve(T):
-            err_and_der = self.PH_error_and_der_1P(T, P, zs, Hm, info=info)
+            err_and_der = self.P_HS_error_and_der_1P(T, P, zs, Hm, Sm, info=info)
             return err_and_der
         to_solve, checker = oscillation_checking_wrapper(to_solve, full=True,
                                                          minimum_progress=minimum_progress)
@@ -3652,12 +3720,16 @@ class GceosBase(Ideal):
                 break
             except (OscillationError, Exception) as e:
                 if not isinstance(e, (OscillationError, UnconvergedError)):
-                    print("Unexpected failure of newton's method at P=%s, Hm=%s; %s" %(P, Hm, e))
+                    if solve_H:
+                        msg = "Unexpected failure of newton's method at P=%s, Hm=%s; %s" %(P, Hm, e)
+                    else:
+                        msg = "Unexpected failure of newton's method at P=%s, Sm=%s; %s" %(P, Sm, e)
+                    print(msg)
                 
-                wrapped_PH_error_1P, _, info_cache = caching_decorator(self.PH_error_1P, full=True)
+                wrapped_P_HS_error_1P, _, info_cache = caching_decorator(self.P_HS_error_1P, full=True)
                 if self.N == 1 and P <= self.Pcs[0]:
                     try:
-                        T, phase, eos, VF = self.flash_PH_2P_N1(P, Hm, zs)
+                        T, phase, eos, VF = self.flash_P_HS_2P_N1(P, zs, Hm, Sm)
                     except Exception as e:
                         print('2 Phase 1 component solver could not converge', e)
                         pass # Does not work often -
@@ -3670,8 +3742,8 @@ class GceosBase(Ideal):
                             last_limit = checker.xs_pos[-1]
                             last_err = checker.ys_pos[-1]
                         try:
-                            ans = brenth(wrapped_PH_error_1P, T, last_limit,
-                                         fb=last_err, args=(P, zs, Hm),
+                            ans = brenth(wrapped_P_HS_error_1P, T, last_limit,
+                                         fb=last_err, args=(P, zs, Hm, Sm),
                                          kwargs={'info': info})
                             info = info_cache[ans]
                         except Exception as e:
@@ -3687,8 +3759,8 @@ class GceosBase(Ideal):
                         T_low = checker.xs_neg[checker.ys_neg.index(err_low)]
                         T_high = checker.xs_pos[checker.ys_pos.index(err_high)]
 
-                        ans = brenth(wrapped_PH_error_1P, T_low, T_high,
-                                     fa=err_low, fb=err_high, args=(P, zs, Hm),
+                        ans = brenth(wrapped_P_HS_error_1P, T_low, T_high,
+                                     fa=err_low, fb=err_high, args=(P, zs, Hm, Sm),
                                      kwargs={'info': info})
                         info = info_cache[ans]
                         break
@@ -3714,7 +3786,7 @@ class GceosBase(Ideal):
         for algorithm in algorithms:
             try:
                 if algorithm == DIRECT_1P:
-                    T, phase, eos, V_over_F = self.flash_PH_1P(P, Hm, zs, T_guess)
+                    T, phase, eos, V_over_F = self.flash_P_HS_1P(P=P, zs=zs, Hm=Hm, T_guess=T_guess)
                     if V_over_F is not None:
                         # Must be a two phase, 1 component solution
                         return phase, [1.0], [1.0], V_over_F, T
@@ -3805,7 +3877,7 @@ class GceosBase(Ideal):
         for algorithm in algorithms:
             try:
                 if algorithm == DIRECT_1P:
-                    T, phase, eos, V_over_F = self.flash_PS_1P(P, Sm, zs, T_guess)
+                    T, phase, eos, V_over_F = self.flash_P_HS_1P(P=P, zs=zs, Hm=None, Sm=Sm, T_guess=T_guess)
                     if V_over_F is not None:
                         # Must be a two phase, 1 component solution
                         return phase, [1.0], [1.0], V_over_F, T
