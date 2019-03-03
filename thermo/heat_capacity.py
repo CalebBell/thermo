@@ -25,7 +25,8 @@ from __future__ import division
 __all__ = ['Poling_data', 'TRC_gas_data', '_PerryI', 'CRC_standard_data', 
            'Lastovka_Shaw', 'Lastovka_Shaw_integral', 
            'Lastovka_Shaw_integral_over_T',
-           'Lastovka_Shaw_T_for_Hm', 'TRCCp',  'Dadgostar_Shaw_integral',
+           'Lastovka_Shaw_T_for_Hm', 'Lastovka_Shaw_T_for_Sm',
+           'TRCCp',  'Dadgostar_Shaw_integral',
            'Dadgostar_Shaw_integral_over_T',
            'TRCCp_integral', 'TRCCp_integral_over_T', 
            'heat_capacity_gas_methods', 'HeatCapacityGas', 
@@ -349,14 +350,14 @@ def Lastovka_Shaw_integral_over_T(T, similarity_variable, cyclic_aliphatic=False
 
 def Lastovka_Shaw_T_for_Hm(Hm, MW, similarity_variable, T_ref=298.15, 
                            factor=1.0):
-    r'''Calculate the integral over temperature of ideal-gas constant-pressure 
-    heat capacitiy with the similarity variable concept and method as shown in
-    [1]_.
+    r'''Uses the Lastovka-Shaw ideal-gas heat capacity correlation to solve for
+    the temperature which has a specified `Hm`, as is required in PH flashes,
+    as shown in [1]_.
 
     Parameters
     ----------
     Hm : float
-        molar enthalpy spec, [J/mol]
+        Molar enthalpy spec, [J/mol]
     MW : float
         Molecular weight of the pure compound or mixture average, [g/mol]
     similarity_variable : float
@@ -407,6 +408,71 @@ def Lastovka_Shaw_T_for_Hm(Hm, MW, similarity_variable, T_ref=298.15,
         except Exception as e:
             if err(1e-11) > 0:
                 raise ValueError("For gas only enthalpy spec to be correct, "
+                                 "model requires negative temperature")
+            raise e
+
+
+def Lastovka_Shaw_T_for_Sm(Sm, MW, similarity_variable, T_ref=298.15, 
+                           factor=1.0):
+    r'''Uses the Lastovka-Shaw ideal-gas heat capacity correlation to solve for
+    the temperature which has a specified `Sm`, as is required in PS flashes,
+    as shown in [1]_.
+
+    Parameters
+    ----------
+    Sm : float
+        Molar entropy spec, [J/mol/K]
+    MW : float
+        Molecular weight of the pure compound or mixture average, [g/mol]
+    similarity_variable : float
+        Similarity variable as defined in [1]_, [mol/g]
+    T_ref : float, optional
+        Reference enthlapy temperature, [K]
+    factor : float, optional
+        A factor to increase or decrease the predicted value of the 
+        method, [-]
+
+    Returns
+    -------
+    T : float
+        Temperature of gas to meet the molar entropy spec, [K]
+
+    Notes
+    -----
+
+    See Also
+    --------
+    Lastovka_Shaw
+    Lastovka_Shaw_integral
+    Lastovka_Shaw_integral_over_T
+
+    Examples
+    --------
+    >>> Lastovka_Shaw_T_for_Sm(Sm=112.80, MW=72.151, similarity_variable=0.2356)
+    603.4298291570277
+    
+    References
+    ----------
+    .. [1] Lastovka, Vaclav, and John M. Shaw. "Predictive Correlations for
+       Ideal Gas Heat Capacities of Pure Hydrocarbons and Petroleum Fractions."
+       Fluid Phase Equilibria 356 (October 25, 2013): 338-370.
+       doi:10.1016/j.fluid.2013.07.023.
+    '''
+    S_ref = Lastovka_Shaw_integral_over_T(T_ref, similarity_variable)
+    def err(T):
+        S1 = Lastovka_Shaw_integral_over_T(T, similarity_variable)
+        dS = S1 - S_ref
+        err = (property_mass_to_molar(dS, MW)*factor - Sm)
+#         print(T, err)
+        return err
+    try:
+        return newton(err, 500, ytol=1e-4)
+    except Exception as e:
+        try:
+            return brenth(err, 1e-3, 1e5)
+        except Exception as e:
+            if err(1e-11) > 0:
+                raise ValueError("For gas only entropy spec to be correct, "
                                  "model requires negative temperature")
             raise e
 

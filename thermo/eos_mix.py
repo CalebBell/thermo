@@ -30,9 +30,9 @@ import numpy as np
 from cmath import log as clog
 from scipy.optimize import minimize
 from scipy.misc import derivative
-from fluids.numerics import IS_PYPY, newton_system
+from fluids.numerics import IS_PYPY, newton_system, UnconvergedError
 from thermo.utils import normalize, Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter
-from thermo.utils import R, UnconvergedError
+from thermo.utils import R
 from thermo.utils import log, exp, sqrt
 from thermo.eos import *
 from thermo.activity import Wilson_K_value, K_value, flash_inner_loop, Rachford_Rice_flash_error, Rachford_Rice_solution2

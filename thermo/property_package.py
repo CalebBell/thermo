@@ -50,11 +50,16 @@ from copy import copy
 from random import uniform, shuffle, seed
 import numpy as np
 from scipy.optimize import golden, brent, minimize, fmin_slsqp, fsolve
-from fluids.numerics import ridder, derivative, py_newton as newton, linspace, logspace, py_brenth as brenth, py_solve, oscillation_checker, secant
+from fluids.numerics import (OscillationError, UnconvergedError, 
+                             ridder, derivative, caching_decorator,
+                             py_newton as newton, linspace, logspace, 
+                             py_brenth as brenth, py_solve, 
+                             oscillation_checker, secant, damping_maintain_sign,
+                             oscillation_checking_wrapper)
 
 from thermo.utils import log, log10, exp, copysign
 from thermo.utils import has_matplotlib, R, pi, N_A
-from thermo.utils import remove_zeros, normalize, Cp_minus_Cv, UnconvergedError, mixing_simple, property_mass_to_molar
+from thermo.utils import remove_zeros, normalize, Cp_minus_Cv, mixing_simple, property_mass_to_molar
 from thermo.elements import mixture_atomic_composition, similarity_variable
 from thermo.identifiers import IDs_to_CASs
 from thermo.activity import K_value, Wilson_K_value, flash_inner_loop, dew_at_T, bubble_at_T, NRTL, Rachford_Rice_solution2
@@ -63,7 +68,7 @@ from thermo.activity import get_T_bub_est, get_T_dew_est, get_P_dew_est, get_P_b
 from thermo.unifac import UNIFAC, UFSG, DOUFSG, DOUFIP2006
 from thermo.eos_mix import *
 from thermo.eos import *
-from thermo.heat_capacity import Lastovka_Shaw_T_for_Hm, Dadgostar_Shaw_integral, Lastovka_Shaw_integral
+from thermo.heat_capacity import Lastovka_Shaw_T_for_Hm, Lastovka_Shaw_T_for_Sm, Dadgostar_Shaw_integral, Lastovka_Shaw_integral
 from thermo.phase_change import SMK
 
 
@@ -281,6 +286,12 @@ class PropertyPackage(object):
     T_REF_IG = 298.15
     P_REF_IG = 101325.
     P_REF_IG_INV = 1.0/P_REF_IG
+    
+    T_MAX_FIXED = 10000.0
+    T_MIN_FIXED = 1e-3
+    
+    P_MAX_FIXED = 1e9
+    P_MIN_FIXED = 1e-3
 
     def to(self, zs, T=None, P=None, VF=None):
         obj = copy(self)
@@ -2391,12 +2402,37 @@ class GceosBase(Ideal):
         return H
 
 
-    # 
+    def dS_dT(self, T, P, V_over_F, zs, xs, ys, eos_l, eos_g, phase):
+        HeatCapacityGases = self.HeatCapacityGases
+        cmps = self.cmps
+        T_REF_IG = self.T_REF_IG
+        P_REF_IG_INV = self.P_REF_IG_INV
+        S = 0.0
+        if phase == 'g' or V_over_F == 1.0:
+            dS_pure_zum = 0.0
+            for zi, obj in zip(zs, HeatCapacityGases):
+                dS_pure_zum += zi*obj.T_dependent_property(T)
+            S += dS_pure_zum/T
+            try:
+                S += eos_g.dS_dep_dT_g
+            except AttributeError:
+                S += eos_g.dS_dep_dT_l
+        elif phase == 'l' or V_over_F == 0.0:
+            dS_pure_zum = 0.0
+            for zi, obj in zip(zs, HeatCapacityGases):
+                dS_pure_zum += zi*obj.T_dependent_property(T)
+            S += dS_pure_zum/T
+            try:
+                S += eos_l.dS_dep_dT_l
+            except AttributeError:
+                S += eos_l.dS_dep_dT_g
+        elif phase == 'l/g':
+            raise ValueError
+                
+        return S
+        
+        
     def entropy_eosmix(self, T, P, V_over_F, zs, xs, ys, eos_l, eos_g, phase):
-        # Believed correct
-#        T = self.T
-#        P = self.P
-#        zs = self.zs
         HeatCapacityGases = self.HeatCapacityGases
         cmps = self.cmps
         T_REF_IG = self.T_REF_IG
@@ -2411,7 +2447,10 @@ class GceosBase(Ideal):
             for i in cmps:
                 dS = HeatCapacityGases[i].T_dependent_property_integral_over_T(T_REF_IG, T)
                 S += zs[i]*dS
-            S += eos_g.S_dep_g
+            try:
+                S += eos_g.S_dep_g
+            except AttributeError:
+                S += eos_g.S_dep_l
                 
         elif phase == 'l' or V_over_F == 0.0:
             S -= R*sum([zi*log(zi) for zi in zs if zi > 0.0]) # ideal composition entropy composition
@@ -2419,7 +2458,10 @@ class GceosBase(Ideal):
             for i in cmps:
                 dS = HeatCapacityGases[i].T_dependent_property_integral_over_T(T_REF_IG, T)
                 S += zs[i]*dS
-            S += eos_l.S_dep_l
+            try:
+                S += eos_l.S_dep_l
+            except AttributeError:
+                S += eos_l.S_dep_g
             
         elif phase == 'l/g':
             S_l = 0.0
@@ -2445,7 +2487,7 @@ class GceosBase(Ideal):
                 dS = HeatCapacityGases[i].T_dependent_property_integral_over_T(T_REF_IG, T)
                 S_g += ys[i]*dS
                 S_l += xs[i]*dS
-
+            
             S_g += eos_g.S_dep_g
             S_l += eos_l.S_dep_l
             S = S_g*V_over_F + S_l*(1.0 - V_over_F)
@@ -2515,7 +2557,7 @@ class GceosBase(Ideal):
                 # TS
                 pass
             elif P is not None and Sm is not None:
-                pass
+                phase, xs, ys, VF, T = self.flash_PS_zs(P, Sm, zs)
                 # PS
             elif P is not None and Hm is not None:
                 phase, xs, ys, VF, T = self.flash_PH_zs(P, Hm, zs)
@@ -3417,7 +3459,7 @@ class GceosBase(Ideal):
             VFs_attempt.append(V_over_F)
             
 
-    def PH_error_1P(self, T, P, zs, H_goal):
+    def PH_error_1P(self, T, P, zs, H_goal, info=None):
         eos_phase = self.to_TP_zs(T=T, P=P, zs=zs, fugacities=False)
         phase = eos_phase.more_stable_phase
         if phase == 'l':
@@ -3426,7 +3468,9 @@ class GceosBase(Ideal):
             eos_l, eos_g = None, eos_phase
         H_calc = self.enthalpy_eosmix(T, P, None, zs, None, None, eos_l, eos_g, phase)
         err = H_calc - H_goal
-#        print(T, err)
+        if info is not None:
+            info[:] = (eos_phase, phase, err)
+#        print(T, err, info)
         return err
 
     def PH_error_and_der_1P(self, T, P, zs, H_goal, info=None):
@@ -3464,11 +3508,11 @@ class GceosBase(Ideal):
                 T_high = 4000.0
             else:
                 T_high = max_Tc*8.0
-    
+        info = []
 
-        T_goal = brenth(self.PH_error_1P, T_low, T_high, rtol=1e-8, args=(P, zs, Hm))
+        T = brenth(self.PH_error_1P, T_low, T_high, rtol=1e-8, args=(P, zs, Hm, info))
             # TODO stability test, 1 component
-        return {'T': T_goal}
+        return T, info[1], info[0], None
 
 
     def PH_T_guesses_1P(self, P, Hm, zs, T_guess=None):
@@ -3570,89 +3614,93 @@ class GceosBase(Ideal):
         return T, 'l/g', eos_l, VF
 
     def flash_PH_1P(self, P, Hm, zs, T_guess=None, minimum_progress=0.3):
-#        print('starting')
-        guesses = []
-        calcs = {}
-        guess_generator = self.PH_T_guesses_1P(P, Hm, zs, T_guess=T_guess)
-        checker = oscillation_checker(minimum_progress)
-        def to_solve(T, der=True):
-#            print(T)
-            info = []
-            if T in calcs:
-                if der:
-                    return calcs[T][-2:]
-                else:
-                    return calcs[T][-2]
-            
-            err_and_der = self.PH_error_and_der_1P(T, P, zs, Hm, info=info)
-            
-            calcs[T] = info
-            
-            oscillating = checker(T, err_and_der[0])
-#            print(T, err_and_der[0], oscillating, 'T and err and oscillating')
-            if oscillating:
-                raise ValueError("Oscillating")
-            if not der:
-                return err_and_der[0]
-            return err_and_der
+        r'''One phase direct solution to the pressure-enthalpy flash problem.
         
-        # Future work: brenth?
-        # Oscillation - quit right away?
+        The algorithm used is:
+            * Obtain a temperature guess
+            * Apply newton's method, calculating analytical derivatives
+              (limit T steps to prevent negative temperatures (go half way);
+              detect oscillations (normally when a phase change occurs))
+            * If oscillations are detected, and the system is 1 component, 
+              solve the the saturation pressure - and try to solve the problem
+              as a two-phase system
+            * If oscillations are detected and the system is not 1 component
+              (or the two-phase solution was not correct), use a bounded solver
+              starting with the two closest bounding values from the newton 
+              iterations.
+              
+        Guesses are obtained from the method `PH_T_guesses_1P`; if one guess
+        does not lead to success for any method, the next is tried until all
+        available guesses have been attempted.
+            
+        '''
+        guesses = []
+        guess_generator = self.PH_T_guesses_1P(P, Hm, zs, T_guess=T_guess)
+        info = []
+        def to_solve(T):
+            err_and_der = self.PH_error_and_der_1P(T, P, zs, Hm, info=info)
+            return err_and_der
+        to_solve, checker = oscillation_checking_wrapper(to_solve, full=True,
+                                                         minimum_progress=minimum_progress)
+         
         ans = None
-#        print('starting guess')
         for T_trial in guess_generator:
-            
             guesses.append(T_trial)
-#            print('guess', T_trial)
-            
             try:
-                # Need to add damping function which does not let a negative step go more than .75
-                # to absolute zero
-                def damping_func(x, step, damping=1.0):
-                    if x + step < 0:
-                        step = -0.5*x
-#                        print('damping')
-                    return x + step*damping
-#                print('starting newton')
                 ans = newton(to_solve, T_trial, fprime=True, require_eval=True,
-                             damping_func=damping_func, maxiter=100)
-#                print('done newton', ans)
+                             damping_func=damping_maintain_sign, maxiter=100)
                 break
-            except Exception as e:
-                pass
-#                print(e, 'newton failed')
+            except (OscillationError, Exception) as e:
+                if not isinstance(e, (OscillationError, UnconvergedError)):
+                    print("Unexpected failure of newton's method at P=%s, Hm=%s; %s" %(P, Hm, e))
                 
-                if self.N == 1:
-                    T, phase, eos, VF = self.flash_PH_2P_N1(P, Hm, zs)
-#                    print('VF', VF)
-                    checker.minimum_progress = 0.0
+                wrapped_PH_error_1P, _, info_cache = caching_decorator(self.PH_error_1P, full=True)
+                if self.N == 1 and P <= self.Pcs[0]:
+                    try:
+                        T, phase, eos, VF = self.flash_PH_2P_N1(P, Hm, zs)
+                    except Exception as e:
+                        print('2 Phase 1 component solver could not converge', e)
+                        pass # Does not work often -
                     if VF < 0 or VF > 1:
                         # Use a bounded solver; will have data available in the oscillation checker
                         if VF < 0:
                             last_limit = checker.xs_neg[-1]
+                            last_err = checker.ys_neg[-1]
                         else:
                             last_limit = checker.xs_pos[-1]
+                            last_err = checker.ys_pos[-1]
                         try:
-                            ans = brenth(to_solve, T, last_limit, args=(False,))
+                            ans = brenth(wrapped_PH_error_1P, T, last_limit,
+                                         fb=last_err, args=(P, zs, Hm),
+                                         kwargs={'info': info})
+                            info = info_cache[ans]
                         except Exception as e:
+                            print('1 Phase Bounded solver could not converge after oscillation', e)
                             pass
-#                            print(e)
-#                        print('done', ans)
                         break 
-                            
-                            
-#                        raise ValueError("Two phase one component solution calculated an unphysical vapor faction")
                     else:
                         return T, phase, eos, VF
-                    # probably oscillating, call a special function which 
-                    # does a dew T calc, and calculates
-#                print(e, 'newton failed')
+                else:
+                    try:
+                        err_low = max(checker.ys_neg)
+                        err_high = min(checker.ys_pos)
+                        T_low = checker.xs_neg[checker.ys_neg.index(err_low)]
+                        T_high = checker.xs_pos[checker.ys_pos.index(err_high)]
+
+                        ans = brenth(wrapped_PH_error_1P, T_low, T_high,
+                                     fa=err_low, fb=err_high, args=(P, zs, Hm),
+                                     kwargs={'info': info})
+                        info = info_cache[ans]
+                        break
+                    except Exception as e:
+                        print('1 Phase Bounded solver could not converge after oscillation', e)
+                        pass
+
+
                 checker.clear()
                 continue
         if ans is None:
-            raise ValueError("Could not converge 1 phase")
-
-        info = calcs[ans]
+            raise ValueError("Could not converge 1 phase with any of initial guesses %s" %(guesses))
         return ans, info[1], info[0], None
         
 
@@ -3667,7 +3715,6 @@ class GceosBase(Ideal):
             try:
                 if algorithm == DIRECT_1P:
                     T, phase, eos, V_over_F = self.flash_PH_1P(P, Hm, zs, T_guess)
-#                    print('done flash_PH_1P', V_over_F)
                     if V_over_F is not None:
                         # Must be a two phase, 1 component solution
                         return phase, [1.0], [1.0], V_over_F, T
@@ -3746,6 +3793,50 @@ class GceosBase(Ideal):
                     
                     
                     # should return phase, xs, ys, V_over_F, T
+            except Exception as e:
+#                print(e)
+                pass
+    
+    def flash_PS_zs(self, P, Sm, zs, T_guess=None, xs_guess=None, ys_guess=None,
+                 algorithms=[DIRECT_1P, RIGOROUS_BISECTION],
+                 maxiter=100, tol=1e-4, damping=0.5):
+        eos_1P = None
+        single_phase_data = None
+        for algorithm in algorithms:
+            try:
+                if algorithm == DIRECT_1P:
+                    T, phase, eos, V_over_F = self.flash_PS_1P(P, Sm, zs, T_guess)
+                    if V_over_F is not None:
+                        # Must be a two phase, 1 component solution
+                        return phase, [1.0], [1.0], V_over_F, T
+                    try:
+                        if eos.G_dep_l < eos.G_dep_g:
+                            xs, ys, V_over_F = zs, None, 0.0
+                            self.eos_l = eos
+                            self.eos_g = None
+                        else:
+                            xs, ys, V_over_F = None, zs, 1.0
+                            self.eos_g = eos
+                            self.eos_l = None
+                    except:
+                        if hasattr(eos, 'G_dep_g'):
+                            xs, ys, V_over_F = None, zs, 1.0
+                            self.eos_g = eos
+                            self.eos_l = None
+                        else:
+                            xs, ys, V_over_F = zs, None, 0.0
+                            self.eos_l = eos
+                            self.eos_g = None
+                    eos_1P = eos
+                    single_phase_data = phase, xs, ys, V_over_F, T
+                    if self.N > 1:
+                        stable, _, _ = self.stability_test_VL(T, P, zs, eos=eos)
+                    else:
+                        stable = True
+                    if not stable:
+                        raise ValueError("One phase solution is unstable")
+                    return phase, xs, ys, V_over_F, T
+
             except Exception as e:
 #                print(e)
                 pass

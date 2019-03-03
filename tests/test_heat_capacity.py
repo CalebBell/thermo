@@ -126,7 +126,7 @@ def test_Lastovka_Shaw_T_for_Hm():
     T = Lastovka_Shaw_T_for_Hm(Hm=55000, MW=80.0, similarity_variable=0.23)
     assert_allclose(T, 600.0943429567604)
     
-#@pytest.mark.fuzz
+@pytest.mark.fuzz
 def test_Lastovka_Shaw_T_for_Hm_fuzz():
     T_ref = 298.15
     factor = 1.0
@@ -145,7 +145,29 @@ def test_Lastovka_Shaw_T_for_Hm_fuzz():
                     if 'negative temperature' in str(e):
                         continue
     #                 print(sv, MW, Hm, e)
+
+#@pytest.mark.fuzz
+def test_Lastovka_Shaw_T_for_Sm_fuzz():
+    T_ref = 298.15
+    factor = 1.0
     
+    similarity_variables = linspace(.05, .5, 8)
+    MWs = linspace(12, 1200, 8)
+    Sms = [i for i in logspace(log10(3000), log10(300), 15)]
+    
+    for sv in similarity_variables:
+        for MW in MWs:
+            for Sm in Sms:
+                try:
+                    Lastovka_Shaw_T_for_Sm(Sm=Sm, MW=MW, similarity_variable=sv, T_ref=T_ref)
+                except Exception as e:
+                    if 'negative temperature' in str(e):
+                        continue
+                    elif isinstance(e, ValueError):
+                        continue
+                    else:
+                        raise ValueError("Could not converge with unexpected error")
+
 
 def test_CRC_standard_data():
     tots_calc = [CRC_standard_data[i].abs().sum() for i in [u'Hfc', u'Gfc', u'Sc', u'Cpc', u'Hfl', u'Gfl', u'Sfl', 'Cpl', u'Hfg', u'Gfg', u'Sfg', u'Cpg']]
