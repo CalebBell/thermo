@@ -3569,16 +3569,60 @@ class GceosBase(Ideal):
         
         Sm -= R*sum([zi*log(zi) for zi in zs if zi > 0.0]) # ideal composition entropy composition
         Sm -= R*log(P*self.P_REF_IG_INV)
+        # It would be nice to include a non-ideal component - maybe from a virial correlation
     
         while i < 3:
             try:
                 if i == -1:
                     yield T_guess
+                elif i == -100:
+                    MW = mixing_simple(zs, self.MWs)
+                    sv = mixing_simple(zs, self.n_atoms)/MW
+                    Tc = mixing_simple(zs, self.Tcs)
+                    Pc = mixing_simple(zs, self.Pcs)
+                    omega = mixing_simple(zs, self.omegas)
+                    
+                    
+#                    from thermo.heat_capacity import Lastovka_Shaw_integral_over_T
+#                    def Lastovka_Shaw_T_for_Sm(Sm, MW, similarity_variable, T_ref=298.15, 
+#                                               factor=1.0):
+#                        S_ref = Lastovka_Shaw_integral_over_T(T_ref, similarity_variable)
+#                        def err(T):
+#                            S1 = Lastovka_Shaw_integral_over_T(T, similarity_variable)
+#                            dS = S1 - S_ref
+#                            
+#                            # May save an iteration
+#                            Tr = T/Tc
+#                            Pr = P/Pc
+#                            dS_virial = R*Pr/Tr**2.6*(.675 + .722*omega/Tr**2.6)
+##                            dS_virial = R*Pr/Tr**2*(.33 + .277/Tr + .036/Tr**2 + .0049/Tr**7 + omega*(-0.662 + 1.269/Tr**2 + .064/Tr**7))
+#                            print(property_mass_to_molar(dS,  MW)*factor, dS_virial, Sm, 'T', T)
+#                            err = (property_mass_to_molar(dS,  MW)*factor - dS_virial - Sm)
+#                    #         print(T, err)
+#                            return err
+#                        try:
+#                            return newton(err, 500, ytol=1e-4)
+#                        except Exception as e:
+#                            try:
+#                                return brenth(err, 1e-3, 1e5)
+#                            except Exception as e:
+#                                if err(1e-11) > 0:
+#                                    raise ValueError("For gas only entropy spec to be correct, "
+#                                                     "model requires negative temperature")
+#                                raise e
+#                    T = Lastovka_Shaw_T_for_Sm(Sm=Sm, MW=MW, similarity_variable=sv)
+#                    print(T, 'guess')
+#                    if T > 10:
+#                        yield T
+                    
+                    
+                    
                 elif i == 0:
                     MW = mixing_simple(zs, self.MWs)
                     sv = mixing_simple(zs, self.n_atoms)/MW
-                    T =  Lastovka_Shaw_T_for_Sm(Sm=Sm, MW=MW, similarity_variable=sv)
-                    if T > 0.0:
+                    T = Lastovka_Shaw_T_for_Sm(Sm=Sm, MW=MW, similarity_variable=sv)
+#                    print(T, 'guess')
+                    if T > 10:
                         yield T
                 elif i == 1:
                     Tc = mixing_simple(zs, self.Tcs)
@@ -3595,13 +3639,14 @@ class GceosBase(Ideal):
                         return newton(err, 100, high=Tc)
                     
                     T = Dadgostar_Shaw_T_guess(Sm, MW, sv, Tc, omega, factor=1)
+#                    print(T, 'T guess liquid')
                     if T > 0.0:
                         yield T
                 elif i == 2:
                     yield 298.15
                     
             except Exception as e:
-#                print(e)
+                print(e)
                 pass
             i += 1
 
@@ -3716,7 +3761,8 @@ class GceosBase(Ideal):
             guesses.append(T_trial)
             try:
                 ans = newton(to_solve, T_trial, fprime=True, require_eval=True,
-                             damping_func=damping_maintain_sign, maxiter=100)
+                             damping_func=damping_maintain_sign, maxiter=100,
+                             bisection=True)
                 break
             except (OscillationError, Exception) as e:
                 if not isinstance(e, (OscillationError, UnconvergedError)):

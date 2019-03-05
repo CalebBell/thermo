@@ -59,6 +59,7 @@ from thermo.electrochem import (Laliberte_heat_capacity,
                                 _Laliberte_Heat_Capacity_ParametersDict)
 from thermo.utils import TDependentProperty, MixtureProperty
 from thermo.coolprop import *
+from cmath import log as clog, exp as cexp
 
                          
                          
@@ -315,7 +316,6 @@ def Lastovka_Shaw_integral_over_T(T, similarity_variable, cyclic_aliphatic=False
        Fluid Phase Equilibria 356 (October 25, 2013): 338-370.
        doi:10.1016/j.fluid.2013.07.023.
     '''
-    from cmath import log, exp
     a = similarity_variable
     if cyclic_aliphatic:
         A1 = -0.1793547
@@ -326,8 +326,9 @@ def Lastovka_Shaw_integral_over_T(T, similarity_variable, cyclic_aliphatic=False
         A2 = 1.25
         A3 = 0.17338003 # 803 instead of 8003 in another paper
         A4 = 0.014
-        first = A2 + (A1-A2)/(1. + exp((a - A3)/A4))
+        first = A2 + (A1-A2)/(1. + cexp((a - A3)/A4))
 
+    T_inv = 1.0/T
     a2 = a*a
     B11 = 0.73917383
     B12 = 8.88308889
@@ -337,12 +338,12 @@ def Lastovka_Shaw_integral_over_T(T, similarity_variable, cyclic_aliphatic=False
     B22 = 4.35656721
     C21 = 2897.01927
     C22 = 5987.80407
-    S = (first*log(T) + (-B11 - B12*a)*log(exp((-C11 - C12*a)/T) - 1.) 
-        + (-B11*C11 - B11*C12*a - B12*C11*a - B12*C12*a2)/(T*exp((-C11
-        - C12*a)/T) - T) - (B11*C11 + B11*C12*a + B12*C11*a + B12*C12*a2)/T)
-    S += ((-B21 - B22*a)*log(exp((-C21 - C22*a)/T) - 1.) + (-B21*C21 - B21*C22*a
-        - B22*C21*a - B22*C22*a2)/(T*exp((-C21 - C22*a)/T) - T) - (B21*C21
-        + B21*C22*a + B22*C21*a + B22*C22*a**2)/T)
+    S = (first*clog(T) + (-B11 - B12*a)*clog(cexp((-C11 - C12*a)*T_inv) - 1.) 
+        + (-B11*C11 - B11*C12*a - B12*C11*a - B12*C12*a2)/(T*cexp((-C11
+        - C12*a)*T_inv) - T) - (B11*C11 + B11*C12*a + B12*C11*a + B12*C12*a2)*T_inv)
+    S += ((-B21 - B22*a)*clog(cexp((-C21 - C22*a)*T_inv) - 1.) + (-B21*C21 - B21*C22*a
+        - B22*C21*a - B22*C22*a2)/(T*cexp((-C21 - C22*a)*T_inv) - T) - (B21*C21
+        + B21*C22*a + B22*C21*a + B22*C22*a2)*T_inv)
     # There is a non-real component, but it is only a function of similariy 
     # variable and so will always cancel out.
     return S.real*1000.
