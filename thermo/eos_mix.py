@@ -1561,7 +1561,7 @@ class GCEOSMIX(GCEOS):
                                      maxiter=20, xtol=1E-12, liq=True):
         # checks stability vs. the current zs, mole fractions
         
-        eos_ref = self.to_TP_zs(T=T, P=P, zs=zs)
+        eos_ref = self#.to_TP_zs(T=T, P=P, zs=zs)
         # If one phase is present - use that phase as the reference phase.
         # Otherwise, consider the phase with the lowest Gibbs excess energy as
         # the stable phase
@@ -1583,7 +1583,8 @@ class GCEOSMIX(GCEOS):
             sum_zs_test = sum(zs_test)
             zs_test_normalized = [zi/sum_zs_test for zi in zs_test]
             
-            eos_test = self.to_TP_zs(T=T, P=P, zs=zs_test_normalized)
+#            to_TP_zs_fast(self, T, P, zs, only_l=False, only_g=False)
+            eos_test = self.to_TP_zs_fast(T=T, P=P, zs=zs_test_normalized, only_l=liq, only_g=not liq)
             fugacities_test, fugacities_phase = eos_test.eos_fugacities_lowest_Gibbs()
             
             if fugacities_ref_phase == fugacities_phase:

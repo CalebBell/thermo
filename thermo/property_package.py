@@ -2359,6 +2359,21 @@ class GceosBase(Ideal):
         return H
     
     
+    def dH_dP(self, P, T, V_over_F, zs, xs, ys, eos_l, eos_g, phase):
+        dH = 0.0
+        if phase == 'g':
+            try:
+                dH += eos_g.dH_dep_dP_g
+            except AttributeError:
+                dH += eos_g.dH_dep_P_l
+        elif phase == 'l':
+            try:
+                dH += eos_l.dH_dep_dP_l
+            except AttributeError:
+                dH += eos_l.dH_dep_dP_g
+        elif phase == 'l/g':
+            raise ValueError
+        return dH
 
     def enthalpy_eosmix(self, T, P, V_over_F, zs, xs, ys, eos_l, eos_g, phase):
         # Believed correct
@@ -2430,6 +2445,25 @@ class GceosBase(Ideal):
             raise ValueError
                 
         return S
+
+    def dS_dP(self, P, T, V_over_F, zs, xs, ys, eos_l, eos_g, phase):
+        dS = 0.0
+        if phase == 'g' or V_over_F == 1.0:
+            dS -= R/P
+            try:
+                dS += eos_g.dS_dep_dP_g
+            except AttributeError:
+                dS += eos_g.dS_dep_dP_l
+        elif phase == 'l' or V_over_F == 0.0:
+            dS -= R/P
+            try:
+                dS += eos_l.dS_dep_dP_l
+            except AttributeError:
+                dS += eos_l.dS_dep_dP_g
+        elif phase == 'l/g':
+            raise ValueError
+                
+        return dS
         
         
     def entropy_eosmix(self, T, P, V_over_F, zs, xs, ys, eos_l, eos_g, phase):
@@ -2892,7 +2926,8 @@ class GceosBase(Ideal):
             if P > self.Pcs[0]:
                 raise ValueError("Pressure is greater than critical pressure")
             Tsat = self._Tsats(P)[0]
-            self.eos_l = self.eos_g = self.to_TP_zs(T=Tsat, P=P, zs=zs, fugacities=False)
+            self.eos_l = self.eos_g = self.eos_pure_ref(0).to_TP(T=Tsat, P=P)
+#            self.eos_l = self.eos_g = self.to_TP_zs(T=Tsat, P=P, zs=zs, fugacities=False)
             return 'l/g', [1.0], [1.0], VF, Tsat
 #        elif 1.0 in zs:
 #            raise NotImplemented
@@ -3565,7 +3600,7 @@ class GceosBase(Ideal):
             i += 1
 
     def PS_T_guesses_1P(self, P, Sm, zs, T_guess=None):
-        i = -1 if T_guess is not None else 0
+        i = -2 if T_guess is not None else -1
         
         Sm -= R*sum([zi*log(zi) for zi in zs if zi > 0.0]) # ideal composition entropy composition
         Sm -= R*log(P*self.P_REF_IG_INV)
@@ -3573,8 +3608,10 @@ class GceosBase(Ideal):
     
         while i < 3:
             try:
-                if i == -1:
+                if i == -2:
                     yield T_guess
+                elif i == -1 and self.N == 1:
+                    yield 298.15
                 elif i == -100:
                     MW = mixing_simple(zs, self.MWs)
                     sv = mixing_simple(zs, self.n_atoms)/MW
@@ -3646,7 +3683,7 @@ class GceosBase(Ideal):
                     yield 298.15
                     
             except Exception as e:
-                print(e)
+#                print(e)
                 pass
             i += 1
 

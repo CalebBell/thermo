@@ -48,7 +48,7 @@ import pandas as pd
 from fluids.numerics import (polyint_over_x, horner_log, horner, polyint, 
                              fit_integral_linear_extrapolation,
                              fit_integral_over_T_linear_extrapolation)
-from fluids.numerics import py_newton as newton, py_brenth as brenth
+from fluids.numerics import py_newton as newton, py_brenth as brenth, secant
 
 from scipy.integrate import quad
 from thermo.utils import R, calorie
@@ -467,7 +467,7 @@ def Lastovka_Shaw_T_for_Sm(Sm, MW, similarity_variable, T_ref=298.15,
 #         print(T, err)
         return err
     try:
-        return newton(err, 500, ytol=1e-4)
+        return secant(err, 500, ytol=1e-4, high=10000)
     except Exception as e:
         try:
             return brenth(err, 1e-3, 1e5)
