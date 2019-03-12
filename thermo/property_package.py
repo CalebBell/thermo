@@ -2754,7 +2754,12 @@ class GceosBase(Ideal):
 
     def flash_TP_zs(self, T, P, zs, Wilson_first=True):
         info = []
-        eos = self.to_TP_zs(T=T, P=P, zs=zs, fugacities=False)
+        if hasattr(self, 'eos_l') and self.eos_l is not None:
+            eos = self.eos_l.to_TP_zs_fast(T=T, P=P, zs=zs)
+        elif hasattr(self, 'eos_g') and self.eos_g is not None:
+            eos = self.eos_g.to_TP_zs_fast(T=T, P=P, zs=zs)
+        else:
+            eos = self.to_TP_zs(T=T, P=P, zs=zs, fugacities=False)
         if self.N == 1:
             if eos.phase == 'l/g':
                 liq = eos.G_dep_l < eos.G_dep_g

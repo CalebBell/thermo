@@ -65,12 +65,13 @@ def a_alpha_aijs_composition_independent(a_alphas, kijs):
         a_alpha_ijs_is = a_alpha_ijs[i]
         a_alpha_ij_roots_i_inv = a_alpha_ij_roots_inv[i]
         # Using range like this saves 20% of the comp time for 44 components!
+        a_alpha_i_root_i = a_alpha_i_roots[i]
         for j in range(i, N):
 #        for j in cmps:
 #            # TODo range
 #            if j < i:
 #                continue
-            term = a_alpha_i_roots[i]*a_alpha_i_roots[j]
+            term = a_alpha_i_root_i*a_alpha_i_roots[j]
 #            a_alpha_ij_roots_i_inv[j] = a_alpha_i_roots_inv[i]*a_alpha_i_roots_inv[j]#1.0/term
             a_alpha_ij_roots_i_inv[j] = 1.0/term
             a_alpha_ijs_is[j] = a_alpha_ijs[j][i] = (1. - kijs_i[j])*term
@@ -115,7 +116,10 @@ def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
         a_alphai = a_alphas[i]
         z_products_i = z_products[i]
         da_alpha_dT_i = da_alpha_dTs[i]
+        d2a_alpha_dT2_i = d2a_alpha_dT2s[i]
         a_alpha_ij_roots_inv_i = a_alpha_ij_roots_inv[i]
+        da_alpha_dT_ijs_i = da_alpha_dT_ijs[i]
+        
         for j in cmps:
 #        for j in range(0, i+1):
             if j < i:
@@ -124,8 +128,9 @@ def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
             a_alphaj = a_alphas[j]
             x0_05_inv = a_alpha_ij_roots_inv_i[j]
             zi_zj = z_products_i[j]
+            da_alpha_dT_j = da_alpha_dTs[j]
             
-            x1 = a_alphai*da_alpha_dTs[j]
+            x1 = a_alphai*da_alpha_dT_j
             x2 = a_alphaj*da_alpha_dT_i
             x1_x2 = x1 + x2
             x3 = x1_x2 + x1_x2
@@ -133,19 +138,17 @@ def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
             kij_m1 = kijs_i[j] - 1.0
             
             da_alpha_dT_ij = -0.5*kij_m1*x1_x2*x0_05_inv
-            
             # For temperature derivatives of fugacities 
-            da_alpha_dT_ijs[i][j] = da_alpha_dT_ijs[j][i] = da_alpha_dT_ij
+            da_alpha_dT_ijs_i[j] = da_alpha_dT_ijs[j][i] = da_alpha_dT_ij
 
             da_alpha_dT_ij *= zi_zj
             
             
             x0 = a_alphai*a_alphaj
-            d2a_alpha_dT2_i = d2a_alpha_dT2s[i]
         
-            d2a_alpha_dT2_ij = zi_zj*kij_m1*(-0.25*(x0*(
-            2.0*(a_alphai*d2a_alpha_dT2s[j] + a_alphaj*d2a_alpha_dT2_i)
-            + 4.*da_alpha_dT_i*da_alpha_dTs[j]) - x1*x3 - x2*x3 + x1_x2*x1_x2)/(x0_05_inv*x0*x0))
+            d2a_alpha_dT2_ij = zi_zj*kij_m1*(  (x0*(
+            -0.5*(a_alphai*d2a_alpha_dT2s[j] + a_alphaj*d2a_alpha_dT2_i)
+            - da_alpha_dT_i*da_alpha_dT_j) +.25*x1_x2*x1_x2)/(x0_05_inv*x0*x0))
             
             if i != j:
                 da_alpha_dT += da_alpha_dT_ij + da_alpha_dT_ij
