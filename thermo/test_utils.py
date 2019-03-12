@@ -32,6 +32,10 @@ import os
 
 default_attrs = ('phase', 'Hm', 'Sm', 'Gm', 'xs', 'ys', 'V_over_F', 'T', 'P')
 
+def flash_rounding(x):
+    if isinstance(x, float):
+        return float('%.10e' %(x))
+    return x
 
 def pkg_tabular_data_TP(IDs, pkg_ID, zs, P_pts=50, T_pts=50, T_min=None,
                         T_max=None, P_min=None, P_max=None, attrs=default_attrs):
@@ -54,7 +58,7 @@ def pkg_tabular_data_TP(IDs, pkg_ID, zs, P_pts=50, T_pts=50, T_min=None,
         data_row = []
         for P in Ps:
             pkg.pkg.flash(T=T, P=P, zs=zs)
-            row = tuple(getattr(pkg.pkg, s) for s in attrs)
+            row = tuple(flash_rounding(getattr(pkg.pkg, s)) for s in attrs)
             data_row.append(row)
         data.append(data_row)
     
@@ -91,7 +95,7 @@ def pkg_tabular_data_TVF(IDs, pkg_ID, zs, VF_pts=50, T_pts=50, T_min=None,
 #            print(T, VF)
             try:
                 pkg.pkg.flash(T=T, VF=VF, zs=zs)
-                row = tuple(getattr(pkg.pkg, s) for s in attrs)
+                row = tuple(flash_rounding(getattr(pkg.pkg, s)) for s in attrs)
             except Exception as e:
                 row = tuple(None for s in attrs)
                 print(e, T, VF, IDs, pkg_ID, zs)
@@ -131,7 +135,7 @@ def pkg_tabular_data_PVF(IDs, pkg_ID, zs, VF_pts=50, P_pts=50, P_min=None,
 #            print(P, VF)
             try:
                 pkg.pkg.flash(P=P, VF=VF, zs=zs)
-                row = tuple(getattr(pkg.pkg, s) for s in attrs)
+                row = tuple(flash_rounding(getattr(pkg.pkg, s)) for s in attrs)
             except Exception as e:
                 row = tuple(None for s in attrs)
                 print(e, P, VF, IDs, pkg_ID, zs)
@@ -179,7 +183,7 @@ def pkg_tabular_data_PH(IDs, pkg_ID, zs, P_pts=50, H_pts=50, H_min=None,
         for P in Ps:
 #            print(P, H, IDs, zs)
             pkg.flash_caloric(Hm=H, P=P, zs=zs)
-            row = tuple(getattr(pkg, s) for s in attrs)
+            row = tuple(flash_rounding(getattr(pkg, s)) for s in attrs)
             data_row.append(row)
         data.append(data_row)
     
@@ -223,7 +227,7 @@ def pkg_tabular_data_PS(IDs, pkg_ID, zs, P_pts=50, S_pts=50, S_min=None,
         for P in Ps:
 #            print(P, S, IDs, zs)
             pkg.flash_caloric(Sm=S, P=P, zs=zs)
-            row = tuple(getattr(pkg, s) for s in attrs)
+            row = tuple(flash_rounding(getattr(pkg, s)) for s in attrs)
             data_row.append(row)
         data.append(data_row)
     

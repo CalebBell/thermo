@@ -3498,7 +3498,12 @@ class GceosBase(Ideal):
         if self.N == 1:
             eos_phase = self.eos_pure_ref(0).to_TP(T=T, P=P)
         else:
-            eos_phase = self.to_TP_zs(T=T, P=P, zs=zs, fugacities=False)
+            if hasattr(self, 'eos_l') and self.eos_l is not None:
+                eos_phase = self.eos_l.to_TP_zs_fast(T=T, P=P, zs=zs)
+            elif hasattr(self, 'eos_g') and self.eos_g is not None:
+                eos_phase = self.eos_g.to_TP_zs_fast(T=T, P=P, zs=zs)
+            else:
+                eos_phase = self.to_TP_zs(T=T, P=P, zs=zs, fugacities=False)
         phase = eos_phase.more_stable_phase
         if phase == 'l':
             eos_l, eos_g = eos_phase, None
@@ -3521,7 +3526,12 @@ class GceosBase(Ideal):
         if self.N == 1:
             eos_phase = self.eos_pure_ref(0).to_TP(T=T, P=P)
         else:
-            eos_phase = self.to_TP_zs(T=T, P=P, zs=zs, fugacities=False)
+            if hasattr(self, 'eos_l') and self.eos_l is not None:
+                eos_phase = self.eos_l.to_TP_zs_fast(T=T, P=P, zs=zs)
+            elif hasattr(self, 'eos_g') and self.eos_g is not None:
+                eos_phase = self.eos_g.to_TP_zs_fast(T=T, P=P, zs=zs)
+            else:
+                eos_phase = self.to_TP_zs(T=T, P=P, zs=zs, fugacities=False)
         phase = eos_phase.more_stable_phase
         if phase == 'l':
             eos_l, eos_g = eos_phase, None
@@ -3694,7 +3704,7 @@ class GceosBase(Ideal):
             try:
                 if i == -1:
                     yield T_guess
-                elif i == 0:
+                elif i == 0 and self.N > 1:
                     MW = mixing_simple(zs, self.MWs)
                     sv = mixing_simple(zs, self.n_atoms)/MW
                                         
@@ -3810,6 +3820,9 @@ class GceosBase(Ideal):
                     print(msg)
                 
                 wrapped_P_HS_error_1P, _, info_cache = caching_decorator(self.P_HS_error_1P, full=True)
+                if self.N > 1:
+                    wrapped_P_HS_error_1P = oscillation_checking_wrapper(wrapped_P_HS_error_1P, full=False,
+                                                                         minimum_progress=minimum_progress)
                 if self.N == 1 and P <= self.Pcs[0]:
                     try:
                         T, phase, eos, VF = self.flash_P_HS_2P_N1(P, zs, Hm, Sm)
@@ -3830,7 +3843,7 @@ class GceosBase(Ideal):
                                          kwargs={'info': info})
                             info = info_cache[ans]
                         except Exception as e:
-                            print('1 Phase Bounded solver could not converge after oscillation', e)
+#                            print('1 Phase Bounded solver could not converge after oscillation', e)
                             pass
                         break 
                     else:
@@ -3841,6 +3854,7 @@ class GceosBase(Ideal):
                         err_high = min(checker.ys_pos)
                         T_low = checker.xs_neg[checker.ys_neg.index(err_low)]
                         T_high = checker.xs_pos[checker.ys_pos.index(err_high)]
+                        
 
                         ans = brenth(wrapped_P_HS_error_1P, T_low, T_high,
                                      fa=err_low, fb=err_high, args=(P, zs, Hm, Sm),
@@ -3848,8 +3862,8 @@ class GceosBase(Ideal):
                         info = info_cache[ans]
                         break
                     except Exception as e:
-                        print('1 Phase Bounded solver could not converge after oscillation', e)
-                        pass
+#                        print('1 Phase Bounded solver could not converge after oscillation', e)
+                        break
 
 
                 checker.clear()
