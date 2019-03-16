@@ -2836,6 +2836,10 @@ class GceosBase(Ideal):
                     
                     self.eos_l = eos_l
                     self.eos_g = eos_g
+                    
+                    eos_l.resolve_full_alphas()
+                    eos_g.resolve_full_alphas()
+                    
                     self.info = info
                     return phase, xs, ys, VF
                 
@@ -2895,6 +2899,8 @@ class GceosBase(Ideal):
                         
                         self.eos_l = eos_l
                         self.eos_g = eos_g
+                        eos_l.resolve_full_alphas()
+                        eos_g.resolve_full_alphas()
                         phase = 'l/g'
                         break
                     except Exception as e:

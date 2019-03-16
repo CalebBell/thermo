@@ -214,7 +214,7 @@ class GCEOSMIX(GCEOS):
 #            new.d2a_alpha_dT2s = self.d2a_alpha_dT2s
 #        return new
     
-    def to_TP_zs_fast(self, T, P, zs, only_l=False, only_g=False):
+    def to_TP_zs_fast(self, T, P, zs, only_l=False, only_g=False, full_alphas=True):
         
         new = self.__class__.__new__(self.__class__)
         new.N = self.N
@@ -244,7 +244,7 @@ class GCEOSMIX(GCEOS):
         new.P = P
         new.V = None
         new.fast_init_specific(self)
-        new.solve(pure_a_alphas=(not copy_alphas), only_l=only_l, only_g=only_g)
+        new.solve(pure_a_alphas=(not copy_alphas), only_l=only_l, only_g=only_g, full_alphas=full_alphas)
         return new
 
 
@@ -1351,7 +1351,8 @@ class GCEOSMIX(GCEOS):
 
     def sequential_substitution_VL(self, Ks_initial=None, maxiter=1000,
                                    xtol=1E-13, near_critical=True, Ks_extra=None,
-                                   xs=None, ys=None, trivial_solution_tol=1e-5, info=None):
+                                   xs=None, ys=None, trivial_solution_tol=1e-5, info=None,
+                                   full_alphas=False):
 #        print(self.zs, Ks)
         T, P, zs = self.T, self.P, self.zs
         V_over_F = None
@@ -1383,13 +1384,13 @@ class GCEOSMIX(GCEOS):
 
         for i in range(maxiter):
             if not near_critical:
-                eos_g = self.to_TP_zs_fast(T=T, P=P, zs=ys, only_l=False, only_g=True)
-                eos_l = self.to_TP_zs_fast(T=T, P=P, zs=xs, only_l=True, only_g=False)
+                eos_g = self.to_TP_zs_fast(T=T, P=P, zs=ys, only_l=False, only_g=True, full_alphas=full_alphas)
+                eos_l = self.to_TP_zs_fast(T=T, P=P, zs=xs, only_l=True, only_g=False, full_alphas=full_alphas)
                 lnphis_g = eos_g.fugacity_coefficients(eos_g.Z_g, ys)
                 lnphis_l = eos_l.fugacity_coefficients(eos_l.Z_l, xs)
             else:
-                eos_g = self.to_TP_zs_fast(T=T, P=P, zs=ys, only_l=False, only_g=True)
-                eos_l = self.to_TP_zs_fast(T=T, P=P, zs=xs, only_l=True, only_g=False)                
+                eos_g = self.to_TP_zs_fast(T=T, P=P, zs=ys, only_l=False, only_g=True, full_alphas=full_alphas)
+                eos_l = self.to_TP_zs_fast(T=T, P=P, zs=xs, only_l=True, only_g=False, full_alphas=full_alphas)                
                 try:
                     lnphis_g = eos_g.fugacity_coefficients(eos_g.Z_g, ys)
                 except AttributeError:
@@ -1588,7 +1589,7 @@ class GCEOSMIX(GCEOS):
             zs_test_normalized = [zi/sum_zs_test for zi in zs_test]
             
 #            to_TP_zs_fast(self, T, P, zs, only_l=False, only_g=False)
-            eos_test = self.to_TP_zs_fast(T=T, P=P, zs=zs_test_normalized, only_l=liq, only_g=not liq)
+            eos_test = self.to_TP_zs_fast(T=T, P=P, zs=zs_test_normalized, only_l=liq, only_g=not liq, full_alphas=False)
             fugacities_test, fugacities_phase = eos_test.eos_fugacities_lowest_Gibbs()
             
             if fugacities_ref_phase == fugacities_phase:

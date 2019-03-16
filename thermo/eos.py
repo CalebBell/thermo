@@ -127,14 +127,21 @@ class GCEOS(object):
                 self.P = R*self.T/(self.V-self.b) - self.a_alpha/(self.V*self.V + self.delta*self.V + self.epsilon)
             Vs = [self.V, 1.0j, 1.0j]
         else:
-            if not full_alphas:
+            if full_alphas:
+                self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2 = self.a_alpha_and_derivatives(self.T, pure_a_alphas=pure_a_alphas)
+            else:
                 self.a_alpha = self.a_alpha_and_derivatives(self.T, full=False, pure_a_alphas=pure_a_alphas)
                 self.da_alpha_dT, self.d2a_alpha_dT2 = -5e-3, 1.5e-5
-            else:
-                self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2 = self.a_alpha_and_derivatives(self.T, pure_a_alphas=pure_a_alphas)
             self.raw_volumes = Vs = self.volume_solutions(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
         self.set_from_PT(Vs, only_l=only_l, only_g=only_g)
 
+    def resolve_full_alphas(self):
+        '''Generic method to resolve the eos with fully calculated alpha
+        derviatives.
+        '''
+        self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2 = self.a_alpha_and_derivatives(self.T, full=True, pure_a_alphas=False)
+        self.set_from_PT(self.raw_volumes, only_l=hasattr(self, 'V_l'), only_g=hasattr(self, 'V_g'))
+        
     def set_from_PT(self, Vs, only_l=False, only_g=False):
         '''Counts the number of real volumes in `Vs`, and determines what to do.
         If there is only one real volume, the method 
