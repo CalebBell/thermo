@@ -550,7 +550,7 @@ should be calculated by this method, in a user subclass.')
         denominator = (V*V + self.delta*V + self.epsilon)
         V_minus_b = (V-self.b)
         def to_solve(T):
-            a_alpha = self.a_alpha_and_derivatives(T, full=False)
+            a_alpha = self.a_alpha_and_derivatives(T, full=False, quick=False)
             P_calc = R*T/V_minus_b - a_alpha/denominator
             return P_calc - P
         return newton(to_solve, self.Tc*0.5)

@@ -77,6 +77,31 @@ def a_alpha_aijs_composition_independent(a_alphas, kijs):
             a_alpha_ijs_is[j] = a_alpha_ijs[j][i] = (1. - kijs_i[j])*term
     return a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv
 
+def a_alpha_and_derivatives(a_alphas, T, zs, kijs, a_alpha_ijs=None,
+                            a_alpha_i_roots=None, a_alpha_ij_roots_inv=None):
+    N = len(a_alphas)
+    cmps = range(N)
+    da_alpha_dT, d2a_alpha_dT2 = 0.0, 0.0
+    
+    if a_alpha_ijs is None or a_alpha_i_roots is None or a_alpha_ij_roots_inv is None:
+        a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, kijs)
+            
+    z_products = [[zs[i]*zs[j] for j in cmps] for i in cmps]
+
+    a_alpha = 0.0
+    for i in cmps:
+        a_alpha_ijs_i = a_alpha_ijs[i]
+        z_products_i = z_products[i]
+        for j in cmps:
+            if j < i:
+                continue
+            term = a_alpha_ijs_i[j]*z_products_i[j]
+            if i != j:
+                a_alpha += term + term
+            else:
+                a_alpha += term
+    return a_alpha, [], a_alpha_ijs
+
 
 def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs, 
                                  kijs, a_alpha_ijs=None, a_alpha_i_roots=None,
@@ -105,7 +130,6 @@ def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
                 a_alpha += term + term
             else:
                 a_alpha += term
-#    return a_alpha, 1, 2, [], a_alpha_ijs
     
     da_alpha_dT_ijs = [[0.0]*N for _ in cmps]
     
@@ -386,23 +410,31 @@ class GCEOSMIX(GCEOS):
         # 2 components 1.89 pypy, pythran 1.75 us, regular python 12.7 us.
         # 10 components - regular python 148 us, 9.81 us PyPy, 8.37 pythran in PyPy (flags have no effect; 14.3 us in regular python)
         zs, kijs, cmps, N = self.zs, self.kijs, self.cmps, self.N
-        if full:
+        
+        if quick:
             try:
                 a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv = self.a_alpha_ijs, self.a_alpha_i_roots, self.a_alpha_ij_roots_inv
-                
             except AttributeError:
                 a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, kijs)
                 self.a_alpha_ijs, self.a_alpha_i_roots, self.a_alpha_ij_roots_inv = a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv
-
+        else:
+            a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, kijs)
+            self.a_alpha_ijs, self.a_alpha_i_roots, self.a_alpha_ij_roots_inv = a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv
+        
+        if full:
             a_alpha, da_alpha_dT, d2a_alpha_dT2, da_alpha_dT_ijs, a_alpha_ijs = a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs, kijs,
                                                                                                              a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv)
-#            stuff = a_alpha_and_derivatives_half(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs, kijs)
-#                ans =  pythran_test2.a_alpha_and_derivatives_py(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs, kijs)
-#                a_alpha, da_alpha_dT, d2a_alpha_dT2, da_alpha_dT_ijs, a_alpha_ijs = ans
             self.da_alpha_dT_ijs = da_alpha_dT_ijs
             self.a_alpha_ijs = a_alpha_ijs
             return a_alpha, da_alpha_dT, d2a_alpha_dT2
+        else:
+            # Priority - test, fix, and validate
+            a_alpha, _, a_alpha_ijs = a_alpha_and_derivatives(a_alphas, T, zs, kijs, a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv)
+            self.da_alpha_dT_ijs = []
+            self.a_alpha_ijs = a_alpha_ijs
+            return a_alpha
 
+        # DO NOT REMOVE THIS CODE! IT MAKES TIHNGS SLOWER IN PYPY, even though it never runs
         da_alpha_dT, d2a_alpha_dT2 = 0.0, 0.0
         
         a_alpha_ijs = [[None]*N for _ in cmps]
