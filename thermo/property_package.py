@@ -2651,17 +2651,23 @@ class GceosBase(Ideal):
 
     def _post_flash(self):
         # Note: compositions are not being checked!
-        if self.xs is not None and self.V_over_F != 1.0:
+        if self.xs is not None: #  and self.V_over_F != 1.0
             try:
                 if self.eos_l.T == self.T and self.eos_l.P == self.P:
+                    if self.eos_l.da_alpha_dT == -5e-3:
+                        # finish, calculate a_alphas
+                        self.eos_l.resolve_full_alphas()
                     pass
                 else:
                     raise ValueError
             except:
                 self.eos_l = self.to_TP_zs(self.T, self.P, self.xs)
-        if self.ys is not None and self.V_over_F != 0.0:
+        if self.ys is not None: #  and self.V_over_F != 0.0
             try:
                 if self.eos_g.T == self.T and self.eos_g.P == self.P:
+                    if self.eos_g.da_alpha_dT == -5e-3:
+                        # finish, calculate a_alphas
+                        self.eos_g.resolve_full_alphas()
                     pass
                 else:
                     raise ValueError
