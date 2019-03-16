@@ -4060,31 +4060,33 @@ class GceosBase(Ideal):
 
         def lnphis_and_derivatives(T_guess):
             eos_l = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
-                                 zs=zs, kijs=self.kijs, T=T_guess, P=P, **self.eos_kwargs)
+                                 zs=zs, kijs=self.kijs, T=T_guess, P=P, 
+                                 only_l=True, fugacities=False,
+                                 **self.eos_kwargs)
 
             if near_critical:
-                if hasattr(eos_l, 'lnphis_l'):
-                    ln_phis_l = eos_l.lnphis_l 
+                try:
+                    ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, zs)
                     d_lnphis_dT_l = eos_l.d_lnphis_dT(eos_l.Z_l, eos_l.dZ_dT_l, zs)
-                else:
-                    ln_phis_l = eos_l.lnphis_g
+                except AttributeError:
+                    ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_g, zs)
                     d_lnphis_dT_l = eos_l.d_lnphis_dT(eos_l.Z_g, eos_l.dZ_dT_g, zs)                
             else:
-                ln_phis_l = eos_l.lnphis_l
+                ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, zs)
                 d_lnphis_dT_l = eos_l.d_lnphis_dT(eos_l.Z_l, eos_l.dZ_dT_l, zs)
 
-            # TODO: fast initialization of alpha terms, preferably with fugacities            
-            eos_g = eos_l.to_TP_zs(T=eos_l.T, P=eos_l.P, zs=ys)
-            
+            # TODO: d alpha 1 only?            
+            eos_g = eos_l.to_TP_zs_fast(T=T_guess, P=P, zs=ys, full_alphas=True, only_g=True)
+
             if near_critical:
-                if hasattr(eos_g, 'lnphis_g'):
-                    ln_phis_g = eos_g.lnphis_g 
+                try:
+                    ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, ys)
                     d_lnphis_dT_g = eos_g.d_lnphis_dT(eos_g.Z_g, eos_g.dZ_dT_g, ys)
-                else:
-                    ln_phis_g = eos_g.lnphis_l
+                except AttributeError:
+                    ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_l, ys)
                     d_lnphis_dT_g = eos_g.d_lnphis_dT(eos_g.Z_l, eos_g.dZ_dT_l, ys)
             else:
-                ln_phis_g = eos_g.lnphis_g
+                ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, ys)
                 d_lnphis_dT_g = eos_g.d_lnphis_dT(eos_g.Z_g, eos_g.dZ_dT_g, ys)
             
             return ln_phis_l, ln_phis_g, d_lnphis_dT_l, d_lnphis_dT_g, eos_l, eos_g
@@ -4481,30 +4483,31 @@ class GceosBase(Ideal):
         
         def lnphis_and_derivatives(T_guess):
             eos_g = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
-                                 zs=zs, kijs=self.kijs, T=T_guess, P=P, **self.eos_kwargs)
+                                 zs=zs, kijs=self.kijs, T=T_guess, P=P, 
+                                 fugacities=False, only_g=True,
+                                 **self.eos_kwargs)
             if near_critical:
-                if hasattr(eos_g, 'lnphis_g'):
-                    ln_phis_g = eos_g.lnphis_g 
+                try:
+                    ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, zs)
                     d_lnphis_dT_g = eos_g.d_lnphis_dT(eos_g.Z_g, eos_g.dZ_dT_g, zs)
-                else:
-                    ln_phis_g = eos_g.lnphis_l
+                except AttributeError:
+                    ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_l, zs)
                     d_lnphis_dT_g = eos_g.d_lnphis_dT(eos_g.Z_l, eos_g.dZ_dT_l, zs)
             else:
-                ln_phis_g = eos_g.lnphis_g
+                ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, zs)
                 d_lnphis_dT_g = eos_g.d_lnphis_dT(eos_g.Z_g, eos_g.dZ_dT_g, zs)
             
-            # TODO: fast initialization of alpha terms, preferably with fugacities
-            eos_l = eos_g.to_TP_zs(T=eos_g.T, P=eos_g.P, zs=xs)
+            eos_l = eos_g.to_TP_zs_fast(T=T_guess, P=P, zs=xs, full_alphas=True, only_l=True)
             
             if near_critical:
-                if hasattr(eos_l, 'lnphis_l'):
-                    ln_phis_l = eos_l.lnphis_l 
+                try:
+                    ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, xs)
                     d_lnphis_dT_l = eos_l.d_lnphis_dT(eos_l.Z_l, eos_l.dZ_dT_l, xs)
-                else:
-                    ln_phis_l = eos_l.lnphis_g 
-                    d_lnphis_dT_l = eos_l.d_lnphis_dT(eos_l.Z_g, eos_l.dZ_dT_g, xs)
+                except AttributeError:
+                    ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_g, xs)
+                    d_lnphis_dT_l = eos_l.d_lnphis_dT(eos_l.Z_g, eos_l.dZ_dT_g, xs)                
             else:
-                ln_phis_l = eos_l.lnphis_l
+                ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, xs)
                 d_lnphis_dT_l = eos_l.d_lnphis_dT(eos_l.Z_l, eos_l.dZ_dT_l, xs)
 
             return ln_phis_l, ln_phis_g, d_lnphis_dT_l, d_lnphis_dT_g, eos_l, eos_g
