@@ -80,27 +80,22 @@ def a_alpha_aijs_composition_independent(a_alphas, kijs):
 def a_alpha_and_derivatives(a_alphas, T, zs, kijs, a_alpha_ijs=None,
                             a_alpha_i_roots=None, a_alpha_ij_roots_inv=None):
     N = len(a_alphas)
-    cmps = range(N)
     da_alpha_dT, d2a_alpha_dT2 = 0.0, 0.0
     
     if a_alpha_ijs is None or a_alpha_i_roots is None or a_alpha_ij_roots_inv is None:
         a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, kijs)
             
-    z_products = [[zs[i]*zs[j] for j in cmps] for i in cmps]
-
     a_alpha = 0.0
-    for i in cmps:
+    for i in range(N):
         a_alpha_ijs_i = a_alpha_ijs[i]
-        z_products_i = z_products[i]
-        for j in cmps:
-            if j < i:
-                continue
-            term = a_alpha_ijs_i[j]*z_products_i[j]
-            if i != j:
-                a_alpha += term + term
-            else:
-                a_alpha += term
-    return a_alpha, [], a_alpha_ijs
+        zi = zs[i]
+        for j in range(i+1, N):
+            term = a_alpha_ijs_i[j]*zi*zs[j]
+            a_alpha += term + term
+                
+        a_alpha += a_alpha_ijs_i[i]*zi*zi
+                
+    return a_alpha, None, a_alpha_ijs
 
 
 def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs, 
