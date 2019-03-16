@@ -39,8 +39,10 @@ from thermo.utils import to_num
 folder = os.path.join(os.path.dirname(__file__), 'Misc')
 
 
-CAS_by_number = ['1333-74-0', '7440-59-7', '7439-93-2', '7440-41-7', '7440-42-8', '7440-44-0', '7727-37-9', '7782-44-7', '7782-41-4', '7440-01-9', '7440-23-5', '7439-95-4', '7429-90-5', '7440-21-3', '7723-14-0', '7704-34-9', '7782-50-5', '7440-37-1', '7440-09-7', '7440-70-2', '7440-20-2', '7440-32-6', '7440-62-2', '7440-47-3', '7439-96-5', '7439-89-6', '7440-48-4', '7440-02-0', '7440-50-8', '7440-66-6', '7440-55-3', '7440-56-4', '7440-38-2', '7782-49-2', '10097-32-2', '7439-90-9', '7440-17-7', '7440-24-6', '7440-65-5', '7440-67-7', '7440-03-1', '7439-98-7', '7440-26-8', '7440-18-8', '7440-16-6', '7440-05-3', '7440-22-4', '7440-43-9', '7440-74-6', '7440-31-5', '7440-36-0', '13494-80-9', '7553-56-2', '7440-63-3', '7440-46-2', '7440-39-3', '7439-91-0', '7440-45-1', '7440-10-0', '7440-00-8', '7440-12-2', '7440-19-9', '7440-53-1', '7440-54-2', '7440-27-9', '7429-91-6', '7440-60-0', '7440-52-0', '7440-30-4', '7440-64-4', '7439-94-3', '7440-58-6', '7440-25-7', '7440-33-7', '7440-15-5', '7440-04-2', '7439-88-5', '7440-06-4', '7440-57-5', '7439-97-6', '7440-28-0', '7439-92-1', '7440-69-9', '7440-08-6', '7440-68-8', '10043-92-2', '7440-73-5', '7440-14-4', '7440-34-8', '7440-29-1', '7440-13-3', '7440-61-1', '7439-99-8', '7440-07-5', '7440-35-9', '7440-51-9', '7440-40-6', '7440-71-3', '7429-92-7', '7440-72-4', '7440-11-1', '10028-14-5', '22537-19-5', '53850-36-5', '53850-35-4', '54038-81-2', '54037-14-8', '54037-57-9', '54038-01-6', '54083-77-1', '54386-24-2', '54084-26-3', '54084-70-7', '54085-16-4', '54085-64-2', '54100-71-9', '54101-14-3', '54144-19-3']
+CAS_by_number_standard = ['1333-74-0', '7440-59-7', '7439-93-2', '7440-41-7', '7440-42-8', '7440-44-0', '7727-37-9', '7782-44-7', '7782-41-4', '7440-01-9', '7440-23-5', '7439-95-4', '7429-90-5', '7440-21-3', '7723-14-0', '7704-34-9', '7782-50-5', '7440-37-1', '7440-09-7', '7440-70-2', '7440-20-2', '7440-32-6', '7440-62-2', '7440-47-3', '7439-96-5', '7439-89-6', '7440-48-4', '7440-02-0', '7440-50-8', '7440-66-6', '7440-55-3', '7440-56-4', '7440-38-2', '7782-49-2', '10097-32-2', '7439-90-9', '7440-17-7', '7440-24-6', '7440-65-5', '7440-67-7', '7440-03-1', '7439-98-7', '7440-26-8', '7440-18-8', '7440-16-6', '7440-05-3', '7440-22-4', '7440-43-9', '7440-74-6', '7440-31-5', '7440-36-0', '13494-80-9', '7553-56-2', '7440-63-3', '7440-46-2', '7440-39-3', '7439-91-0', '7440-45-1', '7440-10-0', '7440-00-8', '7440-12-2', '7440-19-9', '7440-53-1', '7440-54-2', '7440-27-9', '7429-91-6', '7440-60-0', '7440-52-0', '7440-30-4', '7440-64-4', '7439-94-3', '7440-58-6', '7440-25-7', '7440-33-7', '7440-15-5', '7440-04-2', '7439-88-5', '7440-06-4', '7440-57-5', '7439-97-6', '7440-28-0', '7439-92-1', '7440-69-9', '7440-08-6', '7440-68-8', '10043-92-2', '7440-73-5', '7440-14-4', '7440-34-8', '7440-29-1', '7440-13-3', '7440-61-1', '7439-99-8', '7440-07-5', '7440-35-9', '7440-51-9', '7440-40-6', '7440-71-3', '7429-92-7', '7440-72-4', '7440-11-1', '10028-14-5', '22537-19-5', '53850-36-5', '53850-35-4', '54038-81-2', '54037-14-8', '54037-57-9', '54038-01-6', '54083-77-1', '54386-24-2', '54084-26-3', '54084-70-7', '54085-16-4', '54085-64-2', '54100-71-9', '54101-14-3', '54144-19-3']
+CAS_by_number = list(CAS_by_number_standard)
 '''CAS numbers of the elements, indexed by atomic numbers off-by-one up to 118.'''
+
 
 periods = [1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7]
 '''Periods of the elements, indexed by atomic numbers off-by-one up to 118.'''
@@ -68,6 +70,65 @@ for i, CAS in zip(homonuclear_elemental_gases, homonuclear_elemental_singlets_CA
 
 cids = [783, 23987, 3028194, 5460467, 5462311, 5462310, 222, 962, 14917, 23935, 5360545, 5462224, 5359268, 5461123, 24404, 402, 313, 23968, 5462222, 5460341, 23952, 23963, 23990, 23976, 23930, 23925, 104730, 935, 23978, 23994, 5360835, 6326954, 5359596, 6326970, 260, 5416, 5357696, 5359327, 23993, 23995, 23936, 23932, 23957, 23950, 23948, 23938, 23954, 23973, 5359967, 5352426, 5354495, 6327182, 24841, 23991, 5354618, 5355457, 23926, 23974, 23942, 23934, 23944, 23951, 23981, 23982, 23958, 23912, 23988, 23980, 23961, 23992, 23929, 23986, 23956, 23964, 23947, 23937, 23924, 23939, 23985, 23931, 5359464, 5352425, 5359367, 6328143, 5460479, 24857, 6328145, 6328144, 23965, 23960, 23945, 23989, 23933, 23940, 23966, 23979, 23971, 23997, 23913, 23998, 23943, 24822, 31192, 56951715, 56951718, 56951717, 56951713, 56951714, 56951716, None, None, None, None, None, None, None, None, None]
 
+'''
+liquids = ['Hg', 'Br']
+gases = ['He', 'Ne', 'Ar', 'Kr', 'Xe', 'Rn', 'F', 'Cl', 'H', 'O', 'N']
+phases = ['s' for i in periodic_table]
+for i, ele in enumerate(periodic_table):
+    if ele.symbol in liquids:
+        phases[i] = 'l'
+    elif ele.symbol in gases:
+        phases[i] = 'g'
+'''
+phases = ['g', 'g', 's', 's', 's', 's', 'g', 'g', 'g', 'g', 's', 's', 's', 's', 's', 's', 'g', 'g', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 'l', 'g', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 'g', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 'l', 's', 's', 's', 's', 's', 'g', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's', 's']
+
+'''#From CRC Table:
+S0s = []
+Hfs = []
+
+other_values = {'7440-31-5': (0, 51.18) # Tin (white) instead of gray from CODATA
+               }
+for ele in periodic_table:
+    try:
+        CAS = ele.CAS_standard
+        if CAS == '7440-44-0': # carbon -> graphite (which is the standard state)
+            CAS = '7782-42-5'
+        S0c = CRC_standard_data.at[CAS, 'Sc']
+        S0l = CRC_standard_data.at[CAS, 'Sfl']
+        S0g = CRC_standard_data.at[CAS, 'Sfg']
+        Hfc = CRC_standard_data.at[CAS, 'Hfc']
+        Hfl = CRC_standard_data.at[CAS, 'Hfl']
+        Hfg = CRC_standard_data.at[CAS, 'Hfg']        
+        if ele.phase == 's':
+            S0 = S0c
+            Hf = Hfc
+        elif ele.phase == 'l':
+            S0 = S0l
+            Hf = Hfl
+        elif ele.phase == 'g':
+            S0 = S0g
+            Hf = Hfg
+        if isnan(S0):
+            S0 = None
+        if isnan(Hf):
+            Hf = None
+        if CAS in other_values:
+            Hf, S0 = other_values[CAS]
+            
+        S0s.append(S0)
+        Hfs.append(Hf)
+    
+
+    except Exception as e:
+        S0s.append(None)
+        Hfs.append(None)
+
+for Hf, ele in zip(Hfs, periodic_table):
+    if Hf != 0 and Hf is not None:
+        print(Hf, ele.name, ele.CAS)
+'''
+S0s = [130.7, 126.2, 29.1, 9.5, 5.9, 5.7, 191.6, 205.2, 202.8, 146.3, 51.3, 32.7, 28.3, 18.8, 41.1, 32.1, 223.1, 154.8, 64.7, 41.6, 34.6, 30.7, 28.9, 23.8, 32.0, 27.3, 30.0, 29.9, 33.2, 41.6, 40.8, 31.1, 35.1, 42.4, None, 164.1, 76.8, 55.0, 44.4, 39.0, 36.4, 28.7, None, 28.5, 31.5, 37.6, 42.6, 51.8, 57.8, 51.18, 45.7, 49.7, 116.1, 169.7, 85.2, 62.5, 56.9, 72.0, 73.2, 71.5, None, 69.6, 77.8, 68.1, 73.2, 75.6, 75.3, 73.2, 74.0, 59.9, 51.0, 43.6, 41.5, 32.6, 36.9, 32.6, 35.5, 41.6, 47.4, 75.9, 64.2, 64.8, 56.7, None, None, 176.2, 95.4, 71.0, 56.5, 51.8, 51.9, 50.2, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None]
+Hfs = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, None, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, None, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None]
 
 class PeriodicTable(object):
     '''Periodic Table object for use in dealing with elements.
@@ -191,15 +252,33 @@ class Element(object):
         Standard smiles string of the element
     PubChem : int
         PubChem Compound identifier (CID) of the chemical
+    phase : str
+        Standard state at 1 atm and 298.15 K
+    Hf : float
+        Enthalpy of formation of the element in its standard state (0 by
+        definition), [J/mol]
+    S0 : float
+        Standard absolute entropy of the element in its standard state (1 bar,
+        298.15 K), [J/mol/K]
     '''
     __slots__ = ['number', 'symbol', 'name', 'CAS', 'MW', 'AReneg', 'rcov',
                  'rvdw', 'maxbonds', 'elneg', 'ionization', 'elaffinity',
                  'period', 'group', 'block', 'protons', 'electrons', 'InChI',
-                 'InChI_key', 'smiles', 'PubChem']
+                 'InChI_key', 'smiles', 'PubChem', 'phase', 'Hf', 'S0']
 
+    @property
+    def CAS_standard(self):
+        r'''CAS number of the compound of the element used as a standard state
+        ; i.e. the typically diatomic molecules hydrogen, nitrogen, oxygen, 
+        fluorine, and chlorine, have different CAS numbers for the monoatomic
+        form and the diatomic form. This method returns the conventionally used
+        CAS number.
+        '''
+        return CAS_by_number_standard[self.number-1]
+    
     def __init__(self, number, symbol, name, MW, CAS, AReneg, rcov, rvdw,
                  maxbonds, elneg, ionization, elaffinity, period, group, block,
-                 PubChem, InChI_key=None):
+                 PubChem, phase, Hf, S0, InChI_key=None):
         self.number = number
         self.symbol = symbol
         self.name = name
@@ -224,6 +303,10 @@ class Element(object):
         self.InChI_key = InChI_key
         self.smiles = '[' + self.symbol + ']'
         self.PubChem = PubChem
+        
+        self.phase = phase
+        self.S0 = S0
+        self.Hf = Hf
 
 
 element_list = []
@@ -249,13 +332,17 @@ with open(os.path.join(folder, 'element.txt'), 'rb') as f:
             group = groups[number-1]
             InChI_key = InChI_keys[number-1]
             cid = cids[number-1]
+            phase = phases[number-1]
+            Hf = Hfs[number-1]
+            S0 = S0s[number-1]
 
             ele = Element(number=number, symbol=symbol, name=name, MW=MW,
                           CAS=CAS_by_number[number-1], AReneg=AReneg,
                           rcov=rcov, rvdw=rvdw, maxbonds=maxbonds, elneg=elneg,
                           ionization=ionization, elaffinity=elaffinity,
                           block=block, period=period, group=group,
-                          InChI_key=InChI_key, PubChem=cid)
+                          InChI_key=InChI_key, phase=phase, PubChem=cid,
+                          Hf=Hf, S0=S0)
             element_list.append(ele)
 
 periodic_table = PeriodicTable(element_list)

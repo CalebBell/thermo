@@ -57,8 +57,12 @@ def pkg_tabular_data_TP(IDs, pkg_ID, zs, P_pts=50, T_pts=50, T_min=None,
     for T in Ts:
         data_row = []
         for P in Ps:
-            pkg.pkg.flash(T=T, P=P, zs=zs)
-            row = tuple(flash_rounding(getattr(pkg.pkg, s)) for s in attrs)
+            try:
+                pkg.pkg.flash(T=T, P=P, zs=zs)
+                row = tuple(flash_rounding(getattr(pkg.pkg, s)) for s in attrs)
+            except Exception as e:
+                row = tuple(None for s in attrs)
+                print(e, T, P, IDs, pkg_ID, zs)
             data_row.append(row)
         data.append(data_row)
     

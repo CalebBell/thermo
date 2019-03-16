@@ -110,7 +110,7 @@ class GCEOS(object):
             raise Exception('Either T and P, or T and V, or P and V are required')
 
 
-    def solve(self, pure_a_alphas=True, only_l=False, only_g=False):
+    def solve(self, pure_a_alphas=True, only_l=False, only_g=False, full_alphas=True):
         '''First EOS-generic method; should be called by all specific EOSs.
         For solving for `T`, the EOS must provide the method `solve_T`.
         For all cases, the EOS must provide `a_alpha_and_derivatives`.
@@ -127,7 +127,11 @@ class GCEOS(object):
                 self.P = R*self.T/(self.V-self.b) - self.a_alpha/(self.V*self.V + self.delta*self.V + self.epsilon)
             Vs = [self.V, 1.0j, 1.0j]
         else:
-            self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2 = self.a_alpha_and_derivatives(self.T, pure_a_alphas=pure_a_alphas)
+            if not full_alphas:
+                self.a_alpha = self.a_alpha_and_derivatives(self.T, full=False, pure_a_alphas=pure_a_alphas)
+                self.da_alpha_dT, self.d2a_alpha_dT2 = -5e-3, 1.5e-5
+            else:
+                self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2 = self.a_alpha_and_derivatives(self.T, pure_a_alphas=pure_a_alphas)
             self.raw_volumes = Vs = self.volume_solutions(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
         self.set_from_PT(Vs, only_l=only_l, only_g=only_g)
 
@@ -407,10 +411,10 @@ class GCEOS(object):
         .. [3] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
            Butterworth-Heinemann, 1985.
         '''
-        ((dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP), 
-            (d2P_dT2, d2P_dV2, d2V_dT2, d2V_dP2, d2T_dV2, d2T_dP2),
-            (d2V_dPdT, d2P_dTdV, d2T_dPdV),
-            (H_dep, S_dep, Cv_dep)) = self.derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha, da_alpha_dT, d2a_alpha_dT2, quick=quick)
+        (dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP, 
+            d2P_dT2, d2P_dV2, d2V_dT2, d2V_dP2, d2T_dV2, d2T_dP2,
+            d2V_dPdT, d2P_dTdV, d2T_dPdV,
+            H_dep, S_dep, Cv_dep) = self.derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha, da_alpha_dT, d2a_alpha_dT2, quick=quick)
         
         RT = R*T
         RT_inv = 1.0/RT
@@ -423,11 +427,12 @@ class GCEOS(object):
         Cp_m_Cv = -T*dP_dT*dP_dT*dV_dP # Cp_minus_Cv(T, dP_dT, dP_dV)
         
         Cp_dep = Cp_m_Cv + Cv_dep - R
-                
+        
+        TS_dep = T*S_dep
         V_dep = V - RT*P_inv      
         U_dep = H_dep - P*V_dep
-        G_dep = H_dep - T*S_dep
-        A_dep = U_dep - T*S_dep
+        G_dep = H_dep - TS_dep
+        A_dep = U_dep - TS_dep
         fugacity = P*exp(G_dep*RT_inv)
         phi = fugacity*P_inv
   
@@ -764,10 +769,14 @@ should be calculated by this method, in a user subclass.')
         d2T_dPdV = -(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*inverse_dP_dT3
 
         # TODO return one large tuple - quicker, constructing the lists is slow
-        return ([dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP], 
-                [d2P_dT2, d2P_dV2, d2V_dT2, d2V_dP2, d2T_dV2, d2T_dP2],
-                [d2V_dPdT, d2P_dTdV, d2T_dPdV],
-                [H_dep, S_dep, Cv_dep])
+#        return ([dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP], 
+#                [d2P_dT2, d2P_dV2, d2V_dT2, d2V_dP2, d2T_dV2, d2T_dP2],
+#                [d2V_dPdT, d2P_dTdV, d2T_dPdV],
+#                [H_dep, S_dep, Cv_dep])
+        return (dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP, 
+                d2P_dT2, d2P_dV2, d2V_dT2, d2V_dP2, d2T_dV2, d2T_dP2,
+                d2V_dPdT, d2P_dTdV, d2T_dPdV,
+                H_dep, S_dep, Cv_dep)
 
 
 

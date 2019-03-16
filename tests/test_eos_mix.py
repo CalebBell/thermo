@@ -502,7 +502,7 @@ def test_PRMIX_VS_PR():
     
     for f in [True, False]:
         main_calcs = eos.derivatives_and_departures(eos.T, eos.P, eos.V_l, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=f)
-        
+        main_calcs = (main_calcs[0:6], main_calcs[6:12], main_calcs[12:15], main_calcs[15:])
         for i, j in zip(known_derivs_deps, main_calcs):
             assert_allclose(i, j)
         
@@ -611,7 +611,7 @@ def test_SRKMIX_vs_SRK():
     
     for f in [True, False]:
         main_calcs = eos.derivatives_and_departures(eos.T, eos.P, eos.V_l, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=f)
-        
+        main_calcs = (main_calcs[0:6], main_calcs[6:12], main_calcs[12:15], main_calcs[15:])
         for i, j in zip(known_derivs_deps, main_calcs):
             assert_allclose(i, j)
     
@@ -877,7 +877,7 @@ def test_TWUPRMIX_vs_TWUPR():
     
     for f in [True, False]:
         main_calcs = eos.derivatives_and_departures(eos.T, eos.P, eos.V_l, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=f)
-        
+        main_calcs = (main_calcs[0:6], main_calcs[6:12], main_calcs[12:15], main_calcs[15:])
         for i, j in zip(known_derivs_deps, main_calcs):
             assert_allclose(i, j)
         
@@ -968,7 +968,7 @@ def test_TWUSRKMIX_vs_TWUSRK():
     
     for f in [True, False]:
         main_calcs = eos.derivatives_and_departures(eos.T, eos.P, eos.V_l, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=f)
-        
+        main_calcs = (main_calcs[0:6], main_calcs[6:12], main_calcs[12:15], main_calcs[15:])
         for i, j in zip(known_derivs_deps, main_calcs):
             assert_allclose(i, j)
     
@@ -1070,7 +1070,7 @@ def test_APISRKMIX_vs_APISRK():
     
     for f in [True, False]:
         main_calcs = eos.derivatives_and_departures(eos.T, eos.P, eos.V_l, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=f)
-        
+        main_calcs = (main_calcs[0:6], main_calcs[6:12], main_calcs[12:15], main_calcs[15:])
         for i, j in zip(known_derivs_deps, main_calcs):
             assert_allclose(i, j)
             

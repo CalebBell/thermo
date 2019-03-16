@@ -47,27 +47,43 @@ pure_cases_custom = []
 pure_cases.extend(pure_cases_custom)
 
 #pure_cases = [{'IDs': ['water'], 'pkg_ID': PR_PKG, 'zs': [1.0]}]
-pure_path = os.path.join(os.path.dirname(__file__), '../surfaces/TP tabular data pure')
+pure_path = os.path.join(os.path.dirname(__file__), '../surfaces/Tabular data pure')
+mix_path = os.path.join(os.path.dirname(__file__), '../surfaces/Tabular data mix')
 
 
-def export_all_pure_cases(verbose=False):
-    for pure_case in pure_cases:
-        for func_str in pure_case['types']:
+mix_cases = [
+        {'IDs': ['methane', 'CO2'], 'pkg_ID': PR_PKG, 'zs': [.5, .5], 'types': ['TP']},
+        {'IDs': ['methane', 'CO2'], 'pkg_ID': SRK_PKG, 'zs': [.5, .5], 'types': ['TP']},
+        ]
+
+def export_case(cases, path, verbose=False):
+    for case in cases:
+        for func_str in case['types']:
             tabular_data_function = tabular_data_functions[func_str]
-            kwargs = dict(pure_case)
+            kwargs = dict(case)
             del kwargs['types']
             specs0, specs1, data, metadata = tabular_data_function(**kwargs)
-            case_name = '%s %s %s %s' %(pure_case['IDs'], pure_case['zs'], pure_case['pkg_ID'], func_str)
-            file_name = os.path.join(pure_path, case_name)
-            if 'attrs' in pure_cases:
-                attrs = pure_cases['attrs']
+            case_name = '%s %s %s %s' %(case['IDs'], case['zs'], case['pkg_ID'], func_str)
+            file_name = os.path.join(path, case_name)
+            if 'attrs' in cases:
+                attrs = cases['attrs']
             else:
                 attrs = default_attrs
             save_tabular_data_as_json(specs0, specs1, metadata, data, attrs, file_name)
             if verbose:
                 print('Finished %s' %(case_name))
+
+
+
+def export_all_pure_cases(verbose=False):
+    export_case(pure_cases, pure_path, verbose)
+
+
+def export_all_mix_cases(verbose=False):
+    export_case(mix_cases, mix_path, verbose)
         
     
 
 if __name__ == '__main__':
-    export_all_pure_cases(verbose=True)
+#    export_all_pure_cases(verbose=True)
+    export_all_mix_cases(verbose=True)

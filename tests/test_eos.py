@@ -186,6 +186,7 @@ def test_PR_quick():
     
     for f in [True, False]:
         main_calcs = eos.derivatives_and_departures(eos.T, eos.P, eos.V_l, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=f)
+        main_calcs = (main_calcs[0:6], main_calcs[6:12], main_calcs[12:15], main_calcs[15:])
         
         for i, j in zip(known_derivs_deps, main_calcs):
             assert_allclose(i, j)
@@ -659,7 +660,7 @@ def test_RK_quick():
     
     for f in [True, False]:
         main_calcs = eos.derivatives_and_departures(eos.T, eos.P, eos.V_l, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=f)
-        
+        main_calcs = (main_calcs[0:6], main_calcs[6:12], main_calcs[12:15], main_calcs[15:])
         for i, j in zip(known_derivs_deps, main_calcs):
             assert_allclose(i, j)
     
@@ -748,7 +749,7 @@ def test_SRK_quick():
     
     for f in [True, False]:
         main_calcs = eos.derivatives_and_departures(eos.T, eos.P, eos.V_l, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=f)
-        
+        main_calcs = (main_calcs[0:6], main_calcs[6:12], main_calcs[12:15], main_calcs[15:])
         for i, j in zip(known_derivs_deps, main_calcs):
             assert_allclose(i, j)
     
@@ -857,7 +858,7 @@ def test_APISRK_quick():
     
     for f in [True, False]:
         main_calcs = eos.derivatives_and_departures(eos.T, eos.P, eos.V_l, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=f)
-        
+        main_calcs = (main_calcs[0:6], main_calcs[6:12], main_calcs[12:15], main_calcs[15:])
         for i, j in zip(known_derivs_deps, main_calcs):
             assert_allclose(i, j)
     
@@ -913,7 +914,7 @@ def test_TWUPR_quick():
     
     for f in [True, False]:
         main_calcs = eos.derivatives_and_departures(eos.T, eos.P, eos.V_l, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=f)
-        
+        main_calcs = (main_calcs[0:6], main_calcs[6:12], main_calcs[12:15], main_calcs[15:])
         for i, j in zip(known_derivs_deps, main_calcs):
             assert_allclose(i, j)
     
@@ -973,7 +974,7 @@ def test_TWUSRK_quick():
     
     for f in [True, False]:
         main_calcs = eos.derivatives_and_departures(eos.T, eos.P, eos.V_l, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=f)
-        
+        main_calcs = (main_calcs[0:6], main_calcs[6:12], main_calcs[12:15], main_calcs[15:])
         for i, j in zip(known_derivs_deps, main_calcs):
             assert_allclose(i, j)
     

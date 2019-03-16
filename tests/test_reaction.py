@@ -26,7 +26,7 @@ import pandas as pd
 
 from thermo.identifiers import checkCAS
 from thermo.reaction import *
-from thermo.heat_capacity import TRC_gas_data
+from thermo.heat_capacity import TRC_gas_data, CRC_standard_data
 
 
 def test_API_TDB_data():
@@ -85,10 +85,10 @@ def test_Hf_l():
 
 def test_Hf_g():
     Hfs = [Hf_g('67-56-1', Method=i) for i in Hf_g_methods]
-    assert_allclose(Hfs, [-200700.0, -190100.0])
+    assert_allclose(Hfs, [-200700., -190100., -201000., -200900.])
 
-    assert Hf_g('67-56-1', AvailableMethods=True) == ['ATCT_G', 'TRC', 'NONE']
-    assert None == Hf_g('98-00-0')
+    assert Hf_g('67-56-1', AvailableMethods=True) == ['ATCT_G', 'TRC', 'YAWS', 'CRC', 'NONE']
+    assert_allclose(-218900.0, Hf_g('98-00-0'))
 
     with pytest.raises(Exception):
         Hf_g('98-00-0', Method='BADMETHOD')
@@ -98,3 +98,34 @@ def test_Hf_g():
 
     tot2 = sum([abs(Hf_g(i, Method='ATCT_G')) for i in ATcT_g.index])
     assert_allclose(tot2, 300592764.0)
+    
+    tot3 = sum([abs(Hf_g(i, Method='YAWS')) for i in Yaws_Hf_S0.index[pd.notnull(Yaws_Hf_S0['Hf(g)'])]])
+    assert_allclose(tot3, 1545148533.0)
+    
+    tot4 = sum([abs(Hf_g(i, Method='CRC')) for i in CRC_standard_data.index[pd.notnull(CRC_standard_data['Hfg'])]])
+    assert_allclose(tot4, 392946600.0)
+
+
+def test_Gibbs_formation():
+    Gf =  Gibbs_formation(-285830, 69.91,  [0, 0], [130.571, 205.147], [1, .5])
+    assert_allclose(Gf, -237161.633825)
+    
+    Gf = Gibbs_formation(-241818, 188.825,  [0, 0], [130.571, 205.147], [1, .5])
+    assert_allclose(Gf, -228604.141075)
+    
+    Gf = Gibbs_formation(-648980, 297.713, [0, 0, 0], [5.74, 152.206, 202.789], [1, .5, 1.5])
+    assert_allclose(Gf, -622649.329975)
+    
+    
+def test_Hf_basis_converter():
+    assert_allclose(Hf_basis_converter(44018, Hf_liq=-285830), -241812)
+    
+    assert_allclose(Hf_basis_converter(44018, Hf_gas=-241812), -285830)
+
+
+def test_entropy_formation():
+    Sf = entropy_formation(Hf=-74520, Gf=-50490)
+    assert_allclose(Sf, -80.59701492537314)
+    
+    Sf = entropy_formation(Hf=-241818, Gf=-228572)
+    assert_allclose(Sf, -44.427301693778304)

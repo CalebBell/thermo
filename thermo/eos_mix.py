@@ -105,7 +105,7 @@ def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
                 a_alpha += term + term
             else:
                 a_alpha += term
-    
+#    return a_alpha, 1, 2, [], a_alpha_ijs
     
     da_alpha_dT_ijs = [[0.0]*N for _ in cmps]
     
@@ -215,7 +215,6 @@ class GCEOSMIX(GCEOS):
 #        return new
     
     def to_TP_zs_fast(self, T, P, zs, only_l=False, only_g=False):
-        copy_alphas = T == self.T
         
         new = self.__class__.__new__(self.__class__)
         new.N = self.N
@@ -227,6 +226,8 @@ class GCEOSMIX(GCEOS):
         new.kwargs = self.kwargs
         new.ais = self.ais
         new.bs = self.bs
+        
+        copy_alphas = T == self.T
         if copy_alphas:
             new.a_alphas = self.a_alphas
             new.da_alpha_dTs = self.da_alpha_dTs
@@ -238,10 +239,10 @@ class GCEOSMIX(GCEOS):
             except:
                 pass
         
+        new.zs = zs
         new.T = T
         new.P = P
         new.V = None
-        new.zs = zs
         new.fast_init_specific(self)
         new.solve(pure_a_alphas=(not copy_alphas), only_l=only_l, only_g=only_g)
         return new

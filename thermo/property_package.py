@@ -971,6 +971,25 @@ class PropertyPackage(object):
                                  'pressure bound %g Pa has an entropy (%g '
                                  'J/mol/K) upper than that requested (%g J/mol/K)' %(
                                                              P_high, Sm_high, Sm))
+    @property
+    def Hm_reactive(self):
+        Hm = self.Hm
+        for zi, Hf in zip(self.zs, self.Hfs):
+            Hm += zi*Hf
+        return Hm
+
+    @property
+    def Sm_reactive(self):
+        Sm = self.Sm
+        for zi, Sf in zip(self.zs, self.Sfs):
+            Sm += zi*Sf
+        return Sm
+    
+    @property
+    def Gm_reactive(self):
+        Gm = self.Hm_reactive - self.T*self.Sm_reactive
+        return Gm
+    
 
 class Ideal(PropertyPackage):    
     def Ks(self, T, P, zs=None):
@@ -2872,7 +2891,7 @@ class GceosBase(Ideal):
                         G_TP = G_dep_l*(1.0 - VF) + G_dep_g*VF
                         
                         if VF < 0 or VF > 1 or G_TP > G_dep_eos:
-                            raise ValueError("Stability test Ks flash converged but VF unfeasible or Gibbs energy lower than stable phase")
+                            raise ValueError("Stability test Ks flash converged but VF unfeasible or Gibbs energy higher than stable phase")
                         
                         self.eos_l = eos_l
                         self.eos_g = eos_g
@@ -2880,7 +2899,7 @@ class GceosBase(Ideal):
                         break
                     except Exception as e:
                         # K guesses were not close enough to convege or some other error happened
-#                        print('failed convergence of SS with Ks', Ks_initial, e)
+#                        print('failed convergence of SS with Ks', Ks_initial, e, 'T=%g, P=%g, zs=%s' %(T, P, zs))
                         unstable_and_failed_SS = True
                         stable = True
                 
