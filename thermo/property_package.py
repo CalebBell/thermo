@@ -4777,39 +4777,38 @@ class GceosBase(Ideal):
 #        if xtol < 1e-4:
 #            xtol = 1e-3
         eos_g_base = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
-                             zs=zs, kijs=self.kijs, T=T, P=P_guess, **self.eos_kwargs)
+                             zs=zs, kijs=self.kijs, T=T, P=P_guess, fugacities=False, only_g=True,
+                             **self.eos_kwargs)
                 
         def lnphis_and_derivatives(P_guess):
             if eos_g_base.P == P_guess:
                 eos_g = eos_g_base
             else:
                 eos_g = eos_g_base.to_TP_zs_fast(T=T, P=P_guess, zs=zs, full_alphas=False, only_g=True) #  
-                eos_g.fugacities()
 
             if near_critical:
-                if hasattr(eos_g, 'lnphis_g'):
-                    ln_phis_g = eos_g.lnphis_g 
+                try:
+                    ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, zs)
                     d_lnphis_dP_g = eos_g.d_lnphis_dP(eos_g.Z_g, eos_g.dZ_dP_g, zs)
-                else:
-                    ln_phis_g = eos_g.lnphis_l
+                except AttributeError:
+                    ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_l, zs)
                     d_lnphis_dP_g = eos_g.d_lnphis_dP(eos_g.Z_l, eos_g.dZ_dP_l, zs)
             else:
-                ln_phis_g = eos_g.lnphis_g
+                ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, zs)
                 d_lnphis_dP_g = eos_g.d_lnphis_dP(eos_g.Z_g, eos_g.dZ_dP_g, zs)
 
+
             eos_l = eos_g_base.to_TP_zs_fast(T=T, P=P_guess, zs=xs, full_alphas=False, only_l=True)
-            eos_l.fugacities()
-#            eos_g.to_TP_zs(T=eos_g.T, P=eos_g.P, zs=xs)
             
             if near_critical:
-                if hasattr(eos_l, 'lnphis_l'):
-                    ln_phis_l = eos_l.lnphis_l 
+                try:
+                    ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, xs)
                     d_lnphis_dP_l = eos_l.d_lnphis_dP(eos_l.Z_l, eos_l.dZ_dP_l, xs)
-                else:
-                    ln_phis_l = eos_l.lnphis_g
+                except AttributeError:
+                    ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_g, xs)
                     d_lnphis_dP_l = eos_l.d_lnphis_dP(eos_l.Z_g, eos_l.dZ_dP_g, xs)                
             else:
-                ln_phis_l = eos_l.lnphis_l
+                ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, xs)
                 d_lnphis_dP_l = eos_l.d_lnphis_dP(eos_l.Z_l, eos_l.dZ_dP_l, xs)
                         
             return ln_phis_l, ln_phis_g, d_lnphis_dP_l, d_lnphis_dP_g, eos_l, eos_g
@@ -5050,7 +5049,9 @@ class GceosBase(Ideal):
         
         
         eos_l_base = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
-                             zs=zs, kijs=self.kijs, T=T, P=P_guess, **self.eos_kwargs)
+                             zs=zs, kijs=self.kijs, T=T, P=P_guess, 
+                             fugacities=False, only_l=True,
+                             **self.eos_kwargs)
                 
         def lnphis_and_derivatives(P_guess):
             if eos_l_base.P == P_guess:
