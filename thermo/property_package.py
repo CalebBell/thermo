@@ -2651,7 +2651,7 @@ class GceosBase(Ideal):
 
     def _post_flash(self):
         # Note: compositions are not being checked!
-        if self.xs is not None:
+        if self.xs is not None and self.V_over_F != 1.0:
             try:
                 if self.eos_l.T == self.T and self.eos_l.P == self.P:
                     pass
@@ -2659,7 +2659,7 @@ class GceosBase(Ideal):
                     raise ValueError
             except:
                 self.eos_l = self.to_TP_zs(self.T, self.P, self.xs)
-        if self.ys is not None:
+        if self.ys is not None and self.V_over_F != 0.0:
             try:
                 if self.eos_g.T == self.T and self.eos_g.P == self.P:
                     pass
@@ -2774,9 +2774,9 @@ class GceosBase(Ideal):
     def flash_TP_zs(self, T, P, zs, Wilson_first=True):
         info = []
         if hasattr(self, 'eos_l') and self.eos_l is not None:
-            eos = self.eos_l.to_TP_zs_fast(T=T, P=P, zs=zs)
+            eos = self.eos_l.to_TP_zs_fast(T=T, P=P, zs=zs, full_alphas=False)
         elif hasattr(self, 'eos_g') and self.eos_g is not None:
-            eos = self.eos_g.to_TP_zs_fast(T=T, P=P, zs=zs)
+            eos = self.eos_g.to_TP_zs_fast(T=T, P=P, zs=zs, full_alphas=False)
         else:
             eos = self.to_TP_zs(T=T, P=P, zs=zs, fugacities=False)
         if self.N == 1:
@@ -2944,6 +2944,7 @@ class GceosBase(Ideal):
                     phase, xs, ys, VF = 'g', None, zs, 1
                     self.eos_g = None
                     self.eos_l = eos
+            eos.resolve_full_alphas()
         self.info = info
 
         return phase, xs, ys, VF
@@ -4134,6 +4135,7 @@ class GceosBase(Ideal):
             
 #            print(ys, T_guess, abs(T_guess - T_guess_old), dfk_dT, ys)
             if abs(T_guess - T_guess_old) < xtol:
+                T_guess = T_guess_old
                 break
             
                 
@@ -4546,6 +4548,7 @@ class GceosBase(Ideal):
             if info is not None:
                 info[:] = xs, zs, Ks, eos_l, eos_g, 1.0
             if abs(T_guess - T_guess_old) < xtol:
+                T_guess = T_guess_old
                 break
             
                 
@@ -4823,6 +4826,7 @@ class GceosBase(Ideal):
             
 #            print(xs, P_guess, step, P_guess - P_guess_old)
             if abs(P_guess - P_guess_old) < xtol:
+                P_guess = P_guess_old # avoid new step which does not have eos's evaluated at it; just use a lower tolerance 
                 break
             
         if abs(P_guess - P_guess_old) > xtol:
@@ -5094,8 +5098,9 @@ class GceosBase(Ideal):
 
             if info is not None:
                 info[:] = zs, ys, Ks, eos_l, eos_g, 0.0
-            print(ys, P_guess, abs(P_guess - P_guess_old), dfk_dP)
+#            print(ys, P_guess, abs(P_guess - P_guess_old), dfk_dP)
             if abs(P_guess - P_guess_old) < xtol:
+                P_guess = P_guess_old
                 break
                 
         if abs(P_guess - P_guess_old) > xtol:
