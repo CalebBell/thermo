@@ -625,6 +625,19 @@ class Mixture(object):
         self.Hfs = [i.Hf for i in self.Chemicals]
         self.Hcs = [i.Hc for i in self.Chemicals]
 
+        # Ideal gas points
+        self.Hfgms = [i.Hfgm for i in self.Chemicals]
+        self.Hfgs = [i.Hfg for i in self.Chemicals]
+
+        self.Gfgms = [i.Gfgm for i in self.Chemicals]
+        self.Gfgs = [i.Gfg for i in self.Chemicals]
+
+        self.Sfgms = [i.Sfgm for i in self.Chemicals]
+        self.Sfgs = [i.Sfg for i in self.Chemicals]
+
+        self.S0gms = [i.S0gm for i in self.Chemicals]
+        self.S0gs = [i.S0g for i in self.Chemicals]
+
         # Fire Safety Limits
         self.Tflashs = [i.Tflash for i in self.Chemicals]
         self.Tautoignitions = [i.Tautoignition for i in self.Chemicals]
