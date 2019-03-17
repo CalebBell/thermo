@@ -105,6 +105,23 @@ def test_Hf_g():
     tot4 = sum([abs(Hf_g(i, Method='CRC')) for i in CRC_standard_data.index[pd.notnull(CRC_standard_data['Hfg'])]])
     assert_allclose(tot4, 392946600.0)
 
+def test_S0_g():
+    S0s = [S0_g('7732-18-5', Method=i) for i in S0_g_methods]
+    assert_allclose(S0s, [188.8, 188.84])
+
+    assert S0_g('67-56-1', AvailableMethods=True) == ['CRC', 'YAWS', 'NONE']
+    
+    assert_allclose(239.9, S0_g('67-56-1'))
+    
+    with pytest.raises(Exception):
+        S0_g('98-00-0', Method='BADMETHOD')
+
+    tot3 = sum([abs(S0_g(i, Method='YAWS')) for i in Yaws_Hf_S0.index[pd.notnull(Yaws_Hf_S0['S0(g)'])]])
+    assert_allclose(tot3, 2691892.382999995)
+    
+    tot4 = sum([abs(S0_g(i, Method='CRC')) for i in CRC_standard_data.index[pd.notnull(CRC_standard_data['Sfg'])]])
+    assert_allclose(tot4, 141558.30000000008)
+
 
 def test_Gibbs_formation():
     Gf =  Gibbs_formation(-285830, 69.91,  [0, 0], [130.571, 205.147], [1, .5])

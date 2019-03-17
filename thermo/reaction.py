@@ -216,7 +216,7 @@ def Hf_g(CASRN, AvailableMethods=False, Method=None):
 
     Prefered sources are 'Active Thermochemical Tables (g)' for high accuracy,
     and 'TRC' for less accuracy but more chemicals.
-    Function has data for approximately 2000 chemicals.
+    Function has data for approximately 8700 chemicals.
 
     Parameters
     ----------
@@ -243,10 +243,10 @@ def Hf_g(CASRN, AvailableMethods=False, Method=None):
     -----
     Sources are:
 
-        * 'ATCT_G', the Active Thermochemical Tables version 1.112.
-        * 'TRC', from a 1994 compilation.
-        * 'CRC', from the CRC handbook
-        * 'YAWS', a large compillation of values, mostly estimated
+        * 'ATCT_G', the Active Thermochemical Tables version 1.112 (600 values)
+        * 'TRC', from a 1994 compilation (1750 values)
+        * 'CRC', from the CRC handbook (1360 values)
+        * 'YAWS', a large compillation of values, mostly estimated (5000 values)
 
     Examples
     --------
@@ -321,10 +321,8 @@ def S0_g(CASRN, AvailableMethods=False, Method=None):
     source to use if no Method is provided; returns None if the data is not
     available.
 
-    TODO
-    Prefered sources are 'CRC', or 'Yaws'
-    and 'TRC' for less accuracy but more chemicals.
-    Function has data for approximately 500 chemicals.
+    Prefered sources are 'CRC', or 'Yaws'.
+    Function has data for approximately 5400 chemicals.
 
     Parameters
     ----------
@@ -351,21 +349,30 @@ def S0_g(CASRN, AvailableMethods=False, Method=None):
     -----
     Sources are:
 
-        * 'CRC', the CRC handbook
+        * 'CRC', from the CRC handbook (520 values)
+        * 'YAWS', a large compillation of values, mostly estimated (4890 values)
 
     Examples
     --------
-    >>> Hf_g('67-56-1')
-    -200700.0
+    >>> S0_g('67-56-1')
+    239.9
+    >>> S0_g('67-56-1', Method='YAWS')
+    239.88
 
     References
     ----------
-    .. [1]
+    .. [1] Haynes, W.M., Thomas J. Bruno, and David R. Lide. CRC Handbook of
+       Chemistry and Physics. [Boca Raton, FL]: CRC press, 2014.
+    .. [2] Yaws, Carl L. Thermophysical Properties of Chemicals and
+       Hydrocarbons, Second Edition. Amsterdam Boston: Gulf Professional
+       Publishing, 2014.
     '''
     def list_methods():
         methods = []
         if CASRN in CRC_standard_data.index and not isnan(CRC_standard_data.at[CASRN, 'Sfg']):
             methods.append(CRC)
+        if CASRN in Yaws_Hf_S0.index and not isnan(Yaws_Hf_S0.at[CASRN, 'S0(g)']):
+            methods.append(YAWS)
         methods.append(NONE)
         return methods
     if AvailableMethods:
@@ -375,6 +382,8 @@ def S0_g(CASRN, AvailableMethods=False, Method=None):
 
     if Method == CRC:
         return float(CRC_standard_data.at[CASRN, 'Sfg'])
+    elif Method == YAWS:
+        return float(Yaws_Hf_S0.at[CASRN, 'S0(g)'])
     elif Method == NONE:
         return None
     else:
