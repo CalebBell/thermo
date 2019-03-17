@@ -214,10 +214,9 @@ def Hf_g(CASRN, AvailableMethods=False, Method=None):
     source to use if no Method is provided; returns None if the data is not
     available.
 
-    Prefered sources are 'Active Thermochemical Tables (g)' for high accuracy,
-    and 'TRC' for less accuracy but more chemicals.
+    Prefered sources are 'CRC' and 'Yaws'.
     Function has data for approximately 8700 chemicals.
-
+    
     Parameters
     ----------
     CASRN : string
@@ -247,6 +246,9 @@ def Hf_g(CASRN, AvailableMethods=False, Method=None):
         * 'TRC', from a 1994 compilation (1750 values)
         * 'CRC', from the CRC handbook (1360 values)
         * 'YAWS', a large compillation of values, mostly estimated (5000 values)
+
+    'TRC' data may have come from computational procedures, for example petane
+    is off by 30%.
 
     Examples
     --------
@@ -280,12 +282,12 @@ def Hf_g(CASRN, AvailableMethods=False, Method=None):
         methods = []
         if CASRN in ATcT_g.index:
             methods.append(ATCT_G)
-        if CASRN in TRC_gas_data.index and not isnan(TRC_gas_data.at[CASRN, 'Hf']):
-            methods.append(TRC)
         if CASRN in Yaws_Hf_S0.index and not isnan(Yaws_Hf_S0.at[CASRN, 'Hf(g)']):
             methods.append(YAWS)
         if CASRN in CRC_standard_data.index and not isnan(CRC_standard_data.at[CASRN, 'Hfg']):
             methods.append(CRC)
+        if CASRN in TRC_gas_data.index and not isnan(TRC_gas_data.at[CASRN, 'Hf']):
+            methods.append(TRC)
         methods.append(NONE)
         return methods
     if AvailableMethods:

@@ -87,7 +87,7 @@ def test_Hf_g():
     Hfs = [Hf_g('67-56-1', Method=i) for i in Hf_g_methods]
     assert_allclose(Hfs, [-200700., -190100., -201000., -200900.])
 
-    assert Hf_g('67-56-1', AvailableMethods=True) == ['ATCT_G', 'TRC', 'YAWS', 'CRC', 'NONE']
+    assert Hf_g('67-56-1', AvailableMethods=True) == ['ATCT_G', 'YAWS', 'CRC', 'TRC', 'NONE']
     assert_allclose(-218900.0, Hf_g('98-00-0'))
 
     with pytest.raises(Exception):

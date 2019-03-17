@@ -40,7 +40,7 @@ from thermo.permittivity import *
 from thermo.heat_capacity import HeatCapacitySolid, HeatCapacityGas, HeatCapacityLiquid, HeatCapacitySolidMixture, HeatCapacityGasMixture, HeatCapacityLiquidMixture
 from thermo.interface import SurfaceTension, SurfaceTensionMixture
 from thermo.viscosity import ViscosityLiquid, ViscosityGas, ViscosityLiquidMixture, ViscosityGasMixture, viscosity_index
-from thermo.reaction import Hf
+from thermo.reaction import Hf, Hf_g, S0_g, Gibbs_formation
 from thermo.combustion import Hcombustion
 from thermo.safety import Tflash, Tautoignition, LFL, UFL, TWA, STEL, Ceiling, Skin, Carcinogen, LFL_mixture, UFL_mixture
 from thermo.solubility import solubility_parameter
@@ -52,7 +52,7 @@ from thermo.environment import GWP, ODP, logP
 from thermo.law import legal_status, economic_status
 from thermo.refractivity import refractive_index
 from thermo.electrochem import conductivity
-from thermo.elements import atom_fractions, mass_fractions, similarity_variable, atoms_to_Hill, simple_formula_parser, molecular_weight, charge_from_formula
+from thermo.elements import atom_fractions, mass_fractions, similarity_variable, atoms_to_Hill, simple_formula_parser, molecular_weight, charge_from_formula, periodic_table, homonuclear_elements
 from thermo.coolprop import has_CoolProp
 from thermo.eos import *
 from thermo.eos_mix import *
@@ -343,8 +343,18 @@ class Chemical(object): # pragma: no cover
         Molar enthalpy of sublimation [J/mol]
     Hf : float
         Enthalpy of formation [J/mol]
+    Hfgm : float
+        Ideal-gas enthalpy of formation, [J/mol]
+    Hfg : float
+        Ideal-gas enthalpy of formation in a mass basis, [J/kg]
     Hc : float
         Molar enthalpy of combustion [J/mol]
+    S0gm : float
+        Absolute molar entropy of formation in an ideal gas state of the 
+        chemical, [J/mol/K]
+    S0g : float
+        Absolute mass base entropy of formation in an ideal gas state of the 
+        chemical, [J/kg/K]
     Tflash : float
         Flash point of the chemical, [K]
     Tautoignition : float
@@ -748,6 +758,38 @@ class Chemical(object): # pragma: no cover
         # Chemistry - currently molar
         self.Hf_sources = Hf(CASRN=self.CAS, AvailableMethods=True)
         self.Hf_source = self.Hf_sources[0]
+        
+        self.Hfg_sources = Hf_g(CASRN=self.CAS, AvailableMethods=True)
+        self.Hfgm = Hf_g(CASRN=self.CAS, Method=self.Hfg_sources[0])
+        self.Hfg = property_molar_to_mass(self.Hfgm, self.MW) if (self.Hfgm is not None) else None
+
+        self.S0g_sources = S0_g(CASRN=self.CAS, AvailableMethods=True)
+        self.S0gm = S0_g(CASRN=self.CAS, Method=self.S0g_sources[0])
+        self.S0g = property_molar_to_mass(self.S0gm, self.MW) if (self.S0gm is not None) else None
+
+        # Compute Gf(ig)
+        dHfs_std = []
+        S0_abs_elements = []
+        coeffs_elements = []
+        
+        for atom, count in self.atoms.items():
+            ele = getattr(periodic_table, atom)
+            H0, S0 = ele.Hf, ele.S0
+            if ele.number in homonuclear_elements:
+                H0, S0 = 0.5*H0, 0.5*S0
+            dHfs_std.append(H0)
+            S0_abs_elements.append(S0)
+            coeffs_elements.append(count)
+        
+        try:
+            self.Gfgm = Gibbs_formation(self.Hfgm, self.S0gm, dHfs_std, S0_abs_elements, coeffs_elements)
+        except:
+            self.Gfgm = None
+        self.Gfg = property_molar_to_mass(self.Gfgm, self.MW) if (self.Gfgm is not None) else None
+
+        # Compute Entropy of formation
+        self.Sfgm = (self.Hfgm - self.Gfgm)/298.15 if (self.Hfgm is not None and self.Gfgm is not None) else None # hardcoded
+        self.Sfg = property_molar_to_mass(self.Sfgm, self.MW) if (self.Sfgm is not None) else None
 
         # Misc
         self.dipole_sources = dipole(CASRN=self.CAS, AvailableMethods=True)
@@ -767,6 +809,7 @@ class Chemical(object): # pragma: no cover
 
         self.conductivity_sources = conductivity(CASRN=self.CAS, AvailableMethods=True)
         self.conductivity_source = self.conductivity_sources[0]
+        
 
 
     def set_constants(self):
