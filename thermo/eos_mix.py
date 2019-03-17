@@ -2124,11 +2124,15 @@ class PRMIX(GCEOSMIX, PR):
         d_lnphis_dTs = []
         for i in cmps:
             x9 = fugacity_sum_terms[i]
-#            x9 = sum([zs[j]*a_alpha_ijs[i][j] for j in cmps])
-            der_sum = sum([zs[j]*da_alpha_dT_ijs[i][j] for j in cmps])
+
+            der_sum = 0.0
+            da_alpha_dT_ijs_i = da_alpha_dT_ijs[i]
+            for j in cmps:
+                der_sum += zs[j]*da_alpha_dT_ijs_i[j]
+#            der_sum = sum([zs[j]*da_alpha_dT_ijs[i][j] ])
             
             x20 = x50*(x51*x9 + der_sum) + x52
-            x21 = self.bs[i]*x14
+            x21 = bs[i]*x14
             x23 = x53*x9 - x21
             
             d_lhphi_dT = dZ_dT*x21 + x20 + x23*(x24 - x25 + x26)
