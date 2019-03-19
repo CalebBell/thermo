@@ -1727,7 +1727,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Vms(self):
         r'''Solid-phase molar volume of the chemical at its current
-        temperature, in units of [mol/m^3]. For calculation of this property at
+        temperature, in units of [m^3/mol]. For calculation of this property at
         other temperatures, or specifying manually the method used to calculate
         it, and more - see the object oriented interface
         :obj:`thermo.volume.VolumeSolid`; each Chemical instance
@@ -1743,7 +1743,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Vml(self):
         r'''Liquid-phase molar volume of the chemical at its current
-        temperature and pressure, in units of [mol/m^3]. For calculation of this
+        temperature and pressure, in units of [m^3/mol]. For calculation of this
         property at other temperatures or pressures, or specifying manually the
         method used to calculate it, and more - see the object oriented interface
         :obj:`thermo.volume.VolumeLiquid`; each Chemical instance
@@ -1759,7 +1759,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Vmg(self):
         r'''Gas-phase molar volume of the chemical at its current
-        temperature and pressure, in units of [mol/m^3]. For calculation of this
+        temperature and pressure, in units of [m^3/mol]. For calculation of this
         property at other temperatures or pressures, or specifying manually the
         method used to calculate it, and more - see the object oriented interface
         :obj:`thermo.volume.VolumeGas`; each Chemical instance
