@@ -1263,7 +1263,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Vmss(self):
         r'''Pure component solid-phase molar volumes of the chemicals in the
-        mixture at its current temperature, in units of [mol/m^3].
+        mixture at its current temperature, in units of [m^3/mol].
 
         Examples
         --------
@@ -1275,7 +1275,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Vmls(self):
         r'''Pure component liquid-phase molar volumes of the chemicals in the
-        mixture at its current temperature and pressure, in units of [mol/m^3].
+        mixture at its current temperature and pressure, in units of [m^3/mol].
 
         Examples
         --------
@@ -1287,7 +1287,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Vmgs(self):
         r'''Pure component gas-phase molar volumes of the chemicals in the
-        mixture at its current temperature and pressure, in units of [mol/m^3].
+        mixture at its current temperature and pressure, in units of [m^3/mol].
 
         Examples
         --------
@@ -2140,7 +2140,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Vml(self):
         r'''Liquid-phase molar volume of the mixture at its current
-        temperature, pressure, and composition in units of [mol/m^3]. For
+        temperature, pressure, and composition in units of [m^3/mol]. For
         calculation of this property at other temperatures or pressures or
         compositions, or specifying manually the method used to calculate it,
         and more - see the object oriented interface
@@ -2157,7 +2157,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Vmg(self):
         r'''Gas-phase molar volume of the mixture at its current
-        temperature, pressure, and composition in units of [mol/m^3]. For
+        temperature, pressure, and composition in units of [m^3/mol]. For
         calculation of this property at other temperatures or pressures or
         compositions, or specifying manually the method used to calculate it,
         and more - see the object oriented interface
@@ -2497,7 +2497,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Vml_STP(self):
         r'''Liquid-phase molar volume of the mixture at 298.15 K and 101.325 kPa,
-        and the current composition in units of [mol/m^3].
+        and the current composition in units of [m^3/mol].
 
         Examples
         --------
@@ -2509,7 +2509,7 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
     @property
     def Vmg_STP(self):
         r'''Gas-phase molar volume of the mixture at 298.15 K and 101.325 kPa,
-        and the current composition in units of [mol/m^3].
+        and the current composition in units of [m^3/mol].
 
         Examples
         --------
