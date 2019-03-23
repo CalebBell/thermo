@@ -322,7 +322,6 @@ class PropertyPackage(object):
         '''
         if not self.SUPPORTS_ZERO_FRACTIONS:
             zs = remove_zeros(zs, 1e-11)
-            
         if T is not None and P is not None:
             phase, xs, ys, V_over_F = self.flash_TP_zs(T=T, P=P, zs=zs)
         elif T is not None and VF is not None:
@@ -1198,7 +1197,8 @@ class IdealCaloric(Ideal):
     
     def __init__(self, VaporPressures=None, Tms=None, Tbs=None, Tcs=None, Pcs=None, 
                  HeatCapacityLiquids=None, HeatCapacityGases=None,
-                 EnthalpyVaporizations=None, VolumeLiquids=None, **kwargs):
+                 EnthalpyVaporizations=None, VolumeLiquids=None, Hfs=None,
+                 Gfs=None, **kwargs):
         self.cmps = range(len(VaporPressures))
         self.N = len(VaporPressures)
         self.VaporPressures = VaporPressures
@@ -1210,6 +1210,11 @@ class IdealCaloric(Ideal):
         self.HeatCapacityGases = HeatCapacityGases
         self.EnthalpyVaporizations = EnthalpyVaporizations
         self.VolumeLiquids = VolumeLiquids
+
+        self.Hfs = Hfs
+        self.Gfs = Gfs
+        if Hfs is not None and Gfs is not None:
+            self.Sfs = [(Hfi - Gfi)/298.15 for Hfi, Gfi in zip(Hfs, Gfs)]
         
         self.kwargs = {'VaporPressures': VaporPressures,
                        'Tms': Tms, 'Tbs': Tbs, 'Tcs': Tcs, 'Pcs': Pcs,
@@ -2247,7 +2252,7 @@ class GceosBase(Ideal):
     def __init__(self, eos_mix=PRMIX, VaporPressures=None, Tms=None, Tbs=None, 
                  Tcs=None, Pcs=None, omegas=None, kijs=None, eos_kwargs=None,
                  HeatCapacityGases=None, MWs=None, atomss=None,
-                 eos=None,
+                 eos=None, Hfs=None, Gfs=None,
                  **kwargs):
         self.eos_mix = eos_mix
         self.VaporPressures = VaporPressures
@@ -2262,6 +2267,11 @@ class GceosBase(Ideal):
         self.N = len(VaporPressures)
         self.cmps = range(self.N)
         self.HeatCapacityGases = HeatCapacityGases
+        
+        self.Hfs = Hfs
+        self.Gfs = Gfs
+        if Hfs is not None and Gfs is not None:
+            self.Sfs = [(Hfi - Gfi)/298.15 for Hfi, Gfi in zip(Hfs, Gfs)]
 
         self.stability_tester = StabilityTester(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas)
         
@@ -2604,7 +2614,7 @@ class GceosBase(Ideal):
         if not self.SUPPORTS_ZERO_FRACTIONS:
             zs = remove_zeros(zs, self.zero_fraction)
         self.zs = zs
-            
+
         try:
             if T is not None and Sm is not None:
                 # TS
@@ -2620,9 +2630,15 @@ class GceosBase(Ideal):
                 (T is not None and VF is not None) or
                 (P is not None and VF is not None)):
                   # non thermo flashes
+                  self.flash(zs=zs, T=T, P=P, VF=VF)
+                  xs = self.xs
+                  ys = self.ys
+                  phase = self.phase
+                  VF = self.V_over_F
                   pass
             else:
                 raise Exception('Flash inputs unsupported')
+                
             self.P = P
             self.T = T
             self.V_over_F = VF

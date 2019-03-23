@@ -672,3 +672,19 @@ def test_phase_envelope_44_components():
     assert_allclose(Ps_dew_check, spec_points[:-8])
     assert_allclose(Ts_dew_check, Ts_dew_expect, rtol=1e-5)
     assert_allclose(Ts_bubble_check, Ts_bubble_expect, rtol=1e-5)
+    
+    
+def test_stab_comb_products_need_both_roots():
+    from thermo.interaction_parameters import IPDB
+    comb_IDs = ['N2', 'CO2', 'O2', 'H2O']
+    comb_zs = [0.5939849621247668,
+      0.112781954982051,
+      0.0676691730155464,
+      0.2255639098776358]
+    
+    pkg2 = PropertyPackageConstants(comb_IDs, PR_PKG)
+    kijs = IPDB.get_ip_asymmetric_matrix('ChemSep PR', pkg2.CASs, 'kij').tolist()
+    pkg2 = PropertyPackageConstants(comb_IDs, PR_PKG, kijs=kijs)
+    
+    pkg2.pkg.flash_caloric(P=1e5,T=794.5305048838037, zs=comb_zs)
+    assert 'g' == pkg2.pkg.phase

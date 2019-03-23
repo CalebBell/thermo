@@ -112,7 +112,9 @@ class PropertyPackageConstants(object):
                    'VolumeGases': self.VolumeGases,
                     'eos': eos, 'eos_mix': eos_mix,
                     'MWs': self.MWs,
-                    'atomss': self.atomss
+                    'atomss': self.atomss,
+                    'Hfs': self.Hfgms,
+                    'Gfs': self.Gfgms,
                    }
         pkg_args.update(kwargs) 
         

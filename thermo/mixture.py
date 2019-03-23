@@ -836,7 +836,6 @@ class Mixture(object):
             Hm = property_mass_to_molar(H, self.MW)
         if S is not None:
             Sm = property_mass_to_molar(S, self.MW)        
-        
         self.property_package.flash_caloric(zs=self.zs, T=T, P=P, VF=VF, Hm=Hm, Sm=Sm)
         self.status = self.property_package.status
         if self.status == True:

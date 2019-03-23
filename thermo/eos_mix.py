@@ -1592,6 +1592,7 @@ class GCEOSMIX(GCEOS):
     def stabiliy_iteration_Michelsen(self, T, P, zs, Ks_initial=None, 
                                      maxiter=20, xtol=1E-12, liq=True):
         # checks stability vs. the current zs, mole fractions
+        # liq: whether adding a test liquid phase to see if is stable or not
         
         eos_ref = self#.to_TP_zs(T=T, P=P, zs=zs)
         # If one phase is present - use that phase as the reference phase.
@@ -1614,9 +1615,14 @@ class GCEOSMIX(GCEOS):
                 
             sum_zs_test = sum(zs_test)
             zs_test_normalized = [zi/sum_zs_test for zi in zs_test]
+#            if liq:
+#                print(zs_test_normalized, sum_zs_test)
             
 #            to_TP_zs_fast(self, T, P, zs, only_l=False, only_g=False)
-            eos_test = self.to_TP_zs_fast(T=T, P=P, zs=zs_test_normalized, only_l=liq, only_g=not liq, full_alphas=False)
+
+            # IT IS NOT PERMISSIBLE TO DO ONLY ONE ROOT! 2019-03-20
+            # Breaks lots of stabilities.
+            eos_test = self.to_TP_zs_fast(T=T, P=P, zs=zs_test_normalized, only_l=False, only_g=False, full_alphas=False)
             fugacities_test, fugacities_phase = eos_test.eos_fugacities_lowest_Gibbs()
             
             if fugacities_ref_phase == fugacities_phase:
@@ -1624,7 +1630,8 @@ class GCEOSMIX(GCEOS):
             else:
                 same_phase_count = 0
             
-#            print(fugacities_ref_phase, fugacities_phase)
+#            if liq:
+#                print(fugacities_test, fugacities_ref_phase, fugacities_phase)
             
             if liq:
                 corrections = [fi/f_ref*sum_zs_test for fi, f_ref in zip(fugacities_test, fugacities_ref)]
@@ -1638,12 +1645,21 @@ class GCEOSMIX(GCEOS):
 #            print('MM iter Ks =', Ks, 'zs', zs_test_normalized, 'MM err', err, xtol, _)
             if err < xtol:
                 break
-            elif same_phase_count > 5:
-                break
+#            elif same_phase_count > 5:
+#                break
             # It is possible to break if the trivial solution is being approached here also
             if _ == maxiter-1 and fugacities_ref_phase != fugacities_phase:
                 raise UnconvergedError('End of stabiliy_iteration_Michelsen without convergence')
+
         # Fails directly if fugacities_ref_phase == fugacities_phase
+        # Fugacity error:
+        # no, the fugacities are not supposed to be equal
+#        err_equifugacity = 0
+#        for fi, fref in zip(fugacities_test, fugacities_ref):
+#            err_equifugacity += abs(fi - fref)
+#        if err_equifugacity/P > 1e-3:
+#            sum_zs_test = 1
+        
         return sum_zs_test, Ks, fugacities_ref_phase == fugacities_phase
             
     def stability_Michelsen(self, T, P, zs, Ks_initial=None, maxiter=20,
@@ -1676,14 +1692,30 @@ class GCEOSMIX(GCEOS):
             trivial_l = True
             
         stable = False
+#        print(Ks_l, Ks_g, 'Ks_l, Ks_g')
                     
         # Table 4.6 Summary of Possible Phase Stability Test Results, 
         # Phase Behavior, Whitson and Brule
         # There is a typo where Sl appears in the vapor column; this should be
         # liquid; as shown in https://www.e-education.psu.edu/png520/m17_p7.html
+        g_pass, l_pass = False, False # pass means this phase cannot form another phase
         
-#        print('phase_failure_g', phase_failure_g, 'phase_failure_l', phase_failure_l,
-#              'sum_g_criteria', sum_g_criteria, 'sum_l_criteria', sum_l_criteria)
+        if phase_failure_g:
+            g_pass = True
+        if phase_failure_l:
+            l_pass = True
+        if trivial_g:
+            g_pass = True
+        if trivial_l:
+            l_pass = True
+        if sum_g_criteria < stable_criteria:
+            g_pass = True
+        if sum_l_criteria < stable_criteria:
+            l_pass = True
+#        print(l_pass, g_pass, 'l, g test show stable')
+            
+
+        
         if phase_failure_g and phase_failure_l:
             stable = True
         elif trivial_g and trivial_l:
@@ -1704,7 +1736,9 @@ class GCEOSMIX(GCEOS):
 #        else:
 #            print('lnK_2_tot_g', lnK_2_tot_g , 'lnK_2_tot_l', lnK_2_tot_l,
 #                  'sum_g_criteria', sum_g_criteria, 'sum_l_criteria', sum_l_criteria)
-
+#        print('stable', stable, 'phase_failure_g', phase_failure_g, 'phase_failure_l', phase_failure_l,
+#              'sum_g_criteria', sum_g_criteria, 'sum_l_criteria', sum_l_criteria,
+#              'trivial_g', trivial_g, 'trivial_l', trivial_l)
             
             
         # No need to enumerate unstable results

@@ -433,8 +433,7 @@ def COSTALD(T, Tc, Vc, omega):
     tau = 1.0 - Tr
     tau_cbrt = (tau)**(1/3.)
     V_delta = (-0.296123 + Tr*(Tr*(-0.0480645*Tr - 0.0427258) + 0.386914))/(Tr - 1.00001)
-    V_0 = (1.0 - 1.52816*tau_cbrt + 1.43907*tau_cbrt*tau_cbrt
-           - 0.81446*(tau) + 0.190454*tau*tau_cbrt)
+    V_0 = tau_cbrt*(tau_cbrt*(tau_cbrt*(0.190454*tau_cbrt - 0.81446) + 1.43907) - 1.52816) + 1.0
     return Vc*V_0*(1.0 - omega*V_delta)
 
 

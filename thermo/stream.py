@@ -955,7 +955,10 @@ class Stream(Mixture):
         if not hasattr(self, 'm'):
             self.energy = None
             return None
-        self.energy = self.H*self.m
+        if self.H is not None and self.m is not None:
+            self.energy = self.H*self.m
+        else:
+            self.energy = None
 
     def calculate(self, T=None, P=None):
         self.set_TP(T=T, P=P)
@@ -989,7 +992,7 @@ class Stream(Mixture):
 
         T = min(self.T, other.T)
         P = min(self.P, other.P)
-        return Stream(IDs=cmps, ns=moles, T=T, P=P)
+        return Stream(IDs=cmps, ns=moles, T=T, P=P, pkg=self.property_package)
 
     def __sub__(self, other):
         # Subtracts the mass flow rates in other from self and returns a new

@@ -46,3 +46,30 @@ def test_combustion_products():
     assert methanol_products['Br2'] == 0
     assert methanol_products['HCl'] == 0
     assert methanol_products['P4O10'] == 0
+
+
+def test_air_fuel_ratio_solver():
+    Vm_air = 0.024936627188566596
+    Vm_fuel = 0.024880983160354486
+    MW_air = 28.850334
+    MW_fuel = 17.86651
+    n_fuel = 5.0
+    n_air = 25.0
+    
+    strings = ['mole', 'mass', 'volume']
+    ratios = [n_air/n_fuel, MW_air/MW_fuel*5, Vm_air/Vm_fuel*5]
+    
+    ans_expect = [n_air, n_fuel]
+    ans_expect_full = ans_expect + ratios
+    
+    for ratio, s in zip(ratios, strings):
+        for air_spec, fuel_spec in zip([None, n_air], [n_fuel, None]):
+            for full in (True, False):
+                ans = air_fuel_ratio_solver(ratio=ratio, Vm_air=Vm_air, Vm_fuel=Vm_fuel,
+                                            MW_air=MW_air,  MW_fuel=MW_fuel, n_air=air_spec,
+                                            n_fuel=fuel_spec, basis=s, full_info=full)
+                if full:
+                    assert_allclose(ans, ans_expect_full)
+                else:
+                    assert_allclose(ans, ans_expect)
+    
