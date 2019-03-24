@@ -341,20 +341,53 @@ class Chemical(object): # pragma: no cover
         Enthalpy of sublimation [J/kg]
     Hsubm : float
         Molar enthalpy of sublimation [J/mol]
+
+    Hfm : float
+        Standard molar enthalpy of formation [J/mol]
     Hf : float
-        Enthalpy of formation [J/mol]
+        Standard enthalpy of formation [J/kg]
+    
+    Hcm : float
+        Molar higher heat of combustion [J/mol]
+    Hc : float
+        Higher Heat of combustion [J/kg]
+    Hcm_lower : float
+        Molar lower heat of combustion [J/mol]
+    Hc_lower : float
+        Lower Heat of combustion [J/kg]
+
     Hfgm : float
         Ideal-gas enthalpy of formation, [J/mol]
     Hfg : float
         Ideal-gas enthalpy of formation in a mass basis, [J/kg]
-    Hc : float
-        Molar enthalpy of combustion [J/mol]
     S0gm : float
         Absolute molar entropy of formation in an ideal gas state of the 
         chemical, [J/mol/K]
     S0g : float
         Absolute mass base entropy of formation in an ideal gas state of the 
         chemical, [J/kg/K]
+    Gfgm : float
+        Ideal-gas molar change of Gibbs energy of formation [J/mol]
+    Gfg : float
+        Ideal-gas change of Gibbs energy of formation [J/kg]
+    Sfgm : float
+        Ideal-gas molar change of entropy of formation, [J/mol/K]
+    Sfg : float
+        Ideal-gas change of entropy of formation, [J/kg/K]
+        
+    Hcgm : float
+        Higher molar heat of combustion of the chemical in the ideal gas state, 
+        [J/mol]
+    Hcg : float
+        Higher heat of combustion of the chemical in the ideal gas state, 
+        [J/kg]
+    Hcgm_lower : float
+        Lower molar heat of combustion of the chemical in the ideal gas state, 
+        [J/mol]
+    Hcg_lower : float
+        Lower heat of combustion of the chemical in the ideal gas state, 
+        [J/kg]
+
     Tflash : float
         Flash point of the chemical, [K]
     Tautoignition : float
@@ -760,36 +793,11 @@ class Chemical(object): # pragma: no cover
         self.Hf_source = self.Hf_sources[0]
         
         self.Hfg_sources = Hf_g(CASRN=self.CAS, AvailableMethods=True)
-        self.Hfgm = Hf_g(CASRN=self.CAS, Method=self.Hfg_sources[0])
-        self.Hfg = property_molar_to_mass(self.Hfgm, self.MW) if (self.Hfgm is not None) else None
-
+        self.Hfg_source = self.Hfg_sources[0]
+        
         self.S0g_sources = S0_g(CASRN=self.CAS, AvailableMethods=True)
-        self.S0gm = S0_g(CASRN=self.CAS, Method=self.S0g_sources[0])
-        self.S0g = property_molar_to_mass(self.S0gm, self.MW) if (self.S0gm is not None) else None
-
-        # Compute Gf(ig)
-        dHfs_std = []
-        S0_abs_elements = []
-        coeffs_elements = []
+        self.S0g_source = self.S0g_sources[0]
         
-        for atom, count in self.atoms.items():
-            ele = getattr(periodic_table, atom)
-            H0, S0 = ele.Hf, ele.S0
-            if ele.number in homonuclear_elements:
-                H0, S0 = 0.5*H0, 0.5*S0
-            dHfs_std.append(H0)
-            S0_abs_elements.append(S0)
-            coeffs_elements.append(count)
-        
-        try:
-            self.Gfgm = Gibbs_formation(self.Hfgm, self.S0gm, dHfs_std, S0_abs_elements, coeffs_elements)
-        except:
-            self.Gfgm = None
-        self.Gfg = property_molar_to_mass(self.Gfgm, self.MW) if (self.Gfgm is not None) else None
-
-        # Compute Entropy of formation
-        self.Sfgm = (self.Hfgm - self.Gfgm)/298.15 if (self.Hfgm is not None and self.Gfgm is not None) else None # hardcoded
-        self.Sfg = property_molar_to_mass(self.Sfgm, self.MW) if (self.Sfgm is not None) else None
 
         # Misc
         self.dipole_sources = dipole(CASRN=self.CAS, AvailableMethods=True)
@@ -842,18 +850,24 @@ class Chemical(object): # pragma: no cover
         self.Hsubm = property_mass_to_molar(self.Hsub, self.MW)
 
         # Chemistry
-        self.Hf = Hf(CASRN=self.CAS, Method=self.Hf_source)
-        self.Hc = Hcombustion(atoms=self.atoms, Hf=self.Hf)
+        self.Hfm = Hf(CASRN=self.CAS, Method=self.Hf_source)
+        self.Hf = property_molar_to_mass(self.Hfm, self.MW) if (self.Hfm is not None) else None
+        
+        self.Hcm = Hcombustion(atoms=self.atoms, Hf=self.Hfm, higher=True)
+        self.Hc = property_molar_to_mass(self.Hcm, self.MW) if (self.Hcm is not None) else None
+
+        self.Hcm_lower = Hcombustion(atoms=self.atoms, Hf=self.Hfm, higher=False)
+        self.Hc_lower = property_molar_to_mass(self.Hcm_lower, self.MW) if (self.Hcm_lower is not None) else None
 
         # Fire Safety Limits
         self.Tflash = Tflash(self.CAS, Method=self.Tflash_source)
         self.Tautoignition = Tautoignition(self.CAS, Method=self.Tautoignition_source)
-        self.LFL_sources = LFL(atoms=self.atoms, Hc=self.Hc, CASRN=self.CAS, AvailableMethods=True)
+        self.LFL_sources = LFL(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS, AvailableMethods=True)
         self.LFL_source = self.LFL_sources[0]
-        self.UFL_sources = UFL(atoms=self.atoms, Hc=self.Hc, CASRN=self.CAS, AvailableMethods=True)
+        self.UFL_sources = UFL(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS, AvailableMethods=True)
         self.UFL_source = self.UFL_sources[0]
-        self.LFL = LFL(atoms=self.atoms, Hc=self.Hc, CASRN=self.CAS, Method=self.LFL_source)
-        self.UFL = UFL(atoms=self.atoms, Hc=self.Hc, CASRN=self.CAS, Method=self.UFL_source)
+        self.LFL = LFL(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS, Method=self.LFL_source)
+        self.UFL = UFL(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS, Method=self.UFL_source)
 
         # Chemical Exposure Limits
         self.TWA = TWA(self.CAS, Method=self.TWA_source)
@@ -876,6 +890,46 @@ class Chemical(object): # pragma: no cover
         # Analytical
         self.RI, self.RIT = refractive_index(CASRN=self.CAS, Method=self.RI_source)
         self.conductivity, self.conductivityT = conductivity(CASRN=self.CAS, Method=self.conductivity_source)
+
+        self.Hfgm = Hf_g(CASRN=self.CAS, Method=self.Hfg_source)
+        self.Hfg = property_molar_to_mass(self.Hfgm, self.MW) if (self.Hfgm is not None) else None
+
+        self.S0gm = S0_g(CASRN=self.CAS, Method=self.S0g_source)
+        self.S0g = property_molar_to_mass(self.S0gm, self.MW) if (self.S0gm is not None) else None
+
+        # Compute Gf(ig)
+        dHfs_std = []
+        S0_abs_elements = []
+        coeffs_elements = []
+        
+        for atom, count in self.atoms.items():
+            ele = getattr(periodic_table, atom)
+            H0, S0 = ele.Hf, ele.S0
+            if ele.number in homonuclear_elements:
+                H0, S0 = 0.5*H0, 0.5*S0
+            dHfs_std.append(H0)
+            S0_abs_elements.append(S0)
+            coeffs_elements.append(count)
+        
+        try:
+            self.Gfgm = Gibbs_formation(self.Hfgm, self.S0gm, dHfs_std, S0_abs_elements, coeffs_elements)
+        except:
+            self.Gfgm = None
+        self.Gfg = property_molar_to_mass(self.Gfgm, self.MW) if (self.Gfgm is not None) else None
+
+        # Compute Entropy of formation
+        self.Sfgm = (self.Hfgm - self.Gfgm)/298.15 if (self.Hfgm is not None and self.Gfgm is not None) else None # hardcoded
+        self.Sfg = property_molar_to_mass(self.Sfgm, self.MW) if (self.Sfgm is not None) else None
+
+        
+        self.Hcgm = Hcombustion(atoms=self.atoms, Hf=self.Hfgm)
+        self.Hcg = property_molar_to_mass(self.Hcgm, self.MW) if (self.Hcgm is not None) else None
+
+        self.Hcgm_lower = Hcombustion(atoms=self.atoms, Hf=self.Hfgm, higher=False)
+        self.Hcg_lower = property_molar_to_mass(self.Hcgm_lower, self.MW) if (self.Hcgm_lower is not None) else None
+        
+        
+        
 
     def set_eos(self, T, P, eos=PR):
         try:

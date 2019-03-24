@@ -279,8 +279,10 @@ class Mixture(object):
         Enthalpy of sublimations of all chemicals in the mixture, [J/kg]
     Hsubms : list of float
         Molar enthalpy of sublimations of all chemicals in the mixture, [J/mol]
+    Hfms : list of float
+        Molar enthalpy of formations of all chemicals in the mixture, [J/mol]
     Hfs : list of float
-        Enthalpy of formations of all chemicals in the mixture, [J/mol]
+        Enthalpy of formations of all chemicals in the mixture, [J/kg]
     Hcs : list of float
         Molar enthalpy of combustions of all chemicals in the mixture, [J/mol]
     Tflashs : list of float
@@ -622,8 +624,21 @@ class Mixture(object):
         self.Hsubms = [i.Hsubm for i in self.Chemicals]
 
         # Chemistry
+        self.Hfms = [i.Hfm for i in self.Chemicals]
         self.Hfs = [i.Hf for i in self.Chemicals]
+        
+        # Combustion
+        self.Hcms = [i.Hcm for i in self.Chemicals]
         self.Hcs = [i.Hc for i in self.Chemicals]
+        
+        self.Hcms_lower = [i.Hcm_lower for i in self.Chemicals]
+        self.Hcs_lower = [i.Hc_lower for i in self.Chemicals]
+
+        self.Hcgms = [i.Hcgm for i in self.Chemicals]
+        self.Hcgs = [i.Hcg for i in self.Chemicals]
+        
+        self.Hcgms_lower = [i.Hcgm_lower for i in self.Chemicals]
+        self.Hcgs_lower = [i.Hcg_lower for i in self.Chemicals]
 
         # Ideal gas points
         self.Hfgms = [i.Hfgm for i in self.Chemicals]
@@ -1199,14 +1214,14 @@ class Mixture(object):
         '''
         things = dict()
         for zi, atoms in zip(self.zs, self.atomss):
-            for atom, count in atoms.iteritems():
+            for atom, count in atoms.items():
                 if atom in things:
                     things[atom] += zi*count
                 else:
                     things[atom] = zi*count
 
         tot = sum(things.values())
-        return {atom : value/tot for atom, value in things.iteritems()}
+        return {atom : value/tot for atom, value in things.items()}
 
     @property
     def mass_fractionss(self):
@@ -1230,7 +1245,7 @@ class Mixture(object):
         '''
         things = dict()
         for zi, atoms in zip(self.zs, self.atomss):
-            for atom, count in atoms.iteritems():
+            for atom, count in atoms.items():
                 if atom in things:
                     things[atom] += zi*count
                 else:

@@ -57,9 +57,8 @@ def test_Chemical_properties():
     assert_allclose(phenol.Hsub, 740612.9172243401, rtol=1E-3)
     assert_allclose(phenol.Hsubm, 69700.0)
 
-    # Hf test - always molar, TODO mass-based
-    assert_allclose(phenol.Hf, -96400.0)
-    assert_allclose(phenol.Hc, -3121919.0)
+    assert_allclose(phenol.Hfm, -96400.0)
+    assert_allclose(phenol.Hcm, -3121919.0)
 
     assert_allclose(phenol.Tflash, 348.15)
     assert_allclose(phenol.Tautoignition, 868.15)
