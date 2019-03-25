@@ -853,10 +853,10 @@ class Chemical(object): # pragma: no cover
         self.Hfm = Hf(CASRN=self.CAS, Method=self.Hf_source)
         self.Hf = property_molar_to_mass(self.Hfm, self.MW) if (self.Hfm is not None) else None
         
-        self.Hcm = Hcombustion(atoms=self.atoms, Hf=self.Hfm, higher=True)
+        self.Hcm = Hcombustion(atoms=self.atoms, Hf=self.Hfm, CASRN=self.CAS, higher=True)
         self.Hc = property_molar_to_mass(self.Hcm, self.MW) if (self.Hcm is not None) else None
 
-        self.Hcm_lower = Hcombustion(atoms=self.atoms, Hf=self.Hfm, higher=False)
+        self.Hcm_lower = Hcombustion(atoms=self.atoms, Hf=self.Hfm, CASRN=self.CAS, higher=False)
         self.Hc_lower = property_molar_to_mass(self.Hcm_lower, self.MW) if (self.Hcm_lower is not None) else None
 
         # Fire Safety Limits

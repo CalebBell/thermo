@@ -1339,6 +1339,42 @@ class Mixture(object):
         return property_molar_to_mass(R, self.MW)
 
     @property
+    def Hc(self):
+        r'''Standard higher heat of combustion of the mixture,
+        in units of [J/kg].
+
+        This property depends on the bulk composition only.
+        '''
+        return mixing_simple(self.Hcs, self.ws)
+
+    @property
+    def Hcm(self):
+        r'''Standard higher molar heat of combustion of the mixture,
+        in units of [J/mol].
+
+        This property depends on the bulk composition only.
+        '''
+        return mixing_simple(self.Hcms, self.zs)
+
+    @property
+    def Hcm_lower(self):
+        r'''Standard lower molar heat of combustion of the mixture,
+        in units of [J/mol].
+
+        This property depends on the bulk composition only.
+        '''
+        return mixing_simple(self.Hcms_lower, self.zs)
+
+    @property
+    def Hc_lower(self):
+        r'''Standard lower heat of combustion of the mixture,
+        in units of [J/kg].
+
+        This property depends on the bulk composition only.
+        '''
+        return mixing_simple(self.Hcs_lower, self.ws)
+
+    @property
     def charge_balance(self):
         r'''Charge imbalance of the mixture, in units of [faraday].
         Mixtures meeting the electroneutrality condition will have an imbalance

@@ -67,9 +67,15 @@ def combustion_products(atoms):
     Also included in the results is the moles of O2 required per mole of
     the mixture of the molecule.
     
+    HF and HCl are gaseous products in their standard state. P4O10 is a solid
+    in its standard state. Bromine is a liquid as is iodine. Water depends on
+    the chosen definition of heating value. The other products are gases.
+    
     Atoms not in ['C', 'H', 'N', 'O', 'S', 'Br', 'I', 'Cl', 'F', 'P'] are 
     returned as pure species; i.e. sodium hydroxide produces water and pure
     Na.
+    
+    
 
     Examples
     --------
@@ -161,6 +167,10 @@ def combustion_products_mixture(atoms_list, zs):
     
     Note that if O2 is in the feed, this will be subtracted from the required
     O2 amount.
+
+    HF and HCl are gaseous products in their standard state. P4O10 is a solid
+    in its standard state. Bromine is a liquid as is iodine. Water depends on
+    the chosen definition of heating value. The other products are gases.
     
     Note that if instead of mole fractions, mole flows are given - the results
     are in terms of mole flows as well!
@@ -199,7 +209,8 @@ def combustion_products_mixture(atoms_list, zs):
 
 def Hcombustion(atoms, Hf=None, HfH2O=-285825, HfCO2=-393474,
                 HfSO2=-296800, HfBr2=30880, HfI2=62417, HfHCl=-92173,
-                HfHF=-272711, HfP4O10=-3009940, HfO2=0, HfN2=0, higher=True):
+                HfHF=-272711, HfP4O10=-3009940, HfO2=0, HfN2=0, 
+                CASRN=None, higher=True):
     '''Calculates the heat of combustion, in J/mol.
     Value non-hydrocarbons is not correct, but still calculable.a
     
@@ -239,6 +250,8 @@ def Hcombustion(atoms, Hf=None, HfH2O=-285825, HfCO2=-393474,
         Standard heat of formation of oxygen, [J/mol]
     HfN2 : float, optional
         Standard heat of formation of nitrogen, [J/mol]
+    CASRN : str, optional
+        CAS number, [-]
     higher : bool, optional
         Whether or not to return the higher heat of combustion or the lower,
         [-]
@@ -251,6 +264,9 @@ def Hcombustion(atoms, Hf=None, HfH2O=-285825, HfCO2=-393474,
     Notes
     -----
     Default heats of formation for chemicals are at 298 K, 1 atm.
+    HF and HCl are gaseous products in their standard state. P4O10 is a solid
+    in its standard state. Bromine is a liquid as is iodine. Water depends on
+    the chosen definition of heating value. The other products are gases.
 
     Examples
     --------
@@ -262,10 +278,12 @@ def Hcombustion(atoms, Hf=None, HfH2O=-285825, HfCO2=-393474,
     >>> Hcombustion({'H': 4, 'C': 1, 'O': 1}, Hf=-239100, higher=False)
     -638049.1
     '''
-    if not Hf or not atoms:
+    if Hf is None or atoms is None:
         return None
     if not higher:
-         HfH2O += 43987.45
+         HfH2O += 43987.45 # CoolProp, Q=0/1 (not ideal gas)
+    if CASRN is not None and CASRN in incombustible_materials:
+        return 0.0
     
     nC, nH, nN, nO, nS, nBr, nI, nCl, nF, nP = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
@@ -310,6 +328,19 @@ def Hcombustion(atoms, Hf=None, HfH2O=-285825, HfCO2=-393474,
         nN2*HfN2 + nP4O10*HfP4O10 + nH2O*HfH2O - nO2_req*HfO2 + nCO2*HfCO2 - Hf
     return Hc
 
+incombustible_materials = {'7440-37-1': 'Ar',
+'7782-44-7': 'O2',
+'7440-01-9': 'Ne',
+'7439-90-9': 'Kr',
+'7440-63-3': 'Xe',
+'1314-13-2': 'ZnO2',
+'7732-18-5': 'water',
+'7789-20-0': 'water(D2)',
+'13463-67-7': 'TiO2',
+'14762-55-1': 'He3',
+'7440-59-7': 'He',
+'7782-50-5': 'Cl',
+'7726-95-6': 'Br'}
 
 combustion_products_to_CASs = {
 'Br2': '7726-95-6',
