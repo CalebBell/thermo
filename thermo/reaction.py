@@ -101,6 +101,9 @@ def Hf(CASRN, AvailableMethods=False, Method=None):
           Not the original data, but as reproduced in [1]_. Some chemicals with
           duplicated CAS numbers were removed.
 
+    The API data for pentane is incorrect - it is for the gas phase, not the 
+    standard liquid state. Likely further data are incorrect.
+    
     Examples
     --------
     >>> Hf(CASRN='7732-18-5')

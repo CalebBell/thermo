@@ -118,7 +118,7 @@ def S0_basis_converter(c, S0_liq=None, S0_gas=None, T_ref=298.15):
 
     Returns
     -------
-    S0_calc : float, optional
+    S0_calc : float
         Standard absolute entropy of the compound at the reference temperature 
         in the other state to the one provided, [J/mol]
 
@@ -126,7 +126,7 @@ def S0_basis_converter(c, S0_liq=None, S0_gas=None, T_ref=298.15):
     -----
     This function relies in accurate heat capacity curves for both the liquid 
     and gas state.
-    
+        
     Examples
     --------
     >>> S0_basis_converter(Chemical('decane'), S0_liq=425.89)
@@ -146,3 +146,4 @@ def S0_basis_converter(c, S0_liq=None, S0_gas=None, T_ref=298.15):
         dS += c.EnthalpyVaporization(c.Tb)/c.Tb
         dS += c.HeatCapacityGas.T_dependent_property_integral_over_T(c.Tb, T_ref)
         return S0_liq + dS
+

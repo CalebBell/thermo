@@ -40,7 +40,7 @@ from thermo.permittivity import *
 from thermo.heat_capacity import HeatCapacitySolid, HeatCapacityGas, HeatCapacityLiquid, HeatCapacitySolidMixture, HeatCapacityGasMixture, HeatCapacityLiquidMixture
 from thermo.interface import SurfaceTension, SurfaceTensionMixture
 from thermo.viscosity import ViscosityLiquid, ViscosityGas, ViscosityLiquidMixture, ViscosityGasMixture, viscosity_index
-from thermo.reaction import Hf, Hf_g, S0_g, Gibbs_formation
+from thermo.reaction import Hf, Hf_g, S0_g, Gibbs_formation, Hf_basis_converter, entropy_formation
 from thermo.combustion import Hcombustion
 from thermo.safety import Tflash, Tautoignition, LFL, UFL, TWA, STEL, Ceiling, Skin, Carcinogen, LFL_mixture, UFL_mixture
 from thermo.solubility import solubility_parameter
@@ -896,6 +896,10 @@ class Chemical(object): # pragma: no cover
 
         self.S0gm = S0_g(CASRN=self.CAS, Method=self.S0g_source)
         self.S0g = property_molar_to_mass(self.S0gm, self.MW) if (self.S0gm is not None) else None
+        
+        # Calculated later
+        self.S0m = None
+        self.S0 = None
 
         # Compute Gf and Gf(ig)
         dHfs_std = []
@@ -910,15 +914,10 @@ class Chemical(object): # pragma: no cover
             dHfs_std.append(H0)
             S0_abs_elements.append(S0)
             coeffs_elements.append(count)
-
-#        # This requires S0m!
-#        try:
-#            self.Gfm = Gibbs_formation(self.Hfm, self.S0m, dHfs_std, S0_abs_elements, coeffs_elements)
-#        except:
-#            self.Gfm = None
-#        self.Gf = property_molar_to_mass(self.Gfm, self.MW) if (self.Gfm is not None) else None
-
         
+        self.elemental_reaction_data = (dHfs_std, S0_abs_elements, coeffs_elements)
+
+
         try:
             self.Gfgm = Gibbs_formation(self.Hfgm, self.S0gm, dHfs_std, S0_abs_elements, coeffs_elements)
         except:
@@ -1007,6 +1006,7 @@ class Chemical(object): # pragma: no cover
         self.EnthalpyVaporization = EnthalpyVaporization(CASRN=self.CAS, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, omega=self.omega, similarity_variable=self.similarity_variable)
         self.Hvap_Tbm = self.EnthalpyVaporization.T_dependent_property(self.Tb) if self.Tb else None
         self.Hvap_Tb = property_molar_to_mass(self.Hvap_Tbm, self.MW)
+        self.Hvapm_STP = self.EnthalpyVaporization.T_dependent_property(298.15)
 
         self.ViscosityLiquid = ViscosityLiquid(CASRN=self.CAS, MW=self.MW, Tm=self.Tm, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, omega=self.omega, Psat=self.VaporPressure.T_dependent_property, Vml=self.VolumeLiquid.T_dependent_property)
 
@@ -1030,6 +1030,65 @@ class Chemical(object): # pragma: no cover
         self.molecular_diameter_sources = molecular_diameter(Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, Vm=self.Vml_Tm, Vb=self.Vml_Tb, AvailableMethods=True, CASRN=self.CAS)
         self.molecular_diameter_source = self.molecular_diameter_sources[0]
         self.molecular_diameter = molecular_diameter(Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, Vm=self.Vml_Tm, Vb=self.Vml_Tb, Method=self.molecular_diameter_source, CASRN=self.CAS)
+
+        # Adjust Gf, Hf if needed
+        try:            
+            if self.Hfgm is not None and self.Hfm is None:
+                Hfm = None
+                if self.phase_STP == 'l' and self.Hvapm_STP is not None:
+                    Hfm = Hf_basis_converter(Hvapm=self.Hvapm_STP, Hf_gas=self.Hfgm)
+                elif self.phase_STP == 'g':
+                    Hfm = self.Hfgm
+                if Hfm is not None:
+                    self.Hfm = Hfm
+                    self.Hf = property_molar_to_mass(self.Hfm, self.MW) if (self.Hfm is not None) else None
+            elif self.Hfm is not None and self.Hfgm is None:
+                Hfmg = None
+                if self.phase_STP == 'l' and self.Hvapm_STP is not None:
+                    Hfmg = Hf_basis_converter(Hvapm=self.Hvapm_STP, Hf_liq=self.Hfm)
+                elif self.phase_STP == 'g':
+                    Hfmg = self.Hfm
+                if Hfmg is not None:
+                    self.Hfmg = Hfmg
+                    self.Hfg = property_molar_to_mass(self.Hfmg, self.MW) if (self.Hfmg is not None) else None
+        except:
+            pass
+        
+        try:
+            from thermo.chemical_utils import S0_basis_converter 
+            if self.S0gm is not None and self.S0m is None:
+                S0m = None
+                if self.phase_STP == 'l':
+                    S0m = S0_basis_converter(self, S0_gas=self.S0gm)
+                elif self.phase_STP == 'g':
+                    S0m = self.S0gm
+                if S0m is not None:
+                    self.S0m = S0m
+                    self.S0 = property_molar_to_mass(self.S0m, self.MW) if (self.S0m is not None) else None
+            elif self.S0m is not None and self.S0gm is None:
+                S0gm = None
+                if self.phase_STP == 'l':
+                    S0gm = S0_basis_converter(self, S0_liq=self.S0m)
+                elif self.phase_STP == 'g':
+                    S0gm = self.S0m
+                if S0gm is not None:
+                    self.S0gm = S0gm
+                    self.S0g = property_molar_to_mass(self.S0gm, self.MW) if (self.S0gm is not None) else None
+                    
+        except:
+            pass
+        
+        
+        try:
+            self.Gfm = Gibbs_formation(self.Hfm, self.S0m, *self.elemental_reaction_data)
+        except:
+            self.Gfm = None
+        self.Gf = property_molar_to_mass(self.Gfm, self.MW) if (self.Gfm is not None) else None
+        
+        self.Sfm = (self.Hfm - self.Gfm)/298.15 if (self.Hfm is not None and self.Gfm is not None) else None
+        self.Sf = property_molar_to_mass(self.Sfm, self.MW) if (self.Sfm is not None) else None
+        
+
 
 
     def set_ref(self, T_ref=298.15, P_ref=101325, phase_ref='calc', H_ref=0, S_ref=0):
