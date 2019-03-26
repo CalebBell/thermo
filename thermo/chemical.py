@@ -341,12 +341,14 @@ class Chemical(object): # pragma: no cover
         Enthalpy of sublimation [J/kg]
     Hsubm : float
         Molar enthalpy of sublimation [J/mol]
-
     Hfm : float
-        Standard molar enthalpy of formation [J/mol]
+        Standard state molar enthalpy of formation, [J/mol]
     Hf : float
-        Standard enthalpy of formation [J/kg]
-    
+        Standard enthalpy of formation in a mass basis, [J/kg]
+    Hfgm : float
+        Ideal-gas molar enthalpy of formation, [J/mol]
+    Hfg : float
+        Ideal-gas enthalpy of formation in a mass basis, [J/kg]
     Hcm : float
         Molar higher heat of combustion [J/mol]
     Hc : float
@@ -355,26 +357,34 @@ class Chemical(object): # pragma: no cover
         Molar lower heat of combustion [J/mol]
     Hc_lower : float
         Lower Heat of combustion [J/kg]
-
-    Hfgm : float
-        Ideal-gas enthalpy of formation, [J/mol]
-    Hfg : float
-        Ideal-gas enthalpy of formation in a mass basis, [J/kg]
+    S0m : float
+        Standard state absolute molar entropy of formation of the 
+        chemical, [J/mol/K]
+    S0 : float
+        Standard state absolute entropy of formation of the 
+        chemical, [J/kg/K]
     S0gm : float
         Absolute molar entropy of formation in an ideal gas state of the 
         chemical, [J/mol/K]
     S0g : float
-        Absolute mass base entropy of formation in an ideal gas state of the 
+        Absolute mass entropy of formation in an ideal gas state of the 
         chemical, [J/kg/K]
+    Gfm : float
+        Standard state molar change of Gibbs energy of formation [J/mol]
+    Gf : float
+        Standard state change of Gibbs energy of formation [J/kg]
     Gfgm : float
         Ideal-gas molar change of Gibbs energy of formation [J/mol]
     Gfg : float
         Ideal-gas change of Gibbs energy of formation [J/kg]
+    Sfm : float
+        Standard state molar change of entropy of formation, [J/mol/K]
+    Sf : float
+        Standard state change of entropy of formation, [J/kg/K]
     Sfgm : float
         Ideal-gas molar change of entropy of formation, [J/mol/K]
     Sfg : float
         Ideal-gas change of entropy of formation, [J/kg/K]
-        
     Hcgm : float
         Higher molar heat of combustion of the chemical in the ideal gas state, 
         [J/mol]
@@ -387,7 +397,6 @@ class Chemical(object): # pragma: no cover
     Hcg_lower : float
         Lower heat of combustion of the chemical in the ideal gas state, 
         [J/kg]
-
     Tflash : float
         Flash point of the chemical, [K]
     Tautoignition : float
@@ -508,6 +517,8 @@ class Chemical(object): # pragma: no cover
         Molar enthalpy of vaporization at the normal boiling point [J/mol]
     Hvap_Tb : float
         Mass enthalpy of vaporization at the normal boiling point [J/kg]
+    Hvapm_STP : float
+        Molar enthalpy of vaporization at 298.15 K [J/mol]
     alpha
     alphag
     alphal

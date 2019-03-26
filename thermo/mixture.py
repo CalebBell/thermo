@@ -623,10 +623,32 @@ class Mixture(object):
         self.Hfusms = [i.Hfusm for i in self.Chemicals]
         self.Hsubms = [i.Hsubm for i in self.Chemicals]
 
-        # Chemistry
+        # Chemistry - standard state
         self.Hfms = [i.Hfm for i in self.Chemicals]
         self.Hfs = [i.Hf for i in self.Chemicals]
         
+        self.S0ms = [i.S0m for i in self.Chemicals]
+        self.S0s = [i.S0 for i in self.Chemicals]
+        
+        self.Gfms = [i.Gfm for i in self.Chemicals]
+        self.Gfs = [i.Gf for i in self.Chemicals]
+        
+        self.Sfms = [i.Sfm for i in self.Chemicals]
+        self.Sfs = [i.Sf for i in self.Chemicals]
+        
+        # Ideal gas state
+        self.Hfgms = [i.Hfgm for i in self.Chemicals]
+        self.Hfgs = [i.Hfg for i in self.Chemicals]
+
+        self.S0gms = [i.S0gm for i in self.Chemicals]
+        self.S0gs = [i.S0g for i in self.Chemicals]
+
+        self.Gfgms = [i.Gfgm for i in self.Chemicals]
+        self.Gfgs = [i.Gfg for i in self.Chemicals]
+
+        self.Sfgms = [i.Sfgm for i in self.Chemicals]
+        self.Sfgs = [i.Sfg for i in self.Chemicals]
+
         # Combustion
         self.Hcms = [i.Hcm for i in self.Chemicals]
         self.Hcs = [i.Hc for i in self.Chemicals]
@@ -639,19 +661,6 @@ class Mixture(object):
         
         self.Hcgms_lower = [i.Hcgm_lower for i in self.Chemicals]
         self.Hcgs_lower = [i.Hcg_lower for i in self.Chemicals]
-
-        # Ideal gas points
-        self.Hfgms = [i.Hfgm for i in self.Chemicals]
-        self.Hfgs = [i.Hfg for i in self.Chemicals]
-
-        self.Gfgms = [i.Gfgm for i in self.Chemicals]
-        self.Gfgs = [i.Gfg for i in self.Chemicals]
-
-        self.Sfgms = [i.Sfgm for i in self.Chemicals]
-        self.Sfgs = [i.Sfg for i in self.Chemicals]
-
-        self.S0gms = [i.S0gm for i in self.Chemicals]
-        self.S0gs = [i.S0g for i in self.Chemicals]
 
         # Fire Safety Limits
         self.Tflashs = [i.Tflash for i in self.Chemicals]
@@ -691,7 +700,7 @@ class Mixture(object):
         self.Vml_Tms = [i.Vml_Tm for i in self.Chemicals]
         self.Hvap_Tbms = [i.Hvap_Tbm for i in self.Chemicals]
         self.Hvap_Tbs = [i.Hvap_Tb for i in self.Chemicals]
-
+        self.Hvap_STPs = [i.Hvap_STP for i in self.Chemicals]
     ### More stuff here
 
     def set_chemical_TP(self, T=None, P=None):
