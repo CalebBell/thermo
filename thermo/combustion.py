@@ -328,11 +328,14 @@ def Hcombustion(atoms, Hf=None, HfH2O=-285825, HfCO2=-393474,
         nN2*HfN2 + nP4O10*HfP4O10 + nH2O*HfH2O - nO2_req*HfO2 + nCO2*HfCO2 - Hf
     return Hc
 
-incombustible_materials = {'7440-37-1': 'Ar',
+incombustible_materials = {
+'7440-37-1': 'Ar',
 '7782-44-7': 'O2',
 '7440-01-9': 'Ne',
 '7439-90-9': 'Kr',
 '7440-63-3': 'Xe',
+'7727-37-9': 'N2',
+'124-38-9': 'CO2',
 '1314-13-2': 'ZnO2',
 '7732-18-5': 'water',
 '7789-20-0': 'water(D2)',
@@ -340,6 +343,7 @@ incombustible_materials = {'7440-37-1': 'Ar',
 '14762-55-1': 'He3',
 '7440-59-7': 'He',
 '7782-50-5': 'Cl',
+'7446-09-5': 'SO2',
 '7726-95-6': 'Br'}
 
 combustion_products_to_CASs = {

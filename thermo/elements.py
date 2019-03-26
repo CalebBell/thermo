@@ -173,7 +173,7 @@ class PeriodicTable(object):
             self.name_to_elements[ele.name] = ele
             self.name_to_elements[ele.name.lower()] = ele
             self.CAS_to_elements[ele.CAS] = ele
-            
+
     def __contains__(self, key):
         for i in [self.symbol_to_elements, self.number_to_elements,
                   self.name_to_elements, self.CAS_to_elements]:

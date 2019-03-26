@@ -31,6 +31,7 @@ import os
 import numpy as np
 import pandas as pd
 from thermo.utils import isnan
+from thermo.elements import periodic_table, CAS_by_number_standard
 from thermo.heat_capacity import TRC_gas_data, CRC_standard_data
 
 folder = os.path.join(os.path.dirname(__file__), 'Reactions')
@@ -58,7 +59,8 @@ YAWS = 'YAWS'
 
 API_TDB = 'API_TDB'
 NONE = 'NONE'
-Hf_methods = [API_TDB]
+DEFINITION = 'Definition'
+Hf_methods = [DEFINITION, API_TDB]
 
 
 def Hf(CASRN, AvailableMethods=False, Method=None):
@@ -67,7 +69,7 @@ def Hf(CASRN, AvailableMethods=False, Method=None):
     data source available ('API TDB') if the chemical is in it.
     Returns None if the data is not available.
 
-    Function has data for 571 chemicals.
+    Function has data for 571 chemicals and the elements.
 
     Parameters
     ----------
@@ -92,8 +94,9 @@ def Hf(CASRN, AvailableMethods=False, Method=None):
 
     Notes
     -----
-    Only one source of information is available to this function. it is:
-
+    Only two source of information is available to this function. They are:
+        
+        * 'Definition', which applies for the elements defined to be zero
         * 'API_TDB', a compilation of heats of formation of unspecified phase.
           Not the original data, but as reproduced in [1]_. Some chemicals with
           duplicated CAS numbers were removed.
@@ -114,6 +117,8 @@ def Hf(CASRN, AvailableMethods=False, Method=None):
         methods = []
         if CASRN in API_TDB_data.index:
             methods.append(API_TDB)
+        if CASRN in CAS_by_number_standard:
+            methods.append(DEFINITION)
         methods.append(NONE)
         return methods
     if AvailableMethods:
@@ -122,12 +127,13 @@ def Hf(CASRN, AvailableMethods=False, Method=None):
         Method = list_methods()[0]
 
     if Method == API_TDB:
-        _Hf = float(API_TDB_data.at[CASRN, 'Hf'])
+        return float(API_TDB_data.at[CASRN, 'Hf'])
+    elif Method == DEFINITION:
+        return 0.0
     elif Method == NONE:
-        _Hf = None
+        return None
     else:
         raise Exception('Failure in in function')
-    return _Hf
 
 
 ATCT_L = 'ATCT_L'

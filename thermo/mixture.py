@@ -1374,6 +1374,50 @@ class Mixture(object):
         '''
         return mixing_simple(self.Hcs_lower, self.ws)
 
+    def Hc_volumetric_g(self, T=288.7055555555555, P=101325.0):
+        r'''Standard higher molar heat of combustion of the mixture,
+        in units of [J/m^3] at the specified `T` and `P` in the gas phase.
+
+        This property depends on the bulk composition only.
+        
+        Parameters
+        ----------
+        T : float, optional
+            Reference temperature, [K]
+        P : float, optional
+            Reference pressure, [Pa]
+            
+        Returns
+        ----------
+        Hc_volumetric_g : float, optional
+            Higher heat of combustion on a volumetric basis, [J/m^3]
+        '''
+        Vm = self.VolumeGasMixture(T=T, P=P, zs=self.zs, ws=self.ws)
+        Hcm = self.Hcm
+        return Hcm/Vm
+
+    def Hc_volumetric_g_lower(self, T=288.7055555555555, P=101325.0):
+        r'''Standard lower molar heat of combustion of the mixture,
+        in units of [J/m^3] at the specified `T` and `P` in the gas phase.
+
+        This property depends on the bulk composition only.
+        
+        Parameters
+        ----------
+        T : float, optional
+            Reference temperature, [K]
+        P : float, optional
+            Reference pressure, [Pa]
+            
+        Returns
+        ----------
+        Hc_volumetric_g : float, optional
+            Lower heat of combustion on a volumetric basis, [J/m^3]
+        '''
+        Vm = self.VolumeGasMixture(T=T, P=P, zs=self.zs, ws=self.ws)
+        Hcm_lower = self.Hcm_lower
+        return Hcm_lower/Vm
+
     @property
     def charge_balance(self):
         r'''Charge imbalance of the mixture, in units of [faraday].
