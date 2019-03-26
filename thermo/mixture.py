@@ -1328,6 +1328,30 @@ class Mixture(object):
         return [i.PSRK_groups for i in self.Chemicals]
 
     @property
+    def Van_der_Waals_volumes(self):
+        r'''List of unnormalized Van der Waals volumes of all the chemicals in
+        the mixture, in units of [m^3/mol].
+
+        Examples
+        --------
+        >>> Mixture(['1-pentanol', 'decane'], ws=[0.5, 0.5]).Van_der_Waals_volumes
+        [6.9762279e-05, 0.00010918455800000001]
+        '''
+        return [i.Van_der_Waals_volume for i in self.Chemicals]
+
+    @property
+    def Van_der_Waals_areas(self):
+        r'''List of unnormalized Van der Waals areas of all the chemicals
+        in the mixture, in units of [m^2/mol].
+
+        Examples
+        --------
+        >>> Mixture(['1-pentanol', 'decane'], ws=[0.5, 0.5]).Van_der_Waals_areas
+        [1052000.0, 1504000.0]
+        '''
+        return [i.Van_der_Waals_area for i in self.Chemicals]
+
+    @property
     def R_specific(self):
         r'''Specific gas constant of the mixture, in units of [J/kg/K].
 
@@ -2014,6 +2038,26 @@ class Mixture(object):
         '''
         return [i.solubility_parameter for i in self.Chemicals]
 
+    @property
+    def Parachors(self):
+        r'''Pure component Parachor parameters of the chemicals in the
+        mixture at its current temperature and pressure, in units
+        of [N^0.25*m^2.75/mol].
+
+        .. math::
+            P = \frac{\sigma^{0.25} MW}{\rho_L - \rho_V}
+
+        Calculated based on surface tension, density of the liquid and gas
+        phase, and molecular weight. For uses of this property, see
+        :obj:`thermo.utils.Parachor`.
+
+        Examples
+        --------
+        >>> Mixture(['benzene', 'hexane'], ws=[0.5, 0.5], T=320).Parachors
+        [3.6795616000855504e-05, 4.82947303150274e-05]
+        '''
+        return [i.Parachor for i in self.Chemicals]
+
     ### Overall mixture properties
     @property
     def rhol(self):
@@ -2504,6 +2548,28 @@ class Mixture(object):
         Cpg, mug, kg = self.Cpg, self.mug, self.kg
         if all([Cpg, mug, kg]):
             return Prandtl(Cp=Cpg, mu=mug, k=kg)
+        return None
+
+    @property
+    def Parachor(self):
+        r'''Parachor of the mixture at its
+        current temperature and pressure, in units of [N^0.25*m^2.75/mol].
+
+        .. math::
+            P = \frac{\sigma^{0.25} MW}{\rho_L - \rho_V}
+
+        Calculated based on surface tension, density of the liquid and gas
+        phase, and molecular weight. For uses of this property, see
+        :obj:`thermo.utils.Parachor`.
+
+        Examples
+        --------
+        >>> Mixture(['benzene', 'hexane'], ws=[0.5, 0.5], T=320).Parachor
+        4.233407085050756e-05
+        '''
+        sigma, rhol, rhog = self.sigma, self.rhol, self.rhog
+        if all((sigma, rhol, rhog, self.MW)):
+            return Parachor(sigma=sigma, MW=self.MW, rhol=rhol, rhog=rhog)
         return None
 
     ### Properties from Mixture objects

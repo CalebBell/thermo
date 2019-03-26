@@ -525,11 +525,11 @@ def Gibbs_formation(dHf, S0_abs, dHfs_std, S0_abs_elements, coeffs_elements,
 
 
 def entropy_formation(Hf, Gf, T_ref=298.15):
-    r'''This function calculates the Gibbs free energy of formation of a
+    r'''This function calculates the entropy of formation of a
     compound, from its constituent elements.
     
-    The calculated value will be for a "standard-state" value if `dHf` and 
-    `S0_abs` are provided in the standard state; or it will be in an
+    The calculated value will be for a "standard-state" value if `Hf` and 
+    `Gf` are provided in the standard state; or it will be in an
     "ideal gas" basis if they are both for an ideal gas. For compounds which
     are gases at STP, the two values are the same.
 

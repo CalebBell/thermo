@@ -897,7 +897,7 @@ class Chemical(object): # pragma: no cover
         self.S0gm = S0_g(CASRN=self.CAS, Method=self.S0g_source)
         self.S0g = property_molar_to_mass(self.S0gm, self.MW) if (self.S0gm is not None) else None
 
-        # Compute Gf(ig)
+        # Compute Gf and Gf(ig)
         dHfs_std = []
         S0_abs_elements = []
         coeffs_elements = []
@@ -910,6 +910,14 @@ class Chemical(object): # pragma: no cover
             dHfs_std.append(H0)
             S0_abs_elements.append(S0)
             coeffs_elements.append(count)
+
+#        # This requires S0m!
+#        try:
+#            self.Gfm = Gibbs_formation(self.Hfm, self.S0m, dHfs_std, S0_abs_elements, coeffs_elements)
+#        except:
+#            self.Gfm = None
+#        self.Gf = property_molar_to_mass(self.Gfm, self.MW) if (self.Gfm is not None) else None
+
         
         try:
             self.Gfgm = Gibbs_formation(self.Hfgm, self.S0gm, dHfs_std, S0_abs_elements, coeffs_elements)
