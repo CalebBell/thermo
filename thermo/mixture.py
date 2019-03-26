@@ -280,11 +280,39 @@ class Mixture(object):
     Hsubms : list of float
         Molar enthalpy of sublimations of all chemicals in the mixture, [J/mol]
     Hfms : list of float
-        Molar enthalpy of formations of all chemicals in the mixture, [J/mol]
+        Molar enthalpy of formations of all chemicals in the mixture, [J/mol]        
     Hfs : list of float
         Enthalpy of formations of all chemicals in the mixture, [J/kg]
+    Gfms : list of float
+        Molar Gibbs free energies of formation of all chemicals in the mixture, 
+        [J/mol]        
+    Gfs : list of float
+        Gibbs free energies of formation of all chemicals in the mixture, 
+        [J/kg]
+    Sfms : list of float
+        Molar entropy of formation of all chemicals in the mixture, 
+        [J/mol/K]        
+    Sfs : list of float
+        Entropy of formation of all chemicals in the mixture, 
+        [J/kg/K]
+    S0ms : list of float
+        Standard absolute entropies of all chemicals in the mixture, 
+        [J/mol/K]   
+    S0s : list of float
+        Standard absolute entropies of all chemicals in the mixture, 
+        [J/kg/K]
+    Hcms : list of float
+        Molar higher heats of combustions of all chemicals in the mixture, 
+        [J/mol]
     Hcs : list of float
-        Molar enthalpy of combustions of all chemicals in the mixture, [J/mol]
+        Higher heats of combustions of all chemicals in the mixture, 
+        [J/kg]
+    Hcms_lower : list of float
+        Molar lower heats of combustions of all chemicals in the mixture, 
+        [J/mol]
+    Hcs_lower : list of float
+        Higher lower of combustions of all chemicals in the mixture, 
+        [J/kg]
     Tflashs : list of float
         Flash points of all chemicals in the mixture, [K]
     Tautoignitions : list of float
@@ -700,7 +728,7 @@ class Mixture(object):
         self.Vml_Tms = [i.Vml_Tm for i in self.Chemicals]
         self.Hvap_Tbms = [i.Hvap_Tbm for i in self.Chemicals]
         self.Hvap_Tbs = [i.Hvap_Tb for i in self.Chemicals]
-        self.Hvap_STPs = [i.Hvap_STP for i in self.Chemicals]
+        self.Hvapm_STPs = [i.Hvapm_STP for i in self.Chemicals]
     ### More stuff here
 
     def set_chemical_TP(self, T=None, P=None):

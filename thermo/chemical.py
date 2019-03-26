@@ -358,17 +358,13 @@ class Chemical(object): # pragma: no cover
     Hc_lower : float
         Lower Heat of combustion [J/kg]
     S0m : float
-        Standard state absolute molar entropy of formation of the 
-        chemical, [J/mol/K]
+        Standard state absolute molar entropy of the chemical, [J/mol/K]
     S0 : float
-        Standard state absolute entropy of formation of the 
-        chemical, [J/kg/K]
+        Standard state absolute entropy of the chemical, [J/kg/K]
     S0gm : float
-        Absolute molar entropy of formation in an ideal gas state of the 
-        chemical, [J/mol/K]
+        Absolute molar entropy in an ideal gas state of the chemical, [J/mol/K]
     S0g : float
-        Absolute mass entropy of formation in an ideal gas state of the 
-        chemical, [J/kg/K]
+        Absolute mass entropy in an ideal gas state of the chemical, [J/kg/K]
     Gfm : float
         Standard state molar change of Gibbs energy of formation [J/mol]
     Gf : float
