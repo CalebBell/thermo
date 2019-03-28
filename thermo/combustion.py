@@ -23,9 +23,10 @@ SOFTWARE.'''
 from __future__ import division
 from pprint import pprint
 from thermo.utils import property_mass_to_molar, property_molar_to_mass
+from fluids.numerics import normalize
 
 __all__ = ['Hcombustion', 'combustion_products', 'combustion_products_mixture',
-           'air_fuel_ratio_solver']
+           'air_fuel_ratio_solver', 'fuel_air_spec_solver']
 
 
 combustion_atoms = set(['C', 'H', 'N', 'O', 'S', 'Br', 'I', 'Cl', 'F', 'P'])
@@ -141,7 +142,7 @@ def combustion_products(atoms):
 
 # mixture - mole fractions and atoms
 
-def combustion_products_mixture(atoms_list, zs):
+def combustion_products_mixture(atoms_list, zs, reactivities=None, CASs=None):
     '''Calculates the combustion products of a mixture of molecules and their,
     mole fractions; requires a list of dictionaries of each molecule's 
     constituent atoms and their counts.
@@ -154,6 +155,11 @@ def combustion_products_mixture(atoms_list, zs):
         List of dictionaries of atoms and their counts, [-]
     zs : list[float]
         Mole fractions of each molecule in the mixture, [-]
+    reactivities : list[bool]
+        Indicators as to whether to combust each molecule, [-]
+    CASs : list[str]
+        CAS numbers of all compounds; non-reacted products will appear
+        in the products indexed by their CAS number, [-]
 
     Returns
     -------
@@ -179,31 +185,38 @@ def combustion_products_mixture(atoms_list, zs):
     --------
     Mixture of methane and ethane.
 
-    >>> combustion_products_mixture([{'H': 4, 'C': 1}, {'H': 6, 'C': 2}],
-    ... [.9, .1])
-    {'Br2': 0.0,
-     'CO2': 1.1,
-     'H2O': 2.1,
-     'HCl': 0,
-     'HF': 0,
+    >>> combustion_products_mixture([{'H': 4, 'C': 1}, {'H': 6, 'C': 2}, {'Ar': 1}, {'C': 15, 'H': 32}],
+    ... [.9, .05, .04, .01], reactivities=[True, True, True, False], 
+    ... CASs=['74-82-8', '74-84-0', '7440-37-1', '629-62-9'])
+    {'629-62-9': 0.01,
+     'Ar': 0.04,
+     'Br2': 0.0,
+     'CO2': 1.0,
+     'H2O': 1.9500000000000002,
+     'HCl': 0.0,
+     'HF': 0.0,
      'I2': 0.0,
      'N2': 0.0,
-     'O2_required': 2.15,
+     'O2_required': 1.975,
      'P4O10': 0.0,
-     'SO2': 0}
+     'SO2': 0.0}
     '''
     # Attempted to use a .copy() on a base dict but that was slower
     products = {'CO2': 0.0, 'Br2': 0.0, 'I2': 0.0, 'HCl': 0.0, 'HF': 0.0, 
                 'SO2': 0.0, 'N2': 0.0, 'P4O10': 0.0, 'H2O': 0.0,
                 'O2_required': 0.0}
-    for atoms, zs_i in zip(atoms_list, zs):
-        ans = combustion_products(atoms)
-        if ans is not None:
-            for key, val in ans.items():
-                if key in products:
-                    products[key] += val*zs_i
-                else:
-                    products[key] = val*zs_i
+    has_reactivities = reactivities is not None
+    for i, (atoms, zs_i) in enumerate(zip(atoms_list, zs)):
+        if has_reactivities and not reactivities[i]:
+            products[CASs[i]] = zs_i
+        else:
+            ans = combustion_products(atoms)
+            if ans is not None:
+                for key, val in ans.items():
+                    if key in products:
+                        products[key] += val*zs_i
+                    else:
+                        products[key] = val*zs_i
     return products
 
 
@@ -365,8 +378,10 @@ def combustion_products_to_list(products, CASs):
         if product == 'O2_required':
             product = 'O2'
             zi = -zi
-        
-        if combustion_products_to_CASs[product] in CASs:
+            
+        if product in CASs:
+            zs[CASs.index(product)] = zi
+        elif combustion_products_to_CASs[product] in CASs:
             zs[CASs.index(combustion_products_to_CASs[product])] = zi
         else:
             if abs(zi) > 0:
@@ -502,11 +517,13 @@ def fuel_air_spec_solver(zs_air, zs_fuel, CASs, atomss, n_fuel=None,
                          frac_out_O2_dry=None, ratio=None,
                          Vm_air=None, Vm_fuel=None, MW_air=None, MW_fuel=None,
                          ratio_basis='mass', reactivities=None):
+    TRACE_FRACTION_IN_AIR = 1e-10
     # what burns and what does not
 #                          T_flame, efficiency, efficiency_basis, combustion_duty,
 #                          T_air, T_fuel, P_air, P_fuel, T_out, P_out,
     # Goal is only to solve for air or fuel flow rate without rigorous combustion
-    # Only one path to et n_air, n_fuel should ever be followed. Calculate all the
+    
+    # Only one path to get n_air, n_fuel should ever be followed. Calculate all the
     # extra information redundantly at the end!
 
     # Handle combustibles in the air by burning them right away,
@@ -518,9 +535,11 @@ def fuel_air_spec_solver(zs_air, zs_fuel, CASs, atomss, n_fuel=None,
     if reactivities is None:
         reactivities = [True for i in zs_air]
     combustibilities = [is_combustible(CASs[i], atomss[i], reactivities[i]) for i in cmps]
+    
+    for i in combustibilities:
+        if zs_air[i] > TRACE_FRACTION_IN_AIR:
+            pass
         
-    if n_air is not None:
-        n_air_inert = []
         
     O2_index = CASs.index(O2_CAS)
     H2O_index = CASs.index(H2O_CAS)
@@ -535,11 +554,11 @@ def fuel_air_spec_solver(zs_air, zs_fuel, CASs, atomss, n_fuel=None,
     # Given O2 excess and either air or fuel flow rate, can solve directly for the other
     if O2_excess is not None and (n_fuel is None or n_air is None):
         if n_fuel is not None:
-            comb_ans = combustion_products_mixture(atomss, zs_fuel)
+            comb_ans = combustion_products_mixture(atomss, zs_fuel, reactivities=reactivities, CASs=CASs)
             n_O2_required = comb_ans['O2_required']*n_fuel*(1.0 + O2_excess)
             n_air = n_O2_required/zs_air[O2_index]
         elif n_air is not None:
-            comb_ans = combustion_products_mixture(atomss, zs_fuel)
+            comb_ans = combustion_products_mixture(atomss, zs_fuel, reactivities=reactivities, CASs=CASs)
             O2_per_mole_fuel = comb_ans['O2_required']*(1.0 + O2_excess)
             n_O2_in = zs_air[O2_index]*n_air
             n_fuel = n_O2_in/O2_per_mole_fuel
@@ -550,7 +569,7 @@ def fuel_air_spec_solver(zs_air, zs_fuel, CASs, atomss, n_fuel=None,
             Eq1 = Eq(O2_excess, n_air*z_O2/(n_fuel*O2_coeff) - 1)
             Eq2 = Eq(n_out, n_air + coeff*n_fuel)
             solve([Eq1, Eq2], [n_fuel, n_air])'''
-            comb_ans = combustion_products_mixture(atomss, zs_fuel)
+            comb_ans = combustion_products_mixture(atomss, zs_fuel, reactivities=reactivities, CASs=CASs)
             O2_burnt_n_fuel = comb_ans['O2_required']
             n_delta = 0
             for k, v in comb_ans.items():
@@ -568,7 +587,7 @@ def fuel_air_spec_solver(zs_air, zs_fuel, CASs, atomss, n_fuel=None,
     if (frac_out_O2 is not None or frac_out_O2_dry is not None) and (n_fuel is None or n_air is None):
         if n_fuel is not None:
             ns_fuel = [zi*n_fuel for zi in zs_fuel]
-            comb_ans = combustion_products_mixture(atomss, ns_fuel)
+            comb_ans = combustion_products_mixture(atomss, ns_fuel, reactivities=reactivities, CASs=CASs)
             n_O2_stoic = comb_ans['O2_required']
             if n_O2_stoic < 0:
                 raise ValueError("Cannot meet air spec - insufficient air for full combustion")
@@ -595,7 +614,7 @@ def fuel_air_spec_solver(zs_air, zs_fuel, CASs, atomss, n_fuel=None,
                 n_air = ((-frac_out_O2_dry*n_O2_stoic + frac_out_O2_dry*n_fixed_products + n_O2_stoic)
                          /(frac_out_O2_dry*z_air_H20 - frac_out_O2_dry + z_air_O2))
         elif n_air is not None or n_out is not None:
-            comb_ans = combustion_products_mixture(atomss, zs_fuel)
+            comb_ans = combustion_products_mixture(atomss, zs_fuel, reactivities=reactivities, CASs=CASs)
             O2_burnt_n_fuel = comb_ans['O2_required']
             H2O_from_fuel_n = comb_ans['H2O']
             n_delta = 0
@@ -650,7 +669,7 @@ def fuel_air_spec_solver(zs_air, zs_fuel, CASs, atomss, n_fuel=None,
         frac_goal, n_air, z_O2, n_fuel, coeff, O2_coeff, n_out = symbols('frac_goal, n_air, z_O2, n_fuel, coeff, O2_coeff, n_out')
         solve(Eq(n_out, n_air + coeff*n_fuel), n_fuel)
         solve(Eq(n_out, n_air + coeff*n_fuel), n_air)'''
-        comb_ans = combustion_products_mixture(atomss, zs_fuel)
+        comb_ans = combustion_products_mixture(atomss, zs_fuel, reactivities=reactivities, CASs=CASs)
         n_delta = 0
         for k, v in comb_ans.items():
             if k != 'O2_required':
@@ -673,10 +692,10 @@ def fuel_air_spec_solver(zs_air, zs_fuel, CASs, atomss, n_fuel=None,
         for zi_air, zi_fuel in zip(zs_air, zs_fuel):
             ns_to_combust.append(zi_air*n_air + zi_fuel*n_fuel)
         
-        comb_ans = combustion_products_mixture(atomss, ns_to_combust)
+        comb_ans = combustion_products_mixture(atomss, ns_to_combust, reactivities=reactivities, CASs=CASs)
         ns_out = combustion_products_to_list(comb_ans, CASs)
 
-        comb_fuel_only = combustion_products_mixture(atomss, [n_fuel*zi for zi in zs_fuel])
+        comb_fuel_only = combustion_products_mixture(atomss, [n_fuel*zi for zi in zs_fuel], reactivities=reactivities, CASs=CASs)
         
         n_out = sum(ns_out)
         zs_out = normalize(ns_out)
