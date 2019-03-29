@@ -73,3 +73,62 @@ def test_air_fuel_ratio_solver():
                 else:
                     assert_allclose(ans, ans_expect)
     
+
+def assert_comb_dict_equal(calc, expect):
+    for k, v_expect in expect.items():
+        v_calc = calc[k]
+        assert_allclose(v_expect, v_calc)
+
+def fuel_air_spec_solver_checker(inputs, ans):
+    # Two extensive variables check
+    for n_fuel in (None, ans['n_fuel']):
+        for n_air in (None, ans['n_air']):
+            for n_out in (None, ans['n_out']):
+                if sum(i is not None for i in (n_fuel, n_air, n_out)) == 2:
+                    calc = fuel_air_spec_solver(n_fuel=n_fuel, n_air=n_air, n_out=n_out, **inputs)
+                    assert_comb_dict_equal(calc, ans)
+
+    # One intensive variable, one extensive variable
+    for n_spec, n_name in zip(['n_fuel', 'n_air', 'n_out'], [ans['n_fuel'], ans['n_air'], ans['n_out']]):
+        for i_spec, i_name in zip(['O2_excess', 'frac_out_O2', 'frac_out_O2_dry'], [ans['O2_excess'], ans['frac_out_O2'], ans['frac_out_O2_dry']]):
+            d2 = inputs.copy()
+            d2.update({n_spec: n_name, i_spec: i_name})
+            
+            calc = fuel_air_spec_solver(**d2)
+            assert_comb_dict_equal(calc, ans)
+
+    for n_spec, n_name in zip(['n_fuel', 'n_air'], [ans['n_fuel'], ans['n_air']]):
+        for ratio_name, ratio in zip(['mass', 'mole', 'volume'], [ans['mass_ratio'], ans['mole_ratio'], ans['volume_ratio']]):
+            kwargs = inputs.copy()
+            kwargs.update({n_spec: n_name, 'ratio': ratio, 'ratio_basis': ratio_name})
+
+            calc = fuel_air_spec_solver(**kwargs)
+            assert_comb_dict_equal(calc, ans)
+
+def test_fuel_air_spec_solver():
+    ans_N7_messy_fuel = {'O2_excess': 0.5813397129186602,
+ 'frac_out_O2': 0.0712025316455696,
+ 'frac_out_O2_dry': 0.08118672947779891,
+ 'mass_ratio': 24.83317358818291,
+ 'mole_ratio': 16.0,
+ 'n_air': 80,
+ 'n_fuel': 5,
+ 'n_out': 85.32000000000001,
+ 'ns_out': [63.325, 6.074999999999999, 0.0, 0.0, 0.0, 10.492500000000001, 5.4275],
+ 'volume_ratio': 16.032156677022826,
+ 'zs_out': [0.742205813408345, 0.0712025316455696, 0.0, 0.0, 0.0, 0.12297819971870605, 0.06361345522737927]}
+    
+    inputs_N7_messy_fuel = {'CASs': ['7727-37-9',  '7782-44-7',  '74-82-8',  '74-84-0',  '74-98-6',  '7732-18-5',  '124-38-9'],
+     'MW_air': 28.793413510000008,
+     'MW_fuel': 18.551580390000005,
+     'Vm_air': 0.024932453821680217,
+     'Vm_fuel': 0.024882445274415996,
+     'zs_air': [.79, .205, 0, 0, 0, .0045, .0005],
+      'atomss': [{'N': 2},  {'O': 2},  {'C': 1, 'H': 4},  {'C': 2, 'H': 6},  {'C': 3, 'H': 8},  {'H': 2, 'O': 1}, {'C': 1, 'O': 2}],
+     'zs_fuel': [.025, .025, .85, .07, .029, .0005, .0005]}
+
+    all_inputs = [inputs_N7_messy_fuel]
+    all_ans = [ans_N7_messy_fuel]
+    
+    for inputs, ans in zip(all_inputs, all_ans):
+        fuel_air_spec_solver_checker(inputs, ans)
