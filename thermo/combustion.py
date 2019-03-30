@@ -27,7 +27,7 @@ from fluids.numerics import normalize
 
 __all__ = ['Hcombustion', 'combustion_products', 'combustion_products_mixture',
            'air_fuel_ratio_solver', 'fuel_air_spec_solver', 
-           'combustion_spec_solver']
+           'fuel_air_third_spec_solver']
 
 
 combustion_atoms = set(['C', 'H', 'N', 'O', 'S', 'Br', 'I', 'Cl', 'F', 'P'])
@@ -648,7 +648,7 @@ def fuel_air_spec_solver(zs_air, zs_fuel, CASs, atomss, n_fuel=None,
     z_air_H20 = zs_air[H2O_index]
     z_fuel_O2 = zs_fuel[O2_index]
     
-    if ratio is not None:
+    if ratio is not None and (n_air is None or n_fuel is None):
         n_air, n_fuel = air_fuel_ratio_solver(ratio, Vm_air, Vm_fuel, MW_air, MW_fuel, n_air=n_air,
                                               n_fuel=n_fuel, basis=ratio_basis)
     
@@ -833,7 +833,7 @@ def fuel_air_spec_solver(zs_air, zs_fuel, CASs, atomss, n_fuel=None,
     return results
 
 
-def combustion_spec_solver(zs_air, zs_fuel, zs_third, CASs, atomss, n_third,
+def fuel_air_third_spec_solver(zs_air, zs_fuel, zs_third, CASs, atomss, n_third,
                            n_fuel=None, n_air=None, n_out=None,
                            O2_excess=None, frac_out_O2=None,
                            frac_out_O2_dry=None, ratio=None,
@@ -852,6 +852,7 @@ def combustion_spec_solver(zs_air, zs_fuel, zs_third, CASs, atomss, n_third,
     O2_index = CASs.index(O2_CAS)
     H2O_index = CASs.index(H2O_CAS)
     z_air_O2 = zs_air[O2_index]
+    z_fuel_O2 = zs_fuel[O2_index]
 
     Vm_mix, MW_mix = None, None
 
@@ -868,7 +869,7 @@ def combustion_spec_solver(zs_air, zs_fuel, zs_third, CASs, atomss, n_third,
                                            n_air=n_air, n_fuel=n_fuel+n_third, full_info=True)[2:]
         results['mole_ratio'], results['mass_ratio'], results['volume_ratio'] = ratios
             
-    if n_fuel is not None:
+    if n_fuel is not None :
         if Vm_fuel is not None and Vm_third is not None:
             Vm_mix = (Vm_fuel*n_fuel + Vm_third*n_third)/(n_fuel + n_third)
         if MW_fuel is not None and MW_third is not None:
@@ -881,45 +882,62 @@ def combustion_spec_solver(zs_air, zs_fuel, zs_third, CASs, atomss, n_third,
         
         mix_burn = fuel_air_spec_solver(zs_fuel=zs_fuel_mix, n_fuel=n_fuel_mix, 
                                         Vm_fuel=Vm_mix, MW_fuel=MW_mix,
+                                        n_out=n_out,
                                        **common_specs)
         mix_burn['n_fuel'] -= n_third
         return mix_burn
-    elif n_air is not None and n_fuel is None:
-        O2_in_orig = n_air*z_air_O2
+    if n_air is not None and n_fuel is None:
+        O2_in_third = n_third*zs_third[O2_index]
+        O2_in_orig = n_air*z_air_O2 + O2_in_third
+        
         third_burn = fuel_air_spec_solver(zs_fuel=zs_third, n_fuel=n_third,
                                           Vm_fuel=Vm_third, MW_fuel=MW_third,
                                           **common_specs)
-        O2_demand_third = O2_in_orig/(third_burn['O2_excess'] + 1)
-        
-        
-        print(third_burn)
         n_air2 = third_burn['n_out']
         zs_air2 = third_burn['zs_out']
+
+        O2_demand_third = O2_in_orig - third_burn['ns_out'][O2_index]
         
         extra_specs = common_specs.copy()
         extra_specs['n_air'] = n_air2
         extra_specs['zs_air'] = zs_air2
         if O2_excess is not None:
             '''from sympy import *
-            T, F, g, O2_in_orig, h = symbols('T, F, g, O2_in_orig, h')
-            Eq1 = Eq(g, O2_in_orig/(T + F) - 1)
-            # h and F are the unknowns - fuel demand for fuel burn and O2 excess apparent
-            Eq2 = Eq(h, (O2_in_orig - T)/F - 1)
-            solve([Eq1, Eq2], [h, F])'''
-            T = O2_demand_third
-            g = O2_excess
-            O2_excess_to_solver = (-O2_in_orig*g/(-O2_in_orig + T*g + T))
-            extra_specs['O2_excess'] = O2_excess_to_solver
-        elif ratio is not None:
-            raise NotImplemented("Not yet")
-        
-        
-        fuel_burn = fuel_air_spec_solver(zs_fuel=zs_fuel, n_fuel=n_fuel, ratio=ratio,
-                                         Vm_fuel=Vm_fuel, MW_fuel=MW_fuel,
-                                         **extra_specs)
-        O2_demand_fuel = n_air2*zs_air2[O2_index]/(fuel_burn['O2_excess'] + 1)
+            O2_excess, excess_sub, O2_air, O2_in_third, O2_fixed, z_fuel_O2, n_fuel, O2_coeff, O2_demand_third = symbols('O2_excess, excess_sub, O2_air, O2_in_third, O2_fixed, z_fuel_O2, n_fuel, O2_coeff, O2_demand_third')
+            Eq1 = Eq(O2_excess, (O2_air + O2_in_third + z_fuel_O2*n_fuel)/(O2_demand_third + n_fuel*O2_coeff) - 1)
+            Eq2 = Eq(excess_sub, (O2_fixed +z_fuel_O2*n_fuel)/(n_fuel*O2_coeff) - 1)
+            solve([Eq1, Eq2], [excess_sub, n_fuel])'''
+            comb_ans = combustion_products_mixture(atomss, zs_fuel, reactivities=reactivities, CASs=CASs)
+            O2_burnt_n_fuel = O2_coeff = comb_ans['O2_required'] + z_fuel_O2
+            O2_air = z_air_O2*n_air
+            # Simpler expression for n_fuel than fake O2 excess
+            n_fuel = (O2_air - O2_demand_third*O2_excess - O2_demand_third + O2_in_third)/(O2_coeff*O2_excess + O2_coeff - z_fuel_O2)
 
-        fuel_burn['O2_excess'] = O2_in_orig/(O2_demand_fuel + O2_demand_third) - 1
+        elif ratio is not None:
+            if ratio_basis == 'mole':
+                n_fuel = n_air/ratio - n_third
+            elif ratio_basis == 'mass':
+                m_air, m_third = n_air*MW_air*1e-3, n_third*MW_third*1e-3
+                m_fuel = m_air/ratio - m_third
+                n_fuel = m_fuel/(MW_fuel*1e-3)
+            elif ratio_basis == 'volume':
+                Q_air, Q_third = n_air*Vm_air, n_third*Vm_third
+                Q_fuel = Q_air/ratio - Q_third
+                n_fuel = Q_fuel/Vm_fuel
+        
+        
+        fuel_burn = fuel_air_spec_solver(zs_fuel=zs_fuel, n_fuel=n_fuel,
+                                         Vm_fuel=Vm_fuel, MW_fuel=MW_fuel,
+                                         n_out=n_out,
+                                         **extra_specs)
+        
+        O2_in_fuel = fuel_burn['n_fuel']*zs_fuel[O2_index]
+        O2_demand_fuel = (n_air2*zs_air2[O2_index] + O2_in_fuel)/(fuel_burn['O2_excess'] + 1)
+        
+
+        
+        # denominator and numerator are correct now, do not change vars used..
+        fuel_burn['O2_excess'] = (O2_in_orig + O2_in_fuel)/(O2_demand_fuel + O2_demand_third) - 1
 
         fuel_burn['n_air'] = n_air
         n_fuel = fuel_burn['n_fuel']
@@ -927,7 +945,7 @@ def combustion_spec_solver(zs_air, zs_fuel, zs_third, CASs, atomss, n_third,
         
         # O2 excess should be wrong, same for ratios
         return fuel_burn
-    elif n_out is not None:
+    if n_out is not None:
         # missing fuel and air, but know outlet and another spec
         
         # Burn all the third stream at O2 excess=0
@@ -939,8 +957,8 @@ def combustion_spec_solver(zs_air, zs_fuel, zs_third, CASs, atomss, n_third,
         n_out_remaining = n_out - third_burn['n_out']
         
         fuel_burn = fuel_air_spec_solver(zs_fuel=zs_fuel, n_out=n_out_remaining,
-                                         Vm_fuel=Vm_fuel, MW_fuel=MW_fuel,
-                                         **common_specs)
+                                             Vm_fuel=Vm_fuel, MW_fuel=MW_fuel,
+                                             **common_specs)
         
         ans = {'n_out': n_out}
         ans['n_air'] = n_air = third_burn['n_air'] + fuel_burn['n_air']
