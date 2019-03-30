@@ -91,6 +91,7 @@ def fuel_air_spec_solver_checker(inputs, ans, func=fuel_air_spec_solver):
             calc = func(**d2)
             assert_comb_dict_equal(calc, ans)
 
+
     for n_spec, n_name in zip(['n_fuel', 'n_air'], [ans['n_fuel'], ans['n_air']]):
         for ratio_name, ratio in zip(['mass', 'mole', 'volume'], [ans['mass_ratio'], ans['mole_ratio'], ans['volume_ratio']]):
             kwargs = inputs.copy()
@@ -156,7 +157,7 @@ def test_fuel_air_third_spec_solver():
     ans_N7_messy_fuel = {'O2_excess': 0.289894654701522,
      'frac_out_O2': 0.04294053054383636,
      'frac_out_O2_dry': 0.0503063746233793,
-     'mass_ratio': 19.96906710268543,
+     'mass_ratio': 19.969067102685425,
      'mole_ratio': 13.333333333333334,
      'n_air': 80,
      'n_fuel': 5,
@@ -165,9 +166,23 @@ def test_fuel_air_third_spec_solver():
      'volume_ratio': 13.365681067247072,
      'zs_out': [0.7331098653412703,  0.04294053054383636,  0.0,  0.0,  0.0, 0.14641969600647284,  0.07752990810842048]}
     
+    inputs_N7_messy_fuel_reactivities = inputs_N7_messy_fuel.copy()
+    inputs_N7_messy_fuel_reactivities['reactivities'] = [True, True, True, False, False, True, True]
     
-    all_inputs = [inputs_N7_messy_fuel]
-    all_ans = [ans_N7_messy_fuel]
+    ans_N7_messy_fuel_reactivities = {'O2_excess': 0.74,
+     'frac_out_O2': 0.08174418604651168,
+     'frac_out_O2_dry': 0.09233901421863204,
+     'mass_ratio': 19.969067102685425,
+     'mole_ratio': 13.333333333333337,
+     'n_air': 80.00000000000003,
+     'n_fuel': 5,
+     'n_out': 86.00000000000003,
+     'ns_out': [63.425, 7.03, 0.0, 0.74, 0.145, 9.8675, 4.7925],
+     'volume_ratio': 13.365681067247069,
+     'zs_out': [0.7375000000000002, 0.08174418604651168, 0.0, 0.008604651162790695, 0.001686046511627906, 0.11473837209302319, 0.055726744186046485]}
+    
+    all_inputs = [inputs_N7_messy_fuel, inputs_N7_messy_fuel_reactivities]
+    all_ans = [ans_N7_messy_fuel, ans_N7_messy_fuel_reactivities]
     
     for inputs, ans in zip(all_inputs, all_ans):
         fuel_air_spec_solver_checker(inputs, ans, func=fuel_air_third_spec_solver)
