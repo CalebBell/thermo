@@ -184,5 +184,6 @@ def test_fuel_air_third_spec_solver():
     all_inputs = [inputs_N7_messy_fuel, inputs_N7_messy_fuel_reactivities]
     all_ans = [ans_N7_messy_fuel, ans_N7_messy_fuel_reactivities]
     
-    for inputs, ans in zip(all_inputs, all_ans):
-        fuel_air_spec_solver_checker(inputs, ans, func=fuel_air_third_spec_solver)
+    for func in (fuel_air_third_spec_solver, combustion_spec_solver):
+        for inputs, ans in zip(all_inputs, all_ans):
+            fuel_air_spec_solver_checker(inputs, ans, func=func)

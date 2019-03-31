@@ -27,7 +27,7 @@ from fluids.numerics import normalize
 
 __all__ = ['Hcombustion', 'combustion_products', 'combustion_products_mixture',
            'air_fuel_ratio_solver', 'fuel_air_spec_solver', 
-           'fuel_air_third_spec_solver']
+           'fuel_air_third_spec_solver', 'combustion_spec_solver']
 
 
 combustion_atoms = set(['C', 'H', 'N', 'O', 'S', 'Br', 'I', 'Cl', 'F', 'P'])
@@ -977,4 +977,59 @@ def fuel_air_third_spec_solver(zs_air, zs_fuel, zs_third, CASs, atomss, n_third,
         
         return ans
         
+
+def combustion_spec_solver(zs_air, zs_fuel, zs_third, CASs, atomss, n_third,
+                           n_fuel=None, n_air=None, n_out=None,
+                           O2_excess=None, frac_out_O2=None,
+                           frac_out_O2_dry=None, ratio=None,
+                           Vm_air=None, Vm_fuel=None, Vm_third=None, 
+                           MW_air=None, MW_fuel=None, MW_third=None,
+                           ratio_basis='mass', reactivities=None):
+    TRACE_FRACTION_IN_AIR = 1e-12
+    if reactivities is None:
+        reactivities = [True for i in zs_air]
+    combustibilities = [is_combustible(CASs[i], atomss[i], reactivities[i]) for i in range(len(CASs))]
+
+    zs_air_comb = []
+    zs_air_pure = []
+    n_air_comb = 0.0
+    n_air_pure = 0.0
+
+    air_has_combustibles = False
+    for combustible, zi in zip(combustibilities, zs_air):
+        if combustible and zi > TRACE_FRACTION_IN_AIR:
+            air_has_combustibles = True
+            zs_air_comb.append(zi)
+            zs_air_pure.append(0.0)
+            if n_air is not None:
+                n_air_comb += zi*n_air
+        else:
+            zs_air_pure.append(zi)
+            zs_air_comb.append(0.0)
+            if n_air is not None:
+                n_air_pure += zi*n_air
     
+    if air_has_combustibles:
+        try:
+            zs_air_comb = normalize(zs_air_comb)
+        except ZeroDivisionError:
+            pass
+        zs_air_pure = normalize(zs_air_pure)
+        
+    if not air_has_combustibles:
+        return fuel_air_third_spec_solver(zs_air=zs_air, zs_fuel=zs_fuel, 
+                                          zs_third=zs_third, CASs=CASs, 
+                                          atomss=atomss, n_third=n_third,
+                           n_fuel=n_fuel, n_air=n_air, n_out=n_out,
+                           O2_excess=O2_excess, frac_out_O2=frac_out_O2,
+                           frac_out_O2_dry=frac_out_O2_dry, ratio=ratio,
+                           Vm_air=Vm_air, Vm_fuel=Vm_fuel, Vm_third=Vm_third, 
+                           MW_air=MW_air, MW_fuel=MW_fuel, MW_third=MW_third,
+                           ratio_basis=ratio_basis, reactivities=reactivities)
+    else:
+        # Can handle air flow specs easily - burn the air, and then pass in the 
+        # burnt air composition. This includes n_air and n_out spec.
+        
+        # Can handle fuel and air/fuel ratio easily as is equivalent spec to air flow.
+        # Can 
+        raise ValueError("Composition of air includes combustibles")
