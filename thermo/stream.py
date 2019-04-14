@@ -1063,11 +1063,12 @@ class EnergyStream(object):
     Q = None
     medium = None
     def __repr__(self):
-        return '<Energy stream, Q=%g W, medium=%s>' %(self.Q, self.medium.value)
+        return '<Energy stream, Q=%s W, medium=%s>' %(self.Q, self.medium.value)
     
     def __init__(self, Q, medium=EnergyTypes.ELECTRICITY):
         self.medium = medium
         # isinstance test is slow, especially with Number - faster to check float and int first
-        if not isinstance(Q, (float, int, Number)):
+        if not (Q is None or isinstance(Q, (float, int, Number))):
             raise Exception('Energy stream flow rate is not a flow rate')
         self.Q = Q
+

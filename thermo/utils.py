@@ -1806,7 +1806,7 @@ def mix_multiple_component_flows(IDs, flows, fractions):
     return cmps, component_flows
 
 
-def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0):
+def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False):
     r'''Checks a mole balance for a group of inlet streams against outlet
     streams. Inlets and outlets must be Stream objects. The check is performed
     on a mole-basis; an exception is raised if the balance is not satisfied.
@@ -1821,6 +1821,9 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0):
         Relative tolerance, [-]
     atol : float, optional
         Absolute tolerance, [mol/s]
+    reactive : bool, optional
+        Whether or not to perform the check on a reactive basis (check mass,
+        not moles, and element flows as well), [-]
     
     Notes
     -----
@@ -1833,6 +1836,7 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0):
     >>> f2 = Stream(['water', 'methanol'], zs=[.5, .5], T=300, P=9E5, n=25)
     >>> f3 = Stream(IDs=['109-66-0', '64-17-5', '67-56-1', '7732-18-5'], ns=[5.0, 20.0, 12.5, 37.5], T=300, P=850000)
     >>> assert_component_balance([f1, f2], f3)
+    >>> assert_component_balance([f1, f2], f3, reactive=True)
     '''
     try:
         [_ for _ in inlets]
@@ -1843,15 +1847,56 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0):
     except TypeError:
         outlets = [outlets]
 
+    feed_CASs = [i.CASs for i in inlets]
+    product_CASs = [i.CASs for i in outlets]
+
+    if reactive:
+        # mass balance
+        feed_cmps, feed_masses = mix_multiple_component_flows(IDs=feed_CASs,
+                                                              flows=[i.m for i in inlets], 
+                                                              fractions=[i.ws for i in inlets])
+        feed_mass_flows = {i:j for i, j in zip(feed_cmps, feed_masses)}
+        
+        product_cmps, product_mols = mix_multiple_component_flows(IDs=product_CASs, 
+                                                                  flows=[i.m for i in outlets], 
+                                                                  fractions=[i.ws for i in outlets])
+        product_mass_flows = {i:j for i, j in zip(product_cmps, product_mols)}
+        
+        for CAS, flow in feed_mass_flows.items():
+            assert_allclose(flow, product_mass_flows[CAS], rtol=rtol, atol=atol)
+
+        # Check the component set is right
+        if set(feed_cmps) != set(product_cmps):
+            raise Exception('Product and feeds have different components in them')
+
+        # element balance
+        feed_cmps, feed_element_flows = mix_multiple_component_flows(IDs=[i.atoms.keys() for i in inlets],
+                                                              flows=[i.n for i in inlets], 
+                                                              fractions=[i.atoms.values() for i in inlets])
+        feed_element_flows = {i:j for i, j in zip(feed_cmps, feed_element_flows)}
+        
+        
+        product_cmps, product_element_flows = mix_multiple_component_flows(IDs=[i.atoms.keys() for i in outlets],
+                                                              flows=[i.n for i in outlets], 
+                                                              fractions=[i.atoms.values() for i in outlets])
+        product_element_flows = {i:j for i, j in zip(product_cmps, product_element_flows)}
+        
+        for ele, flow in feed_element_flows.items():
+            assert_allclose(flow, product_element_flows[ele], rtol=rtol, atol=atol)
+            
+        if set(feed_cmps) != set(product_cmps):
+            raise Exception('Product and feeds have different elements in them')
+        return True
+
     feed_ns = [i.n for i in inlets]
     feed_zs = [i.zs for i in inlets]
-    feed_CASs = [i.CASs for i in inlets]
-    feed_cmps, feed_mols = mix_multiple_component_flows(IDs=feed_CASs, flows=feed_ns, fractions=feed_zs)
-    feed_flows = {i:j for i, j in zip(feed_cmps, feed_mols)}
     
     product_ns = [i.n for i in outlets]
     product_zs = [i.zs for i in outlets]
-    product_CASs = [i.CASs for i in outlets]
+    
+    feed_cmps, feed_mols = mix_multiple_component_flows(IDs=feed_CASs, flows=feed_ns, fractions=feed_zs)
+    feed_flows = {i:j for i, j in zip(feed_cmps, feed_mols)}
+    
     product_cmps, product_mols = mix_multiple_component_flows(IDs=product_CASs, flows=product_ns, fractions=product_zs)
     product_flows = {i:j for i, j in zip(product_cmps, product_mols)}
 

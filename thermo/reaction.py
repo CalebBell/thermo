@@ -25,10 +25,14 @@ from __future__ import division
 __all__ = ['API_TDB_data', 'ATcT_l', 'ATcT_g', 'Hf_methods', 'Hf', 
            'Hf_l_methods', 'Hf_l', 'Hf_g_methods', 'Hf_g', 'Gibbs_formation',
            'entropy_formation', 'Hf_basis_converter',
-           'S0_g_methods', 'S0_g', 'Yaws_Hf_S0']
+           'S0_g_methods', 'S0_g', 'Yaws_Hf_S0',
+           'balance_stoichiometry', 'stoichiometric_matrix']
            
 import os
+from fractions import Fraction
+from thermo.utils import ceil, log10
 import numpy as np
+import scipy.linalg
 import pandas as pd
 from thermo.utils import isnan
 from thermo.elements import periodic_table, CAS_by_number_standard
@@ -567,3 +571,147 @@ def entropy_formation(Hf, Gf, T_ref=298.15):
     -44.427301693778304
     '''
     return (Hf - Gf)/T_ref
+
+
+def stoichiometric_matrix(atomss, reactants):
+    r'''This function calculates a stoichiometric matrix of reactants and 
+    stoichiometric matrix, as required by a solver to compute the reation
+    coefficients.
+
+    Parameters
+    ----------
+    atomss : list[dict[(str, float)]]
+        A list of dictionaties of (element, element_count) pairs for each 
+        chemical, [-]
+    reactants : list[bool]
+        List of booleans indicating whether each chemical is a reactant (True)
+        or a product (False), [-]
+
+    Returns
+    -------
+    matrix : list[list[float]]
+        Chemical reaction matrix for further processing, [-]
+
+    Notes
+    -----
+    The rows of the matrix contain the element counts of each compound,
+    and the columns represent each chemical. 
+    
+    Examples
+    --------
+    MgO2 -> Mg + 1/2 O2
+    (k=1)
+    
+    >>> stoichiometric_matrix([{'Hg': 1, 'O': 1}, {u'Hg': 1}, {'O': 2}], [True, False, False])
+    [[1, -1, 0.0], [1, 0.0, -2]]
+    
+    
+    Cl2 + propylene -> allyl chloride + HCl
+    
+    >>> stoichiometric_matrix([{'Cl': 2}, {'C': 3, 'H': 6}, {'C': 3, 'Cl': 1, 'H': 5}, {'Cl': 1, 'H': 1}], [True, True, False, False, False])
+    [[0.0, 6, -5, -1], [0.0, 3, -3, 0.0], [2, 0.0, -1, -1]]
+
+    
+    Al + 4HNO3 -> Al(NO3)3 + NO + 2H2O 
+    (k=1)
+
+    >>> stoichiometric_matrix([{'Al': 1}, {'H': 1, 'N': 1, 'O': 3}, {'Al': 1, 'N': 3, 'O': 9}, {'N': 1, 'O': 1}, {'H': 2, 'O': 1}], [True, True, False, False, False])
+    [[0.0, 1, 0.0, 0.0, -2],
+     [1, 0.0, -1, 0.0, 0.0],
+     [0.0, 3, -9, -1, -1],
+     [0.0, 1, -3, -1, 0.0]]
+
+    
+    4Fe + 3O2 -> 2(Fe2O3)
+    (k=2)
+    
+    >>> stoichiometric_matrix([{'Fe': 1}, {'O': 2}, {'Fe':2, 'O': 3}], [True, True, False])
+    [[1, 0.0, -2], [0.0, 2, -3]]
+
+    
+    4NH3 + 5O2 -> 4NO + 6(H2O)
+    (k=4)
+    
+    >>> stoichiometric_matrix([{'N': 1, 'H': 3}, {'O': 2}, {'N': 1, 'O': 1}, {'H': 2, 'O': 1}], [True, True, False, False])
+    [[3, 0.0, 0.0, -2], [0.0, 2, -1, -1], [1, 0.0, -1, 0.0]]
+
+    
+    No unique solution:
+    C2H5NO2 + C3H7NO3 + 2C6H14N4O2 + 3C5H9NO2 + 2C9H11NO2 -> 8H2O + C50H73N15O11
+    
+    >>> stoichiometric_matrix([{'C': 2, 'H': 5, 'N': 1, 'O': 2}, {'C': 3, 'H': 7, 'N': 1, 'O': 3}, {'C': 6, 'H': 14, 'N': 4, 'O': 2}, {'C': 5, 'H': 9, 'N': 1, 'O': 2}, {'C': 9, 'H': 11, 'N': 1, 'O': 2}, {'H': 2, 'O': 1}, {'C': 50, 'H': 73, 'N': 15, 'O': 11}], [True, True, True, True, True, False, False])
+    [[5, 7, 14, 9, 11, -2, -73],
+     [2, 3, 6, 5, 9, 0.0, -50],
+     [2, 3, 2, 2, 2, -1, -11],
+     [1, 1, 4, 1, 1, 0.0, -15]]
+
+    References
+    ----------
+    .. [1] Sen, S. K., Hans Agarwal, and Sagar Sen. "Chemical Equation 
+       Balancing: An Integer Programming Approach." Mathematical and Computer 
+       Modelling 44, no. 7 (October 1, 2006): 678-91.
+       https://doi.org/10.1016/j.mcm.2006.02.004.
+    .. [2] URAVNOTE, NOVOODKRITI PARADOKSI V. TEORIJI, and ENJA KEMIJSKIH 
+       REAKCIJ. "New Discovered Paradoxes in Theory of Balancing Chemical 
+       Reactions." Materiali in Tehnologije 45, no. 6 (2011): 503-22.
+    '''
+    n_compounds = len(atomss)
+    elements = set()
+    for atoms in atomss:
+        elements.update(atoms.keys())
+    elements = list(elements)
+    n_elements = len(elements)
+
+    matrix = [[0]*n_compounds for _ in range(n_elements)]
+    for i, atoms in enumerate(atomss):
+        for k, v in atoms.items():
+            if not reactants[i]:
+                v = -v
+            matrix[elements.index(k)][i] = v
+    return matrix
+
+
+def balance_stoichiometry(matrix, rounding=9, allow_fractional=False):
+    done = scipy.linalg.null_space(matrix)
+    if len(done[0]) > 1:
+        raise ValueError("No solution")
+    d = done[:, 0].tolist()
+
+    min_value_inv = 1.0/min(d)
+    d = [i*min_value_inv for i in d]
+
+    if not allow_fractional:
+        max_denominator = 10**rounding
+        fs = [Fraction(x).limit_denominator(max_denominator=max_denominator) for x in d]
+        all_denominators = set([i.denominator for i in fs])
+        if 1 in all_denominators: 
+            all_denominators.remove(1)
+        
+        for den in sorted(list(all_denominators), reverse=True):
+            fs = [num*den for num in fs]
+            if all(i.denominator == 1 for i in fs):
+                break
+        
+        # May have gone too far
+        return [float(i) for i in fs]
+#        done = False
+#        for i in range(100):
+#            for c in d:
+#                ratio = c.as_integer_ratio()[1]
+#                if ratio != 1:
+#                    d = [di*ratio for di in d]
+#                    break
+#                done = True
+#            if done:
+#                break
+#
+#        d_as_int = [int(i) for i in d]
+#        for i, j in zip(d, d_as_int):
+#            if i != j:
+#                raise ValueError("Could not find integer coefficients (%s, %s)" %(i, j))
+#        return d_as_int
+    else:
+        d = [round(i, rounding + int(ceil(log10(abs(i))))) for i in d]
+        return d
+        
+    

@@ -796,7 +796,7 @@ class PropertyPackage(object):
             temp_pkg._post_flash()
 #            print(temp_pkg.Hm - H_goal, T, P)
             err = temp_pkg.Hm - H_goal
-            print(T, err)
+#            print(T, err)
             return err
         
         def PH_VF_error(VF, P, zs, H_goal):
@@ -809,7 +809,7 @@ class PropertyPackage(object):
             temp_pkg._post_flash()
             return temp_pkg.Hm - H_goal
         try:
-            T_goal = brenth(PH_error, T_low, T_high, args=(P, zs, Hm))
+            T_goal = brenth(PH_error, T_low, T_high, ytol=1e-6, args=(P, zs, Hm))
             if self.N == 1:
                 err = abs(PH_error(T_goal, P, zs, Hm))
                 if err > 1E-3:

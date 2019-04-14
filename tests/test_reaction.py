@@ -146,3 +146,25 @@ def test_entropy_formation():
     
     Sf = entropy_formation(Hf=-241818, Gf=-228572)
     assert_allclose(Sf, -44.427301693778304)
+    
+    
+    
+def test_balance_stoichiometry():
+    test_cases = [
+    [[{'Hg': 1, 'O': 1}, {u'Hg': 1}, {'O': 2}], [True, False, False], [2.0, 2.0, 1.0]],
+    [[{'Cl': 2}, {'C': 3, 'H': 6}, {'C': 3, 'Cl': 1, 'H': 5}, {'Cl': 1, 'H': 1}],
+      [True, True, False, False, False], 
+      [1, 1, 1, 1]],
+    [[{'Al': 1}, {'H': 1, 'N': 1, 'O': 3}, {'Al': 1, 'N': 3, 'O': 9}, {'N': 1, 'O': 1}, {'H': 2, 'O': 1}],
+      [True, True, False, False, False],
+      [1.0, 4.0, 1.0, 1.0, 2.0]],
+    [[{'Fe': 1}, {'O': 2}, {'Fe':2, 'O': 3}], [True, True, False], [4.0, 3.0, 2.0]],
+    [[{'N': 1, 'H': 3}, {'O': 2}, {'N': 1, 'O': 1}, {'H': 2, 'O': 1}], [True, True, False, False], [4.0, 5.0, 4.0, 6.0]],
+    [[{'O': 2}, {'H': 2, 'O': 1}, {'C': 1, 'O': 2}, {'C': 6, 'H': 14}], [True, False, False, True], [19.0, 14.0, 12.0, 2.0]],
+    
+    ]
+    
+    for atomss, statuses, products in test_cases:
+        assert_allclose(balance_stoichiometry(stoichiometric_matrix(atomss, statuses)), products)
+    
+    
