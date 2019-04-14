@@ -634,8 +634,8 @@ class Chemical(object): # pragma: no cover
             self.autocalc = autocalc
             if not isinstance(ID, dict):
                 self.PubChem = self.ChemicalMetadata.pubchemid
-                self.MW = self.ChemicalMetadata.MW
                 self.formula = self.ChemicalMetadata.formula
+                self.MW = molecular_weight(simple_formula_parser(self.formula)) # self.ChemicalMetadata.MW
                 self.smiles = self.ChemicalMetadata.smiles
                 self.InChI = self.ChemicalMetadata.InChI
                 self.InChI_Key = self.ChemicalMetadata.InChI_key

@@ -1852,6 +1852,8 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False)
 
     if reactive:
         # mass balance
+        assert_allclose(sum([i.m for i in inlets]), sum([i.m for i in outlets]))
+        
         feed_cmps, feed_masses = mix_multiple_component_flows(IDs=feed_CASs,
                                                               flows=[i.m for i in inlets], 
                                                               fractions=[i.ws for i in inlets])
@@ -1862,8 +1864,9 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False)
                                                                   fractions=[i.ws for i in outlets])
         product_mass_flows = {i:j for i, j in zip(product_cmps, product_mols)}
         
-        for CAS, flow in feed_mass_flows.items():
-            assert_allclose(flow, product_mass_flows[CAS], rtol=rtol, atol=atol)
+        # Mass flow of each component does not balance.
+#        for CAS, flow in feed_mass_flows.items():
+#            assert_allclose(flow, product_mass_flows[CAS], rtol=rtol, atol=atol)
 
         # Check the component set is right
         if set(feed_cmps) != set(product_cmps):
@@ -2020,7 +2023,8 @@ def solve_flow_composition_mix(Fs, zs, ws, MWs):
 
 
 
-def assert_energy_balance(inlets, outlets, energy_streams, rtol=1E-9, atol=0):
+def assert_energy_balance(inlets, outlets, energy_streams, rtol=1E-9, atol=0,
+                          reactive=False):
     try:
         [_ for _ in inlets]
     except TypeError:
@@ -2036,14 +2040,20 @@ def assert_energy_balance(inlets, outlets, energy_streams, rtol=1E-9, atol=0):
 
     energy_in = 0.0
     for feed in inlets:
-        energy_in += feed.energy
+        if not reactive:
+            energy_in += feed.energy
+        else:
+            energy_in += feed.energy_reactive
     for feed in energy_streams:
         if feed.Q >= 0:
             energy_in += feed.Q
         
     energy_out = 0.0
     for product in outlets:
-        energy_out += product.energy
+        if not reactive:
+            energy_out += product.energy
+        else:
+            energy_out += product.energy_reactive
     for product in energy_streams:
         if product.Q < 0:
             energy_in += product.Q

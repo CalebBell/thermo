@@ -865,6 +865,7 @@ class Mixture(object):
                                          HeatCapacityGases=self.HeatCapacityGases,
                                          EnthalpyVaporizations=self.EnthalpyVaporizations,
                                          UNIFAC_groups=self.UNIFAC_groups, omegas=self.omegas,
+                                         Hfs=self.Hfgms, Gfs=self.Gfgms,
                                          VolumeLiquids=self.VolumeLiquids, eos=type(self.Chemicals[0].eos),
                                          eos_mix=eos_mix)        
         else:
@@ -902,9 +903,17 @@ class Mixture(object):
             self.Sm = self.property_package.Sm
             self.Gm = self.property_package.Gm
             
+            self.Hm_reactive = self.property_package.Hm_reactive
+            self.Sm_reactive = self.property_package.Sm_reactive
+            self.Gm_reactive = self.property_package.Gm_reactive
+            
             self.H = property_molar_to_mass(self.Hm, self.MW)
             self.S = property_molar_to_mass(self.Sm, self.MW)
             self.G = property_molar_to_mass(self.Gm, self.MW)
+
+            self.H_reactive = property_molar_to_mass(self.Hm_reactive, self.MW)
+            self.S_reactive = property_molar_to_mass(self.Sm_reactive, self.MW)
+            self.G_reactive = property_molar_to_mass(self.Gm_reactive, self.MW)
             
             # values are None when not in the appropriate phase
             self.MWl = mixing_simple(self.xs, self.MWs) if self.xs is not None else None

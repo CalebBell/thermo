@@ -957,6 +957,7 @@ class Stream(Mixture):
             return None
         if self.H is not None and self.m is not None:
             self.energy = self.H*self.m
+            self.energy_reactive = self.H_reactive*self.m
         else:
             self.energy = None
 
