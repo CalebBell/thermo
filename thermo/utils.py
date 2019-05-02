@@ -2023,8 +2023,8 @@ def solve_flow_composition_mix(Fs, zs, ws, MWs):
 
 
 
-def assert_energy_balance(inlets, outlets, energy_streams, rtol=1E-9, atol=0,
-                          reactive=False):
+def assert_energy_balance(inlets, outlets, energy_inlets, energy_outlets, 
+                          rtol=1E-9, atol=0.0, reactive=False):
     try:
         [_ for _ in inlets]
     except TypeError:
@@ -2034,19 +2034,24 @@ def assert_energy_balance(inlets, outlets, energy_streams, rtol=1E-9, atol=0,
     except TypeError:
         outlets = [outlets]
     try:
-        [_ for _ in energy_streams]
+        [_ for _ in energy_inlets]
     except TypeError:
-        energy_streams = [energy_streams]
+        energy_inlets = [energy_inlets]
 
+    try:
+        [_ for _ in energy_outlets]
+    except TypeError:
+        energy_outlets = [energy_outlets]
+
+    # Energy streams need to handle direction, not just magnitude
     energy_in = 0.0
     for feed in inlets:
         if not reactive:
             energy_in += feed.energy
         else:
             energy_in += feed.energy_reactive
-    for feed in energy_streams:
-        if feed.Q >= 0:
-            energy_in += feed.Q
+    for feed in energy_inlets:
+        energy_in += feed.Q
         
     energy_out = 0.0
     for product in outlets:
@@ -2054,9 +2059,8 @@ def assert_energy_balance(inlets, outlets, energy_streams, rtol=1E-9, atol=0,
             energy_out += product.energy
         else:
             energy_out += product.energy_reactive
-    for product in energy_streams:
-        if product.Q < 0:
-            energy_in += product.Q
+    for product in energy_outlets:
+        energy_out += product.Q
 
     assert_allclose(energy_in, energy_out, rtol=rtol, atol=atol)
 

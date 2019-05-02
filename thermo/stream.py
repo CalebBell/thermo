@@ -464,6 +464,13 @@ class StreamArgs(object):
         return False
     
     @property
+    def non_pressure_spec_specified(self):
+        state_vars = (i is not None for i in (self.T, self.VF, self.Hm, self.H, self.Sm, self.S, self.energy))
+        if sum(state_vars) >= 1:
+            return True
+        return False
+    
+    @property
     def flow_spec(self):
         # TODO consider energy?
         specs = []
@@ -907,6 +914,12 @@ class Stream(Mixture):
     def specified_state_vars(self):
         '''Always needs two states'''
         return 2
+    
+    @property
+    def non_pressure_spec_specified(self):
+        '''Cannot have a stream without an energy-type spec.
+        '''
+        return True
     
     @property
     def state_specified(self):
