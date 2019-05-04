@@ -59,6 +59,11 @@ https://pypi.python.org/pypi/thermo/
 If you have an installation of Python with pip, simple install it with:
 
     $ pip install thermo
+    
+Alternatively, if you are using `conda <https://conda.io/en/latest/>`_ as your package management, you can simply
+install thermo in your environment from `conda-forge <https://conda-forge.org/>`_ channel with:
+
+    $ conda install -c conda-forge thermo
 
 To get the git version, run:
 
