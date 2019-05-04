@@ -29,7 +29,7 @@ init:
 install:
   - cmd: activate condaenv
   - cmd: conda install -yq numpy scipy pip pytest pandas matplotlib
-  - cmd: pip install pytest-cov coveralls sympy fluids coolprop
+  - cmd: pip install pytest-cov coveralls sympy fluids coolprop pint
   - cmd: python setup.py install
 
 test_script:
