@@ -4,7 +4,7 @@ os:
   - linux
 compiler:
   - "2.7"
-  - "3.4"
+#  - "3.4" # scipy bugs on travis
   - "3.5"
 #  - "3.6"
 env:
