@@ -903,17 +903,26 @@ class Mixture(object):
             self.Sm = self.property_package.Sm
             self.Gm = self.property_package.Gm
             
-            self.Hm_reactive = self.property_package.Hm_reactive
-            self.Sm_reactive = self.property_package.Sm_reactive
-            self.Gm_reactive = self.property_package.Gm_reactive
+            try:
+                self.Hm_reactive = self.property_package.Hm_reactive
+                self.H_reactive = property_molar_to_mass(self.Hm_reactive, self.MW)
+            except:
+                self.Hm_reactive = self.H_reactive = None
+            try:
+                self.Sm_reactive = self.property_package.Sm_reactive
+                self.S_reactive = property_molar_to_mass(self.Sm_reactive, self.MW)
+            except:
+                self.Sm_reactive = self.S_reactive = None
+            try:
+                self.Gm_reactive = self.property_package.Gm_reactive
+                self.G_reactive = property_molar_to_mass(self.Gm_reactive, self.MW)
+            except:
+                self.Gm_reactive = self.G_reactive = None
             
             self.H = property_molar_to_mass(self.Hm, self.MW)
             self.S = property_molar_to_mass(self.Sm, self.MW)
             self.G = property_molar_to_mass(self.Gm, self.MW)
 
-            self.H_reactive = property_molar_to_mass(self.Hm_reactive, self.MW)
-            self.S_reactive = property_molar_to_mass(self.Sm_reactive, self.MW)
-            self.G_reactive = property_molar_to_mass(self.Gm_reactive, self.MW)
             
             # values are None when not in the appropriate phase
             self.MWl = mixing_simple(self.xs, self.MWs) if self.xs is not None else None

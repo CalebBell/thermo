@@ -613,6 +613,7 @@ class Chemical(object): # pragma: no cover
             self.CAS = ID['CASRN']
             self.ID = self.name = ID['name']
             self.formula = ID['formula']
+            # DO NOT REMOVE molecular_weight until the database gets updated with consistent MWs
             self.MW = ID['MW'] if 'MW' in ID else molecular_weight(simple_formula_parser(self.formula))
             self.PubChem = ID['PubChem'] if 'PubChem' in ID else None
             self.smiles = ID['smiles'] if 'smiles' in ID else None

@@ -27,7 +27,7 @@ from thermo.identifiers import checkCAS
 
 def test_fluid_props():
     tots = [sum([getattr(f, prop) for f in coolprop_fluids.values()]) for prop in ['Tmin', 'Tmax', 'Pmax', 'Tc', 'Pc', 'Tt', 'omega']]
-    tots_exp =  [18589.301, 71575.0, 30817000000.0, 45189.59849999997, 440791794.7987591, 18589.301, 30.90243968446593]
+    tots_exp =  [18589.301, 71575.0, 31017000000.0, 45189.59849999997, 440791794.7987591, 18589.301, 30.90243968446593]
               
 
     assert_allclose(tots_exp, tots)

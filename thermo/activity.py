@@ -1158,9 +1158,9 @@ def Rachford_Rice_solutionN(ns, Ks, betas):
                 break
             
             damping = 0.5*damping
-            for i in range(len(betas_test)):
-                betas_test[i] = betas_test[i]  + d_betas[i]*damping
-#            betas_test = [beta_i + d_beta*damping for beta_i, d_beta in zip(betas, d_betas)]
+#            for i in range(len(betas_test)):
+#                betas_test[i] = betas_test[i]  + d_betas[i]*damping
+            betas_test = [beta_i + d_beta*damping for beta_i, d_beta in zip(betas, d_betas)]
 #            print('out of bounds', damping, betas_test)
         if not is_valid:
             raise ValueError("Should never happen - N phase RR still out of bounds after 20 iterations")

@@ -692,7 +692,7 @@ VDI_TABULAR = 'VDI Heat Atlas'
 LASTOVKA_SHAW = 'Lastovka and Shaw (2013)'
 COOLPROP = 'CoolProp'
 BESTFIT = 'Best fit'
-heat_capacity_gas_methods = [TRCIG, POLING, COOLPROP, LASTOVKA_SHAW, CRCSTD,
+heat_capacity_gas_methods = [COOLPROP, TRCIG, POLING, LASTOVKA_SHAW, CRCSTD,
                              POLING_CONST, VDI_TABULAR]
 '''Holds all methods available for the HeatCapacityGas class, for use in
 iterating over them.'''

@@ -809,10 +809,10 @@ class PropertyPackage(object):
             temp_pkg._post_flash()
             return temp_pkg.Hm - H_goal
         try:
-            T_goal = brenth(PH_error, T_low, T_high, ytol=1e-6, args=(P, zs, Hm))
-            if self.N == 1:
-                err = abs(PH_error(T_goal, P, zs, Hm))
-                if err > 1E-3:
+            try:
+                T_goal = brenth(PH_error, T_low, T_high, ytol=1e-6, args=(P, zs, Hm))
+            except UnconvergedError:
+                if self.N == 1:
                     VF_goal = brenth(PH_VF_error, 0, 1, args=(P, zs, Hm))
                     return {'VF': VF_goal}
             return {'T': T_goal}
@@ -1213,7 +1213,7 @@ class IdealCaloric(Ideal):
 
         self.Hfs = Hfs
         self.Gfs = Gfs
-        if Hfs is not None and Gfs is not None:
+        if Hfs is not None and Gfs is not None and None not in Hfs and None not in Gfs:
             self.Sfs = [(Hfi - Gfi)/298.15 for Hfi, Gfi in zip(Hfs, Gfs)]
         
         self.kwargs = {'VaporPressures': VaporPressures,
@@ -2270,7 +2270,7 @@ class GceosBase(Ideal):
         
         self.Hfs = Hfs
         self.Gfs = Gfs
-        if Hfs is not None and Gfs is not None:
+        if Hfs is not None and Gfs is not None and None not in Hfs and None not in Gfs:
             self.Sfs = [(Hfi - Gfi)/298.15 for Hfi, Gfi in zip(Hfs, Gfs)]
 
         self.stability_tester = StabilityTester(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas)

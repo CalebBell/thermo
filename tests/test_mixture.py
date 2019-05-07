@@ -50,7 +50,7 @@ def test_Mixture():
         Mixture(['2,2-Dichloro-1,1,1-trifluoroethane'], T=276.15, P=37000, zs=[0.5, 0.5])
     
     m = Mixture(['Na+', 'Cl-', 'water'], ws=[.01, .02, .97]).charge_balance
-    assert_allclose(m, -0.0023550338411239182)
+    assert_allclose(m, -0.0023549543057603192)
 
 def test_Mixture_input_basics():
     # Run a test initializing a mixture from mole fractions, mass fractions,
