@@ -94,6 +94,9 @@ class PropertyPackageConstants(object):
             eos_mix = property_package_to_eos[name]
             eos = property_package_to_eos_pures[name]
             
+        self.eos = eos
+        self.eos_mix = eos_mix
+            
         self.eos_in_a_box = [eos_mix]
         
         self.pkg_obj = property_package_names_to_objs[self.name]
@@ -102,6 +105,10 @@ class PropertyPackageConstants(object):
         self.set_Chemical_property_objects()
         self.set_TP_sources()
         
+        self.kwargs = kwargs
+        self.pkg = self.new_package()
+        
+    def new_package(self):
         pkg_args = {'VaporPressures': self.VaporPressures,
                    'Tms': self.Tms, 'Tbs': self.Tbs, 'Tcs': self.Tcs,
                    'Pcs': self.Pcs, 'omegas': self.omegas, 'VolumeLiquids': self.VolumeLiquids,
@@ -110,26 +117,20 @@ class PropertyPackageConstants(object):
                    'EnthalpyVaporizations': self.EnthalpyVaporizations,
                    'VolumeLiquids': self.VolumeLiquids,
                    'VolumeGases': self.VolumeGases,
-                    'eos': eos, 'eos_mix': eos_mix,
+                    'eos': self.eos, 'eos_mix': self.eos_mix,
                     'MWs': self.MWs,
                     'atomss': self.atomss,
                     'Hfs': self.Hfgms,
                     'Gfs': self.Gfgms,
                    }
-        pkg_args.update(kwargs) 
+        pkg_args.update(self.kwargs) 
         
         if self.name == UNIFAC_PKG:
             pkg_args['UNIFAC_groups'] = self.UNIFAC_groups
         elif self.name == UNIFAC_DORTMUND_PKG:
             pkg_args['UNIFAC_groups'] = self.UNIFAC_Dortmund_groups
         
-        
-        
-        
-        
-#        print(pkg_args, self.pkg_obj)
-        self.pkg = self.pkg_obj(**pkg_args)
-        
+        return self.pkg_obj(**pkg_args)
         
     def from_json(self, json):
         self.__dict__.update(json)

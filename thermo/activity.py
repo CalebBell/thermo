@@ -1948,13 +1948,14 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
         Method = FLASH_INNER_ANALYTICAL if l < 5 else (FLASH_INNER_NUMPY if (not IS_PYPY and l >= 10) else FLASH_INNER_LN2)    
     if check:
         K_low, K_high = False, False
-        for K in Ks:
-            if K > 1.0:
-                K_high = True
-            else:
-                K_low = True
-            if K_high and K_low:
-                break
+        for zi, Ki in zip(zs, Ks):
+            if zi != 0.0:
+                if Ki > 1.0:
+                    K_high = True
+                else:
+                    K_low = True
+                if K_high and K_low:
+                    break
         if not K_low or not K_high:
             raise ValueError("For provided K values, there is no positive-composition solution; Ks=%s" %(Ks))
 
@@ -1986,8 +1987,14 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
             raise ValueError("Input dimensions are for one component! Rachford-Rice does not aply")
         else:
             raise Exception('Only solutions for components counts 2, 3, and 4 are available analytically')
-        # Need to avoid zero divisions here
-        xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)] # if zi != 0.0
+        # Need to avoid zero divisions here - specifically when the composition of one component in the feed is 0.0
+        xs = []
+        for zi, Ki in zip(zs, Ks):
+            try:
+                xs.append(zi/(1.+V_over_F*(Ki-1.)))
+            except ZeroDivisionError:
+                xs.append(0.0)
+#        xs = [(zi/(1.+V_over_F*(Ki-1.)) if zi != 0.0 else 0.0) ] # if zi != 0.0
         ys = [Ki*xi for xi, Ki in zip(xs, Ks)]
         return V_over_F, xs, ys
     

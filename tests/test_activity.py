@@ -156,6 +156,15 @@ def test_flash_inner_loop():
                              'Rachford-Rice (polynomial)']
 
 
+    # Zero composition - technically this is incorrect? But quite useful in saturation calcs
+    zs, Ks = [0.79, 0.0, 0.21], [51257.70115063271, 0.01720948221285233, 3939.4410123117154]
+    V_over_F, xs, ys = flash_inner_loop(zs, Ks)
+    assert_allclose(1.0175108346095985, V_over_F)
+    assert_allclose([1.5147085263221123e-05, 0.0, 5.2389897372063305e-05], xs)
+    assert_allclose([0.7764047697253411, 0.0, 0.20638691033830794], ys)
+
+
+
 def test_flash_solution_algorithms():
     # Derive the analytical solution with:
 #    from sympy import *
