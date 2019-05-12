@@ -26,6 +26,8 @@ from thermo.utils import normalize
 from thermo.eos import *
 from thermo.eos_mix import *
 from scipy.misc import derivative
+from fluids.constants import R
+#from fluids.numerics import derivative
 from scipy.optimize import minimize, newton
 from math import log, exp, sqrt
 from thermo import Mixture
@@ -1772,3 +1774,252 @@ def test_dS_dep_dP_liquid_and_vapor():
     
     assert_allclose((eos2.S_dep_g - eos1.S_dep_g)/dP, eos1.dS_dep_dP_g)
     assert_allclose(eos1.dS_dep_dP_g, -5.942829393044419e-06)
+    
+    
+def test_db_dzs():
+    liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S']
+    Tcs = [126.2, 304.2, 373.2]
+    Pcs = [3394387.5, 7376460.0, 8936865.0]
+    omegas = [0.04, 0.2252, 0.1]
+    zs = [.7, .2, .1]
+
+    def db_dn(ni, i):
+        zs = [.7, .2, .1]
+        zs[i] = ni
+        eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        return eos.b
+    
+    for obj in eos_mix_list:
+        eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        numericals = [derivative(db_dn, ni, dx=1e-3, order=7, args=(i,)) 
+            for i, ni in zip((0, 1, 2), (.7, .2, .1))]
+        assert_allclose(numericals, eos.bs)
+
+def test_ddelta_dzs():
+    liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S']
+    Tcs = [126.2, 304.2, 373.2]
+    Pcs = [3394387.5, 7376460.0, 8936865.0]
+    omegas = [0.04, 0.2252, 0.1]
+    zs = [.7, .2, .1]
+
+    def db_dn(ni, i):
+        zs = [.7, .2, .1]
+        zs[i] = ni
+        eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        return eos.delta
+    
+    for obj in eos_mix_list:
+        eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        numericals = [derivative(db_dn, ni, dx=1e-3, order=7, args=(i,)) 
+            for i, ni in zip((0, 1, 2), (.7, .2, .1))]
+        
+        analytical = eos.ddelta_dzs
+        assert_allclose(numericals, analytical)
+
+def test_depsilon_dzs():
+    liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S']
+    Tcs = [126.2, 304.2, 373.2]
+    Pcs = [3394387.5, 7376460.0, 8936865.0]
+    omegas = [0.04, 0.2252, 0.1]
+    zs = [.7, .2, .1]
+
+    def db_dn(ni, i):
+        zs = [.7, .2, .1]
+        zs[i] = ni
+        eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        return eos.epsilon
+    
+    for obj in eos_mix_list:
+        eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        numericals = [derivative(db_dn, ni, dx=1e-3, order=7, args=(i,)) 
+            for i, ni in zip((0, 1, 2), (.7, .2, .1))]
+        
+        analytical = eos.depsilon_dzs
+        assert_allclose(numericals, analytical)
+
+
+def test_da_alpha_dzs():
+    liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S']
+    Tcs = [126.2, 304.2, 373.2]
+    Pcs = [3394387.5, 7376460.0, 8936865.0]
+    omegas = [0.04, 0.2252, 0.1]
+    zs = [.7, .2, .1]
+
+    def da_alpha_dzs(ni, i):
+        zs = [.7, .2, .1]
+        zs[i] = ni
+        eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        return eos.a_alpha
+    
+    for obj in eos_mix_list:
+        eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        numericals = [derivative(da_alpha_dzs, ni, dx=1e-3, order=7, args=(i,)) 
+            for i, ni in zip((0, 1, 2), (.7, .2, .1))]
+        
+        analytical = eos.da_alpha_dzs
+        assert_allclose(numericals, analytical)
+
+
+def test_da_alpha_dT_dzs():
+    liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S']
+    Tcs = [126.2, 304.2, 373.2]
+    Pcs = [3394387.5, 7376460.0, 8936865.0]
+    omegas = [0.04, 0.2252, 0.1]
+    zs = [.7, .2, .1]
+
+    def da_alpha_dT_dzs(ni, i):
+        zs = [.7, .2, .1]
+        zs[i] = ni
+        eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        return eos.da_alpha_dT
+    
+    for obj in eos_mix_list:
+        eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        numericals = [derivative(da_alpha_dT_dzs, ni, dx=1e-3, order=7, args=(i,)) 
+            for i, ni in zip((0, 1, 2), (.7, .2, .1))]
+        
+        analytical = eos.da_alpha_dT_dzs
+        assert_allclose(numericals, analytical)
+
+
+def test_dV_dzs():
+    liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S']
+    Tcs = [126.2, 304.2, 373.2]
+    Pcs = [3394387.5, 7376460.0, 8936865.0]
+    omegas = [0.04, 0.2252, 0.1]
+    zs = [.7, .2, .1]
+
+    def dV_dzs(ni, i):
+        zs = [.7, .2, .1]
+        zs[i] = ni
+        eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        return eos.V_g
+    
+    for obj in eos_mix_list:
+        eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        numericals = [derivative(dV_dzs, ni, dx=1e-3, order=7, args=(i,)) 
+            for i, ni in zip((0, 1, 2), (.7, .2, .1))]
+        
+        analytical = eos.dV_dzs(eos.Z_g, zs)
+        assert_allclose(numericals, analytical)
+
+def test_dZ_dzs():
+    liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S']
+    Tcs = [126.2, 304.2, 373.2]
+    Pcs = [3394387.5, 7376460.0, 8936865.0]
+    omegas = [0.04, 0.2252, 0.1]
+    zs = [.7, .2, .1]
+
+    def dZ_dzs(ni, i):
+        zs = [.7, .2, .1]
+        zs[i] = ni
+        eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        return eos.Z_g
+    
+    for obj in eos_mix_list:
+        eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        numericals = [derivative(dZ_dzs, ni, dx=1e-3, order=7, args=(i,)) 
+            for i, ni in zip((0, 1, 2), (.7, .2, .1))]
+        
+        analytical = eos.dZ_dzs(eos.Z_g, zs)
+        assert_allclose(numericals, analytical)
+
+
+def test_dH_dep_dzs():
+    liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S']
+    Tcs = [126.2, 304.2, 373.2]
+    Pcs = [3394387.5, 7376460.0, 8936865.0]
+    omegas = [0.04, 0.2252, 0.1]
+    zs = [.7, .2, .1]
+
+    def dZ_dzs(ni, i):
+        zs = [.7, .2, .1]
+        zs[i] = ni
+        eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        return eos.H_dep_g
+    
+    for obj in eos_mix_list:
+        eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        numericals = [derivative(dZ_dzs, ni, dx=1e-3, order=7, args=(i,)) 
+            for i, ni in zip((0, 1, 2), (.7, .2, .1))]
+        
+        analytical = eos.dH_dep_dzs(eos.Z_g, zs)
+        assert_allclose(numericals, analytical)
+
+
+def test_fugacities_numerical_all_eos_mix():
+    liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S']
+    Tcs = [126.2, 304.2, 373.2]
+    Pcs = [3394387.5, 7376460.0, 8936865.0]
+    omegas = [0.04, 0.2252, 0.1]
+    zs = [.7, .2, .1]
+    P = 1e5
+
+    def to_diff(ni, i):
+        zs = [.7, .2, .1]
+        zs[i] = ni
+        nt = sum(zs)
+        zs = normalize(zs)
+        eos = obj(T=300, P=P, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        return log(eos.fugacity_g)*nt
+    
+    for obj in eos_mix_list:
+        eos = obj(T=300, P=P, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        numericals = [exp(derivative(to_diff, ni, dx=1e-3, order=7, args=(i,))) 
+            for i, ni in zip((0, 1, 2), (.7, .2, .1))]
+        
+        analytical = [P*i for i in eos.phis_g]
+        assert_allclose(numericals, analytical)
+
+
+def test_d_lnphis_dT_vs_Hdep_identity():
+    liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S']
+    Tcs = [126.2, 304.2, 373.2]
+    Pcs = [3394387.5, 7376460.0, 8936865.0]
+    omegas = [0.04, 0.2252, 0.1]
+    zs = [.7, .2, .1]
+    P = 1e5
+    T = 300.0
+    
+    for obj in eos_mix_list:
+        eos = obj(T=300, P=P, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        dlnphis_dT = eos.d_lnphis_dT(eos.Z_g, eos.dZ_dT_g, zs)
+        numerical = sum(zi*di for zi, di in zip(zs, dlnphis_dT))
+        # In Michelsen
+        analytical = -eos.H_dep_g/(R*T*T)
+    
+        assert_allclose(numerical, analytical)
+
+
+
+
+'''
+from sympy import *
+a_alpha11, a_alpha12, a_alpha13, a_alpha14, a_alpha21, a_alpha22, a_alpha23, a_alpha24, a_alpha31, a_alpha32, a_alpha33, a_alpha34, a_alpha41, a_alpha42, a_alpha43, a_alpha44 = symbols(
+    'a_alpha11, a_alpha12, a_alpha13, a_alpha14, a_alpha21, a_alpha22, a_alpha23, a_alpha24, a_alpha31, a_alpha32, a_alpha33, a_alpha34, a_alpha41, a_alpha42, a_alpha43, a_alpha44')
+N = 4
+n1, n2, n3, n4 = symbols('n1, n2, n3, n4')
+ns = [n1, n2, n3, n4]
+nt = n1 + n2 + n3 + n4
+z1 = n1/nt
+z2 = n2/nt
+z3 = n3/nt
+z4 = n4/nt
+
+zs = [z1, z2, z3, z4]
+
+a_alpha_ijs = [[a_alpha11, a_alpha12, a_alpha13, a_alpha14], [a_alpha21, a_alpha22, a_alpha23, a_alpha24],
+               [a_alpha31, a_alpha32, a_alpha33, a_alpha34], [a_alpha41, a_alpha42, a_alpha43, a_alpha44]]        
+a_alpha = 0
+for i in range(N):
+    a_alpha_ijs_i = a_alpha_ijs[i]
+    zi = zs[i]
+    for j in range(i+1, N):
+        term = a_alpha_ijs_i[j]*zi*zs[j]
+        a_alpha += term + term
+
+    a_alpha += a_alpha_ijs_i[i]*zi*zi
+
+simplify(diff(a_alpha, n2))
+# Top large term is actually a_alpha, so the expression simplifies quite a lot
+'''

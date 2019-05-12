@@ -396,7 +396,7 @@ def flash_wilson(zs, Tcs, Pcs, omegas, T=None, P=None, VF=None):
 
 def flash_Tb_Tc_Pc(zs, Tbs, Tcs, Pcs, T=None, P=None, VF=None):
     r'''PVT flash model using a model published in [1]_, which provides a PT
-    surface  using only each compound's boiling temperature and critical 
+    surface using only each compound's boiling temperature and critical 
     temperature and pressure. This is useful for obtaining initial
     guesses for more rigorous models, or it can be used as its own model.
     Capable of solving with two of `T`, `P`, and `VF` for the other one;
