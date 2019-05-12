@@ -1316,14 +1316,10 @@ def dxs_to_dns(dxs, xs):
     >>> dxs_to_dns([-0.0028, -0.00719, -0.00859], [0.7, 0.2, 0.1])
     [0.001457, -0.0029330000000000003, -0.004333]
     '''
-    N = len(xs)
-    values = []
-    for i in range(N):
-        tot = dxs[i]
-        for j in range(N):
-            tot -= xs[j]*(dxs[j])
-        values.append(tot)
-    return values
+    xdx_tot = 0.0
+    for j in range(len(xs)):
+        xdx_tot += xs[j]*dxs[j]
+    return [dxi - xdx_tot for dxi in dxs]
 
 
 def dns_to_dn_partials(dns, F):
@@ -1366,13 +1362,6 @@ def dns_to_dn_partials(dns, F):
     [-0.0001977000000000001, -0.0045957, -0.0059907]
     '''
     return [F + dni for dni in dns]
-    values = []
-    N = len(dns)
-    for i in range(N):
-        tot = F
-        tot += dns[i]
-        values.append(tot)
-    return values
 
 
 def dxs_to_dn_partials(dxs, xs, F):
@@ -1402,6 +1391,11 @@ def dxs_to_dn_partials(dxs, xs, F):
     the same length.
     
     This applies to a specific phase only, not to a mixture of multiple phases.
+    
+    See Also
+    --------
+    dxs_to_dns
+    dns_to_dn_partials
 
     Examples
     --------
@@ -1409,7 +1403,10 @@ def dxs_to_dn_partials(dxs, xs, F):
     ... -0.0016567)
     [-0.00015182, -0.00470142, -0.00610142]
     '''
-    return dns_to_dn_partials(dxs_to_dns(dxs, xs), F)
+    xdx_totF = F
+    for j in range(len(xs)):
+        xdx_totF -= xs[j]*dxs[j]
+    return [dxi + xdx_totF for dxi in dxs]
 
 
 def none_and_length_check(all_inputs, length=None):
