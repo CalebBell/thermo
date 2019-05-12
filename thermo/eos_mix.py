@@ -2061,7 +2061,20 @@ class GCEOSMIX(GCEOS):
             + x12*x14*x8/x6**(3/2.0) - x12*x7*da_alpha_dns[i] - (x1 - db_dns[i])/(x0 - x3))
             dfugacity_dns.append(diff)
         return dfugacity_dns
-                
+
+    def fugacity_coefficients2(self, Z, zs):
+        try:
+            if Z == self.Z_l:
+                F = self.phi_l
+            else:
+                F = self.phi_g
+        except:
+            F = self.phi_g
+        # This conversion seems numerically safe anyway
+        return dns_to_dn_partials(self.dlnphi_dns(Z, zs), log(F))
+    
+    
+    
     def dV_dzs(self, Z, zs):
         '''
         from sympy import *
@@ -2075,10 +2088,10 @@ class GCEOSMIX(GCEOS):
         T = self.T
         RT = R*T
         V = Z*RT/self.P
-        ddelta_dzs = self.ddelta_dns
-        depsilon_dzs = self.depsilon_dns
-        db_dzs = self.db_dns
-        da_alpha_dzs = self.da_alpha_dns
+        ddelta_dzs = self.ddelta_dzs
+        depsilon_dzs = self.depsilon_dzs
+        db_dzs = self.db_dzs
+        da_alpha_dzs = self.da_alpha_dzs
 
         x0 = self.delta
         x1 = a_alpha = self.a_alpha
@@ -2112,6 +2125,7 @@ class GCEOSMIX(GCEOS):
         
         return [t5*depsilon_dzs[i] - t1*da_alpha_dzs[i] + x11t2*db_dzs[i] + t6*ddelta_dzs[i]
                 for i in self.cmps]
+
         
     def dV_dns(self, Z, zs):
         return dxs_to_dns(self.dV_dzs(Z, zs), zs)
@@ -2840,52 +2854,52 @@ class PRMIX(GCEOSMIX, PR):
 
 #        d_lnphi_dzs = d_lnphi_dzs_Varavei
 
-    def dZ_dzs(self, Z, zs):
-        '''
-        from fluids.numerics import derivative
-        Tcs = [126.2, 304.2, 373.2]
-        Pcs = [3394387.5, 7376460.0, 8936865.0]
-        omegas = [0.04, 0.2252, 0.1]
-        zs = [.7, .2, .1]
-        eos = PRMIX(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
-
-        def dZ_dn(ni, i):
-            zs = [.7, .2, .1]
-            zs[i] = ni
-            eos = PRMIX(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
-            return eos.Z_g
-        [derivative(dZ_dn, ni, dx=1e-3, order=17, args=(i,)) for i, ni in zip((0, 1, 2), (.7, .2, .1))], eos.d_Z_dzs(eos.Z_g, zs) 
-        '''
-        # Not even correct for SRK eos, needs to be re derived there
-        T, P = self.T, self.P
-        bs, b = self.bs, self.b
-        RT_inv = R_inv/T
-        fugacity_sum_terms = self.fugacity_sum_terms
-        A = self.a_alpha*P*RT_inv*RT_inv
-        B = b*P*RT_inv
-        C = 1.0/(Z - B)
-        
-        Zm1 = Z - 1.0
-        
-        t6 = P*RT_inv
-        dB_dxks = [t6*bk for bk in bs]
-        
-        const = (P+P)*RT_inv*RT_inv
-        dA_dxks = [const*term_i for term_i in fugacity_sum_terms]
-        
-        dF_dZ_inv = 1.0/(3.0*Z*Z - 2.0*Z*(1.0 - B) + (A - 3.0*B*B - 2.0*B))
-        
-        t15 = (A - 2.0*B - 3.0*B*B + 2.0*(3.0*B + 1.0)*Z - Z*Z)
-        BmZ = (B - Z)
-        dZ_dxs = [(BmZ*dA_dxks[i] + t15*dB_dxks[i])*dF_dZ_inv for i in self.cmps]
-        return dZ_dxs
+#    def dZ_dzs(self, Z, zs):
+#        '''
+#        from fluids.numerics import derivative
+#        Tcs = [126.2, 304.2, 373.2]
+#        Pcs = [3394387.5, 7376460.0, 8936865.0]
+#        omegas = [0.04, 0.2252, 0.1]
+#        zs = [.7, .2, .1]
+#        eos = PRMIX(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+#
+#        def dZ_dn(ni, i):
+#            zs = [.7, .2, .1]
+#            zs[i] = ni
+#            eos = PRMIX(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+#            return eos.Z_g
+#        [derivative(dZ_dn, ni, dx=1e-3, order=17, args=(i,)) for i, ni in zip((0, 1, 2), (.7, .2, .1))], eos.d_Z_dzs(eos.Z_g, zs) 
+#        '''
+#        # Not even correct for SRK eos, needs to be re derived there
+#        T, P = self.T, self.P
+#        bs, b = self.bs, self.b
+#        RT_inv = R_inv/T
+#        fugacity_sum_terms = self.fugacity_sum_terms
+#        A = self.a_alpha*P*RT_inv*RT_inv
+#        B = b*P*RT_inv
+#        C = 1.0/(Z - B)
+#        
+#        Zm1 = Z - 1.0
+#        
+#        t6 = P*RT_inv
+#        dB_dxks = [t6*bk for bk in bs]
+#        
+#        const = (P+P)*RT_inv*RT_inv
+#        dA_dxks = [const*term_i for term_i in fugacity_sum_terms]
+#        
+#        dF_dZ_inv = 1.0/(3.0*Z*Z - 2.0*Z*(1.0 - B) + (A - 3.0*B*B - 2.0*B))
+#        
+#        t15 = (A - 2.0*B - 3.0*B*B + 2.0*(3.0*B + 1.0)*Z - Z*Z)
+#        BmZ = (B - Z)
+#        dZ_dxs = [(BmZ*dA_dxks[i] + t15*dB_dxks[i])*dF_dZ_inv for i in self.cmps]
+#        return dZ_dxs
 
 #    def dV_dzs(self, Z, zs):
 #        # This one is fine for all EOSs
 #        factor = self.T*R/self.P
 #        return [i*factor for i in self.dZ_dzs(Z, zs)]
-    
-        
+#    
+#        
         
     @property
     def ddelta_dzs(self):   
