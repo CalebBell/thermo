@@ -2030,20 +2030,21 @@ class GCEOSMIX(GCEOS):
         # Recreate dlnphi_dzs when this has been optimized... maybe 
         T = self.T
         P = self.P
-        x0 = V = Z*R*T/P
+        RT = R*T
+        x0 = V = Z*RT/P
 
-        x2 = 1.0/(R*T)
+        x2 = 1.0/(RT)
         x3 = self.b
         x4 = self.delta
         x5 = self.epsilon
         x6 = x4*x4 - 4.0*x5
-        x7 = 1/sqrt(x6)
+        x7 = x6**-0.5
         x8 = self.a_alpha
-        x9 = 2.0*x0
+        x9 = x0 + x0
         x10 = x4 + x9
-        x11 = 2*x2
+        x11 = x2 + x2
         x12 = x11*catanh(x10*x7).real
-        x15 = 1/x6
+        x15 = 1.0/x6
 
         db_dns = self.db_dns
         depsilon_dns = self.depsilon_dns
@@ -2051,13 +2052,16 @@ class GCEOSMIX(GCEOS):
         dV_dns = self.dV_dns(Z, zs)
         da_alpha_dns = self.da_alpha_dns
         
+        t1 = P*x2
+        t2 = x11*x15*x8/(x10*x10*x15 - 1.0) 
+        
         dfugacity_dns = []
         for i in self.cmps:
             x13 = ddelta_dns[i]
             x14 = x13*x4 - 2.0*depsilon_dns[i]
             x16 = x14*x15
             x1 = dV_dns[i]
-            diff = (P*x1*x2 + x11*x15*x8*(2*x1 + x13 - x16*x4 - x16*x9)/(x10**2*x15 - 1) 
+            diff = (x1*t1 + t2*(2.0*x1 + x13 - x16*x4 - x16*x9)
             + x12*x14*x8/x6**(3/2.0) - x12*x7*da_alpha_dns[i] - (x1 - db_dns[i])/(x0 - x3))
             dfugacity_dns.append(diff)
         return dfugacity_dns
