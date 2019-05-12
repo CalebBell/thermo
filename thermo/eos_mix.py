@@ -32,7 +32,7 @@ from cmath import log as clog, atanh as catanh
 from scipy.optimize import minimize
 from scipy.misc import derivative
 from fluids.numerics import IS_PYPY, newton_system, UnconvergedError
-from thermo.utils import normalize, Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter
+from thermo.utils import normalize, Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter, dxs_to_dn_partials, dxs_to_dns, dns_to_dn_partials
 from thermo.utils import R
 from thermo.utils import log, exp, sqrt
 from thermo.eos import *
@@ -1987,6 +1987,10 @@ class GCEOSMIX(GCEOS):
             fugacity_sum_terms_dT.append(sum_term)
         return [i + i for i in fugacity_sum_terms_dT]
 
+#    @property
+#    def da_alpha_dT_dns2(self):
+#        return dxs_to_dns(self.da_alpha_dT_dzs, self.zs)
+
     @property
     def da_alpha_dT_dns(self):   
         r'''Helper method for calculating the mole number derivatives of
@@ -2069,20 +2073,23 @@ class GCEOSMIX(GCEOS):
         solution
         '''
         T = self.T
-        V = Z*R*T/self.P
-        ddelta_dzs = self.ddelta_dzs
-        depsilon_dzs = self.depsilon_dzs
-        db_dzs = self.db_dzs
-        da_alpha_dzs = self.da_alpha_dzs
-        
+        RT = R*T
+        V = Z*RT/self.P
+        ddelta_dzs = self.ddelta_dns
+        depsilon_dzs = self.depsilon_dns
+        db_dzs = self.db_dns
+        da_alpha_dzs = self.da_alpha_dns
+
         x0 = self.delta
         x1 = a_alpha = self.a_alpha
         x2 = epsilon = self.epsilon
         b = self.b
 
         x0V = x0*V
-        x5 = (V - b)*(V - b)
+        Vmb = V - b
+        x5 = Vmb*Vmb
         x1x5 = x1*x5
+        x0x1x5 = x0*x1x5
         t0 = V*x1x5
         x6 = x2*x1x5
         x9 = V*V
@@ -2091,27 +2098,35 @@ class GCEOSMIX(GCEOS):
         x10 = x0V + x2 + x9
         x10x10 = x10*x10
         x11 = R*T*x10*x10x10
-        x13 = x0*x1x5*x9
+        x13 = x0x1x5*x9
         
-        t1 = x10x10*x5
-        t2 = -1.0/(x0V*x0*x1x5 + x0*x6 - x11 + 3.0*x13 + x7+x7 + x8+x8)
+        x7x8 = x7+x8
+        
+        t2 = -1.0/(x0V*x0x1x5 + x0*x6 - x11 + 3.0*x13 + x7x8 + x7x8)
+        t1 = t2*x10x10*x5
         t3 = x0V*x1x5
         t4 = x1x5*x9
-        t5 = t3 + t4 + x6
-        t6 = x13 + x7 + x8
+        t5 = t2*(t3 + t4 + x6)
+        t6 = t2*(x13 + x7x8)
+        x11t2 = x11*t2
         
-        dV_dzs = []
-        for i in self.cmps:
-            # Possible to factor out one multiplication here by putting t2 in new constants
-            diff = (t5*depsilon_dzs[i] - t1*da_alpha_dzs[i] + x11*db_dzs[i] + t6*ddelta_dzs[i])*t2
-            dV_dzs.append(diff)
-        return dV_dzs
-    
+        return [t5*depsilon_dzs[i] - t1*da_alpha_dzs[i] + x11t2*db_dzs[i] + t6*ddelta_dzs[i]
+                for i in self.cmps]
+        
     def dV_dns(self, Z, zs):
+        return dxs_to_dns(self.dV_dzs(Z, zs), zs)
+    
+    def _dV_dns_explicit(self, Z, zs):
+        # Approximately 10% of time savings can be held by maintaining a separate function
+        # which allows for better cse optimization
+        # There appear to be accuracy issues with the conversion!!!
+        # The 44 component case doesn't even match to 1 decimal for some
+        # components
         T = self.T
+        RT = T*R
         x0 = self.delta
         x1 = epsilon = self.epsilon
-        x2 = V = Z*R*T/self.P
+        x2 = V = Z*RT/self.P
         x3 = self.b        
         x5 = a_alpha = self.a_alpha
         
@@ -2120,26 +2135,28 @@ class GCEOSMIX(GCEOS):
         db_dns = self.db_dns
         da_alpha_dns = self.da_alpha_dns
         
-        x4 = (x2 - x3)**2
+        x4 = (x2 - x3)*(x2 - x3)
         x6 = x4*x5
         x7 = x1*x6
-        x8 = x2**3*x6
+        x2x2 = x2*x2
         x9 = x2*x6
+        x8 = x2x2*x9
         x10 = x1*x9
-        x11 = x2**2
         x12 = x0*x2
-        x13 = x1 + x11 + x12
-        x14 = R*T*x13**3
-        x15 = x11*x6
+        x13 = x1 + x2x2 + x12
+        x13x13 = x13*x13
+        x14 = R*T*x13*x13x13
+        x15 = x2x2*x6
         x16 = x0*x15
-
+        
+        t1 = 1.0/(x0*x0*x9 + x0*x7 + x10+x10 - x14 + 3.*x16 + x8 + x8)
+        t2 = x12*x6
+        t3 = x13x13*x4
+        t4 = x10 + x16 + x8
+        t5 = t2 + x15 + x7
         dV_dns = []
         for i in self.cmps:
-            x17 = depsilon_dns[i]
-            x18 = ddelta_dns[i]
-            t11 = db_dns[i]
-            t10 = da_alpha_dns[i]
-            diff = (-(x10*x18 + x12*x17*x6 - x13**2*x4*t10 + x14*t11+ x15*x17 + x16*x18 + x17*x7 + x18*x8)/(x0**2*x9 + x0*x7 + 2*x10 - x14 + 3*x16 + 2*x8))
+            diff = (-( - t3*da_alpha_dns[i] + x14*db_dns[i] + t5* depsilon_dns[i] + t4*ddelta_dns[i])*t1)
             dV_dns.append(diff)
         return dV_dns
 
@@ -2148,6 +2165,9 @@ class GCEOSMIX(GCEOS):
         factor = self.P/(self.T*R)
         return [dV*factor for dV in self.dV_dzs(Z, zs)]
 
+    def dZ_dns(self, Z, zs):
+        return dxs_to_dns(self.dZ_dzs(Z, zs), zs)
+    
     def dH_dep_dzs(self, Z, zs):
         '''from sympy import *
         from sympy import *
@@ -2182,7 +2202,6 @@ class GCEOSMIX(GCEOS):
         x7 = 2.0*catanh(x3*x6).real
         x8 = x9 = self.a_alpha
         
-#        x9 = a_alpha(T, x)
         x10 = T*self.da_alpha_dT - x8
         x13 = x6*x6# 1.0/x5
 
@@ -2199,6 +2218,8 @@ class GCEOSMIX(GCEOS):
             dH_dzs.append(value)
         return dH_dzs
 
+    def dH_dep_dns(self, Z, zs):
+        return dxs_to_dns(self.dH_dep_dzs(Z, zs), zs)
 
 
 class PRMIX(GCEOSMIX, PR):
@@ -2221,7 +2242,7 @@ class PRMIX(GCEOSMIX, PR):
 
         a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}
         
-	  b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
+	    b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
 
         \alpha(T)_i=[1+\kappa_i(1-\sqrt{T_{r,i}})]^2
         
@@ -2859,10 +2880,10 @@ class PRMIX(GCEOSMIX, PR):
         dZ_dxs = [(BmZ*dA_dxks[i] + t15*dB_dxks[i])*dF_dZ_inv for i in self.cmps]
         return dZ_dxs
 
-    def dV_dzs(self, Z, zs):
-        # This one is fine for all EOSs
-        factor = self.T*R/self.P
-        return [i*factor for i in self.dZ_dzs(Z, zs)]
+#    def dV_dzs(self, Z, zs):
+#        # This one is fine for all EOSs
+#        factor = self.T*R/self.P
+#        return [i*factor for i in self.dZ_dzs(Z, zs)]
     
         
         
