@@ -2021,7 +2021,43 @@ class GCEOSMIX(GCEOS):
             
         da_alpha_dT = self.da_alpha_dT
         return [2.0*(t - da_alpha_dT) for t in fugacity_sum_terms_dT]
+
+    def dlnphi_dns(self, Z, zs):
+        # Recreate dlnphi_dzs when this has been optimized... maybe 
+        T = self.T
+        P = self.P
+        x0 = V = Z*R*T/P
+
+        x2 = 1.0/(R*T)
+        x3 = self.b
+        x4 = self.delta
+        x5 = self.epsilon
+        x6 = x4*x4 - 4.0*x5
+        x7 = 1/sqrt(x6)
+        x8 = self.a_alpha
+        x9 = 2.0*x0
+        x10 = x4 + x9
+        x11 = 2*x2
+        x12 = x11*catanh(x10*x7).real
+        x15 = 1/x6
+
+        db_dns = self.db_dns
+        depsilon_dns = self.depsilon_dns
+        ddelta_dns = self.ddelta_dns
+        dV_dns = self.dV_dns(Z, zs)
+        da_alpha_dns = self.da_alpha_dns
         
+        dfugacity_dns = []
+        for i in self.cmps:
+            x13 = ddelta_dns[i]
+            x14 = x13*x4 - 2.0*depsilon_dns[i]
+            x16 = x14*x15
+            x1 = dV_dns[i]
+            diff = (P*x1*x2 + x11*x15*x8*(2*x1 + x13 - x16*x4 - x16*x9)/(x10**2*x15 - 1) 
+            + x12*x14*x8/x6**(3/2.0) - x12*x7*da_alpha_dns[i] - (x1 - db_dns[i])/(x0 - x3))
+            dfugacity_dns.append(diff)
+        return dfugacity_dns
+                
     def dV_dzs(self, Z, zs):
         '''
         from sympy import *

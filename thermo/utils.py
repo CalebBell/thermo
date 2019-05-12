@@ -32,7 +32,9 @@ __all__ = ['isobaric_expansion', 'isothermal_compressibility',
  'mixing_simple', 
 'mixing_logarithmic', 'has_matplotlib', 'to_num', 'CAS2int', 'sorted_CAS_key',
 'int2CAS', 'Parachor', 'property_molar_to_mass', 'property_mass_to_molar', 
-'SG_to_API', 'API_to_SG', 'SG', 'vapor_mass_quality', 'mix_component_flows',
+'SG_to_API', 'API_to_SG', 'SG',
+'dxs_to_dns', 'dns_to_dn_partials', 'dxs_to_dn_partials',
+ 'vapor_mass_quality', 'mix_component_flows',
 'mix_multiple_component_flows', 'mix_component_partial_flows', 
 'solve_flow_composition_mix', 'assert_component_balance', 'assert_energy_balance',
 'phase_select_property', 'TDependentProperty', 
@@ -1274,6 +1276,140 @@ def Vfs_to_zs(Vfs, Vms):
     mols_i = [Vfi/Vmi for Vfi, Vmi in zip(Vfs, Vms)]
     mols = sum(mols_i)
     return [mol_i/mols for mol_i in mols_i]
+
+
+def dxs_to_dns(dxs, xs):
+    r'''Convert the mole fraction derivatives of a quantity (calculated so 
+    they do not sum to 1) to mole number derivatives (where the mole fractions
+    do sum to one). Requires the derivatives and the mole fractions of the
+    mixture.
+
+    .. math::
+       \left(\frac{\partial F}{\partial n_i}\right)_{n_{k\ne i}} = \left[
+        \left(\frac{\partial M}{\partial x_i}\right)_{x_{k\ne i}}
+        - \sum_j x_j \left(\frac{\partial M}{\partial x_j}  \right)_{x_{k\ne j}}
+        \right]
+
+    Parameters
+    ----------
+    dxs : list[float]
+        Derivatives of a quantity with respect to mole fraction (not summing to
+        1), [prop]
+    xs : list[float]
+        Mole fractions of the species, [-]
+
+    Returns
+    -------
+    dns : list[float]
+        Derivatives of a quantity with respect to mole number (summing to
+        1), [prop/mol]
+
+    Notes
+    -----
+    Does not check that the sums add to one. Does not check that inputs are of
+    the same length.
+    
+    This applies to a specific phase only, not to a mixture of multiple phases.
+
+    Examples
+    --------
+    >>> dxs_to_dns([-0.0028, -0.00719, -0.00859], [0.7, 0.2, 0.1])
+    [0.001457, -0.0029330000000000003, -0.004333]
+    '''
+    N = len(xs)
+    values = []
+    for i in range(N):
+        tot = dxs[i]
+        for j in range(N):
+            tot -= xs[j]*(dxs[j])
+        values.append(tot)
+    return values
+
+
+def dns_to_dn_partials(dns, F):
+    r'''Convert the mole number derivatives of a quantity (calculated so 
+    they do sum to 1) to partial molar quantites.
+    
+    .. math::
+        
+        \left(\frac{\partial n F}{\partial n_i}\right)_{n_{k \ne i}} = F_i + 
+        n \left(\frac{\partial F}{\partial n_i}\right)_{n_{k\ne i}} 
+
+    In the formula, the `n` is 1.
+    
+    Parameters
+    ----------
+    dns : list[float]
+        Derivatives of a quantity with respect to mole number (summing to
+        1), [prop/mol]
+    F : float
+        Property evaluated at constant composition, [prop]
+    
+    Returns
+    -------
+    partial_properties : list[float]
+        Derivatives of a quantity with respect to mole number (summing to
+        1), [prop]
+
+    Notes
+    -----
+    Does not check that the sums add to one. Does not check that inputs are of
+    the same length.
+    
+    This applies to a specific phase only, not to a mixture of multiple phases.
+    
+    This is especially useful for fugacity calculations.
+
+    Examples
+    --------
+    >>> dns_to_dn_partials([0.001459, -0.002939, -0.004334], -0.0016567)
+    [-0.0001977000000000001, -0.0045957, -0.0059907]
+    '''
+    return [F + dni for dni in dns]
+    values = []
+    N = len(dns)
+    for i in range(N):
+        tot = F
+        tot += dns[i]
+        values.append(tot)
+    return values
+
+
+def dxs_to_dn_partials(dxs, xs, F):
+    r'''Convert the mole fraction derivatives of a quantity (calculated so 
+    they do not sum to 1) to partial molar quantites. Requires the derivatives
+    and the mole fractions of the mixture.
+
+    Parameters
+    ----------
+    dxs : list[float]
+        Derivatives of a quantity with respect to mole fraction (not summing to
+        1), [prop]
+    xs : list[float]
+        Mole fractions of the species, [-]
+    F : float
+        Property evaluated at constant composition, [prop]
+
+    Returns
+    -------
+    partial_properties : list[float]
+        Derivatives of a quantity with respect to mole number (summing to
+        1), [prop]
+
+    Notes
+    -----
+    Does not check that the sums add to one. Does not check that inputs are of
+    the same length.
+    
+    This applies to a specific phase only, not to a mixture of multiple phases.
+
+    Examples
+    --------
+    >>> dxs_to_dn_partials([-0.0026404, -0.00719, -0.00859], [0.7, 0.2, 0.1],
+    ... -0.0016567)
+    [-0.00015182, -0.00470142, -0.00610142]
+    '''
+    return dns_to_dn_partials(dxs_to_dns(dxs, xs), F)
 
 
 def none_and_length_check(all_inputs, length=None):
