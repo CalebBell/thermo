@@ -2054,6 +2054,10 @@ class GCEOSMIX(GCEOS):
         
         t1 = P*x2
         t2 = x11*x15*x8/(x10*x10*x15 - 1.0) 
+        t3 = x12*x8*x6**(-1.5)
+        t4 = x12*x7
+        t5 = 1.0/(x0 - x3)
+        t6 = x4 + x9
         
         dfugacity_dns = []
         for i in self.cmps:
@@ -2061,12 +2065,11 @@ class GCEOSMIX(GCEOS):
             x14 = x13*x4 - 2.0*depsilon_dns[i]
             x16 = x14*x15
             x1 = dV_dns[i]
-            diff = (x1*t1 + t2*(2.0*x1 + x13 - x16*x4 - x16*x9)
-            + x12*x14*x8/x6**(3/2.0) - x12*x7*da_alpha_dns[i] - (x1 - db_dns[i])/(x0 - x3))
+            diff = (x1*t1 + t2*(x1 + x1 + x13 - x16*t6) + x14*t3 - t4*da_alpha_dns[i] - t5*(x1 - db_dns[i]))
             dfugacity_dns.append(diff)
         return dfugacity_dns
 
-    def fugacity_coefficients2(self, Z, zs):
+    def fugacity_coefficients(self, Z, zs):
         try:
             if Z == self.Z_l:
                 F = self.phi_l
