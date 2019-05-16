@@ -1775,176 +1775,327 @@ def test_dS_dep_dP_liquid_and_vapor():
     assert_allclose((eos2.S_dep_g - eos1.S_dep_g)/dP, eos1.dS_dep_dP_g)
     assert_allclose(eos1.dS_dep_dP_g, -5.942829393044419e-06)
     
-    
-def test_db_dzs():
+
+### Composition derivatives
+
+ternary_basic = dict(T=300.0, P=1e6, zs=[.7, .2, .1], Tcs=[126.2, 304.2, 373.2],
+                     Pcs=[3394387.5, 7376460.0, 8936865.0], omegas=[0.04, 0.2252, 0.1])
+
+def test_db_dnxpartial():
     liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S']
     Tcs = [126.2, 304.2, 373.2]
     Pcs = [3394387.5, 7376460.0, 8936865.0]
     omegas = [0.04, 0.2252, 0.1]
     zs = [.7, .2, .1]
+    
+    normalization = False
+    partial_n = False
 
-    def db_dn(ni, i):
+    def db_dnxpartial(ni, i):
         zs = [.7, .2, .1]
         zs[i] = ni
+        nt = sum(zs)
+        if normalization:
+            zs = normalize(zs)
         eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        if partial_n:
+            return eos.b*nt
         return eos.b
     
     for obj in eos_mix_list:
         eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
-        numericals = [derivative(db_dn, ni, dx=1e-3, order=7, args=(i,)) 
+        numericals = [derivative(db_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
             for i, ni in zip((0, 1, 2), (.7, .2, .1))]
-        assert_allclose(numericals, eos.bs)
+        assert_allclose(numericals, eos.db_dzs)
+        
+    normalization = True
 
-def test_ddelta_dzs():
-    liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S']
-    Tcs = [126.2, 304.2, 373.2]
-    Pcs = [3394387.5, 7376460.0, 8936865.0]
-    omegas = [0.04, 0.2252, 0.1]
-    zs = [.7, .2, .1]
-
-    def db_dn(ni, i):
-        zs = [.7, .2, .1]
-        zs[i] = ni
+    for obj in eos_mix_list:
         eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        numericals = [derivative(db_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
+            for i, ni in zip((0, 1, 2), (.7, .2, .1))]
+        assert_allclose(numericals, eos.db_dns)
+    
+    partial_n = True
+    for obj in eos_mix_list:
+        eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        numericals = [derivative(db_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
+            for i, ni in zip((0, 1, 2), (.7, .2, .1))]
+        assert_allclose(numericals, eos.dnb_dns)
+
+
+@pytest.mark.parametrize("kwargs", [ternary_basic])
+def test_ddelta_dnx(kwargs):
+    zs = kwargs['zs']
+    del kwargs['zs'] 
+    normalization = False
+    
+    def ddelta_dnxpartial(ni, i):
+        zs_working = list(zs)
+        zs_working[i] = ni
+        nt = sum(zs_working)
+        if normalization:
+            zs_working = normalize(zs_working)
+        eos = obj(zs=zs_working, **kwargs)
         return eos.delta
     
     for obj in eos_mix_list:
-        eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
-        numericals = [derivative(db_dn, ni, dx=1e-3, order=7, args=(i,)) 
-            for i, ni in zip((0, 1, 2), (.7, .2, .1))]
-        
-        analytical = eos.ddelta_dzs
-        assert_allclose(numericals, analytical)
+        eos = obj(zs=zs, **kwargs)
+        numericals = [derivative(ddelta_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
+            for i, ni in enumerate(zs)]
+        assert_allclose(numericals, eos.ddelta_dzs)
+    
+    normalization = True
+    for obj in eos_mix_list:
+        eos = obj(zs=zs, **kwargs)
+        numericals = [derivative(ddelta_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
+            for i, ni in enumerate(zs)]
+        assert_allclose(numericals, eos.ddelta_dns)
+    
 
-def test_depsilon_dzs():
-    liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S']
-    Tcs = [126.2, 304.2, 373.2]
-    Pcs = [3394387.5, 7376460.0, 8936865.0]
-    omegas = [0.04, 0.2252, 0.1]
-    zs = [.7, .2, .1]
-
-    def db_dn(ni, i):
-        zs = [.7, .2, .1]
-        zs[i] = ni
-        eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+@pytest.mark.parametrize("kwargs", [ternary_basic])
+def test_depsilon_dnx(kwargs):
+    zs = kwargs['zs']
+    del kwargs['zs'] 
+    normalization = False
+    
+    def depsilon_dnxpartial(ni, i):
+        zs_working = list(zs)
+        zs_working[i] = ni
+        nt = sum(zs_working)
+        if normalization:
+            zs_working = normalize(zs_working)
+        eos = obj(zs=zs_working, **kwargs)
         return eos.epsilon
     
     for obj in eos_mix_list:
-        eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
-        numericals = [derivative(db_dn, ni, dx=1e-3, order=7, args=(i,)) 
-            for i, ni in zip((0, 1, 2), (.7, .2, .1))]
-        
-        analytical = eos.depsilon_dzs
-        assert_allclose(numericals, analytical)
+        eos = obj(zs=zs, **kwargs)
+        numericals = [derivative(depsilon_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
+            for i, ni in enumerate(zs)]
+        assert_allclose(numericals, eos.depsilon_dzs)
+    
+    normalization = True
+    for obj in eos_mix_list:
+        eos = obj(zs=zs, **kwargs)
+        numericals = [derivative(depsilon_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
+            for i, ni in enumerate(zs)]
+        assert_allclose(numericals, eos.depsilon_dns)
 
 
-def test_da_alpha_dzs():
+def test_da_alpha_dnxpartial():
     liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S']
     Tcs = [126.2, 304.2, 373.2]
     Pcs = [3394387.5, 7376460.0, 8936865.0]
     omegas = [0.04, 0.2252, 0.1]
     zs = [.7, .2, .1]
+    
+    normalization = False
+    partial_n = False
 
-    def da_alpha_dzs(ni, i):
+    def da_alpha_dnxpartial(ni, i):
         zs = [.7, .2, .1]
         zs[i] = ni
+        nt = sum(zs)
+        if normalization:
+            zs = normalize(zs)
         eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        if partial_n:
+            return eos.a_alpha*nt
         return eos.a_alpha
     
     for obj in eos_mix_list:
         eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
-        numericals = [derivative(da_alpha_dzs, ni, dx=1e-3, order=7, args=(i,)) 
+        numericals = [derivative(da_alpha_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
             for i, ni in zip((0, 1, 2), (.7, .2, .1))]
         
-        analytical = eos.da_alpha_dzs
-        assert_allclose(numericals, analytical)
+        assert_allclose(numericals, eos.da_alpha_dzs)
+
+    normalization = True
+    for obj in eos_mix_list:
+        eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        numericals = [derivative(da_alpha_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
+            for i, ni in zip((0, 1, 2), (.7, .2, .1))]
+        
+        assert_allclose(numericals, eos.da_alpha_dns)
+
+    partial_n = True
+    for obj in eos_mix_list:
+        eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        numericals = [derivative(da_alpha_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
+            for i, ni in zip((0, 1, 2), (.7, .2, .1))]
+        assert_allclose(numericals, eos.dna_alpha_dns)
 
 
-def test_da_alpha_dT_dzs():
+def test_da_alpha_dT_dnxpartial():
     liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S']
     Tcs = [126.2, 304.2, 373.2]
     Pcs = [3394387.5, 7376460.0, 8936865.0]
     omegas = [0.04, 0.2252, 0.1]
     zs = [.7, .2, .1]
 
-    def da_alpha_dT_dzs(ni, i):
+    normalization = False
+    partial_n = False
+
+    def da_alpha_dT_dnxpartial(ni, i):
         zs = [.7, .2, .1]
         zs[i] = ni
+        nt = sum(zs)
+        if normalization:
+            zs = normalize(zs)
         eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        if partial_n:
+            return nt*eos.da_alpha_dT
         return eos.da_alpha_dT
     
     for obj in eos_mix_list:
         eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
-        numericals = [derivative(da_alpha_dT_dzs, ni, dx=1e-3, order=7, args=(i,)) 
+        numericals = [derivative(da_alpha_dT_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
             for i, ni in zip((0, 1, 2), (.7, .2, .1))]
+        assert_allclose(numericals, eos.da_alpha_dT_dzs)
         
-        analytical = eos.da_alpha_dT_dzs
-        assert_allclose(numericals, analytical)
-
-
-def test_dV_dzs():
-    liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S']
-    Tcs = [126.2, 304.2, 373.2]
-    Pcs = [3394387.5, 7376460.0, 8936865.0]
-    omegas = [0.04, 0.2252, 0.1]
-    zs = [.7, .2, .1]
-
-    def dV_dzs(ni, i):
-        zs = [.7, .2, .1]
-        zs[i] = ni
-        eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
-        return eos.V_g
-    
+    normalization = True
     for obj in eos_mix_list:
         eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
-        numericals = [derivative(dV_dzs, ni, dx=1e-3, order=7, args=(i,)) 
+        numericals = [derivative(da_alpha_dT_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
             for i, ni in zip((0, 1, 2), (.7, .2, .1))]
-        
-        analytical = eos.dV_dzs(eos.Z_g, zs)
-        assert_allclose(numericals, analytical)
+        assert_allclose(numericals, eos.da_alpha_dT_dns)
 
-def test_dZ_dzs():
-    liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S']
-    Tcs = [126.2, 304.2, 373.2]
-    Pcs = [3394387.5, 7376460.0, 8936865.0]
-    omegas = [0.04, 0.2252, 0.1]
-    zs = [.7, .2, .1]
-
-    def dZ_dzs(ni, i):
-        zs = [.7, .2, .1]
-        zs[i] = ni
-        eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
-        return eos.Z_g
-    
+    partial_n = True
     for obj in eos_mix_list:
         eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
-        numericals = [derivative(dZ_dzs, ni, dx=1e-3, order=7, args=(i,)) 
+        numericals = [derivative(da_alpha_dT_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
             for i, ni in zip((0, 1, 2), (.7, .2, .1))]
-        
-        analytical = eos.dZ_dzs(eos.Z_g, zs)
-        assert_allclose(numericals, analytical)
+        assert_allclose(numericals, eos.dna_alpha_dT_dns)
 
 
-def test_dH_dep_dzs():
-    liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S']
-    Tcs = [126.2, 304.2, 373.2]
-    Pcs = [3394387.5, 7376460.0, 8936865.0]
-    omegas = [0.04, 0.2252, 0.1]
-    zs = [.7, .2, .1]
 
-    def dZ_dzs(ni, i):
-        zs = [.7, .2, .1]
-        zs[i] = ni
-        eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+
+
+    
+
+@pytest.mark.parametrize("kwargs", [ternary_basic])
+def test_dH_dep_dnxpartial(kwargs):
+    zs = kwargs['zs']
+    del kwargs['zs'] # Large test case - thought had issue but just zs did not sum to 1
+
+    normalization = False
+    partial_n = False
+    
+    def dH_dep_dnxpartial(ni, i):
+        zs_working = list(zs)
+        zs_working[i] = ni
+        nt = sum(zs_working)
+        if normalization:
+            zs_working = normalize(zs_working)
+        eos = obj(zs=zs_working, **kwargs)
+        if partial_n:
+            return nt*eos.H_dep_g
         return eos.H_dep_g
     
     for obj in eos_mix_list:
-        eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
-        numericals = [derivative(dZ_dzs, ni, dx=1e-3, order=7, args=(i,)) 
-            for i, ni in zip((0, 1, 2), (.7, .2, .1))]
-        
-        analytical = eos.dH_dep_dzs(eos.Z_g, zs)
-        assert_allclose(numericals, analytical)
+        eos = obj(zs=zs, **kwargs)
+        numericals = [derivative(dH_dep_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
+            for i, ni in enumerate(zs)]
+    
+        assert_allclose(numericals, eos.dH_dep_dzs(eos.Z_g, zs))
+    
+    normalization = True
+    for obj in eos_mix_list:
+        eos = obj(zs=zs, **kwargs)
+        numericals = [derivative(dH_dep_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
+            for i, ni in enumerate(zs)]
+    
+        assert_allclose(numericals, eos.dH_dep_dns(eos.Z_g, zs))
+    
+    partial_n = True
+    for obj in eos_mix_list:
+        eos = obj(zs=zs, **kwargs)
+        numericals = [derivative(dH_dep_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
+            for i, ni in enumerate(zs)]
+    
+        assert_allclose(numericals, eos.dnH_dep_dns(eos.Z_g, zs))
+
+
+@pytest.mark.parametrize("kwargs", [ternary_basic])
+def test_dV_dnxpartial(kwargs):
+    zs = kwargs['zs']
+    del kwargs['zs'] 
+
+    normalization = False
+    partial_n = False
+    
+    def dV_dnxpartial(ni, i):
+        zs_working = list(zs)
+        zs_working[i] = ni
+        nt = sum(zs_working)
+        if normalization:
+            zs_working = normalize(zs_working)
+        eos = obj(zs=zs_working, **kwargs)
+        if partial_n:
+            return nt*eos.V_g
+        return eos.V_g
+    
+    for obj in eos_mix_list:
+        eos = obj(zs=zs, **kwargs)
+        numericals = [derivative(dV_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
+            for i, ni in enumerate(zs)]
+        assert_allclose(numericals, eos.dV_dzs(eos.Z_g, zs))
+    
+    normalization = True
+    for obj in eos_mix_list:
+        eos = obj(zs=zs, **kwargs)
+        numericals = [derivative(dV_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
+            for i, ni in enumerate(zs)]
+        assert_allclose(numericals, eos.dV_dns(eos.Z_g, zs))
+    
+    partial_n = True
+    for obj in eos_mix_list:
+        eos = obj(zs=zs, **kwargs)
+        numericals = [derivative(dV_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
+            for i, ni in enumerate(zs)]
+        assert_allclose(numericals, eos.dnV_dns(eos.Z_g, zs))
+
+
+@pytest.mark.parametrize("kwargs", [ternary_basic])
+def test_dZ_dnxpartial(kwargs):
+    zs = kwargs['zs']
+    del kwargs['zs'] 
+
+    normalization = False
+    partial_n = False
+    
+    def dZ_dnxpartial(ni, i):
+        zs_working = list(zs)
+        zs_working[i] = ni
+        nt = sum(zs_working)
+        if normalization:
+            zs_working = normalize(zs_working)
+        eos = obj(zs=zs_working, **kwargs)
+        if partial_n:
+            return nt*eos.Z_g
+        return eos.Z_g
+    
+    for obj in eos_mix_list:
+        eos = obj(zs=zs, **kwargs)
+        numericals = [derivative(dZ_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
+            for i, ni in enumerate(zs)]
+        assert_allclose(numericals, eos.dZ_dzs(eos.Z_g, zs))
+    
+    normalization = True
+    for obj in eos_mix_list:
+        eos = obj(zs=zs, **kwargs)
+        numericals = [derivative(dZ_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
+            for i, ni in enumerate(zs)]
+        assert_allclose(numericals, eos.dZ_dns(eos.Z_g, zs))
+    
+    partial_n = True
+    for obj in eos_mix_list:
+        eos = obj(zs=zs, **kwargs)
+        numericals = [derivative(dZ_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
+            for i, ni in enumerate(zs)]
+        assert_allclose(numericals, eos.dnZ_dns(eos.Z_g, zs))
+
+
 
 
 def test_fugacities_numerical_all_eos_mix():

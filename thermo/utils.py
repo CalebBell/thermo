@@ -33,7 +33,7 @@ __all__ = ['isobaric_expansion', 'isothermal_compressibility',
 'mixing_logarithmic', 'has_matplotlib', 'to_num', 'CAS2int', 'sorted_CAS_key',
 'int2CAS', 'Parachor', 'property_molar_to_mass', 'property_mass_to_molar', 
 'SG_to_API', 'API_to_SG', 'SG',
-'dxs_to_dns', 'dns_to_dn_partials', 'dxs_to_dn_partials',
+'dxs_to_dns', 'dns_to_dn_partials', 'dxs_to_dn_partials', 'd2ns_to_dn2_partials',
  'vapor_mass_quality', 'mix_component_flows',
 'mix_multiple_component_flows', 'mix_component_partial_flows', 
 'solve_flow_composition_mix', 'assert_component_balance', 'assert_energy_balance',
@@ -1407,6 +1407,24 @@ def dxs_to_dn_partials(dxs, xs, F):
     for j in range(len(xs)):
         xdx_totF -= xs[j]*dxs[j]
     return [dxi + xdx_totF for dxi in dxs]
+
+
+def d2ns_to_dn2_partials(d2ns, dns):
+    '''from sympy import *
+n1, n2 = symbols('n1, n2')
+f, g, h = symbols('f, g, h', cls=Function)
+
+diff(h(n1, n2)*f(n1,  n2), n1, n2)
+    '''
+    cmps = range(len(dns))
+    hess = []
+    for i in cmps:
+        row = []
+        for j in cmps:
+            v = d2ns[i][j] + dns[i] + dns[j]
+            row.append(v)
+        hess.append(row)
+    return hess
 
 
 def none_and_length_check(all_inputs, length=None):

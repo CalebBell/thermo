@@ -170,6 +170,7 @@ def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
             -0.5*(a_alphai*d2a_alpha_dT2s[j] + a_alphaj*d2a_alpha_dT2_i)
             - da_alpha_dT_i*da_alpha_dT_j) +.25*x1_x2*x1_x2)/(x0_05_inv*x0*x0))
             
+            
             if i != j:
                 da_alpha_dT += da_alpha_dT_ij + da_alpha_dT_ij
                 d2a_alpha_dT2 += d2a_alpha_dT2_ij + d2a_alpha_dT2_ij
@@ -1857,12 +1858,47 @@ class GCEOSMIX(GCEOS):
         fugacity_sum_terms = []
         for i in cmps:
             l = a_alpha_ijs[i]
-            sum_term = sum([zs[j]*l[j] for j in cmps])
+            sum_term = 0.0
+            for j in cmps:
+                sum_term += zs[j]*l[j]
             fugacity_sum_terms.append(sum_term)
         self.fugacity_sum_terms = fugacity_sum_terms
         return fugacity_sum_terms
 
+    def _da_alpha_dT_j_rows(self):
+        zs = self.zs
+        cmps = self.cmps
+        da_alpha_dT_ijs = self.da_alpha_dT_ijs
+        da_alpha_dT_j_rows = []
+        for i in cmps:
+            l = da_alpha_dT_ijs[i]
+            sum_term = 0.0
+            for j in cmps:
+                sum_term += zs[j]*l[j]
+            da_alpha_dT_j_rows.append(sum_term)
+        self.da_alpha_dT_j_rows = da_alpha_dT_j_rows
+        return da_alpha_dT_j_rows
+    
+    def _d2a_alpha_dT2_j_rows(self):
+        # Does not seem to have worked
+        a_alpha, da_alpha_dT, d2a_alpha_dT2, da_alpha_dT_ijs, a_alpha_ijs, d2a_alpha_dT2_ijs = a_alpha_and_derivatives_full(
+                    self.a_alphas, self.da_alpha_dTs, self.d2a_alpha_dT2s, self.T, self.zs, self.kijs,
+                     self.a_alpha_ijs, self.a_alpha_i_roots, self.a_alpha_ij_roots_inv, second_matrix=True)
 
+        zs = self.zs
+        cmps = self.cmps
+        d2a_alpha_dT2_j_rows = []
+        for i in cmps:
+            l = d2a_alpha_dT2_ijs[i]
+            sum_term = 0.0
+            for j in cmps:
+                sum_term += zs[j]*l[j]
+            d2a_alpha_dT2_j_rows.append(sum_term)
+        self.d2a_alpha_dT2_j_rows = d2a_alpha_dT2_j_rows
+        return d2a_alpha_dT2_j_rows
+
+
+    
     @property
     def db_dzs(self):   
         r'''Helper method for calculating the composition derivatives of `b`.
@@ -1889,7 +1925,7 @@ class GCEOSMIX(GCEOS):
         Note this is independent of the phase.
         
         .. math::
-            \left(\frac{\partial b}{\partial nn_i}\right)_{T, P, n_{i\ne j}} 
+            \left(\frac{\partial b}{\partial n_i}\right)_{T, P, n_{i\ne j}} 
             = b_i - b
 
         Returns
@@ -1903,6 +1939,94 @@ class GCEOSMIX(GCEOS):
         '''
         b = self.b
         return [bi - b for bi in self.bs]
+    
+    @property
+    def dnb_dns(self):
+        r'''Helper method for calculating the partial molar derivative of `b`.
+        Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial n \cdot b}{\partial n_i}\right)_{T, P, n_{i\ne j}} 
+            = b_i 
+
+        Returns
+        -------
+        dnb_dns : list[float]
+            Partial molar derivative of `b` of each component, [m^3/mol]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        return self.bs
+
+    @property
+    def d2b_dzizjs(self):
+        return [[0.0]*self.N for i in self.cmps]
+
+    @property
+    def d2b_dninjs(self):   
+        r'''Helper method for calculating the second partial mole number
+        derivatives of `b`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^2 b}{\partial n_i \partial n_j}\right)_{T, P, 
+            n_{k\ne i,k}} = 2b - b_i - b_j
+
+        Returns
+        -------
+        d2b_dninjs : list[list[float]]
+            Second Composition derivative of `b` of each component, 
+            [m^3/mol^3]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        bb = 2.0*self.b
+        bs = self.bs
+        cmps = self.cmps
+        d2b_dninjs = []
+        for bi in self.bs:
+            d2b_dninjs.append([bb - bi - bj for bj in bs])
+        return d2b_dninjs
+
+    @property
+    def d3b_dzizjzks(self):   
+        # All zeros
+        return 0.0
+
+    @property
+    def d3b_dninjnks(self):   
+        r'''Helper method for calculating the third partial mole number
+        derivatives of `b`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^3 b}{\partial n_i \partial n_j \partial n_k }
+            \right)_{T, P, 
+            n_{m \ne i,j,k}} = 2(-3b + b_i + b_j + b_k)
+
+        Returns
+        -------
+        d2b_dninjs : list[list[list[float]]]
+            Second Composition derivative of `b` of each component, 
+            [m^3/mol^4]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        m3b = -3.0*self.b
+        bs = self.bs
+        cmps = self.cmps
+        d3b_dninjnks = []
+        for bi in bs:
+            d3b_dnjnks = []
+            for bj in bs:
+                d3b_dnjnks.append([2.0*(m3b + bi + bj + bk) for bk in bs])
+            d3b_dninjnks.append(d3b_dnjnks)
+        return d3b_dninjnks
+
 
     @property
     def da_alpha_dzs(self):   
@@ -1956,6 +2080,106 @@ class GCEOSMIX(GCEOS):
         return [2.0*(t - a_alpha) for t in fugacity_sum_terms]
 
     @property
+    def dna_alpha_dns(self):   
+        r'''Helper method for calculating the partial molar derivatives of
+        `a_alpha`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial a \alpha}{\partial n_i}\right)_{T, P, n_{i\ne j}} 
+            = 2 (-0.5 a\alpha + \sum_j z_{j} (1 - k_{ij}) \sqrt{ (a \alpha)_i (a \alpha)_j})
+
+        Returns
+        -------
+        dna_alpha_dns : list[float]
+            Partial molar derivative of `alpha` of each component, 
+            [kg*m^5/(mol^2*s^2)]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        try:
+            fugacity_sum_terms = self.fugacity_sum_terms
+        except:
+            fugacity_sum_terms = self._fugacity_sum_terms()
+        a_alpha = self.a_alpha
+        return [t + t - a_alpha for t in fugacity_sum_terms]
+
+    @property
+    def d2a_alpha_dzizjs(self):   
+        r'''Helper method for calculating the second composition derivatives of
+        `a_alpha` (hessian). Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^2 a \alpha}{\partial x_i x_j}\right)_{T, P, x_{k\ne i,j}} 
+            = 2 (1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}
+
+        Returns
+        -------
+        d2a_alpha_dzizjs : list[float]
+            Second composition derivative of `alpha` of each component, 
+            [kg*m^5/(mol^2*s^2)]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        a_alpha_ijs = self.a_alpha_ijs
+        return [[i+i for i in row] for row in a_alpha_ijs]
+
+    @property
+    def d2a_alpha_dninjs(self):   
+        r'''Helper method for calculating the second partial molar derivatives 
+        of `a_alpha` (hessian). Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^2 a \alpha}{\partial n_i \partial n_j }\right)_{T, P, n_{k\ne i,j}} 
+            = 2\left[3(a \alpha) + (a\alpha)_{ij}  -2 (\text{term}_{i,j})
+            \right]
+            
+        .. math::
+            \text{term}_{i,j} = \sum_k z_k\left((a\alpha)_{ik} + (a\alpha)_{jk}
+            \right)
+            
+        .. math::
+            (a\alpha)_{ij} = (1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}
+
+            
+        Returns
+        -------
+        d2a_alpha_dninjs : list[float]
+            Second partial molar derivative of `alpha` of each component, 
+            [kg*m^5/(mol^3*s^2)]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        try:
+            fugacity_sum_terms = self.fugacity_sum_terms
+        except:
+            fugacity_sum_terms = self._fugacity_sum_terms()
+        a_alpha = self.a_alpha
+        a_alpha_ijs = self.a_alpha_ijs
+        cmps = self.cmps
+        zs = self.zs
+        a_alpha3 = 3.0*a_alpha
+        
+        hessian = []
+        for i in cmps:
+            row = []
+            for j in cmps:
+                if i == j:
+                    term = 2.0*fugacity_sum_terms[i]
+                else:
+                    term = 0.0
+                    for k in cmps:
+                        term += zs[k]*(a_alpha_ijs[i][k] + a_alpha_ijs[j][k])
+                row.append(2.0*(a_alpha3 + a_alpha_ijs[i][j] -2.0*term))
+            hessian.append(row)
+        return hessian
+
+    @property
     def da_alpha_dT_dzs(self):   
         r'''Helper method for calculating the composition derivatives of
         `da_alpha_dT`. Note this is independent of the phase.
@@ -1977,19 +2201,11 @@ class GCEOSMIX(GCEOS):
         -----
         This derivative is checked numerically.
         '''
-        zs = self.zs
-        cmps = self.cmps
-        da_alpha_dT_ijs = self.da_alpha_dT_ijs
-        fugacity_sum_terms_dT = []
-        for i in cmps:
-            l = da_alpha_dT_ijs[i]
-            sum_term = sum([zs[j]*l[j] for j in cmps])
-            fugacity_sum_terms_dT.append(sum_term)
-        return [i + i for i in fugacity_sum_terms_dT]
-
-#    @property
-#    def da_alpha_dT_dns2(self):
-#        return dxs_to_dns(self.da_alpha_dT_dzs, self.zs)
+        try:
+            da_alpha_dT_j_rows = self.da_alpha_dT_j_rows
+        except:
+            da_alpha_dT_j_rows = self._da_alpha_dT_j_rows()
+        return [i + i for i in da_alpha_dT_j_rows]
 
     @property
     def da_alpha_dT_dns(self):   
@@ -2014,83 +2230,101 @@ class GCEOSMIX(GCEOS):
         -----
         This derivative is checked numerically.
         '''
-        zs = self.zs
-        cmps = self.cmps
-        da_alpha_dT_ijs = self.da_alpha_dT_ijs
-        fugacity_sum_terms_dT = []
-        for i in cmps:
-            l = da_alpha_dT_ijs[i]
-            sum_term = sum([zs[j]*l[j] for j in cmps])
-            fugacity_sum_terms_dT.append(sum_term)
-            
-        da_alpha_dT = self.da_alpha_dT
-        return [2.0*(t - da_alpha_dT) for t in fugacity_sum_terms_dT]
-
-    def dlnphi_dns(self, Z, zs):
-        # Recreate dlnphi_dzs when this has been optimized... maybe 
-        T = self.T
-        P = self.P
-        RT = R*T
-        x0 = V = Z*RT/P
-
-        x2 = 1.0/(RT)
-        x3 = self.b
-        x4 = self.delta
-        x5 = self.epsilon
-        x6 = x4*x4 - 4.0*x5
-        x7 = x6**-0.5
-        x8 = self.a_alpha
-        x9 = x0 + x0
-        x10 = x4 + x9
-        x11 = x2 + x2
-        x12 = x11*catanh(x10*x7).real
-        x15 = 1.0/x6
-
-        db_dns = self.db_dns
-        depsilon_dns = self.depsilon_dns
-        ddelta_dns = self.ddelta_dns
-        dV_dns = self.dV_dns(Z, zs)
-        da_alpha_dns = self.da_alpha_dns
-        
-        t1 = P*x2
-        t2 = x11*x15*x8/(x10*x10*x15 - 1.0) 
-        t3 = x12*x8*x6**(-1.5)
-        t4 = x12*x7
-        t5 = 1.0/(x0 - x3)
-        t6 = x4 + x9
-        
-        dfugacity_dns = []
-        for i in self.cmps:
-            x13 = ddelta_dns[i]
-            x14 = x13*x4 - 2.0*depsilon_dns[i]
-            x16 = x14*x15
-            x1 = dV_dns[i]
-            diff = (x1*t1 + t2*(x1 + x1 + x13 - x16*t6) + x14*t3 - t4*da_alpha_dns[i] - t5*(x1 - db_dns[i]))
-            dfugacity_dns.append(diff)
-        return dfugacity_dns
-
-    def fugacity_coefficients(self, Z, zs):
         try:
-            if Z == self.Z_l:
-                F = self.phi_l
-            else:
-                F = self.phi_g
+            da_alpha_dT_j_rows = self.da_alpha_dT_j_rows
         except:
-            F = self.phi_g
-        # This conversion seems numerically safe anyway
-        return dns_to_dn_partials(self.dlnphi_dns(Z, zs), log(F))
-    
-    
+            da_alpha_dT_j_rows = self._da_alpha_dT_j_rows()
+        da_alpha_dT = self.da_alpha_dT
+        return [2.0*(t - da_alpha_dT) for t in da_alpha_dT_j_rows]
+
+    @property
+    def dna_alpha_dT_dns(self):   
+        r'''Helper method for calculating the mole number derivatives of
+        `da_alpha_dT`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^2 n a \alpha}{\partial n_i \partial T}
+            \right)_{P, n_{i\ne j}} 
+            = 2 \left[\sum_j -z_{j} (k_{ij} - 1) (a \alpha)_i (a \alpha)_j
+            \frac{\partial (a \alpha)_i}{\partial T} \frac{\partial (a \alpha)_j}{\partial T}
+            \left({ (a \alpha)_i (a \alpha)_j}\right)^{-0.5} 
+             - 0.5 \frac{\partial a \alpha}{\partial T} \right]
+
+        Returns
+        -------
+        dna_alpha_dT_dns : list[float]
+            Composition derivative of `da_alpha_dT` of each component, 
+            [kg*m^5/(mol*s^2*K)]
+        
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        try:
+            da_alpha_dT_j_rows = self.da_alpha_dT_j_rows
+        except:
+            da_alpha_dT_j_rows = self._da_alpha_dT_j_rows()
+        da_alpha_dT = self.da_alpha_dT
+        return [t + t - da_alpha_dT for t in da_alpha_dT_j_rows]
     
     def dV_dzs(self, Z, zs):
-        '''
-        from sympy import *
-        P, T, V, R, b, a, delta, epsilon, x = symbols('P, T, V, R, b, a, delta, epsilon, x')
-        a_alpha = symbols('a_alpha')
+        r'''Calculates the molar volume composition derivative
+        (where the mole fractions do not sum to 1). Verified numerically. 
+        Used in many other derivatives, and for the molar volume mole number 
+        derivative and partial molar volume calculation.
         
-        CUBIC = R*T/(V(x) - b(x)) - a_alpha(x)/(V(x)*V(x) + delta(x)*V(x) + epsilon(x)) - P
-        solution = solve(diff(CUBIC, x), Derivative(V(x), x))
-        solution
+        .. math::
+            \left(\frac{\partial V}{\partial x_i}\right)_{T, P,
+            x_{i\ne j}}  =
+            \frac{- R T \left(V^{2}{\left(x \right)} + V{\left(x \right)} \delta{\left(x \right)} 
+            + \epsilon{\left(x \right)}\right)^{3} \frac{d}{d x} b{\left(x \right)} + \left(V{\left(x \right)} 
+            - b{\left(x \right)}\right)^{2} \left(V^{2}{\left(x \right)} + V{\left(x \right)} \delta{\left(x \right)} 
+            + \epsilon{\left(x \right)}\right)^{2} \frac{d}{d x} \operatorname{a \alpha}{\left(x \right)} 
+            - \left(V{\left(x \right)} - b{\left(x \right)}\right)^{2} V^{3}{\left(x \right)} \operatorname{a 
+            \alpha}{\left(x \right)} \frac{d}{d x} \delta{\left(x \right)} - \left(V{\left(x \right)} - b{\left(x
+            \right)}\right)^{2} V^{2}{\left(x \right)} \operatorname{a \alpha}{\left(x \right)} \delta{\left(x 
+            \right)} \frac{d}{d x} \delta{\left(x \right)} - \left(V{\left(x \right)} - b{\left(x \right)}
+            \right)^{2} V^{2}{\left(x \right)} \operatorname{a \alpha}{\left(x \right)} \frac{d}{d x} \epsilon{
+            \left(x \right)} - \left(V{\left(x \right)} - b{\left(x \right)}\right)^{2} V{\left(x \right)}
+            \operatorname{a \alpha}{\left(x \right)} \delta{\left(x \right)} \frac{d}{d x} \epsilon{\left(x 
+            \right)} - \left(V{\left(x \right)} - b{\left(x \right)}\right)^{2} V{\left(x \right)} \operatorname{a
+            \alpha}{\left(x \right)} \epsilon{\left(x \right)} \frac{d}{d x} \delta{\left(x \right)} 
+            - \left(V{\left(x \right)} - b{\left(x \right)}\right)^{2} \operatorname{a \alpha}{\left(x \right)}
+            \epsilon{\left(x \right)} \frac{d}{d x} \epsilon{\left(x \right)}}{- R T \left(V^{2}{\left(x \right)}
+            + V{\left(x \right)} \delta{\left(x \right)} + \epsilon{\left(x \right)}\right)^{3} 
+            + 2 \left(V{\left(x \right)} - b{\left(x \right)}\right)^{2} V^{3}{\left(x \right)} 
+            \operatorname{a \alpha}{\left(x \right)} + 3 \left(V{\left(x \right)} - b{\left(x \right)}\right)^{2}
+            V^{2}{\left(x \right)} \operatorname{a \alpha}{\left(x \right)} \delta{\left(x \right)} 
+            + \left(V{\left(x \right)} - b{\left(x \right)}\right)^{2} V{\left(x \right)} \operatorname{a 
+            \alpha}{\left(x \right)} \delta^{2}{\left(x \right)} + 2 \left(V{\left(x \right)} - b{\left(x 
+            \right)}\right)^{2} V{\left(x \right)} \operatorname{a \alpha}{\left(x \right)} \epsilon{\left(x
+            \right)} + \left(V{\left(x \right)} - b{\left(x \right)}\right)^{2} \operatorname{a \alpha}{\left(x
+            \right)} \delta{\left(x \right)} \epsilon{\left(x \right)}}
+            
+        Parameters
+        ----------
+        Z : float
+            Compressibility of the mixture for a desired phase, [-]
+        zs : list[float], optional
+            List of mole factions, either overall or in a specific phase, [-]
+        
+        Returns
+        -------
+        dV_dzs : float
+            Molar volume composition derivatives, [m^3/mol]
+            
+        Notes
+        -----
+        The derivation for the derivative is performed as follows using SymPy.
+        The function source code is an optimized variant created with the `cse`
+        SymPy function, and hand optimized further.
+        
+        >>> from sympy import * # doctest:+SKIP
+        >>> P, T, R, x = symbols('P, T, R, x') # doctest:+SKIP
+        >>> V, delta, epsilon, a_alpha, b = symbols('V, delta, epsilon, a\ \\alpha, b', cls=Function) # doctest:+SKIP
+        >>> CUBIC = R*T/(V(x) - b(x)) - a_alpha(x)/(V(x)*V(x) + delta(x)*V(x) + epsilon(x)) - P # doctest:+SKIP
+        >>> solve(diff(CUBIC, x), Derivative(V(x), x)) # doctest:+SKIP
+        [(-R*T*(V(x)**2 + V(x)*delta(x) + epsilon(x))**3*Derivative(b(x), x) + (V(x) - b(x))**2*(V(x)**2 + V(x)*delta(x) + epsilon(x))**2*Derivative(a \alpha(x), x) - (V(x) - b(x))**2*V(x)**3*a \alpha(x)*Derivative(delta(x), x) - (V(x) - b(x))**2*V(x)**2*a \alpha(x)*delta(x)*Derivative(delta(x), x) - (V(x) - b(x))**2*V(x)**2*a \alpha(x)*Derivative(epsilon(x), x) - (V(x) - b(x))**2*V(x)*a \alpha(x)*delta(x)*Derivative(epsilon(x), x) - (V(x) - b(x))**2*V(x)*a \alpha(x)*epsilon(x)*Derivative(delta(x), x) - (V(x) - b(x))**2*a \alpha(x)*epsilon(x)*Derivative(epsilon(x), x))/(-R*T*(V(x)**2 + V(x)*delta(x) + epsilon(x))**3 + 2*(V(x) - b(x))**2*V(x)**3*a \alpha(x) + 3*(V(x) - b(x))**2*V(x)**2*a \alpha(x)*delta(x) + (V(x) - b(x))**2*V(x)*a \alpha(x)*delta(x)**2 + 2*(V(x) - b(x))**2*V(x)*a \alpha(x)*epsilon(x) + (V(x) - b(x))**2*a \alpha(x)*delta(x)*epsilon(x))]
         '''
         T = self.T
         RT = R*T
@@ -2119,8 +2353,7 @@ class GCEOSMIX(GCEOS):
         x10x10 = x10*x10
         x11 = R*T*x10*x10x10
         x13 = x0x1x5*x9
-        
-        x7x8 = x7+x8
+        x7x8 = x7 + x8
         
         t2 = -1.0/(x0V*x0x1x5 + x0*x6 - x11 + 3.0*x13 + x7x8 + x7x8)
         t1 = t2*x10x10*x5
@@ -2133,74 +2366,377 @@ class GCEOSMIX(GCEOS):
         return [t5*depsilon_dzs[i] - t1*da_alpha_dzs[i] + x11t2*db_dzs[i] + t6*ddelta_dzs[i]
                 for i in self.cmps]
 
-        
     def dV_dns(self, Z, zs):
+        r'''Calculates the molar volume mole number derivatives
+        (where the mole fractions sum to 1). No specific formula is implemented
+        for this property - it is calculated from the mole fraction derivative.
+        
+        .. math::
+            \left(\frac{\partial V}{\partial n_i}\right)_{T, P,
+            n_{i\ne j}} = f\left( \left(\frac{\partial V}{\partial x_i}\right)_{T, P,
+            x_{i\ne j}}
+            \right)
+            
+        Parameters
+        ----------
+        Z : float
+            Compressibility of the mixture for a desired phase, [-]
+        zs : list[float], optional
+            List of mole factions, either overall or in a specific phase, [-]
+        
+        Returns
+        -------
+        dV_dns : float
+            Molar volume mole number derivatives, [m^3/mol^2]
+        '''
         return dxs_to_dns(self.dV_dzs(Z, zs), zs)
-    
-    def _dV_dns_explicit(self, Z, zs):
-        # Approximately 10% of time savings can be held by maintaining a separate function
-        # which allows for better cse optimization
-        # There appear to be accuracy issues with the conversion!!!
-        # The 44 component case doesn't even match to 1 decimal for some
-        # components
-        T = self.T
-        RT = T*R
-        x0 = self.delta
-        x1 = epsilon = self.epsilon
-        x2 = V = Z*RT/self.P
-        x3 = self.b        
-        x5 = a_alpha = self.a_alpha
+
+    def dnV_dns(self, Z, zs):
+        r'''Calculates the partial molar volume of the specified phase
+        No specific formula is implemented
+        for this property - it is calculated from the molar
+        volume mole fraction derivative.
+        
+        .. math::
+            \left(\frac{\partial n V}{\partial n_i}\right)_{T, P,
+            n_{i\ne j}} = f\left( \left(\frac{\partial V}{\partial x_i}\right)_{T, P,
+            x_{i\ne j}}
+            \right)
+            
+        Parameters
+        ----------
+        Z : float
+            Compressibility of the mixture for a desired phase, [-]
+        zs : list[float], optional
+            List of mole factions, either overall or in a specific phase, [-]
+        
+        Returns
+        -------
+        dnV_dns : float
+            Partial molar volume of the mixture of the specified phase,
+            [m^3/mol]
+        '''
+        V = Z*R*self.T/self.P
+        return dxs_to_dn_partials(self.dV_dzs(Z, zs), zs, V)
+
+    def d2V_dzizjs(self, Z, zs):
+        V = Z*self.T*R/self.P
+        dV_dzs = self.dV_dzs(Z, zs)
+        
+        depsilon_dzs = self.depsilon_dzs
+        d2epsilon_dzizjs = self.d2epsilon_dzizjs
+        
+        ddelta_dzs = self.ddelta_dzs
+        d2delta_dzizjs = self.d2delta_dzizjs
+
+        db_dzs = self.db_dzs
+        d2bs = self.d2b_dzizjs
+        da_alpha_dzs = self.da_alpha_dzs
+        d2a_alpha_dzizjs = self.d2a_alpha_dzizjs
+        
+        return self._d2V_dij_wrapper(V=V, d_Vs=dV_dzs, dbs=db_dzs, d2bs=d2bs,
+                                     d_epsilons=depsilon_dzs, d2_epsilons=d2epsilon_dzizjs,
+                                     d_deltas=ddelta_dzs, d2_deltas=d2delta_dzizjs,
+                                     da_alphas=da_alpha_dzs, d2a_alphas=d2a_alpha_dzizjs
+                                     )
+
+    def d2V_dninjs(self, Z, zs):
+        V = Z*self.T*R/self.P
+        dV_dns = self.dV_dns(Z, zs)
+        
+        depsilon_dns = self.depsilon_dns
+        d2epsilon_dninjs = self.d2epsilon_dninjs
         
         ddelta_dns = self.ddelta_dns
-        depsilon_dns = self.depsilon_dns
+        d2delta_dninjs = self.d2delta_dninjs
+
         db_dns = self.db_dns
+        d2bs = self.d2b_dninjs
         da_alpha_dns = self.da_alpha_dns
+        d2a_alpha_dninjs = self.d2a_alpha_dninjs
         
-        x4 = (x2 - x3)*(x2 - x3)
-        x6 = x4*x5
-        x7 = x1*x6
-        x2x2 = x2*x2
-        x9 = x2*x6
-        x8 = x2x2*x9
-        x10 = x1*x9
-        x12 = x0*x2
-        x13 = x1 + x2x2 + x12
-        x13x13 = x13*x13
-        x14 = R*T*x13*x13x13
-        x15 = x2x2*x6
-        x16 = x0*x15
+        return self._d2V_dij_wrapper(V=V, d_Vs=dV_dns, dbs=db_dns, d2bs=d2bs,
+                                     d_epsilons=depsilon_dns, d2_epsilons=d2epsilon_dninjs,
+                                     d_deltas=ddelta_dns, d2_deltas=d2delta_dninjs,
+                                     da_alphas=da_alpha_dns, d2a_alphas=d2a_alpha_dninjs
+                                     )
+
+    def _d2V_dij_wrapper(self, V, d_Vs, dbs, d2bs, d_epsilons, d2_epsilons,
+                         d_deltas, d2_deltas, da_alphas, d2a_alphas):
+        T = self.T
+        cmps = self.cmps
+
+        x0 = V
+        x3 = self.b
+        x4 = x0 - x3
+        x5 = self.epsilon
+        x6 = x0**2
+        x7 = self.delta
+        x8 = x0*x7
+        x9 = x5 + x6 + x8
+        x10 = self.a_alpha
+        x11 = x10*x4**2
+        x12 = 2*x0
+        x13 = x9**2
+        x14 = R*T
+        x17 = x4**3
+        x18 = x10*x17
+        x19 = 2*x18
+        x22 = 4*x18
+        x27 = x12*x18
+        x33 = x14*x9**3
+        x34 = 2*x33
+        x37 = x19*x8
+        x38 = x17*x9
+        x39 = x10*x38
         
-        t1 = 1.0/(x0*x0*x9 + x0*x7 + x10+x10 - x14 + 3.*x16 + x8 + x8)
-        t2 = x12*x6
-        t3 = x13x13*x4
-        t4 = x10 + x16 + x8
-        t5 = t2 + x15 + x7
-        dV_dns = []
-        for i in self.cmps:
-            diff = (-( - t3*da_alpha_dns[i] + x14*db_dns[i] + t5* depsilon_dns[i] + t4*ddelta_dns[i])*t1)
-            dV_dns.append(diff)
-        return dV_dns
+        hessian = []
+        for i in cmps:
+
+            
+            row = []
+            for j in cmps:
+                
+                # TODO optimize this
+                x15 = d_epsilons[i]
+                x16 = d_epsilons[j]
+                x20 = x16*x19
+                
+                x21 = d_Vs[i]
+                x24 = d_Vs[j]
+                
+                x23 = x21*x22
+                x25 = x15*x24
+                x26 = d_deltas[i]
+                x28 = d_deltas[j]
+                x29 = x21*x24
+                x30 = 8*x18*x29
+                x31 = x28*x6
+                
+                x32 = x24*x26
+                x35 = x34*dbs[j]
+                x36 = dbs[i]
+                x40 = x38*da_alphas[i]
+                x41 = x38*da_alphas[j]
+                x42 = x21*x41
+                x43 = x24*x40
+                x44 = x21*x39
+                
+                
+                
+                d1 = d2_deltas[i][j] # Derivative(x7, x1, x2)
+                d2 = d2a_alphas[i][j] # Derivative(x10, x1, x2)
+                d3 = d2bs[i][j] # Derivative(x3, x1, x2)
+                d4 = d2_epsilons[i][j] # Derivative(x5, x1, x2)
+                
+                v = ((x0*x16*x23 + x0*x22*x25 - x0*x26*x41 - x0*x28*x40 
+                      - x0*x39*d1 - x12*x42 - x12*x43 + x13*x17*d2 + x15*x20
+                      + x15*x27*x28 - x15*x41 + x16*x26*x27 - x16*x40 
+                      + x19*x25*x7 + x19*x26*x31 + x19*x29*x7**2 + x20*x21*x7 
+                      + x21*x28*x37 + x21*x35 + x22*x32*x6 + x23*x31 
+                      + x24*x34*x36 - 2*x24*x44 - x28*x44 - x29*x34 + x30*x6 
+                      + x30*x8 + x32*x37 - x32*x39 - x33*x4*d3 - x35*x36 
+                      - x39*d4 - x42*x7 - x43*x7)/(x4*x9*(x11*x12 + x11*x7 - x13*x14)))
+                row.append(v)
+                
+            hessian.append(row)
+        return hessian
+                
+
+
+    def _d2V_dij_wrapper_broken(self, V, d_Vs, dbs, d2bs, d_epsilons, d2_epsilons,
+                         d_deltas, d2_deltas, da_alphas, d2a_alphas):
+        # TODO remove
+        T = self.T
+        cmps = self.cmps
+        x0 = V
+        x1 = self.b
+        x2 = x0 - x1
+        x3 = self.epsilon
+        x4 = self.delta
+        x5 = x0**2 + x0*x4 + x3
+        x6 = self.a_alpha
+        x7 = x2**2*x6
+        x8 = 2*x0
+        x9 = x5**2
+        x10 = R*T
+        x11 = x2**3
+        x12 = x11*x6
+        x13 = x12*x5
+        x14 = x10*x5**3
+        x16 = 2*x12
+        x17 = x16*x5
+
+        hessian = []
+        for i in cmps:
+            x15 = d_Vs[i]
+            x23 = x15*x4
+            x18 = d_epsilons[i]
+            x19 = x11*x5*da_alphas[i]
+            x20 = 2*x19
+            x21 = d_deltas[i]
+            x22 = x0*x21
+            
+            x50 = dbs[i]
+            
+            row = []
+            
+            for j in cmps:
+                d1 = d2_deltas[j][i] # Derivative(x4, (x, 2))
+                d2 = d2a_alphas[j][i] # Derivative(x6, (x, 2))
+                d3 = d2_epsilons[j][i] # Derivative(x3, (x, 2))
+                d4 = d2bs[j][i] #Derivative(x1, (x, 2))
+                
+                v = (-(x0*x13*d1 + 4*x0*x15*x19 - x11*x9*d2 + x13*d3 + x14*x2*d4
+                        + 2*x14*(x15 - x50)**2 + x15**2*x17 + x15*x17*x21 
+                        - x16*(x15*x8 + x18 + x22 + x23)**2 + x18*x20 + x20*x22 + x20*x23)
+                        /(x2*x5*(-x10*x9 + x4*x7 + x7*x8)))
+                row.append(v)
+            hessian.append(row)
+        return hessian
+        
+        
+                
 
 
     def dZ_dzs(self, Z, zs):
+        r'''Calculates the compressibility composition derivatives
+        (where the mole fractions do not sum to 1). No specific formula is 
+        implemented for this property - it is calculated from the 
+        composition derivative of molar volume, which does have its formula
+        implemented.
+        
+        .. math::
+            \left(\frac{\partial Z}{\partial x_i}\right)_{T, P,
+            x_{i\ne j}} = \frac{P }{RT} 
+            \left(\frac{\partial V}{\partial x_i}\right)_{T, P, x_{i\ne j}}
+            
+        Parameters
+        ----------
+        Z : float
+            Compressibility of the mixture for a desired phase, [-]
+        zs : list[float], optional
+            List of mole factions, either overall or in a specific phase, [-]
+        
+        Returns
+        -------
+        dZ_dzs : float
+            Compressibility composition derivative, [-]
+        '''
         factor = self.P/(self.T*R)
         return [dV*factor for dV in self.dV_dzs(Z, zs)]
 
     def dZ_dns(self, Z, zs):
+        r'''Calculates the compressibility mole number derivatives
+        (where the mole fractions sum to 1). No specific formula is implemented
+        for this property - it is calculated from the mole fraction derivative.
+        
+        .. math::
+            \left(\frac{\partial Z}{\partial n_i}\right)_{T, P,
+            n_{i\ne j}} = f\left( \left(\frac{\partial Z}{\partial x_i}\right)_{T, P,
+            x_{i\ne j}}
+            \right)
+            
+        Parameters
+        ----------
+        Z : float
+            Compressibility of the mixture for a desired phase, [-]
+        zs : list[float], optional
+            List of mole factions, either overall or in a specific phase, [-]
+        
+        Returns
+        -------
+        dZ_dns : float
+            Compressibility number derivatives, [1/mol]
+        '''
         return dxs_to_dns(self.dZ_dzs(Z, zs), zs)
+
+    def dnZ_dns(self, Z, zs):
+        r'''Calculates the partial compressibility of the specified phase
+        No specific formula is implemented
+        for this property - it is calculated from the compressibility
+        mole fraction derivative.
+        
+        .. math::
+            \left(\frac{\partial n Z}{\partial n_i}\right)_{T, P,
+            n_{i\ne j}} = f\left( \left(\frac{\partial Z}{\partial x_i}\right)_{T, P,
+            x_{i\ne j}}
+            \right)
+            
+        Parameters
+        ----------
+        Z : float
+            Compressibility of the mixture for a desired phase, [-]
+        zs : list[float], optional
+            List of mole factions, either overall or in a specific phase, [-]
+        
+        Returns
+        -------
+        dnZ_dns : float
+            Partial compressibility of the mixture of the specified phase,
+            [-]
+        '''
+        return dxs_to_dn_partials(self.dZ_dzs(Z, zs), zs, Z)
     
     def dH_dep_dzs(self, Z, zs):
-        '''from sympy import *
-        from sympy import *
-        P, T, V, R, b, a, delta, epsilon, x = symbols('P, T, V, R, b, a, delta, epsilon, x')
-        V, delta, epsilon, a_alpha, b = symbols('V, delta, epsilon, a_alpha, b', cls=Function)
+        r'''Calculates the molar departure enthalpy composition derivative
+        (where the mole fractions do not sum to 1). Verified numerically. 
+        Useful in solving for enthalpy specifications in newton-type methods,
+        and forms the basis for the molar departure enthalpy mole number
+        derivative and molar partial departure enthalpy.
         
-        CUBIC = R*T/(V(x) - b(x)) - a_alpha(x)/(V(x)*V(x) + delta(x)*V(x) + epsilon(x)) - P
+        .. math::
+            \left(\frac{\partial H_{dep}}{\partial x_i}\right)_{T, P,
+            x_{i\ne j}}  =
+            P \frac{d}{d x} V{\left(x \right)} + \frac{2 \left(T \frac{\partial}{\partial T}
+            \operatorname{a \alpha}{\left(T,x \right)} - \operatorname{a \alpha}{\left(x
+            \right)}\right) \left(- \delta{\left(x \right)} \frac{d}{d x} \delta{\left(x
+            \right)} + 2 \frac{d}{d x} \epsilon{\left(x \right)}\right) \operatorname{atanh}
+            {\left(\frac{2 V{\left(x \right)} + \delta{\left(x \right)}}{\sqrt{\delta^{2}
+            {\left(x \right)} - 4 \epsilon{\left(x \right)}}} \right)}}{\left(\delta^{2}
+            {\left(x \right)} - 4 \epsilon{\left(x \right)}\right)^{\frac{3}{2}}}
+            + \frac{2 \left(T \frac{\partial}{\partial T} \operatorname{a \alpha}
+            {\left(T,x \right)} - \operatorname{a \alpha}{\left(x \right)}\right) 
+            \left(\frac{\left(- \delta{\left(x \right)} \frac{d}{d x} \delta{\left(x 
+            \right)} + 2 \frac{d}{d x} \epsilon{\left(x \right)}\right) \left(2
+            V{\left(x \right)} + \delta{\left(x \right)}\right)}{\left(\delta^{2}{\left(x
+            \right)} - 4 \epsilon{\left(x \right)}\right)^{\frac{3}{2}}} + \frac{2 
+            \frac{d}{d x} V{\left(x \right)} + \frac{d}{d x} \delta{\left(x \right)}}
+            {\sqrt{\delta^{2}{\left(x \right)} - 4 \epsilon{\left(x \right)}}}\right)}{\left(
+            - \frac{\left(2 V{\left(x \right)} + \delta{\left(x \right)}\right)^{2}}{
+            \delta^{2}{\left(x \right)} - 4 \epsilon{\left(x \right)}} + 1\right) \sqrt{
+            \delta^{2}{\left(x \right)} - 4 \epsilon{\left(x \right)}}} + \frac{2 
+            \left(T \frac{\partial^{2}}{\partial x\partial T} \operatorname{a \alpha}
+            {\left(T,x \right)} - \frac{d}{d x} \operatorname{a \alpha}{\left(x \right)}
+            \right) \operatorname{atanh}{\left(\frac{2 V{\left(x \right)} + \delta{\left(x
+            \right)}}{\sqrt{\delta^{2}{\left(x \right)} - 4 \epsilon{\left(x \right)}}}
+            \right)}}{\sqrt{\delta^{2}{\left(x \right)} - 4 \epsilon{\left(x \right)}}}
+            
+        Parameters
+        ----------
+        Z : float
+            Compressibility of the mixture for a desired phase, [-]
+        zs : list[float], optional
+            List of mole factions, either overall or in a specific phase, [-]
         
-        H_dep = (P*V(x) - R*T +2/sqrt(delta(x)**2 - 4*epsilon(x))*(T*Derivative(a_alpha(T, x), T)
-                    - a_alpha(x))*atanh((2*V(x)+delta(x))/sqrt(delta(x)**2-4*epsilon(x))))
-        
-        cse(diff(H_dep, x), optimizations='basic')        
+        Returns
+        -------
+        dH_dep_dzs : float
+            Departure enthalpy composition derivatives, [J/mol]
+            
+        Notes
+        -----
+        The derivation for the derivative is performed as follows using SymPy.
+        The function source code is an optimized variant created with the `cse`
+        SymPy function, and hand optimized further.
+            
+        >>> from sympy import * # doctest:+SKIP
+        >>> P, T, V, R, b, a, delta, epsilon, x = symbols('P, T, V, R, b, a, delta, epsilon, x') # doctest:+SKIP
+        >>> V, delta, epsilon, a_alpha, b = symbols('V, delta, epsilon, a_alpha, b', cls=Function) # doctest:+SKIP
+        >>> H_dep = (P*V(x) - R*T + 2/sqrt(delta(x)**2 - 4*epsilon(x))*(T*Derivative(a_alpha(T, x), T) # doctest:+SKIP
+        ... - a_alpha(x))*atanh((2*V(x)+delta(x))/sqrt(delta(x)**2-4*epsilon(x))))
+        >>> diff(H_dep, x) # doctest:+SKIP
+        P*Derivative(V(x), x) + 2*(T*Derivative(a \alpha(T, x), T) - a \alpha(x))*(-delta(x)*Derivative(delta(x), x) + 2*Derivative(epsilon(x), x))*atanh((2*V(x) + delta(x))/sqrt(delta(x)**2 - 4*epsilon(x)))/(delta(x)**2 - 4*epsilon(x))**(3/2) + 2*(T*Derivative(a \alpha(T, x), T) - a \alpha(x))*((-delta(x)*Derivative(delta(x), x) + 2*Derivative(epsilon(x), x))*(2*V(x) + delta(x))/(delta(x)**2 - 4*epsilon(x))**(3/2) + (2*Derivative(V(x), x) + Derivative(delta(x), x))/sqrt(delta(x)**2 - 4*epsilon(x)))/((-(2*V(x) + delta(x))**2/(delta(x)**2 - 4*epsilon(x)) + 1)*sqrt(delta(x)**2 - 4*epsilon(x))) + 2*(T*Derivative(a \alpha(T, x), T, x) - Derivative(a \alpha(x), x))*atanh((2*V(x) + delta(x))/sqrt(delta(x)**2 - 4*epsilon(x)))/sqrt(delta(x)**2 - 4*epsilon(x))
         '''
         P = self.P
         T = self.T
@@ -2226,7 +2762,8 @@ class GCEOSMIX(GCEOS):
         x10 = T*self.da_alpha_dT - x8
         x13 = x6*x6# 1.0/x5
 
-        t1 = x10*x7*x6*x13
+        t0 = x6*x7
+        t1 = x10*t0*x13
         t2 = 2.0*x10*x13/(x13*x3*x3 - 1.0)
         dH_dzs = []
         for i in self.cmps:
@@ -2234,13 +2771,312 @@ class GCEOSMIX(GCEOS):
             x11 = ddelta_dzs[i]
             x12 = x11*x2 - 2.0*depsilon_dzs[i]
                 
-            value = (P*x1 - x12*t1 + t2*(-x1 - x1 - x11 + x12*x13*x3)
-            + x6*x7*(T*da_alpha_dT_dzs[i] - da_alpha_dzs[i]))
+            value = (P*x1 - x12*t1 + t2*(x12*x13*x3 -x1 - x1 - x11)
+                     + t0*(T*da_alpha_dT_dzs[i] - da_alpha_dzs[i]))
             dH_dzs.append(value)
         return dH_dzs
 
     def dH_dep_dns(self, Z, zs):
+        r'''Calculates the molar departure enthalpy mole number derivatives
+        (where the mole fractions sum to 1). No specific formula is implemented
+        for this property - it is calculated from the mole fraction derivative.
+        
+        .. math::
+            \left(\frac{\partial H_{dep}}{\partial n_i}\right)_{T, P,
+            n_{i\ne j}} = f\left(  \left(\frac{\partial H_{dep}}{\partial x_i}\right)_{T, P,
+            x_{i\ne j}}
+            \right)
+            
+        Parameters
+        ----------
+        Z : float
+            Compressibility of the mixture for a desired phase, [-]
+        zs : list[float], optional
+            List of mole factions, either overall or in a specific phase, [-]
+        
+        Returns
+        -------
+        dH_dep_dns : float
+            Departure enthalpy mole number derivatives, [J/mol^2]
+        '''
         return dxs_to_dns(self.dH_dep_dzs(Z, zs), zs)
+
+    def dnH_dep_dns(self, Z, zs):
+        r'''Calculates the partial molar departure enthalpy. No specific 
+        formula is implemented for this property - it is calculated from the
+        mole fraction derivative.
+        
+        .. math::
+            \left(\frac{\partial n H_{dep}}{\partial n_i}\right)_{T, P,
+            n_{i\ne j}} = f\left(  \left(\frac{\partial H_{dep}}{\partial x_i}\right)_{T, P,
+            x_{i\ne j}}
+            \right)
+            
+        Parameters
+        ----------
+        Z : float
+            Compressibility of the mixture for a desired phase, [-]
+        zs : list[float], optional
+            List of mole factions, either overall or in a specific phase, [-]
+        
+        Returns
+        -------
+        dnH_dep_dns : float
+            Partial molar departure enthalpies of the phase, [J/mol]
+        '''
+        try:
+            if Z == self.Z_l:
+                F = self.H_dep_l
+            else:
+                F = self.H_dep_g
+        except:
+            F = self.H_dep_g
+        return dxs_to_dn_partials(self.dH_dep_dzs(Z, zs), zs, F)
+
+    def _lnphi_d_helper(self, Z, dbs, depsilons, ddelta, dVs, da_alphas):
+        # Quite a bit of optimization remains here - only do once tested
+        T = self.T
+        P = self.P
+        x3 = self.b
+        x4 = self.delta
+        x5 = self.epsilon
+        RT = R*T
+        x0 = V = Z*RT/P
+
+        x2 = 1.0/(RT)
+        x6 = x4*x4 - 4.0*x5
+        x7 = x6**-0.5
+        x8 = self.a_alpha
+        x9 = x0 + x0
+        x10 = x4 + x9
+        x11 = x2 + x2
+        x12 = x11*catanh(x10*x7).real
+        x15 = 1.0/x6
+
+        db_dns = dbs
+        depsilon_dns = depsilons
+        ddelta_dns = ddelta
+        dV_dns = dVs
+        da_alpha_dns = da_alphas
+        
+        t1 = P*x2
+        t2 = x11*x15*x8/(x10*x10*x15 - 1.0) 
+        t3 = x12*x8*x6**(-1.5)
+        t4 = x12*x7
+        t5 = 1.0/(x0 - x3)
+        t6 = x4 + x9
+        
+        dfugacity_dns = []
+        for i in self.cmps:
+            x13 = ddelta_dns[i]
+            x14 = x13*x4 - 2.0*depsilon_dns[i]
+            x16 = x14*x15
+            x1 = dV_dns[i]
+            diff = (x1*t1 + t2*(x1 + x1 + x13 - x16*t6) + x14*t3 - t4*da_alpha_dns[i] - t5*(x1 - db_dns[i]))
+            dfugacity_dns.append(diff)
+        return dfugacity_dns
+
+    def dlnphi_dzs(self, Z, zs):
+        # Good to go - doc and test
+        return self._lnphi_d_helper(Z, dbs=self.db_dzs, depsilons=self.depsilon_dzs, 
+                                    ddelta=self.ddelta_dzs, dVs=self.dV_dzs(Z, zs),
+                                    da_alphas=self.da_alpha_dzs)
+
+    def dlnphi_dns(self, Z, zs):
+        # Good to go - doc and test
+        return self._lnphi_d_helper(Z, dbs=self.db_dns, depsilons=self.depsilon_dns, 
+                                    ddelta=self.ddelta_dns, dVs=self.dV_dns(Z, zs),
+                                    da_alphas=self.da_alpha_dns)
+        
+    def _d2lnphi_d2_helper(self, V, d_Vs, d2Vs, dbs, d2bs, d_epsilons, d2_epsilons,
+                          d_deltas, d2_deltas, da_alphas, d2a_alphas):
+        T, P = self.T, self.P
+        cmps = self.cmps
+        x0 = V
+        hess = []
+        
+        x2 = 1/(R*T)
+        x3 = self.b
+        x4 = x0 - x3
+        x7 = self.delta
+        x8 = self.epsilon
+        x11 = self.a_alpha
+        for i in cmps:
+            x5 = d_Vs[i]
+            x17 = d_deltas[i]
+            x18 = x17*x7 - 2*d_epsilons[i]
+            x23 = da_alphas[i]
+            bi = dbs[i]
+            
+            row = []
+            for j in cmps:
+                x6 = d_Vs[j]
+                x9 = x7**2 - 4*x8
+                x10 = 1/sqrt(x9)
+                x12 = 2*x0
+                x13 = x12 + x7
+                x14 = catanh(x10*x13).real
+                x15 = 2*x2
+                x16 = x14*x15
+                x19 = da_alphas[j]
+                x20 = x16/x9**(3/2)
+                x21 = d_deltas[j]
+                x22 = x21*x7 - 2*d_epsilons[i]
+                x24 = d2_deltas[i][j]
+                x25 = x17*x21 + x24*x7 - 2*d2_epsilons[i][j]
+                x26 = x11*x22
+                x27 = 2*x5
+                x28 = 1/x9
+                x29 = x28*x7
+                x30 = x18*x28
+                x31 = x12*x30 - x17 + x18*x29 - x27
+                x32 = x13**2*x28 - 1
+                x33 = x15/x32
+                x34 = x28*x33
+                x35 = 2*x6
+                x36 = x22*x28
+                x37 = x12*x36 - x21 + x22*x29 - x35
+                x38 = x9**(-2)
+                x39 = x18*x38
+                x40 = x11*x37
+                x41 = x31*x38
+                x42 = x22*x39
+                
+                x1 = d2Vs[i][j]
+                v = (P*x1*x2 - x10*x16*d2a_alphas[i][j] + x11*x20*x25 - x11*x34*(-6*x0*x42
+                     - 2*x1 + x12*x25*x28 + x17*x36 + x21*x30 - x24 + x25*x29 + x27*x36 + x30*x35 
+                     - 3*x42*x7) - 4*x13*x2*x40*x41/x32**2 - 6*x14*x18*x2*x26/x9**(5/2)
+                    + x18*x19*x20 - x19*x31*x34 + x20*x22*x23 - x23*x34*x37 + x26*x33*x41 + x33*x39*x40
+                    - (x1 - d2bs[i][j])/x4 + (x5 - bi)*(x6 - dbs[j])/x4**2)
+                row.append(v)
+            hess.append(row)
+        return hess
+        
+        
+    def d2lnphi_dninjs(self, Z, zs):
+        V = Z*self.T*R/self.P
+        dV_dns = self.dV_dns(Z, zs)
+        d2Vs = self.d2V_dninjs(Z, zs)
+        
+        depsilon_dns = self.depsilon_dns
+        d2epsilon_dninjs = self.d2epsilon_dninjs
+        
+        ddelta_dns = self.ddelta_dns
+        d2delta_dninjs = self.d2delta_dninjs
+
+        db_dns = self.db_dns
+        d2bs = self.d2b_dninjs
+        da_alpha_dns = self.da_alpha_dns
+        d2a_alpha_dninjs = self.d2a_alpha_dninjs
+        return self._d2lnphi_d2_helper(V=V, d2Vs=d2Vs, d_Vs=dV_dns, dbs=db_dns, d2bs=d2bs,
+                                     d_epsilons=depsilon_dns, d2_epsilons=d2epsilon_dninjs,
+                                     d_deltas=ddelta_dns, d2_deltas=d2delta_dninjs,
+                                     da_alphas=da_alpha_dns, d2a_alphas=d2a_alpha_dninjs)
+
+    def d2lnphi_dzizjs(self, Z, zs):
+        V = Z*self.T*R/self.P
+        dV_dzs = self.dV_dzs(Z, zs)
+        d2Vs = self.d2V_dzizjs(Z, zs)
+
+        depsilon_dzs = self.depsilon_dzs
+        d2epsilon_dzizjs = self.d2epsilon_dzizjs
+        
+        ddelta_dzs = self.ddelta_dzs
+        d2delta_dzizjs = self.d2delta_dzizjs
+
+        db_dzs = self.db_dzs
+        d2bs = self.d2b_dzizjs
+        da_alpha_dzs = self.da_alpha_dzs
+        d2a_alpha_dzizjs = self.d2a_alpha_dzizjs
+        return self._d2lnphi_d2_helper(V=V, d_Vs=dV_dzs, d2Vs=d2Vs, dbs=db_dzs, d2bs=d2bs,
+                                     d_epsilons=depsilon_dzs, d2_epsilons=d2epsilon_dzizjs,
+                                     d_deltas=ddelta_dzs, d2_deltas=d2delta_dzizjs,
+                                     da_alphas=da_alpha_dzs, d2a_alphas=d2a_alpha_dzizjs)
+
+    def fugacity_coefficients(self, Z, zs):
+        try:
+            if Z == self.Z_l:
+                F = self.phi_l
+            else:
+                F = self.phi_g
+        except:
+            F = self.phi_g
+        # This conversion seems numerically safe anyway
+        return dns_to_dn_partials(self.dlnphi_dns(Z, zs), log(F))
+
+    def d_main_derivatives_and_departures_dn(self, g=True):
+        Z = self.Z_g if g else self.Z_l
+        V = self.V_g if g else self.V_l
+        
+        T = self.T
+        
+        x0 = self.a_alpha
+        x2 = self.epsilon
+        x3 = V
+        x4 = self.delta
+        x5 = x2 + x3**2 + x3*x4
+        x6 = 1/x5
+        x7 = self.b
+        x8 = x3 - x7
+        x14 = x5**(-2)
+        x15 = self.da_alpha_dT
+        x16 = x14*x15
+        x18 = 2*x3 + x4
+        x23 = x5**(-3)
+        x24 = 2*x23
+        x27 = x18**2
+        x28 = x18*x24
+        
+        
+
+        da_alpha_dT_dns = self.da_alpha_dT_dns
+        db_dns = self.db_dns
+        ddelta_dns = self.ddelta_dns
+        depsilon_dns = self.depsilon_dns
+        da_alpha_dns = self.da_alpha_dns
+        dV_dns = self.dV_dns(Z, self.zs)
+        
+        dndP_dT_dsn = []
+        dndP_dV_dns = []
+        dnd2P_dT2_dns = []
+        dnd2P_dV2_dns = []
+        dnd2P_dTdV_dns = []
+
+        for i in self.cmps:
+            x1 = da_alpha_dT_dns[i]
+            x9 = dV_dns[i]
+            x10 = R*(x9 - db_dns[i])
+            x17 = 2*x10/x8**3
+            x12 = 2*x9
+    
+            x11 = ddelta_dns[i]
+            x21 = x11 + x12
+            x22 = x0*x21
+            
+            x13 = x11*x3 + x12*x3 + x4*x9 + depsilon_dns[i]
+            x25 = x0*x13
+            x26 = x24*x25
+    
+            x19 = da_alpha_dns[i]
+            x20 = x14*x19
+            
+            dndP_dT = -x1*x6 - x10/x8**2 + x13*x16
+            dndP_dT_dsn.append(dndP_dT)
+            
+            dndP_dV = T*x17 + x14*x22 + x18*x20 - x18*x26
+            dndP_dV_dns.append(dndP_dV)
+            
+            d2a_alpha_dT2_dn = 0 # TODO, vector
+            dnd2P_dT2 = x6*(x13*x6*self.d2a_alpha_dT2 - d2a_alpha_dT2_dn)
+            dnd2P_dT2_dns.append(dnd2P_dT2)
+            
+            dnd2P_dV2 = -6*T*x10/x8**4 - 2*x19*x23*x27 + 2*x20 - 2*x22*x28 + 6*x25*x27/x5**4 - 2*x26
+            dnd2P_dV2_dns.append(dnd2P_dV2)
+            
+            dnd2P_dTdV = x1*x14*x18 - x13*x15*x28 + x16*x21 + x17
+            dnd2P_dTdV_dns.append(dnd2P_dTdV)
+            
+        return dndP_dT_dsn, dndP_dV_dns, dnd2P_dT2_dns, dnd2P_dV2_dns, dnd2P_dTdV_dns
 
 
 class PRMIX(GCEOSMIX, PR):
@@ -2948,6 +3784,52 @@ class PRMIX(GCEOSMIX, PR):
         '''
         b = self.b
         return [2.0*(bi - b) for bi in self.bs]
+
+    @property
+    def d2delta_dzizjs(self):   
+        r'''Helper method for calculating the second composition derivatives (hessian) of
+        `delta`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^2 \delta}{\partial x_i\partial x_j}\right)_{T, P, x_{k\ne i,j}} 
+            = 0
+
+        Returns
+        -------
+        d2delta_dzizjs : list[float]
+            Second Composition derivative of `delta` of each component, [m^3/mol]
+
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        return [[0.0]*self.N for i in self.cmps]
+
+    @property
+    def d2delta_dninjs(self):   
+        r'''Helper method for calculating the second mole number derivatives (hessian) of
+        `delta`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^2 \delta}{\partial n_i \partial n_j}\right)_{T, P, n_{k\ne i,j}} 
+            = 4b - 2b_i - 2b_j
+
+        Returns
+        -------
+        d2delta_dninjs : list[list[float]]
+            Second mole number derivative of `delta` of each component, [m^3/mol^3]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        bb = 2.0*self.b
+        bs = self.bs
+        cmps = self.cmps
+        d2b_dninjs = []
+        for bi in self.bs:
+            d2b_dninjs.append([2.0*(bb - bi - bj) for bj in bs])
+        return d2b_dninjs
     
     @property
     def depsilon_dzs(self):       
@@ -2992,6 +3874,60 @@ class PRMIX(GCEOSMIX, PR):
         b2 = b + b
         return [b2*(b - bi) for bi in self.bs]
     
+    @property
+    def d2epsilon_dzizjs(self):       
+        r'''Helper method for calculating the second composition derivatives (hessian) 
+        of `epsilon`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^2 \epsilon}{\partial x_i \partial x_j}\right)_{T, P, x_{k\ne i,j}} 
+            =  2 b_i b_j
+
+        Returns
+        -------
+        d2epsilon_dzizjs : list[list[float]]
+            Composition derivative of `epsilon` of each component, [m^6/mol^2]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        bs = self.bs
+        return [[-2.0*bi*bj for bi in bs] for bj in bs]
+
+    @property
+    def d2epsilon_dninjs(self):       
+        r'''Helper method for calculating the second mole number derivatives (hessian) of
+        `epsilon`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^2 \epsilon}{\partial n_i n_j}\right)_{T, P, n_{k\ne i,j}} 
+            = -2b(2b - b_i - b_j) - 2(b - b_i)(b - b_j)
+        Returns
+        -------
+        d2epsilon_dninjs : list[list[float]]
+            Second composition derivative of `epsilon` of each component, [m^6/mol^4]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        bs = self.bs
+        b = self.b
+        cmps = self.cmps
+        bb = b + b
+        d2epsilon_dninjs = []
+        for i in cmps:
+            l = []
+            for j in cmps:
+                bi, bj = bs[i], bs[j]
+#                if i != j:
+                v = -bb*(bb - (bi + bj))  -2.0*(b - bi)*(b - bj)
+#                else:
+#                    v = -2.0*(b - bi)*(3.0*b - bj)
+                l.append(v)
+            d2epsilon_dninjs.append(l)
+        return d2epsilon_dninjs
 
 
 class SRKMIX(GCEOSMIX, SRK):    
@@ -3304,6 +4240,46 @@ class SRKMIX(GCEOSMIX, SRK):
         return [(bi - b) for bi in self.bs]
 
     @property
+    def d2delta_dzizjs(self):   
+        r'''Helper method for calculating the second composition derivatives (hessian) of
+        `delta`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^2 \delta}{\partial x_i\partial x_j}\right)_{T, P, x_{k\ne i,j}} 
+            = 0
+
+        Returns
+        -------
+        d2delta_dzizjs : list[float]
+            Second Composition derivative of `delta` of each component, [m^3/mol]
+
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        return [[0.0]*self.N for i in self.cmps]
+
+    @property
+    def d2delta_dninjs(self):   
+        r'''Helper method for calculating the second mole number derivatives (hessian) of
+        `delta`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^2 \delta}{\partial n_i \partial n_j}\right)_{T, P, n_{k\ne i,j}} 
+            = 2b - b_i - b_j
+
+        Returns
+        -------
+        d2delta_dninjs : list[list[float]]
+            Second mole number derivative of `delta` of each component, [m^3/mol^3]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        return self.d2b_dninjs
+
+    @property
     def depsilon_dzs(self):       
         r'''Helper method for calculating the composition derivatives of
         `epsilon`. Note this is independent of the phase.
@@ -3343,6 +4319,45 @@ class SRKMIX(GCEOSMIX, SRK):
         '''
         return [0.0]*self.N
 
+    @property
+    def d2epsilon_dzizjs(self):       
+        r'''Helper method for calculating the second composition derivatives (hessian) 
+        of `epsilon`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^2 \epsilon}{\partial x_i \partial x_j}\right)_{T, P, x_{k\ne i,j}} 
+            = 0
+
+        Returns
+        -------
+        d2epsilon_dzizjs : list[list[float]]
+            Composition derivative of `epsilon` of each component, [m^6/mol^2]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        return [[0.0]*self.N for i in self.cmps]
+
+    @property
+    def d2epsilon_dninjs(self):       
+        r'''Helper method for calculating the second mole number derivatives (hessian) of
+        `epsilon`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^2 \epsilon}{\partial n_i n_j}\right)_{T, P, n_{k\ne i,j}} 
+            = 0
+
+        Returns
+        -------
+        d2epsilon_dninjs : list[list[float]]
+            Second composition derivative of `epsilon` of each component, [m^6/mol^4]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        return [[0.0]*self.N for i in self.cmps]
 
 
 class PR78MIX(PRMIX):
@@ -3764,6 +4779,85 @@ class VDWMIX(GCEOSMIX, VDW):
         '''
         return [0.0]*self.N
 
+    @property
+    def d2delta_dzizjs(self):   
+        r'''Helper method for calculating the second composition derivatives (hessian) of
+        `delta`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^2 \delta}{\partial x_i\partial x_j}\right)_{T, P, x_{k\ne i,j}} 
+            = 0
+
+        Returns
+        -------
+        d2delta_dzizjs : list[float]
+            Second Composition derivative of `delta` of each component, [m^3/mol]
+
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        return [[0.0]*self.N for i in self.cmps]
+
+    @property
+    def d2delta_dninjs(self):   
+        r'''Helper method for calculating the second mole number derivatives (hessian) of
+        `delta`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^2 \delta}{\partial n_i \partial n_j}\right)_{T, P, n_{k\ne i,j}} 
+            = 0
+
+        Returns
+        -------
+        d2delta_dninjs : list[list[float]]
+            Second mole number derivative of `delta` of each component, [m^3/mol^3]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        return [[0.0]*self.N for i in self.cmps]
+
+    @property
+    def d2epsilon_dzizjs(self):       
+        r'''Helper method for calculating the second composition derivatives (hessian) 
+        of `epsilon`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^2 \epsilon}{\partial x_i \partial x_j}\right)_{T, P, x_{k\ne i,j}} 
+            = 0
+
+        Returns
+        -------
+        d2epsilon_dzizjs : list[list[float]]
+            Composition derivative of `epsilon` of each component, [m^6/mol^2]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        return [[0.0]*self.N for i in self.cmps]
+
+    @property
+    def d2epsilon_dninjs(self):       
+        r'''Helper method for calculating the second mole number derivatives (hessian) of
+        `epsilon`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^2 \epsilon}{\partial n_i n_j}\right)_{T, P, n_{k\ne i,j}} 
+            = 0
+
+        Returns
+        -------
+        d2epsilon_dninjs : list[list[float]]
+            Second composition derivative of `epsilon` of each component, [m^6/mol^4]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        return [[0.0]*self.N for i in self.cmps]
 
 
 class PRSVMIX(PRMIX, PRSV):
