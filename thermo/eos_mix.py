@@ -3156,6 +3156,9 @@ class GCEOSMIX(GCEOS):
             x_{i\ne j}}
             \right)
             
+        Apart from the ideal term, this is the formulation for chemical 
+        potential.
+            
         Parameters
         ----------
         Z : float

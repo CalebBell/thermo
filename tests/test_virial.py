@@ -106,7 +106,7 @@ def test_BVirial_Abbott():
     from sympy import symbols, Rational, diff, lambdify, integrate
 
     B = BVirial_Abbott(510., 425.2, 38E5, 0.193)
-    assert_allclose(B, -0.00020570178037383633)
+    assert_allclose(B, -0.00020570185009564064)
     
     with pytest.raises(Exception):
         BVirial_Abbott(510., 425.2, 38E5, 0.193, order=-3)
@@ -173,7 +173,7 @@ def test_BVirial_Tsonopoulos():
     from sympy import symbols, Rational, diff, lambdify, integrate
 
     B = BVirial_Tsonopoulos(510., 425.2, 38E5, 0.193)
-    assert_allclose(B, -0.00020935288308483694)
+    assert_allclose(B, -0.00020935295404416802)
 
     with pytest.raises(Exception):
         BVirial_Tsonopoulos(510., 425.2, 38E5, 0.193, order=-3)
@@ -240,10 +240,10 @@ def test_BVirial_Tsonopoulos_extended():
     from sympy import symbols, Rational, diff, lambdify, integrate
 
     B = BVirial_Tsonopoulos_extended(510., 425.2, 38E5, 0.193, species_type='normal', dipole=0)
-    assert_allclose(B, -0.00020935288308483694)
+    assert_allclose(B, -0.00020935295404416802)
 
     B = BVirial_Tsonopoulos_extended(430., 405.65, 11.28E6, 0.252608, a=0, b=0, species_type='ketone', dipole=1.469)
-    assert_allclose(B, -9.679715056695323e-05)
+    assert_allclose(B, -9.679718337596426e-05)
 
     with pytest.raises(Exception):
         BVirial_Tsonopoulos_extended(510., 425.2, 38E5, 0.193, order=-3)
@@ -255,7 +255,7 @@ def test_BVirial_Tsonopoulos_extended():
 
     Bs_calc = [BVirial_Tsonopoulos_extended(430., 405.65, 11.28E6, 0.252608,
                                             a=0, b=0, species_type=i, dipole=0.1) for i in types]
-    Bs = [-9.002529440027288e-05, -9.002529440027288e-05, -8.136805574379563e-05, -9.232250634010228e-05, -9.00558069055045e-05, -9.00558069055045e-05, -9.00558069055045e-05, -9.00558069055045e-05, -9.00558069055045e-05, -9.00558069055045e-05, -9.00558069055045e-05, -9.00558069055045e-05, -9.003495446399036e-05, -9.003495446399036e-05, -9.003495446399036e-05, -9.003495446399036e-05, -7.331247111785242e-05]
+    Bs = [-9.00253249139901e-05, -9.00253249139901e-05, -8.136808332317606e-05, -9.232253763245037e-05, -9.00558374295638e-05, -9.00558374295638e-05, -9.00558374295638e-05, -9.00558374295638e-05, -9.00558374295638e-05, -9.00558374295638e-05, -9.00558374295638e-05, -9.00558374295638e-05, -9.003498498098181e-05, -9.003498498098181e-05, -9.003498498098181e-05, -9.003498498098181e-05, -7.331249596682434e-05]
     assert_allclose(Bs_calc, Bs)
 
 

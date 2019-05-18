@@ -1257,8 +1257,8 @@ def test_PR_d_lbphis_dT():
     assert_allclose(expected_diffs, numerical_diffs, rtol=1e-5)
 
 @pytest.mark.sympy
-def test_PR_d_lbphis_dT_sympy():
-    from sympy import Derivative, symbols, sqrt, diff, log, N
+def test_PR_d_lnphis_dT_sympy():
+    from sympy import Derivative, symbols, sqrt, diff, log, N, Function
     from fluids.constants import R as R_num
     T_num = 270.0
     P_num = 76E5
@@ -1272,8 +1272,8 @@ def test_PR_d_lbphis_dT_sympy():
     diffs_implemented = eos.d_lnphis_dT(Z=eos.Z_g, dZ_dT=eos.dZ_dT_g, zs=zs)
 
     # Symbolic part
-    T, P, R, a_alpha_f, b1, b2, b3, b, = symbols('T, P, R, a_alpha_f, b1, b2, b3, b')
-    Z_f, sum_f = symbols('Z_f, sum_f')
+    T, P, R, b1, b2, b3, b, = symbols('T, P, R, b1, b2, b3, b')
+    Z_f, sum_f, a_alpha_f = symbols('Z_f, sum_f, a_alpha_f', cls=Function)
     
     root_two = sqrt(2)
     two_root_two = 2*sqrt(2)
@@ -1291,8 +1291,6 @@ def test_PR_d_lbphis_dT_sympy():
         t2 = 2/a_alpha*sum_fun
         t3 = t1 - A/(two_root_two*B)*(t2 - bi/b)*log((Z + (root_two + 1)*B)/(Z - (root_two - 1)*B))
         needed.append(diff(t3, T))
-
-
     
     sympy_diffs = []
     for i in range(3):
@@ -1317,7 +1315,7 @@ def test_PR_d_lbphis_dT_sympy():
     
     assert_allclose(diffs_implemented, sympy_diffs, rtol=1e-10)
     
-def test_SRK_d_lbphis_dT():
+def test_SRK_d_lnphis_dT():
     dT = 1e-6
     T = 270.0
     P = 76E5
@@ -1339,8 +1337,8 @@ def test_SRK_d_lbphis_dT():
 
 
 @pytest.mark.sympy
-def test_SRK_d_lbphis_dT_sympy():
-    from sympy import Derivative, symbols, sqrt, diff, log, N
+def test_SRK_d_lnphis_dT_sympy():
+    from sympy import Derivative, symbols, sqrt, diff, log, N, Function
     from fluids.constants import R as R_num
     T_num = 270.0
     P_num = 76E5
@@ -1354,8 +1352,8 @@ def test_SRK_d_lbphis_dT_sympy():
     diffs_implemented = eos.d_lnphis_dT(Z=eos.Z_g, dZ_dT=eos.dZ_dT_g, zs=zs)
 
     # Symbolic part
-    T, P, R, a_alpha_f, b1, b2, b3, b, = symbols('T, P, R, a_alpha_f, b1, b2, b3, b')
-    Z_f, sum_f = symbols('Z_f, sum_f')
+    T, P, R, b1, b2, b3, b, = symbols('T, P, R, b1, b2, b3, b')
+    Z_f, sum_f, a_alpha_f  = symbols('Z_f, sum_f, a_alpha_f', cls=Function)
     a_alpha, sum_fun = a_alpha_f(T), sum_f(T)
     
     A = a_alpha*P/(R*R*T*T)
@@ -1420,7 +1418,7 @@ def test_VDW_d_lnphis_dT():
 
 @pytest.mark.sympy
 def test_VDW_d_lnphis_dT_sympy():
-    from sympy import Derivative, symbols, sqrt, diff, log, N
+    from sympy import Derivative, symbols, sqrt, diff, log, N, Function
     from fluids.constants import R as R_num
     T_num = 280.0
     P_num = 76E5
@@ -1434,9 +1432,9 @@ def test_VDW_d_lnphis_dT_sympy():
     diffs_implemented = eos.d_lnphis_dT(Z=eos.Z_g, dZ_dT=eos.dZ_dT_g, zs=zs)
 
     # Symbolic part
-    T, P, R, a_alpha_f, b1, b2, b3, b, = symbols('T, P, R, a_alpha_f, b1, b2, b3, b')
+    T, P, R, b1, b2, b3, b, = symbols('T, P, R, b1, b2, b3, b')
     a1, a2, a3 = symbols('a1, a2, a3')
-    Z_f, sum_f = symbols('Z_f, sum_f')
+    Z_f, sum_f, a_alpha_f = symbols('Z_f, sum_f, a_alpha_f', cls=Function)
     a_alpha, sum_fun = a_alpha_f(T), sum_f(T)
     
     A = a_alpha*P/(R*R*T*T)
@@ -1505,7 +1503,7 @@ def test_PR_d_lnphis_dP():
 
 @pytest.mark.sympy
 def test_PR_d_lnphis_dP_sympy():
-    from sympy import Derivative, symbols, sqrt, diff, log, N
+    from sympy import Derivative, symbols, sqrt, diff, log, N, Function
     from fluids.constants import R as R_num
     T_num = 270.0
     P_num = 76E5
@@ -1520,7 +1518,7 @@ def test_PR_d_lnphis_dP_sympy():
     diffs_implemented = eos.d_lnphis_dP(Z=eos.Z_g, dZ_dP=eos.dZ_dP_g, zs=zs)
 
     T, P, R, a_alpha_f, b1, b2, b3, b, = symbols('T, P, R, a_alpha_f, b1, b2, b3, b')
-    Z_f, sum_f = symbols('Z_f, sum_f')
+    Z_f, sum_f = symbols('Z_f, sum_f', cls=Function)
     
     root_two = sqrt(2)
     two_root_two = 2*sqrt(2)
@@ -1582,7 +1580,7 @@ def test_SRK_d_lnphis_dP():
 
 @pytest.mark.sympy
 def test_SRK_d_lnphis_dP_sympy():
-    from sympy import Derivative, symbols, sqrt, diff, log, N
+    from sympy import Derivative, symbols, sqrt, diff, log, N, Function
     from fluids.constants import R as R_num
     T_num = 270.0
     P_num = 76E5
@@ -1592,12 +1590,11 @@ def test_SRK_d_lnphis_dP_sympy():
     kijs = [[0, 0.038, 0.08], [0.038, 0, 0.021], [0.08, 0.021, 0]]
     zs = [0.3, 0.1, 0.6]
     
-    
     eos = SRKMIX(T=T_num, P=P_num, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=kijs)
     diffs_implemented = eos.d_lnphis_dP(Z=eos.Z_g, dZ_dP=eos.dZ_dP_g, zs=zs)
 
-    T, P, R, a_alpha_f, b1, b2, b3, b, = symbols('T, P, R, a_alpha_f, b1, b2, b3, b')
-    Z_f, sum_f = symbols('Z_f, sum_f')
+    T, P, R, b1, b2, b3, b, = symbols('T, P, R, b1, b2, b3, b')
+    Z_f, sum_f, a_alpha_f = symbols('Z_f, sum_f, a_alpha_f', cls=Function)
     a_alpha, sum_fun = a_alpha_f(T), sum_f(T)
     
     A = a_alpha*P/(R*R*T*T)
@@ -1657,7 +1654,7 @@ def test_VDW_d_lnphis_dP():
     
 @pytest.mark.sympy
 def test_VDW_d_lnphis_dP_sympy():
-    from sympy import Derivative, symbols, sqrt, diff, log, N
+    from sympy import Derivative, symbols, sqrt, diff, log, N, Function
     from fluids.constants import R as R_num
 
     T_num = 280.0
@@ -1671,9 +1668,9 @@ def test_VDW_d_lnphis_dP_sympy():
     eos = VDWMIX(T=T_num, P=P_num, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=kijs)
     diffs_implemented = eos.d_lnphis_dP(Z=eos.Z_g, dZ_dP=eos.dZ_dP_g, zs=zs)
 
-    T, P, R, a_alpha_f, b1, b2, b3, b, = symbols('T, P, R, a_alpha_f, b1, b2, b3, b')
+    T, P, R, b1, b2, b3, b, = symbols('T, P, R, b1, b2, b3, b')
     a1, a2, a3 = symbols('a1, a2, a3')
-    Z_f, sum_f = symbols('Z_f, sum_f')
+    Z_f, sum_f, a_alpha_f = symbols('Z_f, sum_f, a_alpha_f', cls=Function)
     a_alpha, sum_fun = a_alpha_f(T), sum_f(T)
     
     Z = Z_f(P)
