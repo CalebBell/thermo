@@ -27,7 +27,7 @@ from thermo.eos import *
 from thermo.eos_mix import *
 from scipy.misc import derivative
 from fluids.constants import R
-#from fluids.numerics import derivative
+from fluids.numerics import jacobian, hessian
 from scipy.optimize import minimize, newton
 from math import log, exp, sqrt
 from thermo import Mixture
@@ -1823,9 +1823,38 @@ def test_db_dnxpartial():
             for i, ni in zip((0, 1, 2), (.7, .2, .1))]
         assert_allclose(numericals, eos.dnb_dns)
 
+@pytest.mark.parametrize("kwargs", [ternary_basic])
+def test_d2b_d2nx(kwargs):
+    kwargs = kwargs.copy()
+    zs = kwargs['zs']
+    del kwargs['zs'] 
+    normalization = False
+    
+    def d2b_d2nxpartial(comp):
+        if normalization:
+            comp = normalize(comp)
+        eos = obj(zs=comp, **kwargs)
+        return eos.b
+    
+    for obj in eos_mix_list:
+        eos = obj(zs=zs, **kwargs)
+        numericals = hessian(d2b_d2nxpartial, zs, perturbation=1e-4)
+        analytical = eos.d2b_dzizjs
+        # All zeros if the model is correct
+        assert_allclose(numericals, analytical, rtol=1e-6, atol=1e-10)
+    
+    normalization = True
+    for obj in eos_mix_list:
+        eos = obj(zs=zs, **kwargs)
+        numericals = hessian(d2b_d2nxpartial, zs, perturbation=5e-5)
+        analytical = eos.d2b_dninjs
+        assert_allclose(numericals, analytical, rtol=5e-4)
+
+
 
 @pytest.mark.parametrize("kwargs", [ternary_basic])
 def test_ddelta_dnx(kwargs):
+    kwargs = kwargs.copy()
     zs = kwargs['zs']
     del kwargs['zs'] 
     normalization = False
@@ -1851,10 +1880,38 @@ def test_ddelta_dnx(kwargs):
         numericals = [derivative(ddelta_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
             for i, ni in enumerate(zs)]
         assert_allclose(numericals, eos.ddelta_dns)
+
+@pytest.mark.parametrize("kwargs", [ternary_basic])
+def test_d2delta_d2nx(kwargs):
+    kwargs = kwargs.copy()
+    zs = kwargs['zs']
+    del kwargs['zs'] 
+    normalization = False
+    
+    def d2delta_d2nxpartial(comp):
+        if normalization:
+            comp = normalize(comp)
+        eos = obj(zs=comp, **kwargs)
+        return eos.delta
+    
+    for obj in eos_mix_list:
+        eos = obj(zs=zs, **kwargs)
+        numericals = hessian(d2delta_d2nxpartial, zs, perturbation=5e-5)
+        analytical = eos.d2delta_dzizjs
+        # For all EOEs so far, is zero
+        assert_allclose(numericals, analytical, atol=1e-8)
+    
+    normalization = True
+    for obj in eos_mix_list:
+        eos = obj(zs=zs, **kwargs)
+        numericals = hessian(d2delta_d2nxpartial, zs, perturbation=5e-5)
+        analytical = eos.d2delta_dninjs
+        assert_allclose(numericals, analytical, rtol=1e-3)
     
 
 @pytest.mark.parametrize("kwargs", [ternary_basic])
 def test_depsilon_dnx(kwargs):
+    kwargs = kwargs.copy()
     zs = kwargs['zs']
     del kwargs['zs'] 
     normalization = False
@@ -1880,6 +1937,32 @@ def test_depsilon_dnx(kwargs):
         numericals = [derivative(depsilon_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
             for i, ni in enumerate(zs)]
         assert_allclose(numericals, eos.depsilon_dns)
+
+@pytest.mark.parametrize("kwargs", [ternary_basic])
+def test_d2epsilon_d2nx(kwargs):
+    kwargs = kwargs.copy()
+    zs = kwargs['zs']
+    del kwargs['zs'] 
+    normalization = False
+    
+    def d2epsilon_d2nxpartial(comp):
+        if normalization:
+            comp = normalize(comp)
+        eos = obj(zs=comp, **kwargs)
+        return eos.epsilon
+    
+    for obj in eos_mix_list:
+        eos = obj(zs=zs, **kwargs)
+        numericals = hessian(d2epsilon_d2nxpartial, zs, perturbation=1e-4)
+        analytical = eos.d2epsilon_dzizjs
+        assert_allclose(numericals, analytical, rtol=1e-6)
+    
+    normalization = True
+    for obj in eos_mix_list:
+        eos = obj(zs=zs, **kwargs)
+        numericals = hessian(d2epsilon_d2nxpartial, zs, perturbation=5e-5)
+        analytical = eos.d2epsilon_dninjs
+        assert_allclose(numericals, analytical, rtol=5e-4)
 
 
 def test_da_alpha_dnxpartial():
@@ -1924,6 +2007,33 @@ def test_da_alpha_dnxpartial():
         numericals = [derivative(da_alpha_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
             for i, ni in zip((0, 1, 2), (.7, .2, .1))]
         assert_allclose(numericals, eos.dna_alpha_dns)
+
+
+@pytest.mark.parametrize("kwargs", [ternary_basic])
+def test_d2a_alpha_d2nx(kwargs):
+    kwargs = kwargs.copy()
+    zs = kwargs['zs']
+    del kwargs['zs'] 
+    normalization = False
+    
+    def d2a_alpha_d2nxpartial(comp):
+        if normalization:
+            comp = normalize(comp)
+        eos = obj(zs=comp, **kwargs)
+        return eos.a_alpha
+    
+    for obj in eos_mix_list:
+        eos = obj(zs=zs, **kwargs)
+        numericals = hessian(d2a_alpha_d2nxpartial, zs, perturbation=1e-4)
+        analytical = eos.d2a_alpha_dzizjs
+        assert_allclose(numericals, analytical, rtol=5e-7)
+    
+    normalization = True
+    for obj in eos_mix_list:
+        eos = obj(zs=zs, **kwargs)
+        numericals = hessian(d2a_alpha_d2nxpartial, zs, perturbation=5e-5)
+        analytical = eos.d2a_alpha_dninjs
+        assert_allclose(numericals, analytical, rtol=5e-4)
 
 
 def test_da_alpha_dT_dnxpartial():
@@ -1975,6 +2085,7 @@ def test_da_alpha_dT_dnxpartial():
 
 @pytest.mark.parametrize("kwargs", [ternary_basic])
 def test_dH_dep_dnxpartial(kwargs):
+    kwargs = kwargs.copy()
     zs = kwargs['zs']
     del kwargs['zs'] # Large test case - thought had issue but just zs did not sum to 1
 
@@ -2017,7 +2128,126 @@ def test_dH_dep_dnxpartial(kwargs):
 
 
 @pytest.mark.parametrize("kwargs", [ternary_basic])
+def test_G_dep_dnxpartial(kwargs):
+    kwargs = kwargs.copy()
+    zs = kwargs['zs']
+    del kwargs['zs'] 
+    normalization = False
+    partial_n = False
+    def G_dep_dnxpartial(comp):
+        nt = sum(comp)
+        if normalization:
+            comp = normalize(comp)
+        eos = obj(zs=comp, **kwargs)
+        if partial_n:
+            return nt*eos.G_dep_g
+        return eos.G_dep_g
+    
+    for obj in eos_mix_list:
+        eos = obj(zs=zs, **kwargs)
+        numericals = jacobian(G_dep_dnxpartial, zs, perturbation=1e-7)
+        analytical = eos.dG_dep_dzs(eos.Z_g, zs)
+        assert_allclose(numericals, analytical, rtol=5e-7)
+    
+    normalization = True
+    for obj in eos_mix_list:
+        eos = obj(zs=zs, **kwargs)
+        numericals = jacobian(G_dep_dnxpartial, zs, perturbation=5e-7)
+        analytical = eos.dG_dep_dns(eos.Z_g, zs)
+        assert_allclose(numericals, analytical, rtol=1e-6)
+
+    partial_n = True
+    for obj in eos_mix_list:
+        eos = obj(zs=zs, **kwargs)
+        numericals = jacobian(G_dep_dnxpartial, zs, perturbation=5e-7)
+        analytical = eos.dnG_dep_dns(eos.Z_g, zs)
+        assert_allclose(numericals, analytical, rtol=1e-6)
+
+@pytest.mark.parametrize("kwargs", [ternary_basic])
+def test_dG_dep_d2nx(kwargs):
+    kwargs = kwargs.copy()
+    zs = kwargs['zs']
+    del kwargs['zs'] 
+    normalization = False
+
+    def G_dep_d2nxpartial(comp):
+        if normalization:
+            comp = normalize(comp)
+        eos = obj(zs=comp, **kwargs)
+        return eos.G_dep_g
+    
+    for obj in eos_mix_list:
+        eos = obj(zs=zs, **kwargs)
+        numericals = hessian(G_dep_d2nxpartial, zs, perturbation=2e-4)
+        analytical = eos.d2G_dep_dzizjs(eos.Z_g, zs)
+        assert_allclose(numericals, analytical, rtol=5e-5)
+    
+    normalization = True
+    for obj in eos_mix_list:
+        eos = obj(zs=zs, **kwargs)
+        numericals = hessian(G_dep_d2nxpartial, zs, perturbation=2e-4)
+        analytical = eos.d2G_dep_dninjs(eos.Z_g, zs)
+        assert_allclose(numericals, analytical, rtol=5e-4)
+
+
+
+@pytest.mark.parametrize("kwargs", [ternary_basic])
+def test_lnphi_dnx(kwargs):
+    kwargs = kwargs.copy()
+    zs = kwargs['zs']
+    del kwargs['zs'] 
+    normalization = False
+    partial_n = False
+    def lnphi_dnxpartial(comp):
+        nt = sum(comp)
+        if normalization:
+            comp = normalize(comp)
+        eos = obj(zs=comp, **kwargs)
+        return log(eos.phi_g)
+    
+    for obj in eos_mix_list:
+        eos = obj(zs=zs, **kwargs)
+        numericals = jacobian(lnphi_dnxpartial, zs, perturbation=1e-7)
+        analytical = eos.dlnphi_dzs(eos.Z_g, zs)
+        assert_allclose(numericals, analytical, rtol=5e-7)
+    
+    normalization = True
+    for obj in eos_mix_list:
+        eos = obj(zs=zs, **kwargs)
+        numericals = jacobian(lnphi_dnxpartial, zs, perturbation=5e-7)
+        analytical = eos.dlnphi_dns(eos.Z_g, zs)
+        assert_allclose(numericals, analytical, rtol=1e-6)
+
+@pytest.mark.parametrize("kwargs", [ternary_basic])
+def test_dlnphi_d2nx(kwargs):
+    kwargs = kwargs.copy()
+    zs = kwargs['zs']
+    del kwargs['zs'] 
+    normalization = False
+
+    def lnphi_d2nxpartial(comp):
+        if normalization:
+            comp = normalize(comp)
+        eos = obj(zs=comp, **kwargs)
+        return log(eos.phi_g)
+    
+    for obj in eos_mix_list:
+        eos = obj(zs=zs, **kwargs)
+        numericals = hessian(lnphi_d2nxpartial, zs, perturbation=2e-4)
+        analytical = eos.d2lnphi_dzizjs(eos.Z_g, zs)
+        assert_allclose(numericals, analytical, rtol=5e-5)
+    
+    normalization = True
+    for obj in eos_mix_list:
+        eos = obj(zs=zs, **kwargs)
+        numericals = hessian(lnphi_d2nxpartial, zs, perturbation=2e-4)
+        analytical = eos.d2lnphi_dninjs(eos.Z_g, zs)
+        assert_allclose(numericals, analytical, rtol=5e-4)
+        
+
+@pytest.mark.parametrize("kwargs", [ternary_basic])
 def test_dV_dnxpartial(kwargs):
+    kwargs = kwargs.copy()
     zs = kwargs['zs']
     del kwargs['zs'] 
 
@@ -2057,7 +2287,35 @@ def test_dV_dnxpartial(kwargs):
 
 
 @pytest.mark.parametrize("kwargs", [ternary_basic])
+def test_V_d2nx(kwargs):
+    kwargs = kwargs.copy()
+    zs = kwargs['zs']
+    del kwargs['zs'] 
+    normalization = False
+    
+    def V_d2nxpartial(comp):
+        if normalization:
+            comp = normalize(comp)
+        eos = obj(zs=comp, **kwargs)
+        return eos.V_g
+    
+    for obj in eos_mix_list:
+        eos = obj(zs=zs, **kwargs)
+        numericals = hessian(V_d2nxpartial, zs, perturbation=1e-4)
+        analytical = eos.d2V_dzizjs(eos.Z_g, zs)
+        assert_allclose(numericals, analytical, rtol=5e-5)
+    
+    normalization = True
+    for obj in eos_mix_list:
+        eos = obj(zs=zs, **kwargs)
+        numericals = hessian(V_d2nxpartial, zs, perturbation=5e-5)
+        analytical = eos.d2V_dninjs(eos.Z_g, zs)
+        assert_allclose(numericals, analytical, rtol=5e-4)
+
+
+@pytest.mark.parametrize("kwargs", [ternary_basic])
 def test_dZ_dnxpartial(kwargs):
+    kwargs = kwargs.copy()
     zs = kwargs['zs']
     del kwargs['zs'] 
 
