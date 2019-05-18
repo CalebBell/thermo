@@ -214,8 +214,9 @@ def test_derivatives_density():
     assert_allclose(eos.dP_drho_g, 77.71290396836963)
     assert_allclose(eos.dP_drho_l, 1712.0682171304466)
 
-
+@pytest.mark.xfail
 def test_density_extrapolation():
+    # no longer used - different cubic formulation, plus extrapolation is not being used
     # Check some extra derivatives
     T = 420.0
     zs = [.5, .5]
