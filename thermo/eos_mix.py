@@ -4076,22 +4076,25 @@ class PRMIX(GCEOSMIX, PR):
             x3 = 0.0
         x4 = x2*x3
 
-        phis = []
-        
         fugacity_sum_terms = self._fugacity_sum_terms()
         
+        t50 = x4*x1
+        t51 = b_inv*x4
+        t52 = b_inv*Zm1
+        
+        phis = []
 #        fugacity_sum_terms = []
         for i in cmps:
             a_alpha_js = a_alpha_ijs[i]
-            b_ratio = bs[i]*b_inv
-            
+#            b_ratio = bs[i]*b_inv
+            bi = bs[i]
 #            sum_term = 0.0
 #            for zi, a_alpha_j_i in zip(zs, a_alpha_js):
 #                sum_term += zi*a_alpha_j_i
 #            sum_term = sum([zs[j]*a_alpha_js[j] for j in cmps])
 
 #            t3 = b_ratio*Zm1 - x0 - x4*(x1*sum_term - b_ratio)
-            t3 = b_ratio*Zm1 - x0 - x4*(x1*fugacity_sum_terms[i] - b_ratio)
+            t3 = bi*t52 - x0 - (t50*fugacity_sum_terms[i] - bi*t51)
             # Let wherever calls the exp deal with overflow
 #            if t3 > 700.0:
 #                t3 = 700.0
