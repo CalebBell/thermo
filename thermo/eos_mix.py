@@ -1864,10 +1864,10 @@ class GCEOSMIX(GCEOS):
 #        return abs(V_over_F-1)
     
     def _fugacity_sum_terms(self):
-        try:
-            return self.fugacity_sum_terms
-        except:
-            pass
+#        try:
+#            return self.fugacity_sum_terms
+#        except:
+#            pass
         zs = self.zs
         cmps = self.cmps
         a_alpha_ijs = self.a_alpha_ijs
@@ -1880,6 +1880,29 @@ class GCEOSMIX(GCEOS):
             fugacity_sum_terms.append(sum_term)
         self.fugacity_sum_terms = fugacity_sum_terms
         return fugacity_sum_terms
+    
+    
+    
+    def _fugacity_sum_terms(self):
+        try:
+            return self.fugacity_sum_terms
+        except:
+            pass
+        zs = self.zs
+        cmps = self.cmps
+        a_alpha_ijs = self.a_alpha_ijs
+        fugacity_sum_terms = [0.0]*self.N
+        for i in cmps:
+            l = a_alpha_ijs[i]
+            for j in range(i):
+                fugacity_sum_terms[j] += zs[i]*l[j]
+                fugacity_sum_terms[i] += zs[j]*l[j]
+            fugacity_sum_terms[i] += zs[i]*l[i]
+        self.fugacity_sum_terms = fugacity_sum_terms
+        return fugacity_sum_terms
+
+
+
 
     def _da_alpha_dT_j_rows(self):
         try:
