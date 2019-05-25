@@ -4049,11 +4049,13 @@ class PRMIX(GCEOSMIX, PR):
         cmps = self.cmps
         a_alpha_ijs = self.a_alpha_ijs
         T_inv = 1.0/self.T
+        P = self.P
         bs, b = self.bs, self.b
-        A = a_alpha*self.P*R2_inv*T_inv*T_inv
-        B = b*self.P*T_inv*R_inv
-        b_inv = 1.0/b
+        P_T = P*T_inv
         
+        A = a_alpha*P_T*R2_inv*T_inv
+        B = b*P_T*R_inv
+        b_inv = 1.0/b
         # The two log terms need to use a complex log; typically these are
         # calculated at "liquid" volume solutions which are unstable
         # and cannot exist
@@ -4081,7 +4083,7 @@ class PRMIX(GCEOSMIX, PR):
 #        fugacity_sum_terms = []
         for i in cmps:
             a_alpha_js = a_alpha_ijs[i]
-            b_ratio = bs[i]*b_inv 
+            b_ratio = bs[i]*b_inv
             
 #            sum_term = 0.0
 #            for zi, a_alpha_j_i in zip(zs, a_alpha_js):
