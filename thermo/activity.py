@@ -2242,7 +2242,7 @@ def UNIQUAC(xs, rs, qs, taus):
     parameters include some of the terms shown in the following form:
 
     .. math::
-        \ln \tau{ij} =a_{ij}+\frac{b_{ij}}{T}+c_{ij}\ln T + d_{ij}T
+        \ln \tau_{ij} =a_{ij}+\frac{b_{ij}}{T}+c_{ij}\ln T + d_{ij}T
         + \frac{e_{ij}}{T^2}
 
     This model is recast in a slightly more computationally efficient way in

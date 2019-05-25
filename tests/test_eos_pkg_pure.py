@@ -85,5 +85,5 @@ def export_all_mix_cases(verbose=False):
     
 
 if __name__ == '__main__':
-#    export_all_pure_cases(verbose=True)
-    export_all_mix_cases(verbose=True)
+    export_all_pure_cases(verbose=True)
+#    export_all_mix_cases(verbose=True)

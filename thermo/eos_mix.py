@@ -102,7 +102,7 @@ def a_alpha_and_derivatives(a_alphas, T, zs, kijs, a_alpha_ijs=None,
 def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs, 
                                  kijs, a_alpha_ijs=None, a_alpha_i_roots=None,
                                  a_alpha_ij_roots_inv=None,
-                                 second_derivative=True):
+                                 second_derivative=False):
     # For 44 components, takes 150 us in PyPy.
     
     N = len(a_alphas)
@@ -128,6 +128,8 @@ def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
                 a_alpha += term
     
     da_alpha_dT_ijs = [[0.0]*N for _ in cmps]
+    if second_derivative:
+        d2a_alpha_dT2_ijs = [[0.0]*N for _ in cmps]
     
     d2a_alpha_dT2_ij = 0.0
     
@@ -166,10 +168,13 @@ def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
             
             x0 = a_alphai*a_alphaj
         
-            d2a_alpha_dT2_ij = zi_zj*kij_m1*(  (x0*(
+            d2a_alpha_dT2_ij = kij_m1*(  (x0*(
             -0.5*(a_alphai*d2a_alpha_dT2s[j] + a_alphaj*d2a_alpha_dT2_i)
             - da_alpha_dT_i*da_alpha_dT_j) +.25*x1_x2*x1_x2)/(x0_05_inv*x0*x0))
-            
+            if second_derivative:
+                d2a_alpha_dT2_ijs[i][j] = d2a_alpha_dT2_ijs[j][i] = d2a_alpha_dT2_ij
+
+            d2a_alpha_dT2_ij *= zi_zj
             
             if i != j:
                 da_alpha_dT += da_alpha_dT_ij + da_alpha_dT_ij
@@ -178,6 +183,8 @@ def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
                 da_alpha_dT += da_alpha_dT_ij
                 d2a_alpha_dT2 += d2a_alpha_dT2_ij
 
+    if second_derivative:
+        return a_alpha, da_alpha_dT, d2a_alpha_dT2, d2a_alpha_dT2_ijs, da_alpha_dT_ijs, a_alpha_ijs
     return a_alpha, da_alpha_dT, d2a_alpha_dT2, da_alpha_dT_ijs, a_alpha_ijs
 
 
@@ -407,7 +414,6 @@ class GCEOSMIX(GCEOS):
         # 2 components 1.89 pypy, pythran 1.75 us, regular python 12.7 us.
         # 10 components - regular python 148 us, 9.81 us PyPy, 8.37 pythran in PyPy (flags have no effect; 14.3 us in regular python)
         zs, kijs, cmps, N = self.zs, self.kijs, self.cmps, self.N
-        
         if quick:
             try:
                 a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv = self.a_alpha_ijs, self.a_alpha_i_roots, self.a_alpha_ij_roots_inv
@@ -419,7 +425,13 @@ class GCEOSMIX(GCEOS):
             self.a_alpha_ijs, self.a_alpha_i_roots, self.a_alpha_ij_roots_inv = a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv
         
         if full:
-            a_alpha, da_alpha_dT, d2a_alpha_dT2, da_alpha_dT_ijs, a_alpha_ijs = a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs, kijs,
+            if True:
+                # Consider not storing the second matrix of a_alpha terms
+                a_alpha, da_alpha_dT, d2a_alpha_dT2, d2a_alpha_dT2_ijs, da_alpha_dT_ijs, a_alpha_ijs = a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs, kijs,
+                                                                                                             a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv, second_derivative=True)
+                self.d2a_alpha_dT2_ijs = d2a_alpha_dT2_ijs
+            else:
+                a_alpha, da_alpha_dT, d2a_alpha_dT2, da_alpha_dT_ijs, a_alpha_ijs = a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs, kijs,
                                                                                                              a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv)
             self.da_alpha_dT_ijs = da_alpha_dT_ijs
             self.a_alpha_ijs = a_alpha_ijs
@@ -664,7 +676,7 @@ class GCEOSMIX(GCEOS):
         Notes
         -----
         One useful application of the mechanical critical temperature is that
-        the pahse identification approach of Venkatarathnam is valid only up to
+        the phase identification approach of Venkatarathnam is valid only up to
         it.
         
         Note that the equation of state, when solved at these conditions, will
@@ -1852,6 +1864,10 @@ class GCEOSMIX(GCEOS):
 #        return abs(V_over_F-1)
     
     def _fugacity_sum_terms(self):
+        try:
+            return self.fugacity_sum_terms
+        except:
+            pass
         zs = self.zs
         cmps = self.cmps
         a_alpha_ijs = self.a_alpha_ijs
@@ -1866,6 +1882,10 @@ class GCEOSMIX(GCEOS):
         return fugacity_sum_terms
 
     def _da_alpha_dT_j_rows(self):
+        try:
+            return self.da_alpha_dT_j_rows
+        except:
+            pass
         zs = self.zs
         cmps = self.cmps
         da_alpha_dT_ijs = self.da_alpha_dT_ijs
@@ -1881,10 +1901,14 @@ class GCEOSMIX(GCEOS):
     
     def _d2a_alpha_dT2_j_rows(self):
         # Does not seem to have worked
-        a_alpha, da_alpha_dT, d2a_alpha_dT2, da_alpha_dT_ijs, a_alpha_ijs, d2a_alpha_dT2_ijs = a_alpha_and_derivatives_full(
-                    self.a_alphas, self.da_alpha_dTs, self.d2a_alpha_dT2s, self.T, self.zs, self.kijs,
-                     self.a_alpha_ijs, self.a_alpha_i_roots, self.a_alpha_ij_roots_inv, second_matrix=True)
-
+#        a_alpha, da_alpha_dT, d2a_alpha_dT2, da_alpha_dT_ijs, a_alpha_ijs, d2a_alpha_dT2_ijs = a_alpha_and_derivatives_full(
+#                    self.a_alphas, self.da_alpha_dTs, self.d2a_alpha_dT2s, self.T, self.zs, self.kijs,
+#                     self.a_alpha_ijs, self.a_alpha_i_roots, self.a_alpha_ij_roots_inv, second_matrix=True)
+        try:
+            return self.d2a_alpha_dT2_j_rows
+        except:
+            pass
+        d2a_alpha_dT2_ijs = self.d2a_alpha_dT2_ijs
         zs = self.zs
         cmps = self.cmps
         d2a_alpha_dT2_j_rows = []
@@ -2391,6 +2415,24 @@ class GCEOSMIX(GCEOS):
             da_alpha_dT_j_rows = self._da_alpha_dT_j_rows()
         da_alpha_dT = self.da_alpha_dT
         return [t + t - da_alpha_dT for t in da_alpha_dT_j_rows]
+
+
+    @property
+    def d2a_alpha_dT2_dzs(self):   
+        try:
+            d2a_alpha_dT2_j_rows = self.d2a_alpha_dT2_j_rows
+        except:
+            d2a_alpha_dT2_j_rows = self._d2a_alpha_dT2_j_rows()
+        return [i + i for i in d2a_alpha_dT2_j_rows]
+
+    @property
+    def d2a_alpha_dT2_dns(self):   
+        try:
+            d2a_alpha_dT2_j_rows = self.d2a_alpha_dT2_j_rows
+        except:
+            d2a_alpha_dT2_j_rows = self._d2a_alpha_dT2_j_rows()
+        d2a_alpha_dT2 = self.d2a_alpha_dT2
+        return [2.0*(t - d2a_alpha_dT2) for t in d2a_alpha_dT2_j_rows]
     
     def dV_dzs(self, Z, zs):
         r'''Calculates the molar volume composition derivative
@@ -3481,14 +3523,12 @@ class GCEOSMIX(GCEOS):
                                      da_alphas=da_alpha_dns, d2a_alphas=d2a_alpha_dninjs,
                                      G=True)
 
-
-
-
-    def d_main_derivatives_and_departures_dn(self, g=True):
-        Z = self.Z_g if g else self.Z_l
-        V = self.V_g if g else self.V_l
-        
+    def _d_main_derivatives_and_departures_dnx(self, V, db_dns, ddelta_dns,
+                                               depsilon_dns, da_alpha_dns,
+                                               da_alpha_dT_dns, 
+                                               d2a_alpha_dT2_dns, dV_dns):
         T = self.T
+        Z = (self.P*V)/(R*T)
         
         x0 = self.a_alpha
         x2 = self.epsilon
@@ -3507,14 +3547,6 @@ class GCEOSMIX(GCEOS):
         x27 = x18**2
         x28 = x18*x24
         
-        
-
-        da_alpha_dT_dns = self.da_alpha_dT_dns
-        db_dns = self.db_dns
-        ddelta_dns = self.ddelta_dns
-        depsilon_dns = self.depsilon_dns
-        da_alpha_dns = self.da_alpha_dns
-        dV_dns = self.dV_dns(Z, self.zs)
         
         dndP_dT_dsn = []
         dndP_dV_dns = []
@@ -3546,7 +3578,7 @@ class GCEOSMIX(GCEOS):
             dndP_dV = T*x17 + x14*x22 + x18*x20 - x18*x26
             dndP_dV_dns.append(dndP_dV)
             
-            d2a_alpha_dT2_dn = 0 # TODO, vector
+            d2a_alpha_dT2_dn = d2a_alpha_dT2_dns[i]
             dnd2P_dT2 = x6*(x13*x6*self.d2a_alpha_dT2 - d2a_alpha_dT2_dn)
             dnd2P_dT2_dns.append(dnd2P_dT2)
             
@@ -3558,7 +3590,256 @@ class GCEOSMIX(GCEOS):
             
         return dndP_dT_dsn, dndP_dV_dns, dnd2P_dT2_dns, dnd2P_dV2_dns, dnd2P_dTdV_dns
 
+    def d_main_derivatives_and_departures_dn(self, V):
+        Z = (self.P*V)/(R*self.T)
+        db_dns = self.db_dns
+        ddelta_dns = self.ddelta_dns
+        depsilon_dns = self.depsilon_dns
+        dV_dns = self.dV_dns(Z, self.zs)
 
+        da_alpha_dns = self.da_alpha_dns
+        da_alpha_dT_dns = self.da_alpha_dT_dns
+        d2a_alpha_dT2_dns = self.d2a_alpha_dT2_dns
+        return self._d_main_derivatives_and_departures_dnx(V, db_dns, ddelta_dns,
+                                               depsilon_dns, da_alpha_dns,
+                                               da_alpha_dT_dns, d2a_alpha_dT2_dns,
+                                               dV_dns)
+
+    def d_main_derivatives_and_departures_dz(self, V):
+        Z = (self.P*V)/(R*self.T)
+        db_dzs = self.db_dzs
+        ddelta_dzs = self.ddelta_dzs
+        depsilon_dzs = self.depsilon_dzs
+        dV_dzs = self.dV_dzs(Z, self.zs)
+
+        da_alpha_dzs = self.da_alpha_dzs
+        da_alpha_dT_dzs = self.da_alpha_dT_dzs
+        d2a_alpha_dT2_dzs = self.d2a_alpha_dT2_dzs
+        return self._d_main_derivatives_and_departures_dnx(V, db_dzs, ddelta_dzs,
+                                               depsilon_dzs, da_alpha_dzs,
+                                               da_alpha_dT_dzs, d2a_alpha_dT2_dzs,
+                                               dV_dzs)
+
+
+    def _dnx_derivatives_and_departures(self, V):
+        try:
+            if V == self.V_l:
+                l = True
+            else:
+                l = False
+        except:
+            l = False
+        
+        
+        d2P_dTdns, d2P_dVdns, d3P_dT2dns, d3P_dV2dns, d3P_dTdVdns = (self.d_main_derivatives_and_departures_dn(V))
+        
+        # Needed in calculation routines
+        if l:
+            (dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP, d2P_dT2, d2P_dV2, d2V_dT2,
+             d2V_dP2, d2T_dV2, d2T_dP2, d2V_dPdT, d2P_dTdV, d2T_dPdV) = (self.dP_dT_l,
+            self.dP_dV_l, self.dV_dT_l, self.dV_dP_l, self.dT_dV_l, self.dT_dP_l,
+            self.d2P_dT2_l, self.d2P_dV2_l, self.d2V_dT2_l, self.d2V_dP2_l, self.d2T_dV2_l,
+            self.d2T_dP2_l, self.d2V_dPdT_l, self.d2P_dTdV_l, self.d2T_dPdV_l)
+        else:
+            (dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP, d2P_dT2, d2P_dV2, d2V_dT2,
+             d2V_dP2, d2T_dV2, d2T_dP2, d2V_dPdT, d2P_dTdV, d2T_dPdV) = (self.dP_dT_g,
+            self.dP_dV_g, self.dV_dT_g, self.dV_dP_g, self.dT_dV_g, self.dT_dP_g,
+            self.d2P_dT2_g, self.d2P_dV2_g, self.d2V_dT2_g, self.d2V_dP2_g, self.d2T_dV2_g,
+            self.d2T_dP2_g, self.d2V_dPdT_g, self.d2P_dTdV_g, self.d2T_dPdV_g)
+
+        d2V_dTdns = []
+        d2V_dPdns = []
+        d2T_dVdns = []
+        d2T_dPdns = []
+        d3T_dP2dns = []
+        d3V_dP2dns = []
+        d3T_dV2dns = []
+        d3V_dT2dns = []
+        d3T_dPdVdns = []
+        d3V_dPdTdns = []
+        for i in self.cmps:
+            d2P_dTdn, d2P_dVdn, d3P_dT2dn, d3P_dV2dn, d3P_dTdVdn = d2P_dTdns[i], d2P_dVdns[i], d3P_dT2dns[i], d3P_dV2dns[i], d3P_dTdVdns[i]
+            
+            # First derivative - one over the other
+            d2V_dTdn = dP_dT*d2P_dVdn/dP_dV**2 - d2P_dTdn/dP_dV
+            d2V_dTdns.append(d2V_dTdn)
+    #        dP_dT # f
+    #        dP_dV # g
+            
+            # Second derivative - one over the other
+            d2V_dPdn = dV_dT*d2P_dTdn/dP_dT**2 - d2V_dTdn/dP_dT
+            d2V_dPdns.append(d2V_dPdn)
+    #        f = dV_dT
+    #        g = dP_dT
+            
+            # Third derivative - inverse of other expression 
+            d2T_dVdn = -d2V_dTdn/dV_dT**2
+            d2T_dVdns.append(d2T_dVdn)
+    
+            # Fourth derivative - inverse of other expression         
+            d2T_dPdn = -d2P_dTdn/dP_dT**2
+            d2T_dPdns.append(d2T_dPdn)
+            
+            # Fifth derivative - starting to get big
+            f = d2P_dT2
+            df = d3P_dT2dn
+            g = dP_dT
+            dg = d2P_dTdn
+            d3T_dP2dn = 3*f*dg/g**4 - df/g**3
+            d3T_dP2dns.append(d3T_dP2dn)
+            
+            # Sixth derivative
+            f = d2P_dV2
+            df = d3P_dV2dn
+            g = dP_dV
+            dg = d2P_dVdn
+            d3V_dP2dn = 3*f*dg/g**4 - df/g**3
+            d3V_dP2dns.append(d3V_dP2dn)
+            
+            # Seventh - crazy
+            f = d2P_dV2
+            df = d3P_dV2dn
+            g = dP_dT
+            dg = d2P_dTdn
+            h = dP_dV
+            dh = d2P_dVdn
+            k = d2P_dTdV
+            dk = d3P_dTdVdn
+            j = d2P_dT2
+            dj = d3P_dT2dn
+            
+            d3T_dV2dn = (f*g**2*dg - g**3*df + 2*g**2*h*dk + 2*g**2*k*dh - g*h**2*dj - 4*g*h*k*dg - 2*g*h*j*dh + 3*h**2*j*dg)/g**4
+            d3T_dV2dns.append(d3T_dV2dn)
+            
+            # ekghth - crazy
+            f = d2P_dT2
+            df = d3P_dT2dn
+            g = dP_dV
+            dg = d2P_dVdn
+            h = dP_dT
+            dh = d2P_dTdn
+            k = d2P_dTdV
+            dk = d3P_dTdVdn
+            j = d2P_dV2
+            dj = d3P_dV2dn
+            d3V_dT2dn = (f*g**2*dg - g**3*df + 2*g**2*h*dk + 2*g**2*k*dh - g*h**2*dj - 4*g*h*k*dg - 2*g*h*j*dh + 3*h**2*j*dg)/g**4
+            d3V_dT2dns.append(d3V_dT2dn)
+            
+            # nknth
+            f = d2P_dTdV
+            df = d3P_dTdVdn
+            g = dP_dT
+            dg = d2P_dTdn
+            h = dP_dV
+            dh = d2P_dVdn
+            k = d2P_dT2
+            dk = d3P_dT2dn
+            j = dP_dT
+            dj = d2P_dTdn
+            d3T_dPdVdn = -3*(f*g - h*k)*dj/j**4 + (f*dg + g*df - h*dk- k*dh)/j**3
+            d3T_dPdVdns.append(d3T_dPdVdn)
+            
+            # tenth
+            f = d2P_dTdV
+            df = d3P_dTdVdn
+            g = dP_dV
+            dg = d2P_dVdn
+            h = dP_dT
+            dh = d2P_dTdn
+            k = d2P_dV2
+            dk = d3P_dV2dn
+            j = dP_dV
+            dj = d2P_dVdn
+            d3V_dPdTdn = -3*(f*g - h*k)*dj/j**4 + (f*dg + g*df - h*dk- k*dh)/j**3
+            d3V_dPdTdns.append(d3V_dPdTdn)
+        
+                         
+                        
+        
+
+        return (d2P_dTdns, d2P_dVdns, d2V_dTdns, d2V_dPdns, d2T_dVdns, d2T_dPdns, 
+                d3P_dT2dns, d3P_dV2dns, d3V_dT2dns, d3V_dP2dns, d3T_dV2dns, d3T_dP2dns,
+                d3V_dPdTdns, d3P_dTdVdns, d3T_dPdVdns)
+
+
+    def dlnphis_dP(self, g=True):
+        '''
+        from sympy import *
+        P, T, R, n = symbols('P, T, R, n')
+        a_alpha, a, delta, epsilon, V, b = symbols('a_alpha, a, delta, epsilon, V, b', cls=Function)
+        da_alpha_dT, d2a_alpha_dT2 = symbols('da_alpha_dT, d2a_alpha_dT2', cls=Function)
+        
+        S_dep = R*log(V(n, P)-b(n))+2*da_alpha_dT(n, T)*atanh((2*V(n, P)+delta(n))/sqrt(delta(n)**2-4*epsilon(n)))/sqrt(delta(n)**2-4*epsilon(n))-R*log(V(n, P))
+        S_dep += R*log(P*V(n, P)/(R*T))
+        H_dep = 2*atanh((2*V(n, P)+delta(n))/sqrt(delta(n)**2-4*epsilon(n)))*(da_alpha_dT(n, T)*T-a_alpha(n, T))/sqrt(delta(n)**2-4*epsilon(n))
+        H_dep += P*V(n, P) - R*T
+        G_dep = H_dep - T*S_dep
+        lnphi = G_dep/(R*T)
+        lnphi = (simplify(lnphi))
+        cse(diff(diff(lnphi, P), n), optimizations='basic')        
+        '''
+        if g:
+            V = self.V_g
+            Z = self.Z_g
+            dV_dP = self.dV_dP_g
+        else:
+            V = self.V_l
+            Z = self.Z_l
+            dV_dP = self.dV_dP_l
+        T = self.T
+        P = self.P
+        dV_dns = self.dV_dns(Z, self.zs)
+        ddelta_dns = self.ddelta_dns
+        depsilon_dns = self.depsilon_dns
+        da_alpha_dns = self.da_alpha_dns
+        db_dns = self.db_dns
+        d2V_dPdns = self._dnx_derivatives_and_departures(V)[3]# self.d2V_dPdn
+
+        x0 = V
+        x2 = 1/(R*T)
+        x3 = 1/x0
+        x6 = dV_dP
+        x8 = self.b
+        x9 = x0 - x8
+        x10 = 1/P
+        x11 = self.delta
+        x12 = 2*x0
+        x13 = x11 + x12
+        x14 = self.epsilon
+        x15 = x11**2 - 4*x14
+        x16 = 1/x15
+        x17 = x13**2*x16 - 1
+        x18 = 1/x17
+        x19 = self.a_alpha
+        x20 = 4*x16
+        x21 = x2*x6
+        x22 = x18*x21
+        x25 = 8*x19/x15**2
+        
+        t50 = 1.0/(x0*x0)
+        
+        dlnphis_dPs = []
+        for i in self.cmps:
+            # number dependent calculations
+            x1 = dV_dns[i] # Derivative(x0, n)
+            x7 = x1*t50
+            
+            x4 = d2V_dPdns[i] #Derivative(x0, P, n) # TODO calculate only this - d2V_dPdn; the T one wants d2V_dTdn
+            x5 = P*x4
+            
+            x23 = ddelta_dns[i]# Derivative(x11, n)
+            x24 = x11*x23 - 2.0*depsilon_dns[i]#Derivative(x14, n)
+            x26 = x16*x24
+            
+            dlnphis_dP = (x1*x2 - x10*x3*(x1 + x5) + x10*x7*(P*x6 + x0) 
+            - x13*x21*x25*(2*x1 - x11*x26 - x12*x26 + x23)/x17**2 
+            + x18*x19*x2*x20*x4 + x2*x5 + x20*x22*da_alpha_dns[i] 
+            - x22*x24*x25 + x3*x4 - x4/x9 - x6*x7 + x6*(x1 - db_dns[i])/x9**2)
+            dlnphis_dPs.append(dlnphis_dP)
+        return dlnphis_dPs
+        
+        
+        
 class PRMIX(GCEOSMIX, PR):
     r'''Class for solving the Peng-Robinson cubic equation of state for a 
     mixture of any number of compounds. Subclasses `PR`. Solves the EOS on

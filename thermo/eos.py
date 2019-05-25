@@ -1617,11 +1617,12 @@ should be calculated by this method, in a user subclass.')
             + 2 V{\left (P \right )}\right)^{2}}{\delta^{2} - 4 \epsilon} 
             + 1\right)}
         '''
+        delta = self.delta
         x0 = self.V_l
-        x1 = self.dV_dP_l
-        x2 = 1/(self.delta*self.delta - 4.0*self.epsilon)
-        x3 = self.a_alpha
-        return self.P*x1 + x0 - 4*x1*x2*(self.T*self.da_alpha_dT - x3)/(x2*(self.delta + 2*x0)**2 - 1)
+        x2 = delta*delta - 4.0*self.epsilon
+        x4 = (delta + x0 + x0)
+        return (x0 + self.dV_dP_l*(self.P - 4.0*(self.T*self.da_alpha_dT
+                - self.a_alpha)/(x4*x4 - x2)))
         
     @property
     def dH_dep_dP_g(self):
@@ -1637,11 +1638,12 @@ should be calculated by this method, in a user subclass.')
             + 2 V{\left (P \right )}\right)^{2}}{\delta^{2} - 4 \epsilon} 
             + 1\right)}
         '''
+        delta = self.delta
         x0 = self.V_g
-        x1 = self.dV_dP_g
-        x2 = 1/(self.delta*self.delta - 4.0*self.epsilon)
-        x3 = self.a_alpha
-        return self.P*x1 + x0 - 4*x1*x2*(self.T*self.da_alpha_dT - x3)/(x2*(self.delta + 2*x0)**2 - 1)
+        x2 = delta*delta - 4.0*self.epsilon
+        x4 = (delta + x0 + x0)
+        return (x0 + self.dV_dP_g*(self.P - 4.0*(self.T*self.da_alpha_dT
+                - self.a_alpha)/(x4*x4 - x2)))
 
     @property
     def dS_dep_dT_l(self):
