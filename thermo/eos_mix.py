@@ -4046,7 +4046,7 @@ class PRMIX(GCEOSMIX, PR):
            Butterworth-Heinemann, 1985.
         '''
         a_alpha = self.a_alpha
-        cmps = self.cmps
+#        cmps = self.cmps
         a_alpha_ijs = self.a_alpha_ijs
         T_inv = 1.0/self.T
         P = self.P
@@ -4079,30 +4079,31 @@ class PRMIX(GCEOSMIX, PR):
         fugacity_sum_terms = self._fugacity_sum_terms()
         
         t50 = x4*x1
-        t51 = b_inv*x4
-        t52 = b_inv*Zm1
+        t51 = b_inv*(x4 + Zm1)
         
-        phis = []
-#        fugacity_sum_terms = []
-        for i in cmps:
-            a_alpha_js = a_alpha_ijs[i]
-#            b_ratio = bs[i]*b_inv
-            bi = bs[i]
-#            sum_term = 0.0
-#            for zi, a_alpha_j_i in zip(zs, a_alpha_js):
-#                sum_term += zi*a_alpha_j_i
-#            sum_term = sum([zs[j]*a_alpha_js[j] for j in cmps])
-
-#            t3 = b_ratio*Zm1 - x0 - x4*(x1*sum_term - b_ratio)
-            t3 = bi*t52 - x0 - (t50*fugacity_sum_terms[i] - bi*t51)
-            # Let wherever calls the exp deal with overflow
-#            if t3 > 700.0:
-#                t3 = 700.0
-            phis.append(t3)
-#            fugacity_sum_terms.append(sum_term)
-            
-#        self.fugacity_sum_terms = fugacity_sum_terms
-        return phis
+        return [bs[i]*t51 - x0 - t50*fugacity_sum_terms[i]
+                for i in self.cmps]
+        
+#        phis = []
+##        fugacity_sum_terms = []
+#        for i in cmps:
+##            a_alpha_js = a_alpha_ijs[i]
+##            b_ratio = bs[i]*b_inv
+##            sum_term = 0.0
+##            for zi, a_alpha_j_i in zip(zs, a_alpha_js):
+##                sum_term += zi*a_alpha_j_i
+##            sum_term = sum([zs[j]*a_alpha_js[j] for j in cmps])
+#
+##            t3 = b_ratio*Zm1 - x0 - x4*(x1*sum_term - b_ratio)
+#            t3 = bs[i]*t51 - x0 - t50*fugacity_sum_terms[i]
+#            # Let wherever calls the exp deal with overflow
+##            if t3 > 700.0:
+##                t3 = 700.0
+#            phis.append(t3)
+##            fugacity_sum_terms.append(sum_term)
+#            
+##        self.fugacity_sum_terms = fugacity_sum_terms
+#        return phis
 
 
     def d_lnphis_dT(self, Z, dZ_dT, zs):
