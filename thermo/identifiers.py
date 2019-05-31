@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2016, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2016, 2017, 2018, 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -28,7 +28,8 @@ __all__ = ['checkCAS', 'CAS_from_any', 'PubChem', 'MW', 'formula', 'smiles',
            'pubchem_db', 'ChemicalConstants', 'empty_chemical_constants']
 import os
 from thermo.utils import to_num, CAS2int, int2CAS
-from thermo.elements import periodic_table, homonuclear_elemental_gases, charge_from_formula, serialize_formula
+from thermo.elements import (periodic_table, homonuclear_elemental_gases,
+                             charge_from_formula, serialize_formula)
 
 folder = os.path.join(os.path.dirname(__file__), 'Identifiers')
 

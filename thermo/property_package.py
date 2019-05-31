@@ -1887,27 +1887,36 @@ class GammaPhi(PropertyPackage):
     def P_bubble_at_T(self, T, zs, Psats=None):
         # Returns P_bubble; only thing easy to calculate
         Psats = self._Psats(Psats, T)
+        cmps, N = self.cmps, self.N
+        
         # If there is one component, return at the saturation line
         if self.N == 1:
             return Psats[0]
         
         gammas = self.gammas(T=T, xs=zs)
-        P = sum([gammas[i]*zs[i]*Psats[i] for i in self.cmps])
+        P = sum([gammas[i]*zs[i]*Psats[i] for i in cmps])
         if self.use_Poynting and not self.use_phis:
             # This is not really necessary; and 3 is more than enough iterations
             for i in range(3):
                 Poyntings = self.Poyntings(T=T, P=P, Psats=Psats)
-                P = sum([gammas[i]*zs[i]*Psats[i]*Poyntings[i] for i in self.cmps])
+                P = sum([gammas[i]*zs[i]*Psats[i]*Poyntings[i] for i in cmps])
         elif self.use_phis:
             for i in range(5):
                 phis_l = self.phis_l(T=T, P=P, xs=zs)
                 if self.use_Poynting:
                     Poyntings = self.Poyntings(T=T, P=P, Psats=Psats)
-                    P = sum([gammas[i]*zs[i]*Psats[i]*Poyntings[i]*phis_l[i] for i in self.cmps])
+                    P = sum([gammas[i]*zs[i]*Psats[i]*Poyntings[i]*phis_l[i] for i in cmps])
                 else:
-                    P = sum([gammas[i]*zs[i]*Psats[i]*phis_l[i] for i in self.cmps])
+                    P = sum([gammas[i]*zs[i]*Psats[i]*phis_l[i] for i in cmps])
+                    
+
+
         # TODO: support equations of state, once you get that figured out.
-        return P
+        P_inv = 1.0/P
+        Ks = [gammas[i]*Psats[i]*P_inv for i in cmps]
+        ys = [zs[i]*Ks[i] for i in cmps]
+
+        return P, zs, ys, Ks
 
     def P_dew_at_T(self, T, zs, Psats=None):
         Psats = self._Psats(Psats, T)
@@ -1916,7 +1925,7 @@ class GammaPhi(PropertyPackage):
         if self.N == 1:
             return Psats[0]
         
-        Pmax = self.P_bubble_at_T(T, zs, Psats)
+        Pmax, _, _, _ = self.P_bubble_at_T(T, zs, Psats)
         diff = 1E-7
         # EOSs do not solve at very low pressure
         if self.use_phis:
@@ -1939,9 +1948,11 @@ class GammaPhi(PropertyPackage):
         if self.N == 1:
             return 'l/g', [1.0], [1.0], VF, Psats[0]
         
-        Pbubble = self.P_bubble_at_T(T=T, zs=zs, Psats=Psats)
+        Pbubble, _, ys, Ks = self.P_bubble_at_T(T=T, zs=zs, Psats=Psats)
         if VF == 0:
             P = Pbubble
+            V_over_F = VF
+            xs = zs
         else:
             diff = 1E-7
             Pmax = Pbubble
@@ -1954,14 +1965,14 @@ class GammaPhi(PropertyPackage):
             P = brenth(self._T_VF_err, Pmin, Pmax, args=(T, zs, Psats, Pmax, VF))
             self.__TVF_solve_cache = None
 #            P = brenth(self._T_VF_err, Pdew, Pbubble, args=(T, VF, zs, Psats))
-        V_over_F, xs, ys = self._flash_sequential_substitution_TP(T=T, P=P, zs=zs, Psats=Psats)
+            V_over_F, xs, ys = self._flash_sequential_substitution_TP(T=T, P=P, zs=zs, Psats=Psats)
         return 'l/g', xs, ys, V_over_F, P
     
     def flash_TP_zs(self, T, P, zs):
         Psats = self._Psats(T=T)
-        Pbubble = self.P_bubble_at_T(T=T, zs=zs, Psats=Psats)
+        Pbubble, _, ys, Ks = self.P_bubble_at_T(T=T, zs=zs, Psats=Psats)
         if P >= Pbubble:
-            return 'l', zs, None, 0
+            return 'l', zs, ys, 0 # return ys
         Pdew = self.P_dew_at_T(T=T, zs=zs, Psats=Psats)
         if P <= Pdew:
             # phase, ys, xs, quality
@@ -2065,38 +2076,132 @@ class Nrtl(GammaPhiCaloric):
         return tot
 
     def taus(self, T):
-        # Zero coefficients if not specified by user
-        if self.tau_coeffs is None:
-            return self.zero_coeffs
+        '''Calculate the `tau` terms for the NRTL model for a specified
+        temperature.
         
-        # initialize the matrix to be zero
-        taus = [[0.0]*self.N for i in self.cmps]
+        .. math::
+            \tau_{ij}=A_{ij}+\frac{B_{ij}}{T}+E_{ij}\ln T + F_{ij}T 
+            + \frac{G_{ij}}{T^2} + H_{ij}{T^2}
+            
+            
+        These `tau ij` values (and the coefficients) are NOT symmetric 
+        normally.
+        '''
+#        tau_coeffs = self.tau_coeffs
+        # Zero coefficients if not specified by user
+#        if tau_coeffs is None:
+#            return self.zero_coeffs
+        
+        
+        tau_coeffs_A = self.tau_coeffs_A
+        tau_coeffs_B = self.tau_coeffs_B
+        tau_coeffs_E = self.tau_coeffs_E
+        tau_coeffs_F = self.tau_coeffs_F
+        tau_coeffs_G = self.tau_coeffs_G
+        tau_coeffs_H = self.tau_coeffs_H
+
+        if tau_coeffs_A is None:
+            return self.zero_tau_coeffs_Acoeffs
+        
+        N, cmps = self.N, self.cmps
         T2 = T*T
+        Tinv = 1.0/T
+        T2inv = Tinv*Tinv
         logT = log(T)
-        for i in self.cmps:
-            for j in range(self.N - i):
-                if i == j:
-                    tau = 0.0
-                else:
-                    coeffs = self.tau_coeffs[i][j]
-                    tau = coeffs[0] + coeffs[1]/T + coeffs[2]*logT + coeffs[3]*T + coeffs[4]/T2  + coeffs[5]*T2
-                taus[i][j] = tau #  = taus[j][i]
+
+        # initialize the matrix to be A
+        taus = [list(l) for l in tau_coeffs_A]
+        for i in cmps:
+            tau_coeffs_Bi = tau_coeffs_B[i]
+            tau_coeffs_Ei = tau_coeffs_E[i]
+            tau_coeffs_Fi = tau_coeffs_F[i]
+            tau_coeffs_Gi = tau_coeffs_G[i]
+            tau_coeffs_Hi = tau_coeffs_H[i]
+            tausi = taus[i]
+            for j in cmps:
+                tausi[j] = tau_coeffs_Bi[j]*Tinv + tau_coeffs_Ei[j]*logT + tau_coeffs_Fi[j]*T + tau_coeffs_Gi[j]*T2inv + tau_coeffs_Hi[j]*T2
+#                tausi[j] = tau_coeffs_Ai[j] + tau_coeffs_Bi[j]*Tinv + tau_coeffs_Ei[j]*logT + tau_coeffs_Fi[j]*T + tau_coeffs_Gi[j]*T2inv + tau_coeffs_Hi[j]*T2
+#                coeffs = coeffsi[j]
+#                tausi[j] = coeffs[0] + coeffs[1]*Tinv + coeffs[2]*logT + coeffs[3]*T + coeffs[4]*T2inv + coeffs[5]*T2
+        # This approach may be better for the cache
+
+#        for i in cmps:
+#            tausi = taus[i]
+#            tau_coeffs_Bi = tau_coeffs_B[i]
+#            for j in cmps:
+#                tausi[j] += tau_coeffs_Bi[j]*Tinv 
+#        for i in cmps:
+#            tausi = taus[i]
+#            tau_coeffs_Ei = tau_coeffs_E[i]
+#            for j in cmps:
+#                tausi[j] += tau_coeffs_Ei[j]*logT 
+#        for i in cmps:
+#            tausi = taus[i]
+#            tau_coeffs_Fi = tau_coeffs_F[i]
+#            for j in cmps:
+#                tausi[j] += tau_coeffs_Fi[j]*T
+#        for i in cmps:
+#            tausi = taus[i]
+#            tau_coeffs_Gi = tau_coeffs_G[i]
+#            for j in cmps:
+#                tausi[j] += tau_coeffs_Gi[j]*T2inv
+#        for i in cmps:
+#            tausi = taus[i]
+#            tau_coeffs_Hi = tau_coeffs_H[i]
+#            for j in cmps:
+#                tausi[j] += tau_coeffs_Hi[j]*T2
         return taus
     
     def alphas(self, T):
-        # Zero coefficients if not specified by user
-        if self.alpha_coeffs is None:
-            return self.zero_coeffs
+        '''Calculates the `alpha` terms in the NRTL model for a specified
+        temperature. 
         
-        alphas = [[0.0]*self.N for i in self.cmps]
-        for i in self.cmps:
-            for j in range(self.N - i):
-                if i == j:
-                    alpha = 0.0
-                else:
-                    c, d = self.alpha_coeffs[i][j]
-                    alpha = c + d*T
-                alphas[i][j] = alpha #  = alphas[j][i]
+        .. math::
+            \alpha_{ij}=c_{ij}+d_{ij}T
+            
+        `alpha` values (and therefore `cij` and `dij` are normally symmetrical;
+        but this is not strictly required.
+            
+        Some sources suggest the c term should be fit to a given system; but 
+        the `d` term should be fit for an entire chemical family to avoid
+        overfitting.
+        
+        Recommended values for `cij` according to one source are: 
+    
+        0.30 Nonpolar substances with nonpolar substances; low deviation from ideality.
+        0.20 Hydrocarbons that are saturated interacting with polar liquids that do not associate, or systems that for multiple liquid phases which are immiscible
+        0.47 Strongly self associative systems, interacting with non-polar substances 
+        
+        `alpha_coeffs` should be a list[list[cij, dij]] so a 3d array
+        '''
+        # Zero coefficients if not specified by user
+        
+#        N = self.N
+        cmps = self.cmps
+#        alpha_coeffs = self.alpha_coeffs
+#        if alpha_coeffs is None:
+#            return self.zero_coeffs
+        
+        alpha_coeffs_c, alpha_coeffs_d = self.alpha_coeffs_c, self.alpha_coeffs_d
+
+#        alphas = [[0.0]*N for i in cmps]
+        alphas = []
+        for i in cmps:
+#            alphas_i = alphas[i]
+#            alpha_coeffs_i = alpha_coeffs[i]
+            alpha_coeffs_ci = alpha_coeffs_c[i]
+            alpha_coeffs_di = alpha_coeffs_d[i]
+            alphas.append([alpha_coeffs_ci[j] + alpha_coeffs_di[j]*T for j in cmps])
+#            for j in cmps:
+#                alphas_i[j] = alpha_coeffs_ci[j] + alpha_coeffs_di[j]*T
+#            for j in range(N - i):
+#                # TODO - handle asymmetry
+#                if i == j:
+#                    alphas_i[j] = 0.0
+#                else:
+#                    c, d = alpha_coeffs_i[j]
+#                    alphas_i[j] = c + d*T
+                
         return alphas
     
     
@@ -2107,8 +2212,33 @@ class Nrtl(GammaPhiCaloric):
                  EnthalpyVaporizations=None,
                  
                  **kwargs):
+        
+        
+        
         self.tau_coeffs = tau_coeffs
+        if tau_coeffs is not None:
+            self.tau_coeffs_A = [[i[0] for i in l] for l in tau_coeffs]
+            self.tau_coeffs_B = [[i[1] for i in l] for l in tau_coeffs]
+            self.tau_coeffs_E = [[i[2] for i in l] for l in tau_coeffs]
+            self.tau_coeffs_F = [[i[3] for i in l] for l in tau_coeffs]
+            self.tau_coeffs_G = [[i[4] for i in l] for l in tau_coeffs]
+            self.tau_coeffs_H = [[i[5] for i in l] for l in tau_coeffs]
+        else:
+            self.tau_coeffs_A = None
+            self.tau_coeffs_B = None
+            self.tau_coeffs_E = None
+            self.tau_coeffs_F = None
+            self.tau_coeffs_G = None
+            self.tau_coeffs_H = None
+
         self.alpha_coeffs = alpha_coeffs
+        if alpha_coeffs is not None:
+            self.alpha_coeffs_c = [[i[0] for i in l] for l in alpha_coeffs]
+            self.alpha_coeffs_d = [[i[1] for i in l] for l in alpha_coeffs]
+        else:
+            self.alpha_coeffs_c = None
+            self.alpha_coeffs_d = None
+        
         self.VaporPressures = VaporPressures
         self.Tms = Tms
         self.Tcs = Tcs
@@ -4083,13 +4213,13 @@ class GceosBase(Ideal):
             if near_critical:
                 try:
                     ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, zs)
-                    d_lnphis_dT_l = eos_l.d_lnphis_dT(eos_l.Z_l, eos_l.dZ_dT_l, zs)
+                    dlnphis_dT_l = eos_l.dlnphis_dT('l')
                 except AttributeError:
                     ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_g, zs)
-                    d_lnphis_dT_l = eos_l.d_lnphis_dT(eos_l.Z_g, eos_l.dZ_dT_g, zs)                
+                    dlnphis_dT_l = eos_l.dlnphis_dT('g')                
             else:
                 ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, zs)
-                d_lnphis_dT_l = eos_l.d_lnphis_dT(eos_l.Z_l, eos_l.dZ_dT_l, zs)
+                dlnphis_dT_l = eos_l.dlnphis_dT('l')
 
             # TODO: d alpha 1 only?            
             eos_g = eos_l.to_TP_zs_fast(T=T_guess, P=P, zs=ys, full_alphas=True, only_g=True)
@@ -4097,21 +4227,21 @@ class GceosBase(Ideal):
             if near_critical:
                 try:
                     ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, ys)
-                    d_lnphis_dT_g = eos_g.d_lnphis_dT(eos_g.Z_g, eos_g.dZ_dT_g, ys)
+                    dlnphis_dT_g = eos_g.dlnphis_dT('g')
                 except AttributeError:
                     ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_l, ys)
-                    d_lnphis_dT_g = eos_g.d_lnphis_dT(eos_g.Z_l, eos_g.dZ_dT_l, ys)
+                    dlnphis_dT_g = eos_g.dlnphis_dT('l')
             else:
                 ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, ys)
-                d_lnphis_dT_g = eos_g.d_lnphis_dT(eos_g.Z_g, eos_g.dZ_dT_g, ys)
+                dlnphis_dT_g = eos_g.dlnphis_dT('g')
             
-            return ln_phis_l, ln_phis_g, d_lnphis_dT_l, d_lnphis_dT_g, eos_l, eos_g
+            return ln_phis_l, ln_phis_g, dlnphis_dT_l, dlnphis_dT_g, eos_l, eos_g
 
         T_guess_old = None
         successive_fails = 0
         for i in range(maxiter):
             try:
-                ln_phis_l, ln_phis_g, d_lnphis_dT_l, d_lnphis_dT_g, eos_l, eos_g = lnphis_and_derivatives(T_guess)
+                ln_phis_l, ln_phis_g, dlnphis_dT_l, dlnphis_dT_g, eos_l, eos_g = lnphis_and_derivatives(T_guess)
                 successive_fails = 0
             except Exception as e:
 #                print(e)
@@ -4122,7 +4252,7 @@ class GceosBase(Ideal):
                     raise ValueError("Stopped convergence procedure after multiple bad steps") 
                 T_guess = T_guess_old + copysign(min(max_step_damping, abs(step)), step)
 #                print('fail - new T guess', T_guess)
-                ln_phis_l, ln_phis_g, d_lnphis_dT_l, d_lnphis_dT_g, eos_l, eos_g = lnphis_and_derivatives(T_guess)
+                ln_phis_l, ln_phis_g, dlnphis_dT_l, dlnphis_dT_g, eos_l, eos_g = lnphis_and_derivatives(T_guess)
             
             
             
@@ -4131,7 +4261,7 @@ class GceosBase(Ideal):
             
             dfk_dT = 0.0
             for i in cmps:
-                dfk_dT += zs[i]*Ks[i]*(d_lnphis_dT_l[i] - d_lnphis_dT_g[i])
+                dfk_dT += zs[i]*Ks[i]*(dlnphis_dT_l[i] - dlnphis_dT_g[i])
             
 #            print('dfk_dT', dfk_dT)
             T_guess_old = T_guess
@@ -4505,34 +4635,34 @@ class GceosBase(Ideal):
             if near_critical:
                 try:
                     ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, zs)
-                    d_lnphis_dT_g = eos_g.d_lnphis_dT(eos_g.Z_g, eos_g.dZ_dT_g, zs)
+                    dlnphis_dT_g = eos_g.dlnphis_dT('g')
                 except AttributeError:
                     ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_l, zs)
-                    d_lnphis_dT_g = eos_g.d_lnphis_dT(eos_g.Z_l, eos_g.dZ_dT_l, zs)
+                    dlnphis_dT_g = eos_g.dlnphis_dT('l')
             else:
                 ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, zs)
-                d_lnphis_dT_g = eos_g.d_lnphis_dT(eos_g.Z_g, eos_g.dZ_dT_g, zs)
+                dlnphis_dT_g = eos_g.dlnphis_dT('g')
             
             eos_l = eos_g.to_TP_zs_fast(T=T_guess, P=P, zs=xs, full_alphas=True, only_l=True)
             
             if near_critical:
                 try:
                     ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, xs)
-                    d_lnphis_dT_l = eos_l.d_lnphis_dT(eos_l.Z_l, eos_l.dZ_dT_l, xs)
+                    dlnphis_dT_l = eos_l.dlnphis_dT('l')
                 except AttributeError:
                     ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_g, xs)
-                    d_lnphis_dT_l = eos_l.d_lnphis_dT(eos_l.Z_g, eos_l.dZ_dT_g, xs)                
+                    dlnphis_dT_l = eos_l.dlnphis_dT('g')                
             else:
                 ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, xs)
-                d_lnphis_dT_l = eos_l.d_lnphis_dT(eos_l.Z_l, eos_l.dZ_dT_l, xs)
+                dlnphis_dT_l = eos_l.dlnphis_dT('l')
 
-            return ln_phis_l, ln_phis_g, d_lnphis_dT_l, d_lnphis_dT_g, eos_l, eos_g
+            return ln_phis_l, ln_phis_g, dlnphis_dT_l, dlnphis_dT_g, eos_l, eos_g
         
         T_guess_old = None
         successive_fails = 0
         for i in range(maxiter):
             try:
-                ln_phis_l, ln_phis_g, d_lnphis_dT_l, d_lnphis_dT_g, eos_l, eos_g = lnphis_and_derivatives(T_guess)
+                ln_phis_l, ln_phis_g, dlnphis_dT_l, dlnphis_dT_g, eos_l, eos_g = lnphis_and_derivatives(T_guess)
                 successive_fails = 0
             except:
                 if T_guess_old is None:
@@ -4542,7 +4672,7 @@ class GceosBase(Ideal):
                     raise ValueError("Stopped convergence procedure after multiple bad steps") 
                 T_guess = T_guess_old + copysign(min(max_step_damping, abs(step)), step)
 #                print('fail - new T guess', T_guess)
-                ln_phis_l, ln_phis_g, d_lnphis_dT_l, d_lnphis_dT_g, eos_l, eos_g = lnphis_and_derivatives(T_guess)
+                ln_phis_l, ln_phis_g, dlnphis_dT_l, dlnphis_dT_g, eos_l, eos_g = lnphis_and_derivatives(T_guess)
 
             Ks = [exp(a - b) for a, b in zip(ln_phis_l, ln_phis_g)]
             xs = [zs[i]/Ks[i] for i in cmps]
@@ -4550,7 +4680,7 @@ class GceosBase(Ideal):
 
             dfk_dT = 0.0
             for i in cmps:
-                dfk_dT += xs[i]*(d_lnphis_dT_g[i] - d_lnphis_dT_l[i])
+                dfk_dT += xs[i]*(dlnphis_dT_g[i] - dlnphis_dT_l[i])
             
             T_guess_old = T_guess
             step = -f_k/dfk_dT
@@ -4808,13 +4938,13 @@ class GceosBase(Ideal):
             if near_critical:
                 try:
                     ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, zs)
-                    d_lnphis_dP_g = eos_g.d_lnphis_dP(eos_g.Z_g, eos_g.dZ_dP_g, zs)
+                    d_lnphis_dP_g = eos_g.dlnphis_dP('g')
                 except AttributeError:
                     ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_l, zs)
-                    d_lnphis_dP_g = eos_g.d_lnphis_dP(eos_g.Z_l, eos_g.dZ_dP_l, zs)
+                    d_lnphis_dP_g = eos_g.dlnphis_dP('l')
             else:
                 ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, zs)
-                d_lnphis_dP_g = eos_g.d_lnphis_dP(eos_g.Z_g, eos_g.dZ_dP_g, zs)
+                d_lnphis_dP_g = eos_g.dlnphis_dP('g')
 
 
             eos_l = eos_g_base.to_TP_zs_fast(T=T, P=P_guess, zs=xs, full_alphas=False, only_l=True)
@@ -4822,13 +4952,13 @@ class GceosBase(Ideal):
             if near_critical:
                 try:
                     ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, xs)
-                    d_lnphis_dP_l = eos_l.d_lnphis_dP(eos_l.Z_l, eos_l.dZ_dP_l, xs)
+                    d_lnphis_dP_l = eos_l.dlnphis_dP('l')
                 except AttributeError:
                     ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_g, xs)
-                    d_lnphis_dP_l = eos_l.d_lnphis_dP(eos_l.Z_g, eos_l.dZ_dP_g, xs)                
+                    d_lnphis_dP_l = eos_l.dlnphis_dP('g')                
             else:
                 ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, xs)
-                d_lnphis_dP_l = eos_l.d_lnphis_dP(eos_l.Z_l, eos_l.dZ_dP_l, xs)
+                d_lnphis_dP_l = eos_l.dlnphis_dP('l')
                         
             return ln_phis_l, ln_phis_g, d_lnphis_dP_l, d_lnphis_dP_g, eos_l, eos_g
         
@@ -5081,26 +5211,26 @@ class GceosBase(Ideal):
             if near_critical:
                 try:
                     ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, zs)
-                    d_lnphis_dP_l = eos_l.d_lnphis_dP(eos_l.Z_l, eos_l.dZ_dP_l, zs)
+                    d_lnphis_dP_l = eos_l.dlnphis_dP('l')
                 except AttributeError:
                     ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_g, zs)
-                    d_lnphis_dP_l = eos_l.d_lnphis_dP(eos_l.Z_g, eos_l.dZ_dP_g, zs)                
+                    d_lnphis_dP_l = eos_l.dlnphis_dP('g')                
             else:
                 ln_phis_l = eos_l.fugacity_coefficients(eos_l.Z_l, zs)
-                d_lnphis_dP_l = eos_l.d_lnphis_dP(eos_l.Z_l, eos_l.dZ_dP_l, zs)
+                d_lnphis_dP_l = eos_l.dlnphis_dP('l')
 
             eos_g = eos_l_base.to_TP_zs_fast(T=T, P=P_guess, zs=ys, full_alphas=False, only_g=True)
             
             if near_critical:
                 try:
                     ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, ys)
-                    d_lnphis_dP_g = eos_g.d_lnphis_dP(eos_g.Z_g, eos_g.dZ_dP_g, ys)
+                    d_lnphis_dP_g = eos_g.dlnphis_dP('g')
                 except AttributeError:
                     ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_l, ys)
-                    d_lnphis_dP_g = eos_g.d_lnphis_dP(eos_g.Z_l, eos_g.dZ_dP_l, ys)
+                    d_lnphis_dP_g = eos_g.dlnphis_dP('l')
             else:
                 ln_phis_g = eos_g.fugacity_coefficients(eos_g.Z_g, ys)
-                d_lnphis_dP_g = eos_g.d_lnphis_dP(eos_g.Z_g, eos_g.dZ_dP_g, ys)
+                d_lnphis_dP_g = eos_g.dlnphis_dP('g')
                 
                         
             return ln_phis_l, ln_phis_g, d_lnphis_dP_l, d_lnphis_dP_g, eos_l, eos_g
@@ -5635,16 +5765,16 @@ class GceosBase(Ideal):
         
         try:
             lnphis_l = eos_l.lnphis_l
-            dlnphis_l_dP = eos_l.d_lnphis_dP(eos_l.Z_l, eos_l.dZ_dP_l, xs)
+            dlnphis_l_dP = eos_l.dlnphis_dP('l')
         except:
             lnphis_l = eos_l.lnphis_g
-            dlnphis_l_dP = eos_l.d_lnphis_dP(eos_l.Z_g, eos_l.dZ_dP_g, xs)
+            dlnphis_l_dP = eos_l.dlnphis_dP('g')
         try:
             lnphis_g = eos_g.lnphis_g
-            dlnphis_g_dP = eos_g.d_lnphis_dP(eos_g.Z_g, eos_g.dZ_dP_g, ys)
+            dlnphis_g_dP = eos_g.dlnphis_dP('g')
         except:
             lnphis_g = eos_g.lnphis_l
-            dlnphis_g_dP = eos_g.d_lnphis_dP(eos_g.Z_l, eos_g.dZ_dP_l, ys)
+            dlnphis_g_dP = eos_g.dlnphis_dP('l')
         
         
         
@@ -5658,16 +5788,16 @@ class GceosBase(Ideal):
         try:
             try:
                 lnphis_l = eos_l.lnphis_l
-                dlnphis_l_dT = eos_l.d_lnphis_dT(eos_l.Z_l, eos_l.dZ_dT_l, xs)
+                dlnphis_l_dT = eos_l.dlnphis_dT('l')
             except:
                 lnphis_l = eos_l.lnphis_g
-                dlnphis_l_dT = eos_l.d_lnphis_dT(eos_l.Z_g, eos_l.dZ_dT_g, xs)
+                dlnphis_l_dT = eos_l.dlnphis_dT('g')
             try:
                 lnphis_g = eos_g.lnphis_g
-                dlnphis_g_dT = eos_g.d_lnphis_dT(eos_g.Z_g, eos_g.dZ_dT_g, ys)
+                dlnphis_g_dT = eos_g.dlnphis_dT('g')
             except:
                 lnphis_g = eos_g.lnphis_l
-                dlnphis_g_dT = eos_g.d_lnphis_dT(eos_g.Z_l, eos_g.dZ_dT_l, ys)
+                dlnphis_g_dT = eos_g.dlnphis_dT('l')
         except:
             eos_l.fugacities()
             eos_g.fugacities()

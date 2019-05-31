@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2016, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2016, 2017, 2018, 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -1569,6 +1569,9 @@ should be calculated by this method, in a user subclass.')
         x1 = self.dV_dT_l
         x2 = self.a_alpha
         x3 = self.delta*self.delta - 4.0*self.epsilon
+        if x3 == 0.0:
+            x3 = 1e-100
+
         x4 = x3**-0.5
         x5 = self.delta + x0 + x0
         x6 = 1.0/x3
@@ -1596,6 +1599,8 @@ should be calculated by this method, in a user subclass.')
         x1 = self.dV_dT_g
         x2 = self.a_alpha
         x3 = self.delta*self.delta - 4.0*self.epsilon
+        if x3 == 0.0:
+            x3 = 1e-100
         x4 = x3**-0.5
         x5 = self.delta + x0 + x0
         x6 = 1.0/x3
@@ -1671,6 +1676,8 @@ should be calculated by this method, in a user subclass.')
         x3 = R*x2
         x4 = self.a_alpha
         x5 = self.delta*self.delta - 4.0*self.epsilon
+        if x5 == 0.0:
+            x5 = 1e-100
         x6 = x5**-0.5
         x7 = self.delta + 2.0*x0
         x8 = 1.0/x5
@@ -1703,7 +1710,10 @@ should be calculated by this method, in a user subclass.')
         x2 = self.dV_dT_g
         x3 = R*x2
         x4 = self.a_alpha
+        
         x5 = self.delta*self.delta - 4.0*self.epsilon
+        if x5 == 0.0:
+            x5 = 1e-100
         x6 = x5**-0.5
         x7 = self.delta + 2.0*x0
         x8 = 1.0/x5
@@ -1731,7 +1741,10 @@ should be calculated by this method, in a user subclass.')
         x1 = 1.0/x0
         x2 = self.dV_dP_l
         x3 = R*x2
-        x4 = 1.0/(self.delta*self.delta - 4.0*self.epsilon)
+        try:
+            x4 = 1.0/(self.delta*self.delta - 4.0*self.epsilon)
+        except ZeroDivisionError:
+            x4 = 1e50
         return (-x1*x3 - 4.0*x2*x4*self.da_alpha_dT/(x4*(self.delta + 2*x0)**2 
                 - 1) - x3/(self.b - x0) + R*x1*(self.P*x2 + x0)/self.P)
         
@@ -1755,7 +1768,10 @@ should be calculated by this method, in a user subclass.')
         x1 = 1.0/x0
         x2 = self.dV_dP_g
         x3 = R*x2
-        x4 = 1.0/(self.delta*self.delta - 4.0*self.epsilon)
+        try:
+            x4 = 1.0/(self.delta*self.delta - 4.0*self.epsilon)
+        except ZeroDivisionError:
+            x4 = 1e200
         return (-x1*x3 - 4.0*x2*x4*self.da_alpha_dT/(x4*(self.delta + 2*x0)**2 
                 - 1) - x3/(self.b - x0) + R*x1*(self.P*x2 + x0)/self.P)
         

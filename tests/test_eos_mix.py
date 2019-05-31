@@ -302,12 +302,13 @@ def test_sequential_substitution_VL():
     assert_allclose(ys, [0.9576279672468324, 0.04237203275316752])    
     
     
-def test_TPD_stuff():
+def test_TPD():
     # Two-phase nitrogen-methane
     eos = PRMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    eos_trial = PRMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
     # Get a negative TPD proving there is a phase split
-    TPD = eos.TPD(eos.Z_g, eos.Z_l, eos.zs, eos.zs)
-    assert_allclose(TPD, -471.36299561394253)
+    TPD = eos.TPD(eos.T, eos.zs, eos.lnphis_g, eos_trial.zs, eos_trial.lnphis_l)
+    assert_allclose(TPD, -471.3629956139435)
     
     
 
@@ -353,14 +354,16 @@ def test_Stateva_Tsvetkov_TPDF_SRKMIX_CH4_H2S():
     for i in range(len(all_zs_SRKMIX_CH4_H2S)):
         zs = all_zs_SRKMIX_CH4_H2S[i]
         kijs = [[0,.08],[0.08,0]]
-        eos = SRKMIX(T=190.0, P=40.53e5, Tcs=[190.6, 373.2], Pcs=[46e5, 89.4e5], omegas=[0.008, .1], zs=zs, kijs=kijs)
+        eos = SRKMIX(T=190.0, P=40.53e5, Tcs=[190.6, 373.2], Pcs=[46e5, 89.4e5],
+                     omegas=[0.008, .1], zs=zs, kijs=kijs)
         Z_eos, prefer, alt = eos_Z_test_phase_stability(eos)
         
         def func(z1):
             zs_trial = [z1, 1-z1]
             eos2 = eos.to_TP_zs(T=eos.T, P=eos.P, zs=zs_trial)
+            
             Z_trial = eos_Z_trial_phase_stability(eos2, prefer, alt)    
-            TPD = eos.Stateva_Tsvetkov_TPDF(Z_eos, Z_trial, eos.zs, zs_trial)
+            TPD = eos.Stateva_Tsvetkov_TPDF_broken(Z_eos, Z_trial, eos.zs, zs_trial)
             return TPD
         guesses = all_guesses[i]
         expected = all_expected_SRKMIX_CH4_H2S[i]
@@ -463,7 +466,7 @@ def test_Stateva_Tsvetkov_TPDF_PRMIX_Nitrogen_Methane_Ethane():
             zs_trial = [float(zs[0]), float(zs[1]), float(1 - sum(zs))]
             eos2 = eos.to_TP_zs(T=eos.T, P=eos.P, zs=zs_trial)
             Z_trial = eos_Z_trial_phase_stability(eos2, prefer, alt)
-            TPD = eos.Stateva_Tsvetkov_TPDF(Z_eos, Z_trial, eos.zs, zs_trial)
+            TPD = eos.Stateva_Tsvetkov_TPDF_broken(Z_eos, Z_trial, eos.zs, zs_trial)
             return TPD
     
         guesses = all_guesses[i]
@@ -1253,12 +1256,15 @@ def test_PR_d_lbphis_dT():
     
     
     expected_diffs = [-0.0125202946344780, -0.00154326287196778, 0.0185468995722353]
-    analytical_diffs = eos.d_lnphis_dT(Z=eos.Z_g, dZ_dT=eos.dZ_dT_g, zs=zs)
+    analytical_diffs = eos.dlnphis_dT('g')
     assert_allclose(analytical_diffs, expected_diffs, rtol=1e-11)
     assert_allclose(expected_diffs, numerical_diffs, rtol=1e-5)
 
+    analytical_diffs_generic = super(eos.__class__, eos).dlnphis_dT('g')
+    assert_allclose(analytical_diffs, analytical_diffs_generic, rtol=1e-11)
+
 @pytest.mark.sympy
-def test_PR_d_lnphis_dT_sympy():
+def test_PR_dlnphis_dT_sympy():
     from sympy import Derivative, symbols, sqrt, diff, log, N, Function
     from fluids.constants import R as R_num
     T_num = 270.0
@@ -1270,7 +1276,7 @@ def test_PR_d_lnphis_dT_sympy():
     zs = [0.3, 0.1, 0.6]
     
     eos = PRMIX(T=T_num, P=P_num, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=kijs)
-    diffs_implemented = eos.d_lnphis_dT(Z=eos.Z_g, dZ_dT=eos.dZ_dT_g, zs=zs)
+    diffs_implemented = eos.dlnphis_dT('g')
 
     # Symbolic part
     T, P, R, b1, b2, b3, b, = symbols('T, P, R, b1, b2, b3, b')
@@ -1316,7 +1322,7 @@ def test_PR_d_lnphis_dT_sympy():
     
     assert_allclose(diffs_implemented, sympy_diffs, rtol=1e-10)
     
-def test_SRK_d_lnphis_dT():
+def test_SRK_dlnphis_dT():
     dT = 1e-6
     T = 270.0
     P = 76E5
@@ -1332,13 +1338,16 @@ def test_SRK_d_lnphis_dT():
     
     
     expected_diffs = [-0.013492637405729917, -0.002035560753468637, 0.019072382634936852]
-    analytical_diffs = eos.d_lnphis_dT(Z=eos.Z_g, dZ_dT=eos.dZ_dT_g, zs=zs)
+    analytical_diffs = eos.dlnphis_dT('g')
     assert_allclose(analytical_diffs, expected_diffs, rtol=1e-11)
     assert_allclose(expected_diffs, numerical_diffs, rtol=1e-5)
 
+    analytical_diffs_generic = super(eos.__class__, eos).dlnphis_dT('g')
+    assert_allclose(analytical_diffs, analytical_diffs_generic, rtol=1e-11)
+
 
 @pytest.mark.sympy
-def test_SRK_d_lnphis_dT_sympy():
+def test_SRK_dlnphis_dT_sympy():
     from sympy import Derivative, symbols, sqrt, diff, log, N, Function
     from fluids.constants import R as R_num
     T_num = 270.0
@@ -1350,7 +1359,7 @@ def test_SRK_d_lnphis_dT_sympy():
     zs = [0.3, 0.1, 0.6]
     
     eos = SRKMIX(T=T_num, P=P_num, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=kijs)
-    diffs_implemented = eos.d_lnphis_dT(Z=eos.Z_g, dZ_dT=eos.dZ_dT_g, zs=zs)
+    diffs_implemented = eos.dlnphis_dT('g')
 
     # Symbolic part
     T, P, R, b1, b2, b3, b, = symbols('T, P, R, b1, b2, b3, b')
@@ -1397,7 +1406,7 @@ def test_SRK_d_lnphis_dT_sympy():
     
     assert_allclose(diffs_implemented, sympy_diffs, rtol=1e-10)
 
-def test_VDW_d_lnphis_dT():
+def test_VDW_dlnphis_dT():
     dT = 1e-5
     T = 280.0 # Need increase T a little
     P = 76E5
@@ -1412,13 +1421,16 @@ def test_VDW_d_lnphis_dT():
     numerical_diffs = (np.array(eos2.lnphis_g) - eos1.lnphis_g) / dT
     
     expected_diffs =[-0.00457948776557392, 0.000404824835196203, 0.0105772883904069]
-    analytical_diffs = eos.d_lnphis_dT(Z=eos.Z_g, dZ_dT=eos.dZ_dT_g, zs=zs)
+    analytical_diffs = eos.dlnphis_dT('g')
     
     assert_allclose(analytical_diffs, expected_diffs, rtol=1e-11)
     assert_allclose(expected_diffs, numerical_diffs, rtol=1e-5)
 
+#    analytical_diffs_generic = super(eos.__class__, eos).dlnphis_dT('g')
+#    assert_allclose(analytical_diffs, analytical_diffs_generic, rtol=1e-11)
+
 @pytest.mark.sympy
-def test_VDW_d_lnphis_dT_sympy():
+def test_VDW_dlnphis_dT_sympy():
     from sympy import Derivative, symbols, sqrt, diff, log, N, Function
     from fluids.constants import R as R_num
     T_num = 280.0
@@ -1430,7 +1442,7 @@ def test_VDW_d_lnphis_dT_sympy():
     zs = [0.3, 0.1, 0.6]
     
     eos = VDWMIX(T=T_num, P=P_num, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=kijs)
-    diffs_implemented = eos.d_lnphis_dT(Z=eos.Z_g, dZ_dT=eos.dZ_dT_g, zs=zs)
+    diffs_implemented = eos.dlnphis_dT('g')
 
     # Symbolic part
     T, P, R, b1, b2, b3, b, = symbols('T, P, R, b1, b2, b3, b')
@@ -1481,7 +1493,7 @@ def test_VDW_d_lnphis_dT_sympy():
     assert_allclose(diffs_implemented, sympy_diffs, rtol=1e-10)
 
 
-def test_PR_d_lnphis_dP():
+def test_PR_dlnphis_dP():
     dP = 1e-1
     T = 270.0
     P = 76E5
@@ -1496,14 +1508,16 @@ def test_PR_d_lnphis_dP():
     numerical_diffs = (np.array(eos2.lnphis_g) - eos1.lnphis_g) / dP
     
     expected_diffs = [8.49254218440054e-8, -3.44512799711331e-9, -1.52343107476988e-7]
-    analytical_diffs = eos.d_lnphis_dP(Z=eos.Z_g, dZ_dP=eos.dZ_dP_g, zs=zs)
+    analytical_diffs = eos.dlnphis_dP('g')
 
     assert_allclose(analytical_diffs, expected_diffs, rtol=1e-11)
     assert_allclose(expected_diffs, numerical_diffs, rtol=1e-5)
-
+    # Base class
+    analytical_diffs = super(eos.__class__, eos).dlnphis_dP('g')
+    assert_allclose(analytical_diffs, expected_diffs, rtol=1e-11)
 
 @pytest.mark.sympy
-def test_PR_d_lnphis_dP_sympy():
+def test_PR_dlnphis_dP_sympy():
     from sympy import Derivative, symbols, sqrt, diff, log, N, Function
     from fluids.constants import R as R_num
     T_num = 270.0
@@ -1516,7 +1530,7 @@ def test_PR_d_lnphis_dP_sympy():
     
     
     eos = PRMIX(T=T_num, P=P_num, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=kijs)
-    diffs_implemented = eos.d_lnphis_dP(Z=eos.Z_g, dZ_dP=eos.dZ_dP_g, zs=zs)
+    diffs_implemented = eos.dlnphis_dP('g')
 
     T, P, R, a_alpha_f, b1, b2, b3, b, = symbols('T, P, R, a_alpha_f, b1, b2, b3, b')
     Z_f, sum_f = symbols('Z_f, sum_f', cls=Function)
@@ -1558,7 +1572,7 @@ def test_PR_d_lnphis_dP_sympy():
     assert_allclose(sympy_diffs, diffs_implemented, rtol=1e-11)
     
     
-def test_SRK_d_lnphis_dP():
+def test_SRK_dlnphis_dP():
     dP = 1e-1
     T = 270.0
     P = 76E5
@@ -1573,14 +1587,16 @@ def test_SRK_d_lnphis_dP():
     numerical_diffs = (np.array(eos2.lnphis_g) - eos1.lnphis_g) / dP
     
     expected_diffs = [9.40786516520732e-8, 3.03133250647420e-9, -1.51771425140191e-7]
-    analytical_diffs = eos.d_lnphis_dP(Z=eos.Z_g, dZ_dP=eos.dZ_dP_g, zs=zs)
+    analytical_diffs = eos.dlnphis_dP('g')
     assert_allclose(analytical_diffs, expected_diffs, rtol=1e-11)
     assert_allclose(expected_diffs, numerical_diffs, rtol=1e-5)
 
-
+    # Base class
+    analytical_diffs = super(eos.__class__, eos).dlnphis_dP('g')
+    assert_allclose(analytical_diffs, expected_diffs, rtol=1e-11)
 
 @pytest.mark.sympy
-def test_SRK_d_lnphis_dP_sympy():
+def test_SRK_dlnphis_dP_sympy():
     from sympy import Derivative, symbols, sqrt, diff, log, N, Function
     from fluids.constants import R as R_num
     T_num = 270.0
@@ -1592,7 +1608,7 @@ def test_SRK_d_lnphis_dP_sympy():
     zs = [0.3, 0.1, 0.6]
     
     eos = SRKMIX(T=T_num, P=P_num, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=kijs)
-    diffs_implemented = eos.d_lnphis_dP(Z=eos.Z_g, dZ_dP=eos.dZ_dP_g, zs=zs)
+    diffs_implemented = eos.dlnphis_dP('g')
 
     T, P, R, b1, b2, b3, b, = symbols('T, P, R, b1, b2, b3, b')
     Z_f, sum_f, a_alpha_f = symbols('Z_f, sum_f, a_alpha_f', cls=Function)
@@ -1633,7 +1649,7 @@ def test_SRK_d_lnphis_dP_sympy():
     assert_allclose(sympy_diffs, diffs_implemented, rtol=1e-11)
 
 
-def test_VDW_d_lnphis_dP():
+def test_VDW_dlnphis_dP():
     dP = 1e-1
     T = 280.0 # Need increase T a little
     P = 76E5
@@ -1648,13 +1664,17 @@ def test_VDW_d_lnphis_dP():
     numerical_diffs = (np.array(eos2.lnphis_g) - eos1.lnphis_g) / dP
     
     expected_diffs = [4.48757918014496e-8, -1.17254464726201e-8, -1.20732168353728e-7]
-    analytical_diffs = eos.d_lnphis_dP(Z=eos.Z_g, dZ_dP=eos.dZ_dP_g, zs=zs)
+    analytical_diffs = eos.dlnphis_dP('g')
     
     assert_allclose(analytical_diffs, expected_diffs, rtol=1e-11)
     assert_allclose(expected_diffs, numerical_diffs, rtol=1e-5)
-    
+
+    # Base class - does not pass likely due to zero division error, could use more work
+#    analytical_diffs = super(eos.__class__, eos).dlnphis_dP('g')
+#    assert_allclose(analytical_diffs, expected_diffs, rtol=1e-11)
+
 @pytest.mark.sympy
-def test_VDW_d_lnphis_dP_sympy():
+def test_VDW_dlnphis_dP_sympy():
     from sympy import Derivative, symbols, sqrt, diff, log, N, Function
     from fluids.constants import R as R_num
 
@@ -1667,7 +1687,7 @@ def test_VDW_d_lnphis_dP_sympy():
     zs = [0.3, 0.1, 0.6]
     
     eos = VDWMIX(T=T_num, P=P_num, Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, kijs=kijs)
-    diffs_implemented = eos.d_lnphis_dP(Z=eos.Z_g, dZ_dP=eos.dZ_dP_g, zs=zs)
+    diffs_implemented = eos.dlnphis_dP('g')
 
     T, P, R, b1, b2, b3, b, = symbols('T, P, R, b1, b2, b3, b')
     a1, a2, a3 = symbols('a1, a2, a3')
@@ -1778,6 +1798,12 @@ def test_dS_dep_dP_liquid_and_vapor():
 
 ternary_basic = dict(T=300.0, P=1e6, zs=[.7, .2, .1], Tcs=[126.2, 304.2, 373.2],
                      Pcs=[3394387.5, 7376460.0, 8936865.0], omegas=[0.04, 0.2252, 0.1])
+quaternary_basic = dict(T=300.0, P=1e5, Tcs=[126.2, 190.564, 304.2, 373.2], 
+                        Pcs=[3394387.5, 4599000, 7376460.0, 8936865.0],
+                        omegas=[0.04, 0.008, 0.2252, 0.1],
+                        zs=[.3, .4, .3-1e-6, 1e-6])
+
+
 
 def test_db_dnxpartial():
     liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S']
@@ -1848,6 +1874,62 @@ def test_d2b_d2nx(kwargs):
         analytical = eos.d2b_dninjs
         assert_allclose(numericals, analytical, rtol=5e-4)
 
+
+@pytest.mark.sympy
+@pytest.mark.parametrize("kwargs", [quaternary_basic])
+def test_d3b_dnz(kwargs):
+    # Rough - neeed sympy, numerical differentiation does not give any accuracy
+    from sympy import symbols, diff
+    zs = kwargs['zs']
+    
+    N = len(zs)
+    b1, b2, b3, b4, n1, n2, n3, n4 = symbols('b1, b2, b3, b4, n1, n2, n3, n4')
+    bs = [b1, b2, b3, b4]
+    nt = n1 + n2 + n3 + n4
+    ns = [n1, n2, n3, n4]
+    z1 = n1/nt
+    z2 = n2/nt
+    z3 = n3/nt
+    z4 = n4/nt
+    zs_n = [z1, z2, z3, z4]
+    b_n = sum([bi*zi for bi, zi in zip(bs, zs_n)])
+    
+    zs_z = symbols('z1, z2, z3, z4')
+    b_z = sum([bi*zi for bi, zi in zip(bs, zs_z)])
+    
+    for z in (True, False):
+        diffs = {}
+        for e in eos_mix_list:
+            eos = e(**kwargs)
+    
+            b_subs = {bi:eos.bs[i] for i, bi in enumerate(bs)}
+            b_subs.update({ni: zs[i] for i, ni in enumerate(ns)})
+            
+            analytical = [[[None]*N for i in range(N)] for i in range(N)]
+            for i in range(N):
+                for j in range(N):
+                    for k in range(N):
+                        if not analytical[i][j][k]:
+                            if (i, j, k) in diffs:
+                                t = diffs[(i, j, k)]
+                            else:
+                                if z:
+                                    t = diff(b_z, zs_z[i], zs_z[j], zs_z[k])
+                                else:
+                                    t = diff(b_n, ns[i], ns[j], ns[k])
+                                diffs[(i, j, k)] = t
+                            v = t.subs(b_subs)
+                            analytical[i][j][k] = analytical[i][k][j] = analytical[j][i][k] = analytical[j][k][i] = analytical[k][i][j] = analytical[k][j][i] = float(v)
+        
+        
+            # Bs, deltas, epsilons
+            analytical = np.array(analytical).ravel().tolist()
+            if z:
+                implemented = np.array(eos.d3b_dzizjzks).ravel().tolist()
+            else:
+                implemented = np.array(eos.d3b_dninjnks).ravel().tolist()
+            assert_allclose(analytical, implemented, rtol=1e-11)
+        
 
 
 @pytest.mark.parametrize("kwargs", [ternary_basic])
@@ -2033,6 +2115,31 @@ def test_d2a_alpha_d2nx(kwargs):
         analytical = eos.d2a_alpha_dninjs
         assert_allclose(numericals, analytical, rtol=5e-4)
 
+@pytest.mark.sympy
+def test_d3a_alpha_dninjnk():
+    from sympy import Function, symbols, diff, simplify
+    a_alpha11, a_alpha12, a_alpha13, a_alpha14, a_alpha21, a_alpha22, a_alpha23, a_alpha24, a_alpha31, a_alpha32, a_alpha33, a_alpha34, a_alpha41, a_alpha42, a_alpha43, a_alpha44 = symbols(
+        'a_alpha11, a_alpha12, a_alpha13, a_alpha14, a_alpha21, a_alpha22, a_alpha23, a_alpha24, a_alpha31, a_alpha32, a_alpha33, a_alpha34, a_alpha41, a_alpha42, a_alpha43, a_alpha44',
+    cls=Function)
+    N = 4
+    T = symbols('T')
+    z1, z2, z3, z4 = symbols('z1, z2, z3, z4')
+    zs = [z1, z2, z3, z4]
+    a_alpha_ijs = [[a_alpha11(T), a_alpha12(T), a_alpha13(T), a_alpha14(T)], [a_alpha21(T), a_alpha22(T), a_alpha23(T), a_alpha24(T)],
+                   [a_alpha31(T), a_alpha32(T), a_alpha33(T), a_alpha34(T)], [a_alpha41(T), a_alpha42(T), a_alpha43(T), a_alpha44(T)]]
+    a_alpha = 0
+    for i in range(N):
+        a_alpha_ijs_i = a_alpha_ijs[i]
+        zi = zs[i]
+        for j in range(i+1, N):
+            term = a_alpha_ijs_i[j]*zi*zs[j]
+            a_alpha += term + term
+    
+        a_alpha += a_alpha_ijs_i[i]*zi*zi
+    
+    assert 0 == diff(simplify(a_alpha), z1, z2, z3)
+    
+    
 
 def test_da_alpha_dT_dnxpartial():
     liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S']
@@ -2077,10 +2184,100 @@ def test_da_alpha_dT_dnxpartial():
 
 
 
+def test_d2a_alpha_dT2_dnxpartial():
+    liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S']
+    Tcs = [126.2, 304.2, 373.2]
+    Pcs = [3394387.5, 7376460.0, 8936865.0]
+    omegas = [0.04, 0.2252, 0.1]
+    zs = [.7, .2, .1]
 
+    normalization = False
 
+    def d2a_alpha_dT2_dnxpartial(ni, i):
+        zs = [.7, .2, .1]
+        zs[i] = ni
+        nt = sum(zs)
+        if normalization:
+            zs = normalize(zs)
+        eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        return eos.d2a_alpha_dT2
     
+    for obj in eos_mix_list:
+        eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        numericals = [derivative(d2a_alpha_dT2_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
+            for i, ni in zip((0, 1, 2), (.7, .2, .1))]
+        assert_allclose(numericals, eos.d2a_alpha_dT2_dzs)
+        
+    normalization = True
+    for obj in eos_mix_list:
+        eos = obj(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        numericals = [derivative(d2a_alpha_dT2_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
+            for i, ni in zip((0, 1, 2), (.7, .2, .1))]
+        assert_allclose(numericals, eos.d2a_alpha_dT2_dns)
 
+@pytest.mark.slow
+@pytest.mark.sympy
+def test_d3a_alpha_dninjnks():
+    from sympy import symbols, Function, diff
+    
+    a_alpha11, a_alpha12, a_alpha13, a_alpha14, a_alpha21, a_alpha22, a_alpha23, a_alpha24, a_alpha31, a_alpha32, a_alpha33, a_alpha34, a_alpha41, a_alpha42, a_alpha43, a_alpha44 = symbols(
+        'a_alpha11, a_alpha12, a_alpha13, a_alpha14, a_alpha21, a_alpha22, a_alpha23, a_alpha24, a_alpha31, a_alpha32, a_alpha33, a_alpha34, a_alpha41, a_alpha42, a_alpha43, a_alpha44',
+    cls=Function)
+    N = 4
+    T = symbols('T')
+    n1, n2, n3, n4 = symbols('n1, n2, n3, n4')
+    ns = [n1, n2, n3, n4]
+    nt = n1 + n2 + n3 + n4
+    z1 = n1/nt
+    z2 = n2/nt
+    z3 = n3/nt
+    z4 = n4/nt
+    zs = [z1, z2, z3, z4]
+    
+    a_alpha_ijs = [[a_alpha11(T), a_alpha12(T), a_alpha13(T), a_alpha14(T)], 
+                   [a_alpha21(T), a_alpha22(T), a_alpha23(T), a_alpha24(T)],
+                   [a_alpha31(T), a_alpha32(T), a_alpha33(T), a_alpha34(T)], 
+                   [a_alpha41(T), a_alpha42(T), a_alpha43(T), a_alpha44(T)]]
+    
+    a_alpha = 0
+    for i in range(N):
+        a_alpha_ijs_i = a_alpha_ijs[i]
+        zi = zs[i]
+        for j in range(i+1, N):
+            term = a_alpha_ijs_i[j]*zi*zs[j]
+            a_alpha += term + term
+        a_alpha += a_alpha_ijs_i[i]*zi*zi
+        
+    T, P = 170.0, 3e6
+    Tcs = [126.2, 304.2, 373.2, 304.1]
+    Pcs = [3394387.5, 7376460.0, 8936865.0, 7376460.0*.99]
+    omegas = [0.04, 0.2252, 0.1, .06]
+    eos = PRMIX(T=T, P=P, zs=[.7, .2, .02, .08], Tcs=Tcs, Pcs=Pcs, omegas=omegas, fugacities=True)
+    implemented = eos.d3a_alpha_dninjnks
+    
+    
+    diffs = {}
+    a_alpha_subs = {ni: eos.zs[i] for i, ni in enumerate(ns)}
+    a_alpha_subs.update({a_alpha_ijs[i][j]: eos.a_alpha_ijs[i][j] for i in eos.cmps for j in eos.cmps})
+    
+    N = eos.N
+    analytical = [[[None]*N for i in range(N)] for i in range(N)]
+    for i in range(N):
+        for j in range(N):
+            for k in range(N):
+                if analytical[i][j][k] is None:
+                    if (i, j, k) in diffs:
+                        v = diffs[(i, j, k)]
+                    else:
+                        t = diff(a_alpha, ns[i], ns[j], ns[k])
+                        v = float(t.subs(a_alpha_subs))
+                        diffs[(i,j,k)] = diffs[(i,k,j)] = diffs[(j,i,k)] = diffs[(j,k,i)] = diffs[(k,i,j)] = v
+                    
+                    analytical[i][j][k] = analytical[i][k][j] = analytical[j][i][k] = analytical[j][k][i] = analytical[k][i][j] = analytical[k][j][i] = v
+                    
+    assert_allclose(implemented, analytical, rtol=1e-11)
+
+        
 @pytest.mark.parametrize("kwargs", [ternary_basic])
 def test_dH_dep_dnxpartial(kwargs):
     kwargs = kwargs.copy()
@@ -2352,8 +2549,56 @@ def test_dZ_dnxpartial(kwargs):
         assert_allclose(numericals, eos.dnZ_dns(eos.Z_g, zs))
 
 
+quaternary_dthermodynamics = dict(T=300.0, P=1e5, Tcs=[126.2, 304.2, 373.2, 304.1], 
+                        Pcs=[3394387.5, 7376460.0, 8936865.0, 7376460.0*.99],
+                        omegas=[0.04, 0.2252, 0.1, .06],
+                        zs=[.7, .2, .02, .08])
 
 
+@pytest.mark.parametrize("kwargs,T,P,zs", [[quaternary_dthermodynamics, 170.0, 3e6, [.7, .2, .02, .08]]])
+def test_dthermodynamics_dnxpartial(kwargs, T, P, zs):
+    # test_dthermodynamics_dnxpartial(quaternary_dthermodynamics, 170.0, 3e6, [.7, .2, .02, .08])
+    kwargs = kwargs.copy()
+    del kwargs['zs']
+    del kwargs['T']
+    del kwargs['P']
+
+    attr_pures =   ['dP_dT',  'dP_dV',  'dV_dT',  'dV_dP',  'dT_dV',  'dT_dP',  'd2P_dT2', 'd2P_dV2', 'd2V_dT2', 'd2V_dP2', 'd2T_dV2', 'd2T_dP2', 'd2V_dPdT', 'd2P_dTdV', 'd2T_dPdV', 'H_dep',   'S_dep',  'V_dep',    'U_dep',   'G_dep',   'A_dep']
+    attr_derivs =  ['d2P_dT', 'd2P_dV', 'd2V_dT', 'd2V_dP', 'd2T_dV', 'd2T_dP', 'd3P_dT2', 'd3P_dV2', 'd3V_dT2', 'd3V_dP2', 'd3T_dV2', 'd3T_dP2', 'd3V_dPdT', 'd3P_dTdV', 'd3T_dPdV', 'dH_dep_', 'dS_dep_', 'dV_dep_', 'dU_dep_', 'dG_dep_', 'dA_dep_']
+
+    eos_mix_working = [SRKMIX, APISRKMIX, PRMIX, PR78MIX, PRSVMIX, PRSV2MIX, TWUPRMIX]
+    
+    def dthing_dnxpartial(ni, i):
+        zs_working = list(zs)
+        zs_working[i] = ni
+        nt = sum(zs_working)
+        if normalization:
+            zs_working = normalize(zs_working)
+        eos = obj(zs=zs_working, T=T, P=P, **kwargs)
+        return getattr(eos, attr_pure_phase)
+    
+    for attr_pure, attr_der in zip(attr_pures, attr_derivs):
+        for phase in ['l', 'g']:
+            attr_pure_phase = attr_pure + '_' + phase
+            attr_der_phase = attr_der + 'dzs_%s' %phase
+            
+            normalization = False
+            for obj in eos_mix_working:
+                eos = obj(zs=zs, T=T, P=P, **kwargs)
+                eos.set_dnzs_derivatives_and_departures()
+                numericals = [derivative(dthing_dnxpartial, ni, dx=1e-4, order=7, args=(i,)) 
+                    for i, ni in enumerate(zs)]
+                assert_allclose(numericals, getattr(eos, attr_der_phase))
+            
+            normalization = True
+            attr_der_phase = attr_der + 'dns_%s' %phase
+            for obj in eos_mix_working:
+                eos = obj(zs=zs, T=T, P=P, **kwargs)
+                eos.set_dnzs_derivatives_and_departures()
+                numericals = [derivative(dthing_dnxpartial, ni, dx=1e-4, order=7, args=(i,)) 
+                    for i, ni in enumerate(zs)]
+                assert_allclose(numericals, getattr(eos, attr_der_phase))
+                    
 def test_fugacities_numerical_all_eos_mix():
     liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S']
     Tcs = [126.2, 304.2, 373.2]
@@ -2377,9 +2622,12 @@ def test_fugacities_numerical_all_eos_mix():
         
         analytical = [P*i for i in eos.phis_g]
         assert_allclose(numericals, analytical)
+        
+        analytical_2 = [exp(i)*P for i in super(eos.__class__, eos).fugacity_coefficients(eos.Z_g, zs)]
+        assert_allclose(numericals, analytical_2)
 
 
-def test_d_lnphis_dT_vs_Hdep_identity():
+def test_dlnphis_dT_vs_Hdep_identity():
     liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S']
     Tcs = [126.2, 304.2, 373.2]
     Pcs = [3394387.5, 7376460.0, 8936865.0]
@@ -2390,7 +2638,7 @@ def test_d_lnphis_dT_vs_Hdep_identity():
     
     for obj in eos_mix_list:
         eos = obj(T=300, P=P, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
-        dlnphis_dT = eos.d_lnphis_dT(eos.Z_g, eos.dZ_dT_g, zs)
+        dlnphis_dT = eos.dlnphis_dT('g')
         numerical = sum(zi*di for zi, di in zip(zs, dlnphis_dT))
         # In Michelsen
         analytical = -eos.H_dep_g/(R*T*T)

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2016, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2016, 2017, 2018, 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -118,14 +118,10 @@ def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
     for i in cmps:
         a_alpha_ijs_i = a_alpha_ijs[i]
         z_products_i = z_products[i]
-        for j in cmps:
-            if j < i:
-                continue
+        for j in range(i):
             term = a_alpha_ijs_i[j]*z_products_i[j]
-            if i != j:
-                a_alpha += term + term
-            else:
-                a_alpha += term
+            a_alpha += term + term
+        a_alpha += a_alpha_ijs_i[i]*z_products_i[i]
     
     da_alpha_dT_ijs = [[0.0]*N for _ in cmps]
     if second_derivative:
@@ -721,7 +717,7 @@ class GCEOSMIX(GCEOS):
         return self.to_TP_zs(T=T, P=P, zs=self.zs)
         
         
-    def fugacities(self, xs=None, ys=None):   
+    def fugacities(self, only_l=False, only_g=False):   
         r'''Helper method for calculating fugacity coefficients for any 
         phases present, using either the overall mole fractions for both phases
         or using specified mole fractions for each phase.
@@ -736,13 +732,18 @@ class GCEOSMIX(GCEOS):
             \hat \phi_i^g = \frac{\hat f_i^g}{x_i P}
         
             \hat \phi_i^l = \frac{\hat f_i^l}{x_i P}
+            
+        Note that in a flash calculation, each phase requires their own EOS
+        object.
         
         Parameters
         ----------
-        xs : list[float], optional
-            Liquid-phase mole fractions of each species, [-]
-        ys : list[float], optional
-            Vapor-phase mole fractions of each species, [-]
+        only_l : bool
+            When true, if there is a liquid and a vapor root, only the liquid
+            root (and properties) will be set.
+        only_g : bool
+            When true, if there is a liquid and a vapor root, only the vapor
+            root (and properties) will be set.
             
         Notes
         -----
@@ -774,19 +775,16 @@ class GCEOSMIX(GCEOS):
            Butterworth-Heinemann, 1985.
         '''
         P = self.P
-        if self.phase in ('l', 'l/g') and hasattr(self, 'Z_l'):
-            if xs is None:
-                xs = self.zs
-            self.lnphis_l = self.fugacity_coefficients(self.Z_l, zs=xs)
+        zs = self.zs
+        if not only_g and hasattr(self, 'V_l'):
+            self.lnphis_l = self.fugacity_coefficients(self.Z_l, zs=zs)
             self.phis_l = [exp(i) for i in self.lnphis_l]
-            self.fugacities_l = [phi*x*P for phi, x in zip(self.phis_l, xs)]
+            self.fugacities_l = [phi*x*P for phi, x in zip(self.phis_l, zs)]
 
-        if self.phase in ('g', 'l/g') and hasattr(self, 'Z_g'):
-            if ys is None:
-                ys = self.zs
-            self.lnphis_g = self.fugacity_coefficients(self.Z_g, zs=ys)
+        if not only_l and hasattr(self, 'V_g'):
+            self.lnphis_g = self.fugacity_coefficients(self.Z_g, zs=zs)
             self.phis_g = [exp(i) for i in self.lnphis_g]
-            self.fugacities_g = [phi*y*P for phi, y in zip(self.phis_g, ys)]
+            self.fugacities_g = [phi*y*P for phi, y in zip(self.phis_g, zs)]
 
     
     def eos_lnphis_lowest_Gibbs(self):
@@ -876,13 +874,16 @@ class GCEOSMIX(GCEOS):
             self.d2fugacities_dni2_g = [derivative(self._dfugacity_dn, ys[i], args=[i, 'g'], dx=1E-5, n=2) for i in self.cmps]
             self.d2lnphis_dni2_g = [d2phi/phi  - dphi*dphi/(phi*phi) for d2phi, dphi, phi in zip(self.d2phis_dni2_g, self.dphis_dni_g, self.phis_g)]
         # second derivative lns confirmed
-
-    def TPD(self, Zz, Zy, zs, ys):
-        r'''Helper method for calculating the Tangent Plane Distance function
+    
+    @staticmethod
+    def TPD(T, zs, lnphis, ys, lnphis_test):
+        r'''Method for calculating the Tangent Plane Distance function
         according to the original Michelsen definition. More advanced 
         transformations of the TPD function are available in the literature for
-        performing calculations. This method does not alter the state of the 
-        object.
+        performing calculations.
+        
+        For a mixture to be stable, it is necessary and sufficient for this to
+        be positive for all trial phase compositions.
         
         .. math::
             \text{TPD}(y) =  \sum_{j=1}^n y_j(\mu_j (y) - \mu_j(z))
@@ -892,26 +893,35 @@ class GCEOSMIX(GCEOS):
             
         Parameters
         ----------
-        Zz : float
-            Compressibility factor of the phase undergoing stability testing
-            (`test` phase), [-]
-        Zy : float
-            Compressibility factor of the trial phase, [-]
+        T : float
+            Temperature of the system, [K]
         zs : list[float]
-            Mole fraction composition of the phase undergoing stability 
-            testing  (`test` phase), [-]
+            Mole fractions of the phase undergoing stability 
+            testing (`test` phase), [-]
+        lnphis : list[float]
+            Log fugacity coefficients of the phase undergoing stability 
+            testing (if two roots are available, always use the lower Gibbs
+            energy root), [-]
         ys : list[float]
             Mole fraction trial phase composition, [-]
+        lnphis_test : list[float]
+            Log fugacity coefficients of the trial phase (if two roots are 
+            available, always use the lower Gibbs energy root), [-]
         
         Returns
         -------
-        TBP : float
+        TPD : float
             Original Tangent Plane Distance function, [J/mol]
             
         Notes
         -----
         A dimensionless version of this is often used as well, divided by
         RT.
+        
+        At the dew point (with test phase as the liquid and vapor incipient 
+        phase as the trial phase), TPD is zero [3]_.
+        At the bubble point (with test phase as the vapor and liquid incipient 
+        phase as the trial phase), TPD is zero [3]_.
         
         References
         ----------
@@ -920,17 +930,19 @@ class GCEOSMIX(GCEOS):
         .. [2] Hoteit, Hussein, and Abbas Firoozabadi. "Simple Phase Stability
            -Testing Algorithm in the Reduction Method." AIChE Journal 52, no. 
            8 (August 1, 2006): 2909-20.
+        .. [3] Qiu, Lu, Yue Wang, Qi Jiao, Hu Wang, and Rolf D. Reitz. 
+           "Development of a Thermodynamically Consistent, Robust and Efficient
+           Phase Equilibrium Solver and Its Validations." Fuel 115 (January 1,
+           2014): 1-16. https://doi.org/10.1016/j.fuel.2013.06.039.
         '''
-        z_log_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
-        y_log_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
-        
-        tot = 0
-        for yi, phi_yi, zi, phi_zi in zip(ys, y_log_fugacity_coefficients, zs, z_log_fugacity_coefficients):
+        tot = 0.0
+        for yi, phi_yi, zi, phi_zi in zip(ys, lnphis_test, zs, lnphis):
             di = log(zi) + phi_zi
             tot += yi*(log(yi) + phi_yi - di)
-        return tot*R*self.T
-    
-    def Stateva_Tsvetkov_TPDF(self, Zz, Zy, zs, ys):
+        return tot*R*T
+        
+    @staticmethod
+    def Stateva_Tsvetkov_TPDF(lnphis, zs, lnphis_trial, ys):
         r'''Modified Tangent Plane Distance function according to [1]_ and
         [2]_. The stationary points of a system are all zeros of this function;
         so once all zeroes have been located, the stability can be evaluated
@@ -951,16 +963,18 @@ class GCEOSMIX(GCEOS):
             
         Parameters
         ----------
-        Zz : float
-            Compressibility factor of the phase undergoing stability testing,
-             (`test` phase), [-]
-        Zy : float
-            Compressibility factor of the trial phase, [-]
         zs : list[float]
-            Mole fraction composition of the phase undergoing stability 
-            testing  (`test` phase), [-]
+            Mole fractions of the phase undergoing stability 
+            testing (`test` phase), [-]
+        lnphis : list[float]
+            Log fugacity coefficients of the phase undergoing stability 
+            testing (if two roots are available, always use the lower Gibbs
+            energy root), [-]
         ys : list[float]
             Mole fraction trial phase composition, [-]
+        lnphis_test : list[float]
+            Log fugacity coefficients of the trial phase (if two roots are 
+            available, always use the lower Gibbs energy root), [-]
         
         Returns
         -------
@@ -970,8 +984,7 @@ class GCEOSMIX(GCEOS):
         Notes
         -----
         In [1]_, a typo omitted the squaring of the expression. This method
-        produces very interesting plots matching the shapes given in 
-        literature.
+        produces plots matching the shapes given in literature.
         
         References
         ----------
@@ -984,6 +997,24 @@ class GCEOSMIX(GCEOS):
            Problem. Application to Vapor-Liquid-Liquid Systems." The Canadian
            Journal of Chemical Engineering 72, no. 4 (August 1, 1994): 722-34.
         '''
+        kis = []
+        for yi, log_phi_yi, zi, log_phi_zi in zip(ys, lnphis_trial, zs, lnphis):
+            di = log_phi_zi + (log(zi) if zi > 0.0 else -690.0)
+            try:
+                ki = log_phi_yi + log(yi) - di
+            except ValueError:
+                # log - yi is negative; convenient to handle it to make the optimization take negative comps
+                ki = log_phi_yi + -690.0 - di
+            kis.append(ki)
+        kis.append(kis[0])
+
+        tot = 0.0
+        for i in range(len(zs)):
+            t = kis[i+1] - kis[i]
+            tot += t*t
+        return tot
+
+    def Stateva_Tsvetkov_TPDF_broken(self, Zz, Zy, zs, ys):
         z_log_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
         y_log_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
         
@@ -999,27 +1030,6 @@ class GCEOSMIX(GCEOS):
 
         tot = 0.0
         for i in range(self.N):
-            t = kis[i+1] - kis[i]
-            tot += t*t
-        return tot
-    
-    @staticmethod
-    def Stateva_Tsvetkov_TPDF_fixed(log_phi_zs, log_phi_ys, zs, ys):
-        kis = []
-        for yi, log_phi_yi, zi, log_phi_zi in zip(ys, log_phi_ys, zs, log_phi_zs):
-            di = log_phi_zi + (log(zi) if zi > 0.0 else -690.0)
-            
-            
-            try:
-                ki = log_phi_yi + log(yi) - di
-            except ValueError:
-                # log - yi is negative; convenient to handle it to make the optimization take negative comps
-                ki = log_phi_yi + -690.0 - di
-            kis.append(ki)
-        kis.append(kis[0])
-
-        tot = 0.0
-        for i in range(len(zs)):
             t = kis[i+1] - kis[i]
             tot += t*t
         return tot
@@ -1103,7 +1113,7 @@ class GCEOSMIX(GCEOS):
         return tot
 
 
-    def TDP_Michelsen(self, Zz, Zy, zs, ys):
+    def TDP_Michelsen(self, phase):
         
         z_log_fugacity_coefficients = self.fugacity_coefficients(Zz, zs)
         y_log_fugacity_coefficients = self.fugacity_coefficients(Zy, ys)
@@ -1882,17 +1892,16 @@ class GCEOSMIX(GCEOS):
         return fugacity_sum_terms
     
     
-    
+    @property
     def _fugacity_sum_terms(self):
         try:
             return self.fugacity_sum_terms
         except:
             pass
         zs = self.zs
-        cmps = self.cmps
         a_alpha_ijs = self.a_alpha_ijs
         fugacity_sum_terms = [0.0]*self.N
-        for i in cmps:
+        for i in self.cmps:
             l = a_alpha_ijs[i]
             for j in range(i):
                 fugacity_sum_terms[j] += zs[i]*l[j]
@@ -1903,44 +1912,41 @@ class GCEOSMIX(GCEOS):
 
 
 
-
+    @property
     def _da_alpha_dT_j_rows(self):
         try:
             return self.da_alpha_dT_j_rows
         except:
             pass
         zs = self.zs
-        cmps = self.cmps
         da_alpha_dT_ijs = self.da_alpha_dT_ijs
-        da_alpha_dT_j_rows = []
-        for i in cmps:
+        da_alpha_dT_j_rows = [0.0]*self.N
+        for i in self.cmps:
             l = da_alpha_dT_ijs[i]
-            sum_term = 0.0
-            for j in cmps:
-                sum_term += zs[j]*l[j]
-            da_alpha_dT_j_rows.append(sum_term)
+            for j in range(i):
+                da_alpha_dT_j_rows[j] += zs[i]*l[j]
+                da_alpha_dT_j_rows[i] += zs[j]*l[j]
+            da_alpha_dT_j_rows[i] += zs[i]*l[i]
+
         self.da_alpha_dT_j_rows = da_alpha_dT_j_rows
         return da_alpha_dT_j_rows
     
+    @property
     def _d2a_alpha_dT2_j_rows(self):
-        # Does not seem to have worked
-#        a_alpha, da_alpha_dT, d2a_alpha_dT2, da_alpha_dT_ijs, a_alpha_ijs, d2a_alpha_dT2_ijs = a_alpha_and_derivatives_full(
-#                    self.a_alphas, self.da_alpha_dTs, self.d2a_alpha_dT2s, self.T, self.zs, self.kijs,
-#                     self.a_alpha_ijs, self.a_alpha_i_roots, self.a_alpha_ij_roots_inv, second_matrix=True)
         try:
             return self.d2a_alpha_dT2_j_rows
-        except:
+        except AttributeError:
             pass
         d2a_alpha_dT2_ijs = self.d2a_alpha_dT2_ijs
         zs = self.zs
-        cmps = self.cmps
-        d2a_alpha_dT2_j_rows = []
-        for i in cmps:
+        d2a_alpha_dT2_j_rows = [0.0]*self.N
+        for i in self.cmps:
             l = d2a_alpha_dT2_ijs[i]
-            sum_term = 0.0
-            for j in cmps:
-                sum_term += zs[j]*l[j]
-            d2a_alpha_dT2_j_rows.append(sum_term)
+            for j in range(i):
+                d2a_alpha_dT2_j_rows[j] += zs[i]*l[j]
+                d2a_alpha_dT2_j_rows[i] += zs[j]*l[j]
+            d2a_alpha_dT2_j_rows[i] += zs[i]*l[i]
+            
         self.d2a_alpha_dT2_j_rows = d2a_alpha_dT2_j_rows
         return d2a_alpha_dT2_j_rows
 
@@ -2175,7 +2181,7 @@ class GCEOSMIX(GCEOS):
         try:
             fugacity_sum_terms = self.fugacity_sum_terms
         except:
-            fugacity_sum_terms = self._fugacity_sum_terms()
+            fugacity_sum_terms = self._fugacity_sum_terms
         return [i + i for i in fugacity_sum_terms]
 
     @property
@@ -2200,7 +2206,7 @@ class GCEOSMIX(GCEOS):
         try:
             fugacity_sum_terms = self.fugacity_sum_terms
         except:
-            fugacity_sum_terms = self._fugacity_sum_terms()
+            fugacity_sum_terms = self._fugacity_sum_terms
         a_alpha = self.a_alpha
         return [2.0*(t - a_alpha) for t in fugacity_sum_terms]
 
@@ -2226,7 +2232,7 @@ class GCEOSMIX(GCEOS):
         try:
             fugacity_sum_terms = self.fugacity_sum_terms
         except:
-            fugacity_sum_terms = self._fugacity_sum_terms()
+            fugacity_sum_terms = self._fugacity_sum_terms
         a_alpha = self.a_alpha
         return [t + t - a_alpha for t in fugacity_sum_terms]
 
@@ -2275,7 +2281,7 @@ class GCEOSMIX(GCEOS):
         -------
         d2a_alpha_dninjs : list[float]
             Second partial molar derivative of `alpha` of each component, 
-            [kg*m^5/(mol^3*s^2)]
+            [kg*m^5/(mol^4*s^2)]
             
         Notes
         -----
@@ -2284,7 +2290,7 @@ class GCEOSMIX(GCEOS):
         try:
             fugacity_sum_terms = self.fugacity_sum_terms
         except:
-            fugacity_sum_terms = self._fugacity_sum_terms()
+            fugacity_sum_terms = self._fugacity_sum_terms
         a_alpha = self.a_alpha
         a_alpha_ijs = self.a_alpha_ijs
         cmps = self.cmps
@@ -2329,6 +2335,27 @@ class GCEOSMIX(GCEOS):
 
     @property
     def d3a_alpha_dninjnks(self):   
+        r'''Helper method for calculating the third mole number derivatives of
+        `a_alpha`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^3 a \alpha}{\partial n_i \partial n_j 
+            \partial n_k}\right)_{T, P, n_{m\ne i,j,k}} 
+            = 4\left(-6 (a \alpha) -  [(a \alpha)_{i,j} +  (a \alpha)_{i,k} 
+            +  (a \alpha)_{j,k}]
+            + 3\sum_m z_m[(a \alpha)_{i,m} +  (a \alpha)_{j,m}
+            +  (a \alpha)_{k,m}]\right)
+
+        Returns
+        -------
+        d3a_alpha_dninjnks : list[float]
+            Third mole number derivative of `alpha` of each component, 
+            [kg*m^5/(mol^5*s^2)]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
         # Seems correct across diagonal
         # Each term is of similar magnitude, so likely would notice if brokwn
         a_alpha = self.a_alpha
@@ -2376,7 +2403,7 @@ class GCEOSMIX(GCEOS):
         try:
             da_alpha_dT_j_rows = self.da_alpha_dT_j_rows
         except:
-            da_alpha_dT_j_rows = self._da_alpha_dT_j_rows()
+            da_alpha_dT_j_rows = self._da_alpha_dT_j_rows
         return [i + i for i in da_alpha_dT_j_rows]
 
     @property
@@ -2394,9 +2421,9 @@ class GCEOSMIX(GCEOS):
 
         Returns
         -------
-        da_alpha_dT_dzs : list[float]
+        da_alpha_dT_dns : list[float]
             Composition derivative of `da_alpha_dT` of each component, 
-            [kg*m^5/(mol^2*s^2*K)]
+            [kg*m^5/(mol^3*s^2*K)]
         
         Notes
         -----
@@ -2405,7 +2432,7 @@ class GCEOSMIX(GCEOS):
         try:
             da_alpha_dT_j_rows = self.da_alpha_dT_j_rows
         except:
-            da_alpha_dT_j_rows = self._da_alpha_dT_j_rows()
+            da_alpha_dT_j_rows = self._da_alpha_dT_j_rows
         da_alpha_dT = self.da_alpha_dT
         return [2.0*(t - da_alpha_dT) for t in da_alpha_dT_j_rows]
 
@@ -2426,7 +2453,7 @@ class GCEOSMIX(GCEOS):
         -------
         dna_alpha_dT_dns : list[float]
             Composition derivative of `da_alpha_dT` of each component, 
-            [kg*m^5/(mol*s^2*K)]
+            [kg*m^5/(mol^2*s^2*K)]
         
         Notes
         -----
@@ -2435,25 +2462,62 @@ class GCEOSMIX(GCEOS):
         try:
             da_alpha_dT_j_rows = self.da_alpha_dT_j_rows
         except:
-            da_alpha_dT_j_rows = self._da_alpha_dT_j_rows()
+            da_alpha_dT_j_rows = self._da_alpha_dT_j_rows
         da_alpha_dT = self.da_alpha_dT
         return [t + t - da_alpha_dT for t in da_alpha_dT_j_rows]
 
 
     @property
     def d2a_alpha_dT2_dzs(self):   
+        r'''Helper method for calculating the mole number derivatives of
+        `d2a_alpha_dT2`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^3 a \alpha}{\partial z_i \partial T^2}
+            \right)_{P, z_{i\ne j}} 
+            = \text{large expression}
+
+        Returns
+        -------
+        d2a_alpha_dT2_dzs : list[float]
+            Composition derivative of `d2a_alpha_dT2` of each component, 
+            [kg*m^5/(mol^2*s^2*K^2)]
+        
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
         try:
             d2a_alpha_dT2_j_rows = self.d2a_alpha_dT2_j_rows
         except:
-            d2a_alpha_dT2_j_rows = self._d2a_alpha_dT2_j_rows()
+            d2a_alpha_dT2_j_rows = self._d2a_alpha_dT2_j_rows
         return [i + i for i in d2a_alpha_dT2_j_rows]
 
     @property
     def d2a_alpha_dT2_dns(self):   
+        r'''Helper method for calculating the mole number derivatives of
+        `d2a_alpha_dT2`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^3 a \alpha}{\partial n_i \partial T^2}
+            \right)_{P, n_{i\ne j}} 
+            = f\left(\left(\frac{\partial^3 a\alpha}{\partial z_i \partial T^2}
+            \right)_{P, z_{i\ne j}}   \right)
+
+        Returns
+        -------
+        d2a_alpha_dT2_dns : list[float]
+            Mole number derivative of `d2a_alpha_dT2` of each component, 
+            [kg*m^5/(mol^3*s^2*K^2)]
+        
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
         try:
             d2a_alpha_dT2_j_rows = self.d2a_alpha_dT2_j_rows
         except:
-            d2a_alpha_dT2_j_rows = self._d2a_alpha_dT2_j_rows()
+            d2a_alpha_dT2_j_rows = self._d2a_alpha_dT2_j_rows
         d2a_alpha_dT2 = self.d2a_alpha_dT2
         return [2.0*(t - d2a_alpha_dT2) for t in d2a_alpha_dT2_j_rows]
     
@@ -3274,6 +3338,38 @@ class GCEOSMIX(GCEOS):
         return dns_to_dn_partials(dG_dns, F)
 
     def fugacity_coefficients(self, Z, zs):
+        r'''Generic formula for calculating log fugacity coefficients for each
+        species in a mixture. Verified numerically. Applicable to all cubic
+        equations of state which can be cast in the form used here. 
+        Normally this routine is slower than EOS-specific ones, as it does not 
+        make assumptions that certain parameters are zero or equal to other
+        parameters.
+        
+        .. math::
+                \left(\frac{\partial n \log \phi}{\partial n_i}
+                \right)_{n_{k \ne i}} = \log \phi _i = \log \phi + 
+                n \left(\frac{\partial \log \phi}{\partial n_i}
+                \right)_{n_{k\ne i}} 
+
+        .. math::
+            \left(\frac{\partial \log \phi }{\partial n_i}\right)_{T, P,
+            n_{i\ne j}} = \frac{1}{RT}\left(  \left(\frac{\partial G_{dep}}
+            {\partial n_i}\right)_{T, P, n_{i\ne j}}
+            \right)
+        
+        Parameters
+        ----------
+        Z : float
+            Compressibility of the mixture for a desired phase, [-]
+        zs : list[float], optional
+            List of mole factions, either overall or in a specific phase, [-]
+        
+        Returns
+        -------
+        log_phis : float
+            Log fugacity coefficient for each species, [-]
+        '''
+
         try:
             if Z == self.Z_l:
                 F = self.phi_l
@@ -3298,8 +3394,22 @@ class GCEOSMIX(GCEOS):
         x7 = self.delta
         x8 = self.epsilon
         x11 = self.a_alpha
+
+        x9 = x7**2 - 4*x8
+        if x9 == 0.0:
+            x9 = 1e-100
+        x10 = 1/sqrt(x9)
+        x12 = 2*x0
+        x13 = x12 + x7
+        x14 = catanh(x10*x13).real
+        x15 = 2*x2
+        x16 = x14*x15
+        x20 = x16/x9**(3/2)
+        x28 = 1/x9
+        x29 = x28*x7
         for i in cmps:
             x5 = d_Vs[i]
+            x27 = 2*x5
             x17 = d_deltas[i]
             x18 = x17*x7 - 2*d_epsilons[i]
             x23 = da_alphas[i]
@@ -3309,25 +3419,12 @@ class GCEOSMIX(GCEOS):
             for j in cmps:
                 # Should be symmetric - only need half, cuts speed in 2
                 x6 = d_Vs[j]
-                x9 = x7**2 - 4*x8
-                if x9 == 0.0:
-                    x9 = 1e-100
-                x10 = 1/sqrt(x9)
-                x12 = 2*x0
-                x13 = x12 + x7
-                x14 = catanh(x10*x13).real
-                x15 = 2*x2
-                x16 = x14*x15
                 x19 = da_alphas[j]
-                x20 = x16/x9**(3/2)
                 x21 = d_deltas[j]
                 x22 = x21*x7 - 2*d_epsilons[i]
                 x24 = d2_deltas[i][j]
                 x25 = x17*x21 + x24*x7 - 2*d2_epsilons[i][j]
                 x26 = x11*x22
-                x27 = 2*x5
-                x28 = 1/x9
-                x29 = x28*x7
                 x30 = x18*x28
                 x31 = x12*x30 - x17 + x18*x29 - x27
                 x32 = x13**2*x28 - 1
@@ -3613,7 +3710,7 @@ class GCEOSMIX(GCEOS):
             
         return dndP_dT_dsn, dndP_dV_dns, dnd2P_dT2_dns, dnd2P_dV2_dns, dnd2P_dTdV_dns
 
-    def d_main_derivatives_and_departures_dn(self, V):
+    def _d_main_derivatives_and_departures_dn(self, V):
         Z = (self.P*V)/(R*self.T)
         db_dns = self.db_dns
         ddelta_dns = self.ddelta_dns
@@ -3628,7 +3725,7 @@ class GCEOSMIX(GCEOS):
                                                da_alpha_dT_dns, d2a_alpha_dT2_dns,
                                                dV_dns)
 
-    def d_main_derivatives_and_departures_dz(self, V):
+    def _d_main_derivatives_and_departures_dz(self, V):
         Z = (self.P*V)/(R*self.T)
         db_dzs = self.db_dzs
         ddelta_dzs = self.ddelta_dzs
@@ -3644,7 +3741,7 @@ class GCEOSMIX(GCEOS):
                                                dV_dzs)
 
 
-    def _dnx_derivatives_and_departures(self, V):
+    def _dnz_derivatives_and_departures(self, V, n=True):
         try:
             if V == self.V_l:
                 l = True
@@ -3653,8 +3750,12 @@ class GCEOSMIX(GCEOS):
         except:
             l = False
         
+        if n:
+            f = self._d_main_derivatives_and_departures_dn
+        else:
+            f = self._d_main_derivatives_and_departures_dz
         
-        d2P_dTdns, d2P_dVdns, d3P_dT2dns, d3P_dV2dns, d3P_dTdVdns = (self.d_main_derivatives_and_departures_dn(V))
+        d2P_dTdns, d2P_dVdns, d3P_dT2dns, d3P_dV2dns, d3P_dTdVdns = f(V)
         
         # Needed in calculation routines
         if l:
@@ -3681,7 +3782,8 @@ class GCEOSMIX(GCEOS):
         d3T_dPdVdns = []
         d3V_dPdTdns = []
         for i in self.cmps:
-            d2P_dTdn, d2P_dVdn, d3P_dT2dn, d3P_dV2dn, d3P_dTdVdn = d2P_dTdns[i], d2P_dVdns[i], d3P_dT2dns[i], d3P_dV2dns[i], d3P_dTdVdns[i]
+            d2P_dTdn, d2P_dVdn, d3P_dT2dn, d3P_dV2dn, d3P_dTdVdn = (
+                    d2P_dTdns[i], d2P_dVdns[i], d3P_dT2dns[i], d3P_dV2dns[i], d3P_dTdVdns[i])
             
             # First derivative - one over the other
             d2V_dTdn = dP_dT*d2P_dVdn/dP_dV**2 - d2P_dTdn/dP_dV
@@ -3759,7 +3861,7 @@ class GCEOSMIX(GCEOS):
             dk = d3P_dT2dn
             j = dP_dT
             dj = d2P_dTdn
-            d3T_dPdVdn = -3*(f*g - h*k)*dj/j**4 + (f*dg + g*df - h*dk- k*dh)/j**3
+            d3T_dPdVdn = 3*(f*g - h*k)*dj/j**4 - (f*dg + g*df - h*dk- k*dh)/j**3
             d3T_dPdVdns.append(d3T_dPdVdn)
             
             # tenth
@@ -3773,7 +3875,7 @@ class GCEOSMIX(GCEOS):
             dk = d3P_dV2dn
             j = dP_dV
             dj = d2P_dVdn
-            d3V_dPdTdn = -3*(f*g - h*k)*dj/j**4 + (f*dg + g*df - h*dk- k*dh)/j**3
+            d3V_dPdTdn = 3*(f*g - h*k)*dj/j**4 - (f*dg + g*df - h*dk- k*dh)/j**3
             d3V_dPdTdns.append(d3V_dPdTdn)
         
                          
@@ -3784,31 +3886,186 @@ class GCEOSMIX(GCEOS):
                 d3P_dT2dns, d3P_dV2dns, d3V_dT2dns, d3V_dP2dns, d3T_dV2dns, d3T_dP2dns,
                 d3V_dPdTdns, d3P_dTdVdns, d3T_dPdVdns)
 
-
-    def dlnphis_dP(self, g=True):
-        '''
-        from sympy import *
-        P, T, R, n = symbols('P, T, R, n')
-        a_alpha, a, delta, epsilon, V, b = symbols('a_alpha, a, delta, epsilon, V, b', cls=Function)
-        da_alpha_dT, d2a_alpha_dT2 = symbols('da_alpha_dT, d2a_alpha_dT2', cls=Function)
+    def set_dnzs_derivatives_and_departures(self, n=True, x=True, only_l=False, 
+                                           only_g=False):
+        r'''Sets a number of mole number and/or composition partial derivatives 
+        of thermodynamic partial derivatives.
         
-        S_dep = R*log(V(n, P)-b(n))+2*da_alpha_dT(n, T)*atanh((2*V(n, P)+delta(n))/sqrt(delta(n)**2-4*epsilon(n)))/sqrt(delta(n)**2-4*epsilon(n))-R*log(V(n, P))
-        S_dep += R*log(P*V(n, P)/(R*T))
-        H_dep = 2*atanh((2*V(n, P)+delta(n))/sqrt(delta(n)**2-4*epsilon(n)))*(da_alpha_dT(n, T)*T-a_alpha(n, T))/sqrt(delta(n)**2-4*epsilon(n))
-        H_dep += P*V(n, P) - R*T
-        G_dep = H_dep - T*S_dep
-        lnphi = G_dep/(R*T)
-        lnphi = (simplify(lnphi))
-        cse(diff(diff(lnphi, P), n), optimizations='basic')        
+        The list of properties set is as follows, with all properties suffixed
+        with '_l' or '_g'
+        
+        if `n` is True:
+        d2P_dTdns, d2P_dVdns, d2V_dTdns, d2V_dPdns, d2T_dVdns, d2T_dPdns, 
+        d3P_dT2dns, d3P_dV2dns, d3V_dT2dns, d3V_dP2dns, d3T_dV2dns, d3T_dP2dns,
+        d3V_dPdTdns, d3P_dTdVdns, d3T_dPdVdns, dV_dep_dns, dG_dep_dns,
+        dH_dep_dns, dU_dep_dns, dS_dep_dns, dA_dep_dns
+
+        if `x` is True:
+        d2P_dTdzs, d2P_dVdzs, d2V_dTdzs, d2V_dPdzs, d2T_dVdzs, d2T_dPdzs, 
+        d3P_dT2dzs, d3P_dV2dzs, d3V_dT2dzs, d3V_dP2dzs, d3T_dV2dzs, d3T_dP2dzs,
+        d3V_dPdTdzs, d3P_dTdVdzs, d3T_dPdVdzs, dV_dep_dzs, dG_dep_dzs,
+        dH_dep_dzs, dU_dep_dzs, dS_dep_dzs, dA_dep_dzs
+
+        Parameters
+        ----------
+        n : bool, optional
+            Whether or not to set the mole number derivatives (sums up to one),
+            [-]
+        x : bool, optional
+            Whether or not to set the composition derivatives (does not sum up
+            to one), [-]
+        only_l : bool, optional
+            Whether or not to set only the liquid-like phase properties (if 
+            there are two phases), [-]
+        only_g : bool, optional
+            Whether or not to set only the gas-like phase properties (if 
+            there are two phases), [-]
+            
+        Notes
+        -----
         '''
-        if g:
+        cmps = self.cmps
+        zs = self.zs
+        T, P = self.T, self.P
+        if n and x:
+            ns = [True, False]
+        elif n:
+            ns = [True]
+        elif x:
+            ns = [False]
+        else:
+            return
+        
+        if only_l:
+            phases = ['l']
+        elif only_g:
+            phases = ['g']
+        else:
+            phases = ['l', 'g']
+        
+        
+        for n in ns:
+            for phase in phases:
+                if phase == 'g':
+                    Z, V = self.Z_g, self.V_g
+                else:
+                    Z, V = self.Z_l, self.V_l
+                    
+                if n:
+                    V_fun, G_fun, H_fun = self.dV_dns, self.dG_dep_dns, self.dH_dep_dns
+                else:
+                    V_fun, G_fun, H_fun = self.dV_dzs, self.dG_dep_dzs, self.dH_dep_dzs
+
+                (d2P_dTdns, d2P_dVdns, d2V_dTdns, d2V_dPdns, d2T_dVdns, d2T_dPdns, 
+                 d3P_dT2dns, d3P_dV2dns, d3V_dT2dns, d3V_dP2dns, d3T_dV2dns, d3T_dP2dns,
+                 d3V_dPdTdns, d3P_dTdVdns, d3T_dPdVdns) = self._dnz_derivatives_and_departures(V, n=n)
+    
+                # V
+                dV_dep_dns = V_fun(Z, zs)
+                # G
+                dG_dep_dns = G_fun(Z, zs)
+                # H
+                dH_dep_dns = H_fun(Z, zs)
+                # U
+                dU_dep_dns = [dH_dep_dns[i] - P*dV_dep_dns[i] for i in cmps]
+                # S
+                dS_dep_dns = [(dG_dep_dns[i] - dH_dep_dns[i])/-T for i in cmps]
+                # A
+                dA_dep_dns = [dU_dep_dns[i] - T*dS_dep_dns[i] for i in cmps]
+                
+                if n and phase == 'l':
+                    self.d2P_dTdns_l, self.d2P_dVdns_l, self.d2V_dTdns_l = d2P_dTdns, d2P_dVdns, d2V_dTdns
+                    self.d2V_dPdns_l, self.d2T_dVdns_l, self.d2T_dPdns_l = d2V_dPdns, d2T_dVdns, d2T_dPdns
+                    self.d3P_dT2dns_l, self.d3P_dV2dns_l, self.d3V_dT2dns_l = d3P_dT2dns, d3P_dV2dns, d3V_dT2dns
+                    self.d3V_dP2dns_l, self.d3T_dV2dns_l, self.d3T_dP2dns_l = d3V_dP2dns, d3T_dV2dns, d3T_dP2dns
+                    self.d3V_dPdTdns_l, self.d3P_dTdVdns_l, self.d3T_dPdVdns_l = d3V_dPdTdns, d3P_dTdVdns, d3T_dPdVdns
+                    
+                    self.dV_dep_dns_l, self.dG_dep_dns_l, self.dH_dep_dns_l = dV_dep_dns, dG_dep_dns, dH_dep_dns
+                    self.dU_dep_dns_l, self.dS_dep_dns_l, self.dA_dep_dns_l = dU_dep_dns, dS_dep_dns, dA_dep_dns
+                if n and phase == 'g':
+                    self.d2P_dTdns_g, self.d2P_dVdns_g, self.d2V_dTdns_g = d2P_dTdns, d2P_dVdns, d2V_dTdns
+                    self.d2V_dPdns_g, self.d2T_dVdns_g, self.d2T_dPdns_g = d2V_dPdns, d2T_dVdns, d2T_dPdns
+                    self.d3P_dT2dns_g, self.d3P_dV2dns_g, self.d3V_dT2dns_g = d3P_dT2dns, d3P_dV2dns, d3V_dT2dns
+                    self.d3V_dP2dns_g, self.d3T_dV2dns_g, self.d3T_dP2dns_g = d3V_dP2dns, d3T_dV2dns, d3T_dP2dns
+                    self.d3V_dPdTdns_g, self.d3P_dTdVdns_g, self.d3T_dPdVdns_g = d3V_dPdTdns, d3P_dTdVdns, d3T_dPdVdns
+                    
+                    self.dV_dep_dns_g, self.dG_dep_dns_g, self.dH_dep_dns_g = dV_dep_dns, dG_dep_dns, dH_dep_dns
+                    self.dU_dep_dns_g, self.dS_dep_dns_g, self.dA_dep_dns_g = dU_dep_dns, dS_dep_dns, dA_dep_dns
+                if not n and phase == 'g':
+                    self.d2P_dTdzs_g, self.d2P_dVdzs_g, self.d2V_dTdzs_g = d2P_dTdns, d2P_dVdns, d2V_dTdns
+                    self.d2V_dPdzs_g, self.d2T_dVdzs_g, self.d2T_dPdzs_g = d2V_dPdns, d2T_dVdns, d2T_dPdns
+                    self.d3P_dT2dzs_g, self.d3P_dV2dzs_g, self.d3V_dT2dzs_g = d3P_dT2dns, d3P_dV2dns, d3V_dT2dns
+                    self.d3V_dP2dzs_g, self.d3T_dV2dzs_g, self.d3T_dP2dzs_g = d3V_dP2dns, d3T_dV2dns, d3T_dP2dns
+                    self.d3V_dPdTdzs_g, self.d3P_dTdVdzs_g, self.d3T_dPdVdzs_g = d3V_dPdTdns, d3P_dTdVdns, d3T_dPdVdns
+                    
+                    self.dV_dep_dzs_g, self.dG_dep_dzs_g, self.dH_dep_dzs_g = dV_dep_dns, dG_dep_dns, dH_dep_dns
+                    self.dU_dep_dzs_g, self.dS_dep_dzs_g, self.dA_dep_dzs_g = dU_dep_dns, dS_dep_dns, dA_dep_dns
+                if not n and phase == 'l':
+                    self.d2P_dTdzs_l, self.d2P_dVdzs_l, self.d2V_dTdzs_l = d2P_dTdns, d2P_dVdns, d2V_dTdns
+                    self.d2V_dPdzs_l, self.d2T_dVdzs_l, self.d2T_dPdzs_l = d2V_dPdns, d2T_dVdns, d2T_dPdns
+                    self.d3P_dT2dzs_l, self.d3P_dV2dzs_l, self.d3V_dT2dzs_l = d3P_dT2dns, d3P_dV2dns, d3V_dT2dns
+                    self.d3V_dP2dzs_l, self.d3T_dV2dzs_l, self.d3T_dP2dzs_l = d3V_dP2dns, d3T_dV2dns, d3T_dP2dns
+                    self.d3V_dPdTdzs_l, self.d3P_dTdVdzs_l, self.d3T_dPdVdzs_l = d3V_dPdTdns, d3P_dTdVdns, d3T_dPdVdns
+                    
+                    self.dV_dep_dzs_l, self.dG_dep_dzs_l, self.dH_dep_dzs_l = dV_dep_dns, dG_dep_dns, dH_dep_dns
+                    self.dU_dep_dzs_l, self.dS_dep_dzs_l, self.dA_dep_dzs_l = dU_dep_dns, dS_dep_dns, dA_dep_dns
+
+    def dlnphis_dP(self, phase):
+        r'''Generic formula for calculating the pressure derivaitve of 
+        log fugacity coefficients for each species in a mixture. Verified
+        numerically. Applicable to all cubic equations of state which can be 
+        cast in the form used here. 
+        
+        Normally this routine is slower than EOS-specific ones, as it does not 
+        make assumptions that certain parameters are zero or equal to other
+        parameters.
+        
+        .. math::
+            \left(\frac{\partial \log \phi_i}{\partial P}\right))_{T,
+            nj \ne i} = \frac{G_{dep}}{\partial P}_{T, n}
+            +  \left(\frac{\partial^2 \log \phi}{\partial P \partial n_i}
+            \right)_{T, P, n_{j \ne i}}
+        
+        Parameters
+        ----------
+        phase : str
+            One of 'l' or 'g', [-]
+        
+        Returns
+        -------
+        dlnphis_dP : float
+            Pressure derivatives of log fugacity coefficient for each species, 
+            [1/Pa]
+            
+        Notes
+        -----
+        This expression for the partial derivative of the mixture `lnphi` with
+        respect to pressure and mole number can be derived as follows; to
+        convert to the partial molar `lnphi` pressure and temperature 
+        derivative, add ::math::`\frac{G_{dep}/(RT)}{\partial P}_{T, n}`.
+        
+        >>> from sympy import * # doctest:+SKIP
+        >>> P, T, R, n = symbols('P, T, R, n') # doctest:+SKIP
+        >>> a_alpha, a, delta, epsilon, V, b, da_alpha_dT, d2a_alpha_dT2 = symbols('a_alpha, a, delta, epsilon, V, b, da_alpha_dT, d2a_alpha_dT2', cls=Function) # doctest:+SKIP
+        >>> S_dep = R*log(P*V(n, P)/(R*T)) + R*log(V(n, P)-b(n))+2*da_alpha_dT(n, T)*atanh((2*V(n, P)+delta(n))/sqrt(delta(n)**2-4*epsilon(n)))/sqrt(delta(n)**2-4*epsilon(n))-R*log(V(n, P)) # doctest:+SKIP
+        >>> H_dep = P*V(n, P) - R*T + 2*atanh((2*V(n, P)+delta(n))/sqrt(delta(n)**2-4*epsilon(n)))*(da_alpha_dT(n, T)*T-a_alpha(n, T))/sqrt(delta(n)**2-4*epsilon(n)) # doctest:+SKIP
+        >>> G_dep = H_dep - T*S_dep # doctest:+SKIP
+        >>> lnphi = simplify(G_dep/(R*T)) # doctest:+SKIP
+        >>> diff(diff(lnphi, P), n) # doctest:+SKIP
+        P*Derivative(V(n, P), P, n)/(R*T) + Derivative(V(n, P), P, n)/V(n, P) - Derivative(V(n, P), P)*Derivative(V(n, P), n)/V(n, P)**2 - Derivative(V(n, P), P, n)/(V(n, P) - b(n)) - (-Derivative(V(n, P), n) + Derivative(b(n), n))*Derivative(V(n, P), P)/(V(n, P) - b(n))**2 + Derivative(V(n, P), n)/(R*T) - 4*(-2*delta(n)*Derivative(delta(n), n) + 4*Derivative(epsilon(n), n))*a_alpha(n, T)*Derivative(V(n, P), P)/(R*T*(1 - (2*V(n, P)/sqrt(delta(n)**2 - 4*epsilon(n)) + delta(n)/sqrt(delta(n)**2 - 4*epsilon(n)))**2)*(delta(n)**2 - 4*epsilon(n))**2) - 4*a_alpha(n, T)*Derivative(V(n, P), P, n)/(R*T*(1 - (2*V(n, P)/sqrt(delta(n)**2 - 4*epsilon(n)) + delta(n)/sqrt(delta(n)**2 - 4*epsilon(n)))**2)*(delta(n)**2 - 4*epsilon(n))) - 4*Derivative(V(n, P), P)*Derivative(a_alpha(n, T), n)/(R*T*(1 - (2*V(n, P)/sqrt(delta(n)**2 - 4*epsilon(n)) + delta(n)/sqrt(delta(n)**2 - 4*epsilon(n)))**2)*(delta(n)**2 - 4*epsilon(n))) - 4*(2*V(n, P)/sqrt(delta(n)**2 - 4*epsilon(n)) + delta(n)/sqrt(delta(n)**2 - 4*epsilon(n)))*(4*(-delta(n)*Derivative(delta(n), n) + 2*Derivative(epsilon(n), n))*V(n, P)/(delta(n)**2 - 4*epsilon(n))**(3/2) + 2*(-delta(n)*Derivative(delta(n), n) + 2*Derivative(epsilon(n), n))*delta(n)/(delta(n)**2 - 4*epsilon(n))**(3/2) + 4*Derivative(V(n, P), n)/sqrt(delta(n)**2 - 4*epsilon(n)) + 2*Derivative(delta(n), n)/sqrt(delta(n)**2 - 4*epsilon(n)))*a_alpha(n, T)*Derivative(V(n, P), P)/(R*T*(1 - (2*V(n, P)/sqrt(delta(n)**2 - 4*epsilon(n)) + delta(n)/sqrt(delta(n)**2 - 4*epsilon(n)))**2)**2*(delta(n)**2 - 4*epsilon(n))) + R*T*(P*Derivative(V(n, P), P)/(R*T) + V(n, P)/(R*T))*Derivative(V(n, P), n)/(P*V(n, P)**2) - R*T*(P*Derivative(V(n, P), P, n)/(R*T) + Derivative(V(n, P), n)/(R*T))/(P*V(n, P))
+        '''
+        if phase == 'g':
             V = self.V_g
             Z = self.Z_g
             dV_dP = self.dV_dP_g
+            dG_dep_dP = (self.dH_dep_dP_g  - self.T*self.dS_dep_dP_g)/(R*self.T)
+
         else:
             V = self.V_l
             Z = self.Z_l
             dV_dP = self.dV_dP_l
+            dG_dep_dP = (self.dH_dep_dP_l  - self.T*self.dS_dep_dP_l)/(R*self.T)
+        
         T = self.T
         P = self.P
         dV_dns = self.dV_dns(Z, self.zs)
@@ -3816,7 +4073,7 @@ class GCEOSMIX(GCEOS):
         depsilon_dns = self.depsilon_dns
         da_alpha_dns = self.da_alpha_dns
         db_dns = self.db_dns
-        d2V_dPdns = self._dnx_derivatives_and_departures(V)[3]# self.d2V_dPdn
+        d2V_dPdns = self._dnz_derivatives_and_departures(V)[3]# self.d2V_dPdn
 
         x0 = V
         x2 = 1/(R*T)
@@ -3830,14 +4087,17 @@ class GCEOSMIX(GCEOS):
         x13 = x11 + x12
         x14 = self.epsilon
         x15 = x11**2 - 4*x14
-        x16 = 1/x15
+        try:
+            x16 = 1/x15
+        except ZeroDivisionError:
+            x16 = 1e50
         x17 = x13**2*x16 - 1
         x18 = 1/x17
         x19 = self.a_alpha
         x20 = 4*x16
         x21 = x2*x6
         x22 = x18*x21
-        x25 = 8*x19/x15**2
+        x25 = 8*x19*x16*x16
         
         t50 = 1.0/(x0*x0)
         
@@ -3854,15 +4114,141 @@ class GCEOSMIX(GCEOS):
             x24 = x11*x23 - 2.0*depsilon_dns[i]#Derivative(x14, n)
             x26 = x16*x24
             
-            dlnphis_dP = (x1*x2 - x10*x3*(x1 + x5) + x10*x7*(P*x6 + x0) 
+            dlnphi_dP = (x1*x2 - x10*x3*(x1 + x5) + x10*x7*(P*x6 + x0) 
             - x13*x21*x25*(2*x1 - x11*x26 - x12*x26 + x23)/x17**2 
             + x18*x19*x2*x20*x4 + x2*x5 + x20*x22*da_alpha_dns[i] 
             - x22*x24*x25 + x3*x4 - x4/x9 - x6*x7 + x6*(x1 - db_dns[i])/x9**2)
-            dlnphis_dPs.append(dlnphis_dP)
+            dlnphis_dPs.append(dlnphi_dP + dG_dep_dP)
         return dlnphis_dPs
         
         
+    def dlnphis_dT(self, phase):
+        r'''Generic formula for calculating the temperature derivaitve of 
+        log fugacity coefficients for each species in a mixture. Verified
+        numerically. Applicable to all cubic equations of state which can be 
+        cast in the form used here. 
         
+        Normally this routine is slower than EOS-specific ones, as it does not 
+        make assumptions that certain parameters are zero or equal to other
+        parameters.
+        
+        .. math::
+            \left(\frac{\partial \log \phi_i}{\partial T}\right))_{P, 
+            nj \ne i} = \frac{\frac{G_{dep}}{RT}}{\partial T}_{P, n}
+            +  \left(\frac{\partial^2 \log \phi}{\partial T \partial n_i}
+            \right)_{P, n_{j \ne i}}
+        
+        Parameters
+        ----------
+        phase : str
+            One of 'l' or 'g', [-]
+        
+        Returns
+        -------
+        dlnphis_dT : float
+            Temperature derivatives of log fugacity coefficient for each species, 
+            [1/K]
+            
+        Notes
+        -----
+        This expression for the partial derivative of the mixture `lnphi` with
+        respect to pressure and mole number can be derived as follows; to
+        convert to the partial molar `lnphi` pressure and temperature 
+        derivative, add ::math::`\frac{G_{dep}/(RT)}{\partial T}_{P, n}`.
+        
+        >>> from sympy import * # doctest:+SKIP
+        >>> P, T, R, n = symbols('P, T, R, n') # doctest:+SKIP
+        >>> a_alpha, a, delta, epsilon, V, b, da_alpha_dT, d2a_alpha_dT2 = symbols('a_alpha, a, delta, epsilon, V, b, da_alpha_dT, d2a_alpha_dT2', cls=Function) # doctest:+SKIP
+        >>> S_dep = R*log(P*V(n, T)/(R*T)) + R*log(V(n, T)-b(n))+2*da_alpha_dT(n, T)*atanh((2*V(n, T)+delta(n))/sqrt(delta(n)**2-4*epsilon(n)))/sqrt(delta(n)**2-4*epsilon(n))-R*log(V(n, T)) # doctest:+SKIP
+        >>> H_dep = P*V(n, T) - R*T + 2*atanh((2*V(n, T)+delta(n))/sqrt(delta(n)**2-4*epsilon(n)))*(da_alpha_dT(n, T)*T-a_alpha(n, T))/sqrt(delta(n)**2-4*epsilon(n)) # doctest:+SKIP
+        >>> G_dep = H_dep - T*S_dep # doctest:+SKIP
+        >>> lnphi = simplify(G_dep/(R*T)) # doctest:+SKIP
+        >>> diff(diff(lnphi, T), n) # doctest:+SKIP
+        P*Derivative(V(n, T), T, n)/(R*T) - P*Derivative(V(n, T), n)/(R*T**2) + Derivative(V(n, T), T, n)/V(n, T) - Derivative(V(n, T), T)*Derivative(V(n, T), n)/V(n, T)**2 - Derivative(V(n, T), T, n)/(V(n, T) - b(n)) - (-Derivative(V(n, T), n) + Derivative(b(n), n))*Derivative(V(n, T), T)/(V(n, T) - b(n))**2 - 2*(-delta(n)*Derivative(delta(n), n) + 2*Derivative(epsilon(n), n))*atanh(2*V(n, T)/sqrt(delta(n)**2 - 4*epsilon(n)) + delta(n)/sqrt(delta(n)**2 - 4*epsilon(n)))*Derivative(a_alpha(n, T), T)/(R*T*(delta(n)**2 - 4*epsilon(n))**(3/2)) - 2*atanh(2*V(n, T)/sqrt(delta(n)**2 - 4*epsilon(n)) + delta(n)/sqrt(delta(n)**2 - 4*epsilon(n)))*Derivative(a_alpha(n, T), T, n)/(R*T*sqrt(delta(n)**2 - 4*epsilon(n))) - 4*(-2*delta(n)*Derivative(delta(n), n) + 4*Derivative(epsilon(n), n))*a_alpha(n, T)*Derivative(V(n, T), T)/(R*T*(1 - (2*V(n, T)/sqrt(delta(n)**2 - 4*epsilon(n)) + delta(n)/sqrt(delta(n)**2 - 4*epsilon(n)))**2)*(delta(n)**2 - 4*epsilon(n))**2) - 4*a_alpha(n, T)*Derivative(V(n, T), T, n)/(R*T*(1 - (2*V(n, T)/sqrt(delta(n)**2 - 4*epsilon(n)) + delta(n)/sqrt(delta(n)**2 - 4*epsilon(n)))**2)*(delta(n)**2 - 4*epsilon(n))) - 4*Derivative(V(n, T), T)*Derivative(a_alpha(n, T), n)/(R*T*(1 - (2*V(n, T)/sqrt(delta(n)**2 - 4*epsilon(n)) + delta(n)/sqrt(delta(n)**2 - 4*epsilon(n)))**2)*(delta(n)**2 - 4*epsilon(n))) - 2*(2*(-delta(n)*Derivative(delta(n), n) + 2*Derivative(epsilon(n), n))*V(n, T)/(delta(n)**2 - 4*epsilon(n))**(3/2) + (-delta(n)*Derivative(delta(n), n) + 2*Derivative(epsilon(n), n))*delta(n)/(delta(n)**2 - 4*epsilon(n))**(3/2) + 2*Derivative(V(n, T), n)/sqrt(delta(n)**2 - 4*epsilon(n)) + Derivative(delta(n), n)/sqrt(delta(n)**2 - 4*epsilon(n)))*Derivative(a_alpha(n, T), T)/(R*T*(1 - (2*V(n, T)/sqrt(delta(n)**2 - 4*epsilon(n)) + delta(n)/sqrt(delta(n)**2 - 4*epsilon(n)))**2)*sqrt(delta(n)**2 - 4*epsilon(n))) - 4*(2*V(n, T)/sqrt(delta(n)**2 - 4*epsilon(n)) + delta(n)/sqrt(delta(n)**2 - 4*epsilon(n)))*(4*(-delta(n)*Derivative(delta(n), n) + 2*Derivative(epsilon(n), n))*V(n, T)/(delta(n)**2 - 4*epsilon(n))**(3/2) + 2*(-delta(n)*Derivative(delta(n), n) + 2*Derivative(epsilon(n), n))*delta(n)/(delta(n)**2 - 4*epsilon(n))**(3/2) + 4*Derivative(V(n, T), n)/sqrt(delta(n)**2 - 4*epsilon(n)) + 2*Derivative(delta(n), n)/sqrt(delta(n)**2 - 4*epsilon(n)))*a_alpha(n, T)*Derivative(V(n, T), T)/(R*T*(1 - (2*V(n, T)/sqrt(delta(n)**2 - 4*epsilon(n)) + delta(n)/sqrt(delta(n)**2 - 4*epsilon(n)))**2)**2*(delta(n)**2 - 4*epsilon(n))) + 2*(-delta(n)*Derivative(delta(n), n) + 2*Derivative(epsilon(n), n))*a_alpha(n, T)*atanh(2*V(n, T)/sqrt(delta(n)**2 - 4*epsilon(n)) + delta(n)/sqrt(delta(n)**2 - 4*epsilon(n)))/(R*T**2*(delta(n)**2 - 4*epsilon(n))**(3/2)) + 2*atanh(2*V(n, T)/sqrt(delta(n)**2 - 4*epsilon(n)) + delta(n)/sqrt(delta(n)**2 - 4*epsilon(n)))*Derivative(a_alpha(n, T), n)/(R*T**2*sqrt(delta(n)**2 - 4*epsilon(n))) + 2*(2*(-delta(n)*Derivative(delta(n), n) + 2*Derivative(epsilon(n), n))*V(n, T)/(delta(n)**2 - 4*epsilon(n))**(3/2) + (-delta(n)*Derivative(delta(n), n) + 2*Derivative(epsilon(n), n))*delta(n)/(delta(n)**2 - 4*epsilon(n))**(3/2) + 2*Derivative(V(n, T), n)/sqrt(delta(n)**2 - 4*epsilon(n)) + Derivative(delta(n), n)/sqrt(delta(n)**2 - 4*epsilon(n)))*a_alpha(n, T)/(R*T**2*(1 - (2*V(n, T)/sqrt(delta(n)**2 - 4*epsilon(n)) + delta(n)/sqrt(delta(n)**2 - 4*epsilon(n)))**2)*sqrt(delta(n)**2 - 4*epsilon(n))) + R*T*(P*Derivative(V(n, T), T)/(R*T) - P*V(n, T)/(R*T**2))*Derivative(V(n, T), n)/(P*V(n, T)**2) - R*T*(P*Derivative(V(n, T), T, n)/(R*T) - P*Derivative(V(n, T), n)/(R*T**2))/(P*V(n, T))
+        '''
+        T, P, zs, cmps = self.T, self.P, self.zs, self.cmps
+        if phase == 'g':
+            V = self.V_g
+            Z = self.Z_g
+            dV_dT = self.dV_dT_g
+            dG_dep_dT = (-T*self.dS_dep_dT_g - self.S_dep_g + self.dH_dep_dT_g)/(R*self.T)
+            dG_dep_dT -= (-T*self.S_dep_g + self.H_dep_g)/(R*self.T*self.T)
+        else:
+            V = self.V_l
+            Z = self.Z_l
+            dV_dT = self.dV_dT_l
+            dG_dep_dT = (-T*self.dS_dep_dT_l - self.S_dep_l + self.dH_dep_dT_l)/(R*self.T)
+            dG_dep_dT -= (-T*self.S_dep_l + self.H_dep_l)/(R*self.T*self.T)
+        '''R, T = symbols('R, T')
+        H, S = symbols('H, S', cls=Function)
+        print(diff((H(T) - T*S(T))/(R*T), T))
+        # (-T*Derivative(S(T), T) - S(T) + Derivative(H(T), T))/(R*T) - (-T*S(T) + H(T))/(R*T**2)
+        '''            
+
+        d2V_dTdns = self._dnz_derivatives_and_departures(V, n=True)[2]
+        dV_dns = self.dV_dns(Z, zs)
+        db_dns = self.db_dns
+        da_alpha_dns = self.da_alpha_dns
+        da_alpha_dT_dns = self.da_alpha_dT_dns
+        ddelta_dns = self.ddelta_dns
+        depsilon_dns = self.depsilon_dns
+        
+        x0 = V
+        x1 = 1/x0
+        x4 = T**(-2)
+        x5 = 1/R
+        x6 = P*x5
+        x7 = 1/T
+        x9 = dV_dT
+        x11 = self.b
+        x12 = x0 - x11
+        x13 = self.a_alpha
+        x15 = self.delta
+        x16 = self.epsilon
+        x17 = x15*x15 - 4.0*x16
+        if x17 == 0.0:
+            x17 = 1e-100
+        x18 = 1/sqrt(x17)
+        x19 = 2*x0
+        x20 = x15 + x19
+        x21 = 2*x5
+        x22 = x21*catanh(x18*x20).real
+        x23 = x18*x22
+        x24 = 1/x17
+        x25 = x20**2*x24 - 1
+        x26 = 1/x25
+        x27 = x24*x26
+        x28 = 4*x27*x5
+        x29 = x7*x9
+        x30 = x13*x4
+        x34 = x7*self.da_alpha_dT
+        x35 = 8*x13*x29*x5/x17**2
+
+        dlnphis_dTs = []
+        for i in cmps:
+            x2 = d2V_dTdns[i]
+            x8 = x2*x7
+            
+            x3 = dV_dns[i]
+            x10 = x3/x0**2
+            x14 = da_alpha_dns[i]
+            x31 = ddelta_dns[i]
+            x32 = x15*x31 - 2.0*depsilon_dns[i]
+            x33 = x22*x32/x17**(3/2)
+            x36 = x24*x32
+            
+            x37 = -x15*x36 - x19*x36 + 2.0*x3 + x31
+            x38 = x21*x27*x37
+            
+            dlnphi_dT = (x1*x2 - x1*(x2 - x3*x7) - x10*x9 + x10*(-x0*x7 + x9)
+            + x13*x28*x8 + x14*x23*x4 + x14*x28*x29 - x20*x35*x37/x25**2
+            - x23*x7*da_alpha_dT_dns[i] - x26*x32*x35 - x3*x4*x6 - x30*x33
+            - x30*x38 + x33*x34 + x34*x38 + x6*x8 - x2/x12 + x9*(x3 - db_dns[i])/x12**2)
+            dlnphis_dTs.append(dlnphi_dT + dG_dep_dT)
+        return dlnphis_dTs
+
+
+
 class PRMIX(GCEOSMIX, PR):
     r'''Class for solving the Peng-Robinson cubic equation of state for a 
     mixture of any number of compounds. Subclasses `PR`. Solves the EOS on
@@ -3989,13 +4375,14 @@ class PRMIX(GCEOSMIX, PR):
 
 
     def a_alpha_and_derivatives_vectorized(self, T, full=False, quick=True):
+        ais, kappas, Tcs = self.ais, self.kappas, self.Tcs
+        
         if not full:
             a_alphas = []
-            for a, kappa, Tc in zip(self.ais, self.kappas, self.Tcs):
-                x1 = Tc**-0.5
-                x2 = 1.0 + kappa*(1.0 - T*x1)
-                a_alphas.append(a*x2*x2)
-            
+            for i in self.cmps:
+                x1 = Tcs[i]**-0.5
+                x2 = 1.0 + kappas[i]*(1.0 - T*x1)
+                a_alphas.append(ais[i]*x2*x2)
             return a_alphas
         else:
             T_inv = 1.0/T
@@ -4004,7 +4391,7 @@ class PRMIX(GCEOSMIX, PR):
             x0T_inv = x0_inv*T_inv
             a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
             
-            for a, kappa, Tc in zip(self.ais, self.kappas, self.Tcs):
+            for a, kappa, Tc in zip(ais, kappas, Tcs):
                 x1 = Tc**-0.5
                 x2 = kappa*(x0*x1 - 1.) - 1.
                 x3 = a*kappa
@@ -4099,7 +4486,7 @@ class PRMIX(GCEOSMIX, PR):
             x3 = 0.0
         x4 = x2*x3
 
-        fugacity_sum_terms = self._fugacity_sum_terms()
+        fugacity_sum_terms = self._fugacity_sum_terms
         
         t50 = x4*x1
         t51 = b_inv*(x4 + Zm1)
@@ -4129,9 +4516,15 @@ class PRMIX(GCEOSMIX, PR):
 #        return phis
 
 
-    def d_lnphis_dT(self, Z, dZ_dT, zs):
-        a_alpha_ijs, da_alpha_dT_ijs = self.a_alpha_ijs, self.da_alpha_dT_ijs
-        cmps = self.cmps
+    def dlnphis_dT(self, phase):
+        zs = self.zs
+        if phase == 'g':
+            Z = self.Z_g
+            dZ_dT = self.dZ_dT_g
+        else:
+            Z = self.Z_l
+            dZ_dT = self.dZ_dT_l
+        
         bs, b = self.bs, self.b
         
         T_inv = 1.0/self.T
@@ -4160,40 +4553,40 @@ class PRMIX(GCEOSMIX, PR):
         x18 = x16/(x17*x8 - Z)
         x19 = log(-x18)
         
-        x24 = 0.25*x10*x13*x14*x19*x2*x3
-        x25 = 0.25*x12*x13*x14*x19*x3*T_inv
-        x26 = 0.25*x10*x13*x14*x3*T_inv*(-dZ_dT + x15*x5 - x18*(dZ_dT + x17*x5))/(x16)
-        x50 = -0.5*x13*x14*x19*x3*T_inv
+        x13x14 = x13*x14
+        x10x13x14_4 = 0.25*x10*x13x14
+        x19x3 = x19*x3
+        
+        x24 = x10x13x14_4*x19x3*x2
+        x25 = 0.25*x12*x13x14*x19x3*T_inv
+        x26 = x10x13x14_4*x3*T_inv*(-dZ_dT + x15*x5 - x18*(dZ_dT + x17*x5))/(x16)
+        x50 = -0.5*x13x14*x19x3*T_inv
         x51 = -x11*x12
         x52 = (dZ_dT + x5)/(x8 - Z)
         x53 = 2.0*x11
+        x54 = x52/x50
+        x55 = x24 - x25 + x26
+        
+        x56 = dZ_dT/x55
+        x57 = x53*x55
+        x58 = x14*(dZ_dT - x55)
+        x59 = x57/x50 + x51
         
         # Composition stuff
         
-        try:
-            fugacity_sum_terms = self.fugacity_sum_terms
-        except AttributeError:
-            fugacity_sum_terms = [sum([zs[j]*a_alpha_ijs[i][j] for j in cmps]) for i in cmps]
+        fugacity_sum_terms = self._fugacity_sum_terms
+        da_alpha_dT_j_rows = self._da_alpha_dT_j_rows
         
-        d_lnphis_dTs = []
-        for i in cmps:
-            x9 = fugacity_sum_terms[i]
-
-            der_sum = 0.0
-            da_alpha_dT_ijs_i = da_alpha_dT_ijs[i]
-            for j in cmps:
-                der_sum += zs[j]*da_alpha_dT_ijs_i[j]
-#            der_sum = sum([zs[j]*da_alpha_dT_ijs[i][j] ])
-            
-            x20 = x50*(x51*x9 + der_sum) + x52
-            x21 = bs[i]*x14
-            x23 = x53*x9 - x21
-            
-            d_lhphi_dT = dZ_dT*x21 + x20 + x23*(x24 - x25 + x26)
-            d_lnphis_dTs.append(d_lhphi_dT)
+        d_lnphis_dTs = [x52 + bs[i]*x58 + x50*(x59*fugacity_sum_terms[i] + da_alpha_dT_j_rows[i])
+                        for i in self.cmps]
         return d_lnphis_dTs
          
-    def d_lnphis_dP(self, Z, dZ_dP, zs):
+    def dlnphis_dP(self, phase):
+        zs = self.zs
+        if phase == 'l':
+            Z, dZ_dP = self.Z_l, self.dZ_dP_l
+        else:
+            Z, dZ_dP = self.Z_g, self.dZ_dP_g
         a_alpha = self.a_alpha
         cmps = self.cmps
         bs, b = self.bs, self.b
@@ -4207,11 +4600,7 @@ class PRMIX(GCEOSMIX, PR):
         x15 = (a_alpha*root_two*x2*R_inv*T_inv*(dZ_dP + root_two_p1*x6 
                 + x13*(dZ_dP - root_two_m1*x6)/(root_two_m1*x8 - Z))/(4.0*x13))
 
-        try:
-            fugacity_sum_terms = self.fugacity_sum_terms
-        except AttributeError:
-            a_alpha_ijs = self.a_alpha_ijs
-            fugacity_sum_terms = [sum([zs[j]*a_alpha_ijs[i][j] for j in cmps]) for i in cmps]
+        fugacity_sum_terms = self._fugacity_sum_terms
 
         x50 = -2.0/a_alpha
         d_lnphi_dPs = []
@@ -4975,7 +5364,15 @@ class SRKMIX(GCEOSMIX, SRK):
         return phis
         
 
-    def d_lnphis_dT(self, Z, dZ_dT, zs):
+    def dlnphis_dT(self, phase):
+        zs = self.zs
+        if phase == 'g':
+            Z = self.Z_g
+            dZ_dT = self.dZ_dT_g
+        else:
+            Z = self.Z_l
+            dZ_dT = self.dZ_dT_l
+
         a_alpha_ijs, da_alpha_dT_ijs = self.a_alpha_ijs, self.da_alpha_dT_ijs
         cmps = self.cmps
         P, bs, b = self.P, self.bs, self.b
@@ -5025,7 +5422,12 @@ class SRKMIX(GCEOSMIX, SRK):
             d_lnphis_dTs.append(d_lhphi_dT)
         return d_lnphis_dTs
 
-    def d_lnphis_dP(self, Z, dZ_dP, zs):
+    def dlnphis_dP(self, phase):
+        zs = self.zs
+        if phase == 'l':
+            Z, dZ_dP = self.Z_l, self.dZ_dP_l
+        else:
+            Z, dZ_dP = self.Z_g, self.dZ_dP_g
         a_alpha = self.a_alpha
         cmps = self.cmps
         bs, b = self.bs, self.b
@@ -5554,7 +5956,15 @@ class VDWMIX(GCEOSMIX, VDW):
             phis.append(phi)
         return phis
 
-    def d_lnphis_dT(self, Z, dZ_dT, zs):
+    def dlnphis_dT(self, phase):
+        zs = self.zs
+        if phase == 'g':
+            Z = self.Z_g
+            dZ_dT = self.dZ_dT_g
+        else:
+            Z = self.Z_l
+            dZ_dT = self.dZ_dT_l
+
         a_alpha_ijs, da_alpha_dT_ijs = self.a_alpha_ijs, self.da_alpha_dT_ijs
         cmps = self.cmps
         T, P, ais, bs, b = self.T, self.P, self.ais, self.bs, self.b
@@ -5584,7 +5994,12 @@ class VDWMIX(GCEOSMIX, VDW):
             d_lnphis_dTs.append(d_lhphi_dT)
         return d_lnphis_dTs
 
-    def d_lnphis_dP(self, Z, dZ_dP, zs):
+    def dlnphis_dP(self, phase):
+        zs = self.zs
+        if phase == 'l':
+            Z, dZ_dP = self.Z_l, self.dZ_dP_l
+        else:
+            Z, dZ_dP = self.Z_g, self.dZ_dP_g
         a_alpha = self.a_alpha
         cmps = self.cmps
         T, P, bs, b, ais = self.T, self.P, self.bs, self.b, self.ais

@@ -338,17 +338,20 @@ def test_Unifac():
 
 def test_NRTL_package():
     m = Mixture(['water', 'ethanol'], zs=[1-.252, .252], T=273.15+70)
-
+    # 6 coeggicients per row.
     # Sample parameters from Understanding Distillation Using Column Profile Maps, First Edition.
     #  Daniel Beneke, Mark Peters, David Glasser, and Diane Hildebrandt.
     # Nice random example except for the poor prediction ! Dew point is good
     # But the bubble point is 10 kPa too high.
     # Still it is a good test of asymmetric values and the required 
     # input form.
-    taus = [ [[], [3.458, -586.1, 0, 0, 0, 0]],
-             [[-0.801, 246.2, 0, 0, 0, 0], []]  ]
-    alphas = [[[], [0.0, 0.0]],
-              [[0.3, 0], []] ]
+    taus = [ 
+            [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [3.458, -586.1, 0, 0, 0, 0]],
+             [[-0.801, 246.2, 0, 0, 0, 0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]  
+             ]
+    
+    alphas = [[[0.0, 0.0], [0.0, 0.0]],
+              [[0.3, 0], [0.0, 0.0]] ]
     pp = Nrtl(tau_coeffs=taus, alpha_coeffs=alphas, VaporPressures=m.VaporPressures, Tms=m.Tms,
                      Tcs=m.Tcs, Pcs=m.Pcs, omegas=m.omegas, VolumeLiquids=m.VolumeLiquids,
                      HeatCapacityLiquids=m.HeatCapacityLiquids,
@@ -363,10 +366,10 @@ def test_NRTL_package():
     assert_allclose(pp.P, 40485.10473289466, rtol=2e-3)
     
 def test_NRTL_package_constants():
-    taus = [ [[], [3.458, -586.1, 0, 0, 0, 0]],
-         [[-0.801, 246.2, 0, 0, 0, 0], []]  ]
-    alphas = [[[], [0.0, 0.0]],
-              [[0.3, 0], []] ]
+    taus = [ [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [3.458, -586.1, 0, 0, 0, 0]],
+         [[-0.801, 246.2, 0, 0, 0, 0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]  ]
+    alphas = [[[0.0, 0.0], [0.0, 0.0]],
+              [[0.3, 0], [0.0, 0.0]] ]
     
     IDs = ['water', 'ethanol']
     

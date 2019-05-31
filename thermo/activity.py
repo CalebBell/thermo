@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2016, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2016, 2017, 2018, 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -1647,12 +1647,13 @@ def Rachford_Rice_solution_LN2(zs, Ks, guess=None):
     z_of_Kmax = zs[Ks.index(Kmax)]
     
     one_m_Kmin = 1.0 - Kmin
+    cmps = range(len(zs))
     
     V_over_F_min = ((Kmax-Kmin)*z_of_Kmax - one_m_Kmin)/((one_m_Kmin)*(Kmax - 1.))
     V_over_F_max = 1./one_m_Kmin
     
     guess = 0.5*(V_over_F_min + V_over_F_max) if guess is None else guess
-    cis = [1.0/(1.0 - Ki) for Ki in Ks]
+    cis_ys = [1.0/(1.0 - Ki) for Ki in Ks] # To save memory, reuse this list later
     
     x0 = V_over_F_max - V_over_F_min
     def err(y):
@@ -1666,14 +1667,13 @@ def Rachford_Rice_solution_LN2(zs, Ks, guess=None):
         t51 = 1.0 - 2.0*x1*x3
         
         F0, dF0, ddF0 = 0.0, 0.0, 0.0
-        for zi, ci in zip(zs, cis):
-            x5 = 1.0/(t50 - ci)
-            zix5 = zi*x5
+        for i in cmps:
+            x5 = 1.0/(t50 - cis_ys[i])
+            zix5 = zs[i]*x5
             F0 += zix5
             # Func requires 1 division, 1 multiplication, 2 add
             # 1st Deriv adds 2 mult, 1 add
             # 3rd deriv adds 1 mult, 3 add
-            
             x5x1x6 = x5*x1x6
             x7 = zix5*x5x1x6
             dF0 -= x7
@@ -1695,9 +1695,10 @@ def Rachford_Rice_solution_LN2(zs, Ks, guess=None):
         V_over_F = brenth(lambda x: err(x)[0], low, high)
     V_over_F = (V_over_F_min + (V_over_F_max - V_over_F_min)/(1.0 + exp(-V_over_F)))
     
-    xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]
-    ys = [Ki*xi for xi, Ki in zip(xs, Ks)]
-    return V_over_F, xs, ys
+    xs = [zs[i]/(1.0 + V_over_F*(Ks[i] - 1.0)) for i in cmps]
+    for i in cmps:
+        cis_ys[i] = Ks[i]*xs[i]
+    return V_over_F, xs, cis_ys
 
 
 def Li_Johns_Ahmadi_solution(zs, Ks, guess=None):
@@ -2094,23 +2095,38 @@ def NRTL(xs, taus, alphas):
     '''
     gammas = []
     cmps = range(len(xs))
-    Gs = [[exp(-alphas[i][j]*taus[i][j]) for j in cmps] for i in cmps]
+    Gs = []
+    for i in cmps:
+        alphasi = alphas[i]
+        tausi = taus[i]
+        Gs.append([exp(-alphasi[j]*tausi[j]) for j in cmps])
+        
+        
+    td2s = []
+    tn3s = []
+    for j in cmps:
+        td2 = 0.0
+        tn3 = 0.0
+        for k in cmps:
+            xkGkj = xs[k]*Gs[k][j]
+            td2 += xkGkj
+            tn3 += xkGkj*taus[k][j]
+        td2 = 1.0/td2
+        td2s.append(td2*xs[j])
+        tn3s.append(tn3*td2*td2*xs[j])
+            
+#    Gs = [[exp(-alphas[i][j]*taus[i][j]) for j in cmps] for i in cmps]
     for i in cmps:
         tn1, td1, total2 = 0., 0., 0.
         Gsi = Gs[i]
         tausi = taus[i]
         for j in cmps:
-            # Term 1, numerator and denominator
-            tn1 += xs[j]*taus[j][i]*Gs[j][i]
-            td1 +=  xs[j]*Gs[j][i]
-            # Term 2
-            tn2 = xs[j]*Gsi[j]
+            xjGji = xs[j]*Gs[j][i]
             
-            # TODO: Combine these two to save some multiplications
-            td2 = td3 = sum([xs[k]*Gs[k][j] for k in cmps])
-            tn3 = sum([xs[m]*taus[m][j]*Gs[m][j] for m in cmps])
+            tn1 += xjGji*taus[j][i]
+            td1 += xjGji
+            total2 += Gsi[j]*(tausi[j]*td2s[j] - tn3s[j])
             
-            total2 += tn2/td2*(tausi[j] - tn3/td3)
         gamma = exp(tn1/td1 + total2)
         gammas.append(gamma)
     return gammas

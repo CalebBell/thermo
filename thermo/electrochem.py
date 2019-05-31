@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2016, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2016, 2017, 2018, 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -1213,21 +1213,21 @@ def balance_ions(anions, cations, anion_zs=None, cation_zs=None,
 
     Returns
     -------
-    anions : list(ChemicalMetadata)
+    anions : list[ChemicalMetadata]
         List of all negatively charged ions measured as being in the solution;
         ChemicalMetadata instances after potentially adding in an ion which
         was not present but specified by the user, [-]
-    cations : list(ChemicalMetadata)
+    cations : list[ChemicalMetadata]
         List of all positively charged ions measured as being in the solution;
         ChemicalMetadata instances after potentially adding in an ion which
         was not present but specified by the user, [-]
-    anion_zs : list,
+    anion_zs : list[float],
         Mole fractions of each anion in the aqueous solution after the charge
         balance, [-]
-    cation_zs : list
+    cation_zs : list[float]
         Mole fractions of each cation in the aqueous solution after the charge
         balance, [-]
-    z_water : float
+    z_water : float[float]
         Mole fraction of the water in the solution, [-]
 
     Notes

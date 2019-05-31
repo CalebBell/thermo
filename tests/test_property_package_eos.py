@@ -672,7 +672,38 @@ def test_phase_envelope_44_components():
     assert_allclose(Ps_dew_check, spec_points[:-8])
     assert_allclose(Ts_dew_check, Ts_dew_expect, rtol=1e-5)
     assert_allclose(Ts_bubble_check, Ts_bubble_expect, rtol=1e-5)
+
+def test_TPD_bubble_dew():
+    IDs = ['ethane', 'n-pentane']
+    pkg = PropertyPackageConstants(IDs, PR_PKG, kijs=[[0, 7.609447e-003], [7.609447e-003, 0]])
+    zs = [0.7058334393128614, 0.2941665606871387] # 50/50 mass basis
+    pkg = pkg.pkg
     
+    
+    pkg.flash(P=1e6, VF=0, zs=zs)
+    pkg.eos_l.fugacities()
+    pkg.eos_g.fugacities()
+    TPD = pkg.eos_l.TPD(pkg.eos_g.T, pkg.eos_l.zs, pkg.eos_l.lnphis_l, pkg.eos_g.zs, pkg.eos_g.lnphis_g,)
+    assert_allclose(TPD, 0, atol=1e-6)
+    
+    pkg.flash(T=200, VF=0, zs=zs)
+    pkg.eos_l.fugacities()
+    pkg.eos_g.fugacities()
+    TPD = pkg.eos_l.TPD(pkg.eos_g.T, pkg.eos_l.zs, pkg.eos_l.lnphis_l, pkg.eos_g.zs, pkg.eos_g.lnphis_g,)
+    assert_allclose(TPD, 0, atol=1e-6)
+    
+    pkg.flash(P=1e6, VF=1, zs=zs)
+    pkg.eos_l.fugacities()
+    pkg.eos_g.fugacities()
+    TPD = pkg.eos_l.TPD(pkg.eos_g.T, pkg.eos_g.zs, pkg.eos_g.lnphis_g, pkg.eos_l.zs, pkg.eos_l.lnphis_l)
+    assert_allclose(TPD, 0, atol=1e-6)
+    
+    pkg.flash(T=300, VF=1, zs=zs)
+    pkg.eos_l.fugacities()
+    pkg.eos_g.fugacities()
+    TPD = pkg.eos_l.TPD(pkg.eos_g.T, pkg.eos_g.zs, pkg.eos_g.lnphis_g, pkg.eos_l.zs, pkg.eos_l.lnphis_l)
+    assert_allclose(TPD, 0, atol=1e-6)
+
     
 def test_stab_comb_products_need_both_roots():
     from thermo.interaction_parameters import IPDB

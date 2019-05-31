@@ -54,6 +54,7 @@ mix_path = os.path.join(os.path.dirname(__file__), '../surfaces/Tabular data mix
 mix_cases = [
         {'IDs': ['methane', 'CO2'], 'pkg_ID': PR_PKG, 'zs': [.5, .5], 'types': ['TP']},
         {'IDs': ['methane', 'CO2'], 'pkg_ID': SRK_PKG, 'zs': [.5, .5], 'types': ['TP']},
+#        {'IDs': ['water', 'oxygen', 'nitrogen'], 'pkg_ID': PR_PKG, 'zs': [.01, .79, .2], 'types': ['TP']} # TP flash is failing
         ]
 
 def export_case(cases, path, verbose=False):
@@ -85,5 +86,5 @@ def export_all_mix_cases(verbose=False):
     
 
 if __name__ == '__main__':
-    export_all_pure_cases(verbose=True)
-#    export_all_mix_cases(verbose=True)
+#    export_all_pure_cases(verbose=True)
+    export_all_mix_cases(verbose=True)
