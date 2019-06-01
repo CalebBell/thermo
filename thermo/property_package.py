@@ -2074,9 +2074,75 @@ class Nrtl(GammaPhiCaloric):
                 diff = Yi**0.5*(log(Yi) + log(phi_yi) - di)
                 tot += abs(diff)
         return tot
+    
+    def GE2(self, T, xs):
+        cmps = self.cmps
+        taus = self.taus(T)
+        Gs = self.Gs(T, taus=taus)
+        
+        tot = 0
+        for i in self.cmps:
+            sum1 = 0.0
+            sum2 = 0.0
+            for j in self.cmps:
+                sum1 += Gs[j][i]*xs[j]
+                sum2 += taus[j][i]*Gs[j][i]*xs[j] # dup
+            t1 = sum2/sum1
+            tot += xs[i]*t1
+        return T*R*tot
+    
+    def HE_l2(self, T, xs):
+        '''f = symbols('f', cls=Function)
+        T = symbols('T')
+        simplify(-T**2*diff(f(T)/T, T))
+        '''
+        dGE_dT = self.dGE_dT(T, xs)
+        GE = self.GE2(T, xs)
+        return -T*dGE_dT + GE
+
+        
+    def dGE_dT(self, T, xs):
+        '''from sympy import *
+        R, T, x = symbols('R, T, x')
+        g, tau = symbols('g, tau', cls=Function)
+        m, n, o = symbols('m, n, o', cls=Function)
+        r, s, t = symbols('r, s, t', cls=Function)
+        u, v, w = symbols('u, v, w', cls=Function)
+        diff(T* (m(T)*n(T) + r(T)*s(T) + u(T)*v(T))/(o(T) + t(T) + w(T)), T)
+        '''
+        # DO NOT EDIT _ WORKING
+        cmps = self.cmps
+        taus = self.taus(T)
+        dtaus_dT = self.dtaus_dT(T)
+        
+        alphas = self.alphas(T)
+        dalphas_dT = self.dalphas_dT(T)
+        
+        Gs = self.Gs(T)
+        dGs_dT = self.dGs_dT(T)
+        
+        tot = 0
+        for i in self.cmps:
+            sum1 = 0.0
+            sum2 = 0.0
+            sum3 = 0.0
+            sum4 = 0.0
+            sum5 = 0.0
+            for j in self.cmps:
+                sum1 += Gs[j][i]*xs[j]
+                sum2 += taus[j][i]*Gs[j][i]*xs[j] # dup
+                sum3 += dGs_dT[j][i] *xs[j]
+                
+                sum4 += taus[j][i]*dGs_dT[j][i] *xs[j]
+                sum5 += Gs[j][i]*dtaus_dT[j][i] *xs[j]
+            
+            t1 = sum2/sum1 - T*(sum2*sum3)/(sum1*sum1) + T*(sum4 + sum5)/sum1
+            tot += xs[i]*t1
+        return R*tot
+
 
     def taus(self, T):
-        '''Calculate the `tau` terms for the NRTL model for a specified
+        r'''Calculate the `tau` terms for the NRTL model for a specified
         temperature.
         
         .. math::
@@ -2119,7 +2185,7 @@ class Nrtl(GammaPhiCaloric):
             tau_coeffs_Hi = tau_coeffs_H[i]
             tausi = taus[i]
             for j in cmps:
-                tausi[j] = tau_coeffs_Bi[j]*Tinv + tau_coeffs_Ei[j]*logT + tau_coeffs_Fi[j]*T + tau_coeffs_Gi[j]*T2inv + tau_coeffs_Hi[j]*T2
+                tausi[j] += tau_coeffs_Bi[j]*Tinv + tau_coeffs_Ei[j]*logT + tau_coeffs_Fi[j]*T + tau_coeffs_Gi[j]*T2inv + tau_coeffs_Hi[j]*T2
 #                tausi[j] = tau_coeffs_Ai[j] + tau_coeffs_Bi[j]*Tinv + tau_coeffs_Ei[j]*logT + tau_coeffs_Fi[j]*T + tau_coeffs_Gi[j]*T2inv + tau_coeffs_Hi[j]*T2
 #                coeffs = coeffsi[j]
 #                tausi[j] = coeffs[0] + coeffs[1]*Tinv + coeffs[2]*logT + coeffs[3]*T + coeffs[4]*T2inv + coeffs[5]*T2
@@ -2151,7 +2217,122 @@ class Nrtl(GammaPhiCaloric):
 #            for j in cmps:
 #                tausi[j] += tau_coeffs_Hi[j]*T2
         return taus
-    
+
+    def dtaus_dT(self, T):
+        r'''Calculate the temperature derivative of the `tau` terms for the 
+        NRTL model for a specified temperature.
+        
+        .. math::
+            \frac{\partial \tau_{ij}} {\partial T}_{P, x_i} = 
+            - \frac{B_{ij}}{T^{2}} + \frac{E_{ij}}{T} + F_{ij} 
+            - \frac{2 G_{ij}}{T^{3}} + 2 H_{ij} T
+            
+        These `tau ij` values (and the coefficients) are NOT symmetric 
+        normally.
+        '''
+        # Believed all correct but not tested
+        tau_coeffs_B = self.tau_coeffs_B
+        tau_coeffs_E = self.tau_coeffs_E
+        tau_coeffs_F = self.tau_coeffs_F
+        tau_coeffs_G = self.tau_coeffs_G
+        tau_coeffs_H = self.tau_coeffs_H
+        cmps = self.cmps
+        
+        Tinv = 1.0/T
+        nT2inv = -Tinv*Tinv
+        n2T3inv = 2.0*nT2inv*Tinv
+        T2 = T + T
+        
+        dtaus_dT = [list(l) for l in tau_coeffs_F]
+        for i in cmps:
+            tau_coeffs_Bi = tau_coeffs_B[i]
+            tau_coeffs_Ei = tau_coeffs_E[i]
+            tau_coeffs_Fi = tau_coeffs_F[i]
+            tau_coeffs_Gi = tau_coeffs_G[i]
+            tau_coeffs_Hi = tau_coeffs_H[i]
+            dtaus_dTi = dtaus_dT[i]
+            for j in cmps:
+                dtaus_dTi[j] += (nT2inv*tau_coeffs_Bi[j] + Tinv*tau_coeffs_Ei[j]
+                + n2T3inv*tau_coeffs_Gi[j] + T2*tau_coeffs_Hi[j])
+                
+        return dtaus_dT
+
+    def d2taus_dT2(self, T):
+        r'''Calculate the second temperature derivative of the `tau` terms for  
+        the NRTL model for a specified temperature.
+        
+        .. math::
+            \frac{\partial^2 \tau_{ij}} {\partial T^2}_{P, x_i} = 
+            \frac{2 B_{ij}}{T^{3}} - \frac{E_{ij}}{T^{2}} + \frac{6 G_{ij}}
+            {T^{4}} + 2 H_{ij}
+            
+        These `tau ij` values (and the coefficients) are NOT symmetric 
+        normally.
+        '''
+        tau_coeffs_B = self.tau_coeffs_B
+        tau_coeffs_E = self.tau_coeffs_E
+        tau_coeffs_G = self.tau_coeffs_G
+        tau_coeffs_H = self.tau_coeffs_H
+        cmps = self.cmps
+
+        d2taus_dT2 = [[h + h for h in l] for l in tau_coeffs_H]
+        
+        Tinv = 1.0/T
+        Tinv2 = Tinv*Tinv
+        
+        T3inv2 = 2.0/(Tinv2*Tinv)
+        nT2inv = -Tinv*Tinv
+        T4inv6 = 6.0/(Tinv2*Tinv2)
+        for i in cmps:
+            tau_coeffs_Bi = tau_coeffs_B[i]
+            tau_coeffs_Ei = tau_coeffs_E[i]
+            tau_coeffs_Gi = tau_coeffs_G[i]
+            d2taus_dT2i = d2taus_dT2[i]
+            for j in cmps:
+                d2taus_dT2i[j] += (T3inv2*tau_coeffs_Bi[j] 
+                                   + nT2inv*tau_coeffs_Ei[j]
+                                   + T4inv6*tau_coeffs_Gi[j])
+        return d2taus_dT2
+
+    def d3taus_dT3(self, T):
+        r'''Calculate the third temperature derivative of the `tau` terms for  
+        the NRTL model for a specified temperature.
+        
+        .. math::
+            \frac{\partial^3 \tau_{ij}} {\partial T^3}_{P, x_i} = 
+            - \frac{6 B_{ij}}{T^{4}} + \frac{2 E_{ij}}{T^{3}}
+            - \frac{24 G_{ij}}{T^{5}}
+            
+        These `tau ij` values (and the coefficients) are NOT symmetric 
+        normally.
+        '''
+        tau_coeffs_B = self.tau_coeffs_B
+        tau_coeffs_E = self.tau_coeffs_E
+        tau_coeffs_G = self.tau_coeffs_G
+        N, cmps = self.N, self.cmps
+
+        d3taus_dT3 = [[0.0]*N for i in cmps]
+        
+        Tinv = 1.0/T
+        T2inv = Tinv*Tinv
+        
+        nT4inv6 = -6.0*T2inv*T2inv
+        T3inv2 = 2.0*T2inv*Tinv
+        T5inv24 = -24.0*(T2inv*T2inv*Tinv)
+        
+        for i in cmps:
+            tau_coeffs_Bi = tau_coeffs_B[i]
+            tau_coeffs_Ei = tau_coeffs_E[i]
+            tau_coeffs_Gi = tau_coeffs_G[i]
+            d3taus_dT3i = d3taus_dT3[i]
+            for j in cmps:
+                d3taus_dT3i[j] = (nT4inv6*tau_coeffs_Bi[j]
+                                  + T3inv2*tau_coeffs_Ei[j] 
+                                  + T5inv24*tau_coeffs_Gi[j])
+        return d3taus_dT3
+
+                
+                
     def alphas(self, T):
         '''Calculates the `alpha` terms in the NRTL model for a specified
         temperature. 
@@ -2204,6 +2385,58 @@ class Nrtl(GammaPhiCaloric):
                 
         return alphas
     
+    def dalphas_dT(self, T):
+        return self.alpha_coeffs_d
+    
+    def d2alphas_dT2(self, T):
+        return self.zero_coeffs
+    
+    def Gs(self, T, alphas=None, taus=None):
+        if alphas is None:
+            alphas = self.alphas(T)
+        if taus is None:
+            taus = self.taus(T)
+        cmps = self.cmps
+        
+        Gs = []
+        for i in cmps:
+            alphasi = alphas[i]
+            tausi = taus[i]
+            Gs.append([exp(-alphasi[j]*tausi[j]) for j in cmps])
+        return Gs
+    
+    def dGs_dT(self, T, alphas=None, dalphas_dT=None, taus=None, dtaus_dT=None,
+               Gs=None):
+        '''from sympy import *
+        T = symbols('T')
+        alpha, tau = symbols('alpha, tau', cls=Function)
+        
+        diff(exp(-alpha(T)*tau(T)), T)
+        '''
+        if alphas is None:
+            alphas = self.alphas(T)
+        if dalphas_dT is None:
+            dalphas_dT = self.dalphas_dT(T)
+        if taus is None:
+            taus = self.taus(T)
+        if dtaus_dT is None:
+            dtaus_dT = self.dtaus_dT(T)
+        if Gs is None:
+            Gs = self.Gs(T, alphas, taus)
+        cmps = self.cmps
+        
+        dGs_dT = []
+        for i in cmps:
+            alphasi = alphas[i]
+            tausi = taus[i]
+            dalphasi = dalphas_dT[i]
+            dtausi = dtaus_dT[i]
+            Gsi = Gs[i]
+            
+            dGs_dT.append([(-alphasi[j]*dtausi[j] - tausi[j]*dalphasi[j])*Gsi[j]
+                    for j in cmps])
+        return dGs_dT
+    
     
     def __init__(self, VaporPressures, tau_coeffs=None, alpha_coeffs=None, Tms=None,
                  Tcs=None, Pcs=None, omegas=None, VolumeLiquids=None, eos=None,
@@ -2247,7 +2480,7 @@ class Nrtl(GammaPhiCaloric):
         self.VolumeLiquids = VolumeLiquids
         self.eos = eos
         self.eos_mix = eos_mix
-        self.N = len(VaporPressures)
+        self.N = N = len(VaporPressures)
         self.cmps = range(self.N)
         self.kwargs = kwargs
 
@@ -2256,9 +2489,9 @@ class Nrtl(GammaPhiCaloric):
         self.HeatCapacityGases = HeatCapacityGases
         self.EnthalpyVaporizations = EnthalpyVaporizations
         
+        self.zero_coeffs_linear = [0.0]*self.N
         
-        if tau_coeffs is None or alpha_coeffs is None:
-            self.zero_coeffs = np.zeros((self.N, self.N)).tolist()
+        self.zero_coeffs = [[0.0]*N for _ in range(N)]
 
         if eos:
             self.eos_pure_instances = [eos(Tc=Tcs[i], Pc=Pcs[i], omega=omegas[i], T=Tcs[i]*0.5, P=Pcs[i]*0.1) for i in self.cmps]

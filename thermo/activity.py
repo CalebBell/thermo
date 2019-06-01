@@ -2095,6 +2095,7 @@ def NRTL(xs, taus, alphas):
     '''
     gammas = []
     cmps = range(len(xs))
+    # Gs does not depend on composition
     Gs = []
     for i in cmps:
         alphasi = alphas[i]
