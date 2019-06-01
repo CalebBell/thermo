@@ -2129,12 +2129,16 @@ class Nrtl(GammaPhiCaloric):
             sum4 = 0.0
             sum5 = 0.0
             for j in self.cmps:
-                sum1 += Gs[j][i]*xs[j]
-                sum2 += taus[j][i]*Gs[j][i]*xs[j] # dup
-                sum3 += dGs_dT[j][i] *xs[j]
+                tauji = taus[j][i] 
                 
-                sum4 += taus[j][i]*dGs_dT[j][i] *xs[j]
-                sum5 += Gs[j][i]*dtaus_dT[j][i] *xs[j]
+                Gjixj = Gs[j][i]*xs[j]
+                dGjidTxj = dGs_dT[j][i]*xs[j]
+                
+                sum1 += Gjixj
+                sum2 += tauji*Gjixj
+                sum3 += dGjidTxj
+                sum4 += tauji*dGjidTxj
+                sum5 += dtaus_dT[j][i]*Gjixj
             
             t1 = sum2/sum1 - T*(sum2*sum3)/(sum1*sum1) + T*(sum4 + sum5)/sum1
             tot += xs[i]*t1
@@ -2151,7 +2155,51 @@ class Nrtl(GammaPhiCaloric):
 
         Gs = self.Gs(T)
         dGs_dT = self.dGs_dT(T)
-        
+        d2Gs_dT2 = self.d2Gs_dT2(T)
+
+        tot = 0
+        for i in self.cmps:
+            sum1 = 0.0
+            sum2 = 0.0
+            sum3 = 0.0
+            sum4 = 0.0
+            sum5 = 0.0
+            
+            sum6 = 0.0
+            sum7 = 0.0
+            sum8 = 0.0
+            sum9 = 0.0
+            for j in self.cmps:
+                tauji = taus[j][i] 
+                dtaus_dTji = dtaus_dT[j][i]
+                
+                Gjixj = Gs[j][i]*xs[j]
+                dGjidTxj = dGs_dT[j][i]*xs[j]
+                d2GjidT2xj = xs[j]*d2Gs_dT2[j][i]
+                
+                sum1 += Gjixj
+                sum2 += tauji*Gjixj
+                sum3 += dGjidTxj
+                
+                sum4 += tauji*dGjidTxj
+                sum5 += dtaus_dTji*Gjixj
+                
+                sum6 += d2GjidT2xj
+                
+                sum7 += tauji*d2GjidT2xj
+                
+                sum8 += Gjixj*d2taus_dT2[j][i]
+                
+                sum9 += dGjidTxj*dtaus_dTji
+                
+            term1 = -T*sum2*(sum6 - 2.0*sum3*sum3/sum1)/sum1
+            term2 = T*(sum7 + sum8 + 2.0*sum9)
+            term3 = -2*T*(sum3*(sum4 + sum5))/sum1
+            term4 = -2.0*(sum2*sum3)/sum1
+            term5 = 2*(sum4 + sum5)
+            
+            tot += xs[i]*(term1 + term2 + term3 + term4 + term5)/sum1
+        return R*tot
 
 
     def taus(self, T):
