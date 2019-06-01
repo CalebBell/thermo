@@ -2140,6 +2140,19 @@ class Nrtl(GammaPhiCaloric):
             tot += xs[i]*t1
         return R*tot
 
+    def dGE2_dT2(self, T, xs):
+        cmps = self.cmps
+        taus = self.taus(T)
+        dtaus_dT = self.dtaus_dT(T)
+        d2taus_dT2 = self.d2taus_dT2(T)
+        
+        alphas = self.alphas(T)
+        dalphas_dT = self.dalphas_dT(T)
+
+        Gs = self.Gs(T)
+        dGs_dT = self.dGs_dT(T)
+        
+
 
     def taus(self, T):
         r'''Calculate the `tau` terms for the NRTL model for a specified
@@ -2280,9 +2293,9 @@ class Nrtl(GammaPhiCaloric):
         Tinv = 1.0/T
         Tinv2 = Tinv*Tinv
         
-        T3inv2 = 2.0/(Tinv2*Tinv)
+        T3inv2 = 2.0*(Tinv2*Tinv)
         nT2inv = -Tinv*Tinv
-        T4inv6 = 6.0/(Tinv2*Tinv2)
+        T4inv6 = 6.0*(Tinv2*Tinv2)
         for i in cmps:
             tau_coeffs_Bi = tau_coeffs_B[i]
             tau_coeffs_Ei = tau_coeffs_E[i]
@@ -2436,6 +2449,52 @@ class Nrtl(GammaPhiCaloric):
             dGs_dT.append([(-alphasi[j]*dtausi[j] - tausi[j]*dalphasi[j])*Gsi[j]
                     for j in cmps])
         return dGs_dT
+    
+    def d2Gs_dT2(self, T, alphas=None, dalphas_dT=None, taus=None, 
+                 dtaus_dT=None, d2taus_dT2=None, Gs=None, dGs_dT=None):
+        '''from sympy import *
+        T = symbols('T')
+        alpha, tau = symbols('alpha, tau', cls=Function)
+        expr = diff(exp(-alpha(T)*tau(T)), T, 2)
+        expr = ((alpha(T)*Derivative(tau(T), T) + tau(T)*Derivative(alpha(T), T))**2 - alpha(T)*Derivative(tau(T), (T, 2)) - 2*Derivative(alpha(T), T)*Derivative(tau(T), T))*exp(-alpha(T)*tau(T))
+        simplify(expr)
+        '''
+        if alphas is None:
+            alphas = self.alphas(T)
+        if dalphas_dT is None:
+            dalphas_dT = self.dalphas_dT(T)
+        if taus is None:
+            taus = self.taus(T)
+        if dtaus_dT is None:
+            dtaus_dT = self.dtaus_dT(T)
+        if d2taus_dT2 is None:
+            d2taus_dT2 = self.d2taus_dT2(T)
+        if Gs is None:
+            Gs = self.Gs(T, alphas, taus)
+#        if dGs_dT is None:
+#            dGs_dT = self.dGs_dT(T, alphas=alphas, dalphas_dT=dalphas_dT, 
+#                                 taus=taus, dtaus_dT=dtaus_dT, Gs=Gs)
+        cmps = self.cmps
+        
+        d2Gs_dT2 = []
+        for i in cmps:
+            alphasi = alphas[i]
+            tausi = taus[i]
+            dalphasi = dalphas_dT[i]
+            dtausi = dtaus_dT[i]
+            d2taus_dT2i = d2taus_dT2[i]
+            Gsi = Gs[i]
+#            dGs_dTi = dGs_dT[i]
+            
+            
+            d2Gs_dT2_row = []
+            for j in cmps:
+                t1 = alphasi[j]*dtausi[j] + tausi[j]*dalphasi[j]
+                
+                d2Gs_dT2_row.append((t1*t1 - alphasi[j]*d2taus_dT2i[j] - 2.0*dalphasi[j]*dtausi[j])*exp(-tausi[j]*alphasi[j])) # Gsi[j]
+            
+            d2Gs_dT2.append(d2Gs_dT2_row)
+        return d2Gs_dT2
     
     
     def __init__(self, VaporPressures, tau_coeffs=None, alpha_coeffs=None, Tms=None,
