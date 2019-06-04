@@ -40,7 +40,7 @@ from __future__ import division
 
 __all__ = ['PropertyPackage', 'Ideal', 'Unifac', 'GammaPhi', 
            'UnifacDortmund', 'IdealCaloric', 'GammaPhiCaloric',
-           'UnifacCaloric', 'UnifacDortmundCaloric', 'Nrtl',
+           'UnifacCaloric', 'UnifacDortmundCaloric', 'Nrtl', 'WilsonPP',
            'StabilityTester',
            'eos_Z_test_phase_stability', 'eos_Z_trial_phase_stability',
            'Stateva_Tsvetkov_TPDF_eos', 'd_TPD_Michelson_modified_eos',
@@ -62,7 +62,7 @@ from thermo.utils import has_matplotlib, R, pi, N_A
 from thermo.utils import remove_zeros, normalize, Cp_minus_Cv, mixing_simple, property_mass_to_molar
 from thermo.elements import mixture_atomic_composition, similarity_variable
 from thermo.identifiers import IDs_to_CASs
-from thermo.activity import K_value, Wilson_K_value, flash_inner_loop, dew_at_T, bubble_at_T, NRTL, Rachford_Rice_solution2
+from thermo.activity import K_value, Wilson_K_value, flash_inner_loop, dew_at_T, bubble_at_T, NRTL, Wilson, Rachford_Rice_solution2
 from thermo.activity import flash_wilson, flash_Tb_Tc_Pc, Rachford_Rice_flash_error
 from thermo.activity import get_T_bub_est, get_T_dew_est, get_P_dew_est, get_P_bub_est
 from thermo.unifac import UNIFAC, UFSG, DOUFSG, DOUFIP2006
@@ -1565,7 +1565,17 @@ class GammaPhi(PropertyPackage):
         P_sat_eos = [i.Psat(T) for i in self.eos_pure_instances]
         return [i.to_TP(T=T, P=Psat).phi_l for i, Psat in zip(self.eos_pure_instances, P_sat_eos)]    
 
-
+    def fugacity_coefficients_l(self, T, P, zs):
+        return
+        # gammai*Psat*Poy*phi_sat_pure/P
+        
+        
+    def fugacities_l(self, T, P, zs):
+        return
+#        return zs[i]*gammas[i]*Psats[i]*Poynting*phil
+#        phis_l = self.phis_l
+    
+    
     def _Psats(self, Psats=None, T=None):
         if Psats is None:
             Psats = []
@@ -1901,6 +1911,8 @@ class GammaPhi(PropertyPackage):
                 Poyntings = self.Poyntings(T=T, P=P, Psats=Psats)
                 P = sum([gammas[i]*zs[i]*Psats[i]*Poyntings[i] for i in cmps])
         elif self.use_phis:
+            # should use pressure derivatives to get solution here
+            # with the MM method
             for i in range(5):
                 phis_l = self.phis_l(T=T, P=P, xs=zs)
                 if self.use_Poynting:
@@ -2092,6 +2104,7 @@ class Nrtl(GammaPhiCaloric):
         return T*R*tot
     
     def HE_l2(self, T, xs):
+        # Just plain excess enthalpy here
         '''f = symbols('f', cls=Function)
         T = symbols('T')
         simplify(-T**2*diff(f(T)/T, T))
@@ -2099,6 +2112,95 @@ class Nrtl(GammaPhiCaloric):
         dGE_dT = self.dGE_dT(T, xs)
         GE = self.GE2(T, xs)
         return -T*dGE_dT + GE
+
+    def dHE_dT(self, T, xs):
+        # excess enthalpy temperature derivative
+        '''from sympy import *
+        f = symbols('f', cls=Function)
+        T = symbols('T')
+        diff(simplify(-T**2*diff(f(T)/T, T)), T)
+        '''
+        return -T*self.dGE2_dT2(T, xs)
+    
+    def dSE_dT(self, T, xs):
+        '''from sympy import *
+        T = symbols('T')
+        G, H = symbols('G, H', cls=Function)
+        S = (H(T) - G(T))/T
+        print(diff(S, T))
+        # (-Derivative(G(T), T) + Derivative(H(T), T))/T - (-G(T) + H(T))/T**2
+        '''
+        # excess entropy temperature derivative
+        H = self.HE_l2(T, xs)
+        dHdT = self.dHE_dT(T, xs)
+        dGdT = self.dGE_dT(T, xs)
+        G = self.GE2(T, xs)
+        return (-dGdT + dHdT)/T - (-G + H)/(T*T)
+
+    def dGE_dxs(self, T, xs):
+        '''
+        from sympy import *
+        N = 3
+        R, T = symbols('R, T')
+        x0, x1, x2 = symbols('x0, x1, x2')
+        xs = [x0, x1, x2]
+        
+        tau00, tau01, tau02, tau10, tau11, tau12, tau20, tau21, tau22 = symbols(
+            'tau00, tau01, tau02, tau10, tau11, tau12, tau20, tau21, tau22', cls=Function)
+        tau_ijs = [[tau00(T), tau01(T), tau02(T)], 
+                   [tau10(T), tau11(T), tau12(T)],
+                   [tau20(T), tau21(T), tau22(T)]]
+        
+        
+        G00, G01, G02, G10, G11, G12, G20, G21, G22 = symbols(
+            'G00, G01, G02, G10, G11, G12, G20, G21, G22', cls=Function)
+        G_ijs = [[G00(T), G01(T), G02(T)], 
+                   [G10(T), G11(T), G12(T)],
+                   [G20(T), G21(T), G22(T)]]
+        ge = 0
+        for i in [2]:#range(0):
+            num = 0
+            den = 0
+            for j in range(N):
+                num += tau_ijs[j][i]*G_ijs[j][i]*xs[j]
+                den += G_ijs[j][i]*xs[j]
+            ge += xs[i]*num/den
+        ge = ge#*R*T
+        diff(ge, x1), diff(ge, x2)
+        '''
+        cmps = self.cmps
+        taus = self.taus(T)
+        alphas = self.alphas(T)
+        Gs = self.Gs(T)
+        
+        dGE_dxs = []
+        
+        for k in cmps:
+            # k is what is being differentiated
+            tot = 0
+            for i in cmps:
+                
+                # sum1 in other places
+                sum1 = 0.0
+                sum2 = 0.0
+                for j in cmps:
+                    sum1 += xs[j]*Gs[j][i]
+                    sum2 += xs[j]*taus[j][i]*Gs[j][i] # sum2 in other places
+                    
+                term0 = xs[i]*Gs[k][i]*taus[k][i]/sum1
+                term1 = -xs[i]*Gs[k][i]*sum2/(sum1*sum1)
+                
+                
+                tot += term0 + term1
+                if i == k:
+                    tot += sum2/sum1
+            tot *= R*T
+            dGE_dxs.append(tot)
+        return dGE_dxs
+
+    def dGE_dns(self, T, xs):
+        # Mole number derivatives
+        return dxs_to_dns(self.dGE_dxs(T, zs), zs)
 
         
     def dGE_dT(self, T, xs):
@@ -2145,6 +2247,15 @@ class Nrtl(GammaPhiCaloric):
         return R*tot
 
     def dGE2_dT2(self, T, xs):
+        '''from sympy import *
+        R, T, x = symbols('R, T, x')
+        g, tau = symbols('g, tau', cls=Function)
+        m, n, o = symbols('m, n, o', cls=Function)
+        r, s, t = symbols('r, s, t', cls=Function)
+        u, v, w = symbols('u, v, w', cls=Function)
+        
+        (diff(T*(m(T)*n(T) + r(T)*s(T))/(o(T) + t(T)), T, 2))
+        '''
         cmps = self.cmps
         taus = self.taus(T)
         dtaus_dT = self.dtaus_dT(T)
@@ -2607,7 +2718,117 @@ class Nrtl(GammaPhiCaloric):
         alphas = self.alphas(T)
         taus = self.taus(T)
         return NRTL(xs=xs, taus=taus, alphas=alphas)
+
+class WilsonPP(GammaPhiCaloric):
+
+    def lambdas(self, T):
+        r'''Calculate the `lambda` terms for the Wilson model for a specified
+        temperature.
+        
+        .. math::
+            \Lambda_{ij} = \exp\left[a_{ij}+\frac{b_{ij}}{T}+c_{ij}\ln T 
++ d_{ij}T + \frac{e_{ij}}{T^2} + f_{ij}{T^2}\right]
+            
+            
+        These `Lambda ij` values (and the coefficients) are NOT symmetric.
+        '''
+        lambda_coeffs_A = self.lambda_coeffs_A
+        lambda_coeffs_B = self.lambda_coeffs_B
+        lambda_coeffs_C = self.lambda_coeffs_C
+        lambda_coeffs_D = self.lambda_coeffs_D
+        lambda_coeffs_E = self.lambda_coeffs_E
+        lambda_coeffs_F = self.lambda_coeffs_F
+
+        
+        N, cmps = self.N, self.cmps
+        T2 = T*T
+        Tinv = 1.0/T
+        T2inv = Tinv*Tinv
+        logT = log(T)
+
+        lambdas = []
+        for i in cmps:
+            lambda_coeffs_Ai = lambda_coeffs_A[i]
+            lambda_coeffs_Bi = lambda_coeffs_B[i]
+            lambda_coeffs_Ci = lambda_coeffs_C[i]
+            lambda_coeffs_Di = lambda_coeffs_D[i]
+            lambda_coeffs_Ei = lambda_coeffs_E[i]
+            lambda_coeffs_Fi = lambda_coeffs_F[i]
+            lambdasi = [exp(lambda_coeffs_Ai[j] + lambda_coeffs_Bi[j]*Tinv 
+                        + lambda_coeffs_Ci[j]*logT + lambda_coeffs_Di[j]*T 
+                        + lambda_coeffs_Ei[j]*T2inv + lambda_coeffs_Fi[j]*T2)
+                        for j in cmps]
+            lambdas.append(lambdasi)
+        return lambdas
+
+    def GE_l2(self, T, xs):
+        # Works great already!
+        lambdas = self.lambdas(T)
+        cmps = self.cmps
+        main_tot = 0.0
+        for i in cmps:
+            tot = 0.0
+            for j in cmps:
+                tot += xs[j]*lambdas[i][j]
+            main_tot += xs[i]*log(tot)
+        return -main_tot*R*T
+        
+        
+    def __init__(self, VaporPressures, lambda_coeffs=None, Tms=None,
+                 Tcs=None, Pcs=None, omegas=None, VolumeLiquids=None, eos=None,
+                 eos_mix=None, HeatCapacityLiquids=None,
+                 HeatCapacityGases=None,
+                 EnthalpyVaporizations=None,
+                 
+                 **kwargs):
+        
+        
+        
+        self.lambda_coeffs = lambda_coeffs
+        if lambda_coeffs is not None:
+            self.lambda_coeffs_A = [[i[0] for i in l] for l in lambda_coeffs]
+            self.lambda_coeffs_B = [[i[1] for i in l] for l in lambda_coeffs]
+            self.lambda_coeffs_C = [[i[2] for i in l] for l in lambda_coeffs]
+            self.lambda_coeffs_D = [[i[3] for i in l] for l in lambda_coeffs]
+            self.lambda_coeffs_E = [[i[4] for i in l] for l in lambda_coeffs]
+            self.lambda_coeffs_F = [[i[5] for i in l] for l in lambda_coeffs]
+        else:
+            self.lambda_coeffs_A = None
+            self.lambda_coeffs_B = None
+            self.lambda_coeffs_C = None
+            self.lambda_coeffs_D = None
+            self.lambda_coeffs_E = None
+            self.lambda_coeffs_F = None
+        
+        self.VaporPressures = VaporPressures
+        self.Tms = Tms
+        self.Tcs = Tcs
+        self.Pcs = Pcs
+        self.omegas = omegas
+        self.VolumeLiquids = VolumeLiquids
+        self.eos = eos
+        self.eos_mix = eos_mix
+        self.N = N = len(VaporPressures)
+        self.cmps = range(self.N)
+        self.kwargs = kwargs
+
+
+        self.HeatCapacityLiquids = HeatCapacityLiquids
+        self.HeatCapacityGases = HeatCapacityGases
+        self.EnthalpyVaporizations = EnthalpyVaporizations
+        
+        self.zero_coeffs_linear = [0.0]*self.N
+        
+        self.zero_coeffs = [[0.0]*N for _ in range(N)]
+
+        if eos:
+            self.eos_pure_instances = [eos(Tc=Tcs[i], Pc=Pcs[i], omega=omegas[i], T=Tcs[i]*0.5, P=Pcs[i]*0.1) for i in self.cmps]
+
+    def gammas(self, T, xs, cached=None):
+        lambdas = self.lambdas(T)
+        return Wilson(xs=xs, params=lambdas)
     
+
     
 class Unifac(GammaPhi):
     '''

@@ -1392,7 +1392,7 @@ class GCEOSMIX(GCEOS):
         info = []
         def err_and_jacobian(lnKs_guess):
             err =  self._err_VL_jacobian(lnKs_guess, T, P, zs, near_critical=True, err_also=True, info=info)
-#            print(lnKs_guess[-1], err)
+#            print(lnKs_guess[-1], err[0])
             return err
 
         ans, count = newton_system(err_and_jacobian, jac=True, x0=lnKs_guess, ytol=ytol, maxiter=maxiter)

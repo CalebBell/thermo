@@ -29,6 +29,7 @@ from fluids.constants import calorie, R
 from thermo.activity import *
 from thermo.mixture import Mixture
 from thermo.activity import Rachford_Rice_solution_numpy
+import random
 
 def test_K_value():
     K = K_value(101325, 3000.)
@@ -600,6 +601,52 @@ def test_NRTL():
     gammas_expect = [2.503204848288857, 2.910723989902569, 2.2547951278295497, 2.9933258413917154, 2.694165187439594]
     assert_allclose(gammas, gammas_expect)
     
+    # ten component
+#    m = Mixture(['water', 'ethanol', 'methanol', '1-pentanol', '2-pentanol', '3-pentanol',
+#             '1-decanol', '2-decanol', '3-decanol', '4-decanol'], 
+#             P=1e5, zs=[.1]*10, T=273.15+70)
+
+    xs = [.1]*10
+    T = 343.15
+    alphas = [[0.0, 0.2937, 0.2999, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3],
+     [0.2937, 0.0, 0.3009, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3],
+     [0.2999, 0.3009, 0.0, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3],
+     [0.3, 0.3, 0.3, 0.0, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3],
+     [0.3, 0.3, 0.3, 0.3, 0.0, 0.3, 0.3, 0.3, 0.3, 0.3],
+     [0.3, 0.3, 0.3, 0.3, 0.3, 0.0, 0.3, 0.3, 0.3, 0.3],
+     [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.0, 0.3, 0.3, 0.3],
+     [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.0, 0.3, 0.3],
+     [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.0, 0.3],
+     [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.0]]
+    
+    taus = [[0.0, 1.8209751485908323, 1.162621164496251, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [-0.08499680747061582, 0.0, -0.10339969905688821, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [-0.2772318019157448, 0.0986791288154995, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]
+    
+    gammas = NRTL(xs=xs, taus=taus, alphas=alphas)
+    gammas_expect = [1.1600804309840225, 1.0892286716705042, 1.0384940848807305, 0.9836770920034531, 0.9836770920034531, 0.9836770920034531, 0.9836770920034531, 0.9836770920034531, 0.9836770920034531, 0.9836770920034531]
+    assert_allclose(gammas, gammas_expect)
+    
+    N = 44
+    taus = [[random.random() for i in range(N)] for j in range(N)]
+    alphas = [[random.random() for i in range(N)] for j in range(N)]
+    xs = normalize([random.random() for i in range(N)])
+    gammas = NRTL(xs=xs, taus=taus, alphas=alphas)
+    
+    
+    # Takes 40 ms - not a great idea
+    N = 200
+    taus = [[random.random() for i in range(N)] for j in range(N)]
+    alphas = [[random.random() for i in range(N)] for j in range(N)]
+    xs = normalize([random.random() for i in range(N)])
+    gammas = NRTL(xs=xs, taus=taus, alphas=alphas)
 
 
 def test_Wilson():

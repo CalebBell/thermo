@@ -2113,8 +2113,9 @@ def NRTL(xs, taus, alphas):
             td2 += xkGkj
             tn3 += xkGkj*taus[k][j]
         td2 = 1.0/td2
-        td2s.append(td2*xs[j])
-        tn3s.append(tn3*td2*td2*xs[j])
+        td2xj = td2*xs[j]
+        td2s.append(td2xj)
+        tn3s.append(tn3*td2*td2xj)
             
 #    Gs = [[exp(-alphas[i][j]*taus[i][j]) for j in cmps] for i in cmps]
     for i in cmps:
@@ -2124,8 +2125,8 @@ def NRTL(xs, taus, alphas):
         for j in cmps:
             xjGji = xs[j]*Gs[j][i]
             
-            tn1 += xjGji*taus[j][i]
             td1 += xjGji
+            tn1 += xjGji*taus[j][i]
             total2 += Gsi[j]*(tausi[j]*td2s[j] - tn3s[j])
             
         gamma = exp(tn1/td1 + total2)
@@ -2165,6 +2166,10 @@ def Wilson(xs, params):
 
     .. math::
         \Lambda_{ij} = \frac{V_j}{V_i} \exp\left(\frac{-\lambda_{i,j}}{RT}\right)
+        
+    If a compound is not liquid at that temperature, the liquid volume is taken
+    at the saturated pressure; and if the component is supercritical, its
+    liquid molar volume should be extrapolated to 25°C.
 
     However, that form has less flexibility and offered no advantage over
     using only regressed parameters.
@@ -2180,6 +2185,8 @@ def Wilson(xs, params):
     
     For this model to produce ideal acitivty coefficients (gammas = 1),
     all interaction parameters should be 1.
+    
+    The specific process simulator implementations are as follows:
 
     Examples
     --------
@@ -2199,13 +2206,21 @@ def Wilson(xs, params):
     '''
     gammas = []
     cmps = range(len(xs))
+    
+    sums0 = []
+    for j in cmps:
+        tot = 0.0
+        paramsj = params[j]
+        for k in cmps:
+            tot += paramsj[k]*xs[k]
+        sums0.append(tot)
+    
     for i in cmps:
-        tot1 = log(sum([params[i][j]*xs[j] for j in cmps]))
         tot2 = 0.
         for j in cmps:
-            tot2 += params[j][i]*xs[j]/sum([params[j][k]*xs[k] for k in cmps])
+            tot2 += params[j][i]*xs[j]/sums0[j]
 
-        gamma = exp(1. - tot1 - tot2)
+        gamma = exp(1. - log(sums0[i]) - tot2)
         gammas.append(gamma)
     return gammas
 
