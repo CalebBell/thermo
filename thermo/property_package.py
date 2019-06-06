@@ -1562,6 +1562,7 @@ class GammaPhi(PropertyPackage):
 
     def phis_l(self, T, P, xs):
 #        return [1 for i in xs] # Most models seem to assume this
+        # This was correct; could also return phi_g instead of phi_l.
         P_sat_eos = [i.Psat(T) for i in self.eos_pure_instances]
         return [i.to_TP(T=T, P=Psat).phi_l for i, Psat in zip(self.eos_pure_instances, P_sat_eos)]    
 
@@ -2055,38 +2056,7 @@ class GammaPhiCaloric(GammaPhi, IdealCaloric):
                        'omegas': omegas}
 
 
-class Nrtl(GammaPhiCaloric):
-    def Stateva_Tsvetkov_TPDF(self, T, zs, ys):
-        z_fugacity_coefficients = self.gammas(T=T, xs=zs)
-        y_fugacity_coefficients = self.gammas(T=T, xs=ys)
-        
-        kis = []
-        for yi, phi_yi, zi, phi_zi in zip(ys, y_fugacity_coefficients, zs, z_fugacity_coefficients):
-            di = log(zi) + log(phi_zi)
-            if yi == 0:
-                yi = 2.2250738585072014e-308 # sys.float_info.min
-            ki = (log(yi) + log(phi_yi) - di)
-            kis.append(ki)
-        kis.append(kis[0])
-
-        tot = 0
-        for i in range(self.N):
-            tot += (kis[i+1] - kis[i])**2
-        return tot
-    
-    def d_TPD_Michelson_modified(self, T, zs, alphas):
-        Ys = [(alpha/2.)**2 for alpha in alphas]
-        ys = normalize(Ys)
-        z_fugacity_coefficients = self.gammas(T=T, xs=zs)
-        y_fugacity_coefficients = self.gammas(T=T, xs=ys)
-        tot = 0
-        for Yi, phi_yi, zi, phi_zi in zip(Ys, y_fugacity_coefficients, zs, z_fugacity_coefficients):
-            di = log(zi) + log(phi_zi)
-            if Yi != 0:
-                diff = Yi**0.5*(log(Yi) + log(phi_yi) - di)
-                tot += abs(diff)
-        return tot
-    
+class Nrtl(GammaPhiCaloric):   
     def GE2(self, T, xs):
         cmps = self.cmps
         taus = self.taus(T)
@@ -2732,6 +2702,7 @@ class WilsonPP(GammaPhiCaloric):
             
         These `Lambda ij` values (and the coefficients) are NOT symmetric.
         '''
+        # 87% of the time of this routine is the exponential.
         lambda_coeffs_A = self.lambda_coeffs_A
         lambda_coeffs_B = self.lambda_coeffs_B
         lambda_coeffs_C = self.lambda_coeffs_C
@@ -2761,6 +2732,157 @@ class WilsonPP(GammaPhiCaloric):
             lambdas.append(lambdasi)
         return lambdas
 
+    def dlambdas_dT(self, T):
+        r'''Calculate the temperature derivative of the `lambda` terms for the
+        Wilson model for a specified temperature.
+        
+        .. math::
+            \frac{\partial \Lambda_{ij}}{\partial T} = 
+            \left(2 T h_{ij} + d_{ij} + \frac{c_{ij}}{T} - \frac{b_{ij}}{T^{2}} 
+            - \frac{2 e_{ij}}{T^{3}}\right) e^{T^{2} h_{ij} + T d_{ij} + a_{ij} 
+            + c_{ij} \log{\left(T \right)} + \frac{b_{ij}}{T} 
+            + \frac{e_{ij}}{T^{2}}}
+            
+            
+        These `Lambda ij` values (and the coefficients) are NOT symmetric.
+        '''
+        # 87% of the time of this routine is the exponential.
+#        lambda_coeffs_A = self.lambda_coeffs_A
+        lambda_coeffs_B = self.lambda_coeffs_B
+        lambda_coeffs_C = self.lambda_coeffs_C
+        lambda_coeffs_D = self.lambda_coeffs_D
+        lambda_coeffs_E = self.lambda_coeffs_E
+        lambda_coeffs_F = self.lambda_coeffs_F
+        
+        cmps = self.cmps
+        lambdas = self.lambdas(T)
+        dlambdas_dT = []
+        
+        T2 = T+T
+        Tinv = 1.0/T
+        nT2inv = -Tinv*Tinv
+        nT3inv2 = 2.0*nT2inv*Tinv
+        
+        for i in cmps:
+            lambdasi = lambdas[i]
+#            lambda_coeffs_Ai = lambda_coeffs_A[i]
+            lambda_coeffs_Bi = lambda_coeffs_B[i]
+            lambda_coeffs_Ci = lambda_coeffs_C[i]
+            lambda_coeffs_Di = lambda_coeffs_D[i]
+            lambda_coeffs_Ei = lambda_coeffs_E[i]
+            lambda_coeffs_Fi = lambda_coeffs_F[i]
+            dlambdas_dTi = [(T2*lambda_coeffs_Fi[j] + lambda_coeffs_Di[j]
+                             + lambda_coeffs_Ci[j]*Tinv + lambda_coeffs_Bi[j]*nT2inv
+                             + lambda_coeffs_Ei[j]*nT3inv2)*lambdasi[j]
+                            for j in cmps]
+            dlambdas_dT.append(dlambdas_dTi)
+        return dlambdas_dT
+
+    def d2lambdas_dT2(self, T):
+        r'''Calculate the second temperature derivative of the `lambda` terms
+         for the Wilson model for a specified temperature.
+        
+        .. math::
+            \frac{\partial^2 \Lambda_{ij}}{\partial^2 T} = 
+            \left(2 f_{ij} + \left(2 T f_{ij} + d_{ij} + \frac{c_{ij}}{T}
+            - \frac{b_{ij}}{T^{2}} - \frac{2 e_{ij}}{T^{3}}\right)^{2} 
+                - \frac{c_{ij}}{T^{2}} + \frac{2 b_{ij}}{T^{3}} 
+                + \frac{6 e_{ij}}{T^{4}}\right) e^{T^{2} f_{ij} + T d_{ij} 
+                + a_{ij} + c_{ij} \log{\left(T \right)} + \frac{b_{ij}}{T} 
+                + \frac{e_{ij}}{T^{2}}}
+            
+            
+        These `Lambda ij` values (and the coefficients) are NOT symmetric.
+        '''
+        lambda_coeffs_B = self.lambda_coeffs_B
+        lambda_coeffs_C = self.lambda_coeffs_C
+        lambda_coeffs_E = self.lambda_coeffs_E
+        lambda_coeffs_F = self.lambda_coeffs_F
+        
+        cmps = self.cmps
+        lambdas = self.lambdas(T)
+        dlambdas_dT = self.dlambdas_dT(T)
+        
+        Tinv = 1.0/T
+        nT2inv = -Tinv*Tinv
+        T3inv2 = 2.0*Tinv*Tinv*Tinv
+#        T4inv6 = 3.0*T3inv2*Tinv
+        
+        T4inv6 = 6.0*Tinv*Tinv*Tinv*Tinv
+
+        d2lambdas_dT2s = []
+        for i in cmps:
+            lambdasi = lambdas[i]
+            dlambdas_dTi = dlambdas_dT[i]
+            lambda_coeffs_Bi = lambda_coeffs_B[i]
+            lambda_coeffs_Ci = lambda_coeffs_C[i]
+            lambda_coeffs_Ei = lambda_coeffs_E[i]
+            lambda_coeffs_Fi = lambda_coeffs_F[i]
+            d2lambdas_dT2i = [(2.0*lambda_coeffs_Fi[j] + nT2inv*lambda_coeffs_Ci[j]
+                             + T3inv2*lambda_coeffs_Bi[j] + T4inv6*lambda_coeffs_Ei[j]
+                             + dlambdas_dTi[j]*dlambdas_dTi[j]/(lambdasi[j]*lambdasi[j])
+                               )*lambdasi[j] for j in cmps]
+            d2lambdas_dT2s.append(d2lambdas_dT2i)
+        return d2lambdas_dT2s
+        
+    def d3lambdas_dT3(self, T):
+        r'''Calculate the third temperature derivative of the `lambda` terms
+         for the Wilson model for a specified temperature.
+        
+        .. math::
+            \frac{\partial^3 \Lambda_{ij}}{\partial^3 T} = 
+            \left(3 \left(2 f_{ij} - \frac{c_{ij}}{T^{2}} + \frac{2 b_{ij}}{T^{3}} 
+            + \frac{6 e_{ij}}{T^{4}}\right) \left(2 T f_{ij} + d_{ij}
+            + \frac{c_{ij}}{T} - \frac{b_{ij}}{T^{2}} - \frac{2 e_{ij}}{T^{3}}\right) 
+            + \left(2 T f_{ij} + d_{ij} + \frac{c_{ij}}{T} - \frac{b_{ij}}{T^{2}}
+            - \frac{2 e_{ij}}{T^{3}}\right)^{3} - \frac{2 \left(- c_{ij} 
+            + \frac{3 b_{ij}}{T} + \frac{12 e_{ij}}{T^{2}}\right)}{T^{3}}\right)
+            e^{T^{2} f_{ij} + T d_{ij} + a_{ij} + c_{ij} \log{\left(T \right)}
+            + \frac{b_{ij}}{T} + \frac{e_{ij}}{T^{2}}}
+            
+        These `Lambda ij` values (and the coefficients) are NOT symmetric.
+        '''
+        lambda_coeffs_B = self.lambda_coeffs_B
+        lambda_coeffs_C = self.lambda_coeffs_C
+        lambda_coeffs_E = self.lambda_coeffs_E
+        lambda_coeffs_F = self.lambda_coeffs_F
+        
+        cmps = self.cmps
+        lambdas = self.lambdas(T)
+        dlambdas_dT = self.dlambdas_dT(T)
+        
+        Tinv = 1.0/T
+        nT2inv = -Tinv*Tinv
+        T3inv2 = 2.0*Tinv*Tinv*Tinv
+#        T4inv6 = 3.0*T3inv2*Tinv
+        
+        T4inv6 = 6.0*Tinv*Tinv*Tinv*Tinv
+        
+        T2_12 = 12.0*Tinv*Tinv
+
+        d3lambdas_dT3s = []
+        for i in cmps:
+            lambdasi = lambdas[i]
+            dlambdas_dTi = dlambdas_dT[i]
+            lambda_coeffs_Bi = lambda_coeffs_B[i]
+            lambda_coeffs_Ci = lambda_coeffs_C[i]
+            lambda_coeffs_Ei = lambda_coeffs_E[i]
+            lambda_coeffs_Fi = lambda_coeffs_F[i]
+            d3lambdas_dT3is = []
+            for j in cmps:
+                term2 = (2.0*lambda_coeffs_Fi[j] + nT2inv*lambda_coeffs_Ci[j]
+                         + T3inv2*lambda_coeffs_Bi[j] + T4inv6*lambda_coeffs_Ei[j])
+                
+                term3 = dlambdas_dTi[j]/lambdasi[j]
+                
+                term4 = (T3inv2*(lambda_coeffs_Ci[j] - 3.0*lambda_coeffs_Bi[j]*Tinv
+                         - T2_12*lambda_coeffs_Ei[j]))
+                
+                d3lambdas_dT3is.append((3.0*term2*term3 + term3*term3*term3 + term4)*lambdasi[j])
+            
+            d3lambdas_dT3s.append(d3lambdas_dT3is)
+        return d3lambdas_dT3s
+
     def GE_l2(self, T, xs):
         # Works great already!
         lambdas = self.lambdas(T)
@@ -2772,8 +2894,128 @@ class WilsonPP(GammaPhiCaloric):
                 tot += xs[j]*lambdas[i][j]
             main_tot += xs[i]*log(tot)
         return -main_tot*R*T
+
+    def dGE_dxs(self, T, xs):
+        r'''
+        
+        .. math::
+            \frac{\partial G^E}{\partial x_k} = -RT\left[
+            \sum_i \frac{x_i \Lambda_{ik}}{\sum_j \Lambda_{ij}x_j }
+            + \log\left(\sum_j x_j \Lambda_{kj}\right)
+            \right]
+        '''
+        '''
+        from sympy import *
+        N = 4
+        R, T = symbols('R, T')
+        x1, x2, x3, x4 = symbols('x1, x2, x3, x4')
+        xs = [x1, x2, x3, x4]
+        
+        Lambda11, Lambda12, Lambda13, Lambda14, Lambda21, Lambda22, Lambda23, Lambda24, Lambda31, Lambda32, Lambda33, Lambda34, Lambda41, Lambda42, Lambda43, Lambda44 = symbols(
+            'Lambda11, Lambda12, Lambda13, Lambda14, Lambda21, Lambda22, Lambda23, Lambda24, Lambda31, Lambda32, Lambda33, Lambda34, Lambda41, Lambda42, Lambda43, Lambda44', cls=Function)
+        Lambda_ijs = [[Lambda11(T), Lambda12(T), Lambda13(T), Lambda14(T)], 
+                   [Lambda21(T), Lambda22(T), Lambda23(T), Lambda24(T)],
+                   [Lambda31(T), Lambda32(T), Lambda33(T), Lambda34(T)], 
+                   [Lambda41(T), Lambda42(T), Lambda43(T), Lambda44(T)]]    
+        ge = 0
+        for i in range(N):
+            num = 0
+            for j in range(N):
+                num += Lambda_ijs[i][j]*xs[j]
+            ge -= xs[i]*log(num)
+        ge = ge*R*T
         
         
+        diff(ge, x1)#, diff(ge, x1, x2), diff(ge, x1, x2, x3)
+        '''
+        cmps = self.cmps
+        lambdas = self.lambdas(T)
+        mRT = -T*R
+        
+        xj_Lambdas_ijs = []
+        for i in cmps:
+            tot = 0.0
+            for j in cmps:
+                tot += xs[j]*lambdas[i][j]
+            xj_Lambdas_ijs.append(tot)
+        
+        # k = what is being differentiated with respect to
+        dGE_dxs = []
+        for k in cmps:
+            tot = 0.0
+            for i in cmps:
+                tot += xs[i]*lambdas[i][k]/xj_Lambdas_ijs[i]
+            tot += log(xj_Lambdas_ijs[k])
+            
+            dGE_dxs.append(mRT*tot)
+            
+        return dGE_dxs
+        
+
+    def d2GE_dxixjs(self, T, xs):
+        # Correct, tested with hessian
+        cmps = self.cmps
+        RT = R*T
+        lambdas = self.lambdas(T)
+
+        xj_Lambdas_ijs = []
+        for i in cmps:
+            tot = 0.0
+            for j in cmps:
+                tot += xs[j]*lambdas[i][j]
+            xj_Lambdas_ijs.append(tot)
+
+
+        
+        d2GE_dxixjs = []
+        for k in cmps:
+            dG_row = []
+            for m in cmps:
+                tot = 0.0
+                for i in cmps:
+                    tot += xs[i]*lambdas[i][k]*lambdas[i][m]/(xj_Lambdas_ijs[i]*xj_Lambdas_ijs[i])
+                tot -= lambdas[k][m]/xj_Lambdas_ijs[k]
+                tot -= lambdas[m][k]/xj_Lambdas_ijs[m]
+                dG_row.append(RT*tot)
+            d2GE_dxixjs.append(dG_row)
+        return d2GE_dxixjs
+
+    def d3GE_dxixjxks(self, T, xs):
+        # Correct, tested with sympy expanding
+        cmps = self.cmps
+        nRT = -R*T
+        lambdas = self.lambdas(T)
+
+        xj_Lambdas_ijs = []
+        for i in cmps:
+            tot = 0.0
+            for j in cmps:
+                tot += xs[j]*lambdas[i][j]
+            xj_Lambdas_ijs.append(tot)
+        
+        xj_Lambdas_ijs_invs = [1.0/i for i in xj_Lambdas_ijs]
+        
+        d2GE_dxixjs = []
+        for k in cmps:
+            dG_matrix = []
+            for m in cmps:
+                dG_row = []
+                for n in cmps:
+                    tot = 0.0
+                    for i in cmps:
+                        num = 2.0*xs[i]*lambdas[i][k]*lambdas[i][m]*lambdas[i][n]
+                        den = xj_Lambdas_ijs_invs[i]*xj_Lambdas_ijs_invs[i]*xj_Lambdas_ijs_invs[i]
+                        tot += num*den
+                    
+                    tot -= lambdas[k][m]*lambdas[k][n]*xj_Lambdas_ijs_invs[k]*xj_Lambdas_ijs_invs[k]
+                    tot -= lambdas[m][k]*lambdas[m][n]*xj_Lambdas_ijs_invs[m]*xj_Lambdas_ijs_invs[m]
+                    tot -= lambdas[n][m]*lambdas[n][k]*xj_Lambdas_ijs_invs[n]*xj_Lambdas_ijs_invs[n]
+                    dG_row.append(nRT*tot)
+                dG_matrix.append(dG_row)
+            d2GE_dxixjs.append(dG_matrix)
+        return d2GE_dxixjs
+                    
+                    
     def __init__(self, VaporPressures, lambda_coeffs=None, Tms=None,
                  Tcs=None, Pcs=None, omegas=None, VolumeLiquids=None, eos=None,
                  eos_mix=None, HeatCapacityLiquids=None,

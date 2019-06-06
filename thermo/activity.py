@@ -2320,12 +2320,15 @@ def UNIQUAC(xs, rs, qs, taus):
        1978): 91-99. doi:10.1016/0378-3812(78)85002-X.
     '''
     cmps = range(len(xs))
+    
     rsxs = [rs[i]*xs[i] for i in cmps]
-    rsxs_sum = sum(rsxs)
-    phis = [rsxs[i]/rsxs_sum for i in cmps]
+    rsxs_sum_inv = 1.0/sum(rsxs)
+    phis = [rsxs[i]*rsxs_sum_inv for i in cmps]
+    
+    
     qsxs = [qs[i]*xs[i] for i in cmps]
-    qsxs_sum = sum(qsxs)
-    vs = [qsxs[i]/qsxs_sum for i in cmps]
+    qsxs_sum_inv = 1.0/sum(qsxs)
+    vs = [qsxs[i]*qsxs_sum_inv for i in cmps]
 
     Ss = [sum([vs[j]*taus[j][i] for j in cmps]) for i in cmps]
     VsSs = [vs[j]/Ss[j] for j in cmps]
