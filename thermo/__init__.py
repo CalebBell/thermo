@@ -61,7 +61,7 @@ from . import virial
 from . import viscosity
 from . import volume
 from . import chemical_utils
-
+from . import wilson
 
 from .acentric import *
 from .activity import *
@@ -104,6 +104,7 @@ from .virial import *
 from .viscosity import *
 from .volume import *
 from .chemical_utils import *
+from .wilson import *
 
 __all__ = ['activity', 'chemical', 'combustion', 'critical',
  'dipole', 'electrochem', 'elements', 'environment', 'eos', 'eos_mix',
@@ -114,7 +115,7 @@ __all__ = ['activity', 'chemical', 'combustion', 'critical',
  'thermal_conductivity', 'triple', 'utils',
  'vapor_pressure', 'virial', 'viscosity', 'volume', 'acentric', 'coolprop', 
  'datasheet', 'dippr', 'unifac', 'stream', 'mixture', 'property_package_constants',
- 'chemical_utils']
+ 'chemical_utils', 'wilson']
 
 
 __all__.extend(acentric.__all__)
@@ -158,6 +159,7 @@ __all__.extend(viscosity.__all__)
 __all__.extend(volume.__all__)
 __all__.extend(property_package_constants.__all__)
 __all__.extend(chemical_utils.__all__)
+__all__.extend(wilson.__all__)
 
 
 # backwards compatibility hack to allow thermo.chemical.Mixture to still be importable

@@ -59,10 +59,11 @@ from fluids.numerics import (OscillationError, UnconvergedError,
 
 from thermo.utils import log, log10, exp, copysign
 from thermo.utils import has_matplotlib, R, pi, N_A
+from thermo.utils import dxs_to_dn_partials, dxs_to_dns, dns_to_dn_partials, d2xs_to_dxdn_partials
 from thermo.utils import remove_zeros, normalize, Cp_minus_Cv, mixing_simple, property_mass_to_molar
 from thermo.elements import mixture_atomic_composition, similarity_variable
 from thermo.identifiers import IDs_to_CASs
-from thermo.activity import K_value, Wilson_K_value, flash_inner_loop, dew_at_T, bubble_at_T, NRTL, Wilson, Rachford_Rice_solution2
+from thermo.activity import K_value, Wilson_K_value, flash_inner_loop, dew_at_T, bubble_at_T, NRTL, Rachford_Rice_solution2, Wilson_gammas as Wilson
 from thermo.activity import flash_wilson, flash_Tb_Tc_Pc, Rachford_Rice_flash_error
 from thermo.activity import get_T_bub_est, get_T_dew_est, get_P_dew_est, get_P_bub_est
 from thermo.unifac import UNIFAC, UFSG, DOUFSG, DOUFIP2006
@@ -1539,7 +1540,7 @@ class GammaPhi(PropertyPackage):
         gammas = self.gammas(T=T, xs=xs)
         if self.use_phis:
             phis_g = self.phis_g(T=T, P=P, ys=ys)
-            phis_l = self.phis_l(T=T, P=P, xs=xs)
+            phis_l = self.phis_l(T=T, xs=xs)
             if self.use_Poynting:
                 Poyntings = self.Poyntings(T=T, P=P, Psats=Psats)
                 return [K_value(P=P, Psat=Psats[i], gamma=gammas[i], 
@@ -1554,28 +1555,157 @@ class GammaPhi(PropertyPackage):
         return Ks
     
     def Poyntings(self, T, P, Psats):
-        Vmls = [VolumeLiquid(T=T, P=P) for VolumeLiquid in self.VolumeLiquids]
+        Vmls = [VolumeLiquid.T_dependent_property(T=T) for VolumeLiquid in self.VolumeLiquids]        
+#        Vmls = [VolumeLiquid(T=T, P=P) for VolumeLiquid in self.VolumeLiquids]
         return [exp(Vml*(P-Psat)/(R*T)) for Psat, Vml in zip(Psats, Vmls)]
+    
+    def dPoyntings_dT(self, T, P, Psats=None):
+        if Psats is None:
+            Psats = self._Psats(T=T)
+            
+        dPsats_dT = [VaporPressure.T_dependent_property_derivative(T=T)
+                     for VaporPressure in self.VaporPressures]
+
+        Vmls = [VolumeLiquid.T_dependent_property(T=T) for VolumeLiquid in self.VolumeLiquids]                    
+        dVml_dTs = [VolumeLiquid.T_dependent_property_derivative(T=T) 
+                    for VolumeLiquid in self.VolumeLiquids]
+#        Vmls = [VolumeLiquid(T=T, P=P) for VolumeLiquid in self.VolumeLiquids]
+#        dVml_dTs = [VolumeLiquid.TP_dependent_property_derivative_T(T=T, P=P) 
+#                    for VolumeLiquid in self.VolumeLiquids]
+        
+        x0 = 1.0/R
+        x1 = 1.0/T
+        
+        dPoyntings_dT = []
+        for i in self.cmps:
+            x2 = Vmls[i]
+            x3 = Psats[i]
+            
+            x4 = P - x3
+            x5 = x1*x2*x4
+            dPoyntings_dTi = -x0*x1*(x2*dPsats_dT[i] - x4*dVml_dTs[i] + x5)*exp(x0*x5)
+            dPoyntings_dT.append(dPoyntings_dTi)
+        return dPoyntings_dT
+    
+    
+    def dPoyntings_dP(self, T, P, Psats=None):
+        '''from sympy import *
+        R, T, P, zi = symbols('R, T, P, zi')
+        Vml = symbols('Vml', cls=Function)
+        cse(diff(exp(Vml(T)*(P - Psati(T))/(R*T)), P), optimizations='basic')
+        '''
+        Vmls = [VolumeLiquid(T=T, P=P) for VolumeLiquid in self.VolumeLiquids]
+        if Psats is None:
+            Psats = self._Psats(T=T)
+        
+        dPoyntings_dPs = []
+        for i in self.cmps:
+            x0 = Vmls[i]/(R*T)
+            dPoyntings_dPs.append(x0*exp(x0*(P - Psats[i])))
+        return dPoyntings_dPs
+        
 
     def phis_g(self, T, P, ys):
         return self.eos_mix(T=T, P=P, zs=ys, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas).phis_g
 
-    def phis_l(self, T, P, xs):
+    def phis_l(self, T, xs):
+        # TODO change name to include sat in it
 #        return [1 for i in xs] # Most models seem to assume this
         # This was correct; could also return phi_g instead of phi_l.
-        P_sat_eos = [i.Psat(T) for i in self.eos_pure_instances]
-        return [i.to_TP(T=T, P=Psat).phi_l for i, Psat in zip(self.eos_pure_instances, P_sat_eos)]    
+        phis_sat = []
+        for obj in self.eos_pure_instances:
+            Psat = obj.Psat(T)
+            obj = obj.to_TP(T=T, P=Psat)
+            # Along the saturation line, may not exist for one phase or the other even though incredibly precise
+            try:
+                phi = obj.phi_l
+            except:
+                phi = obj.phi_g
+            phis_sat.append(phi)
+        return phis_sat
+                
 
-    def fugacity_coefficients_l(self, T, P, zs):
-        return
-        # gammai*Psat*Poy*phi_sat_pure/P
+    def fugacity_coefficients_l(self, T, P, xs):
+        # DO NOT EDIT _ CORRECT
+        gammas = self.gammas(T, xs)
+        Psats = self._Psats(T=T)
+        
+        if self.use_phis:
+            phis = self.phis_l(T=T, xs=xs)
+        else:
+            phis = [1.0]*self.N
+            
+        if self.use_Poynting:
+            Poyntings = self.Poyntings(T=T, P=P, Psats=Psats)
+        else:
+            Poyntings = [1.0]*self.N
+            
+        P_inv = 1.0/P
+        return [gammas[i]*Psats[i]*Poyntings[i]*phis[i]*P_inv
+                for i in self.cmps]
         
         
-    def fugacities_l(self, T, P, zs):
-        return
-#        return zs[i]*gammas[i]*Psats[i]*Poynting*phil
-#        phis_l = self.phis_l
-    
+    def lnphis_l(self, T, P, xs):
+        # DO NOT EDIT _ CORRECT
+        return [log(i) for i in self.fugacity_coefficients_l(T, P, xs)]        
+        
+    def fugacities_l(self, T, P, xs):
+        # DO NOT EDIT _ CORRECT
+        gammas = self.gammas(T, xs)
+        Psats = self._Psats(T=T)
+        if self.use_phis:
+            phis = self.phis_l(T=T, xs=xs)
+        else:
+            phis = [1.0]*self.N
+            
+        if self.use_Poynting:
+            Poyntings = self.Poyntings(T=T, P=P, Psats=Psats)
+        else:
+            Poyntings = [1.0]*self.N
+        return [xs[i]*gammas[i]*Psats[i]*Poyntings[i]*phis[i]
+                for i in self.cmps]
+#        return xs[i]*gammas[i]*Psats[i]*Poynting*phil
+
+    def dphis_dT(self, T, P, xs):
+        Psats = self._Psats(T=T)
+        gammas = self.gammas(T, xs)
+        
+        
+        if self.use_Poynting:
+            # Evidence suggests poynting derivatives are not worth calculating
+            dPoyntings_dT = [0.0]*self.N#self.dPoyntings_dT(T, P, Psats=Psats)
+            Poyntings = self.Poyntings(T, P, Psats)
+        else:
+            dPoyntings_dT = [0.0]*self.N
+            Poyntings = [1.0]*self.N
+
+        dPsats_dT = [VaporPressure.T_dependent_property_derivative(T=T)
+                     for VaporPressure in self.VaporPressures]
+        dgammas_dT = self.dgammas_dT(T, xs)
+        
+        if self.use_phis:
+            dphis_l_sat_dT = 0.0
+            phis_l_sat = self.phis_l(T, xs)
+        else:
+            dphis_l_sat_dT = 0.0
+            phis_l_sat = [1.0]*self.N
+        
+        dphis_dTl = []
+        for i in self.cmps:
+            x0 = gammas[i]
+            x1 = phis_l_sat[i]
+            x2 = Psats[i]
+            x3 = Poyntings[i]
+            x4 = x2*x3
+            x5 = x0*x1
+            v = (x0*x4*dphis_l_sat_dT + x1*x4*dgammas_dT[i] + x2*x5*dPoyntings_dT[i] + x3*x5*dPsats_dT[i])/P
+            dphis_dTl.append(v)
+        return dphis_dTl
+        
+    def dlnphis_dT(self, T, P, xs):
+        dphis_dT = self.dphis_dT(T, P, xs)
+        phis = self.fugacity_coefficients_l(T, P, xs)
+        return [i/j for i, j in zip(dphis_dT, phis)]
     
     def _Psats(self, Psats=None, T=None):
         if Psats is None:
@@ -1915,7 +2045,7 @@ class GammaPhi(PropertyPackage):
             # should use pressure derivatives to get solution here
             # with the MM method
             for i in range(5):
-                phis_l = self.phis_l(T=T, P=P, xs=zs)
+                phis_l = self.phis_l(T=T, xs=zs)
                 if self.use_Poynting:
                     Poyntings = self.Poyntings(T=T, P=P, Psats=Psats)
                     P = sum([gammas[i]*zs[i]*Psats[i]*Poyntings[i]*phis_l[i] for i in cmps])
@@ -2011,6 +2141,196 @@ class GammaPhi(PropertyPackage):
         return 'l/g', xs, ys, V_over_F, T
 
 
+    def dew_T_Michelsen_Mollerup(self, T_guess, P, zs, maxiter=200, 
+                                 xtol=1E-10, info=None, xs_guess=None,
+                                 max_step_damping=100.0, near_critical=False,
+                                 trivial_solution_tol=1e-4):
+        # Does not have any formulation available
+        # According to the following, convergence does not occur with newton's method near the critical point
+        # It recommends some sort of substitution method
+        # Accelerated successive substitution schemes for bubble-point and dew-point calculations
+        N = len(zs)
+        cmps = range(N)
+        xs = zs if xs_guess is None else xs_guess
+        def lnphis_and_derivatives(T_guess):
+            
+            if self.use_phis:
+                ln_phis_g = [log(i) for i in self.phis_g(T=T_guess, P=P, ys=zs)]
+            else:
+                ln_phis_g = [1.0]*N
+            dlnphis_dT_g = [0.0]*N
+            
+            ln_phis_l = self.lnphis_l(T_guess, P, xs)
+            dlnphis_dT_l = self.dlnphis_dT(T_guess, P, xs)
+
+
+            return ln_phis_l, ln_phis_g, dlnphis_dT_l, dlnphis_dT_g
+        
+        T_guess_old = None
+        successive_fails = 0
+        for i in range(maxiter):
+            try:
+                ln_phis_l, ln_phis_g, dlnphis_dT_l, dlnphis_dT_g = lnphis_and_derivatives(T_guess)
+                successive_fails = 0
+            except Exception as e:
+                print(e)
+                if T_guess_old is None:
+                    raise ValueError("Could not calculate liquid and vapor conditions at provided initial temperature %s K" %(T_guess))
+                successive_fails += 1
+                if successive_fails >= 2:
+                    raise ValueError("Stopped convergence procedure after multiple bad steps") 
+                T_guess = T_guess_old + copysign(min(max_step_damping, abs(step)), step)
+#                print('fail - new T guess', T_guess)
+                ln_phis_l, ln_phis_g, dlnphis_dT_l, dlnphis_dT_g = lnphis_and_derivatives(T_guess)
+
+            Ks = [exp(a - b) for a, b in zip(ln_phis_l, ln_phis_g)]
+            xs = [zs[i]/Ks[i] for i in cmps]
+            f_k = sum([xs[i] for i in cmps]) - 1.0
+
+            dfk_dT = 0.0
+            for i in cmps:
+                dfk_dT += xs[i]*(dlnphis_dT_g[i] - dlnphis_dT_l[i])
+            
+            T_guess_old = T_guess
+            step = -f_k/dfk_dT
+            
+#            print(xs, T_guess, step, dfk_dT)
+            
+            if near_critical:
+                T_guess = T_guess + copysign(min(max_step_damping, abs(step)), step)
+            else:
+                T_guess = T_guess + step
+            
+            if near_critical:
+                comp_difference = sum([abs(zi - xi) for zi, xi in zip(zs, xs)])
+                if comp_difference < trivial_solution_tol:
+                    raise ValueError("Converged to trivial condition, compositions of both phases equal")
+            
+            x_sum = sum(xs)
+            xs = [x/x_sum for x in xs]
+            
+            if info is not None:
+                info[:] = xs, zs, Ks, 1.0
+            if abs(T_guess - T_guess_old) < xtol:
+                T_guess = T_guess_old
+                break
+            
+                
+        if abs(T_guess - T_guess_old) > xtol:
+            raise ValueError("Did not converge to specified tolerance")
+                
+        return T_guess
+
+    def HE_l2(self, T, xs):
+        # Just plain excess enthalpy here
+        '''f = symbols('f', cls=Function)
+        T = symbols('T')
+        simplify(-T**2*diff(f(T)/T, T))
+        '''
+        dGE_dT = self.dGE_dT(T, xs)
+        GE = self.GE_l2(T, xs)
+        return -T*dGE_dT + GE
+ 
+    def dHE_dx(self, T, xs):
+        # Derived by hand taking into account the expression for excess enthalpy
+        d2GE_dTdxs = self.d2GE_dTdxs(T, xs)
+        dGE_dxs = self.dGE_dxs(T, xs)
+        return [-T*d2GE_dTdxs[i] + dGE_dxs[i] for i in self.cmps]
+
+    def dHE_dn(self, T, xs):
+        return dxs_to_dns(self.dHE_dx(T, xs), xs)
+    
+    def dnHE_dn(self, T, xs):
+        return dxs_to_dn_partials(self.dHE_dx(T, xs), xs, self.HE_l2(T, xs))
+    
+    def dSE_dx(self, T, xs):
+        # Derived by hand.
+        dGE_dxs = self.dGE_dxs(T, xs)
+        dHE_dx = self.dHE_dx(T, xs)
+        T_inv = 1.0/T
+        return [T_inv*(dHE_dx[i] - dGE_dxs[i]) for i in self.cmps]
+
+    def dSE_dn(self, T, xs):
+        return dxs_to_dns(self.dSE_dx(T, xs), xs)
+    
+    def dnSE_dn(self, T, xs):
+        return dxs_to_dn_partials(self.dSE_dx(T, xs), xs, self.SE_l(T, xs))
+
+    def dGE_dns(self, T, xs):
+        # Mole number derivatives
+        return dxs_to_dns(self.dGE_dxs(T, xs), xs)
+
+    def dnGE_dns(self, T, xs):
+        return dxs_to_dn_partials(self.dGE_dxs(T, xs), xs, self.GE_l2(T, xs))
+
+    def gammas2(self, T, xs):
+        '''
+        .. math::
+            \gamma_i = \exp\left(\frac{\frac{\partial n_i G^E}{\partial n_i }}{RT}\right)
+        '''
+        # Matches the gamma formulation perfectly
+        dG_dxs = self.dGE_dxs(T, xs)
+        GE = self.GE_l2(T, xs)
+        dG_dns = dxs_to_dn_partials(dG_dxs, xs, GE)
+        RT_inv = 1.0/(R*T)
+        return [exp(i*RT_inv) for i in dG_dns]
+
+    def dgammas_dx(self, T, xs):
+#        dnGE_dni = self.dnGE_dns(T, xs)
+        gammas = self.gammas2(T, xs)
+        
+        cmps = self.cmps
+        
+        d2GE_dxixjs = self.d2GE_dxixjs(T, xs)
+        d2nGE_dxjnis = d2xs_to_dxdn_partials(d2GE_dxixjs, xs)
+        
+        RT_inv = 1.0/(R*T)
+        
+        matrix = []
+        for i in cmps:
+            row = []
+            gammai = gammas[i]
+            for j in cmps:
+                v = gammai*d2nGE_dxjnis[i][j]*RT_inv
+                row.append(v)
+            matrix.append(row)
+        return matrix
+        
+    def dgammas_dT(self, T, xs):
+        r'''
+        .. math::
+            \frac{\partial \gamma_i}{\partial T} =
+            \left(\frac{\frac{\partial^2 n G^E}{\partial T \partial n_i}}{RT} - 
+            \frac{{\frac{\partial n_i G^E}{\partial n_i }}}{RT^2}\right)
+             \exp\left(\frac{\frac{\partial n_i G^E}{\partial n_i }}{RT}\right)
+        
+        from sympy import *
+        R, T = symbols('R, T')
+        f = symbols('f', cls=Function)
+        diff(exp(f(T)/(R*T)), T)
+        '''
+        d2nGE_dTdns = self.d2nGE_dTdns(T, xs)
+        
+        dG_dxs = self.dGE_dxs(T, xs)
+        GE = self.GE_l2(T, xs)
+        dG_dns = dxs_to_dn_partials(dG_dxs, xs, GE)
+        
+        RT_inv = 1.0/(R*T)
+        return [(d2nGE_dTdns[i]*RT_inv - dG_dns[i]*RT_inv/T)*exp(dG_dns[i]*RT_inv)
+                for i in self.cmps]
+
+    def d2GE_dTdns(self, T, xs):
+        return dxs_to_dns(self.d2GE_dTdxs(T, xs), xs)
+    
+    
+    def d2nGE_dTdns(self, T, xs):
+        # needed in gammas temperature derivatives
+        dGE_dT = self.dGE_dT(T, xs)
+        d2GE_dTdns = self.d2GE_dTdns(T, xs)
+        return dns_to_dn_partials(d2GE_dTdns, dGE_dT)
+
+
+
 class GammaPhiCaloric(GammaPhi, IdealCaloric):
     
     def _post_flash(self):
@@ -2073,15 +2393,6 @@ class Nrtl(GammaPhiCaloric):
             tot += xs[i]*t1
         return T*R*tot
     
-    def HE_l2(self, T, xs):
-        # Just plain excess enthalpy here
-        '''f = symbols('f', cls=Function)
-        T = symbols('T')
-        simplify(-T**2*diff(f(T)/T, T))
-        '''
-        dGE_dT = self.dGE_dT(T, xs)
-        GE = self.GE2(T, xs)
-        return -T*dGE_dT + GE
 
     def dHE_dT(self, T, xs):
         # excess enthalpy temperature derivative
@@ -2168,9 +2479,6 @@ class Nrtl(GammaPhiCaloric):
             dGE_dxs.append(tot)
         return dGE_dxs
 
-    def dGE_dns(self, T, xs):
-        # Mole number derivatives
-        return dxs_to_dns(self.dGE_dxs(T, zs), zs)
 
         
     def dGE_dT(self, T, xs):
@@ -2894,7 +3202,242 @@ class WilsonPP(GammaPhiCaloric):
                 tot += xs[j]*lambdas[i][j]
             main_tot += xs[i]*log(tot)
         return -main_tot*R*T
+    
+    def dGE_dT(self, T, xs):
+        r'''
+        
+        .. math::
+            \frac{\partial G^E}{\partial T} = -R\sum_i x_i \log\left(\sum_j x_i \Lambda_{ij}\right)
+            -RT\sum_i \frac{x_i \sum_j x_j \frac{\Lambda _{ij}}{\partial T}}{\sum_j x_j \Lambda_{ij}}
+        '''
+        
+        '''from sympy import *
+        N = 4
+        R, T = symbols('R, T')
+        x1, x2, x3, x4 = symbols('x1, x2, x3, x4')
+        xs = [x1, x2, x3, x4]
+        
+        Lambda11, Lambda12, Lambda13, Lambda14, Lambda21, Lambda22, Lambda23, Lambda24, Lambda31, Lambda32, Lambda33, Lambda34, Lambda41, Lambda42, Lambda43, Lambda44 = symbols(
+            'Lambda11, Lambda12, Lambda13, Lambda14, Lambda21, Lambda22, Lambda23, Lambda24, Lambda31, Lambda32, Lambda33, Lambda34, Lambda41, Lambda42, Lambda43, Lambda44', cls=Function)
+        Lambda_ijs = [[Lambda11(T), Lambda12(T), Lambda13(T), Lambda14(T)], 
+                   [Lambda21(T), Lambda22(T), Lambda23(T), Lambda24(T)],
+                   [Lambda31(T), Lambda32(T), Lambda33(T), Lambda34(T)], 
+                   [Lambda41(T), Lambda42(T), Lambda43(T), Lambda44(T)]]    
+        ge = 0
+        for i in range(N):
+            num = 0
+            for j in range(N):
+                num += Lambda_ijs[i][j]*xs[j]
+            ge -= xs[i]*log(num)
+        ge = ge*R*T
+        
+        
+        diff(ge, T)
+        '''
+        cmps = self.cmps
+        lambdas = self.lambdas(T)
+        dlambdas_dT = self.dlambdas_dT(T)
+        RT = T*R
+        
+        xj_Lambdas_ijs = []
+        for i in cmps:
+            tot = 0.0
+            for j in cmps:
+                tot += xs[j]*lambdas[i][j]
+            xj_Lambdas_ijs.append(tot)
 
+        xj_dLambdas_dTijs = []
+        for i in cmps:
+            tot = 0.0
+            for j in cmps:
+                tot += xs[j]*dlambdas_dT[i][j]
+            xj_dLambdas_dTijs.append(tot)
+
+        
+        # First term, with log
+        tot = 0.0
+        for i in cmps:
+            tot += xs[i]*log(xj_Lambdas_ijs[i])
+        tot *= -R
+        
+        # Second term
+        sum1 = 0.0
+        for i in cmps:
+            sum1 += xs[i]*xj_dLambdas_dTijs[i]/xj_Lambdas_ijs[i]
+        tot -= RT*sum1
+        return tot
+            
+    def d2GE_dT2(self, T, xs):
+        r'''
+        .. math::
+            \frac{\partial^2 G^E}{\partial T^2} = -R\left[T\sum_i \left(\frac{x_i \sum_j (x_j \frac{\partial^2 \Lambda_{ij}}{\partial T^2} )}{\sum_j x_j \Lambda_{ij}}
+        - \frac{x_i (\sum_j x_j \frac{\partial \Lambda_{ij}}{\partial T}  )^2}{(\sum_j x_j \Lambda_{ij})^2}
+        \right)
+        + 2\sum_i \left(\frac{x_i \sum_j  x_j \frac{\partial \Lambda_{ij}}{\partial T}}{\sum_j x_j \Lambda_{ij}}
+        \right)
+        \right]
+        '''
+        cmps = self.cmps
+        lambdas = self.lambdas(T)
+        dlambdas_dT = self.dlambdas_dT(T)
+        d2lambdas_dT2 = self.d2lambdas_dT2(T)
+        
+        
+        xj_Lambdas_ijs = []
+        for i in cmps:
+            tot = 0.0
+            for j in cmps:
+                tot += xs[j]*lambdas[i][j]
+            xj_Lambdas_ijs.append(tot)
+
+        xj_dLambdas_dTijs = []
+        for i in cmps:
+            tot = 0.0
+            for j in cmps:
+                tot += xs[j]*dlambdas_dT[i][j]
+            xj_dLambdas_dTijs.append(tot)
+
+        xj_d2Lambdas_dT2ijs = []
+        for i in cmps:
+            tot = 0.0
+            for j in cmps:
+                tot += xs[j]*d2lambdas_dT2[i][j]
+            xj_d2Lambdas_dT2ijs.append(tot)
+
+        # Last term, also the same term as last term of dGE_dT
+        sum1 = 0.0
+        for i in cmps:
+            sum1 += xs[i]*xj_dLambdas_dTijs[i]/xj_Lambdas_ijs[i]
+            
+        sum0 = 0.0
+        for i in cmps:
+            sum0 += (xs[i]*xj_d2Lambdas_dT2ijs[i]/xj_Lambdas_ijs[i]
+                    - xs[i]*(xj_dLambdas_dTijs[i]*xj_dLambdas_dTijs[i])/(xj_Lambdas_ijs[i]*xj_Lambdas_ijs[i]))
+
+        return -R*(T*sum0 + 2.0*sum1)
+
+
+    def d3GE_dT3(self, T, xs):
+        r'''
+        .. math::
+            \frac{\partial^3 G^E}{\partial T^3} = -R\left[3\left(\frac{x_i \sum_j (x_j \frac{\partial^2 \Lambda_{ij}}{\partial T^2} )}{\sum_j x_j \Lambda_{ij}}
+            - \frac{x_i (\sum_j x_j \frac{\partial \Lambda_{ij}}{\partial T}  )^2}{(\sum_j x_j \Lambda_{ij})^2}
+            \right)
+            +T\left(
+            \sum_i \frac{x_i (\sum_j x_j \frac{\partial^3 \Lambda _{ij}}{\partial T^3})}{\sum_j x_j \Lambda_{ij}}
+            - \frac{3x_i (\sum_j x_j \frac{\partial \Lambda_{ij}^2}{\partial T^2})  (\sum_j x_j \frac{\partial \Lambda_{ij}}{\partial T})}{(\sum_j x_j \Lambda_{ij})^2}
+            + 2\frac{x_i(\sum_j x_j \frac{\partial \Lambda_{ij}}{\partial T})^3}{(\sum_j x_j \Lambda_{ij})^3}
+            \right)\right]
+            
+        '''
+        cmps = self.cmps
+        lambdas = self.lambdas(T)
+        dlambdas_dT = self.dlambdas_dT(T)
+        d2lambdas_dT2 = self.d2lambdas_dT2(T)
+        d3lambdas_dT3 = self.d3lambdas_dT3(T)
+        
+        xj_Lambdas_ijs = []
+        for i in cmps:
+            tot = 0.0
+            for j in cmps:
+                tot += xs[j]*lambdas[i][j]
+            xj_Lambdas_ijs.append(tot)
+
+        xj_dLambdas_dTijs = []
+        for i in cmps:
+            tot = 0.0
+            for j in cmps:
+                tot += xs[j]*dlambdas_dT[i][j]
+            xj_dLambdas_dTijs.append(tot)
+
+        xj_d2Lambdas_dT2ijs = []
+        for i in cmps:
+            tot = 0.0
+            for j in cmps:
+                tot += xs[j]*d2lambdas_dT2[i][j]
+            xj_d2Lambdas_dT2ijs.append(tot)
+
+        xj_d3Lambdas_dT3ijs = []
+        for i in cmps:
+            tot = 0.0
+            for j in cmps:
+                tot += xs[j]*d3lambdas_dT3[i][j]
+            xj_d3Lambdas_dT3ijs.append(tot)
+
+        #Term is directly from the one above it
+        sum0 = 0.0
+        for i in cmps:
+            sum0 += (xs[i]*xj_d2Lambdas_dT2ijs[i]/xj_Lambdas_ijs[i]
+                    - xs[i]*(xj_dLambdas_dTijs[i]*xj_dLambdas_dTijs[i])/(xj_Lambdas_ijs[i]*xj_Lambdas_ijs[i]))
+
+        sum_d3 = 0.0
+        for i in cmps:
+            sum_d3 += xs[i]*xj_d3Lambdas_dT3ijs[i]/xj_Lambdas_ijs[i]
+            
+        sum_comb = 0.0
+        for i in cmps:
+            sum_comb += 3.0*xs[i]*xj_d2Lambdas_dT2ijs[i]*xj_dLambdas_dTijs[i]/(xj_Lambdas_ijs[i]*xj_Lambdas_ijs[i])
+        
+        sum_last = 0.0
+        for i in cmps:
+            sum_last += 2.0*xs[i]*(xj_dLambdas_dTijs[i])**3/(xj_Lambdas_ijs[i]*xj_Lambdas_ijs[i]*xj_Lambdas_ijs[i])
+            
+        return -R*(3.0*sum0 + T*(sum_d3 - sum_comb + sum_last))
+        
+    def d2GE_dTdxs(self, T, xs):
+        r'''
+        
+        .. math::
+            \frac{\partial^2 G^E}{\partial x_k \partial T} = -R\left[T\left(   
+            \sum_i  \left(\frac{x_i \frac{\partial n_{ik}}{\partial T}}{\sum_j x_j \Lambda_{ij}} 
+            - \frac{x_i \Lambda_{ik} (\sum_j x_j \frac{\partial \Lambda_{ij}}{\partial T} )}{(\partial_j x_j \Lambda_{ij})^2}
+            \right) + \frac{\sum_i x_i \frac{\partial \Lambda_{ki}}{\partial T}}{\sum_j x_j \Lambda_{kj}}
+            \right)
+            + \log\left(\sum_i x_i \Lambda_{ki}\right)
+            + \sum_i \frac{x_i \Lambda_{ik}}{\sum_j x_j \Lambda_{ij}}
+            \right]
+        '''
+        cmps = self.cmps
+        lambdas = self.lambdas(T)
+        dlambdas_dT = self.dlambdas_dT(T)
+        d2lambdas_dT2 = self.d2lambdas_dT2(T)
+        
+        
+        xj_Lambdas_ijs = []
+        for i in cmps:
+            tot = 0.0
+            for j in cmps:
+                tot += xs[j]*lambdas[i][j]
+            xj_Lambdas_ijs.append(tot)
+
+        xj_dLambdas_dTijs = []
+        for i in cmps:
+            tot = 0.0
+            for j in cmps:
+                tot += xs[j]*dlambdas_dT[i][j]
+            xj_dLambdas_dTijs.append(tot)
+        
+        
+        d2GE_dTdxs = []
+        for k in cmps:
+            tot1 = 0.0
+            for i in cmps:
+                tot1 += (xs[i]*dlambdas_dT[i][k]/xj_Lambdas_ijs[i] 
+                - xs[i]*xj_dLambdas_dTijs[i]*lambdas[i][k]/(xj_Lambdas_ijs[i]*xj_Lambdas_ijs[i]))
+            
+            tot1 += xj_dLambdas_dTijs[k]/xj_Lambdas_ijs[k]
+                
+            tot2 = 0.0
+            for i in cmps:
+                tot2 += xs[i]*lambdas[i][k]/xj_Lambdas_ijs[i]
+            
+            dG = -R*(T*tot1 + log(xj_Lambdas_ijs[k]) + tot2)
+            
+            d2GE_dTdxs.append(dG)
+        return d2GE_dTdxs
+
+        
+        
     def dGE_dxs(self, T, xs):
         r'''
         
@@ -2953,6 +3496,14 @@ class WilsonPP(GammaPhiCaloric):
         
 
     def d2GE_dxixjs(self, T, xs):
+        r'''
+        .. math::
+            \frac{\partial^2 G^E}{\partial x_k \partial x_m} = RT\left(
+            \sum_i \frac{x_i \Lambda_{ik} \Lambda_{im}}{(\sum_j x_j \Lambda_{ij})^2}
+            -\frac{\Lambda_{km}}{\sum_j x_j \Lambda_{kj}}
+            -\frac{\Lambda_{mk}}{\sum_j x_j \Lambda_{mj}}
+            \right)
+        '''
         # Correct, tested with hessian
         cmps = self.cmps
         RT = R*T
@@ -2981,6 +3532,17 @@ class WilsonPP(GammaPhiCaloric):
         return d2GE_dxixjs
 
     def d3GE_dxixjxks(self, T, xs):
+        r'''
+        .. math::
+            \frac{\partial^3 G^E}{\partial x_k \partial x_m \partial x_n}
+            = -RT\left[
+            \sum_i \left(\frac{2x_i \Lambda_{ik}\Lambda_{im}\Lambda_{in}} {(\sum x_j \Lambda_{ij})^3}\right)
+            - \frac{\Lambda_{km} \Lambda_{kn}}{(\sum_j x_j \Lambda_{kj})^2}
+            - \frac{\Lambda_{mk} \Lambda_{mn}}{(\sum_j x_j \Lambda_{mj})^2}
+            - \frac{\Lambda_{nk} \Lambda_{nm}}{(\sum_j x_j \Lambda_{nj})^2}
+            
+            \right]
+        '''
         # Correct, tested with sympy expanding
         cmps = self.cmps
         nRT = -R*T
@@ -2995,6 +3557,7 @@ class WilsonPP(GammaPhiCaloric):
         
         xj_Lambdas_ijs_invs = [1.0/i for i in xj_Lambdas_ijs]
         
+        # all the same: analytical[i][j][k] = analytical[i][k][j] = analytical[j][i][k] = analytical[j][k][i] = analytical[k][i][j] = analytical[k][j][i] = float(v)
         d2GE_dxixjs = []
         for k in cmps:
             dG_matrix = []
@@ -3015,6 +3578,16 @@ class WilsonPP(GammaPhiCaloric):
             d2GE_dxixjs.append(dG_matrix)
         return d2GE_dxixjs
                     
+    def gammas(self, T, xs, cached=None):
+        lambdas = self.lambdas(T)
+        return Wilson(xs=xs, params=lambdas)
+    
+        
+
+        
+        
+        
+        
                     
     def __init__(self, VaporPressures, lambda_coeffs=None, Tms=None,
                  Tcs=None, Pcs=None, omegas=None, VolumeLiquids=None, eos=None,
@@ -3066,12 +3639,8 @@ class WilsonPP(GammaPhiCaloric):
         if eos:
             self.eos_pure_instances = [eos(Tc=Tcs[i], Pc=Pcs[i], omega=omegas[i], T=Tcs[i]*0.5, P=Pcs[i]*0.1) for i in self.cmps]
 
-    def gammas(self, T, xs, cached=None):
-        lambdas = self.lambdas(T)
-        return Wilson(xs=xs, params=lambdas)
-    
 
-    
+        
 class Unifac(GammaPhi):
     '''
     '''

@@ -1861,6 +1861,83 @@ should be calculated by this method, in a user subclass.')
         return (1.0 - P*x0*(T*self.dS_dep_dP_g - self.dH_dep_dP_g))*exp(
                 -x0*(T*self.S_dep_g - self.H_dep_g))
 
+    @property
+    def dphi_dT_l(self):
+        r'''Derivative of fugacity coefficient with respect to temperature for 
+        the liquid phase, [1/K]
+        
+        .. math::
+            \frac{\partial \phi}{\partial T} = \left(\frac{- T \frac{\partial}
+            {\partial T} \operatorname{S_{dep}}{\left(T,P \right)} 
+            - \operatorname{S_{dep}}{\left(T,P \right)} + \frac{\partial}
+            {\partial T} \operatorname{H_{dep}}{\left(T,P \right)}}{R T} 
+            - \frac{- T \operatorname{S_{dep}}{\left(T,P \right)}
+            + \operatorname{H_{dep}}{\left(T,P \right)}}{R T^{2}}\right) 
+            e^{\frac{- T \operatorname{S_{dep}}{\left(T,P \right)} 
+            + \operatorname{H_{dep}}{\left(T,P \right)}}{R T}}
+        '''
+        T, P = self.T, self.P
+        T_inv = 1.0/T
+        x4 = T_inv*(T*self.S_dep_l - self.H_dep_l)
+        return (-R_inv*T_inv*(T*self.dS_dep_dT_l + self.S_dep_l - x4 
+                             - self.dH_dep_dT_l)*exp(-R_inv*x4))
+        
+    @property
+    def dphi_dT_g(self):
+        r'''Derivative of fugacity coefficient with respect to temperature for 
+        the gas phase, [1/K]
+        
+        .. math::
+            \frac{\partial \phi}{\partial T} = \left(\frac{- T \frac{\partial}
+            {\partial T} \operatorname{S_{dep}}{\left(T,P \right)} 
+            - \operatorname{S_{dep}}{\left(T,P \right)} + \frac{\partial}
+            {\partial T} \operatorname{H_{dep}}{\left(T,P \right)}}{R T} 
+            - \frac{- T \operatorname{S_{dep}}{\left(T,P \right)}
+            + \operatorname{H_{dep}}{\left(T,P \right)}}{R T^{2}}\right) 
+            e^{\frac{- T \operatorname{S_{dep}}{\left(T,P \right)} 
+            + \operatorname{H_{dep}}{\left(T,P \right)}}{R T}}
+        '''
+        T, P = self.T, self.P
+        T_inv = 1.0/T
+        x4 = T_inv*(T*self.S_dep_g - self.H_dep_g)
+        return (-R_inv*T_inv*(T*self.dS_dep_dT_g + self.S_dep_g - x4 
+                             - self.dH_dep_dT_g)*exp(-R_inv*x4))
+
+    @property
+    def dphi_dP_l(self):
+        r'''Derivative of fugacity coefficient with respect to pressure for 
+        the liquid phase, [1/Pa]
+        
+        .. math::
+            \frac{\partial \phi}{\partial P} = \frac{\left(- T \frac{\partial}
+            {\partial P} \operatorname{S_{dep}}{\left(T,P \right)}
+            + \frac{\partial}{\partial P} \operatorname{H_{dep}}{\left(T,P 
+            \right)}\right) e^{\frac{- T \operatorname{S_{dep}}{\left(T,P 
+            \right)} + \operatorname{H_{dep}}{\left(T,P \right)}}{R T}}}{R T}
+        '''
+        T = self.T
+        x0 = self.S_dep_l
+        x1 = self.H_dep_l
+        x2 = 1.0/(R*T)
+        return -x2*(T*self.dS_dep_dP_l - self.dH_dep_dP_l)*exp(-x2*(T*x0 - x1))
+
+    @property
+    def dphi_dP_g(self):
+        r'''Derivative of fugacity coefficient with respect to pressure for 
+        the gas phase, [1/Pa]
+        
+        .. math::
+            \frac{\partial \phi}{\partial P} = \frac{\left(- T \frac{\partial}
+            {\partial P} \operatorname{S_{dep}}{\left(T,P \right)}
+            + \frac{\partial}{\partial P} \operatorname{H_{dep}}{\left(T,P 
+            \right)}\right) e^{\frac{- T \operatorname{S_{dep}}{\left(T,P 
+            \right)} + \operatorname{H_{dep}}{\left(T,P \right)}}{R T}}}{R T}
+        '''
+        T = self.T
+        x0 = self.S_dep_g
+        x1 = self.H_dep_g
+        x2 = 1.0/(R*T)
+        return -x2*(T*self.dS_dep_dP_g - self.dH_dep_dP_g)*exp(-x2*(T*x0 - x1))
 
 class GCEOS_DUMMY(GCEOS):
     Tc = None

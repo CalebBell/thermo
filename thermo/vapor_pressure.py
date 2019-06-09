@@ -29,7 +29,7 @@ __all__ = ['WagnerMcGarry', 'AntoinePoling', 'WagnerPoling', 'AntoineExtended',
            'Edalat', 'Sanjari']
 
 import os
-from fluids.numerics import polyint_over_x, horner_log, horner, polyint
+from fluids.numerics import polyint_over_x, horner_log, horner, polyint, horner_and_der
 
 import numpy as np
 import pandas as pd
@@ -687,6 +687,46 @@ class VaporPressure(TDependentProperty):
             raise Exception('Method not valid')
         return True
 
+    def calculate_derivative(self, T, method, order=1):
+        r'''Method to calculate a derivative of a vapor pressure with respect to 
+        temperature, of a given order  using a specified method. If the method
+        is BESTFIT, an anlytical derivative is used; otherwise SciPy's 
+        derivative function, with a delta of 1E-6 K and a number of points 
+        equal to 2*order + 1.
+
+        If the calculation does not succeed, returns the actual error
+        encountered.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the derivative, [K]
+        method : str
+            Method for which to find the derivative
+        order : int
+            Order of the derivative, >= 1
+
+        Returns
+        -------
+        derivative : float
+            Calculated derivative property, [`units/K^order`]
+        '''
+        if order == 1 and method == BESTFIT:
+            
+            if T < self.best_fit_Tmin:
+                return self.best_fit_Tmin_slope*exp(
+                        (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope
+                        + self.best_fit_Tmin_value)
+            elif T > self.best_fit_Tmax:
+                return self.best_fit_Tmax_slope*exp((T - self.best_fit_Tmax)
+                                                    *self.best_fit_Tmax_slope
+                                                    + self.best_fit_Tmax_value)
+            else:
+                v, der = horner_and_der(self.best_fit_coeffs, T)
+                return der*exp(v)
+            
+            
+        return derivative(self.calculate, T, dx=1e-6, args=[method], n=order, order=1+order*2)
 
 ### CSP Methods
 

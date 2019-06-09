@@ -28,11 +28,12 @@ __all__ = ['K_value', 'Wilson_K_value', 'flash_wilson', 'flash_Tb_Tc_Pc',
            'Rachford_Rice_solution_polynomial', 'Rachford_Rice_solution_LN2',
            'Rachford_Rice_solution2', 'Rachford_Rice_solutionN',
            'Rachford_Rice_flashN_f_jac', 'Rachford_Rice_flash2_f_jac',
-           'Li_Johns_Ahmadi_solution', 'flash_inner_loop', 'NRTL', 'Wilson',
+           'Li_Johns_Ahmadi_solution', 'flash_inner_loop', 'NRTL',
+           'Wilson_gammas',
            'UNIQUAC', 'flash', 'dew_at_T',
            'bubble_at_T', 'identify_phase', 'mixture_phase_methods',
            'identify_phase_mixture', 'Pbubble_mixture', 'bubble_at_P',
-           'Pdew_mixture']
+           'Pdew_mixture', 'GibbsExcess']
 
 from fluids.numerics import IS_PYPY, one_epsilon_larger, one_epsilon_smaller
 from fluids.numerics import newton_system, roots_cubic, roots_quartic, horner, py_brenth as brenth, py_newton as newton, oscillation_checker # Always use this method for advanced features
@@ -2134,7 +2135,7 @@ def NRTL(xs, taus, alphas):
     return gammas
 
 
-def Wilson(xs, params):
+def Wilson_gammas(xs, params):
     r'''Calculates the activity coefficients of each species in a mixture
     using the Wilson method, given their mole fractions, and
     dimensionless interaction parameters. Those are normally correlated with
@@ -2797,3 +2798,7 @@ def get_P_bub_est(T, zs, Tbs, Tcs, Pcs):
         return brenth(err, 1E-2, 1e8)
     except:
         return brenth(err, 1E-3, 1E12)
+
+
+class GibbsExcess(object):
+    pass

@@ -34,6 +34,7 @@ __all__ = ['isobaric_expansion', 'isothermal_compressibility',
 'int2CAS', 'Parachor', 'property_molar_to_mass', 'property_mass_to_molar', 
 'SG_to_API', 'API_to_SG', 'SG',
 'dxs_to_dns', 'dns_to_dn_partials', 'dxs_to_dn_partials', 'd2ns_to_dn2_partials',
+'d2xs_to_dxdn_partials',
  'vapor_mass_quality', 'mix_component_flows',
 'mix_multiple_component_flows', 'mix_component_partial_flows', 
 'solve_flow_composition_mix', 'assert_component_balance', 'assert_energy_balance',
@@ -45,8 +46,7 @@ from cmath import sqrt as csqrt
 from bisect import bisect_left
 import numpy as np
 from numpy.testing import assert_allclose
-from fluids.numerics import brenth, newton, linspace, polyint, polyint_over_x
-from scipy.misc import derivative
+from fluids.numerics import brenth, newton, linspace, polyint, polyint_over_x, derivative
 from scipy.integrate import quad
 from scipy.interpolate import interp1d, interp2d
 
@@ -1285,7 +1285,7 @@ def dxs_to_dns(dxs, xs):
     mixture.
 
     .. math::
-       \left(\frac{\partial F}{\partial n_i}\right)_{n_{k\ne i}} = \left[
+       \left(\frac{\partial M}{\partial n_i}\right)_{n_{k\ne i}} = \left[
         \left(\frac{\partial M}{\partial x_i}\right)_{x_{k\ne i}}
         - \sum_j x_j \left(\frac{\partial M}{\partial x_j}  \right)_{x_{k\ne j}}
         \right]
@@ -1425,6 +1425,73 @@ diff(h(n1, n2)*f(n1,  n2), n1, n2)
             row.append(v)
         hess.append(row)
     return hess
+
+
+def d2xs_to_dxdn_partials(d2xs, xs):
+    r'''Convert second-order mole fraction derivatives of a quantity 
+    (calculated so they do not sum to 1) to the following second-order
+    partial derivative:
+        
+    .. math::
+            \frac{\partial^2 n F}{\partial x_j \partial n_i}
+            = \frac{\partial^2 F}{\partial x_i x_j}
+            - \sum_k x_k \frac{\partial^2 F}{\partial x_k \partial x_j}
+    
+    Requires the second derivatives and the mole fractions of the mixture only.
+
+    Parameters
+    ----------
+    d2xs : list[float]
+        Second derivatives of a quantity with respect to mole fraction (not
+         summing to 1), [prop]
+    xs : list[float]
+        Mole fractions of the species, [-]
+
+    Returns
+    -------
+    partial_properties : list[float]
+        Derivatives of a quantity with respect to mole number (summing to
+        1), [prop]
+
+    Notes
+    -----
+    Does not check that the sums add to one. Does not check that inputs are of
+    the same length.
+        
+    See Also
+    --------
+    dxs_to_dns
+    dns_to_dn_partials
+    dxs_to_dn_partials
+
+    Examples
+    --------
+    >>> d2xs = [[0.152, 0.08, 0.547], [0.08, 0.674, 0.729], [0.547, 0.729, 0.131]]
+    >>> d2xs_to_dxdn_partials(d2xs, [0.7, 0.2, 0.1])
+    [[-0.02510000000000001, -0.18369999999999997, 0.005199999999999982], [-0.0971, 0.41030000000000005, 0.18719999999999992], [0.3699, 0.4653, -0.41080000000000005]]
+    '''
+    cmps = range(len(xs))
+    
+    
+    double_sums = []
+    for j in cmps:
+        tot = 0.0
+        for k in cmps:
+            tot += xs[k]*d2xs[j][k]
+        double_sums.append(tot)
+    
+    # Oddly, the below saw found to be successful for NRTL but not PR
+    # Mysterious, interesting sum which is surprisingly efficient to calculate
+#    d2xsi = d2xs[1]
+#    symmetric_sum = 0.0
+#    for k in cmps:
+#        symmetric_sum += xs[k]*d2xsi[k]
+#    print(symmetric_sum)
+    
+    return [[d2xj - tot for (d2xj, tot) in zip(d2xsi, double_sums)]
+             for d2xsi in d2xs]
+    
+
 
 
 def none_and_length_check(all_inputs, length=None):
@@ -2904,6 +2971,12 @@ class TDependentProperty(object):
         derivative : float
             Calculated derivative property, [`units/K^order`]
         '''
+        if self.locked:
+            try:
+                return self.calculate_derivative(T, BESTFIT, order)
+            except Exception as e:
+#                print(e)
+                pass
 #        if self.method:
 #            # retest within range
 #            if self.test_method_validity(T, self.method):

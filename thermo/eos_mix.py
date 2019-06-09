@@ -4736,6 +4736,7 @@ class PRMIX(GCEOSMIX, PR):
         def lnphis_from_zs(zs2):
             if isinstance(zs2, np.ndarray):
                 zs2 = zs2.tolist()
+                zs2 = normalize(zs2)
             # Last row suggests the normalization breaks everything!
 #            zs2 = normalize(zs2)
             

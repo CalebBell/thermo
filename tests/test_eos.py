@@ -1240,6 +1240,50 @@ def test_dfugacity_dP_l_dfugacity_dP_g():
     assert_allclose(numerical, analytical, rtol=1e-6)
     
     
+def test_dphi_dT_l_g():
+    '''from sympy import * # doctest:+SKIP
+    P, T, R = symbols('P, T, R') # doctest:+SKIP
+    H_dep, S_dep = symbols('H_dep, S_dep', cls=Function)
+    
+    G_dep = H_dep(T, P) - T*S_dep(T, P)
+    phi = exp(G_dep/(R*T)) # doctest:+SKIP
+    print(latex(diff(phi, T)))
+    '''
+    T = 400
+    delta = 1e-7
+    eos1 = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=T, P=1E6)
+    eos2 = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=T + delta, P=1E6)
+    numerical = (eos2.phi_l - eos1.phi_l)/delta
+    analytical = eos1.dphi_dT_l
+    assert_allclose(numerical, analytical, rtol=1e-5)
+    
+    numerical = (eos2.phi_g - eos1.phi_g)/delta
+    analytical = eos1.dphi_dT_g
+    assert_allclose(numerical, analytical, rtol=1e-5)
+
+
+def test_dphi_dP_l_g():
+    '''
+    from sympy import * # doctest:+SKIP
+    P, T, R = symbols('P, T, R') # doctest:+SKIP
+    H_dep, S_dep = symbols('H_dep, S_dep', cls=Function)
+    
+    G_dep = H_dep(T, P) - T*S_dep(T, P)
+    phi = exp(G_dep/(R*T)) # doctest:+SKIP
+    print(latex(diff(phi, P)))
+    '''
+    T = 400
+    delta = 1e-2
+    eos1 = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=T, P=1E6)
+    eos2 = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=T, P=1E6+delta)
+    numerical = (eos2.phi_l - eos1.phi_l)/delta
+    analytical = eos1.dphi_dP_l
+    assert_allclose(numerical, analytical, rtol=1e-6)
+    
+    numerical = (eos2.phi_g - eos1.phi_g)/delta
+    analytical = eos1.dphi_dP_g
+    assert_allclose(numerical, analytical, rtol=1e-6)
+
 #@pytest.mark.xfail
 def test_failure_dP_dV_zero_division():
     Tc = 507.6

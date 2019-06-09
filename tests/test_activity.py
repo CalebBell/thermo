@@ -25,6 +25,7 @@ from numpy.testing import assert_allclose
 import pytest
 import numpy as np
 import pandas as pd
+from thermo import normalize
 from fluids.constants import calorie, R
 from thermo.activity import *
 from thermo.mixture import Mixture
@@ -652,7 +653,7 @@ def test_NRTL():
 def test_Wilson():
     # P05.01a VLE Behavior of Ethanol - Water Using Wilson
     # http://chemthermo.ddbst.com/Problems_Solutions/Mathcad_Files/P05.01a%20VLE%20Behavior%20of%20Ethanol%20-%20Water%20Using%20Wilson.xps
-    gammas = Wilson([0.252, 0.748], [[1, 0.154], [0.888, 1]])
+    gammas = Wilson_gammas([0.252, 0.748], [[1, 0.154], [0.888, 1]])
     assert_allclose(gammas, [1.8814926087178843, 1.1655774931125487])
 
     # Test the general form against the simpler binary form
@@ -676,11 +677,11 @@ def test_Wilson():
     params = [[1, 1.1229699812593, 0.73911816162836],
               [3.26947621620298, 1, 1.16749678447695],
               [0.37280197780932, 0.01917909648619, 1]]
-    gammas = Wilson(xs, params)
+    gammas = Wilson_gammas(xs, params)
     assert_allclose(gammas, [1.22339343348885, 1.10094590247015, 1.2052899281172])
 
     # Test the values which produce gamma = 1
-    gammas = Wilson([0.252, 0.748], [[1, 1], [1, 1]])
+    gammas = Wilson_gammas([0.252, 0.748], [[1, 1], [1, 1]])
     assert_allclose(gammas, [1, 1])
 
 
