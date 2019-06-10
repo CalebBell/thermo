@@ -54,6 +54,39 @@ class Wilson(GibbsExcess):
                 self.lambda_coeffs_F = None
             self.N = N = len(lambda_coeffs)
         self.cmps = range(N)
+        
+    def to_T_xs(self, T, xs):
+        new = self.__class__.__new__(self.__class__)
+        new.T = T
+        new.xs = xs
+        new.N = self.N
+        new.cmps = self.cmps
+        (new.lambda_coeffs_A, new.lambda_coeffs_B, new.lambda_coeffs_C, 
+         new.lambda_coeffs_D, new.lambda_coeffs_E, new.lambda_coeffs_F) = (
+                 self.lambda_coeffs_A, self.lambda_coeffs_B, self.lambda_coeffs_C, 
+                 self.lambda_coeffs_D, self.lambda_coeffs_E, self.lambda_coeffs_F)
+        
+        if T == self.T:
+            try:
+                new._lambdas = self._lambdas
+            except AttributeError:
+                pass
+            
+            try:
+                new._dlambdas_dT = self._dlambdas_dT
+            except AttributeError:
+                pass
+
+            try:
+                new._d2lambdas_dT2 = self._d2lambdas_dT2
+            except AttributeError:
+                pass
+
+            try:
+                new._d3lambdas_dT3 = self._d3lambdas_dT3
+            except AttributeError:
+                pass
+        return new
 
     def lambdas(self):
         r'''Calculate the `lambda` terms for the Wilson model for a specified
@@ -168,6 +201,10 @@ class Wilson(GibbsExcess):
             
         These `Lambda ij` values (and the coefficients) are NOT symmetric.
         '''
+        try:
+            return self._d2lambdas_dT2
+        except:
+            pass
         lambda_coeffs_B = self.lambda_coeffs_B
         lambda_coeffs_C = self.lambda_coeffs_C
         lambda_coeffs_E = self.lambda_coeffs_E
@@ -184,7 +221,7 @@ class Wilson(GibbsExcess):
         
         T4inv6 = 6.0*Tinv*Tinv*Tinv*Tinv
 
-        self._d2lambdas_dT2s = d2lambdas_dT2s = []
+        self._d2lambdas_dT2 = d2lambdas_dT2s = []
         for i in cmps:
             lambdasi = lambdas[i]
             dlambdas_dTi = dlambdas_dT[i]
@@ -217,7 +254,7 @@ class Wilson(GibbsExcess):
         These `Lambda ij` values (and the coefficients) are NOT symmetric.
         '''
         try:
-            return self._d3lambdas_dT3s
+            return self._d3lambdas_dT3
         except:
             pass
             
@@ -238,7 +275,7 @@ class Wilson(GibbsExcess):
         T4inv6 = 6.0*Tinv*Tinv*Tinv*Tinv
         T2_12 = 12.0*Tinv*Tinv
 
-        self._d3lambdas_dT3s = d3lambdas_dT3s = []
+        self._d3lambdas_dT3 = d3lambdas_dT3s = []
         for i in cmps:
             lambdasi = lambdas[i]
             dlambdas_dTi = dlambdas_dT[i]
@@ -435,11 +472,11 @@ class Wilson(GibbsExcess):
         r'''
         .. math::
             \frac{\partial^2 G^E}{\partial T^2} = -R\left[T\sum_i \left(\frac{x_i \sum_j (x_j \frac{\partial^2 \Lambda_{ij}}{\partial T^2} )}{\sum_j x_j \Lambda_{ij}}
-        - \frac{x_i (\sum_j x_j \frac{\partial \Lambda_{ij}}{\partial T}  )^2}{(\sum_j x_j \Lambda_{ij})^2}
-        \right)
-        + 2\sum_i \left(\frac{x_i \sum_j  x_j \frac{\partial \Lambda_{ij}}{\partial T}}{\sum_j x_j \Lambda_{ij}}
-        \right)
-        \right]
+            - \frac{x_i (\sum_j x_j \frac{\partial \Lambda_{ij}}{\partial T}  )^2}{(\sum_j x_j \Lambda_{ij})^2}
+            \right)
+            + 2\sum_i \left(\frac{x_i \sum_j  x_j \frac{\partial \Lambda_{ij}}{\partial T}}{\sum_j x_j \Lambda_{ij}}
+            \right)
+            \right]
         '''
         try:
             return self._d2GE_dT2
@@ -664,7 +701,6 @@ class Wilson(GibbsExcess):
             - \frac{\Lambda_{km} \Lambda_{kn}}{(\sum_j x_j \Lambda_{kj})^2}
             - \frac{\Lambda_{mk} \Lambda_{mn}}{(\sum_j x_j \Lambda_{mj})^2}
             - \frac{\Lambda_{nk} \Lambda_{nm}}{(\sum_j x_j \Lambda_{nj})^2}
-            
             \right]
         '''
         try:

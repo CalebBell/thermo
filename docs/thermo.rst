@@ -44,4 +44,5 @@ Submodules
    thermo.virial
    thermo.viscosity
    thermo.volume
+   thermo.wilson
 

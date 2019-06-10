@@ -38,12 +38,12 @@ __all__ = ['K_value', 'Wilson_K_value', 'flash_wilson', 'flash_Tb_Tc_Pc',
 from fluids.numerics import IS_PYPY, one_epsilon_larger, one_epsilon_smaller
 from fluids.numerics import newton_system, roots_cubic, roots_quartic, horner, py_brenth as brenth, py_newton as newton, oscillation_checker # Always use this method for advanced features
 from thermo.utils import exp, log
-from thermo.utils import none_and_length_check
+from thermo.utils import none_and_length_check, dxs_to_dns, dxs_to_dn_partials, d2xs_to_dxdn_partials, dns_to_dn_partials
 from thermo.utils import R
 import numpy as np
 
 
-
+R_inv = 1.0/R
 
 def K_value(P=None, Psat=None, phi_l=None, phi_g=None, gamma=None, Poynting=1):
     r'''Calculates the equilibrium K-value assuming Raoult's law,
@@ -2801,4 +2801,141 @@ def get_P_bub_est(T, zs, Tbs, Tcs, Pcs):
 
 
 class GibbsExcess(object):
-    pass
+    def HE(self):
+        # Just plain excess enthalpy here
+        '''f = symbols('f', cls=Function)
+        T = symbols('T')
+        simplify(-T**2*diff(f(T)/T, T))
+        '''
+        return -self.T*self.dGE_dT() + self.GE()
+
+    def SE(self):
+        r'''Calculates the excess entropy of a liquid phase using an
+        activity coefficient model as shown in [1]_ and [2]_.
+            
+        .. math::
+            s^E = \frac{h^E - g^E }{T} 
+                
+        Returns
+        -------
+        SE : float
+            Excess entropy of the liquid phase, [J/mol/K]
+    
+        Notes
+        -----
+        
+        Note also the relationship of the expressions for partial excess 
+        entropy: 
+            
+        .. math::
+            S_i^E = -R\left(T \frac{\partial \ln \gamma_i}{\partial T}
+            + \ln \gamma_i\right)
+
+            
+        References
+        ----------
+        .. [1] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
+           Butterworth-Heinemann, 1985.
+        .. [2] Gmehling, Jurgen. Chemical Thermodynamics: For Process 
+           Simulation. Weinheim, Germany: Wiley-VCH, 2012.
+        '''
+        return (self.HE() - self.GE())/self.T
+
+    def dHE_dx(self):
+        # Derived by hand taking into account the expression for excess enthalpy
+        d2GE_dTdxs = self.d2GE_dTdxs()
+        dGE_dxs = self.dGE_dxs()
+        T = self.T
+        return [-T*d2GE_dTdxs[i] + dGE_dxs[i] for i in self.cmps]
+
+    def dHE_dn(self):
+        return dxs_to_dns(self.dHE_dx(), self.xs)
+    
+    def dnHE_dn(self):
+        return dxs_to_dn_partials(self.dHE_dx(), self.xs, self.HE())
+    
+    def dSE_dx(self):
+        # Derived by hand.
+        dGE_dxs = self.dGE_dxs()
+        dHE_dx = self.dHE_dx()
+        T_inv = 1.0/self.T
+        return [T_inv*(dHE_dx[i] - dGE_dxs[i]) for i in self.cmps]
+
+    def dSE_dn(self):
+        return dxs_to_dns(self.dSE_dx(), self.xs)
+    
+    def dnSE_dn(self):
+        return dxs_to_dn_partials(self.dSE_dx(), self.xs, self.SE())
+
+    def dGE_dns(self):
+        # Mole number derivatives
+        return dxs_to_dns(self.dGE_dxs(), self.xs)
+
+    def dnGE_dns(self):
+        return dxs_to_dn_partials(self.dGE_dxs(), self.xs, self.GE())
+
+    def gammas2(self, T, xs):
+        '''
+        .. math::
+            \gamma_i = \exp\left(\frac{\frac{\partial n_i G^E}{\partial n_i }}{RT}\right)
+        '''
+        # Matches the gamma formulation perfectly
+        dG_dxs = self.dGE_dxs()
+        GE = self.GE_l2()
+        dG_dns = dxs_to_dn_partials(dG_dxs, self.xs, GE)
+        RT_inv = 1.0/(R*self.T)
+        return [exp(i*RT_inv) for i in dG_dns]
+
+    def dgammas_dx(self):
+        gammas = self.gammas()
+        cmps = self.cmps
+        
+        d2GE_dxixjs = self.d2GE_dxixjs()
+        d2nGE_dxjnis = d2xs_to_dxdn_partials(d2GE_dxixjs, self.xs)
+        
+        RT_inv = 1.0/(R*self.T)
+        
+        matrix = []
+        for i in cmps:
+            row = []
+            gammai = gammas[i]
+            for j in cmps:
+                v = gammai*d2nGE_dxjnis[i][j]*RT_inv
+                row.append(v)
+            matrix.append(row)
+        return matrix
+        
+    def dgammas_dT(self):
+        r'''
+        .. math::
+            \frac{\partial \gamma_i}{\partial T} =
+            \left(\frac{\frac{\partial^2 n G^E}{\partial T \partial n_i}}{RT} - 
+            \frac{{\frac{\partial n_i G^E}{\partial n_i }}}{RT^2}\right)
+             \exp\left(\frac{\frac{\partial n_i G^E}{\partial n_i }}{RT}\right)
+        
+        from sympy import *
+        R, T = symbols('R, T')
+        f = symbols('f', cls=Function)
+        diff(exp(f(T)/(R*T)), T)
+        '''
+        d2nGE_dTdns = self.d2nGE_dTdns()
+        
+        dG_dxs = self.dGE_dxs()
+        GE = self.GE()
+        dG_dns = dxs_to_dn_partials(dG_dxs, self.xs, GE)
+        
+        T_inv = 1.0/self.T
+        RT_inv = R_inv*T_inv
+        return [(d2nGE_dTdns[i]*RT_inv - dG_dns[i]*RT_inv*T_inv)*exp(dG_dns[i]*RT_inv)
+                for i in self.cmps]
+
+    def d2GE_dTdns(self):
+        return dxs_to_dns(self.d2GE_dTdxs(), self.xs)
+    
+    
+    def d2nGE_dTdns(self):
+        # needed in gammas temperature derivatives
+        dGE_dT = self.dGE_dT()
+        d2GE_dTdns = self.d2GE_dTdns()
+        return dns_to_dn_partials(d2GE_dTdns, dGE_dT)
+
