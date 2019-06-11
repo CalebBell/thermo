@@ -29,6 +29,51 @@ __all__ = ['Wilson']
 
 
 class Wilson(GibbsExcess):
+    @staticmethod
+    def from_DDBST(Vi, Vj, a, b, c, d=0.0, e=0.0, f=0.0, unit_conversion=True):
+        '''Converts parameters for the wilson equation in the DDBST to the
+        basis used in this implementation.
+        '''
+        if unit_conversion:
+            R = 1.9872042586408316 # DDBST document suggests  1.9858775
+        else:
+            R = 1.0 # Not used in some cases?
+        a, b = log(Vj/Vi) - b/R, -a/R
+        c, d = -d/R, -c/R
+        e = -e/R
+        f = -f/R
+        return (a, b, c, d, e, f)
+    
+    @staticmethod
+    def from_DDBST_as_matrix(Vs, ais, bis, cis, dis, eis, fis, 
+                             unit_conversion=True):
+        
+        cmps = range(len(Vs))
+        a_mat, b_mat, c_mat, d_mat, e_mat, f_mat = [], [], [], [], [], []
+        for i in cmps:
+            a_row, b_row, c_row, d_row, e_row, f_row = [], [], [], [], [], []
+            for j in cmps:
+                a, b, c, d, e, f = Wilson.from_DDBST(Vs[i], Vs[j], ais[i][j], 
+                                              bis[i][j], cis[i][j], dis[i][j], 
+                                              eis[i][j], fis[i][j], 
+                                              unit_conversion=unit_conversion)
+                a_row.append(a)
+                b_row.append(b)
+                c_row.append(c)
+                d_row.append(d)
+                e_row.append(e)
+                f_row.append(f)
+            a_mat.append(a_row)
+            b_mat.append(b_row)
+            c_mat.append(c_row)
+            d_mat.append(d_row)
+            e_mat.append(e_row)
+            f_mat.append(f_row)
+        return (a_mat, b_mat, c_mat, d_mat, e_mat, f_mat)
+            
+            
+            
+            
     def __init__(self, T, xs, lambda_coeffs=None, ABCDEF=None):
         self.T = T
         self.xs = xs
@@ -89,7 +134,7 @@ class Wilson(GibbsExcess):
         return new
 
     def lambdas(self):
-        r'''Calculate the `lambda` terms for the Wilson model for a specified
+        r'''Calculate the `lambda` terms for the Wilson model for the system
         temperature.
         
         .. math::
