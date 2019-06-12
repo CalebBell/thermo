@@ -313,3 +313,25 @@ def test_DDBST_example():
     
     dnGE_dn_numerical = jacobian(diff_for_dnGE_dn, xs, perturbation=5e-7)
     assert_allclose(dnGE_dn_analytical, dnGE_dn_numerical, rtol=2e-6)    
+    
+
+
+        
+    lambdas = GE.lambdas()
+    def gammas_to_diff(xs):
+        xs = normalize(xs)
+        return np.array(Wilson_gammas(xs, lambdas))
+    
+    dgammas_dns_analytical = GE.dgammas_dns()
+    dgammas_dn_numerical = jacobian(gammas_to_diff, xs, scalar=False)
+    dgammas_dn_expect =  [[-0.13968444275751782, -2.135249914756224, 0.6806316652245148],
+      [-1.9215360979146614, 0.23923983797040177, 0.668061736204089],
+      [0.6705598284218852, 0.7313784266789759, -0.47239836472723573]]
+    
+    assert_allclose(dgammas_dns_analytical, dgammas_dn_numerical, rtol=1e-5)
+    assert_allclose(dgammas_dns_analytical, dgammas_dn_expect, rtol=1e-11)
+    
+    '''# Using numdifftools, the result was confirmed to the four last decimal places (rtol=12-13).
+    from numdifftools import Jacobian
+    (Jacobian(gammas_to_diff, step=1e-6, order=37)(xs)/dgammas_dns_analytical).tolist()
+    '''

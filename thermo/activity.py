@@ -2926,7 +2926,7 @@ class GibbsExcess(object):
         RT_inv = 1.0/(R*self.T)
         return [exp(i*RT_inv) for i in dG_dns]
 
-    def dgammas_dxs(self):
+    def dgammas_dns(self):
         gammas = self.gammas()
         cmps = self.cmps
         
@@ -2945,11 +2945,11 @@ class GibbsExcess(object):
             matrix.append(row)
         return matrix
 
-#    def dgammas_dn(self):
+#    def dgammas_dxs(self):
 #   # Not done
 #        return dxs_to_dns(self.dgammas_dx(), self.xs)
     
-#    def dngammas_dn(self):
+#    def dngammas_dxs(self):
 #        pass
         
     def dgammas_dT(self):
