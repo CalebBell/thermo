@@ -1492,8 +1492,6 @@ def d2xs_to_dxdn_partials(d2xs, xs):
              for d2xsi in d2xs]
     
 
-
-
 def none_and_length_check(all_inputs, length=None):
     r'''Checks inputs for suitability of use by a mixing rule which requires
     all inputs to be of the same length and non-None. A number of variations

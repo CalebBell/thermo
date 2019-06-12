@@ -2912,6 +2912,11 @@ class GibbsExcess(object):
         dGE_dT = self.dGE_dT()
         d2GE_dTdns = self.d2GE_dTdns()
         return dns_to_dn_partials(d2GE_dTdns, dGE_dT)
+    
+    
+    def d2nGE_dninjs(self):
+        # This one worked out
+        return d2xs_to_dxdn_partials(self.d2GE_dxixjs(), self.xs)
 
 
     def gammas(self):
@@ -2935,6 +2940,46 @@ class GibbsExcess(object):
         
         RT_inv = 1.0/(R*self.T)
         
+        matrix = []
+        for i in cmps:
+            row = []
+            gammai = gammas[i]
+            for j in cmps:
+                v = gammai*d2nGE_dxjnis[i][j]*RT_inv
+                row.append(v)
+            matrix.append(row)
+        return matrix
+    
+    def dgammas_dxs(self):
+        # NOT WORKING
+        gammas = self.gammas()
+        cmps = self.cmps
+        RT_inv = 1.0/(R*self.T)
+        d2GE_dxixjs = self.d2GE_dxixjs() # Thi smatrix is symmetric
+        
+        def thing(d2xs, xs):
+            cmps = range(len(xs))
+            
+            double_sums = []
+            for j in cmps:
+                tot = 0.0
+                for k in cmps:
+                    tot += xs[k]*d2xs[j][k]
+                double_sums.append(tot)
+                
+            mat = []
+            for i in cmps:
+                row = []
+                for j in cmps:
+                    row.append(d2xs[i][j] - double_sums[i])
+                mat.append(row)
+            return mat
+                    
+            return [[d2xj - tot for (d2xj, tot) in zip(d2xsi, double_sums)]
+                     for d2xsi in d2xs]
+
+        d2nGE_dxjnis = thing(d2GE_dxixjs, self.xs)
+
         matrix = []
         for i in cmps:
             row = []

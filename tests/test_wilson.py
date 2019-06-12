@@ -335,3 +335,37 @@ def test_DDBST_example():
     from numdifftools import Jacobian
     (Jacobian(gammas_to_diff, step=1e-6, order=37)(xs)/dgammas_dns_analytical).tolist()
     '''
+        
+    dgammas_dT_numerical = ((np.array(GE.to_T_xs(T+dT, xs).gammas()) - np.array(GE.gammas()))/dT) 
+    dgammas_dT_analytical = GE.dgammas_dT()
+    dgammas_dT_expect = [-0.001575992756074107, 0.008578456201039092, -2.7672076632932624e-05]
+    assert_allclose(dgammas_dT_analytical, dgammas_dT_expect, rtol=1e-12)
+    assert_allclose(dgammas_dT_numerical, dgammas_dT_analytical, rtol=2e-6)
+    
+    
+    d2GE_dTdns_expect = [-6.229306309230934, 17.91482391156728, -2.8667500666281702]
+    d2GE_dTdns_analytical = GE.d2GE_dTdns()
+    d2GE_dTdns_numerical = ((np.array(GE.to_T_xs(T+dT, xs).dGE_dns()) - np.array(GE.dGE_dns()))/dT) 
+    assert_allclose(d2GE_dTdns_expect, d2GE_dTdns_analytical, rtol=1e-12)
+    assert_allclose(d2GE_dTdns_analytical, d2GE_dTdns_numerical, rtol=1e-7)
+
+    
+    d2nGE_dTdns_expect = [-1.8733435429979375, 22.270786677800274, 1.4892126996048267]
+    d2nGE_dTdns_analytical = GE.d2nGE_dTdns()
+    d2nGE_dTdns_numerical = ((np.array(GE.to_T_xs(T+dT, xs).dnGE_dns()) - np.array(GE.dnGE_dns()))/dT) 
+    assert_allclose(d2nGE_dTdns_expect, d2nGE_dTdns_analytical, rtol=1e-12)
+    assert_allclose(d2nGE_dTdns_analytical, d2nGE_dTdns_numerical, rtol=1e-6)
+    
+    
+    def to_diff_dnGE2_dninj(ns):
+        nt = sum(ns)
+        xs = normalize(ns)
+        return nt*GE.to_T_xs(T, xs).GE()
+    d2nGE_dninjs_numerical = hessian(to_diff_dnGE2_dninj, xs, perturbation=4e-5)
+    d2nGE_dninjs_analytical = GE.d2nGE_dninjs()
+    d2nGE_dninjs_expect = [[-314.62613303015996, -4809.450576389065, 1533.0591196845521],
+     [-4809.450576389066, 598.7981063018656, 1672.104888238707],
+     [1533.0591196845517, 1672.1048882387074, -1080.0149225663358]]
+    
+    assert_allclose(d2nGE_dninjs_analytical, d2nGE_dninjs_expect, rtol=1e-12)
+    assert_allclose(d2nGE_dninjs_numerical, d2nGE_dninjs_analytical, rtol=1e-4)
