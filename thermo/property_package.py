@@ -2329,6 +2329,29 @@ class GammaPhi(PropertyPackage):
         d2GE_dTdns = self.d2GE_dTdns(T, xs)
         return dns_to_dn_partials(d2GE_dTdns, dGE_dT)
 
+    def dHE_dT(self, T, xs):
+        # excess enthalpy temperature derivative
+        '''from sympy import *
+        f = symbols('f', cls=Function)
+        T = symbols('T')
+        diff(simplify(-T**2*diff(f(T)/T, T)), T)
+        '''
+        return -T*self.dGE2_dT2(T, xs)
+    
+    def dSE_dT(self, T, xs):
+        '''from sympy import *
+        T = symbols('T')
+        G, H = symbols('G, H', cls=Function)
+        S = (H(T) - G(T))/T
+        print(diff(S, T))
+        # (-Derivative(G(T), T) + Derivative(H(T), T))/T - (-G(T) + H(T))/T**2
+        '''
+        # excess entropy temperature derivative
+        H = self.HE_l2(T, xs)
+        dHdT = self.dHE_dT(T, xs)
+        dGdT = self.dGE_dT(T, xs)
+        G = self.GE2(T, xs)
+        return (-dGdT + dHdT)/T - (-G + H)/(T*T)
 
 
 class GammaPhiCaloric(GammaPhi, IdealCaloric):
@@ -2394,29 +2417,6 @@ class Nrtl(GammaPhiCaloric):
         return T*R*tot
     
 
-    def dHE_dT(self, T, xs):
-        # excess enthalpy temperature derivative
-        '''from sympy import *
-        f = symbols('f', cls=Function)
-        T = symbols('T')
-        diff(simplify(-T**2*diff(f(T)/T, T)), T)
-        '''
-        return -T*self.dGE2_dT2(T, xs)
-    
-    def dSE_dT(self, T, xs):
-        '''from sympy import *
-        T = symbols('T')
-        G, H = symbols('G, H', cls=Function)
-        S = (H(T) - G(T))/T
-        print(diff(S, T))
-        # (-Derivative(G(T), T) + Derivative(H(T), T))/T - (-G(T) + H(T))/T**2
-        '''
-        # excess entropy temperature derivative
-        H = self.HE_l2(T, xs)
-        dHdT = self.dHE_dT(T, xs)
-        dGdT = self.dGE_dT(T, xs)
-        G = self.GE2(T, xs)
-        return (-dGdT + dHdT)/T - (-G + H)/(T*T)
 
     def dGE_dxs(self, T, xs):
         '''

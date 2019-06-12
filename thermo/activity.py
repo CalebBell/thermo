@@ -2809,6 +2809,31 @@ class GibbsExcess(object):
         '''
         return -self.T*self.dGE_dT() + self.GE()
 
+    def dHE_dT(self):
+        # excess enthalpy temperature derivative
+        '''from sympy import *
+        f = symbols('f', cls=Function)
+        T = symbols('T')
+        diff(simplify(-T**2*diff(f(T)/T, T)), T)
+        '''
+        return -self.T*self.d2GE_dT2()
+    
+    def CpE(self):
+        return self.dHE_dT()
+
+    def dHE_dxs(self):
+        # Derived by hand taking into account the expression for excess enthalpy
+        d2GE_dTdxs = self.d2GE_dTdxs()
+        dGE_dxs = self.dGE_dxs()
+        T = self.T
+        return [-T*d2GE_dTdxs[i] + dGE_dxs[i] for i in self.cmps]
+
+    def dHE_dns(self):
+        return dxs_to_dns(self.dHE_dxs(), self.xs)
+    
+    def dnHE_dns(self):
+        return dxs_to_dn_partials(self.dHE_dxs(), self.xs, self.HE())
+    
     def SE(self):
         r'''Calculates the excess entropy of a liquid phase using an
         activity coefficient model as shown in [1]_ and [2]_.
@@ -2841,31 +2866,35 @@ class GibbsExcess(object):
         '''
         return (self.HE() - self.GE())/self.T
 
-    def dHE_dx(self):
-        # Derived by hand taking into account the expression for excess enthalpy
-        d2GE_dTdxs = self.d2GE_dTdxs()
-        dGE_dxs = self.dGE_dxs()
+    def dSE_dT(self):
+        '''from sympy import *
+        T = symbols('T')
+        G, H = symbols('G, H', cls=Function)
+        S = (H(T) - G(T))/T
+        print(diff(S, T))
+        # (-Derivative(G(T), T) + Derivative(H(T), T))/T - (-G(T) + H(T))/T**2
+        '''
+        # excess entropy temperature derivative
+        H = self.HE()
+        dHdT = self.dHE_dT()
+        dGdT = self.dGE_dT()
+        G = self.GE()
         T = self.T
-        return [-T*d2GE_dTdxs[i] + dGE_dxs[i] for i in self.cmps]
+        return (-dGdT + dHdT)/T - (-G + H)/(T*T)
 
-    def dHE_dn(self):
-        return dxs_to_dns(self.dHE_dx(), self.xs)
     
-    def dnHE_dn(self):
-        return dxs_to_dn_partials(self.dHE_dx(), self.xs, self.HE())
-    
-    def dSE_dx(self):
+    def dSE_dxs(self):
         # Derived by hand.
         dGE_dxs = self.dGE_dxs()
-        dHE_dx = self.dHE_dx()
+        dHE_dxs = self.dHE_dxs()
         T_inv = 1.0/self.T
-        return [T_inv*(dHE_dx[i] - dGE_dxs[i]) for i in self.cmps]
+        return [T_inv*(dHE_dxs[i] - dGE_dxs[i]) for i in self.cmps]
 
-    def dSE_dn(self):
-        return dxs_to_dns(self.dSE_dx(), self.xs)
+    def dSE_dns(self):
+        return dxs_to_dns(self.dSE_dxs(), self.xs)
     
-    def dnSE_dn(self):
-        return dxs_to_dn_partials(self.dSE_dx(), self.xs, self.SE())
+    def dnSE_dns(self):
+        return dxs_to_dn_partials(self.dSE_dxs(), self.xs, self.SE())
 
     def dGE_dns(self):
         # Mole number derivatives
@@ -2874,19 +2903,30 @@ class GibbsExcess(object):
     def dnGE_dns(self):
         return dxs_to_dn_partials(self.dGE_dxs(), self.xs, self.GE())
 
-    def gammas2(self, T, xs):
+    def d2GE_dTdns(self):
+        return dxs_to_dns(self.d2GE_dTdxs(), self.xs)
+    
+    
+    def d2nGE_dTdns(self):
+        # needed in gammas temperature derivatives
+        dGE_dT = self.dGE_dT()
+        d2GE_dTdns = self.d2GE_dTdns()
+        return dns_to_dn_partials(d2GE_dTdns, dGE_dT)
+
+
+    def gammas(self):
         '''
         .. math::
             \gamma_i = \exp\left(\frac{\frac{\partial n_i G^E}{\partial n_i }}{RT}\right)
         '''
         # Matches the gamma formulation perfectly
         dG_dxs = self.dGE_dxs()
-        GE = self.GE_l2()
+        GE = self.GE()
         dG_dns = dxs_to_dn_partials(dG_dxs, self.xs, GE)
         RT_inv = 1.0/(R*self.T)
         return [exp(i*RT_inv) for i in dG_dns]
 
-    def dgammas_dx(self):
+    def dgammas_dxs(self):
         gammas = self.gammas()
         cmps = self.cmps
         
@@ -2904,6 +2944,13 @@ class GibbsExcess(object):
                 row.append(v)
             matrix.append(row)
         return matrix
+
+#    def dgammas_dn(self):
+#   # Not done
+#        return dxs_to_dns(self.dgammas_dx(), self.xs)
+    
+#    def dngammas_dn(self):
+#        pass
         
     def dgammas_dT(self):
         r'''
@@ -2928,14 +2975,4 @@ class GibbsExcess(object):
         RT_inv = R_inv*T_inv
         return [(d2nGE_dTdns[i]*RT_inv - dG_dns[i]*RT_inv*T_inv)*exp(dG_dns[i]*RT_inv)
                 for i in self.cmps]
-
-    def d2GE_dTdns(self):
-        return dxs_to_dns(self.d2GE_dTdxs(), self.xs)
-    
-    
-    def d2nGE_dTdns(self):
-        # needed in gammas temperature derivatives
-        dGE_dT = self.dGE_dT()
-        d2GE_dTdns = self.d2GE_dTdns()
-        return dns_to_dn_partials(d2GE_dTdns, dGE_dT)
 
