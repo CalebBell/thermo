@@ -440,15 +440,15 @@ class Wilson(GibbsExcess):
         except:
             pass
         
+        try:
+            xj_Lambda_ijs = self._xj_Lambda_ijs
+        except:
+            xj_Lambda_ijs = self.xj_Lambda_ijs()
+        
         T, xs, cmps = self.T, self.xs, self.cmps
-        lambdas = self.lambdas()
         main_tot = 0.0
         for i in cmps:
-            # TODO save sum
-            tot = 0.0
-            for j in cmps:
-                tot += xs[j]*lambdas[i][j]
-            main_tot += xs[i]*log(tot)
+            main_tot += xs[i]*log(xj_Lambda_ijs[i])
         self._GE = GE = -main_tot*R*T
         return GE
     
@@ -488,24 +488,16 @@ class Wilson(GibbsExcess):
         except:
             pass
         T, xs, cmps = self.T, self.xs, self.cmps
-        lambdas = self.lambdas()
-        dlambdas_dT = self.dlambdas_dT()
-        RT = T*R
-        
-        xj_Lambda_ijs = self.xj_Lambda_ijs()
+        xj_Lambda_ijs_inv = self.xj_Lambda_ijs_inv()
         xj_dLambda_dTijs = self.xj_dLambda_dTijs()
         
-        # First term, with log
-        tot = 0.0
-        for i in cmps:
-            tot += xs[i]*log(xj_Lambda_ijs[i])
-        tot *= -R
+        tot = self.GE()/T # First term
         
         # Second term
         sum1 = 0.0
         for i in cmps:
-            sum1 += xs[i]*xj_dLambda_dTijs[i]/xj_Lambda_ijs[i]
-        tot -= RT*sum1
+            sum1 += xs[i]*xj_dLambda_dTijs[i]*xj_Lambda_ijs_inv[i]
+        tot -= T*R*sum1
         
         self._dGE_dT = tot
         return tot
@@ -533,19 +525,19 @@ class Wilson(GibbsExcess):
         d2lambdas_dT2 = self.d2lambdas_dT2()
         
         
-        xj_Lambda_ijs = self.xj_Lambda_ijs()
+        xj_Lambda_ijs_inv = self.xj_Lambda_ijs_inv()
         xj_dLambda_dTijs = self.xj_dLambda_dTijs()
         xj_d2Lambda_dT2ijs = self.xj_d2Lambda_dT2ijs()
 
         # Last term, also the same term as last term of dGE_dT
         sum1 = 0.0
         for i in cmps:
-            sum1 += xs[i]*xj_dLambda_dTijs[i]/xj_Lambda_ijs[i]
+            sum1 += xs[i]*xj_dLambda_dTijs[i]*xj_Lambda_ijs_inv[i]
             
         sum0 = 0.0
         for i in cmps:
-            sum0 += (xs[i]*xj_d2Lambda_dT2ijs[i]/xj_Lambda_ijs[i]
-                    - xs[i]*(xj_dLambda_dTijs[i]*xj_dLambda_dTijs[i])/(xj_Lambda_ijs[i]*xj_Lambda_ijs[i]))
+            sum0 += (xs[i]*xj_d2Lambda_dT2ijs[i]*xj_Lambda_ijs_inv[i]
+                    - xs[i]*(xj_dLambda_dTijs[i]*xj_dLambda_dTijs[i])*(xj_Lambda_ijs_inv[i]*xj_Lambda_ijs_inv[i]))
         
         self._d2GE_dT2 = -R*(T*sum0 + 2.0*sum1)
         return self._d2GE_dT2

@@ -540,7 +540,7 @@ def test_identify_phase():
 
 def test_NRTL():
     # P05.01b VLE Behavior of Ethanol - Water Using NRTL
-    gammas = NRTL([0.252, 0.748], [[0, -0.178], [1.963, 0]], [[0, 0.2974],[.2974, 0]])
+    gammas = NRTL_gammas([0.252, 0.748], [[0, -0.178], [1.963, 0]], [[0, 0.2974],[.2974, 0]])
     assert_allclose(gammas, [1.9363183763514304, 1.1537609663170014])
 
     # Test the general form against the simpler binary form
@@ -562,16 +562,16 @@ def test_NRTL():
     tau = [[0.0, 2.291653777670652, 0.5166949715946564], [4.308652420938829, 0.0, 1.6753963198550983], [0.5527434579849811, 0.15106032392136134, 0.0]]
     alpha = [[0.0, 0.4, 0.3], [0.4, 0.0, 0.3], [0.3, 0.3, 0.0]]
     xs = [.1, .3, .6]
-    gammas = NRTL(xs, tau, alpha)
+    gammas = NRTL_gammas(xs, tau, alpha)
     assert_allclose(gammas, [2.7175098659360413, 2.1373006474468697, 1.085133765593844])
 
     # Test the values which give activity coefficients of 1:
-    gammas = NRTL([0.252, 0.748], [[0, 0], [0, 0]], [[0, 0.5],[.9, 0]])
+    gammas = NRTL_gammas([0.252, 0.748], [[0, 0], [0, 0]], [[0, 0.5],[.9, 0]])
     assert_allclose(gammas, [1, 1])
     # alpha does not matter
     
     a = b = np.zeros((6, 6)).tolist()
-    gammas = NRTL([0., 1, 0, 0, 0, 0], a, b)
+    gammas = NRTL_gammas([0., 1, 0, 0, 0, 0], a, b)
     assert_allclose(gammas, [1,1,1,1,1,1]) 
 
     # Test vs chemsep parameters, same water ethanol T and P
@@ -581,7 +581,7 @@ def test_NRTL():
     tau12 = b12/(R*T)
     tau21 = b21/(R*T)
 
-    gammas = NRTL(xs=[0.252, 0.748], taus=[[0, tau12], [tau21, 0]],
+    gammas = NRTL_gammas(xs=[0.252, 0.748], taus=[[0, tau12], [tau21, 0]],
     alphas=[[0, 0.2937],[.2937, 0]])
     assert_allclose(gammas, [1.9853834856640085, 1.146380779201308])
     
@@ -598,7 +598,7 @@ def test_NRTL():
             [1.821, 2.466, 1.587, 1.101, 0.0]]
     
     xs = [0.18736982702111407, 0.2154173017033719, 0.2717319464745698, 0.11018333572613222, 0.215297589074812]
-    gammas = NRTL(xs, taus, alphas)
+    gammas = NRTL_gammas(xs, taus, alphas)
     gammas_expect = [2.503204848288857, 2.910723989902569, 2.2547951278295497, 2.9933258413917154, 2.694165187439594]
     assert_allclose(gammas, gammas_expect)
     
@@ -631,7 +631,7 @@ def test_NRTL():
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]
     
-    gammas = NRTL(xs=xs, taus=taus, alphas=alphas)
+    gammas = NRTL_gammas(xs=xs, taus=taus, alphas=alphas)
     gammas_expect = [1.1600804309840225, 1.0892286716705042, 1.0384940848807305, 0.9836770920034531, 0.9836770920034531, 0.9836770920034531, 0.9836770920034531, 0.9836770920034531, 0.9836770920034531, 0.9836770920034531]
     assert_allclose(gammas, gammas_expect)
     
@@ -639,7 +639,7 @@ def test_NRTL():
     taus = [[random.random() for i in range(N)] for j in range(N)]
     alphas = [[random.random() for i in range(N)] for j in range(N)]
     xs = normalize([random.random() for i in range(N)])
-    gammas = NRTL(xs=xs, taus=taus, alphas=alphas)
+    gammas = NRTL_gammas(xs=xs, taus=taus, alphas=alphas)
     
     
     # Takes 40 ms - not a great idea
@@ -647,7 +647,7 @@ def test_NRTL():
     taus = [[random.random() for i in range(N)] for j in range(N)]
     alphas = [[random.random() for i in range(N)] for j in range(N)]
     xs = normalize([random.random() for i in range(N)])
-    gammas = NRTL(xs=xs, taus=taus, alphas=alphas)
+    gammas = NRTL_gammas(xs=xs, taus=taus, alphas=alphas)
 
 
 def test_Wilson():

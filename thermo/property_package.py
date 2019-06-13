@@ -63,7 +63,7 @@ from thermo.utils import dxs_to_dn_partials, dxs_to_dns, dns_to_dn_partials, d2x
 from thermo.utils import remove_zeros, normalize, Cp_minus_Cv, mixing_simple, property_mass_to_molar
 from thermo.elements import mixture_atomic_composition, similarity_variable
 from thermo.identifiers import IDs_to_CASs
-from thermo.activity import K_value, Wilson_K_value, flash_inner_loop, dew_at_T, bubble_at_T, NRTL, Rachford_Rice_solution2, Wilson_gammas as Wilson
+from thermo.activity import K_value, Wilson_K_value, flash_inner_loop, dew_at_T, bubble_at_T, NRTL_gammas, Rachford_Rice_solution2, Wilson_gammas as Wilson
 from thermo.activity import flash_wilson, flash_Tb_Tc_Pc, Rachford_Rice_flash_error
 from thermo.activity import get_T_bub_est, get_T_dew_est, get_P_dew_est, get_P_bub_est
 from thermo.unifac import UNIFAC, UFSG, DOUFSG, DOUFIP2006
@@ -2995,7 +2995,7 @@ class Nrtl(GammaPhiCaloric):
     def gammas(self, T, xs, cached=None):
         alphas = self.alphas(T)
         taus = self.taus(T)
-        return NRTL(xs=xs, taus=taus, alphas=alphas)
+        return NRTL_gammas(xs=xs, taus=taus, alphas=alphas)
 
 class WilsonPP(GammaPhiCaloric):
 

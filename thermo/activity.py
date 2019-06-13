@@ -28,7 +28,7 @@ __all__ = ['K_value', 'Wilson_K_value', 'flash_wilson', 'flash_Tb_Tc_Pc',
            'Rachford_Rice_solution_polynomial', 'Rachford_Rice_solution_LN2',
            'Rachford_Rice_solution2', 'Rachford_Rice_solutionN',
            'Rachford_Rice_flashN_f_jac', 'Rachford_Rice_flash2_f_jac',
-           'Li_Johns_Ahmadi_solution', 'flash_inner_loop', 'NRTL',
+           'Li_Johns_Ahmadi_solution', 'flash_inner_loop', 'NRTL_gammas',
            'Wilson_gammas',
            'UNIQUAC', 'flash', 'dew_at_T',
            'bubble_at_T', 'identify_phase', 'mixture_phase_methods',
@@ -2019,7 +2019,7 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
         raise Exception('Incorrect Method input')
 
 
-def NRTL(xs, taus, alphas):
+def NRTL_gammas(xs, taus, alphas):
     r'''Calculates the activity coefficients of each species in a mixture
     using the Non-Random Two-Liquid (NRTL) method, given their mole fractions,
     dimensionless interaction parameters, and nonrandomness constants. Those
@@ -2081,7 +2081,7 @@ def NRTL(xs, taus, alphas):
     --------
     Ethanol-water example, at 343.15 K and 1 MPa:
 
-    >>> NRTL(xs=[0.252, 0.748], taus=[[0, -0.178], [1.963, 0]],
+    >>> NRTL_gammas(xs=[0.252, 0.748], taus=[[0, -0.178], [1.963, 0]],
     ... alphas=[[0, 0.2974],[.2974, 0]])
     [1.9363183763514304, 1.1537609663170014]
 
