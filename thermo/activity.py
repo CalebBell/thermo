@@ -2822,11 +2822,16 @@ class GibbsExcess(object):
         return self.dHE_dT()
 
     def dHE_dxs(self):
+        try:
+            self._dHE_dxs
+        except:
+            pass
         # Derived by hand taking into account the expression for excess enthalpy
         d2GE_dTdxs = self.d2GE_dTdxs()
         dGE_dxs = self.dGE_dxs()
         T = self.T
-        return [-T*d2GE_dTdxs[i] + dGE_dxs[i] for i in self.cmps]
+        self._dHE_dxs = [-T*d2GE_dTdxs[i] + dGE_dxs[i] for i in self.cmps]
+        return self._dHE_dxs
 
     def dHE_dns(self):
         return dxs_to_dns(self.dHE_dxs(), self.xs)
@@ -2879,16 +2884,21 @@ class GibbsExcess(object):
         dHdT = self.dHE_dT()
         dGdT = self.dGE_dT()
         G = self.GE()
-        T = self.T
-        return (-dGdT + dHdT)/T - (-G + H)/(T*T)
+        T_inv = 1.0/self.T
+        return T_inv*((-dGdT + dHdT) - (-G + H)*T_inv)
 
     
     def dSE_dxs(self):
+        try:
+            return self._dSE_dxs
+        except:
+            pass
         # Derived by hand.
         dGE_dxs = self.dGE_dxs()
         dHE_dxs = self.dHE_dxs()
         T_inv = 1.0/self.T
-        return [T_inv*(dHE_dxs[i] - dGE_dxs[i]) for i in self.cmps]
+        self._dSE_dxs = [T_inv*(dHE_dxs[i] - dGE_dxs[i]) for i in self.cmps]
+        return self._dSE_dxs
 
     def dSE_dns(self):
         return dxs_to_dns(self.dSE_dxs(), self.xs)
@@ -2924,12 +2934,17 @@ class GibbsExcess(object):
         .. math::
             \gamma_i = \exp\left(\frac{\frac{\partial n_i G^E}{\partial n_i }}{RT}\right)
         '''
+        try:
+            return self._gammas
+        except:
+            pass
         # Matches the gamma formulation perfectly
         dG_dxs = self.dGE_dxs()
         GE = self.GE()
         dG_dns = dxs_to_dn_partials(dG_dxs, self.xs, GE)
         RT_inv = 1.0/(R*self.T)
-        return [exp(i*RT_inv) for i in dG_dns]
+        self._gammas = [exp(i*RT_inv) for i in dG_dns]
+        return self._gammas
 
     def dgammas_dns(self):
         gammas = self.gammas()
