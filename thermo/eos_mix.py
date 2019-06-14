@@ -32,7 +32,7 @@ from cmath import log as clog, atanh as catanh
 from scipy.optimize import minimize
 from scipy.misc import derivative
 from fluids.numerics import IS_PYPY, newton_system, UnconvergedError
-from thermo.utils import normalize, Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter, dxs_to_dn_partials, dxs_to_dns, dns_to_dn_partials
+from thermo.utils import normalize, Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter, dxs_to_dn_partials, dxs_to_dns, dns_to_dn_partials, d2xs_to_dxdn_partials
 from thermo.utils import R
 from thermo.utils import log, exp, sqrt
 from thermo.eos import *
@@ -4246,6 +4246,11 @@ class GCEOSMIX(GCEOS):
             - x30*x38 + x33*x34 + x34*x38 + x6*x8 - x2/x12 + x9*(x3 - db_dns[i])/x12**2)
             dlnphis_dTs.append(dlnphi_dT + dG_dep_dT)
         return dlnphis_dTs
+    
+    def d_lnphi_dzs(self, Z, zs):
+        d2dxs = self.d2lnphi_dzizjs(Z, zs)
+        d2ns = d2xs_to_dxdn_partials(d2dxs, zs)
+        return d2ns
 
 
 
