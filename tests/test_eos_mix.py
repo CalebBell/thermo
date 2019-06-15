@@ -2704,3 +2704,47 @@ def test_d2A_dep_dninjs():
     assert_allclose(d2A_dep_dninjs_expect, d2A_dep_dninjs_analytical, rtol=1e-12)
     
     assert_allclose(d2A_dep_dninjs_numerical, d2A_dep_dninjs_analytical, rtol=1.5e-4)
+    
+    
+    
+def test_dP_dns_Vt():    
+    liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S', 'methane']
+    zs = [0.1, 0.2, 0.3, 0.4]
+    Tcs = [126.2, 304.2, 373.2, 190.5640]
+    Pcs = [3394387.5, 7376460.0, 8936865.0, 4599000.0]
+    omegas = [0.04, 0.2252, 0.1, 0.008]
+    
+    T = 300.0
+    eos = PRMIX(T=T, P=1e6, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+    Vt = eos.V_g # 0.0023950572174592445
+    
+    
+    def diff_for_dP_dn(ns):
+        V = Vt/sum(ns)
+        zs = normalize(ns)
+        return PRMIX(T=T, V=V, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas).P
+    
+    # dP_dns_Vt
+    dP_dns_Vt_expect = [1008852.4623272286, 945656.6443815783, 925399.0474464404, 980456.0528080815]
+    dP_dns_Vt_analytical = eos.dP_dns_Vt('g')
+    assert_allclose(dP_dns_Vt_expect, dP_dns_Vt_analytical, rtol=1e-12)
+    
+    dP_dns_Vt_numerical = jacobian(diff_for_dP_dn, zs, perturbation=1e-7)
+    assert_allclose(dP_dns_Vt_analytical, dP_dns_Vt_numerical, rtol=1e-8)
+
+
+    # d2P_dninjs_Vt
+    d2P_dninjs_Vt_expect = [[-5788.200297491028, -37211.91404188248, -47410.861447428724, -19515.839351858624],
+                            [-37211.91404188248, -107480.51179668301, -130009.03722609379, -68774.79519256642],
+                            [-47410.861447429175, -130009.03722609379, -156450.94968107349, -84635.02057801858],
+                            [-19515.839351858624, -68774.79519256689, -84635.02057801858, -41431.49651609236]]
+    
+    d2P_dninjs_Vt_analytical = eos.d2P_dninjs_Vt('g')
+    assert_allclose(d2P_dninjs_Vt_expect, d2P_dninjs_Vt_analytical, rtol=1e-12)
+    
+    def diff_for_dP_dn(ns):
+        V = Vt/sum(ns)
+        zs = normalize(ns)
+        return PRMIX(T=T, V=V, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas).P
+    d2P_dninjs_Vt_numerical = hessian(diff_for_dP_dn, zs, perturbation=1.5e-4)
+    assert_allclose(d2P_dninjs_Vt_numerical, d2P_dninjs_Vt_analytical, rtol=2e-4)

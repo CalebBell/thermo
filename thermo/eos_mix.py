@@ -3027,6 +3027,105 @@ class GCEOSMIX(GCEOS):
                      + t0*(T*da_alpha_dT_dzs[i] - da_alpha_dzs[i]))
             dH_dzs.append(value)
         return dH_dzs
+    
+    def dP_dns_Vt(self, phase):
+        # Checked numerically, working. Evaluated at constant temperature and total volume.
+        '''from sympy import *
+        Vt, P, T, R, n1, n2, n3, no = symbols('Vt, P, T, R, n1, n2, n3, no') # doctest:+SKIP
+        n, P, V, a_alpha, delta, epsilon, b = symbols('n, P, V, a\ \\alpha, delta, epsilon, b', cls=Function) # doctest:+SKIP
+        da_alpha_dT, d2a_alpha_dT2 = symbols('da_alpha_dT, d2a_alpha_dT2', cls=Function) # doctest:+SKIP
+        n = no + n1 + n2 + n3
+        
+        P = R*T/(Vt/n-b(n1, n2, n3)) - a_alpha(T, n1, n2, n3)/((Vt/n)**2 + delta(n1, n2, n3)*(Vt/n)+epsilon(n1, n2, n3))
+        V = Vt/n
+        cse(diff(P, n1))
+
+        '''
+        if phase == 'g':
+            Vt = self.V_g
+        else:
+            Vt = self.V_l
+        
+        T = self.T
+        b = self.b
+        a_alpha = self.a_alpha
+        epsilon = self.epsilon
+        Vt2 = Vt*Vt
+        delta = self.delta
+        x9 = Vt2 + Vt*delta + epsilon
+        
+        depsilon_dns = self.depsilon_dns
+        ddelta_dns = self.ddelta_dns
+        db_dns = self.db_dns
+        da_alpha_dns = self.da_alpha_dns
+        
+        t1 = R*T*1.0/((Vt - b)*(Vt - b))
+        t2 = 1.0/x9
+        t3 = a_alpha*t2*t2
+        t4 = t1*Vt -t3*(Vt*delta + Vt2 + Vt2)
+        
+        dP_dns_Vt = []
+        for i in self.cmps:
+            v = (t4 + t1*db_dns[i] + t3*(Vt*ddelta_dns[i] + depsilon_dns[i]) - t2*da_alpha_dns[i])
+            dP_dns_Vt.append(v)
+        return dP_dns_Vt
+ 
+        
+    def d2P_dninjs_Vt(self, phase):
+        if phase == 'g':
+            Vt = self.V_g
+        else:
+            Vt = self.V_l
+        
+        T, cmps = self.T, self.cmps
+        b = self.b
+        a_alpha = self.a_alpha
+        epsilon = self.epsilon
+        
+        depsilon_dns = self.depsilon_dns
+        ddelta_dns = self.ddelta_dns
+        db_dns = self.db_dns
+        da_alpha_dns = self.da_alpha_dns
+
+        d2delta_dninjs = self.d2delta_dninjs
+        d2epsilon_dninjs = self.d2epsilon_dninjs
+        d2bs = self.d2b_dninjs
+        d2a_alpha_dninjs = self.d2a_alpha_dninjs        
+        
+        x0 = self.a_alpha
+        x1 = self.epsilon
+        x2 = Vt**2
+        x3 = 1.0
+        x4 = x3**(-2)
+        x5 = self.delta
+        x6 = Vt/x3
+        x7 = x1 + x2*x4 + x5*x6
+        x8 = self.b
+        x9 = x6 - x8
+        x10 = 2/x3**3
+        x11 = Vt*x10
+        x12 = R*T
+        x13 = Vt*x4
+        x14 = x7**(-2)
+        
+        hess = []
+        for i in cmps:
+            row = []
+            for j in cmps:
+                x15 = ddelta_dns[i]
+                x16 = x10*x2 + x13*x5
+                x17 = -x15*x6 + x16 - depsilon_dns[i]
+                x18 = ddelta_dns[j]
+                x19 = x16 - x18*x6 - depsilon_dns[j]
+                
+                v = (x0*x14*(x11*x5 - x13*x15 - x13*x18 + 6*x2/x3**4 + x6*d2delta_dninjs[i][j] + d2epsilon_dninjs[i][j])
+                - 2*x0*x17*x19/x7**3 - x12*(x11 - d2bs[i][j])/x9**2 + 2*x12*(x13 + db_dns[i])*(x13 + db_dns[j])/x9**3 
+                - x14*x17*da_alpha_dns[j] - x14*x19*da_alpha_dns[i] - d2a_alpha_dninjs[i][j]/x7)
+                row.append(v)
+            
+                
+            hess.append(row)
+        return hess
 
     def dH_dep_dns(self, Z, zs):
         r'''Calculates the molar departure enthalpy mole number derivatives
