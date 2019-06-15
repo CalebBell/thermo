@@ -546,7 +546,75 @@ class NRTL(GibbsExcess):
         return xj_Gs_taus_jis
         
         
+    def xj_dGs_dT_jis(self):
+        # sum3
+        try:
+            return self._xj_dGs_dT_jis
+        except:
+            pass
+        try:
+            dGs_dT = self._dGs_dT
+        except:
+            dGs_dT = self.dGs_dT()
+        
+        xs, cmps = self.xs, self.cmps
+        self._xj_dGs_dT_jis = xj_dGs_dT_jis = []
+        for i in cmps:
+            tot = 0.0
+            for j in cmps:
+                tot += xs[j]*dGs_dT[j][i]
+            xj_dGs_dT_jis.append(tot)
+        return xj_dGs_dT_jis
 
+    def xj_taus_dGs_dT_jis(self):
+        # sum4
+        try:
+            return self._xj_taus_dGs_dT_jis
+        except:
+            pass
+        xs, cmps = self.xs, self.cmps
+        try:
+            dGs_dT = self._dGs_dT
+        except:
+            dGs_dT = self.dGs_dT()
+        try:
+            taus = self._taus
+        except:
+            taus = self.taus()
+            
+        self._xj_taus_dGs_dT_jis = xj_taus_dGs_dT_jis = []
+            
+        for i in cmps:
+            tot = 0.0
+            for j in cmps:
+                tot += xs[j]*taus[j][i]*dGs_dT[j][i]
+            xj_taus_dGs_dT_jis.append(tot)
+        return xj_taus_dGs_dT_jis
+
+    def xj_Gs_dtaus_dT_jis(self):
+        # sum5
+        try:
+            return self._xj_Gs_dtaus_dT_jis
+        except:
+            pass
+        xs, cmps = self.xs, self.cmps
+        try:
+            dtaus_dT = self._dtaus_dT
+        except:
+            dtaus_dT = self.dtaus_dT()
+        try:
+            Gs = self._Gs
+        except:
+            Gs = self.Gs()
+            
+        self._xj_Gs_dtaus_dT_jis = xj_Gs_dtaus_dT_jis = []
+        for i in cmps:
+            tot = 0.0
+            for j in cmps:
+                tot += xs[j]*Gs[j][i]*dtaus_dT[j][i]
+            xj_Gs_dtaus_dT_jis.append(tot)
+        return xj_Gs_dtaus_dT_jis
+            
     def d2GE_dxixjs(self):
         r'''
         
@@ -642,6 +710,62 @@ class NRTL(GibbsExcess):
             d2GE_dxixjs.append(row)
         return d2GE_dxixjs
                 
+    
+    def d2GE_dTdxs(self):
+        r'''
+        .. math::
+            \frac{\partial^2 g^E}{\partial x_i \partial T} = R\left[-T\left(
+            \sum_j \left(
+            -\frac{x_j(G_{ij}\frac{\partial \tau_{ij}}{\partial T} + \tau_{ij}\frac{\partial G_{ij}}{\partial T})}{\sum_k x_k G_{kj}}
+            + \frac{x_j G_{ij}\tau_{ij}(\sum_k x_k \frac{\partial G_{kj}}{\partial T})}{(\sum_k x_k G_{kj})^2}
+            +\frac{x_j \frac{\partial G_{ij}}{\partial T}(\sum_k x_k G_{kj}\tau_{kj})}{(\sum_k x_k G_{kj})^2}
+            + \frac{x_jG_{ij}(\sum_k x_k (G_{kj} \frac{\partial \tau_{kj}}{\partial T}  + \tau_{kj} \frac{\partial G_{kj}}{\partial T} ))}{(\sum_k x_k G_{kj})^2}
+            -2\frac{x_j G_{ij} (\sum_k x_k \frac{\partial G_{kj}}{\partial T})(\sum_k x_k G_{kj}\tau_{kj})}{(\sum_k x_k G_{kj})^3}
+            \right)
+            - \frac{\sum_k (x_k G_{ki} \frac{\partial \tau_{ki}}{\partial T}  + x_k \tau_{ki} \frac{\partial G_{ki}}{\partial T}} {\sum_k x_k G_{ki}}
+            + \frac{(\sum_k x_k \frac{\partial G_{ki}}{\partial T})(\sum_k x_k G_{ki} \tau_{ki})}{(\sum_k x_k G_{ki})^2}
+            \right)
+            + \frac{\sum_j x_j G_{ji}\tau_{ji}}{\sum_j x_j G_{ji}} + \sum_j \left(
+            \frac{x_j G_{ij}(\sum_k x_k G_{kj}\tau_{kj})}{(\sum_k x_k G_{kj})^2} + \frac{x_j G_{ij}\tau_{ij}}{\sum_k x_k G_{kj}}
+            \right)
+            \right]
+        '''
+        sum1, sum2, sum3, sum4, sum5 = self.xj_Gs_jis(), self.xj_Gs_taus_jis(), self.xj_dGs_dT_jis(), self.xj_taus_dGs_dT_jis(), self.xj_Gs_dtaus_dT_jis()
+        
+        
+        T, xs, cmps = self.T, self.xs, self.cmps
+        taus = self.taus()
+        dtaus_dT = self.dtaus_dT()
+        
+        Gs = self.Gs()
+        dGs_dT = self.dGs_dT()
+
+        self._d2GE_dTdxs = d2GE_dTdxs = []
+        for i in cmps:
+            tot1 = sum3[i]*sum2[i]/(sum1[i]**2) # Last singleton
+            tot1 -= (sum5[i] + sum4[i])/sum1[i] # second last singleton
+            for j in cmps:
+                tot1 -= xs[j]*(Gs[i][j]*dtaus_dT[i][j] + taus[i][j]*dGs_dT[i][j])/sum1[j]
+                
+                tot1 += xs[j]*Gs[i][j]*taus[i][j]*sum3[j]/sum1[j]**2
+                
+                tot1 += xs[j]*dGs_dT[i][j]*sum2[j]/sum1[j]**2
+                
+                tot1 += xs[j]*Gs[i][j]*(sum5[j] + sum4[j])/sum1[j]**2
+                
+                tot1 -= 2.0*xs[j]*Gs[i][j]*sum3[j]*sum2[j]/sum1[j]**3
+                
+            
+            others = sum2[i]/sum1[i]
+            for j in cmps:
+                others += xs[j]*Gs[i][j]*taus[i][j]/sum1[j]
+                
+                others -= xs[j]*Gs[i][j]*sum2[j]/sum1[j]**2
+                
+            dG = R*(-T*tot1 + others)
+            
+            d2GE_dTdxs.append(dG)
+        return d2GE_dTdxs
         
     def dGE_dT(self):
         '''from sympy import *

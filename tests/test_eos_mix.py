@@ -2678,3 +2678,29 @@ for i in range(N):
 simplify(diff(a_alpha, n2))
 # Top large term is actually a_alpha, so the expression simplifies quite a lot
 '''
+
+
+
+
+def test_d2A_dep_dninjs():
+    # ['nitrogen', 'methane', 'ethane']
+    zs = [.1, .7, .2]
+
+    T, P = 223.33854381006378, 7222576.081635592
+    Tcs, Pcs, omegas = [126.2, 190.56400000000002, 305.32], [3394387.5, 4599000.0, 4872000.0], [0.04, 0.008, 0.098]
+    e = SRKMIX
+    eos = e(T=T, P=P, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+
+    def to_hess(zs):
+        zs = normalize(zs)
+        return e(T=T, P=P, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas).A_dep_l
+    
+    d2A_dep_dninjs_expect = [[-13470.857294626958, -3088.1224994370855, 18357.465856316656],
+     [-3088.1224994370873, -773.2826253845835, 4208.830036112632],
+     [18357.46585631667, 4208.830036112632, -24170.42087645741]]
+    
+    d2A_dep_dninjs_numerical = hessian(to_hess, zs, perturbation=3e-5)
+    d2A_dep_dninjs_analytical = eos.d2A_dep_dninjs(eos.Z_l, zs)
+    assert_allclose(d2A_dep_dninjs_expect, d2A_dep_dninjs_analytical, rtol=1e-12)
+    
+    assert_allclose(d2A_dep_dninjs_numerical, d2A_dep_dninjs_analytical, rtol=1.5e-4)

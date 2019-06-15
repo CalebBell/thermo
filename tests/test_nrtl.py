@@ -192,3 +192,15 @@ def test_water_ethanol_methanol_madeup():
     assert_allclose(d2GE_dxixjs_expect, d2GE_dxixjs_analytical, rtol=1e-12)
     d2GE_dxixjs_numerical = hessian(to_hess, xs, perturbation=5e-5)
     assert_allclose(d2GE_dxixjs_numerical, d2GE_dxixjs_analytical, rtol=3e-4)
+    
+    
+    # d2GE_dTdxs - matched really well
+    d2GE_dTdxs_expect = [3.053720836458414, 1.8759446742883084, 2.1691316743750826]
+    d2GE_dTdxs_analytical = GE.d2GE_dTdxs()
+    assert_allclose(d2GE_dTdxs_expect, d2GE_dTdxs_analytical, rtol=1e-12)
+    
+    def to_jac(xs):
+        return GE.to_T_xs(T, xs).dGE_dT()
+    
+    d2GE_dTdxs_numerical = jacobian(to_jac, xs, perturbation=3e-8)
+    assert_allclose(d2GE_dTdxs_analytical, d2GE_dTdxs_numerical, rtol=1e-8)

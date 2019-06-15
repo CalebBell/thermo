@@ -3643,6 +3643,109 @@ class GCEOSMIX(GCEOS):
                                      da_alphas=da_alpha_dns, d2a_alphas=d2a_alpha_dninjs,
                                      G=True)
 
+
+    def _d2_A_dep_d2_helper(self, V, d_Vs, d2Vs, dbs, d2bs, d_epsilons, 
+                            d2_epsilons, d_deltas, d2_deltas, da_alphas,
+                            d2a_alphas):
+        '''from sympy import * # doctest:+SKIP
+        P, T, R, x1, x2 = symbols('P, T, R, x1, x2') # doctest:+SKIP
+        a_alpha, delta, epsilon, V, b = symbols('a\ \\alpha, delta, epsilon, V, b', cls=Function) # doctest:+SKIP
+        da_alpha_dT, d2a_alpha_dT2 = symbols('da_alpha_dT, d2a_alpha_dT2', cls=Function) # doctest:+SKIP
+        S_dep = R*log(P*V(x1, x2)/(R*T)) + R*log(V(x1, x2)-b(x1, x2))+2*da_alpha_dT(x1, x2)*atanh((2*V(x1, x2)+delta(x1, x2))/sqrt(delta(x1, x2)**2-4*epsilon(x1, x2)))/sqrt(delta(x1, x2)**2-4*epsilon(x1, x2))-R*log(V(x1, x2)) # doctest:+SKIP
+        H_dep = P*V(x1, x2) - R*T + 2*atanh((2*V(x1, x2)+delta(x1, x2))/sqrt(delta(x1, x2)**2-4*epsilon(x1, x2)))*(da_alpha_dT(x1, x2)*T-a_alpha(x1, x2))/sqrt(delta(x1, x2)**2-4*epsilon(x1, x2)) # doctest:+SKIP
+        G_dep = simplify(H_dep - T*S_dep) # doctest:+SKIP
+        
+        
+        V_dep = V(x1, x2) - R*T/P
+        U_dep = H_dep - P*V_dep
+        
+        A_dep = simplify(U_dep - T*S_dep)
+        '''
+        T, P = self.T, self.P
+        b = self.b
+        cmps = self.cmps
+        RT = T*R
+        hess = []
+        
+        for i in cmps:
+            row = []
+            for j in cmps:
+                x0 = V
+                x3 = b
+                x4 = x0 - x3
+                x5 = d2Vs[i][j]
+                x6 = R*T
+                x7 = d_Vs[i]
+                x8 = d_Vs[j]
+                x9 = self.delta
+                x10 = self.epsilon
+                x11 = -4*x10 + x9**2
+                x12 = 1/sqrt(x11)
+                x13 = self.a_alpha
+                x14 = 2*x0
+                x15 = x14 + x9
+                x16 = catanh(x12*x15).real
+                x17 = 2*x16
+                x18 = d_deltas[i]
+                x19 = x18*x9 - 2*d_epsilons[i]
+                x20 = da_alphas[j]
+                x21 = x17/x11**(3/2)
+                x22 = d_deltas[j]
+                x23 = x22*x9 - 2*d_epsilons[j]
+                x24 = da_alphas[i]
+                x25 = d2_deltas[i][j]
+                x26 = x18*x22 + x25*x9 - 2*d2_epsilons[i][j]
+                x27 = x13*x23
+                x28 = 2*x7
+                x29 = 1/x11
+                x30 = x29*x9
+                x31 = x19*x29
+                x32 = x14*x31 - x18 + x19*x30 - x28
+                x33 = x15**2*x29 - 1
+                x34 = 2/x33
+                x35 = x29*x34
+                x36 = 2*x8
+                x37 = x23*x29
+                x38 = x14*x37 - x22 + x23*x30 - x36
+                x39 = x11**(-2)
+                x40 = x19*x39
+                x41 = x13*x38
+                x42 = x32*x39
+                x43 = x23*x40
+                v = (-x12*x17*d2a_alphas[i][j] + x13*x21*x26 - x13*x35*(-6*x0*x43 
+                     + x14*x26*x29 + x18*x37 + x22*x31 - x25 + x26*x30 + x28*x37 
+                     + x31*x36 - 3*x43*x9 - 2*x5) - 4*x15*x41*x42/x33**2 
+        + x19*x20*x21 - x20*x32*x35 + x21*x23*x24 - x24*x35*x38 + x27*x34*x42 
+        + x34*x40*x41 - x6*(x5 - d2bs[i][j])/x4 + x6*(x7 - dbs[i])*(x8 - dbs[j])/x4**2 - 6*x16*x19*x27/x11**(5/2.))
+                row.append(v)
+            hess.append(row)
+            
+        return hess
+
+
+
+    def d2A_dep_dninjs(self, Z, zs):
+        V = Z*self.T*R/self.P
+        dV_dns = self.dV_dns(Z, zs)
+        d2Vs = self.d2V_dninjs(Z, zs)
+        
+        depsilon_dns = self.depsilon_dns
+        d2epsilon_dninjs = self.d2epsilon_dninjs
+        
+        ddelta_dns = self.ddelta_dns
+        d2delta_dninjs = self.d2delta_dninjs
+
+        db_dns = self.db_dns
+        d2bs = self.d2b_dninjs
+        da_alpha_dns = self.da_alpha_dns
+        d2a_alpha_dninjs = self.d2a_alpha_dninjs
+        return self._d2_A_dep_d2_helper(V=V, d2Vs=d2Vs, d_Vs=dV_dns, dbs=db_dns, d2bs=d2bs,
+                                     d_epsilons=depsilon_dns, d2_epsilons=d2epsilon_dninjs,
+                                     d_deltas=ddelta_dns, d2_deltas=d2delta_dninjs,
+                                     da_alphas=da_alpha_dns, d2a_alphas=d2a_alpha_dninjs)
+                                     
+
+
     def _d_main_derivatives_and_departures_dnx(self, V, db_dns, ddelta_dns,
                                                depsilon_dns, da_alpha_dns,
                                                da_alpha_dT_dns, 
