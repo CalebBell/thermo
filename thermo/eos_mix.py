@@ -3143,6 +3143,103 @@ class GCEOSMIX(GCEOS):
                 hess[i][j] = hess[j][i] = v
         return hess
 
+    def d3P_dninjnks_Vt(self, phase):
+        if phase == 'g':
+            Vt = self.V_g
+        else:
+            Vt = self.V_l
+        
+        T, N, cmps = self.T, self.N, self.cmps
+        b = self.b
+        a_alpha = self.a_alpha
+        epsilon = self.epsilon
+        
+        depsilon_dns = self.depsilon_dns
+        ddelta_dns = self.ddelta_dns
+        db_dns = self.db_dns
+        da_alpha_dns = self.da_alpha_dns
+
+        d2delta_dninjs = self.d2delta_dninjs
+        d2epsilon_dninjs = self.d2epsilon_dninjs
+        d2bs = self.d2b_dninjs
+        d2a_alpha_dninjs = self.d2a_alpha_dninjs        
+        
+        d3epsilon_dninjnks = self.d3epsilon_dninjnks
+        d3delta_dninjnks = self.d3delta_dninjnks
+        d3a_alpha_dninjnks = self.d3a_alpha_dninjnks
+        d3b_dninjnks = self.d3b_dninjnks
+        
+        mat = [[[0.0]*N for _ in cmps] for _ in cmps]
+        
+        for i in cmps:
+            for j in cmps:
+                for k in cmps:
+                    x0 = self.b
+                    x1 = 1.0
+                    x2 = Vt/x1
+                    x3 = -x0 + x2
+                    x4 = 6/x1**4
+                    x5 = Vt*x4
+                    x6 = R*T
+                    x7 = self.a_alpha
+                    x8 = self.epsilon
+                    x9 = Vt**2
+                    x10 = x1**(-2)
+                    x11 = self.delta
+                    x12 = x10*x9 + x11*x2 + x8
+                    x13 = 2/x1**3
+                    x14 = Vt*x13
+                    x15 = Vt*x10
+                    x16 = x6*(x15 + db_dns[k])
+                    x17 = 2/x3**3
+                    x18 = x15 + db_dns[j]
+                    x19 = x17*x6
+                    x20 = x15 + db_dns[i]
+                    x21 = x12**(-2)
+                    x22 = ddelta_dns[i]
+                    x23 = x11*x15 + x13*x9
+                    x24 = -x2*x22 + x23 - depsilon_dns[i]
+                    x25 = ddelta_dns[j]
+                    x26 = -x2*x25 + x23 - depsilon_dns[j]
+                    x27 = ddelta_dns[k]
+                    x28 = -x2*x27 + x23 - depsilon_dns[j]
+                    x29 = da_alpha_dns[k]
+                    x30 = d2delta_dninjs[i][j]
+                    x31 = -x15*x25
+                    x32 = x4*x9
+                    x33 = x11*x14
+                    x34 = -x15*x22 + x32 + x33
+                    x35 = x2*x30 + x31 + x34 + d2epsilon_dninjs[i][j]
+                    x36 = da_alpha_dns[j]
+                    x37 = d2delta_dninjs[i][k]
+                    x38 = -x15*x27
+                    x39 = x2*x37 + x34 + x38 + d2epsilon_dninjs[i][k]
+                    x40 = da_alpha_dns[i]
+                    x41 = d2delta_dninjs[j][k]
+                    x42 = x2*x41 + x31 + x32 + x33 + x38 + d2epsilon_dninjs[j][k]
+                    x43 = 2/x12**3
+                    x44 = x24*x26
+                    x45 = x28*x43
+                    x46 = x43*x7      
+                    
+                    v = (-x16*x17*(x14 - d2bs[i][j]) + 6*x16*x18*x20/x3**4 - x18*x19*(x14 -d2bs[i][k]) 
+                        - x19*x20*(x14 - d2bs[j][k]) - x21*x24*d2a_alpha_dninjs[j][k] 
+                        - x21*x26*d2a_alpha_dninjs[i][k] - x21*x28*d2a_alpha_dninjs[i][j] 
+                        + x21*x29*x35 + x21*x36*x39 + x21*x40*x42
+                        - x21*x7*(x11*x5 - x14*x22 - x14*x25 - x14*x27 + x15*x30 + x15*x37 + x15*x41 
+                                 - x2*d3delta_dninjnks[i][j][k] - d3epsilon_dninjnks[i][j][k] + 24*x9/x1**5)
+                        - x24*x36*x45 + x24*x42*x46 + x26*x39*x46 - x26*x40*x45 - x29*x43*x44 + x35*x45*x7 
+                        + x6*(x5 + d3b_dninjnks[i][j][k])/x3**2 - d3a_alpha_dninjnks[i][j][k]/x12 - 6*x28*x44*x7/x12**4)
+                    
+                    
+                    mat[i][j][k] = v
+        return mat
+                    
+                    
+                    
+                    
+                    
+
     def dH_dep_dns(self, Z, zs):
         r'''Calculates the molar departure enthalpy mole number derivatives
         (where the mole fractions sum to 1). No specific formula is implemented
