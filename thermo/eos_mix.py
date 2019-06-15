@@ -2293,22 +2293,23 @@ class GCEOSMIX(GCEOS):
             fugacity_sum_terms = self._fugacity_sum_terms
         a_alpha = self.a_alpha
         a_alpha_ijs = self.a_alpha_ijs
-        cmps = self.cmps
+        N, cmps = self.N, self.cmps
         zs = self.zs
         a_alpha3 = 3.0*a_alpha
         
-        hessian = []
+        hessian = [[0.0]*N for _ in cmps]
         for i in cmps:
-            row = []
-            for j in cmps:
+            for j in range(i+1):
                 if i == j:
                     term = 2.0*fugacity_sum_terms[i]
                 else:
                     term = 0.0
                     for k in cmps:
                         term += zs[k]*(a_alpha_ijs[i][k] + a_alpha_ijs[j][k])
-                row.append(2.0*(a_alpha3 + a_alpha_ijs[i][j] -2.0*term))
-            hessian.append(row)
+                        
+                hessian[i][j] = hessian[j][i] = 2.0*(a_alpha3 + a_alpha_ijs[i][j] -2.0*term)
+#                row.append(2.0*(a_alpha3 + a_alpha_ijs[i][j] -2.0*term))
+#            hessian.append(row)
         return hessian
 
     def d3a_alpha_dzizjzks(self):   
@@ -3077,7 +3078,7 @@ class GCEOSMIX(GCEOS):
         else:
             Vt = self.V_l
         
-        T, cmps = self.T, self.cmps
+        T, N, cmps = self.T, self.N, self.cmps
         b = self.b
         a_alpha = self.a_alpha
         epsilon = self.epsilon
@@ -3094,37 +3095,52 @@ class GCEOSMIX(GCEOS):
         
         x0 = self.a_alpha
         x1 = self.epsilon
-        x2 = Vt**2
-        x3 = 1.0
-        x4 = x3**(-2)
+        x2 = Vt*Vt
         x5 = self.delta
-        x6 = Vt/x3
-        x7 = x1 + x2*x4 + x5*x6
+        x7 = x1 + x2 + x5*Vt
+        x7_inv = 1.0/x7
         x8 = self.b
-        x9 = x6 - x8
-        x10 = 2/x3**3
-        x11 = Vt*x10
+        x9 = Vt - x8
+        x11 = Vt + Vt
         x12 = R*T
-        x13 = Vt*x4
-        x14 = x7**(-2)
+        x13 = Vt
+        x14 = x7_inv*x7_inv
+        x16 = x2 + x2 + x13*x5
         
-        hess = []
+        t1 = x0*x14
+        
+        x9_inv = 1.0/x9
+        x9_inv2 = x9_inv*x9_inv
+        x9_inv3 = x9_inv*x9_inv2
+        
+        
+        t2 = t1*(x11*x5 + 6.0*x2) - x12*x11*x9_inv2
+        t3 = x12*x9_inv2
+        t4 = 2.0*x12*x9_inv3
+        t5 = 2.0*x0*x7_inv*x7_inv*x7_inv
+        
+        hess = [[0.0]*N for _ in cmps]
         for i in cmps:
-            row = []
-            for j in cmps:
-                x15 = ddelta_dns[i]
-                x16 = x10*x2 + x13*x5
-                x17 = -x15*x6 + x16 - depsilon_dns[i]
-                x18 = ddelta_dns[j]
-                x19 = x16 - x18*x6 - depsilon_dns[j]
-                
-                v = (x0*x14*(x11*x5 - x13*x15 - x13*x18 + 6*x2/x3**4 + x6*d2delta_dninjs[i][j] + d2epsilon_dninjs[i][j])
-                - 2*x0*x17*x19/x7**3 - x12*(x11 - d2bs[i][j])/x9**2 + 2*x12*(x13 + db_dns[i])*(x13 + db_dns[j])/x9**3 
-                - x14*x17*da_alpha_dns[j] - x14*x19*da_alpha_dns[i] - d2a_alpha_dninjs[i][j]/x7)
-                row.append(v)
+            x15 = ddelta_dns[i]
+            x17 = -x15*Vt + x16 - depsilon_dns[i]
             
+            t50 = -x13*x15
+            t51 = t5*x17
+            t52 = t4*(x13 + db_dns[i])
+            t53 = x14*x17
+            t54 = x14*da_alpha_dns[i]
+            t55 = (t51 + t54)
+            
+            iadd = t1*t50 + t52*x13 - x16*t55
+            
+            for j in range(i+1):
+                x18 = ddelta_dns[j]
+                x19 = x18*Vt + depsilon_dns[j]
                 
-            hess.append(row)
+                v = (t2 + iadd + t1*(Vt*d2delta_dninjs[i][j] + d2epsilon_dninjs[i][j] - x13*x18)
+                     + t52*db_dns[j] - t53*da_alpha_dns[j]  + t55*x19
+                     + t3*d2bs[i][j] - x7_inv*d2a_alpha_dninjs[i][j])
+                hess[i][j] = hess[j][i] = v
         return hess
 
     def dH_dep_dns(self, Z, zs):
