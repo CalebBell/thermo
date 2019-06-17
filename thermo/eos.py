@@ -1938,6 +1938,8 @@ should be calculated by this method, in a user subclass.')
         x1 = self.H_dep_g
         x2 = 1.0/(R*T)
         return -x2*(T*self.dS_dep_dP_g - self.dH_dep_dP_g)*exp(-x2*(T*x0 - x1))
+    
+    
 
 class GCEOS_DUMMY(GCEOS):
     Tc = None

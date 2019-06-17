@@ -3856,6 +3856,7 @@ class GCEOSMIX(GCEOS):
                                      G=True)
 
 
+
     def _d2_A_dep_d2_helper(self, V, d_Vs, d2Vs, dbs, d2bs, d_epsilons, 
                             d2_epsilons, d_deltas, d2_deltas, da_alphas,
                             d2a_alphas):
@@ -3955,8 +3956,165 @@ class GCEOSMIX(GCEOS):
                                      d_epsilons=depsilon_dns, d2_epsilons=d2epsilon_dninjs,
                                      d_deltas=ddelta_dns, d2_deltas=d2delta_dninjs,
                                      da_alphas=da_alpha_dns, d2a_alphas=d2a_alpha_dninjs)
-                                     
+                       
+    def dA_dep_dns_Vt(self, phase):
+        if phase == 'g':
+            Vt = self.V_g
+        else:
+            Vt = self.V_l
 
+        T, N, cmps = self.T, self.N, self.cmps
+        b = self.b
+        a_alpha = self.a_alpha
+        epsilon = self.epsilon
+        
+        depsilon_dns = self.depsilon_dns
+        ddelta_dns = self.ddelta_dns
+        db_dns = self.db_dns
+        da_alpha_dns = self.da_alpha_dns
+
+              
+    def d2A_dep_dninjs_Vt(self, phase):
+        if phase == 'g':
+            Vt = self.V_g
+        else:
+            Vt = self.V_l
+
+        T, N, cmps = self.T, self.N, self.cmps
+        b = self.b
+        a_alpha = self.a_alpha
+        epsilon = self.epsilon
+        
+        depsilon_dns = self.depsilon_dns
+        ddelta_dns = self.ddelta_dns
+        db_dns = self.db_dns
+        da_alpha_dns = self.da_alpha_dns
+
+        d2delta_dninjs = self.d2delta_dninjs
+        d2epsilon_dninjs = self.d2epsilon_dninjs
+        d2bs = self.d2b_dninjs
+        d2a_alpha_dninjs = self.d2a_alpha_dninjs    
+        
+        dP_dns_Vt = self.dP_dns_Vt(phase)
+        d2P_dninjs_Vt = self.d2P_dninjs_Vt(phase)
+        
+        hess = [[0.0]*N for i in cmps]
+        
+        for i in cmps:
+            for j in range(i+1):
+                x0 = self.P
+                x1 = x0**2
+                x2 = Vt#V(n1, n2, n3)
+                x3 = x2**2
+                x4 = self.b
+                x5 = x2 - x4
+                x6 = x5**2
+                x7 = self.delta
+                x8 = x7**2
+                x9 = self.epsilon
+                x10 = 4*x9
+                x11 = -x10 + x8
+                x12 = x11**(25/2)
+                x13 = 2*x2
+                x14 = x13 + x7
+                x15 = x10 + x14**2 - x8
+                x16 = x15**2
+                x17 = x1*x6
+                x18 = R*T*x12*x16
+                x19 = x17*x18
+                x20 = x1*x18*x3
+                x21 = Vt*x0
+                x22 = dP_dns_Vt[i]
+                x23 = -x2*x22 + x21
+                x24 = 2*Vt
+                x25 = dP_dns_Vt[j]
+                x26 = x18*x2*x6
+                x27 = self.a_alpha
+                x28 = x17*x3
+                x29 = 2*x28
+                x30 = x16*catanh(x14/sqrt(x11)).real
+                x31 = x29*x30
+                x32 = ddelta_dns[i]
+                x33 = x32*x7 - 2*depsilon_dns[i]
+                x34 = ddelta_dns[j]
+                x35 = x34*x7 - 2*depsilon_dns[j]
+                x36 = x33*x35
+                x37 = da_alpha_dns[j]
+                x38 = da_alpha_dns[i]
+                x39 = d2delta_dninjs[i][j]
+                x40 = x32*x34 + x39*x7 - 2*d2epsilon_dninjs[i][j]
+                x41 = x11*(x24 - x32) + x13*x33 + x33*x7
+                x42 = x11*(x24 - x34) + x13*x35 + x35*x7
+                x43 = x11**(21/2)*x27
+                x44 = x15*x29
+                x45 = x43*x44
+                v = (-(Vt**2*x19 - Vt*x13*x19 + x0*x26*(-Vt*x22 - Vt*x25 + x0*x24 
+                                                        + x2*d2P_dninjs_Vt[i][j]) + x11**(23/2)*x44*(x37*x41 + x38*x42) 
+                    + x11**12*x31*d2a_alpha_dninjs[i][j] - x11**11*x31*(x27*x40 + x33*x37 + x35*x38)
+                    + 6*x11**10*x27*x28*x30*x36 + 4*x14*x28*x41*x42*x43 - x18*x21*x23*x6
+                    + x20*x5*(x24 - d2bs[i][j]) - x20*(Vt + db_dns[i])*(Vt + db_dns[j]) + x23*x25*x26 
+                    - x45*(x33*x42 + x35*x41) - x45*(x11**2*(4*Vt + x39) - x11*(x13*x40 - x24*x33 
+                           - x24*x35 + x32*x35 + x33*x34 + x40*x7) + 3*x14*x36))/(x1*x12*x16*x3*x6))
+                hess[i][j] = hess[j][i] = v
+        return hess
+    
+    @property
+    def SCp0_l(self):
+        S_dep = self.S_dep_l
+        S_dep -= R*sum([zi*log(zi) for zi in self.zs if zi > 0.0]) # ideal composition entropy composition
+        S_dep -= R*log(self.P/101325.0)
+        return S_dep
+
+    @property
+    def ACp0_l(self):
+        return self.A_dep_l - self.T*(self.SCp0_l - self.S_dep_l)
+        
+    @property
+    def SCp0_g(self):
+        S_dep = self.S_dep_g
+        S_dep -= R*sum([zi*log(zi) for zi in self.zs if zi > 0.0]) # ideal composition entropy composition
+        S_dep -= R*log(self.P/101325.0)
+        return S_dep
+
+    @property
+    def ACp0_g(self):
+        return self.A_dep_g - self.T*(self.SCp0_g - self.S_dep_g)
+    
+    @property
+    def dScomp_dns(self):
+        mRT = -R*self.T
+        zs, cmps = self.zs, self.cmps
+        
+        logzs = [log(zi) for zi in zs]
+        tot = 0.0
+        for i in cmps:
+            tot += zs[i]*logzs[i]
+        return [mRT*(tot - logzs[i]) for i in cmps]
+    
+    @property
+    def d2Scomp_dninjs(self):
+        RT = R*self.T
+        zs, cmps = self.zs, self.cmps
+        
+        logzs = [log(zi) for zi in zs]
+        tot = 0.0
+        for i in cmps:
+            tot += zs[i]*logzs[i]
+            
+        tot2m1 = tot+tot - 1.0
+        return [[RT*(tot2m1 + logzs[i] + logzs[j]) for i in cmps] for j in cmps]
+
+    def d2A_dninjs_Vt(self, phase):
+        if phase == 'g':
+            Vt = self.V_g
+        else:
+            Vt = self.V_l
+            
+        d2A_dep_dninjs_Vt = self.d2A_dep_dninjs_Vt(phase)
+
+    
+    
+            
 
     def _d_main_derivatives_and_departures_dnx(self, V, db_dns, ddelta_dns,
                                                depsilon_dns, da_alpha_dns,
