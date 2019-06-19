@@ -32,7 +32,7 @@ from cmath import log as clog, atanh as catanh
 from scipy.optimize import minimize
 from scipy.misc import derivative
 from fluids.numerics import IS_PYPY, newton_system, UnconvergedError
-from thermo.utils import normalize, Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter, dxs_to_dn_partials, dxs_to_dns, dns_to_dn_partials, d2xs_to_dxdn_partials
+from thermo.utils import normalize, Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter, dxs_to_dn_partials, dxs_to_dns, dns_to_dn_partials, d2xs_to_dxdn_partials, d2ns_to_dn2_partials
 from thermo.utils import R
 from thermo.utils import log, exp, sqrt
 from thermo.eos import *
@@ -3958,6 +3958,27 @@ class GCEOSMIX(GCEOS):
                                      da_alphas=da_alpha_dns, d2a_alphas=d2a_alpha_dninjs)
                        
     def dA_dep_dns_Vt(self, phase):
+        '''
+        from sympy import *
+        Vt, P, T, R, n1, n2, n3 = symbols('Vt, P, T, R, n1, n2, n3') # doctest:+SKIP
+        P, V, a_alpha, delta, epsilon, b = symbols('P, V, a\ \\alpha, delta, epsilon, b', cls=Function) # doctest:+SKIP
+        da_alpha_dT, d2a_alpha_dT2 = symbols('da_alpha_dT, d2a_alpha_dT2', cls=Function) # doctest:+SKIP
+        ns = [n1, n2, n3]
+        
+        S_dep = R*log(P(n1, n2, n3)*V(n1, n2, n3)/(R*T)) + R*log(V(n1, n2, n3)-b(n1, n2, n3))+2*da_alpha_dT(n1, n2, n3)*atanh((2*V(n1, n2, n3)+delta(n1, n2, n3))/sqrt(delta(n1, n2, n3)**2-4*epsilon(n1, n2, n3)))/sqrt(delta(n1, n2, n3)**2-4*epsilon(n1, n2, n3))-R*log(V(n1, n2, n3)) 
+        H_dep = P(n1, n2, n3)*V(n1, n2, n3) - R*T + 2*atanh((2*V(n1, n2, n3)+delta(n1, n2, n3))/sqrt(delta(n1, n2, n3)**2-4*epsilon(n1, n2, n3)))*(da_alpha_dT(n1, n2, n3)*T-a_alpha(n1, n2, n3))/sqrt(delta(n1, n2, n3)**2-4*epsilon(n1, n2, n3)) 
+        G_dep = simplify(H_dep - T*S_dep)
+        V_dep = V(n1, n2, n3) - R*T/P(n1, n2, n3)
+        U_dep = H_dep - P(n1, n2, n3)*V_dep
+        A_dep = simplify(U_dep - T*S_dep)
+        expr = diff(A_dep, n1)
+        
+        for ni in ns:
+            expr = expr.subs(Derivative(V(n1, n2, n3), ni), -Vt)
+            
+        expr = simplify(expr)
+        cse(expr, optimizations='basic')
+        '''
         if phase == 'g':
             Vt = self.V_g
         else:
@@ -3972,6 +3993,41 @@ class GCEOSMIX(GCEOS):
         ddelta_dns = self.ddelta_dns
         db_dns = self.db_dns
         da_alpha_dns = self.da_alpha_dns
+        dP_dns_Vt = self.dP_dns_Vt(phase)
+        
+        x0 = self.P
+        x1 = Vt
+        x2 = self.b
+        x3 = x1 - x2
+        x4 = self.delta
+        x5 = x4**2
+        x6 = self.epsilon
+        x7 = 4*x6
+        x8 = x5 - x7
+        x9 = x8**(7/2)
+        x10 = 2*x1
+        x11 = x10 + x4
+        x12 = x11**2 - x5 + x7
+        x13 = Vt*x0
+        x14 = x12*x3
+        x15 = R*T*x9
+        x16 = x14*x15
+        x17 = self.a_alpha
+        x18 = x0*x10
+        x19 = x14*catanh(x11*x8**-0.5).real
+
+        jac = []        
+        for i in cmps:
+            x20 = ddelta_dns[i]
+            x21 = x20*x4 - 2*depsilon_dns[i]
+            x22 = x17*x18
+            
+            v = (-(-x0*x1*x12*x15*(Vt + db_dns[i]) + x13*x16 - x16*(-x1*dP_dns_Vt[i] + x13)
+                + x18*x19*x8**3*da_alpha_dns[i] - x19*x21*x22*x8**2 
+                + x22*x3*x8**(5/2)*(x11*x21 + x8*(2*Vt - x20)))/(x0*x1*x12*x3*x9))
+            jac.append(v)
+        return jac
+
 
               
     def d2A_dep_dninjs_Vt(self, phase):
@@ -4075,13 +4131,20 @@ class GCEOSMIX(GCEOS):
         S_dep -= R*sum([zi*log(zi) for zi in self.zs if zi > 0.0]) # ideal composition entropy composition
         S_dep -= R*log(self.P/101325.0)
         return S_dep
-
+    
     @property
     def ACp0_g(self):
         return self.A_dep_g - self.T*(self.SCp0_g - self.S_dep_g)
     
-    @property
-    def dScomp_dns(self):
+    def Scomp(self, phase):
+        v = self.T*R*sum([zi*log(zi) for zi in self.zs if zi > 0.0]) # ideal composition entropy composition
+        v += R*self.T*log(self.P/101325.0)
+        return v
+        
+    
+    def dScomp_dns(self, phase):
+        dP_dns_Vt = self.dP_dns_Vt(phase)
+        
         mRT = -R*self.T
         zs, cmps = self.zs, self.cmps
         
@@ -4089,31 +4152,74 @@ class GCEOSMIX(GCEOS):
         tot = 0.0
         for i in cmps:
             tot += zs[i]*logzs[i]
-        return [mRT*(tot - logzs[i]) for i in cmps]
+            
+        const = R*self.T/self.P
+        return [mRT*(tot - logzs[i]) + const*dP_dns_Vt[i] for i in cmps]
     
-    @property
-    def d2Scomp_dninjs(self):
+    def d2Scomp_dninjs(self, phase):
+        '''P_ref = symbols('P_ref')
+            diff(R*T*log(P(n1, n2, n3)/P_ref), n1, n2)
+        '''
+        dP_dns_Vt = self.dP_dns_Vt(phase)
+        d2P_dninjs_Vt = self.d2P_dninjs_Vt(phase)
+
+        P = self.P
         RT = R*self.T
+        const = RT/P
         zs, cmps = self.zs, self.cmps
         
         logzs = [log(zi) for zi in zs]
+        
+        hess = []
+        for i in cmps:
+            row = []
+            for j in cmps:
+                t = sum(2.0*zs[i]*logzs[i] + 3.0*zs[i] for i in cmps)
+                if i != j:
+                    v = RT*(t - logzs[i] - logzs[j] -4.0)
+                else:
+                    v = RT*(t - 2*logzs[i] - 3 - (zs[i] - 1.0)/zs[i])
+                    
+                v += const*(d2P_dninjs_Vt[i][j] - dP_dns_Vt[i]*dP_dns_Vt[j]/P)
+                    
+                row.append(v)
+            hess.append(row)
+        return hess
+                
+        
+        
+        # TODO fix the implementation below, make it work
         tot = 0.0
         for i in cmps:
             tot += zs[i]*logzs[i]
             
-        tot2m1 = tot+tot - 1.0
-        return [[RT*(tot2m1 + logzs[i] + logzs[j]) for i in cmps] for j in cmps]
+        tot2m1 = tot + tot - 1.0
+        hess = [[RT*(tot2m1 - logzs[i] - logzs[j]) for i in cmps] for j in cmps]
+        return hess
+#        return d2xs_to_dxdn_partials(hess, zs)
+#        return d2ns_to_dn2_partials(hess, self.dScomp_dns)
 
     def d2A_dninjs_Vt(self, phase):
         if phase == 'g':
             Vt = self.V_g
         else:
             Vt = self.V_l
+        N, zs, cmps = self.N, self.zs, self.cmps
             
         d2A_dep_dninjs_Vt = self.d2A_dep_dninjs_Vt(phase)
-
+        d2Scomp_dninjs = self.d2Scomp_dninjs
+        
+        hess = [[0.0]*N for i in cmps]
+        for i in cmps:
+            for j in cmps:
+                hess[i][j] = d2Scomp_dninjs[i][j] + d2A_dep_dninjs_Vt[i][j]
+        return hess
     
     
+    def d2nA_dninjs_Vt(self, phase):
+        d2ns = [[i+j for i, j in zip(r1, r2)] for r1, r2 in zip(self.d2A_dep_dninjs_Vt(phase), self.d2Scomp_dninjs(phase))]
+        dns = [i+j for i, j in zip(self.dA_dep_dns_Vt(phase), self.dScomp_dns(phase))]
+        return d2ns_to_dn2_partials(d2ns, dns)
             
 
     def _d_main_derivatives_and_departures_dnx(self, V, db_dns, ddelta_dns,

@@ -34,7 +34,7 @@ __all__ = ['isobaric_expansion', 'isothermal_compressibility',
 'int2CAS', 'Parachor', 'property_molar_to_mass', 'property_mass_to_molar', 
 'SG_to_API', 'API_to_SG', 'SG',
 'dxs_to_dns', 'dns_to_dn_partials', 'dxs_to_dn_partials', 'd2ns_to_dn2_partials',
-'d2xs_to_dxdn_partials',
+'d2xs_to_d2ns', 'd2xs_to_dxdn_partials',
  'vapor_mass_quality', 'mix_component_flows',
 'mix_multiple_component_flows', 'mix_component_partial_flows', 
 'solve_flow_composition_mix', 'assert_component_balance', 'assert_energy_balance',
@@ -1426,6 +1426,19 @@ diff(h(n1, n2)*f(n1,  n2), n1, n2)
         hess.append(row)
     return hess
 
+
+def d2xs_to_d2ns(d2xs, dxs, dns):
+    # Could use some simplifying. Derived with trial and error via lots of inner loops
+    N = len(d2xs)
+    cmps = range(N)
+    hess = []
+    for i in cmps:
+        row = []
+        for j in cmps:
+            v = d2xs[i][j] -2*dns[i] - dns[j] - dxs[j]
+            row.append(v)
+        hess.append(row)
+    return hess
 
 def d2xs_to_dxdn_partials(d2xs, xs):
     r'''Convert second-order mole fraction derivatives of a quantity 
