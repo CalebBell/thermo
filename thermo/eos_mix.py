@@ -3811,7 +3811,13 @@ class GCEOSMIX(GCEOS):
                                      d_deltas=ddelta_dzs, d2_deltas=d2delta_dzizjs,
                                      da_alphas=da_alpha_dzs, d2a_alphas=d2a_alpha_dzizjs,
                                      G=True)
-        
+    def dlnphis_dns(self, Z, zs):
+        r'''All working here.
+        '''
+        dns = self.dlnphi_dns(Z, zs)
+        d2ns = self.d2lnphi_dninjs(Z, zs)
+        return d2ns_to_dn2_partials(d2ns, dns)
+    
     def d2G_dep_dninjs(self, Z, zs):
         r'''Calculates the molar departure Gibbs energy mole number derivatives
         (where the mole fractions sum to 1). No specific formula is implemented
@@ -3854,7 +3860,7 @@ class GCEOSMIX(GCEOS):
                                      d_deltas=ddelta_dns, d2_deltas=d2delta_dninjs,
                                      da_alphas=da_alpha_dns, d2a_alphas=d2a_alpha_dninjs,
                                      G=True)
-
+        
 
 
     def _d2_A_dep_d2_helper(self, V, d_Vs, d2Vs, dbs, d2bs, d_epsilons, 
@@ -4221,6 +4227,11 @@ class GCEOSMIX(GCEOS):
         dns = [i+j for i, j in zip(self.dA_dep_dns_Vt(phase), self.dScomp_dns(phase))]
         return d2ns_to_dn2_partials(d2ns, dns)
             
+    def d2A_dninjs_Vt_another(self, phase):
+        d2ns = [[i+j for i, j in zip(r1, r2)] for r1, r2 in zip(self.d2A_dep_dninjs_Vt(phase), self.d2Scomp_dninjs(phase))]
+        return d2ns
+#        dns = [i+j for i, j in zip(self.dA_dep_dns_Vt(phase), self.dScomp_dns(phase))]
+#        return d2ns_to_dn2_partials(d2ns, dns)
 
     def _d_main_derivatives_and_departures_dnx(self, V, db_dns, ddelta_dns,
                                                depsilon_dns, da_alpha_dns,

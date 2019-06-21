@@ -215,7 +215,7 @@ class Wilson(GibbsExcess):
         Tinv = 1.0/T
         nT2inv = -Tinv*Tinv
         nT3inv2 = 2.0*nT2inv*Tinv
-        
+                
         for i in cmps:
             lambdasi = lambdas[i]
             lambda_coeffs_Bi = lambda_coeffs_B[i]
@@ -267,10 +267,8 @@ class Wilson(GibbsExcess):
         
         Tinv = 1.0/T
         nT2inv = -Tinv*Tinv
-        T3inv2 = 2.0*Tinv*Tinv*Tinv
-#        T4inv6 = 3.0*T3inv2*Tinv
-        
-        T4inv6 = 6.0*Tinv*Tinv*Tinv*Tinv
+        T3inv2 = -2.0*nT2inv*Tinv
+        T4inv6 = 3.0*T3inv2*Tinv
 
         self._d2lambdas_dT2 = d2lambdas_dT2s = []
         for i in cmps:
@@ -282,8 +280,8 @@ class Wilson(GibbsExcess):
             lambda_coeffs_Fi = lambda_coeffs_F[i]
             d2lambdas_dT2i = [(2.0*lambda_coeffs_Fi[j] + nT2inv*lambda_coeffs_Ci[j]
                              + T3inv2*lambda_coeffs_Bi[j] + T4inv6*lambda_coeffs_Ei[j]
-                             + dlambdas_dTi[j]*dlambdas_dTi[j]/(lambdasi[j]*lambdasi[j])
-                               )*lambdasi[j] for j in cmps]
+                               )*lambdasi[j] + dlambdas_dTi[j]*dlambdas_dTi[j]/lambdasi[j] 
+                             for j in cmps]
             d2lambdas_dT2s.append(d2lambdas_dT2i)
         return d2lambdas_dT2s
     
@@ -325,9 +323,13 @@ class Wilson(GibbsExcess):
             dlambdas_dT = self.dlambdas_dT()
         
         Tinv = 1.0/T
+        Tinv3 = 3.0*Tinv
         nT2inv = -Tinv*Tinv
-        T3inv2 = -2.0*nT2inv*Tinv
+        nT2inv05 = 0.5*nT2inv
+        T3inv = -nT2inv*Tinv
+        T3inv2 = T3inv+T3inv
         T4inv6 = 3.0*T3inv2*Tinv
+        T4inv3 = 1.5*T3inv2*Tinv
         T2_12 = -12.0*nT2inv
 
         self._d3lambdas_dT3 = d3lambdas_dT3s = []
@@ -340,15 +342,15 @@ class Wilson(GibbsExcess):
             lambda_coeffs_Fi = lambda_coeffs_F[i]
             d3lambdas_dT3is = []
             for j in cmps:
-                term2 = (2.0*lambda_coeffs_Fi[j] + nT2inv*lambda_coeffs_Ci[j]
-                         + T3inv2*lambda_coeffs_Bi[j] + T4inv6*lambda_coeffs_Ei[j])
+                term2 = (lambda_coeffs_Fi[j] + nT2inv05*lambda_coeffs_Ci[j]
+                         + T3inv*lambda_coeffs_Bi[j] + T4inv3*lambda_coeffs_Ei[j])
                 
                 term3 = dlambdas_dTi[j]/lambdasi[j]
                 
-                term4 = (T3inv2*(lambda_coeffs_Ci[j] - 3.0*lambda_coeffs_Bi[j]*Tinv
+                term4 = (T3inv2*(lambda_coeffs_Ci[j] - Tinv3*lambda_coeffs_Bi[j]
                          - T2_12*lambda_coeffs_Ei[j]))
                 
-                d3lambdas_dT3is.append((3.0*term2*term3 + term3*term3*term3 + term4)*lambdasi[j])
+                d3lambdas_dT3is.append((term3*(6.0*term2 + term3*term3) + term4)*lambdasi[j])
             
             d3lambdas_dT3s.append(d3lambdas_dT3is)
         return d3lambdas_dT3s

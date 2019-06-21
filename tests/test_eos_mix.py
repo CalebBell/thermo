@@ -2748,3 +2748,32 @@ def test_dP_dns_Vt():
         return PRMIX(T=T, V=V, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas).P
     d2P_dninjs_Vt_numerical = hessian(diff_for_dP_dn, zs, perturbation=1.5e-4)
     assert_allclose(d2P_dninjs_Vt_numerical, d2P_dninjs_Vt_analytical, rtol=2e-4)
+    
+    
+    
+def test_lnphis_basic():
+    # Not 100% positive these are correct. But to 4.8 nines with jacobian, it's a match.
+    # There is no bias about which direction a number is wrong though.
+    liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S', 'methane']
+    zs = [0.1, 0.2, 0.3, 0.4]
+    Tcs = [126.2, 304.2, 373.2, 190.5640]
+    Pcs = [3394387.5, 7376460.0, 8936865.0, 4599000.0]
+    omegas = [0.04, 0.2252, 0.1, 0.008]
+    
+    T, P = 300, 1e6
+    eos = PRMIX(T=T, P=P, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+    
+    def lnphis_dn(ns):
+        zs = normalize(ns)
+        return PRMIX(T=T, P=P, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas).lnphis_g
+    
+    dlnphis_dns_numerical = jacobian(lnphis_dn, zs, perturbation=1e-7, scalar=False)
+    dlnphis_dns_analytical = eos.dlnphis_dns(eos.Z_g, zs)
+    dlnphis_dns_expect = [[-0.02537902325861477, 0.007204512789763549, 0.0175466983422222, -0.01041859661225469],
+                          [0.007204833259016413, -0.0020454514833986304, -0.004981543870380252, 0.0029576619027266195],
+                          [0.017546853751371598, -0.0049815999187692375, -0.012132256778313248, 0.007203147082507459], 
+                          [-0.01041793395202692, 0.002957664659691675, 0.0072031571097258065, -0.004276674933823978]]
+    assert_allclose(dlnphis_dns_analytical, dlnphis_dns_expect, rtol=1e-12)
+    assert_allclose(dlnphis_dns_analytical, dlnphis_dns_numerical, rtol=8e-5)
+    
+        

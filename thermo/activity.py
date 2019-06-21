@@ -30,10 +30,10 @@ __all__ = ['K_value', 'Wilson_K_value', 'flash_wilson', 'flash_Tb_Tc_Pc',
            'Rachford_Rice_flashN_f_jac', 'Rachford_Rice_flash2_f_jac',
            'Li_Johns_Ahmadi_solution', 'flash_inner_loop', 'NRTL_gammas',
            'Wilson_gammas',
-           'UNIQUAC', 'flash', 'dew_at_T',
+           'UNIQUAC_gammas', 'flash', 'dew_at_T',
            'bubble_at_T', 'identify_phase', 'mixture_phase_methods',
            'identify_phase_mixture', 'Pbubble_mixture', 'bubble_at_P',
-           'Pdew_mixture', 'GibbsExcess']
+           'Pdew_mixture', 'GibbsExcess', 'IdealSolution']
 
 from fluids.numerics import IS_PYPY, one_epsilon_larger, one_epsilon_smaller
 from fluids.numerics import newton_system, roots_cubic, roots_quartic, horner, py_brenth as brenth, py_newton as newton, oscillation_checker # Always use this method for advanced features
@@ -2226,7 +2226,7 @@ def Wilson_gammas(xs, params):
     return gammas
 
 
-def UNIQUAC(xs, rs, qs, taus):
+def UNIQUAC_gammas(xs, rs, qs, taus):
     r'''Calculates the activity coefficients of each species in a mixture
     using the Universal quasi-chemical (UNIQUAC) equation, given their mole
     fractions, `rs`, `qs`, and dimensionless interaction parameters. The
@@ -2303,7 +2303,7 @@ def UNIQUAC(xs, rs, qs, taus):
     --------
     Ethanol-water example, at 343.15 K and 1 MPa:
 
-    >>> UNIQUAC(xs=[0.252, 0.748], rs=[2.1055, 0.9200], qs=[1.972, 1.400],
+    >>> UNIQUAC_gammas(xs=[0.252, 0.748], rs=[2.1055, 0.9200], qs=[1.972, 1.400],
     ... taus=[[1.0, 1.0919744384510301], [0.37452902779205477, 1.0]])
     [2.35875137797083, 1.2442093415968987]
 
@@ -3035,4 +3035,49 @@ class GibbsExcess(object):
         RT_inv = R_inv*T_inv
         return [(d2nGE_dTdns[i]*RT_inv - dG_dns[i]*RT_inv*T_inv)*exp(dG_dns[i]*RT_inv)
                 for i in self.cmps]
+
+
+class IdealSolution(object):
+    def __init__(self, T, xs):
+        self.T = T
+        self.xs = xs
+        self.N = N = len(xs)
+        self.cmps = range(N)
+
+    def to_T_xs(self, T, xs):
+        new = self.__class__.__new__(self.__class__)
+        new.T = T
+        new.xs = xs
+        new.N = self.N
+        new.cmps = self.cmps
+        return new
+
+    def GE(self):
+        return 0.0
+
+    def dGE_dT(self):
+        return 0.0
+
+    def d2GE_dT2(self):
+        return 0.0
+
+    def d3GE_dT3(self):
+        return 0.0
+
+    def d2GE_dTdxs(self):
+        return [0.0 for i in self.cmps]
+
+    def dGE_dxs(self):
+        return [0.0 for i in self.cmps]
+
+    def d2GE_dxixjs(self):
+        N = self.N
+        return [[0.0]*N for i in self.cmps]
+
+    def d3GE_dxixjxks(self):
+        N, cmps = self.N, self.cmps
+        return [[[0.0]*N for i in cmps] for j in cmps]
+
+    def gammas(self):
+        return [1.0 for i in self.cmps]
 

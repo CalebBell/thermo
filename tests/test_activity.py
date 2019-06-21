@@ -689,16 +689,16 @@ def test_UNIQUAC():
     # P05.01c VLE Behavior of Ethanol - Water Using UNIQUAC
     # http://chemthermo.ddbst.com/Problems_Solutions/Mathcad_Files/P05.01c%20VLE%20Behavior%20of%20Ethanol%20-%20Water%20Using%20UNIQUAC.xps
 
-    gammas = UNIQUAC(xs=[0.252, 0.748], rs=[2.1055, 0.9200], qs=[1.972, 1.400], taus=[[1.0, 1.0919744384510301], [0.37452902779205477, 1.0]])
+    gammas = UNIQUAC_gammas(xs=[0.252, 0.748], rs=[2.1055, 0.9200], qs=[1.972, 1.400], taus=[[1.0, 1.0919744384510301], [0.37452902779205477, 1.0]])
     assert_allclose(gammas, [2.35875137797083, 1.2442093415968987])
 
     # Example 8.3  in [2]_ for solubility of benzene (2) in ethanol (1) at 260 K.
     # Worked great here
-    gammas = UNIQUAC(xs=[.7566, .2434], rs=[2.1055, 3.1878], qs=[1.972, 2.4], taus=[[1.0, 1.17984681869376], [0.22826016391070073, 1.0]])
+    gammas = UNIQUAC_gammas(xs=[.7566, .2434], rs=[2.1055, 3.1878], qs=[1.972, 2.4], taus=[[1.0, 1.17984681869376], [0.22826016391070073, 1.0]])
     assert_allclose(gammas, [1.0826343452263132, 3.0176007269546083])
 
     # Example 7.3 in [2], for electrolytes
-    gammas = UNIQUAC(xs=[0.05, 0.025, 0.925], rs=[1., 1., 0.92], qs=[1., 1., 1.4], taus=[[1.0, 0.4052558731309731, 2.7333668483468143], [21.816716876191823, 1.0, 0.06871094878791346], [0.4790878929721784, 3.3901086879605944, 1.0]])
+    gammas = UNIQUAC_gammas(xs=[0.05, 0.025, 0.925], rs=[1., 1., 0.92], qs=[1., 1., 1.4], taus=[[1.0, 0.4052558731309731, 2.7333668483468143], [21.816716876191823, 1.0, 0.06871094878791346], [0.4790878929721784, 3.3901086879605944, 1.0]])
     assert_allclose(gammas, [0.3838177662072466, 0.49469915162858774, 1.0204435746722416])
 
 
