@@ -1669,6 +1669,8 @@ def Rachford_Rice_solution_LN2(zs, Ks, guess=None):
         
         F0, dF0, ddF0 = 0.0, 0.0, 0.0
         for i in cmps:
+#            x5 = (Ks[i]-1.0)/(t50 - cis_ys[i])
+            
             x5 = 1.0/(t50 - cis_ys[i])
             zix5 = zs[i]*x5
             F0 += zix5
@@ -2947,6 +2949,10 @@ class GibbsExcess(object):
         return self._gammas
 
     def dgammas_dns(self):
+        try:
+            return self._dgammas_dns
+        except AttributeError:
+            pass
         gammas = self.gammas()
         cmps = self.cmps
         
@@ -2955,7 +2961,7 @@ class GibbsExcess(object):
         
         RT_inv = 1.0/(R*self.T)
         
-        matrix = []
+        self._dgammas_dns = matrix = []
         for i in cmps:
             row = []
             gammai = gammas[i]

@@ -29,10 +29,47 @@ from fluids.constants import calorie, R
 from thermo.activity import *
 from thermo.mixture import Mixture
 from thermo.nrtl import NRTL
-import random
+from random import random
 from thermo import *
 import numpy as np
 from fluids.numerics import jacobian, hessian, derivative
+
+def make_alphas(N):
+    cmps = range(N)
+    data = []
+    for i in cmps:
+        row = []
+        for j in cmps:
+            if i == j:
+                row.append([0.0, 0.0])
+            else:
+                row.append([round(random()*0.3, 3), round(random()*1e-5, 8)])
+        data.append(row)
+    return data
+
+def make_taus(N):
+    cmps = range(N)
+    data = []
+    base = [3e-5, 600.0, 1e-4, 7e-5, 5e-3, 9e-7]
+    
+    for i in cmps:
+        row = []
+        for j in cmps:
+            if i == j:
+                row.append([0.0]*6)
+            else:
+                row.append([float('%.3g'%(random()*n)) for n in base])
+        data.append(row)
+    return data
+
+
+def test_madeup_20():
+    N = 10
+    alphas = make_alphas(N)
+    taus = make_taus(N)
+    xs = normalize([random() for i in range(N)])
+    T = 350.0
+    GE = NRTL(T, xs, taus, alphas)
 
 
 def test_water_ethanol_methanol_madeup():
@@ -55,6 +92,9 @@ def test_water_ethanol_methanol_madeup():
     dT = T*1e-8
     xs = [.2, .3, .5]
     GE = NRTL(T, xs, taus, alphas)
+    
+    # gammas
+    assert_allclose(GE.gammas(), [1.7795902383749216, 1.1495597830749005, 1.0736702352016942])
     
     ### Tau and derivatives
     taus_expected = [[0.06687993075720595, 1.9456413587531054, 1.2322559725492486],

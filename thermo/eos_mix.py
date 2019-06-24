@@ -5068,24 +5068,22 @@ class PRMIX(GCEOSMIX, PR):
             # less than zero
             x0 = 0.0
             
-        Zm1 = Z - 1.0
-        x1 = 2./a_alpha
         root_two_B = B*root_two
+        two_root_two_B = root_two_B + root_two_B
+        
         ZB = Z + B
         
-        x2 = A/(root_two_B + root_two_B)
         try:
-            x4 = log((ZB + root_two_B)/(ZB - root_two_B))
+            x4 = A*log((ZB + root_two_B)/(ZB - root_two_B))
         except ValueError:
             # less than zero
             x4 = 0.0
-        x4 = x2*x4
 
         fugacity_sum_terms = self._fugacity_sum_terms
         
-        t50 = x4*x1
-        t51 = (x4 + Zm1)/b
-        
+        t50 = 2.0*x4/(a_alpha*two_root_two_B)
+        t51 = (x4 + (Z - 1.0)*two_root_two_B)/(b*two_root_two_B)
+
         return [bs[i]*t51 - x0 - t50*fugacity_sum_terms[i]
                 for i in self.cmps]
         
