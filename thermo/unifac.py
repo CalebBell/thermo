@@ -1164,7 +1164,7 @@ def UNIFAC(T, xs, chemgroups, cached=None, subgroup_data=None,
         
          \phi_i = \frac{x_i r_i}{\sum_{j=1}^{n} x_j r_j}
          
-          L_i = 5(r_i - q_i)-(r_i-1)
+         L_i = 5(r_i - q_i)-(r_i-1)
    
     **Residual component**
     

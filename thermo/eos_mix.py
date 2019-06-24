@@ -5052,15 +5052,13 @@ class PRMIX(GCEOSMIX, PR):
         '''
         a_alpha = self.a_alpha
 #        cmps = self.cmps
-        a_alpha_ijs = self.a_alpha_ijs
+#        a_alpha_ijs = self.a_alpha_ijs
         T_inv = 1.0/self.T
-        P = self.P
         bs, b = self.bs, self.b
-        P_T = P*T_inv
+        P_T = self.P*T_inv
         
         A = a_alpha*P_T*R2_inv*T_inv
         B = b*P_T*R_inv
-        b_inv = 1.0/b
         # The two log terms need to use a complex log; typically these are
         # calculated at "liquid" volume solutions which are unstable
         # and cannot exist
@@ -5072,19 +5070,21 @@ class PRMIX(GCEOSMIX, PR):
             
         Zm1 = Z - 1.0
         x1 = 2./a_alpha
-        x2 = A/(two_root_two*B)
-        t0 = (Z + root_two_p1*B)/(Z - root_two_m1*B)
+        root_two_B = B*root_two
+        ZB = Z + B
+        
+        x2 = A/(root_two_B + root_two_B)
         try:
-            x3 = log(t0)
+            x4 = log((ZB + root_two_B)/(ZB - root_two_B))
         except ValueError:
             # less than zero
-            x3 = 0.0
-        x4 = x2*x3
+            x4 = 0.0
+        x4 = x2*x4
 
         fugacity_sum_terms = self._fugacity_sum_terms
         
         t50 = x4*x1
-        t51 = b_inv*(x4 + Zm1)
+        t51 = (x4 + Zm1)/b
         
         return [bs[i]*t51 - x0 - t50*fugacity_sum_terms[i]
                 for i in self.cmps]
