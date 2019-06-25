@@ -243,4 +243,4 @@ def test_water_ethanol_methanol_madeup():
         return GE.to_T_xs(T, xs).dGE_dT()
     
     d2GE_dTdxs_numerical = jacobian(to_jac, xs, perturbation=3e-8)
-    assert_allclose(d2GE_dTdxs_analytical, d2GE_dTdxs_numerical, rtol=1e-8)
+    assert_allclose(d2GE_dTdxs_analytical, d2GE_dTdxs_numerical, rtol=1e-7)

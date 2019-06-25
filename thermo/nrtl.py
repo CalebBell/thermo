@@ -83,8 +83,39 @@ class NRTL(GibbsExcess):
         
         if T == self.T:
             try:
-                # TODO
-                new._lambdas = self._lambdas
+                new._taus = self._taus
+            except AttributeError:
+                pass
+            try:
+                new._dtaus_dT = self._dtaus_dT
+            except AttributeError:
+                pass
+            try:
+                new._d2taus_dT2 = self._d2taus_dT2
+            except AttributeError:
+                pass
+            try:
+                new._d3taus_dT3 = self._d3taus_dT3
+            except AttributeError:
+                pass
+            try:
+                new._alphas = self._alphas
+            except AttributeError:
+                pass
+            try:
+                new._Gs = self._Gs
+            except AttributeError:
+                pass
+            try:
+                new._dGs_dT = self._dGs_dT
+            except AttributeError:
+                pass
+            try:
+                new._d2Gs_dT2 = self._d2Gs_dT2
+            except AttributeError:
+                pass
+            try:
+                new._d3Gs_dT3 = self._d3Gs_dT3
             except AttributeError:
                 pass
             
@@ -96,14 +127,12 @@ class NRTL(GibbsExcess):
         except AttributeError:
             pass
         cmps = self.cmps
-        xj_Gs_jis, xj_Gs_taus_jis = self.xj_Gs_jis(), self.xj_Gs_taus_jis()
-        taus = self.taus()
-        Gs = self.Gs()
+        xj_Gs_jis_inv, xj_Gs_taus_jis = self.xj_Gs_jis_inv(), self.xj_Gs_taus_jis()
         T, xs = self.T, self.xs
         
-        tot = 0
+        tot = 0.0
         for i in cmps:
-            tot += xs[i]*xj_Gs_taus_jis[i]/xj_Gs_jis[i]
+            tot += xs[i]*xj_Gs_taus_jis[i]*xj_Gs_jis_inv[i]
         self._GE = GE = T*R*tot
         return GE
     
@@ -112,9 +141,30 @@ class NRTL(GibbsExcess):
             return self._gammas
         except AttributeError:
             pass
-        alphas = self.alphas()
-        taus = self.taus()
-        self._gammas = gammas = NRTL_gammas(xs=self.xs, taus=taus, alphas=alphas)
+        try:
+            taus = self._taus
+        except AttributeError:
+            taus = self.taus()
+        try:
+            Gs = self._Gs
+        except AttributeError:
+            Gs = self.Gs()
+            
+        xs, cmps = self.xs, self.cmps
+            
+        xj_Gs_jis_inv, xj_Gs_taus_jis = self.xj_Gs_jis_inv(), self.xj_Gs_taus_jis()
+        
+        self._gammas = gammas = []
+        
+        for i in cmps:
+            tot = xj_Gs_taus_jis[i]*xj_Gs_jis_inv[i]
+            for j in cmps:
+                # Possible to factor out some terms which depend on j only; or to index taus, Gs separately
+                tot += xs[j]*Gs[i][j]*xj_Gs_jis_inv[j]*(taus[i][j] - xj_Gs_taus_jis[j]*xj_Gs_jis_inv[j])
+            gammas.append(exp(tot))
+       
+            
+#        self._gammas = gammas = NRTL_gammas(xs=self.xs, taus=taus, alphas=alphas)
         return gammas
 
 
@@ -559,6 +609,20 @@ class NRTL(GibbsExcess):
                 tot += xs[j]*Gs[j][i]
             xj_Gs_jis.append(tot)
         return xj_Gs_jis
+    
+    def xj_Gs_jis_inv(self):
+        try:
+            return self._xj_Gs_jis_inv
+        except AttributeError:
+            pass
+
+        try:
+            xj_Gs_jis = self._xj_Gs_jis
+        except AttributeError:
+            xj_Gs_jis = self.xj_Gs_jis()
+        
+        self._xj_Gs_jis_inv = [1.0/i for i in xj_Gs_jis]
+        return self._xj_Gs_jis_inv
 
     def xj_Gs_taus_jis(self):
         # sum2
@@ -781,7 +845,12 @@ class NRTL(GibbsExcess):
             return self._d2GE_dTdxs
         except AttributeError:
             pass
-        sum1, sum2, sum3, sum4, sum5 = self.xj_Gs_jis(), self.xj_Gs_taus_jis(), self.xj_dGs_dT_jis(), self.xj_taus_dGs_dT_jis(), self.xj_Gs_dtaus_dT_jis()
+        
+        sum1 = self.xj_Gs_jis_inv()
+        sum2 = self.xj_Gs_taus_jis()
+        sum3 = self.xj_dGs_dT_jis()
+        sum4 = self.xj_taus_dGs_dT_jis()
+        sum5 = self.xj_Gs_dtaus_dT_jis()
         
         
         T, xs, cmps = self.T, self.xs, self.cmps
@@ -790,31 +859,27 @@ class NRTL(GibbsExcess):
         
         Gs = self.Gs()
         dGs_dT = self.dGs_dT()
+        
+        xs_sum1s = [xs[i]*sum1[i] for i in cmps]
+        sum1_sum2s = [sum1[i]*sum2[i] for i in cmps]
 
         self._d2GE_dTdxs = d2GE_dTdxs = []
         for i in cmps:
-            tot1 = sum3[i]*sum2[i]/(sum1[i]**2) # Last singleton
-            tot1 -= (sum5[i] + sum4[i])/sum1[i] # second last singleton
-            for j in cmps:
-                tot1 -= xs[j]*(Gs[i][j]*dtaus_dT[i][j] + taus[i][j]*dGs_dT[i][j])/sum1[j]
-                
-                tot1 += xs[j]*Gs[i][j]*taus[i][j]*sum3[j]/sum1[j]**2
-                
-                tot1 += xs[j]*dGs_dT[i][j]*sum2[j]/sum1[j]**2
-                
-                tot1 += xs[j]*Gs[i][j]*(sum5[j] + sum4[j])/sum1[j]**2
-                
-                tot1 -= 2.0*xs[j]*Gs[i][j]*sum3[j]*sum2[j]/sum1[j]**3
-                
+            others = sum1_sum2s[i]
+            tot1 = sum1[i]*(sum3[i]*sum1_sum2s[i] - (sum5[i] + sum4[i])) # Last singleton and second last singleton
             
-            others = sum2[i]/sum1[i]
+            Gsi = Gs[i]
+            tausi = taus[i]
             for j in cmps:
-                others += xs[j]*Gs[i][j]*taus[i][j]/sum1[j]
+                t0 = sum1_sum2s[j]*dGs_dT[i][j]
+                t0 += sum1[j]*Gsi[j]*(sum3[j]*(tausi[j] - sum1_sum2s[j] - sum1_sum2s[j]) + sum5[j] + sum4[j]) # Could store and factor this stuff out but just makes it slower
+                t0 -= (Gsi[j]*dtaus_dT[i][j] + tausi[j]*dGs_dT[i][j])
                 
-                others -= xs[j]*Gs[i][j]*sum2[j]/sum1[j]**2
-                
-            dG = R*(-T*tot1 + others)
+                tot1 += t0*xs_sum1s[j]
             
+                others += xs_sum1s[j]*Gsi[j]*(tausi[j] - sum1_sum2s[j])
+                
+            dG = -R*(T*tot1 - others)
             d2GE_dTdxs.append(dG)
         return d2GE_dTdxs
         
@@ -827,45 +892,24 @@ class NRTL(GibbsExcess):
         u, v, w = symbols('u, v, w', cls=Function)
         diff(T* (m(T)*n(T) + r(T)*s(T) + u(T)*v(T))/(o(T) + t(T) + w(T)), T)
         '''
-        # DO NOT EDIT _ WORKING
         try:
             return self._dGE_dT
         except AttributeError:
             pass
         T, xs, cmps = self.T, self.xs, self.cmps
-        taus = self.taus()
-        dtaus_dT = self.dtaus_dT()
         
-        alphas = self.alphas()
-        dalphas_dT = self.dalphas_dT()
+        xj_Gs_jis_inv = self.xj_Gs_jis_inv() # sum1 inv
+        xj_Gs_taus_jis = self.xj_Gs_taus_jis() # sum2
+        xj_dGs_dT_jis = self.xj_dGs_dT_jis() # sum3
+        xj_taus_dGs_dT_jis = self.xj_taus_dGs_dT_jis() # sum4
+        xj_Gs_dtaus_dT_jis = self.xj_Gs_dtaus_dT_jis() # sum5
         
-        Gs = self.Gs()
-        dGs_dT = self.dGs_dT()
-        
-        tot = 0
+        tot = 0.0
         for i in cmps:
-            sum1 = 0.0
-            sum2 = 0.0
-            sum3 = 0.0
-            sum4 = 0.0
-            sum5 = 0.0
-            for j in cmps:
-                tauji = taus[j][i] 
-                
-                Gjixj = Gs[j][i]*xs[j]
-                dGjidTxj = dGs_dT[j][i]*xs[j]
-                
-                sum1 += Gjixj
-                sum2 += tauji*Gjixj
-                sum3 += dGjidTxj
-                sum4 += tauji*dGjidTxj
-                sum5 += dtaus_dT[j][i]*Gjixj
-            
-            t1 = sum2/sum1 - T*(sum2*sum3)/(sum1*sum1) + T*(sum4 + sum5)/sum1
-            tot += xs[i]*t1
-        
-        self._dGE_dT = dGE_dT = R*tot
-        return dGE_dT
+            tot += (xs[i]*(xj_Gs_taus_jis[i] + T*((xj_taus_dGs_dT_jis[i] + xj_Gs_dtaus_dT_jis[i])
+                    - (xj_Gs_taus_jis[i]*xj_dGs_dT_jis[i])*xj_Gs_jis_inv[i]))*xj_Gs_jis_inv[i])  
+        self._dGE_dT = R*tot
+        return self._dGE_dT
 
     def d2GE_dT2(self):
         '''from sympy import *

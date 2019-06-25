@@ -2120,7 +2120,6 @@ def NRTL_gammas(xs, taus, alphas):
         td2s.append(td2xj)
         tn3s.append(tn3*td2*td2xj)
             
-#    Gs = [[exp(-alphas[i][j]*taus[i][j]) for j in cmps] for i in cmps]
     for i in cmps:
         tn1, td1, total2 = 0., 0., 0.
         Gsi = Gs[i]
@@ -3031,6 +3030,10 @@ class GibbsExcess(object):
         f = symbols('f', cls=Function)
         diff(exp(f(T)/(R*T)), T)
         '''
+        try:
+            return self._dgammas_dT
+        except AttributeError:
+            pass
         d2nGE_dTdns = self.d2nGE_dTdns()
         
         dG_dxs = self.dGE_dxs()
@@ -3039,8 +3042,11 @@ class GibbsExcess(object):
         
         T_inv = 1.0/self.T
         RT_inv = R_inv*T_inv
-        return [(d2nGE_dTdns[i]*RT_inv - dG_dns[i]*RT_inv*T_inv)*exp(dG_dns[i]*RT_inv)
-                for i in self.cmps]
+        self._dgammas_dT = dgammas_dT = []
+        for i in self.cmps:
+            x1 = dG_dns[i]*T_inv
+            dgammas_dT.append(RT_inv*(d2nGE_dTdns[i] - x1)*exp(x1))
+        return dgammas_dT
 
 
 class IdealSolution(object):
