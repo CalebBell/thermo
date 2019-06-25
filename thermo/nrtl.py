@@ -111,7 +111,7 @@ class NRTL(GibbsExcess):
             except AttributeError:
                 pass
             try:
-                new._d2Gs_dT2 = self._d2Gs_dT2
+                new._d2Gs_dT2 = self._d2Gs_dT2 
             except AttributeError:
                 pass
             try:
@@ -561,33 +561,20 @@ class NRTL(GibbsExcess):
         except AttributeError:
             pass
         T, xs, cmps = self.T, self.xs, self.cmps
+        RT = R*T
         taus = self.taus()
-        alphas = self.alphas()
         Gs = self.Gs()
+        xj_Gs_jis_inv = self.xj_Gs_jis_inv()
+        xj_Gs_taus_jis = self.xj_Gs_taus_jis()
         
         self._dGE_dxs = dGE_dxs = []
         
         for k in cmps:
             # k is what is being differentiated
-            tot = 0
+            tot = xj_Gs_taus_jis[k]*xj_Gs_jis_inv[k]
             for i in cmps:
-                
-                # sum1 in other places
-                sum1 = 0.0
-                sum2 = 0.0
-                for j in cmps:
-                    sum1 += xs[j]*Gs[j][i]
-                    sum2 += xs[j]*taus[j][i]*Gs[j][i] # sum2 in other places
-                    
-                term0 = xs[i]*Gs[k][i]*taus[k][i]/sum1
-                term1 = -xs[i]*Gs[k][i]*sum2/(sum1*sum1)
-                
-                
-                tot += term0 + term1
-                if i == k:
-                    tot += sum2/sum1
-            tot *= R*T
-            dGE_dxs.append(tot)
+                tot += xs[i]*xj_Gs_jis_inv[i]*Gs[k][i]*(taus[k][i] - xj_Gs_jis_inv[i]*xj_Gs_taus_jis[i])
+            dGE_dxs.append(tot*RT)
         return dGE_dxs
 
     def xj_Gs_jis(self):
@@ -789,7 +776,7 @@ class NRTL(GibbsExcess):
         taus = self.taus()
         alphas = self.alphas()
         Gs = self.Gs()
-        xj_Gs_jis = self.xj_Gs_jis()
+        xj_Gs_jis_inv = self.xj_Gs_jis_inv()
         xj_Gs_taus_jis = self.xj_Gs_taus_jis()
         RT = R*T
         
@@ -801,20 +788,20 @@ class NRTL(GibbsExcess):
             for j in cmps:
                 tot = 0.0
                 # two small terms
-                tot += Gs[i][j]*taus[i][j]/xj_Gs_jis[j]
-                tot += Gs[j][i]*taus[j][i]/xj_Gs_jis[i]
+                tot += Gs[i][j]*taus[i][j]*xj_Gs_jis_inv[j]
+                tot += Gs[j][i]*taus[j][i]*xj_Gs_jis_inv[i]
                 
                 # Two large terms
-                tot -= xj_Gs_taus_jis[j]*Gs[i][j]/(xj_Gs_jis[j]**2)
-                tot -= xj_Gs_taus_jis[i]*Gs[j][i]/(xj_Gs_jis[i]**2)
+                tot -= xj_Gs_taus_jis[j]*Gs[i][j]*(xj_Gs_jis_inv[j]*xj_Gs_jis_inv[j])
+                tot -= xj_Gs_taus_jis[i]*Gs[j][i]*(xj_Gs_jis_inv[i]*xj_Gs_jis_inv[i])
                 
                 # Three terms
                 for k in cmps:
-                    tot += 2.0*xs[k]*xj_Gs_taus_jis[k]*Gs[i][k]*Gs[j][k]/(xj_Gs_jis[k]**3)
+                    tot += 2.0*xs[k]*xj_Gs_taus_jis[k]*Gs[i][k]*Gs[j][k]*(xj_Gs_jis_inv[k]*xj_Gs_jis_inv[k]*xj_Gs_jis_inv[k])
                     
                 # 6 terms
                 for k in cmps:
-                    tot -= xs[k]*Gs[i][k]*Gs[j][k]*(taus[j][k] + taus[i][k])/xj_Gs_jis[k]**2
+                    tot -= xs[k]*Gs[i][k]*Gs[j][k]*(taus[j][k] + taus[i][k])*xj_Gs_jis_inv[k]*xj_Gs_jis_inv[k]
                 
                 tot *= RT
                 row.append(tot)
