@@ -587,14 +587,23 @@ class NRTL(GibbsExcess):
             Gs = self._Gs
         except AttributeError:
             Gs = self.Gs()
-        
+        try:
+            taus = self._taus
+        except AttributeError:
+            taus = self.taus()
+
         xs, cmps = self.xs, self.cmps
         self._xj_Gs_jis = xj_Gs_jis = []
+        self._xj_Gs_taus_jis = xj_Gs_taus_jis = []
         for i in cmps:
-            tot = 0.0
+            tot1 = 0.0
+            tot2 = 0.0
             for j in cmps:
-                tot += xs[j]*Gs[j][i]
-            xj_Gs_jis.append(tot)
+                xjGji = xs[j]*Gs[j][i]
+                tot1 += xjGji#xs[j]*Gs[j][i]
+                tot2 += xjGji*taus[j][i]
+            xj_Gs_jis.append(tot1)
+            xj_Gs_taus_jis.append(tot2)
         return xj_Gs_jis
     
     def xj_Gs_jis_inv(self):
@@ -616,7 +625,8 @@ class NRTL(GibbsExcess):
         try:
             return self._xj_Gs_taus_jis
         except AttributeError:
-            pass
+            self.xj_Gs_jis()
+            return self._xj_Gs_taus_jis
         
         try:
             Gs = self._Gs
