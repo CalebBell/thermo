@@ -379,10 +379,10 @@ class UNIQUAC(GibbsExcess):
         .. math::
             
         '''
-#        try:
-#            return self._dphis_dxixjs
-#        except AttributeError:
-#            pass
+        try:
+            return self._dphis_dxixjs
+        except AttributeError:
+            pass
         N, cmps, xs, rs = self.N, self.cmps, self.xs, self.rs
 
         self.phis() # Ensure the sum is there
@@ -393,33 +393,20 @@ class UNIQUAC(GibbsExcess):
         rsxs_sum_inv_2 = rsxs_sum_inv + rsxs_sum_inv
         rsxs_sum_inv2_2 = rsxs_sum_inv2 + rsxs_sum_inv2
         rsxs_sum_inv3_2 = rsxs_sum_inv3 + rsxs_sum_inv3
+        t1s = [rsxs_sum_inv2*(rs[i]*xs[i]*rsxs_sum_inv_2  - 1.0) for i in cmps]
+        t2s = [rs[i]*xs[i]*rsxs_sum_inv3_2 for i in cmps]
 
-        self._dphis_dxixjs = dphis_dxixjs = [[[0.0]*N for _ in cmps] for _ in cmps]
+        self._dphis_dxixjs = dphis_dxixjs = [[None for _ in cmps] for _ in cmps]
         
-        
-#        a, b, c = 0, 0, 0
         for k in cmps:
+            # There is symmetry here, but it is complex. 4200 of 8000 (N=20) values are unique.
+            # Due to the very large matrices, no gains to be had by exploiting it in this function
             dphis_dxixjsk = dphis_dxixjs[k]
             for j in cmps:
+                # Fastest I can test
                 dphis_dxixjskj = dphis_dxixjsk[j]
-                for i in cmps:
-#                    if i == j == k:
-#                        v = rs[i]*rs[i]*(rs[i]*xs[i]*rsxs_sum_inv - 1.0)*rsxs_sum_inv2_2
-                        
-                        
-#                    elif i != j and i != k and j == k:
-#                        b += 1
-#                        v = rs[k]*rs[j]*rs[i]*xs[i]*rsxs_sum_inv3_2
-                        
-                    if (i == k or i == j) and j != k:
-#                        c += 1
-                        v = rs[k]*rs[j]*(rs[i]*xs[i]*rsxs_sum_inv_2 - 1.0)*rsxs_sum_inv2
-                    else:
-#                    elif i != j and i != k:# and j != k:
-#                        a += 1
-                        v = rs[k]*rs[j]*rs[i]*xs[i]*rsxs_sum_inv3_2
-                    dphis_dxixjskj[i] = v
-#        print(a, b, c)
+                dphis_dxixjsk[j] = [rs[k]*rs[j]*t1s[i] if (i == k or i == j) and j != k
+                                       else rs[k]*rs[j]*t2s[i] for i in cmps]
             dphis_dxixjs[k][k][k] -= rs[k]*rs[k]*rsxs_sum_inv2_2
 
         return dphis_dxixjs
