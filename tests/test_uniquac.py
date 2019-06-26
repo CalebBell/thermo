@@ -29,10 +29,39 @@ from fluids.constants import calorie, R
 from thermo.activity import *
 from thermo.mixture import Mixture
 from thermo.uniquac import UNIQUAC
-import random
+from random import random
 from thermo import *
 import numpy as np
 from fluids.numerics import jacobian, hessian, derivative
+
+def make_rsqs(N):
+    cmps = range(N)
+    rs = [float('%.3g'%(random()*2.5)) for _ in cmps]
+    qs = [float('%.3g'%(random()*1.3)) for _ in cmps]
+    return rs, qs
+
+def make_taus(N):
+    cmps = range(N)
+    data = []
+    base = [1e-4, 200.0, -5e-4, -7e-5, 300, 9e-8]
+    
+    for i in cmps:
+        row = []
+        for j in cmps:
+            if i == j:
+                row.append([0.0]*6)
+            else:
+                row.append([float('%.3g'%(random()*n)) for n in base])
+        data.append(row)
+    return data
+
+def test_madeup_20():
+    N = 10
+    rs, qs = make_rsqs(N)
+    taus = make_taus(N)
+    xs = normalize([random() for i in range(N)])
+    T = 350.0
+    GE = UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, tau_coeffs=taus)
 
 def test_UNIQUAC_madeup_ternary():
     N = 3

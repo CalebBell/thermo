@@ -321,10 +321,9 @@ class UNIQUAC(GibbsExcess):
             return self._phis
         except AttributeError:
             pass
-        cmps, xs = self.cmps, self.xs
-        rs, qs = self.rs, self.qs        
+        cmps, xs, rs = self.cmps, self.xs, self.rs
         rsxs = [rs[i]*xs[i] for i in cmps]
-        rsxs_sum_inv = 1.0/sum(rsxs)
+        self._rsxs_sum_inv = rsxs_sum_inv = 1.0/sum(rsxs)
         # reuse the array
         for i in cmps:
             rsxs[i] *= rsxs_sum_inv
@@ -349,23 +348,23 @@ class UNIQUAC(GibbsExcess):
             return self._dphis_dxs
         except AttributeError:
             pass
-        N, cmps, xs = self.N, self.cmps, self.xs
-        rs, qs = self.rs, self.qs        
-        rsxs = [rs[i]*xs[i] for i in cmps]
-        rsxs_sum_inv = 1.0/sum(rsxs)
-        rsxs_sum_inv2 = rsxs_sum_inv*rsxs_sum_inv
+        N, cmps, xs, rs = self.N, self.cmps, self.xs, self.rs
+        
+        rsxs = list(self.phis())
+        rsxs_sum_inv = self._rsxs_sum_inv
+        rsxs_sum_inv_m = -rsxs_sum_inv
         
         for i in cmps:
             # reuse this array for memory savings
-            rsxs[i] *= -rsxs_sum_inv2
+            rsxs[i] *= rsxs_sum_inv_m
         
         self._dphis_dxs = dphis_dxs = [[0.0]*N for _ in cmps]
         for j in cmps:
             for i in cmps:
-                if i == j:
-                    dphis_dxs[i][j] = rsxs[i]*rs[j] + rs[i]*rsxs_sum_inv
-                else:
-                    dphis_dxs[i][j] = rsxs[i]*rs[j]
+                dphis_dxs[i][j] = rsxs[i]*rs[j]
+            # There is no symmetry to exploit here
+            dphis_dxs[j][j] += rs[j]*rsxs_sum_inv
+                    
         return dphis_dxs
 
     def dphis_dxixjs(self):
@@ -380,31 +379,49 @@ class UNIQUAC(GibbsExcess):
         .. math::
             
         '''
-        try:
-            return self._dphis_dxixjs
-        except AttributeError:
-            pass
-        N, cmps, xs = self.N, self.cmps, self.xs
-        rs, qs = self.rs, self.qs        
-        rsxs = [rs[i]*xs[i] for i in cmps]
-        rsxs_sum_inv = 1.0/sum(rsxs)
+#        try:
+#            return self._dphis_dxixjs
+#        except AttributeError:
+#            pass
+        N, cmps, xs, rs = self.N, self.cmps, self.xs, self.rs
+
+        self.phis() # Ensure the sum is there
+        rsxs_sum_inv = self._rsxs_sum_inv
         rsxs_sum_inv2 = rsxs_sum_inv*rsxs_sum_inv
         rsxs_sum_inv3 = rsxs_sum_inv2*rsxs_sum_inv
+        
+        rsxs_sum_inv_2 = rsxs_sum_inv + rsxs_sum_inv
+        rsxs_sum_inv2_2 = rsxs_sum_inv2 + rsxs_sum_inv2
+        rsxs_sum_inv3_2 = rsxs_sum_inv3 + rsxs_sum_inv3
 
         self._dphis_dxixjs = dphis_dxixjs = [[[0.0]*N for _ in cmps] for _ in cmps]
         
+        
+#        a, b, c = 0, 0, 0
         for k in cmps:
+            dphis_dxixjsk = dphis_dxixjs[k]
             for j in cmps:
+                dphis_dxixjskj = dphis_dxixjsk[j]
                 for i in cmps:
-                    if i == j == k:
-                        v = 2.0*rs[i]*rs[i]*(rs[i]*xs[i]*rsxs_sum_inv - 1.0)*rsxs_sum_inv2
-                    elif i != j and i != k and j != k:
-                        v = 2.0*rs[i]*rs[j]*rs[k]*xs[i]*rsxs_sum_inv3
-                    elif i != j and i != k and j == k:
-                        v = 2.0*rs[k]*rs[j]*rs[i]*xs[i]*rsxs_sum_inv3
-                    elif (i == k or i == j) and j != k:
-                        v = rs[k]*rs[j]*(2.0*rs[i]*xs[i]*rsxs_sum_inv - 1.0)*rsxs_sum_inv2
-                    dphis_dxixjs[k][j][i] = v
+#                    if i == j == k:
+#                        v = rs[i]*rs[i]*(rs[i]*xs[i]*rsxs_sum_inv - 1.0)*rsxs_sum_inv2_2
+                        
+                        
+#                    elif i != j and i != k and j == k:
+#                        b += 1
+#                        v = rs[k]*rs[j]*rs[i]*xs[i]*rsxs_sum_inv3_2
+                        
+                    if (i == k or i == j) and j != k:
+#                        c += 1
+                        v = rs[k]*rs[j]*(rs[i]*xs[i]*rsxs_sum_inv_2 - 1.0)*rsxs_sum_inv2
+                    else:
+#                    elif i != j and i != k:# and j != k:
+#                        a += 1
+                        v = rs[k]*rs[j]*rs[i]*xs[i]*rsxs_sum_inv3_2
+                    dphis_dxixjskj[i] = v
+#        print(a, b, c)
+            dphis_dxixjs[k][k][k] -= rs[k]*rs[k]*rsxs_sum_inv2_2
+
         return dphis_dxixjs
 
     def thetas(self):
