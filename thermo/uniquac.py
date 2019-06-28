@@ -419,7 +419,9 @@ class UNIQUAC(GibbsExcess):
         cmps, xs = self.cmps, self.xs
         rs, qs = self.rs, self.qs
         qsxs = [qs[i]*xs[i] for i in cmps]
-        qsxs_sum_inv = 1.0/sum(qsxs)
+        self._qsxs_sum_inv = qsxs_sum_inv = 1.0/sum(qsxs)
+        
+        
         
         # reuse the array qsxs to store thetas
         for i in cmps:
@@ -427,6 +429,88 @@ class UNIQUAC(GibbsExcess):
         self._thetas = qsxs
         return qsxs
 
+
+    def dthetas_dxs(self):
+        r'''
+        
+        if i != j:
+            
+        .. math::
+            \frac{\partial \theta_i}{x_j} = \frac{-r_i r_j x_i}{(\sum_k r_k x_k)^2}
+            
+        else:
+            
+        .. math::
+            \frac{\partial \theta_i}{x_j} = \frac{-r_i r_j x_i}{(\sum_k r_k x_k)^2} + \frac{r_i}{\sum_k r_k x_k}
+            
+        '''
+        try:
+            return self._dthetas_dxs
+        except AttributeError:
+            pass
+        N, cmps, xs, qs = self.N, self.cmps, self.xs, self.qs
+        
+        qsxs = list(self.thetas())
+        qsxs_sum_inv = self._qsxs_sum_inv
+        qsxs_sum_inv_m = -qsxs_sum_inv
+        
+        for i in cmps:
+            # reuse this array for memory savings
+            qsxs[i] *= qsxs_sum_inv_m
+        
+        self._dthetas_dxs = dthetas_dxs = [[0.0]*N for _ in cmps]
+        for j in cmps:
+            for i in cmps:
+                dthetas_dxs[i][j] = qsxs[i]*qs[j]
+            # There is no symmetry to exploit here
+            dthetas_dxs[j][j] += qs[j]*qsxs_sum_inv
+                    
+        return dthetas_dxs
+
+    def dthetas_dxixjs(self):
+        r'''
+        
+        if i != j:
+            
+        .. math::
+            
+        else:
+            
+        .. math::
+            
+        '''
+        try:
+            return self._dthetas_dxixjs
+        except AttributeError:
+            pass
+        N, cmps, xs, qs = self.N, self.cmps, self.xs, self.qs
+
+        self.thetas() # Ensure the sum is there
+        qsxs_sum_inv = self._qsxs_sum_inv
+        qsxs_sum_inv2 = qsxs_sum_inv*qsxs_sum_inv
+        qsxs_sum_inv3 = qsxs_sum_inv2*qsxs_sum_inv
+        
+        qsxs_sum_inv_2 = qsxs_sum_inv + qsxs_sum_inv
+        qsxs_sum_inv2_2 = qsxs_sum_inv2 + qsxs_sum_inv2
+        qsxs_sum_inv3_2 = qsxs_sum_inv3 + qsxs_sum_inv3
+        t1s = [qsxs_sum_inv2*(qs[i]*xs[i]*qsxs_sum_inv_2  - 1.0) for i in cmps]
+        t2s = [qs[i]*xs[i]*qsxs_sum_inv3_2 for i in cmps]
+
+        self._dthetas_dxixjs = dthetas_dxixjs = [[None for _ in cmps] for _ in cmps]
+        
+        for k in cmps:
+            # There is symmetry here, but it is complex. 4200 of 8000 (N=20) values are unique.
+            # Due to the very large matrices, no gains to be had by exploiting it in this function
+            dthetas_dxixjsk = dthetas_dxixjs[k]
+            for j in cmps:
+                # Fastest I can test
+                dthetas_dxixjskj = dthetas_dxixjsk[j]
+                dthetas_dxixjsk[j] = [qs[k]*qs[j]*t1s[i] if (i == k or i == j) and j != k
+                                       else qs[k]*qs[j]*t2s[i] for i in cmps]
+            dthetas_dxixjs[k][k][k] -= qs[k]*qs[k]*qsxs_sum_inv2_2
+
+        return dthetas_dxixjs
+    
     def thetaj_taus_jis(self):
         # sum1
         try:
@@ -649,15 +733,53 @@ class UNIQUAC(GibbsExcess):
         return d3GE_dT3
         
     def dGE_dxs(self):
-        T, xs, cmps = self.T, self.xs, self.cmps
+        z, T, xs, cmps = self.z, self.T, self.xs, self.cmps
+        qs, rs = self.qs, self.rs
         taus = self.taus()
+        phis = self.phis()
+        dphis_dxs = self.dphis_dxs()
+        thetas = self.thetas()
+        dthetas_dxs = self.dthetas_dxs()
+        
+        tau_kj_theta_k_sums = []
+        for j in cmps:
+            tot = 0.0
+            for k in cmps:
+                tot += taus[k][j]*thetas[k]
+            tau_kj_theta_k_sums.append(tot)
+        
+        
+        # index style - [THE THETA FOR WHICH THE DERIVATIVE IS BEING CALCULATED][THE VARIABLE BEING CHANGED CAUsING THE DIFFERENCE]
+
         
         dGE_dxs = []
         
-        for k in cmps:
-            # k is what is being differentiated
-            tot = 0
-            for i in cmps:
-                pass
-            dGE_dxs.append(tot)
+        RT = R*T
+        
+        for i in cmps:
+            # i is what is being differentiated
+            tot = 0.0
+            for j in cmps:
+                # dthetas_dxs and dphis_dxs indexes could be an issue
+                tot += 0.5*qs[j]*xs[j]*phis[j]*z/thetas[j]*(
+                        1.0/phis[j]*dthetas_dxs[j][i]
+                        - thetas[j]/phis[j]**2*dphis_dxs[j][i]
+                        )
+            
+                tot -= qs[j]*xs[j]*sum(taus[k][j]*dthetas_dxs[k][i] for k in cmps)/tau_kj_theta_k_sums[j]
+                if i != j:
+                    # Double index issue
+                    tot += xs[j]/phis[j]*dphis_dxs[j][i]
+            
+            tot += 0.5*z*qs[i]*log(thetas[i]/phis[i])
+            tot -= qs[i]*log(tau_kj_theta_k_sums[i])
+            tot += xs[i]*xs[i]/phis[i]*(dphis_dxs[i][i]/xs[i] - phis[i]/(xs[i]*xs[i]))
+            tot += log(phis[i]/xs[i])
+            
+            
+            # Last terms
+                
+            
+                
+            dGE_dxs.append(RT*tot)
         return dGE_dxs

@@ -56,7 +56,7 @@ def make_taus(N):
     return data
 
 def test_madeup_20():
-    N = 10
+    N = 20
     rs, qs = make_rsqs(N)
     taus = make_taus(N)
     xs = normalize([random() for i in range(N)])
@@ -133,3 +133,14 @@ def test_UNIQUAC_madeup_ternary():
     assert_allclose(dphis_dxixjs_analytical, dphis_dxixjs_expect, rtol=1e-12)
     dphis_dxixjs_numerical = hessian(lambda xs: GE.to_T_xs(T, xs).phis(), xs, scalar=False, perturbation=1e-5)
     assert_allclose(dphis_dxixjs_numerical, dphis_dxixjs_analytical, rtol=8e-5)
+    
+    
+    def to_jac(xs):
+        return GE.to_T_xs(T, xs).GE()
+    
+    # Obtained 12 decimals of precision with numdifftools
+    dGE_dxs_analytical = GE.dGE_dxs()
+    dGE_dxs_expect = [-2651.3181821109024, -2085.574403592012, -2295.0860830203587]
+    assert_allclose(dGE_dxs_analytical, dGE_dxs_expect, rtol=1e-12)
+    dGE_dxs_numerical = jacobian(to_jac, xs, perturbation=1e-8)
+    assert_allclose(dGE_dxs_numerical, dGE_dxs_analytical, rtol=1e-6)

@@ -161,9 +161,9 @@ class NRTL(GibbsExcess):
             for j in cmps:
                 # Possible to factor out some terms which depend on j only; or to index taus, Gs separately
                 tot += xs[j]*Gs[i][j]*xj_Gs_jis_inv[j]*(taus[i][j] - xj_Gs_taus_jis[j]*xj_Gs_jis_inv[j])
+            
             gammas.append(exp(tot))
        
-            
 #        self._gammas = gammas = NRTL_gammas(xs=self.xs, taus=taus, alphas=alphas)
         return gammas
 
