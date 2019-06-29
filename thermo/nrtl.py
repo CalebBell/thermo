@@ -156,11 +156,16 @@ class NRTL(GibbsExcess):
         
         self._gammas = gammas = []
         
+        t0s = [xs[j]*xj_Gs_jis_inv[j] for j in cmps]
+        t1s = [xj_Gs_taus_jis[j]*xj_Gs_jis_inv[j] for j in cmps]
+        
         for i in cmps:
             tot = xj_Gs_taus_jis[i]*xj_Gs_jis_inv[i]
+            Gsi = Gs[i]
+            tausi = taus[i]
             for j in cmps:
                 # Possible to factor out some terms which depend on j only; or to index taus, Gs separately
-                tot += xs[j]*Gs[i][j]*xj_Gs_jis_inv[j]*(taus[i][j] - xj_Gs_taus_jis[j]*xj_Gs_jis_inv[j])
+                tot += t0s[j]*Gsi[j]*(tausi[j] - t1s[j])
             
             gammas.append(exp(tot))
        
