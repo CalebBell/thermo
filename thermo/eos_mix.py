@@ -1431,7 +1431,7 @@ class GCEOSMIX(GCEOS):
 #            print(lnKs_guess[-1], err[0])
             return err
 
-        ans, count = broyden2(fun=err, jac=err_and_jacobian, xs=lnKs_guess, xtol=xtol, maxiter=maxiter, jac_has_fun=True)
+        ans, count = broyden2(fun=err, jac=err_and_jacobian, xs=lnKs_guess, xtol=xtol, maxiter=maxiter, jac_has_fun=True, skip_J=True)
         V_over_F, xs, ys, eos_l, eos_g = info
         return V_over_F, xs, ys, eos_l, eos_g, count
 

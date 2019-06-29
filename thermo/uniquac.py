@@ -783,3 +783,69 @@ class UNIQUAC(GibbsExcess):
                 
             dGE_dxs.append(RT*tot)
         return dGE_dxs
+
+    def d2GE_dTdxs(self):
+        r'''
+        '''
+        try:
+            return self._d2GE_dTdxs
+        except AttributeError:
+            pass
+        z, T, xs, cmps = self.z, self.T, self.xs, self.cmps
+        qs, rs = self.qs, self.rs
+        taus = self.taus()
+        phis = self.phis()
+        dphis_dxs = self.dphis_dxs()
+        thetas = self.thetas()
+        dthetas_dxs = self.dthetas_dxs()
+        dtaus_dT = self.dtaus_dT()
+        
+        thetaj_taus_jis = self.thetaj_taus_jis()
+        thetaj_dtaus_dT_jis = self.thetaj_dtaus_dT_jis()
+
+
+        tau_kj_theta_k_sums = []
+        for j in cmps:
+            tot = 0.0
+            for k in cmps:
+                tot += taus[k][j]*thetas[k]
+            tau_kj_theta_k_sums.append(tot)
+
+
+        d2GE_dTdxs = []
+        
+        # index style - [THE THETA FOR WHICH THE DERIVATIVE IS BEING CALCULATED][THE VARIABLE BEING CHANGED CAUsING THE DIFFERENCE]
+        for i in cmps:
+            # i is what is being differentiated
+            tot, Ttot = 0.0, 0.0
+            Ttot += qs[i]*thetaj_dtaus_dT_jis[i]/thetaj_taus_jis[i]
+            
+            for j in cmps:
+                ## Temperature multiplied terms
+                Ttot += qs[j]*xs[j]*(sum([dtaus_dT[k][j]*dthetas_dxs[k][i] for k in cmps]))/thetaj_taus_jis[k]
+                Ttot -= qs[j]*xs[j]*(sum([dtaus_dT[k][j]*thetas[k] for k in cmps])*sum([dthetas_dxs[k][i]*taus[k][j] for k in cmps])
+                                   )/thetaj_taus_jis[k]**2
+                
+                ## Non temperature multiplied terms
+                tot += qs[j]*xs[j]*z/(2.0*thetas[j])*(dthetas_dxs[j][i] - thetas[j]/phis[j]*dphis_dxs[j][i])
+
+                term = 0.0
+                for k in cmps:
+                    term += taus[k][j]*dthetas_dxs[k][i]
+                tot -= qs[j]*xs[j]*term/tau_kj_theta_k_sums[j]
+                
+                
+                # First term which is almost like it
+                tot += xs[i]/phis[i]*(dphis_dxs[i][i] - phis[i]/xs[i])
+                # Terms reused from dGE_dxs
+                if i != j:
+                    # Double index issue
+                    tot += xs[j]/phis[j]*dphis_dxs[j][i]
+            tot += log(phis[i]/xs[i])
+            tot -= qs[i]*log(tau_kj_theta_k_sums[i])
+            tot += 0.5*z*qs[i]*log(thetas[i]/phis[i])
+                
+#            tot += -T*Ttot
+
+            d2GE_dTdxs.append(R*(-T*Ttot + tot))
+        return d2GE_dTdxs
