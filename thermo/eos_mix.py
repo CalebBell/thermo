@@ -31,7 +31,7 @@ import numpy as np
 from cmath import log as clog, atanh as catanh
 from scipy.optimize import minimize
 from scipy.misc import derivative
-from fluids.numerics import IS_PYPY, newton_system, UnconvergedError
+from fluids.numerics import IS_PYPY, newton_system, broyden2, UnconvergedError
 from thermo.utils import normalize, Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter, dxs_to_dn_partials, dxs_to_dns, dns_to_dn_partials, d2xs_to_dxdn_partials, d2ns_to_dn2_partials
 from thermo.utils import R
 from thermo.utils import log, exp, sqrt
@@ -1316,17 +1316,18 @@ class GCEOSMIX(GCEOS):
 
         return J
             
-    def _err_VL(self, lnKsVF, T, P, zs, near_critical=False):
-        import numpy as np
+    def _err_VL(self, lnKsVF, T, P, zs, near_critical=False, info=None):
+#        import numpy as np
         # tried autograd without luck
         lnKs = lnKsVF[:-1]
-        if isinstance(lnKs, np.ndarray):
-            lnKs = lnKs.tolist()
+#        if isinstance(lnKs, np.ndarray):
+#            lnKs = lnKs.tolist()
 #        Ks = np.exp(lnKs)
         Ks = [exp(lnKi) for lnKi in lnKs]
         VF = float(lnKsVF[-1])
 #        VF = lnKsVF[-1]
-        
+        if info is None:
+            info = []
         xs = [zi/(1.0 + VF*(Ki - 1.0)) for zi, Ki in zip(zs, Ks)]
         ys = [Ki*xi for Ki, xi in zip(Ks, xs)]
         
@@ -1352,6 +1353,7 @@ class GCEOSMIX(GCEOS):
 #        Fs = [fl/fg-1.0 for fl, fg in zip(fugacities_l, fugacities_g)]
         Fs = [lnKi - lnphi_l + lnphi_g for lnphi_l, lnphi_g, lnKi in zip(lnphis_l, lnphis_g, lnKs)]
         Fs.append(err_RR)
+        info[:] = VF, xs, ys, eos_l, eos_g
         return Fs
         
     def sequential_substitution_3P(self, Ks_y, Ks_z, beta_y, beta_z=0.0,
@@ -1399,6 +1401,39 @@ class GCEOSMIX(GCEOS):
         V_over_F, xs, ys, eos_l, eos_g = info
         return V_over_F, xs, ys, eos_l, eos_g
         
+
+
+    def broyden2_VL(self, Ks_initial=None, maxiter=30,
+                  ytol=1E-7, xtol=1e-8, near_critical=True,
+                  xs=None, ys=None, V_over_F=None):
+        T, P, zs = self.T, self.P, self.zs
+        if xs is not None and ys is not None and V_over_F is not None:
+            pass
+        else:
+            if Ks_initial is None:
+                Ks = [Wilson_K_value(T, P, Tci, Pci, omega) for Pci, Tci, omega in zip(self.Pcs, self.Tcs, self.omegas)]
+            else:
+                Ks = Ks_initial
+            V_over_F, xs, ys = flash_inner_loop(zs, Ks)
+        
+        
+        
+        
+        lnKs_guess = [log(yi/xi) for yi, xi in zip(ys, xs)] + [V_over_F]
+        
+        info = []
+        def err_and_jacobian(lnKs_guess):
+            err =  self._err_VL_jacobian(lnKs_guess, T, P, zs, near_critical=near_critical, err_also=True, info=info)
+#            print(lnKs_guess[-1], err[0])
+            return err[0], err[1]
+        def err(lnKs_guess):
+            err = self._err_VL(lnKs_guess, T, P, zs, near_critical=near_critical, info=info)
+#            print(lnKs_guess[-1], err[0])
+            return err
+
+        ans, count = broyden2(fun=err, jac=err_and_jacobian, xs=lnKs_guess, xtol=xtol, maxiter=maxiter, jac_has_fun=True)
+        V_over_F, xs, ys, eos_l, eos_g = info
+        return V_over_F, xs, ys, eos_l, eos_g, count
 
     def sequential_substitution_VL(self, Ks_initial=None, maxiter=1000,
                                    xtol=1E-13, near_critical=True, Ks_extra=None,
