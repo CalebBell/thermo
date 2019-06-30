@@ -819,28 +819,42 @@ class UNIQUAC(GibbsExcess):
             # i is what is being differentiated
             tot, Ttot = 0.0, 0.0
             Ttot += qs[i]*thetaj_dtaus_dT_jis[i]/thetaj_taus_jis[i]
-            
+            t49_sum = 0.0
+            t50_sum = 0.0
+            t51_sum = 0.0
+            t52_sum = 0.0
             for j in cmps:
                 ## Temperature multiplied terms
-                Ttot += qs[j]*xs[j]*(sum([dtaus_dT[k][j]*dthetas_dxs[k][i] for k in cmps]))/thetaj_taus_jis[k]
-                Ttot -= qs[j]*xs[j]*(sum([dtaus_dT[k][j]*thetas[k] for k in cmps])*sum([dthetas_dxs[k][i]*taus[k][j] for k in cmps])
-                                   )/thetaj_taus_jis[k]**2
+                t49 = qs[j]*xs[j]*(sum([dtaus_dT[k][j]*dthetas_dxs[k][i] for k in cmps]))/thetaj_taus_jis[j]
+                Ttot += t49 
+                t49_sum += t49
+
+                t50 = qs[j]*xs[j]*(sum([dtaus_dT[k][j]*thetas[k] for k in cmps])*sum([dthetas_dxs[k][i]*taus[k][j] for k in cmps])
+                                   )/thetaj_taus_jis[j]**2
+                Ttot -= t50
+                t50_sum -= t50
                 
                 ## Non temperature multiplied terms
-                tot += qs[j]*xs[j]*z/(2.0*thetas[j])*(dthetas_dxs[j][i] - thetas[j]/phis[j]*dphis_dxs[j][i])
+                t51 = qs[j]*xs[j]*z/(2.0*thetas[j])*(dthetas_dxs[j][i] - thetas[j]/phis[j]*dphis_dxs[j][i])
+                t51_sum += t51
+                tot += t51
 
                 term = 0.0
                 for k in cmps:
                     term += taus[k][j]*dthetas_dxs[k][i]
-                tot -= qs[j]*xs[j]*term/tau_kj_theta_k_sums[j]
+                
+                t52 = qs[j]*xs[j]*term/tau_kj_theta_k_sums[j]
+                t52_sum -= t52
+                tot -= t52 
                 
                 
-                # First term which is almost like it
-                tot += xs[i]/phis[i]*(dphis_dxs[i][i] - phis[i]/xs[i])
                 # Terms reused from dGE_dxs
                 if i != j:
                     # Double index issue
                     tot += xs[j]/phis[j]*dphis_dxs[j][i]
+                    
+            # First term which is almost like it
+            tot += xs[i]/phis[i]*(dphis_dxs[i][i] - phis[i]/xs[i])
             tot += log(phis[i]/xs[i])
             tot -= qs[i]*log(tau_kj_theta_k_sums[i])
             tot += 0.5*z*qs[i]*log(thetas[i]/phis[i])
