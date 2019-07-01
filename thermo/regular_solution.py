@@ -170,55 +170,52 @@ class RegularSolution(GibbsExcess):
             d2GE_dxixjs.append(row)
         return d2GE_dxixjs
                 
-#    def d3GE_dxixjxks(self):
-#        # Not complete/correct - need to handle more cases of differentiating with different things
-#        try:
-#            return self._d3GE_dxixjxks
-#        except:
-#            pass
-#        cmps, xsVs_inv = self.cmps, self.xsVs_inv
-#        xs, SPs, Vs, coeffs = self.xs, self.SPs, self.Vs, self.lambda_coeffs
-#        GE, dGE_dxs, d2GE_dxixjs = self.GE(), self.dGE_dxs(), self.d2GE_dxixjs()
-#
-#        Hi_sums = []
-#        for i in cmps:
-#            t = 0.0
-#            for j in cmps:
-#                SPi_m_SPj = SPs[i] - SPs[j]
-#                Hi = SPs[i]*SPs[j]*(coeffs[i][j] + coeffs[j][i]) + SPi_m_SPj*SPi_m_SPj
-#                t += Vs[i]*Vs[j]*xs[j]*Hi
-#            Hi_sums.append(t)
-#
-#        # all the same: analytical[i][j][k] = analytical[i][k][j] = analytical[j][i][k] = analytical[j][k][i] = analytical[k][i][j] = analytical[k][j][i] = float(v)
-#        self._d3GE_dxixjxks = d3GE_dxixjxks = []
-#        for i in cmps:
-#            dG_matrix = []
-#            for j in cmps:
-#                dG_row = []
-#                for k in cmps:
-#                    tot = 0.0
+    def d3GE_dxixjxks(self):
+        # Not complete/correct - need to handle more cases of differentiating with different things
+        try:
+            return self._d3GE_dxixjxks
+        except:
+            pass
+        cmps, xsVs_inv = self.cmps, self.xsVs_inv
+        xs, SPs, Vs, coeffs = self.xs, self.SPs, self.Vs, self.lambda_coeffs
+        GE, dGE_dxs, d2GE_dxixjs = self.GE(), self.dGE_dxs(), self.d2GE_dxixjs()
+
+        Hi_sums = []
+        for i in cmps:
+            t = 0.0
+            for j in cmps:
+                SPi_m_SPj = SPs[i] - SPs[j]
+                Hi = SPs[i]*SPs[j]*(coeffs[i][j] + coeffs[j][i]) + SPi_m_SPj*SPi_m_SPj
+                t += Vs[i]*Vs[j]*xs[j]*Hi
+            Hi_sums.append(t)
+
+        # all the same: analytical[i][j][k] = analytical[i][k][j] = analytical[j][i][k] = analytical[j][k][i] = analytical[k][i][j] = analytical[k][j][i] = float(v)
+        self._d3GE_dxixjxks = d3GE_dxixjxks = []
+        for i in cmps:
+            dG_matrix = []
+            for j in cmps:
+                dG_row = []
+                for k in cmps:
+                    tot = 0.0
 #                    if j == k:
-#                        thirds = -2.0*Vs[i]*Vs[j]*Vs[k]*GE + 2.0*Vs[j]*Vs[k]*Hi_sums[i]
-#                        seconds = Vs[i]*(Vs[j]*dGE_dxs[k] + Vs[k]*dGE_dxs[j])
-#                        seconds -= Vs[i]*Vs[j]*Vs[k]*(
-#                                    SPs[i]*(SPs[j]*(coeffs[i][j] + coeffs[j][i]) + SPs[j]*(coeffs[i][k] + coeffs[k][i]))
-#                                     + (SPs[i]-SPs[j])**2 + (SPs[i] - SPs[j])**2
-#                                     )
-#                        firsts = -Vs[i]*d2GE_dxixjs[j][k]
-#                        
-#                        
-#                        
-#                        tot = firsts*xsVs_inv + seconds*xsVs_inv*xsVs_inv + thirds*xsVs_inv*xsVs_inv*xsVs_inv
-#                    dG_row.append(tot)
-#                dG_matrix.append(dG_row)
-#            d3GE_dxixjxks.append(dG_matrix)
-#        return d3GE_dxixjxks
+                    thirds = -2.0*Vs[i]*Vs[j]*Vs[k]*GE + 2.0*Vs[j]*Vs[k]*Hi_sums[i]
+                    seconds = Vs[i]*(Vs[j]*dGE_dxs[k] + Vs[k]*dGE_dxs[j])
+                    seconds -= Vs[i]*Vs[j]*Vs[k]*(
+                                SPs[i]*(SPs[j]*(coeffs[i][j] + coeffs[j][i]) + SPs[k]*(coeffs[i][k] + coeffs[k][i]))
+                                 + (SPs[i]-SPs[j])**2 + (SPs[i] - SPs[k])**2
+                                 )
+                    firsts = -Vs[i]*d2GE_dxixjs[j][k]
+                    
+                    
+                    
+                    tot = firsts*xsVs_inv + seconds*xsVs_inv*xsVs_inv + thirds*xsVs_inv*xsVs_inv*xsVs_inv
+                    dG_row.append(tot)
+                dG_matrix.append(dG_row)
+            d3GE_dxixjxks.append(dG_matrix)
+        return d3GE_dxixjxks
     
     def d2GE_dTdxs(self):
-        try:
-            return self._dGE_dxs
-        except AttributeError:
-            return self.dGE_dxs()
+        return [0.0]*self.N
        
     def dGE_dT(self):
         return 0.0
