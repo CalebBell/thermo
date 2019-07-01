@@ -48,6 +48,7 @@ from . import property_package
 from . import property_package_constants
 from . import reaction
 from . import refractivity
+from . import regular_solution
 from . import safety
 from . import solubility
 from . import stream
@@ -93,6 +94,7 @@ from .property_package import *
 from .property_package_constants import *
 from .reaction import *
 from .refractivity import *
+from .regular_solution import *
 from .safety import *
 from .solubility import *
 from .stream import *
@@ -119,7 +121,7 @@ __all__ = ['activity', 'chemical', 'combustion', 'critical',
  'thermal_conductivity', 'triple', 'utils',
  'vapor_pressure', 'virial', 'viscosity', 'volume', 'acentric', 'coolprop', 
  'datasheet', 'dippr', 'unifac', 'stream', 'mixture', 'property_package_constants',
- 'chemical_utils', 'wilson', 'nrtl', 'uniquac']
+ 'chemical_utils', 'wilson', 'nrtl', 'uniquac', 'regular_solution']
 
 
 __all__.extend(acentric.__all__)
@@ -166,6 +168,8 @@ __all__.extend(chemical_utils.__all__)
 __all__.extend(wilson.__all__)
 __all__.extend(nrtl.__all__)
 __all__.extend(uniquac.__all__)
+__all__.extend(regular_solution.__all__)
+
 
 
 # backwards compatibility hack to allow thermo.chemical.Mixture to still be importable
