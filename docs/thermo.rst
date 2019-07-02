@@ -25,12 +25,14 @@ Submodules
    thermo.joback
    thermo.law
    thermo.lennard_jones
+   thermo.nrtl
    thermo.miscdata
    thermo.mixture
    thermo.permittivity
    thermo.phase_change
    thermo.property_package
    thermo.reaction
+   thermo.regular_solution
    thermo.refractivity
    thermo.safety
    thermo.solubility
@@ -45,4 +47,5 @@ Submodules
    thermo.viscosity
    thermo.volume
    thermo.wilson
+   thermo.uniquac
 

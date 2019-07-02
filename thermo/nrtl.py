@@ -729,16 +729,12 @@ class NRTL(GibbsExcess):
         
         .. math::
             \frac{\partial^2 g^E}{\partial x_i \partial x_j} = RT\left[
-
             + \frac{G_{ij}\tau_{ij}}{\sum_m x_m G_{mj}}
             + \frac{G_{ji}\tau_{jiij}}{\sum_m x_m G_{mi}}
             -\frac{(\sum_m x_m G_{mj}\tau_{mj})G_{ij}}{(\sum_m x_m G_{mj})^2}
             -\frac{(\sum_m x_m G_{mi}\tau_{mi})G_{ji}}{(\sum_m x_m G_{mi})^2}
-            
-            
             \sum_k \left(\frac{2x_k(\sum_m x_m \tau_{mk}G_{mk})G_{ik}G_{jk}}{(\sum_m x_m G_{mk})^3}
             - \frac{x_k G_{ik}G_{jk}(\tau_{jk} + \tau_{ik})}{(\sum_m x_m G_{mk})^2}
-            
             \right)
             \right]
         '''

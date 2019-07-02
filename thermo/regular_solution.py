@@ -64,6 +64,10 @@ class RegularSolution(GibbsExcess):
         r'''
         
         .. math::
+            G^E = \frac{\sum_m \sum_n (x_m x_n V_m V_n A_{mn})}{\sum_m x_m V_m}
+        
+        .. math::
+            A_{mn} = 0.5(\delta_m - \delta_n)^2 - \delta_m \delta_n k_{mn}
             
         '''
         '''
@@ -110,6 +114,12 @@ class RegularSolution(GibbsExcess):
 
 
     def dGE_dxs(self):
+        r'''
+        .. math::
+            \frac{\partial G^E}{\partial x_i} = \frac{-V_i G^E + \sum_m V_i V_m 
+            x_m[\delta_i\delta_m(k_{mi} + k_{im}) + (\delta_i - \delta_m)^2 ]}
+            {\sum_m V_m x_m}
+        '''
         '''
         dGEdxs = (diff(GE, x0)).subs(GE, GEvar(x0, x1, x2))
         Hi = dGEdxs.args[0].args[1]
@@ -136,6 +146,13 @@ class RegularSolution(GibbsExcess):
         return dGE_dxs
 
     def d2GE_dxixjs(self):
+        r'''
+        .. math::
+            \frac{\partial^2 G^E}{\partial x_i \partial x_j} = \frac{V_j(V_i G^E - H_{ij})}{(\sum_m V_m x_m)^2}
+            - \frac{V_i \frac{\partial G^E}{\partial x_j}}{\sum_m V_m x_m}
+            + \frac{V_i V_j[\delta_i\delta_j(k_{ji} + k_{ij}) + (\delta_i - \delta_j)^2] }{\sum_m V_m x_m}
+        '''
+        
         '''
         d2GEdxixjs = diff((diff(GE, x0)).subs(GE, GEvar(x0, x1, x2)), x1).subs(Hi, H(x0, x1, x2))
         d2GEdxixjs
@@ -171,7 +188,14 @@ class RegularSolution(GibbsExcess):
         return d2GE_dxixjs
                 
     def d3GE_dxixjxks(self):
-        # Not complete/correct - need to handle more cases of differentiating with different things
+        r'''
+        
+        .. math::
+            \frac{\partial^3 G^E}{\partial x_i \partial x_j \partial x_k} = \frac{-2V_iV_jV_k G^E + 2 V_j V_k H_{ij}} {(\sum_m V_m x_m)^3}
+            + \frac{V_i\left(V_j\frac{\partial G^E}{\partial x_k} + V_k\frac{\partial G^E}{\partial x_j}  \right)} {(\sum_m V_m x_m)^2}
+            - \frac{V_i \frac{\partial^2 G^E}{\partial x_j \partial x_k}}{\sum_m V_m x_m}
+            - \frac{V_iV_jV_k[\delta_i(\delta_j(k_{ij} + k_{ji}) + \delta_k(k_{ik} + k_{ki})) + (\delta_i - \delta_j)^2 + (\delta_i - \delta_k)^2 ]}{(\sum_m V_m x_m)^2}
+        '''
         try:
             return self._d3GE_dxixjxks
         except:

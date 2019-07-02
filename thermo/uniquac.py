@@ -608,7 +608,7 @@ class UNIQUAC(GibbsExcess):
         return thetaj_d3taus_dT3_jis
             
     def GE(self):
-        '''
+        r'''
         .. math::
             \frac{G^E}{RT} = \sum_i x_i \ln\frac{\phi_i}{x_i} 
             + \frac{z}{2}\sum_i q_i x_i \ln\frac{\theta_i}{\phi_i} 
@@ -733,6 +733,21 @@ class UNIQUAC(GibbsExcess):
         return d3GE_dT3
         
     def dGE_dxs(self):
+        r'''
+        
+        .. math::
+            \frac{\partial G^E}{\partial x_i} = RT\left[
+            \sum_j \frac{q_j x_j \phi_j z}{2\theta_j}\left(\frac{1}{\phi_j} \cdot \frac{\partial \theta_j}{\partial x_i}
+            - \frac{\theta_j}{\phi_j^2}\cdot \frac{\partial \phi_j}{\partial x_i}
+            \right)
+            - \sum_j \left(\frac{q_j x_j(\sum_k \tau_{kj} \frac{\partial \theta_k}{\partial x_i} )}{\sum_k \tau_{kj} \theta_{k}}\right)
+            + 0.5 z q_i\log\left(\frac{\theta_i}{\phi_i}\right)
+            - q_i\log\left(\sum_j \tau_{ji}\theta_j \right)
+            + \frac{x_i^2}{\phi_i}\left(\frac{\partial \phi_i}{\partial x_i}/x_i - \phi_i/x_i^2\right)
+            + \sum_{j!= i} \frac{x_j}{\phi_j}\frac{\partial \phi_j}{\partial x_i}
+            + \log\left(\frac{\phi_i}{x_i} \right)
+            \right]
+        '''
         z, T, xs, cmps = self.z, self.T, self.xs, self.cmps
         qs, rs = self.qs, self.rs
         taus = self.taus()
@@ -786,6 +801,21 @@ class UNIQUAC(GibbsExcess):
 
     def d2GE_dTdxs(self):
         r'''
+        
+        .. math::
+            \frac{\partial G^E}{\partial x_i \partial T} = R\left[-T\left\{
+            \frac{q_i(\sum_j \theta_j \frac{\partial \tau_{ji}}{\partial T} )}{\sum_j \tau_{ki} \theta_k}
+            + \sum_j \frac{q_j x_j(\sum_k \frac{\partial \tau_{kj}}{\partial T} \frac{\partial \theta_k}{\partial x_i} )        }{\sum_k \tau_{kj} \theta_k}
+            - \sum_j \frac{q_j x_j (\sum_k \tau_{kj}  \frac{\partial \theta_k}{\partial x_i})  
+            (\sum_k \theta_k \frac{\partial \tau_{kj}}{\partial T})}{(\sum_k \tau_{kj} \theta_k)^2}
+            \right\}
+            + \sum_j \frac{q_j x_j z\left(\frac{\partial \theta_j}{\partial x_i} - \frac{\theta_j}{\phi_j}\frac{\partial \phi_j}{\partial x_i}  \right)}{2 \theta_j}
+            - \sum_j \frac{q_j x_j \sum_k \tau_{kj}\frac{\partial \theta_k}{\partial x_i}}{\sum_k \tau_{kj}\theta_k}
+            + 0.5zq_i \log\left(\frac{\theta_i}{\phi_i}  \right) - q_i \log\left(\sum_j \tau_{ji} \theta_j\right)
+            + \log\left(\frac{\phi_i}{x_i}    \right)
+            + \frac{x_i}{\phi_i}\left(\frac{\partial \phi_i}{\partial x_i} -\frac{\phi_i}{x_i}  \right)
+            + \sum_{j\ne i} \frac{x_j}{\phi_j}\frac{\partial \phi_j}{\partial x_i}
+            \right]
         '''
         try:
             return self._d2GE_dTdxs
