@@ -951,11 +951,16 @@ class UNIQUAC(GibbsExcess):
 
                     # 0 -1 
                     # checked numerically
-                    tot +=  dphis_dxs[m][n]/phis[m]
+                    if i != j:
+                        tot +=  dphis_dxs[m][n]/phis[m]
                     
                     # 6-8
                     # checked numerically already good!
                     tot -= qs[m]*tau_mk_dthetam_xi[n][m]/thetaj_taus_jis[m]
+
+                if i == j:
+                    # equivalent of 0-1 term
+                    tot += 3*dphis_dxs[i][i]/phis[i] - 3.0/xs[i]
 
                 # 2-4 - two calculations
                 # checked numerically Don't ask questions...
@@ -975,7 +980,10 @@ class UNIQUAC(GibbsExcess):
                 
                 # 4-5
                 # Now good, checked numerically
-                tot += xs[ij_min]**2/phis[ij_min]*(d2phis_dxixjs[i][j][ij_min]/xs[ij_min] - dphis_dxs[ij_min][ij_max]/xs[ij_min]**2)
+                if i != j:
+                    tot += xs[ij_min]**2/phis[ij_min]*(d2phis_dxixjs[i][j][ij_min]/xs[ij_min] - dphis_dxs[ij_min][ij_max]/xs[ij_min]**2)
+                else:
+                    tot += xs[i]*d2phis_dxixjs[i][i][i]/phis[i] - 2.0*dphis_dxs[i][i]/phis[i] + 2.0/xs[i]
 
 
                 # Now good, checked numerically
