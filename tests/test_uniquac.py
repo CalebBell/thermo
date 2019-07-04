@@ -118,8 +118,8 @@ def test_UNIQUAC_madeup_ternary():
     dphis_dxs_numerical = jacobian(lambda xs: GE.to_T_xs(T, xs).phis(), xs, scalar=False, perturbation=2e-8)
     assert_allclose(dphis_dxs_numerical, dphis_dxs_analytical, rtol=3e-8)
     
-    # dphis_dxixjs - checked to the last decimal with sympy
-    dphis_dxixjs_expect = [[[-2.441416183656415, 0.9048216556030662, 1.536594528053349],
+    # d2phis_dxixjs - checked to the last decimal with sympy
+    d2phis_dxixjs_expect = [[[-2.441416183656415, 0.9048216556030662, 1.536594528053349],
       [-0.7693373390462084, -0.9442924629794809, 1.7136298020256895],
       [-0.3836232285397313, 0.5031631130108988, -0.11953988447116741]],
      [[-0.7693373390462084, -0.9442924629794809, 1.7136298020256895],
@@ -129,11 +129,25 @@ def test_UNIQUAC_madeup_ternary():
       [0.6584248735971189, -0.5251124708645561, -0.13331240273256284],
       [0.32831771310273056, 0.27980444182238084, -0.6081221549251116]]]
     
-    dphis_dxixjs_analytical = GE.dphis_dxixjs()
-    assert_allclose(dphis_dxixjs_analytical, dphis_dxixjs_expect, rtol=1e-12)
-    dphis_dxixjs_numerical = hessian(lambda xs: GE.to_T_xs(T, xs).phis(), xs, scalar=False, perturbation=1e-5)
-    assert_allclose(dphis_dxixjs_numerical, dphis_dxixjs_analytical, rtol=8e-5)
+    d2phis_dxixjs_analytical = GE.d2phis_dxixjs()
+    assert_allclose(d2phis_dxixjs_analytical, d2phis_dxixjs_expect, rtol=1e-12)
+    d2phis_dxixjs_numerical = hessian(lambda xs: GE.to_T_xs(T, xs).phis(), xs, scalar=False, perturbation=1e-5)
+    assert_allclose(d2phis_dxixjs_numerical, d2phis_dxixjs_analytical, rtol=8e-5)
     
+
+    d2thetas_dxixjs_expect = [[[-2.346422740416712, 0.7760247163009644, 1.5703980241157476],
+      [-0.7026345706138027, -0.9175106511836936, 1.6201452217974965],
+      [-0.4174990477672056, 0.47571378156805694, -0.05821473380085118]],
+     [[-0.7026345706138027, -0.9175106511836936, 1.6201452217974965],
+      [1.0476523499983839, -2.7191206652946023, 1.6714683152962189],
+      [0.6225054627376287, -0.5624465978146614, -0.06005886492296719]],
+     [[-0.4174990477672056, 0.47571378156805694, -0.05821473380085118],
+      [0.6225054627376287, -0.5624465978146614, -0.06005886492296719],
+      [0.3698870633362176, 0.2916190647283637, -0.6615061280645813]]]
+    d2thetas_dxixjs_analytical = GE.d2thetas_dxixjs()
+    assert_allclose(d2thetas_dxixjs_analytical, d2thetas_dxixjs_expect, rtol=1e-12)
+    d2thetas_dxixjs_numerical = hessian(lambda xs: GE.to_T_xs(T, xs).thetas(), xs, scalar=False, perturbation=2e-5)
+    assert_allclose(d2thetas_dxixjs_numerical, d2thetas_dxixjs_analytical, rtol=1e-4)
     
     def to_jac(xs):
         return GE.to_T_xs(T, xs).GE()
