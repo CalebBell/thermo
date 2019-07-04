@@ -926,7 +926,7 @@ class UNIQUAC(GibbsExcess):
         
         thetaj_taus_jis = self.thetaj_taus_jis()
         thetaj_dtaus_dT_jis = self.thetaj_dtaus_dT_jis()
-        mRT = -R*T
+        RT = R*T
 
         # index style - [THE THETA FOR WHICH THE DERIVATIVE IS BEING CALCULATED][THE VARIABLE BEING CHANGED CAUsING THE DIFFERENCE]
         
@@ -935,14 +935,11 @@ class UNIQUAC(GibbsExcess):
 
         
         self._d2GE_dxixjs = d2GE_dxixjs = []
-        debug_mat = []
         for i in cmps:
             dG_row = []
-            debug_row = []
             for j in cmps:
                 ij_min = min(i, j)
                 ij_max = max(i, j)
-                debug = 0
                 tot = 0.0
                 for (m, n) in [(i, j), (j, i)]:
                     # 10-12
@@ -1018,15 +1015,13 @@ class UNIQUAC(GibbsExcess):
                                    - thetas[k]*dphis_dxs[k][i]/phis[k]**2   )*dphis_dxs[k][j]
                     
                     # 21-24
-                    v = qs[k]*xs[k]*z*phis[k]/(2.0*thetas[k])*(
+                    tot += qs[k]*xs[k]*z*phis[k]/(2.0*thetas[k])*(
                             d2thetas_dxixjs[i][j][k]/phis[k]
                             - 1.0/phis[k]**2*(
                                     thetas[k]*d2phis_dxixjs[i][j][k] 
                                     + dphis_dxs[k][i]*dthetas_dxs[k][j] + dphis_dxs[k][j]*dthetas_dxs[k][i])
                             + 2.0*thetas[k]*dphis_dxs[k][i]*dphis_dxs[k][j]/phis[k]**3
                             )
-                    debug += v
-                    tot += v
                             
                     # 24-27
                     # 10-13 in latest checking - but very suspiscious that the values are so low
@@ -1034,10 +1029,8 @@ class UNIQUAC(GibbsExcess):
                             dthetas_dxs[k][i]/phis[k] - thetas[k]*dphis_dxs[k][i]/phis[k]**2
                             )
                     
-                debug_row.append(debug)
-                dG_row.append(mRT*tot)
+#                debug_row.append(debug)
+                dG_row.append(RT*tot)
             d2GE_dxixjs.append(dG_row)
-            debug_mat.append(debug_row)
-        import pprint
-        pprint.pprint(debug_mat)
+#            debug_mat.append(debug_row)
         return d2GE_dxixjs

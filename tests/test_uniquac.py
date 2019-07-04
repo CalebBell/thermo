@@ -158,3 +158,16 @@ def test_UNIQUAC_madeup_ternary():
     assert_allclose(dGE_dxs_analytical, dGE_dxs_expect, rtol=1e-12)
     dGE_dxs_numerical = jacobian(to_jac, xs, perturbation=1e-8)
     assert_allclose(dGE_dxs_numerical, dGE_dxs_analytical, rtol=1e-6)
+
+    # d2GE_dxixjs
+
+    def to_hess(xs):
+        return GE.to_T_xs(T, xs).GE()
+    
+    d2GE_dxixjs_numerical = hessian(to_hess, xs, perturbation=1e-4)
+    d2GE_dxixjs_sympy = [[-2890.4327598108343, -6687.099054095988, -1549.3754436994557],
+     [-6687.099054095988, -2811.283290487096, -1228.622385377738],
+     [-1549.3754436994557, -1228.622385377738, -3667.3880987585053]]
+    d2GE_dxixjs_analytical = GE.d2GE_dxixjs()
+    assert_allclose(d2GE_dxixjs_numerical, d2GE_dxixjs_analytical, rtol=1e-4)
+    assert_allclose(d2GE_dxixjs_analytical, d2GE_dxixjs_sympy, rtol=1e-12)
