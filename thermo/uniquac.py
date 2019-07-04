@@ -935,65 +935,101 @@ class UNIQUAC(GibbsExcess):
 
         
         self._d2GE_dxixjs = d2GE_dxixjs = []
+        debug_mat = []
         for i in cmps:
             dG_row = []
+            debug_row = []
             for j in cmps:
+                ij_min = min(i, j)
+                ij_max = max(i, j)
+                debug = 0
                 tot = 0.0
-                for k in cmps:
+                for (m, n) in [(i, j), (j, i)]:
+                    # 10-12
+                    # checked numerically already good!
+                    tot += qs[m]*z/(2.0*thetas[m])*(dthetas_dxs[m][n] - thetas[m]/phis[m]*dphis_dxs[m][n])
+
+                    # 0 -1 
+                    # checked numerically
+                    tot +=  dphis_dxs[m][n]/phis[m]
                     
-                    for (m, n) in [(i, j), (j, i)]:
-                        # 10-12
-                        tot -= qs[m]*z/(2.0*thetas[m])*(dthetas_dxs[m][n] - thetas[m]/phis[m]*dphis_dxs[m][n])
-                        # 0 -1 
-                        tot += dphis_dxs[m][n]/phis[m]
-                        # 6-8
-                        tot -= qs[m]*tau_mk_dthetam_xi[m][n]/thetaj_taus_jis[m]
-                        
-                    # 2-4 - two calculations
-                    for m in cmps:
-                        if m != i and m != j:
+                    # 6-8
+                    # checked numerically already good!
+                    tot -= qs[m]*tau_mk_dthetam_xi[n][m]/thetaj_taus_jis[m]
+
+                # 2-4 - two calculations
+                # checked numerically Don't ask questions...
+                for m in cmps:
+                    # This one looks like m != j should not be part
+                    if i < j:
+                        if m != i:
                             tot += xs[m]/phis[m]*d2phis_dxixjs[i][j][m]
-                    tot += xs[i]/phis[i]*d2phis_dxixjs[i][j][i]
-                    
-                    # 5-6
-                    tot -= xs[i]**2/phis[i]**2*(dphis_dxs[i][i]/xs[i] - phis[i]/xs[i]**2)*dphis_dxs[i][j]
-                    
-                    # 4-5
-                    tot += xs[i]**2/phis[i]*(d2phis_dxixjs[i][j][i]/xs[i] - dphis_dxs[i][j]/xs[i]**2)
-                    
-                    # 8
-                    for m in cmps:
-                        if m != i and m != j:
+                    else:
+                        if m != j:
+                            tot += xs[m]/phis[m]*d2phis_dxixjs[i][j][m]
+#                v += xs[i]/phis[i]*d2phis_dxixjs[i][j][i]
+
+                # 5-6
+                # Now good, checked numerically
+                tot -= xs[ij_min]**2/phis[ij_min]**2*(dphis_dxs[ij_min][ij_min]/xs[ij_min] - phis[ij_min]/xs[ij_min]**2)*dphis_dxs[ij_min][ij_max]
+                
+                # 4-5
+                # Now good, checked numerically
+                tot += xs[ij_min]**2/phis[ij_min]*(d2phis_dxixjs[i][j][ij_min]/xs[ij_min] - dphis_dxs[ij_min][ij_max]/xs[ij_min]**2)
+
+
+                # Now good, checked numerically
+                # This one looks like m != j should not be part
+                # 8
+                for m in cmps:
+#                    if m != i and m != j:
+                    if i < j:
+                        if m != i:
                             tot -= xs[m]/phis[m]**2*(dphis_dxs[m][i]*dphis_dxs[m][j])
-                    # 9
-                    tot -= xs[i]*dphis_dxs[i][i]*dphis_dxs[i][j]/phis[i]**2
-                            
-                            
+                    else:
+                        if m != j:
+                            tot -= xs[m]/phis[m]**2*(dphis_dxs[m][i]*dphis_dxs[m][j])
+                # 9
+#                v -= xs[i]*dphis_dxs[i][i]*dphis_dxs[i][j]/phis[i]**2
+                
+                for k in cmps:
                     # 12-15
+                    # Good, checked with sympy/numerically
                     thing = 0.0
                     for m in cmps:
                         thing  += taus[m][k]*d2thetas_dxixjs[i][j][m]
                     tot -= qs[k]*xs[k]*thing/thetaj_taus_jis[k]
                     
                     # 15-18
-                    tot -= qs[k]*xs[k]*tau_mk_dthetam_xi[i][k]*tau_mk_dthetam_xi[j][k]/thetaj_taus_jis[k]**2
+                    # Good, checked with sympy/numerically
+                    tot -= qs[k]*xs[k]*tau_mk_dthetam_xi[i][k]*-1*tau_mk_dthetam_xi[j][k]/thetaj_taus_jis[k]**2
                     
                     # 18-21
+                    # Good, checked with sympy/numerically
                     tot += qs[k]*xs[k]*z/(2.0*thetas[k])*(dthetas_dxs[k][i]/phis[k] 
                                    - thetas[k]*dphis_dxs[k][i]/phis[k]**2   )*dphis_dxs[k][j]
                     
                     # 21-24
-                    tot += qs[k]*xs[k]*z*phis[k]/(2.0*thetas[k])*(d2thetas_dxixjs[i][j][k]/phis[k]
-                            - thetas[k]/phis[k]**2*(d2phis_dxixjs[i][j][k] 
-                            + dphis_dxs[k][i]*dthetas_dxs[k][j] + dphis_dxs[k][j]*dthetas_dxs[k][i])
+                    v = qs[k]*xs[k]*z*phis[k]/(2.0*thetas[k])*(
+                            d2thetas_dxixjs[i][j][k]/phis[k]
+                            - 1.0/phis[k]**2*(
+                                    thetas[k]*d2phis_dxixjs[i][j][k] 
+                                    + dphis_dxs[k][i]*dthetas_dxs[k][j] + dphis_dxs[k][j]*dthetas_dxs[k][i])
                             + 2.0*thetas[k]*dphis_dxs[k][i]*dphis_dxs[k][j]/phis[k]**3
                             )
+                    debug += v
+                    tot += v
                             
                     # 24-27
+                    # 10-13 in latest checking - but very suspiscious that the values are so low
                     tot -= qs[k]*xs[k]*z*phis[k]*dthetas_dxs[k][j]/(2.0*thetas[k]**2)*(
                             dthetas_dxs[k][i]/phis[k] - thetas[k]*dphis_dxs[k][i]/phis[k]**2
                             )
                     
+                debug_row.append(debug)
                 dG_row.append(mRT*tot)
             d2GE_dxixjs.append(dG_row)
+            debug_mat.append(debug_row)
+        import pprint
+        pprint.pprint(debug_mat)
         return d2GE_dxixjs
