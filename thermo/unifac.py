@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['UNIFAC', 'UNIFAC_psi', 'DOUFMG', 'DOUFSG', 'UFSG', 'UFMG', 
+__all__ = ['UNIFAC_gammas', 'UNIFAC_psi', 'DOUFMG', 'DOUFSG', 'UFSG', 'UFMG', 
            'DOUFIP2016', 'DOUFIP2006', 'UFIP', 'DDBST_UNIFAC_assignments', 
            'DDBST_MODIFIED_UNIFAC_assignments', 'DDBST_PSRK_assignments',
            'UNIFAC_RQ', 'Van_der_Waals_volume', 'Van_der_Waals_area',
@@ -1106,7 +1106,7 @@ def UNIFAC_psi(T, subgroup1, subgroup2, subgroup_data, interaction_data,
             return 1.
 
 
-def UNIFAC(T, xs, chemgroups, cached=None, subgroup_data=None, 
+def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None, 
            interaction_data=None, modified=False):
     r'''Calculates activity coefficients using the UNIFAC model (optionally 
     modified), given a mixture's temperature, liquid mole fractions, 

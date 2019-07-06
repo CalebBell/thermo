@@ -66,7 +66,7 @@ from thermo.identifiers import IDs_to_CASs
 from thermo.activity import K_value, Wilson_K_value, flash_inner_loop, dew_at_T, bubble_at_T, NRTL_gammas, Rachford_Rice_solution2, Wilson_gammas as Wilson
 from thermo.activity import flash_wilson, flash_Tb_Tc_Pc, Rachford_Rice_flash_error
 from thermo.activity import get_T_bub_est, get_T_dew_est, get_P_dew_est, get_P_bub_est
-from thermo.unifac import UNIFAC, UFSG, DOUFSG, DOUFIP2006
+from thermo.unifac import UNIFAC_gammas, UFSG, DOUFSG, DOUFIP2006
 from thermo.eos_mix import *
 from thermo.eos import *
 from thermo.heat_capacity import Lastovka_Shaw_T_for_Hm, Lastovka_Shaw_T_for_Sm, Dadgostar_Shaw_integral_over_T, Dadgostar_Shaw_integral, Lastovka_Shaw_integral
@@ -3692,7 +3692,7 @@ class Unifac(GammaPhi):
         self.UNIFAC_cached_inputs = (self.rs, self.qs, self.group_counts)
 
     def gammas(self, T, xs, cached=None):
-        return UNIFAC(chemgroups=self.UNIFAC_groups, T=T, xs=xs, cached=self.UNIFAC_cached_inputs)
+        return UNIFAC_gammas(chemgroups=self.UNIFAC_groups, T=T, xs=xs, cached=self.UNIFAC_cached_inputs)
 
 
 
@@ -3700,7 +3700,7 @@ class UnifacDortmund(Unifac):
     subgroup_data = DOUFSG
 
     def gammas(self, T, xs, cached=None):
-        return UNIFAC(chemgroups=self.UNIFAC_groups, T=T, xs=xs, 
+        return UNIFAC_gammas(chemgroups=self.UNIFAC_groups, T=T, xs=xs, 
                       cached=self.UNIFAC_cached_inputs,
                       subgroup_data=DOUFSG, interaction_data=DOUFIP2006, modified=True)
 

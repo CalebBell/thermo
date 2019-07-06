@@ -90,7 +90,7 @@ def test_UNIFAC():
     # 05.22 VLE of Hexane-Butanone-2 Via UNIFAC (p. 289)
     # Mathcad (2001) - Solution (zip) - step by step
     # http://chemthermo.ddbst.com/Problems_Solutions/Mathcad_Files/05.22a%20VLE%20of%20Hexane-Butanone-2%20Via%20UNIFAC%20-%20Step%20by%20Step.xps
-    gammas_0522A = UNIFAC(chemgroups=[{1:2, 2:4}, {1:1, 2:1, 18:1}], T=60+273.15, xs=[0.5, 0.5])
+    gammas_0522A = UNIFAC_gammas(chemgroups=[{1:2, 2:4}, {1:1, 2:1, 18:1}], T=60+273.15, xs=[0.5, 0.5])
     assert_allclose(gammas_0522A, [1.4276025835624173, 1.3646545010104225])
     assert_allclose(gammas_0522A, [1.428, 1.365], atol=0.001)
     assert_allclose(gammas_0522A, [1.4276, 1.36466], atol=0.0001) # Another calculator
@@ -99,7 +99,7 @@ def test_UNIFAC():
     
     # Example 4.14 Activity Coefficients of Ethanol + Benzene with the UNIFAC method
     # Walas, Phase Equilibria in Chemical Engineering
-    gammas_414 = UNIFAC(chemgroups=[{1:1, 2:1, 14:1}, {9:6}], T=345., xs=[0.2, 0.8])
+    gammas_414 = UNIFAC_gammas(chemgroups=[{1:1, 2:1, 14:1}, {9:6}], T=345., xs=[0.2, 0.8])
     assert_allclose(gammas_414, [2.90999524962436, 1.1038643452317465])
     # Matches faily closely. Confirmed it uses the same coefficients.
     assert_allclose(gammas_414, [2.9119, 1.10832], atol=0.005)
@@ -109,45 +109,45 @@ def test_UNIFAC():
     #  J.Richard Elliott and Carl T. Lira, http://chethermo.net/
     # All match exactly; not even a different gas constant used
     # isopropyl alcohol-water
-    gammas_ACTCOEFF_1 = UNIFAC(chemgroups=[{1:2, 3:1, 14:1}, {16:1}], T=80.37+273.15, xs=[0.5, 0.5])
+    gammas_ACTCOEFF_1 = UNIFAC_gammas(chemgroups=[{1:2, 3:1, 14:1}, {16:1}], T=80.37+273.15, xs=[0.5, 0.5])
     gammas_ACTCOEFF_1_expect = [1.2667572876079400, 1.700192255741180]
     assert_allclose(gammas_ACTCOEFF_1, gammas_ACTCOEFF_1_expect)
-    gammas_ACTCOEFF_2 = UNIFAC(chemgroups=[{1:2, 3:1, 14:1}, {16:1}], T=80.37+273.15, xs=[0.1, 0.9])
+    gammas_ACTCOEFF_2 = UNIFAC_gammas(chemgroups=[{1:2, 3:1, 14:1}, {16:1}], T=80.37+273.15, xs=[0.1, 0.9])
     gammas_ACTCOEFF_2_expect = [5.0971362612830500, 1.058637792621310]
     assert_allclose(gammas_ACTCOEFF_2, gammas_ACTCOEFF_2_expect)
     # Add in Propionic acid
-    gammas_ACTCOEFF_3 = UNIFAC(chemgroups=[{1:2, 3:1, 14:1}, {16:1}, {1:1, 2:1, 42:1}], T=80.37+273.15, xs=[0.1, 0.1, 0.8])
+    gammas_ACTCOEFF_3 = UNIFAC_gammas(chemgroups=[{1:2, 3:1, 14:1}, {16:1}, {1:1, 2:1, 42:1}], T=80.37+273.15, xs=[0.1, 0.1, 0.8])
     gammas_ACTCOEFF_3_expect = [0.9968890535625640, 2.170957708441830, 1.0011209111895400]
     assert_allclose(gammas_ACTCOEFF_3, gammas_ACTCOEFF_3_expect)
     # Add in ethanol
-    gammas_ACTCOEFF_4 = UNIFAC(chemgroups=[{1:2, 3:1, 14:1}, {16:1}, {1:1, 2:1, 42:1}, {1:1, 2:1, 14:1}], T=80.37+273.15, xs=[0.01, 0.01, 0.01, .97])
+    gammas_ACTCOEFF_4 = UNIFAC_gammas(chemgroups=[{1:2, 3:1, 14:1}, {16:1}, {1:1, 2:1, 42:1}, {1:1, 2:1, 14:1}], T=80.37+273.15, xs=[0.01, 0.01, 0.01, .97])
     gammas_ACTCOEFF_4_expect = [1.0172562157805600, 2.721887947655120, 0.9872477280109450, 1.000190624095510]
     assert_allclose(gammas_ACTCOEFF_4, gammas_ACTCOEFF_4_expect)
     # Add in pentane
-    gammas_ACTCOEFF_5 = UNIFAC(chemgroups=[{1:2, 3:1, 14:1}, {16:1}, {1:1, 2:1, 42:1}, {1:1, 2:1, 14:1}, {1:2, 2:3}], T=80.37+273.15, xs=[.1, .05, .1, .25, .5])
+    gammas_ACTCOEFF_5 = UNIFAC_gammas(chemgroups=[{1:2, 3:1, 14:1}, {16:1}, {1:1, 2:1, 42:1}, {1:1, 2:1, 14:1}, {1:2, 2:3}], T=80.37+273.15, xs=[.1, .05, .1, .25, .5])
     gammas_ACTCOEFF_5_expect = [1.2773557137580500, 8.017146862811100, 1.1282116576861800, 1.485860948162550, 1.757426505841570]
     assert_allclose(gammas_ACTCOEFF_5, gammas_ACTCOEFF_5_expect)
 
 
     # Acetone and Pentane at 307 K and x1 = 0.047
     # Example 8-12 in Poling et al., 5E
-    gammas_Poling_5e = UNIFAC(chemgroups=[{1:1, 18:1}, {1:2, 2:3}], T=307, xs=[0.047, 0.953])
+    gammas_Poling_5e = UNIFAC_gammas(chemgroups=[{1:1, 18:1}, {1:2, 2:3}], T=307, xs=[0.047, 0.953])
     gammas_Poling_known = [4.992034311484559, 1.00526021118788]
     assert_allclose(gammas_Poling_5e, gammas_Poling_known)
     assert_allclose(gammas_Poling_5e, [4.99, 1.005], atol=0.003)
     
-    gammas_Poling_with_cache = UNIFAC(chemgroups=[{1:1, 18:1}, {1:2, 2:3}], T=307, xs=[0.047, 0.953], cached=([2.5735, 3.8254], [2.336, 3.316], {1: 3, 18: 1, 2: 3}))
+    gammas_Poling_with_cache = UNIFAC_gammas(chemgroups=[{1:1, 18:1}, {1:2, 2:3}], T=307, xs=[0.047, 0.953], cached=([2.5735, 3.8254], [2.336, 3.316], {1: 3, 18: 1, 2: 3}))
     assert_allclose(gammas_Poling_with_cache, gammas_Poling_known)
     # Test the caching
     
     # Another case with the same mixture
-    gammas_custom = UNIFAC(chemgroups=[{1:1, 18:1}, {1:2, 2:3}], T=307, xs=[.674747, .325251])
+    gammas_custom = UNIFAC_gammas(chemgroups=[{1:1, 18:1}, {1:2, 2:3}], T=307, xs=[.674747, .325251])
     assert_allclose(gammas_custom, [1.1645751997624518, 2.105331695192004])
 
 
 def test_UNIFAC_modified_2006():
     # 11.02 Azeotropic Points in the Quaternary System Benzene - Cyclohexane - Acetone - Ethanol Using Mod. UNIFAC-1.xps
-    gammas_1102_1 = UNIFAC(chemgroups=[{9:6}, {78:6}, {1:1, 18:1}, {1:1, 2:1, 14:1}], T=373.15, xs=[0.2, 0.3, 0.2, 0.2],
+    gammas_1102_1 = UNIFAC_gammas(chemgroups=[{9:6}, {78:6}, {1:1, 18:1}, {1:1, 2:1, 14:1}], T=373.15, xs=[0.2, 0.3, 0.2, 0.2],
                              subgroup_data=DOUFSG, interaction_data=DOUFIP2006, modified=True)
     # Values in .xps
     gammas_1102_1_known = [1.18643111, 1.44028013, 1.20447983, 1.97207061]
@@ -156,13 +156,13 @@ def test_UNIFAC_modified_2006():
     gammas_1102_1_known2 = [1.18643111370682970, 1.44028013391119700, 1.20447983349960850, 1.97207060902998130]
     assert_allclose(gammas_1102_1, gammas_1102_1_known2, rtol=1E-14)
     # 290 K, x3=0.3 to balance
-    gammas_1102_2 = UNIFAC(chemgroups=[{9:6}, {78:6}, {1:1, 18:1}, {1:1, 2:1, 14:1}], T=290, xs=[0.2, 0.3, 0.3, 0.2],
+    gammas_1102_2 = UNIFAC_gammas(chemgroups=[{9:6}, {78:6}, {1:1, 18:1}, {1:1, 2:1, 14:1}], T=290, xs=[0.2, 0.3, 0.3, 0.2],
                              subgroup_data=DOUFSG, interaction_data=DOUFIP2006, modified=True)
     gammas_1102_2_known = [1.2555831362844658, 2.002790560351622, 1.313653013490284, 2.4472442902051923]
     assert_allclose(gammas_1102_2_known, gammas_1102_2, rtol=1E-13)
     
     # 0.01 mole fractions except last, 250 K
-    gammas_1102_3 = UNIFAC(chemgroups=[{9:6}, {78:6}, {1:1, 18:1}, {1:1, 2:1, 14:1}], T=250, xs=[0.01, 0.01, 0.01, 0.97], subgroup_data=DOUFSG, interaction_data=DOUFIP2006, modified=True)
+    gammas_1102_3 = UNIFAC_gammas(chemgroups=[{9:6}, {78:6}, {1:1, 18:1}, {1:1, 2:1, 14:1}], T=250, xs=[0.01, 0.01, 0.01, 0.97], subgroup_data=DOUFSG, interaction_data=DOUFIP2006, modified=True)
     gammas_1102_3_known = [6.233033961983859, 10.01994111294437, 3.376394671321658, 1.00137007335149700]
     assert_allclose(gammas_1102_3_known, gammas_1102_3, rtol=1E-13)
 
@@ -174,7 +174,7 @@ def test_UNIFAC_misc():
     
     def gE_T(T):
         xs = [0.5, 0.5]
-        gammas = UNIFAC(chemgroups=[{1:2, 2:4}, {1:1, 2:1, 18:1}], T=T, xs=xs)
+        gammas = UNIFAC_gammas(chemgroups=[{1:2, 2:4}, {1:1, 2:1, 18:1}], T=T, xs=xs)
         return R*T*sum(xi*log(gamma) for xi, gamma in zip(xs, gammas))
     
     def hE_T(T):
@@ -206,11 +206,11 @@ def test_UNIFAC_psi():
 def test_UNIFAC_flash_1():
     from thermo.activity import flash_inner_loop, K_value
     def flash_UNIFAC_sequential_substitution(T, P, zs, Psats, chemgroups):
-        gammas = UNIFAC(chemgroups=chemgroups, T=T, xs=zs)
+        gammas = UNIFAC_gammas(chemgroups=chemgroups, T=T, xs=zs)
         Ks = [K_value(P=P, Psat=Psat, gamma=gamma) for Psat, gamma in zip(Psats, gammas)]
         V_over_F, xs, ys = flash_inner_loop(zs, Ks)
         for i in range(100):
-            gammas = UNIFAC(chemgroups=chemgroups, T=T, xs=xs)
+            gammas = UNIFAC_gammas(chemgroups=chemgroups, T=T, xs=xs)
             Ks = [K_value(P=P, Psat=Psat, gamma=gamma) for Psat, gamma in zip(Psats, gammas)]
             V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks)
             err = (sum([abs(x_new - x_old) for x_new, x_old in zip(xs_new, xs)]) +
