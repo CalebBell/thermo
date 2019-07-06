@@ -3045,7 +3045,7 @@ class GibbsExcess(object):
         self._dgammas_dT = dgammas_dT = []
         for i in self.cmps:
             x1 = dG_dns[i]*T_inv
-            dgammas_dT.append(RT_inv*(d2nGE_dTdns[i] - x1)*exp(x1))
+            dgammas_dT.append(RT_inv*(d2nGE_dTdns[i] - x1)*exp(dG_dns[i]*RT_inv))
         return dgammas_dT
 
 

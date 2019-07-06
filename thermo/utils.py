@@ -34,7 +34,7 @@ __all__ = ['isobaric_expansion', 'isothermal_compressibility',
 'int2CAS', 'Parachor', 'property_molar_to_mass', 'property_mass_to_molar', 
 'SG_to_API', 'API_to_SG', 'SG',
 'dxs_to_dns', 'dns_to_dn_partials', 'dxs_to_dn_partials', 'd2ns_to_dn2_partials',
-'d2xs_to_d2ns', 'd2xs_to_dxdn_partials',
+'d2xs_to_d2ns', 'd2xs_to_dxdn_partials', 'dxs_to_dxsn1', 'd2xs_to_d2xsn1',
  'vapor_mass_quality', 'mix_component_flows',
 'mix_multiple_component_flows', 'mix_component_partial_flows', 
 'solve_flow_composition_mix', 'assert_component_balance', 'assert_energy_balance',
@@ -1503,7 +1503,87 @@ def d2xs_to_dxdn_partials(d2xs, xs):
     
     return [[d2xj - tot for (d2xj, tot) in zip(d2xsi, double_sums)]
              for d2xsi in d2xs]
+
+
+def dxs_to_dxsn1(dxs):
+    r'''Convert the mole fraction derivatives of a quantity (calculated so 
+    they do not sum to 1) to derivatives such that they do sum to 1 by changing
+    the composition of the last component in the negative of the component
+    which is changed. Requires the derivatives of the mixture only. The size of
+    the returned array is one less than the input.
     
+    .. math::
+        \left(\frac{\partial F}{\partial x_i}\right)_{\sum_{x_i}^N =1} = 
+        \left(\frac{\partial F}{\partial x_i} 
+        - \frac{\partial F}{\partial x_N}\right)_{\sum_{x_i}^N \ne 1}
+
+    Parameters
+    ----------
+    dxs : list[float]
+        Derivatives of a quantity with respect to mole fraction (not summing to
+        1), [prop]
+
+    Returns
+    -------
+    dxsm1 : list[float]
+        Derivatives of a quantity with respect to mole fraction (summing to
+        1 by altering the last component's composition), [prop]
+        
+    Notes
+    -----
+
+    Examples
+    --------
+    >>> dxs_to_dxsn1([-2651.3181821109024, -2085.574403592012, -2295.0860830203587])
+    [-356.23209909054367, 209.51167942834672]
+    '''
+    last = dxs[-1]
+    return [dx - last for dx in dxs[:-1]]
+
+
+def d2xs_to_d2xsn1(d2xs):
+    r'''Convert the second mole fraction derivatives of a quantity (calculated  
+    so they do not sum to 1) to derivatives such that they do sum to 1 
+    Requires the second derivatives of the mixture only. The size of
+    the returned array is one less than the input in both dimensions
+    
+    .. math::
+        \left(\frac{\partial^2 F}{\partial x_i \partial x_j }\right)_{\sum_{x_i}^N =1} = 
+        \left(\frac{\partial^2 F}{\partial x_i\partial x_j} 
+        -\frac{\partial^2 F}{\partial x_i\partial x_N} 
+        -\frac{\partial^2 F}{\partial x_j\partial x_N} 
+        +\frac{\partial^2 F}{\partial x_N\partial x_N} 
+        \right)_{\sum_{x_i}^N \ne 1}
+
+    Parameters
+    ----------
+    second : list[float]
+        Second of a quantity with respect to mole fraction (not summing to
+        1), [prop]
+
+    Returns
+    -------
+    d2xsm1 : list[float]
+        Second derivatives of a quantity with respect to mole fraction (summing 
+        to 1 by altering the last component's composition), [prop]
+        
+    Notes
+    -----
+
+    Examples
+    --------
+    >>> d2xs_to_d2xsn1([[-2890.4327598108, -6687.0990540960065, -1549.375443699441], [-6687.099054095983, -2811.2832904869883, -1228.6223853777503], [-1549.3754436994498, -1228.6223853777562, -3667.388098758508]])
+    [[-3459.069971170426, -7576.489323777324], [-7576.489323777299, -4021.4266184899957]]
+    '''
+    N = len(d2xs)-1
+    out = [[0.0]*N for _ in range(N)]
+    last = d2xs[-1][-1]
+    for i in range(N):
+        last_i = d2xs[i][-1]
+        for j in range(N):
+            out[i][j] = d2xs[i][j] - last_i - d2xs[j][-1] + last
+    return out
+
 
 def none_and_length_check(all_inputs, length=None):
     r'''Checks inputs for suitability of use by a mixing rule which requires
