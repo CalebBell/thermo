@@ -1197,13 +1197,16 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
         
     
     This is more clear when looking at the full rearranged form as in [3]_.
+    
+    UNIFAC LLE uses the original formulation of UNIFAC, and otherwise only 
+    different interaction parameters.
 
     Examples
     --------
-    >>> UNIFAC(T=333.15, xs=[0.5, 0.5], chemgroups=[{1:2, 2:4}, {1:1, 2:1, 18:1}])
+    >>> UNIFAC_gammas(T=333.15, xs=[0.5, 0.5], chemgroups=[{1:2, 2:4}, {1:1, 2:1, 18:1}])
     [1.4276025835624173, 1.3646545010104225]
     
-    >>> UNIFAC(373.15, [0.2, 0.3, 0.2, 0.2], 
+    >>> UNIFAC_gammas(373.15, [0.2, 0.3, 0.2, 0.2], 
     ... [{9:6}, {78:6}, {1:1, 18:1}, {1:1, 2:1, 14:1}],
     ... subgroup_data=DOUFSG, interaction_data=DOUFIP2006, modified=True)
     [1.186431113706829, 1.440280133911197, 1.204479833499608, 1.9720706090299824]
@@ -1286,6 +1289,7 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
     area_fractions = {group: subgroups[group].Q*group_count_xs[group]/Q_sum_term
                       for group in group_counts.keys()}
 
+    # This needs to not be a dictionary
     UNIFAC_psis = {k: {m:(UNIFAC_psi(T, m, k, subgroups, interactions, modified=modified))
                    for m in group_counts} for k in group_counts}
 
@@ -1294,6 +1298,7 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
         sum1, sum2 = 0., 0.
         for m in group_counts:
             sum1 += area_fractions[m]*UNIFAC_psis[k][m]
+            # This term can be pre-calculated
             sum3 = sum(area_fractions[n]*UNIFAC_psis[m][n] for n in group_counts)
             sum2 -= area_fractions[m]*UNIFAC_psis[m][k]/sum3
         loggamma_groups[k] = subgroups[k].Q*(1. - log(sum1) + sum2)
