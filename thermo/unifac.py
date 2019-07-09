@@ -1358,7 +1358,7 @@ class UNIFAC(GibbsExcess):
     
     @staticmethod
     def from_subgroups(T, xs, chemgroups, subgroups=UFSG,
-                       interaction_data=UFIP):
+                       interaction_data=UFIP, version=0):
         rs = []
         qs = []
         for groups in chemgroups:
@@ -1409,7 +1409,7 @@ class UNIFAC(GibbsExcess):
             
             
         debug = (rs, qs, Qs, vs, (psi_a, psi_b, psi_c))
-        return UNIFAC(T=T, xs=xs, rs=rs, qs=qs, Qs=Qs, vs=vs, phi_abc=(psi_a, psi_b, psi_c))
+        return UNIFAC(T=T, xs=xs, rs=rs, qs=qs, Qs=Qs, vs=vs, phi_abc=(psi_a, psi_b, psi_c), version=version)
             
     def __init__(self, T, xs, rs, qs, Qs, vs, phi_coeffs=None, phi_abc=None,
                  version=0):
@@ -1434,6 +1434,9 @@ class UNIFAC(GibbsExcess):
         self.groups = range(self.N_groups)
         self.N = N = len(rs)
         self.cmps = range(N)
+        self.version = version
+        if self.version == 1:
+            self.rs_34 = [i**0.75 for i in rs]
         
     def to_T_xs(self, T, xs):
         new = self.__class__.__new__(self.__class__)
@@ -1450,8 +1453,14 @@ class UNIFAC(GibbsExcess):
         new.Qs = self.Qs
         new.vs = self.vs
         
+        new.version = self.version
+        
         new.phi_a, new.phi_b, new.phi_c = self.phi_a, self.phi_b, self.phi_c
 
+        try:
+            new.rs_34 = self.rs_34
+        except AttributeError:
+            pass
         
         if T == self.T:
             pass
@@ -1587,3 +1596,69 @@ class UNIFAC(GibbsExcess):
         self._d3Fis_dxixjxks = d3Fis
         return d3Fis
 
+
+    def Vis_Dortmund(self):
+        try:
+            return self._Vis_Dortmund
+        except:
+            pass
+        rs_34, xs, cmps = self.rs_34, self.xs, self.cmps
+        tot = 0.0
+        for i in cmps:
+            tot += rs_34[i]*xs[i]
+        tot = 1.0/tot
+        self.r34x_sum_inv = tot
+        self._Vis_Dortmund = [rs_34[i]*tot for i in cmps]
+        return self._Vis_Dortmund
+    
+    def dVis_Dortmund_dxs(self):
+        try:
+            return self._dVis_Dortmund_dxs
+        except AttributeError:
+            pass
+        try:
+            r34x_sum_inv = self.r34x_sum_inv
+        except AttributeError:
+            self.Vis_Dortmund()
+            r34x_sum_inv = self.r34x_sum_inv
+            
+        rs_34 = self.rs_34
+        mr34x_sum_inv2 = -r34x_sum_inv*r34x_sum_inv
+        
+        dVis_Dortmund = [[ri*rj*mr34x_sum_inv2 for rj in rs_34] for ri in rs_34]
+        self._dVis_Dortmund_dxs = dVis_Dortmund
+        return dVis_Dortmund
+    
+    def d2Vis_Dortmund_dxixjs(self):
+        try:
+            return self._d2Vis_Dortmund_dxixjs
+        except AttributeError:
+            pass
+        try:
+            r34x_sum_inv = self.r34x_sum_inv
+        except AttributeError:
+            self.Vis_Dortmund()
+            r34x_sum_inv = self.r34x_sum_inv
+        rs_34 = self.rs_34
+        r34x_sum_inv3_2 = 2.0*r34x_sum_inv*r34x_sum_inv*r34x_sum_inv
+        d2Vis_Dortmund = [[[ri*rj*rk*r34x_sum_inv3_2 for rk in rs_34] for rj in rs_34] for ri in rs_34]
+        self._d2Vis_Dortmund_dxixjs = d2Vis_Dortmund
+        return d2Vis_Dortmund
+    
+    def d3Vis_Dortmund_dxixjxks(self):
+        try:
+            return self._d3Vis_Dortmund_dxixjxks
+        except AttributeError:
+            pass
+        try:
+            r34x_sum_inv = self.r34x_sum_inv
+        except AttributeError:
+            self.Vis_Dortmund()
+            r34x_sum_inv = self.r34x_sum_inv
+        rs_34 = self.rs_34
+        mr34x_sum_inv4_6 = -6.0*r34x_sum_inv*r34x_sum_inv*r34x_sum_inv*r34x_sum_inv
+        
+        d3Vis_Dortmund = [[[[ri*rj*rk*rl*mr34x_sum_inv4_6 for rl in rs_34] for rk in rs_34]
+                                               for rj in rs_34] for ri in rs_34]
+        self._d3Vis_Dortmund_dxixjxks = d3Vis_Dortmund
+        return d3Vis_Dortmund
