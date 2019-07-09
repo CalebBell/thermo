@@ -22,7 +22,8 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['UNIFAC_gammas', 'UNIFAC_psi', 'DOUFMG', 'DOUFSG', 'UFSG', 'UFMG', 
+__all__ = ['UNIFAC_gammas','UNIFAC',  'GibbsExcess', 
+           'UNIFAC_psi', 'DOUFMG', 'DOUFSG', 'UFSG', 'UFMG', 
            'DOUFIP2016', 'DOUFIP2006', 'UFIP', 'DDBST_UNIFAC_assignments', 
            'DDBST_MODIFIED_UNIFAC_assignments', 'DDBST_PSRK_assignments',
            'UNIFAC_RQ', 'Van_der_Waals_volume', 'Van_der_Waals_area',
@@ -31,6 +32,7 @@ __all__ = ['UNIFAC_gammas', 'UNIFAC_psi', 'DOUFMG', 'DOUFSG', 'UFSG', 'UFMG',
            'PSRKIP', 'PSRKSG']
 import os
 from thermo.utils import log, exp
+from thermo.activity import GibbsExcess
 
 folder = os.path.join(os.path.dirname(__file__), 'Phase Change')
 
@@ -1107,7 +1109,7 @@ def UNIFAC_psi(T, subgroup1, subgroup2, subgroup_data, interaction_data,
 
 
 def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None, 
-           interaction_data=None, modified=False):
+                  interaction_data=None, modified=False):
     r'''Calculates activity coefficients using the UNIFAC model (optionally 
     modified), given a mixture's temperature, liquid mole fractions, 
     and optionally the subgroup data and interaction parameter data of your 
@@ -1261,11 +1263,12 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
                     group_counts[group] = count
     else:
         rs, qs, group_counts = cached
-
+    
     # Sum the denominator for calculating Xs
     group_sum = sum(count*xs[i] for i in cmps for count in chemgroups[i].values())
 
     # Caclulate each numerator for calculating Xs
+    # Xms stored in group_count_xs, length number of independent groups
     group_count_xs = {}
     for group in group_counts:
         tot_numerator = sum(chemgroups[i][group]*xs[i] for i in cmps if group in chemgroups[i])        
@@ -1286,6 +1289,8 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
                       + log(Vis[i]/Fis[i])) for i in cmps]
 
     Q_sum_term = sum([subgroups[group].Q*group_count_xs[group] for group in group_counts])
+    
+    # theta(m)
     area_fractions = {group: subgroups[group].Q*group_count_xs[group]/Q_sum_term
                       for group in group_counts.keys()}
 
@@ -1302,15 +1307,19 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
             sum3 = sum(area_fractions[n]*UNIFAC_psis[m][n] for n in group_counts)
             sum2 -= area_fractions[m]*UNIFAC_psis[m][k]/sum3
         loggamma_groups[k] = subgroups[k].Q*(1. - log(sum1) + sum2)
-
-
+    
     loggammars = []
     for groups in chemgroups:
         chem_loggamma_groups = {}
         chem_group_sum = sum(groups.values())
+        
+        # Xm = chem_group_count_xs
         chem_group_count_xs = {group: count/chem_group_sum for group, count in groups.items()}
-                               
+    
+        # denominator of term used to compute Theta(m)
         Q_sum_term = sum([subgroups[group].Q*chem_group_count_xs[group] for group in groups])
+        
+        # Theta(m) = chem_area_fractions (dict indexed by main group)
         chem_area_fractions = {group: subgroups[group].Q*chem_group_count_xs[group]/Q_sum_term
                                for group in groups.keys()}
         for k in groups:
@@ -1328,4 +1337,253 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
 
     return [exp(loggammacs[i]+loggammars[i]) for i in cmps]
 
+
+def chemgroups_to_matrix(chemgroups):
+    r'''
+    Index by [group index][compound index]
+    
+    >>> chemgroups_to_matrix([{9: 6}, {2: 6}, {1: 1, 18: 1}, {1: 1, 2: 1, 14: 1}])
+    [[0, 0, 1, 1], [0, 6, 0, 1], [6, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]
+    '''
+    matrix = []
+    keys = []
+    all_keys = set()
+    [all_keys.update(i.keys()) for i in chemgroups]
+    for k in sorted(list(all_keys)):
+        matrix.append([l[k] if k in l else 0 for l in chemgroups])
+    return matrix
+
+
+class UNIFAC(GibbsExcess):
+    
+    @staticmethod
+    def from_subgroups(T, xs, chemgroups, subgroups=UFSG,
+                       interaction_data=UFIP):
+        rs = []
+        qs = []
+        for groups in chemgroups:
+            ri = 0.
+            qi = 0.
+            for group, count in groups.items():
+                ri += subgroups[group].R*count
+                qi += subgroups[group].Q*count
+            rs.append(ri)
+            qs.append(qi)
+        
+        group_counts = {}
+        for groups in chemgroups:
+            for group, count in groups.items():
+                if group in group_counts:
+                    group_counts[group] += count
+                else:
+                    group_counts[group] = count
+        
+        # Convert group counts into a list, sorted by low index
+        group_counts_list = [c for _, c in sorted(zip(group_counts.keys(), group_counts.values()))]
+        subgroup_list = list(sorted(group_counts.keys()))
+        
+        Qs = [subgroups[group].Q for group in subgroup_list]
+        vs = chemgroups_to_matrix(chemgroups)
+        
+        psi_a, psi_b, psi_c = [], [], []
+        for sub1 in subgroup_list:
+            a_row, b_row, c_row = [], [], []
+            for sub2 in subgroup_list:
+                main1 = subgroups[sub1].main_group_id
+                main2 = subgroups[sub2].main_group_id
+                try:
+                    v = interaction_data[main1][main2]
+                    try:
+                        a_row.append(-v[0])
+                        b_row.append(-v[1])
+                        c_row.append(-v[2])
+                    except:
+                        a_row.append(-v)
+                        b_row.append(0.0)
+                        c_row.append(0.0)
+                except KeyError:
+                        a_row.append(0.0)
+                        b_row.append(0.0)
+                        c_row.append(0.0)
+            psi_a.append(a_row), psi_b.append(b_row), psi_c.append(c_row)
+            
+            
+        debug = (rs, qs, Qs, vs, (psi_a, psi_b, psi_c))
+        return UNIFAC(T=T, xs=xs, rs=rs, qs=qs, Qs=Qs, vs=vs, phi_abc=(psi_a, psi_b, psi_c))
+            
+    def __init__(self, T, xs, rs, qs, Qs, vs, phi_coeffs=None, phi_abc=None,
+                 version=0):
+        self.T = T
+        self.xs = xs
+        
+        self.rs = rs
+        self.qs = qs
+        self.Qs = Qs
+        self.vs = vs
+        
+        if phi_abc is not None:
+            self.phi_a, self.phi_b, self.phi_c = phi_abc
+        
+        else:
+            if phi_coeffs is None:
+                raise ValueError("Missing phis")
+            self.phi_a = [[i[0] for i in l] for l in phi_coeffs]
+            self.phi_b = [[i[1] for i in l] for l in phi_coeffs]
+            self.phi_c = [[i[2] for i in l] for l in phi_coeffs]
+        self.N_groups = len(self.phi_a)
+        self.groups = range(self.N_groups)
+        self.N = N = len(rs)
+        self.cmps = range(N)
+        
+    def to_T_xs(self, T, xs):
+        new = self.__class__.__new__(self.__class__)
+        new.T = T
+        new.xs = xs
+        new.N = self.N
+        new.cmps = self.cmps
+        
+        new.N_groups = self.N_groups
+        new.groups = self.groups
+        
+        new.rs = self.rs
+        new.qs = self.qs
+        new.Qs = self.Qs
+        new.vs = self.vs
+        
+        new.phi_a, new.phi_b, new.phi_c = self.phi_a, self.phi_b, self.phi_c
+
+        
+        if T == self.T:
+            pass
+        return new
+
+    def Vis(self):
+        try:
+            return self._Vis
+        except:
+            pass
+        rs, xs, cmps = self.rs, self.xs, self.cmps
+        tot = 0.0
+        for i in cmps:
+            tot += rs[i]*xs[i]
+        tot = 1.0/tot
+        self.rx_sum_inv = tot
+        self._Vis = [rs[i]*tot for i in cmps]
+        return self._Vis
+    
+    def dVis_dxs(self):
+        try:
+            return self._dVis_dxs
+        except AttributeError:
+            pass
+        try:
+            rx_sum_inv = self.rx_sum_inv
+        except AttributeError:
+            self.Vis()
+            rx_sum_inv = self.rx_sum_inv
+            
+        rs = self.rs
+        mrx_sum_inv2 = -rx_sum_inv*rx_sum_inv
+        
+        dVis = [[ri*rj*mrx_sum_inv2 for rj in rs] for ri in rs]
+        self._dVis_dxs = dVis
+        return dVis
+    
+    def d2Vis_dxixjs(self):
+        try:
+            return self._d2Vis_dxixjs
+        except AttributeError:
+            pass
+        try:
+            rx_sum_inv = self.rx_sum_inv
+        except AttributeError:
+            self.Vis()
+            rx_sum_inv = self.rx_sum_inv
+        rs = self.rs
+        rx_sum_inv3_2 = 2.0*rx_sum_inv*rx_sum_inv*rx_sum_inv
+        d2Vis = [[[ri*rj*rk*rx_sum_inv3_2 for rk in rs] for rj in rs] for ri in rs]
+        self._d2Vis_dxixjs = d2Vis
+        return d2Vis
+    
+    def d3Vis_dxixjxks(self):
+        try:
+            return self._d3Vis_dxixjxks
+        except AttributeError:
+            pass
+        try:
+            rx_sum_inv = self.rx_sum_inv
+        except AttributeError:
+            self.Vis()
+            rx_sum_inv = self.rx_sum_inv
+        rs = self.rs
+        mrx_sum_inv4_6 = -6.0*rx_sum_inv*rx_sum_inv*rx_sum_inv*rx_sum_inv
+        
+        d3Vis = [[[[ri*rj*rk*rl*mrx_sum_inv4_6 for rl in rs] for rk in rs]
+                                               for rj in rs] for ri in rs]
+        self._d3Vis_dxixjxks = d3Vis
+        return d3Vis
+
+    def Fis(self):
+        qs, xs, cmps = self.qs, self.xs, self.cmps
+        tot = 0.0
+        for i in cmps:
+            tot += qs[i]*xs[i]
+        tot = 1.0/tot
+        Fis = [qs[i]*tot for i in cmps]
+        self.qx_sum_inv = tot
+        return Fis
+
+    def dFis_dxs(self):
+        try:
+            return self._dFis_dxs
+        except AttributeError:
+            pass
+        try:
+            qx_sum_inv = self.qx_sum_inv
+        except AttributeError:
+            self.Fis()
+            qx_sum_inv = self.qx_sum_inv
+            
+        qs = self.qs
+        mqx_sum_inv2 = -qx_sum_inv*qx_sum_inv
+        
+        dFis = [[qi*qj*mqx_sum_inv2 for qj in qs] for qi in qs]
+        self._dFis_dxs = dFis
+        return dFis
+
+    def d2Fis_dxixjs(self):
+        try:
+            return self._d2Fis_dxixjs
+        except AttributeError:
+            pass
+        try:
+            qx_sum_inv = self.qx_sum_inv
+        except AttributeError:
+            self.Fis()
+            qx_sum_inv = self.qx_sum_inv
+            
+        qs = self.qs
+
+        qx_sum_inv3_2 = 2.0*qx_sum_inv*qx_sum_inv*qx_sum_inv
+        d2Fis = [[[qi*qj*qk*qx_sum_inv3_2 for qk in qs] for qj in qs] for qi in qs]
+        self._d2Fis_dxixjs = d2Fis
+        return d2Fis
+
+    def d3Fis_dxixjxks(self):
+        try:
+            return self._d3Fis_dxixjxks
+        except AttributeError:
+            pass
+        try:
+            qx_sum_inv = self.qx_sum_inv
+        except AttributeError:
+            self.Fis()
+            qx_sum_inv = self.qx_sum_inv
+        qs = self.qs
+        mqx_sum_inv4_6 = -6.0*qx_sum_inv*qx_sum_inv*qx_sum_inv*qx_sum_inv
+        
+        d3Fis = [[[[qi*qj*qk*ql*mqx_sum_inv4_6 for ql in qs] for qk in qs]
+                                               for qj in qs] for qi in qs]
+        self._d3Fis_dxixjxks = d3Fis
+        return d3Fis
 
