@@ -1273,6 +1273,7 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
     for group in group_counts:
         tot_numerator = sum(chemgroups[i][group]*xs[i] for i in cmps if group in chemgroups[i])        
         group_count_xs[group] = tot_numerator/group_sum
+    print(group_count_xs, 'group_count_xs')
 
     rsxs = sum([rs[i]*xs[i] for i in cmps])
     Vis = [rs[i]/rsxs for i in cmps]
@@ -1290,7 +1291,7 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
 
     Q_sum_term = sum([subgroups[group].Q*group_count_xs[group] for group in group_counts])
     
-    # theta(m)
+    # theta(m) for an overall mixture composition
     area_fractions = {group: subgroups[group].Q*group_count_xs[group]/Q_sum_term
                       for group in group_counts.keys()}
 
@@ -1299,6 +1300,7 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
                    for m in group_counts} for k in group_counts}
 
     loggamma_groups = {}
+    # This is for the total mixture bit of the residual
     for k in group_counts:
         sum1, sum2 = 0., 0.
         for m in group_counts:
@@ -1310,6 +1312,7 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
     
     loggammars = []
     for groups in chemgroups:
+        # Most of this is for the pure-component bit of the residual
         chem_loggamma_groups = {}
         chem_group_sum = sum(groups.values())
         
@@ -1326,6 +1329,8 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
             sum1, sum2 = 0., 0.
             for m in groups:
                 sum1 += chem_area_fractions[m]*UNIFAC_psis[k][m]
+                
+                # sum3 should be cached
                 sum3 = sum(chem_area_fractions[n]*UNIFAC_psis[m][n] for n in groups)
                 sum2 -= chem_area_fractions[m]*UNIFAC_psis[m][k]/sum3
 
@@ -1394,11 +1399,11 @@ class UNIFAC(GibbsExcess):
                 try:
                     v = interaction_data[main1][main2]
                     try:
-                        a_row.append(-v[0])
-                        b_row.append(-v[1])
-                        c_row.append(-v[2])
+                        a_row.append(v[0])
+                        b_row.append(v[1])
+                        c_row.append(v[2])
                     except:
-                        a_row.append(-v)
+                        a_row.append(v)
                         b_row.append(0.0)
                         c_row.append(0.0)
                 except KeyError:
@@ -1409,9 +1414,9 @@ class UNIFAC(GibbsExcess):
             
             
         debug = (rs, qs, Qs, vs, (psi_a, psi_b, psi_c))
-        return UNIFAC(T=T, xs=xs, rs=rs, qs=qs, Qs=Qs, vs=vs, phi_abc=(psi_a, psi_b, psi_c), version=version)
+        return UNIFAC(T=T, xs=xs, rs=rs, qs=qs, Qs=Qs, vs=vs, psi_abc=(psi_a, psi_b, psi_c), version=version)
             
-    def __init__(self, T, xs, rs, qs, Qs, vs, phi_coeffs=None, phi_abc=None,
+    def __init__(self, T, xs, rs, qs, Qs, vs, psi_coeffs=None, psi_abc=None,
                  version=0):
         self.T = T
         self.xs = xs
@@ -1421,16 +1426,16 @@ class UNIFAC(GibbsExcess):
         self.Qs = Qs
         self.vs = vs
         
-        if phi_abc is not None:
-            self.phi_a, self.phi_b, self.phi_c = phi_abc
+        if psi_abc is not None:
+            self.psi_a, self.psi_b, self.psi_c = psi_abc
         
         else:
-            if phi_coeffs is None:
-                raise ValueError("Missing phis")
-            self.phi_a = [[i[0] for i in l] for l in phi_coeffs]
-            self.phi_b = [[i[1] for i in l] for l in phi_coeffs]
-            self.phi_c = [[i[2] for i in l] for l in phi_coeffs]
-        self.N_groups = len(self.phi_a)
+            if psi_coeffs is None:
+                raise ValueError("Missing psis")
+            self.psi_a = [[i[0] for i in l] for l in psi_coeffs]
+            self.psi_b = [[i[1] for i in l] for l in psi_coeffs]
+            self.psi_c = [[i[2] for i in l] for l in psi_coeffs]
+        self.N_groups = len(self.psi_a)
         self.groups = range(self.N_groups)
         self.N = N = len(rs)
         self.cmps = range(N)
@@ -1455,7 +1460,7 @@ class UNIFAC(GibbsExcess):
         
         new.version = self.version
         
-        new.phi_a, new.phi_b, new.phi_c = self.phi_a, self.phi_b, self.phi_c
+        new.psi_a, new.psi_b, new.psi_c = self.psi_a, self.psi_b, self.psi_c
 
         try:
             new.rs_34 = self.rs_34
@@ -1465,7 +1470,110 @@ class UNIFAC(GibbsExcess):
         if T == self.T:
             pass
         return new
+    
+    def Xms_chem(self):
+        # This variable has a temperature and mole fraction derivative of 0!
+        
+        # Indexed by [group][component]
+        groups, cmps = self.groups, self.cmps
+        vs = self.vs
+        # chem_group_sums = [number of groups in each component]
+        chem_group_sums = [sum([vs[i][j] for i in groups]) for j in cmps]
 
+        chem_group_count_xs = [[vs[i][j]/chem_group_sums[j] for j in cmps] for i in groups]        
+        return chem_group_count_xs
+
+
+    def psis(self):
+        try:
+            return self._psis
+        except AttributeError:
+            pass
+        T, groups = self.T, self.groups
+        psi_a, psi_b, psi_c = self.psi_a, self.psi_b, self.psi_c
+        
+        mT_inv = -1.0/T
+        self._psis = psis = []
+        for i in groups:
+            a_row, b_row, c_row = psi_a[i], psi_b[i], psi_c[i]
+            psis.append([exp(a_row[j]*mT_inv - b_row[j] - c_row[j]*T) for j in groups])
+        return psis
+    
+    def dpsis_dT(self):
+        try:
+            return self._dpsis_dT
+        except AttributeError:
+            pass
+        try:
+            psis = self._psis
+        except AttributeError:
+            psis = self.psis()
+            
+        T, groups = self.T, self.groups
+        psi_a, psi_c = self.psi_a, self.psi_c
+        
+        T2_inv = 1.0/(T*T)
+        self._dpsis_dT = dpsis_dT = []
+        for i in groups:
+            psis_row, a_row, c_row = psis[i], psi_a[i], psi_c[i]
+            dpsis_dT.append([psis_row[j]*(a_row[j]*T2_inv - c_row[j])  for j in groups])
+        return dpsis_dT
+
+    def d2psis_dT2(self):
+        try:
+            return self._d2psis_dT2
+        except AttributeError:
+            pass
+        try:
+            psis = self._psis
+        except AttributeError:
+            psis = self.psis()
+            
+        T, groups = self.T, self.groups
+        psi_a, psi_c = self.psi_a, self.psi_c
+        mT2_inv = -1.0/(T*T)
+        T3_inv_m2 = -2.0/(T*T*T)
+        
+        self._d2psis_dT2 = d2psis_dT2 = []
+        for i in groups:
+            psis_row, a_row, c_row = psis[i], psi_a[i], psi_c[i]
+            row = []
+            for j in groups:
+                x0 = c_row[j] + mT2_inv*a_row[j]
+                row.append((x0*x0 + T3_inv_m2*a_row[j])*psis_row[j])
+            d2psis_dT2.append(row)
+        return d2psis_dT2
+    
+    
+    def d3psis_dT3(self):
+        try:
+            return self._d3psis_dT3
+        except AttributeError:
+            pass
+        try:
+            psis = self._psis
+        except AttributeError:
+            psis = self.psis()
+            
+        T, groups = self.T, self.groups
+        psi_a, psi_c = self.psi_a, self.psi_c
+        
+        nT2_inv = -1.0/(T*T)
+        T3_inv_6 = 6.0/(T*T*T)
+        T4_inv_6 = 6.0/(T*T*T*T)
+        
+        self._d3psis_dT3 = d3psis_dT3 = []
+
+        for i in groups:
+            psis_row, a_row, c_row = psis[i], psi_a[i], psi_c[i]
+            row = []
+            for j in groups:
+                x0 = c_row[j] + nT2_inv*a_row[j]
+                row.append((x0*(T3_inv_6*a_row[j] - x0*x0) + T4_inv_6*a_row[j])*psis_row[j])
+
+            d3psis_dT3.append(row)
+        return d3psis_dT3
+                
     def Vis(self):
         try:
             return self._Vis
