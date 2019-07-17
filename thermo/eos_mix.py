@@ -2347,6 +2347,7 @@ class GCEOSMIX(GCEOS):
 #            hessian.append(row)
         return hessian
 
+    @property
     def d3a_alpha_dzizjzks(self):   
         r'''Helper method for calculating the third composition derivatives of
         `a_alpha`. Note this is independent of the phase.
@@ -2407,7 +2408,7 @@ class GCEOSMIX(GCEOS):
                 for k in cmps:
                     mid = a_alpha_ijs[i][j] + a_alpha_ijs[i][k] + a_alpha_ijs[j][k]
                     last = sum(zs[m]*(a_alpha_ijs[i][m] + a_alpha_ijs[j][m] + a_alpha_ijs[k][m]) for m in cmps)
-                    ele = 4*(a_alpha6 -mid + 3*last)
+                    ele = 4.0*(a_alpha6 - mid + 3.0*last)
                     row.append(ele)
                 l.append(row)
             matrix.append(l)
@@ -2718,22 +2719,22 @@ class GCEOSMIX(GCEOS):
         x3 = self.b
         x4 = x0 - x3
         x5 = self.epsilon
-        x6 = x0**2
+        x6 = x0*x0
         x7 = self.delta
         x8 = x0*x7
         x9 = x5 + x6 + x8
         x10 = self.a_alpha
-        x11 = x10*x4**2
-        x12 = 2*x0
-        x13 = x9**2
+        x11 = x10*x4*x4
+        x12 = x0 + x0
+        x13 = x9*x9
         x14 = R*T
-        x17 = x4**3
+        x17 = x4*x4*x4
         x18 = x10*x17
         x19 = 2*x18
         x22 = 4*x18
         x27 = x12*x18
-        x33 = x14*x9**3
-        x34 = 2*x33
+        x33 = x14*x13*x9
+        x34 = x33 + x33
         x37 = x19*x8
         x38 = x17*x9
         x39 = x10*x38
@@ -3654,6 +3655,8 @@ class GCEOSMIX(GCEOS):
         x20 = x16/x9**(3/2)
         x28 = 1/x9
         x29 = x28*x7
+        x32 = x13**2*x28 - 1
+        x33 = x15/x32
         for i in cmps:
             x5 = d_Vs[i]
             x27 = 2*x5
@@ -3674,8 +3677,6 @@ class GCEOSMIX(GCEOS):
                 x26 = x11*x22
                 x30 = x18*x28
                 x31 = x12*x30 - x17 + x18*x29 - x27
-                x32 = x13**2*x28 - 1
-                x33 = x15/x32
                 x34 = x28*x33
                 x35 = 2*x6
                 x36 = x22*x28
@@ -4181,7 +4182,22 @@ class GCEOSMIX(GCEOS):
         v = self.T*R*sum([zi*log(zi) for zi in self.zs if zi > 0.0]) # ideal composition entropy composition
         v += R*self.T*log(self.P/101325.0)
         return v
-        
+    
+    @property
+    def HCp0_g(self):
+        return self.H_dep_g
+
+    @property
+    def HCp0_l(self):
+        return self.H_dep_l
+    
+    @property
+    def GCp0_g(self):
+        return self.HCp0_g - self.T*self.SCp0_g
+    
+    @property
+    def GCp0_l(self):
+        return self.HCp0_l - self.T*self.SCp0_l
     
     def dScomp_dns(self, phase):
         dP_dns_Vt = self.dP_dns_Vt(phase)

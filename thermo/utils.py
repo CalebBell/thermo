@@ -1429,6 +1429,7 @@ diff(h(n1, n2)*f(n1,  n2), n1, n2)
 
 def d2xs_to_d2ns(d2xs, dxs, dns):
     # Could use some simplifying. Derived with trial and error via lots of inner loops
+    # Not working
     N = len(d2xs)
     cmps = range(N)
     hess = []

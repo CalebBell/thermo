@@ -1273,7 +1273,7 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
     for group in group_counts:
         tot_numerator = sum(chemgroups[i][group]*xs[i] for i in cmps if group in chemgroups[i])        
         group_count_xs[group] = tot_numerator/group_sum
-    print(group_count_xs, 'group_count_xs')
+#    print(group_count_xs, 'group_count_xs')
 
     rsxs = sum([rs[i]*xs[i] for i in cmps])
     Vis = [rs[i]/rsxs for i in cmps]
