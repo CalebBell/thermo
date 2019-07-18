@@ -34,6 +34,7 @@ from . import elements
 from . import environment
 from . import eos
 from . import eos_mix
+from . import flash
 from . import heat_capacity
 from . import identifiers
 from . import interaction_parameters
@@ -44,6 +45,7 @@ from . import miscdata
 from . import mixture
 from . import permittivity
 from . import phase_change
+from . import phases
 from . import property_package
 from . import property_package_constants
 from . import reaction
@@ -80,6 +82,7 @@ from .elements import *
 from .environment import *
 from .eos import *
 from .eos_mix import *
+from .flash import *
 from .heat_capacity import *
 from .joback import *
 from .identifiers import *
@@ -90,6 +93,7 @@ from .miscdata import *
 from .mixture import *
 from .permittivity import *
 from .phase_change import *
+from .phases import *
 from .property_package import *
 from .property_package_constants import *
 from .reaction import *
@@ -112,11 +116,11 @@ from .wilson import *
 from .nrtl import *
 from .uniquac import *
 
-__all__ = ['activity', 'chemical', 'combustion', 'critical',
+__all__ = ['activity', 'chemical', 'combustion', 'critical', 'flash',
  'dipole', 'electrochem', 'elements', 'environment', 'eos', 'eos_mix',
  'heat_capacity',  'identifiers', 'joback', 'law', 'lennard_jones',
  'miscdata',
- 'permittivity', 'phase_change', 'property_package', 'reaction',
+ 'permittivity', 'phase_change', 'phases', 'property_package', 'reaction',
  'refractivity', 'safety', 'solubility', 'interface', 'interaction_parameters',
  'thermal_conductivity', 'triple', 'utils',
  'vapor_pressure', 'virial', 'viscosity', 'volume', 'acentric', 'coolprop', 
@@ -138,6 +142,7 @@ __all__.extend(elements.__all__)
 __all__.extend(environment.__all__)
 __all__.extend(eos.__all__)
 __all__.extend(eos_mix.__all__)
+__all__.extend(flash.__all__)
 __all__.extend(heat_capacity.__all__)
 __all__.extend(identifiers.__all__)
 __all__.extend(interaction_parameters.__all__)
@@ -148,6 +153,7 @@ __all__.extend(miscdata.__all__)
 __all__.extend(mixture.__all__)
 __all__.extend(permittivity.__all__)
 __all__.extend(phase_change.__all__)
+__all__.extend(phases.__all__)
 __all__.extend(property_package.__all__)
 __all__.extend(reaction.__all__)
 __all__.extend(refractivity.__all__)

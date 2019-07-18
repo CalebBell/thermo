@@ -1955,7 +1955,14 @@ class GCEOSMIX(GCEOS):
             pass
         zs = self.zs
         da_alpha_dT_ijs = self.da_alpha_dT_ijs
+        
+        # Handle the case of attempting to avoid a full alpha derivative matrix evaluation
+        if not da_alpha_dT_ijs:
+            self.resolve_full_alphas()
+            da_alpha_dT_ijs = self.da_alpha_dT_ijs
+
         da_alpha_dT_j_rows = [0.0]*self.N
+        
         for i in self.cmps:
             l = da_alpha_dT_ijs[i]
             for j in range(i):
@@ -1973,6 +1980,12 @@ class GCEOSMIX(GCEOS):
         except AttributeError:
             pass
         d2a_alpha_dT2_ijs = self.d2a_alpha_dT2_ijs
+        
+        # Handle the case of attempting to avoid a full alpha derivative matrix evaluation
+        if not da_alpha_dT_ijs:
+            self.resolve_full_alphas()
+            d2a_alpha_dT2_ijs = self.d2a_alpha_dT2_ijs
+        
         zs = self.zs
         d2a_alpha_dT2_j_rows = [0.0]*self.N
         for i in self.cmps:

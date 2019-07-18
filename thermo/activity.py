@@ -30,7 +30,7 @@ __all__ = ['K_value', 'Wilson_K_value', 'flash_wilson', 'flash_Tb_Tc_Pc',
            'Rachford_Rice_flashN_f_jac', 'Rachford_Rice_flash2_f_jac',
            'Li_Johns_Ahmadi_solution', 'flash_inner_loop', 'NRTL_gammas',
            'Wilson_gammas',
-           'UNIQUAC_gammas', 'flash', 'dew_at_T',
+           'UNIQUAC_gammas', 'flash_ideal', 'dew_at_T',
            'bubble_at_T', 'identify_phase', 'mixture_phase_methods',
            'identify_phase_mixture', 'Pbubble_mixture', 'bubble_at_P',
            'Pdew_mixture', 'GibbsExcess', 'IdealSolution']
@@ -2345,7 +2345,7 @@ def UNIQUAC_gammas(xs, rs, qs, taus):
     return ans
 
 
-def flash(P, zs, Psats):
+def flash_ideal(P, zs, Psats):
 #    if not fugacities:
 #        fugacities = [1 for i in range(len(zs))]
 #    if not gammas:
@@ -2595,7 +2595,7 @@ def identify_phase_mixture(T=None, P=None, zs=None, Tcs=None, Pcs=None,
             xs = None
             V_over_F = 1
         elif Pdew < P < Pbubble:
-            xs, ys, V_over_F = flash(P, zs, Psats)
+            xs, ys, V_over_F = flash_ideal(P, zs, Psats)
             phase = 'two-phase'
     elif Method == 'SUPERCRITICAL_T':
         if all([T >= i for i in Tcs]):
@@ -2625,7 +2625,7 @@ def identify_phase_mixture(T=None, P=None, zs=None, Tcs=None, Pcs=None,
             xs = None
             V_over_F = 1
         elif Pdew < P < Pbubble:
-            xs, ys, V_over_F = flash(P, zs, Psats)
+            xs, ys, V_over_F = flash_ideal(P, zs, Psats)
             phase = 'two-phase'
 
     elif Method == 'NONE':
@@ -3092,4 +3092,3 @@ class IdealSolution(object):
 
     def gammas(self):
         return [1.0 for i in self.cmps]
-
