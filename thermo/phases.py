@@ -95,6 +95,90 @@ class Phase(object):
     def A_reactive(self):
         A = self.U_reactive - self.T*self.S_reactive
         return A
+    
+    @property
+    def dT_dP(self):
+        return 1.0/self.dP_dT
+    
+    @property
+    def dV_dT(self):
+        return -self.dP_dT/self.dP_dV
+    
+    @property
+    def dV_dP(self):
+        return -self.dV_dT*self.dT_dP 
+    
+    @property
+    def dT_dV(self):
+        return 1./self.dV_dT
+    
+    @property
+    def d2V_dP2(self):
+        inverse_dP_dV = 1.0/self.dP_dV
+        inverse_dP_dV3 = inverse_dP_dV*inverse_dP_dV*inverse_dP_dV
+        return -self.d2P_dV2*inverse_dP_dV3
+
+    @property
+    def d2T_dP2(self):
+        dT_dP = self.dT_dP
+        inverse_dP_dT2 = dT_dP*dT_dP
+        inverse_dP_dT3 = inverse_dP_dT2*dT_dP
+        return -self.d2P_dT2*inverse_dP_dT3
+    
+    @property
+    def d2T_dV2(self):
+        # Wrong
+        dP_dT = self.dP_dT
+        dP_dV = self.dP_dV
+        d2P_dTdV = self.d2P_dTdV
+        d2P_dT2 = self.d2P_dT2
+        dT_dP = self.dT_dP
+        inverse_dP_dT2 = dT_dP*dT_dP
+        inverse_dP_dT3 = inverse_dP_dT2*dT_dP
+        
+        return (-(self.d2P_dV2*dP_dT - dP_dV*d2P_dTdV)*inverse_dP_dT2
+                   +(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*inverse_dP_dT3*dP_dV)
+        
+    @property
+    def d2V_dT2(self):
+        dP_dT = self.dP_dT
+        dP_dV = self.dP_dV
+        d2P_dTdV = self.d2P_dTdV
+        d2P_dT2 = self.d2P_dT2
+        d2P_dV2 = self.d2P_dV2
+
+        inverse_dP_dV = 1.0/dP_dV
+        inverse_dP_dV2 = inverse_dP_dV*inverse_dP_dV
+        inverse_dP_dV3 = inverse_dP_dV*inverse_dP_dV2
+        
+        return  (-(d2P_dT2*dP_dV - dP_dT*d2P_dTdV)*inverse_dP_dV2
+                   +(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*inverse_dP_dV3*dP_dT)
+
+    @property
+    def d2V_dPdT(self):
+        dP_dT = self.dP_dT
+        dP_dV = self.dP_dV
+        d2P_dTdV = self.d2P_dTdV
+        d2P_dV2 = self.d2P_dV2
+        
+        inverse_dP_dV = 1.0/dP_dV
+        inverse_dP_dV2 = inverse_dP_dV*inverse_dP_dV
+        inverse_dP_dV3 = inverse_dP_dV*inverse_dP_dV2
+        
+        return -(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*inverse_dP_dV3
+
+    @property
+    def d2T_dPdV(self):
+        dT_dP = self.dT_dP
+        inverse_dP_dT2 = dT_dP*dT_dP
+        inverse_dP_dT3 = inverse_dP_dT2*dT_dP
+        
+        d2P_dTdV = self.d2P_dTdV
+        dP_dT = self.dP_dT
+        dP_dV = self.dP_dV
+        d2P_dT2 = self.d2P_dT2
+        return -(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*inverse_dP_dT3
+        
 
 
 class EOSLiquid(Phase):
@@ -218,6 +302,23 @@ class EOSGas(Phase):
             return self.eos_mix.d2P_dTdV_g
         except AttributeError:
             return self.eos_mix.d2P_dTdV_l
+        
+    # because of the ideal gas model, for some reason need to use the right ones
+    # FOR THIS MODEL ONLY
+    @property
+    def d2T_dV2(self):
+        try:
+            return self.eos_mix.d2T_dV2_g
+        except AttributeError:
+            return self.eos_mix.d2T_dV2_l
+
+    @property
+    def d2V_dT2(self):
+        try:
+            return self.eos_mix.d2V_dT2_g
+        except AttributeError:
+            return self.eos_mix.d2V_dT2_l
+
         
     @property
     def H(self):
