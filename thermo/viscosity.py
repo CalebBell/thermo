@@ -887,7 +887,7 @@ def Lucas(T, P, Tc, Pc, omega, P_sat, mu_l):
     .. [2] Reid, Robert C.; Prausnitz, John M.; Poling, Bruce E.
        Properties of Gases and Liquids. McGraw-Hill Companies, 1987.
     '''
-    Tr = T/Tc
+    Tr = min(T/Tc, 1.0)
     C = -0.07921+2.1616*Tr - 13.4040*Tr**2 + 44.1706*Tr**3 - 84.8291*Tr**4 \
         + 96.1209*Tr**5-59.8127*Tr**6+15.6719*Tr**7
     D = 0.3257/((1.0039-Tr**2.573)**0.2906) - 0.2086

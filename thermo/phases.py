@@ -28,11 +28,56 @@ from thermo.utils import log, exp
 
 '''
 All phase objects are immutable.
+
+Goal is for each phase to be able to compute all of its thermodynamic properties.
+This includes volume-based ones. Use settings to handle different; do not worry
+about derivatives being calculated correctly.
+
+Phases know nothing about bulk properties.
+Phases know nothing about transport properties.
+
+For enthalpy, need to support with ideal gas heat of formation as a separate
+enthalpy calculation.
 '''
 
 
 class Phase(object):
     pass
+
+        
+class IdealGas(Phase):
+    def __init__(self, HeatCapacityGases=None, Hfs=None, Gfs=None):
+        self.HeatCapacityGases = HeatCapacityGases
+        self.Hfs = Hfs
+        self.Gfs = Gfs
+        if Hfs is not None and Gfs is not None and None not in Hfs and None not in Gfs:
+            self.Sfs = [(Hfi - Gfi)/298.15 for Hfi, Gfi in zip(Hfs, Gfs)]
+        else:
+            self.Sfs = None
+            
+        if HeatCapacityGases is not None:
+            self.N = len(HeatCapacityGases)
+        
+    def fugacities(self):
+        P = self.P
+        return [P*zi for zi in self.zs]
+    
+    def lnphis(self):
+        return [0.0]*self.N
+
+    def to_TP_zs(self, T, P, zs):
+        new = self.__class__.__new__(self.__class__)
+        new.T = T
+        new.P = P
+        new.zs = zs
+        new.N = len(zs)
+        
+        new.HeatCapacityGases = self.HeatCapacityGases
+        new.Hfs = self.Hfs
+        new.Gfs = self.Gfs
+        new.Sfs = self.Sfs
+        return new
+            
 
 class EOSLiquid(Phase):
     pass
@@ -47,9 +92,6 @@ class EOSGas(Phase):
         new.T = T
         new.P = P
         new.zs = zs
-#        new.N = self.N
-#        new.cmps = self.cmps
-        
         try:
             new.eos_mix = self.eos_mix.to_TP_zs_fast(T=T, P=P, zs=zs, only_g=True,
                                                      full_alphas=False) # optimize alphas?
@@ -69,22 +111,19 @@ class EOSGas(Phase):
         try:
             return self.eos_mix.dlnphis_dT('g')
         except Exception as e:
-            print(e)
             return self.eos_mix.dlnphis_dT('l')
-        
-class IdealGas(Phase):
-    pass
 
 class GibbbsExcessLiquid(Phase):
     
     use_Poynting = False
     use_phis_sat = False
     def __init__(self, VaporPressures, VolumeLiquids, GibbsExcessModel, 
-                 eos_pure_instances):
+                 eos_pure_instances, VolumeLiquidMixture=None):
         self.VaporPressures = VaporPressures
         self.VolumeLiquids = VolumeLiquids
         self.GibbsExcessModel = GibbsExcessModel
         self.eos_pure_instances = eos_pure_instances
+        self.VolumeLiquidMixture = VolumeLiquidMixture
         
         self.N = len(VaporPressures)
         self.cmps = range(self.N)
@@ -99,6 +138,7 @@ class GibbbsExcessLiquid(Phase):
         
         new.VaporPressures = self.VaporPressures
         new.VolumeLiquids = self.VolumeLiquids
+        new.VolumeLiquidMixture = self.VolumeLiquidMixture
         new.eos_pure_instances = self.eos_pure_instances
         new.GibbsExcessModel = self.GibbsExcessModel.to_T_xs(T=T, xs=zs)
         

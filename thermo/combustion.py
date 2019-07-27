@@ -226,7 +226,7 @@ def Hcombustion(atoms, Hf=None, HfH2O=-285825, HfCO2=-393474,
                 HfHF=-272711, HfP4O10=-3009940, HfO2=0, HfN2=0, 
                 CASRN=None, higher=True):
     '''Calculates the heat of combustion, in J/mol.
-    Value non-hydrocarbons is not correct, but still calculable.a
+    Value non-hydrocarbons is not correct, but still calculable.
     
     Can calculate the higher heating value (HHV)/heat of combusion or the
     lower heating value (LHV), according to the value of `higher`.

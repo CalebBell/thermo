@@ -21,11 +21,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
-__all__ = ['sequential_substitution_2P', 'bubble_T_Michelsen_Mollerup']
+__all__ = ['sequential_substitution_2P', 'bubble_T_Michelsen_Mollerup',
+           'minimize_gibbs_2P_transformed']
 
-from thermo.utils import exp, copysign
+from thermo.utils import exp, log, copysign, normalize
 from fluids.numerics import UnconvergedError
 from thermo.activity import flash_inner_loop
+from scipy.optimize import minimize
 
 def sequential_substitution_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
                                gas_phase, maxiter=1000, tol=1E-13, 
@@ -46,6 +48,7 @@ def sequential_substitution_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
         lnphis_l = l.lnphis()
 
         Ks = [exp(l - g) for l, g in zip(lnphis_l, lnphis_g)] # K_value(phi_l=l, phi_g=g)
+#        print([log(i) for i in Ks], 'Ks')
         V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks, guess=V_over_F)
         
         # Check for negative fractions - normalize only if needed
@@ -83,12 +86,48 @@ def sequential_substitution_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
             return V_over_F, xs, ys, l, g, iteration, err
     raise UnconvergedError('End of SS without convergence')
 
+
+
+
+def minimize_gibbs_2P_transformed(T, P, zs, xs_guess, ys_guess, liquid_phase,
+                                  gas_phase, maxiter=1000, tol=1E-13, 
+                                  trivial_solution_tol=1e-5, V_over_F_guess=None):
+    if V_over_F_guess is None:
+        V_over_F = 0.5
+    else:
+        V_over_F = V_over_F_guess
+        
+    flows_v = [yi[i]*V_over_F for yi in ys_guess]
+    cmps = range(len(zs))
+
+
+    def G(flows_v):
+        vs = [(0.0 + (zs[i] - 0.0)/(1.0 - flows_v[i])) for i in cmps]
+        ls = [zs[i] - vs[i] for i in cmps]
+        xs = normalize(xs)
+        ys = normalize(ys)
+        
+        VF = flows_v[0]/ys[0]
+    
+        g = gas_phase.to_TP_zs(T=T, P=P, zs=ys)
+        l = liquid_phase.to_TP_zs(T=T, P=P, zs=xs)
+        
+        G_g = g.G()
+        G_l = l.G()
+        GE_calc = (G_g*VF + (1.0 - VF)*G_l)/(R*T)
+        return GE_calc
+
+    ans = minimize(G, flows_v)
+    return ans
+    
+    
+    
 l_undefined_T_msg = "Could not calculate liquid conditions at provided temperature %s K (mole fracions %s)"   
 g_undefined_T_msg = "Could not calculate vapor conditions at provided temperature %s K (mole fracions %s)"   
 
 def bubble_T_Michelsen_Mollerup(T_guess, P, zs, liquid_phase, gas_phase, 
                                 maxiter=200, xtol=1E-10, ys_guess=None,
-                                max_step_damping=5.0,
+                                max_step_damping=5.0, T_update_frequency=1,
                                 trivial_solution_tol=1e-4):
     N = len(zs)
     cmps = range(N)
@@ -97,7 +136,7 @@ def bubble_T_Michelsen_Mollerup(T_guess, P, zs, liquid_phase, gas_phase,
 
     T_guess_old = None
     successive_fails = 0
-    for i in range(maxiter):
+    for iteration in range(maxiter):
         try:
             g = gas_phase.to_TP_zs(T=T_guess, P=P, zs=ys)
             lnphis_g = g.lnphis()
@@ -126,6 +165,8 @@ def bubble_T_Michelsen_Mollerup(T_guess, P, zs, liquid_phase, gas_phase,
         successive_fails = 0
         Ks = [exp(a - b) for a, b in zip(lnphis_l, lnphis_g)]
         ys = [zs[i]*Ks[i] for i in cmps]
+        if iteration % T_update_frequency:
+            continue
 
         f_k = sum([zs[i]*Ks[i] for i in cmps]) - 1.0
         
@@ -156,4 +197,4 @@ def bubble_T_Michelsen_Mollerup(T_guess, P, zs, liquid_phase, gas_phase,
         
     if abs(T_guess - T_guess_old) > xtol:
         raise ValueError("Did not converge to specified tolerance")
-    return T_guess
+    return T_guess, iteration, abs(T_guess - T_guess_old)
