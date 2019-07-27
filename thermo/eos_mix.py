@@ -22,7 +22,7 @@ SOFTWARE.'''
 from __future__ import division
 
 __all__ = ['GCEOSMIX', 'PRMIX', 'SRKMIX', 'PR78MIX', 'VDWMIX', 'PRSVMIX', 
-'PRSV2MIX', 'TWUPRMIX', 'TWUSRKMIX', 'APISRKMIX',
+'PRSV2MIX', 'TWUPRMIX', 'TWUSRKMIX', 'APISRKMIX', 'IGMIX',
 'eos_Z_test_phase_stability', 'eos_Z_trial_phase_stability',
 'eos_mix_list']
 
@@ -4907,6 +4907,57 @@ class GCEOSMIX(GCEOS):
         return d2ns
 
 
+class IGMIX(GCEOSMIX, IG):
+    a_alpha_mro = -4
+    eos_pure = IG
+    
+    nonstate_constants_specific = ()
+    
+    def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
+                 fugacities=True, only_l=False, only_g=False):
+        self.N = N = len(Tcs)
+        self.cmps = range(self.N)
+        self.Tcs = Tcs
+        self.Pcs = Pcs
+        self.omegas = omegas
+        self.zs = zs
+        if kijs is None:
+            kijs = [[0.0]*N for i in self.cmps]
+        self.kijs = kijs
+        self.kwargs = {'kijs': kijs}
+        self.T = T
+        self.P = P
+        self.V = V
+
+        self.solve(only_l=only_l, only_g=only_g)
+        if fugacities:
+            self.fugacities()
+
+    def fast_init_specific(self, other):
+        pass
+
+
+    def a_alpha_and_derivatives_vectorized(self, T, full=False, quick=True):
+        a_alphas = [0.0]*self.N
+        if not full:
+            return a_alphas
+        else:
+            return a_alphas, a_alphas, a_alphas
+
+    def setup_a_alpha_and_derivatives(self, i, T=None):
+        pass
+
+    def cleanup_a_alpha_and_derivatives(self):
+        pass
+
+    def fugacity_coefficients(self, Z, zs):
+        return [0.0]*self.N
+
+    def dlnphis_dT(self, phase):
+        return [0.0]*self.N
+         
+    def dlnphis_dP(self, phase):
+        return [0.0]*self.N
 
 class PRMIX(GCEOSMIX, PR):
     r'''Class for solving the Peng-Robinson cubic equation of state for a 

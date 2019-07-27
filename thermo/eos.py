@@ -2629,15 +2629,20 @@ class IG(GCEOS):
     epsilon = 0.0
     
     # Handle the properties where numerical error puts values - but they should
-    # be zero.
+    # be zero. Not all of them are non-zero all the time - but some times
+    # they are
     def _zero(self): return 0.0
     def _set_nothing(self, thing): return
     
     d2T_dV2_g = property(_zero, _set_nothing)
     d2V_dT2_g = property(_zero, _set_nothing)
+    G_dep_g = property(_zero, _set_nothing)
+    H_dep_g = property(_zero, _set_nothing)
+    S_dep_g = property(_zero, _set_nothing)
     U_dep_g = property(_zero, _set_nothing)
     A_dep_g = property(_zero, _set_nothing)
     V_dep_g = property(_zero, _set_nothing)
+    Cp_dep_g = property(_zero, _set_nothing)
 
     def __init__(self, Tc=190.564, Pc=4599000.0, omega=0.008, T=None, P=None, 
                  V=None):

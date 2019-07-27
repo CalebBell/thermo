@@ -313,6 +313,8 @@ def test_PR_second_partial_derivative_shims():
     
     
 def test_PR_density_derivatives():
+    '''
+    '''
     '''Sympy expressions:
         
     >>> f = 1/x
@@ -1001,6 +1003,51 @@ def test_TWUSRK_quick():
     eos = TWUSRK(Tc=507.6, Pc=3025000, omega=0.2975, V=0.007422212960199866, P=1E6)
     assert_allclose(eos.T, 900)
 
+def test_IG():
+    Ts = [1e-20, 1e-5, 1, 100, 1000, 1e4, 1e7, 1e30]
+    Ps = [1e-20, 1e-5, 1, 1000, 1e6, 1e10, 1e30]
+    
+    zero_attrs = ['d2T_dV2_g', 'd2V_dT2_g', 'U_dep_g', 'A_dep_g', 'V_dep_g', 'Cp_dep_g', 'Cv_dep_g',
+                 'G_dep_g', 'H_dep_g', 'S_dep_g', 'd2P_dT2_g', 'd2T_dP2_g', 
+                 'a_alpha', 'da_alpha_dT', 'd2a_alpha_dT2', ]
+    tol = 1e-15
+    
+    for T in Ts:
+        for P in Ps:
+    
+            eos = IG(T=T, P=P)
+    
+            for attr in zero_attrs:
+                assert getattr(eos, attr) == 0
+            V = eos.V_g
+    
+            assert_allclose(eos.Cp_minus_Cv_g, R, rtol=tol)
+            assert_allclose(eos.PIP_g, 1, rtol=tol)
+            assert_allclose(eos.Z_g, 1, rtol=tol)
+            assert_allclose(eos.phi_g, 1, rtol=tol)
+            assert_allclose(eos.fugacity_g, P, rtol=tol)
+            assert_allclose(eos.V_g,  R*T/P, rtol=tol)
+    
+            # P derivatives - print(diff(R*T/V, V, V))
+            assert_allclose(eos.dP_dT_g, R/V, rtol=tol)
+            assert_allclose(eos.dP_dV_g, -R*T/V**2, rtol=tol)
+            assert_allclose(eos.d2P_dTdV_g, -R/V**2, rtol=tol)
+            assert_allclose(eos.d2P_dV2_g, 2*R*T/V**3 , rtol=tol)
+    
+            # T derivatives - print(diff(P*V/R, P, V))
+            assert_allclose(eos.dT_dP_g, V/R, rtol=tol)
+            assert_allclose(eos.dT_dV_g, P/R, rtol=tol)
+            assert_allclose(eos.d2T_dPdV_g, 1/R, rtol=tol)
+    
+            # V derivatives - print(diff(R*T/P, P))
+            assert_allclose(eos.dV_dP_g, -R*T/P**2, rtol=tol)
+            assert_allclose(eos.dV_dT_g, R/P, rtol=tol)
+            assert_allclose(eos.d2V_dP2_g, 2*R*T/P**3, rtol=tol)
+            assert_allclose(eos.d2V_dPdT_g, -R/P**2, rtol=tol)
+            
+            # Misc
+            assert_allclose(eos.beta_g, R/P/V, rtol=tol)
+            assert_allclose(eos.kappa_g, R*T/P**2/V, rtol=tol)
 
 @pytest.mark.slow
 def test_fuzz_dV_dT_and_d2V_dT2_derivatives():
