@@ -4912,10 +4912,34 @@ class IGMIX(GCEOSMIX, IG):
     eos_pure = IG
     
     nonstate_constants_specific = ()
+
+    def _zeros1d(self): 
+        return self.zeros1d
+    
+    def _zeros2d(self):
+        return self.zeros2d
+    
+    def _zeros3d(self):
+        N, cmps = self.N, self.cmps
+        return [[[0.0]*N for _ in cmps] for _ in self.cmps]
+    
+    
+    ddelta_dzs = property(_zeros1d)
+    ddelta_dns = property(_zeros1d)
+    depsilon_dzs = property(_zeros1d)
+    depsilon_dns = property(_zeros1d)
+    
+    d2delta_dzizjs = property(_zeros2d)
+    d2delta_dninjs = property(_zeros2d)
+    d2epsilon_dzizjs = property(_zeros2d)
+    d2epsilon_dninjs = property(_zeros2d)
+
+    d3delta_dninjnks = property(_zeros3d)
+    d3epsilon_dninjnks = property(_zeros3d)
     
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
-        self.N = N = len(Tcs)
+        self.N = N = len(zs)
         self.cmps = range(self.N)
         self.Tcs = Tcs
         self.Pcs = Pcs
@@ -4928,13 +4952,24 @@ class IGMIX(GCEOSMIX, IG):
         self.T = T
         self.P = P
         self.V = V
+        
+        self.b = 0.0
+        self.bs = self.zeros1d = [0.0]*N
+        
+        self.zeros2d = [[0.0]*N for _ in self.cmps]
+        self.a_alpha_ijs = self.da_alpha_dT_ijs = self.d2a_alpha_dT2_ijs = self.zeros2d
 
         self.solve(only_l=only_l, only_g=only_g)
         if fugacities:
             self.fugacities()
 
     def fast_init_specific(self, other):
-        pass
+        other.bs = self.bs
+        other.b = self.b
+        other.zeros1d = self.zeros1d
+        other.a_alpha_ijs = self.a_alpha_ijs
+        other.da_alpha_dT_ijs = self.da_alpha_dT_ijs
+        other.d2a_alpha_dT2_ijs = self.d2a_alpha_dT2_ijs
 
 
     def a_alpha_and_derivatives_vectorized(self, T, full=False, quick=True):
@@ -4943,6 +4978,12 @@ class IGMIX(GCEOSMIX, IG):
             return a_alphas
         else:
             return a_alphas, a_alphas, a_alphas
+
+    def a_alpha_and_derivatives(self, T, full=True, quick=True,
+                                pure_a_alphas=True):
+        if full:
+            return 0.0, 0.0, 0.0
+        return 0.0
 
     def setup_a_alpha_and_derivatives(self, i, T=None):
         pass
@@ -4958,6 +4999,8 @@ class IGMIX(GCEOSMIX, IG):
          
     def dlnphis_dP(self, phase):
         return [0.0]*self.N
+
+
 
 class PRMIX(GCEOSMIX, PR):
     r'''Class for solving the Peng-Robinson cubic equation of state for a 
@@ -7772,4 +7815,4 @@ def eos_lnphis_trial_phase_stability(eos, prefer, alt):
             lnphis_trial = getattr(eos, prefer)
     return lnphis_trial
 
-eos_mix_list = [PRMIX, SRKMIX, PR78MIX, VDWMIX, PRSVMIX, PRSV2MIX, TWUPRMIX, TWUSRKMIX, APISRKMIX]
+eos_mix_list = [PRMIX, SRKMIX, PR78MIX, VDWMIX, PRSVMIX, PRSV2MIX, TWUPRMIX, TWUSRKMIX, APISRKMIX, IGMIX]

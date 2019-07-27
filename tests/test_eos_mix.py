@@ -2464,14 +2464,14 @@ def test_dV_dnxpartial(kwargs):
         eos = obj(zs=zs, **kwargs)
         numericals = [derivative(dV_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
             for i, ni in enumerate(zs)]
-        assert_allclose(numericals, eos.dV_dzs(eos.Z_g, zs))
+        assert_allclose(numericals, eos.dV_dzs(eos.Z_g, zs), atol=1e-16)
     
     normalization = True
     for obj in eos_mix_list:
         eos = obj(zs=zs, **kwargs)
         numericals = [derivative(dV_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
             for i, ni in enumerate(zs)]
-        assert_allclose(numericals, eos.dV_dns(eos.Z_g, zs))
+        assert_allclose(numericals, eos.dV_dns(eos.Z_g, zs), atol=1e-16)
     
     partial_n = True
     for obj in eos_mix_list:
@@ -2532,14 +2532,14 @@ def test_dZ_dnxpartial(kwargs):
         eos = obj(zs=zs, **kwargs)
         numericals = [derivative(dZ_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
             for i, ni in enumerate(zs)]
-        assert_allclose(numericals, eos.dZ_dzs(eos.Z_g, zs))
+        assert_allclose(numericals, eos.dZ_dzs(eos.Z_g, zs), atol=1e-13)
     
     normalization = True
     for obj in eos_mix_list:
         eos = obj(zs=zs, **kwargs)
         numericals = [derivative(dZ_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
             for i, ni in enumerate(zs)]
-        assert_allclose(numericals, eos.dZ_dns(eos.Z_g, zs))
+        assert_allclose(numericals, eos.dZ_dns(eos.Z_g, zs), atol=1e-13)
     
     partial_n = True
     for obj in eos_mix_list:
@@ -2775,7 +2775,19 @@ def test_lnphis_basic():
                           [-0.01041793395202692, 0.002957664659691675, 0.0072031571097258065, -0.004276674933823978]]
     assert_allclose(dlnphis_dns_analytical, dlnphis_dns_expect, rtol=1e-12)
     assert_allclose(dlnphis_dns_analytical, dlnphis_dns_numerical, rtol=8e-5)
+
+
+def test_IGMIX():
+    T = 270.0
+    P = 76E5
+    zs = [0.3, 0.1, 0.6]
+    Tcs = [126.2, 190.6, 305.4]
+    Pcs = [33.9E5, 46.0E5, 48.8E5]
+    omegas = [0.04, 0.008, 0.098]
+    kijs = [[0, 0.038, 0.08], [0.038, 0, 0.021], [0.08, 0.021, 0]]
+    eos = IGMIX(T=T, P=P, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
     
+    assert_allclose(eos.fugacities_g, [2280000.0, 760000.0, 4560000.0], rtol=1e-14)
         
     
 def test_PRMIX_composition_derivatives_ternary(): 
