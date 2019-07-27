@@ -2643,6 +2643,16 @@ class IG(GCEOS):
     A_dep_g = property(_zero, _set_nothing)
     V_dep_g = property(_zero, _set_nothing)
     Cp_dep_g = property(_zero, _set_nothing)
+    
+    # Replace methods
+    dH_dep_dP_g = property(_zero, doc=GCEOS.dH_dep_dP_g)
+    dH_dep_dT_g = property(_zero, doc=GCEOS.dH_dep_dT_g)
+    dS_dep_dP_g = property(_zero, doc=GCEOS.dS_dep_dP_g)
+    dS_dep_dT_g = property(_zero, doc=GCEOS.dS_dep_dT_g)
+    dfugacity_dT_g = property(_zero, doc=GCEOS.dfugacity_dT_g)
+    dphi_dP_g = property(_zero, doc=GCEOS.dphi_dP_g)
+    dphi_dT_g = property(_zero, doc=GCEOS.dphi_dT_g)
+ 
 
     def __init__(self, Tc=190.564, Pc=4599000.0, omega=0.008, T=None, P=None, 
                  V=None):

@@ -1008,8 +1008,10 @@ def test_IG():
     Ps = [1e-20, 1e-5, 1, 1000, 1e6, 1e10, 1e30]
     
     zero_attrs = ['d2T_dV2_g', 'd2V_dT2_g', 'U_dep_g', 'A_dep_g', 'V_dep_g', 'Cp_dep_g', 'Cv_dep_g',
-                 'G_dep_g', 'H_dep_g', 'S_dep_g', 'd2P_dT2_g', 'd2T_dP2_g', 
-                 'a_alpha', 'da_alpha_dT', 'd2a_alpha_dT2', ]
+             'G_dep_g', 'H_dep_g', 'S_dep_g', 'd2P_dT2_g', 'd2T_dP2_g', 
+             'a_alpha', 'da_alpha_dT', 'd2a_alpha_dT2', 'dH_dep_dT_g', 
+             'dH_dep_dP_g', 'dS_dep_dT_g', 'dS_dep_dP_g',
+              'dfugacity_dT_g', 'dphi_dT_g', 'dphi_dP_g']
     tol = 1e-15
     
     for T in Ts:
@@ -1025,6 +1027,7 @@ def test_IG():
             assert_allclose(eos.PIP_g, 1, rtol=tol)
             assert_allclose(eos.Z_g, 1, rtol=tol)
             assert_allclose(eos.phi_g, 1, rtol=tol)
+            assert_allclose(eos.dfugacity_dP_g, 1, rtol=tol)
             assert_allclose(eos.fugacity_g, P, rtol=tol)
             assert_allclose(eos.V_g,  R*T/P, rtol=tol)
     
