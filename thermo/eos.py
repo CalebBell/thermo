@@ -1955,6 +1955,7 @@ class GCEOS_DUMMY(GCEOS):
         self.T = T
         self.P = P
 
+
 # No named parameters
 class ALPHA_FUNCTIONS(GCEOS):
     r'''Basic class with a number of attached alpha functions for different

@@ -21,7 +21,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
-__all__ = ['GibbbsExcessLiquid', 'Phase', 'EOSLiquid', 'EOSGas', 'IdealGas']
+__all__ = ['GibbbsExcessLiquid', 'Phase', 'EOSLiquid', 'EOSGas']
 
 from fluids.constants import R, R_inv
 from thermo.utils import log, exp
@@ -42,50 +42,85 @@ enthalpy calculation.
 
 
 class Phase(object):
-    pass
-
-        
-class IdealGas(Phase):
-    def __init__(self, HeatCapacityGases=None, Hfs=None, Gfs=None):
-        self.HeatCapacityGases = HeatCapacityGases
-        self.Hfs = Hfs
-        self.Gfs = Gfs
-        if Hfs is not None and Gfs is not None and None not in Hfs and None not in Gfs:
-            self.Sfs = [(Hfi - Gfi)/298.15 for Hfi, Gfi in zip(Hfs, Gfs)]
-        else:
-            self.Sfs = None
-            
-        if HeatCapacityGases is not None:
-            self.N = len(HeatCapacityGases)
-        
-    def fugacities(self):
-        P = self.P
-        return [P*zi for zi in self.zs]
+    T_REF_IG = 298.15
+    P_REF_IG = 101325.
+    P_REF_IG_INV = 1.0/P_REF_IG
     
-    def lnphis(self):
-        return [0.0]*self.N
+    T_MAX_FIXED = 10000.0
+    T_MIN_FIXED = 1e-3
+    
+    P_MAX_FIXED = 1e9
+    P_MIN_FIXED = 1e-3
 
-    def to_TP_zs(self, T, P, zs):
-        new = self.__class__.__new__(self.__class__)
-        new.T = T
-        new.P = P
-        new.zs = zs
-        new.N = len(zs)
-        
-        new.HeatCapacityGases = self.HeatCapacityGases
-        new.Hfs = self.Hfs
-        new.Gfs = self.Gfs
-        new.Sfs = self.Sfs
-        return new
-            
+    @property
+    def G(self):
+        G = self.H - self.T*self.S
+        return G
+    
+    @property
+    def U(self):
+        U = self.H - self.P*self.V
+        return U
+    
+    @property
+    def A(self):
+        A = self.U - self.T*self.S
+        return A
+
+    @property
+    def H_reactive(self):
+        H = self.H
+        for zi, Hf in zip(self.zs, self.Hfs):
+            H += zi*Hf
+        return H
+
+    @property
+    def S_reactive(self):
+        S = self.S
+        for zi, Sf in zip(self.zs, self.Sfs):
+            S += zi*Sf
+        return S
+    
+    @property
+    def G_reactive(self):
+        G = self.H_reactive - self.T*self.S_reactive
+        return G
+    
+    @property
+    def U_reactive(self):
+        U = self.H_reactive - self.P*self.V
+        return U
+    
+    @property
+    def A_reactive(self):
+        A = self.U_reactive - self.T*self.S_reactive
+        return A
+
 
 class EOSLiquid(Phase):
     pass
 
 class EOSGas(Phase):
-    def __init__(self, eos_class, **eos_kwargs):
+    def __init__(self, eos_class, eos_kwargs, HeatCapacityGases=None, Hfs=None,
+                 Gfs=None, Sfs=None,
+                 T=None, P=None, zs=None):
         self.eos_class = eos_class
         self.eos_kwargs = eos_kwargs
+
+        self.HeatCapacityGases = HeatCapacityGases
+        if HeatCapacityGases is not None:
+            self.N = N = len(HeatCapacityGases)
+            self.cmps = range(self.N)
+        self.Hfs = Hfs
+        self.Gfs = Gfs
+        self.Sfs = Sfs
+        
+        if T is not None and P is not None and zs is not None:
+            self.T = T
+            self.P = P
+            self.zs = zs
+            self.eos_mix = self.eos_class(T=T, P=P, zs=zs, **self.eos_kwargs)
+            
         
     def to_TP_zs(self, T, P, zs):
         new = self.__class__.__new__(self.__class__)
@@ -97,6 +132,20 @@ class EOSGas(Phase):
                                                      full_alphas=False) # optimize alphas?
         except AttributeError:
             new.eos_mix = self.eos_class(T=T, P=P, zs=zs, **self.eos_kwargs)
+        
+        new.eos_class = self.eos_class
+        new.eos_kwargs = self.eos_kwargs
+        
+        new.HeatCapacityGases = self.HeatCapacityGases
+        new.Hfs = self.Hfs
+        new.Gfs = self.Gfs
+        new.Sfs = self.Sfs
+        
+        try:
+            new.N = self.N
+            new.cmps = self.cmps
+        except:
+            pass
 
         return new
         
@@ -112,6 +161,104 @@ class EOSGas(Phase):
             return self.eos_mix.dlnphis_dT('g')
         except Exception as e:
             return self.eos_mix.dlnphis_dT('l')
+    
+    @property
+    def H_dep(self):
+        try:
+            return self.eos_mix.H_dep_g
+        except AttributeError:
+            return self.eos_mix.H_dep_l
+
+    @property
+    def S_dep(self):
+        try:
+            return self.eos_mix.S_dep_g
+        except AttributeError:
+            return self.eos_mix.S_dep_l
+        
+        
+    @property
+    def V(self):
+        try:
+            return self.eos_mix.V_g
+        except AttributeError:
+            return self.eos_mix.V_l
+    
+    @property
+    def dP_dT(self):
+        try:
+            return self.eos_mix.dP_dT_g
+        except AttributeError:
+            return self.eos_mix.dP_dT_l
+
+    @property
+    def dP_dV(self):
+        try:
+            return self.eos_mix.dP_dV_g
+        except AttributeError:
+            return self.eos_mix.dP_dV_l
+    
+    @property
+    def d2P_dT2(self):
+        try:
+            return self.eos_mix.d2P_dT2_g
+        except AttributeError:
+            return self.eos_mix.d2P_dT2_l
+
+    @property
+    def d2P_dV2(self):
+        try:
+            return self.eos_mix.d2P_dV2_g
+        except AttributeError:
+            return self.eos_mix.d2P_dV2_l
+
+    @property
+    def d2P_dTdV(self):
+        try:
+            return self.eos_mix.d2P_dTdV_g
+        except AttributeError:
+            return self.eos_mix.d2P_dTdV_l
+        
+    @property
+    def H(self):
+        try:
+            return self._H
+        except AttributeError:
+            pass
+        T_REF_IG = self.T_REF_IG
+        HeatCapacityGases = self.HeatCapacityGases
+        zs = self.zs
+        T = self.T
+
+        H = 0.0        
+        for zi, obj in zip(zs, HeatCapacityGases):
+            H += zi*obj.T_dependent_property_integral(T_REF_IG, T)
+        H += self.H_dep
+        self._H = H
+        return H
+
+    @property
+    def S(self):
+        try:
+            return self._S
+        except AttributeError:
+            pass
+        HeatCapacityGases = self.HeatCapacityGases
+        cmps = self.cmps
+        T, P, zs = self.T, self.P, self.zs
+        
+        T_REF_IG = self.T_REF_IG
+        P_REF_IG_INV = self.P_REF_IG_INV
+        S = 0.0
+        S -= R*sum([zi*log(zi) for zi in zs if zi > 0.0]) # ideal composition entropy composition
+        S -= R*log(P*P_REF_IG_INV)
+        for i in cmps:
+            dS = HeatCapacityGases[i].T_dependent_property_integral_over_T(T_REF_IG, T)
+            S += zs[i]*dS
+        S += self.S_dep
+        self._S = S
+        return S
+
 
 class GibbbsExcessLiquid(Phase):
     
