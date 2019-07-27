@@ -23,7 +23,8 @@ SOFTWARE.'''
 from __future__ import division
 
 __all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',  
-'APISRK', 'TWUPR', 'TWUSRK', 'ALPHA_FUNCTIONS', 'eos_list', 'GCEOS_DUMMY']
+'APISRK', 'TWUPR', 'TWUSRK', 'ALPHA_FUNCTIONS', 'eos_list', 'GCEOS_DUMMY',
+'IG']
 
 from cmath import atanh as catanh
 from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
@@ -446,7 +447,8 @@ class GCEOS(object):
         PIP = V*(d2P_dTdV*dT_dP - d2P_dV2*dV_dP) # phase_identification_parameter(V, dP_dT, dP_dV, d2P_dV2, d2P_dTdV)
 
       
-        if force_l or (not force_g and PIP > 1.0):
+         # 1 + 1e-14 - allow a few dozen unums of toleranve to keep ideal gas model a gas
+        if force_l or (not force_g and PIP > 1.00000000000001):
             self.V_l, self.Z_l = V, Z
             self.beta_l, self.kappa_l = beta, kappa
             self.PIP_l, self.Cp_minus_Cv_l = PIP, Cp_m_Cv
@@ -824,7 +826,11 @@ should be calculated by this method, in a user subclass.')
         x8 = P*V
         x9 = delta*delta
         x10 = x9 - epsilon2 - epsilon2
-        x11 = x10**-0.5
+        try:
+            x11 = x10**-0.5
+        except ZeroDivisionError:
+            # Needed for ideal gas model
+            x11 = 0.0
         x11_half = 0.5*x11
         x12 = 2.*x11*catanh(x11*x5).real # Possible to use a catan, but then a complex division and sq root is needed too
         x14 = 0.5*x5
@@ -2558,10 +2564,105 @@ class ALPHA_FUNCTIONS(GCEOS):
             return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
 
+class IG(GCEOS):
+    r'''Class for solving the ideal gas equation in the `GCEOS` framework.
+    This provides access to a number of derivatives and properties easily.
+    It also keeps a common interface for all gas models. However, it is 
+    somewhat slow.
+    
+    Subclasses `GCEOS`, which 
+    provides the methods for solving the EOS and calculating its assorted 
+    relevant thermodynamic properties. Solves the EOS on initialization. 
 
+    Implemented methods here are `a_alpha_and_derivatives`, which calculates 
+    a_alpha and its first and second derivatives (all zero), and `solve_T`, 
+    which from a specified `P` and `V` obtains `T`.
+    
+    Two of `T`, `P`, and `V` are needed to solve the EOS; values for `Tc` and
+    `Pc` and `omega`, which are not used in the calculates, are set to those of
+    methane by default to allow use without specifying them.
+
+    .. math::
+        P = \frac{RT}{V}
+        
+    Parameters
+    ----------
+    Tc : float, optional
+        Critical temperature, [K]
+    Pc : float, optional
+        Critical pressure, [Pa]
+    omega : float, optional
+        Acentric factor, [-]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+
+    Examples
+    --------
+    T-P initialization, and exploring each phase's properties:
+    
+    >>> eos = IG(T=400., P=1E6)
+    >>> eos.V_g, eos.phase
+    (0.003325785047261296, 'g')
+    >>> eos.H_dep_g, eos.S_dep_g, eos.U_dep_g, eos.G_dep_g, eos.A_dep_g
+    (0.0, 0.0, 0.0, 0.0, 0.0)
+    >>> eos.beta_g, eos.kappa_g, eos.Cp_dep_g, eos.Cv_dep_g
+    (0.0024999999999999996, 1e-06, -1.7763568394002505e-15, 0.0)
+    >>> eos.fugacity_g, eos.PIP_g, eos.Z_g, eos.dP_dT_g
+    (1000000.0, 0.9999999999999999, 1.0, 2500.0)
+    
+    Notes
+    -----
+
+    References
+    ----------
+    .. [1] Smith, J. M, H. C Van Ness, and Michael M Abbott. Introduction to 
+       Chemical Engineering Thermodynamics. Boston: McGraw-Hill, 2005.
+    '''
+    Zc = 1.0
+    a = 0.0
+    b = 0.0
+    delta = 0.0
+    epsilon = 0.0
+    
+    # Handle the properties where numerical error puts values - but they should
+    # be zero.
+    def _zero(self): return 0.0
+    def _set_nothing(self, thing): return
+    
+    d2T_dV2_g = property(_zero, _set_nothing)
+    d2V_dT2_g = property(_zero, _set_nothing)
+    U_dep_g = property(_zero, _set_nothing)
+    A_dep_g = property(_zero, _set_nothing)
+    V_dep_g = property(_zero, _set_nothing)
+
+    def __init__(self, Tc=190.564, Pc=4599000.0, omega=0.008, T=None, P=None, 
+                 V=None):
+        self.Tc = Tc
+        self.Pc = Pc
+        self.omega = omega
+        self.T = T
+        self.P = P
+        self.V = V
+        self.Vc = self.Zc*R*Tc/Pc
+        
+        self.solve()
+
+    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
+        if not full:
+            return 0.0
+        else:
+            return (0.0, 0.0, 0.0)
+
+    def solve_T(self, P, V, quick=True):
+        return P*V*R_inv
+            
 class PR(GCEOS):
     r'''Class for solving the Peng-Robinson cubic 
-    equation of state for a pure compound. Subclasses `CUBIC_EOS`, which 
+    equation of state for a pure compound. Subclasses `GCEOS`, which 
     provides the methods for solving the EOS and calculating its assorted 
     relevant thermodynamic properties. Solves the EOS on initialization. 
 
@@ -2576,7 +2677,7 @@ class PR(GCEOS):
 
         a=0.45724\frac{R^2T_c^2}{P_c}
         
-	  b=0.07780\frac{RT_c}{P_c}
+	     b=0.07780\frac{RT_c}{P_c}
 
         \alpha(T)=[1+\kappa(1-\sqrt{T_r})]^2
         
@@ -3351,7 +3452,7 @@ class PRSV2(PR):
 
 class VDW(GCEOS):
     r'''Class for solving the Van der Waals cubic 
-    equation of state for a pure compound. Subclasses `CUBIC_EOS`, which 
+    equation of state for a pure compound. Subclasses `GCEOS`, which 
     provides the methods for solving the EOS and calculating its assorted 
     relevant thermodynamic properties. Solves the EOS on initialization. 
 
@@ -3522,7 +3623,7 @@ class VDW(GCEOS):
 
 class RK(GCEOS):
     r'''Class for solving the Redlich-Kwong cubic 
-    equation of state for a pure compound. Subclasses `CUBIC_EOS`, which 
+    equation of state for a pure compound. Subclasses `GCEOS`, which 
     provides the methods for solving the EOS and calculating its assorted 
     relevant thermodynamic properties. Solves the EOS on initialization. 
 
@@ -3680,7 +3781,7 @@ class RK(GCEOS):
 
 class SRK(GCEOS):
     r'''Class for solving the Soave-Redlich-Kwong cubic 
-    equation of state for a pure compound. Subclasses `CUBIC_EOS`, which 
+    equation of state for a pure compound. Subclasses `GCEOS`, which 
     provides the methods for solving the EOS and calculating its assorted 
     relevant thermodynamic properties. Solves the EOS on initialization. 
 
@@ -3871,7 +3972,7 @@ class SRK(GCEOS):
 class APISRK(SRK):
     r'''Class for solving the Refinery Soave-Redlich-Kwong cubic 
     equation of state for a pure compound shown in the API Databook [1]_.
-    Subclasses `CUBIC_EOS`, which 
+    Subclasses `GCEOS`, which 
     provides the methods for solving the EOS and calculating its assorted 
     relevant thermodynamic properties. Solves the EOS on initialization. 
 
@@ -4250,7 +4351,7 @@ def TWU_a_alpha_common(T, Tc, omega, a, full=True, quick=True, method='PR'):
 
 class TWUSRK(SRK):
     r'''Class for solving the Soave-Redlich-Kwong cubic 
-    equation of state for a pure compound. Subclasses `CUBIC_EOS`, which 
+    equation of state for a pure compound. Subclasses `GCEOS`, which 
     provides the methods for solving the EOS and calculating its assorted 
     relevant thermodynamic properties. Solves the EOS on initialization. 
 
@@ -4348,4 +4449,4 @@ class TWUSRK(SRK):
         return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=full, quick=quick, method='SRK')
 
 
-eos_list = [PR, PR78, PRSV, PRSV2, VDW, RK, SRK, APISRK, TWUPR, TWUSRK]
+eos_list = [IG, PR, PR78, PRSV, PRSV2, VDW, RK, SRK, APISRK, TWUPR, TWUSRK]

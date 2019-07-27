@@ -1982,7 +1982,7 @@ class GCEOSMIX(GCEOS):
         d2a_alpha_dT2_ijs = self.d2a_alpha_dT2_ijs
         
         # Handle the case of attempting to avoid a full alpha derivative matrix evaluation
-        if not da_alpha_dT_ijs:
+        if not d2a_alpha_dT2_ijs:
             self.resolve_full_alphas()
             d2a_alpha_dT2_ijs = self.d2a_alpha_dT2_ijs
         

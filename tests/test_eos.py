@@ -1074,14 +1074,14 @@ def test_fuzz_Psat():
     from thermo import eos
     eos_list = list(eos.__all__); eos_list.remove('GCEOS')
     eos_list.remove('ALPHA_FUNCTIONS'); eos_list.remove('eos_list')
-    eos_list.remove('GCEOS_DUMMY')
+    eos_list.remove('GCEOS_DUMMY'); eos_list.remove('IG')
     
     Tc = 507.6
     Pc = 3025000
     omega = 0.2975
     # Basic test
     e = PR(T=400, P=1E5, Tc=507.6, Pc=3025000, omega=0.2975)
-    Psats_expect = [22284.314987503185, 466204.89703879296, 2717294.407158156]
+    Psats_expect = [22284.73414685111, 466205.07373896183, 2717375.4955021995]
     assert_allclose([e.Psat(300), e.Psat(400), e.Psat(500)], Psats_expect)
     
     
@@ -1106,14 +1106,14 @@ def test_fuzz_Psat():
             e = globals()[eos_list[eos]](Tc=Tc, Pc=Pc, omega=omega, T=T, P=1E5)
             Psats_poly.append(e.Psat(T))
             Psats_solved.append(e.Psat(T, polish=True))
-    assert_allclose(Psats_solved, Psats_poly, rtol=1E-4)
+    assert_allclose(Psats_solved, Psats_poly, rtol=1E-11)
 
     
 def test_fuzz_dPsat_dT():
     from thermo import eos
     eos_list = list(eos.__all__); eos_list.remove('GCEOS')
     eos_list.remove('ALPHA_FUNCTIONS'); eos_list.remove('eos_list')
-    eos_list.remove('GCEOS_DUMMY')
+    eos_list.remove('GCEOS_DUMMY'); eos_list.remove('IG')
     
     Tc = 507.6
     Pc = 3025000
@@ -1128,7 +1128,7 @@ def test_fuzz_dPsat_dT():
     from thermo import eos
     eos_list = list(eos.__all__); eos_list.remove('GCEOS')
     eos_list.remove('ALPHA_FUNCTIONS'); eos_list.remove('eos_list')
-    eos_list.remove('GCEOS_DUMMY')
+    eos_list.remove('GCEOS_DUMMY'); eos_list.remove('IG')
     
     Tc = 507.6
     Pc = 3025000
@@ -1154,7 +1154,7 @@ def test_Hvaps():
     from thermo import eos
     eos_list = list(eos.__all__); eos_list.remove('GCEOS')
     eos_list.remove('ALPHA_FUNCTIONS'); eos_list.remove('eos_list')
-    eos_list.remove('GCEOS_DUMMY')
+    eos_list.remove('GCEOS_DUMMY'); eos_list.remove('IG')
     
     Tc = 507.6
     Pc = 3025000
@@ -1179,7 +1179,7 @@ def test_V_l_sats():
     from thermo import eos
     eos_list = list(eos.__all__); eos_list.remove('GCEOS')
     eos_list.remove('ALPHA_FUNCTIONS'); eos_list.remove('eos_list')
-    eos_list.remove('GCEOS_DUMMY')
+    eos_list.remove('GCEOS_DUMMY'); eos_list.remove('IG')
     
     Tc = 507.6
     Pc = 3025000
@@ -1199,7 +1199,7 @@ def test_V_g_sats():
     from thermo import eos
     eos_list = list(eos.__all__); eos_list.remove('GCEOS')
     eos_list.remove('ALPHA_FUNCTIONS'); eos_list.remove('eos_list')
-    eos_list.remove('GCEOS_DUMMY')
+    eos_list.remove('GCEOS_DUMMY'); eos_list.remove('IG')
     
     Tc = 507.6
     Pc = 3025000
