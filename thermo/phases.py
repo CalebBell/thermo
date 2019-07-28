@@ -24,7 +24,10 @@ from __future__ import division
 __all__ = ['GibbbsExcessLiquid', 'Phase', 'EOSLiquid', 'EOSGas']
 
 from fluids.constants import R, R_inv
-from thermo.utils import log, exp
+from thermo.utils import (log, exp, Cp_minus_Cv, phase_identification_parameter,
+                          isothermal_compressibility, isobaric_expansion,
+                          Joule_Thomson)
+
 
 '''
 All phase objects are immutable.
@@ -95,6 +98,21 @@ class Phase(object):
     def A_reactive(self):
         A = self.U_reactive - self.T*self.S_reactive
         return A
+    
+    @property
+    def Cv(self):
+        # checks out
+        Cp_m_Cv = Cp_minus_Cv(self.T, self.dP_dT, self.dP_dV)
+        Cp = self.Cp
+        return Cp - Cp_m_Cv
+    
+    @property
+    def Cp_Cv_ratio(self):
+        return self.Cp/self.Cv
+        
+    @property
+    def rho(self):
+        return 1.0/self.V
     
     @property
     def dT_dP(self):
@@ -178,7 +196,26 @@ class Phase(object):
         dP_dV = self.dP_dV
         d2P_dT2 = self.d2P_dT2
         return -(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*inverse_dP_dT3
+    
+    
+    @property
+    def PIP(self):
+        return phase_identification_parameter(self.V, self.dP_dT, self.dP_dV, 
+                                              self.d2P_dV2, self.d2P_dTdV)
         
+    @property
+    def kappa(self):
+        return isothermal_compressibility(self.V, self.dV_dP)
+
+    @property
+    def beta(self):
+        return isobaric_expansion(self.V, self.dV_dT)
+    
+    @property
+    def Joule_Thomson(self):
+        return Joule_Thomson(self.T, self.V, self.Cp, dV_dT=self.dV_dT, beta=self.beta)
+        
+
 
 
 class EOSLiquid(Phase):
@@ -243,8 +280,14 @@ class EOSGas(Phase):
     def dlnphis_dT(self):
         try:
             return self.eos_mix.dlnphis_dT('g')
-        except Exception as e:
+        except:
             return self.eos_mix.dlnphis_dT('l')
+
+    def dlnphis_dP(self):
+        try:
+            return self.eos_mix.dlnphis_dP('g')
+        except:
+            return self.eos_mix.dlnphis_dP('l')
     
     @property
     def H_dep(self):
@@ -259,7 +302,13 @@ class EOSGas(Phase):
             return self.eos_mix.S_dep_g
         except AttributeError:
             return self.eos_mix.S_dep_l
-        
+
+    @property
+    def Cp_dep(self):
+        try:
+            return self.eos_mix.Cp_dep_g
+        except AttributeError:
+            return self.eos_mix.Cp_dep_l        
         
     @property
     def V(self):
@@ -267,6 +316,14 @@ class EOSGas(Phase):
             return self.eos_mix.V_g
         except AttributeError:
             return self.eos_mix.V_l
+
+    @property
+    def Z(self):
+        try:
+            return self.eos_mix.Z_g
+        except AttributeError:
+            return self.eos_mix.Z_l
+    
     
     @property
     def dP_dT(self):
@@ -360,6 +417,18 @@ class EOSGas(Phase):
         self._S = S
         return S
 
+    @property
+    def Cp(self):
+        Cp = 0.0
+        for i in self.cmps:
+            Cp += self.zs[i]*self.HeatCapacityGases[i].T_dependent_property(self.T)
+        return Cp + self.Cp_dep
+
+    @property
+    def dH_dT(self):
+        return self.Cp
+    
+            
 
 class GibbbsExcessLiquid(Phase):
     
