@@ -87,6 +87,14 @@ class Phase(object):
     def dU_dP(self):
         # Correct
         return -self.P*self.dV_dP - self.V + self.dH_dP
+    
+    @property
+    def dA_dT(self):
+        return -self.T*self.dS_dT - self.S + self.dU_dT
+    
+    @property
+    def dA_dP(self):
+        return -self.T*self.dS_dP + self.dU_dP
         
     @property
     def G_dep(self):
