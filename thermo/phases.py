@@ -26,7 +26,8 @@ __all__ = ['GibbbsExcessLiquid', 'Phase', 'EOSLiquid', 'EOSGas']
 from fluids.constants import R, R_inv
 from thermo.utils import (log, exp, Cp_minus_Cv, phase_identification_parameter,
                           isothermal_compressibility, isobaric_expansion,
-                          Joule_Thomson)
+                          Joule_Thomson, dxs_to_dns)
+
 
 
 '''
@@ -69,6 +70,10 @@ class Phase(object):
     def A(self):
         A = self.U - self.T*self.S
         return A
+
+    @property
+    def dH_dns(self):
+        return dxs_to_dns(self.dH_dzs, self.zs)
     
     @property
     def dG_dT(self):
