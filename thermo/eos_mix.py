@@ -3067,13 +3067,14 @@ class GCEOSMIX(GCEOS):
         t0 = x6*x7
         t1 = x10*t0*x13
         t2 = 2.0*x10*x13/(x13*x3*x3 - 1.0)
+        x3_x13 = x3*x13
         dH_dzs = []
         for i in self.cmps:
             x1 = dV_dzs[i]
             x11 = ddelta_dzs[i]
             x12 = x11*x2 - 2.0*depsilon_dzs[i]
                 
-            value = (P*x1 - x12*t1 + t2*(x12*x13*x3 -x1 - x1 - x11)
+            value = (P*x1 - x12*t1 + t2*(x12*x3_x13 - x1 - x1 - x11)
                      + t0*(T*da_alpha_dT_dzs[i] - da_alpha_dzs[i]))
             dH_dzs.append(value)
         return dH_dzs

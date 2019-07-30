@@ -497,15 +497,9 @@ class EOSGas(Phase):
             return self._H
         except AttributeError:
             pass
-        T_REF_IG = self.T_REF_IG
-        HeatCapacityGases = self.HeatCapacityGases
-        zs = self.zs
-        T = self.T
-
-        H = 0.0        
-        for zi, obj in zip(zs, HeatCapacityGases):
-            H += zi*obj.T_dependent_property_integral(T_REF_IG, T)
-        H += self.H_dep
+        H = self.H_dep        
+        for zi, Cp_int in zip(self.zs, self.Cp_integrals_pure):
+            H += zi*Cp_int
         self._H = H
         return H
 
@@ -515,27 +509,59 @@ class EOSGas(Phase):
             return self._S
         except AttributeError:
             pass
-        HeatCapacityGases = self.HeatCapacityGases
-        cmps = self.cmps
-        T, P, zs = self.T, self.P, self.zs
-        
-        T_REF_IG = self.T_REF_IG
+        Cp_integrals_over_T_pure = self.Cp_integrals_over_T_pure
+        T, P, zs, cmps = self.T, self.P, self.zs, self.cmps
         P_REF_IG_INV = self.P_REF_IG_INV
         S = 0.0
         S -= R*sum([zi*log(zi) for zi in zs if zi > 0.0]) # ideal composition entropy composition
         S -= R*log(P*P_REF_IG_INV)
+        
         for i in cmps:
-            dS = HeatCapacityGases[i].T_dependent_property_integral_over_T(T_REF_IG, T)
-            S += zs[i]*dS
+            S += zs[i]*Cp_integrals_over_T_pure[i]
         S += self.S_dep
         self._S = S
         return S
+    
+    @property
+    def Cps_pure(self):
+        try:
+            return self._Cps
+        except AttributeError:
+            pass
+        T = self.T
+        self._Cps = [i.T_dependent_property(T) for i in self.HeatCapacityGases]
+        return self._Cps
+    
+    @property
+    def Cp_integrals_pure(self):
+        try:
+            return self._Cp_integrals_pure
+        except AttributeError:
+            pass
+        T, T_REF_IG, HeatCapacityGases = self.T, self.T_REF_IG, self.HeatCapacityGases
+        self._Cp_integrals_pure = [obj.T_dependent_property_integral(T_REF_IG, T)
+                                   for obj in HeatCapacityGases]
+        return self._Cp_integrals_pure
+
+    @property
+    def Cp_integrals_over_T_pure(self):
+        try:
+            return self._Cp_integrals_over_T_pure
+        except AttributeError:
+            pass
+        
+        T, T_REF_IG, HeatCapacityGases = self.T, self.T_REF_IG, self.HeatCapacityGases
+        self._Cp_integrals_over_T_pure = [obj.T_dependent_property_integral_over_T(T_REF_IG, T)
+                                   for obj in HeatCapacityGases]
+        return self._Cp_integrals_over_T_pure
+        
 
     @property
     def Cp(self):
-        Cp = 0.0
+        Cps_pure = self.Cps_pure
+        Cp, zs = 0.0, self.zs
         for i in self.cmps:
-            Cp += self.zs[i]*self.HeatCapacityGases[i].T_dependent_property(self.T)
+            Cp += zs[i]*Cps_pure[i]
         return Cp + self.Cp_dep
 
     @property
@@ -548,6 +574,21 @@ class EOSGas(Phase):
             return self.eos_mix.dH_dep_dP_g
         except AttributeError:
             return self.eos_mix.dH_dep_dP_l
+
+    @property
+    def dH_dzs(self):
+        try:
+            return self._dH_dzs
+        except AttributeError:
+            pass
+        eos_mix = self.eos_mix
+        try:
+            dH_dep_dzs = self.eos_mix.dH_dep_dzs(eos_mix.Z_g, eos_mix.zs)
+        except AttributeError:
+            dH_dep_dzs = self.eos_mix.dH_dep_dzs(eos_mix.Z_l, eos_mix.zs)
+        Cp_integrals_pure = self.Cp_integrals_pure
+        self._dH_dzs = [dH_dep_dzs[i] + Cp_integrals_pure[i] for i in self.cmps]
+        return self._dH_dzs
 
     @property
     def dS_dT(self):
