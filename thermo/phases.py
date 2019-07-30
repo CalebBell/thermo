@@ -69,6 +69,44 @@ class Phase(object):
     def A(self):
         A = self.U - self.T*self.S
         return A
+    
+    @property
+    def dG_dT(self):
+        return -self.T*self.dS_dT - self.S + self.dH_dT
+    
+    @property
+    def dG_dP(self):
+        return -self.T*self.dS_dP + self.dH_dP
+    
+    @property
+    def dU_dT(self):
+        # Correct
+        return -self.P*self.dV_dT + self.dH_dT
+    
+    @property
+    def dU_dP(self):
+        # Correct
+        return -self.P*self.dV_dP - self.V + self.dH_dP
+        
+    @property
+    def G_dep(self):
+        G_dep = self.H_dep - self.T*self.S_dep
+        return G_dep
+    
+    @property
+    def V_dep(self):
+        # from ideal gas behavior
+        V_dep = self.V - R*self.T/self.P
+        return V_dep
+    
+    @property
+    def U_dep(self):
+        return self.H_dep - self.P*self.V_dep
+    
+    @property
+    def A_dep(self):
+        return self.U_dep - self.T*self.S_dep
+
 
     @property
     def H_reactive(self):
@@ -215,6 +253,72 @@ class Phase(object):
     def Joule_Thomson(self):
         return Joule_Thomson(self.T, self.V, self.Cp, dV_dT=self.dV_dT, beta=self.beta)
         
+    @property
+    def dZ_dT(self):
+        T_inv = 1.0/self.T
+        return self.P*R_inv*T_inv*(self.dV_dT - self.V*T_inv)
+
+    @property
+    def dZ_dP(self):
+        return 1.0/(self.T*R)*(self.V + self.P*self.dV_dP)
+
+    ### Derivatives in the molar density basis
+
+    @property
+    def d2V_dTdP(self):
+        return self.d2V_dPdT
+
+    @property
+    def d2P_dVdT(self):
+        return self.d2P_dTdV
+
+    @property
+    def d2T_dVdP(self):
+        return self.d2T_dPdV
+
+    @property
+    def dP_drho(self):
+        return -self.V*self.V*self.dP_dV 
+
+    @property
+    def drho_dP(self):
+        return -self.dV_dP/(self.V*self.V)
+
+    @property
+    def d2P_drho2(self):
+        return -self.V**2*(-self.V**2*self.d2P_dV2 - 2*self.V*self.dP_dV)
+
+    @property
+    def d2rho_dP2(self):
+        return -self.d2V_dP2/self.V**2 + 2*self.dV_dP**2/self.V**3
+
+    @property
+    def dT_drho(self):
+        return -self.V*self.V*self.dT_dV
+
+    @property
+    def d2T_drho2(self):
+        return -self.V**2*(-self.V**2*self.d2T_dV2 - 2*self.V*self.dT_dV)
+
+    @property
+    def drho_dT(self):
+        return -self.dV_dT/(self.V*self.V)
+
+    @property
+    def d2rho_dT2(self):
+        return -self.d2V_dT2/self.V**2 + 2*self.dV_dT**2/self.V**3
+
+    @property
+    def d2P_dTdrho(self):
+        return -(self.V*self.V)*self.d2P_dTdV
+
+    @property
+    def d2T_dPdrho(self):
+        return -(self.V*self.V)*self.d2T_dPdV
+
+    @property
+    def d2rho_dPdT(self):
+        return -self.d2V_dPdT/self.V**2 + 2*self.dV_dT*self.dV_dP/self.V**3
 
 
 
@@ -250,7 +354,9 @@ class EOSGas(Phase):
         new.zs = zs
         try:
             new.eos_mix = self.eos_mix.to_TP_zs_fast(T=T, P=P, zs=zs, only_g=True,
-                                                     full_alphas=False) # optimize alphas?
+                                                     full_alphas=True) # optimize alphas?
+                                                     # Be very careful doing this in the future - wasted
+                                                     # 1 hour on this because the heat capacity calculation was wrong
         except AttributeError:
             new.eos_mix = self.eos_class(T=T, P=P, zs=zs, **self.eos_kwargs)
         
@@ -427,7 +533,44 @@ class EOSGas(Phase):
     @property
     def dH_dT(self):
         return self.Cp
-    
+
+    @property
+    def dH_dP(self):
+        try:
+            return self.eos_mix.dH_dep_dP_g
+        except AttributeError:
+            return self.eos_mix.dH_dep_dP_l
+
+    @property
+    def dS_dT(self):
+        HeatCapacityGases = self.HeatCapacityGases
+        cmps = self.cmps
+        T, zs = self.T, self.zs
+        T_REF_IG = self.T_REF_IG
+        P_REF_IG_INV = self.P_REF_IG_INV
+
+        S = 0.0
+        dS_pure_sum = 0.0
+        for zi, obj in zip(zs, HeatCapacityGases):
+            dS_pure_sum += zi*obj.T_dependent_property(T)
+        S += dS_pure_sum/T
+        try:
+            S += self.eos_mix.dS_dep_dT_g
+        except AttributeError:
+            S += self.eos_mix.dS_dep_dT_l
+        return S
+
+    @property
+    def dS_dP(self):
+        dS = 0.0
+        P = self.P
+        dS -= R/P
+        try:
+            dS += self.eos_mix.dS_dep_dP_g
+        except AttributeError:
+            dS += self.eos_mix.dS_dep_dP_l
+        return dS
+            
             
 
 class GibbbsExcessLiquid(Phase):
@@ -435,12 +578,16 @@ class GibbbsExcessLiquid(Phase):
     use_Poynting = False
     use_phis_sat = False
     def __init__(self, VaporPressures, VolumeLiquids, GibbsExcessModel, 
-                 eos_pure_instances, VolumeLiquidMixture=None):
+                 eos_pure_instances, VolumeLiquidMixture=None,
+                 HeatCapacityGases=None, EnthalpyVaporizations=None):
         self.VaporPressures = VaporPressures
         self.VolumeLiquids = VolumeLiquids
         self.GibbsExcessModel = GibbsExcessModel
         self.eos_pure_instances = eos_pure_instances
         self.VolumeLiquidMixture = VolumeLiquidMixture
+        
+        self.HeatCapacityGases = HeatCapacityGases
+        self.EnthalpyVaporizations = EnthalpyVaporizations
         
         self.N = len(VaporPressures)
         self.cmps = range(self.N)
@@ -457,6 +604,9 @@ class GibbbsExcessLiquid(Phase):
         new.VolumeLiquids = self.VolumeLiquids
         new.VolumeLiquidMixture = self.VolumeLiquidMixture
         new.eos_pure_instances = self.eos_pure_instances
+        new.HeatCapacityGases = self.HeatCapacityGases
+        new.EnthalpyVaporizations = self.EnthalpyVaporizations
+        
         new.GibbsExcessModel = self.GibbsExcessModel.to_T_xs(T=T, xs=zs)
         
         try:
@@ -684,3 +834,26 @@ class GibbbsExcessLiquid(Phase):
 
     def gammas(self):
         return self.GibbsExcessModel.gammas()
+    
+    @property
+    def H(self):
+        # Untested
+        H = 0
+        T = self.T
+        P = self.P
+        Psats = self.Psats()
+        for i in self.cmps:
+            # No further contribution needed
+            Hg298_to_T = self.HeatCapacityGases[i].T_dependent_property_integral(self.T_REF_IG, T)
+            Hvap = self.EnthalpyVaporizations[i](T) # Do the transition at the temperature of the liquid
+            if Hvap is None:
+                Hvap = 0 # Handle the case of a package predicting a transition past the Tc
+            H_i = Hg298_to_T - Hvap 
+            if self.P_DEPENDENT_H_LIQ:
+                Vl = self.VolumeLiquids[i](T, P)
+                if Vl is None:
+                    # Handle an inability to get a liquid volume by taking
+                    # one at the boiling point (and system P)
+                    Vl = self.VolumeLiquids[i](self.Tbs[i], P)
+                H_i += (P - Psats[i])*Vl
+            H += self.zs[i]*(H_i) 
