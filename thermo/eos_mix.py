@@ -3078,6 +3078,15 @@ class GCEOSMIX(GCEOS):
                      + t0*(T*da_alpha_dT_dzs[i] - da_alpha_dzs[i]))
             dH_dzs.append(value)
         return dH_dzs
+
+    def dS_dep_dzs(self, Z, zs):
+        dH_dep_dzs = self.dH_dep_dzs(Z, zs) 
+        dG_dep_dzs = self.dG_dep_dzs(Z, zs)
+        T_inv = 1.0/self.T
+        return [T_inv*(dH_dep_dzs[i] - dG_dep_dzs[i]) for i in self.cmps]
+
+    def dS_dep_dns(self, Z, zs):
+        return dxs_to_dns(self.dS_dep_dzs(Z, zs), zs)
     
     def dP_dns_Vt(self, phase):
         # Checked numerically, working. Evaluated at constant temperature and total volume.

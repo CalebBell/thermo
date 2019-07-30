@@ -55,6 +55,15 @@ class Phase(object):
     
     P_MAX_FIXED = 1e9
     P_MIN_FIXED = 1e-3
+    
+    @property
+    def log_zs(self):
+        try:
+            return self._log_zs
+        except AttributeError:
+            pass
+        self._log_zs = [log(i) for i in self.zs]
+        return self._log_zs
 
     @property
     def G(self):
@@ -515,10 +524,11 @@ class EOSGas(Phase):
         except AttributeError:
             pass
         Cp_integrals_over_T_pure = self.Cp_integrals_over_T_pure
+        log_zs = self.log_zs
         T, P, zs, cmps = self.T, self.P, self.zs, self.cmps
         P_REF_IG_INV = self.P_REF_IG_INV
         S = 0.0
-        S -= R*sum([zi*log(zi) for zi in zs if zi > 0.0]) # ideal composition entropy composition
+        S -= R*sum([zs[i]*log_zs[i] for i in cmps]) # ideal composition entropy composition
         S -= R*log(P*P_REF_IG_INV)
         
         for i in cmps:
