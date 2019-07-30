@@ -85,6 +85,10 @@ class Phase(object):
         return dxs_to_dns(self.dH_dzs, self.zs)
     
     @property
+    def dS_dns(self):
+        return dxs_to_dns(self.dS_dzs, self.zs)
+    
+    @property
     def dG_dT(self):
         return -self.T*self.dS_dT - self.S + self.dH_dT
     
@@ -635,6 +639,26 @@ class EOSGas(Phase):
             dS += self.eos_mix.dS_dep_dP_l
         return dS
             
+    @property
+    def dS_dzs(self):
+        try:
+            return self._dS_dzs
+        except AttributeError:
+            pass
+        cmps, eos_mix = self.cmps, self.eos_mix
+    
+        log_zs = self.log_zs
+        integrals = self.Cp_integrals_over_T_pure
+
+        try:
+            dS_dep_dzs = self.eos_mix.dS_dep_dzs(eos_mix.Z_g, eos_mix.zs)
+        except AttributeError:
+            dS_dep_dzs = self.eos_mix.dS_dep_dzs(eos_mix.Z_l, eos_mix.zs)
+        
+        self._dS_dzs = [integrals[i] - R*(log_zs[i] + 1.0) + dS_dep_dzs[i] 
+                        for i in cmps]
+        return self._dS_dzs
+ 
             
 
 class GibbbsExcessLiquid(Phase):
