@@ -765,7 +765,7 @@ def Lucas(T, P, Tc, Pc, omega, P_sat, mu_l):
     r'''Adjustes for pressure the viscosity of a liquid using an emperical
     formula developed in [1]_, but as discussed in [2]_ as the original source
     is in German.
-
+        Tr = min(T/Tc, 1.0)
     .. math::
         \frac{\mu}{\mu_{sat}}=\frac{1+D(\Delta P_r/2.118)^A}{1+C\omega \Delta P_r}
 
