@@ -78,7 +78,7 @@ def K_value(P=None, Psat=None, phi_l=None, phi_g=None, gamma=None, Poynting=1):
     Equation of state only:
 
     .. math::
-        K_i = \frac{\phi_i^l}{\phi_i^v} = \frac{f_i^l}{f_i^v}
+        K_i = \frac{\phi_i^l}{\phi_i^v} = \frac{f_i^l y_i}{f_i^v x_i}
 
     Combined approach (liquid reference fugacity coefficient is normally
     calculated the saturation pressure for it as a pure species; vapor fugacity

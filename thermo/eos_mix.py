@@ -5360,6 +5360,7 @@ class PRMIX(GCEOSMIX, PR):
         x13 = Z + root_two_p1*x8
         x15 = (a_alpha*root_two*x2*R_inv*T_inv*(dZ_dP + root_two_p1*x6 
                 + x13*(dZ_dP - root_two_m1*x6)/(root_two_m1*x8 - Z))/(4.0*x13))
+        x16 = dZ_dP + x15
 
         fugacity_sum_terms = self._fugacity_sum_terms
 
@@ -5368,7 +5369,11 @@ class PRMIX(GCEOSMIX, PR):
         for i in cmps:
             x3 = bs[i]*x2
             x10 = x50*fugacity_sum_terms[i]
-            d_lnphi_dP = dZ_dP*x3 + x15*(x10 + x3) + x9
+#            d_lnphi_dP = dZ_dP*x3 + x15*(x10 + x3) + x9
+            
+            
+            
+            d_lnphi_dP = x16*x3 + x15*x10 + x9
             d_lnphi_dPs.append(d_lnphi_dP)
         return d_lnphi_dPs                            
 

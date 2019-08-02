@@ -56,6 +56,15 @@ class Phase(object):
     P_MAX_FIXED = 1e9
     P_MIN_FIXED = 1e-3
     
+    def fugacities(self):
+        P = self.P
+        zs = self.zs
+        lnphis = self.lnphis()
+        return [P*zs[i]*exp(lnphis[i]) for i in range(len(zs))]
+
+    def phis(self):
+        return [exp(i) for i in self.lnphis()]
+    
     @property
     def log_zs(self):
         try:
@@ -349,8 +358,314 @@ class Phase(object):
 
 
 class EOSLiquid(Phase):
-    pass
+    # DO NOT MAKE EDITS TO THIS CLASS!!!
+    def __init__(self, eos_class, eos_kwargs, HeatCapacityGases=None, Hfs=None,
+                 Gfs=None, Sfs=None,
+                 T=None, P=None, zs=None):
+        self.eos_class = eos_class
+        self.eos_kwargs = eos_kwargs
 
+        self.HeatCapacityGases = HeatCapacityGases
+        if HeatCapacityGases is not None:
+            self.N = N = len(HeatCapacityGases)
+            self.cmps = range(self.N)
+        self.Hfs = Hfs
+        self.Gfs = Gfs
+        self.Sfs = Sfs
+        
+        if T is not None and P is not None and zs is not None:
+            self.T = T
+            self.P = P
+            self.zs = zs
+            self.eos_mix = self.eos_class(T=T, P=P, zs=zs, **self.eos_kwargs)
+            
+        
+    def to_TP_zs(self, T, P, zs):
+        new = self.__class__.__new__(self.__class__)
+        new.T = T
+        new.P = P
+        new.zs = zs
+        try:
+            new.eos_mix = self.eos_mix.to_TP_zs_fast(T=T, P=P, zs=zs, only_l=True,
+                                                     full_alphas=True) # optimize alphas?
+                                                     # Be very careful doing this in the future - wasted
+                                                     # 1 hour on this because the heat capacity calculation was wrong
+        except AttributeError:
+            new.eos_mix = self.eos_class(T=T, P=P, zs=zs, **self.eos_kwargs)
+        
+        new.eos_class = self.eos_class
+        new.eos_kwargs = self.eos_kwargs
+        
+        new.HeatCapacityGases = self.HeatCapacityGases
+        new.Hfs = self.Hfs
+        new.Gfs = self.Gfs
+        new.Sfs = self.Sfs
+        
+        try:
+            new.N = self.N
+            new.cmps = self.cmps
+        except:
+            pass
+
+        return new
+        
+    def lnphis(self):
+        try:
+            return self.eos_mix.fugacity_coefficients(self.eos_mix.Z_l, self.zs)
+        except AttributeError:
+            return self.eos_mix.fugacity_coefficients(self.eos_mix.Z_g, self.zs)
+        
+        
+    def dlnphis_dT(self):
+        try:
+            return self.eos_mix.dlnphis_dT('l')
+        except:
+            return self.eos_mix.dlnphis_dT('g')
+
+    def dlnphis_dP(self):
+        try:
+            return self.eos_mix.dlnphis_dP('l')
+        except:
+            return self.eos_mix.dlnphis_dP('g')
+    
+    @property
+    def H_dep(self):
+        try:
+            return self.eos_mix.H_dep_l
+        except AttributeError:
+            return self.eos_mix.H_dep_g
+
+    @property
+    def S_dep(self):
+        try:
+            return self.eos_mix.S_dep_l
+        except AttributeError:
+            return self.eos_mix.S_dep_g
+
+    @property
+    def Cp_dep(self):
+        try:
+            return self.eos_mix.Cp_dep_l
+        except AttributeError:
+            return self.eos_mix.Cp_dep_g        
+        
+    @property
+    def V(self):
+        try:
+            return self.eos_mix.V_l
+        except AttributeError:
+            return self.eos_mix.V_g
+
+    @property
+    def Z(self):
+        try:
+            return self.eos_mix.Z_l
+        except AttributeError:
+            return self.eos_mix.Z_g
+    
+    
+    @property
+    def dP_dT(self):
+        try:
+            return self.eos_mix.dP_dT_l
+        except AttributeError:
+            return self.eos_mix.dP_dT_g
+
+    @property
+    def dP_dV(self):
+        try:
+            return self.eos_mix.dP_dV_l
+        except AttributeError:
+            return self.eos_mix.dP_dV_g
+    
+    @property
+    def d2P_dT2(self):
+        try:
+            return self.eos_mix.d2P_dT2_l
+        except AttributeError:
+            return self.eos_mix.d2P_dT2_g
+
+    @property
+    def d2P_dV2(self):
+        try:
+            return self.eos_mix.d2P_dV2_l
+        except AttributeError:
+            return self.eos_mix.d2P_dV2_g
+
+    @property
+    def d2P_dTdV(self):
+        try:
+            return self.eos_mix.d2P_dTdV_l
+        except AttributeError:
+            return self.eos_mix.d2P_dTdV_g
+        
+    # because of the ideal gas model, for some reason need to use the right ones
+    # FOR THIS MODEL ONLY
+    @property
+    def d2T_dV2(self):
+        try:
+            return self.eos_mix.d2T_dV2_l
+        except AttributeError:
+            return self.eos_mix.d2T_dV2_g
+
+    @property
+    def d2V_dT2(self):
+        try:
+            return self.eos_mix.d2V_dT2_l
+        except AttributeError:
+            return self.eos_mix.d2V_dT2_g
+
+        
+    @property
+    def H(self):
+        try:
+            return self._H
+        except AttributeError:
+            pass
+        H = self.H_dep        
+        for zi, Cp_int in zip(self.zs, self.Cp_integrals_pure):
+            H += zi*Cp_int
+        self._H = H
+        return H
+
+    @property
+    def S(self):
+        try:
+            return self._S
+        except AttributeError:
+            pass
+        Cp_integrals_over_T_pure = self.Cp_integrals_over_T_pure
+        log_zs = self.log_zs
+        T, P, zs, cmps = self.T, self.P, self.zs, self.cmps
+        P_REF_IG_INV = self.P_REF_IG_INV
+        S = 0.0
+        S -= R*sum([zs[i]*log_zs[i] for i in cmps]) # ideal composition entropy composition
+        S -= R*log(P*P_REF_IG_INV)
+        
+        for i in cmps:
+            S += zs[i]*Cp_integrals_over_T_pure[i]
+        S += self.S_dep
+        self._S = S
+        return S
+    
+    @property
+    def Cps_pure(self):
+        try:
+            return self._Cps
+        except AttributeError:
+            pass
+        T = self.T
+        self._Cps = [i.T_dependent_property(T) for i in self.HeatCapacityGases]
+        return self._Cps
+    
+    @property
+    def Cp_integrals_pure(self):
+        try:
+            return self._Cp_integrals_pure
+        except AttributeError:
+            pass
+        T, T_REF_IG, HeatCapacityGases = self.T, self.T_REF_IG, self.HeatCapacityGases
+        self._Cp_integrals_pure = [obj.T_dependent_property_integral(T_REF_IG, T)
+                                   for obj in HeatCapacityGases]
+        return self._Cp_integrals_pure
+
+    @property
+    def Cp_integrals_over_T_pure(self):
+        try:
+            return self._Cp_integrals_over_T_pure
+        except AttributeError:
+            pass
+        
+        T, T_REF_IG, HeatCapacityGases = self.T, self.T_REF_IG, self.HeatCapacityGases
+        self._Cp_integrals_over_T_pure = [obj.T_dependent_property_integral_over_T(T_REF_IG, T)
+                                   for obj in HeatCapacityGases]
+        return self._Cp_integrals_over_T_pure
+        
+
+    @property
+    def Cp(self):
+        Cps_pure = self.Cps_pure
+        Cp, zs = 0.0, self.zs
+        for i in self.cmps:
+            Cp += zs[i]*Cps_pure[i]
+        return Cp + self.Cp_dep
+
+    @property
+    def dH_dT(self):
+        return self.Cp
+
+    @property
+    def dH_dP(self):
+        try:
+            return self.eos_mix.dH_dep_dP_l
+        except AttributeError:
+            return self.eos_mix.dH_dep_dP_g
+
+    @property
+    def dH_dzs(self):
+        try:
+            return self._dH_dzs
+        except AttributeError:
+            pass
+        eos_mix = self.eos_mix
+        try:
+            dH_dep_dzs = self.eos_mix.dH_dep_dzs(eos_mix.Z_l, eos_mix.zs)
+        except AttributeError:
+            dH_dep_dzs = self.eos_mix.dH_dep_dzs(eos_mix.Z_g, eos_mix.zs)
+        Cp_integrals_pure = self.Cp_integrals_pure
+        self._dH_dzs = [dH_dep_dzs[i] + Cp_integrals_pure[i] for i in self.cmps]
+        return self._dH_dzs
+
+    @property
+    def dS_dT(self):
+        HeatCapacityGases = self.HeatCapacityGases
+        cmps = self.cmps
+        T, zs = self.T, self.zs
+        T_REF_IG = self.T_REF_IG
+        P_REF_IG_INV = self.P_REF_IG_INV
+
+        S = 0.0
+        dS_pure_sum = 0.0
+        for zi, obj in zip(zs, HeatCapacityGases):
+            dS_pure_sum += zi*obj.T_dependent_property(T)
+        S += dS_pure_sum/T
+        try:
+            S += self.eos_mix.dS_dep_dT_l
+        except AttributeError:
+            S += self.eos_mix.dS_dep_dT_g
+        return S
+
+    @property
+    def dS_dP(self):
+        dS = 0.0
+        P = self.P
+        dS -= R/P
+        try:
+            dS += self.eos_mix.dS_dep_dP_l
+        except AttributeError:
+            dS += self.eos_mix.dS_dep_dP_g
+        return dS
+            
+    @property
+    def dS_dzs(self):
+        try:
+            return self._dS_dzs
+        except AttributeError:
+            pass
+        cmps, eos_mix = self.cmps, self.eos_mix
+    
+        log_zs = self.log_zs
+        integrals = self.Cp_integrals_over_T_pure
+
+        try:
+            dS_dep_dzs = self.eos_mix.dS_dep_dzs(eos_mix.Z_l, eos_mix.zs)
+        except AttributeError:
+            dS_dep_dzs = self.eos_mix.dS_dep_dzs(eos_mix.Z_g, eos_mix.zs)
+        
+        self._dS_dzs = [integrals[i] - R*(log_zs[i] + 1.0) + dS_dep_dzs[i] 
+                        for i in cmps]
+        return self._dS_dzs
+ 
 class EOSGas(Phase):
     def __init__(self, eos_class, eos_kwargs, HeatCapacityGases=None, Hfs=None,
                  Gfs=None, Sfs=None,
@@ -850,22 +1165,22 @@ class GibbbsExcessLiquid(Phase):
         self._lnphis = [log(i) for i in self.fugacity_coefficients()]        
         return self._lnphis
         
-    def fugacities(self, T, P, zs):
-        # DO NOT EDIT _ CORRECT
-        gammas = self.gammas(T, zs)
-        Psats = self._Psats(T=T)
-        if self.use_phis_sat:
-            phis = self.phis(T=T, zs=zs)
-        else:
-            phis = [1.0]*self.N
-            
-        if self.use_Poynting:
-            Poyntings = self.Poyntings(T=T, P=P, Psats=Psats)
-        else:
-            Poyntings = [1.0]*self.N
-        return [zs[i]*gammas[i]*Psats[i]*Poyntings[i]*phis[i]
-                for i in self.cmps]
-
+#    def fugacities(self, T, P, zs):
+#        # DO NOT EDIT _ CORRECT
+#        gammas = self.gammas(T, zs)
+#        Psats = self._Psats(T=T)
+#        if self.use_phis_sat:
+#            phis = self.phis(T=T, zs=zs)
+#        else:
+#            phis = [1.0]*self.N
+#            
+#        if self.use_Poynting:
+#            Poyntings = self.Poyntings(T=T, P=P, Psats=Psats)
+#        else:
+#            Poyntings = [1.0]*self.N
+#        return [zs[i]*gammas[i]*Psats[i]*Poyntings[i]*phis[i]
+#                for i in self.cmps]
+#
 
     def dphis_dT(self):
         try:
@@ -919,6 +1234,8 @@ class GibbbsExcessLiquid(Phase):
         phis = self.fugacity_coefficients()
         self._dlnphis_dT = [i/j for i, j in zip(dphis_dT, phis)]
         return self._dlnphis_dT
+    
+    # TODO - implement dlnphis_dx, convert do dlnphis_dn
 
     def gammas(self):
         return self.GibbsExcessModel.gammas()
