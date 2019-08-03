@@ -22,12 +22,13 @@ SOFTWARE.'''
 
 from __future__ import division
 __all__ = ['sequential_substitution_2P', 'bubble_T_Michelsen_Mollerup',
-           'minimize_gibbs_2P_transformed', 'sequential_substitution_Mehra_2P']
+           'minimize_gibbs_2P_transformed', 'sequential_substitution_Mehra_2P',
+           'nonlin_2P']
 
 from thermo.utils import exp, log, copysign, normalize
-from fluids.numerics import UnconvergedError
-from thermo.activity import flash_inner_loop
-from scipy.optimize import minimize
+from fluids.numerics import UnconvergedError, trunc_exp
+from thermo.activity import flash_inner_loop, Rachford_Rice_flash_error
+from scipy.optimize import minimize, fsolve, root
 
 def sequential_substitution_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
                                gas_phase, maxiter=1000, tol=1E-13, 
@@ -183,7 +184,9 @@ def sequential_substitution_Mehra_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
     
 def sequential_substitution_GDEM3_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
                                      gas_phase, maxiter=1000, tol=1E-13, 
-                                     trivial_solution_tol=1e-5, V_over_F_guess=None):
+                                     trivial_solution_tol=1e-5, V_over_F_guess=None,
+                                     acc_frequency=3, acc_delay=3,
+                                     ):
     
     xs, ys = xs_guess, ys_guess
     if V_over_F_guess is None:
@@ -220,7 +223,7 @@ def sequential_substitution_GDEM3_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
 
         # Mehra, R. K., R. A. Heidemann, and K. Aziz. “An Accelerated Successive Substitution Algorithm.” The Canadian Journal of Chemical Engineering 61, no. 4 (August 1, 1983): 590-96. https://doi.org/10.1002/cjce.5450610414.
         lnKs = [(l - g) for l, g in zip(lnphis_l, lnphis_g)]
-        if not (iteration %3) and iteration > 3:
+        if not (iteration %acc_frequency) and iteration > acc_delay:
             dlnKs = gdem(lnKs, all_lnKs[-1], all_lnKs[-2], all_lnKs[-3])
             lnKs = [lnKs[i] + dlnKs[i] for i in cmps]
             
@@ -260,6 +263,62 @@ def sequential_substitution_GDEM3_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
         if err < tol:
             return V_over_F, xs, ys, l, g, iteration, err
     raise UnconvergedError('End of SS without convergence')
+
+
+def nonlin_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
+              gas_phase, maxiter=1000, tol=1E-13, 
+              trivial_solution_tol=1e-5, V_over_F_guess=None,
+              method='hybr'):
+    cmps = range(len(zs))
+    xs, ys = xs_guess, ys_guess
+    if V_over_F_guess is None:
+        V_over_F = 0.5
+    else:
+        V_over_F = V_over_F_guess
+    Ks_guess = [ys[i]/xs[i] for i in cmps]
+    
+    info = [0, None, None, None]
+    def to_solve(lnKsVFTrans):
+        Ks = [trunc_exp(i) for i in lnKsVFTrans[:-1]]
+        V_over_F = (0.0 + (1.0 - 0.0)/(1.0 + trunc_exp(-lnKsVFTrans[-1]))) # Translation function - keep it zero to 1
+
+        xs = [zs[i]/(1.0 + V_over_F*(Ks[i] - 1.0)) for i in cmps]
+        ys = [Ks[i]*xs[i] for i in cmps]
+        
+        g = gas_phase.to_TP_zs(T=T, P=P, zs=ys)
+        l = liquid_phase.to_TP_zs(T=T, P=P, zs=xs)
+        
+        lnphis_g = g.lnphis()
+        lnphis_l = l.lnphis()
+        new_Ks = [exp(lnphis_l[i] - lnphis_g[i]) for i in cmps]
+        VF_err = Rachford_Rice_flash_error(V_over_F, zs, new_Ks)
+
+        err = [new_Ks[i] - Ks[i] for i in cmps] + [VF_err]
+        info[1:] = l, g, err
+        info[0] += 1
+        return err
+    
+    VF_guess_in_basis = -log((1.0-V_over_F)/(V_over_F-0.0))
+    
+    guesses = [log(i) for i in Ks_guess]
+    guesses.append(VF_guess_in_basis)
+#    try:
+    sol = root(to_solve, guesses, tol=tol, method=method)
+    # No reliable way to get number of iterations from OptimizeResult
+#        solution, infodict, ier, mesg = fsolve(to_solve, guesses, full_output=True)
+    solution = sol.x.tolist()
+    V_over_F = (0.0 + (1.0 - 0.0)/(1.0 + exp(-solution[-1])))
+    Ks = [exp(solution[i]) for i in cmps]
+    xs = [zs[i]/(1.0 + V_over_F*(Ks[i] - 1.0)) for i in cmps]
+    ys = [Ks[i]*xs[i] for i in cmps]
+#    except Exception as e:
+#        raise UnconvergedError(e)
+    
+    tot_err = 0.0
+    for i in info[3]:
+        tot_err += abs(i)
+    return V_over_F, xs, ys, info[1], info[2], info[0], tot_err
+
 
 
 
