@@ -595,14 +595,13 @@ def Rachford_Rice_polynomial_4(zs, Cs):
     x9 = C2*x2
     x10 = C1*x4
     x11 = C1*x6
-    a = C0*C1*C2*C3*(z0 + z1 + z2 + z3)
-    coeffs = [1.0,
-              (C1*x5 + C1*x7 + C2*x1 + C2*x11 + C2*x3 + C2*x7 
-               + C3*x1 + C3*x10 + C3*x3 + C3*x5 + C3*x8 + C3*x9)/a,
-              (C2*x6 + C3*x0 + C3*x2 + C3*x4 + x1 + x10
-               + x11 + x3 + x5 + x7 + x8 + x9)/a,
-              (x0 + x2 + x4 + x6)/a]
-    return coeffs
+    a_inv = 1.0/(C0*C1*C2*C3) # z0 + z1 + z2 + z3 = 1
+    x0_x2_x4 = x0 + x2 + x4
+    t1 = x1 + x10 + x3 + x5 + x8 + x9
+    return [1.0,
+            (C1*(x5 + x7) + C2*(x1 + x11 + x3 + x7) + C3*t1)*a_inv,
+            (C2*x6 + C3*x0_x2_x4 + t1 + x11 + x7)*a_inv,
+            (x0_x2_x4 + x6)*a_inv]
 
 def Rachford_Rice_polynomial_5(zs, Cs):
     z0, z1, z2, z3, z4 = zs
@@ -898,6 +897,9 @@ def Rachford_Rice_solution_polynomial(zs, Ks):
     used instead. However, it is somewhat slower, especially as newton will
     attempt 50 iterations before giving up.
     
+    This method could be speed up somewhat for N <= 4; the checks for the 
+    vapor fraction range are not really needed.
+    
     
     Examples
     --------
@@ -923,7 +925,7 @@ def Rachford_Rice_solution_polynomial(zs, Ks):
     Kmin = min(Ks)
     Kmax = max(Ks)
     z_of_Kmax = zs[Ks.index(Kmax)]
-    V_over_F_min = ((Kmax-Kmin)*z_of_Kmax - (1.- Kmin))/((1.- Kmin)*(Kmax- 1.))
+    V_over_F_min = ((Kmax-Kmin)*z_of_Kmax - (1.- Kmin))/((1.- Kmin)*(Kmax - 1.))
     V_over_F_max = 1./(1.-Kmin)
     
     if V_over_F_min < 0.0:
@@ -2054,6 +2056,23 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
                     break
         if not K_low or not K_high:
             raise ValueError("For provided K values, there is no positive-composition solution; Ks=%s" %(Ks))
+            
+        for zi in zs:
+            if zi == 0.0:
+                zero_indexes = []
+                zs2, Ks2 = [], []
+                for i in range(len(zs)):
+                    if zs[i] == 0.0:
+                        zero_indexes.append(i)
+                    else:
+                        zs2.append(zs[i])
+                        Ks2.append(Ks[i])
+                    V_over_F, xs, ys =  flash_inner_loop(zs2, Ks2, Method=Method, limit=limit, guess=guess)
+                    for idx in zero_indexes:
+                        xs.insert(idx, 0.0)
+                        ys.insert(idx, 0.0)
+                    return V_over_F, xs, ys
+
 
     if Method == FLASH_INNER_LN2:
         return Rachford_Rice_solution_LN2(zs, Ks, guess)
