@@ -23,11 +23,11 @@ SOFTWARE.'''
 from __future__ import division
 __all__ = ['sequential_substitution_2P', 'bubble_T_Michelsen_Mollerup',
            'minimize_gibbs_2P_transformed', 'sequential_substitution_Mehra_2P',
-           'nonlin_2P']
+           'nonlin_2P', 'sequential_substitution_NP']
 
 from thermo.utils import exp, log, copysign, normalize
 from fluids.numerics import UnconvergedError, trunc_exp
-from thermo.activity import flash_inner_loop, Rachford_Rice_flash_error
+from thermo.activity import flash_inner_loop, Rachford_Rice_solutionN, Rachford_Rice_flash_error, Rachford_Rice_solution2
 from scipy.optimize import minimize, fsolve, root
 
 def sequential_substitution_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
@@ -84,6 +84,56 @@ def sequential_substitution_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
         if err < tol:
             return V_over_F, xs, ys, l, g, iteration, err
     raise UnconvergedError('End of SS without convergence')
+
+
+def sequential_substitution_NP(T, P, zs, compositions_guesses, phases,
+                               betas, maxiter=1000, tol=1E-13,
+                               trivial_solution_tol=1e-5, ref_phase=1):
+    
+    compositions = compositions_guesses
+    cmps = range(len(zs))
+    phases_iter = range(len(phases))
+    
+    for iteration in range(maxiter):
+        phases = [phases[i].to_TP_zs(T=T, P=P, zs=compositions[i]) for i in phases_iter]
+        lnphis = [phases[i].lnphis() for i in phases_iter]
+        Ks = [[exp(lnphis[ref_phase][j] - lnphis[i][j]) for j in cmps] 
+              for i in phases_iter if i != ref_phase] # 
+        
+        betas, compositions = Rachford_Rice_solutionN(zs, Ks, betas)
+#        betas.insert(ref_phase, 1.0 - sum(betas))
+        print(betas, compositions, Ks, 'calculated')
+#        Rachford_Rice_solution2(zs, Ks_y, Ks_z, beta_y=0.5, beta_z=1e-6)
+                
+        err = 0.0
+        
+#        xs = compositions[ref_phase]
+        # Suggested tolerance 1e-15
+#        passed_K = False
+#        for i in phases_iter:
+#            if i == ref_phase:
+#                passed_K = True
+#                continue
+#            K_idx = i
+#            if passed_K:
+#                K_idx -= 1
+#            
+#            Kis, ys = Ks[K_idx], compositions[i]
+#            for Ki, xi, yi in zip(Kis, xs, ys):
+#                err_i = Ki*xi/yi - 1.0
+#                err += err_i*err_i
+        
+        # Check for 
+#        comp_difference = sum([abs(xi - yi) for xi, yi in zip(xs, ys)])
+#        if comp_difference < trivial_solution_tol:
+#            raise ValueError("Converged to trivial condition, compositions of both phases equal")
+#        if err < tol:
+#            return betas, compositions, phases, iteration, err
+        if iteration > 100:
+            return betas, compositions, phases, iteration, err
+    raise UnconvergedError('End of SS without convergence')
+
+
 
 
 def sequential_substitution_Mehra_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,

@@ -158,6 +158,7 @@ def test_flash_inner_loop():
                              'Rachford-Rice (polynomial)']
 
 
+    # TODO - handle with the `check` parameter
     # Zero composition - technically this is incorrect? But quite useful in saturation calcs
     zs, Ks = [0.79, 0.0, 0.21], [51257.70115063271, 0.01720948221285233, 3939.4410123117154]
     V_over_F, xs, ys = flash_inner_loop(zs, Ks)

@@ -21,7 +21,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
-__all__ = ['GibbbsExcessLiquid', 'Phase', 'EOSLiquid', 'EOSGas']
+__all__ = ['GibbbsExcessLiquid', 'Phase', 'EOSLiquid', 'EOSGas', 'IdealGas']
 
 from fluids.constants import R, R_inv
 from thermo.utils import (log, exp, Cp_minus_Cv, phase_identification_parameter,
@@ -356,6 +356,38 @@ class Phase(object):
         return -self.d2V_dPdT/self.V**2 + 2*self.dV_dT*self.dV_dP/self.V**3
 
 
+class IdealGas(Phase):
+    def __init__(self, HeatCapacityGases=None, Hfs=None, Gfs=None):
+        self.HeatCapacityGases = HeatCapacityGases
+        self.Hfs = Hfs
+        self.Gfs = Gfs
+        if Hfs is not None and Gfs is not None and None not in Hfs and None not in Gfs:
+            self.Sfs = [(Hfi - Gfi)/298.15 for Hfi, Gfi in zip(Hfs, Gfs)]
+        else:
+            self.Sfs = None
+            
+        if HeatCapacityGases is not None:
+            self.N = len(HeatCapacityGases)
+        
+    def fugacities(self):
+        P = self.P
+        return [P*zi for zi in self.zs]
+    
+    def lnphis(self):
+        return [0.0]*self.N
+
+    def to_TP_zs(self, T, P, zs):
+        new = self.__class__.__new__(self.__class__)
+        new.T = T
+        new.P = P
+        new.zs = zs
+        new.N = len(zs)
+        
+        new.HeatCapacityGases = self.HeatCapacityGases
+        new.Hfs = self.Hfs
+        new.Gfs = self.Gfs
+        new.Sfs = self.Sfs
+        return new
 
 class EOSLiquid(Phase):
     # DO NOT MAKE EDITS TO THIS CLASS!!!

@@ -1841,6 +1841,97 @@ def Li_Johns_Ahmadi_solution(zs, Ks, guess=None):
     return V_over_F, xs, ys
 
 
+def _Rachford_Rice_analytical_3(zs, Ks):
+    z1, z2, z3 = zs
+    K1, K2, K3 = Ks
+    x0 = K1*z1
+    x1 = K1*z2
+    x2 = K1*z3
+    x3 = K2*z1
+    x4 = K2*z2
+    x5 = K2*z3
+    x6 = K3*z1
+    x7 = K3*z2
+    x8 = K3*z3
+    x9 = K2*x0
+    x10 = K2*x1
+    x11 = K2*x2
+    x12 = K3*x0
+    x13 = K3*x1
+    x14 = K3*x2
+    x15 = K3*x4
+    x16 = K3*x5
+    x17 = x0 + x0
+    x18 = x17*x4
+    x19 = x5 + x5
+    x20 = x0*x19
+    x21 = x1*x19
+    x22 = x17*x7
+    x23 = x17*x8
+    x24 = x8 + x8
+    x25 = x1*x24
+    x26 = x3 + x3
+    x27 = x26*x7
+    x28 = x24*x3
+    x29 = x24*x4
+    x30 = K1*K1
+    x31 = z2*z2
+    x32 = x30*x31
+    x33 = z3*z3
+    x34 = x30*x33
+    x35 = K2*K2
+    x36 = z1*z1
+    x37 = x35*x36
+    x38 = x33*x35
+    x39 = K3*K3
+    x40 = x36*x39
+    x41 = x31*x39
+    x42 = K1 + K1
+    x43 = K2*x33
+    x44 = x42*x43
+    x45 = K3*x31
+    x46 = x42*x45
+    x47 = z2 + z2
+    x48 = x30*z3
+    x49 = K2 + K2
+    x50 = K3*x36
+    x51 = x49*x50
+    x52 = z1 + z1
+    x53 = x35*z3
+    x54 = x39*z2
+    x55 = 4.0*x12
+    x56 = 4.0*K1
+    x57 = K2*x56
+    x58 = x35*x47
+    x59 = x1 + x1
+    x60 = x39*z3
+    x61 = x30*x47
+    x62 = x4 + x4
+    x63 = x6 + x6
+    x64 = x7 + x7
+    x65 = K3 + K3
+    V_over_F = (-(-x0  + 0.5*(-x1 + x10 + x12 + x14 + x15
+                  + x16 - x2 - x3 - x5 - x6 - x7
+                  + x9) - x4  - x8  + z1 + z2 + z3 + (K3*x43*x56 - x0*x58 
+                + 4.0*x13*x5 - x17*x53 - x17*x54 - x17*x60 + x18*x39 + x18 
+                - x20*x39 - x20 - x21*x39 - x21 - x22*x35 - x22 + x23*x35 + x23 
+                - x25*x35 - x25 + x26*x48 - x26*x54 + x26*x60 - x27*x30 - x27
+                - x28*x30 - x28 + x29*x30 + x29 - x3*x61 + x30*x35*x52*z2
+                + x30*x37 + x30*x40 - x30*x51 + x32*x35 - x32*x49 + x32 
+                + x34*x39 - x34*x65 + x34 + x35*x41 - x35*x46 - x37*x42 + x37 
+                + x38*x39 - x38*x65 + x38 - x39*x44 + x39*x48*x52 + x4*x55
+                - x40*x42 + x40 - x41*x49 + x41 - x44 + x45*x57 - x46 + x47*x48 
+                - x48*x62 - x48*x63 - x48*x64 + x5*x55 + x50*x57 - x51 
+                + x52*x53 + x52*x54 + 2.0*x53*x54 + x53*x59 - x53*x63 - x53*x64 
+                + x58*x6 + x59*x60 + x6*x61 - x60*x62)**0.5*0.5)/(
+                K3*(x10 + x11 - x3 + x9) + x0 + x1 - x10 - x11 - x12 - x13 
+                - x14 - x15 - x16 + x2 + x3 + x4 + x5 + x6 + x7 + x8 - x9
+                - z1 - z2 - z3))
+    xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]
+    ys = [Ki*xi for xi, Ki in zip(xs, Ks)]
+    return V_over_F, xs, ys
+
+
 FLASH_INNER_ANALYTICAL = 'Analytical'
 FLASH_INNER_SECANT = 'Rachford-Rice (Secant)'
 FLASH_INNER_NR = 'Rachford-Rice (Newton-Raphson)'
@@ -1981,10 +2072,11 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
             except ZeroDivisionError:
                 return Rachford_Rice_solution(zs=zs, Ks=Ks)
         elif l == 3:
-            # TODO disable
-            z1, z2, z3 = zs
-            K1, K2, K3 = Ks
-            V_over_F = (-K1*K2*z1/2 - K1*K2*z2/2 - K1*K3*z1/2 - K1*K3*z3/2 + K1*z1 + K1*z2/2 + K1*z3/2 - K2*K3*z2/2 - K2*K3*z3/2 + K2*z1/2 + K2*z2 + K2*z3/2 + K3*z1/2 + K3*z2/2 + K3*z3 - z1 - z2 - z3 - (K1**2*K2**2*z1**2 + 2*K1**2*K2**2*z1*z2 + K1**2*K2**2*z2**2 - 2*K1**2*K2*K3*z1**2 - 2*K1**2*K2*K3*z1*z2 - 2*K1**2*K2*K3*z1*z3 + 2*K1**2*K2*K3*z2*z3 - 2*K1**2*K2*z1*z2 + 2*K1**2*K2*z1*z3 - 2*K1**2*K2*z2**2 - 2*K1**2*K2*z2*z3 + K1**2*K3**2*z1**2 + 2*K1**2*K3**2*z1*z3 + K1**2*K3**2*z3**2 + 2*K1**2*K3*z1*z2 - 2*K1**2*K3*z1*z3 - 2*K1**2*K3*z2*z3 - 2*K1**2*K3*z3**2 + K1**2*z2**2 + 2*K1**2*z2*z3 + K1**2*z3**2 - 2*K1*K2**2*K3*z1*z2 + 2*K1*K2**2*K3*z1*z3 - 2*K1*K2**2*K3*z2**2 - 2*K1*K2**2*K3*z2*z3 - 2*K1*K2**2*z1**2 - 2*K1*K2**2*z1*z2 - 2*K1*K2**2*z1*z3 + 2*K1*K2**2*z2*z3 + 2*K1*K2*K3**2*z1*z2 - 2*K1*K2*K3**2*z1*z3 - 2*K1*K2*K3**2*z2*z3 - 2*K1*K2*K3**2*z3**2 + 4*K1*K2*K3*z1**2 + 4*K1*K2*K3*z1*z2 + 4*K1*K2*K3*z1*z3 + 4*K1*K2*K3*z2**2 + 4*K1*K2*K3*z2*z3 + 4*K1*K2*K3*z3**2 + 2*K1*K2*z1*z2 - 2*K1*K2*z1*z3 - 2*K1*K2*z2*z3 - 2*K1*K2*z3**2 - 2*K1*K3**2*z1**2 - 2*K1*K3**2*z1*z2 - 2*K1*K3**2*z1*z3 + 2*K1*K3**2*z2*z3 - 2*K1*K3*z1*z2 + 2*K1*K3*z1*z3 - 2*K1*K3*z2**2 - 2*K1*K3*z2*z3 + K2**2*K3**2*z2**2 + 2*K2**2*K3**2*z2*z3 + K2**2*K3**2*z3**2 + 2*K2**2*K3*z1*z2 - 2*K2**2*K3*z1*z3 - 2*K2**2*K3*z2*z3 - 2*K2**2*K3*z3**2 + K2**2*z1**2 + 2*K2**2*z1*z3 + K2**2*z3**2 - 2*K2*K3**2*z1*z2 + 2*K2*K3**2*z1*z3 - 2*K2*K3**2*z2**2 - 2*K2*K3**2*z2*z3 - 2*K2*K3*z1**2 - 2*K2*K3*z1*z2 - 2*K2*K3*z1*z3 + 2*K2*K3*z2*z3 + K3**2*z1**2 + 2*K3**2*z1*z2 + K3**2*z2**2)**0.5/2)/(K1*K2*K3*z1 + K1*K2*K3*z2 + K1*K2*K3*z3 - K1*K2*z1 - K1*K2*z2 - K1*K2*z3 - K1*K3*z1 - K1*K3*z2 - K1*K3*z3 + K1*z1 + K1*z2 + K1*z3 - K2*K3*z1 - K2*K3*z2 - K2*K3*z3 + K2*z1 + K2*z2 + K2*z3 + K3*z1 + K3*z2 + K3*z3 - z1 - z2 - z3)
+            return _Rachford_Rice_analytical_3(zs, Ks)
+#            # TODO disable
+#            z1, z2, z3 = zs
+#            K1, K2, K3 = Ks
+#            V_over_F = (-K1*K2*z1/2 - K1*K2*z2/2 - K1*K3*z1/2 - K1*K3*z3/2 + K1*z1 + K1*z2/2 + K1*z3/2 - K2*K3*z2/2 - K2*K3*z3/2 + K2*z1/2 + K2*z2 + K2*z3/2 + K3*z1/2 + K3*z2/2 + K3*z3 - z1 - z2 - z3 - (K1**2*K2**2*z1**2 + 2*K1**2*K2**2*z1*z2 + K1**2*K2**2*z2**2 - 2*K1**2*K2*K3*z1**2 - 2*K1**2*K2*K3*z1*z2 - 2*K1**2*K2*K3*z1*z3 + 2*K1**2*K2*K3*z2*z3 - 2*K1**2*K2*z1*z2 + 2*K1**2*K2*z1*z3 - 2*K1**2*K2*z2**2 - 2*K1**2*K2*z2*z3 + K1**2*K3**2*z1**2 + 2*K1**2*K3**2*z1*z3 + K1**2*K3**2*z3**2 + 2*K1**2*K3*z1*z2 - 2*K1**2*K3*z1*z3 - 2*K1**2*K3*z2*z3 - 2*K1**2*K3*z3**2 + K1**2*z2**2 + 2*K1**2*z2*z3 + K1**2*z3**2 - 2*K1*K2**2*K3*z1*z2 + 2*K1*K2**2*K3*z1*z3 - 2*K1*K2**2*K3*z2**2 - 2*K1*K2**2*K3*z2*z3 - 2*K1*K2**2*z1**2 - 2*K1*K2**2*z1*z2 - 2*K1*K2**2*z1*z3 + 2*K1*K2**2*z2*z3 + 2*K1*K2*K3**2*z1*z2 - 2*K1*K2*K3**2*z1*z3 - 2*K1*K2*K3**2*z2*z3 - 2*K1*K2*K3**2*z3**2 + 4*K1*K2*K3*z1**2 + 4*K1*K2*K3*z1*z2 + 4*K1*K2*K3*z1*z3 + 4*K1*K2*K3*z2**2 + 4*K1*K2*K3*z2*z3 + 4*K1*K2*K3*z3**2 + 2*K1*K2*z1*z2 - 2*K1*K2*z1*z3 - 2*K1*K2*z2*z3 - 2*K1*K2*z3**2 - 2*K1*K3**2*z1**2 - 2*K1*K3**2*z1*z2 - 2*K1*K3**2*z1*z3 + 2*K1*K3**2*z2*z3 - 2*K1*K3*z1*z2 + 2*K1*K3*z1*z3 - 2*K1*K3*z2**2 - 2*K1*K3*z2*z3 + K2**2*K3**2*z2**2 + 2*K2**2*K3**2*z2*z3 + K2**2*K3**2*z3**2 + 2*K2**2*K3*z1*z2 - 2*K2**2*K3*z1*z3 - 2*K2**2*K3*z2*z3 - 2*K2**2*K3*z3**2 + K2**2*z1**2 + 2*K2**2*z1*z3 + K2**2*z3**2 - 2*K2*K3**2*z1*z2 + 2*K2*K3**2*z1*z3 - 2*K2*K3**2*z2**2 - 2*K2*K3**2*z2*z3 - 2*K2*K3*z1**2 - 2*K2*K3*z1*z2 - 2*K2*K3*z1*z3 + 2*K2*K3*z2*z3 + K3**2*z1**2 + 2*K3**2*z1*z2 + K3**2*z2**2)**0.5/2)/(K1*K2*K3*z1 + K1*K2*K3*z2 + K1*K2*K3*z3 - K1*K2*z1 - K1*K2*z2 - K1*K2*z3 - K1*K3*z1 - K1*K3*z2 - K1*K3*z3 + K1*z1 + K1*z2 + K1*z3 - K2*K3*z1 - K2*K3*z2 - K2*K3*z3 + K2*z1 + K2*z2 + K2*z3 + K3*z1 + K3*z2 + K3*z3 - z1 - z2 - z3)
         elif l == 3 or l == 4 or l == 5:
             return Rachford_Rice_solution_polynomial(zs, Ks)
         elif l == 1:
