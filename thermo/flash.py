@@ -449,7 +449,7 @@ def bubble_T_Michelsen_Mollerup(T_guess, P, zs, liquid_phase, gas_phase,
             dlnphis_dT_g = g.dlnphis_dT()
         except Exception as e:
             if T_guess_old is None:
-                raise ValueError(g_undefined_T_msg %(T_guess, ys))
+                raise ValueError(g_undefined_T_msg %(T_guess, ys), e)
             successive_fails += 1
             T_guess = T_guess_old + copysign(min(max_step_damping, abs(step)), step)
             continue
@@ -460,7 +460,7 @@ def bubble_T_Michelsen_Mollerup(T_guess, P, zs, liquid_phase, gas_phase,
             dlnphis_dT_l = l.dlnphis_dT()
         except Exception as e:
             if T_guess_old is None:
-                raise ValueError(l_undefined_T_msg %(T_guess, zs))
+                raise ValueError(l_undefined_T_msg %(T_guess, zs), e)
             successive_fails += 1
             T_guess = T_guess_old + copysign(min(max_step_damping, abs(step)), step)
             continue

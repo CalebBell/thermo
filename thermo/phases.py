@@ -24,6 +24,7 @@ from __future__ import division
 __all__ = ['GibbbsExcessLiquid', 'Phase', 'EOSLiquid', 'EOSGas', 'IdealGas']
 
 from fluids.constants import R, R_inv
+from fluids.numerics import horner, horner_and_der
 from thermo.utils import (log, exp, Cp_minus_Cv, phase_identification_parameter,
                           isothermal_compressibility, isobaric_expansion,
                           Joule_Thomson, dxs_to_dns)
@@ -357,6 +358,10 @@ class Phase(object):
 
 
 class IdealGas(Phase):
+    '''DO NOT DELETE - EOS CLASS IS TOO SLOW!
+    This will be important for fitting.
+    
+    '''
     def __init__(self, HeatCapacityGases=None, Hfs=None, Gfs=None):
         self.HeatCapacityGases = HeatCapacityGases
         self.Hfs = Hfs
@@ -374,6 +379,9 @@ class IdealGas(Phase):
         return [P*zi for zi in self.zs]
     
     def lnphis(self):
+        return [0.0]*self.N
+    
+    def dlnphis_dT(self):
         return [0.0]*self.N
 
     def to_TP_zs(self, T, P, zs):
@@ -1013,13 +1021,23 @@ class GibbbsExcessLiquid(Phase):
     use_Poynting = False
     use_phis_sat = False
     def __init__(self, VaporPressures, VolumeLiquids, GibbsExcessModel, 
-                 eos_pure_instances, VolumeLiquidMixture=None,
+                 eos_pure_instances,
+                 VolumeLiquidMixture=None,
                  HeatCapacityGases=None, EnthalpyVaporizations=None):
         self.VaporPressures = VaporPressures
+        self.Psats_locked = all(i.locked for i in VaporPressures)
+        self.Psats_data = ([i.best_fit_Tmin for i in VaporPressures],
+                         [i.best_fit_Tmin_slope for i in VaporPressures],
+                         [i.best_fit_Tmin_value for i in VaporPressures],
+                         [i.best_fit_Tmax for i in VaporPressures],
+                         [i.best_fit_Tmax_slope for i in VaporPressures],
+                         [i.best_fit_Tmax_value for i in VaporPressures],
+                         [i.best_fit_coeffs for i in VaporPressures])
+
         self.VolumeLiquids = VolumeLiquids
         self.GibbsExcessModel = GibbsExcessModel
         self.eos_pure_instances = eos_pure_instances
-        self.VolumeLiquidMixture = VolumeLiquidMixture
+#        self.VolumeLiquidMixture = VolumeLiquidMixture
         
         self.HeatCapacityGases = HeatCapacityGases
         self.EnthalpyVaporizations = EnthalpyVaporizations
@@ -1037,12 +1055,15 @@ class GibbbsExcessLiquid(Phase):
         
         new.VaporPressures = self.VaporPressures
         new.VolumeLiquids = self.VolumeLiquids
-        new.VolumeLiquidMixture = self.VolumeLiquidMixture
+#        new.VolumeLiquidMixture = self.VolumeLiquidMixture
         new.eos_pure_instances = self.eos_pure_instances
         new.HeatCapacityGases = self.HeatCapacityGases
         new.EnthalpyVaporizations = self.EnthalpyVaporizations
         
         new.GibbsExcessModel = self.GibbsExcessModel.to_T_xs(T=T, xs=zs)
+        
+        new.Psats_locked = self.Psats_locked
+        new.Psats_data = self.Psats_data
         
         try:
             if T == self.T:
@@ -1058,11 +1079,29 @@ class GibbbsExcessLiquid(Phase):
             return self._Psats
         except AttributeError:
             pass
-        T = self.T
+        T, cmps = self.T, self.cmps
         # Need to reset the method because for the T bounded solver,
         # will normally get a different than prefered method as it starts
         # at the boundaries
         self._Psats = Psats = []
+        if self.Psats_locked:
+            Psats_data = self.Psats_data
+            Tmins, Tmaxes, coeffs = Psats_data[0], Psats_data[3], Psats_data[6]
+            for i in cmps:
+                if T < Tmins[i]:
+                    Psat = (T - Tmins[i])*Psats_data[1][i] + Psats_data[2][i]
+                elif T > Tmaxes[i]:
+                    Psat = (T - Tmaxes[i])*Psats_data[4][i] + Psats_data[5][i]
+                else:
+                    Psat = 0.0
+                    for c in coeffs[i]:
+                        Psat = Psat*T + c
+#                    Psat = horner(coeffs[i], T)
+                Psats.append(exp(Psat))
+            return Psats
+
+
+        
         for i in self.VaporPressures:
             if i.locked:
                 Psats.append(i(T))
@@ -1076,6 +1115,40 @@ class GibbbsExcessLiquid(Phase):
                 else:
                     Psats.append(i.extrapolate_tabular(T))
         return Psats
+    
+    
+    def dPsats_dT(self):
+        try:
+            return self._dPsats_dT
+        except:
+            pass
+        Psats = self.Psats()
+        T, cmps = self.T, self.cmps
+        # Need to reset the method because for the T bounded solver,
+        # will normally get a different than prefered method as it starts
+        # at the boundaries
+        self._dPsats_dT = dPsats_dT = []
+        if self.Psats_locked:
+            Psats_data = self.Psats_data
+            Tmins, Tmaxes, coeffs = Psats_data[0], Psats_data[3], Psats_data[6]
+            for i in cmps:
+                if T < Tmins[i]:
+                    dPsat_dT = Psats_data[1][i]*Psats[i]#*exp((T - Tmins[i])*Psats_data[1][i]
+                                                 #   + Psats_data[2][i])
+                elif T > Tmaxes[i]:
+                    dPsat_dT = Psats_data[4][i]*Psats[i]#*exp((T - Tmaxes[i])
+                                                        #*Psats_data[4][i]
+                                                        #+ Psats_data[5][i])
+                else:
+                    v, der = horner_and_der(coeffs[i], T)
+                    dPsat_dT = der*Psats[i]
+                dPsats_dT.append(dPsat_dT)
+            return dPsats_dT
+
+        self._dPsats_dT = dPsats_dT = [VaporPressure.T_dependent_property_derivative(T=T)
+                     for VaporPressure in self.VaporPressures]
+        return dPsats_dT
+
         
     def Poyntings(self):
         try:
@@ -1232,8 +1305,7 @@ class GibbbsExcessLiquid(Phase):
             dPoyntings_dT = [0.0]*self.N
             Poyntings = [1.0]*self.N
 
-        dPsats_dT = [VaporPressure.T_dependent_property_derivative(T=T)
-                     for VaporPressure in self.VaporPressures]
+        dPsats_dT = self.dPsats_dT()
         
         dgammas_dT = self.GibbsExcessModel.dgammas_dT()
         

@@ -840,6 +840,10 @@ class Wilson(GibbsExcess):
     
     
     def gammas(self):
+        try:
+            return self._gammas
+        except AttributeError:
+            pass
         xs, cmps = self.xs, self.cmps
         try:
             lambdas = self._lambdas
@@ -852,7 +856,7 @@ class Wilson(GibbsExcess):
 
         xj_over_xj_Lambda_ijs = [xs[j]*xj_Lambda_ijs_inv[j] for j in cmps]
         
-        gammas = []
+        self._gammas = gammas = []
         for i in cmps:
             tot2 = 1.0
             for j in cmps:

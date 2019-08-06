@@ -603,6 +603,7 @@ def Rachford_Rice_polynomial_4(zs, Cs):
             (C2*x6 + C3*x0_x2_x4 + t1 + x11 + x7)*a_inv,
             (x0_x2_x4 + x6)*a_inv]
 
+
 def Rachford_Rice_polynomial_5(zs, Cs):
     z0, z1, z2, z3, z4 = zs
     C0, C1, C2, C3, C4 = Cs
@@ -2096,10 +2097,10 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
         elif l == 4:
             poly = Rachford_Rice_polynomial_4(zs, [Ki - 1.0 for Ki in Ks])
             V_over_F = roots_cubic_a1(poly[1], poly[2], poly[3])[2].real
-        elif l == 3 or l == 4 or l == 5:
+        elif l == 5:
             return Rachford_Rice_solution_polynomial(zs, Ks)
         elif l == 1:
-            raise ValueError("Input dimensions are for one component! Rachford-Rice does not aply")
+            raise ValueError("Input dimensions are for one component! Rachford-Rice does not apply")
         else:
             raise Exception('Only solutions for components counts 2, 3, and 4 are available analytically')
         # Need to avoid zero divisions here - specifically when the composition of one component in the feed is 0.0
@@ -3160,19 +3161,16 @@ class GibbsExcess(object):
         return dgammas_dT
 
 
-class IdealSolution(object):
-    def __init__(self, T, xs):
-        self.T = T
-        self.xs = xs
-        self.N = N = len(xs)
-        self.cmps = range(N)
+class IdealSolution(GibbsExcess):
+    def __init__(self):
+        pass
 
     def to_T_xs(self, T, xs):
         new = self.__class__.__new__(self.__class__)
         new.T = T
         new.xs = xs
-        new.N = self.N
-        new.cmps = self.cmps
+        new.N = len(xs)
+        new.cmps = range(new.N)
         return new
 
     def GE(self):

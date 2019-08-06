@@ -2677,8 +2677,11 @@ class TDependentProperty(object):
 
             self.best_fit_Tmin_slope = (fit_value_low 
                                         - self.best_fit_Tmin_value)/slope_delta_T
-
-
+                                    
+    def as_best_fit(self):
+        return '%s(best_fit=(%s, %s, %s))' %(self.__class__.__name__,
+                  repr(self.best_fit_Tmin), repr(self.best_fit_Tmax),
+                  repr(self.best_fit_coeffs))
 
     def T_dependent_property(self, T):
         r'''Method to calculate the property with sanity checking and without
