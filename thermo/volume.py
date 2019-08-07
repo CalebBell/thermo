@@ -39,6 +39,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 import pandas as pd
 
+from fluids.numerics import horner
 from thermo.utils import R
 from thermo.utils import log, exp, isnan
 from thermo.utils import Vm_to_rho, rho_to_Vm, mixing_simple, none_and_length_check
@@ -657,7 +658,7 @@ def CRC_inorganic(T, rho0, k, Tm):
     '''
     return rho0 - k*(T-Tm)
 
-
+    
 COOLPROP = 'COOLPROP'
 PERRYDIPPR = 'PERRYDIPPR'
 VDI_PPDS = 'VDI_PPDS'
@@ -675,6 +676,7 @@ BHIRUD_NORMAL = 'BHIRUD_NORMAL'
 TOWNSEND_HALES = 'TOWNSEND_HALES'
 CAMPBELL_THODOS = 'CAMPBELL_THODOS'
 EOS = 'EOS'
+BESTFIT = 'Best fit'
 
 
 CRC_INORG_L = 'CRC_INORG_L'
@@ -869,7 +871,8 @@ class VolumeLiquid(TPDependentProperty):
 
 
     def __init__(self, MW=None, Tb=None, Tc=None, Pc=None, Vc=None, Zc=None,
-                 omega=None, dipole=None, Psat=None, CASRN='', eos=None):
+                 omega=None, dipole=None, Psat=None, CASRN='', eos=None,
+                 best_fit=None):
         self.CASRN = CASRN
         self.MW = MW
         self.Tb = Tb
@@ -930,8 +933,9 @@ class VolumeLiquid(TPDependentProperty):
         self.all_methods_P = set()
         '''Set of all high-pressure methods available for a given CASRN and
         properties; filled by :obj:`load_all_methods`.'''
-
         self.load_all_methods()
+        if best_fit is not None:
+            self.set_best_fit(best_fit)
 
     def load_all_methods(self):
         r'''Method which picks out coefficients for the specified chemical
@@ -1040,7 +1044,14 @@ class VolumeLiquid(TPDependentProperty):
         Vm : float
             Molar volume of the liquid at T and a low pressure, [m^3/mol]
         '''
-        if method == RACKETT:
+        if method == BESTFIT:
+            if T < self.best_fit_Tmin:
+                Vm = (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value
+            elif T > self.best_fit_Tmax:
+                Vm = (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
+            else:
+                Vm = horner(self.best_fit_coeffs, T)
+        elif method == RACKETT:
             Vm = Rackett(T, self.Tc, self.Pc, self.Zc)
         elif method == YAMADA_GUNN:
             Vm = Yamada_Gunn(T, self.Tc, self.Pc, self.omega)

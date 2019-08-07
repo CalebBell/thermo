@@ -991,6 +991,7 @@ class Chemical(object): # pragma: no cover
                           Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega,
                           dipole=self.dipole,
                           Psat=self.VaporPressure.T_dependent_property,
+                          best_fit=get_chemical_constants(self.CAS, 'VolumeLiquid'),
                           eos=self.eos_in_a_box, CASRN=self.CAS)
 
         self.Vml_Tb = self.VolumeLiquid.T_dependent_property(self.Tb) if self.Tb else None

@@ -809,6 +809,21 @@ class Mixture(object):
         if self.eos_in_a_box:
             self.eos_in_a_box.pop()
         self.eos_in_a_box.append(eos)
+        
+    def eos_pures(self, eos=PR, T=None, P=None):
+        if T is None:
+            T = self.T
+        if P is None:
+            P = self.P
+        Tcs, Pcs, omegas = self.Tcs, self.Pcs, self.omegas
+        eos_list = []
+        for i in range(len(self.zs)):
+            try:
+                e = eos(T=T, P=P, Tc=Tcs[i], Pc=Pcs[i], omega=omegas[i])
+            except:
+                e = None
+            eos_list.append(e)
+        return eos_list
 
     def set_Chemical_property_objects(self):
         self.VolumeSolids = [i.VolumeSolid for i in self.Chemicals]
