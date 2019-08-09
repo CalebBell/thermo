@@ -102,6 +102,18 @@ class GCEOS(object):
     kwargs = {}
     N = 1
     multicomponent = False
+    
+    def __repr__(self):
+        s = '%s(Tc=%s, Pc=%s, omega=%s, ' %(self.__class__.__name__, repr(self.Tc), repr(self.Pc), repr(self.omega))
+        if hasattr(self, 'no_T_spec') and self.no_T_spec:
+            s += 'P=%s, V=%s' %(repr(self.P), repr(self.V))
+        elif self.V is not None:
+            s += 'T=%s, V=%s' %(repr(self.T), repr(self.V))
+        else:
+            s += 'T=%s, P=%s' %(repr(self.T), repr(self.P))
+        s += ')'
+        return s
+    
     def check_sufficient_inputs(self):
         '''Method to an exception if none of the pairs (T, P), (T, V), or 
         (P, V) are given. '''
@@ -551,6 +563,7 @@ should be calculated by this method, in a user subclass.')
         '''
         denominator = (V*V + self.delta*V + self.epsilon)
         V_minus_b = (V-self.b)
+        self.no_T_spec = True
         def to_solve(T):
             a_alpha = self.a_alpha_and_derivatives(T, full=False, quick=False)
             P_calc = R*T/V_minus_b - a_alpha/denominator
@@ -959,6 +972,10 @@ should be calculated by this method, in a user subclass.')
            through Cubic Equations of State." Fluid Phase Equilibria 31, no. 2 
            (January 1, 1986): 203-7. doi:10.1016/0378-3812(86)90013-0. 
         '''
+        # WARNING - For compounds whose a_alpha (x)values extend too high,
+        # this method is inaccurate.
+        # TODO: find way to extend the range? Multiple compounds?
+        
         if T == self.Tc:
             return self.Pc
         alpha = self.a_alpha_and_derivatives(T, full=False)/self.a
@@ -1055,6 +1072,9 @@ should be calculated by this method, in a user subclass.')
         Useful for calculating enthalpy of vaporization with the Clausius
         Clapeyron Equation. Derived with SymPy's diff and cse.
         '''
+        # WARNING - For compounds whose a_alpha (x)values extend too high,
+        # this method is inaccurate.
+        # TODO: find way to extend the range? Multiple compounds?
         a_alphas = self.a_alpha_and_derivatives(T)
         Tc, alpha, d_alpha_dT = self.Tc, a_alphas[0]/self.a, a_alphas[1]/self.a
         Tc_inv = 1.0/Tc
@@ -1083,7 +1103,43 @@ should be calculated by this method, in a user subclass.')
             Psat = Pc*T*exp_y*dy_dT*Tc_inv + Pc*exp_y*Tc_inv
             return Psat
         
+    def phi_sat(self, T, polish=True):
+        r'''Method to calculate the saturation fugacity coefficient of the
+        compound. This does not require solving the EOS itself.
         
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        polish : bool, optional
+            Whether to perform a rigorous calculation or to use a polynomial
+            fit, [-]
+
+        Returns
+        -------
+        phi_sat : float
+            Fugacity coefficient along the liquid-vapor saturation line, [-]
+            
+        Notes
+        -----
+        Accuracy is generally around 1e-7. If Tr is under 0.32, the rigorous
+        method is always used, but a solution may not exist if both phases
+        cannot coexist. If Tr is above 1, likewise a solution does not exist.
+        '''
+        # WARNING - For compounds whose a_alpha (x)values extend too high,
+        # this method is inaccurate.
+        # TODO: find way to extend the range? Multiple compounds?
+        Tr = T/self.Tc
+        if polish or not 0.32 <= Tr <= 1.0:
+            e = self.to_TP(T=T, P=self.Psat(T), polish=True) # True
+            try:
+                return e.phi_l
+            except:
+                return e.phi_g
+
+        alpha = self.a_alpha_and_derivatives(T, full=False)/self.a
+        x = alpha/Tr - 1.
+        return horner(self.phi_sat_coeffs, x)
         
     def V_l_sat(self, T):
         r'''Method to calculate molar volume of the liquid phase along the
@@ -2674,6 +2730,7 @@ class IG(GCEOS):
             return (0.0, 0.0, 0.0)
 
     def solve_T(self, P, V, quick=True):
+        self.no_T_spec = True
         return P*V*R_inv
             
 class PR(GCEOS):
@@ -2816,6 +2873,12 @@ class PR(GCEOS):
     Psat_coeffs_critical_der = polyder(Psat_coeffs_critical[::-1])[::-1]
     Psat_cheb_constant_factor = (-2.355355160853182, 0.42489124941587103)
     
+    phi_sat_coeffs = [4.040440857039882e-09, -1.512382901024055e-07, 2.5363900091436416e-06,
+                      -2.4959001060510725e-05, 0.00015714708105355206, -0.0006312347348814933,
+                      0.0013488647482434379, 0.0008510254890166079, -0.017614759099592196,
+                      0.06640627813169839, -0.13427456425899886, 0.1172205279608668, 
+                      0.13594473870160448, -0.5560225934266592, 0.7087599054079694, 
+                      0.6426353018023558]
 
     def __init__(self, Tc, Pc, omega, T=None, P=None, V=None):
         self.Tc = Tc
@@ -2908,6 +2971,7 @@ class PR(GCEOS):
         >>> PR_formula = R*T/(V-b) - a_alpha/(V*(V+b)+b*(V-b)) - P
         >>> #solve(PR_formula, T)
         '''
+        self.no_T_spec = True
         Tc, a, b, kappa = self.Tc, self.a, self.b, self.kappa
         if quick:
             x0 = V*V
@@ -3192,6 +3256,7 @@ class PRSV(PR):
         converge on this.        
         '''
         Tc, a, b, kappa0, kappa1 = self.Tc, self.a, self.b, self.kappa0, self.kappa1
+        self.no_T_spec = True
         if quick:
             x0 = V - b
             R_x0 = R/x0
@@ -3388,6 +3453,7 @@ class PRSV2(PR):
         '''
         # Generic solution takes 72 vs 56 microseconds for the optimized version below
 #        return super(PR, self).solve_T(P, V, quick=quick) 
+        self.no_T_spec = True
         Tc, a, b, kappa0, kappa1, kappa2, kappa3 = self.Tc, self.a, self.b, self.kappa0, self.kappa1, self.kappa2, self.kappa3
         if quick:
             x0 = V - b
@@ -3543,6 +3609,12 @@ class VDW(GCEOS):
     Psat_cheb_constant_factor = (-1.0630005005005003, 0.9416200294550813)
     Psat_cheb_coeffs_der = chebder(Psat_cheb_coeffs)
     Psat_coeffs_critical_der = polyder(Psat_coeffs_critical[::-1])[::-1]
+    
+    phi_sat_coeffs = [-4.703247660146169e-06, 7.276853488756492e-05, -0.0005008397610615123,
+                      0.0019560274384829595, -0.004249875101260566, 0.001839985687730564,
+                      0.02021191780955066, -0.07056928933569773, 0.09941120467466309, 
+                      0.021295687530901747, -0.32582447905247514, 0.521321793740683,
+                      0.6950957738017804]
 
     def __init__(self, Tc, Pc, T=None, P=None, V=None, omega=None):
         self.Tc = Tc
@@ -3597,6 +3669,7 @@ class VDW(GCEOS):
         T : float
             Temperature, [K]
         '''
+        self.no_T_spec = True
         return (P*V**2*(V - self.b) + V*self.a - self.a*self.b)/(R*V**2)
     
     @staticmethod
@@ -3716,6 +3789,11 @@ class RK(GCEOS):
     Psat_cheb_constant_factor = (0.8551757791729341, 9.962912449541513)
     Psat_cheb_coeffs_der = chebder(Psat_cheb_coeffs)
     Psat_coeffs_critical_der = polyder(Psat_coeffs_critical[::-1])[::-1]
+    
+    phi_sat_coeffs = [156707085.9178746, 1313005585.0874271, 4947242291.244957, 
+                      11038959845.808495, 16153986262.1129, 16199294577.496677, 
+                      11273931409.81048, 5376831929.990161, 1681814895.2875218, 
+                      311544335.80653775, 25954329.68176187]
 
     def __init__(self, Tc, Pc, T=None, P=None, V=None, omega=None):
         self.Tc = Tc
@@ -3783,6 +3861,7 @@ class RK(GCEOS):
         >>> RK = Eq(P, R*T/(V-b) - a/sqrt(T)/(V*V + b*V))
         >>> # solve(RK, T)
         '''
+        self.no_T_spec = True
         a, b = self.a, self.b
         if quick:
             x1 = -1.j*1.7320508075688772 + 1.
@@ -3874,6 +3953,13 @@ class SRK(GCEOS):
     Psat_cheb_constant_factor = (-2.5857326352412238, 0.38702722494279784)
     Psat_cheb_coeffs_der = chebder(Psat_cheb_coeffs)
     Psat_coeffs_critical_der = polyder(Psat_coeffs_critical[::-1])[::-1]
+    
+    phi_sat_coeffs = [4.883976406433718e-10, -2.00532968010467e-08, 3.647765457046907e-07,
+                      -3.794073186960753e-06, 2.358762477641146e-05, -7.18419726211543e-05,
+                      -0.00013493130050539593, 0.002716443506003684, -0.015404883730347763,
+                      0.05251643616017714, -0.11346125895127993, 0.12885073074459652,
+                      0.0403144920149403, -0.39801902918654086, 0.5962308106352003, 
+                      0.6656153310272716]
 
     def __init__(self, Tc, Pc, omega, T=None, P=None, V=None):
         self.Tc = Tc
@@ -3947,6 +4033,7 @@ class SRK(GCEOS):
         >>> SRK = R*T/(V-b) - a_alpha/(V*(V+b)) - P
         >>> # solve(SRK, T)
         '''
+        self.no_T_spec = True
         a, b, Tc, m = self.a, self.b, self.Tc, self.m
         if quick:
             x0 = R*Tc
@@ -4139,6 +4226,7 @@ class APISRK(SRK):
         There are 8 roots of T in that case, six of them real. No guarantee can
         be made regarding which root will be obtained.
         '''
+        self.no_T_spec = True
         if self.S2 == 0:
             self.m = self.S1
             return SRK.solve_T(self, P, V, quick=quick)

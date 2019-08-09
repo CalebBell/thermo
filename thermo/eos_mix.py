@@ -216,27 +216,22 @@ class GCEOSMIX(GCEOS):
     '''
     nonstate_constants = ('N', 'cmps', 'Tcs', 'Pcs', 'omegas', 'kijs', 'kwargs', 'ais', 'bs')
     multicomponent = True
-#    def fast_copy_base(self, a_alphas=False):
-#        new = self.__class__.__new__(self.__class__)
-##        for attr in self.nonstate_constants:
-##            setattr(new, attr, getattr(self, attr))
-#        new.N = self.N
-#        new.cmps = self.cmps
-#        new.Tcs = self.Tcs
-#        new.Pcs = self.Pcs
-#        new.omegas = self.omegas
-#        new.kijs = self.kijs
-#        new.kwargs = self.kwargs
-#        new.ais = self.ais
-#        new.bs = self.bs
-#
-##        for attr in self.nonstate_constants_specific:
-##            setattr(new, attr, getattr(self, attr))
-#        if a_alphas:
-#            new.a_alphas = self.a_alphas
-#            new.da_alpha_dTs = self.da_alpha_dTs
-#            new.d2a_alpha_dT2s = self.d2a_alpha_dT2s
-#        return new
+    
+    
+    def __repr__(self):
+        s = '%s(Tcs=%s, Pcs=%s, omegas=%s, ' %(self.__class__.__name__, repr(self.Tcs), repr(self.Pcs), repr(self.omegas))
+        for k, v in self.kwargs.items():
+            s += '%s=%s, ' %(k, repr(v))
+
+        s += 'zs=%s, ' %(repr(self.zs))
+        if hasattr(self, 'no_T_spec') and self.no_T_spec:
+            s += 'P=%s, V=%s' %(repr(self.P), repr(self.V))
+        elif self.V is not None:
+            s += 'T=%s, V=%s' %(repr(self.T), repr(self.V))
+        else:
+            s += 'T=%s, P=%s' %(repr(self.T), repr(self.P))
+        s += ')'
+        return s
     
     def to_TP_zs_fast(self, T, P, zs, only_l=False, only_g=False, full_alphas=True):
         

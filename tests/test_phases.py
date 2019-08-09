@@ -24,8 +24,11 @@ from numpy.testing import assert_allclose
 import pytest
 
 from thermo.phases import *
+from thermo.eos_mix import *
+from thermo.eos import *
 from thermo.vapor_pressure import VaporPressure
-
+from thermo.heat_capacity import *
+from thermo.phase_change import *
 
 def test_GibbbsExcessLiquid_VaporPressure():
     # Binary ethanol-water
@@ -34,8 +37,9 @@ def test_GibbbsExcessLiquid_VaporPressure():
     T = 300.0
     P = 1e5
     zs = [.4, .6]
-    liquid = GibbbsExcessLiquid(VaporPressures=VaporPressures).to_TP_zs(T, P, zs)
-
+    liquid = GibbsExcessLiquid(VaporPressures=VaporPressures).to_TP_zs(T, P, zs)
+    
+    # Ingredients
     Psats_expect = [8778.910843769489, 3537.075987237396]
     assert_allclose(liquid.Psats(), Psats_expect, rtol=1e-12)
     
@@ -54,9 +58,9 @@ def test_GibbbsExcessLiquid_VaporPressure():
     phis_sat_expect = [1.0, 1.0]
     assert liquid.phis_sat() == phis_sat_expect
     
+    # Fugacities and friends
     phis_expect = [0.0877891084376949, 0.035370759872373966]
     assert_allclose(liquid.phis(), phis_expect, rtol=1e-12)
-    assert_allclose(liquid.fugacity_coefficients(), phis_expect, rtol=1e-12)
     
     lnphis_expect = [-2.432817835720433, -3.3418697924678376]
     assert_allclose(liquid.lnphis(), lnphis_expect, rtol=1e-12)
@@ -64,10 +68,80 @@ def test_GibbbsExcessLiquid_VaporPressure():
     fugacities_expect = [3511.564337507796, 2122.245592342438]
     assert_allclose(liquid.fugacities(), fugacities_expect, rtol=1e-12)
     
+    # Temperature derivatives
     dlnphis_dT_expect = [0.05691421137269392, 0.058786419948670225]
     assert_allclose(liquid.dlnphis_dT(), dlnphis_dT_expect, rtol=1e-12)
     
     dphis_dT_expect = [0.004996447873843315, 0.0020793203437609493]
     assert_allclose(liquid.dphis_dT(), dphis_dT_expect, rtol=1e-12)
     
-    # liquid.dfugacities_dT() # Missing
+    dfugacities_dT_expect = [199.8579149537326, 124.75922062565697]
+    assert_allclose(liquid.dfugacities_dT(), dfugacities_dT_expect, rtol=1e-12)
+    
+    # Pressure derivatives
+    dlnphis_dP_expect = [-1e-05, -1e-05]
+    assert_allclose(liquid.dlnphis_dP(), dlnphis_dP_expect, rtol=1e-12)
+    
+    dphis_dP_expect = [-8.778910843769491e-07, -3.537075987237397e-07]
+    assert_allclose(liquid.dphis_dP(), dphis_dP_expect, rtol=1e-12)
+    
+    dfugacities_dP_expect = [0, 0]
+    assert_allclose(liquid.dfugacities_dP(), dfugacities_dP_expect, atol=1e-15)
+    
+def test_EOSGas_phis():
+    # Acetone, chloroform, methanol
+    T = 331.42
+    P = 90923
+    zs = [0.229, 0.175, 0.596]
+    
+    eos_kwargs = {'Pcs': [4700000.0, 5330000.0, 8084000.0],
+     'Tcs': [508.1, 536.2, 512.5],
+     'omegas': [0.309, 0.21600000000000003, 0.5589999999999999],
+     'kijs': [[0, 0.038, 0.08], [0.038, 0, 0.021], [0.08, 0.021, 0]],
+    }
+    
+    HeatCapacityGases = [HeatCapacityGas(best_fit=(200.0, 1000.0, [-1.3320002425347943e-21, 6.4063345232664645e-18, -1.251025808150141e-14, 1.2265314167534311e-11, -5.535306305509636e-09, -4.32538332013644e-08, 0.0010438724775716248, -0.19650919978971002, 63.84239495676709])),
+     HeatCapacityGas(best_fit=(200.0, 1000.0, [1.5389278550737367e-21, -8.289631533963465e-18, 1.9149760160518977e-14, -2.470836671137373e-11, 1.9355882067011222e-08, -9.265600540761629e-06, 0.0024825718663005762, -0.21617464276832307, 48.149539665907696])),
+     HeatCapacityGas(best_fit=(50.0, 1000.0, [2.3511458696647882e-21, -9.223721411371584e-18, 1.3574178156001128e-14, -8.311274917169928e-12, 4.601738891380102e-10, 1.78316202142183e-06, -0.0007052056417063217, 0.13263597297874355, 28.44324970462924]))]
+    
+    gas = EOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    
+    lnphis_expect = [-0.02360432649642419, -0.024402271514780954, -0.016769813943198587]
+    assert_allclose(gas.lnphis(), lnphis_expect, rtol=1e-12)
+    
+    phis_expect = [0.9766720765776962, 0.9758930568084294, 0.9833700166511827]
+    assert_allclose(gas.phis(), phis_expect, rtol=1e-12)
+    
+    fugacities_expect = [20335.64774507632, 15527.946770733744, 53288.92740628939]
+    assert_allclose(gas.fugacities(), fugacities_expect, rtol=1e-12)
+    
+    dlnphis_dT_expect = [0.0001969437889400412, 0.0001955309568834383, 0.00014847122768410804]
+    assert_allclose(gas.dlnphis_dT(), dlnphis_dT_expect, rtol=1e-12)
+    
+    dphis_dT_expect = [0.00019234949931314953, 0.00019081730321365582, 0.00014600215363994287]
+    assert_allclose(gas.dphis_dT(), dphis_dT_expect, rtol=1e-12)
+    
+    dfugacities_dT_expect = [4.004979517465334, 3.036194290516665, 7.911872473981097]
+    assert_allclose(gas.dfugacities_dT(), dfugacities_dT_expect, rtol=1e-12)
+    
+    dlnphis_dP_expect = [-2.6201216188562436e-07, -2.709988856769895e-07, -1.857038475967749e-07]
+    assert_allclose(gas.dlnphis_dP(), dlnphis_dP_expect, rtol=1e-12)
+    
+    dphis_dP_expect = [-2.558999622374442e-07, -2.644659309349954e-07, -1.8261559570342924e-07]
+    assert_allclose(gas.dphis_dP(), dphis_dP_expect, rtol=1e-12)
+    
+    dfugacities_dP_expect = [0.21832971850726046, 0.16657322866975469, 0.5761925710704517]
+    assert_allclose(gas.dfugacities_dP(), dfugacities_dP_expect, rtol=1e-12)
+
+    assert_allclose(gas.H(), 1725.7273210879043, rtol=1e-12)
+    assert_allclose(gas.S(), 14.480694885134456, rtol=1e-12)
+    assert_allclose(gas.Cp(), 58.748474752042945, rtol=1e-12)
+    assert_allclose(gas.dH_dT(), gas.Cp(), rtol=1e-12)
+    assert_allclose(gas.dH_dP(), -0.0017158255316092434, rtol=1e-12)
+    assert_allclose(gas.dS_dT(), 0.17726291337892383, rtol=1e-12)
+    assert_allclose(gas.dS_dP(), -9.480886482495667e-05, rtol=1e-12)
+    
+    dH_dzs_expect = [2227.672637816117, 1886.132133010868, 1210.163163133309]
+    assert_allclose(gas.dH_dzs(), dH_dzs_expect, rtol=1e-12)
+    dS_dzs_expect = [11.452747620043832, 12.611417881165302, 0.2036373977480378]
+    assert_allclose(gas.dS_dzs(), dS_dzs_expect, rtol=1e-12)

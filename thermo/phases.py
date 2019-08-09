@@ -21,13 +21,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
-__all__ = ['GibbbsExcessLiquid', 'Phase', 'EOSLiquid', 'EOSGas', 'IdealGas']
+__all__ = ['GibbsExcessLiquid', 'Phase', 'EOSLiquid', 'EOSGas', 'IdealGas']
 
 from fluids.constants import R, R_inv
 from fluids.numerics import horner, horner_and_der
 from thermo.utils import (log, exp, Cp_minus_Cv, phase_identification_parameter,
                           isothermal_compressibility, isobaric_expansion,
-                          Joule_Thomson, dxs_to_dns)
+                          Joule_Thomson, speed_of_sound, dxs_to_dns)
 from thermo.activity import IdealSolution
 
 
@@ -62,10 +62,119 @@ class Phase(object):
         zs = self.zs
         lnphis = self.lnphis()
         return [P*zs[i]*exp(lnphis[i]) for i in range(len(zs))]
+    
+    def dfugacities_dT(self):
+        r'''
+        '''
+        dphis_dT = self.dphis_dT()
+        P, zs = self.P, self.zs
+        return [P*zs[i]*dphis_dT[i] for i in range(len(zs))]
 
     def phis(self):
         return [exp(i) for i in self.lnphis()]
+
+    def dphis_dT(self):
+        r'''Method to calculate the temperature derivative of fugacity 
+        coefficients of the phase.
+        
+        .. math::
+            \frac{\partial \phi_i}{\partial T} = \phi_i \frac{\partial 
+            \log \phi_i}{\partial T} 
+
+        Returns
+        -------
+        dphis_dT : list[float]
+            Temperature derivative of fugacity coefficients of all components
+            in the phase, [1/K]
+            
+        Notes
+        -----
+        '''        
+        try:
+            return self._dphis_dT
+        except AttributeError:
+            pass
+        try:
+            dlnphis_dT = self._dlnphis_dT
+        except AttributeError:
+            dlnphis_dT = self.dlnphis_dT()
+            
+        try:
+            phis = self._phis
+        except AttributeError:
+            phis = self.phis()
+
+        self._dphis_dT = [dlnphis_dT[i]*phis[i] for i in self.cmps]
+        return self._dphis_dT
     
+    def dphis_dP(self):
+        r'''Method to calculate the pressure derivative of fugacity 
+        coefficients of the phase.
+        
+        .. math::
+            \frac{\partial \phi_i}{\partial P} = \phi_i \frac{\partial 
+            \log \phi_i}{\partial P} 
+
+        Returns
+        -------
+        dphis_dP : list[float]
+            Pressure derivative of fugacity coefficients of all components
+            in the phase, [1/Pa]
+            
+        Notes
+        -----
+        '''        
+        try:
+            return self._dphis_dP
+        except AttributeError:
+            pass
+        try:
+            dlnphis_dP = self._dlnphis_dP
+        except AttributeError:
+            dlnphis_dP = self.dlnphis_dP()
+            
+        try:
+            phis = self._phis
+        except AttributeError:
+            phis = self.phis()
+
+        self._dphis_dP = [dlnphis_dP[i]*phis[i] for i in self.cmps]
+        return self._dphis_dP
+
+    def dfugacities_dP(self):
+        r'''Method to calculate the pressure derivative of the fugacities
+        of the components in the phase phase.
+        
+        .. math::
+            \frac{\partial f_i}{\partial P} = z_i \left(P \frac{\partial 
+            \phi_i}{\partial P}  + \phi_i \right)
+
+        Returns
+        -------
+        dfugacities_dP : list[float]
+            Pressure derivative of fugacities of all components
+            in the phase, [-]
+            
+        Notes
+        -----
+        For models without pressure dependence of fugacity, the returned result
+        may not be exactly zero due to inaccuracy in floating point results;
+        results are likely on the order of 1e-14 or lower in that case.
+        '''        
+        try:
+            dphis_dP = self._dphis_dP
+        except AttributeError:
+            dphis_dP = self.dphis_dP()
+            
+        try:
+            phis = self._phis
+        except AttributeError:
+            phis = self.phis()
+
+        P, zs = self.P, self.zs
+        return [zs[i]*(P*dphis_dP[i] + phis[i]) for i in self.cmps]
+
+
     def log_zs(self):
         try:
             return self._log_zs
@@ -160,6 +269,9 @@ class Phase(object):
     
     def Cp_Cv_ratio(self):
         return self.Cp()/self.Cv()
+    
+    def Z(self):
+        return self.P*self.V()/(R*self.T)
         
     def rho(self):
         return 1.0/self.V()
@@ -249,6 +361,9 @@ class Phase(object):
     
     def Joule_Thomson(self):
         return Joule_Thomson(self.T, self.V(), self.Cp(), dV_dT=self.dV_dT(), beta=self.beta())
+    
+    def speed_of_sound(self):
+        return speed_of_sound(self.V(), self.dP_dV(), self.Cp(), self.Cv())
         
     def dZ_dT(self):
         T_inv = 1.0/self.T
@@ -353,298 +468,13 @@ class IdealGas(Phase):
         new.P = P
         new.zs = zs
         new.N = len(zs)
+        new.cmps = range(new.N)
         
         new.HeatCapacityGases = self.HeatCapacityGases
         new.Hfs = self.Hfs
         new.Gfs = self.Gfs
         new.Sfs = self.Sfs
         return new
-
-
-class EOSLiquid(Phase):
-    # DO NOT MAKE EDITS TO THIS CLASS!!!
-    def __init__(self, eos_class, eos_kwargs, HeatCapacityGases=None, Hfs=None,
-                 Gfs=None, Sfs=None,
-                 T=None, P=None, zs=None):
-        self.eos_class = eos_class
-        self.eos_kwargs = eos_kwargs
-
-        self.HeatCapacityGases = HeatCapacityGases
-        if HeatCapacityGases is not None:
-            self.N = N = len(HeatCapacityGases)
-            self.cmps = range(self.N)
-        self.Hfs = Hfs
-        self.Gfs = Gfs
-        self.Sfs = Sfs
-        
-        if T is not None and P is not None and zs is not None:
-            self.T = T
-            self.P = P
-            self.zs = zs
-            self.eos_mix = self.eos_class(T=T, P=P, zs=zs, **self.eos_kwargs)
-            
-        
-    def to_TP_zs(self, T, P, zs):
-        new = self.__class__.__new__(self.__class__)
-        new.T = T
-        new.P = P
-        new.zs = zs
-        try:
-            new.eos_mix = self.eos_mix.to_TP_zs_fast(T=T, P=P, zs=zs, only_l=True,
-                                                     full_alphas=True) # optimize alphas?
-                                                     # Be very careful doing this in the future - wasted
-                                                     # 1 hour on this because the heat capacity calculation was wrong
-        except AttributeError:
-            new.eos_mix = self.eos_class(T=T, P=P, zs=zs, **self.eos_kwargs)
-        
-        new.eos_class = self.eos_class
-        new.eos_kwargs = self.eos_kwargs
-        
-        new.HeatCapacityGases = self.HeatCapacityGases
-        new.Hfs = self.Hfs
-        new.Gfs = self.Gfs
-        new.Sfs = self.Sfs
-        
-        try:
-            new.N = self.N
-            new.cmps = self.cmps
-        except:
-            pass
-
-        return new
-        
-    def lnphis(self):
-        try:
-            return self.eos_mix.fugacity_coefficients(self.eos_mix.Z_l, self.zs)
-        except AttributeError:
-            return self.eos_mix.fugacity_coefficients(self.eos_mix.Z_g, self.zs)
-        
-        
-    def dlnphis_dT(self):
-        try:
-            return self.eos_mix.dlnphis_dT('l')
-        except:
-            return self.eos_mix.dlnphis_dT('g')
-
-    def dlnphis_dP(self):
-        try:
-            return self.eos_mix.dlnphis_dP('l')
-        except:
-            return self.eos_mix.dlnphis_dP('g')
-    
-    def H_dep(self):
-        try:
-            return self.eos_mix.H_dep_l
-        except AttributeError:
-            return self.eos_mix.H_dep_g
-
-    def S_dep(self):
-        try:
-            return self.eos_mix.S_dep_l
-        except AttributeError:
-            return self.eos_mix.S_dep_g
-
-    def Cp_dep(self):
-        try:
-            return self.eos_mix.Cp_dep_l
-        except AttributeError:
-            return self.eos_mix.Cp_dep_g        
-        
-    def V(self):
-        try:
-            return self.eos_mix.V_l
-        except AttributeError:
-            return self.eos_mix.V_g
-
-    def Z(self):
-        try:
-            return self.eos_mix.Z_l
-        except AttributeError:
-            return self.eos_mix.Z_g
-    
-    
-    def dP_dT(self):
-        try:
-            return self.eos_mix.dP_dT_l
-        except AttributeError:
-            return self.eos_mix.dP_dT_g
-
-    def dP_dV(self):
-        try:
-            return self.eos_mix.dP_dV_l
-        except AttributeError:
-            return self.eos_mix.dP_dV_g
-    
-    def d2P_dT2(self):
-        try:
-            return self.eos_mix.d2P_dT2_l
-        except AttributeError:
-            return self.eos_mix.d2P_dT2_g
-
-    def d2P_dV2(self):
-        try:
-            return self.eos_mix.d2P_dV2_l
-        except AttributeError:
-            return self.eos_mix.d2P_dV2_g
-
-    def d2P_dTdV(self):
-        try:
-            return self.eos_mix.d2P_dTdV_l
-        except AttributeError:
-            return self.eos_mix.d2P_dTdV_g
-        
-    # because of the ideal gas model, for some reason need to use the right ones
-    # FOR THIS MODEL ONLY
-    def d2T_dV2(self):
-        try:
-            return self.eos_mix.d2T_dV2_l
-        except AttributeError:
-            return self.eos_mix.d2T_dV2_g
-
-    def d2V_dT2(self):
-        try:
-            return self.eos_mix.d2V_dT2_l
-        except AttributeError:
-            return self.eos_mix.d2V_dT2_g
-
-        
-    def H(self):
-        try:
-            return self._H
-        except AttributeError:
-            pass
-        H = self.H_dep        
-        for zi, Cp_int in zip(self.zs, self.Cp_integrals_pure):
-            H += zi*Cp_int
-        self._H = H
-        return H
-
-    def S(self):
-        try:
-            return self._S
-        except AttributeError:
-            pass
-        Cp_integrals_over_T_pure = self.Cp_integrals_over_T_pure
-        log_zs = self.log_zs()
-        T, P, zs, cmps = self.T, self.P, self.zs, self.cmps
-        P_REF_IG_INV = self.P_REF_IG_INV
-        S = 0.0
-        S -= R*sum([zs[i]*log_zs[i] for i in cmps]) # ideal composition entropy composition
-        S -= R*log(P*P_REF_IG_INV)
-        
-        for i in cmps:
-            S += zs[i]*Cp_integrals_over_T_pure[i]
-        S += self.S_dep
-        self._S = S
-        return S
-    
-    def Cps_pure(self):
-        try:
-            return self._Cps
-        except AttributeError:
-            pass
-        T = self.T
-        self._Cps = [i.T_dependent_property(T) for i in self.HeatCapacityGases]
-        return self._Cps
-    
-    def Cp_integrals_pure(self):
-        try:
-            return self._Cp_integrals_pure
-        except AttributeError:
-            pass
-        T, T_REF_IG, HeatCapacityGases = self.T, self.T_REF_IG, self.HeatCapacityGases
-        self._Cp_integrals_pure = [obj.T_dependent_property_integral(T_REF_IG, T)
-                                   for obj in HeatCapacityGases]
-        return self._Cp_integrals_pure
-
-    def Cp_integrals_over_T_pure(self):
-        try:
-            return self._Cp_integrals_over_T_pure
-        except AttributeError:
-            pass
-        
-        T, T_REF_IG, HeatCapacityGases = self.T, self.T_REF_IG, self.HeatCapacityGases
-        self._Cp_integrals_over_T_pure = [obj.T_dependent_property_integral_over_T(T_REF_IG, T)
-                                   for obj in HeatCapacityGases]
-        return self._Cp_integrals_over_T_pure
-        
-
-    def Cp(self):
-        Cps_pure = self.Cps_pure
-        Cp, zs = 0.0, self.zs
-        for i in self.cmps:
-            Cp += zs[i]*Cps_pure[i]
-        return Cp + self.Cp_dep
-
-    def dH_dT(self):
-        return self.Cp
-
-    def dH_dP(self):
-        try:
-            return self.eos_mix.dH_dep_dP_l
-        except AttributeError:
-            return self.eos_mix.dH_dep_dP_g
-
-    def dH_dzs(self):
-        try:
-            return self._dH_dzs
-        except AttributeError:
-            pass
-        eos_mix = self.eos_mix
-        try:
-            dH_dep_dzs = self.eos_mix.dH_dep_dzs(eos_mix.Z_l, eos_mix.zs)
-        except AttributeError:
-            dH_dep_dzs = self.eos_mix.dH_dep_dzs(eos_mix.Z_g, eos_mix.zs)
-        Cp_integrals_pure = self.Cp_integrals_pure
-        self._dH_dzs = [dH_dep_dzs[i] + Cp_integrals_pure[i] for i in self.cmps]
-        return self._dH_dzs
-
-    def dS_dT(self):
-        HeatCapacityGases = self.HeatCapacityGases
-        cmps = self.cmps
-        T, zs = self.T, self.zs
-        T_REF_IG = self.T_REF_IG
-        P_REF_IG_INV = self.P_REF_IG_INV
-
-        S = 0.0
-        dS_pure_sum = 0.0
-        for zi, obj in zip(zs, HeatCapacityGases):
-            dS_pure_sum += zi*obj.T_dependent_property(T)
-        S += dS_pure_sum/T
-        try:
-            S += self.eos_mix.dS_dep_dT_l
-        except AttributeError:
-            S += self.eos_mix.dS_dep_dT_g
-        return S
-
-    def dS_dP(self):
-        dS = 0.0
-        P = self.P
-        dS -= R/P
-        try:
-            dS += self.eos_mix.dS_dep_dP_l
-        except AttributeError:
-            dS += self.eos_mix.dS_dep_dP_g
-        return dS
-            
-    def dS_dzs(self):
-        try:
-            return self._dS_dzs
-        except AttributeError:
-            pass
-        cmps, eos_mix = self.cmps, self.eos_mix
-    
-        log_zs = self.log_zs()
-        integrals = self.Cp_integrals_over_T_pure
-
-        try:
-            dS_dep_dzs = self.eos_mix.dS_dep_dzs(eos_mix.Z_l, eos_mix.zs)
-        except AttributeError:
-            dS_dep_dzs = self.eos_mix.dS_dep_dzs(eos_mix.Z_g, eos_mix.zs)
-        
-        self._dS_dzs = [integrals[i] - R*(log_zs[i] + 1.0) + dS_dep_dzs[i] 
-                        for i in cmps]
-        return self._dS_dzs
  
 class EOSGas(Phase):
     def __init__(self, eos_class, eos_kwargs, HeatCapacityGases=None, Hfs=None,
@@ -657,6 +487,10 @@ class EOSGas(Phase):
         if HeatCapacityGases is not None:
             self.N = N = len(HeatCapacityGases)
             self.cmps = range(self.N)
+        elif 'Tcs' in eos_kwargs:
+            self.N = N = len(eos_kwargs['Tcs'])
+            self.cmps = range(self.N)
+        
         self.Hfs = Hfs
         self.Gfs = Gfs
         self.Sfs = Sfs
@@ -739,13 +573,6 @@ class EOSGas(Phase):
             return self.eos_mix.V_g
         except AttributeError:
             return self.eos_mix.V_l
-
-    def Z(self):
-        try:
-            return self.eos_mix.Z_g
-        except AttributeError:
-            return self.eos_mix.Z_l
-    
     
     def dP_dT(self):
         try:
@@ -797,8 +624,8 @@ class EOSGas(Phase):
             return self._H
         except AttributeError:
             pass
-        H = self.H_dep        
-        for zi, Cp_int in zip(self.zs, self.Cp_integrals_pure):
+        H = self.H_dep() 
+        for zi, Cp_int in zip(self.zs, self.Cp_integrals_pure()):
             H += zi*Cp_int
         self._H = H
         return H
@@ -808,7 +635,7 @@ class EOSGas(Phase):
             return self._S
         except AttributeError:
             pass
-        Cp_integrals_over_T_pure = self.Cp_integrals_over_T_pure
+        Cp_integrals_over_T_pure = self.Cp_integrals_over_T_pure()
         log_zs = self.log_zs()
         T, P, zs, cmps = self.T, self.P, self.zs, self.cmps
         P_REF_IG_INV = self.P_REF_IG_INV
@@ -818,7 +645,7 @@ class EOSGas(Phase):
         
         for i in cmps:
             S += zs[i]*Cp_integrals_over_T_pure[i]
-        S += self.S_dep
+        S += self.S_dep()
         self._S = S
         return S
     
@@ -854,14 +681,14 @@ class EOSGas(Phase):
         
 
     def Cp(self):
-        Cps_pure = self.Cps_pure
+        Cps_pure = self.Cps_pure()
         Cp, zs = 0.0, self.zs
         for i in self.cmps:
             Cp += zs[i]*Cps_pure[i]
-        return Cp + self.Cp_dep
+        return Cp + self.Cp_dep()
 
     def dH_dT(self):
-        return self.Cp
+        return self.Cp()
 
     def dH_dP(self):
         try:
@@ -879,7 +706,7 @@ class EOSGas(Phase):
             dH_dep_dzs = self.eos_mix.dH_dep_dzs(eos_mix.Z_g, eos_mix.zs)
         except AttributeError:
             dH_dep_dzs = self.eos_mix.dH_dep_dzs(eos_mix.Z_l, eos_mix.zs)
-        Cp_integrals_pure = self.Cp_integrals_pure
+        Cp_integrals_pure = self.Cp_integrals_pure()
         self._dH_dzs = [dH_dep_dzs[i] + Cp_integrals_pure[i] for i in self.cmps]
         return self._dH_dzs
 
@@ -901,7 +728,6 @@ class EOSGas(Phase):
             S += self.eos_mix.dS_dep_dT_l
         return S
 
-    @property
     def dS_dP(self):
         dS = 0.0
         P = self.P
@@ -920,7 +746,7 @@ class EOSGas(Phase):
         cmps, eos_mix = self.cmps, self.eos_mix
     
         log_zs = self.log_zs()
-        integrals = self.Cp_integrals_over_T_pure
+        integrals = self.Cp_integrals_over_T_pure()
 
         try:
             dS_dep_dzs = self.eos_mix.dS_dep_dzs(eos_mix.Z_g, eos_mix.zs)
@@ -932,8 +758,28 @@ class EOSGas(Phase):
         return self._dS_dzs
  
             
+def build_EOSLiquid():
+    import inspect
+    source = inspect.getsource(EOSGas)
+    source = source.replace('EOSGas', 'EOSLiquid').replace('only_g', 'only_l')
+    source = source.replace("'g'", "'gORIG'")
+    source = source.replace("'l'", "'g'")
+    source = source.replace("'gORIG'", "'l'")
+    
+    swap_strings = ('Cp_dep', 'd2P_dT2', 'd2P_dTdV', 'd2P_dV2', 'd2T_dV2', 'd2V_dT2', 'dH_dep_dP', 'dP_dT', 'dP_dV', 'dS_dep_dP', 'dS_dep_dT', 'H_dep', 'S_dep', '.V', '.Z')
+    for s in swap_strings:
+        source = source.replace(s+'_g', 'gORIG')
+        source = source.replace(s+'_l', s+'_g')
+        source = source.replace('gORIG', s+'_l')
+    return source
 
-class GibbbsExcessLiquid(Phase):
+try:
+    EOSLiquid
+except:
+    # Cost is ~10 ms - must be pasted in the future!
+    exec(build_EOSLiquid())
+
+class GibbsExcessLiquid(Phase):
     def __init__(self, VaporPressures, VolumeLiquids=None, 
                  GibbsExcessModel=IdealSolution(), 
                  eos_pure_instances=None,
@@ -1098,7 +944,8 @@ class GibbbsExcessLiquid(Phase):
         except AttributeError:
             pass
         if not self.use_Poynting:
-            return [1.0]*self.N
+            self._Poyntings = [1.0]*self.N
+            return self._Poyntings
         
         T, P = self.T, self.P
         Psats = self.Psats()
@@ -1113,7 +960,8 @@ class GibbbsExcessLiquid(Phase):
         except AttributeError:
             pass
         if not self.use_Poynting:
-            return [0.0]*self.N
+            self._dPoyntings_dT = [0.0]*self.N
+            return self._dPoyntings_dT
         
         Psats = self.Psats()
         T, P = self.T, self.P
@@ -1154,7 +1002,8 @@ class GibbbsExcessLiquid(Phase):
         except AttributeError:
             pass
         if not self.use_Poynting:
-            return [0.0]*self.N
+            self._dPoyntings_dP = [0.0]*self.N
+            return self._dPoyntings_dP
         T, P = self.T, self.P
         Psats = self.Psats()
         
@@ -1171,48 +1020,81 @@ class GibbbsExcessLiquid(Phase):
             return self._phis_sat
         except AttributeError:
             pass
+    
         if not self.use_phis_sat:
-            return [1.0]*self.N
+            self._phis_sat = [1.0]*self.N
+            return self._phis_sat
         
         T = self.T
-        self._phis_sat = phis_sat = []
-        for obj in self.eos_pure_instances:
-            Psat = obj.Psat(T)
-            obj = obj.to_TP(T=T, P=Psat)
-            # Along the saturation line, may not exist for one phase or the other even though incredibly precise
-            try:
-                phi = obj.phi_l
-            except:
-                phi = obj.phi_g
-            phis_sat.append(phi)
-        return phis_sat
+        self._phis_sat = [i.phi_sat(T) for i in self.eos_pure_instances]
+        return self._phis_sat
                 
-
-    def fugacity_coefficients(self):
+    def dphis_sat_dT(self):
+        # Not actually implemented
         try:
-            return self._fugacity_coefficients
+            return self._dphis_sat_dT
         except AttributeError:
             pass
-        # DO NOT EDIT _ CORRECT
-        T, P = self.T, self.P
+
+        if not self._dphis_sat_dT:
+            self._dphis_sat_dT = [0.0]*self.N
+            return self._dphis_sat_dT
+
+        T = self.T
+        # Not implemented
+        self._dphis_sat_dT = [i.dphi_sat_dT(T) for i in self.eos_pure_instances]
+        return self._dphis_sat_dT
+
+
+    def phis(self):
+        r'''Method to calculate the fugacity coefficients of the
+        GibbsExcessLiquid phase. Depending on the settings of the phase, can
+        include the effects of activity coefficients `gammas`, pressure
+        correction terms `Poyntings`, and pure component saturation fugacities
+        `phis_sat` as well as the pure component vapor pressures.
         
-        gammas = self.gammas()
-        Psats = self.Psats()
-        
-        if self.use_phis_sat:
-            phis = self.phis_sat()
-        else:
-            phis = [1.0]*self.N
+        .. math::
+            \phi_i = \frac{\gamma_i P_{i}^{sat} \phi_i^{sat} \text{Poynting}_i}
+            {P}
+
+        Returns
+        -------
+        phis : list[float]
+            Fugacity coefficients of all components in the phase, [-]
             
-        if self.use_Poynting:
+        Notes
+        -----
+        Poyntings, gammas, and pure component saturation phis default to 1.
+        '''
+        try:
+            return self._phis
+        except AttributeError:
+            pass
+        P = self.P
+        try:
+            gammas = self._gammas
+        except AttributeError:
+            gammas = self.gammas()
+            
+        try:
+            Psats = self._Psats
+        except AttributeError:
+            Psats = self.Psats()
+        
+        try:
+             phis_sat = self._phis_sat
+        except AttributeError:
+            phis_sat = self.phis_sat()
+
+        try:
+            Poyntings = self._Poyntings
+        except AttributeError:
             Poyntings = self.Poyntings()
-        else:
-            Poyntings = [1.0]*self.N
             
         P_inv = 1.0/P
-        self._fugacity_coefficients = [gammas[i]*Psats[i]*Poyntings[i]*phis[i]*P_inv
+        self._phis = [gammas[i]*Psats[i]*Poyntings[i]*phis_sat[i]*P_inv
                 for i in self.cmps]
-        return self._fugacity_coefficients
+        return self._phis
         
         
     def lnphis(self):
@@ -1220,7 +1102,7 @@ class GibbbsExcessLiquid(Phase):
             return self._lnphis
         except AttributeError:
             pass
-        self._lnphis = [log(i) for i in self.fugacity_coefficients()]        
+        self._lnphis = [log(i) for i in self.phis()]        
         return self._lnphis
         
 #    def fugacities(self, T, P, zs):
@@ -1288,9 +1170,52 @@ class GibbbsExcessLiquid(Phase):
         except AttributeError:
             pass
         dphis_dT = self.dphis_dT()
-        phis = self.fugacity_coefficients()
+        phis = self.phis()
         self._dlnphis_dT = [i/j for i, j in zip(dphis_dT, phis)]
         return self._dlnphis_dT
+
+    def dlnphis_dP(self):
+        r'''Method to calculate the pressure derivative of log fugacity 
+        coefficients of the phase. Depending on the settings of the phase, can
+        include the effects of activity coefficients `gammas`, pressure
+        correction terms `Poyntings`, and pure component saturation fugacities
+        `phis_sat` as well as the pure component vapor pressures.
+        
+        .. math::
+            \frac{\partial \log \phi_i}{\partial P} = 
+            \frac{\frac{\partial \text{Poynting}_i}{\partial P}}
+            {\text{Poynting}_i} - \frac{1}{P}
+
+        Returns
+        -------
+        dlnphis_dP : list[float]
+            Pressure derivative of log fugacity coefficients of all components
+            in the phase, [1/Pa]
+            
+        Notes
+        -----
+        Poyntings, gammas, and pure component saturation phis default to 1. For
+        that case, :math:`\frac{\partial \log \phi_i}{\partial P}=\frac{1}{P}`.
+        '''
+        try:
+            return self._dlnphis_dP
+        except AttributeError:
+            pass
+        try:
+            Poyntings = self._Poyntings
+        except AttributeError:
+            Poyntings = self.Poyntings()
+            
+        try:
+            dPoyntings_dP = self._dPoyntings_dP
+        except AttributeError:
+            dPoyntings_dP = self.dPoyntings_dP()
+            
+        P_inv = 1.0/self.P
+        
+        self._dlnphis_dP = [dPoyntings_dP[i]/Poyntings[i] - P_inv for i in self.cmps]
+        return self._dlnphis_dP
+                    
     
     # TODO - implement dlnphis_dx, convert do dlnphis_dn
 
