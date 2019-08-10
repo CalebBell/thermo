@@ -64,6 +64,10 @@ def test_Wilson_K_value():
     K = Wilson_K_value(270.0, 7600000.0, 305.4, 4880000.0, 0.098)
     assert_allclose(K, 0.2963932297479371)
 
+def test_PR_water_K_value():
+    K = PR_water_K_value(300, 1e5, 568.7, 2490000.0)
+    assert_allclose(K, 76131.19143239626)
+
 def test_bubble_at_P_with_ideal_mixing():
     '''Check to see if the bubble pressure calculated from the temperature
     matches the temperature calculated by the test function'''

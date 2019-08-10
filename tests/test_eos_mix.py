@@ -2788,7 +2788,8 @@ def test_IGMIX():
     eos = IGMIX(T=T, P=P, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
     
     assert_allclose(eos.fugacities_g, [2280000.0, 760000.0, 4560000.0], rtol=1e-14)
-        
+    assert_allclose(eos.H_dep_g, 0)
+    assert_allclose(eos.S_dep_g, 0)
     
 def test_PRMIX_composition_derivatives_ternary(): 
     

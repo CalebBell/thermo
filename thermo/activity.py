@@ -22,7 +22,9 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['K_value', 'Wilson_K_value', 'flash_wilson', 'flash_Tb_Tc_Pc',
+__all__ = ['K_value', 'Wilson_K_value', 'flash_wilson', 
+           'PR_water_K_value',
+           'flash_Tb_Tc_Pc',
            'Rachford_Rice_flash_error', 
            'Rachford_Rice_solution', 'Rachford_Rice_polynomial',
            'Rachford_Rice_solution_polynomial', 'Rachford_Rice_solution_LN2',
@@ -213,6 +215,8 @@ def Wilson_K_value(T, P, Tc, Pc, omega):
     
     Note the K-values are independent of composition; the correlation is
     applicable up to 3.5 MPa.
+    
+    A description for how this function was generated can be found in [2]_.
 
     Examples
     --------
@@ -226,8 +230,59 @@ def Wilson_K_value(T, P, Tc, Pc, omega):
     .. [1] Wilson, Grant M. "A Modified Redlich-Kwong Equation of State, 
        Application to General Physical Data Calculations." In 65th National 
        AIChE Meeting, Cleveland, OH, 1969.
+    .. [2] Peng, Ding-Yu, and Donald B. Robinson. "Two and Three Phase 
+       Equilibrium Calculations for Systems Containing Water." The Canadian
+       Journal of Chemical Engineering, December 1, 1976. 
+       https://doi.org/10.1002/cjce.5450540620.
     '''
     return Pc/P*exp((5.37*(1.0 + omega)*(1.0 - Tc/T)))
+
+
+def PR_water_K_value(T, P, Tc, Pc):
+    r'''Calculates the equilibrium K-value for a component against water
+    according to the Peng and Robinson (1976) heuristic.
+    
+    .. math::
+        K_i = 10^6 \frac{P_{ri}}{T_{ri}}
+        
+    Parameters
+    ----------
+    T : float
+        System temperature, [K]
+    P : float
+        System pressure, [Pa]
+    Tc : float
+        Critical temperature of chemical [K]
+    Pc : float
+        Critical pressure of chemical [Pa]
+
+    Returns
+    -------
+    K : float
+        Equilibrium K value of component with water as the other phase (
+        not as the reference), calculated via this heuristic [-]
+
+    Notes
+    -----
+    Note the K-values are independent of composition.
+    
+    Examples
+    --------
+    Octane at 300 K and 1 bar:
+        
+    >>> PR_water_K_value(300, 1e5, 568.7, 2490000.0)
+    76131.19143239626
+    
+    References
+    ----------
+    .. [1] Peng, Ding-Yu, and Donald B. Robinson. "Two and Three Phase
+       Equilibrium Calculations for Systems Containing Water." The Canadian 
+       Journal of Chemical Engineering, December 1, 1976. 
+       https://doi.org/10.1002/cjce.5450540620.
+    '''
+    Tr = T/Tc
+    Pr = P/Pc
+    return 1e6*Pr/Tr
 
 
 def flash_wilson(zs, Tcs, Pcs, omegas, T=None, P=None, VF=None):

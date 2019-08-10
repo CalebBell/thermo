@@ -145,3 +145,52 @@ def test_EOSGas_phis():
     assert_allclose(gas.dH_dzs(), dH_dzs_expect, rtol=1e-12)
     dS_dzs_expect = [11.452747620043832, 12.611417881165302, 0.2036373977480378]
     assert_allclose(gas.dS_dzs(), dS_dzs_expect, rtol=1e-12)
+    
+    # Volumetric properties - should be implemented in the model only
+    assert_allclose(gas.V(), 0.029705728448677898, rtol=1e-12)
+    assert_allclose(gas.dP_dT(), 284.342003076555, rtol=1e-12)
+    assert_allclose(gas.dP_dV(), -2999107.769105018, rtol=1e-12)
+    assert_allclose(gas.d2P_dT2(), -0.009887846156943235, rtol=1e-12)
+    assert_allclose(gas.d2P_dV2(), 197784608.40171462, rtol=1e-12)
+    assert_allclose(gas.d2P_dTdV(), -9721.251806049266, rtol=1e-12)
+    
+    # Volumetric properties - base class
+    assert_allclose(gas.Z(), 0.9801692315172096, rtol=1e-12)
+    assert_allclose(gas.rho(), 33.66354074527018, rtol=1e-12)
+    assert_allclose(gas.dT_dP(), 0.0035168915924488455, rtol=1e-12)
+    assert_allclose(gas.dV_dT(), 9.480886482495666e-05, rtol=1e-12)
+    assert_allclose(gas.dV_dP(), -3.334324995925092e-07, rtol=1e-12)
+    assert_allclose(gas.dT_dV(), 10547.536898013452, rtol=1e-12)
+    assert_allclose(gas.d2V_dP2(), 7.331895665172319e-12, rtol=1e-12)
+    assert_allclose(gas.d2T_dP2(), 4.301091137792481e-10, rtol=1e-12)
+    assert_allclose(gas.d2T_dV2(), 29492.455975795572, rtol=1e-12)
+    assert_allclose(gas.d2V_dT2(), -2.513377829277684e-08, rtol=1e-12)
+    assert_allclose(gas.d2V_dPdT(), -1.003984034506695e-09, rtol=1e-12)
+    assert_allclose(gas.d2T_dPdV(), 0.12152750389888099, rtol=1e-12)
+    # aliases
+    assert_allclose(gas.d2V_dTdP(), gas.d2V_dPdT())
+    assert_allclose(gas.d2T_dPdV(), gas.d2T_dVdP())
+    assert_allclose(gas.d2P_dVdT(), gas.d2P_dTdV())
+    # Compressibility factor
+    assert_allclose(gas.dZ_dT(), 0.00017082651132311415, rtol=1e-12)
+    assert_allclose(gas.dZ_dP(), -2.2171553318823896e-07, rtol=1e-12)
+    
+    # Derived properties
+    assert_allclose(gas.PIP(), 0.9434309912868786, rtol=1e-12)
+    assert_allclose(gas.kappa(), 1.1224518535829717e-05, rtol=1e-12)
+    assert_allclose(gas.beta(), 0.0031916020840477414, rtol=1e-12)
+    assert_allclose(gas.Joule_Thomson(), 2.9206299207786268e-05, rtol=1e-12)
+    assert_allclose(gas.speed_of_sound(), 55.867443841933685, rtol=1e-12)
+    
+    # Molar density
+    assert_allclose(gas.dP_drho(), 2646.5035764210666, rtol=1e-12)
+    assert_allclose(gas.drho_dP(), 0.00037785703707694405, rtol=1e-12)
+    assert_allclose(gas.d2P_drho2(), -3.2210736519363414, rtol=1e-12)
+    assert_allclose(gas.d2rho_dP2(), 1.737733604711968e-10, rtol=1e-12)
+    assert_allclose(gas.dT_drho(), -9.30746617730105, rtol=1e-12)
+    assert_allclose(gas.d2T_drho2(), 0.5759354067635106, rtol=1e-12)
+    assert_allclose(gas.drho_dT(), -0.10744062679903038, rtol=1e-12)
+    assert_allclose(gas.d2rho_dT2(), 0.0007142979083006338, rtol=1e-12)
+    assert_allclose(gas.d2P_dTdrho(), 8.578327173510202, rtol=1e-12)
+    assert_allclose(gas.d2T_dPdrho(), -0.00010723955204780491, rtol=1e-12)
+    assert_allclose(gas.d2rho_dPdT(), -1.274189795242708e-06, rtol=1e-12)

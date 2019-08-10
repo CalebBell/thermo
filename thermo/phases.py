@@ -300,7 +300,6 @@ class Phase(object):
         return -self.d2P_dT2()*inverse_dP_dT3
     
     def d2T_dV2(self):
-        # Wrong
         dP_dT = self.dP_dT()
         dP_dV = self.dP_dV()
         d2P_dTdV = self.d2P_dTdV()
@@ -348,7 +347,18 @@ class Phase(object):
         dP_dV = self.dP_dV()
         d2P_dT2 = self.d2P_dT2()
         return -(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*inverse_dP_dT3
-    
+
+    # A few aliases
+    def d2V_dTdP(self):
+        return self.d2V_dPdT()
+
+    def d2P_dVdT(self):
+        return self.d2P_dTdV()
+
+    def d2T_dVdP(self):
+        return self.d2T_dPdV()
+
+    # Derived properties    
     def PIP(self):
         return phase_identification_parameter(self.V(), self.dP_dT(), self.dP_dV(), 
                                               self.d2P_dV2(), self.d2P_dTdV())
@@ -364,25 +374,17 @@ class Phase(object):
     
     def speed_of_sound(self):
         return speed_of_sound(self.V(), self.dP_dV(), self.Cp(), self.Cv())
-        
+    
+    ### Compressibility factor derivatives
     def dZ_dT(self):
         T_inv = 1.0/self.T
         return self.P*R_inv*T_inv*(self.dV_dT() - self.V()*T_inv)
 
     def dZ_dP(self):
         return 1.0/(self.T*R)*(self.V() + self.P*self.dV_dP())
+    # Could add more
 
     ### Derivatives in the molar density basis
-
-    def d2V_dTdP(self):
-        return self.d2V_dPdT()
-
-    def d2P_dVdT(self):
-        return self.d2P_dTdV()
-
-    def d2T_dVdP(self):
-        return self.d2T_dPdV()
-
     def dP_drho(self):
         V = self.V()
         return -V*V*self.dP_dV()
@@ -433,6 +435,38 @@ class Phase(object):
         dV_dP = self.dV_dP()
         V = self.V()
         return -d2V_dPdT/V**2 + 2*dV_dT*dV_dP/V**3
+    
+    # Idea gas heat capacity
+    def Cpigs_pure(self):
+        try:
+            return self._Cps
+        except AttributeError:
+            pass
+        T = self.T
+        self._Cps = [i.T_dependent_property(T) for i in self.HeatCapacityGases]
+        return self._Cps
+    
+    def Cpig_integrals_pure(self):
+#        try:
+#            return self._Cpig_integrals_pure
+#        except AttributeError:
+#            pass
+        T, T_REF_IG, HeatCapacityGases = self.T, self.T_REF_IG, self.HeatCapacityGases
+        self._Cpig_integrals_pure = [obj.T_dependent_property_integral(T_REF_IG, T)
+                                   for obj in HeatCapacityGases]
+        return self._Cpig_integrals_pure
+
+    def Cpig_integrals_over_T_pure(self):
+        try:
+            return self._Cpig_integrals_over_T_pure
+        except AttributeError:
+            pass
+        
+        T, T_REF_IG, HeatCapacityGases = self.T, self.T_REF_IG, self.HeatCapacityGases
+        self._Cpig_integrals_over_T_pure = [obj.T_dependent_property_integral_over_T(T_REF_IG, T)
+                                   for obj in HeatCapacityGases]
+        return self._Cpig_integrals_over_T_pure
+
 
 
 class IdealGas(Phase):
@@ -625,7 +659,7 @@ class EOSGas(Phase):
         except AttributeError:
             pass
         H = self.H_dep() 
-        for zi, Cp_int in zip(self.zs, self.Cp_integrals_pure()):
+        for zi, Cp_int in zip(self.zs, self.Cpig_integrals_pure()):
             H += zi*Cp_int
         self._H = H
         return H
@@ -635,7 +669,7 @@ class EOSGas(Phase):
             return self._S
         except AttributeError:
             pass
-        Cp_integrals_over_T_pure = self.Cp_integrals_over_T_pure()
+        Cpig_integrals_over_T_pure = self.Cpig_integrals_over_T_pure()
         log_zs = self.log_zs()
         T, P, zs, cmps = self.T, self.P, self.zs, self.cmps
         P_REF_IG_INV = self.P_REF_IG_INV
@@ -644,47 +678,18 @@ class EOSGas(Phase):
         S -= R*log(P*P_REF_IG_INV)
         
         for i in cmps:
-            S += zs[i]*Cp_integrals_over_T_pure[i]
+            S += zs[i]*Cpig_integrals_over_T_pure[i]
         S += self.S_dep()
         self._S = S
         return S
     
-    def Cps_pure(self):
-        try:
-            return self._Cps
-        except AttributeError:
-            pass
-        T = self.T
-        self._Cps = [i.T_dependent_property(T) for i in self.HeatCapacityGases]
-        return self._Cps
-    
-    def Cp_integrals_pure(self):
-        try:
-            return self._Cp_integrals_pure
-        except AttributeError:
-            pass
-        T, T_REF_IG, HeatCapacityGases = self.T, self.T_REF_IG, self.HeatCapacityGases
-        self._Cp_integrals_pure = [obj.T_dependent_property_integral(T_REF_IG, T)
-                                   for obj in HeatCapacityGases]
-        return self._Cp_integrals_pure
-
-    def Cp_integrals_over_T_pure(self):
-        try:
-            return self._Cp_integrals_over_T_pure
-        except AttributeError:
-            pass
-        
-        T, T_REF_IG, HeatCapacityGases = self.T, self.T_REF_IG, self.HeatCapacityGases
-        self._Cp_integrals_over_T_pure = [obj.T_dependent_property_integral_over_T(T_REF_IG, T)
-                                   for obj in HeatCapacityGases]
-        return self._Cp_integrals_over_T_pure
         
 
     def Cp(self):
-        Cps_pure = self.Cps_pure()
+        Cpigs_pure = self.Cpigs_pure()
         Cp, zs = 0.0, self.zs
         for i in self.cmps:
-            Cp += zs[i]*Cps_pure[i]
+            Cp += zs[i]*Cpigs_pure[i]
         return Cp + self.Cp_dep()
 
     def dH_dT(self):
@@ -706,8 +711,8 @@ class EOSGas(Phase):
             dH_dep_dzs = self.eos_mix.dH_dep_dzs(eos_mix.Z_g, eos_mix.zs)
         except AttributeError:
             dH_dep_dzs = self.eos_mix.dH_dep_dzs(eos_mix.Z_l, eos_mix.zs)
-        Cp_integrals_pure = self.Cp_integrals_pure()
-        self._dH_dzs = [dH_dep_dzs[i] + Cp_integrals_pure[i] for i in self.cmps]
+        Cpig_integrals_pure = self.Cpig_integrals_pure()
+        self._dH_dzs = [dH_dep_dzs[i] + Cpig_integrals_pure[i] for i in self.cmps]
         return self._dH_dzs
 
     def dS_dT(self):
@@ -746,7 +751,7 @@ class EOSGas(Phase):
         cmps, eos_mix = self.cmps, self.eos_mix
     
         log_zs = self.log_zs()
-        integrals = self.Cp_integrals_over_T_pure()
+        integrals = self.Cpig_integrals_over_T_pure()
 
         try:
             dS_dep_dzs = self.eos_mix.dS_dep_dzs(eos_mix.Z_g, eos_mix.zs)
@@ -780,6 +785,7 @@ except:
     exec(build_EOSLiquid())
 
 class GibbsExcessLiquid(Phase):
+    P_DEPENDENT_H_LIQ = True
     def __init__(self, VaporPressures, VolumeLiquids=None, 
                  GibbsExcessModel=IdealSolution(), 
                  eos_pure_instances=None,
@@ -937,6 +943,16 @@ class GibbsExcessLiquid(Phase):
         self._dPsats_dT = dPsats_dT = [VaporPressure.T_dependent_property_derivative(T=T)
                      for VaporPressure in self.VaporPressures]
         return dPsats_dT
+    
+    def Hvaps(self):
+        try:
+            return self._Hvaps
+        except AttributeError:
+            pass
+        T, EnthalpyVaporizations = self.T, self.EnthalpyVaporizations
+        
+        self._Hvaps = [EnthalpyVaporizations[i](T) for i in self.cmps] 
+        return self._Hvaps
 
     def Poyntings(self):
         try:
@@ -1228,18 +1244,46 @@ class GibbsExcessLiquid(Phase):
         T = self.T
         P = self.P
         Psats = self.Psats()
+        T_REF_IG = self.T_REF_IG
+        P_DEPENDENT_H_LIQ = self.P_DEPENDENT_H_LIQ
+
+        try:
+            Cpig_integrals_pure = self._Cpig_integrals_pure
+        except AttributeError:
+            Cpig_integrals_pure = self.Cpig_integrals_pure()
+            
+        Hvaps = self.Hvaps()
+        VolumeLiquids = self.VolumeLiquids
         for i in self.cmps:
             # No further contribution needed
-            Hg298_to_T = self.HeatCapacityGases[i].T_dependent_property_integral(self.T_REF_IG, T)
-            Hvap = self.EnthalpyVaporizations[i](T) # Do the transition at the temperature of the liquid
-            if Hvap is None:
-                Hvap = 0 # Handle the case of a package predicting a transition past the Tc
-            H_i = Hg298_to_T - Hvap 
-            if self.P_DEPENDENT_H_LIQ:
-                Vl = self.VolumeLiquids[i](T, P)
+            Hg298_to_T = Cpig_integrals_pure[i]
+            H_i = Hg298_to_T - Hvaps[i]
+            if P_DEPENDENT_H_LIQ:
+                Vl = VolumeLiquids[i](T, P)
                 if Vl is None:
                     # Handle an inability to get a liquid volume by taking
                     # one at the boiling point (and system P)
-                    Vl = self.VolumeLiquids[i](self.Tbs[i], P)
+                    Vl = VolumeLiquids[i](self.Tbs[i], P)
                 H_i += (P - Psats[i])*Vl
             H += self.zs[i]*(H_i) 
+            
+    def S(self):
+        # Untested
+        T_REF_IG = self.T_REF_IG
+        S = 0.0
+        T, P, zs, cmps = self.T, self.P, self.zs, self.cmps
+        log_zs = self.log_zs()
+        for i in cmps:
+            S -= zs[i]*log_zs[i]
+        S *= R
+        Psats = self.Psats()
+        T_inv = 1.0/T
+        for i in self.cmps:
+            Sg298_to_T = self.HeatCapacityGases[i].T_dependent_property_integral_over_T(T_REF_IG, T)
+            Hvap = self.EnthalpyVaporizations[i](T)
+            if Hvap is None:
+                Hvap = 0.0 # Handle the case of a package predicting a transition past the Tc
+            Svap = -Hvap*T_inv # Do the transition at the temperature of the liquid
+            S_P = -R*log(Psats[i]/101325.)
+            S += zs[i]*(Sg298_to_T + Svap + S_P)
+        return S
