@@ -632,22 +632,24 @@ class Phase(object):
                 Tmin = Tmins[i]
                 if T < Tmin:
                     x1 = Cpgs_data[2][i] - Cpgs_data[1][i]*Tmin
-                    S = (Cpgs_data[2][i]*T + x1*log(T))
-                if (Tmin <= T <= Cpgs_data[3][i]):
+                    S = (Cpgs_data[1][i]*T + x1*log(T))
+                elif (Tmin <= T <= Cpgs_data[3][i]):
                     x1 = Cpgs_data[2][i] - Cpgs_data[1][i]*Tmin
-                    S = (Cpgs_data[2][i]*Tmin + x1*log(Tmin))
+                    S = (Cpgs_data[1][i]*Tmin + x1*log(Tmin))
+                    
                     S += (horner_log(T_int_T_coeffs[i], Cpgs_data[6][i], T) 
                                 - Cpgs_data[9][i])
                 else:        
                     x1 = Cpgs_data[2][i] - Cpgs_data[1][i]*Tmin
-                    S = (Cpgs_data[2][i]*Tmin + x1*log(Tmin))
+                    S = (Cpgs_data[1][i]*Tmin + x1*log(Tmin))
             
                     S += (Cpgs_data[10][i] - Cpgs_data[9][i])
             
-                    x2 = Cpgs_data[5][i] -Cpgs_data[3][i]*Cpgs_data[4][i]
+                    x2 = Cpgs_data[5][i] - Cpgs_data[3][i]*Cpgs_data[4][i]
                     S += -Cpgs_data[4][i]*(Cpgs_data[3][i] - T) + x2*log(T) - x2*log(Cpgs_data[3][i])
                     
                 Cpig_integrals_over_T_pure.append(S - Cpgs_data[15][i])
+            return Cpig_integrals_over_T_pure
 
                 
                 
