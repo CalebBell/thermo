@@ -194,6 +194,43 @@ def test_EOSGas_phis():
     assert_allclose(gas.d2P_dTdrho(), 8.578327173510202, rtol=1e-12)
     assert_allclose(gas.d2T_dPdrho(), -0.00010723955204780491, rtol=1e-12)
     assert_allclose(gas.d2rho_dPdT(), -1.274189795242708e-06, rtol=1e-12)
+    
+    # ideal gas heat capacity functions
+    # Special speed-heavy functions are implemented, so tests are good.
+    Ts = [25, 75, 200, 500, 1000, 2000]
+    Cps_expect = [[37.53028992502948, 33.55265104423777, 32.07857860033835],
+     [44.0347123821455, 39.474417151512384, 35.173569709777134],
+     [60.29576852493555, 54.27883241969893, 39.860887753971014],
+     [107.85718893790086, 80.57497980236016, 59.60897906926993],
+     [162.03590079225324, 95.5180597032743, 89.53718866129503],
+     [237.98320721946826, 112.42634052893189, 133.3590913320685]]
+    integrals_expect = [[-15137.21482142469, -13572.00184194529, -10509.691719443745],
+     [-13098.089763745316, -11746.325137051535, -8829.670918204232],
+     [-6577.434707052751, -5886.747038850828, -4113.99860325655],
+     [18460.58282142302, 14891.995003616028, 10416.929377837707],
+     [87563.90176282992, 59654.61279312356, 48496.162006301776],
+     [287573.4557686907, 163626.81290922666, 159944.30200298352]]
+    integrals_over_T_expect = [[-120.61307738389117, -108.13985498443918, -89.92401492070823],
+     [-76.45033643889906, -68.60959663060717, -53.31873830843409],
+     [-26.568337973571715, -23.79988041589195, -16.67690619528966],
+     [46.53789612349658, 37.80485397009687, 26.33993249405455],
+     [140.166017825918, 99.2695080821947, 77.93248623842783],
+     [275.7853907156281, 170.66593550131307, 153.44181050202292]]
+    
+    integrals_calc = []
+    integrals_over_T_calc = []
+    Cps_calc = []
+    for i, T in enumerate(Ts):
+        gas2 = gas.to_TP_zs(T=T, P=P, zs=zs)
+        assert gas2.Cpgs_locked
+        Cps_calc.append(gas2.Cpigs_pure())
+        integrals_calc.append(gas2.Cpig_integrals_pure())
+        integrals_over_T_calc.append(gas2.Cpig_integrals_over_T_pure())
+    
+    assert_allclose(Cps_expect, Cps_calc)
+    assert_allclose(integrals_expect, integrals_calc)
+    assert_allclose(integrals_over_T_expect, integrals_over_T_calc)
+
 
 def test_chemical_potential():
     T, P = 200.0, 1e5

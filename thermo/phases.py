@@ -514,10 +514,10 @@ class Phase(object):
 
     
     def Cpigs_pure(self):
-        try:
-            return self._Cps
-        except AttributeError:
-            pass
+#        try:
+#            return self._Cps
+#        except AttributeError:
+#            pass
         if self.Cpgs_locked:
             self._Cps = Cps = []
             T, Cpgs_data, cmps = self.T, self.Cpgs_data, self.cmps
@@ -586,7 +586,7 @@ class Phase(object):
                     
                     
                     
-                # ATTEMPT AT FAST HERE
+                # ATTEMPT AT FAST HERE (NOW WORKING)
                 if T < Tmins[i]:
                     x1 = Cpgs_data[2][i] - Cpgs_data[1][i]*Tmins[i]
                     H = T*(0.5*Cpgs_data[1][i]*T + x1)
