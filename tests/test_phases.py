@@ -194,3 +194,36 @@ def test_EOSGas_phis():
     assert_allclose(gas.d2P_dTdrho(), 8.578327173510202, rtol=1e-12)
     assert_allclose(gas.d2T_dPdrho(), -0.00010723955204780491, rtol=1e-12)
     assert_allclose(gas.d2rho_dPdT(), -1.274189795242708e-06, rtol=1e-12)
+
+def test_chemical_potential():
+    T, P = 200.0, 1e5
+    zs = [0.229, 0.175, 0.596]
+    
+    eos_kwargs = {'Pcs': [4700000.0, 5330000.0, 8084000.0],
+     'Tcs': [508.1, 536.2, 512.5],
+     'omegas': [0.309, 0.21600000000000003, 0.5589999999999999],
+    }
+    
+    HeatCapacityGases = [HeatCapacityGas(best_fit=(200.0, 1000.0, [-1.3320002425347943e-21, 6.4063345232664645e-18, -1.251025808150141e-14, 1.2265314167534311e-11, -5.535306305509636e-09, -4.32538332013644e-08, 0.0010438724775716248, -0.19650919978971002, 63.84239495676709])),
+     HeatCapacityGas(best_fit=(200.0, 1000.0, [1.5389278550737367e-21, -8.289631533963465e-18, 1.9149760160518977e-14, -2.470836671137373e-11, 1.9355882067011222e-08, -9.265600540761629e-06, 0.0024825718663005762, -0.21617464276832307, 48.149539665907696])),
+     HeatCapacityGas(best_fit=(50.0, 1000.0, [2.3511458696647882e-21, -9.223721411371584e-18, 1.3574178156001128e-14, -8.311274917169928e-12, 4.601738891380102e-10, 1.78316202142183e-06, -0.0007052056417063217, 0.13263597297874355, 28.44324970462924]))]
+    
+    Hfs = [-216070.0, -103510.0, -200700.0]
+    Sfs = [-216.5, -110.0, -129.8]
+    Gfs = [-151520.525, -70713.5, -162000.13]
+    
+    liquid = EOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, Hfs=Hfs,
+                       Sfs=Sfs, Gfs=Gfs, T=T, P=P, zs=zs)
+    mu_r_exp = [-188705.67813450593, -97907.78027049133, -193308.17904485852]
+    mu_r_calc = liquid.chemical_potential()
+    # Will likely break when implementing an analytical solution
+    assert_allclose(mu_r_exp, mu_r_calc, rtol=1e-5)
+    
+    # Random gamma example
+    gammas_expect = [1.8877873731435573, 1.52276935445383, 1.5173639948878495]
+    assert_allclose(liquid.gammas(), gammas_expect, rtol=1e-12)
+    
+    gammas_parent = super(EOSLiquid, liquid).gammas()
+    assert_allclose(gammas_parent, gammas_expect, rtol=1e-12)
+    
+    

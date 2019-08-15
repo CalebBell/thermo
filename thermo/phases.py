@@ -24,10 +24,11 @@ from __future__ import division
 __all__ = ['GibbsExcessLiquid', 'Phase', 'EOSLiquid', 'EOSGas', 'IdealGas']
 
 from fluids.constants import R, R_inv
-from fluids.numerics import horner, horner_and_der
+from fluids.numerics import horner, horner_and_der, horner_log, jacobian, best_fit_integral_value
 from thermo.utils import (log, exp, Cp_minus_Cv, phase_identification_parameter,
                           isothermal_compressibility, isobaric_expansion,
-                          Joule_Thomson, speed_of_sound, dxs_to_dns)
+                          Joule_Thomson, speed_of_sound, dxs_to_dns,
+                          normalize)
 from thermo.activity import IdealSolution
 
 
@@ -56,6 +57,11 @@ class Phase(object):
     
     P_MAX_FIXED = 1e9
     P_MIN_FIXED = 1e-3
+
+    Psats_data = None
+    Cpgs_data = None
+    Psats_locked = False 
+    Cpgs_locked = False
     
     def fugacities(self):
         P = self.P
@@ -180,7 +186,15 @@ class Phase(object):
             return self._log_zs
         except AttributeError:
             pass
-        self._log_zs = [log(i) for i in self.zs]
+        try:
+            self._log_zs = [log(zi) for zi in self.zs]
+        except ValueError:
+            self._log_zs = _log_zs = []
+            for zi in self.zs:
+                try:
+                    _log_zs.append(log(zi))
+                except ValueError:
+                    _log_zs.append(-690.7755278982137) # log(1e-300)
         return self._log_zs
 
     def G(self):
@@ -238,19 +252,19 @@ class Phase(object):
 
 
     def H_reactive(self):
-        H = self.H
+        H = self.H()
         for zi, Hf in zip(self.zs, self.Hfs):
             H += zi*Hf
         return H
 
     def S_reactive(self):
-        S = self.S
+        S = self.S()
         for zi, Sf in zip(self.zs, self.Sfs):
             S += zi*Sf
         return S
     
     def G_reactive(self):
-        G = self.H_reactive ()- self.T*self.S_reactive()
+        G = self.H_reactive() - self.T*self.S_reactive()
         return G
     
     def U_reactive(self):
@@ -267,6 +281,40 @@ class Phase(object):
         Cp = self.Cp()
         return Cp - Cp_m_Cv
     
+
+    def chemical_potential(self):
+        # CORRECT DO NOT CHANGE
+        # TODO analytical implementation
+        def to_diff(ns):
+            tot = sum(ns)
+            zs = normalize(ns)
+            return tot*self.to_TP_zs(self.T, self.P, zs).G_reactive()
+        return jacobian(to_diff, self.zs)
+    
+    def activities(self):
+        # CORRECT DO NOT CHANGE
+        fugacities = self.fugacities()
+        fugacities_std = self.fugacities_std() # TODO implement
+        return [fugacities[i]/fugacities_std[i] for i in self.cmps]
+    
+    def gammas(self):
+        # For a good discussion, see 
+        # Thermodynamics: Fundamentals for Applications, J. P. O'Connell, J. M. Haile
+        # There is no one single definition for gamma but it is believed this is
+        # the most generally used one for EOSs; and activity methods
+        # override this
+        phis = self.phis()
+        phis_pure = []
+        T, P, zs, cmps, N = self.T, self.P, self.zs, self.cmps, self.N
+        for i in cmps:
+            zeros = [0.0]*N
+            zeros[i] = 1.0
+            phi = self.to_TP_zs(T=T, P=P, zs=zeros).phis()[i]
+            phis_pure.append(phi)
+        return [phis[i]/phis_pure[i] for i in cmps]
+        
+        
+
     def Cp_Cv_ratio(self):
         return self.Cp()/self.Cv()
     
@@ -437,11 +485,56 @@ class Phase(object):
         return -d2V_dPdT/V**2 + 2*dV_dT*dV_dP/V**3
     
     # Idea gas heat capacity
+    
+    def setup_Cpigs(self):
+        HeatCapacityGases = self.HeatCapacityGases
+        self.Cpgs_locked = all(i.locked for i in HeatCapacityGases) if HeatCapacityGases is not None else False
+        if self.Cpgs_locked:
+            T_REF_IG = self.T_REF_IG
+            self.Cpgs_data = ([i.best_fit_Tmin for i in HeatCapacityGases],
+                              [i.best_fit_Tmin_slope for i in HeatCapacityGases],
+                              [i.best_fit_Tmin_value for i in HeatCapacityGases],
+                              [i.best_fit_Tmax for i in HeatCapacityGases],
+                              [i.best_fit_Tmax_slope for i in HeatCapacityGases],
+                              [i.best_fit_Tmax_value for i in HeatCapacityGases],
+                              [i.best_fit_log_coeff for i in HeatCapacityGases],
+#                              [horner(i.best_fit_int_coeffs, i.best_fit_Tmin) for i in HeatCapacityGases],
+                              [horner(i.best_fit_int_coeffs, i.best_fit_Tmin) - i.best_fit_Tmin*(0.5*i.best_fit_Tmin_slope*i.best_fit_Tmin + i.best_fit_Tmin_value - i.best_fit_Tmin_slope*i.best_fit_Tmin) for i in HeatCapacityGases],
+#                              [horner(i.best_fit_int_coeffs, i.best_fit_Tmax) for i in HeatCapacityGases],
+                              [horner(i.best_fit_int_coeffs, i.best_fit_Tmax) - horner(i.best_fit_int_coeffs, i.best_fit_Tmin) + i.best_fit_Tmin*(0.5*i.best_fit_Tmin_slope*i.best_fit_Tmin + i.best_fit_Tmin_value - i.best_fit_Tmin_slope*i.best_fit_Tmin) for i in HeatCapacityGases],
+                              [horner_log(i.best_fit_T_int_T_coeffs, i.best_fit_log_coeff, i.best_fit_Tmin) for i in HeatCapacityGases],
+                              [horner_log(i.best_fit_T_int_T_coeffs, i.best_fit_log_coeff, i.best_fit_Tmax) for i in HeatCapacityGases],
+                              [best_fit_integral_value(T_REF_IG, i.best_fit_int_coeffs, i.best_fit_Tmin, 
+                                                       i.best_fit_Tmax, i.best_fit_Tmin_value,
+                                                       i.best_fit_Tmax_value, i.best_fit_Tmin_slope,
+                                                       i.best_fit_Tmax_slope) for i in HeatCapacityGases],
+                              [i.best_fit_coeffs for i in HeatCapacityGases],
+                              [i.best_fit_int_coeffs for i in HeatCapacityGases],
+                              [i.best_fit_T_int_T_coeffs for i in HeatCapacityGases])
+
+    
     def Cpigs_pure(self):
         try:
             return self._Cps
         except AttributeError:
             pass
+        if self.Cpgs_locked:
+            self._Cps = Cps = []
+            T, Cpgs_data, cmps = self.T, self.Cpgs_data, self.cmps
+            Tmins, Tmaxs, coeffs = Cpgs_data[0], Cpgs_data[3], Cpgs_data[12]
+            for i in cmps:
+                if T < Tmins[i]:
+                    Cp = (T -  Tmins[i])*Cpgs_data[1][i] + Cpgs_data[2][i]
+                elif T > Tmaxs[i]:
+                    Cp = (T - Tmaxs[i])*Cpgs_data[4][i] + Cpgs_data[5][i]
+                else:
+                    Cp = 0.0
+                    for c in coeffs[i]:
+                        Cp = Cp*T + c
+                Cps.append(Cp)
+            return Cps
+                
+        
         T = self.T
         self._Cps = [i.T_dependent_property(T) for i in self.HeatCapacityGases]
         return self._Cps
@@ -451,16 +544,86 @@ class Phase(object):
 #            return self._Cpig_integrals_pure
 #        except AttributeError:
 #            pass
+        if self.Cpgs_locked:
+            self._Cpig_integrals_pure = Cpig_integrals_pure = []
+            T, Cpgs_data, cmps = self.T, self.Cpgs_data, self.cmps
+            Tmins, Tmaxes, int_coeffs = Cpgs_data[0], Cpgs_data[3], Cpgs_data[13]
+            for i in cmps:
+                # If indeed everything is working here, need to optimize to decide what to store
+                # Try to save lookups to avoid cache misses
+                # Instead of storing horner Tmin and Tmax, store -:
+                # tot(Tmin) - Cpgs_data[7][i]
+                # and tot1 + tot for the high T
+                # Should save quite a bit of lookups! est. .12 go to .09
+#                Tmin = Tmins[i]
+#                if T < Tmin:
+#                    x1 = Cpgs_data[2][i] - Cpgs_data[1][i]*Tmin
+#                    H = T*(0.5*Cpgs_data[1][i]*T + x1)
+#                elif (T <= Tmaxes[i]):
+#                    x1 = Cpgs_data[2][i] - Cpgs_data[1][i]*Tmin
+#                    tot = Tmin*(0.5*Cpgs_data[1][i]*Tmin + x1)
+#                    
+#                    tot1 = 0.0
+#                    for c in int_coeffs[i]:
+#                        tot1 = tot1*T + c
+#                    tot1 -= Cpgs_data[7][i]
+##                    tot1 = horner(int_coeffs[i], T) - horner(int_coeffs[i], Tmin)
+#                    H = tot + tot1
+#                else:
+#                    x1 = Cpgs_data[2][i] - Cpgs_data[1][i]*Tmin
+#                    tot = Tmin*(0.5*Cpgs_data[1][i]*Tmin + x1)
+#                    
+#                    tot1 = Cpgs_data[8][i] - Cpgs_data[7][i]
+#                    
+#                    x1 = Cpgs_data[5][i] - Cpgs_data[4][i]*Tmaxes[i]
+#                    tot2 = T*(0.5*Cpgs_data[4][i]*T + x1) - Tmaxes[i]*(0.5*Cpgs_data[4][i]*Tmaxes[i] + x1)
+#                    H = tot + tot1 + tot2
+                    
+                    
+                    
+                # ATTEMPT AT FAST HERE
+                Tmin = Tmins[i]
+                if T < Tmin:
+                    x1 = Cpgs_data[2][i] - Cpgs_data[1][i]*Tmin
+                    H = T*(0.5*Cpgs_data[1][i]*T + x1)
+                elif (T <= Tmaxes[i]):
+                    
+                    tot1 = 0.0
+                    for c in int_coeffs[i]:
+                        tot1 = tot1*T + c
+                    tot1 -= Cpgs_data[7][i]
+#                    tot1 = horner(int_coeffs[i], T) - horner(int_coeffs[i], Tmin)
+                    H = tot1
+                else:
+                    x1 = Cpgs_data[5][i] - Cpgs_data[4][i]*Tmaxes[i]
+                    tot2 = T*(0.5*Cpgs_data[4][i]*T + x1) - Tmaxes[i]*(0.5*Cpgs_data[4][i]*Tmaxes[i] + x1)
+                    H =  Cpgs_data[8][i] + tot2
+
+
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                Cpig_integrals_pure.append(H - Cpgs_data[11][i])
+            return Cpig_integrals_pure
+
+
+
         T, T_REF_IG, HeatCapacityGases = self.T, self.T_REF_IG, self.HeatCapacityGases
         self._Cpig_integrals_pure = [obj.T_dependent_property_integral(T_REF_IG, T)
                                    for obj in HeatCapacityGases]
         return self._Cpig_integrals_pure
 
     def Cpig_integrals_over_T_pure(self):
-        try:
-            return self._Cpig_integrals_over_T_pure
-        except AttributeError:
-            pass
+#        try:
+#            return self._Cpig_integrals_over_T_pure
+#        except AttributeError:
+#            pass
         
         T, T_REF_IG, HeatCapacityGases = self.T, self.T_REF_IG, self.HeatCapacityGases
         self._Cpig_integrals_over_T_pure = [obj.T_dependent_property_integral_over_T(T_REF_IG, T)
@@ -528,6 +691,7 @@ class EOSGas(Phase):
         self.Hfs = Hfs
         self.Gfs = Gfs
         self.Sfs = Sfs
+        self.setup_Cpigs()
         
         if T is not None and P is not None and zs is not None:
             self.T = T
@@ -553,6 +717,9 @@ class EOSGas(Phase):
         new.eos_kwargs = self.eos_kwargs
         
         new.HeatCapacityGases = self.HeatCapacityGases
+        new.Cpgs_data = self.Cpgs_data
+        new.Cpgs_locked = self.Cpgs_locked
+        
         new.Hfs = self.Hfs
         new.Gfs = self.Gfs
         new.Sfs = self.Sfs
@@ -583,6 +750,19 @@ class EOSGas(Phase):
             return self.eos_mix.dlnphis_dP('g')
         except:
             return self.eos_mix.dlnphis_dP('l')
+        
+        
+    def gammas(self):
+        #         liquid.phis()/np.array([i.phi_l for i in liquid.eos_mix.pures()])
+        phis = self.phis()
+        phis_pure = []
+        for i in self.eos_mix.pures():
+            try:
+                phis_pure.append(i.phi_g)
+            except AttributeError:
+                phis_pure.append(i.phi_l)
+        return [phis[i]/phis_pure[i] for i in self.cmps]
+
     
     def H_dep(self):
         try:
@@ -771,7 +951,7 @@ def build_EOSLiquid():
     source = source.replace("'l'", "'g'")
     source = source.replace("'gORIG'", "'l'")
     
-    swap_strings = ('Cp_dep', 'd2P_dT2', 'd2P_dTdV', 'd2P_dV2', 'd2T_dV2', 'd2V_dT2', 'dH_dep_dP', 'dP_dT', 'dP_dV', 'dS_dep_dP', 'dS_dep_dT', 'H_dep', 'S_dep', '.V', '.Z')
+    swap_strings = ('Cp_dep', 'd2P_dT2', 'd2P_dTdV', 'd2P_dV2', 'd2T_dV2', 'd2V_dT2', 'dH_dep_dP', 'dP_dT', 'dP_dV', 'phi', 'dS_dep_dP', 'dS_dep_dT', 'H_dep', 'S_dep', '.V', '.Z')
     for s in swap_strings:
         source = source.replace(s+'_g', 'gORIG')
         source = source.replace(s+'_l', s+'_g')
@@ -786,6 +966,8 @@ except:
 
 class GibbsExcessLiquid(Phase):
     P_DEPENDENT_H_LIQ = True
+    Psats_data = None
+    Psats_locked = False
     def __init__(self, VaporPressures, VolumeLiquids=None, 
                  GibbsExcessModel=IdealSolution(), 
                  eos_pure_instances=None,
@@ -799,13 +981,18 @@ class GibbsExcessLiquid(Phase):
                  ):
         self.VaporPressures = VaporPressures
         self.Psats_locked = all(i.locked for i in VaporPressures)
-        self.Psats_data = ([i.best_fit_Tmin for i in VaporPressures],
-                         [i.best_fit_Tmin_slope for i in VaporPressures],
-                         [i.best_fit_Tmin_value for i in VaporPressures],
-                         [i.best_fit_Tmax for i in VaporPressures],
-                         [i.best_fit_Tmax_slope for i in VaporPressures],
-                         [i.best_fit_Tmax_value for i in VaporPressures],
-                         [i.best_fit_coeffs for i in VaporPressures])
+        if self.Psats_locked:
+            self.Psats_data = ([i.best_fit_Tmin for i in VaporPressures],
+                             [i.best_fit_Tmin_slope for i in VaporPressures],
+                             [i.best_fit_Tmin_value for i in VaporPressures],
+                             [i.best_fit_Tmax for i in VaporPressures],
+                             [i.best_fit_Tmax_slope for i in VaporPressures],
+                             [i.best_fit_Tmax_value for i in VaporPressures],
+                             [i.best_fit_coeffs for i in VaporPressures])
+        self.setup_Cpigs()
+
+
+            # horner_log takes the log of T - once calculated can be
 
         self.VolumeLiquids = VolumeLiquids
         self.GibbsExcessModel = GibbsExcessModel
@@ -850,6 +1037,9 @@ class GibbsExcessLiquid(Phase):
         new.Psats_locked = self.Psats_locked
         new.Psats_data = self.Psats_data
         
+        new.Cpgs_locked = self.Cpgs_locked
+        new.Cpgs_data = self.Cpgs_data
+        
         new.use_phis_sat = self.use_phis_sat
         new.use_Poynting = self.use_Poynting
 
@@ -870,10 +1060,10 @@ class GibbsExcessLiquid(Phase):
         
         
     def Psats(self):
-        try:
-            return self._Psats
-        except AttributeError:
-            pass
+#        try:
+#            return self._Psats
+#        except AttributeError:
+#            pass
         T, cmps = self.T, self.cmps
         # Need to reset the method because for the T bounded solver,
         # will normally get a different than prefered method as it starts
@@ -949,10 +1139,13 @@ class GibbsExcessLiquid(Phase):
             return self._Hvaps
         except AttributeError:
             pass
-        T, EnthalpyVaporizations = self.T, self.EnthalpyVaporizations
+        T, EnthalpyVaporizations, cmps = self.T, self.EnthalpyVaporizations, self.cmps
         
-        self._Hvaps = [EnthalpyVaporizations[i](T) for i in self.cmps] 
-        return self._Hvaps
+        self._Hvaps = Hvaps = [EnthalpyVaporizations[i](T) for i in cmps] 
+        for i in cmps:
+            if Hvaps[i] is None:
+                Hvaps[i] = 0.0
+        return Hvaps
 
     def Poyntings(self):
         try:
@@ -1239,6 +1432,10 @@ class GibbsExcessLiquid(Phase):
         return self.GibbsExcessModel.gammas()
     
     def H(self):
+        try:
+            return self._H
+        except AttributeError:
+            pass
         # Untested
         H = 0
         T = self.T
@@ -1260,14 +1457,20 @@ class GibbsExcessLiquid(Phase):
             H_i = Hg298_to_T - Hvaps[i]
             if P_DEPENDENT_H_LIQ:
                 Vl = VolumeLiquids[i](T, P)
-                if Vl is None:
-                    # Handle an inability to get a liquid volume by taking
-                    # one at the boiling point (and system P)
-                    Vl = VolumeLiquids[i](self.Tbs[i], P)
+#                if Vl is None:
+#                    # Handle an inability to get a liquid volume by taking
+#                    # one at the boiling point (and system P)
+#                    Vl = VolumeLiquids[i](self.Tbs[i], P)
                 H_i += (P - Psats[i])*Vl
             H += self.zs[i]*(H_i) 
+        self._H = H
+        return H
             
     def S(self):
+        try:
+            return self._S
+        except AttributeError:
+            pass
         # Untested
         T_REF_IG = self.T_REF_IG
         S = 0.0
@@ -1286,4 +1489,5 @@ class GibbsExcessLiquid(Phase):
             Svap = -Hvap*T_inv # Do the transition at the temperature of the liquid
             S_P = -R*log(Psats[i]/101325.)
             S += zs[i]*(Sg298_to_T + Svap + S_P)
+        self._S = S
         return S

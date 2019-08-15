@@ -23,8 +23,10 @@ SOFTWARE.'''
 from __future__ import division
 __all__ = ['sequential_substitution_2P', 'bubble_T_Michelsen_Mollerup',
            'minimize_gibbs_2P_transformed', 'sequential_substitution_Mehra_2P',
-           'nonlin_2P', 'sequential_substitution_NP']
+           'nonlin_2P', 'sequential_substitution_NP',
+           'minimize_gibbs_NP_transformed']
 
+from fluids.constants import R, R_inv
 from thermo.utils import exp, log, copysign, normalize
 from fluids.numerics import UnconvergedError, trunc_exp
 from thermo.activity import flash_inner_loop, Rachford_Rice_solutionN, Rachford_Rice_flash_error, Rachford_Rice_solution2
@@ -39,6 +41,8 @@ def sequential_substitution_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
         V_over_F = 0.5
     else:
         V_over_F = V_over_F_guess
+        
+    cmps = range(len(zs))
     
     for iteration in range(maxiter):
         g = gas_phase.to_TP_zs(T=T, P=P, zs=ys)
@@ -47,7 +51,7 @@ def sequential_substitution_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
         lnphis_g = g.lnphis()
         lnphis_l = l.lnphis()
 
-        Ks = [exp(l - g) for l, g in zip(lnphis_l, lnphis_g)] # K_value(phi_l=l, phi_g=g)
+        Ks = [exp(lnphis_l[i] - lnphis_g[i]) for i in cmps] # K_value(phi_l=l, phi_g=g)
         V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks, guess=V_over_F)
         
         # Check for negative fractions - normalize only if needed
@@ -73,7 +77,6 @@ def sequential_substitution_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
             # Could divide by the old Ks as well.
             err_i = Ki*xi/yi - 1.0
             err += err_i*err_i
-
         # Accept the new compositions
         xs, ys = xs_new, ys_new
         
@@ -426,6 +429,83 @@ def minimize_gibbs_2P_transformed(T, P, zs, xs_guess, ys_guess, liquid_phase,
     ans = minimize(G, flows_v)
     return ans
     
+
+def minimize_gibbs_NP_transformed(T, P, zs, compositions_guesses, phases,
+                                  betas, tol=1E-13,
+                                  method='L-BFGS-B', opt_kwargs=None):
+    if opt_kwargs is None:
+        opt_kwargs = {}
+    N = len(zs)
+    cmps = range(N)
+    phase_count = len(phases)
+    phase_iter = range(phase_count)
+    RT_inv = 1.0/(R*T)
+    
+    # Only exist for the first n phases
+    # Do not multiply by zs - we are already multiplying by a composition
+    flows_guess = [compositions_guesses[j][i]*betas[j] for j in range(phase_count - 1) for i in cmps]
+    # Convert the flow guesses to the basis used
+    remaining = zs
+    flows_guess_basis = []
+    for j in range(phase_count-1):
+        phase_guess = flows_guess[j*N:j*N+N]
+        flows_guess_basis.extend([-log((remaining[i]-phase_guess[i])/(phase_guess[i]-0.0)) for i in cmps])
+        remaining = [remaining[i] - phase_guess[i] for i in cmps]
+
+    global min_G, iterations
+    min_G = 1e100
+    iterations = 0
+    info = []
+    def G(flows):
+        global min_G, iterations
+        try:
+            flows = flows.tolist()
+        except:
+            pass
+        iterations += 1
+        iter_flows = []
+        iter_comps = []
+        iter_betas = []
+        iter_phases = []
+        
+        remaining = zs
+        
+        for j in phase_iter:
+            v = flows[j*N:j*N+N]
+            
+            # Mole flows of phase0/vapor
+            if j == phase_count - 1:
+                vs = remaining
+            else:
+                vs = [(0.0 + (remaining[i] - 0.0)/(1.0 + trunc_exp(-v[i]))) for i in cmps]
+            vs_sum = sum(vs)
+            vs_sum_inv = 1.0/vs_sum
+            ys = [vs[i]*vs_sum_inv for i in cmps]
+            ys = normalize(ys)
+            iter_flows.append(vs)
+            iter_comps.append(ys)
+            iter_betas.append(vs_sum) # Would be divided by feed but feed is zs = 1
+    
+            remaining = [remaining[i] - vs[i] for i in cmps]
+        G = 0.0
+        for j in phase_iter:
+            phase = phases[j].to_TP_zs(T=T, P=P, zs=iter_comps[j])
+            iter_phases.append(phase)
+            G += phase.G()*iter_betas[j]
+        
+        if G < min_G:
+            info[:] = iter_betas, iter_comps, iter_phases
+            min_G = G
+        return G*RT_inv
+#    ans = None
+    ans = minimize(G, flows_guess_basis, method=method, tol=tol, **opt_kwargs)
+#    G(ans['x']) # Make sure info has right value
+    ans['fun'] /= RT_inv
+    
+    betas, compositions, phases = info
+    return betas, compositions, phases, iterations, float(ans['fun'])
+    
+#    return ans, info
     
     
 l_undefined_T_msg = "Could not calculate liquid conditions at provided temperature %s K (mole fracions %s)"   

@@ -28,7 +28,7 @@ from thermo.utils import log, exp
 
 '''Class designed to have multiple phases.
 
-Calculates dew, bubble points as properties.
+Calculates dew, bubble points as properties (going to call back to property package)
 I guess it's going to need MW as well.
 
 Does not have any flow property.
@@ -36,4 +36,9 @@ Does not have any flow property.
 
 
 class Bulk(object):
-    pass
+    def __init__(self, T, P, zs, phases, phase_fractions):
+        self.T = T
+        self.P = P
+        self.zs = zs
+        self.phases = phases
+        self.phase_fractions = phase_fractions
