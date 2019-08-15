@@ -625,28 +625,34 @@ class Phase(object):
 #            pass
         
         if self.Cpgs_locked:
+            # Room for more optimizing in here
             self._Cpig_integrals_over_T_pure = Cpig_integrals_over_T_pure = []
             T, Cpgs_data, cmps = self.T, self.Cpgs_data, self.cmps
             Tmins, Tmaxes, T_int_T_coeffs = Cpgs_data[0], Cpgs_data[3], Cpgs_data[14]
+            logT = log(T)
             for i in cmps:
                 Tmin = Tmins[i]
                 if T < Tmin:
                     x1 = Cpgs_data[2][i] - Cpgs_data[1][i]*Tmin
-                    S = (Cpgs_data[1][i]*T + x1*log(T))
-                elif (Tmin <= T <= Cpgs_data[3][i]):
-                    x1 = Cpgs_data[2][i] - Cpgs_data[1][i]*Tmin
-                    S = (Cpgs_data[1][i]*Tmin + x1*log(Tmin))
+                    S = (Cpgs_data[1][i]*T + x1*logT)
+                elif (Tmin <= T <= Tmaxes[i]):
+                    S = 0.0
+                    for c in T_int_T_coeffs[i]:
+                        S = S*T + c
+                    S += Cpgs_data[6][i]*logT
                     
-                    S += (horner_log(T_int_T_coeffs[i], Cpgs_data[6][i], T) 
-                                - Cpgs_data[9][i])
+                    # The below should be in a constant - taking the place of Cpgs_data[9]
+                    S -= Cpgs_data[9][i]
+                    x1 = Cpgs_data[2][i] - Cpgs_data[1][i]*Tmin
+                    S += (Cpgs_data[1][i]*Tmin + x1*log(Tmin))
                 else:        
                     x1 = Cpgs_data[2][i] - Cpgs_data[1][i]*Tmin
                     S = (Cpgs_data[1][i]*Tmin + x1*log(Tmin))
-            
                     S += (Cpgs_data[10][i] - Cpgs_data[9][i])
+                    # The above should be in the constant Cpgs_data[10], - x2*log(Tmaxes[i]) also
             
-                    x2 = Cpgs_data[5][i] - Cpgs_data[3][i]*Cpgs_data[4][i]
-                    S += -Cpgs_data[4][i]*(Cpgs_data[3][i] - T) + x2*log(T) - x2*log(Cpgs_data[3][i])
+                    x2 = Cpgs_data[5][i] - Tmaxes[i]*Cpgs_data[4][i]
+                    S += -Cpgs_data[4][i]*(Tmaxes[i] - T) + x2*logT - x2*log(Tmaxes[i])
                     
                 Cpig_integrals_over_T_pure.append(S - Cpgs_data[15][i])
             return Cpig_integrals_over_T_pure
