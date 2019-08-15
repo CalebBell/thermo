@@ -522,11 +522,16 @@ class Phase(object):
             self._Cps = Cps = []
             T, Cpgs_data, cmps = self.T, self.Cpgs_data, self.cmps
             Tmins, Tmaxs, coeffs = Cpgs_data[0], Cpgs_data[3], Cpgs_data[12]
+            Tmin_slopes = Cpgs_data[1]
+            Tmin_values = Cpgs_data[2]
+            Tmax_slopes = Cpgs_data[4]
+            Tmax_values = Cpgs_data[5]
+            
             for i in cmps:
                 if T < Tmins[i]:
-                    Cp = (T -  Tmins[i])*Cpgs_data[1][i] + Cpgs_data[2][i]
+                    Cp = (T -  Tmins[i])*Tmin_slopes[i] + Tmin_values[i]
                 elif T > Tmaxs[i]:
-                    Cp = (T - Tmaxs[i])*Cpgs_data[4][i] + Cpgs_data[5][i]
+                    Cp = (T - Tmaxs[i])*Tmax_slopes[i] + Tmax_values[i]
                 else:
                     Cp = 0.0
                     for c in coeffs[i]:
@@ -582,33 +587,20 @@ class Phase(object):
                     
                     
                 # ATTEMPT AT FAST HERE
-                Tmin = Tmins[i]
-                if T < Tmin:
-                    x1 = Cpgs_data[2][i] - Cpgs_data[1][i]*Tmin
+                if T < Tmins[i]:
+                    x1 = Cpgs_data[2][i] - Cpgs_data[1][i]*Tmins[i]
                     H = T*(0.5*Cpgs_data[1][i]*T + x1)
                 elif (T <= Tmaxes[i]):
-                    
-                    tot1 = 0.0
+                    H = 0.0
                     for c in int_coeffs[i]:
-                        tot1 = tot1*T + c
-                    tot1 -= Cpgs_data[7][i]
-#                    tot1 = horner(int_coeffs[i], T) - horner(int_coeffs[i], Tmin)
-                    H = tot1
+                        H = H*T + c
+                    H -= Cpgs_data[7][i]
                 else:
-                    x1 = Cpgs_data[5][i] - Cpgs_data[4][i]*Tmaxes[i]
-                    tot2 = T*(0.5*Cpgs_data[4][i]*T + x1) - Tmaxes[i]*(0.5*Cpgs_data[4][i]*Tmaxes[i] + x1)
-                    H =  Cpgs_data[8][i] + tot2
+                    Tmax_slope = Cpgs_data[4][i]
+                    x1 = Cpgs_data[5][i] - Tmax_slope*Tmaxes[i]
+                    H = T*(0.5*Tmax_slope*T + x1) - Tmaxes[i]*(0.5*Tmax_slope*Tmaxes[i] + x1)
+                    H += Cpgs_data[8][i]
 
-
-                    
-                    
-                    
-                    
-                    
-                    
-                    
-                    
-                    
                 Cpig_integrals_pure.append(H - Cpgs_data[11][i])
             return Cpig_integrals_pure
 
@@ -989,6 +981,7 @@ class GibbsExcessLiquid(Phase):
                              [i.best_fit_Tmax_slope for i in VaporPressures],
                              [i.best_fit_Tmax_value for i in VaporPressures],
                              [i.best_fit_coeffs for i in VaporPressures])
+        self.HeatCapacityGases = HeatCapacityGases
         self.setup_Cpigs()
 
 
