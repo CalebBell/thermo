@@ -507,7 +507,9 @@ class Phase(object):
                               [horner_log(i.best_fit_T_int_T_coeffs, i.best_fit_log_coeff, i.best_fit_Tmin) -(i.best_fit_Tmin_slope*i.best_fit_Tmin + (i.best_fit_Tmin_value - i.best_fit_Tmin_slope*i.best_fit_Tmin)*log(i.best_fit_Tmin)) for i in HeatCapacityGases],
 #                              [horner_log(i.best_fit_T_int_T_coeffs, i.best_fit_log_coeff, i.best_fit_Tmax) for i in HeatCapacityGases],
                               [(horner_log(i.best_fit_T_int_T_coeffs, i.best_fit_log_coeff, i.best_fit_Tmax)
-                                - horner_log(i.best_fit_T_int_T_coeffs, i.best_fit_log_coeff, i.best_fit_Tmin)) + (i.best_fit_Tmin_slope*i.best_fit_Tmin + (i.best_fit_Tmin_value - i.best_fit_Tmin_slope*i.best_fit_Tmin)*log(i.best_fit_Tmin)) for i in HeatCapacityGases],
+                                - horner_log(i.best_fit_T_int_T_coeffs, i.best_fit_log_coeff, i.best_fit_Tmin) 
+                                + (i.best_fit_Tmin_slope*i.best_fit_Tmin + (i.best_fit_Tmin_value - i.best_fit_Tmin_slope*i.best_fit_Tmin)*log(i.best_fit_Tmin)) 
+                                - (i.best_fit_Tmax_value -i.best_fit_Tmax*i.best_fit_Tmax_slope)*log(i.best_fit_Tmax)) for i in HeatCapacityGases],
                               [best_fit_integral_value(T_REF_IG, i.best_fit_int_coeffs, i.best_fit_Tmin, 
                                                        i.best_fit_Tmax, i.best_fit_Tmin_value,
                                                        i.best_fit_Tmax_value, i.best_fit_Tmin_slope,
@@ -643,7 +645,6 @@ class Phase(object):
                     for c in T_int_T_coeffs[i]:
                         S = S*T + c
                     S += Cpgs_data[6][i]*logT
-                    
                     # The below should be in a constant - taking the place of Cpgs_data[9]
                     S -= Cpgs_data[9][i]
 #                    x1 = Cpgs_data[2][i] - Cpgs_data[1][i]*Tmin
@@ -652,12 +653,10 @@ class Phase(object):
 #                    x1 = Cpgs_data[2][i] - Cpgs_data[1][i]*Tmin
 #                    S = (Cpgs_data[1][i]*Tmin + x1*log(Tmin))
 #                    S += (Cpgs_data[10][i] - Cpgs_data[9][i])
-                    
                     S = Cpgs_data[10][i] 
                     # The above should be in the constant Cpgs_data[10], - x2*log(Tmaxes[i]) also
-            
                     x2 = Cpgs_data[5][i] - Tmaxes[i]*Cpgs_data[4][i]
-                    S += -Cpgs_data[4][i]*(Tmaxes[i] - T) + x2*logT - x2*log(Tmaxes[i])
+                    S += -Cpgs_data[4][i]*(Tmaxes[i] - T) + x2*logT #- x2*log(Tmaxes[i])
                     
                 Cpig_integrals_over_T_pure.append(S - Cpgs_data[15][i])
             return Cpig_integrals_over_T_pure
