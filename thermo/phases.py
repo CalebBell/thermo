@@ -24,7 +24,8 @@ from __future__ import division
 __all__ = ['GibbsExcessLiquid', 'Phase', 'EOSLiquid', 'EOSGas', 'IdealGas']
 
 from fluids.constants import R, R_inv
-from fluids.numerics import horner, horner_and_der, horner_log, jacobian, best_fit_integral_value
+from fluids.numerics import (horner, horner_and_der, horner_log, jacobian, 
+                             best_fit_integral_value, best_fit_integral_over_T_value)
 from thermo.utils import (log, exp, Cp_minus_Cv, phase_identification_parameter,
                           isothermal_compressibility, isobaric_expansion,
                           Joule_Thomson, speed_of_sound, dxs_to_dns,
@@ -510,7 +511,13 @@ class Phase(object):
                                                        i.best_fit_Tmax_slope) for i in HeatCapacityGases],
                               [i.best_fit_coeffs for i in HeatCapacityGases],
                               [i.best_fit_int_coeffs for i in HeatCapacityGases],
-                              [i.best_fit_T_int_T_coeffs for i in HeatCapacityGases])
+                              [i.best_fit_T_int_T_coeffs for i in HeatCapacityGases],
+                              [best_fit_integral_over_T_value(T_REF_IG, i.best_fit_T_int_T_coeffs, i.best_fit_log_coeff, i.best_fit_Tmin, 
+                                                       i.best_fit_Tmax, i.best_fit_Tmin_value,
+                                                       i.best_fit_Tmax_value, i.best_fit_Tmin_slope,
+                                                       i.best_fit_Tmax_slope) for i in HeatCapacityGases],
+                              
+                              )
 
     
     def Cpigs_pure(self):
@@ -617,6 +624,35 @@ class Phase(object):
 #        except AttributeError:
 #            pass
         
+        if self.Cpgs_locked:
+            self._Cpig_integrals_over_T_pure = Cpig_integrals_over_T_pure = []
+            T, Cpgs_data, cmps = self.T, self.Cpgs_data, self.cmps
+            Tmins, Tmaxes, T_int_T_coeffs = Cpgs_data[0], Cpgs_data[3], Cpgs_data[14]
+            for i in cmps:
+                Tmin = Tmins[i]
+                if T < Tmin:
+                    x1 = Cpgs_data[2][i] - Cpgs_data[1][i]*Tmin
+                    S = (Cpgs_data[2][i]*T + x1*log(T))
+                if (Tmin <= T <= Cpgs_data[3][i]):
+                    x1 = Cpgs_data[2][i] - Cpgs_data[1][i]*Tmin
+                    S = (Cpgs_data[2][i]*Tmin + x1*log(Tmin))
+                    S += (horner_log(T_int_T_coeffs[i], Cpgs_data[6][i], T) 
+                                - Cpgs_data[9][i])
+                else:        
+                    x1 = Cpgs_data[2][i] - Cpgs_data[1][i]*Tmin
+                    S = (Cpgs_data[2][i]*Tmin + x1*log(Tmin))
+            
+                    S += (Cpgs_data[10][i] - Cpgs_data[9][i])
+            
+                    x2 = Cpgs_data[5][i] -Cpgs_data[3][i]*Cpgs_data[4][i]
+                    S += -Cpgs_data[4][i]*(Cpgs_data[3][i] - T) + x2*log(T) - x2*log(Cpgs_data[3][i])
+                    
+                Cpig_integrals_over_T_pure.append(S - Cpgs_data[15][i])
+
+                
+                
+                
+                
         T, T_REF_IG, HeatCapacityGases = self.T, self.T_REF_IG, self.HeatCapacityGases
         self._Cpig_integrals_over_T_pure = [obj.T_dependent_property_integral_over_T(T_REF_IG, T)
                                    for obj in HeatCapacityGases]
