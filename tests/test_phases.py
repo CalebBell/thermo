@@ -23,10 +23,12 @@ SOFTWARE.'''
 from numpy.testing import assert_allclose
 import pytest
 
+from thermo import Chemical, Mixture
 from thermo.phases import *
 from thermo.eos_mix import *
 from thermo.eos import *
 from thermo.vapor_pressure import VaporPressure
+from thermo.volume import *
 from thermo.heat_capacity import *
 from thermo.phase_change import *
 
@@ -87,7 +89,72 @@ def test_GibbbsExcessLiquid_VaporPressure():
     
     dfugacities_dP_expect = [0, 0]
     assert_allclose(liquid.dfugacities_dP(), dfugacities_dP_expect, atol=1e-15)
+
+
+def test_GibbbsExcessLiquid_VolumeLiquids():
+    # Binary ethanol-water
+    T = 230.0
+    P = 1e5
+    zs = [.4, .6]
     
+    MWs = [18.01528, 46.06844]
+    Tcs = [647.14, 514.0]
+    Pcs = [22048320.0, 6137000.0]
+    Vcs = [5.6e-05, 0.000168]
+    Zcs = [0.22947273972184645, 0.24125043269792068]
+    omegas = [0.344, 0.635]
+    
+    eoss = [PR(Tc=Tcs[0], Pc=Pcs[0], omega=omegas[0], T=T, P=P),
+            PR(Tc=Tcs[1], Pc=Pcs[1], omega=omegas[1], T=T, P=P)]
+
+    m = Mixture(['water', 'ethanol'], zs=zs, T=T, P=P)
+    
+    VaporPressures = [VaporPressure(best_fit=(159.11, 514.7, [-2.3617526481119e-19, 7.318686894378096e-16, -9.835941684445551e-13, 7.518263303343784e-10, -3.598426432676194e-07, 0.00011171481063640762, -0.022458952185007635, 2.802615041941912, -166.43524219017118])),
+                      VaporPressure(best_fit=(273.17, 647.086, [-2.8478502840358144e-21, 1.7295186670575222e-17, -4.034229148562168e-14, 5.0588958391215855e-11, -3.861625996277003e-08, 1.886271475957639e-05, -0.005928371869421494, 1.1494956887882308, -96.74302379151317]))]
+    HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
+                       HeatCapacityGas(best_fit=(50.0, 1000.0, [-1.162767978165682e-20, 5.4975285700787494e-17, -1.0861242757337942e-13, 1.1582703354362728e-10, -7.160627710867427e-08, 2.5392014654765875e-05, -0.004732593693568646, 0.5072291035198603, 20.037826650765965]))]
+    # HBT Pressure dependence needs Psats, Tc, Pc, omegas
+    VolumeLiquids = [VolumeLiquid(best_fit=(273.17, 637.096, [9.00307261049824e-24, -3.097008950027417e-20, 4.608271228765265e-17, -3.8726692841874345e-14, 2.0099220218891486e-11, -6.596204729785676e-09, 1.3368112879131157e-06, -0.00015298762503607717, 0.007589247005014652]),
+                                  Psat=VaporPressures[0], Tc=Tcs[0], Pc=Pcs[0], omega=omegas[0]),
+                     VolumeLiquid(best_fit=(159.11, 504.71000000000004, [5.388587987308587e-23, -1.331077476340645e-19, 1.4083880805283782e-16, -8.327187308842775e-14, 3.006387047487587e-11, -6.781931902982022e-09, 9.331209920256822e-07, -7.153268618320437e-05, 0.0023871634205665524]),
+                                  Psat=VaporPressures[1], Tc=Tcs[1], Pc=Pcs[1], omega=omegas[1])]
+
+
+    VolumeLiquidMixtureArgs = dict(MWs=MWs, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, Zcs=Zcs, omegas=omegas, VolumeLiquids=VolumeLiquids)
+    obj = VolumeLiquidMixture(**VolumeLiquidMixtureArgs)
+
+    liquid = GibbsExcessLiquid(VaporPressures=VaporPressures,HeatCapacityGases=HeatCapacityGases,
+                               VolumeLiquids=VolumeLiquids,
+                               EnthalpyVaporizations=m.EnthalpyVaporizations,
+                               VolumeLiquidMixture=obj,
+                               use_phis_sat=False, eos_pure_instances=eoss).to_TP_zs(T, P, zs)
+    
+    Vms_expect = [1.7944230903025734e-05, 5.44799706327522e-05]
+    Vms_calc = liquid.Vms_sat()
+    assert_allclose(Vms_expect, Vms_calc, rtol=1e-12)
+    
+    dVms_sat_dT_expect = [1.7104481133656886e-09, 5.1434298716332116e-08]
+    dVms_sat_dT_calc = liquid.dVms_sat_dT()
+    assert_allclose(dVms_sat_dT_expect, dVms_sat_dT_calc, rtol=1e-12)
+
+    V_calc = liquid.V()
+    assert_allclose(V_calc, 3.9864638202991644e-05)
+    
+    
+    
+    liq2 = liquid.to_TP_zs(400, 1e6, zs)
+    assert_allclose(liq2.V(), 4.8217797461482174e-05)
+    assert_allclose(liq2.dP_dV(), -22338535869771.266, rtol=1e-4)
+    assert_allclose(liq2.d2P_dV2(), -5.6652055039363195e+23, rtol=1e-4)
+    assert_allclose(liq2.dP_dT(), 4.420694273557085e-21, rtol=1e-4)
+    assert_allclose(liq2.d2P_dTdV(), 319083206136.0664, rtol=1e-4)
+    assert_allclose(liq2.d2P_dT2(), 1.0758054055476452e-22, rtol=1e-4)
+    
+    assert liq2.PIP() > 1# Yes, liquid
+    
+    
+    
+
 def test_EOSGas_phis():
     # Acetone, chloroform, methanol
     T = 331.42

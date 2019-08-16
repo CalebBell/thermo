@@ -1116,7 +1116,8 @@ class VolumeLiquid(TPDependentProperty):
         if method == COSTALD_COMPRESSED:
             Vm = self.T_dependent_property(T)
             Psat = self.Psat(T) if hasattr(self.Psat, '__call__') else self.Psat
-            Vm = COSTALD_compressed(T, P, Psat, self.Tc, self.Pc, self.omega, Vm)
+            if P > Psat:
+                Vm = COSTALD_compressed(T, P, Psat, self.Tc, self.Pc, self.omega, Vm)
         elif method == COOLPROP:
             Vm = 1./PropsSI('DMOLAR', 'T', T, 'P', P, self.CASRN)
         elif method == EOS:
@@ -1298,9 +1299,9 @@ def COSTALD_compressed(T, P, Psat, Tc, Pc, omega, Vs):
     h = 1.14188
     j = 0.0861488
     k = 0.0344483
-    tau = 1.0 - T/Tc
     e = exp(f + omega*(g + h*omega))
     C = j + k*omega
+    tau = 1.0 - T/Tc
     tau13 = tau**(1.0/3.0)
     B = Pc*(-1.0 + a*tau13 + b*tau13*tau13 + d*tau + e*tau*tau13)
     return Vs*(1.0 - C*log((B + P)/(B + Psat)))
@@ -1474,6 +1475,11 @@ def COSTALD_mixture(xs, T, Tcs, Vcs, omegas):
     cmps = range(len(xs))
     if not none_and_length_check([xs, Tcs, Vcs, omegas]):
         raise Exception('Function inputs are incorrect format')
+#    sum1, sum2, sum3 = 0.0, 0.0, 0.0
+#    for i in cmps:
+#        sum1 += xi*Vci
+        
+        
     sum1 = sum([xi*Vci for xi, Vci in zip(xs, Vcs)])
     sum2 = sum([xi*Vci**(2.0/3.) for xi, Vci in zip(xs, Vcs)])
     sum3 = sum([xi*Vci**(1.0/3.) for xi, Vci in zip(xs, Vcs)])
@@ -1493,6 +1499,7 @@ RACKETT = 'RACKETT'
 RACKETT_PARAMETERS = 'RACKETT Parameters'
 volume_liquid_mixture_methods = [LALIBERTE, SIMPLE, COSTALD_MIXTURE_FIT, RACKETT_PARAMETERS, COSTALD, RACKETT]
 
+volume_liquid_mixture_P_methods = [COSTALD]
 
 class VolumeLiquidMixture(MixtureProperty):
     '''Class for dealing with the molar volume of a liquid mixture as a   
@@ -1609,16 +1616,16 @@ class VolumeLiquidMixture(MixtureProperty):
         '''
         methods = [SIMPLE]        
         
-        if none_and_length_check([self.Tcs, self.Vcs, self.omegas, self.CASs]):
+        if none_and_length_check([self.Tcs, self.Vcs, self.omegas]):
             methods.append(COSTALD_MIXTURE)
-            if all([i in COSTALD_data.index for i in self.CASs]):
+            if none_and_length_check([self.Tcs, self.CASs]) and all([i in COSTALD_data.index for i in self.CASs]):
                 self.COSTALD_Vchars = [COSTALD_data.at[CAS, 'Vchar'] for CAS in self.CASs]
                 self.COSTALD_omegas = [COSTALD_data.at[CAS, 'omega_SRK'] for CAS in self.CASs]
                 methods.append(COSTALD_MIXTURE_FIT)
             
-        if none_and_length_check([self.MWs, self.Tcs, self.Pcs, self.Zcs, self.CASs]):
+        if none_and_length_check([self.MWs, self.Tcs, self.Pcs, self.Zcs]):
             methods.append(RACKETT)
-            if all([CAS in COSTALD_data.index for CAS in self.CASs]):
+            if none_and_length_check([self.Tcs, self.CASs]) and all([CAS in COSTALD_data.index for CAS in self.CASs]):
                 Z_RAs = [COSTALD_data.at[CAS, 'Z_RA'] for CAS in self.CASs]
                 if not any(np.isnan(Z_RAs)):
                     self.Z_RAs = Z_RAs
@@ -1662,6 +1669,12 @@ class VolumeLiquidMixture(MixtureProperty):
         if method == SIMPLE:
             Vms = [i(T, P) for i in self.VolumeLiquids]
             return Amgat(zs, Vms)
+        elif method == LALIBERTE:
+            ws = list(ws) ; ws.pop(self.index_w)
+            rho = Laliberte_density(T, ws, self.wCASs)
+            MW = mixing_simple(zs, self.MWs)
+            return rho_to_Vm(rho, MW)
+        # TODO: pressure dependence for the following methods:
         elif method == COSTALD_MIXTURE:
             return COSTALD_mixture(zs, T, self.Tcs, self.Vcs, self.omegas)
         elif method == COSTALD_MIXTURE_FIT:
@@ -1670,11 +1683,6 @@ class VolumeLiquidMixture(MixtureProperty):
             return Rackett_mixture(T, zs, self.MWs, self.Tcs, self.Pcs, self.Zcs)
         elif method == RACKETT_PARAMETERS:
             return Rackett_mixture(T, zs, self.MWs, self.Tcs, self.Pcs, self.Z_RAs)
-        elif method == LALIBERTE:
-            ws = list(ws) ; ws.pop(self.index_w)
-            rho = Laliberte_density(T, ws, self.wCASs)
-            MW = mixing_simple(zs, self.MWs)
-            return rho_to_Vm(rho, MW)
         else:
             raise Exception('Method not valid')
 

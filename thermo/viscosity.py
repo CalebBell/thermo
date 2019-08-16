@@ -1959,7 +1959,7 @@ class ViscosityGasMixture(MixtureProperty):
         or epsilon_k, [K]
     CASs : list[str], optional
         The CAS numbers of all species in the mixture
-    ViscosityGass : list[ViscosityGas], optional
+    ViscosityGases : list[ViscosityGas], optional
         ViscosityGas objects created for all species in the mixture,  
         normally created by :obj:`thermo.chemical.Chemical`.
     
