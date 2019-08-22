@@ -29,7 +29,7 @@ __all__ = ['WagnerMcGarry', 'AntoinePoling', 'WagnerPoling', 'AntoineExtended',
            'Edalat', 'Sanjari']
 
 import os
-from fluids.numerics import polyint_over_x, horner_log, horner, polyint, horner_and_der
+from fluids.numerics import polyint_over_x, horner_log, horner, polyint, horner_and_der, derivative
 
 import numpy as np
 import pandas as pd

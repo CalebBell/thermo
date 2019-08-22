@@ -116,9 +116,12 @@ def get_chemical_constants(CAS, key):
         return None
     from thermo.database import loaded_chemicals
     try:
-        Tmin, Tmax, coeffs = getattr(loaded_chemicals[CAS], key)
-        if Tmin is not None and Tmax is not None and coeffs is not None:
-            return (Tmin, Tmax, coeffs)
+        vs = getattr(loaded_chemicals[CAS], key)
+        if all(i is not None for i in vs):
+            return vs
+#        Tmin, Tmax, coeffs = getattr(loaded_chemicals[CAS], key)
+#        if Tmin is not None and Tmax is not None and coeffs is not None:
+#            return (Tmin, Tmax, coeffs)
         return None
     except KeyError:
         return None
@@ -1012,7 +1015,7 @@ class Chemical(object): # pragma: no cover
 
         self.HeatCapacityLiquid = HeatCapacityLiquid(CASRN=self.CAS, MW=self.MW, similarity_variable=self.similarity_variable, Tc=self.Tc, omega=self.omega, Cpgm=self.HeatCapacityGas.T_dependent_property, best_fit=get_chemical_constants(self.CAS, 'HeatCapacityLiquid'))
 
-        self.EnthalpyVaporization = EnthalpyVaporization(CASRN=self.CAS, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, omega=self.omega, similarity_variable=self.similarity_variable)
+        self.EnthalpyVaporization = EnthalpyVaporization(CASRN=self.CAS, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, omega=self.omega, similarity_variable=self.similarity_variable, best_fit=get_chemical_constants(self.CAS, 'EnthalpyVaporization'))
         self.Hvap_Tbm = self.EnthalpyVaporization.T_dependent_property(self.Tb) if self.Tb else None
         self.Hvap_Tb = property_molar_to_mass(self.Hvap_Tbm, self.MW)
         self.Hvapm_STP = self.EnthalpyVaporization.T_dependent_property(298.15)

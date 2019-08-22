@@ -85,7 +85,10 @@ def loadChemicalConstants(data, rows=True):
                     prop_data = item[prop_key]
                     Tmin, Tmax = prop_data['Tmin'], prop_data['Tmax']
                     coefficients = prop_data['coefficients']
-                    kwargs[prop_key] = (Tmin, Tmax, coefficients)
+                    if 'Tc' in prop_data:
+                        kwargs[prop_key] = (Tmin, Tmax, prop_data['Tc'], coefficients)
+                    else:
+                        kwargs[prop_key] = (Tmin, Tmax, coefficients)
                 except KeyError:
                     pass
 #                    Tmin, Tmax, coefficients = None, None, None
@@ -122,9 +125,15 @@ def marshal_json_data(full_data, path):
                 prop_data = data[prop_key]
                 Tmin, Tmax = prop_data['Tmin'], prop_data['Tmax']
                 coefficients = prop_data['coefficients']
+                if 'Tc' in prop_data:
+                    Tc = prop_data['Tc']
+                    row = (Tmin, Tmax, Tc, coefficients)
+                else:
+                    row = (Tmin, Tmax, coefficients)
             except KeyError:
-                Tmin, Tmax, coefficients = None, None, None
-            row.append((Tmin, Tmax, coefficients))
+                row = (None, None, None)
+                
+            row.append(row)
         
         marshal_rows.append(row)
         

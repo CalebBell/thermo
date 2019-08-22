@@ -22,6 +22,7 @@ SOFTWARE.'''
 
 from __future__ import division
 __all__ = ['sequential_substitution_2P', 'bubble_T_Michelsen_Mollerup',
+           'dew_T_Michelsen_Mollerup',
            'minimize_gibbs_2P_transformed', 'sequential_substitution_Mehra_2P',
            'nonlin_2P', 'sequential_substitution_NP',
            'minimize_gibbs_NP_transformed']
@@ -576,6 +577,82 @@ def bubble_T_Michelsen_Mollerup(T_guess, P, zs, liquid_phase, gas_phase,
         
         y_sum = sum(ys)
         ys = [y/y_sum for y in ys]
+
+        if abs(T_guess - T_guess_old) < xtol:
+            T_guess = T_guess_old
+            break
+        
+    if abs(T_guess - T_guess_old) > xtol:
+        raise ValueError("Did not converge to specified tolerance")
+    return T_guess, iteration, abs(T_guess - T_guess_old)
+
+
+def dew_T_Michelsen_Mollerup(T_guess, P, zs, liquid_phase, gas_phase, 
+                                maxiter=200, xtol=1E-10, xs_guess=None,
+                                max_step_damping=5.0, T_update_frequency=1,
+                                trivial_solution_tol=1e-4):
+    N = len(zs)
+    cmps = range(N)
+    xs = zs if xs_guess is None else xs_guess
+
+
+    T_guess_old = None
+    successive_fails = 0
+    for iteration in range(maxiter):
+        try:
+            g = gas_phase.to_TP_zs(T=T_guess, P=P, zs=xs)
+            lnphis_g = g.lnphis()
+            dlnphis_dT_g = g.dlnphis_dT()
+        except Exception as e:
+            if T_guess_old is None:
+                raise ValueError(g_undefined_T_msg %(T_guess, xs), e)
+            successive_fails += 1
+            T_guess = T_guess_old + copysign(min(max_step_damping, abs(step)), step)
+            continue
+
+        try:
+            l = liquid_phase.to_TP_zs(T=T_guess, P=P, zs=zs)
+            lnphis_l = l.lnphis()
+            dlnphis_dT_l = l.dlnphis_dT()
+        except Exception as e:
+            if T_guess_old is None:
+                raise ValueError(l_undefined_T_msg %(T_guess, zs), e)
+            successive_fails += 1
+            T_guess = T_guess_old + copysign(min(max_step_damping, abs(step)), step)
+            continue
+
+        if successive_fails > 2:
+            raise ValueError("Stopped convergence procedure after multiple bad steps")     
+    
+        successive_fails = 0
+        Ks = [exp(a - b) for a, b in zip(lnphis_l, lnphis_g)]
+        xs = [zs[i]/Ks[i] for i in cmps]
+        if iteration % T_update_frequency:
+            continue
+
+
+        f_k = sum(xs) - 1.0
+        
+        dfk_dT = 0.0
+        for i in cmps:
+            dfk_dT += xs[i]*(dlnphis_dT_g[i] - dlnphis_dT_l[i])
+        
+        T_guess_old = T_guess
+        step = -f_k/dfk_dT
+        
+        
+#        if near_critical:
+        T_guess = T_guess + copysign(min(max_step_damping, abs(step)), step)
+#        else:
+#            T_guess = T_guess + step
+        
+        
+        comp_difference = sum([abs(zi - xi) for zi, xi in zip(zs, xs)])
+        if comp_difference < trivial_solution_tol:
+            raise ValueError("Converged to trivial condition, compositions of both phases equal")
+        
+        y_sum = sum(xs)
+        xs = [y/y_sum for y in xs]
 
         if abs(T_guess - T_guess_old) < xtol:
             T_guess = T_guess_old

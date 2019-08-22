@@ -121,7 +121,6 @@ class ChemicalMetadata(object):
 class ChemicalConstants(object):
     __slots__ = ('CAS', 'Tc', 'Pc', 'Vc', 'omega', 'Tb', 'Tm', 'Tt', 'Pt', 
                  'Hfus', 'Hsub', 'Hf', 'dipole',
-#                 'Tmin_HeatCapacityGas', 'Tmax_HeatCapacityGas', 'coeffs_HeatCapacityGas',
                  'HeatCapacityGas', 'HeatCapacityLiquid', 'HeatCapacitySolid',
                  'ThermalConductivityLiquid', 'ThermalConductivityGas',
                  'ViscosityLiquid', 'ViscosityGas',

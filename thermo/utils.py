@@ -46,7 +46,7 @@ from cmath import sqrt as csqrt
 from bisect import bisect_left
 import numpy as np
 from numpy.testing import assert_allclose
-from fluids.numerics import brenth, newton, linspace, polyint, polyint_over_x, derivative
+from fluids.numerics import brenth, newton, linspace, polyint, polyint_over_x, derivative, polyder
 from scipy.integrate import quad
 from scipy.interpolate import interp1d, interp2d
 
@@ -2430,6 +2430,9 @@ class TDependentProperty(object):
     interpolation_T : function
         A function or lambda expression to transform the temperatures of
         tabular data for interpolation; e.g. 'lambda self, T: 1./T'
+    interpolation_T_inv : function
+        A function or lambda expression to invert the transform of temperatures 
+        of tabular data for interpolation; e.g. 'lambda self, x: self.Tc*(1 - x)'
     interpolation_property : function
         A function or lambda expression to transform tabular property values
         prior to interpolation; e.g. 'lambda self, P: log(P)'
@@ -2482,6 +2485,7 @@ class TDependentProperty(object):
     tabular_extrapolation_permitted = True
 
     interpolation_T = None
+    interpolation_T_inv = None
     interpolation_property = None
     interpolation_property_inv = None
 
@@ -2649,6 +2653,9 @@ class TDependentProperty(object):
     
             self.best_fit_int_coeffs = polyint(best_fit[2])
             self.best_fit_T_int_T_coeffs, self.best_fit_log_coeff = polyint_over_x(best_fit[2])
+
+            self.best_fit_d_coeffs = polyder(best_fit[2][::-1])[::-1]
+            self.best_fit_d2_coeffs = polyder(self.best_fit_d_coeffs[::-1])[::-1]
             
             # Extrapolation slope on high and low
             slope_delta_T = (self.best_fit_Tmax - self.best_fit_Tmin)*.05            

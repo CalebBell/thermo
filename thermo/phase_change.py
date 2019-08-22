@@ -33,6 +33,7 @@ import os
 import numpy as np
 import pandas as pd
 
+from fluids.numerics import horner, horner_and_der
 from thermo.utils import log, isnan
 from thermo.utils import R, pi, N_A
 from thermo.miscdata import CRC_organic_data, CRC_inorganic_data
@@ -879,6 +880,8 @@ RIEDEL = 'RIEDEL'
 CHEN = 'CHEN'
 LIU = 'LIU'
 VETERE = 'VETERE'
+BESTFIT = 'Best fit'
+
 enthalpy_vaporization_methods = [DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, VDI_TABULAR, 
                                  MORGAN_KOBAYASHI,
                       SIVARAMAN_MAGEE_KOBAYASHI, VELASCO, PITZER, ALIBAKHSHI,
@@ -1049,7 +1052,8 @@ class EnthalpyVaporization(TDependentProperty):
     '''Exponent used in the Watson equation'''
 
     def __init__(self, CASRN='', Tb=None, Tc=None, Pc=None, omega=None,
-                 similarity_variable=None, Psat=None, Zl=None, Zg=None):
+                 similarity_variable=None, Psat=None, Zl=None, Zg=None,
+                 best_fit=None):
         self.CASRN = CASRN
         self.Tb = Tb
         self.Tc = Tc
@@ -1088,8 +1092,15 @@ class EnthalpyVaporization(TDependentProperty):
         self.all_methods = set()
         '''Set of all methods available for a given CASRN and properties;
         filled by :obj:`load_all_methods`.'''
+        if best_fit is not None:
+            self.best_fit_Tc = best_fit[2]
+            self.set_best_fit((best_fit[0], best_fit[1], best_fit[3]))
 
         self.load_all_methods()
+    def as_best_fit(self):
+        return '%s(best_fit=(%s, %s, %s, %s))' %(self.__class__.__name__,
+                  repr(self.best_fit_Tmin), repr(self.best_fit_Tmax),
+                  repr(self.best_fit_Tc), repr(self.best_fit_coeffs))
 
     def load_all_methods(self):
         r'''Method which picks out coefficients for the specified chemical
@@ -1177,7 +1188,13 @@ class EnthalpyVaporization(TDependentProperty):
         Hvap : float
             Heat of vaporization of the liquid at T, [J/mol]
         '''
-        if method == COOLPROP:
+        if method == BESTFIT:
+            if T > self.best_fit_Tc:
+                Hvap = 0
+            else:
+                Hvap = horner(self.best_fit_coeffs, log(1.0 - T/self.best_fit_Tc))
+
+        elif method == COOLPROP:
             Hvap = PropsSI('HMOLAR', 'T', T, 'Q', 1, self.CASRN) - PropsSI('HMOLAR', 'T', T, 'Q', 0, self.CASRN)
         elif method == DIPPR_PERRY_8E:
             Hvap = EQ106(T, *self.Perrys2_150_coeffs)
