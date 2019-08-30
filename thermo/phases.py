@@ -696,6 +696,9 @@ class IdealGas(Phase):
     def dlnphis_dT(self):
         return [0.0]*self.N
 
+    def dlnphis_dP(self):
+        return [0.0]*self.N
+
     def to_TP_zs(self, T, P, zs):
         new = self.__class__.__new__(self.__class__)
         new.T = T
@@ -1018,6 +1021,7 @@ class GibbsExcessLiquid(Phase):
                  use_Poynting=False,
                  use_phis_sat=False,
                  Hfs=None, Gfs=None, Sfs=None,
+                 henry_components=None, henry_data=None,
                  T=None, P=None, zs=None,
                  ):
         self.VaporPressures = VaporPressures
@@ -1072,6 +1076,12 @@ class GibbsExcessLiquid(Phase):
         self.use_Poynting = use_Poynting
         self.use_phis_sat = use_phis_sat
         
+        if henry_components is None:
+            henry_components = [False]*self.N
+        self.has_henry_components = any(henry_components)
+        self.henry_components = henry_components
+        self.henry_data = henry_data
+        
         self.Hfs = Hfs
         self.Gfs = Gfs
         self.Sfs = Sfs
@@ -1082,6 +1092,7 @@ class GibbsExcessLiquid(Phase):
             self.zs = zs
         
     def to_TP_zs(self, T, P, zs):
+        T_equal = hasattr(self, 'T') and T == self.T
         new = self.__class__.__new__(self.__class__)
         new.T = T
         new.P = P
@@ -1096,8 +1107,7 @@ class GibbsExcessLiquid(Phase):
         new.HeatCapacityGases = self.HeatCapacityGases
         new.EnthalpyVaporizations = self.EnthalpyVaporizations
         
-        new.GibbsExcessModel = self.GibbsExcessModel.to_T_xs(T=T, xs=zs)
-        
+                
         new.Psats_locked = self.Psats_locked
         new.Psats_data = self.Psats_data
         
@@ -1119,12 +1129,27 @@ class GibbsExcessLiquid(Phase):
         new.Gfs = self.Gfs
         new.Sfs = self.Sfs
         
+        new.henry_data = self.henry_data
+        new.henry_components = self.henry_components
+        new.has_henry_components = self.has_henry_components
+        
+        
+        if T_equal and self.zs is zs:
+            new.GibbsExcessModel = self.GibbsExcessModel
+        else:
+            new.GibbsExcessModel = self.GibbsExcessModel.to_T_xs(T=T, xs=zs)
+        
+        
         try:
-            if T == self.T:
+            if T_equal:
                 try:
+                    1/0 # zs for henry
                     new._Psats = self._Psats
                 except:
                     pass
+                
+
+
         except:
             pass
         return new
@@ -1171,6 +1196,38 @@ class GibbsExcessLiquid(Phase):
                     Psats.append(Psat)
                 else:
                     Psats.append(i.extrapolate_tabular(T))
+                    
+                    
+        if self.has_henry_components:
+            henry_components = self.henry_components
+            henry_data = self.henry_data
+            cmps = self.cmps
+            zs = self.zs
+            
+            for i in cmps:
+                Vcs = [5.6000000000000006e-05, 0.000168, 7.340000000000001e-05]
+                if henry_components[i]:
+                    # WORKING - Need a bunch of conversions of data in terms of other values
+                    # into this basis
+                    d = henry_data[i]
+                    z_sum = 0.0
+                    logH = 0.0
+                    for j in cmps:
+                        if d[j]:
+                            r = d[j]
+                            t = T
+#                            t = T - 273.15
+                            log_Hi = (r[0] + r[1]/t + r[2]*log(t) + r[3]*t + r[4]/t**2)
+                            wi = zs[j]*Vcs[j]**(2.0/3.0)/sum([zs[_]*Vcs[_]**(2.0/3.0) for _ in cmps if d[_]])
+                            
+                            logH += wi*log_Hi
+#                            logH += zs[j]*log_Hi
+                            z_sum += zs[j]
+                    
+                    z_sum = 1
+                    Psats[i] = exp(logH/z_sum)*1e5 # bar to Pa
+                    
+                
         return Psats
 
     
@@ -1657,10 +1714,12 @@ class GibbsExcessLiquid(Phase):
         return self._dlnphis_dP
                     
     
-    # TODO - implement dlnphis_dx, convert do dlnphis_dn
 
     def gammas(self):
-        return self.GibbsExcessModel.gammas()
+        try:
+            return self.GibbsExcessModel._gammas
+        except AttributeError:
+            return self.GibbsExcessModel.gammas()
     
     def H(self):
         try:

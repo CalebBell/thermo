@@ -26,9 +26,10 @@ __all__ = ['WagnerMcGarry', 'AntoinePoling', 'WagnerPoling', 'AntoineExtended',
            'Antoine', 'Wagner_original', 'Wagner', 'TRC_Antoine_extended', 
            'vapor_pressure_methods', 'VaporPressure', 'Perrys2_8', 'VDI_PPDS_3',
            'boiling_critical_relation', 'Lee_Kesler', 'Ambrose_Walton', 
-           'Edalat', 'Sanjari']
+           'Edalat', 'Sanjari', 'Psub_Clapeyron', 'SublimationPressure']
 
 import os
+from fluids.constants import R
 from fluids.numerics import polyint_over_x, horner_log, horner, polyint, horner_and_der, derivative
 
 import numpy as np
@@ -1034,3 +1035,264 @@ def Edalat(T, Tc, Pc, omega):
     b = 1.5737 - 1.0540*omega - 4.4365E-3*d
     lnPr = (a*tau + b*tau**1.5 + c*tau**3 + d*tau**6)/(1.-tau)
     return exp(lnPr)*Pc
+
+
+### Sublimation Pressure
+
+def Psub_Clapeyron(T, Tt, Pt, Hsub_t):
+    r'''Calculates sublimation pressure of a solid at arbitrary temperatures
+    using an approximate themodynamic identity - the Clapeyron equation as
+    described in [1]_ and [2]_.
+    Requires a chemical's triple temperature, triple pressure, and triple
+    enthalpy of sublimation.
+
+    The sublimation pressure of a chemical at `T` is given by:
+
+    .. math::
+        \ln \frac{P}{P_{tp}} = -\frac{\Delta H_{sub}}{R}
+        \left(\frac{1}{T}-\frac{1}{T_{tp}} \right)
+        
+    Parameters
+    ----------
+    T : float
+        Temperature of solid [K]
+    Tt : float
+        Triple temperature of solid [K]
+    Pt : float
+        Truple pressure of solid [Pa]
+    Hsub_t : float
+        Enthalpy of fusion at the triple point of the chemical, [J/mol]
+
+    Returns
+    -------
+    Psub : float
+        Sublimation pressure, [Pa]
+
+    Notes
+    -----
+    Does not seem to capture the decrease in sublimation pressure quickly
+    enough.
+    
+    Examples
+    --------
+    >>> Psub_Clapeyron(250, Tt=273.15, Pt=611.0, Hsub_t=51100.0)
+    76.06457150831804
+    >>> Psub_Clapeyron(300, Tt=273.15, Pt=611.0, Hsub_t=51100.0)
+    4577.282832876156
+    
+    References
+    ----------
+    .. [1] Goodman, B. T., W. V. Wilding, J. L. Oscarson, and R. L. Rowley. 
+       "Use of the DIPPR Database for the Development of QSPR Correlations: 
+       Solid Vapor Pressure and Heat of Sublimation of Organic Compounds." 
+       International Journal of Thermophysics 25, no. 2 (March 1, 2004): 
+       337-50. https://doi.org/10.1023/B:IJOT.0000028471.77933.80.
+    .. [2] Feistel, Rainer, and Wolfgang Wagner. "Sublimation Pressure and 
+       Sublimation Enthalpy of H2O Ice Ih between 0 and 273.16K." Geochimica et
+       Cosmochimica Acta 71, no. 1 (January 1, 2007): 36-45. 
+       https://doi.org/10.1016/j.gca.2006.08.034.
+    '''
+    return Pt*exp(Hsub_t*(T - Tt)/(R*T*Tt))
+
+
+PSUB_CLAPEYRON = 'PSUB_CLAPEYRON'
+
+sublimation_pressure_methods = [PSUB_CLAPEYRON]
+'''Holds all methods available for the SublimationPressure class, for use in
+iterating over them.'''
+
+
+class SublimationPressure(TDependentProperty):
+    '''Class for dealing with sublimation pressure as a function of temperature.
+    Consists of one estimation method.
+
+    Parameters
+    ----------
+    CASRN : str, optional
+        The CAS number of the chemical
+    Tt : float, optional
+        Triple temperature, [K]
+    Pt : float, optional
+        Triple pressure, [Pa]
+    Hsub_t : float, optional
+        Sublimation enthalpy at the triple point, [J/mol]
+
+    Notes
+    -----
+    To iterate over all methods, use the list stored in
+    :obj:`sublimation_pressure_methods`.
+
+    **PSUB_CLAPEYRON**:
+        Clapeyron thermodynamic identity, :obj:`Psub_Clapeyron`,
+
+    See Also
+    --------
+    Psub_Clapeyron
+
+    References
+    ----------
+    .. [1] Goodman, B. T., W. V. Wilding, J. L. Oscarson, and R. L. Rowley. 
+       "Use of the DIPPR Database for the Development of QSPR Correlations: 
+       Solid Vapor Pressure and Heat of Sublimation of Organic Compounds." 
+       International Journal of Thermophysics 25, no. 2 (March 1, 2004): 
+       337-50. https://doi.org/10.1023/B:IJOT.0000028471.77933.80.
+    '''
+    name = 'Sublimation pressure'
+    units = 'Pa'
+    interpolation_T = lambda self, T: 1./T
+    '''1/T interpolation transformation by default.'''
+    interpolation_property = lambda self, P: log(P)
+    '''log(P) interpolation transformation by default.'''
+    interpolation_property_inv = lambda self, P: exp(P)
+    '''exp(P) interpolation transformation by default; reverses
+    :obj:`interpolation_property_inv`.'''
+    tabular_extrapolation_permitted = False
+    '''Disallow tabular extrapolation by default; CSP methods prefered
+    normally.'''
+    property_min = 1e-100
+    '''Mimimum valid value of sublimation pressure.'''
+    property_max = 1e5
+    '''Maximum valid value of sublimation pressure. Set to 1 bar tentatively.'''
+
+    ranked_methods = [PSUB_CLAPEYRON]
+    '''Default rankings of the available methods.'''
+
+    def __init__(self, CASRN=None, Tt=None, Pt=None, Hsub_t=None, best_fit=None):
+        self.CASRN = CASRN
+        self.Tt = Tt
+        self.Pt = Pt
+        self.Hsub_t = Hsub_t
+
+        self.Tmin = None
+        '''Minimum temperature at which no method can calculate sublimation pressure
+        under.'''
+
+        self.Tmax = None
+        '''Maximum temperature at which no method can calculate sublimation pressure
+        above; by definition the critical point.'''
+
+        self.method = None
+        '''The method was which was last used successfully to calculate a property;
+        set only after the first property calculation.'''
+
+        self.tabular_data = {}
+        '''tabular_data, dict: Stored (Ts, properties) for any
+        tabular data; indexed by provided or autogenerated name.'''
+        self.tabular_data_interpolators = {}
+        '''tabular_data_interpolators, dict: Stored (extrapolator,
+        spline) tuples which are interp1d instances for each set of tabular
+        data; indexed by tuple of (name, interpolation_T,
+        interpolation_property, interpolation_property_inv) to ensure that
+        if an interpolation transform is altered, the old interpolator which
+        had been created is no longer used.'''
+
+        self.sorted_valid_methods = []
+        '''sorted_valid_methods, list: Stored methods which were found valid
+        at a specific temperature; set by `T_dependent_property`.'''
+        self.user_methods = []
+        '''user_methods, list: Stored methods which were specified by the user
+        in a ranked order of preference; set by `T_dependent_property`.'''
+
+        self.all_methods = set()
+        '''Set of all methods available for a given CASRN and properties;
+        filled by :obj:`load_all_methods`.'''
+
+        self.load_all_methods()
+
+        if best_fit is not None:
+            self.set_best_fit(best_fit)
+
+
+    def load_all_methods(self):
+        r'''Method which picks out coefficients for the specified chemical
+        from the various dictionaries and DataFrames storing it. All data is
+        stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
+        and :obj:`all_methods` as a set of methods for which the data exists for.
+
+        Called on initialization only. See the source code for the variables at
+        which the coefficients are stored. The coefficients can safely be
+        altered once the class is initialized. This method can be called again
+        to reset the parameters.
+        '''
+        methods = []
+        Tmins, Tmaxs = [], []
+        if all((self.Tt, self.Pt, self.Hsub_t)):
+            methods.append(PSUB_CLAPEYRON)
+            Tmins.append(1.0); Tmaxs.append(self.Tt*1.5)
+        self.all_methods = set(methods)
+        if Tmins and Tmaxs:
+            self.Tmin = min(Tmins)
+            self.Tmax = max(Tmaxs)
+
+    def calculate(self, T, method):
+        r'''Method to calculate sublimation pressure of a fluid at temperature
+        `T` with a given method.
+
+        This method has no exception handling; see `T_dependent_property`
+        for that.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at calculate sublimation pressure, [K]
+        method : str
+            Name of the method to use
+
+        Returns
+        -------
+        Psub : float
+            Sublimation pressure at T, [pa]
+        '''
+        if method == BESTFIT:
+            if T < self.best_fit_Tmin:
+                Psub = (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value
+            elif T > self.best_fit_Tmax:
+                Psub = (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
+            else:
+                Psub = horner(self.best_fit_coeffs, T)
+            Psub = exp(Psub)
+        elif method == PSUB_CLAPEYRON:
+            Psub = max(Psub_Clapeyron(T, Tt=self.Tt, Pt=self.Pt, Hsub_t=self.Hsub_t), 1e-200)
+        elif method in self.tabular_data:
+            Psub = self.interpolate(T, method)
+        elif method == BESTFIT:
+            Psub = exp(horner(self.best_fit_coeffs, T))
+        return Psub
+
+    def test_method_validity(self, T, method):
+        r'''Method to check the validity of a method. Follows the given
+        ranges for all coefficient-based methods. For CSP methods, the models
+        are considered valid from 0 K to the critical point. For tabular data,
+        extrapolation outside of the range is used if
+        :obj:`tabular_extrapolation_permitted` is set; if it is, the 
+        extrapolation is considered valid for all temperatures.
+
+        It is not guaranteed that a method will work or give an accurate
+        prediction simply because this method considers the method valid.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to test the method, [K]
+        method : str
+            Name of the method to test
+
+        Returns
+        -------
+        validity : bool
+            Whether or not a method is valid
+        '''
+        if method in [PSUB_CLAPEYRON]:
+            return True
+            # No lower limit
+        elif method in self.tabular_data:
+            # if tabular_extrapolation_permitted, good to go without checking
+            if not self.tabular_extrapolation_permitted:
+                Ts, properties = self.tabular_data[method]
+                if T < Ts[0] or T > Ts[-1]:
+                    return False
+        else:
+            raise Exception('Method not valid')
+        return True
+
+

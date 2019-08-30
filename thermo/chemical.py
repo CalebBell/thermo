@@ -27,8 +27,8 @@ __all__ = ['Chemical', 'reference_states']
 
 from thermo.identifiers import *
 from thermo.identifiers import _MixtureDict, empty_chemical_constants
-from thermo.vapor_pressure import VaporPressure
-from thermo.phase_change import Tb, Tm, Hfus, Hsub, Tliquidus, EnthalpyVaporization
+from thermo.vapor_pressure import VaporPressure, SublimationPressure
+from thermo.phase_change import Tb, Tm, Hfus, Hsub, Tliquidus, EnthalpyVaporization, EnthalpySublimation
 from thermo.activity import identify_phase, identify_phase_mixture, Pbubble_mixture, Pdew_mixture
 
 from thermo.critical import Tc, Pc, Vc, Tc_mixture, Pc_mixture, Vc_mixture
@@ -989,6 +989,10 @@ class Chemical(object): # pragma: no cover
                                            best_fit=get_chemical_constants(self.CAS, 'VaporPressure'))
         self.Psat_298 = self.VaporPressure.T_dependent_property(298.15)
         self.phase_STP = identify_phase(T=298.15, P=101325., Tm=self.Tm, Tb=self.Tb, Tc=self.Tc, Psat=self.Psat_298)
+        if self.Pt is None and self.Tt is not None:
+            self.Pt = self.VaporPressure(self.Tt)
+            self.Pt_source = 'VaporPressure'
+
 
         self.VolumeLiquid = VolumeLiquid(MW=self.MW, Tb=self.Tb, Tc=self.Tc,
                           Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega,
@@ -1007,7 +1011,7 @@ class Chemical(object): # pragma: no cover
 
         self.Vmg_STP = self.VolumeGas.TP_dependent_property(298.15, 101325)
 
-        self.VolumeSolid = VolumeSolid(CASRN=self.CAS, MW=self.MW, Tt=self.Tt)
+        self.VolumeSolid = VolumeSolid(CASRN=self.CAS, MW=self.MW, Tt=self.Tt, Vml_Tt=self.Vml_Tm)
 
         self.HeatCapacityGas = HeatCapacityGas(CASRN=self.CAS, MW=self.MW, similarity_variable=self.similarity_variable, best_fit=get_chemical_constants(self.CAS, 'HeatCapacityGas'))
 
@@ -1019,6 +1023,15 @@ class Chemical(object): # pragma: no cover
         self.Hvap_Tbm = self.EnthalpyVaporization.T_dependent_property(self.Tb) if self.Tb else None
         self.Hvap_Tb = property_molar_to_mass(self.Hvap_Tbm, self.MW)
         self.Hvapm_STP = self.EnthalpyVaporization.T_dependent_property(298.15)
+        
+        
+        self.EnthalpySublimation = EnthalpySublimation(CASRN=self.CAS, Tm=self.Tm, Tt=self.Tt, 
+                                                       Cpg=self.HeatCapacityGas, Cps=self.HeatCapacitySolid,
+                                                       Hvap=self.EnthalpyVaporization)
+        self.Hsub_Ttm = self.EnthalpySublimation(self.Tt)
+        
+        self.SublimationPressure = SublimationPressure(CASRN=self.CAS, Tt=self.Tt, Pt=self.Pt, Hsub_t=self.Hsub_Ttm)
+        
 
         self.ViscosityLiquid = ViscosityLiquid(CASRN=self.CAS, MW=self.MW, Tm=self.Tm, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, omega=self.omega, Psat=self.VaporPressure.T_dependent_property, Vml=self.VolumeLiquid.T_dependent_property)
 

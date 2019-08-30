@@ -22,7 +22,8 @@ SOFTWARE.'''
 
 from __future__ import division
 __all__ = ['sequential_substitution_2P', 'bubble_T_Michelsen_Mollerup',
-           'dew_T_Michelsen_Mollerup',
+           'dew_T_Michelsen_Mollerup', 'bubble_P_Michelsen_Mollerup',
+           'dew_P_Michelsen_Mollerup',
            'minimize_gibbs_2P_transformed', 'sequential_substitution_Mehra_2P',
            'nonlin_2P', 'sequential_substitution_NP',
            'minimize_gibbs_NP_transformed']
@@ -34,7 +35,7 @@ from thermo.activity import flash_inner_loop, Rachford_Rice_solutionN, Rachford_
 from scipy.optimize import minimize, fsolve, root
 
 def sequential_substitution_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
-                               gas_phase, maxiter=1000, tol=1E-13, 
+                               gas_phase, maxiter=1000, tol=1E-13,
                                trivial_solution_tol=1e-5, V_over_F_guess=None):
     
     xs, ys = xs_guess, ys_guess
@@ -54,7 +55,7 @@ def sequential_substitution_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
 
         Ks = [exp(lnphis_l[i] - lnphis_g[i]) for i in cmps] # K_value(phi_l=l, phi_g=g)
         V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks, guess=V_over_F)
-        
+
         # Check for negative fractions - normalize only if needed
         for xi in xs_new:
             if xi < 0.0:
@@ -407,29 +408,38 @@ def minimize_gibbs_2P_transformed(T, P, zs, xs_guess, ys_guess, liquid_phase,
     else:
         V_over_F = V_over_F_guess
         
-    flows_v = [yi[i]*V_over_F for yi in ys_guess]
+    flows_v = [yi*V_over_F for yi in ys_guess]
     cmps = range(len(zs))
 
-
+    calc_phases = []
     def G(flows_v):
         vs = [(0.0 + (zs[i] - 0.0)/(1.0 - flows_v[i])) for i in cmps]
         ls = [zs[i] - vs[i] for i in cmps]
-        xs = normalize(xs)
-        ys = normalize(ys)
+        xs = normalize(ls)
+        ys = normalize(vs)
         
         VF = flows_v[0]/ys[0]
     
         g = gas_phase.to_TP_zs(T=T, P=P, zs=ys)
         l = liquid_phase.to_TP_zs(T=T, P=P, zs=xs)
         
-        G_g = g.G()
         G_l = l.G()
+        G_g = g.G()
+        calc_phases[:] = G_l, G_g
         GE_calc = (G_g*VF + (1.0 - VF)*G_l)/(R*T)
         return GE_calc
 
     ans = minimize(G, flows_v)
-    return ans
-    
+
+    flows_v = ans['x']
+    vs = [(0.0 + (zs[i] - 0.0) / (1.0 - flows_v[i])) for i in cmps]
+    ls = [zs[i] - vs[i] for i in cmps]
+    xs = normalize(ls)
+    ys = normalize(vs)
+
+    V_over_F = flows_v[0] / ys[0]
+    return V_over_F, xs, ys, calc_phases[0], calc_phases[1], ans['nfev'], ans['fun']
+
 
 def minimize_gibbs_NP_transformed(T, P, zs, compositions_guesses, phases,
                                   betas, tol=1E-13,
@@ -511,6 +521,8 @@ def minimize_gibbs_NP_transformed(T, P, zs, compositions_guesses, phases,
     
 l_undefined_T_msg = "Could not calculate liquid conditions at provided temperature %s K (mole fracions %s)"   
 g_undefined_T_msg = "Could not calculate vapor conditions at provided temperature %s K (mole fracions %s)"   
+l_undefined_P_msg = "Could not calculate liquid conditions at provided pressure %s Pa (mole fracions %s)"   
+g_undefined_P_msg = "Could not calculate vapor conditions at provided pressure %s Pa (mole fracions %s)"   
 
 def bubble_T_Michelsen_Mollerup(T_guess, P, zs, liquid_phase, gas_phase, 
                                 maxiter=200, xtol=1E-10, ys_guess=None,
@@ -584,7 +596,7 @@ def bubble_T_Michelsen_Mollerup(T_guess, P, zs, liquid_phase, gas_phase,
         
     if abs(T_guess - T_guess_old) > xtol:
         raise ValueError("Did not converge to specified tolerance")
-    return T_guess, iteration, abs(T_guess - T_guess_old)
+    return T_guess, ys, l, g, iteration, abs(T_guess - T_guess_old)
 
 
 def dew_T_Michelsen_Mollerup(T_guess, P, zs, liquid_phase, gas_phase, 
@@ -600,23 +612,23 @@ def dew_T_Michelsen_Mollerup(T_guess, P, zs, liquid_phase, gas_phase,
     successive_fails = 0
     for iteration in range(maxiter):
         try:
-            g = gas_phase.to_TP_zs(T=T_guess, P=P, zs=xs)
+            g = gas_phase.to_TP_zs(T=T_guess, P=P, zs=zs)
             lnphis_g = g.lnphis()
             dlnphis_dT_g = g.dlnphis_dT()
         except Exception as e:
             if T_guess_old is None:
-                raise ValueError(g_undefined_T_msg %(T_guess, xs), e)
+                raise ValueError(g_undefined_T_msg %(T_guess, zs), e)
             successive_fails += 1
             T_guess = T_guess_old + copysign(min(max_step_damping, abs(step)), step)
             continue
 
         try:
-            l = liquid_phase.to_TP_zs(T=T_guess, P=P, zs=zs)
+            l = liquid_phase.to_TP_zs(T=T_guess, P=P, zs=xs)
             lnphis_l = l.lnphis()
             dlnphis_dT_l = l.dlnphis_dT()
         except Exception as e:
             if T_guess_old is None:
-                raise ValueError(l_undefined_T_msg %(T_guess, zs), e)
+                raise ValueError(l_undefined_T_msg %(T_guess, xs), e)
             successive_fails += 1
             T_guess = T_guess_old + copysign(min(max_step_damping, abs(step)), step)
             continue
@@ -660,4 +672,145 @@ def dew_T_Michelsen_Mollerup(T_guess, P, zs, liquid_phase, gas_phase,
         
     if abs(T_guess - T_guess_old) > xtol:
         raise ValueError("Did not converge to specified tolerance")
-    return T_guess, iteration, abs(T_guess - T_guess_old)
+    return T_guess, xs, l, g, iteration, abs(T_guess - T_guess_old)
+
+def bubble_P_Michelsen_Mollerup(P_guess, T, zs, liquid_phase, gas_phase, 
+                                maxiter=200, xtol=1E-10, ys_guess=None,
+                                max_step_damping=1e5, P_update_frequency=1,
+                                trivial_solution_tol=1e-4):
+    N = len(zs)
+    cmps = range(N)
+    ys = zs if ys_guess is None else ys_guess
+
+
+    P_guess_old = None
+    successive_fails = 0
+    for iteration in range(maxiter):
+        try:
+            g = gas_phase = gas_phase.to_TP_zs(T=T, P=P_guess, zs=ys)
+            lnphis_g = g.lnphis()
+            dlnphis_dP_g = g.dlnphis_dP()
+        except Exception as e:
+            if P_guess_old is None:
+                raise ValueError(g_undefined_P_msg %(P_guess, ys), e)
+            successive_fails += 1
+            P_guess = P_guess_old + copysign(min(max_step_damping, abs(step)), step)
+            continue
+
+        try:
+            l = liquid_phase= liquid_phase.to_TP_zs(T=T, P=P_guess, zs=zs)
+            lnphis_l = l.lnphis()
+            dlnphis_dP_l = l.dlnphis_dP()
+        except Exception as e:
+            if P_guess_old is None:
+                raise ValueError(l_undefined_P_msg %(P_guess, zs), e)
+            successive_fails += 1
+            T_guess = P_guess_old + copysign(min(max_step_damping, abs(step)), step)
+            continue
+
+        if successive_fails > 2:
+            raise ValueError("Stopped convergence procedure after multiple bad steps")     
+    
+        successive_fails = 0
+        Ks = [exp(a - b) for a, b in zip(lnphis_l, lnphis_g)]
+        ys = [zs[i]*Ks[i] for i in cmps]
+        if iteration % P_update_frequency:
+            continue
+
+        f_k = sum([zs[i]*Ks[i] for i in cmps]) - 1.0
+        
+        dfk_dP = 0.0
+        for i in cmps:
+            dfk_dP += zs[i]*Ks[i]*(dlnphis_dP_l[i] - dlnphis_dP_g[i])
+        
+        P_guess_old = P_guess
+        step = -f_k/dfk_dP
+        
+        P_guess = P_guess + copysign(min(max_step_damping, abs(step)), step)
+        
+        
+        comp_difference = sum([abs(zi - yi) for zi, yi in zip(zs, ys)])
+        if comp_difference < trivial_solution_tol:
+            raise ValueError("Converged to trivial condition, compositions of both phases equal")
+        
+        y_sum = sum(ys)
+        ys = [y/y_sum for y in ys]
+
+        if abs(P_guess - P_guess_old) < xtol:
+            P_guess = P_guess_old
+            break
+        
+    if abs(P_guess - P_guess_old) > xtol:
+        raise ValueError("Did not converge to specified tolerance")
+    return P_guess, ys, l, g, iteration, abs(P_guess - P_guess_old)
+
+
+def dew_P_Michelsen_Mollerup(P_guess, T, zs, liquid_phase, gas_phase, 
+                             maxiter=200, xtol=1E-10, xs_guess=None,
+                             max_step_damping=1e5, P_update_frequency=1,
+                             trivial_solution_tol=1e-4):
+    N = len(zs)
+    cmps = range(N)
+    xs = zs if xs_guess is None else xs_guess
+
+
+    P_guess_old = None
+    successive_fails = 0
+    for iteration in range(maxiter):
+        try:
+            g = gas_phase = gas_phase.to_TP_zs(T=T, P=P_guess, zs=zs)
+            lnphis_g = g.lnphis()
+            dlnphis_dP_g = g.dlnphis_dP()
+        except Exception as e:
+            if P_guess_old is None:
+                raise ValueError(g_undefined_P_msg %(P_guess, zs), e)
+            successive_fails += 1
+            P_guess = P_guess_old + copysign(min(max_step_damping, abs(step)), step)
+            continue
+
+        try:
+            l = liquid_phase= liquid_phase.to_TP_zs(T=T, P=P_guess, zs=xs)
+            lnphis_l = l.lnphis()
+            dlnphis_dP_l = l.dlnphis_dP()
+        except Exception as e:
+            if P_guess_old is None:
+                raise ValueError(l_undefined_P_msg %(P_guess, xs), e)
+            successive_fails += 1
+            T_guess = P_guess_old + copysign(min(max_step_damping, abs(step)), step)
+            continue
+
+        if successive_fails > 2:
+            raise ValueError("Stopped convergence procedure after multiple bad steps")     
+    
+        successive_fails = 0
+        Ks = [exp(a - b) for a, b in zip(lnphis_l, lnphis_g)]
+        xs = [zs[i]/Ks[i] for i in cmps]
+        if iteration % P_update_frequency:
+            continue
+
+        f_k = sum(xs) - 1.0
+        
+        dfk_dP = 0.0
+        for i in cmps:
+            dfk_dP += xs[i]*(dlnphis_dP_g[i] - dlnphis_dP_l[i])
+        
+        P_guess_old = P_guess
+        step = -f_k/dfk_dP
+        
+        P_guess = P_guess + copysign(min(max_step_damping, abs(step)), step)
+        
+        
+        comp_difference = sum([abs(zi - xi) for zi, xi in zip(zs, xs)])
+        if comp_difference < trivial_solution_tol:
+            raise ValueError("Converged to trivial condition, compositions of both phases equal")
+        
+        x_sum_inv = 1.0/sum(xs)
+        xs = [x*x_sum_inv for x in xs]
+
+        if abs(P_guess - P_guess_old) < xtol:
+            P_guess = P_guess_old
+            break
+        
+    if abs(P_guess - P_guess_old) > xtol:
+        raise ValueError("Did not converge to specified tolerance")
+    return P_guess, xs, l, g, iteration, abs(P_guess - P_guess_old)

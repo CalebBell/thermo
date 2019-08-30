@@ -2334,13 +2334,13 @@ class VolumeSolid(TDependentProperty):
     '''No interpolation transformation by default.'''
     tabular_extrapolation_permitted = True
     '''Allow tabular extrapolation by default.'''
-    property_min = 0
+    property_min = 1e-6
     '''Molar volume cannot be under 0.'''
     property_max = 2e-3
     '''Maximum value of Heat capacity; arbitrarily set to 0.002, as the largest
     in the data is 0.00136.'''
 
-    ranked_methods = [CRC_INORG_S]  # GOODMAN
+    ranked_methods = [CRC_INORG_S, GOODMAN]  # 
     '''Default rankings of the available methods.'''
 
     def __init__(self, CASRN='', MW=None, Tt=None, Vml_Tt=None):
@@ -2349,7 +2349,7 @@ class VolumeSolid(TDependentProperty):
         self.Tt = Tt
         self.Vml_Tt = Vml_Tt
 
-        self.Tmin = 0
+        self.Tmin = 1e-2
         '''Minimum temperature at which no method can calculate the
         solid molar volume under.'''
         self.Tmax = 1E4
@@ -2396,9 +2396,8 @@ class VolumeSolid(TDependentProperty):
         if self.CASRN in CRC_inorg_s_const_data.index:
             methods.append(CRC_INORG_S)
             self.CRC_INORG_S_Vm = float(CRC_inorg_s_const_data.at[self.CASRN, 'Vm'])
-#        if all((self.Tt, self.Vml_Tt, self.MW)):
-#            self.rhol_Tt = Vm_to_rho(self.Vml_Tt, self.MW)
-#            methods.append(GOODMAN)
+        if all((self.Tt, self.Vml_Tt, self.MW)):
+            methods.append(GOODMAN)
         self.all_methods = set(methods)
 
     def calculate(self, T, method):
@@ -2422,8 +2421,8 @@ class VolumeSolid(TDependentProperty):
         '''
         if method == CRC_INORG_S:
             Vms = self.CRC_INORG_S_Vm
-#        elif method == GOODMAN:
-#            Vms = Goodman(T, self.Tt, self.rhol_Tt)
+        elif method == GOODMAN:
+            Vms = Goodman(T, self.Tt, self.Vml_Tt)
         elif method in self.tabular_data:
             Vms = self.interpolate(T, method)
         return Vms
@@ -2456,9 +2455,9 @@ class VolumeSolid(TDependentProperty):
         elif method == CRC_INORG_S:
             pass
             # Assume the solid density value is good at any possible T
-#        elif method == GOODMAN:
-#            if T < self.Tt*0.3:
-#                validity = False
+        elif method == GOODMAN:
+            if T < self.Tt*0.3:
+                validity = False
         elif method in self.tabular_data:
             # if tabular_extrapolation_permitted, good to go without checking
             if not self.tabular_extrapolation_permitted:

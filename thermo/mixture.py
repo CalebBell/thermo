@@ -840,7 +840,9 @@ class Mixture(object):
         self.Permittivities = [i.Permittivity for i in self.Chemicals]
 
         self.VaporPressures = [i.VaporPressure for i in self.Chemicals]
+        self.SublimationPressures = [i.SublimationPressure for i in self.Chemicals]
         self.EnthalpyVaporizations = [i.EnthalpyVaporization for i in self.Chemicals]
+        self.EnthalpySublimations = [i.EnthalpySublimation for i in self.Chemicals]
 
     def set_TP_sources(self):
 
