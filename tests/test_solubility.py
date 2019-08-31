@@ -71,3 +71,12 @@ def test_Henry_converter():
             assert_allclose(calc, 2.19707E-05, rtol=2e-6)
             recalc = Henry_converter(v, old_scale=scale, new_scale=scale, rhom=55341.9, MW=18.01528)
             assert_allclose(v, recalc, rtol=1e-14)
+
+
+def test_Henry_pressure():
+    H = Henry_pressure(300.0, A=15.0, B=300.0, C=.04, D=1e-3, E=1e2, F=1e-5)
+    assert_allclose(H, 37105004.47898146)
+    
+def test_Henry_pressure_mixture():
+    H = Henry_pressure_mixture([1072330.36341, 744479.751106, None], zs=[.48, .48, .04])
+    assert_allclose(H, 893492.1611602883)

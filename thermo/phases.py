@@ -1205,8 +1205,8 @@ class GibbsExcessLiquid(Phase):
             zs = self.zs
             
             for i in cmps:
-                Vcs = [1, 1, 1]
-#                Vcs = [5.6000000000000006e-05, 0.000168, 7.340000000000001e-05]
+#                Vcs = [1, 1, 1]
+                Vcs = [5.6000000000000006e-05, 0.000168, 7.340000000000001e-05]
                 if henry_components[i]:
                     # WORKING - Need a bunch of conversions of data in terms of other values
                     # into this basis
@@ -1219,12 +1219,15 @@ class GibbsExcessLiquid(Phase):
                             t = T
 #                            t = T - 273.15
                             log_Hi = (r[0] + r[1]/t + r[2]*log(t) + r[3]*t + r[4]/t**2)
+#                            print(log_Hi)
                             wi = zs[j]*Vcs[j]**(2.0/3.0)/sum([zs[_]*Vcs[_]**(2.0/3.0) for _ in cmps if d[_]])
+                            print(wi)
                             
                             logH += wi*log_Hi
 #                            logH += zs[j]*log_Hi
                             z_sum += zs[j]
                     
+                    print(logH, z_sum)
                     z_sum = 1
                     Psats[i] = exp(logH/z_sum)*1e5 # bar to Pa
                     

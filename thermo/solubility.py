@@ -24,7 +24,7 @@ from __future__ import division
 
 __all__ = ['solubility_parameter_methods', 'solubility_parameter', 
            'solubility_eutectic', 'Tm_depression_eutectic',
-           'Henry_converter']
+           'Henry_converter', 'Henry_pressure', 'Henry_pressure_mixture']
            
 import os
 from fluids.constants import R, atm
@@ -436,3 +436,103 @@ def Henry_converter(val, old_scale, new_scale, rhom=None, MW=None):
 
     return conv_val
         
+
+def Henry_pressure(T, A, B=0.0, C=0.0, D=0.0, E=0.0, F=0.0):
+    r'''Calculates Henry's law constant as a function of temperature according
+    to the SI units of `Pa` and using a common temperature dependence as used
+    in many process simulation applications.
+    
+    Only the `A` parameter is required - which has no temperature dependence
+    when used by itself.
+    As the model is exponential, a sufficiently high temperature may cause an
+    OverflowError.
+    A negative temperature (or just low, if fit poorly) may cause a math domain
+    error.
+
+    .. math::
+        H_{12} = \exp\left(A_{12} + \frac{B_{12}}{T} + C_{12}\log(T) + D_{12}T
+         + \frac{E_{12}}{T^2} \right)
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    A-F : float
+        Parameter for the equation; chemical and property specific [-]
+
+    Returns
+    -------
+    H12 : float
+        Henry's constant [Pa]
+
+    Notes
+    -----
+    Add 11.51292 to the `A` constant if it is said to provide units of `bar`,
+    so that it provides units of `Pa` instead.
+    
+    The `F` parameter is not often included in models. It is rare to fit
+    all parameters.
+
+    Examples
+    --------
+    Random test example.
+
+    >>> Henry_pressure(300.0, A=15.0, B=300.0, C=.04, D=1e-3, E=1e2, F=1e-5)
+    37105004.47898146
+
+    References
+    ----------
+    .. [1] Gmehling, Jurgen. Chemical Thermodynamics: For Process Simulation.
+       Weinheim, Germany: Wiley-VCH, 2012.
+    '''
+    return exp(A + B/T + C*log(T) + D*T + E/T**2 + F*T**2)
+
+
+def Henry_pressure_mixture(Hs, weights=None, zs=None):
+    r'''Mixing rule for Henry's law components. Applies a logarithmic average
+    to all solvent components and mole fractions. Optionally, weight factors
+    can be provided instead of using mole fractions - only specify one of them.
+    
+    A common weight factor is using volume fractions of powers of them, or 
+    using critical volumes.
+
+    Parameters
+    ----------
+    Hs : list[float or None]
+        Henry's law constant between each gas and the solvent (None for other
+        solvents of gases without parameters available), [Pa]
+    weights : list[float], optional
+        Weight factors, [-]
+    zs : list[float]
+        Mole fractions of all species in phase, [-]
+
+    Returns
+    -------
+    H : value
+        Henry's law constant for the gas in the liquid phase, [-]
+
+    Notes
+    -----
+    The default weight factor formulation is from [1]_.
+
+    Examples
+    --------
+    >>> Henry_pressure_mixture([1072330.36341, 744479.751106, None], zs=[.48, .48, .04])
+    893492.1611602883
+
+    References
+    ----------
+    .. [1] Gmehling, Jurgen. Chemical Thermodynamics: For Process Simulation.
+       Weinheim, Germany: Wiley-VCH, 2012.
+    '''
+    cmps = range(len(Hs))
+    if weights is None:
+        # Default parameters - when weight specified only weight by that
+        z_solvent = sum(zs[i] for i in cmps if Hs[i] is not None)
+        weights = [zs[i]/z_solvent for i in cmps]
+    num = 0.0
+    for i in cmps:
+        if Hs[i] is not None:
+            num += weights[i]*log(Hs[i])
+    H = exp(num)
+    return H
