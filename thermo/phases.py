@@ -1205,7 +1205,8 @@ class GibbsExcessLiquid(Phase):
             zs = self.zs
             
             for i in cmps:
-                Vcs = [5.6000000000000006e-05, 0.000168, 7.340000000000001e-05]
+                Vcs = [1, 1, 1]
+#                Vcs = [5.6000000000000006e-05, 0.000168, 7.340000000000001e-05]
                 if henry_components[i]:
                     # WORKING - Need a bunch of conversions of data in terms of other values
                     # into this basis

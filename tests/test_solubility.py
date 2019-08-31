@@ -53,3 +53,21 @@ def test_solubility_parameter():
         solubility_parameter(CASRN='132451235-2151234-1234123', Method='BADMETHOD')
 
     assert None == solubility_parameter(T=3500.2, Hvapm=26403.3, Vml=0.000116055)
+
+
+def test_Henry_converter():
+    from thermo.solubility import (HENRY_SCALES_HCP, HENRY_SCALES_HCP_MOLALITY , HENRY_SCALES_HCC, HENRY_SCALES_HBP_SI, HENRY_SCALES_HBP, HENRY_SCALES_HXP, HENRY_SCALES_BUNSEN, HENRY_SCALES_KHPX, HENRY_SCALES_KHPC_SI, HENRY_SCALES_KHPC, HENRY_SCALES_KHCC, HENRY_SCALES_SI)
+    test_values = [1.2E-05, 0.0012159, 0.0297475, 1.20361E-08, 0.00121956,
+                   2.19707E-05, 0.0272532, 45515.2, 83333.3, 0.822436, 33.6163,
+                   4611823929.1419935]
+    test_scales = [HENRY_SCALES_HCP, HENRY_SCALES_HCP_MOLALITY, HENRY_SCALES_HCC, 
+                   HENRY_SCALES_HBP_SI, HENRY_SCALES_HBP, HENRY_SCALES_HXP, 
+                   HENRY_SCALES_BUNSEN, HENRY_SCALES_KHPX, HENRY_SCALES_KHPC_SI, 
+                   HENRY_SCALES_KHPC, HENRY_SCALES_KHCC, HENRY_SCALES_SI]
+    for v, scales in zip(test_values, test_scales):
+        for scale in scales:
+            calc = Henry_converter(v, old_scale=scale, new_scale='Hxp', rhom=55341.9, MW=18.01528)
+            # Best we can match given the digits provided
+            assert_allclose(calc, 2.19707E-05, rtol=2e-6)
+            recalc = Henry_converter(v, old_scale=scale, new_scale=scale, rhom=55341.9, MW=18.01528)
+            assert_allclose(v, recalc, rtol=1e-14)

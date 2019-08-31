@@ -23,11 +23,12 @@ SOFTWARE.'''
 from __future__ import division
 
 __all__ = ['solubility_parameter_methods', 'solubility_parameter', 
-           'solubility_eutectic', 'Tm_depression_eutectic']
+           'solubility_eutectic', 'Tm_depression_eutectic',
+           'Henry_converter']
            
 import os
+from fluids.constants import R, atm
 from thermo.utils import log, exp
-from thermo.utils import R
 
 folder = os.path.join(os.path.dirname(__file__), 'Solubility')
 
@@ -279,3 +280,159 @@ def Tm_depression_eutectic(Tm, Hm, x=None, M=None, MW=None):
     else:
         raise Exception('Either molality or mole fraction of the solute must be specified; MW of the solvent is required also if molality is provided')
     return dTm
+
+
+HENRY_SCALES_HCP = ('Hcp', 'mol/(m^3*Pa)')
+HENRY_SCALES_HCP_MOLALITY = ('M/atm',)
+HENRY_SCALES_HCC = ('Hcc',)
+HENRY_SCALES_HBP_SI = ('mol/(kg*Pa)',)
+HENRY_SCALES_HBP = ('Hbp', 'mol/(kg*atm)')
+HENRY_SCALES_HXP = ('Hxp', '1/atm')
+HENRY_SCALES_BUNSEN = ('alpha', 'bunsen coefficient')
+
+HENRY_SCALES_KHPX = ('KHpx', 'atm')
+HENRY_SCALES_KHPC_SI =  ('m^3*Pa/mol',)
+HENRY_SCALES_KHPC = ('KHpc', 'm^3*atm/mol')
+HENRY_SCALES_KHCC = ('KHcc',)
+HENRY_SCALES_SI = ('SI',)
+
+HENRY_SCALES_LIST = (HENRY_SCALES_HCP + HENRY_SCALES_HCP_MOLALITY 
+                     + HENRY_SCALES_HCC + HENRY_SCALES_HBP_SI + HENRY_SCALES_HBP
+                     + HENRY_SCALES_HXP + HENRY_SCALES_BUNSEN + HENRY_SCALES_KHPX
+                     + HENRY_SCALES_KHPC_SI + HENRY_SCALES_KHPC + HENRY_SCALES_KHCC
+                     + HENRY_SCALES_SI)
+
+
+def Henry_converter(val, old_scale, new_scale, rhom=None, MW=None):
+    r'''Converts Henry's law constant for a gas with respect to a solvent from 
+    one scale to another. 
+    
+    There are many scales, but it is recommemed to operate in the scale of
+    `SI` - which returns a value with units `Pa`, and directly gets used in
+    place of vapor pressure inside a flash calculation. This removes the
+    complexity of Henry's law, avoiding possible simplication in favor of use
+    with other thermodynamic models.
+    
+    Only some scales require the molecular weight and the molar density of the
+    solvent. Values for water, the most common solute, are 55344.59 mol/m^3 at
+    STP and 18.01528 g/mol.
+        
+    Parameters
+    ----------
+    val : float
+        Henry's law constant, various units
+    old_scale : str
+        String representing the scale that `val` is in originally.
+    new_scale : str
+        String representing the scale that `val` should be converted to.
+        
+    Returns
+    -------
+    result : float
+        Input `val` converted from `old_scale` to `new_scale`, various units
+
+    Notes
+    -----
+    The valid scales for this function are any of the following:
+        
+    ('Hcp', 'mol/(m^3*Pa)', 'M/atm', 'Hcc', 'mol/(kg*Pa)', 'Hbp', 
+    'mol/(kg*atm)', 'Hxp', '1/atm', 'alpha', 'bunsen coefficient', 'KHpx',
+    'atm', 'm^3*Pa/mol', 'KHpc', 'm^3*atm/mol', 'KHcc', 'SI')
+    
+    Examples
+    --------
+    >>> Henry_converter(1.2e-5, old_scale='Hcp', new_scale='SI', rhom=55344.59, 
+    ... MW=18.01528)
+    4612049166.666666
+    
+    >>> Henry_converter(0.0297475, old_scale='Hcc', new_scale='KHcc', 
+    ... rhom=55344.59, MW=18.01528)
+    33.61627027481301
+
+    References
+    ----------
+    .. [1] Green, Don, and Robert Perry. Perry's Chemical Engineers' Handbook,
+       8E. McGraw-Hill Professional, 2007.
+    '''
+    # Convert val to units of 1/atm
+    if old_scale in HENRY_SCALES_HCP:
+        factor = atm/rhom
+        Hxp = val*factor # multiplication of 1.83089 
+    elif old_scale in HENRY_SCALES_HCP_MOLALITY: # Hcp in Molarity
+        factor = 1000.0/rhom
+        Hxp = val*factor # multiplication of 0.0180695 
+    elif old_scale in HENRY_SCALES_HCC:
+        # Aqueous concentration divided by gas concentration
+        factor = (atm/(R*298.15*rhom))
+        Hxp = val*factor # multiplication of 7.38573E-4
+    elif old_scale in HENRY_SCALES_HBP_SI: # Hbp in SI
+        rho = 1e-3*rhom*MW  # Vm_to_rho(1.0/rhom, MW)
+        factor = rho*atm/rhom
+        Hxp = val*factor# Multiplication of 1825.40 
+    elif old_scale in HENRY_SCALES_HBP:
+        rho = 1e-3*rhom*MW  # Vm_to_rho(1.0/rhom, MW)
+        factor = rho/rhom
+        Hxp = val*factor # multiplication of 0.0180153 
+    elif old_scale in HENRY_SCALES_HXP:
+        Hxp = val
+    elif old_scale in HENRY_SCALES_BUNSEN:
+        factor = atm/(R*273.15*rhom)
+        Hxp = val*factor # multiplication of 8.06171E-4
+    # Volatility constants
+    elif old_scale in HENRY_SCALES_KHPX:
+        Hxp = 1.0/val
+    elif old_scale in HENRY_SCALES_KHPC_SI:
+        factor = atm/rhom
+        Hxp = factor/val # multiplication of 0.546182 
+    elif old_scale in HENRY_SCALES_KHPC:
+        factor = 1.0/rhom
+        Hxp = factor/val # multiplication of 55341.9 
+    elif old_scale in HENRY_SCALES_KHCC:
+        factor = atm/(R*298.15*rhom) # gas concentration divided by Aqueous concentration 
+        Hxp = factor/val # Multiplication of 1353.96 
+    elif old_scale in HENRY_SCALES_SI:
+        Hxp = atm/val
+    else:
+        raise ValueError("Not recognized input scale: %s" %old_scale)
+    
+    # Convert from the constant `Hxp` to the desired unit
+    if new_scale in HENRY_SCALES_HCP:
+        factor = atm/rhom
+        conv_val = Hxp/factor
+    elif new_scale in HENRY_SCALES_HCP_MOLALITY:
+        factor = 1000.0/rhom
+        conv_val = Hxp/factor
+    elif new_scale in HENRY_SCALES_HCC:
+        factor = (atm/(R*298.15*rhom))
+        conv_val = Hxp/factor
+    elif new_scale in HENRY_SCALES_HBP_SI:
+        rho = 1e-3*rhom*MW  # Vm_to_rho(1.0/rhom, MW)
+        factor = rho*atm/rhom
+        conv_val = Hxp/factor
+    elif new_scale in HENRY_SCALES_HBP:
+        rho = 1e-3*rhom*MW  # Vm_to_rho(1.0/rhom, MW)
+        factor = rho/rhom
+        conv_val = Hxp/factor
+    elif new_scale in HENRY_SCALES_HXP:
+        conv_val = Hxp
+    elif new_scale in HENRY_SCALES_BUNSEN:
+        factor = atm/(R*273.15*rhom)
+        conv_val = Hxp/factor
+    elif new_scale in HENRY_SCALES_KHPX:
+        conv_val = 1.0/Hxp
+    elif new_scale in HENRY_SCALES_KHPC_SI:
+        factor = atm/rhom
+        conv_val = factor/Hxp
+    elif new_scale in HENRY_SCALES_KHPC:
+        factor = 1.0/rhom
+        conv_val = factor/Hxp
+    elif new_scale in HENRY_SCALES_KHCC:
+        factor = atm/(R*298.15*rhom)
+        conv_val = factor/(Hxp)
+    elif new_scale in HENRY_SCALES_SI:
+        conv_val = atm/Hxp
+    else:
+        raise ValueError("Not recognized input scale: %s" %new_scale)
+
+    return conv_val
+        
