@@ -34,6 +34,7 @@ from . import elements
 from . import environment
 from . import eos
 from . import eos_mix
+from . import equilibrium
 from . import flash
 from . import heat_capacity
 from . import identifiers
@@ -115,6 +116,7 @@ from .chemical_utils import *
 from .wilson import *
 from .nrtl import *
 from .uniquac import *
+from .equilibrium import *
 
 __all__ = ['activity', 'chemical', 'combustion', 'critical', 'flash',
  'dipole', 'electrochem', 'elements', 'environment', 'eos', 'eos_mix',
@@ -125,7 +127,8 @@ __all__ = ['activity', 'chemical', 'combustion', 'critical', 'flash',
  'thermal_conductivity', 'triple', 'utils',
  'vapor_pressure', 'virial', 'viscosity', 'volume', 'acentric', 'coolprop', 
  'datasheet', 'dippr', 'unifac', 'stream', 'mixture', 'property_package_constants',
- 'chemical_utils', 'wilson', 'nrtl', 'uniquac', 'regular_solution']
+ 'chemical_utils', 'wilson', 'nrtl', 'uniquac', 'regular_solution',
+ 'equilibrium']
 
 
 __all__.extend(acentric.__all__)
@@ -175,7 +178,7 @@ __all__.extend(wilson.__all__)
 __all__.extend(nrtl.__all__)
 __all__.extend(uniquac.__all__)
 __all__.extend(regular_solution.__all__)
-
+__all__.extend(equilibrium.__all__)
 
 
 # backwards compatibility hack to allow thermo.chemical.Mixture to still be importable

@@ -36,9 +36,10 @@ Does not have any flow property.
 
 
 class Bulk(object):
-    def __init__(self, T, P, zs, phases, phase_fractions):
-        self.T = T
-        self.P = P
+    def __init__(self,# T, P,
+                 zs, phases, phase_fractions):
+#        self.T = T
+#        self.P = P
         self.zs = zs
         self.phases = phases
         self.phase_fractions = phase_fractions

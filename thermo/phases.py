@@ -21,7 +21,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
-__all__ = ['GibbsExcessLiquid', 'Phase', 'EOSLiquid', 'EOSGas', 'IdealGas']
+__all__ = ['GibbsExcessLiquid', 'Phase', 'EOSLiquid', 'EOSGas', 'IdealGas',
+           'gas_phases', 'liquid_phases']
 
 from fluids.constants import R, R_inv
 from fluids.numerics import (horner, horner_and_der, horner_log, jacobian, derivative,
@@ -31,7 +32,6 @@ from thermo.utils import (log, exp, Cp_minus_Cv, phase_identification_parameter,
                           Joule_Thomson, speed_of_sound, dxs_to_dns,
                           normalize)
 from thermo.activity import IdealSolution
-
 
 '''
 All phase objects are immutable.
@@ -667,6 +667,19 @@ class Phase(object):
                                    for obj in HeatCapacityGases]
         return self._Cpig_integrals_over_T_pure
 
+    ### Transport properties - pass them on!
+    def mu(self):
+        try:
+            return self.result.mu(self)
+        except:
+            return None
+
+    def k(self):
+        try:
+            return self.result.k(self)
+        except:
+            return None
+
 
 
 class IdealGas(Phase):
@@ -1154,7 +1167,16 @@ class GibbsExcessLiquid(Phase):
             pass
         return new
         
+    def Henry_matrix(self):
+        '''Generate a matrix of all component-solvent Henry's law values
+        Shape N*N; solvent/solvent and gas/gas values are all None, as well
+        as solvent/gas values where the parameters are unavailable.
+        '''
         
+    def Henry_constants(self):
+        '''Mix the parameters in `Henry_matrix` into values to take the place
+        in Psats.
+        '''
         
     def Psats(self):
         try:
@@ -1162,9 +1184,6 @@ class GibbsExcessLiquid(Phase):
         except AttributeError:
             pass
         T, cmps = self.T, self.cmps
-        # Need to reset the method because for the T bounded solver,
-        # will normally get a different than prefered method as it starts
-        # at the boundaries
         self._Psats = Psats = []
         if self.Psats_locked:
             Psats_data = self.Psats_data
@@ -1185,6 +1204,9 @@ class GibbsExcessLiquid(Phase):
 
         
         for i in self.VaporPressures:
+        # Need to reset the method because for the T bounded solver,
+        # will normally get a different than prefered method as it starts
+        # at the boundaries
             if i.locked:
                 Psats.append(i(T))
             else:
@@ -1221,13 +1243,13 @@ class GibbsExcessLiquid(Phase):
                             log_Hi = (r[0] + r[1]/t + r[2]*log(t) + r[3]*t + r[4]/t**2)
 #                            print(log_Hi)
                             wi = zs[j]*Vcs[j]**(2.0/3.0)/sum([zs[_]*Vcs[_]**(2.0/3.0) for _ in cmps if d[_]])
-                            print(wi)
+#                            print(wi)
                             
                             logH += wi*log_Hi
 #                            logH += zs[j]*log_Hi
                             z_sum += zs[j]
                     
-                    print(logH, z_sum)
+#                    print(logH, z_sum)
                     z_sum = 1
                     Psats[i] = exp(logH/z_sum)*1e5 # bar to Pa
                     
@@ -1999,4 +2021,5 @@ class GibbsExcessLiquid(Phase):
         self._dV_dT = self.VolumeLiquidMixture.property_derivative_T(self.T, self.P, self.zs, order=1)
         return self._dV_dT
 
-    
+gas_phases = [IdealGas, EOSGas]
+liquid_phases = [EOSLiquid, GibbsExcessLiquid]
