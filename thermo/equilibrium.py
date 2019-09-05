@@ -223,3 +223,17 @@ for name in ChemicalConstantsPackage.__slots__:
     setattr(EquilibriumState, name, getter)
     for phase in all_phases:
         setattr(phase, name, getter)
+        
+        
+def _make_getter_bulk_props(name):
+    def get(self):
+        return getattr(self.bulk, name)
+    return get
+
+
+bulk_props = ['V', 'rho', 'Cp']
+for name in bulk_props:
+    getter = property(_make_getter_bulk_props(name))
+    setattr(EquilibriumState, name, getter)
+
+
