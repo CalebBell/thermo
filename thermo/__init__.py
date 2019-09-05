@@ -23,6 +23,7 @@ SOFTWARE.'''
 from . import acentric
 from . import activity
 from . import chemical
+from . import chemical_package
 from . import combustion
 from . import critical
 from . import coolprop
@@ -72,6 +73,7 @@ from . import uniquac
 from .acentric import *
 from .activity import *
 from .chemical import *
+from .chemical_package import *
 from .combustion import *
 from .critical import *
 from .coolprop import *
@@ -118,7 +120,7 @@ from .nrtl import *
 from .uniquac import *
 from .equilibrium import *
 
-__all__ = ['activity', 'chemical', 'combustion', 'critical', 'flash',
+__all__ = ['activity', 'chemical', 'chemical_package', 'combustion', 'critical', 'flash',
  'dipole', 'electrochem', 'elements', 'environment', 'eos', 'eos_mix',
  'heat_capacity',  'identifiers', 'joback', 'law', 'lennard_jones',
  'miscdata',
@@ -133,6 +135,7 @@ __all__ = ['activity', 'chemical', 'combustion', 'critical', 'flash',
 
 __all__.extend(acentric.__all__)
 __all__.extend(activity.__all__)
+__all__.extend(chemical_package.__all__)
 __all__.extend(chemical.__all__)
 __all__.extend(combustion.__all__)
 __all__.extend(critical.__all__)
