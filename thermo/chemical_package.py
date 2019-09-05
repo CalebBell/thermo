@@ -22,9 +22,9 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['ChemicalPackage']
+__all__ = ['ChemicalConstantsPackage', 'PropertyCorrelationPackage']
 
-from thermo.chemical import Chemical
+from thermo.chemical import Chemical, get_chemical_constants
 from thermo.identifiers import *
 from thermo.activity import identify_phase_mixture, Pbubble_mixture, Pdew_mixture
 from thermo.critical import Tc_mixture, Pc_mixture, Vc_mixture
@@ -37,7 +37,7 @@ from thermo.viscosity import ViscosityLiquidMixture, ViscosityGasMixture
 from thermo.utils import *
 
 
-class ChemicalPackage(object):
+class ChemicalConstantsPackage(object):
     __slots__ = ('atom_fractions', 'atomss', 'Carcinogens', 'CASs', 'Ceilings', 'charges',
                  'conductivities', 'dipoles', 'economic_statuses', 'formulas', 'Gfgs', 
                  'Gfgs_mass', 'GWPs', 'Hcs', 'Hcs_lower', 'Hcs_lower_mass', 'Hcs_mass', 
@@ -251,3 +251,76 @@ class ChemicalPackage(object):
         self.Vcs = Vcs
         self.Vml_STPs = Vml_STPs
         self.Zcs = Zcs
+
+
+class PropertyCorrelationPackage(object):
+    __slots__ = ()
+    def __init__(self, constants, VaporPressures=None, SublimationPressures=None,
+                 VolumeGases=None, VolumeLiquids=None, VolumeSolids=None,
+                 HeatCapacityGases=None, HeatCapacityLiquids=None, HeatCapacitySolids=None,
+                 ViscosityGases=None, ViscosityLiquids=None, 
+                 ThermalConductivityGases=None, ThermalConductivityLiquids=None,
+                 EnthalpyVaporizations=None, EnthalpySublimations=None,
+                 SurfaceTensions=None, Permittivities=None,
+                 
+                 VolumeGasMixtureObj=None, VolumeLiquidMixtureObj=None, VolumeSolidMixtureObj=None,
+                 HeatCapacityGasMixtureObj=None, HeatCapacityLiquidMixtureObj=None, HeatCapacitySolidMixtureObj=None,
+                 ViscosityGasMixtureObj=None, ViscosityLiquidMixtureObj=None,
+                 ThermalConductivityGasMixtureObj=None, ThermalConductivityLiquidMixtureObj=None, 
+                 SurfaceTensionMixtureObj=None,
+                 ):
+        cmps = constants.cmps
+        if VaporPressures is None:
+            VaporPressures = [VaporPressure(Tb=constants.Tbs[i], Tc=constants.Tcs[i], Pc=constants.Pcs[i],
+                                            omega=constants.omegas[i], CASRN=constants.CASs[i],
+                                            best_fit=get_chemical_constants(constants.CASs[i], 'VaporPressure'))
+                              for i in cmps]
+        # TODO remaining properties
+        
+
+        # Mixture objects
+
+        if VolumeSolidMixtureObj is None:
+            VolumeSolidMixtureObj = VolumeSolidMixture(CASs=constants.CASs, MWs=constants.MWs, VolumeSolids=VolumeSolids)
+        if VolumeLiquidMixtureObj is None:
+            VolumeLiquidMixtureObj = VolumeLiquidMixture(MWs=constants.MWs, Tcs=constants.Tcs, Pcs=constants.Pcs, Vcs=constants.Vcs, Zcs=constants.Zcs, omegas=constants.omegas, CASs=constants.CASs, VolumeLiquids=VolumeLiquids)
+        if VolumeGasMixtureObj is None:
+            VolumeGasMixtureObj = VolumeGasMixture(eos=None, MWs=constants.MWs, CASs=constants.CASs, VolumeGases=VolumeGases)
+
+        if HeatCapacityLiquidMixtureObj is None:
+            HeatCapacityLiquidMixtureObj = HeatCapacityLiquidMixture(MWs=constants.MWs, CASs=constants.CASs, HeatCapacityLiquids=HeatCapacityLiquids)
+        if HeatCapacityGasMixtureObj is None:
+            HeatCapacityGasMixtureObj = HeatCapacityGasMixture(MWs=constants.MWs, CASs=constants.CASs, HeatCapacityGases=HeatCapacityGases)
+        if HeatCapacitySolidMixtureObj is None:
+            HeatCapacitySolidMixtureObj = HeatCapacitySolidMixture(MWs=constants.MWs, CASs=constants.CASs, HeatCapacitySolids=HeatCapacitySolids)
+
+        if ViscosityLiquidMixtureObj is None:
+            ViscosityLiquidMixtureObj = ViscosityLiquidMixture(MWs=constants.MWs, CASs=constants.CASs, ViscosityLiquids=ViscosityLiquids)
+        if ViscosityGasMixtureObj is None:
+            ViscosityGasMixtureObj = ViscosityGasMixture(MWs=constants.MWs, molecular_diameters=constants.molecular_diameters, Stockmayers=constants.Stockmayers, CASs=constants.CASs, ViscosityGases=ViscosityGases)
+
+        if ThermalConductivityLiquidMixtureObj is None:
+            ThermalConductivityLiquidMixtureObj = ThermalConductivityLiquidMixture(CASs=constants.CASs, MWs=constants.MWs, ThermalConductivityLiquids=ThermalConductivityLiquids)
+        if ThermalConductivityGasMixtureObj is None:
+            ThermalConductivityGasMixtureObj = ThermalConductivityGasMixture(MWs=constants.MWs, Tbs=constants.Tbs, CASs=constants.CASs, ThermalConductivityGases=ThermalConductivityGases, ViscosityGases=ViscosityGases)
+
+        if SurfaceTensionMixtureObj is None:
+            SurfaceTensionMixtureObj = SurfaceTensionMixture(MWs=constants.MWs, Tbs=constants.Tbs, Tcs=constants.Tcs, CASs=constants.CASs, SurfaceTensions=SurfaceTensions, VolumeLiquids=VolumeLiquids)
+        
+        self.VolumeSolidMixtureObj = VolumeSolidMixtureObj
+        self.VolumeLiquidMixtureObj = VolumeLiquidMixtureObj
+        self.VolumeGasMixtureObj = VolumeGasMixtureObj
+        
+        self.HeatCapacityLiquidMixtureObj = HeatCapacityLiquidMixtureObj
+        self.HeatCapacityGasMixtureObj = HeatCapacityGasMixtureObj
+        self.HeatCapacitySolidMixtureObj = HeatCapacitySolidMixtureObj
+        
+        self.ViscosityLiquidMixtureObj = ViscosityLiquidMixtureObj
+        self.ViscosityGasMixtureObj = ViscosityGasMixtureObj
+        
+        self.ThermalConductivityLiquidMixtureObj = ThermalConductivityLiquidMixtureObj
+        self.ThermalConductivityGasMixtureObj = ThermalConductivityGasMixtureObj
+        
+        self.SurfaceTensionMixtureObj = SurfaceTensionMixtureObj
+
+

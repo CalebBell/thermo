@@ -27,7 +27,7 @@ from fluids.constants import R, R_inv
 from thermo.utils import log, exp, normalize
 from thermo.phases import gas_phases, liquid_phases
 from thermo.elements import atom_fractions, mass_fractions, simple_formula_parser, molecular_weight, mixture_atomic_composition
-from thermo.chemical_package import ChemicalPackage
+from thermo.chemical_package import ChemicalConstantsPackage
 
 solid_phases = []
 all_phases = gas_phases + liquid_phases + solid_phases
@@ -52,12 +52,7 @@ class EquilibriumState(object):
     def __init__(self, T, P, zs, 
                  gas, liquids, solids, betas,
                  flash_specs,
-                 constants,
-                 # All the below should be accessed through some main data class
-                 HeatCapacityGases, 
-                 ViscosityGasMixture, ViscosityLiquidMixture,
-                 ThermalConductivityGasMixture, ThermalConductivityLiquidMixture, ThermalConductivitySolids,
-                 SurfaceTensionMixture, # TODO - permittivity mixture
+                 constants, properties,
                  ):
         # T, P are the only properties constant across phase
         self.T = T
@@ -170,9 +165,9 @@ class EquilibriumState(object):
     
     def mu(self, phase=None):
         if isinstance(phase, gas_phases):
-            return self.ViscosityGasMixture.TP_dependent_property(phase.T, phase.P, phase.zs, phase.ws)
+            return self.properties.ViscosityGasMixture.TP_dependent_property(phase.T, phase.P, phase.zs, phase.ws)
         elif isinstance(phase, liquid_phases):
-            return self.ViscosityLiquidMixture.TP_dependent_property(phase.T, phase.P, phase.zs, phase.ws)
+            return self.properties.ViscosityLiquidMixture.TP_dependent_property(phase.T, phase.P, phase.zs, phase.ws)
         else:
             return None
     
@@ -180,14 +175,14 @@ class EquilibriumState(object):
         if phase is None:
             phase = self.bulk
         if isinstance(phase, gas_phases):
-            return self.ThermalConductivityGasMixture.TP_dependent_property(
+            return self.properties.ThermalConductivityGasMixture.TP_dependent_property(
                     phase.T, phase.P, phase.zs, phase.ws)
         elif isinstance(phase, liquid_phases):
-            return self.ThermalConductivityLiquidMixture.TP_dependent_property(
+            return self.properties.ThermalConductivityLiquidMixture.TP_dependent_property(
                     phase.T, phase.P, phase.zs, phase.ws)
         elif isinstance(phase, solid_phases):
             solid_index = phase.zs.index(1)
-            return self.ThermalConductivitySolids[solid_index].TP_dependent_property(
+            return self.properties.ThermalConductivitySolids[solid_index].TP_dependent_property(
                     phase.T, phase.P, phase.zs, phase.ws)
 
     def API(self, phase):
@@ -208,7 +203,7 @@ class EquilibriumState(object):
             phase = self.bulk
 
         if isinstance(phase, liquid_phases):
-            return self.SurfaceTensionMixture.TP_dependent_property(
+            return self.properties.SurfaceTensionMixture.TP_dependent_property(
                     phase.T, phase.P, phase.zs, phase.ws)
         if isinstance(phase, gas_phases):
             return 0
@@ -223,8 +218,8 @@ def _make_getter_constants(name):
     return get
 
 
-for name in ChemicalPackage.__slots__:
-    getter = property(_make_getter(name))
+for name in ChemicalConstantsPackage.__slots__:
+    getter = property(_make_getter_constants(name))
     setattr(EquilibriumState, name, getter)
     for phase in all_phases:
         setattr(phase, name, getter)
