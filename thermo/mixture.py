@@ -367,6 +367,9 @@ class Mixture(object):
     Vml_STPs : list of float
         Molar volume of the chemicals in the mixture as liquids at 298.15 K and
         101325 Pa, [m^3/mol]
+    rhoml_STPs : list of float
+        Molar densities of the chemicals in the mixture as liquids at 298.15 K 
+        and 101325 Pa, [mol/m^3]
     Vmg_STPs : list of float
         Molar volume of the chemicals in the mixture as gases at 298.15 K and 
         101325 Pa, [m^3/mol]
@@ -555,6 +558,9 @@ class Mixture(object):
                                                                  Vfls=Vfls,
                                                                  Vfgs=Vfgs)
         self.IDs = IDs
+        self.N = len(IDs)
+        self.cmps = range(self.N)
+        
         T_unsolved = T if T is not None else self.T_default
         P_unsolved = P if P is not None else self.P_default
         self.Chemicals = [Chemical(ID, P=P_unsolved, T=T_unsolved, autocalc=False) for ID in self.IDs]
@@ -623,7 +629,7 @@ class Mixture(object):
         automatically on the instantiation of a new Mixture instance.
         '''
         self.names = [i.name for i in self.Chemicals]
-        self.MWs = [i.MW for i in self.Chemicals]
+        self.MWs = MWs = [i.MW for i in self.Chemicals]
         self.CASs = [i.CAS for i in self.Chemicals]
         
         # Set lists of everything set by Chemical.set_constants
@@ -719,7 +725,10 @@ class Mixture(object):
         self.conductivities = [i.conductivity for i in self.Chemicals]
 
         # Constant properties obtained from TP
-        self.Vml_STPs = [i.Vml_STP for i in self.Chemicals]
+        self.Vml_STPs = Vml_STPs = [i.Vml_STP for i in self.Chemicals]
+        self.rholm_STPs = [i.rhoml_STP for i in self.Chemicals]
+        self.rhol_STPs = [i.rhol_STP for i in self.Chemicals]
+        
         self.Vmg_STPs = [i.Vmg_STP for i in self.Chemicals]
 
         self.Psat_298s = [i.Psat_298 for i in self.Chemicals]
@@ -728,7 +737,9 @@ class Mixture(object):
         self.Vml_Tms = [i.Vml_Tm for i in self.Chemicals]
         self.Hvap_Tbms = [i.Hvap_Tbm for i in self.Chemicals]
         self.Hvap_Tbs = [i.Hvap_Tb for i in self.Chemicals]
-        self.Hvapm_STPs = [i.Hvapm_STP for i in self.Chemicals]
+        self.Hvapm_298s = [i.Hvapm_298 for i in self.Chemicals]
+        self.Hvap_298s = [i.Hvap_298 for i in self.Chemicals]
+        
     ### More stuff here
 
     def set_chemical_TP(self, T=None, P=None):
@@ -3206,4 +3217,86 @@ class Mixture(object):
     def Peclet_heat(self, V=None, D=None):
         return Peclet_heat(V=V, L=D, rho=self.rho, Cp=self.Cp, k=self.k)
 
-
+    @property
+    def constants(self):
+        try:
+            return self._constants
+        except AttributeError:
+            pass
+        from thermo.chemical_package import ChemicalConstantsPackage
+        self._constants = ChemicalConstantsPackage(CASs=self.CASs, names=self.names, MWs=self.MWs, 
+                                                   Tms=self.Tms, Tbs=self.Tbs, 
+                 # Critical state points
+                 Tcs=self.Tcs, Pcs=self.Pcs, Vcs=self.Vcs, omegas=self.omegas, 
+                 Zcs=self.Zcs, rhocs=self.rhocms, rhocs_mass=self.rhocs, 
+                 # Phase change enthalpy
+                 Hfus_Tms=self.Hfusms, Hfus_Tms_mass=self.Hfuss, Hvap_Tbs=self.Hvap_Tbms,
+                 Hvap_Tbs_mass=self.Hvap_Tbs, 
+                 # Standard values
+                 Vml_STPs=self.Vml_STPs, rhol_STPs=self.rholm_STPs, rhol_STPs_mass=self.rhol_STPs,
+                 # Reaction (ideal gas)
+                 Hfgs=self.Hfgms, Hfgs_mass=self.Hfgs, Gfgs=self.Gfgms, Gfgs_mass=self.Gfgs,
+                 Sfgs=self.Sfgms, Sfgs_mass=self.Sfgs, S0gs=self.S0gms, S0gs_mass=self.S0gs,
+                 
+                 # Triple point
+                 Tts=self.Tts, Pts=self.Pts, Hsub_Tms=self.Hsubms, Hsub_Tms_mass=self.Hsubs,
+                 # Combustion
+                 Hcs=self.Hcms, Hcs_mass=self.Hcs, Hcs_lower=self.Hcms_lower, Hcs_lower_mass=self.Hcs_lower,
+                 # Fire safety
+                 Tflashs=self.Tflashs, Tautoignitions=self.Tautoignitions, LFLs=self.LFLs, UFLs=self.UFLs,
+                 # Other safety
+                 TWAs=self.TWAs, STELs=self.STELs, Ceilings=self.Ceilings, Skins=self.Skins, 
+                 Carcinogens=self.Carcinogens, legal_statuses=self.legal_statuses, economic_statuses=self.economic_statuses,
+                 # Environmental
+                 GWPs=self.GWPs, ODPs=self.ODPs, logPs=self.logPs, 
+                 Psat_298s=self.Psat_298s, Hvap_298s=self.Hvapm_298s, 
+                 Hvap_298s_mass=self.Hvap_298s, Vml_Tms=self.Vml_Tms,
+                 # Analytical
+                 RIs=self.RIs, conductivities=self.conductivities,
+                 # Odd constants
+                 charges=self.charges, dipoles=self.dipoles, Stockmayers=self.Stockmayers, 
+                 molecular_diameters=self.molecular_diameters, Van_der_Waals_volumes=self.Van_der_Waals_volumes,
+                 Van_der_Waals_areas=self.Van_der_Waals_areas, Parachors=self.Parachors, StielPolars=self.StielPolars,
+                 atomss=self.atomss, atom_fractions=self.atom_fractions,
+                 similarity_variables=self.similarity_variables, phase_STPs=self.phase_STPs,
+                 # Other identifiers
+                 PubChems=self.PubChems, formulas=self.formulas, smiless=self.smiless, InChIs=self.InChIs,
+                 InChI_Keys=self.InChI_Keys,
+                 # Groups
+                 UNIFAC_groups=self.UNIFAC_groups, UNIFAC_Dortmund_groups=self.UNIFAC_Dortmund_groups, 
+                 PSRK_groups=self.PSRK_groups)
+        return self._constants
+    
+    
+    def properties(self, copy_pures=True, copy_mixtures=True):
+        try:
+            return self._properties
+        except AttributeError:
+            pass
+        
+        from thermo.chemical_package import PropertyCorrelationPackage
+        constants = self.constants
+        kwargs = dict(constants=constants)
+        if copy_pures:
+            kwargs.update(VaporPressures=self.VaporPressures, SublimationPressures=self.SublimationPressures,
+                 VolumeGases=self.VolumeGases, VolumeLiquids=self.VolumeLiquids, VolumeSolids=self.VolumeSolids,
+                 HeatCapacityGases=self.HeatCapacityGases, HeatCapacityLiquids=self.HeatCapacityLiquids, 
+                 HeatCapacitySolids=self.HeatCapacitySolids,
+                 ViscosityGases=self.ViscosityGases, ViscosityLiquids=self.ViscosityLiquids, 
+                 ThermalConductivityGases=self.ThermalConductivityGases, ThermalConductivityLiquids=self.ThermalConductivityLiquids,
+                 EnthalpyVaporizations=self.EnthalpyVaporizations, EnthalpySublimations=self.EnthalpySublimations,
+                 SurfaceTensions=self.SurfaceTensions, Permittivities=self.Permittivities)
+        if copy_mixtures:
+            kwargs.update(VolumeGasMixtureObj=self.VolumeGasMixture, VolumeLiquidMixtureObj=self.VolumeLiquidMixture, 
+                          VolumeSolidMixtureObj=self.VolumeSolidMixture,
+                          HeatCapacityGasMixtureObj=self.HeatCapacityGasMixture, 
+                          HeatCapacityLiquidMixtureObj=self.HeatCapacityLiquidMixture, 
+                          HeatCapacitySolidMixtureObj=self.HeatCapacitySolidMixture,
+                          ViscosityGasMixtureObj=self.ViscosityGasMixture, 
+                          ViscosityLiquidMixtureObj=self.ViscosityLiquidMixture,
+                          ThermalConductivityGasMixtureObj=self.ThermalConductivityGasMixture,
+                          ThermalConductivityLiquidMixtureObj=self.ThermalConductivityLiquidMixture, 
+                          SurfaceTensionMixtureObj=self.SurfaceTensionMixture)
+    
+        self._properties = PropertyCorrelationPackage(**kwargs)
+        return self._properties

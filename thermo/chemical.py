@@ -510,14 +510,18 @@ class Chemical(object): # pragma: no cover
         Molar volume of liquid phase at the melting point [m^3/mol]
     Vml_STP : float
         Molar volume of liquid phase at 298.15 K and 101325 Pa [m^3/mol]
+    rhoml_STP : float
+        Molar density of liquid phase at 298.15 K and 101325 Pa [mol/m^3]
     Vmg_STP : float
         Molar volume of gas phase at 298.15 K and 101325 Pa [m^3/mol]
     Hvap_Tbm : float
         Molar enthalpy of vaporization at the normal boiling point [J/mol]
     Hvap_Tb : float
         Mass enthalpy of vaporization at the normal boiling point [J/kg]
-    Hvapm_STP : float
+    Hvapm_298 : float
         Molar enthalpy of vaporization at 298.15 K [J/mol]
+    Hvap_298 : float
+        Mass enthalpy of vaporization at 298.15 K [J/kg]
     alpha
     alphag
     alphal
@@ -1004,6 +1008,8 @@ class Chemical(object): # pragma: no cover
         self.Vml_Tb = self.VolumeLiquid.T_dependent_property(self.Tb) if self.Tb else None
         self.Vml_Tm = self.VolumeLiquid.T_dependent_property(self.Tm) if self.Tm else None
         self.Vml_STP = self.VolumeLiquid.T_dependent_property(298.15)
+        self.rhoml_STP = 1.0/self.Vml_STP if self.Vml_STP else None
+        self.rhol_STP = Vm_to_rho(self.Vml_STP, self.MW) if self.Vml_STP else None
 
         self.VolumeGas = VolumeGas(MW=self.MW, Tc=self.Tc, Pc=self.Pc,
                                    omega=self.omega, dipole=self.dipole,
@@ -1022,8 +1028,8 @@ class Chemical(object): # pragma: no cover
         self.EnthalpyVaporization = EnthalpyVaporization(CASRN=self.CAS, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, omega=self.omega, similarity_variable=self.similarity_variable, best_fit=get_chemical_constants(self.CAS, 'EnthalpyVaporization'))
         self.Hvap_Tbm = self.EnthalpyVaporization.T_dependent_property(self.Tb) if self.Tb else None
         self.Hvap_Tb = property_molar_to_mass(self.Hvap_Tbm, self.MW)
-        self.Hvapm_STP = self.EnthalpyVaporization.T_dependent_property(298.15)
-        
+        self.Hvapm_298 = self.EnthalpyVaporization.T_dependent_property(298.15)
+        self.Hvap_298 = property_molar_to_mass(self.Hvapm_298, self.MW)
         
         self.EnthalpySublimation = EnthalpySublimation(CASRN=self.CAS, Tm=self.Tm, Tt=self.Tt, 
                                                        Cpg=self.HeatCapacityGas, Cps=self.HeatCapacitySolid,
@@ -1060,8 +1066,8 @@ class Chemical(object): # pragma: no cover
         try:            
             if self.Hfgm is not None and self.Hfm is None:
                 Hfm = None
-                if self.phase_STP == 'l' and self.Hvapm_STP is not None:
-                    Hfm = Hf_basis_converter(Hvapm=self.Hvapm_STP, Hf_gas=self.Hfgm)
+                if self.phase_STP == 'l' and self.Hvapm_298 is not None:
+                    Hfm = Hf_basis_converter(Hvapm=self.Hvapm_298, Hf_gas=self.Hfgm)
                 elif self.phase_STP == 'g':
                     Hfm = self.Hfgm
                 if Hfm is not None:
@@ -1069,8 +1075,8 @@ class Chemical(object): # pragma: no cover
                     self.Hf = property_molar_to_mass(self.Hfm, self.MW) if (self.Hfm is not None) else None
             elif self.Hfm is not None and self.Hfgm is None:
                 Hfmg = None
-                if self.phase_STP == 'l' and self.Hvapm_STP is not None:
-                    Hfmg = Hf_basis_converter(Hvapm=self.Hvapm_STP, Hf_liq=self.Hfm)
+                if self.phase_STP == 'l' and self.Hvapm_298 is not None:
+                    Hfmg = Hf_basis_converter(Hvapm=self.Hvapm_298, Hf_liq=self.Hfm)
                 elif self.phase_STP == 'g':
                     Hfmg = self.Hfm
                 if Hfmg is not None:

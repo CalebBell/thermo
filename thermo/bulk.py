@@ -25,6 +25,7 @@ __all__ = ['Bulk']
 
 from fluids.constants import R, R_inv
 from thermo.utils import log, exp
+from thermo.phases import Phase
 
 '''Class designed to have multiple phases.
 
@@ -35,7 +36,7 @@ Does not have any flow property.
 '''
 
 
-class Bulk(object):
+class Bulk(Phase):
     def __init__(self,# T, P,
                  zs, phases, phase_fractions):
 #        self.T = T

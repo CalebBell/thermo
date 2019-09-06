@@ -24,13 +24,14 @@ from __future__ import division
 __all__ = ['EquilibriumState']
 
 from fluids.constants import R, R_inv
-from thermo.utils import log, exp, normalize
+from thermo.utils import log, exp, normalize, zs_to_ws, vapor_mass_quality
 from thermo.phases import gas_phases, liquid_phases
 from thermo.elements import atom_fractions, mass_fractions, simple_formula_parser, molecular_weight, mixture_atomic_composition
 from thermo.chemical_package import ChemicalConstantsPackage
 
 solid_phases = []
 all_phases = gas_phases + liquid_phases + solid_phases
+
 
 class EquilibriumState(object):
     '''Goal is to retrieve literally every thing about the flashed phases here.
@@ -51,7 +52,7 @@ class EquilibriumState(object):
     
     def __init__(self, T, P, zs, 
                  gas, liquids, solids, betas,
-                 flash_specs,
+                 flash_specs, flash_convergence,
                  constants, properties,
                  ):
         # T, P are the only properties constant across phase
@@ -94,6 +95,7 @@ class EquilibriumState(object):
         self.bulk = Bulk(zs, all_phases, betas)
         
         self.flash_specs = flash_specs
+        self.flash_convergence = flash_convergence
         
         self.constants = constants
         for phase in phases:
@@ -110,7 +112,7 @@ class EquilibriumState(object):
         else:
             zs = phase.zs
         things = dict()
-        for zi, atoms in zip(zs, self.atomss):
+        for zi, atoms in zip(zs, self.constants.atomss):
             for atom, count in atoms.items():
                 if atom in things:
                     things[atom] += zi*count
@@ -119,6 +121,23 @@ class EquilibriumState(object):
 
         tot_inv = sum(things.values())
         return {atom : value*tot_inv for atom, value in things.items()}
+
+    def ws(self, phase=None):
+        if phase is None:
+            zs = self.zs
+        else:
+            zs = phase.zs
+        return zs_to_ws(zs, self.constants.MWs)
+    
+    def MW(self, phase=None):
+        if phase is None:
+            zs = self.zs
+        else:
+            zs = phase.zs
+        mixing_simple(zs, self.constants.MWs)
+        
+    def quality(self):
+        return vapor_mass_quality(self.beta_gas, MWl=self.liquid_bulk.MW, MWg=self.gas.MW)
 
     def mass_fractions(self, phase=None):
         r'''Dictionary of mass fractions for each atom in the phase.
@@ -129,7 +148,7 @@ class EquilibriumState(object):
         else:
             zs = phase.zs
         things = dict()
-        for zi, atoms in zip(zs, self.atomss):
+        for zi, atoms in zip(zs, self.constants.atomss):
             for atom, count in atoms.items():
                 if atom in things:
                     things[atom] += zi*count
@@ -184,6 +203,12 @@ class EquilibriumState(object):
             solid_index = phase.zs.index(1)
             return self.properties.ThermalConductivitySolids[solid_index].TP_dependent_property(
                     phase.T, phase.P, phase.zs, phase.ws)
+    
+    def SG(self, phase):
+        if phase is None:
+            phase = self.bulk
+        rho_mass = self.rho_mass(phase)
+        return SG(rho_mass)
 
     def API(self, phase):
         if phase is None:
@@ -207,8 +232,14 @@ class EquilibriumState(object):
                     phase.T, phase.P, phase.zs, phase.ws)
         if isinstance(phase, gas_phases):
             return 0
-        
-        
+    
+    @property
+    def Ks(self, phase):
+        ref_phase = self.flash_convergence['ref_phase']
+        ref_lnphis = self.phases[ref_phase].lnphis()
+        lnphis = phase.lnphis()
+        Ks = [exp(l - g) for l, g in zip(ref_lnphis, lnphis)]
+        return Ks
         
 # Add some fancy things for easier access to properties
 
