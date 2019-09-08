@@ -26,13 +26,14 @@ __all__ = ['sequential_substitution_2P', 'bubble_T_Michelsen_Mollerup',
            'dew_P_Michelsen_Mollerup',
            'minimize_gibbs_2P_transformed', 'sequential_substitution_Mehra_2P',
            'nonlin_2P', 'sequential_substitution_NP',
-           'minimize_gibbs_NP_transformed']
+           'minimize_gibbs_NP_transformed', 'FlashVL']
 
 from fluids.constants import R, R_inv
 from thermo.utils import exp, log, copysign, normalize
 from fluids.numerics import UnconvergedError, trunc_exp
 from thermo.activity import flash_inner_loop, Rachford_Rice_solutionN, Rachford_Rice_flash_error, Rachford_Rice_solution2
 from scipy.optimize import minimize, fsolve, root
+from thermo.equilibrium import EquilibriumState
 
 def sequential_substitution_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
                                gas_phase, maxiter=1000, tol=1E-13,
@@ -814,3 +815,78 @@ def dew_P_Michelsen_Mollerup(P_guess, T, zs, liquid_phase, gas_phase,
     if abs(P_guess - P_guess_old) > xtol:
         raise ValueError("Did not converge to specified tolerance")
     return P_guess, xs, l, g, iteration, abs(P_guess - P_guess_old)
+
+
+
+class FlashVL(object):
+    PT_SS_MAXITER = 1000
+    PT_SS_TOL = 1e-13
+    
+    def __init__(self, constants, properties, liquid, gas):
+        self.constants = constants
+        self.properties = properties
+        self.liquid = liquid
+        self.gas = gas
+        
+    def flash(self, zs, T=None, P=None, VF=None, Hm=None, Sm=None):
+        constants, properties = self.constants, self.properties
+        
+        liquid, gas = self.liquid, self.gas
+        if T is not None and Sm is not None:
+            # TS
+            pass
+        elif P is not None and Sm is not None:
+            phase, xs, ys, VF, T = flash_PS_zs_2P(P, Sm, zs)
+            # PS
+        elif P is not None and Hm is not None:
+            phase, xs, ys, VF, T = flash_PH_zs_2P(P, Hm, zs)
+            # PH
+        elif T is not None and P is not None:
+            # PT
+            try:
+                _, _, VF_guess, xs_guess, ys_guess = flash_wilson(zs, constants.Tcs,
+                                        constants.Pcs, constants.omegas, T=T, P=P)
+            except:
+                xs_guess, ys_guess, VF_guess = zs, zs, 0.5
+                                                              
+            V_over_F, xs, ys, l, g, iteration, err = sequential_substitution_2P(T, P, zs, xs_guess, ys_guess, liquid,
+                           gas, maxiter=self.PT_SS_MAXITER, tol=self.PT_SS_TOL,
+                           V_over_F_guess=VF_guess)
+            
+            flash_specs = {'T': T, 'P': P, 'zs': zs}
+            flash_convergence = {'iterations': iteration, 'err': err}
+            return EquilibriumState(T, P, zs, gas=gas, liquids=[l], solids=[], 
+                                    betas=[V_over_F, 1.0-V_over_F], flash_specs=flash_specs, 
+                                    flash_convergence=flash_convergence,
+                                    constants=constants, properties=properties)
+            
+            
+        elif T is not None and VF == 1:
+            dew_P_Michelsen_Mollerup(P_guess, T, zs, liquid_phase, gas_phase, 
+                             maxiter=200, xtol=1E-10, xs_guess=None,
+                             max_step_damping=1e5, P_update_frequency=1,
+                             trivial_solution_tol=1e-4)
+        elif T is not None and VF == 0:
+            bubble_P_Michelsen_Mollerup(P_guess, T, zs, liquid_phase, gas_phase, 
+                                maxiter=200, xtol=1E-10, ys_guess=None,
+                                max_step_damping=1e5, P_update_frequency=1,
+                                trivial_solution_tol=1e-4)
+        elif T is not None and VF is not None:
+            pass
+            # T-VF flash - unimplemented.
+        elif P is not None and VF == 1:
+            dew_T_Michelsen_Mollerup(T_guess, P, zs, liquid_phase, gas_phase, 
+                                maxiter=200, xtol=1E-10, xs_guess=None,
+                                max_step_damping=5.0, T_update_frequency=1,
+                                trivial_solution_tol=1e-4)
+        elif P is not None and VF == 0:
+            bubble_P_Michelsen_Mollerup(P_guess, T, zs, liquid_phase, gas_phase, 
+                                maxiter=200, xtol=1E-10, ys_guess=None,
+                                max_step_damping=1e5, P_update_frequency=1,
+                                trivial_solution_tol=1e-4)
+        elif P is not None and VF is not None:
+            # P-VF flash - unimplemented
+            pass
+        else:
+            raise Exception('Flash inputs unsupported')
+       

@@ -430,20 +430,20 @@ class PropertyCorrelationPackage(object):
         if SurfaceTensionMixtureObj is None:
             SurfaceTensionMixtureObj = SurfaceTensionMixture(MWs=constants.MWs, Tbs=constants.Tbs, Tcs=constants.Tcs, CASs=constants.CASs, SurfaceTensions=SurfaceTensions, VolumeLiquids=VolumeLiquids)
         
-        self.VolumeSolidMixtureObj = VolumeSolidMixtureObj
-        self.VolumeLiquidMixtureObj = VolumeLiquidMixtureObj
-        self.VolumeGasMixtureObj = VolumeGasMixtureObj
+        self.VolumeSolidMixture = VolumeSolidMixtureObj
+        self.VolumeLiquidMixture = VolumeLiquidMixtureObj
+        self.VolumeGasMixture = VolumeGasMixtureObj
         
-        self.HeatCapacityLiquidMixtureObj = HeatCapacityLiquidMixtureObj
-        self.HeatCapacityGasMixtureObj = HeatCapacityGasMixtureObj
-        self.HeatCapacitySolidMixtureObj = HeatCapacitySolidMixtureObj
+        self.HeatCapacityLiquidMixture = HeatCapacityLiquidMixtureObj
+        self.HeatCapacityGasMixture = HeatCapacityGasMixtureObj
+        self.HeatCapacitySolidMixture = HeatCapacitySolidMixtureObj
         
-        self.ViscosityLiquidMixtureObj = ViscosityLiquidMixtureObj
-        self.ViscosityGasMixtureObj = ViscosityGasMixtureObj
+        self.ViscosityLiquidMixture = ViscosityLiquidMixtureObj
+        self.ViscosityGasMixture = ViscosityGasMixtureObj
         
-        self.ThermalConductivityLiquidMixtureObj = ThermalConductivityLiquidMixtureObj
-        self.ThermalConductivityGasMixtureObj = ThermalConductivityGasMixtureObj
+        self.ThermalConductivityLiquidMixture = ThermalConductivityLiquidMixtureObj
+        self.ThermalConductivityGasMixture = ThermalConductivityGasMixtureObj
         
-        self.SurfaceTensionMixtureObj = SurfaceTensionMixtureObj
+        self.SurfaceTensionMixture = SurfaceTensionMixtureObj
 
 

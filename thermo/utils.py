@@ -239,7 +239,7 @@ def property_molar_to_mass(A_molar, MW):  # pragma: no cover
 def property_mass_to_molar(A_mass, MW):  # pragma: no cover
     if A_mass is None:
         return None
-    A_molar = A_mass*MW/1000
+    A_molar = 1e-3*A_mass*MW
     return A_molar
 
 
@@ -724,9 +724,9 @@ def speed_of_sound(V, dP_dV, Cp, Cv, MW=None):
        no. 2 (March 1, 2001): 112-115. 
     '''
     if not MW:
-        return (-V**2*dP_dV*Cp/Cv)**0.5
+        return (-V*V*dP_dV*Cp/Cv)**0.5
     else:
-        return (-V**2*1000./MW*dP_dV*Cp/Cv)**0.5
+        return (-V*V*1000.0*dP_dV*Cp/(Cv*MW))**0.5
 
 
 def Joule_Thomson(T, V, Cp, dV_dT=None, beta=None):

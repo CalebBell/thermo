@@ -21,8 +21,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
-__all__ = ['GibbsExcessLiquid', 'Phase', 'EOSLiquid', 'EOSGas', 'IdealGas',
-           'gas_phases', 'liquid_phases']
+__all__ = ['GibbsExcessLiquid', 'GibbsExcessSolid', 'Phase', 'EOSLiquid', 'EOSGas', 'IdealGas',
+           'gas_phases', 'liquid_phases', 'solid_phases']
 
 from fluids.constants import R, R_inv
 from fluids.numerics import (horner, horner_and_der, horner_log, jacobian, derivative,
@@ -487,12 +487,12 @@ class Phase(object):
     
     # Idea gas heat capacity
     
-    def setup_Cpigs(self):
-        HeatCapacityGases = self.HeatCapacityGases
-        self.Cpgs_locked = all(i.locked for i in HeatCapacityGases) if HeatCapacityGases is not None else False
-        if self.Cpgs_locked:
+    def setup_Cpigs(self, HeatCapacityGases):
+        Cpgs_data = None
+        Cpgs_locked = all(i.locked for i in HeatCapacityGases) if HeatCapacityGases is not None else False
+        if Cpgs_locked:
             T_REF_IG = self.T_REF_IG
-            self.Cpgs_data = ([i.best_fit_Tmin for i in HeatCapacityGases],
+            Cpgs_data = ([i.best_fit_Tmin for i in HeatCapacityGases],
                               [i.best_fit_Tmin_slope for i in HeatCapacityGases],
                               [i.best_fit_Tmin_value for i in HeatCapacityGases],
                               [i.best_fit_Tmax for i in HeatCapacityGases],
@@ -523,6 +523,7 @@ class Phase(object):
                                                        i.best_fit_Tmax_slope) for i in HeatCapacityGases],
                               
                               )
+        return (Cpgs_locked, Cpgs_data)
 
     
     def Cpigs_pure(self):
@@ -668,19 +669,111 @@ class Phase(object):
         return self._Cpig_integrals_over_T_pure
 
     ### Transport properties - pass them on!
-    def mu(self):
+    # Properties that use `constants` attributes
+    
+    def MW(self):
         try:
-            return self.result.mu(self)
-        except:
-            return None
+            return self._MW
+        except AttributeError:
+            pass
+        zs, MWs = self.zs, self.constants.MWs
+        MW = 0.0
+        for i in self.cmps:
+            MW += zs[i]*MWs[i]
+        self._MW = MW
+        return MW
+    
+    def MW_inv(self):
+        try:
+            return self._MW_inv
+        except AttributeError:
+            pass
+        self._MW_inv = MW_inv = 1.0/self.MW()
+        return MW_inv
+    
+    def mu(self):
+        return self.result.mu(self)
 
     def k(self):
+        return self.result.k(self)
+
+    def ws(self):
+        return self.result.ws(self)
+        
+    def speed_of_sound_mass(self):
+        # 1000**0.5 = 31.622776601683793
+        return 31.622776601683793*self.MW()**-0.5*self.speed_of_sound()
+    
+    def rho_mass(self):
         try:
-            return self.result.k(self)
-        except:
-            return None
+            return self._rho_mass
+        except AttributeError:
+            pass
+        self._rho_mass = rho_mass = self.MW()/(1000.0*self.V())
+        return rho_mass
+    
+    def H_mass(self):
+        try:
+            return self._H_mass
+        except AttributeError:
+            pass
+        
+        self._H_mass = H_mass = self.H()*1e3*self.MW_inv()
+        return H_mass
 
+    def S_mass(self):
+        try:
+            return self._S_mass
+        except AttributeError:
+            pass
+        
+        self._S_mass = S_mass = self.S()*1e3*self.MW_inv()
+        return S_mass
 
+    def U_mass(self):
+        try:
+            return self._U_mass
+        except AttributeError:
+            pass
+        
+        self._U_mass = U_mass = self.U()*1e3*self.MW_inv()
+        return U_mass
+
+    def A_mass(self):
+        try:
+            return self._A_mass
+        except AttributeError:
+            pass
+        
+        self._A_mass = A_mass = self.A()*1e3*self.MW_inv()
+        return A_mass
+
+    def G_mass(self):
+        try:
+            return self._G_mass
+        except AttributeError:
+            pass
+        
+        self._G_mass = G_mass = self.G()*1e3*self.MW_inv()
+        return G_mass
+
+    def Cp_mass(self):
+        try:
+            return self._Cp_mass
+        except AttributeError:
+            pass
+        
+        self._Cp_mass = Cp_mass = self.Cp()*1e3*self.MW_inv()
+        return Cp_mass
+
+    def Cv_mass(self):
+        try:
+            return self._Cv_mass
+        except AttributeError:
+            pass
+        
+        self._Cv_mass = Cv_mass = self.Cv()*1e3*self.MW_inv()
+        return Cv_mass
 
 class IdealGas(Phase):
     '''DO NOT DELETE - EOS CLASS IS TOO SLOW!
@@ -744,7 +837,7 @@ class EOSGas(Phase):
         self.Hfs = Hfs
         self.Gfs = Gfs
         self.Sfs = Sfs
-        self.setup_Cpigs()
+        self.Cpgs_locked, self.Cpgs_data = self.setup_Cpigs(HeatCapacityGases)
         
         if T is not None and P is not None and zs is not None:
             self.T = T
@@ -1025,14 +1118,17 @@ class GibbsExcessLiquid(Phase):
     Vms_sat_data = None
     Hvap_locked = False
     Hvap_data = None
+    use_IG_Cp = True
     def __init__(self, VaporPressures, VolumeLiquids=None, 
                  GibbsExcessModel=IdealSolution(), 
                  eos_pure_instances=None,
                  VolumeLiquidMixture=None,
                  HeatCapacityGases=None, 
                  EnthalpyVaporizations=None,
+                 HeatCapacityLiquids=None, 
                  use_Poynting=False,
                  use_phis_sat=False,
+                 use_IG_Cp=True,
                  Hfs=None, Gfs=None, Sfs=None,
                  henry_components=None, henry_data=None,
                  T=None, P=None, zs=None,
@@ -1041,18 +1137,30 @@ class GibbsExcessLiquid(Phase):
         self.Psats_locked = all(i.locked for i in VaporPressures) if VaporPressures is not None else False
         if self.Psats_locked:
             self.Psats_data = ([i.best_fit_Tmin for i in VaporPressures],
-                             [i.best_fit_Tmin_slope for i in VaporPressures],
-                             [i.best_fit_Tmin_value for i in VaporPressures],
-                             [i.best_fit_Tmax for i in VaporPressures],
-                             [i.best_fit_Tmax_slope for i in VaporPressures],
-                             [i.best_fit_Tmax_value for i in VaporPressures],
-                             [i.best_fit_coeffs for i in VaporPressures],
-                             [i.best_fit_d_coeffs for i in VaporPressures],
-                             [i.best_fit_d2_coeffs for i in VaporPressures])
+                               [i.best_fit_Tmin_slope for i in VaporPressures],
+                               [i.best_fit_Tmin_value for i in VaporPressures],
+                               [i.best_fit_Tmax for i in VaporPressures],
+                               [i.best_fit_Tmax_slope for i in VaporPressures],
+                               [i.best_fit_Tmax_value for i in VaporPressures],
+                               [i.best_fit_coeffs for i in VaporPressures],
+                               [i.best_fit_d_coeffs for i in VaporPressures],
+                               [i.best_fit_d2_coeffs for i in VaporPressures])
+            
+        self.N = len(VaporPressures)
+        self.cmps = range(self.N)
             
         self.HeatCapacityGases = HeatCapacityGases
-        self.setup_Cpigs()
-
+        self.Cpgs_locked, self.Cpgs_data = self.setup_Cpigs(HeatCapacityGases)
+        
+        self.HeatCapacityLiquids = HeatCapacityLiquids
+        if HeatCapacityLiquids is not None:
+            self.Cpls_locked, self.Cpls_data = self.setup_Cpigs(HeatCapacityLiquids)
+            T_REF_IG = self.T_REF_IG
+            T_REF_IG_INV = 1.0/T_REF_IG
+            self.Hvaps_T_ref = [obj(T_REF_IG) for obj in EnthalpyVaporizations]
+            self.dSvaps_T_ref = [T_REF_IG_INV*dH for dH in self.Hvaps_T_ref]
+            
+            
         self.VolumeLiquids = VolumeLiquids
         self.Vms_sat_locked = all(i.locked for i in VolumeLiquids) if VolumeLiquids is not None else False
         if self.Vms_sat_locked:
@@ -1083,8 +1191,6 @@ class GibbsExcessLiquid(Phase):
         self.eos_pure_instances = eos_pure_instances
         self.VolumeLiquidMixture = VolumeLiquidMixture
         
-        self.N = len(VaporPressures)
-        self.cmps = range(self.N)
         
         self.use_Poynting = use_Poynting
         self.use_phis_sat = use_phis_sat
@@ -2020,6 +2126,27 @@ class GibbsExcessLiquid(Phase):
             pass
         self._dV_dT = self.VolumeLiquidMixture.property_derivative_T(self.T, self.P, self.zs, order=1)
         return self._dV_dT
+    
+    
+class GibbsExcessSolid(GibbsExcessLiquid):
+    def __init__(self, SublimationPressures, VolumeSolids=None, 
+                 GibbsExcessModel=IdealSolution(), 
+                 eos_pure_instances=None,
+                 VolumeLiquidMixture=None,
+                 HeatCapacityGases=None, 
+                 EnthalpySublimations=None,
+                 use_Poynting=False,
+                 use_phis_sat=False,
+                 Hfs=None, Gfs=None, Sfs=None,
+                 henry_components=None, henry_data=None,
+                 T=None, P=None, zs=None,
+                 ):
+        super(self, VaporPressures=SublimationPressures, VolumeLiquids=VolumeSolids,
+              HeatCapacityGases=HeatCapacityGases, EnthalpyVaporizations=EnthalpySublimations,
+              use_Poynting=use_Poynting,
+              Hfs=Hfs, Gfs=Gfs, Sfs=Sfs, T=T, P=P, zs=zs)
 
-gas_phases = [IdealGas, EOSGas]
-liquid_phases = [EOSLiquid, GibbsExcessLiquid]
+
+gas_phases = (IdealGas, EOSGas)
+liquid_phases = (EOSLiquid, GibbsExcessLiquid)
+solid_phases = (GibbsExcessSolid,)
