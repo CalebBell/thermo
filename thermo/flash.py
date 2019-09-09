@@ -855,7 +855,7 @@ class FlashVL(object):
             
             flash_specs = {'T': T, 'P': P, 'zs': zs}
             flash_convergence = {'iterations': iteration, 'err': err}
-            return EquilibriumState(T, P, zs, gas=gas, liquids=[l], solids=[], 
+            return EquilibriumState(T, P, zs, gas=g, liquids=[l], solids=[], 
                                     betas=[V_over_F, 1.0-V_over_F], flash_specs=flash_specs, 
                                     flash_convergence=flash_convergence,
                                     constants=constants, properties=properties)

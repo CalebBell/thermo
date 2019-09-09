@@ -696,7 +696,7 @@ class Phase(object):
 
     def k(self):
         return self.result.k(self)
-
+    
     def ws(self):
         return self.result.ws(self)
         

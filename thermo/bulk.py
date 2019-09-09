@@ -37,10 +37,45 @@ Does not have any flow property.
 
 
 class Bulk(Phase):
-    def __init__(self,# T, P,
+    def __init__(self, T, P,
                  zs, phases, phase_fractions):
-#        self.T = T
-#        self.P = P
+        self.T = T
+        self.P = P
         self.zs = zs
         self.phases = phases
         self.phase_fractions = phase_fractions
+
+    def MW(self):
+        MWs = self.constants.MWs
+        zs = self.zs
+        MW = 0.0
+        for i in range(len(MWs)):
+            MW += zs[i]*MWs[i]
+        return MW
+        
+    def V(self):
+        # Is there a point to anything else?
+        try:
+            return self._V
+        except AttributeError:
+            pass
+        
+        betas, phases = self.phase_fractions, self.phases
+        V = 0.0
+        for i in range(len(betas)):
+            V += betas[i]*phases[i].V()
+        self._V = V
+        return V
+    
+    def Cp(self):
+        try:
+            return self._Cp
+        except AttributeError:
+            pass
+        
+        betas, phases = self.phase_fractions, self.phases
+        Cp = 0.0
+        for i in range(len(betas)):
+            Cp += betas[i]*phases[i].Cp()
+        self._Cp = Cp
+        return Cp

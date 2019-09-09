@@ -974,7 +974,7 @@ class Mixture(object):
             
             # TODO: volume fractions - attempt
 #            if (self.rhol is not None and self.rhog is not None):
-#                self.Vfg = vapor_mass_quality(self.quality, MWl=self.rhol, MWg=self.rhog) 
+#                self.Vfg = vapor_mass_quality(self.quality, MWl=self.Vml, MWg=self.Vmg) 
 #            else:
 #                self.Vfg = None
                 

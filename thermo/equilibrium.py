@@ -24,7 +24,7 @@ from __future__ import division
 __all__ = ['EquilibriumState']
 
 from fluids.constants import R, R_inv
-from thermo.utils import log, exp, normalize, zs_to_ws, vapor_mass_quality
+from thermo.utils import log, exp, normalize, zs_to_ws, vapor_mass_quality, mixing_simple, Vm_to_rho
 from thermo.phases import gas_phases, liquid_phases, solid_phases
 from thermo.elements import atom_fractions, mass_fractions, simple_formula_parser, molecular_weight, mixture_atomic_composition
 from thermo.chemical_package import ChemicalConstantsPackage
@@ -87,15 +87,21 @@ class EquilibriumState(object):
         if liquids:
             self.liquid_zs = normalize([sum([betas_liquids[j]*liquids[j].zs[i] for j in range(self.liquid_count)])
                                for i in self.cmps])
-            self.liquid_bulk = Bulk(self.liquid_zs, self.phases, self.betas_liquids)
-
+            self.liquid_bulk = liquid_bulk = Bulk(T, P, self.liquid_zs, self.liquids, self.betas_liquids)
+            liquid_bulk.result = self
+            liquid_bulk.constants = constants
+            
         if solids:
             self.solid_zs = normalize([sum([betas_solids[j]*solids[j].zs[i] for j in range(self.solid_count)])
                                for i in self.cmps])
-            self.solid_bulk = Bulk(self.solid_zs, solids, self.betas_solids)
-        
-        self.bulk = Bulk(zs, all_phases, betas)
-        
+            self.solid_bulk = solid_bulk = Bulk(T, P, self.solid_zs, solids, self.betas_solids)
+            solid_bulk.result = self
+            solid_bulk.constants = constants
+
+        self.bulk = bulk = Bulk(T, P, zs, self.phases, betas)
+        bulk.result = self
+        bulk.constants = constants
+
         self.flash_specs = flash_specs
         self.flash_convergence = flash_convergence
         
@@ -104,7 +110,30 @@ class EquilibriumState(object):
         for phase in self.phases:
             phase.result = self
             phase.constants = constants
+    
+    @property
+    def betas_mass(self):
+        phase_iter = range(self.phase_count)
+        betas = self.betas
+        MWs_phases = [i.MW() for i in self.phases]
         
+        tot = 0.0
+        for i in phase_iter:
+            tot += MWs_phases[i]*betas[i]
+        tot_inv = 1.0/tot
+        return [betas[i]*MWs_phases[i]*tot_inv for i in phase_iter]
+    
+    @property
+    def betas_volume(self):
+        phase_iter = range(self.phase_count)
+        betas = self.betas
+        Vs_phases = [i.V() for i in self.phases]
+        
+        tot = 0.0
+        for i in phase_iter:
+            tot += Vs_phases[i]*betas[i]
+        tot_inv = 1.0/tot
+        return [betas[i]*Vs_phases[i]*tot_inv for i in phase_iter]
     
     
     def atom_fractions(self, phase=None):
@@ -154,21 +183,26 @@ class EquilibriumState(object):
             zs = self.zs
         else:
             zs = phase.zs
-        mixing_simple(zs, self.constants.MWs)
+            
+        MWs = self.constants.MWs
+        MW = 0.0
+        for i in self.cmps:
+            MW += zs[i]*MWs[i]
+        return MW
+
+
         
     def quality(self):
-        return vapor_mass_quality(self.beta_gas, MWl=self.liquid_bulk.MW, MWg=self.gas.MW)
+        return vapor_mass_quality(self.beta_gas, MWl=self.liquid_bulk.MW(), MWg=self.gas.MW())
 
     
     def rho_mass(self, phase=None):
         if phase is None:
             phase = self.bulk
         
-        Vm = phase.Vm()
+        V = phase.V()
         MW = phase.MW()
-        if Vm is not None and MW is not None:
-            return Vm_to_rho(Vm, MW)
-        return None
+        return Vm_to_rho(V, MW)
 
     def H_mass(self, phase=None):
         if phase is None:
@@ -204,6 +238,12 @@ class EquilibriumState(object):
         if phase is None:
             phase = self.bulk
         return phase.Cv()*1e3*phase.MW_inv()
+
+
+    def Cp_mass(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+        return phase.Cp()*1e3*phase.MW_inv()
     
     def alpha(self, phase=None):
         rho = self.rho_mass(phase)
@@ -214,25 +254,29 @@ class EquilibriumState(object):
     
     def mu(self, phase=None):
         if isinstance(phase, gas_phases):
-            return self.properties.ViscosityGasMixture.mixture_property(phase.T, phase.P, phase.zs, phase.ws)
+            return self.properties.ViscosityGasMixture.mixture_property(phase.T, phase.P, phase.zs, phase.ws())
         elif isinstance(phase, liquid_phases):
-            return self.properties.ViscosityLiquidMixture.mixture_property(phase.T, phase.P, phase.zs, phase.ws)
+            return self.properties.ViscosityLiquidMixture.mixture_property(phase.T, phase.P, phase.zs, phase.ws())
         else:
-            return None
+            raise NotImplementedError("no bulk methods")
     
     def k(self, phase=None):
         if phase is None:
             phase = self.bulk
         if isinstance(phase, gas_phases):
             return self.properties.ThermalConductivityGasMixture.mixture_property(
-                    phase.T, phase.P, phase.zs, phase.ws)
+                    phase.T, phase.P, phase.zs, phase.ws())
+            
         elif isinstance(phase, liquid_phases):
             return self.properties.ThermalConductivityLiquidMixture.mixture_property(
-                    phase.T, phase.P, phase.zs, phase.ws)
+                    phase.T, phase.P, phase.zs, phase.ws())
+            
         elif isinstance(phase, solid_phases):
             solid_index = phase.zs.index(1)
             return self.properties.ThermalConductivitySolids[solid_index].mixture_property(
-                    phase.T, phase.P, phase.zs, phase.ws)
+                    phase.T, phase.P, phase.zs, phase.ws())
+        else:
+            raise NotImplementedError("no bulk methods")
     
     def SG(self, phase):
         if phase is None:
@@ -259,7 +303,7 @@ class EquilibriumState(object):
 
         if isinstance(phase, liquid_phases):
             return self.properties.SurfaceTensionMixture.mixture_property(
-                    phase.T, phase.P, phase.zs, phase.ws)
+                    phase.T, phase.P, phase.zs, phase.ws())
         if isinstance(phase, gas_phases):
             return 0
     
@@ -294,8 +338,9 @@ def _make_getter_bulk_props(name):
     return get
 
 
-bulk_props = ['V', 'rho', 'Cp']
+bulk_props = ['V', 'Z', 'rho', 'Cp']
 for name in bulk_props:
+    # Maybe take this out and implement it manually for performance?
     getter = property(_make_getter_bulk_props(name))
     setattr(EquilibriumState, name, getter)
 
