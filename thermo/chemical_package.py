@@ -55,7 +55,8 @@ class ChemicalConstantsPackage(object):
                  'Tbs', 'Tcs', 'Tflashs', 'Tms', 'Tts', 'TWAs', 'UFLs', 
                  'UNIFAC_Dortmund_groups', 'UNIFAC_groups',
                  'Van_der_Waals_areas', 'Van_der_Waals_volumes', 'Vcs', 
-                 'Vml_STPs', 'Vml_Tms', 'Zcs',
+                 'Vml_STPs', 'Vml_Tms', 'Zcs', 'UNIFAC_Rs', 'UNIFAC_Qs',
+                 'rhos_Tms', 'Vms_Tms', 'solubility_parameters',
                  
                  )
     
@@ -93,7 +94,9 @@ class ChemicalConstantsPackage(object):
                  Carcinogens=None, legal_statuses=None, economic_statuses=None,
                  # Environmental
                  GWPs=None, ODPs=None, logPs=None, 
-                 Psat_298s=None, Hvap_298s=None, Hvap_298s_mass=None, Vml_Tms=None,
+                 Psat_298s=None, Hvap_298s=None, Hvap_298s_mass=None, 
+                 Vml_Tms=None, rhos_Tms=None, Vms_Tms=None,
+                 
                  # Analytical
                  RIs=None, conductivities=None,
                  # Odd constants
@@ -102,12 +105,13 @@ class ChemicalConstantsPackage(object):
                  Van_der_Waals_areas=None, Parachors=None, StielPolars=None,
                  atomss=None, atom_fractions=None,
                  similarity_variables=None, phase_STPs=None,
+                 solubility_parameters=None,
                  # Other identifiers
                  PubChems=None, formulas=None, smiless=None, InChIs=None,
                  InChI_Keys=None,
                  # Groups
                  UNIFAC_groups=None, UNIFAC_Dortmund_groups=None, 
-                 PSRK_groups=None,
+                 PSRK_groups=None, UNIFAC_Rs=None, UNIFAC_Qs=None,
                  ):
         self.N = N = len(MWs)
         self.cmps = range(N)
@@ -170,6 +174,7 @@ class ChemicalConstantsPackage(object):
         if STELs is None: STELs = [None]*N
         if StielPolars is None: StielPolars = [None]*N
         if Stockmayers is None: Stockmayers = [None]*N
+        if solubility_parameters is None: solubility_parameters = [None]*N
         if Tautoignitions is None: Tautoignitions = [None]*N
         if Tbs is None: Tbs = [None]*N
         if Tcs is None: Tcs = [None]*N
@@ -180,11 +185,15 @@ class ChemicalConstantsPackage(object):
         if UFLs is None: UFLs = [None]*N
         if UNIFAC_Dortmund_groups is None: UNIFAC_Dortmund_groups = [None]*N
         if UNIFAC_groups is None: UNIFAC_groups = [None]*N
+        if UNIFAC_Rs is None: UNIFAC_Rs = [None]*N
+        if UNIFAC_Qs is None: UNIFAC_Qs = [None]*N
         if Van_der_Waals_areas is None: Van_der_Waals_areas = [None]*N
         if Van_der_Waals_volumes is None: Van_der_Waals_volumes = [None]*N
         if Vcs is None: Vcs = [None]*N
         if Vml_STPs is None: Vml_STPs = [None]*N
         if Vml_Tms is None: Vml_Tms = [None]*N
+        if rhos_Tms is None: rhos_Tms = [None]*N
+        if Vms_Tms is None: Vms_Tms = [None]*N
         if Zcs is None: Zcs = [None]*N
         
         self.atom_fractions = atom_fractions
@@ -241,6 +250,7 @@ class ChemicalConstantsPackage(object):
         self.Sfgs = Sfgs
         self.Sfgs_mass = Sfgs_mass
         self.similarity_variables = similarity_variables
+        self.solubility_parameters = solubility_parameters
         self.Skins = Skins
         self.smiless = smiless
         self.STELs = STELs
@@ -256,16 +266,34 @@ class ChemicalConstantsPackage(object):
         self.UFLs = UFLs
         self.UNIFAC_Dortmund_groups = UNIFAC_Dortmund_groups
         self.UNIFAC_groups = UNIFAC_groups
+        self.UNIFAC_Rs = UNIFAC_Rs
+        self.UNIFAC_Qs = UNIFAC_Qs
         self.Van_der_Waals_areas = Van_der_Waals_areas
         self.Van_der_Waals_volumes = Van_der_Waals_volumes
         self.Vcs = Vcs
         self.Vml_STPs = Vml_STPs
         self.Vml_Tms = Vml_Tms
+        self.rhos_Tms = rhos_Tms
+        self.Vms_Tms = Vms_Tms
         self.Zcs = Zcs
 
 
 class PropertyCorrelationPackage(object):
-#    __slots__ = ()
+    correlations = ('VaporPressures', 'SublimationPressures', 'VolumeGases', 
+               'VolumeLiquids', 'VolumeSolids', 'HeatCapacityGases',
+               'HeatCapacityLiquids', 'HeatCapacitySolids', 'ViscosityGases',
+               'ViscosityLiquids', 'ThermalConductivityGases', 'ThermalConductivityLiquids',
+               'EnthalpyVaporizations', 'EnthalpySublimations', 'SurfaceTensions',
+               'Permittivities',
+               
+               'VolumeGasMixture', 'VolumeLiquidMixture', 'VolumeSolidMixture',
+               'HeatCapacityGasMixture', 'HeatCapacityLiquidMixture',
+               'HeatCapacitySolidMixture', 'ViscosityGasMixture', 
+               'ViscosityLiquidMixture', 'ThermalConductivityGasMixture',
+               'ThermalConductivityLiquidMixture', 'SurfaceTensionMixture',
+               )
+    
+    __slots__ = correlations
     def __init__(self, constants, VaporPressures=None, SublimationPressures=None,
                  VolumeGases=None, VolumeLiquids=None, VolumeSolids=None,
                  HeatCapacityGases=None, HeatCapacityLiquids=None, HeatCapacitySolids=None,
@@ -386,7 +414,7 @@ class PropertyCorrelationPackage(object):
         
         self.VaporPressures = VaporPressures
         self.VolumeLiquids = VolumeLiquids
-        self.VolumeGas = VolumeGases
+        self.VolumeGases = VolumeGases
         self.VolumeSolids = VolumeSolids
         self.HeatCapacityGases = HeatCapacityGases
         self.HeatCapacitySolids = HeatCapacitySolids

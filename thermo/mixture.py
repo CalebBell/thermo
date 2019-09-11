@@ -373,6 +373,10 @@ class Mixture(object):
     Vmg_STPs : list of float
         Molar volume of the chemicals in the mixture as gases at 298.15 K and 
         101325 Pa, [m^3/mol]
+    Vms_Tms : list of float
+        Molar volumes of solid phase at the melting point [m^3/mol]
+    rhos_Tms : list of float
+        Mass densities of solid phase at the melting point [kg/m^3]
     Hvap_Tbms : list of float
         Molar enthalpies of vaporization of the chemicals in the mixture at 
         their normal boiling points, [J/mol]
@@ -730,6 +734,9 @@ class Mixture(object):
         self.rhol_STPs = [i.rhol_STP for i in self.Chemicals]
         
         self.Vmg_STPs = [i.Vmg_STP for i in self.Chemicals]
+
+        self.Vms_Tms = [i.Vms_Tm for i in self.Chemicals]
+        self.rhos_Tms = [i.rhos_Tm for i in self.Chemicals]
 
         self.Psat_298s = [i.Psat_298 for i in self.Chemicals]
         self.phase_STPs = [i.phase_STP for i in self.Chemicals]
@@ -1373,6 +1380,30 @@ class Mixture(object):
           'OECD HPV Chemicals']]
         '''
         return [i.economic_status for i in self.Chemicals]
+
+    @property
+    def UNIFAC_Rs(self):
+        r'''UNIFAC `R` (normalized Van der Waals volume) values, dimensionless.
+        Used in the UNIFAC model.
+
+        Examples
+        --------
+        >>> Mixture(['o-xylene', 'm-xylene'], zs=[.5, .5]).UNIFAC_Rs
+        [4.6578, 4.6578]
+        '''
+        return [i.UNIFAC_R for i in self.Chemicals]
+
+    @property
+    def UNIFAC_Qs(self):
+        r'''UNIFAC `Q` (normalized Van der Waals area) values, dimensionless.
+        Used in the UNIFAC model.
+
+        Examples
+        --------
+        >>> Mixture(['o-xylene', 'decane'], zs=[.5, .5]).UNIFAC_Qs
+        [3.536, 6.016]
+        '''
+        return [i.UNIFAC_Q for i in self.Chemicals]
 
     @property
     def UNIFAC_groups(self):
@@ -3251,6 +3282,7 @@ class Mixture(object):
                  GWPs=self.GWPs, ODPs=self.ODPs, logPs=self.logPs, 
                  Psat_298s=self.Psat_298s, Hvap_298s=self.Hvapm_298s, 
                  Hvap_298s_mass=self.Hvap_298s, Vml_Tms=self.Vml_Tms,
+                 rhos_Tms=self.rhos_Tms, Vms_Tms=self.Vms_Tms,
                  # Analytical
                  RIs=self.RIs, conductivities=self.conductivities,
                  # Odd constants
@@ -3259,6 +3291,7 @@ class Mixture(object):
                  Van_der_Waals_areas=self.Van_der_Waals_areas, Parachors=self.Parachors, StielPolars=self.StielPolars,
                  atomss=self.atomss, atom_fractions=self.atom_fractions,
                  similarity_variables=self.similarity_variables, phase_STPs=self.phase_STPs,
+                 UNIFAC_Rs=self.UNIFAC_Rs, UNIFAC_Qs=self.UNIFAC_Qs, solubility_parameters=self.solubility_parameters,
                  # Other identifiers
                  PubChems=self.PubChems, formulas=self.formulas, smiless=self.smiless, InChIs=self.InChIs,
                  InChI_Keys=self.InChI_Keys,

@@ -32,14 +32,14 @@ __all__ = ['COSTALD_data', 'SNM0_data', 'Perry_l_data', 'CRC_inorg_l_data',
 'ideal_gas', 'volume_gas_methods', 'VolumeGas', 
 'volume_gas_mixture_methods', 'volume_solid_mixture_methods', 'Goodman',
  'volume_solid_methods', 'VolumeSolid',
-'VolumeLiquidMixture', 'VolumeGasMixture', 'VolumeSolidMixture']
+'VolumeLiquidMixture', 'VolumeGasMixture', 'VolumeSolidMixture',
+'Tait_parameters_COSTALD']
 
 import os
-import numpy as np
 from scipy.interpolate import interp1d
 import pandas as pd
 
-from fluids.numerics import horner
+from fluids.numerics import horner, np, polyder
 from thermo.utils import R
 from thermo.utils import log, exp, isnan
 from thermo.utils import Vm_to_rho, rho_to_Vm, mixing_simple, none_and_length_check
@@ -1184,6 +1184,8 @@ class VolumeLiquid(TPDependentProperty):
                 Ts, properties = self.tabular_data[method]
                 if T < Ts[0] or T > Ts[-1]:
                     validity = False
+        elif method == BESTFIT:
+            validity = True
         else:
             raise Exception('Method not valid')
         return validity
@@ -1232,6 +1234,35 @@ class VolumeLiquid(TPDependentProperty):
         else:
             raise Exception('Method not valid')
         return validity
+    
+
+    def Tait_data(self):
+        Tr_min = .27
+        Tr_max = .95
+        Tc = self.Tc
+        
+        Tmin, Tmax = Tc*Tr_min, Tc*Tr_max
+        B_coeffs, C_coeffs = Tait_parameters_COSTALD(Tc, self.Pc, self.omega,
+                                                     Tr_min=Tr_min,
+                                                     Tr_max=Tr_max)
+        B_coeffs_d = polyder(B_coeffs)
+        B_coeffs_d2 = polyder(B_coeffs_d)
+        
+        B_data = [Tmin, horner(B_coeffs_d, Tmin), horner(B_coeffs, Tmin),
+                  Tmax, horner(B_coeffs_d, Tmax), horner(B_coeffs, Tmax),
+                  B_coeffs, B_coeffs_d, B_coeffs_d2]
+        
+        C_coeffs_d = polyder(C_coeffs)
+        C_coeffs_d2 = polyder(C_coeffs_d)
+        
+        C_data = [Tmin, horner(C_coeffs_d, Tmin), horner(C_coeffs, Tmin),
+                  Tmax, horner(C_coeffs_d, Tmax), horner(C_coeffs, Tmax),
+                  C_coeffs, C_coeffs_d, C_coeffs_d2]
+
+        return B_data, C_data
+        
+        
+
 
 
 def COSTALD_compressed(T, P, Psat, Tc, Pc, omega, Vs):
@@ -1306,6 +1337,30 @@ def COSTALD_compressed(T, P, Psat, Tc, Pc, omega, Vs):
     B = Pc*(-1.0 + a*tau13 + b*tau13*tau13 + d*tau + e*tau*tau13)
     return Vs*(1.0 - C*log((B + P)/(B + Psat)))
 
+
+def Tait_parameters_COSTALD(Tc, Pc, omega, Tr_min=.27, Tr_max=.95):
+    # Limits of any of their data for Tr
+    a = -9.070217
+    b = 62.45326
+    d = -135.1102
+    f = 4.79594
+    g = 0.250047
+    h = 1.14188
+    j = 0.0861488
+    k = 0.0344483
+    e = exp(f + omega*(g + h*omega))
+    C = j + k*omega
+        
+    Tc_inv = 1.0/Tc
+    def B_fun(T):
+        tau = 1.0 - T*Tc_inv
+        tau13 = tau**(1.0/3.0)
+        return Pc*(-1.0 + a*tau13 + b*tau13*tau13 + d*tau + e*tau*tau13)
+    from fluids.optional.pychebfun import cheb_to_poly, chebfun
+    
+    fun = chebfun(B_fun, domain=[Tr_min*Tc, Tr_max*Tc], N=3)
+    B_params = cheb_to_poly(fun)
+    return B_params, [C]
 
 ### Liquid Mixtures
 
@@ -2052,6 +2107,8 @@ class VolumeGas(TPDependentProperty):
                 validity = False
         elif method == COOLPROP:
             validity = PhaseSI('T', T, 'P', P, self.CASRN) in ['gas', 'supercritical_gas', 'supercritical', 'supercritical_liquid']
+        elif method == BESTFIT:
+            validity = True
         elif method in self.tabular_data:
             if not self.tabular_extrapolation_permitted:
                 Ts, Ps, properties = self.tabular_data[method]
@@ -2458,6 +2515,8 @@ class VolumeSolid(TDependentProperty):
         elif method == GOODMAN:
             if T < self.Tt*0.3:
                 validity = False
+        elif method == BESTFIT:
+            validity = True
         elif method in self.tabular_data:
             # if tabular_extrapolation_permitted, good to go without checking
             if not self.tabular_extrapolation_permitted:

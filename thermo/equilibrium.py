@@ -24,14 +24,16 @@ from __future__ import division
 __all__ = ['EquilibriumState']
 
 from fluids.constants import R, R_inv
-from thermo.utils import log, exp, normalize, zs_to_ws, vapor_mass_quality, mixing_simple, Vm_to_rho
+from fluids.core import thermal_diffusivity
+from thermo.utils import log, exp, normalize, zs_to_ws, vapor_mass_quality, mixing_simple, Vm_to_rho, SG
 from thermo.phases import gas_phases, liquid_phases, solid_phases
 from thermo.elements import atom_fractions, mass_fractions, simple_formula_parser, molecular_weight, mixture_atomic_composition
-from thermo.chemical_package import ChemicalConstantsPackage
+from thermo.chemical_package import ChemicalConstantsPackage, PropertyCorrelationPackage
 from thermo.bulk import Bulk
 
 all_phases = gas_phases + liquid_phases + solid_phases
 
+CAS_H2O = '7732-18-5'
 
 class EquilibriumState(object):
     '''Goal is to retrieve literally every thing about the flashed phases here.
@@ -53,7 +55,7 @@ class EquilibriumState(object):
     def __init__(self, T, P, zs, 
                  gas, liquids, solids, betas,
                  flash_specs, flash_convergence,
-                 constants, properties,
+                 constants, correlations,
                  ):
         # T, P are the only properties constant across phase
         self.T = T
@@ -85,6 +87,8 @@ class EquilibriumState(object):
         self.betas_solids = betas[self.gas_count+self.liquid_count: ]
         
         if liquids:
+#                tot_inv = 1.0/sum(values)
+#                return [i*tot_inv for i in values]
             self.liquid_zs = normalize([sum([betas_liquids[j]*liquids[j].zs[i] for j in range(self.liquid_count)])
                                for i in self.cmps])
             self.liquid_bulk = liquid_bulk = Bulk(T, P, self.liquid_zs, self.liquids, self.betas_liquids)
@@ -106,7 +110,7 @@ class EquilibriumState(object):
         self.flash_convergence = flash_convergence
         
         self.constants = constants
-        self.properties = properties
+        self.correlations = correlations
         for phase in self.phases:
             phase.result = self
             phase.constants = constants
@@ -159,9 +163,8 @@ class EquilibriumState(object):
 
         '''
         if phase is None:
-            zs = self.zs
-        else:
-            zs = phase.zs
+            phase = self.bulk
+        zs = phase.zs
         things = dict()
         for zi, atoms in zip(zs, self.constants.atomss):
             for atom, count in atoms.items():
@@ -169,7 +172,7 @@ class EquilibriumState(object):
                     things[atom] += zi*count
                 else:
                     things[atom] = zi*count
-        return mass_fractions(things)
+        return mass_fractions(things, phase.MW())
 
     def ws(self, phase=None):
         if phase is None:
@@ -190,8 +193,54 @@ class EquilibriumState(object):
             MW += zs[i]*MWs[i]
         return MW
 
+    def pseudo_Tc(self, phase=None):
+        if phase is None:
+            zs = self.zs
+        else:
+            zs = phase.zs
+            
+        Tcs = self.constants.Tcs
+        Tc = 0.0
+        for i in self.cmps:
+            Tc += zs[i]*Tcs[i]
+        return Tc
 
+    def pseudo_Pc(self, phase=None):
+        if phase is None:
+            zs = self.zs
+        else:
+            zs = phase.zs
+            
+        Pcs = self.constants.Pcs
+        Pc = 0.0
+        for i in self.cmps:
+            Pc += zs[i]*Pcs[i]
+        return Pc
+
+    def pseudo_Vc(self, phase=None):
+        if phase is None:
+            zs = self.zs
+        else:
+            zs = phase.zs
+            
+        Vcs = self.constants.Vcs
+        Vc = 0.0
+        for i in self.cmps:
+            Vc += zs[i]*Vcs[i]
+        return Vc
         
+    def pseudo_Zc(self, phase=None):
+        if phase is None:
+            zs = self.zs
+        else:
+            zs = phase.zs
+            
+        Zcs = self.constants.Zcs
+        Zc = 0.0
+        for i in self.cmps:
+            Zc += zs[i]*Zcs[i]
+        return Zc
+
     def quality(self):
         return vapor_mass_quality(self.beta_gas, MWl=self.liquid_bulk.MW(), MWg=self.gas.MW())
 
@@ -203,6 +252,15 @@ class EquilibriumState(object):
         V = phase.V()
         MW = phase.MW()
         return Vm_to_rho(V, MW)
+
+    def V_mass(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+        
+        V = phase.V()
+        MW = phase.MW()
+#        return 1.0/((Vm)**-1*MW/1000.)
+        return 1.0/Vm_to_rho(V, MW)
 
     def H_mass(self, phase=None):
         if phase is None:
@@ -254,47 +312,96 @@ class EquilibriumState(object):
     
     def mu(self, phase=None):
         if isinstance(phase, gas_phases):
-            return self.properties.ViscosityGasMixture.mixture_property(phase.T, phase.P, phase.zs, phase.ws())
+            return self.correlations.ViscosityGasMixture.mixture_property(phase.T, phase.P, phase.zs, phase.ws())
         elif isinstance(phase, liquid_phases):
-            return self.properties.ViscosityLiquidMixture.mixture_property(phase.T, phase.P, phase.zs, phase.ws())
+            return self.correlations.ViscosityLiquidMixture.mixture_property(phase.T, phase.P, phase.zs, phase.ws())
         else:
             raise NotImplementedError("no bulk methods")
+            
+    def nu(self, phase=None):
+        return self.mu(phase)/self.rho_mass(phase)
     
     def k(self, phase=None):
         if phase is None:
             phase = self.bulk
         if isinstance(phase, gas_phases):
-            return self.properties.ThermalConductivityGasMixture.mixture_property(
+            return self.correlations.ThermalConductivityGasMixture.mixture_property(
                     phase.T, phase.P, phase.zs, phase.ws())
             
         elif isinstance(phase, liquid_phases):
-            return self.properties.ThermalConductivityLiquidMixture.mixture_property(
+            return self.correlations.ThermalConductivityLiquidMixture.mixture_property(
                     phase.T, phase.P, phase.zs, phase.ws())
             
         elif isinstance(phase, solid_phases):
             solid_index = phase.zs.index(1)
-            return self.properties.ThermalConductivitySolids[solid_index].mixture_property(
+            return self.correlations.ThermalConductivitySolids[solid_index].mixture_property(
                     phase.T, phase.P, phase.zs, phase.ws())
         else:
             raise NotImplementedError("no bulk methods")
     
-    def SG(self, phase):
+    def SG(self, phase=None):
         if phase is None:
             phase = self.bulk
         rho_mass = self.rho_mass(phase)
         return SG(rho_mass)
 
-    def API(self, phase):
+    def API(self, phase=None):
         if phase is None:
             phase = self.bulk
         # Going to get a list of liquid phasee models, determine which model 
         # to use. Construct a new phase object, get the density
         
-    def Bvirial(self, phase):
+    def Bvirial(self, phase=None):
         if phase is None:
             phase = self.bulk
         return B_from_Z(phase.Z(), self.T, self.P)
+    
+    def H_C_ratio(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+        atom_fractions = self.atom_fractions()
+        H = atom_fractions.get('H', 0.0)
+        C = atom_fractions.get('C', 0.0)
+        try:
+            return H/C
+        except ZeroDivisionError:
+            return None
+        
+    def H_C_ratio_mass(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+        atom_fractions = self.atom_mass_fractions()
+        H = atom_fractions.get('H', 0.0)
+        C = atom_fractions.get('C', 0.0)
+        try:
+            return H/C
+        except ZeroDivisionError:
+            return None
+    
+    @property
+    def water_index(self):
+        try:
+            return self._water_index
+        except AttributeError:
+            pass
+        
+        try:
+            self._water_index = self.constants.CASs.index(CAS_H2O)
+        except ValueError:
+            self._water_index = None
+        return self._water_index
+        
+        
+    def molar_water_content(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+            
+        water_index = self.water_index
+        if water_index is None:
+            return 0.0
 
+        MW_water = self.constants.MWs[water_index]
+        return MW_water*phase.ws()[water_index]
 
     @property
     def sigma(self, phase=None):
@@ -302,7 +409,7 @@ class EquilibriumState(object):
             phase = self.bulk
 
         if isinstance(phase, liquid_phases):
-            return self.properties.SurfaceTensionMixture.mixture_property(
+            return self.correlations.SurfaceTensionMixture.mixture_property(
                     phase.T, phase.P, phase.zs, phase.ws())
         if isinstance(phase, gas_phases):
             return 0
@@ -322,6 +429,11 @@ def _make_getter_constants(name):
         return getattr(self.constants, name)
     return get
 
+def _make_getter_correlations(name):
+    def get(self):
+        return getattr(self.correlations, name)
+    return get
+
 constant_blacklist = set(['atom_fractions'])
 
 for name in ChemicalConstantsPackage.properties:
@@ -331,6 +443,10 @@ for name in ChemicalConstantsPackage.properties:
         for phase in all_phases:
             setattr(phase, name, getter)
         
+for name in PropertyCorrelationPackage.correlations:
+    getter = property(_make_getter_correlations(name))
+    setattr(EquilibriumState, name, getter)
+
         
 def _make_getter_bulk_props(name):
     def get(self):

@@ -967,6 +967,8 @@ class HeatCapacityGas(TDependentProperty):
         elif method == COOLPROP:
             if T <= self.CP_f.Tmin or T >= self.CP_f.Tmax:
                 return False
+        elif method == BESTFIT:
+            validity = True
         elif method in self.tabular_data:
             # if tabular_extrapolation_permitted, good to go without checking
             if not self.tabular_extrapolation_permitted:
@@ -2279,6 +2281,8 @@ class HeatCapacityLiquid(TDependentProperty):
         elif method in [ROWLINSON_POLING, ROWLINSON_BONDI]:
             if self.Tc and T > self.Tc:
                 return False
+        elif method == BESTFIT:
+            validity = True
         elif method in self.tabular_data:
             # if tabular_extrapolation_permitted, good to go without checking
             if not self.tabular_extrapolation_permitted:
@@ -2812,6 +2816,8 @@ class HeatCapacitySolid(TDependentProperty):
                 Ts, properties = self.tabular_data[method]
                 if T < Ts[0] or T > Ts[-1]:
                     validity = False
+        elif method == BESTFIT:
+            validity = True
         else:
             raise Exception('Method not valid')
         return validity

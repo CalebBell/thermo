@@ -514,6 +514,10 @@ class Chemical(object): # pragma: no cover
         Molar density of liquid phase at 298.15 K and 101325 Pa [mol/m^3]
     Vmg_STP : float
         Molar volume of gas phase at 298.15 K and 101325 Pa [m^3/mol]
+    Vms_Tm : float
+        Molar volume of solid phase at the melting point [m^3/mol]
+    rhos_Tm : float
+        Mass density of solid phase at the melting point [kg/m^3]
     Hvap_Tbm : float
         Molar enthalpy of vaporization at the normal boiling point [J/mol]
     Hvap_Tb : float
@@ -1018,6 +1022,9 @@ class Chemical(object): # pragma: no cover
         self.Vmg_STP = self.VolumeGas.TP_dependent_property(298.15, 101325)
 
         self.VolumeSolid = VolumeSolid(CASRN=self.CAS, MW=self.MW, Tt=self.Tt, Vml_Tt=self.Vml_Tm)
+        
+        self.Vms_Tm = self.VolumeSolid.T_dependent_property(self.Tm) if self.Tm else None
+        self.rhos_Tm = Vm_to_rho(self.Vms_Tm, self.MW) if self.Vms_Tm else None
 
         self.HeatCapacityGas = HeatCapacityGas(CASRN=self.CAS, MW=self.MW, similarity_variable=self.similarity_variable, best_fit=get_chemical_constants(self.CAS, 'HeatCapacityGas'))
 
@@ -1028,6 +1035,8 @@ class Chemical(object): # pragma: no cover
         self.EnthalpyVaporization = EnthalpyVaporization(CASRN=self.CAS, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, omega=self.omega, similarity_variable=self.similarity_variable, best_fit=get_chemical_constants(self.CAS, 'EnthalpyVaporization'))
         self.Hvap_Tbm = self.EnthalpyVaporization.T_dependent_property(self.Tb) if self.Tb else None
         self.Hvap_Tb = property_molar_to_mass(self.Hvap_Tbm, self.MW)
+        self.Svap_Tbm = self.Hvap_Tb/self.Tb if (self.Tb is not None and self.Hvap_Tb is not None) else None
+        
         self.Hvapm_298 = self.EnthalpyVaporization.T_dependent_property(298.15)
         self.Hvap_298 = property_molar_to_mass(self.Hvapm_298, self.MW)
         
@@ -1035,6 +1044,10 @@ class Chemical(object): # pragma: no cover
                                                        Cpg=self.HeatCapacityGas, Cps=self.HeatCapacitySolid,
                                                        Hvap=self.EnthalpyVaporization)
         self.Hsub_Ttm = self.EnthalpySublimation(self.Tt)
+        self.Ssub_Ttm = self.Hsub_Ttm/self.Tt if (self.Tt is not None and self.Hsub_Ttm is not None) else None
+        
+        self.Sfusm = self.Hfusm/self.Tm if (self.Tm is not None and self.Hfusm is not None) else None
+        
         
         self.SublimationPressure = SublimationPressure(CASRN=self.CAS, Tt=self.Tt, Pt=self.Pt, Hsub_t=self.Hsub_Ttm)
         

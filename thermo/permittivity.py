@@ -94,6 +94,8 @@ def permittivity_IAPWS(T, rho):
     --------
     >>> permittivity_IAPWS(373., 958.46)
     55.56584297721836
+    
+    >>> permittivity_IAPWS(650., 40.31090)
 
     References
     ----------
@@ -105,6 +107,7 @@ def permittivity_IAPWS(T, rho):
     dipole = 6.138E-30 # actual molecular dipole moment of water, in C*m
     polarizability = 1.636E-40 # actual mean molecular polarizability of water, C^2/J*m^2
     MW = 0.018015268 # molecular weight of water, kg/mol
+#    N_A = 6.0221367e23
     ih = [1, 1, 1, 2, 3, 3, 4, 5, 6, 7, 10]
     jh = [0.25, 1, 2.5, 1.5, 1.5, 2.5, 2, 2, 5, 0.5, 10]
     Nh = [0.978224486826, -0.957771379375, 0.237511794148, 0.714692244396,

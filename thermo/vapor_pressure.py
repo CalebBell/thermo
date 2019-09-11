@@ -678,6 +678,8 @@ class VaporPressure(TDependentProperty):
             if T > self.Tc or T < 0:
                 return False
             # No lower limit
+        elif method == BESTFIT:
+            validity = True
         elif method in self.tabular_data:
             # if tabular_extrapolation_permitted, good to go without checking
             if not self.tabular_extrapolation_permitted:
@@ -1285,6 +1287,8 @@ class SublimationPressure(TDependentProperty):
         if method in [PSUB_CLAPEYRON]:
             return True
             # No lower limit
+        elif method == BESTFIT:
+            validity = True
         elif method in self.tabular_data:
             # if tabular_extrapolation_permitted, good to go without checking
             if not self.tabular_extrapolation_permitted:

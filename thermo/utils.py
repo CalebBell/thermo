@@ -46,7 +46,7 @@ from cmath import sqrt as csqrt
 from bisect import bisect_left
 import numpy as np
 from numpy.testing import assert_allclose
-from fluids.numerics import brenth, newton, linspace, polyint, polyint_over_x, derivative, polyder
+from fluids.numerics import brenth, newton, linspace, polyint, polyint_over_x, derivative, polyder, horner
 from scipy.integrate import quad
 from scipy.interpolate import interp1d, interp2d
 
@@ -2666,24 +2666,27 @@ class TDependentProperty(object):
             
                         
             # Calculate the average derivative for the last 5% of the curve
-            fit_value_high = self.calculate(self.best_fit_Tmax - slope_delta_T, BESTFIT)
-            if self.interpolation_property is not None:
-                fit_value_high = self.interpolation_property(fit_value_high)
+#            fit_value_high = self.calculate(self.best_fit_Tmax - slope_delta_T, BESTFIT)
+#            if self.interpolation_property is not None:
+#                fit_value_high = self.interpolation_property(fit_value_high)
 
-            self.best_fit_Tmax_slope = (self.best_fit_Tmax_value 
-                                        - fit_value_high)/slope_delta_T
+#            self.best_fit_Tmax_slope = (self.best_fit_Tmax_value 
+#                                        - fit_value_high)/slope_delta_T
+            self.best_fit_Tmax_slope = horner(self.best_fit_d_coeffs, self.best_fit_Tmax)
+
             # Extrapolation to lower T
             self.best_fit_Tmin_value = self.calculate(self.best_fit_Tmin, BESTFIT)
             if self.interpolation_property is not None:
                 self.best_fit_Tmin_value = self.interpolation_property(self.best_fit_Tmin_value)
             
-            fit_value_low = self.calculate(self.best_fit_Tmin + slope_delta_T, BESTFIT)
-            if self.interpolation_property is not None:
-                fit_value_low = self.interpolation_property(fit_value_low)
+#            fit_value_low = self.calculate(self.best_fit_Tmin + slope_delta_T, BESTFIT)
+#            if self.interpolation_property is not None:
+#                fit_value_low = self.interpolation_property(fit_value_low)
+#            self.best_fit_Tmin_slope = (fit_value_low 
+#                                        - self.best_fit_Tmin_value)/slope_delta_T
 
+            self.best_fit_Tmin_slope = horner(self.best_fit_d_coeffs, self.best_fit_Tmin)
 
-            self.best_fit_Tmin_slope = (fit_value_low 
-                                        - self.best_fit_Tmin_value)/slope_delta_T
                                     
     def as_best_fit(self):
         return '%s(best_fit=(%s, %s, %s))' %(self.__class__.__name__,
@@ -2753,7 +2756,7 @@ class TDependentProperty(object):
 #            return self.plot_T_dependent_property(Tmin=Tmin, Tmax=Tmax, methods=methods, pts=pts, only_valid=only_valid, order=order)
 
     def plot_T_dependent_property(self, Tmin=None, Tmax=None, methods=[],
-                                  pts=50, only_valid=True, order=0, show=True,
+                                  pts=250, only_valid=True, order=0, show=True,
                                   axes='semilogy'):  # pragma: no cover
         r'''Method to create a plot of the property vs temperature according to
         either a specified list of methods, or user methods (if set), or all
@@ -2803,6 +2806,15 @@ class TDependentProperty(object):
                 methods = self.user_methods
             else:
                 methods = self.all_methods
+                if self.locked:
+                    methods.add('Best fit')
+                    
+#        cm = plt.get_cmap('gist_rainbow')
+        fig = plt.figure()
+#        ax = fig.add_subplot(111)
+#        NUM_COLORS = len(methods)
+#        ax.set_color_cycle([cm(1.*i/NUM_COLORS) for i in range(NUM_COLORS)])
+        
         plot_fun = {'semilogy': plt.semilogy, 'semilogx': plt.semilogx, 'plot': plt.plot}[axes]
         Ts = linspace(Tmin, Tmax, pts)
         if order == 0:
@@ -2842,7 +2854,7 @@ class TDependentProperty(object):
                     plot_fun(Ts, properties, label=method)
             plt.ylabel(self.name + ', ' + self.units + '/K^%d derivative of order %d' % (order, order))
             plt.title(self.name + ' derivative of order %d' % order + ' of ' + self.CASRN)
-        plt.legend(loc='best')
+        plt.legend(loc='best', fancybox=True, framealpha=0.5)
         plt.xlabel('Temperature, K')
         if show:
             plt.show()

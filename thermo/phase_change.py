@@ -1319,6 +1319,8 @@ class EnthalpyVaporization(TDependentProperty):
                 Ts, properties = self.tabular_data[method]
                 if T < Ts[0] or T > Ts[-1]:
                     validity = False
+        elif method == BESTFIT:
+            validity = True
         elif method == CLAPEYRON:
             if not (self.Psat and T < self.Tc):
                 validity = False
@@ -1638,6 +1640,8 @@ class EnthalpySublimation(TDependentProperty):
         if method == BESTFIT:
             validity = True
         elif method in (GHARAGHEIZI_HSUB_298, GHARAGHEIZI_HSUB, CRC_HFUS_HVAP_TM):
+            validity = True
+        elif method == BESTFIT:
             validity = True
         elif method in self.tabular_data:
             # if tabular_extrapolation_permitted, good to go without checking

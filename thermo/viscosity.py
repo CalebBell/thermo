@@ -353,6 +353,7 @@ PRZEDZIECKI_SRIDHAR = 'PRZEDZIECKI_SRIDHAR'
 LUCAS = 'LUCAS'
 NEGLIGIBLE = 'NEGLIGIBLE'
 DIPPR_PERRY_8E = 'DIPPR_PERRY_8E'
+BESTFIT = 'Best fit'
 
 viscosity_liquid_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, DUTT_PRASAD, VISWANATH_NATARAJAN_3,
                          VISWANATH_NATARAJAN_2, VISWANATH_NATARAJAN_2E,
@@ -744,6 +745,8 @@ class ViscosityLiquid(TPDependentProperty):
             else:
                 der = E*((C - T)/(D - T))**(1/3.)*(-A*(C - D)*(D - T)**6 + B*(C - D)*(C - T)*(D - T)**5 + 3*B*(C - T)**2*(D - T)**5 - 3*B*(C - T)*(D - T)**6)*exp(-((C - T)/(D - T))**(1/3.)*(A*(D - T) - B*(C - T))/(D - T))/(3*(C - T)*(D - T)**7)
             return der < 0
+        elif method == BESTFIT:
+            validity = True
         elif method in self.tabular_data:
             # if tabular_extrapolation_permitted, good to go without checking
             if not self.tabular_extrapolation_permitted:
@@ -1666,6 +1669,8 @@ class ViscosityGas(TPDependentProperty):
                 return False
         elif method == VDI_PPDS:
             pass # Polynomial always works
+        elif method == BESTFIT:
+            validity = True
         elif method in self.tabular_data:
             # if tabular_extrapolation_permitted, good to go without checking
             if not self.tabular_extrapolation_permitted:

@@ -822,14 +822,14 @@ class FlashVL(object):
     PT_SS_MAXITER = 1000
     PT_SS_TOL = 1e-13
     
-    def __init__(self, constants, properties, liquid, gas):
+    def __init__(self, constants, correlations, liquid, gas):
         self.constants = constants
-        self.properties = properties
+        self.correlations = correlations
         self.liquid = liquid
         self.gas = gas
         
     def flash(self, zs, T=None, P=None, VF=None, Hm=None, Sm=None):
-        constants, properties = self.constants, self.properties
+        constants, correlations = self.constants, self.correlations
         
         liquid, gas = self.liquid, self.gas
         if T is not None and Sm is not None:
@@ -858,7 +858,7 @@ class FlashVL(object):
             return EquilibriumState(T, P, zs, gas=g, liquids=[l], solids=[], 
                                     betas=[V_over_F, 1.0-V_over_F], flash_specs=flash_specs, 
                                     flash_convergence=flash_convergence,
-                                    constants=constants, properties=properties)
+                                    constants=constants, correlations=correlations)
             
             
         elif T is not None and VF == 1:

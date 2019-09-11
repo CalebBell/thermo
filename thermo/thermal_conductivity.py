@@ -494,6 +494,7 @@ NONE = 'NONE'
 DIPPR_PERRY_8E = 'DIPPR_PERRY_8E'
 NEGLIGIBLE = 'NEGLIGIBLE'
 DIPPR_9G = 'DIPPR_9G'
+BESTFIT = 'Best fit'
 
 thermal_conductivity_liquid_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, 
                                        VDI_TABULAR, GHARAGHEIZI_L, 
