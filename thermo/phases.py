@@ -2154,20 +2154,37 @@ class GibbsExcessLiquid(Phase):
         
         self._dH_dP_integrals_Tait = dH_dP_integrals_Tait = []
         
-        def to_int(P, i):
-            def to_diff(T):
-                return self.to_TP_zs(T, P, zs).Tait_Vs()[i]
-            dV_dT = derivative(to_diff, T)
-            V = self.to_TP_zs(T, P, zs).Tait_Vs()[i]
-            return V - T*dV_dT
-        from scipy.integrate import quad
-        _dH_dP_integrals_Tait = [quad(to_int, Psats[i], P, args=i)[0]
-                                      for i in self.cmps]
-#        return self._dH_dP_integrals_Tait
+#        def to_int(P, i):
+#            l = self.to_TP_zs(T, P, zs)
+##            def to_diff(T):
+##                return self.to_TP_zs(T, P, zs).Tait_Vs()[i]
+##            dV_dT = derivative(to_diff, T, dx=1e-5*T, order=11)
+#            
+#            x0 = l.Vms_sat()[i]
+#            x1 = l.Tait_Cs()[i]
+#            x2 = l.Tait_Bs()[i]
+#            x3 = P + x2
+#            x4 = l.Psats()[i]
+#            x5 = x3/(x2 + x4)
+#            x6 = log(x5)
+#            x7 = l.dTait_B_dTs()[i]
+#            dV_dT = (-x0*(x1*(-x5*(x7 +l.dPsats_dT()[i]) + x7)/x3 
+#                                   + x6*l.dTait_C_dTs()[i])
+#                        - (x1*x6 - 1.0)*l.dVms_sat_dT()[i])
+#                        
+##            print(dV_dT, dV_dT2, dV_dT/dV_dT2, T, P)   
+#            
+#            V = l.Tait_Vs()[i]
+#            return V - T*dV_dT
+#        from scipy.integrate import quad
+#        _dH_dP_integrals_Tait = [quad(to_int, Psats[i], P, args=i)[0]
+#                                      for i in self.cmps]
+##        return self._dH_dP_integrals_Tait
 #        print(_dH_dP_integrals_Tait)
-        self._dH_dP_integrals_Tait = _dH_dP_integrals_Tait
-        return self._dH_dP_integrals_Tait
+#        self._dH_dP_integrals_Tait2 = _dH_dP_integrals_Tait
+#        return self._dH_dP_integrals_Tait2
         
+#        dH_dP_integrals_Tait = []
         for i in self.cmps:
             # Very wrong according to numerical integration. Is it an issue with
             # the translation to code, one of the derivatives, what was integrated,
@@ -2190,7 +2207,7 @@ class GibbsExcessLiquid(Phase):
             x15 = x4*(x0*x8 + x10*x14 - x11 + x12*dPsats_dT[i] + x13 - x14 - x2*x7 + x2*x8 + x2*x9)
             val = -P*x15 + P*(x10*x6 - x7 + x9)*log(x1*x4) + x13*log(x1) - x13*log(x3) + x15*x2
             dH_dP_integrals_Tait.append(val)
-        print(dH_dP_integrals_Tait)
+#        print(dH_dP_integrals_Tait, self._dH_dP_integrals_Tait2)
         return dH_dP_integrals_Tait
         
     

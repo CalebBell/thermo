@@ -1242,18 +1242,28 @@ class VolumeLiquid(TPDependentProperty):
         Tc = self.Tc
         
         Tmin, Tmax = Tc*Tr_min, Tc*Tr_max
-        B_coeffs, C_coeffs = Tait_parameters_COSTALD(Tc, self.Pc, self.omega,
+        B_coeffs_COSTALD, C_coeffs_COSTALD = Tait_parameters_COSTALD(Tc, self.Pc, self.omega,
                                                      Tr_min=Tr_min,
                                                      Tr_max=Tr_max)
-        B_coeffs_d = polyder(B_coeffs)
-        B_coeffs_d2 = polyder(B_coeffs_d)
+        if not hasattr(self, 'B_coeffs'):
+            B_coeffs = B_coeffs_COSTALD
+        else:
+            B_coeffs = self.B_coeffs
+            
+        if not hasattr(self, 'C_coeffs'):
+            C_coeffs = C_coeffs_COSTALD
+        else:
+            C_coeffs = self.C_coeffs
+            
+        B_coeffs_d = polyder(B_coeffs[::-1])[::-1]
+        B_coeffs_d2 = polyder(B_coeffs_d[::-1])[::-1]
         
         B_data = [Tmin, horner(B_coeffs_d, Tmin), horner(B_coeffs, Tmin),
                   Tmax, horner(B_coeffs_d, Tmax), horner(B_coeffs, Tmax),
                   B_coeffs, B_coeffs_d, B_coeffs_d2]
         
-        C_coeffs_d = polyder(C_coeffs)
-        C_coeffs_d2 = polyder(C_coeffs_d)
+        C_coeffs_d = polyder(C_coeffs[::-1])[::-1]
+        C_coeffs_d2 = polyder(C_coeffs_d[::-1])[::-1]
         
         C_data = [Tmin, horner(C_coeffs_d, Tmin), horner(C_coeffs, Tmin),
                   Tmax, horner(C_coeffs_d, Tmax), horner(C_coeffs, Tmax),
