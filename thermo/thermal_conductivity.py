@@ -642,7 +642,7 @@ class ThermalConductivityLiquid(TPDependentProperty):
 
 
     def __init__(self, CASRN='', MW=None, Tm=None, Tb=None, Tc=None, Pc=None,
-                 omega=None, Hfus=None):
+                 omega=None, Hfus=None, best_fit=None):
         self.CASRN = CASRN
         self.MW = MW
         self.Tm = Tm
@@ -702,6 +702,8 @@ class ThermalConductivityLiquid(TPDependentProperty):
         properties; filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods()
+        if best_fit is not None:
+            self.set_best_fit(best_fit)
 
     def load_all_methods(self):
         r'''Method which picks out coefficients for the specified chemical
@@ -807,6 +809,13 @@ class ThermalConductivityLiquid(TPDependentProperty):
             kl = CoolProp_T_dependent_property(T, self.CASRN, 'L', 'l')
         elif method in self.tabular_data:
             kl = self.interpolate(T, method)
+        elif method == BESTFIT:
+            if T < self.best_fit_Tmin:
+                kl = (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value
+            elif T > self.best_fit_Tmax:
+                kl = (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
+            else:
+                kl = horner(self.best_fit_coeffs, T)
         return kl
 
     def calculate_P(self, T, P, method):
@@ -1961,7 +1970,8 @@ class ThermalConductivityGas(TPDependentProperty):
     '''Default rankings of the high-pressure methods.'''
 
     def __init__(self, CASRN='', MW=None, Tb=None, Tc=None, Pc=None, Vc=None,
-                 Zc=None, omega=None, dipole=None, Vmg=None, Cvgm=None, mug=None):
+                 Zc=None, omega=None, dipole=None, Vmg=None, Cvgm=None, mug=None,
+                 best_fit=None):
         self.CASRN = CASRN
         self.MW = MW
         self.Tb = Tb
@@ -2025,6 +2035,8 @@ class ThermalConductivityGas(TPDependentProperty):
         properties; filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods()
+        if best_fit is not None:
+            self.set_best_fit(best_fit)
 
     def load_all_methods(self):
         r'''Method which picks out coefficients for the specified chemical
@@ -2140,6 +2152,13 @@ class ThermalConductivityGas(TPDependentProperty):
             kg = Bahadori_gas(T, self.MW)
         elif method == COOLPROP:
             kg = CoolProp_T_dependent_property(T, self.CASRN, 'L', 'g')
+        elif method == BESTFIT:
+            if T < self.best_fit_Tmin:
+                kg = (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value
+            elif T > self.best_fit_Tmax:
+                kg = (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
+            else:
+                kg = horner(self.best_fit_coeffs, T)
         elif method in self.tabular_data:
             kg = self.interpolate(T, method)
         return kg

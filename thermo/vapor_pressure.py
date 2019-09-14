@@ -1200,7 +1200,7 @@ class SublimationPressure(TDependentProperty):
         filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods()
-
+        
         if best_fit is not None:
             self.set_best_fit(best_fit)
 
@@ -1257,8 +1257,6 @@ class SublimationPressure(TDependentProperty):
             Psub = max(Psub_Clapeyron(T, Tt=self.Tt, Pt=self.Pt, Hsub_t=self.Hsub_t), 1e-200)
         elif method in self.tabular_data:
             Psub = self.interpolate(T, method)
-        elif method == BESTFIT:
-            Psub = exp(horner(self.best_fit_coeffs, T))
         return Psub
 
     def test_method_validity(self, T, method):

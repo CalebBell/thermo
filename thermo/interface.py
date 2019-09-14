@@ -849,7 +849,7 @@ class SurfaceTension(TDependentProperty):
     '''Default rankings of the available methods.'''
 
     def __init__(self, MW=None, Tb=None, Tc=None, Pc=None, Vc=None, Zc=None, omega=None,
-                 StielPolar=None, Hvap_Tb=None, CASRN='', Vml=None, Cpl=None):
+                 StielPolar=None, Hvap_Tb=None, CASRN='', Vml=None, Cpl=None, best_fit=None):
         self.MW = MW
         self.Tb = Tb
         self.Tc = Tc
@@ -893,6 +893,8 @@ class SurfaceTension(TDependentProperty):
         filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods()
+        if best_fit is not None:
+            self.set_best_fit(best_fit)
 
     def load_all_methods(self):
         r'''Method which picks out coefficients for the specified chemical

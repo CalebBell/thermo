@@ -1042,28 +1042,35 @@ class Chemical(object): # pragma: no cover
         
         self.EnthalpySublimation = EnthalpySublimation(CASRN=self.CAS, Tm=self.Tm, Tt=self.Tt, 
                                                        Cpg=self.HeatCapacityGas, Cps=self.HeatCapacitySolid,
-                                                       Hvap=self.EnthalpyVaporization)
+                                                       Hvap=self.EnthalpyVaporization,
+                                                       best_fit=get_chemical_constants(self.CAS, 'EnthalpySublimation'))
         self.Hsub_Ttm = self.EnthalpySublimation(self.Tt)
         self.Ssub_Ttm = self.Hsub_Ttm/self.Tt if (self.Tt is not None and self.Hsub_Ttm is not None) else None
         
         self.Sfusm = self.Hfusm/self.Tm if (self.Tm is not None and self.Hfusm is not None) else None
         
         
-        self.SublimationPressure = SublimationPressure(CASRN=self.CAS, Tt=self.Tt, Pt=self.Pt, Hsub_t=self.Hsub_Ttm)
+        self.SublimationPressure = SublimationPressure(CASRN=self.CAS, Tt=self.Tt, Pt=self.Pt, Hsub_t=self.Hsub_Ttm,
+                                                       best_fit=get_chemical_constants(self.CAS, 'SublimationPressure'))
         
 
-        self.ViscosityLiquid = ViscosityLiquid(CASRN=self.CAS, MW=self.MW, Tm=self.Tm, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, omega=self.omega, Psat=self.VaporPressure.T_dependent_property, Vml=self.VolumeLiquid.T_dependent_property)
+        self.ViscosityLiquid = ViscosityLiquid(CASRN=self.CAS, MW=self.MW, Tm=self.Tm, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, omega=self.omega, Psat=self.VaporPressure.T_dependent_property, Vml=self.VolumeLiquid.T_dependent_property,
+                                               best_fit=get_chemical_constants(self.CAS, 'ViscosityLiquid'))
 
         Vmg_atm_T_dependent = lambda T : self.VolumeGas.TP_dependent_property(T, 101325)
-        self.ViscosityGas = ViscosityGas(CASRN=self.CAS, MW=self.MW, Tc=self.Tc, Pc=self.Pc, Zc=self.Zc, dipole=self.dipole, Vmg=Vmg_atm_T_dependent)
+        self.ViscosityGas = ViscosityGas(CASRN=self.CAS, MW=self.MW, Tc=self.Tc, Pc=self.Pc, Zc=self.Zc, dipole=self.dipole, Vmg=Vmg_atm_T_dependent,
+                                         best_fit=get_chemical_constants(self.CAS, 'ViscosityGas'))
 
-        self.ThermalConductivityLiquid = ThermalConductivityLiquid(CASRN=self.CAS, MW=self.MW, Tm=self.Tm, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, omega=self.omega, Hfus=self.Hfusm)
+        self.ThermalConductivityLiquid = ThermalConductivityLiquid(CASRN=self.CAS, MW=self.MW, Tm=self.Tm, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, omega=self.omega, Hfus=self.Hfusm,
+                                                                   best_fit=get_chemical_constants(self.CAS, 'ThermalConductivityLiquid'))
 
         Cvgm_calc = lambda T : self.HeatCapacityGas.T_dependent_property(T) - R
-        self.ThermalConductivityGas = ThermalConductivityGas(CASRN=self.CAS, MW=self.MW, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, dipole=self.dipole, Vmg=self.VolumeGas, Cvgm=Cvgm_calc, mug=self.ViscosityGas.T_dependent_property)
+        self.ThermalConductivityGas = ThermalConductivityGas(CASRN=self.CAS, MW=self.MW, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, dipole=self.dipole, Vmg=self.VolumeGas, Cvgm=Cvgm_calc, mug=self.ViscosityGas.T_dependent_property,
+                                                             best_fit=get_chemical_constants(self.CAS, 'ThermalConductivityGas'))
 
         Cpl_calc = lambda T : property_molar_to_mass(self.HeatCapacityLiquid.T_dependent_property(T), self.MW)
-        self.SurfaceTension = SurfaceTension(CASRN=self.CAS, MW=self.MW, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, StielPolar=self.StielPolar, Hvap_Tb=self.Hvap_Tb, Vml=self.VolumeLiquid.T_dependent_property, Cpl=Cpl_calc)
+        self.SurfaceTension = SurfaceTension(CASRN=self.CAS, MW=self.MW, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, StielPolar=self.StielPolar, Hvap_Tb=self.Hvap_Tb, Vml=self.VolumeLiquid.T_dependent_property, Cpl=Cpl_calc,
+                                             best_fit=get_chemical_constants(self.CAS, 'SurfaceTension'))
 
         self.Permittivity = Permittivity(CASRN=self.CAS)
 

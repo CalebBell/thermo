@@ -506,7 +506,7 @@ class ViscosityLiquid(TPDependentProperty):
     '''Default rankings of the high-pressure methods.'''
 
     def __init__(self, CASRN='', MW=None, Tm=None, Tc=None, Pc=None, Vc=None,
-                 omega=None, Psat=None, Vml=None):
+                 omega=None, Psat=None, Vml=None, best_fit=None):
         self.CASRN = CASRN
         self.MW = MW
         self.Tm = Tm
@@ -567,6 +567,8 @@ class ViscosityLiquid(TPDependentProperty):
         properties; filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods()
+        if best_fit is not None:
+            self.set_best_fit(best_fit)
 
     def load_all_methods(self):
         r'''Method which picks out coefficients for the specified chemical
@@ -683,6 +685,14 @@ class ViscosityLiquid(TPDependentProperty):
                 term1 = term**(1/3.)
             term2 = term*term1
             mu = E*exp(A*term1 + B*term2)
+        elif method == BESTFIT:
+            if T < self.best_fit_Tmin:
+                mu = (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value
+            elif T > self.best_fit_Tmax:
+                mu = (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
+            else:
+                mu = horner(self.best_fit_coeffs, T)
+            mu = exp(mu)
         elif method in self.tabular_data:
             mu = self.interpolate(T, method)
         return mu
@@ -1479,7 +1489,7 @@ class ViscosityGas(TPDependentProperty):
     '''Default rankings of the high-pressure methods.'''
 
     def __init__(self, CASRN='', MW=None, Tc=None, Pc=None, Zc=None,
-                 dipole=None, Vmg=None):
+                 dipole=None, Vmg=None, best_fit=None):
         self.CASRN = CASRN
         self.MW = MW
         self.Tc = Tc
@@ -1539,6 +1549,8 @@ class ViscosityGas(TPDependentProperty):
         properties; filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods()
+        if best_fit is not None:
+            self.set_best_fit(best_fit)
 
     def load_all_methods(self):
         r'''Method which picks out coefficients for the specified chemical
@@ -1624,6 +1636,13 @@ class ViscosityGas(TPDependentProperty):
             mu = lucas_gas(T, self.Tc, self.Pc, self.Zc, self.MW, self.dipole, CASRN=self.CASRN)
         elif method in self.tabular_data:
             mu = self.interpolate(T, method)
+        if method == BESTFIT:
+            if T < self.best_fit_Tmin:
+                mu = (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value
+            elif T > self.best_fit_Tmax:
+                mu = (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
+            else:
+                mu = horner(self.best_fit_coeffs, T)
         return mu
 
     def test_method_validity(self, T, method):
