@@ -890,3 +890,12 @@ class FlashVL(object):
         else:
             raise Exception('Flash inputs unsupported')
        
+
+class FlashPureVLS(object):
+    # PT:
+    # Calculate Gibbs energies for all phases
+    # Lowest Gibbs energy is correct phase
+    # Calculate bounds between solid/gas, solid/liquid, and liquid/gas
+    # Interpolate then?
+    # must allow multiple solid phases so liquids as well
+    pass
