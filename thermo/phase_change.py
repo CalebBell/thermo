@@ -27,6 +27,7 @@ __all__ = ['Yaws_data', 'Tb_methods', 'Tb', 'Tm_ON_data', 'Tm_methods', 'Tm',
            'Liu', 'Vetere', 'GharagheiziHvap_data', 'CRCHvap_data', 
            'Perrys2_150', 'VDI_PPDS_4', 'Alibakhshi_Cs', 'Watson', 
            'enthalpy_vaporization_methods', 'EnthalpyVaporization', 
+           'EnthalpySublimation',
            'CRCHfus_data', 'Hfus', 'GharagheiziHsub_data', 'Hsub', 'Tliquidus']
 
 import os

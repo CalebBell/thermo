@@ -1021,7 +1021,8 @@ class Chemical(object): # pragma: no cover
 
         self.Vmg_STP = self.VolumeGas.TP_dependent_property(298.15, 101325)
 
-        self.VolumeSolid = VolumeSolid(CASRN=self.CAS, MW=self.MW, Tt=self.Tt, Vml_Tt=self.Vml_Tm)
+        self.VolumeSolid = VolumeSolid(CASRN=self.CAS, MW=self.MW, Tt=self.Tt, Vml_Tt=self.Vml_Tm,
+                                       best_fit=get_chemical_constants(self.CAS, 'VolumeSolid'))
         
         self.Vms_Tm = self.VolumeSolid.T_dependent_property(self.Tm) if self.Tm else None
         self.rhos_Tm = Vm_to_rho(self.Vms_Tm, self.MW) if self.Vms_Tm else None

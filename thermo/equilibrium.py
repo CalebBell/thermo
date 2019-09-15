@@ -74,7 +74,12 @@ class EquilibriumState(object):
         self.gas = gas
         self.liquids = liquids
         self.solids = solids
-        self.phases = [gas] + liquids + solids
+        if gas is not None:
+            phases = [gas] + liquids + solids
+            
+        else:
+            phases = liquids + solids
+        self.phases = phases
         
         for i, l in enumerate(self.liquids):
             setattr(self, 'liquid' + str(i), l)
@@ -84,7 +89,7 @@ class EquilibriumState(object):
         self.betas = betas
         self.beta_gas = betas[0] if self.gas_count else 0.0
         self.betas_liquids = betas_liquids = betas[self.gas_count: self.gas_count+self.liquid_count]
-        self.betas_solids = betas[self.gas_count+self.liquid_count: ]
+        self.betas_solids = betas_solids = betas[self.gas_count+self.liquid_count: ]
         
         if liquids:
 #                tot_inv = 1.0/sum(values)

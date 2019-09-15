@@ -2410,7 +2410,7 @@ class VolumeSolid(TDependentProperty):
     ranked_methods = [CRC_INORG_S, GOODMAN]  # 
     '''Default rankings of the available methods.'''
 
-    def __init__(self, CASRN='', MW=None, Tt=None, Vml_Tt=None):
+    def __init__(self, CASRN='', MW=None, Tt=None, Vml_Tt=None, best_fit=None):
         self.CASRN = CASRN
         self.MW = MW
         self.Tt = Tt
@@ -2446,6 +2446,8 @@ class VolumeSolid(TDependentProperty):
         filled by :obj:`load_all_methods`.'''
 
         self.load_all_methods()
+        if best_fit is not None:
+            self.set_best_fit(best_fit)
 
 
     def load_all_methods(self):
@@ -2490,6 +2492,13 @@ class VolumeSolid(TDependentProperty):
             Vms = self.CRC_INORG_S_Vm
         elif method == GOODMAN:
             Vms = Goodman(T, self.Tt, self.Vml_Tt)
+        if method == BESTFIT:
+            if T < self.best_fit_Tmin:
+                Vms = (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value
+            elif T > self.best_fit_Tmax:
+                Vms = (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
+            else:
+                Vms = horner(self.best_fit_coeffs, T)
         elif method in self.tabular_data:
             Vms = self.interpolate(T, method)
         return Vms

@@ -64,7 +64,8 @@ def loadChemicalConstants(data, rows=True):
                          ThermalConductivityLiquid=row[16], ThermalConductivityGas=row[17],
                          ViscosityLiquid=row[18], ViscosityGas=row[19],
                          EnthalpyVaporization=row[20], VaporPressure=row[21], VolumeLiquid=row[22],
-                         SublimationPressure=row[23], EnthalpySublimation=row[24])
+                         SublimationPressure=row[23], EnthalpySublimation=row[24],
+                         VolumeSolid=row[25])
             add_chemical(kwargs)
     else:
         for CAS, item in data.items():
@@ -159,7 +160,8 @@ marshal_properties = [('HeatCapacityGas', True),
            ('VaporPressure', True),
            ('VolumeLiquid', True),
            ('SublimationPressure', True),
-           ('EnthalpySublimation', True)]
+           ('EnthalpySublimation', True),
+           ('VolumeSolid', True)]
 
 
 json_path = os.path.join(folder, 'constants dump.json')

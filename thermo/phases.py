@@ -2553,7 +2553,7 @@ class GibbsExcessSolid(GibbsExcessLiquid):
                  henry_components=None, henry_data=None,
                  T=None, P=None, zs=None,
                  ):
-        super(self, VaporPressures=SublimationPressures, VolumeLiquids=VolumeSolids,
+        super(GibbsExcessSolid, self).__init__(VaporPressures=SublimationPressures, VolumeLiquids=VolumeSolids,
               HeatCapacityGases=HeatCapacityGases, EnthalpyVaporizations=EnthalpySublimations,
               use_Poynting=use_Poynting,
               Hfs=Hfs, Gfs=Gfs, Sfs=Sfs, T=T, P=P, zs=zs)

@@ -26,11 +26,11 @@ __all__ = ['sequential_substitution_2P', 'bubble_T_Michelsen_Mollerup',
            'dew_P_Michelsen_Mollerup',
            'minimize_gibbs_2P_transformed', 'sequential_substitution_Mehra_2P',
            'nonlin_2P', 'sequential_substitution_NP',
-           'minimize_gibbs_NP_transformed', 'FlashVL']
+           'minimize_gibbs_NP_transformed', 'FlashVL', 'FlashPureVLS']
 
 from fluids.constants import R, R_inv
 from thermo.utils import exp, log, copysign, normalize
-from fluids.numerics import UnconvergedError, trunc_exp
+from fluids.numerics import UnconvergedError, trunc_exp, py_newton as newton, py_brenth as brenth
 from thermo.activity import flash_inner_loop, Rachford_Rice_solutionN, Rachford_Rice_flash_error, Rachford_Rice_solution2
 from scipy.optimize import minimize, fsolve, root
 from thermo.equilibrium import EquilibriumState
@@ -898,4 +898,140 @@ class FlashPureVLS(object):
     # Calculate bounds between solid/gas, solid/liquid, and liquid/gas
     # Interpolate then?
     # must allow multiple solid phases so liquids as well
-    pass
+    def __init__(self, constants, correlations, gas, liquids, solids):
+        self.constants = constants
+        self.correlations = correlations
+        self.solids = solids
+        self.liquids = liquids
+        self.gas = gas
+        
+        self.gas_count = 1 if gas is not None else 0
+        self.liquid_count = len(liquids)
+        self.solid_count = len(solids)
+
+    def flash(self, zs, T=None, P=None, VF=None, Hm=None, Sm=None):
+        constants, correlations = self.constants, self.correlations
+        
+        liquids, gas, solids = self.liquids, self.gas, self.solids
+        if T is not None and P is not None:            
+            flash_specs = {'T': T, 'P': P, 'zs': zs}
+            flash_convergence = {'iterations': 0, 'err': 0}
+            g, ls, ss, betas = self.flash_TP(T, P)
+            
+            return EquilibriumState(T, P, zs, gas=g, liquids=ls, solids=ss, 
+                                    betas=betas, flash_specs=flash_specs, 
+                                    flash_convergence=flash_convergence,
+                                    constants=constants, correlations=correlations)
+            
+        elif T is not None and VF is not None:
+            # All dew/bubble are the same with 1 component
+            pass
+        elif P is not None and VF is not None:
+            # All dew/bubble are the same with 1 component
+            pass
+        if T is not None and Sm is not None:
+            pass
+        elif P is not None and Sm is not None:
+            pass
+        elif P is not None and Hm is not None:
+            pass
+        else:
+            raise Exception('Flash inputs unsupported')
+
+    def flash_TP(self, T, P):
+        zs = [1]
+        gas = self.gas.to_TP_zs(T, P, zs)
+        liquids = []
+        solids = []
+        
+        G_min, lowest_phase = gas.G(), gas
+        for l in self.liquids:
+            l = l.to_TP_zs(T, P, zs)
+            G = l.G()
+            if G < G_min:
+                G_min, lowest_phase = G, l
+            liquids.append(l)
+
+        for s in self.solids:
+            s = s.to_TP_zs(T, P, zs)
+            G = s.G()
+            if G < G_min:
+                G_min, lowest_phase = G, s
+            solids.append(s)
+        
+        betas = [1]
+        if lowest_phase is gas:
+            return lowest_phase, [], [], betas
+        elif lowest_phase in liquids:
+            return None, [lowest_phase], [], betas
+        else:
+            return None, [], [lowest_phase], betas
+    
+    def flash_TVF(self, T, VF):
+        zs = [1]
+        
+        Psat = self.correlations.VaporPressures[0](T)
+        
+        gas = self.gas.to_TP_zs(T, Psat, zs)
+        liquids = [l.to_TP_zs(T, Psat, zs) for l in self.liquids]
+        one_liquid = self.liquid_count == 1
+        
+        phase_store = []
+        
+        # This should become an algorithm
+        def to_solve_secant(P):
+            g = gas.to_TP_zs(T, P, zs)
+            fugacity_gas = g.fugacities()[0]
+            if one_liquid:
+                l = liquids[0].to_TP_zs(T, P, zs)
+            else:
+                ls = [l.to_TP_zs(T, P, zs) for l in liquids]
+                G_min, lowest_phase = 1e100, None
+                for l in ls:
+                    G = l.G()
+                    if G < G_min:
+                        G_min, lowest_phase = G, l
+        
+            fugacity_liq = l.fugacities()[0]
+            phase_store[:] = (l, g)
+            err = fugacity_liq - fugacity_gas
+#            err = fugacity_liq/fugacity_gas - 1 # Slower
+#            print(err, P)
+            return err
+        
+        def to_solve_newton(P):
+            g = gas.to_TP_zs(T, P, zs)
+            fugacity_gas = g.fugacities()[0]
+            dfugacities_dP_gas = g.dfugacities_dP()[0]
+            if one_liquid:
+                l = liquids[0].to_TP_zs(T, P, zs)
+            else:
+                ls = [l.to_TP_zs(T, P, zs) for l in liquids]
+                G_min, lowest_phase = 1e100, None
+                for l in ls:
+                    G = l.G()
+                    if G < G_min:
+                        G_min, lowest_phase = G, l
+        
+            fugacity_liq = l.fugacities()[0]
+            dfugacities_dP_liq = l.dfugacities_dP()[0]
+            
+            phase_store[:] = (l, g)
+            err = fugacity_liq - fugacity_gas
+            derr_dP = dfugacities_dP_liq - dfugacities_dP_gas
+#            err = fugacity_liq/fugacity_gas - 1 # Slower
+            return err, derr_dP
+        # Also add an algorithm that uses derivatives
+#        import matplotlib.pyplot as plt
+#        import numpy as np
+#        Ps = np.logspace(np.log10(Psat/2), np.log10(Psat*2), 2000)
+#        values = [to_solve_secant(P) for P in Ps]
+#        plt.loglog(Ps, values)
+#        plt.show()
+#        Psat = fsolve(to_solve_secant, Psat)
+        Psat = newton(to_solve_secant, Psat, xtol=1e-11, require_eval=False)
+#        Psat = newton(to_solve_newton, Psat, fprime=True, xtol=1e-11, require_eval=False)
+#        Psat = brenth(to_solve_secant, 1e-5, Psat)
+    
+        return Psat
+

@@ -224,7 +224,7 @@ class GCEOS(object):
             self.phase = 'l/g'
         else:
             # Even in the case of three real roots, it is still the min/max that make sense
-            raise Exception('No acceptable roots were found; the roots are %s, a_alpha is %s, b is %s' %(str(Vs), str([self.a_alpha]), str([self.b])))
+            raise Exception('No acceptable roots were found; the roots are %s, T is %s K, P is %s Pa, a_alpha is %s, b is %s' %(str(Vs), str(self.T), str(self.P), str([self.a_alpha]), str([self.b])))
 
 
     def set_properties_from_solution(self, T, P, V, b, delta, epsilon, a_alpha, 
