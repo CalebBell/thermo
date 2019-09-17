@@ -26,14 +26,22 @@ __all__ = ['sequential_substitution_2P', 'bubble_T_Michelsen_Mollerup',
            'dew_P_Michelsen_Mollerup',
            'minimize_gibbs_2P_transformed', 'sequential_substitution_Mehra_2P',
            'nonlin_2P', 'sequential_substitution_NP',
-           'minimize_gibbs_NP_transformed', 'FlashVL', 'FlashPureVLS']
+           'minimize_gibbs_NP_transformed', 'FlashVL', 'FlashPureVLS',
+           'PH_T_guesses_1P_methods', 'PH_T_guesses_1P']
 
 from fluids.constants import R, R_inv
-from thermo.utils import exp, log, copysign, normalize
-from fluids.numerics import UnconvergedError, trunc_exp, py_newton as newton, py_brenth as brenth
+from thermo.utils import exp, log, log10, copysign, normalize, has_matplotlib, R, mixing_simple, property_mass_to_molar
+from thermo.heat_capacity import Lastovka_Shaw_T_for_Hm, Dadgostar_Shaw_integral
+from thermo.phase_change import SMK
+from fluids.numerics import (UnconvergedError, trunc_exp, py_newton as newton,
+                             py_brenth as brenth, secant, numpy as np, linspace, 
+                             logspace, oscillation_checker, damping_maintain_sign,
+                             oscillation_checking_wrapper, OscillationError)
 from thermo.activity import flash_inner_loop, Rachford_Rice_solutionN, Rachford_Rice_flash_error, Rachford_Rice_solution2
 from scipy.optimize import minimize, fsolve, root
 from thermo.equilibrium import EquilibriumState
+from thermo.phases import gas_phases, liquid_phases, solid_phases
+
 
 def sequential_substitution_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
                                gas_phase, maxiter=1000, tol=1E-13,
@@ -817,6 +825,263 @@ def dew_P_Michelsen_Mollerup(P_guess, T, zs, liquid_phase, gas_phase,
     return P_guess, xs, l, g, iteration, abs(P_guess - P_guess_old)
 
 
+def PH_secant_1P(T_guess, P, H, zs, phase, maxiter=200, xtol=1E-10,
+                 minimum_progress=0.3, oscillation_detection=True):
+    store = []
+    global iterations
+    iterations = 0
+    def to_solve(T):
+        global iterations
+        iterations += 1
+        p = phase.to_TP_zs(T, P, zs)
+        
+        err = p.H() - H
+        store[:] = (p, err)
+        return err
+    if oscillation_detection:
+        to_solve, checker = oscillation_checking_wrapper(to_solve, full=True,
+                                                         minimum_progress=minimum_progress)
+
+    T = secant(to_solve, T_guess, xtol=xtol, maxiter=maxiter)
+    phase, err = store
+
+    return T, phase, iterations, err
+
+
+
+
+def TVF_pure_newton(P_guess, T, liquids, gas, maxiter=200, xtol=1E-10):
+    one_liquid = len(liquids)
+    zs = [1.0]
+    store = []
+    global iterations
+    iterations = 0
+    def to_solve_newton(P):
+        global iterations
+        iterations += 1
+        g = gas.to_TP_zs(T, P, zs)
+        fugacity_gas = g.fugacities()[0]
+        dfugacities_dP_gas = g.dfugacities_dP()[0]
+
+        if one_liquid:
+            lowest_phase = liquids[0].to_TP_zs(T, P, zs)
+        else:
+            ls = [l.to_TP_zs(T, P, zs) for l in liquids]
+            G_min, lowest_phase = 1e100, None
+            for l in ls:
+                G = l.G()
+                if G < G_min:
+                    G_min, lowest_phase = G, l
+    
+        fugacity_liq = lowest_phase.fugacities()[0]
+        dfugacities_dP_liq = lowest_phase.dfugacities_dP()[0]
+        
+        err = fugacity_liq - fugacity_gas
+        derr_dP = dfugacities_dP_liq - dfugacities_dP_gas
+        store[:] = (lowest_phase, g, err)
+        return err, derr_dP
+    Psat = newton(to_solve_newton, P_guess, xtol=xtol, maxiter=maxiter,
+                  require_eval=True, bisection=False, fprime=True)
+    l, g, err = store
+
+    return Psat, l, g, iterations, err
+
+def TVF_pure_secant(P_guess, T, liquids, gas, maxiter=200, xtol=1E-10):
+    one_liquid = len(liquids)
+    zs = [1.0]
+    store = []
+    global iterations
+    iterations = 0
+    def to_solve_secant(P):
+        global iterations
+        iterations += 1
+        g = gas.to_TP_zs(T, P, zs)
+        fugacity_gas = g.fugacities()[0]
+
+        if one_liquid:
+            lowest_phase = liquids[0].to_TP_zs(T, P, zs)
+        else:
+            ls = [l.to_TP_zs(T, P, zs) for l in liquids]
+            G_min, lowest_phase = 1e100, None
+            for l in ls:
+                G = l.G()
+                if G < G_min:
+                    G_min, lowest_phase = G, l
+    
+        fugacity_liq = lowest_phase.fugacities()[0]
+        
+        err = fugacity_liq - fugacity_gas
+        store[:] = (lowest_phase, g, err)
+        return err
+    Psat = secant(to_solve_secant, P_guess, xtol=xtol, maxiter=maxiter)
+    l, g, err = store
+
+    return Psat, l, g, iterations, err
+
+
+def PVF_pure_newton(T_guess, P, liquids, gas, maxiter=200, xtol=1E-10):
+    one_liquid = len(liquids)
+    zs = [1.0]
+    store = []
+    global iterations
+    iterations = 0
+    def to_solve_newton(T):
+        global iterations
+        iterations += 1
+        g = gas.to_TP_zs(T, P, zs)
+        fugacity_gas = g.fugacities()[0]
+        dfugacities_dT_gas = g.dfugacities_dT()[0]
+
+        if one_liquid:
+            lowest_phase = liquids[0].to_TP_zs(T, P, zs)
+        else:
+            ls = [l.to_TP_zs(T, P, zs) for l in liquids]
+            G_min, lowest_phase = 1e100, None
+            for l in ls:
+                G = l.G()
+                if G < G_min:
+                    G_min, lowest_phase = G, l
+    
+        fugacity_liq = lowest_phase.fugacities()[0]
+        dfugacities_dT_liq = lowest_phase.dfugacities_dT()[0]
+        
+        err = fugacity_liq - fugacity_gas
+        derr_dT = dfugacities_dT_liq - dfugacities_dT_gas
+        store[:] = (lowest_phase, g, err)
+        return err, derr_dT
+    Tsat = newton(to_solve_newton, T_guess, xtol=xtol, maxiter=maxiter,
+                  require_eval=True, bisection=False, fprime=True)
+    l, g, err = store
+
+    return Tsat, l, g, iterations, err
+
+
+def PVF_pure_secant(T_guess, P, liquids, gas, maxiter=200, xtol=1E-10):
+    one_liquid = len(liquids)
+    zs = [1.0]
+    store = []
+    global iterations
+    iterations = 0
+    def to_solve_secant(T):
+        global iterations
+        iterations += 1
+        g = gas.to_TP_zs(T, P, zs)
+        fugacity_gas = g.fugacities()[0]
+
+        if one_liquid:
+            lowest_phase = liquids[0].to_TP_zs(T, P, zs)
+        else:
+            ls = [l.to_TP_zs(T, P, zs) for l in liquids]
+            G_min, lowest_phase = 1e100, None
+            for l in ls:
+                G = l.G()
+                if G < G_min:
+                    G_min, lowest_phase = G, l
+    
+        fugacity_liq = lowest_phase.fugacities()[0]
+        
+        err = fugacity_liq - fugacity_gas
+        store[:] = (lowest_phase, g, err)
+        return err
+    Tsat = secant(to_solve_secant, T_guess, xtol=xtol, maxiter=maxiter)
+    l, g, err = store
+
+    return Tsat, l, g, iterations, err
+
+
+def TSF_pure_newton(P_guess, T, other_phases, solids, maxiter=200, xtol=1E-10):
+    one_other = len(other_phases)
+    one_solid = len(solids)
+    zs = [1.0]
+    store = []
+    global iterations
+    iterations = 0
+    def to_solve_newton(P):
+        global iterations
+        iterations += 1
+        if one_solid:
+            lowest_solid = solids[0].to_TP_zs(T, P, zs)
+        else:
+            ss = [s.to_TP_zs(T, P, zs) for s in solids]
+            G_min, lowest_solid = 1e100, None
+            for o in ss:
+                G = o.G()
+                if G < G_min:
+                    G_min, lowest_solid = G, o
+    
+        fugacity_solid = lowest_solid.fugacities()[0]
+        dfugacities_dP_solid = lowest_solid.dfugacities_dP()[0]
+
+        if one_other:
+            lowest_other = other_phases[0].to_TP_zs(T, P, zs)
+        else:
+            others = [l.to_TP_zs(T, P, zs) for l in other_phases]
+            G_min, lowest_other = 1e100, None
+            for o in others:
+                G = o.G()
+                if G < G_min:
+                    G_min, lowest_other = G, o
+    
+        fugacity_other = lowest_other.fugacities()[0]
+        dfugacities_dP_other = lowest_other.dfugacities_dP()[0]
+        
+        err = fugacity_other - fugacity_solid
+        derr_dP = dfugacities_dP_other - dfugacities_dP_solid
+        store[:] = (lowest_other, lowest_solid, err)
+        return err, derr_dP
+
+    Psub = newton(to_solve_newton, P_guess, xtol=xtol, maxiter=maxiter,
+                  require_eval=True, bisection=False, fprime=True)
+    other, solid, err = store
+
+    return Psub, other, solid, iterations, err
+
+def PSF_pure_newton(T_guess, P, other_phases, solids, maxiter=200, xtol=1E-10):
+    one_other = len(other_phases)
+    one_solid = len(solids)
+    zs = [1.0]
+    store = []
+    global iterations
+    iterations = 0
+    def to_solve_newton(T):
+        global iterations
+        iterations += 1
+        if one_solid:
+            lowest_solid = solids[0].to_TP_zs(T, P, zs)
+        else:
+            ss = [s.to_TP_zs(T, P, zs) for s in solids]
+            G_min, lowest_solid = 1e100, None
+            for o in ss:
+                G = o.G()
+                if G < G_min:
+                    G_min, lowest_solid = G, o
+    
+        fugacity_solid = lowest_solid.fugacities()[0]
+        dfugacities_dT_solid = lowest_solid.dfugacities_dT()[0]
+
+        if one_other:
+            lowest_other = other_phases[0].to_TP_zs(T, P, zs)
+        else:
+            others = [l.to_TP_zs(T, P, zs) for l in other_phases]
+            G_min, lowest_other = 1e100, None
+            for o in others:
+                G = o.G()
+                if G < G_min:
+                    G_min, lowest_other = G, o
+    
+        fugacity_other = lowest_other.fugacities()[0]
+        dfugacities_dT_other = lowest_other.dfugacities_dT()[0]
+        
+        err = fugacity_other - fugacity_solid
+        derr_dT = dfugacities_dT_other - dfugacities_dT_solid
+        store[:] = (lowest_other, lowest_solid, err)
+        return err, derr_dT
+
+    Tsub = newton(to_solve_newton, T_guess, xtol=xtol, maxiter=maxiter,
+                  require_eval=True, bisection=False, fprime=True)
+    other, solid, err = store
+
+    return Tsub, other, solid, iterations, err
 
 class FlashVL(object):
     PT_SS_MAXITER = 1000
@@ -892,12 +1157,12 @@ class FlashVL(object):
        
 
 class FlashPureVLS(object):
-    # PT:
-    # Calculate Gibbs energies for all phases
-    # Lowest Gibbs energy is correct phase
-    # Calculate bounds between solid/gas, solid/liquid, and liquid/gas
-    # Interpolate then?
-    # must allow multiple solid phases so liquids as well
+    '''
+    TODO: Get quick version with equivalent features so can begin 
+    UNIT TESTING THE Phases and equilibrium state code. Also this code.
+    
+    But working on all the phases of water can wait.
+    '''
     def __init__(self, constants, correlations, gas, liquids, solids):
         self.constants = constants
         self.correlations = correlations
@@ -909,10 +1174,26 @@ class FlashPureVLS(object):
         self.liquid_count = len(liquids)
         self.solid_count = len(solids)
 
-    def flash(self, zs, T=None, P=None, VF=None, Hm=None, Sm=None):
-        constants, correlations = self.constants, self.correlations
+        self.phase_count = self.gas_count + self.liquid_count + self.solid_count
         
-        liquids, gas, solids = self.liquids, self.gas, self.solids
+        if gas is not None:
+            phases = [gas] + liquids + solids
+            
+        else:
+            phases = liquids + solids
+        self.phases = phases
+        
+        for i, l in enumerate(self.liquids):
+            setattr(self, 'liquid' + str(i), l)
+        for i, s in enumerate(self.solids):
+            setattr(self, 'solid' + str(i), s)
+
+    def flash(self, zs=None, T=None, P=None, VF=None, SF=None, V=None, H=None,
+              S=None, U=None):
+        constants, correlations = self.constants, self.correlations
+        if zs is None:
+            zs = []
+        
         if T is not None and P is not None:            
             flash_specs = {'T': T, 'P': P, 'zs': zs}
             flash_convergence = {'iterations': 0, 'err': 0}
@@ -925,26 +1206,72 @@ class FlashPureVLS(object):
             
         elif T is not None and VF is not None:
             # All dew/bubble are the same with 1 component
-            pass
+            Psat, l, g, iterations, err = self.flash_TVF(T)
+            flash_specs = {'T': T, 'VF': VF, 'zs': zs}
+            flash_convergence = {'iterations': iterations, 'err': err}
+
+            return EquilibriumState(T, Psat, zs, gas=g, liquids=[l], solids=[], 
+                                    betas=[VF, 1-VF], flash_specs=flash_specs, 
+                                    flash_convergence=flash_convergence,
+                                    constants=constants, correlations=correlations)
+            
         elif P is not None and VF is not None:
             # All dew/bubble are the same with 1 component
+            Tsat, l, g, iterations, err = self.flash_PVF(P)
+            flash_specs = {'T': T, 'VF': VF, 'zs': zs}
+            flash_convergence = {'iterations': iterations, 'err': err}
+
+            return EquilibriumState(Tsat, P, zs, gas=g, liquids=[l], solids=[], 
+                                    betas=[VF, 1-VF], flash_specs=flash_specs, 
+                                    flash_convergence=flash_convergence,
+                                    constants=constants, correlations=correlations)
+        elif T is not None and SF is not None:
+            Psub, other_phase, s, iterations, err = self.flash_TSF(T)
+            if isinstance(other_phase, gas_phases):
+                g, liquids = other_phase, []
+            else:
+                g, liquids = None, [other_phase]
+            flash_specs = {'T': T, 'SF': SF, 'zs': zs}
+            flash_convergence = {'iterations': iterations, 'err': err}
+#
+            return EquilibriumState(T, Psub, zs, gas=g, liquids=liquids, solids=[s], 
+                                    betas=[1-SF, SF], flash_specs=flash_specs, 
+                                    flash_convergence=flash_convergence,
+                                    constants=constants, correlations=correlations)
+        elif P is not None and SF is not None:
+            Tsub, other_phase, s, iterations, err = self.flash_PSF(P)
+            if isinstance(other_phase, gas_phases):
+                g, liquids = other_phase, []
+            else:
+                g, liquids = None, [other_phase]
+            flash_specs = {'P': P, 'SF': SF, 'zs': zs}
+            flash_convergence = {'iterations': iterations, 'err': err}
+#
+            return EquilibriumState(Tsub, P, zs, gas=g, liquids=liquids, solids=[s], 
+                                    betas=[1-SF, SF], flash_specs=flash_specs, 
+                                    flash_convergence=flash_convergence,
+                                    constants=constants, correlations=correlations)
+
+        if T is not None and S is not None:
             pass
-        if T is not None and Sm is not None:
+        elif P is not None and S is not None:
             pass
-        elif P is not None and Sm is not None:
-            pass
-        elif P is not None and Hm is not None:
-            pass
+        elif P is not None and H is not None:
+            return self.flash_PH(P, H)
         else:
             raise Exception('Flash inputs unsupported')
 
     def flash_TP(self, T, P):
         zs = [1]
-        gas = self.gas.to_TP_zs(T, P, zs)
         liquids = []
         solids = []
-        
-        G_min, lowest_phase = gas.G(), gas
+
+        if self.gas_count:
+            gas = self.gas.to_TP_zs(T, P, zs)
+            G_min, lowest_phase = gas.G(), gas
+        else:
+            G_min, lowest_phase = 1e100, None
+            gas = None
         for l in self.liquids:
             l = l.to_TP_zs(T, P, zs)
             G = l.G()
@@ -966,72 +1293,335 @@ class FlashPureVLS(object):
             return None, [lowest_phase], [], betas
         else:
             return None, [], [lowest_phase], betas
+
+
     
-    def flash_TVF(self, T, VF):
+    def flash_TVF(self, T, VF=None):
         zs = [1]
-        
         Psat = self.correlations.VaporPressures[0](T)
-        
         gas = self.gas.to_TP_zs(T, Psat, zs)
         liquids = [l.to_TP_zs(T, Psat, zs) for l in self.liquids]
-        one_liquid = self.liquid_count == 1
+#        return TVF_pure_newton(Psat, T, liquids, gas, maxiter=200, xtol=1E-10)
+        return TVF_pure_secant(Psat, T, liquids, gas, maxiter=200, xtol=1E-10)
+
+    def flash_PVF(self, P, VF=None):
+        zs = [1]
+        Tsat = self.correlations.VaporPressures[0].solve_prop(P)
+        gas = self.gas.to_TP_zs(Tsat, P, zs)
+        liquids = [l.to_TP_zs(Tsat, P, zs) for l in self.liquids]
+        return PVF_pure_newton(Tsat, P, liquids, gas, maxiter=200, xtol=1E-10)
+#        return PVF_pure_secant(Tsat, P, liquids, gas, maxiter=200, xtol=1E-10)
+
+    def flash_TSF(self, T, SF=None):
+        # if under triple point search for gas - otherwise search for liquid
+        # For water only there is technically two solutions at some point for both
+        # liquid and gas, flag?
         
-        phase_store = []
+        # The solid-liquid interface is NOT working well...
+        # Worth getting IAPWS going to compare. Maybe also other EOSs
+        zs = [1]
+        if T < self.constants.Tts[0]:
+            Psub = self.correlations.SublimationPressures[0](T)
+            try_phases = [self.gas] + self.liquids
+        else:
+            try_phases = self.liquids
+            Psub = 1e6
         
-        # This should become an algorithm
-        def to_solve_secant(P):
-            g = gas.to_TP_zs(T, P, zs)
-            fugacity_gas = g.fugacities()[0]
-            if one_liquid:
-                l = liquids[0].to_TP_zs(T, P, zs)
+        return TSF_pure_newton(Psub, T, try_phases, self.solids, 
+                               maxiter=200, xtol=1E-10)
+        
+    def flash_PSF(self, P, SF=None):
+        zs = [1]
+        if P < self.constants.Pts[0]:
+            Tsub = self.correlations.SublimationPressures[0].solve_prop(P)
+            try_phases = [self.gas] + self.liquids
+        else:
+            try_phases = self.liquids
+            Tsub = 1e6
+        
+        return PSF_pure_newton(Tsub, P, try_phases, self.solids, 
+                               maxiter=200, xtol=1E-10)
+        
+    def flash_PH(self, P, H):
+        zs = [1]
+        constants, correlations = self.constants, self.correlations
+        if self.phase_count == 1:
+            if self.gas_count:
+                methods = [LAST_CONVERGED, FIXED_GUESS, IG_ENTHALPY,
+                           LASTOVKA_SHAW, STP_T_GUESS]
+            elif self.liquid_count:
+                methods = [LAST_CONVERGED, FIXED_GUESS, IDEAL_LIQUID_ENTHALPY,
+                           DADGOSTAR_SHAW_1, STP_T_GUESS]
             else:
-                ls = [l.to_TP_zs(T, P, zs) for l in liquids]
-                G_min, lowest_phase = 1e100, None
-                for l in ls:
-                    G = l.G()
-                    if G < G_min:
-                        G_min, lowest_phase = G, l
+                methods = [LAST_CONVERGED, FIXED_GUESS, STP_T_GUESS]
+                
+            for method in methods:
+                try:
+                    T_guess = PH_T_guesses_1P(P, H, zs, method=method, constants=constants, correlations=correlations)
+                    break
+                except Exception as e:
+                    pass
+            T, phase, iterations, err = PH_secant_1P(T_guess, P, H, zs, self.phases[0], oscillation_detection=False)
+            return T, phase, iterations, err
         
-            fugacity_liq = l.fugacities()[0]
-            phase_store[:] = (l, g)
-            err = fugacity_liq - fugacity_gas
-#            err = fugacity_liq/fugacity_gas - 1 # Slower
-#            print(err, P)
-            return err
+        try:
+            solve_all_phases_1P
+        except:
+            pass
+        
+        try:
+            try:
+                VL_flash = self.flash(P=P, VF=1)
+                H_l = VL_flash.liquid0.H()
+                H_g = VL_flash.gas.H()
+                VF = (H - H_l)/(H_g - H_l)
+                if VF < 0.0 or VF > 1.0:
+                    raise ValueError("Not apply")
+            except:
+                pass
+            try:
+                VS_flash = self.flash(P=P, SF=1)
+                H_s = VS_flash.solid0.H()
+                H_other = VS_flash.phases[0].H()
+                SF = (H - H_s)/(H_other - H_s)
+                if SF < 0.0 or SF > 1.0:
+                    raise ValueError("Not apply")
+            except:
+                pass
+
+        except:
+            pass
+        try:
+            return solution_with_lowest_G
+        except:
+            pass
+            
+    def debug_TVF(self, T, VF=None, pts=2000):
+        zs = [1]
+        gas = self.gas
+        liquids = self.liquids
         
         def to_solve_newton(P):
             g = gas.to_TP_zs(T, P, zs)
             fugacity_gas = g.fugacities()[0]
             dfugacities_dP_gas = g.dfugacities_dP()[0]
-            if one_liquid:
-                l = liquids[0].to_TP_zs(T, P, zs)
-            else:
-                ls = [l.to_TP_zs(T, P, zs) for l in liquids]
-                G_min, lowest_phase = 1e100, None
-                for l in ls:
-                    G = l.G()
-                    if G < G_min:
-                        G_min, lowest_phase = G, l
+            ls = [l.to_TP_zs(T, P, zs) for l in liquids]
+            G_min, lowest_phase = 1e100, None
+            for l in ls:
+                G = l.G()
+                if G < G_min:
+                    G_min, lowest_phase = G, l
         
-            fugacity_liq = l.fugacities()[0]
-            dfugacities_dP_liq = l.dfugacities_dP()[0]
+            fugacity_liq = lowest_phase.fugacities()[0]
+            dfugacities_dP_liq = lowest_phase.dfugacities_dP()[0]
             
-            phase_store[:] = (l, g)
             err = fugacity_liq - fugacity_gas
             derr_dP = dfugacities_dP_liq - dfugacities_dP_gas
-#            err = fugacity_liq/fugacity_gas - 1 # Slower
             return err, derr_dP
-        # Also add an algorithm that uses derivatives
-#        import matplotlib.pyplot as plt
-#        import numpy as np
-#        Ps = np.logspace(np.log10(Psat/2), np.log10(Psat*2), 2000)
-#        values = [to_solve_secant(P) for P in Ps]
-#        plt.loglog(Ps, values)
-#        plt.show()
-#        Psat = fsolve(to_solve_secant, Psat)
-        Psat = newton(to_solve_secant, Psat, xtol=1e-11, require_eval=False)
-#        Psat = newton(to_solve_newton, Psat, fprime=True, xtol=1e-11, require_eval=False)
-#        Psat = brenth(to_solve_secant, 1e-5, Psat)
+        
+        import matplotlib.pyplot as plt
+        import numpy as np
+        
+        Psat = self.correlations.VaporPressures[0](T)
+        Ps = np.hstack([np.logspace(np.log10(Psat/2), np.log10(Psat*2), int(pts/2)),
+                        np.logspace(np.log10(1e-6), np.log10(1e7), int(pts/2))])
+        Ps = np.sort(Ps)
+        values = np.array([to_solve_newton(P)[0] for P in Ps])
+        plt.loglog(Ps, values, 'x', label='Positive errors')
+        plt.loglog(Ps, -values, 'o', label='Negative errors')
+        plt.legend(loc='best', fancybox=True, framealpha=0.5)
+        plt.show()
+
+    def debug_PVF(self, P, VF=None, pts=2000):
+        zs = [1]
+        gas = self.gas
+        liquids = self.liquids
+        
+        def to_solve_newton(T):
+            g = gas.to_TP_zs(T, P, zs)
+            fugacity_gas = g.fugacities()[0]
+            dfugacities_dT_gas = g.dfugacities_dT()[0]
+            ls = [l.to_TP_zs(T, P, zs) for l in liquids]
+            G_min, lowest_phase = 1e100, None
+            for l in ls:
+                G = l.G()
+                if G < G_min:
+                    G_min, lowest_phase = G, l
+        
+            fugacity_liq = lowest_phase.fugacities()[0]
+            dfugacities_dT_liq = lowest_phase.dfugacities_dT()[0]
+            
+            err = fugacity_liq - fugacity_gas
+            derr_dT = dfugacities_dT_liq - dfugacities_dT_gas
+            return err, derr_dT
+        
+        import matplotlib.pyplot as plt
+        Psat_obj = self.correlations.VaporPressures[0]
+        
+        Tsat = Psat_obj.solve_prop(P)
+        Tmax = Psat_obj.Tmax
+        Tmin = Psat_obj.Tmin
+        
+        
+        Ts = np.hstack([np.linspace(Tmin, Tmax, int(pts/4)),
+                        np.linspace(Tsat-30, Tsat+30, int(pts/4))])
+        Ts = np.sort(Ts)
+
+        values = np.array([to_solve_newton(T)[0] for T in Ts])
+        
+        plt.semilogy(Ts, values, 'x', label='Positive errors')
+        plt.semilogy(Ts, -values, 'o', label='Negative errors')
+        
+        
+        min_index = np.argmin(np.abs(values))
+
+        T = Ts[min_index]
+        Ts2 = np.linspace(T*.999, T*1.001, int(pts/2))
+        values2 = np.array([to_solve_newton(T)[0] for T in Ts2])
+        plt.semilogy(Ts2, values2, 'x', label='Positive Fine')
+        plt.semilogy(Ts2, -values2, 'o', label='Negative Fine')
+
+        plt.legend(loc='best', fancybox=True, framealpha=0.5)
+        plt.show()
     
-        return Psat
+    
+    def debug_PT(self, zs, Pmin=None, Pmax=None, Tmin=None, Tmax=None, pts=50, 
+                ignore_errors=True, values=False): # pragma: no cover
+        if not has_matplotlib and not values:
+            raise Exception('Optional dependency matplotlib is required for plotting')
+        if Pmin is None:
+            Pmin = 1e4
+        if Pmax is None:
+            Pmax = min(self.constants.Pcs)
+        if Tmin is None:
+            Tmin = min(self.constants.Tms)*.9
+        if Tmax is None:
+            Tmax = max(self.constants.Tcs)*1.5
+            
+        Ps = logspace(log10(Pmin), log10(Pmax), pts)
+        Ts = linspace(Tmin, Tmax, pts)
+        
+        matrix = []
+        for T in Ts:
+            row = []
+            for P in Ps:
+                try:
+                    state = self.flash(T=T, P=P, zs=zs)
+                    row.append(state.phases_str)
+                except Exception as e:
+                    if ignore_errors:
+                        row.append('F')
+                    else:
+                        raise e
+            matrix.append(row)
+            
+        if values:
+            return Ts, Ps, matrix
+        
+        regions = {'V': 0, 'L': 1, 'S': 2, 'VL': 3, 'LL': 4, 'VLL': 5,
+                       'VLS': 6, 'VLLS': 7, 'VLLSS': 8, 'F': -1}
+
+        used_regions = set([])
+        for row in matrix:
+            for v in row:
+                used_regions.add(v)
+        
+        region_keys = list(regions.keys())
+        used_keys = [i for i in region_keys if i in used_regions]
+        
+        regions_keys = [n for _, n in sorted(zip([regions[i] for i in used_keys], used_keys))]
+        used_values = [regions[i] for i in regions_keys]
+
+        dat = [[regions[matrix[i][j]] for j in range(pts)] for i in range(pts)]
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots()
+        Ts, Ps = np.meshgrid(Ts, Ps)
+        cs = ax.contourf(Ts, Ps, dat, levels=list(sorted(regions.values())))
+        cbar = fig.colorbar(cs)
+        
+        cbar.ax.set_yticklabels([n for _, n in sorted(zip(regions.values(), regions.keys()))])
+#        cbar.ax.set_yticklabels(regions_keys)
+        ax.set_yscale('log')
+#        plt.imshow(dat, interpolation='nearest')
+#        plt.legend(loc='best', fancybox=True, framealpha=0.5)
+#        return fig, ax       
+        plt.show()
+        
+    # ph - iterate on PT
+    # if oscillating, take those two phases, solve, then get VF
+    # other strategy - guess phase, solve h, PT at point to vonfirm!
+    # For one phase - solve each phase for H, if there is a solution.
+    # Take the one with lowest Gibbs energy
+    
+
+LASTOVKA_SHAW = 'Lastovka Shaw'
+DADGOSTAR_SHAW_1 = 'Dadgostar Shaw 1'
+STP_T_GUESS = '298.15 K'
+LAST_CONVERGED = 'Last converged'
+FIXED_GUESS = 'Fixed guess'
+IG_ENTHALPY = 'Ideal gas'
+IDEAL_LIQUID_ENTHALPY = 'Ideal liquid'
+
+PH_T_guesses_1P_methods = [LASTOVKA_SHAW, DADGOSTAR_SHAW_1, IG_ENTHALPY,
+                           IDEAL_LIQUID_ENTHALPY, FIXED_GUESS, STP_T_GUESS,
+                           LAST_CONVERGED]
+
+def PH_T_guesses_1P(P, H, zs, method, constants, correlations, T_guess=None,
+                    T_last=None, T_ref=298.15):
+    MW = mixing_simple(zs, constants.MWs)
+    n_atoms = [sum(i.values()) for i in constants.atomss]
+    sv = mixing_simple(zs, n_atoms)/MW
+
+    if method == LASTOVKA_SHAW:
+        T = Lastovka_Shaw_T_for_Hm(Hm=H, MW=MW, similarity_variable=sv)
+        return T
+    elif method == DADGOSTAR_SHAW_1:
+        Tc = mixing_simple(zs, constants.Tcs)
+        omega = mixing_simple(zs, constants.omegas)
+        def Dadgostar_Shaw_T_guess(H, MW, similarity_variable, Tc, omega, 
+                                   T_ref=T_ref, factor=1.0):
+            H_ref = Dadgostar_Shaw_integral(T_ref, similarity_variable)
+            def err(T):
+                Hvap = SMK(T, Tc, omega)
+                H1 = Dadgostar_Shaw_integral(T, similarity_variable)
+                dH = H1 - H_ref
+                # Limitation to higher T unfortunately
+                return ((property_mass_to_molar(dH, MW)*factor - Hvap) - H)
+            return newton(err, 100, high=Tc)
+        
+        T = Dadgostar_Shaw_T_guess(H, MW, sv, Tc, omega, factor=1)
+        return T
+    elif method == IG_ENTHALPY:
+        HeatCapacityGases = correlations.HeatCapacityGases
+        def to_solve(T):
+            H_calc = 0.
+            for i in range(len(zs)):
+                H_calc += zs[i]*HeatCapacityGases[i].T_dependent_property_integral(T_ref, T)
+            return H_calc - H
+        T = secant(to_solve, 298.15)
+        return T
+    elif method == IDEAL_LIQUID_ENTHALPY:
+        HeatCapacityGases = correlations.HeatCapacityGases
+        EnthalpyVaporizations = correlations.EnthalpyVaporizations
+        def to_solve(T):
+            H_calc = 0.
+            for i in range(len(zs)):
+                H_calc += zs[i]*(HeatCapacityGases[i].T_dependent_property_integral(T_ref, T)
+                            - EnthalpyVaporizations[i](T))
+            return H_calc - H
+        T = secant(to_solve, 298.15)
+        return T
+        
+    elif method == STP_T_GUESS:
+        return 298.15
+    elif method == LAST_CONVERGED:
+        if T_last is None:
+            raise ValueError("No last converged")
+        return T_last
+    elif method == FIXED_GUESS:
+        if T_guess is None:
+            raise ValueError("No fixed guess")
+        return T_guess
+    else:
+        raise ValueError("Unknown error")
 

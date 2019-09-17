@@ -487,7 +487,10 @@ class VaporPressure(TDependentProperty):
 
         if best_fit is not None:
             self.set_best_fit(best_fit)
-
+            if self.Tmin is None:
+                self.Tmin = self.best_fit_Tmin/100
+            if self.Tmax is None:
+                self.Tmax = self.best_fit_Tmax*10
 
     def load_all_methods(self):
         r'''Method which picks out coefficients for the specified chemical
@@ -1203,7 +1206,10 @@ class SublimationPressure(TDependentProperty):
         
         if best_fit is not None:
             self.set_best_fit(best_fit)
-
+            if self.Tmin is None:
+                self.Tmin = self.best_fit_Tmin/100
+            if self.Tmax is None:
+                self.Tmax = self.best_fit_Tmax*10
 
     def load_all_methods(self):
         r'''Method which picks out coefficients for the specified chemical

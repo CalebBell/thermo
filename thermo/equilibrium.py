@@ -119,6 +119,16 @@ class EquilibriumState(object):
         for phase in self.phases:
             phase.result = self
             phase.constants = constants
+            
+    @property
+    def phases_str(self):
+        s = ''
+        if self.gas:
+            s += 'V'
+        s += 'L'*len(self.liquids)
+        s += 'S'*len(self.solids)
+        return s
+
     
     @property
     def betas_mass(self):
@@ -459,7 +469,7 @@ def _make_getter_bulk_props(name):
     return get
 
 
-bulk_props = ['V', 'Z', 'rho', 'Cp']
+bulk_props = ['V', 'Z', 'rho', 'Cp', 'H', 'S', 'dH_dT', 'dH_dP', 'dS_dT', 'dS_dP']
 for name in bulk_props:
     # Maybe take this out and implement it manually for performance?
     getter = property(_make_getter_bulk_props(name))

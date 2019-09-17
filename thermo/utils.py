@@ -1777,9 +1777,17 @@ def normalize(values):
     >>> normalize([3, 2, 1])
     [0.5, 0.3333333333333333, 0.16666666666666666]
     '''
-    tot_inv = 1.0/sum(values)
-    return [i*tot_inv for i in values]
-
+    try:
+        tot_inv = 1.0/sum(values)
+        return [i*tot_inv for i in values]
+    except ZeroDivisionError:
+        N = len(values)
+        try:
+            # case of values sum to zero
+            return [1.0/N]*N
+        except ZeroDivisionError:
+            # case of 0 values
+            return []
 
 def remove_zeros(values, tol=1e-6):
     r'''Simple function which removes zero values from an array, and replaces 
@@ -2642,7 +2650,7 @@ class TDependentProperty(object):
             return False
         return True
         
-    def set_best_fit(self, best_fit):
+    def set_best_fit(self, best_fit, set_limits=False):
         if (best_fit is not None and len(best_fit) and (best_fit[0] is not None
            and best_fit[1] is not None and  best_fit[2] is not None) 
             and not isnan(best_fit[0]) and not isnan(best_fit[1])):
@@ -2686,6 +2694,12 @@ class TDependentProperty(object):
 #                                        - self.best_fit_Tmin_value)/slope_delta_T
 
             self.best_fit_Tmin_slope = horner(self.best_fit_d_coeffs, self.best_fit_Tmin)
+            
+            if set_limits:
+                if self.Tmin is None:
+                    self.Tmin = self.best_fit_Tmin
+                if self.Tmax is None:
+                    self.Tmax = self.best_fit_Tmax
 
                                     
     def as_best_fit(self):

@@ -79,3 +79,81 @@ class Bulk(Phase):
             Cp += betas[i]*phases[i].Cp()
         self._Cp = Cp
         return Cp
+
+    def H(self):
+        try:
+            return self._H
+        except AttributeError:
+            pass
+        
+        betas, phases = self.phase_fractions, self.phases
+        H = 0.0
+        for i in range(len(betas)):
+            H += betas[i]*phases[i].H()
+        self._H = H
+        return H
+
+    def S(self):
+        try:
+            return self._S
+        except AttributeError:
+            pass
+        
+        betas, phases = self.phase_fractions, self.phases
+        S = 0.0
+        for i in range(len(betas)):
+            S += betas[i]*phases[i].S()
+        self._S = S
+        return S
+    
+    def dH_dT(self):
+        try:
+            return self._dH_dT
+        except AttributeError:
+            pass
+        
+        betas, phases = self.phase_fractions, self.phases
+        dH_dT = 0.0
+        for i in range(len(betas)):
+            dH_dT += betas[i]*phases[i].dH_dT()
+        self._dH_dT = dH_dT
+        return dH_dT
+
+    def dH_dP(self):
+        try:
+            return self._dH_dP
+        except AttributeError:
+            pass
+        
+        betas, phases = self.phase_fractions, self.phases
+        dH_dP = 0.0
+        for i in range(len(betas)):
+            dH_dP += betas[i]*phases[i].dH_dP()
+        self._dH_dP = dH_dP
+        return dH_dP
+
+    def dS_dP(self):
+        try:
+            return self._dS_dP
+        except AttributeError:
+            pass
+        
+        betas, phases = self.phase_fractions, self.phases
+        dS_dP = 0.0
+        for i in range(len(betas)):
+            dS_dP += betas[i]*phases[i].dS_dP()
+        self._dS_dP = dS_dP
+        return dS_dP
+
+    def dS_dT(self):
+        try:
+            return self._dS_dT
+        except AttributeError:
+            pass
+        
+        betas, phases = self.phase_fractions, self.phases
+        dS_dT = 0.0
+        for i in range(len(betas)):
+            dS_dT += betas[i]*phases[i].dS_dT()
+        self._dS_dT = dS_dT
+        return dS_dT
