@@ -1011,10 +1011,16 @@ class Chemical(object): # pragma: no cover
 
         self.Vml_Tb = self.VolumeLiquid.T_dependent_property(self.Tb) if self.Tb else None
         self.Vml_Tm = self.VolumeLiquid.T_dependent_property(self.Tm) if self.Tm else None
+        
+        
         self.Vml_STP = self.VolumeLiquid.T_dependent_property(298.15)
         self.rhoml_STP = 1.0/self.Vml_STP if self.Vml_STP else None
         self.rhol_STP = Vm_to_rho(self.Vml_STP, self.MW) if self.Vml_STP else None
-
+        
+        self.Vml_60F = self.VolumeLiquid.T_dependent_property(288.7055555555555)
+        self.rhoml_60F = 1.0/self.Vml_60F if self.Vml_60F else None
+        self.rhol_60F = Vm_to_rho(self.Vml_60F, self.MW) if self.Vml_60F else None
+        
         self.VolumeGas = VolumeGas(MW=self.MW, Tc=self.Tc, Pc=self.Pc,
                                    omega=self.omega, dipole=self.dipole,
                                    eos=self.eos_in_a_box, CASRN=self.CAS)

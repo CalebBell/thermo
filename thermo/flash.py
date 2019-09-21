@@ -40,7 +40,7 @@ from fluids.numerics import (UnconvergedError, trunc_exp, py_newton as newton,
 from thermo.activity import flash_inner_loop, Rachford_Rice_solutionN, Rachford_Rice_flash_error, Rachford_Rice_solution2
 from scipy.optimize import minimize, fsolve, root
 from thermo.equilibrium import EquilibriumState
-from thermo.phases import gas_phases, liquid_phases, solid_phases
+from thermo.phases import gas_phases, liquid_phases, solid_phases, EOSLiquid, EOSGas
 
 
 def sequential_substitution_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
@@ -1192,7 +1192,7 @@ class FlashPureVLS(object):
               S=None, U=None):
         constants, correlations = self.constants, self.correlations
         if zs is None:
-            zs = []
+            zs = [1.0]
         
         if T is not None and P is not None:            
             flash_specs = {'T': T, 'P': P, 'zs': zs}
@@ -1202,7 +1202,8 @@ class FlashPureVLS(object):
             return EquilibriumState(T, P, zs, gas=g, liquids=ls, solids=ss, 
                                     betas=betas, flash_specs=flash_specs, 
                                     flash_convergence=flash_convergence,
-                                    constants=constants, correlations=correlations)
+                                    constants=constants, correlations=correlations,
+                                    flasher=self)
             
         elif T is not None and VF is not None:
             # All dew/bubble are the same with 1 component
@@ -1213,7 +1214,8 @@ class FlashPureVLS(object):
             return EquilibriumState(T, Psat, zs, gas=g, liquids=[l], solids=[], 
                                     betas=[VF, 1-VF], flash_specs=flash_specs, 
                                     flash_convergence=flash_convergence,
-                                    constants=constants, correlations=correlations)
+                                    constants=constants, correlations=correlations,
+                                    flasher=self)
             
         elif P is not None and VF is not None:
             # All dew/bubble are the same with 1 component
@@ -1224,7 +1226,8 @@ class FlashPureVLS(object):
             return EquilibriumState(Tsat, P, zs, gas=g, liquids=[l], solids=[], 
                                     betas=[VF, 1-VF], flash_specs=flash_specs, 
                                     flash_convergence=flash_convergence,
-                                    constants=constants, correlations=correlations)
+                                    constants=constants, correlations=correlations,
+                                    flasher=self)
         elif T is not None and SF is not None:
             Psub, other_phase, s, iterations, err = self.flash_TSF(T)
             if isinstance(other_phase, gas_phases):
@@ -1237,7 +1240,8 @@ class FlashPureVLS(object):
             return EquilibriumState(T, Psub, zs, gas=g, liquids=liquids, solids=[s], 
                                     betas=[1-SF, SF], flash_specs=flash_specs, 
                                     flash_convergence=flash_convergence,
-                                    constants=constants, correlations=correlations)
+                                    constants=constants, correlations=correlations,
+                                    flasher=self)
         elif P is not None and SF is not None:
             Tsub, other_phase, s, iterations, err = self.flash_PSF(P)
             if isinstance(other_phase, gas_phases):
@@ -1250,7 +1254,8 @@ class FlashPureVLS(object):
             return EquilibriumState(Tsub, P, zs, gas=g, liquids=liquids, solids=[s], 
                                     betas=[1-SF, SF], flash_specs=flash_specs, 
                                     flash_convergence=flash_convergence,
-                                    constants=constants, correlations=correlations)
+                                    constants=constants, correlations=correlations,
+                                    flasher=self)
 
         if T is not None and S is not None:
             pass
@@ -1298,7 +1303,13 @@ class FlashPureVLS(object):
     
     def flash_TVF(self, T, VF=None):
         zs = [1]
-        Psat = self.correlations.VaporPressures[0](T)
+        if (self.phase_count == 2 and self.liquid_count == 1 and self.gas is not None
+            and isinstance(self.liquids[0], EOSLiquid) and isinstance(self.gas, EOSGas)):
+            # Two phase pure eoss are two phase up to the critical point only! Then one phase
+            Psat = self.gas.eos_pures_STP[0].Psat(T)
+        else:
+            Psat = self.correlations.VaporPressures[0](T)
+        
         gas = self.gas.to_TP_zs(T, Psat, zs)
         liquids = [l.to_TP_zs(T, Psat, zs) for l in self.liquids]
 #        return TVF_pure_newton(Psat, T, liquids, gas, maxiter=200, xtol=1E-10)
@@ -1306,7 +1317,11 @@ class FlashPureVLS(object):
 
     def flash_PVF(self, P, VF=None):
         zs = [1]
-        Tsat = self.correlations.VaporPressures[0].solve_prop(P)
+        if (self.phase_count == 2 and self.liquid_count == 1 and self.gas is not None
+            and isinstance(self.liquids[0], EOSLiquid) and isinstance(self.gas, EOSGas)):
+            Tsat = self.gas.eos_pures_STP[0].Tsat(P)
+        else:
+            Tsat = self.correlations.VaporPressures[0].solve_prop(P)
         gas = self.gas.to_TP_zs(Tsat, P, zs)
         liquids = [l.to_TP_zs(Tsat, P, zs) for l in self.liquids]
         return PVF_pure_newton(Tsat, P, liquids, gas, maxiter=200, xtol=1E-10)
@@ -1346,6 +1361,9 @@ class FlashPureVLS(object):
         zs = [1]
         constants, correlations = self.constants, self.correlations
         if self.phase_count == 1:
+            # Somehow, need to switch between multiple phases, using the H of the phase
+            # with the lowest Gibbs energy at each point
+            
             if self.gas_count:
                 methods = [LAST_CONVERGED, FIXED_GUESS, IG_ENTHALPY,
                            LASTOVKA_SHAW, STP_T_GUESS]
@@ -1424,9 +1442,11 @@ class FlashPureVLS(object):
         
         Psat = self.correlations.VaporPressures[0](T)
         Ps = np.hstack([np.logspace(np.log10(Psat/2), np.log10(Psat*2), int(pts/2)),
-                        np.logspace(np.log10(1e-6), np.log10(1e7), int(pts/2))])
+                        np.logspace(np.log10(1e-6), np.log10(1e9), int(pts/2))])
         Ps = np.sort(Ps)
         values = np.array([to_solve_newton(P)[0] for P in Ps])
+        values[values == 0] = 1e-10 # Make them show up on the plot
+        
         plt.loglog(Ps, values, 'x', label='Positive errors')
         plt.loglog(Ps, -values, 'o', label='Negative errors')
         plt.legend(loc='best', fancybox=True, framealpha=0.5)

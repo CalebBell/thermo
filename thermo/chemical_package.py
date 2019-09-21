@@ -57,7 +57,7 @@ class ChemicalConstantsPackage(object):
                  'Van_der_Waals_areas', 'Van_der_Waals_volumes', 'Vcs', 
                  'Vml_STPs', 'Vml_Tms', 'Zcs', 'UNIFAC_Rs', 'UNIFAC_Qs',
                  'rhos_Tms', 'Vms_Tms', 'solubility_parameters',
-                 
+                 'Vml_60Fs', 'rhol_60Fs', 'rhol_60Fs_mass',
                  )
     
     __slots__ = properties + ('N', 'cmps')
@@ -79,6 +79,7 @@ class ChemicalConstantsPackage(object):
                  Hvap_Tbs_mass=None, 
                  # Standard values
                  Vml_STPs=None, rhol_STPs=None, rhol_STPs_mass=None,
+                 Vml_60Fs=None, rhol_60Fs=None, rhol_60Fs_mass=None,
                  # Reaction (ideal gas)
                  Hfgs=None, Hfgs_mass=None, Gfgs=None, Gfgs_mass=None,
                  Sfgs=None, Sfgs_mass=None, S0gs=None, S0gs_mass=None,
@@ -195,7 +196,10 @@ class ChemicalConstantsPackage(object):
         if rhos_Tms is None: rhos_Tms = [None]*N
         if Vms_Tms is None: Vms_Tms = [None]*N
         if Zcs is None: Zcs = [None]*N
-        
+        if Vml_60Fs is None: Vml_60Fs = [None]*N
+        if rhol_60Fs is None: rhol_60Fs = [None]*N
+        if rhol_60Fs_mass is None: rhol_60Fs_mass = [None]*N
+
         self.atom_fractions = atom_fractions
         self.atomss = atomss
         self.Carcinogens = Carcinogens
@@ -276,6 +280,9 @@ class ChemicalConstantsPackage(object):
         self.rhos_Tms = rhos_Tms
         self.Vms_Tms = Vms_Tms
         self.Zcs = Zcs
+        self.Vml_60Fs = Vml_60Fs
+        self.rhol_60Fs = rhol_60Fs
+        self.rhol_60Fs_mass = rhol_60Fs_mass
 
 
 class PropertyCorrelationPackage(object):

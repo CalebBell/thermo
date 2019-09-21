@@ -358,7 +358,7 @@ def API_to_SG(API):
 
 def SG(rho, rho_ref=999.0170824078306):
     r'''Calculates the specific gravity of a substance with respect to another
-    substance; by default, this is water at 15.6 °C (60 °F). For gases, 
+    substance; by default, this is water at 15.555 °C (60 °F). For gases, 
     normally the reference density is 1.2 kg/m^3, that of dry air. However, in 
     general specific gravity should always be specified with respect to the
     temperature and pressure of its reference fluid. This can vary widely.

@@ -733,6 +733,10 @@ class Mixture(object):
         self.rholm_STPs = [i.rhoml_STP for i in self.Chemicals]
         self.rhol_STPs = [i.rhol_STP for i in self.Chemicals]
         
+        self.Vml_60Fs = Vml_STPs = [i.Vml_60F for i in self.Chemicals]
+        self.rhoml_60Fs = [i.rhoml_60F for i in self.Chemicals]
+        self.rhol_60Fs = [i.rhol_60F for i in self.Chemicals]
+        
         self.Vmg_STPs = [i.Vmg_STP for i in self.Chemicals]
 
         self.Vms_Tms = [i.Vms_Tm for i in self.Chemicals]
@@ -3255,6 +3259,7 @@ class Mixture(object):
         except AttributeError:
             pass
         from thermo.chemical_package import ChemicalConstantsPackage
+
         self._constants = ChemicalConstantsPackage(CASs=self.CASs, names=self.names, MWs=self.MWs, 
                                                    Tms=self.Tms, Tbs=self.Tbs, 
                  # Critical state points
@@ -3265,6 +3270,7 @@ class Mixture(object):
                  Hvap_Tbs_mass=self.Hvap_Tbs, 
                  # Standard values
                  Vml_STPs=self.Vml_STPs, rhol_STPs=self.rholm_STPs, rhol_STPs_mass=self.rhol_STPs,
+                 Vml_60Fs=self.Vml_60Fs, rhol_60Fs=self.rholm_STPs, rhol_60Fs_mass=self.rhol_60Fs,
                  # Reaction (ideal gas)
                  Hfgs=self.Hfgms, Hfgs_mass=self.Hfgs, Gfgs=self.Gfgms, Gfgs_mass=self.Gfgs,
                  Sfgs=self.Sfgms, Sfgs_mass=self.Sfgs, S0gs=self.S0gms, S0gs_mass=self.S0gs,

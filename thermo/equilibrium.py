@@ -26,14 +26,15 @@ __all__ = ['EquilibriumState']
 from fluids.constants import R, R_inv
 from fluids.core import thermal_diffusivity
 from thermo.utils import log, exp, normalize, zs_to_ws, vapor_mass_quality, mixing_simple, Vm_to_rho, SG
-from thermo.phases import gas_phases, liquid_phases, solid_phases
+from thermo.phases import gas_phases, liquid_phases, solid_phases, Phase
 from thermo.elements import atom_fractions, mass_fractions, simple_formula_parser, molecular_weight, mixture_atomic_composition
 from thermo.chemical_package import ChemicalConstantsPackage, PropertyCorrelationPackage
-from thermo.bulk import Bulk
+from thermo.bulk import Bulk, BulkSettings, default_settings
 
 all_phases = gas_phases + liquid_phases + solid_phases
 
 CAS_H2O = '7732-18-5'
+
 
 class EquilibriumState(object):
     '''Goal is to retrieve literally every thing about the flashed phases here.
@@ -51,12 +52,17 @@ class EquilibriumState(object):
     '''
     max_liquid_phases = 1
     reacted = False
+
+    T_REF_IG = Phase.T_REF_IG
+    T_REF_IG_INV = Phase.T_REF_IG_INV
+    P_REF_IG = Phase.P_REF_IG
+    P_REF_IG_INV = Phase.P_REF_IG_INV
     
     def __init__(self, T, P, zs, 
                  gas, liquids, solids, betas,
-                 flash_specs, flash_convergence,
-                 constants, correlations,
-                 ):
+                 flash_specs=None, flash_convergence=None,
+                 constants=None, correlations=None, flasher=None,
+                 settings=default_settings):
         # T, P are the only properties constant across phase
         self.T = T
         self.P = P
@@ -110,9 +116,13 @@ class EquilibriumState(object):
         self.bulk = bulk = Bulk(T, P, zs, self.phases, betas)
         bulk.result = self
         bulk.constants = constants
+        bulk.flasher = flasher
+        bulk.settings = settings
 
         self.flash_specs = flash_specs
         self.flash_convergence = flash_convergence
+        self.flasher = flasher
+        self.settings = settings
         
         self.constants = constants
         self.correlations = correlations
@@ -154,6 +164,36 @@ class EquilibriumState(object):
         tot_inv = 1.0/tot
         return [betas[i]*Vs_phases[i]*tot_inv for i in phase_iter]
     
+    def V_liquids_ref(self):
+        T_liquid_volume_ref = self.settings.T_liquid_volume_ref
+        if T_liquid_volume_ref == 298.15:
+            Vls = self.Vml_STPs
+        elif T_liquid_volume_ref == 288.7055555555555:
+            Vls = self.Vml_60Fs
+        else:
+            Vls = [i(T_liquid_volume_ref) for i in self.VolumeLiquids]
+        return Vls
+    
+    def V_liquid_ref(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+            zs = self.zs
+        else:
+            zs = phase.zs
+            
+        Vls = self.V_liquids_ref()
+        V = 0.0
+        for i in self.cmps:
+            V += zs[i]*Vls[i]
+        return V
+    
+    def rho_liquid_ref(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+
+        V = self.V_liquid_ref(phase)
+        MW = phase.MW()
+        return Vm_to_rho(V, MW)
     
     def atom_fractions(self, phase=None):
         r'''Dictionary of atomic fractions for each atom in the phase.
@@ -195,6 +235,29 @@ class EquilibriumState(object):
         else:
             zs = phase.zs
         return zs_to_ws(zs, self.constants.MWs)
+    
+    def Vfls(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+            zs = self.zs
+        else:
+            zs = phase.zs
+        Vls = self.V_liquids_ref()
+        V = 0.0
+        for i in self.cmps:
+            V += zs[i]*Vls[i]
+        V_inv = 1.0/V
+        return [V_inv*Vi for Vi in Vls]
+
+    def Vfgs(self, phase=None):
+        # Ideal volume fractions - do not attempt to compensate for non-ideality
+        # Make an _Actual property to try that.
+        if phase is None:
+            phase = self.bulk
+            zs = self.zs
+        else:
+            zs = phase.zs
+        return zs
     
     def MW(self, phase=None):
         if phase is None:
@@ -258,7 +321,26 @@ class EquilibriumState(object):
 
     def quality(self):
         return vapor_mass_quality(self.beta_gas, MWl=self.liquid_bulk.MW(), MWg=self.gas.MW())
+    
+    def Tmc(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+        return phase.Tmc()
 
+    def Pmc(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+        return phase.Pmc()
+
+    def Vmc(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+        return phase.Vmc()
+
+    def Zmc(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+        return phase.Zmc()
     
     def rho_mass(self, phase=None):
         if phase is None:
@@ -317,6 +399,168 @@ class EquilibriumState(object):
         if phase is None:
             phase = self.bulk
         return phase.Cp()*1e3*phase.MW_inv()
+
+    def Cp_ideal_gas(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+        try:
+            return phase.Cp_ideal_gas()
+        except:
+            pass
+
+        HeatCapacityGases = self.correlations.HeatCapacityGases
+        T = self.T
+        Cpigs_pure = [i.T_dependent_property(T) for i in HeatCapacityGases]
+
+        Cp, zs = 0.0, phase.zs
+        for i in self.cmps:
+            Cp += zs[i]*Cpigs_pure[i]
+        return Cp
+    
+    def H_dep(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+        try:
+            return phase.H_dep()
+        except:
+            pass
+        return phase.H() - self.H_ideal_gas(phase)
+
+    def S_dep(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+        try:
+            return phase.S_dep()
+        except:
+            pass
+        return phase.S() - self.S_ideal_gas(phase)
+
+    def Cp_dep(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+        try:
+            return phase.Cp_dep()
+        except:
+            pass
+        return phase.Cp() - self.Cp_ideal_gas(phase)
+
+    def Cv_dep(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+        try:
+            return phase.Cv_dep()
+        except:
+            pass
+        return phase.Cv() - self.Cv_ideal_gas(phase)
+
+    def H_ideal_gas(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+        try:
+            return phase.H_ideal_gas()
+        except:
+            pass
+
+        HeatCapacityGases = self.correlations.HeatCapacityGases
+        T, T_REF_IG = self.T, self.T_REF_IG
+        Cpig_integrals_pure = [obj.T_dependent_property_integral(T_REF_IG, T)
+                                   for obj in HeatCapacityGases]
+        H = 0.0
+        for zi, Cp_int in zip(phase.zs, Cpig_integrals_pure):
+            H += zi*Cp_int
+        return H
+
+    def S_ideal_gas(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+        try:
+            return phase.S_ideal_gas()
+        except:
+            pass
+
+        HeatCapacityGases = self.correlations.HeatCapacityGases
+        T, T_REF_IG = self.T, self.T_REF_IG
+
+        Cpig_integrals_over_T_pure = [obj.T_dependent_property_integral_over_T(T_REF_IG, T)
+                                      for obj in HeatCapacityGases]
+
+        log_zs = self.log_zs()
+        T, P, zs, cmps = self.T, self.P, phase.zs, self.cmps
+        P_REF_IG_INV = self.P_REF_IG_INV
+        S = 0.0
+        S -= R*sum([zs[i]*log_zs[i] for i in cmps]) # ideal composition entropy composition
+        S -= R*log(P*P_REF_IG_INV)
+        
+        for i in cmps:
+            S += zs[i]*Cpig_integrals_over_T_pure[i]
+
+        return S
+    
+    def Cv_ideal_gas(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+        return self.Cp_ideal_gas(phase) - R
+
+    def Cp_Cv_ratio_ideal_gas(self, phase=None):
+        return self.Cp_ideal_gas(phase)/self.Cv_ideal_gas(phase)
+
+    def G_ideal_gas(self, phase=None):
+        G_ideal_gas = self.H_ideal_gas(phase) - self.T*self.S_ideal_gas(phase)
+        return G_ideal_gas
+
+    def U_ideal_gas(self, phase=None):
+        U_ideal_gas = self.H_ideal_gas(phase) - self.P*self.V_ideal_gas(phase)
+        return U_ideal_gas
+
+    def A_ideal_gas(self, phase=None):
+        A_ideal_gas = self.U_ideal_gas(phase) - self.T*self.S_ideal_gas(phase)
+        return A_ideal_gas
+
+    def V_ideal_gas(self, phase=None):
+        return R*self.T/self.P
+
+
+    def H_formation_ideal_gas(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+        try:
+            return phase.H_formation_ideal_gas()
+        except:
+            pass
+        
+        Hf = 0.0
+        zs = phase.zs
+        Hfgs = self.constants.Hfgs
+        for i in self.cmps:
+            Hf += zs[i]*Hfgs[i]
+        return Hf
+
+    def S_formation_ideal_gas(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+        try:
+            return phase.S_formation_ideal_gas()
+        except:
+            pass
+        
+        Sf = 0.0
+        zs = phase.zs
+        Sfgs = self.constants.Sfgs
+        for i in self.cmps:
+            Sf += zs[i]*Sfgs[i]
+        return Sf
+
+    def G_formation_ideal_gas(self, phase=None):
+        Gf = self.H_formation_ideal_gas(phase) - self.T_REF_IG*self.S_formation_ideal_gas(phase)
+        return Gf
+    
+    def U_formation_ideal_gas(self, phase=None):
+        Uf = self.H_formation_ideal_gas(phase) - self.P_REF_IG*self.V_ideal_gas(phase)
+        return Uf
+    
+    def A_formation_ideal_gas(self, phase=None):
+        Af = self.U_formation_ideal_gas(phase) - self.T_REF_IG*self.S_formation_ideal_gas(phase)
+        return Af
     
     def alpha(self, phase=None):
         rho = self.rho_mass(phase)
@@ -357,8 +601,36 @@ class EquilibriumState(object):
     def SG(self, phase=None):
         if phase is None:
             phase = self.bulk
-        rho_mass = self.rho_mass(phase)
-        return SG(rho_mass)
+        ws = phase.ws()
+        rhol_60Fs_mass = self.constants.rhol_60Fs_mass
+        # Better results than using the phase's density model anyway
+        rho_mass_60F = 0.0
+        for i in self.cmps:
+            rho_mass_60F += ws[i]*rhol_60Fs_mass[i]
+        return SG(rho_mass_60F, rho_ref=999.0170824078306)
+    
+    def SG_gas(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+        MW = phase.MW()
+        # Standard MW of air as in dry air standard
+        # It would be excessive to do a true density call
+        '''Lemmon, Eric W., Richard T. Jacobsen, Steven G. Penoncello, and
+        Daniel G. Friend. "Thermodynamic Properties of Air and Mixtures of 
+        Nitrogen, Argon, and Oxygen From 60 to 2000 K at Pressures to 2000 
+        MPa." Journal of Physical and Chemical Reference Data 29, no. 3 (May
+        1, 2000): 331-85. https://doi.org/10.1063/1.1285884.
+        '''
+        return MW/28.9586
+#        rho_mass = self.rho_mass(phase)
+#        return SG(rho_mass, rho_ref=1.2)
+
+
+    def V_gas_standard(self, phase=None):
+        return R*self.settings.T_standard/self.settings.P_standard
+    
+    def V_gas_normal(self, phase=None):
+        return R*self.settings.T_normal/self.settings.P_normal
 
     def API(self, phase=None):
         if phase is None:
@@ -418,6 +690,34 @@ class EquilibriumState(object):
         MW_water = self.constants.MWs[water_index]
         return MW_water*phase.ws()[water_index]
 
+    def zs_no_water(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+            
+        water_index = self.water_index
+        if water_index is None:
+            return phase.zs
+        zs = list(phase.zs)
+        z_water = zs[water_index]
+        m = 1/(1.0 - z_water)
+        for i in self.cmps:
+            zs[i] *= m
+        return m
+        
+    def ws_no_water(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+            
+        water_index = self.water_index
+        if water_index is None:
+            return phase.ws()
+        ws = list(phase.ws())
+        z_water = ws[water_index]
+        m = 1/(1.0 - z_water)
+        for i in self.cmps:
+            ws[i] *= m
+        return m
+
     @property
     def sigma(self, phase=None):
         if phase is None:
@@ -436,6 +736,113 @@ class EquilibriumState(object):
         lnphis = phase.lnphis()
         Ks = [exp(l - g) for l, g in zip(ref_lnphis, lnphis)]
         return Ks
+
+    def Hc(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+        return mixing_simple(self.constants.Hcs, phase.ws())
+
+    def Hc_mass(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+        return mixing_simple(self.constants.Hcs_mass, phase.zs)
+    
+    def Hc_normal(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+        return phase.Hc()/phase.V_gas_normal()
+
+    def Hc_standard(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+        return phase.Hc()/phase.V_gas_standard()
+
+
+    def Hc_lower(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+        return mixing_simple(self.constants.Hcs_lower, phase.zs)
+    
+    def Hc_lower_mass(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+        return mixing_simple(self.constants.Hcs_lower_mass, phase.ws())
+    
+    def Hc_lower_normal(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+        return phase.Hc_lower()/phase.V_gas_normal()
+
+    def Hc_lower_standard(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+        return phase.Hc_lower()/phase.V_gas_standard()
+
+    
+    def Wobbe_index(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+            
+        Hc = abs(phase.Hc())
+        SG_gas = phase.SG_gas()
+        return Hc*SG_gas**-0.5
+
+    def Wobbe_index_mass(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+            
+        Hc = abs(phase.Hc_mass())
+        SG_gas = phase.SG_gas()
+        return Hc*SG_gas**-0.5
+
+    def Wobbe_index_lower(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+            
+        Hc = abs(phase.Hc_lower())
+        SG_gas = phase.SG_gas()
+        return Hc*SG_gas**-0.5
+
+    def Wobbe_index_lower_mass(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+            
+        Hc = abs(phase.Hc_lower_mass())
+        SG_gas = phase.SG_gas()
+        return Hc*SG_gas**-0.5
+    
+    
+    def Wobbe_index_standard(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+            
+        Hc = abs(phase.Hc_standard())
+        SG_gas = phase.SG_gas()
+        return Hc*SG_gas**-0.5
+
+    def Wobbe_index_normal(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+            
+        Hc = abs(phase.Hc_normal())
+        SG_gas = phase.SG_gas()
+        return Hc*SG_gas**-0.5
+
+    def Wobbe_index_lower_standard(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+            
+        Hc = abs(phase.Hc_lower_standard())
+        SG_gas = phase.SG_gas()
+        return Hc*SG_gas**-0.5
+
+    def Wobbe_index_lower_normal(self, phase=None):
+        if phase is None:
+            phase = self.bulk
+            
+        Hc = abs(phase.Hc_lower_normal())
+        SG_gas = phase.SG_gas()
+        return Hc*SG_gas**-0.5
         
 # Add some fancy things for easier access to properties
 
@@ -449,27 +856,79 @@ def _make_getter_correlations(name):
         return getattr(self.correlations, name)
     return get
 
+def _make_getter_EquilibriumState(name):
+    def get(self):
+        return getattr(self.result, name)(self)
+    return get
+
+def _make_getter_bulk_props(name):
+    def get(self):
+        return getattr(self.bulk, name)
+    return get
+
+### For the pure component fixed properties, allow them to be retrived from the phase
+# and bulk object as well as the Equilibrium State Object
 constant_blacklist = set(['atom_fractions'])
 
 for name in ChemicalConstantsPackage.properties:
     if name not in constant_blacklist:
         getter = property(_make_getter_constants(name))
         setattr(EquilibriumState, name, getter)
-        for phase in all_phases:
-            setattr(phase, name, getter)
-        
+        setattr(Phase, name, getter)
+
+### For the temperature-dependent correlations, allow them to be retrieved by their
+# name from the EquilibriumState ONLY
 for name in PropertyCorrelationPackage.correlations:
     getter = property(_make_getter_correlations(name))
     setattr(EquilibriumState, name, getter)
 
-        
-def _make_getter_bulk_props(name):
-    def get(self):
-        return getattr(self.bulk, name)
-    return get
 
+### For certain properties not supported by Phases/Bulk, allow them to call up to the 
+# EquilibriumState to get the property
+phases_properties_to_EquilibriumState = ['ws', 'mu', 'k', 'atom_fractions', 'atom_mass_fractions',
+                                         'Hc', 'Hc_mass', 'Hc_lower', 'Hc_lower_mass', 'SG', 'SG_gas',
+                                         'pseudo_Tc', 'pseudo_Pc', 'pseudo_Vc', 'pseudo_Zc',
+                                         'V_gas_standard', 'V_gas_normal', 'Hc_normal', 'Hc_standard',
+                                         'Hc_lower_normal', 'Hc_lower_standard',
+                                         'Wobbe_index_lower_normal', 'Wobbe_index_lower_standard',
+                                         'Wobbe_index_normal', 'Wobbe_index_standard',
+                                         'Wobbe_index_lower_mass', 'Wobbe_index_lower', 
+                                         'Wobbe_index_mass', 'Wobbe_index', 'V_mass',
+                                         'rho_liquid_ref', 'V_liquid_ref',
+                                         'molar_water_content',
+                                         'ws_no_water', 'zs_no_water',
+                                         'H_C_ratio', 'H_C_ratio_mass',
+                                         'Vfls', 'Vfgs',
+                                         ]
+for name in phases_properties_to_EquilibriumState:
+    method = _make_getter_EquilibriumState(name)
+    setattr(Phase, name, method)
 
-bulk_props = ['V', 'Z', 'rho', 'Cp', 'H', 'S', 'dH_dT', 'dH_dP', 'dS_dT', 'dS_dP']
+### For certain properties not supported by Bulk, allow them to call up to the 
+# EquilibriumState to get the property
+Bulk_properties_to_EquilibriumState = ['Cp_ideal_gas', 'H_ideal_gas', 
+       'S_ideal_gas', 'V_ideal_gas', 'G_ideal_gas', 'U_ideal_gas',
+       'Cp_ideal_gas', 'Cv_ideal_gas', 'Cp_Cv_ratio_ideal_gas',
+       'A_ideal_gas', 'H_formation_ideal_gas', 'S_formation_ideal_gas', 
+       'G_formation_ideal_gas', 'U_formation_ideal_gas', 'A_formation_ideal_gas',
+       'H_dep', 'S_dep', 'Cp_dep', 'Cv_dep']
+for name in Bulk_properties_to_EquilibriumState:
+    method = _make_getter_EquilibriumState(name)
+    setattr(Bulk, name, method)
+
+### For certain properties of the Bulk phase, make EquilibriumState get it from the Bulk
+bulk_props = ['V', 'Z', 'rho', 'Cp', 'Cv', 'H', 'S', 'U', 'G', 'A', 'dH_dT', 'dH_dP', 'dS_dT', 'dS_dP',
+              'H_reactive', 'S_reactive', 'G_reactive', 'U_reactive', 'A_reactive',
+              'Cp_Cv_ratio', 'log_zs',
+              'dP_dT_frozen', 'dP_dV_frozen', 'd2P_dT2_frozen', 'd2P_dV2_frozen',
+              'd2P_dTdV_frozen',
+              'd2P_dTdV', 'd2P_dV2', 'd2P_dT2', 'dP_dV', 'dP_dT',
+              
+              'PIP', 'kappa', 'beta', 'Joule_Thomson', 'speed_of_sound',
+              'speed_of_sound_mass',
+              'U_dep', 'G_dep', 'A_dep', 'V_dep',
+              ]
+
 for name in bulk_props:
     # Maybe take this out and implement it manually for performance?
     getter = property(_make_getter_bulk_props(name))

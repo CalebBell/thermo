@@ -646,7 +646,6 @@ class GCEOSMIX(GCEOS):
         dF1_dP = x16*(x17 + x18 - x19 - x20 - x22)
         dF2_dT = x14*(-P*b_eos*x1*x15*x7 + 3.0*x23 + x24 + x25 - x26)
         dF2_dP = x16*(-2.0*x23 - x24 - x25 + x26)
-        
         return [F1, F2], [[dF1_dT, dF1_dP], [dF2_dT, dF2_dP]]
         
         

@@ -28,12 +28,14 @@ from fluids.constants import R, R_inv
 from fluids.numerics import (horner, horner_and_der, horner_log, jacobian, derivative,
                              best_fit_integral_value, best_fit_integral_over_T_value,
                              evaluate_linear_fits, evaluate_linear_fits_d,
-                             evaluate_linear_fits_d2)
+                             evaluate_linear_fits_d2,
+                             newton_system)
 from thermo.utils import (log, exp, Cp_minus_Cv, phase_identification_parameter,
                           isothermal_compressibility, isobaric_expansion,
                           Joule_Thomson, speed_of_sound, dxs_to_dns,
                           normalize)
 from thermo.activity import IdealSolution
+from scipy.optimize import fsolve
 
 '''
 All phase objects are immutable.
@@ -288,6 +290,40 @@ class Phase(object):
     def A_reactive(self):
         A = self.U_reactive() - self.T*self.S_reactive()
         return A
+
+    def H_formation_ideal_gas(self):
+        try:
+            return self._H_formation_ideal_gas
+        except AttributeError:
+            pass
+        Hf_ideal_gas = 0.0
+        for zi, Hf in zip(self.zs, self.Hfs):
+            Hf_ideal_gas += zi*Hf
+        self._H_formation_ideal_gas = Hf_ideal_gas
+        return Hf_ideal_gas
+
+    def S_formation_ideal_gas(self):
+        try:
+            return self._S_formation_ideal_gas
+        except:
+            pass
+        Sf_ideal_gas = 0.0
+        for zi, Sf in zip(self.zs, self.Sfs):
+            Sf_ideal_gas += zi*Sf
+        self._S_formation_ideal_gas = Sf_ideal_gas
+        return Sf_ideal_gas
+    
+    def G_formation_ideal_gas(self):
+        Gf = self.H_formation_ideal_gas() - self.T_REF_IG*self.S_formation_ideal_gas()
+        return Gf
+    
+    def U_formation_ideal_gas(self):
+        Uf = self.H_formation_ideal_gas() - self.P_REF_IG*self.V_ideal_gas()
+        return Uf
+    
+    def A_formation_ideal_gas(self):
+        Af = self.U_formation_ideal_gas() - self.T_REF_IG*self.S_formation_ideal_gas()
+        return Af
     
     def Cv(self):
         # checks out
@@ -800,6 +836,12 @@ class Phase(object):
             Cp = self.Cp_ideal_gas()
         return Cp - R
 
+    def Cv_dep(self):
+        return self.Cv() - self.Cv_ideal_gas()
+    
+    def Cp_Cv_ratio_ideal_gas(self):
+        return self.Cp_ideal_gas()/self.Cv_ideal_gas()
+
     def G_ideal_gas(self):
         G_ideal_gas = self.H_ideal_gas() - self.T*self.S_ideal_gas()
         return G_ideal_gas
@@ -812,6 +854,69 @@ class Phase(object):
         A_ideal_gas = self.U_ideal_gas() - self.T*self.S_ideal_gas()
         return A_ideal_gas
     
+    def mechanical_critical_point(self):
+        zs = self.zs
+        # Get initial guess
+        try:
+            try:
+                Tcs, Pcs = self.Tcs, self.Pcs
+            except:
+                Tcs, Pcs = self.eos_mix.Tcs, self.eos_mix.Pcs
+            Pmc = sum([Pcs[i]*zs[i] for i in self.cmps])
+            Tmc = sum([(Tcs[i]*Tcs[j])**0.5*zs[j]*zs[i] for i in self.cmps
+                      for j in self.cmps])
+        except Exception as e:
+            Tmc = 300.0
+            Pmc = 1e6
+        
+        # Try to solve it
+        global new
+        def to_solve(TP):
+            global new
+            T, P = float(TP[0]), float(TP[1])
+            new = self.to_TP_zs(T=T, P=P, zs=zs)
+            errs = [new.dP_drho(), new.d2P_drho2()]
+            return errs
+        
+        jac = lambda TP: jacobian(to_solve, TP, scalar=False)
+        TP, iters = newton_system(to_solve, [Tmc, Pmc], jac=jac, ytol=1e-10) 
+#        TP = fsolve(to_solve, [Tmc, Pmc]) # fsolve handles the discontinuities badly
+        T, P = float(TP[0]), float(TP[1])
+        V = new.V()
+        self._mechanical_critical_T = T
+        self._mechanical_critical_P = P
+        self._mechanical_critical_V = V
+        return T, P, V
+    
+    def Tmc(self):
+        try:
+            return self._mechanical_critical_T
+        except:
+            self.mechanical_critical_point()
+            return self._mechanical_critical_T
+
+    def Pmc(self):
+        try:
+            return self._mechanical_critical_P
+        except:
+            self.mechanical_critical_point()
+            return self._mechanical_critical_P
+
+    def Vmc(self):
+        try:
+            return self._mechanical_critical_V
+        except:
+            self.mechanical_critical_point()
+            return self._mechanical_critical_V
+
+    def Zmc(self):
+        try:
+            V = self._mechanical_critical_V
+        except:
+            self.mechanical_critical_point()
+            V = self._mechanical_critical_V
+        return (self.Pmc()*self.Vmc())/(R*self.Tmc())
+            
 
     ### Transport properties - pass them on!
     # Properties that use `constants` attributes
@@ -836,21 +941,21 @@ class Phase(object):
         self._MW_inv = MW_inv = 1.0/self.MW()
         return MW_inv
     
-    def mu(self):
-        return self.result.mu(self)
+#    def mu(self):
+#        return self.result.mu(self)
 
-    def k(self):
-        return self.result.k(self)
-    
-    def ws(self):
-        return self.result.ws(self)
+#    def k(self):
+#        return self.result.k(self)
+#    
+#    def ws(self):
+#        return self.result.ws(self)
         
     
-    def atom_fractions(self):
-        return self.result.atom_fractions(self)
-    
-    def atom_mass_fractions(self):
-        return self.result.atom_mass_fractions(self)
+#    def atom_fractions(self):
+#        return self.result.atom_fractions(self)
+#    
+#    def atom_mass_fractions(self):
+#        return self.result.atom_mass_fractions(self)
 
     def speed_of_sound_mass(self):
         # 1000**0.5 = 31.622776601683793
@@ -995,7 +1100,11 @@ class EOSGas(Phase):
             self.T = T
             self.P = P
             self.zs = zs
-            self.eos_mix = self.eos_class(T=T, P=P, zs=zs, **self.eos_kwargs)
+            self.eos_mix = eos_mix = self.eos_class(T=T, P=P, zs=zs, **self.eos_kwargs)
+            self.eos_pures_STP = [eos_mix.to_TP_pure(298.15, 101325, i) for i in self.cmps]
+        else:
+            eos_mix = self.eos_class(T=298.15, P=101325.0, zs=[1.0/N]*N, **self.eos_kwargs)
+            self.eos_pures_STP = [eos_mix.to_TP_pure(298.15, 101325.0, i) for i in self.cmps]
             
         
     def to_TP_zs(self, T, P, zs):
@@ -1025,6 +1134,7 @@ class EOSGas(Phase):
         try:
             new.N = self.N
             new.cmps = self.cmps
+            new.eos_pures_STP = self.eos_pures_STP
         except:
             pass
 
@@ -1240,6 +1350,18 @@ class EOSGas(Phase):
                         for i in cmps]
         return self._dS_dzs
  
+    def mechanical_critical_point(self):
+        zs = self.zs
+        new = self.eos_mix.to_mechanical_critical_point()
+        self._mechanical_critical_T = new.T
+        self._mechanical_critical_P = new.P
+        try:
+            V = new.V_l
+        except:
+            V = new.V_g
+        self._mechanical_critical_V = V
+        return new.T, new.P, V
+
             
 def build_EOSLiquid():
     import inspect
@@ -2451,8 +2573,6 @@ class GibbsExcessLiquid(Phase):
 
     def Cp_dep(self):
         return self.Cp() - self.Cp_ideal_gas()
-        
-
     
     ### Volumetric properties
     def V(self):
