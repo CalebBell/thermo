@@ -2849,7 +2849,10 @@ class TDependentProperty(object):
                     properties = [self.calculate(T=T, method=method) for T in Ts]
                     plot_fun(Ts, properties, label=method)
             plt.ylabel(self.name + ', ' + self.units)
-            plt.title(self.name + ' of ' + self.CASRN)
+            title = self.name
+            if self.CASRN:
+                title += ' of ' + self.CASRN
+            plt.title(title)
         elif order > 0:
             for method in methods:
                 if only_valid:
@@ -2867,7 +2870,11 @@ class TDependentProperty(object):
                     properties = [self.calculate_derivative(T=T, method=method, order=order) for T in Ts]
                     plot_fun(Ts, properties, label=method)
             plt.ylabel(self.name + ', ' + self.units + '/K^%d derivative of order %d' % (order, order))
-            plt.title(self.name + ' derivative of order %d' % order + ' of ' + self.CASRN)
+            
+            title = self.name + ' derivative of order %d' % order
+            if self.CASRN:
+                title += ' of ' + self.CASRN
+            plt.title(title)
         plt.legend(loc='best', fancybox=True, framealpha=0.5)
         plt.xlabel('Temperature, K')
         if show:

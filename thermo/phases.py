@@ -2397,7 +2397,7 @@ class GibbsExcessLiquid(Phase):
                 else:
                     for i in self.cmps:
                         # This bit is the differential with respect to pressure
-                        dP = P - Psats[i]
+                        dP = max(0.0, P - Psats[i])
                         H += zs[i]*dP*(Vms_sat[i] - T*dVms_sat_dT[i])
             else:
                 Psats = self.Psats()
@@ -2486,7 +2486,8 @@ class GibbsExcessLiquid(Phase):
                     dSi -= R*log(Psats[i]*P_REF_IG_INV)
     #                dSi -= R*log(P/101325.0)
                     # Only include the
-                    dP = P - Psats[i]
+#                    dP = P - Psats[i]
+                    dP = max(0.0, P - Psats[i])
     #                if dP > 0.0:
                     # I believe should include effect of pressure on all components, regardless of phase
                     dSi -= dP*dVms_sat_dT[i]
