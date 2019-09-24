@@ -27,7 +27,9 @@ __all__ = ['sequential_substitution_2P', 'bubble_T_Michelsen_Mollerup',
            'minimize_gibbs_2P_transformed', 'sequential_substitution_Mehra_2P',
            'nonlin_2P', 'sequential_substitution_NP',
            'minimize_gibbs_NP_transformed', 'FlashVL', 'FlashPureVLS',
-           'PH_T_guesses_1P_methods', 'PH_T_guesses_1P']
+           'PH_T_guesses_1P_methods', 'PH_T_guesses_1P',
+           
+           ]
 
 from fluids.constants import R, R_inv
 from thermo.utils import exp, log, log10, copysign, normalize, has_matplotlib, R, mixing_simple, property_mass_to_molar
@@ -41,7 +43,8 @@ from thermo.activity import flash_inner_loop, Rachford_Rice_solutionN, Rachford_
 from scipy.optimize import minimize, fsolve, root
 from thermo.equilibrium import EquilibriumState
 from thermo.phases import gas_phases, liquid_phases, solid_phases, EOSLiquid, EOSGas
-
+from thermo.phase_identification import identify_sort_phases
+from thermo.bulk import default_settings
 
 def sequential_substitution_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
                                gas_phase, maxiter=1000, tol=1E-13,
@@ -1083,7 +1086,17 @@ def PSF_pure_newton(T_guess, P, other_phases, solids, maxiter=200, xtol=1E-10):
 
     return Tsub, other, solid, iterations, err
 
-class FlashVL(object):
+
+
+
+
+
+class FlashBase(object):
+    
+    def vapor_scores(self, phases):
+        pass
+
+class FlashVL(FlashBase):
     PT_SS_MAXITER = 1000
     PT_SS_TOL = 1e-13
     
@@ -1156,14 +1169,15 @@ class FlashVL(object):
             raise Exception('Flash inputs unsupported')
        
 
-class FlashPureVLS(object):
+class FlashPureVLS(FlashBase):
     '''
     TODO: Get quick version with equivalent features so can begin 
     UNIT TESTING THE Phases and equilibrium state code. Also this code.
     
     But working on all the phases of water can wait.
     '''
-    def __init__(self, constants, correlations, gas, liquids, solids):
+    def __init__(self, constants, correlations, gas, liquids, solids, 
+                 settings=default_settings):
         self.constants = constants
         self.correlations = correlations
         self.solids = solids
@@ -1183,6 +1197,8 @@ class FlashPureVLS(object):
             phases = liquids + solids
         self.phases = phases
         
+        self.settings = settings
+        
         for i, l in enumerate(self.liquids):
             setattr(self, 'liquid' + str(i), l)
         for i, s in enumerate(self.solids):
@@ -1191,6 +1207,7 @@ class FlashPureVLS(object):
     def flash(self, zs=None, T=None, P=None, VF=None, SF=None, V=None, H=None,
               S=None, U=None):
         constants, correlations = self.constants, self.correlations
+        settings = self.settings
         if zs is None:
             zs = [1.0]
         
@@ -1198,6 +1215,9 @@ class FlashPureVLS(object):
             flash_specs = {'T': T, 'P': P, 'zs': zs}
             flash_convergence = {'iterations': 0, 'err': 0}
             g, ls, ss, betas = self.flash_TP(T, P)
+            
+            g, ls, ss, betas = identify_sort_phases([g] + ls + ss, betas, constants,
+                                                    correlations, settings=settings)
             
             return EquilibriumState(T, P, zs, gas=g, liquids=ls, solids=ss, 
                                     betas=betas, flash_specs=flash_specs, 
@@ -1210,7 +1230,7 @@ class FlashPureVLS(object):
             Psat, l, g, iterations, err = self.flash_TVF(T)
             flash_specs = {'T': T, 'VF': VF, 'zs': zs}
             flash_convergence = {'iterations': iterations, 'err': err}
-
+            
             return EquilibriumState(T, Psat, zs, gas=g, liquids=[l], solids=[], 
                                     betas=[VF, 1-VF], flash_specs=flash_specs, 
                                     flash_convergence=flash_convergence,

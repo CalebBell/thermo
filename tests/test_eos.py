@@ -1334,6 +1334,36 @@ def test_dphi_dP_l_g():
     analytical = eos1.dphi_dP_g
     assert_allclose(numerical, analytical, rtol=1e-6)
 
+def test_dbeta_dT():
+    T = 400
+    delta = 1e-7
+    eos1 = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=T, P=1E6)
+    eos2 = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=T + delta, P=1E6)
+    numerical = (eos2.beta_l - eos1.beta_l)/delta
+    analytical = eos1.dbeta_dT_l
+    assert_allclose(numerical, analytical, rtol=1e-5)
+    assert_allclose(analytical, 2.9048493082069868e-05, rtol=1e-9)
+    
+    numerical = (eos2.beta_g - eos1.beta_g)/delta
+    analytical = eos1.dbeta_dT_g
+    assert_allclose(numerical, analytical, rtol=1e-5)
+    assert_allclose(analytical, -0.00033081702756075523, rtol=1e-9)
+
+
+
+
+def test_dbeta_dP():
+    T = 400
+    delta = 10
+    eos1 = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=T, P=1E6)
+    numerical = derivative(lambda P: eos1.to_TP(eos1.T, P).beta_l, eos1.P, order=15, dx=30)
+    analytical = eos1.dbeta_dP_l
+    assert_allclose(numerical, analytical, rtol=1e-8)
+    
+    numerical = derivative(lambda P: eos1.to_TP(eos1.T, P).beta_g, eos1.P, order=15, dx=30)
+    analytical = eos1.dbeta_dP_g
+    assert_allclose(numerical, analytical, rtol=1e-8)
+
 #@pytest.mark.xfail
 def test_failure_dP_dV_zero_division():
     Tc = 507.6

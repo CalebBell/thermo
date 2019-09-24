@@ -630,7 +630,7 @@ def test_phase_envelope_44_components():
     
     pkg = PropertyPackageConstants(IDs, PR_PKG)
     
-    max_step_damping = 100
+    max_step_damping = 50
     P_low = 1e4
     factor = 1.2
     min_step_termination = 1000

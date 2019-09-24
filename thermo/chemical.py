@@ -1051,7 +1051,7 @@ class Chemical(object): # pragma: no cover
                                                        Cpg=self.HeatCapacityGas, Cps=self.HeatCapacitySolid,
                                                        Hvap=self.EnthalpyVaporization,
                                                        best_fit=get_chemical_constants(self.CAS, 'EnthalpySublimation'))
-        self.Hsub_Ttm = self.EnthalpySublimation(self.Tt)
+        self.Hsub_Ttm = self.EnthalpySublimation(self.Tt) if self.Tt is not None else None
         self.Ssub_Ttm = self.Hsub_Ttm/self.Tt if (self.Tt is not None and self.Hsub_Ttm is not None) else None
         
         self.Sfusm = self.Hfusm/self.Tm if (self.Tm is not None and self.Hfusm is not None) else None

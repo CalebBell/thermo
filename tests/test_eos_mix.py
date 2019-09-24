@@ -324,6 +324,7 @@ all_expected_SRKMIX_CH4_H2S = [[.9885],
             [.11, 0.51373521, 0.92278719, 0.9809485]
            ]
 
+@pytest.mark.xfail
 def test_Stateva_Tsvetkov_TPDF_SRKMIX_CH4_H2S():
     # ALL WRONG - did not use two EOS correctly, did not use SHGO
     '''Data and examples from 
@@ -372,6 +373,7 @@ def test_Stateva_Tsvetkov_TPDF_SRKMIX_CH4_H2S():
                 ans = minimize(func, guesses[j][k], bounds=[(1e-9, 1-1e-6)])
                 assert_allclose(float(ans['x']), expected[j], rtol=1e-6)        
 
+@pytest.mark.xfail
 def test_d_TPD_Michelson_modified_SRKMIX_CH4_H2S():
     # ALL WRONG - did not use two EOS correctly, did not use SHGO
     all_guesses = [[[0.98]],
@@ -414,6 +416,7 @@ def test_d_TPD_Michelson_modified_SRKMIX_CH4_H2S():
                 assert_allclose(ys[0], expected[j], rtol=1e-7)        
 
 
+@pytest.mark.xfail
 def test_Stateva_Tsvetkov_TPDF_PRMIX_Nitrogen_Methane_Ethane():
     # ALL WRONG - did not use two EOS correctly, did not use SHGO
     '''Data and examples from 

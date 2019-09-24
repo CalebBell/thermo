@@ -63,6 +63,8 @@ class Phase(object):
     
     P_MAX_FIXED = 1e9
     P_MIN_FIXED = 1e-3
+    
+    force_phase = None
 
     Psats_data = None
     Cpgs_data = None
@@ -467,6 +469,36 @@ class Phase(object):
     def beta(self):
         return isobaric_expansion(self.V(), self.dV_dT())
     
+    def dbeta_dT(self):
+        '''
+        from sympy import *
+        T, P = symbols('T, P')
+        V = symbols('V', cls=Function)
+        expr = 1/V(T, P)*Derivative(V(T, P), T)
+        diff(expr, T)
+        Derivative(V(T, P), (T, 2))/V(T, P) - Derivative(V(T, P), T)**2/V(T, P)**2
+        # Untested
+        '''
+        V_inv = 1.0/self.V()
+        dV_dT = self.dV_dT()
+        return V_inv*(self.d2V_dT2() - dV_dT*dV_dT*V_inv)
+    
+    def dbeta_dP(self):
+        '''
+        from sympy import *
+        T, P = symbols('T, P')
+        V = symbols('V', cls=Function)
+        expr = 1/V(T, P)*Derivative(V(T, P), T)
+        diff(expr, P)
+        Derivative(V(T, P), P, T)/V(T, P) - Derivative(V(T, P), P)*Derivative(V(T, P), T)/V(T, P)**2
+        
+        '''
+        V_inv = 1.0/self.V()
+        dV_dT = self.dV_dT()
+        dV_dP = self.dV_dP()
+        return V_inv*(self.d2V_dTdP() - dV_dT*dV_dP*V_inv)
+
+
     def Joule_Thomson(self):
         return Joule_Thomson(self.T, self.V(), self.Cp(), dV_dT=self.dV_dT(), beta=self.beta())
     
@@ -1037,6 +1069,7 @@ class IdealGas(Phase):
     This will be important for fitting.
     
     '''
+    force_phase = 'g'
     def __init__(self, HeatCapacityGases=None, Hfs=None, Gfs=None):
         self.HeatCapacityGases = HeatCapacityGases
         self.Hfs = Hfs
@@ -1385,6 +1418,7 @@ except:
     exec(build_EOSLiquid())
 
 class GibbsExcessLiquid(Phase):
+    force_phase = 'l'
     P_DEPENDENT_H_LIQ = True
     Psats_data = None
     Psats_locked = False
@@ -1402,7 +1436,6 @@ class GibbsExcessLiquid(Phase):
     def __init__(self, VaporPressures, VolumeLiquids=None, 
                  GibbsExcessModel=IdealSolution(), 
                  eos_pure_instances=None,
-                 VolumeLiquidMixture=None,
                  HeatCapacityGases=None, 
                  EnthalpyVaporizations=None,
                  HeatCapacityLiquids=None, 
@@ -1414,6 +1447,27 @@ class GibbsExcessLiquid(Phase):
                  henry_components=None, henry_data=None,
                  T=None, P=None, zs=None,
                  ):
+        '''It is quite possible to introduce a PVT relation ship for liquid 
+        density and remain thermodynamically consistent. However, must be 
+        applied on a per-component basis! This class cannot have an 
+        equation-of-state for a liquid MIXTURE!
+        
+        (it might still be nice to generalize the handling; maybe even allow)
+        pure EOSs to be used too, and as a form/template for which functions to
+        use).
+        
+        In conclusion, you have
+        1) The standard H/S model
+        2) The H/S model with all pressure correction happening at P
+        3) The inconsistent model which has no pressure dependence whatsover in H/S
+           This model is required due to its popularity, not its consistency.
+           
+        All mixture volumetric properties have to be averages of the pure 
+        components properties and derivatives. A Multiphase will be needed to
+        allow flashes with different properties from different phases.
+        '''
+        
+        
         self.VaporPressures = VaporPressures
         self.Psats_locked = all(i.locked for i in VaporPressures) if VaporPressures is not None else False
         if self.Psats_locked:
@@ -1479,7 +1533,7 @@ class GibbsExcessLiquid(Phase):
         
         self.GibbsExcessModel = GibbsExcessModel
         self.eos_pure_instances = eos_pure_instances
-        self.VolumeLiquidMixture = VolumeLiquidMixture
+#        self.VolumeLiquidMixture = VolumeLiquidMixture
         
         self.use_IG_Cp = use_IG_Cp
         self.use_Poynting = use_Poynting
@@ -1511,7 +1565,7 @@ class GibbsExcessLiquid(Phase):
         
         new.VaporPressures = self.VaporPressures
         new.VolumeLiquids = self.VolumeLiquids
-        new.VolumeLiquidMixture = self.VolumeLiquidMixture
+#        new.VolumeLiquidMixture = self.VolumeLiquidMixture
         new.eos_pure_instances = self.eos_pure_instances
         new.HeatCapacityGases = self.HeatCapacityGases
         new.EnthalpyVaporizations = self.EnthalpyVaporizations
@@ -1734,70 +1788,6 @@ class GibbsExcessLiquid(Phase):
                      for VaporPressure in self.VaporPressures]
         return d2Psats_dT2
 
-    def Tait_Bs(self):
-        try:
-            return self._Tait_Bs
-        except:
-            pass
-        
-        self._Tait_Bs = evaluate_linear_fits(self.Tait_B_data, self.T)
-        return self._Tait_Bs
-        
-    def dTait_B_dTs(self):
-        try:
-            return self._dTait_B_dTs
-        except:
-            pass
-        
-        self._dTait_B_dTs = evaluate_linear_fits_d(self.Tait_B_data, self.T)
-        return self._dTait_B_dTs
-        
-    def d2Tait_B_dT2s(self):
-        try:
-            return self._d2Tait_B_dT2s
-        except:
-            pass
-        
-        self._d2Tait_B_dT2s = evaluate_linear_fits_d2(self.Tait_B_data, self.T)
-        return self._d2Tait_B_dT2s
-
-    def Tait_Cs(self):
-        try:
-            return self._Tait_Cs
-        except:
-            pass
-        
-        self._Tait_Cs = evaluate_linear_fits(self.Tait_C_data, self.T)
-        return self._Tait_Cs
-        
-    def dTait_C_dTs(self):
-        try:
-            return self._dTait_C_dTs
-        except:
-            pass
-        
-        self._dTait_C_dTs = evaluate_linear_fits_d(self.Tait_C_data, self.T)
-        return self._dTait_C_dTs
-        
-    def d2Tait_C_dT2s(self):
-        try:
-            return self._d2Tait_C_dT2s
-        except:
-            pass
-        
-        self._d2Tait_C_dT2s = evaluate_linear_fits_d2(self.Tait_C_data, self.T)
-        return self._d2Tait_C_dT2s
-
-    def Vms_sat_T_ref(self):
-        try:
-            return self._Vms_sat_T_ref
-        except AttributeError:
-            pass
-        VolumeLiquids, cmps = self.VolumeLiquids, self.cmps
-        T_REF_IG = self.T_REF_IG
-        self._Vms_sat_T_ref = [VolumeLiquids[i].T_dependent_property(T_REF_IG) for i in cmps] 
-        return self._Vms_sat_T_ref
-
     def Vms_sat(self):
         try:
             return self._Vms_sat
@@ -1824,16 +1814,6 @@ class GibbsExcessLiquid(Phase):
         VolumeLiquids = self.VolumeLiquids
         self._Vms_sat = [VolumeLiquids[i].T_dependent_property(T) for i in cmps]
         return self._Vms_sat
-
-    def dVms_sat_dT_T_ref(self):
-        try:
-            return self._dVms_sat_dT_T_ref
-        except AttributeError:
-            pass
-        VolumeLiquids, cmps = self.VolumeLiquids, self.cmps
-        T_REF_IG = self.T_REF_IG
-        self._dVms_sat_dT_T_ref = [VolumeLiquids[i].T_dependent_property_derivative(T_REF_IG) for i in cmps] 
-        return self._dVms_sat_dT_T_ref
 
     def dVms_sat_dT(self):
         try:
@@ -1889,15 +1869,50 @@ class GibbsExcessLiquid(Phase):
         self._d2Vms_sat_dT2 = [obj.T_dependent_property_derivative(T=T, order=2) for obj in VolumeLiquids]
         return self._d2Vms_sat_dT2
 
-    def Hvaps_T_ref(self):
+    def Vms_sat_T_ref(self):
         try:
-            return self._Hvaps_T_ref
+            return self._Vms_sat_T_ref
         except AttributeError:
             pass
-        EnthalpyVaporizations, cmps = self.EnthalpyVaporizations, self.cmps
         T_REF_IG = self.T_REF_IG
-        self._Hvaps_T_ref = [EnthalpyVaporizations[i](T_REF_IG) for i in cmps] 
-        return self._Hvaps_T_ref
+        if self.Vms_sat_locked:
+            self._Vms_sat_T_ref = evaluate_linear_fits(self.Vms_sat_data, T_REF_IG)
+        else:
+            VolumeLiquids, cmps = self.VolumeLiquids, self.cmps
+            self._Vms_sat_T_ref = [VolumeLiquids[i].T_dependent_property(T_REF_IG) for i in cmps] 
+        return self._Vms_sat_T_ref
+
+    def dVms_sat_dT_T_ref(self):
+        try:
+            return self._dVms_sat_dT_T_ref
+        except AttributeError:
+            pass
+        T_REF_IG = self.T_REF_IG
+        if self.Vms_sat_locked:
+            self._dVms_sat_dT_T_ref = evaluate_linear_fits_d(self.Vms_sat_data, T)
+        else:
+            VolumeLiquids, cmps = self.VolumeLiquids, self.cmps
+            self._dVms_sat_dT_T_ref = [VolumeLiquids[i].T_dependent_property_derivative(T_REF_IG) for i in cmps] 
+        return self._dVms_sat_dT_T_ref
+
+    def Vms(self):
+        # Fill in tait/eos function to be called instead of Vms_sat
+        return self.Vms_sat()
+
+    def dVms_dT(self):
+        return self.dVms_sat_dT()
+    
+    def d2Vms_dT2(self):
+        return self.d2Vms_sat_dT2()
+
+    def dVms_dP(self):
+        return [0.0]*self.N
+
+    def d2Vms_dP2(self):
+        return [0.0]*self.N
+
+    def d2Vms_dPdT(self):
+        return [0.0]*self.N
 
     def Hvaps(self):
         try:
@@ -1957,6 +1972,16 @@ class GibbsExcessLiquid(Phase):
             if dHvaps_dT[i] is None:
                 dHvaps_dT[i] = 0.0
         return dHvaps_dT
+
+    def Hvaps_T_ref(self):
+        try:
+            return self._Hvaps_T_ref
+        except AttributeError:
+            pass
+        EnthalpyVaporizations, cmps = self.EnthalpyVaporizations, self.cmps
+        T_REF_IG = self.T_REF_IG
+        self._Hvaps_T_ref = [EnthalpyVaporizations[i](T_REF_IG) for i in cmps] 
+        return self._Hvaps_T_ref
 
     def Poyntings(self):
         try:
@@ -2248,90 +2273,6 @@ class GibbsExcessLiquid(Phase):
         except AttributeError:
             return self.GibbsExcessModel.gammas()
         
-    def Tait_Vs(self):
-        Vms_sat = self.Vms_sat()
-        Psats = self.Psats()
-        Tait_Bs = self.Tait_Bs()
-        Tait_Cs = self.Tait_Cs()
-        P = self.P
-        return [Vms_sat[i]*(1.0  - Tait_Cs[i]*log((Tait_Bs[i] + P)/(Tait_Bs[i] + Psats[i]) ))
-                for i in self.cmps]
-        
-    def dH_dP_integrals_Tait(self):
-        try:
-            return self._dH_dP_integrals_Tait
-        except AttributeError:
-            pass
-        Psats = self.Psats()
-        Vms_sat = self.Vms_sat()
-        dVms_sat_dT = self.dVms_sat_dT()
-        dPsats_dT = self.dPsats_dT()
-        
-        Tait_Bs = self.Tait_Bs()
-        Tait_Cs = self.Tait_Cs()
-        dTait_C_dTs = self.dTait_C_dTs()
-        dTait_B_dTs = self.dTait_B_dTs()
-        T, P, zs = self.T, self.P, self.zs
-        
-        
-        self._dH_dP_integrals_Tait = dH_dP_integrals_Tait = []
-        
-#        def to_int(P, i):
-#            l = self.to_TP_zs(T, P, zs)
-##            def to_diff(T):
-##                return self.to_TP_zs(T, P, zs).Tait_Vs()[i]
-##            dV_dT = derivative(to_diff, T, dx=1e-5*T, order=11)
-#            
-#            x0 = l.Vms_sat()[i]
-#            x1 = l.Tait_Cs()[i]
-#            x2 = l.Tait_Bs()[i]
-#            x3 = P + x2
-#            x4 = l.Psats()[i]
-#            x5 = x3/(x2 + x4)
-#            x6 = log(x5)
-#            x7 = l.dTait_B_dTs()[i]
-#            dV_dT = (-x0*(x1*(-x5*(x7 +l.dPsats_dT()[i]) + x7)/x3 
-#                                   + x6*l.dTait_C_dTs()[i])
-#                        - (x1*x6 - 1.0)*l.dVms_sat_dT()[i])
-#                        
-##            print(dV_dT, dV_dT2, dV_dT/dV_dT2, T, P)   
-#            
-#            V = l.Tait_Vs()[i]
-#            return V - T*dV_dT
-#        from scipy.integrate import quad
-#        _dH_dP_integrals_Tait = [quad(to_int, Psats[i], P, args=i)[0]
-#                                      for i in self.cmps]
-##        return self._dH_dP_integrals_Tait
-#        print(_dH_dP_integrals_Tait)
-#        self._dH_dP_integrals_Tait2 = _dH_dP_integrals_Tait
-#        return self._dH_dP_integrals_Tait2
-        
-#        dH_dP_integrals_Tait = []
-        for i in self.cmps:
-            # Very wrong according to numerical integration. Is it an issue with
-            # the translation to code, one of the derivatives, what was integrated,
-            # or sympy's integration?
-            x0 = Tait_Bs[i]
-            x1 = P + x0
-            x2 = Psats[i]
-            x3 = x0 + x2
-            x4 = 1.0/x3
-            x5 = Tait_Cs[i]
-            x6 = Vms_sat[i]
-            x7 = x5*x6
-            x8 = T*dVms_sat_dT[i]
-            x9 = x5*x8
-            x10 = T*dTait_C_dTs[i]
-            x11 = x0*x6
-            x12 = T*x7
-            x13 = -x0*x7 + x0*x9 + x10*x11 + x12*dTait_B_dTs[i]
-            x14 = x2*x6
-            x15 = x4*(x0*x8 + x10*x14 - x11 + x12*dPsats_dT[i] + x13 - x14 - x2*x7 + x2*x8 + x2*x9)
-            val = -P*x15 + P*(x10*x6 - x7 + x9)*log(x1*x4) + x13*log(x1) - x13*log(x3) + x15*x2
-            dH_dP_integrals_Tait.append(val)
-#        print(dH_dP_integrals_Tait, self._dH_dP_integrals_Tait2)
-        return dH_dP_integrals_Tait
-        
     
     def H(self):
         try:
@@ -2582,14 +2523,17 @@ class GibbsExcessLiquid(Phase):
         except AttributeError:
             pass
         zs = self.zs
-        Vms = self.Vms_sat()
+        Vms = self.Vms()
         '''To make a fugacity-volume identity consistent, cannot use pressure
         correction unless the Poynting factor is calculated with quadrature/
         integration.
         '''
-        self._V = sum([zs[i]*Vms[i] for i in self.cmps])
+        V = 0.0
+        for i in self.cmps:
+            V += zs[i]*Vms[i]
+        self._V = V
 #        self._V = self.VolumeLiquidMixture(self.T, self.P, self.zs)
-        return self._V
+        return V
 
     # Main needed volume derivatives
     def dP_dV(self):
@@ -2649,7 +2593,7 @@ class GibbsExcessLiquid(Phase):
             return self._d2V_dP2
         except AttributeError:
             pass
-        self._d2V_dP2 = self.VolumeLiquidMixture.property_derivative_P(self.T, self.P, self.zs, order=2)
+        self._d2V_dP2 = 0.0
         return self._d2V_dP2
 
     def dV_dT(self):
@@ -2657,11 +2601,157 @@ class GibbsExcessLiquid(Phase):
             return self._dV_dT
         except AttributeError:
             pass
-        self._dV_dT = self.VolumeLiquidMixture.property_derivative_T(self.T, self.P, self.zs, order=1)
-        return self._dV_dT
+        zs = self.zs
+        dVms_sat_dT = self.dVms_sat_dT()
+        dV_dT = 0.0
+        for i in self.cmps:
+            dV_dT += zs[i]*dVms_sat_dT[i]
+        self._dV_dT = dV_dT
+        return dV_dT
     
+    def Tait_Bs(self):
+        try:
+            return self._Tait_Bs
+        except:
+            pass
+        
+        self._Tait_Bs = evaluate_linear_fits(self.Tait_B_data, self.T)
+        return self._Tait_Bs
+        
+    def dTait_B_dTs(self):
+        try:
+            return self._dTait_B_dTs
+        except:
+            pass
+        
+        self._dTait_B_dTs = evaluate_linear_fits_d(self.Tait_B_data, self.T)
+        return self._dTait_B_dTs
+        
+    def d2Tait_B_dT2s(self):
+        try:
+            return self._d2Tait_B_dT2s
+        except:
+            pass
+        
+        self._d2Tait_B_dT2s = evaluate_linear_fits_d2(self.Tait_B_data, self.T)
+        return self._d2Tait_B_dT2s
+
+    def Tait_Cs(self):
+        try:
+            return self._Tait_Cs
+        except:
+            pass
+        
+        self._Tait_Cs = evaluate_linear_fits(self.Tait_C_data, self.T)
+        return self._Tait_Cs
+        
+    def dTait_C_dTs(self):
+        try:
+            return self._dTait_C_dTs
+        except:
+            pass
+        
+        self._dTait_C_dTs = evaluate_linear_fits_d(self.Tait_C_data, self.T)
+        return self._dTait_C_dTs
+        
+    def d2Tait_C_dT2s(self):
+        try:
+            return self._d2Tait_C_dT2s
+        except:
+            pass
+        
+        self._d2Tait_C_dT2s = evaluate_linear_fits_d2(self.Tait_C_data, self.T)
+        return self._d2Tait_C_dT2s
+    
+    def Tait_Vs(self):
+        Vms_sat = self.Vms_sat()
+        Psats = self.Psats()
+        Tait_Bs = self.Tait_Bs()
+        Tait_Cs = self.Tait_Cs()
+        P = self.P
+        return [Vms_sat[i]*(1.0  - Tait_Cs[i]*log((Tait_Bs[i] + P)/(Tait_Bs[i] + Psats[i]) ))
+                for i in self.cmps]
+
+        
+    def dH_dP_integrals_Tait(self):
+        try:
+            return self._dH_dP_integrals_Tait
+        except AttributeError:
+            pass
+        Psats = self.Psats()
+        Vms_sat = self.Vms_sat()
+        dVms_sat_dT = self.dVms_sat_dT()
+        dPsats_dT = self.dPsats_dT()
+        
+        Tait_Bs = self.Tait_Bs()
+        Tait_Cs = self.Tait_Cs()
+        dTait_C_dTs = self.dTait_C_dTs()
+        dTait_B_dTs = self.dTait_B_dTs()
+        T, P, zs = self.T, self.P, self.zs
+        
+        
+        self._dH_dP_integrals_Tait = dH_dP_integrals_Tait = []
+        
+#        def to_int(P, i):
+#            l = self.to_TP_zs(T, P, zs)
+##            def to_diff(T):
+##                return self.to_TP_zs(T, P, zs).Tait_Vs()[i]
+##            dV_dT = derivative(to_diff, T, dx=1e-5*T, order=11)
+#            
+#            x0 = l.Vms_sat()[i]
+#            x1 = l.Tait_Cs()[i]
+#            x2 = l.Tait_Bs()[i]
+#            x3 = P + x2
+#            x4 = l.Psats()[i]
+#            x5 = x3/(x2 + x4)
+#            x6 = log(x5)
+#            x7 = l.dTait_B_dTs()[i]
+#            dV_dT = (-x0*(x1*(-x5*(x7 +l.dPsats_dT()[i]) + x7)/x3 
+#                                   + x6*l.dTait_C_dTs()[i])
+#                        - (x1*x6 - 1.0)*l.dVms_sat_dT()[i])
+#                        
+##            print(dV_dT, dV_dT2, dV_dT/dV_dT2, T, P)   
+#            
+#            V = l.Tait_Vs()[i]
+#            return V - T*dV_dT
+#        from scipy.integrate import quad
+#        _dH_dP_integrals_Tait = [quad(to_int, Psats[i], P, args=i)[0]
+#                                      for i in self.cmps]
+##        return self._dH_dP_integrals_Tait
+#        print(_dH_dP_integrals_Tait)
+#        self._dH_dP_integrals_Tait2 = _dH_dP_integrals_Tait
+#        return self._dH_dP_integrals_Tait2
+        
+#        dH_dP_integrals_Tait = []
+        for i in self.cmps:
+            # Very wrong according to numerical integration. Is it an issue with
+            # the translation to code, one of the derivatives, what was integrated,
+            # or sympy's integration?
+            x0 = Tait_Bs[i]
+            x1 = P + x0
+            x2 = Psats[i]
+            x3 = x0 + x2
+            x4 = 1.0/x3
+            x5 = Tait_Cs[i]
+            x6 = Vms_sat[i]
+            x7 = x5*x6
+            x8 = T*dVms_sat_dT[i]
+            x9 = x5*x8
+            x10 = T*dTait_C_dTs[i]
+            x11 = x0*x6
+            x12 = T*x7
+            x13 = -x0*x7 + x0*x9 + x10*x11 + x12*dTait_B_dTs[i]
+            x14 = x2*x6
+            x15 = x4*(x0*x8 + x10*x14 - x11 + x12*dPsats_dT[i] + x13 - x14 - x2*x7 + x2*x8 + x2*x9)
+            val = -P*x15 + P*(x10*x6 - x7 + x9)*log(x1*x4) + x13*log(x1) - x13*log(x3) + x15*x2
+            dH_dP_integrals_Tait.append(val)
+#        print(dH_dP_integrals_Tait, self._dH_dP_integrals_Tait2)
+        return dH_dP_integrals_Tait
+        
+
     
 class GibbsExcessSolid(GibbsExcessLiquid):
+    force_phase = 's'
     def __init__(self, SublimationPressures, VolumeSolids=None, 
                  GibbsExcessModel=IdealSolution(), 
                  eos_pure_instances=None,

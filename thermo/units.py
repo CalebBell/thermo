@@ -52,9 +52,10 @@ for name in dir(thermo):
     elif type(obj) == type and obj in [thermo.Chemical, thermo.Mixture, thermo.Stream]:
         try:
             obj = wrap_numpydoc_obj(obj)
-        except:
+        except Exception as e:
             print('Current implementation of %s contains documentation not '
-                  'parseable and cound not be wrapped to use pint' %str(obj))
+                  'parseable and cound not be wrapped to use pint:' %str(obj))
+            print(e)
     elif isinstance(obj, str):
         continue
     if name == '__all__':

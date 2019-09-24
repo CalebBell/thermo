@@ -29,7 +29,8 @@ __all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',
 from cmath import atanh as catanh
 from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              roots_cubic_a1, numpy as np, py_newton as newton,
-                             py_bisect as bisect, inf, polyder, chebder)
+                             py_bisect as bisect, inf, polyder, chebder, 
+                             trunc_exp)
 from thermo.utils import R
 from thermo.utils import (Cp_minus_Cv, isobaric_expansion, 
                           isothermal_compressibility, 
@@ -453,7 +454,10 @@ class GCEOS(object):
         U_dep = H_dep - P*V_dep
         G_dep = H_dep - TS_dep
         A_dep = U_dep - TS_dep
-        fugacity = P*exp(G_dep*RT_inv)
+        try:
+            fugacity = P*exp(G_dep*RT_inv)
+        except OverflowError:
+            fugacity = P*trunc_exp(G_dep*RT_inv, trunc=1e308)
         phi = fugacity*P_inv
   
         PIP = V*(d2P_dTdV*dT_dP - d2P_dV2*dV_dP) # phase_identification_parameter(V, dP_dT, dP_dV, d2P_dV2, d2P_dTdV)
@@ -2001,7 +2005,70 @@ should be calculated by this method, in a user subclass.')
         x2 = 1.0/(R*T)
         return -x2*(T*self.dS_dep_dP_g - self.dH_dep_dP_g)*exp(-x2*(T*x0 - x1))
     
-    
+    @property
+    def dbeta_dT_g(self):
+        r'''Derivative of isobaric expansion coefficient with respect to 
+        temeprature for the gas phase, [1/K^2]
+        
+        .. math::
+            \frac{\partial \beta_g}{\partial T} = \frac{\frac{\partial^{2}}
+            {\partial T^{2}} V{\left (T,P \right )_g}}{V{\left (T,P \right )_g}} -
+            \frac{\left(\frac{\partial}{\partial T} V{\left (T,P \right )_g}
+            \right)^{2}}{V^{2}{\left (T,P \right )_g}}
+        '''
+        V_inv = 1.0/self.V_g
+        dV_dT = self.dV_dT_g
+        return V_inv*(self.d2V_dT2_g - dV_dT*dV_dT*V_inv)
+
+    @property
+    def dbeta_dT_l(self):
+        r'''Derivative of isobaric expansion coefficient with respect to 
+        temeprature for the liquid phase, [1/K^2]
+        
+        .. math::
+            \frac{\partial \beta_l}{\partial T} = \frac{\frac{\partial^{2}}
+            {\partial T^{2}} V{\left (T,P \right )_l}}{V{\left (T,P \right )_l}} -
+            \frac{\left(\frac{\partial}{\partial T} V{\left (T,P \right )_l}
+            \right)^{2}}{V^{2}{\left (T,P \right )_l}}
+        '''
+        V_inv = 1.0/self.V_l
+        dV_dT = self.dV_dT_l
+        return V_inv*(self.d2V_dT2_l - dV_dT*dV_dT*V_inv)
+
+    @property
+    def dbeta_dP_g(self):
+        r'''Derivative of isobaric expansion coefficient with respect to 
+        pressure for the gas phase, [1/(Pa*K)]
+        
+        .. math::
+            \frac{\partial \beta_g}{\partial P} = \frac{\frac{\partial^{2}}
+            {\partial T\partial P} V{\left (T,P \right )_g}}{V{\left (T,
+            P \right )_g}} - \frac{\frac{\partial}{\partial P} V{\left (T,P 
+            \right )_g} \frac{\partial}{\partial T} V{\left (T,P \right )_g}}
+            {V^{2}{\left (T,P \right )_g}}
+        '''
+        V_inv = 1.0/self.V_g
+        dV_dT = self.dV_dT_g
+        dV_dP = self.dV_dP_g
+        return V_inv*(self.d2V_dTdP_g - dV_dT*dV_dP*V_inv)
+
+    @property
+    def dbeta_dP_l(self):
+        r'''Derivative of isobaric expansion coefficient with respect to 
+        pressure for the liquid phase, [1/(Pa*K)]
+        
+        .. math::
+            \frac{\partial \beta_g}{\partial P} = \frac{\frac{\partial^{2}}
+            {\partial T\partial P} V{\left (T,P \right )_l}}{V{\left (T,
+            P \right )_l}} - \frac{\frac{\partial}{\partial P} V{\left (T,P 
+            \right )_l} \frac{\partial}{\partial T} V{\left (T,P \right )_l}}
+            {V^{2}{\left (T,P \right )_l}}
+        '''
+        V_inv = 1.0/self.V_l
+        dV_dT = self.dV_dT_l
+        dV_dP = self.dV_dP_l
+        return V_inv*(self.d2V_dTdP_l - dV_dT*dV_dP*V_inv)
+
 
 class GCEOS_DUMMY(GCEOS):
     Tc = None

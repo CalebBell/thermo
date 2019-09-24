@@ -31,7 +31,7 @@ import numpy as np
 from cmath import log as clog, atanh as catanh
 from scipy.optimize import minimize
 from scipy.misc import derivative
-from fluids.numerics import IS_PYPY, newton_system, broyden2, UnconvergedError
+from fluids.numerics import IS_PYPY, newton_system, broyden2, UnconvergedError, trunc_exp
 from thermo.utils import normalize, Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter, dxs_to_dn_partials, dxs_to_dns, dns_to_dn_partials, d2xs_to_dxdn_partials, d2ns_to_dn2_partials
 from thermo.utils import R
 from thermo.utils import log, exp, sqrt
@@ -775,12 +775,19 @@ class GCEOSMIX(GCEOS):
         zs = self.zs
         if not only_g and hasattr(self, 'V_l'):
             self.lnphis_l = self.fugacity_coefficients(self.Z_l, zs=zs)
-            self.phis_l = [exp(i) for i in self.lnphis_l]
+            try:
+                self.phis_l = [exp(i) for i in self.lnphis_l]
+            except:
+                self.phis_l = [trunc_exp(i, trunc=1e308) for i in self.lnphis_l]
             self.fugacities_l = [phi*x*P for phi, x in zip(self.phis_l, zs)]
 
         if not only_l and hasattr(self, 'V_g'):
             self.lnphis_g = self.fugacity_coefficients(self.Z_g, zs=zs)
-            self.phis_g = [exp(i) for i in self.lnphis_g]
+            try:
+                self.phis_g = [exp(i) for i in self.lnphis_g]
+            except:
+                self.phis_g = [trunc_exp(i, trunc=1e308) for i in self.lnphis_g]
+
             self.fugacities_g = [phi*y*P for phi, y in zip(self.phis_g, zs)]
 
     

@@ -63,6 +63,8 @@ BETA_METHODS = [MOLE_WEIGHTED, EQUILIBRIUM_DERIVATIVE, FROM_DERIVATIVE_SETTINGS,
 KAPPA_METHODS = JT_METHODS = BETA_METHODS
 
 
+from thermo.phase_identification import VL_ID_PIP, S_ID_D2P_DVDT
+from thermo.phase_identification import DENSITY_MASS, PROP_SORT, WATER_NOT_SPECIAL
 
 class BulkSettings(object):
     def __init__(self, dP_dT=MOLE_WEIGHTED, dP_dV=MOLE_WEIGHTED, 
@@ -73,6 +75,18 @@ class BulkSettings(object):
                  T_normal=288.15, P_normal=atm,
                  T_standard=288.7055555555555, P_standard=atm,
                  T_liquid_volume_ref=298.15,
+                 
+                 VL_ID=VL_ID_PIP, VL_ID_settings=None,
+                 S_ID=S_ID_D2P_DVDT, S_ID_settings=None,
+
+                 solid_sort_method=PROP_SORT,
+                 liquid_sort_method=PROP_SORT,
+                 liquid_sort_cmps=[], solid_sort_cmps=[],
+                 liquid_sort_cmps_neg=[], solid_sort_cmps_neg=[],
+                 liquid_sort_prop=DENSITY_MASS, 
+                 solid_sort_prop=DENSITY_MASS,
+                 phase_sort_higher_first=True,
+                 water_sort=WATER_NOT_SPECIAL,
                  
                  ):
         self.dP_dT = dP_dT
@@ -92,6 +106,30 @@ class BulkSettings(object):
         self.beta = beta
         self.kappa = kappa
         self.JT = JT
+        self.VL_ID = VL_ID
+        self.VL_ID_settings = VL_ID_settings
+        
+        self.S_ID = S_ID
+        self.S_ID_settings = S_ID_settings
+        
+        
+        # These are all lists of lists; can be any number; each has booleans,
+        # length number of components
+        self.liquid_sort_cmps = liquid_sort_cmps
+        self.liquid_sort_cmps_neg = liquid_sort_cmps_neg
+        self.solid_sort_cmps = solid_sort_cmps
+        self.solid_sort_cmps_neg = solid_sort_cmps_neg
+        
+        self.liquid_sort_prop = liquid_sort_prop
+        self.solid_sort_prop = solid_sort_prop
+        
+        self.phase_sort_higher_first = phase_sort_higher_first
+        self.water_sort = water_sort
+        
+        self.solid_sort_method = solid_sort_method
+        self.liquid_sort_method = liquid_sort_method
+        
+        self.phase_sort_higher_first = phase_sort_higher_first
 
 default_settings = BulkSettings()
 

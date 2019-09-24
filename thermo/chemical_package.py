@@ -39,6 +39,9 @@ from thermo.vapor_pressure import VaporPressure, SublimationPressure
 from thermo.phase_change import EnthalpyVaporization, EnthalpySublimation
 
 
+CAS_H2O = '7732-18-5'
+
+
 class ChemicalConstantsPackage(object):
     properties = ('atom_fractions', 'atomss', 'Carcinogens', 'CASs', 'Ceilings', 'charges',
                  'conductivities', 'dipoles', 'economic_statuses', 'formulas', 'Gfgs', 
@@ -60,7 +63,7 @@ class ChemicalConstantsPackage(object):
                  'Vml_60Fs', 'rhol_60Fs', 'rhol_60Fs_mass',
                  )
     
-    __slots__ = properties + ('N', 'cmps')
+    __slots__ = properties + ('N', 'cmps', 'water_index')
     
     def __repr__(self):
         s = 'ChemicalConstantsPackage('
@@ -284,6 +287,10 @@ class ChemicalConstantsPackage(object):
         self.rhol_60Fs = rhol_60Fs
         self.rhol_60Fs_mass = rhol_60Fs_mass
 
+        try:
+            self.water_index = CASs.index(CAS_H2O)
+        except ValueError:
+            self.water_index = None
 
 class PropertyCorrelationPackage(object):
     correlations = ('VaporPressures', 'SublimationPressures', 'VolumeGases', 

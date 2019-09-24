@@ -48,6 +48,7 @@ from . import mixture
 from . import permittivity
 from . import phase_change
 from . import phases
+from . import phase_identification
 from . import property_package
 from . import property_package_constants
 from . import reaction
@@ -97,6 +98,7 @@ from .mixture import *
 from .permittivity import *
 from .phase_change import *
 from .phases import *
+from .phase_identification import *
 from .property_package import *
 from .property_package_constants import *
 from .reaction import *
@@ -130,7 +132,7 @@ __all__ = ['activity', 'chemical', 'chemical_package', 'combustion', 'critical',
  'vapor_pressure', 'virial', 'viscosity', 'volume', 'acentric', 'coolprop', 
  'datasheet', 'dippr', 'unifac', 'stream', 'mixture', 'property_package_constants',
  'chemical_utils', 'wilson', 'nrtl', 'uniquac', 'regular_solution',
- 'equilibrium']
+ 'equilibrium', 'phase_identification']
 
 
 __all__.extend(acentric.__all__)
@@ -160,6 +162,7 @@ __all__.extend(mixture.__all__)
 __all__.extend(permittivity.__all__)
 __all__.extend(phase_change.__all__)
 __all__.extend(phases.__all__)
+__all__.extend(phase_identification.__all__)
 __all__.extend(property_package.__all__)
 __all__.extend(reaction.__all__)
 __all__.extend(refractivity.__all__)

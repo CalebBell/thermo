@@ -30,8 +30,13 @@ from thermo.identifiers import pubchem_db
 
 folder = os.path.join(os.path.dirname(__file__), 'Data')
 
+try:
+    import rdkit
+except:
+    rdkit = None
 
 @pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_Joback_acetone():
     from rdkit import Chem
     from rdkit.Chem import Descriptors
@@ -57,6 +62,7 @@ def test_Joback_acetone():
         
 @pytest.mark.slow
 @pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_Joback_database():
     [pubchem_db.autoload_next() for i in range(10)]
 

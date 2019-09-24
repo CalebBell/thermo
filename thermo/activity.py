@@ -225,6 +225,12 @@ def Wilson_K_value(T, P, Tc, Pc, omega):
     >>> Wilson_K_value(270.0, 7600000.0, 305.4, 4880000.0, 0.098)
     0.2963932297479371
     
+    The "vapor pressure" predicted by this equation can be calculated by
+    multiplying by pressure:
+        
+    >>> Wilson_K_value(270.0, 7600000.0, 305.4, 4880000.0, 0.098)*7600000.0
+    2252588.546084322
+    
     References
     ----------
     .. [1] Wilson, Grant M. "A Modified Redlich-Kwong Equation of State, 
