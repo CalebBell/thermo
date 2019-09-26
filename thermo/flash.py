@@ -828,6 +828,34 @@ def dew_P_Michelsen_Mollerup(P_guess, T, zs, liquid_phase, gas_phase,
     return P_guess, xs, l, g, iteration, abs(P_guess - P_guess_old)
 
 
+def P_or_V_solve_T_for_HSGUA_secant_1P(T_guess, fixed_val, spec_val, zs, phase, 
+                                       fixed_P=True, spec='H', maxiter=200,
+                                       xtol=1E-10, minimum_progress=0.3, 
+                                       oscillation_detection=True):
+    store = []
+    global iterations
+    iterations = 0
+    def to_solve(T):
+        global iterations
+        iterations += 1
+        if fixed_P:
+            p = phase.to_TP_zs(T, fixed_val, zs)
+        else:
+            p = phase.to_TV_zs(T, fixed_val, zs)
+        
+        err = getattr(p, spec)() - spec_val
+        store[:] = (p, err)
+        return err
+
+    if oscillation_detection:
+        to_solve, checker = oscillation_checking_wrapper(to_solve, full=True,
+                                                         minimum_progress=minimum_progress)
+
+    T = secant(to_solve, T_guess, xtol=xtol, maxiter=maxiter)
+    phase, err = store
+
+    return T, phase, iterations, err
+
 def PH_secant_1P(T_guess, P, H, zs, phase, maxiter=200, xtol=1E-10,
                  minimum_progress=0.3, oscillation_detection=True):
     store = []
@@ -891,7 +919,10 @@ def solve_PH_1P(phase, P, H, zs, constants, correlations):
         except Exception as e:
             pass
 
-    T, phase, iterations, err = PH_newton_1P(T_guess, P, H, zs, phase, oscillation_detection=False)
+    T, phase, iterations, err = P_or_V_solve_T_for_HSGUA_secant_1P(T_guess, P, H, zs, phase, 
+                                       fixed_P=True, spec='H',
+                                       oscillation_detection=False)
+#    T, phase, iterations, err = PH_newton_1P(T_guess, P, H, zs, phase, oscillation_detection=False)
 #    T, phase, iterations, err = PH_secant_1P(T_guess, P, H, zs, self.phases[0], oscillation_detection=False)
     return T, phase, iterations, err
 
