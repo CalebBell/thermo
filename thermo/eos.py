@@ -30,7 +30,7 @@ from cmath import atanh as catanh
 from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              roots_cubic_a1, numpy as np, py_newton as newton,
                              py_bisect as bisect, inf, polyder, chebder, 
-                             trunc_exp)
+                             trunc_exp, secant)
 from thermo.utils import R
 from thermo.utils import (Cp_minus_Cv, isobaric_expansion, 
                           isothermal_compressibility, 
@@ -565,14 +565,35 @@ should be calculated by this method, in a user subclass.')
         T : float
             Temperature, [K]
         '''
-        denominator = (V*V + self.delta*V + self.epsilon)
-        V_minus_b = (V-self.b)
+        denominator_inv = 1.0/(V*V + self.delta*V + self.epsilon)
+        V_minus_b_inv = 1.0/(V-self.b)
         self.no_T_spec = True
+        
+        # dP_dT could be added to use a derivative-based method, however it is
+        # quite costly in comparison to the extra evaluations because it
+        # requires the temperature derivative of da_alpha_dT
         def to_solve(T):
             a_alpha = self.a_alpha_and_derivatives(T, full=False, quick=False)
-            P_calc = R*T/V_minus_b - a_alpha/denominator
-            return P_calc - P
-        return newton(to_solve, self.Tc*0.5)
+            P_calc = R*T*V_minus_b_inv - a_alpha*denominator_inv
+            err = P_calc - P
+            return err
+        T_guess_ig = P*V*R_inv
+        T_guess_liq = P*V*R_inv*1000.0 # Compressibility factor of 0.001 for liquids
+        err_ig = to_solve(T_guess_ig)
+        err_liq = to_solve(T_guess_liq)
+        
+        if err_ig*err_liq < 0.0:
+            return brenth(to_solve, T_guess_ig, T_guess_liq, xtol=1e-12,
+                          fa=err_ig, fb=err_liq)
+        else:
+            if abs(err_ig) < abs(err_liq):
+                T_guess = T_guess_ig
+                f0 = err_ig
+            else:
+                T_guess = T_guess_liq
+                f0 = err_liq
+            # T_guess = self.Tc*0.5
+            return secant(to_solve, T_guess, low=1e-12, xtol=1e-12, f0=f0)
 
     @staticmethod
     def volume_solutions(T, P, b, delta, epsilon, a_alpha, quick=True):

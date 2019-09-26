@@ -42,7 +42,7 @@ from fluids.numerics import (UnconvergedError, trunc_exp, py_newton as newton,
 from thermo.activity import flash_inner_loop, Rachford_Rice_solutionN, Rachford_Rice_flash_error, Rachford_Rice_solution2
 from scipy.optimize import minimize, fsolve, root
 from thermo.equilibrium import EquilibriumState
-from thermo.phases import gas_phases, liquid_phases, solid_phases, EOSLiquid, EOSGas
+from thermo.phases import Phase, gas_phases, liquid_phases, solid_phases, EOSLiquid, EOSGas
 from thermo.phase_identification import identify_sort_phases
 from thermo.bulk import default_settings
 
@@ -850,6 +850,50 @@ def PH_secant_1P(T_guess, P, H, zs, phase, maxiter=200, xtol=1E-10,
 
     return T, phase, iterations, err
 
+def PH_newton_1P(T_guess, P, H, zs, phase, maxiter=200, xtol=1E-10,
+                 minimum_progress=0.3, oscillation_detection=True):
+    store = []
+    global iterations
+    iterations = 0
+    def to_solve(T):
+        global iterations
+        iterations += 1
+        p = phase.to_TP_zs(T, P, zs)
+        
+        err = p.H() - H
+        derr_dT = p.dH_dT()
+        store[:] = (p, err)
+        return err, derr_dT
+    if oscillation_detection:
+        to_solve, checker = oscillation_checking_wrapper(to_solve, full=True,
+                                                         minimum_progress=minimum_progress)
+
+    T = newton(to_solve, T_guess, fprime=True, xtol=xtol, maxiter=maxiter)
+    phase, err = store
+
+    return T, phase, iterations, err
+
+
+def solve_PH_1P(phase, P, H, zs, constants, correlations):
+    if isinstance(phase, gas_phases):
+        methods = [LAST_CONVERGED, FIXED_GUESS, IG_ENTHALPY,
+                   LASTOVKA_SHAW, STP_T_GUESS]
+    elif isinstance(phase, liquid_phases):
+        methods = [LAST_CONVERGED, FIXED_GUESS, IDEAL_LIQUID_ENTHALPY,
+                   DADGOSTAR_SHAW_1, STP_T_GUESS]
+    else:
+        methods = [LAST_CONVERGED, FIXED_GUESS, STP_T_GUESS]
+        
+    for method in methods:
+        try:
+            T_guess = PH_T_guesses_1P(P, H, zs, method=method, constants=constants, correlations=correlations)
+            break
+        except Exception as e:
+            pass
+
+    T, phase, iterations, err = PH_newton_1P(T_guess, P, H, zs, phase, oscillation_detection=False)
+#    T, phase, iterations, err = PH_secant_1P(T_guess, P, H, zs, self.phases[0], oscillation_detection=False)
+    return T, phase, iterations, err
 
 
 
@@ -1092,7 +1136,12 @@ def PSF_pure_newton(T_guess, P, other_phases, solids, maxiter=200, xtol=1E-10):
 
 
 class FlashBase(object):
+    T_MAX_FIXED = Phase.T_MAX_FIXED
+    T_MIN_FIXED = Phase.T_MIN_FIXED
     
+    P_MAX_FIXED = Phase.P_MAX_FIXED
+    P_MIN_FIXED = Phase.P_MIN_FIXED
+
     def vapor_scores(self, phases):
         pass
 
@@ -1380,60 +1429,107 @@ class FlashPureVLS(FlashBase):
     def flash_PH(self, P, H):
         zs = [1]
         constants, correlations = self.constants, self.correlations
-        if self.phase_count == 1:
-            # Somehow, need to switch between multiple phases, using the H of the phase
-            # with the lowest Gibbs energy at each point
-            
-            if self.gas_count:
-                methods = [LAST_CONVERGED, FIXED_GUESS, IG_ENTHALPY,
-                           LASTOVKA_SHAW, STP_T_GUESS]
-            elif self.liquid_count:
-                methods = [LAST_CONVERGED, FIXED_GUESS, IDEAL_LIQUID_ENTHALPY,
-                           DADGOSTAR_SHAW_1, STP_T_GUESS]
-            else:
-                methods = [LAST_CONVERGED, FIXED_GUESS, STP_T_GUESS]
-                
-            for method in methods:
-                try:
-                    T_guess = PH_T_guesses_1P(P, H, zs, method=method, constants=constants, correlations=correlations)
-                    break
-                except Exception as e:
-                    pass
-            T, phase, iterations, err = PH_secant_1P(T_guess, P, H, zs, self.phases[0], oscillation_detection=False)
-            return T, phase, iterations, err
-        
+#        if self.phase_count == 1:
+#            T, phase, iterations, err = solve_PH_1P(self.phases[0], P, H, zs, constants, correlations)
+#            return T, phase, iterations, err
+#        
         try:
-            solve_all_phases_1P
+            solutions_1P = []
+            G_min = 1e100
+            results_G_min_1P = None
+            for phase in self.phases:
+                try:
+                    T, phase, iterations, err = solve_PH_1P(phase, P, H, zs, constants, correlations)
+                    G = phase.G()
+                    if G < G_min:
+                        G_min = G
+                        results_G_min_1P = (T, phase, iterations, err)
+                    # might not need, debug only
+                    solutions_1P.append([T, phase, iterations, err])
+                except:
+                    solutions_1P.append(None)
         except:
             pass
         
+
         try:
-            try:
+            G_VL = 1e100
+            if self.gas_count and self.liquid_count:
                 VL_flash = self.flash(P=P, VF=1)
                 H_l = VL_flash.liquid0.H()
                 H_g = VL_flash.gas.H()
                 VF = (H - H_l)/(H_g - H_l)
-                if VF < 0.0 or VF > 1.0:
-                    raise ValueError("Not apply")
-            except:
-                pass
-            try:
+                if 0.0 <= VF <= 1.0:
+                    G_l = VL_flash.liquid0.G()
+                    G_g = VL_flash.gas.G()
+                    G_VL = G_g*VF + G_l*(1.0 - VF)                    
+            else:
+                VF = None
+        except:
+            VF = None
+            
+        try:
+            G_SF = 1e100
+            if self.solid_count and (self.gas_count or self.liquid_count):
                 VS_flash = self.flash(P=P, SF=1)
                 H_s = VS_flash.solid0.H()
                 H_other = VS_flash.phases[0].H()
                 SF = (H - H_s)/(H_other - H_s)
                 if SF < 0.0 or SF > 1.0:
                     raise ValueError("Not apply")
-            except:
-                pass
-
+            else:
+                SF = None
         except:
-            pass
-        try:
-            return solution_with_lowest_G
-        except:
-            pass
+            SF = None
+        
+        
+        gas_phase = None
+        liquid_phases = []
+        solid_phases = []
+        betas = []
+        
+        # If a 1-phase solution arrose, set it
+        if results_G_min_1P is not None:
+            betas = [1.0]
+            T, phase, iterations, err = results_G_min_1P
+            if isinstance(phase, gas_phases):
+                gas_phase = results_G_min_1P[1]
+            elif isinstance(phase, liquid_phases):
+                liquid_phases = [results_G_min_1P[1]]
+            elif isinstance(phase, solid_phases):
+                solid_phases = [results_G_min_1P[1]]
+        
+        flash_convergence = {}
+        if G_VL < G_min:
+            G_min = G_VL
+            liquid_phases = [VL_flash.liquid0]
+            gas_phase = VL_flash.gas
+            betas = [VF, 1.0 - VF]
+            solid_phases = [] # Ensure solid unset
+            T = VS_flash.T
+            iterations = 0
+            err = 0.0
+            flash_convergence['VF flash convergence'] = VF_flash.flash_convergence
             
+        if G_SF < G_min:
+            try:
+                liquid_phases = [SF_flash.liquid0]
+                gas_phase = None
+            except:
+                liquid_phases = []
+                gas_phase = SF_flash.gas
+            solid_phases = [SF_flash.solid0]
+            betas = [1.0 - SF, SF]
+            T = SF_flash.T
+            iterations = 0
+            err = 0.0
+            flash_convergence['SF flash convergence'] = SF_flash.flash_convergence
+        flash_convergence['iterations'] = iterations
+        flash_convergence['err'] = err
+
+        return gas_phase, liquid_phases, solid_phases, betas, T, flash_convergence
+
+
     def debug_TVF(self, T, VF=None, pts=2000):
         zs = [1]
         gas = self.gas

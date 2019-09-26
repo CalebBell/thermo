@@ -71,11 +71,11 @@ class EquilibriumState(object):
         self.N = N = len(zs)
         self.cmps = range(N)
 
-        self.gas_count = 1 if gas is not None else 0
-        self.liquid_count = len(liquids)
-        self.solid_count = len(solids)
+        self.gas_count = gas_count = 1 if gas is not None else 0
+        self.liquid_count = liquid_count = len(liquids)
+        self.solid_count = solid_count = len(solids)
         
-        self.phase_count = self.gas_count + self.liquid_count + self.solid_count
+        self.phase_count = gas_count + liquid_count + solid_count
         
         self.gas = gas
         self.liquids = liquids
@@ -87,20 +87,20 @@ class EquilibriumState(object):
             phases = liquids + solids
         self.phases = phases
         
-        for i, l in enumerate(self.liquids):
+        for i, l in enumerate(liquids):
             setattr(self, 'liquid' + str(i), l)
-        for i, s in enumerate(self.solids):
+        for i, s in enumerate(solids):
             setattr(self, 'solid' + str(i), s)
 
         self.betas = betas
-        self.beta_gas = betas[0] if self.gas_count else 0.0
-        self.betas_liquids = betas_liquids = betas[self.gas_count: self.gas_count+self.liquid_count]
-        self.betas_solids = betas_solids = betas[self.gas_count+self.liquid_count: ]
+        self.beta_gas = betas[0] if gas_count else 0.0
+        self.betas_liquids = betas_liquids = betas[gas_count: gas_count+liquid_count]
+        self.betas_solids = betas_solids = betas[gas_count+liquid_count: ]
         
         if liquids:
 #                tot_inv = 1.0/sum(values)
 #                return [i*tot_inv for i in values]
-            self.liquid_zs = normalize([sum([betas_liquids[j]*liquids[j].zs[i] for j in range(self.liquid_count)])
+            self.liquid_zs = normalize([sum([betas_liquids[j]*liquids[j].zs[i] for j in range(liquid_count)])
                                for i in self.cmps])
             self.liquid_bulk = liquid_bulk = Bulk(T, P, self.liquid_zs, self.liquids, self.betas_liquids)
             liquid_bulk.result = self

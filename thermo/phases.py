@@ -1172,6 +1172,57 @@ class EOSGas(Phase):
             pass
 
         return new
+
+    def to_zs_TPV(self, zs, T=None, P=None, V=None):
+        new = self.__class__.__new__(self.__class__)
+        new.zs = zs
+        
+        if T is not None:
+            if P is not None:
+                try:
+                    new.eos_mix = self.eos_mix.to_TP_zs_fast(T=T, P=P, zs=zs, only_g=True,
+                                                             full_alphas=True)
+                except AttributeError:
+                    new.eos_mix = self.eos_class(T=T, P=P, zs=zs, **self.eos_kwargs)
+            elif V is not None:
+                try:
+                    new.eos_mix = self.eos_mix.to_TV_zs(T=T, V=V, zs=zs)
+                except AttributeError:
+                    new.eos_mix = self.eos_class(T=T, V=V, zs=zs, **self.eos_kwargs)
+                P = new.eos_mix.P
+        elif P is not None and V is not None:
+            try:
+                new.eos_mix = self.eos_mix.to_TV_zs(P=P, V=V, zs=zs)
+            except AttributeError:
+                new.eos_mix = self.eos_class(P=P, V=V, zs=zs, **self.eos_kwargs)
+            T = new.eos_mix.T
+        else:
+            raise ValueError("Two of T, P, or V are needed")
+        new.P = P
+        new.T = T
+        
+        new.eos_class = self.eos_class
+        new.eos_kwargs = self.eos_kwargs
+        
+        new.HeatCapacityGases = self.HeatCapacityGases
+        new.Cpgs_data = self.Cpgs_data
+        new.Cpgs_locked = self.Cpgs_locked
+        
+        new.Hfs = self.Hfs
+        new.Gfs = self.Gfs
+        new.Sfs = self.Sfs
+        
+        try:
+            new.N = self.N
+            new.cmps = self.cmps
+            new.eos_pures_STP = self.eos_pures_STP
+        except:
+            pass
+
+        return new
+        
+        
+
         
     def lnphis(self):
         try:

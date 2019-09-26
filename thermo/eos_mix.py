@@ -269,9 +269,8 @@ class GCEOSMIX(GCEOS):
 
 
     def to_TP_zs(self, T, P, zs):
-#        print(T, self.T, P, self.P, zs, self.zs)
         if T != self.T or P != self.P or zs != self.zs:
-            return self.__class__(T=T, P=P, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, zs=zs, **self.kwargs)
+            return self.__class__(T=T, P=P, zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, **self.kwargs)
         else:
             return self
     
@@ -280,6 +279,17 @@ class GCEOSMIX(GCEOS):
         kwargs = {} # TODO write function to get those
         return self.eos_pure(T=T, P=P, Tc=self.Tcs[i], Pc=self.Pcs[i],
                              omega=self.omegas[i])
+
+    def to_TV_zs(self, T, V, zs):
+        if T == self.T and V == self.V and zs == self.zs:
+            return self
+        return self.__class__(T=T, V=V, zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, **self.kwargs)
+
+    def to_PV_zs(self, P, V, zs):
+        if P == self.P and V == self.V and zs == self.zs:
+            return self
+        return self.__class__(P=P, V=V, zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, **self.kwargs)
+
     def pures(self):
         T, P, cmps = self.T, self.P, self.cmps
         return [self.to_TP_pure(T=T, P=P, i=i) for i in cmps]
