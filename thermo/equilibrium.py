@@ -58,6 +58,11 @@ class EquilibriumState(object):
     P_REF_IG = Phase.P_REF_IG
     P_REF_IG_INV = Phase.P_REF_IG_INV
     
+    def __repr__(self):
+        s = '<EquilibriumState, T=%.4f, P=%.4f, zs=%s, betas=%s, phases=%s>'
+        s = s %(self.T, self.P, self.zs, self.betas, self.phases)
+        return s
+    
     def __init__(self, T, P, zs, 
                  gas, liquids, solids, betas,
                  flash_specs=None, flash_convergence=None,

@@ -71,6 +71,15 @@ class Phase(object):
     Psats_locked = False 
     Cpgs_locked = False
     
+    def __repr__(self):
+        s =  '<%s, ' %(self.__class__.__name__)
+        try:
+            s += 'T=%g K, P=%g Pa' %(self.T, self.P)
+        except:
+            pass
+        s += '>'
+        return s
+    
     def fugacities(self):
         P = self.P
         zs = self.zs
@@ -242,7 +251,22 @@ class Phase(object):
     
     def dA_dP(self):
         return -self.T*self.dS_dP() + self.dU_dP()
+    
+    def dH_dV(self):
+        return self.dH_dT()/self.dV_dT()
         
+    def dS_dV(self):
+        return self.dS_dT()/self.dV_dT()
+
+    def dG_dV(self):
+        return self.dG_dT()/self.dV_dT()
+
+    def dU_dV(self):
+        return self.dU_dT()/self.dV_dT()
+
+    def dA_dV(self):
+        return self.dA_dT()/self.dV_dT()
+    
     def G_dep(self):
         G_dep = self.H_dep() - self.T*self.S_dep()
         return G_dep
@@ -1455,7 +1479,9 @@ def build_EOSLiquid():
     source = source.replace("'l'", "'g'")
     source = source.replace("'gORIG'", "'l'")
     
-    swap_strings = ('Cp_dep', 'd2P_dT2', 'd2P_dTdV', 'd2P_dV2', 'd2T_dV2', 'd2V_dT2', 'dH_dep_dP', 'dP_dT', 'dP_dV', 'phi', 'dS_dep_dP', 'dS_dep_dT', 'H_dep', 'S_dep', '.V', '.Z')
+    swap_strings = ('Cp_dep', 'd2P_dT2', 'd2P_dTdV', 'd2P_dV2', 'd2T_dV2',
+                    'd2V_dT2', 'dH_dep_dP', 'dP_dT', 'dP_dV', 'phi',
+                    'dS_dep_dP', 'dS_dep_dT', 'H_dep', 'S_dep', '.V', '.Z')
     for s in swap_strings:
         source = source.replace(s+'_g', 'gORIG')
         source = source.replace(s+'_l', s+'_g')

@@ -38,7 +38,8 @@ from thermo.phase_change import SMK
 from fluids.numerics import (UnconvergedError, trunc_exp, py_newton as newton,
                              py_brenth as brenth, secant, numpy as np, linspace, 
                              logspace, oscillation_checker, damping_maintain_sign,
-                             oscillation_checking_wrapper, OscillationError)
+                             oscillation_checking_wrapper, OscillationError,
+                             best_bounding_bounds)
 from thermo.activity import flash_inner_loop, Rachford_Rice_solutionN, Rachford_Rice_flash_error, Rachford_Rice_solution2
 from scipy.optimize import minimize, fsolve, root
 from thermo.equilibrium import EquilibriumState
@@ -856,6 +857,151 @@ def P_or_V_solve_T_for_HSGUA_secant_1P(T_guess, fixed_val, spec_val, zs, phase,
 
     return T, phase, iterations, err
 
+
+strs_to_ders = {('H', 'T'): 'dH_dT',
+                ('S', 'T'): 'dS_dT',
+                ('G', 'T'): 'dG_dT',
+                ('U', 'T'): 'dU_dT',
+                ('A', 'T'): 'dA_dT',
+                ('H', 'P'): 'dH_dP',
+                ('S', 'P'): 'dS_dP',
+                ('G', 'P'): 'dG_dP',
+                ('U', 'P'): 'dU_dP',
+                ('A', 'P'): 'dA_dP',
+                ('H', 'V'): 'dH_dV',
+                ('S', 'V'): 'dS_dV',
+                ('G', 'V'): 'dG_dV',
+                ('U', 'V'): 'dU_dV',
+                ('A', 'V'): 'dA_dV'}
+
+def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,  
+                       iter_var='T', fixed_var='P', spec='H',
+                       maxiter=200, xtol=1E-10, ytol=None, fprime=False,
+                       minimum_progress=0.3, oscillation_detection=True,
+                       bounded=False, min_bound=None, max_bound=None):
+    r'''Solve a single-phase flash where one of `T`, `P`, or `V` are specified 
+    and one of `H`, `S`, `G`, `U`, or `A` are also specified. The iteration
+    (changed input variable) variable must be specified as be one of `T`, `P`, 
+    or `V`, but it cannot be the same as the fixed variable.
+    
+    This method is a secant or newton based solution method, optionally with 
+    oscillation detection to bail out of tring to solve the problem to handle 
+    the case where the spec cannot be met because of a phase change (as in a 
+    cubic eos case).
+    
+    Parameters
+    ----------
+    zs : list[float]
+        Mole fractions of the phase, [-]
+    phase : `Phase`
+        The phase object of the mixture, containing the information for
+        calculating properties at new conditions, [-]
+    guess : float
+        The guessed value for the iteration variable,
+        [K or Pa or m^3/mol]
+    fixed_var_val : float
+        The specified value of the fixed variable (one of T, P, or V);
+        [K or Pa, or m^3/mol]
+    spec_val : float
+        The specified value of H, S, G, U, or A, [J/(mol*K) or J/mol]
+    iter_var : str
+        One of 'T', 'P', 'V', [-]
+    fixed_var : str
+        One of 'T', 'P', 'V', [-]
+    spec : str
+        One of 'H', 'S', 'G', 'U', 'A', [-]
+    maxiter : float
+        Maximum number of iterations, [-]
+    xtol : float
+        Tolerance for secant-style convergence of the iteration variable, 
+        [K or Pa, or m^3/mol]
+    ytol : float or None
+        Tolerance for convergence of the spec variable, 
+        [J/(mol*K) or J/mol]
+    
+    Returns
+    -------
+    iter_var_val, phase, iterations, err
+
+    Notes
+    -----
+
+    '''
+    # Needs lots of work but the idea is here
+    # Can iterate chancing any of T, P, V with a fixed other T, P, V to meet any
+    # H S G U A spec.
+    store = []
+    global iterations
+    iterations = 0
+    
+    if fixed_var == iter_var:
+        raise ValueError("Fixed variable cannot be the same as iteration variable")
+    if fixed_var not in ('T', 'P', 'V'):
+        raise ValueError("Fixed variable must be one of `T`, `P`, `V`")
+    if iter_var not in ('T', 'P', 'V'):
+        raise ValueError("Iteration variable must be one of `T`, `P`, `V`")
+    # Little point in enforcing the spec - might want to repurpose the function later
+    if spec not in ('H', 'S', 'G', 'U', 'A'):
+        raise ValueError("Spec variable must be one of `H`, `S`, `G` `U`, `A`")
+
+    phase_kwargs = {fixed_var: fixed_var_val, 'zs': zs}
+    spec_fun = getattr(phase.__class__, spec)
+#    print('spec_fun', spec_fun)
+    if fprime:
+        try:
+            der_attr = strs_to_ders[(spec, iter_var)]
+        except KeyError:
+            der_attr = 'd' + spec + '_d' + iter_var
+        der_attr_fun = getattr(phase.__class__, der_attr)
+#        print('der_attr_fun', der_attr_fun)
+    def to_solve(guess):
+        global iterations
+        iterations += 1
+
+        phase_kwargs[iter_var] = guess
+        p = phase.to_zs_TPV(**phase_kwargs)
+        
+        err = spec_fun(p) - spec_val
+        store[:] = (p, err)
+#        print([err, guess])
+        if fprime:
+            derr = der_attr_fun(p)
+            return err, derr
+        return err
+
+    if oscillation_detection:
+        to_solve2, checker = oscillation_checking_wrapper(to_solve, full=True,
+                                                          minimum_progress=minimum_progress)
+    else:
+        to_solve2 = to_solve
+        checker = None
+        
+    try:
+        # All three variables P, T, V are positive but can grow unbounded, so
+        # for the secant method, only set the one variable
+        if fprime:
+            iter_var_val = newton(to_solve2, guess, xtol=xtol, ytol=ytol, fprime=True,
+                                  maxiter=maxiter, bisection=True, low=min_bound)
+        else:
+            iter_var_val = secant(to_solve2, guess, xtol=xtol, ytol=ytol,
+                                  maxiter=maxiter, bisection=True, low=min_bound)
+    except (UnconvergedError, OscillationError):
+        fprime = False
+        if bounded and min_bound is not None and max_bound is not None:
+            if checker:
+                min_bound, max_bound, fa, fb = best_bounding_bounds(min_bound, max_bound, 
+                                                                    f=to_solve, xs_pos=checker.xs_pos, ys_pos=checker.ys_pos, 
+                                                                    xs_neg=checker.xs_neg, ys_neg=checker.ys_neg)
+            else:
+                fa, fb = None, None
+            iter_var_val = brenth(to_solve, min_bound, max_bound, xtol=xtol, 
+                                  ytol=ytol, maxiter=maxiter, fa=fa, fb=fb)
+    phase, err = store
+
+    return iter_var_val, phase, iterations, err
+
+
+
 def PH_secant_1P(T_guess, P, H, zs, phase, maxiter=200, xtol=1E-10,
                  minimum_progress=0.3, oscillation_detection=True):
     store = []
@@ -918,10 +1064,18 @@ def solve_PH_1P(phase, P, H, zs, constants, correlations):
             break
         except Exception as e:
             pass
+    
+    min_bound = Phase.T_MIN_FIXED
+    max_bound = Phase.T_MAX_FIXED
+    # TODO make brenth bail out when stuck
+    T, phase, iterations, err = TPV_solve_HSGUA_1P(zs, phase, T_guess, fixed_var_val=P, spec_val=H, ytol=1e-8*H,
+                                                   iter_var='T', fixed_var='P', spec='H', oscillation_detection=True,
+                                                   minimum_progress=.3, maxiter=30, fprime=True,
+                                                   bounded=True, min_bound=min_bound, max_bound=max_bound)
 
-    T, phase, iterations, err = P_or_V_solve_T_for_HSGUA_secant_1P(T_guess, P, H, zs, phase, 
-                                       fixed_P=True, spec='H',
-                                       oscillation_detection=False)
+#    T, phase, iterations, err = P_or_V_solve_T_for_HSGUA_secant_1P(T_guess, P, H, zs, phase, 
+#                                       fixed_P=True, spec='H',
+#                                       oscillation_detection=False)
 #    T, phase, iterations, err = PH_newton_1P(T_guess, P, H, zs, phase, oscillation_detection=False)
 #    T, phase, iterations, err = PH_secant_1P(T_guess, P, H, zs, self.phases[0], oscillation_detection=False)
     return T, phase, iterations, err
@@ -1295,8 +1449,12 @@ class FlashPureVLS(FlashBase):
             flash_specs = {'T': T, 'P': P, 'zs': zs}
             flash_convergence = {'iterations': 0, 'err': 0}
             g, ls, ss, betas = self.flash_TP(T, P)
+            if g is not None:
+                id_phases = [g] + ls + ss
+            else:
+                id_phases = ls + ss
             
-            g, ls, ss, betas = identify_sort_phases([g] + ls + ss, betas, constants,
+            g, ls, ss, betas = identify_sort_phases(id_phases, betas, constants,
                                                     correlations, settings=settings)
             
             return EquilibriumState(T, P, zs, gas=g, liquids=ls, solids=ss, 
@@ -1362,7 +1520,23 @@ class FlashPureVLS(FlashBase):
         elif P is not None and S is not None:
             pass
         elif P is not None and H is not None:
-            return self.flash_PH(P, H)
+            g, ls, ss, betas, T, flash_convergence = self.flash_PH(P, H)
+            flash_specs = {'P': P, 'H': H, 'zs': zs}
+#            print(g, ls, ss, betas)
+            if g is not None:
+                phases = [g] + ls + ss
+            else:
+                phases = ls + ss
+            
+            g, ls, ss, betas = identify_sort_phases(phases, betas, constants,
+                                                    correlations, settings=settings)
+            
+            return EquilibriumState(T, P, zs, gas=g, liquids=ls, solids=ss, 
+                                    betas=betas, flash_specs=flash_specs, 
+                                    flash_convergence=flash_convergence,
+                                    constants=constants, correlations=correlations,
+                                    flasher=self)
+            return 
         else:
             raise Exception('Flash inputs unsupported')
 
@@ -1460,16 +1634,13 @@ class FlashPureVLS(FlashBase):
     def flash_PH(self, P, H):
         zs = [1]
         constants, correlations = self.constants, self.correlations
-#        if self.phase_count == 1:
-#            T, phase, iterations, err = solve_PH_1P(self.phases[0], P, H, zs, constants, correlations)
-#            return T, phase, iterations, err
-#        
+
         try:
             solutions_1P = []
             G_min = 1e100
             results_G_min_1P = None
             for phase in self.phases:
-                try:
+                try:                    
                     T, phase, iterations, err = solve_PH_1P(phase, P, H, zs, constants, correlations)
                     G = phase.G()
                     if G < G_min:
@@ -1477,23 +1648,26 @@ class FlashPureVLS(FlashBase):
                         results_G_min_1P = (T, phase, iterations, err)
                     # might not need, debug only
                     solutions_1P.append([T, phase, iterations, err])
-                except:
+                except Exception as e:
+                    print(e)
                     solutions_1P.append(None)
         except:
             pass
-        
-
+#        print(results_G_min_1P[1].H(), 'H 1P')
+#        print(G_min, T, phase, iterations, err)
         try:
             G_VL = 1e100
             if self.gas_count and self.liquid_count:
-                VL_flash = self.flash(P=P, VF=1)
+                VL_flash = self.flash(P=P, VF=.4)
                 H_l = VL_flash.liquid0.H()
                 H_g = VL_flash.gas.H()
                 VF = (H - H_l)/(H_g - H_l)
+#                print(VL_flash, VF, 'H', VL_flash.H())
                 if 0.0 <= VF <= 1.0:
                     G_l = VL_flash.liquid0.G()
                     G_g = VL_flash.gas.G()
-                    G_VL = G_g*VF + G_l*(1.0 - VF)                    
+                    G_VL = G_g*VF + G_l*(1.0 - VF)           
+#                    print(G_VL, VL_flash.G())
             else:
                 VF = None
         except:
@@ -1515,41 +1689,44 @@ class FlashPureVLS(FlashBase):
         
         
         gas_phase = None
-        liquid_phases = []
-        solid_phases = []
+        ls = []
+        ss = []
         betas = []
         
         # If a 1-phase solution arrose, set it
         if results_G_min_1P is not None:
             betas = [1.0]
+#            print(phase, liquid_phases)
             T, phase, iterations, err = results_G_min_1P
             if isinstance(phase, gas_phases):
                 gas_phase = results_G_min_1P[1]
             elif isinstance(phase, liquid_phases):
-                liquid_phases = [results_G_min_1P[1]]
+                ls = [results_G_min_1P[1]]
             elif isinstance(phase, solid_phases):
-                solid_phases = [results_G_min_1P[1]]
+                ss = [results_G_min_1P[1]]
         
         flash_convergence = {}
+#        print(gas_phase, ls, ss, betas)
+#        print(G_VL, G_min)
         if G_VL < G_min:
             G_min = G_VL
-            liquid_phases = [VL_flash.liquid0]
+            ls = [VL_flash.liquid0]
             gas_phase = VL_flash.gas
             betas = [VF, 1.0 - VF]
-            solid_phases = [] # Ensure solid unset
-            T = VS_flash.T
+            ss = [] # Ensure solid unset
+            T = VL_flash.T
             iterations = 0
             err = 0.0
-            flash_convergence['VF flash convergence'] = VF_flash.flash_convergence
+            flash_convergence['VF flash convergence'] = VL_flash.flash_convergence
             
         if G_SF < G_min:
             try:
-                liquid_phases = [SF_flash.liquid0]
+                ls = [SF_flash.liquid0]
                 gas_phase = None
             except:
-                liquid_phases = []
+                ls = []
                 gas_phase = SF_flash.gas
-            solid_phases = [SF_flash.solid0]
+            ss = [SF_flash.solid0]
             betas = [1.0 - SF, SF]
             T = SF_flash.T
             iterations = 0
@@ -1558,7 +1735,7 @@ class FlashPureVLS(FlashBase):
         flash_convergence['iterations'] = iterations
         flash_convergence['err'] = err
 
-        return gas_phase, liquid_phases, solid_phases, betas, T, flash_convergence
+        return gas_phase, ls, ss, betas, T, flash_convergence
 
 
     def debug_TVF(self, T, VF=None, pts=2000):
@@ -1741,6 +1918,7 @@ def PH_T_guesses_1P(P, H, zs, method, constants, correlations, T_guess=None,
 
     if method == LASTOVKA_SHAW:
         T = Lastovka_Shaw_T_for_Hm(Hm=H, MW=MW, similarity_variable=sv)
+        assert T > 0
         return T
     elif method == DADGOSTAR_SHAW_1:
         Tc = mixing_simple(zs, constants.Tcs)
@@ -1757,6 +1935,7 @@ def PH_T_guesses_1P(P, H, zs, method, constants, correlations, T_guess=None,
             return newton(err, 100, high=Tc)
         
         T = Dadgostar_Shaw_T_guess(H, MW, sv, Tc, omega, factor=1)
+        assert T > 0
         return T
     elif method == IG_ENTHALPY:
         HeatCapacityGases = correlations.HeatCapacityGases
@@ -1766,6 +1945,7 @@ def PH_T_guesses_1P(P, H, zs, method, constants, correlations, T_guess=None,
                 H_calc += zs[i]*HeatCapacityGases[i].T_dependent_property_integral(T_ref, T)
             return H_calc - H
         T = secant(to_solve, 298.15)
+        assert T > 0
         return T
     elif method == IDEAL_LIQUID_ENTHALPY:
         HeatCapacityGases = correlations.HeatCapacityGases
@@ -1777,6 +1957,7 @@ def PH_T_guesses_1P(P, H, zs, method, constants, correlations, T_guess=None,
                             - EnthalpyVaporizations[i](T))
             return H_calc - H
         T = secant(to_solve, 298.15)
+        assert T > 0
         return T
         
     elif method == STP_T_GUESS:
