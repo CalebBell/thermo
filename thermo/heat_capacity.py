@@ -272,8 +272,8 @@ def Lastovka_Shaw_integral(T, similarity_variable, cyclic_aliphatic=False):
     x1 = -C11 - C12*a
     x2 = -C21 - C22*a
     
-    return 1000.*(T*first - (B11 + B12*a)*(x1*x1)/(x1 + -x1*exp(x1/T)) 
-                  - (B21 + B22*a)*(x2*x2)/(x2 -x2*exp(x2/T)))
+    return 1000.*(T*first - (B11 + B12*a)*(x1*x1)/(x1 - x1*exp(x1/T)) 
+                  - (B21 + B22*a)*(x2*x2)/(x2 - x2*exp(x2/T)))
 
 
 def Lastovka_Shaw_integral_over_T(T, similarity_variable, cyclic_aliphatic=False):

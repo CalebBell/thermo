@@ -473,6 +473,8 @@ def SMK(T, Tc, omega):
        Engineering Chemistry Fundamentals 23, no. 1 (February 1, 1984): 97-100.
        doi:10.1021/i100013a017.
     '''
+    if T > Tc:
+        return 0.0
     omegaR1, omegaR2 = 0.212, 0.461
     A10 = 6.536924
     A20 = -2.466698

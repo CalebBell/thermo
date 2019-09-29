@@ -28,20 +28,25 @@ __all__ = ['sequential_substitution_2P', 'bubble_T_Michelsen_Mollerup',
            'nonlin_2P', 'sequential_substitution_NP',
            'minimize_gibbs_NP_transformed', 'FlashVL', 'FlashPureVLS',
            'PH_T_guesses_1P_methods', 'PH_T_guesses_1P',
-           
+           'TPV_HSGUA_guesses_1P_methods', 'TPV_solve_HSGUA_guesses_1P',
            ]
 
 from fluids.constants import R, R_inv
-from thermo.utils import exp, log, log10, copysign, normalize, has_matplotlib, R, mixing_simple, property_mass_to_molar
-from thermo.heat_capacity import Lastovka_Shaw_T_for_Hm, Dadgostar_Shaw_integral
-from thermo.phase_change import SMK
 from fluids.numerics import (UnconvergedError, trunc_exp, py_newton as newton,
                              py_brenth as brenth, secant, numpy as np, linspace, 
                              logspace, oscillation_checker, damping_maintain_sign,
                              oscillation_checking_wrapper, OscillationError,
                              best_bounding_bounds)
-from thermo.activity import flash_inner_loop, Rachford_Rice_solutionN, Rachford_Rice_flash_error, Rachford_Rice_solution2
 from scipy.optimize import minimize, fsolve, root
+from thermo.utils import (exp, log, log10, copysign, normalize, has_matplotlib,
+                          mixing_simple, property_mass_to_molar)
+from thermo.heat_capacity import (Lastovka_Shaw_T_for_Hm, Dadgostar_Shaw_integral,
+                                  Dadgostar_Shaw_integral_over_T, Lastovka_Shaw_integral,
+                                  Lastovka_Shaw_integral_over_T)
+from thermo.phase_change import SMK
+from thermo.volume import COSTALD
+from thermo.activity import (flash_inner_loop, Rachford_Rice_solutionN,
+                             Rachford_Rice_flash_error, Rachford_Rice_solution2)
 from thermo.equilibrium import EquilibriumState
 from thermo.phases import Phase, gas_phases, liquid_phases, solid_phases, EOSLiquid, EOSGas
 from thermo.phase_identification import identify_sort_phases
@@ -829,33 +834,34 @@ def dew_P_Michelsen_Mollerup(P_guess, T, zs, liquid_phase, gas_phase,
     return P_guess, xs, l, g, iteration, abs(P_guess - P_guess_old)
 
 
-def P_or_V_solve_T_for_HSGUA_secant_1P(T_guess, fixed_val, spec_val, zs, phase, 
-                                       fixed_P=True, spec='H', maxiter=200,
-                                       xtol=1E-10, minimum_progress=0.3, 
-                                       oscillation_detection=True):
-    store = []
-    global iterations
-    iterations = 0
-    def to_solve(T):
-        global iterations
-        iterations += 1
-        if fixed_P:
-            p = phase.to_TP_zs(T, fixed_val, zs)
-        else:
-            p = phase.to_TV_zs(T, fixed_val, zs)
-        
-        err = getattr(p, spec)() - spec_val
-        store[:] = (p, err)
-        return err
-
-    if oscillation_detection:
-        to_solve, checker = oscillation_checking_wrapper(to_solve, full=True,
-                                                         minimum_progress=minimum_progress)
-
-    T = secant(to_solve, T_guess, xtol=xtol, maxiter=maxiter)
-    phase, err = store
-
-    return T, phase, iterations, err
+# Nothing innovative here, very limited
+#def P_or_V_solve_T_for_HSGUA_secant_1P(T_guess, fixed_val, spec_val, zs, phase, 
+#                                       fixed_P=True, spec='H', maxiter=200,
+#                                       xtol=1E-10, minimum_progress=0.3, 
+#                                       oscillation_detection=True):
+#    store = []
+#    global iterations
+#    iterations = 0
+#    def to_solve(T):
+#        global iterations
+#        iterations += 1
+#        if fixed_P:
+#            p = phase.to_TP_zs(T, fixed_val, zs)
+#        else:
+#            p = phase.to_TV_zs(T, fixed_val, zs)
+#        
+#        err = getattr(p, spec)() - spec_val
+#        store[:] = (p, err)
+#        return err
+#
+#    if oscillation_detection:
+#        to_solve, checker = oscillation_checking_wrapper(to_solve, full=True,
+#                                                         minimum_progress=minimum_progress)
+#
+#    T = secant(to_solve, T_guess, xtol=xtol, maxiter=maxiter)
+#    phase, err = store
+#
+#    return T, phase, iterations, err
 
 
 strs_to_ders = {('H', 'T'): 'dH_dT',
@@ -1909,6 +1915,7 @@ IDEAL_LIQUID_ENTHALPY = 'Ideal liquid'
 PH_T_guesses_1P_methods = [LASTOVKA_SHAW, DADGOSTAR_SHAW_1, IG_ENTHALPY,
                            IDEAL_LIQUID_ENTHALPY, FIXED_GUESS, STP_T_GUESS,
                            LAST_CONVERGED]
+TPV_HSGUA_guesses_1P_methods = PH_T_guesses_1P_methods
 
 def PH_T_guesses_1P(P, H, zs, method, constants, correlations, T_guess=None,
                     T_last=None, T_ref=298.15):
@@ -1973,3 +1980,207 @@ def PH_T_guesses_1P(P, H, zs, method, constants, correlations, T_guess=None,
     else:
         raise ValueError("Unknown error")
 
+
+def TPV_solve_HSGUA_guesses_1P(zs, method, constants, correlations, 
+                               fixed_var_val, spec_val,
+                               iter_var='T', fixed_var='P', spec='H',
+                               maxiter=20, xtol=1E-7, ytol=None,
+                               bounded=False, min_bound=None, max_bound=None,                    
+                               user_guess=None, last_conv=None, T_ref=298.15,
+                               P_ref=101325.0):
+    if fixed_var == iter_var:
+        raise ValueError("Fixed variable cannot be the same as iteration variable")
+    if fixed_var not in ('T', 'P', 'V'):
+        raise ValueError("Fixed variable must be one of `T`, `P`, `V`")
+    if iter_var not in ('T', 'P', 'V'):
+        raise ValueError("Iteration variable must be one of `T`, `P`, `V`")
+    if spec not in ('H', 'S', 'G', 'U', 'A'):
+        raise ValueError("Spec variable must be one of `H`, `S`, `G` `U`, `A`")
+
+    cmps = range(len(zs))
+        
+    iter_T = iter_var == 'T'
+    iter_P = iter_var == 'P'
+    iter_V = iter_var == 'V'
+    
+    fixed_P = fixed_var == 'P'
+    fixed_T = fixed_var == 'T'
+    fixed_V = fixed_var == 'V'
+    
+    always_S = spec in ('S', 'G', 'A')
+    always_H = spec in ('H', 'G', 'U', 'A')
+    always_V = spec in ('U', 'A')
+    
+    
+    if always_S:
+        P_ref_inv = 1.0/P_ref
+        dS_ideal = R*sum([zi*log(zi) for zi in zs if zi > 0.0]) # ideal composition entropy composition
+
+    def err(guess):
+        # Translate the fixed variable to a local variable
+        if fixed_P:
+            P = fixed_var_val
+        elif fixed_T:
+            T = fixed_var_val
+        elif fixed_V:
+            V = fixed_var_val
+            T = None
+        # Translate the iteration variable to a local variable
+        if iter_P:
+            P = guess
+            if not fixed_V:
+                V = None
+        elif iter_T:
+            T = guess
+            if not fixed_V:
+                V = None
+        elif iter_V:
+            V = guess
+            T = None
+            
+        if T is None:
+            T = T_from_V(V, P)
+        
+        # Compute S, H, V as necessary
+        if always_S:
+            S = S_model(T, P) - dS_ideal - R*log(P*P_ref_inv)
+        if always_H:
+            H =  H_model(T, P)
+        if always_V and V is None:
+            V = V_model(T, P)
+        print(H, S, V, 'hi')
+        # Return the objective function
+        if spec == 'H':
+            err = H - spec_val
+        elif spec == 'S':
+            err = S - spec_val
+        elif spec == 'G':
+            err = (H - T*S) - spec_val
+        elif spec == 'U':
+            err = (H - P*V) - spec_val
+        elif spec == 'A':
+            err = (H - P*V - T*S) - spec_val
+        print(T, P, V, 'TPV', err)
+        return err
+
+    # Precompute some things depending on the method
+    if method in (LASTOVKA_SHAW, DADGOSTAR_SHAW_1):
+        MW = mixing_simple(zs, constants.MWs)
+        n_atoms = [sum(i.values()) for i in constants.atomss]
+        sv = mixing_simple(zs, n_atoms)/MW
+    
+    if method == IG_ENTHALPY:
+        HeatCapacityGases = correlations.HeatCapacityGases
+        def H_model(T, P=None):
+            H_calc = 0.
+            for i in cmps:
+                H_calc += zs[i]*HeatCapacityGases[i].T_dependent_property_integral(T_ref, T)
+            return H_calc
+        
+        def S_model(T, P=None):
+            S_calc = 0.
+            for i in cmps:
+                S_calc += zs[i]*HeatCapacityGases[i].T_dependent_property_integral_over_T(T_ref, T)
+            return S_calc
+        
+        def V_model(T, P):  return R*T/P
+        def T_from_V(V, P): return P*V/R
+
+    elif method == LASTOVKA_SHAW:
+        H_ref = Lastovka_Shaw_integral(T_ref, sv)
+        S_ref = Lastovka_Shaw_integral_over_T(T_ref, sv)
+        
+        def H_model(T, P=None):
+            H1 = Lastovka_Shaw_integral(T, sv)
+            dH = H1 - H_ref
+            return property_mass_to_molar(dH, MW)
+        
+        def S_model(T, P=None):
+            S1 = Lastovka_Shaw_integral_over_T(T, sv)
+            dS = S1 - S_ref
+            return property_mass_to_molar(dS, MW)
+
+        def V_model(T, P):  return R*T/P
+        def T_from_V(V, P): return P*V/R
+
+    elif method == DADGOSTAR_SHAW_1:
+        Tc = mixing_simple(zs, constants.Tcs)
+        omega = mixing_simple(zs, constants.omegas)
+        H_ref = Dadgostar_Shaw_integral(T_ref, sv)
+        S_ref = Dadgostar_Shaw_integral_over_T(T_ref, sv)
+
+        def H_model(T, P=None):
+            H1 = Dadgostar_Shaw_integral(T, sv)
+            Hvap = SMK(T, Tc, omega)
+            return (property_mass_to_molar(H1 - H_ref, MW) - Hvap)
+
+        def S_model(T, P=None):
+            S1 = Dadgostar_Shaw_integral_over_T(T, sv)
+            dSvap = SMK(T, Tc, omega)/T
+            return (property_mass_to_molar(S1 - S_ref, MW) - dSvap)
+        
+        Vc = mixing_simple(zs, constants.Vcs)
+        def V_model(T, P=None): return COSTALD(T, Tc, Vc, omega)
+        def T_from_V(V, P): secant(lambda T: COSTALD(T, Tc, Vc, omega), .65*Tc)
+
+    elif method == IDEAL_LIQUID_ENTHALPY:
+        HeatCapacityGases = correlations.HeatCapacityGases
+        EnthalpyVaporizations = correlations.EnthalpyVaporizations
+        def H_model(T, P=None):
+            H_calc = 0.
+            for i in cmps:
+                H_calc += zs[i]*(HeatCapacityGases[i].T_dependent_property_integral(T_ref, T) - EnthalpyVaporizations[i](T))
+            return H_calc
+        
+        def S_model(T, P=None):
+            S_calc = 0.
+            T_inv = 1.0/T
+            for i in cmps:
+                S_calc += zs[i]*(HeatCapacityGases[i].T_dependent_property_integral_over_T(T_ref, T) - T_inv*EnthalpyVaporizations[i](T))
+            return S_calc
+        
+        VolumeLiquids = correlations.VolumeLiquids
+        def V_model(T, P=None):
+            V_calc = 0.
+            for i in cmps:
+                V_calc += zs[i]*VolumeLiquids[i].T_dependent_property(T)
+            return V_calc
+        def T_from_V(V, P): 
+            T_calc = 0.
+            for i in cmps:
+                T_calc += zs[i]*VolumeLiquids[i].solve_prop(V)
+            return T_calc
+            
+
+    # Simple return values - not going through a model
+    if method == STP_T_GUESS:
+        if iter_T:
+            return 298.15
+        elif iter_P:
+            return 101325.0
+        elif iter_V:
+            return 0.024465403697038125
+    elif method == LAST_CONVERGED:
+        if last_conv is None:
+            raise ValueError("No last converged")
+        return last_conv
+    elif method == FIXED_GUESS:
+        if user_guess is None:
+            raise ValueError("No user guess")
+        return user_guess
+
+    try:
+        # All three variables P, T, V are positive but can grow unbounded, so
+        # for the secant method, only set the one variable
+        if iter_T:
+            guess = 298.15
+        elif iter_P:
+            guess = 101325.0
+        elif iter_V:
+            guess = 0.024465403697038125
+        return secant(err, guess, xtol=xtol, ytol=ytol,
+                      maxiter=maxiter, bisection=True, low=min_bound)
+    except (UnconvergedError,) as e:
+        # G and A specs are NOT MONOTONIC and the brackets will likely NOT BRACKET
+        # THE ROOTS!
+        return brenth(err, min_bound, max_bound, xtol=xtol, ytol=ytol, maxiter=maxiter)

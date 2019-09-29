@@ -430,6 +430,8 @@ def COSTALD(T, Tc, Vc, omega):
        Saturated Densities of Liquids and Their Mixtures." AIChE Journal
        25, no. 4 (1979): 653-663. doi:10.1002/aic.690250412
     '''
+    if T > Tc:
+        T = Tc
     Tr = T/Tc
     tau = 1.0 - Tr
     tau_cbrt = (tau)**(1/3.)
