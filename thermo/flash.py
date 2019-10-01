@@ -1407,7 +1407,30 @@ class FlashVL(FlashBase):
             pass
         else:
             raise Exception('Flash inputs unsupported')
-       
+
+'''
+        T_spec = T is not None
+        P_spec = P is not None
+        V_spec = V is not None
+        H_spec = H is not None
+        S_spec = S is not None
+        U_spec = U is not None
+        
+# Format - keys above, and TPV spec, HSU spec, and iter_var
+        fixed_var='P', spec='H', iter_var='T',
+'''
+spec_to_iter_vars = {(True, False, False, True, False, False) : ('T', 'H', 'P'),
+                     (True, False, False, False, True, False) : ('T', 'S', 'P'),
+                     (True, False, False, False, False, True) : ('T', 'U', 'P'),
+
+                     (False, True, False, True, False, False) : ('P', 'H', 'T'),
+                     (False, True, False, False, True, False) : ('P', 'S', 'T'),
+                     (False, True, False, False, False, True) : ('P', 'U', 'T'),
+
+                     (False, False, True, True, False, False) : ('V', 'H', 'P'),
+                     (False, False, True, False, True, False) : ('V', 'S', 'P'),
+                     (False, False, True, False, False, True) : ('V', 'U', 'P'),
+}
 
 class FlashPureVLS(FlashBase):
     '''
@@ -1450,11 +1473,27 @@ class FlashPureVLS(FlashBase):
         settings = self.settings
         if zs is None:
             zs = [1.0]
-        
-        if T is not None and P is not None:            
-            flash_specs = {'T': T, 'P': P, 'zs': zs}
+
+        T_spec = T is not None
+        P_spec = P is not None
+        V_spec = V is not None
+        H_spec = H is not None
+        S_spec = S is not None
+        U_spec = U is not None
+        VF_spec = VF is not None
+        SF_spec = SF is not None
+
+        if ((T_spec and (P_spec or V_spec)) or (P_spec and V_spec)):            
+            flash_specs = {'zs': zs}
+            if T_spec:
+                flash_specs['T'] = T
+            if P_spec:
+                flash_specs['P'] = P
+            if V_spec:
+                flash_specs['V'] = V
+            
             flash_convergence = {'iterations': 0, 'err': 0}
-            g, ls, ss, betas = self.flash_TP(T, P)
+            g, ls, ss, betas = self.flash_TPV(T=T, P=P, V=V)
             if g is not None:
                 id_phases = [g] + ls + ss
             else:
@@ -1469,7 +1508,7 @@ class FlashPureVLS(FlashBase):
                                     constants=constants, correlations=correlations,
                                     flasher=self)
             
-        elif T is not None and VF is not None:
+        elif T_spec and VF_spec:
             # All dew/bubble are the same with 1 component
             Psat, l, g, iterations, err = self.flash_TVF(T)
             flash_specs = {'T': T, 'VF': VF, 'zs': zs}
@@ -1481,7 +1520,7 @@ class FlashPureVLS(FlashBase):
                                     constants=constants, correlations=correlations,
                                     flasher=self)
             
-        elif P is not None and VF is not None:
+        elif P_spec and VF_spec:
             # All dew/bubble are the same with 1 component
             Tsat, l, g, iterations, err = self.flash_PVF(P)
             flash_specs = {'T': T, 'VF': VF, 'zs': zs}
@@ -1492,7 +1531,7 @@ class FlashPureVLS(FlashBase):
                                     flash_convergence=flash_convergence,
                                     constants=constants, correlations=correlations,
                                     flasher=self)
-        elif T is not None and SF is not None:
+        elif T_spec and SF_spec:
             Psub, other_phase, s, iterations, err = self.flash_TSF(T)
             if isinstance(other_phase, gas_phases):
                 g, liquids = other_phase, []
@@ -1506,7 +1545,7 @@ class FlashPureVLS(FlashBase):
                                     flash_convergence=flash_convergence,
                                     constants=constants, correlations=correlations,
                                     flasher=self)
-        elif P is not None and SF is not None:
+        elif P_spec and SF_spec:
             Tsub, other_phase, s, iterations, err = self.flash_PSF(P)
             if isinstance(other_phase, gas_phases):
                 g, liquids = other_phase, []
@@ -1520,6 +1559,23 @@ class FlashPureVLS(FlashBase):
                                     flash_convergence=flash_convergence,
                                     constants=constants, correlations=correlations,
                                     flasher=self)
+        
+        single_iter_key = (T_spec, P_spec, V_spec, H_spec, S_spec, U_spec)
+        if single_iter_key in spec_to_iter_vars:
+            fixed_var, spec, iter_var = spec_to_iter_vars[single_iter_key]
+            if T_spec:
+                fixed_var_val = T
+            elif P_spec:
+                fixed_var_val = P
+            else:
+                fixed_var_val = V
+                
+            if H_spec:
+                spec_val = H
+            elif S_spec:
+                spec_val = S
+            else:
+                spec_val = U
 
         if T is not None and S is not None:
             pass
@@ -1546,26 +1602,26 @@ class FlashPureVLS(FlashBase):
         else:
             raise Exception('Flash inputs unsupported')
 
-    def flash_TP(self, T, P):
+    def flash_TPV(self, T, P, V):
         zs = [1]
         liquids = []
         solids = []
 
         if self.gas_count:
-            gas = self.gas.to_TP_zs(T, P, zs)
+            gas = self.gas.to_zs_TPV(zs=zs, T=T, P=P, V=V)
             G_min, lowest_phase = gas.G(), gas
         else:
             G_min, lowest_phase = 1e100, None
             gas = None
         for l in self.liquids:
-            l = l.to_TP_zs(T, P, zs)
+            l = l.to_zs_TPV(zs=zs, T=T, P=P, V=V)
             G = l.G()
             if G < G_min:
                 G_min, lowest_phase = G, l
             liquids.append(l)
 
         for s in self.solids:
-            s = s.to_TP_zs(T, P, zs)
+            s = s.to_zs_TPV(zs=zs, T=T, P=P, V=V)
             G = s.G()
             if G < G_min:
                 G_min, lowest_phase = G, s
@@ -2048,7 +2104,7 @@ def TPV_solve_HSGUA_guesses_1P(zs, method, constants, correlations,
             H =  H_model(T, P)
         if always_V and V is None:
             V = V_model(T, P)
-        print(H, S, V, 'hi')
+#        print(H, S, V, 'hi')
         # Return the objective function
         if spec == 'H':
             err = H - spec_val
@@ -2060,7 +2116,7 @@ def TPV_solve_HSGUA_guesses_1P(zs, method, constants, correlations,
             err = (H - P*V) - spec_val
         elif spec == 'A':
             err = (H - P*V - T*S) - spec_val
-        print(T, P, V, 'TPV', err)
+#        print(T, P, V, 'TPV', err)
         return err
 
     # Precompute some things depending on the method

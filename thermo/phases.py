@@ -1640,9 +1640,40 @@ class GibbsExcessLiquid(Phase):
         new.N = self.N
         new.cmps = self.cmps
         
+        self.transfer_data(new, T_equal)
+        return new
+
+
+    def to_zs_TPV(self, zs, T=None, P=None, V=None):
+        T_equal = hasattr(self, 'T') and T == self.T
+        new = self.__class__.__new__(self.__class__)
+        new.zs = zs
+        new.N = self.N
+        new.cmps = self.cmps
+        
+        if T is not None:
+            if P is not None:
+                new.T = T
+                new.P = P
+            elif V is not None:
+                def to_solve(P):
+                    return self.to_TP_zs(T, P, zs).V() - V
+                P = secant(to_solve, 0.0002, xtol=1e-8, ytol=1e-10)
+                new.P = P
+        elif P is not None and V is not None:
+            def to_solve(T):
+                return self.to_TP_zs(T, P, zs).V() - V
+            T = secant(to_solve, 300, xtol=1e-9, ytol=1e-5)
+            new.T = T
+        else:
+            raise ValueError("Two of T, P, or V are needed")
+        
+        self.transfer_data(new, T_equal)
+        return new
+    
+    def transfer_data(self, new, T_equal):
         new.VaporPressures = self.VaporPressures
         new.VolumeLiquids = self.VolumeLiquids
-#        new.VolumeLiquidMixture = self.VolumeLiquidMixture
         new.eos_pure_instances = self.eos_pure_instances
         new.HeatCapacityGases = self.HeatCapacityGases
         new.EnthalpyVaporizations = self.EnthalpyVaporizations
@@ -1688,7 +1719,6 @@ class GibbsExcessLiquid(Phase):
         else:
             new.GibbsExcessModel = self.GibbsExcessModel.to_T_xs(T=T, xs=zs)
         
-        
         try:
             if T_equal:
                 try:
@@ -1696,12 +1726,10 @@ class GibbsExcessLiquid(Phase):
                     new._Psats = self._Psats
                 except:
                     pass
-                
-
-
         except:
             pass
         return new
+        
         
     def Henry_matrix(self):
         '''Generate a matrix of all component-solvent Henry's law values
