@@ -27,7 +27,6 @@ __all__ = ['sequential_substitution_2P', 'bubble_T_Michelsen_Mollerup',
            'minimize_gibbs_2P_transformed', 'sequential_substitution_Mehra_2P',
            'nonlin_2P', 'sequential_substitution_NP',
            'minimize_gibbs_NP_transformed', 'FlashVL', 'FlashPureVLS',
-           'PH_T_guesses_1P_methods', 'PH_T_guesses_1P',
            'TPV_HSGUA_guesses_1P_methods', 'TPV_solve_HSGUA_guesses_1P',
            ]
 
@@ -834,35 +833,6 @@ def dew_P_Michelsen_Mollerup(P_guess, T, zs, liquid_phase, gas_phase,
     return P_guess, xs, l, g, iteration, abs(P_guess - P_guess_old)
 
 
-# Nothing innovative here, very limited
-#def P_or_V_solve_T_for_HSGUA_secant_1P(T_guess, fixed_val, spec_val, zs, phase, 
-#                                       fixed_P=True, spec='H', maxiter=200,
-#                                       xtol=1E-10, minimum_progress=0.3, 
-#                                       oscillation_detection=True):
-#    store = []
-#    global iterations
-#    iterations = 0
-#    def to_solve(T):
-#        global iterations
-#        iterations += 1
-#        if fixed_P:
-#            p = phase.to_TP_zs(T, fixed_val, zs)
-#        else:
-#            p = phase.to_TV_zs(T, fixed_val, zs)
-#        
-#        err = getattr(p, spec)() - spec_val
-#        store[:] = (p, err)
-#        return err
-#
-#    if oscillation_detection:
-#        to_solve, checker = oscillation_checking_wrapper(to_solve, full=True,
-#                                                         minimum_progress=minimum_progress)
-#
-#    T = secant(to_solve, T_guess, xtol=xtol, maxiter=maxiter)
-#    phase, err = store
-#
-#    return T, phase, iterations, err
-
 
 strs_to_ders = {('H', 'T'): 'dH_dT',
                 ('S', 'T'): 'dS_dT',
@@ -1054,37 +1024,49 @@ def PH_newton_1P(T_guess, P, H, zs, phase, maxiter=200, xtol=1E-10,
     return T, phase, iterations, err
 
 
-def solve_PH_1P(phase, P, H, zs, constants, correlations):
+
+def solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var, 
+                       spec, iter_var, constants, correlations):
+    if iter_var == 'T':
+        min_bound = Phase.T_MIN_FIXED
+        max_bound = Phase.T_MAX_FIXED
+    elif iter_var == 'P':
+        min_bound = Phase.P_MIN_FIXED
+        max_bound = Phase.P_MAX_FIXED
+    elif iter_var == 'V':
+        min_bound = Phase.V_MIN_FIXED
+        max_bound = Phase.V_MAX_FIXED
+
     if isinstance(phase, gas_phases):
-        methods = [LAST_CONVERGED, FIXED_GUESS, IG_ENTHALPY,
-                   LASTOVKA_SHAW, STP_T_GUESS]
+        methods = [LAST_CONVERGED, FIXED_GUESS, STP_T_GUESS, IG_ENTHALPY,
+                   LASTOVKA_SHAW]
     elif isinstance(phase, liquid_phases):
-        methods = [LAST_CONVERGED, FIXED_GUESS, IDEAL_LIQUID_ENTHALPY,
-                   DADGOSTAR_SHAW_1, STP_T_GUESS]
+        methods = [LAST_CONVERGED, FIXED_GUESS, STP_T_GUESS, IDEAL_LIQUID_ENTHALPY,
+                   DADGOSTAR_SHAW_1]
     else:
         methods = [LAST_CONVERGED, FIXED_GUESS, STP_T_GUESS]
         
     for method in methods:
         try:
-            T_guess = PH_T_guesses_1P(P, H, zs, method=method, constants=constants, correlations=correlations)
+            guess = TPV_solve_HSGUA_guesses_1P(zs, method, constants, correlations, 
+                               fixed_var_val, spec_val,
+                               iter_var=iter_var, fixed_var=fixed_var, spec=spec,
+                               maxiter=50, xtol=1E-7, ytol=abs(spec_val)*1e-5,
+                               bounded=True, min_bound=min_bound, max_bound=max_bound,                    
+                               user_guess=None, last_conv=None, T_ref=298.15,
+                               P_ref=101325.0)
+            
             break
         except Exception as e:
             pass
     
-    min_bound = Phase.T_MIN_FIXED
-    max_bound = Phase.T_MAX_FIXED
-    # TODO make brenth bail out when stuck
-    T, phase, iterations, err = TPV_solve_HSGUA_1P(zs, phase, T_guess, fixed_var_val=P, spec_val=H, ytol=1e-8*H,
-                                                   iter_var='T', fixed_var='P', spec='H', oscillation_detection=True,
+    _, phase, iterations, err = TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val=fixed_var_val, spec_val=spec_val, ytol=1e-8*abs(spec_val),
+                                                   iter_var=iter_var, fixed_var=fixed_var, spec=spec, oscillation_detection=False,
                                                    minimum_progress=.3, maxiter=30, fprime=True,
                                                    bounded=True, min_bound=min_bound, max_bound=max_bound)
+    T, P = phase.T, phase.P
+    return T, P, phase, iterations, err
 
-#    T, phase, iterations, err = P_or_V_solve_T_for_HSGUA_secant_1P(T_guess, P, H, zs, phase, 
-#                                       fixed_P=True, spec='H',
-#                                       oscillation_detection=False)
-#    T, phase, iterations, err = PH_newton_1P(T_guess, P, H, zs, phase, oscillation_detection=False)
-#    T, phase, iterations, err = PH_secant_1P(T_guess, P, H, zs, self.phases[0], oscillation_detection=False)
-    return T, phase, iterations, err
 
 
 
@@ -1483,16 +1465,25 @@ class FlashPureVLS(FlashBase):
         VF_spec = VF is not None
         SF_spec = SF is not None
 
+        flash_specs = {'zs': zs}
+        if T_spec:
+            flash_specs['T'] = T
+        if P_spec:
+            flash_specs['P'] = P
+        if V_spec:
+            flash_specs['V'] = V
+        if H_spec:
+            flash_specs['H'] = H
+        if S_spec:
+            flash_specs['S'] = S
+        if U_spec:
+            flash_specs['U'] = U
+        if VF_spec:
+            flash_specs['VF'] = VF
+        if SF_spec:
+            flash_specs['SF'] = SF
+
         if ((T_spec and (P_spec or V_spec)) or (P_spec and V_spec)):            
-            flash_specs = {'zs': zs}
-            if T_spec:
-                flash_specs['T'] = T
-            if P_spec:
-                flash_specs['P'] = P
-            if V_spec:
-                flash_specs['V'] = V
-            
-            flash_convergence = {'iterations': 0, 'err': 0}
             g, ls, ss, betas = self.flash_TPV(T=T, P=P, V=V)
             if g is not None:
                 id_phases = [g] + ls + ss
@@ -1502,6 +1493,9 @@ class FlashPureVLS(FlashBase):
             g, ls, ss, betas = identify_sort_phases(id_phases, betas, constants,
                                                     correlations, settings=settings)
             
+            a_phase = id_phases[0]
+            T, P = a_phase.T, a_phase.P
+            flash_convergence = {'iterations': 0, 'err': 0}
             return EquilibriumState(T, P, zs, gas=g, liquids=ls, solids=ss, 
                                     betas=betas, flash_specs=flash_specs, 
                                     flash_convergence=flash_convergence,
@@ -1511,7 +1505,6 @@ class FlashPureVLS(FlashBase):
         elif T_spec and VF_spec:
             # All dew/bubble are the same with 1 component
             Psat, l, g, iterations, err = self.flash_TVF(T)
-            flash_specs = {'T': T, 'VF': VF, 'zs': zs}
             flash_convergence = {'iterations': iterations, 'err': err}
             
             return EquilibriumState(T, Psat, zs, gas=g, liquids=[l], solids=[], 
@@ -1523,7 +1516,6 @@ class FlashPureVLS(FlashBase):
         elif P_spec and VF_spec:
             # All dew/bubble are the same with 1 component
             Tsat, l, g, iterations, err = self.flash_PVF(P)
-            flash_specs = {'T': T, 'VF': VF, 'zs': zs}
             flash_convergence = {'iterations': iterations, 'err': err}
 
             return EquilibriumState(Tsat, P, zs, gas=g, liquids=[l], solids=[], 
@@ -1537,7 +1529,6 @@ class FlashPureVLS(FlashBase):
                 g, liquids = other_phase, []
             else:
                 g, liquids = None, [other_phase]
-            flash_specs = {'T': T, 'SF': SF, 'zs': zs}
             flash_convergence = {'iterations': iterations, 'err': err}
 #
             return EquilibriumState(T, Psub, zs, gas=g, liquids=liquids, solids=[s], 
@@ -1551,7 +1542,6 @@ class FlashPureVLS(FlashBase):
                 g, liquids = other_phase, []
             else:
                 g, liquids = None, [other_phase]
-            flash_specs = {'P': P, 'SF': SF, 'zs': zs}
             flash_convergence = {'iterations': iterations, 'err': err}
 #
             return EquilibriumState(Tsub, P, zs, gas=g, liquids=liquids, solids=[s], 
@@ -1576,6 +1566,14 @@ class FlashPureVLS(FlashBase):
                 spec_val = S
             else:
                 spec_val = U
+                
+                
+            g, ls, ss, betas, T, P, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var)
+            return EquilibriumState(T, P, zs, gas=g, liquids=ls, solids=ss, 
+                                    betas=betas, flash_specs=flash_specs, 
+                                    flash_convergence=flash_convergence,
+                                    constants=constants, correlations=correlations,
+                                    flasher=self)
 
         if T is not None and S is not None:
             pass
@@ -1583,7 +1581,6 @@ class FlashPureVLS(FlashBase):
             pass
         elif P is not None and H is not None:
             g, ls, ss, betas, T, flash_convergence = self.flash_PH(P, H)
-            flash_specs = {'P': P, 'H': H, 'zs': zs}
 #            print(g, ls, ss, betas)
             if g is not None:
                 phases = [g] + ls + ss
@@ -1693,7 +1690,7 @@ class FlashPureVLS(FlashBase):
         return PSF_pure_newton(Tsub, P, try_phases, self.solids, 
                                maxiter=200, xtol=1E-10)
         
-    def flash_PH(self, P, H):
+    def flash_TPV_HSGUA(self, fixed_var_val, spec_val, fixed_var='P', spec='H', iter_var='T'):
         zs = [1]
         constants, correlations = self.constants, self.correlations
 
@@ -1703,53 +1700,51 @@ class FlashPureVLS(FlashBase):
             results_G_min_1P = None
             for phase in self.phases:
                 try:                    
-                    T, phase, iterations, err = solve_PH_1P(phase, P, H, zs, constants, correlations)
+                    T, P, phase, iterations, err = solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var=fixed_var, 
+                                                                      spec=spec, iter_var=iter_var, constants=constants, correlations=correlations)
                     G = phase.G()
                     if G < G_min:
                         G_min = G
                         results_G_min_1P = (T, phase, iterations, err)
-                    # might not need, debug only
                     solutions_1P.append([T, phase, iterations, err])
                 except Exception as e:
-                    print(e)
+#                    print(e)
                     solutions_1P.append(None)
         except:
             pass
-#        print(results_G_min_1P[1].H(), 'H 1P')
-#        print(G_min, T, phase, iterations, err)
+        
+        
         try:
             G_VL = 1e100
+            # BUG - P IS NOW KNOWN!
             if self.gas_count and self.liquid_count:
                 VL_flash = self.flash(P=P, VF=.4)
-                H_l = VL_flash.liquid0.H()
-                H_g = VL_flash.gas.H()
-                VF = (H - H_l)/(H_g - H_l)
-#                print(VL_flash, VF, 'H', VL_flash.H())
+                spec_val_l = getattr(VL_flash.liquid0, spec)()
+                spec_val_g = getattr(VL_flash.gas, spec)()
+                VF = (spec_val - spec_val_l)/(spec_val_g - spec_val_l)
                 if 0.0 <= VF <= 1.0:
                     G_l = VL_flash.liquid0.G()
                     G_g = VL_flash.gas.G()
                     G_VL = G_g*VF + G_l*(1.0 - VF)           
-#                    print(G_VL, VL_flash.G())
             else:
                 VF = None
         except:
             VF = None
-            
+        
         try:
             G_SF = 1e100
             if self.solid_count and (self.gas_count or self.liquid_count):
                 VS_flash = self.flash(P=P, SF=1)
-                H_s = VS_flash.solid0.H()
-                H_other = VS_flash.phases[0].H()
-                SF = (H - H_s)/(H_other - H_s)
+                spec_val_s = getattr(VS_flash.solid0, spec)()
+                spec_other = getattr(VS_flash.phases[0], spec)()
+                SF = (spec_val - spec_val_s)/(spec_other - spec_val_s)
                 if SF < 0.0 or SF > 1.0:
                     raise ValueError("Not apply")
             else:
                 SF = None
         except:
             SF = None
-        
-        
+
         gas_phase = None
         ls = []
         ss = []
@@ -1758,7 +1753,6 @@ class FlashPureVLS(FlashBase):
         # If a 1-phase solution arrose, set it
         if results_G_min_1P is not None:
             betas = [1.0]
-#            print(phase, liquid_phases)
             T, phase, iterations, err = results_G_min_1P
             if isinstance(phase, gas_phases):
                 gas_phase = results_G_min_1P[1]
@@ -1768,8 +1762,6 @@ class FlashPureVLS(FlashBase):
                 ss = [results_G_min_1P[1]]
         
         flash_convergence = {}
-#        print(gas_phase, ls, ss, betas)
-#        print(G_VL, G_min)
         if G_VL < G_min:
             G_min = G_VL
             ls = [VL_flash.liquid0]
@@ -1797,8 +1789,8 @@ class FlashPureVLS(FlashBase):
         flash_convergence['iterations'] = iterations
         flash_convergence['err'] = err
 
-        return gas_phase, ls, ss, betas, T, flash_convergence
-
+        return gas_phase, ls, ss, betas, T, P, flash_convergence
+        
 
     def debug_TVF(self, T, VF=None, pts=2000):
         zs = [1]
@@ -1972,70 +1964,6 @@ PH_T_guesses_1P_methods = [LASTOVKA_SHAW, DADGOSTAR_SHAW_1, IG_ENTHALPY,
                            IDEAL_LIQUID_ENTHALPY, FIXED_GUESS, STP_T_GUESS,
                            LAST_CONVERGED]
 TPV_HSGUA_guesses_1P_methods = PH_T_guesses_1P_methods
-
-def PH_T_guesses_1P(P, H, zs, method, constants, correlations, T_guess=None,
-                    T_last=None, T_ref=298.15):
-    MW = mixing_simple(zs, constants.MWs)
-    n_atoms = [sum(i.values()) for i in constants.atomss]
-    sv = mixing_simple(zs, n_atoms)/MW
-
-    if method == LASTOVKA_SHAW:
-        T = Lastovka_Shaw_T_for_Hm(Hm=H, MW=MW, similarity_variable=sv)
-        assert T > 0
-        return T
-    elif method == DADGOSTAR_SHAW_1:
-        Tc = mixing_simple(zs, constants.Tcs)
-        omega = mixing_simple(zs, constants.omegas)
-        def Dadgostar_Shaw_T_guess(H, MW, similarity_variable, Tc, omega, 
-                                   T_ref=T_ref, factor=1.0):
-            H_ref = Dadgostar_Shaw_integral(T_ref, similarity_variable)
-            def err(T):
-                Hvap = SMK(T, Tc, omega)
-                H1 = Dadgostar_Shaw_integral(T, similarity_variable)
-                dH = H1 - H_ref
-                # Limitation to higher T unfortunately
-                return ((property_mass_to_molar(dH, MW)*factor - Hvap) - H)
-            return newton(err, 100, high=Tc)
-        
-        T = Dadgostar_Shaw_T_guess(H, MW, sv, Tc, omega, factor=1)
-        assert T > 0
-        return T
-    elif method == IG_ENTHALPY:
-        HeatCapacityGases = correlations.HeatCapacityGases
-        def to_solve(T):
-            H_calc = 0.
-            for i in range(len(zs)):
-                H_calc += zs[i]*HeatCapacityGases[i].T_dependent_property_integral(T_ref, T)
-            return H_calc - H
-        T = secant(to_solve, 298.15)
-        assert T > 0
-        return T
-    elif method == IDEAL_LIQUID_ENTHALPY:
-        HeatCapacityGases = correlations.HeatCapacityGases
-        EnthalpyVaporizations = correlations.EnthalpyVaporizations
-        def to_solve(T):
-            H_calc = 0.
-            for i in range(len(zs)):
-                H_calc += zs[i]*(HeatCapacityGases[i].T_dependent_property_integral(T_ref, T)
-                            - EnthalpyVaporizations[i](T))
-            return H_calc - H
-        T = secant(to_solve, 298.15)
-        assert T > 0
-        return T
-        
-    elif method == STP_T_GUESS:
-        return 298.15
-    elif method == LAST_CONVERGED:
-        if T_last is None:
-            raise ValueError("No last converged")
-        return T_last
-    elif method == FIXED_GUESS:
-        if T_guess is None:
-            raise ValueError("No fixed guess")
-        return T_guess
-    else:
-        raise ValueError("Unknown error")
-
 
 def TPV_solve_HSGUA_guesses_1P(zs, method, constants, correlations, 
                                fixed_var_val, spec_val,

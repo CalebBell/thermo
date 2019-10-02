@@ -64,6 +64,9 @@ class Phase(object):
     P_MAX_FIXED = 1e9
     P_MIN_FIXED = 1e-3
     
+    V_MIN_FIXED = 1e-6 # m^3/mol
+    V_MAX_FIXED = 1e6 # m^#/mol
+    
     force_phase = None
 
     Psats_data = None
