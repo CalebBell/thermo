@@ -487,9 +487,9 @@ class VaporPressure(TDependentProperty):
 
         if best_fit is not None:
             self.set_best_fit(best_fit)
-            if self.Tmin is None:
+            if self.Tmin is None and hasattr(self, 'best_fit_Tmin'):
                 self.Tmin = self.best_fit_Tmin/100
-            if self.Tmax is None:
+            if self.Tmax is None and hasattr(self, 'best_fit_Tmax'):
                 self.Tmax = self.best_fit_Tmax*10
 
     def load_all_methods(self):
@@ -1206,9 +1206,9 @@ class SublimationPressure(TDependentProperty):
         
         if best_fit is not None:
             self.set_best_fit(best_fit)
-            if self.Tmin is None:
+            if self.Tmin is None and hasattr(self, 'best_fit_Tmin'):
                 self.Tmin = self.best_fit_Tmin/100
-            if self.Tmax is None:
+            if self.Tmax is None and hasattr(self, 'best_fit_Tmax'):
                 self.Tmax = self.best_fit_Tmax*10
 
     def load_all_methods(self):

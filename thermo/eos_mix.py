@@ -268,9 +268,9 @@ class GCEOSMIX(GCEOS):
 
 
 
-    def to_TP_zs(self, T, P, zs):
+    def to_TP_zs(self, T, P, zs, fugacities=True):
         if T != self.T or P != self.P or zs != self.zs:
-            return self.__class__(T=T, P=P, zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, **self.kwargs)
+            return self.__class__(T=T, P=P, zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, fugacities=fugacities, **self.kwargs)
         else:
             return self
     
@@ -280,15 +280,15 @@ class GCEOSMIX(GCEOS):
         return self.eos_pure(T=T, P=P, Tc=self.Tcs[i], Pc=self.Pcs[i],
                              omega=self.omegas[i])
 
-    def to_TV_zs(self, T, V, zs):
+    def to_TV_zs(self, T, V, zs, fugacities=True):
         if T == self.T and V == self.V and zs == self.zs:
             return self
-        return self.__class__(T=T, V=V, zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, **self.kwargs)
+        return self.__class__(T=T, V=V, zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, fugacities=fugacities, **self.kwargs)
 
-    def to_PV_zs(self, P, V, zs):
+    def to_PV_zs(self, P, V, zs, fugacities=True):
         if P == self.P and V == self.V and zs == self.zs:
             return self
-        return self.__class__(P=P, V=V, zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, **self.kwargs)
+        return self.__class__(P=P, V=V, zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, fugacities=fugacities, **self.kwargs)
 
     def pures(self):
         T, P, cmps = self.T, self.P, self.cmps
@@ -1183,7 +1183,6 @@ class GCEOSMIX(GCEOS):
         T : float
             Temperature, [K]
         '''
-        self.Tc = sum(self.Tcs)/self.N
         # -4 goes back from object, GCEOS
         return super(type(self).__mro__[-3], self).solve_T(P=P, V=V, quick=quick)
 
@@ -5956,6 +5955,19 @@ class PRMIX(GCEOSMIX, PR):
                 d3b_dnjnks.append(row)
             d3b_dninjnks.append(d3b_dnjnks)
         return d3b_dninjnks
+
+    def solve_T(self, P, V, quick=True):
+        if self.N == 1:
+            self.Tc = self.Tcs[0]
+            self.kappa = self.kappas[0]
+            self.a = self.ais[0]
+            T = super(type(self).__mro__[-4], self).solve_T(P=P, V=V, quick=quick)   
+            del self.Tc
+            del self.kappa
+            del self.a
+            return T
+        else:
+            return super(type(self).__mro__[-3], self).solve_T(P=P, V=V, quick=quick)   
 
 
 class SRKMIX(GCEOSMIX, SRK):    

@@ -1213,13 +1213,13 @@ class EOSGas(Phase):
                     new.eos_mix = self.eos_class(T=T, P=P, zs=zs, **self.eos_kwargs)
             elif V is not None:
                 try:
-                    new.eos_mix = self.eos_mix.to_TV_zs(T=T, V=V, zs=zs)
+                    new.eos_mix = self.eos_mix.to_TV_zs(T=T, V=V, zs=zs, fugacities=False)
                 except AttributeError:
                     new.eos_mix = self.eos_class(T=T, V=V, zs=zs, **self.eos_kwargs)
                 P = new.eos_mix.P
         elif P is not None and V is not None:
             try:
-                new.eos_mix = self.eos_mix.to_TV_zs(P=P, V=V, zs=zs)
+                new.eos_mix = self.eos_mix.to_PV_zs(P=P, V=V, zs=zs, fugacities=False)
             except AttributeError:
                 new.eos_mix = self.eos_class(P=P, V=V, zs=zs, **self.eos_kwargs)
             T = new.eos_mix.T
@@ -1643,7 +1643,7 @@ class GibbsExcessLiquid(Phase):
         new.N = self.N
         new.cmps = self.cmps
         
-        self.transfer_data(new, T_equal)
+        self.transfer_data(new, zs, T, T_equal)
         return new
 
 
@@ -1671,10 +1671,10 @@ class GibbsExcessLiquid(Phase):
         else:
             raise ValueError("Two of T, P, or V are needed")
         
-        self.transfer_data(new, T_equal)
+        self.transfer_data(new, zs, T, T_equal)
         return new
     
-    def transfer_data(self, new, T_equal):
+    def transfer_data(self, new, zs, T, T_equal):
         new.VaporPressures = self.VaporPressures
         new.VolumeLiquids = self.VolumeLiquids
         new.eos_pure_instances = self.eos_pure_instances

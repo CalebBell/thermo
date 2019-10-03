@@ -939,8 +939,8 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
         
         err = spec_fun(p) - spec_val
         store[:] = (p, err)
-#        print([err, guess])
         if fprime:
+#            print([err, guess])
             derr = der_attr_fun(p)
             return err, derr
         return err
@@ -1061,8 +1061,8 @@ def solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var,
             pass
     
     _, phase, iterations, err = TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val=fixed_var_val, spec_val=spec_val, ytol=1e-8*abs(spec_val),
-                                                   iter_var=iter_var, fixed_var=fixed_var, spec=spec, oscillation_detection=False,
-                                                   minimum_progress=.3, maxiter=30, fprime=True,
+                                                   iter_var=iter_var, fixed_var=fixed_var, spec=spec, oscillation_detection=True,
+                                                   minimum_progress=0.0, maxiter=80, fprime=True,
                                                    bounded=True, min_bound=min_bound, max_bound=max_bound)
     T, P = phase.T, phase.P
     return T, P, phase, iterations, err
@@ -1448,6 +1448,10 @@ class FlashPureVLS(FlashBase):
             setattr(self, 'liquid' + str(i), l)
         for i, s in enumerate(self.solids):
             setattr(self, 'solid' + str(i), s)
+            
+        self.VL_only = self.phase_count == 2 and self.liquid_count == 1 and self.gas is not None
+        self.VL_only_CEOSs = (self.VL_only and gas and liquids and isinstance(self.liquids[0], EOSLiquid) and isinstance(self.gas, EOSGas))
+
 
     def flash(self, zs=None, T=None, P=None, VF=None, SF=None, V=None, H=None,
               S=None, U=None):
@@ -1636,27 +1640,32 @@ class FlashPureVLS(FlashBase):
     
     def flash_TVF(self, T, VF=None):
         zs = [1]
-        if (self.phase_count == 2 and self.liquid_count == 1 and self.gas is not None
-            and isinstance(self.liquids[0], EOSLiquid) and isinstance(self.gas, EOSGas)):
+        if self.VL_only_CEOSs:
             # Two phase pure eoss are two phase up to the critical point only! Then one phase
             Psat = self.gas.eos_pures_STP[0].Psat(T)
+#            
         else:
             Psat = self.correlations.VaporPressures[0](T)
         
         gas = self.gas.to_TP_zs(T, Psat, zs)
         liquids = [l.to_TP_zs(T, Psat, zs) for l in self.liquids]
+
+        if self.VL_only_CEOSs:
+            return Psat, liquids[0], gas, 0, 0.0
 #        return TVF_pure_newton(Psat, T, liquids, gas, maxiter=200, xtol=1E-10)
         return TVF_pure_secant(Psat, T, liquids, gas, maxiter=200, xtol=1E-10)
 
     def flash_PVF(self, P, VF=None):
         zs = [1]
-        if (self.phase_count == 2 and self.liquid_count == 1 and self.gas is not None
-            and isinstance(self.liquids[0], EOSLiquid) and isinstance(self.gas, EOSGas)):
+        if self.VL_only_CEOSs:
             Tsat = self.gas.eos_pures_STP[0].Tsat(P)
         else:
             Tsat = self.correlations.VaporPressures[0].solve_prop(P)
         gas = self.gas.to_TP_zs(Tsat, P, zs)
         liquids = [l.to_TP_zs(Tsat, P, zs) for l in self.liquids]
+        
+        if self.VL_only_CEOSs:
+            return Tsat, liquids[0], gas, 0, 0.0
         return PVF_pure_newton(Tsat, P, liquids, gas, maxiter=200, xtol=1E-10)
 #        return PVF_pure_secant(Tsat, P, liquids, gas, maxiter=200, xtol=1E-10)
 
@@ -1718,13 +1727,23 @@ class FlashPureVLS(FlashBase):
             G_VL = 1e100
             # BUG - P IS NOW KNOWN!
             if self.gas_count and self.liquid_count:
-                VL_flash = self.flash(P=P, VF=.4)
-                spec_val_l = getattr(VL_flash.liquid0, spec)()
-                spec_val_g = getattr(VL_flash.gas, spec)()
+                if fixed_var == 'P':
+                    Psat, VL_liq, VL_gas, VL_iter, VL_err = self.flash_TVF(fixed_var_val, VF=.5)
+                elif fixed_var == 'T':
+                    Tsat, VL_liq, VL_gas, VL_iter, VL_err = self.flash_PVF(fixed_var_val, VF=.5)
+            elif fixed_var == 'V':
+                raise NotImplementedError("Does not make sense here because there is no actual vapor frac spec")
+                
+#                
+#                VL_flash = self.flash(P=P, VF=.4)
+                spec_val_l = getattr(VL_liq, spec)()
+                spec_val_g = getattr(VL_gas, spec)()
+#                spec_val_l = getattr(VL_flash.liquid0, spec)()
+#                spec_val_g = getattr(VL_flash.gas, spec)()
                 VF = (spec_val - spec_val_l)/(spec_val_g - spec_val_l)
                 if 0.0 <= VF <= 1.0:
-                    G_l = VL_flash.liquid0.G()
-                    G_g = VL_flash.gas.G()
+                    G_l = VL_liq.G()
+                    G_g = VL_gas.G()
                     G_VL = G_g*VF + G_l*(1.0 - VF)           
             else:
                 VF = None
@@ -1764,14 +1783,14 @@ class FlashPureVLS(FlashBase):
         flash_convergence = {}
         if G_VL < G_min:
             G_min = G_VL
-            ls = [VL_flash.liquid0]
-            gas_phase = VL_flash.gas
+            ls = [VL_liq]
+            gas_phase = VL_gas
             betas = [VF, 1.0 - VF]
             ss = [] # Ensure solid unset
-            T = VL_flash.T
+            T = VL_liq.T
             iterations = 0
             err = 0.0
-            flash_convergence['VF flash convergence'] = VL_flash.flash_convergence
+            flash_convergence['VF flash convergence'] = {'iterations': VL_iter, 'err': VL_err}
             
         if G_SF < G_min:
             try:
