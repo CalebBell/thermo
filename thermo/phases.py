@@ -1470,16 +1470,12 @@ class EOSGas(Phase):
         T_REF_IG = self.T_REF_IG
         P_REF_IG_INV = self.P_REF_IG_INV
 
-        S = 0.0
-        dS_pure_sum = 0.0
-        for zi, obj in zip(zs, HeatCapacityGases):
-            dS_pure_sum += zi*obj.T_dependent_property(T)
-        S += dS_pure_sum/T
+        dS_dT = self.Cp_ideal_gas()/T
         try:
-            S += self.eos_mix.dS_dep_dT_g
+            dS_dT += self.eos_mix.dS_dep_dT_g
         except AttributeError:
-            S += self.eos_mix.dS_dep_dT_l
-        return S
+            dS_dT += self.eos_mix.dS_dep_dT_l
+        return dS_dT
 
     def dS_dP(self):
         dS = 0.0
@@ -1490,6 +1486,32 @@ class EOSGas(Phase):
         except AttributeError:
             dS += self.eos_mix.dS_dep_dP_l
         return dS
+    
+    def dS_dT_P(self):
+        return self.dS_dT()
+    
+    def dS_dT_V(self):
+        # Good
+        '''
+        # Second last bit from 
+        from sympy import *
+        T, R = symbols('T, R')
+        P = symbols('P', cls=Function)
+        expr =-R*log(P(T)/101325)
+        diff(expr, T)
+        '''
+        dS_dT_V = self.Cp_ideal_gas()/self.T - R/self.P*self.dP_dT()
+        try:
+            dS_dT_V += self.eos_mix.dS_dep_dT_g_V
+        except AttributeError:
+            dS_dT_V += self.eos_mix.dS_dep_dT_l_V
+        return dS_dT_V
+
+    def dS_dP_T(self):
+        return self.dS_dP()
+
+    def dS_dP_V(self):
+        pass
             
     def dS_dzs(self):
         try:
@@ -1531,6 +1553,7 @@ def build_EOSLiquid():
     source = source.replace("'l'", "'g'")
     source = source.replace("'gORIG'", "'l'")
     
+    # TODO add new volume derivatives
     swap_strings = ('Cp_dep', 'd2P_dT2', 'd2P_dTdV', 'd2P_dV2', 'd2T_dV2',
                     'd2V_dT2', 'dH_dep_dP', 'dP_dT', 'dP_dV', 'phi',
                     'dS_dep_dP', 'dS_dep_dT', 'H_dep', 'S_dep', '.V', '.Z')
