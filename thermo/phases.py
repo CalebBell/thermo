@@ -1511,7 +1511,12 @@ class EOSGas(Phase):
         return self.dS_dP()
 
     def dS_dP_V(self):
-        pass
+        dS_dP_V = -R/self.P + self.Cp_ideal_gas()/self.T*self.dT_dP()
+        try:
+            dS_dP_V += self.eos_mix.dS_dep_dP_g_V
+        except AttributeError:
+            dS_dP_V += self.eos_mix.dS_dep_dP_l_V
+        return dS_dP_V
             
     def dS_dzs(self):
         try:
