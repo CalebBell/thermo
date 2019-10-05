@@ -1473,6 +1473,22 @@ def test_dS_dep_dP_V():
     expr = lambda P: eos.to(P=P, V=eos.V_g).S_dep_g
     assert_allclose(derivative(expr, eos.P, dx=eos.P*2e-7), eos.dS_dep_dP_g_V, rtol=1e-8)
 
+def test_dS_dep_dV_P():
+    kwargs = dict(Tc=507.6, Pc=3025000, omega=0.2975, T=299, P=1e5)
+    eos = PR(**kwargs)
+    
+    expr = lambda V: eos.to(P=eos.P, V=V).S_dep_l
+    assert_allclose(derivative(expr, eos.V_l, dx=eos.V_l*2e-7), eos.dS_dep_dV_l_P, rtol=1e-8)
+    
+    expr = lambda V: eos.to(P=eos.P, V=V).S_dep_g
+    assert_allclose(derivative(expr, eos.V_g, dx=eos.V_g*2e-7), eos.dS_dep_dV_g_P, rtol=1e-8)
+    
+    expr = lambda V: eos.to(T=eos.T, V=V).S_dep_l
+    assert_allclose(derivative(expr, eos.V_l, dx=eos.V_l*1e-8), eos.dS_dep_dV_l_T, rtol=1e-8)
+    
+    expr = lambda V: eos.to(T=eos.T, V=V).S_dep_g
+    assert_allclose(derivative(expr, eos.V_g, dx=eos.V_g*2e-8), eos.dS_dep_dV_g_T, rtol=1e-8)
+
 
 #@pytest.mark.xfail
 def test_failure_dP_dV_zero_division():

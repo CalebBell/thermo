@@ -2145,6 +2145,54 @@ should be calculated by this method, in a user subclass.')
             x0 = 1e100
         return (2.0*x0*catanh(x0*(V + V + delta)).real*d2a_alpha_dTdP_V
                 - R*(P*dT_dP/T - 1.0)/P)
+
+    @property
+    def dS_dep_dV_g_T(self):
+        r'''Derivative of departure entropy with respect to 
+        volume at constant temperature for the gas phase, [J/K/m^3]
+        
+        .. math::
+            \left(\frac{\partial S_{dep, g}}{\partial V}\right)_{T} = 
+            \left(\frac{\partial S_{dep, g}}{\partial P}\right)_{T} \cdot
+            \left(\frac{\partial P}{\partial V}\right)_{T} 
+        '''
+        return self.dS_dep_dP_g*self.dP_dV_g
+
+    @property
+    def dS_dep_dV_l_T(self):
+        r'''Derivative of departure entropy with respect to 
+        volume at constant temperature for the gas phase, [J/K/m^3]
+        
+        .. math::
+            \left(\frac{\partial S_{dep, l}}{\partial V}\right)_{T} = 
+            \left(\frac{\partial S_{dep, l}}{\partial P}\right)_{T} \cdot
+            \left(\frac{\partial P}{\partial V}\right)_{T} 
+        '''
+        return self.dS_dep_dP_l*self.dP_dV_l
+
+    @property
+    def dS_dep_dV_g_P(self):
+        r'''Derivative of departure entropy with respect to 
+        volume at constant pressure for the gas phase, [J/K/m^3]
+        
+        .. math::
+            \left(\frac{\partial S_{dep, g}}{\partial V}\right)_{P} = 
+            \left(\frac{\partial S_{dep, g}}{\partial T}\right)_{P} \cdot
+            \left(\frac{\partial T}{\partial V}\right)_{P} 
+        '''
+        return self.dS_dep_dT_g*self.dT_dV_g
+
+    @property
+    def dS_dep_dV_l_P(self):
+        r'''Derivative of departure entropy with respect to 
+        volume at constant pressure for the liquid phase, [J/K/m^3]
+        
+        .. math::
+            \left(\frac{\partial S_{dep, l}}{\partial V}\right)_{P} = 
+            \left(\frac{\partial S_{dep, l}}{\partial T}\right)_{P} \cdot
+            \left(\frac{\partial T}{\partial V}\right)_{P} 
+        '''
+        return self.dS_dep_dT_l*self.dT_dV_l
         
     @property
     def dfugacity_dT_l(self):
