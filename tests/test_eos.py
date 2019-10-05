@@ -1416,6 +1416,22 @@ def test_dH_dep_dP_V():
     assert_allclose(derivative(expr, eos.P, dx=eos.P*1e-6, order=11), eos.dH_dep_dP_g_V, rtol=1e-7)
     
 
+def test_dH_dep_dV_g_T_and_P():
+    kwargs = dict(Tc=507.6, Pc=3025000, omega=0.2975, T=299, P=1e5)
+    eos = PR(**kwargs)
+    
+    expr = lambda V: eos.to(T=eos.T, V=V).H_dep_l
+    assert_allclose(derivative(expr, eos.V_l, dx=eos.V_l*1e-6), eos.dH_dep_dV_l_T, rtol=1e-9)
+    
+    expr = lambda V: eos.to(T=eos.T, V=V).H_dep_g
+    assert_allclose(derivative(expr, eos.V_g, dx=eos.V_g*1e-6), eos.dH_dep_dV_g_T, rtol=1e-9)
+    
+    expr = lambda V: eos.to(P=eos.P, V=V).H_dep_l
+    assert_allclose(derivative(expr, eos.V_l, dx=eos.V_l*1e-6), eos.dH_dep_dV_l_P, rtol=1e-9)
+    
+    expr = lambda V: eos.to(P=eos.P, V=V).H_dep_g
+    assert_allclose(derivative(expr, eos.V_g, dx=eos.V_g*1e-6), eos.dH_dep_dV_g_P, rtol=1e-9)
+
 #@pytest.mark.xfail
 def test_failure_dP_dV_zero_division():
     Tc = 507.6
