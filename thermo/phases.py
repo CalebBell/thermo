@@ -257,34 +257,56 @@ class Phase(object):
     def dG_dV_P(self):
         return self.dG_dT_P()*self.dT_dV()
 
+
     def dU_dT(self):
         # Correct
         return -self.P*self.dV_dT() + self.dH_dT()
     
+    dU_dT_P = dU_dT
+    
+    def dU_dT_V(self):
+        return self.dH_dT_V() - self.V()*self.dP_dT()
+    
     def dU_dP(self):
-        # Correct
         return -self.P*self.dV_dP() - self.V() + self.dH_dP()
+    
+    dU_dP_T = dU_dP
+    
+    def dU_dP_V(self):
+        return self.dH_dP_V() - self.V()
+    
+    def dU_dV_T(self):
+        return self.dU_dP_T()*self.dP_dV()
+
+    def dU_dV_P(self):
+        return self.dU_dT_P()*self.dT_dV()
     
     def dA_dT(self):
         return -self.T*self.dS_dT() - self.S() + self.dU_dT()
     
+    dA_dT_P = dA_dT
+    
+    def dA_dT_V(self):
+        return (self.dH_dT_V() - self.V()*self.dP_dT() - self.T*self.dS_dT_V()
+                - self.S())
+
     def dA_dP(self):
         return -self.T*self.dS_dP() + self.dU_dP()
     
-    def dH_dV(self):
-        return self.dH_dT()/self.dV_dT()
-        
-    def dS_dV(self):
-        return self.dS_dT()/self.dV_dT()
+    dA_dP_T = dA_dP
+    
+    def dA_dP_V(self):
+        return (self.dH_dP_V() - self.V() - self.dT_dP()*self.S() 
+                - self.T*self.dS_dP_V())
 
-    def dG_dV(self):
-        return self.dG_dT()/self.dV_dT()
+    def dA_dV_T(self):
+        return self.dA_dP_T()*self.dP_dV()
 
-    def dU_dV(self):
-        return self.dU_dT()/self.dV_dT()
+    def dA_dV_P(self):
+        return self.dA_dT_P()*self.dT_dV()
+    
 
-    def dA_dV(self):
-        return self.dA_dT()/self.dV_dT()
+
     
     def G_dep(self):
         G_dep = self.H_dep() - self.T*self.S_dep()

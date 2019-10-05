@@ -377,3 +377,39 @@ def test_EOSGas_volume_HSGUA_derivatives():
     dS_dV_P_num = derivative(lambda V: gas.to(V=V, P=gas.P, zs=gas.zs).S(), gas.V(), dx=gas.V()*1e-7)
     assert_allclose(gas.dS_dV_P(), dS_dV_P_num, rtol=1e-7)
     
+
+    dG_dT_V_num = derivative(lambda T: gas.to(V=gas.V(), T=T, zs=gas.zs).G(), gas.T, dx=gas.T*1e-8)
+    assert_allclose(gas.dG_dT_V(), dG_dT_V_num, rtol=1e-7)
+    
+    dG_dP_V_num = derivative(lambda P: gas.to(V=gas.V(), P=P, zs=gas.zs).G(), gas.P, dx=gas.P*1e-6)
+    assert_allclose(gas.dG_dP_V(), dG_dP_V_num, rtol=1e-7)
+    
+    dG_dV_T_num = derivative(lambda V: gas.to(V=V, T=gas.T, zs=gas.zs).G(), gas.V(), dx=gas.V()*1e-6)
+    assert_allclose(gas.dG_dV_T(), dG_dV_T_num, rtol=1e-7)
+    
+    dG_dV_P_num = derivative(lambda V: gas.to(V=V, P=gas.P, zs=gas.zs).G(), gas.V(), dx=gas.V()*1e-6)
+    assert_allclose(gas.dG_dV_P(), dG_dV_P_num, rtol=1e-7)
+    
+    dU_dT_V_num = derivative(lambda T: gas.to(V=gas.V(), T=T, zs=gas.zs).U(), gas.T, dx=gas.T*1e-8)
+    assert_allclose(gas.dU_dT_V(), dU_dT_V_num)
+    
+    dU_dP_V_num = derivative(lambda P: gas.to(V=gas.V(), P=P, zs=gas.zs).U(), gas.P, dx=gas.P*1e-8)
+    assert_allclose(gas.dU_dP_V(), dU_dP_V_num)
+    
+    dU_dV_T_num = derivative(lambda V: gas.to(V=V, T=gas.T, zs=gas.zs).U(), gas.V(), dx=gas.V()*1e-8)
+    assert_allclose(gas.dU_dV_T(), dU_dV_T_num)
+    
+    dU_dV_P_num = derivative(lambda V: gas.to(V=V, P=gas.P, zs=gas.zs).U(), gas.V(), dx=gas.V()*1e-8)
+    assert_allclose(gas.dU_dV_P(), dU_dV_P_num)
+    
+    dA_dT_V_num = derivative(lambda T: gas.to(V=gas.V(), T=T, zs=gas.zs).A(), gas.T, dx=gas.T*1e-8)
+    assert_allclose(gas.dA_dT_V(), dA_dT_V_num)
+    
+    dA_dP_V_num = derivative(lambda P: gas.to(V=gas.V(), P=P, zs=gas.zs).A(), gas.P, dx=gas.P*1e-7)
+    assert_allclose(gas.dA_dP_V(), dA_dP_V_num)
+    
+    dA_dV_T_num = derivative(lambda V: gas.to(V=V, T=gas.T, zs=gas.zs).A(), gas.V(), dx=gas.V()*1e-8)
+    assert_allclose(gas.dA_dV_T(), dA_dV_T_num)
+    
+    dA_dV_P_num = derivative(lambda V: gas.to(V=V, P=gas.P, zs=gas.zs).A(), gas.V(), dx=gas.V()*1e-8)
+    assert_allclose(gas.dA_dV_P(), dA_dV_P_num)
