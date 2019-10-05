@@ -1407,6 +1407,15 @@ def test_d2a_alpha_dTdP_V():
 
 
 def test_dH_dep_dP_V():
+    '''
+    from sympy import *
+    V, P, R, b, delta, epsilon = symbols('V, P, R, b, delta, epsilon')
+    T, f0, f1 = symbols('T, f0, f1', cls=Function) # T, a_alpha and its derivative are functions of P now
+    H_dep = P*V - R*T(P) +2/sqrt(delta**2 - 4*epsilon)*(T(P)*f1(P) - f0(P))*atanh((2*V+delta)/sqrt(delta**2-4*epsilon))
+    fun = diff(H_dep, P)
+    # print(cse(fun, optimizations='basic'))
+    print(latex(fun))
+    '''
     kwargs = dict(Tc=507.6, Pc=3025000, omega=0.2975, T=299, P=1e5)
     eos = PR(**kwargs)
     expr = lambda P: eos.to(P=P, V=eos.V_l).H_dep_l
