@@ -1268,6 +1268,31 @@ should be calculated by this method, in a user subclass.')
         else:
             return self
 
+    def to_TV(self, T, V):
+        if T != self.T or V != self.V:
+            # Only allow creation of new class if volume actually specified
+            return self.__class__(T=T, V=V, Tc=self.Tc, Pc=self.Pc, omega=self.omega, **self.kwargs)
+        else:
+            return self
+        
+    def to_PV(self, P, V):
+        if P != self.P or V != self.V:
+            return self.__class__(V=V, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega, **self.kwargs)
+        else:
+            return self
+    
+    def to(self, T=None, P=None, V=None):
+        if T is not None and P is not None:
+            return self.to_TP(T, P)
+        elif T is not None and V is not None:
+            return self.to_TV(T, V)
+        elif P is not None and V is not None:
+            return self.to_PV(P, V)
+        else:
+            # Error message
+            return self.__class__(T=T, V=V, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega, **self.kwargs)
+        
+        
     @property
     def more_stable_phase(self):
         try:
@@ -1634,7 +1659,7 @@ should be calculated by this method, in a user subclass.')
             \frac{1}{V^3}
         '''
         return -self.d2V_dPdT_g/self.V_g**2 + 2*self.dV_dT_g*self.dV_dP_g/self.V_g**3
-
+    
     @property
     def dH_dep_dT_l(self):
         r'''Derivative of departure enthalpy with respect to 
@@ -1694,6 +1719,52 @@ should be calculated by this method, in a user subclass.')
         return (self.P*x1 - R + 2.0*self.T*x4*catanh(x4*x5).real*self.d2a_alpha_dT2 
                 - 4.0*x1*x6*(self.T*self.da_alpha_dT - x2)/(x5*x5*x6 - 1.0))
         
+    @property
+    def dH_dep_dT_l_V(self):
+        r'''Derivative of departure enthalpy with respect to 
+        temeprature at constant volume for the liquid phase, [(J/mol)/K]
+        
+        .. math::
+            \left(\frac{\partial H_{dep, l}}{\partial T}\right)_{V} = 
+            - R + \frac{2 T 
+            \operatorname{atanh}{\left(\frac{2 V_l + \delta}{\sqrt{\delta^{2}
+            - 4 \epsilon}} \right)} \frac{d^{2}}{d T^{2}} \operatorname{
+                a_{\alpha}}{\left(T \right)}}{\sqrt{\delta^{2} - 4 \epsilon}} 
+                + V_l \frac{\partial}{\partial T} P{\left(T,V \right)}
+        '''
+        T = self.T
+        delta, epsilon = self.delta, self.epsilon
+        V = self.V_l
+        dP_dT = self.dP_dT_l
+        try:
+            x0 = (delta*delta - 4.0*epsilon)**-0.5
+        except ZeroDivisionError:
+            x0 = 1e100
+        return -R + 2.0*T*x0*catanh(x0*(V + V + delta)).real*self.d2a_alpha_dT2 + V*dP_dT
+
+    @property
+    def dH_dep_dT_g_V(self):
+        r'''Derivative of departure enthalpy with respect to 
+        temeprature at constant volume for the gas phase, [(J/mol)/K]
+        
+        .. math::
+            \left(\frac{\partial H_{dep, g}}{\partial T}\right)_{V} = 
+            - R + \frac{2 T 
+            \operatorname{atanh}{\left(\frac{2 V_g + \delta}{\sqrt{\delta^{2}
+            - 4 \epsilon}} \right)} \frac{d^{2}}{d T^{2}} \operatorname{
+                a_{\alpha}}{\left(T \right)}}{\sqrt{\delta^{2} - 4 \epsilon}} 
+                + V_g \frac{\partial}{\partial T} P{\left(T,V \right)}
+        '''
+
+        T = self.T
+        delta, epsilon = self.delta, self.epsilon
+        V = self.V_g
+        dP_dT = self.dP_dT_g
+        try:
+            x0 = (delta*delta - 4.0*epsilon)**-0.5
+        except ZeroDivisionError:
+            x0 = 1e100
+        return -R + 2.0*T*x0*catanh(x0*(V + V + delta)).real*self.d2a_alpha_dT2 + V*dP_dT
         
     @property
     def dH_dep_dP_l(self):

@@ -267,19 +267,12 @@ class GCEOSMIX(GCEOS):
         return new
 
 
-
     def to_TP_zs(self, T, P, zs, fugacities=True):
         if T != self.T or P != self.P or zs != self.zs:
             return self.__class__(T=T, P=P, zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, fugacities=fugacities, **self.kwargs)
         else:
             return self
     
-    
-    def to_TP_pure(self, T, P, i):
-        kwargs = {} # TODO write function to get those
-        return self.eos_pure(T=T, P=P, Tc=self.Tcs[i], Pc=self.Pcs[i],
-                             omega=self.omegas[i])
-
     def to_TV_zs(self, T, V, zs, fugacities=True):
         if T == self.T and V == self.V and zs == self.zs:
             return self
@@ -289,6 +282,21 @@ class GCEOSMIX(GCEOS):
         if P == self.P and V == self.V and zs == self.zs:
             return self
         return self.__class__(P=P, V=V, zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, fugacities=fugacities, **self.kwargs)
+
+    def to(zs, T=None, P=None, V=None, fugacities=True):
+        if T is not None and P is not None:
+            return self.to_TP_zs(T, P, zs, fugacities)
+        elif T is not None and V is not None:
+            return self.to_TV_zs(T, V, zs, fugacities)
+        elif P is not None and V is not None:
+            return self.to_PV_zs(P, V, zs, fugacities)
+        else:
+            return self.__class__(T=T, P=P, V=V, zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, fugacities=fugacities, **self.kwargs)
+
+    def to_TP_pure(self, T, P, i):
+        kwargs = {} # TODO write function to get those
+        return self.eos_pure(T=T, P=P, Tc=self.Tcs[i], Pc=self.Pcs[i],
+                             omega=self.omegas[i])
 
     def pures(self):
         T, P, cmps = self.T, self.P, self.cmps
@@ -5957,7 +5965,7 @@ class PRMIX(GCEOSMIX, PR):
         return d3b_dninjnks
 
     def solve_T(self, P, V, quick=True):
-        if self.N == 1:
+        if self.N == 1 and type(self) is PRMIX:
             self.Tc = self.Tcs[0]
             self.kappa = self.kappas[0]
             self.a = self.ais[0]

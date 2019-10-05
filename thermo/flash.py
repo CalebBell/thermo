@@ -1650,7 +1650,7 @@ class FlashPureVLS(FlashBase):
         gas = self.gas.to_TP_zs(T, Psat, zs)
         liquids = [l.to_TP_zs(T, Psat, zs) for l in self.liquids]
 
-        if self.VL_only_CEOSs:
+        if self.VL_only_CEOSs and 0:
             return Psat, liquids[0], gas, 0, 0.0
 #        return TVF_pure_newton(Psat, T, liquids, gas, maxiter=200, xtol=1E-10)
         return TVF_pure_secant(Psat, T, liquids, gas, maxiter=200, xtol=1E-10)
@@ -1664,7 +1664,7 @@ class FlashPureVLS(FlashBase):
         gas = self.gas.to_TP_zs(Tsat, P, zs)
         liquids = [l.to_TP_zs(Tsat, P, zs) for l in self.liquids]
         
-        if self.VL_only_CEOSs:
+        if self.VL_only_CEOSs and 0:
             return Tsat, liquids[0], gas, 0, 0.0
         return PVF_pure_newton(Tsat, P, liquids, gas, maxiter=200, xtol=1E-10)
 #        return PVF_pure_secant(Tsat, P, liquids, gas, maxiter=200, xtol=1E-10)

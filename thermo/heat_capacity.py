@@ -788,7 +788,8 @@ class HeatCapacityGas(TDependentProperty):
     ranked_methods = [TRCIG, POLING, COOLPROP, LASTOVKA_SHAW, CRCSTD, POLING_CONST, VDI_TABULAR]
     '''Default rankings of the available methods.'''
 
-    def __init__(self, CASRN='', MW=None, similarity_variable=None, best_fit=None):
+    def __init__(self, CASRN='', MW=None, similarity_variable=None, 
+                 best_fit=None):
         self.CASRN = CASRN
         self.MW = MW
         self.similarity_variable = similarity_variable
