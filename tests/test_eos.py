@@ -1441,6 +1441,39 @@ def test_dH_dep_dV_g_T_and_P():
     expr = lambda V: eos.to(P=eos.P, V=V).H_dep_g
     assert_allclose(derivative(expr, eos.V_g, dx=eos.V_g*1e-6), eos.dH_dep_dV_g_P, rtol=1e-9)
 
+
+def test_dS_dep_dT_l_V():
+    '''
+    from sympy import *
+    V, T, R, b, delta, epsilon = symbols('V, T, R, b, delta, epsilon')
+    P, a_alpha, aalpha2 = symbols('P, a_alpha, a_alpha2', cls=Function)
+    
+    # dS_dT|V
+    S_dep = R*log(P(T, V)*V/(R*T)) + R*log(V-b)+2*Derivative(a_alpha(T), T)*atanh((2*V+delta)/sqrt(delta**2-4*epsilon))/sqrt(delta**2-4*epsilon)-R*log(V)
+    # (cse(diff(S_dep, T), optimizations='basic'))
+    print(latex(diff(S_dep, T)))
+    '''
+    kwargs = dict(Tc=507.6, Pc=3025000, omega=0.2975, T=299, P=1e5)
+    eos = PR(**kwargs)
+    
+    expr = lambda T: eos.to(T=T, V=eos.V_l).S_dep_l
+    assert_allclose(derivative(expr, eos.T, dx=eos.T*3e-8), eos.dS_dep_dT_l_V, rtol=1e-8)
+    
+    expr = lambda T: eos.to(T=T, V=eos.V_g).S_dep_g
+    assert_allclose(derivative(expr, eos.T, dx=eos.T*3e-8), eos.dS_dep_dT_g_V, rtol=1e-8)
+
+
+def test_dS_dep_dP_V():
+    kwargs = dict(Tc=507.6, Pc=3025000, omega=0.2975, T=299, P=1e5)
+    eos = PR(**kwargs)
+    
+    expr = lambda P: eos.to(P=P, V=eos.V_l).S_dep_l
+    assert_allclose(derivative(expr, eos.P, dx=eos.P*2e-7), eos.dS_dep_dP_l_V, rtol=1e-8)
+    
+    expr = lambda P: eos.to(P=P, V=eos.V_g).S_dep_g
+    assert_allclose(derivative(expr, eos.P, dx=eos.P*2e-7), eos.dS_dep_dP_g_V, rtol=1e-8)
+
+
 #@pytest.mark.xfail
 def test_failure_dP_dV_zero_division():
     Tc = 507.6

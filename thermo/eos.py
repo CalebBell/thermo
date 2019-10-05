@@ -1924,7 +1924,7 @@ should be calculated by this method, in a user subclass.')
     @property
     def dS_dep_dT_l(self):
         r'''Derivative of departure entropy with respect to 
-        temperature for the liquid phase, [(J/mol)/K]
+        temperature for the liquid phase, [(J/mol)/K^2]
         
         .. math::
             \frac{\partial S_{dep, l}}{\partial T} = - \frac{R \frac{d}{d T}
@@ -1959,7 +1959,7 @@ should be calculated by this method, in a user subclass.')
     @property
     def dS_dep_dT_g(self):
         r'''Derivative of departure entropy with respect to 
-        temperature for the gas phase, [(J/mol)/K]
+        temperature for the gas phase, [(J/mol)/K^2]
         
         .. math::
             \frac{\partial S_{dep, g}}{\partial T} = - \frac{R \frac{d}{d T}
@@ -1993,9 +1993,57 @@ should be calculated by this method, in a user subclass.')
                 + 2.0*x6*catanh(x6*x7).real*self.d2a_alpha_dT2)
 
     @property
+    def dS_dep_dT_l_V(self):
+        r'''Derivative of departure entropy with respect to 
+        temeprature at constant volume for the liquid phase, [(J/mol)/K^2]
+        
+        .. math::
+            \left(\frac{\partial S_{dep, l}}{\partial T}\right)_{V} = 
+            \frac{R^{2} T \left(\frac{V \frac{\partial}{\partial T} P{\left(T,V 
+            \right)}}{R T} - \frac{V P{\left(T,V \right)}}{R T^{2}}\right)}{
+            V P{\left(T,V \right)}} + \frac{2 \operatorname{atanh}{\left(
+            \frac{2 V + \delta}{\sqrt{\delta^{2} - 4 \epsilon}} \right)}
+            \frac{d^{2}}{d T^{2}} \operatorname{a \alpha}{\left(T \right)}}
+            {\sqrt{\delta^{2} - 4 \epsilon}}
+        '''
+        T, P = self.T, self.P
+        delta, epsilon = self.delta, self.epsilon
+        V = self.V_l
+        dP_dT = self.dP_dT_l
+        try:
+            x1 = (delta*delta - 4.0*epsilon)**-0.5
+        except ZeroDivisionError:
+            x1 = 1e100
+        return (R*(dP_dT/P - 1.0/T) + 2.0*x1*catanh(x1*(V + V + delta)).real*self.d2a_alpha_dT2)
+            
+    @property
+    def dS_dep_dT_g_V(self):
+        r'''Derivative of departure entropy with respect to 
+        temeprature at constant volume for the gas phase, [(J/mol)/K^2]
+        
+        .. math::
+            \left(\frac{\partial S_{dep, g}}{\partial T}\right)_{V} = 
+            \frac{R^{2} T \left(\frac{V \frac{\partial}{\partial T} P{\left(T,V 
+            \right)}}{R T} - \frac{V P{\left(T,V \right)}}{R T^{2}}\right)}{
+            V P{\left(T,V \right)}} + \frac{2 \operatorname{atanh}{\left(
+            \frac{2 V + \delta}{\sqrt{\delta^{2} - 4 \epsilon}} \right)}
+            \frac{d^{2}}{d T^{2}} \operatorname{a \alpha}{\left(T \right)}}
+            {\sqrt{\delta^{2} - 4 \epsilon}}
+        '''
+        T, P = self.T, self.P
+        delta, epsilon = self.delta, self.epsilon
+        V = self.V_g
+        dP_dT = self.dP_dT_g
+        try:
+            x1 = (delta*delta - 4.0*epsilon)**-0.5
+        except ZeroDivisionError:
+            x1 = 1e100
+        return (R*(dP_dT/P - 1.0/T) + 2.0*x1*catanh(x1*(V + V + delta)).real*self.d2a_alpha_dT2)
+
+    @property
     def dS_dep_dP_l(self):
         r'''Derivative of departure entropy with respect to 
-        pressure for the liquid phase, [(J/mol)/Pa]
+        pressure for the liquid phase, [(J/mol)/K/Pa]
         
         .. math::
             \frac{\partial S_{dep, l}}{\partial P} = - \frac{R \frac{d}{d P}
@@ -2022,7 +2070,7 @@ should be calculated by this method, in a user subclass.')
     @property
     def dS_dep_dP_g(self):
         r'''Derivative of departure entropy with respect to 
-        pressure for the gas phase, [(J/mol)/Pa]
+        pressure for the gas phase, [(J/mol)/K/Pa]
         
         .. math::
             \frac{\partial S_{dep, g}}{\partial P} = - \frac{R \frac{d}{d P}
@@ -2045,6 +2093,58 @@ should be calculated by this method, in a user subclass.')
             x4 = 1e200
         return (-x1*x3 - 4.0*x2*x4*self.da_alpha_dT/(x4*(self.delta + 2*x0)**2 
                 - 1) - x3/(self.b - x0) + R*x1*(self.P*x2 + x0)/self.P)
+
+    @property
+    def dS_dep_dP_g_V(self):
+        r'''Derivative of departure entropy with respect to 
+        pressure at constant volume for the gas phase, [(J/mol)/K/Pa]
+        
+        .. math::
+            \left(\frac{\partial S_{dep, g}}{\partial P}\right)_{V} = 
+            \frac{2 \operatorname{atanh}{\left(\frac{2 V + \delta}{
+            \sqrt{\delta^{2} - 4 \epsilon}} \right)} 
+            \left(\frac{\partial \left(\frac{\partial a \alpha}{\partial T}
+            \right)_P}{\partial P}\right)_{V}}{\sqrt{\delta^{2} - 4 \epsilon}} 
+            + \frac{R^{2} \left(- \frac{P V \frac{d}{d P} T{\left(P \right)}}
+            {R T^{2}{\left(P \right)}}
+             + \frac{V}{R T{\left(P \right)}}\right) T{\left(P \right)}}{P V}
+        '''
+        T, P, delta, epsilon = self.T, self.P, self.delta, self.epsilon
+        d2a_alpha_dT2 = self.d2a_alpha_dT2 
+        V, dT_dP = self.V_g, self.dT_dP_g
+        d2a_alpha_dTdP_V = d2a_alpha_dT2*dT_dP
+        try:
+            x0 = (delta*delta - 4.0*epsilon)**-0.5
+        except ZeroDivisionError:
+            x0 = 1e100
+        return (2.0*x0*catanh(x0*(V + V + delta)).real*d2a_alpha_dTdP_V
+                - R*(P*dT_dP/T - 1.0)/P)
+
+    @property
+    def dS_dep_dP_l_V(self):
+        r'''Derivative of departure entropy with respect to 
+        pressure at constant volume for the liquid phase, [(J/mol)/K/Pa]
+        
+        .. math::
+            \left(\frac{\partial S_{dep, l}}{\partial P}\right)_{V} = 
+            \frac{2 \operatorname{atanh}{\left(\frac{2 V + \delta}{
+            \sqrt{\delta^{2} - 4 \epsilon}} \right)} 
+            \left(\frac{\partial \left(\frac{\partial a \alpha}{\partial T}
+            \right)_P}{\partial P}\right)_{V}}{\sqrt{\delta^{2} - 4 \epsilon}} 
+            + \frac{R^{2} \left(- \frac{P V \frac{d}{d P} T{\left(P \right)}}
+            {R T^{2}{\left(P \right)}}
+             + \frac{V}{R T{\left(P \right)}}\right) T{\left(P \right)}}{P V}
+        '''
+        T, P, delta, epsilon = self.T, self.P, self.delta, self.epsilon
+        d2a_alpha_dT2 = self.d2a_alpha_dT2 
+        V, dT_dP = self.V_l, self.dT_dP_l
+        d2a_alpha_dTdP_V = d2a_alpha_dT2*dT_dP
+        try:
+            x0 = (delta*delta - 4.0*epsilon)**-0.5
+        except ZeroDivisionError:
+            x0 = 1e100
+        return (2.0*x0*catanh(x0*(V + V + delta)).real*d2a_alpha_dTdP_V
+                - R*(P*dT_dP/T - 1.0)/P)
         
     @property
     def dfugacity_dT_l(self):
