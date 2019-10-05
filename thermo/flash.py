@@ -909,7 +909,7 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
     store = []
     global iterations
     iterations = 0
-    
+    print(fixed_var, iter_var)
     if fixed_var == iter_var:
         raise ValueError("Fixed variable cannot be the same as iteration variable")
     if fixed_var not in ('T', 'P', 'V'):
@@ -925,6 +925,7 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
 #    print('spec_fun', spec_fun)
     if fprime:
         try:
+            # Gotta be a lookup by (spec, iter_var, fixed_var)
             der_attr = strs_to_ders[(spec, iter_var)]
         except KeyError:
             der_attr = 'd' + spec + '_d' + iter_var
@@ -940,7 +941,7 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
         err = spec_fun(p) - spec_val
         store[:] = (p, err)
         if fprime:
-#            print([err, guess])
+            print([err, guess])
             derr = der_attr_fun(p)
             return err, derr
         return err

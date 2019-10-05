@@ -26,10 +26,9 @@ import pytest
 from thermo import eos
 from thermo.eos import *
 from thermo.utils import allclose_variable
-from scipy.misc import derivative
 from fluids.constants import R
 from math import log, exp, sqrt
-from fluids.numerics import linspace
+from fluids.numerics import linspace, derivative
 
 
 @pytest.mark.slow
@@ -1386,6 +1385,19 @@ def test_dH_dep_dT_V():
     eos = IG(**kwargs)    
     expr = lambda T: eos.to(T=T, V=eos.V_g).H_dep_g
     assert_allclose(derivative(expr, eos.T, dx=1e-3), eos.dH_dep_dT_g_V, rtol=1e-8)
+
+
+def test_da_alpha_dP_V():
+    kwargs = dict(Tc=507.6, Pc=3025000, omega=0.2975, T=299, P=1e5)
+    eos = PR(**kwargs)
+    expr = lambda P: eos.to(P=P, V=eos.V_l).a_alpha
+    assert_allclose(derivative(expr, eos.P, dx=eos.P*2e-6, order=11), eos.da_alpha_dP_l_V, rtol=1e-8)
+    
+    kwargs = dict(Tc=507.6, Pc=3025000, omega=0.2975, T=299, P=1e5)
+    eos = PR(**kwargs)
+    expr = lambda P: eos.to(P=P, V=eos.V_g).a_alpha
+    assert_allclose(derivative(expr, eos.P, dx=eos.P*2e-6, order=11), eos.da_alpha_dP_g_V, rtol=1e-8)
+    
 
 #@pytest.mark.xfail
 def test_failure_dP_dV_zero_division():

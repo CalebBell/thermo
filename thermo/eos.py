@@ -2161,6 +2161,32 @@ should be calculated by this method, in a user subclass.')
         dV_dP = self.dV_dP_l
         return V_inv*(self.d2V_dTdP_l - dV_dT*dV_dP*V_inv)
 
+    @property
+    def da_alpha_dP_g_V(self):
+        r'''Derivative of the `a_alpha` with respect to 
+        pressure at constant volume (varying T) for the gas phase, 
+        [J^2/mol^2/Pa^2]
+        
+        .. math::
+            \left(\frac{\partial a \alpha}{\partial P}\right)_{V}
+            = \left(\frac{\partial a \alpha}{\partial T}\right)_{P}
+            \cdot\left( \frac{\partial T}{\partial P}\right)_V
+        '''
+        return self.da_alpha_dT*self.dT_dP_g
+        
+    @property
+    def da_alpha_dP_l_V(self):
+        r'''Derivative of the `a_alpha` with respect to 
+        pressure at constant volume (varying T) for the liquid phase, 
+        [J^2/mol^2/Pa^2]
+        
+        .. math::
+            \left(\frac{\partial a \alpha}{\partial P}\right)_{V}
+            = \left(\frac{\partial a \alpha}{\partial T}\right)_{P}
+            \cdot\left( \frac{\partial T}{\partial P}\right)_V
+        '''
+        return self.da_alpha_dT*self.dT_dP_l
+
 
 class GCEOS_DUMMY(GCEOS):
     Tc = None
