@@ -345,3 +345,21 @@ def test_chemical_potential():
     assert_allclose(gammas_parent, gammas_expect, rtol=1e-12)
     
     
+def test_EOSGas_volume_HSGUA_derivatives():
+    HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [2.3511458696647882e-21, -9.223721411371584e-18, 1.3574178156001128e-14, -8.311274917169928e-12, 
+                                                                  4.601738891380102e-10, 1.78316202142183e-06, -0.0007052056417063217, 0.13263597297874355, 28.44324970462924])), ]
+    kwargs = dict(eos_kwargs=dict(Tcs=[512.5], Pcs=[8084000.0], omegas=[.559]),
+                 HeatCapacityGases=HeatCapacityGases)
+    gas = EOSGas(PRMIX, T=330, P=1e5, zs=[1], **kwargs)
+    
+    dH_dT_V_num = derivative(lambda T: gas.to(V=gas.V(), T=T, zs=gas.zs).H(), gas.T, dx=gas.T*1e-6)
+    assert_allclose(dH_dT_V_num, gas.dH_dT_V(), rtol=1e-8)
+    
+    dH_dP_V_num = derivative(lambda P: gas.to(V=gas.V(), P=P, zs=gas.zs).H(), gas.P, dx=gas.P*1e-7)
+    assert_allclose(dH_dP_V_num, gas.dH_dP_V(), rtol=1e-8)
+    
+    dH_dV_T_num = derivative(lambda V: gas.to(V=V, T=gas.T, zs=gas.zs).H(), gas.V(), dx=gas.V()*2e-7)
+    assert_allclose(dH_dV_T_num, gas.dH_dV_T(), rtol=1e-8)
+    
+    dH_dV_P_num = derivative(lambda V: gas.to(V=V, P=gas.P, zs=gas.zs).H(), gas.V(), dx=gas.V()*1e-7)
+    assert_allclose(dH_dV_P_num, gas.dH_dV_P(), rtol=1e-8)    

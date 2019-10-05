@@ -237,10 +237,20 @@ class Phase(object):
     
     def dG_dT(self):
         return -self.T*self.dS_dT() - self.S() + self.dH_dT()
+
+    def dG_dT_V(self):
+        return -self.T*self.dS_dT_V() - self.S() + self.dH_dT_V()
     
     def dG_dP(self):
         return -self.T*self.dS_dP() + self.dH_dP()
-    
+
+    def dG_dP_V(self):
+        return -self.T*self.dS_dP_V() + self.dH_dP_V()
+
+#    def dG_dV_T(self):
+        # probably wrong
+#        return -self.T*self.dS_dV_T() - self.S() + self.dH_dV_T()
+#    
     def dU_dT(self):
         # Correct
         return -self.P*self.dV_dT() + self.dH_dT()
@@ -1248,6 +1258,7 @@ class EOSGas(Phase):
 
         return new
         
+    to = to_zs_TPV
         
 
         
@@ -1399,6 +1410,44 @@ class EOSGas(Phase):
             return self.eos_mix.dH_dep_dP_g
         except AttributeError:
             return self.eos_mix.dH_dep_dP_l
+
+    def dH_dT_P(self):
+        return self.dH_dT()
+        
+    def dH_dT_V(self):
+        dH_dT_V = self.Cp_ideal_gas()
+        try:
+            dH_dT_V += self.eos_mix.dH_dep_dT_g_V
+        except AttributeError:
+            dH_dT_V += self.eos_mix.dH_dep_dT_l_V
+        return dH_dT_V
+
+    def dH_dP_T(self):
+        return self.dH_dP()
+
+    def dH_dP_V(self):
+        dH_dP_V = self.Cp_ideal_gas()*self.dT_dP()
+        try:
+            dH_dP_V += self.eos_mix.dH_dep_dP_g_V 
+        except AttributeError:
+            dH_dP_V += self.eos_mix.dH_dep_dP_l_V
+        return dH_dP_V
+
+    def dH_dV_T(self):
+        dH_dV_T = 0.0
+        try:
+            dH_dV_T += self.eos_mix.dH_dep_dV_g_T
+        except AttributeError:
+            dH_dV_T += self.eos_mix.dH_dep_dV_l_T
+        return dH_dV_T
+        
+    def dH_dV_P(self):
+        dH_dV_P = self.dT_dV()*self.Cp_ideal_gas()
+        try:
+            dH_dV_P += self.eos_mix.dH_dep_dV_g_P
+        except AttributeError:
+            dH_dV_P += self.eos_mix.dH_dep_dV_l_P
+        return dH_dV_P
 
     def dH_dzs(self):
         try:
