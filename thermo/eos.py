@@ -2187,6 +2187,33 @@ should be calculated by this method, in a user subclass.')
         '''
         return self.da_alpha_dT*self.dT_dP_l
 
+    @property
+    def d2a_alpha_dTdP_g_V(self):
+        r'''Derivative of the temperature derivative of `a_alpha` with respect  
+        to pressure at constant volume (varying T) for the gas phase, 
+        [J^2/mol^2/Pa^2/K]
+        
+        .. math::
+            \left(\frac{\partial \left(\frac{\partial a \alpha}{\partial T}
+            \right)_P}{\partial P}\right)_{V}
+            = \left(\frac{\partial^2 a \alpha}{\partial T^2}\right)_{P}
+            \cdot\left( \frac{\partial T}{\partial P}\right)_V
+            '''
+        return self.d2a_alpha_dT2*self.dT_dP_g
+
+    @property
+    def d2a_alpha_dTdP_l_V(self):
+        r'''Derivative of the temperature derivative of `a_alpha` with respect  
+        to pressure at constant volume (varying T) for the liquid phase, 
+        [J^2/mol^2/Pa^2/K]
+        
+        .. math::
+            \left(\frac{\partial \left(\frac{\partial a \alpha}{\partial T}
+            \right)_P}{\partial P}\right)_{V}
+            = \left(\frac{\partial^2 a \alpha}{\partial T^2}\right)_{P}
+            \cdot\left( \frac{\partial T}{\partial P}\right)_V
+            '''
+        return self.d2a_alpha_dT2*self.dT_dP_l
 
 class GCEOS_DUMMY(GCEOS):
     Tc = None

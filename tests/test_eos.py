@@ -1393,11 +1393,17 @@ def test_da_alpha_dP_V():
     expr = lambda P: eos.to(P=P, V=eos.V_l).a_alpha
     assert_allclose(derivative(expr, eos.P, dx=eos.P*2e-6, order=11), eos.da_alpha_dP_l_V, rtol=1e-8)
     
-    kwargs = dict(Tc=507.6, Pc=3025000, omega=0.2975, T=299, P=1e5)
-    eos = PR(**kwargs)
     expr = lambda P: eos.to(P=P, V=eos.V_g).a_alpha
     assert_allclose(derivative(expr, eos.P, dx=eos.P*2e-6, order=11), eos.da_alpha_dP_g_V, rtol=1e-8)
-    
+
+
+def test_d2a_alpha_dTdP_V():
+    kwargs = dict(Tc=507.6, Pc=3025000, omega=0.2975, T=299, P=1e5)
+    eos = PR(**kwargs)
+    expr = lambda P: eos.to(P=P, V=eos.V_l).da_alpha_dT
+    assert_allclose(derivative(expr, eos.P, dx=eos.P*4e-6, order=11, n=1), eos.d2a_alpha_dTdP_l_V, rtol=1e-7)
+    expr = lambda P: eos.to(P=P, V=eos.V_g).da_alpha_dT
+    assert_allclose(derivative(expr, eos.P, dx=eos.P*4e-6, order=11, n=1), eos.d2a_alpha_dTdP_g_V, rtol=1e-7)    
 
 #@pytest.mark.xfail
 def test_failure_dP_dV_zero_division():
