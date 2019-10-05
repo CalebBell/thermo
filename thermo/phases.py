@@ -237,6 +237,8 @@ class Phase(object):
     
     def dG_dT(self):
         return -self.T*self.dS_dT() - self.S() + self.dH_dT()
+    
+    dG_dT_P = dG_dT
 
     def dG_dT_V(self):
         return -self.T*self.dS_dT_V() - self.S() + self.dH_dT_V()
@@ -244,13 +246,17 @@ class Phase(object):
     def dG_dP(self):
         return -self.T*self.dS_dP() + self.dH_dP()
 
-    def dG_dP_V(self):
-        return -self.T*self.dS_dP_V() + self.dH_dP_V()
+    dG_dP_T = dG_dP
 
-#    def dG_dV_T(self):
-        # probably wrong
-#        return -self.T*self.dS_dV_T() - self.S() + self.dH_dV_T()
-#    
+    def dG_dP_V(self):
+        return -self.T*self.dS_dP_V() - self.dT_dP()*self.S() + self.dH_dP_V()
+    
+    def dG_dV_T(self):
+        return self.dG_dP_T()*self.dP_dV()
+
+    def dG_dV_P(self):
+        return self.dG_dT_P()*self.dT_dV()
+
     def dU_dT(self):
         # Correct
         return -self.P*self.dV_dT() + self.dH_dT()
@@ -1517,7 +1523,14 @@ class EOSGas(Phase):
         except AttributeError:
             dS_dP_V += self.eos_mix.dS_dep_dP_l_V
         return dS_dP_V
+
+    def dS_dV_T(self):
+        return self.dS_dP_T()*self.dP_dV()
             
+    def dS_dV_P(self):
+        return self.dS_dT_P()*self.dT_dV()
+    
+    
     def dS_dzs(self):
         try:
             return self._dS_dzs

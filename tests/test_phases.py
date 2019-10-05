@@ -363,3 +363,17 @@ def test_EOSGas_volume_HSGUA_derivatives():
     
     dH_dV_P_num = derivative(lambda V: gas.to(V=V, P=gas.P, zs=gas.zs).H(), gas.V(), dx=gas.V()*1e-7)
     assert_allclose(dH_dV_P_num, gas.dH_dV_P(), rtol=1e-8)    
+    
+    
+    dS_dT_V_num = derivative(lambda T: gas.to(V=gas.V(), T=T, zs=gas.zs).S(), gas.T, dx=gas.T*1e-8)
+    assert_allclose(gas.dS_dT_V(), dS_dT_V_num, rtol=1e-7)
+    
+    dS_dP_V_num = derivative(lambda P: gas.to(V=gas.V(), P=P, zs=gas.zs).S(), gas.P, dx=gas.P*1e-7)
+    assert_allclose(gas.dS_dP_V(), dS_dP_V_num, rtol=1e-7)
+    
+    dS_dV_T_num = derivative(lambda V: gas.to(V=V, T=gas.T, zs=gas.zs).S(), gas.V(), dx=gas.V()*1e-7)
+    assert_allclose(gas.dS_dV_T(), dS_dV_T_num, rtol=1e-7)
+    
+    dS_dV_P_num = derivative(lambda V: gas.to(V=V, P=gas.P, zs=gas.zs).S(), gas.V(), dx=gas.V()*1e-7)
+    assert_allclose(gas.dS_dV_P(), dS_dV_P_num, rtol=1e-7)
+    
