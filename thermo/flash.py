@@ -51,7 +51,8 @@ from thermo.phases import Phase, gas_phases, liquid_phases, solid_phases, EOSLiq
 from thermo.phase_identification import identify_sort_phases
 from thermo.bulk import default_settings
 
-def sequential_substitution_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
+
+def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
                                gas_phase, maxiter=1000, tol=1E-13,
                                trivial_solution_tol=1e-5, V_over_F_guess=None):
     
@@ -64,8 +65,10 @@ def sequential_substitution_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
     cmps = range(len(zs))
     
     for iteration in range(maxiter):
-        g = gas_phase.to_TP_zs(T=T, P=P, zs=ys)
-        l = liquid_phase.to_TP_zs(T=T, P=P, zs=xs)
+        g = gas_phase.to_zs_TPV(ys, T=T, P=P, V=V)
+#        g = gas_phase.to_TP_zs(T=T, P=P, zs=ys)
+        l = liquid_phase.to_zs_TPV(xs, T=T, P=P, V=V)        
+#        l = liquid_phase.to_TP_zs(T=T, P=P, zs=xs)
         
         lnphis_g = g.lnphis()
         lnphis_l = l.lnphis()
