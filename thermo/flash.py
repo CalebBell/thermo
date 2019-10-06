@@ -833,22 +833,43 @@ def dew_P_Michelsen_Mollerup(P_guess, T, zs, liquid_phase, gas_phase,
     return P_guess, xs, l, g, iteration, abs(P_guess - P_guess_old)
 
 
+# spec, iter_var, fixed_var
+strs_to_ders = {('H', 'T', 'P'): 'dH_dT_P',
+                ('S', 'T', 'P'): 'dS_dT_P',
+                ('G', 'T', 'P'): 'dG_dT_P',
+                ('U', 'T', 'P'): 'dU_dT_P',
+                ('A', 'T', 'P'): 'dA_dT_P',
 
-strs_to_ders = {('H', 'T'): 'dH_dT',
-                ('S', 'T'): 'dS_dT',
-                ('G', 'T'): 'dG_dT',
-                ('U', 'T'): 'dU_dT',
-                ('A', 'T'): 'dA_dT',
-                ('H', 'P'): 'dH_dP',
-                ('S', 'P'): 'dS_dP',
-                ('G', 'P'): 'dG_dP',
-                ('U', 'P'): 'dU_dP',
-                ('A', 'P'): 'dA_dP',
-                ('H', 'V'): 'dH_dV',
-                ('S', 'V'): 'dS_dV',
-                ('G', 'V'): 'dG_dV',
-                ('U', 'V'): 'dU_dV',
-                ('A', 'V'): 'dA_dV'}
+                ('H', 'T', 'V'): 'dH_dT_V',
+                ('S', 'T', 'V'): 'dS_dT_V',
+                ('G', 'T', 'V'): 'dG_dT_V',
+                ('U', 'T', 'V'): 'dU_dT_V',
+                ('A', 'T', 'V'): 'dA_dT_V',
+
+                ('H', 'P', 'T'): 'dH_dP_T',
+                ('S', 'P', 'T'): 'dS_dP_T',
+                ('G', 'P', 'T'): 'dG_dP_T',
+                ('U', 'P', 'T'): 'dU_dP_T',
+                ('A', 'P', 'T'): 'dA_dP_T',
+
+                ('H', 'P', 'V'): 'dH_dP_V',
+                ('S', 'P', 'V'): 'dS_dP_V',
+                ('G', 'P', 'V'): 'dG_dP_V',
+                ('U', 'P', 'V'): 'dU_dP_V',
+                ('A', 'P', 'V'): 'dA_dP_V',
+
+                ('H', 'V', 'T'): 'dH_dV_T',
+                ('S', 'V', 'T'): 'dS_dV_T',
+                ('G', 'V', 'T'): 'dG_dV_T',
+                ('U', 'V', 'T'): 'dU_dV_T',
+                ('A', 'V', 'T'): 'dA_dV_T',
+
+                ('H', 'V', 'P'): 'dH_dV_P',
+                ('S', 'V', 'P'): 'dS_dV_P',
+                ('G', 'V', 'P'): 'dG_dV_P',
+                ('U', 'V', 'P'): 'dU_dV_P',
+                ('A', 'V', 'P'): 'dA_dV_P',
+}
 
 def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,  
                        iter_var='T', fixed_var='P', spec='H',
@@ -909,7 +930,6 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
     store = []
     global iterations
     iterations = 0
-    print(fixed_var, iter_var)
     if fixed_var == iter_var:
         raise ValueError("Fixed variable cannot be the same as iteration variable")
     if fixed_var not in ('T', 'P', 'V'):
@@ -926,7 +946,7 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
     if fprime:
         try:
             # Gotta be a lookup by (spec, iter_var, fixed_var)
-            der_attr = strs_to_ders[(spec, iter_var)]
+            der_attr = strs_to_ders[(spec, iter_var, fixed_var)]
         except KeyError:
             der_attr = 'd' + spec + '_d' + iter_var
         der_attr_fun = getattr(phase.__class__, der_attr)
@@ -941,7 +961,7 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
         err = spec_fun(p) - spec_val
         store[:] = (p, err)
         if fprime:
-            print([err, guess])
+#            print([err, guess])
             derr = der_attr_fun(p)
             return err, derr
         return err
@@ -1063,7 +1083,7 @@ def solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var,
     
     _, phase, iterations, err = TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val=fixed_var_val, spec_val=spec_val, ytol=1e-8*abs(spec_val),
                                                    iter_var=iter_var, fixed_var=fixed_var, spec=spec, oscillation_detection=True,
-                                                   minimum_progress=0.0, maxiter=80, fprime=True,
+                                                   minimum_progress=1e-5, maxiter=80, fprime=True,
                                                    bounded=True, min_bound=min_bound, max_bound=max_bound)
     T, P = phase.T, phase.P
     return T, P, phase, iterations, err
