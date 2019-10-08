@@ -1433,7 +1433,7 @@ spec_to_iter_vars = {(True, False, False, True, False, False) : ('T', 'H', 'P'),
                      (False, True, False, False, True, False) : ('P', 'S', 'T'),
                      (False, True, False, False, False, True) : ('P', 'U', 'T'),
 
-                     (False, False, True, True, False, False) : ('V', 'H', 'P'),
+                     (False, False, True, True, False, False) : ('V', 'H', 'P'), # TODo change these ones to iterate on T?
                      (False, False, True, False, True, False) : ('V', 'S', 'P'),
                      (False, False, True, False, False, True) : ('V', 'U', 'P'),
 }
@@ -1603,27 +1603,6 @@ class FlashPureVLS(FlashBase):
                                     constants=constants, correlations=correlations,
                                     flasher=self)
 
-        if T is not None and S is not None:
-            pass
-        elif P is not None and S is not None:
-            pass
-        elif P is not None and H is not None:
-            g, ls, ss, betas, T, flash_convergence = self.flash_PH(P, H)
-#            print(g, ls, ss, betas)
-            if g is not None:
-                phases = [g] + ls + ss
-            else:
-                phases = ls + ss
-            
-            g, ls, ss, betas = identify_sort_phases(phases, betas, constants,
-                                                    correlations, settings=settings)
-            
-            return EquilibriumState(T, P, zs, gas=g, liquids=ls, solids=ss, 
-                                    betas=betas, flash_specs=flash_specs, 
-                                    flash_convergence=flash_convergence,
-                                    constants=constants, correlations=correlations,
-                                    flasher=self)
-            return 
         else:
             raise Exception('Flash inputs unsupported')
 

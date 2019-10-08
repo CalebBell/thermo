@@ -24,7 +24,9 @@ from __future__ import division
 
 __all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',  
 'APISRK', 'TWUPR', 'TWUSRK', 'ALPHA_FUNCTIONS', 'eos_list', 'GCEOS_DUMMY',
-'IG']
+'IG', 
+#'PRVTTwu'
+]
 
 from cmath import atanh as catanh
 from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
@@ -732,7 +734,7 @@ should be calculated by this method, in a user subclass.')
         d = -(epsilons*(B + 1.0) + thetas*etas)
 #        print(b, c, d)
         roots = roots_cubic(1.0, b, c, d)
-#        roots = np.roots([a, b, c, d]).tolist()
+#        roots = np.roots([1.0, b, c, d]).tolist()
         RT_P = R*T/P
         return [V*RT_P for V in roots]
 
@@ -2913,7 +2915,8 @@ class ALPHA_FUNCTIONS(GCEOS):
         '''
         c1, c2, c3 = self.alpha_function_coeffs
         T, Tc, a = self.T, self.Tc, self.a
-        a_alpha = a*((T/Tc)**(c3*(c2 - 1))*exp(c1*(-(T/Tc)**(c2*c3) + 1)))
+        Tr = T/Tc
+        a_alpha = a*(Tr**(c3*(c2 - 1.0))*exp(c1*(1.0 - (Tr)**(c2*c3))))
         if not full:
             return a_alpha
         else:
@@ -3185,7 +3188,7 @@ class IG(GCEOS):
  
 
     def __init__(self, Tc=190.564, Pc=4599000.0, omega=0.008, T=None, P=None, 
-                 V=None):
+                 V=None, kwargs=None):
         self.Tc = Tc
         self.Pc = Pc
         self.omega = omega
@@ -3353,7 +3356,7 @@ class PR(GCEOS):
                       0.13594473870160448, -0.5560225934266592, 0.7087599054079694, 
                       0.6426353018023558]
 
-    def __init__(self, Tc, Pc, omega, T=None, P=None, V=None):
+    def __init__(self, Tc, Pc, omega, T=None, P=None, V=None, kwargs=None):
         self.Tc = Tc
         self.Pc = Pc
         self.omega = omega
@@ -3519,7 +3522,7 @@ class PR78(PR):
 
         a=0.45724\frac{R^2T_c^2}{P_c}
         
-	  b=0.07780\frac{RT_c}{P_c}
+	    b=0.07780\frac{RT_c}{P_c}
 
         \alpha(T)=[1+\kappa(1-\sqrt{T_r})]^2
         
@@ -3566,7 +3569,7 @@ class PR78(PR):
        Equilibrium in a System Containing Methanol." Fluid Phase Equilibria 24,
        no. 1 (January 1, 1985): 25-41. doi:10.1016/0378-3812(85)87035-7.  
     '''
-    def __init__(self, Tc, Pc, omega, T=None, P=None, V=None):
+    def __init__(self, Tc, Pc, omega, T=None, P=None, V=None, kwargs=None):
         self.Tc = Tc
         self.Pc = Pc
         self.omega = omega
@@ -3587,6 +3590,74 @@ class PR78(PR):
 
         self.solve()
 
+class PRVTTwu(PR):
+    def __init__(self, Tc, Pc, omega, alpha_coeffs=None, c=0.0, T=None, P=None,
+                 V=None, kwargs=None):
+        self.Tc = Tc
+        self.Pc = Pc
+        self.omega = omega
+        self.T = T
+        self.P = P
+        self.V = V
+        
+        Pc_inv = 1.0/Pc
+
+        self.a = self.c1*R2*Tc*Tc*Pc_inv
+        
+        self.c = c
+        if alpha_coeffs is None:
+            raise NotImplementedError("Twu estimation")
+            
+        self.alpha_coeffs = alpha_coeffs
+#        self.C0, self.C1, self.C2 = Twu_coeffs
+        
+        self.b = b = self.c2*R*Tc*Pc_inv - c
+        
+        
+        self.delta = 2.0*(c + b)
+        self.epsilon = -b*b + c*c + 2.0*c*b
+        
+        self.Vc = self.Zc*R*Tc*Pc_inv
+
+        self.solve()
+
+    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
+        r'''Method to calculate `a_alpha` and its first and second
+        derivatives according to Twu et al. (1991) [1]_. Returns `a_alpha`, 
+        `da_alpha_dT`, and `d2a_alpha_dT2`. Three coefficients needed.
+        
+        .. math::
+            \alpha = \left(\frac{T}{Tc}\right)^{c_{3} \left(c_{2} 
+            - 1\right)} e^{c_{1} \left(- \left(\frac{T}{Tc}
+            \right)^{c_{2} c_{3}} + 1\right)}
+
+        References
+        ----------
+        .. [1] Twu, Chorng H., David Bluck, John R. Cunningham, and John E. 
+           Coon. "A Cubic Equation of State with a New Alpha Function and a 
+           New Mixing Rule." Fluid Phase Equilibria 69 (December 10, 1991): 
+           33-50. doi:10.1016/0378-3812(91)90024-2.
+        '''
+        c0, c1, c2 = self.alpha_coeffs
+        T, Tc, a = self.T, self.Tc, self.a
+        Tr = T/Tc
+        if not full:
+            a_alpha = a*(Tr**(c2*(c1 - 1.0))*exp(c0*(1.0 - (Tr)**(c1*c2))))
+            return a_alpha
+        else:
+            T_inv = 1.0/T
+            x1 = c1 - 1
+            x2 = c2*x1
+            x3 = c1*c2
+            x4 = Tr**x3
+            x5 = a*Tr**x2*exp(-c0*(x4 - 1))
+            x6 = c0*x4
+            x7 = c1*x6
+            x8 = c2*x5
+            x9 = c1*c1*c2
+            d2a_alpha_dT2 = (x8*(c0*c0*Tr**(2.0*x3)*x9 - c1 + c2*x1*x1 
+                                 - 2.0*x2*x7 - x6*x9 + x7 + 1.0)*T_inv*T_inv)            
+            return x5, x8*(x1 - x7)*T_inv, d2a_alpha_dT2
 
 class PRSV(PR):
     r'''Class for solving the Peng-Robinson-Stryjek-Vera equations of state for
@@ -3670,14 +3741,27 @@ class PRSV(PR):
        67, no. 1 (February 1, 1989): 170-73. doi:10.1002/cjce.5450670125.
     '''
     kappa1_Tr_limit = False
-    def __init__(self, Tc, Pc, omega, T=None, P=None, V=None, kappa1=0):
+    def __init__(self, Tc, Pc, omega, T=None, P=None, V=None, kappa1=None,
+                 kwargs=None):
         self.Tc = Tc
         self.Pc = Pc
         self.omega = omega
         self.T = T
         self.P = P
         self.V = V
-        self.kwargs = {'kappa1': kappa1}
+        
+        if kappa1 is None:
+            if kwargs is not None:
+                try:
+                    kappa1 = kwargs['kappa1']
+                    self.kwargs = kwargs
+                except KeyError:
+                    raise ValueError("kappa1 not provided in the provided kwargs")
+            else:
+                kappa1 = 0.0
+                self.kwargs = {'kappa1': kappa1}
+        else:
+            self.kwargs = {'kappa1': kappa1}
         
         self.a = self.c1*R*R*Tc*Tc/Pc
         self.b = self.c2*R*Tc/Pc
@@ -3868,7 +3952,8 @@ class PRSV2(PR):
        Chemical Engineering 64, no. 5 (October 1, 1986): 820-26. 
        doi:10.1002/cjce.5450640516. 
     '''
-    def __init__(self, Tc, Pc, omega, T=None, P=None, V=None, kappa1=0, kappa2=0, kappa3=0):
+    def __init__(self, Tc, Pc, omega, T=None, P=None, V=None, kappa1=0, kappa2=0, kappa3=0,
+                 kwargs=None):
         self.Tc = Tc
         self.Pc = Pc
         self.omega = omega
@@ -4089,7 +4174,7 @@ class VDW(GCEOS):
                       0.021295687530901747, -0.32582447905247514, 0.521321793740683,
                       0.6950957738017804]
 
-    def __init__(self, Tc, Pc, T=None, P=None, V=None, omega=None):
+    def __init__(self, Tc, Pc, T=None, P=None, V=None, omega=None, kwargs=None):
         self.Tc = Tc
         self.Pc = Pc
         self.T = T
@@ -4268,7 +4353,7 @@ class RK(GCEOS):
                       11273931409.81048, 5376831929.990161, 1681814895.2875218, 
                       311544335.80653775, 25954329.68176187]
 
-    def __init__(self, Tc, Pc, T=None, P=None, V=None, omega=None):
+    def __init__(self, Tc, Pc, T=None, P=None, V=None, omega=None, kwargs=None):
         self.Tc = Tc
         self.Pc = Pc
         self.T = T
@@ -4434,7 +4519,7 @@ class SRK(GCEOS):
                       0.0403144920149403, -0.39801902918654086, 0.5962308106352003, 
                       0.6656153310272716]
 
-    def __init__(self, Tc, Pc, omega, T=None, P=None, V=None):
+    def __init__(self, Tc, Pc, omega, T=None, P=None, V=None, kwargs=None):
         self.Tc = Tc
         self.Pc = Pc
         self.omega = omega
@@ -4604,7 +4689,8 @@ class APISRK(SRK):
     .. [1] API Technical Data Book: General Properties & Characterization.
        American Petroleum Institute, 7E, 2005.
     '''
-    def __init__(self, Tc, Pc, omega=None, T=None, P=None, V=None, S1=None, S2=0):
+    def __init__(self, Tc, Pc, omega=None, T=None, P=None, V=None, S1=None,
+                 S2=0, kwargs=None):
         self.Tc = Tc
         self.Pc = Pc
         self.omega = omega
@@ -4792,7 +4878,7 @@ class TWUPR(PR):
        Peng-Robinson Equation." Fluid Phase Equilibria 105, no. 1 (March 15, 
        1995): 49-59. doi:10.1016/0378-3812(94)02601-V.
     '''
-    def __init__(self, Tc, Pc, omega, T=None, P=None, V=None):
+    def __init__(self, Tc, Pc, omega, T=None, P=None, V=None, kwargs=None):
         self.Tc = Tc
         self.Pc = Pc
         self.omega = omega
@@ -4997,7 +5083,7 @@ class TWUSRK(SRK):
        Redlich-Kwong Equation." Fluid Phase Equilibria 105, no. 1 (March 15, 
        1995): 61-69. doi:10.1016/0378-3812(94)02602-W.
     '''
-    def __init__(self, Tc, Pc, omega, T=None, P=None, V=None):
+    def __init__(self, Tc, Pc, omega, T=None, P=None, V=None, kwargs=None):
         self.Tc = Tc
         self.Pc = Pc
         self.omega = omega

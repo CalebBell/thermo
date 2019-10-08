@@ -5120,13 +5120,13 @@ class PRMIX(GCEOSMIX, PR):
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
         self.N = N = len(Tcs)
-        self.cmps = range(self.N)
+        self.cmps = cmps = range(N)
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.omegas = omegas
         self.zs = zs
         if kijs is None:
-            kijs = [[0.0]*N for i in self.cmps]
+            kijs = [[0.0]*N for i in cmps]
         self.kijs = kijs
         self.kwargs = {'kijs': kijs}
         self.T = T
@@ -5136,9 +5136,14 @@ class PRMIX(GCEOSMIX, PR):
         # optimization, unfortunately
         c1R2, c2R = self.c1*R2, self.c2*R
         # Also tried to store the inverse of Pcs, without success - slows it down
-        self.ais = [c1R2*Tcs[i]*Tcs[i]/Pcs[i] for i in self.cmps]
-        self.bs = [c2R*Tcs[i]/Pcs[i] for i in self.cmps]
-        self.b = b = sum([bi*zi for bi, zi in zip(self.bs, zs)])
+        self.ais = [c1R2*Tcs[i]*Tcs[i]/Pcs[i] for i in cmps]
+        self.bs = bs = [c2R*Tcs[i]/Pcs[i] for i in cmps]
+        
+        b = 0.0
+        for i in cmps:
+            b += bs[i]*zs[i]
+        self.b = b
+        
         self.kappas = [omega*(-0.26992*omega + 1.54226) + 0.37464 for omega in omegas]
         
         self.delta = 2.0*b
@@ -7489,14 +7494,14 @@ class TWUPRMIX(PRMIX, TWUPR):
     
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
-        self.N = len(Tcs)
-        self.cmps = range(self.N)
+        self.N = N = len(Tcs)
+        self.cmps = cmps = range(N)
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.omegas = omegas
         self.zs = zs
         if kijs is None:
-            kijs = [[0]*self.N for i in range(self.N)]
+            kijs = [[0.0]*N for i in cmps]
         self.kijs = kijs
         self.kwargs = {'kijs': kijs}
         self.T = T
