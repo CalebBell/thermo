@@ -1032,7 +1032,7 @@ should be calculated by this method, in a user subclass.')
                 # For use by newton. Only supports initialization with Tc, Pc and omega
                 # ~200x slower and not guaranteed to converge (primary issue is one phase)
                 # not existing
-                e = self.__class__(Tc=self.Tc, Pc=self.Pc, omega=self.omega, T=T, P=P)
+                e = self.to_TP(T, P)
                 try:
                     fugacity_l = e.fugacity_l
                 except AttributeError as e:
@@ -3590,7 +3590,7 @@ class PR78(PR):
 
         self.solve()
 
-class PRVTTwu(PR):
+class PRTranslated(PR):
     def __init__(self, Tc, Pc, omega, alpha_coeffs=None, c=0.0, T=None, P=None,
                  V=None, kwargs=None):
         self.Tc = Tc
@@ -3606,21 +3606,27 @@ class PRVTTwu(PR):
         
         self.c = c
         if alpha_coeffs is None:
-            raise NotImplementedError("Twu estimation")
-            
+            self.kappa = omega*(-0.26992*omega + 1.54226) + 0.37464
+        
+        # Does not have an impact on phase equilibria
         self.alpha_coeffs = alpha_coeffs
+        self.kwargs = {'c': c, 'alpha_coeffs': alpha_coeffs}
 #        self.C0, self.C1, self.C2 = Twu_coeffs
         
-        self.b = b = self.c2*R*Tc*Pc_inv - c
+        b0 = self.c2*R*Tc*Pc_inv
+        self.b = b = b0 - c
         
-        
-        self.delta = 2.0*(c + b)
-        self.epsilon = -b*b + c*c + 2.0*c*b
+        # Cannot reference b directly
+        self.delta = 2.0*(c + b0)
+        self.epsilon = -b0*b0 + c*c + 2.0*c*b0
         
         self.Vc = self.Zc*R*Tc*Pc_inv
+        # C**2 + 2*C*b + V**2 + V*(2*C + 2*b) - b**2
 
         self.solve()
+        
 
+class PRTranslatedTwu(PRTranslated):
     def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives according to Twu et al. (1991) [1]_. Returns `a_alpha`, 
@@ -3655,6 +3661,7 @@ class PRVTTwu(PR):
             x7 = c1*x6
             x8 = c2*x5
             x9 = c1*c1*c2
+            # TODO replace the Tr to x3 by x4 multiplied by itself
             d2a_alpha_dT2 = (x8*(c0*c0*Tr**(2.0*x3)*x9 - c1 + c2*x1*x1 
                                  - 2.0*x2*x7 - x6*x9 + x7 + 1.0)*T_inv*T_inv)            
             return x5, x8*(x1 - x7)*T_inv, d2a_alpha_dT2
