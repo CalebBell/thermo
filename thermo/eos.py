@@ -32,7 +32,7 @@ from cmath import atanh as catanh
 from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              roots_cubic_a1, numpy as np, py_newton as newton,
                              py_bisect as bisect, inf, polyder, chebder, 
-                             trunc_exp, secant)
+                             trunc_exp, secant, linspace)
 from thermo.utils import R
 from thermo.utils import (Cp_minus_Cv, isobaric_expansion, 
                           isothermal_compressibility, 
@@ -1025,6 +1025,7 @@ should be calculated by this method, in a user subclass.')
                 Psat = 0
         
         if polish:
+            Psat = None
             if T > self.Tc:
                 raise ValueError("Cannot solve for equifugacity condition "
                                  "beyond critical temperature")
@@ -1032,6 +1033,7 @@ should be calculated by this method, in a user subclass.')
                 # For use by newton. Only supports initialization with Tc, Pc and omega
                 # ~200x slower and not guaranteed to converge (primary issue is one phase)
                 # not existing
+                assert P > 0.0
                 e = self.to_TP(T, P)
                 try:
                     fugacity_l = e.fugacity_l
@@ -1046,14 +1048,17 @@ should be calculated by this method, in a user subclass.')
                 err = fugacity_l - fugacity_g
                 
                 d_err_d_P = e.dfugacity_dP_l - e.dfugacity_dP_g
-#                print('err', err, 'd_err_d_P', d_err_d_P, 'P', P)
+                print('err', err, 'd_err_d_P', d_err_d_P, 'P', P)
                 return err, d_err_d_P
             try:
                 Psat = newton(to_solve_newton, Psat, high=self.Pc, fprime=True, 
                               xtol=1e-12, ytol=1e-6, require_eval=False)
             except:
+                pass
+            
+            if Psat is None:
                 def to_solve_bisect(P):
-                    e = self.__class__(Tc=self.Tc, Pc=self.Pc, omega=self.omega, T=T, P=P)
+                    e = self.to_TP(T, P)
                     try:
                         fugacity_l = e.fugacity_l
                     except AttributeError as e:
@@ -1066,8 +1071,28 @@ should be calculated by this method, in a user subclass.')
                     err = fugacity_l - fugacity_g
 #                    print(err, 'err', 'P', P)
                     return err
-                Psat = bisect(to_solve_bisect, .98*Psat, 1.02*Psat, 
-                              maxiter=1000)
+                try:
+                    try:
+                        Psat = bisect(to_solve_bisect, .98*Psat, 1.02*Psat, 
+                                      maxiter=1000)
+                    except:
+                        try:
+                            Psat = bisect(to_solve_bisect, 1, self.Pc, 
+                                          maxiter=1000)
+                        except:
+                            Psat = bisect(to_solve_bisect, 1e-40, 1, 
+                                          maxiter=1000)
+                except:
+                    pass
+                
+            if Psat is None:
+                for f in linspace(1e-3, 1-1e-8, 50) + linspace(.99, 1-1e-8, 5000):
+                    try:
+                        Psat = newton(to_solve_newton, self.Pc*f, high=self.Pc, fprime=True, 
+                                      xtol=1e-12, ytol=1e-6, require_eval=False)
+                        break
+                    except:
+                        continue
                     
         return Psat
 
@@ -3652,11 +3677,11 @@ class PRTranslatedTwu(PRTranslated):
             return a_alpha
         else:
             T_inv = 1.0/T
-            x1 = c1 - 1
+            x1 = c1 - 1.0
             x2 = c2*x1
             x3 = c1*c2
             x4 = Tr**x3
-            x5 = a*Tr**x2*exp(-c0*(x4 - 1))
+            x5 = a*Tr**x2*exp(-c0*(x4 - 1.0))
             x6 = c0*x4
             x7 = c1*x6
             x8 = c2*x5
