@@ -1321,6 +1321,39 @@ should be calculated by this method, in a user subclass.')
         Vs = [i.real for i in Vs]
         V_l, V_g = min(Vs), max(Vs)
         return dPsat_dT*T*(V_g - V_l)
+    
+    def a_alpha_for_Psat(self, T, Psat):
+        # For fitting
+        P = Psat
+#        eos = self.to(T=T, P=Psat)
+#        b, delta, epsilon = eos.b, eos.delta, eos.epsilon
+        b, delta, epsilon = self.b, self.delta, self.epsilon
+        RT_inv = 1.0/(T*R)
+        
+        def fug(V, a_alpha):
+            G_dep = (P*V + R*T*log(V) - R*T*log(P*V/(R*T)) 
+                      - R*T*log(V - b) - R*T - 2*a_alpha*catanh(2*V/sqrt(delta**2 - 4*epsilon)
+                        + delta/sqrt(delta**2 - 4*epsilon)).real/sqrt(delta**2 - 4*epsilon))
+            try:
+                fugacity = P*exp(G_dep*RT_inv)
+            except OverflowError:
+                fugacity = P*trunc_exp(G_dep*RT_inv, trunc=1e308)
+            return fugacity
+
+        def err(a_alpha):
+            Vs = self.volume_solutions(T, P, b, delta, epsilon, a_alpha)
+            good_roots = [i.real for i in Vs if i.imag == 0.0 and i.real > 0.0]
+            good_root_count = len(good_roots)
+            if good_root_count == 1:
+                raise ValueError("Guess did not have two roots")
+            V_l, V_g = min(good_roots), max(good_roots)
+#            print(V_l, V_g, a_alpha)
+            return fug(V_l, a_alpha) - fug(V_g, a_alpha)
+
+        try:
+            return secant(err, self.a_alpha)
+        except:
+            return secant(err, self.to(T=T, P=Psat).a_alpha)
 
     def to_TP(self, T, P):
         if T != self.T or P != self.P:
@@ -3688,7 +3721,7 @@ class PRTranslatedTwu(PRTranslated):
     def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives according to Twu et al. (1991) [1]_. Returns `a_alpha`, 
-        `da_alpha_dT`, and `d2a_alpha_dT2`. Three coefficients needed.
+        `da_alpha_dT`, and `d2a_alpha_dT2`. Three coefficients are needed.
         
         .. math::
             \alpha = \left(\frac{T}{Tc}\right)^{c_{3} \left(c_{2} 
