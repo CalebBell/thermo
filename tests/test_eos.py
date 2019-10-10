@@ -1522,3 +1522,27 @@ def test_Psat_correlations():
     
         # PR - tested up to 1 million points
         assert_allclose(Psats_correlation, Psats_numerical, rtol=1e-6)
+
+
+def test_PRTranslatedTwu():
+    from thermo.eos import PRTranslated, PRTranslatedTwu, PR
+    from fluids.numerics import linspace
+    alpha_coeffs = (0.694911381318495, 0.919907783415812, 1.70412689631515)
+    
+    kwargs = dict(Tc=512.5, Pc=8084000.0, omega=0.559, alpha_coeffs=alpha_coeffs, c=0.0)
+    eos = PRTranslatedTwu(T=300, P=1e5, **kwargs)
+    
+    # Volumes
+    assert_allclose(eos.V_g, 0.024313406330537947, rtol=1e-9)
+    assert_allclose(eos.V_l, 4.791874890665185e-05, rtol=1e-9)
+    
+    # same params as PR
+    kwargs = dict(Tc=512.5, Pc=8084000.0, omega=0.559)
+    eos_PR = PR(T=300, P=1e5, **kwargs)
+    assert_allclose([eos.delta, eos.b, eos.epsilon], [eos_PR.delta, eos_PR.b, eos_PR.epsilon], rtol=1e-12)
+    
+    # Vapor pressure test
+    Ts = linspace(.35*eos.Tc, eos.Tc, 300)
+    Ps = [eos.Psat(T, polish=True) for T in Ts]
+    Ps_unpolished = [eos.Psat(T, polish=False) for T in Ts]
+    assert_allclose(Ps, Ps_unpolished, rtol=1e-9)

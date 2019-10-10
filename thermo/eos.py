@@ -32,12 +32,12 @@ from cmath import atanh as catanh
 from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              roots_cubic_a1, numpy as np, py_newton as newton,
                              py_bisect as bisect, inf, polyder, chebder, 
-                             trunc_exp, secant, linspace)
+                             trunc_exp, secant, linspace, logspace)
 from thermo.utils import R
 from thermo.utils import (Cp_minus_Cv, isobaric_expansion, 
                           isothermal_compressibility, 
                           phase_identification_parameter)
-from thermo.utils import log, exp, sqrt, copysign, horner
+from thermo.utils import log, log10, exp, sqrt, copysign, horner
 
 R2 = R*R
 R_2 = 0.5*R
@@ -1003,32 +1003,33 @@ should be calculated by this method, in a user subclass.')
         # this method is inaccurate.
         # TODO: find way to extend the range? Multiple compounds?
         
-        if T == self.Tc:
-            return self.Pc
+        Tc, Pc = self.Tc, self.Pc
+        if T == Tc:
+            return Pc
         alpha = self.a_alpha_and_derivatives(T, full=False)/self.a
         Tr = T/self.Tc
         x = alpha/Tr - 1.
                         
         if Tr > 0.999:
             y = horner(self.Psat_coeffs_critical, x)
-            Psat = y*Tr*self.Pc
+            Psat = y*Tr*Pc
         else:
             if Tr < 0.32:
                 y = horner(self.Psat_coeffs_limiting, x)
             else:
                 y = chebval(self.Psat_cheb_constant_factor[1]*(x + self.Psat_cheb_constant_factor[0]), self.Psat_cheb_coeffs)
             try:
-                Psat = exp(y)*Tr*self.Pc
+                Psat = exp(y)*Tr*Pc
             except OverflowError:
                 # coefficients sometimes overflow before T is lowered to 0.32Tr
                 polish = False # There is no solution available to polish
                 Psat = 0
         
         if polish:
-            Psat = None
-            if T > self.Tc:
+            if T > Tc:
                 raise ValueError("Cannot solve for equifugacity condition "
                                  "beyond critical temperature")
+            converged = False
             def to_solve_newton(P):
                 # For use by newton. Only supports initialization with Tc, Pc and omega
                 # ~200x slower and not guaranteed to converge (primary issue is one phase)
@@ -1048,15 +1049,17 @@ should be calculated by this method, in a user subclass.')
                 err = fugacity_l - fugacity_g
                 
                 d_err_d_P = e.dfugacity_dP_l - e.dfugacity_dP_g
-                print('err', err, 'd_err_d_P', d_err_d_P, 'P', P)
+#                print('err', err, 'd_err_d_P', d_err_d_P, 'P', P)
                 return err, d_err_d_P
             try:
-                Psat = newton(to_solve_newton, Psat, high=self.Pc, fprime=True, 
-                              xtol=1e-12, ytol=1e-6, require_eval=False)
+                Psat = newton(to_solve_newton, Psat, high=Pc, fprime=True, 
+                              xtol=1e-12, ytol=1e-6*Psat, require_eval=False) #  ,
+#                print(to_solve_newton(Psat), 'newton error')
+                converged = True
             except:
                 pass
             
-            if Psat is None:
+            if not converged:
                 def to_solve_bisect(P):
                     e = self.to_TP(T, P)
                     try:
@@ -1071,28 +1074,48 @@ should be calculated by this method, in a user subclass.')
                     err = fugacity_l - fugacity_g
 #                    print(err, 'err', 'P', P)
                     return err
-                try:
+                for low, high in zip([.98*Psat, 1, 1e-40, Pc*.9], [1.02*Psat, Pc, 1, Pc*1.000000001]):
                     try:
-                        Psat = bisect(to_solve_bisect, .98*Psat, 1.02*Psat, 
-                                      maxiter=1000)
-                    except:
-                        try:
-                            Psat = bisect(to_solve_bisect, 1, self.Pc, 
-                                          maxiter=1000)
-                        except:
-                            Psat = bisect(to_solve_bisect, 1e-40, 1, 
-                                          maxiter=1000)
-                except:
-                    pass
-                
-            if Psat is None:
-                for f in linspace(1e-3, 1-1e-8, 50) + linspace(.99, 1-1e-8, 5000):
-                    try:
-                        Psat = newton(to_solve_newton, self.Pc*f, high=self.Pc, fprime=True, 
-                                      xtol=1e-12, ytol=1e-6, require_eval=False)
+                        Psat = bisect(to_solve_bisect, low, high, ytol=1e-6*Psat, maxiter=128)
+#                        print(to_solve_bisect(Psat), 'bisect error')
+                        converged = True
                         break
                     except:
-                        continue
+                        pass
+            
+            # Last ditch attempt
+            if not converged:
+                if Tr > 0.5:
+                    # Near critical temperature issues
+                    points = [Pc*f for f in linspace(1e-3, 1-1e-8, 50) + linspace(.9, 1-1e-8, 50)]
+                    ytol = 1e-6*Psat
+                else:
+                    # Low temperature issues
+                    points = [Psat*f for f in logspace(-2.5, 2.5, 100)]
+                    ytol = None # Cryogenic point unlikely to work to desired tolerance
+                    # Work on point closer to Psat first
+                    points.sort(key=lambda x: abs(log10(x)))
+                low, high = None, None
+                for point in points:
+                    try:
+                        err = to_solve_newton(point)[0] # Do not use bisect function as it does not raise errors
+                        if err > 0.0:
+                            high = point
+                        elif err < 0.0:
+                            low = point
+                    except:
+                        pass
+                    if low is not None and high is not None:
+                        Psat = brenth(to_solve_bisect, low, high, ytol=ytol, maxiter=128)
+#                        print(to_solve_bisect(Psat), 'bisect error')
+                        converged = True
+                        break
+                # Check that the fugacity error vs. Psat is OK
+                if abs(to_solve_bisect(Psat)/Psat) > .0001:
+                    converged = False
+                    
+            if not converged:
+                raise ValueError("Could not converge")
                     
         return Psat
 
@@ -3670,7 +3693,7 @@ class PRTranslatedTwu(PRTranslated):
            33-50. doi:10.1016/0378-3812(91)90024-2.
         '''
         c0, c1, c2 = self.alpha_coeffs
-        T, Tc, a = self.T, self.Tc, self.a
+        Tc, a = self.Tc, self.a
         Tr = T/Tc
         if not full:
             a_alpha = a*(Tr**(c2*(c1 - 1.0))*exp(c0*(1.0 - (Tr)**(c1*c2))))

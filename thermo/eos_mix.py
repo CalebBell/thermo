@@ -840,6 +840,7 @@ class GCEOSMIX(GCEOS):
 
 
     def _dphi_dn(self, zi, i, phase):
+        # obsolete, should be deleted
         z_copy = list(self.zs)
         z_copy.pop(i)
         z_sum = sum(z_copy) + zi
@@ -853,6 +854,7 @@ class GCEOSMIX(GCEOS):
             return eos.phis_l[i]
 
     def _dfugacity_dn(self, zi, i, phase):
+        # obsolete, should be deleted
         z_copy = list(self.zs)
         z_copy.pop(i)
         z_sum = sum(z_copy) + zi
@@ -867,6 +869,7 @@ class GCEOSMIX(GCEOS):
 
 
     def fugacities_partial_derivatives(self, xs=None, ys=None):
+        # obsolete, should be deleted
         if self.phase in ['l', 'l/g']:
             if xs is None:
                 xs = self.zs
@@ -883,6 +886,7 @@ class GCEOSMIX(GCEOS):
             # There should be an easy way to get dfugacities_dn_g but I haven't figured it out
 
     def fugacities_partial_derivatives_2(self, xs=None, ys=None):
+        # obsolete, should be deleted
         if self.phase in ['l', 'l/g']:
             if xs is None:
                 xs = self.zs
