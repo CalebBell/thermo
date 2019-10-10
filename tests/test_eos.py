@@ -1537,8 +1537,8 @@ def test_PRTranslatedTwu():
     assert_allclose(eos.V_l, 4.791874890665185e-05, rtol=1e-9)
     
     # same params as PR
-    kwargs = dict(Tc=512.5, Pc=8084000.0, omega=0.559)
-    eos_PR = PR(T=300, P=1e5, **kwargs)
+    kwargs_PR = dict(Tc=512.5, Pc=8084000.0, omega=0.559)
+    eos_PR = PR(T=300, P=1e5, **kwargs_PR)
     assert_allclose([eos.delta, eos.b, eos.epsilon], [eos_PR.delta, eos_PR.b, eos_PR.epsilon], rtol=1e-12)
     
     # Vapor pressure test
@@ -1546,3 +1546,6 @@ def test_PRTranslatedTwu():
     Ps = [eos.Psat(T, polish=True) for T in Ts]
     Ps_unpolished = [eos.Psat(T, polish=False) for T in Ts]
     assert_allclose(Ps, Ps_unpolished, rtol=1e-9)
+    
+    # First implementation of vapor pressure analytical derivative
+    assert_allclose(eos.dPsat_dT(eos.T, polish=True), eos.dPsat_dT(eos.T), rtol=1e-9)

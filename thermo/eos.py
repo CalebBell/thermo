@@ -1119,7 +1119,7 @@ should be calculated by this method, in a user subclass.')
                     
         return Psat
 
-    def dPsat_dT(self, T):
+    def dPsat_dT(self, T, polish=False):
         r'''Generic method to calculate the temperature derivative of vapor 
         pressure for a specified `T`. Implements the analytical derivative
         of the three polynomials described in `Psat`.
@@ -1133,6 +1133,9 @@ should be calculated by this method, in a user subclass.')
         ----------
         T : float
             Temperature, [K]
+        polish : bool, optional
+            Whether to attempt to use a numerical solver to make the solution
+            more precise or not
 
         Returns
         -------
@@ -1150,6 +1153,13 @@ should be calculated by this method, in a user subclass.')
         # WARNING - For compounds whose a_alpha (x)values extend too high,
         # this method is inaccurate.
         # TODO: find way to extend the range? Multiple compounds?
+        if polish:
+            # Calculate the derivative of saturation pressure analytically
+            sat_eos = self.to(T=T, P=self.Psat(T, polish=polish))
+            dfg_T, dfl_T = sat_eos.dfugacity_dT_g, sat_eos.dfugacity_dT_l
+            dfg_P, dfl_P = sat_eos.dfugacity_dP_g, sat_eos.dfugacity_dP_l
+            return (dfg_T - dfl_T)/(dfl_P - dfg_P)
+        
         a_alphas = self.a_alpha_and_derivatives(T)
         Tc, alpha, d_alpha_dT = self.Tc, a_alphas[0]/self.a, a_alphas[1]/self.a
         Tc_inv = 1.0/Tc
