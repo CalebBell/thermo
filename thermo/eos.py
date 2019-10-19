@@ -32,12 +32,13 @@ from cmath import atanh as catanh
 from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              roots_cubic_a1, numpy as np, py_newton as newton,
                              py_bisect as bisect, inf, polyder, chebder, 
-                             trunc_exp, secant, linspace, logspace)
+                             trunc_exp, secant, linspace, logspace,
+                             horner, horner_and_der2)
 from thermo.utils import R
 from thermo.utils import (Cp_minus_Cv, isobaric_expansion, 
                           isothermal_compressibility, 
                           phase_identification_parameter)
-from thermo.utils import log, log10, exp, sqrt, copysign, horner
+from thermo.utils import log, log10, exp, sqrt, copysign
 
 R2 = R*R
 R_2 = 0.5*R
@@ -1322,25 +1323,52 @@ should be calculated by this method, in a user subclass.')
         V_l, V_g = min(Vs), max(Vs)
         return dPsat_dT*T*(V_g - V_l)
     
+    def a_alpha_for_V(self, T, P, V):
+        # Derived with sympy
+        '''
+        from sympy import *
+        P, T, V, R, b, a, delta, epsilon = symbols('P, T, V, R, b, a, delta, epsilon')
+        a_alpha = symbols('a_alpha')
+        
+        CUBIC = R*T/(V-b) - a_alpha/(V*V + delta*V + epsilon) #- P
+        cse(solve(Eq(CUBIC, P), a_alpha)[0], optimizations='basic')
+        '''
+        b, delta, epsilon = self.b, self.delta, self.epsilon
+        x0 = P*b
+        x1 = R*T
+        x2 = V*delta
+        x3 = V*V
+        x4 = x3*V
+        return ((-P*x4 - P*V*epsilon - P*delta*x3 + epsilon*x0 + epsilon*x1
+                 + x0*x2 + x0*x3 + x1*x2 + x1*x3)/(V - b))
+        
+    
     def a_alpha_for_Psat(self, T, Psat):
         # For fitting
         P = Psat
 #        eos = self.to(T=T, P=Psat)
 #        b, delta, epsilon = eos.b, eos.delta, eos.epsilon
         b, delta, epsilon = self.b, self.delta, self.epsilon
-        RT_inv = 1.0/(T*R)
+        RT = R*T
+        RT_inv = 1.0/RT
+        x0 = 1.0*(delta*delta - 4.0*epsilon)**-0.5
+        x1 = delta*x0
+        x2 = 2.0*x0
         
         def fug(V, a_alpha):
-            G_dep = (P*V + R*T*log(V) - R*T*log(P*V/(R*T)) 
-                      - R*T*log(V - b) - R*T - 2*a_alpha*catanh(2*V/sqrt(delta**2 - 4*epsilon)
-                        + delta/sqrt(delta**2 - 4*epsilon)).real/sqrt(delta**2 - 4*epsilon))
-            try:
-                fugacity = P*exp(G_dep*RT_inv)
-            except OverflowError:
-                fugacity = P*trunc_exp(G_dep*RT_inv, trunc=1e308)
-            return fugacity
+            # Can simplify this to not use a function, avoid 1 log anywayS
+            G_dep = (P*V - RT - RT*log(P*RT_inv*(V-b))
+                      - x2*a_alpha*catanh(2.0*V*x0 + x1).real)
+            return G_dep # No point going all the way to fugacity
+        
+#            try:
+#                fugacity = P*exp(G_dep*RT_inv)
+#            except OverflowError:
+#                fugacity = P*trunc_exp(G_dep*RT_inv, trunc=1e308)
+#            return fugacity
 
         def err(a_alpha):
+            # Needs some work right up to critical point
             Vs = self.volume_solutions(T, P, b, delta, epsilon, a_alpha)
             good_roots = [i.real for i in Vs if i.imag == 0.0 and i.real > 0.0]
             good_root_count = len(good_roots)
@@ -1351,9 +1379,9 @@ should be calculated by this method, in a user subclass.')
             return fug(V_l, a_alpha) - fug(V_g, a_alpha)
 
         try:
-            return secant(err, self.a_alpha)
+            return secant(err, self.a_alpha, xtol=1e-13)
         except:
-            return secant(err, self.to(T=T, P=Psat).a_alpha)
+            return secant(err, self.to(T=T, P=Psat).a_alpha, xtol=1e-13)
 
     def to_TP(self, T, P):
         if T != self.T or P != self.P:
@@ -3715,7 +3743,17 @@ class PRTranslated(PR):
         # C**2 + 2*C*b + V**2 + V*(2*C + 2*b) - b**2
 
         self.solve()
-        
+
+
+class PRTranslatedPoly(PRTranslated):
+    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
+        alpha_coeffs = self.alpha_coeffs
+        Tc, a = self.Tc, self.a
+        Tr = T/Tc
+        if not full:
+            return horner(alpha_coeffs, T)
+        else:
+            return horner_and_der2(alpha_coeffs, T)
 
 class PRTranslatedTwu(PRTranslated):
     def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
