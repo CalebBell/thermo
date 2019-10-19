@@ -28,6 +28,8 @@ __all__ = ['sequential_substitution_2P', 'bubble_T_Michelsen_Mollerup',
            'nonlin_2P', 'sequential_substitution_NP',
            'minimize_gibbs_NP_transformed', 'FlashVL', 'FlashPureVLS',
            'TPV_HSGUA_guesses_1P_methods', 'TPV_solve_HSGUA_guesses_1P',
+           'sequential_substitution_2P_HSGUAbeta', 
+           'sequential_substitution_2P_sat',
            ]
 
 from fluids.constants import R, R_inv
@@ -1630,6 +1632,94 @@ def sequential_substitution_2P_sat(T, P, V, zs_dry, xs_guess, ys_guess, liquid_p
             return V_over_F, xs, zs, l, g, iteration, err, err0
     raise UnconvergedError('End of SS without convergence')
 
+
+def sequential_substitution_2P_HSGUAbeta(zs, xs_guess, ys_guess, liquid_phase,
+                                     gas_phase, fixed_var_val, spec_val,  
+                                     iter_var_0, iter_var_1=None,
+                                     iter_var='T', fixed_var='P', spec='H', 
+                                     maxiter=1000, tol_eq=1E-13, tol_spec=1e-9,
+                                     trivial_solution_tol=1e-5, damping=1.0,
+                                     V_over_F_guess=None):
+    xs, ys = xs_guess, ys_guess
+    if V_over_F_guess is None:
+        V_over_F = 0.5
+    else:
+        V_over_F = V_over_F_guess
+
+    cmps = range(len(zs))
+
+    if iter_var_1 is None:
+        iter_var_1 = iter_var_0*1.0001 + 1e-4
+        
+    tol_spec_abs = tol_spec*abs(spec_val)
+    
+    # secant step/solving
+    p0, p1, err0, err1 = None, None, None, None
+    def step(p0, p1, err0, err1):
+        if p0 is None:
+            return iter_var_0
+        if p1 is None:
+            return iter_var_1
+        else:
+            new = p1 - err1*(p1 - p0)/(err1 - err0)*damping
+            return new
+        
+    TPV_args = {fixed_var: fixed_var_val, iter_var: iter_var_0}
+    
+    VF_spec = spec == 'beta'
+    if not VF_spec:
+        spec_fun_l = getattr(liquid_phase.__class__, spec)
+        spec_fun_g = getattr(gas_phase.__class__, spec)
+    
+    for iteration in range(maxiter):
+        p0, p1 = step(p0, p1, err0, err1), p0
+        TPV_args[iter_var] = p0
+        
+        g = gas_phase.to_zs_TPV(ys, **TPV_args)
+        l = liquid_phase.to_zs_TPV(xs, **TPV_args)        
+        lnphis_g = g.lnphis()
+        lnphis_l = l.lnphis()
+        
+        Ks = [exp(lnphis_l[i] - lnphis_g[i]) for i in cmps]
+                
+        V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks, guess=V_over_F)
+        
+        if not VF_spec:
+            spec_calc = spec_fun_l(l)*(1.0 - V_over_F) + spec_fun_g(g)*V_over_F
+        else:
+            spec_calc = V_over_F
+        
+        err0, err1 = spec_calc - spec_val, err0
+
+        # Check for negative fractions - normalize only if needed
+        for xi in xs_new:
+            if xi < 0.0:
+                xs_new_sum = sum(abs(i) for i in xs_new)
+                xs_new = [abs(i)/xs_new_sum for i in xs_new]
+                break
+        for yi in ys_new:
+            if yi < 0.0:
+                ys_new_sum = sum(abs(i) for i in ys_new)
+                ys_new = [abs(i)/ys_new_sum for i in ys_new]
+                break
+        
+        err, comp_diff = 0.0, 0.0
+        for i in cmps:
+            err_i = Ks[i]*xs[i]/ys[i] - 1.0
+            err += err_i*err_i
+            comp_diff += abs(xs[i] - ys[i])
+        
+        # Accept the new compositions
+#         xs, ys = xs_new, zs # This has worse convergence behavior?
+        xs, ys = xs_new, ys_new 
+        
+        if comp_diff < trivial_solution_tol:
+            raise ValueError("Converged to trivial condition, compositions of both phases equal")
+        
+#         print(p0, err, err0)
+        if err < tol_eq and abs(err0) < tol_spec_abs:
+            return p0, V_over_F, xs, ys, l, g, iteration, err, err0
+    raise UnconvergedError('End of SS without convergence')
 
 
 class FlashBase(object):
