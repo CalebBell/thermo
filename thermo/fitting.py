@@ -23,14 +23,16 @@ SOFTWARE.'''
 from __future__ import division
 
 __all__ = ['alpha_Twu91_objf', 'alpha_Twu91_objfc',
-           'Twu91_check_params', 'postproc_lmfit']
+           'Twu91_check_params', 'postproc_lmfit',
+           'alpha_poly_objf', 'alpha_poly_objfc', 'poly_check_params']
 
 from cmath import atanh as catanh
 from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              roots_cubic_a1, numpy as np, py_newton as newton,
                              py_bisect as bisect, inf, polyder, chebder, 
                              trunc_exp, secant, linspace, logspace,
-                             horner, horner_and_der2)
+                             horner, horner_and_der2, horner_and_der3,
+                             is_poly_positive, is_poly_negative)
 from thermo.utils import R
 
 # Supported methods of lmfit
@@ -116,6 +118,47 @@ def alpha_Twu91_objfc(params, Trs, alphas_over_a, debug=False):
     valid = Twu91_check_params(params)
     err = alpha_constrain_err(err, d0, d1, d2, d3, valid=valid, debug=debug)
     return err
+
+def poly_check_params(coeffs, domain=None):
+    if domain is None:
+        domain = (0, 1)
+        
+    if not is_poly_positive(coeffs, domain):
+        return False
+    coeffs_d1 = polyder(coeffs[::-1])[::-1]
+    coeffs_d2 = polyder(coeffs_d1[::-1])[::-1]
+    coeffs_d3 = polyder(coeffs_d2[::-1])[::-1]
+    
+    if not is_poly_negative(coeffs_d1, domain):
+        return False
+    if not is_poly_positive(coeffs_d2, domain):
+        return False
+    if not is_poly_negative(coeffs_d3, domain):
+        return False
+    return True
+    
+def alpha_poly_objf(params, Trs, alphas_over_a, domain=None):
+    try:
+        coeffs = [i.value for i in params.values()] # already sorted
+    except:
+        coeffs = params
+    v, d1, d2, d3 = horner_and_der3(coeffs, Trs)
+    err = v - alphas_over_a
+    return err
+
+def alpha_poly_objfc(params, Trs, alphas_over_a, domain=None, debug=False):
+    try:
+        coeffs = [i.value for i in params.values()] # already sorted
+    except:
+        coeffs = params
+    v, d1, d2, d3 = horner_and_der3(coeffs, Trs)
+    err = np.abs(v - alphas_over_a)
+    
+    valid = poly_check_params(coeffs, domain=domain)
+    err = alpha_constrain_err(err, v, d1, d2, d3, valid=valid, debug=debug)
+    
+    return err
+
 
 
 def alpha_constrain_err(err, d0, d1, d2, d3, valid=True, debug=False):
