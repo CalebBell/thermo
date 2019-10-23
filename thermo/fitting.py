@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['alpha_Twu91_objf', 'alpha_Twu91_objfc',
+__all__ = ['alpha_Twu91_objf', 'alpha_Twu91_objfc', 'fit',
            'Twu91_check_params', 'postproc_lmfit',
            'alpha_poly_objf', 'alpha_poly_objfc', 'poly_check_params']
 
@@ -41,6 +41,13 @@ methods_uncons = ['leastsq', 'least_squares', 'nelder', 'lbfgsb', 'powell',
 methods_cons = ['differential_evolution', 'brute', 'dual_annealing', 'shgo', 
                 'basinhopping', 'trust-constr', 'emcee']
 
+methods_uncons_good = ['leastsq', 'least_squares', 'nelder', 'lbfgsb', 'powell', 
+                       'cg', 
+#                        'cobyla', 'slsqp', 
+                       'bfgs', 'tnc',]
+methods_cons_good = ['differential_evolution',
+#                      'trust-constr'
+                    ]
 
 
 def Twu91_check_params(params):
@@ -196,3 +203,59 @@ def postproc_lmfit(result):
     result.aard = np.abs(result.residual).sum()/result.ndata
     return result
 
+
+def fit(fun, x0=None, args=None, check_fun=None, debug=False, 
+        cons_meth=methods_cons_good, uncons_meth=methods_uncons_good):
+    from lmfit import Parameter, Parameters, minimize
+    best_result = None
+    best_coeffs = None
+    best_err = 1e300
+    
+    N = len(x0)
+
+    for restart in (False, True):
+        if restart:
+            if debug:
+                print('-'*10 + 'RESTARTING WITH BEST SOLUTION' + '-'*10)
+            best_coeffs_restart = best_coeffs
+        for method_list, bounded in zip([uncons_meth, cons_meth], [False, True]):
+            for method in method_list:
+                fit_params = Parameters() # Ordered dict
+                for i in range(N):
+                    if restart:
+                        v = best_coeffs_restart[i]
+                    else:
+                        try:
+                            v = x0[-i]
+                        except:
+                            v = 1e-20
+                    if bounded:
+                        if restart:
+                            l, h = -abs(best_coeffs_restart[i])*1e3, abs(best_coeffs_restart[i])*1e3
+                        else:
+                            l, h = -1e5, 1e5
+                        fit_params['c' + str(i)] = Parameter(value=v, min=l, max=h, vary=True)
+                    else:
+                        fit_params['c' + str(i)] = Parameter(value=v, vary=True)
+
+                try:
+                    print('starting', [i.value for i in fit_params.values()])
+                    result = minimize(fun, fit_params, args=args, method=method)
+                except Exception as e:
+                    if debug:
+                        print(e)
+                    continue
+                result = postproc_lmfit(result)
+                fit = [i.value for i in result.params.values()]
+    
+                if result.aard < best_err and (check_fun is None or check_fun(fit)):
+                    best_err = result.aard
+                    best_coeffs = fit
+                    best_result = result
+                
+                if debug:
+                    if check_fun is None:
+                        print(result.aard, method)
+                    else:
+                        print(result.aard, check_fun(fit), method)
+    return best_coeffs, best_result

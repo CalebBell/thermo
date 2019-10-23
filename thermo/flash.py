@@ -37,6 +37,7 @@ from fluids.numerics import (UnconvergedError, trunc_exp, py_newton as newton,
                              py_brenth as brenth, secant, numpy as np, linspace, 
                              logspace, oscillation_checker, damping_maintain_sign,
                              oscillation_checking_wrapper, OscillationError,
+                             NoSolutionError,
                              best_bounding_bounds)
 from scipy.optimize import minimize, fsolve, root
 from thermo.utils import (exp, log, log10, copysign, normalize, has_matplotlib,
@@ -1662,6 +1663,10 @@ def sequential_substitution_2P_HSGUAbeta(zs, xs_guess, ys_guess, liquid_phase,
             return iter_var_1
         else:
             new = p1 - err1*(p1 - p0)/(err1 - err0)*damping
+            if new < 1e-7:
+                # Only handle positive values, damped steps to .5
+                new = 0.5*(1e-7 + p0)
+#            print(p0, p1, new)
             return new
         
     TPV_args = {fixed_var: fixed_var_val, iter_var: iter_var_0}
@@ -1710,13 +1715,13 @@ def sequential_substitution_2P_HSGUAbeta(zs, xs_guess, ys_guess, liquid_phase,
             comp_diff += abs(xs[i] - ys[i])
         
         # Accept the new compositions
-#         xs, ys = xs_new, zs # This has worse convergence behavior?
+#        xs, ys = xs_new, zs # This has worse convergence behavior; seems to not even converge some of the time
         xs, ys = xs_new, ys_new 
         
         if comp_diff < trivial_solution_tol:
             raise ValueError("Converged to trivial condition, compositions of both phases equal")
         
-#         print(p0, err, err0)
+        print(p0, err, err0)
         if err < tol_eq and abs(err0) < tol_spec_abs:
             return p0, V_over_F, xs, ys, l, g, iteration, err, err0
     raise UnconvergedError('End of SS without convergence')
@@ -2117,6 +2122,7 @@ class FlashPureVLS(FlashBase):
         
         
         try:
+            VL_liq, VL_gas = None, None
             G_VL = 1e100
             # BUG - P IS NOW KNOWN!
             if self.gas_count and self.liquid_count:
@@ -2127,17 +2133,16 @@ class FlashPureVLS(FlashBase):
             elif fixed_var == 'V':
                 raise NotImplementedError("Does not make sense here because there is no actual vapor frac spec")
                 
-#                
 #                VL_flash = self.flash(P=P, VF=.4)
-                spec_val_l = getattr(VL_liq, spec)()
-                spec_val_g = getattr(VL_gas, spec)()
+            spec_val_l = getattr(VL_liq, spec)()
+            spec_val_g = getattr(VL_gas, spec)()
 #                spec_val_l = getattr(VL_flash.liquid0, spec)()
 #                spec_val_g = getattr(VL_flash.gas, spec)()
-                VF = (spec_val - spec_val_l)/(spec_val_g - spec_val_l)
-                if 0.0 <= VF <= 1.0:
-                    G_l = VL_liq.G()
-                    G_g = VL_gas.G()
-                    G_VL = G_g*VF + G_l*(1.0 - VF)           
+            VF = (spec_val - spec_val_l)/(spec_val_g - spec_val_l)
+            if 0.0 <= VF <= 1.0:
+                G_l = VL_liq.G()
+                G_g = VL_gas.G()
+                G_VL = G_g*VF + G_l*(1.0 - VF)           
             else:
                 VF = None
         except:
@@ -2146,7 +2151,8 @@ class FlashPureVLS(FlashBase):
         try:
             G_SF = 1e100
             if self.solid_count and (self.gas_count or self.liquid_count):
-                VS_flash = self.flash(P=P, SF=1)
+                VS_flash = self.flash(SF=.5, **{fixed_var: fixed_var_val})
+#                VS_flash = self.flash(P=P, SF=1)
                 spec_val_s = getattr(VS_flash.solid0, spec)()
                 spec_other = getattr(VS_flash.phases[0], spec)()
                 SF = (spec_val - spec_val_s)/(spec_other - spec_val_s)
@@ -2198,6 +2204,74 @@ class FlashPureVLS(FlashBase):
             iterations = 0
             err = 0.0
             flash_convergence['SF flash convergence'] = SF_flash.flash_convergence
+            
+        if G_min == 1e100:
+            '''Calculate the values of val at minimum and maximum temperature
+            for each phase.
+            Calculate the val at the phase changes.
+            Include all in the exception to prove within bounds;
+            also have a self check to say whether or not the value should have
+            had a converged value.
+            '''
+            if iter_var == 'T':
+                min_bound = Phase.T_MIN_FIXED
+                max_bound = Phase.T_MAX_FIXED
+            elif iter_var == 'P':
+                min_bound = Phase.P_MIN_FIXED
+                max_bound = Phase.P_MAX_FIXED
+            elif iter_var == 'V':
+                min_bound = Phase.V_MIN_FIXED
+                max_bound = Phase.V_MAX_FIXED
+                
+            phases_at_min = []
+            phases_at_max = []
+
+#            specs_at_min = []
+#            specs_at_max = []
+            
+            had_solution = False
+            
+            s = ''
+            phase_kwargs = {fixed_var: fixed_var_val, 'zs': zs}
+            for phase in self.phases:
+                
+                phase_kwargs[iter_var] = min_bound
+                p = phase.to_zs_TPV(**phase_kwargs)
+                phases_at_min.append(p)
+                
+                phase_kwargs[iter_var] = max_bound
+                p = phase.to_zs_TPV(**phase_kwargs)
+                phases_at_max.append(p)
+                
+                low, high = getattr(phases_at_min[-1], spec)(), getattr(phases_at_max[-1], spec)()
+                low, high = min(low, high), max(low, high)
+                s += '%s 1 Phase solution: (%g, %g); ' %(p.__class__.__name__, low, high)
+                if low <= spec_val <= high:
+                    had_solution = True
+                
+            if VL_liq is not None:
+                s += '(%s, %s) VL 2 Phase solution: (%g, %g); ' %(
+                        VL_liq.__class__.__name__, VL_gas.__class__.__name__, 
+                        spec_val_l, spec_val_g)
+                VL_min_spec, VL_max_spec = min(spec_val_l, spec_val_g), max(spec_val_l, spec_val_g), 
+                if VL_min_spec <= spec_val <= VL_max_spec:
+                    had_solution = True
+            if SF is not None:
+                s += '(%s, %s) VL 2 Phase solution: (%g, %g); ' %(
+                        VS_flash.phases[0].__class__.__name__, VS_flash.solid0.__class__.__name__, 
+                        spec_val_s, spec_other)
+                S_min_spec, S_max_spec = min(spec_val_s, spec_other), max(spec_val_s, spec_other), 
+                if S_min_spec <= spec_val <= S_max_spec:
+                    had_solution = True
+            if had_solution:
+                raise UnconvergedError("Could not converge but solution detected in bounds: %s" %s)
+            else:
+                raise NoSolutionError("No physical solution in bounds: %s" %s)
+#            phase, zs, fixed_var_val, spec_val, fixed_var=fixed_var,  spec=spec, iter_var=iter_var
+#            print(s)
+#            print(phases_at_min, phases_at_max)
+            
+            
         flash_convergence['iterations'] = iterations
         flash_convergence['err'] = err
 
