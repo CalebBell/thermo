@@ -980,9 +980,10 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
         err = spec_fun(p) - spec_val
         store[:] = (p, err)
         if fprime:
-#            print([err, guess])
+#            print([err, guess, p.eos_mix.phase, der_attr])
             derr = der_attr_fun(p)
             return err, derr
+#        print(err)
         return err
 
     if oscillation_detection:
@@ -1359,6 +1360,7 @@ def TVF_pure_newton(P_guess, T, liquids, gas, maxiter=200, xtol=1E-10):
         store[:] = (lowest_phase, g, err)
         return err, derr_dP
     Psat = newton(to_solve_newton, P_guess, xtol=xtol, maxiter=maxiter,
+                  low=Phase.P_MIN_FIXED,
                   require_eval=True, bisection=False, fprime=True)
     l, g, err = store
 
@@ -1391,7 +1393,7 @@ def TVF_pure_secant(P_guess, T, liquids, gas, maxiter=200, xtol=1E-10):
         err = fugacity_liq - fugacity_gas
         store[:] = (lowest_phase, g, err)
         return err
-    Psat = secant(to_solve_secant, P_guess, xtol=xtol, maxiter=maxiter)
+    Psat = secant(to_solve_secant, P_guess, xtol=xtol, maxiter=maxiter, low=Phase.P_MIN_FIXED)
     l, g, err = store
 
     return Psat, l, g, iterations, err
@@ -1428,6 +1430,7 @@ def PVF_pure_newton(T_guess, P, liquids, gas, maxiter=200, xtol=1E-10):
         store[:] = (lowest_phase, g, err)
         return err, derr_dT
     Tsat = newton(to_solve_newton, T_guess, xtol=xtol, maxiter=maxiter,
+                  low=Phase.T_MIN_FIXED,
                   require_eval=True, bisection=False, fprime=True)
     l, g, err = store
 
@@ -1461,7 +1464,8 @@ def PVF_pure_secant(T_guess, P, liquids, gas, maxiter=200, xtol=1E-10):
         err = fugacity_liq - fugacity_gas
         store[:] = (lowest_phase, g, err)
         return err
-    Tsat = secant(to_solve_secant, T_guess, xtol=xtol, maxiter=maxiter)
+    Tsat = secant(to_solve_secant, T_guess, xtol=xtol, maxiter=maxiter,
+                  low=Phase.T_MIN_FIXED)
     l, g, err = store
 
     return Tsat, l, g, iterations, err
@@ -1820,9 +1824,9 @@ class FlashVL(FlashBase):
 # Format - keys above, and TPV spec, HSU spec, and iter_var
         fixed_var='P', spec='H', iter_var='T',
 '''
-spec_to_iter_vars = {(True, False, False, True, False, False) : ('T', 'H', 'P'),
+spec_to_iter_vars = {(True, False, False, True, False, False) : ('T', 'H', 'V'), # Iterating on P is slow, derivatives look OK
                      (True, False, False, False, True, False) : ('T', 'S', 'P'),
-                     (True, False, False, False, False, True) : ('T', 'U', 'P'),
+                     (True, False, False, False, False, True) : ('T', 'U', 'V'),
 
                      (False, True, False, True, False, False) : ('P', 'H', 'T'),
                      (False, True, False, False, True, False) : ('P', 'S', 'T'),
@@ -1991,7 +1995,12 @@ class FlashPureVLS(FlashBase):
                 spec_val = U
                 
                 
-            g, ls, ss, betas, T, P, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var)
+            g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var)
+            phases = ls + ss
+            if g:
+                phases += [g]
+            T, P = phases[0].T, phases[0].P
+            
             return EquilibriumState(T, P, zs, gas=g, liquids=ls, solids=ss, 
                                     betas=betas, flash_specs=flash_specs, 
                                     flash_convergence=flash_convergence,
@@ -2051,7 +2060,9 @@ class FlashPureVLS(FlashBase):
         if self.VL_only_CEOSs and 0:
             return Psat, liquids[0], gas, 0, 0.0
 #        return TVF_pure_newton(Psat, T, liquids, gas, maxiter=200, xtol=1E-10)
-        return TVF_pure_secant(Psat, T, liquids, gas, maxiter=200, xtol=1E-10)
+        P = TVF_pure_secant(Psat, T, liquids, gas, maxiter=200, xtol=1E-10)
+#        print('P', P, 'solved')
+        return P
 
     def flash_PVF(self, P, VF=None):
         zs = [1]
@@ -2126,14 +2137,15 @@ class FlashPureVLS(FlashBase):
             G_VL = 1e100
             # BUG - P IS NOW KNOWN!
             if self.gas_count and self.liquid_count:
-                if fixed_var == 'P':
+                if fixed_var == 'T':
                     Psat, VL_liq, VL_gas, VL_iter, VL_err = self.flash_TVF(fixed_var_val, VF=.5)
-                elif fixed_var == 'T':
+                elif fixed_var == 'P':
                     Tsat, VL_liq, VL_gas, VL_iter, VL_err = self.flash_PVF(fixed_var_val, VF=.5)
             elif fixed_var == 'V':
                 raise NotImplementedError("Does not make sense here because there is no actual vapor frac spec")
                 
 #                VL_flash = self.flash(P=P, VF=.4)
+#            print('hade it', VL_liq, VL_gas)
             spec_val_l = getattr(VL_liq, spec)()
             spec_val_g = getattr(VL_gas, spec)()
 #                spec_val_l = getattr(VL_flash.liquid0, spec)()
@@ -2145,7 +2157,8 @@ class FlashPureVLS(FlashBase):
                 G_VL = G_g*VF + G_l*(1.0 - VF)           
             else:
                 VF = None
-        except:
+        except Exception as e:
+#            print(e, spec)
             VF = None
         
         try:
@@ -2266,16 +2279,56 @@ class FlashPureVLS(FlashBase):
             if had_solution:
                 raise UnconvergedError("Could not converge but solution detected in bounds: %s" %s)
             else:
-                raise NoSolutionError("No physical solution in bounds: %s" %s)
-#            phase, zs, fixed_var_val, spec_val, fixed_var=fixed_var,  spec=spec, iter_var=iter_var
-#            print(s)
-#            print(phases_at_min, phases_at_max)
-            
+                raise NoSolutionError("No physical solution in bounds for %s=%s at %s=%s: %s" %(spec, spec_val, fixed_var, fixed_var_val, s))            
             
         flash_convergence['iterations'] = iterations
         flash_convergence['err'] = err
 
-        return gas_phase, ls, ss, betas, T, P, flash_convergence
+        return gas_phase, ls, ss, betas, flash_convergence
+    
+    def compare_flashes(self, state, inputs=None):
+        # do a PT
+        PT = self.flash(T=state.T, P=state.P)
+        
+        if inputs is None:
+            inputs = [('T', 'P'),
+                                 ('T', 'V'),
+                                 ('P', 'V'),
+                                 
+                                 ('T', 'H'),
+                                 ('T', 'S'),
+                                 ('T', 'U'),
+                                 
+                                 ('P', 'H'),
+                                 ('P', 'S'),
+                                 ('P', 'U'),
+                                 
+                                 ('V', 'H'),
+                                 ('V', 'S'),
+                                 ('V', 'U')]
+        
+        states = []
+        for p0, p1 in inputs:
+            kwargs = {}
+            
+            p0_spec = getattr(state, p0)
+            try:
+                p0_spec = p0_spec()
+            except:
+                pass
+            p1_spec = getattr(state, p1)
+            try:
+                p1_spec = p1_spec()
+            except:
+                pass
+            kwargs = {}
+            kwargs[p0] = p0_spec
+            kwargs[p1] = p1_spec
+            new = self.flash(**kwargs)
+            states.append(new)
+        return states
+        
+        
         
 
     def debug_TVF(self, T, VF=None, pts=2000):

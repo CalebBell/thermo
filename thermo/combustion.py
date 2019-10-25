@@ -130,7 +130,7 @@ def combustion_products(atoms):
 
     nN2 = .5*nN
     nP4O10 = .25*nP
-    nH2O = (nH - nCl - nF)/2.
+    nH2O = 0.5*(nH - nCl - nF)
     products = {'CO2': nCO2, 'Br2': nBr2, 'I2': nI2, 'HCl': nCl, 'HF': nHF, 
                 'SO2': nSO2, 'N2': nN2, 'P4O10': nP4O10, 'H2O': nH2O,
                 'O2_required': nO2_req}

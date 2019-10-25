@@ -28,7 +28,7 @@ __all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',
 #'PRVTTwu'
 ]
 
-from cmath import atanh as catanh
+from cmath import atanh as catanh, log as clog
 from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              roots_cubic_a1, numpy as np, py_newton as newton,
                              py_bisect as bisect, inf, polyder, chebder, 
@@ -136,13 +136,30 @@ class GCEOS(object):
         self.check_sufficient_inputs()
         
         if self.V is not None:
+            V = self.V
             if self.P is not None:
-                self.T = self.solve_T(self.P, self.V)
+                self.T = self.solve_T(self.P, V)
                 self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2 = self.a_alpha_and_derivatives(self.T, pure_a_alphas=pure_a_alphas)
             else:
                 self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2 = self.a_alpha_and_derivatives(self.T, pure_a_alphas=pure_a_alphas)
-                self.P = R*self.T/(self.V-self.b) - self.a_alpha/(self.V*self.V + self.delta*self.V + self.epsilon)
-            Vs = [self.V, 1.0j, 1.0j]
+                
+                # Tested to change the result at the 7th decimal once
+#                V_r3 = V**(1.0/3.0)
+#                T, b, a_alpha, delta, epsilon = self.T, self.b, self.a_alpha, self.delta, self.epsilon
+#                P = R*T/(V-b) - a_alpha/((V_r3*V_r3)*(V_r3*(V+delta)) + epsilon)
+#                
+#                for _ in range(10):
+#                    err = -T + (P*V**3 - P*V**2*b + P*V**2*delta - P*V*b*delta + P*V*epsilon - P*b*epsilon + V*a_alpha - a_alpha*b)/(R*(V**2 + V*delta + epsilon))
+#                    derr = (V**3 - V**2*b + V**2*delta - V*b*delta + V*epsilon - b*epsilon)/(R*(V**2 + V*delta + epsilon))
+#                    P = P - err/derr
+#                self.P = P
+                # Equation re-aranged to hopefully solve better
+                
+                # Allow mpf multiple precision volume for flash initialization
+                # DO NOT TAKE OUT FLOAT OPTION!
+                self.P = float(R*self.T/(V-self.b) - self.a_alpha/(V*V + self.delta*V + self.epsilon))
+#                self.P = R*self.T/(V-self.b) - self.a_alpha/(V*(V + self.delta) + self.epsilon)
+            Vs = [V, 1.0j, 1.0j]
         else:
             if full_alphas:
                 self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2 = self.a_alpha_and_derivatives(self.T, pure_a_alphas=pure_a_alphas)
@@ -184,11 +201,11 @@ class GCEOS(object):
         function; that is indeed possible, but the check for handling if there
         are two or three roots makes it not worth it.
         '''
-        good_roots = [i.real for i in Vs if i.imag == 0.0 and i.real > 0.0]
-        good_root_count = len(good_roots)
-            # All roots will have some imaginary component; ignore them if > 1E-9 (when using a solver that does not strip them)
-#        good_roots = [i.real for i in Vs if abs(i.imag) < 1E-9 and i.real > 0.0]
+#        good_roots = [i.real for i in Vs if i.imag == 0.0 and i.real > 0.0]
 #        good_root_count = len(good_roots)
+            # All roots will have some imaginary component; ignore them if > 1E-9 (when using a solver that does not strip them)
+        good_roots = [i.real for i in Vs if (i.real ==0 or abs(i.imag/i.real) < 1E-12) and i.real > 0.0]
+        good_root_count = len(good_roots)
             
         if good_root_count == 1: 
             self.phase = self.set_properties_from_solution(self.T, self.P,
@@ -596,10 +613,11 @@ should be calculated by this method, in a user subclass.')
                 T_guess = T_guess_liq
                 f0 = err_liq
             # T_guess = self.Tc*0.5
+            # ytol=T_guess*1e-9,
             return secant(to_solve, T_guess, low=1e-12, xtol=1e-12, f0=f0)
 
     @staticmethod
-    def volume_solutions(T, P, b, delta, epsilon, a_alpha, quick=True):
+    def volume_solutions_fast(T, P, b, delta, epsilon, a_alpha, quick=True):
         r'''Solution of this form of the cubic EOS in terms of volumes. Returns
         three values, all with some complex part.  
 
@@ -710,34 +728,93 @@ should be calculated by this method, in a user subclass.')
             x20 = -t1/x19#
             x22 = x5 + x5
             x25 = 4.*x0*x20
-            return ((x0*x20 - x19 + x5)*third,
+            return [(x0*x20 - x19 + x5)*third,
                     (x19*x24 + x22 - x25*x24_inv)*sixth,
-                    (x19*x26 + x22 - x25*x26_inv)*sixth)
+                    (x19*x26 + x22 - x25*x26_inv)*sixth]
         else:
-            return (-(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)/(3*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)) - (sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)/3 - (-P*b + P*delta - R*T)/(3*P),
+            return [-(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)/(3*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)) - (sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)/3 - (-P*b + P*delta - R*T)/(3*P),
                      -(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)/(3*(-1/2 - sqrt(3)*1j/2)*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)) - (-1/2 - sqrt(3)*1j/2)*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)/3 - (-P*b + P*delta - R*T)/(3*P),
-                     -(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)/(3*(-1/2 + sqrt(3)*1j/2)*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)) - (-1/2 + sqrt(3)*1j/2)*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)/3 - (-P*b + P*delta - R*T)/(3*P))
+                     -(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)/(3*(-1/2 + sqrt(3)*1j/2)*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)) - (-1/2 + sqrt(3)*1j/2)*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)/3 - (-P*b + P*delta - R*T)/(3*P)]
 
-    # volume_solutions_Cardano
     @staticmethod
-    def volume_solutions(T, P, b, delta, epsilon, a_alpha, quick=True):
+    def volume_solutions_Cardano(T, P, b, delta, epsilon, a_alpha, quick=True):
         RT_inv = R_inv/T
         P_RT_inv = P*RT_inv
-#        eta = b
         B = etas = b*P_RT_inv
         deltas = delta*P_RT_inv
         thetas = a_alpha*P_RT_inv*RT_inv
         epsilons = epsilon*P_RT_inv*P_RT_inv
         
-#        a = 1.0
         b = (deltas - B - 1.0)
         c = (thetas + epsilons - deltas*(B + 1.0))
         d = -(epsilons*(B + 1.0) + thetas*etas)
-#        print(b, c, d)
         roots = roots_cubic(1.0, b, c, d)
-#        roots = np.roots([1.0, b, c, d]).tolist()
         RT_P = R*T/P
         return [V*RT_P for V in roots]
+
+    @staticmethod
+    def volume_solutions_numpy(T, P, b, delta, epsilon, a_alpha, quick=True):
+        RT_inv = R_inv/T
+        P_RT_inv = P*RT_inv
+        B = etas = b*P_RT_inv
+        deltas = delta*P_RT_inv
+        thetas = a_alpha*P_RT_inv*RT_inv
+        epsilons = epsilon*P_RT_inv*P_RT_inv
+        
+        b = (deltas - B - 1.0)
+        c = (thetas + epsilons - deltas*(B + 1.0))
+        d = -(epsilons*(B + 1.0) + thetas*etas)
+
+        roots = np.roots([1.0, b, c, d]).tolist()
+        RT_P = R*T/P
+        return [V*RT_P for V in roots]
+    
+    
+    @staticmethod
+    def volume_solutions_mpmath(T, P, b, delta, epsilon, a_alpha, quick=True, dps=50):
+        guesses = GCEOS.volume_solutions_fast(T, P, b, delta, epsilon, a_alpha)
+        import mpmath as mp
+        mp.mp.dps = dps
+        b, T, P, epsilon, delta, a_alpha = [mp.mpf(i) for i in [b, T, P, epsilon, delta, a_alpha]]
+        RT = T*mp.mpf(R)
+        def err(V):
+            return(RT/(V-b) - a_alpha/(V*(V + delta) + epsilon)) - P
+            
+        hits = [mp.findroot(err, Vi, solver='newton') for Vi in guesses]
+        return hits
+    
+    @property
+    def mpmath_volumes(self):
+        return self.volume_solutions_mpmath(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
+    
+    def volume_error(self, only_real=True):
+        Vs_good = self.volume_solutions_mpmath(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha, dps=30)
+        Vs = self.raw_volumes
+        err = 0
+        for i in range(3):
+            try:
+                err_i = abs((Vs[i].real -Vs_good[i].real)/Vs_good[i].real)
+            except ZeroDivisionError:
+                try:
+                    err_i = abs((Vs[i].real -Vs_good[i].real)/Vs[i].real)
+                except ZeroDivisionError:
+                    err_i = abs((Vs[i].real -Vs_good[i].real))
+                    
+            if err_i > err:
+                err = err_i
+            
+            if not only_real:
+                try:
+                    err_i = abs((Vs[i].imag -Vs_good[i].imag)/Vs_good[i].imag)
+                except ZeroDivisionError:
+                    try:
+                        err_i = abs((Vs[i].imag -Vs_good[i].imag)/Vs[i].imag)
+                    except ZeroDivisionError:
+                        err_i = abs((Vs[i].imag -Vs_good[i].imag))
+            if err_i > err:
+                err = err_i
+        return err
+
 
     # validation method
     @staticmethod
@@ -783,6 +860,64 @@ should be calculated by this method, in a user subclass.')
                 
         return [V*RT_P for V in roots]
 
+
+    @staticmethod
+    def volume_solutions_NR(T, P, b, delta, epsilon, a_alpha, quick=True):
+        '''Even if mpmath is used for greater precision in the calculated root,
+        it gets rounded back to a float - and then error occurs.
+        Cannot beat numerical method or numpy roots!
+        
+        The only way out is to keep volume as many decimals, to pass back in
+        to initialize the TV state.
+        '''
+        # Initial calculation - could use any method, however this is fastest
+        # 2 divisions, 2 powers in here
+        Vs = GCEOS.volume_solutions_fast(T, P, b, delta, epsilon, a_alpha, quick=True)
+        RT = R*T
+        P_inv = 1.0/P
+#        maxiter = range(3)
+        for i in (0, 1, 2):
+            for _ in (0, 1, 2):
+                # 3 divisions each iter = 15, triple the duration of the solve
+                V = Vs[i]
+                denom1 = 1.0/(V*(V + delta) + epsilon)
+                denom0 = 1.0/(V-b)
+                w0 = RT*denom0
+                w1 = a_alpha*denom1
+                err = w0 - w1 - P
+#                print(abs(err), V, _)
+#                if abs(err*P_inv) < 1e-12:
+#                    break
+                derr_dV = (V + V + delta)*w1*denom1 - w0*denom0 
+                Vs[i] = V - err/derr_dV
+            
+#            def to_sln(V):
+#                denom1 = 1.0/(V*(V + delta) + epsilon)
+#                denom0 = 1.0/(V-b)
+#                w0 = x2*denom0
+#                w1 = a_alpha*denom1
+#                err = w0 - w1 - P
+##                print(err*P_inv, V)
+#                return err#*P_inv
+#            try:
+#                from fluids.numerics import py_bisect as bisect, secant, linspace
+##                Vs[i] = secant(to_sln, Vs[i].real, x1=Vs[i].real*1.0001, ytol=1e-12, damping=.6)
+#                import matplotlib.pyplot as plt
+#                
+#                plt.figure()
+#                xs = linspace(Vs[i].real*.9999999999, Vs[i].real*1.0000000001, 2000000) + [Vs[i]]
+#                ys = [abs(to_sln(V)) for V in xs]
+#                plt.semilogy(xs, ys)
+#                plt.show()
+#                
+##                Vs[i] = bisect(to_sln, Vs[i].real*.999, Vs[i].real*1.001)
+#            except Exception as e:
+#                print(e)
+            
+        return Vs
+    
+    # Default method
+    volume_solutions = volume_solutions_NR
 
     def derivatives_and_departures(self, T, P, V, b, delta, epsilon, a_alpha, da_alpha_dT, d2a_alpha_dT2, quick=True):
         
@@ -889,7 +1024,8 @@ should be calculated by this method, in a user subclass.')
         H_dep = x12*(T*da_alpha_dT - a_alpha) - x3 + x8
         
         t1 = (x3*x0/P)
-        S_dep = -R_2*log(t1*t1) + da_alpha_dT*x12  # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
+        S_dep = -R*clog(t1).real + da_alpha_dT*x12  # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
+#        S_dep = -R_2*log(t1*t1) + da_alpha_dT*x12  # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
         
         x18 = x16 - x15
         x19 = (x14 + x18)/(x14 - x18)
@@ -3569,6 +3705,7 @@ class PR(GCEOS):
         self.no_T_spec = True
         Tc, a, b, kappa = self.Tc, self.a, self.b, self.kappa
         if quick:
+            # Needs to be improved to do a NR or two at the end!
             x0 = V*V
             x1 = R*Tc
             x2 = x0*x1
@@ -3580,7 +3717,8 @@ class PR(GCEOS):
             x8 = b*b
             x9 = x1*x8
             x10 = V*x4
-            x11 = (-x10 + x2 + x5 + x7 - x9)**2
+            thing = (x2 - x10 + x5 + x7 - x9)
+            x11 = thing*thing
             x12 = x0*x0
             x13 = R*R
             x14 = Tc*Tc
@@ -3600,8 +3738,10 @@ class PR(GCEOS):
             x28 = x0*x25
             x29 = x28*x3
             x30 = 2.*x8
-            x31 = 6.*V*x27 - 2.*b*x29 + x0*x13*x14*x30 + x0*x19 + x12*x15 + x15*x16 - x15*x23 + x15*x24 - x19*x6 + x19*x8 - x20*x21 - x21*x22
-            x32 = V - b
+            x31 = (6.*V*x27 - 2.*b*x29 + x0*x13*x14*x30 + x0*x19 + x12*x15 
+                   + x15*x16 - x15*x23 + x15*x24 - x19*x6 + x19*x8 - x20*x21
+                   - x21*x22)
+            V_m_b = V - b
             x33 = 2.*(R*Tc*a*kappa)
             x34 = P*x2
             x35 = P*x5
@@ -3612,7 +3752,58 @@ class PR(GCEOS):
             x40 = 2.*kappa*x3
             x41 = b*x17
             x42 = P*a*x3
-            return -Tc*(2.*a*kappa*x11*sqrt(x32**3*(x0 + x6 - x8)*(P*x7 - P*x9 + x25 + x33 + x34 + x35 + x36 - x37))*(kappa + 1.) - x31*x32*((4.*V)*(R*Tc*a*b*kappa) + x0*x33 - x0*x35 + x12*x38 + x16*x38 + x18*x39 - x18*x41 - x20*x42 - x22*x42 - x23*x38 + x24*x38 + x25*x6 - x26 - x27 + x28 + x29 + x3*x39 - x3*x41 + x30*x34 - x33*x8 + x36*x6 + 3*x37*x8 + x39*x40 - x40*x41))/(x11*x31)
+            T_calc = (-Tc*(2.*a*kappa*x11*sqrt(V_m_b**3*(x0 + x6 - x8)*(P*x7 -
+                                              P*x9 + x25 + x33 + x34 + x35 
+                                              + x36 - x37))*(kappa + 1.) -
+                x31*V_m_b*((4.*V)*(R*Tc*a*b*kappa) + x0*x33 - x0*x35 + x12*x38
+                         + x16*x38 + x18*x39 - x18*x41 - x20*x42 - x22*x42 
+                         - x23*x38 + x24*x38 + x25*x6 - x26 - x27 + x28 + x29
+                         + x3*x39 - x3*x41 + x30*x34 - x33*x8 + x36*x6
+                         + 3*x37*x8 + x39*x40 - x40*x41))/(x11*x31))
+            
+            # Validation code - although the solution is analytical some issues
+            # with floating points can still occur
+            # Although 99.9 % of points anyone would likely want are plenty good,
+            # there are some edge cases as P approaches T or goes under it.
+            
+            Tc_inv = 1.0/Tc
+            c1, c2 = R/(V_m_b), a/(V*(V+b) + b*V_m_b)
+            
+            rt = (T_calc*Tc_inv)**0.5
+            alpha_root = (1.0 + kappa*(1.0-rt))
+            err = c1*T_calc - alpha_root*alpha_root*c2 - P
+            
+            # Newton step - might as well compute it
+            derr = c1 + c2*kappa*rt*(kappa*(1.0 -rt) + 1.0)/T_calc
+            T_calc = T_calc - err/derr
+            
+            # Step 2 - cannot find occasion to need more steps, most of the time
+            # this does nothing!
+            rt = (T_calc*Tc_inv)**0.5
+            alpha_root = (1.0 + kappa*(1.0-rt))
+            err = c1*T_calc - alpha_root*alpha_root*c2 - P
+            derr = c1 + c2*kappa*rt*(kappa*(1.0 -rt) + 1.0)/T_calc
+            T_calc = T_calc - err/derr
+            return T_calc
+            
+#            P_inv = 1.0/P
+#            if abs(err/P) < 1e-6:
+#                return T_calc
+##            print(abs(err/P))
+##            return GCEOS.solve_T(self, P, V)
+#            for i in range(7):
+#                rt = (T_calc*Tc_inv)**0.5
+#                alpha_root = (1.0 + kappa*(1.0-rt))
+#                err = c1*T_calc - alpha_root*alpha_root*c2 - P
+#                derr = c1 + c2*kappa*rt*(kappa*(1.0 -rt) + 1.0)/T_calc
+#
+#                T_calc = T_calc - err/derr
+#                print(err/P, T_calc, derr)
+#                if abs(err/P) < 1e-12:
+#                    return T_calc
+#            return T_calc
+
+            
         else:
             return Tc*(-2*a*kappa*sqrt((V - b)**3*(V**2 + 2*V*b - b**2)*(P*R*Tc*V**2 + 2*P*R*Tc*V*b - P*R*Tc*b**2 - P*V*a*kappa**2 + P*a*b*kappa**2 + R*Tc*a*kappa**2 + 2*R*Tc*a*kappa + R*Tc*a))*(kappa + 1)*(R*Tc*V**2 + 2*R*Tc*V*b - R*Tc*b**2 - V*a*kappa**2 + a*b*kappa**2)**2 + (V - b)*(R**2*Tc**2*V**4 + 4*R**2*Tc**2*V**3*b + 2*R**2*Tc**2*V**2*b**2 - 4*R**2*Tc**2*V*b**3 + R**2*Tc**2*b**4 - 2*R*Tc*V**3*a*kappa**2 - 2*R*Tc*V**2*a*b*kappa**2 + 6*R*Tc*V*a*b**2*kappa**2 - 2*R*Tc*a*b**3*kappa**2 + V**2*a**2*kappa**4 - 2*V*a**2*b*kappa**4 + a**2*b**2*kappa**4)*(P*R*Tc*V**4 + 4*P*R*Tc*V**3*b + 2*P*R*Tc*V**2*b**2 - 4*P*R*Tc*V*b**3 + P*R*Tc*b**4 - P*V**3*a*kappa**2 - P*V**2*a*b*kappa**2 + 3*P*V*a*b**2*kappa**2 - P*a*b**3*kappa**2 + R*Tc*V**2*a*kappa**2 + 2*R*Tc*V**2*a*kappa + R*Tc*V**2*a + 2*R*Tc*V*a*b*kappa**2 + 4*R*Tc*V*a*b*kappa + 2*R*Tc*V*a*b - R*Tc*a*b**2*kappa**2 - 2*R*Tc*a*b**2*kappa - R*Tc*a*b**2 + V*a**2*kappa**4 + 2*V*a**2*kappa**3 + V*a**2*kappa**2 - a**2*b*kappa**4 - 2*a**2*b*kappa**3 - a**2*b*kappa**2))/((R*Tc*V**2 + 2*R*Tc*V*b - R*Tc*b**2 - V*a*kappa**2 + a*b*kappa**2)**2*(R**2*Tc**2*V**4 + 4*R**2*Tc**2*V**3*b + 2*R**2*Tc**2*V**2*b**2 - 4*R**2*Tc**2*V*b**3 + R**2*Tc**2*b**4 - 2*R*Tc*V**3*a*kappa**2 - 2*R*Tc*V**2*a*b*kappa**2 + 6*R*Tc*V*a*b**2*kappa**2 - 2*R*Tc*a*b**3*kappa**2 + V**2*a**2*kappa**4 - 2*V*a**2*b*kappa**4 + a**2*b**2*kappa**4))
     
