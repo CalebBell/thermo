@@ -5976,10 +5976,12 @@ class PRMIX(GCEOSMIX, PR):
     def solve_T(self, P, V, quick=True):
         if self.N == 1 and type(self) is PRMIX:
             self.Tc = self.Tcs[0]
+            self.Pc = self.Pcs[0]
             self.kappa = self.kappas[0]
             self.a = self.ais[0]
             T = super(type(self).__mro__[-4], self).solve_T(P=P, V=V, quick=quick)   
             del self.Tc
+            del self.Pc
             del self.kappa
             del self.a
             return T
