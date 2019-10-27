@@ -216,6 +216,9 @@ class Phase(object):
                 except ValueError:
                     _log_zs.append(-690.7755278982137) # log(1e-300)
         return self._log_zs
+    
+    def V_iter(self):
+        return self.V()
 
     def G(self):
         G = self.H() - self.T*self.S()
@@ -1288,7 +1291,18 @@ class EOSGas(Phase):
         
     to = to_zs_TPV
         
-
+    def V_iter(self):
+        # Can be some severe issues in the very low pressure/temperature range
+        # For that reason, consider not doing TV iterations.
+        T, P = self.T, self.P
+        if (P < 1.0 or T < 1.0) or (P/T < 5.0 and T < 10.0):
+            eos_mix = self.eos_mix
+            try:
+                return eos_mix.V_g_mpmath.real
+            except:
+                return eos_mix.V_l_mpmath.real
+        else:
+            return self.V()
         
     def lnphis(self):
         try:

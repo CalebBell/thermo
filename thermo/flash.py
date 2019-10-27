@@ -32,7 +32,7 @@ __all__ = ['sequential_substitution_2P', 'bubble_T_Michelsen_Mollerup',
            'sequential_substitution_2P_sat',
            ]
 
-from fluids.constants import R, R_inv
+from fluids.constants import R, R2, R_inv
 from fluids.numerics import (UnconvergedError, trunc_exp, py_newton as newton,
                              py_brenth as brenth, secant, numpy as np, linspace, 
                              logspace, oscillation_checker, damping_maintain_sign,
@@ -40,7 +40,7 @@ from fluids.numerics import (UnconvergedError, trunc_exp, py_newton as newton,
                              NoSolutionError,
                              best_bounding_bounds)
 from scipy.optimize import minimize, fsolve, root
-from thermo.utils import (exp, log, log10, copysign, normalize, has_matplotlib,
+from thermo.utils import (exp, log, log10, floor, copysign, normalize, has_matplotlib,
                           mixing_simple, property_mass_to_molar)
 from thermo.heat_capacity import (Lastovka_Shaw_T_for_Hm, Dadgostar_Shaw_integral,
                                   Dadgostar_Shaw_integral_over_T, Lastovka_Shaw_integral,
@@ -53,6 +53,7 @@ from thermo.equilibrium import EquilibriumState
 from thermo.phases import Phase, gas_phases, liquid_phases, solid_phases, EOSLiquid, EOSGas
 from thermo.phase_identification import identify_sort_phases
 from thermo.bulk import default_settings
+
 
 
 def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
@@ -1030,7 +1031,12 @@ def solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var,
     elif iter_var == 'V':
         min_bound = Phase.V_MIN_FIXED
         max_bound = Phase.V_MAX_FIXED
-
+        if isinstance(phase, (EOSLiquid, EOSGas)):
+            c2R = phase.eos_class.c2*R
+            Tcs, Pcs = constants.Tcs, constants.Pcs
+            b = sum([c2R*Tcs[i]*zs[i]/Pcs[i] for i in constants.cmps])
+            min_bound = b*(1.0 + 1e-15)
+            
     if isinstance(phase, gas_phases):
         methods = [LAST_CONVERGED, FIXED_GUESS, STP_T_GUESS, IG_ENTHALPY,
                    LASTOVKA_SHAW]
@@ -1738,8 +1744,282 @@ class FlashBase(object):
     P_MAX_FIXED = Phase.P_MAX_FIXED
     P_MIN_FIXED = Phase.P_MIN_FIXED
 
-    def vapor_scores(self, phases):
-        pass
+    def generate_Ts(self, Ts=None, Tmin=None, Tmax=None, pts=50, zs=None,
+                    method=None):
+        if method is None:
+            method = 'physical'
+            
+        constants = self.constants
+
+        N = constants.N
+        if zs is None:
+            zs = [1.0/N]*N
+        
+        physical = method == 'physical'
+        realistic = method == 'realistic'
+        
+        Tcs = constants.Tcs
+        Tc = sum([zs[i]*Tcs[i] for i in range(N)])
+        
+        if Ts is None:
+            if Tmin is None:
+                if physical:
+                    Tmin = Phase.T_MIN_FIXED
+                elif realistic:
+                    # Round the temperature widely, ensuring consistent rounding
+                    Tmin = 1e-2*round(floor(Tc), -1)
+            if Tmax is None:
+                if physical:
+                    Tmax = Phase.T_MAX_FIXED
+                elif realistic:
+                    # Round the temperature widely, ensuring consistent rounding
+                    Tmax = min(10*round(floor(Tc), -1), 2000)
+            
+            Ts = logspace(log10(Tmin), log10(Tmax), pts)
+#            Ts = linspace(Tmin, Tmax, pts)
+        return Ts
+
+
+    def generate_Ps(self, Ps=None, Pmin=None, Pmax=None, pts=50, zs=None,
+                    method=None):
+        if method is None:
+            method = 'physical'
+            
+        constants = self.constants
+
+        N = constants.N
+        if zs is None:
+            zs = [1.0/N]*N
+        
+        physical = method == 'physical'
+        realistic = method == 'realistic'
+        
+        Pcs = constants.Pcs
+        Pc = sum([zs[i]*Pcs[i] for i in range(N)])
+        
+        if Ps is None:
+            if Pmin is None:
+                if physical:
+                    Pmin = Phase.P_MIN_FIXED
+                elif realistic:
+                    # Round the pressure widely, ensuring consistent rounding
+                    Pmin = min(1e-5*round(floor(Pc), -1), 100)
+            if Pmax is None:
+                if physical:
+                    Pmax = Phase.P_MAX_FIXED
+                elif realistic:
+                    # Round the pressure widely, ensuring consistent rounding
+                    Pmax = min(10*round(floor(Pc), -1), 1e8)
+
+            Ps = logspace(log10(Pmin), log10(Pmax), pts)
+        return Ps
+
+    def generate_Vs(self, Vs=None, Vmin=None, Vmax=None, pts=50, zs=None,
+                    method=None):
+        if method is None:
+            method = 'physical'
+            
+        constants = self.constants
+
+        N = constants.N
+        if zs is None:
+            zs = [1.0/N]*N
+        
+        physical = method == 'physical'
+        realistic = method == 'realistic'
+        
+        Vcs = constants.Vcs
+        Vc = sum([zs[i]*Vcs[i] for i in range(N)])
+        
+        if Vs is None:
+            if Vmin is None:
+                if physical:
+                    Vmin = Vhase.V_MIN_FIXED
+                elif realistic:
+                    # Round the pressure widely, ensuring consistent rounding
+                    Vmin = round(Vc, 5)
+            if Vmax is None:
+                if physical:
+                    Vmax = Vhase.V_MAX_FIXED
+                elif realistic:
+                    # Round the pressure widely, ensuring consistent rounding
+                    Vmin = 1e5*round(Vc, 5)
+
+            Vs = logspace(log10(Vmin), log10(Vmax), pts)
+        return Vs
+    
+    def debug_grid_flash(self, zs, check0, check1, Ts=None, Ps=None, Vs=None, 
+                         VFs=None, SFs=None, Hs=None, Ss=None, Us=None):
+        
+        matrix_spec_flashes = []
+        matrix_flashes = []
+
+        T_spec = Ts is not None
+        P_spec = Ps is not None
+        V_spec = Vs is not None
+        H_spec = Hs is not None
+        S_spec = Ss is not None
+        U_spec = Us is not None
+        VF_spec = VFs is not None
+        SF_spec = SFs is not None
+
+        flash_specs = {'zs': zs}
+        spec_keys = []
+        spec_iters = []
+        if T_spec:
+            spec_keys.append('T')
+            spec_iters.append(Ts)
+        if P_spec:
+            spec_keys.append('P')
+            spec_iters.append(Ps)
+        if V_spec:
+            spec_keys.append('V')
+            spec_iters.append(Vs)
+        if H_spec:
+            spec_keys.append('H')
+            spec_iters.append(Hs)
+        if S_spec:
+            spec_keys.append('S')
+            spec_iters.append(Ss)
+        if U_spec:
+            spec_keys.append('U')
+            spec_iters.append(Us)
+        if VF_spec:
+            spec_keys.append('VF')
+            spec_iters.append(VFs)
+        if SF_spec:
+            spec_keys.append('SF')
+            spec_iters.append(SFs)
+        
+        for n0, spec0 in enumerate(spec_iters[0]):
+            row = []
+            row_flashes = []
+            row_spec_flashes = []
+            for n1, spec1 in enumerate(spec_iters[1]):
+                
+                flash_specs = {'zs': zs, spec_keys[0]: spec0, spec_keys[1]: spec1}
+                state = self.flash(**flash_specs)
+
+                check0_spec = getattr(state, check0)
+                try:
+                    check0_spec = check0_spec()
+                except:
+                    pass
+                check1_spec = getattr(state, check1)
+                try:
+                    check1_spec = check1_spec()
+                except:
+                    pass
+#                if check1 == 'V' and check0 == 'T':
+#                    check1_spec = getattr(state, 'V_iter')()
+                kwargs = {}
+                kwargs[check0] = check0_spec
+                kwargs[check1] = check1_spec
+                try:
+                    new = self.flash(**kwargs)
+                except Exception as e:
+                    new = None
+                    print('Failed trying to flash %s, from original point %s, with exception %s.'%(kwargs, flash_specs, e))
+                
+                row_spec_flashes.append(state)
+                row_flashes.append(new)
+                
+            matrix_spec_flashes.append(row_spec_flashes)
+            matrix_flashes.append(row_flashes)
+        return matrix_spec_flashes, matrix_flashes
+    
+    def debug_err_flash_grid(self, matrix_spec_flashes, matrix_flashes,
+                             check, method='rtol'):
+        matrix = []
+        N0 = len(matrix_spec_flashes)
+        N1 = len(matrix_spec_flashes[0])
+        for i in range(N0):
+            row = []
+            for j in range(N1):
+                state = matrix_spec_flashes[i][j]
+                new = matrix_flashes[i][j]
+
+                act = getattr(state, check)
+                try:
+                    act = act()
+                except:
+                    pass
+        
+                if new is None:
+                    err = 1.0
+                else:
+                    calc = getattr(new, check)
+                    try:
+                        calc = calc()
+                    except:
+                        pass
+                    if method == 'rtol':
+                        err = abs((act - calc)/act)
+                row.append(err)
+            matrix.append(row)
+        return matrix
+        
+        
+    def TPV_inputs(self, spec0='T', spec1='P', check0='P', check1='V', prop0='T',
+                   Ts=None, Tmin=None, Tmax=None,
+                   Ps=None, Pmin=None, Pmax=None,
+                   Vs=None, Vmin=None, Vmax=None,
+                   VFs=None, SFs=None,
+                   auto_range=None, zs=None, pts=50,
+                   trunc_err_low=1e-15, trunc_err_high=None, plot=True, 
+                   show=True):
+        
+        specs = []
+        if 'T' in (spec0, spec1):
+            Ts = self.generate_Ts(Ts=Ts, Tmin=Tmin, Tmax=Tmax, pts=pts, zs=zs,
+                                  method=auto_range)
+            specs.append(Ts)
+        if 'P' in (spec0, spec1):
+            Ps = self.generate_Ps(Ps=Ps, Pmin=Pmin, Pmax=Pmax, pts=pts, zs=zs,
+                              method=auto_range)
+            specs.append(Ps)
+        if 'V' in (spec0, spec1):
+            Vs = self.generate_Vs(Vs=Vs, Vmin=Vmin, Vmax=Vmax, pts=pts, zs=zs,
+                              method=auto_range)
+            specs.append(Vs)
+        if 'VF' in (spec0, spec1):
+            if VFs is None:
+                VFs = linspace(0, 1, pts)
+            specs.append(VFs)
+        if 'SF' in (spec0, spec1):
+            if SFs is None:
+                SFs = linspace(0, 1, pts)
+            specs.append(SFs)
+            
+        specs0, specs1 = specs
+        matrix_spec_flashes, matrix_flashes = self.debug_grid_flash(zs, 
+            check0=check0, check1=check1, Ts=Ts, Ps=Ps, Vs=Vs, VFs=VFs)
+        
+        errs = self.debug_err_flash_grid(matrix_spec_flashes,
+            matrix_flashes, check=prop0)
+        
+        im = None
+        if plot:
+            import matplotlib.pyplot as plt
+            from matplotlib import ticker, cm
+            from matplotlib.colors import LogNorm
+            X, Y = np.meshgrid(specs0, specs1)
+            z = np.array(errs).copy()
+            fig, ax = plt.subplots(1, 1)
+            z[np.where(abs(z) < trunc_err_low)] = trunc_err_low
+            if trunc_err_high is not None:
+                z[np.where(abs(z) > trunc_err_high)] = trunc_err_high
+            
+            # im = ax.pcolormesh(X, Y, z, cmap=cm.PuRd, norm=LogNorm())
+            im = ax.pcolormesh(X, Y, z, cmap=cm.PuRd, norm=LogNorm(vmin=trunc_err_low, vmax=trunc_err_high))
+            # im = ax.pcolormesh(X, Y, z, cmap=cm.viridis, norm=LogNorm(vmin=1e-7, vmax=1))
+            cbar = fig.colorbar(im, ax=ax)
+            ax.set_yscale('log')
+            ax.set_xscale('log')
+            if show:
+                plt.show()
+                
+        return matrix_spec_flashes, matrix_flashes, errs, im
 
 class FlashVL(FlashBase):
     PT_SS_MAXITER = 1000
@@ -2328,8 +2608,17 @@ class FlashPureVLS(FlashBase):
             states.append(new)
         return states
         
+    def debug_TPV_consistency(self, T, P, V):
+        pass
+    
+    
+    
+
+
         
+
         
+
 
     def debug_TVF(self, T, VF=None, pts=2000):
         zs = [1]

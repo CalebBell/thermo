@@ -163,6 +163,14 @@ class Bulk(Phase):
         self._V = V
         return V
     
+    def V_iter(self):
+        betas, phases = self.phase_fractions, self.phases
+        V = 0.0
+        for i in range(len(betas)):
+            V += betas[i]*phases[i].V_iter()
+        return V
+    
+    
     def Cp(self):
         try:
             return self._Cp

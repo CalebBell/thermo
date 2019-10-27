@@ -931,7 +931,7 @@ bulk_props = ['V', 'Z', 'rho', 'Cp', 'Cv', 'H', 'S', 'U', 'G', 'A', 'dH_dT', 'dH
               
               'PIP', 'kappa', 'beta', 'Joule_Thomson', 'speed_of_sound',
               'speed_of_sound_mass',
-              'U_dep', 'G_dep', 'A_dep', 'V_dep',
+              'U_dep', 'G_dep', 'A_dep', 'V_dep', 'V_iter',
               ]
 
 for name in bulk_props:

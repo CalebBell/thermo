@@ -156,7 +156,7 @@ class GCEOS(object):
                 # Equation re-aranged to hopefully solve better
                 
                 # Allow mpf multiple precision volume for flash initialization
-                # DO NOT TAKE OUT FLOAT OPTION!
+                # DO NOT TAKE OUT FLOAT CONVERSION!
                 self.P = float(R*self.T/(V-self.b) - self.a_alpha/(V*V + self.delta*V + self.epsilon))
 #                self.P = R*self.T/(V-self.b) - self.a_alpha/(V*(V + self.delta) + self.epsilon)
             Vs = [V, 1.0j, 1.0j]
@@ -773,7 +773,9 @@ should be calculated by this method, in a user subclass.')
     
     
     @staticmethod
-    def volume_solutions_mpmath(T, P, b, delta, epsilon, a_alpha, quick=True, dps=50):
+    def volume_solutions_mpmath(T, P, b, delta, epsilon, a_alpha, quick=True, dps=30):
+        # 30 is fine, but do not dercease further!
+        # No matter the precision, still cannot get better
         guesses = GCEOS.volume_solutions_fast(T, P, b, delta, epsilon, a_alpha)
         import mpmath as mp
         mp.mp.dps = dps
@@ -782,12 +784,41 @@ should be calculated by this method, in a user subclass.')
         def err(V):
             return(RT/(V-b) - a_alpha/(V*(V + delta) + epsilon)) - P
             
-        hits = [mp.findroot(err, Vi, solver='newton') for Vi in guesses]
+        hits = []
+        for Vi in guesses:
+            try:
+                V_calc = mp.findroot(err, Vi, solver='newton') 
+                hits.append(V_calc)
+            except Exception as e:
+                pass
+        if not hits:
+            raise ValueError("Could not converge any mpmath volumes")
         return hits
     
     @property
     def mpmath_volumes(self):
         return self.volume_solutions_mpmath(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
+    
+    def mpmath_volume_matching(self, V):
+        Vs = self.mpmath_volumes
+        rel_diffs = []
+        
+        for Vi in Vs:
+            err = abs(Vi.real - V.real) + abs(Vi.imag - V.imag)
+            rel_diffs.append(err)
+        return Vs[rel_diffs.index(min(rel_diffs))]
+
+    @property
+    def V_l_mpmath(self):
+        if not hasattr(self, 'V_l'):
+            raise ValueError("Not solved for that volume")
+        return self.mpmath_volume_matching(self.V_l)
+    
+    @property
+    def V_g_mpmath(self):
+        if not hasattr(self, 'V_g'):
+            raise ValueError("Not solved for that volume")
+        return self.mpmath_volume_matching(self.V_g)
     
     def Vs_mpmath(self):
         Vs = self.mpmath_volumes
