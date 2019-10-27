@@ -283,7 +283,7 @@ class GCEOSMIX(GCEOS):
             return self
         return self.__class__(P=P, V=V, zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, fugacities=fugacities, **self.kwargs)
 
-    def to(zs, T=None, P=None, V=None, fugacities=True):
+    def to(self, zs, T=None, P=None, V=None, fugacities=True):
         if T is not None and P is not None:
             return self.to_TP_zs(T, P, zs, fugacities)
         elif T is not None and V is not None:
@@ -4989,7 +4989,7 @@ class IGMIX(GCEOSMIX, IG):
         self.V = V
         
         self.b = 0.0
-        self.bs = self.zeros1d = [0.0]*N
+        self.bs = self.ais = self.zeros1d = [0.0]*N
         
         self.zeros2d = [[0.0]*N for _ in self.cmps]
         self.a_alpha_ijs = self.da_alpha_dT_ijs = self.d2a_alpha_dT2_ijs = self.zeros2d
@@ -4999,12 +4999,13 @@ class IGMIX(GCEOSMIX, IG):
             self.fugacities()
 
     def fast_init_specific(self, other):
-        other.bs = self.bs
-        other.b = self.b
-        other.zeros1d = self.zeros1d
-        other.a_alpha_ijs = self.a_alpha_ijs
-        other.da_alpha_dT_ijs = self.da_alpha_dT_ijs
-        other.d2a_alpha_dT2_ijs = self.d2a_alpha_dT2_ijs
+        self.bs = other.bs
+        self.ais = other.ais
+        self.b = other.b
+        self.zeros1d = other.zeros1d
+        self.a_alpha_ijs = other.a_alpha_ijs
+        self.da_alpha_dT_ijs = other.da_alpha_dT_ijs
+        self.d2a_alpha_dT2_ijs = other.d2a_alpha_dT2_ijs
 
 
     def a_alpha_and_derivatives_vectorized(self, T, full=False, quick=True):

@@ -3502,6 +3502,10 @@ class IG(GCEOS):
     def solve_T(self, P, V, quick=True):
         self.no_T_spec = True
         return P*V*R_inv
+    
+    def volume_solutions(self, T, P, b, delta, epsilon, a_alpha, quick=True):
+        # Saves some time
+        return [R*T/P, -1j, -1j]
             
 class PR(GCEOS):
     r'''Class for solving the Peng-Robinson cubic 
