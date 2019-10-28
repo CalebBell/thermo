@@ -30,6 +30,7 @@ __all__ = ['sequential_substitution_2P', 'bubble_T_Michelsen_Mollerup',
            'TPV_HSGUA_guesses_1P_methods', 'TPV_solve_HSGUA_guesses_1P',
            'sequential_substitution_2P_HSGUAbeta', 
            'sequential_substitution_2P_sat',
+           'cm_flash_tol'
            ]
 
 from fluids.constants import R, R2, R_inv
@@ -1737,6 +1738,38 @@ def sequential_substitution_2P_HSGUAbeta(zs, xs_guess, ys_guess, liquid_phase,
     raise UnconvergedError('End of SS without convergence')
 
 
+global cm_flash
+cm_flash = None
+def cm_flash_tol():
+    global cm_flash
+    if cm_flash is not None:
+        return cm_flash
+    from matplotlib.colors import ListedColormap
+    N = 100
+    vals = np.zeros((N, 4))
+    vals[:, 3] = np.ones(N)
+    
+    # Grey for 1e-10 to 1e-7
+    low = 40
+    vals[:low, 0] = np.linspace(100/256, 1, low)[::-1]
+    vals[:low, 1] = np.linspace(100/256, 1, low)[::-1]
+    vals[:low, 2] = np.linspace(100/256, 1, low)[::-1]
+    
+    # green 1e-6 to 1e-5
+    ok = 50
+    vals[low:ok, 1] = np.linspace(100/256, 1, ok-low)[::-1]
+    
+    # Blue 1e-5 to 1e-3
+    mid = 70
+    vals[ok:mid, 2] = np.linspace(100/256, 1, mid-ok)[::-1]
+    # Red 1e-3 and higher
+    vals[mid:101, 0] = np.linspace(100/256, 1, 100-mid)[::-1]
+    newcmp = ListedColormap(vals)
+    
+    cm_flash = newcmp
+    return cm_flash
+    
+
 class FlashBase(object):
     T_MAX_FIXED = Phase.T_MAX_FIXED
     T_MIN_FIXED = Phase.T_MIN_FIXED
@@ -1967,7 +2000,7 @@ class FlashBase(object):
                    VFs=None, SFs=None,
                    auto_range=None, zs=None, pts=50,
                    trunc_err_low=1e-15, trunc_err_high=None, plot=True, 
-                   show=True):
+                   show=True, color_map=None):
         
         specs = []
         if 'T' in (spec0, spec1):
@@ -2009,9 +2042,12 @@ class FlashBase(object):
             z[np.where(abs(z) < trunc_err_low)] = trunc_err_low
             if trunc_err_high is not None:
                 z[np.where(abs(z) > trunc_err_high)] = trunc_err_high
+                
+            if color_map is None:
+                color_map = cm.viridis
             
             # im = ax.pcolormesh(X, Y, z, cmap=cm.PuRd, norm=LogNorm())
-            im = ax.pcolormesh(X, Y, z, cmap=cm.PuRd, norm=LogNorm(vmin=trunc_err_low, vmax=trunc_err_high))
+            im = ax.pcolormesh(X, Y, z, cmap=color_map, norm=LogNorm(vmin=trunc_err_low, vmax=trunc_err_high))
             # im = ax.pcolormesh(X, Y, z, cmap=cm.viridis, norm=LogNorm(vmin=1e-7, vmax=1))
             cbar = fig.colorbar(im, ax=ax)
             ax.set_yscale('log')
@@ -2019,7 +2055,7 @@ class FlashBase(object):
             if show:
                 plt.show()
                 
-        return matrix_spec_flashes, matrix_flashes, errs, im
+        return matrix_spec_flashes, matrix_flashes, errs, fig
 
 class FlashVL(FlashBase):
     PT_SS_MAXITER = 1000
