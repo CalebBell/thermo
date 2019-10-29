@@ -361,6 +361,7 @@ def nonlin_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
               gas_phase, maxiter=1000, tol=1E-13, 
               trivial_solution_tol=1e-5, V_over_F_guess=None,
               method='hybr'):
+    # Do with just n?
     cmps = range(len(zs))
     xs, ys = xs_guess, ys_guess
     if V_over_F_guess is None:
@@ -382,6 +383,7 @@ def nonlin_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
         
         lnphis_g = g.lnphis()
         lnphis_l = l.lnphis()
+#        print(g.fugacities(), l.fugacities())
         new_Ks = [exp(lnphis_l[i] - lnphis_g[i]) for i in cmps]
         VF_err = Rachford_Rice_flash_error(V_over_F, zs, new_Ks)
 
@@ -2153,6 +2155,19 @@ spec_to_iter_vars = {(True, False, False, True, False, False) : ('T', 'H', 'V'),
                      (False, False, True, False, False, True) : ('V', 'U', 'P'),
 }
 
+spec_to_iter_vars_backup =  {(True, False, False, True, False, False) : ('T', 'H', 'P'),
+                             (True, False, False, False, True, False) : ('T', 'S', 'V'),
+                             (True, False, False, False, False, True) : ('T', 'U', 'P'),
+        
+                             (False, True, False, True, False, False) : ('P', 'H', 'V'),
+                             (False, True, False, False, True, False) : ('P', 'S', 'V'),
+                             (False, True, False, False, False, True) : ('P', 'U', 'V'),
+        
+                             (False, False, True, True, False, False) : ('V', 'H', 'T'),
+                             (False, False, True, False, True, False) : ('V', 'S', 'T'),
+                             (False, False, True, False, False, True) : ('V', 'U', 'T'),
+}
+
 class FlashPureVLS(FlashBase):
     '''
     TODO: Get quick version with equivalent features so can begin 
@@ -2296,6 +2311,7 @@ class FlashPureVLS(FlashBase):
         single_iter_key = (T_spec, P_spec, V_spec, H_spec, S_spec, U_spec)
         if single_iter_key in spec_to_iter_vars:
             fixed_var, spec, iter_var = spec_to_iter_vars[single_iter_key]
+            _, _, iter_var_backup = spec_to_iter_vars_backup[single_iter_key]
             if T_spec:
                 fixed_var_val = T
             elif P_spec:
@@ -2310,8 +2326,11 @@ class FlashPureVLS(FlashBase):
             else:
                 spec_val = U
                 
-                
-            g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var)
+            try:
+                g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var)
+            except UnconvergedError as e:
+                # Not sure if good idea - would prefer to converge without
+                g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var_backup)
             phases = ls + ss
             if g:
                 phases += [g]

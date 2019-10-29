@@ -1134,7 +1134,8 @@ def test_APISRKMIX_quick():
     a = APISRKMIX(T=300, P=1E7, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
     assert_allclose(a.phis_g, [1.020708538988692, 0.8725461195162044]) 
 
-
+@pytest.mark.slow
+@pytest.mark.CoolProp
 def test_fugacities_PR_vs_coolprop():
     import CoolProp.CoolProp as CP
         
@@ -1169,6 +1170,8 @@ def test_fugacities_PR_vs_coolprop():
     PRMIX.c1, PRMIX.c2 = c1, c2
 
 
+@pytest.mark.slow
+@pytest.mark.CoolProp
 def test_fugacities_SRK_vs_coolprop():
     import CoolProp.CoolProp as CP
     zs = [0.4, 0.6]
@@ -1774,10 +1777,10 @@ def test_dH_dep_dP_liquid_and_vapor():
                 zs=zs, kijs=[[0,0],[0,0]])
     eos2 = eos1.to_TP_zs(T=T, P=P+dP, zs=zs)
     
-    assert_allclose((eos2.H_dep_l - eos1.H_dep_l)/dP, eos1.dH_dep_dP_l, rtol=1e-6)
+    assert_allclose((eos2.H_dep_l - eos1.H_dep_l)/dP, eos1.dH_dep_dP_l, rtol=1e-4)
     assert_allclose(eos1.dH_dep_dP_l, 5.755734044915473e-06)
     
-    assert_allclose((eos2.H_dep_g - eos1.H_dep_g)/dP, eos1.dH_dep_dP_g, rtol=1e-5)
+    assert_allclose((eos2.H_dep_g - eos1.H_dep_g)/dP, eos1.dH_dep_dP_g, rtol=1e-4)
     assert_allclose(eos1.dH_dep_dP_g, -0.0009389226581529606, rtol=1e-5)
     
 
@@ -1790,10 +1793,10 @@ def test_dS_dep_dP_liquid_and_vapor():
                 zs=zs, kijs=[[0,0],[0,0]])
     eos2 = eos1.to_TP_zs(T=T, P=P+dP, zs=zs)
     
-    assert_allclose((eos2.S_dep_l - eos1.S_dep_l)/dP, eos1.dS_dep_dP_l)
+    assert_allclose((eos2.S_dep_l - eos1.S_dep_l)/dP, eos1.dS_dep_dP_l, rtol=1e-5)
     assert_allclose(eos1.dS_dep_dP_l, 8.049231062546365e-06)
     
-    assert_allclose((eos2.S_dep_g - eos1.S_dep_g)/dP, eos1.dS_dep_dP_g)
+    assert_allclose((eos2.S_dep_g - eos1.S_dep_g)/dP, eos1.dS_dep_dP_g, rtol=1e-5)
     assert_allclose(eos1.dS_dep_dP_g, -5.942829393044419e-06)
     
 
@@ -2885,3 +2888,11 @@ def test_PRMIX_composition_derivatives_ternary():
     
     d2a_alpha_dT2_dns_expect = [-1.3992393741884843e-06, -1.1880006563941923e-06, 8.976197964932746e-07]
     assert_allclose(eos.d2a_alpha_dT2_dns, d2a_alpha_dT2_dns_expect, rtol=1e-12)
+    
+    
+def test_dlnphis_dns():
+    eos = PRMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.6, 0.4], kijs=[[0,0],[0,0]])
+    eos.dlnphis_dns(eos.Z_g, eos.zs)
+    
+    assert_allclose(eos.dfugacities_dns('g'), [[337128.52253434795, -505700.6314376668],
+                     [-280166.2742094089, 420239.6290278874]], rtol=1e-5)

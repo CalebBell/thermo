@@ -3902,6 +3902,52 @@ class GCEOSMIX(GCEOS):
         d2ns = self.d2lnphi_dninjs(Z, zs)
         return d2ns_to_dn2_partials(d2ns, dns)
     
+    def dfugacities_dns(self, phase):
+        # Has one test, have not explored yet
+        '''
+        from sympy import *
+        phifun1, phifun2 = symbols('phifun1, phifun2', cls=Function)
+        n1, n2, P = symbols('n1, n2, P')
+        
+        x1 = n1/(n1+n2)
+        x2 = n2/(n1+n2)
+        
+        to_diff = x2*P*exp(phifun1(n1))
+        diff(to_diff, n1).subs({n1+n1: 1})
+        '''
+        zs = self.zs
+        if phase == 'l':
+            Z = self.Z_l
+            try:
+                phis = self.phis_l
+            except AttributeError:
+                self.fugacities()
+                phis = self.phis_l
+        else:
+            Z = self.Z_g
+            try:
+                phis = self.phis_g
+            except AttributeError:
+                self.fugacities()
+                phis = self.phis_g
+        
+        
+        dlnphis_dns = self.dlnphis_dns(Z, zs)
+        
+        P = self.P
+        cmps = self.cmps
+        matrix = []
+        for i in cmps:
+            row = []
+            for j in cmps:
+                v = P*(zs[i]*phis[i]*dlnphis_dns[i][j] - zs[i]*phis[i])
+                row.append(v)
+            row[i] += P*phis[i]
+            matrix.append(row)
+        return matrix
+        
+        
+    
     def d2G_dep_dninjs(self, Z, zs):
         r'''Calculates the molar departure Gibbs energy mole number derivatives
         (where the mole fractions sum to 1). No specific formula is implemented

@@ -1391,19 +1391,19 @@ def test_da_alpha_dP_V():
     kwargs = dict(Tc=507.6, Pc=3025000, omega=0.2975, T=299, P=1e5)
     eos = PR(**kwargs)
     expr = lambda P: eos.to(P=P, V=eos.V_l).a_alpha
-    assert_allclose(derivative(expr, eos.P, dx=eos.P*2e-6, order=11), eos.da_alpha_dP_l_V, rtol=1e-8)
+    assert_allclose(derivative(expr, eos.P, dx=eos.P*2e-6, order=11), eos.da_alpha_dP_l_V, rtol=1e-6)
     
     expr = lambda P: eos.to(P=P, V=eos.V_g).a_alpha
-    assert_allclose(derivative(expr, eos.P, dx=eos.P*2e-6, order=11), eos.da_alpha_dP_g_V, rtol=1e-8)
+    assert_allclose(derivative(expr, eos.P, dx=eos.P*2e-6, order=11), eos.da_alpha_dP_g_V, rtol=1e-6)
 
 
 def test_d2a_alpha_dTdP_V():
     kwargs = dict(Tc=507.6, Pc=3025000, omega=0.2975, T=299, P=1e5)
     eos = PR(**kwargs)
     expr = lambda P: eos.to(P=P, V=eos.V_l).da_alpha_dT
-    assert_allclose(derivative(expr, eos.P, dx=eos.P*4e-6, order=11, n=1), eos.d2a_alpha_dTdP_l_V, rtol=1e-7)
+    assert_allclose(derivative(expr, eos.P, dx=eos.P*4e-6, order=11, n=1), eos.d2a_alpha_dTdP_l_V, rtol=1e-6)
     expr = lambda P: eos.to(P=P, V=eos.V_g).da_alpha_dT
-    assert_allclose(derivative(expr, eos.P, dx=eos.P*4e-6, order=11, n=1), eos.d2a_alpha_dTdP_g_V, rtol=1e-7)    
+    assert_allclose(derivative(expr, eos.P, dx=eos.P*4e-6, order=11, n=1), eos.d2a_alpha_dTdP_g_V, rtol=1e-6)    
 
 
 def test_dH_dep_dP_V():
@@ -1419,10 +1419,10 @@ def test_dH_dep_dP_V():
     kwargs = dict(Tc=507.6, Pc=3025000, omega=0.2975, T=299, P=1e5)
     eos = PR(**kwargs)
     expr = lambda P: eos.to(P=P, V=eos.V_l).H_dep_l
-    assert_allclose(derivative(expr, eos.P, dx=eos.P*1e-6, order=11), eos.dH_dep_dP_l_V, rtol=1e-7)
+    assert_allclose(derivative(expr, eos.P, dx=eos.P*1e-6, order=11), eos.dH_dep_dP_l_V, rtol=1e-6)
     
     expr = lambda P: eos.to(P=P, V=eos.V_g).H_dep_g
-    assert_allclose(derivative(expr, eos.P, dx=eos.P*1e-6, order=11), eos.dH_dep_dP_g_V, rtol=1e-7)
+    assert_allclose(derivative(expr, eos.P, dx=eos.P*1e-6, order=11), eos.dH_dep_dP_g_V, rtol=1e-6)
     
 
 def test_dH_dep_dV_g_T_and_P():
