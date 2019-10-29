@@ -25,7 +25,7 @@ __all__ = ['sequential_substitution_2P', 'bubble_T_Michelsen_Mollerup',
            'dew_T_Michelsen_Mollerup', 'bubble_P_Michelsen_Mollerup',
            'dew_P_Michelsen_Mollerup',
            'minimize_gibbs_2P_transformed', 'sequential_substitution_Mehra_2P',
-           'nonlin_2P', 'sequential_substitution_NP',
+           'nonlin_2P', 'nonlin_n_2P', 'sequential_substitution_NP',
            'minimize_gibbs_NP_transformed', 'FlashVL', 'FlashPureVLS',
            'TPV_HSGUA_guesses_1P_methods', 'TPV_solve_HSGUA_guesses_1P',
            'sequential_substitution_2P_HSGUAbeta', 
@@ -414,6 +414,53 @@ def nonlin_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
     return V_over_F, xs, ys, info[1], info[2], info[0], tot_err
 
 
+def nonlin_n_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
+              gas_phase, maxiter=1000, tol=1E-13, 
+              trivial_solution_tol=1e-5, V_over_F_guess=None,
+              method='hybr'):
+
+    cmps = range(len(zs))
+    xs, ys = xs_guess, ys_guess
+    if V_over_F_guess is None:
+        V_over_F = 0.45
+    else:
+        V_over_F = V_over_F_guess
+
+    ns = [ys[i]*V_over_F for i in cmps]
+    
+    info = [0, None, None, None]
+    def to_solve(ns):
+        ys = normalize(ns)
+        ns_l = [zs[i] - ns[i] for i in cmps]
+#         print(sum(ns)+sum(ns_l))
+        xs = normalize(ns_l)
+#         print(ys, xs)
+        
+        g = gas_phase.to_TP_zs(T=T, P=P, zs=ys)
+        l = liquid_phase.to_TP_zs(T=T, P=P, zs=xs)
+        
+#         print(np.array(g.dfugacities_dns()) - np.array(l.dfugacities_dns()) )
+        
+        fugacities_g = g.fugacities()
+        fugacities_l = l.fugacities()
+        
+
+        err = [fugacities_g[i] - fugacities_l[i] for i in cmps] 
+        info[1:] = l, g, err
+        info[0] += 1
+#         print(err)
+        return err
+
+#     print(np.array(jacobian(to_solve, ns, scalar=False)))
+#     print('ignore')
+    
+    sol = root(to_solve, ns, tol=tol, method=method)
+    ns_sln = sol.x.tolist()
+    ys = normalize(ns_sln)
+    xs_sln = [zs[i] - ns_sln[i] for i in cmps]
+    xs = normalize(xs_sln)
+
+    return xs, ys
 
 
 def gdem(x, x1, x2, x3):

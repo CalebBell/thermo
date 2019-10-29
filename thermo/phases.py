@@ -200,6 +200,21 @@ class Phase(object):
         P, zs = self.P, self.zs
         return [zs[i]*(P*dphis_dP[i] + phis[i]) for i in self.cmps]
 
+    def dfugacities_dns(self):
+        phis = self.phis()
+        dlnphis_dns = self.dlnphis_dns()
+        
+        P, zs, cmps = self.P, self.zs, self.cmps
+        matrix = []
+        for i in cmps:
+            phi_P = P*phis[i]
+            ziPphi = phi_P*zs[i]
+            r = dlnphis_dns[i]
+            row = [ziPphi*(r[j] - 1.0) for j in cmps]
+            row[i] += phi_P
+            matrix.append(row)
+        return matrix
+
 
     def log_zs(self):
         try:
@@ -1323,7 +1338,13 @@ class EOSGas(Phase):
         except:
             return self.eos_mix.dlnphis_dP('l')
         
-        
+    def dlnphis_dns(self):
+        eos_mix = self.eos_mix
+        try:
+            return self.eos_mix.dlnphis_dns(eos_mix.Z_g, eos_mix.zs)
+        except:
+            return self.eos_mix.dlnphis_dP(eos_mix.Z_l, eos_mix.zs)
+
     def gammas(self):
         #         liquid.phis()/np.array([i.phi_l for i in liquid.eos_mix.pures()])
         phis = self.phis()

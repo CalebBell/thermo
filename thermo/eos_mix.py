@@ -3938,11 +3938,11 @@ class GCEOSMIX(GCEOS):
         cmps = self.cmps
         matrix = []
         for i in cmps:
-            row = []
-            for j in cmps:
-                v = P*(zs[i]*phis[i]*dlnphis_dns[i][j] - zs[i]*phis[i])
-                row.append(v)
-            row[i] += P*phis[i]
+            phi_P = P*phis[i]
+            ziPphi = phi_P*zs[i]
+            r = dlnphis_dns[i]
+            row = [ziPphi*(r[j] - 1.0) for j in cmps]
+            row[i] += phi_P
             matrix.append(row)
         return matrix
         
