@@ -62,7 +62,7 @@ class Phase(object):
     T_MIN_FIXED = 1e-3
     
     P_MAX_FIXED = 1e9
-    P_MIN_FIXED = 1e-3
+    P_MIN_FIXED = 1e-2 # 1e-3 was so low issues happened in the root stuff, could not be fixed
     
     V_MIN_FIXED = 1e-9 # m^3/mol
     V_MAX_FIXED = 1e9 # m^#/mol

@@ -301,6 +301,20 @@ class GCEOSMIX(GCEOS):
     def pures(self):
         T, P, cmps = self.T, self.P, self.cmps
         return [self.to_TP_pure(T=T, P=P, i=i) for i in cmps]
+
+    def Psat(self, T, polish=False):
+        if self.N == 1:
+            Tc, Pc = self.Tcs[0], self.Pcs[0]
+        else:
+            zs = self.zs
+            Tc, Pc = 0.0, 0.0
+            for i in self.cmps:
+                Tc += Tcs[i]*zs[i]
+                Pc += Pcs[i]*zs[i]
+        self.Tc, self.Pc = Tc, Pc
+        
+        return super(self, GCEOSMIX).Psat(T, polish=False)
+
     
     def a_alpha_and_derivatives_numpy(self, a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=True, quick=True):
         zs, kijs = self.zs, np.array(self.kijs)

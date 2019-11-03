@@ -33,7 +33,8 @@ from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              roots_cubic_a1, numpy as np, py_newton as newton,
                              py_bisect as bisect, inf, polyder, chebder, 
                              trunc_exp, secant, linspace, logspace,
-                             horner, horner_and_der2)
+                             horner, horner_and_der2,
+                             roots_cubic_a2)
 from thermo.utils import R
 from thermo.utils import (Cp_minus_Cv, isobaric_expansion, 
                           isothermal_compressibility, 
@@ -803,6 +804,43 @@ should be calculated by this method, in a user subclass.')
         return [V*RT_P for V in roots]
 
     @staticmethod
+    def volume_solutions_a1(T, P, b, delta, epsilon, a_alpha, quick=True):
+        RT_inv = R_inv/T
+        P_RT_inv = P*RT_inv
+        B = etas = b*P_RT_inv
+        deltas = delta*P_RT_inv
+        thetas = a_alpha*P_RT_inv*RT_inv
+        epsilons = epsilon*P_RT_inv*P_RT_inv
+        
+        b = (deltas - B - 1.0)
+        c = (thetas + epsilons - deltas*(B + 1.0))
+        d = -(epsilons*(B + 1.0) + thetas*etas)
+#        roots_cubic_a1, roots_cubic_a2
+        roots = list(roots_cubic_a1(b, c, d))
+        
+        RT_P = R*T/P
+        return [V*RT_P for V in roots]
+
+    @staticmethod
+    def volume_solutions_a2(T, P, b, delta, epsilon, a_alpha, quick=True):
+        RT_inv = R_inv/T
+        P_RT_inv = P*RT_inv
+        B = etas = b*P_RT_inv
+        deltas = delta*P_RT_inv
+        thetas = a_alpha*P_RT_inv*RT_inv
+        epsilons = epsilon*P_RT_inv*P_RT_inv
+        
+        b = (deltas - B - 1.0)
+        c = (thetas + epsilons - deltas*(B + 1.0))
+        d = -(epsilons*(B + 1.0) + thetas*etas)
+#        roots_cubic_a1, roots_cubic_a2
+        roots = list(roots_cubic_a2(1.0, b, c, d))
+        
+        RT_P = R*T/P
+        return [V*RT_P for V in roots]
+
+
+    @staticmethod
     def volume_solutions_numpy(T, P, b, delta, epsilon, a_alpha, quick=True):
         RT_inv = R_inv/T
         P_RT_inv = P*RT_inv
@@ -867,7 +905,7 @@ should be calculated by this method, in a user subclass.')
 
 
     @staticmethod
-    def volume_solutions_NR(T, P, b, delta, epsilon, a_alpha, quick=True):
+    def volume_solutions_NR(T, P, b, delta, epsilon, a_alpha, quick=True, tries=0):
         '''Even if mpmath is used for greater precision in the calculated root,
         it gets rounded back to a float - and then error occurs.
         Cannot beat numerical method or numpy roots!
@@ -878,23 +916,38 @@ should be calculated by this method, in a user subclass.')
         # Initial calculation - could use any method, however this is fastest
         # 2 divisions, 2 powers in here
         # First bit is top left corner
-        if 1 and (T < 1e-2 and P > 1e6) or (P < 1e-3 and T < 1e-2) or (P < 1e-1 and T < 1e-4):
+        if P < 1e-2:
+        # if 0 or (0 and ((T < 1e-2 and P > 1e6) or (P < 1e-3 and T < 1e-2) or (P < 1e-1 and T < 1e-4) or P < 1)):
             # Not perfect but so much wasted dev time need to move on, try other fluids and move this tolerance up if needed
             try:
                 return GCEOS.volume_solutions_mpmath_float(T, P, b, delta, epsilon, a_alpha)
             except:
                 pass
         try:
-            Vs = GCEOS.volume_solutions_fast(T, P, b, delta, epsilon, a_alpha, quick=True)
-#            Vs = [Vi+1e-100j for Vi in GCEOS.volume_solutions_Cardano(T, P, b, delta, epsilon, a_alpha, quick=True)]
+            if tries == 0:
+                Vs = [Vi+1e-45j for Vi in GCEOS.volume_solutions_Cardano(T, P, b, delta, epsilon, a_alpha, quick=True)]
+            elif tries == 1:
+                Vs = GCEOS.volume_solutions_fast(T, P, b, delta, epsilon, a_alpha, quick=True)
+            elif tries == 2:
+                # sometimes used successfully
+                Vs = GCEOS.volume_solutions_a1(T, P, b, delta, epsilon, a_alpha, quick=True)
+            elif tries == 3:
+                # never used successfully
+                Vs = GCEOS.volume_solutions_a2(T, P, b, delta, epsilon, a_alpha, quick=True)
         except:
-            Vs = GCEOS.volume_solutions_Cardano(T, P, b, delta, epsilon, a_alpha, quick=True)
+#            Vs = GCEOS.volume_solutions_Cardano(T, P, b, delta, epsilon, a_alpha, quick=True)
+            if tries == 0:
+                Vs = GCEOS.volume_solutions_fast(T, P, b, delta, epsilon, a_alpha, quick=True)
+            else:
+                Vs = GCEOS.volume_solutions_Cardano(T, P, b, delta, epsilon, a_alpha, quick=True)
             # Zero division error is possible above
+            
         RT = R*T
         P_inv = 1.0/P
 #        maxiter = range(3)
         # The case for a fixed number of iterations has pretty much gone.
         # On 1 occasion
+        failed = False
         for i in (0, 1, 2):
             V = Vi = Vs[i]
             for _ in range(11):
@@ -914,6 +967,10 @@ should be calculated by this method, in a user subclass.')
                     break
 #                if _ > 5:
 #                    print(_, V)
+            # This check can get rid of the noise
+            if abs(err*P_inv) > 1e-2: # originally 1e-2; 1e-5 did not change; 1e-10 to far
+#            if abs(err*P_inv) > 1e-2 and (i.real != 0.0 and abs(i.imag/i.real) < 1E-10 ):
+                failed = True
             Vs[i] = V
             
 #            def to_sln(V):
@@ -938,9 +995,17 @@ should be calculated by this method, in a user subclass.')
 ##                Vs[i] = bisect(to_sln, Vs[i].real*.999, Vs[i].real*1.001)
 #            except Exception as e:
 #                print(e)
-        if not [i.real for i in Vs if (i.real ==0 or abs(i.imag/i.real) < 1E-12) and i.real > b]:
+        if not failed:
+            failed = not [i.real for i in Vs if i.real > b and (i.real == 0.0 or abs(i.imag/i.real) < 1E-12)]
+        
+        if failed and tries < 3:
+            return GCEOS.volume_solutions_NR(T, P, b, delta, epsilon, a_alpha, quick=quick, tries=tries+1)
+        elif failed and tries == 3:
+#            print(T, P, b, delta, a_alpha)
             return GCEOS.volume_solutions_mpmath_float(T, P, b, delta, epsilon, a_alpha)
-
+            
+#        if tries == 3 or tries == 2:
+#            print(tries)
         return Vs
     
     # Default method
@@ -1033,6 +1098,18 @@ should be calculated by this method, in a user subclass.')
 #        Vs_good, Vs = self.mpmath_volumes, self.sorted_volumes
         # Compare the reals only if mpmath has the imaginary roots
         Vs_good = self.volume_solutions_mpmath(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
+        Vs_filtered = [i.real for i in Vs_good if (i.real ==0 or abs(i.imag/i.real) < 1E-20) and i.real > self.b]
+        if len(Vs_filtered) in (2, 3):
+            Vl, Vg = min(Vs_filtered), max(Vs_filtered)
+        else:
+            if hasattr(self, 'V_l') and hasattr(self, 'V_g'):
+                # Wrong number of roots!
+                return 1
+            elif hasattr(self, 'V_l'):
+                Vl_mpmath = Vs_filtered[0]
+            elif hasattr(self, 'V_g'):
+                Vg_mpmath = Vs_filtered[0]
+        
         Vs = self.raw_volumes
         err = 0
         
@@ -1045,7 +1122,7 @@ should be calculated by this method, in a user subclass.')
     
         try:
             Vl = self.V_l
-            Vl_mpmath = _mpmath_volume_matching(Vl, Vs_good)
+#            Vl_mpmath = Vl#_mpmath_volume_matching(Vl, Vs_good)
             err_i = abs((Vl - Vl_mpmath)/Vl_mpmath)
             if err_i > err:
                 err = err_i
@@ -1053,7 +1130,7 @@ should be calculated by this method, in a user subclass.')
             pass
         try:
             Vg = self.V_g
-            Vg_mpmath = _mpmath_volume_matching(Vg, Vs_good)
+#            Vg_mpmath = Vf_mpmath_volume_matching(Vg, Vs_good)
             err_i = abs((Vg - Vg_mpmath)/Vg_mpmath)
             if err_i > err:
                 err = err_i
@@ -1132,7 +1209,7 @@ should be calculated by this method, in a user subclass.')
             raise ValueError("Not solved for that volume")
         return self._mpmath_volume_matching(self.V_g)
     
-    def volume_errors(self, Tmin=1e-4, Tmax=1e4, Pmin=1e-3, Pmax=1e9,
+    def volume_errors(self, Tmin=1e-4, Tmax=1e4, Pmin=1e-2, Pmax=1e9,
                           pts=50, plot=False, show=False, trunc_err_low=1e-18,
                           trunc_err_high=1.0, color_map=None):
         # TODO save 50% of the time
