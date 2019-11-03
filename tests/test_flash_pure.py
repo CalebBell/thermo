@@ -62,6 +62,7 @@ correlations = PropertyCorrelationPackage(constants=constants, HeatCapacityGases
 from thermo.eos_mix import eos_mix_list
 #eos_mix_list = [PRMIX, PR78MIX, SRKMIX, VDWMIX, PRSVMIX, PRSV2MIX, APISRKMIX, TWUPRMIX, TWUSRKMIX, IGMIX]
 #eos_mix_list = [TWUPRMIX, TWUSRKMIX] # issues
+@pytest.mark.slow
 @pytest.mark.parametrize("auto_range", ['realistic', 'physical'])
 @pytest.mark.parametrize("fluid_idx", constants.cmps)
 @pytest.mark.parametrize("eos", eos_mix_list)
@@ -176,6 +177,7 @@ def test_TWU_SRK_PR_T_alpha_interp_failure_2():
         assert_allclose(T, PV.T, rtol=1e-6)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("auto_range", ['realistic'])
 @pytest.mark.parametrize("fluid_idx", constants.cmps)
 @pytest.mark.parametrize("eos", eos_mix_list)
@@ -213,6 +215,7 @@ def test_TV_plot(fluid_idx, eos, auto_range):
     plt.close()
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("auto_range", ['realistic'])
 @pytest.mark.parametrize("fluid_idx", constants.cmps)
 @pytest.mark.parametrize("eos", eos_mix_list)
@@ -251,6 +254,7 @@ def x(fluid_idx, eos, auto_range):
 
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("fluid_idx", constants.cmps)
 @pytest.mark.parametrize("eos", eos_mix_list)
 def test_V_G_min_plot(fluid_idx, eos):
@@ -276,7 +280,7 @@ def test_V_G_min_plot(fluid_idx, eos):
     plot_fig.savefig(os.path.join(path, key + '.png'))
     plt.close()
 
-
+@pytest.mark.slow
 @pytest.mark.parametrize("fluid_idx", constants.cmps)
 @pytest.mark.parametrize("eos", eos_mix_list)
 def test_V_error_plot(fluid_idx, eos):

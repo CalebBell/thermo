@@ -1060,6 +1060,7 @@ def test_APISRKMIX_vs_APISRK():
     T_slow = eos.solve_T(P=1E6, V=0.00014681828835112518, quick=False)
     assert_allclose(T_slow, 299)
     # with a S1 set
+    # NOTE! There is another solution to the below case with T=2.9237332747177884 K. Prefer not to return it.
     eos = APISRKMIX(Tcs=[514.0], Pcs=[6137000], zs=[1], S1s=[1.678665], S2s=[-0.216396], P=1E6, V=7.045695070282895e-05)
     assert_allclose(eos.T, 299)
     eos = APISRKMIX(Tcs=[514.0], Pcs=[6137000], zs=[1], omegas=[0.635], S2s=[-0.216396], P=1E6, V=7.184693818446427e-05)
@@ -2903,8 +2904,51 @@ def test_volume_issues():
     e = PRMIX(Tcs=[611.7], Pcs=[2110000.0], omegas=[0.49], kijs=[[0.0]], 
           zs=[1], T=0.11233240329780202, P=0.012328467394420634)
     assert_allclose(e.V_l, float(e.V_l_mpmath), rtol=1e-14)
+    
+    obj = PRMIX(Tcs=[611.7], Pcs=[2110000.0], omegas=[0.49], kijs=[[0.0]],  zs=[1],
+                T=0.11233240329780202, P=0.012328467394420634)
+    assert_allclose(obj.sorted_volumes, obj.mpmath_volumes_float, rtol=1e-14)
+    
+    obj = PRMIX(Tcs=[611.7], Pcs=[2110000.0], omegas=[0.49], kijs=[[0.0]], zs=[1],
+          T=0.11233240329780202, P=0.012328467394420634)
+    assert_allclose(obj.sorted_volumes, obj.mpmath_volumes_float, rtol=1e-14)
+    
+    
+    obj = PRMIX(Tcs=[611.7], Pcs=[2110000.0], omegas=[0.49], kijs=[[0.0]], zs=[1],
+                T=.01, P=1e9)
+    assert_allclose(obj.sorted_volumes, obj.mpmath_volumes_float, rtol=1e-14)
+    
+    obj = PRMIX(Tcs=[611.7], Pcs=[2110000.0], omegas=[0.49], kijs=[[0.0]], zs=[1],
+                T=1e-4, P=1e8)
+    assert_allclose(obj.sorted_volumes, obj.mpmath_volumes_float, rtol=1e-14)
+    
+    obj = SRKMIX(Tcs=[647.14], Pcs=[22048320.0], omegas=[0.344], kijs=[[0]], zs=[1], T=708, P=.097)
+    assert_allclose(obj.sorted_volumes, obj.mpmath_volumes_float, rtol=1e-14)
+    
+    obj = SRKMIX(Tcs=[647.14], Pcs=[22048320.0], omegas=[0.344], kijs=[[0]],
+                 zs=[1], T=1010, P=.1)
+    assert_allclose(obj.sorted_volumes, obj.mpmath_volumes_float, rtol=1e-14)
+    
+    
+    obj = SRKMIX(Tcs=[647.14], Pcs=[22048320.0], omegas=[0.344], kijs=[[0]],
+                 zs=[1], T=100, P=10)
+    assert_allclose(obj.sorted_volumes, obj.mpmath_volumes_float, rtol=1e-14)
+    
+    obj = SRKMIX(Tcs=[647.14], Pcs=[22048320.0], omegas=[0.344], kijs=[[0]],
+                 zs=[1], T=400, P=1.5e5)
+    assert_allclose(obj.sorted_volumes, obj.mpmath_volumes_float, rtol=1e-14)
+    
+    obj = PRMIX(Tcs=[126.2], Pcs=[3394387.5], omegas=[0.04], kijs=[[0.0]], zs=[1],
+                T=.01149756995397728, P=.01)
+    assert_allclose(obj.sorted_volumes, obj.mpmath_volumes_float, rtol=1e-14)
+    
+    obj = PRMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[ 0.04, 0.011], 
+                zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    
+    assert_allclose(obj.sorted_volumes, obj.mpmath_volumes_float, rtol=1e-14)
+
 
 def test_solve_T_issues():
-    T = SRKMIX(Tcs=[611.7], Pcs=[2110000.0], omegas=[0.49], kijs=[[0]], zs=[1], V=0.00042281487181772243, P=247707635.59916735)
-    assert_allclose(T, 10000, rtol=1e-9)
+    obj = SRKMIX(Tcs=[611.7], Pcs=[2110000.0], omegas=[0.49], kijs=[[0]], zs=[1], V=0.00042281487181772243, P=247707635.59916735)
+    assert_allclose(obj.T, 10000, rtol=1e-9)
     
