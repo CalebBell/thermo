@@ -925,7 +925,8 @@ should be calculated by this method, in a user subclass.')
                 pass
         try:
             if tries == 0:
-                Vs = [Vi+1e-45j for Vi in GCEOS.volume_solutions_Cardano(T, P, b, delta, epsilon, a_alpha, quick=True)]
+                Vs = GCEOS.volume_solutions_Cardano(T, P, b, delta, epsilon, a_alpha, quick=True)
+#                Vs = [Vi+1e-45j for Vi in GCEOS.volume_solutions_Cardano(T, P, b, delta, epsilon, a_alpha, quick=True)]
             elif tries == 1:
                 Vs = GCEOS.volume_solutions_fast(T, P, b, delta, epsilon, a_alpha, quick=True)
             elif tries == 2:
@@ -950,6 +951,7 @@ should be calculated by this method, in a user subclass.')
         failed = False
         for i in (0, 1, 2):
             V = Vi = Vs[i]
+            err = 0.0
             for _ in range(11):
                 # More iterations seems to create problems. No, 11 is just lucky for particular problem.
 #            for _ in (0, 1, 2):
@@ -958,6 +960,8 @@ should be calculated by this method, in a user subclass.')
                 denom0 = 1.0/(V-b)
                 w0 = RT*denom0
                 w1 = a_alpha*denom1
+#                if w0 - w1 - P == err:
+#                    break # No change in error
                 err = w0 - w1 - P
 #                print(abs(err), V, _)
                 derr_dV = (V + V + delta)*w1*denom1 - w0*denom0 
@@ -995,15 +999,19 @@ should be calculated by this method, in a user subclass.')
 ##                Vs[i] = bisect(to_sln, Vs[i].real*.999, Vs[i].real*1.001)
 #            except Exception as e:
 #                print(e)
+        root_failed = not [i.real for i in Vs if i.real > b and (i.real == 0.0 or abs(i.imag/i.real) < 1E-12)]
         if not failed:
-            failed = not [i.real for i in Vs if i.real > b and (i.real == 0.0 or abs(i.imag/i.real) < 1E-12)]
-        
+            failed = root_failed
+
         if failed and tries < 3:
             return GCEOS.volume_solutions_NR(T, P, b, delta, epsilon, a_alpha, quick=quick, tries=tries+1)
+        elif root_failed:
+            return GCEOS.volume_solutions_mpmath_float(T, P, b, delta, epsilon, a_alpha)
         elif failed and tries == 3:
 #            print(T, P, b, delta, a_alpha)
-            return GCEOS.volume_solutions_mpmath_float(T, P, b, delta, epsilon, a_alpha)
-            
+#            if root_failed:
+#                return GCEOS.volume_solutions_mpmath_float(T, P, b, delta, epsilon, a_alpha)
+            return Vs
 #        if tries == 3 or tries == 2:
 #            print(tries)
         return Vs
@@ -1212,8 +1220,6 @@ should be calculated by this method, in a user subclass.')
     def volume_errors(self, Tmin=1e-4, Tmax=1e4, Pmin=1e-2, Pmax=1e9,
                           pts=50, plot=False, show=False, trunc_err_low=1e-18,
                           trunc_err_high=1.0, color_map=None):
-        # TODO save 50% of the time
-        
         Ts = logspace(log10(Tmin), log10(Tmax), pts)
         Ps = logspace(log10(Pmin), log10(Pmax), pts)
         kwargs = {}
@@ -1264,6 +1270,56 @@ should be calculated by this method, in a user subclass.')
                 plt.show()
                 
             return errs, fig
+
+    def volumes_G_min(self, Tmin=1e-4, Tmax=1e4, Pmin=1e-2, Pmax=1e9,
+                      pts=50, plot=False, show=False, color_map=None):
+        Ts = logspace(log10(Tmin), log10(Tmax), pts)
+        Ps = logspace(log10(Pmin), log10(Pmax), pts)
+        kwargs = {}
+        if hasattr(self, 'zs'):
+            kwargs['zs'] = self.zs
+
+        Vs = []            
+        for T in Ts:
+            V_row = []
+            for P in Ps:
+                kwargs['T'] = T
+                kwargs['P'] = P
+                obj = self.to(**kwargs)
+                if obj.phase == 'l/g':
+                    V = obj.V_l if obj.G_dep_l < obj.G_dep_g else obj.V_g
+                elif obj.phase == 'l':
+                    V = obj.V_l
+                else:
+                    V = obj.V_g
+                V_row.append(V)
+            Vs.append(V_row)
+
+        if plot:
+            import matplotlib.pyplot as plt
+            from matplotlib import ticker, cm
+            from matplotlib.colors import LogNorm
+            X, Y = np.meshgrid(Ts, Ps)
+            z = np.array(Vs).T
+            fig, ax = plt.subplots()
+            if color_map is None:
+                color_map = cm.viridis
+            
+            im = ax.pcolormesh(X, Y, z, cmap=color_map, norm=LogNorm())
+            cbar = fig.colorbar(im, ax=ax)
+            cbar.set_label('Volume')
+
+            ax.set_yscale('log')
+            ax.set_xscale('log')
+            ax.set_xlabel('T')
+            ax.set_ylabel('P')
+            
+            
+            ax.set_title('Volume solution vs minimum Gibbs validation')
+            if show:
+                plt.show()
+                
+            return Vs, fig
 
     def derivatives_and_departures(self, T, P, V, b, delta, epsilon, a_alpha, da_alpha_dT, d2a_alpha_dT2, quick=True):
         
