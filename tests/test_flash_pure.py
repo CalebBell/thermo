@@ -216,7 +216,7 @@ def test_TV_plot(fluid_idx, eos, auto_range):
 @pytest.mark.parametrize("auto_range", ['realistic'])
 @pytest.mark.parametrize("fluid_idx", constants.cmps)
 @pytest.mark.parametrize("eos", eos_mix_list)
-def test_PS_plot(fluid_idx, eos, auto_range):
+def x(fluid_idx, eos, auto_range):
     '''
     The non-smooth region at ~.01 P causes lots of issues
     '''
@@ -246,5 +246,59 @@ def test_PS_plot(fluid_idx, eos, auto_range):
         os.makedirs(path)
     
     key = '%s - %s - %s - %s' %('PS', eos.__name__, auto_range, fluid)
+    plot_fig.savefig(os.path.join(path, key + '.png'))
+    plt.close()
+
+
+
+@pytest.mark.parametrize("fluid_idx", constants.cmps)
+@pytest.mark.parametrize("eos", eos_mix_list)
+def test_V_G_min_plot(fluid_idx, eos):
+    T, P = 298.15, 101325.0
+    zs = [1.0]
+    fluid = pure_fluids[fluid_idx]
+    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
+    
+    kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
+                  HeatCapacityGases=pure_props.HeatCapacityGases)
+    
+    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    errs, plot_fig = gas.eos_mix.volumes_G_min(plot=True, show=False, pts=150,
+                                               Tmin=1e-4, Tmax=1e4, Pmin=1e-2, Pmax=1e9)
+
+    
+    path = os.path.join(pure_surfaces_dir, fluid, "V_G_min")
+    if not os.path.exists(path):
+        os.makedirs(path)
+    
+    key = '%s - %s - %s' %('V_G_min', eos.__name__, fluid)
+        
+    plot_fig.savefig(os.path.join(path, key + '.png'))
+    plt.close()
+
+
+@pytest.mark.parametrize("fluid_idx", constants.cmps)
+@pytest.mark.parametrize("eos", eos_mix_list)
+def test_V_error_plot(fluid_idx, eos):
+    T, P = 298.15, 101325.0
+    zs = [1.0]
+    fluid = pure_fluids[fluid_idx]
+    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
+    
+    kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
+                  HeatCapacityGases=pure_props.HeatCapacityGases)
+    
+    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    errs, plot_fig = gas.eos_mix.volume_errors(plot=True, show=False, pts=50,
+                                               Tmin=1e-4, Tmax=1e4, Pmin=1e-2, Pmax=1e9,
+                                               trunc_err_low=1e-15, color_map=cm_flash_tol())
+
+    
+    path = os.path.join(pure_surfaces_dir, fluid, "V_error")
+    if not os.path.exists(path):
+        os.makedirs(path)
+    
+    key = '%s - %s - %s' %('V_error', eos.__name__, fluid)
+        
     plot_fig.savefig(os.path.join(path, key + '.png'))
     plt.close()

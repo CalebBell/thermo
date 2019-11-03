@@ -20,7 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
-from __future__ import division
+from __future__ import division, print_function
 
 __all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',  
 'APISRK', 'TWUPR', 'TWUSRK', 'ALPHA_FUNCTIONS', 'eos_list', 'GCEOS_DUMMY',
@@ -949,33 +949,36 @@ should be calculated by this method, in a user subclass.')
         # The case for a fixed number of iterations has pretty much gone.
         # On 1 occasion
         failed = False
-        for i in (0, 1, 2):
-            V = Vi = Vs[i]
-            err = 0.0
-            for _ in range(11):
-                # More iterations seems to create problems. No, 11 is just lucky for particular problem.
-#            for _ in (0, 1, 2):
-                # 3 divisions each iter = 15, triple the duration of the solve
-                denom1 = 1.0/(V*(V + delta) + epsilon)
-                denom0 = 1.0/(V-b)
-                w0 = RT*denom0
-                w1 = a_alpha*denom1
-#                if w0 - w1 - P == err:
-#                    break # No change in error
-                err = w0 - w1 - P
-#                print(abs(err), V, _)
-                derr_dV = (V + V + delta)*w1*denom1 - w0*denom0 
-                V = V - err/derr_dV
-                if abs(err*P_inv) < 1e-14 or V == Vi:
-                    # Conditional check probably not worth it
-                    break
-#                if _ > 5:
-#                    print(_, V)
-            # This check can get rid of the noise
-            if abs(err*P_inv) > 1e-2: # originally 1e-2; 1e-5 did not change; 1e-10 to far
-#            if abs(err*P_inv) > 1e-2 and (i.real != 0.0 and abs(i.imag/i.real) < 1E-10 ):
-                failed = True
-            Vs[i] = V
+        try:
+            for i in (0, 1, 2):
+                V = Vi = Vs[i]
+                err = 0.0
+                for _ in range(11):
+                    # More iterations seems to create problems. No, 11 is just lucky for particular problem.
+    #            for _ in (0, 1, 2):
+                    # 3 divisions each iter = 15, triple the duration of the solve
+                    denom1 = 1.0/(V*(V + delta) + epsilon)
+                    denom0 = 1.0/(V-b)
+                    w0 = RT*denom0
+                    w1 = a_alpha*denom1
+    #                if w0 - w1 - P == err:
+    #                    break # No change in error
+                    err = w0 - w1 - P
+    #                print(abs(err), V, _)
+                    derr_dV = (V + V + delta)*w1*denom1 - w0*denom0 
+                    V = V - err/derr_dV
+                    if abs(err*P_inv) < 1e-14 or V == Vi:
+                        # Conditional check probably not worth it
+                        break
+    #                if _ > 5:
+    #                    print(_, V)
+                # This check can get rid of the noise
+                if abs(err*P_inv) > 1e-2: # originally 1e-2; 1e-5 did not change; 1e-10 to far
+    #            if abs(err*P_inv) > 1e-2 and (i.real != 0.0 and abs(i.imag/i.real) < 1E-10 ):
+                    failed = True
+                Vs[i] = V
+        except ZeroDivisionError:
+            failed = True
             
 #            def to_sln(V):
 #                denom1 = 1.0/(V*(V + delta) + epsilon)
@@ -1006,6 +1009,7 @@ should be calculated by this method, in a user subclass.')
         if failed and tries < 3:
             return GCEOS.volume_solutions_NR(T, P, b, delta, epsilon, a_alpha, quick=quick, tries=tries+1)
         elif root_failed:
+#            print('%g, %g; ' %(T, P), end='')
             return GCEOS.volume_solutions_mpmath_float(T, P, b, delta, epsilon, a_alpha)
         elif failed and tries == 3:
 #            print(T, P, b, delta, a_alpha)
@@ -1219,7 +1223,12 @@ should be calculated by this method, in a user subclass.')
     
     def volume_errors(self, Tmin=1e-4, Tmax=1e4, Pmin=1e-2, Pmax=1e9,
                           pts=50, plot=False, show=False, trunc_err_low=1e-18,
-                          trunc_err_high=1.0, color_map=None):
+                          trunc_err_high=1.0, color_map=None, timing=False):
+        if timing:
+            try:
+                from time import perf_counter
+            except:
+                from time import clock as perf_counter
         Ts = logspace(log10(Tmin), log10(Tmax), pts)
         Ps = logspace(log10(Pmin), log10(Pmax), pts)
         kwargs = {}
@@ -1233,7 +1242,13 @@ should be calculated by this method, in a user subclass.')
                 kwargs['T'] = T
                 kwargs['P'] = P
                 obj = self.to(**kwargs)
-                err_row.append(float(obj.volume_error()))
+                if timing:
+                    t0 = perf_counter()
+                    obj.volume_solutions(obj.T, obj.P, obj.b, obj.delta, obj.epsilon, obj.a_alpha)
+                    val = perf_counter() - t0
+                else:
+                    val = float(obj.volume_error())
+                err_row.append(val)
             errs.append(err_row)
 
         if plot:
@@ -1243,7 +1258,8 @@ should be calculated by this method, in a user subclass.')
             X, Y = np.meshgrid(Ts, Ps)
             z = np.array(errs).T
             fig, ax = plt.subplots()
-            z[np.where(abs(z) < trunc_err_low)] = trunc_err_low
+            if trunc_err_low is not None:
+                z[np.where(abs(z) < trunc_err_low)] = trunc_err_low
             if trunc_err_high is not None:
                 z[np.where(abs(z) > trunc_err_high)] = trunc_err_high
                 
@@ -1260,9 +1276,9 @@ should be calculated by this method, in a user subclass.')
             ax.set_ylabel('P')
             
             max_err = np.max(errs)
-            if max_err < trunc_err_low:
+            if trunc_err_low is not None and max_err < trunc_err_low:
                 max_err = 0
-            if max_err > trunc_err_high:
+            if trunc_err_high is not None and max_err > trunc_err_high:
                 max_err = trunc_err_high
             
             ax.set_title('Volume solution validation; max err %.4e' %(max_err))
