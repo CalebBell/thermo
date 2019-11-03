@@ -2896,3 +2896,15 @@ def test_dlnphis_dns():
     
     assert_allclose(eos.dfugacities_dns('g'), [[337128.52253434795, -505700.6314376668],
                      [-280166.2742094089, 420239.6290278874]], rtol=1e-5)
+         
+
+@pytest.mark.mpmath
+def test_volume_issues():
+    e = PRMIX(Tcs=[611.7], Pcs=[2110000.0], omegas=[0.49], kijs=[[0.0]], 
+          zs=[1], T=0.11233240329780202, P=0.012328467394420634)
+    assert_allclose(e.V_l, float(e.V_l_mpmath), rtol=1e-14)
+
+def test_solve_T_issues():
+    T = SRKMIX(Tcs=[611.7], Pcs=[2110000.0], omegas=[0.49], kijs=[[0]], zs=[1], V=0.00042281487181772243, P=247707635.59916735)
+    assert_allclose(T, 10000, rtol=1e-9)
+    

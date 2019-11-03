@@ -603,20 +603,33 @@ should be calculated by this method, in a user subclass.')
         T_guess_liq = P*V*R_inv*1000.0 # Compressibility factor of 0.001 for liquids
         err_ig = to_solve(T_guess_ig)
         err_liq = to_solve(T_guess_liq)
-        
+
+        T_brenth, T_secant = None, None
         if err_ig*err_liq < 0.0:
-            return brenth(to_solve, T_guess_ig, T_guess_liq, xtol=1e-12,
-                          fa=err_ig, fb=err_liq)
+            try:
+                T_brenth = brenth(to_solve, T_guess_ig, T_guess_liq, xtol=1e-12,
+                              fa=err_ig, fb=err_liq)
+                # Check the error
+                err = to_solve(T_brenth)
+            except:
+                pass
+            # if abs(err/P) < 1e-7:
+            #     return T_brenth
+
+
+        if abs(err_ig) < abs(err_liq):
+            T_guess = T_guess_ig
+            f0 = err_ig
         else:
-            if abs(err_ig) < abs(err_liq):
-                T_guess = T_guess_ig
-                f0 = err_ig
-            else:
-                T_guess = T_guess_liq
-                f0 = err_liq
-            # T_guess = self.Tc*0.5
-            # ytol=T_guess*1e-9,
-            return secant(to_solve, T_guess, low=1e-12, xtol=1e-12, f0=f0)
+            T_guess = T_guess_liq
+            f0 = err_liq
+        # T_guess = self.Tc*0.5
+        # ytol=T_guess*1e-9,
+        T_secant = secant(to_solve, T_guess, low=1e-12, xtol=1e-12, f0=f0)
+
+        if T_brenth is None:
+            return T_secant
+        return min(T_brenth, T_secant)
 
     @staticmethod
     def volume_solutions_fast(T, P, b, delta, epsilon, a_alpha, quick=True):
@@ -750,7 +763,42 @@ should be calculated by this method, in a user subclass.')
         b = (deltas - B - 1.0)
         c = (thetas + epsilons - deltas*(B + 1.0))
         d = -(epsilons*(B + 1.0) + thetas*etas)
-        roots = roots_cubic(1.0, b, c, d)
+        roots = list(roots_cubic(1.0, b, c, d))
+        
+        
+        
+#        if 0:
+#            for i in range(3):
+#                from fluids.numerics import bisect
+#                def err(Z):
+#                    err = Z*(Z*(Z + b) + c) + d
+#                    return err
+#                for fact in (1e-12, 1e-11, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-4, 1e-3):
+#                    try:
+#                        roots[i] = bisect(err, roots[i].real*(1+fact), roots[i].real*(1-fact), xtol=1e-15)
+#                        break
+#                    except Exception as e:
+##                        print(e)
+#                        pass
+#                for _ in range(3):
+#                    Z = roots[i]
+##                    x0 = Z*(Z + b) + c
+##                    err = Z*x0 + d
+##                    derr = Z*(Z + Z + b) + x0
+##
+##                    roots[i] = Z - err/derr
+##        
+#        
+#                    x0 = Z*(Z + b) + c
+#                    err = Z*x0 + d
+#                    derr = Z*(Z + Z + b) + x0
+#                    d2err = 2.0*(3.0*Z + b)
+#                    
+#                    step = err/derr
+#                    step = step/(1.0 - 0.5*step*d2err/derr)
+#                    roots[i] = Z - step
+        
+        
         RT_P = R*T/P
         return [V*RT_P for V in roots]
 
@@ -772,88 +820,6 @@ should be calculated by this method, in a user subclass.')
         return [V*RT_P for V in roots]
     
     
-    @staticmethod
-    def volume_solutions_mpmath(T, P, b, delta, epsilon, a_alpha, quick=True, dps=30):
-        # 30 is fine, but do not dercease further!
-        # No matter the precision, still cannot get better
-        guesses = GCEOS.volume_solutions_fast(T, P, b, delta, epsilon, a_alpha)
-        import mpmath as mp
-        mp.mp.dps = dps
-        b, T, P, epsilon, delta, a_alpha = [mp.mpf(i) for i in [b, T, P, epsilon, delta, a_alpha]]
-        RT = T*mp.mpf(R)
-        def err(V):
-            return(RT/(V-b) - a_alpha/(V*(V + delta) + epsilon)) - P
-            
-        hits = []
-        for Vi in guesses:
-            try:
-                V_calc = mp.findroot(err, Vi, solver='newton') 
-                hits.append(V_calc)
-            except Exception as e:
-                pass
-        if not hits:
-            raise ValueError("Could not converge any mpmath volumes")
-        return hits
-    
-    @property
-    def mpmath_volumes(self):
-        return self.volume_solutions_mpmath(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
-    
-    def mpmath_volume_matching(self, V):
-        Vs = self.mpmath_volumes
-        rel_diffs = []
-        
-        for Vi in Vs:
-            err = abs(Vi.real - V.real) + abs(Vi.imag - V.imag)
-            rel_diffs.append(err)
-        return Vs[rel_diffs.index(min(rel_diffs))]
-
-    @property
-    def V_l_mpmath(self):
-        if not hasattr(self, 'V_l'):
-            raise ValueError("Not solved for that volume")
-        return self.mpmath_volume_matching(self.V_l)
-    
-    @property
-    def V_g_mpmath(self):
-        if not hasattr(self, 'V_g'):
-            raise ValueError("Not solved for that volume")
-        return self.mpmath_volume_matching(self.V_g)
-    
-    def Vs_mpmath(self):
-        Vs = self.mpmath_volumes
-        good_roots = [i.real for i in Vs if (i.real > 0.0 and abs(i.imag/i.real) < 1E-12)]
-        return list(sorted(good_roots))
-
-    
-    def volume_error(self, only_real=True):
-        Vs_good = self.volume_solutions_mpmath(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha, dps=30)
-        Vs = self.raw_volumes
-        err = 0
-        for i in range(3):
-            try:
-                err_i = abs((Vs[i].real -Vs_good[i].real)/Vs_good[i].real)
-            except ZeroDivisionError:
-                try:
-                    err_i = abs((Vs[i].real -Vs_good[i].real)/Vs[i].real)
-                except ZeroDivisionError:
-                    err_i = abs((Vs[i].real -Vs_good[i].real))
-                    
-            if err_i > err:
-                err = err_i
-            
-            if not only_real:
-                try:
-                    err_i = abs((Vs[i].imag -Vs_good[i].imag)/Vs_good[i].imag)
-                except ZeroDivisionError:
-                    try:
-                        err_i = abs((Vs[i].imag -Vs_good[i].imag)/Vs[i].imag)
-                    except ZeroDivisionError:
-                        err_i = abs((Vs[i].imag -Vs_good[i].imag))
-            if err_i > err:
-                err = err_i
-        return err
-
 
     # validation method
     @staticmethod
@@ -911,24 +877,44 @@ should be calculated by this method, in a user subclass.')
         '''
         # Initial calculation - could use any method, however this is fastest
         # 2 divisions, 2 powers in here
-        Vs = GCEOS.volume_solutions_fast(T, P, b, delta, epsilon, a_alpha, quick=True)
+        # First bit is top left corner
+        if 1 and (T < 1e-2 and P > 1e6) or (P < 1e-3 and T < 1e-2) or (P < 1e-1 and T < 1e-4):
+            # Not perfect but so much wasted dev time need to move on, try other fluids and move this tolerance up if needed
+            try:
+                return GCEOS.volume_solutions_mpmath_float(T, P, b, delta, epsilon, a_alpha)
+            except:
+                pass
+        try:
+            Vs = GCEOS.volume_solutions_fast(T, P, b, delta, epsilon, a_alpha, quick=True)
+#            Vs = [Vi+1e-100j for Vi in GCEOS.volume_solutions_Cardano(T, P, b, delta, epsilon, a_alpha, quick=True)]
+        except:
+            Vs = GCEOS.volume_solutions_Cardano(T, P, b, delta, epsilon, a_alpha, quick=True)
+            # Zero division error is possible above
         RT = R*T
         P_inv = 1.0/P
 #        maxiter = range(3)
+        # The case for a fixed number of iterations has pretty much gone.
+        # On 1 occasion
         for i in (0, 1, 2):
-            for _ in (0, 1, 2):
+            V = Vi = Vs[i]
+            for _ in range(11):
+                # More iterations seems to create problems. No, 11 is just lucky for particular problem.
+#            for _ in (0, 1, 2):
                 # 3 divisions each iter = 15, triple the duration of the solve
-                V = Vs[i]
                 denom1 = 1.0/(V*(V + delta) + epsilon)
                 denom0 = 1.0/(V-b)
                 w0 = RT*denom0
                 w1 = a_alpha*denom1
                 err = w0 - w1 - P
 #                print(abs(err), V, _)
-#                if abs(err*P_inv) < 1e-12:
-#                    break
                 derr_dV = (V + V + delta)*w1*denom1 - w0*denom0 
-                Vs[i] = V - err/derr_dV
+                V = V - err/derr_dV
+                if abs(err*P_inv) < 1e-14 or V == Vi:
+                    # Conditional check probably not worth it
+                    break
+#                if _ > 5:
+#                    print(_, V)
+            Vs[i] = V
             
 #            def to_sln(V):
 #                denom1 = 1.0/(V*(V + delta) + epsilon)
@@ -952,11 +938,255 @@ should be calculated by this method, in a user subclass.')
 ##                Vs[i] = bisect(to_sln, Vs[i].real*.999, Vs[i].real*1.001)
 #            except Exception as e:
 #                print(e)
-            
+        if not [i.real for i in Vs if (i.real ==0 or abs(i.imag/i.real) < 1E-12) and i.real > b]:
+            return GCEOS.volume_solutions_mpmath_float(T, P, b, delta, epsilon, a_alpha)
+
         return Vs
     
     # Default method
-    volume_solutions = volume_solutions_NR
+    volume_solutions = volume_solutions_NR#volume_solutions_numpy#volume_solutions_NR
+#    volume_solutions= volume_solutions_numpy
+#    volume_solutions = volume_solutions_fast
+#    volume_solutions = volume_solutions_Cardano
+
+    @staticmethod
+    def volume_solutions_mpmath(T, P, b, delta, epsilon, a_alpha, quick=True, dps=30):
+        # 30 is fine, but do not dercease further!
+        # No matter the precision, still cannot get better
+        # Need to switch from `rindroot` to an actual cubic solution in mpmath
+        # Three roots not found in some cases
+        # PRMIX(T=1e-2, P=1e-5, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]]).volume_error()
+        
+        import mpmath as mp
+        mp.mp.dps = dps
+        b, T, P, epsilon, delta, a_alpha = [mp.mpf(i) for i in [b, T, P, epsilon, delta, a_alpha]]
+        roots = None
+        if 1:
+            RT_inv = 1/(mp.mpf(R)*T)
+            P_RT_inv = P*RT_inv
+            B = etas = b*P_RT_inv
+            deltas = delta*P_RT_inv
+            thetas = a_alpha*P_RT_inv*RT_inv
+            epsilons = epsilon*P_RT_inv*P_RT_inv
+            
+            b = (deltas - B - 1.0)
+            c = (thetas + epsilons - deltas*(B + 1.0))
+            d = -(epsilons*(B + 1.0) + thetas*etas)
+            
+            try:
+                # found case 20 extrapec not enough, increased to 30
+                # Found another case needing 40
+                roots = mp.polyroots([1.0, b, c, d], extraprec=40, maxsteps=100)
+            except:
+                try:
+                    guesses = GCEOS.volume_solutions_fast(T, P, b, delta, epsilon, a_alpha)
+                    roots = mp.polyroots([1.0, b, c, d], extraprec=40, maxsteps=100, roots_init=guesses)
+                except:
+                    pass
+#            roots = np.roots([1.0, b, c, d]).tolist()
+            if roots is not None:
+                RT_P = R*T/P
+                hits = [V*RT_P for V in roots]
+
+        if roots is None:
+            guesses = GCEOS.volume_solutions_fast(T, P, b, delta, epsilon, a_alpha)
+            RT = T*R
+            def err(V):
+                return(RT/(V-b) - a_alpha/(V*(V + delta) + epsilon)) - P
+                
+            hits = []
+            for Vi in guesses:
+                try:
+                    V_calc = mp.findroot(err, Vi, solver='newton') 
+                    hits.append(V_calc)
+                except Exception as e:
+                    pass
+            if not hits:
+                raise ValueError("Could not converge any mpmath volumes")
+
+        sort_fun = lambda x: (x.real, x.imag)
+        return list(sorted(hits, key=sort_fun))
+
+    @staticmethod
+    def volume_solutions_mpmath_float(T, P, b, delta, epsilon, a_alpha, quick=True):
+        Vs = GCEOS.volume_solutions_mpmath(T, P, b, delta, epsilon, a_alpha)
+        return [float(Vi.real) + float(Vi.imag)*1.0j for Vi in Vs]
+
+#    volume_solutions = volume_solutions_mpmath_float
+
+    @property
+    def mpmath_volumes(self):
+        return self.volume_solutions_mpmath(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
+    
+    @property
+    def mpmath_volume_ratios(self):
+        return [i/j for i, j in zip(self.sorted_volumes, self.mpmath_volumes)]
+    
+    def Vs_mpmath(self):
+        Vs = self.mpmath_volumes
+        good_roots = [i.real for i in Vs if (i.real > 0.0 and abs(i.imag/i.real) < 1E-12)]
+        good_roots.sort()
+        return good_roots
+
+    
+    def volume_error(self, only_real=True):
+#        Vs_good, Vs = self.mpmath_volumes, self.sorted_volumes
+        # Compare the reals only if mpmath has the imaginary roots
+        Vs_good = self.volume_solutions_mpmath(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
+        Vs = self.raw_volumes
+        err = 0
+        
+        def _mpmath_volume_matching(V, Vs_mpmath):
+            rel_diffs = []
+            for Vi in Vs_mpmath:
+                err = abs(Vi.real - V.real) + abs(Vi.imag - V.imag)
+                rel_diffs.append(err)
+            return Vs_mpmath[rel_diffs.index(min(rel_diffs))]
+    
+        try:
+            Vl = self.V_l
+            Vl_mpmath = _mpmath_volume_matching(Vl, Vs_good)
+            err_i = abs((Vl - Vl_mpmath)/Vl_mpmath)
+            if err_i > err:
+                err = err_i
+        except:
+            pass
+        try:
+            Vg = self.V_g
+            Vg_mpmath = _mpmath_volume_matching(Vg, Vs_good)
+            err_i = abs((Vg - Vg_mpmath)/Vg_mpmath)
+            if err_i > err:
+                err = err_i
+        except:
+            pass
+        return err
+    
+        for i in range(3):
+            try:
+                # Try a relative error vs. the mpmath vvolume
+                err_i = abs((Vs[i].real -Vs_good[i].real)/Vs_good[i].real)
+            except ZeroDivisionError:
+                try:
+                    # Try a relative error vs. the floating point volume
+                    err_i = abs((Vs[i].real -Vs_good[i].real)/Vs[i].real)
+                except ZeroDivisionError:
+                    # Should never come here, use the actual error
+                    err_i = abs((Vs[i].real -Vs_good[i].real))
+            
+            # Store the error if it is the highest so far
+            if err_i > err:
+                err = err_i
+            
+            # Do the same thing for the imag root
+            if not only_real:
+                try:
+                    err_i = abs((Vs[i].imag -Vs_good[i].imag)/Vs_good[i].imag)
+                except ZeroDivisionError:
+                    try:
+                        err_i = abs((Vs[i].imag -Vs_good[i].imag)/Vs[i].imag)
+                    except ZeroDivisionError:
+                        err_i = abs((Vs[i].imag -Vs_good[i].imag))
+            if err_i > err:
+                err = err_i
+        return err
+
+    def _mpmath_volume_matching(self, V):
+        '''Helper method which, given one of the three molar volume solutions
+        of the EOS, returns the mpmath molar volume which is nearest it.
+        '''
+        Vs = self.mpmath_volumes
+        rel_diffs = []
+        
+        for Vi in Vs:
+            err = abs(Vi.real - V.real) + abs(Vi.imag - V.imag)
+            rel_diffs.append(err)
+        return Vs[rel_diffs.index(min(rel_diffs))]
+
+    @property
+    def V_l_mpmath(self):
+        r'''The molar volume of the liquid phase calculated with `mpmath` to
+        a higher precision, [m^3/mol]. This is useful for validating the
+        cubic root solver(s). It is not quite a true arbitrary solution to the
+        EOS, because the constants `b`,`epsilon`, `delta` and `a_alpha` as well
+        as the input arguments `T` and `P` are not calculated with arbitrary 
+        precision. This is a feature when comparing the volume solution  
+        algorithms however as they work with the same finite-precision
+        variables.
+        '''
+        if not hasattr(self, 'V_l'):
+            raise ValueError("Not solved for that volume")
+        return self._mpmath_volume_matching(self.V_l)
+    
+    @property
+    def V_g_mpmath(self):
+        r'''The molar volume of the gas phase calculated with `mpmath` to
+        a higher precision, [m^3/mol]. This is useful for validating the
+        cubic root solver(s). It is not quite a true arbitrary solution to the
+        EOS, because the constants `b`,`epsilon`, `delta` and `a_alpha` as well
+        as the input arguments `T` and `P` are not calculated with arbitrary 
+        precision. This is a feature when comparing the volume solution  
+        algorithms however as they work with the same finite-precision
+        variables.
+        '''
+        if not hasattr(self, 'V_g'):
+            raise ValueError("Not solved for that volume")
+        return self._mpmath_volume_matching(self.V_g)
+    
+    def volume_errors(self, Tmin=1e-4, Tmax=1e4, Pmin=1e-3, Pmax=1e9,
+                          pts=50, plot=False, show=False, trunc_err_low=1e-18,
+                          trunc_err_high=1.0, color_map=None):
+        # TODO save 50% of the time
+        
+        Ts = logspace(log10(Tmin), log10(Tmax), pts)
+        Ps = logspace(log10(Pmin), log10(Pmax), pts)
+        kwargs = {}
+        if hasattr(self, 'zs'):
+            kwargs['zs'] = self.zs
+
+        errs = []            
+        for T in Ts:
+            err_row = []
+            for P in Ps:
+                kwargs['T'] = T
+                kwargs['P'] = P
+                obj = self.to(**kwargs)
+                err_row.append(float(obj.volume_error()))
+            errs.append(err_row)
+
+        if plot:
+            import matplotlib.pyplot as plt
+            from matplotlib import ticker, cm
+            from matplotlib.colors import LogNorm
+            X, Y = np.meshgrid(Ts, Ps)
+            z = np.array(errs).T
+            fig, ax = plt.subplots()
+            z[np.where(abs(z) < trunc_err_low)] = trunc_err_low
+            if trunc_err_high is not None:
+                z[np.where(abs(z) > trunc_err_high)] = trunc_err_high
+                
+            if color_map is None:
+                color_map = cm.viridis
+            
+            im = ax.pcolormesh(X, Y, z, cmap=color_map, norm=LogNorm(vmin=trunc_err_low, vmax=trunc_err_high))
+            cbar = fig.colorbar(im, ax=ax)
+            cbar.set_label('Relative error')
+
+            ax.set_yscale('log')
+            ax.set_xscale('log')
+            ax.set_xlabel('T')
+            ax.set_ylabel('P')
+            
+            max_err = np.max(errs)
+            if max_err < trunc_err_low:
+                max_err = 0
+            if max_err > trunc_err_high:
+                max_err = trunc_err_high
+            
+            ax.set_title('Volume solution validation; max err %.4e' %(max_err))
+            if show:
+                plt.show()
+                
+            return errs, fig
 
     def derivatives_and_departures(self, T, P, V, b, delta, epsilon, a_alpha, da_alpha_dT, d2a_alpha_dT2, quick=True):
         
@@ -5442,15 +5672,23 @@ def TWU_a_alpha_common(T, Tc, omega, a, full=True, quick=True, method='PR'):
     >>> # diff(alpha, T, T)
     '''
     Tr = T/Tc
+    if Tr < 5e-3:
+        # not enough: Tr from (x) 0 to 2e-4 to (y) 1e-4 2e-4
+        # trying: Tr from (x) 0 to 1e-3 to (y) 5e-4 1e-3
+#        Tr = 1e-3 + (Tr - 0.0)*(1e-3 - 5e-4)/1e-3
+#        Tr = 5e-4 + (Tr - 0.0)*(5e-4)/1e-3
+        Tr = 4e-3 + (Tr - 0.0)*(1e-3)/5e-3
+        T = Tc*Tr
+    
     if method == 'PR':
-        if Tr < 1:
+        if Tr < 1.0:
             L0, M0, N0 = 0.125283, 0.911807, 1.948150
             L1, M1, N1 = 0.511614, 0.784054, 2.812520
         else:
             L0, M0, N0 = 0.401219, 4.963070, -0.2
             L1, M1, N1 = 0.024955, 1.248089, -8.  
     elif method == 'SRK':
-        if Tr < 1:
+        if Tr < 1.0:
             L0, M0, N0 = 0.141599, 0.919422, 2.496441
             L1, M1, N1 = 0.500315, 0.799457, 3.291790
         else:
@@ -5466,7 +5704,7 @@ def TWU_a_alpha_common(T, Tc, omega, a, full=True, quick=True, method='PR'):
         return a*alpha
     else:
         if quick:
-            x0 = T/Tc
+            x0 = Tr
             x1 = M0 - 1
             x2 = N0*x1
             x3 = x0**x2
@@ -5500,7 +5738,10 @@ def TWU_a_alpha_common(T, Tc, omega, a, full=True, quick=True, method='PR'):
             da_alpha_dT = a*(omega*x17 + x15)/T
             d2a_alpha_dT2 = a*(-(omega*(-L1**2*x0**(2.*x11)*x27*x28 + 2.*M1*x29*x8 + x17 + x20 - x23 - x24 + x25 - x27*x8**2 + x28*x29) + x15 - x20 + x23 + x24 - x25)/T**2)
         else:
-            a_alpha = TWU_a_alpha_common(T=T, Tc=Tc, omega=omega, a=a, full=False, quick=quick, method=method)
+            alpha0 = Tr**(N0*(M0-1.))*exp(L0*(1.-Tr**(N0*M0)))
+            alpha1 = Tr**(N1*(M1-1.))*exp(L1*(1.-Tr**(N1*M1)))
+            alpha = alpha0 + omega*(alpha1 - alpha0)
+#            a_alpha = TWU_a_alpha_common(T=T, Tc=Tc, omega=omega, a=a, full=False, quick=quick, method=method)
             da_alpha_dT = a*(-L0*M0*N0*(T/Tc)**(M0*N0)*(T/Tc)**(N0*(M0 - 1))*exp(L0*(-(T/Tc)**(M0*N0) + 1))/T + N0*(T/Tc)**(N0*(M0 - 1))*(M0 - 1)*exp(L0*(-(T/Tc)**(M0*N0) + 1))/T + omega*(L0*M0*N0*(T/Tc)**(M0*N0)*(T/Tc)**(N0*(M0 - 1))*exp(L0*(-(T/Tc)**(M0*N0) + 1))/T - L1*M1*N1*(T/Tc)**(M1*N1)*(T/Tc)**(N1*(M1 - 1))*exp(L1*(-(T/Tc)**(M1*N1) + 1))/T - N0*(T/Tc)**(N0*(M0 - 1))*(M0 - 1)*exp(L0*(-(T/Tc)**(M0*N0) + 1))/T + N1*(T/Tc)**(N1*(M1 - 1))*(M1 - 1)*exp(L1*(-(T/Tc)**(M1*N1) + 1))/T))
             d2a_alpha_dT2 = a*((L0**2*M0**2*N0**2*(T/Tc)**(2*M0*N0)*(T/Tc)**(N0*(M0 - 1))*exp(-L0*((T/Tc)**(M0*N0) - 1)) - L0*M0**2*N0**2*(T/Tc)**(M0*N0)*(T/Tc)**(N0*(M0 - 1))*exp(-L0*((T/Tc)**(M0*N0) - 1)) - 2*L0*M0*N0**2*(T/Tc)**(M0*N0)*(T/Tc)**(N0*(M0 - 1))*(M0 - 1)*exp(-L0*((T/Tc)**(M0*N0) - 1)) + L0*M0*N0*(T/Tc)**(M0*N0)*(T/Tc)**(N0*(M0 - 1))*exp(-L0*((T/Tc)**(M0*N0) - 1)) + N0**2*(T/Tc)**(N0*(M0 - 1))*(M0 - 1)**2*exp(-L0*((T/Tc)**(M0*N0) - 1)) - N0*(T/Tc)**(N0*(M0 - 1))*(M0 - 1)*exp(-L0*((T/Tc)**(M0*N0) - 1)) - omega*(L0**2*M0**2*N0**2*(T/Tc)**(2*M0*N0)*(T/Tc)**(N0*(M0 - 1))*exp(-L0*((T/Tc)**(M0*N0) - 1)) - L0*M0**2*N0**2*(T/Tc)**(M0*N0)*(T/Tc)**(N0*(M0 - 1))*exp(-L0*((T/Tc)**(M0*N0) - 1)) - 2*L0*M0*N0**2*(T/Tc)**(M0*N0)*(T/Tc)**(N0*(M0 - 1))*(M0 - 1)*exp(-L0*((T/Tc)**(M0*N0) - 1)) + L0*M0*N0*(T/Tc)**(M0*N0)*(T/Tc)**(N0*(M0 - 1))*exp(-L0*((T/Tc)**(M0*N0) - 1)) - L1**2*M1**2*N1**2*(T/Tc)**(2*M1*N1)*(T/Tc)**(N1*(M1 - 1))*exp(-L1*((T/Tc)**(M1*N1) - 1)) + L1*M1**2*N1**2*(T/Tc)**(M1*N1)*(T/Tc)**(N1*(M1 - 1))*exp(-L1*((T/Tc)**(M1*N1) - 1)) + 2*L1*M1*N1**2*(T/Tc)**(M1*N1)*(T/Tc)**(N1*(M1 - 1))*(M1 - 1)*exp(-L1*((T/Tc)**(M1*N1) - 1)) - L1*M1*N1*(T/Tc)**(M1*N1)*(T/Tc)**(N1*(M1 - 1))*exp(-L1*((T/Tc)**(M1*N1) - 1)) + N0**2*(T/Tc)**(N0*(M0 - 1))*(M0 - 1)**2*exp(-L0*((T/Tc)**(M0*N0) - 1)) - N0*(T/Tc)**(N0*(M0 - 1))*(M0 - 1)*exp(-L0*((T/Tc)**(M0*N0) - 1)) - N1**2*(T/Tc)**(N1*(M1 - 1))*(M1 - 1)**2*exp(-L1*((T/Tc)**(M1*N1) - 1)) + N1*(T/Tc)**(N1*(M1 - 1))*(M1 - 1)*exp(-L1*((T/Tc)**(M1*N1) - 1))))/T**2)
         return a_alpha, da_alpha_dT, d2a_alpha_dT2

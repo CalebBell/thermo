@@ -7725,7 +7725,13 @@ class TWUSRKMIX(SRKMIX, TWUSRK):
         `GCEOSMIX.a_alpha_and_derivatives` after `a_alpha` is calculated for 
         every component'''
         del(self.a, self.Tc, self.omega)
-
+        
+    def fast_init_specific(self, other):
+        b = 0.0
+        bs, zs = self.bs, self.zs
+        for i in self.cmps:
+            b += bs[i]*zs[i]
+        self.delta = self.b = b
 
 class APISRKMIX(SRKMIX, APISRK):
     r'''Class for solving the Refinery Soave-Redlich-Kwong cubic 

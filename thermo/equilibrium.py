@@ -848,6 +848,15 @@ class EquilibriumState(object):
         Hc = abs(phase.Hc_lower_normal())
         SG_gas = phase.SG_gas()
         return Hc*SG_gas**-0.5
+    
+    def value(self, name):
+        v = getattr(self, name)
+        try:
+            v = v()
+        except:
+            pass
+        return v
+
         
 # Add some fancy things for easier access to properties
 

@@ -1310,7 +1310,7 @@ class EOSGas(Phase):
         # Can be some severe issues in the very low pressure/temperature range
         # For that reason, consider not doing TV iterations.
         T, P = self.T, self.P
-        if (P < 1.0 or T < 1.0) or (P/T < 5.0 and T < 10.0):
+        if 0 and ((P < 1.0 or T < 1.0) or (P/T < 500.0 and T < 50.0)):
             eos_mix = self.eos_mix
             try:
                 return eos_mix.V_g_mpmath.real

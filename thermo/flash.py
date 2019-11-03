@@ -1039,7 +1039,8 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
 
     if oscillation_detection:
         to_solve2, checker = oscillation_checking_wrapper(to_solve, full=True,
-                                                          minimum_progress=minimum_progress)
+                                                          minimum_progress=minimum_progress,
+                                                          good_err=ytol*1e6)
     else:
         to_solve2 = to_solve
         checker = None
@@ -1057,13 +1058,25 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
         fprime = False
         if bounded and min_bound is not None and max_bound is not None:
             if checker:
-                min_bound, max_bound, fa, fb = best_bounding_bounds(min_bound, max_bound, 
+                min_bound_prev, max_bound_prev, fa, fb = best_bounding_bounds(min_bound, max_bound,
                                                                     f=to_solve, xs_pos=checker.xs_pos, ys_pos=checker.ys_pos, 
                                                                     xs_neg=checker.xs_neg, ys_neg=checker.ys_neg)
+                if abs(min_bound_prev/max_bound_prev - 1.0) > 2.5e-4:
+                    # If the points are too close, odds are there is a discontinuity in the newton solution
+                    min_bound, max_bound = min_bound_prev, max_bound_prev
+                else:
+                    fa, fb = None, None
+
             else:
                 fa, fb = None, None
-            iter_var_val = brenth(to_solve, min_bound, max_bound, xtol=xtol, 
-                                  ytol=ytol, maxiter=maxiter, fa=fa, fb=fb)
+
+            try:
+                iter_var_val = brenth(to_solve, min_bound, max_bound, xtol=xtol,
+                                      ytol=ytol, maxiter=maxiter, fa=fa, fb=fb)
+            except:
+                # Not sure at all if good idea
+                iter_var_val = secant(to_solve, guess, xtol=xtol, ytol=ytol,
+                                      maxiter=maxiter, bisection=True, low=min_bound)
     phase, err = store
 
     return iter_var_val, phase, iterations, err
@@ -1929,6 +1942,89 @@ class FlashBase(object):
 
             Vs = logspace(log10(Vmin), log10(Vmax), pts)
         return Vs
+
+    def grid_flash(self, zs, Ts=None, Ps=None, Vs=None, 
+                   VFs=None, SFs=None, Hs=None, Ss=None, Us=None,
+                   props=None, store=True):
+        
+        flashes = []
+
+        T_spec = Ts is not None
+        P_spec = Ps is not None
+        V_spec = Vs is not None
+        H_spec = Hs is not None
+        S_spec = Ss is not None
+        U_spec = Us is not None
+        VF_spec = VFs is not None
+        SF_spec = SFs is not None
+
+        flash_specs = {'zs': zs}
+        spec_keys = []
+        spec_iters = []
+        if T_spec:
+            spec_keys.append('T')
+            spec_iters.append(Ts)
+        if P_spec:
+            spec_keys.append('P')
+            spec_iters.append(Ps)
+        if V_spec:
+            spec_keys.append('V')
+            spec_iters.append(Vs)
+        if H_spec:
+            spec_keys.append('H')
+            spec_iters.append(Hs)
+        if S_spec:
+            spec_keys.append('S')
+            spec_iters.append(Ss)
+        if U_spec:
+            spec_keys.append('U')
+            spec_iters.append(Us)
+        if VF_spec:
+            spec_keys.append('VF')
+            spec_iters.append(VFs)
+        if SF_spec:
+            spec_keys.append('SF')
+            spec_iters.append(SFs)
+            
+        do_props = props is not None
+        scalar_props = isinstance(props, str)
+            
+        calc_props = []
+        for n0, spec0 in enumerate(spec_iters[0]):
+            if do_props:
+                row_props = []
+            if store: 
+                row_flashes = []
+            for n1, spec1 in enumerate(spec_iters[1]):
+                flash_specs = {'zs': zs, spec_keys[0]: spec0, spec_keys[1]: spec1}
+                try:
+                    state = self.flash(**flash_specs)
+                except Exception as e:
+                    state = None
+                    print('Failed trying to flash %s, with exception %s.'%(flash_specs, e))
+                
+                if store: 
+                    row_flashes.append(state)
+                if do_props: 
+                    if scalar_props:
+                        state_props = state.value(props)if state is not None else None
+                    else:
+                        state_props = [state.value(s) for s in props] if state is not None else [None for s in props]
+                        
+                    row_props.append(state_props)
+            
+            if do_props:
+                calc_props.append(row_props)
+            if store: 
+                flashes.append(row_flashes)
+        
+        if do_props and store:
+            return flashes, calc_props
+        elif do_props:
+            return calc_props
+        elif store:
+            return flashes
+        return None
     
     def debug_grid_flash(self, zs, check0, check1, Ts=None, Ps=None, Vs=None, 
                          VFs=None, SFs=None, Hs=None, Ss=None, Us=None):
@@ -1992,8 +2088,8 @@ class FlashBase(object):
                     check1_spec = check1_spec()
                 except:
                     pass
-#                if check1 == 'V' and check0 == 'T':
-#                    check1_spec = getattr(state, 'V_iter')()
+                if (check1 == 'V' and check0 == 'T') or (check1 == 'T' and check0 == 'V'):
+                    check1_spec = getattr(state, 'V_iter')()
                 kwargs = {}
                 kwargs[check0] = check0_spec
                 kwargs[check1] = check1_spec
@@ -2052,26 +2148,27 @@ class FlashBase(object):
                    show=True, color_map=None):
         
         specs = []
-        if 'T' in (spec0, spec1):
-            Ts = self.generate_Ts(Ts=Ts, Tmin=Tmin, Tmax=Tmax, pts=pts, zs=zs,
+        for a_spec in (spec0, spec1):
+            if 'T' == a_spec:
+                Ts = self.generate_Ts(Ts=Ts, Tmin=Tmin, Tmax=Tmax, pts=pts, zs=zs,
+                                      method=auto_range)
+                specs.append(Ts)
+            if 'P' == a_spec:
+                Ps = self.generate_Ps(Ps=Ps, Pmin=Pmin, Pmax=Pmax, pts=pts, zs=zs,
                                   method=auto_range)
-            specs.append(Ts)
-        if 'P' in (spec0, spec1):
-            Ps = self.generate_Ps(Ps=Ps, Pmin=Pmin, Pmax=Pmax, pts=pts, zs=zs,
-                              method=auto_range)
-            specs.append(Ps)
-        if 'V' in (spec0, spec1):
-            Vs = self.generate_Vs(Vs=Vs, Vmin=Vmin, Vmax=Vmax, pts=pts, zs=zs,
-                              method=auto_range)
-            specs.append(Vs)
-        if 'VF' in (spec0, spec1):
-            if VFs is None:
-                VFs = linspace(0, 1, pts)
-            specs.append(VFs)
-        if 'SF' in (spec0, spec1):
-            if SFs is None:
-                SFs = linspace(0, 1, pts)
-            specs.append(SFs)
+                specs.append(Ps)
+            if 'V' == a_spec:
+                Vs = self.generate_Vs(Vs=Vs, Vmin=Vmin, Vmax=Vmax, pts=pts, zs=zs,
+                                  method=auto_range)
+                specs.append(Vs)
+            if 'VF' == a_spec:
+                if VFs is None:
+                    VFs = linspace(0, 1, pts)
+                specs.append(VFs)
+            if 'SF' == a_spec:
+                if SFs is None:
+                    SFs = linspace(0, 1, pts)
+                specs.append(SFs)
             
         specs0, specs1 = specs
         matrix_spec_flashes, matrix_flashes = self.debug_grid_flash(zs, 
@@ -2080,14 +2177,14 @@ class FlashBase(object):
         errs = self.debug_err_flash_grid(matrix_spec_flashes,
             matrix_flashes, check=prop0)
         
-        im = None
         if plot:
             import matplotlib.pyplot as plt
             from matplotlib import ticker, cm
             from matplotlib.colors import LogNorm
+#            plt.ioff()
             X, Y = np.meshgrid(specs0, specs1)
-            z = np.array(errs).copy()
-            fig, ax = plt.subplots(1, 1)
+            z = np.array(errs).T
+            fig, ax = plt.subplots()
             z[np.where(abs(z) < trunc_err_low)] = trunc_err_low
             if trunc_err_high is not None:
                 z[np.where(abs(z) > trunc_err_high)] = trunc_err_high
@@ -2099,12 +2196,109 @@ class FlashBase(object):
             im = ax.pcolormesh(X, Y, z, cmap=color_map, norm=LogNorm(vmin=trunc_err_low, vmax=trunc_err_high))
             # im = ax.pcolormesh(X, Y, z, cmap=cm.viridis, norm=LogNorm(vmin=1e-7, vmax=1))
             cbar = fig.colorbar(im, ax=ax)
+            cbar.set_label('Relative error')
+
             ax.set_yscale('log')
             ax.set_xscale('log')
+            ax.set_xlabel(spec0)
+            ax.set_ylabel(spec1)
+            
+            max_err = np.max(errs)
+            if max_err < trunc_err_low:
+                max_err = 0
+            if max_err > trunc_err_high:
+                max_err = trunc_err_high
+            
+            ax.set_title('%s %s validation of %s; Reference flash %s %s; max err %.1e' %(check0, check1, prop0, spec0, spec1, max_err))
+                         
+            
             if show:
                 plt.show()
                 
-        return matrix_spec_flashes, matrix_flashes, errs, fig
+            return matrix_spec_flashes, matrix_flashes, errs, fig
+        return matrix_spec_flashes, matrix_flashes, errs
+
+    def grid_props(self, spec0='T', spec1='P', prop='H',
+                   Ts=None, Tmin=None, Tmax=None,
+                   Ps=None, Pmin=None, Pmax=None,
+                   Vs=None, Vmin=None, Vmax=None,
+                   VFs=None, SFs=None,
+                   auto_range=None, zs=None, pts=50, plot=True, 
+                   show=True, color_map=None):
+        
+        specs = []
+        for a_spec in (spec0, spec1):
+            if 'T' == a_spec:
+                Ts = self.generate_Ts(Ts=Ts, Tmin=Tmin, Tmax=Tmax, pts=pts, zs=zs,
+                                      method=auto_range)
+                specs.append(Ts)
+            if 'P' == a_spec:
+                Ps = self.generate_Ps(Ps=Ps, Pmin=Pmin, Pmax=Pmax, pts=pts, zs=zs,
+                                  method=auto_range)
+                specs.append(Ps)
+            if 'V' == a_spec:
+                Vs = self.generate_Vs(Vs=Vs, Vmin=Vmin, Vmax=Vmax, pts=pts, zs=zs,
+                                  method=auto_range)
+                specs.append(Vs)
+            if 'VF' == a_spec:
+                if VFs is None:
+                    VFs = linspace(0, 1, pts)
+                specs.append(VFs)
+            if 'SF' == a_spec:
+                if SFs is None:
+                    SFs = linspace(0, 1, pts)
+                specs.append(SFs)
+            
+        specs0, specs1 = specs
+        props = self.grid_flash(zs, Ts=Ts, Ps=Ps, Vs=Vs, VFs=VFs, props=prop, store=False)
+#        props = []
+#        pts_iter = range(pts)
+#        for i in pts_iter:
+#            row = []
+#            for j in pts_iter:
+#                flash = matrix_flashes[i][j]
+#                try:
+#                    v = getattr(flash, prop)
+#                    try:
+#                        v = v()
+#                    except:
+#                        pass
+#                except:
+#                    v = None
+#                row.append(v)
+#            props.append(row)
+
+        if plot:
+            import matplotlib.pyplot as plt
+            from matplotlib import ticker, cm
+            from matplotlib.colors import LogNorm
+            X, Y = np.meshgrid(specs0, specs1)
+            z = np.array(props).T
+            fig, ax = plt.subplots()
+                
+            if color_map is None:
+                color_map = cm.viridis
+            
+            im = ax.pcolormesh(X, Y, z, cmap=color_map, norm=LogNorm()) # 
+            cbar = fig.colorbar(im, ax=ax)
+            cbar.set_label(prop)
+
+            ax.set_yscale('log')
+            ax.set_xscale('log')
+            ax.set_xlabel(spec0)
+            ax.set_ylabel(spec1)
+
+#            ax.set_title()
+            if show:
+                plt.show()
+            return props, fig
+        
+        return props
+            
+                    
+                
+
+
 
 class FlashVL(FlashBase):
     PT_SS_MAXITER = 1000
@@ -2252,6 +2446,11 @@ class FlashPureVLS(FlashBase):
             
         self.VL_only = self.phase_count == 2 and self.liquid_count == 1 and self.gas is not None
         self.VL_only_CEOSs = (self.VL_only and gas and liquids and isinstance(self.liquids[0], EOSLiquid) and isinstance(self.gas, EOSGas))
+        
+        # TODO implement as function of phases/or EOS
+        self.VL_only_CEOSs_same = (self.VL_only_CEOSs and 
+                                   type(self.liquids[0]) == type(self.gas) and 
+                                   self.liquids[0].kijs == self.gas.kijs)
 
 
     def flash(self, zs=None, T=None, P=None, VF=None, SF=None, V=None, H=None,
@@ -2490,10 +2689,39 @@ class FlashPureVLS(FlashBase):
         return PSF_pure_newton(Tsub, P, try_phases, self.solids, 
                                maxiter=200, xtol=1E-10)
         
-    def flash_TPV_HSGUA(self, fixed_var_val, spec_val, fixed_var='P', spec='H', iter_var='T'):
+    def flash_TPV_HSGUA(self, fixed_var_val, spec_val, fixed_var='P', spec='H', iter_var='T', minimize='auto',
+                        selection_fun_1P=None):
+        # Be prepared to have a flag here to handle zero flow
         zs = [1]
         constants, correlations = self.constants, self.correlations
-
+        if minimize == 'auto':
+            if fixed_var == 'P' and spec == 'H':
+                fun = lambda obj: -obj.S()
+            elif fixed_var == 'P' and spec == 'S':
+                fun = lambda obj: obj.H()
+            elif fixed_var == 'V' and spec == 'U':
+                fun = lambda obj: -obj.S()
+            elif fixed_var == 'V' and spec == 'S':
+                fun = lambda obj: obj.U()
+            else:
+                fun = lambda obj: obj.G()
+        
+        if selection_fun_1P is None:
+            def selection_fun_1P(new, prev):
+                if fixed_var == 'P' and spec == 'S':
+                    if new[-1] < prev[-1]:
+                        if new[0] < 1.0 and prev[0] > 1.0:
+                            # Found a very low temperature solution do not take it
+                            return False
+                        return True
+                    elif (prev[0] < 1.0 and new[0] > 1.0):
+                        return True
+                
+                else:
+                    if new[-1] < prev[-1]:
+                        return True
+                return False
+        
         try:
             solutions_1P = []
             G_min = 1e100
@@ -2502,11 +2730,14 @@ class FlashPureVLS(FlashBase):
                 try:                    
                     T, P, phase, iterations, err = solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var=fixed_var, 
                                                                       spec=spec, iter_var=iter_var, constants=constants, correlations=correlations)
-                    G = phase.G()
-                    if G < G_min:
+                    G = fun(phase)
+                    new = [T, phase, iterations, err, G]
+                    if results_G_min_1P is None or selection_fun_1P(new, results_G_min_1P):
+#                    if G < G_min:
                         G_min = G
-                        results_G_min_1P = (T, phase, iterations, err)
-                    solutions_1P.append([T, phase, iterations, err])
+                        results_G_min_1P = new
+                    
+                    solutions_1P.append(new)
                 except Exception as e:
 #                    print(e)
                     solutions_1P.append(None)
@@ -2534,8 +2765,8 @@ class FlashPureVLS(FlashBase):
 #                spec_val_g = getattr(VL_flash.gas, spec)()
             VF = (spec_val - spec_val_l)/(spec_val_g - spec_val_l)
             if 0.0 <= VF <= 1.0:
-                G_l = VL_liq.G()
-                G_g = VL_gas.G()
+                G_l = fun(VL_liq)
+                G_g = fun(VL_gas)
                 G_VL = G_g*VF + G_l*(1.0 - VF)           
             else:
                 VF = None
@@ -2553,6 +2784,10 @@ class FlashPureVLS(FlashBase):
                 SF = (spec_val - spec_val_s)/(spec_other - spec_val_s)
                 if SF < 0.0 or SF > 1.0:
                     raise ValueError("Not apply")
+                else:
+                    G_other = fun(VS_flash.phases[0])
+                    G_s = fun(VS_flash.solid0)
+                    G_SF = G_s*SF + G_other*(1.0 - SF)           
             else:
                 SF = None
         except:
@@ -2566,7 +2801,7 @@ class FlashPureVLS(FlashBase):
         # If a 1-phase solution arrose, set it
         if results_G_min_1P is not None:
             betas = [1.0]
-            T, phase, iterations, err = results_G_min_1P
+            T, phase, iterations, err, _ = results_G_min_1P
             if isinstance(phase, gas_phases):
                 gas_phase = results_G_min_1P[1]
             elif isinstance(phase, liquid_phases):
@@ -2710,15 +2945,6 @@ class FlashPureVLS(FlashBase):
             states.append(new)
         return states
         
-    def debug_TPV_consistency(self, T, P, V):
-        pass
-    
-    
-    
-
-
-        
-
         
 
 

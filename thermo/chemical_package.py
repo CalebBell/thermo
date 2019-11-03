@@ -64,14 +64,38 @@ class ChemicalConstantsPackage(object):
                  )
     
     __slots__ = properties + ('N', 'cmps', 'water_index')
+    non_vectors = ('atom_fractions',)
+    
+    def subset(self, idxs):
+        is_slice = isinstance(idxs, slice)
+        
+        def atindexes(values):
+            if is_slice:
+                return values[idxs]
+            return [values[i] for i in idxs]
+        
+        new = {}
+        for p in self.properties:
+            if hasattr(self, p) and getattr(self, p) is not None and p not in self.non_vectors:
+                new[p] = atindexes(getattr(self, p))
+        return ChemicalConstantsPackage(**new)
     
     def __repr__(self):
+        return self.make_str()
+    
+    def make_str(self, delim=', ', properties=None):
+        if properties is None:
+            properties = self.properties
+        
+        
         s = 'ChemicalConstantsPackage('
-        for k in self.properties:
+        for k in properties:
             if any(i is not None for i in getattr(self, k)):
-                s += '%s=%s, '%(k, getattr(self, k))
+                s += '%s=%s%s'%(k, getattr(self, k), delim)
         s = s[:-2] + ')'
         return s
+    
+    
     
     def __init__(self, CASs=None, names=None, MWs=None, Tms=None, Tbs=None, 
                  # Critical state points
@@ -291,6 +315,8 @@ class ChemicalConstantsPackage(object):
             self.water_index = CASs.index(CAS_H2O)
         except ValueError:
             self.water_index = None
+            
+        
 
 class PropertyCorrelationPackage(object):
     correlations = ('VaporPressures', 'SublimationPressures', 'VolumeGases', 
@@ -307,7 +333,31 @@ class PropertyCorrelationPackage(object):
                'ThermalConductivityLiquidMixture', 'SurfaceTensionMixture',
                )
     
-    __slots__ = correlations
+    __slots__ = correlations + ('constants',)
+    
+    pure_correlations = ('VaporPressures', 'VolumeLiquids', 'VolumeGases', 
+                         'VolumeSolids', 'HeatCapacityGases', 'HeatCapacitySolids',
+                         'HeatCapacityLiquids', 'EnthalpyVaporizations', 
+                         'EnthalpySublimations', 'SublimationPressures', 
+                         'Permittivities', 'ViscosityLiquids', 'ViscosityGases', 
+                         'ThermalConductivityLiquids', 'ThermalConductivityGases',
+                         'SurfaceTensions')
+
+    def subset(self, idxs):
+        is_slice = isinstance(idxs, slice)
+        
+        def atindexes(values):
+            if is_slice:
+                return values[idxs]
+            return [values[i] for i in idxs]
+        
+        new = {'constants': self.constants.subset(idxs)}
+        for p in self.pure_correlations:
+            if hasattr(self, p) and getattr(self, p) is not None:
+                new[p] = atindexes(getattr(self, p))
+        return PropertyCorrelationPackage(**new)
+
+
     def __init__(self, constants, VaporPressures=None, SublimationPressures=None,
                  VolumeGases=None, VolumeLiquids=None, VolumeSolids=None,
                  HeatCapacityGases=None, HeatCapacityLiquids=None, HeatCapacitySolids=None,
@@ -322,6 +372,7 @@ class PropertyCorrelationPackage(object):
                  ThermalConductivityGasMixtureObj=None, ThermalConductivityLiquidMixtureObj=None, 
                  SurfaceTensionMixtureObj=None,
                  ):
+        self.constants = constants
         cmps = constants.cmps
         
         if VaporPressures is None:
@@ -488,4 +539,26 @@ class PropertyCorrelationPackage(object):
         
         self.SurfaceTensionMixture = SurfaceTensionMixtureObj
 
-
+    def as_best_fit(self, props=None):
+        multiple_props = isinstance(props, (tuple, list)) and isinstance(props[0], str)
+        if props is None or multiple_props:
+            if multiple_props:
+                iter_props = props
+            else:
+                iter_props = self.pure_correlations
+            
+            s = '%s(' %(self.__class__.__name__)
+            for prop in iter_props:
+                try:
+                    s += '%s=%s,\n' %(prop, self.as_best_fit(getattr(self, prop)))
+                except Exception as e:
+                    print(e, prop)
+                    
+            s += ')'
+            return s
+        
+        s = '['
+        for obj in props:
+            s += (obj.as_best_fit() + ',\n')
+        s += ']'
+        return s

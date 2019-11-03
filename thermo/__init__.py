@@ -20,6 +20,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
+import os
+
 from . import acentric
 from . import activity
 from . import chemical
@@ -192,5 +194,7 @@ chemical.__dict__['Mixture'] = mixture.Mixture
 chemical.__dict__['Stream'] = stream.Stream
 # However, they cannot go in thermo.chemical's __all__ or they will appear in the
 # documentation and Sphinx currently has no wat to exclude them
+
+thermo_dir = os.path.dirname(__file__)
 
 __version__ = '0.1.39'
