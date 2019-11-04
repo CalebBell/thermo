@@ -219,7 +219,7 @@ def test_TV_plot(fluid_idx, eos, auto_range):
 @pytest.mark.parametrize("auto_range", ['realistic'])
 @pytest.mark.parametrize("fluid_idx", constants.cmps)
 @pytest.mark.parametrize("eos", eos_mix_list)
-def x(fluid_idx, eos, auto_range):
+def test_PS_plot(fluid_idx, eos, auto_range):
     '''
     The non-smooth region at ~.01 P causes lots of issues
     '''
@@ -235,7 +235,7 @@ def x(fluid_idx, eos, auto_range):
 
     flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
 
-    
+    #Physical?
     res = flasher.TPV_inputs(zs=zs, pts=100, spec0='T', spec1='P', check0='P', check1='S', prop0='T',
                            trunc_err_low=1e-10, 
                            trunc_err_high=1, color_map=cm_flash_tol(),
