@@ -936,9 +936,9 @@ should be calculated by this method, in a user subclass.')
             elif tries == 2:
                 # sometimes used successfully
                 Vs = GCEOS.volume_solutions_a1(T, P, b, delta, epsilon, a_alpha, quick=True)
-            elif tries == 3:
-                # never used successfully
-                Vs = GCEOS.volume_solutions_a2(T, P, b, delta, epsilon, a_alpha, quick=True)
+            # elif tries == 3:
+            #     # never used successfully
+            #     Vs = GCEOS.volume_solutions_a2(T, P, b, delta, epsilon, a_alpha, quick=True)
         except:
 #            Vs = GCEOS.volume_solutions_Cardano(T, P, b, delta, epsilon, a_alpha, quick=True)
             if tries == 0:
@@ -953,6 +953,7 @@ should be calculated by this method, in a user subclass.')
         # The case for a fixed number of iterations has pretty much gone.
         # On 1 occasion
         failed = False
+        max_err, rel_err = 0.0, 0.0
         try:
             for i in (0, 1, 2):
                 V = Vi = Vs[i]
@@ -965,22 +966,25 @@ should be calculated by this method, in a user subclass.')
                     denom0 = 1.0/(V-b)
                     w0 = RT*denom0
                     w1 = a_alpha*denom1
-    #                if w0 - w1 - P == err:
-    #                    break # No change in error
+                    if w0 - w1 - P == err:
+                        break # No change in error
                     err = w0 - w1 - P
     #                print(abs(err), V, _)
                     derr_dV = (V + V + delta)*w1*denom1 - w0*denom0 
                     V = V - err/derr_dV
-                    if abs(err*P_inv) < 1e-14 or V == Vi:
+                    rel_err = abs(err*P_inv)
+                    if rel_err < 1e-14 or V == Vi:
                         # Conditional check probably not worth it
                         break
     #                if _ > 5:
     #                    print(_, V)
                 # This check can get rid of the noise
-                if abs(err*P_inv) > 1e-2: # originally 1e-2; 1e-5 did not change; 1e-10 to far
+                if rel_err > 1e-2: # originally 1e-2; 1e-5 did not change; 1e-10 to far
     #            if abs(err*P_inv) > 1e-2 and (i.real != 0.0 and abs(i.imag/i.real) < 1E-10 ):
                     failed = True
+#                    break
                 Vs[i] = V
+                max_err = max(max_err, rel_err)
         except ZeroDivisionError:
             failed = True
             
@@ -1010,16 +1014,26 @@ should be calculated by this method, in a user subclass.')
         if not failed:
             failed = root_failed
 
-        if failed and tries < 3:
+        if failed and tries < 2:
             return GCEOS.volume_solutions_NR(T, P, b, delta, epsilon, a_alpha, quick=quick, tries=tries+1)
         elif root_failed:
 #            print('%g, %g; ' %(T, P), end='')
             return GCEOS.volume_solutions_mpmath_float(T, P, b, delta, epsilon, a_alpha)
-        elif failed and tries == 3:
+        elif failed and tries == 2:
+            # Are we at least consistent? Diitch the NR and try to be OK with the answer
+#            Vs0 = GCEOS.volume_solutions_Cardano(T, P, b, delta, epsilon, a_alpha, quick=True)
+#            Vs1 = GCEOS.volume_solutions_a1(T, P, b, delta, epsilon, a_alpha, quick=True)
+#            if sum(abs((i -j)/i) for i, j in zip(Vs0, Vs1)) < 1e-6:
+#                return Vs0
+            if max_err < 1e6:
+                # Try to catch floating point error
+                return Vs
+            
+            print('%g, %g; ' %(T, P), end='')
 #            print(T, P, b, delta, a_alpha)
 #            if root_failed:
-#                return GCEOS.volume_solutions_mpmath_float(T, P, b, delta, epsilon, a_alpha)
-            return Vs
+            return GCEOS.volume_solutions_mpmath_float(T, P, b, delta, epsilon, a_alpha)
+            # return Vs
 #        if tries == 3 or tries == 2:
 #            print(tries)
         return Vs
