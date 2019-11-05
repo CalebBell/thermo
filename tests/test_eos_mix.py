@@ -2946,6 +2946,14 @@ def test_volume_issues():
                 zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
     
     assert_allclose(obj.sorted_volumes, obj.mpmath_volumes_float, rtol=1e-14)
+    
+    
+    # TV iteration - check back calculation works to the exact precision now
+    obj = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=5., P=1E-4)
+    TV = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=5., V=obj.V_l_mpmath)
+    assert_allclose(obj.P, TV.P, rtol=1e-12)
+    TV = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=5., V=obj.V_g_mpmath)
+    assert_allclose(obj.P, TV.P, rtol=1e-12)
 
 
 def test_solve_T_issues():

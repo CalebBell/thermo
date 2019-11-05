@@ -158,7 +158,12 @@ class GCEOS(object):
                 
                 # Allow mpf multiple precision volume for flash initialization
                 # DO NOT TAKE OUT FLOAT CONVERSION!
-                self.P = float(R*self.T/(V-self.b) - self.a_alpha/(V*V + self.delta*V + self.epsilon))
+                T = self.T
+                if not isinstance(V, (float, int)):
+                    import mpmath as mp
+                    # Need to complete the calculation with the RT term having higher precision as well
+                    T = mp.mpf(T)
+                self.P = float(R*T/(V-self.b) - self.a_alpha/(V*V + self.delta*V + self.epsilon))
 #                self.P = R*self.T/(V-self.b) - self.a_alpha/(V*(V + self.delta) + self.epsilon)
             Vs = [V, 1.0j, 1.0j]
         else:
@@ -1046,6 +1051,7 @@ should be calculated by this method, in a user subclass.')
 
     @staticmethod
     def volume_solutions_mpmath(T, P, b, delta, epsilon, a_alpha, quick=True, dps=30):
+        # Tried to remove some green on physical TV with more than 30, could not
         # 30 is fine, but do not dercease further!
         # No matter the precision, still cannot get better
         # Need to switch from `rindroot` to an actual cubic solution in mpmath

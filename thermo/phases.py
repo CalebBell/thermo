@@ -1309,15 +1309,21 @@ class EOSGas(Phase):
     def V_iter(self):
         # Can be some severe issues in the very low pressure/temperature range
         # For that reason, consider not doing TV iterations.
+        
+        
         T, P = self.T, self.P
-        if 0 and ((P < 1.0 or T < 1.0) or (P/T < 500.0 and T < 50.0)):
-            eos_mix = self.eos_mix
-            try:
-                return eos_mix.V_g_mpmath.real
-            except:
-                return eos_mix.V_l_mpmath.real
-        else:
-            return self.V()
+#        if 0 and ((P < 1.0 or T < 1.0) or (P/T < 500.0 and T < 50.0)):
+        eos_mix = self.eos_mix
+        V = self.V()
+        P_err = abs((R*T/(V-eos_mix.b) - eos_mix.a_alpha/(V*V + eos_mix.delta*V + eos_mix.epsilon)) - P)
+        if (P_err/P) < 1e-9:
+            return V
+        try:
+            return eos_mix.V_g_mpmath.real
+        except:
+            return eos_mix.V_l_mpmath.real
+#        else:
+#            return self.V()
         
     def lnphis(self):
         try:

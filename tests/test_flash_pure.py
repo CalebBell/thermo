@@ -178,12 +178,15 @@ def test_TWU_SRK_PR_T_alpha_interp_failure_2():
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("auto_range", ['realistic'])
+@pytest.mark.parametrize("auto_range", ['physical', 'realistic'])
 @pytest.mark.parametrize("fluid_idx", constants.cmps)
 @pytest.mark.parametrize("eos", eos_mix_list)
 def test_TV_plot(fluid_idx, eos, auto_range):
     '''
-    Even with mpmath cubics just do not like to behave; skeptical it can be done
+    A pretty wide region here uses mpmath to polish the volume root,
+    and calculate the pressure from the TV specs. This is very important! For
+    the liquid region, there is not enough pressure dependence of volume for
+    good calculations to work.
     '''
     T, P = 298.15, 101325.0
     zs = [1.0]
@@ -198,7 +201,7 @@ def test_TV_plot(fluid_idx, eos, auto_range):
     flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
 
     
-    res = flasher.TPV_inputs(zs=zs, pts=100, spec0='T', spec1='P', check0='T', check1='V', prop0='P',
+    res = flasher.TPV_inputs(zs=zs, pts=50, spec0='T', spec1='P', check0='T', check1='V', prop0='P',
                            trunc_err_low=1e-10, 
                            trunc_err_high=1, color_map=cm_flash_tol(),
                            auto_range=auto_range, 
@@ -216,12 +219,11 @@ def test_TV_plot(fluid_idx, eos, auto_range):
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("auto_range", ['realistic'])
+@pytest.mark.parametrize("auto_range", ['physical', 'realistic'])
 @pytest.mark.parametrize("fluid_idx", constants.cmps)
 @pytest.mark.parametrize("eos", eos_mix_list)
 def test_PS_plot(fluid_idx, eos, auto_range):
     '''
-    The non-smooth region at ~.01 P causes lots of issues
     '''
     T, P = 298.15, 101325.0
     zs = [1.0]
@@ -235,8 +237,7 @@ def test_PS_plot(fluid_idx, eos, auto_range):
 
     flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
 
-    #Physical?
-    res = flasher.TPV_inputs(zs=zs, pts=100, spec0='T', spec1='P', check0='P', check1='S', prop0='T',
+    res = flasher.TPV_inputs(zs=zs, pts=60, spec0='T', spec1='P', check0='P', check1='S', prop0='T',
                            trunc_err_low=1e-10, 
                            trunc_err_high=1, color_map=cm_flash_tol(),
                            auto_range=auto_range, 
