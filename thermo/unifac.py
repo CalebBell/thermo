@@ -1195,6 +1195,8 @@ def UNIFAC(T, xs, chemgroups, cached=None, subgroup_data=None,
 
     Examples
     --------
+    Hexane and 2-butanone (MEK)
+    
     >>> UNIFAC(T=333.15, xs=[0.5, 0.5], chemgroups=[{1:2, 2:4}, {1:1, 2:1, 18:1}])
     [1.4276025835624173, 1.3646545010104225]
     
