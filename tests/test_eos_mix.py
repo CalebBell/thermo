@@ -2962,4 +2962,7 @@ def test_solve_T_issues():
 
     # Initial liquid guess was leading to bad answers
     obj = SRKMIX(Tcs=[611.7], Pcs=[2110000.0], omegas=[0.49], kijs=[[0]], zs=[1], T=636.8250, P=7934096.6658)
-    assert_allclose(obj.to(zs=[1], V=obj.V_l, P=obj.P).T, obj.T, rtol=1e-7)    
+    assert_allclose(obj.to(zs=[1], V=obj.V_l, P=obj.P).T, obj.T, rtol=1e-7)  
+    
+    obj = SRKMIX(Tcs=[5.1889], Pcs=[226968.0], omegas=[-0.387], kijs=[[0]], zs=[1], T=1.0405, P=6.9956)
+    assert_allclose(obj.to(zs=[1], V=obj.V_l, P=obj.P).T, obj.T, rtol=1e-7)
