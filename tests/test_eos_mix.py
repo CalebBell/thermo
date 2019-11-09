@@ -2959,4 +2959,7 @@ def test_volume_issues():
 def test_solve_T_issues():
     obj = SRKMIX(Tcs=[611.7], Pcs=[2110000.0], omegas=[0.49], kijs=[[0]], zs=[1], V=0.00042281487181772243, P=247707635.59916735)
     assert_allclose(obj.T, 10000, rtol=1e-9)
-    
+
+    # Initial liquid guess was leading to bad answers
+    obj = SRKMIX(Tcs=[611.7], Pcs=[2110000.0], omegas=[0.49], kijs=[[0]], zs=[1], T=636.8250, P=7934096.6658)
+    assert_allclose(obj.to(zs=[1], V=obj.V_l, P=obj.P).T, obj.T, rtol=1e-7)    

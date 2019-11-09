@@ -2133,6 +2133,8 @@ class FlashBase(object):
                         pass
                     if method == 'rtol':
                         err = abs((act - calc)/act)
+                if err > 1e-6:
+                    print(matrix_flashes[i][j], matrix_spec_flashes[i][j])
                 row.append(err)
             matrix.append(row)
         return matrix

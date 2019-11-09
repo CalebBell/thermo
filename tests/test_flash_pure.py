@@ -28,6 +28,7 @@ from fluids.numerics import *
 from math import *
 import json
 import os
+import numpy as np
 
 from thermo.test_utils import *
 import matplotlib.pyplot as plt
@@ -64,9 +65,9 @@ from thermo.eos_mix import eos_mix_list
 #eos_mix_list = [TWUPRMIX, TWUSRKMIX] # issues
 @pytest.mark.slow
 @pytest.mark.parametrize("auto_range", ['realistic', 'physical'])
-@pytest.mark.parametrize("fluid_idx", constants.cmps)
+@pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("eos", eos_mix_list)
-def test_PV_plot(fluid_idx, eos, auto_range):
+def test_PV_plot(fluid, eos, auto_range):
     '''
     Normally about 16% of the realistic plot overlaps with the physical. However,
     the realistic is the important one, so do not use fewer points for it.
@@ -75,7 +76,8 @@ def test_PV_plot(fluid_idx, eos, auto_range):
     '''
     T, P = 298.15, 101325.0
     zs = [1.0]
-    fluid = pure_fluids[fluid_idx]
+    fluid_idx = pure_fluids.index(fluid)
+    
     pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
     
     '''
@@ -179,9 +181,9 @@ def test_TWU_SRK_PR_T_alpha_interp_failure_2():
 
 @pytest.mark.slow
 @pytest.mark.parametrize("auto_range", ['physical', 'realistic'])
-@pytest.mark.parametrize("fluid_idx", constants.cmps)
+@pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("eos", eos_mix_list)
-def test_TV_plot(fluid_idx, eos, auto_range):
+def test_TV_plot(fluid, eos, auto_range):
     '''
     A pretty wide region here uses mpmath to polish the volume root,
     and calculate the pressure from the TV specs. This is very important! For
@@ -190,7 +192,7 @@ def test_TV_plot(fluid_idx, eos, auto_range):
     '''
     T, P = 298.15, 101325.0
     zs = [1.0]
-    fluid = pure_fluids[fluid_idx]
+    fluid_idx = pure_fluids.index(fluid)
     pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
     kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
                   HeatCapacityGases=pure_props.HeatCapacityGases)
@@ -216,18 +218,25 @@ def test_TV_plot(fluid_idx, eos, auto_range):
     key = '%s - %s - %s - %s' %('TV', eos.__name__, auto_range, fluid)
     plot_fig.savefig(os.path.join(path, key + '.png'))
     plt.close()
+    
+    max_err = np.max(np.abs(errs))
+    
+    try:
+        assert max_err < 5e-9
+    except:
+        assert max_err < 5e-9
 
 
 @pytest.mark.slow
 @pytest.mark.parametrize("auto_range", ['physical', 'realistic'])
-@pytest.mark.parametrize("fluid_idx", constants.cmps)
+@pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("eos", eos_mix_list)
-def test_PS_plot(fluid_idx, eos, auto_range):
+def test_PS_plot(fluid, eos, auto_range):
     '''
     '''
     T, P = 298.15, 101325.0
     zs = [1.0]
-    fluid = pure_fluids[fluid_idx]
+    fluid_idx = pure_fluids.index(fluid)
     pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
     kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
                   HeatCapacityGases=pure_props.HeatCapacityGases)
@@ -256,12 +265,12 @@ def test_PS_plot(fluid_idx, eos, auto_range):
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("fluid_idx", constants.cmps)
+@pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("eos", eos_mix_list)
-def test_V_G_min_plot(fluid_idx, eos):
+def test_V_G_min_plot(fluid, eos):
     T, P = 298.15, 101325.0
     zs = [1.0]
-    fluid = pure_fluids[fluid_idx]
+    fluid_idx = pure_fluids.index(fluid)
     pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
     
     kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
@@ -282,12 +291,12 @@ def test_V_G_min_plot(fluid_idx, eos):
     plt.close()
 
 @pytest.mark.slow
-@pytest.mark.parametrize("fluid_idx", constants.cmps)
+@pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("eos", eos_mix_list)
-def test_V_error_plot(fluid_idx, eos):
+def test_V_error_plot(fluid, eos):
     T, P = 298.15, 101325.0
     zs = [1.0]
-    fluid = pure_fluids[fluid_idx]
+    fluid_idx = pure_fluids.index(fluid)
     pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
     
     kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
@@ -307,3 +316,7 @@ def test_V_error_plot(fluid_idx, eos):
         
     plot_fig.savefig(os.path.join(path, key + '.png'))
     plt.close()
+    
+    
+    max_err = np.max(errs)
+    assert max_err < 1e-8

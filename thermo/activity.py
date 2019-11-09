@@ -37,7 +37,7 @@ __all__ = ['K_value', 'Wilson_K_value', 'flash_wilson',
            'identify_phase_mixture', 'Pbubble_mixture', 'bubble_at_P',
            'Pdew_mixture', 'GibbsExcess', 'IdealSolution']
 
-from fluids.numerics import IS_PYPY, one_epsilon_larger, one_epsilon_smaller
+from fluids.numerics import IS_PYPY, one_epsilon_larger, one_epsilon_smaller, NotBoundedError
 from fluids.numerics import newton_system, roots_cubic, roots_quartic, horner, py_brenth as brenth, py_newton as newton, oscillation_checker, roots_cubic_a1# Always use this method for advanced features
 from thermo.utils import exp, log
 from thermo.utils import none_and_length_check, dxs_to_dns, dxs_to_dn_partials, d2xs_to_dxdn_partials, dns_to_dn_partials
@@ -410,7 +410,7 @@ def flash_wilson(zs, Tcs, Pcs, omegas, T=None, P=None, VF=None):
             T_low_guess = sum([.1*Tcs[i]*zs[i] for i in cmps])
             try:
                 T_dew = brenth(to_solve, T_MAX, T_low_guess)
-            except ValueError:
+            except NotBoundedError:
                 raise Exception("Bisecting solver could not find a solution between %g K and %g K" %(T_MAX, T_low_guess))
         return flash_wilson(zs, Tcs, Pcs, omegas, T=T_dew, P=P)
     elif P is not None and VF == 0:
@@ -431,7 +431,7 @@ def flash_wilson(zs, Tcs, Pcs, omegas, T=None, P=None, VF=None):
             T_low_guess = sum([.1*Tcs[i]*zs[i] for i in cmps])
             try:
                 T_bubble = brenth(to_solve, T_MAX, T_low_guess)
-            except ValueError:
+            except NotBoundedError:
                 raise Exception("Bisecting solver could not find a solution between %g K and %g K" %(T_MAX, T_low_guess))
             
         return flash_wilson(zs, Tcs, Pcs, omegas, T=T_bubble, P=P)
@@ -580,7 +580,7 @@ def flash_Tb_Tc_Pc(zs, Tbs, Tcs, Pcs, T=None, P=None, VF=None):
             checker = oscillation_checker(both_sides=True, minimum_progress=.05)
             try:
                 T_dew = brenth(to_solve, T_MAX, T_low_guess)
-            except ValueError:
+            except NotBoundedError:
                 raise Exception("Bisecting solver could not find a solution between %g K and %g K" %(T_MAX, T_low_guess))
         return flash_Tb_Tc_Pc(zs, Tbs, Tcs, Pcs, T=T_dew, P=P)
     
@@ -612,7 +612,7 @@ def flash_Tb_Tc_Pc(zs, Tbs, Tcs, Pcs, T=None, P=None, VF=None):
             T_low_guess = 0.1*Tc_pseudo
             try:
                 T_bubble = brenth(to_solve, T_MAX, T_low_guess)
-            except ValueError:
+            except NotBoundedError:
                 raise Exception("Bisecting solver could not find a solution between %g K and %g K" %(T_MAX, T_low_guess))
             
         return flash_Tb_Tc_Pc(zs, Tbs, Tcs, Pcs, T=T_bubble, P=P)
@@ -636,10 +636,10 @@ def Rachford_Rice_polynomial_3(zs, Cs):
     x0 = C0*z0
     x1 = C1*z1
     x2 = C2*z2
-    a = C0*C1*C2*(z0 + z1 + z2)
+    a_inv = 1.0/(C0*C1*C2*(z0 + z1 + z2))
     return [1.0,
-            (C0*x1 + C0*x2 + C1*x0 + C1*x2 + C2*x0 + C2*x1)/a,
-            (x0 + x1 + x2)/a]
+            (C0*(x1+x2) + C1*(x0 + x2) + C2*(x0 + x1))*a_inv,
+            (x0 + x1 + x2)*a_inv]
 
 def Rachford_Rice_polynomial_4(zs, Cs):
     z0, z1, z2, z3 = zs
@@ -703,17 +703,17 @@ def Rachford_Rice_polynomial_5(zs, Cs):
     x32 = C3*x6
     x33 = C2*x9
     x34 = C2*x12    
-    a = C0*C1*C2*C3*C4*(z0 + z1 + z2 + z3 + z4)
+    a_inv = 1.0/(C0*C1*C2*C3*C4*(z0 + z1 + z2 + z3 + z4))
     b = (C2*x11 + C2*x14 + C3*x14 + C3*x2 + C3*x21 + C3*x29 + C3*x5 + C3*x8
          + C4*x11 + C4*x15 + C4*x16 + C4*x18 + C4*x19 + C4*x2 + C4*x20 + C4*x23
-         + C4*x25 + C4*x27 + C4*x5 + C4*x8)/a
+         + C4*x25 + C4*x27 + C4*x5 + C4*x8)*a_inv
     c = (C3*x13 + C3*x28 + C3*x34 + C4*x1 + C4*x10 + C4*x17 + C4*x22 + C4*x24 
          + C4*x26 + C4*x30 + C4*x31 + C4*x32 + C4*x33 + C4*x4 + C4*x7 + x11
          + x14 + x15 + x16 + x18 + x19 + x2 + x20 + x21 + x23 + x25 + x27 
-         + x29 + x5 + x8)/a
+         + x29 + x5 + x8)*a_inv
     d = (C3*x12 + C4*x0 + C4*x3 + C4*x6 + C4*x9 + x1 + x10 + x13 + x17 + x22 
-         + x24 + x26 + x28 + x30 + x31 + x32 + x33 + x34 + x4 + x7)/a
-    e = (x0 + x12 + x3 + x6 + x9)/a
+         + x24 + x26 + x28 + x30 + x31 + x32 + x33 + x34 + x4 + x7)*a_inv
+    e = (x0 + x12 + x3 + x6 + x9)*a_inv
     return [1.0, b, c, d, e]
 
     
@@ -1744,8 +1744,8 @@ def Rachford_Rice_solution_LN2(zs, Ks, guess=None):
             x5x1x6 = x5*x1x6
             x7 = zix5*x5x1x6
             dF0 -= x7
-            ddF0 += x7*(t51 + x5x1x6 + x5x1x6)      
-        
+            ddF0 += x7*(t51 + x5x1x6 + x5x1x6)
+
         return F0, dF0, ddF0
     
     # Suggests guess V_over_F_min, not using
@@ -1758,8 +1758,25 @@ def Rachford_Rice_solution_LN2(zs, Ks, guess=None):
         low, high = V_over_F_min + 1e-8, V_over_F_max - 1e-8
         low = -log((V_over_F_max-low)/(low-V_over_F_min))
         high = -log((V_over_F_max-high)/(high-V_over_F_min))
-        
-        V_over_F = brenth(lambda x: err(x)[0], low, high)
+        try:
+            V_over_F = brenth(lambda x: err(x)[0], low, high)
+        except NotBoundedError:
+            pass
+            # err_low = 1e100
+            # try:
+            #     err_low = Rachford_Rice_flash_error(V_over_F_min, zs, Ks)
+            # except ZeroDivisionError:
+            #     pass
+            # if abs(err_low) < 1e-12:
+            #     V_over_F = -log((V_over_F_max - V_over_F_min) / (V_over_F_min - V_over_F_min))
+            # err_high = 1e100
+            # try:
+            #     err_high = Rachford_Rice_flash_error(V_over_F_max, zs, Ks)
+            # except ZeroDivisionError:
+            #     pass
+            # if abs(err_high) < 1e-12:
+            #     V_over_F = -log((V_over_F_max - V_over_F_max) / (V_over_F_max - V_over_F_min))
+
     V_over_F = (V_over_F_min + (V_over_F_max - V_over_F_min)/(1.0 + exp(-V_over_F)))
     
     xs = [zs[i]/(1.0 + V_over_F*(Ks[i] - 1.0)) for i in cmps]

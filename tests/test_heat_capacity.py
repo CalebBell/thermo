@@ -27,7 +27,7 @@ from thermo.heat_capacity import *
 from thermo.heat_capacity import TRCIG, POLING, CRCSTD, COOLPROP, POLING_CONST, VDI_TABULAR
 from random import uniform
 from math import *
-from fluids.numerics import linspace, logspace
+from fluids.numerics import linspace, logspace, NotBoundedError
 
 def test_heat_capacity_CSP():
     # Example is for cis-2-butene at 350K from Poling. It is not consistent with
@@ -163,7 +163,7 @@ def test_Lastovka_Shaw_T_for_Sm_fuzz():
                 except Exception as e:
                     if 'negative temperature' in str(e):
                         continue
-                    elif isinstance(e, ValueError):
+                    elif isinstance(e, NotBoundedError):
                         continue
                     else:
                         raise ValueError("Could not converge with unexpected error")

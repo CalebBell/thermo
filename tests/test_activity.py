@@ -210,6 +210,19 @@ def test_flash_solution_algorithms():
         V_over_F, xs, ys = algo(zs=zs, Ks=Ks)
         assert_allclose(V_over_F, V_over_F_expect)
         assert_allclose(xs, xs_expect)
+        
+        # Hard to resolve two test; LN2 fails, its objective function does not
+        # appear to have any zeroes due to numerical issues.
+        # How to handle?
+        # This is exactly on the bound of the objective function
+#        zs, Ks = [.01, .99],  [2.7433923306443067e-11, 1.26445046138136]
+#        V_over_F_expect = 0.952185734369369
+#        xs_expect = [0.20914260341855995, 0.7908573965814395]
+#        ys_expect =  [5.737602142294611e-12, 0.9999999999942625]
+#        V_over_F, xs, ys = algo(zs=zs, Ks=Ks)
+#        assert_allclose(V_over_F, V_over_F_expect)
+#        assert_allclose(xs, xs_expect)
+#        assert_allclose(ys, ys_expect)
 
         # Dummpy 3 test
         zs = [0.5, 0.3, 0.2]
@@ -806,19 +819,14 @@ def test_flash_wilson_7_pts_44_components():
     assert_allclose(g[2], .1, atol=1e-5)
     
 
-@pytest.mark.xfail
-def test_flash_wilson_failure_singularity():
+def test_flash_wilson_singularity():
     '''TODO: Singularity detection and lagrange multipliers to avoid them
     '''
-    m = Mixture(['methane', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10'], zs=[.1]*10, T=300, P=1E6)
-    pkg = GceosBase(eos_mix=PRMIX, VaporPressures=m.VaporPressures, Tms=m.Tms, Tbs=m.Tbs, 
-                     Tcs=m.Tcs, Pcs=m.Pcs, omegas=m.omegas, kijs=None, eos_kwargs=None)
+    # methane, hydrogen
+    zs, Tcs, Pcs, omegas = [0.01, 0.99], [190.564, 33.2], [4599000.0, 1296960.0], [0.008, -0.22]
     
-    m = Mixture(['methane', 'hydrogen'], zs=[.01, .99], T=300, P=1E6)
-    _, _, VF, _, _ = flash_wilson(zs=m.zs, Tcs=m.Tcs, Pcs=m.Pcs, omegas=m.omegas, P=1e6, VF=.95)
-    assert_allclose(VF, 0.95)
-    # .9521857343693697 is where the point below lands
-    flash_wilson(zs=m.zs, Tcs=m.Tcs, Pcs=m.Pcs, omegas=m.omegas, P=1e6, T=33)
+    _, _, VF, xs, ys = flash_wilson(zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas, P=1e6, T=33)
+    assert_allclose(VF, 0.952185734369369)
     
     
     

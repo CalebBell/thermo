@@ -623,7 +623,7 @@ should be calculated by this method, in a user subclass.')
             #     return T_brenth
 
 
-        if abs(err_ig) < abs(err_liq):
+        if abs(err_ig) < abs(err_liq) or T_guess_liq > 20000:
             T_guess = T_guess_ig
             f0 = err_ig
         else:
