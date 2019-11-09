@@ -631,13 +631,24 @@ should be calculated by this method, in a user subclass.')
             f0 = err_liq
         # T_guess = self.Tc*0.5
         # ytol=T_guess*1e-9,
-        T_secant = secant(to_solve, T_guess, low=1e-12, xtol=1e-12, f0=f0)
+        try:
+            T_secant = secant(to_solve, T_guess, low=1e-12, xtol=1e-12, f0=f0)
+        except:
+            T_guess = T_guess_ig if T_guess != T_guess_ig else T_guess_liq
+            try:
+                T_secant = secant(to_solve, T_guess, low=1e-12, xtol=1e-12, f0=f0)
+            except:
+                if T_brenth is None:
+                    # Hardcoded limits, all the cleverness sometimes does not work
+                    T_brenth = brenth(to_solve, 1e-3, 1e4, xtol=1e-12)
 
         if T_brenth is None:
             return T_secant
-        if abs(T_brenth - 298.15) < abs(T_secant - 298.15):
+        elif T_brenth is not None and T_secant is not None and (abs(T_brenth - 298.15) < abs(T_secant - 298.15)):
             return T_brenth
-        return T_secant
+        elif T_secant is not None:
+            return T_secant
+        return T_brenth
 
         # return min(T_brenth, T_secant)
 
