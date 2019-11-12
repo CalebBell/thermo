@@ -2887,8 +2887,8 @@ class FlashPureVLS(FlashBase):
         if G_VL < G_min:
             skip_VL = False
 
-            if fixed_var == 'P' and spec == 'S' and fixed_var_val < 1.0:
-                skip_VL = True
+#            if fixed_var == 'P' and spec == 'S' and fixed_var_val < 1.0 and 0:
+#                skip_VL = True
 
             if not skip_VL:
                 G_min = G_VL

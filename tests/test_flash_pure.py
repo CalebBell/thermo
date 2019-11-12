@@ -443,19 +443,22 @@ def test_VS_plot(fluid, eos, auto_range):
 
 @pytest.mark.slow
 @pytest.mark.parametrize("fluid", pure_fluids)
-@pytest.mark.parametrize("eos", eos_mix_list)
+@pytest.mark.parametrize("eos", eos_list)
 def test_V_G_min_plot(fluid, eos):
     T, P = 298.15, 101325.0
     zs = [1.0]
     fluid_idx = pure_fluids.index(fluid)
     pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
     
-    kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
-                  HeatCapacityGases=pure_props.HeatCapacityGases)
+#    kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
+#                  HeatCapacityGases=pure_props.HeatCapacityGases)
+#    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
     
-    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
-    errs, plot_fig = gas.eos_mix.volumes_G_min(plot=True, show=False, pts=150,
-                                               Tmin=1e-4, Tmax=1e4, Pmin=1e-2, Pmax=1e9)
+    kwargs = dict(Tc=pure_const.Tcs[0], Pc=pure_const.Pcs[0], omega=pure_const.omegas[0])
+    
+    gas = eos(T=T, P=P, **kwargs)
+    errs, plot_fig = gas.volumes_G_min(plot=True, show=False, pts=150,
+                                       Tmin=1e-4, Tmax=1e4, Pmin=1e-2, Pmax=1e9)
 
     
     path = os.path.join(pure_surfaces_dir, fluid, "V_G_min")
@@ -548,6 +551,8 @@ def test_TS_plot(fluid, eos, auto_range):
 @pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("eos", eos_mix_list)
 def test_V_error_plot(fluid, eos):
+    if eos == IGMIX:
+        return
     T, P = 298.15, 101325.0
     zs = [1.0]
     fluid_idx = pure_fluids.index(fluid)
@@ -597,7 +602,10 @@ def test_some_flashes_bad():
 
 
 def test_PS_1P_vs_VL_issue0():
-    # Hardcoded fix almost. Needs a theoretical basis.
+    '''Made me think there was something wrong with enthalpy maximization.
+    However, it was just a root issue.
+    '''
+
     constants = ChemicalConstantsPackage(Tcs=[647.14], Pcs=[22048320.0], omegas=[0.344], MWs=[18.01528],  CASs=['7732-18-5'],)
     HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))]
     correlations = PropertyCorrelationPackage(constants, HeatCapacityGases=HeatCapacityGases)
@@ -608,6 +616,7 @@ def test_PS_1P_vs_VL_issue0():
     gas = EOSGas(PR78MIX, T=200, P=1e5, zs=[1], **kwargs)
     flasher = FlashPureVLS(constants, correlations, gas, [liquid], []) # 
     
-    obj = flasher.flash(T=166.0882782627715, P=0.015361749466718281)
-    hit = flasher.flash(P=obj.P, S=obj.S())
-    assert_allclose(hit.T, obj.T)
+    for P in (0.01, 0.015361749466718281):
+        obj = flasher.flash(T=166.0882782627715, P=P)
+        hit = flasher.flash(P=obj.P, S=obj.S())
+        assert_allclose(hit.T, obj.T)
