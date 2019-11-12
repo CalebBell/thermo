@@ -1018,6 +1018,11 @@ should be calculated by this method, in a user subclass.')
     #            if abs(err*P_inv) > 1e-2 and (i.real != 0.0 and abs(i.imag/i.real) < 1E-10 ):
                     failed = True
 #                    break
+                if not (.95 < (Vi/V).real < 1.05):
+                    # Cannot let a root become another root
+                    failed = True
+                    max_err = 1e100
+                    break
                 Vs[i] = V
                 max_err = max(max_err, rel_err)
         except ZeroDivisionError:
@@ -1088,9 +1093,10 @@ should be calculated by this method, in a user subclass.')
         # Need to switch from `rindroot` to an actual cubic solution in mpmath
         # Three roots not found in some cases
         # PRMIX(T=1e-2, P=1e-5, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]]).volume_error()
-        
+        # Once found it possible to compute VLE down to 0.03 Tc with ~400 steps and ~500 dps. 
+        # need to start with a really high dps to get convergence or it is discontinuous
         import mpmath as mp
-        mp.mp.dps = dps
+        mp.mp.dps = dps# + 400
         b, T, P, epsilon, delta, a_alpha = [mp.mpf(i) for i in [b, T, P, epsilon, delta, a_alpha]]
         roots = None
         if 1:
@@ -1105,14 +1111,27 @@ should be calculated by this method, in a user subclass.')
             c = (thetas + epsilons - deltas*(B + 1.0))
             d = -(epsilons*(B + 1.0) + thetas*etas)
             
+            extraprec = 15
+            # extraprec alone is not enough to converge everything
             try:
                 # found case 20 extrapec not enough, increased to 30
                 # Found another case needing 40
-                roots = mp.polyroots([1.0, b, c, d], extraprec=40, maxsteps=100)
+                for i in range(4):
+                    try:
+                        # Found 1 case 100 steps not enough needed 200
+                        roots = mp.polyroots([mp.mpf(1.0), b, c, d], extraprec=extraprec, maxsteps=400)
+                        break
+                    except Exception as e:
+                        extraprec += 20
+                        if i == 3:
+                            raise e
+
+                if all(i == 0 or i == 1 for i in roots):
+                    return GCEOS.volume_solutions_mpmath(T, P, b, delta, epsilon, a_alpha, quick=True, dps=dps*2)
             except:
                 try:
                     guesses = GCEOS.volume_solutions_fast(T, P, b, delta, epsilon, a_alpha)
-                    roots = mp.polyroots([1.0, b, c, d], extraprec=40, maxsteps=100, roots_init=guesses)
+                    roots = mp.polyroots([mp.mpf(1.0), b, c, d], extraprec=40, maxsteps=100, roots_init=guesses)
                 except:
                     pass
 #            roots = np.roots([1.0, b, c, d]).tolist()
@@ -1172,7 +1191,7 @@ should be calculated by this method, in a user subclass.')
         Vs_good = self.volume_solutions_mpmath(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
         Vs_filtered = [i.real for i in Vs_good if (i.real ==0 or abs(i.imag/i.real) < 1E-20) and i.real > self.b]
         if len(Vs_filtered) in (2, 3):
-            Vl, Vg = min(Vs_filtered), max(Vs_filtered)
+            Vl_mpmath, Vg_mpmath = min(Vs_filtered), max(Vs_filtered)
         else:
             if hasattr(self, 'V_l') and hasattr(self, 'V_g'):
                 # Wrong number of roots!
@@ -1281,6 +1300,39 @@ should be calculated by this method, in a user subclass.')
             raise ValueError("Not solved for that volume")
         return self._mpmath_volume_matching(self.V_g)
     
+    def fugacities_mpmath(self, dps=30):
+        # At one point thought maybe the fugacity equation was the source of error.
+        # No. always the volume equation.
+        import mpmath as mp
+        mp.mp.dps = dps
+        R_mp = mp.mpf(R)
+        b, T, P, epsilon, delta, a_alpha = self.b, self.T, self.P, self.epsilon, self.delta, self.a_alpha
+        b, T, P, epsilon, delta, a_alpha = [mp.mpf(i) for i in [b, T, P, epsilon, delta, a_alpha]]
+
+        Vs_good = self.volume_solutions_mpmath(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
+        Vs_filtered = [i.real for i in Vs_good if (i.real == 0 or abs(i.imag/i.real) < 1E-20) and i.real > self.b]
+
+        if len(Vs_filtered) in (2, 3):
+            Vs = min(Vs_filtered), max(Vs_filtered)
+        else:
+            if hasattr(self, 'V_l') and hasattr(self, 'V_g'):
+                # Wrong number of roots!
+                raise ValueError("Error")
+            Vs = Vs_filtered
+#            elif hasattr(self, 'V_l'):
+#                Vs = Vs_filtered[0]
+#            elif hasattr(self, 'V_g'):
+#                Vg_mpmath = Vs_filtered[0]
+                
+        log, exp, atanh, sqrt = mp.log, mp.exp, mp.atanh, mp.sqrt
+    
+        return [P*exp((P*V + R_mp*T*log(V) - R_mp*T*log(P*V/(R_mp*T)) - R_mp*T*log(V - b)
+                       - R_mp*T - 2*a_alpha*atanh(2*V/sqrt(delta**2 - 4*epsilon)
+                       + delta/sqrt(delta**2 - 4*epsilon)).real/sqrt(delta**2 - 4*epsilon))/(R_mp*T))
+                for V in Vs]
+    
+    
+    
     def volume_errors(self, Tmin=1e-4, Tmax=1e4, Pmin=1e-2, Pmax=1e9,
                           pts=50, plot=False, show=False, trunc_err_low=1e-18,
                           trunc_err_high=1.0, color_map=None, timing=False):
@@ -1308,6 +1360,8 @@ should be calculated by this method, in a user subclass.')
                     val = perf_counter() - t0
                 else:
                     val = float(obj.volume_error())
+                    if val > 1e-7:
+                        print([T, P])
                 err_row.append(val)
             errs.append(err_row)
 
@@ -1653,38 +1707,42 @@ should be calculated by this method, in a user subclass.')
                 e = self.to_TP(T, P)
                 try:
                     fugacity_l = e.fugacity_l
-                except AttributeError as e:
-                    raise e
+                except AttributeError as err:
+                    raise err
                 
                 try:
                     fugacity_g = e.fugacity_g
-                except AttributeError as e:
-                    raise e
+                except AttributeError as err:
+                    raise err
                 
                 err = fugacity_l - fugacity_g
                 
-                d_err_d_P = e.dfugacity_dP_l - e.dfugacity_dP_g
+                d_err_d_P = e.dfugacity_dP_l - e.dfugacity_dP_g # -1 for low pressure
 #                print('err', err, 'd_err_d_P', d_err_d_P, 'P', P)
                 return err, d_err_d_P
             try:
-                Psat = newton(to_solve_newton, Psat, high=Pc, fprime=True, 
+                try:
+                    high = self.P_discriminant_zero()
+                except:
+                    high = Pc
+                Psat = newton(to_solve_newton, Psat, high=high, fprime=True, 
                               xtol=1e-12, ytol=1e-6*Psat, require_eval=False) #  ,
 #                print(to_solve_newton(Psat), 'newton error')
                 converged = True
             except:
                 pass
-            
+                            
             if not converged:
                 def to_solve_bisect(P):
                     e = self.to_TP(T, P)
                     try:
                         fugacity_l = e.fugacity_l
-                    except AttributeError as e:
+                    except AttributeError as err:
                         return 1e20
                     
                     try:
                         fugacity_g = e.fugacity_g
-                    except AttributeError as e:
+                    except AttributeError as err:
                         return -1e20
                     err = fugacity_l - fugacity_g
 #                    print(err, 'err', 'P', P)
@@ -1936,6 +1994,53 @@ should be calculated by this method, in a user subclass.')
         Vs = [i.real for i in Vs]
         V_l, V_g = min(Vs), max(Vs)
         return dPsat_dT*T*(V_g - V_l)
+
+    def Psat_errors(self, Tmin=1e-4, Tmax=None, pts=50, plot=False, show=False, 
+                    trunc_err_low=1e-18, trunc_err_high=1.0):
+        if Tmax is None:
+            Tmax = self.Tc
+        Ts = logspace(log10(Tmin), log10(Tmax), pts)
+        
+
+        Psats_num, Psats_fit = [], []        
+        for T in Ts:
+            err_row = []
+
+            try:
+                Psats_num.append(self.Psat(T, polish=True))
+            except:
+                Psats_num.append(self.Pc)
+
+            Psats_fit.append(self.Psat(T, polish=False))
+
+        errs = np.array([abs(i-j)/i for i, j in zip(Psats_num, Psats_fit)])
+        if plot:
+            import matplotlib.pyplot as plt
+            fig, ax = plt.subplots()
+            if trunc_err_low is not None:
+                errs[np.where(abs(errs) < trunc_err_low)] = trunc_err_low
+            if trunc_err_high is not None:
+                errs[np.where(abs(errs) > trunc_err_high)] = trunc_err_high
+                            
+            plt.plot(Ts, errs)
+            ax.set_yscale('log')
+            ax.set_xscale('log')
+            ax.set_xlabel('T')
+            ax.set_ylabel('err')
+            
+            max_err = np.max(errs)
+            if trunc_err_low is not None and max_err < trunc_err_low:
+                max_err = 0
+            if trunc_err_high is not None and max_err > trunc_err_high:
+                max_err = trunc_err_high
+            
+            ax.set_title('Vapor pressure validation; max rel err %.4e' %(max_err))
+            if show:
+                plt.show()
+                
+            return errs, Psats_num, Psats_fit, fig
+        else:
+            return errs, Psats_num, Psats_fit
     
     def a_alpha_for_V(self, T, P, V):
         # Derived with sympy
@@ -5378,7 +5483,7 @@ class RK(GCEOS):
     '''
     c1 = 0.4274802335403414043909906940611707345513 # 1/(9*(2**(1/3.)-1)) 
     c2 = 0.08664034996495772158907020242607611685675 # (2**(1/3.)-1)/3 
-    epsilon = 0
+    epsilon = 0.0
     omega = None
     Zc = 1/3.
 
@@ -5397,6 +5502,7 @@ class RK(GCEOS):
                         2.0373765879672795e-12, -8.507821454718095e-13, 3.4975627537410514e-13, -1.4468659018281038e-13,
                         6.536766028637786e-14, -2.7636123641275323e-14, 1.105377996166862e-14]
     Psat_cheb_constant_factor = (0.8551757791729341, 9.962912449541513)
+    
     Psat_cheb_coeffs_der = chebder(Psat_cheb_coeffs)
     Psat_coeffs_critical_der = polyder(Psat_coeffs_critical[::-1])[::-1]
     

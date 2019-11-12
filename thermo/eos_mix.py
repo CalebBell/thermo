@@ -304,16 +304,19 @@ class GCEOSMIX(GCEOS):
 
     def Psat(self, T, polish=False):
         if self.N == 1:
-            Tc, Pc = self.Tcs[0], self.Pcs[0]
+            Tc, Pc, omega, a = self.Tcs[0], self.Pcs[0], self.omegas[0], self.ais[0]
         else:
             zs = self.zs
-            Tc, Pc = 0.0, 0.0
+            Tcs, Pcs, omegas, ais = self.Tcs, self.Pcs, self.omegas, self.ais
+            Tc, Pc, a = 0.0, 0.0, 0.0
             for i in self.cmps:
                 Tc += Tcs[i]*zs[i]
                 Pc += Pcs[i]*zs[i]
-        self.Tc, self.Pc = Tc, Pc
+                a += ais[i]*zs[i]
+        self.Tc, self.Pc, self.omega = Tc, Pc, omega
+        self.a = a
         
-        return super(self, GCEOSMIX).Psat(T, polish=False)
+        return GCEOS.Psat(self, T, polish=False)
 
     
     def a_alpha_and_derivatives_numpy(self, a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=True, quick=True):

@@ -267,7 +267,7 @@ def test_PS_plot(fluid, eos, auto_range):
 
     max_err = np.max(errs)
     assert max_err < 1e-8
-
+#test_PS_plot("water", PR78MIX, "physical")
 
 @pytest.mark.slow
 @pytest.mark.parametrize("auto_range", ['physical', 'realistic'])
@@ -470,6 +470,39 @@ def test_V_G_min_plot(fluid, eos):
     # Not sure how to add error to this one
 
 @pytest.mark.slow
+@pytest.mark.parametrize("fluid", pure_fluids)
+@pytest.mark.parametrize("eos", eos_list)
+def test_Psat_plot(fluid, eos):
+    if eos in (IG,):
+        return
+    T, P = 298.15, 101325.0
+    zs = [1.0]
+    fluid_idx = pure_fluids.index(fluid)
+    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
+    
+    kwargs = dict(Tc=pure_const.Tcs[0], Pc=pure_const.Pcs[0], omega=pure_const.omegas[0])
+    
+    obj = eos(T=T, P=P, **kwargs)
+
+    errs, Psats_num, Psats_fit, plot_fig = obj.Psat_errors(plot=True, show=False, pts=100,
+                                     Tmin=kwargs['Tc']*.1, Tmax=kwargs['Tc'])
+
+    
+    path = os.path.join(pure_surfaces_dir, fluid, "Psat")
+    if not os.path.exists(path):
+        os.makedirs(path)
+    
+    key = '%s - %s - %s' %('Psat', eos.__name__, fluid)
+        
+    plot_fig.savefig(os.path.join(path, key + '.png'))
+    plt.close()
+    
+#    max_err = np.max(errs)
+#    assert max_err < 1e-8
+
+
+
+@pytest.mark.slow
 @pytest.mark.parametrize("auto_range", ['physical', 'realistic'])
 @pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("eos", eos_mix_list)
@@ -561,3 +594,20 @@ def test_some_flashes_bad():
     flasher = FlashPureVLS(constants, correlations, gas, [liquid], [])
         
     assert_allclose(flasher.flash(T=800, P=1e7).G(), flasher.flash(T=725.87092453, P=1e7).G(), rtol=1e-10)
+
+
+def test_PS_1P_vs_VL_issue0():
+    # Hardcoded fix almost. Needs a theoretical basis.
+    constants = ChemicalConstantsPackage(Tcs=[647.14], Pcs=[22048320.0], omegas=[0.344], MWs=[18.01528],  CASs=['7732-18-5'],)
+    HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))]
+    correlations = PropertyCorrelationPackage(constants, HeatCapacityGases=HeatCapacityGases)
+    kwargs = dict(eos_kwargs=dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas),
+                 HeatCapacityGases=HeatCapacityGases)
+    
+    liquid = EOSLiquid(PR78MIX, T=200, P=1e5, zs=[1], **kwargs)
+    gas = EOSGas(PR78MIX, T=200, P=1e5, zs=[1], **kwargs)
+    flasher = FlashPureVLS(constants, correlations, gas, [liquid], []) # 
+    
+    obj = flasher.flash(T=166.0882782627715, P=0.015361749466718281)
+    hit = flasher.flash(P=obj.P, S=obj.S())
+    assert_allclose(hit.T, obj.T)

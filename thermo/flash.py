@@ -2766,7 +2766,7 @@ class FlashPureVLS(FlashBase):
             if fixed_var == 'P' and spec == 'H':
                 fun = lambda obj: -obj.S()
             elif fixed_var == 'P' and spec == 'S':
-#                fun = lambda obj: obj.G()
+               # fun = lambda obj: obj.G()
                 fun = lambda obj: obj.H() # Michaelson
             elif fixed_var == 'V' and spec == 'U':
                 fun = lambda obj: -obj.S()
@@ -2885,15 +2885,21 @@ class FlashPureVLS(FlashBase):
         
         flash_convergence = {}
         if G_VL < G_min:
-            G_min = G_VL
-            ls = [VL_liq]
-            gas_phase = VL_gas
-            betas = [VF, 1.0 - VF]
-            ss = [] # Ensure solid unset
-            T = VL_liq.T
-            iterations = 0
-            err = 0.0
-            flash_convergence['VF flash convergence'] = {'iterations': VL_iter, 'err': VL_err}
+            skip_VL = False
+
+            if fixed_var == 'P' and spec == 'S' and fixed_var_val < 1.0:
+                skip_VL = True
+
+            if not skip_VL:
+                G_min = G_VL
+                ls = [VL_liq]
+                gas_phase = VL_gas
+                betas = [VF, 1.0 - VF]
+                ss = [] # Ensure solid unset
+                T = VL_liq.T
+                iterations = 0
+                err = 0.0
+                flash_convergence['VF flash convergence'] = {'iterations': VL_iter, 'err': VL_err}
             
         if G_SF < G_min:
             try:

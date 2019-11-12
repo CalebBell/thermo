@@ -2959,6 +2959,10 @@ def test_volume_issues():
     # still gets a pretty small max rel error (although it seems dumb)
     obj = SRKMIX(Tcs=[405.6], Pcs=[11277472.5], omegas=[0.25], kijs=[[0]], zs=[1], T=0.04229242874389471, P=0.02782559402207126)
     assert obj.volume_error() < 1e-12
+    
+    # Case where NR switches which root is converged to
+    obj = PR78MIX(Tcs=[647.14], Pcs=[22048320.0], omegas=[0.344], kijs=[[0]], zs=[1], T=494.1713361323858, P=0.13257113655901095)
+    assert obj.volume_error() < 1e-12
 
 
 def test_solve_T_issues():
