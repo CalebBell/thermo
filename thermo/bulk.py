@@ -261,6 +261,84 @@ class Bulk(Phase):
             dS_dT += betas[i]*phases[i].dS_dT()
         self._dS_dT = dS_dT
         return dS_dT
+
+    def dG_dT(self):
+        try:
+            return self._dG_dT
+        except AttributeError:
+            pass
+        
+        betas, phases = self.phase_fractions, self.phases
+        dG_dT = 0.0
+        for i in range(len(betas)):
+            dG_dT += betas[i]*phases[i].dG_dT()
+        self._dG_dT = dG_dT
+        return dG_dT
+
+    def dG_dP(self):
+        try:
+            return self._dG_dP
+        except AttributeError:
+            pass
+        
+        betas, phases = self.phase_fractions, self.phases
+        dG_dP = 0.0
+        for i in range(len(betas)):
+            dG_dP += betas[i]*phases[i].dG_dP()
+        self._dG_dP = dG_dP
+        return dG_dP
+
+    def dU_dT(self):
+        try:
+            return self._dU_dT
+        except AttributeError:
+            pass
+        
+        betas, phases = self.phase_fractions, self.phases
+        dU_dT = 0.0
+        for i in range(len(betas)):
+            dU_dT += betas[i]*phases[i].dU_dT()
+        self._dU_dT = dU_dT
+        return dU_dT
+
+    def dU_dP(self):
+        try:
+            return self._dU_dP
+        except AttributeError:
+            pass
+        
+        betas, phases = self.phase_fractions, self.phases
+        dU_dP = 0.0
+        for i in range(len(betas)):
+            dU_dP += betas[i]*phases[i].dU_dP()
+        self._dU_dP = dU_dP
+        return dU_dP
+
+    def dA_dT(self):
+        try:
+            return self._dA_dT
+        except AttributeError:
+            pass
+        
+        betas, phases = self.phase_fractions, self.phases
+        dA_dT = 0.0
+        for i in range(len(betas)):
+            dA_dT += betas[i]*phases[i].dA_dT()
+        self._dA_dT = dA_dT
+        return dA_dT
+
+    def dA_dP(self):
+        try:
+            return self._dA_dP
+        except AttributeError:
+            pass
+        
+        betas, phases = self.phase_fractions, self.phases
+        dA_dP = 0.0
+        for i in range(len(betas)):
+            dA_dP += betas[i]*phases[i].dA_dP()
+        self._dA_dP = dA_dP
+        return dA_dP
     
     def H_reactive(self):
         try:

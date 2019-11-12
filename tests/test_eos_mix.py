@@ -2955,6 +2955,11 @@ def test_volume_issues():
     TV = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=5., V=obj.V_g_mpmath)
     assert_allclose(obj.P, TV.P, rtol=1e-12)
 
+    # Case where floating point NR iteration behaves horribly, but one of the methods
+    # still gets a pretty small max rel error (although it seems dumb)
+    obj = SRKMIX(Tcs=[405.6], Pcs=[11277472.5], omegas=[0.25], kijs=[[0]], zs=[1], T=0.04229242874389471, P=0.02782559402207126)
+    assert obj.volume_error() < 1e-12
+
 
 def test_solve_T_issues():
     obj = SRKMIX(Tcs=[611.7], Pcs=[2110000.0], omegas=[0.49], kijs=[[0]], zs=[1], V=0.00042281487181772243, P=247707635.59916735)

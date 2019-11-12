@@ -38,7 +38,7 @@ from fluids.numerics import (UnconvergedError, trunc_exp, py_newton as newton,
                              py_brenth as brenth, secant, numpy as np, linspace, 
                              logspace, oscillation_checker, damping_maintain_sign,
                              oscillation_checking_wrapper, OscillationError,
-                             NoSolutionError,
+                             NoSolutionError, NotBoundedError,
                              best_bounding_bounds)
 from scipy.optimize import minimize, fsolve, root
 from thermo.utils import (exp, log, log10, floor, copysign, normalize, has_matplotlib,
@@ -1037,6 +1037,53 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
 #        print(err)
         return err
 
+    arg_fprime = fprime
+    high = None # Optional and not often used bound for newton
+    if fixed_var == 'T':
+        try:
+            fprime = False
+            phase_kwargs['P'] = 1e5 # Dummy pressure does not matter
+            transitions = phase.to_zs_TPV(**phase_kwargs).P_transitions()
+            assert len(transitions) == 1
+            if min_bound is not None and transitions[0] < min_bound:
+                raise NotBoundedError("Not likely to bound")
+            if max_bound is not None and transitions[0] > max_bound:
+                raise NotBoundedError("Not likely to bound")
+
+            delta = 1e-9
+            bracketed_high, bracketed_low = False, False
+            under_trans, above_trans = transitions[0]*(1.0 - delta), transitions[0]*(1.0 + delta)
+            bounding_points = [under_trans, above_trans]
+            if min_bound is not None:
+                bounding_points.insert(0, min_bound)
+                f_min = to_solve(min_bound)
+                f_low_trans = to_solve(under_trans)
+                if f_min*f_low_trans < 0.0:
+                    bracketed_low = True
+                    bounding_pair = (min(min_bound, under_trans), max(min_bound, under_trans))
+            if max_bound is not None and not bracketed_low:
+                bounding_points.append(max_bound)
+                f_max = to_solve(max_bound)
+                f_max_trans = to_solve(above_trans)
+                if f_max*f_max_trans < 0.0:
+                    bracketed_high = True
+                    bounding_pair = (min(max_bound, above_trans), max(max_bound, above_trans))
+
+            if max_bound is not None and max_bound is not None and not bracketed_low and not bracketed_high:
+                raise NotBoundedError("Between phases")
+
+            if bracketed_high or bracketed_low:
+                oscillation_detection = False
+                high = bounding_pair[1] # restrict newton/secant just in case
+                min_bound, max_bound = bounding_pair
+
+        except NotBoundedError as e:
+            raise e
+        except Exception as e:
+            pass
+
+    fprime = arg_fprime
+
     if oscillation_detection:
         to_solve2, checker = oscillation_checking_wrapper(to_solve, full=True,
                                                           minimum_progress=minimum_progress,
@@ -1050,10 +1097,10 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
         # for the secant method, only set the one variable
         if fprime:
             iter_var_val = newton(to_solve2, guess, xtol=xtol, ytol=ytol, fprime=True,
-                                  maxiter=maxiter, bisection=True, low=min_bound)
+                                  maxiter=maxiter, bisection=True, low=min_bound, high=high)
         else:
             iter_var_val = secant(to_solve2, guess, xtol=xtol, ytol=ytol,
-                                  maxiter=maxiter, bisection=True, low=min_bound)
+                                  maxiter=maxiter, bisection=True, low=min_bound, high=high)
     except (UnconvergedError, OscillationError):
         fprime = False
         if bounded and min_bound is not None and max_bound is not None:
@@ -1064,19 +1111,20 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
                 if abs(min_bound_prev/max_bound_prev - 1.0) > 2.5e-4:
                     # If the points are too close, odds are there is a discontinuity in the newton solution
                     min_bound, max_bound = min_bound_prev, max_bound_prev
+#                    maxiter = 20
                 else:
                     fa, fb = None, None
 
             else:
                 fa, fb = None, None
 
-            try:
-                iter_var_val = brenth(to_solve, min_bound, max_bound, xtol=xtol,
-                                      ytol=ytol, maxiter=maxiter, fa=fa, fb=fb)
-            except:
-                # Not sure at all if good idea
-                iter_var_val = secant(to_solve, guess, xtol=xtol, ytol=ytol,
-                                      maxiter=maxiter, bisection=True, low=min_bound)
+            # try:
+            iter_var_val = brenth(to_solve, min_bound, max_bound, xtol=xtol,
+                                  ytol=ytol, maxiter=maxiter, fa=fa, fb=fb)
+            # except:
+            #     # Not sure at all if good idea
+            #     iter_var_val = secant(to_solve, guess, xtol=xtol, ytol=ytol,
+            #                           maxiter=maxiter, bisection=True, low=min_bound)
     phase, err = store
 
     return iter_var_val, phase, iterations, err
@@ -1125,7 +1173,7 @@ def solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var,
     
     _, phase, iterations, err = TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val=fixed_var_val, spec_val=spec_val, ytol=1e-8*abs(spec_val),
                                                    iter_var=iter_var, fixed_var=fixed_var, spec=spec, oscillation_detection=True,
-                                                   minimum_progress=1e-5, maxiter=80, fprime=True,
+                                                   minimum_progress=1e-4, maxiter=80, fprime=True,
                                                    bounded=True, min_bound=min_bound, max_bound=max_bound)
     T, P = phase.T, phase.P
     return T, P, phase, iterations, err
@@ -1926,19 +1974,31 @@ class FlashBase(object):
         Vcs = constants.Vcs
         Vc = sum([zs[i]*Vcs[i] for i in range(N)])
         
+        min_bound = None
+        for phase in self.phases:
+            if isinstance(phase, (EOSLiquid, EOSGas)):
+                c2R = phase.eos_class.c2*R
+                Tcs, Pcs = constants.Tcs, constants.Pcs
+                b = sum([c2R*Tcs[i]*zs[i]/Pcs[i] for i in constants.cmps])
+                min_bound = b*(1.0 + 1e-15) if min_bound is None else min(min_bound, b*(1.0 + 1e-15))
+
+
+
         if Vs is None:
             if Vmin is None:
                 if physical:
-                    Vmin = Vhase.V_MIN_FIXED
+                    Vmin = Phase.V_MIN_FIXED
                 elif realistic:
                     # Round the pressure widely, ensuring consistent rounding
                     Vmin = round(Vc, 5)
+                if Vmin < min_bound:
+                    Vmin = min_bound
             if Vmax is None:
                 if physical:
-                    Vmax = Vhase.V_MAX_FIXED
+                    Vmax = Phase.V_MAX_FIXED
                 elif realistic:
                     # Round the pressure widely, ensuring consistent rounding
-                    Vmin = 1e5*round(Vc, 5)
+                    Vmax = 1e5*round(Vc, 5)
 
             Vs = logspace(log10(Vmin), log10(Vmax), pts)
         return Vs
@@ -2134,6 +2194,8 @@ class FlashBase(object):
                     if method == 'rtol':
                         err = abs((act - calc)/act)
                 if err > 1e-6:
+                    print([matrix_flashes[i][j].T, matrix_spec_flashes[i][j].T])
+                    print([matrix_flashes[i][j].P, matrix_spec_flashes[i][j].P])
                     print(matrix_flashes[i][j], matrix_spec_flashes[i][j])
                 row.append(err)
             matrix.append(row)
@@ -2281,7 +2343,11 @@ class FlashBase(object):
             if color_map is None:
                 color_map = cm.viridis
             
-            im = ax.pcolormesh(X, Y, z, cmap=color_map, norm=LogNorm()) # 
+            if np.any(np.array(props) < 0):
+                norm = None
+            else:
+                norm = LogNorm()
+            im = ax.pcolormesh(X, Y, z, cmap=color_map, norm=norm) # 
             cbar = fig.colorbar(im, ax=ax)
             cbar.set_label(prop)
 
@@ -2700,11 +2766,17 @@ class FlashPureVLS(FlashBase):
             if fixed_var == 'P' and spec == 'H':
                 fun = lambda obj: -obj.S()
             elif fixed_var == 'P' and spec == 'S':
-                fun = lambda obj: obj.H()
+#                fun = lambda obj: obj.G()
+                fun = lambda obj: obj.H() # Michaelson
             elif fixed_var == 'V' and spec == 'U':
                 fun = lambda obj: -obj.S()
             elif fixed_var == 'V' and spec == 'S':
                 fun = lambda obj: obj.U()
+            elif fixed_var == 'P' and spec == 'U':
+                fun = lambda obj: -obj.S() # promising
+                # fun = lambda obj: -obj.H() # not bad not as good as A
+                # fun = lambda obj: obj.A() # Pretty good
+                # fun = lambda obj: -obj.V() # First
             else:
                 fun = lambda obj: obj.G()
         
@@ -2846,14 +2918,14 @@ class FlashPureVLS(FlashBase):
             had a converged value.
             '''
             if iter_var == 'T':
-                min_bound = Phase.T_MIN_FIXED
-                max_bound = Phase.T_MAX_FIXED
+                min_bound = Phase.T_MIN_FIXED*(1.0-1e-15)
+                max_bound = Phase.T_MAX_FIXED*(1.0+1e-15)
             elif iter_var == 'P':
-                min_bound = Phase.P_MIN_FIXED
-                max_bound = Phase.P_MAX_FIXED
+                min_bound = Phase.P_MIN_FIXED*(1.0-1e-15)
+                max_bound = Phase.P_MAX_FIXED*(1.0+1e-15)
             elif iter_var == 'V':
-                min_bound = Phase.V_MIN_FIXED
-                max_bound = Phase.V_MAX_FIXED
+                min_bound = Phase.V_MIN_FIXED*(1.0-1e-15)
+                max_bound = Phase.V_MAX_FIXED*(1.0+1e-15)
                 
             phases_at_min = []
             phases_at_max = []
@@ -2862,24 +2934,28 @@ class FlashPureVLS(FlashBase):
 #            specs_at_max = []
             
             had_solution = False
+            uncertain_solution = False
             
             s = ''
             phase_kwargs = {fixed_var: fixed_var_val, 'zs': zs}
             for phase in self.phases:
                 
-                phase_kwargs[iter_var] = min_bound
-                p = phase.to_zs_TPV(**phase_kwargs)
-                phases_at_min.append(p)
-                
-                phase_kwargs[iter_var] = max_bound
-                p = phase.to_zs_TPV(**phase_kwargs)
-                phases_at_max.append(p)
-                
-                low, high = getattr(phases_at_min[-1], spec)(), getattr(phases_at_max[-1], spec)()
-                low, high = min(low, high), max(low, high)
-                s += '%s 1 Phase solution: (%g, %g); ' %(p.__class__.__name__, low, high)
-                if low <= spec_val <= high:
-                    had_solution = True
+                try:
+                    phase_kwargs[iter_var] = min_bound
+                    p = phase.to_zs_TPV(**phase_kwargs)
+                    phases_at_min.append(p)
+                    
+                    phase_kwargs[iter_var] = max_bound
+                    p = phase.to_zs_TPV(**phase_kwargs)
+                    phases_at_max.append(p)
+                    
+                    low, high = getattr(phases_at_min[-1], spec)(), getattr(phases_at_max[-1], spec)()
+                    low, high = min(low, high), max(low, high)
+                    s += '%s 1 Phase solution: (%g, %g); ' %(p.__class__.__name__, low, high)
+                    if low <= spec_val <= high:
+                        had_solution = True
+                except:
+                    uncertain_solution = True
                 
             if VL_liq is not None:
                 s += '(%s, %s) VL 2 Phase solution: (%g, %g); ' %(
@@ -2897,6 +2973,8 @@ class FlashPureVLS(FlashBase):
                     had_solution = True
             if had_solution:
                 raise UnconvergedError("Could not converge but solution detected in bounds: %s" %s)
+            elif uncertain_solution:
+                raise UnconvergedError("Could not converge and unable to detect if solution detected in bounds")
             else:
                 raise NoSolutionError("No physical solution in bounds for %s=%s at %s=%s: %s" %(spec, spec_val, fixed_var, fixed_var_val, s))            
             

@@ -33,14 +33,14 @@ from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              roots_cubic_a1, numpy as np, py_newton as newton,
                              py_bisect as bisect, inf, polyder, chebder, 
                              trunc_exp, secant, linspace, logspace,
-                             horner, horner_and_der2,
+                             horner, horner_and_der2, derivative,
                              roots_cubic_a2)
 from thermo.utils import R
 from thermo.utils import (Cp_minus_Cv, isobaric_expansion, 
                           isothermal_compressibility, 
                           phase_identification_parameter)
 from thermo.utils import log, log10, exp, sqrt, copysign
-
+from thermo.activity import Wilson_K_value
 R2 = R*R
 R_2 = 0.5*R
 R_inv = 1.0/R
@@ -164,6 +164,8 @@ class GCEOS(object):
                     # Need to complete the calculation with the RT term having higher precision as well
                     T = mp.mpf(T)
                 self.P = float(R*T/(V-self.b) - self.a_alpha/(V*V + self.delta*V + self.epsilon))
+                if self.P <= 0.0:
+                    raise ValueError("TV inputs result in negative pressure of %f Pa" %(self.P))
 #                self.P = R*self.T/(V-self.b) - self.a_alpha/(V*(V + self.delta) + self.epsilon)
             Vs = [V, 1.0j, 1.0j]
         else:
@@ -570,6 +572,15 @@ class GCEOS(object):
     def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
         raise NotImplemented('a_alpha and its first and second derivatives \
 should be calculated by this method, in a user subclass.')
+        
+    def a_alpha_plot(self, Tmin=1e-4, Tmax=10000):
+        Ts = logspace(log10(Tmin), log10(Tmax), 1000)
+        a_alphas = [self.a_alpha_and_derivatives(T, full=False) for T in Ts]
+        import matplotlib.pyplot as plt
+        
+        plt.semilogx(Ts, a_alphas)
+        plt.show()
+        
 
     def solve_T(self, P, V, quick=True):
         '''Generic method to calculate `T` from a specified `P` and `V`.
@@ -605,6 +616,14 @@ should be calculated by this method, in a user subclass.')
             P_calc = R*T*V_minus_b_inv - a_alpha*denominator_inv
             err = P_calc - P
             return err
+
+        # import matplotlib.pyplot as plt
+        # xs = np.logspace(np.log10(1), np.log10(1e12), 15000)
+        # ys = np.abs([to_solve(T) for T in xs])
+        # plt.loglog(xs, ys)
+        # plt.show()
+        # # max(ys), min(ys)
+
         T_guess_ig = P*V*R_inv
         T_guess_liq = P*V*R_inv*1000.0 # Compressibility factor of 0.001 for liquids
         err_ig = to_solve(T_guess_ig)
@@ -632,11 +651,11 @@ should be calculated by this method, in a user subclass.')
         # T_guess = self.Tc*0.5
         # ytol=T_guess*1e-9,
         try:
-            T_secant = secant(to_solve, T_guess, low=1e-12, xtol=1e-12, f0=f0)
+            T_secant = secant(to_solve, T_guess, low=1e-12, xtol=1e-12, same_tol=1e4, f0=f0)
         except:
             T_guess = T_guess_ig if T_guess != T_guess_ig else T_guess_liq
             try:
-                T_secant = secant(to_solve, T_guess, low=1e-12, xtol=1e-12, f0=f0)
+                T_secant = secant(to_solve, T_guess, low=1e-12, xtol=1e-12, same_tol=1e4, f0=f0)
             except:
                 if T_brenth is None:
                     # Hardcoded limits, all the cleverness sometimes does not work
@@ -1041,7 +1060,8 @@ should be calculated by this method, in a user subclass.')
 #            Vs1 = GCEOS.volume_solutions_a1(T, P, b, delta, epsilon, a_alpha, quick=True)
 #            if sum(abs((i -j)/i) for i, j in zip(Vs0, Vs1)) < 1e-6:
 #                return Vs0
-            if max_err < 1e6:
+            if max_err < 5e3:
+            # if max_err < 1e6:
                 # Try to catch floating point error
                 return Vs
             
@@ -2006,7 +2026,25 @@ should be calculated by this method, in a user subclass.')
         else:
             # Error message
             return self.__class__(T=T, V=V, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega, **self.kwargs)
+    
+    def T_min_at_V(self, V, Pmin=1e-15):
+        '''Returns the minimum temperature for the EOS to have the
+        volume as specified. Under this temperature, the pressure will go
+        negative (and the EOS will not solve).
+        '''
+        return self.solve_T(P=Pmin, V=V)
+
+    def T_max_at_V(self, V, Pmax=None):
+        # grows unbounded for all EOS?
+        # EOS should compute Pmax
+        if Pmax is None:
+            Pmax = self.P_max_at_V(V)
+        if Pmax is None:
+            return None
+        return self.solve_T(P=Pmax, V=V)
         
+    def P_max_at_V(self, V):
+        return None
         
     @property
     def more_stable_phase(self):
@@ -2040,7 +2078,113 @@ should be calculated by this method, in a user subclass.')
         x6_2 = x6*x6
         return x0*(18.0*P*x2*x5*x6 + 4.0*P*(-self.a_alpha - x3 + x4)**3 
                    - 27.0*x0*x2_2 - 4.0*x2*x5_2*x5 + x5_2*x6_2)/RT6
+    @property          
+    def discriminant(self):
+        return self.discriminant_at_T_zs(self.P)
+                   
+    def P_discriminant_zero(self):
+        T, a_alpha = self.T, self.a_alpha
+        b, epsilon, delta = self.b, self.epsilon, self.delta
+        global niter
+        niter = 0
+        RT = R*T
+        x13 = RT**-6.0
+        x14 = b*epsilon
+        x15 = -b*delta + epsilon
+        x18 = b - delta
+        def discriminant_fun(P):
+            if P < 0:
+                raise ValueError("Will not converge")
+            global niter
+            niter += 1
+            x0 = P*P
+            x1 = P*epsilon
+            x2 = P*b + RT
+            x3 = a_alpha - delta*x2 + x1
+            x3_x3 = x3*x3
+            x4 = x3*x3_x3
+            x5 = a_alpha*b + epsilon*x2
+            x6 = 27.0*x5*x5
+            x7 = -P*delta + x2
+            x9 = x7*x7
+            x8 = x7*x9
+            x11 = x3*x5*x7
+            x12 = -18.0*P*x11 + 4.0*(P*x4 +x5*x8) + x0*x6 - x3_x3*x9 
+            x16 = P*x15
+            x17 = 9.0*x3
+            x19 = x18*x5
+            # 26 mult so far
+            err = -x0*x12*x13
+            fprime = (-2.0*P*x13*(P*(-P*x17*x19 + P*x6 - b*x1*x17*x7 
+                                     + 27.0*x0*x14*x5 + 6.0*x3_x3*x16 - x3_x3*x18*x7
+                                     - 9.0*x11 + 2.0*x14*x8 - x15*x3*x9 - 9.0*x16*x5*x7 + 6.0*x19*x9 + 2.0*x4) + x12))
 
+            if niter > 3 and (.40 < (err/(P*fprime)) < 0.55):
+                raise ValueError("Not going to work")
+                # a = (err/fprime)/P
+                # print('low probably kill point')
+            return err, fprime
+
+        # New answer: Above critical T only high P result
+        # Ps = logspace(log10(1), log10(1e11), 40000)
+        # errs = []
+        # for P in Ps:
+        #     erri = discriminant_fun(P)[0]
+        #     # if erri < 0:
+        #     #     erri = -log10(abs(erri))
+        #     # else:
+        #     #     erri = log10(erri)
+        #     errs.append(erri)
+        # import matplotlib.pyplot as plt
+        # plt.semilogx(Ps, errs, 'x')
+        # plt.ylim((-1e-3, 1e-3))
+        # plt.show()
+
+        # Checked once
+        # def damping_func(p0, step, damping):
+        #     if p0 + step < 0.0:
+        #         return 0.9*p0
+        #     # while p0 + step < 1e3:
+        #     # if p0 + step < 1e3:
+        #     #     step = 0.5*step
+        #     return p0 + step
+        #low=1,damping_func=damping_func
+        # 5e7
+        guesses = [1e5, 1e6, 1e7, 1e8, 1e9]
+        if self.N == 1:
+            try:
+                try:
+                    Tc, Pc, omega = self.Tc, self.Pc, self.omega
+                except:
+                    Tc, Pc, omega = self.Tcs[0], self.Pcs[0], self.omegas[0]
+                assert T/Tc > .3
+                P_wilson = Wilson_K_value(self.T, self.P, Tc, Pc, omega)*self.P
+                guesses.insert(0, P_wilson*3)
+            except:
+                pass
+
+        global_iter = 0
+        for P in guesses:
+            try:
+                global_iter += niter
+                niter = 0
+                P_disc = newton(discriminant_fun, P, fprime=True, xtol=1e-10, low=1, maxiter=200, bisection=False, damping=1)
+                assert P_disc > 0 and not P_disc == 1
+                break
+            except:
+                pass
+        global_iter += niter
+        return P_disc
+    
+    
+        # Can take a while to converge
+        P_disc = secant(self.discriminant_at_T_zs, self.P, xtol=1e-7, low=1e-12, maxiter=200, bisection=True)
+        if P_disc <= 0.0:
+            P_disc = secant(self.discriminant_at_T_zs, self.P*100, xtol=1e-7, maxiter=200)
+#            P_max = self.P*1000
+#            P_disc = brenth(self.discriminant_at_T_zs, self.P*1e-3, P_max, rtol=1e-7, maxiter=200)
+        return P_disc
+        
     def V_g_extrapolated(self):
         P_pseudo_mc = sum([self.Pcs[i]*self.zs[i] for i in self.cmps])
         T_pseudo_mc = sum([(self.Tcs[i]*self.Tcs[j])**0.5*self.zs[j]*self.zs[i] 
@@ -2048,12 +2192,7 @@ should be calculated by this method, in a user subclass.')
         V_pseudo_mc = (self.Zc*R*T_pseudo_mc)/P_pseudo_mc
         rho_pseudo_mc = 1.0/V_pseudo_mc
         
-        # Can take a while to converge
-        P_disc = newton(self.discriminant_at_T_zs, self.P, tol=1e-7, maxiter=200)
-        if P_disc <= 0.0:
-            P_disc = newton(self.discriminant_at_T_zs, self.P*100, tol=1e-7, maxiter=200)
-#            P_max = self.P*1000
-#            P_disc = brenth(self.discriminant_at_T_zs, self.P*1e-3, P_max, rtol=1e-7, maxiter=200)
+        P_discriminant = self.P_discriminant_zero()
 
         try:
             P_low = max(P_disc - 10.0, 1e-3)
@@ -5473,6 +5612,29 @@ class SRK(GCEOS):
             d2a_alpha_dT2 =  a*m*sqTr*(m + 1.)/(2.*T*T)
             return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
+    def P_max_at_V(self, V):
+        '''
+        from sympy import *
+        # Solve for when T equal
+        P, T, V, R, a, b, m = symbols('P, T, V, R, a, b, m')
+        Tc, Pc, omega = symbols('Tc, Pc, omega')
+        
+        # from the T solution, get the square root part, find when it hits zero
+        # to_zero = sqrt(Tc**2*V*a**2*m**2*(V - b)**3*(V + b)*(m + 1)**2*(P*R*Tc*V**2 + P*R*Tc*V*b - P*V*a*m**2 + P*a*b*m**2 + R*Tc*a*m**2 + 2*R*Tc*a*m + R*Tc*a))
+        
+        lhs = P*R*Tc*V**2 + P*R*Tc*V*b - P*V*a*m**2 + P*a*b*m**2 
+        rhs = R*Tc*a*m**2 + 2*R*Tc*a*m + R*Tc*a
+        hit = solve(Eq(lhs, rhs), P)
+        '''
+        # grows unbounded for all mixture EOS?
+        try:
+            Tc, a, m, b = self.Tc, self.a, self.m, self.b
+        except:
+            Tc, a, m, b = self.Tcs[0], self.ais[0], self.ms[0], self.bs[0]
+        
+        return -R*Tc*a*(m**2 + 2*m + 1)/(R*Tc*V**2 + R*Tc*V*b - V*a*m**2 + a*b*m**2)
+        
+
     def solve_T(self, P, V, quick=True):
         r'''Method to calculate `T` from a specified `P` and `V` for the SRK
         EOS. Uses `a`, `b`, and `Tc` obtained from the class's namespace.
@@ -5504,6 +5666,31 @@ class SRK(GCEOS):
         >>> SRK = R*T/(V-b) - a_alpha/(V*(V+b)) - P
         >>> # solve(SRK, T)
         '''
+        # Takes like half an hour to be derived, saved here for convenience
+#         ([(Tc*(V - b)*(R**2*Tc**2*V**4 + 2*R**2*Tc**2*V**3*b + R**2*Tc**2*V**2*b**2 
+#        - 2*R*Tc*V**3*a*m**2 + 2*R*Tc*V*a*b**2*m**2 + V**2*a**2*m**4 - 2*V*a**2*b*m**4 
+#        + a**2*b**2*m**4)*(P*R*Tc*V**4 + 2*P*R*Tc*V**3*b + P*R*Tc*V**2*b**2 
+#                        - P*V**3*a*m**2 + P*V*a*b**2*m**2 + R*Tc*V**2*a*m**2 
+#                        + 2*R*Tc*V**2*a*m + R*Tc*V**2*a + R*Tc*V*a*b*m**2 
+#                        + 2*R*Tc*V*a*b*m + R*Tc*V*a*b + V*a**2*m**4 + 2*V*a**2*m**3
+#                        + V*a**2*m**2 - a**2*b*m**4 - 2*a**2*b*m**3 - a**2*b*m**2) 
+#                - 2*sqrt(Tc**2*V*a**2*m**2*(V - b)**3*(V + b)*(m + 1)**2*(P*R*Tc*V**2 
+#                         + P*R*Tc*V*b - P*V*a*m**2 + P*a*b*m**2 + R*Tc*a*m**2 + 2*R*Tc*a*m + R*Tc*a))*(R*Tc*V**2 + R*Tc*V*b - V*a*m**2 + a*b*m**2)**2)/((R*Tc*V**2 + R*Tc*V*b - V*a*m**2 + a*b*m**2)**2*(R**2*Tc**2*V**4 + 2*R**2*Tc**2*V**3*b + R**2*Tc**2*V**2*b**2 - 2*R*Tc*V**3*a*m**2 + 2*R*Tc*V*a*b**2*m**2 + V**2*a**2*m**4 - 2*V*a**2*b*m**4 + a**2*b**2*m**4)),
+#        (Tc*(V - b)*(R**2*Tc**2*V**4 + 2*R**2*Tc**2*V**3*b + R**2*Tc**2*V**2*b**2
+#        - 2*R*Tc*V**3*a*m**2 + 2*R*Tc*V*a*b**2*m**2 + V**2*a**2*m**4 - 2*V*a**2*b*m**4
+#        + a**2*b**2*m**4)*(P*R*Tc*V**4 + 2*P*R*Tc*V**3*b + P*R*Tc*V**2*b**2 
+#                        - P*V**3*a*m**2 + P*V*a*b**2*m**2 + R*Tc*V**2*a*m**2
+#                        + 2*R*Tc*V**2*a*m + R*Tc*V**2*a + R*Tc*V*a*b*m**2 
+#                        + 2*R*Tc*V*a*b*m + R*Tc*V*a*b + V*a**2*m**4 + 2*V*a**2*m**3
+#                        + V*a**2*m**2 - a**2*b*m**4 - 2*a**2*b*m**3 - a**2*b*m**2)
+#                + 2*sqrt(Tc**2*V*a**2*m**2*(V - b)**3*(V + b)*(m + 1)**2*(P*R*Tc*V**2 
+#                         + P*R*Tc*V*b - P*V*a*m**2 + P*a*b*m**2 + R*Tc*a*m**2
+#                         + 2*R*Tc*a*m + R*Tc*a))*(R*Tc*V**2 + R*Tc*V*b - V*a*m**2 
+#                + a*b*m**2)**2)/((R*Tc*V**2 + R*Tc*V*b - V*a*m**2 + a*b*m**2
+#                              )**2*(R**2*Tc**2*V**4 + 2*R**2*Tc**2*V**3*b
+#                              + R**2*Tc**2*V**2*b**2 - 2*R*Tc*V**3*a*m**2 
+#                              + 2*R*Tc*V*a*b**2*m**2 + V**2*a**2*m**4 
+#                              - 2*V*a**2*b*m**4 + a**2*b**2*m**4))])
         self.no_T_spec = True
         a, b, Tc, m = self.a, self.b, self.Tc, self.m
         if quick:

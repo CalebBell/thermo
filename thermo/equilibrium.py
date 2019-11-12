@@ -932,6 +932,7 @@ for name in Bulk_properties_to_EquilibriumState:
 
 ### For certain properties of the Bulk phase, make EquilibriumState get it from the Bulk
 bulk_props = ['V', 'Z', 'rho', 'Cp', 'Cv', 'H', 'S', 'U', 'G', 'A', 'dH_dT', 'dH_dP', 'dS_dT', 'dS_dP',
+              'dU_dT', 'dU_dP', 'dG_dT', 'dG_dP', 'dA_dT', 'dA_dP', 
               'H_reactive', 'S_reactive', 'G_reactive', 'U_reactive', 'A_reactive',
               'Cp_Cv_ratio', 'log_zs',
               'dP_dT_frozen', 'dP_dV_frozen', 'd2P_dT2_frozen', 'd2P_dV2_frozen',

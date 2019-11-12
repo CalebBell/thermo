@@ -1146,6 +1146,9 @@ class Phase(object):
         
         self._Cv_mass = Cv_mass = self.Cv()*1e3*self.MW_inv()
         return Cv_mass
+    
+    def P_transitions(self):
+        return []
 
 class IdealGas(Phase):
     '''DO NOT DELETE - EOS CLASS IS TOO SLOW!
@@ -1624,6 +1627,10 @@ class EOSGas(Phase):
             V = new.V_g
         self._mechanical_critical_V = V
         return new.T, new.P, V
+    
+    def P_transitions(self):
+        # EOS is guaranteed to be at correct temperature
+        return [self.eos_mix.P_discriminant_zero()]
 
             
 def build_EOSLiquid():
