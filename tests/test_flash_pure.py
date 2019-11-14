@@ -309,6 +309,8 @@ def test_PH_plot(fluid, eos, auto_range):
 
     max_err = np.max(errs)
     assert max_err < 1e-8
+    
+#test_PH_plot('methanol', PRMIX, 'physical')
 
 
 @pytest.mark.slow

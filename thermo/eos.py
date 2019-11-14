@@ -1096,7 +1096,7 @@ should be calculated by this method, in a user subclass.')
         # Once found it possible to compute VLE down to 0.03 Tc with ~400 steps and ~500 dps. 
         # need to start with a really high dps to get convergence or it is discontinuous
         import mpmath as mp
-        mp.mp.dps = dps# + 400
+        mp.mp.dps = dps + 400
         b, T, P, epsilon, delta, a_alpha = [mp.mpf(i) for i in [b, T, P, epsilon, delta, a_alpha]]
         roots = None
         if 1:
@@ -1300,36 +1300,36 @@ should be calculated by this method, in a user subclass.')
             raise ValueError("Not solved for that volume")
         return self._mpmath_volume_matching(self.V_g)
     
-    def fugacities_mpmath(self, dps=30):
-        # At one point thought maybe the fugacity equation was the source of error.
-        # No. always the volume equation.
-        import mpmath as mp
-        mp.mp.dps = dps
-        R_mp = mp.mpf(R)
-        b, T, P, epsilon, delta, a_alpha = self.b, self.T, self.P, self.epsilon, self.delta, self.a_alpha
-        b, T, P, epsilon, delta, a_alpha = [mp.mpf(i) for i in [b, T, P, epsilon, delta, a_alpha]]
-
-        Vs_good = self.volume_solutions_mpmath(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
-        Vs_filtered = [i.real for i in Vs_good if (i.real == 0 or abs(i.imag/i.real) < 1E-20) and i.real > self.b]
-
-        if len(Vs_filtered) in (2, 3):
-            Vs = min(Vs_filtered), max(Vs_filtered)
-        else:
-            if hasattr(self, 'V_l') and hasattr(self, 'V_g'):
-                # Wrong number of roots!
-                raise ValueError("Error")
-            Vs = Vs_filtered
-#            elif hasattr(self, 'V_l'):
-#                Vs = Vs_filtered[0]
-#            elif hasattr(self, 'V_g'):
-#                Vg_mpmath = Vs_filtered[0]
-                
-        log, exp, atanh, sqrt = mp.log, mp.exp, mp.atanh, mp.sqrt
-    
-        return [P*exp((P*V + R_mp*T*log(V) - R_mp*T*log(P*V/(R_mp*T)) - R_mp*T*log(V - b)
-                       - R_mp*T - 2*a_alpha*atanh(2*V/sqrt(delta**2 - 4*epsilon)
-                       + delta/sqrt(delta**2 - 4*epsilon)).real/sqrt(delta**2 - 4*epsilon))/(R_mp*T))
-                for V in Vs]
+#    def fugacities_mpmath(self, dps=30):
+#        # At one point thought maybe the fugacity equation was the source of error.
+#        # No. always the volume equation.
+#        import mpmath as mp
+#        mp.mp.dps = dps
+#        R_mp = mp.mpf(R)
+#        b, T, P, epsilon, delta, a_alpha = self.b, self.T, self.P, self.epsilon, self.delta, self.a_alpha
+#        b, T, P, epsilon, delta, a_alpha = [mp.mpf(i) for i in [b, T, P, epsilon, delta, a_alpha]]
+#
+#        Vs_good = self.volume_solutions_mpmath(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
+#        Vs_filtered = [i.real for i in Vs_good if (i.real == 0 or abs(i.imag/i.real) < 1E-20) and i.real > self.b]
+#
+#        if len(Vs_filtered) in (2, 3):
+#            Vs = min(Vs_filtered), max(Vs_filtered)
+#        else:
+#            if hasattr(self, 'V_l') and hasattr(self, 'V_g'):
+#                # Wrong number of roots!
+#                raise ValueError("Error")
+#            Vs = Vs_filtered
+##            elif hasattr(self, 'V_l'):
+##                Vs = Vs_filtered[0]
+##            elif hasattr(self, 'V_g'):
+##                Vg_mpmath = Vs_filtered[0]
+#                
+#        log, exp, atanh, sqrt = mp.log, mp.exp, mp.atanh, mp.sqrt
+#    
+#        return [P*exp((P*V + R_mp*T*log(V) - R_mp*T*log(P*V/(R_mp*T)) - R_mp*T*log(V - b)
+#                       - R_mp*T - 2*a_alpha*atanh(2*V/sqrt(delta**2 - 4*epsilon)
+#                       + delta/sqrt(delta**2 - 4*epsilon)).real/sqrt(delta**2 - 4*epsilon))/(R_mp*T))
+#                for V in Vs]
     
     
     
@@ -1691,8 +1691,9 @@ should be calculated by this method, in a user subclass.')
                 Psat = exp(y)*Tr*Pc
             except OverflowError:
                 # coefficients sometimes overflow before T is lowered to 0.32Tr
-                polish = False # There is no solution available to polish
-                Psat = 0
+                # For
+                polish = True # There is no solution available to polish
+                Psat = 1
         
         if polish:
             if T > Tc:
@@ -1726,7 +1727,7 @@ should be calculated by this method, in a user subclass.')
                 except:
                     high = Pc
                 Psat = newton(to_solve_newton, Psat, high=high, fprime=True, 
-                              xtol=1e-12, ytol=1e-6*Psat, require_eval=False) #  ,
+                              xtol=1e-14, require_eval=False) #  ,ytol=1e-6*Psat
 #                print(to_solve_newton(Psat), 'newton error')
                 converged = True
             except:
@@ -2166,8 +2167,43 @@ should be calculated by this method, in a user subclass.')
                 return 'l'
 
         
+    def discriminant_at_P(self, T):
+        # Only T is allowed to be varied
+        # Really need T derivative of this
+        
+        P = self.P
+        a_alpha = self.a_alpha_and_derivatives(T, full=False, quick=True)
+        RT = R*T
+        RT6 = RT**6
+        x0 = P*P
+        x1 = P*self.b + RT
+        x2 = a_alpha*self.b + self.epsilon*x1
+        x3 = P*self.epsilon
+        x4 = self.delta*x1
+        x5 = -P*self.delta + x1
+        x6 = a_alpha + x3 - x4
+        x2_2 = x2*x2
+        x5_2 = x5*x5
+        x6_2 = x6*x6
+        return x0*(18.0*P*x2*x5*x6 + 4.0*P*(-a_alpha - x3 + x4)**3 
+                   - 27.0*x0*x2_2 - 4.0*x2*x5_2*x5 + x5_2*x6_2)/RT6
+                   
+    def T_discriminant_zero(self):
+         Ts = logspace(log10(1), log10(1e4), 10000)
+         errs = []
+         for T in Ts:
+             erri = self.discriminant_at_P(T)
+#             if erri < 0:
+#                 erri = -log10(abs(erri))
+#             else:
+#                 erri = log10(erri)
+             errs.append(erri)
+         import matplotlib.pyplot as plt
+         plt.semilogx(Ts, errs, 'x')
+         plt.ylim((-1e-3, 1e-3))
+         plt.show()
 
-    def discriminant_at_T_zs(self, P):
+    def discriminant_at_T(self, P):
         # Only P is allowed to be varied
         RT = R*self.T
         RT6 = RT**6
@@ -2183,11 +2219,60 @@ should be calculated by this method, in a user subclass.')
         x6_2 = x6*x6
         return x0*(18.0*P*x2*x5*x6 + 4.0*P*(-self.a_alpha - x3 + x4)**3 
                    - 27.0*x0*x2_2 - 4.0*x2*x5_2*x5 + x5_2*x6_2)/RT6
+
+    def T_discriminant_zero_l(self, guess=None):
+        # Can also have one at g
+        global niter
+        niter = 0
+        guesses = [100, 150, 200, 250, 300, 350, 400, 450]
+        if guess is not None:
+            guesses.append(guess)
+        if self.N == 1:
+            pass
+
+        global_iter = 0
+        for T in guesses:
+            try:
+                global_iter += niter
+                niter = 0
+                T_disc = secant(self.discriminant_at_P, T, xtol=1e-10, low=1, maxiter=60, bisection=False, damping=1)
+                assert T_disc > 0 and not T_disc == 1
+                break
+            except:
+                pass
+        global_iter += niter
+        return T_disc
+
+    def T_discriminant_zero_g(self, guess=None):
+        # Can also have one at g
+        global niter
+        niter = 0
+        guesses = [700, 600, 500, 400, 300, 200]
+        if guess is not None:
+            guesses.append(guess)
+        if self.N == 1:
+            pass
+
+        global_iter = 0
+        for T in guesses:
+            try:
+                global_iter += niter
+                niter = 0
+                T_disc = secant(self.discriminant_at_P, T, xtol=1e-10, low=1, maxiter=60, bisection=False, damping=1)
+                assert T_disc > 0 and not T_disc == 1
+                break
+            except:
+                pass
+        global_iter += niter
+        return T_disc
+
+
     @property          
     def discriminant(self):
-        return self.discriminant_at_T_zs(self.P)
+        return self.discriminant_at_T(self.P)
                    
-    def P_discriminant_zero(self):
+    def P_discriminant_zero_l(self):
+        # Can also have one at g
         T, a_alpha = self.T, self.a_alpha
         b, epsilon, delta = self.b, self.epsilon, self.delta
         global niter
@@ -2283,11 +2368,11 @@ should be calculated by this method, in a user subclass.')
     
     
         # Can take a while to converge
-        P_disc = secant(self.discriminant_at_T_zs, self.P, xtol=1e-7, low=1e-12, maxiter=200, bisection=True)
+        P_disc = secant(self.discriminant_at_T, self.P, xtol=1e-7, low=1e-12, maxiter=200, bisection=True)
         if P_disc <= 0.0:
-            P_disc = secant(self.discriminant_at_T_zs, self.P*100, xtol=1e-7, maxiter=200)
+            P_disc = secant(self.discriminant_at_T, self.P*100, xtol=1e-7, maxiter=200)
 #            P_max = self.P*1000
-#            P_disc = brenth(self.discriminant_at_T_zs, self.P*1e-3, P_max, rtol=1e-7, maxiter=200)
+#            P_disc = brenth(self.discriminant_at_T, self.P*1e-3, P_max, rtol=1e-7, maxiter=200)
         return P_disc
         
     def V_g_extrapolated(self):
@@ -2297,7 +2382,7 @@ should be calculated by this method, in a user subclass.')
         V_pseudo_mc = (self.Zc*R*T_pseudo_mc)/P_pseudo_mc
         rho_pseudo_mc = 1.0/V_pseudo_mc
         
-        P_discriminant = self.P_discriminant_zero()
+        P_discriminant = self.P_discriminant_zero_l()
 
         try:
             P_low = max(P_disc - 10.0, 1e-3)

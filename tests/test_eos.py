@@ -1157,7 +1157,10 @@ def test_fuzz_Psat():
             Psats_solved.append(e.Psat(T, polish=True))
     assert_allclose(Psats_solved, Psats_poly, rtol=1E-11)
 
-    
+def test_Psat_issues():
+    e = PR(T=229.43458646616548, P=100000.0, Tc=708.0, Pc=1480000.0, omega=0.6897)
+    assert_allclose(e.Psat(e.T), 0.00012715494309024902)
+
 def test_fuzz_dPsat_dT():
     from thermo import eos
     eos_list = list(eos.__all__); eos_list.remove('GCEOS')

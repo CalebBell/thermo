@@ -1630,9 +1630,14 @@ class EOSGas(Phase):
     
     def P_transitions(self):
         # EOS is guaranteed to be at correct temperature
-        return [self.eos_mix.P_discriminant_zero()]
+        return [self.eos_mix.P_discriminant_zero_l()]
 
-            
+    def T_transitions(self):
+        try:
+            return [self.eos_mix.T_discriminant_zero_l()]
+        except:
+            return [self.eos_mix.T_discriminant_zero_g()]
+
 def build_EOSLiquid():
     import inspect
     source = inspect.getsource(EOSGas)

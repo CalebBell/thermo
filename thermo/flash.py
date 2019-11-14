@@ -1039,33 +1039,31 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
 
     arg_fprime = fprime
     high = None # Optional and not often used bound for newton
-    if fixed_var == 'T':
+    if fixed_var in ('T','P') and 0:
         try:
             fprime = False
-            phase_kwargs['P'] = 1e5 # Dummy pressure does not matter
-            transitions = phase.to_zs_TPV(**phase_kwargs).P_transitions()
+            phase_kwargs[iter_var] = guess # Dummy pressure does not matter
+            phase_temp = phase.to_zs_TPV(**phase_kwargs)
+            
+            if fixed_var == 'T':
+                transitions = phase_temp.P_transitions()
+            elif fixed_var == 'P':
+                transitions = phase_temp.T_transitions()
             assert len(transitions) == 1
-            if min_bound is not None and transitions[0] < min_bound:
-                raise NotBoundedError("Not likely to bound")
-            if max_bound is not None and transitions[0] > max_bound:
-                raise NotBoundedError("Not likely to bound")
 
             delta = 1e-9
             bracketed_high, bracketed_low = False, False
             under_trans, above_trans = transitions[0]*(1.0 - delta), transitions[0]*(1.0 + delta)
-            bounding_points = [under_trans, above_trans]
             if min_bound is not None:
-                bounding_points.insert(0, min_bound)
                 f_min = to_solve(min_bound)
                 f_low_trans = to_solve(under_trans)
-                if f_min*f_low_trans < 0.0:
+                if f_min*f_low_trans <= 0.0:
                     bracketed_low = True
                     bounding_pair = (min(min_bound, under_trans), max(min_bound, under_trans))
             if max_bound is not None and not bracketed_low:
-                bounding_points.append(max_bound)
                 f_max = to_solve(max_bound)
                 f_max_trans = to_solve(above_trans)
-                if f_max*f_max_trans < 0.0:
+                if f_max*f_max_trans <= 0.0:
                     bracketed_high = True
                     bounding_pair = (min(max_bound, above_trans), max(max_bound, above_trans))
 
@@ -1076,6 +1074,11 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
                 oscillation_detection = False
                 high = bounding_pair[1] # restrict newton/secant just in case
                 min_bound, max_bound = bounding_pair
+            else:
+                if min_bound is not None and transitions[0] < min_bound:
+                    raise NotBoundedError("Not likely to bound")
+                if max_bound is not None and transitions[0] > max_bound:
+                    raise NotBoundedError("Not likely to bound")
 
         except NotBoundedError as e:
             raise e
@@ -2639,12 +2642,14 @@ class FlashPureVLS(FlashBase):
                 spec_val = S
             else:
                 spec_val = U
-                
-            try:
-                g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var)
-            except UnconvergedError as e:
-                # Not sure if good idea - would prefer to converge without
-                g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var_backup)
+            
+            # Only allow one
+            g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var)
+#            try:
+#                g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var)
+#            except UnconvergedError as e:
+#                # Not sure if good idea - would prefer to converge without
+#                g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var_backup)
             phases = ls + ss
             if g:
                 phases += [g]
