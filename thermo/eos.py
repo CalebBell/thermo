@@ -5093,7 +5093,7 @@ class PRSV(PR):
         if quick:
             x0 = V - b
             R_x0 = R/x0
-            x3_inv = (100.*(V*(V + b) + b*x0))
+            x3_inv = 1.0/(100.*(V*(V + b) + b*x0))
             x4 = 10.*kappa0
             kappa110 = kappa1*10.
             kappa17 = kappa1*7.

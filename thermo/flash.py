@@ -1040,6 +1040,19 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
 
     arg_fprime = fprime
     high = None # Optional and not often used bound for newton
+    if fixed_var == 'V':
+        if iter_var == 'T':
+            max_phys = phase.T_max_at_V(fixed_var_val)
+        elif iter_var == 'P':
+            max_phys = phase.P_max_at_V(fixed_var_val)
+        if max_phys is not None:
+            if max_bound is None:
+                max_bound = high = max_phys
+            else:
+                max_bound = high = min(max_phys, max_bound)
+
+
+
     if fixed_var in ('T','P') and 0:
         try:
             fprime = False

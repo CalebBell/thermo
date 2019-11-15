@@ -1149,6 +1149,13 @@ class Phase(object):
     
     def P_transitions(self):
         return []
+    
+    def T_max_at_V(self, V):
+        return None
+    
+    def P_max_at_V(self, V):
+        return None
+    
 
 class IdealGas(Phase):
     '''DO NOT DELETE - EOS CLASS IS TOO SLOW!
@@ -1637,6 +1644,13 @@ class EOSGas(Phase):
             return [self.eos_mix.T_discriminant_zero_l()]
         except:
             return [self.eos_mix.T_discriminant_zero_g()]
+
+    def T_max_at_V(self, V):
+        return self.eos_mix.T_max_at_V(V)
+    
+    def P_max_at_V(self, V):
+        return self.eos_mix.P_max_at_V(V)
+
 
 def build_EOSLiquid():
     import inspect
