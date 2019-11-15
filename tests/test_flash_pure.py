@@ -143,6 +143,24 @@ def test_SRK_high_P_PV_failure():
     assert_allclose(T, PV.T, rtol=1e-7)
 
 
+def test_SRK_high_PT_on_SV_failure():
+    T, P, zs = 7609.496685459907, 423758716.06041414, [1.0]
+    fluid_idx, eos = 7, SRKMIX # methanol
+    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
+    
+    kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
+                  HeatCapacityGases=pure_props.HeatCapacityGases)
+
+    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
+
+    base = flasher.flash(T=T, P=P)
+    
+    VS = flasher.flash(S=base.S(), V=base.V())
+    assert_allclose(T, VS.T, rtol=1e-7)
+    
+
 def test_TWU_SRK_PR_T_alpha_interp_failure():
     '''a_alpha becomes 100-500; the EOS makes no sense. Limit it to a Tr no
     around 1E-4 Tr to make it reasonable. 

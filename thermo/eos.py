@@ -4459,6 +4459,34 @@ class PR(GCEOS):
                 d2a_alpha_dT2 = self.a*self.kappa*(self.kappa/self.Tc - sqrt(T/self.Tc)*(self.kappa*(sqrt(T/self.Tc) - 1.) - 1.)/T)/(2.*T)
             return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
+    # sqrt terms:
+    def P_max_at_V(self, V):
+        '''
+        from sympy import *
+        P, T, V = symbols('P, T, V', positive=True)
+        Tc, Pc, omega = symbols('Tc, Pc, omega', positive=True)
+        R, a, b, kappa = symbols('R, a, b, kappa')
+        
+        main = P*R*Tc*V**2 + 2*P*R*Tc*V*b - P*R*Tc*b**2 - P*V*a*kappa**2 + P*a*b*kappa**2 + R*Tc*a*kappa**2 + 2*R*Tc*a*kappa + R*Tc*a
+        to_subs = {b: thing.b,
+                   kappa: thing.kappa,
+                   a: thing.a, R: thermo.eos.R, Tc: thing.Tc, V: thing.V, Tc: thing.Tc, omega: thing.omega}
+        solve(Eq(main, 0), P)[0].subs(to_subs)
+        '''
+        try:
+            Tc, a, b, kappa = self.Tc, self.a, self.b, self.kappa
+        except:
+            Tc, a, b, kappa = self.Tcs[0], self.ais[0], self.bs[0], self.kappas[0]
+        P_max = (-R*Tc*a*(kappa**2 + 2*kappa + 1)/(R*Tc*V**2 + 2*R*Tc*V*b - R*Tc*b**2 - V*a*kappa**2 + a*b*kappa**2))
+        if P_max < 0.0:
+            # No positive pressure - it's negative
+            return None
+        return P_max
+    
+
+    # (V - b)**3*(V**2 + 2*V*b - b**2)*(P*R*Tc*V**2 + 2*P*R*Tc*V*b - P*R*Tc*b**2 - P*V*a*kappa**2 + P*a*b*kappa**2 + R*Tc*a*kappa**2 + 2*R*Tc*a*kappa + R*Tc*a)
+
+
     def solve_T(self, P, V, quick=True):
         r'''Method to calculate `T` from a specified `P` and `V` for the PR
         EOS. Uses `Tc`, `a`, `b`, and `kappa` as well, obtained from the 
@@ -4546,9 +4574,15 @@ class PR(GCEOS):
             
             # 2.*a*kappa - add a negative sign to get the high temperature solution
             # sometimes it is complex!
-            x100 = 2.*a*kappa*x11*(sqrt(V_m_b**3*(x0 + x6 - x8)*(P*x7 -
-                                              P*x9 + x25 + x33 + x34 + x35 
-                                              + x36 - x37))*(kappa + 1.))
+#            try:
+            root_term = sqrt(V_m_b**3*(x0 + x6 - x8)*(P*x7 -
+                                              P*x9 + x25 + x33 + x34 + x35
+                                              + x36 - x37))
+#            except ValueError:
+#                # negative number in sqrt
+#                return super(PR, self).solve_T(P, V)
+
+            x100 = 2.*a*kappa*x11*(root_term*(kappa + 1.))
             x101 = (x31*V_m_b*((4.*V)*(R*Tc*a*b*kappa) + x0*x33 - x0*x35 + x12*x38
                          + x16*x38 + x18*x39 - x18*x41 - x20*x42 - x22*x42 
                          - x23*x38 + x24*x38 + x25*x6 - x26 - x27 + x28 + x29
@@ -5059,19 +5093,27 @@ class PRSV(PR):
         if quick:
             x0 = V - b
             R_x0 = R/x0
-            x3 = (100.*(V*(V + b) + b*x0))
+            x3_inv = (100.*(V*(V + b) + b*x0))
             x4 = 10.*kappa0
             kappa110 = kappa1*10.
             kappa17 = kappa1*7.
+            Tc_inv = 1.0/Tc
+            x51 = x3_inv*a
             def to_solve(T):
-                x1 = T/Tc
+                x1 = T*Tc_inv
                 x2 = x1**0.5
-                return (T*R_x0 - a*((x4 - (kappa110*x1 - kappa17)*(x2 + 1.))*(x2 - 1.) - 10.)**2/x3) - P
+                x10 =((x4 - (kappa110*x1 - kappa17)*(x2 + 1.))*(x2 - 1.) - 10.)
+                x11 = T*R_x0 - P
+                return x11 - x10*x10*x51
         else:
             def to_solve(T):
                 P_calc = R*T/(V - b) - a*((kappa0 + kappa1*(sqrt(T/Tc) + 1)*(-T/Tc + 7/10))*(-sqrt(T/Tc) + 1) + 1)**2/(V*(V + b) + b*(V - b))
                 return P_calc - P
-        return newton(to_solve, Tc*0.5)
+        try:
+            return newton(to_solve, Tc*0.5)
+        except:
+            # The above method handles fewer cases, but the below is less optimized
+            return GCEOS.solve_T(self, P, V)
 
     def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
         r'''Method to calculate `a_alpha` and its first and second
@@ -5269,7 +5311,11 @@ class PRSV2(PR):
             def to_solve(T):
                 P_calc = R*T/(V - b) - a*((kappa0 + (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)*(-T/Tc + 7/10))*(-sqrt(T/Tc) + 1) + 1)**2/(V*(V + b) + b*(V - b))
                 return P_calc - P
-        return newton(to_solve, Tc*0.5)
+        try:
+            return newton(to_solve, Tc*0.5)
+        except:
+            # The above method handles fewer cases, but the below is less optimized
+            return GCEOS.solve_T(self, P, V)
 
 
     def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
@@ -5662,18 +5708,21 @@ class RK(GCEOS):
         >>> RK = Eq(P, R*T/(V-b) - a/sqrt(T)/(V*V + b*V))
         >>> # solve(RK, T)
         '''
-        self.no_T_spec = True
-        a, b = self.a, self.b
-        if quick:
-            x1 = -1.j*1.7320508075688772 + 1.
-            x2 = V - b
-            x3 = x2/R
-            x4 = V + b
-            x5 = (1.7320508075688772*(x2*x2*(-4.*P*P*P*x3 + 27.*a*a/(V*V*x4*x4))/(R*R))**0.5 - 9.*a*x3/(V*x4) +0j)**(1./3.)
-            return (3.3019272488946263*(11.537996562459266*P*x3/(x1*x5) + 1.2599210498948732*x1*x5)**2/144.0).real
-        else:
-            return ((-(-1/2 + sqrt(3)*1j/2)*(sqrt(729*(-V*a + a*b)**2/(R*V**2 + R*V*b)**2 + 108*(-P*V + P*b)**3/R**3)/2 + 27*(-V*a + a*b)/(2*(R*V**2 + R*V*b))+0j)**(1/3)/3 + (-P*V + P*b)/(R*(-1/2 + sqrt(3)*1j/2)*(sqrt(729*(-V*a + a*b)**2/(R*V**2 + R*V*b)**2 + 108*(-P*V + P*b)**3/R**3)/2 + 27*(-V*a + a*b)/(2*(R*V**2 + R*V*b))+0j)**(1/3)))**2).real
-
+        try:
+            self.no_T_spec = True
+            a, b = self.a, self.b
+            if quick:
+                x1 = -1.j*1.7320508075688772 + 1.
+                x2 = V - b
+                x3 = x2/R
+                x4 = V + b
+                x5 = (1.7320508075688772*(x2*x2*(-4.*P*P*P*x3 + 27.*a*a/(V*V*x4*x4))/(R*R))**0.5 - 9.*a*x3/(V*x4) +0j)**(1./3.)
+                return (3.3019272488946263*(11.537996562459266*P*x3/(x1*x5) + 1.2599210498948732*x1*x5)**2/144.0).real
+            else:
+                return ((-(-1/2 + sqrt(3)*1j/2)*(sqrt(729*(-V*a + a*b)**2/(R*V**2 + R*V*b)**2 + 108*(-P*V + P*b)**3/R**3)/2 + 27*(-V*a + a*b)/(2*(R*V**2 + R*V*b))+0j)**(1/3)/3 + (-P*V + P*b)/(R*(-1/2 + sqrt(3)*1j/2)*(sqrt(729*(-V*a + a*b)**2/(R*V**2 + R*V*b)**2 + 108*(-P*V + P*b)**3/R**3)/2 + 27*(-V*a + a*b)/(2*(R*V**2 + R*V*b))+0j)**(1/3)))**2).real
+        except:
+            # Turns out the above solution does not cover all cases
+            return super(RK, self).solve_T(P, V)
 
 class SRK(GCEOS):
     r'''Class for solving the Soave-Redlich-Kwong cubic 
@@ -5823,7 +5872,10 @@ class SRK(GCEOS):
         except:
             Tc, a, m, b = self.Tcs[0], self.ais[0], self.ms[0], self.bs[0]
         
-        return -R*Tc*a*(m**2 + 2*m + 1)/(R*Tc*V**2 + R*Tc*V*b - V*a*m**2 + a*b*m**2)
+        P_max = -R*Tc*a*(m**2 + 2*m + 1)/(R*Tc*V**2 + R*Tc*V*b - V*a*m**2 + a*b*m**2)
+        if P_max < 0.0:
+            return P_max
+        return P_max
         
 
     def solve_T(self, P, V, quick=True):
@@ -5916,7 +5968,10 @@ class SRK(GCEOS):
             x28 = V*x12
             x29 = 2.*m*m*m
             x30 = b*x12
-            return -Tc*(2.*a*m*x9*(V*x21*x21*x21*(V + b)*(P*x2 + P*x7 + x17 + x18 + x22 + x23 - x24))**0.5*(m + 1.) - x20*x21*(-P*x16*x6 + x1*x22 + x10*x26 + x13*x28 - x13*x30 + x15*x23 + x15*x24 + x19*x26 + x22*x3 + x25*x5 + x25 + x27*x5 + x27 + x28*x29 + x28*x5 - x29*x30 - x30*x5))/(x20*x9)
+            T_calc = -Tc*(2.*a*m*x9*(V*x21*x21*x21*(V + b)*(P*x2 + P*x7 + x17 + x18 + x22 + x23 - x24))**0.5*(m + 1.) - x20*x21*(-P*x16*x6 + x1*x22 + x10*x26 + x13*x28 - x13*x30 + x15*x23 + x15*x24 + x19*x26 + x22*x3 + x25*x5 + x25 + x27*x5 + x27 + x28*x29 + x28*x5 - x29*x30 - x30*x5))/(x20*x9)
+            if abs(T_calc.imag) > 1e-12:
+                raise ValueError("Calculated imaginary temperature %s" %(T_calc))
+            return T_calc
         else:
             return Tc*(-2*a*m*sqrt(V*(V - b)**3*(V + b)*(P*R*Tc*V**2 + P*R*Tc*V*b - P*V*a*m**2 + P*a*b*m**2 + R*Tc*a*m**2 + 2*R*Tc*a*m + R*Tc*a))*(m + 1)*(R*Tc*V**2 + R*Tc*V*b - V*a*m**2 + a*b*m**2)**2 + (V - b)*(R**2*Tc**2*V**4 + 2*R**2*Tc**2*V**3*b + R**2*Tc**2*V**2*b**2 - 2*R*Tc*V**3*a*m**2 + 2*R*Tc*V*a*b**2*m**2 + V**2*a**2*m**4 - 2*V*a**2*b*m**4 + a**2*b**2*m**4)*(P*R*Tc*V**4 + 2*P*R*Tc*V**3*b + P*R*Tc*V**2*b**2 - P*V**3*a*m**2 + P*V*a*b**2*m**2 + R*Tc*V**2*a*m**2 + 2*R*Tc*V**2*a*m + R*Tc*V**2*a + R*Tc*V*a*b*m**2 + 2*R*Tc*V*a*b*m + R*Tc*V*a*b + V*a**2*m**4 + 2*V*a**2*m**3 + V*a**2*m**2 - a**2*b*m**4 - 2*a**2*b*m**3 - a**2*b*m**2))/((R*Tc*V**2 + R*Tc*V*b - V*a*m**2 + a*b*m**2)**2*(R**2*Tc**2*V**4 + 2*R**2*Tc**2*V**3*b + R**2*Tc**2*V**2*b**2 - 2*R*Tc*V**3*a*m**2 + 2*R*Tc*V*a*b**2*m**2 + V**2*a**2*m**4 - 2*V*a**2*b*m**4 + a**2*b**2*m**4))
 
@@ -5980,6 +6035,8 @@ class APISRK(SRK):
     .. [1] API Technical Data Book: General Properties & Characterization.
        American Petroleum Institute, 7E, 2005.
     '''
+    
+    P_max_at_V = GCEOS.P_max_at_V
     def __init__(self, Tc, Pc, omega=None, T=None, P=None, V=None, S1=None,
                  S2=0, kwargs=None):
         self.Tc = Tc
@@ -6080,6 +6137,7 @@ class APISRK(SRK):
         if self.S2 == 0:
             self.m = self.S1
             return SRK.solve_T(self, P, V, quick=quick)
+
         else:
             # Previously coded method is  63 microseconds vs 47 here
 #            return super(SRK, self).solve_T(P, V, quick=quick) 
@@ -6095,7 +6153,18 @@ class APISRK(SRK):
                 def to_solve(T):
                     P_calc = R*T/(V - b) - a*(S1*(-sqrt(T/Tc) + 1) + S2*(-sqrt(T/Tc) + 1)/sqrt(T/Tc) + 1)**2/(V*(V + b))
                     return P_calc - P
+                
+        try:
             return newton(to_solve, Tc*0.5)
+        except:
+            return GCEOS.solve_T(self, P, V)
+        
+    
+    def P_max_at_V(self, V):
+        if self.S2 == 0:
+            self.m = self.S1
+            return SRK.P_max_at_V(self, V)
+        return GCEOS.P_max_at_V(self, V)
 
 
 class TWUPR(PR):

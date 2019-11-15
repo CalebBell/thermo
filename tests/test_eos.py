@@ -27,8 +27,8 @@ from thermo import eos
 from thermo.eos import *
 from thermo.utils import allclose_variable
 from fluids.constants import R
-from math import log, exp, sqrt
-from fluids.numerics import linspace, derivative
+from math import log, exp, sqrt, log10
+from fluids.numerics import linspace, derivative, logspace
 
 
 @pytest.mark.slow
@@ -152,7 +152,6 @@ def test_PR_with_sympy():
     # The Cv integral is possible with a more general form, but not here
     # The S and H integrals don't work in Sympy at present
 
-    
     
 def test_PR_quick():
     # Test solution for molar volumes
@@ -290,7 +289,28 @@ def test_PR_quick():
     assert_allclose(V_l, 0.00011087, atol=1e-8)
     # Matches to rounding
     
+    # End pressure for methanol
+    thing = PR(P=1e5, V=0.00014369237974317395, Tc=512.5, Pc=8084000.0, omega=0.559)
+    assert_allclose(thing.P_max_at_V(thing.V), 2247487113.806047, rtol=1e-12)    
+
+    base = PR(Tc=367.6, Pc=302500000, omega=1.5, T=299., P=1E9)
+    base.to(V=base.V_l, P=base.P_max_at_V(base.V_l)-1)
+    with pytest.raises(Exception):
+        base.to(V=base.V_l, P=base.P_max_at_V(base.V_l)+1)
     
+def test_PR_high_pressure_not_always():
+    for T in linspace(10, 5000, 25):
+        for P in logspace(log10(.01*4872000.0), log10(4872000.0*1000), 25):
+            base = PR(Tc=305.32, Pc=4872000.0, omega=0.098, T=T, P=P)
+            try:
+                V = base.V_l
+            except:
+                V = base.V_g
+                
+            P_max = base.P_max_at_V(V)
+            assert P_max is None
+            PR(V=V, P=1e30, Tc=base.Tc, Pc=base.Pc, omega=base.omega)        
+            
 def test_PR_second_partial_derivative_shims():
     # Check the shims for the multi variate derivatives
     T = 400
@@ -547,6 +567,10 @@ def test_PRSV():
 
     with pytest.raises(Exception):
         PRSV(Tc=507.6, Pc=3025000, omega=0.2975, P=1E6, kappa1=0.05104)
+        
+    # One solve_T that did not work
+    test = PRSV(P=1e16, V=0.3498789873827434, Tc=507.6, Pc=3025000.0, omega=0.2975)
+    assert_allclose(test.T, 421177338800932.0)
 
 def test_PRSV2():
     eos = PRSV2(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, kappa1=0.05104, kappa2=0.8634, kappa3=0.460)
@@ -879,6 +903,10 @@ def test_APISRK_quick():
         APISRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299.) 
     with pytest.raises(Exception):
         APISRK(Tc=507.6, Pc=3025000, P=1E6,  T=299.)
+        
+    with pytest.raises(Exception):
+        # No T solution
+        APISRK(Tc=512.5, Pc=8084000.0, omega=0.559, P=1e9, V=0.00017556778406251403)
     
 
 def test_TWUPR_quick():
@@ -1552,3 +1580,36 @@ def test_PRTranslatedTwu():
     
     # First implementation of vapor pressure analytical derivative
     assert_allclose(eos.dPsat_dT(eos.T, polish=True), eos.dPsat_dT(eos.T), rtol=1e-9)
+    
+@pytest.mark.slow
+def test_eos_P_limits():
+    '''Test designed to take some volumes, push the EOS to those limits, and 
+    check that the EOS either recognizes the limit or solves fine
+    '''
+    Tcs = [507.6, 647.14, 190.56400000000002, 305.32, 611.7, 405.6, 126.2, 154.58, 512.5]
+    Pcs = [3025000.0, 22048320.0, 4599000.0, 4872000.0, 2110000.0, 11277472.5, 3394387.5, 5042945.25, 8084000.0]
+    omegas = [0.2975, 0.344, 0.008, 0.098, 0.49, 0.25, 0.04, 0.021, 0.559]
+    P_real_high = 1e20
+    for eos in eos_list:
+        for ci in range(len(Tcs)): # 
+            Tc, Pc, omega = Tcs[ci], Pcs[ci], omegas[ci]
+            Ts = linspace(.01*Tc, Tc*10, 15)
+            Ps = logspace(log10(Pc), log10(Pc*100000), 20)
+            for T in Ts:
+                for P in Ps:
+                    max_P = None
+                    base = eos(T=T, P=P, Tc=Tc, Pc=Pc, omega=omega)
+                    try:
+                        V = base.V_l
+                    except:
+                        V = base.V_g
+                    
+                    try:
+                        e_new = eos(V=V, P=P_real_high, Tc=Tc, Pc=Pc, omega=omega)
+                    except Exception as e:
+                        Pmax = base.P_max_at_V(V) 
+                        if Pmax is not None and Pmax < P_real_high:
+                            pass
+                        else:
+                            print(T, P, V, ci, eos.__name__, Tc, Pc, omega, e)
+                            raise ValueError("Failed")

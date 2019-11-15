@@ -40,6 +40,7 @@ from fluids.numerics import (UnconvergedError, trunc_exp, py_newton as newton,
                              oscillation_checking_wrapper, OscillationError,
                              NoSolutionError, NotBoundedError,
                              best_bounding_bounds)
+from numpy.testing import assert_allclose
 from scipy.optimize import minimize, fsolve, root
 from thermo.utils import (exp, log, log10, floor, copysign, normalize, has_matplotlib,
                           mixing_simple, property_mass_to_molar)
@@ -1104,7 +1105,9 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
         else:
             iter_var_val = secant(to_solve2, guess, xtol=xtol, ytol=ytol,
                                   maxiter=maxiter, bisection=True, low=min_bound, high=high)
-    except (UnconvergedError, OscillationError):
+    except (UnconvergedError, OscillationError, NotBoundedError):
+        # Unconverged - from newton/secant; oscillation - from the oscillation detector;
+        # NotBounded - from when EOS needs to solve T and there is no solution
         fprime = False
         if bounded and min_bound is not None and max_bound is not None:
             if checker:
@@ -3035,7 +3038,13 @@ class FlashPureVLS(FlashBase):
             new = self.flash(**kwargs)
             states.append(new)
         return states
-        
+    
+    def assert_flashes_same(self, reference, states, props=['T', 'P', 'V', 'S', 'H', 'G', 'U', 'A'], rtol=1e-7):
+        ref_props = [reference.value(k) for k in props]
+        for i, k in enumerate(props):
+            ref = ref_props[i]
+            for s in states:
+                assert_allclose(s.value(k), ref, rtol=rtol)
         
 
 
