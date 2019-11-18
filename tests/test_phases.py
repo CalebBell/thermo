@@ -33,6 +33,7 @@ from thermo.volume import *
 from thermo.heat_capacity import *
 from thermo.phase_change import *
 
+
 def test_GibbbsExcessLiquid_VaporPressure():
     # Binary ethanol-water
     VaporPressures = [VaporPressure(best_fit=(159.11, 514.7, [-2.3617526481119e-19, 7.318686894378096e-16, -9.835941684445551e-13, 7.518263303343784e-10, -3.598426432676194e-07, 0.00011171481063640762, -0.022458952185007635, 2.802615041941912, -166.43524219017118])),

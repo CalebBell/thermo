@@ -1637,7 +1637,10 @@ class EOSGas(Phase):
     
     def P_transitions(self):
         # EOS is guaranteed to be at correct temperature
-        return [self.eos_mix.P_discriminant_zero_l()]
+        try:
+            return [self.eos_mix.P_discriminant_zero_l()]
+        except:
+            return [self.eos_mix.P_discriminant_zero_g()]
 
     def T_transitions(self):
         try:
@@ -1646,10 +1649,16 @@ class EOSGas(Phase):
             return [self.eos_mix.T_discriminant_zero_g()]
 
     def T_max_at_V(self, V):
-        return self.eos_mix.T_max_at_V(V)
+        T_max = self.eos_mix.T_max_at_V(V)
+        if T_max is not None:
+            T_max = T_max*(1.0-1e-12)
+        return T_max
     
     def P_max_at_V(self, V):
-        return self.eos_mix.P_max_at_V(V)
+        P_max = self.eos_mix.P_max_at_V(V)
+        if P_max is not None:
+            P_max = P_max*(1.0-1e-12)
+        return P_max
 
 
 def build_EOSLiquid():

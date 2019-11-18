@@ -967,6 +967,9 @@ def test_TWUPR_quick():
     eos = TWUPR(Tc=507.6, Pc=3025000, omega=0.2975, V=0.007371700581036866, P=1E6)
     assert_allclose(eos.T, 900)
     
+    assert None == TWUPR(Tc=507.6, Pc=3025000, omega=0.2975, V=0.0001301755417057077, P=1E6).P_max_at_V(.0001301755417057077)
+    
+    
     
     
 def test_TWUSRK_quick():
@@ -1029,6 +1032,8 @@ def test_TWUSRK_quick():
     eos = TWUSRK(Tc=507.6, Pc=3025000, omega=0.2975, T=900., P=1E6)
     eos = TWUSRK(Tc=507.6, Pc=3025000, omega=0.2975, V=0.007422212960199866, P=1E6)
     assert_allclose(eos.T, 900)
+
+    assert None == TWUSRK(Tc=507.6, Pc=3025000, omega=0.2975, V=0.0001301755417057077, P=1E6).P_max_at_V(.0001301755417057077)
 
 def test_IG():
     Ts = [1e-20, 1e-5, 1, 100, 1000, 1e4, 1e7, 1e30]

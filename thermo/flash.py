@@ -39,7 +39,7 @@ from fluids.numerics import (UnconvergedError, trunc_exp, py_newton as newton,
                              logspace, oscillation_checker, damping_maintain_sign,
                              oscillation_checking_wrapper, OscillationError,
                              NoSolutionError, NotBoundedError,
-                             best_bounding_bounds)
+                             best_bounding_bounds, isclose)
 from numpy.testing import assert_allclose
 from scipy.optimize import minimize, fsolve, root
 from thermo.utils import (exp, log, log10, floor, copysign, normalize, has_matplotlib,
@@ -1022,13 +1022,16 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
             der_attr = 'd' + spec + '_d' + iter_var
         der_attr_fun = getattr(phase.__class__, der_attr)
 #        print('der_attr_fun', der_attr_fun)
-    def to_solve(guess):
+    def to_solve(guess, solved_phase=None):
         global iterations
         iterations += 1
 
-        phase_kwargs[iter_var] = guess
-        p = phase.to_zs_TPV(**phase_kwargs)
-        
+        if solved_phase is not None:
+            p = solved_phase
+        else:
+            phase_kwargs[iter_var] = guess
+            p = phase.to_zs_TPV(**phase_kwargs)
+
         err = spec_fun(p) - spec_val
         store[:] = (p, err)
         if fprime:
@@ -1051,32 +1054,55 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
             else:
                 max_bound = high = min(max_phys, max_bound)
 
+    # TV iterations
 
 
-    if fixed_var in ('T','P') and 0:
+    if fixed_var in ('T',) and ((fixed_var == 'T' and iter_var == 'P') or (fixed_var == 'P' and iter_var == 'T') or (fixed_var == 'T' and iter_var == 'V') ) and 1:
         try:
             fprime = False
-            phase_kwargs[iter_var] = guess # Dummy pressure does not matter
+            if iter_var == 'V':
+                dummy_iter = 1e8
+            else:
+                dummy_iter = guess
+            phase_kwargs[iter_var] = dummy_iter # Dummy pressure does not matter
             phase_temp = phase.to_zs_TPV(**phase_kwargs)
-            
-            if fixed_var == 'T':
-                transitions = phase_temp.P_transitions()
-            elif fixed_var == 'P':
-                transitions = phase_temp.T_transitions()
-            assert len(transitions) == 1
 
+            lower_phase, higher_phase = None, None
             delta = 1e-9
+            if fixed_var == 'T' and iter_var == 'P':
+                transitions = phase_temp.P_transitions()
+                assert len(transitions) == 1
+                under_trans, above_trans = transitions[0] * (1.0 - delta), transitions[0] * (1.0 + delta)
+            elif fixed_var == 'P' and iter_var == 'T':
+                transitions = phase_temp.T_transitions()
+                under_trans, above_trans = transitions[0] * (1.0 - delta), transitions[0] * (1.0 + delta)
+                assert len(transitions) == 1
+
+            elif fixed_var == 'T' and iter_var == 'V':
+                transitions = phase_temp.P_transitions()
+                delta = 1e-11
+                # not_separated = True
+                # while not_separated:
+                P_higher = transitions[0]*(1.0 + delta)  # Dummy pressure does not matter
+                lower_phase = phase.to_zs_TPV(T=fixed_var_val, zs=zs, P=P_higher)
+                P_lower = transitions[0]*(1.0 - delta)  # Dummy pressure does not matter
+                higher_phase = phase.to_zs_TPV(T=fixed_var_val, zs=zs, P=P_lower)
+                under_trans, above_trans = lower_phase.V(), higher_phase.V()
+                not_separated = isclose(under_trans, above_trans, rel_tol=1e-3)
+                # delta *= 10
+
+            # TODO is it possible to evaluate each limit at once, so half the work is avoided?
+
             bracketed_high, bracketed_low = False, False
-            under_trans, above_trans = transitions[0]*(1.0 - delta), transitions[0]*(1.0 + delta)
             if min_bound is not None:
                 f_min = to_solve(min_bound)
-                f_low_trans = to_solve(under_trans)
+                f_low_trans = to_solve(under_trans, lower_phase)
                 if f_min*f_low_trans <= 0.0:
                     bracketed_low = True
                     bounding_pair = (min(min_bound, under_trans), max(min_bound, under_trans))
             if max_bound is not None and not bracketed_low:
                 f_max = to_solve(max_bound)
-                f_max_trans = to_solve(above_trans)
+                f_max_trans = to_solve(above_trans, higher_phase)
                 if f_max*f_max_trans <= 0.0:
                     bracketed_high = True
                     bounding_pair = (min(max_bound, above_trans), max(max_bound, above_trans))
@@ -1088,6 +1114,8 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
                 oscillation_detection = False
                 high = bounding_pair[1] # restrict newton/secant just in case
                 min_bound, max_bound = bounding_pair
+                if not (min_bound < guess < max_bound):
+                    guess = 0.5*(min_bound + max_bound)
             else:
                 if min_bound is not None and transitions[0] < min_bound:
                     raise NotBoundedError("Not likely to bound")
@@ -1108,20 +1136,23 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
     else:
         to_solve2 = to_solve
         checker = None
-        
+    solve_bounded = False
+
     try:
         # All three variables P, T, V are positive but can grow unbounded, so
         # for the secant method, only set the one variable
         if fprime:
             iter_var_val = newton(to_solve2, guess, xtol=xtol, ytol=ytol, fprime=True,
-                                  maxiter=maxiter, bisection=True, low=min_bound, high=high)
+                                  maxiter=maxiter, bisection=True, low=min_bound, high=high, gap_detection=False)
         else:
             iter_var_val = secant(to_solve2, guess, xtol=xtol, ytol=ytol,
                                   maxiter=maxiter, bisection=True, low=min_bound, high=high)
     except (UnconvergedError, OscillationError, NotBoundedError):
+        solve_bounded = True
         # Unconverged - from newton/secant; oscillation - from the oscillation detector;
         # NotBounded - from when EOS needs to solve T and there is no solution
-        fprime = False
+    fprime = False
+    if solve_bounded:
         if bounded and min_bound is not None and max_bound is not None:
             if checker:
                 min_bound_prev, max_bound_prev, fa, fb = best_bounding_bounds(min_bound, max_bound,
@@ -1529,6 +1560,12 @@ def TVF_pure_secant(P_guess, T, liquids, gas, maxiter=200, xtol=1E-10):
         err = fugacity_liq - fugacity_gas
         store[:] = (lowest_phase, g, err)
         return err
+    if P_guess <  Phase.P_MIN_FIXED:
+        raise ValueError("Too low.")
+    # if P_guess <  Phase.P_MIN_FIXED:
+    #     low = None
+    # else:
+    #     low = Phase.P_MIN_FIXED
     Psat = secant(to_solve_secant, P_guess, xtol=xtol, maxiter=maxiter, low=Phase.P_MIN_FIXED)
     l, g, err = store
 
@@ -2660,12 +2697,16 @@ class FlashPureVLS(FlashBase):
                 spec_val = U
             
             # Only allow one
-            g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var)
-#            try:
-#                g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var)
+#            g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var)
+            try:
+                g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var)
+            except Exception as e:
 #            except UnconvergedError as e:
-#                # Not sure if good idea - would prefer to converge without
-#                g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var_backup)
+                if fixed_var == 'T' and iter_var in ('S', 'H', 'U'):
+                    g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var_backup)
+                else:
+                    raise e
+                # Not sure if good idea - would prefer to converge without
             phases = ls + ss
             if g:
                 phases += [g]
@@ -2723,6 +2764,8 @@ class FlashPureVLS(FlashBase):
 #            
         else:
             Psat = self.correlations.VaporPressures[0](T)
+        if Psat >= 0:
+            Psat = 1e-1
         
         gas = self.gas.to_TP_zs(T, Psat, zs)
         liquids = [l.to_TP_zs(T, Psat, zs) for l in self.liquids]

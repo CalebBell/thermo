@@ -1134,6 +1134,9 @@ def test_APISRKMIX_quick():
     # Gas phase only test point
     a = APISRKMIX(T=300, P=1E7, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
     assert_allclose(a.phis_g, [1.020708538988692, 0.8725461195162044]) 
+    
+    base = APISRKMIX(T=300, P=1E7, Tcs=[126.1], Pcs=[33.94E5], omegas=[0.04], zs=[1])
+    assert base.P_max_at_V(base.V_g) is None
 
 @pytest.mark.slow
 @pytest.mark.CoolProp

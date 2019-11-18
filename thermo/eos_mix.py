@@ -302,6 +302,34 @@ class GCEOSMIX(GCEOS):
         T, P, cmps = self.T, self.P, self.cmps
         return [self.to_TP_pure(T=T, P=P, i=i) for i in cmps]
 
+    
+    @property
+    def pseudo_Tc(self):
+        zs = self.zs
+        Tcs = self.Tcs
+        Tc = 0.0
+        for i in self.cmps:
+            Tc += zs[i]*Tcs[i]
+        return Tc
+
+    @property
+    def pseudo_Pc(self):
+        zs = self.zs
+        Pcs = self.Pcs
+        Pc = 0.0
+        for i in self.cmps:
+            Pc += zs[i]*Pcs[i]
+        return Pc
+
+    @property
+    def pseudo_a(self):
+        zs = self.zs
+        ais = self.ais
+        a = 0.0
+        for i in self.cmps:
+            a += zs[i]*ais[i]
+        return a
+
     def Psat(self, T, polish=False):
         if self.N == 1:
             Tc, Pc, omega, a = self.Tcs[0], self.Pcs[0], self.omegas[0], self.ais[0]
@@ -7874,7 +7902,14 @@ class APISRKMIX(SRKMIX, APISRK):
         self.solve(only_l=only_l, only_g=only_g)
         if fugacities:
             self.fugacities()
+            
+    def fast_init_specific(self, other):
+        self.S1s = other.S1s
+        self.S2s = other.S2s
 
+        self.b = b = sum([bi*zi for bi, zi in zip(self.bs, self.zs)])
+        self.delta = self.b
+        
     def setup_a_alpha_and_derivatives(self, i, T=None):
         r'''Sets `a`, `S1`, `S2` and `Tc` for a specific component before the 
         pure-species EOS's `a_alpha_and_derivatives` method is called. Both are 
@@ -7886,6 +7921,14 @@ class APISRKMIX(SRKMIX, APISRK):
         `GCEOSMIX.a_alpha_and_derivatives` after `a_alpha` is calculated for 
         every component'''
         del(self.a, self.Tc, self.S1, self.S2)
+
+    def P_max_at_V(self, V):
+        if self.N == 1 and self.S2s[0] == 0:
+            self.ms = self.S1s
+            P_max_at_V = SRK.P_max_at_V(self, V)
+            del self.ms
+            return P_max_at_V
+        return GCEOSMIX.P_max_at_V(self, V)
 
 
 def eos_Z_test_phase_stability(eos):        

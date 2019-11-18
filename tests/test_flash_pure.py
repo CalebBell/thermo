@@ -122,84 +122,6 @@ def test_PV_plot(fluid, eos, auto_range):
         assert max_err < 5e-9
 
 
-def test_SRK_high_P_PV_failure():
-    '''Numerical solve_T converging to a T in the range 200,000 K when there
-    was a lower T solution
-    '''
-    T, P, zs = 2000, 1e8, [1.0]
-    fluid_idx, eos = 7, SRKMIX # methanol
-    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
-    
-    kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
-                  HeatCapacityGases=pure_props.HeatCapacityGases)
-
-    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
-    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
-    flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
-
-    base = flasher.flash(T=T, P=P)
-    
-    PV = flasher.flash(P=P, V=base.V())
-    assert_allclose(T, PV.T, rtol=1e-7)
-
-
-def test_SRK_high_PT_on_SV_failure():
-    T, P, zs = 7609.496685459907, 423758716.06041414, [1.0]
-    fluid_idx, eos = 7, SRKMIX # methanol
-    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
-    
-    kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
-                  HeatCapacityGases=pure_props.HeatCapacityGases)
-
-    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
-    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
-    flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
-
-    base = flasher.flash(T=T, P=P)
-    
-    VS = flasher.flash(S=base.S(), V=base.V())
-    assert_allclose(T, VS.T, rtol=1e-7)
-    
-
-def test_TWU_SRK_PR_T_alpha_interp_failure():
-    '''a_alpha becomes 100-500; the EOS makes no sense. Limit it to a Tr no
-    around 1E-4 Tr to make it reasonable. 
-    '''
-    T, P, zs = 0.02595024211399719, 6135.90727341312, [1.0]
-    fluid_idx = 2 # ethane
-    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
-    
-    kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
-                  HeatCapacityGases=pure_props.HeatCapacityGases)
-    
-    for eos in [TWUSRKMIX, TWUPRMIX]:
-        liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
-        gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
-        flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
-        base = flasher.flash(T=T, P=P)
-        
-        PV = flasher.flash(P=P, V=base.V())
-        assert_allclose(T, PV.T, rtol=1e-8)
-
-
-def test_TWU_SRK_PR_T_alpha_interp_failure_2():
-    T, P, zs = .001, .001, [1.0]
-    fluid_idx = 0 # water
-    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
-    
-    kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
-                  HeatCapacityGases=pure_props.HeatCapacityGases)
-    
-    for eos in [TWUSRKMIX, TWUPRMIX]:
-        liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
-        gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
-        flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
-        base = flasher.flash(T=T, P=P)
-        
-        PV = flasher.flash(P=P, V=base.V())
-        assert_allclose(T, PV.T, rtol=1e-6)
-
-
 @pytest.mark.slow
 @pytest.mark.parametrize("auto_range", ['physical', 'realistic'])
 @pytest.mark.parametrize("fluid", pure_fluids)
@@ -460,6 +382,91 @@ def test_VS_plot(fluid, eos, auto_range):
 
     max_err = np.max(errs)
     assert max_err < 1e-8
+    
+#for fluid in pure_fluids:
+#    test_VS_plot(fluid, APISRKMIX, 'physical')
+
+@pytest.mark.slow
+@pytest.mark.parametrize("auto_range", ['physical', 'realistic'])
+@pytest.mark.parametrize("fluid", pure_fluids)
+@pytest.mark.parametrize("eos", eos_mix_list)
+def test_VH_plot(fluid, eos, auto_range):
+    if eos in (TWUPRMIX, TWUSRKMIX) and auto_range == 'physical':
+#         Garbage alpha function for very low T
+        return
+    T, P = 298.15, 101325.0
+    zs = [1.0]
+    fluid_idx = pure_fluids.index(fluid)
+    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
+    kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
+                  HeatCapacityGases=pure_props.HeatCapacityGases)
+
+    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+
+    flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
+
+    res = flasher.TPV_inputs(zs=zs, pts=50, spec0='T', spec1='P', check0='V', check1='H', prop0='T',
+                           trunc_err_low=1e-10, 
+                           trunc_err_high=1, color_map=cm_flash_tol(),
+                           auto_range=auto_range, 
+                           show=False)
+
+    matrix_spec_flashes, matrix_flashes, errs, plot_fig = res
+    
+    path = os.path.join(pure_surfaces_dir, fluid, "VH")
+    if not os.path.exists(path):
+        os.makedirs(path)
+    
+    key = '%s - %s - %s - %s' %('VH', eos.__name__, auto_range, fluid)
+    plot_fig.savefig(os.path.join(path, key + '.png'))
+    plt.close()
+
+    max_err = np.max(errs)
+    assert max_err < 1e-8
+
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("auto_range", ['physical', 'realistic'])
+@pytest.mark.parametrize("fluid", pure_fluids)
+@pytest.mark.parametrize("eos", eos_mix_list)
+def test_TS_plot(fluid, eos, auto_range):
+    '''
+    '''
+    #if eos in (TWUPRMIX, TWUSRKMIX) and auto_range == 'physical':
+        # Garbage alpha function for very low T
+    #    return
+    T, P = 298.15, 101325.0
+    zs = [1.0]
+    fluid_idx = pure_fluids.index(fluid)
+    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
+    kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
+                  HeatCapacityGases=pure_props.HeatCapacityGases)
+
+    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+
+    flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
+
+    res = flasher.TPV_inputs(zs=zs, pts=50, spec0='T', spec1='P', check0='T', check1='S', prop0='P',
+                           trunc_err_low=1e-10, 
+                           trunc_err_high=1, color_map=cm_flash_tol(),
+                           auto_range=auto_range, 
+                           show=False)
+
+    matrix_spec_flashes, matrix_flashes, errs, plot_fig = res
+    
+    path = os.path.join(pure_surfaces_dir, fluid, "TS")
+    if not os.path.exists(path):
+        os.makedirs(path)
+    
+    key = '%s - %s - %s - %s' %('TS', eos.__name__, auto_range, fluid)
+    plot_fig.savefig(os.path.join(path, key + '.png'))
+    plt.close()
+
+    max_err = np.max(errs)
+    assert max_err < 1e-8
 
 @pytest.mark.slow
 @pytest.mark.parametrize("fluid", pure_fluids)
@@ -524,47 +531,6 @@ def test_Psat_plot(fluid, eos):
 #    assert max_err < 1e-8
 
 
-
-@pytest.mark.slow
-@pytest.mark.parametrize("auto_range", ['physical', 'realistic'])
-@pytest.mark.parametrize("fluid", pure_fluids)
-@pytest.mark.parametrize("eos", eos_mix_list)
-def test_TS_plot(fluid, eos, auto_range):
-    '''
-    '''
-    #if eos in (TWUPRMIX, TWUSRKMIX) and auto_range == 'physical':
-        # Garbage alpha function for very low T
-    #    return
-    T, P = 298.15, 101325.0
-    zs = [1.0]
-    fluid_idx = pure_fluids.index(fluid)
-    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
-    kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
-                  HeatCapacityGases=pure_props.HeatCapacityGases)
-
-    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
-    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
-
-    flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
-
-    res = flasher.TPV_inputs(zs=zs, pts=50, spec0='T', spec1='P', check0='T', check1='S', prop0='P',
-                           trunc_err_low=1e-10, 
-                           trunc_err_high=1, color_map=cm_flash_tol(),
-                           auto_range=auto_range, 
-                           show=False)
-
-    matrix_spec_flashes, matrix_flashes, errs, plot_fig = res
-    
-    path = os.path.join(pure_surfaces_dir, fluid, "TS")
-    if not os.path.exists(path):
-        os.makedirs(path)
-    
-    key = '%s - %s - %s - %s' %('TS', eos.__name__, auto_range, fluid)
-    plot_fig.savefig(os.path.join(path, key + '.png'))
-    plt.close()
-
-    max_err = np.max(errs)
-    assert max_err < 1e-8
 
 
 @pytest.mark.slow
@@ -640,3 +606,118 @@ def test_PS_1P_vs_VL_issue0():
         obj = flasher.flash(T=166.0882782627715, P=P)
         hit = flasher.flash(P=obj.P, S=obj.S())
         assert_allclose(hit.T, obj.T)
+
+
+def test_SRK_high_P_PV_failure():
+    '''Numerical solve_T converging to a T in the range 200,000 K when there
+    was a lower T solution
+    '''
+    T, P, zs = 2000, 1e8, [1.0]
+    fluid_idx, eos = 7, SRKMIX # methanol
+    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
+    
+    kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
+                  HeatCapacityGases=pure_props.HeatCapacityGases)
+
+    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
+
+    base = flasher.flash(T=T, P=P)
+    
+    PV = flasher.flash(P=P, V=base.V())
+    assert_allclose(T, PV.T, rtol=1e-7)
+
+
+def test_SRK_high_PT_on_VS_failure():
+    T, P, zs = 7609.496685459907, 423758716.06041414, [1.0]
+    fluid_idx, eos = 7, SRKMIX # methanol
+    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
+    
+    kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
+                  HeatCapacityGases=pure_props.HeatCapacityGases)
+
+    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
+
+    base = flasher.flash(T=T, P=P)
+    
+    VS = flasher.flash(S=base.S(), V=base.V())
+    assert_allclose(T, VS.T, rtol=1e-7)
+
+    # Point where max P becomes negative - check it is not used
+    obj = flasher.flash(T=24.53751106639818, P=33529.24149249553)
+    flasher.flash(V=obj.V(), S=obj.S())
+    
+def test_APISRK_VS_at_Pmax_error_failure():
+    T, P, zs = 7196.856730011477, 355648030.6223078, [1.0]
+    fluid_idx, eos = 7, APISRKMIX # methanol
+    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
+    
+    kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
+                  HeatCapacityGases=pure_props.HeatCapacityGases)
+
+    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
+
+    base = flasher.flash(T=T, P=P)
+    
+    VS = flasher.flash(S=base.S(), V=base.V())
+    assert_allclose(T, VS.T, rtol=1e-7)
+
+def test_Twu_missing_Pmax_on_VS_failure():
+    T, P, zs = 855.4672535565693, 6.260516572014815, [1.0]
+    for eos in (TWUSRKMIX, TWUPRMIX):
+        fluid_idx = 7 # methanol
+        pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
+        
+        kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
+                      HeatCapacityGases=pure_props.HeatCapacityGases)
+    
+        liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+        gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+        flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
+        base = flasher.flash(T=T, P=P)
+        VS = flasher.flash(S=base.S(), V=base.V())
+        assert_allclose(T, VS.T, rtol=1e-7)
+
+def test_TWU_SRK_PR_T_alpha_interp_failure():
+    '''a_alpha becomes 100-500; the EOS makes no sense. Limit it to a Tr no
+    around 1E-4 Tr to make it reasonable. 
+    '''
+    T, P, zs = 0.02595024211399719, 6135.90727341312, [1.0]
+    fluid_idx = 2 # ethane
+    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
+    
+    kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
+                  HeatCapacityGases=pure_props.HeatCapacityGases)
+    
+    for eos in [TWUSRKMIX, TWUPRMIX]:
+        liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+        gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+        flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
+        base = flasher.flash(T=T, P=P)
+        
+        PV = flasher.flash(P=P, V=base.V())
+        assert_allclose(T, PV.T, rtol=1e-8)
+
+
+def test_TWU_SRK_PR_T_alpha_interp_failure_2():
+    T, P, zs = .001, .001, [1.0]
+    fluid_idx = 0 # water
+    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
+    
+    kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
+                  HeatCapacityGases=pure_props.HeatCapacityGases)
+    
+    for eos in [TWUSRKMIX, TWUPRMIX]:
+        liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+        gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+        flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
+        base = flasher.flash(T=T, P=P)
+        
+        PV = flasher.flash(P=P, V=base.V())
+        assert_allclose(T, PV.T, rtol=1e-6)
+

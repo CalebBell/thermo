@@ -34,7 +34,7 @@ from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              py_bisect as bisect, inf, polyder, chebder, 
                              trunc_exp, secant, linspace, logspace,
                              horner, horner_and_der2, derivative,
-                             roots_cubic_a2)
+                             roots_cubic_a2, isclose)
 from thermo.utils import R
 from thermo.utils import (Cp_minus_Cv, isobaric_expansion, 
                           isothermal_compressibility, 
@@ -107,6 +107,10 @@ class GCEOS(object):
     kwargs = {}
     N = 1
     multicomponent = False
+    P_zero_l_cheb_coeffs = None
+    P_zero_l_cheb_limits = (0.0, 0.0)
+    P_zero_g_cheb_coeffs = None
+    P_zero_g_cheb_limits = (0.0, 0.0)
     
     def __repr__(self):
         s = '%s(Tc=%s, Pc=%s, omega=%s, ' %(self.__class__.__name__, repr(self.Tc), repr(self.Pc), repr(self.omega))
@@ -2203,23 +2207,6 @@ should be calculated by this method, in a user subclass.')
          plt.ylim((-1e-3, 1e-3))
          plt.show()
 
-    def discriminant_at_T(self, P):
-        # Only P is allowed to be varied
-        RT = R*self.T
-        RT6 = RT**6
-        x0 = P*P
-        x1 = P*self.b + RT
-        x2 = self.a_alpha*self.b + self.epsilon*x1
-        x3 = P*self.epsilon
-        x4 = self.delta*x1
-        x5 = -P*self.delta + x1
-        x6 = self.a_alpha + x3 - x4
-        x2_2 = x2*x2
-        x5_2 = x5*x5
-        x6_2 = x6*x6
-        return x0*(18.0*P*x2*x5*x6 + 4.0*P*(-self.a_alpha - x3 + x4)**3 
-                   - 27.0*x0*x2_2 - 4.0*x2*x5_2*x5 + x5_2*x6_2)/RT6
-
     def T_discriminant_zero_l(self, guess=None):
         # Can also have one at g
         global niter
@@ -2270,8 +2257,52 @@ should be calculated by this method, in a user subclass.')
     @property          
     def discriminant(self):
         return self.discriminant_at_T(self.P)
-                   
+
+
+    def discriminant_at_T(self, P):
+        # Only P is allowed to be varied
+        RT = R*self.T
+        RT6 = RT**6
+        x0 = P*P
+        x1 = P*self.b + RT
+        x2 = self.a_alpha*self.b + self.epsilon*x1
+        x3 = P*self.epsilon
+        x4 = self.delta*x1
+        x5 = -P*self.delta + x1
+        x6 = self.a_alpha + x3 - x4
+        x2_2 = x2*x2
+        x5_2 = x5*x5
+        x6_2 = x6*x6
+        return x0*(18.0*P*x2*x5*x6 + 4.0*P*(-self.a_alpha - x3 + x4)**3 
+                   - 27.0*x0*x2_2 - 4.0*x2*x5_2*x5 + x5_2*x6_2)/RT6
+
+    def discriminant_at_T_mp(self, P):
+        import mpmath as mp
+        mp.mp.dps = 70
+        P, T, b, a_alpha, delta, epsilon, R_mp = [mp.mpf(i) for i in [P, self.T, self.b, self.a_alpha, self.delta, self.epsilon, R]]
+        RT = R_mp*T
+        RT6 = RT**6
+        x0 = P*P
+        x1 = P*b + RT
+        x2 = a_alpha*b + epsilon*x1
+        x3 = P*epsilon
+        x4 = delta*x1
+        x5 = -P*delta + x1
+        x6 = a_alpha + x3 - x4
+        x2_2 = x2*x2
+        x5_2 = x5*x5
+        x6_2 = x6*x6
+        disc = (x0*(18.0*P*x2*x5*x6 + 4.0*P*(-a_alpha - x3 + x4)**3
+                   - 27.0*x0*x2_2 - 4.0*x2*x5_2*x5 + x5_2*x6_2)/RT6)
+        return disc
+
     def P_discriminant_zero_l(self):
+        return self._P_discriminant_zero(low=True)
+    
+    def P_discriminant_zero_g(self):
+        return self._P_discriminant_zero(low=False)
+    
+    def _P_discriminant_zero(self, low):
         # Can also have one at g
         T, a_alpha = self.T, self.a_alpha
         b, epsilon, delta = self.b, self.epsilon, self.delta
@@ -2316,18 +2347,18 @@ should be calculated by this method, in a user subclass.')
             return err, fprime
 
         # New answer: Above critical T only high P result
-        # Ps = logspace(log10(1), log10(1e11), 40000)
+        # Ps = logspace(log10(1), log10(1e10), 40000)
         # errs = []
         # for P in Ps:
-        #     erri = discriminant_fun(P)[0]
-        #     # if erri < 0:
-        #     #     erri = -log10(abs(erri))
-        #     # else:
-        #     #     erri = log10(erri)
+        #     erri = self.discriminant_at_T(P)
+        #     if erri < 0:
+        #         erri = -log10(abs(erri))
+        #     else:
+        #         erri = log10(erri)
         #     errs.append(erri)
         # import matplotlib.pyplot as plt
         # plt.semilogx(Ps, errs, 'x')
-        # plt.ylim((-1e-3, 1e-3))
+        # # plt.ylim((-1e-3, 1e-3))
         # plt.show()
 
         # Checked once
@@ -2340,31 +2371,127 @@ should be calculated by this method, in a user subclass.')
         #     return p0 + step
         #low=1,damping_func=damping_func
         # 5e7
-        guesses = [1e5, 1e6, 1e7, 1e8, 1e9]
-        if self.N == 1:
+        
+        try:
+            Tc = self.Tc
+        except:
+            Tc = self.pseudo_Tc
+            
+        
+        guesses = [1e5, 1e6, 1e7, 1e8, 1e9, .5, 1e-4, 1e-8, 1e-12, 1e-16, 1e-20]
+        if not low:
+            guesses = [1e9, 1e10, 1e10, 5e10, 2e10, 5e9, 5e8, 1e8]
+        if self.N == 1 and low:
             try:
                 try:
                     Tc, Pc, omega = self.Tc, self.Pc, self.omega
                 except:
                     Tc, Pc, omega = self.Tcs[0], self.Pcs[0], self.omegas[0]
+                guesses.append(Pc*.99999999)
                 assert T/Tc > .3
                 P_wilson = Wilson_K_value(self.T, self.P, Tc, Pc, omega)*self.P
                 guesses.insert(0, P_wilson*3)
             except:
                 pass
+        
+        if low:
+            coeffs = self.P_zero_l_cheb_coeffs
+            coeffs_low, coeffs_high = self.P_zero_l_cheb_limits
+        else:
+            coeffs = self.P_zero_g_cheb_coeffs
+            coeffs_low, coeffs_high = self.P_zero_g_cheb_limits
+        
+        
+        if coeffs is not None:
+            try:
+                a = self.a
+            except:
+                a = self.pseudo_a
+            alpha = self.a_alpha/a
+                
+            try:
+                Pc = self.Pc
+            except:
+                Pc = self.pseudo_Pc
+                
+            Tr = self.T/Tc
+            alpha_Tr = alpha/(Tr)
+            x = alpha_Tr - 1.0
+            if coeffs_low < x <  coeffs_high:
+                constant = 0.5*(-coeffs_low - coeffs_high)
+                factor = 2.0/(coeffs_high - coeffs_low)
 
+                y = chebval(factor*(x + constant), coeffs)
+                P_trans = y*Tr*Pc
+
+                guesses.insert(0, P_trans)
+        
+        
         global_iter = 0
         for P in guesses:
             try:
                 global_iter += niter
                 niter = 0
-                P_disc = newton(discriminant_fun, P, fprime=True, xtol=1e-10, low=1, maxiter=200, bisection=False, damping=1)
+                # try:
+                #     P_disc = newton(discriminant_fun, P, fprime=True, xtol=1e-16, low=1, maxiter=200, bisection=False, damping=1)
+                # except:
+#                high = None
+#                if self.N == 1:
+#                    try:
+#                        high = self.Pc
+#                    except:
+#                        high = self.Pcs[0]
+#                    high *= (1+1e-11)
+                if not low and T < Tc:
+                    low_bound = 1e8
+                else:
+                    if Tr > .3:
+                        low_bound = 1.0
+                    else:
+                        low_bound = None
+                P_disc = newton(discriminant_fun, P, fprime=True, xtol=4e-12, low=low_bound,
+                                maxiter=80, bisection=False, damping=1)
                 assert P_disc > 0 and not P_disc == 1
+                if not low:
+                    assert P_disc > low_bound
                 break
             except:
                 pass
+
+        if not low:
+            assert P_disc > low_bound
+
+
         global_iter += niter
-        return P_disc
+        # for i in range(1000):
+        #     a = 1
+
+        if 0:
+            try:
+                P_disc = bisect(self.discriminant_at_T_mp, P_disc*(1-1e-8), P_disc*(1+1e-8), xtol=1e-18)
+            except:
+                try:
+                    P_disc = bisect(self.discriminant_at_T_mp, P_disc*(1-1e-5), P_disc*(1+1e-5), xtol=1e-18)
+                except:
+                    try:
+                        P_disc = bisect(self.discriminant_at_T_mp, P_disc*(1-1e-2), P_disc*(1+1e-2))
+                    except:
+                        pass
+                
+#        if not low:
+#            P_disc_base = None
+#            try:
+#                if T < Tc:
+#                    P_disc_base = self._P_discriminant_zero(True)
+#            except:
+#                pass
+#            if P_disc_base is not None:
+#                # pass
+#               if isclose(P_disc_base, P_disc, rel_tol=1e-4):
+#                   raise ValueError("Converged to wrong solution")
+        
+        
+        return float(P_disc)
     
     
         # Can take a while to converge
@@ -4401,6 +4528,9 @@ class PR(GCEOS):
                       0.06640627813169839, -0.13427456425899886, 0.1172205279608668, 
                       0.13594473870160448, -0.5560225934266592, 0.7087599054079694, 
                       0.6426353018023558]
+    
+    P_zero_l_cheb_coeffs = [0.13358936990391557, -0.20047353906149878, 0.15101308518135467, -0.11422662323168498, 0.08677799907222833, -0.06622719396774103, 0.05078577177767531, -0.03913992025038471, 0.030322206247168845, -0.023618484941949063, 0.018500212460075605, -0.014575143278285305, 0.011551352410948363, -0.00921093058565245, 0.007390713292456164, -0.005968132800177682, 0.00485080886172241, -0.003968872414987763, 0.003269291360484698, -0.002711665819666899, 0.0022651044970457743, -0.0019058978265104418, 0.0016157801830935644, -0.0013806283122768208, 0.0011894838915417153, -0.0010338173333182162, 0.0009069721482541163, -0.0008037443041438563, 0.0007200633946601682, -0.0006527508698173454, 0.0005993365082194993, -0.0005579199462298259, 0.0005270668422661141, -0.0005057321913053223, 0.0004932057251527365, -0.00024453764761005106]
+    P_zero_l_cheb_limits = (0.002068158270122966, 27.87515959722943)
 
     def __init__(self, Tc, Pc, omega, T=None, P=None, V=None, kwargs=None):
         self.Tc = Tc
@@ -5462,6 +5592,9 @@ class VDW(GCEOS):
                       0.021295687530901747, -0.32582447905247514, 0.521321793740683,
                       0.6950957738017804]
 
+    P_zero_l_cheb_coeffs = [0.23949680596158576, -0.28552048884377407, 0.17223773827357045, -0.10535895068953466, 0.06539081523178862, -0.04127943642449526, 0.02647106353835149, -0.017260750015435533, 0.011558172064668568, -0.007830624115831804, 0.005422844032253547, -0.00383463423135285, 0.0027718803475398936, -0.0020570084561681613, 0.0015155074622906842, -0.0011495238177958583, 0.000904782154904249, -0.000683347677699564, 0.0005800187592994201, -0.0004529246894177611, 0.00032901743817593566, -0.0002990561659229427, 0.00023524411148843384, -0.00019464055011993858, 0.0001441665975916752, -0.00013106835607900116, 9.72812311007959e-05, -7.611327134024459e-05, 5.240433315348986e-05, -3.6415012576658176e-05, 3.89310794418167e-05, -2.2160354688301534e-05, 2.7908599229672926e-05, 1.6405692108915904e-05, -1.3931165551671343e-06, -4.80770003354232e-06]
+    P_zero_l_cheb_limits = (0.002354706203222534, 9.0)
+
     def __init__(self, Tc, Pc, T=None, P=None, V=None, omega=None, kwargs=None):
         self.Tc = Tc
         self.Pc = Pc
@@ -5810,6 +5943,13 @@ class SRK(GCEOS):
                       0.05251643616017714, -0.11346125895127993, 0.12885073074459652,
                       0.0403144920149403, -0.39801902918654086, 0.5962308106352003, 
                       0.6656153310272716]
+    
+    P_zero_l_cheb_coeffs = [0.08380676900731782, -0.14019219743961803, 0.11742103327156811, -0.09849160801348428, 0.08273868596563422, -0.0696144897386927, 0.05866765693877264, -0.04952599518184439, 0.04188237509387957, -0.03548315864697149, 0.03011872010893725, -0.02561566850666065, 0.021830462208254395, -0.018644172238802145, 0.015958169671823057, -0.013690592984703707, 0.011773427351986342, -0.01015011684404267, 0.00877358083868034, -0.007604596012758029, 0.006610446573984768, -0.005763823407070205, 0.005041905306198975, -0.004425605918781876, 0.003898948480582476, -0.003448548272342346, 0.0030631866753461218, -0.002733454718851159, 0.0024514621141303247, -0.0022105921907339815, 0.002005302198095145, -0.0018309561248985515, 0.0016836870172771135, -0.0015602844635190134, 0.0014581002673540663, -0.0013749738886825284, 0.0013091699610779176, -0.001259330218826276, 0.001224435336044407, -0.0012037764696538264, 0.0005984681105455358]
+    P_zero_l_cheb_limits = (0.0009838646849082977, 77.36362033836788)
+    
+    P_zero_g_cheb_coeffs = [4074.379698522392, 4074.0787931079158, -0.011974050537509407, 0.011278738948946121, -0.010623695898806596, 0.010006612855718989, -0.00942531345107397, 0.008877745971729046, -0.008361976307962505, 0.007876181274528127, -0.007418642356788098, 0.006987739799033855, -0.006581946966943887, 0.006199825106351055, -0.00584001837117817, 0.005501249138059018, -0.0051823135959307666, 0.004882077534036101, -0.004599472449233056, 0.004333491845900562, -0.004083187738391304, 0.00384766734038441, -0.0036260899632846967, 0.00341766412351482, -0.003221644783037071, 0.003037330724301647, -0.0028640621256170408, 0.0027012182634600047, -0.0025482153614670667, 0.00240450452795168, -0.0022695698397005816, 0.002142926545674241, -0.0020241193744505405, 0.0019127209575542047, -0.0018083302956923518, 0.0017105713491642703, -0.0016190917803071369, 0.0015335616642137794, -0.0014536723452853405, 0.001379135339081262, -0.0013096813358352787, 0.001245059275896766, -0.0011850354079059, 0.001129392510023498, -0.0010779290997626433, 0.0010304587604847658, -0.0009868094600730913, 0.0009468229117978965, -0.0009103540735282088, 0.0008772706097128445, -0.0008474524304184726, 0.0008207912556403528, -0.0007971902270068286, 0.000776563594266667, -0.0007588363976502542, 0.0007439441894165576, -0.0007318328255327643, 0.0007224582401159317, -0.0007157863644244543, 0.0007117929301416425, -0.0003552316997513632]
+    P_zero_g_cheb_limits = (-0.9648141211597231, 34.80547339996925)
+
 
     def __init__(self, Tc, Pc, omega, T=None, P=None, V=None, kwargs=None):
         self.Tc = Tc
@@ -5874,7 +6014,7 @@ class SRK(GCEOS):
         
         P_max = -R*Tc*a*(m**2 + 2*m + 1)/(R*Tc*V**2 + R*Tc*V*b - V*a*m**2 + a*b*m**2)
         if P_max < 0.0:
-            return P_max
+            return None
         return P_max
         
 
@@ -6036,7 +6176,6 @@ class APISRK(SRK):
        American Petroleum Institute, 7E, 2005.
     '''
     
-    P_max_at_V = GCEOS.P_max_at_V
     def __init__(self, Tc, Pc, omega=None, T=None, P=None, V=None, S1=None,
                  S2=0, kwargs=None):
         self.Tc = Tc
@@ -6238,6 +6377,8 @@ class TWUPR(PR):
        Peng-Robinson Equation." Fluid Phase Equilibria 105, no. 1 (March 15, 
        1995): 49-59. doi:10.1016/0378-3812(94)02601-V.
     '''
+    P_max_at_V = GCEOS.P_max_at_V
+    
     def __init__(self, Tc, Pc, omega, T=None, P=None, V=None, kwargs=None):
         self.Tc = Tc
         self.Pc = Pc
@@ -6455,6 +6596,8 @@ class TWUSRK(SRK):
        Redlich-Kwong Equation." Fluid Phase Equilibria 105, no. 1 (March 15, 
        1995): 61-69. doi:10.1016/0378-3812(94)02602-W.
     '''
+    P_max_at_V = GCEOS.P_max_at_V
+    
     def __init__(self, Tc, Pc, omega, T=None, P=None, V=None, kwargs=None):
         self.Tc = Tc
         self.Pc = Pc
