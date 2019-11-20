@@ -83,6 +83,14 @@ class Phase(object):
         s += '>'
         return s
     
+    def value(self, name):
+        v = getattr(self, name)
+        try:
+            v = v()
+        except:
+            pass
+        return v
+
     def fugacities(self):
         P = self.P
         zs = self.zs

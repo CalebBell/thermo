@@ -42,6 +42,7 @@ from fluids.numerics import (UnconvergedError, trunc_exp, py_newton as newton,
                              best_bounding_bounds, isclose)
 from numpy.testing import assert_allclose
 from scipy.optimize import minimize, fsolve, root
+from scipy.interpolate import CubicSpline
 from thermo.utils import (exp, log, log10, floor, copysign, normalize, has_matplotlib,
                           mixing_simple, property_mass_to_molar)
 from thermo.heat_capacity import (Lastovka_Shaw_T_for_Hm, Dadgostar_Shaw_integral,
@@ -55,7 +56,7 @@ from thermo.equilibrium import EquilibriumState
 from thermo.phases import Phase, gas_phases, liquid_phases, solid_phases, EOSLiquid, EOSGas
 from thermo.phase_identification import identify_sort_phases
 from thermo.bulk import default_settings
-
+from thermo.eos_mix import VDWMIX
 
 
 def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
@@ -2573,12 +2574,20 @@ class FlashPureVLS(FlashBase):
         
         # TODO implement as function of phases/or EOS
         self.VL_only_CEOSs_same = (self.VL_only_CEOSs and 
-                                   type(self.liquids[0]) == type(self.gas) and 
-                                   self.liquids[0].kijs == self.gas.kijs)
+                                   self.liquids[0].eos_class is self.gas.eos_class
+                                   # self.liquids[0].kijs == self.gas.kijs
+                                   and (not isinstance(self.liquids[0], (VDWMIX,)) and not isinstance(self.gas, (VDWMIX,))))
 
 
     def flash(self, zs=None, T=None, P=None, VF=None, SF=None, V=None, H=None,
-              S=None, U=None):
+              S=None, U=None, G=None, A=None, solution=None):
+        '''
+        solution : str or int
+           When multiple solutions exist, they will be sorted by T (and then P)
+           increasingly; this number will index into the multiple solution
+           array. Strings are intended to be shortcuts for certain solutions.
+           Negative indexing is supported.
+        '''
         constants, correlations = self.constants, self.correlations
         settings = self.settings
         if zs is None:
@@ -2590,6 +2599,11 @@ class FlashPureVLS(FlashBase):
         H_spec = H is not None
         S_spec = S is not None
         U_spec = U is not None
+        
+        # Normally multiple solutions
+        A_spec = A is not None
+        G_spec = G is not None
+        
         VF_spec = VF is not None
         SF_spec = SF is not None
 
@@ -2606,6 +2620,11 @@ class FlashPureVLS(FlashBase):
             flash_specs['S'] = S
         if U_spec:
             flash_specs['U'] = U
+        if G_spec:
+            flash_specs['G'] = G
+        if A_spec:
+            flash_specs['A'] = A
+            
         if VF_spec:
             flash_specs['VF'] = VF
         if SF_spec:
@@ -2636,7 +2655,7 @@ class FlashPureVLS(FlashBase):
             flash_convergence = {'iterations': iterations, 'err': err}
             
             return EquilibriumState(T, Psat, zs, gas=g, liquids=[l], solids=[], 
-                                    betas=[VF, 1-VF], flash_specs=flash_specs, 
+                                    betas=[VF, 1.0 - VF], flash_specs=flash_specs,
                                     flash_convergence=flash_convergence,
                                     constants=constants, correlations=correlations,
                                     flasher=self)
@@ -2647,7 +2666,7 @@ class FlashPureVLS(FlashBase):
             flash_convergence = {'iterations': iterations, 'err': err}
 
             return EquilibriumState(Tsat, P, zs, gas=g, liquids=[l], solids=[], 
-                                    betas=[VF, 1-VF], flash_specs=flash_specs, 
+                                    betas=[VF, 1.0 - VF], flash_specs=flash_specs,
                                     flash_convergence=flash_convergence,
                                     constants=constants, correlations=correlations,
                                     flasher=self)
@@ -2677,6 +2696,9 @@ class FlashPureVLS(FlashBase):
                                     flash_convergence=flash_convergence,
                                     constants=constants, correlations=correlations,
                                     flasher=self)
+        elif VF_spec and any(H_spec, S_spec, U_spec, G_spec, A_spec):
+            data = self.flash_VF_HSGUA(VF=VF, flash_specs=flash_specs, 
+                                       solution=solution)
         
         single_iter_key = (T_spec, P_spec, V_spec, H_spec, S_spec, U_spec)
         if single_iter_key in spec_to_iter_vars:
@@ -2754,23 +2776,22 @@ class FlashPureVLS(FlashBase):
         else:
             return None, [], [lowest_phase], betas
 
-
-    
-    def flash_TVF(self, T, VF=None):
-        zs = [1]
+    def Psat_guess(self, T):
         if self.VL_only_CEOSs:
             # Two phase pure eoss are two phase up to the critical point only! Then one phase
             Psat = self.gas.eos_pures_STP[0].Psat(T)
-#            
+        #
         else:
             Psat = self.correlations.VaporPressures[0](T)
-        if Psat >= 0:
-            Psat = 1e-1
-        
+        return Psat
+
+    def flash_TVF(self, T, VF=None):
+        zs = [1]
+        Psat = self.Psat_guess(T)
         gas = self.gas.to_TP_zs(T, Psat, zs)
         liquids = [l.to_TP_zs(T, Psat, zs) for l in self.liquids]
 
-        if self.VL_only_CEOSs and 0:
+        if self.VL_only_CEOSs_same:
             return Psat, liquids[0], gas, 0, 0.0
 #        return TVF_pure_newton(Psat, T, liquids, gas, maxiter=200, xtol=1E-10)
         P = TVF_pure_secant(Psat, T, liquids, gas, maxiter=200, xtol=1E-10)
@@ -2786,7 +2807,7 @@ class FlashPureVLS(FlashBase):
         gas = self.gas.to_TP_zs(Tsat, P, zs)
         liquids = [l.to_TP_zs(Tsat, P, zs) for l in self.liquids]
         
-        if self.VL_only_CEOSs and 0:
+        if self.VL_only_CEOSs_same:
             return Tsat, liquids[0], gas, 0, 0.0
         return PVF_pure_newton(Tsat, P, liquids, gas, maxiter=200, xtol=1E-10)
 #        return PVF_pure_secant(Tsat, P, liquids, gas, maxiter=200, xtol=1E-10)
@@ -2888,9 +2909,9 @@ class FlashPureVLS(FlashBase):
             G_VL = 1e100
             # BUG - P IS NOW KNOWN!
             if self.gas_count and self.liquid_count:
-                if fixed_var == 'T':
+                if fixed_var == 'T' and self.Psat_guess(fixed_var_val) > 1e-2:                    
                     Psat, VL_liq, VL_gas, VL_iter, VL_err = self.flash_TVF(fixed_var_val, VF=.5)
-                elif fixed_var == 'P':
+                elif fixed_var == 'P' and fixed_var > 1e-2:
                     Tsat, VL_liq, VL_gas, VL_iter, VL_err = self.flash_PVF(fixed_var_val, VF=.5)
             elif fixed_var == 'V':
                 raise NotImplementedError("Does not make sense here because there is no actual vapor frac spec")
@@ -3102,7 +3123,54 @@ class FlashPureVLS(FlashBase):
             for s in states:
                 assert_allclose(s.value(k), ref, rtol=rtol)
         
+    def generate_VF_data(self, Pmin=None, Pmax=None, pts=50, 
+                         props=['T', 'P', 'V', 'S', 'H', 'G', 'U', 'A']):
+        Pc = self.constants.Pcs[0]
+        if Pmax is None:
+            Pmax = Pc
+        if Pmin is None:
+            Pmin = 1e-2
+            
+        Tmin, liquid, gas, iters, flash_err = self.flash_PVF(P=Pmin, VF=.5)
+        Tmax, liquid, gas, iters, flash_err = self.flash_PVF(P=Pmax, VF=.5)
+        
+        flash_cache = {}
+        
+        liq_props, gas_props = [[] for _ in range(len(props))], [[] for _ in range(len(props))]
+        Ts = linspace(Tmin, Tmax, pts)        
+        for T in Ts:
+            Psat, liquid, gas, iters, flash_err = self.flash_TVF(T, VF=.5)
+            for i, prop in enumerate(props):
+                liq_props[i].append(liquid.value(prop))
+                gas_props[i].append(gas.value(prop))
+        
+        return liq_props, gas_props
 
+    def build_VF_interpolators(self, T_base=True, P_base=True, pts=50):
+        self.liq_VF_interpolators = liq_VF_interpolators = {}
+        self.gas_VF_interpolators = gas_VF_interpolators = {}
+        props = ['T', 'P', 'V', 'S', 'H', 'G', 'U', 'A']
+        liq_props, gas_props = self.generate_VF_data(props=props, pts=pts)
+        if T_base and P_base:
+            base_props, base_idxs = ('T', 'P'), (0, 1)
+        elif T_base:
+            base_props, base_idxs = ('T',), (0,)
+        elif P_base:
+            base_props, base_idxs = ('P',), (1,)
+        
+        spline_kwargs = dict(bc_type='natural', extrapolate=False)
+        for base_prop, base_idx in zip(base_props, base_idxs):
+            xs = liq_props[base_idx]
+            for i, k in enumerate(props):
+                if i == base_idx:
+                    continue
+                spline = CubicSpline(xs, liq_props[i], **spline_kwargs)
+                liq_VF_interpolators[(base_prop, k)] = spline
+                
+                spline = CubicSpline(xs, gas_props[i], **spline_kwargs)
+                gas_VF_interpolators[(base_prop, k)] = spline
+            
+        
 
     def debug_TVF(self, T, VF=None, pts=2000):
         zs = [1]

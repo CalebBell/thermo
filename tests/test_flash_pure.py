@@ -513,9 +513,12 @@ def test_Psat_plot(fluid, eos):
     kwargs = dict(Tc=pure_const.Tcs[0], Pc=pure_const.Pcs[0], omega=pure_const.omegas[0])
     
     obj = eos(T=T, P=P, **kwargs)
-
+    
+    Tmin = kwargs['Tc']*.07
+    if eos is RK:
+        Tmin = kwargs['Tc']*.2
     errs, Psats_num, Psats_fit, plot_fig = obj.Psat_errors(plot=True, show=False, pts=100,
-                                     Tmin=kwargs['Tc']*.1, Tmax=kwargs['Tc'])
+                                     Tmin=Tmin, Tmax=kwargs['Tc'])
 
     
     path = os.path.join(pure_surfaces_dir, fluid, "Psat")
