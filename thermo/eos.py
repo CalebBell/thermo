@@ -2397,6 +2397,7 @@ should be calculated by this method, in a user subclass.')
     def P_discriminant_zero_g(self):
         return self._P_discriminant_zero(low=False)
 
+
     def P_discriminant_zeros_analytical(self, valid=False):
         r'''Method to calculate the pressures which zero the discriminant
         function of the general cubic eos. This is a quartic function
@@ -2439,13 +2440,72 @@ should be calculated by this method, in a user subclass.')
         a = a_alpha
         b, epsilon, delta = self.b, self.epsilon, self.delta
         
+        T_inv = 1.0/T
         # TODO cse
-
-        e = (2*a*delta + 4*a*b -R*T*delta**2 - a**2/(R*T) + 4*R*T*epsilon)
-        d = (-4*b*delta**2 + 16*b*epsilon - 2*delta**3 + 8*delta*epsilon + 12*a*b**2/(R*T) + 12*a*b*delta/(R*T) + 8*a*delta**2/(R*T) - 20*a*epsilon/(R*T) - 20*a**2*b/(R**2*T**2) - 10*a**2*delta/(R**2*T**2) + 4*a**3/(R**3*T**3))
-        c = (-6*b**2*delta**2/(R*T) + 24*b**2*epsilon/(R*T) - 6*b*delta**3/(R*T) + 24*b*delta*epsilon/(R*T) - delta**4/(R*T) + 2*delta**2*epsilon/(R*T) + 8*epsilon**2/(R*T) + 12*a*b**3/(R**2*T**2) + 18*a*b**2*delta/(R**2*T**2) + 10*a*b*delta**2/(R**2*T**2) - 4*a*b*epsilon/(R**2*T**2) + 2*a*delta**3/(R**2*T**2) - 2*a*delta*epsilon/(R**2*T**2) + 8*a**2*b**2/(R**3*T**3) + 8*a**2*b*delta/(R**3*T**3) - a**2*delta**2/(R**3*T**3) + 12*a**2*epsilon/(R**3*T**3))
-        b_coeff = (-4*b**3*delta**2/(R**2*T**2) + 16*b**3*epsilon/(R**2*T**2) - 6*b**2*delta**3/(R**2*T**2) + 24*b**2*delta*epsilon/(R**2*T**2) - 2*b*delta**4/(R**2*T**2) + 4*b*delta**2*epsilon/(R**2*T**2) + 16*b*epsilon**2/(R**2*T**2) - 2*delta**3*epsilon/(R**2*T**2) + 8*delta*epsilon**2/(R**2*T**2) + 4*a*b**4/(R**3*T**3) + 8*a*b**3*delta/(R**3*T**3) + 2*a*b**2*delta**2/(R**3*T**3) + 16*a*b**2*epsilon/(R**3*T**3) - 2*a*b*delta**3/(R**3*T**3) + 16*a*b*delta*epsilon/(R**3*T**3) - 2*a*delta**2*epsilon/(R**3*T**3) + 12*a*epsilon**2/(R**3*T**3))
-        a_coeff = (-b**4*delta**2/(R**3*T**3) + 4*b**4*epsilon/(R**3*T**3) - 2*b**3*delta**3/(R**3*T**3) + 8*b**3*delta*epsilon/(R**3*T**3) - b**2*delta**4/(R**3*T**3) + 2*b**2*delta**2*epsilon/(R**3*T**3) + 8*b**2*epsilon**2/(R**3*T**3) - 2*b*delta**3*epsilon/(R**3*T**3) + 8*b*delta*epsilon**2/(R**3*T**3) - delta**2*epsilon**2/(R**3*T**3) + 4*epsilon**3/(R**3*T**3))
+        x0 = 4.0*a
+        x1 = b*x0
+        x2 = a+a
+        x3 = delta*x2
+        x4 = R*T
+        x5 = 4.0*epsilon
+        x6 = delta*delta
+        x7 = a*a
+        x8 = T_inv*R_inv
+        x9 = 8.0*epsilon
+        x10 = b*x9
+        x11 = 4.0*delta
+        x12 = delta*x6
+        x13 = 2.0*x6
+        x14 = b*x13
+        x15 = a*x8
+        x16 = epsilon*x15
+        x20 = x8*x8
+        x17 = x20*x8
+        x18 = b*delta
+        x19 = 6.0*x15
+        x21 = x20*x7
+        x22 = 10.0*b
+        x23 = b*b
+        x24 = 6.0*x23
+        x25 = x0*x8
+        x26 = x6*x6
+        x27 = epsilon*epsilon
+        x28 = 8.0*x27
+        x29 = 24.0*epsilon
+        x30 = b*x12
+        x31 = epsilon*x13
+        x32 = epsilon*x8
+        x33 = 12.0*epsilon
+        x34 = b*x23
+        x35 = x2*x8
+        x36 = 8.0*x21
+        x37 = x15*x6
+        x38 = delta*x23
+        x39 = b*x28
+        x40 = x34*x9
+        x41 = epsilon*x12
+        x42 = x23*x23
+        
+        e = x1 + x3 + x4*x5 - x4*x6 - x7*x8
+        d = (4.0*x7*a*x17 - 10.0*delta*x21 + 2.0*(epsilon*x11 + x10 - x12
+             - x14 + x15*x24 + x18*x19 - x21*x22 + x25*x6) - 20.0*x16)
+        c = x8*(-x1*x32 + x12*x35 + x15*(12.0*x34 + 18.0*x38) + x18*(x29 + x36)
+                + x21*(x33 - x6) + x22*x37 + x23*(x29 + x36) - x24*x6 - x26
+                + x28 - x3*x32 - 6.0*x30 + x31)
+        b_coeff = (2.0*x20*(-b*x26 + delta*(x10*x15 + x25*x34) + epsilon*x14
+                            + x23*(x15*x9 - 3.0*x12 + x37) - x13*x34 - x15*x30
+                            -x16*x6 + x27*(x19 + x11) + x33*x38 + x35*x42 
+                            + x39 + x40 - x41))
+        a_coeff = x17*(-2.0*b*x41 + delta*(x39 + x40) 
+                       + x27*(4.0*epsilon - x6)
+                       - 2.0*x12*x34 + x23*(x28 + x31 - x26) 
+                       + x42*(x5 - x6))
+        
+#        e = (2*a*delta + 4*a*b -R*T*delta**2 - a**2/(R*T) + 4*R*T*epsilon)
+#        d = (-4*b*delta**2 + 16*b*epsilon - 2*delta**3 + 8*delta*epsilon + 12*a*b**2/(R*T) + 12*a*b*delta/(R*T) + 8*a*delta**2/(R*T) - 20*a*epsilon/(R*T) - 20*a**2*b/(R**2*T**2) - 10*a**2*delta/(R**2*T**2) + 4*a**3/(R**3*T**3))
+#        c = (-6*b**2*delta**2/(R*T) + 24*b**2*epsilon/(R*T) - 6*b*delta**3/(R*T) + 24*b*delta*epsilon/(R*T) - delta**4/(R*T) + 2*delta**2*epsilon/(R*T) + 8*epsilon**2/(R*T) + 12*a*b**3/(R**2*T**2) + 18*a*b**2*delta/(R**2*T**2) + 10*a*b*delta**2/(R**2*T**2) - 4*a*b*epsilon/(R**2*T**2) + 2*a*delta**3/(R**2*T**2) - 2*a*delta*epsilon/(R**2*T**2) + 8*a**2*b**2/(R**3*T**3) + 8*a**2*b*delta/(R**3*T**3) - a**2*delta**2/(R**3*T**3) + 12*a**2*epsilon/(R**3*T**3))
+#        b_coeff = (-4*b**3*delta**2/(R**2*T**2) + 16*b**3*epsilon/(R**2*T**2) - 6*b**2*delta**3/(R**2*T**2) + 24*b**2*delta*epsilon/(R**2*T**2) - 2*b*delta**4/(R**2*T**2) + 4*b*delta**2*epsilon/(R**2*T**2) + 16*b*epsilon**2/(R**2*T**2) - 2*delta**3*epsilon/(R**2*T**2) + 8*delta*epsilon**2/(R**2*T**2) + 4*a*b**4/(R**3*T**3) + 8*a*b**3*delta/(R**3*T**3) + 2*a*b**2*delta**2/(R**3*T**3) + 16*a*b**2*epsilon/(R**3*T**3) - 2*a*b*delta**3/(R**3*T**3) + 16*a*b*delta*epsilon/(R**3*T**3) - 2*a*delta**2*epsilon/(R**3*T**3) + 12*a*epsilon**2/(R**3*T**3))
+#        a_coeff = (-b**4*delta**2/(R**3*T**3) + 4*b**4*epsilon/(R**3*T**3) - 2*b**3*delta**3/(R**3*T**3) + 8*b**3*delta*epsilon/(R**3*T**3) - b**2*delta**4/(R**3*T**3) + 2*b**2*delta**2*epsilon/(R**3*T**3) + 8*b**2*epsilon**2/(R**3*T**3) - 2*b*delta**3*epsilon/(R**3*T**3) + 8*b*delta*epsilon**2/(R**3*T**3) - delta**2*epsilon**2/(R**3*T**3) + 4*epsilon**3/(R**3*T**3))
         roots = roots_quartic(a_coeff, b_coeff, c, d, e)
 #        roots = np.roots([a_coeff, b_coeff, c, d, e]).tolist()
         return roots
@@ -5865,38 +5925,62 @@ class VDW(GCEOS):
         self.no_T_spec = True
         return (P*V**2*(V - self.b) + V*self.a - self.a*self.b)/(R*V**2)
 
-    def _T_discriminant_zero_analytical(self, low):
-        '''
-    from sympy import *
-    P, T, V, R, b, a = symbols('P, T, V, R, b, a')
-    delta, epsilon = 0, 0
-    eta = b
-    B = b*P/(R*T)
-    deltas = delta*P/(R*T)
-    thetas = a*P/(R*T)**2
-    epsilons = epsilon*(P/(R*T))**2
-    etas = eta*P/(R*T)
-    
-    a_coeff = 1
-    b_coeff = (deltas - B - 1)
-    c = (thetas + epsilons - deltas*(B+1))
-    d = -(epsilons*(B+1) + thetas*etas)
-    disc = b_coeff*b_coeff*c*c - 4*a_coeff*c*c*c - 4*b_coeff*b_coeff*b_coeff*d - 27*a_coeff*a_coeff*d*d + 18*a_coeff*b_coeff*c*d
-    base = -(expand(disc/P**2*R**3*T**3/a))
-    base_T = simplify(base*T**3)
-    collect(expand(base_T), T).args
-    '''
-        P, a_alpha = self.P, self.a_alpha
-        a = a_alpha
-        b, epsilon, delta = self.b, self.epsilon, self.delta
+    def T_discriminant_zeros_analytical(self, valid=False):
+        r'''Method to calculate the temperatures which zero the discriminant
+        function of the `VDW` eos. This is an analytical cubic function solved
+        analytically.
         
-        d =4*P*a**2/R**3 + 4*P**3*b**4/R**3 +  8*P**2*a*b**2/R**3
-        c = (12*P**2*b**3/R**2 - 20*P*a*b/R**2)
-        b_coeff = (12*P*b**2/R - a/R)
-        a_coeff = 4*b
+        Parameters
+        ----------
+        valid : bool
+            Whether to filter the calculated temperatures so that they are all 
+            real, and positive only, [-]
+
+        Returns
+        -------
+        T_discriminant_zeros : float
+            Temperatures which make the discriminant zero, [K]
+            
+        Notes
+        -----
+        Calculated analytically. Derived as follows. Has multiple solutions.
+        
+        >>> from sympy import *
+        >>> P, T, V, R, b, a = symbols('P, T, V, R, b, a')
+        >>> delta, epsilon = 0, 0
+        >>> eta = b
+        >>> B = b*P/(R*T)
+        >>> deltas = delta*P/(R*T)
+        >>> thetas = a*P/(R*T)**2
+        >>> epsilons = epsilon*(P/(R*T))**2
+        >>> etas = eta*P/(R*T)
+        >>> a_coeff = 1
+        >>> b_coeff = (deltas - B - 1)
+        >>> c = (thetas + epsilons - deltas*(B+1))
+        >>> d = -(epsilons*(B+1) + thetas*etas)
+        >>> disc = b_coeff*b_coeff*c*c - 4*a_coeff*c*c*c - 4*b_coeff*b_coeff*b_coeff*d - 27*a_coeff*a_coeff*d*d + 18*a_coeff*b_coeff*c*d
+        >>> base = -(expand(disc/P**2*R**3*T**3/a))
+        >>> base_T = simplify(base*T**3)
+        >>> sln = collect(expand(base_T), T).args
+        '''
+        P, a, b = self.P, self.a_alpha, self.b
+        
+        b2 = b*b
+        x1 = P*b2
+        x0 = 12.0*x1
+        
+        d = 4.0*P*R_inv2*R_inv*(a*a + x1*(x1 +  2.0*a))
+        c = (x0 - 20.0*a)*R_inv2*b*P
+        b_coeff = (x0 - a)*R_inv
+        a_coeff = 4.0*b
 
         roots = roots_cubic(a_coeff, b_coeff, c, d)
 #        roots = np.roots([a_coeff, b_coeff, c, d]).tolist()
+        if valid:
+            # TODO - only include ones when switching phases from l/g to either g/l
+            # Do not know how to handle
+            roots = [r.real for r in roots if (r.real >= 0.0 and (abs(r.imag) <= 1e-12))]
+            roots.sort()
         return roots
 
     def P_discriminant_zeros_analytical(self, valid=False):

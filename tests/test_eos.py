@@ -1621,6 +1621,15 @@ def test_eos_P_limits():
 
 
 def test_T_discriminant_zeros_analytical():
+    # VDW
+    eos = VDW(Tc=647.14, Pc=22048320.0, omega=0.344, T=200., P=1E6)
+    roots_valid = eos.T_discriminant_zeros_analytical(True)
+    assert_allclose(roots_valid, [171.53074673774842, 549.7182388464873], rtol=1e-11)
+    roots_all = eos.T_discriminant_zeros_analytical(False)
+    roots_all_expect = (549.7182388464873, -186.23123149684938, 171.53074673774842)
+    assert_allclose(roots_all, roots_all_expect, rtol=1e-11)
+
+
     # RK
     eos = RK(Tc=647.14, Pc=22048320.0, omega=0.344, T=200., P=1E6)
     roots_valid = eos.T_discriminant_zeros_analytical(True)
