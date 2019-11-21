@@ -1618,3 +1618,13 @@ def test_eos_P_limits():
                         else:
                             print(T, P, V, ci, eos.__name__, Tc, Pc, omega, e)
                             raise ValueError("Failed")
+
+
+def test_P_discriminant_zeros_analytical():
+    eos = RK(Tc=647.14, Pc=22048320.0, omega=0.344, T=200., P=1E6)
+    roots_valid = eos.P_discriminant_zeros_analytical(True)
+    assert_allclose(roots_valid, [723466.3464543219, 8981875292.072151], rtol=1e-11)
+    roots_all = eos.P_discriminant_zeros_analytical(False)
+    roots_all_expect = [(-9086739151.717152+0j), (8981875292.072151+0j), (-1949439965.1103678+0j), (1037855078.6044959+731812729.1775476j), (1037855078.6044959-731812729.1775476j), (-493365697.06110173+0j), (723466.3464543219+0j), (-651421.085360629+0j)]
+    assert_allclose(roots_all, roots_all_expect, rtol=1e-11)
+        

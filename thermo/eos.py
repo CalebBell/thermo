@@ -34,7 +34,8 @@ from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              py_bisect as bisect, inf, polyder, chebder, 
                              trunc_exp, secant, linspace, logspace,
                              horner, horner_and_der2, derivative,
-                             roots_cubic_a2, isclose, NoSolutionError)
+                             roots_cubic_a2, isclose, NoSolutionError,
+                             roots_quartic)
 from thermo.utils import R
 from thermo.utils import (Cp_minus_Cv, isobaric_expansion, 
                           isothermal_compressibility, 
@@ -1521,6 +1522,54 @@ should be calculated by this method, in a user subclass.')
         sort_fun = lambda x: (x.real, x.imag)
         return sorted(self.raw_volumes, key=sort_fun)
     
+    def PIP_map(self, Tmin=1e-4, Tmax=1e4, Pmin=1e-2, Pmax=1e9,
+                      pts=50, plot=False, show=False, color_map=None):
+        Ts = logspace(log10(Tmin), log10(Tmax), pts)
+        Ps = logspace(log10(Pmin), log10(Pmax), pts)
+        kwargs = {}
+        if hasattr(self, 'zs'):
+            kwargs['zs'] = self.zs
+
+        PIPs = []            
+        for T in Ts:
+            PIP_row = []
+            for P in Ps:
+                kwargs['T'] = T
+                kwargs['P'] = P
+                obj = self.to(**kwargs)
+                if obj.phase == 'l/g':
+                    PIP_row.append(1)
+                elif obj.phase == 'g':
+                    PIP_row.append(0)
+                elif obj.phase == 'l':
+                    PIP_row.append(2)
+            PIPs.append(PIP_row)
+
+        if plot:
+            import matplotlib.pyplot as plt
+            from matplotlib import ticker, cm
+            from matplotlib.colors import LogNorm
+            X, Y = np.meshgrid(Ts, Ps)
+            z = np.array(PIPs).T
+            fig, ax = plt.subplots()                
+            if color_map is None:
+                color_map = cm.viridis
+            
+            im = ax.pcolormesh(X, Y, z, cmap=color_map, )#LogNorm
+            cbar = fig.colorbar(im, ax=ax)
+            cbar.set_label('PIP')
+
+            ax.set_yscale('log')
+            ax.set_xscale('log')
+            ax.set_xlabel('T')
+            ax.set_ylabel('P')
+            
+            
+            ax.set_title('Volume root/phase ID validation')
+            if show:
+                plt.show()
+                
+            return PIPs, fig
     
     @staticmethod
     def main_derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha,
@@ -2347,7 +2396,61 @@ should be calculated by this method, in a user subclass.')
     
     def P_discriminant_zero_g(self):
         return self._P_discriminant_zero(low=False)
-    
+
+    def P_discriminant_zeros_analytical(self, valid=False):
+        r'''Method to calculate the pressures which zero the discriminant
+        function of the general cubic eos. This is a quartic function
+        solved analytically.
+
+        
+        Parameters
+        ----------
+        valid : bool
+            Whether to filter the calculated pressures so that they are all 
+            real, and positive only, [-]
+
+        Returns
+        -------
+        P_discriminant_zeros : float
+            Pressures which make the discriminants zero, [Pa]
+            
+        Notes
+        -----
+        Calculated analytically. Derived as follows.
+        
+        >>> from sympy import *
+        >>> P, T, V, R, b, a, delta, epsilon = symbols('P, T, V, R, b, a, delta, epsilon')
+        >>> eta = b
+        >>> B = b*P/(R*T)
+        >>> deltas = delta*P/(R*T)
+        >>> thetas = a*P/(R*T)**2
+        >>> epsilons = epsilon*(P/(R*T))**2
+        >>> etas = eta*P/(R*T)
+        >>> a_coeff = 1
+        >>> b_coeff = (deltas - B - 1)
+        >>> c = (thetas + epsilons - deltas*(B+1))
+        >>> d = -(epsilons*(B+1) + thetas*etas)
+        >>> disc = b_coeff*b_coeff*c*c - 4*a_coeff*c*c*c - 4*b_coeff*b_coeff*b_coeff*d - 27*a_coeff*a_coeff*d*d + 18*a_coeff*b_coeff*c*d
+        >>> base = -(expand(disc/P**2*R**3*T**3))
+        >>> sln = collect(base, P)
+        '''
+        # Can also have one at g
+        T, a_alpha = self.T, self.a_alpha
+        a = a_alpha
+        b, epsilon, delta = self.b, self.epsilon, self.delta
+        
+        # TODO cse
+
+        e = (2*a*delta + 4*a*b -R*T*delta**2 - a**2/(R*T) + 4*R*T*epsilon)
+        d = (-4*b*delta**2 + 16*b*epsilon - 2*delta**3 + 8*delta*epsilon + 12*a*b**2/(R*T) + 12*a*b*delta/(R*T) + 8*a*delta**2/(R*T) - 20*a*epsilon/(R*T) - 20*a**2*b/(R**2*T**2) - 10*a**2*delta/(R**2*T**2) + 4*a**3/(R**3*T**3))
+        c = (-6*b**2*delta**2/(R*T) + 24*b**2*epsilon/(R*T) - 6*b*delta**3/(R*T) + 24*b*delta*epsilon/(R*T) - delta**4/(R*T) + 2*delta**2*epsilon/(R*T) + 8*epsilon**2/(R*T) + 12*a*b**3/(R**2*T**2) + 18*a*b**2*delta/(R**2*T**2) + 10*a*b*delta**2/(R**2*T**2) - 4*a*b*epsilon/(R**2*T**2) + 2*a*delta**3/(R**2*T**2) - 2*a*delta*epsilon/(R**2*T**2) + 8*a**2*b**2/(R**3*T**3) + 8*a**2*b*delta/(R**3*T**3) - a**2*delta**2/(R**3*T**3) + 12*a**2*epsilon/(R**3*T**3))
+        b_coeff = (-4*b**3*delta**2/(R**2*T**2) + 16*b**3*epsilon/(R**2*T**2) - 6*b**2*delta**3/(R**2*T**2) + 24*b**2*delta*epsilon/(R**2*T**2) - 2*b*delta**4/(R**2*T**2) + 4*b*delta**2*epsilon/(R**2*T**2) + 16*b*epsilon**2/(R**2*T**2) - 2*delta**3*epsilon/(R**2*T**2) + 8*delta*epsilon**2/(R**2*T**2) + 4*a*b**4/(R**3*T**3) + 8*a*b**3*delta/(R**3*T**3) + 2*a*b**2*delta**2/(R**3*T**3) + 16*a*b**2*epsilon/(R**3*T**3) - 2*a*b*delta**3/(R**3*T**3) + 16*a*b*delta*epsilon/(R**3*T**3) - 2*a*delta**2*epsilon/(R**3*T**3) + 12*a*epsilon**2/(R**3*T**3))
+        a_coeff = (-b**4*delta**2/(R**3*T**3) + 4*b**4*epsilon/(R**3*T**3) - 2*b**3*delta**3/(R**3*T**3) + 8*b**3*delta*epsilon/(R**3*T**3) - b**2*delta**4/(R**3*T**3) + 2*b**2*delta**2*epsilon/(R**3*T**3) + 8*b**2*epsilon**2/(R**3*T**3) - 2*b*delta**3*epsilon/(R**3*T**3) + 8*b*delta*epsilon**2/(R**3*T**3) - delta**2*epsilon**2/(R**3*T**3) + 4*epsilon**3/(R**3*T**3))
+        roots = roots_quartic(a_coeff, b_coeff, c, d, e)
+#        roots = np.roots([a_coeff, b_coeff, c, d, e]).tolist()
+        return roots
+        
+        
     def _P_discriminant_zero(self, low):
         # Can also have one at g
         T, a_alpha = self.T, self.a_alpha
@@ -5761,6 +5864,77 @@ class VDW(GCEOS):
         '''
         self.no_T_spec = True
         return (P*V**2*(V - self.b) + V*self.a - self.a*self.b)/(R*V**2)
+
+    def _T_discriminant_zero_analytical(self, low):
+        '''
+    from sympy import *
+    P, T, V, R, b, a = symbols('P, T, V, R, b, a')
+    delta, epsilon = 0, 0
+    eta = b
+    B = b*P/(R*T)
+    deltas = delta*P/(R*T)
+    thetas = a*P/(R*T)**2
+    epsilons = epsilon*(P/(R*T))**2
+    etas = eta*P/(R*T)
+    
+    a_coeff = 1
+    b_coeff = (deltas - B - 1)
+    c = (thetas + epsilons - deltas*(B+1))
+    d = -(epsilons*(B+1) + thetas*etas)
+    disc = b_coeff*b_coeff*c*c - 4*a_coeff*c*c*c - 4*b_coeff*b_coeff*b_coeff*d - 27*a_coeff*a_coeff*d*d + 18*a_coeff*b_coeff*c*d
+    base = -(expand(disc/P**2*R**3*T**3/a))
+    base_T = simplify(base*T**3)
+    collect(expand(base_T), T).args
+    '''
+        P, a_alpha = self.P, self.a_alpha
+        a = a_alpha
+        b, epsilon, delta = self.b, self.epsilon, self.delta
+        
+        d =4*P*a**2/R**3 + 4*P**3*b**4/R**3 +  8*P**2*a*b**2/R**3
+        c = (12*P**2*b**3/R**2 - 20*P*a*b/R**2)
+        b_coeff = (12*P*b**2/R - a/R)
+        a_coeff = 4*b
+
+        roots = roots_cubic(a_coeff, b_coeff, c, d)
+#        roots = np.roots([a_coeff, b_coeff, c, d]).tolist()
+        return roots
+
+    def P_discriminant_zeros_analytical(self, valid=False):
+        # Can also have one at g
+        '''
+        from sympy import *
+        P, T, V, R, b, a = symbols('P, T, V, R, b, a')
+        P_vdw = R*T/(V-b) - a/(V*V)
+        delta, epsilon = 0, 0
+        eta = b
+        B = b*P/(R*T)
+        deltas = delta*P/(R*T)
+        thetas = a*P/(R*T)**2
+        epsilons = epsilon*(P/(R*T))**2
+        etas = eta*P/(R*T)
+        
+        a_coeff = 1
+        b_coeff = (deltas - B - 1)
+        c = (thetas + epsilons - deltas*(B+1))
+        d = -(epsilons*(B+1) + thetas*etas)
+        disc = b_coeff*b_coeff*c*c - 4*a_coeff*c*c*c - 4*b_coeff*b_coeff*b_coeff*d - 27*a_coeff*a_coeff*d*d + 18*a_coeff*b_coeff*c*d
+        base = -(expand(disc/P**2*R**3*T**3/a))
+        collect(base, P).args
+        # disc
+        '''
+        
+        T, a_alpha = self.T, self.a_alpha
+        a = a_alpha
+        b, epsilon, delta = self.b, self.epsilon, self.delta
+        
+        d = 4*b - a/(R*T)
+        c = (12*b**2/(R*T) - 20*a*b/(R**2*T**2) + 4*a**2/(R**3*T**3))
+        b_coeff = (12*b**3/(R**2*T**2) + 8*a*b**2/(R**3*T**3))
+        a_coeff = 4*b**4/(R**3*T**3)
+
+        roots = roots_cubic(a_coeff, b_coeff, c, d)
+#        roots = np.roots([a_coeff, b_coeff, c, d]).tolist()
+        return roots
     
     @staticmethod
     def main_derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha,
@@ -5967,6 +6141,72 @@ class RK(GCEOS):
         except:
             # Turns out the above solution does not cover all cases
             return super(RK, self).solve_T(P, V)
+
+    def T_discriminant_zeros_analytical(self, valid=False):
+        r'''Method to calculate the temperatures which zero the discriminant
+        function of the `RK` eos. This is an analytical function with an
+        eighth order polynomial which is solved with `numpy`.
+
+        
+        Parameters
+        ----------
+        valid : bool
+            Whether to filter the calculated pressures so that they are all 
+            real, and positive only, [-]
+
+        Returns
+        -------
+        P_discriminant_zeros : float
+            Pressures which make the discriminants zero, [Pa]
+            
+        Notes
+        -----
+        Calculated analytically. Derived as follows.
+        '''
+        T, a, b, epsilon, delta = self.T, self.a, self.b, self.epsilon, self.delta
+        
+#        coeffs = [-R**4*T**5*a**4 + -R**8*T**11*b**4 +  34*R**6*T**8*a**2*b**2,
+#                 (-12*R**7*T**10*b**5 + 312*R**5*T**7*a**2*b**3 - 12*R**3*T**4*a**4*b),
+#                 (-62*R**6*T**9*b**6 + 1172*R**4*T**6*a**2*b**4 - 614*R**2*T**3*a**4*b**2 + 16*a**6),
+#                 (-180*R**5*T**8*b**7 + 2208*R**3*T**5*a**2*b**5 + 1236*R*T**2*a**4*b**3),
+#                 (-321*R**4*T**7*b**8 + 2194*R**2*T**4*a**2*b**6 - 129*T*a**4*b**4),
+#                 (-360*R**3*T**6*b**9 + 1128*R*T**3*a**2*b**7),
+#                 (-248*R**2*T**5*b**10 + 264*T**2*a**2*b**8),
+#                 -96*R*T**4*b**11,
+#                 -16*T**3*b**12,]
+        b2 = b*b
+        T2 = T*T
+        x0 = R4 = R2*R2
+        x1 = a2 = a*a
+        x2 = T3 = T*T2
+        x3 = R2*b2*x2
+        x4 = x1*x3
+        x5 = a4 = a2*a2
+        x6 = b4 = b2*b2
+        x7 = T3*T3*x0*x6
+        x8 = -x5 - x7
+        x9 = T3*T
+        x10 = T2 = T*T
+        
+        b8 = b4*b4
+        
+        coeffs = [-16.0*b8*b4*x2,
+                  -96.0*R*b8*b2*b*x9,
+                  8.0*b8*x10*(33.0*x1 - 31.0*x3),
+                  24.0*R*b4*b2*b*x2*(47.0*x1 - 15.0*x3),
+                  T*x6*(2194.0*x4 - 129.0*x5 - 321.0*x7),
+                  12.0*R*b2*b*x10*(184.0*x4 + 103.0*x5 - 15.0*x7),
+                  -62.0*R4*R2*T3*T3*T3*b2*b4 + 16.0*a4*a2 + 1172.0*x1*x7 - 614.0*x3*x5,
+                  12.0*R2*R*b*x9*(26.0*x4 + x8),
+                  T3*T2*x0*(34.0*x4 + x8)]
+
+        roots = np.roots(coeffs).tolist()
+        if valid:
+            # TODO - only include ones when switching phases from l/g to either g/l
+            # Do not know how to handle
+            roots = [r.real for r in roots if (r.real >= 0.0 and (abs(r.imag) <= 1e-12))]
+            roots.sort()
+        return roots
 
 class SRK(GCEOS):
     r'''Class for solving the Soave-Redlich-Kwong cubic 
