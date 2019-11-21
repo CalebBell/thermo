@@ -45,7 +45,7 @@ from thermo.activity import Wilson_K_value
 R2 = R*R
 R_2 = 0.5*R
 R_inv = 1.0/R
-
+R_inv2 = R_inv*R_inv
 
 class GCEOS(object):
     r'''Class for solving a generic Pressure-explicit three-parameter cubic 
@@ -6142,65 +6142,78 @@ class RK(GCEOS):
             # Turns out the above solution does not cover all cases
             return super(RK, self).solve_T(P, V)
 
+
     def T_discriminant_zeros_analytical(self, valid=False):
         r'''Method to calculate the temperatures which zero the discriminant
         function of the `RK` eos. This is an analytical function with an
-        eighth order polynomial which is solved with `numpy`.
-
+        11-coefficient polynomial which is solved with `numpy`.
         
         Parameters
         ----------
         valid : bool
-            Whether to filter the calculated pressures so that they are all 
+            Whether to filter the calculated temperatures so that they are all 
             real, and positive only, [-]
 
         Returns
         -------
-        P_discriminant_zeros : float
-            Pressures which make the discriminants zero, [Pa]
+        T_discriminant_zeros : float
+            Temperatures which make the discriminant zero, [K]
             
         Notes
         -----
-        Calculated analytically. Derived as follows.
+        Calculated analytically. Derived as follows. Has multiple solutions.
+        
+        >>> from sympy import *
+        >>> P, T, V, R, b, a, Troot = symbols('P, T, V, R, b, a, Troot')
+        >>> a_alpha = a/sqrt(T)
+        >>> delta, epsilon = b, 0
+        >>> eta = b
+        >>> B = b*P/(R*T)
+        >>> deltas = delta*P/(R*T)
+        >>> thetas = a_alpha*P/(R*T)**2
+        >>> epsilons = epsilon*(P/(R*T))**2
+        >>> etas = eta*P/(R*T)
+        >>> a_coeff = 1
+        >>> b_coeff = (deltas - B - 1)
+        >>> c = (thetas + epsilons - deltas*(B+1))
+        >>> d = -(epsilons*(B+1) + thetas*etas)
+        >>> disc = b_coeff*b_coeff*c*c - 4*a_coeff*c*c*c - 4*b_coeff*b_coeff*b_coeff*d - 27*a_coeff*a_coeff*d*d + 18*a_coeff*b_coeff*c*d
+        >>> new_disc = disc.subs(sqrt(T), Troot)
+        >>> new_T_base = expand(expand(new_disc)*Troot**15)
+        >>> ans = collect(new_T_base, Troot).args
         '''
-        T, a, b, epsilon, delta = self.T, self.a, self.b, self.epsilon, self.delta
-        
-#        coeffs = [-R**4*T**5*a**4 + -R**8*T**11*b**4 +  34*R**6*T**8*a**2*b**2,
-#                 (-12*R**7*T**10*b**5 + 312*R**5*T**7*a**2*b**3 - 12*R**3*T**4*a**4*b),
-#                 (-62*R**6*T**9*b**6 + 1172*R**4*T**6*a**2*b**4 - 614*R**2*T**3*a**4*b**2 + 16*a**6),
-#                 (-180*R**5*T**8*b**7 + 2208*R**3*T**5*a**2*b**5 + 1236*R*T**2*a**4*b**3),
-#                 (-321*R**4*T**7*b**8 + 2194*R**2*T**4*a**2*b**6 - 129*T*a**4*b**4),
-#                 (-360*R**3*T**6*b**9 + 1128*R*T**3*a**2*b**7),
-#                 (-248*R**2*T**5*b**10 + 264*T**2*a**2*b**8),
-#                 -96*R*T**4*b**11,
-#                 -16*T**3*b**12,]
-        b2 = b*b
-        T2 = T*T
-        x0 = R4 = R2*R2
-        x1 = a2 = a*a
-        x2 = T3 = T*T2
-        x3 = R2*b2*x2
-        x4 = x1*x3
-        x5 = a4 = a2*a2
-        x6 = b4 = b2*b2
-        x7 = T3*T3*x0*x6
-        x8 = -x5 - x7
-        x9 = T3*T
-        x10 = T2 = T*T
-        
-        b8 = b4*b4
-        
-        coeffs = [-16.0*b8*b4*x2,
-                  -96.0*R*b8*b2*b*x9,
-                  8.0*b8*x10*(33.0*x1 - 31.0*x3),
-                  24.0*R*b4*b2*b*x2*(47.0*x1 - 15.0*x3),
-                  T*x6*(2194.0*x4 - 129.0*x5 - 321.0*x7),
-                  12.0*R*b2*b*x10*(184.0*x4 + 103.0*x5 - 15.0*x7),
-                  -62.0*R4*R2*T3*T3*T3*b2*b4 + 16.0*a4*a2 + 1172.0*x1*x7 - 614.0*x3*x5,
-                  12.0*R2*R*b*x9*(26.0*x4 + x8),
-                  T3*T2*x0*(34.0*x4 + x8)]
+        P, a, b, epsilon, delta = self.P, self.a, self.b, self.epsilon, self.delta
 
+        P2 = P*P
+        P3 = P2*P
+        P4 = P2*P2
+        R_inv4 = R_inv2*R_inv2
+        R_inv5 = R_inv4*R_inv
+        R_inv6 = R_inv4*R_inv2
+        b2 = b*b
+        b3 = b2*b
+        b4 = b2*b2
+        a2 = a*a
+        x5 = 15.0*a2
+        x8 = 2.0*P3
+        x9 = b4*b*R_inv
+        x13 = 6.0*R_inv*R_inv2
+ 
+        coeffs = [P2*b2*R_inv2,
+                  0.0,
+                  P3*b3*x13,
+                  -a*b*P2*x13,
+                  13.0*R_inv4*P4*b4,
+                  -32.0*a*P3*R_inv4*b2,
+                  P2*R_inv4*(12.0*P3*x9 + a2),
+                  -42.0*a*b3*P4*R_inv5,
+                  b*R_inv5*x8*(x5 + x8*x9),
+                  -12.0*P2*P3*a*R_inv6*b4,
+                  -R_inv6*b2*P4*x5,
+                  -4.0*a2*a*P3*R_inv6]
+        
         roots = np.roots(coeffs).tolist()
+        roots = [i*i for i in roots]
         if valid:
             # TODO - only include ones when switching phases from l/g to either g/l
             # Do not know how to handle

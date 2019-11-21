@@ -1620,11 +1620,12 @@ def test_eos_P_limits():
                             raise ValueError("Failed")
 
 
-def test_P_discriminant_zeros_analytical():
+def test_T_discriminant_zeros_analytical():
+    # RK
     eos = RK(Tc=647.14, Pc=22048320.0, omega=0.344, T=200., P=1E6)
-    roots_valid = eos.P_discriminant_zeros_analytical(True)
-    assert_allclose(roots_valid, [723466.3464543219, 8981875292.072151], rtol=1e-11)
-    roots_all = eos.P_discriminant_zeros_analytical(False)
-    roots_all_expect = [(-9086739151.717152+0j), (8981875292.072151+0j), (-1949439965.1103678+0j), (1037855078.6044959+731812729.1775476j), (1037855078.6044959-731812729.1775476j), (-493365697.06110173+0j), (723466.3464543219+0j), (-651421.085360629+0j)]
+    roots_valid = eos.T_discriminant_zeros_analytical(True)
+    assert_allclose(roots_valid, [226.54569586014907, 581.5258414845399, 6071.904717499858], rtol=1e-11)
+    roots_all = eos.T_discriminant_zeros_analytical(False)
+    roots_all_expect = [(-3039.5486755087554-5260.499733964365j), (-3039.5486755087554+5260.499733964365j), (6071.904717499858+0j), (-287.16659607284214-501.5089438353455j), (-287.16659607284214+501.5089438353455j), (65.79460205013443-221.4001851805135j), (65.79460205013443+221.4001851805135j), (581.5258414845399+0j), (-194.3253376956101+136.82750992885255j), (-194.3253376956101-136.82750992885255j), (226.54569586014907+0j)]
     assert_allclose(roots_all, roots_all_expect, rtol=1e-11)
-        
+            
