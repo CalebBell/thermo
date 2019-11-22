@@ -29,6 +29,7 @@ __all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',
 ]
 
 from cmath import atanh as catanh, log as clog
+from math import isnan
 from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              roots_cubic_a1, numpy as np, py_newton as newton,
                              py_bisect as bisect, inf, polyder, chebder, 
@@ -1122,15 +1123,15 @@ should be calculated by this method, in a user subclass.')
             try:
                 # found case 20 extrapec not enough, increased to 30
                 # Found another case needing 40
-                for i in range(4):
+                for i in range(8):
                     try:
-                        # Found 1 case 100 steps not enough needed 200
-                        roots = mp.polyroots([mp.mpf(1.0), b, c, d], extraprec=extraprec, maxsteps=400)
+                        # Found 1 case 100 steps not enough needed 200; then found place 400 was not enough
+                        roots = mp.polyroots([mp.mpf(1.0), b, c, d], extraprec=extraprec, maxsteps=2000)
                         break
                     except Exception as e:
                         extraprec += 20
 #                        print(e, extraprec)
-                        if i == 3:
+                        if i == 7:
 #                            print(e, 'failed')
                             raise e
 
@@ -1148,6 +1149,7 @@ should be calculated by this method, in a user subclass.')
                 hits = [V*RT_P for V in roots]
 
         if roots is None:
+            print('trying numerical mpmath')
             guesses = GCEOS.volume_solutions_fast(T, P, b, delta, epsilon, a_alpha)
             RT = T*R
             def err(V):
@@ -1794,7 +1796,13 @@ should be calculated by this method, in a user subclass.')
                 err = fugacity_l - fugacity_g
                 
                 d_err_d_P = e.dfugacity_dP_l - e.dfugacity_dP_g # -1 for low pressure
+                if isnan(d_err_d_P):
+                    d_err_d_P = -1.0
                 # print('err', err, 'rel err', err/P, 'd_err_d_P', d_err_d_P, 'P', P)
+                # Clamp the derivative - if it will step to zero or negative, dampen to half the distance which gets to zero
+                if (P - err*d_err_d_P) <= 0.0:
+                    d_err_d_P = -1.01
+
                 return err, d_err_d_P
             try:
                 try:
@@ -6047,10 +6055,10 @@ class VDW(GCEOS):
         (R/(V - b), -R*T/(V - b)**2 + 2*a/V**3, 0, 2*(R*T/(V - b)**3 - 3*a/V**4), -R/(V - b)**2, P*V - R*T - a/V, R*(-log(V) + log(V - b)) + R*log(P*V/(R*T)), 0)
         '''
         dP_dT = R/(V - b)
-        dP_dV = -R*T/(V - b)**2 + 2*a_alpha/V**3
+        dP_dV = -R*T*(V - b)**-2 + 2*a_alpha*V**-3
         d2P_dT2 = 0
-        d2P_dV2 = 2*(R*T/(V - b)**3 - 3*a_alpha/V**4)
-        d2P_dTdV = -R/(V - b)**2
+        d2P_dV2 = 2*(R*T*(V - b)**-3 - 3*a_alpha*V**-4) # Causes issues at low T when V fourth power fails
+        d2P_dTdV = -R*(V - b)**-2
         H_dep = P*V - R*T - a_alpha/V
         S_dep = R*(-log(V) + log(V - b)) + R*log(P*V/(R*T))
         Cv_dep = 0
