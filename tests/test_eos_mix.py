@@ -2966,6 +2966,30 @@ def test_volume_issues():
     # Case where NR switches which root is converged to
     obj = PR78MIX(Tcs=[647.14], Pcs=[22048320.0], omegas=[0.344], kijs=[[0]], zs=[1], T=494.1713361323858, P=0.13257113655901095)
     assert obj.volume_error() < 1e-12
+    
+    
+@pytest.mark.mpmath
+def test_volume_issues_low_P():
+    # Low pressure  section
+    eos = PRMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    assert eos.to(T=0.0004498432668969453, P=2.3299518105153813e-20, zs=eos.zs).volume_error() < 1e-12
+    
+    assert eos.to(T=0.00021209508879201926, P=3.5564803062232667e-11, zs=eos.zs).volume_error() < 1e-12
+    assert eos.to(T=7.906043210907728, P=7.543120063354915e-15, zs=eos.zs).volume_error() < 1e-12
+    assert eos.to(T=206.9138081114788, P=1.4384498882876541e-05, zs=eos.zs).volume_error() < 1e-12
+
+    assert eos.to(T=1e-6, P=2.3299518105153813e-20, zs=eos.zs).volume_error() < 1e-12
+        
+    eos = PR(Tc=190.564, Pc=4599000.0, omega=0.008, T=0.00014563484775, P=2.81176869797e-06)
+    assert eos.volume_error() < 1e-12
+
+    eos = PR(Tc=190.56400000000002, Pc=4599000.0, omega=0.008, T=0.00014563484775, P=2.81176869797e-150)
+    assert eos.volume_error() < 1e-12
+
+    eos = TWUSRKMIX(T=1e-4, P=1e-200, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    assert eos.volume_error() < 1e-12
+    eos = PRSV(Tc=507.6, Pc=3025000, omega=0.2975, T=0.013257113655901155, P=0.00033932217718954545, kappa1=0.05104)
+    assert eos.volume_error() < 1e-12
 
 
 def test_solve_T_issues():

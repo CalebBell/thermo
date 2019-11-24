@@ -965,6 +965,15 @@ should be calculated by this method, in a user subclass.')
         if P < 1e-2:
         # if 0 or (0 and ((T < 1e-2 and P > 1e6) or (P < 1e-3 and T < 1e-2) or (P < 1e-1 and T < 1e-4) or P < 1)):
             # Not perfect but so much wasted dev time need to move on, try other fluids and move this tolerance up if needed
+            # if P < min(GCEOS.P_discriminant_zeros_analytical(T=T, b=b, delta=delta, epsilon=epsilon, a_alpha=a_alpha, valid=True)):
+                # TODO - need function that returns range two solutions are available!
+                # Very important because the below strategy only works for that regime.
+            if T > 1e-2 or 1:
+                try:
+                    return GCEOS.volume_solutions_NR_low_P(T, P, b, delta, epsilon, a_alpha)
+                except Exception as e:
+                    print(e, 'was not 2 phase')
+            
             try:
                 return GCEOS.volume_solutions_mpmath_float(T, P, b, delta, epsilon, a_alpha)
             except:
@@ -1093,6 +1102,78 @@ should be calculated by this method, in a user subclass.')
 #    volume_solutions = volume_solutions_Cardano
 
     @staticmethod
+    def volume_solutions_NR_low_P(T, P, b, delta, epsilon, a_alpha, quick=True, 
+                                  tries=0):
+
+        P_inv = 1/P
+        def err_fun(V):
+            denom1 = 1.0/(V*(V + delta) + epsilon)
+            denom0 = 1.0/(V-b)
+            w0 = R*T*denom0
+            w1 = a_alpha*denom1
+            err = w0 - w1 - P
+            return err
+        
+#        failed = False
+        Vs = [R*T/P, b*1.000001]
+        max_err, rel_err = 0.0, 0.0
+        for i, damping in zip((0, 1), (1.0, 1.0)):
+            V = Vi = Vs[i]
+            err = 0.0
+            for _ in range(31):
+                denom1 = 1.0/(V*(V + delta) + epsilon)
+                denom0 = 1.0/(V-b)
+                w0 = R*T*denom0
+                w1 = a_alpha*denom1
+                if w0 - w1 - P == err:
+                    break # No change in error
+                err = w0 - w1 - P
+                derr_dV = (V + V + delta)*w1*denom1 - w0*denom0
+                if derr_dV != 0.0:
+                    V = V - err/derr_dV*damping
+                rel_err = abs(err*P_inv)
+                if rel_err < 1e-14 or V == Vi:
+                    # Conditional check probably not worth it
+                    break
+            if i == 1 and V > 1.5*b or V < b:
+                # try:
+                    # try:
+                try:
+                    V = brenth(err_fun, b*(1.0+1e-12), b*(1.5), xtol=1e-14)
+
+                    denom1 = 1.0/(V*(V + delta) + epsilon)
+                    denom0 = 1.0/(V-b)
+                    w0 = R*T*denom0
+                    w1 = a_alpha*denom1
+                    err = w0 - w1 - P
+                    derr_dV = (V + V + delta)*w1*denom1 - w0*denom0
+                    V_1NR = V - err/derr_dV*damping
+                    if abs((V_1NR-V)/V) < 1e-10:
+                        V = V_1NR
+
+                except:
+                    V = 1j
+            if i == 0 and rel_err > 1e-8:
+                V = 1j
+#                    failed = True
+                    # except:
+                    #     V = brenth(err_fun, b*(1.0+1e-12), b*(1.5))
+                # except:
+                #     pass
+                    # print([T, P, 'fail on brenth low P root'])
+            Vs[i] = V
+#            max_err = max(max_err, rel_err)
+        Vs.append(1j)
+#        if failed:
+            
+        
+        
+        return Vs
+
+
+
+
+    @staticmethod
     def volume_solutions_mpmath(T, P, b, delta, epsilon, a_alpha, quick=True, dps=30):
         # Tried to remove some green on physical TV with more than 30, could not
         # 30 is fine, but do not dercease further!
@@ -1102,8 +1183,11 @@ should be calculated by this method, in a user subclass.')
         # PRMIX(T=1e-2, P=1e-5, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]]).volume_error()
         # Once found it possible to compute VLE down to 0.03 Tc with ~400 steps and ~500 dps. 
         # need to start with a really high dps to get convergence or it is discontinuous
+        if P == 0.0 or T == 0.0:
+            raise ValueError("Bad P or T; issue is not the algorithm")
+        
         import mpmath as mp
-        mp.mp.dps = dps + 400
+        mp.mp.dps = dps + 400#400
         b, T, P, epsilon, delta, a_alpha = [mp.mpf(i) for i in [b, T, P, epsilon, delta, a_alpha]]
         roots = None
         if 1:
@@ -1114,9 +1198,9 @@ should be calculated by this method, in a user subclass.')
             thetas = a_alpha*P_RT_inv*RT_inv
             epsilons = epsilon*P_RT_inv*P_RT_inv
             
-            b = (deltas - B - 1.0)
-            c = (thetas + epsilons - deltas*(B + 1.0))
-            d = -(epsilons*(B + 1.0) + thetas*etas)
+            b = (deltas - B - 1)
+            c = (thetas + epsilons - deltas*(B + 1))
+            d = -(epsilons*(B + 1) + thetas*etas)
             
             extraprec = 15
             # extraprec alone is not enough to converge everything
@@ -1214,16 +1298,9 @@ should be calculated by this method, in a user subclass.')
         Vs = self.raw_volumes
         err = 0
         
-        def _mpmath_volume_matching(V, Vs_mpmath):
-            rel_diffs = []
-            for Vi in Vs_mpmath:
-                err = abs(Vi.real - V.real) + abs(Vi.imag - V.imag)
-                rel_diffs.append(err)
-            return Vs_mpmath[rel_diffs.index(min(rel_diffs))]
-    
+        # Important not to confuse the roots and also to not consider the third root
         try:
             Vl = self.V_l
-#            Vl_mpmath = Vl#_mpmath_volume_matching(Vl, Vs_good)
             err_i = abs((Vl - Vl_mpmath)/Vl_mpmath)
             if err_i > err:
                 err = err_i
@@ -1231,7 +1308,6 @@ should be calculated by this method, in a user subclass.')
             pass
         try:
             Vg = self.V_g
-#            Vg_mpmath = Vf_mpmath_volume_matching(Vg, Vs_good)
             err_i = abs((Vg - Vg_mpmath)/Vg_mpmath)
             if err_i > err:
                 err = err_i
@@ -1239,35 +1315,6 @@ should be calculated by this method, in a user subclass.')
             pass
         return err
     
-        for i in range(3):
-            try:
-                # Try a relative error vs. the mpmath vvolume
-                err_i = abs((Vs[i].real -Vs_good[i].real)/Vs_good[i].real)
-            except ZeroDivisionError:
-                try:
-                    # Try a relative error vs. the floating point volume
-                    err_i = abs((Vs[i].real -Vs_good[i].real)/Vs[i].real)
-                except ZeroDivisionError:
-                    # Should never come here, use the actual error
-                    err_i = abs((Vs[i].real -Vs_good[i].real))
-            
-            # Store the error if it is the highest so far
-            if err_i > err:
-                err = err_i
-            
-            # Do the same thing for the imag root
-            if not only_real:
-                try:
-                    err_i = abs((Vs[i].imag -Vs_good[i].imag)/Vs_good[i].imag)
-                except ZeroDivisionError:
-                    try:
-                        err_i = abs((Vs[i].imag -Vs_good[i].imag)/Vs[i].imag)
-                    except ZeroDivisionError:
-                        err_i = abs((Vs[i].imag -Vs_good[i].imag))
-            if err_i > err:
-                err = err_i
-        return err
-
     def _mpmath_volume_matching(self, V):
         '''Helper method which, given one of the three molar volume solutions
         of the EOS, returns the mpmath molar volume which is nearest it.
@@ -1742,6 +1789,7 @@ should be calculated by this method, in a user subclass.')
             Psat = y*Tr*Pc
         else:
             if isinstance(self, (VDW, RK)):
+                # VDW has been able to get down to 1e-306 Pa! That's all that can be asked for and T is still 2 K
                 if Tr < 0.32:
                     y = horner(self.Psat_coeffs_limiting, x)
                 else:
@@ -2405,8 +2453,8 @@ should be calculated by this method, in a user subclass.')
     def P_discriminant_zero_g(self):
         return self._P_discriminant_zero(low=False)
 
-
-    def P_discriminant_zeros_analytical(self, valid=False):
+    @staticmethod
+    def P_discriminant_zeros_analytical(T, b, delta, epsilon, a_alpha, valid=False):
         r'''Method to calculate the pressures which zero the discriminant
         function of the general cubic eos. This is a quartic function
         solved analytically.
@@ -2414,6 +2462,16 @@ should be calculated by this method, in a user subclass.')
         
         Parameters
         ----------
+        T : float
+            Temperature, [K]
+        b : float
+            Coefficient calculated by EOS-specific method, [m^3/mol]
+        delta : float
+            Coefficient calculated by EOS-specific method, [m^3/mol]
+        epsilon : float
+            Coefficient calculated by EOS-specific method, [m^6/mol^2]
+        a_alpha : float
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
         valid : bool
             Whether to filter the calculated pressures so that they are all 
             real, and positive only, [-]
@@ -2444,9 +2502,9 @@ should be calculated by this method, in a user subclass.')
         >>> sln = collect(base, P)
         '''
         # Can also have one at g
-        T, a_alpha = self.T, self.a_alpha
+#        T, a_alpha = self.T, self.a_alpha
         a = a_alpha
-        b, epsilon, delta = self.b, self.epsilon, self.delta
+#        b, epsilon, delta = self.b, self.epsilon, self.delta
         
         T_inv = 1.0/T
         # TODO cse
@@ -2514,8 +2572,13 @@ should be calculated by this method, in a user subclass.')
 #        c = (-6*b**2*delta**2/(R*T) + 24*b**2*epsilon/(R*T) - 6*b*delta**3/(R*T) + 24*b*delta*epsilon/(R*T) - delta**4/(R*T) + 2*delta**2*epsilon/(R*T) + 8*epsilon**2/(R*T) + 12*a*b**3/(R**2*T**2) + 18*a*b**2*delta/(R**2*T**2) + 10*a*b*delta**2/(R**2*T**2) - 4*a*b*epsilon/(R**2*T**2) + 2*a*delta**3/(R**2*T**2) - 2*a*delta*epsilon/(R**2*T**2) + 8*a**2*b**2/(R**3*T**3) + 8*a**2*b*delta/(R**3*T**3) - a**2*delta**2/(R**3*T**3) + 12*a**2*epsilon/(R**3*T**3))
 #        b_coeff = (-4*b**3*delta**2/(R**2*T**2) + 16*b**3*epsilon/(R**2*T**2) - 6*b**2*delta**3/(R**2*T**2) + 24*b**2*delta*epsilon/(R**2*T**2) - 2*b*delta**4/(R**2*T**2) + 4*b*delta**2*epsilon/(R**2*T**2) + 16*b*epsilon**2/(R**2*T**2) - 2*delta**3*epsilon/(R**2*T**2) + 8*delta*epsilon**2/(R**2*T**2) + 4*a*b**4/(R**3*T**3) + 8*a*b**3*delta/(R**3*T**3) + 2*a*b**2*delta**2/(R**3*T**3) + 16*a*b**2*epsilon/(R**3*T**3) - 2*a*b*delta**3/(R**3*T**3) + 16*a*b*delta*epsilon/(R**3*T**3) - 2*a*delta**2*epsilon/(R**3*T**3) + 12*a*epsilon**2/(R**3*T**3))
 #        a_coeff = (-b**4*delta**2/(R**3*T**3) + 4*b**4*epsilon/(R**3*T**3) - 2*b**3*delta**3/(R**3*T**3) + 8*b**3*delta*epsilon/(R**3*T**3) - b**2*delta**4/(R**3*T**3) + 2*b**2*delta**2*epsilon/(R**3*T**3) + 8*b**2*epsilon**2/(R**3*T**3) - 2*b*delta**3*epsilon/(R**3*T**3) + 8*b*delta*epsilon**2/(R**3*T**3) - delta**2*epsilon**2/(R**3*T**3) + 4*epsilon**3/(R**3*T**3))
-        roots = roots_quartic(a_coeff, b_coeff, c, d, e)
-#        roots = np.roots([a_coeff, b_coeff, c, d, e]).tolist()
+#        roots = roots_quartic(a_coeff, b_coeff, c, d, e)
+        roots = np.roots([a_coeff, b_coeff, c, d, e]).tolist()
+        if valid:
+            # TODO - only include ones when switching phases from l/g to either g/l
+            # Do not know how to handle
+            roots = [r.real for r in roots if (r.real >= 0.0)]
+            roots.sort()
         return roots
         
         
@@ -5991,8 +6054,8 @@ class VDW(GCEOS):
             roots.sort()
         return roots
 
-    def P_discriminant_zeros_analytical(self, valid=False):
-        # Can also have one at g
+    @staticmethod
+    def P_discriminant_zeros_analytical(T, b, delta, epsilon, a_alpha, valid=False):
         '''
         from sympy import *
         P, T, V, R, b, a = symbols('P, T, V, R, b, a')

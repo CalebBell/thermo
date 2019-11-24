@@ -512,6 +512,7 @@ def test_Psat_plot(fluid, eos):
     
     kwargs = dict(Tc=pure_const.Tcs[0], Pc=pure_const.Pcs[0], omega=pure_const.omegas[0])
     
+    
     obj = eos(T=T, P=P, **kwargs)
     
     Tmin = kwargs['Tc']*.07
@@ -539,7 +540,8 @@ def test_Psat_plot(fluid, eos):
 @pytest.mark.slow
 @pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("eos", eos_mix_list)
-def test_V_error_plot(fluid, eos):
+@pytest.mark.parametrize("P_range", ['high', 'low'])
+def test_V_error_plot(fluid, eos, P_range):
     if eos == IGMIX:
         return
     T, P = 298.15, 101325.0
@@ -550,24 +552,31 @@ def test_V_error_plot(fluid, eos):
     kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
                   HeatCapacityGases=pure_props.HeatCapacityGases)
     
+    if P_range == 'high':
+        Pmin = 1e-2
+        Pmax = 1e9
+    elif P_range == 'low':
+        Pmax = 1e-2
+        Pmin = 1e-60
     gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
     errs, plot_fig = gas.eos_mix.volume_errors(plot=True, show=False, pts=50,
-                                               Tmin=1e-4, Tmax=1e4, Pmin=1e-2, Pmax=1e9,
+                                               Tmin=1e-4, Tmax=1e4, Pmin=Pmin, Pmax=Pmax,
                                                trunc_err_low=1e-15, color_map=cm_flash_tol())
 
     
     path = os.path.join(pure_surfaces_dir, fluid, "V_error")
     if not os.path.exists(path):
         os.makedirs(path)
+        
     
-    key = '%s - %s - %s' %('V_error', eos.__name__, fluid)
+    key = '%s - %s - %s - %s' %('V_error', eos.__name__, fluid, P_range)
         
     plot_fig.savefig(os.path.join(path, key + '.png'))
     plt.close()
     
     
     max_err = np.max(errs)
-    assert max_err < 1e-8
+    assert max_err < 1e-10
     
     
 def test_some_flashes_bad():
