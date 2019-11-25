@@ -1638,3 +1638,13 @@ def test_T_discriminant_zeros_analytical():
     roots_all_expect = [(-3039.5486755087554-5260.499733964365j), (-3039.5486755087554+5260.499733964365j), (6071.904717499858+0j), (-287.16659607284214-501.5089438353455j), (-287.16659607284214+501.5089438353455j), (65.79460205013443-221.4001851805135j), (65.79460205013443+221.4001851805135j), (581.5258414845399+0j), (-194.3253376956101+136.82750992885255j), (-194.3253376956101-136.82750992885255j), (226.54569586014907+0j)]
     assert_allclose(roots_all, roots_all_expect, rtol=1e-11)
             
+    
+def test_Psats_low_P():
+    Tc = 190.564
+    kwargs = dict(Tc=Tc, Pc=4599000.0, omega=0.008, T=300, P=1e5)
+    Ps = [10**(-10*i) for i in range(10)]
+    for eos in [VDW, SRK, PR, RK]: # RK
+        for P in Ps:
+            base = eos(**kwargs)
+            T_calc = base.Tsat(P, polish=True)
+            assert_allclose(base.Psat(T_calc, polish=True), P, rtol=1e-9)

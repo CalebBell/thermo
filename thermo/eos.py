@@ -1706,26 +1706,82 @@ should be calculated by this method, in a user subclass.')
         It is recommended not to run with `polish=True`, as that will make the
         calculation much slower.
         '''
+        fprime = False
+
+        def to_solve_newton(T):
+            assert T > 0.0
+            e = self.to_TP(T, P)
+            try:
+                fugacity_l = e.fugacity_l
+            except AttributeError as err:
+                raise err
+            try:
+                fugacity_g = e.fugacity_g
+            except AttributeError as err:
+                raise err
+
+            err = fugacity_l - fugacity_g
+            if fprime:
+                d_err_d_T = e.dfugacity_dT_l - e.dfugacity_dT_g
+                return err, d_err_d_T
+
+            # print('err', err, 'rel err', err/T, 'd_err_d_T', d_err_d_T, 'T', T)
+
+            return err
+
         def to_solve(T):
             err = self.Psat(T, polish=polish) - P
 #            print(err, T)
-#            derr_dT = self.dPsat_dT(T)
+            if fprime:
+                derr_dT = self.dPsat_dT(T)
+                return err, derr_dT
             return err#, derr_dT
 #            return copysign(log(abs(err)), err)
         # Outstanding improvements to do: Better guess; get NR working;
         # see if there is a general curve
         
         guess = -5.4*self.Tc/(1.0*log(P/self.Pc) - 5.4)
+        high = guess*2.0
+        low = guess*0.5
 #        return newton(to_solve, guess, fprime=True, ytol=1e-6, high=self.Pc)
 #        return newton(to_solve, guess, ytol=1e-6, high=self.Pc)
         try:
-            return brenth(to_solve, max(guess*.7, 0.2*self.Tc), min(self.Tc, guess*1.3))
+            Tsat = brenth(to_solve, max(guess*.7, 0.2*self.Tc), min(self.Tc, guess*1.3))
+            if abs(to_solve_newton(Tsat)) < 1e-9:
+                return Tsat
         except:
             try:
                 return brenth(to_solve, 0.2*self.Tc, self.Tc)
             except:
-                return brenth(to_solve, 0.2*self.Tc, self.Tc*1.5)
-            
+                try:
+                    return brenth(to_solve, 0.2*self.Tc, self.Tc*1.5)
+                except:
+                    pass
+
+        fprime = True
+
+        try:
+            Tsat = newton(to_solve_newton, guess, fprime=True, maxiter=100,
+                          xtol=4e-13, require_eval=False, damping=1.0)
+        except:
+            # high = self.Tc
+            # try:
+            #     high = min(high, self.T_discriminant_zero_l()*(1-1e-8))
+            # except:
+            #     pass
+            # Does not seem to be working
+            try:
+                Tsat = None
+                Tsat = newton(to_solve_newton, guess, fprime=True, maxiter=200, high=high, low=low,
+                              xtol=4e-13, require_eval=False, damping=1.0)
+            except:
+                pass
+            fprime = False
+            if Tsat is None or abs(to_solve_newton(Tsat)) == P:
+                Tsat = brenth(to_solve_newton, low, high)
+
+        return Tsat
+
     def Psat(self, T, polish=False, guess=None):
         r'''Generic method to calculate vapor pressure for a specified `T`.
         
@@ -1798,8 +1854,8 @@ should be calculated by this method, in a user subclass.')
                 Psat_ranges_low = self.Psat_ranges_low
                 if x > Psat_ranges_low[-1]:
 #                    x = Psat_ranges_low[-1]
-#                    polish = True
-                    raise NoSolutionError("T %.8f K is too low for equations to converge" %(T))
+                    polish = True
+#                    raise NoSolutionError("T %.8f K is too low for equations to converge" %(T))
             
                 for i in range(len(Psat_ranges_low)):
                     if x < Psat_ranges_low[i]:
@@ -1810,6 +1866,9 @@ should be calculated by this method, in a user subclass.')
 
             try:
                 Psat = exp(y)*Tr*Pc
+                if Psat == 0.0:
+                    Psat = 1e-100
+                    polish = True
             except OverflowError:
                 # coefficients sometimes overflow before T is lowered to 0.32Tr
                 # For
@@ -1848,8 +1907,9 @@ should be calculated by this method, in a user subclass.')
                     d_err_d_P = -1.0
                 # print('err', err, 'rel err', err/P, 'd_err_d_P', d_err_d_P, 'P', P)
                 # Clamp the derivative - if it will step to zero or negative, dampen to half the distance which gets to zero
-                if (P - err*d_err_d_P) <= 0.0:
-                    d_err_d_P = -1.01
+                if (P - err/d_err_d_P) <= 0.0: # This is the one matching newton
+                # if (P - err*d_err_d_P) <= 0.0:
+                    d_err_d_P = -1.0001
 
                 return err, d_err_d_P
             try:
@@ -1863,7 +1923,7 @@ should be calculated by this method, in a user subclass.')
                 #     p = p0 + step * damping
                 #     return p
 
-                Psat = newton(to_solve_newton, Psat, high=high, fprime=True, 
+                Psat = newton(to_solve_newton, Psat, high=high, fprime=True, maxiter=100,
                               xtol=4e-13, require_eval=False, damping=1.0) #  ,ytol=1e-6*Psat # damping_func=damping_func
 #                print(to_solve_newton(Psat), 'newton error')
                 converged = True
