@@ -22,7 +22,7 @@ SOFTWARE.'''
 from __future__ import division
 
 __all__ = ['GCEOSMIX', 'PRMIX', 'SRKMIX', 'PR78MIX', 'VDWMIX', 'PRSVMIX', 
-'PRSV2MIX', 'TWUPRMIX', 'TWUSRKMIX', 'APISRKMIX', 'IGMIX',
+'PRSV2MIX', 'TWUPRMIX', 'TWUSRKMIX', 'APISRKMIX', 'IGMIX', 'RKMIX',
 'eos_Z_test_phase_stability', 'eos_Z_trial_phase_stability',
 'eos_mix_list', 'eos_mix_no_coeffs_list']
 
@@ -6522,110 +6522,6 @@ class SRKMIX(GCEOSMIX, SRK):
             d3delta_dninjnks.append(d3b_dnjnks)
         return d3delta_dninjnks
 
-    @property
-    def depsilon_dzs(self):       
-        r'''Helper method for calculating the composition derivatives of
-        `epsilon`. Note this is independent of the phase.
-        
-        .. math::
-            \left(\frac{\partial \epsilon}{\partial x_i}\right)_{T, P, x_{i\ne j}} 
-            = 0
-
-        Returns
-        -------
-        depsilon_dzs : list[float]
-            Composition derivative of `epsilon` of each component, [m^6/mol^2]
-            
-        Notes
-        -----
-        This derivative is checked numerically.
-        '''
-        return [0.0]*self.N
-
-    @property
-    def depsilon_dns(self):       
-        r'''Helper method for calculating the mole number derivatives of
-        `epsilon`. Note this is independent of the phase.
-        
-        .. math::
-            \left(\frac{\partial \epsilon}{\partial n_i}\right)_{T, P, n_{i\ne j}} 
-            = 0
-
-        Returns
-        -------
-        depsilon_dns : list[float]
-            Composition derivative of `epsilon` of each component, [m^6/mol^3]
-            
-        Notes
-        -----
-        This derivative is checked numerically.
-        '''
-        return [0.0]*self.N
-
-    @property
-    def d2epsilon_dzizjs(self):       
-        r'''Helper method for calculating the second composition derivatives (hessian) 
-        of `epsilon`. Note this is independent of the phase.
-        
-        .. math::
-            \left(\frac{\partial^2 \epsilon}{\partial x_i \partial x_j}\right)_{T, P, x_{k\ne i,j}} 
-            = 0
-
-        Returns
-        -------
-        d2epsilon_dzizjs : list[list[float]]
-            Composition derivative of `epsilon` of each component, [m^6/mol^2]
-            
-        Notes
-        -----
-        This derivative is checked numerically.
-        '''
-        return [[0.0]*self.N for i in self.cmps]
-
-    @property
-    def d2epsilon_dninjs(self):       
-        r'''Helper method for calculating the second mole number derivatives (hessian) of
-        `epsilon`. Note this is independent of the phase.
-        
-        .. math::
-            \left(\frac{\partial^2 \epsilon}{\partial n_i n_j}\right)_{T, P, n_{k\ne i,j}} 
-            = 0
-
-        Returns
-        -------
-        d2epsilon_dninjs : list[list[float]]
-            Second composition derivative of `epsilon` of each component, [m^6/mol^4]
-            
-        Notes
-        -----
-        This derivative is checked numerically.
-        '''
-        return [[0.0]*self.N for i in self.cmps]
-
-    @property
-    def d3epsilon_dninjnks(self):   
-        r'''Helper method for calculating the third partial mole number
-        derivatives of `epsilon`. Note this is independent of the phase.
-        
-        .. math::
-            \left(\frac{\partial^3 \epsilon}{\partial n_i \partial n_j \partial n_k }
-            \right)_{T, P, 
-            n_{m \ne i,j,k}} = 0
-
-        Returns
-        -------
-        d3epsilon_dninjnks : list[list[list[float]]]
-            Third mole number derivative of `epsilon` of each component,
-            [m^6/mol^5]
-            
-        Notes
-        -----
-        This derivative is checked numerically.
-        '''
-        N, cmps = self.N, self.cmps
-        return [[[0.0]*N for _ in cmps] for _ in cmps]
-
-
 class PR78MIX(PRMIX):
     r'''Class for solving the Peng-Robinson cubic equation of state for a 
     mixture of any number of compounds according to the 1978 variant. 
@@ -7018,45 +6914,6 @@ class VDWMIX(GCEOSMIX, VDW):
         '''
         return [0.0]*self.N
 
-    @property
-    def depsilon_dzs(self):       
-        r'''Helper method for calculating the composition derivatives of
-        `epsilon`. Note this is independent of the phase.
-        
-        .. math::
-            \left(\frac{\partial \epsilon}{\partial x_i}\right)_{T, P, x_{i\ne j}} 
-            = 0
-
-        Returns
-        -------
-        depsilon_dzs : list[float]
-            Composition derivative of `epsilon` of each component, [m^6/mol^2]
-            
-        Notes
-        -----
-        This derivative is checked numerically.
-        '''
-        return [0.0]*self.N
-
-    @property
-    def depsilon_dns(self):       
-        r'''Helper method for calculating the mole number derivatives of
-        `epsilon`. Note this is independent of the phase.
-        
-        .. math::
-            \left(\frac{\partial \epsilon}{\partial n_i}\right)_{T, P, n_{i\ne j}} 
-            = 0
-
-        Returns
-        -------
-        depsilon_dns : list[float]
-            Composition derivative of `epsilon` of each component, [m^6/mol^3]
-            
-        Notes
-        -----
-        This derivative is checked numerically.
-        '''
-        return [0.0]*self.N
 
     @property
     def d2delta_dzizjs(self):   
@@ -7121,68 +6978,85 @@ class VDWMIX(GCEOSMIX, VDW):
         N, cmps = self.N, self.cmps
         return [[[0.0]*N for _ in cmps] for _ in cmps]
 
-    @property
-    def d2epsilon_dzizjs(self):       
-        r'''Helper method for calculating the second composition derivatives (hessian) 
-        of `epsilon`. Note this is independent of the phase.
+
+class RKMIX(GCEOSMIX, RK):
+    eos_pure = RK
+    a_alpha_mro = -4
+
+    def __init__(self,  Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
+                 fugacities=True, only_l=False, only_g=False):
+        self.N = N = len(Tcs)
+        self.cmps = cmps = range(N)
+        self.Tcs = Tcs
+        self.Pcs = Pcs
+        self.omegas = omegas
+        self.zs = zs
+        if kijs is None:
+            kijs = [[0.0]*N for i in cmps]
+        self.kijs = kijs
+        self.kwargs = {'kijs': kijs}
+        self.T = T
+        self.P = P
+        self.V = V
+
+        c1R2, c2R = self.c1*R2, self.c2*R
+        # Also tried to store the inverse of Pcs, without success - slows it down
+        self.ais = [c1R2*Tcs[i]**2.5/Pcs[i] for i in cmps]
+        self.bs = bs = [c2R*Tcs[i]/Pcs[i] for i in cmps]
         
-        .. math::
-            \left(\frac{\partial^2 \epsilon}{\partial x_i \partial x_j}\right)_{T, P, x_{k\ne i,j}} 
-            = 0
+        b = 0.0
+        for i in cmps:
+            b += bs[i]*zs[i]
+        self.b = self.delta = b
 
-        Returns
-        -------
-        d2epsilon_dzizjs : list[list[float]]
-            Composition derivative of `epsilon` of each component, [m^6/mol^2]
-            
-        Notes
-        -----
-        This derivative is checked numerically.
-        '''
-        return [[0.0]*self.N for i in self.cmps]
 
-    @property
-    def d2epsilon_dninjs(self):       
-        r'''Helper method for calculating the second mole number derivatives (hessian) of
-        `epsilon`. Note this is independent of the phase.
+        self.solve(only_l=only_l, only_g=only_g)
+        if fugacities:
+            self.fugacities()
+
+    def fast_init_specific(self, other):
+        b = 0.0
+        for bi, zi in zip(self.bs, self.zs):
+            b += bi*zi
+        self.b = self.delta = b
+
+    def a_alpha_and_derivatives_vectorized(self, T, full=False, quick=True):
+        ais, Tcs = self.ais, self.Tcs
+        T_root_inv = T**-0.5
         
-        .. math::
-            \left(\frac{\partial^2 \epsilon}{\partial n_i n_j}\right)_{T, P, n_{k\ne i,j}} 
-            = 0
-
-        Returns
-        -------
-        d2epsilon_dninjs : list[list[float]]
-            Second composition derivative of `epsilon` of each component, [m^6/mol^4]
+        if not full:
+            a_alphas = [ais[i]*T_root_inv for i in self.cmps]
+            return a_alphas
+        else:
+            T_inv = T_root_inv*T_root_inv
+            T_15_inv = T_inv*T_root_inv
+            T_25_inv = T_inv*T_root_inv
             
-        Notes
-        -----
-        This derivative is checked numerically.
-        '''
-        return [[0.0]*self.N for i in self.cmps]
+            x0 = -0.5*T_15_inv
+            x1 = 0.75*T_25_inv
+            cmps = self.cmps
 
-    @property
-    def d3epsilon_dninjnks(self):   
-        r'''Helper method for calculating the third partial mole number
-        derivatives of `epsilon`. Note this is independent of the phase.
-        
-        .. math::
-            \left(\frac{\partial^3 \epsilon}{\partial n_i \partial n_j \partial n_k }
-            \right)_{T, P, 
-            n_{m \ne i,j,k}} = 0
+            a_alphas = [ais[i]*T_root_inv for i in cmps]
+            da_alpha_dTs = [ais[i]*x0 for i in cmps]
+            d2a_alpha_dT2s = [ais[i]*x1 for i in cmps]
+            return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
 
-        Returns
-        -------
-        d3epsilon_dninjnks : list[list[list[float]]]
-            Third mole number derivative of `epsilon` of each component,
-            [m^6/mol^5]
-            
-        Notes
-        -----
-        This derivative is checked numerically.
-        '''
-        N, cmps = self.N, self.cmps
-        return [[[0.0]*N for _ in cmps] for _ in cmps]
+    def solve_T(self, P, V, quick=True):
+        if self.N == 1 and type(self) is RKMIX:
+            self.Tc = self.Tcs[0]
+            self.Pc = self.Pcs[0]
+            self.a = self.ais[0]
+            self.b = self.bs[0]
+            T = super(type(self).__mro__[-4], self).solve_T(P=P, V=V, quick=quick)   
+            del self.Tc
+            del self.Pc
+            del self.kappa
+            del self.a
+            del self.b
+            return T
+        else:
+            return super(type(self).__mro__[-3], self).solve_T(P=P, V=V, quick=quick)   
+
 
 
 class PRSVMIX(PRMIX, PRSV):
@@ -8043,5 +7917,125 @@ def eos_lnphis_trial_phase_stability(eos, prefer, alt):
             lnphis_trial = getattr(eos, prefer)
     return lnphis_trial
 
-eos_mix_list = [PRMIX, SRKMIX, PR78MIX, VDWMIX, PRSVMIX, PRSV2MIX, TWUPRMIX, TWUSRKMIX, APISRKMIX, IGMIX]
-eos_mix_no_coeffs_list = [PRMIX, SRKMIX, PR78MIX, VDWMIX, TWUPRMIX, TWUSRKMIX, IGMIX]
+eos_mix_list = [PRMIX, SRKMIX, PR78MIX, VDWMIX, PRSVMIX, PRSV2MIX, TWUPRMIX, TWUSRKMIX, APISRKMIX, IGMIX, RKMIX]
+eos_mix_no_coeffs_list = [PRMIX, SRKMIX, PR78MIX, VDWMIX, TWUPRMIX, TWUSRKMIX, IGMIX, RKMIX]
+
+
+for eos in eos_mix_list:
+    
+    if hasattr(eos, 'epsilon') and eos.epsilon == 0:
+        @property
+        def depsilon_dzs(self):       
+            r'''Helper method for calculating the composition derivatives of
+            `epsilon`. Note this is independent of the phase.
+            
+            .. math::
+                \left(\frac{\partial \epsilon}{\partial x_i}\right)_{T, P, x_{i\ne j}} 
+                = 0
+    
+            Returns
+            -------
+            depsilon_dzs : list[float]
+                Composition derivative of `epsilon` of each component, [m^6/mol^2]
+                
+            Notes
+            -----
+            This derivative is checked numerically.
+            '''
+            return [0.0]*self.N
+    
+        @property
+        def depsilon_dns(self):       
+            r'''Helper method for calculating the mole number derivatives of
+            `epsilon`. Note this is independent of the phase.
+            
+            .. math::
+                \left(\frac{\partial \epsilon}{\partial n_i}\right)_{T, P, n_{i\ne j}} 
+                = 0
+    
+            Returns
+            -------
+            depsilon_dns : list[float]
+                Composition derivative of `epsilon` of each component, [m^6/mol^3]
+                
+            Notes
+            -----
+            This derivative is checked numerically.
+            '''
+            return [0.0]*self.N
+    
+        @property
+        def d2epsilon_dzizjs(self):       
+            r'''Helper method for calculating the second composition derivatives (hessian) 
+            of `epsilon`. Note this is independent of the phase.
+            
+            .. math::
+                \left(\frac{\partial^2 \epsilon}{\partial x_i \partial x_j}\right)_{T, P, x_{k\ne i,j}} 
+                = 0
+    
+            Returns
+            -------
+            d2epsilon_dzizjs : list[list[float]]
+                Composition derivative of `epsilon` of each component, [m^6/mol^2]
+                
+            Notes
+            -----
+            This derivative is checked numerically.
+            '''
+            return [[0.0]*self.N for i in self.cmps]
+    
+        @property
+        def d2epsilon_dninjs(self):       
+            r'''Helper method for calculating the second mole number derivatives (hessian) of
+            `epsilon`. Note this is independent of the phase.
+            
+            .. math::
+                \left(\frac{\partial^2 \epsilon}{\partial n_i n_j}\right)_{T, P, n_{k\ne i,j}} 
+                = 0
+    
+            Returns
+            -------
+            d2epsilon_dninjs : list[list[float]]
+                Second composition derivative of `epsilon` of each component, [m^6/mol^4]
+                
+            Notes
+            -----
+            This derivative is checked numerically.
+            '''
+            return [[0.0]*self.N for i in self.cmps]
+    
+        @property
+        def d3epsilon_dninjnks(self):   
+            r'''Helper method for calculating the third partial mole number
+            derivatives of `epsilon`. Note this is independent of the phase.
+            
+            .. math::
+                \left(\frac{\partial^3 \epsilon}{\partial n_i \partial n_j \partial n_k }
+                \right)_{T, P, 
+                n_{m \ne i,j,k}} = 0
+    
+            Returns
+            -------
+            d3epsilon_dninjnks : list[list[list[float]]]
+                Third mole number derivative of `epsilon` of each component,
+                [m^6/mol^5]
+                
+            Notes
+            -----
+            This derivative is checked numerically.
+            '''
+            N, cmps = self.N, self.cmps
+            return [[[0.0]*N for _ in cmps] for _ in cmps]
+        
+        try:
+            eos.__dict__['d3epsilon_dninjnks'] = d3epsilon_dninjnks
+            eos.__dict__['d2epsilon_dninjs'] = d2epsilon_dninjs
+            eos.__dict__['d2epsilon_dzizjs'] = d2epsilon_dzizjs
+            eos.__dict__['depsilon_dns'] = depsilon_dns
+            eos.__dict__['depsilon_dzs'] = depsilon_dzs
+        except:
+            setattr(eos, 'd3epsilon_dninjnks', d3epsilon_dninjnks)
+            setattr(eos, 'd2epsilon_dninjs', d2epsilon_dninjs)
+            setattr(eos, 'd2epsilon_dzizjs', d2epsilon_dzizjs)
+            setattr(eos, 'depsilon_dns', depsilon_dns)
+            setattr(eos, 'depsilon_dzs', depsilon_dzs)
