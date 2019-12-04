@@ -2966,8 +2966,32 @@ def test_volume_issues():
     # Case where NR switches which root is converged to
     obj = PR78MIX(Tcs=[647.14], Pcs=[22048320.0], omegas=[0.344], kijs=[[0]], zs=[1], T=494.1713361323858, P=0.13257113655901095)
     assert obj.volume_error() < 1e-12
+
+def test_to_TPV_pure():
+    # PRSV2MIX
+    eos = PRSV2MIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., P=1E6, 
+                   kappa1s=[0.05104], kappa2s=[0.8634], kappa3s=[0.460])
+    eos2 = eos.to_TPV_pure(T=eos.T, P=eos.P, V=None, i=0)
+    assert_allclose(eos.V_l, eos2.V_l, rtol=1e-13)
+
+    # PRSVMIX
+    eos = PRSVMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., P=1E6, kappa1s=[0.05104])
+    eos2 = eos.to_TPV_pure(T=eos.T, P=eos.P, V=None, i=0)
+    assert_allclose(eos.V_l, eos2.V_l, rtol=1e-13)    
+
+    # APISRKMIX
+    eos = APISRKMIX(Tcs=[514.0], Pcs=[6137000.0], omegas=[0.635], S1s=[1.678665], S2s=[-0.216396], zs=[1], T=299., P=1E6)
+    eos2 = eos.to_TPV_pure(T=eos.T, P=eos.P, V=None, i=0)
+    assert_allclose(eos.V_l, eos2.V_l, rtol=1e-13)
     
     
+    # Check that the set of EOSs are covered.
+    covered_here = [PRSVMIX, PRSV2MIX, APISRKMIX]
+    covered_all = eos_mix_no_coeffs_list + covered_here
+    assert set(covered_all) == set(eos_mix_list)
+    
+
+
 @pytest.mark.mpmath
 def test_volume_issues_low_P():
     # Low pressure  section

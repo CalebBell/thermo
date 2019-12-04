@@ -24,7 +24,7 @@ from __future__ import division
 __all__ = ['GCEOSMIX', 'PRMIX', 'SRKMIX', 'PR78MIX', 'VDWMIX', 'PRSVMIX', 
 'PRSV2MIX', 'TWUPRMIX', 'TWUSRKMIX', 'APISRKMIX', 'IGMIX',
 'eos_Z_test_phase_stability', 'eos_Z_trial_phase_stability',
-'eos_mix_list']
+'eos_mix_list', 'eos_mix_no_coeffs_list']
 
 import sys
 import numpy as np
@@ -215,6 +215,7 @@ class GCEOSMIX(GCEOS):
     each species via multiple inheritance.
     '''
     nonstate_constants = ('N', 'cmps', 'Tcs', 'Pcs', 'omegas', 'kijs', 'kwargs', 'ais', 'bs')
+    mix_kwargs_to_pure = {}
     multicomponent = True
     
     
@@ -293,14 +294,56 @@ class GCEOSMIX(GCEOS):
         else:
             return self.__class__(T=T, P=P, V=V, zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, fugacities=fugacities, **self.kwargs)
 
-    def to_TP_pure(self, T, P, i):
-        kwargs = {} # TODO write function to get those
-        return self.eos_pure(T=T, P=P, Tc=self.Tcs[i], Pc=self.Pcs[i],
-                             omega=self.omegas[i])
+    def to_TPV_pure(self, T, P, V, i):
+        r'''Helper method which returns a pure `EOSs` at the specs (two of `T`,
+        `P` and `V`) and base EOS as the mixture for a particular index.
+
+        Parameters
+        ----------
+        T : float or None
+            Specified temperature, [K]
+        P : float or None
+            Specified pressure, [Pa]
+        V : float or None
+            Specified volume, [m^3/mol]
+        i : int
+            Index of specified compound, [-]
+        
+        Returns
+        -------
+        eos_pure : eos
+            A pure-species EOSs at the two specified  `T`, `P`, and `V` for
+            component `i`, [-]
+            
+        Notes
+        -----
+        '''
+        kwargs = {}
+        mix_kwargs_to_pure = self.mix_kwargs_to_pure
+        for k, v in self.kwargs.items():
+            if k in mix_kwargs_to_pure:
+                kwargs[mix_kwargs_to_pure[k]] = v[i]
+        return self.eos_pure(T=T, P=P, V=V, Tc=self.Tcs[i], Pc=self.Pcs[i],
+                             omega=self.omegas[i], **kwargs)
 
     def pures(self):
+        r'''Helper method which returns a list of pure `EOSs` at the same `T` 
+        and `P` and base EOS as the mixture.
+        
+        Returns
+        -------
+        eos_pures : list[eos]
+            A list of pure-species EOSs at the same `T` and `P` as the system,
+            [-]
+            
+        Notes
+        -----
+        This is useful for i.e. comparing mixture fugacities with the
+        Lewis-Randall rule or when using an activity coefficient model which
+        require pure component fugacities.
+        '''
         T, P, cmps = self.T, self.P, self.cmps
-        return [self.to_TP_pure(T=T, P=P, i=i) for i in cmps]
+        return [self.to_TPV_pure(T=T, P=P, V=None, i=i) for i in cmps]
 
     
     @property
@@ -7246,6 +7289,8 @@ class PRSVMIX(PRMIX, PRSV):
     a_alpha_mro = -5
     eos_pure = PRSV
     nonstate_constants_specific = ('kappa0s', 'kappa1s', 'kappas')
+    mix_kwargs_to_pure = {'kappa1s': 'kappa1'}
+    
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  kappa1s=None, fugacities=True, only_l=False, only_g=False):
         self.N = len(Tcs)
@@ -7414,6 +7459,8 @@ class PRSV2MIX(PRMIX, PRSV2):
     a_alpha_mro = -5
     eos_pure = PRSV2
     nonstate_constants_specific = ('kappa1s', 'kappa2s', 'kappa3s', 'kappa0s', 'kappas')
+    mix_kwargs_to_pure = {'kappa1s': 'kappa1', 'kappa2s': 'kappa2', 'kappa3s': 'kappa3'}
+    
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  kappa1s=None, kappa2s=None, kappa3s=None,
                  fugacities=True, only_l=False, only_g=False):
@@ -7865,6 +7912,8 @@ class APISRKMIX(SRKMIX, APISRK):
     a_alpha_mro = -5
     eos_pure = APISRK
     nonstate_constants_specific = ('S1s', 'S2s')
+    mix_kwargs_to_pure = {'S1s': 'S1', 'S2s': 'S2'}
+    
     def __init__(self, Tcs, Pcs, zs, omegas=None, kijs=None, T=None, P=None, V=None,
                  S1s=None, S2s=None, fugacities=True, only_l=False, only_g=False):
         self.N = len(Tcs)
@@ -7893,6 +7942,7 @@ class APISRKMIX(SRKMIX, APISRK):
         if S2s is None:
             S2s = [0.0 for i in self.cmps]
         self.S2s = S2s
+        self.kwargs = {'S1s': self.S1s, 'S2s': self.S2s}
         
         self.ais = [self.c1*R*R*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
         self.bs = [self.c2*R*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
@@ -7993,3 +8043,4 @@ def eos_lnphis_trial_phase_stability(eos, prefer, alt):
     return lnphis_trial
 
 eos_mix_list = [PRMIX, SRKMIX, PR78MIX, VDWMIX, PRSVMIX, PRSV2MIX, TWUPRMIX, TWUSRKMIX, APISRKMIX, IGMIX]
+eos_mix_no_coeffs_list = [PRMIX, SRKMIX, PR78MIX, VDWMIX, TWUPRMIX, TWUSRKMIX, IGMIX]

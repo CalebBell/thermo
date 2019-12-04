@@ -1123,6 +1123,15 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
                 if max_bound is not None and transitions[0] > max_bound:
                     raise NotBoundedError("Not likely to bound")
 
+
+            # Plot the objective function
+            # tests = logspace(log10(1e-5), log10(1), 15000)
+            # values = [to_solve(t) for t in tests]
+            # values = [abs(t) for t in values]
+            # import matplotlib.pyplot as plt
+            # plt.loglog(tests, values)
+            # plt.show()
+
         except NotBoundedError as e:
             raise e
         except Exception as e:
@@ -1221,8 +1230,14 @@ def solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var,
             break
         except Exception as e:
             pass
-    
-    _, phase, iterations, err = TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val=fixed_var_val, spec_val=spec_val, ytol=1e-8*abs(spec_val),
+
+    ytol = 1e-8*abs(spec_val)
+
+    if iter_var == 'T' and spec  in ('S', 'H'):
+        ytol = ytol/100
+
+
+    _, phase, iterations, err = TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val=fixed_var_val, spec_val=spec_val, ytol=ytol,
                                                    iter_var=iter_var, fixed_var=fixed_var, spec=spec, oscillation_detection=True,
                                                    minimum_progress=1e-4, maxiter=80, fprime=True,
                                                    bounded=True, min_bound=min_bound, max_bound=max_bound)
