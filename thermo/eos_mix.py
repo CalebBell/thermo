@@ -256,7 +256,7 @@ class GCEOSMIX(GCEOS):
                 new.a_alpha_ijs = self.a_alpha_ijs
                 new.a_alpha_i_roots = self.a_alpha_i_roots
                 new.a_alpha_ij_roots_inv = self.a_alpha_ij_roots_inv
-            except:
+            except AttributeError:
                 pass
         
         new.zs = zs
@@ -264,7 +264,8 @@ class GCEOSMIX(GCEOS):
         new.P = P
         new.V = None
         new.fast_init_specific(self)
-        new.solve(pure_a_alphas=(not copy_alphas), only_l=only_l, only_g=only_g, full_alphas=full_alphas)
+        new.solve(pure_a_alphas=(not copy_alphas), only_l=only_l, 
+                  only_g=only_g, full_alphas=full_alphas)
         return new
 
 
