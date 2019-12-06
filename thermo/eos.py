@@ -115,6 +115,28 @@ class GCEOS(object):
     P_zero_g_cheb_limits = (0.0, 0.0)
     Psat_cheb_range = (0.0, 0.0)
     
+    @property
+    def state_specs(self):
+        '''Convenience method to return the two specified state specs (`T`, 
+        `P`, or `V`) as a dictionary.
+        
+        Examples
+        --------
+        >>> PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=500.0, V=1.0).state_specs
+        {'T': 500.0, 'V': 1.0}
+        '''
+        d = {}
+        if hasattr(self, 'no_T_spec') and self.no_T_spec:
+            d['P'] = self.P
+            d['V'] = self.V
+        elif self.V is not None:
+            d['T'] = self.T
+            d['V'] = self.V
+        else:
+            d['T'] = self.T
+            d['P'] = self.P
+        return d
+    
     def __repr__(self):
         s = '%s(Tc=%s, Pc=%s, omega=%s, ' %(self.__class__.__name__, repr(self.Tc), repr(self.Pc), repr(self.omega))
         if hasattr(self, 'no_T_spec') and self.no_T_spec:
@@ -577,8 +599,8 @@ class GCEOS(object):
         return self.a_alpha_and_derivatives_pure(T=T, full=full, quick=quick)
     
     def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
-        raise NotImplemented('a_alpha and its first and second derivatives \
-should be calculated by this method, in a user subclass.')
+        raise NotImplemented('a_alpha and its first and second derivatives '
+                             'should be calculated by this method, in a user subclass.')
         
     def a_alpha_plot(self, Tmin=1e-4, Tmax=10000):
         Ts = logspace(log10(Tmin), log10(Tmax), 1000)
@@ -1457,6 +1479,112 @@ should be calculated by this method, in a user subclass.')
                 plt.show()
                 
             return errs, fig
+        
+    def PT_surface_special(self, Tmin=1e-4, Tmax=1e4, Pmin=1e-2, Pmax=1e9,
+                      pts=50, plot=False, show=False, color_map=None,
+                      mechanical=True, pseudo_critical=True, Psat=True,
+                      determinant_zeros=True):
+        Ts = logspace(log10(Tmin), log10(Tmax), pts)
+        Ps = logspace(log10(Pmin), log10(Pmax), pts)
+        kwargs = {}
+        if hasattr(self, 'zs'):
+            kwargs['zs'] = self.zs
+
+        Vs = []            
+        for T in Ts:
+            V_row = []
+            for P in Ps:
+                kwargs['T'] = T
+                kwargs['P'] = P
+                obj = self.to(**kwargs)
+                if obj.phase == 'l/g':
+                    V = obj.V_l if obj.G_dep_l < obj.G_dep_g else obj.V_g
+                elif obj.phase == 'l':
+                    V = obj.V_l
+                else:
+                    V = obj.V_g
+                V_row.append(V)
+            Vs.append(V_row)
+
+        if self.multicomponent:
+            Tc, Pc = self.pseudo_Tc, self.pseudo_Pc
+        else:
+            Tc, Pc = self.Tc, self.Pc
+            
+        if Psat:
+            Pmax_Psat = min(Pc, Pmax)
+            Pmin_Psat = max(1e-20, Pmin)
+            Tmin_Psat, Tmax_Psat = self.Tsat(Pmin_Psat), self.Tsat(Pmax_Psat)
+            
+            Ts_Psats = []
+            Psats = []
+            for T in linspace(Tmin_Psat, Tmax_Psat, pts):
+                P = self.Psat(T)
+                Ts_Psats.append(T)
+                Psats.append(P)
+                    
+        if mechanical:
+            if self.multicomponent:
+                TP_mechanical = self.mechanical_critical_point()
+            else:
+                TP_mechanical = (Tc, Pc)
+        
+        if determinant_zeros:
+            lows_det_Ps, high_det_Ps, Ts_dets_low, Ts_dets_high = [], [], [], []
+            for T in Ts:
+                a_alpha = self.a_alpha_and_derivatives(T, full=False)
+                P_dets = self.P_discriminant_zeros_analytical(T=T, b=self.b, delta=self.delta,
+                                                              epsilon=self.epsilon, a_alpha=a_alpha, valid=True)
+                if P_dets:
+                    P_det_min = min(P_dets)
+                    P_det_max = max(P_dets)
+                    if Pmin <= P_det_min <= Pmax:
+                        lows_det_Ps.append(P_det_min)
+                        Ts_dets_low.append(T)
+                        
+                    if Pmin <= P_det_max <= Pmax:
+                        high_det_Ps.append(P_det_max)
+                        Ts_dets_high.append(T)
+
+        if plot:
+            import matplotlib.pyplot as plt
+            from matplotlib import ticker, cm
+            from matplotlib.colors import LogNorm
+            X, Y = np.meshgrid(Ts, Ps)
+            z = np.array(Vs).T
+            fig, ax = plt.subplots()
+            if color_map is None:
+                color_map = cm.viridis
+            
+            im = ax.pcolormesh(X, Y, z, cmap=color_map, norm=LogNorm())
+            cbar = fig.colorbar(im, ax=ax)
+            cbar.set_label('Volume')
+            
+            if Psat:
+                plt.plot(Ts_Psats, Psats, label='Psat')
+
+            if determinant_zeros:
+                plt.plot(Ts_dets_low, lows_det_Ps, label='Low trans')
+                plt.plot(Ts_dets_high, high_det_Ps, label='High trans')
+                
+            if pseudo_critical:
+                plt.plot([Tc], [Pc], 'x', label='Pseudo crit')
+            if mechanical:
+                plt.plot([TP_mechanical[0]], [TP_mechanical[1]], 'o', label='Mechanical')
+                
+            ax.set_yscale('log')
+            ax.set_xscale('log')
+            ax.set_xlabel('T')
+            ax.set_ylabel('P')
+            plt.legend()
+            
+            
+            ax.set_title('Volume solution vs minimum Gibbs validation')
+            if show:
+                plt.show()
+                
+            return Vs, fig
+        
 
     def volumes_G_min(self, Tmin=1e-4, Tmax=1e4, Pmin=1e-2, Pmax=1e9,
                       pts=50, plot=False, show=False, color_map=None):
@@ -1740,21 +1868,26 @@ should be calculated by this method, in a user subclass.')
         # Outstanding improvements to do: Better guess; get NR working;
         # see if there is a general curve
         
-        guess = -5.4*self.Tc/(1.0*log(P/self.Pc) - 5.4)
+        try:
+            Tc, Pc = self.Tc, self.Pc
+        except:
+            Tc, Pc = self.pseudo_Tc, self.pseudo_Pc
+        
+        guess = -5.4*Tc/(1.0*log(P/Pc) - 5.4)
         high = guess*2.0
         low = guess*0.5
 #        return newton(to_solve, guess, fprime=True, ytol=1e-6, high=self.Pc)
 #        return newton(to_solve, guess, ytol=1e-6, high=self.Pc)
         try:
-            Tsat = brenth(to_solve, max(guess*.7, 0.2*self.Tc), min(self.Tc, guess*1.3))
+            Tsat = brenth(to_solve, max(guess*.7, 0.2*Tc), min(Tc, guess*1.3))
             if abs(to_solve_newton(Tsat)) < 1e-9:
                 return Tsat
         except:
             try:
-                return brenth(to_solve, 0.2*self.Tc, self.Tc)
+                return brenth(to_solve, 0.2*Tc, Tc)
             except:
                 try:
-                    return brenth(to_solve, 0.2*self.Tc, self.Tc*1.5)
+                    return brenth(to_solve, 0.2*Tc, Tc*1.5)
                 except:
                     pass
 
@@ -2319,25 +2452,148 @@ should be calculated by this method, in a user subclass.')
             return secant(err, self.to(T=T, P=Psat).a_alpha, xtol=1e-13)
 
     def to_TP(self, T, P):
+        r'''Method to construct a new EOS object at the spcified `T` and `P`.
+        In the event the `T` and `P` match the current object's `T` and `P`,
+        it will be returned unchanged.
+        
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        P : float
+            Pressure, [Pa]
+
+        Returns
+        -------
+        obj : EOS
+            Pure component EOS at specified `T` and `P`, [-]
+            
+        Notes
+        -----
+        Constructs the object with parameters `Tc`, `Pc`, `omega`, and 
+        `kwargs`.
+        
+        Examples
+        --------
+        
+        >>> base = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=500.0, P=1E6)
+        >>> new = base.to_TP(T=1.0, P=2.0)
+        >>> base.state_specs, new.state_specs
+        ({'P': 1000000.0, 'T': 500.0}, {'P': 2.0, 'T': 1.0})                    
+        '''
+        # TODo replicate method for mixtures
         if T != self.T or P != self.P:
             return self.__class__(T=T, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega, **self.kwargs)
         else:
             return self
 
     def to_TV(self, T, V):
+        r'''Method to construct a new EOS object at the spcified `T` and `V`.
+        In the event the `T` and `V` match the current object's `T` and `V`,
+        it will be returned unchanged.
+        
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        V : float
+            Molar volume, [m^3/mol]
+
+        Returns
+        -------
+        obj : EOS
+            Pure component EOS at specified `T` and `V`, [-]
+            
+        Notes
+        -----
+        Constructs the object with parameters `Tc`, `Pc`, `omega`, and 
+        `kwargs`.
+        
+        Examples
+        --------
+        
+        >>> base = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=500.0, P=1E6)
+        >>> new = base.to_TV(T=1000000.0, V=1.0)
+        >>> base.state_specs, new.state_specs
+        ({'P': 1000000.0, 'T': 500.0}, {'T': 1000000.0, 'V': 1.0})
+        '''
         if T != self.T or V != self.V:
             # Only allow creation of new class if volume actually specified
+            # Ignores the posibility that V is V_l or V_g
             return self.__class__(T=T, V=V, Tc=self.Tc, Pc=self.Pc, omega=self.omega, **self.kwargs)
         else:
             return self
         
     def to_PV(self, P, V):
+        r'''Method to construct a new EOS object at the spcified `P` and `V`.
+        In the event the `P` and `V` match the current object's `P` and `V`,
+        it will be returned unchanged.
+        
+        Parameters
+        ----------
+        P : float
+            Pressure, [Pa]
+        V : float
+            Molar volume, [m^3/mol]
+
+        Returns
+        -------
+        obj : EOS
+            Pure component EOS at specified `P` and `V`, [-]
+            
+        Notes
+        -----
+        Constructs the object with parameters `Tc`, `Pc`, `omega`, and 
+        `kwargs`.
+        
+        Examples
+        --------
+        
+        >>> base = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=500.0, P=1E6)
+        >>> new = base.to_PV(P=1000.0, V=1.0)
+        >>> base.state_specs, new.state_specs
+        ({'P': 1000000.0, 'T': 500.0}, {'P': 1000.0, 'V': 1.0})
+        '''
         if P != self.P or V != self.V:
             return self.__class__(V=V, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega, **self.kwargs)
         else:
             return self
     
     def to(self, T=None, P=None, V=None):
+        r'''Method to construct a new EOS object at two of `T`, `P` or `V`.
+        In the event the specs match those of the current object, it will be 
+        returned unchanged.
+        
+        Parameters
+        ----------
+        T : float or None, optional
+            Temperature, [K]
+        P : float or None, optional
+            Pressure, [Pa]
+        V : float or None, optional
+            Molar volume, [m^3/mol]
+
+        Returns
+        -------
+        obj : EOS
+            Pure component EOS at the two specified specs, [-]
+            
+        Notes
+        -----
+        Constructs the object with parameters `Tc`, `Pc`, `omega`, and 
+        `kwargs`.
+        
+        Examples
+        --------
+        
+        >>> base = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=500.0, P=1E6)
+        >>> base.to(T=300.0, P=1e9).state_specs
+        {'P': 1000000000.0, 'T': 300.0}
+        >>> base.to(T=300.0, V=1.0).state_specs
+        {'T': 300.0, 'V': 1.0}
+        >>> base.to(P=1e5, V=1.0).state_specs
+        {'P': 100000.0, 'V': 1.0}
+        '''
         if T is not None and P is not None:
             return self.to_TP(T, P)
         elif T is not None and V is not None:
@@ -2895,10 +3151,6 @@ should be calculated by this method, in a user subclass.')
     @property
     def dZ_dP_g(self):
         return 1.0/(self.T*R)*(self.V_g + self.P*self.dV_dP_g)
-
-    @property
-    def d2V_dTdP_l(self):
-        return self.d2V_dPdT_l
     
     @property
     def d2V_dTdP_g(self):
@@ -3170,7 +3422,7 @@ should be calculated by this method, in a user subclass.')
             \frac{1}{V^3}
         '''
         return -self.d2V_dPdT_g/self.V_g**2 + 2*self.dV_dT_g*self.dV_dP_g/self.V_g**3
-    
+        
     @property
     def dH_dep_dT_l(self):
         r'''Derivative of departure enthalpy with respect to 
@@ -6238,7 +6490,8 @@ class RK(GCEOS):
     c2 = 0.08664034996495772158907020242607611685675 # (2**(1/3.)-1)/3 
     epsilon = 0.0
     omega = None
-    Zc = 1/3.
+    Zc = 1.0/3.
+    c1R2, c2R = c1*R2, c2*R
 
     Psat_coeffs_limiting = [-72.700288369511583, -68.76714163049]
     Psat_coeffs_critical = [1129250.3276866912, 4246321.053155941,
@@ -6271,10 +6524,9 @@ class RK(GCEOS):
         self.P = P
         self.V = V
 
-        self.a = self.c1*R*R*Tc**2.5/Pc
-        self.b = self.c2*R*Tc/Pc
-        self.delta = self.b
-        self.Vc = self.Zc*R*self.Tc/self.Pc
+        self.a = self.c1R2*Tc**2.5/Pc
+        self.b = self.delta = self.c2R*Tc/Pc
+        self.Vc = self.Zc*R*Tc/Pc
         self.solve()
 
     def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):

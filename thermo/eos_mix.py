@@ -32,6 +32,7 @@ from cmath import log as clog, atanh as catanh
 from scipy.optimize import minimize
 from scipy.misc import derivative
 from fluids.numerics import IS_PYPY, newton_system, broyden2, UnconvergedError, trunc_exp
+from fluids.numerics.arrays import det
 from thermo.utils import normalize, Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter, dxs_to_dn_partials, dxs_to_dns, dns_to_dn_partials, d2xs_to_dxdn_partials, d2ns_to_dn2_partials
 from thermo.utils import R
 from thermo.utils import log, exp, sqrt
@@ -263,7 +264,7 @@ class GCEOSMIX(GCEOS):
         new.T = T
         new.P = P
         new.V = None
-        new.fast_init_specific(self)
+        new._fast_init_specific(self)
         new.solve(pure_a_alphas=(not copy_alphas), only_l=only_l, 
                   only_g=only_g, full_alphas=full_alphas)
         return new
@@ -285,7 +286,47 @@ class GCEOSMIX(GCEOS):
             return self
         return self.__class__(P=P, V=V, zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, fugacities=fugacities, **self.kwargs)
 
-    def to(self, zs, T=None, P=None, V=None, fugacities=True):
+    def to(self, zs=None, T=None, P=None, V=None, fugacities=True):
+        r'''Method to construct a new EOSMIX object at two of `T`, `P` or `V`
+        with the specified composition.
+        In the event the specs match those of the current object, it will be 
+        returned unchanged.
+        
+        Parameters
+        ----------
+        zs : list[float], optional
+            Mole fractions of EOS, [-]
+        T : float or None, optional
+            Temperature, [K]
+        P : float or None, optional
+            Pressure, [Pa]
+        V : float or None, optional
+            Molar volume, [m^3/mol]
+        fugacities : bool
+            Whether or not to calculate fugacities, [-]
+
+        Returns
+        -------
+        obj : EOSMIX
+            Pure component EOSMIX at the two specified specs, [-]
+            
+        Notes
+        -----
+        Constructs the object with parameters `Tcs`, `Pcs`, `omegas`, and 
+        `kwargs`.
+        
+        Examples
+        --------
+        >>> base = PRMIX(T=500.0, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.6, 0.4])
+        >>> base.to(T=300.0, P=1e9).state_specs
+        {'P': 1000000000.0, 'T': 300.0}
+        >>> base.to(T=300.0, V=1.0).state_specs
+        {'T': 300.0, 'V': 1.0}
+        >>> base.to(P=1e5, V=1.0).state_specs
+        {'P': 100000.0, 'V': 1.0}
+        '''
+        if zs is None:
+            zs = self.zs
         if T is not None and P is not None:
             return self.to_TP_zs(T, P, zs, fugacities)
         elif T is not None and V is not None:
@@ -295,20 +336,120 @@ class GCEOSMIX(GCEOS):
         else:
             return self.__class__(T=T, P=P, V=V, zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, fugacities=fugacities, **self.kwargs)
 
-    def to_TPV_pure(self, T, P, V, i):
+    def to_TP(self, T, P):
+        r'''Method to construct a new EOSMIX object at the spcified `T` and `P`
+        with the current composition. In the event the `T` and `P` match the 
+        current object's `T` and `P`, it will be returned unchanged.
+        
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        P : float
+            Pressure, [Pa]
+
+        Returns
+        -------
+        obj : EOSMIX
+            Pure component EOSMIX at specified `T` and `P`, [-]
+            
+        Notes
+        -----
+        Constructs the object with parameters `Tcs`, `Pcs`, `omegas`, and 
+        `kwargs`.
+        
+        Examples
+        --------
+        
+        >>> base = RKMIX(T=500.0, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.6, 0.4])
+        >>> new = base.to_TP(T=10.0, P=2000.0)
+        >>> base.state_specs, new.state_specs
+        ({'T': 500.0, 'P': 1000000.0}, {'T': 10.0, 'P': 2000.0})                  
+        '''
+        return self.to_TP_zs(T, P, zs=self.zs)
+
+    def to_TV(self, T, V):
+        r'''Method to construct a new EOSMIX object at the spcified `T` and `V`
+        with the current composition. In the event the `T` and `V` match the 
+        current object's `T` and `V`, it will be returned unchanged.
+        
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        V : float
+            Molar volume, [m^3/mol]
+
+        Returns
+        -------
+        obj : EOSMIX
+            Pure component EOSMIX at specified `T` and `V`, [-]
+            
+        Notes
+        -----
+        Constructs the object with parameters `Tcs`, `Pcs`, `omegas`, and 
+        `kwargs`.
+        
+        Examples
+        --------
+        
+        >>> base = RKMIX(T=500.0, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.6, 0.4])
+        >>> new = base.to_TV(T=1000000.0, V=1.0)
+        >>> base.state_specs, new.state_specs
+        ({'P': 1000000.0, 'T': 500.0}, {'T': 1000000.0, 'V': 1.0})
+        '''
+        return self.to_TV_zs(T=T, V=V, zs=self.zs)
+        
+    def to_PV(self, P, V):
+        r'''Method to construct a new EOSMIX object at the spcified `P` and `V`
+        with the current composition. In the event the `P` and `V` match the 
+        current object's `P` and `V`, it will be returned unchanged.
+        
+        Parameters
+        ----------
+        P : float
+            Pressure, [Pa]
+        V : float
+            Molar volume, [m^3/mol]
+
+        Returns
+        -------
+        obj : EOSMIX
+            Pure component EOSMIX at specified `P` and `V`, [-]
+            
+        Notes
+        -----
+        Constructs the object with parameters `Tcs`, `Pcs`, `omegas`, and 
+        `kwargs`.
+        
+        Examples
+        --------
+        
+        >>> base = RKMIX(T=500.0, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.6, 0.4])
+        >>> new = base.to_PV(P=1000000.0, V=1.0)
+        >>> base.state_specs, new.state_specs
+        ({'P': 1000000.0, 'T': 500.0}, {'P': 1000000.0, 'V': 1.0})
+        '''
+        return self.to_PV_zs(P=P, V=V, zs=self.zs)
+
+    def to_mechanical_critical_point(self):
+        T, P = self.mechanical_critical_point()
+        return self.to_TP_zs(T=T, P=P, zs=self.zs)
+
+    def to_TPV_pure(self, i, T=None, P=None, V=None):
         r'''Helper method which returns a pure `EOSs` at the specs (two of `T`,
         `P` and `V`) and base EOS as the mixture for a particular index.
 
         Parameters
         ----------
-        T : float or None
-            Specified temperature, [K]
-        P : float or None
-            Specified pressure, [Pa]
-        V : float or None
-            Specified volume, [m^3/mol]
         i : int
             Index of specified compound, [-]
+        T : float or None, optional
+            Specified temperature, [K]
+        P : float or None, optional
+            Specified pressure, [Pa]
+        V : float or None, optional
+            Specified volume, [m^3/mol]
         
         Returns
         -------
@@ -388,46 +529,9 @@ class GCEOSMIX(GCEOS):
         self.Tc, self.Pc, self.omega = Tc, Pc, omega
         self.a = a
         
-        return GCEOS.Psat(self, T, polish=False)
-
-    
-    def a_alpha_and_derivatives_numpy(self, a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=True, quick=True):
-        zs, kijs = self.zs, np.array(self.kijs)
-        a_alphas = np.array(a_alphas)
-        da_alpha_dTs = np.array(da_alpha_dTs)
-        one_minus_kijs = 1.0 - kijs
-        
-        x0 = np.einsum('i,j', a_alphas, a_alphas)
-        x0_05 = x0**0.5
-        a_alpha_ijs = (one_minus_kijs)*x0_05
-        z_products = np.einsum('i,j', zs, zs)
-        a_alpha = np.einsum('ij,ji', a_alpha_ijs, z_products)
-
-        self.a_alpha_ijs = a_alpha_ijs.tolist()
-        
-        if full:            
-            term0 = np.einsum('j,i', a_alphas, da_alpha_dTs)
-            term7 = (one_minus_kijs)/(x0_05)
-            da_alpha_dT = (z_products*term7*(term0)).sum()
-            
-            term1 = -x0_05/x0*(one_minus_kijs)
-            
-            term2 = np.einsum('i, j', a_alphas, da_alpha_dTs)
-                        
-            main3 = da_alpha_dTs/(2.0*a_alphas)*term2
-            main4 = -np.einsum('i, j', a_alphas, d2a_alpha_dT2s)
-            main6 = -0.5*np.einsum('i, j', da_alpha_dTs, da_alpha_dTs)
-            
-            # Needed for fugacity temperature derivative
-            self.da_alpha_dT_ijs = (0.5*(term7)*(term2 + term0))
-            
-            d2a_alpha_dT2 = (z_products*(term1*(main3 + main4 + main6))).sum()
-        
-            return float(a_alpha), float(da_alpha_dT), float(d2a_alpha_dT2)
-        else:
-            return float(a_alpha)
-
-
+        Psat = GCEOS.Psat(self, T, polish=False)
+        del self.tc, self.Pc, self.omega
+        return Psat
 
     def a_alpha_and_derivatives(self, T, full=True, quick=True,
                                 pure_a_alphas=True):
@@ -486,7 +590,7 @@ class GCEOSMIX(GCEOS):
             try:
                 # TODO do not compute derivatives if full=False
                 a_alphas, da_alpha_dTs, d2a_alpha_dT2s = self.a_alpha_and_derivatives_vectorized(T, full=True)
-            except:
+            except NotImplementedError:
                 a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
                 method_obj = super(type(self).__mro__[self.a_alpha_mro], self)
                 for i in self.cmps:
@@ -646,8 +750,70 @@ class GCEOSMIX(GCEOS):
             return a_alpha
         
         
+    def a_alpha_and_derivatives_numpy(self, a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=True, quick=True):
+        zs, kijs = self.zs, np.array(self.kijs)
+        a_alphas = np.array(a_alphas)
+        da_alpha_dTs = np.array(da_alpha_dTs)
+        one_minus_kijs = 1.0 - kijs
         
-    def mechanical_critical_point_f_jac(self, TP):
+        x0 = np.einsum('i,j', a_alphas, a_alphas)
+        x0_05 = x0**0.5
+        a_alpha_ijs = (one_minus_kijs)*x0_05
+        z_products = np.einsum('i,j', zs, zs)
+        a_alpha = np.einsum('ij,ji', a_alpha_ijs, z_products)
+
+        self.a_alpha_ijs = a_alpha_ijs.tolist()
+        
+        if full:            
+            term0 = np.einsum('j,i', a_alphas, da_alpha_dTs)
+            term7 = (one_minus_kijs)/(x0_05)
+            da_alpha_dT = (z_products*term7*(term0)).sum()
+            
+            term1 = -x0_05/x0*(one_minus_kijs)
+            
+            term2 = np.einsum('i, j', a_alphas, da_alpha_dTs)
+                        
+            main3 = da_alpha_dTs/(2.0*a_alphas)*term2
+            main4 = -np.einsum('i, j', a_alphas, d2a_alpha_dT2s)
+            main6 = -0.5*np.einsum('i, j', da_alpha_dTs, da_alpha_dTs)
+            
+            # Needed for fugacity temperature derivative
+            self.da_alpha_dT_ijs = (0.5*(term7)*(term2 + term0))
+            
+            d2a_alpha_dT2 = (z_products*(term1*(main3 + main4 + main6))).sum()
+        
+            return float(a_alpha), float(da_alpha_dT), float(d2a_alpha_dT2)
+        else:
+            return float(a_alpha)
+
+    def _spinodal_f(self, TP):
+        # Work to do - ethane', 'heptane
+        # Specify V, solve P; increase V and keep going
+        # After Effective utilization of equations of state for thermodynamic properties in process simulation
+        '''eos = PRMIX(P=6e6, T=500, Tcs=[305.32, 540.2], Pcs=[4872000.0, 2740000.0], omegas=[0.098, 0.3457], zs=[.5, .5])
+        def to_solve(T):
+            return eos.to(T=T, P=eos.P, zs=eos.zs)._spinodal_f([T, eos.P])
+        
+        # Very well could be right
+        eos.to(T=secant(to_solve, eos.T), P=eos.P, zs=eos.zs).rho_l  # 3004.715984610371
+        '''
+        T, P = float(TP[0]), float(TP[1])
+        RT_inv = 1.0/(R*T)
+        eos_instance = self.to(T=T, P=P, zs=self.zs)
+        if eos_instance.phase == 'l/g':
+            if eos_instance.G_dep_l < eos_instance.G_dep_g:
+                v = eos_instance.d2nA_dninjs_Vt('l')
+            else:
+                v = eos_instance.d2nA_dninjs_Vt('g')
+        elif eos_instance.phase == 'g':
+            v = eos_instance.d2nA_dninjs_Vt('g')
+        else:
+            v = eos_instance.d2nA_dninjs_Vt('l')
+        dGs = [[i*RT_inv for i in row] for row in v]
+        return det(dGs)
+
+        
+    def _mechanical_critical_point_f_jac(self, TP):
         '''The criteria for c_goal and d_goal come from a cubic
         'roots_cubic', which uses a `f`, `g`, and `h` parameter. When all of 
         them are zero, all three roots are equal. For the eos (a=1), this
@@ -699,9 +865,6 @@ class GCEOSMIX(GCEOS):
 
             
             
-            
-            
-            
         Performance analysis:
             
         77% of this is getting a_alpha and da_alpha_dT.
@@ -744,7 +907,7 @@ class GCEOSMIX(GCEOS):
         x19 = delta*x10
         x20 = delta*x11
         x21 = b_eos - delta
-        x22 = 2.0*x12*x21/3.0
+        x22 = 2.0/3.0*x12*x21
         x23 = P*b_eos*x0*x1*x2
         x24 = b_eos*x5
         x25 = x11*x18
@@ -815,15 +978,10 @@ class GCEOSMIX(GCEOS):
         Pmc = sum([Pcs[i]*zs[i] for i in self.cmps])
         Tmc = sum([(Tcs[i]*Tcs[j])**0.5*zs[j]*zs[i] for i in self.cmps
                   for j in self.cmps])
-        TP, iterations = newton_system(self.mechanical_critical_point_f_jac,
+        TP, iterations = newton_system(self._mechanical_critical_point_f_jac,
                                        x0=[Tmc, Pmc], jac=True, ytol=1e-10)
         T, P = float(TP[0]), float(TP[1])
         return T, P
-        
-    def to_mechanical_critical_point(self):
-        T, P = self.mechanical_critical_point()
-        return self.to_TP_zs(T=T, P=P, zs=self.zs)
-        
         
     def fugacities(self, only_l=False, only_g=False):   
         r'''Helper method for calculating fugacity coefficients for any 
@@ -5081,8 +5239,8 @@ class GCEOSMIX(GCEOS):
         return d2ns
 
 
+
 class IGMIX(GCEOSMIX, IG):
-    a_alpha_mro = -4
     eos_pure = IG
     
     nonstate_constants_specific = ()
@@ -5137,25 +5295,55 @@ class IGMIX(GCEOSMIX, IG):
         if fugacities:
             self.fugacities()
 
-    def fast_init_specific(self, other):
+    def _fast_init_specific(self, other):
         self.bs = other.bs
         self.ais = other.ais
         self.b = other.b
         self.zeros1d = other.zeros1d
+        self.zeros2d = other.zeros2d
         self.a_alpha_ijs = other.a_alpha_ijs
         self.da_alpha_dT_ijs = other.da_alpha_dT_ijs
         self.d2a_alpha_dT2_ijs = other.d2a_alpha_dT2_ijs
 
 
-    def a_alpha_and_derivatives_vectorized(self, T, full=False, quick=True):
-        a_alphas = [0.0]*self.N
+    def a_alpha_and_derivatives_vectorized(self, T, full=False):
+        r'''Method to calculate the pure-component `a_alphas` and their first  
+        and second derivatives for the Ideal Gas EOS. This vectorized  
+        implementation is added for extra speed.
+
+        .. math::
+            a\alpha = 0
+        
+            \frac{d a\alpha}{dT} = 0
+
+            \frac{d^2 a\alpha}{dT^2} = 0
+        
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        full : bool, optional
+            If False, calculates and returns only `a_alphas`, [-]
+            
+        Returns
+        -------
+        a_alphas : list[float]
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        da_alpha_dTs : list[float]
+            Temperature derivative of coefficient calculated by EOS-specific 
+            method, [J^2/mol^2/Pa/K]
+        d2a_alpha_dT2s : list[float]
+            Second temperature derivative of coefficient calculated by  
+            EOS-specific method, [J^2/mol^2/Pa/K**2]
+        '''
         if not full:
-            return a_alphas
+            return self.zeros1d
         else:
-            return a_alphas, a_alphas, a_alphas
+            return self.zeros1d, self.zeros1d, self.zeros1d
 
     def a_alpha_and_derivatives(self, T, full=True, quick=True,
                                 pure_a_alphas=True):
+        # Saves time
         if full:
             return 0.0, 0.0, 0.0
         return 0.0
@@ -5167,13 +5355,13 @@ class IGMIX(GCEOSMIX, IG):
         pass
 
     def fugacity_coefficients(self, Z, zs):
-        return [0.0]*self.N
+        return self.zeros1d
 
     def dlnphis_dT(self, phase):
-        return [0.0]*self.N
+        return self.zeros1d
          
     def dlnphis_dP(self, phase):
-        return [0.0]*self.N
+        return self.zeros1d
 
 
 
@@ -5256,7 +5444,6 @@ class PRMIX(GCEOSMIX, PR):
        Equilibrium in a System Containing Methanol." Fluid Phase Equilibria 24,
        no. 1 (January 1, 1985): 25-41. doi:10.1016/0378-3812(85)87035-7. 
     '''
-    a_alpha_mro = -4
     eos_pure = PR
     
     nonstate_constants_specific = ('kappas', )
@@ -5297,7 +5484,7 @@ class PRMIX(GCEOSMIX, PR):
         if fugacities:
             self.fugacities()
 
-    def fast_init_specific(self, other):
+    def _fast_init_specific(self, other):
         self.kappas = other.kappas
         b = 0.0
         for bi, zi in zip(self.bs, self.zs):
@@ -5307,7 +5494,40 @@ class PRMIX(GCEOSMIX, PR):
         self.epsilon = -b*b
 
 
-    def a_alpha_and_derivatives_vectorized(self, T, full=False, quick=True):
+    def a_alpha_and_derivatives_vectorized(self, T, full=False):
+        r'''Method to calculate the pure-component `a_alphas` and their first  
+        and second derivatives for the PR EOS. This vectorized implementation 
+        is added for extra speed.
+
+        .. math::
+            a\alpha = a \left(\kappa \left(- \frac{T^{0.5}}{Tc^{0.5}} 
+            + 1\right) + 1\right)^{2}
+        
+            \frac{d a\alpha}{dT} = - \frac{1.0 a \kappa}{T^{0.5} Tc^{0.5}}
+            \left(\kappa \left(- \frac{T^{0.5}}{Tc^{0.5}} + 1\right) + 1\right)
+
+            \frac{d^2 a\alpha}{dT^2} = 0.5 a \kappa \left(- \frac{1}{T^{1.5} 
+            Tc^{0.5}} \left(\kappa \left(\frac{T^{0.5}}{Tc^{0.5}} - 1\right)
+            - 1\right) + \frac{\kappa}{T^{1.0} Tc^{1.0}}\right)
+        
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        full : bool, optional
+            If False, calculates and returns only `a_alphas`, [-]
+        
+        Returns
+        -------
+        a_alphas : list[float]
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        da_alpha_dTs : list[float]
+            Temperature derivative of coefficient calculated by EOS-specific 
+            method, [J^2/mol^2/Pa/K]
+        d2a_alpha_dT2s : list[float]
+            Second temperature derivative of coefficient calculated by  
+            EOS-specific method, [J^2/mol^2/Pa/K**2]
+        '''
         ais, kappas, Tcs = self.ais, self.kappas, self.Tcs
         
         if not full:
@@ -5322,6 +5542,8 @@ class PRMIX(GCEOSMIX, PR):
             x0 = T**0.5
             x0_inv = 1.0/x0
             x0T_inv = x0_inv*T_inv
+            
+            x5, x6 = 0.5*T_inv, 0.5*x0T_inv
             a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
             
             for a, kappa, Tc in zip(ais, kappas, Tcs):
@@ -5331,26 +5553,9 @@ class PRMIX(GCEOSMIX, PR):
                 x4 = x1*x2
                 a_alphas.append(a*x2*x2)
                 da_alpha_dTs.append(x4*x3*x0_inv)
-                d2a_alpha_dT2s.append(0.5*x3*(T_inv*x1*x1*kappa - x4*x0T_inv))
+                d2a_alpha_dT2s.append(x3*(x5*x1*x1*kappa - x4*x6))
 
             return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
-
-
-
-
-
-
-    def setup_a_alpha_and_derivatives(self, i, T=None):
-        r'''Sets `a`, `kappa`, and `Tc` for a specific component before the 
-        pure-species EOS's `a_alpha_and_derivatives` method is called. Both are 
-        called by `GCEOSMIX.a_alpha_and_derivatives` for every component.'''
-        self.a, self.kappa, self.Tc = self.ais[i], self.kappas[i], self.Tcs[i]
-
-    def cleanup_a_alpha_and_derivatives(self):
-        r'''Removes properties set by `setup_a_alpha_and_derivatives`; run by
-        `GCEOSMIX.a_alpha_and_derivatives` after `a_alpha` is calculated for 
-        every component'''
-        del(self.a, self.kappa, self.Tc)
         
     def fugacity_coefficients(self, Z, zs):
         r'''Literature formula for calculating fugacity coefficients for each
@@ -6210,7 +6415,6 @@ class SRKMIX(GCEOSMIX, SRK):
     .. [3] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
        Butterworth-Heinemann, 1985.
     '''
-    a_alpha_mro = -4
     eos_pure = SRK
     nonstate_constants_specific = ('ms',)
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
@@ -6239,22 +6443,66 @@ class SRKMIX(GCEOSMIX, SRK):
         if fugacities:
             self.fugacities()
         
-    def fast_init_specific(self, other):
+    def _fast_init_specific(self, other):
         self.ms = other.ms
         self.b = b = sum([bi*zi for bi, zi in zip(self.bs, self.zs)])
         self.delta = self.b
 
-    def setup_a_alpha_and_derivatives(self, i, T=None):
-        r'''Sets `a`, `m`, and `Tc` for a specific component before the 
-        pure-species EOS's `a_alpha_and_derivatives` method is called. Both are 
-        called by `GCEOSMIX.a_alpha_and_derivatives` for every component.'''
-        self.a, self.m, self.Tc = self.ais[i], self.ms[i], self.Tcs[i]
+    def a_alpha_and_derivatives_vectorized(self, T, full=False):
+        r'''Method to calculate the pure-component `a_alphas` and their first  
+        and second derivatives for the SRK EOS. This vectorized implementation 
+        is added for extra speed.
 
-    def cleanup_a_alpha_and_derivatives(self):
-        r'''Removes properties set by `setup_a_alpha_and_derivatives`; run by
-        `GCEOSMIX.a_alpha_and_derivatives` after `a_alpha` is calculated for 
-        every component'''
-        del(self.a, self.m, self.Tc)
+        .. math::
+            a\alpha = a \left(m \left(- \sqrt{\frac{T}{Tc}} + 1\right)
+            + 1\right)^{2}
+        
+            \frac{d a\alpha}{dT} = \frac{a m}{T} \sqrt{\frac{T}{Tc}} \left(m
+            \left(\sqrt{\frac{T}{Tc}} - 1\right) - 1\right)
+
+            \frac{d^2 a\alpha}{dT^2} = \frac{a m \sqrt{\frac{T}{Tc}}}{2 T^{2}}
+            \left(m + 1\right)
+        
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        full : bool, optional
+            If False, calculates and returns only `a_alphas`, [-]
+        
+        Returns
+        -------
+        a_alphas : list[float]
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        da_alpha_dTs : list[float]
+            Temperature derivative of coefficient calculated by EOS-specific 
+            method, [J^2/mol^2/Pa/K]
+        d2a_alpha_dT2s : list[float]
+            Second temperature derivative of coefficient calculated by  
+            EOS-specific method, [J^2/mol^2/Pa/K**2]
+        '''
+        ais, Tcs, ms = self.ais, self.Tcs, self.ms
+        sqrtT = T**0.5
+        if not full:
+            a_alphas = []
+            for i in self.cmps:
+                x0 = ms[i]*(1. - sqrtT*Tcs[i]**-0.5) + 1.0
+                a_alphas.append(ais[i]*x0*x0)
+            return a_alphas
+        else:
+            T_inv = 1.0/T
+            x10 = 0.5*T_inv*T_inv
+            nT_inv = -T_inv
+            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
+            for i in self.cmps:
+                x1 = sqrtT*Tcs[i]**-0.5
+                x2 = ais[i]*ms[i]*x1
+                x3 = ms[i]*(1.0 - x1) + 1.
+                
+                a_alphas.append(ais[i]*x3*x3)
+                da_alpha_dTs.append(x2*nT_inv*x3)
+                d2a_alpha_dT2s.append(x2*x10*(ms[i] + 1.))
+            return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
         
     def fugacity_coefficients(self, Z, zs):
         r'''Literature formula for calculating fugacity coefficients for each
@@ -6605,7 +6853,6 @@ class PR78MIX(PRMIX):
        Equilibrium in a System Containing Methanol." Fluid Phase Equilibria 24,
        no. 1 (January 1, 1985): 25-41. doi:10.1016/0378-3812(85)87035-7. 
     '''
-    a_alpha_mro = -4
     eos_pure = PR78
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
@@ -6714,9 +6961,7 @@ class VDWMIX(GCEOSMIX, VDW):
     .. [2] Poling, Bruce E. The Properties of Gases and Liquids. 5th 
        edition. New York: McGraw-Hill Professional, 2000.
     '''
-    a_alpha_mro = -4
     eos_pure = VDW
-    
     nonstate_constants_specific = tuple()
     
     def __init__(self, Tcs, Pcs, zs, kijs=None, T=None, P=None, V=None, 
@@ -6743,22 +6988,39 @@ class VDWMIX(GCEOSMIX, VDW):
         if fugacities:
             self.fugacities()
 
-    def fast_init_specific(self, other):
+    def _fast_init_specific(self, other):
         self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
         
-    def setup_a_alpha_and_derivatives(self, i, T=None):
-        r'''Sets `a` for a specific component before the 
-        pure-species EOS's `a_alpha_and_derivatives` method is called. Both are 
-        called by `GCEOSMIX.a_alpha_and_derivatives` for every component.'''
-        self.a = self.ais[i]
+    def a_alpha_and_derivatives_vectorized(self, T, full=False):
+        r'''Method to calculate the pure-component `a_alphas` and their first  
+        and second derivatives for the VDW EOS. This vectorized implementation 
+        is added for extra speed.
+
+        .. math::
+            a\alpha = a
         
-    def cleanup_a_alpha_and_derivatives(self):
-        r'''Removes properties set by `setup_a_alpha_and_derivatives`; run by
-        `GCEOSMIX.a_alpha_and_derivatives` after `a_alpha` is calculated for 
-        every component'''
-        del(self.a)
+            \frac{d a\alpha}{dT} = 0
+
+            \frac{d^2 a\alpha}{dT^2} = 0
         
-    def a_alpha_and_derivatives_vectorized(self, T, full=False, quick=True):
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        full : bool, optional
+            If False, calculates and returns only `a_alphas`, [-]
+        
+        Returns
+        -------
+        a_alphas : list[float]
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        da_alpha_dTs : list[float]
+            Temperature derivative of coefficient calculated by EOS-specific 
+            method, [J^2/mol^2/Pa/K]
+        d2a_alpha_dT2s : list[float]
+            Second temperature derivative of coefficient calculated by  
+            EOS-specific method, [J^2/mol^2/Pa/K**2]
+        '''
         if not full:
             return self.ais
         else:
@@ -6981,9 +7243,8 @@ class VDWMIX(GCEOSMIX, VDW):
 
 class RKMIX(GCEOSMIX, RK):
     eos_pure = RK
-    a_alpha_mro = -4
 
-    def __init__(self,  Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
+    def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
         self.N = N = len(Tcs)
         self.cmps = cmps = range(N)
@@ -7014,13 +7275,51 @@ class RKMIX(GCEOSMIX, RK):
         if fugacities:
             self.fugacities()
 
-    def fast_init_specific(self, other):
+    def _fast_init_specific(self, other):
         b = 0.0
         for bi, zi in zip(self.bs, self.zs):
             b += bi*zi
         self.b = self.delta = b
 
-    def a_alpha_and_derivatives_vectorized(self, T, full=False, quick=True):
+    def a_alpha_and_derivatives_vectorized(self, T, full=False):
+        r'''Method to calculate the pure-component `a_alphas` and their first  
+        and second derivatives for the RK EOS. This vectorized implementation 
+        is added for extra speed.
+
+        .. math::
+            a\alpha = \frac{a}{\sqrt{T}}
+        
+            \frac{d a\alpha}{dT} = - \frac{a}{2 T^{\frac{3}{2}}}
+
+            \frac{d^2 a\alpha}{dT^2} = \frac{3 a}{4 T^{\frac{5}{2}}}
+        
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        full : bool, optional
+            If False, calculates and returns only `a_alphas`, [-]
+        
+        Returns
+        -------
+        a_alphas : list[float]
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        da_alpha_dTs : list[float]
+            Temperature derivative of coefficient calculated by EOS-specific 
+            method, [J^2/mol^2/Pa/K]
+        d2a_alpha_dT2s : list[float]
+            Second temperature derivative of coefficient calculated by  
+            EOS-specific method, [J^2/mol^2/Pa/K**2]
+            
+        Examples
+        --------
+        
+        >>> eos = RKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+        >>> eos.a_alpha_and_derivatives_vectorized(115, full=True)
+        ([0.14498109194681866, 0.3001977367788305],
+         [-0.0006303525736818202, -0.0013052075512123066],
+         [8.221990091502003e-06, 1.702444632016052e-05])
+        '''
         ais, Tcs = self.ais, self.Tcs
         T_root_inv = T**-0.5
         
@@ -7030,7 +7329,7 @@ class RKMIX(GCEOSMIX, RK):
         else:
             T_inv = T_root_inv*T_root_inv
             T_15_inv = T_inv*T_root_inv
-            T_25_inv = T_inv*T_root_inv
+            T_25_inv = T_inv*T_15_inv
             
             x0 = -0.5*T_15_inv
             x1 = 0.75*T_25_inv
@@ -7046,13 +7345,10 @@ class RKMIX(GCEOSMIX, RK):
             self.Tc = self.Tcs[0]
             self.Pc = self.Pcs[0]
             self.a = self.ais[0]
-            self.b = self.bs[0]
             T = super(type(self).__mro__[-4], self).solve_T(P=P, V=V, quick=quick)   
             del self.Tc
             del self.Pc
-            del self.kappa
             del self.a
-            del self.b
             return T
         else:
             return super(type(self).__mro__[-3], self).solve_T(P=P, V=V, quick=quick)   
@@ -7161,7 +7457,6 @@ class PRSVMIX(PRMIX, PRSV):
        of Industrial Interest." The Canadian Journal of Chemical Engineering 
        67, no. 1 (February 1, 1989): 170-73. doi:10.1002/cjce.5450670125.
     '''
-    a_alpha_mro = -5
     eos_pure = PRSV
     nonstate_constants_specific = ('kappa0s', 'kappa1s', 'kappas')
     mix_kwargs_to_pure = {'kappa1s': 'kappa1'}
@@ -7211,7 +7506,7 @@ class PRSVMIX(PRMIX, PRSV):
 
 
 
-    def fast_init_specific(self, other):
+    def _fast_init_specific(self, other):
         self.kappa0s = other.kappa0s
         self.kappa1s = other.kappa1s
         self.kappas = other.kappas
@@ -7222,24 +7517,74 @@ class PRSVMIX(PRMIX, PRSV):
         self.delta = 2.0*b
         self.epsilon = -b*b
 
+    def a_alpha_and_derivatives_vectorized(self, T, full=False):
+        r'''Method to calculate the pure-component `a_alphas` and their first  
+        and second derivatives for the PRSV EOS. This vectorized implementation 
+        is added for extra speed.
 
-    def a_alpha_and_derivatives_vectorized(self, T, full=False, quick=True):
-        raise NotImplementedError("Not Implemented")
-
-    def setup_a_alpha_and_derivatives(self, i, T=None):
-        r'''Sets `a`, `kappa0`, `kappa1`, and `Tc` for a specific component before the 
-        pure-species EOS's `a_alpha_and_derivatives` method is called. Both are 
-        called by `GCEOSMIX.a_alpha_and_derivatives` for every component.'''
-        if not hasattr(self, 'kappas'):
-            self.kappas = [kappa0 + kappa1*(1 + (T/Tc)**0.5)*(0.7 - (T/Tc)) for kappa0, kappa1, Tc in zip(self.kappa0s, self.kappa1s, self.Tcs)]
-        self.a, self.kappa, self.kappa0, self.kappa1, self.Tc = self.ais[i], self.kappas[i], self.kappa0s[i], self.kappa1s[i], self.Tcs[i]
-
-    def cleanup_a_alpha_and_derivatives(self):
-        r'''Removes properties set by `setup_a_alpha_and_derivatives`; run by
-        `GCEOSMIX.a_alpha_and_derivatives` after `a_alpha` is calculated for 
-        every component'''
-        del(self.a, self.kappa, self.kappa0, self.kappa1, self.Tc)
+        .. math::
+            a\alpha = a \left(\left(\kappa_{0} + \kappa_{1} \left(\sqrt{\frac{
+            T}{Tc}} + 1\right) \left(- \frac{T}{Tc} + \frac{7}{10}\right)
+            \right) \left(- \sqrt{\frac{T}{Tc}} + 1\right) + 1\right)^{2}
         
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        full : bool, optional
+            If False, calculates and returns only `a_alphas`, [-]
+        
+        Returns
+        -------
+        a_alphas : list[float]
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        da_alpha_dTs : list[float]
+            Temperature derivative of coefficient calculated by EOS-specific 
+            method, [J^2/mol^2/Pa/K]
+        d2a_alpha_dT2s : list[float]
+            Second temperature derivative of coefficient calculated by  
+            EOS-specific method, [J^2/mol^2/Pa/K**2]
+        '''
+        ais, Tcs, kappa0s, kappa1s = self.ais, self.Tcs, self.kappa0s, self.kappa1s
+        sqrtT = T**0.5
+        if not full:
+            a_alphas = []
+            for i in self.cmps:
+                Tc_inv_root = Tcs[i]**-0.5
+                Tc_inv = Tc_inv_root*Tc_inv_root
+                x0 = Tc_inv_root*sqrtT
+                x2 = (1.0 + (kappa0s[i] + kappa1s[i]*(x0 + 1.0)*(0.7 - T*Tc_inv))*(1.0 - x0))
+                a_alphas.append(ais[i]*x2*x2)
+            return a_alphas
+        else:
+            T_inv = 1.0/T
+            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
+            for i in self.cmps:
+                Tc_inv_root = Tcs[i]**-0.5
+                Tc_inv = Tc_inv_root*Tc_inv_root
+                
+                x1 = T*Tc_inv
+                x2 = sqrtT*Tc_inv_root
+                
+                x3 = x2 - 1.
+                x4 = 10.*x1 - 7.
+                x5 = x2 + 1.
+                x6 = 10.*kappa0s[i] - kappa1s[i]*x4*x5
+                x7 = x3*x6
+                x8 = x7*0.1 - 1.
+                x10 = x6*T_inv
+                x11 = kappa1s[i]*x3
+                x12 = x4*T_inv
+                x13 = 20.*Tc_inv*x5 + x12*x2
+                x14 = -x10*x2 + x11*x13
+                a_alpha = ais[i]*x8*x8
+                da_alpha_dT = -ais[i]*x14*x8*0.1
+                d2a_alpha_dT2 = ais[i]*0.005*(x14*x14 - x2*T_inv*(x7 - 10.)*(2.*kappa1s[i]*x13 + x10 + x11*(40.*Tc_inv - x12)))
+                
+                a_alphas.append(a_alpha)
+                da_alpha_dTs.append(da_alpha_dT)
+                d2a_alpha_dT2s.append(d2a_alpha_dT2)
+            return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
 
 class PRSV2MIX(PRMIX, PRSV2):
     r'''Class for solving the Peng-Robinson-Stryjek-Vera 2 equations of state 
@@ -7261,7 +7606,7 @@ class PRSV2MIX(PRMIX, PRSV2):
 
         a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}
         
-	  b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
+	    b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
         
         \alpha(T)_i=[1+\kappa_i(1-\sqrt{T_{r,i}})]^2
         
@@ -7331,7 +7676,6 @@ class PRSV2MIX(PRMIX, PRSV2):
        Chemical Engineering 64, no. 5 (October 1, 1986): 820-26. 
        doi:10.1002/cjce.5450640516. 
     '''
-    a_alpha_mro = -5
     eos_pure = PRSV2
     nonstate_constants_specific = ('kappa1s', 'kappa2s', 'kappa3s', 'kappa0s', 'kappas')
     mix_kwargs_to_pure = {'kappa1s': 'kappa1', 'kappa2s': 'kappa2', 'kappa3s': 'kappa3'}
@@ -7387,7 +7731,7 @@ class PRSV2MIX(PRMIX, PRSV2):
         if fugacities:
             self.fugacities()
 
-    def fast_init_specific(self, other):
+    def _fast_init_specific(self, other):
         self.kappa0s = other.kappa0s
         self.kappa1s = other.kappa1s
         self.kappa2s = other.kappa2s
@@ -7397,34 +7741,85 @@ class PRSV2MIX(PRMIX, PRSV2):
         for bi, zi in zip(self.bs, self.zs):
             b += bi*zi
         self.b = b
-        self.delta = 2.0*b
+        self.delta = b + b
         self.epsilon = -b*b
 
+    def a_alpha_and_derivatives_vectorized(self, T, full=False):
+        r'''Method to calculate the pure-component `a_alphas` and their first  
+        and second derivatives for the PRSV2 EOS. This vectorized  
+        implementation is added for extra speed.
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        full : bool, optional
+            If False, calculates and returns only `a_alphas`, [-]
         
-    def setup_a_alpha_and_derivatives(self, i, T=None):
-        r'''Sets `a`, `kappa`, `kappa0`, `kappa1`, `kappa2`, `kappa3` and `Tc`
-        for a specific component before the 
-        pure-species EOS's `a_alpha_and_derivatives` method is called. Both are 
-        called by `GCEOSMIX.a_alpha_and_derivatives` for every component.'''
-        if not hasattr(self, 'kappas'):
-            self.kappas = []
-            for Tc, kappa0, kappa1, kappa2, kappa3 in zip(self.Tcs, self.kappa0s, self.kappa1s, self.kappa2s, self.kappa3s):
-                Tr = T/Tc
-                kappa = kappa0 + ((kappa1 + kappa2*(kappa3 - Tr)*(1. - Tr**0.5))*(1. + Tr**0.5)*(0.7 - Tr))
-                self.kappas.append(kappa)
+        Returns
+        -------
+        a_alphas : list[float]
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        da_alpha_dTs : list[float]
+            Temperature derivative of coefficient calculated by EOS-specific 
+            method, [J^2/mol^2/Pa/K]
+        d2a_alpha_dT2s : list[float]
+            Second temperature derivative of coefficient calculated by  
+            EOS-specific method, [J^2/mol^2/Pa/K**2]
+        '''
+        Tcs, ais, kappa0s, kappa1s, kappa2s, kappa3s = self.Tcs, self.ais, self.kappa0s, self.kappa1s, self.kappa2s, self.kappa3s
+        sqrtT = T**0.5
+        if not full:
+            a_alphas = []
+            for i in self.cmps:
+                Tc_inv_root = Tcs[i]**-0.5
+                Tr_sqrt = sqrtT*Tc_inv_root
+                Tr = T*Tc_inv_root*Tc_inv_root
+                kappa = (kappa0s[i] + ((kappa1s[i] + kappa2s[i]*(kappa3s[i] - Tr)
+                         *(1.0 - Tc_inv_root))*(1.0 + Tc_inv_root)*(0.7 - Tr)))
+                x0 = (1.0 + kappa*(1.0 - Tr_sqrt))
+                a_alphas.append(ais[i]*x0*x0)
+            return a_alphas
+        else:
+            T_inv = 1.0/T
+            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
+            for i in self.cmps:
+                Tc_inv_root = Tcs[i]**-0.5
+                Tc_inv = Tc_inv_root*Tc_inv_root
+                x1 = T*Tc_inv
+                x2 = sqrtT*Tc_inv_root
+                
+                x3 = x2 - 1.
+                x4 = x2 + 1.
+                x5 = 10.*x1 - 7.
+                x6 = -kappa3s[i] + x1
+                x7 = kappa1s[i] + kappa2s[i]*x3*x6
+                x8 = x5*x7
+                x9 = 10.*kappa0s[i] - x4*x8
+                x10 = x3*x9
+                x11 = x10*0.1 - 1.0
+                x13 = x2*T_inv
+                x14 = x7*Tc_inv
+                x15 = kappa2s[i]*x4*x5
+                x16 = 2.*(-x2 + 1.)*Tc_inv + x13*(kappa3s[i] - x1)
+                x17 = -x13*x8 - x14*(20.*x2 + 20.) + x15*x16
+                x18 = x13*x9 + x17*x3
+                x19 = x2*T_inv*T_inv
+                x20 = 2.*x2*T_inv
+                
+                a_alpha = ais[i]*x11*x11
+                da_alpha_dT = ais[i]*x11*x18*0.1
+                d2a_alpha_dT2 = ais[i]*(x18*x18 + (x10 - 10.)*(x17*x20 - x19*x9
+                                   + x3*(40.*kappa2s[i]*Tc_inv*x16*x4 
+                                 + kappa2s[i]*x16*x20*x5 - 40.*T_inv*x14*x2
+                                 - x15*T_inv*x2*(4.0*Tc_inv - x6*T_inv) 
+                                 + x19*x8)))*0.005
+                
+                a_alphas.append(a_alpha)
+                da_alpha_dTs.append(da_alpha_dT)
+                d2a_alpha_dT2s.append(d2a_alpha_dT2)
+            return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
 
-        (self.a, self.kappa, self.kappa0, self.kappa1, self.kappa2, 
-         self.kappa3, self.Tc) = (self.ais[i], self.kappas[i], self.kappa0s[i],
-         self.kappa1s[i], self.kappa2s[i], self.kappa3s[i], self.Tcs[i])
-
-    def cleanup_a_alpha_and_derivatives(self):
-        r'''Removes properties set by `setup_a_alpha_and_derivatives`; run by
-        `GCEOSMIX.a_alpha_and_derivatives` after `a_alpha` is calculated for 
-        every component'''
-        del(self.a, self.kappa, self.kappa0, self.kappa1, self.kappa2, self.kappa3, self.Tc)
-
-    def a_alpha_and_derivatives_vectorized(self, T, full=False, quick=True):
-        raise NotImplementedError("Not Implemented")
 
 class TWUPRMIX(PRMIX, TWUPR):
     r'''Class for solving the Twu [1]_ variant of the Peng-Robinson cubic 
@@ -7544,7 +7939,7 @@ class TWUPRMIX(PRMIX, TWUPR):
         if fugacities:
             self.fugacities()
 
-    def fast_init_specific(self, other):
+    def _fast_init_specific(self, other):
         b = 0.0
         for bi, zi in zip(self.bs, self.zs):
             b += bi*zi
@@ -7552,6 +7947,8 @@ class TWUPRMIX(PRMIX, TWUPR):
         self.delta = 2.0*b
         self.epsilon = -b*b
 
+    def a_alpha_and_derivatives_vectorized(self, T, full=False):
+        raise NotImplementedError("Not implemented")
 
     def setup_a_alpha_and_derivatives(self, i, T=None):
         r'''Sets `a`, `omega`, and `Tc` for a specific component before the 
@@ -7563,9 +7960,6 @@ class TWUPRMIX(PRMIX, TWUPR):
         `GCEOSMIX.a_alpha_and_derivatives` after `a_alpha` is calculated for 
         every component'''
         del(self.a, self.Tc, self.omega)
-
-    def a_alpha_and_derivatives_vectorized(self, T, full=False, quick=True):
-        raise NotImplementedError("Not Implemented")
 
 class TWUSRKMIX(SRKMIX, TWUSRK):
     r'''Class for solving the Twu variant of the Soave-Redlich-Kwong cubic 
@@ -7685,6 +8079,9 @@ class TWUSRKMIX(SRKMIX, TWUSRK):
         if fugacities:
             self.fugacities()
 
+    def a_alpha_and_derivatives_vectorized(self, T, full=False):
+        raise NotImplementedError("Not implemented")
+
     def setup_a_alpha_and_derivatives(self, i, T=None):
         r'''Sets `a`, `omega`, and `Tc` for a specific component before the 
         pure-species EOS's `a_alpha_and_derivatives` method is called. Both are 
@@ -7697,7 +8094,7 @@ class TWUSRKMIX(SRKMIX, TWUSRK):
         every component'''
         del(self.a, self.Tc, self.omega)
         
-    def fast_init_specific(self, other):
+    def _fast_init_specific(self, other):
         b = 0.0
         bs, zs = self.bs, self.zs
         for i in self.cmps:
@@ -7784,7 +8181,6 @@ class APISRKMIX(SRKMIX, APISRK):
     .. [1] API Technical Data Book: General Properties & Characterization.
        American Petroleum Institute, 7E, 2005.
     '''
-    a_alpha_mro = -5
     eos_pure = APISRK
     nonstate_constants_specific = ('S1s', 'S2s')
     mix_kwargs_to_pure = {'S1s': 'S1', 'S2s': 'S2'}
@@ -7828,24 +8224,82 @@ class APISRKMIX(SRKMIX, APISRK):
         if fugacities:
             self.fugacities()
             
-    def fast_init_specific(self, other):
+    def _fast_init_specific(self, other):
         self.S1s = other.S1s
         self.S2s = other.S2s
 
         self.b = b = sum([bi*zi for bi, zi in zip(self.bs, self.zs)])
         self.delta = self.b
         
-    def setup_a_alpha_and_derivatives(self, i, T=None):
-        r'''Sets `a`, `S1`, `S2` and `Tc` for a specific component before the 
-        pure-species EOS's `a_alpha_and_derivatives` method is called. Both are 
-        called by `GCEOSMIX.a_alpha_and_derivatives` for every component.'''
-        self.a, self.Tc, self.S1, self.S2  = self.ais[i], self.Tcs[i], self.S1s[i], self.S2s[i]
 
-    def cleanup_a_alpha_and_derivatives(self):
-        r'''Removes properties set by `setup_a_alpha_and_derivatives`; run by
-        `GCEOSMIX.a_alpha_and_derivatives` after `a_alpha` is calculated for 
-        every component'''
-        del(self.a, self.Tc, self.S1, self.S2)
+    def a_alpha_and_derivatives_vectorized(self, T, full=False):
+        r'''Method to calculate the pure-component `a_alphas` and their first  
+        and second derivatives for the API SRK EOS. This vectorized implementation 
+        is added for extra speed.
+
+        .. math::
+            a\alpha(T) = a\left[1 + S_1\left(1-\sqrt{T_r}\right) + S_2\frac{1
+            - \sqrt{T_r}}{\sqrt{T_r}}\right]^2
+        
+            \frac{d a\alpha}{dT} = a\frac{Tc}{T^{2}} \left(- S_{2} \left(\sqrt{
+            \frac{T}{Tc}} - 1\right) + \sqrt{\frac{T}{Tc}} \left(S_{1} \sqrt{
+            \frac{T}{Tc}} + S_{2}\right)\right) \left(S_{2} \left(\sqrt{\frac{
+            T}{Tc}} - 1\right) + \sqrt{\frac{T}{Tc}} \left(S_{1} \left(\sqrt{
+            \frac{T}{Tc}} - 1\right) - 1\right)\right)
+
+            \frac{d^2 a\alpha}{dT^2} = a\frac{1}{2 T^{3}} \left(S_{1}^{2} T
+            \sqrt{\frac{T}{Tc}} - S_{1} S_{2} T \sqrt{\frac{T}{Tc}} + 3 S_{1}
+            S_{2} Tc \sqrt{\frac{T}{Tc}} + S_{1} T \sqrt{\frac{T}{Tc}} 
+            - 3 S_{2}^{2} Tc \sqrt{\frac{T}{Tc}} + 4 S_{2}^{2} Tc + 3 S_{2} 
+            Tc \sqrt{\frac{T}{Tc}}\right)
+        
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        full : bool, optional
+            If False, calculates and returns only `a_alphas`, [-]
+        
+        Returns
+        -------
+        a_alphas : list[float]
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        da_alpha_dTs : list[float]
+            Temperature derivative of coefficient calculated by EOS-specific 
+            method, [J^2/mol^2/Pa/K]
+        d2a_alpha_dT2s : list[float]
+            Second temperature derivative of coefficient calculated by  
+            EOS-specific method, [J^2/mol^2/Pa/K**2]
+        '''
+        ais, Tcs, S1s, S2s = self.ais, self.Tcs, self.S1s, self.S2s
+        sqrtT = T**0.5
+        if not full:
+            a_alphas = []
+            for i in self.cmps:
+                a_alpha = ais[i]*(S1s[i]*(-(T/Tcs[i])**0.5 + 1.) + S2s[i]*(-(T/Tcs[i])**0.5 + 1)*(T/Tcs[i])**-0.5 + 1)**2
+                a_alphas.append(a_alpha)
+            return a_alphas
+        else:
+            T_inv = 1.0/T
+            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
+            for i in self.cmps:
+                x0 = (T/Tcs[i])**0.5
+                x1 = x0 - 1.
+                x2 = x1/x0
+                x3 = S2s[i]*x2
+                x4 = S1s[i]*x1 + x3 - 1.
+                x5 = S1s[i]*x0
+                x6 = S2s[i] - x3 + x5
+                x7 = 3.*S2s[i]
+                a_alpha = ais[i]*x4*x4
+                da_alpha_dT = ais[i]*x4*x6/T
+                d2a_alpha_dT2 = ais[i]*(-x4*(-x2*x7 + x5 + x7) + x6*x6)/(2.*T*T)
+                
+                a_alphas.append(a_alpha)
+                da_alpha_dTs.append(da_alpha_dT)
+                d2a_alpha_dT2s.append(d2a_alpha_dT2)
+            return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
+
 
     def P_max_at_V(self, V):
         if self.N == 1 and self.S2s[0] == 0:
@@ -8027,6 +8481,7 @@ for eos in eos_mix_list:
             N, cmps = self.N, self.cmps
             return [[[0.0]*N for _ in cmps] for _ in cmps]
         
+        # Python 2/3 compatibility
         try:
             eos.__dict__['d3epsilon_dninjnks'] = d3epsilon_dninjnks
             eos.__dict__['d2epsilon_dninjs'] = d2epsilon_dninjs
@@ -8039,3 +8494,19 @@ for eos in eos_mix_list:
             setattr(eos, 'd2epsilon_dzizjs', d2epsilon_dzizjs)
             setattr(eos, 'depsilon_dns', depsilon_dns)
             setattr(eos, 'depsilon_dzs', depsilon_dzs)
+
+
+# RK has the same `delta` as SRK 
+        # Python 2/3 compatibility
+try:
+    RKMIX.__dict__['ddelta_dzs'] = SRKMIX.ddelta_dzs
+    RKMIX.__dict__['ddelta_dns'] = SRKMIX.ddelta_dns
+    RKMIX.__dict__['d2delta_dzizjs'] = SRKMIX.d2delta_dzizjs
+    RKMIX.__dict__['d2delta_dninjs'] = SRKMIX.d2delta_dninjs
+    RKMIX.__dict__['d3delta_dninjnks'] = SRKMIX.d3delta_dninjnks
+except:
+    setattr(RKMIX, 'ddelta_dzs', SRKMIX.ddelta_dzs)
+    setattr(RKMIX, 'ddelta_dns', SRKMIX.ddelta_dns)
+    setattr(RKMIX, 'd2delta_dzizjs', SRKMIX.d2delta_dzizjs)
+    setattr(RKMIX, 'd2delta_dninjs', SRKMIX.d2delta_dninjs)
+    setattr(RKMIX, 'd3delta_dninjnks', SRKMIX.d3delta_dninjnks)

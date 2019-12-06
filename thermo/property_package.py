@@ -3807,7 +3807,7 @@ class GceosBase(Ideal):
             eos_base = self.to_TP_zs(T=fake_T, P=fake_P, zs=fake_zs)
             eos_pure_refs = []
             for idx in self.cmps:
-                eos_pure = eos_base.to_TP_pure(fake_T, fake_P, idx)
+                eos_pure = eos_base.to_TPV_pure(T=fake_T, P=fake_P, V=None, i=idx)
                 
                 eos_pure_refs.append(eos_pure)
             self.eos_pure_refs = eos_pure_refs

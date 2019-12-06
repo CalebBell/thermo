@@ -48,10 +48,11 @@ def test_PRMIX_quick():
 
     # Test of a_alphas
     a_alphas = (0.21876490011332972, -0.0006346637957108072, 3.6800265478701025e-06)
-    a_alphas_fast = eos.a_alpha_and_derivatives(115)
+    a_alphas_fast = eos.a_alpha_and_derivatives(eos.T)
     assert_allclose(a_alphas, a_alphas_fast)
-    a_alphas_slow = eos.a_alpha_and_derivatives(115, quick=False)
+    a_alphas_slow = eos.a_alpha_and_derivatives(eos.T, quick=False)
     assert_allclose(a_alphas, a_alphas_slow)
+    assert_allclose(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False), rtol=1e-12)
 
     # back calculation for T, both solutions
     for V in [3.625736293970586e-05, 0.0007006659231347704]:
@@ -558,6 +559,7 @@ def test_SRKMIX_quick():
     assert_allclose(a_alphas, a_alphas_fast)
     a_alphas_slow = eos.a_alpha_and_derivatives(115, quick=False)
     assert_allclose(a_alphas, a_alphas_slow)
+    assert_allclose(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False), rtol=1e-12)
 
     # back calculation for T, both solutions
     for V in [4.104756961475803e-05, 0.0007110158049778292]:
@@ -604,7 +606,9 @@ def test_SRKMIX_vs_SRK():
     a_alphas = (3.72718144448615, -0.007332994130304653, 1.9476133436500582e-05)
     a_alphas_fast = eos.a_alpha_and_derivatives(299)
     assert_allclose(a_alphas, a_alphas_fast)
-    
+    assert_allclose(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False), rtol=1e-12)
+    assert_allclose(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False, quick=False), rtol=1e-12)
+
     # PR back calculation for T
     eos = SRKMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], V=0.0001468210773547259, P=1E6)
     assert_allclose(eos.T, 299)
@@ -644,7 +648,8 @@ def test_VDWMIX_vs_VDW():
     a_alphas = [2.4841053385218554, 0, 0]
     a_alphas_fast = eos.a_alpha_and_derivatives(299)
     assert_allclose(a_alphas, a_alphas_fast)
-    
+    [assert_allclose(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False, quick=i), rtol=1e-12) for i in (True, False)]
+
     # Back calculation for P
     eos = VDWMIX(Tcs=[507.6], Pcs=[3025000], zs=[1], T=299, V=0.00022332985608164609)
     assert_allclose(eos.P, 1E6)
@@ -707,11 +712,13 @@ def test_PRSVMIX_vs_PRSV():
     # Test of a_alphas
     a_alphas = [3.812985698311453, -0.006976903474851659, 2.0026560811043733e-05]
     
+    [assert_allclose(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False, quick=i), rtol=1e-12) for i in (True, False)]
+    
     a_alphas_fast = eos.a_alpha_and_derivatives(299)
-    assert_allclose(a_alphas, a_alphas_fast)
+    assert_allclose(a_alphas, a_alphas_fast, rtol=1e-12)
     
     a_alphas_fast = eos.a_alpha_and_derivatives(299, quick=False)
-    assert_allclose(a_alphas, a_alphas_fast)
+    assert_allclose(a_alphas, a_alphas_fast, rtol=1e-12)
     
     # PR back calculation for T
     eos = PRSVMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], V=0.0001301269135543934, P=1E6, kappa1s=[0.05104])
@@ -747,6 +754,7 @@ def test_PRSVMIX_quick():
     assert_allclose(a_alphas, a_alphas_fast)
     a_alphas_slow = eos.a_alpha_and_derivatives(115, quick=False)
     assert_allclose(a_alphas, a_alphas_slow)
+    [assert_allclose(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False, quick=i), rtol=1e-12) for i in (True, False)]
 
     # back calculation for T, both solutions
     for V in [3.623553616564366e-05, 0.0007002423865480607]:
@@ -793,6 +801,8 @@ def test_PRSV2MIX_vs_PRSV():
     a_alphas_fast = eos.a_alpha_and_derivatives(299, quick=False)
     assert_allclose(a_alphas, a_alphas_fast)
     
+    [assert_allclose(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False, quick=i), rtol=1e-12) for i in (True, False)]
+
     # PSRV2 back calculation for T
     eos = PRSV2MIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], V=0.00013018825759153257, P=1E6, kappa1s=[0.05104], kappa2s=[0.8634], kappa3s=[0.460])
     assert_allclose(eos.T, 299)
@@ -819,6 +829,8 @@ def test_PRSV2MIX_quick():
     assert_allclose(a_alphas, a_alphas_fast)
     a_alphas_slow = eos.a_alpha_and_derivatives(115, quick=False)
     assert_allclose(a_alphas, a_alphas_slow)
+    
+    [assert_allclose(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False, quick=i), rtol=1e-12) for i in (True, False)]
 
     # back calculation for T, both solutions
     for V in [3.623553616564366e-05, 0.0007002423865480607]:
@@ -868,6 +880,7 @@ def test_TWUPRMIX_vs_TWUPR():
     assert_allclose(a_alphas, a_alphas_fast)
     a_alphas_slow = eos.a_alpha_and_derivatives(299, quick=False)
     assert_allclose(a_alphas, a_alphas_slow)
+    [assert_allclose(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False, quick=i), rtol=1e-12) for i in (True, False)]
 
     # back calculation for T
     eos = TWUPRMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], V=0.00013017554170570767, P=1E6)
@@ -915,6 +928,7 @@ def test_TWUPRMIX_quick():
     assert_allclose(a_alphas, a_alphas_fast)
     a_alphas_slow = eos.a_alpha_and_derivatives(115, quick=False)
     assert_allclose(a_alphas, a_alphas_slow)
+    [assert_allclose(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False, quick=i), rtol=1e-12) for i in (True, False)]
 
     # back calculation for T, both solutions
     for V in [3.624571041690618e-05, 0.0007004401318229852]:
@@ -959,6 +973,7 @@ def test_TWUSRKMIX_vs_TWUSRK():
     assert_allclose(a_alphas, a_alphas_fast)
     a_alphas_slow = eos.a_alpha_and_derivatives(299, quick=False)
     assert_allclose(a_alphas, a_alphas_slow)
+    [assert_allclose(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False, quick=i), rtol=1e-12) for i in (True, False)]
 
     # back calculation for T
     eos = TWUSRKMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], V=0.00014689222296622483, P=1E6)
@@ -1006,6 +1021,7 @@ def test_TWUSRKMIX_quick():
     assert_allclose(a_alphas, a_alphas_fast)
     a_alphas_slow = eos.a_alpha_and_derivatives(115, quick=False)
     assert_allclose(a_alphas, a_alphas_slow)
+    [assert_allclose(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False, quick=i), rtol=1e-12) for i in (True, False)]
 
     # back calculation for T, both solutions
     for V in [4.108792754297647e-05, 0.0007117073252579778]:
@@ -1053,6 +1069,7 @@ def test_APISRKMIX_vs_APISRK():
     assert_allclose(a_alphas, a_alphas_fast)
     a_alphas_slow = eos.a_alpha_and_derivatives(299, quick=False)
     assert_allclose(a_alphas, a_alphas_slow)
+    [assert_allclose(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False, quick=i), rtol=1e-12) for i in (True, False)]
 
     # SRK back calculation for T
     eos = APISRKMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], V=0.00014681828835112518, P=1E6)
@@ -1090,6 +1107,14 @@ def test_APISRKMIX_vs_APISRK():
     eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2, quick=False)
     slow_vars = vars(eos)
     [assert_allclose(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
+    
+    # Test vs. pure with S1, S2
+    eos = APISRKMIX(Tcs=[514.0], Pcs=[6137000], omegas=[0.2975], zs=[1], S1s=[1.678665], S2s=[-0.216396], P=1E6, T=299)
+    alphas_mix = eos.a_alpha_and_derivatives(eos.T)
+    alphas_expect = (2.253839504404085, -0.005643991699455514, 1.1130938936120253e-05)
+    alphas_pure = eos.pures()[0].a_alpha_and_derivatives(eos.T)
+    assert_allclose(alphas_expect, alphas_mix, rtol=1e-12)
+    assert_allclose(alphas_pure, alphas_mix, rtol=1e-12)
 
 
 def test_APISRKMIX_quick():
@@ -1104,6 +1129,7 @@ def test_APISRKMIX_quick():
     assert_allclose(a_alphas, a_alphas_fast)
     a_alphas_slow = eos.a_alpha_and_derivatives(115, quick=False)
     assert_allclose(a_alphas, a_alphas_slow)
+    [assert_allclose(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False, quick=i), rtol=1e-12) for i in (True, False)]
 
     # back calculation for T, both solutions
     for V in [4.1015923107747434e-05, 0.0007104688303034478]:
@@ -1137,6 +1163,53 @@ def test_APISRKMIX_quick():
     
     base = APISRKMIX(T=300, P=1E7, Tcs=[126.1], Pcs=[33.94E5], omegas=[0.04], zs=[1])
     assert base.P_max_at_V(base.V_g) is None
+
+def test_RKMIX_quick():
+    # Two-phase nitrogen-methane
+    eos = RKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    
+    Vs_calc = eos.sorted_volumes
+    Vs_expected = [4.04841478191211e-05, 0.00021507299462855748, 0.0007006060586399438]
+    assert_allclose(Vs_calc, Vs_expected)
+    
+    # Test of a_alphas
+    a_alphas = (0.21560553557204304, -0.0009374153720523612, 1.2227157026769929e-05)
+    a_alphas_fast = eos.a_alpha_and_derivatives(115)
+    assert_allclose(a_alphas, a_alphas_fast)
+    a_alphas_slow = eos.a_alpha_and_derivatives(115, quick=False)
+    assert_allclose(a_alphas, a_alphas_slow)
+    [assert_allclose(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False, quick=i), rtol=1e-12) for i in (True, False)]
+
+    # back calculation for T, both solutions
+    for V in [4.04841478191211e-05, 0.0007006060586399438]:
+        eos = RKMIX(V=V, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+        assert_allclose(eos.T, 115)
+        T_slow = eos.solve_T(P=1E6, V=V, quick=False)
+        assert_allclose(T_slow, 115)
+    
+    # Fugacities
+    eos = RKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    assert_allclose(eos.phis_l, [1.690029818231663, 0.11498701813658066])
+    assert_allclose(eos.phis_g, [0.8872543290701194, 0.7106636262058122])
+    assert_allclose(eos.fugacities_l ,[845014.9091158316, 57493.50906829033])
+    assert_allclose(eos.fugacities_g, [443627.1645350597, 355331.8131029061])
+    
+    # Test solve_T for pure component but a mixture (also PV)
+    obj = RKMIX(T=115, P=1E6, Tcs=[126.1], Pcs=[33.94E5], omegas=[0.04], zs=[1.0])
+    for V in [5.9099600832651364e-05, 0.0008166666387475041]:
+        eos = obj.to(V=V, P=obj.P, zs=[1.0])
+        assert_allclose(eos.T, 115)
+        T_slow = eos.solve_T(P=1E6, V=V, quick=False)
+        assert_allclose(T_slow, 115)
+    
+        eos = obj.to(V=V, T=obj.T, zs=[1.0])
+        assert_allclose(eos.P, obj.P)
+    
+    # Check the a_alphas are the same
+    pure_obj = obj.pures()[0]
+    assert_allclose([obj.a_alpha, obj.da_alpha_dT, obj.d2a_alpha_dT2], 
+                    [pure_obj.a_alpha, pure_obj.da_alpha_dT, pure_obj.d2a_alpha_dT2], rtol=1e-12)
+
 
 @pytest.mark.slow
 @pytest.mark.CoolProp
@@ -2116,7 +2189,7 @@ def test_d2a_alpha_d2nx(kwargs):
         eos = obj(zs=zs, **kwargs)
         numericals = hessian(d2a_alpha_d2nxpartial, zs, perturbation=1e-4)
         analytical = eos.d2a_alpha_dzizjs
-        assert_allclose(numericals, analytical, rtol=5e-7)
+        assert_allclose(numericals, analytical, rtol=1e-6)
     
     normalization = True
     for obj in eos_mix_list:
@@ -2984,9 +3057,13 @@ def test_to_TPV_pure():
     eos2 = eos.to_TPV_pure(T=eos.T, P=eos.P, V=None, i=0)
     assert_allclose(eos.V_l, eos2.V_l, rtol=1e-13)
     
+    # RKMIX
+    eos = RKMIX(T=115, P=1E6, Tcs=[126.1], Pcs=[33.94E5], omegas=[0.04], zs=[1.0])
+    eos2 = eos.to_TPV_pure(T=eos.T, P=eos.P, V=None, i=0)
+    assert_allclose(eos.V_l, eos2.V_l, rtol=1e-13)
     
     # Check that the set of EOSs are covered.
-    covered_here = [PRSVMIX, PRSV2MIX, APISRKMIX]
+    covered_here = [PRSVMIX, PRSV2MIX, APISRKMIX, RKMIX]
     covered_all = eos_mix_no_coeffs_list + covered_here
     assert set(covered_all) == set(eos_mix_list)
     
