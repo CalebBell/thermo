@@ -530,7 +530,7 @@ class GCEOSMIX(GCEOS):
         self.a = a
         
         Psat = GCEOS.Psat(self, T, polish=False)
-        del self.tc, self.Pc, self.omega
+        del self.Tc, self.Pc, self.omega
         return Psat
 
     def a_alpha_and_derivatives(self, T, full=True, quick=True,
@@ -786,7 +786,8 @@ class GCEOSMIX(GCEOS):
         else:
             return float(a_alpha)
 
-    def _spinodal_f(self, TP):
+    def _spinodal_f(self, TPV):
+        # TODO - use `self`, do not create new instance
         # Work to do - ethane', 'heptane
         # Specify V, solve P; increase V and keep going
         # After Effective utilization of equations of state for thermodynamic properties in process simulation
@@ -797,9 +798,12 @@ class GCEOSMIX(GCEOS):
         # Very well could be right
         eos.to(T=secant(to_solve, eos.T), P=eos.P, zs=eos.zs).rho_l  # 3004.715984610371
         '''
-        T, P = float(TP[0]), float(TP[1])
-        RT_inv = 1.0/(R*T)
-        eos_instance = self.to(T=T, P=P, zs=self.zs)
+        T, P, V = TPV
+        eos_instance = self.to(T=T, P=P, V=V, zs=self.zs)
+        if T is not None:
+            RT_inv = 1.0/(R*T)
+        else:
+            RT_inv = 1.0/(R*eos_instance.T)
         if eos_instance.phase == 'l/g':
             if eos_instance.G_dep_l < eos_instance.G_dep_g:
                 v = eos_instance.d2nA_dninjs_Vt('l')
@@ -811,6 +815,14 @@ class GCEOSMIX(GCEOS):
             v = eos_instance.d2nA_dninjs_Vt('l')
         dGs = [[i*RT_inv for i in row] for row in v]
         return det(dGs)
+    
+    def spinodal_at(self, T=None, P=None, V=None):
+        if T is not None or P is not None:
+            def to_solve(V):
+                pass
+        elif V is not None:
+            def to_solve(V):
+                pass
 
         
     def _mechanical_critical_point_f_jac(self, TP):
@@ -7242,9 +7254,80 @@ class VDWMIX(GCEOSMIX, VDW):
 
 
 class RKMIX(GCEOSMIX, RK):
+    r'''Class for solving the Redlich Kwong cubic equation of state for a 
+    mixture of any number of compounds. Subclasses `RK`. Solves the EOS on
+    initialization and calculates fugacities for all components in all phases.
+    Two of `T`, `P`, and `V` are needed to solve the EOS.
+
+    .. math::
+        P =\frac{RT}{V-b}-\frac{a}{V\sqrt{T}(V+b)}
+        
+        a = \sum_i \sum_j z_i z_j {a}_{ij}
+            
+        b = \sum_i z_i b_i
+
+        a_{ij} = (1-k_{ij})\sqrt{a_{i}a_{j}}
+
+        a_i =\left(\frac{R^2(T_{c,i})^{2.5}}{9(\sqrt[3]{2}-1)P_{c,i}} \right)
+        =\frac{0.42748\cdot R^2(T_{c,i})^{2.5}}{P_{c,i}}
+        
+        b_i=\left( \frac{(\sqrt[3]{2}-1)}{3}\right)\frac{RT_{c,i}}{P_{c,i}}
+        =\frac{0.08664\cdot R T_{c,i}}{P_{c,i}}
+                    
+    Parameters
+    ----------
+    Tcs : float
+        Critical temperatures of all compounds, [K]
+    Pcs : float
+        Critical pressures of all compounds, [Pa]
+    zs : float
+        Overall mole fractions of all species, [-]
+    kijs : list[list[float]], optional
+        n*n size list of lists with binary interaction parameters for the
+        Van der Waals mixing rules, default all 0 [-]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+    omegas : float, optional
+        Acentric factors of all compounds - Not used in equation of state!, [-]
+    fugacities : bool, optional
+        Whether or not to calculate fugacity related values (phis, log phis,
+        and fugacities); default True, [-]
+    only_l : bool, optional
+        When true, if there is a liquid and a vapor root, only the liquid
+        root (and properties) will be set; default False, [-]
+    only_g : bool, optoinal
+        When true, if there is a liquid and a vapor root, only the vapor
+        root (and properties) will be set; default False, [-]
+        
+    Examples
+    --------
+    T-P initialization, nitrogen-methane at 115 K and 1 MPa:
+    
+    >>> eos = RKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    >>> eos.V_l, eos.V_g
+    (4.04841478191211e-05, 0.0007006060586399438)
+    >>> eos.fugacities_l, eos.fugacities_g
+    ([845014.9091158316, 57493.50906829033], [443627.1645350597, 355331.8131029061])
+
+    Notes
+    -----
+    For P-V initializations with multiple components, SciPy's `newton` solver
+    is used to find T.
+
+    References
+    ----------
+    .. [1] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
+       Butterworth-Heinemann, 1985.
+    .. [2] Poling, Bruce E. The Properties of Gases and Liquids. 5th 
+       edition. New York: McGraw-Hill Professional, 2000.
+    '''
     eos_pure = RK
 
-    def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
+    def __init__(self, Tcs, Pcs, zs, omegas=None, kijs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
         self.N = N = len(Tcs)
         self.cmps = cmps = range(N)
@@ -7260,9 +7343,9 @@ class RKMIX(GCEOSMIX, RK):
         self.P = P
         self.V = V
 
-        c1R2, c2R = self.c1*R2, self.c2*R
+        c1R2, c2R = self.c1R2, self.c2R
         # Also tried to store the inverse of Pcs, without success - slows it down
-        self.ais = [c1R2*Tcs[i]**2.5/Pcs[i] for i in cmps]
+        self.ais = [c1R2*Tcs[i]**2/Pcs[i] for i in cmps]
         self.bs = bs = [c2R*Tcs[i]/Pcs[i] for i in cmps]
         
         b = 0.0
@@ -7321,6 +7404,8 @@ class RKMIX(GCEOSMIX, RK):
          [8.221990091502003e-06, 1.702444632016052e-05])
         '''
         ais, Tcs = self.ais, self.Tcs
+        
+        ais = [ai*Tci**0.5 for ai, Tci in zip(ais, Tcs)]
         T_root_inv = T**-0.5
         
         if not full:

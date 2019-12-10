@@ -714,21 +714,29 @@ def test_RK_quick():
     V = eos.V_l
     Z = eos.P*V/(R*eos.T)
 
-    phi_walas = exp(Z - 1 - log(Z*(1 - eos.b/V)) - eos.a/(eos.b*R*eos.T**1.5)*log(1 + eos.b/V))
+    phi_walas = exp(Z - 1 - log(Z*(1 - eos.b/V)) - eos.a*eos.Tc**0.5/(eos.b*R*eos.T**1.5)*log(1 + eos.b/V))
     phi_l_expect = 0.052632270169019224
     assert_allclose(phi_l_expect, eos.phi_l)
     assert_allclose(phi_walas, eos.phi_l)
     
-    S_dep_walas = -R*(log(Z*(1 - eos.b/V)) - eos.a/(2*eos.b*R*eos.T**1.5)*log(1 + eos.b/V))
+    S_dep_walas = -R*(log(Z*(1 - eos.b/V)) - eos.a*eos.Tc**0.5/(2*eos.b*R*eos.T**1.5)*log(1 + eos.b/V))
     S_dep_expect = -63.01313785205201
     assert_allclose(-S_dep_walas, S_dep_expect)
     assert_allclose(S_dep_expect, eos.S_dep_l)
     
-    H_dep_walas = R*eos.T*(1 - Z + 1.5*eos.a/(eos.b*R*eos.T**1.5)*log(1 + eos.b/V))
+    H_dep_walas = R*eos.T*(1 - Z + 1.5*eos.a*eos.Tc**0.5/(eos.b*R*eos.T**1.5)*log(1 + eos.b/V))
     H_dep_expect = -26160.84248778514
     assert_allclose(-H_dep_walas, H_dep_expect)
     assert_allclose(H_dep_expect, eos.H_dep_l)
     
+    
+    # Poling table 4.9 edition 5 - molar volumes of vapor and liquid bang on
+    T = 300
+    kwargs = dict(Tc=369.83, Pc=4248000.0, omega=0.152, )
+    Psat = 997420
+    base = RK(T=T, P=Psat, **kwargs)
+    assert_allclose(base.V_g, 0.002085, atol=.000001)
+    assert 0.0001014 == round(base.V_l, 7)
 
 def test_RK_Psat():
     eos = RK(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
@@ -1193,6 +1201,23 @@ def test_fuzz_Psat():
 def test_Psat_issues():
     e = PR(T=229.43458646616548, P=100000.0, Tc=708.0, Pc=1480000.0, omega=0.6897)
     assert_allclose(e.Psat(e.T), 0.00012715494309024902)
+    
+    eos = TWUPR(Tc=611.7, Pc=2110000.0, omega=0.49, T=298.15, P=101325.0)
+    Tsat = eos.Tsat(1e-100)
+    assert_allclose(Tsat, 44.196052244378244, rtol=1e-7)
+    assert_allclose(eos.Psat(Tsat), 1e-100)
+    
+    # Ammonia
+    eos = TWUPR(Tc=405.6, Pc=11277472.5, omega=0.25, T=298.15, P=101325.0)
+    Tsat = eos.Tsat(1e-100)
+    assert_allclose(Tsat, 22.50315376221732, rtol=1e-7)
+    assert_allclose(eos.Psat(Tsat), 1e-100)
+
+    eos = TWUSRK(Tc=405.6, Pc=11277472.5, omega=0.25, T=298.15, P=101325.0)
+    Tsat = eos.Tsat(1e-100)
+    assert_allclose(Tsat, 23.41595921544242, rtol=1e-7)
+    assert_allclose(eos.Psat(Tsat), 1e-100)
+
 
 def test_fuzz_dPsat_dT():
     from thermo import eos

@@ -515,11 +515,11 @@ def test_Psat_plot(fluid, eos):
     
     obj = eos(T=T, P=P, **kwargs)
     
-    Tmin = kwargs['Tc']*.07
+    Tmin = kwargs['Tc']*.03
     if eos is RK:
         Tmin = kwargs['Tc']*.2
     errs, Psats_num, Psats_fit, plot_fig = obj.Psat_errors(plot=True, show=False, pts=100,
-                                     Tmin=Tmin, Tmax=kwargs['Tc'])
+                                     Tmin=Tmin, Tmax=kwargs['Tc'], Pmin=1e-100)
 
     
     path = os.path.join(pure_surfaces_dir, fluid, "Psat")
@@ -528,11 +528,13 @@ def test_Psat_plot(fluid, eos):
     
     key = '%s - %s - %s' %('Psat', eos.__name__, fluid)
         
-    plot_fig.savefig(os.path.join(path, key + '.png'))
+    plot_fig.savefig(os.path.join(path, key + '.png'), bbox_inches='tight')
     plt.close()
     
-#    max_err = np.max(errs)
-#    assert max_err < 1e-8
+    # TODO reenable
+    max_err = np.max(errs)
+    if eos not in (VDW,):
+        assert max_err < 1e-8
 
 
 
