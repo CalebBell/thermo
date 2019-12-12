@@ -34,7 +34,7 @@ from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              roots_cubic_a1, numpy as np, py_newton as newton,
                              py_bisect as bisect, inf, polyder, chebder, 
                              trunc_exp, secant, linspace, logspace,
-                             horner, horner_and_der2, derivative,
+                             horner, horner_and_der, horner_and_der2, derivative,
                              roots_cubic_a2, isclose, NoSolutionError,
                              roots_quartic)
 from thermo.utils import R
@@ -138,7 +138,15 @@ class GCEOS(object):
         return d
     
     def __repr__(self):
+        '''Create a string representation of the EOS - by default, include
+        all parameters so as to make it easy to construct new instances from
+        states. Includes the two specified state variables, `Tc`, `Pc`, `omega`
+        and any `kwargs`.
+        '''
         s = '%s(Tc=%s, Pc=%s, omega=%s, ' %(self.__class__.__name__, repr(self.Tc), repr(self.Pc), repr(self.omega))
+        for k, v in self.kwargs.items():
+            s += '%s=%s, ' %(k, v)
+        
         if hasattr(self, 'no_T_spec') and self.no_T_spec:
             s += 'P=%s, V=%s' %(repr(self.P), repr(self.V))
         elif self.V is not None:
@@ -208,7 +216,8 @@ class GCEOS(object):
 
     def resolve_full_alphas(self):
         '''Generic method to resolve the eos with fully calculated alpha
-        derviatives.
+        derviatives. Re-calculates properties with the new alpha derivatives
+        for any previously solved roots.
         '''
         self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2 = self.a_alpha_and_derivatives(self.T, full=True, pure_a_alphas=False)
         self.set_from_PT(self.raw_volumes, only_l=hasattr(self, 'V_l'), only_g=hasattr(self, 'V_g'))
@@ -602,13 +611,24 @@ class GCEOS(object):
         raise NotImplemented('a_alpha and its first and second derivatives '
                              'should be calculated by this method, in a user subclass.')
         
-    def a_alpha_plot(self, Tmin=1e-4, Tmax=10000):
+    def a_alpha_plot(self, Tmin=1e-4, Tmax=10000, show=True, plot=True):
         Ts = logspace(log10(Tmin), log10(Tmax), 1000)
         a_alphas = [self.a_alpha_and_derivatives(T, full=False) for T in Ts]
-        import matplotlib.pyplot as plt
         
-        plt.semilogx(Ts, a_alphas)
-        plt.show()
+        if plot:
+            import matplotlib.pyplot as plt
+            fig, ax = plt.subplots()
+            plt.semilogx(Ts, a_alphas)
+            
+            ax.set_xlabel('Temperature [K]')
+            ax.set_ylabel('a_alpha [J^2/mol^2/Pa]')
+            
+            ax.set_title('a_alpha vs temperature; range %.4g to %.4g' %(max(a_alphas), min(a_alphas)))
+
+            if show:
+                plt.show()
+            return Ts, a_alphas, fig
+        return Ts, a_alphas
         
 
     def solve_T(self, P, V, quick=True):
@@ -1974,10 +1994,6 @@ class GCEOS(object):
            through Cubic Equations of State." Fluid Phase Equilibria 31, no. 2 
            (January 1, 1986): 203-7. doi:10.1016/0378-3812(86)90013-0. 
         '''
-        # WARNING - For compounds whose a_alpha (x)values extend too high,
-        # this method is inaccurate.
-        # TODO: find way to extend the range? Multiple compounds?
-        
         Tc, Pc = self.Tc, self.Pc
         if T == Tc:
             return Pc
@@ -2153,6 +2169,7 @@ class GCEOS(object):
                 raise ValueError("Could not converge at T=%.6f K" %(T))
                     
         return Psat
+    
 
     def dPsat_dT(self, T, polish=False):
         r'''Generic method to calculate the temperature derivative of vapor 
@@ -2185,9 +2202,6 @@ class GCEOS(object):
         Useful for calculating enthalpy of vaporization with the Clausius
         Clapeyron Equation. Derived with SymPy's diff and cse.
         '''
-        # WARNING - For compounds whose a_alpha (x)values extend too high,
-        # this method is inaccurate.
-        # TODO: find way to extend the range? Multiple compounds?
         if polish:
             # Calculate the derivative of saturation pressure analytically
             sat_eos = self.to(T=T, P=self.Psat(T, polish=polish))
@@ -2201,7 +2215,7 @@ class GCEOS(object):
         T_inv = 1.0/T
         Tr = T*Tc_inv
         Pc = self.Pc
-        if Tr < 0.32:
+        if Tr < 0.32 and not isinstance(self, PR):
             # Delete
             c = self.Psat_coeffs_limiting
             return self.Pc*T*c[0]*(self.Tc*d_alpha_dT/T - self.Tc*alpha/(T*T)
@@ -2215,16 +2229,37 @@ class GCEOS(object):
             dy_dT = T_inv*(Tc*d_alpha_dT - Tc*alpha*T_inv)*horner(self.Psat_coeffs_critical_der, x)
             return self.Pc*(T*dy_dT*Tc_inv + y*Tc_inv)
         else:
-            # change chebval to horner, and get new derivative
+            # New formulation
+#            if isinstance(self, PR):
             x = alpha/Tr - 1.
-            arg = (self.Psat_cheb_constant_factor[1]*(x + self.Psat_cheb_constant_factor[0]))
-            y = chebval(arg, self.Psat_cheb_coeffs)
-            
+            Psat_ranges_low = self.Psat_ranges_low
+            if x > Psat_ranges_low[-1]:
+                raise NoSolutionError("T %.8f K is too low for equations to converge" %(T))
+
+            for i in range(len(Psat_ranges_low)):
+                if x < Psat_ranges_low[i]:
+                    break
+            y = 0.0
+            for c in self.Psat_coeffs_low[i]:
+                y = y*x + c
+                
             exp_y = exp(y)
-            dy_dT = T_inv*(Tc*d_alpha_dT - Tc*alpha*T_inv)*chebval(arg,
-                     self.Psat_cheb_coeffs_der)*self.Psat_cheb_constant_factor[1]
+            dy_dT = T_inv*(Tc*d_alpha_dT - Tc*alpha*T_inv)*horner_and_der(self.Psat_coeffs_low[i], x)[1]
+
             Psat = Pc*T*exp_y*dy_dT*Tc_inv + Pc*exp_y*Tc_inv
             return Psat
+
+
+#            # change chebval to horner, and get new derivative
+#            x = alpha/Tr - 1.
+#            arg = (self.Psat_cheb_constant_factor[1]*(x + self.Psat_cheb_constant_factor[0]))
+#            y = chebval(arg, self.Psat_cheb_coeffs)
+#            
+#            exp_y = exp(y)
+#            dy_dT = T_inv*(Tc*d_alpha_dT - Tc*alpha*T_inv)*chebval(arg,
+#                     self.Psat_cheb_coeffs_der)*self.Psat_cheb_constant_factor[1]
+#            Psat = Pc*T*exp_y*dy_dT*Tc_inv + Pc*exp_y*Tc_inv
+#            return Psat
         
     def phi_sat(self, T, polish=True):
         r'''Method to calculate the saturation fugacity coefficient of the
@@ -2359,6 +2394,34 @@ class GCEOS(object):
         Vs = [i.real for i in Vs]
         V_l, V_g = min(Vs), max(Vs)
         return dPsat_dT*T*(V_g - V_l)
+
+    def dH_dep_dT_sat_l(self, T, polish=False):
+        sat_eos = self.to(T=T, P=self.Psat(T, polish=polish))
+        dfg_T, dfl_T = sat_eos.dfugacity_dT_g, sat_eos.dfugacity_dT_l
+        dfg_P, dfl_P = sat_eos.dfugacity_dP_g, sat_eos.dfugacity_dP_l
+        dPsat_dT = (dfg_T - dfl_T)/(dfl_P - dfg_P)
+        return dPsat_dT*sat_eos.dH_dep_dP_l + sat_eos.dH_dep_dT_l
+        
+    def dH_dep_dT_sat_g(self, T, polish=False):
+        sat_eos = self.to(T=T, P=self.Psat(T, polish=polish))
+        dfg_T, dfl_T = sat_eos.dfugacity_dT_g, sat_eos.dfugacity_dT_l
+        dfg_P, dfl_P = sat_eos.dfugacity_dP_g, sat_eos.dfugacity_dP_l
+        dPsat_dT = (dfg_T - dfl_T)/(dfl_P - dfg_P)
+        return dPsat_dT*sat_eos.dH_dep_dP_g + sat_eos.dH_dep_dT_g
+        
+    def dS_dep_dT_sat_g(self, T, polish=False):
+        sat_eos = self.to(T=T, P=self.Psat(T, polish=polish))
+        dfg_T, dfl_T = sat_eos.dfugacity_dT_g, sat_eos.dfugacity_dT_l
+        dfg_P, dfl_P = sat_eos.dfugacity_dP_g, sat_eos.dfugacity_dP_l
+        dPsat_dT = (dfg_T - dfl_T)/(dfl_P - dfg_P)
+        return dPsat_dT*sat_eos.dS_dep_dP_g + sat_eos.dS_dep_dT_g
+
+    def dS_dep_dT_sat_l(self, T, polish=False):
+        sat_eos = self.to(T=T, P=self.Psat(T, polish=polish))
+        dfg_T, dfl_T = sat_eos.dfugacity_dT_g, sat_eos.dfugacity_dT_l
+        dfg_P, dfl_P = sat_eos.dfugacity_dP_g, sat_eos.dfugacity_dP_l
+        dPsat_dT = (dfg_T - dfl_T)/(dfl_P - dfg_P)
+        return dPsat_dT*sat_eos.dS_dep_dP_l + sat_eos.dS_dep_dT_l
 
     def Psat_errors(self, Tmin=None, Tmax=None, pts=50, plot=False, show=False, 
                     trunc_err_low=1e-18, trunc_err_high=1.0, Pmin=1e-100):
@@ -6485,9 +6548,9 @@ class RK(GCEOS):
     Two of `T`, `P`, and `V` are needed to solve the EOS.
 
     .. math::
-        P =\frac{RT}{V-b}-\frac{a}{V\sqrt{T}(V+b)}
+        P =\frac{RT}{V-b}-\frac{a}{V\sqrt{\frac{T}{Tc}}(V+b)}
         
-        a=\left(\frac{R^2(T_c)^{2.5}}{9(\sqrt[3]{2}-1)P_c} \right)
+        a=\left(\frac{R^2(T_c)^{2}}{9(\sqrt[3]{2}-1)P_c} \right)
         =\frac{0.42748\cdot R^2(T_c)^{2.5}}{P_c}
         
         b=\left( \frac{(\sqrt[3]{2}-1)}{3}\right)\frac{RT_c}{P_c}
@@ -6577,7 +6640,7 @@ class RK(GCEOS):
         self.omega = omega
 
 #        self.a = self.c1R2*Tc**2.5/Pc
-        self.a = self.c1R2*Tc**2/Pc
+        self.a = self.c1R2*Tc*Tc/Pc
         self.b = self.delta = self.c2R*Tc/Pc
         self.Vc = self.Zc*R*Tc/Pc
         self.solve()
@@ -6589,26 +6652,21 @@ class RK(GCEOS):
         documentation. Uses the set values of `a`.
         
         .. math::
-            a\alpha = \frac{a}{\sqrt{T}}
+            a\alpha = \frac{a}{\sqrt{\frac{T}{Tc}}}
         
-            \frac{d a\alpha}{dT} = - \frac{a}{2 T^{\frac{3}{2}}}
+            \frac{d a\alpha}{dT} = - \frac{a}{2 T\sqrt{\frac{T}{Tc}}}
 
-            \frac{d^2 a\alpha}{dT^2} = \frac{3 a}{4 T^{\frac{5}{2}}}
+            \frac{d^2 a\alpha}{dT^2} = \frac{3 a}{4 T^{2}\sqrt{\frac{T}{Tc}}}
         '''
-#        a_alpha = self.a*T**-0.5
-#        if not full:
-#            return a_alpha
-#        else:
-#            da_alpha_dT = -0.5*self.a*T**(-1.5)
-#            d2a_alpha_dT2 = 0.75*self.a*T**(-2.5)
-#            return a_alpha, da_alpha_dT, d2a_alpha_dT2
         Tc = self.Tc
-        a_alpha = self.a*(T/Tc)**-0.5
+        sqrt_Tr_inv = (T/Tc)**-0.5
+        a_alpha = self.a*sqrt_Tr_inv
         if not full:
             return a_alpha
         else:
-            da_alpha_dT = -0.5*self.a/T*(T/Tc)**(-0.5)
-            d2a_alpha_dT2 = 0.75*self.a/T**2*(T/Tc)**(-0.5)#*T**(-2.5)
+            T_inv = 1.0/T
+            da_alpha_dT = -0.5*self.a*T_inv*sqrt_Tr_inv
+            d2a_alpha_dT2 = 0.75*self.a*T_inv*T_inv*sqrt_Tr_inv
             return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
     def solve_T(self, P, V, quick=True):

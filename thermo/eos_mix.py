@@ -7268,8 +7268,8 @@ class RKMIX(GCEOSMIX, RK):
 
         a_{ij} = (1-k_{ij})\sqrt{a_{i}a_{j}}
 
-        a_i =\left(\frac{R^2(T_{c,i})^{2.5}}{9(\sqrt[3]{2}-1)P_{c,i}} \right)
-        =\frac{0.42748\cdot R^2(T_{c,i})^{2.5}}{P_{c,i}}
+        a_i =\left(\frac{R^2(T_{c,i})^{2}}{9(\sqrt[3]{2}-1)P_{c,i}} \right)
+        =\frac{0.42748\cdot R^2(T_{c,i})^{2}}{P_{c,i}}
         
         b_i=\left( \frac{(\sqrt[3]{2}-1)}{3}\right)\frac{RT_{c,i}}{P_{c,i}}
         =\frac{0.08664\cdot R T_{c,i}}{P_{c,i}}
@@ -7345,7 +7345,7 @@ class RKMIX(GCEOSMIX, RK):
 
         c1R2, c2R = self.c1R2, self.c2R
         # Also tried to store the inverse of Pcs, without success - slows it down
-        self.ais = [c1R2*Tcs[i]**2/Pcs[i] for i in cmps]
+        self.ais = [c1R2*Tcs[i]*Tcs[i]/Pcs[i] for i in cmps]
         self.bs = bs = [c2R*Tcs[i]/Pcs[i] for i in cmps]
         
         b = 0.0
@@ -7370,11 +7370,11 @@ class RKMIX(GCEOSMIX, RK):
         is added for extra speed.
 
         .. math::
-            a\alpha = \frac{a}{\sqrt{T}}
+            a\alpha = \frac{a}{\sqrt{\frac{T}{Tc}}}
         
-            \frac{d a\alpha}{dT} = - \frac{a}{2 T^{\frac{3}{2}}}
+            \frac{d a\alpha}{dT} = - \frac{a}{2 T\sqrt{\frac{T}{Tc}}}
 
-            \frac{d^2 a\alpha}{dT^2} = \frac{3 a}{4 T^{\frac{5}{2}}}
+            \frac{d^2 a\alpha}{dT^2} = \frac{3 a}{4 T^{2}\sqrt{\frac{T}{Tc}}}
         
         Parameters
         ----------

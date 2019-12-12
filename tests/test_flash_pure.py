@@ -533,8 +533,7 @@ def test_Psat_plot(fluid, eos):
     
     # TODO reenable
     max_err = np.max(errs)
-    if eos not in (VDW,):
-        assert max_err < 1e-8
+    assert max_err < 1e-10
 
 
 
@@ -735,3 +734,231 @@ def test_TWU_SRK_PR_T_alpha_interp_failure_2():
         PV = flasher.flash(P=P, V=base.V())
         assert_allclose(T, PV.T, rtol=1e-6)
 
+
+def test_VF_H_cases():
+    T, P, zs = 350.0, 1e5, [1.0]
+    fluid_idx = 7 # methanol
+    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
+    
+    kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
+                  HeatCapacityGases=pure_props.HeatCapacityGases)
+    
+    eos = PRMIX
+    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
+
+    # Two solutions
+    VFs_two = [0.9285628571428575, 0.7857085714285716, 0.5714271428571429,
+               0.5714271428571429, 
+               0.9
+               ]
+    Ts_two_low = [312.9795918367355, 481.71428571428584, 507.6734693877551,
+                  506.84085844724433, 320.0050872321796,
+                  ]
+    Ts_two_high = [512.214210227972, 484.30741617882694, 511.70674621843665,
+                   512.0, 
+                   512.49999,
+                   ]     
+    
+    for VF, T_low, T_high in zip(VFs_two, Ts_two_low, Ts_two_high):
+        base = flasher.flash(T=T_low, VF=VF)
+        low = flasher.flash(H=base.H(), VF=VF, solution='low')
+        assert_allclose(low.T, base.T, rtol=1e-8)
+        assert_allclose(low.H(), base.H(), rtol=1e-7)
+
+        high = flasher.flash(H=base.H(), VF=VF, solution='high')
+        assert_allclose(high.T, T_high, rtol=1e-8)
+        assert_allclose(high.H(), base.H(), rtol=1e-7)
+
+    
+    solutions = ['mid', 'low', 'high']
+    
+    one_sln_Ts = [512.0, 
+                  486.0408163265307, # Covers 2 solutions trying to find middle point - make sure is handled
+                  512.0,
+                  200.0, # Point where room for improvement exists - should not need to find root as sln is far
+                  512.5 # boundary
+                  ]
+    one_sln_VFs = [0.5, 0.5714271428571429, 1e-5, 0.4827586206896553, 0.3]
+    
+    for T, VF in zip(one_sln_Ts, one_sln_VFs):
+        base = flasher.flash(T=T, VF=VF)
+        for s in solutions:
+            new = flasher.flash(H=base.H(), VF=VF, solution=s)
+            assert_allclose(new.T, base.T, rtol=1e-8)
+        
+
+def test_VF_U_cases():
+    T, P, zs = 350.0, 1e5, [1.0]
+    fluid_idx = 7 # methanol
+    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
+    
+    kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
+                  HeatCapacityGases=pure_props.HeatCapacityGases)
+    
+    eos = PRMIX
+    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
+
+    # Two solutions
+    VFs_two =[0.7857085714285716, 0.5714271428571429, 0.5714271428571429, 0.9285628571428575, 0.7857085714285716, 0.5714271428571429, 0.5714271428571429, 0.9]
+
+    Ts_two_low = [481.71428571428584, 507.6734693877551, 506.84085844724433, 337.15037336596805, 484.30741617882694, 509.784104700645, 509.1465329286005, 344.57339768096267]
+
+    Ts_two_high = [496.74470283423096, 512.3840598446428, 512.4750615095567, 512.214210227972, 494.79103350924, 511.70674621843665, 512.0, 512.49999]
+    
+    
+
+    for VF, T_low, T_high in zip(VFs_two, Ts_two_low, Ts_two_high):
+        base = flasher.flash(T=T_low, VF=VF)
+        low = flasher.flash(U=base.U(), VF=VF, solution='low')
+        assert_allclose(low.T, base.T, rtol=1e-8)
+        assert_allclose(low.U(), base.U(), rtol=1e-7)
+
+        high = flasher.flash(U=base.U(), VF=VF, solution='high')
+        assert_allclose(high.T, T_high, rtol=1e-8)
+        assert_allclose(high.U(), base.U(), rtol=1e-7)
+
+    
+    solutions = ['mid', 'low', 'high']
+    
+    one_sln_Ts = [312.9795918367355, 320.0050872321796, 512.0, 486.0408163265307, 512.0, 200.0, 512.5
+                  ]
+    one_sln_VFs = [0.9285628571428575, 0.9, 0.5, 0.5714271428571429, 1e-05, 0.4827586206896553, 0.3]
+    
+    for T, VF in zip(one_sln_Ts, one_sln_VFs):
+        base = flasher.flash(T=T, VF=VF)
+        for s in solutions:
+            new = flasher.flash(U=base.U(), VF=VF, solution=s)
+            assert_allclose(new.T, base.T, rtol=1e-8)
+
+
+def test_VF_A_cases():
+    T, P, zs = 350.0, 1e5, [1.0]
+    fluid_idx = 7 # methanol
+    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
+    
+    kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
+                  HeatCapacityGases=pure_props.HeatCapacityGases)
+    
+    eos = PRMIX
+    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
+
+    # Two solutions
+    VFs_two = [1e-05, 0.3]
+    Ts_two_low = [505.1428075489603, 510.509170507811]
+    Ts_two_high = [512.0, 512.49999]
+    for VF, T_low, T_high in zip(VFs_two, Ts_two_low, Ts_two_high):
+        base = flasher.flash(T=T_low, VF=VF)
+        low = flasher.flash(A=base.A(), VF=VF, solution='low')
+        assert_allclose(low.T, base.T, rtol=1e-8)
+        assert_allclose(low.A(), base.A(), rtol=1e-7)
+
+        high = flasher.flash(A=base.A(), VF=VF, solution='high')
+        assert_allclose(high.T, T_high, rtol=1e-8)
+        assert_allclose(high.A(), base.A(), rtol=1e-7)
+
+    
+    solutions = ['mid', 'low', 'high']
+    one_sln_Ts =  [312.9795918367355, 481.71428571428584, 507.6734693877551, 506.84085844724433, 320.0050872321796, 512.214210227972, 484.30741617882694, 511.70674621843665, 512.0, 512.49999, 512.0, 486.0408163265307, 200.0]
+    one_sln_VFs = [0.9285628571428575, 0.7857085714285716, 0.5714271428571429, 0.5714271428571429, 0.9, 0.9285628571428575, 0.7857085714285716, 0.5714271428571429, 0.5714271428571429, 0.9, 0.5, 0.5714271428571429, 0.4827586206896553]
+    
+    for T, VF in zip(one_sln_Ts, one_sln_VFs):
+        base = flasher.flash(T=T, VF=VF)
+        for s in solutions:
+            new = flasher.flash(A=base.A(), VF=VF, solution=s)
+            assert_allclose(new.T, base.T, rtol=1e-8)
+
+def test_VF_G_cases():
+    # No double solutions for G - almost no need to iterate
+    T, P, zs = 350.0, 1e5, [1.0]
+    fluid_idx = 7 # methanol
+    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
+    
+    kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
+                  HeatCapacityGases=pure_props.HeatCapacityGases)
+    
+    eos = PRMIX
+    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
+
+    
+    solutions = ['mid', 'low', 'high']
+    one_sln_Ts =  [312.9795918367355, 481.71428571428584, 507.6734693877551, 506.84085844724433, 320.0050872321796, 512.214210227972, 484.30741617882694, 511.70674621843665, 512.0, 512.49999, 512.0, 486.0408163265307, 512.0, 200.0, 512.49999]
+    one_sln_VFs = [0.9285628571428575, 0.7857085714285716, 0.5714271428571429, 0.5714271428571429, 0.9, 0.9285628571428575, 0.7857085714285716, 0.5714271428571429, 0.5714271428571429, 0.9, 0.5, 0.5714271428571429, 1e-05, 0.4827586206896553, 0.3]
+
+    for T, VF in zip(one_sln_Ts, one_sln_VFs):
+        base = flasher.flash(T=T, VF=VF)
+        for s in solutions:
+            new = flasher.flash(G=base.G(), VF=VF, solution=s)
+            assert_allclose(new.T, base.T, rtol=1e-8)
+                
+            
+def test_VF_S_cases():
+    '''
+    S has cases with three solutions. Lots of work remains here! The plot does
+    not look very healthy, and I am not convinced the two solution point is not
+    actually three point.
+    '''
+    T, P, zs = 350.0, 1e5, [1.0]
+    fluid_idx = 7 # methanol
+    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
+    
+    kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
+                  HeatCapacityGases=pure_props.HeatCapacityGases)
+    
+    eos = PRMIX
+    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
+
+    # Two solutions
+    VFs_two = [0.5714271428571429, 0.4827586206896553]
+    Ts_two_low = [212.16975817104446, 199.99999999981264]
+    Ts_two_high = [486.04081632653146, 359.28026319594096]
+
+    for VF, T_low, T_high in zip(VFs_two, Ts_two_low, Ts_two_high):
+        base = flasher.flash(T=T_low, VF=VF)
+        low = flasher.flash(S=base.S(), VF=VF, solution='low')
+        assert_allclose(low.T, base.T, rtol=1e-5)
+        assert_allclose(low.S(), base.S(), rtol=1e-7)
+
+        high = flasher.flash(S=base.S(), VF=VF, solution='high')
+        assert_allclose(high.T, T_high, rtol=1e-5)
+        assert_allclose(high.S(), base.S(), rtol=1e-7)
+
+    
+    solutions = ['mid', 'low', 'high']
+    one_sln_Ts =  [312.9795918367355, 481.71428571428584, 320.0050872321796, 512.214210227972, 484.30741617882694, 512.49999, 512.0, 512.0, 512.49999]
+    one_sln_VFs = [0.9285628571428575, 0.7857085714285716, 0.9, 0.9285628571428575, 0.7857085714285716, 0.9, 0.5, 1e-05, 0.3]
+
+    for T, VF in zip(one_sln_Ts, one_sln_VFs):
+        base = flasher.flash(T=T, VF=VF)
+        for s in solutions:
+            new = flasher.flash(S=base.S(), VF=VF, solution=s)
+            assert_allclose(new.T, base.T, rtol=1e-8)
+
+
+    VFs_three = [0.5714271428571429, 0.5714271428571429, 0.5714271428571429, 0.5714271428571429]
+    Ts_three_low = [208.4063161102236, 208.42865241364098, 209.04825869752273, 209.253671056617]
+    Ts_three_mid = [507.6734693878061, 506.8408584472489, 500.99800548138063, 499.7044524953537]
+    Ts_three_high = [508.178797993246, 508.9013433039185, 511.7067462184334, 512.0000000000291]
+
+    for VF, T_low, T_mid, T_high in zip(VFs_three, Ts_three_low, Ts_three_mid, Ts_three_high):
+        base = flasher.flash(T=T_low, VF=VF)
+        low = flasher.flash(S=base.S(), VF=VF, solution='low')
+        assert_allclose(low.T, base.T, rtol=1e-5)
+        assert_allclose(low.S(), base.S(), rtol=1e-7)
+
+        mid = flasher.flash(S=base.S(), VF=VF, solution='mid')
+        assert_allclose(mid.T, T_mid, rtol=1e-5)
+        assert_allclose(mid.S(), base.S(), rtol=1e-7)
+
+        high = flasher.flash(S=base.S(), VF=VF, solution='high')
+        assert_allclose(high.T, T_high, rtol=1e-5)
+        assert_allclose(high.S(), base.S(), rtol=1e-7)

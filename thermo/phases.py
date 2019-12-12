@@ -91,6 +91,32 @@ class Phase(object):
             pass
         return v
 
+    def lnphi(self):
+        if self.N != 1:
+            raise ValueError("Property not supported for multicomponent phases")
+        return self.lnphis()[0]
+    
+    def phi(self):
+        if self.N != 1:
+            raise ValueError("Property not supported for multicomponent phases")
+        return self.phis()[0]
+    
+    def fugacity(self):
+        if self.N != 1:
+            raise ValueError("Property not supported for multicomponent phases")
+        return self.fugacities()[0]
+    
+    def dfugacity_dT(self):
+        if self.N != 1:
+            raise ValueError("Property not supported for multicomponent phases")
+        return self.dfugacities_dT()[0]
+    
+    def dfugacity_dP(self):
+        if self.N != 1:
+            raise ValueError("Property not supported for multicomponent phases")
+        return self.dfugacities_dP()[0]
+    
+
     def fugacities(self):
         P = self.P
         zs = self.zs

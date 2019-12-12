@@ -35,7 +35,9 @@ __all__ = ['sequential_substitution_2P', 'bubble_T_Michelsen_Mollerup',
 
 from fluids.constants import R, R2, R_inv
 from fluids.numerics import (UnconvergedError, trunc_exp, py_newton as newton,
-                             py_brenth as brenth, secant, numpy as np, linspace, 
+                             py_brenth as brenth, secant, py_bisect as bisect,
+                             py_ridder as ridder,
+                             numpy as np, linspace, 
                              logspace, oscillation_checker, damping_maintain_sign,
                              oscillation_checking_wrapper, OscillationError,
                              NoSolutionError, NotBoundedError,
@@ -56,7 +58,7 @@ from thermo.equilibrium import EquilibriumState
 from thermo.phases import Phase, gas_phases, liquid_phases, solid_phases, EOSLiquid, EOSGas
 from thermo.phase_identification import identify_sort_phases
 from thermo.bulk import default_settings
-from thermo.eos_mix import VDWMIX
+from thermo.eos_mix import VDWMIX, IGMIX
 
 
 def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
@@ -1582,7 +1584,7 @@ def TVF_pure_secant(P_guess, T, liquids, gas, maxiter=200, xtol=1E-10):
     #     low = None
     # else:
     #     low = Phase.P_MIN_FIXED
-    Psat = secant(to_solve_secant, P_guess, xtol=xtol, maxiter=maxiter, low=Phase.P_MIN_FIXED)
+    Psat = secant(to_solve_secant, P_guess, xtol=xtol, maxiter=maxiter, low=Phase.P_MIN_FIXED*(1-1e-10))
     l, g, err = store
 
     return Psat, l, g, iterations, err
@@ -2556,6 +2558,7 @@ class FlashPureVLS(FlashBase):
     
     But working on all the phases of water can wait.
     '''
+    VF_interpolators_built = False
     def __init__(self, constants, correlations, gas, liquids, solids, 
                  settings=default_settings):
         self.constants = constants
@@ -2591,7 +2594,7 @@ class FlashPureVLS(FlashBase):
         self.VL_only_CEOSs_same = (self.VL_only_CEOSs and 
                                    self.liquids[0].eos_class is self.gas.eos_class
                                    # self.liquids[0].kijs == self.gas.kijs
-                                   and (not isinstance(self.liquids[0], (VDWMIX,)) and not isinstance(self.gas, (VDWMIX,))))
+                                   and (not isinstance(self.liquids[0], (IGMIX,)) and not isinstance(self.gas, (IGMIX,))))
 
 
     def flash(self, zs=None, T=None, P=None, VF=None, SF=None, V=None, H=None,
@@ -2711,10 +2714,16 @@ class FlashPureVLS(FlashBase):
                                     flash_convergence=flash_convergence,
                                     constants=constants, correlations=correlations,
                                     flasher=self)
-        elif VF_spec and any(H_spec, S_spec, U_spec, G_spec, A_spec):
-            data = self.flash_VF_HSGUA(VF=VF, flash_specs=flash_specs, 
-                                       solution=solution)
-        
+        elif VF_spec and any([H_spec, S_spec, U_spec, G_spec, A_spec]):
+            spec_var, spec_val = [(k, v) for k, v in flash_specs.items() if k not in ('VF', 'zs')][0]
+            T, Psat, liquid, gas, iters_inner, err_inner, err, iterations = self.flash_VF_HSGUA(VF, spec_val, fixed_var='VF', spec_var=spec_var, solution=solution)
+            flash_convergence = {'iterations': iterations, 'err': err, 'inner_flash_convergence': {'iterations': iters_inner, 'err': err_inner}}
+            return EquilibriumState(T, Psat, zs, gas=gas, liquids=[liquid], solids=[],
+                                    betas=[VF, 1.0 - VF], flash_specs=flash_specs,
+                                    flash_convergence=flash_convergence,
+                                    constants=constants, correlations=correlations,
+                                    flasher=self)
+
         single_iter_key = (T_spec, P_spec, V_spec, H_spec, S_spec, U_spec)
         if single_iter_key in spec_to_iter_vars:
             fixed_var, spec, iter_var = spec_to_iter_vars[single_iter_key]
@@ -2792,7 +2801,7 @@ class FlashPureVLS(FlashBase):
             return None, [], [lowest_phase], betas
 
     def Psat_guess(self, T):
-        if self.VL_only_CEOSs:
+        if self.VL_only_CEOSs_same:
             # Two phase pure eoss are two phase up to the critical point only! Then one phase
             Psat = self.gas.eos_pures_STP[0].Psat(T)
         #
@@ -2806,16 +2815,16 @@ class FlashPureVLS(FlashBase):
         gas = self.gas.to_TP_zs(T, Psat, zs)
         liquids = [l.to_TP_zs(T, Psat, zs) for l in self.liquids]
 
-        if self.VL_only_CEOSs_same:
+        if self.VL_only_CEOSs_same and 1:
             return Psat, liquids[0], gas, 0, 0.0
 #        return TVF_pure_newton(Psat, T, liquids, gas, maxiter=200, xtol=1E-10)
-        P = TVF_pure_secant(Psat, T, liquids, gas, maxiter=200, xtol=1E-10)
+        vals = TVF_pure_secant(Psat, T, liquids, gas, maxiter=200, xtol=1E-10)
 #        print('P', P, 'solved')
-        return P
+        return vals
 
     def flash_PVF(self, P, VF=None):
         zs = [1]
-        if self.VL_only_CEOSs:
+        if self.VL_only_CEOSs_same:
             Tsat = self.gas.eos_pures_STP[0].Tsat(P)
         else:
             Tsat = self.correlations.VaporPressures[0].solve_prop(P)
@@ -2856,6 +2865,12 @@ class FlashPureVLS(FlashBase):
         
         return PSF_pure_newton(Tsub, P, try_phases, self.solids, 
                                maxiter=200, xtol=1E-10)
+
+
+    def flash_double(self, spec_0_val, spec_1_val, spec_0_var, spec_1_var):
+        pass
+        
+    
         
     def flash_TPV_HSGUA(self, fixed_var_val, spec_val, fixed_var='P', spec='H', iter_var='T', minimize='auto',
                         selection_fun_1P=None):
@@ -3138,8 +3153,11 @@ class FlashPureVLS(FlashBase):
             for s in states:
                 assert_allclose(s.value(k), ref, rtol=rtol)
         
-    def generate_VF_data(self, Pmin=None, Pmax=None, pts=50, 
+    def generate_VF_data(self, Pmin=None, Pmax=None, pts=100, 
                          props=['T', 'P', 'V', 'S', 'H', 'G', 'U', 'A']):
+        '''Could use some better algorithms for generating better data? Some of
+        the solutions count on this.
+        '''
         Pc = self.constants.Pcs[0]
         if Pmax is None:
             Pmax = Pc
@@ -3148,11 +3166,15 @@ class FlashPureVLS(FlashBase):
             
         Tmin, liquid, gas, iters, flash_err = self.flash_PVF(P=Pmin, VF=.5)
         Tmax, liquid, gas, iters, flash_err = self.flash_PVF(P=Pmax, VF=.5)
-        
-        flash_cache = {}
-        
+                
         liq_props, gas_props = [[] for _ in range(len(props))], [[] for _ in range(len(props))]
-        Ts = linspace(Tmin, Tmax, pts)        
+        # Lots of issues near Tc - split the range into low T and high T
+        T_mid = 0.1*Tmin + 0.95*Tmax
+        T_next = 0.045*Tmin + 0.955*Tmax
+        
+        Ts = linspace(Tmin, T_mid, pts//2)
+        Ts += linspace(T_next, Tmax, pts//2)
+        Ts.insert(-1, Tmax*(1-1e-8))
         for T in Ts:
             Psat, liquid, gas, iters, flash_err = self.flash_TVF(T, VF=.5)
             for i, prop in enumerate(props):
@@ -3164,28 +3186,279 @@ class FlashPureVLS(FlashBase):
     def build_VF_interpolators(self, T_base=True, P_base=True, pts=50):
         self.liq_VF_interpolators = liq_VF_interpolators = {}
         self.gas_VF_interpolators = gas_VF_interpolators = {}
-        props = ['T', 'P', 'V', 'S', 'H', 'G', 'U', 'A']
+        props = ['T', 'P', 'V', 'S', 'H', 'G', 'U', 'A',
+                 'dS_dT', 'dH_dT', 'dG_dT', 'dU_dT', 'dA_dT',
+                 'dS_dP', 'dH_dP', 'dG_dP', 'dU_dP', 'dA_dP',
+                 'fugacity', 'dfugacity_dT', 'dfugacity_dP']
+
         liq_props, gas_props = self.generate_VF_data(props=props, pts=pts)
+        self.liq_VF_data = liq_props
+        self.gas_VF_data = gas_props
+        self.props_VF_data = props
+
         if T_base and P_base:
             base_props, base_idxs = ('T', 'P'), (0, 1)
         elif T_base:
             base_props, base_idxs = ('T',), (0,)
         elif P_base:
             base_props, base_idxs = ('P',), (1,)
+
+        self.VF_data_base_props = base_props
+        self.VF_data_base_idxs = base_idxs
         
-        spline_kwargs = dict(bc_type='natural', extrapolate=False)
-        for base_prop, base_idx in zip(base_props, base_idxs):
+        self.VF_data_spline_kwargs = spline_kwargs = dict(bc_type='natural', extrapolate=False)
+        
+        try:
+            self.build_VF_splines()
+        except:
+            pass
+
+    def build_VF_splines(self):
+        self.VF_interpolators_built = True
+        props = self.props_VF_data
+        liq_props, gas_props = self.liq_VF_data, self.gas_VF_data
+        VF_data_spline_kwargs = self.VF_data_spline_kwargs
+
+        for base_prop, base_idx in zip(self.VF_data_base_props, self.VF_data_base_idxs):
             xs = liq_props[base_idx]
             for i, k in enumerate(props):
                 if i == base_idx:
                     continue
-                spline = CubicSpline(xs, liq_props[i], **spline_kwargs)
+                spline = CubicSpline(xs, liq_props[i], **VF_data_spline_kwargs)
                 liq_VF_interpolators[(base_prop, k)] = spline
                 
-                spline = CubicSpline(xs, gas_props[i], **spline_kwargs)
+                spline = CubicSpline(xs, gas_props[i], **VF_data_spline_kwargs)
                 gas_VF_interpolators[(base_prop, k)] = spline
-            
-        
+                
+    
+    
+    def flash_VF_HSGUA(self, fixed_var_val, spec_val, fixed_var='VF', spec_var='H', 
+                       solution='high'):
+        # solution at high T by default
+        if not self.VF_interpolators_built:
+            self.build_VF_interpolators()
+        iter_var = 'T' # hardcoded -
+        # to make code generic try not to use eos stuff
+#        liq_obj = self.liq_VF_interpolators[(iter_var, spec_var)]
+#        gas_obj = self.liq_VF_interpolators[(iter_var, spec_var)]
+        # iter_var must always be T
+        VF = fixed_var_val
+        props = self.props_VF_data
+        liq_props = self.liq_VF_data
+        gas_props = self.gas_VF_data
+        iter_idx = props.index(iter_var)
+        spec_idx = props.index(spec_var)
+
+        T_idx, P_idx = props.index('T'), props.index('P')
+        Ts, Ps = liq_props[T_idx], liq_props[P_idx]
+
+        dfug_dT_idx = props.index('dfugacity_dT')
+        dfug_dP_idx = props.index('dfugacity_dP')
+
+        dspec_dT_var = 'd%s_dT' %(spec_var)
+        dspec_dP_var = 'd%s_dP' %(spec_var)
+        dspec_dT_idx = props.index(dspec_dT_var)
+        dspec_dP_idx = props.index(dspec_dP_var)
+
+        bounding_idx, bounding_Ts = [], []
+
+        spec_values = []
+        dspec_values = []
+
+        d_sign_changes = False
+        d_sign_changes_idx = []
+
+        for i in range(len(liq_props[0])):
+            v = liq_props[spec_idx][i]*(1.0 - VF) + gas_props[spec_idx][i]*VF
+
+            dfg_T, dfl_T = gas_props[dfug_dT_idx][i], liq_props[dfug_dT_idx][i]
+            dfg_P, dfl_P = gas_props[dfug_dP_idx][i], liq_props[dfug_dP_idx][i]
+            at_critical = False
+            try:
+                dPsat_dT = (dfg_T - dfl_T)/(dfl_P - dfg_P)
+            except ZeroDivisionError:
+                at_critical = True
+                dPsat_dT = self.constants.Pcs[0] #
+
+            dv_g = dPsat_dT*gas_props[dspec_dP_idx][i] + gas_props[dspec_dT_idx][i]
+            dv_l = dPsat_dT*liq_props[dspec_dP_idx][i] + liq_props[dspec_dT_idx][i]
+            dv = dv_l*(1.0 - VF) + dv_g*VF
+            if at_critical:
+                dv = dspec_values[-1]
+
+            if i > 0:
+                if ((v <= spec_val <= spec_values[-1]) or (spec_values[-1] <= spec_val <= v)):
+                    bounding_idx.append((i-1, i))
+                    bounding_Ts.append((Ts[i-1], Ts[i]))
+
+                if dv*dspec_values[-1] < 0.0:
+                    d_sign_changes = True
+                    d_sign_changes_idx.append((i-1, i))
+
+            spec_values.append(v)
+            dspec_values.append(dv)
+
+        # if len(bounding_idx) < 2 and d_sign_changes:
+        # Might not be in the range where there are multiple solutions
+        #     raise ValueError("Derivative sign changes but only found one bounding value")
+
+
+        # if len(bounding_idx) == 1:
+        if len(bounding_idx) == 1 and (not d_sign_changes or (bounding_idx != d_sign_changes_idx and 1)):
+            # Not sure about condition
+            # Go right for the root
+            T_low, T_high = bounding_Ts[0][0], bounding_Ts[0][1]
+            idx_low, idx_high = bounding_idx[0][0], bounding_idx[0][1]
+
+            val_low, val_high = spec_values[idx_low], spec_values[idx_high]
+            dval_low, dval_high = dspec_values[idx_low], dspec_values[idx_high]
+        # elif len(bounding_idx) == 0 and d_sign_changes:
+            # root must be in interval derivative changes: Go right for the root
+            # idx_low, idx_high = d_sign_changes_idx[0][0], d_sign_changes_idx[0][1]
+            # T_low, T_high = Ts[idx_low], Ts[idx_high]
+            #
+            # val_low, val_high = spec_values[idx_low], spec_values[idx_high]
+            # dval_low, dval_high = dspec_values[idx_low], dspec_values[idx_high]
+        elif len(bounding_idx) == 2:
+            # pick range and go for it
+            if solution == 'high' or solution is None:
+                T_low, T_high = bounding_Ts[1][0], bounding_Ts[1][1]
+                idx_low, idx_high = bounding_idx[1][0], bounding_idx[1][1]
+            else:
+                T_low, T_high = bounding_Ts[0][0], bounding_Ts[0][1]
+                idx_low, idx_high = bounding_idx[0][0], bounding_idx[0][1]
+
+            val_low, val_high = spec_values[idx_low], spec_values[idx_high]
+            dval_low, dval_high = dspec_values[idx_low], dspec_values[idx_high]
+
+        elif (len(bounding_idx) == 1 and d_sign_changes) or (len(bounding_idx) == 0 and d_sign_changes):
+            # Gotta find where derivative root changes, then decide if we have two solutions or just one; decide which to pursue
+            idx_low, idx_high = d_sign_changes_idx[0][0], d_sign_changes_idx[0][1]
+            T_low, T_high = Ts[idx_low], Ts[idx_high]
+
+            T_guess = 0.5*(T_low +T_high)
+            T_der_zero, v_zero = self._VF_HSGUA_der_root(T_guess, T_low, T_high, fixed_var_val, spec_val, fixed_var=fixed_var,
+                                        spec_var=spec_var)
+            high, low = False, False
+            if (v_zero < spec_val < spec_values[idx_high]) or (spec_values[idx_high] < spec_val < v_zero):
+                high = True
+            if (spec_values[idx_low] < spec_val < v_zero) or (v_zero < spec_val < spec_values[idx_low]):
+                low = True
+            if not low and not high:
+                # There was no other solution where the derivative changed
+                T_low, T_high = bounding_Ts[0][0], bounding_Ts[0][1]
+                idx_low, idx_high = bounding_idx[0][0], bounding_idx[0][1]
+
+                val_low, val_high = spec_values[idx_low], spec_values[idx_high]
+                dval_low, dval_high = dspec_values[idx_low], dspec_values[idx_high]
+            elif (high and solution == 'high') or not low:
+                val_low, val_high = v_zero, spec_values[idx_high]
+                dval_low, dval_high = dspec_values[idx_high], dspec_values[idx_high]
+                T_low, T_high = T_der_zero, Ts[idx_high]
+            else:
+                val_low, val_high = spec_values[idx_low], v_zero
+                dval_low, dval_high = dspec_values[idx_low], dspec_values[idx_low]
+                T_low, T_high = Ts[idx_low], T_der_zero
+        elif len(bounding_idx) >2:
+            # Entropy plot has 3 solutions, two derivative changes - give up by that point
+            if isinstance(solution, int):
+                sln_idx = solution
+            else:
+                sln_idx = {'high': -1, 'mid': -2, 'low': 0}[solution]
+            T_low, T_high = bounding_Ts[sln_idx][0], bounding_Ts[sln_idx][1]
+            idx_low, idx_high = bounding_idx[sln_idx][0], bounding_idx[sln_idx][1]
+
+            val_low, val_high = spec_values[idx_low], spec_values[idx_high]
+            dval_low, dval_high = dspec_values[idx_low], dspec_values[idx_high]
+
+        else:
+            raise ValueError("What")
+
+        T_guess_low  = T_low - (val_low - spec_val)/dval_low
+        T_guess_high  = T_high - (val_high - spec_val)/dval_high
+
+        if T_low < T_guess_low < T_high and T_low < T_guess_high < T_high:
+            T_guess = 0.5*(T_guess_low + T_guess_high)
+        else:
+            T_guess = 0.5*(T_low + T_high)
+
+        return self.flash_VF_HSGUA_bounded(T_guess, T_low, T_high, fixed_var_val, spec_val, fixed_var=fixed_var, spec_var=spec_var)
+
+    def _VF_HSGUA_der_root(self, guess, low, high, fixed_var_val, spec_val, fixed_var='VF', spec_var='H'):
+        dspec_dT_var = 'd%s_dT' % (spec_var)
+        dspec_dP_var = 'd%s_dP' % (spec_var)
+        VF = fixed_var_val
+
+        val_cache = [None, 0]
+
+        def to_solve(T):
+            Psat, liquid, gas, iters, flash_err = self.flash_TVF(T=T, VF=VF)
+            # Error
+            calc_spec_val = getattr(gas, spec_var)()*VF + getattr(liquid, spec_var)()*(1.0 - VF)
+            val_cache[0] = calc_spec_val
+            val_cache[1] += 1
+
+            dfg_T, dfl_T = gas.dfugacity_dT(), liquid.dfugacity_dT()
+            dfg_P, dfl_P = gas.dfugacity_dP(), liquid.dfugacity_dP()
+            dPsat_dT = (dfg_T - dfl_T) / (dfl_P - dfg_P)
+
+            dv_g = dPsat_dT*getattr(gas, dspec_dP_var)() + getattr(gas, dspec_dT_var)()
+            dv_l = dPsat_dT*getattr(liquid, dspec_dP_var)() + getattr(liquid, dspec_dT_var)()
+            dv = dv_l*(1.0 - VF) + dv_g*VF
+
+            return dv
+
+        # import matplotlib.pyplot as plt
+        # xs = linspace(low, high, 1000)
+        # ys = [to_solve(x) for x in xs]
+        # plt.plot(xs, ys)
+        # plt.show()
+        try:
+            T_zero = secant(to_solve, guess, low=low, high=high, xtol=1e-12, bisection=True)
+        except:
+            T_zero = brenth(to_solve, low, high, xtol=1e-12)
+        return T_zero, val_cache[0]
+
+    def flash_VF_HSGUA_bounded(self, guess, low, high, fixed_var_val, spec_val, fixed_var='VF', spec_var='H'):
+        dspec_dT_var = 'd%s_dT' % (spec_var)
+        dspec_dP_var = 'd%s_dP' % (spec_var)
+        VF = fixed_var_val
+
+        cache = [0]
+        fprime = True
+        def to_solve(T):
+            Psat, liquid, gas, iters, flash_err = self.flash_TVF(T=T, VF=VF)
+            # Error
+            calc_spec_val = getattr(gas, spec_var)()*VF + getattr(liquid, spec_var)()*(1.0 - VF)
+            err = calc_spec_val - spec_val
+            cache[:] = [T, Psat, liquid, gas, iters, flash_err, err, cache[-1]+1]
+            if not fprime:
+                return err
+            # Derivative
+            dfg_T, dfl_T = gas.dfugacity_dT(), liquid.dfugacity_dT()
+            dfg_P, dfl_P = gas.dfugacity_dP(), liquid.dfugacity_dP()
+            dPsat_dT = (dfg_T - dfl_T) / (dfl_P - dfg_P)
+
+            dv_g = dPsat_dT*getattr(gas, dspec_dP_var)() + getattr(gas, dspec_dT_var)()
+            dv_l = dPsat_dT*getattr(liquid, dspec_dP_var)() + getattr(liquid, dspec_dT_var)()
+            dv = dv_l*(1.0 - VF) + dv_g*VF
+
+            return err, dv
+
+        #
+        try:
+            T_calc = newton(to_solve, guess, fprime=True, low=low, high=high, xtol=1e-12, require_eval=True)
+        except:
+            # Zero division error in derivative mostly
+            fprime = False
+            T_calc = secant(to_solve, guess, low=low, high=high, xtol=1e-12, ytol=guess*1e-5, require_eval=True)
+
+
+        return cache
+
+
+
+
 
     def debug_TVF(self, T, VF=None, pts=2000):
         zs = [1]
