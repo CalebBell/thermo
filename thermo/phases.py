@@ -1319,9 +1319,9 @@ class EOSGas(Phase):
                 P = new.eos_mix.P
         elif P is not None and V is not None:
             try:
-                new.eos_mix = self.eos_mix.to_PV_zs(P=P, V=V, zs=zs, fugacities=False)
+                new.eos_mix = self.eos_mix.to_PV_zs(P=P, V=V, zs=zs, only_g=True, fugacities=False)
             except AttributeError:
-                new.eos_mix = self.eos_class(P=P, V=V, zs=zs, **self.eos_kwargs)
+                new.eos_mix = self.eos_class(P=P, V=V, zs=zs, only_g=True, **self.eos_kwargs)
             T = new.eos_mix.T
         else:
             raise ValueError("Two of T, P, or V are needed")
@@ -1670,6 +1670,8 @@ class EOSGas(Phase):
         return new.T, new.P, V
     
     def P_transitions(self):
+        e = self.eos_mix
+        return e.P_discriminant_zeros_analytical(e.T, e.b, e.delta, e.epsilon, e.a_alpha, valid=True)
         # EOS is guaranteed to be at correct temperature
         try:
             return [self.eos_mix.P_discriminant_zero_l()]

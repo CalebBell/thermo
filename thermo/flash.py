@@ -42,6 +42,7 @@ from fluids.numerics import (UnconvergedError, trunc_exp, py_newton as newton,
                              oscillation_checking_wrapper, OscillationError,
                              NoSolutionError, NotBoundedError,
                              best_bounding_bounds, isclose)
+from fluids.optional.pychebfun import build_solve_pychebfun
 from numpy.testing import assert_allclose
 from scipy.optimize import minimize, fsolve, root
 from scipy.interpolate import CubicSpline
@@ -1044,6 +1045,7 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
 #        print(err)
         return err
 
+
     arg_fprime = fprime
     high = None # Optional and not often used bound for newton
     if fixed_var == 'V':
@@ -1058,7 +1060,7 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
                 max_bound = high = min(max_phys, max_bound)
 
     # TV iterations
-
+    ignore_bound_fail = (fixed_var == 'T' and iter_var == 'P')
 
     if fixed_var in ('T',) and ((fixed_var == 'T' and iter_var == 'P') or (fixed_var == 'P' and iter_var == 'T') or (fixed_var == 'T' and iter_var == 'V') ) and 1:
         try:
@@ -1074,7 +1076,7 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
             delta = 1e-9
             if fixed_var == 'T' and iter_var == 'P':
                 transitions = phase_temp.P_transitions()
-                assert len(transitions) == 1
+                # assert len(transitions) == 1
                 under_trans, above_trans = transitions[0] * (1.0 - delta), transitions[0] * (1.0 + delta)
             elif fixed_var == 'P' and iter_var == 'T':
                 transitions = phase_temp.T_transitions()
@@ -1111,7 +1113,8 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
                     bounding_pair = (min(max_bound, above_trans), max(max_bound, above_trans))
 
             if max_bound is not None and max_bound is not None and not bracketed_low and not bracketed_high:
-                raise NotBoundedError("Between phases")
+                if not ignore_bound_fail:
+                    raise NotBoundedError("Between phases")
 
             if bracketed_high or bracketed_low:
                 oscillation_detection = False
@@ -1120,19 +1123,12 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
                 if not (min_bound < guess < max_bound):
                     guess = 0.5*(min_bound + max_bound)
             else:
-                if min_bound is not None and transitions[0] < min_bound:
+                if min_bound is not None and transitions[0] < min_bound and not ignore_bound_fail:
                     raise NotBoundedError("Not likely to bound")
-                if max_bound is not None and transitions[0] > max_bound:
+                if max_bound is not None and transitions[0] > max_bound and not ignore_bound_fail:
                     raise NotBoundedError("Not likely to bound")
 
 
-            # Plot the objective function
-            # tests = logspace(log10(1e-5), log10(1), 15000)
-            # values = [to_solve(t) for t in tests]
-            # values = [abs(t) for t in values]
-            # import matplotlib.pyplot as plt
-            # plt.loglog(tests, values)
-            # plt.show()
 
         except NotBoundedError as e:
             raise e
@@ -1140,6 +1136,16 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
             pass
 
     fprime = arg_fprime
+
+    # Plot the objective function
+    # tests = logspace(log10(10.6999), log10(10.70005), 15000)
+    # tests = logspace(log10(10.6), log10(10.8), 15000)
+    # tests = logspace(log10(min_bound), log10(max_bound), 1500)
+    # values = [to_solve(t)[0] for t in tests]
+    # values = [abs(t) for t in values]
+    # import matplotlib.pyplot as plt
+    # plt.loglog(tests, values)
+    # plt.show()
 
     if oscillation_detection:
         to_solve2, checker = oscillation_checking_wrapper(to_solve, full=True,
@@ -2165,6 +2171,7 @@ class FlashBase(object):
         
         matrix_spec_flashes = []
         matrix_flashes = []
+        nearest_check_prop = 'T' if 'T' not in (check0, check1) else 'P'
 
         T_spec = Ts is not None
         P_spec = Ps is not None
@@ -2227,6 +2234,7 @@ class FlashBase(object):
                 kwargs = {}
                 kwargs[check0] = check0_spec
                 kwargs[check1] = check1_spec
+                kwargs['solution'] = lambda new: abs(new.value(nearest_check_prop) - state.value(nearest_check_prop))
                 try:
                     new = self.flash(**kwargs)
                 except Exception as e:
@@ -2522,10 +2530,12 @@ class FlashVL(FlashBase):
         S_spec = S is not None
         U_spec = U is not None
         
-# Format - keys above, and TPV spec, HSU spec, and iter_var
+# Format -(6 keys above) : (TPV spec, HSU spec, and iter_var)
         fixed_var='P', spec='H', iter_var='T',
 '''
-spec_to_iter_vars = {(True, False, False, True, False, False) : ('T', 'H', 'V'), # Iterating on P is slow, derivatives look OK
+spec_to_iter_vars = {
+                     (True, False, False, True, False, False) : ('T', 'H', 'P'), # Iterating on P is slow, derivatives look OK
+#                     (True, False, False, True, False, False) : ('T', 'H', 'V'), # Iterating on P is slow, derivatives look OK
                      (True, False, False, False, True, False) : ('T', 'S', 'P'),
                      (True, False, False, False, False, True) : ('T', 'U', 'V'),
 
@@ -2538,7 +2548,7 @@ spec_to_iter_vars = {(True, False, False, True, False, False) : ('T', 'H', 'V'),
                      (False, False, True, False, False, True) : ('V', 'U', 'P'),
 }
 
-spec_to_iter_vars_backup =  {(True, False, False, True, False, False) : ('T', 'H', 'P'),
+spec_to_iter_vars_backup =  {(True, False, False, True, False, False) : ('T', 'H', 'V'),
                              (True, False, False, False, True, False) : ('T', 'S', 'V'),
                              (True, False, False, False, False, True) : ('T', 'U', 'P'),
         
@@ -2649,7 +2659,7 @@ class FlashPureVLS(FlashBase):
             flash_specs['SF'] = SF
 
         if ((T_spec and (P_spec or V_spec)) or (P_spec and V_spec)):            
-            g, ls, ss, betas = self.flash_TPV(T=T, P=P, V=V)
+            g, ls, ss, betas = self.flash_TPV(T=T, P=P, V=V, solution=solution)
             if g is not None:
                 id_phases = [g] + ls + ss
             else:
@@ -2745,13 +2755,13 @@ class FlashPureVLS(FlashBase):
             # Only allow one
 #            g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var)
             try:
-                g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var)
+                g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var, solution=solution)
             except Exception as e:
 #            except UnconvergedError as e:
-                if fixed_var == 'T' and iter_var in ('S', 'H', 'U'):
-                    g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var_backup)
-                else:
-                    raise e
+#                 if fixed_var == 'T' and iter_var in ('S', 'H', 'U'):
+#                     g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var_backup, solution=solution)
+#                 else:
+                raise e
                 # Not sure if good idea - would prefer to converge without
             phases = ls + ss
             if g:
@@ -2767,27 +2777,38 @@ class FlashPureVLS(FlashBase):
         else:
             raise Exception('Flash inputs unsupported')
 
-    def flash_TPV(self, T, P, V):
+    def flash_TPV(self, T, P, V, solution=None):
         zs = [1]
         liquids = []
         solids = []
+        
+        if solution is None:
+            fun = lambda obj: obj.G()
+        elif solution == 'high':
+            fun = lambda obj: -obj.T
+        elif solution == 'low':
+            fun = lambda obj: obj.T
+        elif callable(solution):
+            fun = solution
+        else:
+            raise ValueError("Did not recognize solution %s" %(solution))
 
         if self.gas_count:
             gas = self.gas.to_zs_TPV(zs=zs, T=T, P=P, V=V)
-            G_min, lowest_phase = gas.G(), gas
+            G_min, lowest_phase = fun(gas), gas
         else:
             G_min, lowest_phase = 1e100, None
             gas = None
         for l in self.liquids:
             l = l.to_zs_TPV(zs=zs, T=T, P=P, V=V)
-            G = l.G()
+            G = fun(l)
             if G < G_min:
                 G_min, lowest_phase = G, l
             liquids.append(l)
 
         for s in self.solids:
             s = s.to_zs_TPV(zs=zs, T=T, P=P, V=V)
-            G = s.G()
+            G = fun(s)
             if G < G_min:
                 G_min, lowest_phase = G, s
             solids.append(s)
@@ -2872,12 +2893,12 @@ class FlashPureVLS(FlashBase):
         
     
         
-    def flash_TPV_HSGUA(self, fixed_var_val, spec_val, fixed_var='P', spec='H', iter_var='T', minimize='auto',
+    def flash_TPV_HSGUA(self, fixed_var_val, spec_val, fixed_var='P', spec='H', iter_var='T', solution=None,
                         selection_fun_1P=None):
         # Be prepared to have a flag here to handle zero flow
         zs = [1]
         constants, correlations = self.constants, self.correlations
-        if minimize == 'auto':
+        if solution is None:
             if fixed_var == 'P' and spec == 'H':
                 fun = lambda obj: -obj.S()
             elif fixed_var == 'P' and spec == 'S':
@@ -2894,7 +2915,17 @@ class FlashPureVLS(FlashBase):
                 # fun = lambda obj: -obj.V() # First
             else:
                 fun = lambda obj: obj.G()
-        
+        else:
+            if solution == 'high':
+                fun = lambda obj: -obj.value(iter_var)
+            elif solution == 'low':
+                fun = lambda obj: obj.value(iter_var)
+            elif callable(solution):
+                fun = solution
+            else:
+                raise ValueError("Unrecognized solution")
+
+
         if selection_fun_1P is None:
             def selection_fun_1P(new, prev):
                 if fixed_var == 'P' and spec == 'S':

@@ -1210,6 +1210,9 @@ def test_RKMIX_quick():
     assert_allclose([obj.a_alpha, obj.da_alpha_dT, obj.d2a_alpha_dT2], 
                     [pure_obj.a_alpha, pure_obj.da_alpha_dT, pure_obj.d2a_alpha_dT2], rtol=1e-12)
 
+    # This low T, P one failed to create before
+    RKMIX(Tcs=[768.0], Pcs=[1070000.0], omegas=[0.8805], kijs=[[0.0]], zs=[1.0], T=0.0001, P=1e-60, fugacities=False)
+    RKMIX(Tcs=[768.0], Pcs=[1070000.0], omegas=[0.8805], kijs=[[0.0]], zs=[1.0], T=0.0001, P=1e-60, fugacities=True)
 
 @pytest.mark.slow
 @pytest.mark.CoolProp
@@ -3039,6 +3042,16 @@ def test_volume_issues():
     # Case where NR switches which root is converged to
     obj = PR78MIX(Tcs=[647.14], Pcs=[22048320.0], omegas=[0.344], kijs=[[0]], zs=[1], T=494.1713361323858, P=0.13257113655901095)
     assert obj.volume_error() < 1e-12
+    
+    # Case where NR low P is used
+    obj = RK(Tc=768.0, Pc=1070000.0, omega=0.8805, T=0.000954095, P=0.0790604)
+    assert obj.volume_error() < 1e-12
+    
+def test_PV_issues_multiple_solutions_T():
+    obj = APISRKMIX(Tcs=[768.0], Pcs=[1070000.0], omegas=[0.8805], zs=[1], V=0.0026896181445057303, P=14954954.954954954, only_g=True)
+    assert_allclose(obj.T, 1e4)
+    obj = APISRKMIX(Tcs=[768.0], Pcs=[1070000.0], omegas=[0.8805], zs=[1], V=0.0026896181445057303, P=14954954.954954954, only_l=True)
+    assert_allclose(obj.T, 6741.680441295266)
 
 def test_to_TPV_pure():
     # PRSV2MIX
@@ -3103,3 +3116,32 @@ def test_solve_T_issues():
     
     obj = SRKMIX(Tcs=[5.1889], Pcs=[226968.0], omegas=[-0.387], kijs=[[0]], zs=[1], T=1.0405, P=6.9956)
     assert_allclose(obj.to(zs=[1], V=obj.V_l, P=obj.P).T, obj.T, rtol=1e-7)
+    
+    # High and low solution at crazy T
+    kwargs = dict(Tcs=[768.0], Pcs=[1070000.0], omegas=[0.8805], S1s=[1.7303161495675], S2s=[0.0], zs=[1], P=359381366.3805, V=0.0006354909990692889)
+    assert_allclose(APISRKMIX(**kwargs).T, 7220.8089999999975)
+    assert_allclose(APISRKMIX(only_l=True, **kwargs).T, 7220.8089999999975)
+    assert_allclose(APISRKMIX(only_g=True, **kwargs).T, 140184.08901758507)
+    
+    # PR - switching between roots
+    kwargs = dict(Tcs=[768.0], Pcs=[1070000.0], omegas=[0.8805], kijs=[[0.0]], zs=[1], P=59948425.03189249, V=0.0010511136321381571)
+    assert_allclose(PRMIX(**kwargs).T, 8494.452309870687)
+    assert_allclose(PRMIX(only_l=True, **kwargs).T, 8494.452309870687)
+    assert_allclose(PRMIX(only_g=True, **kwargs).T, 8497.534359083393)
+    
+    # PRSV - getting correct high T root
+    obj = PRSVMIX(Tcs=[768.0], Pcs=[1070000.0], omegas=[0.8805], kijs=[[0]], kappa1s=[0.0], zs=[1], P=101325.0, V=0.0006516540616638367, only_g=True)
+    assert_allclose(obj.T, 53063.095694269345)
+
+    obj = PRSVMIX(Tcs=[768.0], Pcs=[1070000.0], omegas=[0.8805], kijs=[[0]], kappa1s=[0.0], zs=[1], P=101325.0, V=0.0006516540616638367, only_l=True)
+    assert_allclose(obj.T, 633.5943456378642)
+    
+    # RK - formula just dies, need numerical
+    obj = RKMIX(Tcs=[768.0], Pcs=[1070000.0], omegas=[0.8805], kijs=[[0.0]], zs=[1], V=0.0005170491466536438, P=1.048113134154686, only_l=True)
+    assert_allclose(obj.T, 0.0013894955646342926)
+    
+    # PRSV - issue where wrong a_alpha  was stored
+    a_alpha_PT = PRSVMIX(Tcs=[768.0], Pcs=[1070000.0], omegas=[0.8805], kijs=[[0]], kappa1s=[0.0], zs=[1],T=2000, P=1121481.0535455043).a_alpha
+    a_alpha_PV = PRSVMIX(Tcs=[768.0], Pcs=[1070000.0], omegas=[0.8805], kijs=[[0]], kappa1s=[0.0], zs=[1],V=0.015290731096352726, P=1121481.0535455043, only_l=True).a_alpha
+    assert_allclose(a_alpha_PT, a_alpha_PV, rtol=1e-12)
+

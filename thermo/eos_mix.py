@@ -270,21 +270,21 @@ class GCEOSMIX(GCEOS):
         return new
 
 
-    def to_TP_zs(self, T, P, zs, fugacities=True):
+    def to_TP_zs(self, T, P, zs, fugacities=True, only_l=False, only_g=False):
         if T != self.T or P != self.P or zs != self.zs:
-            return self.__class__(T=T, P=P, zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, fugacities=fugacities, **self.kwargs)
+            return self.__class__(T=T, P=P, zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, only_l=only_l, only_g=only_g, fugacities=fugacities, **self.kwargs)
         else:
             return self
     
-    def to_TV_zs(self, T, V, zs, fugacities=True):
+    def to_TV_zs(self, T, V, zs, fugacities=True, only_l=False, only_g=False):
         if T == self.T and V == self.V and zs == self.zs:
             return self
-        return self.__class__(T=T, V=V, zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, fugacities=fugacities, **self.kwargs)
+        return self.__class__(T=T, V=V, zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, only_l=only_l, only_g=only_g, fugacities=fugacities, **self.kwargs)
 
-    def to_PV_zs(self, P, V, zs, fugacities=True):
+    def to_PV_zs(self, P, V, zs, fugacities=True, only_l=False, only_g=False):
         if P == self.P and V == self.V and zs == self.zs:
             return self
-        return self.__class__(P=P, V=V, zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, fugacities=fugacities, **self.kwargs)
+        return self.__class__(P=P, V=V, zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, only_l=only_l, only_g=only_g, fugacities=fugacities, **self.kwargs)
 
     def to(self, zs=None, T=None, P=None, V=None, fugacities=True):
         r'''Method to construct a new EOSMIX object at two of `T`, `P` or `V`
@@ -1437,7 +1437,7 @@ class GCEOSMIX(GCEOS):
 #        return (1. + sum(Ys)*tot)*1e15
 
 
-    def solve_T(self, P, V, quick=True):
+    def solve_T(self, P, V, quick=True, solution=None):
         r'''Generic method to calculate `T` from a specified `P` and `V`.
         Provides SciPy's `newton` solver, and iterates to solve the general
         equation for `P`, recalculating `a_alpha` as a function of temperature
@@ -1452,6 +1452,10 @@ class GCEOSMIX(GCEOS):
         quick : bool, optional
             Unimplemented, although it may be possible to derive explicit 
             expressions as done for many pure-component EOS
+        solution : str or None, optional
+            'l' or 'g' to specify a liquid of vapor solution (if one exists);
+            if None, will select a solution more likely to be real (closer to
+            STP, attempting to avoid temperatures like 60000 K or 0.0001 K).
 
         Returns
         -------
@@ -1459,7 +1463,7 @@ class GCEOSMIX(GCEOS):
             Temperature, [K]
         '''
         # -4 goes back from object, GCEOS
-        return super(type(self).__mro__[-3], self).solve_T(P=P, V=V, quick=quick)
+        return super(type(self).__mro__[-3], self).solve_T(P=P, V=V, quick=quick, solution=solution)
 
     
     def _err_VL_jacobian(self, lnKsVF, T, P, zs, near_critical=False,
@@ -3937,7 +3941,11 @@ class GCEOSMIX(GCEOS):
         except:
             F = self.phi_g
         # This conversion seems numerically safe anyway
-        return dns_to_dn_partials(self.dlnphi_dns(Z, zs), log(F))
+        try:
+            logF = log(F)
+        except:
+            logF = -690.7755278982137
+        return dns_to_dn_partials(self.dlnphi_dns(Z, zs), logF)
         
     def _d2_G_dep_lnphi_d2_helper(self, V, d_Vs, d2Vs, dbs, d2bs, d_epsilons, d2_epsilons,
                           d_deltas, d2_deltas, da_alphas, d2a_alphas, G=True):
@@ -6330,20 +6338,20 @@ class PRMIX(GCEOSMIX, PR):
             d3b_dninjnks.append(d3b_dnjnks)
         return d3b_dninjnks
 
-    def solve_T(self, P, V, quick=True):
+    def solve_T(self, P, V, quick=True, solution=None):
         if self.N == 1 and type(self) is PRMIX:
             self.Tc = self.Tcs[0]
             self.Pc = self.Pcs[0]
             self.kappa = self.kappas[0]
             self.a = self.ais[0]
-            T = super(type(self).__mro__[-4], self).solve_T(P=P, V=V, quick=quick)   
+            T = super(type(self).__mro__[-4], self).solve_T(P=P, V=V, quick=quick, solution=solution)   
             del self.Tc
             del self.Pc
             del self.kappa
             del self.a
             return T
         else:
-            return super(type(self).__mro__[-3], self).solve_T(P=P, V=V, quick=quick)   
+            return super(type(self).__mro__[-3], self).solve_T(P=P, V=V, quick=quick, solution=solution)   
 
 
 class SRKMIX(GCEOSMIX, SRK):    
@@ -7425,18 +7433,18 @@ class RKMIX(GCEOSMIX, RK):
             d2a_alpha_dT2s = [ais[i]*x1 for i in cmps]
             return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
 
-    def solve_T(self, P, V, quick=True):
+    def solve_T(self, P, V, quick=True, solution=None):
         if self.N == 1 and type(self) is RKMIX:
             self.Tc = self.Tcs[0]
             self.Pc = self.Pcs[0]
             self.a = self.ais[0]
-            T = super(type(self).__mro__[-4], self).solve_T(P=P, V=V, quick=quick)   
+            T = super(type(self).__mro__[-4], self).solve_T(P=P, V=V, quick=quick, solution=solution)   
             del self.Tc
             del self.Pc
             del self.a
             return T
         else:
-            return super(type(self).__mro__[-3], self).solve_T(P=P, V=V, quick=quick)   
+            return super(type(self).__mro__[-3], self).solve_T(P=P, V=V, quick=quick, solution=solution)   
 
 
 
@@ -7579,7 +7587,8 @@ class PRSVMIX(PRMIX, PRSV):
         if self.V and self.P:
             # Deal with T-solution here; does NOT support kappa1_Tr_limit.
             self.kappa1s = kappa1s
-            self.T = self.solve_T(self.P, self.V)
+            solution = 'g' if (only_g and not only_l) else ('l' if only_l else None)
+            self.T = self.solve_T(self.P, self.V, solution=solution)
         else:
             self.kappa1s = [(0 if (T/Tc > 0.7 and self.kappa1_Tr_limit) else kappa1) for kappa1, Tc in zip(kappa1s, Tcs)]
             
@@ -7805,7 +7814,8 @@ class PRSV2MIX(PRMIX, PRSV2):
 
         
         if self.V and self.P:
-            self.T = self.solve_T(self.P, self.V)
+            solution = 'g' if (only_g and not only_l) else ('l' if only_l else None)
+            self.T = self.solve_T(self.P, self.V, solution=solution)
     
         self.kappas = []
         for Tc, kappa0, kappa1, kappa2, kappa3 in zip(Tcs, self.kappa0s, self.kappa1s, self.kappa2s, self.kappa3s):

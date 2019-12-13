@@ -176,7 +176,8 @@ class GCEOS(object):
         if self.V is not None:
             V = self.V
             if self.P is not None:
-                self.T = self.solve_T(self.P, V)
+                solution = 'g' if (only_g and not only_l) else ('l' if only_l else None)
+                self.T = self.solve_T(self.P, V, quick=True, solution=solution)
                 self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2 = self.a_alpha_and_derivatives(self.T, pure_a_alphas=pure_a_alphas)
             else:
                 self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2 = self.a_alpha_and_derivatives(self.T, pure_a_alphas=pure_a_alphas)
@@ -198,6 +199,7 @@ class GCEOS(object):
                 T = self.T
                 if not isinstance(V, (float, int)):
                     import mpmath as mp
+                    mp.mp.dps = 50 # Do not need more decimal places than needed
                     # Need to complete the calculation with the RT term having higher precision as well
                     T = mp.mpf(T)
                 self.P = float(R*T/(V-self.b) - self.a_alpha/(V*V + self.delta*V + self.epsilon))
@@ -631,7 +633,7 @@ class GCEOS(object):
         return Ts, a_alphas
         
 
-    def solve_T(self, P, V, quick=True):
+    def solve_T(self, P, V, quick=True, solution=None):
         '''Generic method to calculate `T` from a specified `P` and `V`.
         Provides SciPy's `newton` solver, and iterates to solve the general
         equation for `P`, recalculating `a_alpha` as a function of temperature
@@ -647,6 +649,10 @@ class GCEOS(object):
             Whether to use a SymPy cse-derived expression (3x faster) or 
             individual formulas - not applicable where a numerical solver is
             used.
+        solution : str or None, optional
+            'l' or 'g' to specify a liquid of vapor solution (if one exists);
+            if None, will select a solution more likely to be real (closer to
+            STP, attempting to avoid temperatures like 60000 K or 0.0001 K).
 
         Returns
         -------
@@ -671,7 +677,7 @@ class GCEOS(object):
         # ys = np.abs([to_solve(T) for T in xs])
         # plt.loglog(xs, ys)
         # plt.show()
-        # # max(ys), min(ys)
+        # max(ys), min(ys)
 
         T_guess_ig = P*V*R_inv
         T_guess_liq = P*V*R_inv*1000.0 # Compressibility factor of 0.001 for liquids
@@ -679,7 +685,7 @@ class GCEOS(object):
         err_liq = to_solve(T_guess_liq)
 
         T_brenth, T_secant = None, None
-        if err_ig*err_liq < 0.0:
+        if err_ig*err_liq < 0.0 and T_guess_liq < 3e4:
             try:
                 T_brenth = brenth(to_solve, T_guess_ig, T_guess_liq, xtol=1e-12,
                               fa=err_ig, fb=err_liq)
@@ -691,7 +697,7 @@ class GCEOS(object):
             #     return T_brenth
 
 
-        if abs(err_ig) < abs(err_liq) or T_guess_liq > 20000:
+        if abs(err_ig) < abs(err_liq) or T_guess_liq > 20000 or solution == 'g':
             T_guess = T_guess_ig
             f0 = err_ig
         else:
@@ -709,6 +715,50 @@ class GCEOS(object):
                 if T_brenth is None:
                     # Hardcoded limits, all the cleverness sometimes does not work
                     T_brenth = brenth(to_solve, 1e-3, 1e4, xtol=1e-12)
+        if solution is not None:
+            if T_brenth is None or (T_secant is not None and isclose(T_brenth, T_secant, rel_tol=1e-7)):
+                if T_secant is not None:
+                    attempt_bounds = [(1e-3, T_secant-1e-5), (T_secant+1e-3, 1e4), (T_secant+1e-3, 1e5)]
+                else:
+                    attempt_bounds = [(1e-3, 1e4), (1e4, 1e5)]
+                if T_guess_liq > 1e5:
+                    attempt_bounds.append((1e4, T_guess_liq))
+                    attempt_bounds.append((T_guess_liq, T_guess_liq*10))
+
+                for low, high in attempt_bounds:
+                    try:
+                        T_brenth = brenth(to_solve, low, high, xtol=1e-12)
+                        break
+                    except:
+                        pass
+            if T_secant is None:
+                if T_secant is not None:
+                    attempt_bounds = [(1e-3, T_brenth-1e-5), (T_brenth+1e-3, 1e4), (T_brenth+1e-3, 1e5)]
+                else:
+                    attempt_bounds = [(1e4, 1e5), (1e-3, 1e4)]
+                if T_guess_liq > 1e5:
+                    attempt_bounds.append((1e4, T_guess_liq))
+                    attempt_bounds.append((T_guess_liq, T_guess_liq*10))
+
+                for low, high in attempt_bounds:
+                    try:
+                        T_secant = brenth(to_solve, low, high, xtol=1e-12)
+                        break
+                    except:
+                        pass
+        try:
+            del self.a_alpha_ijs
+            del self.a_alpha_i_roots
+            del self.a_alpha_ij_roots_inv
+        except AttributeError:
+            pass
+
+        if solution is not None:
+            if (T_secant is not None and T_brenth is not None):
+                if solution == 'g':
+                    return max(T_brenth, T_secant)
+                else:
+                    return min(T_brenth, T_secant)
 
         if T_brenth is None:
             return T_secant
@@ -1129,7 +1179,7 @@ class GCEOS(object):
             # if max_err < 1e6:
                 # Try to catch floating point error
                 return Vs
-            
+            return GCEOS.volume_solutions_NR_low_P(T, P, b, delta, epsilon, a_alpha)
             print('%g, %g; ' %(T, P), end='')
 #            print(T, P, b, delta, a_alpha)
 #            if root_failed:
@@ -1357,7 +1407,7 @@ class GCEOS(object):
                 err = err_i
         except:
             pass
-        return err
+        return float(err)
     
     def _mpmath_volume_matching(self, V):
         '''Helper method which, given one of the three molar volume solutions
@@ -1447,6 +1497,7 @@ class GCEOS(object):
         kwargs = {}
         if hasattr(self, 'zs'):
             kwargs['zs'] = self.zs
+            kwargs['fugacities'] = False
 
         errs = []            
         for T in Ts:
@@ -2460,18 +2511,20 @@ class GCEOS(object):
         for T in Ts:
             failed = False
             try:
+                Psats_fit.append(self.Psat(T, polish=False))
+            except NoSolutionError:
+                # Trust the fit - do not continue if no good
+                continue
+            except Exception as e:
+                raise ValueError("Failed to converge at %.8f K with unexpected error" %(T), e)
+
+            try:
                 Psat_polished = self.Psat(T, polish=True)
                 Psats_num.append(Psat_polished)
             except Exception as e:
                 failed = True
                 raise ValueError("Failed to converge at %.8f K with unexpected error" %(T), e)
 
-            try:
-                Psats_fit.append(self.Psat(T, polish=False))
-            except NoSolutionError:
-                continue
-            except Exception as e:
-                raise ValueError("Failed to converge at %.8f K with unexpected error" %(T), e)
             Ts_worked.append(T)
         Ts = Ts_worked
             
@@ -5100,7 +5153,7 @@ class IG(GCEOS):
         else:
             return (0.0, 0.0, 0.0)
 
-    def solve_T(self, P, V, quick=True):
+    def solve_T(self, P, V, quick=True, solution=None):
         self.no_T_spec = True
         return P*V*R_inv
     
@@ -5363,7 +5416,7 @@ class PR(GCEOS):
     # (V - b)**3*(V**2 + 2*V*b - b**2)*(P*R*Tc*V**2 + 2*P*R*Tc*V*b - P*R*Tc*b**2 - P*V*a*kappa**2 + P*a*b*kappa**2 + R*Tc*a*kappa**2 + 2*R*Tc*a*kappa + R*Tc*a)
 
 
-    def solve_T(self, P, V, quick=True):
+    def solve_T(self, P, V, quick=True, solution=None):
         r'''Method to calculate `T` from a specified `P` and `V` for the PR
         EOS. Uses `Tc`, `a`, `b`, and `kappa` as well, obtained from the 
         class's namespace.
@@ -5377,6 +5430,10 @@ class PR(GCEOS):
         quick : bool, optional
             Whether to use a SymPy cse-derived expression (3x faster) or 
             individual formulas
+        solution : str or None, optional
+            'l' or 'g' to specify a liquid of vapor solution (if one exists);
+            if None, will select a solution more likely to be real (closer to
+            STP, attempting to avoid temperatures like 60000 K or 0.0001 K).
 
         Returns
         -------
@@ -5469,11 +5526,13 @@ class PR(GCEOS):
             T_calc = (x102*(x100 - x101)) # Normally the correct root
             if T_calc < 0.0:
                 # Ruined, call the numerical method; sometimes it happens
-                return super(PR, self).solve_T(P, V)
+                return super(PR, self).solve_T(P, V, solution=solution)
                 
             Tc_inv = 1.0/Tc
             
             T_calc_high = (x102*(-x100 - x101))
+            if solution is not None and solution == 'g':
+                T_calc = T_calc_high
             if True:
                 c1, c2 = R/(V_m_b), a/(V*(V+b) + b*V_m_b)
                 
@@ -5482,7 +5541,7 @@ class PR(GCEOS):
                 err = c1*T_calc - alpha_root*alpha_root*c2 - P
                 if abs(err/P) > 1e-2:
                     # Numerical issue - such a bad solution we cannot converge
-                    return super(PR, self).solve_T(P, V)
+                    return super(PR, self).solve_T(P, V, solution=solution)
                 
                 # Newton step - might as well compute it
                 derr = c1 + c2*kappa*rt*(kappa*(1.0 -rt) + 1.0)/T_calc
@@ -5936,7 +5995,7 @@ class PRSV(PR):
         self.kappa = self.kappa0 + self.kappa1*(1 + Tr**0.5)*(0.7 - Tr)
         self.solve()
 
-    def solve_T(self, P, V, quick=True):
+    def solve_T(self, P, V, quick=True, solution=None):
         r'''Method to calculate `T` from a specified `P` and `V` for the PRSV
         EOS. Uses `Tc`, `a`, `b`, `kappa0`  and `kappa` as well, obtained from  
         the class's namespace.
@@ -5950,6 +6009,10 @@ class PRSV(PR):
         quick : bool, optional
             Whether to use a SymPy cse-derived expression (somewhat faster) or 
             individual formulas.
+        solution : str or None, optional
+            'l' or 'g' to specify a liquid of vapor solution (if one exists);
+            if None, will select a solution more likely to be real (closer to
+            STP, attempting to avoid temperatures like 60000 K or 0.0001 K).
 
         Returns
         -------
@@ -5983,11 +6046,13 @@ class PRSV(PR):
             def to_solve(T):
                 P_calc = R*T/(V - b) - a*((kappa0 + kappa1*(sqrt(T/Tc) + 1)*(-T/Tc + 7/10))*(-sqrt(T/Tc) + 1) + 1)**2/(V*(V + b) + b*(V - b))
                 return P_calc - P
-        try:
-            return newton(to_solve, Tc*0.5)
-        except:
+        if solution is None:
+            try:
+                return newton(to_solve, Tc*0.5)
+            except:
+                pass
             # The above method handles fewer cases, but the below is less optimized
-            return GCEOS.solve_T(self, P, V)
+        return GCEOS.solve_T(self, P, V, solution=solution)
 
     def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
         r'''Method to calculate `a_alpha` and its first and second
@@ -6137,7 +6202,7 @@ class PRSV2(PR):
                                      - Tr)*(1 - Tr**0.5))*(1 + Tr**0.5)*(0.7 - Tr))
         self.solve()
 
-    def solve_T(self, P, V, quick=True):
+    def solve_T(self, P, V, quick=True, solution=None):
         r'''Method to calculate `T` from a specified `P` and `V` for the PRSV2
         EOS. Uses `Tc`, `a`, `b`, `kappa0`, `kappa1`, `kappa2`, and `kappa3`
         as well, obtained from the class's namespace.
@@ -6151,6 +6216,10 @@ class PRSV2(PR):
         quick : bool, optional
             Whether to use a SymPy cse-derived expression (somewhat faster) or 
             individual formulas.
+        solution : str or None, optional
+            'l' or 'g' to specify a liquid of vapor solution (if one exists);
+            if None, will select a solution more likely to be real (closer to
+            STP, attempting to avoid temperatures like 60000 K or 0.0001 K).
 
         Returns
         -------
@@ -6184,11 +6253,13 @@ class PRSV2(PR):
             def to_solve(T):
                 P_calc = R*T/(V - b) - a*((kappa0 + (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)*(-T/Tc + 7/10))*(-sqrt(T/Tc) + 1) + 1)**2/(V*(V + b) + b*(V - b))
                 return P_calc - P
-        try:
-            return newton(to_solve, Tc*0.5)
-        except:
+        if solution is None:
+            try:
+                return newton(to_solve, Tc*0.5)
+            except:
+                pass
             # The above method handles fewer cases, but the below is less optimized
-            return GCEOS.solve_T(self, P, V)
+        return GCEOS.solve_T(self, P, V, solution=solution)
 
 
     def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
@@ -6379,7 +6450,7 @@ class VDW(GCEOS):
             d2a_alpha_dT2 = 0.0
             return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
-    def solve_T(self, P, V):
+    def solve_T(self, P, V, quick=True, solution=None):
         r'''Method to calculate `T` from a specified `P` and `V` for the VDW
         EOS. Uses `a`, and `b`, obtained from the class's namespace.
 
@@ -6393,6 +6464,12 @@ class VDW(GCEOS):
             Pressure, [Pa]
         V : float
             Molar volume, [m^3/mol]
+        quick : bool, optional
+            Not used, [-]
+        solution : str or None, optional
+            'l' or 'g' to specify a liquid of vapor solution (if one exists);
+            if None, will select a solution more likely to be real (closer to
+            STP, attempting to avoid temperatures like 60000 K or 0.0001 K).
 
         Returns
         -------
@@ -6669,7 +6746,7 @@ class RK(GCEOS):
             d2a_alpha_dT2 = 0.75*self.a*T_inv*T_inv*sqrt_Tr_inv
             return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
-    def solve_T(self, P, V, quick=True):
+    def solve_T(self, P, V, quick=True, solution=None):
         r'''Method to calculate `T` from a specified `P` and `V` for the RK
         EOS. Uses `a`, and `b`, obtained from the class's namespace.
 
@@ -6682,6 +6759,10 @@ class RK(GCEOS):
         quick : bool, optional
             Whether to use a SymPy cse-derived expression (3x faster) or 
             individual formulas
+        solution : str or None, optional
+            'l' or 'g' to specify a liquid of vapor solution (if one exists);
+            if None, will select a solution more likely to be real (closer to
+            STP, attempting to avoid temperatures like 60000 K or 0.0001 K).
 
         Returns
         -------
@@ -6703,20 +6784,41 @@ class RK(GCEOS):
         '''
         a, b = self.a, self.b
         a = a*self.Tc**0.5
-        try:
-            self.no_T_spec = True
-            if quick:
-                x1 = -1.j*1.7320508075688772 + 1.
-                x2 = V - b
-                x3 = x2/R
-                x4 = V + b
-                x5 = (1.7320508075688772*(x2*x2*(-4.*P*P*P*x3 + 27.*a*a/(V*V*x4*x4))/(R*R))**0.5 - 9.*a*x3/(V*x4) +0j)**(1./3.)
-                return (3.3019272488946263*(11.537996562459266*P*x3/(x1*x5) + 1.2599210498948732*x1*x5)**2/144.0).real
-            else:
-                return ((-(-1/2 + sqrt(3)*1j/2)*(sqrt(729*(-V*a + a*b)**2/(R*V**2 + R*V*b)**2 + 108*(-P*V + P*b)**3/R**3)/2 + 27*(-V*a + a*b)/(2*(R*V**2 + R*V*b))+0j)**(1/3)/3 + (-P*V + P*b)/(R*(-1/2 + sqrt(3)*1j/2)*(sqrt(729*(-V*a + a*b)**2/(R*V**2 + R*V*b)**2 + 108*(-P*V + P*b)**3/R**3)/2 + 27*(-V*a + a*b)/(2*(R*V**2 + R*V*b))+0j)**(1/3)))**2).real
-        except:
+#        print([R, V, b, P, a])
+        if solution is None:
+            # COnfirmed with mpmath - has numerical issues
+            x0 = 3**0.5
+            x1 = 1j*x0
+            x2 = x1 + 1.0
+            x3 = V + b
+            x4 = V - b
+            x5 = x4/R
+            x6 = (x0*(x4**2*(-4*P**3*x5 + 27*a**2/(V**2*x3**2))/R**2+0.0j)**0.5 - 9*a*x5/(V*x3))**0.333333333333333
+            x7 = 0.190785707092222*x6
+            x8 = P*x5/x6
+            x9 =1.7471609294726*x8
+            x10 = 1.0 - x1
+            
+            slns = [(x2*x7 + x9/x2)**2,
+                    (x10*x7 + x9/x10)**2,
+                    (0.381571414184444*x6 + 0.873580464736299*x8)**2]
+            try:
+                self.no_T_spec = True
+                if quick:
+                    x1 = -1.j*1.7320508075688772 + 1.
+                    x2 = V - b
+                    x3 = x2/R
+                    x4 = V + b
+                    x5 = (1.7320508075688772*(x2*x2*(-4.*P*P*P*x3 + 27.*a*a/(V*V*x4*x4))/(R*R))**0.5 - 9.*a*x3/(V*x4) +0j)**(1./3.)
+                    T_sln = (3.3019272488946263*(11.537996562459266*P*x3/(x1*x5) + 1.2599210498948732*x1*x5)**2/144.0).real
+                else:
+                    T_sln = ((-(-1/2 + sqrt(3)*1j/2)*(sqrt(729*(-V*a + a*b)**2/(R*V**2 + R*V*b)**2 + 108*(-P*V + P*b)**3/R**3)/2 + 27*(-V*a + a*b)/(2*(R*V**2 + R*V*b))+0j)**(1/3)/3 + (-P*V + P*b)/(R*(-1/2 + sqrt(3)*1j/2)*(sqrt(729*(-V*a + a*b)**2/(R*V**2 + R*V*b)**2 + 108*(-P*V + P*b)**3/R**3)/2 + 27*(-V*a + a*b)/(2*(R*V**2 + R*V*b))+0j)**(1/3)))**2).real
+                if T_sln > 1e-3:
+                    return T_sln
+            except:
+                pass
             # Turns out the above solution does not cover all cases
-            return super(RK, self).solve_T(P, V)
+        return super(RK, self).solve_T(P, V, solution=solution)
 
 
     def T_discriminant_zeros_analytical(self, valid=False):
@@ -6966,7 +7068,7 @@ class SRK(GCEOS):
         return P_max
         
 
-    def solve_T(self, P, V, quick=True):
+    def solve_T(self, P, V, quick=True, solution=None):
         r'''Method to calculate `T` from a specified `P` and `V` for the SRK
         EOS. Uses `a`, `b`, and `Tc` obtained from the class's namespace.
 
@@ -6979,6 +7081,10 @@ class SRK(GCEOS):
         quick : bool, optional
             Whether to use a SymPy cse-derived expression (3x faster) or 
             individual formulas
+        solution : str or None, optional
+            'l' or 'g' to specify a liquid of vapor solution (if one exists);
+            if None, will select a solution more likely to be real (closer to
+            STP, attempting to avoid temperatures like 60000 K or 0.0001 K).
 
         Returns
         -------
@@ -7194,7 +7300,7 @@ class APISRK(SRK):
                 d2a_alpha_dT2 = a*(((S1*sqrt(T/Tc) + S2 - S2*(sqrt(T/Tc) - 1)/sqrt(T/Tc))**2 - (S1*sqrt(T/Tc) + 3*S2 - 3*S2*(sqrt(T/Tc) - 1)/sqrt(T/Tc))*(S1*(sqrt(T/Tc) - 1) + S2*(sqrt(T/Tc) - 1)/sqrt(T/Tc) - 1))/(2*T**2))
             return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
-    def solve_T(self, P, V, quick=True):
+    def solve_T(self, P, V, quick=True, solution=None):
         r'''Method to calculate `T` from a specified `P` and `V` for the API 
         SRK EOS. Uses `a`, `b`, and `Tc` obtained from the class's namespace.
 
@@ -7207,6 +7313,10 @@ class APISRK(SRK):
         quick : bool, optional
             Whether to use a SymPy cse-derived expression (3x faster) or 
             individual formulas
+        solution : str or None, optional
+            'l' or 'g' to specify a liquid of vapor solution (if one exists);
+            if None, will select a solution more likely to be real (closer to
+            STP, attempting to avoid temperatures like 60000 K or 0.0001 K).
 
         Returns
         -------
@@ -7223,7 +7333,7 @@ class APISRK(SRK):
         self.no_T_spec = True
         if self.S2 == 0:
             self.m = self.S1
-            return SRK.solve_T(self, P, V, quick=quick)
+            return SRK.solve_T(self, P, V, quick=quick, solution=solution)
 
         else:
             # Previously coded method is  63 microseconds vs 47 here
@@ -7240,11 +7350,13 @@ class APISRK(SRK):
                 def to_solve(T):
                     P_calc = R*T/(V - b) - a*(S1*(-sqrt(T/Tc) + 1) + S2*(-sqrt(T/Tc) + 1)/sqrt(T/Tc) + 1)**2/(V*(V + b))
                     return P_calc - P
-                
-        try:
-            return newton(to_solve, Tc*0.5)
-        except:
-            return GCEOS.solve_T(self, P, V)
+        
+        if solution is None:
+            try:
+                return newton(to_solve, Tc*0.5)
+            except:
+                pass
+        return GCEOS.solve_T(self, P, V, solution=solution)
         
     
     def P_max_at_V(self, V):
