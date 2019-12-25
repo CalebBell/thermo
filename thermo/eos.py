@@ -2064,6 +2064,7 @@ class GCEOS(object):
                 else:
                     y = chebval(self.Psat_cheb_constant_factor[1]*(x + self.Psat_cheb_constant_factor[0]), self.Psat_cheb_coeffs)
             else:
+                # TWUPR/SRK TODO need to be prepared for x being way outside the range (in the weird direction - at the start)
                 Psat_ranges_low = self.Psat_ranges_low
                 if x > Psat_ranges_low[-1]:
                     if not polish:
@@ -2083,8 +2084,10 @@ class GCEOS(object):
             try:
                 Psat = exp(y)*Tr*Pc
                 if Psat == 0.0:
-                    Psat = 1e-100
-                    polish = True
+                    if polish:
+                        Psat = 1e-100
+                    else:
+                        raise NoSolutionError("T %.8f K is too low for equations to converge" %(T))
             except OverflowError:
                 # coefficients sometimes overflow before T is lowered to 0.32Tr
                 # For
@@ -7508,6 +7511,8 @@ def TWU_a_alpha_common(T, Tc, omega, a, full=True, quick=True, method='PR'):
     >>> # diff(alpha, T)
     >>> # diff(alpha, T, T)
     '''
+    # e-10 works
+    min_a_alpha = 1e-3 # There are a LOT of formulas, and they do not like having zeros
     Tr = T/Tc
     if Tr < 5e-3:
         # not enough: Tr from (x) 0 to 2e-4 to (y) 1e-4 2e-4
@@ -7538,7 +7543,10 @@ def TWU_a_alpha_common(T, Tc, omega, a, full=True, quick=True, method='PR'):
         alpha0 = Tr**(N0*(M0-1.))*exp(L0*(1.-Tr**(N0*M0)))
         alpha1 = Tr**(N1*(M1-1.))*exp(L1*(1.-Tr**(N1*M1)))
         alpha = alpha0 + omega*(alpha1 - alpha0)
-        return a*alpha
+        a_alpha = a*alpha
+        if a_alpha < min_a_alpha:
+            a_alpha = min_a_alpha
+        return a_alpha
     else:
         if quick:
             x0 = Tr
@@ -7582,6 +7590,11 @@ def TWU_a_alpha_common(T, Tc, omega, a, full=True, quick=True, method='PR'):
 #            a_alpha = TWU_a_alpha_common(T=T, Tc=Tc, omega=omega, a=a, full=False, quick=quick, method=method)
             da_alpha_dT = a*(-L0*M0*N0*(T/Tc)**(M0*N0)*(T/Tc)**(N0*(M0 - 1))*exp(L0*(-(T/Tc)**(M0*N0) + 1))/T + N0*(T/Tc)**(N0*(M0 - 1))*(M0 - 1)*exp(L0*(-(T/Tc)**(M0*N0) + 1))/T + omega*(L0*M0*N0*(T/Tc)**(M0*N0)*(T/Tc)**(N0*(M0 - 1))*exp(L0*(-(T/Tc)**(M0*N0) + 1))/T - L1*M1*N1*(T/Tc)**(M1*N1)*(T/Tc)**(N1*(M1 - 1))*exp(L1*(-(T/Tc)**(M1*N1) + 1))/T - N0*(T/Tc)**(N0*(M0 - 1))*(M0 - 1)*exp(L0*(-(T/Tc)**(M0*N0) + 1))/T + N1*(T/Tc)**(N1*(M1 - 1))*(M1 - 1)*exp(L1*(-(T/Tc)**(M1*N1) + 1))/T))
             d2a_alpha_dT2 = a*((L0**2*M0**2*N0**2*(T/Tc)**(2*M0*N0)*(T/Tc)**(N0*(M0 - 1))*exp(-L0*((T/Tc)**(M0*N0) - 1)) - L0*M0**2*N0**2*(T/Tc)**(M0*N0)*(T/Tc)**(N0*(M0 - 1))*exp(-L0*((T/Tc)**(M0*N0) - 1)) - 2*L0*M0*N0**2*(T/Tc)**(M0*N0)*(T/Tc)**(N0*(M0 - 1))*(M0 - 1)*exp(-L0*((T/Tc)**(M0*N0) - 1)) + L0*M0*N0*(T/Tc)**(M0*N0)*(T/Tc)**(N0*(M0 - 1))*exp(-L0*((T/Tc)**(M0*N0) - 1)) + N0**2*(T/Tc)**(N0*(M0 - 1))*(M0 - 1)**2*exp(-L0*((T/Tc)**(M0*N0) - 1)) - N0*(T/Tc)**(N0*(M0 - 1))*(M0 - 1)*exp(-L0*((T/Tc)**(M0*N0) - 1)) - omega*(L0**2*M0**2*N0**2*(T/Tc)**(2*M0*N0)*(T/Tc)**(N0*(M0 - 1))*exp(-L0*((T/Tc)**(M0*N0) - 1)) - L0*M0**2*N0**2*(T/Tc)**(M0*N0)*(T/Tc)**(N0*(M0 - 1))*exp(-L0*((T/Tc)**(M0*N0) - 1)) - 2*L0*M0*N0**2*(T/Tc)**(M0*N0)*(T/Tc)**(N0*(M0 - 1))*(M0 - 1)*exp(-L0*((T/Tc)**(M0*N0) - 1)) + L0*M0*N0*(T/Tc)**(M0*N0)*(T/Tc)**(N0*(M0 - 1))*exp(-L0*((T/Tc)**(M0*N0) - 1)) - L1**2*M1**2*N1**2*(T/Tc)**(2*M1*N1)*(T/Tc)**(N1*(M1 - 1))*exp(-L1*((T/Tc)**(M1*N1) - 1)) + L1*M1**2*N1**2*(T/Tc)**(M1*N1)*(T/Tc)**(N1*(M1 - 1))*exp(-L1*((T/Tc)**(M1*N1) - 1)) + 2*L1*M1*N1**2*(T/Tc)**(M1*N1)*(T/Tc)**(N1*(M1 - 1))*(M1 - 1)*exp(-L1*((T/Tc)**(M1*N1) - 1)) - L1*M1*N1*(T/Tc)**(M1*N1)*(T/Tc)**(N1*(M1 - 1))*exp(-L1*((T/Tc)**(M1*N1) - 1)) + N0**2*(T/Tc)**(N0*(M0 - 1))*(M0 - 1)**2*exp(-L0*((T/Tc)**(M0*N0) - 1)) - N0*(T/Tc)**(N0*(M0 - 1))*(M0 - 1)*exp(-L0*((T/Tc)**(M0*N0) - 1)) - N1**2*(T/Tc)**(N1*(M1 - 1))*(M1 - 1)**2*exp(-L1*((T/Tc)**(M1*N1) - 1)) + N1*(T/Tc)**(N1*(M1 - 1))*(M1 - 1)*exp(-L1*((T/Tc)**(M1*N1) - 1))))/T**2)
+        if a_alpha < min_a_alpha:
+            a_alpha = min_a_alpha
+            da_alpha_dT = d2a_alpha_dT2 = 0.0
+            # Hydrogen at low T
+#            a_alpha = da_alpha_dT = d2a_alpha_dT2 = 0.0
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
 

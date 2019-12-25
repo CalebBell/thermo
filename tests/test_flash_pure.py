@@ -35,7 +35,7 @@ import matplotlib.pyplot as plt
 
 pure_surfaces_dir = os.path.join(thermo.thermo_dir, '..', 'surfaces', 'pure')
 
-pure_fluids = ['water', 'methane', 'ethane', 'decane', 'ammonia', 'nitrogen', 'oxygen', 'methanol', 'eicosane']
+pure_fluids = ['water', 'methane', 'ethane', 'decane', 'ammonia', 'nitrogen', 'oxygen', 'methanol', 'eicosane', 'hydrogen']
 
 '''# Recreate the below with the following:
 N = len(pure_fluids)
@@ -45,19 +45,24 @@ correlations = m.properties()
 print(correlations.as_best_fit(['HeatCapacityGases']))
 '''
 constants = ChemicalConstantsPackage(Tcs=[647.14, 190.56400000000002, 305.32, 611.7, 405.6, 126.2, 154.58, 512.5, 
-                                          768.0
+                                          768.0,
+                                          33.2
                                           ], 
             Pcs=[22048320.0, 4599000.0, 4872000.0, 2110000.0, 11277472.5, 3394387.5, 5042945.25, 8084000.0, 
-                 1070000.0
+                 1070000.0,
+                 1296960.0
                  ], 
             omegas=[0.344, 0.008, 0.098, 0.49, 0.25, 0.04, 0.021, 0.559, 
-                    0.8805
+                    0.8805,
+                    -0.22,
                     ], 
             MWs=[18.01528, 16.04246, 30.06904, 142.28168, 17.03052, 28.0134, 31.9988, 32.04186, 
-                 282.54748
+                 282.54748,
+                 2.01588
                  ], 
             CASs=['7732-18-5', '74-82-8', '74-84-0', '124-18-5', '7664-41-7', '7727-37-9', '7782-44-7', '67-56-1', 
-                  '112-95-8'
+                  '112-95-8',
+                  '1333-74-0'
                   ])
 
 correlations = PropertyCorrelationPackage(constants=constants, HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
@@ -69,9 +74,29 @@ correlations = PropertyCorrelationPackage(constants=constants, HeatCapacityGases
         HeatCapacityGas(best_fit=(50.0, 1000.0, [7.682842888382947e-22, -3.3797331490434755e-18, 6.036320672021355e-15, -5.560319277907492e-12, 2.7591871443240986e-09, -7.058034933954475e-07, 9.350023770249747e-05, -0.005794412013028436, 29.229215579932934])),
         HeatCapacityGas(best_fit=(50.0, 1000.0, [2.3511458696647882e-21, -9.223721411371584e-18, 1.3574178156001128e-14, -8.311274917169928e-12, 4.601738891380102e-10, 1.78316202142183e-06, -0.0007052056417063217, 0.13263597297874355, 28.44324970462924])),
         HeatCapacityGas(best_fit=(200.0, 1000.0, [-2.075118433508619e-20, 1.0383055980949049e-16, -2.1577805903757125e-13, 2.373511052680461e-10, -1.4332562489496906e-07, 4.181755403465859e-05, -0.0022544761674344544, -0.15965342941876415, 303.71771182550816])),
+        HeatCapacityGas(best_fit=(50.0, 1000.0, [1.1878323802695824e-20, -5.701277266842367e-17, 1.1513022068830274e-13, -1.270076105261405e-10, 8.309937583537026e-08, -3.2694889968431594e-05, 0.007443050245274358, -0.8722920255910297, 66.82863369121873])),
         ])
 
 from thermo.eos_mix import eos_mix_list
+
+
+
+def plot_unsupported(reason, color='r'):
+    fig, ax = plt.subplots()
+
+    xlims = ax.get_xlim()
+    ylims = ax.get_ylim()
+    ax.plot([0, 1], [0, 1], lw=5, c=color)
+    ax.plot([0, 1], [1, 0], lw=5, c=color)
+
+    ax.text(.5, .5, reason, ha='center', va='center', bbox=dict(fc='white'))
+    return fig
+
+
+
+
+
+
 #eos_mix_list = [PRMIX, PR78MIX, SRKMIX, VDWMIX, PRSVMIX, PRSV2MIX, APISRKMIX, TWUPRMIX, TWUSRKMIX, IGMIX]
 #eos_mix_list = [TWUPRMIX, TWUSRKMIX] # issues
 @pytest.mark.slow
@@ -134,8 +159,9 @@ def test_PV_plot(fluid, eos, auto_range):
         print(fluid, eos, auto_range)
         assert max_err < limit
 #for e in eos_mix_list:
+#    e = TWUPRMIX
 #    print(e)
-#    test_PV_plot('eicosane', e, 'physical')
+#    test_PV_plot('hydrogen', e, 'physical')
 #test_PV_plot('eicosane', APISRKMIX, 'physical')
 
 @pytest.mark.slow
@@ -358,7 +384,7 @@ def test_VU_plot(fluid, eos, auto_range):
 
 #for e in eos_mix_list:
 #    print(e)
-#    test_VU_plot('eicosane', e, 'physical')
+#    test_VU_plot('hydrogen', e, 'realistic')
 
 @pytest.mark.slow
 @pytest.mark.parametrize("auto_range", ['physical', 'realistic'])
@@ -545,12 +571,12 @@ def test_TH_plot(fluid, eos, auto_range):
     max_err = np.max(errs)
     assert max_err < 1e-8
 
-for e in eos_mix_list:
-    print(e)
-    try:
-        test_TH_plot('eicosane', e, 'realistic')
-    except:
-        pass
+#for e in eos_mix_list:
+#    print(e)
+#    try:
+#        test_TH_plot('eicosane', e, 'realistic')
+#    except:
+#        pass
 
 @pytest.mark.slow
 @pytest.mark.parametrize("fluid", pure_fluids)
@@ -582,12 +608,24 @@ def test_V_G_min_plot(fluid, eos):
     plt.close()
     
     # Not sure how to add error to this one
+#test_V_G_min_plot('hydrogen', TWUPR)
+#test_V_G_min_plot('hydrogen', TWUSRK)
+
 
 @pytest.mark.slow
 @pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("eos", eos_list)
 def test_Psat_plot(fluid, eos):
+    path = os.path.join(pure_surfaces_dir, fluid, "Psat")
+    if not os.path.exists(path):
+        os.makedirs(path)
+    
+    key = '%s - %s - %s' %('Psat', eos.__name__, fluid)
+
     if eos in (IG,):
+        plot_fig = plot_unsupported('Ideal gas cannot have a liquid phase', color='g')
+        plot_fig.savefig(os.path.join(path, key + '.png'), bbox_inches='tight')
+        plt.close()
         return
     T, P = 298.15, 101325.0
     zs = [1.0]
@@ -606,11 +644,6 @@ def test_Psat_plot(fluid, eos):
                                      Tmin=Tmin, Tmax=kwargs['Tc'], Pmin=1e-100)
 
     
-    path = os.path.join(pure_surfaces_dir, fluid, "Psat")
-    if not os.path.exists(path):
-        os.makedirs(path)
-    
-    key = '%s - %s - %s' %('Psat', eos.__name__, fluid)
         
     plot_fig.savefig(os.path.join(path, key + '.png'), bbox_inches='tight')
     plt.close()
@@ -618,7 +651,9 @@ def test_Psat_plot(fluid, eos):
     # TODO reenable
     max_err = np.max(errs)
     assert max_err < 1e-10
-
+    # HYDROGEN twu broken
+#test_Psat_plot('hydrogen', IG)
+#test_Psat_plot('eicosane', IG)
 
 
 
@@ -627,7 +662,15 @@ def test_Psat_plot(fluid, eos):
 @pytest.mark.parametrize("eos", eos_mix_list)
 @pytest.mark.parametrize("P_range", ['high', 'low'])
 def test_V_error_plot(fluid, eos, P_range):
-    if eos == IGMIX:
+    path = os.path.join(pure_surfaces_dir, fluid, "V_error")
+    if not os.path.exists(path):
+        os.makedirs(path)
+    key = '%s - %s - %s - %s' %('V_error', eos.__name__, fluid, P_range)
+
+    if eos in (IGMIX,):
+        plot_fig = plot_unsupported('Ideal gas has only one volume solution', color='g')
+        plot_fig.savefig(os.path.join(path, key + '.png'), bbox_inches='tight')
+        plt.close()
         return
     T, P = 298.15, 101325.0
     zs = [1.0]
@@ -649,12 +692,6 @@ def test_V_error_plot(fluid, eos, P_range):
                                                trunc_err_low=1e-15, color_map=cm_flash_tol())
 
     
-    path = os.path.join(pure_surfaces_dir, fluid, "V_error")
-    if not os.path.exists(path):
-        os.makedirs(path)
-        
-    
-    key = '%s - %s - %s - %s' %('V_error', eos.__name__, fluid, P_range)
         
     plot_fig.savefig(os.path.join(path, key + '.png'))
     plt.close()
@@ -663,8 +700,9 @@ def test_V_error_plot(fluid, eos, P_range):
     max_err = np.max(errs)
     assert max_err < 1e-10
 
-#test_V_error_plot('eicosane', RKMIX, 'high')
-    
+#test_V_error_plot('hydrogen', TWUSRKMIX, 'high')
+test_V_error_plot('hydrogen', IGMIX, 'high')
+
 ### Non-generic tests
     
 def test_some_flashes_bad():

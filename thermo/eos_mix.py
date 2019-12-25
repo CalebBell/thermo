@@ -79,6 +79,32 @@ def a_alpha_aijs_composition_independent(a_alphas, kijs):
             a_alpha_ijs_is[j] = a_alpha_ijs[j][i] = (1. - kijs_i[j])*term
     return a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv
 
+
+def a_alpha_aijs_composition_independent_support_zeros(a_alphas, kijs):
+    # Same as the above but works when there are zeros
+    N = len(a_alphas)
+    cmps = range(N)
+
+    a_alpha_ijs = [[0.0] * N for _ in cmps]
+    a_alpha_i_roots = [a_alpha_i ** 0.5 for a_alpha_i in a_alphas]
+    a_alpha_ij_roots_inv = [[0.0] * N for _ in cmps]
+
+    for i in cmps:
+        kijs_i = kijs[i]
+        a_alpha_i = a_alphas[i]
+        a_alpha_ijs_is = a_alpha_ijs[i]
+        a_alpha_ij_roots_i_inv = a_alpha_ij_roots_inv[i]
+        a_alpha_i_root_i = a_alpha_i_roots[i]
+        for j in range(i, N):
+            term = a_alpha_i_root_i * a_alpha_i_roots[j]
+            try:
+                a_alpha_ij_roots_i_inv[j] = 1.0 / term
+            except ZeroDivisionError:
+                a_alpha_ij_roots_i_inv[j] = 1e100
+            a_alpha_ijs_is[j] = a_alpha_ijs[j][i] = (1. - kijs_i[j]) * term
+    return a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv
+
+
 def a_alpha_and_derivatives(a_alphas, T, zs, kijs, a_alpha_ijs=None,
                             a_alpha_i_roots=None, a_alpha_ij_roots_inv=None):
     N = len(a_alphas)
@@ -608,7 +634,7 @@ class GCEOSMIX(GCEOS):
             self.a_alphas, self.da_alpha_dTs, self.d2a_alpha_dT2s = a_alphas, da_alpha_dTs, d2a_alpha_dT2s
         else:
             a_alphas, da_alpha_dTs, d2a_alpha_dT2s = self.a_alphas, self.da_alpha_dTs, self.d2a_alpha_dT2s
-        
+
         if not IS_PYPY and self.N > 20:
             return self.a_alpha_and_derivatives_numpy(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=full, quick=quick)
         return self.a_alpha_and_derivatives_py(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=full, quick=quick)
@@ -626,7 +652,10 @@ class GCEOSMIX(GCEOS):
                 assert same_T
                 a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv = self.a_alpha_ijs, self.a_alpha_i_roots, self.a_alpha_ij_roots_inv
             except (AttributeError, AssertionError):
-                a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, kijs)
+                try:
+                    a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, kijs)
+                except ZeroDivisionError:
+                    a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent_support_zeros(a_alphas, kijs)
                 self.a_alpha_ijs, self.a_alpha_i_roots, self.a_alpha_ij_roots_inv = a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv
         else:
             a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, kijs)
@@ -636,8 +665,14 @@ class GCEOSMIX(GCEOS):
         if full:
             if True:
                 # Consider not storing the second matrix of a_alpha terms
-                a_alpha, da_alpha_dT, d2a_alpha_dT2, d2a_alpha_dT2_ijs, da_alpha_dT_ijs, a_alpha_ijs = a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs, kijs,
-                                                                                                             a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv, second_derivative=True)
+                try:
+                    a_alpha, da_alpha_dT, d2a_alpha_dT2, d2a_alpha_dT2_ijs, da_alpha_dT_ijs, a_alpha_ijs = a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs, kijs,
+                                                                                                                 a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv, second_derivative=True)
+                except:
+                    if self.N == 1:
+                        a_alpha, da_alpha_dT, d2a_alpha_dT2 = a_alphas[0], da_alpha_dTs[0], d2a_alpha_dT2s[0]
+                        d2a_alpha_dT2_ijs, da_alpha_dT_ijs, a_alpha_ijs = [[d2a_alpha_dT2s[0]]], [[da_alpha_dTs[0]]], [[a_alphas[0]]]
+
                 self.d2a_alpha_dT2_ijs = d2a_alpha_dT2_ijs
             else:
                 a_alpha, da_alpha_dT, d2a_alpha_dT2, da_alpha_dT_ijs, a_alpha_ijs = a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs, kijs,
@@ -651,6 +686,14 @@ class GCEOSMIX(GCEOS):
             self.da_alpha_dT_ijs = []
             self.a_alpha_ijs = a_alpha_ijs
             return a_alpha
+
+
+
+
+
+
+
+
 
         # DO NOT REMOVE THIS CODE! IT MAKES TIHNGS SLOWER IN PYPY, even though it never runs
         da_alpha_dT, d2a_alpha_dT2 = 0.0, 0.0
