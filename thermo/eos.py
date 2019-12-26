@@ -24,7 +24,7 @@ from __future__ import division, print_function
 
 __all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',  
 'APISRK', 'TWUPR', 'TWUSRK', 'ALPHA_FUNCTIONS', 'eos_list', 'GCEOS_DUMMY',
-'IG', 
+'IG', 'PRTranslatedPPJP', 'SRKTranslated', 'PRTranslated',
 #'PRVTTwu'
 ]
 
@@ -5830,6 +5830,29 @@ class PRTranslated(PR):
 
         self.solve()
 
+class PRTranslatedPPJP(PR):
+    # Updated versions of the generalized Soave α-function suitable for the Redlich-Kwong and Peng-Robinson equations of state
+    def __init__(self, Tc, Pc, omega, c=0.0, T=None, P=None, V=None):
+        self.Tc = Tc
+        self.Pc = Pc
+        self.omega = omega
+        self.T = T
+        self.P = P
+        self.V = V
+        
+        Pc_inv = 1.0/Pc
+        self.a = self.c1*R2*Tc*Tc*Pc_inv
+        self.c = c
+        # 0.3919 + 1.4996*omega - 0.2721*omega**2+0.1063*omega**3
+        self.kappa = omega*(omega*(0.1063*omega - 0.2721) + 1.4996) + 0.3919
+        self.kwargs = {'c': c}
+        b0 = self.c2*R*Tc*Pc_inv
+        self.b = b = b0 - c
+        
+        self.delta = 2.0*(c + b0)
+        self.epsilon = -b0*b0 + c*c + 2.0*c*b0
+        self.Vc = self.Zc*R*Tc*Pc_inv
+        self.solve()
 
 class PRTranslatedPoly(PRTranslated):
     def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
@@ -7173,6 +7196,42 @@ class SRK(GCEOS):
             return Tc*(-2*a*m*sqrt(V*(V - b)**3*(V + b)*(P*R*Tc*V**2 + P*R*Tc*V*b - P*V*a*m**2 + P*a*b*m**2 + R*Tc*a*m**2 + 2*R*Tc*a*m + R*Tc*a))*(m + 1)*(R*Tc*V**2 + R*Tc*V*b - V*a*m**2 + a*b*m**2)**2 + (V - b)*(R**2*Tc**2*V**4 + 2*R**2*Tc**2*V**3*b + R**2*Tc**2*V**2*b**2 - 2*R*Tc*V**3*a*m**2 + 2*R*Tc*V*a*b**2*m**2 + V**2*a**2*m**4 - 2*V*a**2*b*m**4 + a**2*b**2*m**4)*(P*R*Tc*V**4 + 2*P*R*Tc*V**3*b + P*R*Tc*V**2*b**2 - P*V**3*a*m**2 + P*V*a*b**2*m**2 + R*Tc*V**2*a*m**2 + 2*R*Tc*V**2*a*m + R*Tc*V**2*a + R*Tc*V*a*b*m**2 + 2*R*Tc*V*a*b*m + R*Tc*V*a*b + V*a**2*m**4 + 2*V*a**2*m**3 + V*a**2*m**2 - a**2*b*m**4 - 2*a**2*b*m**3 - a**2*b*m**2))/((R*Tc*V**2 + R*Tc*V*b - V*a*m**2 + a*b*m**2)**2*(R**2*Tc**2*V**4 + 2*R**2*Tc**2*V**3*b + R**2*Tc**2*V**2*b**2 - 2*R*Tc*V**3*a*m**2 + 2*R*Tc*V*a*b**2*m**2 + V**2*a**2*m**4 - 2*V*a**2*b*m**4 + a**2*b**2*m**4))
 
 
+class SRKTranslated(SRK):
+    def __init__(self, Tc, Pc, omega, alpha_coeffs=None, c=0.0, T=None, P=None,
+                 V=None):
+        self.Tc = Tc
+        self.Pc = Pc
+        self.omega = omega
+        self.T = T
+        self.P = P
+        self.V = V
+        
+        Pc_inv = 1.0/Pc
+
+        self.a = self.c1*R*R*Tc*Tc*Pc_inv
+        
+        self.c = c
+        if alpha_coeffs is None:
+            self.m = 0.480 + 1.574*omega - 0.176*omega*omega
+        
+        self.alpha_coeffs = alpha_coeffs
+        self.kwargs = {'c': c, 'alpha_coeffs': alpha_coeffs}
+
+        b0 = self.c2*R*Tc*Pc_inv
+        self.b = b0 - c
+
+        ### from sympy.abc import V, c, b, epsilon, delta
+        ### expand((V+c)*((V+c)+b))
+        # delta = (b + 2*c) 
+        self.delta = c + c + b0
+        # epsilon = b*c + c*c
+        self.epsilon = c*(b0 + c)
+        
+        self.Vc = self.Zc*R*Tc*Pc_inv
+
+        self.solve()
+
+
 class APISRK(SRK):
     r'''Class for solving the Refinery Soave-Redlich-Kwong cubic 
     equation of state for a pure compound shown in the API Databook [1]_.
@@ -7700,4 +7759,4 @@ class TWUSRK(SRK):
         return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=full, quick=quick, method='SRK')
 
 
-eos_list = [IG, PR, PR78, PRSV, PRSV2, VDW, RK, SRK, APISRK, TWUPR, TWUSRK]
+eos_list = [IG, PR, PR78, PRSV, PRSV2, VDW, RK, SRK, APISRK, TWUPR, TWUSRK, PRTranslatedPPJP]

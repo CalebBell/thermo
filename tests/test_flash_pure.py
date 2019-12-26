@@ -159,7 +159,7 @@ def test_PV_plot(fluid, eos, auto_range):
         print(fluid, eos, auto_range)
         assert max_err < limit
 #for e in eos_mix_list:
-#    e = TWUPRMIX
+#    e = TWUSRKMIX
 #    print(e)
 #    test_PV_plot('hydrogen', e, 'physical')
 #test_PV_plot('eicosane', APISRKMIX, 'physical')
@@ -211,6 +211,10 @@ def test_TV_plot(fluid, eos, auto_range):
     except:
         assert max_err < 5e-9
 
+#for e in eos_mix_list:
+#    e = TWUPRMIX
+#    print(e)
+#    test_TV_plot('hydrogen', e, 'realistic')
 
 @pytest.mark.slow
 @pytest.mark.parametrize("auto_range", ['physical', 'realistic'])
@@ -249,7 +253,10 @@ def test_PS_plot(fluid, eos, auto_range):
 
     max_err = np.max(errs)
     assert max_err < 1e-8
-#test_PS_plot("water", PR78MIX, "physical")
+#test_PS_plot("hydrogen", TWUPRMIX, "physical")
+#test_PS_plot("hydrogen", TWUSRKMIX, "physical")
+#test_PS_plot("hydrogen", TWUPRMIX, "realistic")
+#test_PS_plot("hydrogen", TWUSRKMIX, "realistic")
 
 @pytest.mark.slow
 @pytest.mark.parametrize("auto_range", ['physical', 'realistic'])
@@ -654,6 +661,9 @@ def test_Psat_plot(fluid, eos):
     # HYDROGEN twu broken
 #test_Psat_plot('hydrogen', IG)
 #test_Psat_plot('eicosane', IG)
+#test_Psat_plot('eicosane', PRTranslatedPPJP)
+
+    
 
 
 
@@ -701,7 +711,7 @@ def test_V_error_plot(fluid, eos, P_range):
     assert max_err < 1e-10
 
 #test_V_error_plot('hydrogen', TWUSRKMIX, 'high')
-test_V_error_plot('hydrogen', IGMIX, 'high')
+#test_V_error_plot('hydrogen', IGMIX, 'low')
 
 ### Non-generic tests
     
