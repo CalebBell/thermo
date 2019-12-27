@@ -1077,7 +1077,7 @@ def test_PRTranslatedConsistent():
     assert_allclose([0.27877755625, 0.8266271, 2.0], eos.alpha_coeffs, rtol=1e-12)
     
     # Test overwritting c
-    c_force = 0.6390
+    c_force = 0.6390E-6
     eos = PRTranslatedConsistent(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, c=c_force)
     assert_allclose(eos.c, c_force, rtol=1e-12)
     assert_allclose(eos.to(T=eos.T, P=eos.P).c, c_force, rtol=1e-12)
@@ -1089,7 +1089,7 @@ def test_PRTranslatedConsistent():
     eos_copy = eos.to(T=eos.T, P=eos.P)
     assert_allclose(eos_copy.c, c_force, rtol=1e-12)
 
-    a_alphas_new = (3.805629668918672, -0.0068587409608788265, 2.1778830141804843e-05)
+    a_alphas_new = (3.8055614088179506, -0.0069721058918524054, 2.1747678188454976e-05)
     a_alphas_calc = (eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2)
     assert_allclose(a_alphas_new, a_alphas_calc, rtol=1e-9)
     a_alphas_calc_copy = (eos_copy.a_alpha, eos_copy.da_alpha_dT, eos_copy.d2a_alpha_dT2)
@@ -1142,6 +1142,99 @@ def test_SRKTranslatedConsistent():
     assert_allclose(eos_copy.c, c_force, rtol=1e-12)
 
     a_alphas_new = (3.557908729514593, -0.0065183855286746915, 2.0332415052898068e-05)
+    a_alphas_calc = (eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2)
+    assert_allclose(a_alphas_new, a_alphas_calc, rtol=1e-9)
+    a_alphas_calc_copy = (eos_copy.a_alpha, eos_copy.da_alpha_dT, eos_copy.d2a_alpha_dT2)
+    assert_allclose(a_alphas_new, a_alphas_calc_copy, rtol=1e-9)
+
+
+def test_PRTranslatedPPJP():
+    eos = PRTranslatedPPJP(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+    three_props = [eos.V_l, eos.H_dep_l, eos.S_dep_l]
+    expect_props = [0.00013013535006092269, -31304.613873527414, -72.86609506697148]
+    assert_allclose(three_props, expect_props)
+
+    # Test of a_alphas
+    a_alphas = [3.811942643891255, -0.006716261984061717, 1.714789853730881e-05]
+
+    a_alphas_fast = eos.a_alpha_and_derivatives_pure(299)
+    assert_allclose(a_alphas, a_alphas_fast)
+
+    a_alphas_fast = eos.a_alpha_and_derivatives_pure(299, quick=False)
+    assert_allclose(a_alphas, a_alphas_fast)
+
+    # back calculation for T
+    eos = PRTranslatedPPJP(Tc=507.6, Pc=3025000, omega=0.2975, V=0.00013013535006092269, P=1E6)
+    assert_allclose(eos.T, 299)
+    T_slow = eos.solve_T(P=1E6, V=0.00013013535006092269, quick=False)
+    assert_allclose(T_slow, 299)
+
+    # TV solve for P
+    eos_TV = eos.to(T=eos.T, V=eos.V_l)
+    assert_allclose(eos_TV.P, 1e6, rtol=1e-12)
+    assert_allclose(eos_TV.kappa, eos.kappa)
+    assert_allclose(eos.kappa, 0.8167473931515625, rtol=1e-12)
+
+    # Test with c
+    c = 0.6390E-6
+    eos = PRTranslatedPPJP(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, c=c)
+    assert_allclose(eos.c, c, rtol=1e-12)
+
+    eos_copy = eos.to(T=eos.T, P=eos.P)
+    assert_allclose(eos_copy.c, c, rtol=1e-12)
+
+    three_props = [eos.V_l, eos.H_dep_l, eos.S_dep_l]
+    expect_props = [0.00012949635006092268, -31305.252873527414, -72.86609506697148]
+    assert_allclose(three_props, expect_props)
+
+    a_alphas_new = (3.811942643891255, -0.006716261984061717, 1.714789853730881e-05)
+    a_alphas_calc = (eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2)
+    assert_allclose(a_alphas_new, a_alphas_calc, rtol=1e-9)
+
+    eos_copy = eos.to(T=eos.T, P=eos.P)
+    a_alphas_calc_copy = (eos_copy.a_alpha, eos_copy.da_alpha_dT, eos_copy.d2a_alpha_dT2)
+    assert_allclose(a_alphas_new, a_alphas_calc_copy, rtol=1e-9)
+
+
+def test_SRKTranslatedPPJP():
+    eos = SRKTranslatedPPJP(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+    three_props = [eos.V_l, eos.H_dep_l, eos.S_dep_l]
+    expect_props = [0.0001468182905372137, -31759.404328020573, -74.38422222691308]
+    assert_allclose(three_props, expect_props)
+
+    # Test of a_alphas
+    a_alphas = [3.7274765423787573, -0.007334913389260811, 1.9482548027213383e-05]
+
+    a_alphas_fast = eos.a_alpha_and_derivatives_pure(299)
+    assert_allclose(a_alphas, a_alphas_fast)
+
+    a_alphas_fast = eos.a_alpha_and_derivatives_pure(299, quick=False)
+    assert_allclose(a_alphas, a_alphas_fast)
+
+    # back calculation for T
+    eos = SRKTranslatedPPJP(Tc=507.6, Pc=3025000, omega=0.2975, V=0.0001468182905372137, P=1E6)
+    assert_allclose(eos.T, 299)
+    T_slow = eos.solve_T(P=1E6, V=0.0001468182905372137, quick=False)
+    assert_allclose(T_slow, 299)
+
+    # TV solve for P
+    eos_TV = eos.to(T=eos.T, V=eos.V_l)
+    assert_allclose(eos_TV.P, 1e6, rtol=1e-12)
+    assert_allclose(eos_TV.m, eos.m)
+    assert_allclose(eos.m, 0.9328950816515624, rtol=1e-12)
+
+    # Test with c
+    c = 22.3098E-6
+    eos = SRKTranslatedPPJP(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, c=c)
+    assert_allclose(eos.c, c, rtol=1e-12)
+    eos_copy = eos.to(T=eos.T, P=eos.P)
+    assert_allclose(eos_copy.c, c, rtol=1e-12)
+
+    three_props = [eos.V_l, eos.H_dep_l, eos.S_dep_l]
+    expect_props = [0.0001245084905372137, -31781.714128020576, -74.3842222269131]
+    assert_allclose(three_props, expect_props)
+
+    a_alphas_new = (3.7274765423787573, -0.007334913389260811, 1.9482548027213383e-05)
     a_alphas_calc = (eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2)
     assert_allclose(a_alphas_new, a_alphas_calc, rtol=1e-9)
     a_alphas_calc_copy = (eos_copy.a_alpha, eos_copy.da_alpha_dT, eos_copy.d2a_alpha_dT2)
