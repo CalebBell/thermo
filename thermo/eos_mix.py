@@ -6397,6 +6397,118 @@ class PRMIX(GCEOSMIX, PR):
             return super(type(self).__mro__[-3], self).solve_T(P=P, V=V, quick=quick, solution=solution)   
 
 
+class PRMIXTranslatedConsistent(PRMIX):
+    
+    def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, cs=None, 
+                 alpha_coeffs=None, T=None, P=None, V=None,
+                 fugacities=True, only_l=False, only_g=False):
+        self.N = N = len(Tcs)
+        self.cmps = cmps = range(N)
+        self.Tcs = Tcs
+        self.Pcs = Pcs
+        self.omegas = omegas
+        self.zs = zs
+        if kijs is None:
+            kijs = [[0.0]*N for i in cmps]
+        self.kijs = kijs
+        self.T = T
+        self.P = P
+        self.V = V
+
+        c1R2, c2R = self.c1*R2, self.c2*R
+        self.ais = [c1R2*Tcs[i]*Tcs[i]/Pcs[i] for i in cmps]
+        b0s = [c2R*Tcs[i]/Pcs[i] for i in cmps]
+        
+        if cs is None:
+            cs = [R*Tcs[i]/Pcs[i]*(0.0198*min(max(omega, -0.01), 1.48) - 0.0065)
+                for i in cmps]
+        if alpha_coeffs is None:
+            alpha_coeffs = []
+            for i in cmps:
+                o = min(max(omega, -0.01), 1.48)
+                L = o*(0.1290*o + 0.6039) + 0.0877
+                M = o*(0.1760*o - 0.2600) + 0.8884
+                alpha_coeffs.append((L, M, 2.0))
+        
+        self.kwargs = {'kijs': kijs, 'alpha_coeffs': alpha_coeffs, 'cs': cs}
+        
+        b0, c = 0.0, 0.0
+        for i in cmps:
+            b0 += b0s[i]*zs[i]
+            c += cs[i]*zs[i]
+        
+        self.b = b = b0 - c
+        self.delta = 2.0*(c + b0)
+        self.epsilon = -b0*b0 + c*c + 2.0*c*b0
+
+        self.solve(only_l=only_l, only_g=only_g)
+        if fugacities:
+            self.fugacities()
+
+    def a_alpha_and_derivatives_vectorized(self, T, full=False):
+        r'''Method to calculate the pure-component `a_alphas` and their first  
+        and second derivatives for TWU91 alpha function EOS. This vectorized 
+        implementation is added for extra speed.
+
+        .. math::
+            \alpha = \left(\frac{T}{Tc}\right)^{c_{3} \left(c_{2} 
+            - 1\right)} e^{c_{1} \left(- \left(\frac{T}{Tc}
+            \right)^{c_{2} c_{3}} + 1\right)}        
+        
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        full : bool, optional
+            If False, calculates and returns only `a_alphas`, [-]
+        
+        Returns
+        -------
+        a_alphas : list[float]
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        da_alpha_dTs : list[float]
+            Temperature derivative of coefficient calculated by EOS-specific 
+            method, [J^2/mol^2/Pa/K]
+        d2a_alpha_dT2s : list[float]
+            Second temperature derivative of coefficient calculated by  
+            EOS-specific method, [J^2/mol^2/Pa/K**2]
+        '''
+        ais, alpha_coeffs, Tcs = self.ais, self.alpha_coeffs, self.Tcs
+        if not full:
+            a_alphas = []
+            for i in self.cmps:
+                coeffs = alpha_coeffs[i] 
+                Tr = T/Tcs[i]
+                a_alpha = ais[i]*(Tr**(coeffs[2]*(coeffs[1] - 1.0))*exp(coeffs[0]*(1.0 - (Tr)**(coeffs[1]*coeffs[2]))))
+                a_alphas.append(a_alpha)
+            return a_alphas
+        else:
+            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
+            T_inv = 1.0/T
+            for i in self.cmps:
+                coeffs = alpha_coeffs[i]
+                c0, c1, c2 = coeffs[0], coeffs[1], coeffs[2]
+                Tr = T/Tcs[i]
+                
+                x1 = c1 - 1.0
+                x2 = c2*x1
+                x3 = c1*c2
+                x4 = Tr**x3
+                x5 = a*Tr**x2*exp(-c0*(x4 - 1.0))
+                x6 = c0*x4
+                x7 = c1*x6
+                x8 = c2*x5
+                x9 = c1*c1*c2
+                
+                d2a_alpha_dT2 = (x8*(c0*c0*x4*x4*x9 - c1 + c2*x1*x1 
+                                     - 2.0*x2*x7 - x6*x9 + x7 + 1.0)*T_inv*T_inv)            
+                a_alphas.append(x5)
+                da_alpha_dTs.append(x8*(x1 - x7)*T_inv)
+                d2a_alpha_dT2s.append(d2a_alpha_dT2)
+
+            return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
+
+
 class SRKMIX(GCEOSMIX, SRK):    
     r'''Class for solving the Soave-Redlich-Kwong cubic equation of state for a 
     mixture of any number of compounds. Subclasses `SRK`. Solves the EOS on

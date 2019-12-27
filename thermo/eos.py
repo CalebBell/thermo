@@ -5969,8 +5969,7 @@ class PRTranslatedTwu(PRTranslated):
             x7 = c1*x6
             x8 = c2*x5
             x9 = c1*c1*c2
-            # TODO replace the Tr to x3 by x4 multiplied by itself
-            d2a_alpha_dT2 = (x8*(c0*c0*Tr**(x3 + x3)*x9 - c1 + c2*x1*x1 
+            d2a_alpha_dT2 = (x8*(c0*c0*x4*x4*x9 - c1 + c2*x1*x1 
                                  - 2.0*x2*x7 - x6*x9 + x7 + 1.0)*T_inv*T_inv)            
             return x5, x8*(x1 - x7)*T_inv, d2a_alpha_dT2
 
@@ -5981,7 +5980,7 @@ class PRTranslatedConsistent(PRTranslatedTwu):
     for a pure compound according to [1]_.
     Subclasses `PRTranslatedTwu`, which provides everything except the 
     estimation of `c` and the alpha coefficients. This model's `alpha` is based
-    on the TWU 1981 model; when estimating, `N` is set to 2.
+    on the TWU 1991 model; when estimating, `N` is set to 2.
     Solves the EOS on initialization. See `PR` for further documentation.
     
     .. math::
@@ -6022,7 +6021,7 @@ class PRTranslatedConsistent(PRTranslatedTwu):
     omega : float
         Acentric factor, [-]
     alpha_coeffs : tuple(float[3]), optional
-        Coefficients L, M, N (also called C1, C2, C3), [-]
+        Coefficients L, M, N (also called C1, C2, C3) of TWU 1991 form, [-]
     c : float, optional
         Volume translation parameter, [m^3/mol]
     T : float, optional
@@ -7541,13 +7540,91 @@ class SRKTranslatedTwu(SRKTranslated):
             x7 = c1*x6
             x8 = c2*x5
             x9 = c1*c1*c2
-            # TODO replace the Tr to x3 by x4 multiplied by itself
-            d2a_alpha_dT2 = (x8*(c0*c0*Tr**(x3 + x3)*x9 - c1 + c2*x1*x1 
+            d2a_alpha_dT2 = (x8*(c0*c0*x4*x4*x9 - c1 + c2*x1*x1 
                                  - 2.0*x2*x7 - x6*x9 + x7 + 1.0)*T_inv*T_inv)            
             return x5, x8*(x1 - x7)*T_inv, d2a_alpha_dT2
 
 
 class SRKTranslatedConsistent(SRKTranslatedTwu):
+    r'''Class for solving the volume translated Le Guennec, Privat, and Jaubert
+    revision of the SRK equation of state 
+    for a pure compound according to [1]_.
+    Subclasses `SRKTranslatedTwu`, which provides everything except the 
+    estimation of `c` and the alpha coefficients. This model's `alpha` is based
+    on the TWU 1991 model; when estimating, `N` is set to 2.
+    Solves the EOS on initialization. See `SRK` for further documentation.
+    
+    .. math::
+        P = \frac{RT}{V + c - b} - \frac{a\alpha(T)}{(V + c)(V + c + b)}
+
+    .. math::
+        a=\left(\frac{R^2(T_c)^{2}}{9(\sqrt[3]{2}-1)P_c} \right)
+        =\frac{0.42748\cdot R^2(T_c)^{2}}{P_c}
+    
+    .. math::
+        b=\left( \frac{(\sqrt[3]{2}-1)}{3}\right)\frac{RT_c}{P_c}
+        =\frac{0.08664\cdot R T_c}{P_c}
+
+    .. math::
+        \alpha = \left(\frac{T}{Tc}\right)^{c_{3} \left(c_{2} 
+        - 1\right)} e^{c_{1} \left(- \left(\frac{T}{Tc}
+        \right)^{c_{2} c_{3}} + 1\right)}
+    
+    If `c` is not provided, it is estimated as:
+
+    .. math::
+        c =\frac{R T_c}{P_c}(0.0172\omega - 0.0096)
+        
+    If `alpha_coeffs` is not provided, the parameters `L` and `M` are estimated
+    from the acentric factor as follows:
+    
+    .. math::
+        L = 0.0947\omega^2 + 0.6871\omega + 0.1508
+    
+    .. math::
+        M = 0.1615\omega^2 - 0.2349\omega + 0.8876
+    
+    Parameters
+    ----------
+    Tc : float
+        Critical temperature, [K]
+    Pc : float
+        Critical pressure, [Pa]
+    omega : float
+        Acentric factor, [-]
+    alpha_coeffs : tuple(float[3]), optional
+        Coefficients L, M, N (also called C1, C2, C3) of TWU 1991 form, [-]
+    c : float, optional
+        Volume translation parameter, [m^3/mol]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+
+    Examples
+    --------
+    P-T initialization (methanol), liquid phase:
+    
+    >>> eos = SRKTranslatedConsistent(Tc=507.6, Pc=3025000, omega=0.2975, T=250., P=1E6)
+    >>> eos.phase, eos.V_l, eos.H_dep_l, eos.S_dep_l
+    ('l', 0.00011846802568940222, -34324.05211005662, -83.83861726864234)
+    
+    Notes
+    -----
+    This variant offers substantial improvements to the SRK-type EOSs - likely 
+    getting about as accurate as this form of cubic equation can get.
+
+    References
+    ----------
+    .. [1] Le Guennec, Yohann, Romain Privat, and Jean-Noël Jaubert. 
+       "Development of the Translated-Consistent Tc-PR and Tc-RK Cubic
+       Equations of State for a Safe and Accurate Prediction of Volumetric, 
+       Energetic and Saturation Properties of Pure Compounds in the Sub- and 
+       Super-Critical Domains." Fluid Phase Equilibria 429 (December 15, 2016):
+       301-12. https://doi.org/10.1016/j.fluid.2016.09.003.
+    '''
     def __init__(self, Tc, Pc, omega, alpha_coeffs=None, c=None, T=None, 
                  P=None, V=None):
         # estimates volume translation and alpha function parameters
