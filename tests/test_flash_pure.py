@@ -162,7 +162,7 @@ def test_PV_plot(fluid, eos, auto_range):
 #    e = TWUSRKMIX
 #    print(e)
 #    test_PV_plot('hydrogen', e, 'physical')
-#test_PV_plot('eicosane', APISRKMIX, 'physical')
+#test_PV_plot('decane', PRMIXTranslatedConsistent, 'physical')
 
 @pytest.mark.slow
 @pytest.mark.parametrize("auto_range", ['physical', 'realistic'])
@@ -210,6 +210,8 @@ def test_TV_plot(fluid, eos, auto_range):
         assert max_err < 5e-9
     except:
         assert max_err < 5e-9
+
+#test_TV_plot('decane', PRMIXTranslatedConsistent, 'physical')
 
 #for e in eos_mix_list:
 #    e = TWUPRMIX
@@ -389,6 +391,9 @@ def test_VU_plot(fluid, eos, auto_range):
     max_err = np.max(errs)
     assert max_err < 1e-8
 
+for fluid in pure_fluids:
+    print(fluid)
+    test_VU_plot(fluid, PRMIXTranslatedConsistent, 'realistic')
 #for e in eos_mix_list:
 #    print(e)
 #    test_VU_plot('hydrogen', e, 'realistic')
@@ -499,6 +504,18 @@ def test_TS_plot(fluid, eos, auto_range):
     #if eos in (TWUPRMIX, TWUSRKMIX) and auto_range == 'physical':
         # Garbage alpha function for very low T
     #    return
+    path = os.path.join(pure_surfaces_dir, fluid, "TS")
+    if not os.path.exists(path):
+        os.makedirs(path)
+    
+    key = '%s - %s - %s - %s' %('TS', eos.__name__, auto_range, fluid)
+    
+    if eos in (IGMIX,):
+        plot_fig = plot_unsupported('Ideal gas has no pressure dependence of entropy', color='g')
+        plot_fig.savefig(os.path.join(path, key + '.png'), bbox_inches='tight')
+        plt.close()
+        return
+
     T, P = 298.15, 101325.0
     zs = [1.0]
     fluid_idx = pure_fluids.index(fluid)
@@ -519,11 +536,6 @@ def test_TS_plot(fluid, eos, auto_range):
 
     matrix_spec_flashes, matrix_flashes, errs, plot_fig = res
     
-    path = os.path.join(pure_surfaces_dir, fluid, "TS")
-    if not os.path.exists(path):
-        os.makedirs(path)
-    
-    key = '%s - %s - %s - %s' %('TS', eos.__name__, auto_range, fluid)
     plot_fig.savefig(os.path.join(path, key + '.png'))
     plt.close()
 
@@ -547,6 +559,17 @@ def test_TH_plot(fluid, eos, auto_range):
     #if eos in (TWUPRMIX, TWUSRKMIX) and auto_range == 'physical':
         # Garbage alpha function for very low T
     #    return
+    path = os.path.join(pure_surfaces_dir, fluid, "TH")
+    if not os.path.exists(path):
+        os.makedirs(path)
+    
+    key = '%s - %s - %s - %s' %('TH', eos.__name__, auto_range, fluid)
+    if eos in (IGMIX,):
+        plot_fig = plot_unsupported('Ideal gas has no pressure dependence of enthalpy', color='g')
+        plot_fig.savefig(os.path.join(path, key + '.png'), bbox_inches='tight')
+        plt.close()
+        return
+
     T, P = 298.15, 101325.0
     zs = [1.0]
     fluid_idx = pure_fluids.index(fluid)
@@ -567,11 +590,6 @@ def test_TH_plot(fluid, eos, auto_range):
 
     matrix_spec_flashes, matrix_flashes, errs, plot_fig = res
     
-    path = os.path.join(pure_surfaces_dir, fluid, "TH")
-    if not os.path.exists(path):
-        os.makedirs(path)
-    
-    key = '%s - %s - %s - %s' %('TH', eos.__name__, auto_range, fluid)
     plot_fig.savefig(os.path.join(path, key + '.png'))
     plt.close()
 

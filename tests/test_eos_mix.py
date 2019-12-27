@@ -1214,6 +1214,58 @@ def test_RKMIX_quick():
     RKMIX(Tcs=[768.0], Pcs=[1070000.0], omegas=[0.8805], kijs=[[0.0]], zs=[1.0], T=0.0001, P=1e-60, fugacities=False)
     RKMIX(Tcs=[768.0], Pcs=[1070000.0], omegas=[0.8805], kijs=[[0.0]], zs=[1.0], T=0.0001, P=1e-60, fugacities=True)
 
+
+def test_PRMIXTranslatedConsistent_vs_pure():
+    # Test solution for molar volumes
+    eos = PRMIXTranslatedConsistent(Tcs=[33.2], Pcs=[1296960.0], omegas=[-0.22], zs=[1], T=300, P=1e6)
+    eos_pure = PRTranslatedConsistent(Tc=33.2, Pc=1296960.0, omega=-0.22, T=300, P=1e6)
+    eos_pure_copy = eos.pures()[0]
+    assert_allclose(eos_pure.sorted_volumes, eos.sorted_volumes, rtol=1e-13)
+    assert_allclose(eos_pure_copy.sorted_volumes, eos.sorted_volumes, rtol=1e-13)
+    
+    # Test of a_alphas
+    a_alphas_expect = (0.0002908980675477252, -7.343408956556013e-06, 1.6748923735113275e-07)
+    a_alphas = eos.a_alpha_and_derivatives(eos.T)
+    a_alphas_pure = eos_pure.a_alpha_and_derivatives(eos_pure.T)
+    assert_allclose(a_alphas, a_alphas_expect, rtol=1e-12)
+    assert_allclose(a_alphas, a_alphas_pure, rtol=1e-12)
+    
+    # Test of PV
+    eos_PV = eos.to(P=eos.P, V=eos.V_l, zs=eos.zs)
+    eos_pure_PV = eos_pure.to(P=eos.P, V=eos.V_l)
+    assert_allclose(eos_PV.T, eos.T, rtol=1e-9)
+    assert_allclose(eos_pure_PV.T, eos.T, rtol=1e-9)
+
+    # Test of TV
+    eos_TV = eos.to(T=eos.T, V=eos.V_l, zs=eos.zs)
+    eos_pure_TV = eos_pure.to(T=eos.T, V=eos.V_l)
+    assert_allclose(eos_TV.P, eos.P, rtol=1e-9)
+    assert_allclose(eos_pure_TV.P, eos.P, rtol=1e-9)
+    
+    # Test c
+    assert_allclose(eos.c, eos_pure.c, rtol=1e-12)
+    assert_allclose(eos_pure_copy.c, eos.c, rtol=1e-12)
+
+    # Test Psat
+    assert_allclose(eos.Psat(eos.T), eos_pure.Psat(eos.T), rtol=1e-9)
+
+    # Fugacity - need derivatives right; go to gas point to make the difference bigger
+    T = 50
+    eos = PRMIXTranslatedConsistent(Tcs=[33.2], Pcs=[1296960.0], omegas=[-0.22], zs=[1], T=T, P=1e6)
+    eos_pure = PRTranslatedConsistent(Tc=33.2, Pc=1296960.0, omega=-0.22, T=T, P=1e6)
+    assert_allclose(eos.phis_g[0], eos_pure.phi_g, rtol=1e-12)
+    
+    # Misc points
+    mech_crit = eos.to_mechanical_critical_point()
+    assert_allclose([mech_crit.T, mech_crit.P], [eos.Tcs[0], eos.Pcs[0]])
+    
+    # Different test where a_alpha is zero - ideal gas solution
+    alpha_zero = PRMIXTranslatedConsistent(Tcs=[33.2], Pcs=[1296960.0], omegas=[-0.22], kijs=[[0.0]], zs=[1], T=6000, P=1e2)
+    assert 0.0 == alpha_zero.a_alpha
+    assert_allclose(alpha_zero.V_l, 498.86775708919436, rtol=1e-12)
+
+
+
 @pytest.mark.slow
 @pytest.mark.CoolProp
 def test_fugacities_PR_vs_coolprop():
@@ -2046,6 +2098,7 @@ def test_ddelta_dnx(kwargs):
         numericals = [derivative(ddelta_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
             for i, ni in enumerate(zs)]
         assert_allclose(numericals, eos.ddelta_dns)
+test_ddelta_dnx(ternary_basic)
 
 @pytest.mark.parametrize("kwargs", [ternary_basic])
 def test_d2delta_d2nx(kwargs):

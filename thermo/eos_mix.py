@@ -23,6 +23,7 @@ from __future__ import division
 
 __all__ = ['GCEOSMIX', 'PRMIX', 'SRKMIX', 'PR78MIX', 'VDWMIX', 'PRSVMIX', 
 'PRSV2MIX', 'TWUPRMIX', 'TWUSRKMIX', 'APISRKMIX', 'IGMIX', 'RKMIX',
+'PRMIXTranslatedConsistent',
 'eos_Z_test_phase_stability', 'eos_Z_trial_phase_stability',
 'eos_mix_list', 'eos_mix_no_coeffs_list']
 
@@ -98,7 +99,7 @@ def a_alpha_aijs_composition_independent_support_zeros(a_alphas, kijs):
         for j in range(i, N):
             term = a_alpha_i_root_i * a_alpha_i_roots[j]
             try:
-                a_alpha_ij_roots_i_inv[j] = 1.0 / term
+                a_alpha_ij_roots_i_inv[j] = 1.0/term
             except ZeroDivisionError:
                 a_alpha_ij_roots_i_inv[j] = 1e100
             a_alpha_ijs_is[j] = a_alpha_ijs[j][i] = (1. - kijs_i[j]) * term
@@ -658,7 +659,11 @@ class GCEOSMIX(GCEOS):
                     a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent_support_zeros(a_alphas, kijs)
                 self.a_alpha_ijs, self.a_alpha_i_roots, self.a_alpha_ij_roots_inv = a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv
         else:
-            a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, kijs)
+            try:
+                a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, kijs)
+            except:
+                a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent_support_zeros(a_alphas, kijs)
+
             if same_T:
                 self.a_alpha_ijs, self.a_alpha_i_roots, self.a_alpha_ij_roots_inv = a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv
         
@@ -5686,8 +5691,10 @@ class PRMIX(GCEOSMIX, PR):
             x4 = 0.0
 
         fugacity_sum_terms = self._fugacity_sum_terms
-        
-        t50 = 2.0*x4/(a_alpha*two_root_two_B)
+        try:
+            t50 = 2.0*x4/(a_alpha*two_root_two_B)
+        except ZeroDivisionError:
+            return [0.0]*self.N
         t51 = (x4 + (Z - 1.0)*two_root_two_B)/(b*two_root_two_B)
 
         return [bs[i]*t51 - x0 - t50*fugacity_sum_terms[i]
@@ -6396,8 +6403,61 @@ class PRMIX(GCEOSMIX, PR):
         else:
             return super(type(self).__mro__[-3], self).solve_T(P=P, V=V, quick=quick, solution=solution)   
 
+class PRMIXTranslated(PRMIX):
+    fugacity_coefficients = GCEOSMIX.fugacity_coefficients
+    dlnphis_dT = GCEOSMIX.dlnphis_dT
+    dlnphis_dP = GCEOSMIX.dlnphis_dP
+    d_lnphi_dzs = GCEOSMIX.d_lnphi_dzs
+    
+    # # TODO: b derivative, delta derivative, epsilon derivative
+    solve_T = GCEOS.solve_T
+    @property
+    def ddelta_dzs(self):   
+        r'''Helper method for calculating the composition derivatives of
+        `delta`. Note this is independent of the phase. :math:`b^0` refers to
+        the original `b` parameter not involving any translation.
+        
+        .. math::
+            \left(\frac{\partial \delta}{\partial x_i}\right)_{T, P, x_{i\ne j}} 
+            = 2 (c_i + b^0_i)
 
-class PRMIXTranslatedConsistent(PRMIX):
+        Returns
+        -------
+        ddelta_dzs : list[float]
+            Composition derivative of `delta` of each component, [m^3/mol]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        b0s, cs = self.b0s, self.cs
+        return [2.0*(cs[i] + b0s[i]) for i in self.cmps]
+    
+    @property
+    def ddelta_dns(self):   
+        r'''Helper method for calculating the mole number derivatives of
+        `delta`. Note this is independent of the phase. :math:`b^0` refers to
+        the original `b` parameter not involving any translation.
+        
+        .. math::
+            \left(\frac{\partial \delta}{\partial n_i}\right)_{T, P, n_{i\ne j}} 
+            = 2 (c_i + b^0_i) - \delta
+
+        Returns
+        -------
+        ddelta_dns : list[float]
+            Mole number derivative of `delta` of each component, [m^3/mol^2]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        b0s, cs, delta = self.b0s, self.cs, self.delta
+        return [2.0*(cs[i] + b0s[i]) - delta for i in self.cmps]
+
+class PRMIXTranslatedConsistent(PRMIXTranslated):    
+    eos_pure = PRTranslatedConsistent
+    mix_kwargs_to_pure = {'cs': 'c', 'alpha_coeffs': 'alpha_coeffs'}
     
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, cs=None, 
                  alpha_coeffs=None, T=None, P=None, V=None,
@@ -6420,23 +6480,28 @@ class PRMIXTranslatedConsistent(PRMIX):
         b0s = [c2R*Tcs[i]/Pcs[i] for i in cmps]
         
         if cs is None:
-            cs = [R*Tcs[i]/Pcs[i]*(0.0198*min(max(omega, -0.01), 1.48) - 0.0065)
+            cs = [R*Tcs[i]/Pcs[i]*(0.0198*min(max(omegas[i], -0.01), 1.48) - 0.0065)
                 for i in cmps]
         if alpha_coeffs is None:
             alpha_coeffs = []
             for i in cmps:
-                o = min(max(omega, -0.01), 1.48)
+                o = min(max(omegas[i], -0.01), 1.48)
                 L = o*(0.1290*o + 0.6039) + 0.0877
                 M = o*(0.1760*o - 0.2600) + 0.8884
                 alpha_coeffs.append((L, M, 2.0))
         
         self.kwargs = {'kijs': kijs, 'alpha_coeffs': alpha_coeffs, 'cs': cs}
+        self.alpha_coeffs = alpha_coeffs
+        self.cs = cs
         
         b0, c = 0.0, 0.0
         for i in cmps:
             b0 += b0s[i]*zs[i]
             c += cs[i]*zs[i]
         
+        self.b0s = b0s
+        self.bs = [b0s[i] - cs[i] for i in cmps]
+        self.c = c
         self.b = b = b0 - c
         self.delta = 2.0*(c + b0)
         self.epsilon = -b0*b0 + c*c + 2.0*c*b0
@@ -6444,6 +6509,22 @@ class PRMIXTranslatedConsistent(PRMIX):
         self.solve(only_l=only_l, only_g=only_g)
         if fugacities:
             self.fugacities()
+            
+    def _fast_init_specific(self, other):
+        self.cs = cs = other.cs
+        self.alpha_coeffs = other.alpha_coeffs
+        zs = self.zs
+        self.b0s = b0s = other.b0s            
+            
+        b0, c = 0.0, 0.0
+        for i in self.cmps:
+            b0 += b0s[i]*zs[i]
+            c += cs[i]*zs[i]
+        
+        self.c = c
+        self.b = b0 - c
+        self.delta = 2.0*(c + b0)
+        self.epsilon = -b0*b0 + c*c + 2.0*c*b0
 
     def a_alpha_and_derivatives_vectorized(self, T, full=False):
         r'''Method to calculate the pure-component `a_alphas` and their first  
@@ -6494,7 +6575,7 @@ class PRMIXTranslatedConsistent(PRMIX):
                 x2 = c2*x1
                 x3 = c1*c2
                 x4 = Tr**x3
-                x5 = a*Tr**x2*exp(-c0*(x4 - 1.0))
+                x5 = ais[i]*Tr**x2*exp(-c0*(x4 - 1.0))
                 x6 = c0*x4
                 x7 = c1*x6
                 x8 = c2*x5
@@ -8621,8 +8702,8 @@ def eos_lnphis_trial_phase_stability(eos, prefer, alt):
             lnphis_trial = getattr(eos, prefer)
     return lnphis_trial
 
-eos_mix_list = [PRMIX, SRKMIX, PR78MIX, VDWMIX, PRSVMIX, PRSV2MIX, TWUPRMIX, TWUSRKMIX, APISRKMIX, IGMIX, RKMIX]
-eos_mix_no_coeffs_list = [PRMIX, SRKMIX, PR78MIX, VDWMIX, TWUPRMIX, TWUSRKMIX, IGMIX, RKMIX]
+eos_mix_list = [PRMIX, SRKMIX, PR78MIX, VDWMIX, PRSVMIX, PRSV2MIX, TWUPRMIX, TWUSRKMIX, APISRKMIX, IGMIX, RKMIX, PRMIXTranslatedConsistent]
+eos_mix_no_coeffs_list = [PRMIX, SRKMIX, PR78MIX, VDWMIX, TWUPRMIX, TWUSRKMIX, IGMIX, RKMIX, PRMIXTranslatedConsistent]
 
 
 for eos in eos_mix_list:

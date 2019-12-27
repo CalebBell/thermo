@@ -1058,6 +1058,9 @@ class GCEOS(object):
         # Initial calculation - could use any method, however this is fastest
         # 2 divisions, 2 powers in here
         # First bit is top left corner
+        if a_alpha == 0.0:
+            # EOS has devolved into having the Ideal gas solution only
+            return [R*T/P, -1j, -1j]
         if P < 1e-2:
         # if 0 or (0 and ((T < 1e-2 and P > 1e6) or (P < 1e-3 and T < 1e-2) or (P < 1e-1 and T < 1e-4) or P < 1)):
             # Not perfect but so much wasted dev time need to move on, try other fluids and move this tolerance up if needed
