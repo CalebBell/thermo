@@ -6608,7 +6608,12 @@ class PRMIXTranslated(PRMIX):
         
         .. math::
             \left(\frac{\partial^2 \epsilon}{\partial n_i n_j}\right)_{T, P, n_{k\ne i,j}} 
-            = 
+            = -2b^0(2b^0 - b_i^0 - b_j^0) + c(4b^0 - 2b^0_i - 2b^0_j + 2c - c_i - c_j)
+            -2(b^0 - b_i^0)(b^0 - b^0_j) 
+            + (c - c_i)(2b^0 - 2b^0_j - c_j + c)
+            + (c - c_j)(2b^0 - 2b^0_i - c_i + c)
+            + (2b^0 + c)(2c-c_i - c_j)
+        
         Returns
         -------
         d2epsilon_dninjs : list[list[float]]

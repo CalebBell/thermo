@@ -2291,6 +2291,100 @@ def test_d3epsilon_dnz(kwargs):
 #                    print(e)
 #test_d3epsilon_dnz(quaternary_basic)
 
+@pytest.mark.sympy
+@pytest.mark.parametrize("kwargs", [ternary_basic])
+def test_d2epsilon_dnz(kwargs):
+    from thermo.eos_mix import PRMIXTranslated
+    from sympy import symbols, diff
+    zs = kwargs['zs']
+    
+    N = len(zs)
+    b1, b2, b3, n1, n2, n3 = symbols('b1, b2, b3, n1, n2, n3')
+    c1, c2, c3 = symbols('c1, c2, c3')
+    bs = [b1, b2, b3]
+    cs = [c1, c2, c3]
+    nt = n1 + n2 + n3 
+    ns = [n1, n2, n3]
+    z1 = n1/nt
+    z2 = n2/nt
+    z3 = n3/nt
+    zs_n = [z1, z2, z3]
+
+    zs_z = symbols('z1, z2, z3')
+
+    b_n = sum([bi*zi for bi, zi in zip(bs, zs_n)])
+    b_z = sum([bi*zi for bi, zi in zip(bs, zs_z)])
+    c_n = sum([ci*zi for ci, zi in zip(cs, zs_n)])
+    c_z = sum([ci*zi for ci, zi in zip(cs, zs_z)])
+    
+    for z in (True, False):
+        if z:
+            b_working, c_working = b_z, c_z
+        else:
+            b_working, c_working = b_n, c_n
+
+        epsilons = {PRMIX: -b_working*b_working,
+                  PR78MIX: -b_working*b_working,
+                  PRSVMIX: -b_working*b_working,
+                  PRSV2MIX: -b_working*b_working,
+                  TWUPRMIX: -b_working*b_working,
+                  
+                  SRKMIX: 0,
+                  APISRKMIX: 0,
+                  TWUSRKMIX: 0,
+                  
+                  RKMIX: 0,
+                  IGMIX: 0,
+                  VDWMIX: 0,
+                  
+                  PRMIXTranslated: -b_working*b_working + c_working*(c_working + b_working + b_working),
+                  PRMIXTranslatedConsistent: -b_working*b_working + c_working*(c_working + b_working + b_working),
+                 }
+
+        for e in eos_mix_list:
+            if e in epsilons:
+                diffs = {}
+                epsilon = epsilons[e]
+            
+                eos = e(**kwargs)
+
+                to_subs = {}
+                try:
+                    to_subs.update({bi: eos.b0s[i] for i, bi in enumerate(bs)})
+                except:
+                    to_subs.update({bi: eos.bs[i] for i, bi in enumerate(bs)})
+                to_subs.update({ni: zs[i] for i, ni in enumerate(ns)})
+                try:
+                    to_subs.update({ci: eos.cs[i] for i, ci in enumerate(cs)})
+                except:
+                    to_subs.update({ci: 0 for i, ci in enumerate(cs)})
+
+                analytical = [[None]*N for i in range(N)]
+                for i in range(N):
+                    for j in range(N):
+                        if not analytical[i][j]:
+                            if (i, j) in diffs:
+                                t = diffs[(i, j)]
+                            else:
+                                if z:
+                                    t = diff(epsilon, zs_z[i], zs_z[j])
+                                else:
+                                    t = diff(epsilon, ns[i], ns[j])
+                                diffs[(i, j,)] = t
+                            v = t.subs(to_subs)
+                            analytical[i][j] = analytical[j][i] = float(v)
+            
+            
+                analytical = np.array(analytical).ravel().tolist()
+                if z:
+                    implemented = np.array(eos.d2epsilon_dzizjs).ravel().tolist()
+                else:
+                    implemented = np.array(eos.d2epsilon_dninjs).ravel().tolist()
+                assert_allclose(analytical, implemented, rtol=1e-11)
+
+#test_d2epsilon_dnz(ternary_basic)
+
+
 @pytest.mark.parametrize("kwargs", [ternary_basic])
 def test_ddelta_dnx(kwargs):
     kwargs = kwargs.copy()
