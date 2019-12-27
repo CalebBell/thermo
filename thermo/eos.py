@@ -2386,7 +2386,7 @@ class GCEOS(object):
         a_alpha = self.a_alpha_and_derivatives(T, full=False)
         Vs = self.volume_solutions(T, Psat, self.b, self.delta, self.epsilon, a_alpha)
         # Assume we can safely take the Vmax as gas, Vmin as l on the saturation line
-        return min([i.real for i in Vs])
+        return min([i.real for i in Vs if i.real > self.b])
     
     def V_g_sat(self, T):
         r'''Method to calculate molar volume of the vapor phase along the
