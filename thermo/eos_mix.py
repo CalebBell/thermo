@@ -6382,7 +6382,7 @@ class PRMIX(GCEOSMIX, PR):
             for bj in bs:
                 row = []
                 for bk in bs:
-                    term = 24*b*b - 12*b*(bi + bj + bk) + 4*(bi*bj + bi*bk + bj*bk)
+                    term = 24.0*b*b - 12.0*b*(bi + bj + bk) + 4.0*(bi*bj + bi*bk + bj*bk)
                     row.append(term)
                 d3b_dnjnks.append(row)
             d3b_dninjnks.append(d3b_dnjnks)
@@ -6641,6 +6641,58 @@ class PRMIXTranslated(PRMIX):
                 l.append(v)
             d2epsilon_dninjs.append(l)
         return d2epsilon_dninjs
+
+    @property
+    def d3epsilon_dninjnks(self):   
+        r'''Helper method for calculating the third partial mole number
+        derivatives of `epsilon`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^3 \epsilon}{\partial n_i \partial n_j \partial n_k }
+            \right)_{T, P, 
+            n_{m \ne i,j,k}} = TODO
+
+        Returns
+        -------
+        d3epsilon_dninjnks : list[list[list[float]]]
+            Third mole number derivative of `epsilon` of each component,
+            [m^6/mol^5]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        epsilon, c, b = self.epsilon, self.c, self.b
+        cmps, b0s, cs = self.cmps, self.b0s, self.cs
+        b0 = b + c
+        d3b_dninjnks = []
+        for i in cmps:
+            d3b_dnjnks = []
+            for j in cmps:
+                row = []
+                for k in cmps:
+                    term = (4.0*b0*(3.0*b0 - b0s[i] - b0s[j] - b0s[k])
+                    -2.0*c*(6.0*b0 + 3.0*c - 2.0*(b0s[i] + b0s[j] + b0s[k]) -(cs[i] + cs[j] + cs[k]))
+                    
+                    + 2.0*(b0 - b0s[i])*(2.0*b0 - b0s[j] - b0s[k])
+                    + 2.0*(b0 - b0s[j])*(2.0*b0 - b0s[i] - b0s[k])
+                    + 2.0*(b0 - b0s[k])*(2.0*b0 - b0s[i] - b0s[j])
+                    
+                    - (c - cs[i])*(4.0*b0 - 2.0*b0s[j] - 2.0*b0s[k] + 2.0*c - cs[j] - cs[k])
+                    - (c - cs[j])*(4.0*b0 - 2.0*b0s[i] - 2.0*b0s[k] + 2.0*c - cs[i] - cs[k])
+                    - (c - cs[k])*(4.0*b0 - 2.0*b0s[i] - 2.0*b0s[j] + 2.0*c - cs[i] - cs[j])
+                    
+                    - 2.0*(c + 2.0*b0)*(3.0*c - cs[i] - cs[j] - cs[k])
+                    
+                    - (2.0*c - cs[i] - cs[j])*(2.0*b0 + c - 2.0*b0s[k] - cs[k])
+                    - (2.0*c - cs[i] - cs[k])*(2.0*b0 + c - 2.0*b0s[j] - cs[j])
+                    - (2.0*c - cs[j] - cs[k])*(2.0*b0 + c - 2.0*b0s[i] - cs[i])
+                    
+                    )
+                    row.append(term)
+                d3b_dnjnks.append(row)
+            d3b_dninjnks.append(d3b_dnjnks)
+        return d3b_dninjnks
 
 class PRMIXTranslatedConsistent(PRMIXTranslated):    
     eos_pure = PRTranslatedConsistent

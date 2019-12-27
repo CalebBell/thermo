@@ -2285,6 +2285,7 @@ def test_d3epsilon_dnz(kwargs):
                     implemented = np.array(eos.d3epsilon_dzizjzks).ravel().tolist()
                 else:
                     implemented = np.array(eos.d3epsilon_dninjnks).ravel().tolist()
+#                print(e)
 #                try:
                 assert_allclose(analytical, implemented, rtol=1e-11)
 #                except:
