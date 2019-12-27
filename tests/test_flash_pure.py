@@ -669,7 +669,7 @@ def test_Psat_plot(fluid, eos):
 
 @pytest.mark.slow
 @pytest.mark.parametrize("fluid", pure_fluids)
-@pytest.mark.parametrize("eos", eos_mix_list)
+@pytest.mark.parametrize("eos", eos_list)
 @pytest.mark.parametrize("P_range", ['high', 'low'])
 def test_V_error_plot(fluid, eos, P_range):
     path = os.path.join(pure_surfaces_dir, fluid, "V_error")
@@ -677,7 +677,7 @@ def test_V_error_plot(fluid, eos, P_range):
         os.makedirs(path)
     key = '%s - %s - %s - %s' %('V_error', eos.__name__, fluid, P_range)
 
-    if eos in (IGMIX,):
+    if eos in (IG,):
         plot_fig = plot_unsupported('Ideal gas has only one volume solution', color='g')
         plot_fig.savefig(os.path.join(path, key + '.png'), bbox_inches='tight')
         plt.close()
@@ -687,8 +687,11 @@ def test_V_error_plot(fluid, eos, P_range):
     fluid_idx = pure_fluids.index(fluid)
     pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
     
-    kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
-                  HeatCapacityGases=pure_props.HeatCapacityGases)
+#    kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
+#                  HeatCapacityGases=pure_props.HeatCapacityGases)
+    kwargs = dict(Tc=pure_const.Tcs[0], Pc=pure_const.Pcs[0], omega=pure_const.omegas[0])
+    
+    
     
     if P_range == 'high':
         Pmin = 1e-2
@@ -696,10 +699,11 @@ def test_V_error_plot(fluid, eos, P_range):
     elif P_range == 'low':
         Pmax = 1e-2
         Pmin = 1e-60
-    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
-    errs, plot_fig = gas.eos_mix.volume_errors(plot=True, show=False, pts=50,
-                                               Tmin=1e-4, Tmax=1e4, Pmin=Pmin, Pmax=Pmax,
-                                               trunc_err_low=1e-15, color_map=cm_flash_tol())
+#    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    obj = eos(T=T, P=P, **kwargs)
+    errs, plot_fig = obj.volume_errors(plot=True, show=False, pts=50,
+                                       Tmin=1e-4, Tmax=1e4, Pmin=Pmin, Pmax=Pmax,
+                                       trunc_err_low=1e-15, color_map=cm_flash_tol())
 
     
         
@@ -710,6 +714,8 @@ def test_V_error_plot(fluid, eos, P_range):
     max_err = np.max(errs)
     assert max_err < 1e-10
 
+#test_V_error_plot('ethane', PR, 'high')
+#test_V_error_plot('decane', PR, 'high')
 #test_V_error_plot('hydrogen', TWUSRKMIX, 'high')
 #test_V_error_plot('hydrogen', IGMIX, 'low')
 

@@ -1043,6 +1043,111 @@ def test_TWUSRK_quick():
 
     assert None == TWUSRK(Tc=507.6, Pc=3025000, omega=0.2975, V=0.0001301755417057077, P=1E6).P_max_at_V(.0001301755417057077)
 
+
+def test_PRTranslatedConsistent():
+    eos = PRTranslatedConsistent(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+    three_props = [eos.V_l, eos.H_dep_l, eos.S_dep_l]
+    expect_props = [0.0001310369170127519, -31475.233165751422, -73.54457346552005]
+    assert_allclose(three_props, expect_props)
+
+    # Test of a_alphas
+    a_alphas = [3.805629668918672, -0.0068587409608788265, 2.1778830141804843e-05]
+
+    a_alphas_fast = eos.a_alpha_and_derivatives_pure(299)
+    assert_allclose(a_alphas, a_alphas_fast)
+
+    a_alphas_fast = eos.a_alpha_and_derivatives_pure(299, quick=False)
+    assert_allclose(a_alphas, a_alphas_fast)
+    
+    # back calculation for T
+    eos = PRTranslatedConsistent(Tc=507.6, Pc=3025000, omega=0.2975, V=0.0001310369170127519, P=1E6)
+    assert_allclose(eos.T, 299)
+    T_slow = eos.solve_T(P=1E6, V=0.0001310369170127519, quick=False)
+    assert_allclose(T_slow, 299)
+    
+    # TV solve for P
+    eos = eos.to(T=eos.T, V=eos.V_l)
+    assert_allclose(eos.P, 1e6, rtol=1e-12)
+    
+    
+    # Two correlations
+    # Test the bool to control its behavior results in the same conditions
+    eos = PRTranslatedConsistent(Tc=507.6, Pc=3025000, omega=0.2975, T=406.08, P=1E6)
+    assert_allclose(eos.c, -8.503625575609944e-07, rtol=1e-12)
+    assert_allclose([0.27877755625, 0.8266271, 2.0], eos.alpha_coeffs, rtol=1e-12)
+    
+    # Test overwritting c
+    c_force = 0.6390
+    eos = PRTranslatedConsistent(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, c=c_force)
+    assert_allclose(eos.c, c_force, rtol=1e-12)
+    assert_allclose(eos.to(T=eos.T, P=eos.P).c, c_force, rtol=1e-12)
+
+    # Test overwtitting alphas
+    alpha_force = (0.623166885722628, 0.831835883048979, 1.13487540699625)
+    eos = PRTranslatedConsistent(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, c=c_force, alpha_coeffs=alpha_force)
+    assert_allclose(eos.c, c_force, rtol=1e-12)
+    eos_copy = eos.to(T=eos.T, P=eos.P)
+    assert_allclose(eos_copy.c, c_force, rtol=1e-12)
+
+    a_alphas_new = (3.805629668918672, -0.0068587409608788265, 2.1778830141804843e-05)
+    a_alphas_calc = (eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2)
+    assert_allclose(a_alphas_new, a_alphas_calc, rtol=1e-9)
+    a_alphas_calc_copy = (eos_copy.a_alpha, eos_copy.da_alpha_dT, eos_copy.d2a_alpha_dT2)
+    assert_allclose(a_alphas_new, a_alphas_calc_copy, rtol=1e-9)
+
+
+def test_SRKTranslatedConsistent():
+    eos = SRKTranslatedConsistent(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+    three_props = [eos.V_l, eos.H_dep_l, eos.S_dep_l]
+    expect_props = [0.0001263530801579297, -31683.55352277101, -74.18061768230253]
+    assert_allclose(three_props, expect_props)
+
+    # Test of a_alphas
+    a_alphas = [3.720329980107943, -0.007300826722636607, 2.1378814745831847e-05]
+
+    a_alphas_fast = eos.a_alpha_and_derivatives_pure(299)
+    assert_allclose(a_alphas, a_alphas_fast)
+
+    a_alphas_fast = eos.a_alpha_and_derivatives_pure(299, quick=False)
+    assert_allclose(a_alphas, a_alphas_fast)
+    
+    # back calculation for T
+    eos = SRKTranslatedConsistent(Tc=507.6, Pc=3025000, omega=0.2975, V=0.0001263530801579297, P=1E6)
+    assert_allclose(eos.T, 299)
+    T_slow = eos.solve_T(P=1E6, V=0.0001263530801579297, quick=False)
+    assert_allclose(T_slow, 299)
+    
+    # TV solve for P
+    eos = eos.to(T=eos.T, V=eos.V_l)
+    assert_allclose(eos.P, 1e6, rtol=1e-12)
+    
+    
+    # Two correlations
+    # Test the bool to control its behavior results in the same conditions
+    eos = SRKTranslatedConsistent(Tc=507.6, Pc=3025000, omega=0.2975, T=406.08, P=1E6)
+    assert_allclose(eos.c, 2.053287245221519e-05, rtol=1e-12)
+    assert_allclose([0.363593791875, 0.8320110093749999, 2.0], eos.alpha_coeffs, rtol=1e-12)
+
+    # Test overwritting c
+    c_force = 22.3098E-6
+    eos = SRKTranslatedConsistent(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, c=c_force)
+    assert_allclose(eos.c, c_force, rtol=1e-12)
+    assert_allclose(eos.to(T=eos.T, P=eos.P).c, c_force, rtol=1e-12)
+
+    # Test overwtitting alphas
+    alpha_force = (0.623166885722628, 0.831835883048979, 1.13487540699625)
+    eos = SRKTranslatedConsistent(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, c=c_force, alpha_coeffs=alpha_force)
+    assert_allclose(eos.c, c_force, rtol=1e-12)
+    eos_copy = eos.to(T=eos.T, P=eos.P)
+    assert_allclose(eos_copy.c, c_force, rtol=1e-12)
+
+    a_alphas_new = (3.557908729514593, -0.0065183855286746915, 2.0332415052898068e-05)
+    a_alphas_calc = (eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2)
+    assert_allclose(a_alphas_new, a_alphas_calc, rtol=1e-9)
+    a_alphas_calc_copy = (eos_copy.a_alpha, eos_copy.da_alpha_dT, eos_copy.d2a_alpha_dT2)
+    assert_allclose(a_alphas_new, a_alphas_calc_copy, rtol=1e-9)
+
+
 def test_IG():
     Ts = [1e-20, 1e-5, 1, 100, 1000, 1e4, 1e7, 1e30]
     Ps = [1e-20, 1e-5, 1, 1000, 1e6, 1e10, 1e30]
@@ -1616,7 +1721,15 @@ def test_PRTranslatedTwu():
     
     # First implementation of vapor pressure analytical derivative
     assert_allclose(eos.dPsat_dT(eos.T, polish=True), eos.dPsat_dT(eos.T), rtol=1e-9)
-    
+
+def test_PRTranslatedConsistent():
+    # root solution fails
+    # volume has nasty issue
+    base = PRTranslatedConsistent(Tc=768.0, Pc=1070000.0, omega=0.8805, T=8837.07874361444, P=216556124.0631852)
+    V_expect = 0.0007383087409586962
+    assert_allclose(base.V_l, V_expect, rtol=1e-11)
+
+
 @pytest.mark.slow
 def test_eos_P_limits():
     '''Test designed to take some volumes, push the EOS to those limits, and 

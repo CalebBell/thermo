@@ -24,7 +24,9 @@ from __future__ import division, print_function
 
 __all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',  
 'APISRK', 'TWUPR', 'TWUSRK', 'ALPHA_FUNCTIONS', 'eos_list', 'GCEOS_DUMMY',
-'IG', 'PRTranslatedPPJP', 'SRKTranslated', 'PRTranslated',
+'IG', 'PRTranslatedPPJP', 'SRKTranslatedPPJP', 
+'PRTranslatedConsistent', 'SRKTranslatedConsistent',
+'SRKTranslated', 'PRTranslated',
 #'PRVTTwu'
 ]
 
@@ -1233,7 +1235,13 @@ class GCEOS(object):
                 # try:
                     # try:
                 try:
-                    V = brenth(err_fun, b*(1.0+1e-12), b*(1.5), xtol=1e-14)
+                    try:
+                        V = brenth(err_fun, b*(1.0+1e-12), b*(1.5), xtol=1e-14)
+                    except Exception as e:
+                        if a_alpha < 1e-5:
+                            V = brenth(err_fun, b*1.5, b*5.0, xtol=1e-14)
+                        else:
+                            raise e
 
                     denom1 = 1.0/(V*(V + delta) + epsilon)
                     denom0 = 1.0/(V-b)
@@ -5796,6 +5804,8 @@ class PR78(PR):
         self.solve()
 
 class PRTranslated(PR):
+    solve_T = GCEOS.solve_T
+    
     def __init__(self, Tc, Pc, omega, alpha_coeffs=None, c=0.0, T=None, P=None,
                  V=None):
         self.Tc = Tc
@@ -5830,8 +5840,10 @@ class PRTranslated(PR):
 
         self.solve()
 
+
 class PRTranslatedPPJP(PR):
     # Updated versions of the generalized Soave α-function suitable for the Redlich-Kwong and Peng-Robinson equations of state
+    # estimates alpha function parameters - no real point to it being translated
     def __init__(self, Tc, Pc, omega, c=0.0, T=None, P=None, V=None):
         self.Tc = Tc
         self.Pc = Pc
@@ -5903,6 +5915,44 @@ class PRTranslatedTwu(PRTranslated):
             d2a_alpha_dT2 = (x8*(c0*c0*Tr**(x3 + x3)*x9 - c1 + c2*x1*x1 
                                  - 2.0*x2*x7 - x6*x9 + x7 + 1.0)*T_inv*T_inv)            
             return x5, x8*(x1 - x7)*T_inv, d2a_alpha_dT2
+
+
+class PRTranslatedConsistent(PRTranslatedTwu):
+    def __init__(self, Tc, Pc, omega, alpha_coeffs=None, c=None, T=None, 
+                 P=None, V=None):
+        # estimates volume translation and alpha function parameters
+        self.Tc = Tc
+        self.Pc = Pc
+        self.omega = omega
+        self.T = T
+        self.P = P
+        self.V = V
+        Pc_inv = 1.0/Pc
+        
+        # Limit the fitting omega to a little under the range reported 
+        o = min(max(omega, -0.01), 1.48)
+        if c is None:
+            c = R*Tc*Pc_inv*(0.0198*o - 0.0065)
+            
+        if alpha_coeffs is None:
+            L = o*(0.1290*o + 0.6039) + 0.0877
+            M = o*(0.1760*o - 0.2600) + 0.8884
+            N = 2.0
+            alpha_coeffs = (L, M, N)
+        
+        self.c = c
+        self.alpha_coeffs = alpha_coeffs
+        self.kwargs = {'c': c, 'alpha_coeffs': alpha_coeffs}
+        
+        self.a = self.c1*R2*Tc*Tc*Pc_inv
+        b0 = self.c2*R*Tc*Pc_inv
+        self.b = b = b0 - c
+        
+        self.delta = 2.0*(c + b0)
+        self.epsilon = -b0*b0 + c*c + 2.0*c*b0
+        self.Vc = self.Zc*R*Tc*Pc_inv
+
+        self.solve()
 
 class PRSV(PR):
     r'''Class for solving the Peng-Robinson-Stryjek-Vera equations of state for
@@ -7197,6 +7247,8 @@ class SRK(GCEOS):
 
 
 class SRKTranslated(SRK):
+    solve_T = GCEOS.solve_T
+    
     def __init__(self, Tc, Pc, omega, alpha_coeffs=None, c=0.0, T=None, P=None,
                  V=None):
         self.Tc = Tc
@@ -7231,6 +7283,109 @@ class SRKTranslated(SRK):
 
         self.solve()
 
+
+class SRKTranslatedPPJP(SRKTranslated):
+    # Updated versions of the generalized Soave α-function suitable for the Redlich-Kwong and Peng-Robinson equations of state
+    def __init__(self, Tc, Pc, omega, c=0.0, T=None, P=None, V=None):
+        self.Tc = Tc
+        self.Pc = Pc
+        self.omega = omega
+        self.T = T
+        self.P = P
+        self.V = V
+        
+        Pc_inv = 1.0/Pc
+        self.a = self.c1*R2*Tc*Tc*Pc_inv
+        self.c = c
+        self.m = omega*(omega*(0.1223*omega - 0.2963) + 1.5963) + 0.4810
+        self.kwargs = {'c': c}
+
+        b0 = self.c2*R*Tc*Pc_inv
+        self.b = b0 - c
+        self.delta = c + c + b0
+        self.epsilon = c*(b0 + c)
+        self.Vc = self.Zc*R*Tc*Pc_inv
+        self.solve()
+
+
+class SRKTranslatedTwu(SRKTranslated):
+    # Same as PR - is there an easy other way to handle it?
+    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
+        r'''Method to calculate `a_alpha` and its first and second
+        derivatives according to Twu et al. (1991) [1]_. Returns `a_alpha`, 
+        `da_alpha_dT`, and `d2a_alpha_dT2`. Three coefficients are needed.
+        
+        .. math::
+            \alpha = \left(\frac{T}{Tc}\right)^{c_{3} \left(c_{2} 
+            - 1\right)} e^{c_{1} \left(- \left(\frac{T}{Tc}
+            \right)^{c_{2} c_{3}} + 1\right)}
+
+        References
+        ----------
+        .. [1] Twu, Chorng H., David Bluck, John R. Cunningham, and John E. 
+           Coon. "A Cubic Equation of State with a New Alpha Function and a 
+           New Mixing Rule." Fluid Phase Equilibria 69 (December 10, 1991): 
+           33-50. doi:10.1016/0378-3812(91)90024-2.
+        '''
+        c0, c1, c2 = self.alpha_coeffs
+        Tc, a = self.Tc, self.a
+        Tr = T/Tc
+        if not full:
+            a_alpha = a*(Tr**(c2*(c1 - 1.0))*exp(c0*(1.0 - (Tr)**(c1*c2))))
+            return a_alpha
+        else:
+            T_inv = 1.0/T
+            x1 = c1 - 1.0
+            x2 = c2*x1
+            x3 = c1*c2
+            x4 = Tr**x3
+            x5 = a*Tr**x2*exp(-c0*(x4 - 1.0))
+            x6 = c0*x4
+            x7 = c1*x6
+            x8 = c2*x5
+            x9 = c1*c1*c2
+            # TODO replace the Tr to x3 by x4 multiplied by itself
+            d2a_alpha_dT2 = (x8*(c0*c0*Tr**(x3 + x3)*x9 - c1 + c2*x1*x1 
+                                 - 2.0*x2*x7 - x6*x9 + x7 + 1.0)*T_inv*T_inv)            
+            return x5, x8*(x1 - x7)*T_inv, d2a_alpha_dT2
+
+
+class SRKTranslatedConsistent(SRKTranslatedTwu):
+    def __init__(self, Tc, Pc, omega, alpha_coeffs=None, c=None, T=None, 
+                 P=None, V=None):
+        # estimates volume translation and alpha function parameters
+        self.Tc = Tc
+        self.Pc = Pc
+        self.omega = omega
+        self.T = T
+        self.P = P
+        self.V = V
+        Pc_inv = 1.0/Pc
+        
+        # limit oemga to 0.01 under the eos limit 1.47 for the estimation
+        o = min(max(omega, -0.01), 1.46) 
+        if c is None:
+            c = R*Tc*Pc_inv*(0.0172*o + 0.0096)
+            
+        if alpha_coeffs is None:
+            L = o*(0.0947*o + 0.6871) + 0.1508
+            M = o*(0.1615*o - 0.2349) + 0.8876
+            N = 2.0
+            alpha_coeffs = (L, M, N)
+        
+        self.c = c
+        self.alpha_coeffs = alpha_coeffs
+        self.kwargs = {'c': c, 'alpha_coeffs': alpha_coeffs}
+        
+        self.a = self.c1*R2*Tc*Tc*Pc_inv
+        b0 = self.c2*R*Tc*Pc_inv
+        self.b = b = b0 - c
+        
+        self.delta = c + c + b0
+        self.epsilon = c*(b0 + c)
+        self.Vc = self.Zc*R*Tc*Pc_inv
+
+        self.solve()
 
 class APISRK(SRK):
     r'''Class for solving the Refinery Soave-Redlich-Kwong cubic 
@@ -7500,6 +7655,7 @@ class TWUPR(PR):
        1995): 49-59. doi:10.1016/0378-3812(94)02601-V.
     '''
     P_max_at_V = GCEOS.P_max_at_V
+    solve_T = GCEOS.solve_T
     
     def __init__(self, Tc, Pc, omega, T=None, P=None, V=None):
         self.Tc = Tc
@@ -7515,7 +7671,6 @@ class TWUPR(PR):
         self.check_sufficient_inputs()
         self.Vc = self.Zc*R*self.Tc/self.Pc
 
-        self.solve_T = super(PR, self).solve_T        
         self.solve()
 
     def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
@@ -7729,6 +7884,7 @@ class TWUSRK(SRK):
        1995): 61-69. doi:10.1016/0378-3812(94)02602-W.
     '''
     P_max_at_V = GCEOS.P_max_at_V
+    solve_T = GCEOS.solve_T
     
     def __init__(self, Tc, Pc, omega, T=None, P=None, V=None):
         self.Tc = Tc
@@ -7743,7 +7899,6 @@ class TWUSRK(SRK):
         self.delta = self.b
         self.check_sufficient_inputs()
         self.Vc = self.Zc*R*self.Tc/self.Pc
-        self.solve_T = super(SRK, self).solve_T
         self.solve()
         
     def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
@@ -7759,4 +7914,6 @@ class TWUSRK(SRK):
         return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=full, quick=quick, method='SRK')
 
 
-eos_list = [IG, PR, PR78, PRSV, PRSV2, VDW, RK, SRK, APISRK, TWUPR, TWUSRK, PRTranslatedPPJP]
+eos_list = [IG, PR, PR78, PRSV, PRSV2, VDW, RK, SRK, APISRK, TWUPR, TWUSRK,
+            PRTranslatedPPJP, SRKTranslatedPPJP,
+            PRTranslatedConsistent, SRKTranslatedConsistent]
