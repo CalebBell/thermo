@@ -6432,6 +6432,10 @@ class PRMIXTranslated(PRMIX):
         '''
         b0s, cs = self.b0s, self.cs
         return [2.0*(cs[i] + b0s[i]) for i in self.cmps]
+
+    # Zero in both cases
+    d2delta_dzizjs = PRMIX.d2delta_dzizjs
+    d3delta_dzizjzks = PRMIX.d3delta_dzizjzks
     
     @property
     def ddelta_dns(self):   
@@ -6454,6 +6458,66 @@ class PRMIXTranslated(PRMIX):
         '''
         b0s, cs, delta = self.b0s, self.cs, self.delta
         return [2.0*(cs[i] + b0s[i]) - delta for i in self.cmps]
+    
+
+    @property
+    def d2delta_dninjs(self):   
+        r'''Helper method for calculating the second mole number derivatives (hessian) of
+        `delta`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^2 \delta}{\partial n_i \partial n_j}\right)_{T, P, n_{k\ne i,j}} 
+            = 2\left(\delta - b^0_i - b^0_j - c_i - c_j \right)
+
+        Returns
+        -------
+        d2delta_dninjs : list[list[float]]
+            Second mole number derivative of `delta` of each component, [m^3/mol^3]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        cmps, b0s, cs, delta = self.cmps, self.b0s, self.cs, self.delta
+        d2b_dninjs = []
+        for i in cmps:
+            t = delta - b0s[i] - cs[i]
+            d2b_dninjs.append([2.0*(t - b0s[j] - cs[j]) for j in cmps])
+        return d2b_dninjs
+
+    @property
+    def d3delta_dninjnks(self):   
+        r'''Helper method for calculating the third partial mole number
+        derivatives of `delta`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^3 delta}{\partial n_i \partial n_j \partial n_k }
+            \right)_{T, P, 
+            n_{m \ne i,j,k}} = 4(-3b + b_i + b_j + b_k)
+
+        Returns
+        -------
+        d3delta_dninjnks : list[list[list[float]]]
+            Third mole number derivative of `delta` of each component, 
+            [m^3/mol^4]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        cmps, b0s, cs, delta = self.cmps, self.b0s, self.cs, self.delta
+        delta_six = 6.0*delta
+        bs = self.bs
+        cmps = self.cmps
+        d3delta_dninjnks = []
+        for i in cmps:
+            b0ici = b0s[i] + cs[i]
+            d3b_dnjnks = []
+            for j in cmps:
+                b0jcj = b0s[j] + cs[j]
+                d3b_dnjnks.append([4.0*(b0ici + b0jcj + b0s[k] + cs[k]) - delta_six for k in cmps])
+            d3delta_dninjnks.append(d3b_dnjnks)
+        return d3delta_dninjnks
 
 class PRMIXTranslatedConsistent(PRMIXTranslated):    
     eos_pure = PRTranslatedConsistent
