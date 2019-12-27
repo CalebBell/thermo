@@ -6576,6 +6576,67 @@ class PRMIXTranslated(PRMIX):
                  )
                 for i in cmps]
 
+    @property
+    def d2epsilon_dzizjs(self):       
+        r'''Helper method for calculating the second composition derivatives (hessian) 
+        of `epsilon`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^2 \epsilon}{\partial x_i \partial x_j}\right)_{T, P, x_{k\ne i,j}} 
+            =  -2 b^0_i b^0_j + 2b^0_i c_j + 2b^0_j c_i + 2c_i c_j
+
+        Returns
+        -------
+        d2epsilon_dzizjs : list[list[float]]
+            Second composition derivative of `epsilon` of each component, [m^6/mol^2]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        cmps, b0s, cs = self.cmps, self.b0s, self.cs
+        return [[2.0*(-b0s[i]*b0s[j] + b0s[i]*cs[j] + b0s[j]*cs[i] + cs[i]*cs[j])
+                 for i in cmps] for j in cmps]
+        
+    d3epsilon_dzizjzks = GCEOSMIX.d3epsilon_dzizjzks # Zeros
+
+
+    @property
+    def d2epsilon_dninjs(self):       
+        r'''Helper method for calculating the second mole number derivatives (hessian) of
+        `epsilon`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^2 \epsilon}{\partial n_i n_j}\right)_{T, P, n_{k\ne i,j}} 
+            = 
+        Returns
+        -------
+        d2epsilon_dninjs : list[list[float]]
+            Second mole number derivative of `epsilon` of each component, [m^6/mol^4]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        # Not trusted yet - numerical check does not have enough digits
+        epsilon, c, b = self.epsilon, self.c, self.b
+        cmps, b0s, cs = self.cmps, self.b0s, self.cs
+        b0 = b + c
+        d2epsilon_dninjs = []
+        for i in cmps:
+            l = []
+            for j in cmps:
+                v = (-2.0*b0*(2.0*b0 - b0s[i] - b0s[j])
+                + c*(4.0*b0 - 2.0*b0s[i] -2.0*b0s[j] + 2.0*c - cs[i] - cs[j])
+                - 2.0*(b0 - b0s[i])*(b0 - b0s[j]) 
+                + (c - cs[i])*(2.0*b0 - 2.0*b0s[j] - cs[j] + c)
+                + (c - cs[j])*(2.0*b0 - 2.0*b0s[i] - cs[i] + c)
+                + (2.0*b0 + c)*(2.0*c - cs[i] - cs[j])
+                )
+                l.append(v)
+            d2epsilon_dninjs.append(l)
+        return d2epsilon_dninjs
+
 class PRMIXTranslatedConsistent(PRMIXTranslated):    
     eos_pure = PRTranslatedConsistent
     mix_kwargs_to_pure = {'cs': 'c', 'alpha_coeffs': 'alpha_coeffs'}
