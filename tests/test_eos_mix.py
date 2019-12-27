@@ -2809,14 +2809,15 @@ def test_G_dep_dnxpartial(kwargs):
         eos = obj(zs=zs, **kwargs)
         numericals = jacobian(G_dep_dnxpartial, zs, perturbation=5e-7)
         analytical = eos.dG_dep_dns(eos.Z_g, zs)
-        assert_allclose(numericals, analytical, rtol=1e-6)
+        assert_allclose(numericals, analytical, rtol=1e-5)
 
     partial_n = True
     for obj in eos_mix_list:
         eos = obj(zs=zs, **kwargs)
         numericals = jacobian(G_dep_dnxpartial, zs, perturbation=5e-7)
         analytical = eos.dnG_dep_dns(eos.Z_g, zs)
-        assert_allclose(numericals, analytical, rtol=1e-6)
+        assert_allclose(numericals, analytical, rtol=1e-5)
+
 
 @pytest.mark.parametrize("kwargs", [ternary_basic])
 def test_dG_dep_d2nx(kwargs):
