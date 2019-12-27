@@ -6650,8 +6650,18 @@ class PRMIXTranslated(PRMIX):
         .. math::
             \left(\frac{\partial^3 \epsilon}{\partial n_i \partial n_j \partial n_k }
             \right)_{T, P, 
-            n_{m \ne i,j,k}} = TODO
-
+            n_{m \ne i,j,k}} = 4b^0(3b^0 - b_i^0 - b_j^0 - b_k^0)
+                -2c(6b^0 - 2(b_i^0 + b_j^0 + b_k^0) + 3c - (c_i + c_j + c_k))
+                +2(b^0-b_i^0)(2b^0 - b_j^0 - b_k^0) + 2(b^0 - b^0_j)(2b^0 - b_i^0 - b_k^0)
+                +2(b^0-b^0_k)(2b^0 - b^0_i-b^0_j)
+            -(c-c_i)(4b^0 - 2b^0_j - 2b^0_k + 2c - c_j - c_k)
+            -(c-c_j)(4b^0 - 2b^0_i - 2b^0_k + 2c - c_i - c_k)
+            -(c-c_k)(4b^0 - 2b^0_j - 2b^0_i + 2c - c_j - c_i)
+            -2(c + 2b^0)(3c - c_i - c_j - c_k)
+            -(2c - c_i - c_j)(2b^0 + c - 2b^0_k - c_k)
+            -(2c - c_i - c_k)(2b^0 + c - 2b^0_j - c_j)
+            -(2c - c_j - c_k)(2b^0 + c - 2b^0_i - c_i)
+            
         Returns
         -------
         d3epsilon_dninjnks : list[list[list[float]]]
