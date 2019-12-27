@@ -944,7 +944,7 @@ class GCEOS(object):
         return [V*RT_P for V in roots]
 
     @staticmethod
-    def volume_solutions_a1(T, P, b, delta, epsilon, a_alpha, quick=True):
+    def _volume_solutions_a1(T, P, b, delta, epsilon, a_alpha, quick=True):
         RT_inv = R_inv/T
         P_RT_inv = P*RT_inv
         B = etas = b*P_RT_inv
@@ -962,7 +962,7 @@ class GCEOS(object):
         return [V*RT_P for V in roots]
 
     @staticmethod
-    def volume_solutions_a2(T, P, b, delta, epsilon, a_alpha, quick=True):
+    def _volume_solutions_a2(T, P, b, delta, epsilon, a_alpha, quick=True):
         RT_inv = R_inv/T
         P_RT_inv = P*RT_inv
         B = etas = b*P_RT_inv
@@ -981,7 +981,7 @@ class GCEOS(object):
 
 
     @staticmethod
-    def volume_solutions_numpy(T, P, b, delta, epsilon, a_alpha, quick=True):
+    def _volume_solutions_numpy(T, P, b, delta, epsilon, a_alpha, quick=True):
         RT_inv = R_inv/T
         P_RT_inv = P*RT_inv
         B = etas = b*P_RT_inv
@@ -1000,48 +1000,50 @@ class GCEOS(object):
     
 
     # validation method
-    @staticmethod
-    def volume_solutions_bench(T, P, b, delta, epsilon, a_alpha, quick=True):
-        RT_inv = R_inv/T
-        P_RT_inv = P*RT_inv
-        eta = b
-        B = b*P_RT_inv
-        deltas = delta*P_RT_inv
-        thetas = a_alpha*P_RT_inv*RT_inv
-        epsilons = epsilon*P_RT_inv*P_RT_inv
-        etas = eta*P_RT_inv
-        
-        a = 1.0
-        b = (deltas - B - 1.0)
-        c = (thetas + epsilons - deltas*(B + 1.0))
-        d = -(epsilons*(B + 1.0) + thetas*etas)
-        RT_P = R*T/P
-        roots = roots_cubic(a, b, c, d)
-        
-        def trim_root(x, tol=1e-6):
-            x = np.array(x)
-            vals = abs(x.imag) < abs(x.real)*tol
-            try:
-                x.imag[vals] = 0
-            except:
-                pass
-            return x     
-        
-        fast = trim_root(roots)
-        slow = trim_root(np.roots([a, b, c, d]))
-
-        fast = np.sort(fast)
-        slow = np.sort(slow)
-        if np.sign(slow[1].imag) != np.sign(fast[1].imag):
-            fast[1], fast[2] = fast[2], fast[1]
-        try:
-            from numpy.testing import assert_allclose
-            assert_allclose(fast, slow, rtol=1e-7)
-        except:
-            ratio = np.real_if_close(np.array(fast)/np.array(slow), tol=1e6)
-            print('root fail', ratio, [b, c, d])
-                
-        return [V*RT_P for V in roots]
+#    @staticmethod
+#    def volume_solutions_bench(T, P, b, delta, epsilon, a_alpha, quick=True):
+#        # Deprecated method for comparing the performance of volume solution
+#        # methods
+#        RT_inv = R_inv/T
+#        P_RT_inv = P*RT_inv
+#        eta = b
+#        B = b*P_RT_inv
+#        deltas = delta*P_RT_inv
+#        thetas = a_alpha*P_RT_inv*RT_inv
+#        epsilons = epsilon*P_RT_inv*P_RT_inv
+#        etas = eta*P_RT_inv
+#        
+#        a = 1.0
+#        b = (deltas - B - 1.0)
+#        c = (thetas + epsilons - deltas*(B + 1.0))
+#        d = -(epsilons*(B + 1.0) + thetas*etas)
+#        RT_P = R*T/P
+#        roots = roots_cubic(a, b, c, d)
+#        
+#        def trim_root(x, tol=1e-6):
+#            x = np.array(x)
+#            vals = abs(x.imag) < abs(x.real)*tol
+#            try:
+#                x.imag[vals] = 0
+#            except:
+#                pass
+#            return x     
+#        
+#        fast = trim_root(roots)
+#        slow = trim_root(np.roots([a, b, c, d]))
+#
+#        fast = np.sort(fast)
+#        slow = np.sort(slow)
+#        if np.sign(slow[1].imag) != np.sign(fast[1].imag):
+#            fast[1], fast[2] = fast[2], fast[1]
+#        try:
+#            from numpy.testing import assert_allclose
+#            assert_allclose(fast, slow, rtol=1e-7)
+#        except:
+#            ratio = np.real_if_close(np.array(fast)/np.array(slow), tol=1e6)
+#            print('root fail', ratio, [b, c, d])
+#                
+#        return [V*RT_P for V in roots]
 
 
     @staticmethod
@@ -1080,10 +1082,10 @@ class GCEOS(object):
                 Vs = GCEOS.volume_solutions_fast(T, P, b, delta, epsilon, a_alpha, quick=True)
             elif tries == 2:
                 # sometimes used successfully
-                Vs = GCEOS.volume_solutions_a1(T, P, b, delta, epsilon, a_alpha, quick=True)
+                Vs = GCEOS._volume_solutions_a1(T, P, b, delta, epsilon, a_alpha, quick=True)
             # elif tries == 3:
             #     # never used successfully
-            #     Vs = GCEOS.volume_solutions_a2(T, P, b, delta, epsilon, a_alpha, quick=True)
+            #     Vs = GCEOS._volume_solutions_a2(T, P, b, delta, epsilon, a_alpha, quick=True)
 
             # TODO fall back to tlow T
         except:
@@ -1174,7 +1176,7 @@ class GCEOS(object):
         elif failed and tries == 2:
             # Are we at least consistent? Diitch the NR and try to be OK with the answer
 #            Vs0 = GCEOS.volume_solutions_Cardano(T, P, b, delta, epsilon, a_alpha, quick=True)
-#            Vs1 = GCEOS.volume_solutions_a1(T, P, b, delta, epsilon, a_alpha, quick=True)
+#            Vs1 = GCEOS._volume_solutions_a1(T, P, b, delta, epsilon, a_alpha, quick=True)
 #            if sum(abs((i -j)/i) for i, j in zip(Vs0, Vs1)) < 1e-6:
 #                return Vs0
             if max_err < 5e3:
@@ -1192,8 +1194,8 @@ class GCEOS(object):
         return Vs
     
     # Default method
-    volume_solutions = volume_solutions_NR#volume_solutions_numpy#volume_solutions_NR
-#    volume_solutions= volume_solutions_numpy
+    volume_solutions = volume_solutions_NR#_volume_solutions_numpy#volume_solutions_NR
+#    volume_solutions= _volume_solutions_numpy
 #    volume_solutions = volume_solutions_fast
 #    volume_solutions = volume_solutions_Cardano
 
@@ -5842,8 +5844,66 @@ class PRTranslated(PR):
 
 
 class PRTranslatedPPJP(PR):
-    # Updated versions of the generalized Soave α-function suitable for the Redlich-Kwong and Peng-Robinson equations of state
-    # estimates alpha function parameters - no real point to it being translated
+    r'''Class for solving the volume translated Pina-Martinez, Privat, Jaubert, 
+    and Peng revision of the Peng-Robinson equation of state 
+    for a pure compound according to [1]_.
+    Subclasses `PR`, which provides everything except the variable `kappa`.
+    Solves the EOS on initialization. See `PR` for further documentation.
+    
+    .. math::
+        P = \frac{RT}{v + c - b} - \frac{a\alpha(T)}{(v+c)(v + c + b)+b(v
+        + c - b)}
+
+    .. math::
+        a=0.45724\frac{R^2T_c^2}{P_c}
+        
+    .. math::
+	    b=0.07780\frac{RT_c}{P_c}
+
+    .. math::
+        \alpha(T)=[1+\kappa(1-\sqrt{T_r})]^2
+        
+    .. math::
+        \kappa = 0.3919 + 1.4996 \omega - 0.2721\omega^2 + 0.1063\omega^3
+        
+    Parameters
+    ----------
+    Tc : float
+        Critical temperature, [K]
+    Pc : float
+        Critical pressure, [Pa]
+    omega : float
+        Acentric factor, [-]
+    c : float, optional
+        Volume translation parameter, [m^3/mol]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+
+    Examples
+    --------
+    P-T initialization (methanol), liquid phase:
+    
+    >>> eos = PRTranslatedPPJP(Tc=507.6, Pc=3025000, omega=0.2975, c=0.6390E-6, T=250., P=1E6)
+    >>> eos.phase, eos.V_l, eos.H_dep_l, eos.S_dep_l
+    ('l', 0.00012292312380926779, -33466.24282966813, -80.75610242427152)
+    
+    Notes
+    -----
+    This variant offers incremental improvements in accuracy only, but those
+    can be fairly substantial for some substances.
+
+    References
+    ----------
+    .. [1] Pina-Martinez, Andrés, Romain Privat, Jean-Noël Jaubert, and 
+       Ding-Yu Peng. "Updated Versions of the Generalized Soave α-Function 
+       Suitable for the Redlich-Kwong and Peng-Robinson Equations of State."
+       Fluid Phase Equilibria, December 7, 2018. 
+       https://doi.org/10.1016/j.fluid.2018.12.007. 
+    '''
     def __init__(self, Tc, Pc, omega, c=0.0, T=None, P=None, V=None):
         self.Tc = Tc
         self.Pc = Pc
