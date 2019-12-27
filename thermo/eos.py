@@ -5904,6 +5904,7 @@ class PRTranslatedPPJP(PR):
        Fluid Phase Equilibria, December 7, 2018. 
        https://doi.org/10.1016/j.fluid.2018.12.007. 
     '''
+    # No point in subclassing PRTranslated - just disables direct solver for T
     def __init__(self, Tc, Pc, omega, c=0.0, T=None, P=None, V=None):
         self.Tc = Tc
         self.Pc = Pc
@@ -5928,13 +5929,10 @@ class PRTranslatedPPJP(PR):
 
 class PRTranslatedPoly(PRTranslated):
     def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
-        alpha_coeffs = self.alpha_coeffs
-        Tc, a = self.Tc, self.a
-        Tr = T/Tc
         if not full:
-            return horner(alpha_coeffs, T)
+            return horner(self.alpha_coeffs, T)
         else:
-            return horner_and_der2(alpha_coeffs, T)
+            return horner_and_der2(self.alpha_coeffs, T)
 
 class PRTranslatedTwu(PRTranslated):
     def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
@@ -7344,8 +7342,69 @@ class SRKTranslated(SRK):
         self.solve()
 
 
-class SRKTranslatedPPJP(SRKTranslated):
-    # Updated versions of the generalized Soave α-function suitable for the Redlich-Kwong and Peng-Robinson equations of state
+class SRKTranslatedPPJP(SRK):
+    r'''Class for solving the volume translated Pina-Martinez, Privat, Jaubert, 
+    and Peng revision of the Soave-Redlich-Kwong equation of state 
+    for a pure compound according to [1]_.
+    Subclasses `SRK`, which provides everything except the variable `kappa`.
+    Solves the EOS on initialization. See `SRK` for further documentation.
+    
+    .. math::
+        P = \frac{RT}{V + c - b} - \frac{a\alpha(T)}{(V + c)(V + c + b)}
+        
+    .. math::
+        a=\left(\frac{R^2(T_c)^{2}}{9(\sqrt[3]{2}-1)P_c} \right)
+        =\frac{0.42748\cdot R^2(T_c)^{2}}{P_c}
+    
+    .. math::
+        b=\left( \frac{(\sqrt[3]{2}-1)}{3}\right)\frac{RT_c}{P_c}
+        =\frac{0.08664\cdot R T_c}{P_c}
+        
+    .. math::
+        \alpha(T) = \left[1 + m\left(1 - \sqrt{\frac{T}{T_c}}\right)\right]^2
+        
+    .. math::
+        m = 0.4810 + 1.5963 \omega - 0.2963\omega^2 + 0.1223\omega^3
+                
+    Parameters
+    ----------
+    Tc : float
+        Critical temperature, [K]
+    Pc : float
+        Critical pressure, [Pa]
+    omega : float
+        Acentric factor, [-]
+    c : float, optional
+        Volume translation parameter, [m^3/mol]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+
+    Examples
+    --------
+    P-T initialization (methanol), liquid phase:
+    
+    >>> eos = SRKTranslatedPPJP(Tc=507.6, Pc=3025000, omega=0.2975, c=22.3098E-6, T=250., P=1E6)
+    >>> eos.phase, eos.V_l, eos.H_dep_l, eos.S_dep_l
+    ('l', 0.00011666322408111662, -34158.934132722185, -83.06507748137201)
+    
+    Notes
+    -----
+    This variant offers incremental improvements in accuracy only, but those
+    can be fairly substantial for some substances.
+
+    References
+    ----------
+    .. [1] Pina-Martinez, Andrés, Romain Privat, Jean-Noël Jaubert, and 
+       Ding-Yu Peng. "Updated Versions of the Generalized Soave α-Function 
+       Suitable for the Redlich-Kwong and Peng-Robinson Equations of State."
+       Fluid Phase Equilibria, December 7, 2018. 
+       https://doi.org/10.1016/j.fluid.2018.12.007. 
+    '''
+    # No point in subclassing SRKTranslated - just disables direct solver for T
     def __init__(self, Tc, Pc, omega, c=0.0, T=None, P=None, V=None):
         self.Tc = Tc
         self.Pc = Pc
