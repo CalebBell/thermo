@@ -391,9 +391,9 @@ def test_VU_plot(fluid, eos, auto_range):
     max_err = np.max(errs)
     assert max_err < 1e-8
 
-for fluid in pure_fluids:
-    print(fluid)
-    test_VU_plot(fluid, PRMIXTranslatedConsistent, 'realistic')
+#for fluid in pure_fluids:
+#    print(fluid)
+#    test_VU_plot(fluid, PRMIXTranslatedConsistent, 'realistic')
 #for e in eos_mix_list:
 #    print(e)
 #    test_VU_plot('hydrogen', e, 'realistic')

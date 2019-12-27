@@ -6231,7 +6231,7 @@ class PRMIX(GCEOSMIX, PR):
         derivatives of `delta`. Note this is independent of the phase.
         
         .. math::
-            \left(\frac{\partial^3 delta}{\partial n_i \partial n_j \partial n_k }
+            \left(\frac{\partial^3 \delta}{\partial n_i \partial n_j \partial n_k }
             \right)_{T, P, 
             n_{m \ne i,j,k}} = 4(-3b + b_i + b_j + b_k)
 
@@ -6409,7 +6409,8 @@ class PRMIXTranslated(PRMIX):
     dlnphis_dP = GCEOSMIX.dlnphis_dP
     d_lnphi_dzs = GCEOSMIX.d_lnphi_dzs
     
-    # # TODO: b derivative, delta derivative, epsilon derivative
+    # All the b derivatives happen to work out to be the same, and are checked numerically
+    # # TODO: epsilon derivative
     solve_T = GCEOS.solve_T
     @property
     def ddelta_dzs(self):   
@@ -6463,7 +6464,8 @@ class PRMIXTranslated(PRMIX):
     @property
     def d2delta_dninjs(self):   
         r'''Helper method for calculating the second mole number derivatives (hessian) of
-        `delta`. Note this is independent of the phase.
+        `delta`. Note this is independent of the phase. :math:`b^0` refers to
+        the original `b` parameter not involving any translation.
         
         .. math::
             \left(\frac{\partial^2 \delta}{\partial n_i \partial n_j}\right)_{T, P, n_{k\ne i,j}} 
@@ -6488,12 +6490,14 @@ class PRMIXTranslated(PRMIX):
     @property
     def d3delta_dninjnks(self):   
         r'''Helper method for calculating the third partial mole number
-        derivatives of `delta`. Note this is independent of the phase.
+        derivatives of `delta`. Note this is independent of the phase. :math:`b^0` refers to
+        the original `b` parameter not involving any translation.
         
         .. math::
-            \left(\frac{\partial^3 delta}{\partial n_i \partial n_j \partial n_k }
+            \left(\frac{\partial^3 \delta}{\partial n_i \partial n_j \partial n_k }
             \right)_{T, P, 
-            n_{m \ne i,j,k}} = 4(-3b + b_i + b_j + b_k)
+            n_{m \ne i,j,k}} = 4\left(b^0_i + b^0_j + b^0_k + c_i + c_j 
+                + c_k \right) - 6 \delta
 
         Returns
         -------
@@ -6518,6 +6522,59 @@ class PRMIXTranslated(PRMIX):
                 d3b_dnjnks.append([4.0*(b0ici + b0jcj + b0s[k] + cs[k]) - delta_six for k in cmps])
             d3delta_dninjnks.append(d3b_dnjnks)
         return d3delta_dninjnks
+
+    @property
+    def depsilon_dzs(self):       
+        r'''Helper method for calculating the composition derivatives of
+        `epsilon`. Note this is independent of the phase. :math:`b^0` refers to
+        the original `b` parameter not involving any translation.
+        
+        .. math::
+            \left(\frac{\partial \epsilon}{\partial x_i}\right)_{T, P, x_{i\ne j}} 
+            = c_i(2b^0_i + c) + c(2b^0_i + c_i) - 2b^0 b^0_i
+
+        Returns
+        -------
+        depsilon_dzs : list[float]
+            Composition derivative of `epsilon` of each component, [m^6/mol^2]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        epsilon, c, b = self.epsilon, self.c, self.b
+        cmps, b0s, cs = self.cmps, self.b0s, self.cs
+        b0 = b + c
+        return [cs[i]*(2.0*b0 + c) + c*(2.0*b0s[i] + cs[i]) - 2.0*b0*b0s[i]
+                for i in cmps]
+
+    @property    
+    def depsilon_dns(self):       
+        r'''Helper method for calculating the mole number derivatives of
+        `epsilon`. Note this is independent of the phase. :math:`b^0` refers to
+        the original `b` parameter not involving any translation.
+        
+        .. math::
+            \left(\frac{\partial \epsilon}{\partial n_i}\right)_{T, P, n_{i\ne j}} 
+            = 2b^0(b^0 - b^0_i) - c(2b^0 - 2b_i^0 + c - c_i) - (c - c_i)(2b^0 + c)
+            
+            
+        Returns
+        -------
+        depsilon_dns : list[float]
+            Composition derivative of `epsilon` of each component, [m^6/mol^3]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        epsilon, c, b = self.epsilon, self.c, self.b
+        cmps, b0s, cs = self.cmps, self.b0s, self.cs
+        b0 = b + c
+        return [(2.0*b0*(b0 - b0s[i]) - c*(2.0*b0 - 2.0*b0s[i] + c - cs[i])
+                 - (c-cs[i])*(2.0*b0 + c)
+                 )
+                for i in cmps]
 
 class PRMIXTranslatedConsistent(PRMIXTranslated):    
     eos_pure = PRTranslatedConsistent
@@ -6568,7 +6625,7 @@ class PRMIXTranslatedConsistent(PRMIXTranslated):
         self.c = c
         self.b = b = b0 - c
         self.delta = 2.0*(c + b0)
-        self.epsilon = -b0*b0 + c*c + 2.0*c*b0
+        self.epsilon = -b0*b0 + c*(c + b0 + b0)
 
         self.solve(only_l=only_l, only_g=only_g)
         if fugacities:
@@ -7065,7 +7122,7 @@ class SRKMIX(GCEOSMIX, SRK):
         derivatives of `delta`. Note this is independent of the phase.
         
         .. math::
-            \left(\frac{\partial^3 delta}{\partial n_i \partial n_j \partial n_k }
+            \left(\frac{\partial^3 \delta}{\partial n_i \partial n_j \partial n_k }
             \right)_{T, P, 
             n_{m \ne i,j,k}} = 2(-3b + b_i + b_j + b_k)
 
@@ -7543,7 +7600,7 @@ class VDWMIX(GCEOSMIX, VDW):
         derivatives of `delta`. Note this is independent of the phase.
         
         .. math::
-            \left(\frac{\partial^3 delta}{\partial n_i \partial n_j \partial n_k }
+            \left(\frac{\partial^3 \delta}{\partial n_i \partial n_j \partial n_k }
             \right)_{T, P, 
             n_{m \ne i,j,k}} = 0
 

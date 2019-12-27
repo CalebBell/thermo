@@ -1985,6 +1985,9 @@ def test_db_dnxpartial():
             for i, ni in zip((0, 1, 2), (.7, .2, .1))]
         assert_allclose(numericals, eos.dnb_dns)
 
+#test_db_dnxpartial()
+
+
 @pytest.mark.parametrize("kwargs", [ternary_basic])
 def test_d2b_d2nx(kwargs):
     kwargs = kwargs.copy()
@@ -2012,6 +2015,8 @@ def test_d2b_d2nx(kwargs):
         analytical = eos.d2b_dninjs
         assert_allclose(numericals, analytical, rtol=5e-4)
 
+#test_d2b_d2nx(ternary_basic)
+
 
 @pytest.mark.sympy
 @pytest.mark.parametrize("kwargs", [quaternary_basic])
@@ -2022,7 +2027,10 @@ def test_d3b_dnz(kwargs):
     
     N = len(zs)
     b1, b2, b3, b4, n1, n2, n3, n4 = symbols('b1, b2, b3, b4, n1, n2, n3, n4')
+    c1, c2, c3, c4 = symbols('c1, c2, c3, c4')
+    zs_z = symbols('z1, z2, z3, z4')
     bs = [b1, b2, b3, b4]
+    cs = [c1, c2, c3, c4]
     nt = n1 + n2 + n3 + n4
     ns = [n1, n2, n3, n4]
     z1 = n1/nt
@@ -2030,18 +2038,30 @@ def test_d3b_dnz(kwargs):
     z3 = n3/nt
     z4 = n4/nt
     zs_n = [z1, z2, z3, z4]
+
     b_n = sum([bi*zi for bi, zi in zip(bs, zs_n)])
-    
-    zs_z = symbols('z1, z2, z3, z4')
     b_z = sum([bi*zi for bi, zi in zip(bs, zs_z)])
-    
+
+    c_n = sum([ci*zi for ci, zi in zip(cs, zs_n)])
+    c_z = sum([ci*zi for ci, zi in zip(cs, zs_z)])
+
+    b_n -= c_n
+    b_z -= c_z
+
     for z in (True, False):
         diffs = {}
         for e in eos_mix_list:
             eos = e(**kwargs)
-    
-            b_subs = {bi:eos.bs[i] for i, bi in enumerate(bs)}
+            # handle the translated volume ones
+            try:
+                b_subs = {bi:eos.b0s[i] for i, bi in enumerate(bs)}
+            except:
+                b_subs = {bi:eos.bs[i] for i, bi in enumerate(bs)}
             b_subs.update({ni: zs[i] for i, ni in enumerate(ns)})
+            try:
+                b_subs.update({ci: eos.cs[i] for i, ci in enumerate(cs)})
+            except:
+                b_subs.update({ci: 0 for ci in cs})
             
             analytical = [[[None]*N for i in range(N)] for i in range(N)]
             for i in range(N):
@@ -2067,7 +2087,10 @@ def test_d3b_dnz(kwargs):
             else:
                 implemented = np.array(eos.d3b_dninjnks).ravel().tolist()
             assert_allclose(analytical, implemented, rtol=1e-11)
-        
+
+#test_d3b_dnz(quaternary_basic)
+
+
 @pytest.mark.sympy
 @pytest.mark.parametrize("kwargs", [quaternary_basic])
 def test_d3delta_dnz(kwargs):
@@ -2244,19 +2267,21 @@ def test_depsilon_dnx(kwargs):
             zs_working = normalize(zs_working)
         eos = obj(zs=zs_working, **kwargs)
         return eos.epsilon
-    
+
     for obj in eos_mix_list:
         eos = obj(zs=zs, **kwargs)
         numericals = [derivative(depsilon_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
             for i, ni in enumerate(zs)]
         assert_allclose(numericals, eos.depsilon_dzs)
-    
+
     normalization = True
     for obj in eos_mix_list:
         eos = obj(zs=zs, **kwargs)
         numericals = [derivative(depsilon_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
             for i, ni in enumerate(zs)]
         assert_allclose(numericals, eos.depsilon_dns)
+
+#test_depsilon_dnx(ternary_basic)
 
 @pytest.mark.parametrize("kwargs", [ternary_basic])
 def test_d2epsilon_d2nx(kwargs):
