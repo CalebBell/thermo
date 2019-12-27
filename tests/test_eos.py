@@ -1465,68 +1465,107 @@ def test_fuzz_dPsat_dT_full():
 
 
 def test_Hvaps():
-    from thermo import eos
-    eos_list = list(eos.__all__); eos_list.remove('GCEOS')
-    eos_list.remove('ALPHA_FUNCTIONS'); eos_list.remove('eos_list')
-    eos_list.remove('GCEOS_DUMMY'); eos_list.remove('IG')
+    eos_iter = list(eos_list)
+    eos_iter.remove(IG)
     
     Tc = 507.6
     Pc = 3025000
     omega = 0.2975
-
-    Hvaps = []
-    Hvaps_expect = [31086.219936345555, 31711.070598348884, 31086.219936345555, 
-                    31035.433669033115, 31035.433669033115, 13004.122697412045,
-                    26010.125229469202, 31715.84315012893, 31592.705837696965, 
-                    31562.95493009898]
-
     
-    for eos in range(len(eos_list)):
-        e = globals()[eos_list[eos]](Tc=Tc, Pc=Pc, omega=omega, T=300, P=1E5)
-        Hvaps.append(e.Hvap(300))
+    Hvaps = {}
+    Hvaps_expect = {PR78: 31086.219936356967,
+                 TWUPR: 31592.70583768895,
+                 TWUSRK: 31562.954930111275,
+                 SRK: 31711.070598361417,
+                 PR: 31086.219936356967,
+                 PRSV2: 31035.43366905585,
+                 VDW: 13004.122697411925,
+                 APISRK: 31715.843150141456,
+                 SRKTranslatedConsistent: 31615.664668686026,
+                 RK: 26010.12522947027,
+                 SRKTranslatedPPJP: 31715.83940885055,
+                 PRTranslatedConsistent: 31419.504797000944,
+                 PRSV: 31035.43366905585,
+                 PRTranslatedPPJP: 31257.15735072686}
     
-    assert_allclose(Hvaps, Hvaps_expect)
+    for eos in eos_iter:
+        e = eos(Tc=Tc, Pc=Pc, omega=omega, T=300, P=1E5)
+        Hvap_calc = e.Hvap(300)
+        Hvaps[eos] = Hvap_calc
+        
+    for eos in eos_iter:
+        assert_allclose(Hvaps_expect[eos], Hvaps[eos], rtol=1e-7)
 
 
 
 def test_V_l_sats():
-    from thermo import eos
-    eos_list = list(eos.__all__); eos_list.remove('GCEOS')
-    eos_list.remove('ALPHA_FUNCTIONS'); eos_list.remove('eos_list')
-    eos_list.remove('GCEOS_DUMMY'); eos_list.remove('IG')
+    eos_iter = list(eos_list)
+    eos_iter.remove(IG)
     
     Tc = 507.6
     Pc = 3025000
     omega = 0.2975
-
-    V_l_sats = []
-    V_l_sats_expect = [0.00013065657945228706, 0.0001473849390433038, 0.00013065657945228706, 0.0001306833828856586, 0.0001306833828856586, 0.00022496914668396754, 0.00015267480918174935, 0.00014738204694914823, 0.00013061083043122885, 0.00014745855640970563]
     
-    for eos in range(len(eos_list)):
-        e = globals()[eos_list[eos]](Tc=Tc, Pc=Pc, omega=omega, T=300, P=1E5)
-        V_l_sats.append(e.V_l_sat(300))
+    V_l_sats = {}
+    V_l_sats_expect = {PR78: 0.00013065657945228289,
+                        TWUPR: 0.0001306108304312293,
+                        TWUSRK: 0.00014745855640971024,
+                        SRK: 0.00014738493904330595,
+                        PR: 0.00013065657945228289,
+                        PRSV2: 0.00013068338288565773,
+                        VDW: 0.0002249691466839674,
+                        APISRK: 0.00014738204694914915,
+                        SRKTranslatedConsistent: 0.00012691945527035751,
+                        RK: 0.00015267480918175063,
+                        SRKTranslatedPPJP: 0.00014738204921603808,
+                        PRTranslatedConsistent: 0.00013147170331755256,
+                        PRSV: 0.00013068338288565773,
+                        PRTranslatedPPJP: 0.00013056689289733488}
     
-    assert_allclose(V_l_sats, V_l_sats_expect)
+    for eos in eos_iter:
+        e = eos(Tc=Tc, Pc=Pc, omega=omega, T=300, P=1E5)
+        V_l_sat_calc = e.V_l_sat(300)
+        V_l_sats[eos] = V_l_sat_calc
+        
+    for eos in eos_iter:
+        assert_allclose(V_l_sats_expect[eos], V_l_sats[eos], rtol=1e-7)
 
 
 def test_V_g_sats():
-    from thermo import eos
-    eos_list = list(eos.__all__); eos_list.remove('GCEOS')
-    eos_list.remove('ALPHA_FUNCTIONS'); eos_list.remove('eos_list')
-    eos_list.remove('GCEOS_DUMMY'); eos_list.remove('IG')
+    eos_iter = list(eos_list)
+    eos_iter.remove(IG)
     
     Tc = 507.6
     Pc = 3025000
     omega = 0.2975
-    V_g_sats = []
-    V_g_sats_expect = [0.11050249932591111, 0.11367528462558969, 0.11050249932591111, 0.1097954579773439, 0.1097954579773439, 0.009465797766589464, 0.046046050884104774, 0.11374303933593542, 0.11172398125011096, 0.11196919594301445]
     
-    for eos in range(len(eos_list)):
-        e = globals()[eos_list[eos]](Tc=Tc, Pc=Pc, omega=omega, T=300, P=1E5)
-        V_g_sats.append(e.V_g_sat(300))
-    
-    assert_allclose(V_g_sats, V_g_sats_expect)
+    V_g_sats = {}
+    V_g_sats_expect = {PR78: 0.11050249932616305,
+                        TWUPR: 0.11172398125036595,
+                        TWUSRK: 0.11196919594301465,
+                        SRK: 0.11367528462559041,
+                        PR: 0.11050249932616305,
+                        PRSV2: 0.10979545797759405,
+                        VDW: 0.009465797766589491,
+                        APISRK: 0.11374303933593632,
+                        SRKTranslatedConsistent: 0.11209163965600458,
+                        RK: 0.04604605088410411,
+                        SRKTranslatedPPJP: 0.11374298620644632,
+                        PRTranslatedConsistent: 0.11144255765526169,
+                        PRSV: 0.10979545797759405,
+                        PRTranslatedPPJP: 0.1129148079163081}
 
+
+    
+    for eos in eos_iter:
+        e = eos(Tc=Tc, Pc=Pc, omega=omega, T=300, P=1E5)
+        V_g_sat_calc = e.V_g_sat(300)
+        V_g_sats[eos] = V_g_sat_calc
+        
+    for eos in eos_iter:
+        assert_allclose(V_g_sats_expect[eos], V_g_sats[eos], rtol=1e-7)
+
+    
 def test_dfugacity_dT_l_dfugacity_dT_g():
     T = 400
     delta = 1e-5
