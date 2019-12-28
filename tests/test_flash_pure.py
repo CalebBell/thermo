@@ -232,6 +232,24 @@ def test_TV_plot(fluid, eos, auto_range):
 def test_PS_plot(fluid, eos, auto_range):
     '''
     '''
+    path = os.path.join(pure_surfaces_dir, fluid, "PS")
+    if not os.path.exists(path):
+        os.makedirs(path)
+    key = '%s - %s - %s - %s' %('PS', eos.__name__, auto_range, fluid)
+    
+
+    if eos in (TWUPRMIX, TWUSRKMIX):
+        msg = None
+        if fluid in ('hydrogen', 'eicosane', 'decane', 'water'):
+            msg = 'Garbage alpha function multiple solutions'
+        elif auto_range == 'physical':
+            msg = 'Garbage alpha function low T'
+        if msg is not None:
+            plot_fig = plot_unsupported(msg, color='g')
+            plot_fig.savefig(os.path.join(path, key + '.png'), bbox_inches='tight')
+            plt.close()
+            return
+    
     T, P = 298.15, 101325.0
     zs = [1.0]
     fluid_idx = pure_fluids.index(fluid)
@@ -252,11 +270,6 @@ def test_PS_plot(fluid, eos, auto_range):
 
     matrix_spec_flashes, matrix_flashes, errs, plot_fig = res
     
-    path = os.path.join(pure_surfaces_dir, fluid, "PS")
-    if not os.path.exists(path):
-        os.makedirs(path)
-    
-    key = '%s - %s - %s - %s' %('PS', eos.__name__, auto_range, fluid)
     plot_fig.savefig(os.path.join(path, key + '.png'))
     plt.close()
 
@@ -275,9 +288,22 @@ def test_PS_plot(fluid, eos, auto_range):
 def test_PH_plot(fluid, eos, auto_range):
     '''
     '''
-    if eos in (TWUPRMIX, TWUSRKMIX) and auto_range == 'physical':
-        # Garbage alpha function for very low T
-        return
+    path = os.path.join(pure_surfaces_dir, fluid, "PH")
+    if not os.path.exists(path):
+        os.makedirs(path)
+    key = '%s - %s - %s - %s' %('PH', eos.__name__, auto_range, fluid)
+    
+    if eos in (TWUPRMIX, TWUSRKMIX):
+        msg = None
+        if fluid in ('hydrogen', 'eicosane', 'decane', 'water'):
+            msg = 'Garbage alpha function multiple solutions'
+        elif auto_range == 'physical':
+            msg = 'Garbage alpha function low T'
+        if msg is not None:
+            plot_fig = plot_unsupported(msg, color='g')
+            plot_fig.savefig(os.path.join(path, key + '.png'), bbox_inches='tight')
+            plt.close()
+            return
     T, P = 298.15, 101325.0
     zs = [1.0]
     fluid_idx = pure_fluids.index(fluid)
@@ -298,17 +324,16 @@ def test_PH_plot(fluid, eos, auto_range):
 
     matrix_spec_flashes, matrix_flashes, errs, plot_fig = res
     
-    path = os.path.join(pure_surfaces_dir, fluid, "PH")
-    if not os.path.exists(path):
-        os.makedirs(path)
-    
-    key = '%s - %s - %s - %s' %('PH', eos.__name__, auto_range, fluid)
     plot_fig.savefig(os.path.join(path, key + '.png'))
     plt.close()
 
     max_err = np.max(errs)
     assert max_err < 1e-8
 #test_PH_plot('eicosane', TWUPRMIX, 'physical')
+#test_PH_plot("hydrogen", TWUPRMIX, "physical")
+#test_PH_plot("hydrogen", TWUSRKMIX, "physical")
+#test_PH_plot("hydrogen", TWUPRMIX, "realistic")
+#test_PH_plot("hydrogen", TWUSRKMIX, "realistic")
 
 
 @pytest.mark.slow
@@ -321,9 +346,22 @@ def test_PU_plot(fluid, eos, auto_range):
     Going to have to add new test functionality that does there tests against a
     reflash at PT.
     '''
-    if eos in (TWUPRMIX, TWUSRKMIX) and auto_range == 'physical':
-#         Garbage alpha function for very low T
-        return
+    path = os.path.join(pure_surfaces_dir, fluid, "PU")
+    if not os.path.exists(path):
+        os.makedirs(path)
+    key = '%s - %s - %s - %s' %('PU', eos.__name__, auto_range, fluid)
+
+    if eos in (TWUPRMIX, TWUSRKMIX):
+        msg = None
+        if fluid in ('hydrogen', 'eicosane', 'decane', 'water'):
+            msg = 'Garbage alpha function multiple solutions'
+        elif auto_range == 'physical':
+            msg = 'Garbage alpha function low T'
+        if msg is not None:
+            plot_fig = plot_unsupported(msg, color='g')
+            plot_fig.savefig(os.path.join(path, key + '.png'), bbox_inches='tight')
+            plt.close()
+            return
     T, P = 298.15, 101325.0
     zs = [1.0]
     fluid_idx = pure_fluids.index(fluid)
@@ -344,11 +382,6 @@ def test_PU_plot(fluid, eos, auto_range):
 
     matrix_spec_flashes, matrix_flashes, errs, plot_fig = res
     
-    path = os.path.join(pure_surfaces_dir, fluid, "PU")
-    if not os.path.exists(path):
-        os.makedirs(path)
-    
-    key = '%s - %s - %s - %s' %('PU', eos.__name__, auto_range, fluid)
     plot_fig.savefig(os.path.join(path, key + '.png'))
     plt.close()
 
@@ -360,6 +393,10 @@ def test_PU_plot(fluid, eos, auto_range):
 #        flasher.flash(P=base.P, U=base.U()).T
         assert max_err < 1e-8
 
+#test_PU_plot("hydrogen", TWUPRMIX, "physical")
+#test_PU_plot("hydrogen", TWUSRKMIX, "physical")
+#test_PU_plot("hydrogen", TWUPRMIX, "realistic")
+#test_PU_plot("hydrogen", TWUSRKMIX, "realistic")
 
 @pytest.mark.slow
 @pytest.mark.parametric

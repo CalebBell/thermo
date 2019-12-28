@@ -947,6 +947,10 @@ strs_to_ders = {('H', 'T', 'P'): 'dH_dT_P',
 }
 
 
+multiple_solution_sets = set([('T', 'S'), ('T', 'H'), ('T', 'U'), ('T', 'A'), ('T', 'G'),
+                              ('S', 'T'), ('H', 'T'), ('U', 'T'), ('A', 'T'), ('G', 'T'),
+                              ])
+
 def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,  
                        iter_var='T', fixed_var='P', spec='H',
                        maxiter=200, xtol=1E-10, ytol=None, fprime=False,
@@ -1016,6 +1020,8 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
     if spec not in ('H', 'S', 'G', 'U', 'A'):
         raise ValueError("Spec variable must be one of `H`, `S`, `G` `U`, `A`")
 
+    multiple_solutions = (fixed_var, spec) in multiple_solution_sets
+
     phase_kwargs = {fixed_var: fixed_var_val, 'zs': zs}
     spec_fun = getattr(phase.__class__, spec)
 #    print('spec_fun', spec_fun)
@@ -1038,14 +1044,15 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
             p = phase.to_zs_TPV(**phase_kwargs)
 
         err = spec_fun(p) - spec_val
+#        err = (spec_fun(p) - spec_val)/spec_val
         store[:] = (p, err)
         if fprime:
 #            print([err, guess, p.eos_mix.phase, der_attr])
             derr = der_attr_fun(p)
+#            derr = der_attr_fun(p)/spec_val
             return err, derr
 #        print(err)
         return err
-
 
     arg_fprime = fprime
     high = None # Optional and not often used bound for newton
@@ -1106,7 +1113,7 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
                 if f_min*f_low_trans <= 0.0:
                     bracketed_low = True
                     bounding_pair = (min(min_bound, under_trans), max(min_bound, under_trans))
-            if max_bound is not None and not bracketed_low:
+            if max_bound is not None and (not bracketed_low or multiple_solutions):
                 f_max = to_solve(max_bound)
                 f_max_trans = to_solve(above_trans, higher_phase)
                 if f_max*f_max_trans <= 0.0:
