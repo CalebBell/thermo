@@ -1259,11 +1259,11 @@ def test_PRMIXTranslatedConsistent_vs_pure():
     mech_crit = eos.to_mechanical_critical_point()
     assert_allclose([mech_crit.T, mech_crit.P], [eos.Tcs[0], eos.Pcs[0]])
     
-    # Different test where a_alpha is zero - ideal gas solution
+    # Different test where a_alpha is zero - first term solution
     alpha_zero = PRMIXTranslatedConsistent(Tcs=[33.2], Pcs=[1296960.0], omegas=[-0.22], kijs=[[0.0]], zs=[1], T=6000, P=1e2)
     assert 0.0 == alpha_zero.a_alpha
-    assert_allclose(alpha_zero.V_l, 498.86775708919436, rtol=1e-12)
-    
+    assert_allclose(alpha_zero.V_l, 498.86777507259984, rtol=1e-12)
+    assert_allclose(alpha_zero.V_l, alpha_zero.b + R*alpha_zero.T/alpha_zero.P, rtol=1e-12)
     assert eos.P_max_at_V(1) is None # No direct solution for P
 
 
@@ -3541,3 +3541,10 @@ def TV_PV_precision_issue():
     
     # No matter what I do, the solved T is at maximum precision! Cannot go lower without more prec
     assert abs(PV_bad.T/base.T-1) < 1e-7
+    
+    # Different case
+    base = PRMIXTranslatedConsistent(Tcs=[33.2], Pcs=[1296960.0], omegas=[-0.22], zs=[1], T=10000, P=596362331.6594564)
+    TV = base.to(V=base.V_l, T=base.T)
+    PV = base.to(V=base.V_l, P=base.P)
+    assert_allclose(TV.P, base.P, rtol=1e-11)
+    assert_allclose(PV.T, base.T, rtol=1e-11)

@@ -6755,7 +6755,6 @@ class PRMIXTranslatedConsistent(PRMIXTranslated):
         self.b = b = b0 - c
         self.delta = 2.0*(c + b0)
         self.epsilon = -b0*b0 + c*(c + b0 + b0)
-
         self.solve(only_l=only_l, only_g=only_g)
         if fugacities:
             self.fugacities()
@@ -6774,7 +6773,7 @@ class PRMIXTranslatedConsistent(PRMIXTranslated):
         self.c = c
         self.b = b0 - c
         self.delta = 2.0*(c + b0)
-        self.epsilon = -b0*b0 + c*c + 2.0*c*b0
+        self.epsilon = -b0*b0 + c*(c + b0 + b0) # Very important to be calculated exactly the same way as the other implementation
 
     def a_alpha_and_derivatives_vectorized(self, T, full=False):
         r'''Method to calculate the pure-component `a_alphas` and their first  

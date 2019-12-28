@@ -201,7 +201,7 @@ class GCEOS(object):
                 T = self.T
                 if not isinstance(V, (float, int)):
                     import mpmath as mp
-                    mp.mp.dps = 50 # Do not need more decimal places than needed
+                    # mp.mp.dps = 50 # Do not need more decimal places than needed
                     # Need to complete the calculation with the RT term having higher precision as well
                     T = mp.mpf(T)
                 self.P = float(R*T/(V-self.b) - self.a_alpha/(V*V + self.delta*V + self.epsilon))
@@ -1076,8 +1076,12 @@ class GCEOS(object):
         # 2 divisions, 2 powers in here
         # First bit is top left corner
         if a_alpha == 0.0:
-            # EOS has devolved into having the Ideal gas solution only
-            return [R*T/P, -1j, -1j]
+            '''from sympy import *
+                R, T, P, b, V = symbols('R, T, P, b, V')
+                solve(Eq(P, R*T/(V-b)), V)
+            '''
+            # EOS has devolved into having the first term solution only
+            return [b + R*T/P, -1j, -1j]
         if P < 1e-2:
         # if 0 or (0 and ((T < 1e-2 and P > 1e6) or (P < 1e-3 and T < 1e-2) or (P < 1e-1 and T < 1e-4) or P < 1)):
             # Not perfect but so much wasted dev time need to move on, try other fluids and move this tolerance up if needed

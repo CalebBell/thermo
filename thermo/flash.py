@@ -1206,8 +1206,8 @@ def solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var,
         min_bound = Phase.T_MIN_FIXED
         max_bound = Phase.T_MAX_FIXED
     elif iter_var == 'P':
-        min_bound = Phase.P_MIN_FIXED
-        max_bound = Phase.P_MAX_FIXED
+        min_bound = Phase.P_MIN_FIXED*(1.0 - 1e-12)
+        max_bound = Phase.P_MAX_FIXED*(1.0 + 1e-12)
     elif iter_var == 'V':
         min_bound = Phase.V_MIN_FIXED
         max_bound = Phase.V_MAX_FIXED
@@ -2295,7 +2295,7 @@ class FlashBase(object):
                 kwargs = {}
                 kwargs[check0] = check0_spec
                 kwargs[check1] = check1_spec
-                if high_prec_V:
+                if TV_iter:
                     kwargs['V'] = getattr(state, 'V_iter')()
                 kwargs['retry'] = retry
                 kwargs['solution'] = lambda new: abs(new.value(nearest_check_prop) - state.value(nearest_check_prop))
@@ -2426,9 +2426,9 @@ class FlashBase(object):
             ax.set_ylabel(spec1)
             
             max_err = np.max(errs)
-            if max_err < trunc_err_low:
+            if trunc_err_low is not None and max_err < trunc_err_low:
                 max_err = 0
-            if max_err > trunc_err_high:
+            if trunc_err_high is not None and max_err > trunc_err_high:
                 max_err = trunc_err_high
             
             ax.set_title('%s %s validation of %s; Reference flash %s %s; max err %.1e' %(check0, check1, prop0, spec0, spec1, max_err))

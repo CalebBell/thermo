@@ -217,6 +217,7 @@ def test_TV_plot(fluid, eos, auto_range):
         assert max_err < 5e-9
 
 #test_TV_plot('decane', PRMIXTranslatedConsistent, 'physical')
+#test_TV_plot('eicosane', PRMIXTranslatedConsistent, 'physical')
 
 #for e in eos_mix_list:
 #    e = TWUPRMIX
@@ -398,7 +399,7 @@ def test_VU_plot(fluid, eos, auto_range):
     plt.close()
 
     max_err = np.max(errs)
-    assert max_err < 1e-8
+    assert max_err < 1e-7
 
 #for fluid in pure_fluids:
 #    print(fluid)
@@ -406,6 +407,7 @@ def test_VU_plot(fluid, eos, auto_range):
 #for e in eos_mix_list:
 #    print(e)
 #    test_VU_plot('hydrogen', e, 'realistic')
+#test_VU_plot('methanol', PRMIXTranslatedConsistent, 'physical')
 
 @pytest.mark.slow
 @pytest.mark.parametric
@@ -499,7 +501,7 @@ def test_VH_plot(fluid, eos, auto_range):
     plt.close()
 
     max_err = np.max(errs)
-    assert max_err < 1e-8
+    assert max_err < 1e-7
 
 #for e in eos_mix_list:
 #    print(e)
@@ -778,7 +780,7 @@ def test_a_alpha_plot(fluid, eos):
     kwargs = dict(Tc=pure_const.Tcs[0], Pc=pure_const.Pcs[0], omega=pure_const.omegas[0])
     
     obj = eos(T=T, P=P, **kwargs)
-    a_alphas, plot_fig = obj.a_alpha_plot(Tmin=1e-4, Tmax=None, pts=500,
+    a_alphas, plot_fig = obj.a_alpha_plot(Tmin=1e-4, Tmax=pure_const.Tcs[0]*30, pts=500,
                                           plot=True, show=False)
 
     plot_fig.savefig(os.path.join(path, key + '.png'))
@@ -961,6 +963,47 @@ def test_PRMIXTranslatedConsistent_VS_low_prec_failure():
         recalc = flasher.flash(S=base.S(), V=base.V_iter(True), zs=zs)
         assert_allclose(base.T, recalc.T, rtol=1e-9)
     
+    # VU failure
+    base = flasher.flash(T=2682.6958, P=1e-2, zs=zs)
+    recalc = flasher.flash(U=base.U(), V=base.V(), zs=[1])
+    assert_allclose(base.T, recalc.T, rtol=1e-7)
+
+    # VH failure
+    base = flasher.flash(T=10000, P=596362331.6594564, zs=zs)
+    recalc = flasher.flash(H=base.H(), V=base.V(), zs=zs)
+    assert_allclose(base.T, recalc.T, rtol=1e-7)
+    
+    # TV failure - check the higher precision iteraitons are happening
+    flashes_base, flashes_new, errs = flasher.TPV_inputs(spec0='T', spec1='P', check0='T', check1='V', prop0='P',
+                  Ts=[1e-2, 1e-1, 1, 10], Ps=[1e-1, 1, 100, 1e4], zs=[1], trunc_err_low=1e-20, plot=False)
+    assert np.max(errs) < 1e-9
+
+
+def test_PRMIXTranslatedConsistent_TV_epsilon_consistency_with_fast():
+    '''Really interesting bug, where the absolute last place decimal of epsilon
+    was different by the slightest amount. The TP and TV initializations used 
+    
+    -b0*b0 + c*(c + b0 + b0) vs. -b0*b0 + c*c + 2.0*b0
+    
+    And this caused all the issues!
+    '''
+    T, P, zs = 1e-2, 1e-2, [1.0]
+    fluid_idx, eos = 8, PRMIXTranslatedConsistent # eicosane
+    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
+    
+    kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
+                  HeatCapacityGases=pure_props.HeatCapacityGases)
+
+    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
+
+    base = flasher.flash(T=T, P=P, zs=zs)
+    recalc = flasher.flash(T=base.T, V=base.phases[0].V_iter(), zs=zs)
+    assert_allclose(base.P, recalc.P, rtol=1e-7)
+
+
+
 
 def test_TWU_SRK_PR_T_alpha_interp_failure_2():
     T, P, zs = .001, .001, [1.0]
