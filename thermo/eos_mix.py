@@ -7664,8 +7664,6 @@ class SRKMIXTranslatedConsistent(SRKMIXTranslated):
                 M = o*(0.1615*o - 0.2349) + 0.8876
                 alpha_coeffs.append((L, M, 2.0))
 
-
-        
         self.kwargs = {'kijs': kijs, 'alpha_coeffs': alpha_coeffs, 'cs': cs}
         self.alpha_coeffs = alpha_coeffs
         self.cs = cs
@@ -7684,6 +7682,22 @@ class SRKMIXTranslatedConsistent(SRKMIXTranslated):
         self.solve(only_l=only_l, only_g=only_g)
         if fugacities:
             self.fugacities()
+
+    def _fast_init_specific(self, other):
+        self.cs = cs = other.cs
+        self.alpha_coeffs = other.alpha_coeffs
+        zs = self.zs
+        self.b0s = b0s = other.b0s            
+            
+        b0, c = 0.0, 0.0
+        for i in self.cmps:
+            b0 += b0s[i]*zs[i]
+            c += cs[i]*zs[i]
+        
+        self.c = c
+        self.b = b0 - c
+        self.delta = c + c + b0
+        self.epsilon = c*(b0 + c)
 
     def a_alpha_and_derivatives_vectorized(self, T, full=False):
         r'''Method to calculate the pure-component `a_alphas` and their first  
