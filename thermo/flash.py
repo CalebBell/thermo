@@ -2266,6 +2266,11 @@ class FlashBase(object):
         if SF_spec:
             spec_keys.append('SF')
             spec_iters.append(SFs)
+            
+        V_set = set([check1, check0])
+        TV_iter = V_set == set(['T', 'V']) 
+        PV_iter = V_set == set(['P', 'V'])
+        high_prec_V = TV_iter or PV_iter 
         
         for n0, spec0 in enumerate(spec_iters[0]):
             row = []
@@ -2286,19 +2291,28 @@ class FlashBase(object):
                     check1_spec = check1_spec()
                 except:
                     pass
-                if (check1 == 'V' and check0 == 'T') or (check1 == 'T' and check0 == 'V'):
-                    check1_spec = getattr(state, 'V_iter')()
+                
                 kwargs = {}
                 kwargs[check0] = check0_spec
                 kwargs[check1] = check1_spec
+                if high_prec_V:
+                    kwargs['V'] = getattr(state, 'V_iter')()
                 kwargs['retry'] = retry
                 kwargs['solution'] = lambda new: abs(new.value(nearest_check_prop) - state.value(nearest_check_prop))
                 try:
                     new = self.flash(**kwargs)
                 except Exception as e:
-                    new = None
-                    print('Failed trying to flash %s, from original point %s, with exception %s.'%(kwargs, flash_specs, e))
-                
+                    # Was it a precision issue? Some flashes can be brutal
+                    if 'V' in kwargs:
+                        try:
+                             kwargs['V'] = getattr(state, 'V_iter')(True)
+                             new = self.flash(**kwargs)
+                        except Exception as e2:
+                            new = None
+                            print('Failed trying to flash %s, from original point %s, with exception %s.'%(kwargs, flash_specs, e))
+                    else:
+                        new = None
+                        print('Failed trying to flash %s, from original point %s, with exception %s.' % (kwargs, flash_specs, e))
                 row_spec_flashes.append(state)
                 row_flashes.append(new)
                 
@@ -2689,10 +2703,12 @@ class FlashPureVLS(FlashBase):
         H_spec = H is not None
         S_spec = S is not None
         U_spec = U is not None
-        
         # Normally multiple solutions
         A_spec = A is not None
         G_spec = G is not None
+        
+        HSGUA_spec_count = H_spec + S_spec + G_spec + U_spec + A_spec
+        
         
         VF_spec = VF is not None
         SF_spec = SF is not None
@@ -2795,6 +2811,8 @@ class FlashPureVLS(FlashBase):
                                     flash_convergence=flash_convergence,
                                     constants=constants, correlations=correlations,
                                     flasher=self)
+        elif HSGUA_spec_count == 2:
+            pass
 
         single_iter_key = (T_spec, P_spec, V_spec, H_spec, S_spec, U_spec)
         if single_iter_key in spec_to_iter_vars:

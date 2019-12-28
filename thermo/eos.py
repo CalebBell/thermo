@@ -1419,7 +1419,6 @@ class GCEOS(object):
             elif hasattr(self, 'V_g'):
                 Vg_mpmath = Vs_filtered[0]
         
-        Vs = self.raw_volumes
         err = 0
         
         # Important not to confuse the roots and also to not consider the third root
@@ -1687,6 +1686,39 @@ class GCEOS(object):
                 plt.show()
                 
             return Vs, fig
+
+    def a_alpha_plot(self, Tmin=1e-4, Tmax=None, pts=500, plot=False, show=False):
+        # TODO: Show check boxes for meeting criteria
+        if Tmax is None:
+            if self.multicomponent:
+                Tc = self.pseudo_Tc
+            else:
+                Tc = self.Tc
+        Tmax = Tc*10
+        
+        Ts = logspace(log10(Tmin), log10(Tmax), pts)
+
+        a_alphas = []            
+        for T in Ts:
+            a_alpha = self.a_alpha_and_derivatives(T, full=False)
+            a_alphas.append(a_alpha)
+
+        if plot:
+            import matplotlib.pyplot as plt
+            fig, ax = plt.subplots()
+            plt.plot(Ts, a_alphas)
+
+            ax.set_yscale('log')
+#            ax.set_xscale('log')
+            ax.set_xlabel('Temperature [K]')
+            ax.set_ylabel(r'$a \alpha$')
+            
+            
+            ax.set_title(r'$a \alpha$ curve')
+            if show:
+                plt.show()
+                
+            return a_alphas, fig
         
 
     def volumes_G_min(self, Tmin=1e-4, Tmax=1e4, Pmin=1e-2, Pmax=1e9,
@@ -1738,6 +1770,47 @@ class GCEOS(object):
                 plt.show()
                 
             return Vs, fig
+
+    def saturation_prop_plot(self, prop, Tmin=None, Tmax=None, pts=100, plot=False, show=False):
+        if Tmax is None:
+            if self.multicomponent:
+                Tmax = self.pseudo_Tc
+            else:
+                Tmax = self.Tc
+        if Tmin is None:
+            Tmin = self.Tsat(1e-5)
+
+        
+        Ts = logspace(log10(Tmin), log10(Tmax), pts)
+        kwargs = {}
+        if hasattr(self, 'zs'):
+            kwargs['zs'] = self.zs
+        props = []         
+        for T in Ts:
+            kwargs['T'] = T
+            kwargs['P'] = self.Psat(T)
+            obj = self.to(**kwargs)
+            v = getattr(obj, prop)
+            try:
+                v = v()
+            except:
+                pass
+            props.append(v)
+
+        if plot:
+            import matplotlib.pyplot as plt
+            fig, ax = plt.subplots()
+            plt.plot(Ts, props)
+
+            ax.set_xlabel('Temperature [K]')
+            ax.set_ylabel(r'%s' %(prop))
+            
+            
+            ax.set_title(r'%s curve' %(prop))
+            if show:
+                plt.show()
+                
+            return props, fig
 
     def derivatives_and_departures(self, T, P, V, b, delta, epsilon, a_alpha, da_alpha_dT, d2a_alpha_dT2, quick=True):
         

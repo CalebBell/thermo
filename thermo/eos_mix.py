@@ -6408,7 +6408,7 @@ class PRMIXTranslated(PRMIX):
     dlnphis_dT = GCEOSMIX.dlnphis_dT
     dlnphis_dP = GCEOSMIX.dlnphis_dP
     d_lnphi_dzs = GCEOSMIX.d_lnphi_dzs
-    P_max_at_V = GCEOS.P_max_at_V
+    P_max_at_V = GCEOSMIX.P_max_at_V
     
     # All the b derivatives happen to work out to be the same, and are checked numerically
     # # TODO: epsilon derivative

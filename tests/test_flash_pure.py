@@ -82,6 +82,9 @@ from thermo.eos_mix import eos_mix_list
 
 
 def plot_unsupported(reason, color='r'):
+    '''Helper function - draw a plot with an `x` over it displaying a message
+    why that plot is not supported.
+    '''
     fig, ax = plt.subplots()
 
     xlims = ax.get_xlim()
@@ -100,6 +103,7 @@ def plot_unsupported(reason, color='r'):
 #eos_mix_list = [PRMIX, PR78MIX, SRKMIX, VDWMIX, PRSVMIX, PRSV2MIX, APISRKMIX, TWUPRMIX, TWUSRKMIX, IGMIX]
 #eos_mix_list = [TWUPRMIX, TWUSRKMIX] # issues
 @pytest.mark.slow
+@pytest.mark.parametric
 @pytest.mark.parametrize("auto_range", ['realistic', 'physical'])
 @pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("eos", eos_mix_list)
@@ -165,6 +169,7 @@ def test_PV_plot(fluid, eos, auto_range):
 #test_PV_plot('decane', PRMIXTranslatedConsistent, 'physical')
 
 @pytest.mark.slow
+@pytest.mark.parametric
 @pytest.mark.parametrize("auto_range", ['physical', 'realistic'])
 @pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("eos", eos_mix_list)
@@ -219,6 +224,7 @@ def test_TV_plot(fluid, eos, auto_range):
 #    test_TV_plot('hydrogen', e, 'realistic')
 
 @pytest.mark.slow
+@pytest.mark.parametric
 @pytest.mark.parametrize("auto_range", ['physical', 'realistic'])
 @pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("eos", eos_mix_list)
@@ -261,6 +267,7 @@ def test_PS_plot(fluid, eos, auto_range):
 #test_PS_plot("hydrogen", TWUSRKMIX, "realistic")
 
 @pytest.mark.slow
+@pytest.mark.parametric
 @pytest.mark.parametrize("auto_range", ['physical', 'realistic'])
 @pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("eos", eos_mix_list)
@@ -304,6 +311,7 @@ def test_PH_plot(fluid, eos, auto_range):
 
 
 @pytest.mark.slow
+@pytest.mark.parametric
 @pytest.mark.parametrize("auto_range", ['physical', 'realistic'])
 @pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("eos", eos_mix_list)
@@ -353,6 +361,7 @@ def test_PU_plot(fluid, eos, auto_range):
 
 
 @pytest.mark.slow
+@pytest.mark.parametric
 @pytest.mark.parametrize("auto_range", ['physical', 'realistic'])
 @pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("eos", eos_mix_list)
@@ -399,6 +408,7 @@ def test_VU_plot(fluid, eos, auto_range):
 #    test_VU_plot('hydrogen', e, 'realistic')
 
 @pytest.mark.slow
+@pytest.mark.parametric
 @pytest.mark.parametrize("auto_range", ['physical', 'realistic'])
 @pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("eos", eos_mix_list)
@@ -452,6 +462,7 @@ def test_VS_plot(fluid, eos, auto_range):
 
 
 @pytest.mark.slow
+@pytest.mark.parametric
 @pytest.mark.parametrize("auto_range", ['physical', 'realistic'])
 @pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("eos", eos_mix_list)
@@ -496,6 +507,7 @@ def test_VH_plot(fluid, eos, auto_range):
 
 
 @pytest.mark.slow
+@pytest.mark.parametric
 @pytest.mark.parametrize("auto_range", ['physical', 'realistic'])
 @pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("eos", eos_mix_list)
@@ -551,6 +563,7 @@ def test_TS_plot(fluid, eos, auto_range):
 
 
 @pytest.mark.slow
+@pytest.mark.parametric
 @pytest.mark.parametrize("auto_range", ['physical', 'realistic'])
 @pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("eos", eos_mix_list)
@@ -604,7 +617,9 @@ def test_TH_plot(fluid, eos, auto_range):
 #    except:
 #        pass
 
+### Pure EOS only tests
 @pytest.mark.slow
+@pytest.mark.parametric
 @pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("eos", eos_list)
 def test_V_G_min_plot(fluid, eos):
@@ -641,6 +656,7 @@ def test_V_G_min_plot(fluid, eos):
 @pytest.mark.slow
 @pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("eos", eos_list)
+@pytest.mark.parametric
 def test_Psat_plot(fluid, eos):
     path = os.path.join(pure_surfaces_dir, fluid, "Psat")
     if not os.path.exists(path):
@@ -687,6 +703,7 @@ def test_Psat_plot(fluid, eos):
 
 
 @pytest.mark.slow
+@pytest.mark.parametric
 @pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("eos", eos_list)
 @pytest.mark.parametrize("P_range", ['high', 'low'])
@@ -737,6 +754,35 @@ def test_V_error_plot(fluid, eos, P_range):
 #test_V_error_plot('decane', PR, 'high')
 #test_V_error_plot('hydrogen', TWUSRKMIX, 'high')
 #test_V_error_plot('hydrogen', IGMIX, 'low')
+
+
+
+@pytest.mark.slow
+@pytest.mark.parametric
+@pytest.mark.parametrize("fluid", pure_fluids)
+@pytest.mark.parametrize("eos", eos_list)
+def test_a_alpha_plot(fluid, eos):
+    path = os.path.join(pure_surfaces_dir, fluid, "a_alpha")
+    if not os.path.exists(path):
+        os.makedirs(path)
+    key = '%s - %s - %s' %('a_alpha', eos.__name__, fluid)
+
+    if eos in (IG,):
+        plot_fig = plot_unsupported('Ideal gas has a_alpha of zero', color='g')
+        plot_fig.savefig(os.path.join(path, key + '.png'), bbox_inches='tight')
+        plt.close()
+        return
+    T, P = 298.15, 101325.0
+    fluid_idx = pure_fluids.index(fluid)
+    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
+    kwargs = dict(Tc=pure_const.Tcs[0], Pc=pure_const.Pcs[0], omega=pure_const.omegas[0])
+    
+    obj = eos(T=T, P=P, **kwargs)
+    a_alphas, plot_fig = obj.a_alpha_plot(Tmin=1e-4, Tmax=None, pts=500,
+                                          plot=True, show=False)
+
+    plot_fig.savefig(os.path.join(path, key + '.png'))
+    plt.close()
 
 ### Non-generic tests
     
@@ -893,6 +939,28 @@ def test_TWU_SRK_PR_T_alpha_interp_failure():
         PV = flasher.flash(P=P, V=base.V())
         assert_allclose(T, PV.T, rtol=1e-8)
 
+def test_PRMIXTranslatedConsistent_VS_low_prec_failure():
+    '''Numerical issue with volume precision T in the range .001 K at P ~< 100 Pa
+    volume_solution works fine, just `V` does not
+    '''
+    T, P, zs = 0.0013894954943731374, 1e5, [1.0]
+    fluid_idx, eos = 7, PRMIXTranslatedConsistent # methanol
+    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
+    
+    kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
+                  HeatCapacityGases=pure_props.HeatCapacityGases)
+
+    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
+
+    base = flasher.flash(T=T, P=P)
+    
+    for P in [109.85411419875584, 1.7575106248547927]:
+        base = flasher.flash(T=T, P=P, zs=zs)
+        recalc = flasher.flash(S=base.S(), V=base.V_iter(True), zs=zs)
+        assert_allclose(base.T, recalc.T, rtol=1e-9)
+    
 
 def test_TWU_SRK_PR_T_alpha_interp_failure_2():
     T, P, zs = .001, .001, [1.0]

@@ -266,7 +266,7 @@ class Phase(object):
                     _log_zs.append(-690.7755278982137) # log(1e-300)
         return self._log_zs
     
-    def V_iter(self):
+    def V_iter(self, force=False):
         return self.V()
 
     def G(self):
@@ -1409,7 +1409,7 @@ class EOSGas(Phase):
         
     to = to_zs_TPV
         
-    def V_iter(self):
+    def V_iter(self, force=False):
         # Can be some severe issues in the very low pressure/temperature range
         # For that reason, consider not doing TV iterations.
         # Cal occur also with PV iterations
@@ -1419,7 +1419,7 @@ class EOSGas(Phase):
         eos_mix = self.eos_mix
         V = self.V()
         P_err = abs((R*T/(V-eos_mix.b) - eos_mix.a_alpha/(V*V + eos_mix.delta*V + eos_mix.epsilon)) - P)
-        if (P_err/P) < 1e-9:
+        if (P_err/P) < 1e-9 and not force:
             return V
         try:
             return eos_mix.V_g_mpmath.real
