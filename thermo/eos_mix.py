@@ -7347,6 +7347,118 @@ class SRKMIXTranslated(SRKMIX):
     solve_T = GCEOS.solve_T
 
 
+    @property
+    def ddelta_dzs(self):   
+        r'''Helper method for calculating the composition derivatives of
+        `delta`. Note this is independent of the phase. :math:`b^0` refers to
+        the original `b` parameter not involving any translation.
+        
+        .. math::
+            \left(\frac{\partial \delta}{\partial x_i}\right)_{T, P, x_{i\ne j}} 
+            = 2 (c_i + b^0_i)
+
+        Returns
+        -------
+        ddelta_dzs : list[float]
+            Composition derivative of `delta` of each component, [m^3/mol]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        b0s, cs = self.b0s, self.cs
+        return [(2.0*cs[i] + b0s[i]) for i in self.cmps]
+
+    # Zero in both cases
+    d2delta_dzizjs = PRMIX.d2delta_dzizjs
+    d3delta_dzizjzks = PRMIX.d3delta_dzizjzks
+
+    @property
+    def ddelta_dns(self):   
+        r'''Helper method for calculating the mole number derivatives of
+        `delta`. Note this is independent of the phase. :math:`b^0` refers to
+        the original `b` parameter not involving any translation.
+        
+        .. math::
+            \left(\frac{\partial \delta}{\partial n_i}\right)_{T, P, n_{i\ne j}} 
+            = (2 c_i + b^0_i) - \delta
+
+        Returns
+        -------
+        ddelta_dns : list[float]
+            Mole number derivative of `delta` of each component, [m^3/mol^2]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        b0s, cs, delta = self.b0s, self.cs, self.delta
+        return [(2.0*cs[i] + b0s[i]) - delta for i in self.cmps]
+
+    @property
+    def d2delta_dninjs(self):   
+        r'''Helper method for calculating the second mole number derivatives (hessian) of
+        `delta`. Note this is independent of the phase. :math:`b^0` refers to
+        the original `b` parameter not involving any translation.
+        
+        .. math::
+            \left(\frac{\partial^2 \delta}{\partial n_i \partial n_j}\right)_{T, P, n_{k\ne i,j}} 
+            = \left(\2(b^0 - c_i - c_j) + 4c - b_i^0 - b_j^0\right)
+
+        Returns
+        -------
+        d2delta_dninjs : list[list[float]]
+            Second mole number derivative of `delta` of each component, [m^3/mol^3]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        cmps, b0s, cs, delta = self.cmps, self.b0s, self.cs, self.delta
+        c, b = self.c, self.b
+        b0 = b + c
+        d2delta_dninjs = []
+        for i in cmps:
+            d2delta_dninjs.append([(2.0*(b0 - cs[i] - cs[j]) + 4.0*c - b0s[i] - b0s[j])
+                                    for j in cmps])
+        return d2delta_dninjs
+
+    @property
+    def d3delta_dninjnks(self):   
+        r'''Helper method for calculating the third partial mole number
+        derivatives of `delta`. Note this is independent of the phase. :math:`b^0` refers to
+        the original `b` parameter not involving any translation.
+        
+        .. math::
+            \left(\frac{\partial^3 \delta}{\partial n_i \partial n_j \partial n_k }
+            \right)_{T, P, 
+            n_{m \ne i,j,k}} = -6b^0 + 2(b^0_i + b^0_j + b^0_k) + -12c 
+                +4(c_i + c_j + c_k)
+
+        Returns
+        -------
+        d3delta_dninjnks : list[list[list[float]]]
+            Third mole number derivative of `delta` of each component, 
+            [m^3/mol^4]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        cmps, b0s, cs, delta = self.cmps, self.b0s, self.cs, self.delta
+        c, b = self.c, self.b
+        b0 = b + c
+        d3delta_dninjnks = []
+        for i in cmps:
+            d3delta_dnjnks = []
+            for j in cmps:
+                d3delta_dnjnks.append([(-6.0*b0 + 2.0*(b0s[i] + b0s[j] + b0s[k])
+                - 12.0*c + 4.0*(cs[i] + cs[j] + cs[k]))
+                for k in cmps])
+            d3delta_dninjnks.append(d3delta_dnjnks)
+        return d3delta_dninjnks
+
+
 class SRKMIXTranslatedConsistent(SRKMIXTranslated):    
     eos_pure = SRKTranslatedConsistent
     mix_kwargs_to_pure = {'cs': 'c', 'alpha_coeffs': 'alpha_coeffs'}

@@ -2190,7 +2190,7 @@ def test_d3b_dnz(kwargs):
 @pytest.mark.sympy
 @pytest.mark.parametrize("kwargs", [quaternary_basic])
 def test_d3delta_dnz(kwargs):
-    from thermo.eos_mix import PRMIXTranslated
+    from thermo.eos_mix import PRMIXTranslated, SRKMIXTranslated
     # Rough - neeed sympy, numerical differentiation does not give any accuracy
     # Covers everything but to validate new EOSs, have to add the delta function to the list
     from sympy import symbols, diff
@@ -2239,6 +2239,8 @@ def test_d3delta_dnz(kwargs):
                   PRMIXTranslated: 2*(c_working + b_working),
                   PRMIXTranslatedConsistent: 2*(c_working + b_working),
                   PRMIXTranslatedPPJP: 2*(c_working + b_working),
+                  
+                  SRKMIXTranslatedConsistent: 2*c_working + b_working,
                  }
 
         for e in eos_mix_list:
@@ -2283,6 +2285,7 @@ def test_d3delta_dnz(kwargs):
                 else:
                     implemented = np.array(eos.d3delta_dninjnks).ravel().tolist()
 #                try:
+                
                 assert_allclose(analytical, implemented, rtol=1e-11)
 #                except:
 #                    print(e, delta, z)
@@ -2513,7 +2516,7 @@ def test_ddelta_dnx(kwargs):
         numericals = [derivative(ddelta_dnxpartial, ni, dx=1e-3, order=7, args=(i,)) 
             for i, ni in enumerate(zs)]
         assert_allclose(numericals, eos.ddelta_dns)
-# test_ddelta_dnx(ternary_basic)
+#test_ddelta_dnx(ternary_basic)
 
 @pytest.mark.parametrize("kwargs", [ternary_basic])
 def test_d2delta_d2nx(kwargs):
@@ -2541,7 +2544,7 @@ def test_d2delta_d2nx(kwargs):
         numericals = hessian(d2delta_d2nxpartial, zs, perturbation=5e-5)
         analytical = eos.d2delta_dninjs
         assert_allclose(numericals, analytical, rtol=1e-3)
-# test_d2delta_d2nx(ternary_basic)
+#test_d2delta_d2nx(ternary_basic)
 
 
 @pytest.mark.parametrize("kwargs", [ternary_basic])
