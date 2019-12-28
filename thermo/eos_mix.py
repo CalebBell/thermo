@@ -24,6 +24,7 @@ from __future__ import division
 __all__ = ['GCEOSMIX', 'PRMIX', 'SRKMIX', 'PR78MIX', 'VDWMIX', 'PRSVMIX', 
 'PRSV2MIX', 'TWUPRMIX', 'TWUSRKMIX', 'APISRKMIX', 'IGMIX', 'RKMIX',
 'PRMIXTranslatedConsistent', 'PRMIXTranslatedPPJP',
+'SRKMIXTranslatedConsistent',
 'eos_Z_test_phase_stability', 'eos_Z_trial_phase_stability',
 'eos_mix_list', 'eos_mix_no_coeffs_list']
 
@@ -6411,7 +6412,6 @@ class PRMIXTranslated(PRMIX):
     P_max_at_V = GCEOSMIX.P_max_at_V
     
     # All the b derivatives happen to work out to be the same, and are checked numerically
-    # # TODO: epsilon derivative
     solve_T = GCEOS.solve_T
     @property
     def ddelta_dzs(self):   
@@ -7336,6 +7336,137 @@ class SRKMIX(GCEOSMIX, SRK):
                 d3b_dnjnks.append([2.0*(m3b + bi + bj + bk) for bk in bs])
             d3delta_dninjnks.append(d3b_dnjnks)
         return d3delta_dninjnks
+
+
+class SRKMIXTranslated(SRKMIX):
+    fugacity_coefficients = GCEOSMIX.fugacity_coefficients
+    dlnphis_dT = GCEOSMIX.dlnphis_dT
+    dlnphis_dP = GCEOSMIX.dlnphis_dP
+    d_lnphi_dzs = GCEOSMIX.d_lnphi_dzs
+    P_max_at_V = GCEOSMIX.P_max_at_V
+    solve_T = GCEOS.solve_T
+
+
+class SRKMIXTranslatedConsistent(SRKMIXTranslated):    
+    eos_pure = SRKTranslatedConsistent
+    mix_kwargs_to_pure = {'cs': 'c', 'alpha_coeffs': 'alpha_coeffs'}
+    
+    def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, cs=None, 
+                 alpha_coeffs=None, T=None, P=None, V=None,
+                 fugacities=True, only_l=False, only_g=False):
+        self.N = N = len(Tcs)
+        self.cmps = cmps = range(N)
+        self.Tcs = Tcs
+        self.Pcs = Pcs
+        self.omegas = omegas
+        self.zs = zs
+        if kijs is None:
+            kijs = [[0.0]*N for i in cmps]
+        self.kijs = kijs
+        self.T = T
+        self.P = P
+        self.V = V
+
+        c1R2, c2R = self.c1*R2, self.c2*R
+        self.ais = [c1R2*Tcs[i]*Tcs[i]/Pcs[i] for i in cmps]
+        b0s = [c2R*Tcs[i]/Pcs[i] for i in cmps]
+
+        if cs is None:
+            cs = [R*Tcs[i]/Pcs[i]*(0.0172*min(max(omegas[i], -0.01), 1.46) + 0.0096)
+                for i in cmps]
+        if alpha_coeffs is None:
+            alpha_coeffs = []
+            for i in cmps:
+                o = min(max(omegas[i], -0.01), 1.46)
+                L = o*(0.0947*o + 0.6871) + 0.1508
+                M = o*(0.1615*o - 0.2349) + 0.8876
+                alpha_coeffs.append((L, M, 2.0))
+
+
+        
+        self.kwargs = {'kijs': kijs, 'alpha_coeffs': alpha_coeffs, 'cs': cs}
+        self.alpha_coeffs = alpha_coeffs
+        self.cs = cs
+        
+        b0, c = 0.0, 0.0
+        for i in cmps:
+            b0 += b0s[i]*zs[i]
+            c += cs[i]*zs[i]
+        
+        self.b0s = b0s
+        self.bs = [b0s[i] - cs[i] for i in cmps]
+        self.c = c
+        self.b = b = b0 - c
+        self.delta = c + c + b0
+        self.epsilon = c*(b0 + c)
+        self.solve(only_l=only_l, only_g=only_g)
+        if fugacities:
+            self.fugacities()
+
+    def a_alpha_and_derivatives_vectorized(self, T, full=False):
+        r'''Method to calculate the pure-component `a_alphas` and their first  
+        and second derivatives for TWU91 alpha function EOS. This vectorized 
+        implementation is added for extra speed.
+
+        .. math::
+            \alpha = \left(\frac{T}{Tc}\right)^{c_{3} \left(c_{2} 
+            - 1\right)} e^{c_{1} \left(- \left(\frac{T}{Tc}
+            \right)^{c_{2} c_{3}} + 1\right)}        
+        
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        full : bool, optional
+            If False, calculates and returns only `a_alphas`, [-]
+        
+        Returns
+        -------
+        a_alphas : list[float]
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        da_alpha_dTs : list[float]
+            Temperature derivative of coefficient calculated by EOS-specific 
+            method, [J^2/mol^2/Pa/K]
+        d2a_alpha_dT2s : list[float]
+            Second temperature derivative of coefficient calculated by  
+            EOS-specific method, [J^2/mol^2/Pa/K**2]
+        '''
+        # TODO: share code with PRMIXTranslatedConsistent
+        ais, alpha_coeffs, Tcs = self.ais, self.alpha_coeffs, self.Tcs
+        if not full:
+            a_alphas = []
+            for i in self.cmps:
+                coeffs = alpha_coeffs[i] 
+                Tr = T/Tcs[i]
+                a_alpha = ais[i]*(Tr**(coeffs[2]*(coeffs[1] - 1.0))*exp(coeffs[0]*(1.0 - (Tr)**(coeffs[1]*coeffs[2]))))
+                a_alphas.append(a_alpha)
+            return a_alphas
+        else:
+            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
+            T_inv = 1.0/T
+            for i in self.cmps:
+                coeffs = alpha_coeffs[i]
+                c0, c1, c2 = coeffs[0], coeffs[1], coeffs[2]
+                Tr = T/Tcs[i]
+                
+                x1 = c1 - 1.0
+                x2 = c2*x1
+                x3 = c1*c2
+                x4 = Tr**x3
+                x5 = ais[i]*Tr**x2*exp(-c0*(x4 - 1.0))
+                x6 = c0*x4
+                x7 = c1*x6
+                x8 = c2*x5
+                x9 = c1*c1*c2
+                
+                d2a_alpha_dT2 = (x8*(c0*c0*x4*x4*x9 - c1 + c2*x1*x1 
+                                     - 2.0*x2*x7 - x6*x9 + x7 + 1.0)*T_inv*T_inv)            
+                a_alphas.append(x5)
+                da_alpha_dTs.append(x8*(x1 - x7)*T_inv)
+                d2a_alpha_dT2s.append(d2a_alpha_dT2)
+
+            return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
+
 
 class PR78MIX(PRMIX):
     r'''Class for solving the Peng-Robinson cubic equation of state for a 
@@ -9015,9 +9146,10 @@ def eos_lnphis_trial_phase_stability(eos, prefer, alt):
 
 eos_mix_list = [PRMIX, SRKMIX, PR78MIX, VDWMIX, PRSVMIX, PRSV2MIX, TWUPRMIX,
                 TWUSRKMIX, APISRKMIX, IGMIX, RKMIX, PRMIXTranslatedConsistent,
-                PRMIXTranslatedPPJP]
+                PRMIXTranslatedPPJP, SRKMIXTranslatedConsistent]
 eos_mix_no_coeffs_list = [PRMIX, SRKMIX, PR78MIX, VDWMIX, TWUPRMIX, TWUSRKMIX, 
-                          IGMIX, RKMIX, PRMIXTranslatedConsistent, PRMIXTranslatedPPJP]
+                          IGMIX, RKMIX, PRMIXTranslatedConsistent,
+                          PRMIXTranslatedPPJP, SRKMIXTranslatedConsistent]
 
 
 for eos in eos_mix_list:
