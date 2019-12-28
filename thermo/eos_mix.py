@@ -7570,6 +7570,65 @@ class SRKMIXTranslated(SRKMIX):
             d2epsilon_dninjs.append(l)
         return d2epsilon_dninjs
 
+    @property
+    def d3epsilon_dninjnks(self):   
+        r'''Helper method for calculating the third partial mole number
+        derivatives of `epsilon`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^3 \epsilon}{\partial n_i \partial n_j \partial n_k }
+            \right)_{T, P, 
+            n_{m \ne i,j,k}} = -2b^0(3c - c_i - c_j - c_k)
+                - 2c(3b^0 - b^0_i - b^0_j - b^0_k)
+                - 4c(3c - c_i - c_j - c_k)
+                -(b^0 - b^0_i)(2c - c_j - c_k)
+                -(b^0 - b^0_j)(2c - c_i - c_k)
+                -(b^0 - b^0_k)(2c - c_i - c_j)
+                - (c - c_i)(2b^0 - b^0_j - b^0_k)
+                - (c - c_j)(2b^0 - b^0_i - b^0_k)
+                - (c - c_k)(2b^0 - b^0_i - b^0_j)
+                -2(c - c_i)(2c - c_j - c_k)
+                -2(c - c_j)(2c - c_i - c_k)
+                -2(c - c_k)(2c - c_i - c_j)
+                
+        Returns
+        -------
+        d3epsilon_dninjnks : list[list[list[float]]]
+            Third mole number derivative of `epsilon` of each component,
+            [m^6/mol^5]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        epsilon, c, b = self.epsilon, self.c, self.b
+        cmps, b0s, cs = self.cmps, self.b0s, self.cs
+        b0 = b + c
+        d3b_dninjnks = []
+        for i in cmps:
+            d3b_dnjnks = []
+            for j in cmps:
+                row = []
+                for k in cmps:
+                    term = (-2.0*b0*(3.0*c - cs[i] - cs[j] - cs[k])
+                    - 2.0*c*(3.0*b0 - b0s[i] - b0s[j] - b0s[k])
+                    - 4.0*c*(3.0*c - cs[i] - cs[j] - cs[k])
+                    - (b0 - b0s[i])*(2.0*c - cs[j] - cs[k])
+                    - (b0 - b0s[j])*(2.0*c - cs[i] - cs[k])
+                    - (b0 - b0s[k])*(2.0*c - cs[i] - cs[j])
+                    - (c - cs[i])*(2.0*b0 - b0s[j] - b0s[k])
+                    - (c - cs[j])*(2.0*b0 - b0s[i] - b0s[k])
+                    - (c - cs[k])*(2.0*b0 - b0s[i] - b0s[j])
+                    - 2.0*(c - cs[i])*(2.0*c - cs[j] - cs[k])
+                    - 2.0*(c - cs[j])*(2.0*c - cs[i] - cs[k])
+                    - 2.0*(c - cs[k])*(2.0*c - cs[i] - cs[j])
+                    )
+                    row.append(term)
+                d3b_dnjnks.append(row)
+            d3b_dninjnks.append(d3b_dnjnks)
+        return d3b_dninjnks
+
+
 class SRKMIXTranslatedConsistent(SRKMIXTranslated):    
     eos_pure = SRKTranslatedConsistent
     mix_kwargs_to_pure = {'cs': 'c', 'alpha_coeffs': 'alpha_coeffs'}

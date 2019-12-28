@@ -2437,53 +2437,54 @@ def test_d3epsilon_dnz(kwargs):
                   PRMIXTranslated: -b_working*b_working + c_working*(c_working + b_working + b_working),
                   PRMIXTranslatedConsistent: -b_working*b_working + c_working*(c_working + b_working + b_working),
                   PRMIXTranslatedPPJP: -b_working*b_working + c_working*(c_working + b_working + b_working),
+
+                  SRKMIXTranslatedConsistent: c_working*(b_working + c_working),
                  }
 
         for e in eos_mix_list:
-            if e in epsilons:
-                diffs = {}
-                epsilon = epsilons[e]
-            
-                eos = e(**kwargs)
+            if e not in epsilons:
+                raise ValueError("Add new data")
+                
+            diffs = {}
+            epsilon = epsilons[e]
+        
+            eos = e(**kwargs)
 
-                to_subs = {}
-                try:
-                    to_subs.update({bi: eos.b0s[i] for i, bi in enumerate(bs)})
-                except:
-                    to_subs.update({bi: eos.bs[i] for i, bi in enumerate(bs)})
-                to_subs.update({ni: zs[i] for i, ni in enumerate(ns)})
-                try:
-                    to_subs.update({ci: eos.cs[i] for i, ci in enumerate(cs)})
-                except:
-                    to_subs.update({ci: 0 for i, ci in enumerate(cs)})
+            to_subs = {}
+            try:
+                to_subs.update({bi: eos.b0s[i] for i, bi in enumerate(bs)})
+            except:
+                to_subs.update({bi: eos.bs[i] for i, bi in enumerate(bs)})
+            to_subs.update({ni: zs[i] for i, ni in enumerate(ns)})
+            try:
+                to_subs.update({ci: eos.cs[i] for i, ci in enumerate(cs)})
+            except:
+                to_subs.update({ci: 0 for i, ci in enumerate(cs)})
 
-                analytical = [[[None]*N for i in range(N)] for i in range(N)]
-                for i in range(N):
-                    for j in range(N):
-                        for k in range(N):
-                            if not analytical[i][j][k]:
-                                if (i, j, k) in diffs:
-                                    t = diffs[(i, j, k)]
+            analytical = [[[None]*N for i in range(N)] for i in range(N)]
+            for i in range(N):
+                for j in range(N):
+                    for k in range(N):
+                        if not analytical[i][j][k]:
+                            if (i, j, k) in diffs:
+                                t = diffs[(i, j, k)]
+                            else:
+                                if z:
+                                    t = diff(epsilon, zs_z[i], zs_z[j], zs_z[k])
                                 else:
-                                    if z:
-                                        t = diff(epsilon, zs_z[i], zs_z[j], zs_z[k])
-                                    else:
-                                        t = diff(epsilon, ns[i], ns[j], ns[k])
-                                    diffs[(i, j, k)] = t
-                                v = t.subs(to_subs)
-                                analytical[i][j][k] = analytical[i][k][j] = analytical[j][i][k] = analytical[j][k][i] = analytical[k][i][j] = analytical[k][j][i] = float(v)
-            
-            
-                analytical = np.array(analytical).ravel().tolist()
-                if z:
-                    implemented = np.array(eos.d3epsilon_dzizjzks).ravel().tolist()
-                else:
-                    implemented = np.array(eos.d3epsilon_dninjnks).ravel().tolist()
-#                print(e)
-#                try:
-                assert_allclose(analytical, implemented, rtol=1e-11)
-#                except:
-#                    print(e)
+                                    t = diff(epsilon, ns[i], ns[j], ns[k])
+                                diffs[(i, j, k)] = t
+                            v = t.subs(to_subs)
+                            analytical[i][j][k] = analytical[i][k][j] = analytical[j][i][k] = analytical[j][k][i] = analytical[k][i][j] = analytical[k][j][i] = float(v)
+        
+        
+            analytical = np.array(analytical).ravel().tolist()
+            if z:
+                implemented = np.array(eos.d3epsilon_dzizjzks).ravel().tolist()
+            else:
+                implemented = np.array(eos.d3epsilon_dninjnks).ravel().tolist()
+            assert_allclose(analytical, implemented, rtol=1e-11)
+
 #test_d3epsilon_dnz(quaternary_basic)
 
 @pytest.mark.sympy
@@ -2535,48 +2536,52 @@ def test_d2epsilon_dnz_sympy(kwargs):
                   PRMIXTranslated: -b_working*b_working + c_working*(c_working + b_working + b_working),
                   PRMIXTranslatedConsistent: -b_working*b_working + c_working*(c_working + b_working + b_working),
                   PRMIXTranslatedPPJP: -b_working*b_working + c_working*(c_working + b_working + b_working),
+
+                  SRKMIXTranslatedConsistent: c_working*(b_working + c_working),
                  }
 
         for e in eos_mix_list:
-            if e in epsilons:
-                diffs = {}
-                epsilon = epsilons[e]
-            
-                eos = e(**kwargs)
+            if e not in epsilons:
+                raise ValueError("missing function")
+                
+            diffs = {}
+            epsilon = epsilons[e]
+        
+            eos = e(**kwargs)
 
-                to_subs = {}
-                try:
-                    to_subs.update({bi: eos.b0s[i] for i, bi in enumerate(bs)})
-                except:
-                    to_subs.update({bi: eos.bs[i] for i, bi in enumerate(bs)})
-                to_subs.update({ni: zs[i] for i, ni in enumerate(ns)})
-                try:
-                    to_subs.update({ci: eos.cs[i] for i, ci in enumerate(cs)})
-                except:
-                    to_subs.update({ci: 0 for i, ci in enumerate(cs)})
+            to_subs = {}
+            try:
+                to_subs.update({bi: eos.b0s[i] for i, bi in enumerate(bs)})
+            except:
+                to_subs.update({bi: eos.bs[i] for i, bi in enumerate(bs)})
+            to_subs.update({ni: zs[i] for i, ni in enumerate(ns)})
+            try:
+                to_subs.update({ci: eos.cs[i] for i, ci in enumerate(cs)})
+            except:
+                to_subs.update({ci: 0 for i, ci in enumerate(cs)})
 
-                analytical = [[None]*N for i in range(N)]
-                for i in range(N):
-                    for j in range(N):
-                        if not analytical[i][j]:
-                            if (i, j) in diffs:
-                                t = diffs[(i, j)]
+            analytical = [[None]*N for i in range(N)]
+            for i in range(N):
+                for j in range(N):
+                    if not analytical[i][j]:
+                        if (i, j) in diffs:
+                            t = diffs[(i, j)]
+                        else:
+                            if z:
+                                t = diff(epsilon, zs_z[i], zs_z[j])
                             else:
-                                if z:
-                                    t = diff(epsilon, zs_z[i], zs_z[j])
-                                else:
-                                    t = diff(epsilon, ns[i], ns[j])
-                                diffs[(i, j,)] = t
-                            v = t.subs(to_subs)
-                            analytical[i][j] = analytical[j][i] = float(v)
-            
-            
-                analytical = np.array(analytical).ravel().tolist()
-                if z:
-                    implemented = np.array(eos.d2epsilon_dzizjs).ravel().tolist()
-                else:
-                    implemented = np.array(eos.d2epsilon_dninjs).ravel().tolist()
-                assert_allclose(analytical, implemented, rtol=1e-11)
+                                t = diff(epsilon, ns[i], ns[j])
+                            diffs[(i, j,)] = t
+                        v = t.subs(to_subs)
+                        analytical[i][j] = analytical[j][i] = float(v)
+        
+        
+            analytical = np.array(analytical).ravel().tolist()
+            if z:
+                implemented = np.array(eos.d2epsilon_dzizjs).ravel().tolist()
+            else:
+                implemented = np.array(eos.d2epsilon_dninjs).ravel().tolist()
+            assert_allclose(analytical, implemented, rtol=1e-11)
 
 #test_d2epsilon_dnz_sympy(ternary_basic)
 
