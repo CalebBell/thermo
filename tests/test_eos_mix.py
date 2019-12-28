@@ -3084,9 +3084,9 @@ def test_fugacities_numerical_all_eos_mix():
         analytical = [P*i for i in eos.phis_g]
         assert_allclose(numericals, analytical)
         
-        analytical_2 = [exp(i)*P for i in super(eos.__class__, eos).fugacity_coefficients(eos.Z_g, zs)]
+        analytical_2 = [exp(i)*P for i in GCEOSMIX.fugacity_coefficients(eos, eos.Z_g, zs)]
         assert_allclose(numericals, analytical_2)
-
+# test_fugacities_numerical_all_eos_mix()
 
 def test_dlnphis_dT_vs_Hdep_identity():
     liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S']
