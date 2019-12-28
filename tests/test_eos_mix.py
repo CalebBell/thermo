@@ -2578,7 +2578,7 @@ def test_d2epsilon_dnz_sympy(kwargs):
                     implemented = np.array(eos.d2epsilon_dninjs).ravel().tolist()
                 assert_allclose(analytical, implemented, rtol=1e-11)
 
-#test_d2epsilon_dnz(ternary_basic)
+#test_d2epsilon_dnz_sympy(ternary_basic)
 
 
 @pytest.mark.parametrize("kwargs", [ternary_basic])
@@ -2689,7 +2689,7 @@ def test_d2epsilon_d2nx(kwargs):
         numericals = hessian(d2epsilon_d2nxpartial, zs, perturbation=1e-4)
         analytical = eos.d2epsilon_dzizjs
         assert_allclose(numericals, analytical, rtol=1e-6)
-    
+
     normalization = True
     for obj in eos_mix_list:
         eos = obj(zs=zs, **kwargs)

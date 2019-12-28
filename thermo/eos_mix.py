@@ -7458,6 +7458,117 @@ class SRKMIXTranslated(SRKMIX):
             d3delta_dninjnks.append(d3delta_dnjnks)
         return d3delta_dninjnks
 
+    @property
+    def depsilon_dzs(self):       
+        r'''Helper method for calculating the composition derivatives of
+        `epsilon`. Note this is independent of the phase. :math:`b^0` refers to
+        the original `b` parameter not involving any translation.
+        
+        .. math::
+            \left(\frac{\partial \epsilon}{\partial x_i}\right)_{T, P, x_{i\ne j}} 
+            = c_i b^0 + 2c c_i + b_i c
+
+        Returns
+        -------
+        depsilon_dzs : list[float]
+            Composition derivative of `epsilon` of each component, [m^6/mol^2]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        epsilon, c, b = self.epsilon, self.c, self.b
+        cmps, b0s, cs = self.cmps, self.b0s, self.cs
+        b0 = b + c
+        return [b0s[i]*c + cs[i]*b0 + 2.0*cs[i]*c
+                for i in cmps]
+
+    @property    
+    def depsilon_dns(self):       
+        r'''Helper method for calculating the mole number derivatives of
+        `epsilon`. Note this is independent of the phase. :math:`b^0` refers to
+        the original `b` parameter not involving any translation.
+        
+        .. math::
+            \left(\frac{\partial \epsilon}{\partial n_i}\right)_{T, P, n_{i\ne j}} 
+            = -b^0(c - c_i) - c(b^0 - b_i^0) - 2c(c - c_i)
+            
+            
+        Returns
+        -------
+        depsilon_dns : list[float]
+            Composition derivative of `epsilon` of each component, [m^6/mol^3]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        epsilon, c, b = self.epsilon, self.c, self.b
+        cmps, b0s, cs = self.cmps, self.b0s, self.cs
+        b0 = b + c
+        return [(-b0*(c - cs[i]) - c*(b0 - b0s[i]) - 2.0*c*(c - cs[i]))
+                for i in cmps]
+
+    @property
+    def d2epsilon_dzizjs(self):       
+        r'''Helper method for calculating the second composition derivatives (hessian) 
+        of `epsilon`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^2 \epsilon}{\partial x_i \partial x_j}\right)_{T, P, x_{k\ne i,j}} 
+            = b^0_i c_j + b^0_j c_i + 2c_i c_j
+
+        Returns
+        -------
+        d2epsilon_dzizjs : list[list[float]]
+            Second composition derivative of `epsilon` of each component, [m^6/mol^2]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        cmps, b0s, cs = self.cmps, self.b0s, self.cs
+        return [[2.0*cs[i]*cs[j] + b0s[i]*cs[j] + b0s[j]*cs[i]
+                 for i in cmps] for j in cmps]
+        
+    d3epsilon_dzizjzks = GCEOSMIX.d3epsilon_dzizjzks # Zeros
+
+    @property
+    def d2epsilon_dninjs(self):       
+        r'''Helper method for calculating the second mole number derivatives (hessian) of
+        `epsilon`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^2 \epsilon}{\partial n_i n_j}\right)_{T, P, n_{k\ne i,j}} 
+            = b^0(2c - c_i - c_j) + c(2b^0 - b_i^0 - b_j^0) + 2c(2c - c_i - c_j)
+            +(b^0 - b^0_i)(c - c_j) + (b^0 - b_j^0)(c - c_i) + 2(c - c_i)(c - c_j)
+            
+        Returns
+        -------
+        d2epsilon_dninjs : list[list[float]]
+            Second mole number derivative of `epsilon` of each component, [m^6/mol^4]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        # Not trusted yet - numerical check does not have enough digits
+        epsilon, c, b = self.epsilon, self.c, self.b
+        cmps, b0s, cs = self.cmps, self.b0s, self.cs
+        b0 = b + c
+        d2epsilon_dninjs = []
+        for i in cmps:
+            l = []
+            for j in cmps:
+                v = (b0*(2.0*c - cs[i] - cs[j]) + c*(2.0*b0 - b0s[i] - b0s[j])
+                +2.0*c*(2.0*c - cs[i] - cs[j]) 
+                + (b0 - b0s[i])*(c - cs[j])
+                + (b0 - b0s[j])*(c - cs[i])
+                + 2.0*(c - cs[i])*(c - cs[j])
+                )
+                l.append(v)
+            d2epsilon_dninjs.append(l)
+        return d2epsilon_dninjs
 
 class SRKMIXTranslatedConsistent(SRKMIXTranslated):    
     eos_pure = SRKTranslatedConsistent
@@ -9266,7 +9377,7 @@ eos_mix_no_coeffs_list = [PRMIX, SRKMIX, PR78MIX, VDWMIX, TWUPRMIX, TWUSRKMIX,
 
 for eos in eos_mix_list:
     
-    if hasattr(eos, 'epsilon') and eos.epsilon == 0:
+    if hasattr(eos, 'epsilon') and eos.epsilon == 0 and not SRKMIXTranslated in eos.__mro__:
         @property
         def depsilon_dzs(self):       
             r'''Helper method for calculating the composition derivatives of
