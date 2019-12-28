@@ -30,6 +30,7 @@ __all__ = ['sequential_substitution_2P', 'bubble_T_Michelsen_Mollerup',
            'TPV_HSGUA_guesses_1P_methods', 'TPV_solve_HSGUA_guesses_1P',
            'sequential_substitution_2P_HSGUAbeta', 
            'sequential_substitution_2P_sat',
+           'TPV_double_solve_1P',
            'cm_flash_tol'
            ]
 
@@ -41,7 +42,7 @@ from fluids.numerics import (UnconvergedError, trunc_exp, py_newton as newton,
                              logspace, oscillation_checker, damping_maintain_sign,
                              oscillation_checking_wrapper, OscillationError,
                              NoSolutionError, NotBoundedError,
-                             best_bounding_bounds, isclose)
+                             best_bounding_bounds, isclose, newton_system)
 from fluids.optional.pychebfun import build_solve_pychebfun
 from numpy.testing import assert_allclose
 from scipy.optimize import minimize, fsolve, root
@@ -1928,6 +1929,61 @@ def sequential_substitution_2P_HSGUAbeta(zs, xs_guess, ys_guess, liquid_phase,
     raise UnconvergedError('End of SS without convergence')
 
 
+def TPV_double_solve_1P(zs, phase, guesses, spec_vals,
+                        goal_specs=('V', 'U'), state_specs=('T', 'P'),
+                        maxiter=200, xtol=1E-10, ytol=None):
+    kwargs = {'zs': zs}
+    phase_cls = phase.__class__
+    s00 = 'd%s_d%s_%s' %(goal_specs[0], state_specs[0], state_specs[1])
+    s01 = 'd%s_d%s_%s' %(goal_specs[0], state_specs[1], state_specs[0])
+    s10 = 'd%s_d%s_%s' %(goal_specs[1], state_specs[0], state_specs[1])
+    s11 = 'd%s_d%s_%s' %(goal_specs[1], state_specs[1], state_specs[0])
+    try:
+        err0_fun = getattr(phase_cls, goal_specs[0])
+        err1_fun = getattr(phase_cls, goal_specs[1])
+        j00 = getattr(phase_cls, s00)
+        j01 = getattr(phase_cls, s01)
+        j10 = getattr(phase_cls, s10)
+        j11 = getattr(phase_cls, s11)
+    except:
+        pass
+    
+    cache = []
+
+    def to_solve(states):
+        kwargs[state_specs[0]] = float(states[0])
+        kwargs[state_specs[1]] = float(states[1])
+        new = phase.to(**kwargs)
+        try:
+            v0, v1 = err0_fun(new), err1_fun(new)
+            jac = [[j00(new), j01(new)],
+                   [j10(new), j11(new)]]
+        except:
+            v0, v1 = new.value(goal_specs[0]), new.value(goal_specs[1])
+            jac = [[new.value(s00), new.value(s01)],
+                   [new.value(s10), new.value(s11)]]
+        
+        err0 = v0 - spec_vals[0]
+        err1 = v1 - spec_vals[1]
+        errs = [err0, err1]
+        
+        cache[:] = [new, errs, jac]
+        print(kwargs, errs)
+        return errs, jac
+
+#
+    states, iterations = newton_system(to_solve, x0=guesses, jac=True, xtol=xtol, 
+             ytol=ytol, maxiter=maxiter, damping_func=damping_maintain_sign)
+    phase = cache[0]
+    err = cache[1]
+    jac = cache[2]
+    
+    return states, phase, iterations, err, jac
+
+
+
+
+
 global cm_flash
 cm_flash = None
 def cm_flash_tol():
@@ -2167,7 +2223,8 @@ class FlashBase(object):
         return None
     
     def debug_grid_flash(self, zs, check0, check1, Ts=None, Ps=None, Vs=None, 
-                         VFs=None, SFs=None, Hs=None, Ss=None, Us=None):
+                         VFs=None, SFs=None, Hs=None, Ss=None, Us=None,
+                         retry=False):
         
         matrix_spec_flashes = []
         matrix_flashes = []
@@ -2234,6 +2291,7 @@ class FlashBase(object):
                 kwargs = {}
                 kwargs[check0] = check0_spec
                 kwargs[check1] = check1_spec
+                kwargs['retry'] = retry
                 kwargs['solution'] = lambda new: abs(new.value(nearest_check_prop) - state.value(nearest_check_prop))
                 try:
                     new = self.flash(**kwargs)
@@ -2294,7 +2352,7 @@ class FlashBase(object):
                    VFs=None, SFs=None,
                    auto_range=None, zs=None, pts=50,
                    trunc_err_low=1e-15, trunc_err_high=None, plot=True, 
-                   show=True, color_map=None):
+                   show=True, color_map=None, retry=False):
         
         specs = []
         for a_spec in (spec0, spec1):
@@ -2321,7 +2379,8 @@ class FlashBase(object):
             
         specs0, specs1 = specs
         matrix_spec_flashes, matrix_flashes = self.debug_grid_flash(zs, 
-            check0=check0, check1=check1, Ts=Ts, Ps=Ps, Vs=Vs, VFs=VFs)
+            check0=check0, check1=check1, Ts=Ts, Ps=Ps, Vs=Vs, VFs=VFs,
+            retry=retry)
         
         errs = self.debug_err_flash_grid(matrix_spec_flashes,
             matrix_flashes, check=prop0)
@@ -2611,7 +2670,7 @@ class FlashPureVLS(FlashBase):
 
 
     def flash(self, zs=None, T=None, P=None, VF=None, SF=None, V=None, H=None,
-              S=None, U=None, G=None, A=None, solution=None):
+              S=None, U=None, G=None, A=None, solution=None, retry=False):
         '''
         solution : str or int
            When multiple solutions exist, they will be sorted by T (and then P)
@@ -2760,11 +2819,15 @@ class FlashPureVLS(FlashBase):
             try:
                 g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var, solution=solution)
             except Exception as e:
+                if retry:
+                    print('retrying HSGUA flash')
+                    g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var_backup, solution=solution)
+                else:
+                    raise e
 #            except UnconvergedError as e:
 #                 if fixed_var == 'T' and iter_var in ('S', 'H', 'U'):
 #                     g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var_backup, solution=solution)
 #                 else:
-                raise e
                 # Not sure if good idea - would prefer to converge without
             phases = ls + ss
             if g:

@@ -1263,6 +1263,8 @@ def test_PRMIXTranslatedConsistent_vs_pure():
     alpha_zero = PRMIXTranslatedConsistent(Tcs=[33.2], Pcs=[1296960.0], omegas=[-0.22], kijs=[[0.0]], zs=[1], T=6000, P=1e2)
     assert 0.0 == alpha_zero.a_alpha
     assert_allclose(alpha_zero.V_l, 498.86775708919436, rtol=1e-12)
+    
+    assert eos.P_max_at_V(1) is None # No direct solution for P
 
 
 
@@ -3520,3 +3522,22 @@ def test_solve_T_issues():
     a_alpha_PV = PRSVMIX(Tcs=[768.0], Pcs=[1070000.0], omegas=[0.8805], kijs=[[0]], kappa1s=[0.0], zs=[1],V=0.015290731096352726, P=1121481.0535455043, only_l=True).a_alpha
     assert_allclose(a_alpha_PT, a_alpha_PV, rtol=1e-12)
 
+
+def TV_PV_precision_issue():
+    base = PRMIXTranslatedConsistent(Tcs=[512.5], Pcs=[8084000.0], omegas=[0.559],  zs=[1], T=0.0013894954943731374, P=2.947051702551812)
+    V_err = base.volume_error()
+    assert V_err < 1e-15
+    
+    PV_good = PRMIXTranslatedConsistent(Tcs=[512.5], Pcs=[8084000.0], omegas=[0.559], zs=[1], P=base.P, V=base.V_l_mpmath)
+    TV_good = PRMIXTranslatedConsistent(Tcs=[512.5], Pcs=[8084000.0], omegas=[0.559], zs=[1], T=base.T, V=base.V_l_mpmath)
+    
+    with pytest.raises(Exception):
+        TV_bad = PRMIXTranslatedConsistent(Tcs=[512.5], Pcs=[8084000.0], omegas=[0.559], zs=[1], T=base.T, V=base.V_l)
+    
+    PV_bad = PRMIXTranslatedConsistent(Tcs=[512.5], Pcs=[8084000.0], omegas=[0.559], zs=[1], P=base.P, V=base.V_l)
+    # except
+    assert_allclose(base.T, PV_good.T, rtol=1e-15)
+    assert_allclose(base.P, TV_good.P, rtol=1e-15)
+    
+    # No matter what I do, the solved T is at maximum precision! Cannot go lower without more prec
+    assert abs(PV_bad.T/base.T-1) < 1e-7

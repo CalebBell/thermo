@@ -1094,6 +1094,8 @@ def test_PRTranslatedConsistent():
     assert_allclose(a_alphas_new, a_alphas_calc, rtol=1e-9)
     a_alphas_calc_copy = (eos_copy.a_alpha, eos_copy.da_alpha_dT, eos_copy.d2a_alpha_dT2)
     assert_allclose(a_alphas_new, a_alphas_calc_copy, rtol=1e-9)
+    
+    assert eos.P_max_at_V(1) is None # No direct solution for P
 
 
 def test_SRKTranslatedConsistent():
@@ -1854,12 +1856,13 @@ def test_PRTranslatedTwu():
     # First implementation of vapor pressure analytical derivative
     assert_allclose(eos.dPsat_dT(eos.T, polish=True), eos.dPsat_dT(eos.T), rtol=1e-9)
 
-def test_PRTranslatedConsistent():
+def test_PRTranslatedConsistent_misc():
     # root solution fails
     # volume has nasty issue
     base = PRTranslatedConsistent(Tc=768.0, Pc=1070000.0, omega=0.8805, T=8837.07874361444, P=216556124.0631852)
     V_expect = 0.0007383087409586962
     assert_allclose(base.V_l, V_expect, rtol=1e-11)
+
 
 
 @pytest.mark.slow

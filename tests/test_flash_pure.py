@@ -424,7 +424,7 @@ def test_VS_plot(fluid, eos, auto_range):
     flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
 
     res = flasher.TPV_inputs(zs=zs, pts=50, spec0='T', spec1='P', check0='V', check1='S', prop0='T',
-                           trunc_err_low=1e-10, 
+                           trunc_err_low=1e-10, retry=True,
                            trunc_err_high=1, color_map=cm_flash_tol(),
                            auto_range=auto_range, 
                            show=False)
@@ -441,7 +441,8 @@ def test_VS_plot(fluid, eos, auto_range):
 
     max_err = np.max(errs)
     assert max_err < 1e-8
-    
+
+#test_VS_plot('methanol', PRMIXTranslatedConsistent, 'physical')
 #for fluid in pure_fluids:
 #    test_VS_plot(fluid, APISRKMIX, 'physical')
 #for e in eos_mix_list:

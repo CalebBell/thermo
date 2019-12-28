@@ -661,6 +661,7 @@ class GCEOS(object):
         T : float
             Temperature, [K]
         '''
+        high_prec = type(V) is not float
         denominator_inv = 1.0/(V*V + self.delta*V + self.epsilon)
         V_minus_b_inv = 1.0/(V-self.b)
         self.no_T_spec = True
@@ -673,6 +674,13 @@ class GCEOS(object):
             P_calc = R*T*V_minus_b_inv - a_alpha*denominator_inv
             err = P_calc - P
             return err
+        
+        def to_solve_newton(T):
+            a_alpha, da_alpha_dT, _ = self.a_alpha_and_derivatives(T, full=True, quick=False)
+            P_calc = R*T*V_minus_b_inv - a_alpha*denominator_inv
+            err = P_calc - P
+            derr_dT = R*V_minus_b_inv - denominator_inv*da_alpha_dT
+            return err, derr_dT
 
         # import matplotlib.pyplot as plt
         # xs = np.logspace(np.log10(1), np.log10(1e12), 15000)
@@ -686,10 +694,14 @@ class GCEOS(object):
         err_ig = to_solve(T_guess_ig)
         err_liq = to_solve(T_guess_liq)
 
+        base_tol = 1e-12
+        if high_prec:
+            base_tol = 1e-18
+
         T_brenth, T_secant = None, None
         if err_ig*err_liq < 0.0 and T_guess_liq < 3e4:
             try:
-                T_brenth = brenth(to_solve, T_guess_ig, T_guess_liq, xtol=1e-12,
+                T_brenth = brenth(to_solve, T_guess_ig, T_guess_liq, xtol=base_tol,
                               fa=err_ig, fb=err_liq)
                 # Check the error
                 err = to_solve(T_brenth)
@@ -708,15 +720,15 @@ class GCEOS(object):
         # T_guess = self.Tc*0.5
         # ytol=T_guess*1e-9,
         try:
-            T_secant = secant(to_solve, T_guess, low=1e-12, xtol=1e-12, same_tol=1e4, f0=f0)
+            T_secant = secant(to_solve, T_guess, low=1e-12, xtol=base_tol, same_tol=1e4, f0=f0)
         except:
             T_guess = T_guess_ig if T_guess != T_guess_ig else T_guess_liq
             try:
-                T_secant = secant(to_solve, T_guess, low=1e-12, xtol=1e-12, same_tol=1e4, f0=f0)
+                T_secant = secant(to_solve, T_guess, low=1e-12, xtol=base_tol, same_tol=1e4, f0=f0)
             except:
                 if T_brenth is None:
                     # Hardcoded limits, all the cleverness sometimes does not work
-                    T_brenth = brenth(to_solve, 1e-3, 1e4, xtol=1e-12)
+                    T_brenth = brenth(to_solve, 1e-3, 1e4, xtol=base_tol)
         if solution is not None:
             if T_brenth is None or (T_secant is not None and isclose(T_brenth, T_secant, rel_tol=1e-7)):
                 if T_secant is not None:
@@ -729,7 +741,7 @@ class GCEOS(object):
 
                 for low, high in attempt_bounds:
                     try:
-                        T_brenth = brenth(to_solve, low, high, xtol=1e-12)
+                        T_brenth = brenth(to_solve, low, high, xtol=base_tol)
                         break
                     except:
                         pass
@@ -744,7 +756,7 @@ class GCEOS(object):
 
                 for low, high in attempt_bounds:
                     try:
-                        T_secant = brenth(to_solve, low, high, xtol=1e-12)
+                        T_secant = brenth(to_solve, low, high, xtol=base_tol)
                         break
                     except:
                         pass
@@ -754,6 +766,11 @@ class GCEOS(object):
             del self.a_alpha_ij_roots_inv
         except AttributeError:
             pass
+
+        if T_secant is not None:
+            T_secant = float(T_secant)
+        if T_brenth is not None:
+            T_brenth = float(T_brenth)
 
         if solution is not None:
             if (T_secant is not None and T_brenth is not None):
@@ -5810,7 +5827,7 @@ class PR78(PR):
 
 class PRTranslated(PR):
     solve_T = GCEOS.solve_T
-    
+    P_max_at_V = GCEOS.P_max_at_V
     def __init__(self, Tc, Pc, omega, alpha_coeffs=None, c=0.0, T=None, P=None,
                  V=None):
         self.Tc = Tc
@@ -7386,7 +7403,7 @@ class SRK(GCEOS):
 
 class SRKTranslated(SRK):
     solve_T = GCEOS.solve_T
-    
+    P_max_at_V = GCEOS.P_max_at_V
     def __init__(self, Tc, Pc, omega, alpha_coeffs=None, c=0.0, T=None, P=None,
                  V=None):
         self.Tc = Tc
