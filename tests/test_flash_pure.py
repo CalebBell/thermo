@@ -167,6 +167,7 @@ def test_PV_plot(fluid, eos, auto_range):
 #    print(e)
 #    test_PV_plot('hydrogen', e, 'physical')
 #test_PV_plot('decane', PRMIXTranslatedConsistent, 'physical')
+#test_PV_plot('methanol', SRKMIXTranslatedConsistent, 'physical')
 
 @pytest.mark.slow
 @pytest.mark.parametric

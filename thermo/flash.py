@@ -2302,12 +2302,20 @@ class FlashBase(object):
                 kwargs = {}
                 kwargs[check0] = check0_spec
                 kwargs[check1] = check1_spec
+                
+                # TV_iter is important to always do
                 if TV_iter:
-                    kwargs['V'] = getattr(state, 'V_iter')()
+                    kwargs['V'] = getattr(state, 'V_iter')(force=False)
                 kwargs['retry'] = retry
                 kwargs['solution'] = lambda new: abs(new.value(nearest_check_prop) - state.value(nearest_check_prop))
                 try:
                     new = self.flash(**kwargs)
+                    if PV_iter:
+                        # Do a check here on tolerance
+                        err = abs((new.value(nearest_check_prop) - state.value(nearest_check_prop))/state.value(nearest_check_prop))
+                        if err > 1e-8:
+                            kwargs['V'] = getattr(state, 'V_iter')(force=True)
+                            new = self.flash(**kwargs)
                 except Exception as e:
                     # Was it a precision issue? Some flashes can be brutal
                     if 'V' in kwargs:
