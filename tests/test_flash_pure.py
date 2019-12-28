@@ -1042,6 +1042,22 @@ def test_PRMIXTranslatedConsistent_TV_epsilon_consistency_with_fast():
     recalc = flasher.flash(T=base.T, V=base.phases[0].V_iter(), zs=zs)
     assert_allclose(base.P, recalc.P, rtol=1e-7)
 
+def test_SRKMIXTranslatedConsistent_PV_consistency_issue():
+
+    T, P, zs = 1.0001e-3, 1.1e-2, [1.0]
+    fluid_idx, eos = 7, SRKMIXTranslatedConsistent # methanol
+    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
+    
+    kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
+                  HeatCapacityGases=pure_props.HeatCapacityGases)
+    
+    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
+
+    flashes_base, flashes_new, errs = flasher.TPV_inputs(spec0='T', spec1='P', check0='P', check1='V', prop0='T',
+                  Ts=[1e-3, 1e-2], Ps=[1e-1, 1e-2], zs=[1], trunc_err_low=1e-20, plot=False)
+    assert np.max(errs) < 1e-9
 
 
 
