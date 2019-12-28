@@ -5940,7 +5940,7 @@ class PRTranslated(PR):
         self.solve()
 
 
-class PRTranslatedPPJP(PR):
+class PRTranslatedPPJP(PRTranslated):
     r'''Class for solving the volume translated Pina-Martinez, Privat, Jaubert, 
     and Peng revision of the Peng-Robinson equation of state 
     for a pure compound according to [1]_.
@@ -6001,7 +6001,7 @@ class PRTranslatedPPJP(PR):
        Fluid Phase Equilibria, December 7, 2018. 
        https://doi.org/10.1016/j.fluid.2018.12.007. 
     '''
-    # No point in subclassing PRTranslated - just disables direct solver for T
+    # Direct solver for T could be implemented but cannot use the PR one
     def __init__(self, Tc, Pc, omega, c=0.0, T=None, P=None, V=None):
         self.Tc = Tc
         self.Pc = Pc

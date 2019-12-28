@@ -23,7 +23,7 @@ from __future__ import division
 
 __all__ = ['GCEOSMIX', 'PRMIX', 'SRKMIX', 'PR78MIX', 'VDWMIX', 'PRSVMIX', 
 'PRSV2MIX', 'TWUPRMIX', 'TWUSRKMIX', 'APISRKMIX', 'IGMIX', 'RKMIX',
-'PRMIXTranslatedConsistent',
+'PRMIXTranslatedConsistent', 'PRMIXTranslatedPPJP',
 'eos_Z_test_phase_stability', 'eos_Z_trial_phase_stability',
 'eos_mix_list', 'eos_mix_no_coeffs_list']
 
@@ -6704,6 +6704,68 @@ class PRMIXTranslated(PRMIX):
                 d3b_dnjnks.append(row)
             d3b_dninjnks.append(d3b_dnjnks)
         return d3b_dninjnks
+
+
+class PRMIXTranslatedPPJP(PRMIXTranslated):
+    eos_pure = PRTranslatedPPJP
+    mix_kwargs_to_pure = {'cs': 'c'}
+    def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, cs=None, 
+                 T=None, P=None, V=None,
+                 fugacities=True, only_l=False, only_g=False):
+
+        self.N = N = len(Tcs)
+        self.cmps = cmps = range(N)
+        self.Tcs = Tcs
+        self.Pcs = Pcs
+        self.omegas = omegas
+        self.zs = zs
+        if kijs is None:
+            kijs = [[0.0]*N for i in cmps]
+        self.kijs = kijs
+        self.T = T
+        self.P = P
+        self.V = V
+
+        c1R2, c2R = self.c1*R2, self.c2*R
+        self.ais = [c1R2*Tcs[i]*Tcs[i]/Pcs[i] for i in cmps]
+        b0s = [c2R*Tcs[i]/Pcs[i] for i in cmps]
+        
+        if cs is None:
+            cs = [0.0]*N
+
+        self.kappas = [omega*(omega*(0.1063*omega - 0.2721) + 1.4996) + 0.3919 for omega in omegas]
+        self.kwargs = {'kijs': kijs, 'cs': cs}
+        self.cs = cs
+        
+        b0, c = 0.0, 0.0
+        for i in cmps:
+            b0 += b0s[i]*zs[i]
+            c += cs[i]*zs[i]
+        
+        self.b0s = b0s
+        self.bs = [b0s[i] - cs[i] for i in cmps]
+        self.c = c
+        self.b = b = b0 - c
+        self.delta = 2.0*(c + b0)
+        self.epsilon = -b0*b0 + c*(c + b0 + b0)
+        self.solve(only_l=only_l, only_g=only_g)
+        if fugacities:
+            self.fugacities()
+
+    def _fast_init_specific(self, other):
+        self.cs = cs = other.cs
+        self.kappas = other.kappas
+        zs = self.zs
+        self.b0s = b0s = other.b0s            
+        b0, c = 0.0, 0.0
+        for i in self.cmps:
+            b0 += b0s[i]*zs[i]
+            c += cs[i]*zs[i]
+        self.c = c
+        self.b = b0 - c
+        self.delta = 2.0*(c + b0)
+        self.epsilon = -b0*b0 + c*(c + b0 + b0) # Very important to be calculated exactly the same way as the other implementation
+
 
 class PRMIXTranslatedConsistent(PRMIXTranslated):    
     eos_pure = PRTranslatedConsistent

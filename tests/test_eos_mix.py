@@ -1267,6 +1267,46 @@ def test_PRMIXTranslatedConsistent_vs_pure():
     assert eos.P_max_at_V(1) is None # No direct solution for P
 
 
+def test_PRMIXTranslatedPPJP_vs_pure():
+    eos = PRMIXTranslatedPPJP(Tcs=[33.2], Pcs=[1296960.0], omegas=[-0.22], zs=[1], T=300, P=1e6, cs=[-1.4256e-6])
+    eos_pure = PRTranslatedPPJP(Tc=33.2, Pc=1296960.0, omega=-0.22, T=300, P=1e6, c=-1.4256e-6)
+    eos_pure_copy = eos.pures()[0]
+    assert_allclose(eos_pure.sorted_volumes, eos.sorted_volumes, rtol=1e-13)
+    assert_allclose(eos_pure_copy.sorted_volumes, eos.sorted_volumes, rtol=1e-13)
+    Vs_expect = [-2.7557919524404116e-05, 5.90161172350635e-06, 0.0025037140652460132]
+    assert_allclose(Vs_expect, eos.sorted_volumes)
+    
+    # Test of a_alphas
+    a_alphas_expect = (0.021969565519583095, -1.16079431214164e-05, 2.2413185621355093e-08)
+    a_alphas = eos.a_alpha_and_derivatives(eos.T)
+    a_alphas_pure = eos_pure.a_alpha_and_derivatives(eos_pure.T)
+    assert_allclose(a_alphas, a_alphas_expect, rtol=1e-12)
+    assert_allclose(a_alphas, a_alphas_pure, rtol=1e-12)
+    
+    # Test of PV
+    eos_PV = eos.to(P=eos.P, V=eos.V_l, zs=eos.zs)
+    eos_pure_PV = eos_pure.to(P=eos.P, V=eos.V_l)
+    assert_allclose(eos_PV.T, eos.T, rtol=1e-9)
+    assert_allclose(eos_pure_PV.T, eos.T, rtol=1e-9)
+    
+    # Test of TV
+    eos_TV = eos.to(T=eos.T, V=eos.V_l, zs=eos.zs)
+    eos_pure_TV = eos_pure.to(T=eos.T, V=eos.V_l)
+    assert_allclose(eos_TV.P, eos.P, rtol=1e-9)
+    assert_allclose(eos_pure_TV.P, eos.P, rtol=1e-9)
+    
+    # Test c
+    assert_allclose(eos.c, eos_pure.c, rtol=1e-12)
+    assert_allclose(eos_pure_copy.c, eos.c, rtol=1e-12)
+    
+    # Test Psat
+    assert_allclose(eos.Psat(eos.T), eos_pure.Psat(eos.T), rtol=1e-9)
+    
+    T = 50
+    eos = PRMIXTranslatedPPJP(Tcs=[33.2], Pcs=[1296960.0], omegas=[-0.22], zs=[1], T=T, P=1e6, cs=[-1.4256e-6])
+    eos_pure = PRTranslatedPPJP(Tc=33.2, Pc=1296960.0, omega=-0.22, T=T, P=1e6, c=-1.4256e-6)
+    assert_allclose(eos.phis_g[0], eos_pure.phi_g, rtol=1e-12)
+
 
 @pytest.mark.slow
 @pytest.mark.CoolProp
