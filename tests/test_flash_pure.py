@@ -546,6 +546,7 @@ def test_VH_plot(fluid, eos, auto_range):
 
 
 @pytest.mark.slow
+@pytest.mark.skip
 @pytest.mark.parametric
 @pytest.mark.parametrize("auto_range", ['physical', 'realistic'])
 @pytest.mark.parametrize("fluid", pure_fluids)
@@ -602,6 +603,7 @@ def test_TS_plot(fluid, eos, auto_range):
 
 
 @pytest.mark.slow
+@pytest.mark.skip
 @pytest.mark.parametric
 @pytest.mark.parametrize("auto_range", ['physical', 'realistic'])
 @pytest.mark.parametrize("fluid", pure_fluids)

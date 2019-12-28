@@ -9013,8 +9013,11 @@ def eos_lnphis_trial_phase_stability(eos, prefer, alt):
             lnphis_trial = getattr(eos, prefer)
     return lnphis_trial
 
-eos_mix_list = [PRMIX, SRKMIX, PR78MIX, VDWMIX, PRSVMIX, PRSV2MIX, TWUPRMIX, TWUSRKMIX, APISRKMIX, IGMIX, RKMIX, PRMIXTranslatedConsistent]
-eos_mix_no_coeffs_list = [PRMIX, SRKMIX, PR78MIX, VDWMIX, TWUPRMIX, TWUSRKMIX, IGMIX, RKMIX, PRMIXTranslatedConsistent]
+eos_mix_list = [PRMIX, SRKMIX, PR78MIX, VDWMIX, PRSVMIX, PRSV2MIX, TWUPRMIX,
+                TWUSRKMIX, APISRKMIX, IGMIX, RKMIX, PRMIXTranslatedConsistent,
+                PRMIXTranslatedPPJP]
+eos_mix_no_coeffs_list = [PRMIX, SRKMIX, PR78MIX, VDWMIX, TWUPRMIX, TWUSRKMIX, 
+                          IGMIX, RKMIX, PRMIXTranslatedConsistent, PRMIXTranslatedPPJP]
 
 
 for eos in eos_mix_list:

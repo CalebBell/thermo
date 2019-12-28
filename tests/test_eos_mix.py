@@ -2184,6 +2184,7 @@ def test_d3delta_dnz(kwargs):
                   
                   PRMIXTranslated: 2*(c_working + b_working),
                   PRMIXTranslatedConsistent: 2*(c_working + b_working),
+                  PRMIXTranslatedPPJP: 2*(c_working + b_working),
                  }
 
         for e in eos_mix_list:
@@ -2285,6 +2286,7 @@ def test_d3epsilon_dnz(kwargs):
                   
                   PRMIXTranslated: -b_working*b_working + c_working*(c_working + b_working + b_working),
                   PRMIXTranslatedConsistent: -b_working*b_working + c_working*(c_working + b_working + b_working),
+                  PRMIXTranslatedPPJP: -b_working*b_working + c_working*(c_working + b_working + b_working),
                  }
 
         for e in eos_mix_list:
@@ -2382,6 +2384,7 @@ def test_d2epsilon_dnz(kwargs):
                   
                   PRMIXTranslated: -b_working*b_working + c_working*(c_working + b_working + b_working),
                   PRMIXTranslatedConsistent: -b_working*b_working + c_working*(c_working + b_working + b_working),
+                  PRMIXTranslatedPPJP: -b_working*b_working + c_working*(c_working + b_working + b_working),
                  }
 
         for e in eos_mix_list:

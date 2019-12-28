@@ -1315,7 +1315,7 @@ class GCEOS(object):
             raise ValueError("Bad P or T; issue is not the algorithm")
         
         import mpmath as mp
-        mp.mp.dps = dps + 400#400
+        mp.mp.dps = dps + 40#400#400
         b, T, P, epsilon, delta, a_alpha = [mp.mpf(i) for i in [b, T, P, epsilon, delta, a_alpha]]
         roots = None
         if 1:
