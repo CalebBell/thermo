@@ -26,7 +26,7 @@ __all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',
 'APISRK', 'TWUPR', 'TWUSRK', 'ALPHA_FUNCTIONS', 'eos_list', 'GCEOS_DUMMY',
 'IG', 'PRTranslatedPPJP', 'SRKTranslatedPPJP', 
 'PRTranslatedConsistent', 'SRKTranslatedConsistent',
-'SRKTranslated', 'PRTranslated',
+'SRKTranslated', 'PRTranslated', 'PRTranslatedCoqueletChapoyRichon',
 #'PRVTTwu'
 ]
 
@@ -6032,6 +6032,84 @@ class PRTranslatedPoly(PRTranslated):
             return horner(self.alpha_coeffs, T)
         else:
             return horner_and_der2(self.alpha_coeffs, T)
+
+class PRTranslatedMathiasCopeman(PRTranslated):
+    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
+        Tc = self.Tc
+        a = self.a
+        rt = (T/Tc)**0.5
+        tau = 1.0 - rt
+        alpha_coeffs = self.alpha_coeffs
+#        alpha_coeffs [c3, c2, c1, 1] always
+        if not full:
+            if T < Tc:
+                x0 = horner(alpha_coeffs, tau)
+                a_alpha = x0*x0*a
+                return a_alpha
+            else:
+                x = (1.0 + alpha_coeffs[-2]*tau)
+                return a*x*x
+        else:
+            if T < Tc:
+                # Do not optimize until unit tests are in place
+                x0, x1, x2 = horner_and_der2(alpha_coeffs, tau)
+                a_alpha = x0*x0*a
+                
+                da_alpha_dT = -a*(rt*x0*x1/T)
+                d2a_alpha_dT2 = a*((x0*x2/Tc + x1*x1/Tc + rt*x0*x1/T)/(2.0*T))
+                return a_alpha, da_alpha_dT, d2a_alpha_dT2
+            else:
+                c1 = alpha_coeffs[-2]
+                x0 = 1.0/T
+                x1 = 1.0/Tc
+                x2 = rt#sqrt(T*x1)
+                x3 = c1*(x2 - 1.0) - 1.0
+                x4 = x0*x2*x3
+                a_alpha = a*x3*x3
+                da_alpha_dT = a*c1*x4
+                d2a_alpha_dT2 = 0.5*c1*x0*(c1*x1 - x4)
+                return a_alpha, da_alpha_dT, d2a_alpha_dT2
+                '''
+                from sympy import *
+                T, Tc, c1 = symbols('T, Tc, c1')
+                tau = 1 - sqrt(T/Tc)
+                alpha = (1 + c1*tau)**2
+                cse([alpha, diff(alpha, T), diff(alpha, T, T)], optimizations='basic')
+                '''
+                            
+
+class PRTranslatedCoqueletChapoyRichon(PRTranslatedMathiasCopeman):
+    def __init__(self, Tc, Pc, omega, c=0.0, alpha_coeffs=None, T=None, P=None, V=None):
+        self.Tc = Tc
+        self.Pc = Pc
+        self.omega = omega
+        self.T = T
+        self.P = P
+        self.V = V
+        
+        Pc_inv = 1.0/Pc
+        self.a = self.c1*R2*Tc*Tc*Pc_inv
+        self.c = c
+        if alpha_coeffs is None:
+            c1 = omega*(0.1316*omega + 1.4031) + 0.3906
+            c2 = omega*(-1.3127*omega + 0.3015) - 0.1213
+            c3 = 0.7661*omega + 0.3041
+            alpha_coeffs = [c3, c2, c1, 1.0]
+        elif alpha_coeffs[-1] != 1.0:
+            alpha_coeffs = list(alpha_coeffs)
+            alpha_coeffs.append(1.0)
+            
+        self.kwargs = {'c': c, 'alpha_coeffs': alpha_coeffs}
+        self.alpha_coeffs = alpha_coeffs
+        b0 = self.c2*R*Tc*Pc_inv
+        self.b = b = b0 - c
+        
+        self.delta = 2.0*(c + b0)
+        self.epsilon = -b0*b0 + c*c + 2.0*c*b0
+        self.Vc = self.Zc*R*Tc*Pc_inv
+        self.solve()
+
+
 
 class PRTranslatedTwu(PRTranslated):
     def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):

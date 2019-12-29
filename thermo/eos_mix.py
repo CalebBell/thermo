@@ -6770,7 +6770,8 @@ class PRMIXTranslatedPPJP(PRMIXTranslated):
 class PRMIXTranslatedConsistent(PRMIXTranslated):    
     eos_pure = PRTranslatedConsistent
     mix_kwargs_to_pure = {'cs': 'c', 'alpha_coeffs': 'alpha_coeffs'}
-    
+    # There is an updated set of correlations - which means a revision flag is needed
+    # Analysis of the Combinations of Property Data That Are Suitable for a Safe Estimation of Consistent Twu α-Function Parameters: Updated Parameter Values for the Translated-Consistent tc-PR and tc-RK Cubic Equations of State
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, cs=None, 
                  alpha_coeffs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
