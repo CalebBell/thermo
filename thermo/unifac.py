@@ -1162,10 +1162,13 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
         \ln\frac{\theta_i}{\phi_i} + L_i - \frac{\phi_i}{x_i}
         \sum_{j=1}^{n} x_j L_j
         
+    .. math::
         \theta_i = \frac{x_i q_i}{\sum_{j=1}^{n} x_j q_j} 
         
+    .. math::
          \phi_i = \frac{x_i r_i}{\sum_{j=1}^{n} x_j r_j}
          
+    .. math::
          L_i = 5(r_i - q_i)-(r_i-1)
    
     **Residual component**
@@ -1174,11 +1177,14 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
         \ln \gamma_i^r = \sum_{k}^n \nu_k^{(i)} \left[ \ln \Gamma_k
         - \ln \Gamma_k^{(i)} \right]
         
+    .. math::
         \ln \Gamma_k = Q_k \left[1 - \ln \sum_m \Theta_m \Psi_{mk} - \sum_m 
         \frac{\Theta_m \Psi_{km}}{\sum_n \Theta_n \Psi_{nm}}\right]
         
+    .. math::
         \Theta_m = \frac{Q_m X_m}{\sum_{n} Q_n X_n}
         
+    .. math::
         X_m = \frac{ \sum_j \nu^j_m x_j}{\sum_j \sum_n \nu_n^j x_j}
         
     **R and Q**
@@ -1186,6 +1192,7 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
     .. math::
         r_i = \sum_{k=1}^{n} \nu_k R_k 
         
+    .. math::
         q_i = \sum_{k=1}^{n}\nu_k Q_k
     
     The newer forms of UNIFAC (Dortmund, NIST) calculate the combinatorial
@@ -1195,10 +1202,25 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
         \ln \gamma_i^c = 1 - {V'}_i + \ln({V'}_i) - 5q_i \left(1
         - \frac{V_i}{F_i}+ \ln\left(\frac{V_i}{F_i}\right)\right)
         
+    .. math::
         V'_i = \frac{r_i^{3/4}}{\sum_j r_j^{3/4}x_j}
-        
     
-    This is more clear when looking at the full rearranged form as in [3]_.
+    .. math::
+        V_i = \frac{r_i}{\sum_j r_j x_j}
+        
+    .. math::
+        F_i = \frac{q_i}{\sum_j q_j x_j}
+    
+    Although this form looks substantially different than the original, it 
+    infact reverts to the original form if only :math:`V'_i` is replaced by
+    :math:`V_i`. This is more clear when looking at the full rearranged form as
+    in [3]_.
+    
+    In some publications such as [5]_, the nomenclature is such that 
+    :math:`\theta_i` and :math:`\phi` do not contain the top :math:`x_i`,
+    making :math:`\theta_i = F_i` and  :math:`\phi_i = V_i`. [5]_ is also 
+    notable for having supporting information containing very nice sets of
+    analytical derivatives.
     
     UNIFAC LLE uses the original formulation of UNIFAC, and otherwise only 
     different interaction parameters.
@@ -1229,6 +1251,10 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
        UNIFAC Parameters Using Critically Evaluated Phase Equilibrium Data." 
        Fluid Phase Equilibria 388 (February 25, 2015): 128-41. 
        doi:10.1016/j.fluid.2014.12.042.
+    .. [5] Jäger, Andreas, Ian H. Bell, and Cornelia Breitkopf. "A 
+       Theoretically Based Departure Function for Multi-Fluid Mixture Models."
+       Fluid Phase Equilibria 469 (August 15, 2018): 56-69. 
+       https://doi.org/10.1016/j.fluid.2018.04.015.
     '''
     cmps = range(len(xs))
     if subgroup_data is None:
@@ -1369,24 +1395,26 @@ class UNIFAC(GibbsExcess):
         for groups in chemgroups:
             ri = 0.
             qi = 0.
-            for group, count in groups.items():
-                ri += subgroups[group].R*count
-                qi += subgroups[group].Q*count
+            for subgroup_idx, count in groups.items():
+                ri += subgroups[subgroup_idx].R*count
+                qi += subgroups[subgroup_idx].Q*count
             rs.append(ri)
             qs.append(qi)
-        
+
+        # Make a dictionary containing the subgroups as keys and their count - the total number
+        # of them in ALL the compounds, regardless of mole fractions
         group_counts = {}
-        for groups in chemgroups:
-            for group, count in groups.items():
-                if group in group_counts:
-                    group_counts[group] += count
-                else:
-                    group_counts[group] = count
+        for compound_subgroups in chemgroups:
+            for subgroup, count in compound_subgroups.items():
+                try:
+                    group_counts[subgroup] += count
+                except KeyError:
+                    group_counts[subgroup] = count
         
-        # Convert group counts into a list, sorted by low index
-        group_counts_list = [c for _, c in sorted(zip(group_counts.keys(), group_counts.values()))]
+        # Convert group counts into a list, sorted by index (lowest subgroup index is first element, highest subgroup index is the last)
         subgroup_list = list(sorted(group_counts.keys()))
-        
+        group_counts_list = [c for _, c in sorted(zip(group_counts.keys(), group_counts.values()))]
+
         Qs = [subgroups[group].Q for group in subgroup_list]
         vs = chemgroups_to_matrix(chemgroups)
         
@@ -1421,11 +1449,19 @@ class UNIFAC(GibbsExcess):
         self.T = T
         self.xs = xs
         
+        # rs - 1d index by [component] parameter, calculated using the chemical's subgroups and their count
         self.rs = rs
+        # qs - 1d index by [component] parameter, calculated using the chemical's subgroups and their count
         self.qs = qs
         self.Qs = Qs
+        
+        # [subgroup][component] = number of subgroup in component where subgroup
+        # is an index, numbered sequentially by the number of subgroups in the mixture
         self.vs = vs
         
+        # each psi_letter is a matrix of [subgroup_length][subgroups_length]
+        # the diagonal is zero
+        # Indexed by index of the subgroup in the mixture, again sorted lowest first
         if psi_abc is not None:
             self.psi_a, self.psi_b, self.psi_c = psi_abc
         
@@ -1436,7 +1472,7 @@ class UNIFAC(GibbsExcess):
             self.psi_b = [[i[1] for i in l] for l in psi_coeffs]
             self.psi_c = [[i[2] for i in l] for l in psi_coeffs]
         self.N_groups = len(self.psi_a)
-        self.groups = range(self.N_groups)
+        self.groups = range(self.N_groups) # iterator over the number of 
         self.N = N = len(rs)
         self.cmps = range(N)
         self.version = version
