@@ -1314,7 +1314,7 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
     else:
         loggammacs = [1. - Vis[i] + log(Vis[i]) - 5.*qs[i]*(1. - Vis[i]/Fis[i]
                       + log(Vis[i]/Fis[i])) for i in cmps]
-    print(loggammacs)
+#    print(loggammacs)
 
     Q_sum_term = sum([subgroups[group].Q*group_count_xs[group] for group in group_counts])
     
@@ -1907,3 +1907,232 @@ class UNIFAC(GibbsExcess):
             
         self._dlngammas_c_dxs = dlngammas_c_dxs
         return dlngammas_c_dxs
+
+    ''' Sympy code used to get these derivatives - not yet validated with numerical values from SymPy!
+        Second and third derivative formulas generated with SymPy.
+    from sympy import *
+    
+    N = 3
+    cmps = range(N)
+    xs = x0, x1, x2 = symbols('x0, x1, x2')
+    rs = r0, r1, r2 = symbols('r0, r1, r2')
+    qs = q0, q1, q2 = symbols('q0, q1, q2') # Pure component property (made from subgroups, but known)
+    
+    rsxs = sum([rs[i]*xs[i] for i in cmps])
+    Vis = [rs[i]/rsxs for i in cmps]
+    
+    qsxs = sum([qs[i]*xs[i] for i in cmps])
+    Fis = [qs[i]/qsxs for i in cmps]
+    
+    Vis = V0, V1, V2 = symbols('V0, V1, V2', cls=Function)
+    VisD = V0D, V1D, V2D = symbols('V0D, V1D, V2D', cls=Function)
+    Fis = F0, F1, F2 = symbols('F0, F1, F2', cls=Function)
+    Vis = [Vis[i](x0, x1, x2) for i in cmps]
+    VisD = [VisD[i](x0, x1, x2) for i in cmps]
+    Fis = [Fis[i](x0, x1, x2) for i in cmps]
+    
+    loggammacs = [1 - VisD[i] + log(VisD[i]) - 5*qs[i]*(1 - Vis[i]/Fis[i]
+                  + log(Vis[i]/Fis[i])) for i in cmps]
+    # Variable to use for substitutions
+    Vi, ViD, Fi, xj, xk, xm, qi = symbols('V_i, Vi\', F_i, x_j, x_k, x_m, q_i')
+    
+    # First derivative
+    good_first = diff(loggammacs[0], x1).subs(V0(x0, x1, x2), Vi).subs(F0(x0, x1, x2), Fi).subs(V0D(x0, x1, x2), ViD).subs(x1, xj).subs(q0, qi)
+    good_first = simplify(expand(simplify(good_first)))
+    
+    # Second derivative
+    good_second = diff(loggammacs[0], x1, x2).subs(V0(x0, x1, x2), Vi).subs(F0(x0, x1, x2), Fi).subs(V0D(x0, x1, x2), ViD).subs(x1, xj).subs(x2, xk).subs(q0, qi)
+    
+    # Third derivative
+    good_third = diff(loggammacs[0], x0, x1, x2).subs(V0(x0, x1, x2), Vi).subs(F0(x0, x1, x2), Fi).subs(V0D(x0, x1, x2), ViD).subs(x0, xj).subs(x1, xk).subs(x2, xm).subs(q0, qi)
+    good_third = simplify(good_third)
+
+
+    '''
+    def d2lngammas_c_dxixjs(self):
+        r'''
+        .. math::
+            \frac{\partial%2 \ln \gamma^c_i}{\partial x_j \partial x_k} = 
+            5 q_{i} \left(\frac{- \frac{d^{2}}{d x_{k}d x_{j}} V_{i} + \frac{V_{i}
+            \frac{d^{2}}{d x_{k}d x_{j}} F_{i}}{F_{i}} + \frac{\frac{d}{d x_{j}} F_{i} 
+            \frac{d}{d x_{k}} V_{i}}{F_{i}} + \frac{\frac{d}{d x_{k}} F_{i}
+            \frac{d}{d x_{j}} V_{i}}{F_{i}} - \frac{2 V_{i} \frac{d}{d x_{j}}
+            F_{i} \frac{d}{d x_{k}} F_{i}}{F_{i}^{2}}}{V_{i}} + \frac{\left(
+            \frac{d}{d x_{j}} V_{i} - \frac{V_{i} \frac{d}{d x_{j}} F_{i}}
+            {F_{i}}\right) \frac{d}{d x_{k}} V_{i}}{V_{i}^{2}}
+            + \frac{\frac{d^{2}}{d x_{k}d x_{j}} V_{i}}{F_{i}} - \frac{\left(
+            \frac{d}{d x_{j}} V_{i} - \frac{V_{i} \frac{d}{d x_{j}} F_{i}}{
+            F_{i}}\right) \frac{d}{d x_{k}} F_{i}}{F_{i} V_{i}} - \frac{V_{i}
+            \frac{d^{2}}{d x_{k}d x_{j}} F_{i}}{F_{i}^{2}} - \frac{\frac{d}
+            {d x_{j}} F_{i} \frac{d}{d x_{k}} V_{i}}{F_{i}^{2}} 
+            - \frac{\frac{d}{d x_{k}} F_{i} \frac{d}{d x_{j}} V_{i}}{F_{i}^{2}}
+            + \frac{2 V_{i} \frac{d}{d x_{j}} F_{i} \frac{d}{d x_{k}} F_{i}}
+            {F_{i}^{3}}\right) - \frac{d^{2}}{d x_{k}d x_{j}} Vi' 
+            + \frac{\frac{d^{2}}{d x_{k}d x_{j}} Vi'}{Vi'} - \frac{\frac{d}
+            {d x_{j}} Vi' \frac{d}{d x_{k}} Vi'}{Vi'^{2}}
+            
+        '''
+        try:
+            return self._d2lngammas_c_dxixjs
+        except AttributeError:
+            pass
+        cmps, version, qs = self.cmps, self.version, self.qs
+        Vis = self.Vis()
+        dVis_dxs = self.dVis_dxs()
+        d2Vis_dxixjs = self.d2Vis_dxixjs()
+
+        Fis = self.Fis()
+        dFis_dxs = self.dFis_dxs()
+        d2Fis_dxixjs = self.d2Fis_dxixjs()
+        
+        if self.version == 1:
+            Vis_Dortmund = self.Vis_Dortmund()
+            dVis_Dortmund_dxs = self.dVis_Dortmund_dxs()
+            d2Vis_Dortmund_dxixjs =self.d2Vis_Dortmund_dxixjs()
+        else:
+            Vis_Dortmund = Vis
+            dVis_Dortmund_dxs = dVis_dxs
+            d2Vis_Dortmund_dxixjs = d2Vis_dxixjs
+
+        d2lngammas_c_dxixjs = []
+        for i in cmps:
+            Vi = Vis[i]
+            qi = qs[i]
+            ViD = Vis_Dortmund[i]
+            ViD_inv2 = 1.0/(ViD*ViD)
+            Fi = Fis[i]
+            x1 = 1.0/Fi
+            x4 = x1*x1
+            Fi_inv3 = x1*x1*x1
+            x5 = Vis[i]*x4
+            x15 = 1.0/Vi
+            Vi_inv2 = x15*x15
+            matrix = []
+            for j in cmps:
+                x6 = dFis_dxs[i][j]
+                x10 = dVis_dxs[i][j]
+                dViD_dxj = dVis_Dortmund_dxs[i][j]
+                row = []
+                for k in cmps:
+                    x0 = d2Vis_Dortmund_dxixjs[i][j][k]
+                    x2 = d2Vis_dxixjs[i][j][k]
+                    x3 = d2Fis_dxixjs[i][j][k]
+                    x7 = dVis_dxs[i][k]
+                    dViD_dxk = dVis_Dortmund_dxs[i][k]
+                    x8 = x6*x7
+                    x9 = dFis_dxs[i][k]
+                    x11 = x10*x9
+                    x12 = 2.0*x6*x9
+                    
+                    x13 = Vi*x1
+                    x14 = x10 - x13*x6
+                    
+                    val = (5.0*qi*(-x1*x14*x15*x9 + x1*x2 - x11*x4
+                                   + x15*(x1*x11 + x1*x8 - x12*x5 + x13*x3 - x2)
+                                   - x3*x5 - x4*x8 + x14*x7*Vi_inv2 + Vi*x12*Fi_inv3) 
+                            - x0 + x0/ViD - dViD_dxj*dViD_dxk*ViD_inv2
+                            )
+                    row.append(val)
+                matrix.append(row)
+            d2lngammas_c_dxixjs.append(matrix)
+            
+        self._d2lngammas_c_dxixjs = d2lngammas_c_dxixjs
+        return d2lngammas_c_dxixjs
+
+    def d3lngammas_c_dxixjxks(self):
+        r'''NOT WORKING - and no way to debug
+        
+        .. math::
+            \frac{\partial%2 \ln \gamma^c_i}{\partial x_j \partial x_k
+            \partial x_m} = 
+            
+        '''
+        raise NotImplementedError("Incorrect")
+        try:
+            return self._d3lngammas_c_dxixjxks
+        except AttributeError:
+            pass
+        cmps, version, qs = self.cmps, self.version, self.qs
+        Vis = self.Vis()
+        dVis_dxs = self.dVis_dxs()
+        d2Vis_dxixjs = self.d2Vis_dxixjs()
+        d3Vis_dxixjxks = self.d3Vis_dxixjxks()
+
+        Fis = self.Fis()
+        dFis_dxs = self.dFis_dxs()
+        d2Fis_dxixjs = self.d2Fis_dxixjs()
+        d3Fis_dxixjxks = self.d3Fis_dxixjxks()
+        
+        if self.version == 1:
+            Vis_Dortmund = self.Vis_Dortmund()
+            dVis_Dortmund_dxs = self.dVis_Dortmund_dxs()
+            d2Vis_Dortmund_dxixjs = self.d2Vis_Dortmund_dxixjs()
+            d3Vis_Dortmund_dxixjxks = self.d3Vis_Dortmund_dxixjxks()
+        else:
+            Vis_Dortmund = Vis
+            dVis_Dortmund_dxs = dVis_dxs
+            d2Vis_Dortmund_dxixjs = d2Vis_dxixjs
+            d3Vis_Dortmund_dxixjxks = d3Vis_dxixjxks
+        
+        d3lngammas_c_dxixjxks = []
+        
+        for i in cmps:
+            Vi = Vis[i]
+            ViD = Vis_Dortmund[i]
+            Fi = Fis[i]
+            qi = qs[i]
+            third = []
+            for j in cmps:
+                hess = []
+                for k in cmps:
+                    row = []
+                    for m in cmps:
+                        x0 = d3Vis_Dortmund_dxixjxks[i][j][k][m]#Derivative(ViD, xj, xk, xm)
+                        x1 = 1/Fis[i]#1/Fi
+                        x2 = 5.0*qs[i]
+                        x3 = x2*d3Fis_dxixjxks[i][j][k][m]#Derivative(Fi, xj, xk, xm)
+                        x4 = x2*d3Vis_dxixjxks[i][j][k][m]#Derivative(Vi, xj, xk, xm)
+                        x5 = Vis_Dortmund[i]**-2#ViD**(-2)
+                        x6 = dVis_Dortmund_dxs[i][j]#Derivative(ViD, xj)
+                        x7 = dVis_Dortmund_dxs[i][k]#Derivative(ViD, xk)
+                        x8 = dVis_Dortmund_dxs[i][m]#Derivative(ViD, xm)
+                        x9 = Fis[i]**-2#Fi**(-2)
+                        x10 = x2*x9
+                        x11 = dFis_dxs[i][j]#Derivative(Fi, xj)
+                        x12 = d2Fis_dxixjs[i][k][m]#Derivative(Fi, xk, xm)
+                        x13 = x11*x12
+                        x14 = d2Vis_dxixjs[i][k][m]#Derivative(Vi, xk, xm)
+                        x15 = d2Fis_dxixjs[i][j][m]#Derivative(Fi, xj, xm)
+                        x16 = dFis_dxs[i][k]#Derivative(Fi, xk)
+                        x17 = x10*x16
+                        x18 = d2Vis_dxixjs[i][j][m]#Derivative(Vi, xj, xm)
+                        x19 = d2Fis_dxixjs[i][j][k]#Derivative(Fi, xj, xk)
+                        x20 = dFis_dxs[i][m]#Derivative(Fi, xm)
+                        x21 = x10*x20
+                        x22 = d2Vis_dxixjs[i][j][k]#Derivative(Vi, xj, xk)
+                        x23 = dVis_dxs[i][j]#Derivative(Vi, xj)
+                        x24 = dVis_dxs[i][k]#Derivative(Vi, xk)
+                        x25 = dVis_dxs[i][m]#Derivative(Vi, xm)
+                        x26 = x2/Vis[i]**2
+                        x27 = Fis[i]**(-3)
+                        x28 = 10*qs[i]
+                        x29 = x27*x28
+                        x30 = Vi*x29
+                        x31 = x11*x16
+                        x32 = x20*x29
+                        x33 = x25*x28        
+                        val = (-Vi*x3*x9 - x0 + x1*x3 + x1*x4 - x10*x11*x14 - x10*x12*x23 
+                               - x10*x13 - x10*x15*x24 - x10*x19*x25 + x11*x24*x32 + x13*x30 
+                               + x14*x23*x26 + x15*x16*x30 - x15*x17 + x16*x23*x32 - x17*x18 
+                               + x18*x24*x26 + x19*x20*x30 - x19*x21 - x21*x22 + x22*x25*x26 
+                               + x27*x31*x33 + x31*x32 - x5*x6*d2Vis_Dortmund_dxixjs[i][k][m]
+                               - x5*x7*d2Vis_Dortmund_dxixjs[i][j][m]
+                               - x5*x8*d2Vis_Dortmund_dxixjs[i][j][k]
+                               + x0/ViD + 2*x6*x7*x8/ViD**3 - x4/Vi - x23*x24*x33/Vi**3 - 30*Vi*qi*x20*x31/Fi**4)
+                        row.append(val)
+                    hess.append(row)
+                third.append(hess)
+            d3lngammas_c_dxixjxks.append(third)
+        
+        self._d3lngammas_c_dxixjxks = d3lngammas_c_dxixjxks
+        return d3lngammas_c_dxixjxks
