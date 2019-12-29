@@ -1314,6 +1314,7 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
     else:
         loggammacs = [1. - Vis[i] + log(Vis[i]) - 5.*qs[i]*(1. - Vis[i]/Fis[i]
                       + log(Vis[i]/Fis[i])) for i in cmps]
+    print(loggammacs)
 
     Q_sum_term = sum([subgroups[group].Q*group_count_xs[group] for group in group_counts])
     
@@ -1806,3 +1807,103 @@ class UNIFAC(GibbsExcess):
                                                for rj in rs_34] for ri in rs_34]
         self._d3Vis_Dortmund_dxixjxks = d3Vis_Dortmund
         return d3Vis_Dortmund
+
+    def lngammas_c(self):
+        r'''
+        
+        .. math::
+            \ln \gamma_i^c = 1 - {V'}_i + \ln({V'}_i) - 5q_i \left(1
+            - \frac{V_i}{F_i}+ \ln\left(\frac{V_i}{F_i}\right)\right)
+            
+        .. math::
+            V'_i = \frac{r_i^{3/4}}{\sum_j r_j^{3/4}x_j}
+        
+        .. math::
+            V_i = \frac{r_i}{\sum_j r_j x_j}
+            
+        .. math::
+            F_i = \frac{q_i}{\sum_j q_j x_j}
+
+        '''
+        try:
+            return self._lngammas_c
+        except AttributeError:
+            pass
+        Vis = self.Vis()
+        cmps, version, qs = self.cmps, self.version, self.qs
+        if self.version == 1:
+            Vis_Dortmund = self.Vis_Dortmund()
+        else:
+            Vis_Dortmund = Vis
+        Fis = self.Fis()
+        
+        lngammas_c = []
+        for i in cmps:
+            Vi_Fi = Vis[i]/Fis[i]
+            val = (1.0 - Vis_Dortmund[i] + log(Vis_Dortmund[i])
+                    - 5.0*qs[i]*(1.0 - Vi_Fi + log(Vi_Fi)))
+            lngammas_c.append(val)
+            
+        self._lngammas_c = lngammas_c
+        return lngammas_c
+    
+    def dlngammas_c_dT(self):
+        return [0.0]*self.N
+    
+    def d2lngammas_c_dT2(self):
+        return [0.0]*self.N
+    
+    def d3lngammas_c_dT3(self):
+        return [0.0]*self.N
+       
+    def d2lngammas_c_dTdx(self):
+        # Since T derivative is zero
+        return [0.0]*self.N
+
+            
+    def dlngammas_c_dxs(self):
+        r'''
+        .. math::
+            \frac{\partial \ln \gamma^c_i}{\partial x_j} = 
+            -5q_i\left[ \left( \frac{\frac{\partial V_i}{\partial x_j}}{F_i} - \frac{V_i \frac{\partial F_i}{\partial x_j}}{F_i^2}
+            \right)\frac{F_i}{V_i} - \frac{\frac{\partial V_i}{\partial x_j}}{F_i} 
+            + \frac{V_i\frac{\partial F_i}{\partial x_j}}{F_i^2}
+            \right]
+              - \frac{\partial V_i'}{\partial x_j} 
+              + \frac{\frac{\partial V_i'}{\partial x_j}}{V_i'}
+              
+        '''
+        try:
+            return self._dlngammas_c_dxs
+        except AttributeError:
+            pass
+        cmps, version, qs = self.cmps, self.version, self.qs
+        Vis = self.Vis()
+        dVis_dxs = self.dVis_dxs()
+
+        Fis = self.Fis()
+        dFis_dxs = self.dFis_dxs()
+        
+        if self.version == 1:
+            Vis_Dortmund = self.Vis_Dortmund()
+            dVis_Dortmund_dxs = self.dVis_Dortmund_dxs()
+        else:
+            Vis_Dortmund = Vis
+            dVis_Dortmund_dxs = dVis_dxs
+            
+        # index style - [THE GAMMA FOR WHICH THE DERIVATIVE IS BEING CALCULATED][THE VARIABLE BEING CHANGED CAUsING THE DIFFERENCE]
+        
+        dlngammas_c_dxs = []
+        for i in cmps:
+            row = []
+            Fi_inv = 1.0/Fis[i]
+            for j in cmps:
+                val = -5.0*qs[i]*((dVis_dxs[i][j] - Vis[i]*dFis_dxs[i][j]*Fi_inv)/Vis[i]
+                - dVis_dxs[i][j]*Fi_inv + Vis[i]*dFis_dxs[i][j]*Fi_inv*Fi_inv
+                ) - dVis_Dortmund_dxs[i][j] + dVis_Dortmund_dxs[i][j]/Vis_Dortmund[i]
+                row.append(val)
+            
+            dlngammas_c_dxs.append(row)
+            
+        self._dlngammas_c_dxs = dlngammas_c_dxs
+        return dlngammas_c_dxs
