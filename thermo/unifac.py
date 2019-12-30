@@ -1952,7 +1952,7 @@ class UNIFAC(GibbsExcess):
     def d2lngammas_c_dxixjs(self):
         r'''
         .. math::
-            \frac{\partial%2 \ln \gamma^c_i}{\partial x_j \partial x_k} = 
+            \frac{\partial \ln \gamma^c_i}{\partial x_j \partial x_k} = 
             5 q_{i} \left(\frac{- \frac{d^{2}}{d x_{k}d x_{j}} V_{i} + \frac{V_{i}
             \frac{d^{2}}{d x_{k}d x_{j}} F_{i}}{F_{i}} + \frac{\frac{d}{d x_{j}} F_{i} 
             \frac{d}{d x_{k}} V_{i}}{F_{i}} + \frac{\frac{d}{d x_{k}} F_{i}
@@ -2040,14 +2040,44 @@ class UNIFAC(GibbsExcess):
         return d2lngammas_c_dxixjs
 
     def d3lngammas_c_dxixjxks(self):
-        r'''NOT WORKING - and no way to debug
+        r'''
         
         .. math::
-            \frac{\partial%2 \ln \gamma^c_i}{\partial x_j \partial x_k
-            \partial x_m} = 
+            \frac{\partial \ln \gamma^c_i}{\partial x_j \partial x_k
+            \partial x_m} = - \frac{d^{3}}{d x_{m}d x_{k}d x_{j}} Vi' 
+            + \frac{\frac{d^{3}}{d x_{m}d x_{k}d x_{j}} Vi'}{Vi'} 
+            - \frac{\frac{d}{d x_{j}} Vi' \frac{d^{2}}{d x_{m}d x_{k}} Vi'}
+            {Vi'^{2}} - \frac{\frac{d}{d x_{k}} Vi' \frac{d^{2}}{d x_{m}d 
+            x_{j}} Vi'}{Vi'^{2}} - \frac{\frac{d}{d x_{m}} Vi' \frac{d^{2}}
+            {d x_{k}d x_{j}} Vi'}{Vi'^{2}} + \frac{2 \frac{d}{d x_{j}} Vi' 
+            \frac{d}{d x_{k}} Vi' \frac{d}{d x_{m}} Vi'}{Vi'^{3}} - \frac{5
+            q_{i} \frac{d^{3}}{d x_{m}d x_{k}d x_{j}} V_{i}}{V_{i}} 
+            + \frac{5 q_{i} \frac{d}{d x_{j}} V_{i} \frac{d^{2}}{d x_{m}d x_{k}} V_{i}}{V_{i}^{2}} 
+            + \frac{5 q_{i} \frac{d}{d x_{k}} V_{i} \frac{d^{2}}{d x_{m}d x_{j}} V_{i}}{V_{i}^{2}} 
+            + \frac{5 q_{i} \frac{d}{d x_{m}} V_{i} \frac{d^{2}}{d x_{k}d x_{j}} V_{i}}{V_{i}^{2}} 
+            - \frac{10 q_{i} \frac{d}{d x_{j}} V_{i} \frac{d}{d x_{k}} V_{i} \frac{d}{d x_{m}} V_{i}}{V_{i}^{3}} 
+            + \frac{5 q_{i} \frac{d^{3}}{d x_{m}d x_{k}d x_{j}} F_{i}}{F_{i}} 
+            + \frac{5 q_{i} \frac{d^{3}}{d x_{m}d x_{k}d x_{j}} V_{i}}{F_{i}} 
+            - \frac{5 V_{i} q_{i} \frac{d^{3}}{d x_{m}d x_{k}d x_{j}} F_{i}}{F_{i}^{2}} 
+            - \frac{5 q_{i} \frac{d}{d x_{j}} F_{i} \frac{d^{2}}{d x_{m}d x_{k}} F_{i}}{F_{i}^{2}} 
+            - \frac{5 q_{i} \frac{d}{d x_{j}} F_{i} \frac{d^{2}}{d x_{m}d x_{k}} V_{i}}{F_{i}^{2}} 
+            - \frac{5 q_{i} \frac{d}{d x_{k}} F_{i} \frac{d^{2}}{d x_{m}d x_{j}} F_{i}}{F_{i}^{2}} 
+            - \frac{5 q_{i} \frac{d}{d x_{k}} F_{i} \frac{d^{2}}{d x_{m}d x_{j}} V_{i}}{F_{i}^{2}} 
+            - \frac{5 q_{i} \frac{d}{d x_{m}} F_{i} \frac{d^{2}}{d x_{k}d x_{j}} F_{i}}{F_{i}^{2}} 
+            - \frac{5 q_{i} \frac{d}{d x_{m}} F_{i} \frac{d^{2}}{d x_{k}d x_{j}} V_{i}}{F_{i}^{2}} 
+            - \frac{5 q_{i} \frac{d}{d x_{j}} V_{i} \frac{d^{2}}{d x_{m}d x_{k}} F_{i}}{F_{i}^{2}} 
+            - \frac{5 q_{i} \frac{d}{d x_{k}} V_{i} \frac{d^{2}}{d x_{m}d x_{j}} F_{i}}{F_{i}^{2}} 
+            - \frac{5 q_{i} \frac{d}{d x_{m}} V_{i} \frac{d^{2}}{d x_{k}d x_{j}} F_{i}}{F_{i}^{2}} 
+            + \frac{10 V_{i} q_{i} \frac{d}{d x_{j}} F_{i} \frac{d^{2}}{d x_{m}d x_{k}} F_{i}}{F_{i}^{3}} 
+            + \frac{10 V_{i} q_{i} \frac{d}{d x_{k}} F_{i} \frac{d^{2}}{d x_{m}d x_{j}} F_{i}}{F_{i}^{3}} 
+            + \frac{10 V_{i} q_{i} \frac{d}{d x_{m}} F_{i} \frac{d^{2}}{d x_{k}d x_{j}} F_{i}}{F_{i}^{3}} 
+            + \frac{10 q_{i} \frac{d}{d x_{j}} F_{i} \frac{d}{d x_{k}} F_{i} \frac{d}{d x_{m}} F_{i}}{F_{i}^{3}} 
+            + \frac{10 q_{i} \frac{d}{d x_{j}} F_{i} \frac{d}{d x_{k}} F_{i} \frac{d}{d x_{m}} V_{i}}{F_{i}^{3}} 
+            + \frac{10 q_{i} \frac{d}{d x_{j}} F_{i} \frac{d}{d x_{m}} F_{i} \frac{d}{d x_{k}} V_{i}}{F_{i}^{3}} 
+            + \frac{10 q_{i} \frac{d}{d x_{k}} F_{i} \frac{d}{d x_{m}} F_{i} \frac{d}{d x_{j}} V_{i}}{F_{i}^{3}} 
+            - \frac{30 V_{i} q_{i} \frac{d}{d x_{j}} F_{i} \frac{d}{d x_{k}} F_{i} \frac{d}{d x_{m}} F_{i}}{F_{i}^{4}}
             
         '''
-        raise NotImplementedError("Incorrect")
         try:
             return self._d3lngammas_c_dxixjxks
         except AttributeError:
@@ -2129,6 +2159,9 @@ class UNIFAC(GibbsExcess):
                                - x5*x7*d2Vis_Dortmund_dxixjs[i][j][m]
                                - x5*x8*d2Vis_Dortmund_dxixjs[i][j][k]
                                + x0/ViD + 2*x6*x7*x8/ViD**3 - x4/Vi - x23*x24*x33/Vi**3 - 30*Vi*qi*x20*x31/Fi**4)
+#                        if i == j == k:
+#                            val = 0
+                        
                         row.append(val)
                     hess.append(row)
                 third.append(hess)
