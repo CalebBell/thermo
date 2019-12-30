@@ -403,3 +403,42 @@ def test_UNIFAC_class():
     d3lngammas_c_dxixjxks = GE.d3lngammas_c_dxixjxks()
     assert_allclose(d3lngammas_c_dxixjxks, d3lngammas_c_dxixjxks_sympy, rtol=1e-12)
     assert_allclose(d3lngammas_c_dxixjxks, d3lngammas_c_dxixjxks_expct, rtol=1e-12)
+    
+    # Residual - basic parts
+
+    Xs_pure_expect = [[0.0, 0.0, 0.5, 0.3333333333333333], 
+                      [0.0, 0.0, 0.0, 0.3333333333333333],
+                      [1.0, 0.0, 0.0, 0.0],
+                      [0.0, 0.0, 0.0, 0.3333333333333333],
+                      [0.0, 0.0, 0.5, 0.0],
+                      [0.0, 1.0, 0.0, 0.0]]
+    assert_allclose(GE.Xs_pure(), Xs_pure_expect, rtol=1e-12)
+    
+    Xs_expect = [0.11363636363636363, 0.09090909090909091, 0.27272727272727276, 0.09090909090909091, 0.022727272727272728, 0.40909090909090906]
+    assert_allclose(Xs_expect, GE.Xs(), rtol=1e-12)
+    
+    Thetas_expect = [0.1555178945269664, 0.08304843221308064, 0.15203457516991448, 0.10469896262761912, 0.048965852914787694, 0.4557342825476318]
+    assert_allclose(GE.Thetas(), Thetas_expect, rtol=1e-12)
+    
+    Thetas_pure_expect = [[0.0, 0.0, 0.3884575948440017, 0.3985572587917043], [0.0, 0.0, 0.0, 0.2660429816651638], [1.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.335399759543132], [0.0, 0.0, 0.6115424051559982, 0.0], [0.0, 1.0, 0.0, 0.0]]
+    assert_allclose(GE.Thetas_pure(), Thetas_pure_expect, rtol=1e-12)
+    
+    
+    lnGammas_subgroups_pure_expect = [[0.0, 0.0, 0.2525211912149972, 0.30820317547330855],
+     [0.0, 0.0, 0.0, 0.20573026824344812],
+     [0.0, 0.0, 0.0, 0.0],
+     [0.0, 0.0, 0.0, 0.3400841900068883],
+     [0.0, 0.0, 0.07142530517046565, 0.0],
+     [0.0, 0.0, 0.0, 0.0]]
+    assert_allclose(GE.lnGammas_subgroups_pure(), lnGammas_subgroups_pure_expect, rtol=1e-12)
+    
+    lnGammas_subgroups_expect = [0.08369133966599032, 0.055865231539864016, 0.05507425302818821, 1.1382224417102726, 0.4125412676822281, 0.08846629261844947]
+    assert_allclose(lnGammas_subgroups_expect, GE.lnGammas_subgroups(), rtol=1e-12)
+    
+    lngammas_r_expect = [0.33044551816912926, 0.5307977557106969, 0.17228611096275556, 0.423761379192482]
+    assert_allclose(lngammas_r_expect, GE.lngammas_r(), rtol=1e-12)
+    
+    assert_allclose(GE.GE(), 1292.0910446403336)
+    
+    gammas_expect = [1.366341183343183, 1.6835125692286341, 1.1737608489858082, 1.5751837540437106]
+    assert_allclose(GE.gammas(), gammas_expect, rtol=1e-12)

@@ -33,7 +33,7 @@ __all__ = ['UNIFAC_gammas','UNIFAC',  'GibbsExcess',
 import os
 from thermo.utils import log, exp
 from thermo.activity import GibbsExcess
-
+from thermo.utils import R
 folder = os.path.join(os.path.dirname(__file__), 'Phase Change')
 
 
@@ -1321,6 +1321,7 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
     # theta(m) for an overall mixture composition
     area_fractions = {group: subgroups[group].Q*group_count_xs[group]/Q_sum_term
                       for group in group_counts.keys()}
+#    print('theta(m) for an overall mixture ', area_fractions)
 
     # This needs to not be a dictionary
     UNIFAC_psis = {k: {m:(UNIFAC_psi(T, m, k, subgroups, interactions, modified=modified))
@@ -1345,6 +1346,7 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
         
         # Xm = chem_group_count_xs
         chem_group_count_xs = {group: count/chem_group_sum for group, count in groups.items()}
+#        print('Xm', chem_group_count_xs)
     
         # denominator of term used to compute Theta(m)
         Q_sum_term = sum([subgroups[group].Q*chem_group_count_xs[group] for group in groups])
@@ -1352,6 +1354,8 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
         # Theta(m) = chem_area_fractions (dict indexed by main group)
         chem_area_fractions = {group: subgroups[group].Q*chem_group_count_xs[group]/Q_sum_term
                                for group in groups.keys()}
+        print('Theta(m)', chem_area_fractions)
+        
         for k in groups:
             sum1, sum2 = 0., 0.
             for m in groups:
@@ -1459,7 +1463,8 @@ class UNIFAC(GibbsExcess):
         # [subgroup][component] = number of subgroup in component where subgroup
         # is an index, numbered sequentially by the number of subgroups in the mixture
         self.vs = vs
-        
+
+
         # each psi_letter is a matrix of [subgroup_length][subgroups_length]
         # the diagonal is zero
         # Indexed by index of the subgroup in the mixture, again sorted lowest first
@@ -1479,7 +1484,12 @@ class UNIFAC(GibbsExcess):
         self.version = version
         if self.version == 1:
             self.rs_34 = [i**0.75 for i in rs]
+
+        self.cmp_v_count = [sum(vs[group][i] for group in self.groups) for i in self.cmps]
         
+        # Matrix of [component][list(indexes to groups in component)], list of list
+        self.cmp_group_idx = [[j for j in self.groups if vs[j][i]] for i in self.cmps]
+
     def to_T_xs(self, T, xs):
         new = self.__class__.__new__(self.__class__)
         new.T = T
@@ -1494,6 +1504,7 @@ class UNIFAC(GibbsExcess):
         new.qs = self.qs
         new.Qs = self.Qs
         new.vs = self.vs
+        new.cmp_v_count = self.cmp_v_count
         
         new.version = self.version
         
@@ -1507,18 +1518,18 @@ class UNIFAC(GibbsExcess):
         if T == self.T:
             pass
         return new
-    
-    def Xms_chem(self):
-        # This variable has a temperature and mole fraction derivative of 0!
-        
-        # Indexed by [group][component]
-        groups, cmps = self.groups, self.cmps
-        vs = self.vs
-        # chem_group_sums = [number of groups in each component]
-        chem_group_sums = [sum([vs[i][j] for i in groups]) for j in cmps]
-
-        chem_group_count_xs = [[vs[i][j]/chem_group_sums[j] for j in cmps] for i in groups]        
-        return chem_group_count_xs
+#    
+#    def Xms_chem(self):
+#        # This variable has a temperature and mole fraction derivative of 0!
+#        
+#        # Indexed by [group][component]
+#        groups, cmps = self.groups, self.cmps
+#        vs = self.vs
+#        # chem_group_sums = [number of groups in each component]
+#        chem_group_sums = [sum([vs[i][j] for i in groups]) for j in cmps]
+#
+#        chem_group_count_xs = [[vs[i][j]/chem_group_sums[j] for j in cmps] for i in groups]        
+#        return chem_group_count_xs
 
 
     def psis(self):
@@ -1807,7 +1818,199 @@ class UNIFAC(GibbsExcess):
                                                for rj in rs_34] for ri in rs_34]
         self._d3Vis_Dortmund_dxixjxks = d3Vis_Dortmund
         return d3Vis_Dortmund
+    
+    def Xs(self):
+        try:
+            return self._Xs
+        except AttributeError:
+            pass
+        # [subgroup][component] = number of subgroup in component where subgroup
+        # is an index, numbered sequentially by the number of subgroups in the mixture
+        vs, xs = self.vs, self.xs
+        cmps, groups = self.cmps, self.groups
+        subgroup_sums = []
+        for i in groups:
+            tot = 0.0
+            for j in cmps:
+                tot += vs[i][j]*xs[j]
+            subgroup_sums.append(tot)
 
+        sum_inv = 1.0/sum(subgroup_sums)
+
+        self._Xs = Xs = [subgroup_sums[i]*sum_inv for i in groups]
+
+        return Xs
+    
+    def Thetas(self):
+        try:
+            return self._Thetas
+        except AttributeError:
+            pass
+        Qs, groups = self.Qs, self.groups
+        Xs = self.Xs()
+        
+        tot = 0.0
+        for i in groups:
+            tot += Xs[i]*Qs[i]
+        tot_inv = 1.0/tot
+            
+        self._Thetas = Thetas = [Qs[i]*Xs[i]*tot_inv for i in groups]
+        return Thetas
+
+    def lnGammas_subgroups(self):
+        # Temperature and composition dependent!
+        try:
+            return self._lnGammas_subgroups
+        except AttributeError:
+            pass
+        Xs, Thetas, Qs = self.Xs(), self.Thetas(), self.Qs
+        psis = self.psis()
+        cmps, groups = self.cmps, self.groups
+        
+        self._lnGammas_subgroups = lnGammas_subgroups = []
+        for k in groups:
+            log_sum = 0.0
+            for m in groups:
+                log_sum += Thetas[m]*psis[m][k]
+            log_sum = log(log_sum)
+            
+            last = 0.0
+            for m in groups:
+                sub_subs = 0.0
+                for n in groups:
+                    sub_subs += Thetas[n]*psis[n][m]
+                last += Thetas[m]*psis[k][m]/sub_subs
+                
+            v = Qs[k]*(1.0 - log_sum - last)
+            lnGammas_subgroups.append(v)
+        return lnGammas_subgroups
+        
+    def Xs_pure(self):
+        try:
+            return self._Xs_pure
+        except AttributeError:
+            pass
+        # Independent of mole fractions and temperature
+        vs, cmp_v_count = self.vs, self.cmp_v_count
+        cmps, groups = self.cmps, self.groups
+        
+        Xs_pure = []
+        for i in groups:
+            row = []
+            for j in cmps:
+                row.append(vs[i][j]/cmp_v_count[j])
+            Xs_pure.append(row)
+        self._Xs_pure = Xs_pure
+        return Xs_pure
+    
+    def Thetas_pure(self):
+        # Composition and temperature independent
+        try:
+            return self._Thetas_pure
+        except AttributeError:
+            pass
+        
+        Xs_pure, Qs = self.Xs_pure(), self.Qs
+        cmps, groups = self.cmps, self.groups
+        Thetas_pure = []
+        for i in cmps:
+            # groups = self.cmp_group_idx[i]
+            tot = 0.0
+            for j in groups:
+                tot += Qs[j]*Xs_pure[j][i]
+            tot_inv = 1.0/tot
+            row = [Qs[j]*Xs_pure[j][i]*tot_inv for j in groups]
+            Thetas_pure.append(row)
+        
+        # Get indexing convention back to [subgroup][component]
+        self._Thetas_pure = Thetas_pure = list(map(list, zip(*Thetas_pure)))
+        return Thetas_pure
+
+    
+    def lnGammas_subgroups_pure(self):
+        # Temperature dependent only!
+        try:
+            return self._lnGammas_subgroups_pure
+        except AttributeError:
+            pass
+        Xs_pure, Thetas_pure, Qs = self.Xs_pure(), self.Thetas_pure(), self.Qs
+        psis = self.psis()
+        cmps, groups = self.cmps, self.groups
+        
+        cmp_group_idx = self.cmp_group_idx
+        
+        matrix = []
+        for i in cmps:
+            groups2 = cmp_group_idx[i]
+            row = []
+            for k in groups:
+                log_sum = 0.0
+                for m in groups2:
+                    log_sum += Thetas_pure[m][i]*psis[m][k]
+                log_sum = log(log_sum)
+                
+                last = 0.0
+                for m in groups2:
+                    sub_subs = 0.0
+                    for n in groups:
+                        sub_subs += Thetas_pure[n][i]*psis[n][m]
+                    last += Thetas_pure[m][i]*psis[k][m]/sub_subs
+
+                v = Qs[k]*(1.0 - log_sum - last)
+                if k not in groups2:
+                    v = 0.0
+                row.append(v)
+            matrix.append(row)
+            
+        # Transpose
+        self._lnGammas_subgroups_pure = lnGammas_subgroups_pure = list(map(list, zip(*matrix)))
+        return lnGammas_subgroups_pure
+    
+    def lngammas_r(self):
+        try:
+            return self._lngammas_r
+        except AttributeError:
+            pass
+        lnGammas_subgroups_pure = self.lnGammas_subgroups_pure()
+        lnGammas_subgroups = self.lnGammas_subgroups()
+        vs = self.vs
+        cmps, groups = self.cmps, self.groups
+        
+        self._lngammas_r = lngammas_r = []
+        for i in cmps:
+            tot = 0.0
+            for k in groups:
+                tot += vs[k][i]*(lnGammas_subgroups[k] - lnGammas_subgroups_pure[k][i])
+            lngammas_r.append(tot)
+            
+        return lngammas_r
+    
+    def GE(self):
+        try:
+            return self._GE
+        except AttributeError:
+            pass
+        T, xs, cmps = self.T, self.xs, self.cmps
+        lngammas_r = self.lngammas_r()
+        lngammas_c = self.lngammas_c()
+        GE = 0.0
+        for i in cmps:
+            GE += xs[i]*(lngammas_c[i] + lngammas_r[i])
+        GE *= R*T
+        self._GE = GE
+        return GE
+
+    def gammas(self):
+        try:
+            return self._gammas
+        except:
+            pass
+        xs, cmps = self.xs, self.cmps
+        lngammas_r = self.lngammas_r()
+        lngammas_c = self.lngammas_c()
+        self._gammas = [exp(lngammas_r[i] + lngammas_c[i]) for i in cmps]
+        return self._gammas
+    
     def lngammas_c(self):
         r'''
         
