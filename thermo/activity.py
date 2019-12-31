@@ -3161,6 +3161,7 @@ class GibbsExcess(object):
         return matrix
     
 #    def dgammas_dxs(self):
+        # TODO - compare with UNIFAC, which has a dx derivative working
 #        # NOT WORKING
 #        gammas = self.gammas()
 #        cmps = self.cmps
