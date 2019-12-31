@@ -2206,6 +2206,66 @@ class UNIFAC(GibbsExcess):
             
         return lngammas_r
     
+    def dlngammas_r_dT(self):
+        try:
+            return self._dlngammas_r_dT
+        except AttributeError:
+            pass
+        dlnGammas_subgroups_pure_dT = self.dlnGammas_subgroups_pure_dT()
+        dlnGammas_subgroups_dT = self.dlnGammas_subgroups_dT()
+        vs = self.vs
+        cmps, groups = self.cmps, self.groups
+        
+        self._dlngammas_r_dT = dlngammas_r_dT = []
+        for i in cmps:
+            tot = 0.0
+            for k in groups:
+                tot += vs[k][i]*(dlnGammas_subgroups_dT[k] - dlnGammas_subgroups_pure_dT[k][i])
+            dlngammas_r_dT.append(tot)
+            
+        return dlngammas_r_dT
+    dlngammas_dT = dlngammas_r_dT
+
+    def d2lngammas_r_dT2(self):
+        try:
+            return self._d2lngammas_r_dT2
+        except AttributeError:
+            pass
+        d2lnGammas_subgroups_pure_dT2 = self.d2lnGammas_subgroups_pure_dT2()
+        d2lnGammas_subgroups_dT2 = self.d2lnGammas_subgroups_dT2()
+        vs = self.vs
+        cmps, groups = self.cmps, self.groups
+        
+        self._d2lngammas_r_dT2 = d2lngammas_r_dT2 = []
+        for i in cmps:
+            tot = 0.0
+            for k in groups:
+                tot += vs[k][i]*(d2lnGammas_subgroups_dT2[k] - d2lnGammas_subgroups_pure_dT2[k][i])
+            d2lngammas_r_dT2.append(tot)
+            
+        return d2lngammas_r_dT2
+    d2lngammas_dT2 = d2lngammas_r_dT2
+
+    def d3lngammas_r_dT3(self):
+        try:
+            return self._d3lngammas_r_dT3
+        except AttributeError:
+            pass
+        d3lnGammas_subgroups_pure_dT3 = self.d3lnGammas_subgroups_pure_dT3()
+        d3lnGammas_subgroups_dT3 = self.d3lnGammas_subgroups_dT3()
+        vs = self.vs
+        cmps, groups = self.cmps, self.groups
+        
+        self._d3lngammas_r_dT3 = d3lngammas_r_dT3 = []
+        for i in cmps:
+            tot = 0.0
+            for k in groups:
+                tot += vs[k][i]*(d3lnGammas_subgroups_dT3[k] - d3lnGammas_subgroups_pure_dT3[k][i])
+            d3lngammas_r_dT3.append(tot)
+            
+        return d3lngammas_r_dT3
+    d3lngammas_dT3 = d3lngammas_r_dT3
+    
     def GE(self):
         try:
             return self._GE
@@ -2220,6 +2280,62 @@ class UNIFAC(GibbsExcess):
         GE *= R*T
         self._GE = GE
         return GE
+
+    def dGE_dT(self):
+        try:
+            return self._dGE_dT
+        except AttributeError:
+            pass
+        T, xs, cmps = self.T, self.xs, self.cmps
+        lngammas_r = self.lngammas_r()
+        lngammas_c = self.lngammas_c()
+        dlngammas_r_dT = self.dlngammas_r_dT()
+        dGE_dT = 0.0
+        tot0, tot1 = 0.0, 0.0
+        for i in cmps:
+            tot0 += xs[i]*dlngammas_r_dT[i]
+            tot1 += xs[i]*(lngammas_c[i] + lngammas_r[i])
+            
+        dGE_dT = R*T*tot0 + R*tot1
+        
+        self._dGE_dT = dGE_dT
+        return dGE_dT
+
+    def d2GE_dT2(self):
+        try:
+            return self._d2GE_dT2
+        except AttributeError:
+            pass
+        T, xs, cmps = self.T, self.xs, self.cmps
+        dlngammas_r_dT = self.dlngammas_r_dT()
+        d2lngammas_r_dT2 = self.d2lngammas_r_dT2()
+        tot0, tot1 = 0.0, 0.0
+        for i in cmps:
+            tot0 += xs[i]*d2lngammas_r_dT2[i]
+            tot1 += 2.0*xs[i]*(dlngammas_r_dT[i])
+            
+        d2GE_dT2 = R*(T*tot0 + tot1)
+        self._d2GE_dT2 = d2GE_dT2
+        return d2GE_dT2
+
+    def d3GE_dT3(self):
+        try:
+            return self._d3GE_dT3
+        except AttributeError:
+            pass
+        T, xs, cmps = self.T, self.xs, self.cmps
+        d2lngammas_r_dT2 = self.d2lngammas_r_dT2()
+        d3lngammas_r_dT3 = self.d3lngammas_r_dT3()
+
+        tot0, tot1 = 0.0, 0.0
+        for i in cmps:
+            tot0 += xs[i]*d3lngammas_r_dT3[i]
+            tot1 += 3.0*xs[i]*(d2lngammas_r_dT2[i])
+            
+        d3GE_dT3 = R*(T*tot0 + tot1)
+        
+        self._d3GE_dT3 = d3GE_dT3
+        return d3GE_dT3
 
     def gammas(self):
         try:

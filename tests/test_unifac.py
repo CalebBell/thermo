@@ -24,6 +24,7 @@ from numpy.testing import assert_allclose
 import pytest
 import numpy as np
 import pandas as pd
+from math import *
 from thermo.unifac import *
 from fluids.numerics import *
 from fluids.constants import R
@@ -497,7 +498,42 @@ def test_UNIFAC_class():
     assert_allclose(d3lnGammas_subgroups_pure_dT3, d3lnGammas_subgroups_pure_dT3_expect, rtol=1e-12)
     assert_allclose(d3lnGammas_subgroups_pure_dT3_numerical, d3lnGammas_subgroups_pure_dT3, rtol=1e-6)
     
+    dlngammas_dT_numerical = [i[0] for i in jacobian(lambda T: [log(i) for i in GE.to_T_xs(T=T[0], xs=GE.xs).gammas()], [GE.T], scalar=False, perturbation=3e-8)]
+    dlngammas_dT_expect = [-0.0021084349284519036, -0.002958360494734416, -0.002528650249029941, -0.0012526678676069276]
+    dlngammas_dT = GE.dlngammas_dT()
+    assert_allclose(dlngammas_dT, dlngammas_dT_expect, rtol=1e-12)
+    assert_allclose(dlngammas_dT, dlngammas_dT_numerical, rtol=1e-7)
     
+    d2lngammas_dT2_numerical = [i[0] for i in jacobian(lambda T: GE.to_T_xs(T=T[0], xs=GE.xs).dlngammas_dT(), [GE.T], scalar=False, perturbation=3e-8)]
+    d2lngammas_dT2_expect = [1.99884565597294e-05, -4.178009193040629e-06, 1.4025477728224088e-05, -1.8554400546398206e-06]
+    d2lngammas_dT2 = GE.d2lngammas_dT2()
+    assert_allclose(d2lngammas_dT2, d2lngammas_dT2_expect, rtol=1e-12)
+    assert_allclose(d2lngammas_dT2, d2lngammas_dT2_numerical, rtol=1e-6)
     
+    d3lngammas_dT3_numerical = [i[0] for i in jacobian(lambda T: GE.to_T_xs(T=T[0], xs=GE.xs).d2lngammas_dT2(), [GE.T], scalar=False, perturbation=3e-8)]
+    d3lngammas_dT3_expect = [6.533220785904886e-07, 1.975132199760568e-07, -6.045635266026704e-07, 5.7595328721413586e-08]
+    d3lngammas_dT3 = GE.d3lngammas_dT3()
+    assert_allclose(d3lngammas_dT3, d3lngammas_dT3_expect, rtol=1e-13)
+    assert_allclose(d3lngammas_dT3, d3lngammas_dT3_numerical, rtol=1e-6)
     
+    dGE_dT_expect = -2.9382799850394155
+    dGE_dT_numerical = derivative(lambda T: GE.to_T_xs(T=T, xs=GE.xs).GE(), GE.T, dx=1e-5)
+    dGE_dT = GE.dGE_dT()
+    assert_allclose(dGE_dT_expect, dGE_dT, rtol=1e-12)
+    assert_allclose(dGE_dT_numerical, dGE_dT, rtol=1e-7)
     
+    d2GE_dT2_expect = -0.023744489066399498
+    d2GE_dT2_numerical = derivative(lambda T: GE.to_T_xs(T=T, xs=GE.xs).dGE_dT(), GE.T, dx=1e-5)
+    d2GE_dT2 = GE.d2GE_dT2()
+    assert_allclose(d2GE_dT2_expect, d2GE_dT2, rtol=1e-12)
+    assert_allclose(d2GE_dT2_numerical, d2GE_dT2, rtol=1e-7)
+    
+    d3GE_dT3_expect = 0.0005580618737894017
+    d3GE_dT3_numerical = derivative(lambda T: GE.to_T_xs(T=T, xs=GE.xs).d2GE_dT2(), GE.T, dx=1e-5)
+    d3GE_dT3 = GE.d3GE_dT3()
+    assert_allclose(d3GE_dT3_expect, d3GE_dT3, rtol=1e-12)
+    assert_allclose(d3GE_dT3_numerical, d3GE_dT3, rtol=1e-7)
+        
+        
+        
+        
