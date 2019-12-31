@@ -1955,21 +1955,12 @@ class UNIFAC(GibbsExcess):
         self._d2lnGammas_subgroups_dT2 = row
         return row
 
-    def d3lnGammas_subgroups_dT3(self):
-        try:
-            return self._d3lnGammas_subgroups_dT3
-        except:
-            pass
-        Xs, Thetas, Qs = self.Xs(), self.Thetas(), self.Qs
-        psis, dpsis_dT, d2psis_dT2, d3psis_dT3 = self.psis(), self.dpsis_dT(), self.d2psis_dT2(), self.d3psis_dT3()
-        cmps, groups = self.cmps, self.groups
+    @staticmethod
+    def d3lnGammas_subgroups_dT3_meth(groups, Qs, psis, dpsis_dT, d2psis_dT2, d3psis_dT3, 
+                                      Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum,
+                                      Theta_d2PsidT2_sum, Theta_d3PsidT3_sum):
 
-        Us = [sum(Thetas[k]*psis[k][j] for k in groups) for j in groups]
-        Us_inv = [1.0/Ui for Ui in Us]
-        Fs = [sum(Thetas[k]*dpsis_dT[k][j] for k in groups) for j in groups]
-        Gs = [sum(Thetas[k]*d2psis_dT2[k][j] for k in groups) for j in groups]
-        Hs = [sum(Thetas[k]*d3psis_dT3[k][j] for k in groups) for j in groups]
-        
+        Us_inv, Fs, Gs, Hs = Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum, Theta_d3PsidT3_sum
         row = []
         for i in groups:
             tot = 0.0
@@ -1986,6 +1977,25 @@ class UNIFAC(GibbsExcess):
                 
             v = Qs[i]*(-Hs[i]*Us_inv[i] - 2.0*Fs[i]**3*Us_inv[i]**3 + 3.0*Fs[i]*Gs[i]*Us_inv[i]**2 + tot)
             row.append(v)
+        return row
+
+    def d3lnGammas_subgroups_dT3(self):
+        try:
+            return self._d3lnGammas_subgroups_dT3
+        except:
+            pass
+        Xs, Thetas, Qs = self.Xs(), self.Thetas(), self.Qs
+        psis, dpsis_dT, d2psis_dT2, d3psis_dT3 = self.psis(), self.dpsis_dT(), self.d2psis_dT2(), self.d3psis_dT3()
+        cmps, groups = self.cmps, self.groups
+
+        Theta_Psi_sum_invs = [1.0/sum(Thetas[k]*psis[k][j] for k in groups) for j in groups]
+        Theta_dPsidT_sum = [sum(Thetas[k]*dpsis_dT[k][j] for k in groups) for j in groups]
+        Theta_d2PsidT2_sum = [sum(Thetas[k]*d2psis_dT2[k][j] for k in groups) for j in groups]
+        Theta_d3PsidT3_sum = [sum(Thetas[k]*d3psis_dT3[k][j] for k in groups) for j in groups]
+        
+        row = UNIFAC.d3lnGammas_subgroups_dT3_meth(groups, Qs, psis, dpsis_dT, d2psis_dT2, d3psis_dT3, 
+                                      Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum,
+                                      Theta_d2PsidT2_sum, Theta_d3PsidT3_sum)
         
         self._d3lnGammas_subgroups_dT3 = row
         return row
@@ -2138,6 +2148,43 @@ class UNIFAC(GibbsExcess):
         mat = list(map(list, zip(*mat)))
         # Index by [subgroup][component]
         self._d2lnGammas_subgroups_pure_dT2 = mat
+        return mat
+
+    def d3lnGammas_subgroups_pure_dT3(self):
+        try:
+            return self._d3lnGammas_subgroups_pure_dT3
+        except:
+            pass
+
+        Xs_pure, Thetas_pure, Qs = self.Xs_pure(), self.Thetas_pure(), self.Qs
+        psis, dpsis_dT, d2psis_dT2, d3psis_dT3 = self.psis(), self.dpsis_dT(), self.d2psis_dT2(), self.d3psis_dT3()
+        cmps, groups = self.cmps, self.groups
+        cmp_group_idx = self.cmp_group_idx
+        
+        # Index by [component][subgroup]
+        Theta_Psi_sum_pure_invs = [[1.0/sum(Thetas_pure[i][k]*psis[k][j] for k in groups) for j in groups] for i in cmps]
+        Theta_dPsidT_sum_pure = [[sum(Thetas_pure[i][k]*dpsis_dT[k][j] for k in groups) for j in groups] for i in cmps]
+        Theta_d2PsidT2_sum_pure = [[sum(Thetas_pure[i][k]*d2psis_dT2[k][j] for k in groups) for j in groups] for i in cmps]
+        Theta_d3PsidT3_sum_pure = [[sum(Thetas_pure[i][k]*d3psis_dT3[k][j] for k in groups) for j in groups] for i in cmps]
+
+        mat = []
+        for m in cmps:
+            groups2 = cmp_group_idx[m]
+            Thetas = Thetas_pure[m]
+            Theta_Psi_sum_invs = Theta_Psi_sum_pure_invs[m]
+            Theta_dPsidT_sum = Theta_dPsidT_sum_pure[m]
+            Theta_d2PsidT2_sum = Theta_d2PsidT2_sum_pure[m]
+            Theta_d3PsidT3_sum = Theta_d3PsidT3_sum_pure[m]
+            
+            row = UNIFAC.d3lnGammas_subgroups_dT3_meth(groups, Qs, psis, dpsis_dT, d2psis_dT2, d3psis_dT3, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum, Theta_d3PsidT3_sum)
+            for i in groups:
+                if i not in groups2:
+                    row[i] = 0.0
+            mat.append(row)
+            
+        mat = list(map(list, zip(*mat)))
+        # Index by [subgroup][component]
+        self._d3lnGammas_subgroups_pure_dT3 = mat
         return mat
     
     def lngammas_r(self):

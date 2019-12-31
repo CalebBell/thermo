@@ -420,7 +420,10 @@ def test_UNIFAC_class():
     Thetas_expect = [0.1555178945269664, 0.08304843221308064, 0.15203457516991448, 0.10469896262761912, 0.048965852914787694, 0.4557342825476318]
     assert_allclose(GE.Thetas(), Thetas_expect, rtol=1e-12)
     
-    Thetas_pure_expect = [[0.0, 0.0, 0.3884575948440017, 0.3985572587917043], [0.0, 0.0, 0.0, 0.2660429816651638], [1.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.335399759543132], [0.0, 0.0, 0.6115424051559982, 0.0], [0.0, 1.0, 0.0, 0.0]]
+    Thetas_pure_expect = [[0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
+     [0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
+     [0.3884575948440017, 0.0, 0.0, 0.0, 0.6115424051559982, 0.0],
+     [0.3985572587917043, 0.2660429816651638, 0.0, 0.335399759543132, 0.0, 0.0]]
     assert_allclose(GE.Thetas_pure(), Thetas_pure_expect, rtol=1e-12)
     
     
@@ -460,9 +463,41 @@ def test_UNIFAC_class():
     assert_allclose(d3lnGammas_subgroups_dT3, d3lnGammas_subgroups_dT3_expect, rtol=1e-12)
     assert_allclose(d3lnGammas_subgroups_dT3, d3lnGammas_subgroups_dT3_numerical, rtol=1e-6)
 
-
-
-
-
-
-
+    dlnGammas_subgroups_pure_dT_expect = [[0.0, 0.0, -0.0013677908855988523, -0.002042849755954296],
+     [0.0, 0.0, 0.0, -0.001363633024313006],
+     [0.0, 0.0, 0.0, 0.0],
+     [0.0, 0.0, 0.0, -0.004385381381959583],
+     [0.0, 0.0, -0.0004368227607265967, 0.0],
+     [0.0, 0.0, 0.0, 0.0]]
+    
+    dlnGammas_subgroups_pure_dT_numerical = [[i[0] for i in jacobian(lambda T: GE.to_T_xs(T=T[0], xs=GE.xs).lnGammas_subgroups_pure()[j], [GE.T], scalar=False, perturbation=1e-8)] for j in range(6)]
+    dlnGammas_subgroups_pure_dT = GE.dlnGammas_subgroups_pure_dT()
+    assert_allclose(dlnGammas_subgroups_pure_dT, dlnGammas_subgroups_pure_dT_expect, rtol=1e-12)
+    assert_allclose(dlnGammas_subgroups_pure_dT_numerical, dlnGammas_subgroups_pure_dT, rtol=1e-6)
+    
+    d2lnGammas_subgroups_pure_dT2_expect = [[0.0, 0.0, 5.259889238911016e-06, -1.7377017617239823e-05],
+      [0.0, 0.0, 0.0, -1.1599421356304221e-05],
+      [-0.0, 0.0, 0.0, 0.0],
+      [0.0, 0.0, 0.0, 1.0119388945730533e-05],
+      [0.0, 0.0, 1.923660010004082e-06, 0.0],
+      [0.0, -0.0, 0.0, 0.0]]
+    d2lnGammas_subgroups_pure_dT2_numerical = [[i[0] for i in jacobian(lambda T: GE.to_T_xs(T=T[0], xs=GE.xs).dlnGammas_subgroups_pure_dT()[j], [GE.T], scalar=False, perturbation=3e-7)] for j in range(6)]
+    d2lnGammas_subgroups_pure_dT2 = GE.d2lnGammas_subgroups_pure_dT2()
+    assert_allclose(d2lnGammas_subgroups_pure_dT2, d2lnGammas_subgroups_pure_dT2_expect, rtol=1e-12)
+    assert_allclose(d2lnGammas_subgroups_pure_dT2, d2lnGammas_subgroups_pure_dT2_numerical, rtol=1e-5)
+    
+    d3lnGammas_subgroups_pure_dT3_expect = [[0.0, 0.0, -2.7154094696008944e-08, 9.320074307198575e-08],
+     [0.0, 0.0, 0.0, 6.221290174328159e-08],
+     [0.0, 0.0, 0.0, 0.0],
+     [0.0, 0.0, 0.0, 1.6857904176843558e-07],
+     [0.0, 0.0, -1.4797079241774134e-08, 0.0],
+     [0.0, 0.0, 0.0, 0.0]]
+    d3lnGammas_subgroups_pure_dT3_numerical = [[i[0] for i in jacobian(lambda T: GE.to_T_xs(T=T[0], xs=GE.xs).d2lnGammas_subgroups_pure_dT2()[j], [GE.T], scalar=False, perturbation=3e-8)] for j in range(6)]
+    d3lnGammas_subgroups_pure_dT3 = GE.d3lnGammas_subgroups_pure_dT3()
+    assert_allclose(d3lnGammas_subgroups_pure_dT3, d3lnGammas_subgroups_pure_dT3_expect, rtol=1e-12)
+    assert_allclose(d3lnGammas_subgroups_pure_dT3_numerical, d3lnGammas_subgroups_pure_dT3, rtol=1e-6)
+    
+    
+    
+    
+    
