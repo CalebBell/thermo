@@ -1936,6 +1936,41 @@ class UNIFAC(GibbsExcess):
         
         self._d2lnGammas_subgroups_dT2 = row
         return row
+
+    def d3lnGammas_subgroups_dT3(self):
+        try:
+            return self._d3lnGammas_subgroups_dT3
+        except:
+            pass
+        Xs, Thetas, Qs = self.Xs(), self.Thetas(), self.Qs
+        psis, dpsis_dT, d2psis_dT2, d3psis_dT3 = self.psis(), self.dpsis_dT(), self.d2psis_dT2(), self.d3psis_dT3()
+        cmps, groups = self.cmps, self.groups
+
+        Us = [sum(Thetas[k]*psis[k][j] for k in groups) for j in groups]
+        Us_inv = [1.0/Ui for Ui in Us]
+        Fs = [sum(Thetas[k]*dpsis_dT[k][j] for k in groups) for j in groups]
+        Gs = [sum(Thetas[k]*d2psis_dT2[k][j] for k in groups) for j in groups]
+        Hs = [sum(Thetas[k]*d3psis_dT3[k][j] for k in groups) for j in groups]
+        
+        row = []
+        for i in groups:
+            tot = 0.0
+            for j in groups:
+                tot -= Thetas[j]*d3psis_dT3[i][j]*Us_inv[j]
+                tot += Hs[j]*Thetas[j]*psis[i][j]*Us_inv[j]*Us_inv[j]
+                tot -= 6.0*Fs[j]*Fs[j]*Thetas[j]*dpsis_dT[i][j]*Us_inv[j]*Us_inv[j]*Us_inv[j]
+                tot += 3.0*Fs[j]*Thetas[j]*d2psis_dT2[i][j]*Us_inv[j]*Us_inv[j]
+                
+                tot += 3.0*Gs[j]*Thetas[j]*dpsis_dT[i][j]*Us_inv[j]*Us_inv[j]
+                tot += 6.0*Fs[j]**3*Thetas[j]*psis[i][j]*Us_inv[j]**4
+                tot -= 6.0*Fs[j]*Gs[j]*Thetas[j]*psis[i][j]*Us_inv[j]**3
+
+                
+            v = Qs[i]*(-Hs[i]*Us_inv[i] - 2.0*Fs[i]**3*Us_inv[i]**3 + 3.0*Fs[i]*Gs[i]*Us_inv[i]**2 + tot)
+            row.append(v)
+        
+        self._d3lnGammas_subgroups_dT3 = row
+        return row
         
     def Xs_pure(self):
         try:
