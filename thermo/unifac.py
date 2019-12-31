@@ -1354,7 +1354,7 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
         # Theta(m) = chem_area_fractions (dict indexed by main group)
         chem_area_fractions = {group: subgroups[group].Q*chem_group_count_xs[group]/Q_sum_term
                                for group in groups.keys()}
-        print('Theta(m)', chem_area_fractions)
+#        print('Theta(m)', chem_area_fractions)
         
         for k in groups:
             sum1, sum2 = 0., 0.
@@ -1884,6 +1884,58 @@ class UNIFAC(GibbsExcess):
             v = Qs[k]*(1.0 - log_sum - last)
             lnGammas_subgroups.append(v)
         return lnGammas_subgroups
+    
+    def dlnGammas_subgroups_dT(self):
+        try:
+            return self._dlnGammas_subgroups_dT
+        except:
+            pass
+        Xs, Thetas, Qs = self.Xs(), self.Thetas(), self.Qs
+        psis, dpsis_dT = self.psis(), self.dpsis_dT()
+        cmps, groups = self.cmps, self.groups
+        
+        Theta_Psi_sum = [sum(Thetas[k]*psis[k][j] for k in groups) for j in groups]
+        Theta_dPsidT_sum = [sum(Thetas[k]*dpsis_dT[k][j] for k in groups) for j in groups]
+        
+        row = []
+        for i in groups:
+            tot0, tot1 = 0.0, 0.0
+            for j in groups:
+                tot0 -= Thetas[j]*dpsis_dT[i][j]/Theta_Psi_sum[j]
+                tot1 += Thetas[j]*psis[i][j]*Theta_dPsidT_sum[j]/Theta_Psi_sum[j]**2
+            v = Qs[i]*(tot0 + tot1 - Theta_dPsidT_sum[i]/Theta_Psi_sum[i])
+            row.append(v)
+        
+        self._dlnGammas_subgroups_dT = row
+        return row
+                
+    def d2lnGammas_subgroups_dT2(self):
+        try:
+            return self._d2lnGammas_subgroups_dT2
+        except:
+            pass
+        Xs, Thetas, Qs = self.Xs(), self.Thetas(), self.Qs
+        psis, dpsis_dT, d2psis_dT2 = self.psis(), self.dpsis_dT(), self.d2psis_dT2()
+        cmps, groups = self.cmps, self.groups
+
+        Us = Theta_Psi_sum = [sum(Thetas[k]*psis[k][j] for k in groups) for j in groups]
+        Us_inv = [1.0/Ui for Ui in Us]
+        Fs = Theta_dPsidT_sum = [sum(Thetas[k]*dpsis_dT[k][j] for k in groups) for j in groups]
+        Gs = Theta_dPsidT_sum = [sum(Thetas[k]*d2psis_dT2[k][j] for k in groups) for j in groups]
+
+        row = []
+        for i in groups:
+            tot0 = 0.0
+            for j in groups:
+                tot0 += Thetas[j]*d2psis_dT2[i][j]*Us_inv[j]
+                tot0 -= (Gs[j]*Thetas[j]*psis[i][j] + 2.0*Fs[j]*Thetas[j]*dpsis_dT[i][j])*Us_inv[j]*Us_inv[j]
+                tot0 += 2.0*Fs[j]*Fs[j]*Thetas[j]*psis[i][j]*Us_inv[j]*Us_inv[j]*Us_inv[j]
+                
+            v = -Qs[i]*(Gs[i]*Us_inv[i] - Fs[i]*Fs[i]*Us_inv[i]*Us_inv[i] + tot0)
+            row.append(v)
+        
+        self._d2lnGammas_subgroups_dT2 = row
+        return row
         
     def Xs_pure(self):
         try:
