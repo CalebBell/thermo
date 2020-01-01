@@ -7770,7 +7770,7 @@ class MSRKTranslated(SRKTranslated):
            1725-30. https://doi.org/10.1016/0009-2509(80)85007-X.
         '''
         M, N = self.M, self.N
-        T, Tc, a = self.T, self.Tc, self.a
+        Tc, a = self.Tc, self.a
         if not full:
             Tr = T/Tc
             return a*(1.0 + (1.0 - Tr)*(M + N/Tr))

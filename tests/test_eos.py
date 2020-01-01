@@ -1864,6 +1864,48 @@ def test_PRTranslatedConsistent_misc():
     assert_allclose(base.V_l, V_expect, rtol=1e-11)
 
 
+def test_MSRK():
+    eos = MSRKTranslated(Tc=507.6, Pc=3025000, omega=0.2975, c=22.0561E-6, M=0.7446, N=0.2476, T=250., P=1E6)
+    V_expect = 0.00011692764613229268
+    assert_allclose(eos.V_l, V_expect, rtol=1e-9)
+    a_alphas = (4.1104444077070035, -0.008754034661729146, 4.0493421990729605e-05)
+    assert_allclose(eos.a_alpha_and_derivatives(eos.T), a_alphas)
+    assert_allclose(eos.a_alpha_and_derivatives(eos.T, full=False), a_alphas[0])
+    
+    # Test copies
+    TP_copy = eos.to(T=eos.T, P=eos.P)
+    assert_allclose(eos.V_l, TP_copy.V_l, rtol=1e-14)
+    assert_allclose(eos.N, TP_copy.N, rtol=1e-14)
+    assert_allclose(eos.M, TP_copy.M, rtol=1e-14)
+    assert_allclose(eos.c, TP_copy.c, rtol=1e-14)
+    
+    PV_copy = eos.to(P=eos.P, V=eos.V_l)
+    assert_allclose(PV_copy.T, eos.T, rtol=1e-7)
+    
+    
+    # water estimation
+    Zc, omega = .235, .344
+    M = .4745 + 2.7349*omega*Zc + 6.0984*(omega*Zc )**2
+    N = 0.0674 + 2.1031*omega*Zc + 3.9512*(omega*Zc)**2
+    
+    eos = MSRKTranslated(Tc=647.3, Pc=221.2e5, omega=0.344, T=299., P=1E6, M=M, N=N)
+    
+    # Values are pertty close to tabulated
+    Ts = [460, 490, 520, 550, 580, 510]
+    Psats_full = []
+    Psats = []
+    for T in Ts:
+        Psats.append(eos.Psat(T, polish=False))
+        Psats_full.append(eos.Psat(T, polish=True))
+    assert_allclose(Psats_full, Psats, rtol=1e-7)
+    
+    # Test estimation
+    eos_SRK = SRK(Tc=647.3, Pc=221.2e5, omega=0.344, T=299., P=1E6)
+    eos = MSRKTranslated(Tc=647.3, Pc=221.2e5, omega=0.344, T=299., P=1E6)
+    assert_allclose([eos.M, eos.N], [0.8456055026734339, 0.24705086824600675])
+    assert_allclose(eos.Tsat(101325), eos_SRK.Tsat(101325))
+    assert_allclose(eos.Tsat(1333.2236842105262), eos_SRK.Tsat(1333.2236842105262))
+
 
 @pytest.mark.slow
 def test_eos_P_limits():
