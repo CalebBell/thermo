@@ -1836,7 +1836,7 @@ class UNIFAC(GibbsExcess):
                 tot += vs[i][j]*xs[j]
             subgroup_sums.append(tot)
 
-        sum_inv = 1.0/sum(subgroup_sums)
+        self.Xs_sum_inv = sum_inv = 1.0/sum(subgroup_sums)
 
         self._Xs = Xs = [subgroup_sums[i]*sum_inv for i in groups]
 
@@ -1853,10 +1853,43 @@ class UNIFAC(GibbsExcess):
         tot = 0.0
         for i in groups:
             tot += Xs[i]*Qs[i]
-        tot_inv = 1.0/tot
-            
+        self.Thetas_sum_inv = tot_inv = 1.0/tot
         self._Thetas = Thetas = [Qs[i]*Xs[i]*tot_inv for i in groups]
         return Thetas
+    
+    def dThetas_dxs(self):
+        try:
+            return self._dThetas_dxs
+        except AttributeError:
+            pass
+        
+        F = self.Xs_sum_inv
+        G = self.Thetas_sum_inv
+        Qs, cmps, groups, xs = self.Qs, self.cmps, self.groups, self.xs
+        Xs = self.Xs()
+        Thetas = self.Thetas()
+        vs = self.vs
+        
+        VS = [sum(vs[i][j] for j in cmps) for i in groups]
+        VSXS = [sum(vs[i][j]*xs[j] for j in cmps) for i in groups]
+        
+        F2, G2 = F*F, G*G
+        
+        # Index [subgroup][component]
+        self._dThetas_dxs = dThetas_dxs = []
+        for i in groups:
+            row = []
+            for j in cmps:
+                tot = 0.0
+                for k in groups:
+                    tot += F2*Qs[k]*VS[j]*VSXS[k] - F*Qs[k]*vs[j][k]
+                    
+                v = F2*G*Qs[i]*VS[j]*VSXS[i] + F*G2*Qs[i]*tot + F*G*Qs[i]*vs[j][i]
+                row.append(v)
+            dThetas_dxs.append(row)
+        return dThetas_dxs
+                
+
 
     def lnGammas_subgroups(self):
         # Temperature and composition dependent!
@@ -1889,6 +1922,7 @@ class UNIFAC(GibbsExcess):
     
     @staticmethod
     def dlnGammas_subgroups_dT_meth(groups, Qs, psis, dpsis_dT, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum):
+        # TODO document
         row = []
         for i in groups:
             psisi, dpsis_dTi = psis[i], dpsis_dT[i]
@@ -1919,6 +1953,7 @@ class UNIFAC(GibbsExcess):
 
     @staticmethod
     def d2lnGammas_subgroups_dT2_meth(groups, Qs, psis, dpsis_dT, d2psis_dT2, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum):
+        # TODO document
 
         Us_inv, Fs, Gs = Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum
         row = []
@@ -1959,6 +1994,7 @@ class UNIFAC(GibbsExcess):
     def d3lnGammas_subgroups_dT3_meth(groups, Qs, psis, dpsis_dT, d2psis_dT2, d3psis_dT3, 
                                       Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum,
                                       Theta_d2PsidT2_sum, Theta_d3PsidT3_sum):
+        # TODO document
 
         Us_inv, Fs, Gs, Hs = Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum, Theta_d3PsidT3_sum
         row = []

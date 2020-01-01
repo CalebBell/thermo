@@ -25,7 +25,7 @@ from __future__ import division, print_function
 __all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',  
 'APISRK', 'TWUPR', 'TWUSRK', 'ALPHA_FUNCTIONS', 'eos_list', 'GCEOS_DUMMY',
 'IG', 'PRTranslatedPPJP', 'SRKTranslatedPPJP', 
-'PRTranslatedConsistent', 'SRKTranslatedConsistent',
+'PRTranslatedConsistent', 'SRKTranslatedConsistent', 'MSRKTranslated',
 'SRKTranslated', 'PRTranslated', 'PRTranslatedCoqueletChapoyRichon',
 #'PRVTTwu'
 ]
@@ -39,6 +39,7 @@ from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              horner, horner_and_der, horner_and_der2, derivative,
                              roots_cubic_a2, isclose, NoSolutionError,
                              roots_quartic)
+from fluids.constants import mmHg
 from thermo.utils import R
 from thermo.utils import (Cp_minus_Cv, isobaric_expansion, 
                           isothermal_compressibility, 
@@ -2700,7 +2701,7 @@ class GCEOS(object):
                  + x0*x2 + x0*x3 + x1*x2 + x1*x3)/(V - b))
         
     
-    def a_alpha_for_Psat(self, T, Psat):
+    def a_alpha_for_Psat(self, T, Psat, guess=None):
         # For fitting
         P = Psat
 #        eos = self.to(T=T, P=Psat)
@@ -2735,8 +2736,14 @@ class GCEOS(object):
 #            print(V_l, V_g, a_alpha)
             return fug(V_l, a_alpha) - fug(V_g, a_alpha)
 
+        if guess is None:
+            try:
+                guess = self.a_alpha
+            except AttributeError:
+                guess = 0.002
+
         try:
-            return secant(err, self.a_alpha, xtol=1e-13)
+            return secant(err, guess, xtol=1e-13)
         except:
             return secant(err, self.to(T=T, P=Psat).a_alpha, xtol=1e-13)
 
@@ -7596,6 +7603,187 @@ class SRKTranslated(SRK):
         self.solve()
 
 
+class MSRKTranslated(SRKTranslated):
+    r'''Class for solving the volume translated Soave (1980) alpha function, 
+    revision of the Soave-Redlich-Kwong equation of state 
+    for a pure compound according to [1]_. Uses two fitting parameters `N` and
+    `M` to more accurately fit the vapor pressure of pure species.
+    Subclasses `SRKTranslated`.
+    Solves the EOS on initialization. See `SRKTranslated` for further 
+    documentation.
+    
+    .. math::
+        P = \frac{RT}{V + c - b} - \frac{a\alpha(T)}{(V + c)(V + c + b)}
+        
+    .. math::
+        a=\left(\frac{R^2(T_c)^{2}}{9(\sqrt[3]{2}-1)P_c} \right)
+        =\frac{0.42748\cdot R^2(T_c)^{2}}{P_c}
+    
+    .. math::
+        b=\left( \frac{(\sqrt[3]{2}-1)}{3}\right)\frac{RT_c}{P_c}
+        =\frac{0.08664\cdot R T_c}{P_c}
+        
+    .. math::
+        \alpha(T) = 1 + (1 - T_r)(M + \frac{N}{T_r})
+        
+    Parameters
+    ----------
+    Tc : float
+        Critical temperature, [K]
+    Pc : float
+        Critical pressure, [Pa]
+    omega : float
+        Acentric factor, [-]
+    c : float, optional
+        Volume translation parameter, [m^3/mol]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+
+    Examples
+    --------
+    P-T initialization (hexane), liquid phase:
+    
+    >>> eos = MSRKTranslated(Tc=507.6, Pc=3025000, omega=0.2975, c=22.0561E-6, M=0.7446, N=0.2476, T=250., P=1E6)
+    >>> eos.phase, eos.V_l, eos.H_dep_l, eos.S_dep_l
+    ('l', 0.00011692764613229268, -34571.686267335615, -84.7579003483068)
+    
+    Notes
+    -----
+    This is an older correlation that offers lower accuracy on many properties
+    which were sacrificed to obtain the vapor pressure accuracy. The alpha
+    function of this EOS does not meet any of the consistency requriements for
+    alpha functions.
+    
+    Coefficients can be found in [2]_, or estimated with the method in [3]_.
+    The estimation method in [3]_ works as follows, using the acentric factor
+    and true critical compressibility:
+        
+    .. math::
+        M = 0.4745 + 2.7349(\omega Z_c) + 6.0984(\omega Z_c)^2
+        
+        N = 0.0674 + 2.1031(\omega Z_c) + 3.9512(\omega Z_c)^2
+        
+    An alternate estimation scheme is provided in [1]_, which provides
+    analytical solutions to calculate the parameters `M` and `N` from two
+    points on the vapor pressure curve, suggested as 10 mmHg and 1 atm.
+    This is used as an estimation method here if the parameters are not
+    provided, and the two vapor pressure points are obtained from the original 
+    SRK equation of state.
+
+    References
+    ----------
+    .. [1] Soave, G. "Rigorous and Simplified Procedures for Determining 
+       the Pure-Component Parameters in the Redlich—Kwong—Soave Equation of
+       State." Chemical Engineering Science 35, no. 8 (January 1, 1980): 
+       1725-30. https://doi.org/10.1016/0009-2509(80)85007-X.
+    .. [2] Sandarusi, Jamal A., Arthur J. Kidnay, and Victor F. Yesavage. 
+       "Compilation of Parameters for a Polar Fluid Soave-Redlich-Kwong 
+       Equation of State." Industrial & Engineering Chemistry Process Design
+       and Development 25, no. 4 (October 1, 1986): 957-63.
+       https://doi.org/10.1021/i200035a020.
+    .. [3] Valderrama, Jose O., Héctor De la Puente, and Ahmed A. Ibrahim. 
+       "Generalization of a Polar-Fluid Soave-Redlich-Kwong Equation of State."
+       Fluid Phase Equilibria 93 (February 11, 1994): 377-83. 
+       https://doi.org/10.1016/0378-3812(94)87021-7.
+    '''
+    def __init__(self, Tc, Pc, omega, M=None, N=None, c=0.0, T=None, P=None,
+                 V=None):
+        # Complex M, N estimation is available - could also get from SRK
+        self.Tc = Tc
+        self.Pc = Pc
+        self.omega = omega
+        self.T = T
+        self.P = P
+        self.V = V
+        
+        Pc_inv = 1.0/Pc
+
+        self.a = self.c1*R*R*Tc*Tc*Pc_inv
+        
+        self.c = c
+
+        b0 = self.c2*R*Tc*Pc_inv
+        self.b = b0 - c
+
+        self.delta = c + c + b0
+        self.epsilon = c*(b0 + c)
+        if M is None or N is None:
+            N, M = self._estimate_NM()
+        self.N = N
+        self.M = M
+        
+        self.kwargs = {'c': c, 'M': M, 'N': N}
+        self.Vc = self.Zc*R*Tc*Pc_inv
+
+        self.solve()
+        
+    def _estimate_NM(self):
+        r'''Calculate the alpha values for the SRK equation to match two pressure
+        points, and solve analytically for the M, N required to match exactly that.
+        Since no experimental data is available, make it up with the original 
+        SRK EOS.
+        Solution code:
+            
+        
+        from sympy import *
+        Tc, m, n = symbols('Tc, m, n')
+        T0, T1 = symbols('T_10, T_760')
+        alpha0, alpha1 = symbols('alpha_10, alpha_760')
+        
+        Eqs = [Eq(alpha0, 1 + (1 - T0/Tc)*(m + n/(T0/Tc))),
+               Eq(alpha1, 1 + (1 - T1/Tc)*(m + n/(T1/Tc)))]
+        solve(Eqs, [n, m])
+        '''
+        SRK_base = SRKTranslated(T=self.Tc*0.5, P=self.Pc*0.5, c=self.c, Tc=self.Tc, Pc=self.Pc, omega=self.omega)
+        # Temperatures at 10 mmHg, 760 mmHg
+        P_10, P_760 = 10.0*mmHg, 760.0*mmHg
+        T_10 = SRK_base.Tsat(P_10)
+        T_760 = SRK_base.Tsat(P_760)
+        
+        alpha_10 = SRK_base.a_alpha_and_derivatives(T=T_10, full=False)/self.a
+        alpha_760 = SRK_base.a_alpha_and_derivatives(T=T_760, full=False)/self.a
+#        alpha_10 = self.a_alpha_for_Psat(T_10, P_10)/self.a
+#        alpha_760 = self.a_alpha_for_Psat(T_760, P_760)/self.a
+        Tc = self.Tc
+
+        N = T_10*T_760*(-(T_10 - Tc)*(alpha_760 - 1) + (T_760 - Tc)*(alpha_10 - 1))/((T_10 - T_760)*(T_10 - Tc)*(T_760 - Tc))
+        M = Tc*(-T_10*(T_760 - Tc)*(alpha_10 - 1) + T_760*(T_10 - Tc)*(alpha_760 - 1))/((T_10 - T_760)*(T_10 - Tc)*(T_760 - Tc))
+        return (N, M)
+
+    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
+        r'''Method to calculate `a_alpha` and its first and second
+        derivatives according to Soave (1979) [1]_. Returns `a_alpha`, 
+        `da_alpha_dT`, and `d2a_alpha_dT2`. Three coefficients are needed.
+        
+        .. math::
+            \alpha = 1 + (1 - T_r)(M + \frac{N}{T_r})
+
+        References
+        ----------
+        .. [1] Soave, G. "Rigorous and Simplified Procedures for Determining 
+           the Pure-Component Parameters in the Redlich—Kwong—Soave Equation of
+           State." Chemical Engineering Science 35, no. 8 (January 1, 1980): 
+           1725-30. https://doi.org/10.1016/0009-2509(80)85007-X.
+        '''
+        M, N = self.M, self.N
+        T, Tc, a = self.T, self.Tc, self.a
+        if not full:
+            Tr = T/Tc
+            return a*(1.0 + (1.0 - Tr)*(M + N/Tr))
+        else:
+            T_inv = 1.0/T
+            x0 = Tc_inv = 1.0/Tc
+            x1 = T*x0 - 1.0
+            x2 = Tc*T_inv
+            x3 = M + N*x2
+            x4 = N*T_inv*T_inv
+            return (a*(1.0 - x1*x3), a*(Tc*x1*x4 - x0*x3), a*(2.0*x4*(1.0 - x1*x2)))
+            
+
 class SRKTranslatedPPJP(SRK):
     r'''Class for solving the volume translated Pina-Martinez, Privat, Jaubert, 
     and Peng revision of the Soave-Redlich-Kwong equation of state 
@@ -7639,7 +7827,7 @@ class SRKTranslatedPPJP(SRK):
 
     Examples
     --------
-    P-T initialization (methanol), liquid phase:
+    P-T initialization (hexane), liquid phase:
     
     >>> eos = SRKTranslatedPPJP(Tc=507.6, Pc=3025000, omega=0.2975, c=22.3098E-6, T=250., P=1E6)
     >>> eos.phase, eos.V_l, eos.H_dep_l, eos.S_dep_l
