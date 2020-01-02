@@ -30,14 +30,14 @@ __all__ = ['sequential_substitution_2P', 'bubble_T_Michelsen_Mollerup',
            'TPV_HSGUA_guesses_1P_methods', 'TPV_solve_HSGUA_guesses_1P',
            'sequential_substitution_2P_HSGUAbeta', 
            'sequential_substitution_2P_sat',
-           'TPV_double_solve_1P',
+           'TPV_double_solve_1P', 'nonlin_2P_HSGUAbeta',
            'cm_flash_tol'
            ]
 
 from fluids.constants import R, R2, R_inv
 from fluids.numerics import (UnconvergedError, trunc_exp, py_newton as newton,
                              py_brenth as brenth, secant, py_bisect as bisect,
-                             py_ridder as ridder,
+                             py_ridder as ridder, broyden2,
                              numpy as np, linspace, 
                              logspace, oscillation_checker, damping_maintain_sign,
                              oscillation_checking_wrapper, OscillationError,
@@ -418,6 +418,83 @@ def nonlin_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
     for i in info[3]:
         tot_err += abs(i)
     return V_over_F, xs, ys, info[1], info[2], info[0], tot_err
+
+
+
+def nonlin_2P_HSGUAbeta(spec, spec_var, iter_val, iter_var, fixed_val, fixed_var, zs, xs_guess, ys_guess, liquid_phase,
+              gas_phase, maxiter=1000, tol=1E-13, 
+              trivial_solution_tol=1e-5, V_over_F_guess=None,
+              method='hybr'):
+    cmps = range(len(zs))
+    xs, ys = xs_guess, ys_guess
+    if V_over_F_guess is None:
+        V_over_F = 0.5
+    else:
+        V_over_F = V_over_F_guess
+    Ks_guess = [ys[i]/xs[i] for i in cmps]
+
+    kwargs_l = {'zs': xs_guess, fixed_var: fixed_val}
+    kwargs_g = {'zs': ys_guess, fixed_var: fixed_val}
+    
+    info = [0, None, None, None, None]
+    def to_solve(lnKsVFTransHSGUABeta):
+        Ks = [trunc_exp(i) for i in lnKsVFTransHSGUABeta[:-2]]
+        V_over_F = (0.0 + (1.0 - 0.0)/(1.0 + trunc_exp(-lnKsVFTransHSGUABeta[-2]))) # Translation function - keep it zero to 1
+        iter_val = lnKsVFTransHSGUABeta[-1]
+
+        xs = [zs[i]/(1.0 + V_over_F*(Ks[i] - 1.0)) for i in cmps]
+        ys = [Ks[i]*xs[i] for i in cmps]
+
+        kwargs_l[iter_var] = iter_val
+        kwargs_l['zs'] = xs
+        kwargs_g[iter_var] = iter_val
+        kwargs_g['zs'] = ys
+
+        g = gas_phase.to(**kwargs_g)
+        l = liquid_phase.to(**kwargs_l)
+        
+        lnphis_g = g.lnphis()
+        lnphis_l = l.lnphis()
+        new_Ks = [exp(lnphis_l[i] - lnphis_g[i]) for i in cmps]
+        VF_err = Rachford_Rice_flash_error(V_over_F, zs, new_Ks)
+
+        val_l = getattr(l, spec_var)()
+        val_g = getattr(g, spec_var)()
+        val = V_over_F*val_g + (1.0 - V_over_F)*val_l
+
+        other_err = val - spec
+
+
+        err = [new_Ks[i] - Ks[i] for i in cmps] + [VF_err, other_err]
+        info[1:] = l, g, err, other_err
+        info[0] += 1
+#        print(lnKsVFTransHSGUABeta, err)
+        return err
+    
+    VF_guess_in_basis = -log((1.0-V_over_F)/(V_over_F-0.0))
+    
+    guesses = [log(i) for i in Ks_guess]
+    guesses.append(VF_guess_in_basis)
+    guesses.append(iter_val)
+#    solution, iterations = broyden2(guesses, fun=to_solve, jac=False, xtol=1e-7,
+#                                    maxiter=maxiter, jac_has_fun=False, skip_J=True)
+    
+    sol = root(to_solve, guesses, tol=tol, method=method)
+    solution = sol.x.tolist()
+    V_over_F = (0.0 + (1.0 - 0.0)/(1.0 + exp(-solution[-2])))
+    iter_val = solution[-1]
+    Ks = [exp(solution[i]) for i in cmps]
+    xs = [zs[i]/(1.0 + V_over_F*(Ks[i] - 1.0)) for i in cmps]
+    ys = [Ks[i]*xs[i] for i in cmps]
+    
+    tot_err = 0.0
+    for i in info[3]:
+        tot_err += abs(i)
+    return V_over_F, solution[-1], xs, ys, info[1], info[2], info[0], tot_err
+
+#def broyden2(xs, fun, jac, xtol=1e-7, maxiter=100, jac_has_fun=False,
+#             skip_J=False):
+
 
 
 def nonlin_n_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
@@ -1930,7 +2007,7 @@ def sequential_substitution_2P_HSGUAbeta(zs, xs_guess, ys_guess, liquid_phase,
         if comp_diff < trivial_solution_tol:
             raise ValueError("Converged to trivial condition, compositions of both phases equal")
         
-        print(p0, err, err0)
+        print(p0, err, err0, xs, ys, V_over_F)
         if err < tol_eq and abs(err0) < tol_spec_abs:
             return p0, V_over_F, xs, ys, l, g, iteration, err, err0
     raise UnconvergedError('End of SS without convergence')

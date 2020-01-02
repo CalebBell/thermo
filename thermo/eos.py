@@ -7692,7 +7692,8 @@ class MSRKTranslated(SRKTranslated):
     '''
     def __init__(self, Tc, Pc, omega, M=None, N=None, c=0.0, T=None, P=None,
                  V=None):
-        # Complex M, N estimation is available - could also get from SRK
+        # Ready for mixture class implemenentation
+
         self.Tc = Tc
         self.Pc = Pc
         self.omega = omega
