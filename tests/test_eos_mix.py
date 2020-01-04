@@ -3746,3 +3746,63 @@ def TV_PV_precision_issue():
     PV = base.to(V=base.V_l, P=base.P)
     assert_allclose(TV.P, base.P, rtol=1e-11)
     assert_allclose(PV.T, base.T, rtol=1e-11)
+    
+    
+def test_PSRK_basic():
+    from thermo.unifac import UNIFAC, PSRKIP, PSRKSG
+    Tcs = [304.2, 507.4]
+    Pcs = [7.37646e6, 3.014419e6]
+    omegas = [0.2252, 0.2975]
+    zs = [0.5, 0.5]
+    
+    # From 1991 PSRK pub
+    Mathias_Copeman_coeffs = [[-1.7039, 0.2515, 0.8252, 1.0], 
+                              [2.9173, -1.4411, 1.1061, 1.0]]
+    T = 313.
+    P = 1E6
+    
+    ge_model = UNIFAC.from_subgroups(T=T, xs=zs, chemgroups=[{117: 1}, {1:2, 2:4}], subgroups=PSRKSG,
+                           interaction_data=PSRKIP, version=0)
+    
+    eos = PSRK(Tcs=Tcs, Pcs=Pcs, omegas=omegas, zs=zs, ge_model=ge_model,
+               alpha_coeffs=Mathias_Copeman_coeffs, T=T, P=P)
+    
+    # Basic alphas
+    alphas_calcs = eos.a_alphas, eos.da_alpha_dTs, eos.d2a_alpha_dT2s
+    alphas_expect = ([0.3619928043680038, 3.633428981933551],
+     [-0.0009796813317750766, -0.006767771602552934],
+     [2.8906692884712426e-06, 2.5446078792139856e-05])
+    assert_allclose(alphas_calcs, alphas_expect, rtol=1e-12)
+    
+    alphas_expect = (1.4982839752515456, -0.002999402788526605, 1.0500167086432077e-05)
+    alphas_calc = eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2
+    assert_allclose(alphas_expect, alphas_calc, rtol=1e-10)
+    
+    assert_allclose(eos.ge_model.T, eos.T, rtol=1e-16)
+    assert_allclose(eos.ge_model.xs, eos.zs, rtol=1e-16)
+    
+    # Basic alpha derivatives - checking vs numerical
+    da_alpha_dT_numerical = derivative(lambda T: eos.to(T=T, P=P, zs=[.5, .5]).a_alpha, eos.T, dx=eos.T*3e-4, order=17)
+    assert_allclose(eos.da_alpha_dT, da_alpha_dT_numerical, rtol=1e-10)
+    d2a_alpha_dT2_numerical = derivative(lambda T: eos.to(T=T, P=P, zs=[.5, .5]).da_alpha_dT, eos.T, dx=eos.T*3e-4, order=13)
+    assert_allclose(eos.d2a_alpha_dT2, d2a_alpha_dT2_numerical, rtol=1e-10)
+    
+    # Copy to new states
+    eos_lower = eos.to(T=300.0, P=1e5, zs=[.4, .6])
+    assert_allclose(eos_lower.ge_model.T, eos_lower.T, rtol=1e-16)
+    assert_allclose(eos_lower.ge_model.xs, eos_lower.zs, rtol=1e-16)
+    
+    eos_TV = eos.to(T=300.0, V=eos_lower.V_l, zs=[.4, .6])
+    assert_allclose(eos_TV.ge_model.T, eos_TV.T, rtol=1e-16)
+    assert_allclose(eos_TV.ge_model.xs, eos_TV.zs, rtol=1e-16)
+    
+    eos_PV = eos.to(P=eos_lower.P, V=eos_lower.V_l, zs=[.4, .6])
+    assert_allclose(eos_PV.ge_model.T, eos_PV.T, rtol=1e-16)
+    assert_allclose(eos_PV.ge_model.xs, eos_PV.zs, rtol=1e-16)
+    
+    eos_fast = eos.to_TP_zs_fast(T=eos_lower.T, P=eos_lower.P, zs=eos_lower.zs)
+    assert_allclose(eos_fast.T, eos_lower.T, rtol=1e-16)
+    assert_allclose(eos_fast.ge_model.T, eos_lower.T, rtol=1e-16)
+    assert_allclose(eos_fast.ge_model.xs, eos_lower.zs, rtol=1e-16)
+    assert_allclose(eos_fast.ge_model.xs, eos_fast.zs, rtol=1e-16)
+    assert_allclose(eos_fast.V_l, eos_lower.V_l, rtol=1e-14)

@@ -1835,7 +1835,8 @@ class UNIFAC(GibbsExcess):
             for j in cmps:
                 tot += vs[i][j]*xs[j]
             subgroup_sums.append(tot)
-
+            
+        self.subgroup_sums = subgroup_sums # Used in several derivatives
         self.Xs_sum_inv = sum_inv = 1.0/sum(subgroup_sums)
 
         self._Xs = Xs = [subgroup_sums[i]*sum_inv for i in groups]
@@ -1870,7 +1871,7 @@ class UNIFAC(GibbsExcess):
         Thetas = self.Thetas()
         vs = self.vs
         
-        VS = [sum(vs[i][j] for j in cmps) for i in groups]
+        VS = [sum(vs[j][i] for j in groups) for i in cmps]
         VSXS = [sum(vs[i][j]*xs[j] for j in cmps) for i in groups]
         
         F2, G2 = F*F, G*G
@@ -1878,13 +1879,14 @@ class UNIFAC(GibbsExcess):
         # Index [subgroup][component]
         self._dThetas_dxs = dThetas_dxs = []
         for i in groups:
+            Qi = Qs[i]
             row = []
             for j in cmps:
                 tot = 0.0
                 for k in groups:
-                    tot += F2*Qs[k]*VS[j]*VSXS[k] - F*Qs[k]*vs[j][k]
-                    
-                v = F2*G*Qs[i]*VS[j]*VSXS[i] + F*G2*Qs[i]*tot + F*G*Qs[i]*vs[j][i]
+                    tot += F*Qs[k]*VS[j]*VSXS[k] - Qs[k]*vs[k][j]
+                
+                v = F*G*Qi*(F*G*VSXS[i]*tot - F*VS[j]*VSXS[i] + vs[i][j])
                 row.append(v)
             dThetas_dxs.append(row)
         return dThetas_dxs

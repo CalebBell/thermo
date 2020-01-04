@@ -1032,7 +1032,7 @@ def test_TWUSRK_quick():
     # Error checking
     with pytest.raises(Exception):
         TWUSRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299.) 
-    from thermo.eos import TWU_a_alpha_common
+    from thermo.alpha_functions import TWU_a_alpha_common
     with pytest.raises(Exception):
         TWU_a_alpha_common(299.0, 507.6, 0.2975, 2.5171086468571824, method='FAIL')
         
@@ -1296,7 +1296,7 @@ def test_IG():
 def test_fuzz_dV_dT_and_d2V_dT2_derivatives():
     from thermo import eos
     eos_list = list(eos.__all__); eos_list.remove('GCEOS')
-    eos_list.remove('ALPHA_FUNCTIONS'); eos_list.remove('VDW')
+    eos_list.remove('VDW')
     
     phase_extensions = {True: '_l', False: '_g'}
     derivative_bases_dV_dT = {0:'V', 1:'dV_dT', 2:'d2V_dT2'}
@@ -1329,7 +1329,7 @@ def test_fuzz_dV_dT_and_d2V_dT2_derivatives():
 def test_fuzz_dV_dP_and_d2V_dP2_derivatives():
     from thermo import eos
     eos_list = list(eos.__all__); eos_list.remove('GCEOS')
-    eos_list.remove('ALPHA_FUNCTIONS'); eos_list.remove('VDW')
+    eos_list.remove('VDW')
     
     phase_extensions = {True: '_l', False: '_g'}
     derivative_bases_dV_dP = {0:'V', 1:'dV_dP', 2:'d2V_dP2'}
@@ -1363,7 +1363,7 @@ def test_fuzz_dV_dP_and_d2V_dP2_derivatives():
 def test_fuzz_Psat():
     from thermo import eos
     eos_list = list(eos.__all__); eos_list.remove('GCEOS')
-    eos_list.remove('ALPHA_FUNCTIONS'); eos_list.remove('eos_list')
+    eos_list.remove('eos_list')
     eos_list.remove('GCEOS_DUMMY'); eos_list.remove('IG')
     
     Tc = 507.6
@@ -1422,7 +1422,7 @@ def test_Psat_issues():
 def test_fuzz_dPsat_dT():
     from thermo import eos
     eos_list = list(eos.__all__); eos_list.remove('GCEOS')
-    eos_list.remove('ALPHA_FUNCTIONS'); eos_list.remove('eos_list')
+    eos_list.remove('eos_list')
     eos_list.remove('GCEOS_DUMMY'); eos_list.remove('IG')
     
     Tc = 507.6
@@ -1437,7 +1437,7 @@ def test_fuzz_dPsat_dT():
 def test_fuzz_dPsat_dT_full():
     from thermo import eos
     eos_list = list(eos.__all__); eos_list.remove('GCEOS')
-    eos_list.remove('ALPHA_FUNCTIONS'); eos_list.remove('eos_list')
+    eos_list.remove('eos_list')
     eos_list.remove('GCEOS_DUMMY'); eos_list.remove('IG')
     
     Tc = 507.6
@@ -1875,8 +1875,7 @@ def test_MSRK():
     # Test copies
     TP_copy = eos.to(T=eos.T, P=eos.P)
     assert_allclose(eos.V_l, TP_copy.V_l, rtol=1e-14)
-    assert_allclose(eos.N, TP_copy.N, rtol=1e-14)
-    assert_allclose(eos.M, TP_copy.M, rtol=1e-14)
+    assert_allclose(eos.alpha_coeffs, TP_copy.alpha_coeffs, rtol=1e-14)
     assert_allclose(eos.c, TP_copy.c, rtol=1e-14)
     
     PV_copy = eos.to(P=eos.P, V=eos.V_l)
@@ -1902,7 +1901,7 @@ def test_MSRK():
     # Test estimation
     eos_SRK = SRK(Tc=647.3, Pc=221.2e5, omega=0.344, T=299., P=1E6)
     eos = MSRKTranslated(Tc=647.3, Pc=221.2e5, omega=0.344, T=299., P=1E6)
-    assert_allclose([eos.M, eos.N], [0.8456055026734339, 0.24705086824600675])
+    assert_allclose(eos.alpha_coeffs, [0.8456055026734339, 0.24705086824600675])
     assert_allclose(eos.Tsat(101325), eos_SRK.Tsat(101325))
     assert_allclose(eos.Tsat(1333.2236842105262), eos_SRK.Tsat(1333.2236842105262))
 
