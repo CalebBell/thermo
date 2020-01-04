@@ -1874,8 +1874,6 @@ class UNIFAC(GibbsExcess):
         VS = [sum(vs[j][i] for j in groups) for i in cmps]
         VSXS = [sum(vs[i][j]*xs[j] for j in cmps) for i in groups]
         
-        F2, G2 = F*F, G*G
-        
         # Index [subgroup][component]
         self._dThetas_dxs = dThetas_dxs = []
         for i in groups:
@@ -1890,7 +1888,61 @@ class UNIFAC(GibbsExcess):
                 row.append(v)
             dThetas_dxs.append(row)
         return dThetas_dxs
+
+    def d2Thetas_dxixjs(self):
+        try:
+            return self._d2Thetas_dxixjs
+        except AttributeError:
+            pass
                 
+        F = self.Xs_sum_inv
+        G = self.Thetas_sum_inv
+        Qs, cmps, groups, xs = self.Qs, self.cmps, self.groups, self.xs
+        vs = self.vs
+        
+        
+        VS = [sum(vs[j][i] for j in groups) for i in cmps]
+        VSXS = [sum(vs[i][j]*xs[j] for j in cmps) for i in groups]
+        
+        QsVSXS = [Qs[i]*VSXS[i] for i in groups]
+        QsVSXS_sum_inv = 1.0/sum(QsVSXS)
+        
+        # Index [comp][comp][subgroup]
+        self._d2Thetas_dxixjs = d2Thetas_dxixjs = []
+        for j in cmps:
+            matrix = []
+            for k in cmps:
+                row = []
+                for i in groups:
+                    tot0, tot1, tot2 = 0.0, 0.0, 0.0
+                    for n in groups:
+                        tot0 += -2.0*F*Qs[n]*VS[j]*VS[k]*VSXS[n] + Qs[n]*VS[j]*vs[n][k] + Qs[n]*VS[k]*vs[n][j]
+                        # These are each used in three places
+                        tot1 += -F*Qs[n]*VS[j]*VSXS[n] + Qs[n]*vs[n][j]
+                        tot2 += -F*Qs[n]*VS[k]*VSXS[n] + Qs[n]*vs[n][k]
+                        
+                    v = -F*VS[j]*vs[i][k] - F*VS[k]*vs[i][j]
+                    v += 2.0*F*F*VS[j]*VS[k]*VSXS[i]
+                    
+                    v += F*VSXS[i]*tot0*QsVSXS_sum_inv
+                    
+                    v += 2.0*VSXS[i]*tot1*tot2*QsVSXS_sum_inv*QsVSXS_sum_inv
+
+                    # For both of these duplicate terms, j goes with k; k with j                    
+                    v -= vs[i][j]*tot2*QsVSXS_sum_inv
+                    v -= vs[i][k]*tot1*QsVSXS_sum_inv
+                    
+                    v += F*VS[j]*VSXS[i]*tot2*QsVSXS_sum_inv
+                    v += F*VS[k]*VSXS[i]*tot1*QsVSXS_sum_inv
+
+                    # Constant multiplier
+                    v *= Qs[i]*QsVSXS_sum_inv
+                        
+                    row.append(v)
+                matrix.append(row)
+            d2Thetas_dxixjs.append(matrix)
+        return d2Thetas_dxixjs
+
 
 
     def lnGammas_subgroups(self):
