@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2016, 2017, 2018, 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2016, 2017, 2018, 2019, 2020
+Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +25,7 @@ from __future__ import division
 __all__ = ['GCEOSMIX', 'PRMIX', 'SRKMIX', 'PR78MIX', 'VDWMIX', 'PRSVMIX', 
 'PRSV2MIX', 'TWUPRMIX', 'TWUSRKMIX', 'APISRKMIX', 'IGMIX', 'RKMIX',
 'PRMIXTranslatedConsistent', 'PRMIXTranslatedPPJP',
-'SRKMIXTranslatedConsistent',
+'SRKMIXTranslatedConsistent', 'PSRK', 'MSRKMIXTranslated',
 'eos_Z_test_phase_stability', 'eos_Z_trial_phase_stability',
 'eos_mix_list', 'eos_mix_no_coeffs_list']
 
@@ -38,6 +39,7 @@ from fluids.numerics.arrays import det
 from thermo.utils import normalize, Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter, dxs_to_dn_partials, dxs_to_dns, dns_to_dn_partials, d2xs_to_dxdn_partials, d2ns_to_dn2_partials
 from thermo.utils import R
 from thermo.utils import log, exp, sqrt
+from thermo.alpha_functions import (TwuPR95_a_alpha, TwuSRK95_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha, Soave_79_a_alpha)
 from thermo.eos import *
 from thermo.activity import Wilson_K_value, K_value, flash_inner_loop, Rachford_Rice_flash_error, Rachford_Rice_solution2
 
@@ -5306,10 +5308,284 @@ class GCEOSMIX(GCEOS):
         d2dxs = self.d2lnphi_dzizjs(Z, zs)
         d2ns = d2xs_to_dxdn_partials(d2dxs, zs)
         return d2ns
+    
+class EpsilonZeroMixingRules(object):
+    @property
+    def depsilon_dzs(self):       
+        r'''Helper method for calculating the composition derivatives of
+        `epsilon`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial \epsilon}{\partial x_i}\right)_{T, P, x_{i\ne j}} 
+            = 0
+
+        Returns
+        -------
+        depsilon_dzs : list[float]
+            Composition derivative of `epsilon` of each component, [m^6/mol^2]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        return [0.0]*self.N
+
+    @property
+    def depsilon_dns(self):       
+        r'''Helper method for calculating the mole number derivatives of
+        `epsilon`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial \epsilon}{\partial n_i}\right)_{T, P, n_{i\ne j}} 
+            = 0
+
+        Returns
+        -------
+        depsilon_dns : list[float]
+            Composition derivative of `epsilon` of each component, [m^6/mol^3]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        return [0.0]*self.N
+
+    @property
+    def d2epsilon_dzizjs(self):       
+        r'''Helper method for calculating the second composition derivatives (hessian) 
+        of `epsilon`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^2 \epsilon}{\partial x_i \partial x_j}\right)_{T, P, x_{k\ne i,j}} 
+            = 0
+
+        Returns
+        -------
+        d2epsilon_dzizjs : list[list[float]]
+            Composition derivative of `epsilon` of each component, [m^6/mol^2]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        return [[0.0]*self.N for i in self.cmps]
+
+    @property
+    def d2epsilon_dninjs(self):       
+        r'''Helper method for calculating the second mole number derivatives (hessian) of
+        `epsilon`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^2 \epsilon}{\partial n_i n_j}\right)_{T, P, n_{k\ne i,j}} 
+            = 0
+
+        Returns
+        -------
+        d2epsilon_dninjs : list[list[float]]
+            Second composition derivative of `epsilon` of each component, [m^6/mol^4]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        return [[0.0]*self.N for i in self.cmps]
+
+    @property
+    def d3epsilon_dninjnks(self):   
+        r'''Helper method for calculating the third partial mole number
+        derivatives of `epsilon`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^3 \epsilon}{\partial n_i \partial n_j \partial n_k }
+            \right)_{T, P, 
+            n_{m \ne i,j,k}} = 0
+
+        Returns
+        -------
+        d3epsilon_dninjnks : list[list[list[float]]]
+            Third mole number derivative of `epsilon` of each component,
+            [m^6/mol^5]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        N, cmps = self.N, self.cmps
+        return [[[0.0]*N for _ in cmps] for _ in cmps]
+    
+#    # Python 2/3 compatibility
+#    try:
+#        eos.__dict__['d3epsilon_dninjnks'] = d3epsilon_dninjnks
+#        eos.__dict__['d2epsilon_dninjs'] = d2epsilon_dninjs
+#        eos.__dict__['d2epsilon_dzizjs'] = d2epsilon_dzizjs
+#        eos.__dict__['depsilon_dns'] = depsilon_dns
+#        eos.__dict__['depsilon_dzs'] = depsilon_dzs
+#    except:
+#        setattr(eos, 'd3epsilon_dninjnks', d3epsilon_dninjnks)
+#        setattr(eos, 'd2epsilon_dninjs', d2epsilon_dninjs)
+#        setattr(eos, 'd2epsilon_dzizjs', d2epsilon_dzizjs)
+#        setattr(eos, 'depsilon_dns', depsilon_dns)
+#        setattr(eos, 'depsilon_dzs', depsilon_dzs)
 
 
 
-class IGMIX(GCEOSMIX, IG):
+
+class PSRKMixingRules(object):
+    u = 1.1
+    A = -0.6466271649250525 # log(1.1/(1.1+1))
+    A_inv = 1.0/A
+    def a_alpha_and_derivatives(self, T, full=True, quick=True,
+                                pure_a_alphas=True):
+        
+        r'''
+        
+        .. math::
+            \alpha = bRT \left[ \sum_i \frac{z_i \alpha_i}{b_i RT} + \frac{1}{A}\left(
+                    \frac{G^E}{RT} + \sum_i z_i \ln\left(\frac{b}{b_i}\right)
+                    \right)\right]
+        
+        .. math::
+            \frac{\partial \alpha}{\partial T} = RTb\left[
+                \sum_i \left(\frac{z_i \frac{\partial \alpha_i}{\partial T}}{RTb_i} -\frac{z_i\alpha_i}{RT^2b_i} \right)
+                + \frac{1}{A}\left(\frac{\frac{\partial G^E}{\partial T}}{RT} - \frac{G^E}{RT^2} \right)
+                \right] + \frac{\alpha}{T}
+            
+        .. math::
+            \frac{\partial^2 \alpha}{\partial T^2} = b\left[\sum_i 
+            \left(\frac{z_i\frac{\partial^2 \alpha_i}{\partial T^2}}{b_i}
+            - \frac{2z_i \frac{\partial \alpha_i}{\partial T}}{T b_i}
+            + \frac{2z_i\alpha_i}{T^2 b_i}
+            \right)
+            + \frac{2}{T}\left[\sum_i \left(\frac{z_i\frac{\partial \alpha_i}{\partial T}}{b_i}
+            - \frac{z_i \alpha_i}{T b_i}
+            \right)
+            + \frac{1}{A}\left(\frac{\partial G^E}{\partial T} - \frac{G^E}{T}   \right)
+            \right]
+            + \frac{1}{A}\left( 
+            \frac{\partial^2 G^E}{\partial T^2} - \frac{2}{T}\frac{\partial G^E}{\partial T} + 2\frac{G^E}{T^2}
+            \right)
+            \right]
+        '''
+        if pure_a_alphas:
+            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = self.a_alpha_and_derivatives_vectorized(T, full=True)
+            self.a_alphas, self.da_alpha_dTs, self.d2a_alpha_dT2s = a_alphas, da_alpha_dTs, d2a_alpha_dT2s
+        else:
+            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = self.a_alphas, self.da_alpha_dTs, self.d2a_alpha_dT2s
+
+        b, zs, bs =self.b, self.zs, self.bs
+        
+        ge_model = self.ge_model
+        
+        if T != ge_model.T:
+            # TODO make sure this gets set when solve_T is called
+            ge_model = ge_model.to_T_xs(T, zs)
+            self._last_ge = ge_model
+        
+        GE = ge_model.GE()
+        if full:
+            dGE_dT = ge_model.dGE_dT()
+            d2GE_dT2 = ge_model.d2GE_dT2()
+        
+        T_inv = 1.0/T
+        T2_inv = T_inv*T_inv
+        RT_inv = R_inv*T_inv
+        RT2_inv = R_inv*T2_inv
+        
+        A_inv = self.A_inv
+        
+        
+        tot0, tot1, d1tot, d2tot, other = 0.0, 0.0, 0.0, 0.0, 0.0
+        if full:
+            for i in self.cmps:
+                bi_inv = 1.0/bs[i]
+                # Main component
+                tot0 += zs[i]*a_alphas[i]*bi_inv*RT_inv
+                tot1 += zs[i]*log(b*bi_inv)
+                
+                
+                d1tot += zs[i]*da_alpha_dTs[i]*RT_inv*bi_inv - zs[i]*a_alphas[i]*RT2_inv*bi_inv
+                
+                # TODO go back to just using d1tot
+                # TODO optimize all of this
+                other += zs[i]*da_alpha_dTs[i]*bi_inv - zs[i]*a_alphas[i]*bi_inv*T_inv
+                
+                d2tot += (zs[i]*d2a_alpha_dT2s[i]*bi_inv 
+                          - 2.0*zs[i]*da_alpha_dTs[i]*T_inv*bi_inv
+                          + 2.0*zs[i]*a_alphas[i]*T2_inv*bi_inv)
+        else:
+            for i in self.cmps:
+                bi_inv = 1.0/bs[i]
+                tot0 += zs[i]*a_alphas[i]*bi_inv*RT_inv
+                tot1 += zs[i]*log(b*bi_inv)
+            
+            
+        a_alpha = R*T*b*(tot0 + A_inv*(GE*RT_inv + tot1))
+        if full:
+            da_alpha_dT = R*T*b*(d1tot + A_inv*(dGE_dT*RT_inv - GE*RT2_inv)) + a_alpha*T_inv
+            d2a_alpha_dT2 = b*(d2tot + 2.0*T_inv*(other + A_inv*(dGE_dT - GE*T_inv))
+                               + A_inv*(d2GE_dT2 - 2.0*T_inv*dGE_dT + 2.0*GE*T2_inv))
+            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+        return a_alpha
+
+    def solve_T(self, P, V, quick=True, solution=None):
+        T = GCEOS.solve_T(self, P, V, quick=quick, solution=solution)
+        if hasattr(self, '_last_ge') and self._last_ge.T == T:
+            self.ge_model = self._last_ge
+            del self._last_ge
+        else:
+            self.ge_model = self.ge_model.to_T_xs(T, self.zs)
+        return T
+
+    @property
+    def da_alpha_dzs(self):
+        raise NotImplementedError("TODO")
+
+    @property
+    def da_alpha_dns(self):   
+        raise NotImplementedError("TODO")
+
+    @property
+    def dna_alpha_dns(self):   
+        raise NotImplementedError("TODO")
+
+    @property
+    def d2a_alpha_dzizjs(self):   
+        raise NotImplementedError("TODO")
+
+    @property
+    def d2a_alpha_dninjs(self):   
+        raise NotImplementedError("TODO")
+
+    @property
+    def d3a_alpha_dzizjzks(self):   
+        raise NotImplementedError("TODO")
+
+    @property
+    def d3a_alpha_dninjnks(self):   
+        raise NotImplementedError("TODO")
+
+    @property
+    def da_alpha_dT_dzs(self):   
+        raise NotImplementedError("TODO")
+
+    @property
+    def da_alpha_dT_dns(self):   
+        raise NotImplementedError("TODO")
+
+    @property
+    def dna_alpha_dT_dns(self):   
+        raise NotImplementedError("TODO")
+
+    @property
+    def d2a_alpha_dT2_dzs(self):   
+        raise NotImplementedError("TODO")
+
+    @property
+    def d2a_alpha_dT2_dns(self):   
+        raise NotImplementedError("TODO")
+
+
+class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
     eos_pure = IG
     
     nonstate_constants_specific = ()
@@ -5432,6 +5708,304 @@ class IGMIX(GCEOSMIX, IG):
     def dlnphis_dP(self, phase):
         return self.zeros1d
 
+
+class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
+    r'''Class for solving the Redlich Kwong cubic equation of state for a 
+    mixture of any number of compounds. Subclasses `RK`. Solves the EOS on
+    initialization and calculates fugacities for all components in all phases.
+    Two of `T`, `P`, and `V` are needed to solve the EOS.
+
+    .. math::
+        P =\frac{RT}{V-b}-\frac{a}{V\sqrt{T}(V+b)}
+        
+        a = \sum_i \sum_j z_i z_j {a}_{ij}
+            
+        b = \sum_i z_i b_i
+
+        a_{ij} = (1-k_{ij})\sqrt{a_{i}a_{j}}
+
+        a_i =\left(\frac{R^2(T_{c,i})^{2}}{9(\sqrt[3]{2}-1)P_{c,i}} \right)
+        =\frac{0.42748\cdot R^2(T_{c,i})^{2}}{P_{c,i}}
+        
+        b_i=\left( \frac{(\sqrt[3]{2}-1)}{3}\right)\frac{RT_{c,i}}{P_{c,i}}
+        =\frac{0.08664\cdot R T_{c,i}}{P_{c,i}}
+                    
+    Parameters
+    ----------
+    Tcs : float
+        Critical temperatures of all compounds, [K]
+    Pcs : float
+        Critical pressures of all compounds, [Pa]
+    zs : float
+        Overall mole fractions of all species, [-]
+    kijs : list[list[float]], optional
+        n*n size list of lists with binary interaction parameters for the
+        Van der Waals mixing rules, default all 0 [-]
+    T : float, optional
+        Temperature, [K]
+    P : float, optional
+        Pressure, [Pa]
+    V : float, optional
+        Molar volume, [m^3/mol]
+    omegas : float, optional
+        Acentric factors of all compounds - Not used in equation of state!, [-]
+    fugacities : bool, optional
+        Whether or not to calculate fugacity related values (phis, log phis,
+        and fugacities); default True, [-]
+    only_l : bool, optional
+        When true, if there is a liquid and a vapor root, only the liquid
+        root (and properties) will be set; default False, [-]
+    only_g : bool, optoinal
+        When true, if there is a liquid and a vapor root, only the vapor
+        root (and properties) will be set; default False, [-]
+        
+    Examples
+    --------
+    T-P initialization, nitrogen-methane at 115 K and 1 MPa:
+    
+    >>> eos = RKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+    >>> eos.V_l, eos.V_g
+    (4.04841478191211e-05, 0.0007006060586399438)
+    >>> eos.fugacities_l, eos.fugacities_g
+    ([845014.9091158316, 57493.50906829033], [443627.1645350597, 355331.8131029061])
+
+    Notes
+    -----
+    For P-V initializations with multiple components, SciPy's `newton` solver
+    is used to find T.
+
+    References
+    ----------
+    .. [1] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
+       Butterworth-Heinemann, 1985.
+    .. [2] Poling, Bruce E. The Properties of Gases and Liquids. 5th 
+       edition. New York: McGraw-Hill Professional, 2000.
+    '''
+    eos_pure = RK
+
+    def __init__(self, Tcs, Pcs, zs, omegas=None, kijs=None, T=None, P=None, V=None,
+                 fugacities=True, only_l=False, only_g=False):
+        self.N = N = len(Tcs)
+        self.cmps = cmps = range(N)
+        self.Tcs = Tcs
+        self.Pcs = Pcs
+        self.omegas = omegas
+        self.zs = zs
+        if kijs is None:
+            kijs = [[0.0]*N for i in cmps]
+        self.kijs = kijs
+        self.kwargs = {'kijs': kijs}
+        self.T = T
+        self.P = P
+        self.V = V
+
+        c1R2, c2R = self.c1R2, self.c2R
+        # Also tried to store the inverse of Pcs, without success - slows it down
+        self.ais = [c1R2*Tcs[i]*Tcs[i]/Pcs[i] for i in cmps]
+        self.bs = bs = [c2R*Tcs[i]/Pcs[i] for i in cmps]
+        
+        b = 0.0
+        for i in cmps:
+            b += bs[i]*zs[i]
+        self.b = self.delta = b
+
+
+        self.solve(only_l=only_l, only_g=only_g)
+        if fugacities:
+            self.fugacities()
+
+    def _fast_init_specific(self, other):
+        b = 0.0
+        for bi, zi in zip(self.bs, self.zs):
+            b += bi*zi
+        self.b = self.delta = b
+
+    def a_alpha_and_derivatives_vectorized(self, T, full=False):
+        r'''Method to calculate the pure-component `a_alphas` and their first  
+        and second derivatives for the RK EOS. This vectorized implementation 
+        is added for extra speed.
+
+        .. math::
+            a\alpha = \frac{a}{\sqrt{\frac{T}{Tc}}}
+        
+            \frac{d a\alpha}{dT} = - \frac{a}{2 T\sqrt{\frac{T}{Tc}}}
+
+            \frac{d^2 a\alpha}{dT^2} = \frac{3 a}{4 T^{2}\sqrt{\frac{T}{Tc}}}
+        
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        full : bool, optional
+            If False, calculates and returns only `a_alphas`, [-]
+        
+        Returns
+        -------
+        a_alphas : list[float]
+            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
+        da_alpha_dTs : list[float]
+            Temperature derivative of coefficient calculated by EOS-specific 
+            method, [J^2/mol^2/Pa/K]
+        d2a_alpha_dT2s : list[float]
+            Second temperature derivative of coefficient calculated by  
+            EOS-specific method, [J^2/mol^2/Pa/K**2]
+            
+        Examples
+        --------
+        
+        >>> eos = RKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
+        >>> eos.a_alpha_and_derivatives_vectorized(115, full=True)
+        ([0.14498109194681866, 0.3001977367788305],
+         [-0.0006303525736818202, -0.0013052075512123066],
+         [8.221990091502003e-06, 1.702444632016052e-05])
+        '''
+        ais, Tcs = self.ais, self.Tcs
+        
+        ais = [ai*Tci**0.5 for ai, Tci in zip(ais, Tcs)]
+        T_root_inv = T**-0.5
+        
+        if not full:
+            a_alphas = [ais[i]*T_root_inv for i in self.cmps]
+            return a_alphas
+        else:
+            T_inv = T_root_inv*T_root_inv
+            T_15_inv = T_inv*T_root_inv
+            T_25_inv = T_inv*T_15_inv
+            
+            x0 = -0.5*T_15_inv
+            x1 = 0.75*T_25_inv
+            cmps = self.cmps
+
+            a_alphas = [ais[i]*T_root_inv for i in cmps]
+            da_alpha_dTs = [ais[i]*x0 for i in cmps]
+            d2a_alpha_dT2s = [ais[i]*x1 for i in cmps]
+            return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
+
+    def solve_T(self, P, V, quick=True, solution=None):
+        if self.N == 1 and type(self) is RKMIX:
+            self.Tc = self.Tcs[0]
+            self.Pc = self.Pcs[0]
+            self.a = self.ais[0]
+            T = super(type(self).__mro__[-4], self).solve_T(P=P, V=V, quick=quick, solution=solution)   
+            del self.Tc
+            del self.Pc
+            del self.a
+            return T
+        else:
+            return super(type(self).__mro__[-3], self).solve_T(P=P, V=V, quick=quick, solution=solution)   
+
+
+    @property
+    def ddelta_dzs(self):   
+        r'''Helper method for calculating the composition derivatives of
+        `delta`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial \delta}{\partial x_i}\right)_{T, P, x_{i\ne j}} 
+            = b_i
+
+        Returns
+        -------
+        ddelta_dzs : list[float]
+            Composition derivative of `delta` of each component, [m^3/mol]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        return self.bs
+
+    @property
+    def ddelta_dns(self):   
+        r'''Helper method for calculating the mole number derivatives of
+        `delta`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial \delta}{\partial n_i}\right)_{T, P, n_{i\ne j}} 
+            = (b_i - b)
+
+        Returns
+        -------
+        ddelta_dns : list[float]
+            Mole number derivative of `delta` of each component, [m^3/mol^2]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        b = self.b
+        return [(bi - b) for bi in self.bs]
+
+    @property
+    def d2delta_dzizjs(self):   
+        r'''Helper method for calculating the second composition derivatives (hessian) of
+        `delta`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^2 \delta}{\partial x_i\partial x_j}\right)_{T, P, x_{k\ne i,j}} 
+            = 0
+
+        Returns
+        -------
+        d2delta_dzizjs : list[float]
+            Second Composition derivative of `delta` of each component, [m^3/mol]
+
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        return [[0.0]*self.N for i in self.cmps]
+
+    @property
+    def d2delta_dninjs(self):   
+        r'''Helper method for calculating the second mole number derivatives (hessian) of
+        `delta`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^2 \delta}{\partial n_i \partial n_j}\right)_{T, P, n_{k\ne i,j}} 
+            = 2b - b_i - b_j
+
+        Returns
+        -------
+        d2delta_dninjs : list[list[float]]
+            Second mole number derivative of `delta` of each component, [m^3/mol^3]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        return self.d2b_dninjs
+
+    @property
+    def d3delta_dninjnks(self):   
+        r'''Helper method for calculating the third partial mole number
+        derivatives of `delta`. Note this is independent of the phase.
+        
+        .. math::
+            \left(\frac{\partial^3 \delta}{\partial n_i \partial n_j \partial n_k }
+            \right)_{T, P, 
+            n_{m \ne i,j,k}} = 2(-3b + b_i + b_j + b_k)
+
+        Returns
+        -------
+        d3delta_dninjnks : list[list[list[float]]]
+            Third mole number derivative of `delta` of each component, 
+            [m^3/mol^4]
+            
+        Notes
+        -----
+        This derivative is checked numerically.
+        '''
+        m3b = -3.0*self.b
+        bs = self.bs
+        cmps = self.cmps
+        d3delta_dninjnks = []
+        for bi in bs:
+            d3b_dnjnks = []
+            for bj in bs:
+                d3b_dnjnks.append([2.0*(m3b + bi + bj + bk) for bk in bs])
+            d3delta_dninjnks.append(d3b_dnjnks)
+        return d3delta_dninjnks
 
 
 class PRMIX(GCEOSMIX, PR):
@@ -6706,6 +7280,9 @@ class PRMIXTranslated(PRMIX):
         return d3b_dninjnks
 
 
+class PPR(Mathias_Copeman_a_alpha, PSRKMixingRules, PRMIXTranslated):
+    pass
+
 class PRMIXTranslatedPPJP(PRMIXTranslated):
     eos_pure = PRTranslatedPPJP
     mix_kwargs_to_pure = {'cs': 'c'}
@@ -6767,7 +7344,7 @@ class PRMIXTranslatedPPJP(PRMIXTranslated):
         self.epsilon = -b0*b0 + c*(c + b0 + b0) # Very important to be calculated exactly the same way as the other implementation
 
 
-class PRMIXTranslatedConsistent(PRMIXTranslated):    
+class PRMIXTranslatedConsistent(Twu91_a_alpha, PRMIXTranslated):    
     eos_pure = PRTranslatedConsistent
     mix_kwargs_to_pure = {'cs': 'c', 'alpha_coeffs': 'alpha_coeffs'}
     # There is an updated set of correlations - which means a revision flag is needed
@@ -6838,71 +7415,8 @@ class PRMIXTranslatedConsistent(PRMIXTranslated):
         self.delta = 2.0*(c + b0)
         self.epsilon = -b0*b0 + c*(c + b0 + b0) # Very important to be calculated exactly the same way as the other implementation
 
-    def a_alpha_and_derivatives_vectorized(self, T, full=False):
-        r'''Method to calculate the pure-component `a_alphas` and their first  
-        and second derivatives for TWU91 alpha function EOS. This vectorized 
-        implementation is added for extra speed.
 
-        .. math::
-            \alpha = \left(\frac{T}{Tc}\right)^{c_{3} \left(c_{2} 
-            - 1\right)} e^{c_{1} \left(- \left(\frac{T}{Tc}
-            \right)^{c_{2} c_{3}} + 1\right)}        
-        
-        Parameters
-        ----------
-        T : float
-            Temperature, [K]
-        full : bool, optional
-            If False, calculates and returns only `a_alphas`, [-]
-        
-        Returns
-        -------
-        a_alphas : list[float]
-            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
-        da_alpha_dTs : list[float]
-            Temperature derivative of coefficient calculated by EOS-specific 
-            method, [J^2/mol^2/Pa/K]
-        d2a_alpha_dT2s : list[float]
-            Second temperature derivative of coefficient calculated by  
-            EOS-specific method, [J^2/mol^2/Pa/K**2]
-        '''
-        ais, alpha_coeffs, Tcs = self.ais, self.alpha_coeffs, self.Tcs
-        if not full:
-            a_alphas = []
-            for i in self.cmps:
-                coeffs = alpha_coeffs[i] 
-                Tr = T/Tcs[i]
-                a_alpha = ais[i]*(Tr**(coeffs[2]*(coeffs[1] - 1.0))*exp(coeffs[0]*(1.0 - (Tr)**(coeffs[1]*coeffs[2]))))
-                a_alphas.append(a_alpha)
-            return a_alphas
-        else:
-            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
-            T_inv = 1.0/T
-            for i in self.cmps:
-                coeffs = alpha_coeffs[i]
-                c0, c1, c2 = coeffs[0], coeffs[1], coeffs[2]
-                Tr = T/Tcs[i]
-                
-                x1 = c1 - 1.0
-                x2 = c2*x1
-                x3 = c1*c2
-                x4 = Tr**x3
-                x5 = ais[i]*Tr**x2*exp(-c0*(x4 - 1.0))
-                x6 = c0*x4
-                x7 = c1*x6
-                x8 = c2*x5
-                x9 = c1*c1*c2
-                
-                d2a_alpha_dT2 = (x8*(c0*c0*x4*x4*x9 - c1 + c2*x1*x1 
-                                     - 2.0*x2*x7 - x6*x9 + x7 + 1.0)*T_inv*T_inv)            
-                a_alphas.append(x5)
-                da_alpha_dTs.append(x8*(x1 - x7)*T_inv)
-                d2a_alpha_dT2s.append(d2a_alpha_dT2)
-
-            return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
-
-
-class SRKMIX(GCEOSMIX, SRK):    
+class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):    
     r'''Class for solving the Soave-Redlich-Kwong cubic equation of state for a 
     mixture of any number of compounds. Subclasses `SRK`. Solves the EOS on
     initialization and calculates fugacities for all components in all phases.
@@ -6985,6 +7499,13 @@ class SRKMIX(GCEOSMIX, SRK):
     '''
     eos_pure = SRK
     nonstate_constants_specific = ('ms',)
+    
+    ddelta_dzs = RKMIX.ddelta_dzs
+    ddelta_dns = RKMIX.ddelta_dns
+    d2delta_dzizjs = RKMIX.d2delta_dzizjs
+    d2delta_dninjs = RKMIX.d2delta_dninjs
+    d3delta_dninjnks = RKMIX.d3delta_dninjnks
+
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
         self.N = len(Tcs)
@@ -7225,118 +7746,6 @@ class SRKMIX(GCEOSMIX, SRK):
             d_lnphi_dP = dZ_dP*x3 + x10*(x8 - x3) + x6
             d_lnphi_dPs.append(d_lnphi_dP)
         return d_lnphi_dPs                            
-
-    @property
-    def ddelta_dzs(self):   
-        r'''Helper method for calculating the composition derivatives of
-        `delta`. Note this is independent of the phase.
-        
-        .. math::
-            \left(\frac{\partial \delta}{\partial x_i}\right)_{T, P, x_{i\ne j}} 
-            = b_i
-
-        Returns
-        -------
-        ddelta_dzs : list[float]
-            Composition derivative of `delta` of each component, [m^3/mol]
-            
-        Notes
-        -----
-        This derivative is checked numerically.
-        '''
-        return self.bs
-
-    @property
-    def ddelta_dns(self):   
-        r'''Helper method for calculating the mole number derivatives of
-        `delta`. Note this is independent of the phase.
-        
-        .. math::
-            \left(\frac{\partial \delta}{\partial n_i}\right)_{T, P, n_{i\ne j}} 
-            = (b_i - b)
-
-        Returns
-        -------
-        ddelta_dns : list[float]
-            Mole number derivative of `delta` of each component, [m^3/mol^2]
-            
-        Notes
-        -----
-        This derivative is checked numerically.
-        '''
-        b = self.b
-        return [(bi - b) for bi in self.bs]
-
-    @property
-    def d2delta_dzizjs(self):   
-        r'''Helper method for calculating the second composition derivatives (hessian) of
-        `delta`. Note this is independent of the phase.
-        
-        .. math::
-            \left(\frac{\partial^2 \delta}{\partial x_i\partial x_j}\right)_{T, P, x_{k\ne i,j}} 
-            = 0
-
-        Returns
-        -------
-        d2delta_dzizjs : list[float]
-            Second Composition derivative of `delta` of each component, [m^3/mol]
-
-        Notes
-        -----
-        This derivative is checked numerically.
-        '''
-        return [[0.0]*self.N for i in self.cmps]
-
-    @property
-    def d2delta_dninjs(self):   
-        r'''Helper method for calculating the second mole number derivatives (hessian) of
-        `delta`. Note this is independent of the phase.
-        
-        .. math::
-            \left(\frac{\partial^2 \delta}{\partial n_i \partial n_j}\right)_{T, P, n_{k\ne i,j}} 
-            = 2b - b_i - b_j
-
-        Returns
-        -------
-        d2delta_dninjs : list[list[float]]
-            Second mole number derivative of `delta` of each component, [m^3/mol^3]
-            
-        Notes
-        -----
-        This derivative is checked numerically.
-        '''
-        return self.d2b_dninjs
-
-    @property
-    def d3delta_dninjnks(self):   
-        r'''Helper method for calculating the third partial mole number
-        derivatives of `delta`. Note this is independent of the phase.
-        
-        .. math::
-            \left(\frac{\partial^3 \delta}{\partial n_i \partial n_j \partial n_k }
-            \right)_{T, P, 
-            n_{m \ne i,j,k}} = 2(-3b + b_i + b_j + b_k)
-
-        Returns
-        -------
-        d3delta_dninjnks : list[list[list[float]]]
-            Third mole number derivative of `delta` of each component, 
-            [m^3/mol^4]
-            
-        Notes
-        -----
-        This derivative is checked numerically.
-        '''
-        m3b = -3.0*self.b
-        bs = self.bs
-        cmps = self.cmps
-        d3delta_dninjnks = []
-        for bi in bs:
-            d3b_dnjnks = []
-            for bj in bs:
-                d3b_dnjnks.append([2.0*(m3b + bi + bj + bk) for bk in bs])
-            d3delta_dninjnks.append(d3b_dnjnks)
-        return d3delta_dninjnks
 
 
 class SRKMIXTranslated(SRKMIX):
@@ -7630,7 +8039,7 @@ class SRKMIXTranslated(SRKMIX):
         return d3b_dninjnks
 
 
-class SRKMIXTranslatedConsistent(SRKMIXTranslated):    
+class SRKMIXTranslatedConsistent(Twu91_a_alpha, SRKMIXTranslated):    
     eos_pure = SRKTranslatedConsistent
     mix_kwargs_to_pure = {'cs': 'c', 'alpha_coeffs': 'alpha_coeffs'}
     
@@ -7700,69 +8109,125 @@ class SRKMIXTranslatedConsistent(SRKMIXTranslated):
         self.delta = c + c + b0
         self.epsilon = c*(b0 + c)
 
-    def a_alpha_and_derivatives_vectorized(self, T, full=False):
-        r'''Method to calculate the pure-component `a_alphas` and their first  
-        and second derivatives for TWU91 alpha function EOS. This vectorized 
-        implementation is added for extra speed.
 
-        .. math::
-            \alpha = \left(\frac{T}{Tc}\right)^{c_{3} \left(c_{2} 
-            - 1\right)} e^{c_{1} \left(- \left(\frac{T}{Tc}
-            \right)^{c_{2} c_{3}} + 1\right)}        
-        
-        Parameters
-        ----------
-        T : float
-            Temperature, [K]
-        full : bool, optional
-            If False, calculates and returns only `a_alphas`, [-]
-        
-        Returns
-        -------
-        a_alphas : list[float]
-            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
-        da_alpha_dTs : list[float]
-            Temperature derivative of coefficient calculated by EOS-specific 
-            method, [J^2/mol^2/Pa/K]
-        d2a_alpha_dT2s : list[float]
-            Second temperature derivative of coefficient calculated by  
-            EOS-specific method, [J^2/mol^2/Pa/K**2]
-        '''
-        # TODO: share code with PRMIXTranslatedConsistent
-        ais, alpha_coeffs, Tcs = self.ais, self.alpha_coeffs, self.Tcs
-        if not full:
-            a_alphas = []
-            for i in self.cmps:
-                coeffs = alpha_coeffs[i] 
-                Tr = T/Tcs[i]
-                a_alpha = ais[i]*(Tr**(coeffs[2]*(coeffs[1] - 1.0))*exp(coeffs[0]*(1.0 - (Tr)**(coeffs[1]*coeffs[2]))))
-                a_alphas.append(a_alpha)
-            return a_alphas
-        else:
-            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
-            T_inv = 1.0/T
-            for i in self.cmps:
-                coeffs = alpha_coeffs[i]
-                c0, c1, c2 = coeffs[0], coeffs[1], coeffs[2]
-                Tr = T/Tcs[i]
-                
-                x1 = c1 - 1.0
-                x2 = c2*x1
-                x3 = c1*c2
-                x4 = Tr**x3
-                x5 = ais[i]*Tr**x2*exp(-c0*(x4 - 1.0))
-                x6 = c0*x4
-                x7 = c1*x6
-                x8 = c2*x5
-                x9 = c1*c1*c2
-                
-                d2a_alpha_dT2 = (x8*(c0*c0*x4*x4*x9 - c1 + c2*x1*x1 
-                                     - 2.0*x2*x7 - x6*x9 + x7 + 1.0)*T_inv*T_inv)            
-                a_alphas.append(x5)
-                da_alpha_dTs.append(x8*(x1 - x7)*T_inv)
-                d2a_alpha_dT2s.append(d2a_alpha_dT2)
+class MSRKMIXTranslated(Soave_79_a_alpha, SRKMIXTranslatedConsistent):
+    eos_pure = MSRKTranslated
+    def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, cs=None, 
+                 alpha_coeffs=None, T=None, P=None, V=None,
+                 fugacities=True, only_l=False, only_g=False):
+        self.N = N = len(Tcs)
+        self.cmps = cmps = range(N)
+        self.Tcs = Tcs
+        self.Pcs = Pcs
+        self.omegas = omegas
+        self.zs = zs
+        if kijs is None:
+            kijs = [[0.0]*N for i in cmps]
+        self.kijs = kijs
+        self.T = T
+        self.P = P
+        self.V = V
 
-            return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
+        c1R2, c2R = self.c1*R2, self.c2*R
+        self.ais = [c1R2*Tcs[i]*Tcs[i]/Pcs[i] for i in cmps]
+        b0s = [c2R*Tcs[i]/Pcs[i] for i in cmps]
+
+        if cs is None:
+            cs = [0.0]*N # TODO peneloux? Inherit?
+        if alpha_coeffs is None:
+            alpha_coeffs = []
+            for i in cmps:
+                alpha_coeffs.append(MSRKTranslated.estimate_MN(Tcs[i], Pcs[i], omegas[i], cs[i]))
+
+        self.kwargs = {'kijs': kijs, 'alpha_coeffs': alpha_coeffs, 'cs': cs}
+        self.alpha_coeffs = alpha_coeffs
+        self.cs = cs
+        
+        b0, c = 0.0, 0.0
+        for i in cmps:
+            b0 += b0s[i]*zs[i]
+            c += cs[i]*zs[i]
+        
+        self.b0s = b0s
+        self.bs = [b0s[i] - cs[i] for i in cmps]
+        self.c = c
+        self.b = b = b0 - c
+        self.delta = c + c + b0
+        self.epsilon = c*(b0 + c)
+        self.solve(only_l=only_l, only_g=only_g)
+        if fugacities:
+            self.fugacities()
+    
+class PSRK(Mathias_Copeman_a_alpha, PSRKMixingRules, SRKMIXTranslated):
+    eos_pure = SRKTranslated
+    mix_kwargs_to_pure = {'cs': 'c', 'alpha_coeffs': 'alpha_coeffs'}
+    
+    def __init__(self, Tcs, Pcs, omegas, zs, alpha_coeffs, ge_model,
+                 kijs=None, cs=None, 
+                 T=None, P=None, V=None,
+                 fugacities=True, only_l=False, only_g=False):
+        self.N = N = len(Tcs)
+        self.cmps = cmps = range(N)
+        self.Tcs = Tcs
+        self.Pcs = Pcs
+        self.omegas = omegas
+        self.zs = zs
+        if kijs is None:
+            kijs = [[0.0]*N for i in cmps]
+        if cs is None:
+            cs = [0.0]*N
+        self.kijs = kijs
+        self.T = T
+        self.P = P
+        self.V = V
+        
+        c1R2, c2R = self.c1*R2, self.c2*R
+        self.ais = [c1R2*Tcs[i]*Tcs[i]/Pcs[i] for i in cmps]
+        b0s = [c2R*Tcs[i]/Pcs[i] for i in cmps]
+        
+
+        self.kwargs = {'kijs': kijs, 'alpha_coeffs': alpha_coeffs, 'cs': cs,
+                       'ge_model': ge_model}
+        self.alpha_coeffs = alpha_coeffs
+        self.cs = cs
+        
+        if zs != ge_model.xs or ge_model.T != T:
+            if T is None:
+                T = 298.15 # default value, need to check in a_alpha call
+            ge_model = ge_model.to_T_xs(T, zs)
+        self.ge_model = ge_model
+        
+        b0, c = 0.0, 0.0
+        for i in cmps:
+            b0 += b0s[i]*zs[i]
+            c += cs[i]*zs[i]
+        
+        self.b0s = b0s
+        self.bs = [b0s[i] - cs[i] for i in cmps]
+        self.c = c
+        self.b = b = b0 - c
+        self.delta = c + c + b0
+        self.epsilon = c*(b0 + c)
+        self.solve(only_l=only_l, only_g=only_g)
+#        if fugacities:
+#            self.fugacities()
+
+    def _fast_init_specific(self, other):
+        zs = self.zs
+        self.ge_model = other.ge_model.to_T_xs(self.T, zs)
+        self.cs = cs = other.cs
+        self.alpha_coeffs = other.alpha_coeffs
+        self.b0s = b0s = other.b0s            
+            
+        b0, c = 0.0, 0.0
+        for i in self.cmps:
+            b0 += b0s[i]*zs[i]
+            c += cs[i]*zs[i]
+        
+        self.c = c
+        self.b = b0 - c
+        self.delta = c + c + b0
+        self.epsilon = c*(b0 + c)
 
 
 class PR78MIX(PRMIX):
@@ -7884,7 +8349,7 @@ class PR78MIX(PRMIX):
 
 
 
-class VDWMIX(GCEOSMIX, VDW):
+class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
     r'''Class for solving the Van der Waals cubic equation of state for a 
     mixture of any number of compounds. Subclasses `VDW`. Solves the EOS on
     initialization and calculates fugacities for all components in all phases.
@@ -8236,190 +8701,6 @@ class VDWMIX(GCEOSMIX, VDW):
         return [[[0.0]*N for _ in cmps] for _ in cmps]
 
 
-class RKMIX(GCEOSMIX, RK):
-    r'''Class for solving the Redlich Kwong cubic equation of state for a 
-    mixture of any number of compounds. Subclasses `RK`. Solves the EOS on
-    initialization and calculates fugacities for all components in all phases.
-    Two of `T`, `P`, and `V` are needed to solve the EOS.
-
-    .. math::
-        P =\frac{RT}{V-b}-\frac{a}{V\sqrt{T}(V+b)}
-        
-        a = \sum_i \sum_j z_i z_j {a}_{ij}
-            
-        b = \sum_i z_i b_i
-
-        a_{ij} = (1-k_{ij})\sqrt{a_{i}a_{j}}
-
-        a_i =\left(\frac{R^2(T_{c,i})^{2}}{9(\sqrt[3]{2}-1)P_{c,i}} \right)
-        =\frac{0.42748\cdot R^2(T_{c,i})^{2}}{P_{c,i}}
-        
-        b_i=\left( \frac{(\sqrt[3]{2}-1)}{3}\right)\frac{RT_{c,i}}{P_{c,i}}
-        =\frac{0.08664\cdot R T_{c,i}}{P_{c,i}}
-                    
-    Parameters
-    ----------
-    Tcs : float
-        Critical temperatures of all compounds, [K]
-    Pcs : float
-        Critical pressures of all compounds, [Pa]
-    zs : float
-        Overall mole fractions of all species, [-]
-    kijs : list[list[float]], optional
-        n*n size list of lists with binary interaction parameters for the
-        Van der Waals mixing rules, default all 0 [-]
-    T : float, optional
-        Temperature, [K]
-    P : float, optional
-        Pressure, [Pa]
-    V : float, optional
-        Molar volume, [m^3/mol]
-    omegas : float, optional
-        Acentric factors of all compounds - Not used in equation of state!, [-]
-    fugacities : bool, optional
-        Whether or not to calculate fugacity related values (phis, log phis,
-        and fugacities); default True, [-]
-    only_l : bool, optional
-        When true, if there is a liquid and a vapor root, only the liquid
-        root (and properties) will be set; default False, [-]
-    only_g : bool, optoinal
-        When true, if there is a liquid and a vapor root, only the vapor
-        root (and properties) will be set; default False, [-]
-        
-    Examples
-    --------
-    T-P initialization, nitrogen-methane at 115 K and 1 MPa:
-    
-    >>> eos = RKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
-    >>> eos.V_l, eos.V_g
-    (4.04841478191211e-05, 0.0007006060586399438)
-    >>> eos.fugacities_l, eos.fugacities_g
-    ([845014.9091158316, 57493.50906829033], [443627.1645350597, 355331.8131029061])
-
-    Notes
-    -----
-    For P-V initializations with multiple components, SciPy's `newton` solver
-    is used to find T.
-
-    References
-    ----------
-    .. [1] Walas, Stanley M. Phase Equilibria in Chemical Engineering. 
-       Butterworth-Heinemann, 1985.
-    .. [2] Poling, Bruce E. The Properties of Gases and Liquids. 5th 
-       edition. New York: McGraw-Hill Professional, 2000.
-    '''
-    eos_pure = RK
-
-    def __init__(self, Tcs, Pcs, zs, omegas=None, kijs=None, T=None, P=None, V=None,
-                 fugacities=True, only_l=False, only_g=False):
-        self.N = N = len(Tcs)
-        self.cmps = cmps = range(N)
-        self.Tcs = Tcs
-        self.Pcs = Pcs
-        self.omegas = omegas
-        self.zs = zs
-        if kijs is None:
-            kijs = [[0.0]*N for i in cmps]
-        self.kijs = kijs
-        self.kwargs = {'kijs': kijs}
-        self.T = T
-        self.P = P
-        self.V = V
-
-        c1R2, c2R = self.c1R2, self.c2R
-        # Also tried to store the inverse of Pcs, without success - slows it down
-        self.ais = [c1R2*Tcs[i]*Tcs[i]/Pcs[i] for i in cmps]
-        self.bs = bs = [c2R*Tcs[i]/Pcs[i] for i in cmps]
-        
-        b = 0.0
-        for i in cmps:
-            b += bs[i]*zs[i]
-        self.b = self.delta = b
-
-
-        self.solve(only_l=only_l, only_g=only_g)
-        if fugacities:
-            self.fugacities()
-
-    def _fast_init_specific(self, other):
-        b = 0.0
-        for bi, zi in zip(self.bs, self.zs):
-            b += bi*zi
-        self.b = self.delta = b
-
-    def a_alpha_and_derivatives_vectorized(self, T, full=False):
-        r'''Method to calculate the pure-component `a_alphas` and their first  
-        and second derivatives for the RK EOS. This vectorized implementation 
-        is added for extra speed.
-
-        .. math::
-            a\alpha = \frac{a}{\sqrt{\frac{T}{Tc}}}
-        
-            \frac{d a\alpha}{dT} = - \frac{a}{2 T\sqrt{\frac{T}{Tc}}}
-
-            \frac{d^2 a\alpha}{dT^2} = \frac{3 a}{4 T^{2}\sqrt{\frac{T}{Tc}}}
-        
-        Parameters
-        ----------
-        T : float
-            Temperature, [K]
-        full : bool, optional
-            If False, calculates and returns only `a_alphas`, [-]
-        
-        Returns
-        -------
-        a_alphas : list[float]
-            Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
-        da_alpha_dTs : list[float]
-            Temperature derivative of coefficient calculated by EOS-specific 
-            method, [J^2/mol^2/Pa/K]
-        d2a_alpha_dT2s : list[float]
-            Second temperature derivative of coefficient calculated by  
-            EOS-specific method, [J^2/mol^2/Pa/K**2]
-            
-        Examples
-        --------
-        
-        >>> eos = RKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
-        >>> eos.a_alpha_and_derivatives_vectorized(115, full=True)
-        ([0.14498109194681866, 0.3001977367788305],
-         [-0.0006303525736818202, -0.0013052075512123066],
-         [8.221990091502003e-06, 1.702444632016052e-05])
-        '''
-        ais, Tcs = self.ais, self.Tcs
-        
-        ais = [ai*Tci**0.5 for ai, Tci in zip(ais, Tcs)]
-        T_root_inv = T**-0.5
-        
-        if not full:
-            a_alphas = [ais[i]*T_root_inv for i in self.cmps]
-            return a_alphas
-        else:
-            T_inv = T_root_inv*T_root_inv
-            T_15_inv = T_inv*T_root_inv
-            T_25_inv = T_inv*T_15_inv
-            
-            x0 = -0.5*T_15_inv
-            x1 = 0.75*T_25_inv
-            cmps = self.cmps
-
-            a_alphas = [ais[i]*T_root_inv for i in cmps]
-            da_alpha_dTs = [ais[i]*x0 for i in cmps]
-            d2a_alpha_dT2s = [ais[i]*x1 for i in cmps]
-            return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
-
-    def solve_T(self, P, V, quick=True, solution=None):
-        if self.N == 1 and type(self) is RKMIX:
-            self.Tc = self.Tcs[0]
-            self.Pc = self.Pcs[0]
-            self.a = self.ais[0]
-            T = super(type(self).__mro__[-4], self).solve_T(P=P, V=V, quick=quick, solution=solution)   
-            del self.Tc
-            del self.Pc
-            del self.a
-            return T
-        else:
-            return super(type(self).__mro__[-3], self).solve_T(P=P, V=V, quick=quick, solution=solution)   
 
 
 
@@ -8891,7 +9172,7 @@ class PRSV2MIX(PRMIX, PRSV2):
             return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
 
 
-class TWUPRMIX(PRMIX, TWUPR):
+class TWUPRMIX(TwuPR95_a_alpha, PRMIX):
     r'''Class for solving the Twu [1]_ variant of the Peng-Robinson cubic 
     equation of state for a mixture. Subclasses `TWUPR`. Solves the EOS on
     initialization and calculates fugacities for all components in all phases.
@@ -8978,9 +9259,10 @@ class TWUPRMIX(PRMIX, TWUPR):
        Peng-Robinson Equation." Fluid Phase Equilibria 105, no. 1 (March 15, 
        1995): 49-59. doi:10.1016/0378-3812(94)02601-V.
     '''
-    a_alpha_mro = -5
     eos_pure = TWUPR
-    
+    P_max_at_V = GCEOS.P_max_at_V
+    solve_T = GCEOS.solve_T
+
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
         self.N = N = len(Tcs)
@@ -9017,21 +9299,21 @@ class TWUPRMIX(PRMIX, TWUPR):
         self.delta = 2.0*b
         self.epsilon = -b*b
 
-    def a_alpha_and_derivatives_vectorized(self, T, full=False):
-        raise NotImplementedError("Not implemented")
+#    def a_alpha_and_derivatives_vectorized(self, T, full=False):
+#        raise NotImplementedError("Not implemented")
 
-    def setup_a_alpha_and_derivatives(self, i, T=None):
-        r'''Sets `a`, `omega`, and `Tc` for a specific component before the 
-        pure-species EOS's `a_alpha_and_derivatives` method is called. Both are 
-        called by `GCEOSMIX.a_alpha_and_derivatives` for every component.'''
-        self.a, self.Tc, self.omega  = self.ais[i], self.Tcs[i], self.omegas[i]
-    def cleanup_a_alpha_and_derivatives(self):
-        r'''Removes properties set by `setup_a_alpha_and_derivatives`; run by
-        `GCEOSMIX.a_alpha_and_derivatives` after `a_alpha` is calculated for 
-        every component'''
-        del(self.a, self.Tc, self.omega)
+#    def setup_a_alpha_and_derivatives(self, i, T=None):
+#        r'''Sets `a`, `omega`, and `Tc` for a specific component before the 
+#        pure-species EOS's `a_alpha_and_derivatives` method is called. Both are 
+#        called by `GCEOSMIX.a_alpha_and_derivatives` for every component.'''
+#        self.a, self.Tc, self.omega  = self.ais[i], self.Tcs[i], self.omegas[i]
+#    def cleanup_a_alpha_and_derivatives(self):
+#        r'''Removes properties set by `setup_a_alpha_and_derivatives`; run by
+#        `GCEOSMIX.a_alpha_and_derivatives` after `a_alpha` is calculated for 
+#        every component'''
+#        del(self.a, self.Tc, self.omega)
 
-class TWUSRKMIX(SRKMIX, TWUSRK):
+class TWUSRKMIX(TwuSRK95_a_alpha, SRKMIX):
     r'''Class for solving the Twu variant of the Soave-Redlich-Kwong cubic 
     equation of state for a mixture. Subclasses `TWUSRK`. Solves the EOS on
     initialization and calculates fugacities for all components in all phases.
@@ -9120,8 +9402,10 @@ class TWUSRKMIX(SRKMIX, TWUSRK):
        Redlich-Kwong Equation." Fluid Phase Equilibria 105, no. 1 (March 15, 
        1995): 61-69. doi:10.1016/0378-3812(94)02602-W.
     '''
-    a_alpha_mro = -5
+#    a_alpha_mro = -5
     eos_pure = TWUSRK
+    P_max_at_V = GCEOS.P_max_at_V
+    solve_T = GCEOS.solve_T
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
         self.N = len(Tcs)
@@ -9149,20 +9433,20 @@ class TWUSRKMIX(SRKMIX, TWUSRK):
         if fugacities:
             self.fugacities()
 
-    def a_alpha_and_derivatives_vectorized(self, T, full=False):
-        raise NotImplementedError("Not implemented")
+#    def a_alpha_and_derivatives_vectorized(self, T, full=False):
+#        raise NotImplementedError("Not implemented")
 
-    def setup_a_alpha_and_derivatives(self, i, T=None):
-        r'''Sets `a`, `omega`, and `Tc` for a specific component before the 
-        pure-species EOS's `a_alpha_and_derivatives` method is called. Both are 
-        called by `GCEOSMIX.a_alpha_and_derivatives` for every component.'''
-        self.a, self.Tc, self.omega  = self.ais[i], self.Tcs[i], self.omegas[i]
-
-    def cleanup_a_alpha_and_derivatives(self):
-        r'''Removes properties set by `setup_a_alpha_and_derivatives`; run by
-        `GCEOSMIX.a_alpha_and_derivatives` after `a_alpha` is calculated for 
-        every component'''
-        del(self.a, self.Tc, self.omega)
+#    def setup_a_alpha_and_derivatives(self, i, T=None):
+#        r'''Sets `a`, `omega`, and `Tc` for a specific component before the 
+#        pure-species EOS's `a_alpha_and_derivatives` method is called. Both are 
+#        called by `GCEOSMIX.a_alpha_and_derivatives` for every component.'''
+#        self.a, self.Tc, self.omega  = self.ais[i], self.Tcs[i], self.omegas[i]
+#
+#    def cleanup_a_alpha_and_derivatives(self):
+#        r'''Removes properties set by `setup_a_alpha_and_derivatives`; run by
+#        `GCEOSMIX.a_alpha_and_derivatives` after `a_alpha` is calculated for 
+#        every component'''
+#        del(self.a, self.Tc, self.omega)
         
     def _fast_init_specific(self, other):
         b = 0.0
@@ -9448,139 +9732,3 @@ eos_mix_no_coeffs_list = [PRMIX, SRKMIX, PR78MIX, VDWMIX, TWUPRMIX, TWUSRKMIX,
                           IGMIX, RKMIX, PRMIXTranslatedConsistent,
                           PRMIXTranslatedPPJP, SRKMIXTranslatedConsistent]
 
-
-for eos in eos_mix_list:
-    
-    if hasattr(eos, 'epsilon') and eos.epsilon == 0 and not SRKMIXTranslated in eos.__mro__:
-        @property
-        def depsilon_dzs(self):       
-            r'''Helper method for calculating the composition derivatives of
-            `epsilon`. Note this is independent of the phase.
-            
-            .. math::
-                \left(\frac{\partial \epsilon}{\partial x_i}\right)_{T, P, x_{i\ne j}} 
-                = 0
-    
-            Returns
-            -------
-            depsilon_dzs : list[float]
-                Composition derivative of `epsilon` of each component, [m^6/mol^2]
-                
-            Notes
-            -----
-            This derivative is checked numerically.
-            '''
-            return [0.0]*self.N
-    
-        @property
-        def depsilon_dns(self):       
-            r'''Helper method for calculating the mole number derivatives of
-            `epsilon`. Note this is independent of the phase.
-            
-            .. math::
-                \left(\frac{\partial \epsilon}{\partial n_i}\right)_{T, P, n_{i\ne j}} 
-                = 0
-    
-            Returns
-            -------
-            depsilon_dns : list[float]
-                Composition derivative of `epsilon` of each component, [m^6/mol^3]
-                
-            Notes
-            -----
-            This derivative is checked numerically.
-            '''
-            return [0.0]*self.N
-    
-        @property
-        def d2epsilon_dzizjs(self):       
-            r'''Helper method for calculating the second composition derivatives (hessian) 
-            of `epsilon`. Note this is independent of the phase.
-            
-            .. math::
-                \left(\frac{\partial^2 \epsilon}{\partial x_i \partial x_j}\right)_{T, P, x_{k\ne i,j}} 
-                = 0
-    
-            Returns
-            -------
-            d2epsilon_dzizjs : list[list[float]]
-                Composition derivative of `epsilon` of each component, [m^6/mol^2]
-                
-            Notes
-            -----
-            This derivative is checked numerically.
-            '''
-            return [[0.0]*self.N for i in self.cmps]
-    
-        @property
-        def d2epsilon_dninjs(self):       
-            r'''Helper method for calculating the second mole number derivatives (hessian) of
-            `epsilon`. Note this is independent of the phase.
-            
-            .. math::
-                \left(\frac{\partial^2 \epsilon}{\partial n_i n_j}\right)_{T, P, n_{k\ne i,j}} 
-                = 0
-    
-            Returns
-            -------
-            d2epsilon_dninjs : list[list[float]]
-                Second composition derivative of `epsilon` of each component, [m^6/mol^4]
-                
-            Notes
-            -----
-            This derivative is checked numerically.
-            '''
-            return [[0.0]*self.N for i in self.cmps]
-    
-        @property
-        def d3epsilon_dninjnks(self):   
-            r'''Helper method for calculating the third partial mole number
-            derivatives of `epsilon`. Note this is independent of the phase.
-            
-            .. math::
-                \left(\frac{\partial^3 \epsilon}{\partial n_i \partial n_j \partial n_k }
-                \right)_{T, P, 
-                n_{m \ne i,j,k}} = 0
-    
-            Returns
-            -------
-            d3epsilon_dninjnks : list[list[list[float]]]
-                Third mole number derivative of `epsilon` of each component,
-                [m^6/mol^5]
-                
-            Notes
-            -----
-            This derivative is checked numerically.
-            '''
-            N, cmps = self.N, self.cmps
-            return [[[0.0]*N for _ in cmps] for _ in cmps]
-        
-        # Python 2/3 compatibility
-        try:
-            eos.__dict__['d3epsilon_dninjnks'] = d3epsilon_dninjnks
-            eos.__dict__['d2epsilon_dninjs'] = d2epsilon_dninjs
-            eos.__dict__['d2epsilon_dzizjs'] = d2epsilon_dzizjs
-            eos.__dict__['depsilon_dns'] = depsilon_dns
-            eos.__dict__['depsilon_dzs'] = depsilon_dzs
-        except:
-            setattr(eos, 'd3epsilon_dninjnks', d3epsilon_dninjnks)
-            setattr(eos, 'd2epsilon_dninjs', d2epsilon_dninjs)
-            setattr(eos, 'd2epsilon_dzizjs', d2epsilon_dzizjs)
-            setattr(eos, 'depsilon_dns', depsilon_dns)
-            setattr(eos, 'depsilon_dzs', depsilon_dzs)
-
-
-# RK has the same `delta` as SRK 
-        # Python 2/3 compatibility
-try:
-    RKMIX.__dict__['ddelta_dzs'] = SRKMIX.ddelta_dzs
-    RKMIX.__dict__['ddelta_dns'] = SRKMIX.ddelta_dns
-    RKMIX.__dict__['d2delta_dzizjs'] = SRKMIX.d2delta_dzizjs
-    RKMIX.__dict__['d2delta_dninjs'] = SRKMIX.d2delta_dninjs
-    RKMIX.__dict__['d3delta_dninjnks'] = SRKMIX.d3delta_dninjnks
-except:
-    setattr(RKMIX, 'ddelta_dzs', SRKMIX.ddelta_dzs)
-    setattr(RKMIX, 'ddelta_dns', SRKMIX.ddelta_dns)
-    setattr(RKMIX, 'd2delta_dzizjs', SRKMIX.d2delta_dzizjs)
-    setattr(RKMIX, 'd2delta_dninjs', SRKMIX.d2delta_dninjs)
-    setattr(RKMIX, 'd3delta_dninjnks', SRKMIX.d3delta_dninjnks)

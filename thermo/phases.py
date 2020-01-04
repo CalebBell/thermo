@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 from __future__ import division
 __all__ = ['GibbsExcessLiquid', 'GibbsExcessSolid', 'Phase', 'EOSLiquid', 'EOSGas', 'IdealGas',
-           'gas_phases', 'liquid_phases', 'solid_phases']
+           'gas_phases', 'liquid_phases', 'solid_phases', 'CombinedPhase']
 
 from fluids.constants import R, R_inv
 from fluids.numerics import (horner, horner_and_der, horner_log, jacobian, derivative,
@@ -30,7 +30,7 @@ from fluids.numerics import (horner, horner_and_der, horner_log, jacobian, deriv
                              evaluate_linear_fits, evaluate_linear_fits_d,
                              evaluate_linear_fits_d2,
                              newton_system)
-from thermo.utils import (log, exp, Cp_minus_Cv, phase_identification_parameter,
+from thermo.utils import (log, log10, exp, Cp_minus_Cv, phase_identification_parameter,
                           isothermal_compressibility, isobaric_expansion,
                           Joule_Thomson, speed_of_sound, dxs_to_dns,
                           normalize)
@@ -3157,7 +3157,236 @@ class GibbsExcessSolid(GibbsExcessLiquid):
               use_Poynting=use_Poynting,
               Hfs=Hfs, Gfs=Gfs, Sfs=Sfs, T=T, P=P, zs=zs)
 
+# hydrogen, methane
+Grayson_Streed_special_CASs = set(['1333-74-0', '74-82-8'])
 
+class GraysonStreed(Phase):
+    # revised one
+    
+    hydrogen_coeffs = (1.50709, 2.74283, -0.0211, 0.00011, 0.0, 0.008585, 0.0, 0.0, 0.0, 0.0)
+    methane_coeffs = (1.36822, -1.54831, 0.0, 0.02889, -0.01076, 0.10486, -0.02529, 0.0, 0.0, 0.0)
+    simple_coeffs = (2.05135, -2.10889, 0.0, -0.19396, 0.02282, 0.08852, 0.0, -0.00872, -0.00353, 0.00203)
+    version = 1
+
+    def to_TP_zs(self, T, P, zs):
+        new = self.__class__.__new__(self.__class__)
+        new.T = T
+        new.P = P
+        new.zs = zs
+        
+        new._Tcs = self._Tcs
+        new._Pcs = self._Pcs
+        new._omegas = self._omegas
+        new._CASs = self._CASs
+        new.regular = self.regular
+        new.GibbsExcessModel = self.GibbsExcessModel.to_T_xs(T, zs)
+        new.version = self.version
+        
+        try:
+            new.cmps = self.cmps
+            new.N = self.N
+        except:
+            pass
+
+        return new
+
+    def to_zs_TPV(self, zs, T=None, P=None, V=None):
+        if T is not None:
+            if P is not None:
+                return self.to_TP_zs(T=T, P=P, zs=zs)
+            elif V is not None:
+                raise ValueError("Model does not implement volume")
+        elif P is not None and V is not None:
+            raise ValueError("Model does not implement volume")
+        else:
+            raise ValueError("Two of T, P, or V are needed")
+
+    def __init__(self, Tcs, Pcs, omegas, CASs,
+                 GibbsExcessModel=IdealSolution(), 
+                 T=None, P=None, zs=None,
+                 ):
+        
+        self.T = T
+        self.P = P
+        self.zs = zs
+        
+        self.N = len(zs)
+        self.cmps = range(self.N)
+        self._Tcs = Tcs
+        self._Pcs = Pcs
+        self._omegas = omegas
+        self._CASs = CASs
+        self.regular = [i not in Grayson_Streed_special_CASs for i in CASs]
+        
+        self.GibbsExcessModel = GibbsExcessModel
+
+    def gammas(self):
+        try:
+            return self.GibbsExcessModel._gammas
+        except AttributeError:
+            return self.GibbsExcessModel.gammas()
+        
+    def phis(self):
+        try:
+            return self._phis
+        except AttributeError:
+            pass
+        try:
+            gammas = self._gammas
+        except AttributeError:
+            gammas = self.gammas()
+        fugacity_coeffs_pure = self.nus()
+        
+        self._phis = [gammas[i]*fugacity_coeffs_pure[i]
+                for i in self.cmps]
+        return self._phis
+        
+        
+    def lnphis(self):
+        try:
+            return self._lnphis
+        except AttributeError:
+            pass
+        self._lnphis = [log(i) for i in self.phis()]        
+        return self._lnphis
+
+    def nus(self):
+        T, P = self.T, self.P
+        Tcs, Pcs, omegas = self._Tcs, self._Pcs, self._omegas
+        regular, CASs = self.regular, self._CASs
+        nus = []
+        limit_Tr = self.version > 0
+        
+        for i in self.cmps:
+            # TODO validate and take T, P derivatives; n derivatives are from regular solution only
+            Tr = T/Tcs[i]
+            Pr = P/Pcs[i]
+            
+            if regular[i]:
+                coeffs = self.simple_coeffs
+            elif CASs[i] == '1333-74-0':
+                coeffs = self.hydrogen_coeffs
+            elif CASs[i] == '74-82-8':
+                coeffs = self.methane_coeffs
+            else:
+                raise ValueError("Fail")
+            A0, A1, A2, A3, A4, A5, A6, A7, A8, A9 = coeffs
+    
+            log10_v0 = A0 + A1/Tr + A2*Tr + A3*Tr**2 + A4*Tr**3 + (A5 + A6*Tr + A7*Tr**2)*Pr + (A8 + A9*Tr)*Pr**2 - log10(Pr)
+            log10_v1 = -4.23893 + 8.65808*Tr - 1.2206/Tr - 3.15224*Tr**3 - 0.025*(Pr - 0.6)
+            if Tr > 1.0 and limit_Tr:
+                log10_v1 = 1.0
+            
+            if regular[i]:
+                v = 10.0**(log10_v0 + omegas[i]*log10_v1)
+            else:
+                # Chao Seader mentions
+                v = 10.0**(log10_v0)
+            nus.append(v)
+        return nus
+
+class ChaoSeader(GraysonStreed):
+    # original one
+    hydrogen_coeffs = (1.96718, 1.02972, -0.054009, 0.0005288, 0.0, 0.008585, 0.0, 0.0, 0.0, 0.0)
+    methane_coeffs = (2.4384, -2.2455, -0.34084, 0.00212, -0.00223, 0.10486, -0.03691, 0.0, 0.0, 0.0)
+    simple_coeffs = (5.75748, -3.01761, -4.985, 2.02299, 0.0, 0.08427, 0.26667, -0.31138, -0.02655, 0.02883)
+    version = 0
+
+
+
+class CombinedPhase(Phase):
+    def __init__(self, phases, equilibrium=None, thermal=None, volume=None,
+                 other_props=None,
+                 T=None, P=None, zs=None,
+                 ):
+        # phases : list[other phases]
+        # equilibrium: index
+        # thermal: index
+        # volume: index
+        # other_props: dict[prop] = phase index
+        
+        # may be missing S_formation_ideal_gas Hfs arg
+        self.equilibrium = equilibrium
+        self.thermal = thermal
+        self.volume = volume
+        self.other_props = other_props
+        
+        for i, p in enumerate(phases):
+            if p.T != T or p.P != P or p.zs != zs:
+                phases[i] = p.to_zs_TPV(T=T, P=P, zs=zs)
+        self.phases = phases
+        
+    def lnphis(self):
+        # This style will save the getattr call but takes more time to code
+        if 'lnphis' in self.other_props:
+            return self.phases[self.other_props['lnphis']].lnphis()
+        if self.equilibrium is not None:
+            return self.phases[self.equilibrium].lnphis()
+        raise ValueError("No method specified")
+        
+    def makeeqfun(prop_name):
+        def fun(self):
+            if prop_name in self.other_props:
+                return getattr(self.phases[self.other_props[prop_name]], prop_name)()
+            if self.equilibrium is not None:
+                return getattr(self.phases[self.equilibrium], prop_name)()
+            raise ValueError("No method specified")
+        return fun
+
+    def makethermalfun(prop_name):
+        def fun(self):
+            if prop_name in self.other_props:
+                return getattr(self.phases[self.other_props[prop_name]], prop_name)()
+            if self.thermal is not None:
+                return getattr(self.phases[self.thermal], prop_name)()
+            raise ValueError("No method specified")
+        return fun
+
+    def makevolumefun(prop_name):
+        def fun(self):
+            if prop_name in self.other_props:
+                return getattr(self.phases[self.other_props[prop_name]], prop_name)()
+            if self.volume is not None:
+                return getattr(self.phases[self.volume], prop_name)()
+            raise ValueError("No method specified")
+        return fun
+    
+    lnphis = makeeqfun("lnphis")
+    dlnphis_dT = makeeqfun("dlnphis_dT")
+    dlnphis_dP = makeeqfun("dlnphis_dP")
+    dlnphis_dns = makeeqfun("dlnphis_dns")
+    
+    V = makevolumefun("V")
+    dP_dT = makevolumefun("dP_dT")
+    dP_dT_V = dP_dT
+    dP_dV = makevolumefun("dP_dV")
+    dP_dV_T = dP_dV
+    d2P_dT2 = makevolumefun("d2P_dT2")
+    d2P_dT2_V = d2P_dT2
+    d2P_dV2 = makevolumefun("d2P_dV2")
+    d2P_dV2_T = d2P_dV2
+    d2P_dTdV = makevolumefun("d2P_dTdV")
+    
+    H = makethermalfun("H")
+    S = makethermalfun("S")
+    Cp = makethermalfun("Cp")
+    dH_dT = makethermalfun("dH_dT")
+    dH_dP = makethermalfun("dH_dP")
+    dH_dT_V = makethermalfun("dH_dT_V")
+    dH_dP_V = makethermalfun("dH_dP_V")
+    dH_dV_T = makethermalfun("dH_dV_T")
+    dH_dV_P = makethermalfun("dH_dV_P")
+    dH_dzs = makethermalfun("dH_dzs")
+    dS_dT = makethermalfun("dS_dT")
+    dS_dP = makethermalfun("dS_dP")
+    dS_dT_P = makethermalfun("dS_dT_P")
+    dS_dT_V = makethermalfun("dS_dT_V")
+    dS_dP_V = makethermalfun("dS_dP_V")
+    dS_dzs = makethermalfun("dS_dzs")
+    
+    
+    
+    
 gas_phases = (IdealGas, EOSGas)
 liquid_phases = (EOSLiquid, GibbsExcessLiquid)
 solid_phases = (GibbsExcessSolid,)

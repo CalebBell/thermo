@@ -29,6 +29,7 @@ __all__ = ['RegularSolution']
 
 class RegularSolution(GibbsExcess):
     def __init__(self, T, xs, Vs, SPs, lambda_coeffs):
+        # lambda_coeffs is N*N of zeros for no interaction parameters
         self.T = T
         self.xs = xs
         self.lambda_coeffs = lambda_coeffs

@@ -421,10 +421,11 @@ def nonlin_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
 
 
 
-def nonlin_2P_HSGUAbeta(spec, spec_var, iter_val, iter_var, fixed_val, fixed_var, zs, xs_guess, ys_guess, liquid_phase,
-              gas_phase, maxiter=1000, tol=1E-13, 
-              trivial_solution_tol=1e-5, V_over_F_guess=None,
-              method='hybr'):
+def nonlin_2P_HSGUAbeta(spec, spec_var, iter_val, iter_var, fixed_val, 
+                        fixed_var, zs, xs_guess, ys_guess, liquid_phase,
+                        gas_phase, maxiter=1000, tol=1E-13, 
+                        trivial_solution_tol=1e-5, V_over_F_guess=None,
+                        method='hybr'):
     cmps = range(len(zs))
     xs, ys = xs_guess, ys_guess
     if V_over_F_guess is None:
@@ -1926,7 +1927,7 @@ def sequential_substitution_2P_HSGUAbeta(zs, xs_guess, ys_guess, liquid_phase,
                                      iter_var='T', fixed_var='P', spec='H', 
                                      maxiter=1000, tol_eq=1E-13, tol_spec=1e-9,
                                      trivial_solution_tol=1e-5, damping=1.0,
-                                     V_over_F_guess=None):
+                                     V_over_F_guess=None, fprime=True):
     xs, ys = xs_guess, ys_guess
     if V_over_F_guess is None:
         V_over_F = 0.5
@@ -1942,13 +1943,22 @@ def sequential_substitution_2P_HSGUAbeta(zs, xs_guess, ys_guess, liquid_phase,
     
     # secant step/solving
     p0, p1, err0, err1 = None, None, None, None
-    def step(p0, p1, err0, err1):
+    def step(p0, p1, err0, err1, step_der):
         if p0 is None:
             return iter_var_0
         if p1 is None:
             return iter_var_1
         else:
-            new = p1 - err1*(p1 - p0)/(err1 - err0)*damping
+            secant_step = err1*(p1 - p0)/(err1 - err0)*damping
+            if fprime and step_der is not None:
+                if abs(step_der) < abs(secant_step):
+                    step = step_der
+                    new = p0 - step
+                else:
+                    step = secant_step
+                    new = p1 - step
+            else:
+                new = p1 - secant_step
             if new < 1e-7:
                 # Only handle positive values, damped steps to .5
                 new = 0.5*(1e-7 + p0)
@@ -1961,9 +1971,14 @@ def sequential_substitution_2P_HSGUAbeta(zs, xs_guess, ys_guess, liquid_phase,
     if not VF_spec:
         spec_fun_l = getattr(liquid_phase.__class__, spec)
         spec_fun_g = getattr(gas_phase.__class__, spec)
+        
+        s_der = 'd%s_d%s_%s'%(spec, iter_var, fixed_var)
+        spec_der_fun_l = getattr(liquid_phase.__class__, s_der)
+        spec_der_fun_g = getattr(gas_phase.__class__, s_der)
     
+    step_der = None
     for iteration in range(maxiter):
-        p0, p1 = step(p0, p1, err0, err1), p0
+        p0, p1 = step(p0, p1, err0, err1, step_der), p0
         TPV_args[iter_var] = p0
         
         g = gas_phase.to_zs_TPV(ys, **TPV_args)
@@ -1977,10 +1992,18 @@ def sequential_substitution_2P_HSGUAbeta(zs, xs_guess, ys_guess, liquid_phase,
         
         if not VF_spec:
             spec_calc = spec_fun_l(l)*(1.0 - V_over_F) + spec_fun_g(g)*V_over_F
+            spec_der_calc = spec_der_fun_l(l)*(1.0 - V_over_F) + spec_der_fun_g(g)*V_over_F
+#            print(spec_der_calc)
         else:
             spec_calc = V_over_F
         
         err0, err1 = spec_calc - spec_val, err0
+        
+        try:
+            step_der = err0/spec_der_calc
+            # print(err0, step_der, p1-p0)
+        except:
+            pass
 
         # Check for negative fractions - normalize only if needed
         for xi in xs_new:
@@ -2007,7 +2030,8 @@ def sequential_substitution_2P_HSGUAbeta(zs, xs_guess, ys_guess, liquid_phase,
         if comp_diff < trivial_solution_tol:
             raise ValueError("Converged to trivial condition, compositions of both phases equal")
         
-        print(p0, err, err0, xs, ys, V_over_F)
+        print(p0, err, err0, V_over_F)
+#        print(p0, err, err0, xs, ys, V_over_F)
         if err < tol_eq and abs(err0) < tol_spec_abs:
             return p0, V_over_F, xs, ys, l, g, iteration, err, err0
     raise UnconvergedError('End of SS without convergence')
