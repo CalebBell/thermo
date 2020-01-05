@@ -1986,13 +1986,13 @@ class UNIFAC(GibbsExcess):
         cmps, groups = self.cmps, self.groups
         
         Theta_Psi_sum_invs = [1.0/sum(Thetas[k]*psis[k][j] for k in groups) for j in groups]
+        self.Theta_Psi_sum_invs = Theta_Psi_sum_invs
         
-        # Index by [i component][k subgroup]
-        # TODO reverse?
+        # Index by [subgroup][component]
         tot0s, tot1s = [], []
-        for i in cmps:
+        for k in groups:
             row0, row1 = [], []
-            for k in groups:
+            for i in cmps:
                 tot0, tot1 = 0.0, 0.0
                 for m in groups:
                     tot0 += psis[m][k]*dThetas_dxs[m][i]
@@ -2002,16 +2002,19 @@ class UNIFAC(GibbsExcess):
                 row1.append(tot1)
             tot0s.append(row0)
             tot1s.append(row1)
+            
+        self._Ws = tot0s
+        self._Ys = tot1s
                 
         matrix = []
         for k in groups:
             row = []
             for i in cmps:
-                tot = -tot0s[i][k]*Theta_Psi_sum_invs[k]
+                tot = -tot0s[k][i]*Theta_Psi_sum_invs[k]
                 for m in groups:
                     tot -= psis[k][m]*dThetas_dxs[m][i]*Theta_Psi_sum_invs[m]
 
-                    tot += tot0s[i][m]*Thetas[m]*psis[k][m]*Theta_Psi_sum_invs[m]**2
+                    tot += tot0s[m][i]*Thetas[m]*psis[k][m]*Theta_Psi_sum_invs[m]**2
 
                 row.append(tot*Qs[k])
             matrix.append(row)
@@ -2021,6 +2024,53 @@ class UNIFAC(GibbsExcess):
         self._dlnGammas_subgroups_dxs = matrix
         return matrix
 
+    def d2lnGammas_subgroups_d2xs(self):
+        try:
+            return self._d2lnGammas_subgroups_d2xs
+        except:
+            pass
+        Thetas, Qs = self.Thetas(), self.Qs
+        psis = self.psis()
+        dThetas_dxs, d2Thetas_dxixjs = self.dThetas_dxs(), self.d2Thetas_dxixjs()
+        
+        self.dlnGammas_subgroups_dxs() # make sure dependent variables are calculated
+
+        cmps, groups = self.cmps, self.groups
+        
+        Zs = self.Theta_Psi_sum_invs
+        Ws, Ys = self._Ws, self._Ys
+        
+        def K(k, i, j):
+            # k: group
+            # i, j : mole fracions derivavtive indexes
+            tot = 0.0
+            for m in groups:
+                # Index [comp][comp][subgroup] for d2Thetas_dxixjs
+                tot += psis[m][k]*d2Thetas_dxixjs[i][j][m]
+            return tot
+        
+        self._d2lnGammas_subgroups_d2xs = d2lnGammas_subgroups_d2xs = []
+        for i in cmps:
+            matrix = []
+            for j in cmps:
+                row = []
+                for k in groups:
+                    v = Zs[k]*K(k, i, j)
+                    v -= Ws[k][i]*Ws[k][j]*Zs[k]**2
+                    for m in groups:
+                        v -= Zs[m]**2*K(m, i, j)*Thetas[m]*psis[k][m]
+                        
+                        v += Zs[m]*psis[k][m]*d2Thetas_dxixjs[i][j][m]
+                        
+                        v -= Ws[m][j]*Zs[m]**2*psis[k][m]*dThetas_dxs[m][i] + Ws[m][i]*Zs[m]**2*psis[k][m]*dThetas_dxs[m][j]
+                        
+                        v += 2.0*Ws[m][i]*Ws[m][j]*Zs[m]**3*Thetas[m]*psis[k][m]
+                    row.append(-v*Qs[k])
+                matrix.append(row)
+            d2lnGammas_subgroups_d2xs.append(matrix)
+        return d2lnGammas_subgroups_d2xs
+                    
+        
 
     
     @staticmethod
