@@ -2023,6 +2023,56 @@ class UNIFAC(GibbsExcess):
         
         self._dlnGammas_subgroups_dxs = matrix
         return matrix
+    
+    def d2lnGammas_subgroups_dTdxs(self):
+        try:
+            return self._d2lnGammas_subgroups_dTdxs
+        except:
+            pass
+        Thetas, Qs = self.Thetas(), self.Qs
+        psis, dpsis_dT = self.psis(), self.dpsis_dT()
+        dThetas_dxs = self.dThetas_dxs()
+        
+        self.dlnGammas_subgroups_dxs() # make sure dependent variables are calculated
+        cmps, groups = self.cmps, self.groups
+
+        Zs = self.Theta_Psi_sum_invs
+        Ws, Ys = self._Ws, self._Ys
+        
+        Bs = []
+        for k in groups:
+            tot = 0.0
+            for m in groups:
+                tot += Thetas[m]*dpsis_dT[m][k]
+            Bs.append(tot)
+            
+        Ds = []
+        for k in groups:
+            row = []
+            for j in cmps:
+                tot = 0.0
+                for m in groups:
+                    tot += dThetas_dxs[m][j]*dpsis_dT[m][k]
+                row.append(tot)
+            Ds.append(row)
+        
+        
+        self._d2lnGammas_subgroups_dTdxs = d2lnGammas_subgroups_dTdxs = []
+        
+        for k in groups:
+            row = []
+            for i in cmps:
+                v = Ds[k][i]*Zs[k] - Bs[k]*Ws[k][i]*Zs[k]**2
+                for m in groups:
+                    v += Zs[m]*dThetas_dxs[m][i]*dpsis_dT[k][m]
+                    v -= Bs[m]*Zs[m]**2*psis[k][m]*dThetas_dxs[m][i]
+                    v -= Ds[m][i]*Zs[m]**2*Thetas[m]*psis[k][m]
+                    v -= Ws[m][i]*Zs[m]**2*Thetas[m]*dpsis_dT[k][m]
+                    v += 2.0*Bs[m]*Ws[m][i]*Zs[m]**3*Thetas[m]*psis[k][m]
+                row.append(-v*Qs[k])
+            d2lnGammas_subgroups_dTdxs.append(row)
+        return d2lnGammas_subgroups_dTdxs
+
 
     def d2lnGammas_subgroups_d2xs(self):
         try:

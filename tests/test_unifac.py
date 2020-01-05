@@ -565,3 +565,13 @@ def test_UNIFAC_class():
     assert_allclose(d2lnGammas_subgroups_d2xs, d2lnGammas_subgroups_d2xs_expect, rtol=1e-10)
     d2lnGammas_subgroups_d2xs_numerical = hessian(to_jac_lnGammas_subgroups, xs, scalar=False, perturbation=4e-5)
     assert_allclose(d2lnGammas_subgroups_d2xs, d2lnGammas_subgroups_d2xs_numerical, rtol=2e-4)
+
+    # d2lnGammas_subgroups_dTdxs
+    def to_jac_dlnGammas_subgroups_dT(xs):
+        return GE.to_T_xs(T, xs).dlnGammas_subgroups_dT()
+    
+    d2lnGammas_subgroups_dTdxs_expect = [[0.00017336393795856162, 0.0012100791818007632, 0.00017012629938040544, -0.0010367729301749545], [0.00011572304342803308, 0.000807746105423379, 0.00011356187084395275, -0.000692061568492539], [0.0005549001004452165, -4.353312535547032e-06, 0.0006376008184172771, -0.00043358527042526747], [-0.0028905986039381992, -0.004736079063168619, -0.003737006717513751, 0.005931610278724003], [0.0036522409725451024, -0.0013380189677480517, 0.006375757426611714, -0.002416545617114441], [-4.353312535546634e-06, 0.0006140663688973192, -2.1323297657880727e-05, -0.0004530422959907456]]
+    dlnGammas_subgroups_dT_dxs_num = jacobian(to_jac_dlnGammas_subgroups_dT, xs, scalar=False, perturbation=4e-8)
+    d2lnGammas_subgroups_dTdxs = GE.d2lnGammas_subgroups_dTdxs()
+    assert_allclose(d2lnGammas_subgroups_dTdxs, d2lnGammas_subgroups_dTdxs_expect, rtol=1e-10)
+    assert_allclose(d2lnGammas_subgroups_dTdxs, dlnGammas_subgroups_dT_dxs_num, rtol=1e-5)
