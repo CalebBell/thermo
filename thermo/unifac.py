@@ -2789,8 +2789,6 @@ class UNIFAC(GibbsExcess):
                                - x5*x7*d2Vis_Dortmund_dxixjs[i][j][m]
                                - x5*x8*d2Vis_Dortmund_dxixjs[i][j][k]
                                + x0/ViD + 2*x6*x7*x8/ViD**3 - x4/Vi - x23*x24*x33/Vi**3 - 30*Vi*qi*x20*x31/Fi**4)
-#                        if i == j == k:
-#                            val = 0
                         
                         row.append(val)
                     hess.append(row)
