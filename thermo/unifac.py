@@ -2074,9 +2074,9 @@ class UNIFAC(GibbsExcess):
         return d2lnGammas_subgroups_dTdxs
 
 
-    def d2lnGammas_subgroups_d2xs(self):
+    def d2lnGammas_subgroups_dxixjs(self):
         try:
-            return self._d2lnGammas_subgroups_d2xs
+            return self._d2lnGammas_subgroups_dxixjs
         except:
             pass
         Thetas, Qs = self.Thetas(), self.Qs
@@ -2099,7 +2099,8 @@ class UNIFAC(GibbsExcess):
                 tot += psis[m][k]*d2Thetas_dxixjs[i][j][m]
             return tot
         
-        self._d2lnGammas_subgroups_d2xs = d2lnGammas_subgroups_d2xs = []
+        # Index [comp][comp][subgroup]
+        self._d2lnGammas_subgroups_dxixjs = d2lnGammas_subgroups_dxixjs = []
         for i in cmps:
             matrix = []
             for j in cmps:
@@ -2117,8 +2118,8 @@ class UNIFAC(GibbsExcess):
                         v += 2.0*Ws[m][i]*Ws[m][j]*Zs[m]**3*Thetas[m]*psis[k][m]
                     row.append(-v*Qs[k])
                 matrix.append(row)
-            d2lnGammas_subgroups_d2xs.append(matrix)
-        return d2lnGammas_subgroups_d2xs
+            d2lnGammas_subgroups_dxixjs.append(matrix)
+        return d2lnGammas_subgroups_dxixjs
                     
         
 
@@ -2504,6 +2505,72 @@ class UNIFAC(GibbsExcess):
             
         return d3lngammas_r_dT3
     d3lngammas_dT3 = d3lngammas_r_dT3
+
+    def dlngammas_r_dxs(self):
+        try:
+            return self._dlngammas_r_dxs
+        except AttributeError:
+            pass
+        vs = self.vs
+        cmps, groups = self.cmps, self.groups
+        dlnGammas_subgroups_dxs = self.dlnGammas_subgroups_dxs()
+        
+        self._dlngammas_r_dxs = dlngammas_r_dxs = []
+        for i in cmps:
+            row = []
+            for j in cmps:
+                tot = 0.0
+                for m in groups:
+                    tot += vs[m][i]*dlnGammas_subgroups_dxs[m][j]
+                row.append(tot)
+            dlngammas_r_dxs.append(row)
+            
+        return dlngammas_r_dxs
+
+    def d2lngammas_r_dTdxs(self):
+        try:
+            return self._d2lngammas_r_dTdxs
+        except AttributeError:
+            pass
+        vs = self.vs
+        cmps, groups = self.cmps, self.groups
+        d2lnGammas_subgroups_dTdxs = self.d2lnGammas_subgroups_dTdxs()
+        
+        self._d2lngammas_r_dTdxs = d2lngammas_r_dTdxs = []
+        for i in cmps:
+            row = []
+            for j in cmps:
+                tot = 0.0
+                for m in groups:
+                    tot += vs[m][i]*d2lnGammas_subgroups_dTdxs[m][j]
+                row.append(tot)
+            d2lngammas_r_dTdxs.append(row)
+            
+        return d2lngammas_r_dTdxs
+    
+    def d2lngammas_r_dxixjs(self):
+        try:
+            return self._d2lngammas_r_dxixjs
+        except AttributeError:
+            pass
+        vs = self.vs
+        cmps, groups = self.cmps, self.groups
+        d2lnGammas_subgroups_dxixjs = self.d2lnGammas_subgroups_dxixjs()
+        
+        self._d2lngammas_r_dxixjs = d2lngammas_r_dxixjs = []
+        for i in cmps:
+            matrix = []
+            for j in cmps:
+                row = []
+                for k in cmps:
+                    tot = 0.0
+                    for m in groups:
+                        tot += vs[m][i]*d2lnGammas_subgroups_dxixjs[j][k][m]
+                    row.append(tot)
+                matrix.append(row)
+            d2lngammas_r_dxixjs.append(matrix)
+            
+        return d2lngammas_r_dxixjs
     
     def GE(self):
         try:
