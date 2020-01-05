@@ -1951,7 +1951,7 @@ class UNIFAC(GibbsExcess):
             return self._lnGammas_subgroups
         except AttributeError:
             pass
-        Xs, Thetas, Qs = self.Xs(), self.Thetas(), self.Qs
+        Thetas, Qs = self.Thetas(), self.Qs
         psis = self.psis()
         cmps, groups = self.cmps, self.groups
         
@@ -1973,6 +1973,55 @@ class UNIFAC(GibbsExcess):
             lnGammas_subgroups.append(v)
         return lnGammas_subgroups
     
+    
+    def dlnGammas_subgroups_dxs(self):
+        try:
+            return self._dlnGammas_subgroups_dxs
+        except:
+            pass
+        Thetas, Qs = self.Thetas(), self.Qs
+        psis = self.psis()
+        dThetas_dxs = self.dThetas_dxs()
+
+        cmps, groups = self.cmps, self.groups
+        
+        Theta_Psi_sum_invs = [1.0/sum(Thetas[k]*psis[k][j] for k in groups) for j in groups]
+        
+        # Index by [i component][k subgroup]
+        # TODO reverse?
+        tot0s, tot1s = [], []
+        for i in cmps:
+            row0, row1 = [], []
+            for k in groups:
+                tot0, tot1 = 0.0, 0.0
+                for m in groups:
+                    tot0 += psis[m][k]*dThetas_dxs[m][i]
+                    tot1 += psis[k][m]*dThetas_dxs[m][i]
+                
+                row0.append(tot0)
+                row1.append(tot1)
+            tot0s.append(row0)
+            tot1s.append(row1)
+                
+        matrix = []
+        for k in groups:
+            row = []
+            for i in cmps:
+                tot = -tot0s[i][k]*Theta_Psi_sum_invs[k]
+                for m in groups:
+                    tot -= psis[k][m]*dThetas_dxs[m][i]*Theta_Psi_sum_invs[m]
+
+                    tot += tot0s[i][m]*Thetas[m]*psis[k][m]*Theta_Psi_sum_invs[m]**2
+
+                row.append(tot*Qs[k])
+            matrix.append(row)
+                
+        
+        
+        self._dlnGammas_subgroups_dxs = matrix
+        return matrix
+
+
     
     @staticmethod
     def dlnGammas_subgroups_dT_meth(groups, Qs, psis, dpsis_dT, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum):
