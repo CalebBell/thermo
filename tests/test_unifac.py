@@ -600,3 +600,20 @@ def test_UNIFAC_class():
     d2lngammas_r_dxixjs_num = hessian(to_jac_lngammas_r, xs, scalar=False, perturbation=10e-5)
     assert_allclose(d2lngammas_r_dxixjs, d2lngammas_r_dxixjs_expect, rtol=1e-7)
     assert_allclose(d2lngammas_r_dxixjs_num, d2lngammas_r_dxixjs, rtol=4e-4)
+    
+    
+    def to_jac_GE(xs):
+        return GE.to_T_xs(T, xs).GE()
+    dGE_dxs = GE.dGE_dxs()
+    dGE_dxs_numerical = jacobian(to_jac_GE, xs, perturbation=1e-7)
+    dGE_dxs_expect = [968.4165097020538, 1616.0594601188081, 497.0675005089688, 1409.7078865334572]
+    assert_allclose(dGE_dxs_expect, dGE_dxs, rtol=1e-10)
+    assert_allclose(dGE_dxs_numerical, dGE_dxs, rtol=1e-6)
+    
+    
+    # Got more decimals with numdifftools, must be correct
+    d2GE_dxixjs_num = hessian(to_jac_GE, xs, perturbation=2e-5)
+    d2GE_dxixjs = GE.d2GE_dxixjs()
+    d2GE_dxixjs_expect = [[-4940.980009366508, -4370.754506520942, -3939.3162636852335, -1022.969364414501], [-4370.754506520916, -6195.5302935872505, -1543.5471574562987, -538.4425520948281], [-3939.316263685231, -1543.5471574563073, -4349.151467217632, -3541.7479481704927], [-1022.9693644144832, -538.4425520948315, -3541.74794817049, -5955.600731588765]]
+    assert_allclose(d2GE_dxixjs, d2GE_dxixjs_expect, rtol=1e-10)
+    assert_allclose(d2GE_dxixjs, d2GE_dxixjs_num, rtol=5e-4)

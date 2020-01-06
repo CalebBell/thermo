@@ -2586,6 +2586,58 @@ class UNIFAC(GibbsExcess):
         GE *= R*T
         self._GE = GE
         return GE
+    
+    def dGE_dxs(self):
+        try:
+            return self._dGE_dxs
+        except AttributeError:
+            pass
+        T, xs, cmps = self.T, self.xs, self.cmps
+        lngammas_r = self.lngammas_r()
+        lngammas_c = self.lngammas_c()
+        
+        dlngammas_c_dxs = self.dlngammas_c_dxs()
+        dlngammas_r_dxs = self.dlngammas_r_dxs()
+        RT = R*T
+        dGE_dxs = []
+        for i in cmps:
+            dGE = lngammas_r[i] + lngammas_c[i]
+            for j in cmps:
+                dGE += xs[j]*(dlngammas_c_dxs[j][i] + dlngammas_r_dxs[j][i])
+            
+            dGE_dxs.append(dGE*RT)
+        self._dGE_dxs = dGE_dxs
+        return dGE_dxs
+
+    def d2GE_dxixjs(self):
+        try:
+            return self._d2GE_dxixjs
+        except AttributeError:
+            pass
+        T, xs, cmps = self.T, self.xs, self.cmps
+        
+        dlngammas_c_dxs = self.dlngammas_c_dxs()
+        dlngammas_r_dxs = self.dlngammas_r_dxs()
+        d2lngammas_c_dxixjs = self.d2lngammas_c_dxixjs()
+        d2lngammas_r_dxixjs = self.d2lngammas_r_dxixjs()
+
+
+        RT = R*T
+        d2GE_dxixjs = []
+        for i in cmps:
+            row = []
+            for j in cmps:
+                dGE = dlngammas_c_dxs[i][j] + dlngammas_r_dxs[i][j]
+                dGE += dlngammas_c_dxs[j][i] + dlngammas_r_dxs[j][i]
+                
+                for k in cmps:
+                    dGE += xs[k]*(d2lngammas_c_dxixjs[k][i][j] + d2lngammas_r_dxixjs[k][i][j])
+#                    dGE += xs[k]*(d2lngammas_c_dxixjs[i][j][k] + d2lngammas_r_dxixjs[i][j][k]) # thought good
+                row.append(dGE*RT)
+            
+            d2GE_dxixjs.append(row)
+        self._d2GE_dxixjs = d2GE_dxixjs
+        return d2GE_dxixjs
 
     def dGE_dT(self):
         try:

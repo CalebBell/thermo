@@ -3137,6 +3137,13 @@ class GibbsExcess(object):
         self._gammas = [exp(i*RT_inv) for i in dG_dns]
         return self._gammas
 
+    def _gammas_dGE_dxs(self):
+        try:
+            del self._gammas
+        except:
+            pass
+        return GibbsExcess.gammas(self)
+
     def dgammas_dns(self):
         try:
             return self._dgammas_dns
