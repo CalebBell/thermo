@@ -2609,6 +2609,34 @@ class UNIFAC(GibbsExcess):
         self._dGE_dxs = dGE_dxs
         return dGE_dxs
 
+    def d2GE_dTdxs(self):
+        try:
+            return self._d2GE_dTdxs
+        except AttributeError:
+            pass
+        T, xs, cmps = self.T, self.xs, self.cmps
+        lngammas_r = self.lngammas_r()
+        lngammas_c = self.lngammas_c()
+        
+        dlngammas_c_dxs = self.dlngammas_c_dxs()
+        dlngammas_r_dxs = self.dlngammas_r_dxs()
+        dlngammas_r_dT = self.dlngammas_r_dT()
+        d2lngammas_r_dTdxs = self.d2lngammas_r_dTdxs()
+        d2GE_dTdxs = []
+        for i in cmps:
+            dGE = lngammas_r[i] + lngammas_c[i]
+            dGE += T*dlngammas_r_dT[i]
+            for j in cmps:
+                dGE += xs[j]*(dlngammas_c_dxs[j][i] + dlngammas_r_dxs[j][i])
+                dGE += T*xs[j]*d2lngammas_r_dTdxs[j][i] # ji should be consistent in all of them
+#                dGE += xs[j]*(dlngammas_c_dxs[i][j] + dlngammas_r_dxs[i][j])
+#                dGE += T*xs[j]*d2lngammas_r_dTdxs[i][j] # ji should be consistent in all of them
+            
+            d2GE_dTdxs.append(dGE*R)
+        self._d2GE_dTdxs = d2GE_dTdxs
+        return d2GE_dTdxs
+
+
     def d2GE_dxixjs(self):
         try:
             return self._d2GE_dxixjs

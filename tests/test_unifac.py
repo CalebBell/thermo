@@ -617,3 +617,12 @@ def test_UNIFAC_class():
     d2GE_dxixjs_expect = [[-4940.980009366508, -4370.754506520942, -3939.3162636852335, -1022.969364414501], [-4370.754506520916, -6195.5302935872505, -1543.5471574562987, -538.4425520948281], [-3939.316263685231, -1543.5471574563073, -4349.151467217632, -3541.7479481704927], [-1022.9693644144832, -538.4425520948315, -3541.74794817049, -5955.600731588765]]
     assert_allclose(d2GE_dxixjs, d2GE_dxixjs_expect, rtol=1e-10)
     assert_allclose(d2GE_dxixjs, d2GE_dxixjs_num, rtol=5e-4)
+
+    def to_jac_dGE_dT(xs):
+        return GE.to_T_xs(T, xs).dGE_dT()
+    
+    d2GE_dTdxs_numerical = jacobian(to_jac_dGE_dT, xs, perturbation=5e-8)
+    d2GE_dTdxs_expect = [-3.9462600963845125, -4.847579418251475, -6.513157954188368, -0.10859586217058816]
+    d2GE_dTdxs = GE.d2GE_dTdxs()
+    assert_allclose(d2GE_dTdxs, d2GE_dTdxs_expect, rtol=1e-10)
+    assert_allclose(d2GE_dTdxs, d2GE_dTdxs_numerical, rtol=4e-6)
