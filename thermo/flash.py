@@ -125,6 +125,8 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
         # Accept the new compositions
         xs, ys = xs_new, ys_new
         
+#        print(err, xs, ys, Ks)
+        
         # Check for 
         comp_difference = sum([abs(xi - yi) for xi, yi in zip(xs, ys)])
         if comp_difference < trivial_solution_tol:

@@ -29,7 +29,7 @@ __all__ = ['UNIFAC_gammas','UNIFAC',  'GibbsExcess',
            'UNIFAC_RQ', 'Van_der_Waals_volume', 'Van_der_Waals_area',
            'load_group_assignments_DDBST', 'DDBST_UNIFAC_assignments', 
            'DDBST_MODIFIED_UNIFAC_assignments', 'DDBST_PSRK_assignments',
-           'PSRKIP', 'PSRKSG']
+           'PSRKIP', 'PSRKSG', 'LLEUFIP', 'LLEUFSG', 'LLEMG']
 import os
 from thermo.utils import log, exp
 from thermo.activity import GibbsExcess
@@ -228,6 +228,7 @@ UFSG[118] = UNIFAC_subgroup('(CH2)2SU', 55, 'SULFONES', 2.6869, 2.12, smarts='CC
 UFSG[119] = UNIFAC_subgroup('CH2CHSU', 55, 'SULFONES', 2.4595, 1.808, smarts='[CX4;H2][CX4;H1][SX4](=O)(=O)') # 3 missing of 6
 UFSG[178] = UNIFAC_subgroup('IMIDAZOL', 84, 'IMIDAZOL', 2.026, 0.868, smarts='c1cnc[nH]1') # untested
 UFSG[179] = UNIFAC_subgroup('BTI', 85, 'BTI', 5.774, 4.932, smarts='C(F)(F)(F)S(=O)(=O)[N-]S(=O)(=O)C(F)(F)F') # untested
+
 
 
 # http://www.ddbst.com/PublishedParametersUNIFACDO.html#ListOfSubGroupsAndTheirGroupSurfacesAndVolumes
@@ -837,6 +838,141 @@ PSRKSG[148] = UNIFAC_subgroup('O3', 84, 'O3', 1.1000, 1.2700)
 PSRKSG[149] = UNIFAC_subgroup('CLNO', 85, 'CLNO', 1.4800, 1.3400)
 PSRKSG[152] = UNIFAC_subgroup('CNH2', 14, 'CNH2', 0.9147, 0.6140)
 
+LLEUFSG = {}
+# LLEUFSG[subgroup ID] = (subgroup formula, main group ID, subgroup R, subgroup Q)
+LLEUFSG[1] = UNIFAC_subgroup('CH3', 1, 'CH2', 0.9011, 0.848, smarts=UFSG[1].smarts)
+LLEUFSG[2] = UNIFAC_subgroup('CH2', 1, 'CH2', 0.6744, 0.54, smarts=UFSG[2].smarts)
+LLEUFSG[3] = UNIFAC_subgroup('CH', 1, 'CH2', 0.4469, 0.228, smarts=UFSG[3].smarts)
+LLEUFSG[4] = UNIFAC_subgroup('C', 1, 'CH2', 0.2195, 0, smarts=UFSG[4].smarts)
+
+LLEUFSG[5] = UNIFAC_subgroup('CH2=CH', 2, 'C=C', 1.3454, 1.176, smarts=UFSG[5].smarts)
+LLEUFSG[6] = UNIFAC_subgroup('CH=CH', 2, 'C=C', 1.1167, 0.867, smarts=UFSG[6].smarts)
+LLEUFSG[7] = UNIFAC_subgroup('CH=C', 2, 'C=C', 0.8886, 0.676, smarts=UFSG[8].smarts) # 7, 8 diff order than UFSG
+LLEUFSG[8] = UNIFAC_subgroup('CH2=C', 2, 'C=C', 1.1173, 0.988, smarts=UFSG[7].smarts)
+
+LLEUFSG[9] = UNIFAC_subgroup('ACH', 3, 'ACH', 0.5313, 0.4, smarts=UFSG[9].smarts)
+LLEUFSG[10] = UNIFAC_subgroup('AC', 3, 'ACH', 0.3652, 0.12, smarts=UFSG[10].smarts)
+
+LLEUFSG[11] = UNIFAC_subgroup('ACCH3', 4, 'ACCH2', 1.2663, 0.968, smarts=UFSG[11].smarts)
+LLEUFSG[12] = UNIFAC_subgroup('ACCH2', 4, 'ACCH2', 1.0396, 0.66, smarts=UFSG[12].smarts)
+LLEUFSG[13] = UNIFAC_subgroup('ACCH', 4, 'ACCH2', 0.8121, 0.348, smarts=UFSG[13].smarts)
+
+LLEUFSG[14] = UNIFAC_subgroup('OH', 5, 'OH', 1, 1.2, smarts=UFSG[14].smarts)
+
+LLEUFSG[15] = UNIFAC_subgroup('P1', 6, 'P1', 3.2499, 3.128, smarts='CCCO') # 1-propanol, hopefully smarts works
+LLEUFSG[16] = UNIFAC_subgroup('P2', 7, 'P2', 3.2491, 3.124, smarts='CC(C)O') # 2-propanol, hopefully smarts works
+LLEUFSG[17] = UNIFAC_subgroup('H2O', 8, 'H2O', 0.92, 1.4, smarts=UFSG[16].smarts)
+
+LLEUFSG[18] = UNIFAC_subgroup('ACOH', 9, 'ACOH', 0.8952, 0.68, smarts=UFSG[17].smarts)
+
+LLEUFSG[19] = UNIFAC_subgroup('CH3CO', 10, 'CH2CO', 1.6724, 1.488, smarts=UFSG[18].smarts)
+LLEUFSG[20] = UNIFAC_subgroup('CH2CO', 10, 'CH2CO', 1.4457, 1.18, smarts=UFSG[19].smarts)
+LLEUFSG[21] = UNIFAC_subgroup('CHO', 11, 'CHO', 0.998, 0.948, smarts=UFSG[20].smarts)
+LLEUFSG[22] = UNIFAC_subgroup('Furfural', 12, 'Furfural', 3.168, 2.484, smarts=UFSG[61].smarts)
+
+LLEUFSG[23] = UNIFAC_subgroup('COOH', 13, 'COOH', 1.3013, 1.224, smarts=UFSG[42].smarts)
+LLEUFSG[24] = UNIFAC_subgroup('HCOOH', 13, 'COOH', 1.528, 1.532, smarts=UFSG[43].smarts)
+
+LLEUFSG[25] = UNIFAC_subgroup('CH3COO', 14, 'CCOO', 1.9031, 1.728, smarts=UFSG[21].smarts)
+LLEUFSG[26] = UNIFAC_subgroup('CH2COO', 14, 'CCOO', 1.6764, 1.42, smarts=UFSG[22].smarts)
+
+LLEUFSG[27] = UNIFAC_subgroup('CH3O', 15, 'CH2O', 1.145, 1.088, smarts=UFSG[24].smarts)
+LLEUFSG[28] = UNIFAC_subgroup('CH2O', 15, 'CH2O', 0.9183, 0.78, smarts=UFSG[25].smarts)
+LLEUFSG[29] = UNIFAC_subgroup('CHO', 15, 'CH2O', 0.6908, 0.468, smarts=UFSG[26].smarts)
+LLEUFSG[30] = UNIFAC_subgroup('FCH2O', 15, 'CH2O', 9183, 1.1, smarts=UFSG[27].smarts) # THF in original and others, FCH2O here
+
+LLEUFSG[31] = UNIFAC_subgroup('CH2CL', 16, 'CCL', 1.4654, 1.264, smarts=UFSG[44].smarts)
+LLEUFSG[32] = UNIFAC_subgroup('CHCL', 16, 'CCL', 1.238, 0.952, smarts=UFSG[45].smarts)
+LLEUFSG[33] = UNIFAC_subgroup('CCL', 16, 'CCL', 1.0106, 0.724, smarts=UFSG[46].smarts)
+
+LLEUFSG[34] = UNIFAC_subgroup('CH2CL2', 17, 'CCL2', 2.2564, 1.988, smarts=UFSG[47].smarts)
+LLEUFSG[35] = UNIFAC_subgroup('CHCL2', 17, 'CCL2', 2.0606, 1.684, smarts=UFSG[48].smarts)
+LLEUFSG[36] = UNIFAC_subgroup('CCL2', 17, 'CCL2', 1.8016, 1.448, smarts=UFSG[49].smarts)
+
+LLEUFSG[37] = UNIFAC_subgroup('CHCL3', 18, 'CCL3', 2.87, 2.41, smarts=UFSG[50].smarts)
+LLEUFSG[38] = UNIFAC_subgroup('CCL3', 18, 'CCL3', 2.6401, 2.184, smarts=UFSG[51].smarts)
+
+LLEUFSG[39] = UNIFAC_subgroup('CCL4', 19, 'CCL4', 3.39, 2.91, smarts=UFSG[52].smarts)
+
+LLEUFSG[40] = UNIFAC_subgroup('ACCL', 20, 'ACCL', 1.1562, 0.844, smarts=UFSG[53].smarts)
+
+LLEUFSG[41] = UNIFAC_subgroup('CH3CN', 21, 'CCN', 1.8701, 1.724, smarts=UFSG[40].smarts)
+LLEUFSG[42] = UNIFAC_subgroup('CH2CN', 21, 'CCN', 1.6434, 1.416, smarts=UFSG[41].smarts)
+
+LLEUFSG[43] = UNIFAC_subgroup('ACNH2', 22, 'ACNH2', 1.06, 0.816, smarts=UFSG[36].smarts)
+
+LLEUFSG[44] = UNIFAC_subgroup('CH3NO2', 23, 'CNO2', 2.0086, 1.868, smarts=UFSG[54].smarts)
+LLEUFSG[45] = UNIFAC_subgroup('CH2NO2', 23, 'CNO2', 1.7818, 1.56, smarts=UFSG[55].smarts)
+LLEUFSG[46] = UNIFAC_subgroup('CHNO2', 23, 'CNO2', 1.5544, 1.248, smarts=UFSG[56].smarts)
+
+LLEUFSG[47] = UNIFAC_subgroup('ACNO2', 24, 'ACNO2', 1.4199, 1.104, smarts=UFSG[57].smarts)
+
+LLEUFSG[48] = UNIFAC_subgroup('DOH', 25, 'DOH', 2.4088, 2.248, smarts=UFSG[62].smarts)
+
+LLEUFSG[49] = UNIFAC_subgroup('(HOCH2CH2)2O', 26, 'DEOH', 4.0013, 3.568, smarts='C(COCCO)O') # diethylene glycol
+
+LLEUFSG[50] = UNIFAC_subgroup('C5H5N', 27, 'PYRIDINE', 2.9993, 2.113, smarts=UFSG[37].smarts)
+LLEUFSG[51] = UNIFAC_subgroup('C5H4N', 27, 'PYRIDINE', 2.8332, 1.833, smarts=UFSG[38].smarts)
+LLEUFSG[52] = UNIFAC_subgroup('C5H3N', 27, 'PYRIDINE', 2.667, 1.553, smarts=UFSG[39].smarts)
+
+LLEUFSG[53] = UNIFAC_subgroup('CCl2=CHCl', 28, 'TCE', 3.3092, 2.860, smarts='C(=C(Cl)Cl)Cl') # trichloroethylene
+LLEUFSG[54] = UNIFAC_subgroup('HCONHCH3', 29, 'MFA', 2.4317, 2.192, smarts='C(=C(Cl)Cl)Cl') # methylformamide
+LLEUFSG[55] = UNIFAC_subgroup('DMF', 30, 'DMFA', 3.0856, 2.736, smarts=UFSG[72].smarts) # DMFA is same as DMF - dimethylformamide
+LLEUFSG[56] = UNIFAC_subgroup('(CH2)4SO2', 31, 'TMS', 4.0358, 3.20, smarts='C1CCS(=O)(=O)C1') # tetramethylene sulfone
+LLEUFSG[57] = UNIFAC_subgroup('DMSO', 32, 'DMSO', 2.8266, 2.472, smarts=UFSG[67].smarts)
+
+# Generated with the following:
+'''
+t = 'LLEMG = {'
+for main_key in range(1, 33):
+    main_group = None
+    hits = []
+    for subgroup_key, o in LLEUFSG.items():
+        if o.main_group_id == main_key:
+            main_group = o.main_group
+            hits.append(subgroup_key)
+    t += '%d: ("%s", %s),\n' %(main_key, main_group, list(sorted(hits)))
+t += '}'
+'''
+
+LLEMG = {   1: ("CH2", [1, 2, 3, 4]),
+            2: ("C=C", [5, 6, 7, 8]),
+            3: ("ACH", [9, 10]),
+            4: ("ACCH2", [11, 12, 13]),
+            5: ("OH", [14]),
+            6: ("P1", [15]),
+            7: ("P2", [16]),
+            8: ("H2O", [17]),
+            9: ("ACOH", [18]),
+            10: ("CH2CO", [19, 20]),
+            11: ("CHO", [21]),
+            12: ("Furfural", [22]),
+            13: ("COOH", [23, 24]),
+            14: ("CCOO", [25, 26]),
+            15: ("CH2O", [27, 28, 29, 30]),
+            16: ("CCL", [31, 32, 33]),
+            17: ("CCL2", [34, 35, 36]),
+            18: ("CCL3", [37, 38]),
+            19: ("CCL4", [39]),
+            20: ("ACCL", [40]),
+            21: ("CCN", [41, 42]),
+            22: ("ACNH2", [43]),
+            23: ("CNO2", [44, 45, 46]),
+            24: ("ACNO2", [47]),
+            25: ("DOH", [48]),
+            26: ("DEOH", [49]),
+            27: ("PYRIDINE", [50, 51, 52]),
+            28: ("TCE", [53]),
+            29: ("MFA", [54]),
+            30: ("DMFA", [55]),
+            31: ("TMS", [56]),
+            32: ("DMSO", [57]),
+}
+
+'''Compared to storing the values in dict[(int1, int2)] = (values), 
+the dict-in-dict structure is found emperically to take 111608 bytes vs. 
+79096 bytes, or 30% less memory.
+'''
 
 UFIP = {i: {} for i in list(range(1, 52)) + [55, 84, 85]}
 with open(os.path.join(folder, 'UNIFAC original interaction parameters.tsv')) as f:
@@ -844,6 +980,14 @@ with open(os.path.join(folder, 'UNIFAC original interaction parameters.tsv')) as
         maingroup1, maingroup2, interaction_parameter = line.strip('\n').split('\t')
         # Index by both int, order maters, to only one parameter.
         UFIP[int(maingroup1)][int(maingroup2)] = float(interaction_parameter)
+
+
+LLEUFIP = {i: {} for i in list(range(1, 33))}
+with open(os.path.join(folder, 'UNIFAC LLE interaction parameters.tsv')) as f:
+    for line in f:
+        maingroup1, maingroup2, interaction_parameter = line.strip('\n').split('\t')
+        LLEUFIP[int(maingroup1)][int(maingroup2)] = float(interaction_parameter)
+
 
 DOUFIP2006 = {i: {} for i in DOUFMG.keys()}
 with open(os.path.join(folder, 'UNIFAC modified Dortmund interaction parameters 2006.tsv')) as f:
@@ -1755,6 +1899,8 @@ class UNIFAC(GibbsExcess):
 
 
     def Vis_Dortmund(self):
+        # To include Lyngby model, need to refactor to make power generic as it
+        # uses 2/3 instead
         try:
             return self._Vis_Dortmund
         except:
