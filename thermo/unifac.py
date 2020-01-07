@@ -969,6 +969,82 @@ LLEMG = {   1: ("CH2", [1, 2, 3, 4]),
             32: ("DMSO", [57]),
 }
 
+'''
+Larsen, Bent L., Peter Rasmussen, and Aage Fredenslund. "A Modified UNIFAC
+Group-Contribution Model for Prediction of Phase Equilibria and Heats of Mixing."
+Industrial & Engineering Chemistry Research 26, no. 11 (November 1, 1987): 
+2274-86. https://doi.org/10.1021/ie00071a018.
+'''
+LUFSG = {}
+LUFSG[1] = UNIFAC_subgroup('CH3', 1, 'CH2', 0.9011, 0.848, smarts=UFSG[1].smarts)
+LUFSG[2] = UNIFAC_subgroup('CH2', 1, 'CH2', 0.6744, 0.54, smarts=UFSG[2].smarts)
+LUFSG[3] = UNIFAC_subgroup('CH', 1, 'CH2', 0.4469, 0.228, smarts=UFSG[3].smarts)
+LUFSG[4] = UNIFAC_subgroup('C', 1, 'CH2', 0.2195, 0, smarts=UFSG[4].smarts)
+
+LUFSG[5] = UNIFAC_subgroup('CH2=CH', 2, 'C=C', 1.3454, 1.176, smarts=UFSG[5].smarts)
+LUFSG[6] = UNIFAC_subgroup('CH=CH', 2, 'C=C', 1.1167, 0.867, smarts=UFSG[6].smarts)
+LUFSG[7] = UNIFAC_subgroup('CH2=C', 2, 'C=C', 1.1173, 0.988, smarts=UFSG[7].smarts)
+LUFSG[8] = UNIFAC_subgroup('CH=C', 2, 'C=C', 0.8886, 0.676, smarts=UFSG[8].smarts)
+LUFSG[9] = UNIFAC_subgroup('C=C', 2, 'C=C', 0.6605, 0.485, smarts=UFSG[70].smarts)
+
+LUFSG[10] = UNIFAC_subgroup('ACH', 3, 'ACH', 0.5313, 0.4, smarts=UFSG[9].smarts)
+LUFSG[11] = UNIFAC_subgroup('AC', 3, 'ACH', 0.3652, 0.12, smarts=UFSG[10].smarts)
+
+LUFSG[12] = UNIFAC_subgroup('OH', 4, 'OH', 1, 1.2, smarts=UFSG[14].smarts)
+
+LUFSG[13] = UNIFAC_subgroup('CH3OH', 5, 'CH3OH', 1.0, 1.0, smarts=UFSG[15].smarts)
+
+LUFSG[14] = UNIFAC_subgroup('H2O', 6, 'H2O', 0.92, 1.4, smarts=UFSG[16].smarts)
+
+LUFSG[15] = UNIFAC_subgroup('CH3CO', 7, 'CH2CO', 1.6724, 1.488, smarts=UFSG[18].smarts)
+LUFSG[16] = UNIFAC_subgroup('CH2CO', 7, 'CH2CO', 1.4457, 1.488, smarts=UFSG[19].smarts)
+
+LUFSG[17] = UNIFAC_subgroup('CHO', 8, 'CHO', 0.998, 0.948, smarts=UFSG[20].smarts)
+
+LUFSG[18] = UNIFAC_subgroup('CH3COO', 9, 'CCOO', 1.9031, 1.728, smarts=UFSG[21].smarts)
+LUFSG[19] = UNIFAC_subgroup('CH2COO', 9, 'CCOO', 1.6764, 1.42, smarts=UFSG[22].smarts)
+
+LUFSG[20] = UNIFAC_subgroup('CH3O', 10, 'CH2O', 1.145, 0.9, smarts=UFSG[24].smarts)
+LUFSG[21] = UNIFAC_subgroup('CH2O', 10, 'CH2O', 0.9183, 0.78, smarts=UFSG[25].smarts)
+LUFSG[22] = UNIFAC_subgroup('CHO', 10, 'CH2O', 0.6908, 0.65, smarts=UFSG[26].smarts)
+LUFSG[23] = UNIFAC_subgroup('THF', 10, 'CH2O', 0.9183, 1.1, smarts=UFSG[27].smarts)
+
+LUFSG[24] = UNIFAC_subgroup('NH2', 11, 'NH2', 0.6948, 1.150, smarts='[NH2-]')
+
+LUFSG[25] = UNIFAC_subgroup('CH3NH', 12, 'CNH2NG', 1.4337, 1.050, smarts=UFSG[31].smarts)
+LUFSG[26] = UNIFAC_subgroup('CH2NH', 12, 'CNH2NG', 1.207, 0.936, smarts=UFSG[32].smarts)
+LUFSG[27] = UNIFAC_subgroup('CHNH', 12, 'CNH2NG', 0.9795, 0.624, smarts=UFSG[33].smarts)
+
+LUFSG[28] = UNIFAC_subgroup('CH3N', 13, 'CH2N', 1.1865, 0.94, smarts=UFSG[34].smarts)
+LUFSG[29] = UNIFAC_subgroup('CH2N', 13, 'CH2N', 0.9597, 0.632, smarts=UFSG[35].smarts)
+
+LUFSG[30] = UNIFAC_subgroup('ANH2', 14, 'ANH2', 0.6948, 1.4, smarts=None) # NH2 attached to aromatic ring
+
+LUFSG[31] = UNIFAC_subgroup('C5H5N', 15, 'PYRIDINE', 2.9993, 2.113, smarts=UFSG[37].smarts)
+LUFSG[32] = UNIFAC_subgroup('C5H4N', 15, 'PYRIDINE', 2.8332, 1.833, smarts=UFSG[38].smarts)
+LUFSG[33] = UNIFAC_subgroup('C5H3N', 15, 'PYRIDINE', 2.667, 1.553, smarts=UFSG[39].smarts)
+
+LUFSG[34] = UNIFAC_subgroup('CH3CN', 16, 'CCN', 1.8701, 1.724, smarts=UFSG[40].smarts)
+LUFSG[35] = UNIFAC_subgroup('CH2CN', 16, 'CCN', 1.6434, 1.416, smarts=UFSG[41].smarts)
+
+LUFSG[36] = UNIFAC_subgroup('COOH', 17, 'COOH', 1.3013, 1.224, smarts=UFSG[42].smarts)
+
+LUFSG[37] = UNIFAC_subgroup('CH2CL', 18, 'CCL', 1.4654, 1.264, smarts=UFSG[44].smarts)
+LUFSG[38] = UNIFAC_subgroup('CHCL', 18, 'CCL', 1.238, 0.952, smarts=UFSG[45].smarts)
+LUFSG[39] = UNIFAC_subgroup('CCL', 18, 'CCL', 1.0106, 0.724, smarts=UFSG[46].smarts)
+
+LUFSG[40] = UNIFAC_subgroup('CH2CL2', 19, 'CCL2', 2.2564, 1.988, smarts=UFSG[47].smarts)
+LUFSG[41] = UNIFAC_subgroup('CHCL2', 19, 'CCL2', 2.0606, 1.684, smarts=UFSG[48].smarts)
+LUFSG[42] = UNIFAC_subgroup('CCL2', 19, 'CCL2', 1.8016, 1.448, smarts=UFSG[49].smarts)
+
+LUFSG[43] = UNIFAC_subgroup('CHCL3', 20, 'CCL3', 2.87, 2.41, smarts=UFSG[50].smarts)
+LUFSG[44] = UNIFAC_subgroup('CCL3', 20, 'CCL3', 2.6401, 2.184, smarts=UFSG[51].smarts)
+
+LUFSG[45] = UNIFAC_subgroup('CCL4', 21, 'CCL4', 3.39, 2.91, smarts=UFSG[52].smarts)
+
+
+
+
 '''Compared to storing the values in dict[(int1, int2)] = (values), 
 the dict-in-dict structure is found emperically to take 111608 bytes vs. 
 79096 bytes, or 30% less memory.
