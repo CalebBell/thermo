@@ -1671,6 +1671,16 @@ class UNIFAC(GibbsExcess):
             
     def __init__(self, T, xs, rs, qs, Qs, vs, psi_coeffs=None, psi_abc=None,
                  version=0):
+        '''
+        
+        versions: 
+            
+        0 - original UNIFAC, OR UNIFAC LLE
+        1 - Dortmund UNIFAC (adds T dept, 3/4 power)
+        2 - PSRK (original with T dept function)
+        3 - VTPR (drops combinatorial term, Dortmund UNIFAC otherwise)
+        4 - Lyngby/Larsen has different combinatorial, 2/3 poewr
+        '''
         self.T = T
         self.xs = xs
         
@@ -1702,8 +1712,14 @@ class UNIFAC(GibbsExcess):
         self.N = N = len(rs)
         self.cmps = range(N)
         self.version = version
+        
         if self.version == 1:
-            self.rs_34 = [i**0.75 for i in rs]
+            power = 0.75
+            self.rs_34 = [i**power for i in rs]
+        elif self.version == 4:
+            power = 2.0/3.0 # Lyngby
+            # Magically works in the various functions without change
+            self.rs_34 = [i**power for i in rs]
 
         self.cmp_v_count = [sum(vs[group][i] for group in self.groups) for i in self.cmps]
         
@@ -2979,7 +2995,7 @@ class UNIFAC(GibbsExcess):
             pass
         Vis = self.Vis()
         cmps, version, qs = self.cmps, self.version, self.qs
-        if self.version == 1:
+        if self.version in (1, 4):
             Vis_Dortmund = self.Vis_Dortmund()
         else:
             Vis_Dortmund = Vis
@@ -3032,7 +3048,7 @@ class UNIFAC(GibbsExcess):
         Fis = self.Fis()
         dFis_dxs = self.dFis_dxs()
         
-        if self.version == 1:
+        if self.version in (1, 4):
             Vis_Dortmund = self.Vis_Dortmund()
             dVis_Dortmund_dxs = self.dVis_Dortmund_dxs()
         else:
@@ -3133,10 +3149,10 @@ class UNIFAC(GibbsExcess):
         dFis_dxs = self.dFis_dxs()
         d2Fis_dxixjs = self.d2Fis_dxixjs()
         
-        if self.version == 1:
+        if self.version in (1, 4):
             Vis_Dortmund = self.Vis_Dortmund()
             dVis_Dortmund_dxs = self.dVis_Dortmund_dxs()
-            d2Vis_Dortmund_dxixjs =self.d2Vis_Dortmund_dxixjs()
+            d2Vis_Dortmund_dxixjs = self.d2Vis_Dortmund_dxixjs()
         else:
             Vis_Dortmund = Vis
             dVis_Dortmund_dxs = dVis_dxs
@@ -3241,7 +3257,7 @@ class UNIFAC(GibbsExcess):
         d2Fis_dxixjs = self.d2Fis_dxixjs()
         d3Fis_dxixjxks = self.d3Fis_dxixjxks()
         
-        if self.version == 1:
+        if self.version in (1, 4):
             Vis_Dortmund = self.Vis_Dortmund()
             dVis_Dortmund_dxs = self.dVis_Dortmund_dxs()
             d2Vis_Dortmund_dxixjs = self.d2Vis_Dortmund_dxixjs()
