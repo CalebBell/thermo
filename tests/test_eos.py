@@ -1433,12 +1433,11 @@ def test_fuzz_dPsat_dT():
     dPsats_dT_expect = [938.8330442120659, 10288.110417535852, 38843.65395496486]
     assert_allclose([e.dPsat_dT(300), e.dPsat_dT(400), e.dPsat_dT(500)], dPsats_dT_expect)
 
-#@pytest.mark.slow
+@pytest.mark.slow
+@pytest.mark.fuzz
 def test_fuzz_dPsat_dT_full():
-    from thermo import eos
-    eos_list = list(eos.__all__); eos_list.remove('GCEOS')
-    eos_list.remove('eos_list')
-    eos_list.remove('GCEOS_DUMMY'); eos_list.remove('IG')
+    from thermo.eos import eos_2P_list
+    # TODO - add specific points to separate test
     
     Tc = 507.6
     Pc = 3025000
@@ -1450,20 +1449,17 @@ def test_fuzz_dPsat_dT_full():
     # though - to be expected; the derivatives are discontinuous there.
     dPsats_derivative = []
     dPsats_analytical = []
-    for eos in range(len(eos_list)):
-        for T in np.linspace(0.2*Tc, Tc*.999, 50):
-            e = globals()[eos_list[eos]](Tc=Tc, Pc=Pc, omega=omega, T=T, P=1E5)
+    for eos in eos_2P_list:
+        e = eos(Tc=Tc, Pc=Pc, omega=omega, T=298.15, P=1E5)
+        for T in [.1*Tc, .2*Tc, .5*Tc, .7*Tc, .9*Tc, .99*Tc, .999*Tc]:
             anal = e.dPsat_dT(T)
             numer = e.dPsat_dT(T, polish=True)
 #            numer = derivative(e.Psat, T, order=9)
             dPsats_analytical.append(anal)
             dPsats_derivative.append(numer)
     
-#    try:
-#        assert allclose_variable(dPsats_derivative, dPsats_analytical, limits=[.02, .06], rtols=[1E-5, 1E-7])
-##        assert allclose_variable(dPsats_derivative, dPsats_analytical, limits=[.02, .06], rtols=[1E-5, 1E-7])
-#    except:
-#        assert_allclose(dPsats_derivative, dPsats_analytical)
+    assert_allclose(dPsats_derivative, dPsats_analytical)
+
 
 
 def test_Hvaps():

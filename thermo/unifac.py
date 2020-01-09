@@ -29,7 +29,8 @@ __all__ = ['UNIFAC_gammas','UNIFAC',  'GibbsExcess',
            'UNIFAC_RQ', 'Van_der_Waals_volume', 'Van_der_Waals_area',
            'load_group_assignments_DDBST', 'DDBST_UNIFAC_assignments', 
            'DDBST_MODIFIED_UNIFAC_assignments', 'DDBST_PSRK_assignments',
-           'PSRKIP', 'PSRKSG', 'LLEUFIP', 'LLEUFSG', 'LLEMG']
+           'PSRKIP', 'PSRKSG', 'LLEUFIP', 'LLEUFSG', 'LLEMG', 
+           'LUFIP', 'LUFSG']
 import os
 from thermo.utils import log, exp
 from thermo.activity import GibbsExcess
@@ -1064,6 +1065,12 @@ with open(os.path.join(folder, 'UNIFAC LLE interaction parameters.tsv')) as f:
         maingroup1, maingroup2, interaction_parameter = line.strip('\n').split('\t')
         LLEUFIP[int(maingroup1)][int(maingroup2)] = float(interaction_parameter)
 
+LUFIP = {i: {} for i in list(range(1, 22))}
+with open(os.path.join(folder, 'UNIFAC Lyngby interaction parameters.tsv')) as f:
+    for line in f:
+        maingroup1, maingroup2, a, b, c = line.strip('\n').split('\t')
+        LUFIP[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
+
 
 DOUFIP2006 = {i: {} for i in DOUFMG.keys()}
 with open(os.path.join(folder, 'UNIFAC modified Dortmund interaction parameters 2006.tsv')) as f:
@@ -1775,13 +1782,27 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             pass
         T, groups = self.T, self.groups
-        psi_a, psi_b, psi_c = self.psi_a, self.psi_b, self.psi_c
-        
         mT_inv = -1.0/T
+        psi_a, psi_b, psi_c = self.psi_a, self.psi_b, self.psi_c
         self._psis = psis = []
-        for i in groups:
-            a_row, b_row, c_row = psi_a[i], psi_b[i], psi_c[i]
-            psis.append([exp(a_row[j]*mT_inv - b_row[j] - c_row[j]*T) for j in groups])
+        if self.version == 4:
+            T0 = 298.15
+            TmT0 = T - T0
+            B = T*log(T0/T) + T - T0
+            for i in groups:
+                a_row, b_row, c_row = psi_a[i], psi_b[i], psi_c[i]
+#                r = []
+#                for j in groups:
+#                    a1, a2, a3 = a_row[j], b_row[j], c_row[j]
+#                    f = a1 + a2*(T - T0) + a3*(T*log(T0/T) + T - T0)
+#                    tau = exp(-f/T)
+#                    r.append(tau)
+#                psis.append(r)
+                psis.append([exp(mT_inv*(a_row[j] + b_row[j]*TmT0 + c_row[j]*B)) for j in groups])
+        else:
+            for i in groups:
+                a_row, b_row, c_row = psi_a[i], psi_b[i], psi_c[i]
+                psis.append([exp(a_row[j]*mT_inv - b_row[j] - c_row[j]*T) for j in groups])
         return psis
     
     def dpsis_dT(self):
@@ -1799,9 +1820,24 @@ class UNIFAC(GibbsExcess):
         
         T2_inv = 1.0/(T*T)
         self._dpsis_dT = dpsis_dT = []
-        for i in groups:
-            psis_row, a_row, c_row = psis[i], psi_a[i], psi_c[i]
-            dpsis_dT.append([psis_row[j]*(a_row[j]*T2_inv - c_row[j])  for j in groups])
+        if self.version == 4:
+            psi_b = self.psi_b
+            T0 = 298.15
+            mT_inv = -1.0/T
+            T2_inv = mT_inv*mT_inv
+            TmT0 = T - T0
+            x0 = log(T0/T)
+            B = T*x0 + T - T0
+            for i in groups:
+                psis_row, a_row, b_row, c_row = psis[i], psi_a[i], psi_b[i], psi_c[i]
+#                tf3 = b_row[j] + c_row[j]*x0
+#                f = a_row[j] + b_row[j]*TmT0 + c_row[j]*B
+                dpsis_dT.append([psis_row[j]*(mT_inv*(b_row[j] + c_row[j]*x0) +  (a_row[j] + b_row[j]*TmT0 + c_row[j]*B)*T2_inv) for j in groups])
+            
+        else:
+            for i in groups:
+                psis_row, a_row, c_row = psis[i], psi_a[i], psi_c[i]
+                dpsis_dT.append([psis_row[j]*(a_row[j]*T2_inv - c_row[j])  for j in groups])
         return dpsis_dT
 
     def d2psis_dT2(self):

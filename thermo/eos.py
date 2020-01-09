@@ -23,7 +23,7 @@ SOFTWARE.'''
 from __future__ import division, print_function
 
 __all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',  
-'APISRK', 'TWUPR', 'TWUSRK', 'eos_list', 'GCEOS_DUMMY',
+'APISRK', 'TWUPR', 'TWUSRK', 'eos_list', 'eos_2P_list', 'GCEOS_DUMMY',
 'IG', 'PRTranslatedPPJP', 'SRKTranslatedPPJP', 
 'PRTranslatedConsistent', 'SRKTranslatedConsistent', 'MSRKTranslated',
 'SRKTranslated', 'PRTranslated', 'PRTranslatedCoqueletChapoyRichon',
@@ -2381,14 +2381,14 @@ class GCEOS(object):
         T_inv = 1.0/T
         Tr = T*Tc_inv
         Pc = self.Pc
-        if Tr < 0.32 and not isinstance(self, PR):
-            # Delete
-            c = self.Psat_coeffs_limiting
-            return self.Pc*T*c[0]*(self.Tc*d_alpha_dT/T - self.Tc*alpha/(T*T)
-                              )*exp(c[0]*(-1. + self.Tc*alpha/T) + c[1]
-                              )/self.Tc + self.Pc*exp(c[0]*(-1.
-                              + self.Tc*alpha/T) + c[1])/self.Tc
-        elif Tr > 0.999:
+#        if Tr < 0.32 and not isinstance(self, PR):
+#            # Delete
+#            c = self.Psat_coeffs_limiting
+#            return self.Pc*T*c[0]*(self.Tc*d_alpha_dT/T - self.Tc*alpha/(T*T)
+#                              )*exp(c[0]*(-1. + self.Tc*alpha/T) + c[1]
+#                              )/self.Tc + self.Pc*exp(c[0]*(-1.
+#                              + self.Tc*alpha/T) + c[1])/self.Tc
+        if Tr > 0.999:
             # OK
             x = alpha/Tr - 1.
             y = horner(self.Psat_coeffs_critical, x)
@@ -7668,3 +7668,6 @@ class TWUSRK(TwuSRK95_a_alpha, SRK):
 eos_list = [IG, PR, PR78, PRSV, PRSV2, VDW, RK, SRK, APISRK, TWUPR, TWUSRK,
             PRTranslatedPPJP, SRKTranslatedPPJP,
             PRTranslatedConsistent, SRKTranslatedConsistent]
+
+eos_2P_list = list(eos_list)
+eos_2P_list.remove(IG)
