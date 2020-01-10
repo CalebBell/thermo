@@ -1719,6 +1719,7 @@ class UNIFAC(GibbsExcess):
         self.N = N = len(rs)
         self.cmps = range(N)
         self.version = version
+        self.skip_comb = version == 4
         
         if self.version == 1:
             power = 0.75
@@ -1751,6 +1752,7 @@ class UNIFAC(GibbsExcess):
         new.cmp_group_idx = self.cmp_group_idx
         
         new.version = self.version
+        new.skip_comb = self.skip_comb
         
         new.psi_a, new.psi_b, new.psi_c = self.psi_a, self.psi_b, self.psi_c
 
@@ -1762,18 +1764,6 @@ class UNIFAC(GibbsExcess):
         if T == self.T:
             pass
         return new
-#    
-#    def Xms_chem(self):
-#        # This variable has a temperature and mole fraction derivative of 0!
-#        
-#        # Indexed by [group][component]
-#        groups, cmps = self.groups, self.cmps
-#        vs = self.vs
-#        # chem_group_sums = [number of groups in each component]
-#        chem_group_sums = [sum([vs[i][j] for i in groups]) for j in cmps]
-#
-#        chem_group_count_xs = [[vs[i][j]/chem_group_sums[j] for j in cmps] for i in groups]        
-#        return chem_group_count_xs
 
 
     def psis(self):
@@ -2853,10 +2843,16 @@ class UNIFAC(GibbsExcess):
             pass
         T, xs, cmps = self.T, self.xs, self.cmps
         lngammas_r = self.lngammas_r()
-        lngammas_c = self.lngammas_c()
-        GE = 0.0
-        for i in cmps:
-            GE += xs[i]*(lngammas_c[i] + lngammas_r[i])
+        
+        if self.skip_comb:
+            GE = 0.0
+            for i in cmps:
+                GE += xs[i]*lngammas_r[i]
+        else:
+            lngammas_c = self.lngammas_c()
+            GE = 0.0
+            for i in cmps:
+                GE += xs[i]*(lngammas_c[i] + lngammas_r[i])
         GE *= R*T
         self._GE = GE
         return GE
@@ -2866,20 +2862,30 @@ class UNIFAC(GibbsExcess):
             return self._dGE_dxs
         except AttributeError:
             pass
-        T, xs, cmps = self.T, self.xs, self.cmps
+        T, xs, cmps, skip_comb = self.T, self.xs, self.cmps, self.skip_comb
         lngammas_r = self.lngammas_r()
-        lngammas_c = self.lngammas_c()
-        
-        dlngammas_c_dxs = self.dlngammas_c_dxs()
         dlngammas_r_dxs = self.dlngammas_r_dxs()
+        if not skip_comb:
+            lngammas_c = self.lngammas_c()
+            dlngammas_c_dxs = self.dlngammas_c_dxs()
         RT = R*T
         dGE_dxs = []
-        for i in cmps:
-            dGE = lngammas_r[i] + lngammas_c[i]
-            for j in cmps:
-                dGE += xs[j]*(dlngammas_c_dxs[j][i] + dlngammas_r_dxs[j][i])
+        
+        if skip_comb:
+            for i in cmps:
+                dGE = lngammas_r[i]
+                for j in cmps:
+                    dGE += xs[j]*(dlngammas_r_dxs[j][i])
+                dGE_dxs.append(dGE*RT)
+        else:
+            for i in cmps:
+                dGE = lngammas_r[i] + lngammas_c[i]
+                for j in cmps:
+                    dGE += xs[j]*(dlngammas_c_dxs[j][i] + dlngammas_r_dxs[j][i])
+                dGE_dxs.append(dGE*RT)
             
-            dGE_dxs.append(dGE*RT)
+            
+            
         self._dGE_dxs = dGE_dxs
         return dGE_dxs
 
@@ -2888,25 +2894,35 @@ class UNIFAC(GibbsExcess):
             return self._d2GE_dTdxs
         except AttributeError:
             pass
-        T, xs, cmps = self.T, self.xs, self.cmps
+        T, xs, cmps, skip_comb = self.T, self.xs, self.cmps, self.skip_comb
         lngammas_r = self.lngammas_r()
-        lngammas_c = self.lngammas_c()
-        
-        dlngammas_c_dxs = self.dlngammas_c_dxs()
         dlngammas_r_dxs = self.dlngammas_r_dxs()
         dlngammas_r_dT = self.dlngammas_r_dT()
         d2lngammas_r_dTdxs = self.d2lngammas_r_dTdxs()
+        
+        if not skip_comb:
+            lngammas_c = self.lngammas_c()
+            dlngammas_c_dxs = self.dlngammas_c_dxs()
+        
         d2GE_dTdxs = []
-        for i in cmps:
-            dGE = lngammas_r[i] + lngammas_c[i]
-            dGE += T*dlngammas_r_dT[i]
-            for j in cmps:
-                dGE += xs[j]*(dlngammas_c_dxs[j][i] + dlngammas_r_dxs[j][i])
-                dGE += T*xs[j]*d2lngammas_r_dTdxs[j][i] # ji should be consistent in all of them
-#                dGE += xs[j]*(dlngammas_c_dxs[i][j] + dlngammas_r_dxs[i][j])
-#                dGE += T*xs[j]*d2lngammas_r_dTdxs[i][j] # ji should be consistent in all of them
+        if skip_comb:
+            for i in cmps:
+                dGE = lngammas_r[i] + T*dlngammas_r_dT[i]
+                for j in cmps:
+                    dGE += xs[j]*(dlngammas_r_dxs[j][i] + T*d2lngammas_r_dTdxs[j][i])
+                d2GE_dTdxs.append(dGE*R)
             
-            d2GE_dTdxs.append(dGE*R)
+        else:
+            for i in cmps:
+                dGE = lngammas_r[i] + lngammas_c[i]
+                dGE += T*dlngammas_r_dT[i]
+                for j in cmps:
+                    dGE += xs[j]*(dlngammas_c_dxs[j][i] + dlngammas_r_dxs[j][i])
+                    dGE += T*xs[j]*d2lngammas_r_dTdxs[j][i] # ji should be consistent in all of them
+    #                dGE += xs[j]*(dlngammas_c_dxs[i][j] + dlngammas_r_dxs[i][j])
+    #                dGE += T*xs[j]*d2lngammas_r_dTdxs[i][j] # ji should be consistent in all of them
+                
+                d2GE_dTdxs.append(dGE*R)
         self._d2GE_dTdxs = d2GE_dTdxs
         return d2GE_dTdxs
 
@@ -2916,28 +2932,38 @@ class UNIFAC(GibbsExcess):
             return self._d2GE_dxixjs
         except AttributeError:
             pass
-        T, xs, cmps = self.T, self.xs, self.cmps
+        T, xs, cmps, skip_comb = self.T, self.xs, self.cmps, self.skip_comb
         
-        dlngammas_c_dxs = self.dlngammas_c_dxs()
         dlngammas_r_dxs = self.dlngammas_r_dxs()
-        d2lngammas_c_dxixjs = self.d2lngammas_c_dxixjs()
         d2lngammas_r_dxixjs = self.d2lngammas_r_dxixjs()
-
-
+        
+        if not skip_comb:
+            dlngammas_c_dxs = self.dlngammas_c_dxs()
+            d2lngammas_c_dxixjs = self.d2lngammas_c_dxixjs()
+        
         RT = R*T
         d2GE_dxixjs = []
-        for i in cmps:
-            row = []
-            for j in cmps:
-                dGE = dlngammas_c_dxs[i][j] + dlngammas_r_dxs[i][j]
-                dGE += dlngammas_c_dxs[j][i] + dlngammas_r_dxs[j][i]
-                
-                for k in cmps:
-                    dGE += xs[k]*(d2lngammas_c_dxixjs[k][i][j] + d2lngammas_r_dxixjs[k][i][j])
-#                    dGE += xs[k]*(d2lngammas_c_dxixjs[i][j][k] + d2lngammas_r_dxixjs[i][j][k]) # thought good
-                row.append(dGE*RT)
-            
-            d2GE_dxixjs.append(row)
+        
+        if skip_comb:
+            for i in cmps:
+                row = []
+                for j in cmps:
+                    dGE =  dlngammas_r_dxs[i][j] + dlngammas_r_dxs[j][i]
+                    for k in cmps:
+                        dGE += xs[k]*d2lngammas_r_dxixjs[k][i][j]
+                    row.append(dGE*RT)
+                d2GE_dxixjs.append(row)
+        else:
+            for i in cmps:
+                row = []
+                for j in cmps:
+                    dGE = dlngammas_c_dxs[i][j] + dlngammas_r_dxs[i][j]
+                    dGE += dlngammas_c_dxs[j][i] + dlngammas_r_dxs[j][i]
+                    
+                    for k in cmps:
+                        dGE += xs[k]*(d2lngammas_c_dxixjs[k][i][j] + d2lngammas_r_dxixjs[k][i][j])
+                    row.append(dGE*RT)
+                d2GE_dxixjs.append(row)
         self._d2GE_dxixjs = d2GE_dxixjs
         return d2GE_dxixjs
 
@@ -2946,15 +2972,22 @@ class UNIFAC(GibbsExcess):
             return self._dGE_dT
         except AttributeError:
             pass
-        T, xs, cmps = self.T, self.xs, self.cmps
+        T, xs, cmps, skip_comb = self.T, self.xs, self.cmps, self.skip_comb
         lngammas_r = self.lngammas_r()
-        lngammas_c = self.lngammas_c()
         dlngammas_r_dT = self.dlngammas_r_dT()
+        
+        if not skip_comb:
+            lngammas_c = self.lngammas_c()
         dGE_dT = 0.0
         tot0, tot1 = 0.0, 0.0
-        for i in cmps:
-            tot0 += xs[i]*dlngammas_r_dT[i]
-            tot1 += xs[i]*(lngammas_c[i] + lngammas_r[i])
+        if skip_comb:
+            for i in cmps:
+                tot0 += xs[i]*dlngammas_r_dT[i]
+                tot1 += xs[i]*lngammas_r[i]
+        else:
+            for i in cmps:
+                tot0 += xs[i]*dlngammas_r_dT[i]
+                tot1 += xs[i]*(lngammas_c[i] + lngammas_r[i])
             
         dGE_dT = R*T*tot0 + R*tot1
         
@@ -3004,9 +3037,13 @@ class UNIFAC(GibbsExcess):
             pass
         xs, cmps = self.xs, self.cmps
         lngammas_r = self.lngammas_r()
-        lngammas_c = self.lngammas_c()
-        self._gammas = [exp(lngammas_r[i] + lngammas_c[i]) for i in cmps]
-        return self._gammas
+        if self.skip_comb:
+            gammas = [exp(ri) for ri in lngammas_r]
+        else:
+            lngammas_c = self.lngammas_c()
+            gammas = [exp(lngammas_r[i] + lngammas_c[i]) for i in cmps]
+        self._gammas = gammas
+        return gammas
     
     def lngammas_c(self):
         r'''

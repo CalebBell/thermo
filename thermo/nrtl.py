@@ -21,11 +21,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
+from fluids.numerics import numpy as np
 from thermo.activity import GibbsExcess, NRTL_gammas
 from math import log, exp
 from fluids.constants import R
 
 __all__ = ['NRTL']
+
 
 class NRTL(GibbsExcess):
     def __init__(self, T, xs, tau_coeffs=None, alpha_coeffs=None, 
@@ -39,7 +41,6 @@ class NRTL(GibbsExcess):
             self.alpha_coeffs_c, self.alpha_coeffs_d) = ABEFGHCD
             self.N = N = len(self.tau_coeffs_A)
         else:
-            self.tau_coeffs = tau_coeffs
             if tau_coeffs is not None:
                 self.tau_coeffs_A = [[i[0] for i in l] for l in tau_coeffs]
                 self.tau_coeffs_B = [[i[1] for i in l] for l in tau_coeffs]
@@ -48,24 +49,27 @@ class NRTL(GibbsExcess):
                 self.tau_coeffs_G = [[i[4] for i in l] for l in tau_coeffs]
                 self.tau_coeffs_H = [[i[5] for i in l] for l in tau_coeffs]
             else:
-                self.tau_coeffs_A = None
-                self.tau_coeffs_B = None
-                self.tau_coeffs_E = None
-                self.tau_coeffs_F = None
-                self.tau_coeffs_G = None
-                self.tau_coeffs_H = None
+                raise ValueError("`tau_coeffs` is required")
     
-            self.alpha_coeffs = alpha_coeffs
             if alpha_coeffs is not None:
                 self.alpha_coeffs_c = [[i[0] for i in l] for l in alpha_coeffs]
                 self.alpha_coeffs_d = [[i[1] for i in l] for l in alpha_coeffs]
             else:
-                self.alpha_coeffs_c = None
-                self.alpha_coeffs_d = None
+                raise ValueError("`alpha_coeffs` is required")
 
             self.N = N = len(self.tau_coeffs_A)
+            
         self.cmps = range(N)
-        self.zero_coeffs = [[0.0]*N for _ in range(N)]
+        
+    @property
+    def zero_coeffs(self):
+        try:
+            return self._zero_coeffs
+        except AttributeError:
+            pass
+        N = self.N
+        self._zero_coeffs = [[0.0]*N for _ in range(N)]
+        return self._zero_coeffs
 
         
     def to_T_xs(self, T, xs):
@@ -74,7 +78,6 @@ class NRTL(GibbsExcess):
         new.xs = xs
         new.N = self.N
         new.cmps = self.cmps
-        new.zero_coeffs = self.zero_coeffs
         (new.tau_coeffs_A, new.tau_coeffs_B, new.tau_coeffs_E, 
          new.tau_coeffs_F, new.tau_coeffs_G, new.tau_coeffs_H,
          new.alpha_coeffs_c, new.alpha_coeffs_d) = (self.tau_coeffs_A, self.tau_coeffs_B, self.tau_coeffs_E, 
@@ -118,6 +121,11 @@ class NRTL(GibbsExcess):
                 new._d3Gs_dT3 = self._d3Gs_dT3
             except AttributeError:
                 pass
+            
+        try:
+            new._zero_coeffs = self.zero_coeffs
+        except AttributeError:
+            pass
             
         return new
 
