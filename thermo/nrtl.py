@@ -29,6 +29,33 @@ from fluids.constants import R
 __all__ = ['NRTL']
 
 
+with_numba = True
+if with_numba:
+    from numba import jitclass
+    from numba import int32, int64, float64
+    arange = np.arange
+    spec = [
+        ('T', float64),
+        ('xs', float64[:]),
+        ('N', int32),
+        ('cmps', int64[:]),
+        ('tau_coeffs_A', float64[:, :]),
+        ('tau_coeffs_B', float64[:, :]),
+        ('tau_coeffs_E', float64[:, :]),
+        ('tau_coeffs_F', float64[:, :]),
+        ('tau_coeffs_G', float64[:, :]),
+        ('tau_coeffs_H', float64[:, :]),
+        ('alpha_coeffs_c', float64[:, :]),
+        ('alpha_coeffs_d', float64[:, :]),
+        ('_zero_coeffs', float64[:, :]),
+    ]
+else:
+    arange = range
+    spec = []
+    def jitclass(obj, spec):
+        return obj
+    
+@jitclass(spec)
 class NRTL(GibbsExcess):
     def __init__(self, T, xs, tau_coeffs=None, alpha_coeffs=None, 
                  ABEFGHCD=None):
@@ -59,16 +86,17 @@ class NRTL(GibbsExcess):
 
             self.N = N = len(self.tau_coeffs_A)
             
-        self.cmps = range(N)
+        self.cmps = arange(N)
         
     @property
     def zero_coeffs(self):
         try:
             return self._zero_coeffs
-        except AttributeError:
+        except Exception:
             pass
         N = self.N
-        self._zero_coeffs = [[0.0]*N for _ in range(N)]
+        self._zero_coeffs = np.zeros((N, N), dtype=np.float64)
+#        self._zero_coeffs = [[0.0]*N for _ in arange(N)]
         return self._zero_coeffs
 
         
@@ -87,44 +115,44 @@ class NRTL(GibbsExcess):
         if T == self.T:
             try:
                 new._taus = self._taus
-            except AttributeError:
+            except Exception:
                 pass
             try:
                 new._dtaus_dT = self._dtaus_dT
-            except AttributeError:
+            except Exception:
                 pass
             try:
                 new._d2taus_dT2 = self._d2taus_dT2
-            except AttributeError:
+            except Exception:
                 pass
             try:
                 new._d3taus_dT3 = self._d3taus_dT3
-            except AttributeError:
+            except Exception:
                 pass
             try:
                 new._alphas = self._alphas
-            except AttributeError:
+            except Exception:
                 pass
             try:
                 new._Gs = self._Gs
-            except AttributeError:
+            except Exception:
                 pass
             try:
                 new._dGs_dT = self._dGs_dT
-            except AttributeError:
+            except Exception:
                 pass
             try:
                 new._d2Gs_dT2 = self._d2Gs_dT2 
-            except AttributeError:
+            except Exception:
                 pass
             try:
                 new._d3Gs_dT3 = self._d3Gs_dT3
-            except AttributeError:
+            except Exception:
                 pass
             
         try:
             new._zero_coeffs = self.zero_coeffs
-        except AttributeError:
+        except Exception:
             pass
             
         return new
@@ -132,7 +160,7 @@ class NRTL(GibbsExcess):
     def GE(self):
         try:
             return self._GE
-        except AttributeError:
+        except Exception:
             pass
         cmps = self.cmps
         xj_Gs_jis_inv, xj_Gs_taus_jis = self.xj_Gs_jis_inv(), self.xj_Gs_taus_jis()
@@ -147,15 +175,15 @@ class NRTL(GibbsExcess):
     def gammas(self):
         try:
             return self._gammas
-        except AttributeError:
+        except Exception:
             pass
         try:
             taus = self._taus
-        except AttributeError:
+        except Exception:
             taus = self.taus()
         try:
             Gs = self._Gs
-        except AttributeError:
+        except Exception:
             Gs = self.Gs()
             
         xs, cmps = self.xs, self.cmps
@@ -195,7 +223,7 @@ class NRTL(GibbsExcess):
         '''
         try:
             return self._taus
-        except AttributeError:
+        except Exception:
             pass
         tau_coeffs_A = self.tau_coeffs_A
         tau_coeffs_B = self.tau_coeffs_B
@@ -237,7 +265,7 @@ class NRTL(GibbsExcess):
         '''
         try:
             return self._dtaus_dT
-        except AttributeError:
+        except Exception:
             pass
         # Believed all correct but not tested
         tau_coeffs_B = self.tau_coeffs_B
@@ -280,7 +308,7 @@ class NRTL(GibbsExcess):
         '''
         try:
             return self._d2taus_dT2
-        except AttributeError:
+        except Exception:
             pass
         tau_coeffs_B = self.tau_coeffs_B
         tau_coeffs_E = self.tau_coeffs_E
@@ -321,7 +349,7 @@ class NRTL(GibbsExcess):
         '''
         try:
             return self._d3taus_dT3
-        except AttributeError:
+        except Exception:
             pass
         tau_coeffs_B = self.tau_coeffs_B
         tau_coeffs_E = self.tau_coeffs_E
@@ -373,7 +401,7 @@ class NRTL(GibbsExcess):
         '''
         try:
             return self._alphas
-        except AttributeError:
+        except Exception:
             pass
         T, cmps = self.T, self.cmps
         alpha_coeffs_c, alpha_coeffs_d = self.alpha_coeffs_c, self.alpha_coeffs_d
@@ -398,7 +426,7 @@ class NRTL(GibbsExcess):
     def Gs(self):
         try:
             return self._Gs
-        except AttributeError:
+        except Exception:
             pass
         alphas = self.alphas()
         taus = self.taus()
@@ -426,7 +454,7 @@ class NRTL(GibbsExcess):
         '''
         try:
             return self._dGs_dT
-        except AttributeError:
+        except Exception:
             pass
         alphas = self.alphas()
         dalphas_dT = self.dalphas_dT()
@@ -462,7 +490,7 @@ class NRTL(GibbsExcess):
         '''
         try:
             return self._d2Gs_dT2
-        except AttributeError:
+        except Exception:
             pass
         alphas = self.alphas()
         dalphas_dT = self.dalphas_dT()
@@ -503,7 +531,7 @@ class NRTL(GibbsExcess):
         '''
         try:
             return self._d3Gs_dT3
-        except AttributeError:
+        except Exception:
             pass
         cmps = self.cmps
         alphas = self.alphas()
@@ -571,7 +599,7 @@ class NRTL(GibbsExcess):
         '''
         try:
             return self._dGE_dxs
-        except AttributeError:
+        except Exception:
             pass
         T, xs, cmps = self.T, self.xs, self.cmps
         RT = R*T
@@ -594,15 +622,15 @@ class NRTL(GibbsExcess):
         # sum1
         try:
             return self._xj_Gs_jis
-        except AttributeError:
+        except Exception:
             pass
         try:
             Gs = self._Gs
-        except AttributeError:
+        except Exception:
             Gs = self.Gs()
         try:
             taus = self._taus
-        except AttributeError:
+        except Exception:
             taus = self.taus()
 
         xs, cmps = self.xs, self.cmps
@@ -622,12 +650,12 @@ class NRTL(GibbsExcess):
     def xj_Gs_jis_inv(self):
         try:
             return self._xj_Gs_jis_inv
-        except AttributeError:
+        except Exception:
             pass
 
         try:
             xj_Gs_jis = self._xj_Gs_jis
-        except AttributeError:
+        except Exception:
             xj_Gs_jis = self.xj_Gs_jis()
         
         self._xj_Gs_jis_inv = [1.0/i for i in xj_Gs_jis]
@@ -637,18 +665,18 @@ class NRTL(GibbsExcess):
         # sum2
         try:
             return self._xj_Gs_taus_jis
-        except AttributeError:
+        except Exception:
             self.xj_Gs_jis()
             return self._xj_Gs_taus_jis
         
         try:
             Gs = self._Gs
-        except AttributeError:
+        except Exception:
             Gs = self.Gs()
 
         try:
             taus = self._taus
-        except AttributeError:
+        except Exception:
             taus = self.taus()
         
         xs, cmps = self.xs, self.cmps
@@ -667,11 +695,11 @@ class NRTL(GibbsExcess):
         # sum3
         try:
             return self._xj_dGs_dT_jis
-        except AttributeError:
+        except Exception:
             pass
         try:
             dGs_dT = self._dGs_dT
-        except AttributeError:
+        except Exception:
             dGs_dT = self.dGs_dT()
         
         xs, cmps = self.xs, self.cmps
@@ -687,16 +715,16 @@ class NRTL(GibbsExcess):
         # sum4
         try:
             return self._xj_taus_dGs_dT_jis
-        except AttributeError:
+        except Exception:
             pass
         xs, cmps = self.xs, self.cmps
         try:
             dGs_dT = self._dGs_dT
-        except AttributeError:
+        except Exception:
             dGs_dT = self.dGs_dT()
         try:
             taus = self._taus
-        except AttributeError:
+        except Exception:
             taus = self.taus()
             
         self._xj_taus_dGs_dT_jis = xj_taus_dGs_dT_jis = []
@@ -712,16 +740,16 @@ class NRTL(GibbsExcess):
         # sum5
         try:
             return self._xj_Gs_dtaus_dT_jis
-        except AttributeError:
+        except Exception:
             pass
         xs, cmps = self.xs, self.cmps
         try:
             dtaus_dT = self._dtaus_dT
-        except AttributeError:
+        except Exception:
             dtaus_dT = self.dtaus_dT()
         try:
             Gs = self._Gs
-        except AttributeError:
+        except Exception:
             Gs = self.Gs()
         
         self._xj_Gs_dtaus_dT_jis = xj_Gs_dtaus_dT_jis = []
@@ -789,7 +817,7 @@ class NRTL(GibbsExcess):
         '''
         try:
             return self._d2GE_dxixjs
-        except AttributeError:
+        except Exception:
             pass
         T, xs, cmps = self.T, self.xs, self.cmps
         taus = self.taus()
@@ -849,7 +877,7 @@ class NRTL(GibbsExcess):
         '''
         try:
             return self._d2GE_dTdxs
-        except AttributeError:
+        except Exception:
             pass
         
         sum1 = self.xj_Gs_jis_inv()
@@ -900,7 +928,7 @@ class NRTL(GibbsExcess):
         '''
         try:
             return self._dGE_dT
-        except AttributeError:
+        except Exception:
             pass
         T, xs, cmps = self.T, self.xs, self.cmps
         
@@ -929,7 +957,7 @@ class NRTL(GibbsExcess):
         '''
         try:
             return self._d2GE_dT2
-        except AttributeError:
+        except Exception:
             pass
         T, xs, cmps = self.T, self.xs, self.cmps
         taus = self.taus()
