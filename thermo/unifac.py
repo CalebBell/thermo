@@ -1767,6 +1767,20 @@ class UNIFAC(GibbsExcess):
 
 
     def psis(self):
+        r'''
+        
+        
+        For the Lyngby model, the temperature dependence is as follows:
+            
+        .. math::
+            \psi_{mk} = e^{\frac{- a_{1} - a_{2} \left(T - T_{0}\right) - a_{3} 
+            \left(T \log{\left(\frac{T_{0}}{T} \right)} + T - T_{0}\right)}{T}}
+        
+        with :math:`T_0 = 298.15` K and the `a` coefficients are specific to
+        each pair of main groups, and they are asymmetric, so
+        :math:`a_{0,mk} \ne a_{0,km}`.
+        
+        '''
         try:
             return self._psis
         except AttributeError:
@@ -1796,6 +1810,24 @@ class UNIFAC(GibbsExcess):
         return psis
     
     def dpsis_dT(self):
+        r'''
+        
+        
+        For the Lyngby model, the first temperature derivative is:
+            
+        .. math::
+            \frac{\partial \psi_{mk}}{\partial T} = \left(\frac{- a_{2} - a_{3}
+            \log{\left(\frac{T_{0}}{T} \right)}}{T} - \frac{- a_{1} - a_{2} 
+            \left(T - T_{0}\right) - a_{3} \left(T \log{\left(\frac{T_{0}}{T}
+            \right)} + T - T_{0}\right)}{T^{2}}\right) e^{\frac{- a_{1} - a_{2}
+            \left(T - T_{0}\right) - a_{3} \left(T \log{\left(\frac{T_{0}}{T} 
+            \right)} + T - T_{0}\right)}{T}}
+        
+        with :math:`T_0 = 298.15` K and the `a` coefficients are specific to
+        each pair of main groups, and they are asymmetric, so
+        :math:`a_{0,mk} \ne a_{0,km}`.
+        
+        '''
         try:
             return self._dpsis_dT
         except AttributeError:
@@ -1829,6 +1861,26 @@ class UNIFAC(GibbsExcess):
         return dpsis_dT
 
     def d2psis_dT2(self):
+        r'''
+        
+        For the Lyngby model, the second temperature derivative is:
+            
+        .. math::
+            \frac{\partial^2 \psi_{mk}}{\partial T^2} = \frac{\left(2 a_{2}
+            + 2 a_{3} \log{\left(\frac{T_{0}}{T} \right)} + a_{3} + \left(a_{2}
+            + a_{3} \log{\left(\frac{T_{0}}{T} \right)} - \frac{a_{1} + a_{2}
+            \left(T - T_{0}\right) + a_{3} \left(T \log{\left(\frac{T_{0}}{T} 
+            \right)} + T - T_{0}\right)}{T}\right)^{2} - \frac{2 \left(a_{1} 
+            + a_{2} \left(T - T_{0}\right) + a_{3} \left(T \log{\left(
+            \frac{T_{0}}{T} \right)} + T - T_{0}\right)\right)}{T}\right)
+            e^{- \frac{a_{1} + a_{2} \left(T - T_{0}\right) + a_{3} \left(
+            T \log{\left(\frac{T_{0}}{T} \right)} + T - T_{0}\right)}{T}}}
+            {T^{2}}
+        
+        with :math:`T_0 = 298.15` K and the `a` coefficients are specific to
+        each pair of main groups, and they are asymmetric, so
+        :math:`a_{0,mk} \ne a_{0,km}`.
+        '''
         try:
             return self._d2psis_dT2
         except AttributeError:
@@ -1877,6 +1929,32 @@ class UNIFAC(GibbsExcess):
     
     
     def d3psis_dT3(self):
+        r'''
+        
+        For the Lyngby model, the third temperature derivative is:
+            
+        .. math::
+            \frac{\partial^3 \psi_{mk}}{\partial T^3} = 
+            - \frac{\left(6 a_{2} + 6 a_{3} \log{\left(\frac{T_{0}}{T} \right)}
+            + 4 a_{3} + \left(a_{2} + a_{3} \log{\left(\frac{T_{0}}{T} \right)}
+            - \frac{a_{1} + a_{2} \left(T - T_{0}\right) + a_{3} \left(T \log{
+            \left(\frac{T_{0}}{T} \right)} + T - T_{0}\right)}{T}\right)^{3} 
+            + 3 \left(a_{2} + a_{3} \log{\left(\frac{T_{0}}{T} \right)} 
+            - \frac{a_{1} + a_{2} \left(T - T_{0}\right) + a_{3} \left(T \log{
+            \left(\frac{T_{0}}{T} \right)} + T - T_{0}\right)}{T}\right) \left(
+            2 a_{2} + 2 a_{3} \log{\left(\frac{T_{0}}{T} \right)} + a_{3} 
+            - \frac{2 \left(a_{1} + a_{2} \left(T - T_{0}\right) + a_{3} \left(
+            T \log{\left(\frac{T_{0}}{T} \right)} + T - T_{0}\right)\right)}{T}
+            \right) - \frac{6 \left(a_{1} + a_{2} \left(T - T_{0}\right) 
+            + a_{3} \left(T \log{\left(\frac{T_{0}}{T} \right)} + T - T_{0}
+            \right)\right)}{T}\right) e^{- \frac{a_{1} + a_{2} \left(T - T_{0}
+            \right) + a_{3} \left(T \log{\left(\frac{T_{0}}{T} \right)} 
+            + T - T_{0}\right)}{T}}}{T^{3}}
+        
+        with :math:`T_0 = 298.15` K and the `a` coefficients are specific to
+        each pair of main groups, and they are asymmetric, so
+        :math:`a_{0,mk} \ne a_{0,km}`.
+        '''
         try:
             return self._d3psis_dT3
         except AttributeError:
