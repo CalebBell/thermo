@@ -1820,8 +1820,6 @@ class UNIFAC(GibbsExcess):
             B = T*x0 + T - T0
             for i in groups:
                 psis_row, a_row, b_row, c_row = psis[i], psi_a[i], psi_b[i], psi_c[i]
-#                tf3 = b_row[j] + c_row[j]*x0
-#                f = a_row[j] + b_row[j]*TmT0 + c_row[j]*B
                 dpsis_dT.append([psis_row[j]*(mT_inv*(b_row[j] + c_row[j]*x0) +  (a_row[j] + b_row[j]*TmT0 + c_row[j]*B)*T2_inv) for j in groups])
             
         else:
@@ -1846,13 +1844,35 @@ class UNIFAC(GibbsExcess):
         T3_inv_m2 = -2.0/(T*T*T)
         
         self._d2psis_dT2 = d2psis_dT2 = []
-        for i in groups:
-            psis_row, a_row, c_row = psis[i], psi_a[i], psi_c[i]
-            row = []
-            for j in groups:
-                x0 = c_row[j] + mT2_inv*a_row[j]
-                row.append((x0*x0 + T3_inv_m2*a_row[j])*psis_row[j])
-            d2psis_dT2.append(row)
+        if self.version == 4:
+            psi_b = self.psi_b
+            T0 = 298.15
+            T_inv = 1.0/T
+            T2_inv = T_inv*T_inv
+            TmT0 = T - T0
+            x0 = log(T0/T)
+            B = T*x0 + T - T0
+            for i in groups:
+                psis_row, a_row, b_row, c_row = psis[i], psi_a[i], psi_b[i], psi_c[i]
+                row = []
+                for j in groups:
+                    a1, a2, a3 = a_row[j], b_row[j], c_row[j]
+                    tf2 = a1 + a2*(T - T0) + a3*(T*log(T0/T) + T - T0)
+                    tf3 = b_row[j] + c_row[j]*x0
+                    
+                    x1 = (tf3 - tf2*T_inv)
+                    v = T2_inv*psis_row[j]*(a3 + 2.0*tf3 + x1*x1 - 2.0*tf2*T_inv)
+                    row.append(v)
+                d2psis_dT2.append(row)
+            
+        else:
+            for i in groups:
+                psis_row, a_row, c_row = psis[i], psi_a[i], psi_c[i]
+                row = []
+                for j in groups:
+                    x0 = c_row[j] + mT2_inv*a_row[j]
+                    row.append((x0*x0 + T3_inv_m2*a_row[j])*psis_row[j])
+                d2psis_dT2.append(row)
         return d2psis_dT2
     
     
@@ -1874,15 +1894,37 @@ class UNIFAC(GibbsExcess):
         T4_inv_6 = 6.0/(T*T*T*T)
         
         self._d3psis_dT3 = d3psis_dT3 = []
-
-        for i in groups:
-            psis_row, a_row, c_row = psis[i], psi_a[i], psi_c[i]
-            row = []
-            for j in groups:
-                x0 = c_row[j] + nT2_inv*a_row[j]
-                row.append((x0*(T3_inv_6*a_row[j] - x0*x0) + T4_inv_6*a_row[j])*psis_row[j])
-
-            d3psis_dT3.append(row)
+        if self.version == 4:
+            psi_b = self.psi_b
+            T0 = 298.15
+            T_inv = 1.0/T
+            nT3_inv = -T_inv*T_inv*T_inv
+            TmT0 = T - T0
+            x0 = log(T0/T)
+            B = T*x0 + T - T0
+            for i in groups:
+                psis_row, a_row, b_row, c_row = psis[i], psi_a[i], psi_b[i], psi_c[i]
+                row = []
+                for j in groups:
+                    a1, a2, a3 = a_row[j], b_row[j], c_row[j]
+                    tf2 = a1 + a2*(T - T0) + a3*(T*log(T0/T) + T - T0)
+                    tf3 = b_row[j] + c_row[j]*x0
+                    
+                    x5 = (tf3 - tf2*T_inv)
+                    v = nT3_inv*psis_row[j]*(4.0*a3 + 6.0*tf3 + x5*x5*x5
+                                        + 3.0*(x5)*(a3 + 2.0*tf3 - 2.0*tf2*T_inv) 
+                                        - 6.0*tf2*T_inv)
+                    row.append(v)
+                d3psis_dT3.append(row)
+                    
+        else:
+            for i in groups:
+                psis_row, a_row, c_row = psis[i], psi_a[i], psi_c[i]
+                row = []
+                for j in groups:
+                    x0 = c_row[j] + nT2_inv*a_row[j]
+                    row.append((x0*(T3_inv_6*a_row[j] - x0*x0) + T4_inv_6*a_row[j])*psis_row[j])
+                d3psis_dT3.append(row)
         return d3psis_dT3
                 
     def Vis(self):

@@ -626,3 +626,52 @@ def test_UNIFAC_class():
     d2GE_dTdxs = GE.d2GE_dTdxs()
     assert_allclose(d2GE_dTdxs, d2GE_dTdxs_expect, rtol=1e-10)
     assert_allclose(d2GE_dTdxs, d2GE_dTdxs_numerical, rtol=4e-6)
+
+def test_UNIFAC_class_Lyngby():
+    T = 373.15
+    xs = [0.2, 0.3, 0.1, 0.4]
+    
+    chemgroups = [{1: 1, 2: 1, 12: 1}, {1: 2, 2: 3}, {1: 2, 2: 6}, {1: 2, 2: 7}]
+    # m = Mixture(['ethanol', 'pentane', 'octane', 'nonane'], zs=xs, T=T, P=1e5)
+    GE = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups, version=4,
+                               interaction_data=LUFIP, subgroups=LUFSG)    
+    
+    
+    def to_diff(T):
+        T = float(T[0])
+        return np.array(GE.to_T_xs(T, xs).psis())
+    dpsis_dT_numerical = jacobian(to_diff, [T], scalar=True)[0]
+    dpsis_dT = GE.dpsis_dT()
+    
+    dpsis_dT_expect = [[0.0, 0.0, 0.0009554723111888648],
+     [0.0, 0.0, 0.0009554723111888648],
+     [0.009512842969259994, 0.009512842969259994, 0.0]]
+    assert_allclose(dpsis_dT, dpsis_dT_numerical, rtol=1e-7)
+    assert_allclose(dpsis_dT, dpsis_dT_expect, rtol=1e-12)
+    
+    
+    def to_diff_dT(T):
+        T = float(T[0])
+        return np.array(GE.to_T_xs(T, xs).dpsis_dT())
+    
+    d2psis_dT2_numerical = jacobian(to_diff_dT, [T], scalar=True)[0]
+    d2psis_dT2 = GE.d2psis_dT2()
+    d2psis_dT2_expect = [[0.0, 0.0, 1.092520326434123e-05],
+     [0.0, 0.0, 1.092520326434123e-05],
+     [0.0001033194479619687, 0.0001033194479619687, 0.0]]
+    assert_allclose(d2psis_dT2_expect, d2psis_dT2, rtol=1e-12)
+    assert_allclose(d2psis_dT2_numerical, d2psis_dT2_expect, rtol=1e-7)
+    
+    
+    def to_diff_dT2(T):
+        T = float(T[0])
+        return np.array(GE.to_T_xs(T, xs).d2psis_dT2())
+    
+    d3psis_dT3_numerical = jacobian(to_diff_dT2, [T], scalar=True, perturbation=1e-8)[0]
+    d3psis_dT3 = GE.d3psis_dT3()
+    d3psis_dT3_expect = [[-0.0, -0.0, 1.1123247721639152e-07],
+     [-0.0, -0.0, 1.1123247721639152e-07],
+     [3.5174180159656834e-07, 3.5174180159656834e-07, -0.0]]
+    
+    assert_allclose(d3psis_dT3, d3psis_dT3_expect, rtol=1e-12)
+    assert_allclose(d3psis_dT3, d3psis_dT3_numerical, rtol=1e-7)
