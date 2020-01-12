@@ -3446,6 +3446,19 @@ class UNIFAC(GibbsExcess):
         return dGE_dT
 
     def d2GE_dT2(self):
+        r'''Calculate the second temperature derivative of excess Gibbs energy
+        with the UNIFAC model.
+        
+        .. math::
+            \frac{\partial^2 G^E}{\partial T^2} =             
+            RT\sum_i x_i \frac{\partial^2 \ln \gamma_i^r}{\partial T^2}
+            + 2R\sum_i x_i \frac{\partial \ln \gamma_i^r}{\partial T}
+                
+        Returns
+        -------
+        d2GE_dT2 : float
+            Second temperature derivative of excess Gibbs energy, [J/mol/K^2]
+        '''
         try:
             return self._d2GE_dT2
         except AttributeError:
@@ -3456,13 +3469,25 @@ class UNIFAC(GibbsExcess):
         tot0, tot1 = 0.0, 0.0
         for i in cmps:
             tot0 += xs[i]*d2lngammas_r_dT2[i]
-            tot1 += 2.0*xs[i]*(dlngammas_r_dT[i])
+            tot1 += xs[i]*dlngammas_r_dT[i] # This line same as the dGE_dT
             
-        d2GE_dT2 = R*(T*tot0 + tot1)
-        self._d2GE_dT2 = d2GE_dT2
+        self._d2GE_dT2 = d2GE_dT2 = R*(T*tot0 + (tot1 + tot1))
         return d2GE_dT2
 
     def d3GE_dT3(self):
+        r'''Calculate the third temperature derivative of excess Gibbs energy
+        with the UNIFAC model.
+        
+        .. math::
+            \frac{\partial^3 G^E}{\partial T^3} =             
+            RT\sum_i x_i \frac{\partial^3 \ln \gamma_i^r}{\partial T^3}
+            + 3R\sum_i x_i \frac{\partial^2 \ln \gamma_i^r}{\partial T^2}
+                
+        Returns
+        -------
+        d3GE_dT3 : float
+            Third temperature derivative of excess Gibbs energy, [J/mol/K^3]
+        '''
         try:
             return self._d3GE_dT3
         except AttributeError:
@@ -3474,9 +3499,9 @@ class UNIFAC(GibbsExcess):
         tot0, tot1 = 0.0, 0.0
         for i in cmps:
             tot0 += xs[i]*d3lngammas_r_dT3[i]
-            tot1 += 3.0*xs[i]*(d2lngammas_r_dT2[i])
+            tot1 += xs[i]*d2lngammas_r_dT2[i] # This line same as the d2GE_dT2
             
-        d3GE_dT3 = R*(T*tot0 + tot1)
+        d3GE_dT3 = R*(T*tot0 + 3.0*tot1)
         
         self._d3GE_dT3 = d3GE_dT3
         return d3GE_dT3
