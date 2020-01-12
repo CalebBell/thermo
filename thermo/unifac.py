@@ -1767,19 +1767,30 @@ class UNIFAC(GibbsExcess):
 
 
     def psis(self):
-        r'''
+        r'''Calculate the :math:`\Psi` term matrix for all groups interacting
+        with all other groups.
         
+        The main model calculates it as a function of three coefficients; 
+
+        .. math::
+            \Psi_{mn} = \exp\left(\frac{-a_{mn} - b_{mn}T - c_{mn}T^2}{T}\right)
         
-        For the Lyngby model, the temperature dependence is as follows:
+        Only the first, `a` coefficient, is used in the original UNIFAC model 
+        as well as the UNIFAC-LLE model, so the expression simplifies to:
             
         .. math::
-            \psi_{mk} = e^{\frac{- a_{1} - a_{2} \left(T - T_{0}\right) - a_{3} 
+            \Psi_{mn} = \exp\left(\frac{-a_{mn}}{T}\right)
+        
+        For the Lyngby model, the temperature dependence is modified slightly,
+        as follows:
+            
+        .. math::
+            \Psi_{mk} = e^{\frac{- a_{1} - a_{2} \left(T - T_{0}\right) - a_{3} 
             \left(T \log{\left(\frac{T_{0}}{T} \right)} + T - T_{0}\right)}{T}}
         
         with :math:`T_0 = 298.15` K and the `a` coefficients are specific to
         each pair of main groups, and they are asymmetric, so
         :math:`a_{0,mk} \ne a_{0,km}`.
-        
         '''
         try:
             return self._psis
@@ -1810,13 +1821,28 @@ class UNIFAC(GibbsExcess):
         return psis
     
     def dpsis_dT(self):
-        r'''
+        r'''Calculate the :math:`\Psi` term first temperature derivative
+        matrix for all groups interacting with all other groups.
         
+        The main model calculates the derivative as a function of three 
+        coefficients; 
+
+        .. math::
+            \frac{\partial \Psi_{mn}}{\partial T} = \left(\frac{- 2 T c_{mn} 
+            - b_{mn}}{T} - \frac{- T^{2} c_{mn} - T b_{mn} - a_{mn}}{T^{2}}
+            \right) e^{\frac{- T^{2} c_{mn} - T b_{mn} - a_{mn}}{T}}
+        
+        Only the first, `a` coefficient, is used in the original UNIFAC model 
+        as well as the UNIFAC-LLE model, so the expression simplifies to:
+            
+        .. math::
+            \frac{\partial \Psi_{mn}}{\partial T} = \frac{a_{mn}
+            e^{- \frac{a_{mn}}{T}}}{T^{2}}
         
         For the Lyngby model, the first temperature derivative is:
             
         .. math::
-            \frac{\partial \psi_{mk}}{\partial T} = \left(\frac{- a_{2} - a_{3}
+            \frac{\partial \Psi_{mk}}{\partial T} = \left(\frac{- a_{2} - a_{3}
             \log{\left(\frac{T_{0}}{T} \right)}}{T} - \frac{- a_{1} - a_{2} 
             \left(T - T_{0}\right) - a_{3} \left(T \log{\left(\frac{T_{0}}{T}
             \right)} + T - T_{0}\right)}{T^{2}}\right) e^{\frac{- a_{1} - a_{2}
@@ -1861,12 +1887,31 @@ class UNIFAC(GibbsExcess):
         return dpsis_dT
 
     def d2psis_dT2(self):
-        r'''
+        r'''Calculate the :math:`\Psi` term second temperature derivative
+        matrix for all groups interacting with all other groups.
+        
+        The main model calculates the derivative as a function of three 
+        coefficients; 
+
+        .. math::
+            \frac{\partial^2 \Psi_{mn}}{\partial T^2} = \frac{\left(- 2 c_{mn} 
+            + \frac{2 \left(2 T c_{mn} + b_{mn}\right)}{T} + \frac{\left(2 T
+            c_{mn} + b_{mn} - \frac{T^{2} c_{mn} + T b_{mn} + a_{mn}}{T}
+            \right)^{2}}{T} - \frac{2 \left(T^{2} c_{mn} + T b_{mn} + a_{mn}
+            \right)}{T^{2}}\right) e^{- \frac{T^{2} c_{mn} + T b_{mn} + a_{mn}}
+            {T}}}{T}
+        
+        Only the first, `a` coefficient, is used in the original UNIFAC model 
+        as well as the UNIFAC-LLE model, so the expression simplifies to:
+            
+        .. math::
+            \frac{\partial^2 \Psi_{mn}}{\partial T^2} = \frac{a_{mn} \left(-2
+            + \frac{a_{mn}}{T}\right) e^{- \frac{a_{mn}}{T}}}{T^{3}}
         
         For the Lyngby model, the second temperature derivative is:
             
         .. math::
-            \frac{\partial^2 \psi_{mk}}{\partial T^2} = \frac{\left(2 a_{2}
+            \frac{\partial^2 \Psi_{mk}}{\partial T^2} = \frac{\left(2 a_{2}
             + 2 a_{3} \log{\left(\frac{T_{0}}{T} \right)} + a_{3} + \left(a_{2}
             + a_{3} \log{\left(\frac{T_{0}}{T} \right)} - \frac{a_{1} + a_{2}
             \left(T - T_{0}\right) + a_{3} \left(T \log{\left(\frac{T_{0}}{T} 
@@ -1929,12 +1974,34 @@ class UNIFAC(GibbsExcess):
     
     
     def d3psis_dT3(self):
-        r'''
+        r'''Calculate the :math:`\Psi` term third temperature derivative
+        matrix for all groups interacting with all other groups.
+        
+        The main model calculates the derivative as a function of three 
+        coefficients; 
+
+        .. math::
+            \frac{\partial^3 \Psi_{mn}}{\partial T^3} = \frac{\left(6 c_{mn} 
+            + 6 \left(c_{mn} - \frac{2 T c_{mn} + b_{mn}}{T} + \frac{T^{2}
+            c_{mn} + T b_{mn} + a_{mn}}{T^{2}}\right) \left(2 T c_{mn} + b_{mn}
+                - \frac{T^{2} c_{mn} + T b_{mn} + a_{mn}}{T}\right) - \frac{6
+            \left(2 T c_{mn} + b_{mn}\right)}{T} - \frac{\left(2 T c_{mn}
+            + b_{mn} - \frac{T^{2} c_{mn} + T b_{mn} + a_{mn}}{T}\right)^{3}}
+            {T} + \frac{6 \left(T^{2} c_{mn} + T b_{mn} + a_{mn}\right)}{T^{2}}
+            \right) e^{- \frac{T^{2} c_{mn} + T b_{mn} + a_{mn}}{T}}}{T^{2}}
+        
+        Only the first, `a` coefficient, is used in the original UNIFAC model 
+        as well as the UNIFAC-LLE model, so the expression simplifies to:
+            
+        .. math::
+            \frac{\partial^3 \Psi_{mn}}{\partial T^3} = \frac{a_{mn} \left(6 
+            - \frac{6 a_{mn}}{T} + \frac{a_{mn}^{2}}{T^{2}}\right) e^{- 
+            \frac{a_{mn}}{T}}}{T^{4}}
         
         For the Lyngby model, the third temperature derivative is:
             
         .. math::
-            \frac{\partial^3 \psi_{mk}}{\partial T^3} = 
+            \frac{\partial^3 \Psi_{mk}}{\partial T^3} = 
             - \frac{\left(6 a_{2} + 6 a_{3} \log{\left(\frac{T_{0}}{T} \right)}
             + 4 a_{3} + \left(a_{2} + a_{3} \log{\left(\frac{T_{0}}{T} \right)}
             - \frac{a_{1} + a_{2} \left(T - T_{0}\right) + a_{3} \left(T \log{
