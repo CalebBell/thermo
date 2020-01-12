@@ -2212,7 +2212,7 @@ class UNIFAC(GibbsExcess):
         
         Returns
         -------
-        d3Vis_dxixjxks : list[list[list[float]]]
+        d3Vis_dxixjxks : list[list[list[list[float]]]]
             `V` terms size number of components by number of components by
             number of components by number of components, [-]
         '''
@@ -2234,16 +2234,52 @@ class UNIFAC(GibbsExcess):
         return d3Vis
 
     def Fis(self):
+        r'''Calculate the :math:`F_i` terms used in calculating the 
+        combinatorial part. A function of mole fractions and the parameters
+        `q` only.
+        
+        .. math::
+            F_i = \frac{q_i}{\sum_j q_j x_j}
+        
+        This is used in the UNIFAC, UNIFAC-LLE, UNIFAC Dortmund, UNIFAC-NIST,
+        and PSRK models.
+        
+        Returns
+        -------
+        Fis : list[float]
+            `F` terms size number of components, [-]
+        '''
+        try:
+            return self._Fis
+        except AttributeError:
+            pass
         qs, xs, cmps = self.qs, self.xs, self.cmps
         tot = 0.0
         for i in cmps:
             tot += qs[i]*xs[i]
-        tot = 1.0/tot
-        Fis = [qs[i]*tot for i in cmps]
-        self.qx_sum_inv = tot
+        self.qx_sum_inv = tot = 1.0/tot
+        self._Fis = Fis = [qs[i]*tot for i in cmps]
         return Fis
 
     def dFis_dxs(self):
+        r'''Calculate the mole fraction derivative of the :math:`F_i` terms 
+        used in calculating the combinatorial part. A function of mole 
+        fractions and the parameters `q` only.
+        
+        .. math::
+            \frac{\partial F_i}{\partial x_j} = -q_i q_j G_{sum}^2
+            
+        .. math::
+            G_{sum} = \frac{1}{\sum_j q_j x_j}
+        
+        This is used in the UNIFAC, UNIFAC-LLE, UNIFAC Dortmund, UNIFAC-NIST,
+        and PSRK models.
+        
+        Returns
+        -------
+        dFis_dxs : list[list[float]]
+            `F` terms size number of components by number of components, [-]
+        '''
         try:
             return self._dFis_dxs
         except AttributeError:
@@ -2262,6 +2298,26 @@ class UNIFAC(GibbsExcess):
         return dFis
 
     def d2Fis_dxixjs(self):
+        r'''Calculate the second mole fraction derivative of the :math:`F_i`  
+        terms used in calculating the combinatorial part. A function of mole 
+        fractions and the parameters `q` only.
+        
+        .. math::
+            \frac{\partial F_i}{\partial x_j \partial x_k} =
+            2 q_i q_j q_k G_{sum}^3
+            
+        .. math::
+            G_{sum} = \frac{1}{\sum_j q_j x_j}
+        
+        This is used in the UNIFAC, UNIFAC-LLE, UNIFAC Dortmund, UNIFAC-NIST,
+        and PSRK models.
+        
+        Returns
+        -------
+        d2Fis_dxixjs : list[list[list[float]]]
+            `F` terms size number of components by number of components by
+            number of components, [-]
+        '''
         try:
             return self._d2Fis_dxixjs
         except AttributeError:
@@ -2280,6 +2336,26 @@ class UNIFAC(GibbsExcess):
         return d2Fis
 
     def d3Fis_dxixjxks(self):
+        r'''Calculate the third mole fraction derivative of the :math:`F_i`  
+        terms used in calculating the combinatorial part. A function of mole 
+        fractions and the parameters `q` only.
+        
+        .. math::
+            \frac{\partial F_i}{\partial x_j \partial x_k \partial x_m} =
+            -6 q_i q_j q_k q_m G_{sum}^4
+            
+        .. math::
+            G_{sum} = \frac{1}{\sum_j q_j x_j}
+        
+        This is used in the UNIFAC, UNIFAC-LLE, UNIFAC Dortmund, UNIFAC-NIST,
+        and PSRK models.
+        
+        Returns
+        -------
+        d3Fis_dxixjxks : list[list[list[list[float]]]]
+            `F` terms size number of components by number of components by
+            number of components by number of components, [-]
+        '''
         try:
             return self._d3Fis_dxixjxks
         except AttributeError:
@@ -2297,12 +2373,24 @@ class UNIFAC(GibbsExcess):
         self._d3Fis_dxixjxks = d3Fis
         return d3Fis
 
+    def Vis_modified(self):
+        r'''Calculate the :math:`V_i'` terms used in calculating the 
+        combinatorial part. A function of mole fractions and the parameters
+        `r` only.
+        
+        .. math::
+            V_i' = \frac{r_i^n}{\sum_j r_j^n x_j}
 
-    def Vis_Dortmund(self):
-        # To include Lyngby model, need to refactor to make power generic as it
-        # uses 2/3 instead
+        This is used in the UNIFAC Dortmund and UNIFAC-NIST model with
+        n=0.75, and the Lyngby model with n=2/3.
+        
+        Returns
+        -------
+        Vis_modified : list[float]
+            Modified `V` terms size number of components, [-]
+        '''
         try:
-            return self._Vis_Dortmund
+            return self._Vis_modified
         except:
             pass
         rs_34, xs, cmps = self.rs_34, self.xs, self.cmps
@@ -2311,60 +2399,118 @@ class UNIFAC(GibbsExcess):
             tot += rs_34[i]*xs[i]
         tot = 1.0/tot
         self.r34x_sum_inv = tot
-        self._Vis_Dortmund = [rs_34[i]*tot for i in cmps]
-        return self._Vis_Dortmund
+        self._Vis_modified = [rs_34[i]*tot for i in cmps]
+        return self._Vis_modified
     
-    def dVis_Dortmund_dxs(self):
+    def dVis_modified_dxs(self):
+        r'''Calculate the mole fraction derivative of the :math:`V_i'` terms 
+        used in calculating the combinatorial part. A function of mole 
+        fractions and the parameters `r` only.
+        
+        .. math::
+            \frac{\partial V_i'}{\partial x_j} = -r_i^n r_j^n V_{sum}^2
+            
+        .. math::
+            V_{sum} = \frac{1}{\sum_j r_j^n x_j}
+        
+        This is used in the UNIFAC Dortmund and UNIFAC-NIST model with
+        n=0.75, and the Lyngby model with n=2/3.
+        
+        Returns
+        -------
+        dVis_modified_dxs : list[list[float]]
+            `V'` terms size number of components by number of components, [-]
+        '''
         try:
-            return self._dVis_Dortmund_dxs
+            return self._dVis_modified_dxs
         except AttributeError:
             pass
         try:
             r34x_sum_inv = self.r34x_sum_inv
         except AttributeError:
-            self.Vis_Dortmund()
+            self.Vis_modified()
             r34x_sum_inv = self.r34x_sum_inv
             
         rs_34 = self.rs_34
         mr34x_sum_inv2 = -r34x_sum_inv*r34x_sum_inv
         
-        dVis_Dortmund = [[ri*rj*mr34x_sum_inv2 for rj in rs_34] for ri in rs_34]
-        self._dVis_Dortmund_dxs = dVis_Dortmund
-        return dVis_Dortmund
+        dVis_modified = [[ri*rj*mr34x_sum_inv2 for rj in rs_34] for ri in rs_34]
+        self._dVis_modified_dxs = dVis_modified
+        return dVis_modified
     
-    def d2Vis_Dortmund_dxixjs(self):
+    def d2Vis_modified_dxixjs(self):
+        r'''Calculate the second mole fraction derivative of the :math:`V_i'`  
+        terms used in calculating the combinatorial part. A function of mole 
+        fractions and the parameters `r` only.
+        
+        .. math::
+            \frac{\partial V_i'}{\partial x_j \partial x_k} =
+            2 r_i^n r_j^n r_k^n V_{sum}^3
+            
+        .. math::
+            V_{sum} = \frac{1}{\sum_j r_j^n x_j}
+        
+        This is used in the UNIFAC Dortmund and UNIFAC-NIST model with
+        n=0.75, and the Lyngby model with n=2/3.
+        
+        Returns
+        -------
+        d2Vis_modified_dxixjs : list[list[list[float]]]
+            `V'` terms size number of components by number of components by
+            number of components, [-]
+        '''
         try:
-            return self._d2Vis_Dortmund_dxixjs
+            return self._d2Vis_modified_dxixjs
         except AttributeError:
             pass
         try:
             r34x_sum_inv = self.r34x_sum_inv
         except AttributeError:
-            self.Vis_Dortmund()
+            self.Vis_modified()
             r34x_sum_inv = self.r34x_sum_inv
         rs_34 = self.rs_34
         r34x_sum_inv3_2 = 2.0*r34x_sum_inv*r34x_sum_inv*r34x_sum_inv
-        d2Vis_Dortmund = [[[ri*rj*rk*r34x_sum_inv3_2 for rk in rs_34] for rj in rs_34] for ri in rs_34]
-        self._d2Vis_Dortmund_dxixjs = d2Vis_Dortmund
-        return d2Vis_Dortmund
+        d2Vis_modified = [[[ri*rj*rk*r34x_sum_inv3_2 for rk in rs_34] for rj in rs_34] for ri in rs_34]
+        self._d2Vis_modified_dxixjs = d2Vis_modified
+        return d2Vis_modified
     
-    def d3Vis_Dortmund_dxixjxks(self):
+    def d3Vis_modified_dxixjxks(self):
+        r'''Calculate the third mole fraction derivative of the :math:`V_i'`  
+        terms used in calculating the combinatorial part. A function of mole 
+        fractions and the parameters `r` only.
+        
+        .. math::
+            \frac{\partial V_i'}{\partial x_j \partial x_k \partial x_m} =
+            -6 r_i^n r_j^n r_k^n r_m^n V_{sum}^4
+            
+        .. math::
+            V_{sum} = \frac{1}{\sum_j r_j x_j}
+        
+        This is used in the UNIFAC Dortmund and UNIFAC-NIST model with
+        n=0.75, and the Lyngby model with n=2/3.
+        
+        Returns
+        -------
+        d3Vis_modified_dxixjxks : list[list[list[list[float]]]]
+            `V'` terms size number of components by number of components by
+            number of components by number of components, [-]
+        '''
         try:
-            return self._d3Vis_Dortmund_dxixjxks
+            return self._d3Vis_modified_dxixjxks
         except AttributeError:
             pass
         try:
             r34x_sum_inv = self.r34x_sum_inv
         except AttributeError:
-            self.Vis_Dortmund()
+            self.Vis_modified()
             r34x_sum_inv = self.r34x_sum_inv
         rs_34 = self.rs_34
         mr34x_sum_inv4_6 = -6.0*r34x_sum_inv*r34x_sum_inv*r34x_sum_inv*r34x_sum_inv
         
-        d3Vis_Dortmund = [[[[ri*rj*rk*rl*mr34x_sum_inv4_6 for rl in rs_34] for rk in rs_34]
+        d3Vis_modified = [[[[ri*rj*rk*rl*mr34x_sum_inv4_6 for rl in rs_34] for rk in rs_34]
                                                for rj in rs_34] for ri in rs_34]
-        self._d3Vis_Dortmund_dxixjxks = d3Vis_Dortmund
-        return d3Vis_Dortmund
+        self._d3Vis_modified_dxixjxks = d3Vis_modified
+        return d3Vis_modified
     
     def Xs(self):
         try:
@@ -3351,15 +3497,15 @@ class UNIFAC(GibbsExcess):
         Vis = self.Vis()
         cmps, version, qs = self.cmps, self.version, self.qs
         if self.version in (1, 4):
-            Vis_Dortmund = self.Vis_Dortmund()
+            Vis_modified = self.Vis_modified()
         else:
-            Vis_Dortmund = Vis
+            Vis_modified = Vis
         Fis = self.Fis()
         
         lngammas_c = []
         for i in cmps:
             Vi_Fi = Vis[i]/Fis[i]
-            val = (1.0 - Vis_Dortmund[i] + log(Vis_Dortmund[i])
+            val = (1.0 - Vis_modified[i] + log(Vis_modified[i])
                     - 5.0*qs[i]*(1.0 - Vi_Fi + log(Vi_Fi)))
             lngammas_c.append(val)
             
@@ -3404,11 +3550,11 @@ class UNIFAC(GibbsExcess):
         dFis_dxs = self.dFis_dxs()
         
         if self.version in (1, 4):
-            Vis_Dortmund = self.Vis_Dortmund()
-            dVis_Dortmund_dxs = self.dVis_Dortmund_dxs()
+            Vis_modified = self.Vis_modified()
+            dVis_modified_dxs = self.dVis_modified_dxs()
         else:
-            Vis_Dortmund = Vis
-            dVis_Dortmund_dxs = dVis_dxs
+            Vis_modified = Vis
+            dVis_modified_dxs = dVis_dxs
             
         # index style - [THE GAMMA FOR WHICH THE DERIVATIVE IS BEING CALCULATED][THE VARIABLE BEING CHANGED CAUsING THE DIFFERENCE]
         
@@ -3419,7 +3565,7 @@ class UNIFAC(GibbsExcess):
             for j in cmps:
                 val = -5.0*qs[i]*((dVis_dxs[i][j] - Vis[i]*dFis_dxs[i][j]*Fi_inv)/Vis[i]
                 - dVis_dxs[i][j]*Fi_inv + Vis[i]*dFis_dxs[i][j]*Fi_inv*Fi_inv
-                ) - dVis_Dortmund_dxs[i][j] + dVis_Dortmund_dxs[i][j]/Vis_Dortmund[i]
+                ) - dVis_modified_dxs[i][j] + dVis_modified_dxs[i][j]/Vis_modified[i]
                 row.append(val)
             
             dlngammas_c_dxs.append(row)
@@ -3505,19 +3651,19 @@ class UNIFAC(GibbsExcess):
         d2Fis_dxixjs = self.d2Fis_dxixjs()
         
         if self.version in (1, 4):
-            Vis_Dortmund = self.Vis_Dortmund()
-            dVis_Dortmund_dxs = self.dVis_Dortmund_dxs()
-            d2Vis_Dortmund_dxixjs = self.d2Vis_Dortmund_dxixjs()
+            Vis_modified = self.Vis_modified()
+            dVis_modified_dxs = self.dVis_modified_dxs()
+            d2Vis_modified_dxixjs = self.d2Vis_modified_dxixjs()
         else:
-            Vis_Dortmund = Vis
-            dVis_Dortmund_dxs = dVis_dxs
-            d2Vis_Dortmund_dxixjs = d2Vis_dxixjs
+            Vis_modified = Vis
+            dVis_modified_dxs = dVis_dxs
+            d2Vis_modified_dxixjs = d2Vis_dxixjs
 
         d2lngammas_c_dxixjs = []
         for i in cmps:
             Vi = Vis[i]
             qi = qs[i]
-            ViD = Vis_Dortmund[i]
+            ViD = Vis_modified[i]
             ViD_inv2 = 1.0/(ViD*ViD)
             Fi = Fis[i]
             x1 = 1.0/Fi
@@ -3530,14 +3676,14 @@ class UNIFAC(GibbsExcess):
             for j in cmps:
                 x6 = dFis_dxs[i][j]
                 x10 = dVis_dxs[i][j]
-                dViD_dxj = dVis_Dortmund_dxs[i][j]
+                dViD_dxj = dVis_modified_dxs[i][j]
                 row = []
                 for k in cmps:
-                    x0 = d2Vis_Dortmund_dxixjs[i][j][k]
+                    x0 = d2Vis_modified_dxixjs[i][j][k]
                     x2 = d2Vis_dxixjs[i][j][k]
                     x3 = d2Fis_dxixjs[i][j][k]
                     x7 = dVis_dxs[i][k]
-                    dViD_dxk = dVis_Dortmund_dxs[i][k]
+                    dViD_dxk = dVis_modified_dxs[i][k]
                     x8 = x6*x7
                     x9 = dFis_dxs[i][k]
                     x11 = x10*x9
@@ -3613,21 +3759,21 @@ class UNIFAC(GibbsExcess):
         d3Fis_dxixjxks = self.d3Fis_dxixjxks()
         
         if self.version in (1, 4):
-            Vis_Dortmund = self.Vis_Dortmund()
-            dVis_Dortmund_dxs = self.dVis_Dortmund_dxs()
-            d2Vis_Dortmund_dxixjs = self.d2Vis_Dortmund_dxixjs()
-            d3Vis_Dortmund_dxixjxks = self.d3Vis_Dortmund_dxixjxks()
+            Vis_modified = self.Vis_modified()
+            dVis_modified_dxs = self.dVis_modified_dxs()
+            d2Vis_modified_dxixjs = self.d2Vis_modified_dxixjs()
+            d3Vis_modified_dxixjxks = self.d3Vis_modified_dxixjxks()
         else:
-            Vis_Dortmund = Vis
-            dVis_Dortmund_dxs = dVis_dxs
-            d2Vis_Dortmund_dxixjs = d2Vis_dxixjs
-            d3Vis_Dortmund_dxixjxks = d3Vis_dxixjxks
+            Vis_modified = Vis
+            dVis_modified_dxs = dVis_dxs
+            d2Vis_modified_dxixjs = d2Vis_dxixjs
+            d3Vis_modified_dxixjxks = d3Vis_dxixjxks
         
         d3lngammas_c_dxixjxks = []
         
         for i in cmps:
             Vi = Vis[i]
-            ViD = Vis_Dortmund[i]
+            ViD = Vis_modified[i]
             Fi = Fis[i]
             qi = qs[i]
             third = []
@@ -3636,15 +3782,15 @@ class UNIFAC(GibbsExcess):
                 for k in cmps:
                     row = []
                     for m in cmps:
-                        x0 = d3Vis_Dortmund_dxixjxks[i][j][k][m]#Derivative(ViD, xj, xk, xm)
+                        x0 = d3Vis_modified_dxixjxks[i][j][k][m]#Derivative(ViD, xj, xk, xm)
                         x1 = 1/Fis[i]#1/Fi
                         x2 = 5.0*qs[i]
                         x3 = x2*d3Fis_dxixjxks[i][j][k][m]#Derivative(Fi, xj, xk, xm)
                         x4 = x2*d3Vis_dxixjxks[i][j][k][m]#Derivative(Vi, xj, xk, xm)
-                        x5 = Vis_Dortmund[i]**-2#ViD**(-2)
-                        x6 = dVis_Dortmund_dxs[i][j]#Derivative(ViD, xj)
-                        x7 = dVis_Dortmund_dxs[i][k]#Derivative(ViD, xk)
-                        x8 = dVis_Dortmund_dxs[i][m]#Derivative(ViD, xm)
+                        x5 = Vis_modified[i]**-2#ViD**(-2)
+                        x6 = dVis_modified_dxs[i][j]#Derivative(ViD, xj)
+                        x7 = dVis_modified_dxs[i][k]#Derivative(ViD, xk)
+                        x8 = dVis_modified_dxs[i][m]#Derivative(ViD, xm)
                         x9 = Fis[i]**-2#Fi**(-2)
                         x10 = x2*x9
                         x11 = dFis_dxs[i][j]#Derivative(Fi, xj)
@@ -3674,9 +3820,9 @@ class UNIFAC(GibbsExcess):
                                - x10*x13 - x10*x15*x24 - x10*x19*x25 + x11*x24*x32 + x13*x30 
                                + x14*x23*x26 + x15*x16*x30 - x15*x17 + x16*x23*x32 - x17*x18 
                                + x18*x24*x26 + x19*x20*x30 - x19*x21 - x21*x22 + x22*x25*x26 
-                               + x27*x31*x33 + x31*x32 - x5*x6*d2Vis_Dortmund_dxixjs[i][k][m]
-                               - x5*x7*d2Vis_Dortmund_dxixjs[i][j][m]
-                               - x5*x8*d2Vis_Dortmund_dxixjs[i][j][k]
+                               + x27*x31*x33 + x31*x32 - x5*x6*d2Vis_modified_dxixjs[i][k][m]
+                               - x5*x7*d2Vis_modified_dxixjs[i][j][m]
+                               - x5*x8*d2Vis_modified_dxixjs[i][j][k]
                                + x0/ViD + 2*x6*x7*x8/ViD**3 - x4/Vi - x23*x24*x33/Vi**3 - 30*Vi*qi*x20*x31/Fi**4)
                         
                         row.append(val)
