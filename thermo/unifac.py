@@ -3277,6 +3277,18 @@ class UNIFAC(GibbsExcess):
         return d2lngammas_r_dxixjs
     
     def GE(self):
+        r'''Calculate the excess Gibbs energy with the UNIFAC model.
+        
+        .. math::
+            G^E = RT\sum_i x_i \left(\ln \gamma_i^c + \ln \gamma_i^r \right)
+        
+        For the VTPR model, the combinatorial component is set to zero.
+        
+        Returns
+        -------
+        GE : float
+            Excess Gibbs energy, [J/mol]
+        '''
         try:
             return self._GE
         except AttributeError:
@@ -3284,13 +3296,12 @@ class UNIFAC(GibbsExcess):
         T, xs, cmps = self.T, self.xs, self.cmps
         lngammas_r = self.lngammas_r()
         
+        GE = 0.0
         if self.skip_comb:
-            GE = 0.0
             for i in cmps:
                 GE += xs[i]*lngammas_r[i]
         else:
             lngammas_c = self.lngammas_c()
-            GE = 0.0
             for i in cmps:
                 GE += xs[i]*(lngammas_c[i] + lngammas_r[i])
         GE *= R*T
@@ -3408,30 +3419,30 @@ class UNIFAC(GibbsExcess):
         return d2GE_dxixjs
 
     def dGE_dT(self):
+        r'''Calculate the first temperature derivative of excess Gibbs energy
+        with the UNIFAC model.
+        
+        .. math::
+            \frac{\partial G^E}{\partial T} =             
+            RT\sum_i x_i \frac{\partial \ln \gamma_i^r}{\partial T}
+            + \frac{G^E}{T}
+                
+        Returns
+        -------
+        dGE_dT : float
+            First temperature derivative of excess Gibbs energy, [J/mol/K]
+        '''
         try:
             return self._dGE_dT
         except AttributeError:
             pass
-        T, xs, cmps, skip_comb = self.T, self.xs, self.cmps, self.skip_comb
-        lngammas_r = self.lngammas_r()
+        T, xs, cmps = self.T, self.xs, self.cmps
         dlngammas_r_dT = self.dlngammas_r_dT()
         
-        if not skip_comb:
-            lngammas_c = self.lngammas_c()
-        dGE_dT = 0.0
-        tot0, tot1 = 0.0, 0.0
-        if skip_comb:
-            for i in cmps:
-                tot0 += xs[i]*dlngammas_r_dT[i]
-                tot1 += xs[i]*lngammas_r[i]
-        else:
-            for i in cmps:
-                tot0 += xs[i]*dlngammas_r_dT[i]
-                tot1 += xs[i]*(lngammas_c[i] + lngammas_r[i])
-            
-        dGE_dT = R*T*tot0 + R*tot1
-        
-        self._dGE_dT = dGE_dT
+        tot = 0.0
+        for i in cmps:
+            tot += xs[i]*dlngammas_r_dT[i]
+        self._dGE_dT = dGE_dT = R*T*tot + self.GE()/T
         return dGE_dT
 
     def d2GE_dT2(self):
@@ -3471,6 +3482,21 @@ class UNIFAC(GibbsExcess):
         return d3GE_dT3
 
     def gammas(self):
+        r'''Calculates the activity coefficients with the UNIFAC model.
+        
+        .. math::
+            \gamma_i =  \exp\left(\ln \gamma_i^c + \ln \gamma_i^r \right)
+        
+        For the VTPR variant, the combinatorial part is skipped:
+            
+        .. math::
+            \gamma_i = \exp(\ln \gamma_i^r)
+        
+        Returns
+        -------
+        gammas : list[float]
+            Activity coefficients, size number of components [-]
+        '''
         try:
             return self._gammas
         except:
