@@ -2108,7 +2108,7 @@ class UNIFAC(GibbsExcess):
         Returns
         -------
         Vis : list[float]
-            `V` terms, [-]
+            `V` terms size number of components, [-]
         '''
         try:
             return self._Vis
@@ -2124,6 +2124,24 @@ class UNIFAC(GibbsExcess):
         return self._Vis
     
     def dVis_dxs(self):
+        r'''Calculate the mole fraction derivative of the :math:`V_i` terms 
+        used in calculating the combinatorial part. A function of mole 
+        fractions and the parameters `r` only.
+        
+        .. math::
+            \frac{\partial V_i}{\partial x_j} = -r_i r_j V_{sum}^2
+            
+        .. math::
+            V_{sum} = \frac{1}{\sum_j r_j x_j}
+        
+        This is used in the UNIFAC, UNIFAC-LLE, UNIFAC Dortmund, UNIFAC-NIST,
+        and PSRK models.
+        
+        Returns
+        -------
+        dVis_dxs : list[list[float]]
+            `V` terms size number of components by number of components, [-]
+        '''
         try:
             return self._dVis_dxs
         except AttributeError:
@@ -2142,6 +2160,26 @@ class UNIFAC(GibbsExcess):
         return dVis
     
     def d2Vis_dxixjs(self):
+        r'''Calculate the second mole fraction derivative of the :math:`V_i`  
+        terms used in calculating the combinatorial part. A function of mole 
+        fractions and the parameters `r` only.
+        
+        .. math::
+            \frac{\partial V_i}{\partial x_j \partial x_k} =
+            2 r_i r_j r_k V_{sum}^3
+            
+        .. math::
+            V_{sum} = \frac{1}{\sum_j r_j x_j}
+        
+        This is used in the UNIFAC, UNIFAC-LLE, UNIFAC Dortmund, UNIFAC-NIST,
+        and PSRK models.
+        
+        Returns
+        -------
+        d2Vis_dxixjs : list[list[list[float]]]
+            `V` terms size number of components by number of components by
+            number of components, [-]
+        '''
         try:
             return self._d2Vis_dxixjs
         except AttributeError:
@@ -2158,6 +2196,26 @@ class UNIFAC(GibbsExcess):
         return d2Vis
     
     def d3Vis_dxixjxks(self):
+        r'''Calculate the third mole fraction derivative of the :math:`V_i`  
+        terms used in calculating the combinatorial part. A function of mole 
+        fractions and the parameters `r` only.
+        
+        .. math::
+            \frac{\partial V_i}{\partial x_j \partial x_k \partial x_m} =
+            -6 r_i r_j r_k r_m V_{sum}^4
+            
+        .. math::
+            V_{sum} = \frac{1}{\sum_j r_j x_j}
+        
+        This is used in the UNIFAC, UNIFAC-LLE, UNIFAC Dortmund, UNIFAC-NIST,
+        and PSRK models.
+        
+        Returns
+        -------
+        d3Vis_dxixjxks : list[list[list[float]]]
+            `V` terms size number of components by number of components by
+            number of components by number of components, [-]
+        '''
         try:
             return self._d3Vis_dxixjxks
         except AttributeError:
