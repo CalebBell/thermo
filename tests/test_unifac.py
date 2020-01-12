@@ -675,3 +675,18 @@ def test_UNIFAC_class_Lyngby():
     
     assert_allclose(d3psis_dT3, d3psis_dT3_expect, rtol=1e-12)
     assert_allclose(d3psis_dT3, d3psis_dT3_numerical, rtol=1e-7)
+
+
+    lngammas_c_expect = [-1.119262645894437,-0.8224400796998474, -8.0283426112779, -0.9573228840477972]
+    lngammas_c = GE.lngammas_c()
+    assert_allclose(lngammas_c_expect, lngammas_c, rtol=1e-10)
+    
+    def to_jac_lngammas_c(xs):
+        return GE.to_T_xs(T, xs).lngammas_c()
+    
+    # lngammas combinatorial x derivative
+    dlngammas_c_dxs_analytical = GE.dlngammas_c_dxs()
+    dlngammas_c_dxs_expect = [[13.133704788392217, 2.0037702162382045, 2.659283432839861, 2.859970808569204], [1.2481385222250245, 7.8926669863159935, 2.156368758572895, 2.319102817650077], [6.948366778380437, 9.045368577670422, 116.68340875935264, 12.910407528390584], [1.3828734428420124, 1.8002216039743406, 2.3891459450259944, 7.777783276430932]]
+    assert_allclose(dlngammas_c_dxs_expect, dlngammas_c_dxs_analytical, rtol=1e-11)
+    dlngammas_c_dxs_numerical = jacobian(to_jac_lngammas_c, xs, scalar=False, perturbation=1e-7)
+    assert_allclose(dlngammas_c_dxs_analytical, dlngammas_c_dxs_numerical, rtol=1e-6)

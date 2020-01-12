@@ -3486,26 +3486,24 @@ class UNIFAC(GibbsExcess):
         return gammas
     
     def lngammas_c(self):
-        r'''
-        
+        r'''Calculates the combinatorial part of the UNIFAC model. For the 
+        modified UNIFAC model, the equation is as follows; for the original
+        UNIFAC and UNIFAC LLE, replace :math:`V_i'` with :math:`V_i`.
+
         .. math::
             \ln \gamma_i^c = 1 - {V'}_i + \ln({V'}_i) - 5q_i \left(1
             - \frac{V_i}{F_i}+ \ln\left(\frac{V_i}{F_i}\right)\right)
-            
-        .. math::
-            V'_i = \frac{r_i^{3/4}}{\sum_j r_j^{3/4}x_j}
         
-        .. math::
-            V_i = \frac{r_i}{\sum_j r_j x_j}
+        For the Lyngby model:
             
         .. math::
-            F_i = \frac{q_i}{\sum_j q_j x_j}
-            
-        for the Lyngby model:
-            
-        .. math::
-            \ln \gamma_i^c = \ln \left( \frac{V_i'}{x_i} \right) + 1 - \frac{V_i'}{x_i}
-
+            \ln \gamma_i^c = \ln \left( \frac{V_i'}{x_i} \right) + 1 
+            - \frac{V_i'}{x_i}
+        
+        Returns
+        -------
+        lngammas_c : list[float]
+            Combinatorial lngammas terms, size number of components [-]
         '''
         try:
             return self._lngammas_c
