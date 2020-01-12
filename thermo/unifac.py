@@ -3500,6 +3500,11 @@ class UNIFAC(GibbsExcess):
             
         .. math::
             F_i = \frac{q_i}{\sum_j q_j x_j}
+            
+        for the Lyngby model:
+            
+        .. math::
+            \ln \gamma_i^c = \ln \left( \frac{V_i'}{x_i} \right) + 1 - \frac{V_i'}{x_i}
 
         '''
         try:
@@ -3515,11 +3520,18 @@ class UNIFAC(GibbsExcess):
         Fis = self.Fis()
         
         lngammas_c = []
-        for i in cmps:
-            Vi_Fi = Vis[i]/Fis[i]
-            val = (1.0 - Vis_modified[i] + log(Vis_modified[i])
-                    - 5.0*qs[i]*(1.0 - Vi_Fi + log(Vi_Fi)))
-            lngammas_c.append(val)
+        if version == 4:
+            xs = self.xs
+            for i in cmps:
+                r = Vis_modified[i]/xs[i]
+                val = log(r) + 1.0 - r
+                lngammas_c.append(val)
+        else:
+            for i in cmps:
+                Vi_Fi = Vis[i]/Fis[i]
+                val = (1.0 - Vis_modified[i] + log(Vis_modified[i])
+                        - 5.0*qs[i]*(1.0 - Vi_Fi + log(Vi_Fi)))
+                lngammas_c.append(val)
             
         self._lngammas_c = lngammas_c
         return lngammas_c
@@ -3599,7 +3611,21 @@ class UNIFAC(GibbsExcess):
             \right]
             - \frac{\partial V_i'}{\partial x_j} 
             + \frac{\frac{\partial V_i'}{\partial x_j}}{V_i'}
-
+        
+        For the Lyngby model, the following equations are used for 
+        :math:`i \ne j` and for :math:`i = j` respectively:
+            
+        .. math::
+            \frac{\ln \gamma_i^c}{\partial x_j} = 
+            \frac{\frac{V_i'}{\partial x_j}}{V_i'} - \frac{\frac{\partial V_i'}
+            {\partial x_j}}{x_i}
+            
+        .. math::
+            \frac{\ln \gamma_i^c}{\partial x_i} = 
+            \frac{x_i\left(\frac{\frac{\partial V_i'}{x_i}}{x_i}
+            - \frac{V_i'}{x_i^2} \right)}{V_i'}
+            - \frac{\frac{\partial V_i'}{\partial x_i}}{x_i} +\frac{V_i'}{x_i^2}
+        
         Returns
         -------
         dlngammas_c_dxs : list[list[float]]
@@ -3610,8 +3636,6 @@ class UNIFAC(GibbsExcess):
             return self._dlngammas_c_dxs
         except AttributeError:
             pass
-        if self.version == 4:
-            raise NotImplementedError("TODO")
         cmps, version, qs = self.cmps, self.version, self.qs
         Vis = self.Vis()
         dVis_dxs = self.dVis_dxs()
@@ -3619,7 +3643,7 @@ class UNIFAC(GibbsExcess):
         Fis = self.Fis()
         dFis_dxs = self.dFis_dxs()
         
-        if self.version in (1, 4):
+        if version in (1, 4):
             Vis_modified = self.Vis_modified()
             dVis_modified_dxs = self.dVis_modified_dxs()
         else:
@@ -3629,16 +3653,29 @@ class UNIFAC(GibbsExcess):
         # index style - [THE GAMMA FOR WHICH THE DERIVATIVE IS BEING CALCULATED][THE VARIABLE BEING CHANGED CAUsING THE DIFFERENCE]
         
         dlngammas_c_dxs = []
-        for i in cmps:
-            row = []
-            Fi_inv = 1.0/Fis[i]
-            for j in cmps:
-                val = -5.0*qs[i]*((dVis_dxs[i][j] - Vis[i]*dFis_dxs[i][j]*Fi_inv)/Vis[i]
-                - dVis_dxs[i][j]*Fi_inv + Vis[i]*dFis_dxs[i][j]*Fi_inv*Fi_inv
-                ) - dVis_modified_dxs[i][j] + dVis_modified_dxs[i][j]/Vis_modified[i]
-                row.append(val)
-            
-            dlngammas_c_dxs.append(row)
+        
+        if version == 4:
+            xs = self.xs
+            for i in cmps:
+                row = []
+                for j in cmps:
+                    if i == j:
+                        v = xs[i]/Vis_modified[i]*(dVis_modified_dxs[i][i]/xs[i] - Vis_modified[i]/xs[i]**2)
+                        v += -dVis_modified_dxs[i][i]/xs[i] + Vis_modified[i]/xs[i]**2
+                    else:
+                        v = dVis_modified_dxs[i][j]/Vis_modified[i] - dVis_modified_dxs[i][j]/xs[i]
+                    row.append(v)
+                dlngammas_c_dxs.append(row)
+        else:
+            for i in cmps:
+                row = []
+                Fi_inv = 1.0/Fis[i]
+                for j in cmps:
+                    val = -5.0*qs[i]*((dVis_dxs[i][j] - Vis[i]*dFis_dxs[i][j]*Fi_inv)/Vis[i]
+                    - dVis_dxs[i][j]*Fi_inv + Vis[i]*dFis_dxs[i][j]*Fi_inv*Fi_inv
+                    ) - dVis_modified_dxs[i][j] + dVis_modified_dxs[i][j]/Vis_modified[i]
+                    row.append(val)
+                dlngammas_c_dxs.append(row)
             
         self._dlngammas_c_dxs = dlngammas_c_dxs
         return dlngammas_c_dxs
@@ -3683,6 +3720,18 @@ class UNIFAC(GibbsExcess):
     good_third = simplify(good_third)
     '''
     
+    '''For the Lyngby model composition derivatives remaining:
+        
+    from sympy import *
+    N = 4
+    cmps = range(N)
+    xs = x0, x1, x2, x3 = symbols('x0, x1, x2, x3')
+    Vis = V0, V1, V2, V3 = symbols('V0, V1, V2, V3', cls=Function)
+    Vis = [Vis[i](x0, x1, x2, x3) for i in cmps]
+    loggammacs = [1 + log(Vis[i]/xs[i]) - Vis[i]/xs[i] for i in cmps]
+    diff(loggammacs[0], xs[1], xs[2])
+    '''
+    
     def d2lngammas_c_dxixjs(self):
         r'''Second composition derivative of
         the combinatorial part of the UNIFAC model. For the modified UNIFAC
@@ -3708,6 +3757,8 @@ class UNIFAC(GibbsExcess):
             {F_{i}^{3}}\right) - \frac{d^{2}}{d x_{k}d x_{j}} Vi' 
             + \frac{\frac{d^{2}}{d x_{k}d x_{j}} Vi'}{Vi'} - \frac{\frac{d}
             {d x_{j}} Vi' \frac{d}{d x_{k}} Vi'}{Vi'^{2}}
+            
+        The Lyngby model derivative is not implemented.
             
         Returns
         -------
@@ -3825,6 +3876,8 @@ class UNIFAC(GibbsExcess):
             + \frac{10 q_{i} \frac{d}{d x_{j}} F_{i} \frac{d}{d x_{m}} F_{i} \frac{d}{d x_{k}} V_{i}}{F_{i}^{3}} 
             + \frac{10 q_{i} \frac{d}{d x_{k}} F_{i} \frac{d}{d x_{m}} F_{i} \frac{d}{d x_{j}} V_{i}}{F_{i}^{3}} 
             - \frac{30 V_{i} q_{i} \frac{d}{d x_{j}} F_{i} \frac{d}{d x_{k}} F_{i} \frac{d}{d x_{m}} F_{i}}{F_{i}^{4}}
+
+        The Lyngby model derivative is not implemented.
             
         Returns
         -------
