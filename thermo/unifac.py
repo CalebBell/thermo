@@ -3309,6 +3309,20 @@ class UNIFAC(GibbsExcess):
         return GE
     
     def dGE_dxs(self):
+        r'''Calculate the first composition derivative of excess Gibbs energy 
+        with the UNIFAC model.
+        
+        .. math::
+            \frac{\partial G^E}{\partial x_i} = RT\left(\ln \gamma_i^c
+            + \ln \gamma_i^r \right)
+            + RT\sum_j x_j \left(\frac{\partial \ln \gamma_j^c}{\partial x_i}
+            + \frac{\partial \ln \gamma_j^r}{\partial x_i} \right)
+        
+        Returns
+        -------
+        dGE_dxs : float
+            First composition derivative of excess Gibbs energy, [J/mol]
+        '''
         try:
             return self._dGE_dxs
         except AttributeError:
