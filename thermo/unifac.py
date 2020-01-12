@@ -3320,7 +3320,7 @@ class UNIFAC(GibbsExcess):
         
         Returns
         -------
-        dGE_dxs : float
+        dGE_dxs : list[float]
             First composition derivative of excess Gibbs energy, [J/mol]
         '''
         try:
@@ -3349,12 +3349,28 @@ class UNIFAC(GibbsExcess):
                     dGE += xs[j]*(dlngammas_c_dxs[j][i] + dlngammas_r_dxs[j][i])
                 dGE_dxs.append(dGE*RT)
             
-            
-            
         self._dGE_dxs = dGE_dxs
         return dGE_dxs
 
     def d2GE_dTdxs(self):
+        r'''Calculate the first composition derivative and temperature
+        derivative of excess Gibbs energy with the UNIFAC model.
+        
+        .. math::
+            \frac{\partial^2 G^E}{\partial T\partial x_i} = 
+            RT\left(\frac{\partial \ln \gamma_i^r}{\partial T} 
+            + \sum_j x_j \frac{\partial \ln \gamma_j^r}{\partial x_i}  \right)
+            + R\left[ \frac{\partial \ln \gamma_i^c}{\partial x_i}
+            + \frac{\partial \ln \gamma_i^r}{\partial x_i}
+            + \sum_j x_j \left( \frac{\partial \ln \gamma_j^c}{\partial x_i}
+            + \frac{\partial \ln \gamma_j^r}{\partial x_i}\right)\right]
+        
+        Returns
+        -------
+        dGE_dxs : list[float]
+            First composition derivative and first temperature derivative of
+            excess Gibbs energy, [J/mol/K]
+        '''
         try:
             return self._d2GE_dTdxs
         except AttributeError:
@@ -3384,15 +3400,31 @@ class UNIFAC(GibbsExcess):
                 for j in cmps:
                     dGE += xs[j]*(dlngammas_c_dxs[j][i] + dlngammas_r_dxs[j][i])
                     dGE += T*xs[j]*d2lngammas_r_dTdxs[j][i] # ji should be consistent in all of them
-    #                dGE += xs[j]*(dlngammas_c_dxs[i][j] + dlngammas_r_dxs[i][j])
-    #                dGE += T*xs[j]*d2lngammas_r_dTdxs[i][j] # ji should be consistent in all of them
                 
                 d2GE_dTdxs.append(dGE*R)
         self._d2GE_dTdxs = d2GE_dTdxs
         return d2GE_dTdxs
 
-
     def d2GE_dxixjs(self):
+        r'''Calculate the second composition derivative of excess Gibbs energy 
+        with the UNIFAC model.
+        
+        .. math::
+            \frac{\partial^2 G^E}{\partial x_j \partial x_k} = RT
+            \left[\sum_i \left(  
+            \frac{\partial \ln \gamma_i^c}{\partial x_j \partial x_k}
+            + \frac{\partial \ln \gamma_i^r}{\partial x_j \partial x_k}
+            \right)
+            + \frac{\partial \ln \gamma_j^c}{\partial x_k}
+            + \frac{\partial \ln \gamma_j^r}{\partial x_k}
+            + \frac{\partial \ln \gamma_k^c}{\partial x_j}
+            + \frac{\partial \ln \gamma_k^r}{\partial x_j}\right]
+        
+        Returns
+        -------
+        d2GE_dxixjs : list[list[float]]
+            Second composition derivative of excess Gibbs energy, [J/mol]
+        '''
         try:
             return self._d2GE_dxixjs
         except AttributeError:
