@@ -1791,6 +1791,11 @@ class UNIFAC(GibbsExcess):
         with :math:`T_0 = 298.15` K and the `a` coefficients are specific to
         each pair of main groups, and they are asymmetric, so
         :math:`a_{0,mk} \ne a_{0,km}`.
+
+        Returns
+        -------
+        psis : list[list[float]]
+            `psi` terms, size subgroups x subgroups [-]
         '''
         try:
             return self._psis
@@ -1852,7 +1857,12 @@ class UNIFAC(GibbsExcess):
         with :math:`T_0 = 298.15` K and the `a` coefficients are specific to
         each pair of main groups, and they are asymmetric, so
         :math:`a_{0,mk} \ne a_{0,km}`.
-        
+
+        Returns
+        -------
+        dpsis_dT : list[list[float]]
+            First temperature derivative of`psi` terms, size subgroups x 
+            subgroups [-]
         '''
         try:
             return self._dpsis_dT
@@ -1925,6 +1935,12 @@ class UNIFAC(GibbsExcess):
         with :math:`T_0 = 298.15` K and the `a` coefficients are specific to
         each pair of main groups, and they are asymmetric, so
         :math:`a_{0,mk} \ne a_{0,km}`.
+
+        Returns
+        -------
+        d2psis_dT2 : list[list[float]]
+            Second temperature derivative of`psi` terms, size subgroups x 
+            subgroups [-]
         '''
         try:
             return self._d2psis_dT2
@@ -2021,6 +2037,12 @@ class UNIFAC(GibbsExcess):
         with :math:`T_0 = 298.15` K and the `a` coefficients are specific to
         each pair of main groups, and they are asymmetric, so
         :math:`a_{0,mk} \ne a_{0,km}`.
+
+        Returns
+        -------
+        d3psis_dT3 : list[list[float]]
+            Third temperature derivative of`psi` terms, size subgroups x 
+            subgroups [-]
         '''
         try:
             return self._d3psis_dT3
@@ -2073,6 +2095,21 @@ class UNIFAC(GibbsExcess):
         return d3psis_dT3
                 
     def Vis(self):
+        r'''Calculate the :math:`V_i` terms used in calculating the 
+        combinatorial part. A function of mole fractions and the parameters
+        `r` only.
+        
+        .. math::
+            V_i = \frac{r_i}{\sum_j r_j x_j}
+        
+        This is used in the UNIFAC, UNIFAC-LLE, UNIFAC Dortmund, UNIFAC-NIST,
+        and PSRK models.
+        
+        Returns
+        -------
+        Vis : list[float]
+            `V` terms, [-]
+        '''
         try:
             return self._Vis
         except:
