@@ -2513,6 +2513,19 @@ class UNIFAC(GibbsExcess):
         return d3Vis_modified
     
     def Xs(self):
+        r'''Calculate the :math:`X_m` parameters 
+        used in calculating the combinatorial part. A function of mole 
+        fractions and group counts only.
+        
+        .. math::
+            X_m = \frac{ \sum_j \nu^j_m x_j}{\sum_j \sum_n \nu_n^j x_j}
+        
+        Returns
+        -------
+        Xs : list[list[float]]
+           :math:`X_m` terms, size number of subgroups by number of components
+           and indexed in that order, [-]
+        '''
         try:
             return self._Xs
         except AttributeError:
@@ -2532,7 +2545,6 @@ class UNIFAC(GibbsExcess):
         self.Xs_sum_inv = sum_inv = 1.0/sum(subgroup_sums)
 
         self._Xs = Xs = [subgroup_sums[i]*sum_inv for i in groups]
-
         return Xs
     
     def Thetas(self):
@@ -3513,35 +3525,93 @@ class UNIFAC(GibbsExcess):
         return lngammas_c
     
     def dlngammas_c_dT(self):
+        r'''Temperature derivatives of the combinatorial part of the UNIFAC
+        model. Zero in all variations.
+        
+        .. math::
+            \frac{\partial \ln \gamma_i^c}{\partial T} = 0
+        
+        Returns
+        -------
+        dlngammas_c_dT : list[float]
+            Combinatorial lngammas term temperature derivatives, size number of
+            components, [-]
+        '''
         return [0.0]*self.N
     
     def d2lngammas_c_dT2(self):
+        r'''Second temperature derivatives of the combinatorial part of the 
+        UNIFAC model. Zero in all variations.
+        
+        .. math::
+            \frac{\partial^2 \ln \gamma_i^c}{\partial T^2} = 0
+        
+        Returns
+        -------
+        d2lngammas_c_dT2 : list[float]
+            Combinatorial lngammas term second temperature derivatives, size 
+            number of components, [-]
+        '''
         return [0.0]*self.N
     
     def d3lngammas_c_dT3(self):
+        r'''Third temperature derivatives of the combinatorial part of the 
+        UNIFAC model. Zero in all variations.
+        
+        .. math::
+            \frac{\partial^3 \ln \gamma_i^c}{\partial T^3} = 0
+        
+        Returns
+        -------
+        d3lngammas_c_dT3 : list[float]
+            Combinatorial lngammas term second temperature derivatives, size 
+            number of components, [-]
+        '''
         return [0.0]*self.N
        
     def d2lngammas_c_dTdx(self):
-        # Since T derivative is zero
+        r'''Second temperature derivative and first mole fraction derivative of
+        the combinatorial part of the UNIFAC model. Zero in all variations.
+        
+        .. math::
+            \frac{\partial^3 \ln \gamma_i^c}{\partial T^2 \partial x_j} = 0
+        
+        Returns
+        -------
+        d2lngammas_c_dTdx : list[list[float]]
+            Combinatorial lngammas term second temperature derivatives, size 
+            number of components by number of components, [-]
+        '''
         return [0.0]*self.N
 
-            
     def dlngammas_c_dxs(self):
-        r'''
+        r'''First composition derivative of
+        the combinatorial part of the UNIFAC model. For the modified UNIFAC
+        model, the equation is as follows; for the original UNIFAC and UNIFAC
+        LLE, replace :math:`V_i'` with :math:`V_i`.
+        
         .. math::
             \frac{\partial \ln \gamma^c_i}{\partial x_j} = 
-            -5q_i\left[ \left( \frac{\frac{\partial V_i}{\partial x_j}}{F_i} - \frac{V_i \frac{\partial F_i}{\partial x_j}}{F_i^2}
+            -5q_i\left[ \left( \frac{\frac{\partial V_i}{\partial x_j}}{F_i} 
+            - \frac{V_i \frac{\partial F_i}{\partial x_j}}{F_i^2}
             \right)\frac{F_i}{V_i} - \frac{\frac{\partial V_i}{\partial x_j}}{F_i} 
             + \frac{V_i\frac{\partial F_i}{\partial x_j}}{F_i^2}
             \right]
-              - \frac{\partial V_i'}{\partial x_j} 
-              + \frac{\frac{\partial V_i'}{\partial x_j}}{V_i'}
-              
+            - \frac{\partial V_i'}{\partial x_j} 
+            + \frac{\frac{\partial V_i'}{\partial x_j}}{V_i'}
+
+        Returns
+        -------
+        dlngammas_c_dxs : list[list[float]]
+            Combinatorial lngammas term first composition derivative, size 
+            number of components by number of components, [-]
         '''
         try:
             return self._dlngammas_c_dxs
         except AttributeError:
             pass
+        if self.version == 4:
+            raise NotImplementedError("TODO")
         cmps, version, qs = self.cmps, self.version, self.qs
         Vis = self.Vis()
         dVis_dxs = self.dVis_dxs()
@@ -3611,11 +3681,14 @@ class UNIFAC(GibbsExcess):
     # Third derivative
     good_third = diff(loggammacs[0], x0, x1, x2).subs(V0(x0, x1, x2), Vi).subs(F0(x0, x1, x2), Fi).subs(V0D(x0, x1, x2), ViD).subs(x0, xj).subs(x1, xk).subs(x2, xm).subs(q0, qi)
     good_third = simplify(good_third)
-
-
     '''
+    
     def d2lngammas_c_dxixjs(self):
-        r'''
+        r'''Second composition derivative of
+        the combinatorial part of the UNIFAC model. For the modified UNIFAC
+        model, the equation is as follows; for the original UNIFAC and UNIFAC
+        LLE, replace :math:`V_i'` with :math:`V_i`.
+
         .. math::
             \frac{\partial \ln \gamma^c_i}{\partial x_j \partial x_k} = 
             5 q_{i} \left(\frac{- \frac{d^{2}}{d x_{k}d x_{j}} V_{i} + \frac{V_{i}
@@ -3636,7 +3709,15 @@ class UNIFAC(GibbsExcess):
             + \frac{\frac{d^{2}}{d x_{k}d x_{j}} Vi'}{Vi'} - \frac{\frac{d}
             {d x_{j}} Vi' \frac{d}{d x_{k}} Vi'}{Vi'^{2}}
             
+        Returns
+        -------
+        d2lngammas_c_dxixjs : list[list[list[float]]]
+            Combinatorial lngammas term second composition derivative, size 
+            number of components by number of components by number of
+            components, [-]
         '''
+        if self.version == 4:
+            raise NotImplementedError("TODO")
         try:
             return self._d2lngammas_c_dxixjs
         except AttributeError:
@@ -3705,7 +3786,10 @@ class UNIFAC(GibbsExcess):
         return d2lngammas_c_dxixjs
 
     def d3lngammas_c_dxixjxks(self):
-        r'''
+        r'''Third composition derivative of
+        the combinatorial part of the UNIFAC model. For the modified UNIFAC
+        model, the equation is as follows; for the original UNIFAC and UNIFAC
+        LLE, replace :math:`V_i'` with :math:`V_i`.
         
         .. math::
             \frac{\partial \ln \gamma^c_i}{\partial x_j \partial x_k
@@ -3742,7 +3826,15 @@ class UNIFAC(GibbsExcess):
             + \frac{10 q_{i} \frac{d}{d x_{k}} F_{i} \frac{d}{d x_{m}} F_{i} \frac{d}{d x_{j}} V_{i}}{F_{i}^{3}} 
             - \frac{30 V_{i} q_{i} \frac{d}{d x_{j}} F_{i} \frac{d}{d x_{k}} F_{i} \frac{d}{d x_{m}} F_{i}}{F_{i}^{4}}
             
+        Returns
+        -------
+        d3lngammas_c_dxixjxks : list[list[list[list[float]]]]
+            Combinatorial lngammas term third composition derivative, size 
+            number of components by number of components by number of 
+            components by number of components, [-]
         '''
+        if self.version == 4:
+            raise NotImplementedError("TODO")
         try:
             return self._d3lngammas_c_dxixjxks
         except AttributeError:
