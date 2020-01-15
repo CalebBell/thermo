@@ -593,7 +593,7 @@ VTPRUFSG[142] = UNIFAC_subgroup('CF2Cl', 70, 'CF2Cl2', None, 1.8506, smarts=None
 VTPRUFSG[143] = UNIFAC_subgroup('CF2Cl2', 70, 'CF2Cl2', None, 2.5974, smarts=None)
 VTPRUFSG[148] = UNIFAC_subgroup('CF3Br', 70, 'CF2Cl2', None, 2.5104, smarts=None)
 
-VTPRUFSG[73] = UNIFAC_subgroup('CF4', 146, 'CF4', None, 1.8400, smarts=None)
+VTPRUFSG[146] = UNIFAC_subgroup('CF4', 73, 'CF4', None, 1.8400, smarts=None)
 VTPRUFSG[300] = UNIFAC_subgroup('NH3', 150, 'NH3', None, 0.7780, smarts=None)
 VTPRUFSG[306] = UNIFAC_subgroup('CO2', 151, 'CO2', None, 0.982, smarts=None)
 VTPRUFSG[307] = UNIFAC_subgroup('CH4', 152, 'CH4', None, 1.124, smarts=None)
@@ -610,6 +610,11 @@ VTPRUFSG[314] = UNIFAC_subgroup('He', 164, 'He', None, 0.9850, smarts=None)
 VTPRUFSG[315] = UNIFAC_subgroup('Ne', 165, 'Ne', None, 0.9860, smarts=None)
 VTPRUFSG[319] = UNIFAC_subgroup('HCl', 169, 'HCl', None, 1.2560, smarts=None)
 VTPRUFSG[345] = UNIFAC_subgroup('Hg', 185, 'Hg', None, 7.9616, smarts=None)
+
+# From Present Status of the Group Contribution Equation of State VTPR and Typical Applications for Process Development
+VTPRUFSG[54] = UNIFAC_subgroup('CH3NO2', 26, 'CNO2', None, 1.8285, smarts=DOUFSG[54].smarts)
+VTPRUFSG[55] = UNIFAC_subgroup('CH2NO2', 26, 'CNO2', None, 1.56, smarts=DOUFSG[55].smarts)
+VTPRUFSG[56] = UNIFAC_subgroup('CHNO2', 26, 'CNO2', None, 1.248, smarts=DOUFSG[56].smarts)
 
 
 NISTUFMG = {}
