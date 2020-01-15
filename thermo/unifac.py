@@ -18,7 +18,71 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+
+This module contains functions and classes related to the UNIFAC and its many
+variants. The bulk of the code relates to calculating derivativies, or 
+is tables of data.
+
+For reporting bugs, adding feature requests, or submitting pull requests, 
+please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_
+or contact the author at Caleb.Andrew.Bell@gmail.com.
+
+.. contents:: :local:
+
+Main Model
+----------
+.. autoclass:: UNIFAC
+    :members:
+.. autofunction:: UNIFAC_gammas
+.. autofunction:: UNIFAC_psi
+        
+Misc Functions
+--------------
+.. autofunction:: UNIFAC_RQ
+.. autofunction:: Van_der_Waals_volume
+.. autofunction:: Van_der_Waals_area
+.. autofunction:: chemgroups_to_matrix
+.. autofunction:: load_group_assignments_DDBST
+
+Data for Original UNIFAC
+------------------------
+.. autodata:: UFSG
+.. autodata:: UFMG
+.. autodata:: UFIP
+
+Data for Dortmund UNIFAC
+------------------------
+.. autodata:: DOUFSG
+.. autodata:: DOUFMG
+.. autodata:: DOUFIP2016
+
+Data for NIST UNIFAC
+--------------------
+.. autodata:: NISTUFSG
+.. autodata:: NISTUFMG
+.. autodata:: NISTUFIP
+
+Data for UNIFAC LLE
+-------------------
+.. autodata:: LLEUFSG
+.. autodata:: LLEMG
+.. autodata:: LLEUFIP
+
+Data for Lyngby UNIFAC
+----------------------
+.. autodata:: LUFSG
+.. autodata:: LUFMG
+.. autodata:: LUFIP
+
+Data for PSRK UNIFAC
+--------------------
+.. autodata:: PSRKSG
+.. autodata:: PSRKMG
+.. autodata:: PSRKIP
+
+
+'''
 
 from __future__ import division
 
@@ -30,7 +94,7 @@ __all__ = ['UNIFAC_gammas','UNIFAC',  'GibbsExcess',
            'load_group_assignments_DDBST', 'DDBST_UNIFAC_assignments', 
            'DDBST_MODIFIED_UNIFAC_assignments', 'DDBST_PSRK_assignments',
            'PSRKIP', 'PSRKSG', 'LLEUFIP', 'LLEUFSG', 'LLEMG', 
-           'LUFIP', 'LUFSG']
+           'LUFIP', 'LUFSG', 'NISTUFSG', 'NISTUFMG', 'NISTUFIP']
 import os
 from thermo.utils import log, exp
 from thermo.activity import GibbsExcess
@@ -423,6 +487,66 @@ DOUFMG[91] = ('OTF', [197])
 # Added Rev 6
 DOUFMG[61] = ('SULFIDES', [122, 123, 124])
 DOUFMG[93] = ('DISULFIDES', [201])
+
+
+VTPRUFSG = {}
+
+#  subgroup = (subgroup, #maingroup, maingroup, R, Q)
+VTPRUFSG = {}
+VTPRUFSG[1] = UNIFAC_subgroup('CH3', 1, 'CH2', None, 1.2958, smarts=DOUFSG[1].smarts)
+VTPRUFSG[2] = UNIFAC_subgroup('CH2', 1, 'CH2', None, 0.9471, smarts=DOUFSG[2].smarts)
+VTPRUFSG[3] = UNIFAC_subgroup('CH', 1, 'CH2', None, 0.2629, smarts=DOUFSG[3].smarts)
+VTPRUFSG[4] = UNIFAC_subgroup('C', 1, 'CH2', None, 0, smarts=DOUFSG[4].smarts)
+
+VTPRUFSG[5] = UNIFAC_subgroup('CH2=CH', 2, 'C=C', None, 1.1507, smarts=DOUFSG[5].smarts)
+VTPRUFSG[6] = UNIFAC_subgroup('CH=CH', 2, 'C=C', None, 1.3221, smarts=DOUFSG[6].smarts)
+VTPRUFSG[7] = UNIFAC_subgroup('CH2=C', 2, 'C=C', None, 0.9889, smarts=DOUFSG[7].smarts)
+VTPRUFSG[8] = UNIFAC_subgroup('CH=C', 2, 'C=C', None, 0.6760, smarts=DOUFSG[8].smarts)
+VTPRUFSG[70] = UNIFAC_subgroup('C=C', 2, 'C=C', None, 0.4850, smarts=DOUFSG[70].smarts)
+VTPRUFSG[97] = UNIFAC_subgroup('Allene', 2, 'Allene', None, 1.1287, smarts=None)
+VTPRUFSG[98] = UNIFAC_subgroup('=CHCH=', 2, '=CHCH=', None, 1.7345, smarts=None)
+VTPRUFSG[99] = UNIFAC_subgroup('=CCH=', 2, '=CCH=', None, 3.5331, smarts=None)
+VTPRUFSG[250] = UNIFAC_subgroup('H2C=CH2', 2, 'H2C=CH2', None, 0.6758, smarts=None)
+
+VTPRUFSG[9] = UNIFAC_subgroup('ACH', 3, 'ACH', None, 0.4972, smarts=DOUFSG[9].smarts)
+VTPRUFSG[10] = UNIFAC_subgroup('AC', 3, 'ACH', None, 0.1885, smarts=DOUFSG[10].smarts)
+
+VTPRUFSG[11] = UNIFAC_subgroup('ACCH3', 4, 'ACCH2', None, 1.4843, smarts=DOUFSG[11].smarts)
+VTPRUFSG[12] = UNIFAC_subgroup('ACCH2', 4, 'ACCH2', None, 1.1356, smarts=DOUFSG[12].smarts)
+VTPRUFSG[13] = UNIFAC_subgroup('ACCH', 4, 'ACCH2', None, 0.4514, smarts=DOUFSG[13].smarts)
+
+
+
+VTPRUFSG[14] = UNIFAC_subgroup('OH(P)', 5, 'OH', None, 1.0189, smarts=DOUFSG[14].smarts)
+VTPRUFSG[81] = UNIFAC_subgroup('OH(S)', 5, 'OH', None, 0.9326, smarts=DOUFSG[81].smarts)
+VTPRUFSG[82] = UNIFAC_subgroup('OH(T)', 5, 'OH', None, 0.8727, smarts=DOUFSG[82].smarts)
+
+VTPRUFSG[15] = UNIFAC_subgroup('CH3OH', 6, 'CH3OH', None, 0.8779, smarts=DOUFSG[15].smarts)
+
+VTPRUFSG[16] = UNIFAC_subgroup('H2O', 7, 'H2O', None, 1.5576, smarts=DOUFSG[16].smarts)
+
+VTPRUFSG[17] = UNIFAC_subgroup('ACOH', 8, 'ACOH', None, 0.9013, smarts=DOUFSG[17].smarts)
+
+VTPRUFSG[18] = UNIFAC_subgroup('CH3CO', 9, 'CH2CO', None, 1.448, smarts=DOUFSG[18].smarts)
+VTPRUFSG[19] = UNIFAC_subgroup('CH2CO', 9, 'CH2CO', None, 1.18, smarts=DOUFSG[19].smarts)
+
+VTPRUFSG[20] = UNIFAC_subgroup('CHO', 10, 'CHO', None, 0.948, smarts=DOUFSG[20].smarts)
+
+VTPRUFSG[21] = UNIFAC_subgroup('CH3COO', 11, 'CCOO', None, 1.728, smarts=DOUFSG[21].smarts)
+VTPRUFSG[22] = UNIFAC_subgroup('CH2COO', 11, 'CCOO', None, 1.42, smarts=DOUFSG[22].smarts)
+VTPRUFSG[129] = UNIFAC_subgroup('CHCOO', 11, 'CCOO', None, 1.221, smarts=None)
+VTPRUFSG[180] = UNIFAC_subgroup('CHCOO', 11, 'CCOO', None, 0.88, smarts=None)
+
+VTPRUFSG[23] = UNIFAC_subgroup('HCOO', 12, 'HCOO', None, 1.1880, smarts=DOUFSG[23].smarts)
+
+VTPRUFSG[24] = UNIFAC_subgroup('CH3O', 13, 'CH2O', None, 1.088, smarts=DOUFSG[24].smarts)
+VTPRUFSG[25] = UNIFAC_subgroup('CH2O', 13, 'CH2O', None, 0.78, smarts=DOUFSG[25].smarts)
+VTPRUFSG[26] = UNIFAC_subgroup('CHO', 13, 'CH2O', None, 0.468, smarts=DOUFSG[26].smarts)
+
+VTPRUFSG[28] = UNIFAC_subgroup('CH3NH2', 14, 'CH2NH2', None, 1.2260, smarts=DOUFSG[28].smarts)
+VTPRUFSG[29] = UNIFAC_subgroup('CH2NH2', 14, 'CH2NH2', None, 1.2360, smarts=DOUFSG[29].smarts)
+VTPRUFSG[30] = UNIFAC_subgroup('CHNH2', 14, 'CH2NH2', None, 1.1868, smarts=DOUFSG[30].smarts)
+VTPRUFSG[85] = UNIFAC_subgroup('CNH2', 14, 'CH2NH2', None, 1.1527, smarts=DOUFSG[85].smarts)
 
 
 NISTUFMG = {}
@@ -839,6 +963,89 @@ PSRKSG[148] = UNIFAC_subgroup('O3', 84, 'O3', 1.1000, 1.2700)
 PSRKSG[149] = UNIFAC_subgroup('CLNO', 85, 'CLNO', 1.4800, 1.3400)
 PSRKSG[152] = UNIFAC_subgroup('CNH2', 14, 'CNH2', 0.9147, 0.6140)
 
+PSRKMG = {1: ("CH2", [1, 2, 3, 4]),
+2: ("C=C", [5, 6, 7, 8, 70, 109]),
+3: ("ACH", [9, 10]),
+4: ("ACCH2", [11, 12, 13]),
+5: ("OH", [14]),
+6: ("CH3OH", [15]),
+7: ("H2O", [16]),
+8: ("ACOH", [17]),
+9: ("CH2CO", [18, 19]),
+10: ("CHO", [20]),
+11: ("CCOO", [21, 22]),
+12: ("HCOO", [23]),
+13: ("CH2O", [24, 25, 26, 27]),
+14: ("CNH2", [28, 29, 30, 152]),
+15: ("CNH", [31, 32, 33]),
+16: ("(C)3N", [34, 35]),
+17: ("ACNH2", [36]),
+18: ("PYRIDINE", [37, 38, 39]),
+19: ("CCN", [40, 41]),
+20: ("COOH", [42, 43]),
+21: ("CCL", [44, 45, 46]),
+22: ("CCL2", [47, 48, 49]),
+23: ("CCL3", [50, 51]),
+24: ("CCL4", [52]),
+25: ("ACCL", [53]),
+26: ("CNO2", [54, 55, 56]),
+27: ("ACNO2", [57]),
+28: ("CS2", [58]),
+29: ("CH3SH", [59, 60, 134, 135]),
+30: ("FURFURAL", [61]),
+31: ("DOH", [62]),
+32: ("I", [63]),
+33: ("BR", [64]),
+34: ("C=-C", [65, 66, 110]),
+35: ("DMSO", [67]),
+36: ("ACRY", [68]),
+37: ("CLCC", [69]),
+38: ("ACF", [71]),
+39: ("DMF", [72, 73]),
+40: ("CF2", [74, 75, 76]),
+41: ("COO", [77]),
+42: ("SIH2", [78, 79, 80, 81]),
+43: ("SIO", [82, 83, 84]),
+44: ("NMP", [85]),
+45: ("CCLF", [86, 87, 88, 89, 90, 91, 92, 93]),
+46: ("CON (AM)", [94, 95, 96, 97, 98, 99]),
+47: ("OCCOH", [100, 101]),
+48: ("CH2S", [102, 103, 104]),
+49: ("MORPH", [105]),
+50: ("THIOPHEN", [106, 107, 108]),
+51: ("EPOXY", [136, 137, 138, 139, 140, 141]),
+55: ("NH3", [111]),
+56: ("CO2", [117]),
+57: ("CH4", [118]),
+58: ("O2", [119]),
+59: ("AR", [116]),
+60: ("N2", [115]),
+61: ("H2S", [114]),
+62: ("H2", [113, 120]),
+63: ("CO", [112]),
+65: ("SO2", [121]),
+66: ("NO", [122]),
+67: ("N2O", [123]),
+68: ("SF6", [124]),
+69: ("HE", [125]),
+70: ("NE", [126]),
+71: ("KR", [127]),
+72: ("XE", [128]),
+73: ("HF", [129]),
+74: ("HCL", [130]),
+75: ("HBR", [131]),
+76: ("HI", [132]),
+77: ("COS", [133]),
+78: ("F2", [142]),
+79: ("CL2", [143]),
+80: ("BR2", [144]),
+81: ("HCN", [145]),
+82: ("NO2", [146]),
+83: ("CF4", [147]),
+84: ("O3", [148]),
+85: ("CLNO", [149]),
+}
+
 LLEUFSG = {}
 # LLEUFSG[subgroup ID] = (subgroup formula, main group ID, subgroup R, subgroup Q)
 LLEUFSG[1] = UNIFAC_subgroup('CH3', 1, 'CH2', 0.9011, 0.848, smarts=UFSG[1].smarts)
@@ -1043,7 +1250,28 @@ LUFSG[44] = UNIFAC_subgroup('CCL3', 20, 'CCL3', 2.6401, 2.184, smarts=UFSG[51].s
 
 LUFSG[45] = UNIFAC_subgroup('CCL4', 21, 'CCL4', 3.39, 2.91, smarts=UFSG[52].smarts)
 
-
+LUFMG = {1: ("CH2", [1, 2, 3, 4]),
+2: ("C=C", [5, 6, 7, 8, 9]),
+3: ("ACH", [10, 11]),
+4: ("OH", [12]),
+5: ("CH3OH", [13]),
+6: ("H2O", [14]),
+7: ("CH2CO", [15, 16]),
+8: ("CHO", [17]),
+9: ("CCOO", [18, 19]),
+10: ("CH2O", [20, 21, 22, 23]),
+11: ("NH2", [24]),
+12: ("CNH2NG", [25, 26, 27]),
+13: ("CH2N", [28, 29]),
+14: ("ANH2", [30]),
+15: ("PYRIDINE", [31, 32, 33]),
+16: ("CCN", [34, 35]),
+17: ("COOH", [36]),
+18: ("CCL", [37, 38, 39]),
+19: ("CCL2", [40, 41, 42]),
+20: ("CCL3", [43, 44]),
+21: ("CCL4", [45]),
+}
 
 
 '''Compared to storing the values in dict[(int1, int2)] = (values), 
@@ -1087,14 +1315,14 @@ with open(os.path.join(folder, 'UNIFAC modified Dortmund interaction parameters.
 
 
 #NISTUFIP = {i: {} for i in list(NISTUFMG.keys())}
-NISTUFIP = {i: {} for i in range(400)}
+NISTUFIP = {i: {} for i in list(range(87)) + [92, 94, 95, 96] }
 
 with open(os.path.join(folder, 'UNIFAC modified NIST 2015 interaction parameters.tsv')) as f:
     for line in f:
         maingroup1, maingroup2, a, b, c, Tmin, Tmax = line.strip('\n').split('\t')
         NISTUFIP[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
 
-PSRKIP = {i: {} for i in range(400)}
+PSRKIP = {i: {} for i in range(1, 86)}
 
 with open(os.path.join(folder, 'PSRK interaction parameters.tsv')) as f:
     for line in f:
@@ -1620,8 +1848,12 @@ def chemgroups_to_matrix(chemgroups):
 class UNIFAC(GibbsExcess):
     
     @staticmethod
-    def from_subgroups(T, xs, chemgroups, subgroups=UFSG,
-                       interaction_data=UFIP, version=0):
+    def from_subgroups(T, xs, chemgroups, subgroups=None,
+                       interaction_data=None, version=0):
+        if subgroups is None:
+            subgroups = UFSG
+        if interaction_data is None:
+            interaction_data = UFIP
         rs = []
         qs = []
         for groups in chemgroups:
@@ -1686,7 +1918,7 @@ class UNIFAC(GibbsExcess):
         1 - Dortmund UNIFAC (adds T dept, 3/4 power)
         2 - PSRK (original with T dept function)
         3 - VTPR (drops combinatorial term, Dortmund UNIFAC otherwise)
-        4 - Lyngby/Larsen has different combinatorial, 2/3 poewr
+        4 - Lyngby/Larsen has different combinatorial, 2/3 power
         '''
         self.T = T
         self.xs = xs
@@ -1719,15 +1951,15 @@ class UNIFAC(GibbsExcess):
         self.N = N = len(rs)
         self.cmps = range(N)
         self.version = version
-        self.skip_comb = version == 4
+        self.skip_comb = version == 3
         
         if self.version == 1:
             power = 0.75
-            self.rs_34 = [i**power for i in rs]
+            self.rs_34 = [ri**power for ri in rs]
         elif self.version == 4:
             power = 2.0/3.0 # Lyngby
-            # Magically works in the various functions without change
-            self.rs_34 = [i**power for i in rs]
+            # works in the various functions without change as never taking the der w.r.t. r
+            self.rs_34 = [ri**power for ri in rs]
 
         self.cmp_v_count = [sum(vs[group][i] for group in self.groups) for i in self.cmps]
         
@@ -3395,8 +3627,7 @@ class UNIFAC(GibbsExcess):
             
         else:
             for i in cmps:
-                dGE = lngammas_r[i] + lngammas_c[i]
-                dGE += T*dlngammas_r_dT[i]
+                dGE = lngammas_r[i] + lngammas_c[i] + T*dlngammas_r_dT[i]
                 for j in cmps:
                     dGE += xs[j]*(dlngammas_c_dxs[j][i] + dlngammas_r_dxs[j][i])
                     dGE += T*xs[j]*d2lngammas_r_dTdxs[j][i] # ji should be consistent in all of them
@@ -3594,8 +3825,8 @@ class UNIFAC(GibbsExcess):
         For the Lyngby model:
             
         .. math::
-            \ln \gamma_i^c = \ln \left( \frac{V_i'}{x_i} \right) + 1 
-            - \frac{V_i'}{x_i}
+            \ln \gamma_i^c = \ln \left(V_i'\right) + 1 
+            - V_i'
         
         Returns
         -------
@@ -3618,7 +3849,7 @@ class UNIFAC(GibbsExcess):
         if version == 4:
             xs = self.xs
             for i in cmps:
-                r = Vis_modified[i]/xs[i]
+                r = Vis_modified[i] # In the definition of V' used here, there is no mole fraction division needed
                 val = log(r) + 1.0 - r
                 lngammas_c.append(val)
         else:
@@ -3707,20 +3938,13 @@ class UNIFAC(GibbsExcess):
             - \frac{\partial V_i'}{\partial x_j} 
             + \frac{\frac{\partial V_i'}{\partial x_j}}{V_i'}
         
-        For the Lyngby model, the following equations are used for 
-        :math:`i \ne j` and for :math:`i = j` respectively:
-            
-        .. math::
-            \frac{\ln \gamma_i^c}{\partial x_j} = 
-            \frac{\frac{V_i'}{\partial x_j}}{V_i'} - \frac{\frac{\partial V_i'}
-            {\partial x_j}}{x_i}
-            
-        .. math::
-            \frac{\ln \gamma_i^c}{\partial x_i} = 
-            \frac{x_i\left(\frac{\frac{\partial V_i'}{x_i}}{x_i}
-            - \frac{V_i'}{x_i^2} \right)}{V_i'}
-            - \frac{\frac{\partial V_i'}{\partial x_i}}{x_i} +\frac{V_i'}{x_i^2}
+        For the Lyngby model, the following equations are used:
         
+        .. math::
+            \frac{\partial \ln \gamma^c_i}{\partial x_j} = 
+            \frac{-\partial V_i'}{\partial x_j} + \frac{1}{V_i'}
+            \frac{\partial V_i'}{\partial x_j}
+
         Returns
         -------
         dlngammas_c_dxs : list[list[float]]
@@ -3754,11 +3978,7 @@ class UNIFAC(GibbsExcess):
             for i in cmps:
                 row = []
                 for j in cmps:
-                    if i == j:
-                        v = xs[i]/Vis_modified[i]*(dVis_modified_dxs[i][i]/xs[i] - Vis_modified[i]/xs[i]**2)
-                        v += -dVis_modified_dxs[i][i]/xs[i] + Vis_modified[i]/xs[i]**2
-                    else:
-                        v = dVis_modified_dxs[i][j]/Vis_modified[i] - dVis_modified_dxs[i][j]/xs[i]
+                    v = -dVis_modified_dxs[i][j] + dVis_modified_dxs[i][j]/Vis_modified[i]
                     row.append(v)
                 dlngammas_c_dxs.append(row)
         else:
@@ -3853,7 +4073,14 @@ class UNIFAC(GibbsExcess):
             + \frac{\frac{d^{2}}{d x_{k}d x_{j}} Vi'}{Vi'} - \frac{\frac{d}
             {d x_{j}} Vi' \frac{d}{d x_{k}} Vi'}{Vi'^{2}}
             
-        The Lyngby model derivative is not implemented.
+        For the Lyngby model, the following equations are used:
+        
+        .. math::
+            \frac{\partial^2 \ln \gamma^c_i}{\partial x_j \partial x_k} = 
+            -\frac{\partial^2 V_i'}{\partial x_j \partial x_k}
+            + \frac{1}{V_i'} \frac{\partial^2 V_i'}{\partial x_j \partial x_k} 
+            - \frac{1}{\left(V_i'\right)^2} \frac{\partial V_i'}{\partial x_j}
+             \frac{\partial V_i'}{\partial x_k}
             
         Returns
         -------
@@ -3862,8 +4089,6 @@ class UNIFAC(GibbsExcess):
             number of components by number of components by number of
             components, [-]
         '''
-        if self.version == 4:
-            raise NotImplementedError("TODO")
         try:
             return self._d2lngammas_c_dxixjs
         except AttributeError:
@@ -3887,46 +4112,62 @@ class UNIFAC(GibbsExcess):
             d2Vis_modified_dxixjs = d2Vis_dxixjs
 
         d2lngammas_c_dxixjs = []
-        for i in cmps:
-            Vi = Vis[i]
-            qi = qs[i]
-            ViD = Vis_modified[i]
-            ViD_inv2 = 1.0/(ViD*ViD)
-            Fi = Fis[i]
-            x1 = 1.0/Fi
-            x4 = x1*x1
-            Fi_inv3 = x1*x1*x1
-            x5 = Vis[i]*x4
-            x15 = 1.0/Vi
-            Vi_inv2 = x15*x15
-            matrix = []
-            for j in cmps:
-                x6 = dFis_dxs[i][j]
-                x10 = dVis_dxs[i][j]
-                dViD_dxj = dVis_modified_dxs[i][j]
-                row = []
-                for k in cmps:
-                    x0 = d2Vis_modified_dxixjs[i][j][k]
-                    x2 = d2Vis_dxixjs[i][j][k]
-                    x3 = d2Fis_dxixjs[i][j][k]
-                    x7 = dVis_dxs[i][k]
-                    dViD_dxk = dVis_modified_dxs[i][k]
-                    x8 = x6*x7
-                    x9 = dFis_dxs[i][k]
-                    x11 = x10*x9
-                    x12 = 2.0*x6*x9
-                    
-                    x13 = Vi*x1
-                    x14 = x10 - x13*x6
-                    
-                    val = (5.0*qi*(-x1*x14*x15*x9 + x1*x2 - x11*x4
-                                   + x15*(x1*x11 + x1*x8 - x12*x5 + x13*x3 - x2)
-                                   - x3*x5 - x4*x8 + x14*x7*Vi_inv2 + Vi*x12*Fi_inv3) 
-                            - x0 + x0/ViD - dViD_dxj*dViD_dxk*ViD_inv2
-                            )
-                    row.append(val)
-                matrix.append(row)
-            d2lngammas_c_dxixjs.append(matrix)
+        
+        if version == 4:
+            for i in cmps:
+                Vi = Vis_modified[i]
+                matrix = []
+                for j in cmps:
+                    row = []
+                    for k in cmps:
+                        val = -d2Vis_modified_dxixjs[i][j][k] + 1.0/Vi*d2Vis_modified_dxixjs[i][j][k]
+                        val -= 1.0/Vi**2*dVis_modified_dxs[i][j]*dVis_modified_dxs[i][k]
+                        row.append(val)
+                    matrix.append(row)
+                
+                d2lngammas_c_dxixjs.append(matrix)
+
+        else:
+            for i in cmps:
+                Vi = Vis[i]
+                qi = qs[i]
+                ViD = Vis_modified[i]
+                ViD_inv2 = 1.0/(ViD*ViD)
+                Fi = Fis[i]
+                x1 = 1.0/Fi
+                x4 = x1*x1
+                Fi_inv3 = x1*x1*x1
+                x5 = Vis[i]*x4
+                x15 = 1.0/Vi
+                Vi_inv2 = x15*x15
+                matrix = []
+                for j in cmps:
+                    x6 = dFis_dxs[i][j]
+                    x10 = dVis_dxs[i][j]
+                    dViD_dxj = dVis_modified_dxs[i][j]
+                    row = []
+                    for k in cmps:
+                        x0 = d2Vis_modified_dxixjs[i][j][k]
+                        x2 = d2Vis_dxixjs[i][j][k]
+                        x3 = d2Fis_dxixjs[i][j][k]
+                        x7 = dVis_dxs[i][k]
+                        dViD_dxk = dVis_modified_dxs[i][k]
+                        x8 = x6*x7
+                        x9 = dFis_dxs[i][k]
+                        x11 = x10*x9
+                        x12 = 2.0*x6*x9
+                        
+                        x13 = Vi*x1
+                        x14 = x10 - x13*x6
+                        
+                        val = (5.0*qi*(-x1*x14*x15*x9 + x1*x2 - x11*x4
+                                       + x15*(x1*x11 + x1*x8 - x12*x5 + x13*x3 - x2)
+                                       - x3*x5 - x4*x8 + x14*x7*Vi_inv2 + Vi*x12*Fi_inv3) 
+                                - x0 + x0/ViD - dViD_dxj*dViD_dxk*ViD_inv2
+                                )
+                        row.append(val)
+                    matrix.append(row)
+                d2lngammas_c_dxixjs.append(matrix)
             
         self._d2lngammas_c_dxixjs = d2lngammas_c_dxixjs
         return d2lngammas_c_dxixjs
@@ -3972,7 +4213,20 @@ class UNIFAC(GibbsExcess):
             + \frac{10 q_{i} \frac{d}{d x_{k}} F_{i} \frac{d}{d x_{m}} F_{i} \frac{d}{d x_{j}} V_{i}}{F_{i}^{3}} 
             - \frac{30 V_{i} q_{i} \frac{d}{d x_{j}} F_{i} \frac{d}{d x_{k}} F_{i} \frac{d}{d x_{m}} F_{i}}{F_{i}^{4}}
 
-        The Lyngby model derivative is not implemented.
+        For the Lyngby model, the following equations are used:
+        
+        .. math::
+            \frac{\partial^3 \ln \gamma^c_i}{\partial x_j \partial x_k \partial 
+            x_m} = \frac{\partial^3 V_i'}{\partial x_j \partial x_k \partial 
+            x_m}\left(\frac{1}{V_i'} - 1\right)
+            - \frac{1}{(V_i')^2}\left(
+            \frac{\partial V_i'}{\partial x_j}\frac{\partial V_i'}{\partial x_k \partial x_m}
+            + \frac{\partial V_i'}{\partial x_k}\frac{\partial V_i'}{\partial x_j \partial x_m}
+            + \frac{\partial V_i'}{\partial x_m}\frac{\partial V_i'}{\partial x_j \partial x_k}
+            \right)
+            + \frac{2}{(V_i')^3}\frac{\partial V_i'}{\partial x_j}
+            \frac{\partial V_i'}{\partial x_k}\frac{\partial V_i'}{\partial x_m}
+            
             
         Returns
         -------
@@ -3981,8 +4235,6 @@ class UNIFAC(GibbsExcess):
             number of components by number of components by number of 
             components by number of components, [-]
         '''
-        if self.version == 4:
-            raise NotImplementedError("TODO")
         try:
             return self._d3lngammas_c_dxixjxks
         except AttributeError:
@@ -3998,7 +4250,7 @@ class UNIFAC(GibbsExcess):
         d2Fis_dxixjs = self.d2Fis_dxixjs()
         d3Fis_dxixjxks = self.d3Fis_dxixjxks()
         
-        if self.version in (1, 4):
+        if version in (1, 4):
             Vis_modified = self.Vis_modified()
             dVis_modified_dxs = self.dVis_modified_dxs()
             d2Vis_modified_dxixjs = self.d2Vis_modified_dxixjs()
@@ -4011,64 +4263,85 @@ class UNIFAC(GibbsExcess):
         
         d3lngammas_c_dxixjxks = []
         
-        for i in cmps:
-            Vi = Vis[i]
-            ViD = Vis_modified[i]
-            Fi = Fis[i]
-            qi = qs[i]
-            third = []
-            for j in cmps:
-                hess = []
-                for k in cmps:
-                    row = []
-                    for m in cmps:
-                        x0 = d3Vis_modified_dxixjxks[i][j][k][m]#Derivative(ViD, xj, xk, xm)
-                        x1 = 1/Fis[i]#1/Fi
-                        x2 = 5.0*qs[i]
-                        x3 = x2*d3Fis_dxixjxks[i][j][k][m]#Derivative(Fi, xj, xk, xm)
-                        x4 = x2*d3Vis_dxixjxks[i][j][k][m]#Derivative(Vi, xj, xk, xm)
-                        x5 = Vis_modified[i]**-2#ViD**(-2)
-                        x6 = dVis_modified_dxs[i][j]#Derivative(ViD, xj)
-                        x7 = dVis_modified_dxs[i][k]#Derivative(ViD, xk)
-                        x8 = dVis_modified_dxs[i][m]#Derivative(ViD, xm)
-                        x9 = Fis[i]**-2#Fi**(-2)
-                        x10 = x2*x9
-                        x11 = dFis_dxs[i][j]#Derivative(Fi, xj)
-                        x12 = d2Fis_dxixjs[i][k][m]#Derivative(Fi, xk, xm)
-                        x13 = x11*x12
-                        x14 = d2Vis_dxixjs[i][k][m]#Derivative(Vi, xk, xm)
-                        x15 = d2Fis_dxixjs[i][j][m]#Derivative(Fi, xj, xm)
-                        x16 = dFis_dxs[i][k]#Derivative(Fi, xk)
-                        x17 = x10*x16
-                        x18 = d2Vis_dxixjs[i][j][m]#Derivative(Vi, xj, xm)
-                        x19 = d2Fis_dxixjs[i][j][k]#Derivative(Fi, xj, xk)
-                        x20 = dFis_dxs[i][m]#Derivative(Fi, xm)
-                        x21 = x10*x20
-                        x22 = d2Vis_dxixjs[i][j][k]#Derivative(Vi, xj, xk)
-                        x23 = dVis_dxs[i][j]#Derivative(Vi, xj)
-                        x24 = dVis_dxs[i][k]#Derivative(Vi, xk)
-                        x25 = dVis_dxs[i][m]#Derivative(Vi, xm)
-                        x26 = x2/Vis[i]**2
-                        x27 = Fis[i]**(-3)
-                        x28 = 10*qs[i]
-                        x29 = x27*x28
-                        x30 = Vi*x29
-                        x31 = x11*x16
-                        x32 = x20*x29
-                        x33 = x25*x28        
-                        val = (-Vi*x3*x9 - x0 + x1*x3 + x1*x4 - x10*x11*x14 - x10*x12*x23 
-                               - x10*x13 - x10*x15*x24 - x10*x19*x25 + x11*x24*x32 + x13*x30 
-                               + x14*x23*x26 + x15*x16*x30 - x15*x17 + x16*x23*x32 - x17*x18 
-                               + x18*x24*x26 + x19*x20*x30 - x19*x21 - x21*x22 + x22*x25*x26 
-                               + x27*x31*x33 + x31*x32 - x5*x6*d2Vis_modified_dxixjs[i][k][m]
-                               - x5*x7*d2Vis_modified_dxixjs[i][j][m]
-                               - x5*x8*d2Vis_modified_dxixjs[i][j][k]
-                               + x0/ViD + 2*x6*x7*x8/ViD**3 - x4/Vi - x23*x24*x33/Vi**3 - 30*Vi*qi*x20*x31/Fi**4)
-                        
-                        row.append(val)
-                    hess.append(row)
-                third.append(hess)
-            d3lngammas_c_dxixjxks.append(third)
+        if version == 4:
+            for i in cmps:
+                Vi = Vis_modified[i]
+                third = []
+                for j in cmps:
+                    hess = []
+                    for k in cmps:
+                        row = []
+                        for m in cmps:
+                            val = d3Vis_modified_dxixjxks[i][j][k][m]*(1.0/Vi - 1.0)
+                            val-= 1.0/Vi**2*  (dVis_modified_dxs[i][j]*d2Vis_modified_dxixjs[i][k][m]
+                                             + dVis_modified_dxs[i][k]*d2Vis_modified_dxixjs[i][j][m]
+                                             + dVis_modified_dxs[i][m]*d2Vis_modified_dxixjs[i][j][k])
+                            
+                            val += 2.0/Vi**3*dVis_modified_dxs[i][j]*dVis_modified_dxs[i][k]*dVis_modified_dxs[i][m]
+                            
+                            row.append(val)
+                        hess.append(row)
+                    third.append(hess)
+                d3lngammas_c_dxixjxks.append(third)
+        else:
+            for i in cmps:
+                Vi = Vis[i]
+                ViD = Vis_modified[i]
+                Fi = Fis[i]
+                qi = qs[i]
+                third = []
+                for j in cmps:
+                    hess = []
+                    for k in cmps:
+                        row = []
+                        for m in cmps:
+                            x0 = d3Vis_modified_dxixjxks[i][j][k][m]#Derivative(ViD, xj, xk, xm)
+                            x1 = 1/Fis[i]#1/Fi
+                            x2 = 5.0*qs[i]
+                            x3 = x2*d3Fis_dxixjxks[i][j][k][m]#Derivative(Fi, xj, xk, xm)
+                            x4 = x2*d3Vis_dxixjxks[i][j][k][m]#Derivative(Vi, xj, xk, xm)
+                            x5 = Vis_modified[i]**-2#ViD**(-2)
+                            x6 = dVis_modified_dxs[i][j]#Derivative(ViD, xj)
+                            x7 = dVis_modified_dxs[i][k]#Derivative(ViD, xk)
+                            x8 = dVis_modified_dxs[i][m]#Derivative(ViD, xm)
+                            x9 = Fis[i]**-2#Fi**(-2)
+                            x10 = x2*x9
+                            x11 = dFis_dxs[i][j]#Derivative(Fi, xj)
+                            x12 = d2Fis_dxixjs[i][k][m]#Derivative(Fi, xk, xm)
+                            x13 = x11*x12
+                            x14 = d2Vis_dxixjs[i][k][m]#Derivative(Vi, xk, xm)
+                            x15 = d2Fis_dxixjs[i][j][m]#Derivative(Fi, xj, xm)
+                            x16 = dFis_dxs[i][k]#Derivative(Fi, xk)
+                            x17 = x10*x16
+                            x18 = d2Vis_dxixjs[i][j][m]#Derivative(Vi, xj, xm)
+                            x19 = d2Fis_dxixjs[i][j][k]#Derivative(Fi, xj, xk)
+                            x20 = dFis_dxs[i][m]#Derivative(Fi, xm)
+                            x21 = x10*x20
+                            x22 = d2Vis_dxixjs[i][j][k]#Derivative(Vi, xj, xk)
+                            x23 = dVis_dxs[i][j]#Derivative(Vi, xj)
+                            x24 = dVis_dxs[i][k]#Derivative(Vi, xk)
+                            x25 = dVis_dxs[i][m]#Derivative(Vi, xm)
+                            x26 = x2/Vis[i]**2
+                            x27 = Fis[i]**(-3)
+                            x28 = 10*qs[i]
+                            x29 = x27*x28
+                            x30 = Vi*x29
+                            x31 = x11*x16
+                            x32 = x20*x29
+                            x33 = x25*x28        
+                            val = (-Vi*x3*x9 - x0 + x1*x3 + x1*x4 - x10*x11*x14 - x10*x12*x23 
+                                   - x10*x13 - x10*x15*x24 - x10*x19*x25 + x11*x24*x32 + x13*x30 
+                                   + x14*x23*x26 + x15*x16*x30 - x15*x17 + x16*x23*x32 - x17*x18 
+                                   + x18*x24*x26 + x19*x20*x30 - x19*x21 - x21*x22 + x22*x25*x26 
+                                   + x27*x31*x33 + x31*x32 - x5*x6*d2Vis_modified_dxixjs[i][k][m]
+                                   - x5*x7*d2Vis_modified_dxixjs[i][j][m]
+                                   - x5*x8*d2Vis_modified_dxixjs[i][j][k]
+                                   + x0/ViD + 2*x6*x7*x8/ViD**3 - x4/Vi - x23*x24*x33/Vi**3 - 30*Vi*qi*x20*x31/Fi**4)
+                            
+                            row.append(val)
+                        hess.append(row)
+                    third.append(hess)
+                d3lngammas_c_dxixjxks.append(third)
         
         self._d3lngammas_c_dxixjxks = d3lngammas_c_dxixjxks
         return d3lngammas_c_dxixjxks
