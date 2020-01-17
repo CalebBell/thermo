@@ -21,7 +21,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
-__all__ = ['sequential_substitution_2P', 'bubble_T_Michelsen_Mollerup',
+__all__ = ['sequential_substitution_2P', 'sequential_substitution_GDEM3_2P',
+           'bubble_T_Michelsen_Mollerup',
            'dew_T_Michelsen_Mollerup', 'bubble_P_Michelsen_Mollerup',
            'dew_P_Michelsen_Mollerup',
            'minimize_gibbs_2P_transformed', 'sequential_substitution_Mehra_2P',
@@ -2648,6 +2649,9 @@ class FlashVL(FlashBase):
     PT_SS_MAXITER = 1000
     PT_SS_TOL = 1e-13
     
+    SS_acceleration = False
+    SS_acceleration_method = None
+    
     def __init__(self, constants, correlations, liquid, gas):
         self.constants = constants
         self.correlations = correlations
@@ -2809,6 +2813,8 @@ class FlashPureVLS(FlashBase):
            increasingly; this number will index into the multiple solution
            array. Strings are intended to be shortcuts for certain solutions.
            Negative indexing is supported.
+           
+           Can this be made part of the multiphase flash?
         '''
         constants, correlations = self.constants, self.correlations
         settings = self.settings
@@ -2855,7 +2861,7 @@ class FlashPureVLS(FlashBase):
             flash_specs['SF'] = SF
 
         if ((T_spec and (P_spec or V_spec)) or (P_spec and V_spec)):            
-            g, ls, ss, betas = self.flash_TPV(T=T, P=P, V=V, solution=solution)
+            g, ls, ss, betas = self.flash_TPV(T=T, P=P, V=V, zs=zs, solution=solution)
             if g is not None:
                 id_phases = [g] + ls + ss
             else:
@@ -2875,7 +2881,7 @@ class FlashPureVLS(FlashBase):
             
         elif T_spec and VF_spec:
             # All dew/bubble are the same with 1 component
-            Psat, l, g, iterations, err = self.flash_TVF(T)
+            Psat, l, g, iterations, err = self.flash_TVF(T, zs=zs)
             flash_convergence = {'iterations': iterations, 'err': err}
             
             return EquilibriumState(T, Psat, zs, gas=g, liquids=[l], solids=[], 
@@ -2886,7 +2892,7 @@ class FlashPureVLS(FlashBase):
             
         elif P_spec and VF_spec:
             # All dew/bubble are the same with 1 component
-            Tsat, l, g, iterations, err = self.flash_PVF(P)
+            Tsat, l, g, iterations, err = self.flash_PVF(P, zs=zs)
             flash_convergence = {'iterations': iterations, 'err': err}
 
             return EquilibriumState(Tsat, P, zs, gas=g, liquids=[l], solids=[], 
@@ -2895,7 +2901,7 @@ class FlashPureVLS(FlashBase):
                                     constants=constants, correlations=correlations,
                                     flasher=self)
         elif T_spec and SF_spec:
-            Psub, other_phase, s, iterations, err = self.flash_TSF(T)
+            Psub, other_phase, s, iterations, err = self.flash_TSF(T, zs=zs)
             if isinstance(other_phase, gas_phases):
                 g, liquids = other_phase, []
             else:
@@ -2908,7 +2914,7 @@ class FlashPureVLS(FlashBase):
                                     constants=constants, correlations=correlations,
                                     flasher=self)
         elif P_spec and SF_spec:
-            Tsub, other_phase, s, iterations, err = self.flash_PSF(P)
+            Tsub, other_phase, s, iterations, err = self.flash_PSF(P, zs=zs)
             if isinstance(other_phase, gas_phases):
                 g, liquids = other_phase, []
             else:
@@ -2922,7 +2928,7 @@ class FlashPureVLS(FlashBase):
                                     flasher=self)
         elif VF_spec and any([H_spec, S_spec, U_spec, G_spec, A_spec]):
             spec_var, spec_val = [(k, v) for k, v in flash_specs.items() if k not in ('VF', 'zs')][0]
-            T, Psat, liquid, gas, iters_inner, err_inner, err, iterations = self.flash_VF_HSGUA(VF, spec_val, fixed_var='VF', spec_var=spec_var, solution=solution)
+            T, Psat, liquid, gas, iters_inner, err_inner, err, iterations = self.flash_VF_HSGUA(VF, spec_val, fixed_var='VF', spec_var=spec_var, zs=zs, solution=solution)
             flash_convergence = {'iterations': iterations, 'err': err, 'inner_flash_convergence': {'iterations': iters_inner, 'err': err_inner}}
             return EquilibriumState(T, Psat, zs, gas=gas, liquids=[liquid], solids=[],
                                     betas=[VF, 1.0 - VF], flash_specs=flash_specs,
@@ -2953,11 +2959,11 @@ class FlashPureVLS(FlashBase):
             # Only allow one
 #            g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var)
             try:
-                g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var, solution=solution)
+                g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var, zs=zs, solution=solution)
             except Exception as e:
                 if retry:
                     print('retrying HSGUA flash')
-                    g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var_backup, solution=solution)
+                    g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var_backup, zs=zs, solution=solution)
                 else:
                     raise e
 #            except UnconvergedError as e:
@@ -2979,7 +2985,7 @@ class FlashPureVLS(FlashBase):
         else:
             raise Exception('Flash inputs unsupported')
 
-    def flash_TPV(self, T, P, V, solution=None):
+    def flash_TPV(self, T, P, V, zs=None, solution=None):
         zs = [1]
         liquids = []
         solids = []
@@ -3032,7 +3038,7 @@ class FlashPureVLS(FlashBase):
             Psat = self.correlations.VaporPressures[0](T)
         return Psat
 
-    def flash_TVF(self, T, VF=None):
+    def flash_TVF(self, T, VF=None, zs=None):
         zs = [1]
         Psat = self.Psat_guess(T)
         gas = self.gas.to_TP_zs(T, Psat, zs)
@@ -3045,7 +3051,7 @@ class FlashPureVLS(FlashBase):
 #        print('P', P, 'solved')
         return vals
 
-    def flash_PVF(self, P, VF=None):
+    def flash_PVF(self, P, VF=None, zs=None):
         zs = [1]
         if self.VL_only_CEOSs_same:
             Tsat = self.gas.eos_pures_STP[0].Tsat(P)
@@ -3059,7 +3065,7 @@ class FlashPureVLS(FlashBase):
         return PVF_pure_newton(Tsat, P, liquids, gas, maxiter=200, xtol=1E-10)
 #        return PVF_pure_secant(Tsat, P, liquids, gas, maxiter=200, xtol=1E-10)
 
-    def flash_TSF(self, T, SF=None):
+    def flash_TSF(self, T, SF=None, zs=None):
         # if under triple point search for gas - otherwise search for liquid
         # For water only there is technically two solutions at some point for both
         # liquid and gas, flag?
@@ -3077,7 +3083,7 @@ class FlashPureVLS(FlashBase):
         return TSF_pure_newton(Psub, T, try_phases, self.solids, 
                                maxiter=200, xtol=1E-10)
         
-    def flash_PSF(self, P, SF=None):
+    def flash_PSF(self, P, SF=None, zs=None):
         zs = [1]
         if P < self.constants.Pts[0]:
             Tsub = self.correlations.SublimationPressures[0].solve_prop(P)
@@ -3095,7 +3101,7 @@ class FlashPureVLS(FlashBase):
         
     
         
-    def flash_TPV_HSGUA(self, fixed_var_val, spec_val, fixed_var='P', spec='H', iter_var='T', solution=None,
+    def flash_TPV_HSGUA(self, fixed_var_val, spec_val, fixed_var='P', spec='H', iter_var='T', zs=None, solution=None,
                         selection_fun_1P=None):
         # Be prepared to have a flag here to handle zero flow
         zs = [1]
@@ -3465,7 +3471,7 @@ class FlashPureVLS(FlashBase):
                 
     
     
-    def flash_VF_HSGUA(self, fixed_var_val, spec_val, fixed_var='VF', spec_var='H', 
+    def flash_VF_HSGUA(self, fixed_var_val, spec_val, fixed_var='VF', spec_var='H', zs=None,
                        solution='high'):
         # solution at high T by default
         if not self.VF_interpolators_built:

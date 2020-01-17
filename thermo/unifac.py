@@ -57,11 +57,17 @@ Data for Dortmund UNIFAC
 .. autodata:: DOUFMG
 .. autodata:: DOUFIP2016
 
-Data for NIST UNIFAC
---------------------
+Data for NIST UNIFAC (2015)
+---------------------------
 .. autodata:: NISTUFSG
 .. autodata:: NISTUFMG
 .. autodata:: NISTUFIP
+
+Data for NIST KT UNIFAC (2011)
+------------------------------
+.. autodata:: NISTKTUFSG
+.. autodata:: NISTKTUFMG
+.. autodata:: NISTKTUFIP
 
 Data for UNIFAC LLE
 -------------------
@@ -100,7 +106,8 @@ __all__ = ['UNIFAC_gammas','UNIFAC',  'GibbsExcess',
            'DDBST_MODIFIED_UNIFAC_assignments', 'DDBST_PSRK_assignments',
            'PSRKIP', 'PSRKSG', 'LLEUFIP', 'LLEUFSG', 'LLEMG', 
            'LUFIP', 'LUFSG', 'NISTUFSG', 'NISTUFMG', 'NISTUFIP', 'VTPRIP',
-           'VTPRSG', 'VTPRMG']
+           'VTPRSG', 'VTPRMG', 'NISTKTUFSG', 'NISTKTUFIP', 'NISTKTUFMG',
+           'LUFMG', 'PSRKMG']
 import os
 from thermo.utils import log, exp
 from thermo.activity import GibbsExcess
@@ -1412,6 +1419,199 @@ LUFMG = {1: ("CH2", [1, 2, 3, 4]),
 21: ("CCL4", [45]),
 }
 
+NISTKTUFSG = {}
+NISTKTUFSG[1] = UNIFAC_subgroup("CH3-", 1, 'C', 0.9011, 0.848)
+NISTKTUFSG[2] = UNIFAC_subgroup("-CH2-", 1, 'C', 0.6744, 0.54)
+NISTKTUFSG[3] = UNIFAC_subgroup("-CH<", 1, 'C', 0.4469, 0.228)
+NISTKTUFSG[4] = UNIFAC_subgroup(">C<", 1, 'C', 0.2195, 0)
+NISTKTUFSG[5] = UNIFAC_subgroup("CH2=CH-", 2, 'C=C', 1.3454, 1.176)
+NISTKTUFSG[6] = UNIFAC_subgroup("-CH=CH-", 2, 'C=C', 1.1167, 0.867)
+NISTKTUFSG[7] = UNIFAC_subgroup("CH2=C<", 2, 'C=C', 1.1173, 0.988)
+NISTKTUFSG[8] = UNIFAC_subgroup("-CH=C<", 2, 'C=C', 0.8886, 0.676)
+NISTKTUFSG[9] = UNIFAC_subgroup(">C=C<", 2, 'C=C', 0.6605, 0.485)
+NISTKTUFSG[15] = UNIFAC_subgroup("-ACH-", 3, 'ACH', 0.5313, 0.4)
+NISTKTUFSG[16] = UNIFAC_subgroup(">AC- (link)", 3, 'ACH', 0.3652, 0.12)
+NISTKTUFSG[17] = UNIFAC_subgroup(">AC- (cond)", 3, 'ACH', 0.3125, 0.084)
+NISTKTUFSG[18] = UNIFAC_subgroup(">AC-CH3", 4, 'ACCH2', 1.2663, 0.968)
+NISTKTUFSG[19] = UNIFAC_subgroup(">AC-CH2-", 4, 'ACCH2', 1.0396, 0.66)
+NISTKTUFSG[20] = UNIFAC_subgroup(">AC-CH<", 4, 'ACCH2', 0.8121, 0.348)
+NISTKTUFSG[21] = UNIFAC_subgroup(">AC-C<-", 4, 'ACCH2', 0.5847, 0.084)
+NISTKTUFSG[34] = UNIFAC_subgroup("-OH(primary)", 5, 'OH', 1, 1.2)
+NISTKTUFSG[204] = UNIFAC_subgroup("-OH(secondary)", 5, 'OH', 1, 1.2)
+NISTKTUFSG[205] = UNIFAC_subgroup("-OH(tertiary)", 5, 'OH', 1, 1.2)
+NISTKTUFSG[35] = UNIFAC_subgroup("CH3OH", 6, 'CH2OH', 1.4311, 1.432)
+NISTKTUFSG[36] = UNIFAC_subgroup("H2O", 7, 'H2O', 0.92, 1.4)
+NISTKTUFSG[37] = UNIFAC_subgroup(">AC-OH", 8, 'ACOH', 0.8952, 0.68)
+NISTKTUFSG[42] = UNIFAC_subgroup("CH3-CO-", 9, 'CH2CO', 1.6724, 1.488)
+NISTKTUFSG[43] = UNIFAC_subgroup("-CH2-CO-", 9, 'CH2CO', 1.4457, 1.18)
+NISTKTUFSG[44] = UNIFAC_subgroup(">CH-CO-", 9, 'CH2CO', 1.2182, 0.868)
+NISTKTUFSG[45] = UNIFAC_subgroup("->C-CO-", 9, 'CH2CO', 0.9908, 0.64)
+NISTKTUFSG[48] = UNIFAC_subgroup("-CHO", 10, 'CHO', 0.998, 0.948)
+NISTKTUFSG[51] = UNIFAC_subgroup("CH3-COO-", 11, 'CCOO', 1.9031, 1.728)
+NISTKTUFSG[52] = UNIFAC_subgroup("-CH2-COO-", 11, 'CCOO', 1.6764, 1.42)
+NISTKTUFSG[53] = UNIFAC_subgroup(">CH-COO-", 11, 'CCOO', 1.4489, 1.108)
+NISTKTUFSG[54] = UNIFAC_subgroup("->C-COO-", 11, 'CCOO', 1.2215, 0.88)
+NISTKTUFSG[55] = UNIFAC_subgroup("HCOO-", 12, 'HCOO', 1.242, 1.188)
+NISTKTUFSG[59] = UNIFAC_subgroup("CH3-O-", 13, 'CH2O', 1.145, 1.088)
+NISTKTUFSG[60] = UNIFAC_subgroup("-CH2-O-", 13, 'CH2O', 0.9183, 0.78)
+NISTKTUFSG[61] = UNIFAC_subgroup(">CH-O-", 13, 'CH2O', 0.6908, 0.468)
+NISTKTUFSG[62] = UNIFAC_subgroup("->CO-", 13, 'CH2O', 0.9183, 0.24)
+NISTKTUFSG[63] = UNIFAC_subgroup("-CH2-O- (cy)", 'CH2O', None, 0.9183, 1.1)
+NISTKTUFSG[66] = UNIFAC_subgroup("CH3-NH2", 14, 'CNH2', 1.5959, 1.544)
+NISTKTUFSG[67] = UNIFAC_subgroup("-CH2-NH2", 14, 'CNH2', 1.3692, 1.236)
+NISTKTUFSG[68] = UNIFAC_subgroup(">CH-NH2", 14, 'CNH2', 1.1417, 0.924)
+NISTKTUFSG[69] = UNIFAC_subgroup("->C-NH2", 14, 'CNH2', 0.9275, 0.696)
+NISTKTUFSG[71] = UNIFAC_subgroup("CH3-NH-", 15, '(C)2NH', 1.4337, 1.244)
+NISTKTUFSG[72] = UNIFAC_subgroup("-CH2-NH-", 15, '(C)2NH', 1.207, 0.936)
+NISTKTUFSG[73] = UNIFAC_subgroup(">CH-NH-", 15, '(C)2NH', 0.9795, 0.624)
+NISTKTUFSG[74] = UNIFAC_subgroup("CH3-N<", 16, '(C)3N', 1.1865, 0.94)
+NISTKTUFSG[75] = UNIFAC_subgroup("-CH2-N<", 16, '(C)3N', 0.9597, 0.632)
+NISTKTUFSG[79] = UNIFAC_subgroup(">AC-NH2", 17, 'ACNH2', 1.06, 0.816)
+NISTKTUFSG[80] = UNIFAC_subgroup(">AC-NH-", 17, 'ACNH2', 0.8978, 0.516)
+NISTKTUFSG[81] = UNIFAC_subgroup(">AC-N<", 17, 'ACNH2', 0.6506, 0.212)
+NISTKTUFSG[76] = UNIFAC_subgroup("C5H5N", 18, 'Pyridine', 2.9993, 2.113)
+NISTKTUFSG[77] = UNIFAC_subgroup("C5H4N-", 18, 'Pyridine', 2.8332, 1.833)
+NISTKTUFSG[78] = UNIFAC_subgroup("C5H3N<", 18, 'Pyridine', 2.667, 1.553)
+NISTKTUFSG[85] = UNIFAC_subgroup("CH3-CN", 19, 'CCN', 1.8701, 1.724)
+NISTKTUFSG[86] = UNIFAC_subgroup("-CH2-CN", 19, 'CCN', 1.6434, 1.416)
+NISTKTUFSG[87] = UNIFAC_subgroup(">CH-CN", 19, 'CCN', 1.416, 1.104)
+NISTKTUFSG[88] = UNIFAC_subgroup("->C-CN", 19, 'CCN', 1.1885, 0.876)
+NISTKTUFSG[94] = UNIFAC_subgroup("-COOH", 20, 'COOH', 1.3013, 1.224)
+NISTKTUFSG[95] = UNIFAC_subgroup("HCOOH", 20, 'COOH', 1.528, 1.532)
+NISTKTUFSG[99] = UNIFAC_subgroup("-CH2-Cl", 21, 'CCl', 1.4654, 1.264)
+NISTKTUFSG[100] = UNIFAC_subgroup(">CH-Cl", 21, 'CCl', 1.238, 0.952)
+NISTKTUFSG[101] = UNIFAC_subgroup("->CCl", 21, 'CCl', 1.0106, 0.724)
+NISTKTUFSG[102] = UNIFAC_subgroup("CH2Cl2", 22, 'CCl2', 2.2564, 1.988)
+NISTKTUFSG[103] = UNIFAC_subgroup("-CHCl2", 22, 'CCl2', 2.0606, 1.684)
+NISTKTUFSG[104] = UNIFAC_subgroup(">CCl2", 22, 'CCl2', 1.8016, 1.448)
+NISTKTUFSG[105] = UNIFAC_subgroup("CHCl3", 23, 'CCl3', 2.87, 2.41)
+NISTKTUFSG[106] = UNIFAC_subgroup("-CCl3", 23, 'CCl3', 2.6401, 2.184)
+NISTKTUFSG[107] = UNIFAC_subgroup("CCl4", 24, 'CCl4', 3.39, 2.91)
+NISTKTUFSG[109] = UNIFAC_subgroup(">AC-Cl", 25, 'ACCl', 1.1562, 0.844)
+NISTKTUFSG[132] = UNIFAC_subgroup("CH3-NO2", 26, 'CNO2', 2.0086, 1.868)
+NISTKTUFSG[133] = UNIFAC_subgroup("-CH2-NO2", 26, 'CNO2', 1.7818, 1.56)
+NISTKTUFSG[134] = UNIFAC_subgroup(">CH-NO2", 26, 'CNO2', 1.5544, 1.248)
+NISTKTUFSG[135] = UNIFAC_subgroup("->C-NO2", 26, 'CNO2', 1.327, 1.02)
+NISTKTUFSG[136] = UNIFAC_subgroup(">AC-NO2", 27, 'ACNO2', 1.4199, 1.104)
+NISTKTUFSG[146] = UNIFAC_subgroup("CS2", 28, 'CS2', 2.057, 1.65)
+NISTKTUFSG[138] = UNIFAC_subgroup("CH3-SH", 29, 'CH3SH', 1.877, 1.676)
+NISTKTUFSG[139] = UNIFAC_subgroup("-CH2-SH", 29, 'CH3SH', 1.651, 1.368)
+NISTKTUFSG[140] = UNIFAC_subgroup(">CH-SH", 29, 'CH3SH', 1.4232, 0.228)
+NISTKTUFSG[141] = UNIFAC_subgroup("->C-SH", 29, 'CH3SH', 1.1958, 0)
+NISTKTUFSG[50] = UNIFAC_subgroup("C5H4O2", 30, 'Furfural', 3.168, 2.484)
+NISTKTUFSG[38] = UNIFAC_subgroup("(CH2OH)2", 31, 'DOH', 2.4088, 2.248)
+NISTKTUFSG[128] = UNIFAC_subgroup("-I", 32, 'I', 1.264, 0.992)
+NISTKTUFSG[130] = UNIFAC_subgroup("-Br", 33, 'Br', 0.9492, 0.832)
+NISTKTUFSG[13] = UNIFAC_subgroup("CH≡C-", 34, 'C=-C', 1.292, 1.088)
+NISTKTUFSG[14] = UNIFAC_subgroup("-C≡C-", 34, 'C=-C', 1.0613, 0.784)
+NISTKTUFSG[153] = UNIFAC_subgroup("DMSO", 35, 'DMSO', 2.8266, 2.472)
+NISTKTUFSG[90] = UNIFAC_subgroup("CH2=CH-CN", 36, 'ACRY', 2.3144, 2.052)
+NISTKTUFSG[108] = UNIFAC_subgroup("Cl(C=C)", 37, 'Cl(C=C)', 0.791, 0.724)
+NISTKTUFSG[118] = UNIFAC_subgroup(">AC-F", 38, 'ACF', 0.6948, 0.524)
+NISTKTUFSG[161] = UNIFAC_subgroup("DMF", 39, 'DMF', 3.0856, 2.736)
+NISTKTUFSG[162] = UNIFAC_subgroup("-CON(CH3)2", 39, 'DMF', 2.8589, 2.428)
+NISTKTUFSG[163] = UNIFAC_subgroup("-CON(CH2)(CH3)-", 39, 'DMF', 2.6322, 2.12)
+NISTKTUFSG[164] = UNIFAC_subgroup("HCON(CH2)2<", 39, 'DMF', 2.6322, 2.12)
+NISTKTUFSG[165] = UNIFAC_subgroup("-CON(CH2)2<", 39, 'DMF', 2.4054, 1.812)
+NISTKTUFSG[111] = UNIFAC_subgroup("CHF3", 40, 'CF2', 1.5781, 1.548)
+NISTKTUFSG[112] = UNIFAC_subgroup("-CF3", 40, 'CF2', 1.406, 1.38)
+NISTKTUFSG[113] = UNIFAC_subgroup("-CHF2", 40, 'CF2', 1.2011, 1.108)
+NISTKTUFSG[114] = UNIFAC_subgroup(">CF2", 40, 'CF2', 1.0105, 0.92)
+NISTKTUFSG[115] = UNIFAC_subgroup("-CH2F", 40, 'CF2', 1.0514, 0.98)
+NISTKTUFSG[116] = UNIFAC_subgroup(">CH-F", 40, 'CF2', 0.824, 0.668)
+NISTKTUFSG[117] = UNIFAC_subgroup("->CF", 40, 'CF2', 0.615, 0.46)
+NISTKTUFSG[58] = UNIFAC_subgroup("-COO-", 41, 'COO', 1.38, 1.2)
+NISTKTUFSG[197] = UNIFAC_subgroup("SiH3-", 42, 'SiH2', 1.6035, 1.263)
+NISTKTUFSG[198] = UNIFAC_subgroup("-SiH2-", 42, 'SiH2', 1.4443, 1.006)
+NISTKTUFSG[199] = UNIFAC_subgroup(">SiH-", 42, 'SiH2', 1.2853, 0.749)
+NISTKTUFSG[200] = UNIFAC_subgroup(">Si<", 42, 'SiH2', 1.047, 0.41)
+NISTKTUFSG[201] = UNIFAC_subgroup("-SiH2-O-", 43, 'SiO', 1.4838, 1.062)
+NISTKTUFSG[202] = UNIFAC_subgroup(">SiH-O-", 43, 'SiO', 1.303, 0.764)
+NISTKTUFSG[203] = UNIFAC_subgroup("->Si-O-", 43, 'SiO', 1.1044, 0.466)
+NISTKTUFSG[195] = UNIFAC_subgroup("NMP", 44, 'NMP', 3.981, 3.2)
+NISTKTUFSG[120] = UNIFAC_subgroup("CCl3F", 45, 'CClF', 3.0356, 2.644)
+NISTKTUFSG[121] = UNIFAC_subgroup("-CCl2F", 45, 'CClF', 2.2287, 1.916)
+NISTKTUFSG[122] = UNIFAC_subgroup("HCCl2F", 45, 'CClF', 2.406, 2.116)
+NISTKTUFSG[123] = UNIFAC_subgroup("-HCClF", 45, 'CClF', 1.6493, 1.416)
+NISTKTUFSG[124] = UNIFAC_subgroup("-CClF2", 45, 'CClF', 1.8174, 1.648)
+NISTKTUFSG[125] = UNIFAC_subgroup("HCClF2", 45, 'CClF', 1.967, 1.828)
+NISTKTUFSG[126] = UNIFAC_subgroup("CClF3", 45, 'CClF', 2.1721, 2.1)
+NISTKTUFSG[127] = UNIFAC_subgroup("CCl2F2", 45, 'CClF', 2.6243, 2.376)
+NISTKTUFSG[166] = UNIFAC_subgroup("-CONH(CH3)", 46, 'CONCH2', 2.205, 1.884)
+NISTKTUFSG[167] = UNIFAC_subgroup("HCONH(CH2)-", 46, 'CONCH2', 2.205, 1.884)
+NISTKTUFSG[168] = UNIFAC_subgroup("-CONH(CH2)-", 46, 'CONCH2', 1.9782, 1.576)
+NISTKTUFSG[169] = UNIFAC_subgroup("-CONH2", 46, 'CONCH2', 1.4661, 1.336)
+NISTKTUFSG[39] = UNIFAC_subgroup("-O-CH2-CH2-OH", 47, 'OCCOH', 2.1226, 1.904)
+NISTKTUFSG[40] = UNIFAC_subgroup("-O-CH-CH2-OH", 47, 'OCCOH', 1.8952, 1.592)
+NISTKTUFSG[41] = UNIFAC_subgroup("-O-CH2-CH-OH", 47, 'OCCOH', 1.8952, 1.592)
+NISTKTUFSG[142] = UNIFAC_subgroup("CH3-S-", 48, 'CH2S', 1.613, 1.368)
+NISTKTUFSG[143] = UNIFAC_subgroup("-CH2-S-", 48, 'CH2S', 1.3863, 1.06)
+NISTKTUFSG[144] = UNIFAC_subgroup(">CH-S-", 48, 'CH2S', 1.1589, 0.748)
+NISTKTUFSG[145] = UNIFAC_subgroup("->C-S-", 48, 'CH2S', 0.9314, 0.52)
+NISTKTUFSG[196] = UNIFAC_subgroup("MORPHOLIN", 49, 'Morpholin', 3.474, 2.796)
+NISTKTUFSG[147] = UNIFAC_subgroup("THIOPHENE", 50, 'THIOPHENE', 2.8569, 2.14)
+NISTKTUFSG[148] = UNIFAC_subgroup("C4H3S-", 50, 'THIOPHENE', 2.6908, 1.86)
+NISTKTUFSG[149] = UNIFAC_subgroup("C4H2S<", 50, 'THIOPHENE', 2.5247, 1.58)
+NISTKTUFSG[27] = UNIFAC_subgroup("-CH2- (cy)", 51, 'CH2(cyc)', 0.6744, 0.54)
+NISTKTUFSG[28] = UNIFAC_subgroup(">CH- (cy)", 51, 'CH2(cyc)', 0.4469, 0.228)
+NISTKTUFSG[29] = UNIFAC_subgroup(">C< (cy)", 51, 'CH2(cyc)', 0.2195, 0)
+NISTKTUFSG[30] = UNIFAC_subgroup("-CH=CH- (cy)", 52, 'C=C(cyc)', 1.1167, 0.867)
+NISTKTUFSG[31] = UNIFAC_subgroup("CH2=C< (cy)", 52, 'C=C(cyc)', 1.1173, 0.988)
+NISTKTUFSG[32] = UNIFAC_subgroup("-CH=C< (cy)", 52, 'C=C(cyc)', 0.8886, 0.676)
+
+NISTKTUFMG = {1: ("C", [1, 2, 3, 4]),
+2: ("C=C", [5, 6, 7, 8, 9]),
+3: ("ACH", [15, 16, 17]),
+4: ("ACCH2", [18, 19, 20, 21]),
+5: ("OH", [34, 204, 205]),
+6: ("CH2OH", [35]),
+7: ("H2O", [36]),
+8: ("ACOH", [37]),
+9: ("CH2CO", [42, 43, 44, 45]),
+10: ("CHO", [48]),
+11: ("CCOO", [51, 52, 53, 54]),
+12: ("HCOO", [55]),
+13: ("CH2O", [59, 60, 61, 62]),
+14: ("CNH2", [66, 67, 68, 69]),
+15: ("(C)2NH", [71, 72, 73]),
+16: ("(C)3N", [74, 75]),
+17: ("ACNH2", [79, 80, 81]),
+18: ("Pyridine", [76, 77, 78]),
+19: ("CCN", [85, 86, 87, 88]),
+20: ("COOH", [94, 95]),
+21: ("CCl", [99, 100, 101]),
+22: ("CCl2", [102, 103, 104]),
+23: ("CCl3", [105, 106]),
+24: ("CCl4", [107]),
+25: ("ACCl", [109]),
+26: ("CNO2", [132, 133, 134, 135]),
+27: ("ACNO2", [136]),
+28: ("CS2", [146]),
+29: ("CH3SH", [138, 139, 140, 141]),
+30: ("Furfural", [50]),
+31: ("DOH", [38]),
+32: ("I", [128]),
+33: ("Br", [130]),
+34: ("C=-C", [13, 14]),
+35: ("DMSO", [153]),
+36: ("ACRY", [90]),
+37: ("Cl(C=C)", [108]),
+38: ("ACF", [118]),
+39: ("DMF", [161, 162, 163, 164, 165]),
+40: ("CF2", [111, 112, 113, 114, 115, 116, 117]),
+41: ("COO", [58]),
+42: ("SiH2", [197, 198, 199, 200]),
+43: ("SiO", [201, 202, 203]),
+44: ("NMP", [195]),
+45: ("CClF", [120, 121, 122, 123, 124, 125, 126, 127]),
+46: ("CONCH2", [166, 167, 168, 169]),
+47: ("OCCOH", [39, 40, 41]),
+48: ("CH2S", [142, 143, 144, 145]),
+49: ("Morpholin", [196]),
+50: ("THIOPHENE", [147, 148, 149]),
+51: ("CH2(cyc)", [27, 28, 29]),
+52: ("C=C(cyc)", [30, 31, 32]),
+}
 
 '''Compared to storing the values in dict[(int1, int2)] = (values), 
 the dict-in-dict structure is found emperically to take 111608 bytes vs. 
@@ -1461,7 +1661,7 @@ with open(os.path.join(folder, 'UNIFAC modified NIST 2015 interaction parameters
         maingroup1, maingroup2, a, b, c, Tmin, Tmax = line.strip('\n').split('\t')
         NISTUFIP[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
         
-NISTKTUFIP = {i: {} for i in range(200) }
+NISTKTUFIP = {i: {} for i in range(1, 53) }
 with open(os.path.join(folder, 'NIST KT 2011 interaction parameters.tsv')) as f:
     for line in f:
         maingroup1, maingroup2, a, b, c = line.strip('\n').split('\t')
@@ -2075,7 +2275,7 @@ class UNIFAC(GibbsExcess):
         2 - PSRK (original with T dept function)
         3 - VTPR (drops combinatorial term, Dortmund UNIFAC otherwise)
         4 - Lyngby/Larsen has different combinatorial, 2/3 power
-        5 - UNIFAC KT (2 params for psi)
+        5 - UNIFAC KT (2 params for psi, Lyngby/Larsen formulation; otherwise same as original)
         '''
         self.T = T
         self.xs = xs

@@ -718,3 +718,17 @@ def test_VTPR_GE():
     
     assert_allclose(GE.gammas(), [1.084965825553096, 1.2579548067749646])
     assert_allclose(GE.GE(), 373.85917799452574)
+    
+def test_NISTUF_2011():
+    T = 330.0
+    P = 1e5
+    xs = [1-.01, .01]
+    
+    chemgroups = {1:1, 15:5, 19:1}, {15:4, 18:2} # from https://trc.nist.gov/TDE/Help/TDE103b/NIST-KT-UNIFAC-AC-Model.htm
+    #m = Mixture(['ethylbenzene', 'p-xylene'], zs=xs, T=T, P=P)
+    
+    GE = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups, version=5,
+                               interaction_data=NISTKTUFIP, subgroups=NISTKTUFSG)    
+    
+    gammas_expect = [0.9999968672576434, 0.9737803219928437]
+    assert_allclose(GE.gammas(), gammas_expect)
