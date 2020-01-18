@@ -2040,9 +2040,9 @@ def sequential_substitution_2P_HSGUAbeta(zs, xs_guess, ys_guess, liquid_phase,
     raise UnconvergedError('End of SS without convergence')
 
 
-def TPV_double_solve_1P(zs, phase, guesses, spec_vals,
+def TPV_double_solve_1P(zs, phase, guesses, spec_vals, 
                         goal_specs=('V', 'U'), state_specs=('T', 'P'),
-                        maxiter=200, xtol=1E-10, ytol=None):
+                        maxiter=200, xtol=1E-10, ytol=None, spec_funs=None):
     kwargs = {'zs': zs}
     phase_cls = phase.__class__
     s00 = 'd%s_d%s_%s' %(goal_specs[0], state_specs[0], state_specs[1])
@@ -2074,8 +2074,12 @@ def TPV_double_solve_1P(zs, phase, guesses, spec_vals,
             jac = [[new.value(s00), new.value(s01)],
                    [new.value(s10), new.value(s11)]]
         
-        err0 = v0 - spec_vals[0]
-        err1 = v1 - spec_vals[1]
+        if spec_funs is not None:
+            err0 = v0 - spec_funs[0](new)
+            err1 = v1 - spec_funs[1](new)
+        else:
+            err0 = v0 - spec_vals[0]
+            err1 = v1 - spec_vals[1]
         errs = [err0, err1]
         
         cache[:] = [new, errs, jac]

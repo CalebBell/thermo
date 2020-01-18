@@ -1249,6 +1249,29 @@ class Phase(object):
     def P_max_at_V(self, V):
         return None
     
+#    @property
+#    def dspeed_of_sound_dT(self):
+#        raise NotImplementedError("Fail")
+#        x0 = self.Cp()
+#        x1 = self.V()
+#        x2 = self.dP_dV_T()
+#        x3 = self.Cv()
+#        x4 = x0*x2
+#        x5 = x4/x3
+#        x6 = x1/2.0
+#        
+#        dx2_dT = self.d2P_dVdT()
+##        dx0_dT = # Second derivative of enthalpy at constant pressure - requires third T derivatives
+#
+##     [10*sqrt(10)*sqrt(-x1**2*x5/MW)*(x0*x6*Derivative(x2, T) + x2*x6*Derivative(x0, T)
+## + x4*Derivative(x1, T) - x5*x6*Derivative(x3, T))/(x0*x1*x2)])
+#        
+#
+#    @property
+#    def dspeed_of_sound_dP(self):
+#        # Requires d2H_dTdP_T
+#        # Requires d2H_dTdP_V
+#        pass
 
 class IdealGas(Phase):
     '''DO NOT DELETE - EOS CLASS IS TOO SLOW!
