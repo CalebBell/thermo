@@ -1114,7 +1114,7 @@ class Phase(object):
     def dV_dV_T(self):
         return 1.0
 
-    def dV_dP_T(self):
+    def dV_dV_P(self):
         return 1.0
     
     d2T_dV2_P = d2T_dV2
@@ -1125,6 +1125,55 @@ class Phase(object):
     dV_dT_P = dV_dT
     dT_dP_V = dT_dP
     dT_dV_P = dT_dV
+    
+    
+    # More derivatives - at const H, S, G, U, A
+    _derivs_jacobian_x = 'V'
+    _derivs_jacobian_y = 'T'
+    
+    def _derivs_jacobian(self, a, b, c, x=_derivs_jacobian_x,
+                         y=_derivs_jacobian_y):
+        r'''Calculates and returns a first-order derivative of one property
+        with respect to another property at constant another property.
+        
+        This is particularly useful to obtain derivatives with respect to 
+        another property which is not an intensive variable in a model,
+        allowing for example derivatives at constant enthalpy or Gibbs energy
+        to be obtained. This formula is obtained from the first derivative
+        principles of reciprocity, the chain rule, and the triple product rule
+        as shown in [1]_.
+        
+        ... math::
+            \left(\frac{\partial a}{\partial b}\right)_{c}=
+            \frac{\left(\frac{\partial a}{\partial x}\right)_{y}\left(
+            \frac{\partial c}{\partial y}\right)_{x}-\left(\frac{\partial a}{
+            \partial y}\right)_{x}\left(\frac{\partial c}{\partial x}
+            \right)_{y}}{\left(\frac{\partial b}{\partial x}\right)_{y}\left(
+            \frac{\partial c}{\partial y}\right)_{x}-\left(\frac{\partial b}
+            {\partial y}\right)_{x}\left(\frac{\partial c}{\partial x}
+            \right)_{y}}
+    
+        References
+        ----------
+        .. [1] Thorade, Matthis, and Ali Saadat. "Partial Derivatives of
+           Thermodynamic State Properties for Dynamic Simulation." 
+           Environmental Earth Sciences 70, no. 8 (April 10, 2013): 3497-3503. 
+           https://doi.org/10.1007/s12665-013-2394-z.
+        '''
+        n0 = getattr(self, 'd%s_d%s_%s'%(a, x, y))()
+        n1 = getattr(self, 'd%s_d%s_%s'%(c, y, x))()
+
+        n2 = getattr(self, 'd%s_d%s_%s'%(a, y, x))()
+        n3 = getattr(self, 'd%s_d%s_%s'%(c, x, y))()
+        
+        d0 = getattr(self, 'd%s_d%s_%s'%(b, x, y))()
+        d1 = getattr(self, 'd%s_d%s_%s'%(c, y, x))()
+        
+        d2 = getattr(self, 'd%s_d%s_%s'%(b, y, x))()
+        d3 = getattr(self, 'd%s_d%s_%s'%(c, x, y))()
+        
+        return (n0*n1 - n2*n3)/(d0*d1 - d2*d3)
+    
 
     ### Transport properties - pass them on!
     # Properties that use `constants` attributes
@@ -1272,6 +1321,15 @@ class Phase(object):
 #        # Requires d2H_dTdP_T
 #        # Requires d2H_dTdP_V
 #        pass
+
+for a in ('T', 'P', 'V', 'rho'):
+    for b in ('T', 'P', 'V', 'rho'):
+        for c in ('H', 'S', 'G', 'U', 'A'):
+            # _der = lambda self: self._derivs_jacobian(a=a, b=b, c=c)
+           def _der(self, a=a, b=b, c=c):
+               return self._derivs_jacobian(a=a, b=b, c=c)
+           setattr(Phase, 'd%s_d%s_%s' %(a, b, c), _der)
+
 
 class IdealGas(Phase):
     '''DO NOT DELETE - EOS CLASS IS TOO SLOW!
