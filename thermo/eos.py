@@ -618,6 +618,11 @@ class GCEOS(object):
         raise NotImplemented('a_alpha and its first and second derivatives '
                              'should be calculated by this method, in a user subclass.')
         
+    @property
+    def d3a_alpha_dT3(self):
+        return self.d3a_alpha_dT3_pure(self.T)
+
+        
     def a_alpha_plot(self, Tmin=1e-4, Tmax=10000, show=True, plot=True):
         Ts = logspace(log10(Tmin), log10(Tmax), 1000)
         a_alphas = [self.a_alpha_and_derivatives(T, full=False) for T in Ts]
@@ -4859,7 +4864,24 @@ class PR(GCEOS):
         self.Vc = self.Zc*R*Tc_Pc
         
         self.solve()
-
+        
+    def d3a_alpha_dT3_pure(self, T):
+        r'''Method to calculate the third temperature derivative of `a_alpha`.
+        Uses the set values of `Tc`, `kappa`, and `a`. This property is not
+        normally needed.
+        
+        .. math::
+            \frac{d^3 a\alpha}{dT^3} = \frac{3 a\kappa \left(- \frac{\kappa}
+            {Tc} + \frac{\sqrt{\frac{T}{Tc}} \left(\kappa \left(\sqrt{\frac{T}
+            {Tc}} - 1\right) - 1\right)}{T}\right)}{4 T^{2}}
+            
+        '''
+        kappa = self.kappa
+        x0 = 1.0/self.Tc
+        T_inv = 1.0/T
+        x1 = (T*x0)**0.5
+        return -self.a*0.75*kappa*(kappa*x0 - x1*(kappa*(x1 - 1.0) - 1.0)*T_inv)*T_inv*T_inv
+        
     def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives for this EOS. Returns `a_alpha`, `da_alpha_dT`, and 
