@@ -3803,8 +3803,8 @@ class GCEOS(object):
             - R + \frac{2 T 
             \operatorname{atanh}{\left(\frac{2 V_l + \delta}{\sqrt{\delta^{2}
             - 4 \epsilon}} \right)} \frac{d^{2}}{d T^{2}} \operatorname{
-                a_{\alpha}}{\left(T \right)}}{\sqrt{\delta^{2} - 4 \epsilon}} 
-                + V_l \frac{\partial}{\partial T} P{\left(T,V \right)}
+            a_{\alpha}}{\left(T \right)}}{\sqrt{\delta^{2} - 4 \epsilon}} 
+            + V_l \frac{\partial}{\partial T} P{\left(T,V \right)}
         '''
         T = self.T
         delta, epsilon = self.delta, self.epsilon
@@ -4515,6 +4515,62 @@ class GCEOS(object):
                 - 8.0*x17*x4*d2a_alpha_dT2 + x2*x8*x9 
                 + x2*(x1 - 2.0*x4*x8 + x10*x8*x8) + x3*x6 - x6*x50*x50
                 + 16.0*x14*x18*x5*x51*x51*x15*x15)
+
+    @property
+    def d2H_dep_dT2_g_V(self):
+        r'''Second temperature derivative of departure enthalpy with respect to 
+        temeprature at constant volume for the gas phase, [(J/mol)/K^2]
+        
+        .. math::
+            \left(\frac{\partial^2 H_{dep, g}}{\partial T^2}\right)_V = 
+            \frac{2 T \operatorname{atanh}{\left(\frac{2 V + \delta}{\sqrt{
+            \delta^{2} - 4 \epsilon}} \right)} \frac{d^{3}}{d T^{3}} 
+            \operatorname{a\alpha}{\left(T \right)}}{\sqrt{\delta^{2}
+            - 4 \epsilon}} + V \frac{\partial^{2}}{\partial T^{2}}
+            P{\left(V,T \right)} + \frac{2 \operatorname{atanh}{\left(\frac{
+            2 V + \delta}{\sqrt{\delta^{2} - 4 \epsilon}} \right)} \frac{d^{2}}
+            {d T^{2}} \operatorname{a\alpha}{\left(T \right)}}{\sqrt{\delta^{2}
+            - 4 \epsilon}}
+        '''
+        V, T, delta, epsilon = self.V_g, self.T, self.delta, self.epsilon
+        x51 = delta*delta - 4.0*epsilon
+        d2a_alpha_dT2 = self.d2a_alpha_dT2
+        d3a_alpha_dT3 = self.d3a_alpha_dT3
+        d2P_dT2 = self.d2P_dT2_g
+        try:
+            x1 = x51**-0.5
+        except ZeroDivisionError:
+            x1 = 1e100
+        x2 = 2.0*x1*catanh(x1*(V + V + delta)).real
+        return T*x2*d3a_alpha_dT3 + V*d2P_dT2 + x2*d2a_alpha_dT2
+        
+    @property
+    def d2H_dep_dT2_l_V(self):
+        r'''Second temperature derivative of departure enthalpy with respect to 
+        temeprature at constant volume for the liquid phase, [(J/mol)/K^2]
+        
+        .. math::
+            \left(\frac{\partial^2 H_{dep, l}}{\partial T^2}\right)_V = 
+            \frac{2 T \operatorname{atanh}{\left(\frac{2 V + \delta}{\sqrt{
+            \delta^{2} - 4 \epsilon}} \right)} \frac{d^{3}}{d T^{3}} 
+            \operatorname{a\alpha}{\left(T \right)}}{\sqrt{\delta^{2}
+            - 4 \epsilon}} + V \frac{\partial^{2}}{\partial T^{2}}
+            P{\left(V,T \right)} + \frac{2 \operatorname{atanh}{\left(\frac{
+            2 V + \delta}{\sqrt{\delta^{2} - 4 \epsilon}} \right)} \frac{d^{2}}
+            {d T^{2}} \operatorname{a\alpha}{\left(T \right)}}{\sqrt{\delta^{2}
+            - 4 \epsilon}}
+        '''
+        V, T, delta, epsilon = self.V_l, self.T, self.delta, self.epsilon
+        x51 = delta*delta - 4.0*epsilon
+        d2a_alpha_dT2 = self.d2a_alpha_dT2
+        d3a_alpha_dT3 = self.d3a_alpha_dT3
+        d2P_dT2 = self.d2P_dT2_l
+        try:
+            x1 = x51**-0.5
+        except ZeroDivisionError:
+            x1 = 1e100
+        x2 = 2.0*x1*catanh(x1*(V + V + delta)).real
+        return T*x2*d3a_alpha_dT3 + V*d2P_dT2 + x2*d2a_alpha_dT2
 
     @property
     def dfugacity_dT_l(self):

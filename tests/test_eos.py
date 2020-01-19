@@ -1681,6 +1681,16 @@ def test_d2H_dep_dT2_P():
     assert_allclose(d2H_dep_dT2_l_num, eos.d2H_dep_dT2_l, rtol=1e-7)
     assert_allclose(eos.d2H_dep_dT2_l, 0.05566404509607853, rtol=1e-12)
 
+def test_d2H_dep_dT2_V():
+    eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E5)
+    d2H_dep_dT2_g_V_num = derivative(lambda T: eos.to(V=eos.V_g, T=T).dH_dep_dT_g_V, eos.T, dx=eos.T*5e-7, order=5)
+    assert_allclose(eos.d2H_dep_dT2_g_V, d2H_dep_dT2_g_V_num, rtol=1e-9)
+    assert_allclose(eos.d2H_dep_dT2_g_V, -0.0010786001950969532)
+    
+    d2H_dep_dT2_l_V_num = derivative(lambda T: eos.to(V=eos.V_l, T=T).dH_dep_dT_l_V, eos.T, dx=eos.T*5e-7, order=5)
+    assert_allclose(eos.d2H_dep_dT2_l_V, d2H_dep_dT2_l_V_num, rtol=1e-9)
+    assert_allclose(eos.d2H_dep_dT2_l_V, -0.1078300228825107)
+
 def test_d2S_dep_dT2_P():
     eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E5)
     d2S_dep_dT2_g_num = derivative(lambda T: eos.to(P=eos.P, T=T).dS_dep_dT_g, eos.T, dx=eos.T*1e-8)
