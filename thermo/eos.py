@@ -620,7 +620,12 @@ class GCEOS(object):
         
     @property
     def d3a_alpha_dT3(self):
-        return self.d3a_alpha_dT3_pure(self.T)
+        try:
+            return self._d3a_alpha_dT3
+        except AttributeError:
+            pass
+        self._d3a_alpha_dT3 = self.d3a_alpha_dT3_pure(self.T)
+        return self._d3a_alpha_dT3
 
         
     def a_alpha_plot(self, Tmin=1e-4, Tmax=10000, show=True, plot=True):
@@ -4375,10 +4380,142 @@ class GCEOS(object):
         temeprature for the gas phase, [(J/mol)/K^3]
         
         .. math::
-            \frac{\partial^2 S_{dep, g}}{\partial T^2} = 
+            \frac{\partial^2 S_{dep, g}}{\partial T^2} = - \frac{R \left(
+            \frac{d}{d T} V{\left(T \right)} - \frac{V{\left(T \right)}}{T}
+            \right) \frac{d}{d T} V{\left(T \right)}}{V^{2}{\left(T \right)}}
+            + \frac{R \left(\frac{d^{2}}{d T^{2}} V{\left(T \right)}
+            - \frac{2 \frac{d}{d T} V{\left(T \right)}}{T} + \frac{2 
+            V{\left(T \right)}}{T^{2}}\right)}{V{\left(T \right)}} 
+            - \frac{R \frac{d^{2}}{d T^{2}} V{\left(T \right)}}{V{\left(T 
+            \right)}} + \frac{R \left(\frac{d}{d T} V{\left(T \right)}
+            \right)^{2}}{V^{2}{\left(T \right)}} - \frac{R \frac{d^{2}}{dT^{2}}
+            V{\left(T \right)}}{b - V{\left(T \right)}} - \frac{R \left(
+            \frac{d}{d T} V{\left(T \right)}\right)^{2}}{\left(b - V{\left(T
+            \right)}\right)^{2}} + \frac{R \left(\frac{d}{d T} V{\left(T 
+            \right)} - \frac{V{\left(T \right)}}{T}\right)}{T V{\left(T 
+            \right)}} + \frac{16 \left(\delta + 2 V{\left(T \right)}\right)
+            \left(\frac{d}{d T} V{\left(T \right)}\right)^{2} \frac{d}{d T} 
+            \operatorname{a\alpha}{\left(T \right)}}{\left(\delta^{2}
+            - 4 \epsilon\right)^{2} \left(\frac{\left(\delta + 2 V{\left(T
+            \right)}\right)^{2}}{\delta^{2} - 4 \epsilon} - 1\right)^{2}}
+            - \frac{8 \frac{d}{d T} V{\left(T \right)} \frac{d^{2}}{d T^{2}}
+            \operatorname{a\alpha}{\left(T \right)}}{\left(\delta^{2}
+            - 4 \epsilon\right) \left(\frac{\left(\delta + 2 V{\left(T \right)}
+            \right)^{2}}{\delta^{2} - 4 \epsilon} - 1\right)} - \frac{4
+            \frac{d^{2}}{d T^{2}} V{\left(T \right)} \frac{d}{d T} 
+            \operatorname{a\alpha}{\left(T \right)}}{\left(\delta^{2}
+            - 4 \epsilon\right) \left(\frac{\left(\delta + 2 V{\left(T \right)}
+            \right)^{2}}{\delta^{2} - 4 \epsilon} - 1\right)} + \frac{2
+            \operatorname{atanh}{\left(\frac{\delta + 2 V{\left(T 
+            \right)}}{\sqrt{\delta^{2} - 4 \epsilon}} \right)} \frac{d^{3}}
+            {d T^{3}} \operatorname{a\alpha}{\left(T \right)}}
+            {\sqrt{\delta^{2} - 4 \epsilon}}
         '''
-        T, P, delta, epsilon = self.T, self.P, self.delta, self.epsilon
-    
+        T, P, b, delta, epsilon = self.T, self.P, self.b, self.delta, self.epsilon
+        V = x0 = self.V_g
+        V_inv = 1.0/V
+        x1 = self.d2V_dT2_g
+        x2 = R*V_inv
+        x3 = V_inv*V_inv
+        x4 = self.dV_dT_g
+        x5 = x4*x4
+        x6 = R*x5
+        x7 = b - x0
+        x8 = 1.0/T
+        x9 = -x0*x8 + x4
+        x10 = x0 + x0
+        x11 = self.a_alpha
+        x12 = delta*delta - 4.0*epsilon
+        try:
+            x13 = x12**-0.5
+        except ZeroDivisionError:
+            x13 = 1e100
+        x14 = delta + x10
+        x15 = x13*x13
+        x16 = x14*x14*x15 - 1.0
+        x51 = 1.0/x16
+        x17 = x15*x51
+        x18 = self.da_alpha_dT
+        x50 = 1.0/x7
+        d2a_alpha_dT2 = self.d2a_alpha_dT2
+        d3a_alpha_dT3 = self.d3a_alpha_dT3
+        return (-R*x1*x50 - R*x3*x4*x9 - 4.0*x1*x17*x18 - x1*x2
+                + 2.0*x13*catanh(x13*x14).real*d3a_alpha_dT3 
+                - 8.0*x17*x4*d2a_alpha_dT2 + x2*x8*x9 
+                + x2*(x1 - 2.0*x4*x8 + x10*x8*x8) + x3*x6 - x6*x50*x50
+                + 16.0*x14*x18*x5*x51*x51*x15*x15)
+
+    @property
+    def d2S_dep_dT2_l(self):
+        r'''Second temperature derivative of departure entropy with respect to 
+        temeprature for the liquid phase, [(J/mol)/K^3]
+        
+        .. math::
+            \frac{\partial^2 S_{dep, l}}{\partial T^2} = - \frac{R \left(
+            \frac{d}{d T} V{\left(T \right)} - \frac{V{\left(T \right)}}{T}
+            \right) \frac{d}{d T} V{\left(T \right)}}{V^{2}{\left(T \right)}}
+            + \frac{R \left(\frac{d^{2}}{d T^{2}} V{\left(T \right)}
+            - \frac{2 \frac{d}{d T} V{\left(T \right)}}{T} + \frac{2 
+            V{\left(T \right)}}{T^{2}}\right)}{V{\left(T \right)}} 
+            - \frac{R \frac{d^{2}}{d T^{2}} V{\left(T \right)}}{V{\left(T 
+            \right)}} + \frac{R \left(\frac{d}{d T} V{\left(T \right)}
+            \right)^{2}}{V^{2}{\left(T \right)}} - \frac{R \frac{d^{2}}{dT^{2}}
+            V{\left(T \right)}}{b - V{\left(T \right)}} - \frac{R \left(
+            \frac{d}{d T} V{\left(T \right)}\right)^{2}}{\left(b - V{\left(T
+            \right)}\right)^{2}} + \frac{R \left(\frac{d}{d T} V{\left(T 
+            \right)} - \frac{V{\left(T \right)}}{T}\right)}{T V{\left(T 
+            \right)}} + \frac{16 \left(\delta + 2 V{\left(T \right)}\right)
+            \left(\frac{d}{d T} V{\left(T \right)}\right)^{2} \frac{d}{d T} 
+            \operatorname{a\alpha}{\left(T \right)}}{\left(\delta^{2}
+            - 4 \epsilon\right)^{2} \left(\frac{\left(\delta + 2 V{\left(T
+            \right)}\right)^{2}}{\delta^{2} - 4 \epsilon} - 1\right)^{2}}
+            - \frac{8 \frac{d}{d T} V{\left(T \right)} \frac{d^{2}}{d T^{2}}
+            \operatorname{a\alpha}{\left(T \right)}}{\left(\delta^{2}
+            - 4 \epsilon\right) \left(\frac{\left(\delta + 2 V{\left(T \right)}
+            \right)^{2}}{\delta^{2} - 4 \epsilon} - 1\right)} - \frac{4
+            \frac{d^{2}}{d T^{2}} V{\left(T \right)} \frac{d}{d T} 
+            \operatorname{a\alpha}{\left(T \right)}}{\left(\delta^{2}
+            - 4 \epsilon\right) \left(\frac{\left(\delta + 2 V{\left(T \right)}
+            \right)^{2}}{\delta^{2} - 4 \epsilon} - 1\right)} + \frac{2
+            \operatorname{atanh}{\left(\frac{\delta + 2 V{\left(T 
+            \right)}}{\sqrt{\delta^{2} - 4 \epsilon}} \right)} \frac{d^{3}}
+            {d T^{3}} \operatorname{a\alpha}{\left(T \right)}}
+            {\sqrt{\delta^{2} - 4 \epsilon}}
+        '''
+        T, P, b, delta, epsilon = self.T, self.P, self.b, self.delta, self.epsilon
+        V = x0 = self.V_l
+        V_inv = 1.0/V
+        x1 = self.d2V_dT2_l
+        x2 = R*V_inv
+        x3 = V_inv*V_inv
+        x4 = self.dV_dT_l
+        x5 = x4*x4
+        x6 = R*x5
+        x7 = b - x0
+        x8 = 1.0/T
+        x9 = -x0*x8 + x4
+        x10 = x0 + x0
+        x11 = self.a_alpha
+        x12 = delta*delta - 4.0*epsilon
+        try:
+            x13 = x12**-0.5
+        except ZeroDivisionError:
+            x13 = 1e100
+        x14 = delta + x10
+        x15 = x13*x13
+        x16 = x14*x14*x15 - 1.0
+        x51 = 1.0/x16
+        x17 = x15*x51
+        x18 = self.da_alpha_dT
+        x50 = 1.0/x7
+        d2a_alpha_dT2 = self.d2a_alpha_dT2
+        d3a_alpha_dT3 = self.d3a_alpha_dT3
+        return (-R*x1*x50 - R*x3*x4*x9 - 4.0*x1*x17*x18 - x1*x2
+                + 2.0*x13*catanh(x13*x14).real*d3a_alpha_dT3 
+                - 8.0*x17*x4*d2a_alpha_dT2 + x2*x8*x9 
+                + x2*(x1 - 2.0*x4*x8 + x10*x8*x8) + x3*x6 - x6*x50*x50
+                + 16.0*x14*x18*x5*x51*x51*x15*x15)
+
     @property
     def dfugacity_dT_l(self):
         r'''Derivative of fugacity with respect to temperature for the liquid 

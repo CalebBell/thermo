@@ -6205,11 +6205,16 @@ class PRMIX(GCEOSMIX, PR):
         '''Estimate of the third temperature derivative of a_alpha for a mixture
         to avoid some very expensive compututations only.
         '''
+        try:
+            return self._d3a_alpha_dT3
+        except AttributeError:
+            pass
         tot = 0.0
         zs = self.zs
         vs = self.d3a_alpha_dT3_vectorized(self.T)
         for i in self.cmps:
             tot += zs[i]*vs[i]
+        self._d3a_alpha_dT3 = tot
         return tot
 
     

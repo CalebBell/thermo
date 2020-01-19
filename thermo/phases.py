@@ -620,6 +620,7 @@ class Phase(object):
         return Joule_Thomson(self.T, self.V(), self.Cp(), dV_dT=self.dV_dT(), beta=self.beta())
     
     def speed_of_sound(self):
+        # Intentionally molar
         return speed_of_sound(self.V(), self.dP_dV(), self.Cp(), self.Cv())
     
     ### Compressibility factor derivatives
