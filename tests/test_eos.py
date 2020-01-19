@@ -1683,6 +1683,9 @@ def test_d2P_dVdP():
     assert_allclose(num, eos.d2P_dVdP_g, rtol=1e-7)
     assert_allclose(eos.d2P_dVdP_g, -79.86820966180667, rtol=1e-11)
 
+    num = derivative(lambda P: eos.to(P=P, T=eos.T).dP_dV_l, eos.P, dx=eos.P*2e-7, order=5)
+    assert_allclose(num, eos.d2P_dVdP_l, rtol=1e-6)
+    assert_allclose(eos.d2P_dVdP_l, -121536.72600389269, rtol=1e-11)
 
 def test_dH_dep_dT_V():
     '''Equation obtained with:
