@@ -128,6 +128,12 @@ def test_Vfs_to_zs():
     zs = [0.6369779395901142, 0.3630220604098858]
     assert_allclose(zs_calc, zs)
 
+def test_molar_velocity_conv():
+    v_molar_calc = v_to_v_molar(500, 18.015)
+    assert_allclose(v_molar_calc, 67.10998435404377, rtol=1e-12)
+    
+    v_calc = v_molar_to_v(67.10998435404377, 18.015)
+    assert_allclose(v_calc, 500, rtol=1e-12)
 
 def test_B_To_Z():
     Z_calc = B_to_Z(-0.0015, 300, 1E5)

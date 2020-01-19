@@ -4314,6 +4314,8 @@ class GCEOS(object):
         x50 = self.d3a_alpha_dT3
         return (P*x1  + x3*x7  + T*x7*x50- 4.0*x1*x11*x12  - 8.0*T*x11*x3*x8 + 16.0*x12*x6*x8*x8*x11*x11)
 
+    d2H_dep_dT2_g_P = d2H_dep_dT2_g
+
     @property
     def d2H_dep_dT2_l(self):
         r'''Second temperature derivative of departure enthalpy with respect to 
@@ -4364,7 +4366,19 @@ class GCEOS(object):
         x12 = T*self.da_alpha_dT - x2
         x50 = self.d3a_alpha_dT3
         return (P*x1  + x3*x7  + T*x7*x50- 4.0*x1*x11*x12  - 8.0*T*x11*x3*x8 + 16.0*x12*x6*x8*x8*x11*x11)
+    
+    d2H_dep_dT2_l_P = d2H_dep_dT2_l
+
+    @property
+    def d2S_dep_dT2_g(self):
+        r'''Second temperature derivative of departure entropy with respect to 
+        temeprature for the gas phase, [(J/mol)/K^3]
         
+        .. math::
+            \frac{\partial^2 S_{dep, g}}{\partial T^2} = 
+        '''
+        T, P, delta, epsilon = self.T, self.P, self.delta, self.epsilon
+    
     @property
     def dfugacity_dT_l(self):
         r'''Derivative of fugacity with respect to temperature for the liquid 

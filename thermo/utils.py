@@ -40,7 +40,7 @@ __all__ = ['isobaric_expansion', 'isothermal_compressibility',
 'solve_flow_composition_mix', 'assert_component_balance', 'assert_energy_balance',
 'phase_select_property', 'TDependentProperty', 
 'TPDependentProperty', 'MixtureProperty', 'allclose_variable', 'horner', 
-'polylog2']
+'polylog2', 'v_to_v_molar', 'v_molar_to_v']
 
 from cmath import sqrt as csqrt
 from bisect import bisect_left
@@ -242,6 +242,66 @@ def property_mass_to_molar(A_mass, MW):  # pragma: no cover
     A_molar = 1e-3*A_mass*MW
     return A_molar
 
+root_1000 = 1000**0.5
+root_1000_inv = 1.0/root_1000
+
+def v_to_v_molar(v, MW):
+    r'''Convert a velocity from units of m/s to a "molar" form of velocity,
+    compatible with thermodynamic calculations on a molar basis.
+
+    .. math::
+        v\left(\frac{\text{m}\sqrt{\text{kg}} }{s \sqrt{\text{mol}}} \right) 
+        = v \text{(m/s)}
+        \sqrt{\text{MW (g/mol)}}\cdot
+        \left(\frac{1000 \text{g}}{1 \text{kg}}\right)^{-0.5}
+        
+    Parameters
+    ----------
+    v : float
+        Velocity, [m/s]
+    MW : float
+        Molecular weight, [g/mol]
+
+    Returns
+    -------
+    v_molar : float
+        Molar velocity, [m*kg^0.5/s/mol^0.5]
+
+    Examples
+    --------
+    >>> v_to_v_molar(500, 18.015)
+    67.10998435404377
+    '''
+    return v*MW**0.5*root_1000_inv
+    
+def v_molar_to_v(v_molar, MW):
+    r'''Convert a velocity from units of the molar form velocity to standard 
+    m/s units.
+
+    .. math::
+        v \text{(m/s)} = v\left(\frac{\text{m}\sqrt{\text{kg}} }
+        {s \sqrt{\text{mol}}} \right)
+        {\text{MW (g/mol)}}^{-0.5}\cdot
+        \left(\frac{1000 \text{g}}{1 \text{kg}}\right)^{0.5}
+        
+    Parameters
+    ----------
+    v_molar : float
+        Molar velocity, [m*kg^0.5/s/mol^0.5]
+    MW : float
+        Molecular weight, [g/mol]
+
+    Returns
+    -------
+    v : float
+        Velocity, [m/s]
+
+    Examples
+    --------
+    >>> v_molar_to_v(67.10998435404377, 18.015)
+    499.99999999999994
+    '''
+    return v_molar*root_1000*MW**-0.5
 
 def vapor_mass_quality(VF, MWl, MWg):
     r'''Calculates the vapor quality on a mass basis of a two-phase mixture;
