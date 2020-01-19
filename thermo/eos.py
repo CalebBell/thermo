@@ -4650,12 +4650,12 @@ class GCEOS(object):
                 ).real*d3a_alpha_dT3)
 
     @property
-    def d2H_dep_dTdP_g_V(self):
+    def d2H_dep_dTdP_g(self):
         r'''Temperature and pressure derivative of departure enthalpy 
-        at constant volume for the gas phase, [(J/mol)/K/Pa]
+        at constant pressure then pressure for the gas phase, [(J/mol)/K/Pa]
         
         .. math::
-            \left(\frac{\partial^2 H_{dep, g}}{\partial T \partial P}\right)_V
+            \left(\frac{\partial^2 H_{dep, g}}{\partial T \partial P}\right)_{T, P}
             = P \frac{\partial^{2}}{\partial T\partial P} V{\left(T,P \right)} 
             - \frac{4 T \frac{\partial}{\partial P} V{\left(T,P \right)}
             \frac{d^{2}}{d T^{2}} \operatorname{a\alpha}{\left(T \right)}}
@@ -4696,9 +4696,10 @@ class GCEOS(object):
                 + dV_dT - x10*d2V_dTdP*x9)
 
     @property
-    def d2H_dep_dTdP_l_V(self):
+    def d2H_dep_dTdP_l(self):
         r'''Temperature and pressure derivative of departure enthalpy 
-        at constant volume for the liquid phase, [(J/mol)/K/Pa]
+        at constant pressure then temperature for the liquid phase, 
+        [(J/mol)/K/Pa]
         
         .. math::
             \left(\frac{\partial^2 H_{dep, l}}{\partial T \partial P}\right)_V
