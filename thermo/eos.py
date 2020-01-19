@@ -5247,6 +5247,11 @@ class GCEOS(object):
         x52 = 1.0/(b - x0)
         x2_inv = 1.0/x2
         return 2.0*(-R*T*x52*x52*x52 + x1*x2_inv*x2_inv*(1.0 - x51*x51*x2_inv))*x50
+    
+    @property
+    def d2P_dTdP_g(self):
+        V = self.V_g
+        return -self.d2a_alpha_dTdP_g_V/(V*V + V*self.delta + self.epsilon)
 
 class GCEOS_DUMMY(GCEOS):
     Tc = None
