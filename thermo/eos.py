@@ -4650,6 +4650,97 @@ class GCEOS(object):
                 ).real*d3a_alpha_dT3)
 
     @property
+    def d2H_dep_dTdP_g_V(self):
+        r'''Temperature and pressure derivative of departure enthalpy 
+        at constant volume for the gas phase, [(J/mol)/K/Pa]
+        
+        .. math::
+            \left(\frac{\partial^2 H_{dep, g}}{\partial T \partial P}\right)_V
+            = P \frac{\partial^{2}}{\partial T\partial P} V{\left(T,P \right)} 
+            - \frac{4 T \frac{\partial}{\partial P} V{\left(T,P \right)}
+            \frac{d^{2}}{d T^{2}} \operatorname{a\alpha}{\left(T \right)}}
+            {\left(\delta^{2} - 4 \epsilon\right) \left(\frac{\left(\delta 
+            + 2 V{\left(T,P \right)}\right)^{2}}{\delta^{2} - 4 \epsilon} 
+            - 1\right)} + \frac{16 \left(\delta + 2 V{\left(T,P \right)}\right)
+            \left(T \frac{d}{d T} \operatorname{a\alpha}{\left(T \right)} 
+            - \operatorname{a\alpha}{\left(T \right)}\right) \frac{\partial}
+            {\partial P} V{\left(T,P \right)} \frac{\partial}{\partial T} 
+            V{\left(T,P \right)}}{\left(\delta^{2} - 4 \epsilon\right)^{2} 
+            \left(\frac{\left(\delta + 2 V{\left(T,P \right)}\right)^{2}}
+            {\delta^{2} - 4 \epsilon} - 1\right)^{2}} + \frac{\partial}
+            {\partial T} V{\left(T,P \right)} - \frac{4 \left(T \frac{d}{d T}
+            \operatorname{a\alpha}{\left(T \right)} - \operatorname{a\alpha}
+            {\left(T \right)}\right) \frac{\partial^{2}}{\partial T\partial P}
+            V{\left(T,P \right)}}{\left(\delta^{2} - 4 \epsilon\right) 
+            \left(\frac{\left(\delta + 2 V{\left(T,P \right)}\right)^{2}}
+            {\delta^{2} - 4 \epsilon} - 1\right)}
+        '''
+        V, T, P, delta, epsilon = self.V_g, self.T, self.P, self.delta, self.epsilon
+        dV_dT = self.dV_dT_g
+        d2V_dTdP = self.d2V_dTdP_g
+        dV_dP = self.dV_dP_g
+        a_alpha = self.a_alpha
+        d2a_alpha_dT2 = self.d2a_alpha_dT2
+        x5 = delta*delta - 4.0*epsilon
+        try:
+            x6 = 1.0/x5
+        except ZeroDivisionError:
+            x6 = 1e100
+        x7 = delta + V  + V
+        x8 = x6*x7*x7 - 1.0
+        x8_inv = 1.0/x8
+        x9 = 4.0*x6*x8_inv
+        x10 = T*self.da_alpha_dT - a_alpha
+        return (P*d2V_dTdP - T*dV_dP*x9*d2a_alpha_dT2 
+                + 16.0*dV_dT*x10*dV_dP*x7*x6*x6*x8_inv*x8_inv 
+                + dV_dT - x10*d2V_dTdP*x9)
+
+    @property
+    def d2H_dep_dTdP_l_V(self):
+        r'''Temperature and pressure derivative of departure enthalpy 
+        at constant volume for the liquid phase, [(J/mol)/K/Pa]
+        
+        .. math::
+            \left(\frac{\partial^2 H_{dep, l}}{\partial T \partial P}\right)_V
+            = P \frac{\partial^{2}}{\partial T\partial P} V{\left(T,P \right)} 
+            - \frac{4 T \frac{\partial}{\partial P} V{\left(T,P \right)}
+            \frac{d^{2}}{d T^{2}} \operatorname{a\alpha}{\left(T \right)}}
+            {\left(\delta^{2} - 4 \epsilon\right) \left(\frac{\left(\delta 
+            + 2 V{\left(T,P \right)}\right)^{2}}{\delta^{2} - 4 \epsilon} 
+            - 1\right)} + \frac{16 \left(\delta + 2 V{\left(T,P \right)}\right)
+            \left(T \frac{d}{d T} \operatorname{a\alpha}{\left(T \right)} 
+            - \operatorname{a\alpha}{\left(T \right)}\right) \frac{\partial}
+            {\partial P} V{\left(T,P \right)} \frac{\partial}{\partial T} 
+            V{\left(T,P \right)}}{\left(\delta^{2} - 4 \epsilon\right)^{2} 
+            \left(\frac{\left(\delta + 2 V{\left(T,P \right)}\right)^{2}}
+            {\delta^{2} - 4 \epsilon} - 1\right)^{2}} + \frac{\partial}
+            {\partial T} V{\left(T,P \right)} - \frac{4 \left(T \frac{d}{d T}
+            \operatorname{a\alpha}{\left(T \right)} - \operatorname{a\alpha}
+            {\left(T \right)}\right) \frac{\partial^{2}}{\partial T\partial P}
+            V{\left(T,P \right)}}{\left(\delta^{2} - 4 \epsilon\right) 
+            \left(\frac{\left(\delta + 2 V{\left(T,P \right)}\right)^{2}}
+            {\delta^{2} - 4 \epsilon} - 1\right)}
+        '''
+        V, T, P, delta, epsilon = self.V_l, self.T, self.P, self.delta, self.epsilon
+        dV_dT = self.dV_dT_l
+        d2V_dTdP = self.d2V_dTdP_l
+        dV_dP = self.dV_dP_l
+        a_alpha = self.a_alpha
+        d2a_alpha_dT2 = self.d2a_alpha_dT2
+        x5 = delta*delta - 4.0*epsilon
+        try:
+            x6 = 1.0/x5
+        except ZeroDivisionError:
+            x6 = 1e100
+        x7 = delta + V  + V
+        x8 = x6*x7*x7 - 1.0
+        x8_inv = 1.0/x8
+        x9 = 4.0*x6*x8_inv
+        x10 = T*self.da_alpha_dT - a_alpha
+        return (P*d2V_dTdP - T*dV_dP*x9*d2a_alpha_dT2 
+                + 16.0*dV_dT*x10*dV_dP*x7*x6*x6*x8_inv*x8_inv 
+                + dV_dT - x10*d2V_dTdP*x9)
+    @property
     def dfugacity_dT_l(self):
         r'''Derivative of fugacity with respect to temperature for the liquid 
         phase, [Pa/K]
