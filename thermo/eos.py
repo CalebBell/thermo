@@ -3817,6 +3817,29 @@ class GCEOS(object):
         x12 = T*self.da_alpha_dT - x2
         x50 = self.d3a_alpha_dT3
         return (P*x1 - 8*T*x11*x3*x8 + T*x7*x50 - 4*x1*x11*x12 + x3*x7 + 16*x12*x6*x8**2/(x10**2*x4**2))
+
+    @property
+    def d2P_dVdP_g(self):
+        r'''Feels like a really strange derivative. Have not been able to construct 
+        it from others yet.
+        
+        from sympy import *
+        P, T, R, b, delta, epsilon = symbols('P, T, R, b, delta, epsilon')
+        a_alpha, V = symbols(r'a\alpha, V', cls=Function)
+        
+        dP_dV = 1/(1/(-R*T/(V(P) - b)**2 - a_alpha(T)*(-2*V(P) - delta)/(V(P)**2 + V(P)*delta + epsilon)**2))
+        cse(diff(dP_dV, P), optimizations='basic')
+        '''
+        T, P, b, delta, epsilon = self.T, self.P, self.b, self.delta, self.epsilon
+        x0 = self.V_g
+        x1 = self.a_alpha
+        x2 = delta*x0 + epsilon + x0*x0
+        x50 = self.dV_dP_g
+        x51 = x0 + x0 + delta
+        x52 = 1.0/(b - x0)
+        x2_inv = 1.0/x2
+        return 2.0*(-R*T*x52*x52*x52 + x1*x2_inv*x2_inv*(1.0 - x51*x51*x2_inv))*x50
+
         
     @property
     def dH_dep_dT_l_V(self):
