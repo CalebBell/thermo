@@ -299,20 +299,25 @@ def test_EOSGas_phis():
      [140.16601782591798, 99.2695080821947, 77.9324862384278],
      [275.0685207089067, 170.51771449925985, 153.56327376798978]]
     
+    dCps_expect = [[0.11555598834384742, 0.11991470210722174, 0.07548394100635737], [0.11555598834384742, 0.11991470210722174, 0.056589692276255196], [0.1155559883438474, 0.11991470210722148, 0.0349394761861727], [0.15194986052287612, 0.05385782617451507, 0.08087587202769089], [0.07361110496090048, 0.016425244683690856, 0.044217738257974225], [0.07361110496089149, 0.016425244683693302, 0.04421773825797312]]
+    
+    
     integrals_calc = []
     integrals_over_T_calc = []
     Cps_calc = []
+    dCps_dT_calc = []
     for i, T in enumerate(Ts):
         gas2 = gas.to_TP_zs(T=T, P=P, zs=zs)
         assert gas2.Cpgs_locked
         Cps_calc.append(gas2.Cpigs_pure())
         integrals_calc.append(gas2.Cpig_integrals_pure())
         integrals_over_T_calc.append(gas2.Cpig_integrals_over_T_pure())
+        dCps_dT_calc.append(gas2.dCpigs_dT_pure())
     
     assert_allclose(Cps_expect, Cps_calc)
     assert_allclose(integrals_expect, integrals_calc)
     assert_allclose(integrals_over_T_expect, integrals_over_T_calc)
-
+    assert_allclose(dCps_expect, dCps_dT_calc)
 
 def test_chemical_potential():
     T, P = 200.0, 1e5

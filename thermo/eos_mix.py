@@ -6199,6 +6199,32 @@ class PRMIX(GCEOSMIX, PR):
                 d2a_alpha_dT2s.append(x3*(x5*x1*x1*kappa - x4*x6))
 
             return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
+    
+    @property
+    def d3a_alpha_dT3(self):
+        '''Estimate of the third temperature derivative of a_alpha for a mixture
+        to avoid some very expensive compututations only.
+        '''
+        tot = 0.0
+        zs = self.zs
+        vs = self.d3a_alpha_dT3_vectorized(self.T)
+        for i in self.cmps:
+            tot += zs[i]*vs[i]
+        return tot
+
+    
+    def d3a_alpha_dT3_vectorized(self, T):
+        ais, kappas, Tcs = self.ais, self.kappas, self.Tcs
+        T_inv = 1.0/T
+        
+        d3a_alpha_dT3s = []
+        for a, kappa, Tc in zip(ais, kappas, Tcs):
+
+            x0 = 1.0/Tc
+            x1 = (T*x0)**0.5
+            v = (-a*0.75*kappa*(kappa*x0 - x1*(kappa*(x1 - 1.0) - 1.0)*T_inv)*T_inv*T_inv)
+            d3a_alpha_dT3s.append(v)
+        return d3a_alpha_dT3s
         
     def fugacity_coefficients(self, Z, zs):
         r'''Literature formula for calculating fugacity coefficients for each

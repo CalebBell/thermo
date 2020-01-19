@@ -744,6 +744,28 @@ class Phase(object):
                     Cp = Cp*T + c
             Cps.append(Cp)
         return Cps
+
+    def _dCp_dT_pure_fast(self, Cps_data):
+        dCps = []
+        T, cmps = self.T, self.cmps
+        Tmins, Tmaxs, coeffs = Cps_data[0], Cps_data[3], Cps_data[12]
+        Tmin_slopes = Cps_data[1]
+        Tmin_values = Cps_data[2]
+        Tmax_slopes = Cps_data[4]
+        Tmax_values = Cps_data[5]
+        
+        for i in cmps:
+            if T < Tmins[i]:
+                dCp = Tmin_slopes[i]
+            elif T > Tmaxs[i]:
+                dCp = Tmax_slopes[i]
+            else:
+                Cp, dCp = 0.0, 0.0
+                for c in coeffs[i]:
+                    dCp = T*dCp + Cp
+                    Cp = T*Cp + c
+            dCps.append(dCp)
+        return dCps
         
     def _Cp_integrals_pure_fast(self, Cps_data):
         Cp_integrals_pure = []
@@ -874,6 +896,18 @@ class Phase(object):
                                    for obj in HeatCapacityGases]
         return self._Cpig_integrals_over_T_pure
 
+    def dCpigs_dT_pure(self):
+        try:
+            return self._dCpigs_dT
+        except AttributeError:
+            pass
+        if self.Cpgs_locked:
+            self._dCpigs_dT = self._dCp_dT_pure_fast(self.Cpgs_data)
+            return self._dCpigs_dT
+                
+        T = self.T
+        self._dCpigs_dT = [i.T_dependent_property_derivative(T) for i in self.HeatCapacityGases]
+        return self._dCpigs_dT
 
 
     def Cpls_pure(self):
@@ -1325,7 +1359,6 @@ class Phase(object):
 for a in ('T', 'P', 'V', 'rho'):
     for b in ('T', 'P', 'V', 'rho'):
         for c in ('H', 'S', 'G', 'U', 'A'):
-            # _der = lambda self: self._derivs_jacobian(a=a, b=b, c=c)
            def _der(self, a=a, b=b, c=c):
                return self._derivs_jacobian(a=a, b=b, c=c)
            setattr(Phase, 'd%s_d%s_%s' %(a, b, c), _der)

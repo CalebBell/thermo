@@ -204,6 +204,12 @@ def test_PR_quick():
         
     with pytest.raises(Exception):
         PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299)
+        
+        
+    # First third a_alpha T derivative - works fine, easy for pures anyway
+    d3a_alpha_dT3_num = derivative(lambda T: eos.to(P=eos.P, T=T).d2a_alpha_dT2, eos.T, dx=eos.T*3e-8)
+    assert_allclose(d3a_alpha_dT3_num, eos.d3a_alpha_dT3, rtol=1e-8)
+
     
     # Integration tests
     eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299.,V=0.00013)
