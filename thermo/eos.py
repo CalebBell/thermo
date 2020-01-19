@@ -4652,7 +4652,7 @@ class GCEOS(object):
     @property
     def d2H_dep_dTdP_g(self):
         r'''Temperature and pressure derivative of departure enthalpy 
-        at constant pressure then pressure for the gas phase, [(J/mol)/K/Pa]
+        at constant pressure then temperature for the gas phase, [(J/mol)/K/Pa]
         
         .. math::
             \left(\frac{\partial^2 H_{dep, g}}{\partial T \partial P}\right)_{T, P}
@@ -4741,6 +4741,157 @@ class GCEOS(object):
         return (P*d2V_dTdP - T*dV_dP*x9*d2a_alpha_dT2 
                 + 16.0*dV_dT*x10*dV_dP*x7*x6*x6*x8_inv*x8_inv 
                 + dV_dT - x10*d2V_dTdP*x9)
+
+    @property
+    def d2S_dep_dTdP_g(self):
+        r'''Temperature and pressure derivative of departure entropy 
+        at constant pressure then temperature for the gas phase, [(J/mol)/K^2/Pa]
+        
+        .. math::
+            \left(\frac{\partial^2 S_{dep, g}}{\partial T \partial P}\right)_{T, P}
+            = - \frac{R \frac{\partial^{2}}{\partial T\partial P} V{\left(T,P 
+            \right)}}{V{\left(T,P \right)}} + \frac{R \frac{\partial}{\partial
+            P} V{\left(T,P \right)} \frac{\partial}{\partial T} V{\left(T,P 
+            \right)}}{V^{2}{\left(T,P \right)}} - \frac{R \frac{\partial^{2}}
+            {\partial T\partial P} V{\left(T,P \right)}}{b - V{\left(T,P 
+            \right)}} - \frac{R \frac{\partial}{\partial P} V{\left(T,P
+            \right)} \frac{\partial}{\partial T} V{\left(T,P \right)}}{\left(b
+            - V{\left(T,P \right)}\right)^{2}} + \frac{16 \left(\delta 
+            + 2 V{\left(T,P \right)}\right) \frac{\partial}{\partial P}
+            V{\left(T,P \right)} \frac{\partial}{\partial T} V{\left(T,P
+            \right)} \frac{d}{d T} \operatorname{a\alpha}{\left(T \right)}}
+            {\left(\delta^{2} - 4 \epsilon\right)^{2} \left(\frac{\left(\delta 
+            + 2 V{\left(T,P \right)}\right)^{2}}{\delta^{2} - 4 \epsilon}
+            - 1\right)^{2}} - \frac{4 \frac{\partial}{\partial P} V{\left(T,P 
+            \right)} \frac{d^{2}}{d T^{2}} \operatorname{a\alpha}{\left(T
+            \right)}}{\left(\delta^{2} - 4 \epsilon\right) \left(\frac{\left(
+            \delta + 2 V{\left(T,P \right)}\right)^{2}}{\delta^{2}
+            - 4 \epsilon} - 1\right)} - \frac{4 \frac{d}{d T} 
+            \operatorname{a\alpha}{\left(T \right)} \frac{\partial^{2}}
+            {\partial T\partial P} V{\left(T,P \right)}}{\left(\delta^{2}
+            - 4 \epsilon\right) \left(\frac{\left(\delta + 2 V{\left(T,P
+            \right)}\right)^{2}}{\delta^{2} - 4 \epsilon} - 1\right)}
+            - \frac{R \left(P \frac{\partial}{\partial P} V{\left(T,P \right)} 
+            + V{\left(T,P \right)}\right) \frac{\partial}{\partial T} 
+            V{\left(T,P \right)}}{P V^{2}{\left(T,P \right)}} + \frac{R 
+            \left(P \frac{\partial^{2}}{\partial T\partial P} V{\left(T,P
+            \right)} - \frac{P \frac{\partial}{\partial P} V{\left(T,P 
+            \right)}}{T} + \frac{\partial}{\partial T} V{\left(T,P \right)}
+            - \frac{V{\left(T,P \right)}}{T}\right)}{P V{\left(T,P \right)}} 
+            + \frac{R \left(P \frac{\partial}{\partial P} V{\left(T,P \right)}
+            + V{\left(T,P \right)}\right)}{P T V{\left(T,P \right)}}
+        '''
+        V, T, P, b, delta, epsilon = self.V_g, self.T, self.P, self.b, self.delta, self.epsilon
+        dV_dT = self.dV_dT_g
+        d2V_dTdP = self.d2V_dTdP_g
+        dV_dP = self.dV_dP_g
+
+        x0 = V
+        V_inv = 1.0/V
+        x2 = d2V_dTdP
+        x3 = R*x2
+        x4 = dV_dT
+        x5 = x4*V_inv*V_inv
+        x6 = dV_dP
+        x7 = R*x6
+        x8 = b - V
+        x8_inv = 1.0/x8
+        x9 = 1.0/T
+        x10 = P*x6
+        x11 = V + x10
+        x12 = R/P
+        x13 = V_inv*x12
+        x14 = self.a_alpha
+        x15 = delta*delta - 4.0*epsilon
+        try:
+            x16 = 1.0/x15
+        except ZeroDivisionError:
+            x16 = 1e100
+        x17 = delta + V + V
+        x18 = x16*x17*x17 - 1.0
+        x50 = 1.0/x18
+        x19 = 4.0*x16*x50
+        x20 = self.da_alpha_dT
+        return (-V_inv*x3 - x11*x12*x5 + x11*x13*x9 + x13*(P*x2 - V*x9 - x10*x9 
+                + x4) - x19*x2*x20 - x19*x6*self.d2a_alpha_dT2 - x3*x8_inv
+                - x4*x7*x8_inv*x8_inv + x5*x7 
+                + 16.0*x17*x20*x4*x6*x16*x16*x50*x50)
+
+    @property
+    def d2S_dep_dTdP_l(self):
+        r'''Temperature and pressure derivative of departure entropy 
+        at constant pressure then temperature for the liquid phase, [(J/mol)/K^2/Pa]
+        
+        .. math::
+            \left(\frac{\partial^2 S_{dep, l}}{\partial T \partial P}\right)_{T, P}
+            = - \frac{R \frac{\partial^{2}}{\partial T\partial P} V{\left(T,P 
+            \right)}}{V{\left(T,P \right)}} + \frac{R \frac{\partial}{\partial
+            P} V{\left(T,P \right)} \frac{\partial}{\partial T} V{\left(T,P 
+            \right)}}{V^{2}{\left(T,P \right)}} - \frac{R \frac{\partial^{2}}
+            {\partial T\partial P} V{\left(T,P \right)}}{b - V{\left(T,P 
+            \right)}} - \frac{R \frac{\partial}{\partial P} V{\left(T,P
+            \right)} \frac{\partial}{\partial T} V{\left(T,P \right)}}{\left(b
+            - V{\left(T,P \right)}\right)^{2}} + \frac{16 \left(\delta 
+            + 2 V{\left(T,P \right)}\right) \frac{\partial}{\partial P}
+            V{\left(T,P \right)} \frac{\partial}{\partial T} V{\left(T,P
+            \right)} \frac{d}{d T} \operatorname{a\alpha}{\left(T \right)}}
+            {\left(\delta^{2} - 4 \epsilon\right)^{2} \left(\frac{\left(\delta 
+            + 2 V{\left(T,P \right)}\right)^{2}}{\delta^{2} - 4 \epsilon}
+            - 1\right)^{2}} - \frac{4 \frac{\partial}{\partial P} V{\left(T,P 
+            \right)} \frac{d^{2}}{d T^{2}} \operatorname{a\alpha}{\left(T
+            \right)}}{\left(\delta^{2} - 4 \epsilon\right) \left(\frac{\left(
+            \delta + 2 V{\left(T,P \right)}\right)^{2}}{\delta^{2}
+            - 4 \epsilon} - 1\right)} - \frac{4 \frac{d}{d T} 
+            \operatorname{a\alpha}{\left(T \right)} \frac{\partial^{2}}
+            {\partial T\partial P} V{\left(T,P \right)}}{\left(\delta^{2}
+            - 4 \epsilon\right) \left(\frac{\left(\delta + 2 V{\left(T,P
+            \right)}\right)^{2}}{\delta^{2} - 4 \epsilon} - 1\right)}
+            - \frac{R \left(P \frac{\partial}{\partial P} V{\left(T,P \right)} 
+            + V{\left(T,P \right)}\right) \frac{\partial}{\partial T} 
+            V{\left(T,P \right)}}{P V^{2}{\left(T,P \right)}} + \frac{R 
+            \left(P \frac{\partial^{2}}{\partial T\partial P} V{\left(T,P
+            \right)} - \frac{P \frac{\partial}{\partial P} V{\left(T,P 
+            \right)}}{T} + \frac{\partial}{\partial T} V{\left(T,P \right)}
+            - \frac{V{\left(T,P \right)}}{T}\right)}{P V{\left(T,P \right)}} 
+            + \frac{R \left(P \frac{\partial}{\partial P} V{\left(T,P \right)}
+            + V{\left(T,P \right)}\right)}{P T V{\left(T,P \right)}}
+        '''
+        V, T, P, b, delta, epsilon = self.V_l, self.T, self.P, self.b, self.delta, self.epsilon
+        dV_dT = self.dV_dT_l
+        d2V_dTdP = self.d2V_dTdP_l
+        dV_dP = self.dV_dP_l
+
+        x0 = V
+        V_inv = 1.0/V
+        x2 = d2V_dTdP
+        x3 = R*x2
+        x4 = dV_dT
+        x5 = x4*V_inv*V_inv
+        x6 = dV_dP
+        x7 = R*x6
+        x8 = b - V
+        x8_inv = 1.0/x8
+        x9 = 1.0/T
+        x10 = P*x6
+        x11 = V + x10
+        x12 = R/P
+        x13 = V_inv*x12
+        x14 = self.a_alpha
+        x15 = delta*delta - 4.0*epsilon
+        try:
+            x16 = 1.0/x15
+        except ZeroDivisionError:
+            x16 = 1e100
+        x17 = delta + V + V
+        x18 = x16*x17*x17 - 1.0
+        x50 = 1.0/x18
+        x19 = 4.0*x16*x50
+        x20 = self.da_alpha_dT
+        return (-V_inv*x3 - x11*x12*x5 + x11*x13*x9 + x13*(P*x2 - V*x9 - x10*x9 
+                + x4) - x19*x2*x20 - x19*x6*self.d2a_alpha_dT2 - x3*x8_inv
+                - x4*x7*x8_inv*x8_inv + x5*x7 
+                + 16.0*x17*x20*x4*x6*x16*x16*x50*x50)
+
     @property
     def dfugacity_dT_l(self):
         r'''Derivative of fugacity with respect to temperature for the liquid 
