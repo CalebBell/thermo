@@ -1671,6 +1671,11 @@ def test_dbeta_dP():
     analytical = eos1.dbeta_dP_g
     assert_allclose(numerical, analytical, rtol=1e-8)
     
+def d2H_dep_dT2_P():
+    eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E5)
+    d2H_dep_dT2_g_num = derivative(lambda T: eos.to(P=eos.P, T=T).dH_dep_dT_g, eos.T, dx=eos.T*1e-8)
+    assert_allclose(d2H_dep_dT2_g_num, eos.d2H_dep_dT2_g, rtol=1e-8)
+    assert_allclose(eos.d2H_dep_dT2_g, -0.01886053682747742)
 
 def test_dH_dep_dT_V():
     '''Equation obtained with:
