@@ -1708,6 +1708,12 @@ class EOSGas(Phase):
         except AttributeError:
             return self.eos_mix.dH_dep_dP_l
 
+    def d2H_dP2(self):
+        try:
+            return self.eos_mix.d2H_dep_dP2_g
+        except AttributeError:
+            return self.eos_mix.d2H_dep_dP2_l
+
         
     def dH_dT_V(self):
         dH_dT_V = self.Cp_ideal_gas()
@@ -1778,6 +1784,15 @@ class EOSGas(Phase):
         except AttributeError:
             dS += self.eos_mix.dS_dep_dP_l
         return dS
+
+    def d2S_dP2(self):
+        P = self.P
+        d2S = R/(P*P)
+        try:
+            d2S += self.eos_mix.d2S_dep_dP_g
+        except AttributeError:
+            d2S += self.eos_mix.d2S_dep_dP_l
+        return d2S
     
     def dS_dT_P(self):
         return self.dS_dT()
