@@ -4573,6 +4573,83 @@ class GCEOS(object):
         return T*x2*d3a_alpha_dT3 + V*d2P_dT2 + x2*d2a_alpha_dT2
 
     @property
+    def d2S_dep_dT2_g_V(self):
+        r'''Second temperature derivative of departure entropy with respect to 
+        temeprature at constant volume for the gas phase, [(J/mol)/K^3]
+        
+        .. math::
+            \left(\frac{\partial^2 S_{dep, g}}{\partial T^2}\right)_V = 
+            - \frac{R \left(\frac{\partial}{\partial T} P{\left(V,T \right)} 
+            - \frac{P{\left(V,T \right)}}{T}\right) \frac{\partial}{\partial T}
+            P{\left(V,T \right)}}{P^{2}{\left(V,T \right)}} + \frac{R \left(
+            \frac{\partial^{2}}{\partial T^{2}} P{\left(V,T \right)} - \frac{2
+            \frac{\partial}{\partial T} P{\left(V,T \right)}}{T} + \frac{2 
+            P{\left(V,T \right)}}{T^{2}}\right)}{P{\left(V,T \right)}}
+            + \frac{R \left(\frac{\partial}{\partial T} P{\left(V,T \right)} 
+            - \frac{P{\left(V,T \right)}}{T}\right)}{T P{\left(V,T \right)}} 
+            + \frac{2 \operatorname{atanh}{\left(\frac{2 V + \delta}{\sqrt{
+            \delta^{2} - 4 \epsilon}} \right)} \frac{d^{3}}{d T^{3}} 
+            \operatorname{a\alpha}{\left(T \right)}}{\sqrt{\delta^{2} 
+            - 4 \epsilon}}
+        '''
+        V, T, delta, epsilon = self.V_g, self.T, self.delta, self.epsilon
+        d2a_alpha_dT2 = self.d2a_alpha_dT2
+        d3a_alpha_dT3 = self.d3a_alpha_dT3
+        d2P_dT2 = self.d2P_dT2_g
+        
+        x0 = 1.0/T
+        x1 = self.P
+        P_inv = 1.0/x1
+        x2 = self.dP_dT_g
+        x3 = -x0*x1 + x2
+        x4 = R*P_inv
+        try:
+            x5 = (delta*delta - 4.0*epsilon)**-0.5
+        except ZeroDivisionError:
+            x5 = 1e100
+        return (-R*x2*x3*P_inv*P_inv + x0*x3*x4 + x4*(d2P_dT2 - 2.0*x0*x2
+                + 2.0*x1*x0*x0) + 2.0*x5*catanh(x5*(V + V + delta)
+                ).real*d3a_alpha_dT3)
+
+    @property
+    def d2S_dep_dT2_l_V(self):
+        r'''Second temperature derivative of departure entropy with respect to 
+        temeprature at constant volume for the liquid phase, [(J/mol)/K^3]
+        
+        .. math::
+            \left(\frac{\partial^2 S_{dep, l}}{\partial T^2}\right)_V = 
+            - \frac{R \left(\frac{\partial}{\partial T} P{\left(V,T \right)} 
+            - \frac{P{\left(V,T \right)}}{T}\right) \frac{\partial}{\partial T}
+            P{\left(V,T \right)}}{P^{2}{\left(V,T \right)}} + \frac{R \left(
+            \frac{\partial^{2}}{\partial T^{2}} P{\left(V,T \right)} - \frac{2
+            \frac{\partial}{\partial T} P{\left(V,T \right)}}{T} + \frac{2 
+            P{\left(V,T \right)}}{T^{2}}\right)}{P{\left(V,T \right)}}
+            + \frac{R \left(\frac{\partial}{\partial T} P{\left(V,T \right)} 
+            - \frac{P{\left(V,T \right)}}{T}\right)}{T P{\left(V,T \right)}} 
+            + \frac{2 \operatorname{atanh}{\left(\frac{2 V + \delta}{\sqrt{
+            \delta^{2} - 4 \epsilon}} \right)} \frac{d^{3}}{d T^{3}} 
+            \operatorname{a\alpha}{\left(T \right)}}{\sqrt{\delta^{2} 
+            - 4 \epsilon}}
+        '''
+        V, T, delta, epsilon = self.V_l, self.T, self.delta, self.epsilon
+        d2a_alpha_dT2 = self.d2a_alpha_dT2
+        d3a_alpha_dT3 = self.d3a_alpha_dT3
+        d2P_dT2 = self.d2P_dT2_l
+        x0 = 1.0/T
+        x1 = self.P
+        P_inv = 1.0/x1
+        x2 = self.dP_dT_l
+        x3 = -x0*x1 + x2
+        x4 = R*P_inv
+        try:
+            x5 = (delta*delta - 4.0*epsilon)**-0.5
+        except ZeroDivisionError:
+            x5 = 1e100
+        return (-R*x2*x3*P_inv*P_inv + x0*x3*x4 + x4*(d2P_dT2 - 2.0*x0*x2
+                + 2.0*x1*x0*x0) + 2.0*x5*catanh(x5*(V + V + delta)
+                ).real*d3a_alpha_dT3)
+
+    @property
     def dfugacity_dT_l(self):
         r'''Derivative of fugacity with respect to temperature for the liquid 
         phase, [Pa/K]
