@@ -3789,38 +3789,6 @@ class GCEOS(object):
                 - 4.0*x1*x6*(self.T*self.da_alpha_dT - x2)/(x5*x5*x6 - 1.0))
         
     @property
-    def d2H_dep_dT2_g(self):
-        r'''Second temperature derivative of departure enthalpy with respect to 
-        temeprature for the gas phase, [(J/mol)/K^2]
-        
-        .. math::
-            \frac{\partial^2 H_{dep, g}}{\partial T^2} = 
-            P \frac{d^{2}}{d T^{2}} V{\left(T \right)} - \frac{8 T \frac{d}{d T} V{\left(T \right)} \frac{d^{2}}{d T^{2}} \operatorname{a\alpha}{\left(T \right)}}{\left(\delta^{2} - 4 \epsilon\right) \left(\frac{\left(\delta + 2 V{\left(T \right)}\right)^{2}}{\delta^{2} - 4 \epsilon} - 1\right)} + \frac{2 T \operatorname{atanh}{\left(\frac{\delta + 2 V{\left(T \right)}}{\sqrt{\delta^{2} - 4 \epsilon}} \right)} \frac{d^{3}}{d T^{3}} \operatorname{a\alpha}{\left(T \right)}}{\sqrt{\delta^{2} - 4 \epsilon}} + \frac{16 \left(\delta + 2 V{\left(T \right)}\right) \left(T \frac{d}{d T} \operatorname{a\alpha}{\left(T \right)} - \operatorname{a\alpha}{\left(T \right)}\right) \left(\frac{d}{d T} V{\left(T \right)}\right)^{2}}{\left(\delta^{2} - 4 \epsilon\right)^{2} \left(\frac{\left(\delta + 2 V{\left(T \right)}\right)^{2}}{\delta^{2} - 4 \epsilon} - 1\right)^{2}} - \frac{4 \left(T \frac{d}{d T} \operatorname{a\alpha}{\left(T \right)} - \operatorname{a\alpha}{\left(T \right)}\right) \frac{d^{2}}{d T^{2}} V{\left(T \right)}}{\left(\delta^{2} - 4 \epsilon\right) \left(\frac{\left(\delta + 2 V{\left(T \right)}\right)^{2}}{\delta^{2} - 4 \epsilon} - 1\right)} + \frac{2 \operatorname{atanh}{\left(\frac{\delta + 2 V{\left(T \right)}}{\sqrt{\delta^{2} - 4 \epsilon}} \right)} \frac{d^{2}}{d T^{2}} \operatorname{a\alpha}{\left(T \right)}}{\sqrt{\delta^{2} - 4 \epsilon}}
-            
-        '''
-        T, P, delta, epsilon = self.T, self.P, self.delta, self.epsilon
-        x0 = self.V_g
-        x1 = self.d2V_dT2_g
-        x2 = self.a_alpha
-        x3 = self.d2a_alpha_dT2
-        x4 = delta*delta - 4.0*epsilon
-        try:
-            x5 = x4**-0.5
-        except:
-            x5 = 1e100
-        x6 = delta + 2.0*x0
-        x7 = 2*x5*catanh(x5*x6).real
-        x8 = self.dV_dT_g
-        x9 = 1.0/x4
-        x10 = x6*x6*x9 - 1.0
-        x11 = x9/x10
-        x12 = T*self.da_alpha_dT - x2
-        x50 = self.d3a_alpha_dT3
-        return (P*x1 - 8*T*x11*x3*x8 + T*x7*x50 - 4*x1*x11*x12 + x3*x7 + 16*x12*x6*x8**2/(x10**2*x4**2))
-
-
-        
-    @property
     def dH_dep_dT_l_V(self):
         r'''Derivative of departure enthalpy with respect to 
         temeprature at constant volume for the liquid phase, [(J/mol)/K]
@@ -4294,6 +4262,108 @@ class GCEOS(object):
             \left(\frac{\partial T}{\partial V}\right)_{P} 
         '''
         return self.dS_dep_dT_l*self.dT_dV_l
+
+    @property
+    def d2H_dep_dT2_g(self):
+        r'''Second temperature derivative of departure enthalpy with respect to 
+        temeprature for the gas phase, [(J/mol)/K^2]
+        
+        .. math::
+            \frac{\partial^2 H_{dep, g}}{\partial T^2} = 
+            P \frac{d^{2}}{d T^{2}} V{\left(T \right)} - \frac{8 T \frac{d}{d T} 
+            V{\left(T \right)} \frac{d^{2}}{d T^{2}} \operatorname{a\alpha}
+            {\left(T \right)}}{\left(\delta^{2} - 4 \epsilon\right) \left(\frac{
+            \left(\delta + 2 V{\left(T \right)}\right)^{2}}{\delta^{2} 
+            - 4 \epsilon} - 1\right)} + \frac{2 T \operatorname{atanh}{\left(
+            \frac{\delta + 2 V{\left(T \right)}}{\sqrt{\delta^{2}
+            - 4 \epsilon}} \right)} \frac{d^{3}}{d T^{3}} 
+            \operatorname{a\alpha}{\left(T \right)}}{\sqrt{\delta^{2}
+            - 4 \epsilon}} + \frac{16 \left(\delta + 2 V{\left(T \right)}
+            \right) \left(T \frac{d}{d T} \operatorname{a\alpha}{\left(T 
+            \right)} - \operatorname{a\alpha}{\left(T \right)}\right) \left(
+            \frac{d}{d T} V{\left(T \right)}\right)^{2}}{\left(\delta^{2}
+            - 4 \epsilon\right)^{2} \left(\frac{\left(\delta + 2 V{\left(T
+            \right)}\right)^{2}}{\delta^{2} - 4 \epsilon} - 1\right)^{2}}
+            - \frac{4 \left(T \frac{d}{d T} \operatorname{a\alpha}{\left(T 
+            \right)} - \operatorname{a\alpha}{\left(T \right)}\right)
+            \frac{d^{2}}{d T^{2}} V{\left(T \right)}}{\left(\delta^{2} 
+            - 4 \epsilon\right) \left(\frac{\left(\delta + 2 V{\left(T \right)}
+            \right)^{2}}{\delta^{2} - 4 \epsilon} - 1\right)} + \frac{2 
+            \operatorname{atanh}{\left(\frac{\delta + 2 V{\left(T \right)}}
+            {\sqrt{\delta^{2} - 4 \epsilon}} \right)} \frac{d^{2}}{d T^{2}} 
+            \operatorname{a\alpha}{\left(T \right)}}{\sqrt{\delta^{2} 
+            - 4 \epsilon}}
+        '''
+        T, P, delta, epsilon = self.T, self.P, self.delta, self.epsilon
+        x0 = self.V_g
+        x1 = self.d2V_dT2_g
+        x2 = self.a_alpha
+        x3 = self.d2a_alpha_dT2
+        x4 = delta*delta - 4.0*epsilon
+        try:
+            x5 = x4**-0.5
+        except:
+            x5 = 1e100
+        x6 = delta + x0 + x0
+        x7 = 2.0*x5*catanh(x5*x6).real
+        x8 = self.dV_dT_g
+        x9 = x5*x5
+        x10 = x6*x6*x9 - 1.0
+        x11 = x9/x10
+        x12 = T*self.da_alpha_dT - x2
+        x50 = self.d3a_alpha_dT3
+        return (P*x1  + x3*x7  + T*x7*x50- 4.0*x1*x11*x12  - 8.0*T*x11*x3*x8 + 16.0*x12*x6*x8*x8*x11*x11)
+
+    @property
+    def d2H_dep_dT2_l(self):
+        r'''Second temperature derivative of departure enthalpy with respect to 
+        temeprature for the liquid phase, [(J/mol)/K^2]
+        
+        .. math::
+            \frac{\partial^2 H_{dep, l}}{\partial T^2} = 
+            P \frac{d^{2}}{d T^{2}} V{\left(T \right)} - \frac{8 T \frac{d}{d T} 
+            V{\left(T \right)} \frac{d^{2}}{d T^{2}} \operatorname{a\alpha}
+            {\left(T \right)}}{\left(\delta^{2} - 4 \epsilon\right) \left(\frac{
+            \left(\delta + 2 V{\left(T \right)}\right)^{2}}{\delta^{2} 
+            - 4 \epsilon} - 1\right)} + \frac{2 T \operatorname{atanh}{\left(
+            \frac{\delta + 2 V{\left(T \right)}}{\sqrt{\delta^{2}
+            - 4 \epsilon}} \right)} \frac{d^{3}}{d T^{3}} 
+            \operatorname{a\alpha}{\left(T \right)}}{\sqrt{\delta^{2}
+            - 4 \epsilon}} + \frac{16 \left(\delta + 2 V{\left(T \right)}
+            \right) \left(T \frac{d}{d T} \operatorname{a\alpha}{\left(T 
+            \right)} - \operatorname{a\alpha}{\left(T \right)}\right) \left(
+            \frac{d}{d T} V{\left(T \right)}\right)^{2}}{\left(\delta^{2}
+            - 4 \epsilon\right)^{2} \left(\frac{\left(\delta + 2 V{\left(T
+            \right)}\right)^{2}}{\delta^{2} - 4 \epsilon} - 1\right)^{2}}
+            - \frac{4 \left(T \frac{d}{d T} \operatorname{a\alpha}{\left(T 
+            \right)} - \operatorname{a\alpha}{\left(T \right)}\right)
+            \frac{d^{2}}{d T^{2}} V{\left(T \right)}}{\left(\delta^{2} 
+            - 4 \epsilon\right) \left(\frac{\left(\delta + 2 V{\left(T \right)}
+            \right)^{2}}{\delta^{2} - 4 \epsilon} - 1\right)} + \frac{2 
+            \operatorname{atanh}{\left(\frac{\delta + 2 V{\left(T \right)}}
+            {\sqrt{\delta^{2} - 4 \epsilon}} \right)} \frac{d^{2}}{d T^{2}} 
+            \operatorname{a\alpha}{\left(T \right)}}{\sqrt{\delta^{2} 
+            - 4 \epsilon}}
+        '''
+        T, P, delta, epsilon = self.T, self.P, self.delta, self.epsilon
+        x0 = self.V_l
+        x1 = self.d2V_dT2_l
+        x2 = self.a_alpha
+        x3 = self.d2a_alpha_dT2
+        x4 = delta*delta - 4.0*epsilon
+        try:
+            x5 = x4**-0.5
+        except:
+            x5 = 1e100
+        x6 = delta + x0 + x0
+        x7 = 2.0*x5*catanh(x5*x6).real
+        x8 = self.dV_dT_l
+        x9 = x5*x5
+        x10 = x6*x6*x9 - 1.0
+        x11 = x9/x10
+        x12 = T*self.da_alpha_dT - x2
+        x50 = self.d3a_alpha_dT3
+        return (P*x1  + x3*x7  + T*x7*x50- 4.0*x1*x11*x12  - 8.0*T*x11*x3*x8 + 16.0*x12*x6*x8*x8*x11*x11)
         
     @property
     def dfugacity_dT_l(self):
