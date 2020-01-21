@@ -5247,12 +5247,185 @@ class GCEOS(object):
         x52 = 1.0/(b - x0)
         x2_inv = 1.0/x2
         return 2.0*(-R*T*x52*x52*x52 + x1*x2_inv*x2_inv*(1.0 - x51*x51*x2_inv))*x50
+        
+    @property
+    def d2P_dVdT_TP_g(self):
+        r'''Second derivative of pressure with respect to molar volume and
+        then temperature at constant temperature then pressure for the gas
+        phase, [Pa*mol/m^3/K]
+        
+        .. math::
+            \left(\frac{\partial^2 P}{\partial V \partial T}\right)_{T,P} = 
+            \frac{2 R T \frac{d}{d T} V{\left(T \right)}}{\left(- b + V{\left(T
+            \right)}\right)^{3}} - \frac{R}{\left(- b + V{\left(T \right)}
+            \right)^{2}} - \frac{\left(- \delta - 2 V{\left(T \right)}\right)
+            \left(- 2 \delta \frac{d}{d T} V{\left(T \right)} - 4 V{\left(T
+            \right)} \frac{d}{d T} V{\left(T \right)}\right) \operatorname{
+            a\alpha}{\left(T \right)}}{\left(\delta V{\left(T \right)}
+            + \epsilon + V^{2}{\left(T \right)}\right)^{3}} - \frac{\left(
+            - \delta - 2 V{\left(T \right)}\right) \frac{d}{d T} \operatorname{
+            a\alpha}{\left(T \right)}}{\left(\delta V{\left(T \right)} 
+            + \epsilon + V^{2}{\left(T \right)}\right)^{2}} + \frac{2 
+            \operatorname{a\alpha}{\left(T \right)} \frac{d}{d T} V{\left(T
+            \right)}}{\left(\delta V{\left(T \right)} + \epsilon + V^{2}{\left(
+            T \right)}\right)^{2}}
+        '''
+        T, b, delta, epsilon = self.T, self.b, self.delta, self.epsilon
+        x0 = self.V_g
+        x2 = 2.0*self.dV_dT_g
+        x1 = self.b - x0
+        x1_inv = 1.0/x1
+        x3 = delta*x0 + epsilon + x0*x0
+        x3_inv = 1.0/x3
+        x4 = x3_inv*x3_inv
+        x5 = self.a_alpha
+        x6 = x2*x5
+        x7 = delta + x0 + x0
+        return (-x1_inv*x1_inv*R*(T*x2*x1_inv + 1.0) + x4*x6
+                + x4*x7*(self.da_alpha_dT - x6*x7*x3_inv))
+
+    @property
+    def d2P_dVdT_TP_l(self):
+        r'''Second derivative of pressure with respect to molar volume and
+        then temperature at constant temperature then pressure for the liquid
+        phase, [Pa*mol/m^3/K]
+        
+        .. math::
+            \left(\frac{\partial^2 P}{\partial V \partial T}\right)_{T,P} = 
+            \frac{2 R T \frac{d}{d T} V{\left(T \right)}}{\left(- b + V{\left(T
+            \right)}\right)^{3}} - \frac{R}{\left(- b + V{\left(T \right)}
+            \right)^{2}} - \frac{\left(- \delta - 2 V{\left(T \right)}\right)
+            \left(- 2 \delta \frac{d}{d T} V{\left(T \right)} - 4 V{\left(T
+            \right)} \frac{d}{d T} V{\left(T \right)}\right) \operatorname{
+            a\alpha}{\left(T \right)}}{\left(\delta V{\left(T \right)}
+            + \epsilon + V^{2}{\left(T \right)}\right)^{3}} - \frac{\left(
+            - \delta - 2 V{\left(T \right)}\right) \frac{d}{d T} \operatorname{
+            a\alpha}{\left(T \right)}}{\left(\delta V{\left(T \right)} 
+            + \epsilon + V^{2}{\left(T \right)}\right)^{2}} + \frac{2 
+            \operatorname{a\alpha}{\left(T \right)} \frac{d}{d T} V{\left(T
+            \right)}}{\left(\delta V{\left(T \right)} + \epsilon + V^{2}{\left(
+            T \right)}\right)^{2}}
+        '''
+        T, b, delta, epsilon = self.T, self.b, self.delta, self.epsilon
+        x0 = self.V_l
+        x2 = 2.0*self.dV_dT_l
+        x1 = self.b - x0
+        x1_inv = 1.0/x1
+        x3 = delta*x0 + epsilon + x0*x0
+        x3_inv = 1.0/x3
+        x4 = x3_inv*x3_inv
+        x5 = self.a_alpha
+        x6 = x2*x5
+        x7 = delta + x0 + x0
+        return (-x1_inv*x1_inv*R*(T*x2*x1_inv + 1.0) + x4*x6
+                + x4*x7*(self.da_alpha_dT - x6*x7*x3_inv))
     
     @property
-    def d2P_dTdP_g(self):
-        V = self.V_g
-        return -self.d2a_alpha_dTdP_g_V/(V*V + V*self.delta + self.epsilon)
+    def d2P_dT2_PV_g(self):
+        r'''Second derivative of pressure with respect to temperature twice,
+        but with pressure held constant the first time and volume held
+        constant the second time for the gas phase, [Pa/K^2]
 
+        .. math::
+            \left(\frac{\partial^2 P}{\partial T \partial T}\right)_{P,V} = 
+            - \frac{R \frac{d}{d T} V{\left(T \right)}}{\left(- b + V{\left(T
+            \right)}\right)^{2}} - \frac{\left(- \delta \frac{d}{d T} V{\left(T
+            \right)} - 2 V{\left(T \right)} \frac{d}{d T} V{\left(T \right)}
+            \right) \frac{d}{d T} \operatorname{a\alpha}{\left(T \right)}}
+            {\left(\delta V{\left(T \right)} + \epsilon + V^{2}{\left(T 
+            \right)}\right)^{2}} - \frac{\frac{d^{2}}{d T^{2}}
+            \operatorname{a\alpha}{\left(T \right)}}{\delta V{\left(T \right)}
+            + \epsilon + V^{2}{\left(T \right)}}
+        '''
+        T, b, delta, epsilon = self.T, self.b, self.delta, self.epsilon
+        V = self.V_g
+        dV_dT = self.dV_dT_g
+        
+        x2 = self.a_alpha        
+        x0 = V
+        x1 = dV_dT
+        x3 = delta*x0 + epsilon + x0*x0
+        x3_inv = 1.0/x3
+        x50 = 1.0/(b - x0)
+        return (-R*x1*x50*x50 + x1*(delta + x0 + x0)*self.da_alpha_dT*x3_inv*x3_inv - self.d2a_alpha_dT2*x3_inv)
+
+    @property
+    def d2P_dT2_PV_l(self):
+        r'''Second derivative of pressure with respect to temperature twice,
+        but with pressure held constant the first time and volume held
+        constant the second time for the liquid phase, [Pa/K^2]
+
+        .. math::
+            \left(\frac{\partial^2 P}{\partial T \partial T}\right)_{P,V} = 
+            - \frac{R \frac{d}{d T} V{\left(T \right)}}{\left(- b + V{\left(T
+            \right)}\right)^{2}} - \frac{\left(- \delta \frac{d}{d T} V{\left(T
+            \right)} - 2 V{\left(T \right)} \frac{d}{d T} V{\left(T \right)}
+            \right) \frac{d}{d T} \operatorname{a\alpha}{\left(T \right)}}
+            {\left(\delta V{\left(T \right)} + \epsilon + V^{2}{\left(T 
+            \right)}\right)^{2}} - \frac{\frac{d^{2}}{d T^{2}}
+            \operatorname{a\alpha}{\left(T \right)}}{\delta V{\left(T \right)}
+            + \epsilon + V^{2}{\left(T \right)}}
+        '''
+        T, b, delta, epsilon = self.T, self.b, self.delta, self.epsilon
+        V = self.V_l
+        dV_dT = self.dV_dT_l
+    
+        x0 = V
+        x1 = dV_dT
+        x2 = self.a_alpha
+        x3 = delta*x0 + epsilon + x0*x0
+        x3_inv = 1.0/x3
+        x50 = 1.0/(b - x0)
+        return (-R*x1*x50*x50 + x1*(delta + x0 + x0)*self.da_alpha_dT*x3_inv*x3_inv - self.d2a_alpha_dT2*x3_inv)
+
+    @property
+    def d2P_dTdP_g(self):
+        r'''Second derivative of pressure with respect to temperature and,
+        then pressure; and with volume held constant at first, then temperature
+        for the gas phase, [1/K]
+
+        .. math::
+            \left(\frac{\partial^2 P}{\partial T \partial P}\right)_{V, T} = 
+            - \frac{R \frac{d}{d P} V{\left(P \right)}}{\left(- b + V{\left(P 
+            \right)}\right)^{2}} - \frac{\left(- \delta \frac{d}{d P} V{\left(P 
+            \right)} - 2 V{\left(P \right)} \frac{d}{d P} V{\left(P \right)}
+            \right) \frac{d}{d T} \operatorname{a\alpha}{\left(T \right)}}
+            {\left(\delta V{\left(P \right)} + \epsilon + V^{2}{\left(P
+            \right)}\right)^{2}}
+        '''
+        V = self.V_g
+        dV_dP = self.dV_dP_g
+        T, b, delta, epsilon = self.T, self.b, self.delta, self.epsilon
+        da_alpha_dT = self.da_alpha_dT
+        x0 = V - b
+        x1 = delta*V + epsilon + V*V
+        return (-R*dV_dP/(x0*x0) - (-delta*dV_dP - 2.0*V*dV_dP)*da_alpha_dT/(x1*x1))
+        
+
+    @property
+    def d2P_dTdP_l(self):
+        r'''Second derivative of pressure with respect to temperature and,
+        then pressure; and with volume held constant at first, then temperature
+        for the liquid phase, [1/K]
+
+        .. math::
+            \left(\frac{\partial^2 P}{\partial T \partial P}\right)_{V, T} = 
+            - \frac{R \frac{d}{d P} V{\left(P \right)}}{\left(- b + V{\left(P 
+            \right)}\right)^{2}} - \frac{\left(- \delta \frac{d}{d P} V{\left(P 
+            \right)} - 2 V{\left(P \right)} \frac{d}{d P} V{\left(P \right)}
+            \right) \frac{d}{d T} \operatorname{a\alpha}{\left(T \right)}}
+            {\left(\delta V{\left(P \right)} + \epsilon + V^{2}{\left(P
+            \right)}\right)^{2}}
+        '''
+        V = self.V_l
+        dV_dP = self.dV_dP_l
+        T, b, delta, epsilon = self.T, self.b, self.delta, self.epsilon
+        da_alpha_dT = self.da_alpha_dT
+        x0 = V - b
+        x1 = delta*V + epsilon + V*V
+        return (-R*dV_dP/(x0*x0) - (-delta*dV_dP - 2.0*V*dV_dP)*da_alpha_dT/(x1*x1))
+
+        
 class GCEOS_DUMMY(GCEOS):
     Tc = None
     Pc = None

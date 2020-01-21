@@ -445,11 +445,79 @@ class Phase(object):
         return Af
     
     def Cv(self):
+        try:
+            return self._Cv
+        except AttributeError:
+            pass
         # checks out
         Cp_m_Cv = Cp_minus_Cv(self.T, self.dP_dT(), self.dP_dV())
         Cp = self.Cp()
-        return Cp - Cp_m_Cv
+        self._Cv = Cv = Cp - Cp_m_Cv
+        return Cv
     
+    def dCv_dT_P(self):
+        r'''Method to calculate the temperature derivative of Cv, constant
+        volume heat capacity, at constant pressure.
+        
+        .. math::
+            \left(\frac{\partial C_v}{\partial T}\right)_P = 
+            - \frac{T \operatorname{dPdT_{V}}^{2}{\left(T \right)} \frac{d}{dT}
+            \operatorname{dPdV_{T}}{\left(T \right)}}{\operatorname{dPdV_{T}}^{2}
+            {\left(T \right)}} + \frac{2 T \operatorname{dPdT_{V}}{\left(T \right)}
+            \frac{d}{d T} \operatorname{dPdT_{V}}{\left(T \right)}}
+            {\operatorname{dPdV_{T}}{\left(T \right)}} + \frac{\operatorname{
+            dPdT_{V}}^{2}{\left(T \right)}}{\operatorname{dPdV_{T}}{\left(T 
+            \right)}} + \frac{d}{d T} \operatorname{Cp}{\left(T \right)}
+
+        Returns
+        -------
+        dCv_dT_P : float
+           Temperature derivative of constant volume heat capacity at constant 
+           pressure, [J/mol/K^2]
+            
+        Notes
+        -----
+        Requires `d2P_dT2_PV`, `d2P_dVdT_TP`, and `d2H_dT2`.
+        '''
+        T = self.T
+        x0 = self.dP_dT_V()
+        x1 = x0*x0
+        x2 = self.dP_dV_T()
+        x3 = 1.0/x2
+        
+        x50 = self.d2P_dT2_PV()
+        x51 = self.d2P_dVdT_TP()
+        x52 = self.d2H_dT2()
+        return 2.0*T*x0*x3*x50 - T*x1*x51*x3*x3 + x1*x3 + x52
+
+    def dCv_dP_T(self):
+        r'''Method to calculate the pressure derivative of Cv, constant
+        volume heat capacity, at constant temperature.
+        
+        .. math::
+            \left(\frac{\partial C_v}{\partial P}\right)_T = 
+            - T \operatorname{dPdT_{V}}{\left(P \right)} \frac{d}{d P}
+            \operatorname{dVdT_{P}}{\left(P \right)} - T \operatorname{
+            dVdT_{P}}{\left(P \right)} \frac{d}{d P} \operatorname{dPdT_{V}}
+            {\left(P \right)} + \frac{d}{d P} \operatorname{Cp}{\left(P\right)}
+            
+        Returns
+        -------
+        dCv_dP_T : float
+           Pressure derivative of constant volume heat capacity at constant 
+           temperature, [J/mol/K/Pa]
+            
+        Notes
+        -----
+        Requires `d2V_dTdP`, `d2P_dTdP`, and `d2H_dTdP`.
+        '''
+        T = self.T
+        dP_dT_V = self.dP_dT_V()
+        d2V_dTdP = self.d2V_dTdP()
+        dV_dT_P = self.dV_dT_P()
+        d2P_dTdP = self.d2P_dTdP()
+        d2H_dep_dTdP = self.d2H_dTdP()
+        return -T*dP_dT_V*d2V_dTdP - T*dV_dT_P*d2P_dTdP + d2H_dep_dTdP
 
     def chemical_potential(self):
         # CORRECT DO NOT CHANGE
@@ -497,7 +565,12 @@ class Phase(object):
         return 1.0/self.dP_dT()
     
     def dV_dT(self):
-        return -self.dP_dT()/self.dP_dV()
+        try:
+            return self._dV_dT
+        except AttributeError:
+            pass
+        dV_dT = self._dV_dT = -self.dP_dT()/self.dP_dV()
+        return dV_dT
     
     def dV_dP(self):
         return -self.dV_dT()*self.dT_dP()
@@ -1333,29 +1406,79 @@ class Phase(object):
     def P_max_at_V(self, V):
         return None
     
-#    @property
-#    def dspeed_of_sound_dT(self):
-#        raise NotImplementedError("Fail")
-#        x0 = self.Cp()
-#        x1 = self.V()
-#        x2 = self.dP_dV_T()
-#        x3 = self.Cv()
-#        x4 = x0*x2
-#        x5 = x4/x3
-#        x6 = x1/2.0
-#        
-#        dx2_dT = self.d2P_dVdT()
-##        dx0_dT = # Second derivative of enthalpy at constant pressure - requires third T derivatives
-#
-##     [10*sqrt(10)*sqrt(-x1**2*x5/MW)*(x0*x6*Derivative(x2, T) + x2*x6*Derivative(x0, T)
-## + x4*Derivative(x1, T) - x5*x6*Derivative(x3, T))/(x0*x1*x2)])
-#        
-#
-#    @property
-#    def dspeed_of_sound_dP(self):
-#        # Requires d2H_dTdP_T
-#        # Requires d2H_dTdP_V
-#        pass
+    def dspeed_of_sound_dT_P(self):
+        r'''Method to calculate the temperature derivative of speed of sound
+        at constant pressure in molar units.
+        
+        .. math::
+            \left(\frac{\partial c{\partial T}\right)_P = 
+            - \frac{\sqrt{- \frac{\operatorname{Cp}{\left(T \right)} V^{2}
+            {\left(T \right)} \operatorname{dPdV_{T}}{\left(T \right)}}
+            {\operatorname{Cv}{\left(T \right)}}} \left(- \frac{\operatorname{Cp}
+            {\left(T \right)} V^{2}{\left(T \right)} \frac{d}{d T}
+            \operatorname{dPdV_{T}}{\left(T \right)}}{2 \operatorname{Cv}{\left(T
+            \right)}} - \frac{\operatorname{Cp}{\left(T \right)} V{\left(T 
+            \right)} \operatorname{dPdV_{T}}{\left(T \right)} \frac{d}{d T}
+            V{\left(T \right)}}{\operatorname{Cv}{\left(T \right)}} 
+            + \frac{\operatorname{Cp}{\left(T \right)} V^{2}{\left(T \right)}
+            \operatorname{dPdV_{T}}{\left(T \right)} \frac{d}{d T}
+            \operatorname{Cv}{\left(T \right)}}{2 \operatorname{Cv}^{2}
+            {\left(T \right)}} - \frac{V^{2}{\left(T \right)} \operatorname{
+            dPdV_{T}}{\left(T \right)} \frac{d}{d T} \operatorname{Cp}{\left(T
+            \right)}}{2 \operatorname{Cv}{\left(T \right)}}\right) 
+            \operatorname{Cv}{\left(T \right)}}{\operatorname{Cp}{\left(T 
+            \right)} V^{2}{\left(T \right)} \operatorname{dPdV_{T}}{\left(T
+            \right)}}
+
+        Returns
+        -------
+        dspeed_of_sound_dT_P : float
+           Temperature derivative of speed of sound at constant pressure, 
+           [m*kg^0.5/s/mol^0.5/K]
+            
+        Notes
+        -----
+        Requires the temperature derivative of Cp and Cv both at constant
+        pressure, as wel as the volume and temperature derivative of pressure,
+        calculated at constant temperature and then pressure respectively. 
+        These can be tricky to obtain.
+        '''
+        '''Calculation with SymPy:
+        from sympy import *
+        T = symbols('T')
+        V, dPdV_T, Cp, Cv = symbols('V, dPdV_T, Cp, Cv', cls=Function)
+        c = sqrt(-V(T)**2*dPdV_T(T)*Cp(T)/Cv(T))
+        '''
+        x0 = self.Cp()
+        x1 = self.V()
+        x2 = self.dP_dV()
+        x3 = self.Cv()
+        x4 = x0*x2
+        x5 = x4/x3
+        x6 = 0.5*x1
+        
+        x50 = self.d2P_dVdT_TP()
+        x51 = self.d2H_dT2()
+        x52 = self.dV_dT()
+        x53 = self.dCv_dT_P()
+        
+        return (-x1*x1*x5)**0.5*(x0*x6*x50 + x2*x6*x51 + x4*x52- x5*x6*x53)/(x0*x1*x2)
+
+    def dspeed_of_sound_dP_T(self):
+        x0 = self.Cp()
+        x1 = self.V()
+        x2 = self.dP_dV()
+        x3 = self.Cv()
+        x4 = x0*x2
+        x5 = x4/x3
+        x6 = 0.5*x1
+        
+        x50 = self.d2P_dVdP()
+        x51 = self.d2H_dTdP()
+        x52 = self.dV_dP()
+        x53 = self.dCv_dP_T()
+        
+        return (-x1*x1*x5)**0.5*(x0*x6*x50 + x2*x6*x51 + x4*x52- x5*x6*x53)/(x0*x1*x2)
 
 for a in ('T', 'P', 'V', 'rho'):
     for b in ('T', 'P', 'V', 'rho'):
@@ -1694,26 +1817,72 @@ class EOSGas(Phase):
         
 
     def Cp(self):
+        try:
+            return self._Cp
+        except AttributeError:
+            pass
         Cpigs_pure = self.Cpigs_pure()
         Cp, zs = 0.0, self.zs
         for i in self.cmps:
             Cp += zs[i]*Cpigs_pure[i]
-        return Cp + self.Cp_dep()
+        Cp += self.Cp_dep()
+        self._Cp = Cp
+        return Cp 
 
     def dH_dT(self):
         return self.Cp()
 
     def dH_dP(self):
         try:
-            return self.eos_mix.dH_dep_dP_g
+            return self._dH_dP
         except AttributeError:
-            return self.eos_mix.dH_dep_dP_l
-
+            pass
+        try:
+            self._dH_dP = dH_dP = self.eos_mix.dH_dep_dP_g
+        except AttributeError:
+            self._dH_dP = dH_dP = self.eos_mix.dH_dep_dP_l
+        return dH_dP
+        
+    def d2H_dT2(self):
+        try:
+            return self._d2H_dT2
+        except AttributeError:
+            pass
+        dCpigs_pure = self.dCpigs_dT_pure()
+        dCp, zs = 0.0, self.zs
+        for i in self.cmps:
+            dCp += zs[i]*dCpigs_pure[i]
+        try:
+            dCp += self.eos_mix.d2H_dep_dT2_g
+        except AttributeError:
+            dCp += self.eos_mix.d2H_dep_dT2_l
+        self._d2H_dT2 = dCp
+        return dCp
+    
+    def d2H_dT2_V(self):
+        dCpigs_pure = self.dCpigs_dT_pure()
+        dCp, zs = 0.0, self.zs
+        for i in self.cmps:
+            dCp += zs[i]*dCpigs_pure[i]
+        
+        try:
+            dCp += self.eos_mix.d2H_dep_dT2_g_V
+        except AttributeError:
+            dCp += self.eos_mix.d2H_dep_dT2_l_V
+        return dCp
+    
+    
     def d2H_dP2(self):
         try:
             return self.eos_mix.d2H_dep_dP2_g
         except AttributeError:
             return self.eos_mix.d2H_dep_dP2_l
+        
+    def d2H_dTdP(self):
+        try:
+            return self.eos_mix.d2H_dep_dTdP_g
+        except AttributeError:
+            return self.eos_mix.d2H_dep_dTdP_l
 
         
     def dH_dT_V(self):
@@ -1823,6 +1992,30 @@ class EOSGas(Phase):
             dS_dP_V += self.eos_mix.dS_dep_dP_l_V
         return dS_dP_V
 
+    def d2P_dTdP(self):
+        
+        try:
+            return self.eos_mix.d2P_dTdP_g
+        except AttributeError:
+            return self.eos_mix.d2P_dTdP_l
+        
+    def d2P_dVdP(self):
+        try:
+            return self.eos_mix.d2P_dVdP_g
+        except AttributeError:
+            return self.eos_mix.d2P_dVdP_l
+    
+    def d2P_dVdT_TP(self):
+        try:
+            return self.eos_mix.d2P_dVdT_TP_g
+        except AttributeError:
+            return self.eos_mix.d2P_dVdT_TP_l
+    
+    def d2P_dT2_PV(self):
+        try:
+            return self.eos_mix.d2P_dT2_PV_g
+        except AttributeError:
+            return self.eos_mix.d2P_dT2_PV_l
     
     def dS_dzs(self):
         try:

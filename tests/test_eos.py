@@ -1747,6 +1747,62 @@ def test_d2P_dTdP():
     assert_allclose(eos.d2P_dTdP_g, d2P_dTdP_g_num)
     assert_allclose(eos.d2P_dTdP_g, -8.314373652066897e-05, rtol=1e-11)
 
+def test_d2P_dVdT_TP():
+    '''SymPy source:
+    from sympy import *
+    P, T, R, b, delta, epsilon = symbols('P, T, R, b, delta, epsilon')
+    a_alpha, V = symbols(r'a\alpha, V', cls=Function)
+    Vconst = symbols('Vconst')
+    CUBIC = R*T/(Vconst-b) - a_alpha(T)/(Vconst*Vconst + delta*Vconst + epsilon)
+    dP_dV = diff(CUBIC, Vconst)
+    diff(dP_dV.subs(Vconst, V(T)), T)        
+    '''
+    eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E5)
+    d2P_dVdT_TP_g_num = derivative(lambda T: eos.to(P=eos.P, T=T).dP_dV_g, eos.T, dx=eos.T*2e-8, order=3)
+    assert_allclose(eos.d2P_dVdT_TP_g, 13116.743483603945, rtol=1e-11)
+    assert_allclose(eos.d2P_dVdT_TP_g, d2P_dVdT_TP_g_num, rtol=1e-7)
+    
+    d2P_dVdT_TP_l_num = derivative(lambda T: eos.to(P=eos.P, T=T).dP_dV_l, eos.T, dx=eos.T*2e-8, order=3)
+    assert_allclose(eos.d2P_dVdT_TP_l, 50040777323.75235, rtol=1e-11)
+    assert_allclose(eos.d2P_dVdT_TP_l, d2P_dVdT_TP_l_num, rtol=1e-7)
+
+def test_d2P_dT2_PV():
+    '''
+    from sympy import *
+    P, T, R, b, delta, epsilon, Vconst = symbols('P, T, R, b, delta, epsilon, Vconst')
+    a_alpha, V = symbols(r'a\alpha, V', cls=Function)
+    CUBIC = R*T/(Vconst-b) - a_alpha(T)/(Vconst*Vconst + delta*Vconst + epsilon)
+    dP_dT_V = diff(CUBIC, T).subs(Vconst, V(T))
+    diff(dP_dT_V, T)
+    '''
+    eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E5)
+    d2P_dT2_PV_g_num = derivative(lambda T: eos.to(P=eos.P, T=T).dP_dT_g, eos.T, dx=eos.T*2e-8, order=3)
+    assert_allclose(eos.d2P_dT2_PV_g, -1.5428790190793502, rtol=1e-11)
+    assert_allclose(eos.d2P_dT2_PV_g, d2P_dT2_PV_g_num, rtol=1e-7)
+    
+    d2P_dT2_PV_l_num = derivative(lambda T: eos.to(P=eos.P, T=T).dP_dT_l, eos.T, dx=eos.T*2e-8, order=3)
+    assert_allclose(eos.d2P_dT2_PV_l, -3768.328311659964, rtol=1e-11)
+    assert_allclose(eos.d2P_dT2_PV_l, d2P_dT2_PV_l_num, rtol=1e-7)
+
+def test_d2P_dTdP():
+    '''
+    from sympy import *
+    P, T, R, b, delta, epsilon, Vconst = symbols('P, T, R, b, delta, epsilon, Vconst')
+    a_alpha, V = symbols(r'a\alpha, V', cls=Function)
+    CUBIC = R*T/(Vconst-b) - a_alpha(T)/(Vconst*Vconst + delta*Vconst + epsilon)
+    dP_dT_V = diff(CUBIC, T).subs(Vconst, V(P))
+    diff(dP_dT_V, P)
+    '''
+    eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E5)
+    d2P_dTdP_g_num = derivative(lambda P: eos.to(P=P, T=eos.T).dP_dT_g, eos.P, dx=eos.P*1e-8)
+    assert_allclose(d2P_dTdP_g_num, eos.d2P_dTdP_g, rtol=1e-8)
+    assert_allclose(eos.d2P_dTdP_g, 0.0040914288794245265, rtol=1e-12)
+    
+    d2P_dTdP_l_num = derivative(lambda P: eos.to(P=P, T=eos.T).dP_dT_l, eos.P, dx=eos.P*8e-6, order=7)
+    assert_allclose(d2P_dTdP_l_num, eos.d2P_dTdP_l, rtol=1e-7)
+    assert_allclose(eos.d2P_dTdP_l, 0.0056550655224853735, rtol=1e-12)
+
+
 def test_dH_dep_dT_V():
     '''Equation obtained with:
         

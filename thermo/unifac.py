@@ -3103,7 +3103,7 @@ class UNIFAC(GibbsExcess):
     
     def Xs(self):
         r'''Calculate the :math:`X_m` parameters 
-        used in calculating the combinatorial part. A function of mole 
+        used in calculating the residual part. A function of mole 
         fractions and group counts only.
         
         .. math::
@@ -3111,9 +3111,8 @@ class UNIFAC(GibbsExcess):
         
         Returns
         -------
-        Xs : list[list[float]]
-           :math:`X_m` terms, size number of subgroups by number of components
-           and indexed in that order, [-]
+        Xs : list[float]
+           :math:`X_m` terms, size number of subgroups, [-]
         '''
         try:
             return self._Xs
@@ -3137,6 +3136,18 @@ class UNIFAC(GibbsExcess):
         return Xs
     
     def Thetas(self):
+        r'''Calculate the :math:`\Theta_m` parameters 
+        used in calculating the residual part. A function of mole 
+        fractions and group counts only.
+        
+        .. math::
+            \Theta_m = \frac{Q_m X_m}{\sum_{n} Q_n X_n}
+        
+        Returns
+        -------
+        Thetas : list[float]
+           :math:`\Theta_m` terms, size number of subgroups, [-]
+        '''
         try:
             return self._Thetas
         except AttributeError:
@@ -3152,6 +3163,36 @@ class UNIFAC(GibbsExcess):
         return Thetas
     
     def dThetas_dxs(self):
+        r'''Calculate the mole fraction derivatives of the :math:`\Theta_m` 
+        parameters. A function of mole fractions and group counts only.
+        
+        .. math::
+            \frac{\partial \Theta_i}{\partial x_j} = 
+            FGQ_i\left[FG (\nu x)_{sum,i}
+            \left(\sum_k^{gr} FQ_k  (\nu)_{sum,j} (\nu x)_{sum,k}
+            -\sum_k^{gr} Q_k \nu_{k,j}
+            \right)
+            - F (\nu)_{sum,j}(\nu x)_{sum,i} + \nu_{ij}
+            \right]
+            
+        .. math::
+            G = \frac{1}{\sum_j Q_j X_j}
+            
+        .. math::
+            F = \frac{1}{\sum_j \sum_n \nu_n^j x_j}
+            
+        .. math::
+            (\nu)_{sum,i} = \sum_j \nu_{j,i}
+                
+        .. math::
+            (\nu x)_{sum,i} = \sum_j \nu_{i,j}x_j
+                    
+        Returns
+        -------
+        dThetas_dxs : list[list[float]]
+           Mole fraction derivatives of :math:`\Theta_m` terms, size number of
+           subgroups by mole fractions and indexed in that order, [-]
+        '''
         try:
             return self._dThetas_dxs
         except AttributeError:
@@ -3183,6 +3224,52 @@ class UNIFAC(GibbsExcess):
         return dThetas_dxs
 
     def d2Thetas_dxixjs(self):
+        r'''Calculate the mole fraction derivatives of the :math:`\Theta_m` 
+        parameters. A function of mole fractions and group counts only.
+        
+        .. math::
+            \frac{\partial^2 \Theta_i}{\partial x_j \partial x_k} = 
+            \frac{Q_i}{\sum_n Q_n (\nu x)_{sum,n}}\left[
+            -F(\nu)_{sum,j} \nu_{i,k} - F (\nu)_{sum,k}\nu_{i,j}
+            + 2F^2(\nu)_{sum,j} (\nu)_{sum,k} (\nu x)_{sum,i}
+            + \frac{F (\nu x)_{sum,i}\left[
+            \sum_n(-2 F Q_n (\nu)_{sum,j} (\nu)_{sum,k} 
+            (\nu x)_{sum,n} + Q_n (\nu)_{sum,j} \nu_{n,k} + Q_n (\nu)_{sum,k}\nu_{n,j}
+            )\right] }
+            {\sum_n^{gr} Q_n (\nu x)_{sum,n} }
+            + \frac{2(\nu x)_{sum,i}(\sum_n^{gr}[-FQ_n (\nu)_{sum,j} (\nu x)_{sum,n} + Q_n \nu_{n,j}])
+            (\sum_n^{gr}[-FQ_n (\nu)_{sum,k} (\nu x)_{sum,n} + Q_n \nu_{n,k}])  }
+            {\left( \sum_n^{gr} Q_n (\nu x)_{sum,n} \right)^2}
+            - \frac{\nu_{i,j}(\sum_n^{gr} -FQ_n (\nu)_{sum,k} (\nu x)_{sum,n} + Q_n \nu_{n,k} )}
+            {\left( \sum_n^{gr} Q_n (\nu x)_{sum,n} \right)}
+            - \frac{\nu_{i,k}(\sum_n^{gr} -FQ_n (\nu)_{sum,j} (\nu x)_{sum,n} + Q_n \nu_{n,j} )}
+            {\left( \sum_n^{gr} Q_n (\nu x)_{sum,n} \right)}
+            + \frac{F(\nu)_{sum,j} (\nu x)_{sum,i} (\sum_n^{gr} -FQ_n (\nu)_{sum,k}  
+            (\nu x)_{sum,n} + Q_n \nu_{n,k})}
+            {\left(\sum_n^{gr} Q_n (\nu x)_{sum,n} \right)}
+            + \frac{F(\nu)_{sum,k} (\nu x)_{sum,i} (\sum_n^{gr} -FQ_n (\nu)_{sum,j}  
+            (\nu x)_{sum,n} + Q_n \nu_{n,j})}
+            {\left(\sum_n^{gr} Q_n (\nu x)_{sum,n} \right)}
+            \right]
+            
+        .. math::
+            G = \frac{1}{\sum_j Q_j X_j}
+            
+        .. math::
+            F = \frac{1}{\sum_j \sum_n \nu_n^j x_j}
+            
+        .. math::
+            (\nu)_{sum,i} = \sum_j \nu_{j,i}
+                
+        .. math::
+            (\nu x)_{sum,i} = \sum_j \nu_{i,j}x_j
+                    
+        Returns
+        -------
+        d2Thetas_dxixjs : list[list[list[float]]]
+           :math:`\Theta_m` terms, size number of subgroups by mole fractions
+           and indexed in that order, [-]
+        '''
         try:
             return self._d2Thetas_dxixjs
         except AttributeError:
@@ -3534,6 +3621,19 @@ class UNIFAC(GibbsExcess):
         return row
         
     def Xs_pure(self):
+        r'''Calculate the :math:`X_m` parameters for each chemical in the 
+        mixture as a pure species, used in calculating the residual part. A 
+        function of group counts only, not even mole fractions or temperature.
+        
+        .. math::
+            X_m = \frac{\nu_m}{\sum^{gr}_n \nu_n}
+        
+        Returns
+        -------
+        Xs_pure : list[list[float]]
+           :math:`X_m` terms, size number of subgroups by number of components
+           and indexed in that order, [-]
+        '''
         try:
             return self._Xs_pure
         except AttributeError:
@@ -3552,6 +3652,20 @@ class UNIFAC(GibbsExcess):
         return Xs_pure
     
     def Thetas_pure(self):
+        r'''Calculate the :math:`\Theta_m` parameters for each chemical in the 
+        mixture as a pure species,
+        used in calculating the residual part. A function of mole 
+        fractions and group counts only.
+        
+        .. math::
+            \Theta_m = \frac{Q_m X_m}{\sum_{n} Q_n X_n}
+        
+        Returns
+        -------
+        Thetas_pure : list[list[float]]
+           :math:`\Theta_m` terms, size number of components by number of 
+           subgroups and indexed in that order, [-]
+        '''
         # Composition and temperature independent
         try:
             return self._Thetas_pure
@@ -3721,6 +3835,20 @@ class UNIFAC(GibbsExcess):
         return mat
     
     def lngammas_r(self):
+        r'''Calculates the residual part of the UNIFAC model.
+
+        .. math::
+            \ln \gamma_i^r = \sum_{k}^{gr}_n \nu_k^{(i)} \left[ \ln \Gamma_k
+            - \ln \Gamma_k^{(i)} \right]
+        
+        where the second Gamma is the pure-component Gamma of group `k` in
+        component `i`.
+        
+        Returns
+        -------
+        lngammas_r : list[float]
+            Residual lngammas terms, size number of components [-]
+        '''
         try:
             return self._lngammas_r
         except AttributeError:
@@ -3740,6 +3868,23 @@ class UNIFAC(GibbsExcess):
         return lngammas_r
     
     def dlngammas_r_dT(self):
+        r'''Calculates the first temperature derivative of the residual part of 
+        the UNIFAC model.
+
+        .. math::
+            \frac{\partial \ln \gamma_i^r}{\partial T} = \sum_{k}^{gr}_n
+            \nu_k^{(i)} \left[ \frac{\partial \ln \Gamma_k}{\partial T}
+            - \frac{\partial \ln \Gamma_k^{(i)}}{\partial T} \right]
+        
+        where the second Gamma is the pure-component Gamma of group `k` in
+        component `i`.
+        
+        Returns
+        -------
+        dlngammas_r_dT : list[float]
+            Residual lngammas terms first temperature derivative, size number
+            of components [1/K]
+        '''
         try:
             return self._dlngammas_r_dT
         except AttributeError:
