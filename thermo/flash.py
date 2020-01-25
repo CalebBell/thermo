@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 from __future__ import division
 __all__ = ['sequential_substitution_2P', 'sequential_substitution_GDEM3_2P',
-           'bubble_T_Michelsen_Mollerup',
+           'dew_bubble_Michelsen_Mollerup', 'bubble_T_Michelsen_Mollerup',
            'dew_T_Michelsen_Mollerup', 'bubble_P_Michelsen_Mollerup',
            'dew_P_Michelsen_Mollerup',
            'minimize_gibbs_2P_transformed', 'sequential_substitution_Mehra_2P',
@@ -969,6 +969,156 @@ l_undefined_T_msg = "Could not calculate liquid conditions at provided temperatu
 g_undefined_T_msg = "Could not calculate vapor conditions at provided temperature %s K (mole fracions %s)"   
 l_undefined_P_msg = "Could not calculate liquid conditions at provided pressure %s Pa (mole fracions %s)"   
 g_undefined_P_msg = "Could not calculate vapor conditions at provided pressure %s Pa (mole fracions %s)"   
+
+def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
+                                iter_var='T', fixed_var='P', V_over_F=1, 
+                                maxiter=200, xtol=1E-10, comp_guess=None,
+                                max_step_damping=.01, guess_update_frequency=1,
+                                trivial_solution_tol=1e-4, V_diff=.01):
+    
+    kwargs = {fixed_var: fixed_val}
+    N = len(zs)
+    cmps = range(N)
+    comp_guess = zs if comp_guess is None else comp_guess
+
+    if V_over_F == 1.0:
+        iter_phase, const_phase, bubble = liquid_phase, gas_phase, False
+    elif V_over_F == 0.0:
+        iter_phase, const_phase, bubble = gas_phase, liquid_phase, True
+    else:
+        raise ValueError("Supports only VF of 0 or 1")
+    if iter_var == 'T':
+        if V_over_F == 1.0:
+            iter_msg, const_msg = l_undefined_T_msg, g_undefined_T_msg
+        else:
+            iter_msg, const_msg = g_undefined_T_msg, l_undefined_T_msg
+    elif iter_var == 'P':
+        if V_over_F == 1.0:
+            iter_msg, const_msg = l_undefined_P_msg, g_undefined_P_msg
+        else:
+            iter_msg, const_msg = g_undefined_P_msg, l_undefined_P_msg
+
+    s = 'dlnphis_d%s' %(iter_var)
+    dlnphis_diter_var_iter = getattr(iter_phase.__class__, s)
+    dlnphis_diter_var_const = getattr(const_phase.__class__, s)
+
+    guess_old = None
+    successive_fails = 0
+    for iteration in range(maxiter):
+        kwargs[iter_var] = guess
+        try:
+            const_phase = const_phase.to_TP_zs(zs=zs, **kwargs)
+            lnphis_const = const_phase.lnphis()
+            dlnphis_dvar_const = dlnphis_diter_var_const(const_phase)
+        except Exception as e:
+            if guess_old is None:
+                raise ValueError(const_msg %(guess, zs), e)
+            successive_fails += 1
+            guess = guess_old + copysign(min(max_step_damping*guess, abs(step)), step)
+            continue
+        try:
+            iter_phase = iter_phase.to_TP_zs(zs=comp_guess, **kwargs)
+            if V_diff is not None:
+                if 1 - V_diff < iter_phase.V() / const_phase.V() < 1 + V_diff:
+                    # Relax the constraint for the iterating on variable so two different phases exist
+                    expect_phase = 'g' if V_over_F == 0.0 else 'l'
+                    unwanted_phase = 'l' if expect_phase == 'g' else 'g'
+                    #if iter_phase.eos_mix.phase in ('l', 'g') and iter_phase.eos_mix.phase == const_phase.eos_mix.phase:
+                    if iter_phase.eos_mix.phase == unwanted_phase:
+                        if iter_var == 'P':
+                            split = iter_phase.eos_mix.P_discriminant_zero_l()
+                            if bubble:
+                                split *= 0.999999999
+                            else:
+                                split *= 1.000000001
+                        elif iter_var == 'T':
+                            split = iter_phase.eos_mix.T_discriminant_zero_l()
+                            if bubble:
+                                split *= 0.999999999
+                            else:
+                                split *= 1.000000001
+                        kwargs[iter_var] = guess = split
+                        iter_phase = iter_phase.to_zs_TPV(zs=comp_guess, **kwargs)
+                        const_phase = const_phase.to_zs_TPV(zs=zs, **kwargs)
+                        lnphis_const = const_phase.lnphis()
+                        dlnphis_dvar_const = dlnphis_diter_var_const(const_phase)
+                        print('adj iter phase', split)
+                    elif const_phase.eos_mix.phase == expect_phase:
+                        if iter_var == 'P':
+                            split = const_phase.eos_mix.P_discriminant_zero_l()
+                            if bubble:
+                                split *= 0.999999999
+                            else:
+                                split *= 1.000000001
+                        elif iter_var == 'T':
+                            split = const_phase.eos_mix.T_discriminant_zero_l()
+                            if bubble:
+                                split *= 0.999999999
+                            else:
+                                split *= 1.000000001
+                        kwargs[iter_var] = guess = split
+                        const_phase = const_phase.to_zs_TPV(zs=zs, **kwargs)
+                        lnphis_const = const_phase.lnphis()
+                        dlnphis_dvar_const = dlnphis_diter_var_const(const_phase)
+                        iter_phase = iter_phase.to_zs_TPV(zs=comp_guess, **kwargs)
+                        # Also need to adjust the other phase to keep it in sync
+
+                        print('adj const phase', split)
+
+            lnphis_iter = iter_phase.lnphis()
+            dlnphis_dvar_iter = dlnphis_diter_var_iter(iter_phase)
+        except Exception as e:
+            if guess_old is None:
+                raise ValueError(iter_msg %(guess, zs), e)
+            successive_fails += 1
+            guess = guess_old + copysign(min(max_step_damping*guess, abs(step)), step)
+            continue
+
+
+        if successive_fails > 2:
+            raise ValueError("Stopped convergence procedure after multiple bad steps")     
+    
+        successive_fails = 0
+        Ks = [exp(a - b) for a, b in zip(lnphis_const, lnphis_iter)]
+        comp_guess = [zs[i]*Ks[i] for i in cmps]
+        if iteration % guess_update_frequency:
+            continue
+
+        f_k = sum([zs[i]*Ks[i] for i in cmps]) - 1.0
+        
+        dfk_dvar = 0.0
+        for i in cmps:
+            dfk_dvar += zs[i]*Ks[i]*(dlnphis_dvar_const[i] - dlnphis_dvar_iter[i])
+        
+        guess_old = guess
+        step = -f_k/dfk_dvar
+        
+        
+#        if near_critical:
+        adj_step = copysign(min(max_step_damping*guess, abs(step)), step)
+        if guess + adj_step <= 0.0:
+            adj_step *= 0.5
+        guess = guess + adj_step
+#        else:
+#            guess = guess + step
+        
+        
+        comp_difference = sum([abs(zi - yi) for zi, yi in zip(zs, comp_guess)])
+        if comp_difference < trivial_solution_tol:
+            raise ValueError("Converged to trivial condition, compositions of both phases equal")
+        
+        y_sum = sum(comp_guess)
+        comp_guess = [y/y_sum for y in comp_guess]
+
+        if abs(guess - guess_old) < xtol:
+            guess = guess_old
+            break
+        
+    if abs(guess - guess_old) > xtol:
+        raise ValueError("Did not converge to specified tolerance")
+    return guess, comp_guess, iter_phase, const_phase, iteration, abs(guess - guess_old)
+
+
 
 def bubble_T_Michelsen_Mollerup(T_guess, P, zs, liquid_phase, gas_phase, 
                                 maxiter=200, xtol=1E-10, ys_guess=None,

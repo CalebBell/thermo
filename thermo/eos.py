@@ -3076,6 +3076,9 @@ class GCEOS(object):
     def P_discriminant_zero_g(self):
         return self._P_discriminant_zero(low=False)
 
+    def P_discriminant_zeros(self):
+        return GCEOS.P_discriminant_zeros_analytical(self.T, self.b, self.delta, self.epsilon, self.a_alpha, valid=True)
+    
     @staticmethod
     def P_discriminant_zeros_analytical(T, b, delta, epsilon, a_alpha, valid=False):
         r'''Method to calculate the pressures which zero the discriminant
@@ -7140,7 +7143,7 @@ class VDW(GCEOS):
             roots = [r.real for r in roots if (r.real >= 0.0 and (abs(r.imag) <= 1e-12))]
             roots.sort()
         return roots
-
+    
     @staticmethod
     def P_discriminant_zeros_analytical(T, b, delta, epsilon, a_alpha, valid=False):
         '''
