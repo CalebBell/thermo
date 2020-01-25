@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 from numpy.testing import assert_allclose
 import pytest
-
+from fluids.numerics import *
 from thermo.flash import *
 from thermo.phases import *
 from thermo.eos_mix import *
@@ -99,3 +99,68 @@ def test_UNIFAC_LLE_SS():
     assert_allclose(VF, 0.8180880014378398)
     assert_allclose(xs0, [0.5336869025395473, 0.46631309746045285])
     assert_allclose(xs1,[0.9814542537494846, 0.018545746250515603])
+
+def test_dew_bubble_newton_zs():
+    T, P = 370.0, 6e5
+    zs = [.3, .5, .2]
+    eos_kwargs = {'Pcs': [22048320.0, 3025000.0, 4108000.0], 'Tcs': [647.14, 507.6, 591.75], 'omegas': [0.344, 0.2975, 0.257]}
+    HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
+                         HeatCapacityGas(best_fit=(200.0, 1000.0, [1.3740654453881647e-21, -8.344496203280677e-18, 2.2354782954548568e-14, -3.4659555330048226e-11, 3.410703030634579e-08, -2.1693611029230923e-05, 0.008373280796376588, -1.356180511425385, 175.67091124888998])),
+                         HeatCapacityGas(best_fit=(50.0, 1000.0, [-9.48396765770823e-21, 4.444060985512694e-17, -8.628480671647472e-14, 8.883982004570444e-11, -5.0893293251198045e-08, 1.4947108372371731e-05, -0.0015271248410402886, 0.19186172941013854, 30.797883940134057]))]
+    
+    gas = EOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = EOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    
+    # TVF-0
+    TVF0 = dew_bubble_newton_zs(P, T, zs, liq, gas, 
+                               iter_var='P', fixed_var='T', V_over_F=0, 
+                               maxiter=200, xtol=1E-11, comp_guess=None, debug=True)
+    (iter_val, comp, iter_phase, const_phase, niter, err), cb = TVF0
+    
+    TVF0_jac_expect = [[-1.7094866222319638, -0.060889186638232645, -0.06326258796693127, -2.623671448053193e-06], [0.04594194610061586, -2.6779244704304754, 0.09199738718637793, -2.3450702269756142e-06], [0.052225681359212524, 0.10065452377367312, -23.400784985388814, -2.3292014632919617e-06], [-1.0, -1.0, -1.0, 0.0]]
+    jac_num = jacobian(lambda x: list(cb(x, jac=False)), comp + [iter_val], scalar=False, perturbation=1e-7)
+    jac_analytical = [list(i) for i in cb(comp + [iter_val], jac=True)[1]]
+    
+    assert_allclose(TVF0_jac_expect, jac_analytical, rtol=1e-7)
+    assert_allclose(jac_num, jac_analytical, rtol=1e-6)
+    assert_allclose(comp, [0.5959851041217594, 0.3614714142727822, 0.04254348160545845], rtol=1e-6)
+    assert_allclose(iter_val, 369706.09616182366, rtol=1e-8)
+    
+    # TVF-1
+    TVF1 = dew_bubble_newton_zs(P, T, zs, liq, gas, 
+                               iter_var='P', fixed_var='T', V_over_F=1, 
+                               maxiter=200, xtol=1E-11, comp_guess=None, debug=True)
+    (iter_val, comp, iter_phase, const_phase, niter, err), cb = TVF1
+    jac_num = jacobian(lambda x: list(cb(x, jac=False)), comp + [iter_val], scalar=False, perturbation=1e-7)
+    jac_analytical = [list(i) for i in cb(comp + [iter_val], jac=True)[1]]
+    TVF1_jac_expect = [[-11.607060987245507, 0.17093888890495346, 0.7136499432808722, 5.053514880988398e-06], [-0.7226038994767894, -2.653184191819002, -0.48362418106386595, 4.725356979277343e-06], [0.38123614577345877, 0.07750480981046248, -1.648559971422293, 4.705268781400021e-06], [-1.0, -1.0, -1.0, 0.0]]
+    assert_allclose(TVF1_jac_expect, jac_analytical, rtol=1e-7)
+    assert_allclose(jac_num, jac_analytical, rtol=1e-6)
+    assert_allclose(comp, [0.07863510496551862, 0.39728142156798496, 0.5240834734664964], rtol=1e-6)
+    assert_allclose(iter_val, 196037.49251710708, rtol=1e-8)
+    
+    # PVF-1
+    PVF1 = dew_bubble_newton_zs(T, P, zs, liq, gas, 
+                               iter_var='T', fixed_var='P', V_over_F=1, 
+                               maxiter=200, xtol=1E-11, debug=True)
+    (iter_val, comp, iter_phase, const_phase, niter, err), cb = PVF1
+    jac_num = jacobian(lambda x: list(cb(x, jac=False)), comp + [iter_val], scalar=False, perturbation=1e-7)
+    jac_analytical = [list(i) for i in cb(comp + [iter_val], jac=True)[1]]
+    PVF1_jac_expect = [[-8.981778361176932, 0.2533697774315433, 0.6428032458633708, -0.01567016574390102], [-0.6340304549551559, -2.4698089607476525, -0.5159121776039166, -0.016284877533440625], [0.4377008898727188, 0.16638569879213017, -1.8473188730053174, -0.021260114330616014], [-1.0, -1.0, -1.0, 0.0]]
+    assert_allclose(PVF1_jac_expect, jac_analytical, rtol=1e-7)
+    assert_allclose(jac_num, jac_analytical, rtol=1e-6)
+    assert_allclose(comp, [0.10190680927242819, 0.44581304512199615, 0.45228014560557583])
+    assert_allclose(iter_val, 414.5860479637154)
+
+    # PVF-0
+    PVF0 = dew_bubble_newton_zs(T, P, zs, liq, gas, 
+                               iter_var='T', fixed_var='P', V_over_F=0, 
+                               maxiter=200, xtol=1E-11, debug=True)
+    (iter_val, comp, iter_phase, const_phase, niter, err), cb = PVF0
+    PVF0_jac_expect = [[-1.7799148067485484, -0.09576578045148737, -0.1000043126222332, 0.019325866913386947], [0.06747154401695143, -2.5608953087110042, 0.13445334461342753, 0.018884399921460383], [0.0784219794200535, 0.14964231218727547, -19.81193477319855, 0.024952816338405084], [-1.0, -1.0, -1.0, 0.0]]
+    jac_num = jacobian(lambda x: list(cb(x, jac=False)), comp + [iter_val], scalar=False, perturbation=1e-7)
+    jac_analytical = [list(i) for i in cb(comp + [iter_val], jac=True)[1]]
+    assert_allclose(jac_num, jac_analytical, rtol=1e-6)
+    assert_allclose(PVF0_jac_expect, jac_analytical, rtol=1e-7)
+    assert_allclose(comp, [0.5781248395738718, 0.3717955398333062, 0.05007962059282194])
+    assert_allclose(iter_val, 390.91409227801205)

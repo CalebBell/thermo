@@ -24,7 +24,7 @@ from __future__ import division
 
 __all__ = ['K_value', 'Wilson_K_value', 'flash_wilson', 
            'PR_water_K_value',
-           'flash_Tb_Tc_Pc',
+           'flash_Tb_Tc_Pc', 'flash_ideal',
            'Rachford_Rice_flash_error', 
            'Rachford_Rice_solution', 'Rachford_Rice_polynomial',
            'Rachford_Rice_solution_polynomial', 'Rachford_Rice_solution_LN2',
@@ -32,13 +32,13 @@ __all__ = ['K_value', 'Wilson_K_value', 'flash_wilson',
            'Rachford_Rice_flashN_f_jac', 'Rachford_Rice_flash2_f_jac',
            'Li_Johns_Ahmadi_solution', 'flash_inner_loop', 'NRTL_gammas',
            'Wilson_gammas',
-           'UNIQUAC_gammas', 'flash_ideal', 'dew_at_T',
+           'UNIQUAC_gammas', 'flash_ideal_basic', 'dew_at_T',
            'bubble_at_T', 'identify_phase', 'mixture_phase_methods',
            'identify_phase_mixture', 'Pbubble_mixture', 'bubble_at_P',
            'Pdew_mixture', 'GibbsExcess', 'IdealSolution']
 
 from fluids.numerics import IS_PYPY, one_epsilon_larger, one_epsilon_smaller, NotBoundedError
-from fluids.numerics import newton_system, roots_cubic, roots_quartic, horner, py_brenth as brenth, py_newton as newton, oscillation_checker, roots_cubic_a1# Always use this method for advanced features
+from fluids.numerics import newton_system, roots_cubic, roots_quartic, secant, horner, py_brenth as brenth, py_newton as newton, oscillation_checker, roots_cubic_a1# Always use this method for advanced features
 from thermo.utils import exp, log
 from thermo.utils import none_and_length_check, dxs_to_dns, dxs_to_dn_partials, d2xs_to_dxdn_partials, dns_to_dn_partials
 from thermo.utils import R
@@ -625,6 +625,112 @@ def flash_Tb_Tc_Pc(zs, Tbs, Tcs, Pcs, T=None, P=None, VF=None):
             info[:] = T_calc, P_calc, VF_calc, xs, ys
             return VF_calc - VF
         P = brenth(err, T_low, T_high)
+        return tuple(info)
+    else:
+        raise ValueError("Provide two of P, T, and VF")
+
+
+def flash_ideal(zs, funcs, Tcs=None, T=None, P=None, VF=None):
+    T_MAX = 50000
+    N = len(zs)
+    cmps = range(N)
+    if Tcs is None:
+        Tcs = [fi.solve_prop(1e6) for fi in funcs]
+    if T is not None and P is not None:
+        P_inv = 1.0/P
+        Ks = [P_inv*funcs[i](T) for i in cmps]
+        ans = (T, P) + flash_inner_loop(zs=zs, Ks=Ks)
+        return ans
+    if T is not None and VF == 0.0:
+        ys = []
+        P_bubble = 0.0
+        for i in cmps:
+            v = funcs[i](T)*zs[i]
+            P_bubble += v
+            ys.append(v)
+
+        P_inv = 1.0/P_bubble
+        for i in cmps:
+            ys[i] *= P_inv
+        return (T, P_bubble, 0.0, zs, ys)
+    if T is not None and VF == 1.0:
+        xs = []
+        P_dew = 0.
+        for i in cmps:
+            v = zs[i]/funcs[i](T)
+            P_dew += v
+            xs.append(v)
+        P_dew = 1./P_dew
+        for i in cmps:
+            xs[i] *= P_dew
+        return (T, P_dew, 1.0, xs, zs)
+    elif T is not None and VF is not None:
+        # Solve for in the middle of Pdew
+        P_low = flash_ideal(zs, funcs, Tcs, T=T, VF=1)[1]
+        P_high = flash_ideal(zs, funcs, Tcs, T=T, VF=0)[1]
+        info = []
+        def to_solve(P):
+            T_calc, P_calc, VF_calc, xs, ys = flash_ideal(zs, funcs, Tcs, T=T, P=P)
+            info[:] = T_calc, P_calc, VF_calc, xs, ys
+            err = VF_calc - VF
+            return err
+        P = brenth(to_solve, P_low, P_high)
+        return tuple(info)
+    elif P is not None and VF == 1:
+        def to_solve(T_guess):
+            T_guess = abs(T_guess)
+            P_dew = 0.
+            for i in cmps:
+                P_dew += zs[i]/funcs[i](T_guess)
+            P_dew = 1./P_dew
+            return P_dew - P
+
+        # 2/3 average critical point
+        T_guess = sum([.666*Tcs[i]*zs[i] for i in cmps])
+        try:
+            T_dew = abs(secant(to_solve, T_guess, maxiter=50, ytol=1e-2))
+        except Exception as e:
+            T_dew = None
+        if T_dew is None or T_dew > T_MAX*5.0: 
+            # Went insanely high T, bound it with brenth
+            T_low_guess = sum([.1*Tcs[i]*zs[i] for i in cmps])
+            try:
+                T_dew = brenth(to_solve, T_MAX, T_low_guess)
+            except NotBoundedError:
+                raise Exception("Bisecting solver could not find a solution between %g K and %g K" %(T_MAX, T_low_guess))
+        return flash_ideal(zs, funcs, Tcs, T=T_dew, P=P)
+
+    elif P is not None and VF == 0:
+        def to_solve(T_guess):
+            # T_guess = abs(T_guess)
+            P_bubble = 0.0
+            for i in cmps:
+                P_bubble += zs[i]*funcs[i](T_guess)
+            return P_bubble - P
+        # 2/3 average critical point
+        T_guess = sum([.55*Tcs[i]*zs[i] for i in cmps])
+        try:
+            T_bubble = abs(secant(to_solve, T_guess, maxiter=50, ytol=1e-2, bisection=True))
+        except Exception as e:
+            T_bubble = None
+        if T_bubble is None or T_bubble > T_MAX*5.0: 
+            # Went insanely high T, bound it with brenth
+            T_low_guess = sum([.1*Tcs[i]*zs[i] for i in cmps])
+            try:
+                T_bubble = brenth(to_solve, T_MAX, T_low_guess)
+            except NotBoundedError:
+                raise Exception("Bisecting solver could not find a solution between %g K and %g K" %(T_MAX, T_low_guess))
+
+        return flash_ideal(zs, funcs, Tcs, T=T_bubble, P=P)
+    elif P is not None and VF is not None:
+        T_low = flash_ideal(zs, funcs, Tcs, P=P, VF=1)[0]
+        T_high = flash_ideal(zs, funcs, Tcs, P=P, VF=0)[0]
+        info = []
+        def err(T):
+            T_calc, P_calc, VF_calc, xs, ys = flash_ideal(zs, funcs, Tcs, T=T, P=P)
+            info[:] = T_calc, P_calc, VF_calc, xs, ys
+            return VF_calc - VF
+        P = brenth(err, T_low, T_high, xtol=1e-14)
         return tuple(info)
     else:
         raise ValueError("Provide two of P, T, and VF")
@@ -2535,7 +2641,7 @@ def UNIQUAC_gammas(xs, rs, qs, taus):
     return ans
 
 
-def flash_ideal(P, zs, Psats):
+def flash_ideal_basic(P, zs, Psats):
 #    if not fugacities:
 #        fugacities = [1 for i in range(len(zs))]
 #    if not gammas:
@@ -2785,7 +2891,7 @@ def identify_phase_mixture(T=None, P=None, zs=None, Tcs=None, Pcs=None,
             xs = None
             V_over_F = 1
         elif Pdew < P < Pbubble:
-            xs, ys, V_over_F = flash_ideal(P, zs, Psats)
+            xs, ys, V_over_F = flash_ideal_basic(P, zs, Psats)
             phase = 'two-phase'
     elif Method == 'SUPERCRITICAL_T':
         if all([T >= i for i in Tcs]):
@@ -2815,7 +2921,7 @@ def identify_phase_mixture(T=None, P=None, zs=None, Tcs=None, Pcs=None,
             xs = None
             V_over_F = 1
         elif Pdew < P < Pbubble:
-            xs, ys, V_over_F = flash_ideal(P, zs, Psats)
+            xs, ys, V_over_F = flash_ideal_basic(P, zs, Psats)
             phase = 'two-phase'
 
     elif Method == 'NONE':

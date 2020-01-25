@@ -1688,9 +1688,19 @@ class EOSGas(Phase):
     def dlnphis_dns(self):
         eos_mix = self.eos_mix
         try:
-            return self.eos_mix.dlnphis_dns(eos_mix.Z_g, eos_mix.zs)
+            return eos_mix.dlnphis_dns(eos_mix.Z_g, eos_mix.zs)
         except:
-            return self.eos_mix.dlnphis_dP(eos_mix.Z_l, eos_mix.zs)
+            return eos_mix.dlnphis_dns(eos_mix.Z_l, eos_mix.zs)
+        
+    def dlnphis_dzs(self):
+        # Confirmed to be mole fraction derivatives - taked with sum not 1 -
+        # of the log fugacity coefficients!
+        eos_mix = self.eos_mix
+        try:
+            return eos_mix.d_lnphi_dzs(eos_mix.Z_g, eos_mix.zs)
+        except:
+            return eos_mix.d_lnphi_dzs(eos_mix.Z_l, eos_mix.zs)
+        
 
     def gammas(self):
         #         liquid.phis()/np.array([i.phi_l for i in liquid.eos_mix.pures()])
