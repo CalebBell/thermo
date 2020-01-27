@@ -399,10 +399,7 @@ def flash_wilson(zs, Tcs, Pcs, omegas, T=None, P=None, VF=None):
             P_bubble += zs[i]*K_P
             P_dew += zs[i]/K_P
             K_Ps.append(K_P)
-        P_dew = 1./P_dew
-#        P_low = flash_wilson(zs, Tcs, Pcs, omegas, T=T, VF=1.0)[1]
-#        P_high = flash_wilson(zs, Tcs, Pcs, omegas, T=T, VF=0.0)[1]
-        
+        P_dew = 1./P_dew        
         try:
             '''Rachford-Rice esque solution in terms of pressure.
             from sympy import *
@@ -432,7 +429,6 @@ def flash_wilson(zs, Tcs, Pcs, omegas, T=None, P=None, VF=None):
             P = newton(err, P_guess, fprime=True, bisection=True, 
                        low=P_dew, high=P_bubble)
             P_inv = 1.0/P
-            
             xs, ys = [], []
             for i in cmps:
                 Ki = K_Ps[i]*P_inv
@@ -440,9 +436,6 @@ def flash_wilson(zs, Tcs, Pcs, omegas, T=None, P=None, VF=None):
                 ys.append(Ki*xi)
                 xs.append(xi)
             return (T, P, VF, xs, ys)
-#            for i in cmps:
-#                K_Ps *= P_inv
-#            return (T, P) + flash_inner_loop(zs=zs, Ks=Ks)
         except:
             info = []
             def to_solve(P):
