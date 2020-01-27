@@ -34,6 +34,7 @@ __all__ = ['sequential_substitution_2P', 'sequential_substitution_GDEM3_2P',
            'TPV_double_solve_1P', 'nonlin_2P_HSGUAbeta',
            'sequential_substitution_2P_double',
            'cm_flash_tol', 'nonlin_2P_newton', 'dew_bubble_newton_zs',
+           'SS_VF_simultaneous'
            ]
 
 from fluids.constants import R, R2, R_inv
@@ -65,6 +66,11 @@ from thermo.phases import Phase, gas_phases, liquid_phases, solid_phases, EOSLiq
 from thermo.phase_identification import identify_sort_phases
 from thermo.bulk import default_settings
 from thermo.eos_mix import VDWMIX, IGMIX
+
+
+if has_matplotlib:
+    import matplotlib
+    import matplotlib.pyplot as plt
 
 
 def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
@@ -949,6 +955,15 @@ def dew_bubble_newton_zs(guess, fixed_val, zs, liquid_phase, gas_phase,
     comp_val, iterations = newton_system(to_solve_comp, guesses, jac=True, xtol=xtol, damping_func=damping_maintain_sign)
     iter_val = comp_val[-1]
     comp = comp_val[:-1]
+
+    comp_difference = 0.0
+    for i in cmps: comp_difference += abs(zs[i] - comp[i])
+
+    if comp_difference < trivial_solution_tol:
+        raise ValueError("Converged to trivial condition, compositions of both phases equal")
+
+    if iter_var == 'P' and iter_val > 1e10:
+        raise ValueError("Converged to unlikely point")
     
     sln = [iter_val, comp]
     sln.append(info[0])
@@ -973,7 +988,7 @@ g_undefined_P_msg = "Could not calculate vapor conditions at provided pressure %
 def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
                                 iter_var='T', fixed_var='P', V_over_F=1, 
                                 maxiter=200, xtol=1E-10, comp_guess=None,
-                                max_step_damping=.01, guess_update_frequency=1,
+                                max_step_damping=.25, guess_update_frequency=1,
                                 trivial_solution_tol=1e-4, V_diff=.01):
     
     kwargs = {fixed_var: fixed_val}
@@ -1002,6 +1017,7 @@ def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
     dlnphis_diter_var_iter = getattr(iter_phase.__class__, s)
     dlnphis_diter_var_const = getattr(const_phase.__class__, s)
 
+    skip = 0
     guess_old = None
     successive_fails = 0
     for iteration in range(maxiter):
@@ -1017,16 +1033,18 @@ def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
             guess = guess_old + copysign(min(max_step_damping*guess, abs(step)), step)
             continue
         try:
+            skip -= 1
             iter_phase = iter_phase.to_TP_zs(zs=comp_guess, **kwargs)
             if V_diff is not None:
-                if 1 - V_diff < iter_phase.V() / const_phase.V() < 1 + V_diff:
+                if 1.0 - V_diff < iter_phase.V() / const_phase.V() < 1.0 + V_diff:
                     # Relax the constraint for the iterating on variable so two different phases exist
                     expect_phase = 'g' if V_over_F == 0.0 else 'l'
                     unwanted_phase = 'l' if expect_phase == 'g' else 'g'
                     #if iter_phase.eos_mix.phase in ('l', 'g') and iter_phase.eos_mix.phase == const_phase.eos_mix.phase:
                     if iter_phase.eos_mix.phase == unwanted_phase:
+                        skip = 5
                         if iter_var == 'P':
-                            split = iter_phase.eos_mix.P_discriminant_zero_l()
+                            split = min(iter_phase.eos_mix.P_discriminant_zeros())
                             if bubble:
                                 split *= 0.999999999
                             else:
@@ -1044,8 +1062,9 @@ def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
                         dlnphis_dvar_const = dlnphis_diter_var_const(const_phase)
                         print('adj iter phase', split)
                     elif const_phase.eos_mix.phase == expect_phase:
+                        skip = 5
                         if iter_var == 'P':
-                            split = const_phase.eos_mix.P_discriminant_zero_l()
+                            split = min(const_phase.eos_mix.P_discriminant_zeros())
                             if bubble:
                                 split *= 0.999999999
                             else:
@@ -1081,7 +1100,9 @@ def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
         successive_fails = 0
         Ks = [exp(a - b) for a, b in zip(lnphis_const, lnphis_iter)]
         comp_guess = [zs[i]*Ks[i] for i in cmps]
-        if iteration % guess_update_frequency:
+        y_sum = sum(comp_guess)
+        comp_guess = [y/y_sum for y in comp_guess]
+        if iteration % guess_update_frequency or skip > 0:
             continue
 
         f_k = sum([zs[i]*Ks[i] for i in cmps]) - 1.0
@@ -1093,7 +1114,6 @@ def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
         guess_old = guess
         step = -f_k/dfk_dvar
         
-        
 #        if near_critical:
         adj_step = copysign(min(max_step_damping*guess, abs(step)), step)
         if guess + adj_step <= 0.0:
@@ -1101,16 +1121,14 @@ def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
         guess = guess + adj_step
 #        else:
 #            guess = guess + step
-        
-        
-        comp_difference = sum([abs(zi - yi) for zi, yi in zip(zs, comp_guess)])
-        if comp_difference < trivial_solution_tol:
+        comp_difference = 0.0
+        for i in cmps: comp_difference += abs(zs[i] - comp_guess[i])
+
+        if comp_difference < trivial_solution_tol and iteration:
             raise ValueError("Converged to trivial condition, compositions of both phases equal")
         
-        y_sum = sum(comp_guess)
-        comp_guess = [y/y_sum for y in comp_guess]
 
-        if abs(guess - guess_old) < xtol:
+        if abs(guess - guess_old) < xtol and not skip:
             guess = guess_old
             break
         
@@ -2346,6 +2364,35 @@ def sequential_substitution_2P_sat(T, P, V, zs_dry, xs_guess, ys_guess, liquid_p
             return V_over_F, xs, zs, l, g, iteration, err, err0
     raise UnconvergedError('End of SS without convergence')
 
+def SS_VF_simultaneous(guess, fixed_val, zs, liquid_phase, gas_phase,
+                                iter_var='T', fixed_var='P', V_over_F=1, 
+                                maxiter=200, xtol=1E-10, comp_guess=None,
+                                damping=0.8, tol_eq=1e-12, update_frequency=3):
+    if comp_guess is None:
+        comp_guess = zs
+    
+    if V_over_F == 1 or V_over_F > 0.5:
+        dew = True
+        xs, ys = comp_guess, zs
+    else:
+        dew = False
+        xs, ys = zs, comp_guess
+    
+    sln = sequential_substitution_2P_HSGUAbeta(zs=zs, xs_guess=xs, ys_guess=ys, liquid_phase=liquid_phase,
+                                     gas_phase=gas_phase, fixed_var_val=fixed_val, spec_val=V_over_F, tol_spec=xtol,
+                                     iter_var_0=guess, update_frequency=update_frequency,
+                                     iter_var=iter_var, fixed_var=fixed_var, spec='beta', damping=damping, tol_eq=tol_eq)
+    guess, _, xs, ys, l, g, iteration, err_eq, spec_err = sln
+    
+    if dew:
+        comp_guess = xs
+        iter_phase, const_phase = l, g
+    else:
+        comp_guess = ys
+        iter_phase, const_phase = g, l
+    
+    return guess, comp_guess, iter_phase, const_phase, iteration, {'err_eq': err_eq, 'spec_err': spec_err}
+    
 
 def sequential_substitution_2P_HSGUAbeta(zs, xs_guess, ys_guess, liquid_phase,
                                      gas_phase, fixed_var_val, spec_val,  
@@ -2353,7 +2400,8 @@ def sequential_substitution_2P_HSGUAbeta(zs, xs_guess, ys_guess, liquid_phase,
                                      iter_var='T', fixed_var='P', spec='H', 
                                      maxiter=1000, tol_eq=1E-13, tol_spec=1e-9,
                                      trivial_solution_tol=1e-5, damping=1.0,
-                                     V_over_F_guess=None, fprime=True):
+                                     V_over_F_guess=None, fprime=True,
+                                     update_frequency=1, update_eq=1e-7):
     xs, ys = xs_guess, ys_guess
     if V_over_F_guess is None:
         V_over_F = 0.5
@@ -2366,16 +2414,21 @@ def sequential_substitution_2P_HSGUAbeta(zs, xs_guess, ys_guess, liquid_phase,
         iter_var_1 = iter_var_0*1.0001 + 1e-4
         
     tol_spec_abs = tol_spec*abs(spec_val)
+    if tol_spec_abs == 0.0:
+        if spec == 'beta':
+            tol_spec_abs = 1e-9
+        else:
+            tol_spec_abs = 1e-7
     
     # secant step/solving
-    p0, p1, err0, err1 = None, None, None, None
-    def step(p0, p1, err0, err1, step_der):
+    p0, p1, spec_err, spec_err_old = None, None, None, None
+    def step(p0, p1, spec_err, spec_err_old, step_der):
         if p0 is None:
             return iter_var_0
         if p1 is None:
             return iter_var_1
         else:
-            secant_step = err1*(p1 - p0)/(err1 - err0)*damping
+            secant_step = spec_err_old*(p1 - p0)/(spec_err_old - spec_err)*damping
             if fprime and step_der is not None:
                 if abs(step_der) < abs(secant_step):
                     step = step_der
@@ -2401,10 +2454,13 @@ def sequential_substitution_2P_HSGUAbeta(zs, xs_guess, ys_guess, liquid_phase,
         s_der = 'd%s_d%s_%s'%(spec, iter_var, fixed_var)
         spec_der_fun_l = getattr(liquid_phase.__class__, s_der)
         spec_der_fun_g = getattr(gas_phase.__class__, s_der)
+    else:
+        V_over_F = iter_var_0
     
     step_der = None
     for iteration in range(maxiter):
-        p0, p1 = step(p0, p1, err0, err1, step_der), p0
+        if (not (iteration % update_frequency) or err_eq < update_eq) or iteration < 2:
+            p0, p1 = step(p0, p1, spec_err, spec_err_old, step_der), p0
         TPV_args[iter_var] = p0
         
         g = gas_phase.to_zs_TPV(ys, **TPV_args)
@@ -2422,44 +2478,45 @@ def sequential_substitution_2P_HSGUAbeta(zs, xs_guess, ys_guess, liquid_phase,
 #            print(spec_der_calc)
         else:
             spec_calc = V_over_F
-        
-        err0, err1 = spec_calc - spec_val, err0
+        if (not (iteration % update_frequency) or err_eq < update_eq) or iteration < 2:
+            spec_err_old = spec_err # Only update old error on an update iteration
+        spec_err = spec_calc - spec_val
         
         try:
-            step_der = err0/spec_der_calc
-            # print(err0, step_der, p1-p0)
+            step_der = spec_err/spec_der_calc
+            # print(spec_err, step_der, p1-p0)
         except:
             pass
 
         # Check for negative fractions - normalize only if needed
         for xi in xs_new:
             if xi < 0.0:
-                xs_new_sum = sum(abs(i) for i in xs_new)
-                xs_new = [abs(i)/xs_new_sum for i in xs_new]
+                xs_new_sum_inv = 1.0/sum(abs(i) for i in xs_new)
+                xs_new = [abs(i)*xs_new_sum_inv for i in xs_new]
                 break
         for yi in ys_new:
             if yi < 0.0:
-                ys_new_sum = sum(abs(i) for i in ys_new)
-                ys_new = [abs(i)/ys_new_sum for i in ys_new]
+                ys_new_sum_inv = 1.0/sum(abs(i) for i in ys_new)
+                ys_new = [abs(i)*ys_new_sum_inv for i in ys_new]
                 break
         
-        err, comp_diff = 0.0, 0.0
+        err_eq, comp_diff = 0.0, 0.0
         for i in cmps:
             err_i = Ks[i]*xs[i]/ys[i] - 1.0
-            err += err_i*err_i
+            err_eq += err_i*err_i
             comp_diff += abs(xs[i] - ys[i])
         
         # Accept the new compositions
 #        xs, ys = xs_new, zs # This has worse convergence behavior; seems to not even converge some of the time
         xs, ys = xs_new, ys_new 
         
-        if comp_diff < trivial_solution_tol:
+        if comp_diff < trivial_solution_tol and iteration: # Allow the first iteration to start with the same composition
             raise ValueError("Converged to trivial condition, compositions of both phases equal")
-        
-        print(p0, err, err0, V_over_F)
-#        print(p0, err, err0, xs, ys, V_over_F)
-        if err < tol_eq and abs(err0) < tol_spec_abs:
-            return p0, V_over_F, xs, ys, l, g, iteration, err, err0
+        print('Guess: %g, Eq Err: %g, Spec Err: %g, VF: %g' %(p0, err_eq, spec_err, V_over_F))
+#        print(p0, err_eq, spec_err, V_over_F)
+#        print(p0, err, spec_err, xs, ys, V_over_F)
+        if err_eq < tol_eq and abs(spec_err) < tol_spec_abs:
+            return p0, V_over_F, xs, ys, l, g, iteration, err_eq, spec_err
     raise UnconvergedError('End of SS without convergence')
 
 
@@ -2669,7 +2726,8 @@ class FlashBase(object):
     P_MIN_FIXED = Phase.P_MIN_FIXED
 
     def flash(self, zs=None, T=None, P=None, VF=None, SF=None, V=None, H=None,
-              S=None, U=None, G=None, A=None, solution=None, retry=False):
+              S=None, U=None, G=None, A=None, solution=None, retry=False,
+              hot_start=None):
         '''
         solution : str or int
            When multiple solutions exist, they will be sorted by T (and then P)
@@ -2724,7 +2782,7 @@ class FlashBase(object):
             flash_specs['SF'] = SF
 
         if ((T_spec and (P_spec or V_spec)) or (P_spec and V_spec)):            
-            g, ls, ss, betas, flash_convergence = self.flash_TPV(T=T, P=P, V=V, zs=zs, solution=solution)
+            g, ls, ss, betas, flash_convergence = self.flash_TPV(T=T, P=P, V=V, zs=zs, solution=solution, hot_start=hot_start)
             if g is not None:
                 id_phases = [g] + ls + ss
             else:
@@ -2743,10 +2801,12 @@ class FlashBase(object):
             
         elif T_spec and VF_spec:
             # All dew/bubble are the same with 1 component
-            Psat, l, g, iterations, err = self.flash_TVF(T, zs=zs)
+            Psat, ls, g, iterations, err = self.flash_TVF(T, VF=VF, zs=zs, hot_start=hot_start)
+            if type(ls) is not list:
+                ls = [ls]
             flash_convergence = {'iterations': iterations, 'err': err}
             
-            return EquilibriumState(T, Psat, zs, gas=g, liquids=[l], solids=[], 
+            return EquilibriumState(T, Psat, zs, gas=g, liquids=ls, solids=[], 
                                     betas=[VF, 1.0 - VF], flash_specs=flash_specs,
                                     flash_convergence=flash_convergence,
                                     constants=constants, correlations=correlations,
@@ -2754,16 +2814,18 @@ class FlashBase(object):
             
         elif P_spec and VF_spec:
             # All dew/bubble are the same with 1 component
-            Tsat, l, g, iterations, err = self.flash_PVF(P, zs=zs)
+            Tsat, ls, g, iterations, err = self.flash_PVF(P, VF=VF, zs=zs, hot_start=hot_start)
+            if type(ls) is not list:
+                ls = [ls]
             flash_convergence = {'iterations': iterations, 'err': err}
 
-            return EquilibriumState(Tsat, P, zs, gas=g, liquids=[l], solids=[], 
+            return EquilibriumState(Tsat, P, zs, gas=g, liquids=ls, solids=[], 
                                     betas=[VF, 1.0 - VF], flash_specs=flash_specs,
                                     flash_convergence=flash_convergence,
                                     constants=constants, correlations=correlations,
                                     flasher=self)
         elif T_spec and SF_spec:
-            Psub, other_phase, s, iterations, err = self.flash_TSF(T, zs=zs)
+            Psub, other_phase, s, iterations, err = self.flash_TSF(T, SF=SF, zs=zs, hot_start=hot_start)
             if isinstance(other_phase, gas_phases):
                 g, liquids = other_phase, []
             else:
@@ -2776,7 +2838,7 @@ class FlashBase(object):
                                     constants=constants, correlations=correlations,
                                     flasher=self)
         elif P_spec and SF_spec:
-            Tsub, other_phase, s, iterations, err = self.flash_PSF(P, zs=zs)
+            Tsub, other_phase, s, iterations, err = self.flash_PSF(P, SF=SF, zs=zs, hot_start=hot_start)
             if isinstance(other_phase, gas_phases):
                 g, liquids = other_phase, []
             else:
@@ -2790,7 +2852,7 @@ class FlashBase(object):
                                     flasher=self)
         elif VF_spec and any([H_spec, S_spec, U_spec, G_spec, A_spec]):
             spec_var, spec_val = [(k, v) for k, v in flash_specs.items() if k not in ('VF', 'zs')][0]
-            T, Psat, liquid, gas, iters_inner, err_inner, err, iterations = self.flash_VF_HSGUA(VF, spec_val, fixed_var='VF', spec_var=spec_var, zs=zs, solution=solution)
+            T, Psat, liquid, gas, iters_inner, err_inner, err, iterations = self.flash_VF_HSGUA(VF, spec_val, fixed_var='VF', spec_var=spec_var, zs=zs, solution=solution, hot_start=hot_start)
             flash_convergence = {'iterations': iterations, 'err': err, 'inner_flash_convergence': {'iterations': iters_inner, 'err': err_inner}}
             return EquilibriumState(T, Psat, zs, gas=gas, liquids=[liquid], solids=[],
                                     betas=[VF, 1.0 - VF], flash_specs=flash_specs,
@@ -2821,11 +2883,11 @@ class FlashBase(object):
             # Only allow one
 #            g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var)
             try:
-                g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var, zs=zs, solution=solution)
+                g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var, zs=zs, solution=solution, hot_start=hot_start)
             except Exception as e:
                 if retry:
                     print('retrying HSGUA flash')
-                    g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var_backup, zs=zs, solution=solution)
+                    g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var_backup, zs=zs, solution=solution, hot_start=hot_start)
                 else:
                     raise e
 #            except UnconvergedError as e:
@@ -3355,6 +3417,66 @@ class FlashBase(object):
             
                     
                 
+    def plot_TP(self, zs, Tmin=None, Tmax=None, pts=50, branches=[],
+                ignore_errors=True, values=False): # pragma: no cover
+        if not has_matplotlib and not values:
+            raise Exception('Optional dependency matplotlib is required for plotting')
+        if not Tmin:
+            Tmin = min(self.constants.Tms)
+        if not Tmax:
+            Tmax = min(self.constants.Tcs)
+        Ts = np.linspace(Tmin, Tmax, pts)
+        P_dews = []
+        P_bubbles = []
+        branch = bool(len(branches))
+        if branch:
+            branch_Ps = [[] for i in range(len(branches))]
+        else:
+            branch_Ps = None
+        
+        state_TVF0, state_TVF1 = None, None
+        for T in Ts:
+            try:
+                state_TVF0 = self.flash(T=T, VF=0.0, zs=zs, hot_start=state_TVF0)
+                assert state_TVF0 is not None
+                P_bubbles.append(state_TVF0.P)
+            except Exception as e:
+                if ignore_errors:
+                    P_bubbles.append(None)
+                else:
+                    raise e
+            try:
+                state_TVF1 = self.flash(T=T, VF=1.0, zs=zs, hot_start=state_TVF1)
+                assert state_TVF1 is not None
+                P_dews.append(state_TVF1.P)
+            except Exception as e:
+                if ignore_errors:
+                    P_dews.append(None)
+                else:
+                    raise e
+
+            if branch:
+                for VF, Ps in zip(branches, branch_Ps):
+                    try:
+                        state = self.flash(T=T, VF=VF, zs=zs)
+                        Ps.append(state.P)
+                    except Exception as e:
+                        if ignore_errors:
+                            Ps.append(None)
+                        else:
+                            raise e
+        if values:
+            return Ts, P_dews, P_bubbles, branch_Ps
+        plt.semilogy(Ts, P_dews, label='TP dew point curve')
+        plt.semilogy(Ts, P_bubbles, label='TP bubble point curve')
+        plt.xlabel('System temperature, K')
+        plt.ylabel('System pressure, Pa')
+        plt.title('PT system curve, zs=%s' %zs)
+        if branch:
+            for VF, Ps in zip(branches, branch_Ps):
+                plt.semilogy(Ts, Ps, label='TP curve for VF=%s'%VF)
+        plt.legend(loc='best')
+        plt.show()
 
 
 
@@ -3365,6 +3487,18 @@ class FlashVL(FlashBase):
     SS_acceleration = False
     SS_acceleration_method = None
     
+    VF_guess_methods = [WILSON_GUESS, IDEAL_PSAT, TB_TC_GUESS]
+    
+    dew_bubble_flash_algos = [dew_bubble_Michelsen_Mollerup, dew_bubble_newton_zs,
+                              SS_VF_simultaneous]
+    dew_T_flash_algos = bubble_T_flash_algos = dew_bubble_flash_algos
+    
+    VF_flash_algos = [SS_VF_simultaneous]
+    
+    dew_bubble_xtol = 1e-8
+    dew_bubble_maxiter = 200
+    
+    # TODO - add nested PT? Probably more reliable than SS_VF_simultaneous
     def __init__(self, constants, correlations, liquid, gas, settings=default_settings):
         self.constants = constants
         self.correlations = correlations
@@ -3372,7 +3506,68 @@ class FlashVL(FlashBase):
         self.gas = gas
         self.settings = settings
         
-    def flash_TPV(self, T, P, V, zs=None, solution=None):
+    def flash_TVF(self, T, VF, zs, solution=None, hot_start=None):
+        constants, correlations = self.constants, self.correlations
+        liquid, gas = self.liquid, self.gas
+        
+        dew_bubble_xtol = self.dew_bubble_xtol
+        dew_bubble_maxiter = self.dew_bubble_maxiter
+        
+        if hot_start is not None:
+            P, xs, ys = hot_start.P, hot_start.liquid0.zs, hot_start.gas.zs
+        else:
+            for method in self.VF_guess_methods:
+                try:
+                    if method is dew_bubble_newton_zs:
+                        xtol = max(1e-3*xtol, 1e-12)
+                    else:
+                        xtol = dew_bubble_xtol
+                    _, P, _, xs, ys = TP_solve_VF_guesses(zs=zs, method=method, constants=constants,
+                                                           correlations=correlations, T=T, VF=VF,
+                                                           xtol=xtol, maxiter=dew_bubble_maxiter)
+                    break
+                except Exception as e:
+                    print(e)
+        
+        if VF == 1.0:
+            dew = True
+            integral_VF = True
+            comp_guess = xs
+            algos = self.dew_T_flash_algos
+        elif VF == 0.0:
+            dew = False
+            integral_VF = True
+            comp_guess = ys
+            algos = self.bubble_T_flash_algos
+        else:
+            integral_VF = False
+            algos = self.VF_flash_algos
+        
+        if integral_VF:
+            for algo in algos:
+                try:
+                    sln = algo(P, fixed_val=T, zs=zs, liquid_phase=liquid, gas_phase=gas, 
+                                iter_var='P', fixed_var='T', V_over_F=VF,
+                                maxiter=dew_bubble_maxiter, xtol=dew_bubble_xtol,
+                                comp_guess=comp_guess)
+                    break
+                except Exception as e:
+                    print(e)
+                    continue
+                
+            guess, comp_guess, iter_phase, const_phase, iterations, err = sln
+            if dew:
+                l, g = iter_phase, const_phase
+            else:
+                l, g = const_phase, iter_phase
+                
+            return guess, l, g, iterations, err
+        
+        else:
+            raise NotImplementedError("TODO")
+        
+        
+    def flash_TPV(self, T, P, V, zs=None, solution=None, hot_start=None):
         constants, correlations = self.constants, self.correlations
         liquid, gas = self.liquid, self.gas
         try:
@@ -3541,7 +3736,7 @@ class FlashPureVLS(FlashBase):
 
 
 
-    def flash_TPV(self, T, P, V, zs=None, solution=None):
+    def flash_TPV(self, T, P, V, zs=None, solution=None, hot_start=None):
         zs = [1]
         liquids = []
         solids = []
@@ -3594,7 +3789,7 @@ class FlashPureVLS(FlashBase):
             Psat = self.correlations.VaporPressures[0](T)
         return Psat
 
-    def flash_TVF(self, T, VF=None, zs=None):
+    def flash_TVF(self, T, VF=None, zs=None, hot_start=None):
         zs = [1]
         Psat = self.Psat_guess(T)
         gas = self.gas.to_TP_zs(T, Psat, zs)
@@ -3607,7 +3802,7 @@ class FlashPureVLS(FlashBase):
 #        print('P', P, 'solved')
         return vals
 
-    def flash_PVF(self, P, VF=None, zs=None):
+    def flash_PVF(self, P, VF=None, zs=None, hot_start=None):
         zs = [1]
         if self.VL_only_CEOSs_same:
             Tsat = self.gas.eos_pures_STP[0].Tsat(P)
@@ -3621,7 +3816,7 @@ class FlashPureVLS(FlashBase):
         return PVF_pure_newton(Tsat, P, liquids, gas, maxiter=200, xtol=1E-10)
 #        return PVF_pure_secant(Tsat, P, liquids, gas, maxiter=200, xtol=1E-10)
 
-    def flash_TSF(self, T, SF=None, zs=None):
+    def flash_TSF(self, T, SF=None, zs=None, hot_start=None):
         # if under triple point search for gas - otherwise search for liquid
         # For water only there is technically two solutions at some point for both
         # liquid and gas, flag?
@@ -3639,7 +3834,7 @@ class FlashPureVLS(FlashBase):
         return TSF_pure_newton(Psub, T, try_phases, self.solids, 
                                maxiter=200, xtol=1E-10)
         
-    def flash_PSF(self, P, SF=None, zs=None):
+    def flash_PSF(self, P, SF=None, zs=None, hot_start=None):
         zs = [1]
         if P < self.constants.Pts[0]:
             Tsub = self.correlations.SublimationPressures[0].solve_prop(P)
@@ -3657,8 +3852,9 @@ class FlashPureVLS(FlashBase):
         
     
         
-    def flash_TPV_HSGUA(self, fixed_var_val, spec_val, fixed_var='P', spec='H', iter_var='T', zs=None, solution=None,
-                        selection_fun_1P=None):
+    def flash_TPV_HSGUA(self, fixed_var_val, spec_val, fixed_var='P', spec='H',
+                        iter_var='T', zs=None, solution=None,
+                        selection_fun_1P=None, hot_start=None):
         # Be prepared to have a flag here to handle zero flow
         zs = [1]
         constants, correlations = self.constants, self.correlations
@@ -4028,7 +4224,7 @@ class FlashPureVLS(FlashBase):
     
     
     def flash_VF_HSGUA(self, fixed_var_val, spec_val, fixed_var='VF', spec_var='H', zs=None,
-                       solution='high'):
+                       hot_start=None, solution='high'):
         # solution at high T by default
         if not self.VF_interpolators_built:
             self.build_VF_interpolators()
