@@ -145,6 +145,17 @@ def test_Rachford_Rice_solution_LN2_backup():
     assert_allclose(xs, xs_expect)
     assert_allclose(ys, ys_expect)
     assert_allclose(V_over_F, 0.999999999000000)
+    
+    # Case where solver not in range
+    zs = [0.4050793625620341, 0.07311645032153137, 0.0739927977508874, 0.0028093939126068498, 0.44500199545294034]
+    Ks = [7.330341496863982e-19, 13.676812750105826, 8.152759918973137e-21, 4.6824608110480365e-35, 7.707355701762951e-18]
+    V_over_F, xs, ys = Rachford_Rice_solution_LN2(zs=zs, Ks=Ks)
+    xs_expect = [0.4050793625620341, 0.0731164503215314, 0.0739927977508874, 0.0028093939126068498, 0.44500199545294034]
+    ys_expect = [2.9693700609116885e-19, 0.9999999999999999, 6.0324551579612055e-22, 1.3154876898578485e-37, 3.4297886669501107e-18]
+    assert_allclose(xs, xs_expect)
+    assert_allclose(ys, ys_expect)
+    assert_allclose(V_over_F, 0, atol=1e-15)
+
 
 def test_flash_inner_loop():
     V_over_F, xs, ys = flash_inner_loop(zs=[0.5, 0.3, 0.2], Ks=[1.685, 0.742, 0.532], Method='Analytical')
@@ -862,6 +873,18 @@ def test_flash_wilson_PVFs():
             _, _, _, xs_TP, ys_TP = flash_wilson(zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas, T=T, P=P)
             assert_allclose(xs, xs_TP, rtol=1e-7)
             assert_allclose(ys, ys_TP, rtol=1e-7)
+            
+    # Problem point - RR had a hard time converging
+    zs = [0.4050793625620341, 0.07311645032153137, 0.0739927977508874, 0.0028093939126068498, 0.44500199545294034]
+    P = 100.0
+    VF = 0.0
+    T, _, _, xs, ys = flash_wilson(zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas, VF=VF, P=P)
+    _, _, VF_calc, xs_TP, ys_TP = flash_wilson(zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas, T=T, P=P)
+    assert_allclose(xs, xs_TP)
+    assert_allclose(ys, ys_TP)
+    assert_allclose(VF_calc, VF, atol=1e-15)
+    
+    
         
 def test_flash_wilson_singularity():
     '''TODO: Singularity detection and lagrange multipliers to avoid them

@@ -1774,14 +1774,14 @@ def Rachford_Rice_solution(zs, Ks, fprime=False, fprime2=False,
         low, high = V_over_F_min*one_epsilon_larger, V_over_F_max*one_epsilon_smaller
         if fprime2:
             V_over_F = newton(err2, x0, ytol=1e-5, fprime=True, fprime2=True,
-                              high=high, low=low)
+                              high=high, low=low, bisection=True)
         elif fprime:
             V_over_F = newton(err1, x0, ytol=1e-12, fprime=True, high=high,
-                              low=low)
+                              low=low, bisection=True)
         else:
 #            print(V_over_F_max, V_over_F_min)
             V_over_F = newton(err, x0, ytol=1e-5, high=high,
-                              low=low)
+                              low=low, bisection=True)
         
 #        assert V_over_F >= V_over_F_min2
 #        assert V_over_F <= V_over_F_max2
