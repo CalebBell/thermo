@@ -494,6 +494,8 @@ def flash_wilson(zs, Tcs, Pcs, omegas, T=None, P=None, VF=None):
             for i in cmps:
                 T += zs[i]*Tcs[i]
             T *= 0.666666
+            if T < T_low:
+                T = T_low + 1.0 # Take a nominal step
         #try:
         T = newton(to_solve, T, fprime=True, low=T_low, xtol=1e-13, bisection=True) # High bound not actually a bound, only low bound
         #except Exception as e:

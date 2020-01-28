@@ -895,7 +895,14 @@ def test_flash_wilson_PVFs():
     assert_allclose(ys, ys_TP)
     assert_allclose(VF_calc, VF, atol=1e-15)
     
-    
+    # point where initial guess was lower than T_low
+    VF, P, zs = (1.0, 1000000000.0, [0.019533438038283966, 0.8640664164566196, 0.05411762997156959, 0.04013739663879973, 0.022145118894727096])
+    T, _, _, xs, ys = flash_wilson(zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas, VF=VF, P=P)
+    _, _, VF_calc, xs_TP, ys_TP = flash_wilson(zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas, T=T, P=P)
+    assert_allclose(xs, xs_TP)
+    assert_allclose(ys, ys_TP)
+    assert_allclose(VF_calc, VF, atol=1e-15)
+
         
 def test_flash_wilson_singularity():
     '''TODO: Singularity detection and lagrange multipliers to avoid them
