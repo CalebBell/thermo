@@ -155,6 +155,17 @@ def test_Rachford_Rice_solution_LN2_backup():
     assert_allclose(xs, xs_expect)
     assert_allclose(ys, ys_expect)
     assert_allclose(V_over_F, 0, atol=1e-15)
+    
+    # Case where the evaluated point is right on the boundary
+    Ks = [1.2566703532018493e-21, 3.35062752053393, 1.0300675710905643e-23, 1.706258568414198e-39, 1.6382855298440747e-20]
+    zs = [0.13754371891028325, 0.2984515568715462, 0.2546683930289046, 0.08177453852283137, 0.22756179266643456]
+    V_over_F, xs, ys = Rachford_Rice_solution_LN2(zs=zs, Ks=Ks)
+    xs_expect = [0.13754371891028325, 0.2984515568715462, 0.2546683930289046, 0.08177453852283137, 0.22756179266643456]
+    ys_expect = [1.7284711382368154e-22, 1.0, 2.6232565304082093e-24, 1.3952850703269794e-40, 3.728111920707972e-21]
+    assert_allclose(xs, xs_expect)
+    assert_allclose(ys, ys_expect)
+    assert_allclose(V_over_F, 0, atol=1e-15)
+
 
 
 def test_flash_inner_loop():
