@@ -355,16 +355,26 @@ def flash_wilson(zs, Tcs, Pcs, omegas, T=None, P=None, VF=None):
     >>> flash_wilson(zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas, T=300, P=1e5)
     (300, 100000.0, 0.42219453293637355, [0.020938815080034565, 0.9790611849199654], [0.9187741856225791, 0.08122581437742094])
     '''
-    T_MAX = 50000
+    T_MAX = 50000.0
     N = len(zs)
     cmps = range(N)
     # Assume T and P to begin with
     if T is not None and P is not None:
         P_inv, T_inv = 1.0/P, 1.0/T
         Ks = [Pcs[i]*P_inv*exp((5.37*(1.0 + omegas[i])*(1.0 - Tcs[i]*T_inv))) for i in cmps]
+#        all_under_1, all_over_1 = True, True
+#        for K in Ks:
+#            if K < 1.0:
+#                all_over_1 = False
+#            else:
+#                all_under_1 = False
+#            if all_over_1:
+#                raise ValueError("Fail")
+#            elif all_under_1:
+#                raise ValueError("Fail")
         ans = (T, P) + flash_inner_loop(zs=zs, Ks=Ks)
         return ans
-    if T is not None and VF == 0.0:
+    elif T is not None and VF == 0.0:
         ys = []
         P_bubble = 0.0
         T_inv = 1.0/T
@@ -376,7 +386,7 @@ def flash_wilson(zs, Tcs, Pcs, omegas, T=None, P=None, VF=None):
         for i in cmps:
             ys[i] *= P_inv
         return (T, P_bubble, 0.0, zs, ys)
-    if T is not None and VF == 1.0:
+    elif T is not None and VF == 1.0:
         xs = []
         P_dew = 0.
         T_inv = 1.0/T
@@ -400,51 +410,51 @@ def flash_wilson(zs, Tcs, Pcs, omegas, T=None, P=None, VF=None):
             P_dew += zs[i]/K_P
             K_Ps.append(K_P)
         P_dew = 1./P_dew        
-        try:
-            '''Rachford-Rice esque solution in terms of pressure.
-            from sympy import *
-            N = 1
-            cmps = range(N)
-            zs = z0, z1, z2, z3 = symbols('z0, z1, z2, z3')
-            Ks_P = K0_P, K1_P, K2_P, K3_P = symbols('K0_P, K1_P, K2_P, K3_P')
-            VF, P = symbols('VF, P')
-            tot = 0
-            for i in cmps:
-                tot += zs[i]*(Ks_P[i]/P - 1)/(1 + VF*(Ks_P[i]/P - 1))
-            cse([tot, diff(tot, P)], optimizations='basic')
-            '''
-            def err(P):
-                P_inv = 1.0/P
-                err, derr = 0.0, 0.0
-                for i in cmps:
-                    x50 = K_Ps[i]*P_inv
-                    x0 = x50 - 1.0
-                    x1 = VF*x0
-                    x2 = 1.0/(x1 + 1.0)
-                    x3 = x2*zs[i]
-                    err += x0*x3
-                    derr += x50*P_inv*x3*(x1*x2 - 1.0)
-                return err, derr
-            P_guess = P_bubble + VF*(P_dew - P_bubble) # Linear interpolation
-            P = newton(err, P_guess, fprime=True, bisection=True, 
-                       low=P_dew, high=P_bubble)
+#        try:
+        '''Rachford-Rice esque solution in terms of pressure.
+        from sympy import *
+        N = 1
+        cmps = range(N)
+        zs = z0, z1, z2, z3 = symbols('z0, z1, z2, z3')
+        Ks_P = K0_P, K1_P, K2_P, K3_P = symbols('K0_P, K1_P, K2_P, K3_P')
+        VF, P = symbols('VF, P')
+        tot = 0
+        for i in cmps:
+            tot += zs[i]*(Ks_P[i]/P - 1)/(1 + VF*(Ks_P[i]/P - 1))
+        cse([tot, diff(tot, P)], optimizations='basic')
+        '''
+        def err(P):
             P_inv = 1.0/P
-            xs, ys = [], []
+            err, derr = 0.0, 0.0
             for i in cmps:
-                Ki = K_Ps[i]*P_inv
-                xi = zs[i]/(1.0 + VF*(Ki - 1.0))
-                ys.append(Ki*xi)
-                xs.append(xi)
-            return (T, P, VF, xs, ys)
-        except:
-            info = []
-            def to_solve(P):
-                T_calc, P_calc, VF_calc, xs, ys = flash_wilson(zs, Tcs, Pcs, omegas, T=T, P=P)
-                info[:] = T_calc, P_calc, VF_calc, xs, ys
-                err = VF_calc - VF
-                return err
-            P = brenth(to_solve, P_dew, P_bubble)
-            return tuple(info)
+                x50 = K_Ps[i]*P_inv
+                x0 = x50 - 1.0
+                x1 = VF*x0
+                x2 = 1.0/(x1 + 1.0)
+                x3 = x2*zs[i]
+                err += x0*x3
+                derr += x50*P_inv*x3*(x1*x2 - 1.0)
+            return err, derr
+        P_guess = P_bubble + VF*(P_dew - P_bubble) # Linear interpolation
+        P = newton(err, P_guess, fprime=True, bisection=True, 
+                   low=P_dew, high=P_bubble)
+        P_inv = 1.0/P
+        xs, ys = [], []
+        for i in cmps:
+            Ki = K_Ps[i]*P_inv
+            xi = zs[i]/(1.0 + VF*(Ki - 1.0))
+            ys.append(Ki*xi)
+            xs.append(xi)
+        return (T, P, VF, xs, ys)
+#        except:
+#            info = []
+#            def to_solve(P):
+#                T_calc, P_calc, VF_calc, xs, ys = flash_wilson(zs, Tcs, Pcs, omegas, T=T, P=P)
+#                info[:] = T_calc, P_calc, VF_calc, xs, ys
+#                err = VF_calc - VF
+#                return err
+#            P = brenth(to_solve, P_dew, P_bubble)
+#            return tuple(info)
     elif P is not None:
         P_inv = 1.0/P
         Ks, xs = [0.0]*N, [0.0]*N
@@ -464,83 +474,102 @@ def flash_wilson(zs, Tcs, Pcs, omegas, T=None, P=None, VF=None):
                 derr += xs[i]*(1.0 - x2*x3)*dKi_dT
             return err, derr
 
-        T = 0.0
-        for i in cmps:
-            T += zs[i]*Tcs[i]
-        T *= 0.666666
 
-        T = newton(to_solve, T, fprime=True, low=1e-10, xtol=1e-11, bisection=True)
+        T_low, T_high = 1e100, 0.0
+        logP = log(P)
+        for i in cmps:
+            T_K_1 = Tcs[i]*x50s[i]/(x50s[i] - logP + log(Pcs[i]))
+            if T_K_1 < T_low:
+                T_low = T_K_1
+            if T_K_1 > T_high:
+                T_high = T_K_1
+        if T_low < 0.0:
+            T_low = 1e-12
+        if T_high <= 0.0:
+            raise ValueError("No temperature exists which makes Wilson K factor above 1 - decrease pressure")
+        if T_high < 0.1*T_MAX:
+            T = 0.5*(T_low + T_high)
+        else:
+            T = 0.0
+            for i in cmps:
+                T += zs[i]*Tcs[i]
+            T *= 0.666666
+        #try:
+        T = newton(to_solve, T, fprime=True, low=T_low, xtol=1e-13, bisection=True) # High bound not actually a bound, only low bound
+        #except Exception as e:
+        #    print(e, [P, VF])
+        #    T = 1e100
         if 1e-10 < T < T_MAX:
             ys = x50s
             for i in cmps:
                 ys[i] = xs[i]*Ks[i]
             return (T, P, VF, xs, ys)
-    
-    # Old code - may converge where the other will not
-    if P is not None and VF == 1.0:
-        def to_solve(T_guess):
-            # Avoid some nasty unpleasantness in newton
-            T_guess = abs(T_guess)
-            P_dew = 0.
-            for i in range(len(zs)):
-                P_dew += zs[i]/(Pcs[i]*exp((5.37*(1.0 + omegas[i])*(1.0 - Tcs[i]/T_guess))))
-            P_dew = 1./P_dew
-#            print(P_dew - P, T_guess)
-            return P_dew - P
-        # 2/3 average critical point
-        T_guess = sum([.666*Tcs[i]*zs[i] for i in cmps])
-        try:
-            T_dew = abs(newton(to_solve, T_guess, maxiter=50, ytol=1e-2))
-        except Exception as e:
-#            print(e)
-            T_dew = None
-        if T_dew is None or T_dew > T_MAX*5.0: 
-            # Went insanely high T, bound it with brenth
-            T_low_guess = sum([.1*Tcs[i]*zs[i] for i in cmps])
-            try:
-                T_dew = brenth(to_solve, T_MAX, T_low_guess)
-            except NotBoundedError:
-                raise Exception("Bisecting solver could not find a solution between %g K and %g K" %(T_MAX, T_low_guess))
-        return flash_wilson(zs, Tcs, Pcs, omegas, T=T_dew, P=P)
-    elif P is not None and VF == 0.0:
-        def to_solve(T_guess):
-            T_guess = abs(T_guess)
-            P_bubble = 0.0
-            for i in cmps:
-                P_bubble += zs[i]*Pcs[i]*exp((5.37*(1.0 + omegas[i])*(1.0 - Tcs[i]/T_guess)))
-            return P_bubble - P
-        # 2/3 average critical point
-        T_guess = sum([.55*Tcs[i]*zs[i] for i in cmps])
-        try:
-            T_bubble = abs(newton(to_solve, T_guess, maxiter=50, ytol=1e-2))
-        except Exception as e:
-            T_bubble = None
-        if T_bubble is None or T_bubble > T_MAX*5.0: 
-            # Went insanely high T, bound it with brenth
-            T_low_guess = sum([.1*Tcs[i]*zs[i] for i in cmps])
-            try:
-                T_bubble = brenth(to_solve, T_MAX, T_low_guess)
-            except NotBoundedError:
-                raise Exception("Bisecting solver could not find a solution between %g K and %g K" %(T_MAX, T_low_guess))
-            
-        return flash_wilson(zs, Tcs, Pcs, omegas, T=T_bubble, P=P)
-    elif P is not None and VF is not None:
-        # Solve for in the middle of Pdew
-        T_low = flash_wilson(zs, Tcs, Pcs, omegas, P=P, VF=1)[0]
-        T_high = flash_wilson(zs, Tcs, Pcs, omegas, P=P, VF=0)[0]
-#        print(T_low, T_high)
-        info = []
-        def err(T):
-            T_calc, P_calc, VF_calc, xs, ys = flash_wilson(zs, Tcs, Pcs, omegas, T=T, P=P)
-#            if abs(VF_calc) > 100: # Did not work at all
-#                VF_calc = abs(VF_calc)
-            info[:] = T_calc, P_calc, VF_calc, xs, ys
-#            print(T, VF_calc - VF)
-            return VF_calc - VF
-        # Nasty function for tolerance; the default works and is good enough, could remove some
-        # iterations in the fuure
-        P = brenth(err, T_low, T_high, xtol=1e-14)
-        return tuple(info)
+
+#    # Old code - may converge where the other will not
+#    if P is not None and VF == 1.0:
+#        def to_solve(T_guess):
+#            # Avoid some nasty unpleasantness in newton
+#            T_guess = abs(T_guess)
+#            P_dew = 0.
+#            for i in range(len(zs)):
+#                P_dew += zs[i]/(Pcs[i]*exp((5.37*(1.0 + omegas[i])*(1.0 - Tcs[i]/T_guess))))
+#            P_dew = 1./P_dew
+##            print(P_dew - P, T_guess)
+#            return P_dew - P
+#        # 2/3 average critical point
+#        T_guess = sum([.666*Tcs[i]*zs[i] for i in cmps])
+#        try:
+#            T_dew = abs(newton(to_solve, T_guess, maxiter=50, ytol=1e-2))
+#        except Exception as e:
+##            print(e)
+#            T_dew = None
+#        if T_dew is None or T_dew > T_MAX*5.0: 
+#            # Went insanely high T, bound it with brenth
+#            T_low_guess = sum([.1*Tcs[i]*zs[i] for i in cmps])
+#            try:
+#                T_dew = brenth(to_solve, T_MAX, T_low_guess)
+#            except NotBoundedError:
+#                raise Exception("Bisecting solver could not find a solution between %g K and %g K" %(T_MAX, T_low_guess))
+#        return flash_wilson(zs, Tcs, Pcs, omegas, T=T_dew, P=P)
+#    elif P is not None and VF == 0.0:
+#        def to_solve(T_guess):
+#            T_guess = abs(T_guess)
+#            P_bubble = 0.0
+#            for i in cmps:
+#                P_bubble += zs[i]*Pcs[i]*exp((5.37*(1.0 + omegas[i])*(1.0 - Tcs[i]/T_guess)))
+#            return P_bubble - P
+#        # 2/3 average critical point
+#        T_guess = sum([.55*Tcs[i]*zs[i] for i in cmps])
+#        try:
+#            T_bubble = abs(newton(to_solve, T_guess, maxiter=50, ytol=1e-2))
+#        except Exception as e:
+#            T_bubble = None
+#        if T_bubble is None or T_bubble > T_MAX*5.0: 
+#            # Went insanely high T, bound it with brenth
+#            T_low_guess = sum([.1*Tcs[i]*zs[i] for i in cmps])
+#            try:
+#                T_bubble = brenth(to_solve, T_MAX, T_low_guess)
+#            except NotBoundedError:
+#                raise Exception("Bisecting solver could not find a solution between %g K and %g K" %(T_MAX, T_low_guess))
+#            
+#        return flash_wilson(zs, Tcs, Pcs, omegas, T=T_bubble, P=P)
+#    elif P is not None and VF is not None:
+#        # Solve for in the middle of Pdew
+#        T_low = flash_wilson(zs, Tcs, Pcs, omegas, P=P, VF=1)[0]
+#        T_high = flash_wilson(zs, Tcs, Pcs, omegas, P=P, VF=0)[0]
+##        print(T_low, T_high)
+#        info = []
+#        def err(T):
+#            T_calc, P_calc, VF_calc, xs, ys = flash_wilson(zs, Tcs, Pcs, omegas, T=T, P=P)
+##            if abs(VF_calc) > 100: # Did not work at all
+##                VF_calc = abs(VF_calc)
+#            info[:] = T_calc, P_calc, VF_calc, xs, ys
+##            print(T, VF_calc - VF)
+#            return VF_calc - VF
+#        # Nasty function for tolerance; the default works and is good enough, could remove some
+#        # iterations in the fuure
+#        P = brenth(err, T_low, T_high, xtol=1e-14)
+#        return tuple(info)
     else:
         raise ValueError("Provide two of P, T, and VF")
 
@@ -720,7 +749,7 @@ def flash_Tb_Tc_Pc(zs, Tbs, Tcs, Pcs, T=None, P=None, VF=None):
 
 
 def flash_ideal(zs, funcs, Tcs=None, T=None, P=None, VF=None):
-    T_MAX = 50000
+    T_MAX = 50000.0
     N = len(zs)
     cmps = range(N)
     if Tcs is None:
@@ -1956,6 +1985,7 @@ def Rachford_Rice_solution_LN2(zs, Ks, guess=None):
         try:
             V_over_F = brenth(lambda x: err(x)[0], low, high)
         except NotBoundedError:
+            return Rachford_Rice_solution(zs=zs, Ks=Ks, fprime=True)
             pass
             # err_low = 1e100
             # try:

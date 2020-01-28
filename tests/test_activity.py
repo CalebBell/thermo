@@ -124,7 +124,17 @@ def test_Rachford_Rice_solution():
     Ks = [8392.392499558426, 12360.984782058651, 13065.127660554343, 13336.292668013915, 14828.275288641305, 15830.9627719128, 17261.101575196506, 18943.481861916727, 21232.279762917482, 23663.61696650799]
 #    flash_inner_loop(zs, Ks)
 
-
+def test_Rachford_Rice_solution_LN2_backup():
+    # Fall back to another strategy
+    Ks = [8.772518288527105e-14, 5.002470370940732, 2.1304298170037353e-15, 1.0678310431341144e-25, 5.320178677867539e-13]
+    zs = [0.5, 0.2, 0.1, 1e-06, 0.199999]
+    V_over_F, xs, ys = Rachford_Rice_solution_LN2(zs=zs, Ks=Ks)
+    xs_expect = [0.5000617287749428, 0.1999012339600916, 0.10001234575498856, 1.0001234575498856e-06, 0.20002369138651954]
+    ys_expect = [4.3868006610706666e-14, 0.9999999999998495, 2.1306928346491458e-16, 1.0679628749383915e-31, 1.0641617779829182e-13]
+    assert_allclose(xs, xs_expect)
+    assert_allclose(ys, ys_expect)
+    assert_allclose(V_over_F, 0.0001234423100003866)
+    
 
 def test_flash_inner_loop():
     V_over_F, xs, ys = flash_inner_loop(zs=[0.5, 0.3, 0.2], Ks=[1.685, 0.742, 0.532], Method='Analytical')
@@ -752,6 +762,13 @@ def test_UNIQUAC():
     gammas = UNIQUAC_original_form(xs=[0.05, 0.025, 0.925], rs=[1., 1., 0.92], qs=[1., 1., 1.4], taus=[[1.0, 0.4052558731309731, 2.7333668483468143], [21.816716876191823, 1.0, 0.06871094878791346], [0.4790878929721784, 3.3901086879605944, 1.0]])
     assert_allclose(gammas, [0.3838177662072466, 0.49469915162858774, 1.0204435746722416])
 
+def test_flash_wilson_no_solution_high_P():
+    Tcs = [647.14, 190.56400000000002, 611.7, 755.0, 514.0]
+    Pcs = [22048320.0, 4599000.0, 2110000.0, 1160000.0, 6137000.0]
+    omegas = [0.344, 0.008, 0.49, 0.8486, 0.635]
+    zs = [.5, .2, .1, .000001, .199999]
+    with pytest.raises(ValueError):
+        flash_wilson(zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas, VF=1e-9, P=1e13)
 
 
 def test_flash_wilson_7_pts():
@@ -819,6 +836,23 @@ def test_flash_wilson_7_pts_44_components():
     assert_allclose(g[2], .1, atol=1e-5)
     
 
+def test_flash_wilson_PVFs():
+    zs = [.5, .2, .1, .000001, .199999]
+    Tcs = [647.14, 190.56400000000002, 611.7, 755.0, 514.0]
+    Pcs = [22048320.0, 4599000.0, 2110000.0, 1160000.0, 6137000.0]
+    omegas = [0.344, 0.008, 0.49, 0.8486, 0.635]
+    
+    # 8*7 = 56 cases
+    VFs = [1-1e-9, .9999965432, .5, .00012344231, 0+1e-9, 1.0, 0.0]
+    Ps = [1e-6, 1e-3, 1.0, 1e2, 1e4, 1e5, 1e7, 1e9]
+    
+    for VF in VFs:
+        for P in Ps:
+            T, _, _, xs, ys = flash_wilson(zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas, VF=VF, P=P)
+            _, _, _, xs_TP, ys_TP = flash_wilson(zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas, T=T, P=P)
+            assert_allclose(xs, xs_TP, rtol=1e-7)
+            assert_allclose(ys, ys_TP, rtol=1e-7)
+        
 def test_flash_wilson_singularity():
     '''TODO: Singularity detection and lagrange multipliers to avoid them
     '''
