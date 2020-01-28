@@ -445,7 +445,39 @@ def flash_wilson(zs, Tcs, Pcs, omegas, T=None, P=None, VF=None):
                 return err
             P = brenth(to_solve, P_dew, P_bubble)
             return tuple(info)
-    elif P is not None and VF == 1.0:
+    elif P is not None:
+        P_inv = 1.0/P
+        Ks, xs = [0.0]*N, [0.0]*N
+        x50s = [5.37*(omegai + 1.0) for omegai in omegas]
+        def to_solve(T_guess):
+            err, derr = 0.0, 0.0
+            T_inv = 1.0/T_guess
+            T_inv2 = T_inv*T_inv
+            for i in cmps:
+                Ks[i] = Pcs[i]*exp(x50s[i]*(1.0 - Tcs[i]*T_inv))*P_inv
+                dKi_dT = Ks[i]*x50s[i]*T_inv2*Tcs[i]
+                x1 = Ks[i] - 1.0
+                x2 = VF*x1
+                x3 = 1.0/(x2 + 1.0)
+                xs[i] = x3*zs[i]
+                err += x1*xs[i]
+                derr += xs[i]*(1.0 - x2*x3)*dKi_dT
+            return err, derr
+
+        T = 0.0
+        for i in cmps:
+            T += zs[i]*Tcs[i]
+        T *= 0.666666
+
+        T = newton(to_solve, T, fprime=True, low=1e-10, xtol=1e-11, bisection=True)
+        if 1e-10 < T < T_MAX:
+            ys = x50s
+            for i in cmps:
+                ys[i] = xs[i]*Ks[i]
+            return (T, P, VF, xs, ys)
+    
+    # Old code - may converge where the other will not
+    if P is not None and VF == 1.0:
         def to_solve(T_guess):
             # Avoid some nasty unpleasantness in newton
             T_guess = abs(T_guess)
@@ -743,7 +775,7 @@ def flash_ideal(zs, funcs, Tcs=None, T=None, P=None, VF=None):
             return P_dew - P
 
         # 2/3 average critical point
-        T_guess = sum([.666*Tcs[i]*zs[i] for i in cmps])
+        T_guess = .66666*sum([Tcs[i]*zs[i] for i in cmps])
         try:
             T_dew = abs(secant(to_solve, T_guess, maxiter=50, ytol=1e-2))
         except Exception as e:

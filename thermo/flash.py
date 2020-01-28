@@ -1042,9 +1042,9 @@ def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
                     unwanted_phase = 'l' if expect_phase == 'g' else 'g'
                     #if iter_phase.eos_mix.phase in ('l', 'g') and iter_phase.eos_mix.phase == const_phase.eos_mix.phase:
                     if iter_phase.eos_mix.phase == unwanted_phase:
-                        skip = 5
+                        skip = 0
                         if iter_var == 'P':
-                            split = min(iter_phase.eos_mix.P_discriminant_zeros())
+                            split = min(iter_phase.eos_mix.P_discriminant_zeros()) # P_discriminant_zero_l
                             if bubble:
                                 split *= 0.999999999
                             else:
@@ -1062,7 +1062,7 @@ def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
                         dlnphis_dvar_const = dlnphis_diter_var_const(const_phase)
                         print('adj iter phase', split)
                     elif const_phase.eos_mix.phase == expect_phase:
-                        skip = 5
+                        skip = 0
                         if iter_var == 'P':
                             split = min(const_phase.eos_mix.P_discriminant_zeros())
                             if bubble:
@@ -1128,7 +1128,7 @@ def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
             raise ValueError("Converged to trivial condition, compositions of both phases equal")
         
 
-        if abs(guess - guess_old) < xtol and not skip:
+        if abs(guess - guess_old) < xtol: #and not skip:
             guess = guess_old
             break
         
@@ -3492,6 +3492,7 @@ class FlashVL(FlashBase):
     dew_bubble_flash_algos = [dew_bubble_Michelsen_Mollerup, dew_bubble_newton_zs,
                               SS_VF_simultaneous]
     dew_T_flash_algos = bubble_T_flash_algos = dew_bubble_flash_algos
+    dew_P_flash_algos = bubble_P_flash_algos = dew_bubble_flash_algos
     
     VF_flash_algos = [SS_VF_simultaneous]
     
@@ -3566,7 +3567,66 @@ class FlashVL(FlashBase):
         else:
             raise NotImplementedError("TODO")
         
+    def flash_PVF(self, P, VF, zs, solution=None, hot_start=None):
+        constants, correlations = self.constants, self.correlations
+        liquid, gas = self.liquid, self.gas
         
+        dew_bubble_xtol = self.dew_bubble_xtol
+        dew_bubble_maxiter = self.dew_bubble_maxiter
+        
+        if hot_start is not None:
+            T, xs, ys = hot_start.T, hot_start.liquid0.zs, hot_start.gas.zs
+        else:
+            for method in self.VF_guess_methods:
+                try:
+                    if method is dew_bubble_newton_zs:
+                        xtol = max(1e-3*xtol, 1e-12)
+                    else:
+                        xtol = dew_bubble_xtol
+                    T, _, _, xs, ys = TP_solve_VF_guesses(zs=zs, method=method, constants=constants,
+                                                           correlations=correlations, P=P, VF=VF,
+                                                           xtol=xtol, maxiter=dew_bubble_maxiter)
+                    break
+                except Exception as e:
+                    print(e)
+        
+        if VF == 1.0:
+            dew = True
+            integral_VF = True
+            comp_guess = xs
+            algos = self.dew_P_flash_algos
+        elif VF == 0.0:
+            dew = False
+            integral_VF = True
+            comp_guess = ys
+            algos = self.bubble_P_flash_algos
+        else:
+            integral_VF = False
+            algos = self.VF_flash_algos
+        
+        if integral_VF:
+            for algo in algos:
+                try:
+                    sln = algo(T, fixed_val=P, zs=zs, liquid_phase=liquid, gas_phase=gas, 
+                                iter_var='T', fixed_var='P', V_over_F=VF,
+                                maxiter=dew_bubble_maxiter, xtol=dew_bubble_xtol,
+                                comp_guess=comp_guess)
+                    break
+                except Exception as e:
+                    print(e)
+                    continue
+                
+            guess, comp_guess, iter_phase, const_phase, iterations, err = sln
+            if dew:
+                l, g = iter_phase, const_phase
+            else:
+                l, g = const_phase, iter_phase
+                
+            return guess, l, g, iterations, err
+        
+        else:
+            raise NotImplementedError("TODO")
+
     def flash_TPV(self, T, P, V, zs=None, solution=None, hot_start=None):
         constants, correlations = self.constants, self.correlations
         liquid, gas = self.liquid, self.gas
