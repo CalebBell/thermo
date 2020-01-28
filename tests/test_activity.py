@@ -135,6 +135,16 @@ def test_Rachford_Rice_solution_LN2_backup():
     assert_allclose(ys, ys_expect)
     assert_allclose(V_over_F, 0.0001234423100003866)
     
+    
+    # Case where the derivative goes to zero
+    Ks = [15.464909530837806, 7006.64008090944, 1.8085837711444488, 0.007750676421035811, 30.98450366497431]
+    zs = [0.26562380186293233, 0.04910234829974003, 0.284394553603828, 0.006300023876072552, 0.3945792723574272]
+    V_over_F, xs, ys = Rachford_Rice_solution_LN2(zs=zs, Ks=Ks)
+    xs_expect = [0.01717590404145029, 7.007973548209148e-06, 0.15724710033808065, 0.8128352581509947, 0.012734729495935555]
+    ys_expect = [0.2656238021113802, 0.04910234834883537, 0.28439455373097544, 0.0063000230695374705, 0.3945792727392716]
+    assert_allclose(xs, xs_expect)
+    assert_allclose(ys, ys_expect)
+    assert_allclose(V_over_F, 0.999999999000000)
 
 def test_flash_inner_loop():
     V_over_F, xs, ys = flash_inner_loop(zs=[0.5, 0.3, 0.2], Ks=[1.685, 0.742, 0.532], Method='Analytical')
