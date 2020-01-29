@@ -883,7 +883,7 @@ def dew_P_newton(P_guess, T, zs, liquid_phase, gas_phase,
 def dew_bubble_newton_zs(guess, fixed_val, zs, liquid_phase, gas_phase, 
                         iter_var='T', fixed_var='P', V_over_F=1, # 1 = dew, 0 = bubble
                         maxiter=200, xtol=1E-10, comp_guess=None,
-                        max_step_damping=1e5,
+                        max_step_damping=1e5, damping=1.0,
                         trivial_solution_tol=1e-4, debug=False):
     V = None
     N = len(zs)
@@ -949,10 +949,12 @@ def dew_bubble_newton_zs(guess, fixed_val, zs, liquid_phase, gas_phase,
             return errs, J
         
         return errs
-    
+    damping = 1.0
     guesses = list(comp_guess)
     guesses.append(guess)
-    comp_val, iterations = newton_system(to_solve_comp, guesses, jac=True, xtol=xtol, damping_func=damping_maintain_sign)
+    comp_val, iterations = newton_system(to_solve_comp, guesses, jac=True,
+                                         xtol=xtol, damping=damping, 
+                                         damping_func=damping_maintain_sign)
     iter_val = comp_val[-1]
     comp = comp_val[:-1]
 
@@ -989,12 +991,13 @@ def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
                                 iter_var='T', fixed_var='P', V_over_F=1, 
                                 maxiter=200, xtol=1E-10, comp_guess=None,
                                 max_step_damping=.25, guess_update_frequency=1,
-                                trivial_solution_tol=1e-4, V_diff=.01):
-    
+                                trivial_solution_tol=1e-7, V_diff=.00002, damping=1.0):
+    # for near critical, V diff very wrong - .005 seen, both g as or both liquid
     kwargs = {fixed_var: fixed_val}
     N = len(zs)
     cmps = range(N)
     comp_guess = zs if comp_guess is None else comp_guess
+    damping_orig = damping
 
     if V_over_F == 1.0:
         iter_phase, const_phase, bubble = liquid_phase, gas_phase, False
@@ -1036,13 +1039,15 @@ def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
             skip -= 1
             iter_phase = iter_phase.to_TP_zs(zs=comp_guess, **kwargs)
             if V_diff is not None:
-                if 1.0 - V_diff < iter_phase.V() / const_phase.V() < 1.0 + V_diff:
+                if 1.0 - V_diff < iter_phase.V() / const_phase.V() < 1.0 + V_diff or skip > 0:
                     # Relax the constraint for the iterating on variable so two different phases exist
                     expect_phase = 'g' if V_over_F == 0.0 else 'l'
                     unwanted_phase = 'l' if expect_phase == 'g' else 'g'
                     #if iter_phase.eos_mix.phase in ('l', 'g') and iter_phase.eos_mix.phase == const_phase.eos_mix.phase:
                     if iter_phase.eos_mix.phase == unwanted_phase:
-                        skip = 0
+                        if skip < 0:
+                            skip = 4
+                            damping = .15
                         if iter_var == 'P':
                             split = min(iter_phase.eos_mix.P_discriminant_zeros()) # P_discriminant_zero_l
                             if bubble:
@@ -1062,7 +1067,9 @@ def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
                         dlnphis_dvar_const = dlnphis_diter_var_const(const_phase)
                         print('adj iter phase', split)
                     elif const_phase.eos_mix.phase == expect_phase:
-                        skip = 0
+                        if skip < 0:
+                            skip = 4
+                            damping = .15
                         if iter_var == 'P':
                             split = min(const_phase.eos_mix.P_discriminant_zeros())
                             if bubble:
@@ -1102,8 +1109,10 @@ def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
         comp_guess = [zs[i]*Ks[i] for i in cmps]
         y_sum = sum(comp_guess)
         comp_guess = [y/y_sum for y in comp_guess]
-        if iteration % guess_update_frequency or skip > 0:
+        if iteration % guess_update_frequency: #  or skip > 0
             continue
+        elif skip == 0:
+            damping = damping_orig
 
         f_k = sum([zs[i]*Ks[i] for i in cmps]) - 1.0
         
@@ -1115,7 +1124,7 @@ def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
         step = -f_k/dfk_dvar
         
 #        if near_critical:
-        adj_step = copysign(min(max_step_damping*guess, abs(step)), step)
+        adj_step = copysign(min(max_step_damping*guess, abs(step), abs(step)*damping), step)
         if guess + adj_step <= 0.0:
             adj_step *= 0.5
         guess = guess + adj_step
@@ -3418,14 +3427,14 @@ class FlashBase(object):
                     
                 
     def plot_TP(self, zs, Tmin=None, Tmax=None, pts=50, branches=[],
-                ignore_errors=True, values=False): # pragma: no cover
+                ignore_errors=True, values=False, hot=True): # pragma: no cover
         if not has_matplotlib and not values:
             raise Exception('Optional dependency matplotlib is required for plotting')
         if not Tmin:
             Tmin = min(self.constants.Tms)
         if not Tmax:
             Tmax = min(self.constants.Tcs)
-        Ts = np.linspace(Tmin, Tmax, pts)
+        Ts = linspace(Tmin, Tmax, pts)
         P_dews = []
         P_bubbles = []
         branch = bool(len(branches))
@@ -3436,6 +3445,8 @@ class FlashBase(object):
         
         state_TVF0, state_TVF1 = None, None
         for T in Ts:
+            if not hot:
+                state_TVF0, state_TVF1 = None, None
             try:
                 state_TVF0 = self.flash(T=T, VF=0.0, zs=zs, hot_start=state_TVF0)
                 assert state_TVF0 is not None
@@ -3478,6 +3489,68 @@ class FlashBase(object):
         plt.legend(loc='best')
         plt.show()
 
+
+    def plot_PT(self, zs, Pmin=None, Pmax=None, pts=50, branches=[],
+                ignore_errors=True, values=False, hot=True): # pragma: no cover
+        if not has_matplotlib and not values:
+            raise Exception('Optional dependency matplotlib is required for plotting')
+        if not Pmin:
+            Pmin = 1e4
+        if not Pmax:
+            Pmax = min(self.constants.Pcs)
+        Ps = logspace(log10(Pmin), log10(Pmax), pts)
+        T_dews = []
+        T_bubbles = []
+        branch = bool(len(branches))
+        if branch:
+            branch_Ts = [[] for i in range(len(branches))]
+        else:
+            branch_Ts = None
+        state_PVF0, state_PVF1 = None, None
+        for P in Ps:
+            if not hot:
+                state_PVF0, state_PVF1 = None, None
+            try:
+                state_PVF0 = self.flash(P=P, VF=0, zs=zs, hot_start=state_PVF0)
+                assert state_PVF0 is not None
+                T_bubbles.append(state_PVF0.T)
+            except Exception as e:
+                if ignore_errors:
+                    T_bubbles.append(None)
+                else:
+                    raise e
+            try:
+                state_PVF1 = self.flash(P=P, VF=1, zs=zs, hot_start=state_PVF1)
+                assert state_PVF1 is not None
+                T_dews.append(state_PVF1.T)
+            except Exception as e:
+                if ignore_errors:
+                    T_dews.append(None)
+                else:
+                    raise e
+
+            if branch:
+                for VF, Ts in zip(branches, branch_Ts):
+                    try:
+                        state = self.flash(P=P, VF=VF, zs=zs)
+                        Ts.append(state.T)
+                    except Exception as e:
+                        if ignore_errors:
+                            Ts.append(None)
+                        else:
+                            raise e
+        if values:
+            return Ps, T_dews, T_bubbles, branch_Ts
+        plt.plot(Ps, T_dews, label='PT dew point curve')
+        plt.plot(Ps, T_bubbles, label='PT bubble point curve')
+        plt.xlabel('System pressure, Pa')
+        plt.ylabel('System temperature, K')
+        plt.title('PT system curve, zs=%s' %zs)
+        if branch:
+            for VF, Ts in zip(branches, branch_Ts):
+                plt.plot(Ps, Ts, label='PT curve for VF=%s'%VF)
+        plt.legend(loc='best')
+        plt.show()
 
 
 class FlashVL(FlashBase):

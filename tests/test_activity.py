@@ -867,7 +867,7 @@ def test_flash_wilson_7_pts_44_components():
     g = flash_wilson(zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas, P=1e4, VF=.1)
     assert_allclose(g[2], .1, atol=1e-5)
     
-
+@pytest.mark.slow
 def test_flash_wilson_PVFs():
     zs = [.5, .2, .1, .000001, .199999]
     Tcs = [647.14, 190.56400000000002, 611.7, 755.0, 514.0]
@@ -884,7 +884,12 @@ def test_flash_wilson_PVFs():
             _, _, _, xs_TP, ys_TP = flash_wilson(zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas, T=T, P=P)
             assert_allclose(xs, xs_TP, rtol=1e-7)
             assert_allclose(ys, ys_TP, rtol=1e-7)
-            
+
+def test_flash_wilson_PVFs_issues():
+    zs = [.5, .2, .1, .000001, .199999]
+    Tcs = [647.14, 190.56400000000002, 611.7, 755.0, 514.0]
+    Pcs = [22048320.0, 4599000.0, 2110000.0, 1160000.0, 6137000.0]
+    omegas = [0.344, 0.008, 0.49, 0.8486, 0.635]
     # Problem point - RR had a hard time converging
     zs = [0.4050793625620341, 0.07311645032153137, 0.0739927977508874, 0.0028093939126068498, 0.44500199545294034]
     P = 100.0
@@ -905,16 +910,21 @@ def test_flash_wilson_PVFs():
 
         
 def test_flash_wilson_singularity():
-    '''TODO: Singularity detection and lagrange multipliers to avoid them
+    '''This was an issue at some point. At the time, it was thought
+    singularity detection and lagrange multipliers to avoid them would work. 
+    However, the enhanced solver alone did the trick.
     '''
     # methane, hydrogen
     zs, Tcs, Pcs, omegas = [0.01, 0.99], [190.564, 33.2], [4599000.0, 1296960.0], [0.008, -0.22]
-    
-    _, _, VF, xs, ys = flash_wilson(zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas, P=1e6, T=33)
+    T, P = 33.0, 1e6
+    _, _, VF, xs, ys = flash_wilson(zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas, P=P, T=T)
     assert_allclose(VF, 0.952185734369369)
-    
-    
-    
+    _, _, _, xs_P, ys_P = flash_wilson(zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas, P=P, VF=VF)
+    assert_allclose(xs_P, xs)
+    assert_allclose(ys_P, ys)
+    _, _, _, xs_T, ys_T = flash_wilson(zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas, T=T, VF=VF)
+    assert_allclose(xs_T, xs)
+    assert_allclose(ys_T, ys)
 
 
 def test_flash_Tb_Tc_Pc():
