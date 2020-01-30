@@ -123,6 +123,8 @@ class Phase(object):
         lnphis = self.lnphis()
         return [P*zs[i]*exp(lnphis[i]) for i in range(len(zs))]
     
+    fugacities_lowest_Gibbs = fugacities
+    
     def dfugacities_dT(self):
         r'''
         '''
@@ -1700,6 +1702,22 @@ class EOSGas(Phase):
             return eos_mix.d_lnphi_dzs(eos_mix.Z_g, eos_mix.zs)
         except:
             return eos_mix.d_lnphi_dzs(eos_mix.Z_l, eos_mix.zs)
+
+    def fugacities_lowest_Gibbs(self):
+        eos_mix = self.eos_mix
+        P = self.P
+        zs = self.zs        
+        try:
+            if eos_mix.G_dep_g < eos_mix.G_dep_l:
+                lnphis = eos_mix.fugacity_coefficients(eos_mix.Z_g, zs)
+            else:
+                lnphis = eos_mix.fugacity_coefficients(eos_mix.Z_l, zs)
+        except:
+            try:
+                lnphis = eos_mix.fugacity_coefficients(eos_mix.Z_g, zs)
+            except:
+                lnphis = eos_mix.fugacity_coefficients(eos_mix.Z_l, zs)
+        return [P*zs[i]*exp(lnphis[i]) for i in range(len(zs))]
         
 
     def gammas(self):

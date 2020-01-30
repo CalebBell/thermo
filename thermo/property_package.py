@@ -381,20 +381,23 @@ class StabilityTester(object):
             P_inv, T_inv = 1.0/P, 1.0/T
             for i in cmps:
                 Ks_Wilson[i] = Pcs[i]*P_inv*exp(5.37*(1.0 + omegas[i])*(1.0 - Tcs[i]*T_inv))
-            yield normalize([Ks_Wilson[i]*zs[i] for i in cmps])
-            yield normalize([zs[i]/Ks_Wilson[i] for i in cmps])
+            yield normalize([Ks_Wilson[i]*zs[i] for i in cmps]) # gas composition estimate
+            yield normalize([zs[i]/Ks_Wilson[i] for i in cmps]) # liquid composition estimate
             # TODO optimization - can cache Ks_Wilson power, and cache it.
             yield normalize([Ks_Wilson[i]**(1.0/3.0)*zs[i] for i in cmps])
             yield normalize([Ks_Wilson[i]**(-1.0/3.0)*zs[i] for i in cmps])
 
-        if pure:
+        if pure: # these could be pre-allocated based on zero_fraction
+            # A pure phase is more likely to be a liquid than a gas - gases have no polar effects
             main_frac = 1.0 - zero_fraction
             remaining = zero_fraction/(N-1.0)
             for k in cmps:
                 guess = [remaining]*N
                 guess[k] = main_frac
                 yield guess
-        if random:
+        if random: # these could be pre-allocated based on N, although changing number is hard
+            # Probably bad for cache access however
+            # More likely to predict a liquid phase than a gas phase
             idx = 0
             if RANDOM_MAX_GUESSES*N > 1000: # len(random_values)
                 for i in range(RANDOM_MAX_GUESSES):

@@ -2145,7 +2145,8 @@ class GCEOSMIX(GCEOS):
             
         # No need to enumerate unstable results
         
-        if not stable:
+        if not stable: # One set may be trivial, which means the other set is approx
+            # the only use used
             Ks = [K_g*K_l for K_g, K_l in zip(Ks_g, Ks_l)]
 #        print('MM ended', Ks, stable, Ks_g, Ks_l)
         return stable, Ks, [Ks_g, Ks_l]
