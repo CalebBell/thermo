@@ -23,7 +23,7 @@ SOFTWARE.'''
 import numpy as np
 from numpy.testing import assert_allclose
 import pytest
-from thermo.utils import normalize
+from thermo.utils import normalize, TPD
 from thermo.eos import *
 from thermo.eos_mix import *
 from scipy.misc import derivative
@@ -683,26 +683,26 @@ def test_TPD_bubble_dew():
     pkg.flash(P=1e6, VF=0, zs=zs)
     pkg.eos_l.fugacities()
     pkg.eos_g.fugacities()
-    TPD = pkg.eos_l.TPD(pkg.eos_g.T, pkg.eos_l.zs, pkg.eos_l.lnphis_l, pkg.eos_g.zs, pkg.eos_g.lnphis_g,)
-    assert_allclose(TPD, 0, atol=1e-6)
+    TPD_calc = TPD(pkg.eos_g.T, pkg.eos_l.zs, pkg.eos_l.lnphis_l, pkg.eos_g.zs, pkg.eos_g.lnphis_g,)
+    assert_allclose(TPD_calc, 0, atol=1e-6)
     
     pkg.flash(T=200, VF=0, zs=zs)
     pkg.eos_l.fugacities()
     pkg.eos_g.fugacities()
-    TPD = pkg.eos_l.TPD(pkg.eos_g.T, pkg.eos_l.zs, pkg.eos_l.lnphis_l, pkg.eos_g.zs, pkg.eos_g.lnphis_g,)
-    assert_allclose(TPD, 0, atol=1e-6)
+    TPD_calc = TPD(pkg.eos_g.T, pkg.eos_l.zs, pkg.eos_l.lnphis_l, pkg.eos_g.zs, pkg.eos_g.lnphis_g,)
+    assert_allclose(TPD_calc, 0, atol=1e-6)
     
     pkg.flash(P=1e6, VF=1, zs=zs)
     pkg.eos_l.fugacities()
     pkg.eos_g.fugacities()
-    TPD = pkg.eos_l.TPD(pkg.eos_g.T, pkg.eos_g.zs, pkg.eos_g.lnphis_g, pkg.eos_l.zs, pkg.eos_l.lnphis_l)
-    assert_allclose(TPD, 0, atol=1e-6)
+    TPD_calc = TPD(pkg.eos_g.T, pkg.eos_g.zs, pkg.eos_g.lnphis_g, pkg.eos_l.zs, pkg.eos_l.lnphis_l)
+    assert_allclose(TPD_calc, 0, atol=1e-6)
     
     pkg.flash(T=300, VF=1, zs=zs)
     pkg.eos_l.fugacities()
     pkg.eos_g.fugacities()
-    TPD = pkg.eos_l.TPD(pkg.eos_g.T, pkg.eos_g.zs, pkg.eos_g.lnphis_g, pkg.eos_l.zs, pkg.eos_l.lnphis_l)
-    assert_allclose(TPD, 0, atol=1e-6)
+    TPD_calc = TPD(pkg.eos_g.T, pkg.eos_g.zs, pkg.eos_g.lnphis_g, pkg.eos_l.zs, pkg.eos_l.lnphis_l)
+    assert_allclose(TPD_calc, 0, atol=1e-6)
 
     
 def test_stab_comb_products_need_both_roots():

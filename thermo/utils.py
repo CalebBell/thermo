@@ -32,7 +32,7 @@ __all__ = ['isobaric_expansion', 'isothermal_compressibility',
  'mixing_simple', 
 'mixing_logarithmic', 'has_matplotlib', 'to_num', 'CAS2int', 'sorted_CAS_key',
 'int2CAS', 'Parachor', 'property_molar_to_mass', 'property_mass_to_molar', 
-'SG_to_API', 'API_to_SG', 'SG',
+'SG_to_API', 'API_to_SG', 'SG',  'Stateva_Tsvetkov_TPDF', 'TPD',
 'dxs_to_dns', 'dns_to_dn_partials', 'dxs_to_dn_partials', 'd2ns_to_dn2_partials',
 'd2xs_to_dxdn_partials', 'dxs_to_dxsn1', 'd2xs_to_d2xsn1',
  'vapor_mass_quality', 'mix_component_flows',
@@ -1646,6 +1646,154 @@ def d2xs_to_d2xsn1(d2xs):
         for j in range(N):
             out[i][j] = d2xs[i][j] - last_i - d2xs[j][-1] + last
     return out
+
+
+def TPD(T, zs, lnphis, ys, lnphis_test):
+    r'''Function for calculating the Tangent Plane Distance function
+    according to the original Michelsen definition. More advanced 
+    transformations of the TPD function are available in the literature for
+    performing calculations.
+    
+    For a mixture to be stable, it is necessary and sufficient for this to
+    be positive for all trial phase compositions.
+    
+    .. math::
+        \text{TPD}(y) =  \sum_{j=1}^n y_j(\mu_j (y) - \mu_j(z))
+        = RT \sum_i y_i\left(\log(y_i) + \log(\phi_i(y)) - d_i(z)\right)
+        
+        d_i(z) = \ln z_i + \ln \phi_i(z)
+        
+    Parameters
+    ----------
+    T : float
+        Temperature of the system, [K]
+    zs : list[float]
+        Mole fractions of the phase undergoing stability 
+        testing (`test` phase), [-]
+    lnphis : list[float]
+        Log fugacity coefficients of the phase undergoing stability 
+        testing (if two roots are available, always use the lower Gibbs
+        energy root), [-]
+    ys : list[float]
+        Mole fraction trial phase composition, [-]
+    lnphis_test : list[float]
+        Log fugacity coefficients of the trial phase (if two roots are 
+        available, always use the lower Gibbs energy root), [-]
+    
+    Returns
+    -------
+    TPD : float
+        Original Tangent Plane Distance function, [J/mol]
+        
+    Notes
+    -----
+    A dimensionless version of this is often used as well, divided by
+    RT.
+    
+    At the dew point (with test phase as the liquid and vapor incipient 
+    phase as the trial phase), TPD is zero [3]_.
+    At the bubble point (with test phase as the vapor and liquid incipient 
+    phase as the trial phase), TPD is zero [3]_.
+    
+    Examples
+    --------
+    Solved bubble point for ethane/n-pentane 50-50 wt% at 1 MPa
+    
+    >>> from thermo.eos_mix import PRMIX
+    >>> gas = PRMIX(Tcs=[305.32, 469.7], Pcs=[4872000.0, 3370000.0], omegas=[0.098, 0.251], kijs=[[0, 0.0078], [0.0078, 0]], zs=[0.9946656798618667, 0.005334320138133337], T=254.43857191839297, P=1000000.0)
+    >>> liq = PRMIX(Tcs=[305.32, 469.7], Pcs=[4872000.0, 3370000.0], omegas=[0.098, 0.251], kijs=[[0, 0.0078], [0.0078, 0]], zs=[0.7058334393128614, 0.2941665606871387], T=254.43857191839297, P=1000000.0)
+    >>> TPD(liq.T, liq.zs, liq.lnphis_l, gas.zs, gas.lnphis_g)
+    -4.039718547593688e-09
+    
+    References
+    ----------
+    .. [1] Michelsen, Michael L. "The Isothermal Flash Problem. Part I. 
+       Stability." Fluid Phase Equilibria 9, no. 1 (December 1982): 1-19.
+    .. [2] Hoteit, Hussein, and Abbas Firoozabadi. "Simple Phase Stability
+       -Testing Algorithm in the Reduction Method." AIChE Journal 52, no. 
+       8 (August 1, 2006): 2909-20.
+    .. [3] Qiu, Lu, Yue Wang, Qi Jiao, Hu Wang, and Rolf D. Reitz. 
+       "Development of a Thermodynamically Consistent, Robust and Efficient
+       Phase Equilibrium Solver and Its Validations." Fuel 115 (January 1,
+       2014): 1-16. https://doi.org/10.1016/j.fuel.2013.06.039.
+    '''
+    tot = 0.0
+    for yi, phi_yi, zi, phi_zi in zip(ys, lnphis_test, zs, lnphis):
+        di = log(zi) + phi_zi
+        tot += yi*(log(yi) + phi_yi - di)
+    return tot*R*T
+    
+def Stateva_Tsvetkov_TPDF(lnphis, zs, lnphis_trial, ys):
+    r'''Modified Tangent Plane Distance function according to [1]_ and
+    [2]_. The stationary points of a system are all zeros of this function;
+    so once all zeroes have been located, the stability can be evaluated
+    at the stationary points only. It may be required to use multiple 
+    guesses to find all stationary points, and there is no method of
+    confirming all points have been found.
+    
+    This method does not alter the state of the object.
+    
+    .. math::
+        \phi(y) = \sum_i^{N} (k_{i+1}(y) - k_i(y))^2
+        
+        k_i(y) = \ln \phi_i(y) + \ln(y_i) - d_i
+        
+        k_{N+1}(y) = k_1(y)
+
+        d_i(z) = \ln z_i + \ln \phi_i(z)
+        
+    Parameters
+    ----------
+    zs : list[float]
+        Mole fractions of the phase undergoing stability 
+        testing (`test` phase), [-]
+    lnphis : list[float]
+        Log fugacity coefficients of the phase undergoing stability 
+        testing (if two roots are available, always use the lower Gibbs
+        energy root), [-]
+    ys : list[float]
+        Mole fraction trial phase composition, [-]
+    lnphis_test : list[float]
+        Log fugacity coefficients of the trial phase (if two roots are 
+        available, always use the lower Gibbs energy root), [-]
+    
+    Returns
+    -------
+    TPDF_Stateva_Tsvetkov : float
+        Modified Tangent Plane Distance function according to [1]_, [-]
+        
+    Notes
+    -----
+    In [1]_, a typo omitted the squaring of the expression. This method
+    produces plots matching the shapes given in literature.
+    
+    References
+    ----------
+    .. [1] Ivanov, Boyan B., Anatolii A. Galushko, and Roumiana P. Stateva.
+       "Phase Stability Analysis with Equations of State-A Fresh Look from 
+       a Different Perspective." Industrial & Engineering Chemistry 
+       Research 52, no. 32 (August 14, 2013): 11208-23.
+    .. [2] Stateva, Roumiana P., and Stefan G. Tsvetkov. "A Diverse 
+       Approach for the Solution of the Isothermal Multiphase Flash 
+       Problem. Application to Vapor-Liquid-Liquid Systems." The Canadian
+       Journal of Chemical Engineering 72, no. 4 (August 1, 1994): 722-34.
+    '''
+    kis = []
+    for yi, log_phi_yi, zi, log_phi_zi in zip(ys, lnphis_trial, zs, lnphis):
+        di = log_phi_zi + (log(zi) if zi > 0.0 else -690.0)
+        try:
+            ki = log_phi_yi + log(yi) - di
+        except ValueError:
+            # log - yi is negative; convenient to handle it to make the optimization take negative comps
+            ki = log_phi_yi + -690.0 - di
+        kis.append(ki)
+    kis.append(kis[0])
+
+    tot = 0.0
+    for i in range(len(zs)):
+        t = kis[i+1] - kis[i]
+        tot += t*t
+    return tot
 
 
 def none_and_length_check(all_inputs, length=None):

@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 from numpy.testing import assert_allclose
 import pytest
-from thermo.utils import normalize
+from thermo.utils import normalize, TPD
 from thermo.eos import *
 from thermo.eos_mix import *
 from scipy.misc import derivative
@@ -308,8 +308,8 @@ def test_TPD():
     eos = PRMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
     eos_trial = PRMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
     # Get a negative TPD proving there is a phase split
-    TPD = eos.TPD(eos.T, eos.zs, eos.lnphis_g, eos_trial.zs, eos_trial.lnphis_l)
-    assert_allclose(TPD, -471.3629956139435)
+    TPD_calc = TPD(eos.T, eos.zs, eos.lnphis_g, eos_trial.zs, eos_trial.lnphis_l)
+    assert_allclose(TPD_calc, -471.3629956139435)
     
     
 

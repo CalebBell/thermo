@@ -34,7 +34,7 @@ __all__ = ['sequential_substitution_2P', 'sequential_substitution_GDEM3_2P',
            'TPV_double_solve_1P', 'nonlin_2P_HSGUAbeta',
            'sequential_substitution_2P_double',
            'cm_flash_tol', 'nonlin_2P_newton', 'dew_bubble_newton_zs',
-           'SS_VF_simultaneous'
+           'SS_VF_simultaneous', 'stabiliy_iteration_Michelsen'
            ]
 
 from fluids.constants import R, R2, R_inv
@@ -2634,6 +2634,65 @@ def sequential_substitution_2P_double(zs, xs_guess, ys_guess, liquid_phase,
         if err < tol_eq and abs(err0) < tol_spec_abs:
             return p0, V_over_F, xs, ys, l, g, iteration, err, err0
     raise UnconvergedError('End of SS without convergence')
+
+
+def stabiliy_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
+                                 maxiter=20, xtol=1E-12):
+    # So long as for both trial_phase, and test_phase use the lowest Gibbs energy fugacities, no need to test two phases.
+    # Very much no need to converge using acceleration - just keep a low tolerance
+    # At any point, can use the Ks working, assume a drop of the new phase, and evaluate two new phases and see if G drops.
+    # If it does, drop out early! This implementation does not do that.
+
+    # Should be possible to tell if converging to trivial solution during the process - and bail out then
+    if test_phase is None:
+        test_phase = trial_phase
+    T, P, zs = trial_phase.T, trial_phase.P, trial_phase.zs
+
+    fugacities_trial = trial_phase.fugacities_lowest_Gibbs()
+
+    N, cmps = trial_phase.N, trial_phase.cmps
+    # Basis of equations is for the test phase being a gas, the trial phase assumed is a liquid
+    # makes no real difference
+    Ks = [0.0]*N
+    corrections = [1.0]*N
+        
+    # Model converges towards fictional K values which, when evaluated, yield the
+    # stationary point composition
+    for i in cmps:
+        Ks[i] = zs_test[i]/zs[i]
+    
+    sum_zs_test_inv = 1.0
+    converged = False
+    for _ in range(maxiter):
+        test_phase = test_phase.to(T=T, P=P, zs=zs_test)
+        fugacities_test = test_phase.fugacities_lowest_Gibbs()
+        
+        err = 0.0
+        for i in cmps:
+            corrections[i] = ci = fugacities_trial[i]/fugacities_test[i]*sum_zs_test_inv
+            Ks[i] *= ci
+            err += (ci - 1.0)*(ci - 1.0)
+            
+        if err < xtol:
+            converged = True
+            break
+        
+        # Update compositions for the next iteration - might as well move this above the break check
+        for i in cmps:
+            zs_test[i] = Ks[i]*zs[i] # new test phase comp
+            
+        # Cannot move the normalization above the error check - returning 
+        # unnormalized sum_zs_test is used also to detect a trivial solution
+        sum_zs_test = sum(zs_test)
+        sum_zs_test_inv = 1.0/sum_zs_test
+        zs_test = [zi*sum_zs_test_inv for zi in zs_test]
+    
+    if converged:
+        V_over_F, xs, ys = V_over_F, trial_zs, appearing_zs = flash_inner_loop(zs, Ks)
+        return sum_zs_test, Ks, zs_test, V_over_F, trial_zs, appearing_zs
+    else:
+        raise UnconvergedError('End of stabiliy_iteration_Michelsen without convergence', zs_test)
+
 
 
 def TPV_double_solve_1P(zs, phase, guesses, spec_vals, 
