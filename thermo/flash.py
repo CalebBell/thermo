@@ -66,7 +66,7 @@ from thermo.phases import Phase, gas_phases, liquid_phases, solid_phases, EOSLiq
 from thermo.phase_identification import identify_sort_phases
 from thermo.bulk import default_settings
 from thermo.eos_mix import VDWMIX, IGMIX
-
+from thermo.property_package import StabilityTester
 
 if has_matplotlib:
     import matplotlib
@@ -2661,7 +2661,7 @@ def stabiliy_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
     for i in cmps:
         Ks[i] = zs_test[i]/zs[i]
     
-    sum_zs_test_inv = 1.0
+    sum_zs_test = sum_zs_test_inv = 1.0
     converged = False
     for _ in range(maxiter):
         test_phase = test_phase.to(T=T, P=P, zs=zs_test)
@@ -3615,6 +3615,9 @@ class FlashBase(object):
 class FlashVL(FlashBase):
     PT_SS_MAXITER = 1000
     PT_SS_TOL = 1e-13
+
+    stability_maxiter = 500 # 30 good professional default; 500 used in source DTU
+    stability_xtol = 5E-9 # 1e-12 was too strict; 1e-10 used in source DTU; 1e-9 set for some points near critical where convergence stopped; even some more stopped at higher Ts
     
     SS_acceleration = False
     SS_acceleration_method = None
@@ -3638,6 +3641,10 @@ class FlashVL(FlashBase):
         self.liquid = liquid
         self.gas = gas
         self.settings = settings
+        self.N = constants.N
+        self.cmps = constants.cmps
+        
+        self.stab = StabilityTester(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
         
     def flash_TVF(self, T, VF, zs, solution=None, hot_start=None):
         constants, correlations = self.constants, self.correlations
@@ -3758,6 +3765,52 @@ class FlashVL(FlashBase):
         
         else:
             raise NotImplementedError("TODO")
+            
+    def flash_TP_stability_test(self, T, P, zs, solution=None):
+        gen = self.stab.incipient_guesses(T, P, zs)
+        liquid, gas = self.liquid, self.gas
+        liquid = liquid.to(T=T, P=P, zs=zs)
+        gas = gas.to(T=T, P=P, zs=zs)
+        if liquid.G() < gas.G():
+            min_phase, other_phase = liquid, gas
+        else:
+            min_phase, other_phase = gas, liquid
+
+        stable = True
+        for trial_comp in gen:
+                try:
+                    sln = stabiliy_iteration_Michelsen(min_phase, trial_comp, test_phase=other_phase,
+                                 maxiter=self.stability_maxiter, xtol=self.stability_xtol)
+                    sum_zs_test, Ks, zs_test, V_over_F, trial_zs, appearing_zs = sln
+                    lnK_2_tot = 0.0
+                    for i in self.cmps:
+                        lnK = log(Ks[i])
+                        lnK_2_tot += lnK*lnK
+                    sum_criteria = abs(sum_zs_test - 1.0)
+                    if sum_criteria < 1e-7 or lnK_2_tot < 1e-7:
+                        continue
+                    stable = False
+                    break
+                    
+                except UnconvergedError:
+                    pass
+
+        if stable:
+            ls, g = [liquid], gas if min_phase is liquid else [], gas
+            return g, ls, [], [1.0], {'iterations': 0, 'err': 0.0}
+
+        V_over_F, xs, ys, l, g, iteration, err = sequential_substitution_2P(T=T, P=P, V=None,
+                                                                            zs=zs, xs_guess=trial_zs, ys_guess=appearing_zs,
+                                                                            liquid_phase=min_phase,
+                                                                            gas_phase=other_phase, maxiter=self.PT_SS_MAXITER,
+                                                                            tol=self.PT_SS_TOL,
+                                                                            V_over_F_guess=V_over_F)
+        if min_phase is liquid:
+            ls, g, V_over_F = [l], g, V_over_F
+        else:
+            ls, g, V_over_F = [g], l, 1.0 - V_over_F
+        
+        return g, ls, [], [V_over_F, 1.0 - V_over_F], {'iterations': iteration, 'err': err}
 
     def flash_TPV(self, T, P, V, zs=None, solution=None, hot_start=None):
         constants, correlations = self.constants, self.correlations
@@ -3779,6 +3832,9 @@ class FlashVL(FlashBase):
                        V_over_F_guess=VF_guess)
         
         return g, [l], [], [V_over_F, 1.0 - V_over_F], {'iterations': iteration, 'err': err}
+
+    def flash_TPV(self, T, P, V, zs=None, solution=None, hot_start=None):
+        return self.flash_TP_stability_test(T, P, zs, solution=solution)
 
 #    def flash(self, zs, T=None, P=None, VF=None, H=None, S=None):
 #        constants, correlations = self.constants, self.correlations

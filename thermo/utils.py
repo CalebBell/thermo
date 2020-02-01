@@ -1731,8 +1731,6 @@ def Stateva_Tsvetkov_TPDF(lnphis, zs, lnphis_trial, ys):
     guesses to find all stationary points, and there is no method of
     confirming all points have been found.
     
-    This method does not alter the state of the object.
-    
     .. math::
         \phi(y) = \sum_i^{N} (k_{i+1}(y) - k_i(y))^2
         
