@@ -3380,7 +3380,7 @@ class UNIFAC(GibbsExcess):
         Computes the following term for each group `k`, size number of groups.
         
         .. math::
-            \frac{1}{\sum_m \Theta_m \Psi_{mk}}
+            U(k) = \frac{1}{\sum_m \Theta_m \Psi_{m,k}}
         '''
         try:
             return self.Theta_Psi_sum_invs
@@ -3509,11 +3509,12 @@ class UNIFAC(GibbsExcess):
         temperature.
         
         .. math::
-            \frac{\partial \ln \Gamma_k}{\partial x_i} = -Q_k\left(
+            \frac{\partial \ln \Gamma_k}{\partial x_i} = Q_k\left(
             -\frac{\sum_m^{gr} \psi_{m,k} \frac{\partial \theta_m}{\partial x_i}}{\sum_m^{gr} \theta_m \psi_{m,k}}
             - \sum_m^{gr} \frac{\psi_{k,m} \frac{\partial \theta_m}{\partial x_i}}{\sum_n^{gr} \theta_n \psi_{n,m}}
             + \sum_m^{gr}  \frac{(\sum_n^{gr} \psi_{n,m}\frac{\partial \theta_n}{\partial x_i})\theta_m \psi_{k,m}}{(\sum_n^{gr} \theta_n \psi_{n,m})^2}
             \right)
+        
         The group W is used internally as follows to simplfy the number of
         evaluations.
         
@@ -3567,6 +3568,46 @@ class UNIFAC(GibbsExcess):
         return matrix
     
     def d2lnGammas_subgroups_dTdxs(self):
+        r'''Calculate the temperature and mole fraction derivatives of the 
+        :math:`\Gamma_k` parameters for the phase; depends on the phases's 
+        composition and temperature.
+        
+        .. math::
+            \frac{\partial^2 \ln \Gamma_k}{\partial x_i \partial T} = -Q_k\left(
+            D(k,i) Z(k) - B(k)W(k,i) Z(k)^2
+            + \sum_m^{gr} (Z(m) \frac{\partial \theta_m}{\partial x_i}\frac{\partial \psi_{k,m}}{\partial T})
+            -\sum_m^{gr} (B(m) Z(m)^2 \psi_{k,m} \frac{\partial \theta_m}{\partial x_i})
+            -\sum_m^{gr}(D(m,i) Z(m)^2 \theta_m \psi_{k,m})
+            - \sum_m^{gr} (W(m,i) Z(m)^2 \theta_m \frac{\partial \psi_{k,m}}{\partial T})
+            + \sum_m^{gr} 2 B(m) W(m,i) Z(m)^3 \theta_m \psi_{k,m}
+            \right)
+            
+        The following groups are used as follows to simplfy the number of
+        evaluations:
+            
+        .. math::
+            W(k,i) = \sum_m^{gr} \psi_{m,k} \frac{\partial \theta_m}{\partial x_i}
+            
+        .. math::
+            Z(k) = \frac{1}{\sum_m \Theta_m \Psi_{mk}}
+        
+        .. math::
+            F(k) = \sum_m^{gr} \theta_m \frac{\partial \psi_{m,k}}{\partial T}
+            
+        In the below expression, k` refers to a group, and `i` refers to a
+        component.
+        
+        .. math::
+            D(k,i) = \sum_m^{gr} \frac{\partial \theta_m}{\partial x_i}
+            \frac{\partial \psi_{m,k}}{\partial T}
+        
+        Returns
+        -------
+        d2lnGammas_subgroups_dTdxs : list[list[float]]
+           Temperature and mole fraction derivatives of Gamma parameters for 
+           each subgroup, size number of subgroups by number of components and 
+           indexed in that order, [1/K]
+        '''
         try:
             return self._d2lnGammas_subgroups_dTdxs
         except:
@@ -3597,12 +3638,12 @@ class UNIFAC(GibbsExcess):
             Ws = self._Ws()
         cmps, groups, Qs = self.cmps, self.groups, self.Qs
         
-        Bs = []
+        Fs = []
         for k in groups:
             tot = 0.0
             for m in groups:
                 tot += Thetas[m]*dpsis_dT[m][k]
-            Bs.append(tot)
+            Fs.append(tot)
             
         Ds = []
         for k in groups:
@@ -3614,19 +3655,19 @@ class UNIFAC(GibbsExcess):
                 row.append(tot)
             Ds.append(row)
         
-        
+        Zs2 = [Zi*Zi for Zi in Zs]
+        FsZs3Thetas2 = [2.0*Fs[m]*Zs2[m]*Zs[m]*Thetas[m] for m in groups]
+
         self._d2lnGammas_subgroups_dTdxs = d2lnGammas_subgroups_dTdxs = []
         
         for k in groups:
             row = []
             for i in cmps:
-                v = Ds[k][i]*Zs[k] - Bs[k]*Ws[k][i]*Zs[k]**2
+                v = Ds[k][i]*Zs[k] - Fs[k]*Ws[k][i]*Zs2[k]
                 for m in groups:
-                    v += Zs[m]*dThetas_dxs[m][i]*dpsis_dT[k][m]
-                    v -= Bs[m]*Zs[m]**2*psis[k][m]*dThetas_dxs[m][i]
-                    v -= Ds[m][i]*Zs[m]**2*Thetas[m]*psis[k][m]
-                    v -= Ws[m][i]*Zs[m]**2*Thetas[m]*dpsis_dT[k][m]
-                    v += 2.0*Bs[m]*Ws[m][i]*Zs[m]**3*Thetas[m]*psis[k][m]
+                    v += dThetas_dxs[m][i]*Zs[m]*(dpsis_dT[k][m] - Fs[m]*Zs[m]*psis[k][m])
+                    v -= Zs2[m]*Thetas[m]*(Ds[m][i]*psis[k][m] + Ws[m][i]*dpsis_dT[k][m])
+                    v += FsZs3Thetas2[m]*Ws[m][i]*psis[k][m]
                 row.append(-v*Qs[k])
             d2lnGammas_subgroups_dTdxs.append(row)
         return d2lnGammas_subgroups_dTdxs
@@ -3730,8 +3771,26 @@ class UNIFAC(GibbsExcess):
         return d2lnGammas_subgroups_dxixjs
                     
     @staticmethod
-    def dlnGammas_subgroups_dT_meth(groups, Qs, psis, dpsis_dT, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum):
-        # TODO document
+    def _dlnGammas_subgroups_dT_meth(groups, Qs, psis, dpsis_dT, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum):
+        r'''
+        
+        .. math::
+            \frac{\partial \ln \Gamma_i}{\partial T} = Q_i\left(
+            \sum_j^{gr} U(j) \left[{\theta_j \frac{\partial \psi_{i,j}}{\partial T}}
+            + {\theta_j \psi_{i,j} F(j)}U(j)
+            \right]
+            - F(i) U(i)
+            \right)
+        
+        .. math::
+            F(k) = \sum_m^{gr} \theta_m \frac{\partial \psi_{m,k}}{\partial T}
+        
+        .. math::
+            U(k) = \frac{1}{\sum_m \Theta_m \Psi_{m,k}}
+
+        '''
+        # Theta_Psi_sum_invs = U
+        # Theta_dPsidT_sum = F
         row = []
         for i in groups:
             psisi, dpsis_dTi = psis[i], dpsis_dT[i]
@@ -3739,6 +3798,7 @@ class UNIFAC(GibbsExcess):
             for j in groups:
                 tot += (psisi[j]*Theta_dPsidT_sum[j]*Theta_Psi_sum_invs[j]
                        - dpsis_dTi[j])*Theta_Psi_sum_invs[j]*Thetas[j]
+                
             v = Qs[i]*(tot - Theta_dPsidT_sum[i]*Theta_Psi_sum_invs[i])
             row.append(v)
         return row
@@ -3755,7 +3815,7 @@ class UNIFAC(GibbsExcess):
         Theta_Psi_sum_invs = [1.0/sum(Thetas[k]*psis[k][j] for k in groups) for j in groups]
         Theta_dPsidT_sum = [sum(Thetas[k]*dpsis_dT[k][j] for k in groups) for j in groups]
         
-        row = UNIFAC.dlnGammas_subgroups_dT_meth(groups, Qs, psis, dpsis_dT, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum)
+        row = UNIFAC._dlnGammas_subgroups_dT_meth(groups, Qs, psis, dpsis_dT, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum)
         
         self._dlnGammas_subgroups_dT = row
         return row
@@ -3976,7 +4036,7 @@ class UNIFAC(GibbsExcess):
             Theta_Psi_sum_invs = Theta_Psi_sum_pure_invs[m]
             Theta_dPsidT_sum = Theta_dPsidT_sum_pure[m]
             
-            row = UNIFAC.dlnGammas_subgroups_dT_meth(groups, Qs, psis, dpsis_dT, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum)
+            row = UNIFAC._dlnGammas_subgroups_dT_meth(groups, Qs, psis, dpsis_dT, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum)
             for i in groups:
                 if i not in groups2:
                     row[i] = 0.0
