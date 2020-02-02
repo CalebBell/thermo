@@ -30,10 +30,13 @@ or contact the author at Caleb.Andrew.Bell@gmail.com.
 
 .. contents:: :local:
 
-Main Model
+Main Model (Object-Oriented)
 ----------
 .. autoclass:: UNIFAC
     :members:
+
+Main Model (Functional)
+----------
 .. autofunction:: UNIFAC_gammas
 .. autofunction:: UNIFAC_psi
         
@@ -3202,7 +3205,10 @@ class UNIFAC(GibbsExcess):
         G = self.Thetas_sum_inv
         Qs, cmps, groups, xs = self.Qs, self.cmps, self.groups, self.xs
         Xs = self.Xs()
-        Thetas = self.Thetas()
+        try:
+            Thetas = self._Thetas
+        except AttributeError:
+            Thetas = self.Thetas()
         vs = self.vs
         
         VS = [sum(vs[j][i] for j in groups) for i in cmps]
@@ -3323,50 +3329,198 @@ class UNIFAC(GibbsExcess):
             d2Thetas_dxixjs.append(matrix)
         return d2Thetas_dxixjs
 
+    def _Theta_Psi_sums(self):
+        r'''
+        Computes the following term for each group `k`, size number of groups.
+        
+        .. math::
+            \sum_m \Theta_m \Psi_{mk} 
+        '''
+        try:
+            return self.Theta_Psi_sums
+        except AttributeError:
+            self.Theta_Psi_sums = Theta_Psi_sums = []
+        try:
+            Thetas = self._Thetas
+        except AttributeError:
+            Thetas = self.Thetas()
+        try:
+            psis = self._psis
+        except AttributeError:
+            psis = self.psis()
+        groups = self.groups
+        for k in groups:
+            tot = 0.0
+            for m in groups:
+                tot += Thetas[m]*psis[m][k]
+            Theta_Psi_sums.append(tot)
+        return Theta_Psi_sums
 
+    def _Theta_Psi_sum_invs(self):
+        r'''
+        Computes the following term for each group `k`, size number of groups.
+        
+        .. math::
+            \frac{1}{\sum_m \Theta_m \Psi_{mk}}
+        '''
+        try:
+            return self.Theta_Psi_sum_invs
+        except AttributeError:
+            try:
+                Theta_Psi_sums = self.Theta_Psi_sums
+            except AttributeError:
+                Theta_Psi_sums = self._Theta_Psi_sums()
+        self.Theta_Psi_sum_invs = [1.0/v for v in Theta_Psi_sums]
+        return self.Theta_Psi_sum_invs
+
+    def _Ws(self):
+        r'''
+        Computes the following for each `k` and each `i`, indexed by [k][i]
+        `k` is in groups, and `i` is in components.
+
+        .. math::
+            W(k,i) = \sum_m^{gr} \psi_{m,k} \frac{\partial \theta_m}{\partial x_i}
+        '''
+        try:
+            return self.Ws
+        except AttributeError:
+            pass
+            
+        try:
+            psis = self._psis
+        except AttributeError:
+            psis = self.psis()        
+        try:
+            dThetas_dxs = self._dThetas_dxs
+        except AttributeError:
+            dThetas_dxs = self.dThetas_dxs()
+        cmps, groups = self.cmps, self.groups
+        
+        tot0s = []
+        for k in groups:
+            row0 = []
+            for i in cmps:
+                tot0 = 0.0
+                for m in groups:
+                    tot0 += psis[m][k]*dThetas_dxs[m][i]
+                row0.append(tot0)
+            tot0s.append(row0)
+        self.Ws = tot0s
+        return tot0s
+
+    def _Ys(self):
+        r'''
+        Computes the following for each `k` and each `i`, indexed by [k][i].
+        `k` is in groups, and `i` is in components.
+        
+        .. math::
+            Y(k,i) = \sum_m^{gr} \psi_{k,m} \frac{\partial \theta_m}{\partial x_i}
+        '''
+        try:
+            psis = self._psis
+        except AttributeError:
+            psis = self.psis()        
+        try:
+            dThetas_dxs = self._dThetas_dxs
+        except AttributeError:
+            dThetas_dxs = self.dThetas_dxs()
+        cmps, groups = self.cmps, self.groups
+        
+        tots = []
+        for k in groups:
+            row = []
+            for i in cmps:
+                tot = 0.0
+                for m in groups:
+                    tot += psis[k][m]*dThetas_dxs[m][i]
+                row.append(tot)
+            tots.append(row)
+        self.Ys = tots
+        return tots
 
     def lnGammas_subgroups(self):
-        # Temperature and composition dependent!
+        r'''Calculate the :math:`\Gamma_k` parameters for the phase;
+        depends on the phases's composition and temperature.
+        
+        .. math::
+            \ln \Gamma_k = Q_k \left[1 - \ln \sum_m \Theta_m \Psi_{mk} - \sum_m 
+            \frac{\Theta_m \Psi_{km}}{\sum_n \Theta_n \Psi_{nm}}\right]
+                    
+        Returns
+        -------
+        lnGammas_subgroups : list[float]
+           Gamma parameters for each subgroup, size number of subgroups, [-]
+        '''
         try:
             return self._lnGammas_subgroups
         except AttributeError:
             pass
-        Thetas, Qs = self.Thetas(), self.Qs
-        psis = self.psis()
-        cmps, groups = self.cmps, self.groups
+        try:
+            Thetas = self._Thetas
+        except AttributeError:
+            Thetas = self.Thetas()
+        try:
+            psis = self._psis
+        except AttributeError:
+            psis = self.psis()        
+        try:
+            Theta_Psi_sums = self.Theta_Psi_sums
+        except AttributeError:
+            Theta_Psi_sums = self._Theta_Psi_sums()
+        try:
+            Theta_Psi_sum_invs = self.Theta_Psi_sum_invs
+        except AttributeError:
+            Theta_Psi_sum_invs = self._Theta_Psi_sum_invs()
+
+        cmps, groups, Qs = self.cmps, self.groups, self.Qs
         
         self._lnGammas_subgroups = lnGammas_subgroups = []
         for k in groups:
-            log_sum = 0.0
-            for m in groups:
-                log_sum += Thetas[m]*psis[m][k]
-            log_sum = log(log_sum)
-            
             last = 0.0
             for m in groups:
-                sub_subs = 0.0
-                for n in groups:
-                    sub_subs += Thetas[n]*psis[n][m]
-                last += Thetas[m]*psis[k][m]/sub_subs
+                last += Thetas[m]*psis[k][m]*Theta_Psi_sum_invs[m]
                 
-            v = Qs[k]*(1.0 - log_sum - last)
+            v = Qs[k]*(1.0 - log(Theta_Psi_sums[k]) - last)
             lnGammas_subgroups.append(v)
         return lnGammas_subgroups
     
-    
     def dlnGammas_subgroups_dxs(self):
+        r'''Calculate the mole fraction derivatives of the :math:`\Gamma_k` 
+        parameters for the phase; depends on the phases's composition and
+        temperature.
+        
+        .. math::
+            \frac{\partial \ln \Gamma_k}{\partial x_i} =
+                    
+        Returns
+        -------
+        dlnGammas_subgroups_dxs : list[list[float]]
+           Mole fraction derivatives of Gamma parameters for each subgroup, 
+           size number of subgroups by number of components and indexed in 
+           that order, [-]
+        '''
         try:
             return self._dlnGammas_subgroups_dxs
         except:
             pass
-        Thetas, Qs = self.Thetas(), self.Qs
-        psis = self.psis()
-        dThetas_dxs = self.dThetas_dxs()
-
-        cmps, groups = self.cmps, self.groups
+        try:
+            Thetas = self._Thetas
+        except AttributeError:
+            Thetas = self.Thetas()
+        try:
+            psis = self._psis
+        except AttributeError:
+            psis = self.psis()        
+        try:
+            Theta_Psi_sum_invs = self.Theta_Psi_sum_invs
+        except AttributeError:
+            Theta_Psi_sum_invs = self._Theta_Psi_sum_invs()
+        try:
+            dThetas_dxs = self._dThetas_dxs
+        except AttributeError:
+            dThetas_dxs = self.dThetas_dxs()
+        cmps, groups, Qs = self.cmps, self.groups, self.Qs
         
-        Theta_Psi_sum_invs = [1.0/sum(Thetas[k]*psis[k][j] for k in groups) for j in groups]
-        self.Theta_Psi_sum_invs = Theta_Psi_sum_invs
         
         # Index by [subgroup][component]
         tot0s, tot1s = [], []
@@ -3383,18 +3537,26 @@ class UNIFAC(GibbsExcess):
             tot0s.append(row0)
             tot1s.append(row1)
             
-        self._Ws = tot0s
-        self._Ys = tot1s
+        try:
+            Ws = self.Ws
+        except AttributeError:
+            Ws = self._Ws()
+        try:
+            Ys = self.Ys
+        except AttributeError:
+            Ys = self._Ys()
+#        self._Ws = tot0s
+#        self._Ys = tot1s
                 
         matrix = []
         for k in groups:
             row = []
             for i in cmps:
-                tot = -tot0s[k][i]*Theta_Psi_sum_invs[k]
+                tot = -Ws[k][i]*Theta_Psi_sum_invs[k]
                 for m in groups:
                     tot -= psis[k][m]*dThetas_dxs[m][i]*Theta_Psi_sum_invs[m]
 
-                    tot += tot0s[m][i]*Thetas[m]*psis[k][m]*Theta_Psi_sum_invs[m]**2
+                    tot += Ws[m][i]*Thetas[m]*psis[k][m]*Theta_Psi_sum_invs[m]**2
 
                 row.append(tot*Qs[k])
             matrix.append(row)
@@ -3417,7 +3579,14 @@ class UNIFAC(GibbsExcess):
         cmps, groups = self.cmps, self.groups
 
         Zs = self.Theta_Psi_sum_invs
-        Ws, Ys = self._Ws, self._Ys
+        try:
+            Ws = self.Ws
+        except AttributeError:
+            Ws = self._Ws()
+        try:
+            Ys = self.Ys
+        except AttributeError:
+            Ys = self._Ys()
         
         Bs = []
         for k in groups:
@@ -3468,7 +3637,14 @@ class UNIFAC(GibbsExcess):
         cmps, groups = self.cmps, self.groups
         
         Zs = self.Theta_Psi_sum_invs
-        Ws, Ys = self._Ws, self._Ys
+        try:
+            Ws = self.Ws
+        except AttributeError:
+            Ws = self._Ws()
+        try:
+            Ys = self.Ys
+        except AttributeError:
+            Ys = self._Ys()
         
         def K(k, i, j):
             # k: group
@@ -3838,7 +4014,7 @@ class UNIFAC(GibbsExcess):
         r'''Calculates the residual part of the UNIFAC model.
 
         .. math::
-            \ln \gamma_i^r = \sum_{k}^{gr}_n \nu_k^{(i)} \left[ \ln \Gamma_k
+            \ln \gamma_i^r = \sum_{k}^{gr} \nu_k^{(i)} \left[ \ln \Gamma_k
             - \ln \Gamma_k^{(i)} \right]
         
         where the second Gamma is the pure-component Gamma of group `k` in
@@ -3872,7 +4048,7 @@ class UNIFAC(GibbsExcess):
         the UNIFAC model.
 
         .. math::
-            \frac{\partial \ln \gamma_i^r}{\partial T} = \sum_{k}^{gr}_n
+            \frac{\partial \ln \gamma_i^r}{\partial T} = \sum_{k}^{gr}
             \nu_k^{(i)} \left[ \frac{\partial \ln \Gamma_k}{\partial T}
             - \frac{\partial \ln \Gamma_k^{(i)}}{\partial T} \right]
         
