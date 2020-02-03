@@ -2360,6 +2360,24 @@ class UNIFAC(GibbsExcess):
         new._Thetas_pure = self._Thetas_pure
         new._Xs_pure = self._Xs_pure
         if T == self.T:
+            # interaction parameters that depend on T only
+            try:
+                new._psis = self._psis
+            except AttributeError:
+                pass
+            try:
+                new._dpsis_dT = self._dpsis_dT
+            except AttributeError:
+                pass
+            try:
+                new._d2psis_dT2 = self._d2psis_dT2
+            except AttributeError:
+                pass
+            try:
+                new._d3psis_dT3 = self._d3psis_dT3
+            except AttributeError:
+                pass
+            
             # pure parameters that depend on T only
             try:
                 new._lnGammas_subgroups_pure = self._lnGammas_subgroups_pure
@@ -2377,9 +2395,82 @@ class UNIFAC(GibbsExcess):
                 new._d3lnGammas_subgroups_pure_dT3 = self._d3lnGammas_subgroups_pure_dT3
             except AttributeError:
                 pass
-#        if xs == self.xs:
-#            # composition dependent only?
-#            pass
+        if xs == self.xs:
+            try:
+                new._Fis = self._Fis
+            except AttributeError:
+                pass
+            try:
+                new.qx_sum_inv = self.qx_sum_inv
+            except AttributeError:
+                pass
+            try:
+                new._dFis_dxs = self._dFis_dxs
+            except AttributeError:
+                pass
+            try:
+                new._d2Fis_dxixjs = self._d2Fis_dxixjs
+            except AttributeError:
+                pass
+            try:
+                new._d3Fis_dxixjxks = self._d3Fis_dxixjxks
+            except AttributeError:
+                pass
+            try:
+                new._Vis_modified = self._Vis_modified
+                new.r34x_sum_inv = self.r34x_sum_inv
+            except AttributeError:
+                pass
+            try:
+                new._dVis_modified_dxs = self._dVis_modified_dxs
+            except AttributeError:
+                pass
+            try:
+                new._d2Vis_modified_dxixjs = self._d2Vis_modified_dxixjs
+            except AttributeError:
+                pass
+            try:
+                new._d3Vis_modified_dxixjxks = self._d3Vis_modified_dxixjxks
+            except AttributeError:
+                pass
+            # composition dependent - parameters not using psis
+            try:
+                new._Xs = self._Xs
+            except AttributeError:
+                pass
+            try:
+                new._Thetas = self._Thetas
+                new.Thetas_sum_inv = self.Thetas_sum_inv
+            except AttributeError:
+                pass
+            try:
+                new.Xs_sum_inv = self.Xs_sum_inv
+            except AttributeError:
+                pass
+            try:
+                new._dThetas_dxs = self._dThetas_dxs
+            except AttributeError:
+                pass
+            try:
+                new._d2Thetas_dxixjs = self._d2Thetas_dxixjs
+            except AttributeError:
+                pass
+            try:
+                new._lngammas_c = self._lngammas_c
+            except AttributeError:
+                pass
+            try:
+                new._dlngammas_c_dxs = self._dlngammas_c_dxs
+            except AttributeError:
+                pass
+            try:
+                new._d2lngammas_c_dxixjs = self._d2lngammas_c_dxixjs
+            except AttributeError:
+                pass
+            try:
+                new._d3lngammas_c_dxixjxks = self._d3lngammas_c_dxixjxks
+            except AttributeError:
+                pass
             
         return new
 
@@ -2876,7 +2967,7 @@ class UNIFAC(GibbsExcess):
         for i in cmps:
             tot += qs[i]*xs[i]
         self.qx_sum_inv = tot = 1.0/tot
-        self._Fis = Fis = [qs[i]*tot for i in cmps]
+        self._Fis = Fis = [qi*tot for qi in qs]
         return Fis
 
     def dFis_dxs(self):
@@ -3605,12 +3696,11 @@ class UNIFAC(GibbsExcess):
         
         self._lnGammas_subgroups = lnGammas_subgroups = []
         for k in groups:
-            last = 0.0
+            psisk = psis[k]
+            last = 1.0
             for m in groups:
-                last += Thetas[m]*psis[k][m]*Theta_Psi_sum_invs[m]
-                
-            v = Qs[k]*(1.0 - log(Theta_Psi_sums[k]) - last)
-            lnGammas_subgroups.append(v)
+                last -= Thetas[m]*Theta_Psi_sum_invs[m]*psisk[m]
+            lnGammas_subgroups.append(Qs[k]*(last - log(Theta_Psi_sums[k])))
         return lnGammas_subgroups
     
     def dlnGammas_subgroups_dxs(self):
@@ -3857,6 +3947,7 @@ class UNIFAC(GibbsExcess):
             return tot
         
         Zs2 = [Zi*Zi for Zi in Zs]
+        K_row = [0.0]*self.N_groups
         # Index [comp][comp][subgroup]
         self._d2lnGammas_subgroups_dxixjs = d2lnGammas_subgroups_dxixjs = []
         for i in cmps:
@@ -3864,9 +3955,12 @@ class UNIFAC(GibbsExcess):
             for j in cmps:
                 row = []
                 for k in groups:
-                    v = Zs[k]*K(k, i, j) - Ws[k][i]*Ws[k][j]*Zs2[k]
+                    K_row[k] = K(k, i, j) 
+#                Krow = [K(k, i, j) for k in groups]
+                for k in groups:
+                    v = Zs[k]*K_row[k] - Ws[k][i]*Ws[k][j]*Zs2[k]
                     for m in groups:
-                        v -= Zs2[m]*K(m, i, j)*Thetas[m]*psis[k][m]
+                        v -= Zs2[m]*K_row[m]*Thetas[m]*psis[k][m]
                         
                         v += Zs[m]*psis[k][m]*d2Thetas_dxixjs[i][j][m]
                         
@@ -4295,30 +4389,39 @@ class UNIFAC(GibbsExcess):
         Thetas_pure, cmp_group_idx = self._Thetas_pure, self.cmp_group_idx
         
         matrix = []
-        for i in cmps:
-            groups2 = cmp_group_idx[i]
-            row = []
-            for k in groups:
-                log_sum = 0.0
-                for m in groups2:
-                    log_sum += Thetas_pure[i][m]*psis[m][k]
-                log_sum = log(log_sum)
+#        for i in cmps:
+#            groups2 = cmp_group_idx[i]
+#            Thetas_purei = Thetas_pure[i]
+#            row = []
+#            for k in groups:
                 
-                last = 0.0
-                for m in groups2:
-                    sub_subs = 0.0
-                    for n in groups:
-                        sub_subs += Thetas_pure[i][n]*psis[n][m]
-                    last += Thetas_pure[i][m]*psis[k][m]/sub_subs
-
-                v = Qs[k]*(1.0 - log_sum - last)
+                
+        for k in groups:
+            row = []
+            for i in cmps:
+                groups2 = cmp_group_idx[i]
+                Thetas_purei = Thetas_pure[i]
                 if k not in groups2:
                     v = 0.0
+                else:
+                    psisk = psis[k]
+                    log_sum = 0.0
+                    for m in groups2:
+                        log_sum += Thetas_purei[m]*psis[m][k]
+                    log_sum = log(log_sum)
+                    
+                    last = 0.0
+                    for m in groups2:
+                        sub_subs = 0.0
+                        for n in groups:
+                            sub_subs += Thetas_purei[n]*psis[n][m]
+                        last += Thetas_purei[m]*psisk[m]/sub_subs
+    
+                    v = Qs[k]*(1.0 - log_sum - last)
                 row.append(v)
             matrix.append(row)
             
-        # Transpose
-        self._lnGammas_subgroups_pure = lnGammas_subgroups_pure = list(map(list, zip(*matrix)))
+        self._lnGammas_subgroups_pure = lnGammas_subgroups_pure = matrix#list(map(list, zip(*matrix)))
         return lnGammas_subgroups_pure
 
     def dlnGammas_subgroups_pure_dT(self):
@@ -4901,11 +5004,17 @@ class UNIFAC(GibbsExcess):
         except:
             pass
         xs, cmps = self.xs, self.cmps
-        lngammas_r = self.lngammas_r()
+        try:
+            lngammas_r = self._lngammas_r
+        except AttributeError:
+            lngammas_r = self.lngammas_r()
         if self.skip_comb:
             gammas = [exp(ri) for ri in lngammas_r]
         else:
-            lngammas_c = self.lngammas_c()
+            try:
+                lngammas_c = self._lngammas_c
+            except AttributeError:
+                lngammas_c = self.lngammas_c()
             gammas = [exp(lngammas_r[i] + lngammas_c[i]) for i in cmps]
         self._gammas = gammas
         return gammas
