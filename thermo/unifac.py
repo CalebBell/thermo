@@ -2472,6 +2472,9 @@ class UNIFAC(GibbsExcess):
             except AttributeError:
                 pass
             
+        # gammas, theta_psi_sums, _theta_psi_sum_inv, lngammas_subgroups, lngammas_r
+        # SHOULD NOT be moved to a new class - use the same class if T and x is the same!
+            
         return new
 
 
@@ -3353,21 +3356,32 @@ class UNIFAC(GibbsExcess):
             Thetas = self.Thetas()
         vs = self.vs
         
-        VS = [sum(vs[j][i] for j in groups) for i in cmps] # cmp_group_idx
-        VSXS = [sum(vs[i][j]*xs[j] for j in cmps) for i in groups]
+        VS = self.cmp_v_count#[sum(vs[j][i] for j in groups) for i in cmps]
+        try:
+            VSXS = self.VSXS
+        except AttributeError:
+            VSXS = self._VSXS()
+
+        tot0 = 0.0
+        for k in groups:
+            tot0 += Qs[k]*VSXS[k]
+        tot0*= F
         
+        tots = []
+        for j in cmps:
+            tot1 = 0.0
+            for k in groups:
+                tot1 -= Qs[k]*vs[k][j]
+            tots.append(F*(G*(tot0*VS[j] + tot1) - VS[j]))
+        
+        FG = F*G
         # Index [subgroup][component]
         self._dThetas_dxs = dThetas_dxs = []
         for i in groups:
-            Qi = Qs[i]
+            c = FG*Qs[i]
             row = []
-            for j in cmps:
-                tot = 0.0
-                for k in groups:
-                    tot += F*Qs[k]*VS[j]*VSXS[k] - Qs[k]*vs[k][j]
-                
-                v = F*G*Qi*(F*G*VSXS[i]*tot - F*VS[j]*VSXS[i] + vs[i][j])
-                row.append(v)
+            for j in cmps:                
+                row.append(c*(VSXS[i]*tots[j] + vs[i][j]))
             dThetas_dxs.append(row)
         return dThetas_dxs
 
@@ -3435,12 +3449,10 @@ class UNIFAC(GibbsExcess):
         vs = self.vs
         
         VS = self.cmp_v_count
-        VSXS = []
-        for i in groups:
-            v = 0.0
-            for j in cmps:
-                v += vs[i][j]*xs[j]
-            VSXS.append(v)
+        try:
+            VSXS = self.VSXS
+        except AttributeError:
+            VSXS = self._VSXS()
         
         QsVSXS = 0.0
         for i in groups:
@@ -3501,6 +3513,20 @@ class UNIFAC(GibbsExcess):
                 matrix.append(row)
             d2Thetas_dxixjs.append(matrix)
         return d2Thetas_dxixjs
+        
+    def _VSXS(self):
+        try:
+            return self.VSXS
+        except AttributeError:
+            pass
+        self.VSXS = VSXS = []
+        groups, cmps, vs, xs = self.groups, self.cmps, self.vs, self.xs
+        for i in groups:
+            v = 0.0
+            for j in cmps:
+                v += vs[i][j]*xs[j]
+            VSXS.append(v)
+        return VSXS
 
     def _Theta_Psi_sums(self):
         r'''
