@@ -114,7 +114,7 @@ __all__ = ['UNIFAC_gammas','UNIFAC',  'GibbsExcess',
 import os
 from thermo.utils import log, exp
 from thermo.activity import GibbsExcess
-from thermo.utils import R
+from thermo.utils import R, dxs_to_dns
 folder = os.path.join(os.path.dirname(__file__), 'Phase Change')
 
 
@@ -3279,7 +3279,10 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             pass
         Qs, groups = self.Qs, self.groups
-        Xs = self.Xs()
+        try:
+            Xs = self._Xs
+        except AttributeError:
+            Xs = self.Xs()
         
         tot = 0.0
         for i in groups:
@@ -3340,14 +3343,17 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             G = self._Thetas_sum_inv()
         Qs, cmps, groups, xs = self.Qs, self.cmps, self.groups, self.xs
-        Xs = self.Xs()
+        try:
+            Xs = self._Xs
+        except AttributeError:
+            Xs = self.Xs()
         try:
             Thetas = self._Thetas
         except AttributeError:
             Thetas = self.Thetas()
         vs = self.vs
         
-        VS = [sum(vs[j][i] for j in groups) for i in cmps]
+        VS = [sum(vs[j][i] for j in groups) for i in cmps] # cmp_group_idx
         VSXS = [sum(vs[i][j]*xs[j] for j in cmps) for i in groups]
         
         # Index [subgroup][component]
@@ -3416,18 +3422,41 @@ class UNIFAC(GibbsExcess):
             return self._d2Thetas_dxixjs
         except AttributeError:
             pass
-                
-        F = self.Xs_sum_inv
-        G = self.Thetas_sum_inv
+        
+        try:
+            F = self.Xs_sum_inv
+        except AttributeError:
+            F = self._Xs_sum_inv()
+        try:
+            G = self.Thetas_sum_inv
+        except AttributeError:
+            G = self._Thetas_sum_inv()
         Qs, cmps, groups, xs = self.Qs, self.cmps, self.groups, self.xs
         vs = self.vs
         
+        VS = self.cmp_v_count
+        VSXS = []
+        for i in groups:
+            v = 0.0
+            for j in cmps:
+                v += vs[i][j]*xs[j]
+            VSXS.append(v)
         
-        VS = [sum(vs[j][i] for j in groups) for i in cmps]
-        VSXS = [sum(vs[i][j]*xs[j] for j in cmps) for i in groups]
+        QsVSXS = 0.0
+        for i in groups:
+            QsVSXS += Qs[i]*VSXS[i]
+        QsVSXS_sum_inv = 1.0/QsVSXS
         
-        QsVSXS = [Qs[i]*VSXS[i] for i in groups]
-        QsVSXS_sum_inv = 1.0/sum(QsVSXS)
+        tot1s = []
+        for j in cmps:
+            nffVSj = -F*VS[j]
+            v = 0.0
+            for n in groups:
+                v += Qs[n]*(nffVSj*VSXS[n] + vs[n][j])
+            tot1s.append(v)
+        n2F = -2.0*F
+        F2_2 = 2.0*F*F
+        QsVSXS_sum_inv2 = 2.0*QsVSXS_sum_inv
         
         # Index [comp][comp][subgroup]
         self._d2Thetas_dxixjs = d2Thetas_dxixjs = []
@@ -3435,32 +3464,40 @@ class UNIFAC(GibbsExcess):
             matrix = []
             for k in cmps:
                 row = []
+                n2FVsK = n2F*VS[k]
+                tot0 = 0.0
+                for n in groups:
+                    tot0 += Qs[n]*(VS[j]*(n2FVsK*VSXS[n] + vs[n][k]) + VS[k]*vs[n][j])
+                tot0 = tot0*F*QsVSXS_sum_inv
+                
                 for i in groups:
-                    tot0, tot1, tot2 = 0.0, 0.0, 0.0
-                    for n in groups:
-                        tot0 += -2.0*F*Qs[n]*VS[j]*VS[k]*VSXS[n] + Qs[n]*VS[j]*vs[n][k] + Qs[n]*VS[k]*vs[n][j]
+#                    tot0, tot1, tot2 = 0.0, 0.0, 0.0
+#                    for n in groups:
+#                        # dep on k, j only; some sep
+#                        tot0 += -2.0*F*Qs[n]*VS[j]*VS[k]*VSXS[n] + Qs[n]*VS[j]*vs[n][k] + Qs[n]*VS[k]*vs[n][j]
                         # These are each used in three places
-                        tot1 += -F*Qs[n]*VS[j]*VSXS[n] + Qs[n]*vs[n][j]
-                        tot2 += -F*Qs[n]*VS[k]*VSXS[n] + Qs[n]*vs[n][k]
-                        
-                    v = -F*VS[j]*vs[i][k] - F*VS[k]*vs[i][j]
-                    v += 2.0*F*F*VS[j]*VS[k]*VSXS[i]
+#                        tot1 += -F*Qs[n]*VS[j]*VSXS[n] + Qs[n]*vs[n][j]
+#                        tot2 += -F*Qs[n]*VS[k]*VSXS[n] + Qs[n]*vs[n][k]
+                    v = -F*(VS[j]*vs[i][k] + VS[k]*vs[i][j]) + VSXS[i]*tot0 + F2_2*VS[j]*VS[k]*VSXS[i]
                     
-                    v += F*VSXS[i]*tot0*QsVSXS_sum_inv
+#                    v = -F*VS[j]*vs[i][k] - F*VS[k]*vs[i][j]
+#                    v += F2_2*VS[j]*VS[k]*VSXS[i]
+#                    v += VSXS[i]*tot0
                     
-                    v += 2.0*VSXS[i]*tot1*tot2*QsVSXS_sum_inv*QsVSXS_sum_inv
+#                    v += QsVSXS_sum_inv2*VSXS[i]*tot1s[j]*tot1s[k]*QsVSXS_sum_inv
+#
+#                    # For both of these duplicate terms, j goes with k; k with j                    
+#                    v -= vs[i][j]*tot1s[k]*QsVSXS_sum_inv
+#                    v -= vs[i][k]*tot1s[j]*QsVSXS_sum_inv
+#                    
+#                    v += F*VS[j]*VSXS[i]*tot1s[k]*QsVSXS_sum_inv
+#                    v += F*VS[k]*VSXS[i]*tot1s[j]*QsVSXS_sum_inv
+                    
+                    v += QsVSXS_sum_inv*(QsVSXS_sum_inv2*VSXS[i]*tot1s[j]*tot1s[k] 
+                         - vs[i][j]*tot1s[k] - vs[i][k]*tot1s[j]
+                         + F*VSXS[i]*(VS[j]*tot1s[k] + VS[k]*tot1s[j]))
 
-                    # For both of these duplicate terms, j goes with k; k with j                    
-                    v -= vs[i][j]*tot2*QsVSXS_sum_inv
-                    v -= vs[i][k]*tot1*QsVSXS_sum_inv
-                    
-                    v += F*VS[j]*VSXS[i]*tot2*QsVSXS_sum_inv
-                    v += F*VS[k]*VSXS[i]*tot1*QsVSXS_sum_inv
-
-                    # Constant multiplier
-                    v *= Qs[i]*QsVSXS_sum_inv
-                        
-                    row.append(v)
+                    row.append(v*Qs[i]*QsVSXS_sum_inv)
                 matrix.append(row)
             d2Thetas_dxixjs.append(matrix)
         return d2Thetas_dxixjs
@@ -3658,6 +3695,146 @@ class UNIFAC(GibbsExcess):
             Hs.append(tot)
         return Hs
 
+    def _Theta_pure_Psi_sums(self):
+        try:
+            return self.Theta_pure_Psi_sums
+        except AttributeError:
+            pass
+        try:
+            Thetas_pure = self._Thetas_pure
+        except AttributeError:
+            Thetas_pure = self.Thetas_pure()
+        try:
+            psis = self._psis
+        except AttributeError:
+            psis = self.psis()
+
+        groups, cmps = self.groups, self.cmps
+        self.Theta_pure_Psi_sums = Theta_pure_Psi_sums = []
+        for i in cmps:
+            row = []
+            Thetas_pure_i = Thetas_pure[i]
+            for k in groups:
+                tot = 0.0
+                for m in groups:
+                    tot += Thetas_pure_i[m]*psis[m][k]
+                row.append(tot)
+            Theta_pure_Psi_sums.append(row)
+        return Theta_pure_Psi_sums
+
+    def _Theta_pure_Psi_sum_invs(self):
+        r'''
+        Computes the following term for each group `k`, size number of groups.
+        
+        .. math::
+            U(k) = \frac{1}{\sum_m \Theta_m \Psi_{m,k}}
+        '''
+        try:
+            return self.Theta_pure_Psi_sum_invs
+        except AttributeError:
+            try:
+                Theta_pure_Psi_sums = self.Theta_pure_Psi_sums
+            except AttributeError:
+                Theta_pure_Psi_sums = self._Theta_pure_Psi_sums()
+        self.Theta_pure_Psi_sum_invs = [[1.0/v for v in row] for row in Theta_pure_Psi_sums]
+        return self.Theta_pure_Psi_sum_invs
+
+    def _Fs_pure(self):
+        r'''Computes the following:
+            
+        .. math::
+            F(k) = \sum_m^{gr} \theta_m \frac{\partial \psi_{m,k}}{\partial T}
+        '''
+        try:
+            return self.Fs_pure
+        except AttributeError:
+            pass
+        try:
+            Thetas_pure = self._Thetas_pure
+        except AttributeError:
+            Thetas_pure = self.Thetas_pure()
+        try:
+            dpsis_dT = self._dpsis_dT
+        except AttributeError:
+            dpsis_dT = self.dpsis_dT()
+
+        groups, cmps = self.groups, self.cmps
+        self.Fs_pure = Fs_pure = []
+        for i in cmps:
+            row = []
+            Thetas_pure_i = Thetas_pure[i]
+            for k in groups:
+                tot = 0.0
+                for m in groups:
+                    tot += Thetas_pure_i[m]*dpsis_dT[m][k]
+                row.append(tot)
+            Fs_pure.append(row)
+        return Fs_pure
+
+    def _Gs_pure(self):
+        r'''Computes the following:
+            
+        .. math::
+            G(k) = \sum_m^{gr} \theta_m \frac{\partial^2 \psi_{m,k}}{\partial T^2}
+        '''
+        try:
+            return self.Gs_pure
+        except AttributeError:
+            pass
+        try:
+            Thetas_pure = self._Thetas_pure
+        except AttributeError:
+            Thetas_pure = self.Thetas_pure()
+        try:
+            d2psis_dT2 = self._d2psis_dT2
+        except AttributeError:
+            d2psis_dT2 = self.d2psis_dT2()
+
+        groups, cmps = self.groups, self.cmps
+        self.Gs_pure = Gs_pure = []
+        for i in cmps:
+            row = []
+            Thetas_pure_i = Thetas_pure[i]
+            for k in groups:
+                tot = 0.0
+                for m in groups:
+                    tot += Thetas_pure_i[m]*d2psis_dT2[m][k]
+                row.append(tot)
+            Gs_pure.append(row)
+        return Gs_pure
+
+    def _Hs_pure(self):
+        r'''Computes the following:
+            
+        .. math::
+            H(k) = \sum_m^{gr} \theta_m \frac{\partial^3 \psi_{m,k}}{\partial T^3}
+        '''
+        try:
+            return self.Hs_pure
+        except AttributeError:
+            pass
+        try:
+            Thetas_pure = self._Thetas_pure
+        except AttributeError:
+            Thetas_pure = self.Thetas_pure()
+        try:
+            d3psis_dT3 = self._d3psis_dT3
+        except AttributeError:
+            d3psis_dT3 = self.d3psis_dT3()
+
+        groups, cmps = self.groups, self.cmps
+        self.Hs_pure = Hs_pure = []
+        for i in cmps:
+            row = []
+            Thetas_pure_i = Thetas_pure[i]
+            for k in groups:
+                tot = 0.0
+                for m in groups:
+                    tot += Thetas_pure_i[m]*d3psis_dT3[m][k]
+                row.append(tot)
+            Hs_pure.append(row)
+        return Hs_pure
+
     def lnGammas_subgroups(self):
         r'''Calculate the :math:`\ln \Gamma_k` parameters for the phase;
         depends on the phases's composition and temperature.
@@ -3842,7 +4019,8 @@ class UNIFAC(GibbsExcess):
             Fs = self.Fs
         except AttributeError:
             Fs = self._Fs()
-            
+        
+        # Could be stored as a function - not needed elsewhere though
         Ds = []
         for k in groups:
             row = []
@@ -3861,7 +4039,7 @@ class UNIFAC(GibbsExcess):
         for k in groups:
             row = []
             for i in cmps:
-                v = Ds[k][i]*Zs[k] - Fs[k]*Ws[k][i]*Zs2[k]
+                v = Zs[k]*(Ds[k][i] - Fs[k]*Ws[k][i]*Zs[k])
                 for m in groups:
                     v += dThetas_dxs[m][i]*Zs[m]*(dpsis_dT[k][m] - Fs[m]*Zs[m]*psis[k][m])
                     v -= Zs2[m]*Thetas[m]*(Ds[m][i]*psis[k][m] + Ws[m][i]*dpsis_dT[k][m])
@@ -3937,36 +4115,44 @@ class UNIFAC(GibbsExcess):
             
         cmps, groups, Qs = self.cmps, self.groups, self.Qs
         
-        def K(k, i, j):
-            # k: group
-            # i, j : mole fracions derivavtive indexes
-            tot = 0.0
-            for m in groups:
-                # Index [comp][comp][subgroup] for d2Thetas_dxixjs
-                tot += psis[m][k]*d2Thetas_dxixjs[i][j][m]
-            return tot
+#        def K(k, i, j):
+#            # k: group
+#            # i, j : mole fracions derivavtive indexes
+#            totK = 0.0
+#            row = d2Thetas_dxixjs[i][j]
+#            for m in groups:
+#                # Index [comp][comp][subgroup] for d2Thetas_dxixjs
+#                totK += psis[m][k]*row[m]
+#            return totK
         
-        Zs2 = [Zi*Zi for Zi in Zs]
         K_row = [0.0]*self.N_groups
         # Index [comp][comp][subgroup]
         self._d2lnGammas_subgroups_dxixjs = d2lnGammas_subgroups_dxixjs = []
         for i in cmps:
             matrix = []
             for j in cmps:
+                d2Thetas_dxixjs_ij = d2Thetas_dxixjs[i][j]
+                
                 row = []
                 for k in groups:
-                    K_row[k] = K(k, i, j) 
-#                Krow = [K(k, i, j) for k in groups]
-                for k in groups:
-                    v = Zs[k]*K_row[k] - Ws[k][i]*Ws[k][j]*Zs2[k]
+                    totK = 0.0
                     for m in groups:
-                        v -= Zs2[m]*K_row[m]*Thetas[m]*psis[k][m]
-                        
-                        v += Zs[m]*psis[k][m]*d2Thetas_dxixjs[i][j][m]
-                        
-                        v -= Zs2[m]*psis[k][m]*(Ws[m][j]*dThetas_dxs[m][i] + Ws[m][i]*dThetas_dxs[m][j])
-                        
-                        v += 2.0*Ws[m][i]*Ws[m][j]*Zs[m]*Zs2[m]*Thetas[m]*psis[k][m]
+                        totK += psis[m][k]*d2Thetas_dxixjs_ij[m]
+                    K_row[k] = totK   #K(k, i, j) 
+#                Krow = [K(k, i, j) for k in groups]
+                    
+                for k in groups:
+                    v = 0.0
+                    for m in groups:
+                        d = d2Thetas_dxixjs_ij[m]
+#                        d += (2.0*Ws[m][i]*Ws[m][j]*Zs[m] - K_row[m])*Zs[m]*Thetas[m]
+#                        d -= Zs[m]*(Ws[m][j]*dThetas_dxs[m][i] + Ws[m][i]*dThetas_dxs[m][j])
+                        d += Zs[m]*((2.0*Ws[m][i]*Ws[m][j]*Zs[m] - K_row[m])*Thetas[m]
+                                    - (Ws[m][j]*dThetas_dxs[m][i] + Ws[m][i]*dThetas_dxs[m][j]))
+                        v += d*psis[k][m]*Zs[m]
+                    
+                    # psis[k][m] can be factored here
+                    v += Zs[k]*(K_row[k] - Ws[k][i]*Ws[k][j]*Zs[k])
                     row.append(-v*Qs[k])
                 matrix.append(row)
             d2lnGammas_subgroups_dxixjs.append(matrix)
@@ -4425,29 +4611,78 @@ class UNIFAC(GibbsExcess):
         return lnGammas_subgroups_pure
 
     def dlnGammas_subgroups_pure_dT(self):
+        r'''Calculate the first temperature derivative of :math:`\ln \Gamma_k`
+        pure component parameters for the phase; depends on the phases's
+        temperature only.
+        
+        .. math::
+            \frac{\partial \ln \Gamma_i}{\partial T} = Q_i\left(
+            \sum_j^{gr} Z(j) \left[{\theta_j \frac{\partial \psi_{i,j}}{\partial T}}
+            + {\theta_j \psi_{i,j} F(j)}Z(j) \right]- F(i) Z(i)
+            \right)
+        
+        .. math::
+            F(k) = \sum_m^{gr} \theta_m \frac{\partial \psi_{m,k}}{\partial T}
+        
+        .. math::
+            Z(k) = \frac{1}{\sum_m \Theta_m \Psi_{m,k}}
+            
+        In this model, the :math:`\Theta` values come from the 
+        :obj:`UNIFAC.Thetas_pure` method, where each compound is assumed to be
+        pure.
+                    
+        Returns
+        -------
+        dlnGammas_subgroups_pure_dT : list[list[float]]
+           First temperature derivative of ln Gamma parameters for each 
+           subgroup, size number of subgroups by number of components and
+           indexed in that order, [1/K]
+        '''
         # Temperature dependent only!
         try:
             return self._dlnGammas_subgroups_pure_dT
         except:
             pass
-
-        Xs_pure, Thetas_pure, Qs = self.Xs_pure(), self.Thetas_pure(), self.Qs
-        psis, dpsis_dT = self.psis(), self.dpsis_dT()
-        cmps, groups = self.cmps, self.groups
+        try:
+            Xs_pure = self._Xs_pure
+        except AttributeError:
+            Xs_pure = self.Xs_pure()
+        try:
+            Thetas_pure = self._Thetas_pure
+        except AttributeError:
+            Thetas_pure = self.Thetas_pure()
+        try:
+            psis = self._psis
+        except AttributeError:
+            psis = self.psis()
+        try:
+            dpsis_dT = self._dpsis_dT
+        except AttributeError:
+            dpsis_dT = self.dpsis_dT()
+        cmps, groups, Qs = self.cmps, self.groups, self.Qs
         cmp_group_idx = self.cmp_group_idx
         
-        # Index by [component][subgroup]
-        Theta_Psi_sum_pure_invs = [[1.0/sum(Thetas_pure[i][k]*psis[k][j] for k in groups) for j in groups] for i in cmps]
-        Theta_dPsidT_sum_pure = [[sum(Thetas_pure[i][k]*dpsis_dT[k][j] for k in groups) for j in groups] for i in cmps]
+        try:
+            Theta_pure_Psi_sum_invs = self.Theta_pure_Psi_sum_invs
+        except AttributeError:
+            Theta_pure_Psi_sum_invs = self._Theta_pure_Psi_sum_invs()
+        try:
+            Fs_pure = self.Fs_pure
+        except AttributeError:
+            Fs_pure = self._Fs_pure()
         
+        # Index by [component][subgroup]
+
         mat = []
         for m in cmps:
             groups2 = cmp_group_idx[m]
             Thetas = Thetas_pure[m]
-            Theta_Psi_sum_invs = Theta_Psi_sum_pure_invs[m]
-            Theta_dPsidT_sum = Theta_dPsidT_sum_pure[m]
+            Theta_Psi_sum_invs = Theta_pure_Psi_sum_invs[m]
+            Theta_dPsidT_sum = Fs_pure[m]
             
-            row = UNIFAC._dlnGammas_subgroups_dT_meth(groups, Qs, psis, dpsis_dT, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum)
+            row = UNIFAC._dlnGammas_subgroups_dT_meth(groups, Qs, psis, dpsis_dT, 
+                                                      Thetas, Theta_Psi_sum_invs, 
+                                                      Theta_dPsidT_sum)
             for i in groups:
                 if i not in groups2:
                     row[i] = 0.0
@@ -4459,7 +4694,38 @@ class UNIFAC(GibbsExcess):
         return mat
 
     def d2lnGammas_subgroups_pure_dT2(self):
-        # Temperature dependent only!
+        r'''Calculate the second temperature derivative of :math:`\ln \Gamma_k`
+        pure component parameters for the phase; depends on the phases's
+        temperature only.
+        
+        .. math::
+            \frac{\partial^2 \ln \Gamma_i}{\partial T^2} = -Q_i\left[
+            Z(i)G(i) - F(i)^2 Z(i)^2 + \sum_j\left(
+            \theta_j Z(j)\frac{\partial^2 \psi_{i,j}}{\partial T}
+            - Z(j)^2 \left(G(j)\theta_j \psi_{i,j} + 2 F_j \theta_j \frac{\partial \psi_{i,j}}{\partial T}\right)
+            + 2Z(j)^3F(j)^2 \theta_j \psi_{i,j}
+            \right)\right]
+            
+        .. math::
+            F(k) = \sum_m^{gr} \theta_m \frac{\partial \psi_{m,k}}{\partial T}
+        
+        .. math::
+            G(k) = \sum_m^{gr} \theta_m \frac{\partial^2 \psi_{m,k}}{\partial T^2}
+            
+        .. math::
+            Z(k) = \frac{1}{\sum_m \Theta_m \Psi_{m,k}}
+            
+        In this model, the :math:`\Theta` values come from the 
+        :obj:`UNIFAC.Thetas_pure` method, where each compound is assumed to be
+        pure.
+                    
+        Returns
+        -------
+        d2lnGammas_subgroups_pure_dT2 : list[list[float]]
+           Second temperature derivative of ln Gamma parameters for each 
+           subgroup, size number of subgroups by number of components and
+           indexed in that order, [1/K^2]
+        '''
         try:
             return self._d2lnGammas_subgroups_pure_dT2
         except:
@@ -4471,17 +4737,29 @@ class UNIFAC(GibbsExcess):
         cmp_group_idx = self.cmp_group_idx
         
         # Index by [component][subgroup]
-        Theta_Psi_sum_pure_invs = [[1.0/sum(Thetas_pure[i][k]*psis[k][j] for k in groups) for j in groups] for i in cmps]
-        Theta_dPsidT_sum_pure = [[sum(Thetas_pure[i][k]*dpsis_dT[k][j] for k in groups) for j in groups] for i in cmps]
-        Theta_d2PsidT2_sum_pure = [[sum(Thetas_pure[i][k]*d2psis_dT2[k][j] for k in groups) for j in groups] for i in cmps]
+        try:
+            Theta_pure_Psi_sum_invs = self.Theta_pure_Psi_sum_invs
+        except AttributeError:
+            Theta_pure_Psi_sum_invs = self._Theta_pure_Psi_sum_invs()
+        try:
+            Fs_pure = self.Fs_pure
+        except AttributeError:
+            Fs_pure = self._Fs_pure()
+        try:
+            Gs_pure = self.Gs_pure
+        except AttributeError:
+            Gs_pure = self._Gs_pure()
+#        Theta_pure_Psi_sum_invs = [[1.0/sum(Thetas_pure[i][k]*psis[k][j] for k in groups) for j in groups] for i in cmps]
+#        Theta_dPsidT_sum_pure = [[sum(Thetas_pure[i][k]*dpsis_dT[k][j] for k in groups) for j in groups] for i in cmps]
+#        Theta_d2PsidT2_sum_pure = [[sum(Thetas_pure[i][k]*d2psis_dT2[k][j] for k in groups) for j in groups] for i in cmps]
         
         mat = []
         for m in cmps:
             groups2 = cmp_group_idx[m]
             Thetas = Thetas_pure[m]
-            Theta_Psi_sum_invs = Theta_Psi_sum_pure_invs[m]
-            Theta_dPsidT_sum = Theta_dPsidT_sum_pure[m]
-            Theta_d2PsidT2_sum = Theta_d2PsidT2_sum_pure[m]
+            Theta_Psi_sum_invs = Theta_pure_Psi_sum_invs[m]
+            Theta_dPsidT_sum = Fs_pure[m]
+            Theta_d2PsidT2_sum = Gs_pure[m]
             
             row = UNIFAC._d2lnGammas_subgroups_dT2_meth(groups, Qs, psis, dpsis_dT, d2psis_dT2, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum)
             for i in groups:
@@ -4495,31 +4773,86 @@ class UNIFAC(GibbsExcess):
         return mat
 
     def d3lnGammas_subgroups_pure_dT3(self):
-        # Temperature dependent only!
+        r'''Calculate the third temperature derivative of :math:`\ln \Gamma_k`
+        pure component parameters for the phase; depends on the phases's
+        temperature only.
+        
+        .. math::
+            \frac{\partial^3 \ln \Gamma_i}{\partial T^3} =Q_i\left[-H(i) Z(i)
+            - 2F(i)^3 Z(i)^3 + 3F(i) G(i) Z(i)^2+ \left(
+            -\theta_j Z(j) \frac{\partial^3 \psi}{\partial T^3}
+            + H(j) Z(j)^2 \theta(j)\psi_{i,j}
+            - 6F(j)^2 Z(j)^3 \theta_j \frac{\partial \psi_{i,j}}{\partial T}
+            + 3 F(j) Z(j)^2 \theta(j) \frac{\partial^2 \psi_{i,j}}{\partial T^2}
+            ++ 3G(j) \theta(j) Z(j)^2 \frac{\partial \psi_{i,j}}{\partial T}
+            + 6F(j)^3 \theta(j) Z(j)^4 \psi_{i,j}
+            - 6F(j) G(j) \theta(j) Z(j)^3 \psi_{i,j}
+            \right)
+            \right]
+            
+        .. math::
+            F(k) = \sum_m^{gr} \theta_m \frac{\partial \psi_{m,k}}{\partial T}
+        
+        .. math::
+            G(k) = \sum_m^{gr} \theta_m \frac{\partial^2 \psi_{m,k}}{\partial T^2}
+
+        .. math::
+            H(k) = \sum_m^{gr} \theta_m \frac{\partial^3 \psi_{m,k}}{\partial T^3}
+            
+        .. math::
+            Z(k) = \frac{1}{\sum_m \Theta_m \Psi_{m,k}}
+            
+        In this model, the :math:`\Theta` values come from the 
+        :obj:`UNIFAC.Thetas_pure` method, where each compound is assumed to be
+        pure.
+                    
+        Returns
+        -------
+        d3lnGammas_subgroups_pure_dT3 : list[list[float]]
+           Third temperature derivative of ln Gamma parameters for each 
+           subgroup, size number of subgroups by number of components and
+           indexed in that order, [1/K^3]
+        '''
         try:
             return self._d3lnGammas_subgroups_pure_dT3
         except:
             pass
-
         Xs_pure, Thetas_pure, Qs = self.Xs_pure(), self.Thetas_pure(), self.Qs
         psis, dpsis_dT, d2psis_dT2, d3psis_dT3 = self.psis(), self.dpsis_dT(), self.d2psis_dT2(), self.d3psis_dT3()
         cmps, groups = self.cmps, self.groups
         cmp_group_idx = self.cmp_group_idx
         
         # Index by [component][subgroup]
-        Theta_Psi_sum_pure_invs = [[1.0/sum(Thetas_pure[i][k]*psis[k][j] for k in groups) for j in groups] for i in cmps]
-        Theta_dPsidT_sum_pure = [[sum(Thetas_pure[i][k]*dpsis_dT[k][j] for k in groups) for j in groups] for i in cmps]
-        Theta_d2PsidT2_sum_pure = [[sum(Thetas_pure[i][k]*d2psis_dT2[k][j] for k in groups) for j in groups] for i in cmps]
-        Theta_d3PsidT3_sum_pure = [[sum(Thetas_pure[i][k]*d3psis_dT3[k][j] for k in groups) for j in groups] for i in cmps]
+#        Theta_Psi_sum_pure_invs = [[1.0/sum(Thetas_pure[i][k]*psis[k][j] for k in groups) for j in groups] for i in cmps]
+#        Theta_dPsidT_sum_pure = [[sum(Thetas_pure[i][k]*dpsis_dT[k][j] for k in groups) for j in groups] for i in cmps]
+#        Theta_d2PsidT2_sum_pure = [[sum(Thetas_pure[i][k]*d2psis_dT2[k][j] for k in groups) for j in groups] for i in cmps]
+#        Theta_d3PsidT3_sum_pure = [[sum(Thetas_pure[i][k]*d3psis_dT3[k][j] for k in groups) for j in groups] for i in cmps]
 
+        try:
+            Theta_pure_Psi_sum_invs = self.Theta_pure_Psi_sum_invs
+        except AttributeError:
+            Theta_pure_Psi_sum_invs = self._Theta_pure_Psi_sum_invs()
+        try:
+            Fs_pure = self.Fs_pure
+        except AttributeError:
+            Fs_pure = self._Fs_pure()
+        try:
+            Gs_pure = self.Gs_pure
+        except AttributeError:
+            Gs_pure = self._Gs_pure()
+        try:
+            Hs_pure = self.Hs_pure
+        except AttributeError:
+            Hs_pure = self._Hs_pure()
+            
         mat = []
         for m in cmps:
             groups2 = cmp_group_idx[m]
             Thetas = Thetas_pure[m]
-            Theta_Psi_sum_invs = Theta_Psi_sum_pure_invs[m]
-            Theta_dPsidT_sum = Theta_dPsidT_sum_pure[m]
-            Theta_d2PsidT2_sum = Theta_d2PsidT2_sum_pure[m]
-            Theta_d3PsidT3_sum = Theta_d3PsidT3_sum_pure[m]
+            Theta_Psi_sum_invs = Theta_pure_Psi_sum_invs[m]
+            Theta_dPsidT_sum = Fs_pure[m]
+            Theta_d2PsidT2_sum = Gs_pure[m]
+            Theta_d3PsidT3_sum = Hs_pure[m]
             
             row = UNIFAC._d3lnGammas_subgroups_dT3_meth(groups, Qs, psis, dpsis_dT, d2psis_dT2, d3psis_dT3, Thetas, Theta_Psi_sum_invs, Theta_dPsidT_sum, Theta_d2PsidT2_sum, Theta_d3PsidT3_sum)
             for i in groups:
@@ -4603,6 +4936,23 @@ class UNIFAC(GibbsExcess):
     dlngammas_dT = dlngammas_r_dT
 
     def d2lngammas_r_dT2(self):
+        r'''Calculates the second temperature derivative of the residual part of 
+        the UNIFAC model.
+
+        .. math::
+            \frac{\partial^2 \ln \gamma_i^r}{\partial T^2} = \sum_{k}^{gr}
+            \nu_k^{(i)} \left[ \frac{\partial^2 \ln \Gamma_k}{\partial T^2}
+            - \frac{\partial^2 \ln \Gamma_k^{(i)}}{\partial T^2} \right]
+        
+        where the second Gamma is the pure-component Gamma of group `k` in
+        component `i`.
+        
+        Returns
+        -------
+        d2lngammas_r_dT2 : list[float]
+            Residual lngammas terms second temperature derivative, size number
+            of components [1/K^2]
+        '''
         try:
             return self._d2lngammas_r_dT2
         except AttributeError:
@@ -4623,6 +4973,23 @@ class UNIFAC(GibbsExcess):
     d2lngammas_dT2 = d2lngammas_r_dT2
 
     def d3lngammas_r_dT3(self):
+        r'''Calculates the third temperature derivative of the residual part of 
+        the UNIFAC model.
+
+        .. math::
+            \frac{\partial^3 \ln \gamma_i^r}{\partial T^3} = \sum_{k}^{gr}
+            \nu_k^{(i)} \left[ \frac{\partial^23\ln \Gamma_k}{\partial T^3}
+            - \frac{\partial^3 \ln \Gamma_k^{(i)}}{\partial T^3} \right]
+        
+        where the second Gamma is the pure-component Gamma of group `k` in
+        component `i`.
+        
+        Returns
+        -------
+        d3lngammas_r_dT3 : list[float]
+            Residual lngammas terms third temperature derivative, size number
+            of components [1/K^3]
+        '''
         try:
             return self._d3lngammas_r_dT3
         except AttributeError:
@@ -4643,12 +5010,24 @@ class UNIFAC(GibbsExcess):
     d3lngammas_dT3 = d3lngammas_r_dT3
 
     def dlngammas_r_dxs(self):
+        r'''Calculates the first mole fraction derivative of the residual part
+        of the UNIFAC model.
+
+        .. math::
+            \frac{\partial \ln \gamma_i^r}{\partial x_j} = \sum_{m}^{gr} \nu_m^{(i)}
+            \frac{\partial \ln \Gamma_m}{\partial x_j}
+                
+        Returns
+        -------
+        dlngammas_r_dxs : list[list[float]]
+            First mole fraction derivative of residual lngammas terms, size 
+            number of components by number of components [-]
+        '''
         try:
             return self._dlngammas_r_dxs
         except AttributeError:
             pass
-        vs = self.vs
-        cmps, groups = self.cmps, self.groups
+        vs, cmps, groups = self.vs, self.cmps, self.groups
         dlnGammas_subgroups_dxs = self.dlnGammas_subgroups_dxs()
         
         self._dlngammas_r_dxs = dlngammas_r_dxs = []
@@ -4664,6 +5043,21 @@ class UNIFAC(GibbsExcess):
         return dlngammas_r_dxs
 
     def d2lngammas_r_dTdxs(self):
+        r'''Calculates the first mole fraction derivative of the temperature 
+        derivative of the residual part of the UNIFAC model.
+
+        .. math::
+            \frac{\partial^2 \ln \gamma_i^r}{\partial x_j \partial T} = 
+            \sum_{m}^{gr} \nu_m^{(i)} \frac{\partial^2 \ln \Gamma_m}
+            {\partial x_j \partial T}
+                
+        Returns
+        -------
+        d2lngammas_r_dTdxs : list[list[float]]
+            First mole fraction derivative and temperature derivative of 
+            residual lngammas terms, size number of components by number of 
+            components [-]
+        '''
         try:
             return self._d2lngammas_r_dTdxs
         except AttributeError:
@@ -4685,6 +5079,20 @@ class UNIFAC(GibbsExcess):
         return d2lngammas_r_dTdxs
     
     def d2lngammas_r_dxixjs(self):
+        r'''Calculates the second mole fraction derivative of the residual part
+        of the UNIFAC model.
+
+        .. math::
+            \frac{\partial^2 \ln \gamma_i^r}{\partial x_j^2} = \sum_{m}^{gr} 
+            \nu_m^{(i)} \frac{\partial^2 \ln \Gamma_m}{\partial x_j^2}
+                
+        Returns
+        -------
+        d2lngammas_r_dxixjs : list[list[list[float]]]
+            Second mole fraction derivative of the residual lngammas terms, 
+            size number of components by number of components by number of
+            components [-]
+        '''
         try:
             return self._d2lngammas_r_dxixjs
         except AttributeError:
@@ -4700,8 +5108,9 @@ class UNIFAC(GibbsExcess):
                 row = []
                 for k in cmps:
                     tot = 0.0
+                    r = d2lnGammas_subgroups_dxixjs[j][k]
                     for m in groups:
-                        tot += vs[m][i]*d2lnGammas_subgroups_dxixjs[j][k][m]
+                        tot += vs[m][i]*r[m]
                     row.append(tot)
                 matrix.append(row)
             d2lngammas_r_dxixjs.append(matrix)
@@ -5018,7 +5427,56 @@ class UNIFAC(GibbsExcess):
             gammas = [exp(lngammas_r[i] + lngammas_c[i]) for i in cmps]
         self._gammas = gammas
         return gammas
+
+    def dgammas_dT(self):
+        try:
+            return self._dgammas_dT
+        except:
+            pass
+        # Same for all models
+        try:
+            gammas = self._gammas
+        except AttributeError:
+            gammas = self.gammas()
+        try:
+            dlngammas_r_dT = self._dlngammas_r_dT
+        except AttributeError:
+            dlngammas_r_dT = self.dlngammas_r_dT()
+        self._dgammas_dT = dgammas_dT = [dlngammas_r_dT[i]*gammas[i] for i in self.cmps]
+        return dgammas_dT
     
+    def dgammas_dns(self):
+        dgammas_dxs = self.dgammas_dxs()
+        xs = self.xs
+        return [dxs_to_dns(dgammas_dxs[i], xs) for i in self.cmps]
+
+    def dgammas_dxs(self):
+        try:
+            return self._dgammas_dxs
+        except:
+            pass
+        try:
+            gammas = self._gammas
+        except AttributeError:
+            gammas = self.gammas()
+        
+        
+        xs, cmps = self.xs, self.cmps
+        try:
+            dlngammas_r_dxs = self._dlngammas_r_dxs
+        except AttributeError:
+            dlngammas_r_dxs = self.dlngammas_r_dxs()
+        if self.skip_comb:
+            dgammas_dxs = [[dlngammas_r_dxs[i][j]*gammas[i] for j in cmps] for i in cmps]
+        else:
+            try:
+                dlngammas_c_dxs = self._dlngammas_c_dxs
+            except AttributeError:
+                dlngammas_c_dxs = self.dlngammas_c_dxs()
+            dgammas_dxs = [[(dlngammas_r_dxs[i][j]+dlngammas_c_dxs[i][j])*gammas[i] for j in cmps] for i in cmps]
+        self._dgammas_dxs = dgammas_dxs
+        return dgammas_dxs
+
     def lngammas_c(self):
         r'''Calculates the combinatorial part of the UNIFAC model. For the 
         modified UNIFAC model, the equation is as follows; for the original
@@ -5043,13 +5501,22 @@ class UNIFAC(GibbsExcess):
             return self._lngammas_c
         except AttributeError:
             pass
-        Vis = self.Vis()
+        try:
+            Vis = self._Vis
+        except AttributeError:
+            Vis = self.Vis()
+        try:
+            Fis = self._Fis
+        except AttributeError:
+            Fis = self.Fis()
         cmps, version, qs = self.cmps, self.version, self.qs
         if self.version in (1, 4):
-            Vis_modified = self.Vis_modified()
+            try:
+                Vis_modified = self._Vis_modified
+            except AttributeError:
+                Vis_modified = self.Vis_modified()
         else:
             Vis_modified = Vis
-        Fis = self.Fis()
         
         lngammas_c = []
         if version == 4:
@@ -5162,15 +5629,32 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             pass
         cmps, version, qs = self.cmps, self.version, self.qs
-        Vis = self.Vis()
-        dVis_dxs = self.dVis_dxs()
-
-        Fis = self.Fis()
-        dFis_dxs = self.dFis_dxs()
+        try:
+            Vis = self._Vis
+        except AttributeError:
+            Vis = self.Vis()
+        try:
+            dVis_dxs = self.dVis_dxs()
+        except AttributeError:
+            dVis_dxs = self.dVis_dxs()
+        try:
+            Fis = self._Fis
+        except AttributeError:
+            Fis = self.Fis()
+        try:
+            dFis_dxs = self._dFis_dxs
+        except AttributeError:
+            dFis_dxs = self.dFis_dxs()
         
         if version in (1, 4):
-            Vis_modified = self.Vis_modified()
-            dVis_modified_dxs = self.dVis_modified_dxs()
+            try:
+                Vis_modified = self._Vis_modified
+            except AttributeError:
+                Vis_modified = self.Vis_modified()
+            try:
+                dVis_modified_dxs = self._dVis_modified_dxs
+            except AttributeError:
+                dVis_modified_dxs = self.dVis_modified_dxs()
         else:
             Vis_modified = Vis
             dVis_modified_dxs = dVis_dxs
@@ -5300,18 +5784,44 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             pass
         cmps, version, qs = self.cmps, self.version, self.qs
-        Vis = self.Vis()
-        dVis_dxs = self.dVis_dxs()
-        d2Vis_dxixjs = self.d2Vis_dxixjs()
-
-        Fis = self.Fis()
-        dFis_dxs = self.dFis_dxs()
-        d2Fis_dxixjs = self.d2Fis_dxixjs()
+        try:
+            Vis = self._Vis
+        except AttributeError:
+            Vis = self.Vis()
+        try:
+            dVis_dxs = self.dVis_dxs()
+        except AttributeError:
+            dVis_dxs = self.dVis_dxs()
+        try:
+            d2Vis_dxixjs = self._d2Vis_dxixjs
+        except AttributeError:
+            d2Vis_dxixjs = self.d2Vis_dxixjs()
+        try:
+            Fis = self._Fis
+        except AttributeError:
+            Fis = self.Fis()
+        try:
+            dFis_dxs = self._dFis_dxs
+        except AttributeError:
+            dFis_dxs = self.dFis_dxs()
+        try:
+            d2Fis_dxixjs = self._d2Fis_dxixjs
+        except AttributeError:
+            d2Fis_dxixjs = self.d2Fis_dxixjs()
         
         if self.version in (1, 4):
-            Vis_modified = self.Vis_modified()
-            dVis_modified_dxs = self.dVis_modified_dxs()
-            d2Vis_modified_dxixjs = self.d2Vis_modified_dxixjs()
+            try:
+                Vis_modified = self._Vis_modified
+            except AttributeError:
+                Vis_modified = self.Vis_modified()
+            try:
+                dVis_modified_dxs = self._dVis_modified_dxs
+            except AttributeError:
+                dVis_modified_dxs = self.dVis_modified_dxs()
+            try:
+                d2Vis_modified_dxixjs = self._d2Vis_modified_dxixjs
+            except AttributeError:
+                d2Vis_modified_dxixjs = self.d2Vis_modified_dxixjs()
         else:
             Vis_modified = Vis
             dVis_modified_dxs = dVis_dxs

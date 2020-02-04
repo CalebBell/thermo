@@ -3236,8 +3236,7 @@ class GibbsExcess(object):
         '''
         return -self.T*self.d2GE_dT2()
     
-    def CpE(self):
-        return self.dHE_dT()
+    CpE = dHE_dT
 
     def dHE_dxs(self):
         try:
@@ -3262,7 +3261,7 @@ class GibbsExcess(object):
         activity coefficient model as shown in [1]_ and [2]_.
             
         .. math::
-            s^E = \frac{h^E - g^E }{T} 
+            s^E = \frac{h^E - g^E}{T} 
                 
         Returns
         -------
