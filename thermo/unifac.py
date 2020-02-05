@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2017, 2018, 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -2199,6 +2199,7 @@ def chemgroups_to_matrix(chemgroups):
     [all_keys.update(i.keys()) for i in chemgroups]
     for k in sorted(list(all_keys)):
         matrix.append([l[k] if k in l else 0 for l in chemgroups])
+#        matrix.append([float(l[k]) if k in l else 0.0 for l in chemgroups]) # Cannot notice performance improvement
     return matrix
 
 
@@ -2786,13 +2787,13 @@ class UNIFAC(GibbsExcess):
                 row = []
                 for j in groups:
                     a1, a2, a3 = a_row[j], b_row[j], c_row[j]
-                    tf2 = a1 + a2*(T - T0) + a3*(T*log(T0/T) + T - T0)
+                    tf2 = a1 + a2*TmT0 + a3*B
                     tf3 = b_row[j] + c_row[j]*x0
-                    
-                    x5 = (tf3 - tf2*T_inv)
+                    x6 = tf2*T_inv
+                    x5 = (tf3 - x6)
                     v = nT3_inv*psis_row[j]*(4.0*a3 + 6.0*tf3 + x5*x5*x5
-                                        + 3.0*(x5)*(a3 + 2.0*tf3 - 2.0*tf2*T_inv) 
-                                        - 6.0*tf2*T_inv)
+                                        + 3.0*(x5)*(a3 + tf3 + tf3 - 2.0*x6) 
+                                        - 6.0*x6)
                     row.append(v)
                 d3psis_dT3.append(row)
                     
@@ -5455,11 +5456,23 @@ class UNIFAC(GibbsExcess):
         return gammas
 
     def dgammas_dT(self):
+        r'''Calculates the first temperature derivative of activity 
+        coefficients with the UNIFAC model.
+        
+        .. math::
+            \frac{\partial \gamma_i}{\partial T} = \gamma_i\frac{\partial \ln 
+            \gamma_i^r}{\partial T}
+                
+        Returns
+        -------
+        dgammas_dT : list[float]
+            First temperature derivative of activity coefficients, size number
+            of components [1/K]
+        '''
         try:
             return self._dgammas_dT
         except:
             pass
-        # Same for all models
         try:
             gammas = self._gammas
         except AttributeError:
@@ -5472,11 +5485,40 @@ class UNIFAC(GibbsExcess):
         return dgammas_dT
     
     def dgammas_dns(self):
+        try:
+            return self._dgammas_dns
+        except AttributeError:
+            pass
         dgammas_dxs = self.dgammas_dxs()
         xs = self.xs
-        return [dxs_to_dns(dgammas_dxs[i], xs) for i in self.cmps]
+        self._dgammas_dns = dgammas_dns = []
+        for row in self.cmps:
+            dgammas_dns.append(dxs_to_dns(row, xs))
+        return dgammas_dns
 
     def dgammas_dxs(self):
+        r'''Calculates the first mole fraction derivative of activity 
+        coefficients with the UNIFAC model.
+        
+        .. math::
+            \frac{\partial \gamma_i}{\partial x_j} = \gamma_i
+            \left(\frac{\partial \ln \gamma_i^r}{\partial x_j}
+            + \frac{\partial \ln \gamma_i^c}{\partial x_j}
+            \right)
+
+        For the VTPR variant, the combinatorial part is skipped:
+            
+        .. math::
+            \frac{\partial \gamma_i}{\partial x_j} = \gamma_i
+            \left(\frac{\partial \ln \gamma_i^r}{\partial x_j}
+            \right)
+            
+        Returns
+        -------
+        dgammas_dxs : list[list[float]]
+            First mole fraction derivative of activity coefficients, size 
+            number of components by number of components [-]
+        '''
         try:
             return self._dgammas_dxs
         except:
