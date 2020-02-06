@@ -361,7 +361,31 @@ class StabilityTester(object):
             Wilson_guesses.append(normalize(Ys_Wilson))
 #            print(Ys_Wilson, normalize(Ys_Wilson))
         return Wilson_guesses
-
+    
+    def incipient_guess_named(self, T, P, zs, name, zero_fraction=1E-6):
+        N, cmps = self.N, self.cmps
+        Ks_Wilson = [Wilson_K_value(T=T, P=P, Tc=self.Tcs[i], Pc=self.Pcs[i], omega=self.omegas[i]) for i in self.cmps]
+        if name == 'Wilson gas':
+            # Where the wilson guess leads to an incipient gas
+            Ys_Wilson = [Ki*zi for Ki, zi in zip(Ks_Wilson, zs)]
+            return normalize(Ys_Wilson)
+        elif name == 'Wilson liquid':
+            Ys_Wilson = [zi/Ki for Ki, zi in zip(Ks_Wilson, zs)]
+            return normalize(Ys_Wilson)
+        elif name == 'Wilson gas third':
+            Ys_Wilson = [Ki**(1.0/3.0)*zi for Ki, zi in zip(Ks_Wilson, zs)]
+            return normalize(Ys_Wilson)
+        elif name == 'Wilson liquid third':
+            Ys_Wilson = [Ki**(-1.0/3.0)*zi for Ki, zi in zip(Ks_Wilson, zs)]
+            return normalize(Ys_Wilson)
+        elif name[0:4] == 'pure':
+            k = int(name[4:])
+            main_frac = 1.0 - zero_fraction
+            remaining = zero_fraction/(N-1.0)
+            guess = [remaining]*N
+            guess[k] = main_frac
+            return guess
+            
     def incipient_guesses(self, T, P, zs, pure=True, Wilson=True, random=True, 
                 zero_fraction=1E-6):
         N, cmps = self.N, self.cmps

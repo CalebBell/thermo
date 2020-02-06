@@ -34,7 +34,8 @@ __all__ = ['sequential_substitution_2P', 'sequential_substitution_GDEM3_2P',
            'TPV_double_solve_1P', 'nonlin_2P_HSGUAbeta',
            'sequential_substitution_2P_double',
            'cm_flash_tol', 'nonlin_2P_newton', 'dew_bubble_newton_zs',
-           'SS_VF_simultaneous', 'stabiliy_iteration_Michelsen'
+           'SS_VF_simultaneous', 'stabiliy_iteration_Michelsen',
+           'assert_stab_success_2P',
            ]
 
 from fluids.constants import R, R2, R_inv
@@ -2752,6 +2753,33 @@ def TPV_double_solve_1P(zs, phase, guesses, spec_vals,
 
 
 
+def assert_stab_success_2P(liq, gas, stab, T, P, zs, guess_name, xs=None,
+                           ys=None, VF=None, SS_tol=1e-15, rtol=1e-7):
+    r'''Basic function - perform a specified stability test, and then a two-phase flash using it
+    Check on specified variables the method is working.
+    '''
+    trial_comp = stab.incipient_guess_named(T, P, zs, guess_name)
+    if liq.G() < gas.G():
+        min_phase, other_phase = liq, gas
+    else:
+        min_phase, other_phase = gas, liq
+
+    _, _, _, V_over_F, trial_zs, appearing_zs = stabiliy_iteration_Michelsen(min_phase, trial_comp, test_phase=other_phase)
+
+    V_over_F, xs_calc, ys_calc, l, g, iteration, err = sequential_substitution_2P(T=T, P=P, V=None,
+                                                                        zs=zs, xs_guess=trial_zs, ys_guess=appearing_zs,
+                                                                        liquid_phase=min_phase, tol=SS_tol,
+                                                                        gas_phase=other_phase)
+    if xs_calc is not None:
+        assert_allclose(xs, xs_calc, rtol)
+    if ys_calc is not None:
+        assert_allclose(ys, ys_calc, rtol)
+    if VF is not None:
+        assert_allclose(V_over_F, VF, rtol)
+    assert_allclose(l.fugacities(), g.fugacities(), rtol)
+    
+
+
 
 
 global cm_flash
@@ -3483,6 +3511,81 @@ class FlashBase(object):
         
         return props
             
+    def debug_PT(self, zs, Pmin=None, Pmax=None, Tmin=None, Tmax=None, pts=50, 
+                ignore_errors=True, values=False): # pragma: no cover
+        if not has_matplotlib and not values:
+            raise Exception('Optional dependency matplotlib is required for plotting')
+        if Pmin is None:
+            Pmin = 1e4
+        if Pmax is None:
+            Pmax = min(self.constants.Pcs)
+        if Tmin is None:
+            Tmin = min(self.constants.Tms)*.9
+        if Tmax is None:
+            Tmax = max(self.constants.Tcs)*1.5
+            
+        Ps = logspace(log10(Pmin), log10(Pmax), pts)
+        Ts = linspace(Tmin, Tmax, pts)
+        
+        matrix = []
+        for T in Ts:
+            row = []
+            for P in Ps:
+                try:
+                    state = self.flash(T=T, P=P, zs=zs)
+                    row.append(state.phases_str)
+                except Exception as e:
+                    if ignore_errors:
+                        row.append('F')
+                    else:
+                        raise e
+            matrix.append(row)
+            
+        if values:
+            return Ts, Ps, matrix
+        
+        regions = {'V': 0, 'L': 1, 'S': 2, 'VL': 3, 'LL': 4, 'VLL': 5,
+                       'VLS': 6, 'VLLS': 7, 'VLLSS': 8, 'F': -1}
+        
+        regions = {'V': 1, 'L': 2, 'S': 3, 'VL': 4, 'LL': 5, 'VLL': 6,
+                       'VLS': 7, 'VLLS': 8, 'VLLSS': 9, 'F': 0}
+
+        used_regions = set([])
+        for row in matrix:
+            for v in row:
+                used_regions.add(v)
+        
+        region_keys = list(regions.keys())
+        used_keys = [i for i in region_keys if i in used_regions]
+        
+        regions_keys = [n for _, n in sorted(zip([regions[i] for i in used_keys], used_keys))]
+        used_values = [regions[i] for i in regions_keys]
+
+        dat = [[regions[matrix[i][j]] for j in range(pts)] for i in range(pts)]
+        import matplotlib.pyplot as plt
+        from matplotlib import colors
+        fig, ax = plt.subplots()
+        Ts, Ps = np.meshgrid(Ts, Ps)
+        
+        # need 3 more
+        cmap = colors.ListedColormap(['k','y','b','r', 'g', 'c', 'm', 'w', 'w', 'w'])
+        
+#        ax.scatter(Ts,Ps, s=dat)
+        im = ax.pcolormesh(Ts, Ps, dat, cmap=cmap, norm=colors.Normalize(vmin=0, vmax=9)) # , cmap=color_map, norm=LogNorm()
+        cbar = fig.colorbar(im, ax=ax)
+        cbar.set_label('Phase')
+#        cbar = plt.colorbar()
+        
+#        cs = ax.contourf(Ts, Ps, dat, levels=list(sorted(regions.values())))
+#        cbar = fig.colorbar(ax)
+        
+        cbar.ax.set_yticklabels([n for _, n in sorted(zip(regions.values(), regions.keys()))])
+#        cbar.ax.set_yticklabels(regions_keys)
+        ax.set_yscale('log')
+#        plt.imshow(dat, interpolation='nearest')
+#        plt.legend(loc='best', fancybox=True, framealpha=0.5)
+#        return fig, ax       
+        plt.show()
                     
                 
     def plot_TP(self, zs, Tmin=None, Tmax=None, pts=50, branches=[],
@@ -3615,6 +3718,12 @@ class FlashBase(object):
 class FlashVL(FlashBase):
     PT_SS_MAXITER = 1000
     PT_SS_TOL = 1e-13
+
+    # Settings for near-boundary conditions
+    PT_SS_POLISH_TOL = 1e-25
+    PT_SS_POLISH = True
+    PT_SS_POLISH_VF = 5e-8
+    PT_SS_POLISH_MAXITER = 1000
 
     stability_maxiter = 500 # 30 good professional default; 500 used in source DTU
     stability_xtol = 5E-9 # 1e-12 was too strict; 1e-10 used in source DTU; 1e-9 set for some points near critical where convergence stopped; even some more stopped at higher Ts
@@ -3771,8 +3880,10 @@ class FlashVL(FlashBase):
         liquid, gas = self.liquid, self.gas
         liquid = liquid.to(T=T, P=P, zs=zs)
         gas = gas.to(T=T, P=P, zs=zs)
-        if liquid.G() < gas.G():
+        if liquid.G() < gas.G(): # How handle equal?
             min_phase, other_phase = liquid, gas
+        elif liquid.G() == gas.G():
+            min_phase, other_phase = (liquid, gas) if liquid.phase == 'l' else (gas, liquid)
         else:
             min_phase, other_phase = gas, liquid
 
@@ -3787,16 +3898,19 @@ class FlashVL(FlashBase):
                         lnK = log(Ks[i])
                         lnK_2_tot += lnK*lnK
                     sum_criteria = abs(sum_zs_test - 1.0)
-                    if sum_criteria < 1e-7 or lnK_2_tot < 1e-7:
+                    if sum_criteria < 1e-9 or lnK_2_tot < 1e-7:
                         continue
-                    stable = False
-                    break
+                    # some stability test-driven VFs are converged to about the right solution - but just a little on the other side
+                    # For those cases, we need to let SS determine the result
+                    stable = V_over_F < -1e-6 or V_over_F > (1.0 + 1e-6) #not (0.0 < V_over_F < 1.0)
+                    if not stable:
+                        break
                     
                 except UnconvergedError:
                     pass
 
         if stable:
-            ls, g = [liquid], gas if min_phase is liquid else [], gas
+            ls, g = ([liquid], None) if min_phase is liquid else ([], gas)
             return g, ls, [], [1.0], {'iterations': 0, 'err': 0.0}
 
         V_over_F, xs, ys, l, g, iteration, err = sequential_substitution_2P(T=T, P=P, V=None,
@@ -3805,6 +3919,23 @@ class FlashVL(FlashBase):
                                                                             gas_phase=other_phase, maxiter=self.PT_SS_MAXITER,
                                                                             tol=self.PT_SS_TOL,
                                                                             V_over_F_guess=V_over_F)
+        if V_over_F < 0.0 or V_over_F > 1.0:
+            # Continue the SS, with the previous values, to a much tighter tolerance - if specified/allowed
+            if (V_over_F > -self.PT_SS_POLISH_VF or V_over_F > 1.0 + self.PT_SS_POLISH_VF) and self.PT_SS_POLISH:
+                V_over_F, xs, ys, l, g, iteration, err = sequential_substitution_2P(T=T, P=P, V=None,
+                                                                                    zs=zs, xs_guess=xs,
+                                                                                    ys_guess=ys,
+                                                                                    liquid_phase=l,
+                                                                                    gas_phase=g,
+                                                                                    maxiter=self.PT_SS_POLISH_MAXITER,
+                                                                                    tol=self.PT_SS_POLISH_TOL,
+                                                                                    V_over_F_guess=V_over_F)
+
+            if V_over_F < 0.0 or V_over_F > 1.0:
+
+                ls, g = ([liquid], None) if min_phase is liquid else ([], gas)
+                return g, ls, [], [1.0], {'iterations': iteration, 'err': err}
+
         if min_phase is liquid:
             ls, g, V_over_F = [l], g, V_over_F
         else:
@@ -4790,67 +4921,6 @@ class FlashPureVLS(FlashBase):
         plt.show()
     
     
-    def debug_PT(self, zs, Pmin=None, Pmax=None, Tmin=None, Tmax=None, pts=50, 
-                ignore_errors=True, values=False): # pragma: no cover
-        if not has_matplotlib and not values:
-            raise Exception('Optional dependency matplotlib is required for plotting')
-        if Pmin is None:
-            Pmin = 1e4
-        if Pmax is None:
-            Pmax = min(self.constants.Pcs)
-        if Tmin is None:
-            Tmin = min(self.constants.Tms)*.9
-        if Tmax is None:
-            Tmax = max(self.constants.Tcs)*1.5
-            
-        Ps = logspace(log10(Pmin), log10(Pmax), pts)
-        Ts = linspace(Tmin, Tmax, pts)
-        
-        matrix = []
-        for T in Ts:
-            row = []
-            for P in Ps:
-                try:
-                    state = self.flash(T=T, P=P, zs=zs)
-                    row.append(state.phases_str)
-                except Exception as e:
-                    if ignore_errors:
-                        row.append('F')
-                    else:
-                        raise e
-            matrix.append(row)
-            
-        if values:
-            return Ts, Ps, matrix
-        
-        regions = {'V': 0, 'L': 1, 'S': 2, 'VL': 3, 'LL': 4, 'VLL': 5,
-                       'VLS': 6, 'VLLS': 7, 'VLLSS': 8, 'F': -1}
-
-        used_regions = set([])
-        for row in matrix:
-            for v in row:
-                used_regions.add(v)
-        
-        region_keys = list(regions.keys())
-        used_keys = [i for i in region_keys if i in used_regions]
-        
-        regions_keys = [n for _, n in sorted(zip([regions[i] for i in used_keys], used_keys))]
-        used_values = [regions[i] for i in regions_keys]
-
-        dat = [[regions[matrix[i][j]] for j in range(pts)] for i in range(pts)]
-        import matplotlib.pyplot as plt
-        fig, ax = plt.subplots()
-        Ts, Ps = np.meshgrid(Ts, Ps)
-        cs = ax.contourf(Ts, Ps, dat, levels=list(sorted(regions.values())))
-        cbar = fig.colorbar(cs)
-        
-        cbar.ax.set_yticklabels([n for _, n in sorted(zip(regions.values(), regions.keys()))])
-#        cbar.ax.set_yticklabels(regions_keys)
-        ax.set_yscale('log')
-#        plt.imshow(dat, interpolation='nearest')
-#        plt.legend(loc='best', fancybox=True, framealpha=0.5)
-#        return fig, ax       
-        plt.show()
         
     # ph - iterate on PT
     # if oscillating, take those two phases, solve, then get VF

@@ -1495,6 +1495,7 @@ class IdealGas(Phase):
     This will be important for fitting.
     
     '''
+    phase = 'g'
     force_phase = 'g'
     def __init__(self, HeatCapacityGases=None, Hfs=None, Gfs=None):
         self.HeatCapacityGases = HeatCapacityGases
@@ -1536,6 +1537,14 @@ class IdealGas(Phase):
         return new
  
 class EOSGas(Phase):
+    
+    @property
+    def phase(self):
+        phase = self.eos_mix.phase
+        if phase in ('l', 'g'):
+            return phase
+        return 'g'
+        
     def __init__(self, eos_class, eos_kwargs, HeatCapacityGases=None, Hfs=None,
                  Gfs=None, Sfs=None,
                  T=None, P=None, zs=None):
@@ -2130,6 +2139,7 @@ except:
 
 class GibbsExcessLiquid(Phase):
     force_phase = 'l'
+    phase = 'l'
     P_DEPENDENT_H_LIQ = True
     Psats_data = None
     Psats_locked = False
@@ -3491,6 +3501,7 @@ class GibbsExcessLiquid(Phase):
     
 class GibbsExcessSolid(GibbsExcessLiquid):
     force_phase = 's'
+    phase = 's'
     def __init__(self, SublimationPressures, VolumeSolids=None, 
                  GibbsExcessModel=IdealSolution(), 
                  eos_pure_instances=None,
@@ -3512,6 +3523,7 @@ class GibbsExcessSolid(GibbsExcessLiquid):
 Grayson_Streed_special_CASs = set(['1333-74-0', '74-82-8'])
 
 class GraysonStreed(Phase):
+    phase = force_phase = 'l'
     # revised one
     
     hydrogen_coeffs = (1.50709, 2.74283, -0.0211, 0.00011, 0.0, 0.008585, 0.0, 0.0, 0.0, 0.0)
