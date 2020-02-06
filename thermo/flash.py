@@ -3544,8 +3544,8 @@ class FlashBase(object):
         if values:
             return Ts, Ps, matrix
         
-        regions = {'V': 0, 'L': 1, 'S': 2, 'VL': 3, 'LL': 4, 'VLL': 5,
-                       'VLS': 6, 'VLLS': 7, 'VLLSS': 8, 'F': -1}
+#        regions = {'V': 0, 'L': 1, 'S': 2, 'VL': 3, 'LL': 4, 'VLL': 5,
+#                       'VLS': 6, 'VLLS': 7, 'VLLSS': 8, 'F': -1}
         
         regions = {'V': 1, 'L': 2, 'S': 3, 'VL': 4, 'LL': 5, 'VLL': 6,
                        'VLS': 7, 'VLLS': 8, 'VLLSS': 9, 'F': 0}
@@ -3561,7 +3561,8 @@ class FlashBase(object):
         regions_keys = [n for _, n in sorted(zip([regions[i] for i in used_keys], used_keys))]
         used_values = [regions[i] for i in regions_keys]
 
-        dat = [[regions[matrix[i][j]] for j in range(pts)] for i in range(pts)]
+        dat = [[regions[matrix[j][i]] for j in range(pts)] for i in range(pts)]
+#        print(dat)
         import matplotlib.pyplot as plt
         from matplotlib import colors
         fig, ax = plt.subplots()
@@ -3581,7 +3582,8 @@ class FlashBase(object):
         
         cbar.ax.set_yticklabels([n for _, n in sorted(zip(regions.values(), regions.keys()))])
 #        cbar.ax.set_yticklabels(regions_keys)
-        ax.set_yscale('log')
+#        ax.set_yscale('log')
+        plt.yscale('log')
 #        plt.imshow(dat, interpolation='nearest')
 #        plt.legend(loc='best', fancybox=True, framealpha=0.5)
 #        return fig, ax       

@@ -39,7 +39,7 @@ __all__ = ['vapor_score_Tpc', 'vapor_score_Vpc',
 
 
 from thermo.activity import Wilson_K_value, Rachford_Rice_flash_error, flash_inner_loop
-from thermo.utils import phase_identification_parameter
+from thermo.utils import phase_identification_parameter, Vm_to_rho
 
 def vapor_score_Tpc(T, Tcs, zs):
     # Does not work for pure compounds
@@ -263,17 +263,30 @@ def key_cmp_sort(phases, cmps, cmps_neg):
     return phases
 
 def mini_sort_phases(phases, sort_method, prop, cmps, cmps_neg,
-                     reverse=True):
+                     reverse=True, constants=None):
     if sort_method == PROP_SORT:
         if prop == DENSITY_MASS:
-            keys = [i.rho_mass() for i in liquids]
+            keys = []
+            MWs = constants.MWs
+            for p in phases:
+                zs = p.zs
+                MW = 0.0
+                for i in constants.cmps:
+                    MW += zs[i]*MWs[i]
+                keys.append(Vm_to_rho(p.V(), MW))
+
+            # for i in phases:
+            #     i.constants = constants
+            # keys = [i.rho_mass() for i in phases]
         elif prop == DENSITY:
-            keys = [i.rho() for i in liquids]
+            keys = [i.rho() for i in phases]
         elif prop == ISOTHERMAL_COMPRESSIBILITY:
-            keys = [i.beta() for i in liquids]
+            keys = [i.beta() for i in phases]
         elif prop == HEAT_CAPACITY:
-            keys = [i.Cp() for i in liquids]
-        phases.sort(key=keys, reverse=reverse)
+            keys = [i.Cp() for i in phases]
+        phases = [p for _, p in sorted(zip(keys, phases))]
+        if reverse:
+            phases.reverse()
     elif sort_method == KEY_COMPONENTS_SORT:
         phases = key_cmp_sort(phases, cmps, cmps_neg)
     return phases
@@ -282,10 +295,10 @@ def sort_phases(liquids, solids, constants, settings):
     
     if len(liquids) > 1:
         liquids = mini_sort_phases(liquids, sort_method=settings.liquid_sort_method,
-                         prop=setings.liquid_sort_prop,
+                         prop=settings.liquid_sort_prop,
                          cmps=settings.liquid_sort_cmps, 
                          cmps_neg=settings.liquid_sort_cmps_neg,
-                         reverse=settings.phase_sort_higher_first)
+                         reverse=settings.phase_sort_higher_first, constants=constants)
 
         # Handle water special
         if settings.water_sort != WATER_NOT_SPECIAL:
@@ -306,7 +319,7 @@ def sort_phases(liquids, solids, constants, settings):
                          prop=setings.solid_sort_prop,
                          cmps=settings.solid_sort_cmps, 
                          cmps_neg=settings.solid_sort_cmps_neg,
-                         reverse=settings.phase_sort_higher_first)
+                         reverse=settings.phase_sort_higher_first, constants=constants)
     return liquids, solids
 
 

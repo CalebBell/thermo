@@ -71,3 +71,6 @@ def test_C2_C5_PR():
     assert_allclose(res.betas, [0.9999999999697166, 3.028344242039793e-11], rtol=1e-2)
     assert_allclose(res.gas.zs, [0.7058336794959247, 0.29416632050407526])
     assert_allclose(res.liquid0.zs, [0.49517801199759515, 0.5048219880024049])
+    
+    # This one is presently identified as a LL...  just check the number of phases
+    assert flasher.flash(zs=zs, P=6.615e6, T=386).phase_count == 2
