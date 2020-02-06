@@ -362,6 +362,14 @@ class StabilityTester(object):
 #            print(Ys_Wilson, normalize(Ys_Wilson))
         return Wilson_guesses
     
+    def incipient_guess_name(self, idx):
+        if idx < 4:
+            return ('Wilson gas', 'Wilson liquid', 'Wilson gas third', 'Wilson liquid third')[idx]
+        elif idx > 3 and idx < 3 + self.N:
+            return 'pure%d' %(idx-3)
+        elif idx > 3+self.N:
+            return 'random%d' %(idx-(3+self.N))
+    
     def incipient_guess_named(self, T, P, zs, name, zero_fraction=1E-6):
         N, cmps = self.N, self.cmps
         Ks_Wilson = [Wilson_K_value(T=T, P=P, Tc=self.Tcs[i], Pc=self.Pcs[i], omega=self.omegas[i]) for i in self.cmps]

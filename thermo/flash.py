@@ -2758,13 +2758,15 @@ def assert_stab_success_2P(liq, gas, stab, T, P, zs, guess_name, xs=None,
     r'''Basic function - perform a specified stability test, and then a two-phase flash using it
     Check on specified variables the method is working.
     '''
+    gas = gas.to(T=T, P=P, zs=zs)
+    liq = liq.to(T=T, P=P, zs=zs)
     trial_comp = stab.incipient_guess_named(T, P, zs, guess_name)
     if liq.G() < gas.G():
         min_phase, other_phase = liq, gas
     else:
         min_phase, other_phase = gas, liq
 
-    _, _, _, V_over_F, trial_zs, appearing_zs = stabiliy_iteration_Michelsen(min_phase, trial_comp, test_phase=other_phase)
+    _, _, _, V_over_F, trial_zs, appearing_zs = stabiliy_iteration_Michelsen(min_phase, trial_comp, test_phase=other_phase, maxiter=100)
 
     V_over_F, xs_calc, ys_calc, l, g, iteration, err = sequential_substitution_2P(T=T, P=P, V=None,
                                                                         zs=zs, xs_guess=trial_zs, ys_guess=appearing_zs,
@@ -3890,14 +3892,14 @@ class FlashVL(FlashBase):
             min_phase, other_phase = gas, liquid
 
         stable = True
-        for trial_comp in gen:
+        for i, trial_comp in enumerate(gen):
                 try:
                     sln = stabiliy_iteration_Michelsen(min_phase, trial_comp, test_phase=other_phase,
                                  maxiter=self.stability_maxiter, xtol=self.stability_xtol)
                     sum_zs_test, Ks, zs_test, V_over_F, trial_zs, appearing_zs = sln
                     lnK_2_tot = 0.0
-                    for i in self.cmps:
-                        lnK = log(Ks[i])
+                    for k in self.cmps:
+                        lnK = log(Ks[k])
                         lnK_2_tot += lnK*lnK
                     sum_criteria = abs(sum_zs_test - 1.0)
                     if sum_criteria < 1e-9 or lnK_2_tot < 1e-7:
@@ -3911,10 +3913,11 @@ class FlashVL(FlashBase):
                 except UnconvergedError:
                     pass
 
+        stab_guess_name = self.stab.incipient_guess_name(i)
         if stable:
             ls, g = ([liquid], None) if min_phase is liquid else ([], gas)
-            return g, ls, [], [1.0], {'iterations': 0, 'err': 0.0}
-
+            return g, ls, [], [1.0], {'iterations': 0, 'err': 0.0, 'stab_guess_name': stab_guess_name}
+        
         V_over_F, xs, ys, l, g, iteration, err = sequential_substitution_2P(T=T, P=P, V=None,
                                                                             zs=zs, xs_guess=trial_zs, ys_guess=appearing_zs,
                                                                             liquid_phase=min_phase,
@@ -3936,14 +3939,14 @@ class FlashVL(FlashBase):
             if V_over_F < 0.0 or V_over_F > 1.0:
 
                 ls, g = ([liquid], None) if min_phase is liquid else ([], gas)
-                return g, ls, [], [1.0], {'iterations': iteration, 'err': err}
+                return g, ls, [], [1.0], {'iterations': iteration, 'err': err, 'stab_guess_name': stab_guess_name}
 
         if min_phase is liquid:
             ls, g, V_over_F = [l], g, V_over_F
         else:
             ls, g, V_over_F = [g], l, 1.0 - V_over_F
         
-        return g, ls, [], [V_over_F, 1.0 - V_over_F], {'iterations': iteration, 'err': err}
+        return g, ls, [], [V_over_F, 1.0 - V_over_F], {'iterations': iteration, 'err': err, 'stab_guess_name': stab_guess_name}
 
     def flash_TPV(self, T, P, V, zs=None, solution=None, hot_start=None):
         constants, correlations = self.constants, self.correlations
