@@ -3726,7 +3726,6 @@ if has_CoolProp:
     # 
     caching_states_CoolProp = OrderedDict()
     def caching_state_CoolProp(backend, fluid, spec0, spec1, spec_set, phase, zs):
-        # TODO - different components
         # zs should be a tuple, not a list
         key = (backend, fluid, spec0, spec1, spec_set, phase, zs)
         if key in caching_states_CoolProp:
@@ -3748,7 +3747,10 @@ if has_CoolProp:
         else:
             # Reuse an item if not in the cache, making the value go to the end of
             # the ordered dict
-            _, AS = caching_states_CoolProp.popitem(last=False)
+            old_key, AS = caching_states_CoolProp.popitem(last=False)
+            if old_key[0] != backend or old_key[1] != fluid:
+                # Handle different components
+                AS = CoolProp.AbstractState(backend, fluid)
             AS.specify_phase(phase)
             if zs is not None:
                 AS.set_mole_fractions(zs)
