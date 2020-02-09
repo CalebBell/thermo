@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 from __future__ import division
 __all__ = ['GibbsExcessLiquid', 'GibbsExcessSolid', 'Phase', 'EOSLiquid', 'EOSGas', 'IdealGas',
-           'gas_phases', 'liquid_phases', 'solid_phases', 'CombinedPhase']
+           'gas_phases', 'liquid_phases', 'solid_phases', 'CombinedPhase', 'CoolPropPhase', 'CoolPropLiquid', 'CoolPropGas']
 
 from fluids.constants import R, R_inv
 from fluids.numerics import (horner, horner_and_der, horner_log, jacobian, derivative,
@@ -35,6 +35,7 @@ from thermo.utils import (log, log10, exp, Cp_minus_Cv, phase_identification_par
                           Joule_Thomson, speed_of_sound, dxs_to_dns,
                           normalize)
 from thermo.activity import IdealSolution
+from thermo.coolprop import has_CoolProp, CP as CoolProp
 from scipy.optimize import fsolve
 
 '''
@@ -758,6 +759,13 @@ class Phase(object):
         dV_dP = self.dV_dP()
         V = self.V()
         return -d2V_dPdT/V**2 + 2*dV_dT*dV_dP/V**3
+    
+    def drho_dV_T(self):
+        V = self.V()
+        return -1.0/(V*V)
+    
+    def drho_dT_V(self):
+        return 0.0
     
     # Idea gas heat capacity
     
@@ -1897,6 +1905,7 @@ class EOSGas(Phase):
         return dCp
     
     def d2H_dT2_V(self):
+        # Turned out not to be needed when I thought it was - ignore this!
         dCpigs_pure = self.dCpigs_dT_pure()
         dCp, zs = 0.0, self.zs
         for i in self.cmps:
@@ -2028,6 +2037,9 @@ class EOSGas(Phase):
         except AttributeError:
             dS_dP_V += self.eos_mix.dS_dep_dP_l_V
         return dS_dP_V
+    
+    # The following - likely should be reimplemented generically
+    # http://www.coolprop.org/_static/doxygen/html/class_cool_prop_1_1_abstract_state.html#a0815380e76a7dc9c8cc39493a9f3df46
 
     def d2P_dTdP(self):
         
@@ -3656,6 +3668,247 @@ class ChaoSeader(GraysonStreed):
     version = 0
 
 
+if has_CoolProp:
+    CPPT_INPUTS = CoolProp.PT_INPUTS
+    CPrhoT_INPUTS = CoolProp.DmolarT_INPUTS
+    CPrhoP_INPUTS = CoolProp.DmolarP_INPUTS
+
+    CPiP, CPiT, CPiDmolar = CoolProp.iP, CoolProp.iT, CoolProp.iDmolar
+    CPiHmolar, CPiSmolar = CoolProp.iHmolar, CoolProp.iSmolar
+
+    CoolProp_gas_phases = set([CoolProp.iphase_gas, CoolProp.iphase_supercritical, CoolProp.iphase_unknown,
+                              CoolProp.iphase_critical_point, CoolProp.iphase_supercritical_gas])
+    CoolProp_liquid_phases = set([CoolProp.iphase_liquid, CoolProp.iphase_supercritical_liquid])
+    
+    CPliquid = CoolProp.iphase_liquid
+    CPgas = CoolProp.iphase_gas
+    CPunknown = CoolProp.iphase_not_imposed
+
+class CoolPropPhase(Phase):
+    prefer_phase = CPunknown
+    @property
+    def phase(self):
+        idx = self.AS.phase()
+        if idx in CoolProp_gas_phases:
+            return 'g'
+        return 'l'
+        
+    def __init__(self, backend, fluid,
+                 T=None, P=None, zs=None,  Hfs=None,
+                 Gfs=None, Sfs=None,):
+
+        self.Hfs = Hfs
+        self.Gfs = Gfs
+        self.Sfs = Sfs
+        
+        self.backend = backend
+        self.fluid = fluid
+        
+        self.skip_comp = skip_comp = (backend in ('IF97') or fluid in ('water'))
+
+        if zs is None:
+            zs = [1.0]
+        self.zs = zs
+        self.N = N = len(zs)
+        self.cmps = range(N)
+        
+        if T is not None and P is not None:
+            self.T = T
+            self.P = P
+            self.AS = AS = CoolProp.AbstractState(backend, fluid)
+            if not skip_comp:
+                AS.set_mole_fractions(zs)
+            AS.specify_phase(self.prefer_phase)
+            try:
+                AS.update(CPPT_INPUTS, P, T)
+            except:
+                AS.specify_phase(CPunknown)
+                AS.update(CPPT_INPUTS, P, T)
+                
+    def to_TP_zs(self, T, P, zs):
+        return self.to_zs_TPV(T=T, P=P, zs=zs)
+
+    def to_zs_TPV(self, zs, T=None, P=None, V=None):
+        new = self.__class__.__new__(self.__class__)
+        new.zs = zs
+        new.N = self.N
+        new.cmps = self.cmps
+        new.backend = self.backend
+        new.fluid = self.fluid
+        new.skip_comp = self.skip_comp
+        new.AS = AS = CoolProp.AbstractState(self.backend, self.fluid)
+        if not self.skip_comp:
+            AS.set_mole_fractions(zs)
+        
+        AS.specify_phase(self.prefer_phase)
+        try:
+            if T is not None:
+                if P is not None:
+                    new.T, new.P = T, P
+                    AS.update(CPPT_INPUTS, P, T)
+                elif V is not None:
+                    AS.update(CPrhoT_INPUTS, 1.0/V, T)
+                    new.T, new.P = T, AS.p()
+            elif P is not None and V is not None:
+                AS.update(CPrhoP_INPUTS, 1.0/V, P)
+                new.T, new.P = AS.T(), P
+        except:
+            AS.specify_phase(CPunknown)
+            if T is not None:
+                if P is not None:
+                    new.T, new.P = T, P
+                    AS.update(CPPT_INPUTS, P, T)
+                elif V is not None:
+                    AS.update(CPrhoT_INPUTS, 1.0/V, T)
+                    new.T, new.P = T, AS.p()
+            elif P is not None and V is not None:
+                AS.update(CPrhoP_INPUTS, 1.0/V, P)
+                new.T, new.P = AS.T(), P
+            else:
+                raise ValueError("Two of T, P, or V are needed")
+        
+        new.Hfs = self.Hfs
+        new.Gfs = self.Gfs
+        new.Sfs = self.Sfs
+        return new
+        
+    to = to_zs_TPV
+
+    def V(self):
+        return 1.0/self.AS.rhomolar()
+
+    def lnphis(self):
+        try:
+            return self._lnphis
+        except AttributeError:
+            pass
+        self._lnphis = lnphis = []
+        AS = self.AS
+        for i in self.cmps:
+            lnphis.append(log(AS.fugacity_coefficient(i)))
+        return lnphis
+
+    def dlnphis_dT(self):
+        raise NotImplementedError("Not in CoolProp")
+
+    def dlnphis_dP(self):
+        raise NotImplementedError("Not in CoolProp")
+        
+    def dlnphis_dns(self):
+        raise NotImplementedError("Not in CoolProp")
+        
+    def dlnphis_dzs(self):
+        raise NotImplementedError("Not in CoolProp")
+        
+    def gammas(self):
+        raise NotImplementedError("TODO")
+                
+    def dP_dT(self):
+        return self.AS.first_partial_deriv(CPiP, CPiT, CPiDmolar)
+    dP_dT_V = dP_dT
+    
+    def dP_dV(self):
+        rho = self.AS.rhomolar()
+        dP_drho = self.AS.first_partial_deriv(CPiP, CPiDmolar, CPiT)
+        return -dP_drho*rho*rho
+    dP_dV_T = dP_dV
+    
+    def d2P_dT2(self):
+        return self.AS.second_partial_deriv(CPiP, CPiT, CPiDmolar, CPiT, CPiDmolar)
+    d2P_dT2_V = d2P_dT2
+    
+    def d2P_dV2(self):
+        d2P_drho2 = self.AS.second_partial_deriv(CPiP, CPiDmolar, CPiT, CPiDmolar, CPiT)
+        V = self.V()
+        dP_dV = self.dP_dV()
+        return (d2P_drho2/-V**2 + 2.0*V*dP_dV)/-V**2
+    d2P_dV2_T = d2P_dV2
+    
+    def d2P_dTdV(self):
+        d2P_dTdrho = self.AS.second_partial_deriv(CPiP, CPiT, CPiDmolar, CPiDmolar, CPiT)
+        rho = self.AS.rhomolar()
+        return -d2P_dTdrho*rho*rho
+
+    def H(self):
+        return self.AS.hmolar()
+
+    def S(self):
+        return self.AS.smolar()
+
+    def H_dep(self):
+        return self.AS.hmolar_excess()
+
+    def S_dep(self):
+        return self.AS.smolar_excess()
+
+    def Cp_dep(self):
+        raise NotImplementedError("Not in CoolProp")
+    
+    def Cp(self):
+        return self.AS.cpmolar()
+    dH_dT = Cp 
+    
+    def dH_dP(self):
+        return self.AS.first_partial_deriv(CoolProp.iHmolar, CPiP, CPiT)
+    
+    def dH_dT_V(self):
+        # Does not need rho multiplication
+        return self.AS.first_partial_deriv(CoolProp.iHmolar, CPiT, CPiDmolar)
+
+    def dH_dP_V(self):
+        return self.AS.first_partial_deriv(CoolProp.iHmolar, CPiP, CPiDmolar)
+
+    def dH_dV_T(self):
+        rho = self.AS.rhomolar()
+        return -self.AS.first_partial_deriv(CoolProp.iHmolar, CPiDmolar, CPiT)*rho*rho
+        
+    def dH_dV_P(self):
+        rho = self.AS.rhomolar()
+        return -self.AS.first_partial_deriv(CoolProp.iHmolar, CPiDmolar, CPiP)*rho*rho
+
+    def d2H_dT2(self):
+        return self.AS.second_partial_deriv(CoolProp.iHmolar, CPiT, CPiP, CPiT, CPiP)
+
+    def d2H_dP2(self):
+        return self.AS.second_partial_deriv(CoolProp.iHmolar, CPiP, CPiT, CPiP, CPiT)
+    
+    def d2H_dTdP(self):
+        return self.AS.second_partial_deriv(CoolProp.iHmolar, CPiT, CPiP, CPiP, CPiT)
+    
+    def dS_dT(self):
+        return self.AS.first_partial_deriv(CPiSmolar, CPiT, CPiP)
+    
+    def dS_dP(self):
+        return self.AS.first_partial_deriv(CPiSmolar, CPiP, CPiT)
+    
+    def dS_dT_V(self):
+        return self.AS.first_partial_deriv(CPiSmolar, CPiT, CPiDmolar)
+
+    def dS_dP_V(self):
+        return self.AS.first_partial_deriv(CPiSmolar, CPiP, CPiDmolar)
+
+    def dS_dV_T(self):
+        rho = self.AS.rhomolar()
+        return -self.AS.first_partial_deriv(CPiSmolar, CPiDmolar, CPiT)*rho*rho
+        
+    def dS_dV_P(self):
+        rho = self.AS.rhomolar()
+        return -self.AS.first_partial_deriv(CPiSmolar, CPiDmolar, CPiP)*rho*rho
+
+    def d2S_dT2(self):
+        return self.AS.second_partial_deriv(CPiSmolar, CPiT, CPiP, CPiT, CPiP)
+
+    def d2S_dP2(self):
+        return self.AS.second_partial_deriv(CPiSmolar, CPiP, CPiT, CPiP, CPiT)
+    
+    def d2S_dTdP(self):
+        return self.AS.second_partial_deriv(CPiSmolar, CPiT, CPiP, CPiP, CPiT)
+
+class CoolPropLiquid(CoolPropPhase):
+    prefer_phase = CPliquid
+
+class CoolPropGas(CoolPropPhase):
+    prefer_phase = CPgas
 
 class CombinedPhase(Phase):
     def __init__(self, phases, equilibrium=None, thermal=None, volume=None,

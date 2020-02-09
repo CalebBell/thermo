@@ -28,7 +28,7 @@ from math import *
 from thermo.unifac import *
 from fluids.numerics import *
 from fluids.constants import R
-
+import types
 
 def test_UNIFAC_data():
     # Test the interaction pairs
@@ -732,3 +732,47 @@ def test_NISTUF_2011():
     
     gammas_expect = [0.9999968672576434, 0.9737803219928437]
     assert_allclose(GE.gammas(), gammas_expect)
+
+def call_all_methods_first_UNIFAC(kwargs):
+    cls = UNIFAC
+    arg_methods = ('__init__', 'to_T_xs')
+    special_methods = {1: ('Vis_modified', 'dVis_modified_dxs', 'd2Vis_modified_dxixjs', 'd3Vis_modified_dxixjxks')}
+    special_methods[4] = special_methods[1]
+    
+    restricted_methods = {}
+    for k, methods in special_methods.items():
+        for name in methods:
+            try:
+                restricted_methods[name].add(k)
+            except:
+                restricted_methods[name] = set([k])
+    
+    for s in dir(cls):
+        attr = getattr(cls, s)
+        if isinstance(attr, types.MethodType) or type(attr) == property:
+            if (s in restricted_methods and not kwargs['version'] in restricted_methods[s]) or s in arg_methods:
+                continue
+            base = cls(**kwargs)
+            v = getattr(base, s)()
+        
+        
+@pytest.mark.fuzz
+def test_UNIFAC_class_all_methods_first():
+    '''T = 300.0
+    xs = [0.1, 0.9]
+    chemgroups = [{16: 1}, {1: 1, 2: 5, 14: 1}]
+    GE = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups,
+                               interaction_data=UFIP, subgroups=UFSG, version=0)
+    '''
+    kwargs = dict(T=300.0, xs=[0.1, 0.9], rs=[0.92, 5.2730999999999995], qs=[1.4, 4.748],
+                  Qs=[0.848, 0.54, 1.2, 1.4], vs=[[0, 1], [0, 5], [0, 1], [1, 0]],
+                  psi_abc=([[0.0, 0.0, 986.5, 1318.0], [0.0, 0.0, 986.5, 1318.0], [156.4, 156.4, 0.0, 353.5], [300.0, 300.0, -229.1, 0.0]], [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]]),
+                  version=0)
+    call_all_methods_first_UNIFAC(kwargs)
+    '''xs = [0.1, 0.9]
+    chemgroups = [{16: 1}, {1: 1, 2: 5, 14: 1}]
+    GE = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups,
+                               interaction_data=DOUFIP2006, subgroups=DOUFSG, version=1)
+    '''
+    kwargs= dict(T=300.0, xs=[0.1, 0.9], rs=[1.7334, 5.0252], qs=[2.4561, 5.494], Qs=[1.0608, 0.7081, 0.8927, 2.4561], vs=[[0, 1], [0, 5], [0, 1], [1, 0]], psi_abc=([[0.0, 0.0, 2777.0, 1391.3], [0.0, 0.0, 2777.0, 1391.3], [1606.0, 1606.0, 0.0, -801.9], [-17.253, -17.253, 1460.0, 0.0]], [[0.0, 0.0, -4.674, -3.6156], [0.0, 0.0, -4.674, -3.6156], [-4.746, -4.746, 0.0, 3.824], [0.8389, 0.8389, -8.673, 0.0]], [[0.0, 0.0, 0.001551, 0.001144], [0.0, 0.0, 0.001551, 0.001144], [0.0009181, 0.0009181, 0.0, -0.007514], [0.0009021, 0.0009021, 0.01641, 0.0]]), version=1)
+    call_all_methods_first_UNIFAC(kwargs)

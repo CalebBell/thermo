@@ -262,6 +262,7 @@ def test_EOSGas_phis():
     assert_allclose(gas.beta(), 0.0031916020840477414, rtol=1e-12)
     assert_allclose(gas.Joule_Thomson(), 2.9206299207786268e-05, rtol=1e-12)
     assert_allclose(gas.speed_of_sound(), 55.867443841933685, rtol=1e-12)
+    assert_allclose(gas.speed_of_sound(), (gas.dP_drho_S())**0.5, rtol=1e-11)
     
     # Molar density
     assert_allclose(gas.dP_drho(), 2646.5035764210666, rtol=1e-12)
@@ -419,3 +420,92 @@ def test_EOSGas_volume_HSGUA_derivatives():
     
     dA_dV_P_num = derivative(lambda V: gas.to(V=V, P=gas.P, zs=gas.zs).A(), gas.V(), dx=gas.V()*1e-8)
     assert_allclose(gas.dA_dV_P(), dA_dV_P_num)
+    
+    
+def test_CoolPropPhase_PR_pure():
+    T, P = 299.0, 1e5
+    CPP = CoolPropPhase('PR', 'nHexane', T=T, P=P)
+    # Make a duplicate fluid using the parameters from CoolProp
+    Tc, Pc, omega = CPP.AS.T_critical(), CPP.AS.p_critical(), CPP.AS.acentric_factor()
+
+    # These have been tested by varing the PRMIX coefficients - they are correct,
+    # and can get much closer as well when that is the case
+    eos = PRMIX(Tcs=[Tc], Pcs=[Pc], omegas=[omega], T=T, P=P, zs=[1])
+    assert_allclose(CPP.V(), eos.V_l, rtol=1e-4)
+    assert_allclose(CPP.dP_dT(), eos.dP_dT_l, rtol=3e-4)
+    assert_allclose(CPP.dP_dV(), eos.dP_dV_l, rtol=5e-4)
+    assert_allclose(CPP.d2P_dT2(), eos.d2P_dT2_l, rtol=2e-4)
+    assert_allclose(CPP.d2P_dV2(), eos.d2P_dV2_l, rtol=4e-4)
+    assert_allclose(CPP.d2P_dTdV(), eos.d2P_dTdV_l, rtol=5e-4)
+
+
+def test_CoolPropPhase_Water():
+    T, P = 299.0, 1e5
+    CPP = CoolPropPhase('HEOS', 'water', T=T, P=P)
+    
+    # Test the initialization methods
+    CPP_TV = CPP.to(T=T, V=CPP.V(), zs=[1.0])
+    assert_allclose(CPP_TV.P, P, rtol=1e-8)
+    
+    CPP_PV = CPP.to(P=P, V=CPP.V(), zs=[1.0])
+    assert_allclose(CPP_PV.T, T, rtol=1e-8)
+    
+    assert_allclose(CPP.H(), 1954.1678289799822)
+    assert_allclose(CPP.S(), 6.829644373073796)
+    assert_allclose(CPP.G(), CPP.AS.gibbsmolar(), rtol=1e-11)
+    assert_allclose(CPP.U(), CPP.AS.umolar(), rtol=1e-11)
+    assert_allclose(CPP.A(), CPP.AS.helmholtzmolar(), rtol=1e-9) # This one cannot go lower prec oddly
+    
+    dH_dT_num = derivative(lambda T: CPP.to(T=T, P=P, zs=[1]).H(), T, dx=.01)
+    assert_allclose(CPP.dH_dT(), dH_dT_num)
+    
+    dH_dP_num = derivative(lambda P: CPP.to(T=T, P=P, zs=[1]).H(), P, dx=P*2e-5, order=7)
+    assert_allclose(CPP.dH_dP(), dH_dP_num, rtol=5e-6)
+    
+    d2H_dT2_num = derivative(lambda T: CPP.to(T=T, P=P, zs=[1]).dH_dT(), T, dx=T*1e-5, n=1)
+    assert_allclose(CPP.d2H_dT2(), d2H_dT2_num)
+    
+    d2H_dP2_num = derivative(lambda P: CPP.to(T=T, P=P, zs=[1]).dH_dP(), P, dx=P*1e-3, n=1, order=5)
+    assert_allclose(CPP.d2H_dP2(), d2H_dP2_num, rtol=5e-6)
+    
+    d2H_dTdP_num = derivative(lambda T: CPP.to(T=T, P=P, zs=[1]).dH_dP(), T, dx=T*1e-5, n=1)
+    assert_allclose(CPP.d2H_dTdP(), d2H_dTdP_num)
+    
+    dH_dT_V_num = derivative(lambda T: CPP.to(T=T, V=CPP.V(), zs=[1]).H(), T, dx=.001)
+    assert_allclose(CPP.dH_dT_V(), dH_dT_V_num)
+    
+    dH_dP_V_num = derivative(lambda P: CPP.to(P=P, V=CPP.V(), zs=[1]).H(), P, dx=P*3e-5)
+    assert_allclose(CPP.dH_dP_V(), dH_dP_V_num, rtol=5e-6)
+    
+    dH_dV_T_num = derivative(lambda V: CPP.to(T=T, V=V, zs=[1]).H(), CPP.V(), dx=CPP.V()*1e-5)
+    assert_allclose(CPP.dH_dV_T(), dH_dV_T_num)
+    
+    dH_dV_P_num = derivative(lambda V: CPP.to(P=P, V=V, zs=[1]).H(), CPP.V(), dx=CPP.V()*1e-6)
+    assert_allclose(CPP.dH_dV_P(), dH_dV_P_num)
+    
+    dS_dT_num = derivative(lambda T: CPP.to(T=T, P=P, zs=[1]).S(), T, dx=.01)
+    assert_allclose(CPP.dS_dT(), dS_dT_num)
+    
+    dS_dP_num = derivative(lambda P: CPP.to(T=T, P=P, zs=[1]).S(), P, dx=P*2e-4, order=7)
+    assert_allclose(CPP.dS_dP(), dS_dP_num, rtol=5e-5)
+    
+    d2S_dT2_num = derivative(lambda T: CPP.to(T=T, P=P, zs=[1]).dS_dT(), T, dx=T*1e-5, n=1)
+    assert_allclose(CPP.d2S_dT2(), d2S_dT2_num)
+    
+    d2S_dP2_num = derivative(lambda P: CPP.to(T=T, P=P, zs=[1]).dS_dP(), P, dx=P*1e-3, n=1, order=5)
+    assert_allclose(CPP.d2S_dP2(), d2S_dP2_num, rtol=5e-6)
+    
+    d2S_dTdP_num = derivative(lambda T: CPP.to(T=T, P=P, zs=[1]).dS_dP(), T, dx=T*1e-5, n=1)
+    assert_allclose(CPP.d2S_dTdP(), d2S_dTdP_num)
+    
+    dS_dT_V_num = derivative(lambda T: CPP.to(T=T, V=CPP.V(), zs=[1]).S(), T, dx=.001)
+    assert_allclose(CPP.dS_dT_V(), dS_dT_V_num)
+    
+    dS_dP_V_num = derivative(lambda P: CPP.to(P=P, V=CPP.V(), zs=[1]).S(), P, dx=P*3e-5)
+    assert_allclose(CPP.dS_dP_V(), dS_dP_V_num, rtol=5e-6)
+    
+    dS_dV_T_num = derivative(lambda V: CPP.to(T=T, V=V, zs=[1]).S(), CPP.V(), dx=CPP.V()*1e-5)
+    assert_allclose(CPP.dS_dV_T(), dS_dV_T_num)
+    
+    dS_dV_P_num = derivative(lambda V: CPP.to(P=P, V=V, zs=[1]).S(), CPP.V(), dx=CPP.V()*1e-6)
+    assert_allclose(CPP.dS_dV_P(), dS_dV_P_num)

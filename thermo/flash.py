@@ -85,6 +85,8 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
         V_over_F = V_over_F_guess
         
     cmps = range(len(zs))
+
+    err, err1, err2, err3 = 0.0, 0.0, 0.0, 0.0
     
     for iteration in range(maxiter):
         g = gas_phase.to_zs_TPV(ys, T=T, P=P, V=V)
@@ -104,19 +106,21 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
         # Check for negative fractions - normalize only if needed
         for xi in xs_new:
             if xi < 0.0:
-                xs_new_sum = sum(abs(i) for i in xs_new)
-                xs_new = [abs(i)/xs_new_sum for i in xs_new]
+                xs_new_sum_inv = 1.0/sum(abs(i) for i in xs_new)
+                for i in cmps:
+                    xs_new[i] = abs(xs_new[i])*xs_new_sum_inv
                 break
         for yi in ys_new:
             if yi < 0.0:
-                ys_new_sum = sum(abs(i) for i in ys_new)
-                ys_new = [abs(i)/ys_new_sum for i in ys_new]
+                ys_new_sum_inv = 1.0/sum(abs(i) for i in ys_new)
+                for i in cmps:
+                    ys_new[i] = abs(ys_new[i])*ys_new_sum_inv
                 break
         
         # Calculate the error using the new Ks and old compositions
         # Claimed error function in CONVENTIONAL AND RAPID FLASH
         # CALCULATIONS FOR THE SOAVE-REDLICH-KWONG AND PENG-ROBINSON EQUATIONS OF STATE
-        
+
         err = 0.0
         # Suggested tolerance 1e-15
         try:
@@ -133,6 +137,9 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
                     err += err_i*err_i
                 except ZeroDivisionError:
                     pass
+
+        if err > 0.0 and err in (err1, err2, err3):
+            raise ValueError("Converged to cycle in errors, no progress being made")
         # Accept the new compositions
         xs, ys = xs_new, ys_new
         
@@ -144,6 +151,7 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
             raise ValueError("Converged to trivial condition, compositions of both phases equal")
         if err < tol:
             return V_over_F, xs, ys, l, g, iteration, err
+        err1, err2, err3 = err, err1, err2
     raise UnconvergedError('End of SS without convergence')
 
 
@@ -3514,7 +3522,7 @@ class FlashBase(object):
         return props
             
     def debug_PT(self, zs, Pmin=None, Pmax=None, Tmin=None, Tmax=None, pts=50, 
-                ignore_errors=True, values=False): # pragma: no cover
+                ignore_errors=True, values=False, verbose=False): # pragma: no cover
         if not has_matplotlib and not values:
             raise Exception('Optional dependency matplotlib is required for plotting')
         if Pmin is None:
@@ -3537,6 +3545,8 @@ class FlashBase(object):
                     state = self.flash(T=T, P=P, zs=zs)
                     row.append(state.phases_str)
                 except Exception as e:
+                    if verbose:
+                        print([T, P, e])
                     if ignore_errors:
                         row.append('F')
                     else:
@@ -3719,6 +3729,11 @@ class FlashBase(object):
         plt.show()
 
 
+PT_SS = 'SS'
+PT_SS_MEHRA = 'SS Mehra'
+PT_SS_GDEM3 = 'SS GDEM3'
+PT_NEWTON_lNKVF = 'Newton lnK VF'
+
 class FlashVL(FlashBase):
     PT_SS_MAXITER = 1000
     PT_SS_TOL = 1e-13
@@ -3728,6 +3743,10 @@ class FlashVL(FlashBase):
     PT_SS_POLISH = True
     PT_SS_POLISH_VF = 5e-8
     PT_SS_POLISH_MAXITER = 1000
+    
+    PT_methods = [PT_SS, PT_SS_MEHRA, PT_SS_GDEM3, PT_NEWTON_lNKVF]
+    PT_algorithms = [sequential_substitution_2P, sequential_substitution_Mehra_2P,
+                     sequential_substitution_GDEM3_2P, nonlin_2P_newton]
 
     stability_maxiter = 500 # 30 good professional default; 500 used in source DTU
     stability_xtol = 5E-9 # 1e-12 was too strict; 1e-10 used in source DTU; 1e-9 set for some points near critical where convergence stopped; even some more stopped at higher Ts
@@ -3879,6 +3898,8 @@ class FlashVL(FlashBase):
         else:
             raise NotImplementedError("TODO")
             
+    
+            
     def flash_TP_stability_test(self, T, P, zs, solution=None):
         gen = self.stab.incipient_guesses(T, P, zs)
         liquid, gas = self.liquid, self.gas
@@ -3947,6 +3968,21 @@ class FlashVL(FlashBase):
             ls, g, V_over_F = [g], l, 1.0 - V_over_F
         
         return g, ls, [], [V_over_F, 1.0 - V_over_F], {'iterations': iteration, 'err': err, 'stab_guess_name': stab_guess_name}
+    
+    def PT_converge(self):
+#        for algo in self.PT_algorithms:
+#            pass
+#        T=T, P=P, V=None,
+#                                                                            zs=zs, xs_guess=trial_zs, ys_guess=appearing_zs,
+#                                                                            liquid_phase=min_phase,
+#                                                                            gas_phase=other_phase, maxiter=self.PT_SS_MAXITER,
+#                                                                            tol=self.PT_SS_TOL,
+#                                                                            V_over_F_guess=V_over_F
+#        
+        PT_methods = [PT_SS, PT_SS_MEHRA, PT_SS_GDEM3, PT_NEWTON_lNKVF]
+        PT_algorithms = [sequential_substitution_2P, sequential_substitution_Mehra_2P,
+                     sequential_substitution_GDEM3_2P, nonlin_2P_newton]
+
 
     def flash_TPV(self, T, P, V, zs=None, solution=None, hot_start=None):
         constants, correlations = self.constants, self.correlations

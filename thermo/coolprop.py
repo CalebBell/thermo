@@ -38,7 +38,7 @@ try:
     has_CoolProp = True
 except ImportError:  # pragma: no cover
     has_CoolProp = False
-    PropsSI, PhaseSI, CP, AbstractState = [None, None, None, None]
+    PropsSI, PhaseSI, CP, AbstractState = None, None, None, None
 #has_CoolProp = False # For testing
 
 

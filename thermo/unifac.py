@@ -2267,7 +2267,18 @@ class UNIFAC(GibbsExcess):
             
         debug = (rs, qs, Qs, vs, (psi_a, psi_b, psi_c))
         return UNIFAC(T=T, xs=xs, rs=rs, qs=qs, Qs=Qs, vs=vs, psi_abc=(psi_a, psi_b, psi_c), version=version)
-            
+    
+    def __make_repr__(self):
+        
+        psi_abc = (self.psi_a, self.psi_b, self.psi_c)
+        s = '<UNIFAC('
+        s += 'T=%s, xs=%s, rs=%s, qs=%s' %(self.T, self.xs, self.rs, self.qs)
+        s += ', Qs=%s, vs=%s, psi_abc=%s, version=%s' %(self.Qs, self.vs, 
+                                                        psi_abc, self.version)
+        s += ')>'
+        return s
+        
+    
     def __init__(self, T, xs, rs, qs, Qs, vs, psi_coeffs=None, psi_abc=None,
                  version=0):
         '''
@@ -2308,9 +2319,9 @@ class UNIFAC(GibbsExcess):
             self.psi_b = [[i[1] for i in l] for l in psi_coeffs]
             self.psi_c = [[i[2] for i in l] for l in psi_coeffs]
         self.N_groups = len(self.psi_a)
-        self.groups = range(self.N_groups) # iterator over the number of 
+        self.groups = groups = range(self.N_groups) # iterator over the number of 
         self.N = N = len(rs)
-        self.cmps = range(N)
+        self.cmps = cmps = range(N)
         self.version = version
         self.skip_comb = version == 3
         
@@ -2322,10 +2333,15 @@ class UNIFAC(GibbsExcess):
             # works in the various functions without change as never taking the der w.r.t. r
             self.rs_34 = [ri**power for ri in rs]
 
-        self.cmp_v_count = [sum(vs[group][i] for group in self.groups) for i in self.cmps]
-        
+        self.cmp_v_count = cmp_v_count = []
+        for i in cmps:
+            tot = 0
+            for group in groups:
+                tot += vs[group][i]
+            cmp_v_count.append(tot)
+                
         # Matrix of [component][list(indexes to groups in component)], list of list
-        self.cmp_group_idx = [[j for j in self.groups if vs[j][i]] for i in self.cmps]
+        self.cmp_group_idx = [[j for j in groups if vs[j][i]] for i in cmps]
         
         # Calculate the composition and temperature independent parameters on initialization
         self.Thetas_pure()
@@ -5493,7 +5509,7 @@ class UNIFAC(GibbsExcess):
         xs = self.xs
         self._dgammas_dns = dgammas_dns = []
         for row in self.cmps:
-            dgammas_dns.append(dxs_to_dns(row, xs))
+            dgammas_dns.append(dxs_to_dns(dgammas_dxs[row], xs))
         return dgammas_dns
 
     def dgammas_dxs(self):

@@ -193,8 +193,13 @@ def test_flash_inner_loop():
 
     with pytest.raises(Exception):
         flash_inner_loop(zs=[0.6, 0.4], Ks=[1.685, 0.4], Method='FAIL')
-    with pytest.raises(Exception):
-        flash_inner_loop(zs=[0.1, 0.2, 0.3, 0.3, .01], Ks=[4.2, 1.75, 0.74, 0.34, .01], Method='Analytical')
+
+    V_over_F_5a, xs_5a, ys_5a = flash_inner_loop(zs=[0.1, 0.2, 0.3, 0.3, .01], Ks=[4.2, 1.75, 0.74, 0.34, .01], Method='Analytical')
+    V_over_F_5b, xs_5b, ys_5b = flash_inner_loop(zs=[0.1, 0.2, 0.3, 0.3, .01], Ks=[4.2, 1.75, 0.74, 0.34, .01])
+    assert_allclose(xs_5a, xs_5b)
+    assert_allclose(ys_5a, ys_5b)
+    assert_allclose(V_over_F_5a, V_over_F_5b)
+
 
     methods = flash_inner_loop(zs=[0.1, 0.2, 0.3, 0.4], Ks=[4.2, 1.75, 0.74, 0.34], AvailableMethods=True)
     assert methods == ['Analytical', 'Leibovici and Nichita 2', 'Rachford-Rice (Secant)',
