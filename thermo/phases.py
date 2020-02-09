@@ -3675,6 +3675,8 @@ if has_CoolProp:
 
     CPiP, CPiT, CPiDmolar = CoolProp.iP, CoolProp.iT, CoolProp.iDmolar
     CPiHmolar, CPiSmolar = CoolProp.iHmolar, CoolProp.iSmolar
+    
+    CPPQ_INPUTS, CPQT_INPUTS = CoolProp.PQ_INPUTS, CoolProp.QT_INPUTS
 
     CoolProp_gas_phases = set([CoolProp.iphase_gas, CoolProp.iphase_supercritical, CoolProp.iphase_unknown,
                               CoolProp.iphase_critical_point, CoolProp.iphase_supercritical_gas])
@@ -3721,8 +3723,10 @@ if has_CoolProp:
     # Emperically measured to be ~140 KB/instance, do not want to cache too many - 35 is 5 MB
     max_CoolProp_states = 35
     # Forget about time - just use them last; make sure the LRU is at the top
+    # 
     caching_states_CoolProp = OrderedDict()
     def caching_state_CoolProp(backend, fluid, spec0, spec1, spec_set, phase, zs):
+        # TODO - different components
         # zs should be a tuple, not a list
         key = (backend, fluid, spec0, spec1, spec_set, phase, zs)
         if key in caching_states_CoolProp:
@@ -3777,10 +3781,15 @@ class CoolPropPhase(Phase):
         
     @property
     def phase(self):
-        idx = self.AS.phase()
-        if idx in CoolProp_gas_phases:
+        try:
+            idx = self.AS.phase()
+            if idx in CoolProp_gas_phases:
+                return 'g'
+            return 'l'
+        except:
+            if self.prefer_phase == CPliquid:
+                return 'l'
             return 'g'
-        return 'l'
         
     def __init__(self, backend, fluid,
                  T=None, P=None, zs=None,  Hfs=None,
@@ -3834,6 +3843,27 @@ class CoolPropPhase(Phase):
                 
     def to_TP_zs(self, T, P, zs):
         return self.to_zs_TPV(T=T, P=P, zs=zs)
+    
+    def from_AS(self, AS):
+        new = self.__class__.__new__(self.__class__)
+        new.zs = zs = AS.get_mole_fractions()
+        new.N = N = self.N
+        new.cmps = self.cmps
+        new.backend = backend = self.backend
+        new.fluid = fluid = self.fluid
+        new.skip_comp = self.skip_comp
+        new.T, new.P = T, P = AS.T(), AS.p()
+
+        new.Hfs = self.Hfs
+        new.Gfs = self.Gfs
+        new.Sfs = self.Sfs
+        if new.skip_comp or N == 1:
+            zs_key = None
+        else:
+            zs_key = tuple(zs)
+        # Always use density as an input - does not require a phase ID spec / setting with AS.phase() seems to not work
+        new.key = (backend, fluid, AS.rhomolar(), T, CPrhoT_INPUTS, CPunknown, zs_key)
+        return new
 
     def to_zs_TPV(self, zs, T=None, P=None, V=None, prefer_phase=None):
         new = self.__class__.__new__(self.__class__)
@@ -3842,9 +3872,11 @@ class CoolPropPhase(Phase):
         new.cmps = self.cmps
         new.backend = backend = self.backend
         new.fluid = fluid = self.fluid
-        new.skip_comp = self.skip_comp
-        if self.skip_comp:
-            zs = None # For cache
+        new.skip_comp = skip_comp = self.skip_comp
+        if skip_comp or N == 1:
+            zs_key = None
+        else:
+            zs_key = tuple(zs)
 #        new.AS = AS = get_CoolProp_AS(self.backend, self.fluid) # CoolProp.AbstractState(self.backend, self.fluid)
 #        if not self.skip_comp:
 #            AS.set_mole_fractions(zs)
@@ -3856,15 +3888,15 @@ class CoolPropPhase(Phase):
             if T is not None:
                 if P is not None:
                     new.T, new.P = T, P
-                    key = (backend, fluid, P, T, CPPT_INPUTS, prefer_phase, zs)
+                    key = (backend, fluid, P, T, CPPT_INPUTS, prefer_phase, zs_key)
                     AS = caching_state_CoolProp(*key)
                 elif V is not None:
-                    key = (backend, fluid, 1.0/V, T, CPrhoT_INPUTS, prefer_phase, zs)
+                    key = (backend, fluid, 1.0/V, T, CPrhoT_INPUTS, prefer_phase, zs_key)
                     AS = caching_state_CoolProp(*key)
     #                    AS.update(CPrhoT_INPUTS, 1.0/V, T)
                     new.T, new.P = T, AS.p()
             elif P is not None and V is not None:
-                    key = (backend, fluid, 1.0/V, P, CPrhoP_INPUTS, prefer_phase, zs)
+                    key = (backend, fluid, 1.0/V, P, CPrhoP_INPUTS, prefer_phase, zs_key)
                     AS = caching_state_CoolProp(*key)
     #                AS.update(CPrhoP_INPUTS, 1.0/V, P)
                     new.T, new.P = AS.T(), P
@@ -3873,14 +3905,14 @@ class CoolPropPhase(Phase):
             if T is not None:
                 if P is not None:
                     new.T, new.P = T, P
-                    key = (backend, fluid, P, T, CPPT_INPUTS, prefer_phase, zs)
+                    key = (backend, fluid, P, T, CPPT_INPUTS, prefer_phase, zs_key)
                     AS = caching_state_CoolProp(*key)
                 elif V is not None:
-                    key = (backend, fluid, 1.0/V, T, CPrhoT_INPUTS, prefer_phase, zs)
+                    key = (backend, fluid, 1.0/V, T, CPrhoT_INPUTS, prefer_phase, zs_key)
                     AS = caching_state_CoolProp(*key)
                     new.T, new.P = T, AS.p()
             elif P is not None and V is not None:
-                    key = (backend, fluid, 1.0/V, P, CPrhoP_INPUTS, prefer_phase, zs)
+                    key = (backend, fluid, 1.0/V, P, CPrhoP_INPUTS, prefer_phase, zs_key)
                     AS = caching_state_CoolProp(*key)
                     new.T, new.P = AS.T(), P
         
@@ -4122,6 +4154,6 @@ class CombinedPhase(Phase):
     
     
     
-gas_phases = (IdealGas, EOSGas)
-liquid_phases = (EOSLiquid, GibbsExcessLiquid)
+gas_phases = (IdealGas, EOSGas, CoolPropGas)
+liquid_phases = (EOSLiquid, GibbsExcessLiquid, CoolPropLiquid)
 solid_phases = (GibbsExcessSolid,)

@@ -63,7 +63,8 @@ from thermo.volume import COSTALD
 from thermo.activity import (flash_inner_loop, flash_wilson, flash_ideal, Rachford_Rice_solutionN,
                              Rachford_Rice_flash_error, Rachford_Rice_solution2, flash_Tb_Tc_Pc)
 from thermo.equilibrium import EquilibriumState
-from thermo.phases import Phase, gas_phases, liquid_phases, solid_phases, EOSLiquid, EOSGas, CoolPropGas, CoolPropLiquid
+from thermo.phases import Phase, gas_phases, liquid_phases, solid_phases, EOSLiquid, EOSGas, CoolPropGas, CoolPropLiquid, CoolPropPhase
+from thermo.phases import CPPQ_INPUTS, CPQT_INPUTS, CPrhoT_INPUTS, CPunknown, caching_state_CoolProp, CPiDmolar
 from thermo.phase_identification import identify_sort_phases
 from thermo.bulk import default_settings
 from thermo.eos_mix import VDWMIX, IGMIX
@@ -1752,6 +1753,9 @@ def solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var,
     if iter_var == 'T':
         min_bound = Phase.T_MIN_FIXED
         max_bound = Phase.T_MAX_FIXED
+        if isinstance(phase, CoolPropPhase):
+            min_bound = phase.AS.Tmin()
+            max_bound = phase.AS.Tmax()
     elif iter_var == 'P':
         min_bound = Phase.P_MIN_FIXED*(1.0 - 1e-12)
         max_bound = Phase.P_MAX_FIXED*(1.0 + 1e-12)
@@ -4220,7 +4224,10 @@ class FlashPureVLS(FlashBase):
     def flash_TVF(self, T, VF=None, zs=None, hot_start=None):
         zs = [1.0]
         if self.VL_only_CoolProp:
-            pass
+            sat_gas_CoolProp = caching_state_CoolProp(self.gas.backend, self.gas.fluid, 1, T, CPQT_INPUTS, CPunknown, None)
+            sat_gas = self.gas.from_AS(sat_gas_CoolProp)
+            sat_liq = self.liquids[0].to(zs=zs, T=T, V=1.0/sat_gas_CoolProp.saturated_liquid_keyed_output(CPiDmolar))
+            return sat_gas.P, sat_liq, sat_gas, 0, 0.0
         Psat = self.Psat_guess(T)
         gas = self.gas.to_TP_zs(T, Psat, zs)
         liquids = [l.to_TP_zs(T, Psat, zs) for l in self.liquids]
@@ -4233,7 +4240,13 @@ class FlashPureVLS(FlashBase):
         return vals
 
     def flash_PVF(self, P, VF=None, zs=None, hot_start=None):
-        zs = [1]
+        zs = [1.0]
+        if self.VL_only_CoolProp:
+            sat_gas_CoolProp = caching_state_CoolProp(self.gas.backend, self.gas.fluid, P, 1.0, CPPQ_INPUTS, CPunknown, None)
+            sat_gas = self.gas.from_AS(sat_gas_CoolProp)
+            sat_liq = self.liquids[0].to(zs=zs, T=sat_gas.T, V=1.0/sat_gas_CoolProp.saturated_liquid_keyed_output(CPiDmolar))
+            return sat_gas.T, sat_liq, sat_gas, 0, 0.0
+
         if self.VL_only_CEOSs_same:
             Tsat = self.gas.eos_pures_STP[0].Tsat(P)
         else:
