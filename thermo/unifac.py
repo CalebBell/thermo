@@ -121,7 +121,7 @@ folder = os.path.join(os.path.dirname(__file__), 'Phase Change')
 class UNIFAC_subgroup(object):
     __slots__ = ['group', 'main_group_id', 'main_group', 'R', 'Q', 'smarts']
     
-    def __repr__(self):
+    def __repr__(self):   # pragma: no cover
         return '<%s>' %self.group
         
     def __init__(self, group, main_group_id, main_group, R, Q, smarts=None):
@@ -2268,7 +2268,7 @@ class UNIFAC(GibbsExcess):
         debug = (rs, qs, Qs, vs, (psi_a, psi_b, psi_c))
         return UNIFAC(T=T, xs=xs, rs=rs, qs=qs, Qs=Qs, vs=vs, psi_abc=(psi_a, psi_b, psi_c), version=version)
     
-    def __make_repr__(self):
+    def __make_repr__(self):  # pragma: no cover
         
         psi_abc = (self.psi_a, self.psi_b, self.psi_c)
         s = '<UNIFAC('
@@ -3363,14 +3363,9 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             G = self._Thetas_sum_inv()
         Qs, cmps, groups, xs = self.Qs, self.cmps, self.groups, self.xs
-        try:
-            Xs = self._Xs
-        except AttributeError:
-            Xs = self.Xs()
-        try:
-            Thetas = self._Thetas
-        except AttributeError:
-            Thetas = self.Thetas()
+        # Xs_sum_inv and Thetas_sum_inv have already calculated _Xs, _Thetas
+        Xs = self._Xs
+        Thetas = self._Thetas
         vs = self.vs
         
         VS = self.cmp_v_count#[sum(vs[j][i] for j in groups) for i in cmps]
@@ -3624,35 +3619,36 @@ class UNIFAC(GibbsExcess):
         self.Ws = tot0s
         return tot0s
 
-    def _Ys(self):
-        r'''
-        Computes the following for each `k` and each `i`, indexed by [k][i].
-        `k` is in groups, and `i` is in components.
-        
-        .. math::
-            Y(k,i) = \sum_m^{gr} \psi_{k,m} \frac{\partial \theta_m}{\partial x_i}
-        '''
-        try:
-            psis = self._psis
-        except AttributeError:
-            psis = self.psis()        
-        try:
-            dThetas_dxs = self._dThetas_dxs
-        except AttributeError:
-            dThetas_dxs = self.dThetas_dxs()
-        cmps, groups = self.cmps, self.groups
-        
-        tots = []
-        for k in groups:
-            row = []
-            for i in cmps:
-                tot = 0.0
-                for m in groups:
-                    tot += psis[k][m]*dThetas_dxs[m][i]
-                row.append(tot)
-            tots.append(row)
-        self.Ys = tots
-        return tots
+#    def _Ys(self):
+#        # Turned out not to be used anywhere
+#        r'''
+#        Computes the following for each `k` and each `i`, indexed by [k][i].
+#        `k` is in groups, and `i` is in components.
+#        
+#        .. math::
+#            Y(k,i) = \sum_m^{gr} \psi_{k,m} \frac{\partial \theta_m}{\partial x_i}
+#        '''
+#        try:
+#            psis = self._psis
+#        except AttributeError:
+#            psis = self.psis()        
+#        try:
+#            dThetas_dxs = self._dThetas_dxs
+#        except AttributeError:
+#            dThetas_dxs = self.dThetas_dxs()
+#        cmps, groups = self.cmps, self.groups
+#        
+#        tots = []
+#        for k in groups:
+#            row = []
+#            for i in cmps:
+#                tot = 0.0
+#                for m in groups:
+#                    tot += psis[k][m]*dThetas_dxs[m][i]
+#                row.append(tot)
+#            tots.append(row)
+#        self.Ys = tots
+#        return tots
     
     def _Fs(self):
         r'''Computes the following:
@@ -3743,10 +3739,7 @@ class UNIFAC(GibbsExcess):
             return self.Theta_pure_Psi_sums
         except AttributeError:
             pass
-        try:
-            Thetas_pure = self._Thetas_pure
-        except AttributeError:
-            Thetas_pure = self.Thetas_pure()
+        Thetas_pure = self._Thetas_pure
         try:
             psis = self._psis
         except AttributeError:
@@ -3792,10 +3785,7 @@ class UNIFAC(GibbsExcess):
             return self.Fs_pure
         except AttributeError:
             pass
-        try:
-            Thetas_pure = self._Thetas_pure
-        except AttributeError:
-            Thetas_pure = self.Thetas_pure()
+        Thetas_pure = self._Thetas_pure
         try:
             dpsis_dT = self._dpsis_dT
         except AttributeError:
@@ -3824,10 +3814,7 @@ class UNIFAC(GibbsExcess):
             return self.Gs_pure
         except AttributeError:
             pass
-        try:
-            Thetas_pure = self._Thetas_pure
-        except AttributeError:
-            Thetas_pure = self.Thetas_pure()
+        Thetas_pure = self._Thetas_pure
         try:
             d2psis_dT2 = self._d2psis_dT2
         except AttributeError:
@@ -3856,10 +3843,7 @@ class UNIFAC(GibbsExcess):
             return self.Hs_pure
         except AttributeError:
             pass
-        try:
-            Thetas_pure = self._Thetas_pure
-        except AttributeError:
-            Thetas_pure = self.Thetas_pure()
+        Thetas_pure = self._Thetas_pure
         try:
             d3psis_dT3 = self._d3psis_dT3
         except AttributeError:
@@ -4686,14 +4670,9 @@ class UNIFAC(GibbsExcess):
             return self._dlnGammas_subgroups_pure_dT
         except:
             pass
-        try:
-            Xs_pure = self._Xs_pure
-        except AttributeError:
-            Xs_pure = self.Xs_pure()
-        try:
-            Thetas_pure = self._Thetas_pure
-        except AttributeError:
-            Thetas_pure = self.Thetas_pure()
+        # The followign are calculated on initialization - no caching needed
+        Xs_pure = self._Xs_pure
+        Thetas_pure = self._Thetas_pure
         try:
             psis = self._psis
         except AttributeError:
@@ -5718,7 +5697,7 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             Vis = self.Vis()
         try:
-            dVis_dxs = self.dVis_dxs()
+            dVis_dxs = self._dVis_dxs
         except AttributeError:
             dVis_dxs = self.dVis_dxs()
         try:
@@ -5873,7 +5852,7 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             Vis = self.Vis()
         try:
-            dVis_dxs = self.dVis_dxs()
+            dVis_dxs = self._dVis_dxs
         except AttributeError:
             dVis_dxs = self.dVis_dxs()
         try:
