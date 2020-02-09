@@ -784,6 +784,7 @@ def test_NISTUF_2011():
     gammas_expect = [0.9999968672576434, 0.9737803219928437]
     assert_allclose(GE.gammas(), gammas_expect)
 
+
 def call_all_methods_first_UNIFAC(kwargs):
     cls = UNIFAC
     arg_methods = ('__init__', 'to_T_xs')
@@ -807,8 +808,10 @@ def call_all_methods_first_UNIFAC(kwargs):
             v = getattr(base, s)()
         
         
-@pytest.mark.fuzz
+#@pytest.mark.fuzz
 def test_UNIFAC_class_all_methods_first():
+    # Technically a fuzz test - but takes 1/20th a second, allowed for test coverage
+    # and finding real bugs
     '''T = 300.0
     xs = [0.1, 0.9]
     chemgroups = [{16: 1}, {1: 1, 2: 5, 14: 1}]
