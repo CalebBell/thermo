@@ -63,7 +63,7 @@ from thermo.volume import COSTALD
 from thermo.activity import (flash_inner_loop, flash_wilson, flash_ideal, Rachford_Rice_solutionN,
                              Rachford_Rice_flash_error, Rachford_Rice_solution2, flash_Tb_Tc_Pc)
 from thermo.equilibrium import EquilibriumState
-from thermo.phases import Phase, gas_phases, liquid_phases, solid_phases, EOSLiquid, EOSGas
+from thermo.phases import Phase, gas_phases, liquid_phases, solid_phases, EOSLiquid, EOSGas, CoolPropGas, CoolPropLiquid
 from thermo.phase_identification import identify_sort_phases
 from thermo.bulk import default_settings
 from thermo.eos_mix import VDWMIX, IGMIX
@@ -4154,10 +4154,13 @@ class FlashPureVLS(FlashBase):
                                    # self.liquids[0].kijs == self.gas.kijs
                                    and (not isinstance(self.liquids[0], (IGMIX,)) and not isinstance(self.gas, (IGMIX,))))
 
-
+        self.VL_only_CoolProp = (isinstance(liquids[0], CoolPropLiquid) and isinstance(gas, CoolPropGas) 
+                            and len(liquids) == 1 and (not solids) and liquids[0].backend == gas.backend and 
+                            liquids[0].fluid == gas.fluid)
 
     def flash_TPV(self, T, P, V, zs=None, solution=None, hot_start=None):
-        zs = [1]
+        betas = [1.0]
+        zs = [1.0]
         liquids = []
         solids = []
         
@@ -4171,6 +4174,12 @@ class FlashPureVLS(FlashBase):
             fun = solution
         else:
             raise ValueError("Did not recognize solution %s" %(solution))
+            
+        if self.VL_only_CoolProp:
+            sln = self.gas.to_zs_TPV(zs, T=T, P=P, V=V, prefer_phase=8)
+            if sln.phase == 'l':
+                return None, [sln], [], betas, None
+            return None, [], [sln], betas, None
 
         if self.gas_count:
             gas = self.gas.to_zs_TPV(zs=zs, T=T, P=P, V=V)
@@ -4192,7 +4201,6 @@ class FlashPureVLS(FlashBase):
                 G_min, lowest_phase = G, s
             solids.append(s)
         
-        betas = [1.0]
         if lowest_phase is gas:
             return lowest_phase, [], [], betas, None
         elif lowest_phase in liquids:
@@ -4210,7 +4218,9 @@ class FlashPureVLS(FlashBase):
         return Psat
 
     def flash_TVF(self, T, VF=None, zs=None, hot_start=None):
-        zs = [1]
+        zs = [1.0]
+        if self.VL_only_CoolProp:
+            pass
         Psat = self.Psat_guess(T)
         gas = self.gas.to_TP_zs(T, Psat, zs)
         liquids = [l.to_TP_zs(T, Psat, zs) for l in self.liquids]
