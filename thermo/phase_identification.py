@@ -191,6 +191,9 @@ def identity_phase_states(phases, constants, correlations, VL_method=VL_ID_PIP,
                           S_method=S_ID_D2P_DVDT,
                           VL_ID_settings=None, S_ID_settings=None, 
                           skip_solids=False):
+    # TODO - unit test
+    # TODO - optimize
+    # Takes a while
 
     force_phases = [i.force_phase for i in phases]
     forced = True

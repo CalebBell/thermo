@@ -90,11 +90,6 @@ class EquilibriumState(object):
         else:
             self.phases = liquids + solids
         
-        for i, l in enumerate(liquids):
-            setattr(self, 'liquid' + str(i), l)
-        for i, s in enumerate(solids):
-            setattr(self, 'solid' + str(i), s)
-
         self.betas = betas
         self.beta_gas = betas[0] if gas_count else 0.0
         self.betas_liquids = betas_liquids = betas[gas_count:gas_count + liquid_count]
@@ -108,16 +103,20 @@ class EquilibriumState(object):
             self.liquid_bulk = liquid_bulk = Bulk(T, P, self.liquid_zs, self.liquids, self.betas_liquids)
             liquid_bulk.result = self
             liquid_bulk.constants = constants
+            for i, l in enumerate(liquids):
+                setattr(self, 'liquid%d'%(i), l)
         elif liquid_count:
             self.liquid_zs = liquids[0].zs
             self.liquid_bulk = liquids[0]
-            
+            self.liquid0 = liquids[0]
         if solids:
             self.solid_zs = normalize([sum([betas_solids[j]*solids[j].zs[i] for j in range(self.solid_count)])
                                for i in self.cmps])
             self.solid_bulk = solid_bulk = Bulk(T, P, self.solid_zs, solids, self.betas_solids)
             solid_bulk.result = self
             solid_bulk.constants = constants
+            for i, s in enumerate(solids):
+                setattr(self, 'solid%d' %(i), s)
 
         self.bulk = bulk = Bulk(T, P, zs, self.phases, betas)
         bulk.result = self

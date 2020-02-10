@@ -40,6 +40,8 @@ except ImportError:  # pragma: no cover
     has_CoolProp = False
     PropsSI, PhaseSI, CP, AbstractState = None, None, None, None
 #has_CoolProp = False # For testing
+    
+CPiP_min = CP.iP_min
 
 
 folder = os.path.join(os.path.dirname(__file__), 'Misc')

@@ -69,6 +69,7 @@ from thermo.phase_identification import identify_sort_phases
 from thermo.bulk import default_settings
 from thermo.eos_mix import VDWMIX, IGMIX
 from thermo.property_package import StabilityTester
+from thermo.coolprop import CPiP_min
 
 if has_matplotlib:
     import matplotlib
@@ -1759,6 +1760,10 @@ def solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var,
     elif iter_var == 'P':
         min_bound = Phase.P_MIN_FIXED*(1.0 - 1e-12)
         max_bound = Phase.P_MAX_FIXED*(1.0 + 1e-12)
+        if isinstance(phase, CoolPropPhase):
+            AS = phase.AS
+            max_bound = AS.pmax()*(1.0 - 1e-7)
+            min_bound = AS.trivial_keyed_output(CPiP_min)*(1.0 + 1e-7)
     elif iter_var == 'V':
         min_bound = Phase.V_MIN_FIXED
         max_bound = Phase.V_MAX_FIXED
@@ -4600,6 +4605,10 @@ class FlashPureVLS(FlashBase):
             Pmax = Pc
         if Pmin is None:
             Pmin = 1e-2
+        if self.VL_only_CoolProp:
+            AS = self.gas.AS
+            Pmin = AS.trivial_keyed_output(CPiP_min)*(1.0 + 1e-3)
+            Pmax = AS.p_critical()*(1.0 - 1e-7)
             
         Tmin, liquid, gas, iters, flash_err = self.flash_PVF(P=Pmin, VF=.5)
         Tmax, liquid, gas, iters, flash_err = self.flash_PVF(P=Pmax, VF=.5)

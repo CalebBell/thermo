@@ -3862,24 +3862,25 @@ class CoolPropPhase(Phase):
     
     def from_AS(self, AS):
         new = self.__class__.__new__(self.__class__)
-        new.zs = zs = AS.get_mole_fractions()
         new.N = N = self.N
+        if N == 1:
+            zs_key = None
+            new.zs = self.zs
+        else:
+            new.zs = zs = AS.get_mole_fractions()
+            zs_key = tuple(zs)
         new.cmps = self.cmps
         new.backend = backend = self.backend
         new.fluid = fluid = self.fluid
         new.skip_comp = self.skip_comp
         new.T, new.P = T, P = AS.T(), AS.p()
-
         new.Hfs = self.Hfs
         new.Gfs = self.Gfs
         new.Sfs = self.Sfs
-        if new.skip_comp or N == 1:
-            zs_key = None
-        else:
-            zs_key = tuple(zs)
+
         # Always use density as an input - does not require a phase ID spec / setting with AS.phase() seems to not work
-        new.key = (backend, fluid, AS.rhomolar(), T, CPrhoT_INPUTS, CPunknown, zs_key)
         new._cache_easy_properties(AS)
+        new.key = (backend, fluid, self._rho, T, CPrhoT_INPUTS, CPunknown, zs_key)
         return new
 
     def to_zs_TPV(self, zs, T=None, P=None, V=None, prefer_phase=None):
@@ -3942,12 +3943,12 @@ class CoolPropPhase(Phase):
         return new
     
     def _cache_easy_properties(self, AS):
+        self._rho = AS.rhomolar()
+        self._V = 1.0/self._rho
         self._H = AS.hmolar()
         self._S = AS.smolar()
         self._Cp = AS.cpmolar()
         self._PIP = AS.PIP()
-        self._V = 1.0/AS.rhomolar()
-#        self.
         
     to = to_zs_TPV
 
