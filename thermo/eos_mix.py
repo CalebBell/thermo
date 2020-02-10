@@ -5335,7 +5335,7 @@ class PSRKMixingRules(object):
         else:
             a_alphas, da_alpha_dTs, d2a_alpha_dT2s = self.a_alphas, self.da_alpha_dTs, self.d2a_alpha_dT2s
 
-        b, zs, bs =self.b, self.zs, self.bs
+        b, zs, bs = self.b, self.zs, self.bs
         
         ge_model = self.ge_model
         

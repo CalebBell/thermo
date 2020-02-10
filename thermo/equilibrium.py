@@ -86,11 +86,9 @@ class EquilibriumState(object):
         self.liquids = liquids
         self.solids = solids
         if gas is not None:
-            phases = [gas] + liquids + solids
-            
+            self.phases = [gas] + liquids + solids
         else:
-            phases = liquids + solids
-        self.phases = phases
+            self.phases = liquids + solids
         
         for i, l in enumerate(liquids):
             setattr(self, 'liquid' + str(i), l)
@@ -99,10 +97,10 @@ class EquilibriumState(object):
 
         self.betas = betas
         self.beta_gas = betas[0] if gas_count else 0.0
-        self.betas_liquids = betas_liquids = betas[gas_count: gas_count+liquid_count]
-        self.betas_solids = betas_solids = betas[gas_count+liquid_count: ]
+        self.betas_liquids = betas_liquids = betas[gas_count:gas_count + liquid_count]
+        self.betas_solids = betas_solids = betas[gas_count + liquid_count:]
         
-        if liquids:
+        if liquid_count > 1:
 #                tot_inv = 1.0/sum(values)
 #                return [i*tot_inv for i in values]
             self.liquid_zs = normalize([sum([betas_liquids[j]*liquids[j].zs[i] for j in range(liquid_count)])
@@ -110,6 +108,9 @@ class EquilibriumState(object):
             self.liquid_bulk = liquid_bulk = Bulk(T, P, self.liquid_zs, self.liquids, self.betas_liquids)
             liquid_bulk.result = self
             liquid_bulk.constants = constants
+        elif liquid_count:
+            self.liquid_zs = liquids[0].zs
+            self.liquid_bulk = liquids[0]
             
         if solids:
             self.solid_zs = normalize([sum([betas_solids[j]*solids[j].zs[i] for j in range(self.solid_count)])
@@ -128,7 +129,6 @@ class EquilibriumState(object):
         self.flash_convergence = flash_convergence
         self.flasher = flasher
         self.settings = settings
-        
         self.constants = constants
         self.correlations = correlations
         for phase in self.phases:

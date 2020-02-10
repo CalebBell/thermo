@@ -175,8 +175,9 @@ def score_phases_VL(phases, constants, correlations, method,
     elif method == VL_ID_POLING:
         scores = [vapor_score_Poling(i.kappa()) for i in phases]
     elif method == VL_ID_PIP:
-        scores = [vapor_score_PIP(i.V(), i.dP_dT(), i.dP_dV(),
-                                           i.d2P_dV2(), i.d2P_dVdT()) for i in phases]
+        scores = [-(i.PIP() - 1.0) for i in phases]
+#        scores = [vapor_score_PIP(i.V(), i.dP_dT(), i.dP_dV(),
+#                                           i.d2P_dV2(), i.d2P_dVdT()) for i in phases]
     elif method == VL_ID_BS:
         scores = [vapor_score_Bennett_Schmidt(i.dbeta_dT()) for i in phases]
     elif method == VL_ID_TRACES:
@@ -188,7 +189,8 @@ def score_phases_VL(phases, constants, correlations, method,
         
 def identity_phase_states(phases, constants, correlations, VL_method=VL_ID_PIP, 
                           S_method=S_ID_D2P_DVDT,
-                          VL_ID_settings=None, S_ID_settings=None):
+                          VL_ID_settings=None, S_ID_settings=None, 
+                          skip_solids=False):
 
     force_phases = [i.force_phase for i in phases]
     forced = True
@@ -200,8 +202,9 @@ def identity_phase_states(phases, constants, correlations, VL_method=VL_ID_PIP,
     if not forced:
         VL_scores = score_phases_VL(phases, constants, correlations, 
                                     method=VL_method, VL_ID_settings=VL_ID_settings)
-        S_scores = score_phases_S(phases, constants, correlations, 
-                                  method=S_method, S_ID_settings=S_ID_settings)
+        if not skip_solids:
+            S_scores = score_phases_S(phases, constants, correlations, 
+                                      method=S_method, S_ID_settings=S_ID_settings)
     
     solids = []
     liquids = []
@@ -216,7 +219,7 @@ def identity_phase_states(phases, constants, correlations, VL_method=VL_ID_PIP,
                 solids.append(phases[i])
             if force_phases[i] == 'g':
                 gases.append(phases[i])
-        elif S_scores[i] >= 0.0:
+        elif not skip_solids and S_scores[i] >= 0.0:
             solids.append(phases[i])
         elif VL_scores[i] >= 0.0:
             possible_gases.append(phases[i])
@@ -323,12 +326,14 @@ def sort_phases(liquids, solids, constants, settings):
     return liquids, solids
 
 
-def identify_sort_phases(phases, betas, constants, correlations, settings):
+def identify_sort_phases(phases, betas, constants, correlations, settings,
+                         skip_solids=False):
     gas, liquids, solids = identity_phase_states(phases, constants, correlations, 
                               VL_method=settings.VL_ID, 
                               S_method=settings.S_ID,
                               VL_ID_settings=settings.VL_ID_settings,
-                              S_ID_settings=settings.S_ID_settings)
+                              S_ID_settings=settings.S_ID_settings,
+                              skip_solids=skip_solids)
     
     liquids, solids = sort_phases(liquids, solids, constants, settings)
     if betas is not None:

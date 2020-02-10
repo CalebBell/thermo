@@ -24,6 +24,7 @@ from __future__ import division
 __all__ = ['GibbsExcessLiquid', 'GibbsExcessSolid', 'Phase', 'EOSLiquid', 'EOSGas', 'IdealGas',
            'gas_phases', 'liquid_phases', 'solid_phases', 'CombinedPhase', 'CoolPropPhase', 'CoolPropLiquid', 'CoolPropGas']
 
+import sys
 from fluids.constants import R, R_inv
 from fluids.numerics import (horner, horner_and_der, horner_log, jacobian, derivative,
                              best_fit_integral_value, best_fit_integral_over_T_value,
@@ -51,6 +52,10 @@ Phases know nothing about transport properties.
 For enthalpy, need to support with ideal gas heat of formation as a separate
 enthalpy calculation.
 '''
+
+#PY2 = int(sys.version[0]) == 2
+
+SORTED_DICT = sys.version_info >= (3, 6)
 
 
 class Phase(object):
@@ -3724,7 +3729,10 @@ if has_CoolProp:
     max_CoolProp_states = 35
     # Forget about time - just use them last; make sure the LRU is at the top
     # 
-    caching_states_CoolProp = OrderedDict()
+    if not SORTED_DICT:
+        caching_states_CoolProp = OrderedDict()
+    else:
+        caching_states_CoolProp = {}
     def caching_state_CoolProp(backend, fluid, spec0, spec1, spec_set, phase, zs):
         # zs should be a tuple, not a list
         key = (backend, fluid, spec0, spec1, spec_set, phase, zs)
@@ -3747,7 +3755,12 @@ if has_CoolProp:
         else:
             # Reuse an item if not in the cache, making the value go to the end of
             # the ordered dict
-            old_key, AS = caching_states_CoolProp.popitem(last=False)
+            if not SORTED_DICT:
+                old_key, AS = caching_states_CoolProp.popitem(last=False)
+            else:
+                old_key = next(iter(caching_states_CoolProp))
+                AS = caching_states_CoolProp.pop(old_key)
+            
             if old_key[0] != backend or old_key[1] != fluid:
                 # Handle different components
                 AS = CoolProp.AbstractState(backend, fluid)
@@ -3824,6 +3837,7 @@ class CoolPropPhase(Phase):
                 key = (backend, fluid, P, T, CPPT_INPUTS, CPunknown, zs_key)
                 AS = caching_state_CoolProp(*key)
             self.key = key
+            self._cache_easy_properties(AS)
 #        if not skip_comp and zs is None:
 #            self.zs = [1.0]
                 
@@ -3865,6 +3879,7 @@ class CoolPropPhase(Phase):
             zs_key = tuple(zs)
         # Always use density as an input - does not require a phase ID spec / setting with AS.phase() seems to not work
         new.key = (backend, fluid, AS.rhomolar(), T, CPrhoT_INPUTS, CPunknown, zs_key)
+        new._cache_easy_properties(AS)
         return new
 
     def to_zs_TPV(self, zs, T=None, P=None, V=None, prefer_phase=None):
@@ -3923,12 +3938,22 @@ class CoolPropPhase(Phase):
         new.Gfs = self.Gfs
         new.Sfs = self.Sfs
         new.key = key
+        new._cache_easy_properties(AS)
         return new
+    
+    def _cache_easy_properties(self, AS):
+        self._H = AS.hmolar()
+        self._S = AS.smolar()
+        self._Cp = AS.cpmolar()
+        self._PIP = AS.PIP()
+        self._V = 1.0/AS.rhomolar()
+#        self.
         
     to = to_zs_TPV
 
     def V(self):
-        return 1.0/self.AS.rhomolar()
+        return self._V
+#        return 1.0/self.AS.rhomolar()
 
     def lnphis(self):
         try:
@@ -3981,12 +4006,19 @@ class CoolPropPhase(Phase):
         d2P_dTdrho = self.AS.second_partial_deriv(CPiP, CPiT, CPiDmolar, CPiDmolar, CPiT)
         rho = self.AS.rhomolar()
         return -d2P_dTdrho*rho*rho
+    
+    def PIP(self):
+        return self._PIP
+        # Saves time
+#        return self.AS.PIP()
 
     def H(self):
-        return self.AS.hmolar()
+        return self._H
+#        return self.AS.hmolar()
 
     def S(self):
-        return self.AS.smolar()
+        return self._S
+#        return self.AS.smolar()
 
     def H_dep(self):
         return self.AS.hmolar_excess()
@@ -3998,7 +4030,8 @@ class CoolPropPhase(Phase):
         raise NotImplementedError("Not in CoolProp")
     
     def Cp(self):
-        return self.AS.cpmolar()
+        return self._Cp
+#        return self.AS.cpmolar()
     dH_dT = Cp 
     
     def dH_dP(self):

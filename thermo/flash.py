@@ -2899,7 +2899,8 @@ class FlashBase(object):
                 id_phases = ls + ss
             
             g, ls, ss, betas = identify_sort_phases(id_phases, betas, constants,
-                                                    correlations, settings=settings)
+                                                    correlations, settings=settings,
+                                                    skip_solids=not bool(self.solids))
             
             a_phase = id_phases[0]
             T, P = a_phase.T, a_phase.P
@@ -3769,6 +3770,8 @@ class FlashVL(FlashBase):
     
     dew_bubble_xtol = 1e-8
     dew_bubble_maxiter = 200
+
+    solids = None
     
     # TODO - add nested PT? Probably more reliable than SS_VF_simultaneous
     def __init__(self, constants, correlations, liquid, gas, settings=default_settings):
@@ -4181,8 +4184,8 @@ class FlashPureVLS(FlashBase):
             
         if self.VL_only_CoolProp:
             sln = self.gas.to_zs_TPV(zs, T=T, P=P, V=V, prefer_phase=8)
-            if sln.phase == 'l':
-                return None, [sln], [], betas, None
+#            if sln.phase == 'l':
+#                return None, [sln], [], betas, None
             return None, [], [sln], betas, None
 
         if self.gas_count:
