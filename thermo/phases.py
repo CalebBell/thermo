@@ -3733,7 +3733,9 @@ if has_CoolProp:
         caching_states_CoolProp = OrderedDict()
     else:
         caching_states_CoolProp = {}
+        
     def caching_state_CoolProp(backend, fluid, spec0, spec1, spec_set, phase, zs):
+        # Pretty sure about as optimized as can get!
         # zs should be a tuple, not a list
         key = (backend, fluid, spec0, spec1, spec_set, phase, zs)
         if key in caching_states_CoolProp:
@@ -3741,6 +3743,7 @@ if has_CoolProp:
             try:
                 caching_states_CoolProp.move_to_end(key)
             except:
+                # Move to end the old fashioned way
                 del caching_states_CoolProp[key]
                 caching_states_CoolProp[key] = AS
         elif len(caching_states_CoolProp) < max_CoolProp_states:
@@ -3756,13 +3759,14 @@ if has_CoolProp:
             # Reuse an item if not in the cache, making the value go to the end of
             # the ordered dict
             if not SORTED_DICT:
-                old_key, AS = caching_states_CoolProp.popitem(last=False)
+                old_key, AS = caching_states_CoolProp.popitem(False)
             else:
+                # Hack - get first item in dict
                 old_key = next(iter(caching_states_CoolProp))
                 AS = caching_states_CoolProp.pop(old_key)
             
-            if old_key[0] != backend or old_key[1] != fluid:
-                # Handle different components
+            if old_key[1] != fluid or old_key[0] != backend:
+                # Handle different components - other will be gc
                 AS = CoolProp.AbstractState(backend, fluid)
             AS.specify_phase(phase)
             if zs is not None:
@@ -3895,13 +3899,9 @@ class CoolPropPhase(Phase):
             zs_key = None
         else:
             zs_key = tuple(zs)
-#        new.AS = AS = get_CoolProp_AS(self.backend, self.fluid) # CoolProp.AbstractState(self.backend, self.fluid)
-#        if not self.skip_comp:
-#            AS.set_mole_fractions(zs)
         
         if prefer_phase is None:
             prefer_phase = self.prefer_phase
-#        AS.specify_phase(prefer_phase)
         try:
             if T is not None:
                 if P is not None:
@@ -3933,7 +3933,6 @@ class CoolPropPhase(Phase):
                     key = (backend, fluid, 1.0/V, P, CPrhoP_INPUTS, prefer_phase, zs_key)
                     AS = caching_state_CoolProp(*key)
                     new.T, new.P = AS.T(), P
-        
         
         new.Hfs = self.Hfs
         new.Gfs = self.Gfs
