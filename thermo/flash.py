@@ -999,10 +999,10 @@ l_undefined_P_msg = "Could not calculate liquid conditions at provided pressure 
 g_undefined_P_msg = "Could not calculate vapor conditions at provided pressure %s Pa (mole fracions %s)"   
 
 def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
-                                iter_var='T', fixed_var='P', V_over_F=1, 
-                                maxiter=200, xtol=1E-10, comp_guess=None,
-                                max_step_damping=.25, guess_update_frequency=1,
-                                trivial_solution_tol=1e-7, V_diff=.00002, damping=1.0):
+                                  iter_var='T', fixed_var='P', V_over_F=1,
+                                  maxiter=200, xtol=1E-10, comp_guess=None,
+                                  max_step_damping=.25, guess_update_frequency=1,
+                                  trivial_solution_tol=1e-7, V_diff=.00002, damping=1.0):
     # for near critical, V diff very wrong - .005 seen, both g as or both liquid
     kwargs = {fixed_var: fixed_val}
     N = len(zs)
@@ -1033,6 +1033,11 @@ def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
 
     skip = 0
     guess_old = None
+    V_ratio, V_ratio_last = None, None
+    V_iter_last, V_const_last = None, None
+    expect_phase = 'g' if V_over_F == 0.0 else 'l'
+    unwanted_phase = 'l' if expect_phase == 'g' else 'g'
+
     successive_fails = 0
     for iteration in range(maxiter):
         kwargs[iter_var] = guess
@@ -1050,10 +1055,10 @@ def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
             skip -= 1
             iter_phase = iter_phase.to_TP_zs(zs=comp_guess, **kwargs)
             if V_diff is not None:
-                if 1.0 - V_diff < iter_phase.V() / const_phase.V() < 1.0 + V_diff or skip > 0:
+                V_iter, V_const = iter_phase.V(), const_phase.V()
+                V_ratio = V_iter/V_const
+                if 1.0 - V_diff < V_ratio < 1.0 + V_diff or skip > 0 or V_iter_last and (abs(min(V_iter, V_iter_last)/max(V_iter, V_iter_last)) < .8):
                     # Relax the constraint for the iterating on variable so two different phases exist
-                    expect_phase = 'g' if V_over_F == 0.0 else 'l'
-                    unwanted_phase = 'l' if expect_phase == 'g' else 'g'
                     #if iter_phase.eos_mix.phase in ('l', 'g') and iter_phase.eos_mix.phase == const_phase.eos_mix.phase:
                     if iter_phase.eos_mix.phase == unwanted_phase:
                         if skip < 0:
@@ -1145,13 +1150,20 @@ def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
         for i in cmps: comp_difference += abs(zs[i] - comp_guess[i])
 
         if comp_difference < trivial_solution_tol and iteration:
-            raise ValueError("Converged to trivial condition, compositions of both phases equal")
+            for zi in zs:
+                if zi == 1.0:
+                    # Turn off trivial check for pure components
+                    trivial_solution_tol = -1.0
+            if comp_difference < trivial_solution_tol:
+                raise ValueError("Converged to trivial condition, compositions of both phases equal")
         
 
         if abs(guess - guess_old) < xtol: #and not skip:
             guess = guess_old
             break
-        
+        if V_diff is not None:
+            V_iter_last, V_const_last, V_ratio_last = V_iter, V_const, V_ratio
+
     if abs(guess - guess_old) > xtol:
         raise ValueError("Did not converge to specified tolerance")
     return guess, comp_guess, iter_phase, const_phase, iteration, abs(guess - guess_old)
@@ -2665,10 +2677,28 @@ def stabiliy_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
     if test_phase is None:
         test_phase = trial_phase
     T, P, zs = trial_phase.T, trial_phase.P, trial_phase.zs
-
+    N, cmps = trial_phase.N, trial_phase.cmps
     fugacities_trial = trial_phase.fugacities_lowest_Gibbs()
 
-    N, cmps = trial_phase.N, trial_phase.cmps
+    # Go through the feed composition - and the trial composition - if we have zeros, need to make them a trace;
+    for i in cmps:
+        if zs_test[i] == 0.0:
+            zs_test = list(zs_test)
+            for i in cmps:
+                if zs_test[i] == 0.0:
+                    zs_test[i] = 1e-50
+            break
+    for i in cmps:
+        if zs[i] == 0.0:
+            zs = list(zs)
+            for i in cmps:
+                if zs[i] == 0.0:
+                    zs[i] = 1e-50
+            # Requires another evaluation of the trial phase
+            trial_phase = trial_phase.to(T=T, P=P, zs=zs)
+            fugacities_trial = trial_phase.fugacities_lowest_Gibbs()
+            break
+
     # Basis of equations is for the test phase being a gas, the trial phase assumed is a liquid
     # makes no real difference
     Ks = [0.0]*N
@@ -2678,7 +2708,7 @@ def stabiliy_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
     # stationary point composition
     for i in cmps:
         Ks[i] = zs_test[i]/zs[i]
-    
+
     sum_zs_test = sum_zs_test_inv = 1.0
     converged = False
     for _ in range(maxiter):
@@ -2854,7 +2884,15 @@ class FlashBase(object):
         '''
         constants, correlations = self.constants, self.correlations
         settings = self.settings
-        if zs is None:
+        if self.N > 1 and 0:
+            for zi in zs:
+                if zi == 1.0:
+                    # Does not work - phases expect multiple components mole fractions
+                    return self.flash_pure.flash(zs=zs, T=T, P=P, VF=VF, SF=SF, 
+                                           V=V, H=H, S=S, U=U, G=G, A=A, 
+                                           solution=solution, retry=retry,
+                                           hot_start=hot_start)
+        elif zs is None:
             zs = [1.0]
 
         T_spec = T is not None
@@ -3738,6 +3776,71 @@ class FlashBase(object):
         plt.legend(loc='best')
         plt.show()
 
+    def plot_ternary(self, T, scale=10): # pragma: no cover
+        if not has_matplotlib:
+            raise Exception('Optional dependency matplotlib is required for plotting')
+        try:
+            import ternary
+        except:
+            raise Exception('Optional dependency ternary is required for ternary plotting')
+        if self.N != 3:
+            raise Exception('Ternary plotting requires a mixture of exactly three components')
+
+        P_values = []
+
+        def P_dew_at_T_zs(zs):
+            print(zs, 'dew')
+            res = self.flash(T=T, zs=zs, VF=0)
+            P_values.append(res.P)
+            return res.P
+        
+        def P_bubble_at_T_zs(zs):
+            print(zs, 'bubble')
+            res = self.flash(T=T, zs=zs, VF=1)
+            return res.P
+        
+        
+        axes_colors = {'b': 'g', 'l': 'r', 'r':'b'}
+        ticks = [round(i / float(10), 1) for i in range(10+1)]
+        
+        fig, ax = plt.subplots(1, 3, gridspec_kw = {'width_ratios':[4, 4, 1]})
+        ax[0].axis("off") ; ax[1].axis("off")  ; ax[2].axis("off")
+        
+        for axis, f, i in zip(ax[0:2], [P_dew_at_T_zs, P_bubble_at_T_zs], [0, 1]):
+            figure, tax = ternary.figure(ax=axis, scale=scale)
+            figure.set_size_inches(12, 4)
+            if not i:
+                tax.heatmapf(f, boundary=True, colorbar=False, vmin=0)
+            else:
+                tax.heatmapf(f, boundary=True, colorbar=False, vmin=0, vmax=max(P_values))
+        
+            tax.boundary(linewidth=2.0)
+            tax.left_axis_label("mole fraction $x_2$", offset=0.16, color=axes_colors['l'])
+            tax.right_axis_label("mole fraction $x_1$", offset=0.16, color=axes_colors['r'])
+            tax.bottom_axis_label("mole fraction $x_3$", offset=-0.06, color=axes_colors['b'])
+        
+            tax.ticks(ticks=ticks, axis='rlb', linewidth=1, clockwise=True,
+                      axes_colors=axes_colors, offset=0.03)
+        
+            tax.gridlines(multiple=scale/10., linewidth=2,
+                          horizontal_kwargs={'color':axes_colors['b']},
+                          left_kwargs={'color':axes_colors['l']},
+                          right_kwargs={'color':axes_colors['r']},
+                          alpha=0.5)
+        
+        norm = plt.Normalize(vmin=0, vmax=max(P_values))
+        sm = plt.cm.ScalarMappable(cmap=plt.get_cmap('viridis'), norm=norm)
+        sm._A = []
+        cb = plt.colorbar(sm, ax=ax[2])
+        cb.locator = matplotlib.ticker.LinearLocator(numticks=7)
+        cb.formatter = matplotlib.ticker.ScalarFormatter()
+        cb.formatter.set_powerlimits((0, 0))
+        cb.update_ticks()
+        plt.tight_layout()
+        fig.suptitle("Bubble pressure vs composition (left) and dew pressure vs composition (right) at %s K, in Pa" %T, fontsize=14); 
+        fig.subplots_adjust(top=0.85)
+        plt.show()
+
 
 PT_SS = 'SS'
 PT_SS_MEHRA = 'SS Mehra'
@@ -3789,6 +3892,10 @@ class FlashVL(FlashBase):
         self.cmps = constants.cmps
         
         self.stab = StabilityTester(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
+        
+        self.flash_pure = FlashPureVLS(constants=constants, correlations=correlations,
+                                       gas=gas, liquids=[liquid], solids=[], 
+                                       settings=settings)
         
     def flash_TVF(self, T, VF, zs, solution=None, hot_start=None):
         constants, correlations = self.constants, self.correlations
@@ -4129,6 +4236,7 @@ class FlashPureVLS(FlashBase):
     But working on all the phases of water can wait.
     '''
     VF_interpolators_built = False
+    N = 1
     def __init__(self, constants, correlations, gas, liquids, solids, 
                  settings=default_settings):
         self.constants = constants
@@ -4230,7 +4338,6 @@ class FlashPureVLS(FlashBase):
         return Psat
 
     def flash_TVF(self, T, VF=None, zs=None, hot_start=None):
-        zs = [1.0]
         if self.VL_only_CoolProp:
             sat_gas_CoolProp = caching_state_CoolProp(self.gas.backend, self.gas.fluid, 1, T, CPQT_INPUTS, CPunknown, None)
             sat_gas = self.gas.from_AS(sat_gas_CoolProp)
@@ -4248,7 +4355,6 @@ class FlashPureVLS(FlashBase):
         return vals
 
     def flash_PVF(self, P, VF=None, zs=None, hot_start=None):
-        zs = [1.0]
         if self.VL_only_CoolProp:
             sat_gas_CoolProp = caching_state_CoolProp(self.gas.backend, self.gas.fluid, P, 1.0, CPPQ_INPUTS, CPunknown, None)
             sat_gas = self.gas.from_AS(sat_gas_CoolProp)
@@ -4274,7 +4380,6 @@ class FlashPureVLS(FlashBase):
         
         # The solid-liquid interface is NOT working well...
         # Worth getting IAPWS going to compare. Maybe also other EOSs
-        zs = [1]
         if T < self.constants.Tts[0]:
             Psub = self.correlations.SublimationPressures[0](T)
             try_phases = [self.gas] + self.liquids
@@ -4286,7 +4391,6 @@ class FlashPureVLS(FlashBase):
                                maxiter=200, xtol=1E-10)
         
     def flash_PSF(self, P, SF=None, zs=None, hot_start=None):
-        zs = [1]
         if P < self.constants.Pts[0]:
             Tsub = self.correlations.SublimationPressures[0].solve_prop(P)
             try_phases = [self.gas] + self.liquids

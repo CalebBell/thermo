@@ -30,6 +30,7 @@ from thermo.eos import *
 from thermo.vapor_pressure import VaporPressure
 from thermo.heat_capacity import *
 from thermo.phase_change import *
+from thermo import ChemicalConstantsPackage, PropertyCorrelationPackage
 
 def test_minimize_gibbs_NP_transformed():
     T=298.15
@@ -164,3 +165,62 @@ def test_dew_bubble_newton_zs():
     assert_allclose(PVF0_jac_expect, jac_analytical, rtol=1e-7)
     assert_allclose(comp, [0.5781248395738718, 0.3717955398333062, 0.05007962059282194])
     assert_allclose(iter_val, 390.91409227801205)
+
+
+def test_dew_bubble_Michelsen_Mollerup_pure():
+    # Only goal here is to check the trivial composition test does not 
+    # cause the pure component flash to fail
+    zs = [.3, .5, .2]
+    T, P = 300, 3e6
+    # m = Mixture(['methanol', 'water', 'dimethyl disulfide'], ws=zs, T=T, P=P)
+    constants = ChemicalConstantsPackage(Tcs=[512.5, 647.14, 615.0], Pcs=[8084000.0, 22048320.0, 5100000.0], omegas=[0.5589999999999999, 0.344, 0.1869], MWs=[32.04186, 18.01528, 94.19904], CASs=['67-56-1', '7732-18-5', '624-92-0'])
+    properties = PropertyCorrelationPackage(constants=constants, HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [2.3511458696647882e-21, -9.223721411371584e-18, 1.3574178156001128e-14, -8.311274917169928e-12, 4.601738891380102e-10, 1.78316202142183e-06, -0.0007052056417063217, 0.13263597297874355, 28.44324970462924])),
+                                                                        HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
+                                                                        HeatCapacityGas(best_fit=(273, 1000, [-1.575967061488898e-21, 8.453271073419098e-18, -1.921448640274908e-14, 2.3921686769873392e-11, -1.7525253961492494e-08, 7.512525679465744e-06, -0.0018211688612260338, 0.3869010410224839, 35.590034427486614])),],)
+    HeatCapacityGases = properties.HeatCapacityGases
+    eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
+    gas = EOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = EOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    
+    
+    sln = dew_bubble_Michelsen_Mollerup(350, 101325, [0, 1, 0], liq, gas, iter_var='T', fixed_var='P', V_over_F=1)
+    assert_allclose(sln[0], 374.54273473073675, rtol=1e-6)                              
+    sln2 = dew_bubble_Michelsen_Mollerup(350, 101325, [0, 1, 0], liq, gas, iter_var='T', fixed_var='P', V_over_F=0)
+    assert_allclose(sln[0], sln2[0], rtol=1e-12)                              
+    
+    slnP = dew_bubble_Michelsen_Mollerup(101325, 350, [0, 1, 0], liq, gas, iter_var='P', fixed_var='T', V_over_F=1)
+    assert_allclose(slnP[0], 38567.9910222508, rtol=1e-6)
+    slnP2 = dew_bubble_Michelsen_Mollerup(101325, 350, [0, 1, 0], liq, gas, iter_var='P', fixed_var='T', V_over_F=0)
+    assert_allclose(slnP[0], slnP2[0], rtol=1e-12)                              
+
+
+def test_stabiliy_iteration_Michelsen_zero_fraction():
+    # Initially the stab test did not support zero fraction. This test confirms the additional
+    # components can be added in such a way that zero fraction support is allowed.
+    # The result of this new functionality is such that an unstable phase can still be detected
+    # when one or more components in a feed have zero mole fraction.
+    # This check should really be done before, to avoid creating multiple trial phases
+    zs = [0.0, 0.95, 0.05]
+    T, P = 400.0, 1325753.6447835972
+    # m = Mixture(['methanol', 'water', 'dimethyl disulfide'], ws=zs, T=T, P=P)
+    constants = ChemicalConstantsPackage(Tcs=[512.5, 647.14, 615.0], Pcs=[8084000.0, 22048320.0, 5100000.0], omegas=[0.5589999999999999, 0.344, 0.1869], MWs=[32.04186, 18.01528, 94.19904], CASs=['67-56-1', '7732-18-5', '624-92-0'])
+    properties = PropertyCorrelationPackage(constants=constants, HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [2.3511458696647882e-21, -9.223721411371584e-18, 1.3574178156001128e-14, -8.311274917169928e-12, 4.601738891380102e-10, 1.78316202142183e-06, -0.0007052056417063217, 0.13263597297874355, 28.44324970462924])),
+                                                                        HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
+                                                                        HeatCapacityGas(best_fit=(273, 1000, [-1.575967061488898e-21, 8.453271073419098e-18, -1.921448640274908e-14, 2.3921686769873392e-11, -1.7525253961492494e-08, 7.512525679465744e-06, -0.0018211688612260338, 0.3869010410224839, 35.590034427486614])),],)
+    HeatCapacityGases = properties.HeatCapacityGases
+    eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
+    gas = EOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = EOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+
+    zs_test = [0.0, 0.966916481252204, 0.033083518747796005]
+    kwargs = {'trial_phase': liq, 'zs_test': zs_test,
+           'test_phase': gas, 'maxiter': 500, 'xtol': 5e-09}
+    sln_with_zero = stabiliy_iteration_Michelsen(**kwargs)
+    
+    kwargs['zs_test'] = [1e-13, 0.966916481252204-5e-14, 0.033083518747796005-5e-14]
+    sln_without_zero = stabiliy_iteration_Michelsen(**kwargs)
+    assert_allclose(sln_with_zero[-2][1:], sln_without_zero[-2][1:])
+    assert_allclose(sln_with_zero[-1][1:], sln_without_zero[-1][1:])
+    assert_allclose(sln_with_zero[-3], sln_without_zero[-3])
+
+    

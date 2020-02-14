@@ -28,10 +28,13 @@ __all__ = ['has_CoolProp', 'coolprop_dict', 'CP_fluid', 'coolprop_fluids',
 import os
 import json
 import numpy as np
+from thermo.utils import data_dir
 from numpy.testing import assert_allclose
 from bisect import bisect_left
 
 try:
+    import CoolProp
+    CoolProp_version = CoolProp.__version__
     from CoolProp.CoolProp import PropsSI, PhaseSI
     import CoolProp.CoolProp as CP
     from CoolProp import AbstractState
@@ -39,6 +42,7 @@ try:
 except ImportError:  # pragma: no cover
     has_CoolProp = False
     PropsSI, PhaseSI, CP, AbstractState = None, None, None, None
+    CoolProp_version = None
 #has_CoolProp = False # For testing
     
 CPiP_min = CP.iP_min
@@ -46,7 +50,12 @@ CPiP_min = CP.iP_min
 
 folder = os.path.join(os.path.dirname(__file__), 'Misc')
 
+# Load the constants, store
 
+
+
+
+# CoolProp.FluidsList() indicates some new fluids have been added
 # All of these can be inputs to the PropsSI function!
 coolprop_dict = ['100-41-4', '10024-97-2', '102687-65-0', '106-42-3',
 '106-97-8', '106-98-9', '107-46-0', '107-51-7', '107-52-8', '107-83-5',
@@ -95,11 +104,15 @@ class CP_fluid(object):
 # Store the propoerties in a dict of CP_fluid instances
 coolprop_fluids = {}
 if has_CoolProp:
+    for fluid in CP.FluidsList():
+        CASRN = CP.get_fluid_param_string(fluid, 'CAS')
     for CASRN in coolprop_dict:
+        # TODO find other way of getting the data faster - there is no way
+        # TODO use appdirs, store this data as a cache
         HEOS = AbstractState("HEOS", CASRN)
         coolprop_fluids[CASRN] = CP_fluid(Tmin=HEOS.Tmin(), Tmax=HEOS.Tmax(), Pmax=HEOS.pmax(),
                        has_melting_line=HEOS.has_melting_line(), Tc=HEOS.T_critical(), Pc=HEOS.p_critical(),
-                       Tt=HEOS.Ttriple(), omega=HEOS.acentric_factor(), HEOS=HEOS)
+                       Tt=HEOS.Ttriple(), omega=HEOS.acentric_factor(), HEOS=None)
 
 
 
@@ -291,7 +304,7 @@ def CoolProp_T_dependent_property(T, CASRN, prop, phase):
     else:
         raise Exception('Error in CoolProp property function')
 
-if has_CoolProp:
+if has_CoolProp and 0:
     f = open(os.path.join(folder, 'CoolProp vapor properties fits.json'), 'r')
     vapor_properties = json.load(f)
     f.close()

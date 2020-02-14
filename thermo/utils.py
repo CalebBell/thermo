@@ -42,6 +42,7 @@ __all__ = ['isobaric_expansion', 'isothermal_compressibility',
 'TPDependentProperty', 'MixtureProperty', 'allclose_variable', 'horner', 
 'polylog2', 'v_to_v_molar', 'v_molar_to_v']
 
+import os
 from cmath import sqrt as csqrt
 from bisect import bisect_left
 import numpy as np
@@ -55,6 +56,15 @@ try:
     has_matplotlib = True
 except:
     has_matplotlib = False
+    
+try:  # pragma: no cover
+    from appdirs import user_data_dir, user_config_dir
+    data_dir = user_config_dir('thermo')
+    if not os.path.exists(data_dir):
+        os.mkdir(data_dir)
+except ImportError:  # pragma: no cover
+    data_dir = ''
+
 
 from math import (acos, acosh, asin, asinh, atan, atan2, atanh, ceil, copysign,
                   cos, cosh, degrees, e,  exp, fabs, 
