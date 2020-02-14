@@ -27,6 +27,7 @@ __all__ = ['checkCAS', 'CAS_from_any', 'PubChem', 'MW', 'formula', 'smiles',
            '_MixtureDict', 'mixture_from_any', 'cryogenics', 'dippr_compounds',
            'pubchem_db']
 import os
+from io import open
 from thermo.utils import to_num, CAS2int, int2CAS
 from thermo.elements import periodic_table, homonuclear_elemental_gases, charge_from_formula, serialize_formula
 
@@ -216,7 +217,7 @@ class ChemicalMetadataDB(object):
 
 
     def load(self, file_name, overwrite=False):
-        f = open(file_name)
+        f = open(file_name, encoding='utf-8')
         for line in f:
             # This is effectively the documentation for the file format of the file
             values = line.rstrip('\n').split('\t')
