@@ -1423,6 +1423,13 @@ def test_Psat_issues():
     Tsat = eos.Tsat(1e-100)
     assert_allclose(Tsat, 23.41595921544242, rtol=1e-7)
     assert_allclose(eos.Psat(Tsat), 1e-100)
+    
+    # Issue where the brenth solver does not converge to an appropriate ytol
+    # and the newton fails; added code to start newton from the bounded solver
+    # where it looks like a good solution
+    eos = PR(Tc=540.2, Pc=2740000.0, omega=0.3457, T=298.15, P=101325.0)
+    Tsat = eos.Tsat(2453124.6502311486, polish=False)
+    assert_allclose(Tsat, 532.1131652558847, rtol=1e-7)
 
 
 def test_fuzz_dPsat_dT():

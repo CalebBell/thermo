@@ -2075,8 +2075,11 @@ class GCEOS(object):
 #        return newton(to_solve, guess, ytol=1e-6, high=self.Pc)
         try:
             Tsat = brenth(to_solve, max(guess*.7, 0.2*Tc), min(Tc, guess*1.3))
-            if abs(to_solve_newton(Tsat)) < 1e-9:
+            abs_err = abs(to_solve_newton(Tsat))
+            if abs_err < 1e-9:
                 return Tsat
+            elif abs_err < 1e-2:
+                guess = Tsat
         except:
             try:
                 return brenth(to_solve, 0.2*Tc, Tc)

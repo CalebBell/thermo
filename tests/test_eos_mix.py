@@ -164,6 +164,9 @@ def test_many_components():
     omegas = [0.04, 0.2252, 0.1, 0.008, 0.098, 0.152, 0.17600000000000002, 0.193, 0.22699999999999998, 0.251, 0.2975, 0.3457, 0.39399999999999996, 0.444, 0.49, 0.535, 0.562, 0.623, 0.679, 0.6897, 0.742, 0.7564, 0.8087, 0.8486, 0.8805, 0.9049, 0.9423, 1.0247, 1.0411, 1.105, 1.117, 1.214, 1.195, 1.265, 1.26, 0.212, 0.257, 0.301, 0.3118, 0.3771, 0.1921, 0.239, 0.213, 0.2477]
     eos = PRMIX(T=300, P=1e5, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
     
+    # This call would fail due to numpy arrays in the numpy fast path being used elsewhere
+    eos._da_alpha_dT_j_rows
+    
     
     assert_allclose(eos.V_g, 0.019092551264336028)
     assert_allclose(eos.V_l, 0.0002453974598582871)

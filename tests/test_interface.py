@@ -205,13 +205,13 @@ def test_SurfaceTensionMixture():
     a = SurfaceTensionMixture(MWs=m.MWs, Tbs=m.Tbs, Tcs=m.Tcs, CASs=m.CASs, SurfaceTensions=SurfaceTensions, VolumeLiquids=VolumeLiquids)
 
     sigma = a.mixture_property(m.T, m.P, m.zs, m.ws)
-    assert_allclose(sigma, 0.023886472131054423)
+    assert_allclose(sigma, 0.023887948426185343)
     
     sigma = a.calculate(m.T, m.P, m.zs, m.ws, SIMPLE)
     assert_allclose(sigma, 0.025331490604571537)
     
     sigmas = [a.calculate(m.T, m.P, m.zs, m.ws, i) for i in [DIGUILIOTEJA, SIMPLE, WINTERFELDSCRIVENDAVIS]]
-    assert_allclose(sigmas, [0.025257338967448677, 0.025331490604571537, 0.023886472131054423])
+    assert_allclose(sigmas, [0.025257338967448677, 0.025331490604571537, 0.023887948426185343])
     
     with pytest.raises(Exception):
         a.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')

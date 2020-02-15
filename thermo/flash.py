@@ -48,7 +48,7 @@ from fluids.numerics import (UnconvergedError, trunc_exp, py_newton as newton,
                              NoSolutionError, NotBoundedError, jacobian,
                              best_bounding_bounds, isclose, newton_system,
                              make_damp_initial)
-from fluids.numerics import py_solve
+from fluids.numerics import py_solve, trunc_log
 from fluids.optional.pychebfun import build_solve_pychebfun
 from numpy.testing import assert_allclose
 from scipy.optimize import minimize, fsolve, root
@@ -78,7 +78,8 @@ if has_matplotlib:
 
 def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
                                gas_phase, maxiter=1000, tol=1E-13,
-                               trivial_solution_tol=1e-5, V_over_F_guess=None):
+                               trivial_solution_tol=1e-5, V_over_F_guess=None,
+                               check_G=False, check_V=False, dZ_allow=0.1):
     
     xs, ys = xs_guess, ys_guess
     if V_over_F_guess is None:
@@ -89,7 +90,11 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
     cmps = range(len(zs))
 
     err, err1, err2, err3 = 0.0, 0.0, 0.0, 0.0
-    
+    G_old = None
+    V_over_F_old = V_over_F
+    restrained = 0
+    restrained_switch_count = 300
+
     for iteration in range(maxiter):
         g = gas_phase.to_zs_TPV(ys, T=T, P=P, V=V)
 #        g = gas_phase.to_TP_zs(T=T, P=P, zs=ys)
@@ -98,12 +103,74 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
         
         lnphis_g = g.lnphis()
         lnphis_l = l.lnphis()
+        limited_Z = False
         
         try:
             Ks = [exp(lnphis_l[i] - lnphis_g[i]) for i in cmps] # K_value(phi_l=l, phi_g=g)
         except OverflowError:
             Ks = [trunc_exp(lnphis_l[i] - lnphis_g[i]) for i in cmps] # K_value(phi_l=l, phi_g=g)
         V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks, guess=V_over_F)
+        
+        if check_G:
+            V_over_F_G = min(max(V_over_F_old, 0), 1)
+            G = g.G()*V_over_F_G + (1.0 - V_over_F_G)*l.G()
+            print('new G', G, 'old G', G_old)
+            if G_old is not None:
+                if G > G_old:
+                    step = .5
+                    while G > G_old and step > 1e-4:
+#                        ys_working = normalize([step*xo + (1.0 - step)*xi for xi, xo in zip(xs, xs_old)])
+#                        xs_working = normalize([step*xo + (1.0 - step)*xi for xi, xo in zip(ys, ys_old)])
+#                         ys_working = normalize([step*xo + (1.0 - step)*xi for xo, xi in zip(xs, xs_old)])
+#                         xs_working = normalize([step*xo + (1.0 - step)*xi for xo, xi in zip(ys, ys_old)])
+#                         g = gas_phase.to_zs_TPV(ys_working, T=T, P=P, V=V)
+#                         l = liquid_phase.to_zs_TPV(xs_working, T=T, P=P, V=V)
+#                         lnphis_g = g.lnphis()
+#                         lnphis_l = l.lnphis()
+#                         try:
+#                             Ks = [exp(lnphis_l[i] - lnphis_g[i]) for i in cmps]
+#                         except OverflowError:
+#                             Ks = [trunc_exp(lnphis_l[i] - lnphis_g[i]) for i in cmps]
+                        Ks_working = [step*xo + (1.0 - step)*xi for xo, xi in zip(Ks_old, Ks)]
+
+                        V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks_working, guess=V_over_F)
+#                        V_over_F_G = min(max(V_over_F, 0), 1)
+                        g = gas_phase.to_zs_TPV(ys_new, T=T, P=P, V=V)
+                        l = liquid_phase.to_zs_TPV(xs_new, T=T, P=P, V=V)
+                        G = g.G()*V_over_F_G + (1.0 - V_over_F_G)*l.G()
+                        print('step', step, G, V_over_F, Ks)
+                        step *= 0.5
+                    # xs, ys = xs_working, ys_working
+
+
+#                    print('Gibbs increased', G/G_old)
+            G_old = G
+        if check_V and iteration > 2:
+            big_Z_change = (abs(1.0 - l_old.Z()/l.Z()) > dZ_allow or abs(1.0 - g_old.Z()/g.Z()) > dZ_allow)
+            if restrained <= restrained_switch_count and big_Z_change:
+                limited_Z = True
+                step = .5 #.5
+                while (abs(1.0 - l_old.Z()/l.Z()) > dZ_allow  or abs(1.0 - g_old.Z()/g.Z()) > dZ_allow ) and step > 1e-8:
+                    # Ks_working = [step*xo + (1.0 - step)*xi for xo, xi in zip(Ks, Ks_old)]
+#                     Ks_working = [Ks[i]*(Ks_old[i]/Ks[i])**(1.0 - step) for i in cmps] # step = 0 - all new; step = 1 - all old
+#                     Ks_working = [Ks_old[i]*(exp(lnphis_l[i])/exp(lnphis_g[i])/Ks_old[i])**(1.0 - step) for i in cmps]
+                    ys_new = normalize([step*xo + (1.0 - step)*xi for xo, xi in zip(ys, ys_old)])
+                    xs_new = normalize([step*xo + (1.0 - step)*xi for xo, xi in zip(xs, xs_old)])
+                    # V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks_working, guess=V_over_F)
+                    l = liquid_phase.to_zs_TPV(xs_new, T=T, P=P, V=V)
+                    g = gas_phase.to_zs_TPV(ys_new, T=T, P=P, V=V)
+                    # lnphis_g = g.lnphis()
+                    # lnphis_l = l.lnphis()
+                    print('step', step, V_over_F, g.Z())
+                    step *= 0.5
+                xs, ys = xs_new, ys_new
+                lnphis_g = g.lnphis()
+                lnphis_l = l.lnphis()
+                Ks = [exp(lnphis_l[i] - lnphis_g[i]) for i in cmps]
+                V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks, guess=V_over_F)
+                restrained += 1
+            elif restrained > restrained_switch_count and big_Z_change:
+                restrained = 0
 
         # Check for negative fractions - normalize only if needed
         for xi in xs_new:
@@ -143,16 +210,24 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
         if err > 0.0 and err in (err1, err2, err3):
             raise ValueError("Converged to cycle in errors, no progress being made")
         # Accept the new compositions
+        xs_old, ys_old, V_over_F_old, Ks_old = xs, ys, V_over_F, Ks
+        if not limited_Z:
+            assert xs == l.zs
+            assert ys == g.zs
         xs, ys = xs_new, ys_new
+        lnphis_g_old, lnphis_l_old = lnphis_g, lnphis_l
+        l_old, g_old = l, g
         
-#        print(err, xs, ys, Ks)
+        # print(err, Ks, g.Z()) # xs, ys
         
         # Check for 
         comp_difference = sum([abs(xi - yi) for xi, yi in zip(xs, ys)])
         if comp_difference < trivial_solution_tol:
             raise ValueError("Converged to trivial condition, compositions of both phases equal")
-        if err < tol:
+        if err < tol and not limited_Z:
             return V_over_F, xs, ys, l, g, iteration, err
+        # elif err < tol and limited_Z:
+        #     print(l.fugacities()/np.array(g.fugacities()))
         err1, err2, err3 = err, err1, err2
     raise UnconvergedError('End of SS without convergence')
 
@@ -663,6 +738,7 @@ def nonlin_2P_newton(T, P, zs, xs_guess, ys_guess, liquid_phase,
     guesses = [log(i) for i in Ks_guess]
     guesses.append(V_over_F)
 
+    # TODO trust-region
     sln, iterations = newton_system(to_solve, guesses, jac=True, xtol=xtol, 
                                     maxiter=maxiter, 
                                     damping_func=make_damp_initial(3),
@@ -742,30 +818,35 @@ def minimize_gibbs_2P_transformed(T, P, zs, xs_guess, ys_guess, liquid_phase,
 
 def minimize_gibbs_NP_transformed(T, P, zs, compositions_guesses, phases,
                                   betas, tol=1E-13,
-                                  method='L-BFGS-B', opt_kwargs=None):
+                                  method='L-BFGS-B', opt_kwargs=None, translate=False):
     if opt_kwargs is None:
         opt_kwargs = {}
     N = len(zs)
     cmps = range(N)
     phase_count = len(phases)
     phase_iter = range(phase_count)
-    RT_inv = 1.0/(R*T)
+#    RT_inv = 1.0/(R*T)
     
     # Only exist for the first n phases
     # Do not multiply by zs - we are already multiplying by a composition
     flows_guess = [compositions_guesses[j][i]*betas[j] for j in range(phase_count - 1) for i in cmps]
     # Convert the flow guesses to the basis used
     remaining = zs
-    flows_guess_basis = []
-    for j in range(phase_count-1):
-        phase_guess = flows_guess[j*N:j*N+N]
-        flows_guess_basis.extend([-log((remaining[i]-phase_guess[i])/(phase_guess[i]-0.0)) for i in cmps])
-        remaining = [remaining[i] - phase_guess[i] for i in cmps]
+    if translate:
+        flows_guess_basis = []
+        for j in range(phase_count-1):
+            phase_guess = flows_guess[j*N:j*N+N]
+            flows_guess_basis.extend([-trunc_log((remaining[i]-phase_guess[i])/(phase_guess[i]-0.0)) for i in cmps])
+            remaining = [remaining[i] - phase_guess[i] for i in cmps]
+    else:
+        flows_guess_basis = flows_guess
 
     global min_G, iterations
+    jac = False
     min_G = 1e100
     iterations = 0
     info = []
+    last = []
     def G(flows):
         global min_G, iterations
         try:
@@ -779,40 +860,86 @@ def minimize_gibbs_NP_transformed(T, P, zs, compositions_guesses, phases,
         iter_phases = []
         
         remaining = zs
+        for i in range(len(flows)):
+            if flows[i] < 1e-10:
+                flows[i] = 1e-10
+            # elif flows[i] > zs[i]
         
         for j in phase_iter:
             v = flows[j*N:j*N+N]
-            
+
             # Mole flows of phase0/vapor
             if j == phase_count - 1:
                 vs = remaining
             else:
-                vs = [(0.0 + (remaining[i] - 0.0)/(1.0 + trunc_exp(-v[i]))) for i in cmps]
-            vs_sum = sum(vs)
-            vs_sum_inv = 1.0/vs_sum
-            ys = [vs[i]*vs_sum_inv for i in cmps]
-            ys = normalize(ys)
+                if translate:
+                    vs = [(0.0 + (remaining[i] - 0.0)/(1.0 + trunc_exp(-v[i]))) for i in cmps]
+                else:
+                    vs = v
+            vs_sum = sum(abs(i) for i in vs)
+            if vs_sum == 0.0:
+                # Handle the case an optimizer takes all of all compounds already
+                ys = zs
+            else:
+                vs_sum_inv = 1.0/vs_sum
+                ys = [abs(vs[i]*vs_sum_inv) for i in cmps]
+                ys = normalize(ys)
             iter_flows.append(vs)
             iter_comps.append(ys)
             iter_betas.append(vs_sum) # Would be divided by feed but feed is zs = 1
     
             remaining = [remaining[i] - vs[i] for i in cmps]
         G = 0.0
+        jac_array = []
         for j in phase_iter:
-            phase = phases[j].to_TP_zs(T=T, P=P, zs=iter_comps[j])
+            comp = iter_comps[j]
+            phase = phases[j].to_TP_zs(T=T, P=P, zs=comp)
+            lnphis = phase.lnphis()
+            for i in cmps:
+                G += iter_flows[j][i]*(trunc_log(comp[i]) + lnphis[i])
             iter_phases.append(phase)
-            G += phase.G()*iter_betas[j]
-        
+#        if not jac:
+#            for j in phase_iter:
+#                comp = iter_comps[j]
+#            G += phase.G()*iter_betas[j]
+#            if jac:
+#                r = []
+#                for i in cmps:
+#                    v = (log())
+#                jac_array.append([log()])
+        jac_arr = []
+        comp = iter_comps[0]
+        phase = iter_phases[0]
+        lnphis = phase.lnphis()
+        base = [log(xi) + lnphii for xi, lnphii in zip(comp, lnphis)]
+        if jac:
+            for j in range(1, phase_count):
+                comp = iter_comps[j]
+                phase = iter_phases[j]
+                lnphis = phase.lnphis()
+                jac_arr.extend([ref - (log(xi) + lnphii) for ref, xi, lnphii in zip(base, comp, lnphis)])
         if G < min_G:
             info[:] = iter_betas, iter_comps, iter_phases
             min_G = G
-        return G*RT_inv
+        last[:] = iter_betas, iter_comps, iter_phases
+        if jac:
+            return G, np.array(jac_arr)
+        return G
 #    ans = None
-    ans = minimize(G, flows_guess_basis, method=method, tol=tol, **opt_kwargs)
+    if method == 'differential_evolution':
+        from scipy.optimize import differential_evolution
+        ans = differential_evolution(G, [(-100.0, 100.0) for i in cmps for j in range(phase_count-1)], **opt_kwargs)
+    else:
+        jac = True
+        import numdifftools as nd
+#        nd.Jacobian(G, step=1e-5)
+        # trust-constr special handling to add constraints
+
+        ans = minimize(G, flows_guess_basis, jac=True, method=method, tol=tol, **opt_kwargs)
 #    G(ans['x']) # Make sure info has right value
-    ans['fun'] /= RT_inv
+#    ans['fun'] *= R*T
     
-    betas, compositions, phases = info
+    betas, compositions, phases = last#info
     return betas, compositions, phases, iterations, float(ans['fun'])
     
 #    return ans, info
@@ -2892,7 +3019,7 @@ class FlashBase(object):
                                            V=V, H=H, S=S, U=U, G=G, A=A, 
                                            solution=solution, retry=retry,
                                            hot_start=hot_start)
-        elif zs is None:
+        if zs is None:
             zs = [1.0]
 
         T_spec = T is not None
@@ -4058,6 +4185,10 @@ class FlashVL(FlashBase):
             ls, g = ([liquid], None) if min_phase is liquid else ([], gas)
             return g, ls, [], [1.0], {'iterations': 0, 'err': 0.0, 'stab_guess_name': stab_guess_name}
         
+        if 0:
+            self.PT_converge(T=T, P=P, zs=zs, xs_guess=trial_zs, ys_guess=appearing_zs, liquid_phase=min_phase, 
+                        gas_phase=other_phase, V_over_F_guess=V_over_F)
+        
         V_over_F, xs, ys, l, g, iteration, err = sequential_substitution_2P(T=T, P=P, V=None,
                                                                             zs=zs, xs_guess=trial_zs, ys_guess=appearing_zs,
                                                                             liquid_phase=min_phase,
@@ -4088,15 +4219,15 @@ class FlashVL(FlashBase):
         
         return g, ls, [], [V_over_F, 1.0 - V_over_F], {'iterations': iteration, 'err': err, 'stab_guess_name': stab_guess_name}
     
-    def PT_converge(self):
-#        for algo in self.PT_algorithms:
-#            pass
-#        T=T, P=P, V=None,
-#                                                                            zs=zs, xs_guess=trial_zs, ys_guess=appearing_zs,
-#                                                                            liquid_phase=min_phase,
-#                                                                            gas_phase=other_phase, maxiter=self.PT_SS_MAXITER,
-#                                                                            tol=self.PT_SS_TOL,
-#                                                                            V_over_F_guess=V_over_F
+    def PT_converge(self, T, P, zs, xs_guess, ys_guess, liquid_phase, 
+                    gas_phase, V_over_F_guess=0.5):
+        for algo in self.PT_algorithms:
+            try:
+                sln = algo(T=T, P=P, zs=zs, xs_guess=xs_guess, ys_guess=ys_guess, liquid_phase=liquid_phase,
+                  gas_phase=gas_phase, V_over_F_guess=V_over_F_guess)
+                return sln
+            except Exception as e:
+                a = 1
 #        
         PT_methods = [PT_SS, PT_SS_MEHRA, PT_SS_GDEM3, PT_NEWTON_lNKVF]
         PT_algorithms = [sequential_substitution_2P, sequential_substitution_Mehra_2P,
@@ -4125,6 +4256,23 @@ class FlashVL(FlashBase):
         return g, [l], [], [V_over_F, 1.0 - V_over_F], {'iterations': iteration, 'err': err}
 
     def flash_TPV(self, T, P, V, zs=None, solution=None, hot_start=None):
+        if hot_start is not None:
+            try:
+                VF_guess, xs, ys = hot_start.beta_gas, hot_start.liquid0.zs, hot_start.gas.zs
+                liquid, gas = self.liquid, self.gas
+                
+                V_over_F, xs, ys, l, g, iteration, err = sequential_substitution_2P(T=T, P=P, V=None,
+                                                    zs=zs, xs_guess=xs, ys_guess=ys, liquid_phase=liquid,
+                               gas_phase=gas, maxiter=self.PT_SS_MAXITER, tol=self.PT_SS_TOL,
+                               V_over_F_guess=VF_guess)
+                
+                assert 0.0 <= V_over_F <= 1.0
+                return g, [l], [], [V_over_F, 1.0 - V_over_F], {'iterations': iteration, 'err': err}
+            except Exception as e:
+                print('FAILED from hot start TP')
+                pass
+        
+        
         return self.flash_TP_stability_test(T, P, zs, solution=solution)
 
 #    def flash(self, zs, T=None, P=None, VF=None, H=None, S=None):
@@ -4714,8 +4862,8 @@ class FlashPureVLS(FlashBase):
             Pmin = AS.trivial_keyed_output(CPiP_min)*(1.0 + 1e-3)
             Pmax = AS.p_critical()*(1.0 - 1e-7)
             
-        Tmin, liquid, gas, iters, flash_err = self.flash_PVF(P=Pmin, VF=.5)
-        Tmax, liquid, gas, iters, flash_err = self.flash_PVF(P=Pmax, VF=.5)
+        Tmin, liquid, gas, iters, flash_err = self.flash_PVF(P=Pmin, VF=.5, zs=[1.0])
+        Tmax, liquid, gas, iters, flash_err = self.flash_PVF(P=Pmax, VF=.5, zs=[1.0])
                 
         liq_props, gas_props = [[] for _ in range(len(props))], [[] for _ in range(len(props))]
         # Lots of issues near Tc - split the range into low T and high T
@@ -4726,7 +4874,7 @@ class FlashPureVLS(FlashBase):
         Ts += linspace(T_next, Tmax, pts//2)
         Ts.insert(-1, Tmax*(1-1e-8))
         for T in Ts:
-            Psat, liquid, gas, iters, flash_err = self.flash_TVF(T, VF=.5)
+            Psat, liquid, gas, iters, flash_err = self.flash_TVF(T, VF=.5, zs=[1.0])
             for i, prop in enumerate(props):
                 liq_props[i].append(liquid.value(prop))
                 gas_props[i].append(gas.value(prop))
@@ -4942,7 +5090,7 @@ class FlashPureVLS(FlashBase):
         val_cache = [None, 0]
 
         def to_solve(T):
-            Psat, liquid, gas, iters, flash_err = self.flash_TVF(T=T, VF=VF)
+            Psat, liquid, gas, iters, flash_err = self.flash_TVF(T=T, VF=VF, zs=[1.0])
             # Error
             calc_spec_val = getattr(gas, spec_var)()*VF + getattr(liquid, spec_var)()*(1.0 - VF)
             val_cache[0] = calc_spec_val
@@ -4977,7 +5125,7 @@ class FlashPureVLS(FlashBase):
         cache = [0]
         fprime = True
         def to_solve(T):
-            Psat, liquid, gas, iters, flash_err = self.flash_TVF(T=T, VF=VF)
+            Psat, liquid, gas, iters, flash_err = self.flash_TVF(T=T, VF=VF, zs=[1.0])
             # Error
             calc_spec_val = getattr(gas, spec_var)()*VF + getattr(liquid, spec_var)()*(1.0 - VF)
             err = calc_spec_val - spec_val

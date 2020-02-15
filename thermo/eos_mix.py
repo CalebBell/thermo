@@ -829,7 +829,7 @@ class GCEOSMIX(GCEOS):
             main6 = -0.5*np.einsum('i, j', da_alpha_dTs, da_alpha_dTs)
             
             # Needed for fugacity temperature derivative
-            self.da_alpha_dT_ijs = (0.5*(term7)*(term2 + term0))
+            self.da_alpha_dT_ijs = (0.5*(term7)*(term2 + term0)).tolist()
             
             d2a_alpha_dT2 = (z_products*(term1*(main3 + main4 + main6))).sum()
         
