@@ -3416,29 +3416,39 @@ def test_dP_dns_Vt():
     
     
 def test_lnphis_basic():
-    # Not 100% positive these are correct. But to 4.8 nines with jacobian, it's a match.
-    # There is no bias about which direction a number is wrong though.
     liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S', 'methane']
     zs = [0.1, 0.2, 0.3, 0.4]
     Tcs = [126.2, 304.2, 373.2, 190.5640]
     Pcs = [3394387.5, 7376460.0, 8936865.0, 4599000.0]
     omegas = [0.04, 0.2252, 0.1, 0.008]
     
-    T, P = 300, 1e6
-    eos = PRMIX(T=T, P=P, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+    T = 250.0
+    eos_l = PRMIX(T=T, P=9e6, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+    eos_g = PRMIX(T=T, P=1e6, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
     
-    def lnphis_dn(ns):
+    def to_diff_lnphis(ns):
         zs = normalize(ns)
-        return PRMIX(T=T, P=P, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas).lnphis_g
+        if phase == 'g':
+            new = PRMIX(T=T, P=1e6, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+            return new.lnphis_g
+        new = PRMIX(T=T, P=9e6, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        return new.lnphis_l
     
-    dlnphis_dns_numerical = jacobian(lnphis_dn, zs, perturbation=1e-7, scalar=False)
-    dlnphis_dns_analytical = eos.dlnphis_dns(eos.Z_g, zs)
-    dlnphis_dns_expect = [[-0.02537902325861477, 0.007204512789763549, 0.0175466983422222, -0.01041859661225469],
-                          [0.007204833259016413, -0.0020454514833986304, -0.004981543870380252, 0.0029576619027266195],
-                          [0.017546853751371598, -0.0049815999187692375, -0.012132256778313248, 0.007203147082507459], 
-                          [-0.01041793395202692, 0.002957664659691675, 0.0072031571097258065, -0.004276674933823978]]
-    assert_allclose(dlnphis_dns_analytical, dlnphis_dns_expect, rtol=1e-12)
-    assert_allclose(dlnphis_dns_analytical, dlnphis_dns_numerical, rtol=8e-5)
+    phase = 'g'
+    dlnphis_dns_expect = [[-0.041589990253287246, 0.013411942425344808, 0.028569754501346474, -0.017735789525360493], [0.013411942425344811, -0.004325097479659749, -0.009213200783469343, 0.005719463721095726], [0.028569754501346467, -0.00921320078346936, -0.019625701941100915, 0.012183438222223696], [-0.017735789525360493, 0.005719463721095722, 0.012183438222223696, -0.007563363145875399]]
+    dlnphis_dns_g = eos_g.dlnphis_dns(eos_g.Z_g, zs)
+    dlnphis_dns_num = jacobian(to_diff_lnphis, zs, scalar=False, perturbation=2.5e-7)
+    assert_allclose(dlnphis_dns_g, dlnphis_dns_expect, rtol=1e-10)
+    assert_allclose(dlnphis_dns_num, dlnphis_dns_g, rtol=1e-6)
+    
+    phase = 'l'
+    dlnphis_dns_l = eos_l.dlnphis_dns(eos_l.Z_l, zs)
+    dlnphis_dns_l_expect = [[-2.8417588759587655, 1.019086847527884, 2.1398480583755637, -1.4039897485559263], [1.0190868475278858, -0.3655127847640719, -0.767477412353023, 0.5035927397648337], [2.1398480583755637, -0.7674774123530248, -1.6114979541968093, 1.0574001572302283], [-1.4039897485559263, 0.5035927397648343, 1.0574001572302274, -0.6938490506661066]]
+    dlnphis_dns_num = jacobian(to_diff_lnphis, zs, scalar=False, perturbation=1.5e-7)
+    assert_allclose(dlnphis_dns_l, dlnphis_dns_l_expect, rtol=1e-10)
+    assert_allclose(dlnphis_dns_l, dlnphis_dns_num, rtol=2e-6)
+    # assert_allclose(nd.Jacobian(lambda x: np.array(to_diff_lnphis(x.tolist())), step=13.e-7)(np.array(zs)),
+    #                 dlnphis_dns_l, rtol=1e-7)
 
 
 def test_IGMIX():
@@ -3547,6 +3557,96 @@ def test_PRMIX_composition_derivatives_ternary():
     d2a_alpha_dT2_dns_expect = [-1.3992393741884843e-06, -1.1880006563941923e-06, 8.976197964932746e-07]
     assert_allclose(eos.d2a_alpha_dT2_dns, d2a_alpha_dT2_dns_expect, rtol=1e-12)
     
+    
+    
+def test_PR_sample_second_derivative_symmetry():
+    liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S', 'methane']
+    zs = [0.1, 0.2, 0.3, 0.4]
+    Tcs = [126.2, 304.2, 373.2, 190.5640]
+    Pcs = [3394387.5, 7376460.0, 8936865.0, 4599000.0]
+    omegas = [0.04, 0.2252, 0.1, 0.008]
+    
+    T = 250.0
+    eos_l = PRMIX(T=T, P=9e6, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+    eos_g = PRMIX(T=T, P=1e6, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+    
+    tol = 1e-13
+    assert_allclose(eos_l.d2a_alpha_dninjs, np.array(eos_l.d2a_alpha_dninjs).T, rtol=tol)
+    assert_allclose(eos_l.d2epsilon_dninjs, np.array(eos_l.d2epsilon_dninjs).T, rtol=tol)
+    assert_allclose(eos_l.d2delta_dninjs, np.array(eos_l.d2delta_dninjs).T, rtol=tol)
+    d2V_dninjs = eos_l.d2V_dninjs(eos_l.Z_l, zs)
+    assert_allclose(d2V_dninjs, np.array(d2V_dninjs).T, rtol=tol)
+    d2V_dninjs = eos_g.d2V_dninjs(eos_g.Z_g, zs)
+    assert_allclose(d2V_dninjs, np.array(d2V_dninjs).T, rtol=tol)
+    
+    
+    assert_allclose(eos_l.d2a_alpha_dzizjs, np.array(eos_l.d2a_alpha_dzizjs).T, rtol=tol)
+    assert_allclose(eos_l.d2epsilon_dzizjs, np.array(eos_l.d2epsilon_dzizjs).T, rtol=tol)
+    assert_allclose(eos_l.d2delta_dzizjs, np.array(eos_l.d2delta_dzizjs).T, rtol=tol)
+    d2V_dzizjs = eos_l.d2V_dzizjs(eos_l.Z_l, zs)
+    assert_allclose(d2V_dzizjs, np.array(d2V_dzizjs).T, rtol=tol)
+    d2V_dzizjs = eos_g.d2V_dzizjs(eos_g.Z_g, zs)
+    assert_allclose(d2V_dzizjs, np.array(d2V_dzizjs).T, rtol=tol)
+    
+    d2P_dninjs_Vt = eos_l.d2P_dninjs_Vt('l')
+    assert_allclose(d2P_dninjs_Vt, np.array(d2P_dninjs_Vt).T, rtol=tol)
+    d2lnphi_dzizjs = eos_l.d2lnphi_dzizjs(eos_l.Z_l, eos_l.zs)
+    assert_allclose(d2lnphi_dzizjs, np.array(d2lnphi_dzizjs).T, rtol=tol)
+    d2lnphi_dninjs = eos_l.d2lnphi_dninjs(eos_l.Z_l, eos_l.zs)
+    assert_allclose(d2lnphi_dninjs, np.array(d2lnphi_dninjs).T, rtol=tol)
+    d2G_dep_dzizjs = eos_l.d2G_dep_dzizjs(eos_l.Z_l, eos_l.zs)
+    assert_allclose(d2G_dep_dzizjs, np.array(d2G_dep_dzizjs).T, rtol=tol)
+    d2G_dep_dninjs = eos_l.d2G_dep_dninjs(eos_l.Z_l, eos_l.zs)
+    assert_allclose(d2G_dep_dninjs, np.array(d2G_dep_dninjs).T, rtol=tol)
+    
+    d2A_dep_dninjs = eos_l.d2A_dep_dninjs(eos_l.Z_l, eos_l.zs)
+    assert_allclose(d2A_dep_dninjs, np.array(d2A_dep_dninjs).T, rtol=tol)
+    d2A_dep_dninjs_Vt = eos_l.d2A_dep_dninjs_Vt('l')
+    assert_allclose(d2A_dep_dninjs_Vt, np.array(d2A_dep_dninjs_Vt).T, rtol=tol)
+    d2nA_dninjs_Vt = eos_l.d2nA_dninjs_Vt('l')
+    assert_allclose(d2nA_dninjs_Vt, np.array(d2nA_dninjs_Vt).T, rtol=tol)
+    
+    
+    
+    
+    assert_allclose(eos_g.d2a_alpha_dninjs, np.array(eos_g.d2a_alpha_dninjs).T, rtol=tol)
+    assert_allclose(eos_g.d2epsilon_dninjs, np.array(eos_g.d2epsilon_dninjs).T, rtol=tol)
+    assert_allclose(eos_g.d2delta_dninjs, np.array(eos_g.d2delta_dninjs).T, rtol=tol)
+    d2V_dninjs = eos_g.d2V_dninjs(eos_g.Z_g, zs)
+    assert_allclose(d2V_dninjs, np.array(d2V_dninjs).T, rtol=tol)
+    d2V_dninjs = eos_g.d2V_dninjs(eos_g.Z_g, zs)
+    assert_allclose(d2V_dninjs, np.array(d2V_dninjs).T, rtol=tol)
+    
+    
+    assert_allclose(eos_g.d2a_alpha_dzizjs, np.array(eos_g.d2a_alpha_dzizjs).T, rtol=tol)
+    assert_allclose(eos_g.d2epsilon_dzizjs, np.array(eos_g.d2epsilon_dzizjs).T, rtol=tol)
+    assert_allclose(eos_g.d2delta_dzizjs, np.array(eos_g.d2delta_dzizjs).T, rtol=tol)
+    d2V_dzizjs = eos_g.d2V_dzizjs(eos_g.Z_g, zs)
+    assert_allclose(d2V_dzizjs, np.array(d2V_dzizjs).T, rtol=tol)
+    d2V_dzizjs = eos_g.d2V_dzizjs(eos_g.Z_g, zs)
+    assert_allclose(d2V_dzizjs, np.array(d2V_dzizjs).T, rtol=tol)
+    
+    d2P_dninjs_Vt = eos_g.d2P_dninjs_Vt('g')
+    assert_allclose(d2P_dninjs_Vt, np.array(d2P_dninjs_Vt).T, rtol=tol)
+    d2lnphi_dzizjs = eos_g.d2lnphi_dzizjs(eos_g.Z_g, eos_g.zs)
+    assert_allclose(d2lnphi_dzizjs, np.array(d2lnphi_dzizjs).T, rtol=tol)
+    d2lnphi_dninjs = eos_g.d2lnphi_dninjs(eos_g.Z_g, eos_g.zs)
+    assert_allclose(d2lnphi_dninjs, np.array(d2lnphi_dninjs).T, rtol=tol)
+    d2G_dep_dzizjs = eos_g.d2G_dep_dzizjs(eos_g.Z_g, eos_g.zs)
+    assert_allclose(d2G_dep_dzizjs, np.array(d2G_dep_dzizjs).T, rtol=tol)
+    d2G_dep_dninjs = eos_g.d2G_dep_dninjs(eos_g.Z_g, eos_g.zs)
+    assert_allclose(d2G_dep_dninjs, np.array(d2G_dep_dninjs).T, rtol=tol)
+    
+    d2A_dep_dninjs = eos_g.d2A_dep_dninjs(eos_g.Z_g, eos_g.zs)
+    assert_allclose(d2A_dep_dninjs, np.array(d2A_dep_dninjs).T, rtol=tol)
+    d2A_dep_dninjs_Vt = eos_g.d2A_dep_dninjs_Vt('g')
+    assert_allclose(d2A_dep_dninjs_Vt, np.array(d2A_dep_dninjs_Vt).T, rtol=tol)
+    d2nA_dninjs_Vt = eos_g.d2nA_dninjs_Vt('g')
+    assert_allclose(d2nA_dninjs_Vt, np.array(d2nA_dninjs_Vt).T, rtol=tol)
+
+    
+    
+    
 def test_dlnphi_dns_PR_sample():
     # Basic check - tested elsewhere more comprehensively
     liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S', 'methane']
@@ -3633,11 +3733,77 @@ def test_dV_dns_d2V_dninjs_num_sample():
     # assert_allclose(nd.Hessian(to_jac_V, step=18e-5)(zs), d2V_dninjs, rtol=3.5e-7)
 
 
+def test_d2G_dep_dninjs_sample():
+    liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S', 'methane']
+    zs = [0.1, 0.2, 0.3, 0.4]
+    Tcs = [126.2, 304.2, 373.2, 190.5640]
+    Pcs = [3394387.5, 7376460.0, 8936865.0, 4599000.0]
+    omegas = [0.04, 0.2252, 0.1, 0.008]
+    
+    T = 250.0
+    eos_l = PRMIX(T=T, P=9e6, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+    eos_g = PRMIX(T=T, P=1e6, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+    
+    def to_jac(ns):
+        zs = normalize(ns)
+        if phase == 'g':
+            new = PRMIX(T=T, P=1e6, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+            return new.G_dep_g
+        new = PRMIX(T=T, P=9e6, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        return new.G_dep_l
+    
+    phase = 'l'
+    d2G_dep_dninjs = eos_l.d2G_dep_dninjs(eos_l.Z_l, zs)
+    d2G_dep_dninjs_num = np.array(hessian(to_jac, zs, perturbation=4e-5))
+    d2G_dep_dninjs_expect = [[-13904.027444500864, -516.3873193389383, 3332.201156558403, -8761.329044761345], [-516.3873193389346, 1967.9879742763017, 2651.414684829288, 566.2275423506163], [3332.201156558403, 2651.4146848292844, 2415.977051830929, 3236.3369879236607], [-8761.329044761345, 566.2275423506177, 3236.336987923659, -5131.0904892947165]]
+    assert_allclose(d2G_dep_dninjs, d2G_dep_dninjs_expect, rtol=1e-10)
+    assert_allclose(d2G_dep_dninjs, d2G_dep_dninjs_num, rtol=8e-5)
+    
+    phase = 'g'
+    d2G_dep_dninjs_expect = [[-400.9512555721441, -78.08507623085663, 11.211718829012208, -262.25550056275165], [-78.08507623085663, 93.58473600305078, 141.21377754489365, -4.962742937886635], [11.2117188290122, 141.21377754489362, 177.35971922588433, 66.26290524083636], [-262.25550056275165, -4.962742937886636, 66.26290524083636, -151.99889589589074]]
+    d2G_dep_dninjs = eos_g.d2G_dep_dninjs(eos_g.Z_g, zs)
+    d2G_dep_dninjs_num = np.array(hessian(to_jac, zs, perturbation=10e-5))
+    assert_allclose(d2G_dep_dninjs, d2G_dep_dninjs_expect, rtol=1e-10)
+    assert_allclose(d2G_dep_dninjs, d2G_dep_dninjs_num, rtol=5e-4)
 
 
+def test_d2lnphi_dninjs_sample():
+    liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S', 'methane']
+    zs = [0.1, 0.2, 0.3, 0.4]
+    Tcs = [126.2, 304.2, 373.2, 190.5640]
+    Pcs = [3394387.5, 7376460.0, 8936865.0, 4599000.0]
+    omegas = [0.04, 0.2252, 0.1, 0.008]
+    
+    T = 250.0
+    eos_l = PRMIX(T=T, P=9e6, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+    eos_g = PRMIX(T=T, P=1e6, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+    
+    def to_jac(ns):
+        zs = normalize(ns)
+        if phase == 'g':
+            new = PRMIX(T=T, P=1e6, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+            return new.lnphi_g
+        new = PRMIX(T=T, P=9e6, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        return new.lnphi_l
+    
+    phase = 'l'
+    d2lnphi_dninjs = eos_l.d2lnphi_dninjs(eos_l.Z_l, zs)
+    d2lnphi_dninjs_num = np.array(hessian(to_jac, zs, perturbation=4e-5))
+    d2lnphi_dninjs_expect = [[-6.689080501315258, -0.24842847604437732, 1.6030867223014982, -4.214982710070737], [-0.24842847604437557, 0.9467781934478982, 1.2755675533571427, 0.27240608003425404], [1.6030867223014982, 1.275567553357141, 1.162300999011552, 1.5569674849978443], [-4.214982710070737, 0.2724060800342547, 1.5569674849978434, -2.468513348339236]]
+    assert_allclose(d2lnphi_dninjs, d2lnphi_dninjs_expect, rtol=1e-10)
+    assert_allclose(d2lnphi_dninjs, d2lnphi_dninjs_num, rtol=8e-5)
+    
+    phase = 'g'
+    d2lnphi_dninjs_expect = [[-0.19289340705999877, -0.037565904047903664, 0.005393839310568691, -0.1261683467023644], [-0.037565904047903664, 0.045022626380554834, 0.06793645435921593, -0.0023875231224451303], [0.005393839310568688, 0.06793645435921591, 0.08532588448405505, 0.03187838266115353], [-0.1261683467023644, -0.002387523122445131, 0.03187838266115353, -0.07312506069317169]]
+    d2lnphi_dninjs = eos_g.d2lnphi_dninjs(eos_g.Z_g, zs)
+    d2lnphi_dninjs_num = np.array(hessian(to_jac, zs, perturbation=10e-5))
+    assert_allclose(d2lnphi_dninjs, d2lnphi_dninjs_expect, rtol=1e-10)
+    assert_allclose(d2lnphi_dninjs, d2lnphi_dninjs_num, rtol=5e-4)
+    # import numdifftools as nd
+    # assert_allclose(nd.Hessian(to_jac, step=1.5e-4)(zs), d2lnphi_dninjs, rtol=4e-7)
 
-def test_dfugacities_dns():
-    # WRONG FOR PR!!! Sometimes the gas one looks close but it is not!
+
+def test_dfugacities_dns_SRK():
     eos = SRKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.4, 0.6], kijs=[[0,0],[0,0]])
     def to_diff_fugacities(zs):
         zs = normalize(zs)
@@ -3664,7 +3830,40 @@ def test_dfugacities_dns():
     assert_allclose(dfugacities_dns_l, dfugacities_dns_l_expect, rtol=1e-10)
     assert_allclose(dfugacities_dns_l, dfugacities_dns_num)
          
-         
+def test_dfugacities_dns_PR_4():
+    liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S', 'methane']
+    zs = [0.1, 0.2, 0.3, 0.4]
+    Tcs = [126.2, 304.2, 373.2, 190.5640]
+    Pcs = [3394387.5, 7376460.0, 8936865.0, 4599000.0]
+    omegas = [0.04, 0.2252, 0.1, 0.008]
+    
+    T = 250.0
+    eos_l = PRMIX(T=T, P=9e6, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+    eos_g = PRMIX(T=T, P=1e6, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+    
+    def to_diff_fugacities(ns):
+        zs = normalize(ns)
+        if phase == 'g':
+            new = PRMIX(T=T, P=1e6, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+            return new.fugacities_g
+        new = PRMIX(T=T, P=9e6, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        return new.fugacities_l
+    phase = 'g'
+    dfugacities_dns_expect = [[903011.9134523516, -99448.5370384289, -97920.62250095973, -102588.24296815366], [-179910.93176460464, 728638.0462663197, -184036.77797240485, -181313.7067127051], [-258434.41887949963, -268486.006358711, 615527.1466444619, -262793.75208411587], [-393132.5517098944, -384072.22028135974, -381575.30623355834, 576500.7277433223]]
+    dfugacities_dns_g = eos_g.dfugacities_dns('g')
+    assert_allclose(dfugacities_dns_g, dfugacities_dns_expect, rtol=1e-10)
+    dfugacities_dns_num = jacobian(to_diff_fugacities, zs, scalar=False, perturbation=1e-7)
+    assert_allclose(dfugacities_dns_g, dfugacities_dns_num, rtol=2e-6)
+    
+    phase = 'l'
+    dfugacities_dns_l = eos_l.dfugacities_dns('l')
+    dfugacities_dns_l_expect =[[16181029.072792342, 50151.468339063846, 2994997.142794145, -6316580.859463232], [7601.827445166389, 1447527.9179300785, -703943.29300887, -197706.94606967806], [327913.730146497, -508471.37649235234, 207659.02085379465, 16512.99006920588], [-8963347.443242379, -1850869.2682689782, 214018.1973988597, 3005757.846895938]]
+    dfugacities_dns_num = jacobian(to_diff_fugacities, zs, scalar=False, perturbation=1.5e-7)
+    assert_allclose(dfugacities_dns_l, dfugacities_dns_l_expect, rtol=1e-10)
+    assert_allclose(dfugacities_dns_l, dfugacities_dns_num, rtol=2e-6)
+    # assert_allclose(nd.Jacobian(lambda x: np.array(to_diff_fugacities(x.tolist())), step=13.e-7)(np.array(zs)),
+    #                 dfugacities_dns_l, rtol=1e-8)
+
 
 def test_dlnfugacities_dns():
     eos = SRKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.4, 0.6], kijs=[[0,0],[0,0]])
@@ -3677,15 +3876,11 @@ def test_dlnfugacities_dns():
             return [log(fi) for fi in new.fugacities_l]
         else:
             return [log(fi) for fi in new.fugacities_g]
-    
-    # SRK is symmetric for some reason
-    # Will not work for PR
-    # Believe issue is in d2ns_to_dn2_partials
     phase = 'g'
     dlnfugacities_dns_expect = [[1.4378058197970829, -0.9585372131980551],
      [-0.958537213198055, 0.6390248087987035]]
     dlnfugacities_dns_g = eos.dlnfugacities_dns('g')
-    assert_allclose(dlnfugacities_dns_g, dlnfugacities_dns_expect, rtol=1e-9)
+    assert_allclose(dlnfugacities_dns_g, dlnfugacities_dns_expect, rtol=1e-11)
     dlnfugacities_dns_num = jacobian(to_diff_lnfugacities, eos.zs, scalar=False, perturbation=1e-7)
     assert_allclose(dlnfugacities_dns_g, dlnfugacities_dns_num)
     
@@ -3694,7 +3889,7 @@ def test_dlnfugacities_dns():
     dlnfugacities_dns_l_expect = [[1.1560067098003597, -0.7706711398669063],
      [-0.7706711398669062, 0.5137807599112717]]
     dlnfugacities_dns_num = jacobian(to_diff_lnfugacities, eos.zs, scalar=False, perturbation=1e-7)
-    assert_allclose(dlnfugacities_dns_l, dlnfugacities_dns_l_expect, rtol=1e-10)
+    assert_allclose(dlnfugacities_dns_l, dlnfugacities_dns_l_expect, rtol=1e-11)
     assert_allclose(dlnfugacities_dns_l, dlnfugacities_dns_num)
 
 

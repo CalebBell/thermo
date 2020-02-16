@@ -3861,79 +3861,156 @@ class GCEOSMIX(GCEOS):
             logF = -690.7755278982137
         return dns_to_dn_partials(self.dlnphi_dns(Z, zs), logF)
         
+    # This method was good until it was broke and was unable to find the error
+    # Had to be recreated
+#    def _d2_G_dep_lnphi_d2_helper(self, V, d_Vs, d2Vs, dbs, d2bs, d_epsilons, d2_epsilons,
+#                          d_deltas, d2_deltas, da_alphas, d2a_alphas, G=True):
+#        # There may be some issues with the liquid phase...very confused
+#        # Doesnt appear in SRK??
+#        # Has a bug... somewhere
+#        T, P = self.T, self.P
+#        cmps = self.cmps
+#        x0 = V
+#        RT = T*R
+#        hess = []
+#        
+#        x2 = 1/(R*T)
+#        x3 = self.b
+#        x4 = x0 - x3
+#        x7 = self.delta
+#        x8 = self.epsilon
+#        x11 = self.a_alpha
+#
+#        x9 = x7**2 - 4*x8
+#        if x9 == 0.0:
+#            # Pretty sure this should be large not small
+#            x9 = 1e100
+#        x10 = 1/sqrt(x9)
+#        x12 = 2*x0
+#        x13 = x12 + x7
+#        x14 = catanh(x10*x13).real
+#        x15 = 2*x2
+#        x16 = x14*x15
+#        x20 = x16/x9**(3/2.)
+#        x28 = 1/x9
+#        x29 = x28*x7
+#        x32 = x13**2*x28 - 1
+#        x33 = x15/x32
+#        for i in cmps:
+#            x5 = d_Vs[i]
+#            x27 = 2*x5
+#            x17 = d_deltas[i]
+#            x18 = x17*x7 - 2*d_epsilons[i]
+#            x23 = da_alphas[i]
+#            bi = dbs[i]
+#            
+#            row = []
+#            for j in cmps:
+#                # Should be symmetric - only need half, cuts speed in 2
+#                x6 = d_Vs[j]
+#                x19 = da_alphas[j]
+#                x21 = d_deltas[j]
+#                x22 = x21*x7 - 2.0*d_epsilons[i]
+#                x24 = d2_deltas[i][j]
+#                x25 = x17*x21 + x24*x7 - 2*d2_epsilons[i][j]
+#                x26 = x11*x22
+#                x30 = x18*x28
+#                x31 = x12*x30 - x17 + x18*x29 - x27
+#                x34 = x28*x33
+#                x35 = 2.0*x6
+#                x36 = x22*x28
+#                x37 = x12*x36 - x21 + x22*x29 - x35
+#                x38 = x9**(-2.0)
+#                x39 = x18*x38
+#                x40 = x11*x37
+#                x41 = x31*x38
+#                x42 = x22*x39
+#                
+#                x1 = d2Vs[i][j]
+#                v = (P*x1*x2 - x10*x16*d2a_alphas[i][j] + x11*x20*x25 - x11*x34*(-6.0*x0*x42
+#                     - 2.0*x1 + x12*x25*x28 + x17*x36 + x21*x30 - x24 + x25*x29 + x27*x36 + x30*x35 
+#                     - 3.0*x42*x7) - 4.0*x13*x2*x40*x41/x32**2.0 - 6.0*x14*x18*x2*x26/x9**(5.0/2.0)
+#                    + x18*x19*x20 - x19*x31*x34 + x20*x22*x23 - x23*x34*x37 + x26*x33*x41 + x33*x39*x40
+#                    - (x1 - d2bs[i][j])/x4 + (x5 - bi)*(x6 - dbs[j])/x4**2.0)
+#                if G:
+#                    v *= RT
+#                row.append(v)
+#            hess.append(row)
+#        return hess
+    
+    
     def _d2_G_dep_lnphi_d2_helper(self, V, d_Vs, d2Vs, dbs, d2bs, d_epsilons, d2_epsilons,
                           d_deltas, d2_deltas, da_alphas, d2a_alphas, G=True):
-        # There may be some issues with the liquid phase...very confused
-        # Doesnt appear in SRK??
         T, P = self.T, self.P
         cmps = self.cmps
-        x0 = V
         RT = T*R
+        RT_inv = 1.0/RT
         hess = []
-        
-        x2 = 1/(R*T)
-        x3 = self.b
-        x4 = x0 - x3
-        x7 = self.delta
-        x8 = self.epsilon
-        x11 = self.a_alpha
-
-        x9 = x7**2 - 4*x8
-        if x9 == 0.0:
-            x9 = 1e-100
-        x10 = 1/sqrt(x9)
-        x12 = 2*x0
-        x13 = x12 + x7
-        x14 = catanh(x10*x13).real
-        x15 = 2*x2
-        x16 = x14*x15
-        x20 = x16/x9**(3/2.)
-        x28 = 1/x9
-        x29 = x28*x7
-        x32 = x13**2*x28 - 1
-        x33 = x15/x32
         for i in cmps:
-            x5 = d_Vs[i]
-            x27 = 2*x5
-            x17 = d_deltas[i]
-            x18 = x17*x7 - 2*d_epsilons[i]
-            x23 = da_alphas[i]
-            bi = dbs[i]
-            
             row = []
             for j in cmps:
-                # Should be symmetric - only need half, cuts speed in 2
-                x6 = d_Vs[j]
-                x19 = da_alphas[j]
-                x21 = d_deltas[j]
-                x22 = x21*x7 - 2.0*d_epsilons[i]
-                x24 = d2_deltas[i][j]
-                x25 = x17*x21 + x24*x7 - 2*d2_epsilons[i][j]
-                x26 = x11*x22
-                x30 = x18*x28
-                x31 = x12*x30 - x17 + x18*x29 - x27
-                x34 = x28*x33
-                x35 = 2.0*x6
-                x36 = x22*x28
-                x37 = x12*x36 - x21 + x22*x29 - x35
-                x38 = x9**(-2.0)
-                x39 = x18*x38
-                x40 = x11*x37
-                x41 = x31*x38
-                x42 = x22*x39
-                
-                x1 = d2Vs[i][j]
-                v = (P*x1*x2 - x10*x16*d2a_alphas[i][j] + x11*x20*x25 - x11*x34*(-6.0*x0*x42
-                     - 2.0*x1 + x12*x25*x28 + x17*x36 + x21*x30 - x24 + x25*x29 + x27*x36 + x30*x35 
-                     - 3.0*x42*x7) - 4.0*x13*x2*x40*x41/x32**2.0 - 6.0*x14*x18*x2*x26/x9**(5.0/2.0)
-                    + x18*x19*x20 - x19*x31*x34 + x20*x22*x23 - x23*x34*x37 + x26*x33*x41 + x33*x39*x40
-                    - (x1 - d2bs[i][j])/x4 + (x5 - bi)*(x6 - dbs[j])/x4**2.0)
-                if G:
-                    v *= RT
+                # x1: i
+                # x2: j
+                x0 = V# V(x1, x2)
+                x3 = d2Vs[i][j] #Derivative(x0, x1, x2)
+                x4 = self.b#b(x1, x2)
+                x5 = x0 - x4
+                x6 = R*T
+                x7 = d_Vs[i] #Derivative(x0, x1)
+                x8 = d_Vs[j] #Derivative(x0, x2)
+                x9 = self.delta#delta(x1, x2)
+                x10 = self.epsilon#epsilon(x1, x2)
+                x11 = -4*x10 + x9**2
+                if x11 == 0.0:
+                    x11 = 1e-100
+                x12 = 1/sqrt(x11)
+                x13 = self.a_alpha#alpha(x1, x2)
+                x14 = 2*x0
+                x15 = x14 + x9
+                x16 = catanh(x12*x15).real
+                x17 = 2*x16
+                x18 = d_deltas[i] #Derivative(x9, x1)
+                x19 = x18*x9 - 2*d_epsilons[i]#Derivative(x10, x1)
+                x20 = da_alphas[j]#Derivative(x13, x2)
+                x21 = x17/x11**(3/2)
+                x22 = d_deltas[j]#Derivative(x9, x2)
+                x23 = x22*x9 - 2*d_epsilons[j]#Derivative(x10, x2)
+                x24 = da_alphas[i]#Derivative(x13, x1)
+                x25 = d2_deltas[i][j]#Derivative(x9, x1, x2)
+                x26 = x18*x22 + x25*x9 - 2*d2_epsilons[i][j]#Derivative(x10, x1, x2)
+                x27 = x13*x23
+                x28 = 2*x7
+                x29 = 1/x11
+                x30 = x29*x9
+                x31 = x19*x29
+                x32 = x14*x31 - x18 + x19*x30 - x28
+                x33 = x15**2*x29 - 1
+                x34 = 2/x33
+                x35 = x29*x34
+                x36 = 2*x8
+                x37 = x23*x29
+                x38 = x14*x37 - x22 + x23*x30 - x36
+                x39 = x11**(-2)
+                x40 = x19*x39
+                x41 = x13*x38
+                x42 = x32*x39
+                x43 = x23*x40
+                v = (P*x3 - x12*x17*d2a_alphas[i][j] + x13*x21*x26 
+                     - x13*x35*(-6*x0*x43 + x14*x26*x29 + x18*x37 + x22*x31 
+                                - x25 + x26*x30 + x28*x37 - 2*x3 + x31*x36 
+                            - 3*x43*x9) - 4*x15*x41*x42/x33**2 + x19*x20*x21 
+                    - x20*x32*x35 + x21*x23*x24 - x24*x35*x38 + x27*x34*x42
+                    + x34*x40*x41 - x6*(x3 - d2bs[i][j])/x5
+                    + x6*(x7 - dbs[i])*(x8 - dbs[j])/x5**2 
+                    - 6*x16*x19*x27/x11**(5/2))
+                if not G:
+                    v *= RT_inv
                 row.append(v)
             hess.append(row)
         return hess
-        
+
+
+
     def d2lnphi_dzizjs(self, Z, zs):
         r'''Calculates the mixture log *fugacity coefficient* second mole 
         fraction derivatives (where the mole fractions do not sum to 1). No  
