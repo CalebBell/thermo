@@ -3865,7 +3865,7 @@ def test_dfugacities_dns_PR_4():
     #                 dfugacities_dns_l, rtol=1e-8)
 
 
-def test_dlnfugacities_dns():
+def test_dlnfugacities_dns_SRK():
     eos = SRKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.4, 0.6], kijs=[[0,0],[0,0]])
 
     def to_diff_lnfugacities(zs):
@@ -3891,6 +3891,41 @@ def test_dlnfugacities_dns():
     dlnfugacities_dns_num = jacobian(to_diff_lnfugacities, eos.zs, scalar=False, perturbation=1e-7)
     assert_allclose(dlnfugacities_dns_l, dlnfugacities_dns_l_expect, rtol=1e-11)
     assert_allclose(dlnfugacities_dns_l, dlnfugacities_dns_num)
+
+def test_dlnfugacities_dn_PR():
+    liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S', 'methane']
+    zs = [0.1, 0.2, 0.3, 0.4]
+    Tcs = [126.2, 304.2, 373.2, 190.5640]
+    Pcs = [3394387.5, 7376460.0, 8936865.0, 4599000.0]
+    omegas = [0.04, 0.2252, 0.1, 0.008]
+    
+    T = 250.0
+    eos_l = PRMIX(T=T, P=9e6, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+    eos_g = PRMIX(T=T, P=1e6, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+    
+    def to_diff_fugacities(ns):
+        zs = normalize(ns)
+        if phase == 'g':
+            new = PRMIX(T=T, P=1e6, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+            return [log(i) for i in new.fugacities_g]
+        new = PRMIX(T=T, P=9e6, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas)
+        return [log(i) for i in new.fugacities_l]
+    
+    phase = 'g'
+    dfugacities_dns_expect = [[8.958410009746713, -0.9865880575746552, -0.9714302454986535, -1.0177357895253605], [-0.9865880575746553, 3.99567490252034, -1.0092132007834693, -0.9942805362789043], [-0.9714302454986535, -1.0092132007834693, 2.313707631392233, -0.9878165617777763], [-1.0177357895253603, -0.994280536278904, -0.9878165617777761, 1.4924366368541242]]
+    dfugacities_dns_g = eos_g.dlnfugacities_dns('g')
+    assert_allclose(dfugacities_dns_g, dfugacities_dns_expect, rtol=1e-10)
+    dfugacities_dns_num = jacobian(to_diff_fugacities, zs, scalar=False, perturbation=1e-7)
+    assert_allclose(dfugacities_dns_num, dfugacities_dns_g)
+    
+    phase = 'l'
+    dfugacities_dns_l = eos_l.dlnfugacities_dns('l')
+    dfugacities_dns_l_expect =[[6.1582411240412345, 0.01908684752788581, 1.1398480583755637, -2.4039897485559263], [0.019086847527884032, 3.6344872152359278, -1.7674774123530248, -0.4964072602351657], [1.1398480583755635, -1.7674774123530226, 0.7218353791365238, 0.057400157230227386], [-2.403989748555926, -0.49640726023516624, 0.05740015723022828, 0.8061509493338931]]
+    dfugacities_dns_num = jacobian(to_diff_fugacities, zs, scalar=False, perturbation=2e-7)
+    assert_allclose(dfugacities_dns_l, dfugacities_dns_l_expect, rtol=1e-10)
+    assert_allclose(dfugacities_dns_l, dfugacities_dns_num, rtol=2e-6)
+    # assert_allclose(nd.Jacobian(lambda x: np.array(to_diff_fugacities(x.tolist())), step=13.e-7)(np.array(zs)),
+    #                 dfugacities_dns_l, rtol=1e-8)
 
 
 @pytest.mark.mpmath

@@ -4167,6 +4167,7 @@ class GCEOSMIX(GCEOS):
         return d2ns_to_dn2_partials(d2ns, dns)
 
     def dlnfugacities_dns(self, phase):
+        # Great
         zs, cmps = self.zs, self.cmps
         if phase == 'l':
             Z = self.Z_l
@@ -4191,7 +4192,7 @@ class GCEOSMIX(GCEOS):
         return dlnfugacities_dns
 
     def dfugacities_dns(self, phase):
-        # Has one test, have not explored yet
+        # Good
         '''
         from sympy import *
         phifun1, phifun2 = symbols('phifun1, phifun2', cls=Function)
