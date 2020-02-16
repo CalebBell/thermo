@@ -3863,6 +3863,8 @@ class GCEOSMIX(GCEOS):
         
     def _d2_G_dep_lnphi_d2_helper(self, V, d_Vs, d2Vs, dbs, d2bs, d_epsilons, d2_epsilons,
                           d_deltas, d2_deltas, da_alphas, d2a_alphas, G=True):
+        # There may be some issues with the liquid phase...very confused
+        # Doesnt appear in SRK??
         T, P = self.T, self.P
         cmps = self.cmps
         x0 = V
@@ -3885,7 +3887,7 @@ class GCEOSMIX(GCEOS):
         x14 = catanh(x10*x13).real
         x15 = 2*x2
         x16 = x14*x15
-        x20 = x16/x9**(3/2)
+        x20 = x16/x9**(3/2.)
         x28 = 1/x9
         x29 = x28*x7
         x32 = x13**2*x28 - 1
@@ -3904,28 +3906,28 @@ class GCEOSMIX(GCEOS):
                 x6 = d_Vs[j]
                 x19 = da_alphas[j]
                 x21 = d_deltas[j]
-                x22 = x21*x7 - 2*d_epsilons[i]
+                x22 = x21*x7 - 2.0*d_epsilons[i]
                 x24 = d2_deltas[i][j]
                 x25 = x17*x21 + x24*x7 - 2*d2_epsilons[i][j]
                 x26 = x11*x22
                 x30 = x18*x28
                 x31 = x12*x30 - x17 + x18*x29 - x27
                 x34 = x28*x33
-                x35 = 2*x6
+                x35 = 2.0*x6
                 x36 = x22*x28
                 x37 = x12*x36 - x21 + x22*x29 - x35
-                x38 = x9**(-2)
+                x38 = x9**(-2.0)
                 x39 = x18*x38
                 x40 = x11*x37
                 x41 = x31*x38
                 x42 = x22*x39
                 
                 x1 = d2Vs[i][j]
-                v = (P*x1*x2 - x10*x16*d2a_alphas[i][j] + x11*x20*x25 - x11*x34*(-6*x0*x42
-                     - 2*x1 + x12*x25*x28 + x17*x36 + x21*x30 - x24 + x25*x29 + x27*x36 + x30*x35 
-                     - 3*x42*x7) - 4*x13*x2*x40*x41/x32**2 - 6*x14*x18*x2*x26/x9**(5/2)
+                v = (P*x1*x2 - x10*x16*d2a_alphas[i][j] + x11*x20*x25 - x11*x34*(-6.0*x0*x42
+                     - 2.0*x1 + x12*x25*x28 + x17*x36 + x21*x30 - x24 + x25*x29 + x27*x36 + x30*x35 
+                     - 3.0*x42*x7) - 4.0*x13*x2*x40*x41/x32**2.0 - 6.0*x14*x18*x2*x26/x9**(5.0/2.0)
                     + x18*x19*x20 - x19*x31*x34 + x20*x22*x23 - x23*x34*x37 + x26*x33*x41 + x33*x39*x40
-                    - (x1 - d2bs[i][j])/x4 + (x5 - bi)*(x6 - dbs[j])/x4**2)
+                    - (x1 - d2bs[i][j])/x4 + (x5 - bi)*(x6 - dbs[j])/x4**2.0)
                 if G:
                     v *= RT
                 row.append(v)
@@ -4086,7 +4088,31 @@ class GCEOSMIX(GCEOS):
         dns = self.dlnphi_dns(Z, zs)
         d2ns = self.d2lnphi_dninjs(Z, zs)
         return d2ns_to_dn2_partials(d2ns, dns)
-    
+
+    def dlnfugacities_dns(self, phase):
+        zs, cmps = self.zs, self.cmps
+        if phase == 'l':
+            Z = self.Z_l
+            try:
+                fugacities = self.fugacities_l
+            except AttributeError:
+                self.fugacities()
+                fugacities = self.fugacities_l
+        else:
+            Z = self.Z_g
+            try:
+                fugacities = self.fugacities_g
+            except AttributeError:
+                self.fugacities()
+                fugacities = self.fugacities_g
+        dlnfugacities_dns = [list(i) for i in self.dfugacities_dns(phase)]
+        fugacities_inv = [1.0/fi for fi in fugacities]
+        for i in cmps:
+            r = dlnfugacities_dns[i]
+            for j in cmps:
+                r[j]*= fugacities_inv[i]
+        return dlnfugacities_dns
+
     def dfugacities_dns(self, phase):
         # Has one test, have not explored yet
         '''
@@ -4126,7 +4152,8 @@ class GCEOSMIX(GCEOS):
             phi_P = P*phis[i]
             ziPphi = phi_P*zs[i]
             r = dlnphis_dns[i]
-            row = [ziPphi*(r[j] - 1.0) for j in cmps]
+#            row = [ziPphi*(r[j] - 1.0) for j in cmps]
+            row = [ziPphi*(dlnphis_dns[j][i] - 1.0) for j in cmps]
             row[i] += phi_P
             matrix.append(row)
         return matrix

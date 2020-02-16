@@ -47,7 +47,7 @@ from fluids.numerics import (UnconvergedError, trunc_exp, py_newton as newton,
                              oscillation_checking_wrapper, OscillationError,
                              NoSolutionError, NotBoundedError, jacobian,
                              best_bounding_bounds, isclose, newton_system,
-                             make_damp_initial)
+                             make_damp_initial, newton_minimize)
 from fluids.numerics import py_solve, trunc_log
 from fluids.optional.pychebfun import build_solve_pychebfun
 from numpy.testing import assert_allclose
@@ -842,7 +842,7 @@ def minimize_gibbs_NP_transformed(T, P, zs, compositions_guesses, phases,
         flows_guess_basis = flows_guess
 
     global min_G, iterations
-    jac = False
+    jac, hess = False, False
     min_G = 1e100
     iterations = 0
     info = []
@@ -929,6 +929,9 @@ def minimize_gibbs_NP_transformed(T, P, zs, compositions_guesses, phases,
     if method == 'differential_evolution':
         from scipy.optimize import differential_evolution
         ans = differential_evolution(G, [(-100.0, 100.0) for i in cmps for j in range(phase_count-1)], **opt_kwargs)
+    elif method == 'newton_minimize':
+        jac = True
+        hess = True
     else:
         jac = True
         import numdifftools as nd

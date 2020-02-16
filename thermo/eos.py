@@ -5430,7 +5430,14 @@ class GCEOS(object):
         x0 = V - b
         x1 = delta*V + epsilon + V*V
         return (-R*dV_dP/(x0*x0) - (-delta*dV_dP - 2.0*V*dV_dP)*da_alpha_dT/(x1*x1))
-
+    
+    @property
+    def lnphi_l(self):
+        return log(self.phi_l)
+    
+    @property
+    def lnphi_g(self):
+        return log(self.phi_g)
         
 class GCEOS_DUMMY(GCEOS):
     Tc = None
