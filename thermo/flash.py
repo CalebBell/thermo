@@ -234,49 +234,80 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
 
 def sequential_substitution_NP(T, P, zs, compositions_guesses, phases,
                                betas, maxiter=1000, tol=1E-13,
-                               trivial_solution_tol=1e-5, ref_phase=1):
+                               trivial_solution_tol=1e-5, ref_phase=2):
     
     compositions = compositions_guesses
     cmps = range(len(zs))
     phases_iter = range(len(phases))
-    
+    phase_iter_n1 = range(len(phases)-1)
+    if len(betas) < len(phases):
+        betas.append(1.0 - sum(betas))
+
+    compositions_K_order = [compositions[i] for i in phases_iter if i != ref_phase]
+    compositions_ref = compositions_guesses[ref_phase]
+
     for iteration in range(maxiter):
         phases = [phases[i].to_TP_zs(T=T, P=P, zs=compositions[i]) for i in phases_iter]
         lnphis = [phases[i].lnphis() for i in phases_iter]
-        Ks = [[exp(lnphis[ref_phase][j] - lnphis[i][j]) for j in cmps] 
-              for i in phases_iter if i != ref_phase] # 
+
+        Ks = []
+        lnphis_ref = lnphis[ref_phase]
+        for i in phases_iter:
+            if i != ref_phase:
+                lnphis_i = lnphis[i]
+                try:
+                    Ks.append([exp(lnphis_ref[j] - lnphis_i[j]) for j in cmps])
+                except OverflowError:
+                    Ks.append([trunc_exp(lnphis_ref[j] - lnphis_i[j]) for j in cmps])
+
+
+        beta_guesses = [betas[i] for i in phases_iter if i != ref_phase]
+        betas_new, compositions_new = Rachford_Rice_solutionN(zs, Ks, beta_guesses)
+        # Sort the order back
+        beta_ref_new = betas_new[-1]
+        betas_new = betas_new[:-1]
+        betas_new.insert(ref_phase, beta_ref_new)
         
-        betas, compositions = Rachford_Rice_solutionN(zs, Ks, betas)
-#        betas.insert(ref_phase, 1.0 - sum(betas))
-        print(betas, compositions, Ks, 'calculated')
-#        Rachford_Rice_solution2(zs, Ks_y, Ks_z, beta_y=0.5, beta_z=1e-6)
-                
+        compositions_ref_new = compositions_new[-1]
+        compositions_K_order_new = compositions_new[:-1]
+        
+        compositions_new = list(compositions_K_order_new)
+        compositions_new.insert(ref_phase, compositions_ref_new)
+        
         err = 0.0
-        
-#        xs = compositions[ref_phase]
-        # Suggested tolerance 1e-15
-#        passed_K = False
-#        for i in phases_iter:
-#            if i == ref_phase:
-#                passed_K = True
-#                continue
-#            K_idx = i
-#            if passed_K:
-#                K_idx -= 1
-#            
-#            Kis, ys = Ks[K_idx], compositions[i]
-#            for Ki, xi, yi in zip(Kis, xs, ys):
-#                err_i = Ki*xi/yi - 1.0
-#                err += err_i*err_i
+        for i in phase_iter_n1:
+            Ks_i = Ks[i]
+            ys = compositions_K_order[i]
+            try:
+                for Ki, xi, yi in zip(Ks_i, compositions_ref, ys):
+                    err_i = Ki*xi/yi - 1.0
+                    err += err_i*err_i
+            except ZeroDivisionError:
+                err = 0.0
+                for Ki, xi, yi in zip(Ks_i, compositions_ref, ys):
+                    try:
+                        err_i = Ki*xi/yi - 1.0
+                        err += err_i*err_i
+                    except ZeroDivisionError:
+                        pass
+        # print(betas, compositions, Ks, 'calculated', err)
+        # print(err)
+
+        compositions = compositions_new
+        compositions_K_order = compositions_K_order_new
+        compositions_ref = compositions_ref_new
+        betas = betas_new
+
+        # TODO trivial solution check - how to handle - drop phase?
         
         # Check for 
 #        comp_difference = sum([abs(xi - yi) for xi, yi in zip(xs, ys)])
 #        if comp_difference < trivial_solution_tol:
 #            raise ValueError("Converged to trivial condition, compositions of both phases equal")
-#        if err < tol:
-#            return betas, compositions, phases, iteration, err
-        if iteration > 100:
+        if err < tol:
             return betas, compositions, phases, iteration, err
+        # if iteration > 100:
+        #     return betas, compositions, phases, iteration, err
     raise UnconvergedError('End of SS without convergence')
 
 

@@ -292,6 +292,8 @@ class Phase(object):
         G = self.H() - self.T*self.S()
         return G
     
+    G_min = G
+    
     def U(self):
         U = self.H() - self.P*self.V()
         return U

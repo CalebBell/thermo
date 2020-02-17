@@ -1402,7 +1402,7 @@ def Rachford_Rice_valid_solution_naive(ns, betas, Ks, limit_betas=False):
 def Rachford_Rice_solutionN(ns, Ks, betas):
     r'''Solves the (phases -1) objectives functions of the Rachford-Rice flash 
     equation for an N-phase system. Initial guesses are required for all phase 
-    fractions except the last`. The Newton method is used, with an
+    fractions except the last. The Newton method is used, with an
     analytical Jacobian.
         
     Parameters
@@ -1412,14 +1412,19 @@ def Rachford_Rice_solutionN(ns, Ks, betas):
     Ks : list[list[float]]
         Equilibrium K-values of all phases phase to the `x` phase, [-]
     betas : list[float]
-        Phase fraction guesses for the first N - 1 phases, [-]
+        Phase fraction initial guesses only for the first N - 1 phases;
+        each value corresponds to the phase fraction of each set of the K 
+        values [-]
         
     Returns
     -------
     betas : list[float]
-        Phase fractions of the first N-1 phases, [-]
+        Phase fractions of the first N-1 phases; one each for each K value set
+        given, [-]
     compositions : list[list[float]]
-        Mole fractions of each species in each phase, [-]
+        Mole fractions of each species in each phase; order is the `x` phase
+        first, which was the reference phase; then each subsequent phase,
+        in the same order as the K values were provided, [-]
     
     Notes
     -----
@@ -1460,21 +1465,29 @@ def Rachford_Rice_solutionN(ns, Ks, betas):
     if not Rachford_Rice_valid_solution_naive(ns, betas, Ks, limit_betas=limit_betas):
         raise ValueError("Initial guesses will not lead to convergence")
     
+    # Handle the case of the supplementary answer
+    if len(betas) > len(Ks):
+        betas = betas[:-1]
+    
     betas, iter = newton_system(Rachford_Rice_flashN_f_jac, jac=True, 
                                            x0=betas, args=(ns, Ks),
                                            ytol=1e-14, damping_func=new_betas)
 #    print(betas, iter, 'current progress')
-    comps = [[]]
+    comps = []
+    ref_comp = []
     for i, ni in enumerate(ns):
         denom = 1.0
         for j, beta_i in enumerate(betas):
             denom += beta_i*(Ks[j][i]-1.0)
         denom_inv = 1.0/denom
-        comps[0].append(ni*denom_inv)
-    
+        ref_comp.append(ni*denom_inv)
+
     for Ks_j in Ks:
-        comp = [Ki*xi for Ki, xi in zip(Ks_j, comps[0])]
+        comp = [Ki*xi for Ki, xi in zip(Ks_j, ref_comp)]
         comps.append(comp)
+
+    comps.append(ref_comp)
+    betas.append(1.0 - sum(betas))
 
     return betas, comps
 
