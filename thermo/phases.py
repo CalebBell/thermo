@@ -30,7 +30,7 @@ from fluids.numerics import (horner, horner_and_der, horner_log, jacobian, deriv
                              best_fit_integral_value, best_fit_integral_over_T_value,
                              evaluate_linear_fits, evaluate_linear_fits_d,
                              evaluate_linear_fits_d2,
-                             newton_system)
+                             newton_system, trunc_log, trunc_exp)
 from thermo.utils import (log, log10, exp, Cp_minus_Cv, phase_identification_parameter,
                           isothermal_compressibility, isobaric_expansion,
                           Joule_Thomson, speed_of_sound, dxs_to_dns,
@@ -127,7 +127,7 @@ class Phase(object):
         P = self.P
         zs = self.zs
         lnphis = self.lnphis()
-        return [P*zs[i]*exp(lnphis[i]) for i in range(len(zs))]
+        return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(len(zs))]
     
     fugacities_lowest_Gibbs = fugacities
     
@@ -139,7 +139,7 @@ class Phase(object):
         return [P*zs[i]*dphis_dT[i] for i in range(len(zs))]
 
     def phis(self):
-        return [exp(i) for i in self.lnphis()]
+        return [trunc_exp(i) for i in self.lnphis()]
 
     def dphis_dT(self):
         r'''Method to calculate the temperature derivative of fugacity 
@@ -256,6 +256,17 @@ class Phase(object):
             row[i] += phi_P
             matrix.append(row)
         return matrix
+
+    def dlnfugacities_dns(self):
+        zs, cmps = self.zs, self.cmps
+        fugacities = self.fugacities()
+        dlnfugacities_dns = [list(i) for i in self.dfugacities_dns()]
+        fugacities_inv = [1.0/fi for fi in fugacities]
+        for i in cmps:
+            r = dlnfugacities_dns[i]
+            for j in cmps:
+                r[j]*= fugacities_inv[i]
+        return dlnfugacities_dns
 
 
     def log_zs(self):

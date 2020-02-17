@@ -825,6 +825,8 @@ def minimize_gibbs_NP_transformed(T, P, zs, compositions_guesses, phases,
     cmps = range(N)
     phase_count = len(phases)
     phase_iter = range(phase_count)
+    if method == 'differential_evolution':
+        translate = True
 #    RT_inv = 1.0/(R*T)
     
     # Only exist for the first n phases
@@ -843,6 +845,7 @@ def minimize_gibbs_NP_transformed(T, P, zs, compositions_guesses, phases,
 
     global min_G, iterations
     jac, hess = False, False
+    real_min = False
     min_G = 1e100
     iterations = 0
     info = []
@@ -852,7 +855,7 @@ def minimize_gibbs_NP_transformed(T, P, zs, compositions_guesses, phases,
         try:
             flows = flows.tolist()
         except:
-            pass
+            flows = list(flows)
         iterations += 1
         iter_flows = []
         iter_comps = []
@@ -860,11 +863,11 @@ def minimize_gibbs_NP_transformed(T, P, zs, compositions_guesses, phases,
         iter_phases = []
         
         remaining = zs
-        for i in range(len(flows)):
-            if flows[i] < 1e-10:
-                flows[i] = 1e-10
-            # elif flows[i] > zs[i]
-        
+        if not translate:
+            for i in range(len(flows)):
+                if flows[i] < 1e-10:
+                    flows[i] = 1e-10
+
         for j in phase_iter:
             v = flows[j*N:j*N+N]
 
@@ -895,10 +898,20 @@ def minimize_gibbs_NP_transformed(T, P, zs, compositions_guesses, phases,
             comp = iter_comps[j]
             phase = phases[j].to_TP_zs(T=T, P=P, zs=comp)
             lnphis = phase.lnphis()
-            for i in cmps:
-                G += iter_flows[j][i]*(trunc_log(comp[i]) + lnphis[i])
+            if real_min:
+                pass
+                # fugacities = phase.fugacities()
+                # fugacities = phase.phis()
+                #G += sum([iter_flows[j][i]*trunc_log(fugacities[i]) for i in cmps])
+                # G += phase.G()*iter_betas[j]
+            else:
+                for i in cmps:
+                    G += iter_flows[j][i]*(trunc_log(comp[i]) + lnphis[i])
             iter_phases.append(phase)
-#        if not jac:
+
+#         if real_min:
+#             G += G_base
+# #        if not jac:
 #            for j in phase_iter:
 #                comp = iter_comps[j]
 #            G += phase.G()*iter_betas[j]
@@ -919,31 +932,80 @@ def minimize_gibbs_NP_transformed(T, P, zs, compositions_guesses, phases,
                 lnphis = phase.lnphis()
                 jac_arr.extend([ref - (log(xi) + lnphii) for ref, xi, lnphii in zip(base, comp, lnphis)])
         if G < min_G:
-            info[:] = iter_betas, iter_comps, iter_phases
+            print('new min G', G, 'comp', iter_comps, 'phases', iter_phases, 'betas', iter_betas)
+            info[:] = iter_betas, iter_comps, iter_phases, G
             min_G = G
-        last[:] = iter_betas, iter_comps, iter_phases
+        last[:] = iter_betas, iter_comps, iter_phases, G
+        if hess:
+            base = iter_phases[0].dlnfugacities_dns()
+            p1 = iter_phases[1].dlnfugacities_dns()
+            dlnphis_dns0 = iter_phases[0].dlnphis_dns()
+            dlnphis_dns1 = iter_phases[1].dlnphis_dns()
+            xs, ys = iter_comps[0], iter_comps[1]
+            hess_arr = []
+            beta = iter_betas[0]
+            for i in cmps:
+                r = []
+                for j in cmps:
+                    # How the heck to make this multidimensional?
+                    delta = 1.0 if i ==j else 0.0
+                    v = 1.0/(beta*(1.0 - beta))*(zs[i]*delta/(xs[i]*ys[i])
+                                                 - 1.0 + (1.0 - beta)*dlnphis_dns0[i][j]
+                                                 + beta*dlnphis_dns1[i][j])
+
+                    # v = base[i][j] + p1[i][j]
+                    r.append(v)
+                hess_arr.append(r)
+            # Going to be hard to figure out
+            # for j in range(1, phase_count):
+            #     comp = iter_comps[j]
+            #     phase = iter_phases[j]
+            #     dlnfugacities_dns = phase.dlnfugacities_dns()
+            #     row = [base[i] + dlnfugacities_dns[i] for i in cmps]
+            #     hess_arr = row
+                # hess_arr.append(row)
+            return G, jac_arr, hess_arr
         if jac:
             return G, np.array(jac_arr)
         return G
 #    ans = None
     if method == 'differential_evolution':
         from scipy.optimize import differential_evolution
-        ans = differential_evolution(G, [(-100.0, 100.0) for i in cmps for j in range(phase_count-1)], **opt_kwargs)
+        real_min = True
+        translate = True
+
+        G_base = 1e100
+        for p in phases:
+            G_calc = p.to(T=T,P=P, zs=zs).G()
+            if G_base > G_calc:
+                G_base = G_calc
+        jac = hess = False
+        print(G(list(flows_guess_basis)))
+        ans = differential_evolution(G, [(-30.0, 30.0) for i in cmps for j in range(phase_count-1)], **opt_kwargs)
+#        ans = differential_evolution(G, [(-100.0, 100.0) for i in cmps for j in range(phase_count-1)], **opt_kwargs)
+        objf = float(ans['fun'])
     elif method == 'newton_minimize':
+        import numdifftools as nd
         jac = True
         hess = True
+        ans, iters = newton_minimize(G, flows_guess_basis, jac=True, hess=True, xtol=tol, ytol=None, maxiter=100, damping=1.0,
+                  damping_func=damping_maintain_sign)
+        objf = None
     else:
         jac = True
+        hess = True
         import numdifftools as nd
+        hess_fun = lambda flows_guess_basis: np.array(G(flows_guess_basis)[2])
 #        nd.Jacobian(G, step=1e-5)
         # trust-constr special handling to add constraints
 
-        ans = minimize(G, flows_guess_basis, jac=True, method=method, tol=tol, **opt_kwargs)
+        ans = minimize(G, flows_guess_basis, jac=True, hess=hess_fun, method=method, tol=tol, **opt_kwargs)
+        objf = float(ans['fun'])
 #    G(ans['x']) # Make sure info has right value
 #    ans['fun'] *= R*T
     
-    betas, compositions, phases = last#info
-    return betas, compositions, phases, iterations, float(ans['fun'])
+    betas, compositions, phases, objf = info#info
+    return betas, compositions, phases, iterations, objf
     
 #    return ans, info
 
