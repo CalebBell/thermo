@@ -1410,21 +1410,23 @@ def Rachford_Rice_solutionN(ns, Ks, betas):
     ns : list[float]
         Overall mole fractions of all species, [-]
     Ks : list[list[float]]
-        Equilibrium K-values of all phases phase to the `x` phase, [-]
+        Equilibrium K-values of all phases with respect to the `x` (reference) 
+        phase, [-]
     betas : list[float]
         Phase fraction initial guesses only for the first N - 1 phases;
         each value corresponds to the phase fraction of each set of the K 
-        values [-]
+        values; if a phase fraction is specified for the last phase as well,
+        it is ignored [-]
         
     Returns
     -------
     betas : list[float]
-        Phase fractions of the first N-1 phases; one each for each K value set
-        given, [-]
+        Phase fractions of all of the phases; one each for each K value set
+        given, plus the reference phase phase fraction [-]
     compositions : list[list[float]]
-        Mole fractions of each species in each phase; order is the `x` phase
-        first, which was the reference phase; then each subsequent phase,
-        in the same order as the K values were provided, [-]
+        Mole fractions of each species in each phase; order each phase
+        in the same order as the K values were provided, and then the `x` phase
+        last, which was the reference phase [-]
     
     Notes
     -----
@@ -1437,7 +1439,7 @@ def Rachford_Rice_solutionN(ns, Ks, betas):
     >>> Ks_y = [1.23466988745, 0.89727701141, 2.29525708098, 1.58954899888, 0.23349348597, 0.02038108640, 1.40715641002]
     >>> Ks_z = [1.52713341421, 0.02456487977, 1.46348240453, 1.16090546194, 0.24166289908, 0.14815282572, 14.3128010831]
     >>> Rachford_Rice_solutionN(ns, [Ks_y, Ks_z], [.1, .6])
-    ... [0.6868328915094766, 0.06019424397668606], [[0.1712804659711611, 0.08150738616425436, 0.1393433949193188, 0.20945175387703213, 0.15668977784027893, 0.22650123851718007, 0.015225982711774586], [0.21147483364299702, 0.07313470386530294, 0.31982891387635903, 0.33293382568889657, 0.036586042443791586, 0.004616341311925655, 0.02142533917172731], [0.26156812278601893, 0.00200221914149187, 0.20392660665189805, 0.2431536850887592, 0.03786610596908295, 0.03355679851539993, 0.21792646184834918]])
+    ... ([0.6868328915094767, 0.060194243976686025, 0.25297286451383727], [[0.21147483364299702, 0.07313470386530294, 0.31982891387635903, 0.33293382568889657, 0.036586042443791586, 0.004616341311925657, 0.021425339171727318], [0.26156812278601893, 0.00200221914149187, 0.20392660665189805, 0.2431536850887592, 0.03786610596908295, 0.03355679851539994, 0.2179264618483492], [0.1712804659711611, 0.08150738616425436, 0.1393433949193188, 0.20945175387703213, 0.15668977784027893, 0.22650123851718013, 0.01522598271177459]])
     
     References
     ----------

@@ -931,11 +931,10 @@ def minimize_gibbs_NP_transformed(T, P, zs, compositions_guesses, phases,
             phase = phases[j].to_TP_zs(T=T, P=P, zs=comp)
             lnphis = phase.lnphis()
             if real_min:
-                pass
                 # fugacities = phase.fugacities()
                 # fugacities = phase.phis()
                 #G += sum([iter_flows[j][i]*trunc_log(fugacities[i]) for i in cmps])
-                # G += phase.G()*iter_betas[j]
+                G += phase.G()*iter_betas[j]
             else:
                 for i in cmps:
                     G += iter_flows[j][i]*(trunc_log(comp[i]) + lnphis[i])
