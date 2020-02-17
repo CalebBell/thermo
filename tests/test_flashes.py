@@ -67,7 +67,65 @@ def test_minimize_gibbs_NP_transformed():
       [0.026792761914958576, 0.9529216972153103, 0.0202855408697312],
       [0.9999999901300325, 0.0, 9.869967458145574e-09]], rtol=1e-3, atol=1e-7)
     
+def test_sequential_substitution_NP_first():
+    # Test case from DWSIM - water - methane - octane
+    T = 298.15
+    P = 101325.0
+    omegas = [0.344, 0.008, 0.394]
+    Tcs = [647.14, 190.564, 568.7]
+    Pcs = [22048320.0, 4599000.0, 2490000.0]
+    kijs=[[0,0, 0],[0,0, 0.0496], [0,0.0496,0]]
+    zs = [1.0/3.0]*3
+    N = len(zs)
     
+    HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
+                          HeatCapacityGas(best_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
+                          HeatCapacityGas(best_fit=(200.0, 1000.0, [-1.069661592422583e-22, -1.2992882995593864e-18, 8.808066659263286e-15, -2.1690080247294972e-11, 2.8519221306107026e-08, -2.187775092823544e-05, 0.009432620102532702, -1.5719488702446165, 217.60587499269303]))]
+    eos_kwargs = dict(Tcs=Tcs, Pcs=Pcs, omegas=omegas, kijs=kijs)
+    
+    phase_list = [EOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs),
+    EOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs),
+    EOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)]
+    comp_guesses = [[0.3092021596382196, 0.0026640919987306125, 0.6881337483630493],
+                                          [0.3549497291610413, 0.6295425977084024, 0.015507673130556588],
+                                          [0.9999999999999915, 1.382471293523363e-15, 7.277922055269012e-15]]
+    betas_guesses = [0.5274853712846019, .2]
+    
+    sln = sequential_substitution_NP(T=T, P=P, zs=zs, compositions_guesses=comp_guesses, phases=phase_list,
+                               betas_guesses=betas_guesses, maxiter=1000, tol=1E-25,
+                               trivial_solution_tol=1e-5, ref_phase=0)
+
+    comp_expect = [[0.02679265575830939, 0.9529209534992429, 0.02028639074244788],
+          [0.017108983672010535, 0.004664632419653161, 0.978226383908336],
+          [0.9999990988582429, 9.011417571269636e-07, 9.573789620423122e-17]]
+    
+    betas_expect = [0.34816869015277496, 0.33353245486699196, 0.318298854980233]
+    assert_allclose(sln[0], betas_expect, rtol=1e-7)
+    assert_allclose(sln[1], comp_expect, rtol=1e-7)
+    err = sln[-1]
+    assert err < 1e-15
+    
+    # Should be the same as the G minimization example
+    G_check = sum([sln[0][i]*sln[2][i].G() for i in range(3)])
+    assert_allclose(G_check, -6288.484949505805, rtol=1e-6)
+    
+    # Run the same flash with different ref phases
+    sln = sequential_substitution_NP(T=T, P=P, zs=zs, compositions_guesses=comp_guesses, phases=phase_list,
+                               betas_guesses=betas_guesses, maxiter=1000, tol=1E-25,
+                               trivial_solution_tol=1e-5, ref_phase=1)
+    assert_allclose(sln[0], betas_expect, rtol=1e-7)
+    assert_allclose(sln[1], comp_expect, rtol=1e-7)
+    err = sln[-1]
+    assert err < 1e-15
+
+    sln = sequential_substitution_NP(T=T, P=P, zs=zs, compositions_guesses=comp_guesses, phases=phase_list,
+                               betas_guesses=betas_guesses, maxiter=1000, tol=1E-25,
+                               trivial_solution_tol=1e-5, ref_phase=2)
+    assert_allclose(sln[0], betas_expect, rtol=1e-7)
+    assert_allclose(sln[1], comp_expect, rtol=1e-7)
+    err = sln[-1]
+    assert err < 1e-15
+
 def test_UNIFAC_LLE_SS():
     from thermo.unifac import LLEUFIP, LLEUFSG, UNIFAC
     from thermo import VaporPressure, HeatCapacityGas, VolumeLiquid
@@ -100,6 +158,7 @@ def test_UNIFAC_LLE_SS():
     assert_allclose(VF, 0.8180880014378398)
     assert_allclose(xs0, [0.5336869025395473, 0.46631309746045285])
     assert_allclose(xs1,[0.9814542537494846, 0.018545746250515603])
+    
 
 def test_dew_bubble_newton_zs():
     T, P = 370.0, 6e5

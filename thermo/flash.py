@@ -232,14 +232,15 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
     raise UnconvergedError('End of SS without convergence')
 
 
-def sequential_substitution_NP(T, P, zs, compositions_guesses, phases,
-                               betas, maxiter=1000, tol=1E-13,
+def sequential_substitution_NP(T, P, zs, compositions_guesses, betas_guesses, 
+                               phases, maxiter=1000, tol=1E-13,
                                trivial_solution_tol=1e-5, ref_phase=2):
     
     compositions = compositions_guesses
     cmps = range(len(zs))
     phases_iter = range(len(phases))
     phase_iter_n1 = range(len(phases)-1)
+    betas = betas_guesses
     if len(betas) < len(phases):
         betas.append(1.0 - sum(betas))
 
