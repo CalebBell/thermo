@@ -238,8 +238,9 @@ def sequential_substitution_NP(T, P, zs, compositions_guesses, betas_guesses,
     
     compositions = compositions_guesses
     cmps = range(len(zs))
-    phases_iter = range(len(phases))
-    phase_iter_n1 = range(len(phases)-1)
+    phase_count = len(phases)
+    phases_iter = range(phase_count)
+    phase_iter_n1 = range(phase_count - 1)
     betas = betas_guesses
     if len(betas) < len(phases):
         betas.append(1.0 - sum(betas))
@@ -263,6 +264,9 @@ def sequential_substitution_NP(T, P, zs, compositions_guesses, betas_guesses,
 
 
         beta_guesses = [betas[i] for i in phases_iter if i != ref_phase]
+
+        if phase_count == 3:
+            Rachford_Rice_solution2(zs, Ks[0], Ks[1], beta_y=beta_guesses[0], beta_z=beta_guesses[1])
         betas_new, compositions_new = Rachford_Rice_solutionN(zs, Ks, beta_guesses)
         # Sort the order back
         beta_ref_new = betas_new[-1]
@@ -857,6 +861,7 @@ def minimize_gibbs_NP_transformed(T, P, zs, compositions_guesses, phases,
     cmps = range(N)
     phase_count = len(phases)
     phase_iter = range(phase_count)
+    phase_iter_n1 = range(phase_count-1)
     if method == 'differential_evolution':
         translate = True
 #    RT_inv = 1.0/(R*T)
@@ -939,6 +944,14 @@ def minimize_gibbs_NP_transformed(T, P, zs, compositions_guesses, phases,
                 for i in cmps:
                     G += iter_flows[j][i]*(trunc_log(comp[i]) + lnphis[i])
             iter_phases.append(phase)
+            
+        if 1:
+            fugacities_last = iter_phases[-1].fugacities()
+#            G = 0.0
+            for j in phase_iter_n1:
+                fugacities = iter_phases[j].fugacities()
+                G += sum([abs(fugacities_last[i] - fugacities[i]) for i in cmps])
+#                lnphis = phase.lnphis()
 
 #         if real_min:
 #             G += G_base

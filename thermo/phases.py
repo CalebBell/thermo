@@ -137,6 +137,9 @@ class Phase(object):
         dphis_dT = self.dphis_dT()
         P, zs = self.P, self.zs
         return [P*zs[i]*dphis_dT[i] for i in range(len(zs))]
+    
+    def lnphis_G_min(self):
+        return self.lnphis()
 
     def phis(self):
         return [trunc_exp(i) for i in self.lnphis()]
@@ -1542,6 +1545,8 @@ class IdealGas(Phase):
     def lnphis(self):
         return [0.0]*self.N
     
+    lnphis_G_min = lnphis
+    
     def dlnphis_dT(self):
         return [0.0]*self.N
 
@@ -1702,6 +1707,19 @@ class EOSGas(Phase):
             return eos_mix.V_l_mpmath.real
 #        else:
 #            return self.V()
+            
+    def lnphis_G_min(self):
+        eos_mix = self.eos_mix
+        if eos_mix.phase == 'l/g':
+            # Check both phases are solved, and complete if not
+            eos_mix.solve_missing_volumes()
+            if eos_mix.G_dep_l < eos_mix.G_dep_g:
+                return eos_mix.fugacity_coefficients(eos_mix.Z_l, self.zs)
+            return eos_mix.fugacity_coefficients(eos_mix.Z_g, self.zs)
+        try:
+            return eos_mix.fugacity_coefficients(eos_mix.Z_g, self.zs)
+        except AttributeError:
+            return eos_mix.fugacity_coefficients(eos_mix.Z_l, self.zs)
         
     def lnphis(self):
         try:
@@ -2933,6 +2951,8 @@ class GibbsExcessLiquid(Phase):
             pass
         self._lnphis = [log(i) for i in self.phis()]        
         return self._lnphis
+    
+    lnphis_G_min = lnphis
         
 #    def fugacities(self, T, P, zs):
 #        # DO NOT EDIT _ CORRECT
@@ -3642,6 +3662,8 @@ class GraysonStreed(Phase):
             pass
         self._lnphis = [log(i) for i in self.phis()]        
         return self._lnphis
+    
+    lnphis_G_min = lnphis
 
     def nus(self):
         T, P = self.T, self.P
@@ -3978,6 +4000,8 @@ class CoolPropPhase(Phase):
         for i in self.cmps:
             lnphis.append(log(AS.fugacity_coefficient(i)))
         return lnphis
+    
+    lnphis_G_min = lnphis
 
     def dlnphis_dT(self):
         raise NotImplementedError("Not in CoolProp")
@@ -4137,6 +4161,13 @@ class CombinedPhase(Phase):
             return self.phases[self.other_props['lnphis']].lnphis()
         if self.equilibrium is not None:
             return self.phases[self.equilibrium].lnphis()
+        raise ValueError("No method specified")
+        
+    def lnphis_G_min(self):
+        if 'lnphis' in self.other_props:
+            return self.phases[self.other_props['lnphis']].lnphis_G_min()
+        if self.equilibrium is not None:
+            return self.phases[self.equilibrium].lnphis_G_min()
         raise ValueError("No method specified")
         
     def makeeqfun(prop_name):

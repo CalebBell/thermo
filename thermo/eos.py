@@ -229,6 +229,22 @@ class GCEOS(object):
         self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2 = self.a_alpha_and_derivatives(self.T, full=True, pure_a_alphas=False)
         self.set_from_PT(self.raw_volumes, only_l=hasattr(self, 'V_l'), only_g=hasattr(self, 'V_g'))
         
+    def solve_missing_volumes(self):
+        '''Generic method to ensure both volumes, if solutions are physical,
+        have calculated properties. This effectively un-does the optimization
+        of the `only_l` and `only_g` keywords.
+        '''
+        if self.phase == 'l/g':
+            try:
+                self.V_l
+            except:
+                self.set_from_PT(self.raw_volumes, only_l=True, only_g=False)
+            try:
+                self.V_g
+            except:
+                self.set_from_PT(self.raw_volumes, only_l=False, only_g=True)
+        
+        
     def set_from_PT(self, Vs, only_l=False, only_g=False):
         '''Counts the number of real volumes in `Vs`, and determines what to do.
         If there is only one real volume, the method 
