@@ -144,66 +144,16 @@ mixtures.
     >>> from thermo.chemical import Mixture
     >>> vodka = Mixture(['water', 'ethanol'], Vfls=[.6, .4], T=300, P=1E5)
     >>> vodka.Prl,vodka.Prg
-    (35.130757024029364, 0.9490586345579207)
+    (35.13075699606542, 0.9822705235442692)
     >>> air = Mixture('air', T=400, P=1e5)
     >>> air.Cp
-    1013.7956176577834
+    1013.7956176577836
 
 Roadmap
 -------
 
-This library includes a huge database of (70000+) chemicals taken from the PubChem
-database (selected by the availability of CAS numbers, which all data included here 
-is indexed by). Regretably, only ~20000 of those have even one chemical property
-apart from metadata (molecular weight, etc.). Some niche aspects (ions, ionic 
-liquids) have been poorly served by the PubChem, and so extra databases manually
-curated for these are in development. 
-
-The Chemical and Mixture classes may be subject to considerably change in the
-interests of performance in the future. Because of this, they have been poorly
-documented and tested. However, each individual property method is mature and
-not expected to change. Documentation and testing are huge strengths, and
-it is intended to keep up the current quality of both.
-
-A number of features have been worked on but are not yet included in this 
-library, not ordered by any priority.
-
-Phase equilibria according to activity coefficient methods (NRTL, UNIQUAC, 
-Wilson, Van Laar, Margules): Functionality has been tentatively created, but
-is not included due to the lack of coefficient databases. Suggestions would
-be very welcome. UNIFAC has been tested, but is also not included due to the
-lack of automatic group contribution assignment.
-
-Rigorous equations of state for excess properties, and phase equilibria:
-Tested EOSs are PR, LK, VdW, SRK, BWRS, and a few others. The holdup here
-is the determination of analytical expressions for their partial 
-derivatives of mixtures. SymPy is immensely helpful, and has been used to
-successfully obtain specific values of those derivatives at specific points.
-Unfortunately, most listed forms as in Walas (1985) are incorrect. If
-expressions are not eventually found, this will be implemented with numerical
-derivatives only.
-
-Fundamental Equations of State: The IAPWS-95 model, and that of 20 fluids
-in "Short Fundamental Equations of State for 20 Industrial Fluids" have
-been implemented. However, they are quite slow in Python - taking 2-10 ms
-to solve. This can be reduced to ~1-2 ms if Cython is used, however, this
-means that distribution through PyPi because harder. Suggestions about
-this are welcome. Currently, the phenomenal library CoolProp is used instead;
-which has already been packaged for PyPi. Even if custom code is released
-for these EOS, CoolProp will remain prioritized; developed in C++, it is
-simply much faster than code can be in pure Python.
-
-Electrolyte models: The Pitzer, Bromley, and LIQUAC models have been in
-development along with parameter databases for them. The ion database
-currently has ~300 species, few of them with much data available.
-Phase equilibria with these models is also in progress.
-
-Safety information, regulatory information, and economic data for chemicals:
-This functionality has been included, but is not yet very mature. This is 
-a low priority.
-
-Development follows pep8 and uses pytest for testing. Both Python 2 and 3 are
-supported.
+The author's main development item is phase equilibrium, a particularly
+tricky area.
 
 Latest source code
 ------------------
@@ -237,5 +187,5 @@ Citation
 
 To cite thermo in publications use::
 
-    Caleb Bell (2016). thermo: Chemical properties component of Chemical Engineering Design Library (ChEDL)
+    Caleb Bell and Contributors (2016-2020). thermo: Chemical properties component of Chemical Engineering Design Library (ChEDL)
     https://github.com/CalebBell/thermo.

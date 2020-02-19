@@ -69,7 +69,7 @@ def test_Mixture_input_forms():
     IDs = ['pentane', 'hexane', 'heptane']
     kwargs = {'ws': [0.4401066297270966, 0.31540115235588945, 0.24449221791701395], 
               'zs': [.5, .3, .2],
-              'Vfls': [0.45725229530669054, 0.3106973688150756, 0.2320503358782339],
+              'Vfls': [0.45711574619871703, 0.31076035223551646, 0.23212390156576654],
               'Vfgs': [0.5127892380094016, 0.2979448661739439, 0.18926589581665448]}
     for key, val in kwargs.items():
         d = OrderedDict()
@@ -86,7 +86,7 @@ def test_Mixture_input_forms():
     IDs = ['pentane', 'hexane', 'heptane']
     kwargs = {'ws': np.array([0.4401066297270966, 0.31540115235588945, 0.24449221791701395]), 
               'zs': np.array([.5, .3, .2]),
-              'Vfls': np.array([0.45725229530669054, 0.3106973688150756, 0.2320503358782339]),
+              'Vfls': np.array([0.45711574619871703, 0.31076035223551646, 0.23212390156576654]),
               'Vfgs': np.array([0.5127892380094016, 0.2979448661739439, 0.18926589581665448])}
     
     for key, val in kwargs.items():
@@ -131,10 +131,10 @@ def test_Mixture_calculated_Vfs():
     # Liquid standard fractions
     S = Mixture(['hexane', 'decane'], zs=[0.25, 0.75])
     Vfls = S.Vfls(298.16, 101326)
-    assert_allclose(Vfls, [0.18301434895886864, 0.8169856510411313])
-    assert_allclose(S.Vfls(), [0.18301384717011993, 0.8169861528298801])
-    assert_allclose(S.Vfls(P=1E6), [0.18292777184777048, 0.8170722281522296])
-    assert_allclose(S.Vfls(T=299.15), [0.1830642468206885, 0.8169357531793114])
+    assert_allclose(Vfls, [0.18299723912903532, 0.8170027608709647])
+    assert_allclose(S.Vfls(), [0.18299676086285419, 0.8170032391371459])
+    assert_allclose(S.Vfls(P=1E6), [0.18291966593930253, 0.8170803340606975])
+    assert_allclose(S.Vfls(T=299.15), [0.18304482422114987, 0.8169551757788501])
     
     # gas fractions
     S = Mixture(['hexane', 'decane'], zs=[0.25, 0.75], T=699)
