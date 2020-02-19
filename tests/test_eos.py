@@ -25,9 +25,8 @@ import numpy as np
 import pytest
 from thermo import eos
 from thermo.eos import *
-from thermo.utils import allclose_variable
+from thermo.utils import allclose_variable, R
 from scipy.misc import derivative
-from scipy.constants import R
 from math import log, exp, sqrt
 
 

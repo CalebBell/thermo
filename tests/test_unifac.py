@@ -25,7 +25,7 @@ import pytest
 import numpy as np
 import pandas as pd
 from thermo.unifac import *
-
+from thermo.utils import R
 
 def test_UNIFAC_data():
     # Test the interaction pairs
@@ -168,7 +168,6 @@ def test_UNIFAC_modified_2006():
 
 def test_UNIFAC_misc():
     from scipy.misc import derivative
-    from scipy.constants import R
     from math import log
     T = 273.15 + 60
     

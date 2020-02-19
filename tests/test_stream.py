@@ -29,7 +29,7 @@ from thermo.stream import Stream
 import thermo
 from scipy.integrate import quad
 from math import *
-from scipy.constants import R
+from thermo.utils import R
 
 
 def test_Stream():   

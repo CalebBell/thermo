@@ -24,7 +24,7 @@ from numpy.testing import assert_allclose
 import pytest
 import numpy as np
 from thermo.virial import *
-from scipy.constants import R as _R
+from thermo.utils import R as _R
 from scipy.integrate import quad
 
 
