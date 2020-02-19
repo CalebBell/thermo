@@ -173,6 +173,55 @@ def int2CAS(i):
     return i[:-3]+'-'+i[-3:-1]+'-'+i[-1]
 
 
+def hash_any_primitive(v):
+    '''Method to hash a primitive - with basic support for lists and 
+    dictionaries.     
+    
+    Parameters
+    ----------
+    v : object
+        Value to hash [-]
+
+    Returns
+    -------
+    h : int
+        Hashed value [-]
+
+    Notes
+    -----
+    Handles up to 3d lists. Assumes all lists are the same dimension.
+    Handles dictionaries by iterating over each value and key.
+    
+    Will fail explosively on circular references.
+    
+    The values returned by this function should not be counted on to be the
+    same in the future.
+    
+    Examples
+    --------
+    
+    hash_any_primitive([1,2,3,4,5])
+    
+    hash_any_primitive({'a': [1,2,3], 'b': []})
+    '''
+    if isinstance(v, list):
+        if len(v) and isinstance(v[0], list):
+            if len(v[0]) and isinstance(v[0][0], list):
+                v = (tuple(tuple(hash_any_primitive(j)) for j in i) for i in v)
+            else:
+                v = (tuple(hash_any_primitive(i)) for i in v)
+        else:
+            v = tuple(hash_any_primitive(i) for i in v)
+    elif isinstance(v, dict):
+        temp_hash = 0
+        for key, value in v.items():
+            temp_hash = hash((temp_hash, key, hash_any_primitive(value)))
+        v = temp_hash
+    elif isinstance(v, set):
+        # Should only contain hashable items
+        v = tuple(v)
+    return hash(v)
+
 def sorted_CAS_key(CASs):
     int_CASs = [CAS2int(i) for i in CASs]
     return tuple(CAS for _, CAS in sorted(zip(int_CASs,CASs)))
@@ -2732,6 +2781,9 @@ class TDependentProperty(object):
     def __deepcopy__(self, memo):
         # By default, share state among subsequent objects 
         return self
+    
+    def __hash__(self):
+        return hash_any_primitive([self.__class__, self.__dict__])
 
     def __call__(self, T):
         r'''Convenience method to calculate the property; calls 

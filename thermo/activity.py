@@ -1598,12 +1598,12 @@ def Rachford_Rice_solution2(ns, Ks_y, Ks_z, beta_y=0.5, beta_z=1e-6):
     '''
     limit_betas = False
     Ks = [Ks_y, Ks_z]
-    max_beta_step = 1000
+    max_beta_step = 1e100
     def new_betas(betas, d_betas, damping):
         for i in range(len(d_betas)):
             if d_betas[i] > max_beta_step:
                 d_betas[i] = max_beta_step
-            elif d_betas[i] < max_beta_step:
+            elif d_betas[i] < -max_beta_step:
                 d_betas[i] = -max_beta_step
 
         betas_test = [beta_i + d_beta*damping for beta_i, d_beta in zip(betas, d_betas)]

@@ -36,7 +36,7 @@ from scipy.optimize import minimize
 from scipy.misc import derivative
 from fluids.numerics import IS_PYPY, newton_system, broyden2, UnconvergedError, trunc_exp
 from fluids.numerics.arrays import det
-from thermo.utils import normalize, Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter, dxs_to_dn_partials, dxs_to_dns, dns_to_dn_partials, d2xs_to_dxdn_partials, d2ns_to_dn2_partials
+from thermo.utils import normalize, Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter, dxs_to_dn_partials, dxs_to_dns, dns_to_dn_partials, d2xs_to_dxdn_partials, d2ns_to_dn2_partials, hash_any_primitive
 from thermo.utils import R
 from thermo.utils import log, exp, sqrt
 from thermo.alpha_functions import (TwuPR95_a_alpha, TwuSRK95_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha, Soave_79_a_alpha)
@@ -248,6 +248,20 @@ class GCEOSMIX(GCEOS):
     nonstate_constants = ('N', 'cmps', 'Tcs', 'Pcs', 'omegas', 'kijs', 'kwargs', 'ais', 'bs')
     mix_kwargs_to_pure = {}
     multicomponent = True
+    
+    def model_hash(self):
+        r'''Basic method to calculate a hash of the non-state parts of the model -
+        critical constants, kijs, volume translation coefficient `cs`, other
+        variables stored as `kwargs`. This is useful for comparing to models to 
+        determine if they are the same, i.e. in a VLL flash it is important to 
+        know if both liquids have the same model.
+        '''
+        h = hash(self.__class__)
+        
+        for s in self.nonstate_constants:
+            if hasattr(self, s):
+                h = hash((h, s, hash_any_primitive(getattr(self, s))))
+        return h
     
     
     def __repr__(self):

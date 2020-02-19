@@ -34,9 +34,10 @@ from fluids.numerics import (horner, horner_and_der, horner_log, jacobian, deriv
 from thermo.utils import (log, log10, exp, Cp_minus_Cv, phase_identification_parameter,
                           isothermal_compressibility, isobaric_expansion,
                           Joule_Thomson, speed_of_sound, dxs_to_dns,
-                          normalize)
+                          normalize, hash_any_primitive)
 from thermo.activity import IdealSolution
 from thermo.coolprop import has_CoolProp, CP as CoolProp
+from random import randint
 from scipy.optimize import fsolve
 from collections import OrderedDict
 '''
@@ -88,6 +89,9 @@ class Phase(object):
             pass
         s += '>'
         return s
+    
+    def model_hash(self):
+        return randint()
     
     def value(self, name):
         v = getattr(self, name)
@@ -1568,6 +1572,10 @@ class IdealGas(Phase):
         return new
  
 class EOSGas(Phase):
+    
+    def model_hash(self):
+        return hash_any_primitive([self.__class__, self.eos_class, self.eos_kwargs,
+                                   self.Hfs, self.Gfs, self.Sfs, self.HeatCapacityGases])
     
     @property
     def phase(self):
@@ -3814,7 +3822,7 @@ if has_CoolProp:
 class CoolPropPhase(Phase):
     prefer_phase = CPunknown
     
-
+        
     def __repr__(self):
         if self.phase == 'g':
             s =  '<%s, ' %('CoolPropGas')
@@ -3844,6 +3852,9 @@ class CoolPropPhase(Phase):
             if self.prefer_phase == CPliquid:
                 return 'l'
             return 'g'
+
+    def model_hash(self):
+        return hash_any_primitive([self.backend, self.fluid, self.Hfs, self.Gfs, self.Sfs, self.__class__])
         
     def __init__(self, backend, fluid,
                  T=None, P=None, zs=None,  Hfs=None,

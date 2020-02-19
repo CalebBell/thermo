@@ -27,7 +27,7 @@ __all__ = ['sequential_substitution_2P', 'sequential_substitution_GDEM3_2P',
            'dew_P_Michelsen_Mollerup',
            'minimize_gibbs_2P_transformed', 'sequential_substitution_Mehra_2P',
            'nonlin_2P', 'nonlin_n_2P', 'sequential_substitution_NP',
-           'minimize_gibbs_NP_transformed', 'FlashVL', 'FlashPureVLS',
+           'minimize_gibbs_NP_transformed', 'FlashVL','FlashVLN', 'FlashPureVLS',
            'TPV_HSGUA_guesses_1P_methods', 'TPV_solve_HSGUA_guesses_1P',
            'sequential_substitution_2P_HSGUAbeta', 
            'sequential_substitution_2P_sat', 'TP_solve_VF_guesses',
@@ -35,7 +35,7 @@ __all__ = ['sequential_substitution_2P', 'sequential_substitution_GDEM3_2P',
            'sequential_substitution_2P_double',
            'cm_flash_tol', 'nonlin_2P_newton', 'dew_bubble_newton_zs',
            'SS_VF_simultaneous', 'stabiliy_iteration_Michelsen',
-           'assert_stab_success_2P',
+           'assert_stab_success_2P', 
            ]
 
 from fluids.constants import R, R2, R_inv
@@ -4083,6 +4083,8 @@ PT_SS_MEHRA = 'SS Mehra'
 PT_SS_GDEM3 = 'SS GDEM3'
 PT_NEWTON_lNKVF = 'Newton lnK VF'
 
+
+
 class FlashVL(FlashBase):
     PT_SS_MAXITER = 1000
     PT_SS_TOL = 1e-13
@@ -4342,28 +4344,6 @@ class FlashVL(FlashBase):
         PT_algorithms = [sequential_substitution_2P, sequential_substitution_Mehra_2P,
                      sequential_substitution_GDEM3_2P, nonlin_2P_newton]
 
-
-    def flash_TPV(self, T, P, V, zs=None, solution=None, hot_start=None):
-        constants, correlations = self.constants, self.correlations
-        liquid, gas = self.liquid, self.gas
-        try:
-            _, _, VF_guess, xs_guess, ys_guess = flash_wilson(zs, constants.Tcs,
-                                    constants.Pcs, constants.omegas, T=T, P=P)
-        except:
-            xs_guess, ys_guess, VF_guess = zs, zs, 0.5
-            
-            # New strategy for one phase disapearing - drop the pressure
-            # of a liquid or gas phase, iterate then, try to get to reapear
-            # Increase pressure each iteration once possible.
-            # Pseudo-volumes are not needed in that case.
-                                                          
-        V_over_F, xs, ys, l, g, iteration, err = sequential_substitution_2P(T=T, P=P, V=None,
-                                            zs=zs, xs_guess=xs_guess, ys_guess=ys_guess, liquid_phase=liquid,
-                       gas_phase=gas, maxiter=self.PT_SS_MAXITER, tol=self.PT_SS_TOL,
-                       V_over_F_guess=VF_guess)
-        
-        return g, [l], [], [V_over_F, 1.0 - V_over_F], {'iterations': iteration, 'err': err}
-
     def flash_TPV(self, T, P, V, zs=None, solution=None, hot_start=None):
         if hot_start is not None:
             try:
@@ -4384,68 +4364,45 @@ class FlashVL(FlashBase):
         
         return self.flash_TP_stability_test(T, P, zs, solution=solution)
 
-#    def flash(self, zs, T=None, P=None, VF=None, H=None, S=None):
-#        constants, correlations = self.constants, self.correlations
-#        
-#        liquid, gas = self.liquid, self.gas
-#        if T is not None and S is not None:
-#            # TS
-#            pass
-#        elif P is not None and S is not None:
-#            phase, xs, ys, VF, T = flash_PS_zs_2P(P, S, zs)
-#            # PS
-#        elif P is not None and H is not None:
-#            phase, xs, ys, VF, T = flash_PH_zs_2P(P, H, zs)
-#            # PH
-#        elif T is not None and P is not None:
-#            # PT
-#            try:
-#                _, _, VF_guess, xs_guess, ys_guess = flash_wilson(zs, constants.Tcs,
-#                                        constants.Pcs, constants.omegas, T=T, P=P)
-#            except:
-#                xs_guess, ys_guess, VF_guess = zs, zs, 0.5
-#                                                              
-#            V_over_F, xs, ys, l, g, iteration, err = sequential_substitution_2P(T=T, P=P, V=None, zs=zs, xs_guess=xs_guess, ys_guess=ys_guess, liquid_phase=liquid,
-#                           gas_phase=gas, maxiter=self.PT_SS_MAXITER, tol=self.PT_SS_TOL,
-#                           V_over_F_guess=VF_guess)
-#            
-#            flash_specs = {'T': T, 'P': P, 'zs': zs}
-#            flash_convergence = {'iterations': iteration, 'err': err}
-#            return EquilibriumState(T, P, zs, gas=g, liquids=[l], solids=[], 
-#                                    betas=[V_over_F, 1.0-V_over_F], flash_specs=flash_specs, 
-#                                    flash_convergence=flash_convergence,
-#                                    constants=constants, correlations=correlations)
-#            
-#            
-#        elif T is not None and VF == 1:
-#            dew_P_Michelsen_Mollerup(P_guess, T, zs, liquid_phase, gas_phase, 
-#                             maxiter=200, xtol=1E-10, xs_guess=None,
-#                             max_step_damping=1e5, P_update_frequency=1,
-#                             trivial_solution_tol=1e-4)
-#        elif T is not None and VF == 0:
-#            bubble_P_Michelsen_Mollerup(P_guess, T, zs, liquid_phase, gas_phase, 
-#                                maxiter=200, xtol=1E-10, ys_guess=None,
-#                                max_step_damping=1e5, P_update_frequency=1,
-#                                trivial_solution_tol=1e-4)
-#        elif T is not None and VF is not None:
-#            pass
-#            # T-VF flash - unimplemented.
-#        elif P is not None and VF == 1:
-#            dew_T_Michelsen_Mollerup(T_guess, P, zs, liquid_phase, gas_phase, 
-#                                maxiter=200, xtol=1E-10, xs_guess=None,
-#                                max_step_damping=5.0, T_update_frequency=1,
-#                                trivial_solution_tol=1e-4)
-#        elif P is not None and VF == 0:
-#            bubble_P_Michelsen_Mollerup(P_guess, T, zs, liquid_phase, gas_phase, 
-#                                maxiter=200, xtol=1E-10, ys_guess=None,
-#                                max_step_damping=1e5, P_update_frequency=1,
-#                                trivial_solution_tol=1e-4)
-#        elif P is not None and VF is not None:
-#            # P-VF flash - unimplemented
-#            pass
-#        else:
-#            raise Exception('Flash inputs unsupported')
 
+class FlashVLN(FlashVL):
+    def __init__(self, constants, correlations, liquids, gas, settings=default_settings):
+        self.constants = constants
+        self.correlations = correlations
+        self.liquids = liquids
+        self.max_liquids = len(liquids)
+        self.max_phases = 1 + self.max_liquids
+        
+        unique_liquids, unique_liquid_hashes = [], []
+        for l in liquids:
+            h = l.model_hash()
+            if h not in unique_liquid_hashes:
+                unique_liquid_hashes.append(h)
+                unique_liquids.append(l)
+                
+        self.unique_liquids = unique_liquids
+        self.unique_liquid_count = len(unique_liquids)
+        self.unique_phases = 1 + self.unique_liquid_count
+        
+        self.gas = gas
+        self.settings = settings
+        self.N = constants.N
+        self.cmps = constants.cmps
+        
+        self.stab = StabilityTester(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
+        
+        self.flash_pure = FlashPureVLS(constants=constants, correlations=correlations,
+                                       gas=gas, liquids=unique_liquids, solids=[], 
+                                       settings=settings)
+    
+    # Should be straightforward for stability test
+    # How handle which phase to stability test? May need both
+    # After 2 phase flash, drop into 3 phase flash
+    # Start with water-methane-octanol example?
+    
+    # Vapor fraction flashes - if anything other than VF=1, need a 3 phase stability test
+    
+    
 '''
         T_spec = T is not None
         P_spec = P is not None
