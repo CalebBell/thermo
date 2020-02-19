@@ -4,9 +4,9 @@ os:
   - linux
 compiler:
   - "2.7"
-#  - "3.4" # scipy bugs on travis
   - "3.5"
-#  - "3.6"
+  - "3.6"
+  - "3.7"
 env:
   - SCIPY_VER="scipy>=0.18.0" 
 matrix:
