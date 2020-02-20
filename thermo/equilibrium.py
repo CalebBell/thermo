@@ -670,6 +670,33 @@ class EquilibriumState(object):
             return None
     
     @property
+    def water_phase_index(self):
+        try:
+            return self._water_phase_index
+        except AttributeError:
+            pass
+        try:
+            water_index = self._water_index
+        except AttributeError:
+            water_index = self.water_index
+            
+        max_zw, max_phase, max_phase_idx = 0.0, None, None
+        for i, l in enumerate(self.liquids):
+            z_w = l.zs[water_index]
+            if z_w > max_zw:
+                max_phase, max_zw, max_phase_idx = l, z_w, i
+        
+        self._water_phase_index = max_phase_idx
+        return max_phase_idx
+
+    @property
+    def water_phase(self):
+        try:
+            return self.liquids[self.water_phase_index]
+        except:
+            return None
+    
+    @property
     def water_index(self):
         try:
             return self._water_index
@@ -733,7 +760,6 @@ class EquilibriumState(object):
         if isinstance(phase, gas_phases):
             return 0
     
-    @property
     def Ks(self, phase):
         ref_phase = self.flash_convergence['ref_phase']
         ref_lnphis = self.phases[ref_phase].lnphis()

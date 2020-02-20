@@ -220,6 +220,8 @@ def hash_any_primitive(v):
     elif isinstance(v, set):
         # Should only contain hashable items
         v = tuple(v)
+    elif isinstance(v, tuple):
+        v = tuple(hash_any_primitive(i) for i in v)
     return hash(v)
 
 def sorted_CAS_key(CASs):
@@ -2782,8 +2784,8 @@ class TDependentProperty(object):
         # By default, share state among subsequent objects 
         return self
     
-    def __hash__(self):
-        return hash_any_primitive([self.__class__, self.__dict__])
+#    def __hash__(self):
+#        return hash_any_primitive([self.__class__, self.__dict__])
 
     def __call__(self, T):
         r'''Convenience method to calculate the property; calls 

@@ -38,7 +38,7 @@ __all__ = ['K_value', 'Wilson_K_value', 'flash_wilson',
            'Pdew_mixture', 'GibbsExcess', 'IdealSolution']
 
 from fluids.numerics import IS_PYPY, one_epsilon_larger, one_epsilon_smaller, NotBoundedError
-from fluids.numerics import newton_system, roots_cubic, roots_quartic, secant, horner, py_brenth as brenth, py_newton as newton, oscillation_checker, roots_cubic_a1# Always use this method for advanced features
+from fluids.numerics import newton_system, roots_cubic, roots_quartic, secant, horner, py_brenth as brenth, py_newton as newton, oscillation_checker, roots_cubic_a1, linspace, horner_and_der
 from thermo.utils import exp, log
 from thermo.utils import none_and_length_check, dxs_to_dns, dxs_to_dn_partials, d2xs_to_dxdn_partials, dns_to_dn_partials
 from thermo.utils import R
@@ -1232,9 +1232,13 @@ def Rachford_Rice_solution_polynomial(zs, Ks):
         x0 = 0.5*(V_over_F_min + V_over_F_max)
         def err(VF):
             return horner(poly, VF)
+        def err_and_der(VF):
+            return horner_and_der(poly, VF)
         
         try:
-            V_over_F = newton(err, x0)
+            V_over_F = secant(err, x0)
+            # V_over_F = secant(err, x0, low=V_over_F_min, high=V_over_F_max, bisection=True)
+            # V_over_F = newton(err_and_der, x0, fprime=True, low=V_over_F_min, high=V_over_F_max, bisection=True)
             if V_over_F < V_over_F_min or V_over_F > V_over_F_max:
                 raise ValueError("Newton converged to another root")
         except:
@@ -1491,6 +1495,9 @@ def Rachford_Rice_solutionN(ns, Ks, betas):
     comps.append(ref_comp)
     betas.append(1.0 - sum(betas))
 
+    if (1.0 - sum(ref_comp)) > 1e-10:
+        raise ValueError("Converged to nonphysical solution")
+
     return betas, comps
 
 
@@ -1621,7 +1628,48 @@ def Rachford_Rice_solution2(ns, Ks_y, Ks_z, beta_y=0.5, beta_z=1e-6):
     
     if not Rachford_Rice_valid_solution_naive(ns, [beta_y, beta_z], Ks, limit_betas=limit_betas):
         raise ValueError("Initial guesses will not lead to convergence")
-    
+
+    if 0:
+        import matplotlib.pyplot as plt
+        from matplotlib import ticker, cm
+        from matplotlib.colors import LogNorm
+        betas = linspace(-10, 10, 500)
+        errs = []
+        for b0 in betas:
+            r = []
+            for b1 in betas:
+                Fs = Rachford_Rice_flashN_f_jac([b0, b1], ns, Ks)[0]
+                err = abs(Fs[0]) + abs(Fs[1])
+                r.append(err)
+            errs.append(r)
+            
+        trunc_err_low = 1e-9
+        trunc_err_high = 1e5
+        X, Y = np.meshgrid(betas, betas)
+        z = np.array(errs).T
+        if trunc_err_low is not None:
+            z[np.where(abs(z) < trunc_err_low)] = trunc_err_low
+        if trunc_err_high is not None:
+            z[np.where(abs(z) > trunc_err_high)] = trunc_err_high
+        color_map = cm.viridis
+
+        fig, ax = plt.subplots()
+        im = ax.pcolormesh(X, Y, z, cmap=color_map) # , norm=LogNorm(vmin=trunc_err_low, vmax=trunc_err_high)
+        cbar = fig.colorbar(im, ax=ax)
+        cbar.set_label('Relative error')
+        plt.show()
+    if 0:
+        from scipy.optimize import differential_evolution
+        def obj(x):
+            try:
+                x = x.tolist()
+            except:
+                pass
+            Fs = Rachford_Rice_flashN_f_jac(x, ns, Ks)[0]
+            return abs(Fs[0]) + abs(Fs[1])
+        ans = differential_evolution(obj, [(-30.0, 30.0) for j in range(2)], **{'popsize':200, 'init': 'random', 'atol': 1e-12})
+        objf = float(ans['fun'])
+
     (beta_y, beta_z), iter = newton_system(Rachford_Rice_flashN_f_jac, jac=True, 
                                            x0=[beta_y, beta_z], args=(ns, Ks),
                                            ytol=1e-14, damping_func=new_betas)
@@ -1633,6 +1681,8 @@ def Rachford_Rice_solution2(ns, Ks_y, Ks_z, beta_y=0.5, beta_z=1e-6):
     xs = [zi/(1.+beta_y*(Ky-1.) + beta_z*(Kz-1.)) for Ky, Kz, zi in zip(Ks_y, Ks_z, ns)]
     ys = [Ky*xi for xi, Ky in zip(xs, Ks_y)]
     zs = [Kz*xi for xi, Kz in zip(xs, Ks_z)]
+    if (1.0 - sum(zs)) > 1e-10:
+        raise ValueError("Converged to nonphysical solution")
     return beta_y, beta_z, xs, ys, zs
 
 
@@ -1804,8 +1854,8 @@ def Rachford_Rice_solution(zs, Ks, fprime=False, fprime2=False,
                               low=low, bisection=True)
         else:
 #            print(V_over_F_max, V_over_F_min)
-            V_over_F = newton(err, x0, ytol=1e-5, high=high,
-                              low=low, bisection=True)
+            V_over_F = secant(err, x0, ytol=1e-5, xtol=1.48e-8, high=high,
+                              low=low, bisection=True, require_xtol=True)
         
 #        assert V_over_F >= V_over_F_min2
 #        assert V_over_F <= V_over_F_max2
@@ -1997,8 +2047,13 @@ def Rachford_Rice_solution_LN2(zs, Ks, guess=None):
         return F0, dF0, ddF0
     
     # Suggests guess V_over_F_min, not using
-    guess = -log((V_over_F_max-guess)/(guess-V_over_F_min))
-    
+    try:
+        guess = -log((V_over_F_max-guess)/(guess-V_over_F_min))
+    except ValueError:
+        # Case where guess was less than V_over_F_min - nasty
+        guess = 0.5*(V_over_F_min + V_over_F_max)
+        guess = -log((V_over_F_max-guess)/(guess-V_over_F_min))
+
     # Should always converge - no poles
     try:
         V_over_F = newton(err, guess, fprime=True, fprime2=True, ytol=1e-8)
@@ -2240,22 +2295,22 @@ def _Rachford_Rice_analytical_3(zs, Ks):
     x63 = x6 + x6
     x64 = x7 + x7
     x65 = K3 + K3
-    
+
     V_over_F = (-(-x0  + 0.5*(-x1 + x10 + x12 + x14 + x15
                   + x16 - x2 - x3 - x5 - x6 - x7
                   + x9) - x4  - x8  + z1 + z2 + z3 + (
-                 K3*x43*x56 - x0*x58 + 4.0*x13*x5 + x18 - x20 - x21 - x22 + x23 
-                 - x25 - x27 - x28 + x29 + x30*(-x27 - x28 + x29 + x35*x52*z2 
-                + x37 + x40 - x51) + x32 + x34*(x39 - x65 + 1.0) + x35*(-x22 
+                 K3*x43*x56 - x0*x58 + 4.0*x13*x5 + x18 - x20 - x21 - x22 + x23
+                 - x25 - x27 - x28 + x29 + x30*(-x27 - x28 + x29 + x35*x52*z2
+                + x37 + x40 - x51) + x32 + x34*(x39 - x65 + 1.0) + x35*(-x22
                  + x23 - x25 + x32 + x41 - x46) + x37 - x38*x65 + x38 + x39*(
                 x18 - x20 - x21 + x38 - x44 + x48*x52) + x4*x55 + x40 + x41
-                + x42*(-x37 - x40) - x44 - x46 + x48*(x26 + x47 - x62 - x63 
-                - x64) + x49*(-x32 - x41) + x5*x55 - x51 + x53*(x59 + x52 
+                + x42*(-x37 - x40) - x44 - x46 + x48*(x26 + x47 - x62 - x63
+                - x64) + x49*(-x32 - x41) + x5*x55 - x51 + x53*(x59 + x52
                 -x17 + x54 + x54 - x63 - x64) + x54*(x52 - x17 - x26)
                 + x57*(x45 + x50) + x58*x6 + x60*(x26 -x17 + x59 - x62)
                 + x61*(x6 - x3)
                 )**0.5*0.5)/(
-                K3*(x10 + x11 - x3 + x9) + x0 + x1 - x10 - x11 - x12 - x13 
+                K3*(x10 + x11 - x3 + x9) + x0 + x1 - x10 - x11 - x12 - x13
                 - x14 - x15 - x16 + x2 + x3 + x4 + x5 + x6 + x7 + x8 - x9
                 - z1 - z2 - z3))
     xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]
@@ -2420,10 +2475,14 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
             except ZeroDivisionError:
                 return Rachford_Rice_solution(zs=zs, Ks=Ks)
         elif l == 3:
-            return _Rachford_Rice_analytical_3(zs, Ks)
+            try:
+                return _Rachford_Rice_analytical_3(zs, Ks)
+            except (ValueError, ZeroDivisionError):
+                return Rachford_Rice_solution(zs=zs, Ks=Ks)
         elif l == 4:
-            poly = Rachford_Rice_polynomial_4(zs, [Ki - 1.0 for Ki in Ks])
-            V_over_F = roots_cubic_a1(poly[1], poly[2], poly[3])[2].real
+            return Rachford_Rice_solution_polynomial(zs, Ks)
+#            poly = Rachford_Rice_polynomial_4(zs, [Ki - 1.0 for Ki in Ks])
+#            V_over_F = roots_cubic_a1(poly[1], poly[2], poly[3])[2].real
         elif l == 5:
             return Rachford_Rice_solution_polynomial(zs, Ks)
         elif l == 1:

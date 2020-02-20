@@ -365,7 +365,7 @@ class StabilityTester(object):
     def incipient_guess_name(self, idx):
         if idx < 4:
             return ('Wilson gas', 'Wilson liquid', 'Wilson gas third', 'Wilson liquid third')[idx]
-        elif idx > 3 and idx < 3 + self.N:
+        elif idx > 3 and idx <= 3 + self.N:
             return 'pure%d' %(idx-3)
         elif idx > 3+self.N:
             return 'random%d' %(idx-(3+self.N))

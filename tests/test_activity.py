@@ -368,6 +368,18 @@ def test_flash_solution_algorithms():
         if algo is not flash_inner_loop_poly:
             V_over_F, _, _ = algo(zs=zs, Ks=Ks)
             assert_allclose(V_over_F, 1, atol=0.001)
+            
+def test_RR4_analytical_correct_root_selection():
+    zs = [.25]*4
+    Ks = [272.3389789221219, 0.03332258671372583, 5.5312234259718825e-06, 0.7150198654249253]
+    # Cannot naively take a root
+    V_over_F, xs, ys = flash_inner_loop(zs, Ks, Method='Analytical')
+    xs_expect = [0.002907312276718056, 0.35857061296097453, 0.3640191709591237, 0.2745029038031836]
+    ys_expect = [0.7917744568491449, 0.011948500343385897, 2.0134713659119683e-06, 0.19627502933610355]
+    assert_allclose(xs, xs_expect)
+    assert_allclose(ys, ys_expect)
+    assert_allclose(V_over_F, 0.3132247165106723)
+
 
 
 @pytest.mark.slow
@@ -381,6 +393,49 @@ def test_fuzz_flash_inner_loop():
         if any(Ks > 1) and any(Ks < 1):
             zs, Ks = list(zs), list(Ks)
             flash_inner_loop(zs=zs, Ks=Ks)
+
+def test_RR_3_component_analytical_killer():
+    # Causes a zero division in the current analytical implementation
+    # Unfortunately, a slight numerical change in the future may move
+    # where the point occurs, and then this test will not cover it
+    zs = [0.3236492620816329, 0.6641935438362395, 0.012157194082127343]
+    Ks = [0.9999999836883505, 1.0000000096397859, 0.9999999075885792]
+
+    V_over_F_expect = -132.57775072987795
+    xs_expect = [0.32364856217161636, 0.6641943926907056, 0.01215704513767788]
+    ys_expect = [0.3236485568923745, 0.6641943990933973, 0.012157044014228065]
+    
+    methods = flash_inner_loop(zs, Ks, AvailableMethods=True)
+    for method in methods:
+        V_over_F, xs, ys = flash_inner_loop(zs, Ks, Method=method)
+        assert_allclose(V_over_F, V_over_F_expect, rtol=1e-6)
+        assert_allclose(xs, xs_expect, rtol=1e-5)
+        assert_allclose(ys, ys_expect, rtol=1e-5)
+        
+def test_RR_9_guess_outside_bounds():
+    zs = [0.019940159581097128, 0.0029910239371645692, 9.970079790548564e-07, 0.6480551863856566, 0.12961103727713133, 0.08973071811493706, 0.04985039895274282, 0.029910239371645688, 0.029910239371645688]
+    Ks = [3.5485897145055816e-06, 0.002018123183156661, 0.019945350603929494, 2.7529940298098384e-05, 2.3624326321851173e-05, 2.3490645243135485e-06, 1.891034975611742e-07, 7.690760330909594e-09, 634.2139456449565]
+    guess = 0.028368024647511682
+    
+    V_over_F_expect = 0.028379070106453616
+    xs_expect = [0.020522568936985175, 0.0030782042140309754, 1.025531116615776e-06, 0.6669830232661768, 0.13339661987044737, 0.09235156345203366, 0.05130642737684176, 0.030783856589219376, 0.0015767107631482343]
+    ys_expect = [7.282617704501734e-08, 6.2121952868264395e-06, 2.0454577676140954e-08, 1.836200281036301e-05, 3.151405278051385e-06, 2.1693978147006393e-07, 9.702224864329157e-09, 2.367512630887783e-10, 0.9999719542371123]
+    
+    V_over_F, xs, ys = Rachford_Rice_solution_LN2(zs, Ks, guess=guess)
+    assert_allclose(V_over_F, V_over_F_expect, rtol=1e-6)
+    assert_allclose(xs, xs_expect, rtol=1e-5)
+    assert_allclose(ys, ys_expect, rtol=1e-5)
+    
+    # Check all the methods anyway 
+    methods = flash_inner_loop(zs, Ks, guess=guess, AvailableMethods=True)
+    for method in methods:
+        # 9 coeff root finding is numerically terrible - has a false root, and doesn't quite bracket
+        # Cannot make work
+        if 'polynomial' not in method:
+            V_over_F, xs, ys = flash_inner_loop(zs, Ks, Method=method)
+            assert_allclose(V_over_F, V_over_F_expect, rtol=1e-6)
+            assert_allclose(xs, xs_expect, rtol=1e-5)
+            assert_allclose(ys, ys_expect, rtol=1e-5)
 
 
 def validate_RR_convergence(ns, Ks, betas, n=1000):

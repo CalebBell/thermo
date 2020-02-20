@@ -347,7 +347,7 @@ def identify_sort_phases(phases, betas, constants, correlations, settings,
             new_betas.append(betas[phases.index(liquid)])
         for solid in solids:
             new_betas.append(betas[phases.index(solid)])
-    
+        betas = new_betas
     return gas, liquids, solids, betas
     
     
