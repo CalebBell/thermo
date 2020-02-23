@@ -35,7 +35,7 @@ __all__ = ['sequential_substitution_2P', 'sequential_substitution_GDEM3_2P',
            'sequential_substitution_2P_double',
            'cm_flash_tol', 'nonlin_2P_newton', 'dew_bubble_newton_zs',
            'SS_VF_simultaneous', 'stabiliy_iteration_Michelsen',
-           'assert_stab_success_2P', 
+           'assert_stab_success_2P', 'nonlin_equilibrium_NP',
            ]
 
 from fluids.constants import R, R2, R_inv
@@ -495,6 +495,104 @@ def sequential_substitution_GDEM3_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
         if err < tol:
             return V_over_F, xs, ys, l, g, iteration, err
     raise UnconvergedError('End of SS without convergence')
+
+
+def nonlin_equilibrium_NP(T, P, zs, compositions_guesses, betas_guesses, 
+                        phases, maxiter=1000, tol=1E-13,
+                        trivial_solution_tol=1e-5, ref_phase=-1,
+                        method='hybr', solve_kwargs=None):
+    if solve_kwargs is None:
+        solve_kwargs = {}
+
+    compositions = compositions_guesses
+    N = len(zs)
+    cmps = range(N)
+    phase_count = len(phases)
+    phase_iter = range(phase_count)
+    if ref_phase < 0:
+        ref_phase = phase_count + ref_phase
+
+    phase_iter_n1 = [i for i in phase_iter if i != ref_phase]
+    phase_iter_n1_0 = range(phase_count-1)
+    betas = betas_guesses
+    if len(betas) < len(phases):
+        betas.append(1.0 - sum(betas))
+
+    flows_guess = [compositions_guesses[j][i]*betas[j] for j in phase_iter_n1 for i in cmps]
+    
+    jac = True
+    global iterations, info
+    iterations = 0
+    info = []
+    def to_solve(flows):
+        global iterations, info
+        try:
+            flows = flows.tolist()
+        except:
+            flows = list(flows)
+        iterations += 1
+        iter_flows = []
+        iter_comps = []
+        iter_betas = []
+        iter_phases = []
+        
+        remaining = zs
+        for i in range(len(flows)):
+            if flows[i] < 0.0:
+                flows[i] = 1e-100
+
+
+        for j, k in zip(phase_iter_n1, phase_iter_n1_0):
+            v = flows[k*N:k*N+N]
+            vs = v
+            vs_sum = sum(abs(i) for i in vs)
+            if vs_sum == 0.0:
+                # Handle the case an optimizer takes all of all compounds already
+                ys = zs
+            else:
+                vs_sum_inv = 1.0/vs_sum
+                ys = [abs(vs[i]*vs_sum_inv) for i in cmps]
+                ys = normalize(ys)
+            iter_flows.append(vs)
+            iter_comps.append(ys)
+            iter_betas.append(vs_sum) # Would be divided by feed but feed is zs = 1
+            iter_phases.append(phases[j].to_TP_zs(T=T, P=P, zs=ys))
+            remaining = [remaining[i] - vs[i] for i in cmps]
+
+        flows_ref = remaining
+        iter_flows.insert(ref_phase, remaining)
+
+        beta_ref = sum(remaining)
+        iter_betas.insert(ref_phase, beta_ref)
+
+        xs_ref = normalize(remaining)
+        iter_comps.insert(ref_phase, xs_ref)
+
+        phase_ref = phases[ref_phase].to_TP_zs(T=T, P=P, zs=xs_ref)
+        iter_phases.insert(ref_phase, phase_ref)
+
+        lnphis_ref = phase_ref.lnphis()
+        
+        errs = []
+        for k in phase_iter_n1:
+            phase = iter_phases[k]
+            lnphis = phase.lnphis()
+            xs = iter_comps[k]
+            for i in cmps:
+                gi = log(xs[i]/xs_ref[i]) + lnphis[i] - lnphis_ref[i]
+                errs.append(gi)
+        print(errs)
+        info[:] = iter_betas, iter_comps, iter_phases, errs, None
+        return errs
+
+    import numdifftools as nd
+    jac = nd.Jacobian(to_solve)
+    
+    sol = root(to_solve, flows_guess, tol=tol, method=method, **solve_kwargs)
+    solution = sol.x.tolist()
+    
+    betas, compositions, phases, errs, jac = info
+    return betas, compositions, phases, errs, jac
 
 
 def nonlin_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
@@ -975,6 +1073,31 @@ def minimize_gibbs_NP_transformed(T, P, zs, compositions_guesses, phases,
                 phase = iter_phases[j]
                 lnphis = phase.lnphis()
                 jac_arr.extend([ref - (log(xi) + lnphii) for ref, xi, lnphii in zip(base, comp, lnphis)])
+
+            jac_arr = []
+            comp_last = iter_comps[-1]
+            phase_last = iter_phases[-1]
+            flows_last = iter_flows[-1]
+            lnphis_last = phase_last.lnphis()
+            dlnphis_dns_last = phase_last.dlnphis_dns()
+
+            for j in phase_iter_n1:
+                comp = iter_comps[j]
+                phase = iter_phases[j]
+                flows = iter_flows[j]
+                lnphis = phase.lnphis()
+                dlnphis_dns = phase.dlnphis_dns()
+                for i in cmps:
+                    v = 0
+                    for k in cmps:
+                        v += flows[k][i]*lnphis[k][i]
+                        v -= flows_last[i]*dlnphis_dns_last[k][i]
+                    v += lnphis[i] + log(comp[i])
+                    
+
+
+
+
         if G < min_G:
             #  'phases', iter_phases
             print('new min G', G,  'betas', iter_betas, 'comp', iter_comps)
@@ -984,23 +1107,43 @@ def minimize_gibbs_NP_transformed(T, P, zs, compositions_guesses, phases,
         if hess:
             base = iter_phases[0].dlnfugacities_dns()
             p1 = iter_phases[1].dlnfugacities_dns()
+            dlnphis_dns = [i.dlnphis_dns() for i in iter_phases]
             dlnphis_dns0 = iter_phases[0].dlnphis_dns()
             dlnphis_dns1 = iter_phases[1].dlnphis_dns()
             xs, ys = iter_comps[0], iter_comps[1]
             hess_arr = []
             beta = iter_betas[0]
-            for i in cmps:
-                r = []
-                for j in cmps:
-                    # How the heck to make this multidimensional?
-                    delta = 1.0 if i ==j else 0.0
-                    v = 1.0/(beta*(1.0 - beta))*(zs[i]*delta/(xs[i]*ys[i])
-                                                 - 1.0 + (1.0 - beta)*dlnphis_dns0[i][j]
-                                                 + beta*dlnphis_dns1[i][j])
-
-                    # v = base[i][j] + p1[i][j]
-                    r.append(v)
-                hess_arr.append(r)
+            
+            hess_arr = [[0.0]*N*(phase_count-1) for i in range(N*(phase_count-1))]
+            for n in range(1, phase_count):
+                for m in range(1, phase_count):
+                    for i in cmps:
+                        for j in cmps:
+                            delta = 1.0 if i == j else 0.0
+                            v = 1.0/iter_betas[n]*(1.0/iter_comps[n][i]*delta
+                                               - 1.0 + dlnphis_dns[n][i][j])
+                            v += 1.0/iter_betas[0]*(1.0/iter_comps[0][i]*delta
+                                               - 1.0 + dlnphis_dns[0][i][j])
+                            hess_arr[(n-1)*N+i][(m-1)*N+j] = v
+#
+#            for n in range(1, phase_count):
+#                for i in cmps:
+#                    r = []
+#                    for j in cmps:
+#                        v = 0.0
+#                        for m in phase_iter:
+#                            delta = 1.0 if i ==j else 0.0
+#                            v += 1.0/iter_betas[m]*(1.0/iter_comps[m][i]*delta
+#                                               - 1.0 + dlnphis_dns[m][i][j])
+#                        
+#                        # How the heck to make this multidimensional?
+#                        # v = 1.0/(beta*(1.0 - beta))*(zs[i]*delta/(xs[i]*ys[i])
+#                        #                              - 1.0 + (1.0 - beta)*dlnphis_dns0[i][j]
+#                        #                              + beta*dlnphis_dns1[i][j])
+#    
+#                        # v = base[i][j] + p1[i][j]
+#                        r.append(v)
+#                    hess_arr.append(r)
             # Going to be hard to figure out
             # for j in range(1, phase_count):
             #     comp = iter_comps[j]
@@ -1033,6 +1176,7 @@ def minimize_gibbs_NP_transformed(T, P, zs, compositions_guesses, phases,
         import numdifftools as nd
         jac = True
         hess = True
+        initial_hess = nd.Hessian(lambda x: G(x)[0], step=1e-4)(flows_guess_basis)
         ans, iters = newton_minimize(G, flows_guess_basis, jac=True, hess=True, xtol=tol, ytol=None, maxiter=100, damping=1.0,
                   damping_func=damping_maintain_sign)
         objf = None
@@ -1040,11 +1184,17 @@ def minimize_gibbs_NP_transformed(T, P, zs, compositions_guesses, phases,
         jac = True
         hess = True
         import numdifftools as nd
-        hess_fun = lambda flows_guess_basis: np.array(G(flows_guess_basis)[2])
+        def hess_fun(flows):
+            return np.array(G(flows)[2])
+
+        # hess_fun = lambda flows_guess_basis: np.array(G(flows_guess_basis)[2])
 #        nd.Jacobian(G, step=1e-5)
         # trust-constr special handling to add constraints
+        def fun_and_jac(x):
+            x, j, _ = G(x)
+            return x, np.array(j)
 
-        ans = minimize(G, flows_guess_basis, jac=True, hess=hess_fun, method=method, tol=tol, **opt_kwargs)
+        ans = minimize(fun_and_jac, flows_guess_basis, jac=True, hess=hess_fun, method=method, tol=tol, **opt_kwargs)
         objf = float(ans['fun'])
 #    G(ans['x']) # Make sure info has right value
 #    ans['fun'] *= R*T

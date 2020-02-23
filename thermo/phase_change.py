@@ -1567,7 +1567,7 @@ class EnthalpySublimation(TDependentProperty):
             pass
         self.all_methods = set(methods)
         if Tmins and Tmaxs:
-            self.Tmin, self.Tmax = min(Tmins), max(Tmaxs)
+            self.Tmin, self.Tmax = min(i for i in Tmins if i is not None), max(i for i in Tmaxs if i is not None)
             
     def calculate(self, T, method):
         r'''Method to calculate heat of sublimation of a solid at
