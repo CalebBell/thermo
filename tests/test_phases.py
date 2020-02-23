@@ -532,3 +532,24 @@ def test_model_hash():
     assert gas.model_hash() != liq.model_hash()
     assert liq2.model_hash() == liq.model_hash()
     assert liq3.model_hash() != liq.model_hash()
+
+
+def test_dlnfugacities_SRK():
+    T = 115.0
+    P = 1e6
+    zs = [0.4, 0.6]
+    
+    dlnfugacities_dns_expect = [[1.4378058197970829, -0.9585372131980551],
+     [-0.958537213198055, 0.6390248087987035]]
+    
+    dlnfugacities_dns_l_expect = [[1.1560067098003597, -0.7706711398669063],
+     [-0.7706711398669062, 0.5137807599112717]]
+    
+    HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
+                         HeatCapacityGas(best_fit=(273, 1000, [-1.575967061488898e-21, 8.453271073419098e-18, -1.921448640274908e-14, 2.3921686769873392e-11, -1.7525253961492494e-08, 7.512525679465744e-06, -0.0018211688612260338, 0.3869010410224839, 35.590034427486614])),]
+    
+    eos_kwargs = {'Pcs': [33.94E5, 46.04E5], 'Tcs': [126.1, 190.6], 'omegas': [0.04, 0.011]}
+    gas = EOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = EOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    assert_allclose(gas.dlnfugacities_dns(), dlnfugacities_dns_expect, rtol=1e-9)
+    assert_allclose(liq.dlnfugacities_dns(), dlnfugacities_dns_l_expect, rtol=1e-9)

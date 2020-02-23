@@ -570,23 +570,55 @@ def nonlin_equilibrium_NP(T, P, zs, compositions_guesses, betas_guesses,
 
         phase_ref = phases[ref_phase].to_TP_zs(T=T, P=P, zs=xs_ref)
         iter_phases.insert(ref_phase, phase_ref)
-
+        
         lnphis_ref = phase_ref.lnphis()
+        dlnfugacities_ref = phase_ref.dlnfugacities_dns()
         
         errs = []
         for k in phase_iter_n1:
             phase = iter_phases[k]
             lnphis = phase.lnphis()
             xs = iter_comps[k]
+            lnfugacities = phase.lnfugacities()
             for i in cmps:
+                # This is identical to lnfugacity(i)^j - lnfugacity(i)^ref
+                # gi = lnfugacities[i]
                 gi = log(xs[i]/xs_ref[i]) + lnphis[i] - lnphis_ref[i]
                 errs.append(gi)
+                
+        jac_arr = [[0.0]*N*(phase_count-1) for i in range(N*(phase_count-1))]
+        for ni, nj in zip(phase_iter_n1, phase_iter_n1_0):
+            p = iter_phases[ni]
+            dlnfugacities = p.dlnfugacities_dns()
+            # Begin with the first row using ni, nj; 
+            for i in cmps:
+                for ki, kj in zip(phase_iter_n1, phase_iter_n1_0):
+                    for j in cmps:
+#                        if ki == ni:
+#                            dlnfugacities_i =
+                        delta = 1.0 if j == i else 0.0
+                        jac_arr[nj*N + i][kj*N + j] = dlnfugacities[i][j]*delta/iter_betas[ni] + dlnfugacities_ref[i][j]/beta_ref
+
+
+# if ni == ki:
+                            # jac_arr[nj*N+i][kj*N+j] = dlnfugacities[i][j]# + dlnfugacities_ref[i][j]
+                            # jac_arr[nj*N+i][kj*N+j] = dlnfugacities[i][j] + dlnfugacities_ref[i][j]
+                            
+
+#                for m in range(1, phase_count):
+        
+                
+                
         print(errs)
-        info[:] = iter_betas, iter_comps, iter_phases, errs, None
+        info[:] = iter_betas, iter_comps, iter_phases, errs, jac_arr
         return errs
 
     import numdifftools as nd
     jac = nd.Jacobian(to_solve)
+
+    # flows_guess_fixed = flows_guess[0:4]/
+    to_solve(flows_guess)
+    a = 1
     
     sol = root(to_solve, flows_guess, tol=tol, method=method, **solve_kwargs)
     solution = sol.x.tolist()

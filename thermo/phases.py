@@ -133,6 +133,9 @@ class Phase(object):
         lnphis = self.lnphis()
         return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(len(zs))]
     
+    def lnfugacities(self):
+        return [log(i) for i in self.fugacities()]
+    
     fugacities_lowest_Gibbs = fugacities
     
     def dfugacities_dT(self):
