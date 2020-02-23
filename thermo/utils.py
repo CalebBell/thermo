@@ -2784,8 +2784,8 @@ class TDependentProperty(object):
         # By default, share state among subsequent objects 
         return self
     
-#    def __hash__(self):
-#        return hash_any_primitive([self.__class__, self.__dict__])
+    def __hash__(self):
+        return hash_any_primitive([self.__class__, self.__dict__])
 
     def __call__(self, T):
         r'''Convenience method to calculate the property; calls 
@@ -3201,12 +3201,13 @@ class TDependentProperty(object):
         prop : float
             Calculated property, [`units`]
         '''
-        key = (name, self.interpolation_T, self.interpolation_property, self.interpolation_property_inv)
+        # Cannot use method as key - need its id; faster also
+        key = (name, id(self.interpolation_T), id(self.interpolation_property), id(self.interpolation_property_inv))
 
         # If the interpolator and extrapolator has already been created, load it
 #        if isinstance(self.tabular_data_interpolators, dict) and key in self.tabular_data_interpolators:
 #            extrapolator, spline = self.tabular_data_interpolators[key]
-
+        
         if key in self.tabular_data_interpolators:
             extrapolator, spline = self.tabular_data_interpolators[key]
         else:
@@ -3909,7 +3910,7 @@ class TPDependentProperty(TDependentProperty):
         prop : float
             Calculated property, [`units`]
         '''
-        key = (name, self.interpolation_T, self.interpolation_P, self.interpolation_property, self.interpolation_property_inv)
+        key = (name, self.interpolation_T, id(self.interpolation_P), id(self.interpolation_property), id(self.interpolation_property_inv))
 
         # If the interpolator and extrapolator has already been created, load it
         if key in self.tabular_data_interpolators:
