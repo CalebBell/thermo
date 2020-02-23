@@ -2931,6 +2931,10 @@ class GCEOS(object):
             # Error message
             return self.__class__(T=T, V=V, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega, **self.kwargs)
     
+    def V_max_l_at_T(self):
+        # Should return the maximum liquid volume
+        pass
+    
     def T_min_at_V(self, V, Pmin=1e-15):
         '''Returns the minimum temperature for the EOS to have the
         volume as specified. Under this temperature, the pressure will go

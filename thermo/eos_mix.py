@@ -865,10 +865,7 @@ class GCEOSMIX(GCEOS):
         '''
         T, P, V = TPV
         eos_instance = self.to(T=T, P=P, V=V, zs=self.zs)
-        if T is not None:
-            RT_inv = 1.0/(R*T)
-        else:
-            RT_inv = 1.0/(R*eos_instance.T)
+        RT_inv = 1.0/(R*eos_instance.T)
         if eos_instance.phase == 'l/g':
             if eos_instance.G_dep_l < eos_instance.G_dep_g:
                 v = eos_instance.d2nA_dninjs_Vt('l')
@@ -882,12 +879,29 @@ class GCEOSMIX(GCEOS):
         return det(dGs)
     
     def spinodal_at(self, T=None, P=None, V=None):
-        if T is not None or P is not None:
+        if T is not None:
             def to_solve(V):
-                pass
+                return self._spinodal_f((T, None, V))
+            
+            if 1:
+                from fluids.numerics import linspace
+                Vs = linspace(self.b*(1+1e-7), self.b*1000, 1000)
+                errs = []
+                for Vi in Vs:
+                    try:
+                        errs.append(abs(to_solve(Vi)))
+                    except:
+                        errs.append(1e5)
+                import matplotlib.pyplot as plt
+                plt.semilogy(Vs, errs)
+                plt.show()
+                a = 1
+        elif P is not None:
+            def to_solve(V):
+                return self._spinodal_f((None, P, V))
         elif V is not None:
-            def to_solve(V):
-                pass
+            def to_solve(T):
+                return self._spinodal_f((T, None, V))
 
         
     def _mechanical_critical_point_f_jac(self, TP):

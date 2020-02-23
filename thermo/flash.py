@@ -4523,13 +4523,14 @@ class FlashVLN(FlashVL):
 
         G_2P = sum([found_betas[i]*found_phases[i].G() for i in range(len(found_phases))])
 
+        # Can still be a VLL solution now that a new phase has been added
         if LL_solved and self.max_liquids == 2:
             return sln_2P
         if not LL_solved and not VL_solved:
             return None, found_phases, [], [1.0], {'iterations': 0, 'err': 0.0, 'stab_guess_name': None}
 
         # Always want the other phase to be type of one not present.
-        min_phase = sln_2P[0]
+        min_phase = sln_2P[0] if sln_2P[0] is not None else sln_2P[1][0]
         other_phase = self.gas if LL_solved else self.liquids[1]
 
         stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name) = self.stability_test_Michelsen(T, P, zs, min_phase, other_phase, existing_comps=existing_comps)

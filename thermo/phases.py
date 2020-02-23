@@ -91,7 +91,7 @@ class Phase(object):
         return s
     
     def model_hash(self):
-        return randint()
+        return randint(0, 100000)
     
     def value(self, name):
         v = getattr(self, name)
@@ -2371,6 +2371,8 @@ class GibbsExcessLiquid(Phase):
         self.transfer_data(new, zs, T, T_equal)
         return new
     
+    to = to_zs_TPV
+    
     def transfer_data(self, new, zs, T, T_equal):
         new.VaporPressures = self.VaporPressures
         new.VolumeLiquids = self.VolumeLiquids
@@ -2530,7 +2532,9 @@ class GibbsExcessLiquid(Phase):
                 
         return Psats
 
-    
+    def PIP(self):
+        # Force liquid
+        return 2.0
     
     def dPsats_dT(self):
         try:

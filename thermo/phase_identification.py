@@ -197,16 +197,20 @@ def identity_phase_states(phases, constants, correlations, VL_method=VL_ID_PIP,
 
     force_phases = [i.force_phase for i in phases]
     forced = True
-    for s in force_phases:
+    phases_to_ID = []
+    phases_to_ID_idxs = []
+    for i, s in enumerate(force_phases):
         if s is None:
             forced = False
-            break
+            # TODO avoid scoring phases with force phase
+            phases_to_ID.append(phases[i])
+            phases_to_ID_idxs.append(i)
         
     if not forced:
-        VL_scores = score_phases_VL(phases, constants, correlations, 
+        VL_scores = score_phases_VL(phases, constants, correlations,
                                     method=VL_method, VL_ID_settings=VL_ID_settings)
         if not skip_solids:
-            S_scores = score_phases_S(phases, constants, correlations, 
+            S_scores = score_phases_S(phases, constants, correlations,
                                       method=S_method, S_ID_settings=S_ID_settings)
     
     solids = []
