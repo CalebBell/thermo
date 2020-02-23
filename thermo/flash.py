@@ -596,8 +596,17 @@ def nonlin_equilibrium_NP(T, P, zs, compositions_guesses, betas_guesses,
                     for j in cmps:
 #                        if ki == ni:
 #                            dlnfugacities_i =
-                        delta = 1.0 if j == i else 0.0
-                        jac_arr[nj*N + i][kj*N + j] = dlnfugacities[i][j]*delta/iter_betas[ni] + dlnfugacities_ref[i][j]/beta_ref
+                        delta = 1.0 if ni == ki else 0.0# closeet yet
+                        # delta = 1.0 if j == i else 0.0 # second Closest
+                        if jac_arr[nj*N + i][kj*N + j] != 0:
+                            a = 0
+                        # if (ki != 0 or ni != 0) and j in (1, 2):
+                        if (ni < ki or ki > ni) and j in (1, 2):
+                            jac_arr[nj * N + i][kj * N + j] = dlnfugacities_ref[i][j]/beta_ref/2
+                        elif kj == 1 and kj == 1 and j in (1, 2):
+                            jac_arr[nj * N + i][kj * N + j] = (dlnfugacities[i][j] * delta / iter_betas[ni] + dlnfugacities_ref[i][j] / beta_ref)/2
+                        else:
+                            jac_arr[nj*N + i][kj*N + j] = dlnfugacities[i][j]*delta/iter_betas[ni] + dlnfugacities_ref[i][j]/beta_ref
 
 
 # if ni == ki:
