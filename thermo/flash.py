@@ -506,6 +506,7 @@ def nonlin_equilibrium_NP(T, P, zs, compositions_guesses, betas_guesses,
 
     compositions = compositions_guesses
     N = len(zs)
+    Nm1 = N - 1
     cmps = range(N)
     phase_count = len(phases)
     phase_iter = range(phase_count)
@@ -535,6 +536,7 @@ def nonlin_equilibrium_NP(T, P, zs, compositions_guesses, betas_guesses,
         iter_comps = []
         iter_betas = []
         iter_phases = []
+        jac_arr = None
         
         remaining = zs
         for i in range(len(flows)):
@@ -565,7 +567,7 @@ def nonlin_equilibrium_NP(T, P, zs, compositions_guesses, betas_guesses,
         beta_ref = sum(remaining)
         iter_betas.insert(ref_phase, beta_ref)
 
-        xs_ref = normalize(remaining)
+        xs_ref = normalize([abs(i) for i in remaining])
         iter_comps.insert(ref_phase, xs_ref)
 
         phase_ref = phases[ref_phase].to_TP_zs(T=T, P=P, zs=xs_ref)
@@ -579,58 +581,79 @@ def nonlin_equilibrium_NP(T, P, zs, compositions_guesses, betas_guesses,
             phase = iter_phases[k]
             lnphis = phase.lnphis()
             xs = iter_comps[k]
-            lnfugacities = phase.lnfugacities()
+            # lnfugacities = phase.lnfugacities()
             for i in cmps:
                 # This is identical to lnfugacity(i)^j - lnfugacity(i)^ref
                 # gi = lnfugacities[i]
-                gi = log(xs[i]/xs_ref[i]) + lnphis[i] - lnphis_ref[i]
+                gi = trunc_log(xs[i]/xs_ref[i]) + lnphis[i] - lnphis_ref[i]
                 errs.append(gi)
-                
-        jac_arr = [[0.0]*N*(phase_count-1) for i in range(N*(phase_count-1))]
-        for ni, nj in zip(phase_iter_n1, phase_iter_n1_0):
-            p = iter_phases[ni]
-            dlnfugacities = p.dlnfugacities_dns()
-            # Begin with the first row using ni, nj; 
-            for i in cmps:
-                for ki, kj in zip(phase_iter_n1, phase_iter_n1_0):
-                    for j in cmps:
-#                        if ki == ni:
-#                            dlnfugacities_i =
-                        delta = 1.0 if ni == ki else 0.0# closeet yet
-                        # delta = 1.0 if j == i else 0.0 # second Closest
-                        if jac_arr[nj*N + i][kj*N + j] != 0:
-                            a = 0
-                        # if (ki != 0 or ni != 0) and j in (1, 2):
-                        if (ni < ki or ki > ni) and j in (1, 2):
-                            jac_arr[nj * N + i][kj * N + j] = dlnfugacities_ref[i][j]/beta_ref/2
-                        elif kj == 1 and kj == 1 and j in (1, 2):
-                            jac_arr[nj * N + i][kj * N + j] = (dlnfugacities[i][j] * delta / iter_betas[ni] + dlnfugacities_ref[i][j] / beta_ref)/2
-                        else:
-                            jac_arr[nj*N + i][kj*N + j] = dlnfugacities[i][j]*delta/iter_betas[ni] + dlnfugacities_ref[i][j]/beta_ref
-
-
-# if ni == ki:
-                            # jac_arr[nj*N+i][kj*N+j] = dlnfugacities[i][j]# + dlnfugacities_ref[i][j]
-                            # jac_arr[nj*N+i][kj*N+j] = dlnfugacities[i][j] + dlnfugacities_ref[i][j]
-                            
-
-#                for m in range(1, phase_count):
         
-                
-                
-        print(errs)
+        if jac:
+            jac_arr = [[0.0]*N*(phase_count-1) for i in range(N*(phase_count-1))]
+            for ni, nj in zip(phase_iter_n1, phase_iter_n1_0):
+                p = iter_phases[ni]
+                dlnfugacities = p.dlnfugacities_dns()
+                # Begin with the first row using ni, nj; 
+                for i in cmps:
+                    for ki, kj in zip(phase_iter_n1, phase_iter_n1_0):
+                        for j in cmps:
+    
+    #                        if ki == ni:
+    #                            dlnfugacities_i =
+                            delta_ref = 1.0#0.5 if (j not in (0, Nm1) and kj > 0 ) else 1.0
+                            delta = 1.0*delta_ref if nj == kj else 0.0# closeet yet
+                            # delta = 1.0 if j == i else 0.0 # second Closest
+                            v_ref = dlnfugacities_ref[i][j]/beta_ref
+                            jac_arr[nj*N + i][kj*N + j] = dlnfugacities[i][j]*delta/iter_betas[ni] + v_ref*delta_ref
+    
+                            # if jac_arr[nj*N + i][kj*N + j] != 0:
+                            #     a = 0
+                            # # if (ki != 0 or ni != 0) and j in (1, 2):
+                            # if (ni < ki or ki > ni) and j in (1, 2):
+                            #     jac_arr[nj * N + i][kj * N + j] = 0#0.5*v_ref
+                            # elif kj == 1 and kj == 1 and j in (1, 2):
+                            #     jac_arr[nj * N + i][kj * N + j] = .5#0.5*dlnfugacities[i][j]*delta/iter_betas[ni] + 0.5*v_ref
+                            # else:
+                            #     jac_arr[nj*N + i][kj*N + j] = delta#dlnfugacities[i][j]*delta/iter_betas[ni] + v_ref
+    
+    
+                            # jac_arr[nj*N + i][kj*N + j] = dlnfugacities[i][j]*delta/iter_betas[ni] + dlnfugacities_ref[i][j]/beta_ref
+                            # if ni != ki:
+    
+    
+    
+    # if ni == ki:
+                                # jac_arr[nj*N+i][kj*N+j] = dlnfugacities[i][j]# + dlnfugacities_ref[i][j]
+                                # jac_arr[nj*N+i][kj*N+j] = dlnfugacities[i][j] + dlnfugacities_ref[i][j]
+                                
+    
+    #                for m in range(1, phase_count):
+            
+                    
+                    
+#            print(errs)
         info[:] = iter_betas, iter_comps, iter_phases, errs, jac_arr
+        if jac:
+            return errs, jac_arr
         return errs
 
     import numdifftools as nd
-    jac = nd.Jacobian(to_solve)
-
-    # flows_guess_fixed = flows_guess[0:4]/
-    to_solve(flows_guess)
-    a = 1
+    def f_jac_numpy(x):
+        ans = to_solve(x)
+        return np.array(ans[0]), np.array(ans[1])
     
-    sol = root(to_solve, flows_guess, tol=tol, method=method, **solve_kwargs)
-    solution = sol.x.tolist()
+    jac = True
+    if method in ('broyden1', 'broyden2', 'anderson', 'linearmixing',
+                  'diagbroyden', 'excitingmixing', 'krylov'):
+        jac = False
+#    to_solve(flows_guess)
+#    a = 1
+    if method == 'newton_system':
+        comp_val, iterations = newton_system(to_solve, flows_guess, jac=True,
+                                             xtol=tol, damping=1, 
+                                             damping_func=damping_maintain_sign)
+    else:
+        sln = root(f_jac_numpy, flows_guess, tol=tol, jac=(True if jac else None), method=method, **solve_kwargs)
     
     betas, compositions, phases, errs, jac = info
     return betas, compositions, phases, errs, jac
