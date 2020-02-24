@@ -787,7 +787,7 @@ def test_NISTUF_2011():
 
 def call_all_methods_first_UNIFAC(kwargs):
     cls = UNIFAC
-    arg_methods = ('__init__', 'to_T_xs')
+    arg_methods = ('__init__', 'to_T_xs', '__delattr__', '__format__', '__getattribute__', '__setattr__')
     special_methods = {1: ('Vis_modified', 'dVis_modified_dxs', 'd2Vis_modified_dxixjs', 'd3Vis_modified_dxixjxks')}
     special_methods[4] = special_methods[1]
     
