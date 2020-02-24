@@ -28,7 +28,7 @@ from thermo.eos import *
 from thermo.utils import allclose_variable
 from fluids.constants import R
 from math import log, exp, sqrt, log10
-from fluids.numerics import linspace, derivative, logspace
+from fluids.numerics import linspace, derivative, logspace, assert_close
 
 
 @pytest.mark.slow
@@ -338,6 +338,7 @@ def test_PR_second_partial_derivative_shims():
     
     
 def test_PR_density_derivatives():
+    # TODO speed up big time - takes 2 seconds!
     '''
     '''
     '''Sympy expressions:
@@ -366,76 +367,76 @@ def test_PR_density_derivatives():
     crit_params = {'Tc': 507.6, 'Pc': 3025000.0, 'omega': 0.2975}
     eos = PR(T=T, P=P, **crit_params)
     
-    assert_allclose(eos.dP_drho_l, 16717.849183154118)
-    assert_allclose(eos.dP_drho_g, 1086.6585648335506)
+    assert_close(eos.dP_drho_l, 16717.849183154118)
+    assert_close(eos.dP_drho_g, 1086.6585648335506)
 
-    assert_allclose(eos.drho_dP_g, 0.0009202522598744487)
-    assert_allclose(eos.drho_dP_l, 5.981630705268346e-05)
+    assert_close(eos.drho_dP_g, 0.0009202522598744487)
+    assert_close(eos.drho_dP_l, 5.981630705268346e-05)
     
     V = 'V_g'
     def d_rho_dP(P):
         return 1/getattr(PR(T=T, P=P, **crit_params), V)
-    assert_allclose(eos.drho_dP_g, derivative(d_rho_dP, P, order=3))
+    assert_close(eos.drho_dP_g, derivative(d_rho_dP, P, order=3))
     V = 'V_l'
-    assert_allclose(eos.drho_dP_l, derivative(d_rho_dP, P), rtol=1e-5)
+    assert_close(eos.drho_dP_l, derivative(d_rho_dP, P), rtol=1e-5)
     
     # f = 1/x
     # >>> diff(diff(g(x), x)/diff(f, x), x)/diff(f, x)
     # -x**2*(-x**2*Derivative(g(x), x, x) - 2*x*Derivative(g(x), x))
-    assert_allclose(eos.d2P_drho2_l, 22.670941865204274)
-    assert_allclose(eos.d2P_drho2_g, -4.025199354171817)
+    assert_close(eos.d2P_drho2_l, 22.670941865204274)
+    assert_close(eos.d2P_drho2_g, -4.025199354171817)
     
     # Numerical tests
-    assert_allclose(eos.d2rho_dP2_l, -4.852084485170919e-12)
-    assert_allclose(eos.d2rho_dP2_g, 3.136953435966285e-09)
+    assert_close(eos.d2rho_dP2_l, -4.852084485170919e-12)
+    assert_close(eos.d2rho_dP2_g, 3.136953435966285e-09)
     V = 'V_g'
-    assert_allclose(derivative(d_rho_dP, 1e6, n=2, order=11, dx=100), 3.136954499224254e-09, rtol=1e-3)
+    assert_close(derivative(d_rho_dP, 1e6, n=2, order=11, dx=100), 3.136954499224254e-09, rtol=1e-3)
     V = 'V_l'
-    assert_allclose(derivative(d_rho_dP, 1e6, n=2, order=11, dx=100), -4.852086129765671e-12, rtol=1e-3)
+    assert_close(derivative(d_rho_dP, 1e6, n=2, order=11, dx=100), -4.852086129765671e-12, rtol=1e-3)
 
 
     # dT_drho tests - analytical
-    assert_allclose(eos.dT_drho_l, -0.05794715601744427)  
-    assert_allclose(eos.dT_drho_g, -0.2115805039516506)
-    assert_allclose(eos.d2T_drho2_l, -2.7171270001507268e-05)
-    assert_allclose(eos.d2T_drho2_g, 0.0019160984645184406)
+    assert_close(eos.dT_drho_l, -0.05794715601744427)  
+    assert_close(eos.dT_drho_g, -0.2115805039516506)
+    assert_close(eos.d2T_drho2_l, -2.7171270001507268e-05)
+    assert_close(eos.d2T_drho2_g, 0.0019160984645184406)
     
     def dT_drho(rho):
         return PR(V=1.0/rho, P=P, **crit_params).T
 
     ans_numeric = derivative(dT_drho, 1/eos.V_l, n=1, dx=1e-2)
-    assert_allclose(eos.dT_drho_l, ans_numeric, rtol=1e-5)   
+    assert_close(eos.dT_drho_l, ans_numeric, rtol=1e-5)   
     
     ans_numeric = derivative(dT_drho, 1/eos.V_g, n=1, dx=1e-2)
-    assert_allclose(eos.dT_drho_g, ans_numeric)
+    assert_close(eos.dT_drho_g, ans_numeric)
     
     ans_numeric = derivative(dT_drho, 1/eos.V_l, n=2, dx=1, order=21)
-    assert_allclose(eos.d2T_drho2_l, ans_numeric, rtol=1e-5)
+    assert_close(eos.d2T_drho2_l, ans_numeric, rtol=1e-5)
     
     ans_numeric = derivative(dT_drho, 1/eos.V_g, n=2, dx=1, order=3)
-    assert_allclose(eos.d2T_drho2_g, ans_numeric, rtol=1e-5)
+    assert_close(eos.d2T_drho2_g, ans_numeric, rtol=1e-5)
 
     # drho_dT tests - analytical
     def drho_dT(T, V='V_l'):
         return 1.0/getattr(PR(T=T, P=P, **crit_params), V)
     
-    assert_allclose(eos.drho_dT_g, -4.726333387638189)
-    assert_allclose(eos.drho_dT_l, -17.25710231057694)
+    assert_close(eos.drho_dT_g, -4.726333387638189)
+    assert_close(eos.drho_dT_l, -17.25710231057694)
                     
     ans_numeric = derivative(drho_dT, eos.T, n=1, dx=1e-2, args=['V_l'])
-    assert_allclose(ans_numeric, eos.drho_dT_l)
+    assert_close(ans_numeric, eos.drho_dT_l)
     
     ans_numeric = derivative(drho_dT, eos.T, n=1, dx=1e-2, args=['V_g'])
-    assert_allclose(ans_numeric, eos.drho_dT_g)
+    assert_close(ans_numeric, eos.drho_dT_g)
 
 
-    assert_allclose(eos.d2rho_dT2_l, -0.13964119596352564)
-    assert_allclose(eos.d2rho_dT2_g, 0.20229767021600575)
+    assert_close(eos.d2rho_dT2_l, -0.13964119596352564)
+    assert_close(eos.d2rho_dT2_g, 0.20229767021600575)
 
     ans_numeric = derivative(drho_dT, eos.T, n=2, dx=3e-2, args=['V_l'])
-    assert_allclose(eos.d2rho_dT2_l, ans_numeric, rtol=1e-6)
+    assert_close(eos.d2rho_dT2_l, ans_numeric, rtol=1e-6)
     ans_numeric = derivative(drho_dT, eos.T, n=2, dx=1e-2, args=['V_g'])
-    assert_allclose(eos.d2rho_dT2_g, ans_numeric, rtol=1e-6)
+    assert_close(eos.d2rho_dT2_g, ans_numeric, rtol=1e-6)
 
     # Sympy and numerical derivative quite agree!
     # d2P_drho_dT
@@ -448,12 +449,12 @@ def test_PR_density_derivatives():
         return derivative(to_diff, T, n=1, dx=.1, order=3)
     
     ans_numerical = d2P_drhodT(eos.T, 1/eos.V_l)
-    assert_allclose(eos.d2P_dTdrho_l, 121.15490035272644)
-    assert_allclose(eos.d2P_dTdrho_l, ans_numerical)
+    assert_close(eos.d2P_dTdrho_l, 121.15490035272644)
+    assert_close(eos.d2P_dTdrho_l, ans_numerical)
     
     ans_numerical = d2P_drhodT(eos.T, 1/eos.V_g)
-    assert_allclose(eos.d2P_dTdrho_g, 13.513868196361557)
-    assert_allclose(eos.d2P_dTdrho_g, ans_numerical)
+    assert_close(eos.d2P_dTdrho_g, 13.513868196361557)
+    assert_close(eos.d2P_dTdrho_g, ans_numerical)
 
     # Numerical derivatives agree - d2T_dPdrho_g
     def dT_drho(rho, P):
@@ -466,12 +467,12 @@ def test_PR_density_derivatives():
     
     
     ans_numerical = d2T_drhodP(eos.P, 1/eos.V_l)
-    assert_allclose(ans_numerical, eos.d2T_dPdrho_l, rtol=2e-3)
-    assert_allclose(eos.d2T_dPdrho_l, -1.6195726310475797e-09)
+    assert_close(ans_numerical, eos.d2T_dPdrho_l, rtol=2e-3)
+    assert_close(eos.d2T_dPdrho_l, -1.6195726310475797e-09)
     
     ans_numerical = d2T_drhodP(eos.P, 1/eos.V_g)
-    assert_allclose(ans_numerical, eos.d2T_dPdrho_g)
-    assert_allclose(eos.d2T_dPdrho_g, -5.29734819740022e-07)
+    assert_close(ans_numerical, eos.d2T_dPdrho_g)
+    assert_close(eos.d2T_dPdrho_g, -5.29734819740022e-07)
 
     # drho_DT_dP derivatives
     def drho_dT(T, P, V='V_l'):
@@ -484,12 +485,12 @@ def test_PR_density_derivatives():
     
     
     ans_numerical = drho_dT_dP(eos.T, eos.P, 'V_l')
-    assert_allclose(9.66343207820545e-07, eos.d2rho_dPdT_l)
-    assert_allclose(ans_numerical, eos.d2rho_dPdT_l, rtol=1e-5)
+    assert_close(9.66343207820545e-07, eos.d2rho_dPdT_l)
+    assert_close(ans_numerical, eos.d2rho_dPdT_l, rtol=1e-5)
     
     ans_numerical = drho_dT_dP(eos.T, eos.P, 'V_g')
-    assert_allclose(ans_numerical, eos.d2rho_dPdT_g, rtol=1e-6)
-    assert_allclose(-2.755552405262765e-05, eos.d2rho_dPdT_g)
+    assert_close(ans_numerical, eos.d2rho_dPdT_g, rtol=1e-6)
+    assert_close(-2.755552405262765e-05, eos.d2rho_dPdT_g)
 
 
 def test_PR_Psat():

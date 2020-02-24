@@ -121,6 +121,7 @@ class EquilibriumState(object):
         self.bulk = bulk = Bulk(T, P, zs, self.phases, betas)
         bulk.result = self
         bulk.constants = constants
+        bulk.correlations = correlations
         bulk.flasher = flasher
         bulk.settings = settings
 
@@ -424,37 +425,41 @@ class EquilibriumState(object):
     def H_dep(self, phase=None):
         if phase is None:
             phase = self.bulk
-        try:
-            return phase.H_dep()
-        except:
-            pass
+        elif phase is not self.bulk:
+            try:
+                return phase.H_dep()
+            except:
+                pass
         return phase.H() - self.H_ideal_gas(phase)
 
     def S_dep(self, phase=None):
         if phase is None:
             phase = self.bulk
-        try:
-            return phase.S_dep()
-        except:
-            pass
+        elif phase is not self.bulk:
+            try:
+                return phase.S_dep()
+            except:
+                pass
         return phase.S() - self.S_ideal_gas(phase)
 
     def Cp_dep(self, phase=None):
         if phase is None:
             phase = self.bulk
-        try:
-            return phase.Cp_dep()
-        except:
-            pass
+        elif phase is not self.bulk:
+            try:
+                return phase.Cp_dep()
+            except:
+                pass
         return phase.Cp() - self.Cp_ideal_gas(phase)
 
     def Cv_dep(self, phase=None):
         if phase is None:
             phase = self.bulk
-        try:
-            return phase.Cv_dep()
-        except:
-            pass
+        elif phase is not self.bulk:
+            try:
+                return phase.Cv_dep()
+            except:
+                pass
         return phase.Cv() - self.Cv_ideal_gas(phase)
 
     def H_ideal_gas(self, phase=None):
@@ -527,10 +532,11 @@ class EquilibriumState(object):
     def H_formation_ideal_gas(self, phase=None):
         if phase is None:
             phase = self.bulk
-        try:
-            return phase.H_formation_ideal_gas()
-        except:
-            pass
+        elif phase is not self.bulk:
+            try:
+                return phase.H_formation_ideal_gas()
+            except:
+                pass
         
         Hf = 0.0
         zs = phase.zs
@@ -542,10 +548,11 @@ class EquilibriumState(object):
     def S_formation_ideal_gas(self, phase=None):
         if phase is None:
             phase = self.bulk
-        try:
-            return phase.S_formation_ideal_gas()
-        except:
-            pass
+        elif phase is not self.bulk:
+            try:
+                return phase.S_formation_ideal_gas()
+            except:
+                pass
         
         Sf = 0.0
         zs = phase.zs
@@ -945,9 +952,9 @@ for name in phases_properties_to_EquilibriumState:
 
 ### For certain properties not supported by Bulk, allow them to call up to the 
 # EquilibriumState to get the property
-Bulk_properties_to_EquilibriumState = ['Cp_ideal_gas', 'H_ideal_gas', 
-       'S_ideal_gas', 'V_ideal_gas', 'G_ideal_gas', 'U_ideal_gas',
-       'Cp_ideal_gas', 'Cv_ideal_gas', 'Cp_Cv_ratio_ideal_gas',
+Bulk_properties_to_EquilibriumState = [#'H_ideal_gas', 'Cp_ideal_gas','S_ideal_gas', 
+       'V_ideal_gas', 'G_ideal_gas', 'U_ideal_gas',
+        'Cv_ideal_gas', 'Cp_Cv_ratio_ideal_gas',
        'A_ideal_gas', 'H_formation_ideal_gas', 'S_formation_ideal_gas', 
        'G_formation_ideal_gas', 'U_formation_ideal_gas', 'A_formation_ideal_gas',
        'H_dep', 'S_dep', 'Cp_dep', 'Cv_dep']

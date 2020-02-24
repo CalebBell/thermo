@@ -588,6 +588,7 @@ def test_phase_envelope_ethane_pentane():
     assert_allclose(Ts_bubble_check, Ts_bubble_expect, rtol=1e-5)
     
 def test_ethane_pentane_TP_Tdew_Tbubble_TP():
+    # Takes 9 seconds!
     IDs = ['ethane', 'n-pentane']
     pkg = PropertyPackageConstants(IDs, PR_PKG, kijs=[[0, 7.609447e-003], [7.609447e-003, 0]])
     zs = [0.7058334393128614, 0.2941665606871387] # 50/50 mass basis

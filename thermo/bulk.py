@@ -140,6 +140,8 @@ class Bulk(Phase):
         self.zs = zs
         self.phases = phases
         self.phase_fractions = phase_fractions
+        self.N = N = len(zs)
+        self.cmps = range(N)
 
     def MW(self):
         MWs = self.constants.MWs
@@ -737,3 +739,43 @@ class Bulk(Phase):
             Zmc += betas[i]*phases[i].Zmc()
         self._Zmc = Zmc
         return Zmc
+
+### Functions depending on correlations - here for speed
+    def H_ideal_gas(self):
+        HeatCapacityGases = self.correlations.HeatCapacityGases
+        T, T_REF_IG = self.T, self.T_REF_IG
+        Cpig_integrals_pure = [obj.T_dependent_property_integral(T_REF_IG, T)
+                                   for obj in HeatCapacityGases]
+        H = 0.0
+        for zi, Cp_int in zip(self.zs, Cpig_integrals_pure):
+            H += zi*Cp_int
+        return H
+
+    def Cp_ideal_gas(self):
+        HeatCapacityGases = self.correlations.HeatCapacityGases
+        T = self.T
+        Cpigs_pure = [i.T_dependent_property(T) for i in HeatCapacityGases]
+
+        Cp, zs = 0.0, self.zs
+        for i in self.cmps:
+            Cp += zs[i]*Cpigs_pure[i]
+        return Cp
+
+    def S_ideal_gas(self):
+        HeatCapacityGases = self.correlations.HeatCapacityGases
+        T, T_REF_IG = self.T, self.T_REF_IG
+
+        Cpig_integrals_over_T_pure = [obj.T_dependent_property_integral_over_T(T_REF_IG, T)
+                                      for obj in HeatCapacityGases]
+
+        log_zs = self.log_zs()
+        T, P, zs, cmps = self.T, self.P, self.zs, self.cmps
+        P_REF_IG_INV = self.P_REF_IG_INV
+        S = 0.0
+        S -= R*sum([zs[i]*log_zs[i] for i in cmps]) # ideal composition entropy composition
+        S -= R*log(P*P_REF_IG_INV)
+        
+        for i in cmps:
+            S += zs[i]*Cpig_integrals_over_T_pure[i]
+
+        return S

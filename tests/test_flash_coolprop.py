@@ -31,7 +31,10 @@ from math import *
 import json
 import os
 import numpy as np
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+except:
+    pass
 
 pure_surfaces_dir = os.path.join(thermo.thermo_dir, '..', 'surfaces', 'pure_coolprop')
 pure_fluids = ['water', 'methane', 'ethane', 'decane', 'ammonia', 'nitrogen', 'oxygen', 'methanol', 'eicosane', 'hydrogen']
@@ -77,7 +80,6 @@ backends = ['HEOS']
 @pytest.mark.parametric
 @pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("backend", backends)
-
 def test_PV_plot(fluid, backend):
     T, P = 298.15, 101325.0
     zs = [1.0]

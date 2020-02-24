@@ -29,9 +29,11 @@ from math import *
 import json
 import os
 import numpy as np
-
 from thermo.test_utils import *
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+except:
+    pass
 
 pure_surfaces_dir = os.path.join(thermo.thermo_dir, '..', 'surfaces', 'pure')
 
