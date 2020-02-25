@@ -30,6 +30,8 @@ from fluids.constants import calorie, R
 from thermo.activity import *
 from thermo.mixture import Mixture
 from thermo.activity import Rachford_Rice_solution_numpy
+from fluids.numerics import assert_close
+
 import random
 
 def test_K_value():
@@ -372,6 +374,14 @@ def test_flash_solution_algorithms():
         V_over_F, _, _ = algo(zs=zs, Ks=Ks)
         assert_allclose(V_over_F, 1, atol=0.001)
             
+def test_RR3_analytical_handle_imag_result():
+    Ks = [0.9999533721721108, 1.0002950232772678, 0.9998314089519726]
+    zs = [0.8486684394734213, 0.14038238201968353, 0.010949178506895217]
+    # Need to fallback to another solver
+    sln = flash_inner_loop(zs, Ks, Method='Analytical')
+    assert_close(sln[0], -0.09940571001259549)
+
+
 def test_RR4_analytical_correct_root_selection():
     zs = [.25]*4
     Ks = [272.3389789221219, 0.03332258671372583, 5.5312234259718825e-06, 0.7150198654249253]
@@ -397,7 +407,7 @@ def test_fuzz_flash_inner_loop():
             zs, Ks = list(zs), list(Ks)
             flash_inner_loop(zs=zs, Ks=Ks)
 
-def test_RR_3_component_analytical_killer():
+def test_RR_3_component_analytical_killers():
     # Causes a zero division in the current analytical implementation
     # Unfortunately, a slight numerical change in the future may move
     # where the point occurs, and then this test will not cover it
@@ -414,6 +424,13 @@ def test_RR_3_component_analytical_killer():
         assert_allclose(V_over_F, V_over_F_expect, rtol=1e-6)
         assert_allclose(xs, xs_expect, rtol=1e-5)
         assert_allclose(ys, ys_expect, rtol=1e-5)
+    
+    zs = [.8, 0.19, .01]
+    Ks = [1.0003745026538315, 0.9983665794975959, 1.0010499948551157]
+    with pytest.raises(Exception):
+        V_over_F, xs, ys = flash_inner_loop(zs, Ks, Method='Analytical')
+        V_over_F_good, xs_good, ys_good = Rachford_Rice_solution(zs, Ks)
+        assert_allclose(V_over_F, V_over_F_good)
         
 def test_RR_9_guess_outside_bounds():
     zs = [0.019940159581097128, 0.0029910239371645692, 9.970079790548564e-07, 0.6480551863856566, 0.12961103727713133, 0.08973071811493706, 0.04985039895274282, 0.029910239371645688, 0.029910239371645688]

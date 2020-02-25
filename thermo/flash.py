@@ -54,7 +54,7 @@ from numpy.testing import assert_allclose
 from scipy.optimize import minimize, fsolve, root
 from scipy.interpolate import CubicSpline
 from thermo.utils import (exp, log, log10, floor, copysign, normalize, has_matplotlib,
-                          mixing_simple, property_mass_to_molar)
+                          mixing_simple, property_mass_to_molar, TrivialSolutionError)
 from thermo.heat_capacity import (Lastovka_Shaw_T_for_Hm, Dadgostar_Shaw_integral,
                                   Dadgostar_Shaw_integral_over_T, Lastovka_Shaw_integral,
                                   Lastovka_Shaw_integral_over_T)
@@ -109,7 +109,24 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
             Ks = [exp(lnphis_l[i] - lnphis_g[i]) for i in cmps] # K_value(phi_l=l, phi_g=g)
         except OverflowError:
             Ks = [trunc_exp(lnphis_l[i] - lnphis_g[i]) for i in cmps] # K_value(phi_l=l, phi_g=g)
-        V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks, guess=V_over_F)
+
+        try:
+            V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks, guess=V_over_F)
+        except Exception as e:
+#            K_low, K_high = False, False
+#            for zi, Ki in zip(zs, Ks):
+#                if zi != 0.0:
+#                    if Ki > 1.0:
+#                        K_high = True
+#                    else:
+#                        K_low = True
+#                    if K_high and K_low:
+#                        break
+#            if not (K_high and K_low):
+#                raise TrivialSolutionError("Converged to trivial condition, all K same phase",
+#                                           comp_difference, iteration, err)
+#            else:
+            raise e
         
         if check_G:
             V_over_F_G = min(max(V_over_F_old, 0), 1)
@@ -211,19 +228,20 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
             raise ValueError("Converged to cycle in errors, no progress being made")
         # Accept the new compositions
         xs_old, ys_old, V_over_F_old, Ks_old = xs, ys, V_over_F, Ks
-        if not limited_Z:
-            assert xs == l.zs
-            assert ys == g.zs
+        # if not limited_Z:
+        #     assert xs == l.zs
+        #     assert ys == g.zs
         xs, ys = xs_new, ys_new
         lnphis_g_old, lnphis_l_old = lnphis_g, lnphis_l
         l_old, g_old = l, g
         
-        # print(err, Ks, g.Z()) # xs, ys
+#        print(err, V_over_F, Ks) # xs, ys
         
         # Check for 
         comp_difference = sum([abs(xi - yi) for xi, yi in zip(xs, ys)])
         if comp_difference < trivial_solution_tol:
-            raise ValueError("Converged to trivial condition, compositions of both phases equal")
+            raise TrivialSolutionError("Converged to trivial condition, compositions of both phases equal",
+                                       comp_difference, iteration, err)
         if err < tol and not limited_Z:
             return V_over_F, xs, ys, l, g, iteration, err
         # elif err < tol and limited_Z:
@@ -295,7 +313,7 @@ def sequential_substitution_NP(T, P, zs, compositions_guesses, betas_guesses,
                         err += err_i*err_i
                     except ZeroDivisionError:
                         pass
-        # print(betas, compositions, Ks, 'calculated', err)
+#        print(betas, Ks, 'calculated', err)
         # print(err)
 
         compositions = compositions_new
@@ -407,7 +425,8 @@ def sequential_substitution_Mehra_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
         # Check for 
         comp_difference = sum([abs(xi - yi) for xi, yi in zip(xs, ys)])
         if comp_difference < trivial_solution_tol:
-            raise ValueError("Converged to trivial condition, compositions of both phases equal")
+            raise TrivialSolutionError("Converged to trivial condition, compositions of both phases equal",
+                                       comp_difference, iteration, err)
         if err < tol:
             return V_over_F, xs, ys, l, g, iteration, err
     raise UnconvergedError('End of SS without convergence')
@@ -457,6 +476,7 @@ def sequential_substitution_GDEM3_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
         lnKs = [(l - g) for l, g in zip(lnphis_l, lnphis_g)]
         if not (iteration %acc_frequency) and iteration > acc_delay:
             dlnKs = gdem(lnKs, all_lnKs[-1], all_lnKs[-2], all_lnKs[-3])
+            print(dlnKs)
             lnKs = [lnKs[i] + dlnKs[i] for i in cmps]
             
             
@@ -491,7 +511,8 @@ def sequential_substitution_GDEM3_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
         # Check for 
         comp_difference = sum([abs(xi - yi) for xi, yi in zip(xs, ys)])
         if comp_difference < trivial_solution_tol:
-            raise ValueError("Converged to trivial condition, compositions of both phases equal")
+            raise TrivialSolutionError("Converged to trivial condition, compositions of both phases equal",
+                                       comp_difference, iteration, err)
         if err < tol:
             return V_over_F, xs, ys, l, g, iteration, err
     raise UnconvergedError('End of SS without convergence')
@@ -3318,6 +3339,9 @@ def cm_flash_tol():
     return cm_flash
     
 
+empty_flash_conv = {'iterations': 0, 'err': 0.0, 'stab_guess_name': None}
+one_in_list = [1.0]
+
 class FlashBase(object):
     T_MAX_FIXED = Phase.T_MAX_FIXED
     T_MIN_FIXED = Phase.T_MIN_FIXED
@@ -4074,7 +4098,10 @@ class FlashBase(object):
         regions_keys = [n for _, n in sorted(zip([regions[i] for i in used_keys], used_keys))]
         used_values = [regions[i] for i in regions_keys]
 
-        dat = [[regions[matrix[j][i]] for j in range(pts)] for i in range(pts)]
+        new_map = list(range(len(used_values)))
+        new_map_trans = {i: j for i, j in zip(used_values, new_map)}
+
+        dat = [[new_map_trans[regions[matrix[j][i]]] for j in range(pts)] for i in range(pts)]
 #        print(dat)
         import matplotlib.pyplot as plt
         from matplotlib import colors
@@ -4082,24 +4109,33 @@ class FlashBase(object):
         Ts, Ps = np.meshgrid(Ts, Ps)
         
         # need 3 more
-        cmap = colors.ListedColormap(['k','y','b','r', 'g', 'c', 'm', 'w', 'w', 'w', 'w'])
+        cmap = colors.ListedColormap(['y','b','r', 'g', 'c', 'm', 'k', 'w', 'w', 'w', 'w'][0:len(used_values)])
+
+        vmax = len(used_values) - 1
         
 #        ax.scatter(Ts,Ps, s=dat)
-        im = ax.pcolormesh(Ts, Ps, dat, cmap=cmap, norm=colors.Normalize(vmin=0, vmax=10)) # , cmap=color_map, norm=LogNorm()
+        im = ax.pcolormesh(Ts, Ps, dat, cmap=cmap, norm=colors.Normalize(vmin=0, vmax=vmax)) # , cmap=color_map, norm=LogNorm()
         cbar = fig.colorbar(im, ax=ax)
         cbar.set_label('Phase')
+        cbar.ax.locator_params(nbins=len(used_values))
 #        cbar = plt.colorbar()
         
 #        cs = ax.contourf(Ts, Ps, dat, levels=list(sorted(regions.values())))
 #        cbar = fig.colorbar(ax)
-        
-        cbar.ax.set_yticklabels([n for _, n in sorted(zip(regions.values(), regions.keys()))])
+
+        # used_region_keys = regions_keys
+        cbar.ax.set_yticklabels(regions_keys)
+
+        # cbar.ax.set_yticklabels([n for _, n in sorted(zip(regions.values(), regions.keys()))])
 #        cbar.ax.set_yticklabels(regions_keys)
 #        ax.set_yscale('log')
         plt.yscale('log')
+        plt.xlabel('System temperature, K')
+        plt.ylabel('System pressure, Pa')
 #        plt.imshow(dat, interpolation='nearest')
 #        plt.legend(loc='best', fancybox=True, framealpha=0.5)
-#        return fig, ax       
+#        return fig, ax
+        plt.title('PT system flashes, zs=%s' %zs)
         plt.show()
                     
                 
@@ -4303,7 +4339,7 @@ PT_NEWTON_lNKVF = 'Newton lnK VF'
 
 
 class FlashVL(FlashBase):
-    PT_SS_MAXITER = 1000
+    PT_SS_MAXITER = 5000
     PT_SS_TOL = 1e-13
 
     # Settings for near-boundary conditions
@@ -4510,10 +4546,10 @@ class FlashVL(FlashBase):
                     pass
         if not stable:
             stab_guess_name = self.stab.incipient_guess_name(i)
-            return (stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name))
+            return (stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name, sum_criteria, lnK_2_tot))
         else:
             stab_guess_name = None
-            return (stable, (None, None, None, None))
+            return (stable, (None, None, None, None, None, None))
             
             
     def flash_TP_stability_test(self, T, P, zs, liquid, gas, solution=None, LL=False):
@@ -4527,8 +4563,7 @@ class FlashVL(FlashBase):
         else:
             min_phase, other_phase = gas, liquid
             
-        stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name) = self.stability_test_Michelsen(T, P, zs, min_phase, other_phase)
-
+        stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name, stab_sum_zs_test, stab_lnK_2_tot) = self.stability_test_Michelsen(T, P, zs, min_phase, other_phase)
 #        stable = True
 #        for i, trial_comp in enumerate(gen):
 #                try:
@@ -4558,13 +4593,17 @@ class FlashVL(FlashBase):
         if 0:
             self.PT_converge(T=T, P=P, zs=zs, xs_guess=trial_zs, ys_guess=appearing_zs, liquid_phase=min_phase, 
                         gas_phase=other_phase, V_over_F_guess=V_over_F)
-        
-        V_over_F, xs, ys, l, g, iteration, err = sequential_substitution_2P(T=T, P=P, V=None,
-                                                                            zs=zs, xs_guess=trial_zs, ys_guess=appearing_zs,
-                                                                            liquid_phase=min_phase,
-                                                                            gas_phase=other_phase, maxiter=self.PT_SS_MAXITER,
-                                                                            tol=self.PT_SS_TOL,
-                                                                            V_over_F_guess=V_over_F)
+        try:
+            V_over_F, xs, ys, l, g, iteration, err = sequential_substitution_2P(T=T, P=P, V=None,
+                                                                                zs=zs, xs_guess=trial_zs, ys_guess=appearing_zs,
+                                                                                liquid_phase=min_phase,
+                                                                                gas_phase=other_phase, maxiter=self.PT_SS_MAXITER,
+                                                                                tol=self.PT_SS_TOL,
+                                                                                V_over_F_guess=V_over_F)
+        except TrivialSolutionError as e:
+            ls, g = ([liquid], None) if min_phase is liquid else ([], gas)
+            return g, ls, [], [1.0], {'iterations': 0, 'err': 0.0, 'stab_guess_name': stab_guess_name}
+
         if V_over_F < 0.0 or V_over_F > 1.0:
             # Continue the SS, with the previous values, to a much tighter tolerance - if specified/allowed
             if (V_over_F > -self.PT_SS_POLISH_VF or V_over_F > 1.0 + self.PT_SS_POLISH_VF) and self.PT_SS_POLISH:
@@ -4635,16 +4674,22 @@ class FlashVLN(FlashVL):
         self.max_liquids = len(liquids)
         self.max_phases = 1 + self.max_liquids
         
+        liquids_to_unique_liquids = []
         unique_liquids, unique_liquid_hashes = [], []
-        for l in liquids:
+        for i, l in enumerate(liquids):
             h = l.model_hash()
             if h not in unique_liquid_hashes:
                 unique_liquid_hashes.append(h)
                 unique_liquids.append(l)
+                liquids_to_unique_liquids.append(i)
+            else:
+                liquids_to_unique_liquids.append(unique_liquid_hashes.index(h))
+        self.liquids_to_unique_liquids = liquids_to_unique_liquids
                 
         self.unique_liquids = unique_liquids
         self.unique_liquid_count = len(unique_liquids)
         self.unique_phases = 1 + self.unique_liquid_count
+        self.unique_liquid_hashes = unique_liquid_hashes
         
         self.gas = gas
         self.settings = settings
@@ -4676,81 +4721,98 @@ class FlashVLN(FlashVL):
     def flash_PVF(self, P, VF, zs, solution=None, hot_start=None):
         if self.unique_liquid_count == 1:
             return self.flash_PVF_2P(P, VF, zs, self.liquid, self.gas, solution=solution, hot_start=hot_start)
-
+    
+    def phases_at(self, T, P, zs):
+        # Avoid doing excess work here
+        # Goal: bring each phase to T, P, zs; using whatever duplicate information
+        # possible
+        # returns gas, [liquids], phases
+        liquids = [None]*self.max_liquids
+        for i, liq in enumerate(self.unique_liquids):
+            l = liq.to(T=T, P=P, zs=zs)
+            for j, idx in enumerate(self.liquids_to_unique_liquids):
+                if idx == i:
+                    liquids[j] = l
+                    
+        gas = self.gas.to(T=T, P=P, zs=zs)
+        return gas, liquids, [gas] + liquids
+            
+    
     def flash_TPV(self, T, P, V, zs=None, solution=None, hot_start=None):
         if hot_start is not None:
             pass
+        
+        gas, liquids, phases = self.phases_at(T, P, zs)
+        
+        min_phase_1P, G_min_1P = None, 1e100
+        for p in phases:
+            G = p.G()
+            if G < G_min_1P:
+                min_phase_1P, G_min_1P = p, G
+        one_phase_sln = None, [min_phase_1P], [], one_in_list, empty_flash_conv
 
-        G_one_phase_min, one_phase_min = None, None
+        one_phase_min = None
         VL_solved, LL_solved = False, False
         phase_evolved = [False]*self.max_phases
 
         try:
-            assert self.gas
-            sln_2P = self.flash_TP_stability_test(T, P, zs, self.liquids[0], self.gas, solution=solution)
-            if len(sln_2P[3]) == 1: # One phase only
-                if sln_2P[0] is not None:
-                    one_phase_min = sln_2P[0]
-                elif sln_2P[1]:
-                    one_phase_min = sln_2P[1][0]
-                G_one_phase_min = one_phase_min.G()
-            else:
+            sln_2P = self.flash_TP_stability_test(T, P, zs, liquids[0], gas, solution=solution)
+            if len(sln_2P[3]) == 2: # One phase only
                 VL_solved = True
                 g, l0 = sln_2P[0], sln_2P[1][0]
                 found_phases = [g, l0]
                 phase_evolved[0] = phase_evolved[1] = True
+                found_betas = sln_2P[3]
         except:
             VL_solved = False
 
         if not VL_solved:
-            for n_liq, a_liq in enumerate(self.liquids[1:]):
+            for n_liq, a_liq in enumerate(liquids[1:]):
                 # Come up with algorithm to skip
                 try:
-                    sln_2P = self.flash_TP_stability_test(T, P, zs, self.liquids[0], a_liq, solution=solution, LL=True)
-                    if len(sln_2P[3]) == 1:  # One phase only
-                        if sln_2P[0] is not None:
-                            one_phase_min_LL = sln_2P[0]
-                        elif sln_2P[1]:
-                            one_phase_min_LL = sln_2P[1][0]
-                        if one_phase_min is not None:
-                            G_min_LL = one_phase_min_LL.G()
-                            if G_min_LL < G_one_phase_min:
-                                G_one_phase_min = G_min_LL
-                                one_phase_min = one_phase_min_LL
-                        else:
-                            G_one_phase_min = one_phase_min_LL.G()
-                            one_phase_min = one_phase_min_LL
-
-                    else:
+                    sln_2P = self.flash_TP_stability_test(T, P, zs, liquids[0], a_liq, solution=solution, LL=True)
+                    if len(sln_2P[3]) == 2: 
                         LL_solved = True
                         g = None
                         l0, l1 = sln_2P[1]
                         found_phases = [l0, l1]
+                        found_betas = sln_2P[3]
                         break
                 except:
                     pass
 
         if not LL_solved and not VL_solved:
-            found_phases = [one_phase_min]
-        found_betas = sln_2P[3]
+            found_phases = [min_phase_1P]
+            found_betas = [1]
+        
         existing_comps = [i.zs for i in found_phases]
 
         G_2P = sum([found_betas[i]*found_phases[i].G() for i in range(len(found_phases))])
 
         # Can still be a VLL solution now that a new phase has been added
         if LL_solved and self.max_liquids == 2:
-            return sln_2P
+            # Check the Gibbs
+            if G_2P < G_min_1P:
+                return sln_2P
+            else:
+                # May be missing possible 3 phase solutions which have lower G
+                return one_phase_sln
         if not LL_solved and not VL_solved:
-            return None, found_phases, [], [1.0], {'iterations': 0, 'err': 0.0, 'stab_guess_name': None}
+            return one_phase_sln
+        if self.N < 3:
+            # Gibbs phase rule 5.9: Multiphase Split and Stability Analysis
+            # in Thermodynamics and Applications in Hydrocarbon Energy Production by Firoozabadi (2016)
+            # Can only have three phases when either T or P are not specified
+            return sln_2P
 
         # Always want the other phase to be type of one not present.
         min_phase = sln_2P[0] if sln_2P[0] is not None else sln_2P[1][0]
-        other_phase = self.gas if LL_solved else self.liquids[1]
+        other_phase = self.gas if LL_solved else liquids[1]
 
-        stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name) = self.stability_test_Michelsen(T, P, zs, min_phase, other_phase, existing_comps=existing_comps)
+        stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name, stab_sum_zs_test, stab_lnK_2_tot) = self.stability_test_Michelsen(T, P, zs, min_phase, other_phase, existing_comps=existing_comps)
         if stable and self.unique_liquid_count > 2:
-            for other_phase in self.liquids[2:]:
-                stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name) = self.stability_test_Michelsen(T, P, zs,
+            for other_phase in liquids[2:]:
+                stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name, stab_sum_zs_test, stab_lnK_2_tot) = self.stability_test_Michelsen(T, P, zs,
                                                                                                             min_phase,
                                                                                                             other_phase, existing_comps=existing_comps)
                 if not stable:
@@ -4764,18 +4826,32 @@ class FlashVLN(FlashVL):
             flash_comps.append(appearing_zs)
             flash_betas = list(found_betas)
             flash_betas.append(0.0)
+            try_LL_3P_failed = False
             try:
+                failed_3P = False
                 sln3 = sequential_substitution_NP(T, P, zs, flash_comps, flash_betas, flash_phases)
-                if self.max_phases == 3:
+                new_betas = sln3[0]
+                good_betas = True
+                for b in new_betas:
+                    if b < 0.0 or b > 1.0:
+                        good_betas = False
+                if self.max_phases == 3 and good_betas:
                     return None, sln3[2], [], sln3[0], {'iterations': sln3[3], 'err': sln3[4],
                                                                    'stab_guess_name': stab_guess_name}
+                if not good_betas:
+                    # Might need to make this true
+                    try_LL_3P_failed = False
+                    failed_3P = True
             except:
-                if VL_solved:
+                try_LL_3P_failed = True
+                failed_3P = True
+            if VL_solved and failed_3P:
+                if try_LL_3P_failed:
                     V_over_F, xs, ys, l, g, iteration, err = sequential_substitution_2P(T=T, P=P, V=None,
                                                                                         zs=zs, xs_guess=trial_zs,
                                                                                         ys_guess=appearing_zs,
-                                                                                        liquid_phase=self.liquids[0],
-                                                                                        gas_phase=self.liquids[1],
+                                                                                        liquid_phase=liquids[0],
+                                                                                        gas_phase=liquids[1],
                                                                                         maxiter=self.PT_SS_POLISH_MAXITER,
                                                                                         tol=self.PT_SS_POLISH_TOL,
                                                                                         V_over_F_guess=V_over_F)
@@ -4785,19 +4861,25 @@ class FlashVLN(FlashVL):
                         a = 1
                     else:
                         return sln_2P
+                else:
+                    return sln_2P
 
         slnN = sln3
+        
+        if self.N == 3:
+            # Cannot have a four phase system with three components (and so on)
+            return slnN
         
         # We are here after solving three phases
         min_phase = slnN[2][0]
         existing_comps = slnN[1]
         # hardcoded for now - need to track
-        other_phase = self.liquids[2]
+        other_phase = liquids[2]
 
-        stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name) = self.stability_test_Michelsen(T, P, zs, min_phase, other_phase, existing_comps=existing_comps)
+        stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name, stab_sum_zs_test, stab_lnK_2_tot) = self.stability_test_Michelsen(T, P, zs, min_phase, other_phase, existing_comps=existing_comps)
         if stable and self.unique_liquid_count > 3:
-            for other_phase in self.liquids[3:]:
-                stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name) = self.stability_test_Michelsen(T, P, zs,
+            for other_phase in liquids[3:]:
+                stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name, stab_sum_zs_test, stab_lnK_2_tot) = self.stability_test_Michelsen(T, P, zs,
                                                                                                             min_phase,
                                                                                                             other_phase, existing_comps=existing_comps)
                 if not stable:

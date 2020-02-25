@@ -697,6 +697,31 @@ class EquilibriumState(object):
         return max_phase_idx
 
     @property
+    def lightest_liquid(self):
+        liquids = self.liquids
+        if not liquids:
+            return None
+        elif len(liquids) == 1:
+            return liquids[0]
+        else:
+            rhos = [i.rho_mass() for i in liquids]
+            min_rho = min(rhos)
+            return liquids[rhos.index(min_rho)]
+
+    @property
+    def heaviest_liquid(self):
+        liquids = self.liquids
+        if not liquids:
+            return None
+        elif len(liquids) == 1:
+            return liquids[0]
+        else:
+            rhos = [i.rho_mass() for i in liquids]
+            max_rho = max(rhos)
+            return liquids[rhos.index(max_rho)]
+
+
+    @property
     def water_phase(self):
         try:
             return self.liquids[self.water_phase_index]

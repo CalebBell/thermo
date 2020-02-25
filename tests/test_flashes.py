@@ -26,6 +26,7 @@ from fluids.numerics import *
 from thermo.flash import *
 from thermo.phases import *
 from thermo.eos_mix import *
+from thermo.utils import *
 from thermo.eos import *
 from thermo.vapor_pressure import VaporPressure
 from thermo.heat_capacity import *
@@ -278,8 +279,44 @@ def test_stabiliy_iteration_Michelsen_zero_fraction():
     
     kwargs['zs_test'] = [1e-13, 0.966916481252204-5e-14, 0.033083518747796005-5e-14]
     sln_without_zero = stabiliy_iteration_Michelsen(**kwargs)
-    assert_allclose(sln_with_zero[-2][1:], sln_without_zero[-2][1:])
-    assert_allclose(sln_with_zero[-1][1:], sln_without_zero[-1][1:])
-    assert_allclose(sln_with_zero[-3], sln_without_zero[-3])
+    assert_allclose(sln_with_zero[-2][1:], sln_without_zero[-2][1:], rtol=1e-5)
+    assert_allclose(sln_with_zero[-1][1:], sln_without_zero[-1][1:], rtol=1e-5)
+    assert_allclose(sln_with_zero[-3], sln_without_zero[-3], rtol=1e-5)
 
     
+    
+def test_SS_trivial_solution_error():
+    # Would be nice to do the same test for all the accelerated ones
+    # Michaelson's stab test just misses this one depending on tolerance
+    # Really should abort this earlier, but acceleration will help too
+    zs = [.8, 0.19, .01]
+    # m = Mixture(['ethylene', 'ethanol', 'nitrogen'], zs=zs)
+    T = 283.65
+    P = 4690033.135557525
+    constants = ChemicalConstantsPackage(Tcs=[282.34, 514.0, 126.2], Pcs=[5041000.0, 6137000.0, 3394387.5], omegas=[0.085, 0.635, 0.04], MWs=[28.05316, 46.06844, 28.0134], CASs=['74-85-1', '64-17-5', '7727-37-9'])
+    properties =PropertyCorrelationPackage(constants=constants, HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [-3.2701693466919565e-21, 1.660757962278189e-17, -3.525777713754962e-14, 4.01892664375958e-11, -2.608749347072186e-08, 9.23682495982131e-06, -0.0014524032651835623, 0.09701764355901257, 31.034399100170667])),
+                                                                                    HeatCapacityGas(best_fit=(50.0, 1000.0, [-1.162767978165682e-20, 5.4975285700787494e-17, -1.0861242757337942e-13, 1.1582703354362728e-10, -7.160627710867427e-08, 2.5392014654765875e-05, -0.004732593693568646, 0.5072291035198603, 20.037826650765965])),
+                                                                                    HeatCapacityGas(best_fit=(50.0, 1000.0, [-6.496329615255804e-23, 2.1505678500404716e-19, -2.2204849352453665e-16, 1.7454757436517406e-14, 9.796496485269412e-11, -4.7671178529502835e-08, 8.384926355629239e-06, -0.0005955479316119903, 29.114778709934264]))])
+    eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs,
+                      omegas=constants.omegas, kijs=[[0.0, -.0057, 0.0], [-.0057, 0.0, 0.0], [0.0, 0.0, 0.0]])
+    gas = EOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = EOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+
+    kwargs = {'T': 366.66666666666674, 'P': 13335214.32163324, 'V': None, 'zs': [0.8, 0.19, 0.01],
+                     'xs_guess': [0.7999903516900219, 0.1900100873837821, 0.009999561935269637],
+                     'ys_guess': [0.8003317371691744, 0.18965316618684375, 0.010015061949076507],
+                     'liquid_phase': liq, 'gas_phase': gas, 
+                     'maxiter': 10000, 'tol': 1e-13, 'V_over_F_guess': 0.028262215493598263}
+    try:
+        sequential_substitution_2P(**kwargs)
+    except TrivialSolutionError as e:
+        assert e.iterations > 5
+        
+#    with pytest.raises(TrivialSolutionError):
+    # Case all Ks go under 1 when analytical RR was used; no longer does
+    kwargs =  {'T': 283.3333333333333, 'P': 10000000.0, 'V': None, 'zs': [0.8, 0.19, 0.01], 
+       'xs_guess': [0.8001527424635891, 0.1898414107577097, 0.010006017410413398], 
+       'ys_guess': [0.7999616931190321, 0.19003977321750912, 0.009998490870063081], 
+       'liquid_phase': liq, 'gas_phase': gas, 'maxiter': 10000, 'tol': 1e-11}
+    sln = sequential_substitution_2P( **kwargs)
+

@@ -40,7 +40,7 @@ __all__ = ['isobaric_expansion', 'isothermal_compressibility',
 'solve_flow_composition_mix', 'assert_component_balance', 'assert_energy_balance',
 'phase_select_property', 'TDependentProperty', 
 'TPDependentProperty', 'MixtureProperty', 'allclose_variable', 'horner', 
-'polylog2', 'v_to_v_molar', 'v_molar_to_v']
+'polylog2', 'v_to_v_molar', 'v_molar_to_v', 'TrivialSolutionError']
 
 import os
 from cmath import sqrt as csqrt
@@ -5115,4 +5115,13 @@ class MultiCheb1D(object):
         return c0 + c1*x
 
 
+
+class TrivialSolutionError(Exception):
+    '''Error raised SS converges to trivial solution
+    '''
+    def __init__(self, message, comp_difference, iterations, err):
+        super(TrivialSolutionError, self).__init__(message)
+        self.comp_difference = comp_difference
+        self.iterations = iterations
+        self.err = err
 

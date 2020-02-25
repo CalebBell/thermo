@@ -1666,7 +1666,11 @@ def Rachford_Rice_solution2(ns, Ks_y, Ks_z, beta_y=0.5, beta_z=1e-6):
             except:
                 pass
             Fs = Rachford_Rice_flashN_f_jac(x, ns, Ks)[0]
-            return abs(Fs[0]) + abs(Fs[1])
+            err = 0.0
+            # if sum(x) > 1:
+            #     err += abs(1-sum(x))
+            err += abs(Fs[0]) + abs(Fs[1])
+            return err
         ans = differential_evolution(obj, [(-30.0, 30.0) for j in range(2)], **{'popsize':200, 'init': 'random', 'atol': 1e-12})
         objf = float(ans['fun'])
 
@@ -2426,7 +2430,7 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
         return flash_inner_loop_list_methods(l)
     if Method is None:
         l = len(zs)
-        Method = FLASH_INNER_ANALYTICAL if l < 5 else (FLASH_INNER_NUMPY if (not IS_PYPY and l >= 10) else FLASH_INNER_LN2)    
+        Method = FLASH_INNER_ANALYTICAL if l < 3 else (FLASH_INNER_NUMPY if (not IS_PYPY and l >= 10) else FLASH_INNER_LN2)    
     if check:
         K_low, K_high = False, False
         for zi, Ki in zip(zs, Ks):
@@ -2476,7 +2480,10 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
                 return Rachford_Rice_solution(zs=zs, Ks=Ks)
         elif l == 3:
             try:
-                return _Rachford_Rice_analytical_3(zs, Ks)
+                sln = _Rachford_Rice_analytical_3(zs, Ks)
+                if sln[0].imag != 0.0:
+                    raise ValueError("Failed analytically")
+                return sln
             except (ValueError, ZeroDivisionError):
                 return Rachford_Rice_solution(zs=zs, Ks=Ks)
         elif l == 4:
