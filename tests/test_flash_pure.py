@@ -104,6 +104,7 @@ def plot_unsupported(reason, color='r'):
 
 #eos_mix_list = [PRMIX, PR78MIX, SRKMIX, VDWMIX, PRSVMIX, PRSV2MIX, APISRKMIX, TWUPRMIX, TWUSRKMIX, IGMIX]
 #eos_mix_list = [TWUPRMIX, TWUSRKMIX] # issues
+@pytest.mark.plot
 @pytest.mark.slow
 @pytest.mark.parametric
 @pytest.mark.parametrize("auto_range", ['realistic', 'physical'])
@@ -171,6 +172,7 @@ def test_PV_plot(fluid, eos, auto_range):
 #test_PV_plot('decane', PRMIXTranslatedConsistent, 'physical')
 #test_PV_plot('methanol', SRKMIXTranslatedConsistent, 'physical')
 
+@pytest.mark.plot
 @pytest.mark.slow
 @pytest.mark.parametric
 @pytest.mark.parametrize("auto_range", ['physical', 'realistic'])
@@ -227,6 +229,7 @@ def test_TV_plot(fluid, eos, auto_range):
 #    print(e)
 #    test_TV_plot('hydrogen', e, 'realistic')
 
+@pytest.mark.plot
 @pytest.mark.slow
 @pytest.mark.parametric
 @pytest.mark.parametrize("auto_range", ['physical', 'realistic'])
@@ -283,6 +286,7 @@ def test_PS_plot(fluid, eos, auto_range):
 #test_PS_plot("hydrogen", TWUPRMIX, "realistic")
 #test_PS_plot("hydrogen", TWUSRKMIX, "realistic")
 
+@pytest.mark.plot
 @pytest.mark.slow
 @pytest.mark.parametric
 @pytest.mark.parametrize("auto_range", ['physical', 'realistic'])
@@ -339,6 +343,7 @@ def test_PH_plot(fluid, eos, auto_range):
 #test_PH_plot("hydrogen", TWUSRKMIX, "realistic")
 
 
+@pytest.mark.plot
 @pytest.mark.slow
 @pytest.mark.parametric
 @pytest.mark.parametrize("auto_range", ['physical', 'realistic'])
@@ -401,6 +406,7 @@ def test_PU_plot(fluid, eos, auto_range):
 #test_PU_plot("hydrogen", TWUPRMIX, "realistic")
 #test_PU_plot("hydrogen", TWUSRKMIX, "realistic")
 
+@pytest.mark.plot
 @pytest.mark.slow
 @pytest.mark.parametric
 @pytest.mark.parametrize("auto_range", ['physical', 'realistic'])
@@ -449,6 +455,7 @@ def test_VU_plot(fluid, eos, auto_range):
 #    test_VU_plot('hydrogen', e, 'realistic')
 #test_VU_plot('methanol', PRMIXTranslatedConsistent, 'physical')
 
+@pytest.mark.plot
 @pytest.mark.slow
 @pytest.mark.parametric
 @pytest.mark.parametrize("auto_range", ['physical', 'realistic'])
@@ -503,6 +510,7 @@ def test_VS_plot(fluid, eos, auto_range):
 #test_VS_plot('eicosane', RKMIX, 'physical')
 
 
+@pytest.mark.plot
 @pytest.mark.slow
 @pytest.mark.parametric
 @pytest.mark.parametrize("auto_range", ['physical', 'realistic'])
@@ -548,6 +556,7 @@ def test_VH_plot(fluid, eos, auto_range):
 #    test_VH_plot('eicosane', e, 'physical')
 
 
+@pytest.mark.plot
 @pytest.mark.slow
 @pytest.mark.skip
 @pytest.mark.parametric
@@ -605,6 +614,7 @@ def test_TS_plot(fluid, eos, auto_range):
 
 
 
+@pytest.mark.plot
 @pytest.mark.slow
 @pytest.mark.skip
 @pytest.mark.parametric

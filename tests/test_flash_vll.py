@@ -30,6 +30,14 @@ import json
 import os
 import numpy as np
 
+try:
+    import matplotlib.pyplot as plt
+except:
+    pass
+
+flashN_surfaces_dir = os.path.join(thermo.thermo_dir, '..', 'surfaces', 'flashN')
+
+
 def test_water_C1_C8():
     T = 298.15
     P = 101325.0
@@ -295,3 +303,132 @@ def test_phases_at():
     
     flashN = FlashVLN(constants, properties, liquids=[liq2, liq3, liq, liq3, liq, liq2, liq2], gas=gas)
     assert 3 == len(set([id(i) for i in flashN.phases_at(T=T, P=P, zs=zs)[1]]))
+    
+    
+def write_PT_plot(fig, eos, IDs, zs, flashN):
+    # Helper function for PT plotting
+    path = os.path.join(flashN_surfaces_dir, 'PT', 'Cubic')
+    if not os.path.exists(path):
+        os.makedirs(path)
+    
+    key = '%s - %s - %s - %s liquids' %(eos.__name__, ', '.join(IDs), ', '.join('%g' %zi for zi in zs), len(flashN.liquids))
+    fig.savefig(os.path.join(path, key + '.png'))
+    plt.close()
+
+@pytest.mark.plot   
+@pytest.mark.slow   
+@pytest.mark.parametrize("eos", [PRMIX, SRKMIX, VDWMIX]) # eos_mix_list
+def test_PT_plot_butanol_water_ethanol(eos):
+    IDs = ['butanol', 'water', 'ethanol']
+    zs = [.25, 0.7, .05]
+    # m = Mixture(['butanol', 'water', 'ethanol'], zs=zs)
+    constants = ChemicalConstantsPackage(Tcs=[563.0, 647.14, 514.0], Pcs=[4414000.0, 22048320.0, 6137000.0], omegas=[0.59, 0.344, 0.635], MWs=[74.1216, 18.01528, 46.06844], CASs=['71-36-3', '7732-18-5', '64-17-5'])
+    properties = PropertyCorrelationPackage(constants=constants,
+                                            HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [-3.787200194613107e-20, 1.7692887427654656e-16, -3.445247207129205e-13, 3.612771874320634e-10, -2.1953250181084466e-07, 7.707135849197655e-05, -0.014658388538054169, 1.5642629364740657, -7.614560475001724])),
+                                            HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
+                                            HeatCapacityGas(best_fit=(50.0, 1000.0, [-1.162767978165682e-20, 5.4975285700787494e-17, -1.0861242757337942e-13, 1.1582703354362728e-10, -7.160627710867427e-08, 2.5392014654765875e-05, -0.004732593693568646, 0.5072291035198603, 20.037826650765965])),],)
+    eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
+    gas = EOSGas(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=298.15, P=1e5, zs=zs)
+    liq = EOSLiquid(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=298.15, P=1e5, zs=zs)
+    flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
+    fig = flashN.debug_PT(zs=zs, Tmin=300, Tmax=600, Pmin=1e5, Pmax=3e7, pts=25, verbose=False, show=False, values=False)
+    write_PT_plot(fig, eos, IDs, zs, flashN)
+    
+
+@pytest.mark.plot   
+@pytest.mark.slow   
+@pytest.mark.parametrize("eos", [PRMIX]) # eos_mix_list
+def test_PT_plot_ethanol_water_cyclohexane(eos):
+    IDs = ['ethanol', 'water', 'cyclohexane']
+    zs = [.35, .06, .59]
+    # m = Mixture(['ethanol', 'water','cyclohexane'], zs=zs)
+    constants = ChemicalConstantsPackage(Tcs=[514.0, 647.14, 532.7], Pcs=[6137000.0, 22048320.0, 3790000.0], omegas=[0.635, 0.344, 0.213], MWs=[46.06844, 18.01528, 84.15948], CASs=['64-17-5', '7732-18-5', '110-82-7'])
+
+    properties = PropertyCorrelationPackage(constants=constants, HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [-1.162767978165682e-20, 5.4975285700787494e-17, -1.0861242757337942e-13, 1.1582703354362728e-10, -7.160627710867427e-08, 2.5392014654765875e-05, -0.004732593693568646, 0.5072291035198603, 20.037826650765965])),
+                                                            HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
+                                                            HeatCapacityGas(best_fit=(100.0, 1000.0, [-2.974359561904494e-20, 1.4314483633408613e-16, -2.8871179135718834e-13, 3.1557554273363386e-10, -2.0114283147465467e-07, 7.426722872136983e-05, -0.014718631011050769, 1.6791476987773946, -34.557986234881355]))])
+    eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
+
+    gas = EOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=298.15, P=1e5, zs=zs)
+    liq = EOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=298.15, P=1e5, zs=zs)
+    
+    flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
+    fig = flashN.debug_PT(zs=zs, Tmin=175, Tmax=700, Pmin=1e4, Pmax=2.5e7, pts=50, verbose=False, show=False, values=False)
+    write_PT_plot(fig, eos, IDs, zs, flashN)
+
+
+@pytest.mark.plot   
+@pytest.mark.slow   
+@pytest.mark.parametrize("eos", [PRMIX]) # eos_mix_list
+def test_PT_plot_C1_to_C5_water_gas(eos):
+    IDs = ['methane', 'ethane', 'propane', 'butane', 'pentane', 'water', 'nitrogen', 'carbon dioxide', 'hydrogen sulfide']
+    zs = normalize([.65, .13, .09, .05, .03, .03, .02, .003, 1e-6])
+    T = 300.0
+    P = 3000e3
+    constants = ChemicalConstantsPackage(Tcs=[190.56400000000002, 305.32, 369.83, 425.12, 469.7, 647.14, 126.2, 304.2, 373.2], 
+                                            Pcs=[4599000.0, 4872000.0, 4248000.0, 3796000.0, 3370000.0, 22048320.0, 3394387.5, 7376460.0, 8936865.0], 
+                                            omegas=[0.008, 0.098, 0.152, 0.193, 0.251, 0.344, 0.04, 0.2252, 0.1], 
+                                            MWs=[16.04246, 30.06904, 44.09562, 58.1222, 72.14878, 18.01528, 28.0134, 44.0095, 34.08088], 
+                                            CASs=['74-82-8', '74-84-0', '74-98-6', '106-97-8', '109-66-0', '7732-18-5', '7727-37-9', '124-38-9', '7783-06-4'],)
+    properties = PropertyCorrelationPackage(constants=constants, HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
+                                                                HeatCapacityGas(best_fit=(50.0, 1000.0, [7.115386645067898e-21, -3.2034776773408394e-17, 5.957592282542187e-14, -5.91169369931607e-11, 3.391209091071677e-08, -1.158730780040934e-05, 0.002409311277400987, -0.18906638711444712, 37.94602410497228])),
+                                                                HeatCapacityGas(best_fit=(50.0, 1000.0, [7.008452174279456e-22, -1.7927920989992578e-18, 1.1218415948991092e-17, 4.23924157032547e-12, -5.279987063309569e-09, 2.5119646468572195e-06, -0.0004080663744697597, 0.1659704314379956, 26.107282495650367])),
+                                                                HeatCapacityGas(best_fit=(200.0, 1000.0, [-2.608494166540452e-21, 1.3127902917979555e-17, -2.7500977814441112e-14, 3.0563338307642794e-11, -1.866070373718589e-08, 5.4505831355984375e-06, -0.00024022110003950325, 0.04007078628096955, 55.70646822218319])),
+                                                                HeatCapacityGas(best_fit=(200.0, 1000.0, [7.537198394065234e-22, -4.946850205122326e-18, 1.4223747507170372e-14, -2.3451318313798008e-11, 2.4271676873997662e-08, -1.6055220805830093e-05, 0.006379734000450042, -1.0360272314628292, 141.84695243411866])),
+                                                                HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
+                                                                HeatCapacityGas(best_fit=(50.0, 1000.0, [-6.496329615255804e-23, 2.1505678500404716e-19, -2.2204849352453665e-16, 1.7454757436517406e-14, 9.796496485269412e-11, -4.7671178529502835e-08, 8.384926355629239e-06, -0.0005955479316119903, 29.114778709934264])),
+                                                                HeatCapacityGas(best_fit=(50.0, 1000.0, [-3.1115474168865828e-21, 1.39156078498805e-17, -2.5430881416264243e-14, 2.4175307893014295e-11, -1.2437314771044867e-08, 3.1251954264658904e-06, -0.00021220221928610925, 0.000884685506352987, 29.266811602924644])),
+                                                                HeatCapacityGas(best_fit=(50.0, 1000.0, [-3.4967172940791855e-22, 1.7086617923088487e-18, -3.505442235019261e-15, 3.911995832871371e-12, -2.56012228400194e-09, 9.620884103239162e-07, -0.00016570643705524543, 0.011886900701175745, 32.972342195898534])),])
+    eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
+    gas = EOSGas(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = EOSLiquid(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
+    fig = flashN.debug_PT(zs=zs, Tmin=175, Tmax=430, Pmin=1e4, Pmax=3.5e7, pts=25, verbose=False, show=False, values=False)
+    write_PT_plot(fig, eos, IDs, zs, flashN)
+
+@pytest.mark.plot   
+@pytest.mark.slow   
+@pytest.mark.parametrize("eos", [PRMIX]) # eos_mix_list
+def test_PT_plot_water_C1_C8(eos):
+    IDs = ['water', 'methane', 'octane']
+    T = 298.15
+    P = 101325.0
+    omegas = [0.344, 0.008, 0.394]
+    Tcs = [647.14, 190.564, 568.7]
+    Pcs = [22048320.0, 4599000.0, 2490000.0]
+    kijs=[[0,0, 0],[0,0, 0.0496], [0,0.0496,0]]
+    zs = [1.0/3.0]*3
+    N = len(zs)
+    HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
+                         HeatCapacityGas(best_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
+                         HeatCapacityGas(best_fit=(200.0, 1000.0, [-1.069661592422583e-22, -1.2992882995593864e-18, 8.808066659263286e-15, -2.1690080247294972e-11, 2.8519221306107026e-08, -2.187775092823544e-05, 0.009432620102532702, -1.5719488702446165, 217.60587499269303]))]
+    constants = ChemicalConstantsPackage(Tcs=Tcs, Pcs=Pcs, omegas=omegas, MWs=[18.01528, 16.04246, 114.22852], 
+                                         CASs=['7732-18-5', '74-82-8', '111-65-9'])
+    properties = PropertyCorrelationPackage(constants=constants, HeatCapacityGases=HeatCapacityGases)
+    eos_kwargs = dict(Tcs=Tcs, Pcs=Pcs, omegas=omegas, kijs=kijs)
+    gas = EOSGas(eos, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = EOSLiquid(eos, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
+    fig = flashN.debug_PT(zs=zs, Tmin=175, Tmax=700, Pmin=1e4, Pmax=1e8, pts=25, verbose=False, show=False, values=False)
+    write_PT_plot(fig, eos, IDs, zs, flashN)
+
+
+@pytest.mark.plot   
+@pytest.mark.slow   
+@pytest.mark.parametrize("eos", [SRKMIX]) # eos_mix_list
+def test_PT_plot_ethylene_ethanol_nitrogen(eos):
+    IDs = ['ethylene', 'ethanol', 'nitrogen']
+    zs = [.8, 0.19, .01]
+    T = 283.65
+    P = 4690033.135557525
+    constants = ChemicalConstantsPackage(Tcs=[282.34, 514.0, 126.2], Pcs=[5041000.0, 6137000.0, 3394387.5], omegas=[0.085, 0.635, 0.04], MWs=[28.05316, 46.06844, 28.0134], CASs=['74-85-1', '64-17-5', '7727-37-9'])
+    properties =PropertyCorrelationPackage(constants=constants, HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [-3.2701693466919565e-21, 1.660757962278189e-17, -3.525777713754962e-14, 4.01892664375958e-11, -2.608749347072186e-08, 9.23682495982131e-06, -0.0014524032651835623, 0.09701764355901257, 31.034399100170667])),
+                                                                                    HeatCapacityGas(best_fit=(50.0, 1000.0, [-1.162767978165682e-20, 5.4975285700787494e-17, -1.0861242757337942e-13, 1.1582703354362728e-10, -7.160627710867427e-08, 2.5392014654765875e-05, -0.004732593693568646, 0.5072291035198603, 20.037826650765965])),
+                                                                                    HeatCapacityGas(best_fit=(50.0, 1000.0, [-6.496329615255804e-23, 2.1505678500404716e-19, -2.2204849352453665e-16, 1.7454757436517406e-14, 9.796496485269412e-11, -4.7671178529502835e-08, 8.384926355629239e-06, -0.0005955479316119903, 29.114778709934264]))])
+    eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs,
+                      omegas=constants.omegas, kijs=[[0.0, -.0057, 0.0], [-.0057, 0.0, 0.0], [0.0, 0.0, 0.0]])
+    gas = EOSGas(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = EOSLiquid(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
+    fig = flashN.debug_PT(zs=zs, Tmin=175, Tmax=500, Pmin=1e5, Pmax=1e8, pts=25, verbose=False, show=False, values=False)
+    write_PT_plot(fig, eos, IDs, zs, flashN)

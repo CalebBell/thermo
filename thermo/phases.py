@@ -1576,9 +1576,12 @@ class IdealGas(Phase):
  
 class EOSGas(Phase):
     
-    def model_hash(self):
-        return hash_any_primitive([self.__class__, self.eos_class, self.eos_kwargs,
-                                   self.Hfs, self.Gfs, self.Sfs, self.HeatCapacityGases])
+    def model_hash(self, ignore_phase=False):
+        to_hash = [self.eos_class, self.eos_kwargs,
+                                   self.Hfs, self.Gfs, self.Sfs, self.HeatCapacityGases]
+        if not ignore_phase:
+            to_hash.append(self.__class__)
+        return hash_any_primitive(to_hash)
     
     @property
     def phase(self):
@@ -1617,18 +1620,23 @@ class EOSGas(Phase):
             self.eos_pures_STP = [eos_mix.to_TPV_pure(T=298.15, P=101325.0, V=None, i=i) for i in self.cmps]
             
         
-    def to_TP_zs(self, T, P, zs):
+    def to_TP_zs(self, T, P, zs, other_eos=None):
+        # Why so slow
         new = self.__class__.__new__(self.__class__)
         new.T = T
         new.P = P
         new.zs = zs
-        try:
-            new.eos_mix = self.eos_mix.to_TP_zs_fast(T=T, P=P, zs=zs, only_g=True,
-                                                     full_alphas=True) # optimize alphas?
-                                                     # Be very careful doing this in the future - wasted
-                                                     # 1 hour on this because the heat capacity calculation was wrong
-        except AttributeError:
-            new.eos_mix = self.eos_class(T=T, P=P, zs=zs, **self.eos_kwargs)
+        if other_eos is not None:
+            other_eos.solve_missing_volumes()
+            new.eos_mix = other_eos
+        else:
+            try:
+                new.eos_mix = self.eos_mix.to_TP_zs_fast(T=T, P=P, zs=zs, only_g=True,
+                                                         full_alphas=True) # optimize alphas?
+                                                         # Be very careful doing this in the future - wasted
+                                                         # 1 hour on this because the heat capacity calculation was wrong
+            except AttributeError:
+                new.eos_mix = self.eos_class(T=T, P=P, zs=zs, **self.eos_kwargs)
         
         new.eos_class = self.eos_class
         new.eos_kwargs = self.eos_kwargs

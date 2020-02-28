@@ -4049,7 +4049,7 @@ class FlashBase(object):
         return props
             
     def debug_PT(self, zs, Pmin=None, Pmax=None, Tmin=None, Tmax=None, pts=50, 
-                ignore_errors=True, values=False, verbose=False): # pragma: no cover
+                ignore_errors=True, values=False, verbose=False, show=False): # pragma: no cover
         if not has_matplotlib and not values:
             raise Exception('Optional dependency matplotlib is required for plotting')
         if Pmin is None:
@@ -4136,7 +4136,10 @@ class FlashBase(object):
 #        plt.legend(loc='best', fancybox=True, framealpha=0.5)
 #        return fig, ax
         plt.title('PT system flashes, zs=%s' %zs)
-        plt.show()
+        if show:
+            plt.show()
+        else:
+            return fig
                     
                 
     def plot_TP(self, zs, Tmin=None, Tmax=None, pts=50, branches=[],
@@ -4684,6 +4687,17 @@ class FlashVLN(FlashVL):
                 liquids_to_unique_liquids.append(i)
             else:
                 liquids_to_unique_liquids.append(unique_liquid_hashes.index(h))
+        if gas:
+            gas_hash = gas.model_hash(True)
+        
+        gas_to_unique_liquid = None
+        for i, l in enumerate(liquids):
+            h = l.model_hash(True)
+            if gas_hash == h:
+                gas_to_unique_liquid = liquids_to_unique_liquids[i]
+                break
+        
+        self.gas_to_unique_liquid = gas_to_unique_liquid
         self.liquids_to_unique_liquids = liquids_to_unique_liquids
                 
         self.unique_liquids = unique_liquids
@@ -4727,14 +4741,19 @@ class FlashVLN(FlashVL):
         # Goal: bring each phase to T, P, zs; using whatever duplicate information
         # possible
         # returns gas, [liquids], phases
+        gas = None
+        gas_to_unique_liquid = self.gas_to_unique_liquid
         liquids = [None]*self.max_liquids
         for i, liq in enumerate(self.unique_liquids):
             l = liq.to(T=T, P=P, zs=zs)
             for j, idx in enumerate(self.liquids_to_unique_liquids):
                 if idx == i:
                     liquids[j] = l
-                    
-        gas = self.gas.to(T=T, P=P, zs=zs)
+            if i == gas_to_unique_liquid:
+                pass
+        
+        if gas is None:
+            gas = self.gas.to(T=T, P=P, zs=zs)
         return gas, liquids, [gas] + liquids
             
     
@@ -4830,6 +4849,7 @@ class FlashVLN(FlashVL):
             try:
                 failed_3P = False
                 sln3 = sequential_substitution_NP(T, P, zs, flash_comps, flash_betas, flash_phases)
+                G_3P = sum([sln3[0][i]*sln3[2][i].G() for i in range(3)])
                 new_betas = sln3[0]
                 good_betas = True
                 for b in new_betas:
@@ -4838,7 +4858,7 @@ class FlashVLN(FlashVL):
                 if self.max_phases == 3 and good_betas:
                     return None, sln3[2], [], sln3[0], {'iterations': sln3[3], 'err': sln3[4],
                                                                    'stab_guess_name': stab_guess_name}
-                if not good_betas:
+                if not good_betas or G_3P > G_2P:
                     # Might need to make this true
                     try_LL_3P_failed = False
                     failed_3P = True
