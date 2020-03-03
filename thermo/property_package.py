@@ -82,6 +82,7 @@ if has_matplotlib:
 DIRECT_1P = 'Direct 1 Phase'
 DIRECT_2P = 'Direct 2 Phase'
 RIGOROUS_BISECTION = 'Bisection'
+CAS_H2O = '7732-18-5'
 
 #from random import uniform, seed
 #seed(0)
@@ -269,12 +270,19 @@ def d_TPD_Michelson_modified_eos(eos):
 
 class StabilityTester(object):
     
-    def __init__(self, Tcs, Pcs, omegas):
+    def __init__(self, Tcs, Pcs, omegas, aqueous_check=False, CASs=None):
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.omegas = omegas
         self.N = len(Tcs)
         self.cmps = range(self.N)
+        self.aqueous_check = aqueous_check
+        self.CASs = CASs
+        
+        try:
+            self.water_index = CASs.index(CAS_H2O)
+        except:
+            self.water_index = None
         
     def set_d_TPD_obj_unconstrained(self, f, T, P, zs):
         self.f_unconstrained = f
@@ -362,9 +370,20 @@ class StabilityTester(object):
 #            print(Ys_Wilson, normalize(Ys_Wilson))
         return Wilson_guesses
     
-    def incipient_guess_name(self, idx):
+    def incipient_guess_name(self, idx, expect_liquid=False,
+                             expect_aqueous=False, existing_phases=0):
         if idx < 4:
-            return ('Wilson gas', 'Wilson liquid', 'Wilson gas third', 'Wilson liquid third')[idx]
+            if not expect_liquid:
+                return ('Wilson gas', 'Wilson liquid', 'Wilson gas third', 'Wilson liquid third')[idx]
+            else:
+                if expect_aqueous:
+                    if idx == 0:
+                        return 'pure%d' %(self.water_index)
+                    return ('Wilson liquid',  'Wilson liquid third', 'Wilson gas third', 'Wilson gas')[idx-1]
+                else:
+                    return ('Wilson liquid',  'Wilson liquid third', 'Wilson gas third', 'Wilson gas')[idx]
+        if expect_aqueous:
+            idx -= 1
         elif idx > 3 and idx <= 3 + self.N:
             return 'pure%d' %(idx-3)
         elif idx > 3+self.N:
@@ -395,7 +414,8 @@ class StabilityTester(object):
             return guess
             
     def incipient_guesses(self, T, P, zs, pure=True, Wilson=True, random=True, 
-                zero_fraction=1E-6):
+                zero_fraction=1E-6, expect_liquid=False, expect_aqueous=False,
+                existing_phases=0):
         N, cmps = self.N, self.cmps
         Tcs, Pcs, omegas = self.Tcs, self.Pcs, self.omegas
         
@@ -413,11 +433,30 @@ class StabilityTester(object):
             P_inv, T_inv = 1.0/P, 1.0/T
             for i in cmps:
                 Ks_Wilson[i] = Pcs[i]*P_inv*exp(5.37*(1.0 + omegas[i])*(1.0 - Tcs[i]*T_inv))
-            yield normalize([Ks_Wilson[i]*zs[i] for i in cmps]) # gas composition estimate
-            yield normalize([zs[i]/Ks_Wilson[i] for i in cmps]) # liquid composition estimate
-            # TODO optimization - can cache Ks_Wilson power, and cache it.
-            yield normalize([Ks_Wilson[i]**(1.0/3.0)*zs[i] for i in cmps])
-            yield normalize([Ks_Wilson[i]**(-1.0/3.0)*zs[i] for i in cmps])
+            
+            if expect_liquid:
+                if expect_aqueous:
+                    main_frac = 1.0 - zero_fraction
+                    remaining = zero_fraction/(N-1.0)
+                    guess = [remaining]*N
+                    guess[self.water_index] = main_frac
+                    yield guess
+                # if existing_phases:
+                #     yield zs
+
+                yield normalize([zs[i]/Ks_Wilson[i] for i in cmps]) # liquid composition estimate
+                yield normalize([Ks_Wilson[i]**(-1.0/3.0)*zs[i] for i in cmps])
+
+                yield normalize([Ks_Wilson[i]**(1.0/3.0)*zs[i] for i in cmps])
+                yield normalize([Ks_Wilson[i]*zs[i] for i in cmps]) # gas composition estimate
+            else:
+                yield normalize([Ks_Wilson[i]*zs[i] for i in cmps]) # gas composition estimate
+                # if existing_phases:
+                    # yield zs
+                yield normalize([zs[i]/Ks_Wilson[i] for i in cmps]) # liquid composition estimate
+                # TODO optimization - can cache Ks_Wilson power, and cache it.
+                yield normalize([Ks_Wilson[i]**(1.0/3.0)*zs[i] for i in cmps])
+                yield normalize([Ks_Wilson[i]**(-1.0/3.0)*zs[i] for i in cmps])
 
         if pure: # these could be pre-allocated based on zero_fraction
             # A pure phase is more likely to be a liquid than a gas - gases have no polar effects

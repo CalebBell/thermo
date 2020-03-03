@@ -1789,7 +1789,7 @@ class EOSGas(Phase):
                 lnphis = eos_mix.fugacity_coefficients(eos_mix.Z_g, zs)
             except:
                 lnphis = eos_mix.fugacity_coefficients(eos_mix.Z_l, zs)
-        return [P*zs[i]*exp(lnphis[i]) for i in range(len(zs))]
+        return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(len(zs))]
         
 
     def gammas(self):

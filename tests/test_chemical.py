@@ -355,6 +355,10 @@ def test_all_chemicals():
         c.R_specific
         
         
+def test_specific_chemical_failures():
+    # D2O - failed on Hf, Gf
+    Chemical('7789-20-0')
+        
 @pytest.mark.slow
 def test_all_element_Chemicals():
     things = [periodic_table.CAS_to_elements, periodic_table.name_to_elements, periodic_table.symbol_to_elements]

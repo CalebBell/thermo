@@ -76,6 +76,8 @@ if has_matplotlib:
     import matplotlib.pyplot as plt
 
 
+CAS_H2O = '7732-18-5'
+
 def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
                                gas_phase, maxiter=1000, tol=1E-13,
                                trivial_solution_tol=1e-5, V_over_F_guess=None,
@@ -3206,6 +3208,7 @@ def stabiliy_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
         sum_zs_test = sum(zs_test)
         sum_zs_test_inv = 1.0/sum_zs_test
         zs_test = [zi*sum_zs_test_inv for zi in zs_test]
+
     
     if converged:
         try:
@@ -3213,6 +3216,16 @@ def stabiliy_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
         except:
             # Converged to trivial solution so closely the math does not work
             V_over_F, xs, ys = V_over_F, trial_zs, appearing_zs = 0.0, zs, zs
+            
+        # Calculate the dG of the feed
+        dG_RT = 0.0
+        lnphis_test = test_phase.lnphis()
+        for i in cmps:
+            dG_RT += zs_test[i]*(log(zs_test[i]) + lnphis_test[i])
+        dG_RT *= V_over_F
+#        print(dG_RT)
+            
+            
         return sum_zs_test, Ks, zs_test, V_over_F, trial_zs, appearing_zs
     else:
         raise UnconvergedError('End of stabiliy_iteration_Michelsen without convergence', zs_test)
@@ -4049,7 +4062,8 @@ class FlashBase(object):
         return props
             
     def debug_PT(self, zs, Pmin=None, Pmax=None, Tmin=None, Tmax=None, pts=50, 
-                ignore_errors=True, values=False, verbose=False, show=False): # pragma: no cover
+                ignore_errors=True, values=False, verbose=False, show=False,
+                T_pts=None, P_pts=None, Ts=None, Ps=None): # pragma: no cover
         if not has_matplotlib and not values:
             raise Exception('Optional dependency matplotlib is required for plotting')
         if Pmin is None:
@@ -4060,9 +4074,16 @@ class FlashBase(object):
             Tmin = min(self.constants.Tms)*.9
         if Tmax is None:
             Tmax = max(self.constants.Tcs)*1.5
+        if T_pts is None:
+            T_pts = pts
+        if P_pts is None:
+            P_pts = pts
             
-        Ps = logspace(log10(Pmin), log10(Pmax), pts)
-        Ts = linspace(Tmin, Tmax, pts)
+        Ts = self.generate_Ts(Ts=Ts, Tmin=Tmin, Tmax=Tmax, pts=T_pts, zs=zs)
+        Ps = self.generate_Ps(Ps=Ps, Pmin=Pmin, Pmax=Pmax, pts=P_pts, zs=zs)
+            
+#        Ps = logspace(log10(Pmin), log10(Pmax), pts)
+#        Ts = linspace(Tmin, Tmax, pts)
         
         matrix = []
         for T in Ts:
@@ -4515,9 +4536,19 @@ class FlashVL(FlashBase):
         else:
             raise NotImplementedError("TODO")
             
-    def stability_test_Michelsen(self, T, P, zs, min_phase, other_phase, existing_comps=None):
-        gen = self.stab.incipient_guesses(T, P, zs) #random=10000 has yet to help
+    def stability_test_Michelsen(self, T, P, zs, min_phase, other_phase,
+                                 existing_comps=None, skip=None,
+                                 expect_liquid=False, expect_aqueous=False):
+        existing_phases = len(existing_comps) if existing_comps is not None else 0
+        gen = self.stab.incipient_guesses(T, P, zs, expect_liquid=expect_liquid,
+                                          expect_aqueous=expect_aqueous, existing_phases=existing_phases) #random=10000 has yet to help
         stable = True
+
+        if skip is not None:
+            (gen() for i in range(skip))
+            
+        iffy_solution = None
+
         for i, trial_comp in enumerate(gen):
                 try:
                     sln = stabiliy_iteration_Michelsen(min_phase, trial_comp, test_phase=other_phase,
@@ -4537,22 +4568,39 @@ class FlashVL(FlashBase):
                             if diff < 4e-4:
                                 existing_phase = True
                                 break
+                            diffs2 = [abs(1.0-(existing_comp[i]/appearing_zs[i])) for i in self.cmps]
+                            diff2 = sum(diffs2)/self.N
+                            if diff2 < .02:
+                                existing_phase = True
+                                break
                         if existing_phase:
                             continue
                     # some stability test-driven VFs are converged to about the right solution - but just a little on the other side
                     # For those cases, we need to let SS determine the result
                     stable = V_over_F < -1e-6 or V_over_F > (1.0 + 1e-6) #not (0.0 < V_over_F < 1.0)
                     if not stable:
-                        break
+                        if 0 and sum_criteria < 1e-5:
+                            iffy_solution = (trial_zs, appearing_zs, V_over_F, i, sum_criteria, lnK_2_tot)
+#                        continue
+                        else:
+                            break
                     
                 except UnconvergedError:
                     pass
         if not stable:
-            stab_guess_name = self.stab.incipient_guess_name(i)
-            return (stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name, sum_criteria, lnK_2_tot))
+            if skip is not None:
+                i += skip
+            stab_guess_name = self.stab.incipient_guess_name(i, expect_liquid=expect_liquid)
+            return (stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name, i, sum_criteria, lnK_2_tot))
+        elif iffy_solution is not None:
+            trial_zs, appearing_zs, V_over_F, i, sum_criteria, lnK_2_tot = iffy_solution
+            if skip is not None:
+                i += skip
+            stab_guess_name = self.stab.incipient_guess_name(i, expect_liquid=expect_liquid)
+            return (False, (trial_zs, appearing_zs, V_over_F, stab_guess_name, i, sum_criteria, lnK_2_tot))
         else:
-            stab_guess_name = None
-            return (stable, (None, None, None, None, None, None))
+                
+            return (stable, (None, None, None, None, None, None, None))
             
             
     def flash_TP_stability_test(self, T, P, zs, liquid, gas, solution=None, LL=False):
@@ -4566,7 +4614,7 @@ class FlashVL(FlashBase):
         else:
             min_phase, other_phase = gas, liquid
             
-        stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name, stab_sum_zs_test, stab_lnK_2_tot) = self.stability_test_Michelsen(T, P, zs, min_phase, other_phase)
+        stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name, stab_guess_number, stab_sum_zs_test, stab_lnK_2_tot) = self.stability_test_Michelsen(T, P, zs, min_phase, other_phase)
 #        stable = True
 #        for i, trial_comp in enumerate(gen):
 #                try:
@@ -4670,6 +4718,14 @@ class FlashVL(FlashBase):
 
 
 class FlashVLN(FlashVL):
+    
+    SS_NP_MAXITER = FlashVL.PT_SS_MAXITER
+    SS_NP_TRIVIAL_TOL = 5e-5
+    SS_NP_TOL = 1e-15
+    SS_STAB_AQUEOUS_CHECK = True
+    
+    DOUBLE_CHECK_2P = False
+    
     def __init__(self, constants, correlations, liquids, gas, settings=default_settings):
         self.constants = constants
         self.correlations = correlations
@@ -4710,7 +4766,14 @@ class FlashVLN(FlashVL):
         self.N = constants.N
         self.cmps = constants.cmps
         
-        self.stab = StabilityTester(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
+        self.aqueous_check = (self.SS_STAB_AQUEOUS_CHECK and '7732-18-5' in constants.CASs)
+        self.stab = StabilityTester(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas,
+                                    aqueous_check=self.aqueous_check, CASs=constants.CASs)
+
+        try:
+            self.water_index = constants.CASs.index(CAS_H2O)
+        except ValueError:
+            self.water_index = None
         
         self.flash_pure = FlashPureVLS(constants=constants, correlations=correlations,
                                        gas=gas, liquids=unique_liquids, solids=[], 
@@ -4734,7 +4797,7 @@ class FlashVLN(FlashVL):
 
     def flash_PVF(self, P, VF, zs, solution=None, hot_start=None):
         if self.unique_liquid_count == 1:
-            return self.flash_PVF_2P(P, VF, zs, self.liquid, self.gas, solution=solution, hot_start=hot_start)
+            return self.flash_PVF_2P(P, VF, zs, self.liquids[0], self.gas, solution=solution, hot_start=hot_start)
     
     def phases_at(self, T, P, zs):
         # Avoid doing excess work here
@@ -4750,7 +4813,7 @@ class FlashVLN(FlashVL):
                 if idx == i:
                     liquids[j] = l
             if i == gas_to_unique_liquid:
-                pass
+                gas = self.gas.to_TP_zs(T, P, zs, other_eos=l.eos_mix)
         
         if gas is None:
             gas = self.gas.to(T=T, P=P, zs=zs)
@@ -4770,7 +4833,7 @@ class FlashVLN(FlashVL):
                 min_phase_1P, G_min_1P = p, G
         one_phase_sln = None, [min_phase_1P], [], one_in_list, empty_flash_conv
 
-        one_phase_min = None
+        sln_2P, one_phase_min = None, None
         VL_solved, LL_solved = False, False
         phase_evolved = [False]*self.max_phases
 
@@ -4785,7 +4848,7 @@ class FlashVLN(FlashVL):
         except:
             VL_solved = False
 
-        if not VL_solved:
+        if not VL_solved and self.max_liquids > 1:
             for n_liq, a_liq in enumerate(liquids[1:]):
                 # Come up with algorithm to skip
                 try:
@@ -4799,6 +4862,17 @@ class FlashVLN(FlashVL):
                         break
                 except:
                     pass
+        if sln_2P is not None and self.DOUBLE_CHECK_2P:
+            g_id, ls_id, _, _ = identify_sort_phases(found_phases, found_betas, self.constants,
+                                                    self.correlations, settings=self.settings,
+                                                    skip_solids=not bool(self.solids))
+            if g_id is None:
+                another_phase, base_phase = gas, liquids[0]
+            else:
+                another_phase, base_phase = liquids[0], base_phase
+                # Didn't work
+            sln_2P_double_check = self.flash_TP_stability_test(T, P, zs, another_phase, base_phase, solution=solution)
+#            has_g = pass 
 
         if not LL_solved and not VL_solved:
             found_phases = [min_phase_1P]
@@ -4809,7 +4883,7 @@ class FlashVLN(FlashVL):
         G_2P = sum([found_betas[i]*found_phases[i].G() for i in range(len(found_phases))])
 
         # Can still be a VLL solution now that a new phase has been added
-        if LL_solved and self.max_liquids == 2:
+        if (LL_solved and (self.max_liquids == 2) or (VL_solved and self.max_liquids == 1) or (self.N < 3 and (VL_solved or LL_solved))):
             # Check the Gibbs
             if G_2P < G_min_1P:
                 return sln_2P
@@ -4826,12 +4900,23 @@ class FlashVLN(FlashVL):
 
         # Always want the other phase to be type of one not present.
         min_phase = sln_2P[0] if sln_2P[0] is not None else sln_2P[1][0]
+        other_phase_flashed = found_phases[0] if found_phases[0] is not min_phase else found_phases[1]
         other_phase = self.gas if LL_solved else liquids[1]
+        
+        SWITCH_EXPECT_LIQ_Z = 0.25
+        expect_liquid = (True if (other_phase_flashed.Z() > SWITCH_EXPECT_LIQ_Z 
+                                 or min_phase.Z() > SWITCH_EXPECT_LIQ_Z) else False)
+        expect_aqueous = False
+        if self.aqueous_check and self.water_index is not None and zs[self.water_index] > 1e-3:
+            # Probably a water phase exists
+            expect_aqueous = True
 
-        stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name, stab_sum_zs_test, stab_lnK_2_tot) = self.stability_test_Michelsen(T, P, zs, min_phase, other_phase, existing_comps=existing_comps)
+        stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name, stab_guess_number, stab_sum_zs_test, stab_lnK_2_tot) = self.stability_test_Michelsen(
+                T, P, zs, min_phase, other_phase, existing_comps=existing_comps, expect_liquid=expect_liquid,
+                expect_aqueous=expect_aqueous)
         if stable and self.unique_liquid_count > 2:
             for other_phase in liquids[2:]:
-                stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name, stab_sum_zs_test, stab_lnK_2_tot) = self.stability_test_Michelsen(T, P, zs,
+                stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name, stab_guess_number, stab_sum_zs_test, stab_lnK_2_tot) = self.stability_test_Michelsen(T, P, zs,
                                                                                                             min_phase,
                                                                                                             other_phase, existing_comps=existing_comps)
                 if not stable:
@@ -4848,7 +4933,9 @@ class FlashVLN(FlashVL):
             try_LL_3P_failed = False
             try:
                 failed_3P = False
-                sln3 = sequential_substitution_NP(T, P, zs, flash_comps, flash_betas, flash_phases)
+
+                sln3 = sequential_substitution_NP(T, P, zs, flash_comps, flash_betas, flash_phases, maxiter=self.SS_NP_MAXITER, tol=self.SS_NP_TOL,
+                               trivial_solution_tol=self.SS_NP_TRIVIAL_TOL)
                 G_3P = sum([sln3[0][i]*sln3[2][i].G() for i in range(3)])
                 new_betas = sln3[0]
                 good_betas = True
@@ -4856,6 +4943,8 @@ class FlashVLN(FlashVL):
                     if b < 0.0 or b > 1.0:
                         good_betas = False
                 if self.max_phases == 3 and good_betas:
+                    if G_2P < G_3P:
+                        raise ValueError("Should never happen")
                     return None, sln3[2], [], sln3[0], {'iterations': sln3[3], 'err': sln3[4],
                                                                    'stab_guess_name': stab_guess_name}
                 if not good_betas or G_3P > G_2P:
@@ -4891,36 +4980,39 @@ class FlashVLN(FlashVL):
             return slnN
         
         # We are here after solving three phases
-        min_phase = slnN[2][0]
-        existing_comps = slnN[1]
-        # hardcoded for now - need to track
-        other_phase = liquids[2]
+        liquid_idx = 2
+        while len(slnN[0]) < self.max_phases and liquid_idx < self.max_liquids:
+            min_phase = slnN[2][0]
+            existing_comps = slnN[1]
+            # hardcoded for now - need to track
+            other_phase = liquids[liquid_idx]
+            stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name, stab_guess_number, stab_sum_zs_test, stab_lnK_2_tot) = self.stability_test_Michelsen(T, P, zs, min_phase, other_phase, existing_comps=existing_comps)
+        # if stable and self.unique_liquid_count > 3:
+        #     for other_phase in liquids[3:]:
+        #         stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name, stab_guess_number, stab_sum_zs_test, stab_lnK_2_tot) = self.stability_test_Michelsen(T, P, zs,
+        #                                                                                                     min_phase,
+        #                                                                                                     other_phase, existing_comps=existing_comps)
+        #         if not stable:
+        #             break
 
-        stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name, stab_sum_zs_test, stab_lnK_2_tot) = self.stability_test_Michelsen(T, P, zs, min_phase, other_phase, existing_comps=existing_comps)
-        if stable and self.unique_liquid_count > 3:
-            for other_phase in liquids[3:]:
-                stable, (trial_zs, appearing_zs, V_over_F, stab_guess_name, stab_sum_zs_test, stab_lnK_2_tot) = self.stability_test_Michelsen(T, P, zs,
-                                                                                                            min_phase,
-                                                                                                            other_phase, existing_comps=existing_comps)
-                if not stable:
-                    break
+            if not stable:
+    
+                flash_phases = slnN[2] + [other_phase]
+                flash_comps = list(slnN[1])
+                flash_comps.append(appearing_zs)
+                flash_betas = list(slnN[0])
+                flash_betas.append(0.0)
+                try:
+                    slnN = sequential_substitution_NP(T, P, zs, flash_comps, flash_betas, flash_phases)
+                    if self.max_phases == len(slnN[0]):
+                        return None, slnN[2], [], slnN[0], {'iterations': slnN[3], 'err': slnN[4],
+                                                                       'stab_guess_name': stab_guess_name}
+                except:
+                    pass
 
-        if not stable:
-
-            flash_phases = sln3[2] + [other_phase]
-            flash_comps = list(sln3[1])
-            flash_comps.append(appearing_zs)
-            flash_betas = list(sln3[0])
-            flash_betas.append(0.0)
-            try:
-                slnN = sequential_substitution_NP(T, P, zs, flash_comps, flash_betas, flash_phases)
-                if self.max_phases == len(slnN[0]):
-                    return None, sln3[2], [], sln3[0], {'iterations': sln3[3], 'err': sln3[4],
-                                                                   'stab_guess_name': stab_guess_name}
-            except:
-                pass
-
-        return None, sln3[2], [], sln3[0], {'iterations': sln3[3], 'err': sln3[4],
+            liquid_idx += 1
+        
+        return None, slnN[2], [], slnN[0], {'iterations': slnN[3], 'err': slnN[4],
                                             'stab_guess_name': stab_guess_name}
 
     # Should be straightforward for stability test

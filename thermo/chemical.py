@@ -926,10 +926,13 @@ class Chemical(object): # pragma: no cover
         coeffs_elements = []
         
         for atom, count in self.atoms.items():
-            ele = getattr(periodic_table, atom)
-            H0, S0 = ele.Hf, ele.S0
-            if ele.number in homonuclear_elements:
-                H0, S0 = 0.5*H0, 0.5*S0
+            try:
+                ele = getattr(periodic_table, atom)
+                H0, S0 = ele.Hf, ele.S0
+                if ele.number in homonuclear_elements:
+                    H0, S0 = 0.5 * H0, 0.5 * S0
+            except KeyError:
+                H0, S0 = None, None # D, T
             dHfs_std.append(H0)
             S0_abs_elements.append(S0)
             coeffs_elements.append(count)
