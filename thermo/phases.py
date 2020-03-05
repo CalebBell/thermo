@@ -299,7 +299,12 @@ class Phase(object):
         return self.V()
 
     def G(self):
+        try:
+            return self._G
+        except AttributeError:
+            pass
         G = self.H() - self.T*self.S()
+        self._G = G
         return G
     
     G_min = G

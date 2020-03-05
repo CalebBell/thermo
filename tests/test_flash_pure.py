@@ -673,6 +673,7 @@ def test_TH_plot(fluid, eos, auto_range):
 
 ### Pure EOS only tests
 @pytest.mark.slow
+@pytest.mark.plot
 @pytest.mark.parametric
 @pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("eos", eos_list)
@@ -708,6 +709,7 @@ def test_V_G_min_plot(fluid, eos):
 
 
 @pytest.mark.slow
+@pytest.mark.plot
 @pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("eos", eos_list)
 @pytest.mark.parametric
@@ -757,6 +759,7 @@ def test_Psat_plot(fluid, eos):
 
 
 @pytest.mark.slow
+@pytest.mark.plot
 @pytest.mark.parametric
 @pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("eos", eos_list)
@@ -812,6 +815,7 @@ def test_V_error_plot(fluid, eos, P_range):
 
 
 @pytest.mark.slow
+@pytest.mark.plot
 @pytest.mark.parametric
 @pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("eos", eos_list)
