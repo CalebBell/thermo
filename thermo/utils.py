@@ -197,6 +197,8 @@ def hash_any_primitive(v):
     The values returned by this function should not be counted on to be the
     same in the future.
     
+    Values change on startup due to hash randomization on python 3.3+.
+    
     Examples
     --------
     
@@ -207,9 +209,9 @@ def hash_any_primitive(v):
     if isinstance(v, list):
         if len(v) and isinstance(v[0], list):
             if len(v[0]) and isinstance(v[0][0], list):
-                v = (tuple(tuple(hash_any_primitive(j)) for j in i) for i in v)
+                v = tuple(tuple(hash_any_primitive(j) for j in i) for i in v)
             else:
-                v = (tuple(hash_any_primitive(i)) for i in v)
+                v = tuple(hash_any_primitive(i) for i in v)
         else:
             v = tuple(hash_any_primitive(i) for i in v)
     elif isinstance(v, dict):

@@ -4181,3 +4181,24 @@ def test_PSRK_basic():
     assert_allclose(eos_fast.ge_model.xs, eos_lower.zs, rtol=1e-16)
     assert_allclose(eos_fast.ge_model.xs, eos_fast.zs, rtol=1e-16)
     assert_allclose(eos_fast.V_l, eos_lower.V_l, rtol=1e-14)
+
+
+def test_subset():
+    # All should be three components
+    # ideally test all EOSs with special arguments
+    # basic test, 1.2 ms - mostly creating three eos instances/loop
+    # also tests a bug with model hash
+    kijs = [[0, 0.00076, 0.00171], [0.00076, 0, 0.00061], [0.00171, 0.00061, 0]]
+    PR_case = PRMIX(Tcs=[469.7, 507.4, 540.3], zs=[0.8168, 0.1501, 0.0331], 
+              omegas=[0.249, 0.305, 0.349], Pcs=[3.369E6, 3.012E6, 2.736E6],
+              T=322.29, P=101325, kijs=kijs)
+    PPJP_case = PRMIXTranslatedPPJP(Tcs=[469.7, 507.4, 540.3], zs=[0.8168, 0.1501, 0.0331], 
+          omegas=[0.249, 0.305, 0.349], Pcs=[3.369E6, 3.012E6, 2.736E6], cs=[-1.4e-6, -1.3e-6, -1.2e-6],
+          T=322.29, P=101325, kijs=kijs)
+    
+    cases = [PR_case, PPJP_case]
+    for e in cases:
+        
+        assert e.subset([1,2]).subset([0]).model_hash() == e.subset([0, 1]).subset([1]).model_hash()
+        assert e.subset([0, 1, 2]).model_hash() == e.model_hash()
+        assert e.subset([0, 1, 2]).subset([0, 1]).model_hash() == e.subset([0, 1]).model_hash()

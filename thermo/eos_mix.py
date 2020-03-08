@@ -35,7 +35,7 @@ from cmath import log as clog, atanh as catanh
 from scipy.optimize import minimize
 from scipy.misc import derivative
 from fluids.numerics import IS_PYPY, newton_system, broyden2, UnconvergedError, trunc_exp
-from fluids.numerics.arrays import det
+from fluids.numerics.arrays import det, subset_matrix
 from thermo.utils import normalize, Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter, dxs_to_dn_partials, dxs_to_dns, dns_to_dn_partials, d2xs_to_dxdn_partials, d2ns_to_dn2_partials, hash_any_primitive
 from thermo.utils import R
 from thermo.utils import log, exp, sqrt
@@ -247,7 +247,38 @@ class GCEOSMIX(GCEOS):
     '''
     nonstate_constants = ('N', 'cmps', 'Tcs', 'Pcs', 'omegas', 'kijs', 'kwargs', 'ais', 'bs')
     mix_kwargs_to_pure = {}
+    kwargs_square = ('kijs',)
+    kwargs_linear = tuple()
     multicomponent = True
+
+    def subset(self, idxs):
+        is_slice = isinstance(idxs, slice)
+        
+        if is_slice:
+            def atindexes(values):
+                return values[idxs]
+        else:
+            def atindexes(values):
+                return [values[i] for i in idxs]
+        
+        kwargs = self.state_specs
+        
+        
+        zs = atindexes(self.zs)
+        zs_tot_inv = 1.0/sum(zs)
+        for i in range(len(zs)):
+            zs[i] *= zs_tot_inv
+        kwargs['zs'] = zs
+        kwargs['Tcs'] = atindexes(self.Tcs)
+        kwargs['Pcs'] = atindexes(self.Pcs)
+        kwargs['omegas'] = atindexes(self.omegas)
+        local_kwargs = self.kwargs
+        for k in self.kwargs_linear:
+            kwargs[k] = atindexes(local_kwargs[k])
+        for k in self.kwargs_square:
+            kwargs[k] = subset_matrix(local_kwargs[k], idxs)
+        return self.__class__(**kwargs)
+        
     
     def model_hash(self):
         r'''Basic method to calculate a hash of the non-state parts of the model -
@@ -256,11 +287,21 @@ class GCEOSMIX(GCEOS):
         determine if they are the same, i.e. in a VLL flash it is important to 
         know if both liquids have the same model.
         '''
+#        print('start')
         h = hash(self.__class__)
+#        print(h)
         
         for s in self.nonstate_constants:
-            if hasattr(self, s):
+#            if hasattr(self, s):
+#                print(s, getattr(self, s))
+#                if s == 'kijs':
+#                    print([id(i) for r in self.kijs for i in r])
+            try:
                 h = hash((h, s, hash_any_primitive(getattr(self, s))))
+            except AttributeError:
+                pass
+#                print(h)
+#        print('end')
         return h
     
     
@@ -7313,6 +7354,7 @@ class PPR(Mathias_Copeman_a_alpha, PSRKMixingRules, PRMIXTranslated):
 class PRMIXTranslatedPPJP(PRMIXTranslated):
     eos_pure = PRTranslatedPPJP
     mix_kwargs_to_pure = {'cs': 'c'}
+    kwargs_linear = ('cs',)
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, cs=None, 
                  T=None, P=None, V=None,
                  fugacities=True, only_l=False, only_g=False):
@@ -7373,6 +7415,7 @@ class PRMIXTranslatedPPJP(PRMIXTranslated):
 
 class PRMIXTranslatedConsistent(Twu91_a_alpha, PRMIXTranslated):    
     eos_pure = PRTranslatedConsistent
+    kwargs_linear = ('cs', 'alpha_coeffs')
     mix_kwargs_to_pure = {'cs': 'c', 'alpha_coeffs': 'alpha_coeffs'}
     # There is an updated set of correlations - which means a revision flag is needed
     # Analysis of the Combinations of Property Data That Are Suitable for a Safe Estimation of Consistent Twu α-Function Parameters: Updated Parameter Values for the Translated-Consistent tc-PR and tc-RK Cubic Equations of State
@@ -8069,6 +8112,7 @@ class SRKMIXTranslated(SRKMIX):
 class SRKMIXTranslatedConsistent(Twu91_a_alpha, SRKMIXTranslated):    
     eos_pure = SRKTranslatedConsistent
     mix_kwargs_to_pure = {'cs': 'c', 'alpha_coeffs': 'alpha_coeffs'}
+    kwargs_linear = ('cs', 'alpha_coeffs')
     
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, cs=None, 
                  alpha_coeffs=None, T=None, P=None, V=None,
@@ -8188,6 +8232,7 @@ class MSRKMIXTranslated(Soave_79_a_alpha, SRKMIXTranslatedConsistent):
 class PSRK(Mathias_Copeman_a_alpha, PSRKMixingRules, SRKMIXTranslated):
     eos_pure = SRKTranslated
     mix_kwargs_to_pure = {'cs': 'c', 'alpha_coeffs': 'alpha_coeffs'}
+    kwargs_linear = ('cs', 'alpha_coeffs')
     
     def __init__(self, Tcs, Pcs, omegas, zs, alpha_coeffs, ge_model,
                  kijs=None, cs=None, 
@@ -8836,6 +8881,7 @@ class PRSVMIX(PRMIX, PRSV):
     eos_pure = PRSV
     nonstate_constants_specific = ('kappa0s', 'kappa1s', 'kappas')
     mix_kwargs_to_pure = {'kappa1s': 'kappa1'}
+    kwargs_linear = ('kappa1s',)
     
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  kappa1s=None, fugacities=True, only_l=False, only_g=False):
@@ -9056,6 +9102,7 @@ class PRSV2MIX(PRMIX, PRSV2):
     eos_pure = PRSV2
     nonstate_constants_specific = ('kappa1s', 'kappa2s', 'kappa3s', 'kappa0s', 'kappas')
     mix_kwargs_to_pure = {'kappa1s': 'kappa1', 'kappa2s': 'kappa2', 'kappa3s': 'kappa3'}
+    kwargs_linear = ('kappa1s', 'kappa2s', 'kappa3s')
     
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
                  kappa1s=None, kappa2s=None, kappa3s=None,
@@ -9565,6 +9612,7 @@ class APISRKMIX(SRKMIX, APISRK):
     eos_pure = APISRK
     nonstate_constants_specific = ('S1s', 'S2s')
     mix_kwargs_to_pure = {'S1s': 'S1', 'S2s': 'S2'}
+    kwargs_linear = ('S1s', 'S2s')
     
     def __init__(self, Tcs, Pcs, zs, omegas=None, kijs=None, T=None, P=None, V=None,
                  S1s=None, S2s=None, fugacities=True, only_l=False, only_g=False):
