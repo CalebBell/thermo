@@ -25,7 +25,9 @@ from math import log, exp, log10
 from fluids.constants import psi, psi_inv
 from fluids.numerics import roots_quartic
 from thermo.utils import SG
-__all__ = ['Caroll_hydrate_formation_P_pure', 'Motiee_hydrate_formation_T']
+__all__ = ['Caroll_hydrate_formation_P_pure', 'Motiee_hydrate_formation_T',
+           'Towler_Mokhatab_hydrate_formation_T',
+           'Hammerschmidt_hydrate_formation_T']
 
 
 # Table 13.2 in Phase Behavior of Petroleum Reservoir Fluids with additinos for all cases
@@ -176,4 +178,115 @@ def Motiee_hydrate_formation_T(P, SG):
           + 349.473877*SG - 150.854675*SG*SG - 27.604065*SG*x)
     # Convert to K
     T = (T - 32.0)/1.8 + 273.15
+    return T
+
+
+def Towler_Mokhatab_hydrate_formation_T(P, SG):
+    r'''Calculates the hydrate formation temperature at a specified operating 
+    pressure and gas specific gravity using the correlation of Towler and
+    Mokhatab (2005) [1]_, [2]_.
+
+    .. math::
+        T [^\circ F] = 13.47(\ln P \text{[psi]})) + 34.27(\ln \text{SG}) 
+        - 1.675(\ln P \text{[psi]}))(\ln \text{SG}) - 20.35
+
+    Parameters
+    ----------
+    P : float
+        Gas pressure, [Pa]
+    SG : float
+        Specific gravity of the gas with respect to air; no specific
+        density is recommended so a molecular weight of 28.96 is recommended
+        for simplicity, [-]
+
+    Returns
+    -------
+    formation_T : float
+        Hydrate formation temperature, [K]
+
+    Notes
+    -----
+    Easy to invert to solve for `P` given `T`.
+    
+    Examples
+    --------
+    Point where the experimental value is 277.6 K:
+    
+    >>> Towler_Mokhatab_hydrate_formation_T(600.0*psi, 0.555)
+    284.23204260201555
+    
+    References
+    ----------
+    .. [1] Towler, Brian, and S. Mokhatab. "Quickly Estimate Hydrate Formation 
+       Conditions in Natural Gases." Hydrocarbon Processing 84 (April 1, 2005):
+       61-62.
+    .. [2] Mokhatab, Saeid, William A. Poe, and John Y. Mak. Handbook of
+       Natural Gas Transmission and Processing: Principles and Practices. 
+       3rd edition. Amsterdam: Gulf Professional Publishing, 2015.
+    .. [3] Carroll, John. Natural Gas Hydrates: A Guide for Engineers. Gulf
+       Professional Publishing, 2014.
+    '''
+    # T in F, P in psia
+    lnP = log(P*psi_inv)
+    lnSG = log(SG)
+    # Calculate the correlation
+    T =  13.47*lnP + 34.27*lnSG - 1.675*lnP*lnSG - 20.35
+    T = (T - 32.0)/1.8 + 273.15 # Convert F to K
+    return T
+
+
+def Hammerschmidt_hydrate_formation_T(P, SG=None):
+    r'''Calculates the hydrate formation temperature at a specified operating 
+    pressure using simple correlation of Hammerschmidt (1934) [1]_.
+
+    .. math::
+        T [^\circ F] = 8.9(\ln P \text{[psi]}))^{0.285}
+
+    Parameters
+    ----------
+    P : float
+        Gas pressure, [Pa]
+    SG : float, optional
+        Specific gravity of the gas with respect to air; not used but an input
+        for consistency with other methods, [-]
+
+    Returns
+    -------
+    formation_T : float
+        Hydrate formation temperature, [K]
+
+    Notes
+    -----
+    Easy to invert to solve for `P` given `T`.
+    
+    [4]_ confirms the correlation is in terms of F and psi.
+    
+    Examples
+    --------
+    Point where the experimental value is 277.6 K:
+    
+    >>> Hammerschmidt_hydrate_formation_T(600.0*psi)
+    285.98414491553734
+    
+    References
+    ----------
+    .. [1] Hammerschmidt, E. G. "Formation of Gas Hydrates in Natural Gas
+       Transmission Lines." Industrial & Engineering Chemistry 26, no. 8 
+       (August 1, 1934): 851-55. https://doi.org/10.1021/ie50296a010.
+    .. [2] Chavoshi, Sakineh, Mani Safamirzaei, and F. Pajoum Shariati. 
+       "Evaluation of Empirical Correlations for Predicting Gas Hydrate
+       Formation Temperature." Gas Processing 6, no. 2 (October 1, 2018): 
+       15-36. https://doi.org/10.22108/gpj.2018.112052.1036.    
+    .. [3] Fattah, Khaled Ahmed Abdel. "Evaluation of Empirical Correlations
+       for Natural Gas Hydrate Predictions." Сетевое Издание «Нефтегазовое 
+       Дело», no. 2 (2004).
+    .. [4] Mohamadi-Baghmolaei, Mohamad, Abdollah Hajizadeh, Reza Azin, and
+       Amir Abbas Izadpanah. "Assessing Thermodynamic Models and Introducing
+       Novel Method for Prediction of Methane Hydrate Formation." Journal of 
+       Petroleum Exploration and Production Technology 8, no. 4 (December 1, 
+       2018): 1401-12. https://doi.org/10.1007/s13202-017-0415-2.
+    '''
+    P *= psi_inv # Convert P to psi
+    T = 8.9*P**0.285
+    T = (T - 32.0)/1.8 + 273.15 # Convert F to K
     return T

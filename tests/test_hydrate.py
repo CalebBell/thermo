@@ -79,3 +79,18 @@ def test_Motiee_hydrate_formation_T():
         SG = SGs[i]
         T = K2F(Motiee_hydrate_formation_T(P, SG))
         assert T_lit == round(T, 1)
+
+def test_Towler_Mokhatab_hydrate_formation_T():
+
+    # point from Ankur
+    T_expect = Towler_Mokhatab_hydrate_formation_T(1000*psi, .69)
+    assert_allclose(T_expect, 291.0802777198715, rtol=1e-14)
+    
+    T_experimental = Towler_Mokhatab_hydrate_formation_T(600.0*psi, 0.555)
+    assert_allclose(T_experimental, 284.23204260201555)
+    
+    
+def test_Hammerschmidt_hydrate_formation_T():
+    # Point from Fattah, SG=0.555 - matches, like the rest of points.
+    T_calc = Hammerschmidt_hydrate_formation_T(458*psi)
+    assert_allclose(T_calc, 283.7164195466192, rtol=1e-14)
