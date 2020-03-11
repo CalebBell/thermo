@@ -25,7 +25,7 @@ import pytest
 import numpy as np
 import pandas as pd
 from thermo.combustion import *
-
+from fluids.numerics import assert_close
 
 def test_Hcombustion():
     dH = Hcombustion({'H': 4, 'C': 1, 'O': 1}, Hf=-239100)
@@ -79,7 +79,7 @@ def test_air_fuel_ratio_solver():
 def assert_comb_dict_equal(calc, expect):
     for k, v_expect in expect.items():
         v_calc = calc[k]
-        assert_allclose(v_expect, v_calc)
+        assert_close(v_expect, v_calc)
 
 def fuel_air_spec_solver_checker(inputs, ans, func=fuel_air_spec_solver):
     # One intensive variable, one extensive variable

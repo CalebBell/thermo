@@ -180,3 +180,22 @@ def test_constant_properties():
 def test_Mixture_VF_input():
     test_mix = Mixture(['ethylene oxide', 'tetrahydrofuran',  'beta-propiolactone'], ws=[6021, 111569.76, 30711.21], T=400,  VF=0.5)
     assert_allclose(test_mix.P, 370054, rtol=1E-2)
+    
+    
+def test_bubble_at_P_with_ideal_mixing():
+    '''Check to see if the bubble pressure calculated from the temperature
+    matches the temperature calculated by the test function'''
+    from thermo.activity import bubble_at_P
+
+    test_mix = Mixture(['ethylene oxide',
+                        'tetrahydrofuran',
+                        'beta-propiolactone'],
+                       ws=[6021, 111569.76, 30711.21, ],
+                       T=273.15 + 80,
+                       P=101325 + 1.5e5)
+
+    bubble_temp = bubble_at_P(test_mix.Pbubble,
+                              test_mix.zs,
+                              test_mix.VaporPressures)
+
+    assert_allclose(test_mix.T, bubble_temp)

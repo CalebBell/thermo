@@ -553,7 +553,7 @@ def test_assert_component_balance():
 
 
 def test_solve_flow_composition_mix():
-    from thermo.utils import solve_flow_composition_mix
+    # Needs fast assert_allclose
     Fs = [3600, None, None, None, None]
     zs = [None, .1, .2, None, None]
     ws = [None, None, None, .01, .02]
@@ -624,6 +624,9 @@ def test_solve_flow_composition_mix():
     assert_allclose(ws, ws_expect)
     assert_allclose(zs, zs_expect)
 
+@pytest.mark.fuzz
+@pytest.mark.slow
+def test_solve_flow_composition_mix_fuzz():
     # Solve a large-scale problem
     from random import uniform, randint
     N = 1000

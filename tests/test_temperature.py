@@ -23,6 +23,7 @@ SOFTWARE.'''
 from numpy.testing import assert_allclose
 import pytest
 from thermo.temperature import *
+from fluids.numerics import assert_close, linspace
 
 
 def test_data():
@@ -35,31 +36,33 @@ def test_data():
 
 
 def test_conversion():
+    # TODO actually test data points instead of covering everything in a slow test
+    
     T2 = T_converter(500, 'ITS-68', 'ITS-48')
-    assert_allclose(T2, 499.9470092992346)
+    assert_close(T2, 499.9470092992346)
 
-    high_scales = ['ITS-90', 'ITS-68', 'ITS-27', 'ITS-48']
+    high_scales = ('ITS-90', 'ITS-68', 'ITS-27', 'ITS-48')
 
     for scale1 in high_scales:
         for scale2 in high_scales:
-            T = T_converter(1000, scale1, scale2)
-            assert_allclose(T_converter(T, scale2, scale1), 1000)
+            T = T_converter(1000.0, scale1, scale2)
+            assert_close(T_converter(T, scale2, scale1), 1000.0)
 
-    mid_scales = ['ITS-90', 'ITS-68', 'ITS-48']
+    mid_scales = ('ITS-90', 'ITS-68', 'ITS-48')
 
-    for Ti in range(100, 1000, 200):
+    for Ti in linspace(100, 1000, 10):
         for scale1 in mid_scales:
             for scale2 in mid_scales:
                 T = T_converter(Ti, scale1, scale2)
-                assert_allclose(T_converter(T, scale2, scale1), Ti, rtol=1e-6)
+                assert_close(T_converter(T, scale2, scale1), Ti, rtol=1e-6)
 
-    low_scales = ['ITS-90', 'ITS-68', 'ITS-76']
-
-    for Ti in range(15, 27, 2):
+    low_scales = ('ITS-90', 'ITS-68', 'ITS-76')
+    
+    for Ti in (15, 17, 19, 21, 23, 25):
         for scale1 in low_scales:
             for scale2 in low_scales:
                 T = T_converter(Ti, scale1, scale2)
-                assert_allclose(T_converter(T, scale2, scale1), Ti)
+                assert_close(T_converter(T, scale2, scale1), Ti)
 
     with pytest.raises(Exception):
         T_converter(10, 'ITS-27', 'ITS-48')

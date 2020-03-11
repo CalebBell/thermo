@@ -31,7 +31,9 @@ from thermo.activity import *
 from thermo.mixture import Mixture
 from thermo.activity import Rachford_Rice_solution_numpy
 from fluids.numerics import assert_close
-
+from random import uniform
+from thermo.activity import Rachford_Rice_valid_solution_naive, Rachford_Rice_solution2
+from thermo.activity import Rachford_Rice_flash2_f_jac, Rachford_Rice_flashN_f_jac
 import random
 
 def test_K_value():
@@ -70,22 +72,6 @@ def test_PR_water_K_value():
     K = PR_water_K_value(300, 1e5, 568.7, 2490000.0)
     assert_allclose(K, 76131.19143239626)
 
-def test_bubble_at_P_with_ideal_mixing():
-    '''Check to see if the bubble pressure calculated from the temperature
-    matches the temperature calculated by the test function'''
-
-    test_mix = Mixture(['ethylene oxide',
-                        'tetrahydrofuran',
-                        'beta-propiolactone'],
-                       ws=[6021, 111569.76, 30711.21, ],
-                       T=273.15 + 80,
-                       P=101325 + 1.5e5)
-
-    bubble_temp = bubble_at_P(test_mix.Pbubble,
-                              test_mix.zs,
-                              test_mix.VaporPressures)
-
-    assert_allclose(test_mix.T, bubble_temp)
 
 def test_RR_numpy():
     Tcs = [369.83, 407.8, 425.12, 433.8, 460.4, 469.7, 507.6, 126.2, 190.56400000000002, 304.2, 305.32]
@@ -408,6 +394,7 @@ def test_fuzz_flash_inner_loop():
             flash_inner_loop(zs=zs, Ks=Ks)
 
 def test_RR_3_component_analytical_killers():
+    # 3 ms test - need to replace assert_allcloses
     # Causes a zero division in the current analytical implementation
     # Unfortunately, a slight numerical change in the future may move
     # where the point occurs, and then this test will not cover it
@@ -421,7 +408,7 @@ def test_RR_3_component_analytical_killers():
     methods = flash_inner_loop(zs, Ks, AvailableMethods=True)
     for method in methods:
         V_over_F, xs, ys = flash_inner_loop(zs, Ks, Method=method)
-        assert_allclose(V_over_F, V_over_F_expect, rtol=1e-6)
+        assert_close(V_over_F, V_over_F_expect, rtol=1e-6)
         assert_allclose(xs, xs_expect, rtol=1e-5)
         assert_allclose(ys, ys_expect, rtol=1e-5)
     
@@ -460,9 +447,6 @@ def test_RR_9_guess_outside_bounds():
 
 def validate_RR_convergence(ns, Ks, betas, n=1000):
     # TODO better support for n phases
-    from random import uniform
-    from thermo.activity import Rachford_Rice_valid_solution_naive, Rachford_Rice_solution2
-    from numpy.testing import assert_allclose
     
     for _ in range(n):
         beta_guess = []
@@ -474,14 +458,13 @@ def validate_RR_convergence(ns, Ks, betas, n=1000):
 
         ans = Rachford_Rice_solution2(ns, Ks[0], Ks[1], beta_guess[0], beta_guess[1])
         # 1e-5 - not testing convergence tightness
-        assert_allclose([ans[0], ans[1]], betas, rtol=1e-5)
-
+        assert_close(ans[0], betas[0], rtol=1e-5)
+        assert_close(ans[1], betas[1], rtol=1e-5)
 
 
 def test_Rachford_Rice_solution2():
     
-    n_composition_fuzz = 10
-    from thermo.activity import Rachford_Rice_flash2_f_jac, Rachford_Rice_flashN_f_jac
+    n_composition_fuzz = 0
     # Example 1 in Okuno 2010
     zs = [0.204322076984, 0.070970999150, 0.267194323384, 0.296291964579, 0.067046080882, 0.062489248292, 0.031685306730]
     Ks_y = [1.23466988745, 0.89727701141, 2.29525708098, 1.58954899888, 0.23349348597, 0.02038108640, 1.40715641002]
@@ -642,15 +625,14 @@ def test_Rachford_Rice_solutionN():
     beta_solution.append(1.0 - sum(beta_solution))
     Ks = [Ks0, Ks1, Ks2, Ks3]
     
+    # Angry solution - spends lots of time in the damping, goes down to 0.001 even
+    # Would be a great candidate for a line search
     betas, comps = Rachford_Rice_solutionN(zs, Ks, betas)
     for beta_i, beta_known in zip(betas, beta_solution):
-        assert_allclose(beta_i, beta_known, atol=1e-8)
+        assert_close(beta_i, beta_known, atol=1e-8)
     
     for comp_calc, comp_expect in zip(comps, comps_expect):
         assert_allclose(comp_calc, comp_expect, atol=1e-9)
-
-
-    
     
 def test_identify_phase():
     # Above the melting point, higher pressure than the vapor pressure
@@ -754,12 +736,13 @@ def test_NRTL():
     gammas = NRTL_gammas(xs, taus, alphas)
     gammas_expect = [2.503204848288857, 2.910723989902569, 2.2547951278295497, 2.9933258413917154, 2.694165187439594]
     assert_allclose(gammas, gammas_expect)
-    
+
+@pytest.mark.slow
+def test_NRTL_slow():
     # ten component
 #    m = Mixture(['water', 'ethanol', 'methanol', '1-pentanol', '2-pentanol', '3-pentanol',
 #             '1-decanol', '2-decanol', '3-decanol', '4-decanol'], 
 #             P=1e5, zs=[.1]*10, T=273.15+70)
-
     xs = [.1]*10
     T = 343.15
     alphas = [[0.0, 0.2937, 0.2999, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3],

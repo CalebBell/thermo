@@ -47,7 +47,8 @@ def test_CRC_organic():
 
     assert CRC_organic_data.index.is_unique
     assert CRC_organic_data.shape == (10867, 5)
-    assert all([checkCAS(i) for i in CRC_organic_data.index])
+    for i in CRC_organic_data.index:
+        assert checkCAS(i)
 
 
 def test_VDI_tabular_data():

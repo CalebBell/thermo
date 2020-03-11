@@ -275,7 +275,7 @@ class GCEOS(object):
             # All roots will have some imaginary component; ignore them if > 1E-9 (when using a solver that does not strip them)
         b = self.b
 #        good_roots = [i.real for i in Vs if (i.real ==0 or abs(i.imag/i.real) < 1E-12) and i.real > 0.0]
-        good_roots = [i.real for i in Vs if (i.real ==0 or abs(i.imag/i.real) < 1E-12) and i.real > b]
+        good_roots = [i.real for i in Vs if (i.real > b and (i.real == 0.0 or abs(i.imag/i.real) < 1E-12))]
         good_root_count = len(good_roots)
             
         if good_root_count == 1: 
@@ -2189,7 +2189,8 @@ class GCEOS(object):
         Tc, Pc = self.Tc, self.Pc
         if T == Tc:
             return Pc
-        alpha = self.a_alpha_and_derivatives(T, full=False)/self.a
+        a_alpha = self.a_alpha_and_derivatives(T, full=False)
+        alpha = a_alpha/self.a
         Tr = T/self.Tc
         x = alpha/Tr - 1.
         
@@ -2274,14 +2275,10 @@ class GCEOS(object):
                 return err, d_err_d_P
             try:
                 try:
-                    a_alpha = self.a_alpha_and_derivatives(T=T, full=False)
-                    boundaries = GCEOS.P_discriminant_zeros_analytical(T, self.b, self.delta, self.epsilon, self.a_alpha, valid=True)
+                    boundaries = GCEOS.P_discriminant_zeros_analytical(T, self.b, self.delta, self.epsilon, a_alpha, valid=True)
                     low, high = min(boundaries), max(boundaries)
                 except:
                     pass
-
-
-
                 try:
                     high = self.P_discriminant_zero()
                 except:
@@ -3221,8 +3218,8 @@ class GCEOS(object):
 #        c = (-6*b**2*delta**2/(R*T) + 24*b**2*epsilon/(R*T) - 6*b*delta**3/(R*T) + 24*b*delta*epsilon/(R*T) - delta**4/(R*T) + 2*delta**2*epsilon/(R*T) + 8*epsilon**2/(R*T) + 12*a*b**3/(R**2*T**2) + 18*a*b**2*delta/(R**2*T**2) + 10*a*b*delta**2/(R**2*T**2) - 4*a*b*epsilon/(R**2*T**2) + 2*a*delta**3/(R**2*T**2) - 2*a*delta*epsilon/(R**2*T**2) + 8*a**2*b**2/(R**3*T**3) + 8*a**2*b*delta/(R**3*T**3) - a**2*delta**2/(R**3*T**3) + 12*a**2*epsilon/(R**3*T**3))
 #        b_coeff = (-4*b**3*delta**2/(R**2*T**2) + 16*b**3*epsilon/(R**2*T**2) - 6*b**2*delta**3/(R**2*T**2) + 24*b**2*delta*epsilon/(R**2*T**2) - 2*b*delta**4/(R**2*T**2) + 4*b*delta**2*epsilon/(R**2*T**2) + 16*b*epsilon**2/(R**2*T**2) - 2*delta**3*epsilon/(R**2*T**2) + 8*delta*epsilon**2/(R**2*T**2) + 4*a*b**4/(R**3*T**3) + 8*a*b**3*delta/(R**3*T**3) + 2*a*b**2*delta**2/(R**3*T**3) + 16*a*b**2*epsilon/(R**3*T**3) - 2*a*b*delta**3/(R**3*T**3) + 16*a*b*delta*epsilon/(R**3*T**3) - 2*a*delta**2*epsilon/(R**3*T**3) + 12*a*epsilon**2/(R**3*T**3))
 #        a_coeff = (-b**4*delta**2/(R**3*T**3) + 4*b**4*epsilon/(R**3*T**3) - 2*b**3*delta**3/(R**3*T**3) + 8*b**3*delta*epsilon/(R**3*T**3) - b**2*delta**4/(R**3*T**3) + 2*b**2*delta**2*epsilon/(R**3*T**3) + 8*b**2*epsilon**2/(R**3*T**3) - 2*b*delta**3*epsilon/(R**3*T**3) + 8*b*delta*epsilon**2/(R**3*T**3) - delta**2*epsilon**2/(R**3*T**3) + 4*epsilon**3/(R**3*T**3))
-#        roots = roots_quartic(a_coeff, b_coeff, c, d, e)
-        roots = np.roots([a_coeff, b_coeff, c, d, e]).tolist()
+        roots = roots_quartic(a_coeff, b_coeff, c, d, e)
+#        roots = np.roots([a_coeff, b_coeff, c, d, e]).tolist()
         if valid:
             # TODO - only include ones when switching phases from l/g to either g/l
             # Do not know how to handle

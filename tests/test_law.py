@@ -84,7 +84,8 @@ def test_HPV_data():
     assert HPV_data.shape == (5067, 0)
     assert sum(list(HPV_data.index)) == 176952023632
 
-    assert all([checkCAS(int2CAS(i)) for i in HPV_data.index])
+    for i in HPV_data.index:
+        assert checkCAS(int2CAS(i))
 
 
 def test_legal_status():

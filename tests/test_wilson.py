@@ -374,9 +374,9 @@ def test_DDBST_example():
 def test_multicomnent_madeup():
     T=273.15+70
     xs = [1/7.0]*7
-    m = Mixture(['water', 'ethanol', 'methanol', '1-pentanol', '2-pentanol', '3-pentanol',
-                 '1-decanol'], 
-                 P=1e5, zs=xs, T=T)
+#    m = Mixture(['water', 'ethanol', 'methanol', '1-pentanol', '2-pentanol', '3-pentanol',
+#                 '1-decanol'], 
+#                 P=1e5, zs=xs, T=T)
     
     # Main coefficients with temperature inverse dependency
     lambdasB = [[0.0, -35.3, 40.0, -139.0, -129.0, -128.0, -242.0],
@@ -433,7 +433,7 @@ def test_multicomnent_madeup():
     
     
     dT = T*4e-8
-    dlambdas_dT_numerical = ((np.array(GE.to_T_xs(T=m.T+dT, xs=xs).lambdas()) - np.array(GE.lambdas()))/dT)
+    dlambdas_dT_numerical = ((np.array(GE.to_T_xs(T=T+dT, xs=xs).lambdas()) - np.array(GE.lambdas()))/dT)
     dlambdas_dT_analytical = GE.dlambdas_dT() 
     dlambdas_dT_expect = [[7.590031904561817e-05, 0.00035248336206849656, -0.0003094799547918734, 0.0008734144675894445, 0.0008398355729456691, 0.0008388484248830437, 0.0011010388136697634],
                           [0.0009887057582300238, 7.958864330150294e-05, 0.0010333738209314847, -0.0008357318798642386, -0.0008603154287867674, -0.000798471407040265, -0.0017482651322616297],
@@ -455,7 +455,7 @@ def test_multicomnent_madeup():
                             [1.6807740689825766e-07, -3.272186668663736e-06, -2.3655959455488764e-06, -2.778154773804601e-06, -2.7342339993722627e-06, -2.6363752589934457e-06, 3.957722151854727e-07]]
 
     d2lambdas_dT2_analytical = GE.d2lambdas_dT2()
-    d2lambdas_dT2_numerical = ((np.array(GE.to_T_xs(T=m.T+dT, xs=xs).dlambdas_dT()) - np.array(GE.dlambdas_dT()))/dT)
+    d2lambdas_dT2_numerical = ((np.array(GE.to_T_xs(T=T+dT, xs=xs).dlambdas_dT()) - np.array(GE.dlambdas_dT()))/dT)
     assert_allclose(d2lambdas_dT2_analytical, d2lambdas_dT2_expect, rtol=1e-13)
     assert_allclose(d2lambdas_dT2_numerical, d2lambdas_dT2_analytical, rtol=1e-7)
     
@@ -468,7 +468,7 @@ def test_multicomnent_madeup():
                             [1.7135848473209763e-09, 1.331477284270524e-08, 3.0148603800370024e-09, 2.1913464581918025e-08, 2.1725189171286703e-08, 2.120416180853968e-08, -2.4707966753243437e-09]]
     
     d3lambdas_dT3_analytical = GE.d3lambdas_dT3()
-    d3lambdas_dT3_numerical = ((np.array(GE.to_T_xs(T=m.T+dT, xs=xs).d2lambdas_dT2()) - np.array(GE.d2lambdas_dT2()))/dT)
+    d3lambdas_dT3_numerical = ((np.array(GE.to_T_xs(T=T+dT, xs=xs).d2lambdas_dT2()) - np.array(GE.d2lambdas_dT2()))/dT)
     assert_allclose(d3lambdas_dT3_analytical, d3lambdas_dT3_expect, rtol=1e-13)
     assert_allclose(d3lambdas_dT3_numerical, d3lambdas_dT3_analytical, rtol=2e-7)
 

@@ -413,7 +413,13 @@ class GCEOSMIX(GCEOS):
         if zs is None:
             zs = self.zs
         if T is not None and P is not None:
-            return self.to_TP_zs(T, P, zs, fugacities)
+            try:
+                sln = self.to_TP_zs_fast(T, P, zs)
+                if fugacities:
+                    sln.fugacities()
+                return sln
+            except:
+                return self.to_TP_zs(T, P, zs, fugacities)
         elif T is not None and V is not None:
             return self.to_TV_zs(T, V, zs, fugacities)
         elif P is not None and V is not None:
@@ -5624,6 +5630,9 @@ class PSRKMixingRules(object):
 
 class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
     eos_pure = IG
+    a_alphas = None
+    da_alpha_dTs = None
+    d2a_alpha_dT2s = None
     
     nonstate_constants_specific = ()
 

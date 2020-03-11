@@ -75,7 +75,8 @@ def test_WagnerMcGarry():
 
     assert WagnerMcGarry.index.is_unique
     assert WagnerMcGarry.shape == (245, 8)
-    assert all([checkCAS(i) for i in WagnerMcGarry.index])
+    for i in WagnerMcGarry.index:
+        assert checkCAS(i)
 
 
 def test_AntoinePoling():

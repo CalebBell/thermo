@@ -23,7 +23,7 @@ SOFTWARE.'''
 from numpy.testing import assert_allclose
 import pytest
 from thermo.solubility import *
-
+from fluids.numerics import assert_close
 
 def test_solubility():
     # From [1]_, matching examples 1 and 2.
@@ -68,9 +68,9 @@ def test_Henry_converter():
         for scale in scales:
             calc = Henry_converter(v, old_scale=scale, new_scale='Hxp', rhom=55341.9, MW=18.01528)
             # Best we can match given the digits provided
-            assert_allclose(calc, 2.19707E-05, rtol=2e-6)
+            assert_close(calc, 2.19707E-05, rtol=2e-6)
             recalc = Henry_converter(v, old_scale=scale, new_scale=scale, rhom=55341.9, MW=18.01528)
-            assert_allclose(v, recalc, rtol=1e-14)
+            assert_close(v, recalc, rtol=1e-14)
 
 
 def test_Henry_pressure():

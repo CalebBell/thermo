@@ -59,12 +59,42 @@ def test_dippr_2016_matched_meta():
 
 
 @pytest.mark.slow
+def test_Matthews_critical_names():
+    from thermo.critical import _crit_Matthews
+    for CAS, name in zip(_crit_Matthews.index, _crit_Matthews['Chemical']):
+        assert CAS_from_any(CAS) == CAS
+    # might be worth doing
+#        try:
+#            assert CAS_from_any(name) == CAS
+#        except:
+#            print(CAS, name)
+
+@pytest.mark.slow
+def test_Laliberte_metadata_identifiers():
+    from thermo.electrochem import _Laliberte_Density_ParametersDict, _Laliberte_Viscosity_ParametersDict, _Laliberte_Heat_Capacity_ParametersDict
+    lalib = _Laliberte_Density_ParametersDict.copy()
+    lalib.update(_Laliberte_Viscosity_ParametersDict)
+    lalib.update(_Laliberte_Heat_Capacity_ParametersDict)
+    
+    for CAS, d in lalib.items():
+        c = None
+        formula = d['Formula']
+        name = d['Name']
+        if formula not in set(['HCHO2', 'CH3CH2OH', 'HCH3CO2']):
+            assert CAS_from_any(formula) == CAS
+#        try:
+#            CAS_from_any(name)
+#        except:
+#            print(name)
+
+
+@pytest.mark.slow
 def test_pubchem_dict():
     assert all([checkCAS(i.CASs) for i in pubchem_db.CAS_index.values()])
 
 @pytest.mark.xfail
 def test_database_formulas():
-    # This worked until sisotopes were added to formulas
+    # This worked until isotopes were added to formulas
     assert all([i.formula == serialize_formula(i.formula) for i in pubchem_db.CAS_index.values()])
 
 def test_organic_user_db():

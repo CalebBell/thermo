@@ -65,13 +65,6 @@ def test_data_Matthews():
     assert _crit_Matthews.shape == (120, 6)
     assert _crit_Matthews.index.is_unique
     
-    for CAS, name in zip(_crit_Matthews.index, _crit_Matthews['Chemical']):
-        assert CAS_from_any(CAS) == CAS
-#        try:
-#            assert CAS_from_any(name) == CAS
-#        except:
-#            print(CAS, name)
-        
 def test_data_CRC():
     Tc_sum = _crit_CRC['Tc'].sum()
     assert_allclose(Tc_sum, 514092.75)
