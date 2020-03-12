@@ -80,7 +80,27 @@ def test_water_C1_C8():
     assert_allclose(res.gas.zs, zs_gas_expect, rtol=1e-5)
     zs_other_expect = [0.018970964990697076, 0.3070011367278533, 0.6740278982814496]
     assert_allclose(res.lightest_liquid.zs, zs_other_expect, rtol=1e-5)
+    
+    # Point where failures are happening with DOUBLE_CHECK_2P
+    flashN.DOUBLE_CHECK_2P = True
+    res = flashN.flash(T=100.0, P=33932.21771895288, zs=zs)
+    assert res.gas is not None
+    assert res.phase_count == 3
 
+    # Another point - DOUBLE_CHECK_2P was failing due to flash_inner_loop all having K under 1
+    res = flashN.flash(T=100.0, P=49417.13361323757, zs=zs)
+    assert res.phase_count == 2
+    assert res.gas is not None
+    assert_allclose(res.water_phase.zs, [0.9999999999999996, 3.2400602001103857e-16, 1.2679535429897556e-61], atol=1e-10)
+
+    # Another point - the RR solution went so far it had a compositions smaller than 1e-16 causing issues
+    res = flashN.flash(T=100.0, P=294705.1702551713, zs=zs)
+    assert res.phase_count == 3
+    assert res.gas is None
+    assert_close(res.water_phase.Z(), 0.006887567438189129)
+    assert_close(res.lightest_liquid.Z(), 0.011644749497712284)
+    
+    
     
 def test_C1_to_C5_water_gas():
     zs = normalize([.65, .13, .09, .05, .03, .03, .02, .003, 1e-6])
@@ -761,6 +781,7 @@ def test_problem_8_Ivanov():
     assert_allclose(res.betas, [0.43700616001533293, 0.562993839984667], rtol=1e-5)
     
     # Extremely stupid point - 3000 iterations, G is 1E-7 relative lower with three phase than 2
+    # Solution: Acceleration
     res = flashN.flash(T=128.021, P=1.849e6, zs=zs)
     assert res.phase_count == 3
 

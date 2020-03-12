@@ -997,6 +997,8 @@ def test_TWU_SRK_PR_T_alpha_interp_failure():
         PV = flasher.flash(P=P, V=base.V())
         assert_allclose(T, PV.T, rtol=1e-8)
 
+@pytest.mark.mpmath
+@pytest.mark.slow
 def test_PRMIXTranslatedConsistent_VS_low_prec_failure():
     '''Numerical issue with volume precision T in the range .001 K at P ~< 100 Pa
     volume_solution works fine, just `V` does not

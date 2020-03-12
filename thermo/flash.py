@@ -34,8 +34,10 @@ __all__ = ['sequential_substitution_2P', 'sequential_substitution_GDEM3_2P',
            'TPV_double_solve_1P', 'nonlin_2P_HSGUAbeta',
            'sequential_substitution_2P_double',
            'cm_flash_tol', 'nonlin_2P_newton', 'dew_bubble_newton_zs',
+           'existence_3P_Michelsen_Mollerup',
            'SS_VF_simultaneous', 'stabiliy_iteration_Michelsen',
            'assert_stab_success_2P', 'nonlin_equilibrium_NP',
+           'nonlin_spec_NP',
            ]
 
 from fluids.constants import R, R2, R_inv
@@ -54,7 +56,7 @@ from numpy.testing import assert_allclose
 from scipy.optimize import minimize, fsolve, root
 from scipy.interpolate import CubicSpline
 from thermo.utils import (exp, log, log10, floor, copysign, normalize, has_matplotlib,
-                          mixing_simple, property_mass_to_molar, TrivialSolutionError)
+                          mixing_simple, property_mass_to_molar, TrivialSolutionError, PhaseCountReducedError)
 from thermo.heat_capacity import (Lastovka_Shaw_T_for_Hm, Dadgostar_Shaw_integral,
                                   Dadgostar_Shaw_integral_over_T, Lastovka_Shaw_integral,
                                   Lastovka_Shaw_integral_over_T)
@@ -115,6 +117,7 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
         try:
             V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks, guess=V_over_F)
         except Exception as e:
+            V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks, guess=V_over_F, check=True)
 #            K_low, K_high = False, False
 #            for zi, Ki in zip(zs, Ks):
 #                if zi != 0.0:
@@ -128,7 +131,6 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
 #                raise TrivialSolutionError("Converged to trivial condition, all K same phase",
 #                                           comp_difference, iteration, err)
 #            else:
-            raise e
         
         if check_G:
             V_over_F_G = min(max(V_over_F_old, 0), 1)
@@ -523,7 +525,7 @@ def sequential_substitution_GDEM3_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
 def nonlin_equilibrium_NP(T, P, zs, compositions_guesses, betas_guesses, 
                         phases, maxiter=1000, tol=1E-13,
                         trivial_solution_tol=1e-5, ref_phase=-1,
-                        method='hybr', solve_kwargs=None):
+                        method='hybr', solve_kwargs=None, debug=False):
     if solve_kwargs is None:
         solve_kwargs = {}
 
@@ -545,10 +547,17 @@ def nonlin_equilibrium_NP(T, P, zs, compositions_guesses, betas_guesses,
     flows_guess = [compositions_guesses[j][i]*betas[j] for j in phase_iter_n1 for i in cmps]
     
     jac = True
+    if method in ('broyden1', 'broyden2', 'anderson', 'linearmixing',
+                  'diagbroyden', 'excitingmixing', 'krylov'):
+        jac = False
+    
+    
+    
+    
     global iterations, info
     iterations = 0
     info = []
-    def to_solve(flows):
+    def to_solve(flows, jac=jac):
         global iterations, info
         try:
             flows = flows.tolist()
@@ -604,10 +613,8 @@ def nonlin_equilibrium_NP(T, P, zs, compositions_guesses, betas_guesses,
             phase = iter_phases[k]
             lnphis = phase.lnphis()
             xs = iter_comps[k]
-            # lnfugacities = phase.lnfugacities()
             for i in cmps:
                 # This is identical to lnfugacity(i)^j - lnfugacity(i)^ref
-                # gi = lnfugacities[i]
                 gi = trunc_log(xs[i]/xs_ref[i]) + lnphis[i] - lnphis_ref[i]
                 errs.append(gi)
         
@@ -620,66 +627,225 @@ def nonlin_equilibrium_NP(T, P, zs, compositions_guesses, betas_guesses,
                 for i in cmps:
                     for ki, kj in zip(phase_iter_n1, phase_iter_n1_0):
                         for j in cmps:
-    
-    #                        if ki == ni:
-    #                            dlnfugacities_i =
-                            delta_ref = 1.0#0.5 if (j not in (0, Nm1) and kj > 0 ) else 1.0
-                            delta = 1.0*delta_ref if nj == kj else 0.0# closeet yet
-                            # delta = 1.0 if j == i else 0.0 # second Closest
+                            delta = 1.0 if nj == kj else 0.0
                             v_ref = dlnfugacities_ref[i][j]/beta_ref
-                            jac_arr[nj*N + i][kj*N + j] = dlnfugacities[i][j]*delta/iter_betas[ni] + v_ref*delta_ref
-    
-                            # if jac_arr[nj*N + i][kj*N + j] != 0:
-                            #     a = 0
-                            # # if (ki != 0 or ni != 0) and j in (1, 2):
-                            # if (ni < ki or ki > ni) and j in (1, 2):
-                            #     jac_arr[nj * N + i][kj * N + j] = 0#0.5*v_ref
-                            # elif kj == 1 and kj == 1 and j in (1, 2):
-                            #     jac_arr[nj * N + i][kj * N + j] = .5#0.5*dlnfugacities[i][j]*delta/iter_betas[ni] + 0.5*v_ref
-                            # else:
-                            #     jac_arr[nj*N + i][kj*N + j] = delta#dlnfugacities[i][j]*delta/iter_betas[ni] + v_ref
-    
-    
-                            # jac_arr[nj*N + i][kj*N + j] = dlnfugacities[i][j]*delta/iter_betas[ni] + dlnfugacities_ref[i][j]/beta_ref
-                            # if ni != ki:
-    
-    
-    
-    # if ni == ki:
-                                # jac_arr[nj*N+i][kj*N+j] = dlnfugacities[i][j]# + dlnfugacities_ref[i][j]
-                                # jac_arr[nj*N+i][kj*N+j] = dlnfugacities[i][j] + dlnfugacities_ref[i][j]
-                                
-    
-    #                for m in range(1, phase_count):
-            
-                    
-                    
-#            print(errs)
-        info[:] = iter_betas, iter_comps, iter_phases, errs, jac_arr
+                            jac_arr[nj*N + i][kj*N + j] = dlnfugacities[i][j]*delta/iter_betas[ni] + v_ref
+        info[:] = iter_betas, iter_comps, iter_phases, errs, jac_arr, flows
         if jac:
             return errs, jac_arr
         return errs
-
-    import numdifftools as nd
-    def f_jac_numpy(x):
-        ans = to_solve(x)
-        return np.array(ans[0]), np.array(ans[1])
     
-    jac = True
-    if method in ('broyden1', 'broyden2', 'anderson', 'linearmixing',
-                  'diagbroyden', 'excitingmixing', 'krylov'):
-        jac = False
-#    to_solve(flows_guess)
-#    a = 1
     if method == 'newton_system':
         comp_val, iterations = newton_system(to_solve, flows_guess, jac=True,
                                              xtol=tol, damping=1, 
                                              damping_func=damping_maintain_sign)
     else:
+        def f_jac_numpy(flows_guess):
+            # needed
+            ans = to_solve(flows_guess)
+            if jac:
+                return np.array(ans[0]), np.array(ans[1])
+            return np.array(ans)
         sln = root(f_jac_numpy, flows_guess, tol=tol, jac=(True if jac else None), method=method, **solve_kwargs)
+        iterations = sln['nfev']
     
-    betas, compositions, phases, errs, jac = info
-    return betas, compositions, phases, errs, jac
+    betas, compositions, phases, errs, jac, flows = info
+    sln = (betas, compositions, phases, errs, jac, iterations)
+    if debug:
+        return sln, flows, to_solve
+    return sln
+
+
+def nonlin_spec_NP(guess, fixed_val, spec_val, zs, compositions_guesses, betas_guesses, 
+                        phases, iter_var='T', fixed_var='P', spec='H',
+                        maxiter=1000, tol=1E-13,
+                        trivial_solution_tol=1e-5, ref_phase=-1,
+                        method='hybr', solve_kwargs=None, debug=False):
+    if solve_kwargs is None:
+        solve_kwargs = {}
+    
+    phase_kwargs = {fixed_var: fixed_val, iter_var: guess}
+    compositions = compositions_guesses
+    N = len(zs)
+    Nm1 = N - 1
+    cmps = range(N)
+    phase_count = len(phases)
+    phase_iter = range(phase_count)
+    if ref_phase < 0:
+        ref_phase = phase_count + ref_phase
+
+    phase_iter_n1 = [i for i in phase_iter if i != ref_phase]
+    phase_iter_n1_0 = range(phase_count-1)
+    betas = betas_guesses
+    if len(betas) < len(phases):
+        betas.append(1.0 - sum(betas))
+
+    guesses = [compositions_guesses[j][i]*betas[j] for j in phase_iter_n1 for i in cmps]
+    guesses.append(guess)
+    spec_callables = [getattr(phase.__class__, spec) for phase in phases]
+    
+    dlnphis_diter_s = 'dlnphis_d' + iter_var
+    dlnphis_diter_callables = [getattr(phase.__class__, dlnphis_diter_s) for phase in phases]
+
+    dspec_diter_s = 'd%s_d%s' %(spec, iter_var)
+    dspec_diter_callables = [getattr(phase.__class__, dspec_diter_s) for phase in phases]
+
+    dspec_dn_s = 'd%s_dns' %(spec)
+    dspec_dn_callables = [getattr(phase.__class__, dspec_dn_s) for phase in phases]
+    
+    jac = True
+    if method in ('broyden1', 'broyden2', 'anderson', 'linearmixing',
+                  'diagbroyden', 'excitingmixing', 'krylov', 'fsolve'):
+        jac = False
+    
+    
+    
+    
+    global iterations, info
+    iterations = 0
+    info = []
+    def to_solve(flows, jac=jac):
+        global iterations, info
+        try:
+            flows = flows.tolist()
+        except:
+            flows = list(flows)
+        iter_val = flows[-1]
+        phase_kwargs[iter_var] = iter_val
+        flows = flows[:-1]
+        iterations += 1
+        iter_flows = []
+        iter_comps = []
+        iter_betas = []
+        iter_phases = []
+        jac_arr = None
+        
+        remaining = zs
+        for i in range(len(flows)):
+            if flows[i] < 0.0:
+                flows[i] = 1e-100
+
+
+        for j, k in zip(phase_iter_n1, phase_iter_n1_0):
+            v = flows[k*N:k*N+N]
+            vs = v
+            vs_sum = sum(abs(i) for i in vs)
+            if vs_sum == 0.0:
+                # Handle the case an optimizer takes all of all compounds already
+                ys = zs
+            else:
+                vs_sum_inv = 1.0/vs_sum
+                ys = [abs(vs[i]*vs_sum_inv) for i in cmps]
+                ys = normalize(ys)
+            iter_flows.append(vs)
+            iter_comps.append(ys)
+            iter_betas.append(vs_sum) # Would be divided by feed but feed is zs = 1
+            iter_phases.append(phases[j].to_TP_zs(zs=ys, **phase_kwargs))
+            remaining = [remaining[i] - vs[i] for i in cmps]
+
+        flows_ref = remaining
+        iter_flows.insert(ref_phase, remaining)
+
+        beta_ref = sum(remaining)
+        iter_betas.insert(ref_phase, beta_ref)
+
+        xs_ref = normalize([abs(i) for i in remaining])
+        iter_comps.insert(ref_phase, xs_ref)
+
+        phase_ref = phases[ref_phase].to_TP_zs(zs=xs_ref, **phase_kwargs)
+        iter_phases.insert(ref_phase, phase_ref)
+        
+        lnphis_ref = phase_ref.lnphis()
+        dlnfugacities_ref = phase_ref.dlnfugacities_dns()
+        
+        errs = []
+        for k in phase_iter_n1:
+            phase = iter_phases[k]
+            lnphis = phase.lnphis()
+            xs = iter_comps[k]
+            for i in cmps:
+                # This is identical to lnfugacity(i)^j - lnfugacity(i)^ref
+                gi = trunc_log(xs[i]/xs_ref[i]) + lnphis[i] - lnphis_ref[i]
+                errs.append(gi)
+        
+        spec_phases = []
+        spec_calc = 0.0
+        for k in phase_iter:
+            spec_phase = spec_callables[k](iter_phases[k])
+            spec_phases.append(spec_phase)
+            spec_calc += spec_phase*iter_betas[k]
+        errs.append(spec_calc - spec_val)
+#        print(errs[-1], 'err', iter_val, 'T')
+    
+        
+        if jac:
+            jac_arr = [[0.0]*(N*(phase_count-1) + 1) for i in range(N*(phase_count-1)+1)]
+            for ni, nj in zip(phase_iter_n1, phase_iter_n1_0):
+                p = iter_phases[ni]
+                dlnfugacities = p.dlnfugacities_dns()
+                # Begin with the first row using ni, nj; 
+                for i in cmps:
+                    for ki, kj in zip(phase_iter_n1, phase_iter_n1_0):
+                        for j in cmps:
+                            delta = 1.0 if nj == kj else 0.0
+                            v_ref = dlnfugacities_ref[i][j]/beta_ref
+                            jac_arr[nj*N + i][kj*N + j] = dlnfugacities[i][j]*delta/iter_betas[ni] + v_ref
+            
+            dlnphis_dspec = [dlnphis_diter_callables[i](phases[i]) for i in phase_iter]
+            dlnphis_dspec_ref = dlnphis_dspec[ref_phase]
+            for ni, nj in zip(phase_iter_n1, phase_iter_n1_0):
+                p = iter_phases[ni]
+                for i in cmps:
+                    jac_arr[nj*N + i][-1] = dlnphis_dspec[ni][i] - dlnphis_dspec_ref[i]
+            
+#            last = 
+            dspec_calc = 0.0
+            for k in phase_iter:
+                dspec_calc += dspec_diter_callables[k](iter_phases[k])*iter_betas[k]
+            jac_arr[-1][-1] = dspec_calc
+            
+            dspec_dns = [dspec_dn_callables[i](phases[i]) for i in phase_iter]
+            dspec_dns_ref = dspec_dns[ref_phase]
+            last_jac_row = jac_arr[-1]
+            
+            for ni, nj in zip(phase_iter_n1, phase_iter_n1_0):
+                for i in cmps:
+                    # What is wrong?
+                    # H is multiplied by the phase fraction, of which this n is a part of
+                    # So there must be two parts here
+                    last_jac_row[nj*N + i] = ((iter_betas[ni]*dspec_dns[ni][i]/iter_betas[ni] - beta_ref*dspec_dns_ref[i]/beta_ref)
+                                            + (spec_phases[ni] - spec_phases[ref_phase]))
+                            
+        info[:] = iter_betas, iter_comps, iter_phases, errs, jac_arr, flows, iter_val
+        if jac:
+            return errs, jac_arr
+        return errs
+    
+    if method == 'newton_system':
+        comp_val, iterations = newton_system(to_solve, guesses, jac=True,
+                                             xtol=tol, damping=1, 
+                                             damping_func=damping_maintain_sign)
+    else:
+        def f_jac_numpy(flows_guess):
+            # needed
+            ans = to_solve(flows_guess)
+            if jac:
+                return np.array(ans[0]), np.array(ans[1])
+            return np.array(ans)
+        if method == 'fsolve':
+            jac = False
+            sln, infodict, _, _ = fsolve(f_jac_numpy, guesses, xtol=tol, full_output=1, **solve_kwargs)
+            iterations = infodict['nfev']
+        else:
+            sln = root(f_jac_numpy, guesses, tol=tol, jac=(True if jac else None), method=method, **solve_kwargs)
+            iterations = sln['nfev']
+    
+    betas, compositions, phases, errs, jac, flows, iter_val = info
+
+    sln = (iter_val, betas, compositions, phases, errs, jac, iterations)
+    if debug:
+        return sln, flows, to_solve
+    return sln
 
 
 def nonlin_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
@@ -1642,6 +1808,150 @@ def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
         raise ValueError("Did not converge to specified tolerance")
     return guess, comp_guess, iter_phase, const_phase, iteration, abs(guess - guess_old)
 
+
+l_undefined_T_msg = "Could not calculate liquid conditions at provided temperature %s K (mole fracions %s)"   
+g_undefined_T_msg = "Could not calculate vapor conditions at provided temperature %s K (mole fracions %s)"   
+l_undefined_P_msg = "Could not calculate liquid conditions at provided pressure %s Pa (mole fracions %s)"   
+g_undefined_P_msg = "Could not calculate vapor conditions at provided pressure %s Pa (mole fracions %s)"   
+
+def existence_3P_Michelsen_Mollerup(guess, fixed_val, zs, iter_phase, liquid0, liquid1,
+                                    iter_var='T', fixed_var='P',
+                                    maxiter=200, xtol=1E-10, comp_guess=None,
+                                    liquid0_comp=None, liquid1_comp=None,
+                                    max_step_damping=.25, SS_tol=1e-10,
+                                    trivial_solution_tol=1e-7, damping=1.0,
+                                    beta=0.5):
+    # For convenience call the two phases that exist already liquid0, liquid1
+    # But one of them can be a gas, solid, etc.
+    kwargs = {fixed_var: fixed_val}
+    N = len(zs)
+    cmps = range(N)
+    comp_guess = zs if comp_guess is None else comp_guess
+    damping_orig = damping
+
+    if iter_var == 'T':
+        iter_msg, const_msg = g_undefined_T_msg, l_undefined_T_msg
+    elif iter_var == 'P':
+        iter_msg, const_msg = g_undefined_P_msg, l_undefined_P_msg
+
+    s = 'dlnphis_d%s' %(iter_var)
+    dlnphis_diter_var_iter = getattr(iter_phase.__class__, s)
+    dlnphis_diter_var_liquid0 = getattr(liquid0.__class__, s)
+#    dlnphis_diter_var_liquid1 = getattr(liquid1.__class__, s)
+
+    skip = 0
+    guess_old = None
+
+    successive_fails = 0
+    for iteration in range(maxiter):
+        kwargs[iter_var] = guess
+        try:
+            liquid0 = liquid0.to_TP_zs(zs=liquid0_comp, **kwargs)
+            lnphis_liquid0 = liquid0.lnphis()
+            dlnphis_dvar_liquid0 = dlnphis_diter_var_liquid0(liquid0)
+        except Exception as e:
+            if guess_old is None:
+                raise ValueError(const_msg %(guess, liquid0_comp), e)
+            successive_fails += 1
+            guess = guess_old + copysign(min(max_step_damping*guess, abs(step)), step)
+            continue
+        try:
+            liquid1 = liquid1.to_TP_zs(zs=liquid1_comp, **kwargs)
+            lnphis_liquid1 = liquid1.lnphis()
+#            dlnphis_dvar_liquid1 = dlnphis_diter_var_liquid1(liquid1)
+        except Exception as e:
+            if guess_old is None:
+                raise ValueError(const_msg %(guess, liquid0_comp), e)
+            successive_fails += 1
+            guess = guess_old + copysign(min(max_step_damping*guess, abs(step)), step)
+            continue
+        try:
+            iter_phase = iter_phase.to_TP_zs(zs=comp_guess, **kwargs)
+            lnphis_iter = iter_phase.lnphis()
+            dlnphis_dvar_iter = dlnphis_diter_var_iter(iter_phase)
+        except Exception as e:
+            if guess_old is None:
+                raise ValueError(iter_msg %(guess, zs), e)
+            successive_fails += 1
+            guess = guess_old + copysign(min(max_step_damping*guess, abs(step)), step)
+            continue
+
+
+        if successive_fails > 2:
+            raise ValueError("Stopped convergence procedure after multiple bad steps")     
+    
+        successive_fails = 0
+        Ks = [exp(a - b) for a, b in zip(lnphis_liquid0, lnphis_iter)]
+        comp_guess = [liquid0_comp[i]*Ks[i] for i in cmps]
+        y_sum_inv = 1.0/sum(comp_guess)
+        comp_guess = [y*y_sum_inv for y in comp_guess]
+
+        f_k = sum([liquid0_comp[i]*Ks[i] for i in cmps]) - 1.0
+        
+        dfk_dvar = 0.0
+        for i in cmps:
+            dfk_dvar += liquid0_comp[i]*Ks[i]*(dlnphis_dvar_liquid0[i] - dlnphis_dvar_iter[i])
+        
+        guess_old = guess
+        step = -f_k/dfk_dvar
+        
+        adj_step = copysign(min(max_step_damping*guess, abs(step), abs(step)*damping), step)
+        if guess + adj_step <= 0.0:
+            adj_step *= 0.5
+        guess = guess + adj_step
+        
+        comp_difference = 0.0
+        for i in cmps: 
+            comp_difference += abs(liquid0_comp[i] - comp_guess[i])
+
+        if comp_difference < trivial_solution_tol and iteration:
+            if comp_difference < trivial_solution_tol:
+                raise ValueError("Converged to trivial condition, compositions of both phases equal")
+        
+        # Do the SS part for the two phases
+        try:
+            Ks_SS = [exp(lnphis_liquid0[i] - lnphis_liquid1[i]) for i in cmps]
+        except OverflowError:
+            Ks_SS = [trunc_exp(lnphis_liquid0[i] - lnphis_liquid1[i]) for i in cmps]
+        beta, liquid0_comp_new, liquid1_comp_new = flash_inner_loop(zs, Ks_SS, guess=beta)
+
+        for xi in liquid0_comp_new:
+            if xi < 0.0:
+                xs_new_sum_inv = 1.0/sum(abs(i) for i in liquid0_comp_new)
+                for i in cmps:
+                    liquid0_comp_new[i] = abs(liquid0_comp_new[i])*xs_new_sum_inv
+                break
+        for xi in liquid1_comp_new:
+            if xi < 0.0:
+                xs_new_sum_inv = 1.0/sum(abs(i) for i in liquid1_comp_new)
+                for i in cmps:
+                    liquid1_comp_new[i] = abs(liquid1_comp_new[i])*xs_new_sum_inv
+                break
+        err_SS = 0.0
+        try:
+            for Ki, xi, yi in zip(Ks_SS, liquid0_comp, liquid1_comp):
+                err_i = Ki*xi/yi - 1.0
+                err_SS += err_i*err_i
+        except ZeroDivisionError:
+            err_SS = 0.0
+            for Ki, xi, yi in zip(Ks, xs, ys):
+                try:
+                    err_i = Ki*xi/yi - 1.0
+                    err_SS += err_i*err_i
+                except ZeroDivisionError:
+                    pass
+                
+        liquid0_comp, liquid1_comp = liquid0_comp_new, liquid1_comp_new
+        if abs(guess - guess_old) < xtol and err_SS < SS_tol:
+            err_VF = abs(guess - guess_old)
+            guess = guess_old
+            break
+        
+
+    if abs(guess - guess_old) > xtol:
+        raise ValueError("Did not converge to specified tolerance")
+    
+    return guess, [iter_phase, liquid0, liquid1], [0.0, 1.0-beta, beta], err_VF, err_SS, iteration
 
 
 def bubble_T_Michelsen_Mollerup(T_guess, P, zs, liquid_phase, gas_phase, 
@@ -4949,25 +5259,26 @@ class FlashVLN(FlashVL):
             else:
                 another_phase, base_phase = liquids[0], gas
 
-            all_solutions = self.stability_test_Michelsen(T, P, zs, another_phase, base_phase, all_solutions=True)
+            all_solutions = self.stability_test_Michelsen(T, P, zs, another_phase, base_phase, all_solutions=True) + self.stability_test_Michelsen(T, P, zs, base_phase, another_phase, all_solutions=True)
             all_solutions = deduplicate_stab_results(all_solutions)
             for stab_sln in all_solutions:
                 trial_zs, appearing_zs, V_over_F, stab_guess_name, _, _, _ = stab_sln
-                try:
-                    double_check_sln = self.flash_2P(T, P, zs, trial_zs, appearing_zs, another_phase,
-                                                     base_phase, gas, liquids[0], V_over_F_guess=V_over_F, LL=True)
-                except (UnconvergedError, OscillationError):
-                    continue
-                double_check_betas = double_check_sln[3]
-                if len(double_check_betas) == 2:
-                    double_check_phases = double_check_sln[1]
-                    G_2P_new = sum([double_check_betas[i]*double_check_phases[i].G() for i in range(2)])
-                    if G_2P_new < G_2P:
-                        sln_2P = double_check_sln
-                        G_2P = G_2P_new
-                        found_phases = double_check_phases
-                        existing_comps = [i.zs for i in found_phases]
-                        found_betas = double_check_betas
+                if V_over_F < 1.000001 and V_over_F > -.000001:
+                    try:
+                        double_check_sln = self.flash_2P(T, P, zs, trial_zs, appearing_zs, another_phase,
+                                                         base_phase, gas, liquids[0], V_over_F_guess=V_over_F, LL=True)
+                    except (UnconvergedError, OscillationError, PhaseCountReducedError):
+                        continue
+                    double_check_betas = double_check_sln[3]
+                    if len(double_check_betas) == 2:
+                        double_check_phases = double_check_sln[1]
+                        G_2P_new = sum([double_check_betas[i]*double_check_phases[i].G() for i in range(2)])
+                        if G_2P_new < G_2P:
+                            sln_2P = double_check_sln
+                            G_2P = G_2P_new
+                            found_phases = double_check_phases
+                            existing_comps = [i.zs for i in found_phases]
+                            found_betas = double_check_betas
 
 
         # Can still be a VLL solution now that a new phase has been added

@@ -30,6 +30,7 @@ __all__ = ['K_value', 'Wilson_K_value', 'flash_wilson',
            'Rachford_Rice_solution_polynomial', 'Rachford_Rice_solution_LN2',
            'Rachford_Rice_solution2', 'Rachford_Rice_solutionN',
            'Rachford_Rice_flashN_f_jac', 'Rachford_Rice_flash2_f_jac',
+           'Rachford_Rice_solution_trace',
            'Li_Johns_Ahmadi_solution', 'flash_inner_loop', 'NRTL_gammas',
            'Wilson_gammas',
            'UNIQUAC_gammas', 'flash_ideal_basic', 'dew_at_T',
@@ -40,7 +41,7 @@ __all__ = ['K_value', 'Wilson_K_value', 'flash_wilson',
 from fluids.numerics import IS_PYPY, one_epsilon_larger, one_epsilon_smaller, NotBoundedError
 from fluids.numerics import newton_system, roots_cubic, roots_quartic, secant, horner, py_brenth as brenth, py_newton as newton, oscillation_checker, roots_cubic_a1, linspace, horner_and_der
 from thermo.utils import exp, log
-from thermo.utils import none_and_length_check, dxs_to_dns, dxs_to_dn_partials, d2xs_to_dxdn_partials, dns_to_dn_partials
+from thermo.utils import normalize, none_and_length_check, dxs_to_dns, dxs_to_dn_partials, d2xs_to_dxdn_partials, dns_to_dn_partials, PhaseCountReducedError
 from thermo.utils import R
 import numpy as np
 from scipy.optimize import fsolve, root
@@ -2049,7 +2050,7 @@ def Rachford_Rice_solution_LN2(zs, Ks, guess=None):
             ddF0 += x7*(t51 + x5x1x6 + x5x1x6)
 
         return F0, dF0, ddF0
-    
+
     # Suggests guess V_over_F_min, not using
     try:
         guess = -log((V_over_F_max-guess)/(guess-V_over_F_min))
@@ -2060,7 +2061,10 @@ def Rachford_Rice_solution_LN2(zs, Ks, guess=None):
 
     # Should always converge - no poles
     try:
-        V_over_F = newton(err, guess, fprime=True, fprime2=True, ytol=1e-8)
+        if one_m_Kmin == 1.0:
+            V_over_F = newton(err, guess, fprime=True, fprime2=True, xtol=1e-10)
+        else:
+            V_over_F = newton(err, guess, fprime=True, fprime2=True, ytol=1e-8)
     except Exception as e:
         low, high = V_over_F_min + 1e-8, V_over_F_max - 1e-8
         low = -log((V_over_F_max-low)/(low-V_over_F_min))
@@ -2322,6 +2326,73 @@ def _Rachford_Rice_analytical_3(zs, Ks):
     return V_over_F, xs, ys
 
 
+def Rachford_Rice_solution_trace(zs, Ks, guess=0.5, trace=1e-15):
+    bad_idxs = []
+    zs_new, Ks_new = [], []
+    for i in range(len(Ks)):
+        if Ks[i] > trace:
+            zs_new.append(zs[i])
+            Ks_new.append(Ks[i])
+        else:
+            bad_idxs.append(i)
+    zs_new_sum = sum(zs_new)
+    zs_new_sum_inv = 1.0/zs_new_sum
+    for i in range(len(zs_new)):
+        zs_new[i] *= zs_new_sum_inv
+    
+    # Check we still have a higher and lower
+    K_low, K_high = False, False
+    for zi, Ki in zip(zs_new, Ks_new):
+        if zi != 0.0:
+            if Ki > 1.0:
+                K_high = True
+            else:
+                K_low = True
+        if K_high and K_low:
+            break
+    if len(zs_new) == 1:
+        if K_high:
+            ys, xs = [1.0], [0.0]
+            V_over_F = zs_new_sum
+        else:
+            ys, xs = [0.0], [1.0]
+            V_over_F = 0.0
+    elif not K_low:
+        # all vapor
+        V_over_F = zs_new_sum
+        ys, xs = zs_new, [0.0]*len(zs_new)
+    elif not K_high:
+        V_over_F = 0.0
+        ys, xs = [0.0]*len(zs_new), zs_new
+    else:
+        V_over_F, xs, ys = flash_inner_loop(zs_new, Ks_new, guess=guess)
+        # Convert to mole numbers
+        for i in range(len(xs)):
+            xs[i] *= (1.0 - V_over_F)*zs_new_sum
+            ys[i] *= V_over_F*zs_new_sum
+        V_over_F = sum(ys)
+#         print(V_over_F, xs, ys)
+#     print(zs_new_sum)
+    
+    # Will need to increase V_over_F proportional to zs[i] for any vapor
+    
+    for idx in bad_idxs:
+        Ki, zi = Ks[idx], zs[idx]
+        if Ki > 1.0:
+            ys.insert(idx, zi)
+            xs.insert(idx, 0.0)
+            V_over_F += zi
+        else:
+            xs.insert(idx, zi)
+            ys.insert(idx, 0.0)
+
+    xs = normalize(xs)
+    ys = normalize(ys)
+    
+    return V_over_F, xs, ys
+
+
+
 FLASH_INNER_ANALYTICAL = 'Analytical'
 FLASH_INNER_SECANT = 'Rachford-Rice (Secant)'
 FLASH_INNER_NR = 'Rachford-Rice (Newton-Raphson)'
@@ -2442,8 +2513,9 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
                 if K_high and K_low:
                     break
         if not K_low or not K_high:
-            raise ValueError("For provided K values, there is no positive-composition solution; Ks=%s" %(Ks))
-            
+            raise PhaseCountReducedError("For provided K values, there is no positive-composition solution; Ks=%s" %(Ks))
+        
+        
         for zi in zs:
             if zi == 0.0:
                 zero_indexes = []
@@ -2454,12 +2526,12 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
                     else:
                         zs2.append(zs[i])
                         Ks2.append(Ks[i])
-                    V_over_F, xs, ys =  flash_inner_loop(zs2, Ks2, Method=Method, limit=limit, guess=guess)
+                    V_over_F, xs, ys =  flash_inner_loop(zs2, Ks2, Method=Method, limit=limit, guess=guess, check=True)
                     for idx in zero_indexes:
                         xs.insert(idx, 0.0)
                         ys.insert(idx, 0.0)
                     return V_over_F, xs, ys
-
+        return Rachford_Rice_solution_trace(zs, Ks, guess)
 
     if Method == FLASH_INNER_LN2:
         return Rachford_Rice_solution_LN2(zs, Ks, guess)

@@ -603,6 +603,7 @@ def test_Rachford_Rice_solutionN_vs_flash_inner_loop():
     assert_allclose(xs_1d, xs)
     assert_allclose(ys, ys_1d)
     
+    
 def test_Rachford_Rice_solutionN():
     # 5 phase example!
     # Example 2 in Gao, Ran, Xiaolong Yin, and Zhiping Li. "Hybrid Newton-Successive 
@@ -634,6 +635,42 @@ def test_Rachford_Rice_solutionN():
     for comp_calc, comp_expect in zip(comps, comps_expect):
         assert_allclose(comp_calc, comp_expect, atol=1e-9)
     
+def test_Rachford_Rice_solution_trace():
+    zs = [0.3333333333333333, 0.3333333333333333, 0.3333333333333333]
+    Ks = [8755306854.943026, 7.393334548416551e-16, 6.87130044872998e-79]
+    V_over_F, xs, ys = Rachford_Rice_solution_trace(zs, Ks)
+    assert_allclose(V_over_F, 1.0/3, rtol=1e-12)
+    assert_allclose(xs, [0.0, 0.5, 0.5], rtol=1e-12)
+    assert_allclose(ys, [1.0, 0.0, 0.0], rtol=1e-12)
+
+    zs = [0.3333333333333333, 0.3333333333333333, 0.3333333333333333]
+    Ks = [1e3, 1e4, 1e-17]
+    V_over_F, xs, ys = Rachford_Rice_solution_trace(zs, Ks)
+    assert_allclose(V_over_F, 2.0/3, rtol=1e-12)
+    assert_allclose(xs, [0.0, 0.0, 1.0], rtol=1e-12)
+    assert_allclose(ys, [0.5, 0.5, 0.0], rtol=1e-12)
+
+
+
+    zs = [.25, .25, .25, .25]
+    Ks = [100, .1, 1e-16, 1e-50]
+    V_over_F, xs, ys = Rachford_Rice_solution_trace(zs, Ks)
+    assert_allclose(V_over_F, 0.27525252525252525, rtol=1e-12)
+    assert_allclose(xs, [0.0027937345010515743, 0.3073107951156732, 0.34494773519163763, 0.34494773519163763], rtol=1e-12)
+    assert_allclose(ys, [0.9009009009009009, 0.09909909909909911, 0.0, 0.0], rtol=1e-12)
+    
+    recalc = (np.array(xs)*(1-V_over_F)+ np.array(ys)*V_over_F) 
+    assert_allclose(recalc, zs, rtol=1e-12)
+
+    zs = [0.4, 0.6]
+    Ks = [1e3, 1e-17]
+    V_over_F, xs, ys = Rachford_Rice_solution_trace(zs, Ks)
+    assert_close(V_over_F, 0.4, rtol=1e-12)
+    assert_allclose(xs, [0.0, 1.0], rtol=1e-12)
+    assert_allclose(ys, [1.0, 0.0], rtol=1e-12)
+    V_over_F, xs, ys
+
+
 def test_identify_phase():
     # Above the melting point, higher pressure than the vapor pressure
     assert 'l' == identify_phase(T=280, P=101325, Tm=273.15, Psat=991)

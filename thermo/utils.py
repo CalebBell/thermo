@@ -40,7 +40,8 @@ __all__ = ['isobaric_expansion', 'isothermal_compressibility',
 'solve_flow_composition_mix', 'assert_component_balance', 'assert_energy_balance',
 'phase_select_property', 'TDependentProperty', 
 'TPDependentProperty', 'MixtureProperty', 'allclose_variable', 'horner', 
-'polylog2', 'v_to_v_molar', 'v_molar_to_v', 'TrivialSolutionError']
+'polylog2', 'v_to_v_molar', 'v_molar_to_v', 'TrivialSolutionError',
+'PhaseCountReducedError']
 
 import os
 from cmath import sqrt as csqrt
@@ -5127,3 +5128,11 @@ class TrivialSolutionError(Exception):
         self.iterations = iterations
         self.err = err
 
+
+class PhaseCountReducedError(Exception):
+    '''Error raised SS inner flash loop says all Ks are under 1 or above 1
+    '''
+    def __init__(self, message, zs=None, Ks=None):
+        super(PhaseCountReducedError, self).__init__(message)
+        self.zs = zs
+        self.Ks = Ks
