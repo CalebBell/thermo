@@ -1,0 +1,8 @@
+.cache/
+build/
+dist/
+tests/__pycache__/
+thermo.egg-info/
+.vscode/
+*.pyc
+.pytest_cache/

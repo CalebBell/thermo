@@ -74,7 +74,7 @@ setup(
   package_data={'thermo': ['Critical Properties/*', 'Density/*', 
   'Electrolytes/*', 'Environment/*', 'Heat Capacity/*', 'Identifiers/*',
   'Law/*', 'Misc/*', 'Phase Change/*', 'Reactions/*', 'Safety/*', 
-  'Solubility/*', 'Interface/*', 'Triple Properties/*', 
+  'Solubility/*', 'Interface/*', 'Steam Properties/*', 'Triple Properties/*', 
   'Thermal Conductivity/*', 
   'Vapor Pressure/*', 'Viscosity/*']}
 )
