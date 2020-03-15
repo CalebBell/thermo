@@ -63,7 +63,7 @@ class ChemicalConstantsPackage(object):
                  'Vml_60Fs', 'rhol_60Fs', 'rhol_60Fs_mass',
                  )
     
-    __slots__ = properties + ('N', 'cmps', 'water_index')
+    __slots__ = properties + ('N', 'cmps', 'water_index', 'n_atoms')
     non_vectors = ('atom_fractions',)
     
     def subset(self, idxs):
@@ -316,6 +316,10 @@ class ChemicalConstantsPackage(object):
         except ValueError:
             self.water_index = None
             
+        try:
+            self.n_atoms = [sum(i.values()) for i in atomss]
+        except:
+            self.n_atoms = None
         
 
 class PropertyCorrelationPackage(object):

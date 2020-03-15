@@ -489,15 +489,20 @@ def SMK(T, Tc, omega):
     B11 = 99.00008
     B21 = 19.10458
     B31 = -2.795660
-
+    # 1 branch, two powers, 1 division
     tau = 1. - T/Tc
-    L0 = A10*tau**(1/3.) + A20*tau**(5/6.) + A30*tau**(1-1/8. + 1/3.) + \
-        B10*tau + B20*tau**2 + B30*tau**3
+    tau_16 = tau**(1.0/6.0)
+    tau_13 = tau_16*tau_16
+    tau_56 = tau_13*tau_13*tau_16
+    tau_other = tau**1.2083333333333333 #(1-1/8. + 1/3.))
+    L0 = (A10*tau_13 + A20*tau_56 + A30*tau_other +
+          tau*(B10 + tau*(B20 + B30*tau)))
 
-    L1 = A11*tau**(1/3.) + A21*tau**(5/6.0) + A31*tau**(1-1/8. + 1/3.) + \
-        B11*tau + B21*tau**2 + B31*tau**3
+    L1 = (A11*tau_13 + A21*tau_56 + A31*tau_other + 
+           tau*(B11 + tau*(B21 + B31*tau)))
 
-    domega = (omega - omegaR1)/(omegaR2 - omegaR1)
+    domega = 4.016064257028112*(omega - omegaR1) # 4.016... = 1.0/(omegaR2 - omegaR1
+#    domega = (omega - omegaR1)/(omegaR2 - omegaR1)
     return R*Tc*(L0 + domega*L1)
 
 

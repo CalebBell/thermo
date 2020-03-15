@@ -23,12 +23,12 @@ SOFTWARE.'''
 from __future__ import division
 
 __all__ = ['PeriodicTable', 'molecular_weight', 'mass_fractions', 
-           'atom_fractions','mixture_atomic_composition',
+           'atom_fractions','mixture_atomic_composition', 'atom_matrix',
            'similarity_variable', 'atoms_to_Hill', 
            'simple_formula_parser', 'nested_formula_parser', 'CAS_by_number',
            'periods', 'groups',  'homonuclear_elements',
            'blocks', 'homonuclear_elemental_gases', 'charge_from_formula',
-           'serialize_formula']
+           'serialize_formula', 'mixture_atomic_composition_ordered']
 from pprint import pprint
 import os
 import re
@@ -528,6 +528,95 @@ def mixture_atomic_composition(atomss, zs):
     return ans
 
 
+def mixture_atomic_composition_ordered(atomss, zs):
+    r'''Simple function to calculate the atomic average composition of a
+    mixture, using the mole fractions of each species and their own atomic 
+    compositions. Returns the result as a sorted list with atomic numbers from
+    low to high.
+    
+    Parameters
+    ----------
+    atomss : list[dict[(str, int)]]
+        List of dictionaries of atomic compositions, [-]
+    zs : list[float]
+        Mole fractions of each component; this can also be a molar flow rate
+        and then the `abundances` will be flows, [-]
+
+    Returns
+    -------
+    abundances : list[float]
+        Number of atoms of each element per mole of the feed, [-]
+    atom_keys : list[str]
+        Atomic elements, sorted from lowest atomic number to highest
+
+    Notes
+    -----
+    Useful to ensure a matrix order is consistent in multiple steps.
+
+    Examples
+    --------
+    >>> mixture_atomic_composition_ordered([{'O': 2}, {'N': 1, 'O': 2}, {'C': 1, 'H': 4}], [0.95, 0.025, .025])
+    ([0.1, 0.025, 0.025, 1.95], ['H', 'C', 'N', 'O'])
+    '''
+    ans = mixture_atomic_composition(atomss, zs)
+    nums = []
+    eles = []
+    for k, n in sorted(ans.items(), key=lambda x: periodic_table[x[0]].number):
+        nums.append(n)
+        eles.append(k)
+    return nums, eles
+
+
+def atom_matrix(atomss, atom_IDs=None):
+    r'''Simple function to create a matrix of elements in each compound, where
+    each row has the same elements.
+    
+    Parameters
+    ----------
+    atomss : list[dict[(str, int)]]
+        List of dictionaries of atomic compositions, [-]
+    atom_IDs : list[str], optional
+        Optionally, a subset (or simply ordered differently) of elements to 
+        consider, [-]
+
+    Returns
+    -------
+    matrix : list[list[float]]
+        The number of each element in each compound as a matrix, indexed as
+        [compound][element], [-]
+
+    Notes
+    -----
+
+    Examples
+    --------
+    >>> atom_matrix([{'C': 1, 'H': 4}, {'C': 2, 'H': 6}, {'N': 2}, {'O': 2}, {'H': 2, 'O': 1}, {'C': 1, 'O': 2}])
+    [[4, 1, 0.0, 0.0], [6, 2, 0.0, 0.0], [0.0, 0.0, 2, 0.0], [0.0, 0.0, 0.0, 2], [2, 0.0, 0.0, 1], [0.0, 1, 0.0, 2]]
+    '''
+    if atom_IDs is None:
+        ans = set([])
+        for atoms in atomss:
+            for i in atoms.keys():
+                ans.add(i)
+        atom_IDs = sorted(list(ans), key=lambda x: periodic_table[x].number)
+    
+    atom_idx = {k: i for i, k in enumerate(atom_IDs)}
+    n_atoms = len(atom_IDs)
+    element_matrix = []
+    for atoms in atomss:
+        l = [0.0]*n_atoms
+        for k, v in atoms.items():
+            try:
+                l[atom_idx[k]] = v
+            except KeyError:
+                pass
+        element_matrix.append(l)
+        
+    return element_matrix
+
+
+
+
 def similarity_variable(atoms, MW=None):
     r'''Calculates the similarity variable of an compound, as defined in [1]_.
     Currently only applied for certain heat capacity estimation routines.
@@ -843,7 +932,7 @@ def serialize_formula(formula):
     charge = charge_from_formula(formula)
     element_dict = nested_formula_parser(formula)
     base = atoms_to_Hill(element_dict)
-    if charge  == 0:
+    if charge == 0:
         pass
     elif charge > 0:
         if charge == 1:

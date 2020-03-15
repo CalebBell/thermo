@@ -287,6 +287,10 @@ class GCEOSMIX(GCEOS):
         determine if they are the same, i.e. in a VLL flash it is important to 
         know if both liquids have the same model.
         '''
+#        try:
+#            return self._model_hash
+#        except AttributeError:
+#            pass
 #        print('start')
         h = hash(self.__class__)
 #        print(h)
@@ -302,6 +306,7 @@ class GCEOSMIX(GCEOS):
                 pass
 #                print(h)
 #        print('end')
+#        self._model_hash = h
         return h
     
     

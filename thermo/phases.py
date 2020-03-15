@@ -33,7 +33,7 @@ from fluids.numerics import (horner, horner_and_der, horner_log, jacobian, deriv
                              newton_system, trunc_log, trunc_exp)
 from thermo.utils import (log, log10, exp, Cp_minus_Cv, phase_identification_parameter,
                           isothermal_compressibility, isobaric_expansion,
-                          Joule_Thomson, speed_of_sound, dxs_to_dns,
+                          Joule_Thomson, speed_of_sound, dxs_to_dns, dns_to_dn_partials,
                           normalize, hash_any_primitive)
 from thermo.activity import IdealSolution
 from thermo.coolprop import has_CoolProp, CP as CoolProp
@@ -556,13 +556,25 @@ class Phase(object):
         return -T*dP_dT_V*d2V_dTdP - T*dV_dT_P*d2P_dTdP + d2H_dep_dTdP
 
     def chemical_potential(self):
-        # CORRECT DO NOT CHANGE
-        # TODO analytical implementation
-        def to_diff(ns):
-            tot = sum(ns)
-            zs = normalize(ns)
-            return tot*self.to_TP_zs(self.T, self.P, zs).G_reactive()
-        return jacobian(to_diff, self.zs)
+        try:
+            return self._chemical_potentials
+        except AttributeError:
+            pass
+        dS_dzs = self.dS_dzs()
+        dH_dzs = self.dH_dzs()
+        T, Hfs, Sfs = self.T, self.Hfs, self.Sfs
+        dG_reactive_dzs = [Hfs[i] - T*(Sfs[i] + dS_dzs[i]) + dH_dzs[i] for i in self.cmps]
+        dG_reactive_dns = dxs_to_dns(dG_reactive_dzs, self.zs)
+        chemical_potentials = dns_to_dn_partials(dG_reactive_dns, self.G_reactive())   
+        self._chemical_potentials = chemical_potentials
+        return chemical_potentials
+#        # CORRECT DO NOT CHANGE
+#        # TODO analytical implementation
+#        def to_diff(ns):
+#            tot = sum(ns)
+#            zs = normalize(ns)
+#            return tot*self.to_TP_zs(self.T, self.P, zs).G_reactive()
+#        return jacobian(to_diff, self.zs)
     
     def activities(self):
         # CORRECT DO NOT CHANGE
@@ -1582,12 +1594,27 @@ class IdealGas(Phase):
 class EOSGas(Phase):
     
     def model_hash(self, ignore_phase=False):
+        if ignore_phase:
+            try:
+                return self._model_hash_ignore_phase
+            except AttributeError:
+                pass
+        else:
+            try:
+                return self._model_hash
+            except AttributeError:
+                pass
         to_hash = [self.eos_class, self.eos_kwargs,
                                    self.Hfs, self.Gfs, self.Sfs, self.HeatCapacityGases]
         if not ignore_phase:
             to_hash.append(self.__class__)
-        return hash_any_primitive(to_hash)
-    
+        h =  hash_any_primitive(to_hash)
+        if ignore_phase:
+            self._model_hash_ignore_phase = h
+        else:
+            self._model_hash = h
+        return h
+
     @property
     def phase(self):
         phase = self.eos_mix.phase

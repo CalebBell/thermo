@@ -257,8 +257,9 @@ def Lastovka_Shaw_integral(T, similarity_variable, cyclic_aliphatic=False):
         A1 = 0.58
         A2 = 1.25
         A3 = 0.17338003 # 803 instead of 8003 in another paper
-        A4 = 0.014
-        first = A2 + (A1-A2)/(1.+exp((a-A3)/A4)) # One reference says exp((a-A3)/A4)
+#        A4 = 0.014
+        A4_inv = 71.42857142857143
+        first = A2 + (A1-A2)/(1. + exp((a-A3)*A4_inv)) # One reference says exp((a-A3)/A4)
         # Personal communication confirms the change
 
     B11 = 0.73917383
@@ -271,9 +272,10 @@ def Lastovka_Shaw_integral(T, similarity_variable, cyclic_aliphatic=False):
     C22 = 5987.80407
     x1 = -C11 - C12*a
     x2 = -C21 - C22*a
+    T_inv = 1.0/T
     
-    return 1000.*(T*first - (B11 + B12*a)*(x1*x1)/(x1 - x1*exp(x1/T)) 
-                  - (B21 + B22*a)*(x2*x2)/(x2 - x2*exp(x2/T)))
+    return 1000.*(T*first - (B11 + B12*a)*(x1*x1)/(x1 - x1*exp(x1*T_inv)) 
+                  - (B21 + B22*a)*(x2*x2)/(x2 - x2*exp(x2*T_inv)))
 
 
 def Lastovka_Shaw_integral_over_T(T, similarity_variable, cyclic_aliphatic=False):

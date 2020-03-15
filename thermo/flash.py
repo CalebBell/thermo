@@ -38,6 +38,7 @@ __all__ = ['sequential_substitution_2P', 'sequential_substitution_GDEM3_2P',
            'SS_VF_simultaneous', 'stabiliy_iteration_Michelsen',
            'assert_stab_success_2P', 'nonlin_equilibrium_NP',
            'nonlin_spec_NP',
+           'TPV_solve_HSGUA_guesses_VL',
            ]
 
 from fluids.constants import R, R2, R_inv
@@ -63,7 +64,8 @@ from thermo.heat_capacity import (Lastovka_Shaw_T_for_Hm, Dadgostar_Shaw_integra
 from thermo.phase_change import SMK
 from thermo.volume import COSTALD
 from thermo.activity import (flash_inner_loop, flash_wilson, flash_ideal, Rachford_Rice_solutionN,
-                             Rachford_Rice_flash_error, Rachford_Rice_solution2, flash_Tb_Tc_Pc)
+                             Rachford_Rice_flash_error, Rachford_Rice_solution2, flash_Tb_Tc_Pc,
+                             Rachford_Rice_solution_LN2)
 from thermo.equilibrium import EquilibriumState
 from thermo.phases import Phase, gas_phases, liquid_phases, solid_phases, EOSLiquid, EOSGas, CoolPropGas, CoolPropLiquid, CoolPropPhase
 from thermo.phases import CPPQ_INPUTS, CPQT_INPUTS, CPrhoT_INPUTS, CPunknown, caching_state_CoolProp, CPiDmolar
@@ -287,8 +289,8 @@ def sequential_substitution_NP(T, P, zs, compositions_guesses, betas_guesses,
 
         beta_guesses = [betas[i] for i in phases_iter if i != ref_phase]
 
-        if phase_count == 3:
-            Rachford_Rice_solution2(zs, Ks[0], Ks[1], beta_y=beta_guesses[0], beta_z=beta_guesses[1])
+        #if phase_count == 3:
+        #    Rachford_Rice_solution2(zs, Ks[0], Ks[1], beta_y=beta_guesses[0], beta_z=beta_guesses[1])
         betas_new, compositions_new = Rachford_Rice_solutionN(zs, Ks, beta_guesses)
         # Sort the order back
         beta_ref_new = betas_new[-1]
@@ -657,10 +659,13 @@ def nonlin_equilibrium_NP(T, P, zs, compositions_guesses, betas_guesses,
 
 
 def nonlin_spec_NP(guess, fixed_val, spec_val, zs, compositions_guesses, betas_guesses, 
-                        phases, iter_var='T', fixed_var='P', spec='H',
-                        maxiter=1000, tol=1E-13,
-                        trivial_solution_tol=1e-5, ref_phase=-1,
-                        method='hybr', solve_kwargs=None, debug=False):
+                    phases, iter_var='T', fixed_var='P', spec='H',
+                    maxiter=1000, tol=1E-13,
+                    trivial_solution_tol=1e-5, ref_phase=-1,
+#                    method='hybr',
+                    method='fsolve',
+                    solve_kwargs=None, debug=False,
+                    analytical_jac=True):
     if solve_kwargs is None:
         solve_kwargs = {}
     
@@ -704,7 +709,7 @@ def nonlin_spec_NP(guess, fixed_val, spec_val, zs, compositions_guesses, betas_g
     global iterations, info
     iterations = 0
     info = []
-    def to_solve(flows, jac=jac):
+    def to_solve(flows, jac=jac, skip_err=False):
         global iterations, info
         try:
             flows = flows.tolist()
@@ -713,7 +718,6 @@ def nonlin_spec_NP(guess, fixed_val, spec_val, zs, compositions_guesses, betas_g
         iter_val = flows[-1]
         phase_kwargs[iter_var] = iter_val
         flows = flows[:-1]
-        iterations += 1
         iter_flows = []
         iter_comps = []
         iter_betas = []
@@ -721,64 +725,74 @@ def nonlin_spec_NP(guess, fixed_val, spec_val, zs, compositions_guesses, betas_g
         jac_arr = None
         
         remaining = zs
-        for i in range(len(flows)):
-            if flows[i] < 0.0:
-                flows[i] = 1e-100
+        if not skip_err:
+#            print(flows, iter_val)
+            iterations += 1
+            for i in range(len(flows)):
+                if flows[i] < 0.0:
+                    flows[i] = 1e-100
+    
+            
+            for j, k in zip(phase_iter_n1, phase_iter_n1_0):
+                v = flows[k*N:k*N+N]
+                vs = v
+                vs_sum = sum(abs(i) for i in vs)
+                if vs_sum == 0.0:
+                    # Handle the case an optimizer takes all of all compounds already
+                    ys = zs
+                else:
+                    vs_sum_inv = 1.0/vs_sum
+                    ys = [abs(vs[i]*vs_sum_inv) for i in cmps]
+                    ys = normalize(ys)
+                iter_flows.append(vs)
+                iter_comps.append(ys)
+                iter_betas.append(vs_sum) # Would be divided by feed but feed is zs = 1
+                iter_phases.append(phases[j].to_TP_zs(zs=ys, **phase_kwargs))
+                remaining = [remaining[i] - vs[i] for i in cmps]
+    
+            flows_ref = remaining
+            iter_flows.insert(ref_phase, remaining)
+    
+            beta_ref = sum(remaining)
+            iter_betas.insert(ref_phase, beta_ref)
+    
+            xs_ref = normalize([abs(i) for i in remaining])
+            iter_comps.insert(ref_phase, xs_ref)
+    
+            phase_ref = phases[ref_phase].to_TP_zs(zs=xs_ref, **phase_kwargs)
+            iter_phases.insert(ref_phase, phase_ref)
+            
+            lnphis_ref = phase_ref.lnphis()
+            
+            errs = []
+            for k in phase_iter_n1:
+                phase = iter_phases[k]
+                lnphis = phase.lnphis()
+                xs = iter_comps[k]
+                for i in cmps:
+                    # This is identical to lnfugacity(i)^j - lnfugacity(i)^ref
+                    gi = trunc_log(xs[i]/xs_ref[i]) + lnphis[i] - lnphis_ref[i]
+                    errs.append(gi)
+            
+            spec_phases = []
+            spec_calc = 0.0
+            for k in phase_iter:
+                spec_phase = spec_callables[k](iter_phases[k])
+                spec_phases.append(spec_phase)
+                spec_calc += spec_phase*iter_betas[k]
+            errs.append(spec_calc - spec_val)
+        else:
+            iter_betas, iter_comps, iter_phases, errs, jac_arr, flows, iter_val_check, spec_phases = info
+            beta_ref = iter_betas[ref_phase]
+            xs_ref = iter_comps[ref_phase]
+            phase_ref = iter_phases[ref_phase]
+            lnphis_ref = phase_ref.lnphis()
 
-
-        for j, k in zip(phase_iter_n1, phase_iter_n1_0):
-            v = flows[k*N:k*N+N]
-            vs = v
-            vs_sum = sum(abs(i) for i in vs)
-            if vs_sum == 0.0:
-                # Handle the case an optimizer takes all of all compounds already
-                ys = zs
-            else:
-                vs_sum_inv = 1.0/vs_sum
-                ys = [abs(vs[i]*vs_sum_inv) for i in cmps]
-                ys = normalize(ys)
-            iter_flows.append(vs)
-            iter_comps.append(ys)
-            iter_betas.append(vs_sum) # Would be divided by feed but feed is zs = 1
-            iter_phases.append(phases[j].to_TP_zs(zs=ys, **phase_kwargs))
-            remaining = [remaining[i] - vs[i] for i in cmps]
-
-        flows_ref = remaining
-        iter_flows.insert(ref_phase, remaining)
-
-        beta_ref = sum(remaining)
-        iter_betas.insert(ref_phase, beta_ref)
-
-        xs_ref = normalize([abs(i) for i in remaining])
-        iter_comps.insert(ref_phase, xs_ref)
-
-        phase_ref = phases[ref_phase].to_TP_zs(zs=xs_ref, **phase_kwargs)
-        iter_phases.insert(ref_phase, phase_ref)
-        
-        lnphis_ref = phase_ref.lnphis()
-        dlnfugacities_ref = phase_ref.dlnfugacities_dns()
-        
-        errs = []
-        for k in phase_iter_n1:
-            phase = iter_phases[k]
-            lnphis = phase.lnphis()
-            xs = iter_comps[k]
-            for i in cmps:
-                # This is identical to lnfugacity(i)^j - lnfugacity(i)^ref
-                gi = trunc_log(xs[i]/xs_ref[i]) + lnphis[i] - lnphis_ref[i]
-                errs.append(gi)
-        
-        spec_phases = []
-        spec_calc = 0.0
-        for k in phase_iter:
-            spec_phase = spec_callables[k](iter_phases[k])
-            spec_phases.append(spec_phase)
-            spec_calc += spec_phase*iter_betas[k]
-        errs.append(spec_calc - spec_val)
 #        print(errs[-1], 'err', iter_val, 'T')
     
         
         if jac:
+            dlnfugacities_ref = phase_ref.dlnfugacities_dns()
             jac_arr = [[0.0]*(N*(phase_count-1) + 1) for i in range(N*(phase_count-1)+1)]
             for ni, nj in zip(phase_iter_n1, phase_iter_n1_0):
                 p = iter_phases[ni]
@@ -815,8 +829,11 @@ def nonlin_spec_NP(guess, fixed_val, spec_val, zs, compositions_guesses, betas_g
                     # So there must be two parts here
                     last_jac_row[nj*N + i] = ((iter_betas[ni]*dspec_dns[ni][i]/iter_betas[ni] - beta_ref*dspec_dns_ref[i]/beta_ref)
                                             + (spec_phases[ni] - spec_phases[ref_phase]))
+                    
+            if skip_err:
+                return jac_arr
                             
-        info[:] = iter_betas, iter_comps, iter_phases, errs, jac_arr, flows, iter_val
+        info[:] = iter_betas, iter_comps, iter_phases, errs, jac_arr, flows, iter_val, spec_phases
         if jac:
             return errs, jac_arr
         return errs
@@ -832,15 +849,30 @@ def nonlin_spec_NP(guess, fixed_val, spec_val, zs, compositions_guesses, betas_g
             if jac:
                 return np.array(ans[0]), np.array(ans[1])
             return np.array(ans)
+        def jac_numpy(flows_guess):
+            if flows_guess.tolist() == info[5] + [info[6]]:
+                a =  np.array(to_solve(flows_guess, jac=True, skip_err=True))
+#                b = np.array(to_solve(flows_guess, jac=True)[1])
+#                from numpy.testing import assert_allclose
+#                assert_allclose(a, b, rtol=1e-10)
+                return a
+#            print('fail jac', tuple(flows_guess.tolist()), tuple(info[5]))
+#            print('new jac')
+            return np.array(to_solve(flows_guess, jac=True)[1])
+
         if method == 'fsolve':
-            jac = False
-            sln, infodict, _, _ = fsolve(f_jac_numpy, guesses, xtol=tol, full_output=1, **solve_kwargs)
+            # Need a function cache! 2 wasted fevals, 1 wasted jaceval
+            if analytical_jac:
+                jac = False
+                sln, infodict, _, _ = fsolve(f_jac_numpy, guesses, fprime=jac_numpy, xtol=tol, full_output=1, **solve_kwargs)
+            else:
+                sln, infodict, _, _ = fsolve(f_jac_numpy, guesses, xtol=tol, full_output=1, **solve_kwargs)
             iterations = infodict['nfev']
         else:
             sln = root(f_jac_numpy, guesses, tol=tol, jac=(True if jac else None), method=method, **solve_kwargs)
             iterations = sln['nfev']
     
-    betas, compositions, phases, errs, jac, flows, iter_val = info
+    betas, compositions, phases, errs, jac, flows, iter_val, spec_phases = info
 
     sln = (iter_val, betas, compositions, phases, errs, jac, iterations)
     if debug:
@@ -910,7 +942,8 @@ def nonlin_2P_HSGUAbeta(spec, spec_var, iter_val, iter_var, fixed_val,
                         fixed_var, zs, xs_guess, ys_guess, liquid_phase,
                         gas_phase, maxiter=1000, tol=1E-13, 
                         trivial_solution_tol=1e-5, V_over_F_guess=None,
-                        method='hybr'):
+                        method='hybr'
+                        ):
     cmps = range(len(zs))
     xs, ys = xs_guess, ys_guess
     if V_over_F_guess is None:
@@ -3627,7 +3660,318 @@ def assert_stab_success_2P(liq, gas, stab, T, P, zs, guess_name, xs=None,
     assert_allclose(l.fugacities(), g.fugacities(), rtol)
     
 
+IDEAL_WILSON = 'Ideal Wilson'
+SHAW_ELEMENTAL = 'Shaw Elemental'
 
+
+def TPV_solve_HSGUA_guesses_VL(zs, method, constants, correlations, 
+                               fixed_var_val, spec_val,
+                               iter_var='T', fixed_var='P', spec='H',
+                               maxiter=20, xtol=1E-7, ytol=None,
+                               bounded=False, min_bound=None, max_bound=None,                    
+                               user_guess=None, last_conv=None, T_ref=298.15,
+                               P_ref=101325.0):
+    global V_over_F_guess
+    V_over_F_guess = 0.5
+
+    if fixed_var == iter_var:
+        raise ValueError("Fixed variable cannot be the same as iteration variable")
+    if fixed_var not in ('T', 'P', 'V'):
+        raise ValueError("Fixed variable must be one of `T`, `P`, `V`")
+    if iter_var not in ('T', 'P', 'V'):
+        raise ValueError("Iteration variable must be one of `T`, `P`, `V`")
+    if spec not in ('H', 'S', 'G', 'U', 'A'):
+        raise ValueError("Spec variable must be one of `H`, `S`, `G` `U`, `A`")
+
+
+    cmps = range(len(zs))
+        
+    iter_T = iter_var == 'T'
+    iter_P = iter_var == 'P'
+    iter_V = iter_var == 'V'
+    
+    fixed_P = fixed_var == 'P'
+    fixed_T = fixed_var == 'T'
+    fixed_V = fixed_var == 'V'
+    if fixed_P:
+        P = fixed_var_val
+    elif fixed_T:
+        T = fixed_var_val
+    elif fixed_V:
+        V = fixed_var_val
+    
+    always_S = spec in ('S', 'G', 'A')
+    always_H = spec in ('H', 'G', 'U', 'A')
+    always_V = spec in ('U', 'A')
+
+    
+    def H_model(T, P, xs, ys, V_over_F):
+        if V_over_F >= 1.0:
+            return H_model_g(T, P, zs)
+        elif V_over_F <= 0.0:
+            return H_model_l(T, P, zs)
+        H_liq = H_model_l(T, P, xs)
+        H_gas = H_model_g(T, P, ys)
+        return H_liq*(1.0 - V_over_F) + V_over_F*H_gas
+        
+    def S_model(T, P, xs, ys, V_over_F):
+        if V_over_F >= 1.0:
+            return S_model_g(T, P, zs)
+        elif V_over_F <= 0.0:
+            return S_model_l(T, P, zs)
+        S_liq = S_model_l(T, P, xs)
+        S_gas = S_model_g(T, P, ys)
+        return S_liq*(1.0 - V_over_F) + V_over_F*S_gas
+
+    def V_model(T, P, xs, ys, V_over_F):
+        if V_over_F >= 1.0:
+            return V_model_g(T, P, zs)
+        elif V_over_F <= 0.0:
+            return V_model_l(T, P, zs)
+        V_liq = V_model_l(T, P, xs)
+        V_gas = V_model_g(T, P, ys)
+        return V_liq*(1.0 - V_over_F) + V_over_F*V_gas
+
+    # whhat goes in here?
+    if always_S:
+        P_ref_inv = 1.0/P_ref
+        dS_ideal = R*sum([zi*log(zi) for zi in zs if zi > 0.0]) # ideal composition entropy composition
+
+    info = []
+    def err(guess):
+        # Translate the fixed variable to a local variable
+        if fixed_P:
+            P = fixed_var_val
+        elif fixed_T:
+            T = fixed_var_val
+        elif fixed_V:
+            V = fixed_var_val
+            T = None
+        # Translate the iteration variable to a local variable
+        if iter_P:
+            P = guess
+            if not fixed_V:
+                V = None
+        elif iter_T:
+            T = guess
+            if not fixed_V:
+                V = None
+        elif iter_V:
+            V = guess
+            T = None
+            
+        if T is None:
+            T = T_from_V(V, P, zs)
+            
+        VF, xs, ys = flash_model(T, P, zs)
+        info[:] = VF, xs, ys
+        
+        # Compute S, H, V as necessary
+        if always_S:
+            S = S_model(T, P, xs, ys, VF) - dS_ideal - R*log(P*P_ref_inv)
+        if always_H:
+            H =  H_model(T, P, xs, ys, VF)
+        if always_V and V is None:
+            V = V_model(T, P, xs, ys, VF)
+        
+        # Return the objective function
+        if spec == 'H':
+            err = H - spec_val
+        elif spec == 'S':
+            err = S - spec_val
+        elif spec == 'G':
+            err = (H - T*S) - spec_val
+        elif spec == 'U':
+            err = (H - P*V) - spec_val
+        elif spec == 'A':
+            err = (H - P*V - T*S) - spec_val
+#         print(T, P, V, 'TPV', err)
+        return err
+
+    # Common models
+    VolumeLiquids = correlations.VolumeLiquids
+    def V_model_l(T, P, zs):
+        V_calc = 0.
+        for i in cmps:
+            V_calc += zs[i]*VolumeLiquids[i].T_dependent_property(T)
+        return V_calc
+    
+    def T_from_V_l(V, P, zs): 
+        T_calc = 0.
+        for i in cmps:
+            T_calc += zs[i]*VolumeLiquids[i].solve_prop(V)
+        return T_calc
+    
+    def V_model_g(T, P, zs):
+        return R*T/P
+
+    def T_from_V_g(V, P, zs): 
+        return P*V/R
+    
+    if method == IDEAL_WILSON or method == SHAW_ELEMENTAL:
+        if iter_P:
+            T_inv = 1.0/T
+            Ks_P = [Pcs[i]*exp((5.37*(1.0 + omegas[i])*(1.0 - Tcs[i]*T_inv))) for i in cmps]
+            def flash_model(T, P, zs):
+                global V_over_F_guess
+                P_inv = 1.0/P
+                Ks = [Ki*P_inv for Ki in Ks_P]
+                
+                K_low, K_high = False, False
+                for i in cmps:
+                    if zs[i] != 0.0:
+                        if Ks[i] > 1.0:
+                            K_high = True
+                        else:
+                            K_low = True
+                        if K_high and K_low:
+                            break
+                if K_high and K_low:
+                    V_over_F_guess, xs, ys = Rachford_Rice_solution_LN2(zs, Ks, V_over_F_guess)
+                    return V_over_F_guess, xs, ys
+                elif K_high:
+                    return 1.0, zs, zs
+                else:
+                    return 0.0, zs, zs
+        else:
+            P_inv  = 1.0/P
+            def flash_model(T, P, zs):
+                global V_over_F_guess
+                T_inv = 1.0/T
+                Ks = [Pcs[i]*P_inv*exp((5.37*(1.0 + omegas[i])*(1.0 - Tcs[i]*T_inv))) for i in cmps]
+                K_low, K_high = False, False
+                for i in cmps:
+                    if zs[i] != 0.0:
+                        if Ks[i] > 1.0:
+                            K_high = True
+                        else:
+                            K_low = True
+                        if K_high and K_low:
+                            break
+                if K_high and K_low:
+                    V_over_F_guess, xs, ys = Rachford_Rice_solution_LN2(zs, Ks, V_over_F_guess)
+                    return V_over_F_guess, xs, ys
+                elif K_high:
+                    return 1.0, zs, zs
+                else:
+                    return 0.0, zs, zs
+
+    if method == SHAW_ELEMENTAL:
+        VolumeLiquids = correlations.VolumeLiquids
+        Tcs, Pcs, omegas = constants.Tcs, constants.Pcs, constants.omegas
+        MWs, n_atoms = constants.MWs, constants.n_atoms
+        cmps = constants.cmps
+                
+        def H_model_g(T, P, zs):
+            MW_g, sv_g = 0.0, 0.0
+            for i in cmps:
+                MW_g += MWs[i]*zs[i]
+                sv_g += n_atoms[i]*zs[i]
+            sv_g /= MW_g
+            
+            H_ref_LS = Lastovka_Shaw_integral(T_ref, sv_g)
+            H1 = Lastovka_Shaw_integral(T, sv_g)
+            dH = H1 - H_ref_LS
+            H_gas = 1e-3*dH*MW_g  #property_mass_to_molar(dH, MW_g)
+            return H_gas
+
+        def S_model_g(T, P, zs):
+            MW_g, sv_g = 0.0, 0.0
+            for i in cmps:
+                MW_g += MWs[i]*zs[i]
+                sv_g += n_atoms[i]*zs[i]
+            sv_g /= MW_g
+            
+            S_ref_LS = Lastovka_Shaw_integral_over_T(T_ref, sv_g)
+            S1 = Lastovka_Shaw_integral_over_T(T, sv_g)
+            dS = S1 - S_ref_LS
+            S_gas = 1e-3*dS*MW_g
+            return S_gas
+        
+        def H_model_l(T, P, zs):
+            MW_l, sv_l, Tc_l, omega_l = 0.0, 0.0, 0.0, 0.0
+            for i in cmps:
+                MW_l += MWs[i]*zs[i]
+                sv_l += n_atoms[i]*zs[i]
+                Tc_l += Tcs[i]*zs[i]
+                omega_l += omegas[i]*zs[i]
+            sv_l /= MW_l
+
+            H_ref_DS = Dadgostar_Shaw_integral(T_ref, sv_l)
+            H1 = Dadgostar_Shaw_integral(T, sv_l)
+            Hvap = SMK(T, Tc_l, omega_l)
+            
+            dH = H1 - H_ref_DS
+            H_liq = 1e-3*dH*MW_l #property_mass_to_molar(dH, MW_l)
+            return (H_liq - Hvap)
+        
+        def S_model_l(T, P, zs):
+            MW_l, sv_l, Tc_l, omega_l = 0.0, 0.0, 0.0, 0.0
+            for i in cmps:
+                MW_l += MWs[i]*zs[i]
+                sv_l += n_atoms[i]*zs[i]
+                Tc_l += Tcs[i]*zs[i]
+                omega_l += omegas[i]*zs[i]
+            sv_l /= MW_l
+
+            S_ref_DS = Dadgostar_Shaw_integral_over_T(T_ref, sv_l)
+            S1 = Dadgostar_Shaw_integral_over_T(T, sv_l)
+            
+            Hvap = SMK(T, Tc_l, omega_l)
+            
+            dS = S1 - S_ref_DS
+            S_liq = 1e-3*dS*MW_l
+            return (S_liq - Hvap/T)
+        
+
+    elif method == IDEAL_WILSON:
+        HeatCapacityGases = correlations.HeatCapacityGases
+        EnthalpyVaporizations = correlations.EnthalpyVaporizations
+        def flash_model(T, P, zs):
+            _, _, VF, xs, ys = flash_wilson(zs, constants.Tcs, constants.Pcs, constants.omegas, T=T, P=P)
+            return VF, xs, ys
+        
+        def H_model_g(T, P, zs):
+            H_calc = 0.
+            for i in cmps:
+                H_calc += zs[i]*HeatCapacityGases[i].T_dependent_property_integral(T_ref, T)
+            return H_calc
+        
+        def S_model_g(T, P, zs):
+            S_calc = 0.
+            for i in cmps:
+                S_calc += zs[i]*HeatCapacityGases[i].T_dependent_property_integral_over_T(T_ref, T)
+            return S_calc
+        
+        def H_model_l(T, P, zs):
+            H_calc = 0.
+            for i in cmps:
+                H_calc += zs[i]*(HeatCapacityGases[i].T_dependent_property_integral(T_ref, T) - EnthalpyVaporizations[i](T))
+            return H_calc
+        
+        def S_model_l(T, P, zs):
+            S_calc = 0.
+            T_inv = 1.0/T
+            for i in cmps:
+                S_calc += zs[i]*(HeatCapacityGases[i].T_dependent_property_integral_over_T(T_ref, T) - T_inv*EnthalpyVaporizations[i](T))
+            return S_calc
+        
+
+    try:
+        # All three variables P, T, V are positive but can grow unbounded, so
+        # for the secant method, only set the one variable
+        if iter_T:
+            guess = 298.15
+        elif iter_P:
+            guess = 101325.0
+        elif iter_V:
+            guess = 0.024465403697038125
+        val = secant(err, guess, xtol=xtol, ytol=ytol,
+                      maxiter=maxiter, bisection=True, low=min_bound, require_xtol=False)
+        return val, info[0], info[1], info[2]
+    except (UnconvergedError,) as e:
+        val = brenth(err, min_bound, max_bound, xtol=xtol, ytol=ytol, maxiter=maxiter)
+        return val, info[0], info[1], info[2]
 
 
 global cm_flash
@@ -3686,14 +4030,14 @@ class FlashBase(object):
         '''
         constants, correlations = self.constants, self.correlations
         settings = self.settings
-        if self.N > 1 and 0:
-            for zi in zs:
-                if zi == 1.0:
-                    # Does not work - phases expect multiple components mole fractions
-                    return self.flash_pure.flash(zs=zs, T=T, P=P, VF=VF, SF=SF, 
-                                           V=V, H=H, S=S, U=U, G=G, A=A, 
-                                           solution=solution, retry=retry,
-                                           hot_start=hot_start)
+#        if self.N > 1 and 0:
+#            for zi in zs:
+#                if zi == 1.0:
+#                    # Does not work - phases expect multiple components mole fractions
+#                    return self.flash_pure.flash(zs=zs, T=T, P=P, VF=VF, SF=SF, 
+#                                           V=V, H=H, S=S, U=U, G=G, A=A, 
+#                                           solution=solution, retry=retry,
+#                                           hot_start=hot_start)
         if zs is None:
             zs = [1.0]
 
@@ -4721,6 +5065,15 @@ class FlashVL(FlashBase):
     
     dew_bubble_xtol = 1e-8
     dew_bubble_maxiter = 200
+    
+    HSGUA_BISECT_XTOL = 1e-9
+    HSGUA_BISECT_RELTOL = 1e-6
+    HSGUA_BISECT_YTOL_ONLY = True
+
+    HSGUA_NEWTON_XTOL = 1e-9
+    HSGUA_NEWTON_MAXITER = 1000
+    HSGUA_NEWTON_SOLVER = 'hybr'
+    HSGUA_NEWTON_ANALYTICAL_JAC = True
 
     solids = None
     
@@ -5113,6 +5466,7 @@ class FlashVLN(FlashVL):
         self.liquids = liquids
         self.max_liquids = len(liquids)
         self.max_phases = 1 + self.max_liquids
+        self.phases = [gas] + liquids if gas is not None else liquids
         
         liquids_to_unique_liquids = []
         unique_liquids, unique_liquid_hashes = [], []
@@ -5139,7 +5493,8 @@ class FlashVLN(FlashVL):
                 
         self.unique_liquids = unique_liquids
         self.unique_liquid_count = len(unique_liquids)
-        self.unique_phases = 1 + self.unique_liquid_count
+        self.unique_phases = [gas] + unique_liquids
+        self.unique_phase_count = 1 + self.unique_liquid_count
         self.unique_liquid_hashes = unique_liquid_hashes
         
         self.gas = gas
@@ -5156,13 +5511,15 @@ class FlashVLN(FlashVL):
         except ValueError:
             self.water_index = None
         
-        self.flash_pure = FlashPureVLS(constants=constants, correlations=correlations,
-                                       gas=gas, liquids=unique_liquids, solids=[], 
-                                       settings=settings)
+#        self.flash_pure = FlashPureVLS(constants=constants, correlations=correlations,
+#                                       gas=gas, liquids=unique_liquids, solids=[], 
+#                                       settings=settings)
 
-    def flash_TVF(self, T, VF, zs, solution=None, hot_start=None):
+    def flash_TVF(self, T, VF, zs, solution=None, hot_start=None, liquid_idx=None):
         if self.unique_liquid_count == 1:
             return self.flash_TVF_2P(T, VF, zs, self.liquids[0], self.gas, solution=solution, hot_start=hot_start)
+        elif liquid_idx is not None:
+            return self.flash_TVF_2P(T, VF, zs, self.liquids[liquid_idx], self.gas, solution=solution, hot_start=hot_start)
         else:
             sln_G_min, G_min = None, 1e100
             for l in self.unique_liquids:
@@ -5176,10 +5533,25 @@ class FlashVLN(FlashVL):
             return sln_G_min
 
 
-    def flash_PVF(self, P, VF, zs, solution=None, hot_start=None):
+    def flash_PVF(self, P, VF, zs, solution=None, hot_start=None, liquid_idx=None):
         if self.unique_liquid_count == 1:
-            return self.flash_PVF_2P(P, VF, zs, self.liquids[0], self.gas, solution=solution, hot_start=hot_start)
-    
+            sln_2P = self.flash_PVF_2P(P, VF, zs, self.liquids[0], self.gas, solution=solution, hot_start=hot_start)
+        elif liquid_idx is not None:
+            sln_2P = self.flash_PVF_2P(P, VF, zs, self.liquids[liquid_idx], self.gas, solution=solution, hot_start=hot_start)
+        else:
+            sln_G_min, G_min = None, 1e100
+            for l in self.unique_liquids:
+                try:
+                    sln = self.flash_PVF_2P(P, VF, zs, l, self.gas, solution=solution, hot_start=hot_start)
+                    sln_G = (sln[1].G()*(1.0 - VF) + sln[2].G()*VF)
+                    if sln_G < G_min:
+                        sln_G_min, G_min = sln, sln_G
+                except:
+                    pass
+            sln_2P = sln_G_min
+        return sln_2P
+
+
     def phases_at(self, T, P, zs):
         # Avoid doing excess work here
         # Goal: bring each phase to T, P, zs; using whatever duplicate information
@@ -5199,11 +5571,34 @@ class FlashVLN(FlashVL):
         if gas is None:
             gas = self.gas.to(T=T, P=P, zs=zs)
         return gas, liquids, [gas] + liquids
-            
     
+    def flash_TPV_hot(self, T, P, V, zs, hot_start, solution=None):
+        if hot_start.phase_count == 2:
+            xs = hot_start.phases[0].zs
+            ys = hot_start.phases[1].zs
+            double_check_sln = self.flash_2P(T, P, zs, xs, ys, hot_start.phases[0],
+                                                         hot_start.phases[1],
+                                                         None, None, V_over_F_guess=hot_start.betas[1], LL=True)
+            return double_check_sln
+        elif hot_start.phase_count > 2:
+            phases = hot_start.phases
+            comps = [i.zs for i in hot_start.phases]
+            betas = hot_start.betas
+            slnN = sequential_substitution_NP(T, P, zs, comps, betas, phases,
+                                              maxiter=self.SS_NP_MAXITER, tol=self.SS_NP_TOL,
+                                              trivial_solution_tol=self.SS_NP_TRIVIAL_TOL)
+            return None, slnN[2], [], slnN[0], {'iterations': slnN[3], 'err': slnN[4],
+                                                'stab_guess_name': None}
+
     def flash_TPV(self, T, P, V, zs=None, solution=None, hot_start=None):
-        if hot_start is not None:
-            pass
+        if hot_start is not None and hot_start.phase_count > 1:
+            # Only allow hot start when there are multiple phases
+            try:
+                return self.flash_TPV_hot(T, P, V, zs, hot_start, solution=solution)
+            except:
+                # Let anything fail
+                pass
+            
         
         gas, liquids, phases = self.phases_at(T, P, zs)
         
@@ -5424,6 +5819,173 @@ class FlashVLN(FlashVL):
     # Start with water-methane-octanol example?
     
     # Vapor fraction flashes - if anything other than VF=1, need a 3 phase stability test
+
+    def flash_TPV_HSGUA(self, fixed_val, spec_val, fixed_var='P', spec='H',
+                        iter_var='T', zs=None, solution=None,
+                        selection_fun_1P=None, hot_start=None):
+
+        constants, correlations = self.constants, self.correlations
+        if solution is None:
+            if fixed_var == 'P' and spec == 'H':
+                fun = lambda obj: -obj.S()
+            elif fixed_var == 'P' and spec == 'S':
+                fun = lambda obj: obj.H() # Michaelson
+            elif fixed_var == 'V' and spec == 'U':
+                fun = lambda obj: -obj.S()
+            elif fixed_var == 'V' and spec == 'S':
+                fun = lambda obj: obj.U()
+            elif fixed_var == 'P' and spec == 'U':
+                fun = lambda obj: -obj.S() # promising
+            else:
+                fun = lambda obj: obj.G()
+        else:
+            if solution == 'high':
+                fun = lambda obj: -obj.value(iter_var)
+            elif solution == 'low':
+                fun = lambda obj: obj.value(iter_var)
+            elif callable(solution):
+                fun = solution
+            else:
+                raise ValueError("Unrecognized solution")
+
+        if selection_fun_1P is None:
+            def selection_fun_1P(new, prev):
+                if new[-1] < prev[-1]:
+                    return True
+                return False
+
+        try:
+            solutions_1P = []
+            G_min = 1e100
+            results_G_min_1P = None
+            for phase in self.unique_phases:
+                try:                    
+                    T, P, phase, iterations, err = solve_PTV_HSGUA_1P(phase, zs, fixed_val, spec_val, fixed_var=fixed_var, 
+                                                                      spec=spec, iter_var=iter_var, constants=constants, correlations=correlations)
+                    G = fun(phase)
+                    new = [T, phase, iterations, err, G]
+                    if results_G_min_1P is None or selection_fun_1P(new, results_G_min_1P):
+                        G_min = G
+                        results_G_min_1P = new
+                    
+                    solutions_1P.append(new)
+                except Exception as e:
+#                    print(e)
+                    solutions_1P.append(None)
+        except:
+            pass
+        
+        if 0:
+            res, flash_convergence = self.solve_PT_HSGUA_NP_guess_bisect(zs, fixed_val, spec_val,
+                                                           fixed_var=fixed_var, spec=spec, iter_var=iter_var)
+            return None, res.phases, [], res.betas, flash_convergence
+        if 1:
+            g, ls, ss, betas, flash_convergence = self.solve_PT_HSGUA_NP_guess_newton_2P(zs, fixed_val, spec_val,
+                                                           fixed_var=fixed_var, spec=spec, iter_var=iter_var)
+            return g, ls, ss, betas, flash_convergence
+
+# Need to return g, ls, ss, betas, flash_convergence
+        
+    def bounds_PT_HSGUA(self, iter_var='T'):
+        if iter_var == 'T':
+            min_bound = Phase.T_MIN_FIXED
+            max_bound = Phase.T_MAX_FIXED
+            for p in self.phases:
+                if isinstance(p, CoolPropPhase):
+                    min_bound = max(p.AS.Tmin(), min_bound)
+                    max_bound = min(p.AS.Tmax(), max_bound)
+        elif iter_var == 'P':
+            min_bound = Phase.P_MIN_FIXED*(1.0 - 1e-12)
+            max_bound = Phase.P_MAX_FIXED*(1.0 + 1e-12)
+            for p in self.phases:
+                if isinstance(p, CoolPropPhase):
+                    AS = p.AS
+                    max_bound = min(AS.pmax()*(1.0 - 1e-7), max_bound)
+                    min_bound = max(AS.trivial_keyed_output(CPiP_min)*(1.0 + 1e-7), min_bound)
+        elif iter_var == 'V':
+            min_bound = Phase.V_MIN_FIXED
+            max_bound = Phase.V_MAX_FIXED
+        return min_bound, max_bound
+
+    def solve_PT_HSGUA_NP_guess_newton_2P(self, zs, fixed_val, spec_val, 
+                                          fixed_var='P', spec='H', iter_var='T'):
+        phases = self.phases
+        constants = self.constants
+        correlations = self.correlations
+        min_bound, max_bound = self.bounds_PT_HSGUA()
+        init_methods = [SHAW_ELEMENTAL, IDEAL_WILSON]
+        
+        for method in init_methods:
+            try:
+                guess, VF, xs, ys = TPV_solve_HSGUA_guesses_VL(zs, method, constants, correlations, 
+                               fixed_val, spec_val,
+                               iter_var=iter_var, fixed_var=fixed_var, spec=spec,
+                               maxiter=50, xtol=1E-5, ytol=None,
+                               bounded=False, min_bound=min_bound, max_bound=max_bound,                    
+                               user_guess=None, last_conv=None, T_ref=298.15,
+                               P_ref=101325.0)
+                
+                break
+            except Exception as e:
+                print(e)
+                pass
+            
+        sln = nonlin_spec_NP(guess, fixed_val, spec_val, zs, [xs, ys], [1.0-VF, VF], 
+                             [self.liquids[0], self.gas], iter_var=iter_var, fixed_var=fixed_var, spec=spec,
+                             maxiter=self.HSGUA_NEWTON_MAXITER, tol=self.HSGUA_NEWTON_XTOL,
+                             trivial_solution_tol=1e-5, ref_phase=-1,
+                             method=self.HSGUA_NEWTON_SOLVER,
+                             solve_kwargs=None, debug=False,
+                             analytical_jac=self.HSGUA_NEWTON_ANALYTICAL_JAC)
+        iter_val, betas, compositions, phases, errs, _, iterations = sln
+        
+        return None, phases, [], betas, {'errs': errs, 'iterations': iterations}
+
+
+
+    def solve_PT_HSGUA_NP_guess_bisect(self, zs, fixed_val, spec_val, 
+                                       fixed_var='P', spec='H', iter_var='T'):
+        phases = self.phases
+        constants = self.constants
+        correlations = self.correlations
+        min_bound, max_bound = self.bounds_PT_HSGUA()
+            
+        init_methods = [SHAW_ELEMENTAL, IDEAL_WILSON]
+        
+        for method in init_methods:
+            try:
+                guess, VF, xs, ys = TPV_solve_HSGUA_guesses_VL(zs, method, constants, correlations, 
+                               fixed_val, spec_val,
+                               iter_var=iter_var, fixed_var=fixed_var, spec=spec,
+                               maxiter=50, xtol=1E-5, ytol=None,
+                               bounded=False, min_bound=min_bound, max_bound=max_bound,                    
+                               user_guess=None, last_conv=None, T_ref=298.15,
+                               P_ref=101325.0)
+                
+                break
+            except Exception as e:
+                print(e)
+                pass
+        sln = []
+        global iterations
+        iterations = 0
+        kwargs = {fixed_var: fixed_val, 'zs': zs}
+        def to_solve(iter_val):
+            global iterations
+            iterations += 1
+            kwargs[iter_var] = iter_val
+            res = self.flash(**kwargs)
+            err = getattr(res, spec)() - spec_val
+            sln[:] = (res, iter_val)
+            return err
+        
+        ytol = abs(spec_val)*self.HSGUA_BISECT_RELTOL
+        sln_val = secant(to_solve, guess, xtol=self.HSGUA_BISECT_XTOL, ytol=ytol,
+               require_xtol=self.HSGUA_BISECT_YTOL_ONLY, require_eval=True, bisection=True,
+               low=min_bound, high=max_bound)
+        return sln[0], {'iterations': iterations, 'err': sln[1]}
+        
+    
     
     
 '''

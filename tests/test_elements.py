@@ -126,3 +126,32 @@ def test_charge_from_formula():
 
 def test_serialize_formula():
     assert serialize_formula('Pd(NH3)4+3') == 'H12N4Pd+3'
+    
+    
+def test_mixture_atomic_composition_ordered():
+    ns, names = mixture_atomic_composition_ordered([{'O': 2}, {'N': 1, 'O': 2}, {'C': 1, 'H': 4}], [0.95, 0.025, .025])
+    assert names == ['H', 'C', 'N', 'O']
+    assert_allclose(ns, [0.1, 0.025, 0.025, 1.95], rtol=1e-12)
+    
+    
+def test_atom_matrix():
+    atomss = [{'C': 1, 'H': 4}, {'C': 2, 'H': 6}, {'N': 2}, {'O': 2}, {'H': 2, 'O': 1}, {'C': 1, 'O': 2}]
+    OCH_expect = [[0.0, 1, 4],
+     [0.0, 2, 6],
+     [0.0, 0.0, 0.0],
+     [2, 0.0, 0.0],
+     [1, 0.0, 2],
+     [2, 1, 0.0]]
+    
+    default_expect = [[4, 1, 0.0, 0.0],
+     [6, 2, 0.0, 0.0],
+     [0.0, 0.0, 2, 0.0],
+     [0.0, 0.0, 0.0, 2],
+     [2, 0.0, 0.0, 1],
+     [0.0, 1, 0.0, 2]]
+    default = atom_matrix(atomss)
+    
+    assert_allclose(default, default_expect, rtol=1e-12)
+    
+    OCH = atom_matrix(atomss, ['O', 'C', 'H'])
+    assert_allclose(OCH, OCH_expect, rtol=1e-12)

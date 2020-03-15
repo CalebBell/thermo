@@ -340,10 +340,29 @@ def test_chemical_potential():
     
     liquid = EOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, Hfs=Hfs,
                        Sfs=Sfs, Gfs=Gfs, T=T, P=P, zs=zs)
-    mu_r_exp = [-188705.67813450593, -97907.78027049133, -193308.17904485852]
+    mu_r_exp = [-188705.73988392908, -97907.9761772734, -193308.17514525697]
     mu_r_calc = liquid.chemical_potential()
-    # Will likely break when implementing an analytical solution
-    assert_allclose(mu_r_exp, mu_r_calc, rtol=1e-5)
+    assert_allclose(mu_r_exp, mu_r_calc, rtol=1e-9)
+    '''#Derived with:
+    from sympy import *
+    T = symbols('T')
+    zs = z0, z1, z2 = symbols('z0, z1, z2')
+    Hb = symbols('Hbase', cls=Function)
+    Hbase = Hb(z0, z1, z2)
+    Hfs = Hf0, Hf1, Hf2 = symbols('Hf0, Hf1, Hf2')
+    for zi, Hf in zip(zs, Hfs):
+        Hbase += zi*Hf
+    Sb = symbols('Sbase', cls=Function)
+    Sbase = Sb(z0, z1, z2)
+    Sfs = Sf0, Sf1, Sf2 = symbols('Sf0, Sf1, Sf2')
+    for zi, Sf in zip(zs, Sfs):
+        Sbase += zi*Sf
+    
+    G = Hbase - T*Sbase
+    diff(G, z0)
+    '''
+    
+    
     
     # Random gamma example
     gammas_expect = [1.8877873731435573, 1.52276935445383, 1.5173639948878495]
