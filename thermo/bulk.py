@@ -75,6 +75,7 @@ class BulkSettings(object):
                  T_normal=288.15, P_normal=atm,
                  T_standard=288.7055555555555, P_standard=atm,
                  T_liquid_volume_ref=298.15,
+                 T_gas_ref=288.15, P_gas_ref=atm,
                  
                  VL_ID=VL_ID_PIP, VL_ID_settings=None,
                  S_ID=S_ID_D2P_DVDT, S_ID_settings=None,
@@ -102,6 +103,9 @@ class BulkSettings(object):
         self.T_standard = T_standard
         self.P_standard = P_standard
         self.T_liquid_volume_ref = T_liquid_volume_ref
+        
+        self.T_gas_ref = T_gas_ref
+        self.P_gas_ref = P_gas_ref
         
         self.beta = beta
         self.kappa = kappa

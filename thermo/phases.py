@@ -90,8 +90,8 @@ class Phase(object):
         s += '>'
         return s
     
-    def model_hash(self):
-        return randint(0, 100000)
+    def model_hash(self, ignore_phase=False):
+        return randint(0, 10000000)
     
     def value(self, name):
         v = getattr(self, name)
@@ -706,6 +706,9 @@ class Phase(object):
 
     def beta(self):
         return isobaric_expansion(self.V(), self.dV_dT())
+    
+    def isentropic_exponent(self):
+        return self.Cp()/self.Cv()
     
     def dbeta_dT(self):
         '''
@@ -1614,7 +1617,7 @@ class EOSGas(Phase):
         else:
             self._model_hash = h
         return h
-
+    
     @property
     def phase(self):
         phase = self.eos_mix.phase
@@ -3900,7 +3903,7 @@ class CoolPropPhase(Phase):
                 return 'l'
             return 'g'
 
-    def model_hash(self):
+    def model_hash(self, ignore_phase=False):
         return hash_any_primitive([self.backend, self.fluid, self.Hfs, self.Gfs, self.Sfs, self.__class__])
         
     def __init__(self, backend, fluid,

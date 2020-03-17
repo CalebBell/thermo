@@ -1096,6 +1096,30 @@ def test_TWU_SRK_PR_T_alpha_interp_failure_2():
         PV = flasher.flash(P=P, V=base.V())
         assert_allclose(T, PV.T, rtol=1e-6)
 
+
+def test_VL_EOSMIX_fast_return():
+    T, P, zs = 298.15, 101325.0, [1.0]
+    constants = ChemicalConstantsPackage(atom_fractions={'H': 0.6666666666666666, 'O': 0.3333333333333333}, atomss=[{'H': 2, 'O': 1}],CASs=['7732-18-5'], charges=[0], conductivities=[4e-06], dipoles=[1.85], formulas=['H2O'], Gfgs=[-228554.325], Gfgs_mass=[-12686692.9073542], Hcs=[0.0], Hcs_lower=[0.0], Hcs_lower_mass=[0.0], Hcs_mass=[0.0], Hfgs=[-241822.0], Hfgs_mass=[-13423160.783512661], Hfus_Tms=[6010.0], Hfus_Tms_mass=[333605.69472136983], Hvap_298s=[43991.076027756884], Hvap_298s_mass=[2441875.7869850975], Hvap_Tbs=[40643.402624176735], Hvap_Tbs_mass=[2256051.6752543803], InChI_Keys=['XLYOFNOQVPJJNP-UHFFFAOYSA-N'], InChIs=['H2O/h1H2'], logPs=[-1.38], molecular_diameters=[3.24681], MWs=[18.01528], names=['water'], omegas=[0.344], Parachors=[9.368511392279435e-06], Pcs=[22048320.0], phase_STPs=['l'], Psat_298s=[3170.146712628533], PSRK_groups=[{16: 1}], Pts=[610.8773135731733], PubChems=[962], rhocs=[17857.142857142855], rhocs_mass=[321.7014285714285], rhol_STPs=[55287.70167376968], rhol_STPs_mass=[996.0234262094295], S0gs=[188.8], S0gs_mass=[10479.992539666328], Sfgs=[-44.499999999999964], Sfgs_mass=[-2470.1253602497413], similarity_variables=[0.16652530518537598], smiless=['O'], StielPolars=[0.023222134391615246], Stockmayers=[501.01], Tbs=[373.124], Tcs=[647.14], Tms=[273.15], Tts=[273.15], UNIFAC_Dortmund_groups=[{16: 1}], UNIFAC_groups=[{16: 1}], Van_der_Waals_areas=[350000.0], Van_der_Waals_volumes=[1.39564e-05], Vcs=[5.6000000000000006e-05], Vml_STPs=[1.808720510576827e-05], Vml_Tms=[1.801816212354171e-05], Zcs=[0.22947273972184645], UNIFAC_Rs=[0.92], UNIFAC_Qs=[1.4], rhos_Tms=[1126.700421021929], Vms_Tms=[1.5989414456471007e-05], solubility_parameters=[47931.929488349415], Vml_60Fs=[1.8036021352672155e-05], rhol_60Fs=[55287.70167376968], rhol_60Fs_mass=[998.8500039855475])
+    properties = PropertyCorrelationPackage(constants=constants, HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))],
+                                            VolumeLiquids=[VolumeLiquid(best_fit=(273.17, 637.096, [9.00307261049824e-24, -3.097008950027417e-20, 4.608271228765265e-17, -3.8726692841874345e-14, 2.0099220218891486e-11, -6.596204729785676e-09, 1.3368112879131157e-06, -0.00015298762503607717, 0.007589247005014652]))],
+                                            VaporPressures=[VaporPressure(best_fit=(273.17, 647.086, [-2.8478502840358144e-21, 1.7295186670575222e-17, -4.034229148562168e-14, 5.0588958391215855e-11, -3.861625996277003e-08, 1.886271475957639e-05, -0.005928371869421494, 1.1494956887882308, -96.74302379151317]))],
+                                            EnthalpyVaporizations=[EnthalpyVaporization(best_fit=(273.17, 642.095, 647.14, [3.897048781581251, 94.88210726884502, 975.3860042050983, 5488.360052656942, 18273.86104025691, 36258.751893749475, 42379.63786686855, 39492.82327945519, 58540.84902227406]))],
+                                            ViscosityLiquids=[ViscosityLiquid(best_fit=(273.17, 647.086, [-3.2967840446295976e-19, 1.083422738340624e-15, -1.5170905583877102e-12, 1.1751285808764222e-09, -5.453683174592268e-07, 0.00015251508129341616, -0.024118558027652552, 1.7440690494170135, -24.96090630337129]))],
+                                            ViscosityGases=[ViscosityGas(best_fit=(273.16, 1073.15, [-1.1818252575481647e-27, 6.659356591849417e-24, -1.5958127917299133e-20, 2.1139343137119052e-17, -1.6813187290802144e-14, 8.127448028541097e-12, -2.283481528583874e-09, 3.674008403495927e-07, -1.9313694390100466e-05]))])
+    eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas,
+    alpha_coeffs=[[0.3872, 0.87587208, 1.9668]], cs=[5.2711E-6])
+    gas = EOSGas(PRMIXTranslatedConsistent, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = EOSLiquid(PRMIXTranslatedConsistent, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    flasher = FlashPureVLS(constants, properties, liquids=[liq], gas=gas, solids=[])
+
+    res = flasher.flash(T=300, P=1e5)
+    # Point missing the right phase return
+    assert_close(res.Z(), 0.0006437621418058624, rtol=1e-5)
+    
+    # Do a vapor check for consistency
+    point = flasher.flash(T=300, P=3200)
+    assert_close(point.Z(), 0.9995223890086967, rtol=1e-5)
+
 def test_APISRK_multiple_T_slns():
     constants = ChemicalConstantsPackage(Tcs=[768.0], Pcs=[1070000.0], omegas=[0.8805], MWs=[282.54748], CASs=['112-95-8'])
     HeatCapacityGases = [HeatCapacityGas(best_fit=(200.0, 1000.0, [-2.075118433508619e-20, 1.0383055980949049e-16, -2.1577805903757125e-13, 2.373511052680461e-10, -1.4332562489496906e-07, 4.181755403465859e-05, -0.0022544761674344544, -0.15965342941876415, 303.71771182550816]))]

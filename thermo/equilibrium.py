@@ -247,12 +247,13 @@ class EquilibriumState(object):
             zs = self.zs
         else:
             zs = phase.zs
+            
         Vls = self.V_liquids_ref()
         V = 0.0
         for i in self.cmps:
             V += zs[i]*Vls[i]
         V_inv = 1.0/V
-        return [V_inv*Vi for Vi in Vls]
+        return [V_inv*Vls[i]*zs[i] for i in self.cmps]
 
     def Vfgs(self, phase=None):
         # Ideal volume fractions - do not attempt to compensate for non-ideality
@@ -581,6 +582,11 @@ class EquilibriumState(object):
 
     
     def mu(self, phase=None):
+        if phase is None:
+            if self.phase_count == 1:
+                phase = self.phases[0]
+            else:
+                phase = self.bulk
         if isinstance(phase, gas_phases):
             return self.correlations.ViscosityGasMixture.mixture_property(phase.T, phase.P, phase.zs, phase.ws())
         elif isinstance(phase, liquid_phases):
@@ -593,7 +599,10 @@ class EquilibriumState(object):
     
     def k(self, phase=None):
         if phase is None:
-            phase = self.bulk
+            if self.phase_count == 1:
+                phase = self.phases[0]
+            else:
+                phase = self.bulk
         if isinstance(phase, gas_phases):
             return self.correlations.ThermalConductivityGasMixture.mixture_property(
                     phase.T, phase.P, phase.zs, phase.ws())
@@ -994,7 +1003,7 @@ bulk_props = ['V', 'Z', 'rho', 'Cp', 'Cv', 'H', 'S', 'U', 'G', 'A', 'dH_dT', 'dH
               'Cp_Cv_ratio', 'log_zs',
               'dP_dT_frozen', 'dP_dV_frozen', 'd2P_dT2_frozen', 'd2P_dV2_frozen',
               'd2P_dTdV_frozen',
-              'd2P_dTdV', 'd2P_dV2', 'd2P_dT2', 'dP_dV', 'dP_dT',
+              'd2P_dTdV', 'd2P_dV2', 'd2P_dT2', 'dP_dV', 'dP_dT', 'isentropic_exponent',
               
               'PIP', 'kappa', 'beta', 'Joule_Thomson', 'speed_of_sound',
               'speed_of_sound_mass',

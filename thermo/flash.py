@@ -2326,7 +2326,8 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
                        iter_var='T', fixed_var='P', spec='H',
                        maxiter=200, xtol=1E-10, ytol=None, fprime=False,
                        minimum_progress=0.3, oscillation_detection=True,
-                       bounded=False, min_bound=None, max_bound=None):
+                       bounded=False, min_bound=None, max_bound=None,
+                       multi_solution=False):
     r'''Solve a single-phase flash where one of `T`, `P`, or `V` are specified 
     and one of `H`, `S`, `G`, `U`, or `A` are also specified. The iteration
     (changed input variable) variable must be specified as be one of `T`, `P`, 
@@ -4018,7 +4019,7 @@ class FlashBase(object):
 
     def flash(self, zs=None, T=None, P=None, VF=None, SF=None, V=None, H=None,
               S=None, U=None, G=None, A=None, solution=None, retry=False,
-              hot_start=None):
+              hot_start=None, dest=None):
         '''
         solution : str or int
            When multiple solutions exist, they will be sorted by T (and then P)
@@ -4030,6 +4031,8 @@ class FlashBase(object):
         '''
         constants, correlations = self.constants, self.correlations
         settings = self.settings
+        if dest is None:
+            dest = EquilibriumState
 #        if self.N > 1 and 0:
 #            for zi in zs:
 #                if zi == 1.0:
@@ -4093,7 +4096,7 @@ class FlashBase(object):
             
             a_phase = id_phases[0]
             T, P = a_phase.T, a_phase.P
-            return EquilibriumState(T, P, zs, gas=g, liquids=ls, solids=ss, 
+            return dest(T, P, zs, gas=g, liquids=ls, solids=ss, 
                                     betas=betas, flash_specs=flash_specs, 
                                     flash_convergence=flash_convergence,
                                     constants=constants, correlations=correlations,
@@ -4106,7 +4109,7 @@ class FlashBase(object):
                 ls = [ls]
             flash_convergence = {'iterations': iterations, 'err': err}
             
-            return EquilibriumState(T, Psat, zs, gas=g, liquids=ls, solids=[], 
+            return dest(T, Psat, zs, gas=g, liquids=ls, solids=[], 
                                     betas=[VF, 1.0 - VF], flash_specs=flash_specs,
                                     flash_convergence=flash_convergence,
                                     constants=constants, correlations=correlations,
@@ -4119,7 +4122,7 @@ class FlashBase(object):
                 ls = [ls]
             flash_convergence = {'iterations': iterations, 'err': err}
 
-            return EquilibriumState(Tsat, P, zs, gas=g, liquids=ls, solids=[], 
+            return dest(Tsat, P, zs, gas=g, liquids=ls, solids=[], 
                                     betas=[VF, 1.0 - VF], flash_specs=flash_specs,
                                     flash_convergence=flash_convergence,
                                     constants=constants, correlations=correlations,
@@ -4132,7 +4135,7 @@ class FlashBase(object):
                 g, liquids = None, [other_phase]
             flash_convergence = {'iterations': iterations, 'err': err}
 #
-            return EquilibriumState(T, Psub, zs, gas=g, liquids=liquids, solids=[s], 
+            return dest(T, Psub, zs, gas=g, liquids=liquids, solids=[s], 
                                     betas=[1-SF, SF], flash_specs=flash_specs, 
                                     flash_convergence=flash_convergence,
                                     constants=constants, correlations=correlations,
@@ -4145,7 +4148,7 @@ class FlashBase(object):
                 g, liquids = None, [other_phase]
             flash_convergence = {'iterations': iterations, 'err': err}
 #
-            return EquilibriumState(Tsub, P, zs, gas=g, liquids=liquids, solids=[s], 
+            return dest(Tsub, P, zs, gas=g, liquids=liquids, solids=[s], 
                                     betas=[1-SF, SF], flash_specs=flash_specs, 
                                     flash_convergence=flash_convergence,
                                     constants=constants, correlations=correlations,
@@ -4154,7 +4157,7 @@ class FlashBase(object):
             spec_var, spec_val = [(k, v) for k, v in flash_specs.items() if k not in ('VF', 'zs')][0]
             T, Psat, liquid, gas, iters_inner, err_inner, err, iterations = self.flash_VF_HSGUA(VF, spec_val, fixed_var='VF', spec_var=spec_var, zs=zs, solution=solution, hot_start=hot_start)
             flash_convergence = {'iterations': iterations, 'err': err, 'inner_flash_convergence': {'iterations': iters_inner, 'err': err_inner}}
-            return EquilibriumState(T, Psat, zs, gas=gas, liquids=[liquid], solids=[],
+            return dest(T, Psat, zs, gas=gas, liquids=[liquid], solids=[],
                                     betas=[VF, 1.0 - VF], flash_specs=flash_specs,
                                     flash_convergence=flash_convergence,
                                     constants=constants, correlations=correlations,
@@ -4200,7 +4203,7 @@ class FlashBase(object):
                 phases += [g]
             T, P = phases[0].T, phases[0].P
             
-            return EquilibriumState(T, P, zs, gas=g, liquids=ls, solids=ss, 
+            return dest(T, P, zs, gas=g, liquids=ls, solids=ss, 
                                     betas=betas, flash_specs=flash_specs, 
                                     flash_convergence=flash_convergence,
                                     constants=constants, correlations=correlations,
@@ -6077,6 +6080,37 @@ class FlashPureVLS(FlashBase):
                             and len(liquids) == 1 and (not solids) and liquids[0].backend == gas.backend and 
                             liquids[0].fluid == gas.fluid)
 
+        liquids_to_unique_liquids = []
+        unique_liquids, unique_liquid_hashes = [], []
+        for i, l in enumerate(liquids):
+            h = l.model_hash()
+            if h not in unique_liquid_hashes:
+                unique_liquid_hashes.append(h)
+                unique_liquids.append(l)
+                liquids_to_unique_liquids.append(i)
+            else:
+                liquids_to_unique_liquids.append(unique_liquid_hashes.index(h))
+        if gas:
+            gas_hash = gas.model_hash(True)
+        
+        gas_to_unique_liquid = None
+        for i, l in enumerate(liquids):
+            h = l.model_hash(True)
+            if gas_hash == h:
+                gas_to_unique_liquid = liquids_to_unique_liquids[i]
+                break
+        
+        self.gas_to_unique_liquid = gas_to_unique_liquid
+        self.liquids_to_unique_liquids = liquids_to_unique_liquids
+                
+        self.unique_liquids = unique_liquids
+        self.unique_liquid_count = len(unique_liquids)
+        self.unique_phases = [gas] + unique_liquids
+        self.unique_phase_count = 1 + self.unique_liquid_count
+        self.unique_liquid_hashes = unique_liquid_hashes
+
+
+
     def flash_TPV(self, T, P, V, zs=None, solution=None, hot_start=None):
         betas = [1.0]
         zs = [1.0]
@@ -6098,14 +6132,20 @@ class FlashPureVLS(FlashBase):
             sln = self.gas.to_zs_TPV(zs, T=T, P=P, V=V, prefer_phase=8)
 #            if sln.phase == 'l':
 #                return None, [sln], [], betas, None
-            return None, [], [sln], betas, None
-
+            return None, [], [sln], betas, None            
         if self.gas_count:
             gas = self.gas.to_zs_TPV(zs=zs, T=T, P=P, V=V)
             G_min, lowest_phase = fun(gas), gas
         else:
             G_min, lowest_phase = 1e100, None
             gas = None
+        if self.VL_only_CEOSs_same and V is None:
+            l = self.liquids[0].to_TP_zs(T, P, zs, other_eos=gas.eos_mix)
+            G = fun(l)
+            if G < G_min:
+                return None, [l], [], betas, None
+            return lowest_phase, [], [], betas, None
+        
         for l in self.liquids:
             l = l.to_zs_TPV(zs=zs, T=T, P=P, V=V)
             G = fun(l)
