@@ -25,6 +25,7 @@ import numpy as np
 import pytest
 from thermo import eos
 from thermo.eos import *
+from thermo.eos import eos_2P_list
 from thermo.utils import allclose_variable
 from fluids.constants import R
 from math import log, exp, sqrt, log10
@@ -1238,6 +1239,13 @@ def test_PRTranslatedPPJP():
     eos_copy = eos.to(T=eos.T, P=eos.P)
     a_alphas_calc_copy = (eos_copy.a_alpha, eos_copy.da_alpha_dT, eos_copy.d2a_alpha_dT2)
     assert_allclose(a_alphas_new, a_alphas_calc_copy, rtol=1e-9)
+    
+    # A P_max_at_V example anyway; still not implemented for the volume translation case
+    base = PRTranslatedPPJP(Tc=512.5, Pc=8084000.0, omega=0.559, c=0.0, T=736.5357142857143, P=91255255.16379045)
+    P_max = base.P_max_at_V(base.V_l) 
+    base.to(P=P_max-1, V=base.V_l).phase
+    with pytest.raises(Exception):
+        base.to(P=P_max+100, V=base.V_l).phase
 
 
 def test_SRKTranslatedPPJP():
@@ -1336,36 +1344,64 @@ def test_IG():
 
 @pytest.mark.slow
 def test_fuzz_dV_dT_and_d2V_dT2_derivatives():
-    from thermo import eos
-    eos_list = list(eos.__all__); eos_list.remove('GCEOS')
-    eos_list.remove('VDW')
+    dx = 2e-7
+    order = 5
+    Tc=507.6
+    Pc=3025000.
+    omega=0.2975
+    rtol = 5e-6
+    for eos in eos_2P_list:
+        for T in linspace(10, 1000, 5):
+            for P in logspace(log10(3E4), log10(1E6), 5):
+                e = eos(Tc=Tc, Pc=Pc, omega=omega, T=T, P=P)
+                c = {}
+                def cto(T, P):
+                    k = (T, P)
+                    if k in c:
+                        return c[k]
+                    new = e.to(T=T, P=P)
+                    c[k] = new
+                    return new
+                
+                if 'l' in e.phase:
+                    dV_dT_l_num = derivative(lambda T: cto(T=T, P=P).V_l, T, order=order, dx=T*dx)
+                    assert_close(e.dV_dT_l, dV_dT_l_num, rtol=rtol)
+                    d2V_dT2_l_num = derivative(lambda T: cto(T=T, P=P).dV_dT_l, T, order=order, dx=T*dx)
+                    assert_close(e.d2V_dT2_l, d2V_dT2_l_num, rtol=rtol)
+                if 'g' in e.phase:
+                    dV_dT_g_num = derivative(lambda T: cto(T=T, P=P).V_g, T, order=order, dx=T*dx)
+                    assert_close(e.dV_dT_g, dV_dT_g_num, rtol=rtol)
+                    d2V_dT2_g_num = derivative(lambda T: cto(T=T, P=P).dV_dT_g, T, order=order, dx=T*dx)
+                    assert_close(e.d2V_dT2_g, d2V_dT2_g_num, rtol=rtol)
     
-    phase_extensions = {True: '_l', False: '_g'}
-    derivative_bases_dV_dT = {0:'V', 1:'dV_dT', 2:'d2V_dT2'}
     
-    def dV_dT(T, P, eos, order=0, phase=True, Tc=507.6, Pc=3025000., omega=0.2975):
-        eos = globals()[eos_list[eos]](Tc=Tc, Pc=Pc, omega=omega, T=T, P=P)
-        phase_base = phase_extensions[phase]
-        attr = derivative_bases_dV_dT[order]+phase_base
-        return getattr(eos, attr)
-    
-    x, y = [], []
-    for eos in range(len(eos_list)):
-        for T in np.linspace(.1, 1000, 50):
-            for P in np.logspace(np.log10(3E4), np.log10(1E6), 50):
-                T, P = float(T), float(P)
-                for phase in [True, False]:
-                    for order in [1, 2]:
-                        try:
-                            # If dV_dx_phase doesn't exist, will simply abort and continue the loop
-                            numer = derivative(dV_dT, T, dx=1E-4, args=(P, eos, order-1, phase))
-                            ana = dV_dT(T=T, P=P, eos=eos, order=order, phase=phase)
-                        except:
-                            continue
-                        x.append(numer)
-                        y.append(ana)
-    assert allclose_variable(x, y, limits=[.009, .05, .65, .93],rtols=[1E-5, 1E-6, 1E-9, 1E-10])
-
+#    from thermo import eos
+#    phase_extensions = {True: '_l', False: '_g'}
+#    derivative_bases_dV_dT = {0:'V', 1:'dV_dT', 2:'d2V_dT2'}
+#    
+#    def dV_dT(T, P, eos, order=0, phase=True, Tc=507.6, Pc=3025000., omega=0.2975):
+#        e = eos(Tc=Tc, Pc=Pc, omega=omega, T=T, P=P)
+#        phase_base = phase_extensions[phase]
+#        attr = derivative_bases_dV_dT[order]+phase_base
+#        return getattr(e, attr)
+#    
+#    x, y = [], []
+#    for eos in eos_2P_list:
+#        for T in linspace(.1, 1000, 50):
+#            for P in logspace(log10(3E4), log10(1E6), 50):
+#                T, P = float(T), float(P)
+#                for phase in [True, False]:
+#                    for order in [1, 2]:
+#                        try:
+#                            # If dV_dx_phase doesn't exist, will simply abort and continue the loop
+#                            numer = derivative(dV_dT, T, dx=1E-4, args=(P, eos, order-1, phase))
+#                            ana = dV_dT(T=T, P=P, eos=eos, order=order, phase=phase)
+#                        except:
+#                            continue
+#                        x.append(numer)
+#                        y.append(ana)
+#    assert allclose_variable(x, y, limits=[.009, .05, .65, .93],rtols=[1E-5, 1E-6, 1E-9, 1E-10])
+#
 
 @pytest.mark.slow
 def test_fuzz_dV_dP_and_d2V_dP2_derivatives():
@@ -1403,11 +1439,6 @@ def test_fuzz_dV_dP_and_d2V_dP2_derivatives():
     
 @pytest.mark.slow
 def test_fuzz_Psat():
-    from thermo import eos
-    eos_list = list(eos.__all__); eos_list.remove('GCEOS')
-    eos_list.remove('eos_list')
-    eos_list.remove('GCEOS_DUMMY'); eos_list.remove('IG')
-    
     Tc = 507.6
     Pc = 3025000
     omega = 0.2975
@@ -1419,9 +1450,9 @@ def test_fuzz_Psat():
     
     # Test the relative fugacity errors at the correlated Psat are small
     x = []
-    for eos in range(len(eos_list)):
-        for T in np.linspace(0.318*Tc, Tc*.99, 100):
-            e = globals()[eos_list[eos]](Tc=Tc, Pc=Pc, omega=omega, T=T, P=1E5)
+    for eos in eos_2P_list:
+        for T in linspace(0.318*Tc, Tc*.99, 100):
+            e = eos(Tc=Tc, Pc=Pc, omega=omega, T=T, P=1E5)
             Psat = e.Psat(T)
             e = e.to_TP(T, Psat)
             rerr = (e.fugacity_l - e.fugacity_g)/e.fugacity_g
@@ -1433,9 +1464,9 @@ def test_fuzz_Psat():
     # Test Polish is working, and that its values are close to the polynomials
     Psats_solved = []
     Psats_poly = []
-    for eos in range(len(eos_list)):
-        for T in np.linspace(0.4*Tc, Tc*.99, 50):
-            e = globals()[eos_list[eos]](Tc=Tc, Pc=Pc, omega=omega, T=T, P=1E5)
+    for eos in eos_2P_list:
+        for T in linspace(0.4*Tc, Tc*.99, 50):
+            e = eos(Tc=Tc, Pc=Pc, omega=omega, T=T, P=1E5)
             Psats_poly.append(e.Psat(T))
             Psats_solved.append(e.Psat(T, polish=True))
     assert_allclose(Psats_solved, Psats_poly, rtol=1E-11)
@@ -1466,8 +1497,31 @@ def test_Psat_issues():
     eos = PR(Tc=540.2, Pc=2740000.0, omega=0.3457, T=298.15, P=101325.0)
     Tsat = eos.Tsat(2453124.6502311486, polish=False)
     assert_allclose(Tsat, 532.1131652558847, rtol=1e-7)
+    
+    # TWU fails completely for hydrogen at low conditions
+#    e = TWUPR(Tc=33.2, Pc=1296960.0, omega=-0.22, T=298.15, P=101325.0)
+#    e.Psat(T=1.24005018079967879)
+#    
+#    e = TWUPR(Tc=33.2, Pc=1296960.0, omega=-0.22, T=298.15, P=101325.0)
+#    e.Psat(T=1.24005018079967879)
 
 
+def test_Tsat_issues():
+    # This point should be easy to solve and should not require full evaluations
+    # Cannot test that but this can be manually checked
+    base = PRTranslatedConsistent(Tc=647.14, Pc=22048320.0, omega=0.344, c=5.2711e-06, alpha_coeffs=[0.3872, 0.87587208, 1.9668], T=298.15, P=101325.0)
+    assert_close(base.Tsat(1e5), 371.95148202471137, rtol=1e-6)
+
+def test_Tsat_issues_extrapolation():
+    P = 6100000.000000002
+    e = PR(Tc=305.32, Pc=4872000.0, omega=0.098, T=298.15, P=101325.0)
+    e.Tsat(P)
+    
+    e = PR(Tc=469.7, Pc=3370000.0, omega=0.251, T=298.15, P=101325.0)
+    e.Tsat(P)
+
+    
+    
 def test_fuzz_dPsat_dT():
     from thermo import eos
     eos_list = list(eos.__all__); eos_list.remove('GCEOS')
@@ -1483,9 +1537,7 @@ def test_fuzz_dPsat_dT():
     assert_allclose([e.dPsat_dT(300), e.dPsat_dT(400), e.dPsat_dT(500)], dPsats_dT_expect)
 
 @pytest.mark.slow
-@pytest.mark.fuzz
 def test_fuzz_dPsat_dT_full():
-    from thermo.eos import eos_2P_list
     # TODO - add specific points to separate test
     
     Tc = 507.6
@@ -1500,10 +1552,9 @@ def test_fuzz_dPsat_dT_full():
     dPsats_analytical = []
     for eos in eos_2P_list:
         e = eos(Tc=Tc, Pc=Pc, omega=omega, T=298.15, P=1E5)
-        for T in [.1*Tc, .2*Tc, .5*Tc, .7*Tc, .9*Tc, .99*Tc, .999*Tc]:
+        for T in [.1*Tc, .2*Tc, .5*Tc, .7*Tc, .9*Tc, .99*Tc, .999*Tc]: # , 0.99999*Tc will fail
             anal = e.dPsat_dT(T)
             numer = e.dPsat_dT(T, polish=True)
-#            numer = derivative(e.Psat, T, order=9)
             dPsats_analytical.append(anal)
             dPsats_derivative.append(numer)
     

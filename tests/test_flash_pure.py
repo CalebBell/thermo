@@ -336,7 +336,7 @@ def test_PH_plot(fluid, eos, auto_range):
 
     max_err = np.max(errs)
     assert max_err < 1e-8
-#test_PH_plot('eicosane', TWUPRMIX, 'physical')
+#test_PH_plot('eicosane', PRMIX, 'physical')
 #test_PH_plot("hydrogen", TWUPRMIX, "physical")
 #test_PH_plot("hydrogen", TWUSRKMIX, "physical")
 #test_PH_plot("hydrogen", TWUPRMIX, "realistic")
@@ -725,6 +725,14 @@ def test_Psat_plot(fluid, eos):
         plot_fig.savefig(os.path.join(path, key + '.png'), bbox_inches='tight')
         plt.close()
         return
+    if eos in (TWUPR, TWUSRK):
+        if fluid in ('hydrogen', ):
+            msg = 'Garbage alpha function low T'
+            plot_fig = plot_unsupported(msg, color='g')
+            plot_fig.savefig(os.path.join(path, key + '.png'), bbox_inches='tight')
+            plt.close()
+            return
+
     T, P = 298.15, 101325.0
     zs = [1.0]
     fluid_idx = pure_fluids.index(fluid)
@@ -863,6 +871,15 @@ def test_some_flashes_bad():
         
     assert_allclose(flasher.flash(T=800, P=1e7).G(), flasher.flash(T=725.87092453, P=1e7).G(), rtol=1e-10)
 
+    # Test which covers the ID of returned dew/bubble flash phases are the same
+    # for the EOS case
+    res = flasher.flash(P=1e5, VF=.5)
+    assert res.gas.eos_mix is res.liquid0.eos_mix
+    
+    res = flasher.flash(T=300, VF=.5)
+    assert res.gas.eos_mix is res.liquid0.eos_mix
+
+
 def test_VS_issue_PRSV():
     constants = ChemicalConstantsPackage(Tcs=[768.0], Pcs=[1070000.0], omegas=[0.8805], MWs=[282.54748], CASs=['112-95-8'])
     HeatCapacityGases = [HeatCapacityGas(best_fit=(200.0, 1000.0, [-2.075118433508619e-20, 1.0383055980949049e-16, -2.1577805903757125e-13, 2.373511052680461e-10, -1.4332562489496906e-07, 4.181755403465859e-05, -0.0022544761674344544, -0.15965342941876415, 303.71771182550816]))]
@@ -897,6 +914,25 @@ def test_PS_1P_vs_VL_issue0():
         obj = flasher.flash(T=166.0882782627715, P=P)
         hit = flasher.flash(P=obj.P, S=obj.S())
         assert_allclose(hit.T, obj.T)
+
+
+def test_HSGUA_early_return_eos():
+    '''Need to check metastable
+    '''
+    T, P, zs = 517.9474679231187, 91029.8177991519, [1.0]
+    fluid_idx, eos = 8, PRMIX # eicosane
+    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
+    
+    kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
+                  HeatCapacityGases=pure_props.HeatCapacityGases)
+
+    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
+
+    res0 = flasher.flash(T=517.9474679231187, P=P)
+    res1 = flasher.flash(P=P, H=res0.H())
+    assert_close(res1.G(), res0.G(), rtol=1e-7)
 
 
 def test_SRK_high_P_PV_failure():

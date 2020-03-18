@@ -4105,7 +4105,15 @@ class GceosBase(Ideal):
 #        return Psats
 
     def _Tsats(self, P):
-        return [eos.Tsat(P) for eos in self.eos_pure_ref()]
+        try:
+            vs = [eos.Tsat(P) for eos in self.eos_pure_ref()]
+            print(vs,P, 'values')
+            print(self.eos_pure_ref())
+            return vs
+        except Exception as e:
+            print('Fail')
+            print(e)
+            raise e
 
 #        fake_T = 300
 #        fake_zs = [1./self.N]*self.N

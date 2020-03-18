@@ -359,62 +359,158 @@ class StreamArgs(object):
                  energy=None,
                  Vf_TP=(None, None), Q_TP=(None, None, ''), pkg=None,
                  single_composition_basis=True):
-        self.specifications = base_specifications.copy()
+#        self.specifications = base_specifications.copy()
+        self.specifications = s = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None, 
+                       'ns': None, 'ms': None, 'Qls': None, 'Qgs': None,
+                       'n': None, 'm': None, 'Q': None,
+                       'T': None, 'P': None, 'VF': None, 'H': None,
+                       'Hm': None, 'S': None, 'Sm': None, 'energy': None}
         
         # If this is False, DO NOT CLEAR OTHER COMPOSITION / FLOW VARIABLES WHEN SETTING ONE!
         # This makes sense for certain cases but not all.
         self.single_composition_basis = single_composition_basis
-        
-        
         self.IDs = IDs
-        self.zs = zs
-        self.ws = ws
-        self.Vfls = Vfls
-        self.Vfgs = Vfgs
-        self.T = T
-        self.P = P
-        self.VF = VF
-        self.H = H
-        self.Hm = Hm
-        self.S = S
-        self.Sm = Sm
-        
-        self.ns = ns
-        self.ms = ms
-        self.Qls = Qls
-        self.Qgs = Qgs
-        self.m = m
-        self.n = n
-        self.Q = Q
-        self.energy = energy
         self.Vf_TP = Vf_TP
         self.Q_TP = Q_TP
-        
         # pkg should be either a property package or property package constants
         self.pkg = self.property_package = self.property_package_constants = pkg
+        self.equilibrium_pkg = isinstance(pkg, FlashBase)
+        
+        composition_specs = state_specs = flow_specs = 0
+        if zs is not None:
+            s['zs'] = zs
+            composition_specs += 1
+        if ws is not None:
+            s['ws'] = ws
+            composition_specs += 1
+        if Vfls is not None:
+            s['Vfls'] = Vfls
+            composition_specs += 1
+        if Vfgs is not None:
+            s['Vfgs'] = Vfls
+            composition_specs += 1
+
+        if ns is not None:
+            s['ns'] = ns
+            composition_specs += 1
+            flow_specs += 1
+        if ms is not None:
+            s['ms'] = ms
+            composition_specs += 1
+            flow_specs += 1
+        if Qls is not None:
+            s['Qls'] = Qls
+            composition_specs += 1
+            flow_specs += 1
+        if Qgs is not None:
+            s['Qgs'] = Qgs
+            composition_specs += 1
+            flow_specs += 1
+        
+        if n is not None:
+            s['n'] = n
+            flow_specs += 1
+        if m is not None:
+            s['m'] = m
+            flow_specs += 1
+        if Q is not None:
+            s['Q'] = Q
+            flow_specs += 1
+
+        if T is not None:
+            s['T'] = T
+            state_specs += 1
+        if P is not None:
+            s['P'] = P
+            state_specs += 1
+        if VF is not None:
+            s['VF'] = VF
+            state_specs += 1
+        if Hm is not None:
+            s['Hm'] = Hm
+            state_specs += 1
+        if H is not None:
+            s['H'] = H
+            state_specs += 1
+        if Sm is not None:
+            s['Sm'] = Sm
+            state_specs += 1
+        if S is not None:
+            s['S'] = S
+            state_specs += 1
+        if energy is not None:
+            s['energy'] = energy
+            state_specs += 1
+
+        if flow_specs > 1:
+            raise ValueError("Flow specification is overspecified")
+        if composition_specs > 1:
+            raise ValueError("Composition specification is overspecified")
+        if state_specs > 2:
+            raise ValueError("State specification is overspecified")
+#        self.zs = zs
+#        self.ws = ws
+#        self.Vfls = Vfls
+#        self.Vfgs = Vfgs
+#        self.T = T
+#        self.P = P
+#        self.VF = VF
+#        self.H = H
+#        self.Hm = Hm
+#        self.S = S
+#        self.Sm = Sm
+#        
+#        self.ns = ns
+#        self.ms = ms
+#        self.Qls = Qls
+#        self.Qgs = Qgs
+#        self.m = m
+#        self.n = n
+#        self.Q = Q
+#        self.energy = energy
             
     
     @property
-    def composition_spec(self):
-        IDs, zs, ws, Vfls, Vfgs = preprocess_mixture_composition(IDs=self.IDs,
-                                zs=self.zs, ws=self.ws, Vfls=self.Vfls, 
-                                Vfgs=self.Vfgs, ignore_exceptions=True)
-        if zs is not None:
-            return 'zs', zs
-        elif ws is not None:
-            return 'ws', ws
-        elif Vfls is not None:
-            return 'Vfls', Vfls
-        elif Vfgs is not None:
-            return 'Vfgs', Vfgs
-        elif self.ns is not None:
-            return 'ns', self.ns
-        elif self.ms is not None:
-            return 'ms', self.ms
-        elif self.Qls is not None:
-            return 'Qls', self.Qls
-        elif self.Qgs is not None:
-            return 'Qgs', self.Qgs
+    def composition_spec(self):       
+        if self.equilibrium_pkg:
+            s = self.specifications
+            if s['zs'] is not None:
+                return 'zs', s['zs']
+            if s['ws'] is not None:
+                return 'ws', s['ws']
+            if s['Vfls'] is not None:
+                return 'Vfls', s['Vfls']
+            if s['Vfgs'] is not None:
+                return 'Vfgs', s['Vfgs']
+            if s['ns'] is not None:
+                return 'ns', s['ns']
+            if s['ms'] is not None:
+                return 'ms', s['ms']
+            if s['Qls'] is not None:
+                return 'Qls', s['Qls']
+            if s['Qgs'] is not None:
+                return 'Qgs', s['Qgs']
+        else:
+            IDs, zs, ws, Vfls, Vfgs = preprocess_mixture_composition(IDs=self.IDs,
+                                    zs=self.zs, ws=self.ws, Vfls=self.Vfls, 
+                                    Vfgs=self.Vfgs, ignore_exceptions=True)
+
+            if zs is not None:
+                return 'zs', zs
+            elif ws is not None:
+                return 'ws', ws
+            elif Vfls is not None:
+                return 'Vfls', Vfls
+            elif Vfgs is not None:
+                return 'Vfgs', Vfgs
+            elif self.ns is not None:
+                return 'ns', self.ns
+            elif self.ms is not None:
+                return 'ms', self.ms
+            elif self.Qls is not None:
+                return 'Qls', self.Qls
+            elif self.Qgs is not None:
+                return 'Qgs', self.Qgs
     
     @property
     def clean(self):
@@ -436,6 +532,25 @@ class StreamArgs(object):
 
     @property
     def composition_specified(self):
+        if self.equilibrium_pkg:
+            s = self.specifications
+            if s['zs'] is not None:
+                return True
+            if s['ws'] is not None:
+                return True
+            if s['Vfls'] is not None:
+                return True
+            if s['Vfgs'] is not None:
+                return True
+            if s['ns'] is not None:
+                return True
+            if s['ms'] is not None:
+                return True
+            if s['Qls'] is not None:
+                return True
+            if s['Qgs'] is not None:
+                return True
+            return False
         IDs, zs, ws, Vfls, Vfgs = preprocess_mixture_composition(IDs=self.IDs,
                                 zs=self.zs, ws=self.ws, Vfls=self.Vfls, 
                                 Vfgs=self.Vfgs, ignore_exceptions=True)
@@ -447,11 +562,28 @@ class StreamArgs(object):
     
     @property
     def state_specs(self):
+        s = self.specifications
         specs = []
-        for var in ('T', 'P', 'VF', 'Hm', 'H', 'Sm', 'S', 'energy'):
-            v = getattr(self, var)
-            if v is not None:
-                specs.append((var, v))
+        if s['T'] is not None:
+            specs.append(('T', s['T']))
+        if s['P'] is not None:
+            specs.append(('P', s['P']))
+        if s['VF'] is not None:
+            specs.append(('VF', s['VF']))
+        if s['Hm'] is not None:
+            specs.append(('Hm', s['Hm']))
+        if s['H'] is not None:
+            specs.append(('H', s['H']))
+        if s['Sm'] is not None:
+            specs.append(('Sm', s['Sm']))
+        if s['S'] is not None:
+            specs.append(('S', s['S']))
+        if s['energy'] is not None:
+            specs.append(('energy', s['energy']))
+#        for var in ('T', 'P', 'VF', 'Hm', 'H', 'Sm', 'S', 'energy'):
+#            v = getattr(self, var)
+#            if v is not None:
+#                specs.append((var, v))
         return specs
     
     @property
@@ -462,8 +594,27 @@ class StreamArgs(object):
     
     @property
     def state_specified(self):
-        state_vars = (i is not None for i in (self.T, self.P, self.VF, self.Hm, self.H, self.Sm, self.S, self.energy))
-        if sum(state_vars) == 2:
+        s = self.specifications
+
+        state_vars = 0
+        if s['T'] is not None:
+            state_vars += 1
+        if s['P'] is not None:
+            state_vars += 1
+        if s['VF'] is not None:
+            state_vars += 1
+        if s['Hm'] is not None:
+            state_vars += 1
+        if s['H'] is not None:
+            state_vars += 1
+        if s['S'] is not None:
+            state_vars += 1
+        if s['Sm'] is not None:
+            state_vars += 1
+        if s['energy'] is not None:
+            state_vars += 1
+#        state_vars = (i is not None for i in (self.T, self.P, self.VF, self.Hm, self.H, self.Sm, self.S, self.energy))
+        if state_vars == 2:
             return True
         return False
     
@@ -476,12 +627,28 @@ class StreamArgs(object):
     
     @property
     def flow_spec(self):
-        # TODO consider energy?
-        specs = []
-        for var in ('ns', 'ms', 'Qls', 'Qgs', 'm', 'n', 'Q'):
-            v = getattr(self, var)
-            if v is not None:
-                return var, v
+        s = self.specifications
+        if s['ns'] is not None:
+            return ('ns', s['ns'])
+        if s['ms'] is not None:
+            return ('ms', s['ms'])
+        if s['Qls'] is not None:
+            return ('Qls', s['Qls'])
+        if s['Qgs'] is not None:
+            return ('Qgs', s['Qgs'])
+        if s['m'] is not None:
+            return ('m', s['m'])
+        if s['n'] is not None:
+            return ('n', s['n'])
+        if s['Q'] is not None:
+            return ('Q', s['Q'])
+#        
+#        # TODO consider energy?
+#        specs = []
+#        for var in ('ns', 'ms', 'Qls', 'Qgs', 'm', 'n', 'Q'):
+#            v = getattr(self, var)
+#            if v is not None:
+#                return var, v
 
     @property
     def specified_flow_vars(self):
@@ -489,10 +656,26 @@ class StreamArgs(object):
 
     @property
     def flow_specified(self):
-        flow_vars = (i is not None for i in (self.ns, self.ms, self.Qls, self.Qgs, self.m, self.n, self.Q))
-        if sum(flow_vars) == 1:
+        s = self.specifications
+        if s['ns'] is not None:
+            return True
+        if s['ms'] is not None:
+            return True
+        if s['Qls'] is not None:
+            return True
+        if s['Qgs'] is not None:
+            return True
+        if s['m'] is not None:
+            return True
+        if s['n'] is not None:
+            return True
+        if s['Q'] is not None:
             return True
         return False
+#        flow_vars = (i is not None for i in (self.ns, self.ms, self.Qls, self.Qgs, self.m, self.n, self.Q))
+#        if sum(flow_vars) == 1:
+#            return True
+#        return False
         
     def update(self, **kwargs):
         for key, value in kwargs:
@@ -500,8 +683,8 @@ class StreamArgs(object):
     
     @property
     def stream(self):
-        if isinstance(self.property_package, FlashBase):
-            if self.composition_specified and self.state_specified and self.flow_specified:
+        if self.equilibrium_pkg:
+            if self.flow_specified and self.composition_specified and self.state_specified:
                 s = self.specifications.copy()
                 del s['IDs']
                 if 'S' in s:

@@ -2208,15 +2208,15 @@ def phase_select_property(phase=None, s=None, l=None, g=None, V_over_F=None,
     3312.0
     '''
     if phase == 's':
-        if self is not None:
+        if self is not None and s is not None:
             return s.fget(self)
         return s
     elif phase == 'l':
-        if self is not None:
+        if self is not None and l is not None:
             return l.fget(self)
         return l
     elif phase == 'g':
-        if self is not None:
+        if self is not None and g is not None:
             return g.fget(self)
         return g
     elif phase is None or phase == 'two-phase':

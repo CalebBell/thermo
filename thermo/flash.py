@@ -6184,10 +6184,12 @@ class FlashPureVLS(FlashBase):
             return sat_gas.P, sat_liq, sat_gas, 0, 0.0
         Psat = self.Psat_guess(T)
         gas = self.gas.to_TP_zs(T, Psat, zs)
-        liquids = [l.to_TP_zs(T, Psat, zs) for l in self.liquids]
 
-        if self.VL_only_CEOSs_same and 1:
-            return Psat, liquids[0], gas, 0, 0.0
+        if self.VL_only_CEOSs_same:
+            sat_liq = self.liquids[0].to_TP_zs(T, Psat, zs, other_eos=gas.eos_mix)
+            return Psat, sat_liq, gas, 0, 0.0
+
+        liquids = [l.to_TP_zs(T, Psat, zs) for l in self.liquids]
 #        return TVF_pure_newton(Psat, T, liquids, gas, maxiter=200, xtol=1E-10)
         vals = TVF_pure_secant(Psat, T, liquids, gas, maxiter=200, xtol=1E-10)
 #        print('P', P, 'solved')
@@ -6202,6 +6204,9 @@ class FlashPureVLS(FlashBase):
 
         if self.VL_only_CEOSs_same:
             Tsat = self.gas.eos_pures_STP[0].Tsat(P)
+            gas = self.gas.to_TP_zs(Tsat, P, zs)
+            sat_liq = self.liquids[0].to_TP_zs(Tsat, P, zs, other_eos=gas.eos_mix)
+            return Tsat, sat_liq, gas, 0, 0.0
         else:
             Tsat = self.correlations.VaporPressures[0].solve_prop(P)
         gas = self.gas.to_TP_zs(Tsat, P, zs)
@@ -6245,12 +6250,79 @@ class FlashPureVLS(FlashBase):
         pass
         
     
+    def flash_TPV_HSGUA_VL_GCEOS(self, fixed_var_val, spec_val, fixed_var='P', 
+                                 spec='H', iter_var='T', hot_start=None,
+                                 selection_fun_1P=None):
+        constants, correlations = self.constants, self.correlations
+        zs = [1.0]
+        VL_liq, VL_gas = None, None
+        flash_convergence = {}
+        G_VL = 1e100
+        has_VL = False
+        need_both = True
+        if fixed_var == 'T':
+            if self.Psat_guess(fixed_var_val) > 1e-2:
+                Psat, VL_liq, VL_gas, VL_iter, VL_err = self.flash_TVF(fixed_var_val, VF=.5, zs=zs)
+                has_VL = True
+        elif fixed_var == 'P':
+            if fixed_var_val > 1e-2:
+                Tsat, VL_liq, VL_gas, VL_iter, VL_err = self.flash_PVF(fixed_var_val, VF=.5, zs=zs)
+                has_VL = True
+        if has_VL:
+            need_both = False
+            spec_val_l = getattr(VL_liq, spec)()
+            spec_val_g = getattr(VL_gas, spec)()
+            VF = (spec_val - spec_val_l) / (spec_val_g - spec_val_l)
+            if 0.0 <= VF <= 1.0:
+                G_l = fun(VL_liq)
+                G_g = fun(VL_gas)
+                G_VL = G_g * VF + G_l * (1.0 - VF)
+                return VL_gas, [VL_liq], [], [VF, 1.0 - VF], flash_convergence
+            elif VF < 0.0:
+                phases = [self.liquids[0], self.gas]
+            else:
+                phases = [self.gas, self.liquids[0]]
+        else:
+            phases = self.phases
+        solutions_1P = []
+        G_min = 1e100
+        results_G_min_1P = None
+        for phase in phases:
+            try:                    
+                T, P, phase, iterations, err = solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var=fixed_var, 
+                                                                  spec=spec, iter_var=iter_var, constants=constants, correlations=correlations)
+                G = phase.G()
+                new = [T, phase, iterations, err, G]
+                if results_G_min_1P is None or selection_fun_1P(new, results_G_min_1P):
+                    G_min = G
+                    results_G_min_1P = new
+                
+                solutions_1P.append(new)
+                phase.eos_mix.solve_missing_volumes()
+                if phase.eos_mix.phase == 'l/g':
+                    # Check we are not metastable
+                    if min(phase.eos_mix.G_dep_l, phase.eos_mix.G_dep_g) == phase.G_dep(): # If we do not have a metastable phase
+                        if isinstance(phase, EOSGas):
+                            g, ls = phase, []
+                        else:
+                            g, ls = None, [phase]
+                        flash_convergence['err'] = err
+                        flash_convergence['iterations'] = iterations
+                        return g, ls, [], [1.0], flash_convergence
+
+                else:
+                    break
+            except Exception as e:
+#                    print(e)
+                solutions_1P.append(None)
         
+
+
     def flash_TPV_HSGUA(self, fixed_var_val, spec_val, fixed_var='P', spec='H',
                         iter_var='T', zs=None, solution=None,
                         selection_fun_1P=None, hot_start=None):
         # Be prepared to have a flag here to handle zero flow
-        zs = [1]
+        zs = [1.0]
         constants, correlations = self.constants, self.correlations
         if solution is None:
             if fixed_var == 'P' and spec == 'H':
@@ -6279,8 +6351,9 @@ class FlashPureVLS(FlashBase):
             else:
                 raise ValueError("Unrecognized solution")
 
-
+        selection_fun_1P_specified = True
         if selection_fun_1P is None:
+            selection_fun_1P_specified = False
             def selection_fun_1P(new, prev):
                 if fixed_var == 'P' and spec == 'S':
                     if new[-1] < prev[-1]:
@@ -6296,6 +6369,9 @@ class FlashPureVLS(FlashBase):
                         return True
                 return False
         
+        if self.VL_only_CEOSs_same and not selection_fun_1P_specified and solution is None and fixed_var != 'V':
+            return self.flash_TPV_HSGUA_VL_GCEOS(fixed_var_val=fixed_var_val, spec_val=spec_val, fixed_var=fixed_var, 
+                                 spec=spec, iter_var=iter_var, hot_start=hot_start, selection_fun_1P=selection_fun_1P)
         try:
             solutions_1P = []
             G_min = 1e100
@@ -6312,6 +6388,15 @@ class FlashPureVLS(FlashBase):
                         results_G_min_1P = new
                     
                     solutions_1P.append(new)
+                    
+                    if self.VL_only_CEOSs_same and not selection_fun_1P_specified and solution is None:
+                        phase.eos_mix.solve_missing_volumes()
+                        if phase.eos_mix.phase == 'l/g':
+                            # Check we are not metastable
+                            if min(phase.eos_mix.G_dep_l, phase.eos_mix.G_dep_g) == phase.G_dep():
+                                break
+                        else:
+                            break
                 except Exception as e:
 #                    print(e)
                     solutions_1P.append(None)

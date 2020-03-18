@@ -922,6 +922,10 @@ class EquilibriumState(object):
         except:
             pass
         return v
+    
+    @property
+    def IDs(self):
+        return self.constants.CASs
 
         
 # Add some fancy things for easier access to properties
