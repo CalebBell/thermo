@@ -86,6 +86,27 @@ class StreamArgs(object):
         
         return c
     
+    def copy(self):
+        # single_composition_basis may mean multiple sets of specs for comp/flow
+        kwargs = self.specifications.copy()
+        if kwargs['zs'] is not None:
+            kwargs['zs'] = [i for i in kwargs['zs']]
+        if kwargs['ws'] is not None:
+            kwargs['ws'] = [i for i in kwargs['ws']]
+        if kwargs['ns'] is not None:
+            kwargs['ns'] = [i for i in kwargs['ns']]
+        if kwargs['ms'] is not None:
+            kwargs['ms'] = [i for i in kwargs['ms']]
+        if kwargs['Qls'] is not None:
+            kwargs['Qls'] = [i for i in kwargs['Qls']]
+        if kwargs['Qgs'] is not None:
+            kwargs['Qgs'] = [i for i in kwargs['Qgs']]
+        if kwargs['Vfgs'] is not None:
+            kwargs['Vfgs'] = [i for i in kwargs['Vfgs']]
+        if kwargs['Vfls'] is not None:
+            kwargs['Vfls'] = [i for i in kwargs['Vfls']]
+        return StreamArgs(Vf_TP=self.Vf_TP, Q_TP=self.Q_TP, pkg=self.pkg,
+                 single_composition_basis=self.single_composition_basis, **kwargs)
     
     def __copy__(self):
         return deepcopy(self)
@@ -441,10 +462,10 @@ class StreamArgs(object):
         if energy is not None:
             s['energy'] = energy
             state_specs += 1
-
+            
         if flow_specs > 1:
             raise ValueError("Flow specification is overspecified")
-        if composition_specs > 1:
+        if composition_specs > 1 and single_composition_basis:
             raise ValueError("Composition specification is overspecified")
         if state_specs > 2:
             raise ValueError("State specification is overspecified")
@@ -680,6 +701,29 @@ class StreamArgs(object):
     def update(self, **kwargs):
         for key, value in kwargs:
             setattr(self, key, value)
+    
+    def flash(self, hot_start=None, existing_flash=None):
+#        if self.flow_specified and self.composition_specified and self.state_specified:
+        s = self.specifications.copy()
+        del s['IDs']
+        if 'S' in s:
+            if s['S'] is not None:
+                s['S_mass'] = s['S']
+            del s['S']
+        if 'Sm' in s:
+            if s['Sm'] is not None:
+                s['S'] = s['Sm']
+            del s['Sm']
+        if 'H' in s:
+            if s['H'] is not None:
+                s['H_mass'] = s['H']
+            del s['H']
+        if 'Hm' in s:
+            if s['Hm'] is not None:
+                s['H'] = s['Hm']
+            del s['Hm']
+        return EquilibriumStream(self.property_package, hot_start=hot_start,
+                                 existing_flash=existing_flash, **s)
     
     @property
     def stream(self):
@@ -1271,7 +1315,8 @@ class EquilibriumStream(EquilibriumState):
                  ns=None, ms=None, Qls=None, Qgs=None, 
                  n=None, m=None, Q=None, 
                  T=None, P=None, VF=None, H=None, H_mass=None, S=None, S_mass=None,
-                 energy=None, Vf_TP=None, Q_TP=None):
+                 energy=None, Vf_TP=None, Q_TP=None, hot_start=None, 
+                 existing_flash=None):
         
         constants = flasher.constants
         
@@ -1381,8 +1426,11 @@ class EquilibriumStream(EquilibriumState):
             # Handle the various mole flows - converting to get energy
             pass
         
-        dest = super(EquilibriumStream, self).__init__
-        flasher.flash(T=T, P=P, VF=VF, H=H, S=S, dest=dest, zs=zs)
+        if existing_flash is not None:
+            self.__dict__.update(existing_flash)
+        else:
+            dest = super(EquilibriumStream, self).__init__
+            flasher.flash(T=T, P=P, VF=VF, H=H, S=S, dest=dest, zs=zs, hot_start=hot_start)
         
         # Convert the flow rate into total molar flow
         if m is not None:

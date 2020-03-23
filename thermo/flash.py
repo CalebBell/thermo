@@ -2580,7 +2580,7 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
 
 
 def solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var, 
-                       spec, iter_var, constants, correlations):
+                       spec, iter_var, constants, correlations, last_conv=None):
     if iter_var == 'T':
         min_bound = Phase.T_MIN_FIXED
         max_bound = Phase.T_MAX_FIXED
@@ -2619,7 +2619,7 @@ def solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var,
                                iter_var=iter_var, fixed_var=fixed_var, spec=spec,
                                maxiter=50, xtol=1E-7, ytol=abs(spec_val)*1e-5,
                                bounded=True, min_bound=min_bound, max_bound=max_bound,                    
-                               user_guess=None, last_conv=None, T_ref=298.15,
+                               user_guess=None, last_conv=last_conv, T_ref=298.15,
                                P_ref=101325.0)
             
             break
@@ -2630,7 +2630,6 @@ def solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var,
 
     if iter_var == 'T' and spec  in ('S', 'H'):
         ytol = ytol/100
-
 
     _, phase, iterations, err = TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val=fixed_var_val, spec_val=spec_val, ytol=ytol,
                                                    iter_var=iter_var, fixed_var=fixed_var, spec=spec, oscillation_detection=True,
@@ -6132,20 +6131,27 @@ class FlashPureVLS(FlashBase):
             sln = self.gas.to_zs_TPV(zs, T=T, P=P, V=V, prefer_phase=8)
 #            if sln.phase == 'l':
 #                return None, [sln], [], betas, None
-            return None, [], [sln], betas, None            
+            return None, [], [sln], betas, None          
+        elif self.VL_only_CEOSs_same and V is None and solution is None:
+            gas = self.gas.to_zs_TPV(zs=zs, T=T, P=P, V=V)
+            if gas.eos_mix.phase == 'l/g':
+                gas.eos_mix.solve_missing_volumes()
+                if gas.eos_mix.G_dep_l < gas.eos_mix.G_dep_g:
+                    l = self.liquids[0].to_TP_zs(T, P, zs, other_eos=gas.eos_mix)
+                    return None, [l], [], betas, None
+                return gas, [], [], betas, None
+            elif gas.eos_mix.phase == 'g':
+                return gas, [], [], betas, None
+            else:
+                return None, [gas], [], betas, None
+        
+        
         if self.gas_count:
             gas = self.gas.to_zs_TPV(zs=zs, T=T, P=P, V=V)
             G_min, lowest_phase = fun(gas), gas
         else:
             G_min, lowest_phase = 1e100, None
             gas = None
-        if self.VL_only_CEOSs_same and V is None:
-            l = self.liquids[0].to_TP_zs(T, P, zs, other_eos=gas.eos_mix)
-            G = fun(l)
-            if G < G_min:
-                return None, [l], [], betas, None
-            return lowest_phase, [], [], betas, None
-        
         for l in self.liquids:
             l = l.to_zs_TPV(zs=zs, T=T, P=P, V=V)
             G = fun(l)
@@ -6287,10 +6293,16 @@ class FlashPureVLS(FlashBase):
         solutions_1P = []
         G_min = 1e100
         results_G_min_1P = None
+        if hot_start is None:
+            last_conv = None
+        elif iter_var == 'T':
+            last_conv = hot_start.T
+        elif iter_var == 'P':
+            last_conv = hot_start.P
         for phase in phases:
             try:                    
                 T, P, phase, iterations, err = solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var=fixed_var, 
-                                                                  spec=spec, iter_var=iter_var, constants=constants, correlations=correlations)
+                                                                  spec=spec, iter_var=iter_var, constants=constants, correlations=correlations, last_conv=last_conv)
                 G = phase.G()
                 new = [T, phase, iterations, err, G]
                 if results_G_min_1P is None or selection_fun_1P(new, results_G_min_1P):

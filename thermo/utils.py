@@ -585,6 +585,14 @@ def isothermal_compressibility(V, dV_dP):
     
     .. math::
         \kappa = \frac{1}{P}
+        
+        
+    The isothermal bulk modulus is the inverse of this quantity:
+        
+    .. math::
+        K = -V\left(\frac{\partial P}{\partial V} \right)_T
+        
+    The ideal gas isothermal bulk modulus is simply the gas's pressure.
 
     Examples
     --------
@@ -592,6 +600,11 @@ def isothermal_compressibility(V, dV_dP):
     
     >>> isothermal_compressibility(0.000130229900873546, -2.72902118209903e-13)
     2.095541165119158e-09
+    
+    Calculate the bulk modulus of propane from the PR EOS at 294 K as a gas:
+    
+    >>> 1/isothermal_compressibility(0.0024576770482135617, -3.5943321700795866e-09)
+    683764.5859979445
 
     References
     ----------

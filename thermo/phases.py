@@ -703,6 +703,9 @@ class Phase(object):
         
     def kappa(self):
         return isothermal_compressibility(self.V(), self.dV_dP())
+    
+    def isothermal_bulk_modulus(self):
+        return 1.0/self.kappa()
 
     def beta(self):
         return isobaric_expansion(self.V(), self.dV_dT())
@@ -2283,7 +2286,7 @@ class GibbsExcessLiquid(Phase):
         1) The standard H/S model
         2) The H/S model with all pressure correction happening at P
         3) The inconsistent model which has no pressure dependence whatsover in H/S
-           This model is required due to its popularity, not its consistency.
+           This model is required due to its popularity, not its consistency (but still volume dependency)
            
         All mixture volumetric properties have to be averages of the pure 
         components properties and derivatives. A Multiphase will be needed to
@@ -3398,7 +3401,7 @@ class GibbsExcessLiquid(Phase):
             return self._dP_dV
         except AttributeError:
             pass
-        self._dP_dV = 1.0/self.VolumeLiquidMixture.property_derivative_P(self.T, self.P, self.zs, order=1)
+        self._dP_dV = 1e30 #1.0/self.VolumeLiquidMixture.property_derivative_P(self.T, self.P, self.zs, order=1)
         return self._dP_dV
     
     def d2P_dV2(self):
@@ -3406,7 +3409,7 @@ class GibbsExcessLiquid(Phase):
             return self._d2P_dV2
         except AttributeError:
             pass
-        self._d2P_dV2 = self.d2V_dP2()/-(self.dP_dV())**-3
+        self._d2P_dV2 = 1e30#self.d2V_dP2()/-(self.dP_dV())**-3
         return self._d2P_dV2
     
     def dP_dT(self):
