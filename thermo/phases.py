@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 from __future__ import division
 __all__ = ['GibbsExcessLiquid', 'GibbsExcessSolid', 'Phase', 'EOSLiquid', 'EOSGas', 'IdealGas',
-           'gas_phases', 'liquid_phases', 'solid_phases', 'CombinedPhase', 'CoolPropPhase', 'CoolPropLiquid', 'CoolPropGas']
+           'gas_phases', 'liquid_phases', 'solid_phases', 'CombinedPhase', 'CoolPropPhase', 'CoolPropLiquid', 'CoolPropGas', 'INCOMPRESSIBLE_CONST']
 
 import sys
 from fluids.constants import R, R_inv
@@ -57,6 +57,7 @@ enthalpy calculation.
 #PY2 = int(sys.version[0]) == 2
 
 SORTED_DICT = sys.version_info >= (3, 6)
+INCOMPRESSIBLE_CONST = 1e30
 
 
 class Phase(object):
@@ -100,6 +101,58 @@ class Phase(object):
         except:
             pass
         return v
+    
+    def S_phi_consistency(self):
+        # From coco
+        S0 = self.S_ideal_gas()
+        lnphis = self.lnphis()
+        dlnphis_dT = self.dlnphis_dT()
+        T, zs = self.T, self.zs
+        for i in range(len(zs)):
+            S0 -= zs[i]*(R*lnphis[i] + R*T*dlnphis_dT[i])
+        return abs(1.0 - S0/self.S())
+
+    def H_phi_consistency(self):
+        # From coco
+        H0 = self.H_ideal_gas()
+        lnphis = self.lnphis()
+        dlnphis_dT = self.dlnphis_dT()
+        T, zs = self.T, self.zs
+        for i in self.cmps:
+            H0 -= R*T*T*zs[i]*dlnphis_dT[i]
+        return abs(1.0 - H0/self.H())
+    
+    def G_phi_consistency(self):
+        # Chapter 2 equation 31 Michaelson
+        zs, T = self.zs, self.T
+        G_dep_RT = 0.0
+        lnphis = self.lnphis()
+        G_dep_RT = sum(zs[i]*lnphis[i] for i in self.cmps)
+        G_dep = G_dep_RT*R*T
+        return abs(1.0 - G_dep/self.G_dep())
+    
+    def H_dep_phi_consistency(self):
+        H_dep_RT2 = 0.0
+        dlnphis_dTs = self.dlnphis_dT()
+        zs, T = self.zs, self.T
+        H_dep_RT2 = sum(zs[i]*dlnphis_dTs[i] for i in range(len(zs)))
+        H_dep_recalc = -H_dep_RT2*R*T*T
+        H_dep = self.H_dep()
+        return abs(1.0 - H_dep/H_dep_recalc)
+
+    def V_phi_consistency(self):
+        zs, P = self.zs, self.P
+        dlnphis_dP = self.dlnphis_dP()
+        obj = sum(zs[i]*dlnphis_dP[i] for i in self.cmps)
+        base = (self.Z() - 1.0)/P
+        return abs(1.0 - obj/base)
+    
+    def V_from_phi(self):
+        zs, P = self.zs, self.P
+        dlnphis_dP = self.dlnphis_dP()
+        obj = sum(zs[i]*dlnphis_dP[i] for i in self.cmps)
+        Z = P*obj + 1.0
+        return Z*R*self.T/P
 
     def lnphi(self):
         if self.N != 1:
@@ -2334,6 +2387,8 @@ class GibbsExcessLiquid(Phase):
                                  [i.best_fit_coeffs for i in VolumeLiquids],
                                  [i.best_fit_d_coeffs for i in VolumeLiquids],
                                  [i.best_fit_d2_coeffs for i in VolumeLiquids])
+            
+        self.incompressible = not use_Tait
         self.use_Tait = use_Tait
         if self.use_Tait:
             Tait_B_data, Tait_C_data = [[] for i in range(9)], [[] for i in range(9)]
@@ -2445,7 +2500,8 @@ class GibbsExcessLiquid(Phase):
         
         new.Hvap_data = self.Hvap_data
         new.Hvap_locked = self.Hvap_locked
-
+        
+        new.incompressible = self.incompressible
         
         new.use_phis_sat = self.use_phis_sat
         new.use_Poynting = self.use_Poynting
@@ -2581,9 +2637,9 @@ class GibbsExcessLiquid(Phase):
                 
         return Psats
 
-    def PIP(self):
-        # Force liquid
-        return 2.0
+#    def PIP(self):
+#        # Force liquid
+#        return 2.0
     
     def dPsats_dT(self):
         try:
@@ -2990,7 +3046,7 @@ class GibbsExcessLiquid(Phase):
             Psats = self.Psats()
         
         try:
-             phis_sat = self._phis_sat
+            phis_sat = self._phis_sat
         except AttributeError:
             phis_sat = self.phis_sat()
 
@@ -3031,7 +3087,8 @@ class GibbsExcessLiquid(Phase):
 #        return [zs[i]*gammas[i]*Psats[i]*Poyntings[i]*phis[i]
 #                for i in self.cmps]
 #
-
+#    def dphis_dxs(self):
+#        if
     def dphis_dT(self):
         try:
             return self._dphis_dT
@@ -3288,6 +3345,8 @@ class GibbsExcessLiquid(Phase):
     #                dSi -= R*log(P/101325.0)
                     # Only include the
 #                    dP = P - Psats[i]
+                    
+                    
                     dP = max(0.0, P - Psats[i])
     #                if dP > 0.0:
                     # I believe should include effect of pressure on all components, regardless of phase
@@ -3367,11 +3426,32 @@ class GibbsExcessLiquid(Phase):
         self._Cp = Cp
         return Cp
 
+    def dH_dP(self):
+        try:
+            return self._dH_dP
+        except AttributeError:
+            pass
+        T = self.T
+        P = self.P
+        zs = self.zs
+        dH_dP = 0.0
+        
+        if self.P_DEPENDENT_H_LIQ:
+            if self.use_IG_Cp:
+                Vms_sat = self.Vms_sat()
+                dVms_sat_dT = self.dVms_sat_dT()
+                Psats = self.Psats()
+                for i in self.cmps:
+                    if P > Psats[i]:
+                        dH_dP += zs[i]*(-T*dVms_sat_dT[i] + Vms_sat[i])
+        self._dH_dP = dH_dP
+        return dH_dP
+
     def H_dep(self):
         return self.H() - self.H_ideal_gas()
 
     def S_dep(self):
-        return self.S() - self.H_ideal_gas()
+        return self.S() - self.S_ideal_gas()
 
     def Cp_dep(self):
         return self.Cp() - self.Cp_ideal_gas()
@@ -3395,13 +3475,41 @@ class GibbsExcessLiquid(Phase):
 #        self._V = self.VolumeLiquidMixture(self.T, self.P, self.zs)
         return V
 
+    def dV_dT(self):
+        try:
+            return self._dV_dT
+        except AttributeError:
+            pass
+        zs = self.zs
+        dVms_sat_dT = self.dVms_sat_dT()
+        dV_dT = 0.0
+        for i in self.cmps:
+            dV_dT += zs[i]*dVms_sat_dT[i]
+        self._dV_dT = dV_dT
+        return dV_dT
+
+    def d2V_dT2(self):
+        try:
+            return self._d2V_dT2
+        except AttributeError:
+            pass
+        zs = self.zs
+        d2Vms_sat_dT2 = self.d2Vms_sat_dT2()
+        d2V_dT2 = 0.0
+        for i in self.cmps:
+            d2V_dT2 += zs[i]*d2Vms_sat_dT2[i]
+        self._d2V_dT2 = d2V_dT2
+        return d2V_dT2
+
     # Main needed volume derivatives
     def dP_dV(self):
         try:
             return self._dP_dV
         except AttributeError:
             pass
-        self._dP_dV = 1e30 #1.0/self.VolumeLiquidMixture.property_derivative_P(self.T, self.P, self.zs, order=1)
+        if self.incompressible:
+            self._dP_dV = INCOMPRESSIBLE_CONST #1.0/self.VolumeLiquidMixture.property_derivative_P(self.T, self.P, self.zs, order=1)
+            
         return self._dP_dV
     
     def d2P_dV2(self):
@@ -3409,7 +3517,8 @@ class GibbsExcessLiquid(Phase):
             return self._d2P_dV2
         except AttributeError:
             pass
-        self._d2P_dV2 = 1e30#self.d2V_dP2()/-(self.dP_dV())**-3
+        if self.incompressible:
+            self._d2P_dV2 = INCOMPRESSIBLE_CONST#self.d2V_dP2()/-(self.dP_dV())**-3
         return self._d2P_dV2
     
     def dP_dT(self):
@@ -3425,11 +3534,14 @@ class GibbsExcessLiquid(Phase):
             return self._d2P_dTdV
         except AttributeError:
             pass
-        P = self.P
-        def dP_dV_for_diff(T):
-            return 1.0/self.VolumeLiquidMixture.property_derivative_P(T, P, self.zs, order=1)
+        if self.incompressible:
+            self._d2P_dTdV = 0.0
+        else:
+            P = self.P
+            def dP_dV_for_diff(T):
+                return 1.0/self.VolumeLiquidMixture.property_derivative_P(T, P, self.zs, order=1)
 
-        self._d2P_dTdV = derivative(dP_dV_for_diff, self.T)
+            self._d2P_dTdV = derivative(dP_dV_for_diff, self.T)
         return self._d2P_dTdV
 
     def d2P_dT2(self):
@@ -3437,14 +3549,17 @@ class GibbsExcessLiquid(Phase):
             return self._d2P_dT2
         except AttributeError:
             pass
-        P, zs = self.P, self.zs
-        def dP_dT_for_diff(T):
-            dV_dT = self.VolumeLiquidMixture.property_derivative_T(T, P, zs, order=1)
-            dP_dV = 1.0/self.VolumeLiquidMixture.property_derivative_P(T, P, zs, order=1)
-            dP_dT = dV_dT/-dP_dV
-            return dP_dT
-        
-        self._d2P_dT2 = derivative(dP_dT_for_diff, self.T)
+        if self.incompressible:
+            self._d2P_dT2 = -self.d2V_dT2()/INCOMPRESSIBLE_CONST
+        else:
+            P, zs = self.P, self.zs
+            def dP_dT_for_diff(T):
+                dV_dT = self.VolumeLiquidMixture.property_derivative_T(T, P, zs, order=1)
+                dP_dV = 1.0/self.VolumeLiquidMixture.property_derivative_P(T, P, zs, order=1)
+                dP_dT = dV_dT/-dP_dV
+                return dP_dT
+            
+            self._d2P_dT2 = derivative(dP_dT_for_diff, self.T)
         return self._d2P_dT2
 
     # Volume derivatives which needed to be implemented for the main ones
@@ -3453,22 +3568,10 @@ class GibbsExcessLiquid(Phase):
             return self._d2V_dP2
         except AttributeError:
             pass
-        self._d2V_dP2 = 0.0
+        if self.incompressible:
+            self._d2V_dP2 = 0.0
         return self._d2V_dP2
 
-    def dV_dT(self):
-        try:
-            return self._dV_dT
-        except AttributeError:
-            pass
-        zs = self.zs
-        dVms_sat_dT = self.dVms_sat_dT()
-        dV_dT = 0.0
-        for i in self.cmps:
-            dV_dT += zs[i]*dVms_sat_dT[i]
-        self._dV_dT = dV_dT
-        return dV_dT
-    
     def Tait_Bs(self):
         try:
             return self._Tait_Bs

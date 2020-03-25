@@ -3634,9 +3634,14 @@ class GibbsExcess(object):
 
 
 class IdealSolution(GibbsExcess):
-    def __init__(self):
-        pass
-
+    def __init__(self, T=None, xs=None):
+        if T is not None:
+            self.T = T
+        if xs is not None:
+            self.xs = xs
+            self.N = len(xs)
+            self.cmps = range(self.N)
+            
     def to_T_xs(self, T, xs):
         new = self.__class__.__new__(self.__class__)
         new.T = T

@@ -2056,6 +2056,13 @@ def test_Psat_correlations():
         # PR - tested up to 1 million points
         assert_allclose(Psats_correlation, Psats_numerical, rtol=1e-6)
 
+def test_phi_sat():
+    eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+    phi_exp = 0.9985054999720072
+    phi_good = eos.phi_sat(250.0, polish=True)
+    assert_close(phi_good, phi_exp)
+    phi_approx = eos.phi_sat(250.0, polish=False)
+    assert_close(phi_good, phi_approx, rtol=1e-6)
 
 def test_PRTranslatedTwu():
     from thermo.eos import PRTranslated, PRTranslatedTwu, PR

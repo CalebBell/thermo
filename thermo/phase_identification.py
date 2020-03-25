@@ -175,7 +175,7 @@ def score_phases_VL(phases, constants, correlations, method,
     elif method == VL_ID_POLING:
         scores = [vapor_score_Poling(i.kappa()) for i in phases]
     elif method == VL_ID_PIP:
-        scores = [-(i.PIP() - 1.0) for i in phases]
+        scores = [-(i.PIP() - 1.00000000000001) for i in phases]
 #        scores = [vapor_score_PIP(i.V(), i.dP_dT(), i.dP_dV(),
 #                                           i.d2P_dV2(), i.d2P_dVdT()) for i in phases]
     elif method == VL_ID_BS:

@@ -2511,7 +2511,7 @@ class GCEOS(object):
         # TODO: find way to extend the range? Multiple compounds?
         Tr = T/self.Tc
         if polish or not 0.32 <= Tr <= 1.0:
-            e = self.to_TP(T=T, P=self.Psat(T), polish=True) # True
+            e = self.to_TP(T=T, P=self.Psat(T, polish=True)) # True
             try:
                 return e.phi_l
             except:
