@@ -30,7 +30,7 @@ __all__ = ['WagnerMcGarry', 'AntoinePoling', 'WagnerPoling', 'AntoineExtended',
 
 import os
 from fluids.constants import R
-from fluids.numerics import polyint_over_x, horner_log, horner, polyint, horner_and_der, derivative
+from fluids.numerics import polyint_over_x, horner_log, horner, polyint, horner_and_der, derivative, py_newton as newton
 
 import numpy as np
 import pandas as pd
@@ -733,6 +733,33 @@ class VaporPressure(TDependentProperty):
             
             
         return derivative(self.calculate, T, dx=1e-6, args=[method], n=order, order=1+order*2)
+    
+    def solve_prop_best_fit(self, goal):
+        best_fit_Tmin, best_fit_Tmax = self.best_fit_Tmin, self.best_fit_Tmax
+        best_fit_Tmin_slope, best_fit_Tmax_slope = self.best_fit_Tmin_slope, self.best_fit_Tmax_slope
+        best_fit_Tmin_value, best_fit_Tmax_value = self.best_fit_Tmin_value, self.best_fit_Tmax_value
+        coeffs = self.best_fit_coeffs
+        
+        T_low = log(goal*exp(best_fit_Tmin*best_fit_Tmin_slope - best_fit_Tmin_value))/best_fit_Tmin_slope
+        if T_low <= best_fit_Tmin:
+            return T_low
+        T_high = log(goal*exp(best_fit_Tmax*best_fit_Tmax_slope - best_fit_Tmax_value))/best_fit_Tmax_slope
+        if T_high >= best_fit_Tmax:
+            return T_high
+        else:
+            lnPGoal = log(goal)
+            def to_solve(T):
+                # dPsat and Psat are both in log basis
+                dPsat = Psat = 0.0
+                for c in coeffs:
+                    dPsat = T*dPsat + Psat
+                    Psat = T*Psat + c
+                    
+                return Psat - lnPGoal, dPsat
+            # Guess with the two extrapolations from the linear fits
+            # By definition both guesses are in the range of they would have been returned
+            T = newton(to_solve, 0.5*(T_low + T_high), fprime=True, low=best_fit_Tmin, high=best_fit_Tmax)
+            return T
 
 ### CSP Methods
 

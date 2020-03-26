@@ -24,9 +24,11 @@ from numpy.testing import assert_allclose
 import pytest
 import numpy as np
 import pandas as pd
+from fluids.numerics import assert_close
 from thermo.vapor_pressure import *
 from thermo.vapor_pressure import VDI_TABULAR
 from thermo.identifiers import checkCAS
+from math import *
 
 ### Regression equations
 
@@ -214,6 +216,28 @@ def test_VaporPressure():
 
     with pytest.raises(Exception):
         cycloheptane.test_method_validity(300, 'BADMETHOD')
+
+def test_VaporPressure_fast_Psat_best_fit():
+    corr = VaporPressure(best_fit=(273.17, 647.086, [-2.8478502840358144e-21, 1.7295186670575222e-17, -4.034229148562168e-14, 5.0588958391215855e-11, -3.861625996277003e-08, 1.886271475957639e-05, -0.005928371869421494, 1.1494956887882308, -96.74302379151317]))
+    # Low temperature values - up to 612 Pa
+    assert_close(corr.solve_prop(1e-5), corr.solve_prop_best_fit(1e-5), rtol=1e-10)
+    assert_close(corr.solve_prop(1), corr.solve_prop_best_fit(1), rtol=1e-10)
+    assert_close(corr.solve_prop(100), corr.solve_prop_best_fit(100), rtol=1e-10)
+    
+    P_trans = exp(corr.best_fit_Tmin_value)
+    assert_close(corr.solve_prop(P_trans), corr.solve_prop_best_fit(P_trans), rtol=1e-10)
+    assert_close(corr.solve_prop(P_trans+1e-7), corr.solve_prop_best_fit(P_trans+1e-7), rtol=1e-10)
+    
+    # Solver region
+    assert_close(corr.solve_prop(1e5), corr.solve_prop_best_fit(1e5), rtol=1e-10)
+    assert_close(corr.solve_prop(1e7), corr.solve_prop_best_fit(1e7), rtol=1e-10)
+    
+    P_trans = exp(corr.best_fit_Tmax_value)
+    assert_close(corr.solve_prop(P_trans), corr.solve_prop_best_fit(P_trans), rtol=1e-10)
+    assert_close(corr.solve_prop(P_trans+1e-7), corr.solve_prop_best_fit(P_trans+1e-7), rtol=1e-10)
+    
+    # High T
+    assert_close(corr.solve_prop(1e8), corr.solve_prop_best_fit(1e8), rtol=1e-10)
 
 
 def test_Psub_Clapeyron():

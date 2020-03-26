@@ -67,7 +67,7 @@ from thermo.activity import (flash_inner_loop, flash_wilson, flash_ideal, Rachfo
                              Rachford_Rice_flash_error, Rachford_Rice_solution2, flash_Tb_Tc_Pc,
                              Rachford_Rice_solution_LN2)
 from thermo.equilibrium import EquilibriumState
-from thermo.phases import Phase, gas_phases, liquid_phases, solid_phases, EOSLiquid, EOSGas, CoolPropGas, CoolPropLiquid, CoolPropPhase
+from thermo.phases import Phase, gas_phases, liquid_phases, solid_phases, EOSLiquid, EOSGas, CoolPropGas, CoolPropLiquid, CoolPropPhase, GibbsExcessLiquid, IdealGas
 from thermo.phases import CPPQ_INPUTS, CPQT_INPUTS, CPrhoT_INPUTS, CPunknown, caching_state_CoolProp, CPiDmolar
 from thermo.phase_identification import identify_sort_phases
 from thermo.bulk import default_settings
@@ -6038,6 +6038,7 @@ class FlashPureVLS(FlashBase):
     '''
     VF_interpolators_built = False
     N = 1
+    VL_IG_hack = True
     def __init__(self, constants, correlations, gas, liquids, solids, 
                  settings=default_settings):
         self.constants = constants
@@ -6078,6 +6079,10 @@ class FlashPureVLS(FlashBase):
         self.VL_only_CoolProp = (isinstance(liquids[0], CoolPropLiquid) and isinstance(gas, CoolPropGas) 
                             and len(liquids) == 1 and (not solids) and liquids[0].backend == gas.backend and 
                             liquids[0].fluid == gas.fluid)
+
+        self.VL_IG_activity = (isinstance(liquids[0], GibbsExcessLiquid)
+                               and (gas.eos_class is IGMIX or isinstance(gas, IdealGas))
+                               and len(liquids) == 1 and len(solids) == 0)
 
         liquids_to_unique_liquids = []
         unique_liquids, unique_liquid_hashes = [], []
@@ -6144,7 +6149,13 @@ class FlashPureVLS(FlashBase):
                 return gas, [], [], betas, None
             else:
                 return None, [gas], [], betas, None
-        
+        elif self.VL_IG_activity and self.VL_IG_hack and V is None and solution is None:
+            l = self.liquids[0].to_zs_TPV(zs=zs, T=T, P=P, V=V)
+            if P > l.Psats()[0]:
+                return None, [l], [], betas, None
+            else:
+                gas = self.gas.to_zs_TPV(zs=zs, T=T, P=P, V=V)
+                return gas, [], [], betas, None
         
         if self.gas_count:
             gas = self.gas.to_zs_TPV(zs=zs, T=T, P=P, V=V)
@@ -6188,6 +6199,11 @@ class FlashPureVLS(FlashBase):
             sat_gas = self.gas.from_AS(sat_gas_CoolProp)
             sat_liq = self.liquids[0].to(zs=zs, T=T, V=1.0/sat_gas_CoolProp.saturated_liquid_keyed_output(CPiDmolar))
             return sat_gas.P, sat_liq, sat_gas, 0, 0.0
+        elif self.VL_IG_activity:
+            Psat = self.liquids[0].Psats_at(T)[0]
+            sat_gas = self.gas.to_TP_zs(T, Psat, zs)
+            sat_liq = self.liquids[0].to_TP_zs(T, Psat, zs)
+            return Psat, sat_liq, sat_gas, 0, 0.0
         Psat = self.Psat_guess(T)
         gas = self.gas.to_TP_zs(T, Psat, zs)
 
@@ -6207,12 +6223,16 @@ class FlashPureVLS(FlashBase):
             sat_gas = self.gas.from_AS(sat_gas_CoolProp)
             sat_liq = self.liquids[0].to(zs=zs, T=sat_gas.T, V=1.0/sat_gas_CoolProp.saturated_liquid_keyed_output(CPiDmolar))
             return sat_gas.T, sat_liq, sat_gas, 0, 0.0
-
-        if self.VL_only_CEOSs_same:
+        elif self.VL_only_CEOSs_same:
             Tsat = self.gas.eos_pures_STP[0].Tsat(P)
-            gas = self.gas.to_TP_zs(Tsat, P, zs)
-            sat_liq = self.liquids[0].to_TP_zs(Tsat, P, zs, other_eos=gas.eos_mix)
-            return Tsat, sat_liq, gas, 0, 0.0
+            sat_gas = self.gas.to_TP_zs(Tsat, P, zs)
+            sat_liq = self.liquids[0].to_TP_zs(Tsat, P, zs, other_eos=sat_gas.eos_mix)
+            return Tsat, sat_liq, sat_gas, 0, 0.0
+        elif self.VL_IG_activity:
+            Tsat = self.correlations.VaporPressures[0].solve_prop_best_fit(P)
+            sat_gas = self.gas.to_TP_zs(Tsat, P, zs)
+            sat_liq = self.liquids[0].to_TP_zs(Tsat, P, zs)
+            return Tsat, sat_liq, sat_gas, 0, 0.0
         else:
             Tsat = self.correlations.VaporPressures[0].solve_prop(P)
         gas = self.gas.to_TP_zs(Tsat, P, zs)

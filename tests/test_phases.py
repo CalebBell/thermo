@@ -47,6 +47,8 @@ def test_GibbbsExcessLiquid_VaporPressure():
     # Ingredients
     Psats_expect = [8778.910843769489, 3537.075987237396]
     assert_allclose(liquid.Psats(), Psats_expect, rtol=1e-12)
+    assert_allclose(liquid.Psats_at(T), Psats_expect, rtol=1e-12)
+    assert_allclose(liquid.Psats_at(310.0), [15187.108461608485, 6231.649608160113], rtol=1e-12)
     
     gammas_expect = [1.0, 1.0]
     assert liquid.gammas() == gammas_expect
@@ -246,7 +248,33 @@ def test_GibbbsExcessLiquid_MiscIdeal():
     liquid.H_phi_consistency()
     liquid.V_phi_consistency()
     liquid.G_phi_consistency()
+
+    dPsats_dT = liquid.dPsats_dT()
+    dPsats_dT_num = jacobian(lambda T: liquid.to(T=T[0], P=P, zs=zs).Psats(), [T], scalar=False, perturbation=2e-9)
+    dPsats_dT_num = [i[0] for i in dPsats_dT_num]
+    assert_allclose(dPsats_dT, dPsats_dT_num, rtol=2e-7)
+    assert_allclose(dPsats_dT, [4.158045781849272, 1.932164419816], rtol=1e-12)
     
+    d2Psats_dT2 = liquid.d2Psats_dT2()
+    d2Psats_dT2_num = jacobian(lambda T: liquid.to(T=T[0], P=P, zs=zs).dPsats_dT(), [T], scalar=False, perturbation=10e-9)
+    d2Psats_dT2_num = [i[0] for i in d2Psats_dT2_num]
+    assert_allclose(d2Psats_dT2, d2Psats_dT2_num, rtol=5e-7)
+    assert_allclose(d2Psats_dT2, [0.38889016337503146, 0.14036196963829964], rtol=1e-12)
+    
+    dVms_sat_dT = liquid.dVms_sat_dT()
+    dVms_sat_dT_num = jacobian(lambda T: liquid.to(T=T[0], P=P, zs=zs).Vms_sat(), [T],
+                               scalar=False, perturbation=1e-6)
+    dVms_sat_dT_num = [i[0] for i in dVms_sat_dT_num]
+    assert_allclose(dVms_sat_dT, dVms_sat_dT_num, rtol=1e-6)
+    assert_allclose(dVms_sat_dT, [-4.55877309895312e-09, 5.14342987163643e-08], rtol=1e-12)
+    
+    d2Vms_sat_dT2 = liquid.d2Vms_sat_dT2()
+    d2Vms_sat_dT2_num = jacobian(lambda T: liquid.to(T=T[0], P=P, zs=zs).dVms_sat_dT(), 
+                                 [T], scalar=False, perturbation=1e-7)
+    d2Vms_sat_dT2_num = [i[0] for i in d2Vms_sat_dT2_num]
+    assert_allclose(d2Vms_sat_dT2, d2Vms_sat_dT2_num, rtol=1e-6)
+    assert_allclose([0.0, 5.457718437885466e-10], [0.0, 5.457718437885466e-10], rtol=1e-12)
+        
     
 def test_GibbbsExcessLiquid_PoyntingWorking():
     # Binary ethanol-water
@@ -304,12 +332,35 @@ def test_GibbbsExcessLiquid_PoyntingWorking():
     dphis_dP_num = jacobian(lambda P: liquid.to(P=P[0], T=T, zs=zs).phis(), [P], scalar=False, perturbation=1e-8)
     dphis_dP_num = [i[0] for i in dphis_dP_num]
     assert_allclose(dphis_dP, dphis_dP_num, rtol=1e-7)
+    
+    # point under Psats - check the consistencies are still there
+    liq2 = liquid.to(T=400, P=1e5, zs=zs)
+    assert_close(liq2.S_phi_consistency(), 0, atol=1e-13)
+    assert_close(liq2.H_phi_consistency(), 0, atol=1e-13)
+    assert_close(liq2.G_phi_consistency(), 0, atol=1e-13)
+    assert_close(liq2.V_phi_consistency(), 0, atol=1e-13)
+    assert_close(liq2.V_from_phi(), liq2.V(), rtol=1e-13)
 
     dH_dP_num = derivative(lambda P: liquid.to(T=T, P=P, zs=zs).H(), P, dx=P*1e-5)
     dH_dP = liquid.dH_dP()
     assert_close(dH_dP, 3.3295405555001344e-05, rtol=1e-11)
     assert_close(dH_dP, dH_dP_num, rtol=1e-7)
     
+    dS_dP_num = derivative(lambda P: liquid.to(T=T, P=P, zs=zs).S(), P, dx=P*1e-5)
+    dS_dP = liquid.dS_dP()
+    assert_close(dS_dP, dS_dP_num, rtol=1e-7)
+    assert_close(dS_dP, -2.9037069990237336e-08, rtol=1e-11)
+    
+    dH_dT_num = derivative(lambda T: liquid.to(T=T, P=P, zs=zs).H(), T, dx=T*1e-7)
+    dH_dT = liquid.dH_dT()
+    assert_close(dH_dT, dH_dT_num, rtol=1e-7)
+    assert_close(dH_dT, -105.70590026321679, rtol=1e-11)
+    
+    dS_dT_num = derivative(lambda T: liquid.to(T=T, P=P, zs=zs).S(), T, dx=T*1e-7)
+    dS_dT = liquid.dS_dT()
+    assert_close(dS_dT, dS_dT_num, rtol=1e-7)
+    assert_close(dS_dT, -0.4595908707096407, rtol=1e-11)
+
 
 def test_EOSGas_phis():
     # Acetone, chloroform, methanol
