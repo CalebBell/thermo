@@ -844,7 +844,7 @@ class VolumeLiquid(TPDependentProperty):
        Berlin; New York:: Springer, 2010.
     '''
     name = 'Liquid molar volume'
-    units = 'mol/m^3'
+    units = 'm^3/mol'
     interpolation_T = None
     '''No interpolation transformation by default.'''
     interpolation_P = None
@@ -1907,7 +1907,7 @@ class VolumeGas(TPDependentProperty):
        2498-2508. doi:10.1021/ie4033999. http://www.coolprop.org/
     '''
     name = 'Gas molar volume'
-    units = 'mol/m^3'
+    units = 'm^3/mol'
     interpolation_T = None
     '''No interpolation transformation by default.'''
     interpolation_P = None
@@ -2394,7 +2394,7 @@ class VolumeSolid(TDependentProperty):
        Chemistry and Physics. [Boca Raton, FL]: CRC press, 2014.
     '''
     name = 'Solid molar volume'
-    units = 'mol/m^3'
+    units = 'm^3/mol'
     interpolation_T = None
     '''No interpolation transformation by default.'''
     interpolation_property = None

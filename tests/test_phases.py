@@ -274,7 +274,21 @@ def test_GibbbsExcessLiquid_MiscIdeal():
     d2Vms_sat_dT2_num = [i[0] for i in d2Vms_sat_dT2_num]
     assert_allclose(d2Vms_sat_dT2, d2Vms_sat_dT2_num, rtol=1e-6)
     assert_allclose([0.0, 5.457718437885466e-10], [0.0, 5.457718437885466e-10], rtol=1e-12)
-        
+    
+    # Do a comple more points on the second derivative
+    for T in [159.11+.1, 159.11-.1, 159.11+1e-5, 159.11-1e-5]:
+        liquid = liquid.to(T=T, P=P, zs=zs)
+    
+        dPsats_dT = liquid.dPsats_dT()
+        dPsats_dT_num = jacobian(lambda T: liquid.to(T=T[0], P=P, zs=zs).Psats(), [liquid.T], scalar=False, perturbation=10e-9)
+        dPsats_dT_num = [i[0] for i in dPsats_dT_num]
+        assert_allclose(dPsats_dT, dPsats_dT_num, rtol=5e-7)
+    
+        d2Psats_dT2 = liquid.d2Psats_dT2()
+        d2Psats_dT2_num = jacobian(lambda T: liquid.to(T=T[0], P=P, zs=zs).dPsats_dT(), [liquid.T], scalar=False, perturbation=10e-9)
+        d2Psats_dT2_num = [i[0] for i in d2Psats_dT2_num]
+        assert_allclose(d2Psats_dT2, d2Psats_dT2_num, rtol=5e-7)
+            
     
 def test_GibbbsExcessLiquid_PoyntingWorking():
     # Binary ethanol-water

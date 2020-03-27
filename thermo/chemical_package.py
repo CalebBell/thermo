@@ -374,18 +374,18 @@ class PropertyCorrelationPackage(object):
                  HeatCapacityGasMixtureObj=None, HeatCapacityLiquidMixtureObj=None, HeatCapacitySolidMixtureObj=None,
                  ViscosityGasMixtureObj=None, ViscosityLiquidMixtureObj=None,
                  ThermalConductivityGasMixtureObj=None, ThermalConductivityLiquidMixtureObj=None, 
-                 SurfaceTensionMixtureObj=None,
+                 SurfaceTensionMixtureObj=None, skip_missing=False,
                  ):
         self.constants = constants
         cmps = constants.cmps
         
-        if VaporPressures is None:
+        if VaporPressures is None and not skip_missing:
             VaporPressures = [VaporPressure(Tb=constants.Tbs[i], Tc=constants.Tcs[i], Pc=constants.Pcs[i],
                                             omega=constants.omegas[i], CASRN=constants.CASs[i],
                                             best_fit=get_chemical_constants(constants.CASs[i], 'VaporPressure'))
                               for i in cmps]
             
-        if VolumeLiquids is None:
+        if VolumeLiquids is None and not skip_missing:
             VolumeLiquids = [VolumeLiquid(MW=constants.MWs[i], Tb=constants.Tbs[i], Tc=constants.Tcs[i],
                               Pc=constants.Pcs[i], Vc=constants.Vcs[i], Zc=constants.Zcs[i], omega=constants.omegas[i],
                               dipole=constants.dipoles[i],
@@ -394,58 +394,58 @@ class PropertyCorrelationPackage(object):
                               eos=None, CASRN=constants.CASs[i])
                               for i in cmps]
             
-        if VolumeGases is None:
+        if VolumeGases is None and not skip_missing:
             VolumeGases = [VolumeGas(MW=constants.MWs[i], Tc=constants.Tcs[i], Pc=constants.Pcs[i],
                                    omega=constants.omegas[i], dipole=constants.dipoles[i],
                                    eos=None, CASRN=constants.CASs[i])
                               for i in cmps]
             
-        if VolumeSolids is None:
+        if VolumeSolids is None and not skip_missing:
             VolumeSolids = [VolumeSolid(CASRN=constants.CASs[i], MW=constants.MWs[i],
                                         Tt=constants.Tts[i], Vml_Tt=constants.Vml_Tms[i])
                               for i in cmps]
         
-        if HeatCapacityGases is None:
+        if HeatCapacityGases is None and not skip_missing:
             HeatCapacityGases = [HeatCapacityGas(CASRN=constants.CASs[i], MW=constants.MWs[i],
                                                  similarity_variable=constants.similarity_variables[i],
                                                  best_fit=get_chemical_constants(constants.CASs[i], 'HeatCapacityGas'))
                               for i in cmps]
             
-        if HeatCapacitySolids is None:
+        if HeatCapacitySolids is None and not skip_missing:
             HeatCapacitySolids = [HeatCapacitySolid(MW=constants.MWs[i], similarity_variable=constants.similarity_variables[i],
                                                     CASRN=constants.CASs[i], best_fit=get_chemical_constants(constants.CASs[i], 'HeatCapacitySolid'))
                               for i in cmps]
 
-        if HeatCapacityLiquids is None:
+        if HeatCapacityLiquids is None and not skip_missing:
             HeatCapacityLiquids = [HeatCapacityLiquid(CASRN=constants.CASs[i], MW=constants.MWs[i], 
                                                       similarity_variable=constants.similarity_variables[i],
                                                       Tc=constants.Tcs[i], omega=constants.omegas[i],
                                                       Cpgm=HeatCapacityGases[i], best_fit=get_chemical_constants(constants.CASs[i], 'HeatCapacityLiquid'))
                               for i in cmps]
 
-        if EnthalpyVaporizations is None:
+        if EnthalpyVaporizations is None and not skip_missing:
             EnthalpyVaporizations = [EnthalpyVaporization(CASRN=constants.CASs[i], Tb=constants.Tbs[i],
                                                           Tc=constants.Tcs[i], Pc=constants.Pcs[i], omega=constants.omegas[i],
                                                           similarity_variable=constants.similarity_variables[i],
                                                           best_fit=get_chemical_constants(constants.CASs[i], 'EnthalpyVaporization'))
                               for i in cmps]
 
-        if EnthalpySublimations is None:
+        if EnthalpySublimations is None and not skip_missing:
             EnthalpySublimations = [EnthalpySublimation(CASRN=constants.CASs[i], Tm=constants.Tms[i], Tt=constants.Tts[i], 
                                                        Cpg=HeatCapacityGases[i], Cps=HeatCapacitySolids[i],
                                                        Hvap=EnthalpyVaporizations[i])
                                     for i in cmps]
             
-        if SublimationPressures is None:
+        if SublimationPressures is None and not skip_missing:
             SublimationPressures = [SublimationPressure(CASRN=constants.CASs[i], Tt=constants.Tts[i], Pt=constants.Pts[i],
                                                         Hsub_t=constants.Hsub_Tms[i])
                                     for i in cmps]
         
-        if Permittivities is None:
+        if Permittivities is None and not skip_missing:
             Permittivities = [Permittivity(CASRN=constants.CASs[i]) for i in cmps]
             
         # missing -  ThermalConductivityGas, SurfaceTension
-        if ViscosityLiquids is None:
+        if ViscosityLiquids is None and not skip_missing:
             ViscosityLiquids = [ViscosityLiquid(CASRN=constants.CASs[i], MW=constants.MWs[i], Tm=constants.Tms[i],
                                                 Tc=constants.Tcs[i], Pc=constants.Pcs[i], Vc=constants.Vcs[i],
                                                 omega=constants.omegas[i], Psat=VaporPressures[i].T_dependent_property,
@@ -453,19 +453,19 @@ class PropertyCorrelationPackage(object):
                                 for i in cmps]
         
 
-        if ViscosityGases is None:
+        if ViscosityGases is None and not skip_missing:
             ViscosityGases = [ViscosityGas(CASRN=constants.CASs[i], MW=constants.MWs[i], Tc=constants.Tcs[i],
                                            Pc=constants.Pcs[i], Zc=constants.Zcs[i], dipole=constants.dipoles[i],
                                            Vmg=lambda T: VolumeGases[i](T, 101325.0)) # Might be an issue with what i refers too
                                 for i in cmps]
-        if ThermalConductivityLiquids is None:
+        if ThermalConductivityLiquids is None and not skip_missing:
             ThermalConductivityLiquids = [ThermalConductivityLiquid(CASRN=constants.CASs[i], MW=constants.MWs[i], 
                                                                     Tm=constants.Tms[i], Tb=constants.Tbs[i],
                                                                     Tc=constants.Tcs[i], Pc=constants.Pcs[i], 
                                                                     omega=constants.omegas[i], Hfus=constants.Hfus_Tms[i])
                                                 for i in cmps]
 
-        if ThermalConductivityGases is None:
+        if ThermalConductivityGases is None and not skip_missing:
             ThermalConductivityGases = [ThermalConductivityGas(CASRN=constants.CASs[i], MW=constants.MWs[i], Tb=constants.Tbs[i],
                                                                Tc=constants.Tcs[i], Pc=constants.Pcs[i], Vc=constants.Vcs[i],
                                                                Zc=constants.Zcs[i], omega=constants.omegas[i], dipole=constants.dipoles[i],
@@ -473,7 +473,7 @@ class PropertyCorrelationPackage(object):
                                                                Cvgm=lambda T : HeatCapacityGases[i].T_dependent_property(T) - R)
                                                 for i in cmps]
 
-        if SurfaceTensions is None:
+        if SurfaceTensions is None and not skip_missing:
             SurfaceTensions = [SurfaceTension(CASRN=constants.CASs[i], MW=constants.MWs[i], Tb=constants.Tbs[i],
                                               Tc=constants.Tcs[i], Pc=constants.Pcs[i], Vc=constants.Vcs[i],
                                               Zc=constants.Zcs[i], omega=constants.omegas[i], StielPolar=constants.StielPolars[i],
@@ -500,31 +500,31 @@ class PropertyCorrelationPackage(object):
 
         # Mixture objects
 
-        if VolumeSolidMixtureObj is None:
+        if VolumeSolidMixtureObj is None and not skip_missing:
             VolumeSolidMixtureObj = VolumeSolidMixture(CASs=constants.CASs, MWs=constants.MWs, VolumeSolids=VolumeSolids)
-        if VolumeLiquidMixtureObj is None:
+        if VolumeLiquidMixtureObj is None and not skip_missing:
             VolumeLiquidMixtureObj = VolumeLiquidMixture(MWs=constants.MWs, Tcs=constants.Tcs, Pcs=constants.Pcs, Vcs=constants.Vcs, Zcs=constants.Zcs, omegas=constants.omegas, CASs=constants.CASs, VolumeLiquids=VolumeLiquids)
-        if VolumeGasMixtureObj is None:
+        if VolumeGasMixtureObj is None and not skip_missing:
             VolumeGasMixtureObj = VolumeGasMixture(eos=None, MWs=constants.MWs, CASs=constants.CASs, VolumeGases=VolumeGases)
 
-        if HeatCapacityLiquidMixtureObj is None:
+        if HeatCapacityLiquidMixtureObj is None and not skip_missing:
             HeatCapacityLiquidMixtureObj = HeatCapacityLiquidMixture(MWs=constants.MWs, CASs=constants.CASs, HeatCapacityLiquids=HeatCapacityLiquids)
-        if HeatCapacityGasMixtureObj is None:
+        if HeatCapacityGasMixtureObj is None and not skip_missing:
             HeatCapacityGasMixtureObj = HeatCapacityGasMixture(MWs=constants.MWs, CASs=constants.CASs, HeatCapacityGases=HeatCapacityGases)
-        if HeatCapacitySolidMixtureObj is None:
+        if HeatCapacitySolidMixtureObj is None and not skip_missing:
             HeatCapacitySolidMixtureObj = HeatCapacitySolidMixture(MWs=constants.MWs, CASs=constants.CASs, HeatCapacitySolids=HeatCapacitySolids)
 
-        if ViscosityLiquidMixtureObj is None:
+        if ViscosityLiquidMixtureObj is None and not skip_missing:
             ViscosityLiquidMixtureObj = ViscosityLiquidMixture(MWs=constants.MWs, CASs=constants.CASs, ViscosityLiquids=ViscosityLiquids)
-        if ViscosityGasMixtureObj is None:
+        if ViscosityGasMixtureObj is None and not skip_missing:
             ViscosityGasMixtureObj = ViscosityGasMixture(MWs=constants.MWs, molecular_diameters=constants.molecular_diameters, Stockmayers=constants.Stockmayers, CASs=constants.CASs, ViscosityGases=ViscosityGases)
 
-        if ThermalConductivityLiquidMixtureObj is None:
+        if ThermalConductivityLiquidMixtureObj is None and not skip_missing:
             ThermalConductivityLiquidMixtureObj = ThermalConductivityLiquidMixture(CASs=constants.CASs, MWs=constants.MWs, ThermalConductivityLiquids=ThermalConductivityLiquids)
-        if ThermalConductivityGasMixtureObj is None:
+        if ThermalConductivityGasMixtureObj is None and not skip_missing:
             ThermalConductivityGasMixtureObj = ThermalConductivityGasMixture(MWs=constants.MWs, Tbs=constants.Tbs, CASs=constants.CASs, ThermalConductivityGases=ThermalConductivityGases, ViscosityGases=ViscosityGases)
 
-        if SurfaceTensionMixtureObj is None:
+        if SurfaceTensionMixtureObj is None and not skip_missing:
             SurfaceTensionMixtureObj = SurfaceTensionMixture(MWs=constants.MWs, Tbs=constants.Tbs, Tcs=constants.Tcs, CASs=constants.CASs, SurfaceTensions=SurfaceTensions, VolumeLiquids=VolumeLiquids)
         
         self.VolumeSolidMixture = VolumeSolidMixtureObj

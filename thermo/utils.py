@@ -2967,6 +2967,8 @@ class TDependentProperty(object):
 #            self.best_fit_Tmax_slope = (self.best_fit_Tmax_value 
 #                                        - fit_value_high)/slope_delta_T
             self.best_fit_Tmax_slope = horner(self.best_fit_d_coeffs, self.best_fit_Tmax)
+            self.best_fit_Tmax_dT2 = horner(self.best_fit_d2_coeffs, self.best_fit_Tmax)
+            
 
             # Extrapolation to lower T
             self.best_fit_Tmin_value = self.calculate(self.best_fit_Tmin, BESTFIT)
@@ -2980,6 +2982,7 @@ class TDependentProperty(object):
 #                                        - self.best_fit_Tmin_value)/slope_delta_T
 
             self.best_fit_Tmin_slope = horner(self.best_fit_d_coeffs, self.best_fit_Tmin)
+            self.best_fit_Tmin_dT2 = horner(self.best_fit_d2_coeffs, self.best_fit_Tmin)
             
             if set_limits:
                 if self.Tmin is None:

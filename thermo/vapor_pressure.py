@@ -758,6 +758,10 @@ class VaporPressure(TDependentProperty):
                 return Psat - lnPGoal, dPsat
             # Guess with the two extrapolations from the linear fits
             # By definition both guesses are in the range of they would have been returned
+            if T_low > best_fit_Tmax:
+                T_low = best_fit_Tmax
+            if T_high < best_fit_Tmin:
+                T_high = best_fit_Tmin
             T = newton(to_solve, 0.5*(T_low + T_high), fprime=True, low=best_fit_Tmin, high=best_fit_Tmax)
             return T
 
