@@ -26,6 +26,7 @@ from fluids.numerics import derivative, assert_close, jacobian, hessian
 
 from thermo.chemical_package import ChemicalConstantsPackage, PropertyCorrelationPackage
 from thermo import Chemical, Mixture
+from math import *
 from thermo.phases import *
 from thermo.eos_mix import *
 from thermo.eos import *
@@ -376,6 +377,84 @@ def test_GibbbsExcessLiquid_PoyntingWorking():
     assert_close(dS_dT, dS_dT_num, rtol=1e-7)
     assert_close(dS_dT, 0.3659084663286978, rtol=1e-11)
     
+def test_GibbsExcessLiquid_lnPsats():
+    T, P, zs = 100.0, 1e5, [1.0]
+    constants = ChemicalConstantsPackage(Tms=[179.2], Tbs=[383.75], Tcs=[591.75], Pcs=[4108000.0], omegas=[0.257], MWs=[92.13842], CASs=['108-88-3'], names=[u'toluene'])
+    VaporPressures = [VaporPressure(best_fit=(178.01, 591.74, [-8.638045111752356e-20, 2.995512203611858e-16, -4.5148088801006036e-13, 3.8761537879200513e-10, -2.0856828984716705e-07, 7.279010846673517e-05, -0.01641020023565049, 2.2758331029405516, -146.04484159879843]))]
+    HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [-9.48396765770823e-21, 4.444060985512694e-17, -8.628480671647472e-14, 8.883982004570444e-11, -5.0893293251198045e-08, 1.4947108372371731e-05, -0.0015271248410402886, 0.19186172941013854, 30.797883940134057]))]
+    VolumeLiquids = [VolumeLiquid(best_fit=(178.01, 581.75, [2.2801490297347937e-23, -6.411956871696508e-20, 7.723152902379232e-17, -5.197203733189603e-14, 2.1348482785660093e-11, -5.476649499770259e-09, 8.564670053875876e-07, -7.455178589434267e-05, 0.0028545812080104068]))]
+    correlations = PropertyCorrelationPackage(constants, VolumeLiquids=VolumeLiquids, VaporPressures=VaporPressures, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
+    liquid = GibbsExcessLiquid(VaporPressures=correlations.VaporPressures, 
+                               HeatCapacityGases=correlations.HeatCapacityGases,
+                               VolumeLiquids=correlations.VolumeLiquids,
+                               use_phis_sat=False, use_Poynting=True, T=T, P=P, zs=zs)
+    
+    for T in (1, 5, 20, 100, 400, 591.74-1e-4, 591.74, 591.74+1e-10, 1000):
+        liquid = liquid.to(T=T, P=P, zs=zs)
+        assert_close(liquid.Psats()[0], exp(liquid.lnPsats()[0]), rtol=1e-12)
+    
+        dlnPsats_dT = liquid.dlnPsats_dT()[0]
+        dlnPsats_dT_num = derivative(lambda T: liquid.to(T=T, P=P, zs=zs).lnPsats()[0], T, dx=T*1e-7)
+        assert_close(dlnPsats_dT, dlnPsats_dT_num, rtol=5e-6)
+        
+        # Lack of second derivative continuity means this doesn't work
+        if T < 591.73:
+            d2lnPsats_dT2 = liquid.d2lnPsats_dT2()[0]
+            d2lnPsats_dT2_num = derivative(lambda T: liquid.to(T=T, P=P, zs=zs).dlnPsats_dT()[0], T, dx=T*1e-7)
+            assert_close(d2lnPsats_dT2, d2lnPsats_dT2_num, rtol=5e-6)
+    
+    liquid = liquid.to(T=300, P=P, zs=zs)
+    assert_close(liquid.dPsats_dT_over_Psats()[0], 0.05097707819215502, rtol=1e-12)
+    liquid = liquid.to(T=100, P=P, zs=zs)
+    assert_close(liquid.dPsats_dT_over_Psats()[0], .6014857645090779, rtol=1e-12)
+    
+    # Point where cannot calculate normally, need special math
+    liquid = liquid.to(T=5, P=P, zs=zs)
+    assert_close(liquid.dPsats_dT_over_Psats(), 268.3252967590297, rtol=1e-12)
+    
+    # High temp - avoid checking a value
+    liquid = liquid.to(T=1000, P=P, zs=zs)
+    assert_close(liquid.dPsats_dT_over_Psats()[0], liquid.dPsats_dT()[0]/liquid.Psats()[0], rtol=1e-12)
+
+def test_GibbsExcessLiquid_dHS_dT_low():
+    T, P, zs = 100.0, 1e5, [1.0]
+    constants = ChemicalConstantsPackage(Tms=[179.2], Tbs=[383.75], Tcs=[591.75], Pcs=[4108000.0], omegas=[0.257], MWs=[92.13842], CASs=['108-88-3'], names=[u'toluene'])
+    VaporPressures = [VaporPressure(best_fit=(178.01, 591.74, [-8.638045111752356e-20, 2.995512203611858e-16, -4.5148088801006036e-13, 3.8761537879200513e-10, -2.0856828984716705e-07, 7.279010846673517e-05, -0.01641020023565049, 2.2758331029405516, -146.04484159879843]))]
+    HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [-9.48396765770823e-21, 4.444060985512694e-17, -8.628480671647472e-14, 8.883982004570444e-11, -5.0893293251198045e-08, 1.4947108372371731e-05, -0.0015271248410402886, 0.19186172941013854, 30.797883940134057]))]
+    VolumeLiquids = [VolumeLiquid(best_fit=(178.01, 581.75, [2.2801490297347937e-23, -6.411956871696508e-20, 7.723152902379232e-17, -5.197203733189603e-14, 2.1348482785660093e-11, -5.476649499770259e-09, 8.564670053875876e-07, -7.455178589434267e-05, 0.0028545812080104068]))]
+    correlations = PropertyCorrelationPackage(constants, VolumeLiquids=VolumeLiquids, VaporPressures=VaporPressures, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
+    liquid = GibbsExcessLiquid(VaporPressures=correlations.VaporPressures, 
+                               HeatCapacityGases=correlations.HeatCapacityGases,
+                               VolumeLiquids=correlations.VolumeLiquids,
+                               use_phis_sat=False, use_Poynting=True, T=T, P=P, zs=zs)
+    liquid = liquid.to(T=10.0, P=P, zs=zs)
+    assert_close(liquid.Psats()[0], 1.8250740791522587e-269)
+    assert_close(liquid.S(), -463.15806679753285, rtol=1e-12)
+    assert_close(liquid.dS_dT(), 9.368833868082978, rtol=1e-12)
+    assert_close(liquid.H(), -73061.5146569193, rtol=1e-12)
+    assert_close(liquid.dH_dT(), 93.68833868183933, rtol=1e-12)
+    
+    liquid = liquid.to(T=8.0, P=P, zs=zs)
+    assert_close(liquid.S(), -484.0343032579679, rtol=1e-12)
+    assert_close(liquid.dS_dT(), 11.67894683998161, rtol=1e-12)
+    assert_close(liquid.H(), -73248.63457031998, rtol=1e-12)
+    assert_allclose(liquid.dH_dT(), 93.43157471985432, rtol=1e-12)
+    assert liquid.Psats()[0] == 0.0
+    
+    # used to return inf but not error - now check for infinity
+    liquid = liquid.to(T=8.7, P=P, zs=zs)
+    assert_close(liquid.S(), -476.1934077017887, rtol=1e-12)
+    assert_close(liquid.dS_dT(), 10.749591046689055, rtol=1e-12)
+    assert_close(liquid.H(), -73183.20101443084, rtol=1e-12)
+    assert_allclose(liquid.dH_dT(), 93.52144210619554, rtol=1e-12) # used to be nan
+    
+    # Point where vapor pressure was so low the calculation was not erroring
+    # but was failing for floating point errors
+    liquid = liquid.to(T=16.010610610610595, P=P, zs=zs)
+    assert_allclose(liquid.dS_dT(), 5.899836993871634, rtol=1e-12)
+    assert_allclose(liquid.dH_dT(), 94.45999277445732, rtol=1e-12)
+
+
 
 def test_EOSGas_phis():
     # Acetone, chloroform, methanol

@@ -875,51 +875,51 @@ def test_a_alpha_plot(fluid, eos):
     
     
 #### Ideal property package - dead out of the gate, second T derivative of V is zero - breaks requirements
-#@pytest.mark.plot
-#@pytest.mark.slow
-#@pytest.mark.parametric
-#@pytest.mark.parametrize("fluid", pure_fluids)
-#def test_PH_plot_ideal_Poy(fluid):
-#    '''
-#    '''
-#    if fluid == 'water':
-#        return # Causes multiple solutions
-#    path = os.path.join(pure_surfaces_dir, fluid, "PH")
-#    if not os.path.exists(path):
-#        os.makedirs(path)
-#    key = '%s - %s - %s - %s' %('PH', "idealPoynting", "physical", fluid)
-#    
-#    T, P = 298.15, 101325.0
-#    zs = [1.0]
-#    fluid_idx = pure_fluids.index(fluid)
-#    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
-#    ig_kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
-#                  HeatCapacityGases=pure_props.HeatCapacityGases)
-##
-#    liquid = GibbsExcessLiquid(VaporPressures=pure_props.VaporPressures, 
-#                           HeatCapacityGases=pure_props.HeatCapacityGases,
-#                           VolumeLiquids=pure_props.VolumeLiquids,
-#                           use_phis_sat=False, use_Poynting=True).to_TP_zs(T, P, zs)
+@pytest.mark.plot
+@pytest.mark.slow
+@pytest.mark.parametric
+@pytest.mark.parametrize("fluid", pure_fluids)
+def test_PH_plot_ideal_Poy(fluid):
+    '''
+    '''
+    if fluid == 'water':
+        return # Causes multiple solutions
+    path = os.path.join(pure_surfaces_dir, fluid, "PH")
+    if not os.path.exists(path):
+        os.makedirs(path)
+    key = '%s - %s - %s - %s' %('PH', "idealPoynting", "physical", fluid)
+    
+    T, P = 298.15, 101325.0
+    zs = [1.0]
+    fluid_idx = pure_fluids.index(fluid)
+    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
+    ig_kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
+                  HeatCapacityGases=pure_props.HeatCapacityGases)
 #
-#    gas = EOSGas(IGMIX, T=T, P=P, zs=zs, **ig_kwargs)
-##
-#    flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
-#    flasher.VL_IG_activity = True
-##
-#    res = flasher.TPV_inputs(zs=zs, pts=50, spec0='T', spec1='P', check0='P', check1='H', prop0='T',
-#                           trunc_err_low=1e-10, 
-#                           trunc_err_high=1, color_map=cm_flash_tol(),
-#                           auto_range='physical', 
-#                           show=False)
-##
-#    matrix_spec_flashes, matrix_flashes, errs, plot_fig = res
-##    
-#    plot_fig.savefig(os.path.join(path, key + '.png'))
-#    plt.close()
-##
-#    max_err = np.max(errs)
-#    assert max_err < 1e-8
-##test_PH_plot_ideal_Poy('methanol')
+    liquid = GibbsExcessLiquid(VaporPressures=pure_props.VaporPressures, 
+                           HeatCapacityGases=pure_props.HeatCapacityGases,
+                           VolumeLiquids=pure_props.VolumeLiquids,
+                           use_phis_sat=False, use_Poynting=True).to_TP_zs(T, P, zs)
+
+    gas = EOSGas(IGMIX, T=T, P=P, zs=zs, **ig_kwargs)
+#
+    flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
+    flasher.VL_IG_activity = True
+#
+    res = flasher.TPV_inputs(zs=zs, pts=50, spec0='T', spec1='P', check0='P', check1='H', prop0='T',
+                           trunc_err_low=1e-10, 
+                           trunc_err_high=1, color_map=cm_flash_tol(),
+                           auto_range='physical', 
+                           show=False)
+#
+    matrix_spec_flashes, matrix_flashes, errs, plot_fig = res
+#    
+    plot_fig.savefig(os.path.join(path, key + '.png'))
+    plt.close()
+#
+    max_err = np.max(errs)
+    assert max_err < 1e-8
+#test_PH_plot_ideal_Poy('methanol')
 
 
 ### Non-generic tests
@@ -1469,13 +1469,14 @@ def test_IG_liq_poy_flashes(hacks):
     assert 1 == res.phase_count
     assert_close(res.rho_mass(), 455.930726761562)
     
+    
     # Low temperature and very low pressure transition
     res = flasher.flash(T=50, P=1e-4)
     assert res.liquid0 is not None
     assert 1 == res.phase_count
-    assert_close(res.H(), -9778.899615845798)
-    
-    res = flasher.flash(T=50, P=1e-5)
+    assert_close(res.H(), -62196.88248213482)
+     # If the low pressure vapor pressure extrapolation method changes, this one will fail
+    res = flasher.flash(T=50, P=1e-45)
     assert res.gas is not None
     assert 1 == res.phase_count
     assert_close(res.H(), -8268.890506895972)
@@ -1491,6 +1492,7 @@ def test_IG_liq_poy_flashes(hacks):
     assert 1 == res.phase_count
     assert_close(res.Z(), 1, rtol=1e-12)
     
+    
     # STP is a liquid
     res = flasher.flash(T=298.15, P=101325.0)
     assert res.liquid0 is not None
@@ -1503,13 +1505,13 @@ def test_IG_liq_poy_flashes(hacks):
         assert res.gas is not None
         assert 1 == res.phase_count
         assert_close(res.Z(), 1, rtol=1e-12)
-        
+    
         res =  flasher.flash(T=1000, P=1e10)
         assert res.liquid0 is not None
         assert 1 == res.phase_count
         assert_allclose(res.liquid0.lnphis(), [189.5201904078434])
         assert_close(res.G(), 1653472.4199520082)
-        
+    
     # Vapor fraction flashes
     res = flasher.flash(T=646, VF=0)
     assert_close(res.P, 21777293.25835532)
@@ -1524,7 +1526,7 @@ def test_IG_liq_poy_flashes(hacks):
     assert_close(res.T, 646)
     res = flasher.flash(P=21777293.25835532, VF=1)
     assert_close(res.T, 646)
-
+    
     # PH
     res = flasher.flash(H=-43925.16879798105, P=1e5)
     assert_allclose(res.T, 300.0)

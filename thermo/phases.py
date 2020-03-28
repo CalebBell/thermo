@@ -25,6 +25,7 @@ __all__ = ['GibbsExcessLiquid', 'GibbsExcessSolid', 'Phase', 'EOSLiquid', 'EOSGa
            'gas_phases', 'liquid_phases', 'solid_phases', 'CombinedPhase', 'CoolPropPhase', 'CoolPropLiquid', 'CoolPropGas', 'INCOMPRESSIBLE_CONST']
 
 import sys
+from math import isinf, isnan
 from fluids.constants import R, R_inv
 from fluids.numerics import (horner, horner_and_der, horner_and_der2, horner_log, jacobian, derivative,
                              best_fit_integral_value, best_fit_integral_over_T_value,
@@ -65,6 +66,7 @@ class Phase(object):
     T_REF_IG_INV = 1.0/T_REF_IG
     P_REF_IG = 101325.
     P_REF_IG_INV = 1.0/P_REF_IG
+    LOG_P_REF_IG = log(P_REF_IG)
     
     T_MAX_FIXED = 10000.0
     T_MIN_FIXED = 1e-3
@@ -2313,7 +2315,7 @@ class GibbsExcessLiquid(Phase):
     Tait_B_data = None
     Tait_C_data = None
     def __init__(self, VaporPressures, VolumeLiquids=None, 
-                 GibbsExcessModel=IdealSolution(), 
+                 GibbsExcessModel=None, 
                  eos_pure_instances=None,
                  HeatCapacityGases=None, 
                  EnthalpyVaporizations=None,
@@ -2418,6 +2420,8 @@ class GibbsExcessLiquid(Phase):
         
         
         
+        if GibbsExcessModel is None:
+            GibbsExcessModel = IdealSolution(T=T, xs=zs)
         
         self.GibbsExcessModel = GibbsExcessModel
         self.eos_pure_instances = eos_pure_instances
@@ -2754,7 +2758,7 @@ class GibbsExcessLiquid(Phase):
         self._dPsats_dT = dPsats_dT = [VaporPressure.T_dependent_property_derivative(T=T)
                      for VaporPressure in self.VaporPressures]
         return dPsats_dT
-
+    
     def d2Psats_dT2(self):
         try:
             return self._d2Psats_dT2
@@ -2798,6 +2802,93 @@ class GibbsExcessLiquid(Phase):
         self._d2Psats_dT2 = d2Psats_dT2 = [VaporPressure.T_dependent_property_derivative(T=T, n=2)
                      for VaporPressure in self.VaporPressures]
         return d2Psats_dT2
+
+    def lnPsats(self):
+        T, cmps = self.T, self.cmps
+        T_inv = 1.0/T
+        logT = log(T)
+        lnPsats = []
+        if self.Psats_locked:
+            Psats_data = self.Psats_data
+            Tmins, Tmaxes, coeffs = Psats_data[0], Psats_data[3], Psats_data[6]
+            for i in cmps:
+                if T < Tmins[i]:
+                    A, B, C = Psats_data[9][i]
+                    Psat = (A + B*T_inv + C*logT)
+                elif T > Tmaxes[i]:
+                    Psat = (T - Tmaxes[i])*Psats_data[4][i] + Psats_data[5][i]
+                else:
+                    Psat = 0.0
+                    for c in coeffs[i]:
+                        Psat = Psat*T + c
+                lnPsats.append(Psat)
+            return lnPsats
+        return [log(i) for i in self.Psats()]
+    
+    def dlnPsats_dT(self):
+        T, cmps = self.T, self.cmps
+        T_inv = 1.0/T
+        Tinv2 = T_inv*T_inv
+        if self.Psats_locked:
+            Psats_data = self.Psats_data
+            Tmins, Tmaxes, dcoeffs = Psats_data[0], Psats_data[3], Psats_data[7]
+            dlnPsats_dT = []
+            for i in cmps:
+                if T < Tmins[i]:
+                    A, B, C = Psats_data[9][i]
+                    dPsat_dT = (-B*Tinv2 + C*T_inv)
+                elif T > Tmaxes[i]:
+                    dPsat_dT = Psats_data[4][i]
+                else:
+                    dPsat_dT = 0.0
+                    for c in dcoeffs[i]:
+                        dPsat_dT = dPsat_dT*T + c
+                dlnPsats_dT.append(dPsat_dT)
+            return dlnPsats_dT
+
+    def d2lnPsats_dT2(self):
+        T, cmps = self.T, self.cmps
+        T_inv = 1.0/T
+        T_inv2 = T_inv*T_inv
+        Tinv3 = T_inv*T_inv*T_inv
+        if self.Psats_locked:
+            Psats_data = self.Psats_data
+            Tmins, Tmaxes, d2coeffs = Psats_data[0], Psats_data[3], Psats_data[8]
+            d2lnPsats_dT2 = []
+            for i in cmps:
+                if T < Tmins[i]:
+                    A, B, C = Psats_data[9][i]
+                    d2lnPsat_dT2 = (2.0*B*T_inv - C)*T_inv2                    
+                elif T > Tmaxes[i]:
+                    d2lnPsat_dT2 = 0.0
+                else:
+                    d2lnPsat_dT2 = 0.0
+                    for c in d2coeffs[i]:
+                        d2lnPsat_dT2 = d2lnPsat_dT2*T + c
+                d2lnPsats_dT2.append(d2lnPsat_dT2)
+            return d2lnPsats_dT2
+
+    def dPsats_dT_over_Psats(self):
+        T, cmps = self.T, self.cmps
+        T_inv = 1.0/T
+        Tinv2 = T_inv*T_inv
+        if self.Psats_locked:
+            dPsat_dT_over_Psats = []
+            Psats_data = self.Psats_data
+            Tmins, Tmaxes, dcoeffs, low_coeffs = Psats_data[0], Psats_data[3], Psats_data[7], Psats_data[9]
+            for i in cmps:
+                if T < Tmins[i]:
+                    dPsat_dT_over_Psat = (-low_coeffs[i][1]*Tinv2 + low_coeffs[i][2]*T_inv)
+                elif T > Tmaxes[i]:
+                    dPsat_dT_over_Psat = Psats_data[4][i]
+                else:
+                    dPsat_dT_over_Psat = 0.0
+                    for c in dcoeffs[i]:
+                        dPsat_dT_over_Psat = dPsat_dT_over_Psat*T + c
+                dPsat_dT_over_Psats.append(dPsat_dT_over_Psat)
+            return dPsat_dT_over_Psats
+        return [i/j for i, j in zip(self.dPsats_dT(), self.Psats())]
+
 
     def Vms_sat(self):
         try:
@@ -3305,8 +3396,8 @@ class GibbsExcessLiquid(Phase):
         except AttributeError:
             pass
         # Untested
-        H = 0
         T = self.T
+        RT = R*T
         P = self.P
         zs, cmps = self.zs, self.cmps
         T_REF_IG = self.T_REF_IG
@@ -3360,18 +3451,31 @@ class GibbsExcessLiquid(Phase):
                     dVms_sat_dT = self._Vms_sat_dT
                 except AttributeError:
                     dVms_sat_dT = self.dVms_sat_dT()
-                    
-                # Trying the DTU formulation:
-                H = 0.0
-                for i in cmps:
-                    dV_vap = R*T/Psats[i] - Vms_sat[i]
-#                    print( R*T/Psats[i] , Vms_sat[i])
-                    # ratio of der to value might be easier?
-                    dS_vap = dPsats_dT[i]*dV_vap
-#                    print(dPsats_dT[i]*dV_vap)
-                    Hvap = T*dS_vap
-                    H += zs[i]*(Cpig_integrals_pure[i] - Hvap)
-                    
+                
+                failed_dPsat_dT = False
+                try:
+                    H = 0.0
+                    for i in cmps:
+                        dV_vap = R*T/Psats[i] - Vms_sat[i]
+    #                    print( R*T/Psats[i] , Vms_sat[i])
+                        # ratio of der to value might be easier?
+                        dS_vap = dPsats_dT[i]*dV_vap
+    #                    print(dPsats_dT[i]*dV_vap)
+                        Hvap = T*dS_vap
+                        H += zs[i]*(Cpig_integrals_pure[i] - Hvap)
+                except ZeroDivisionError:
+                    failed_dPsat_dT = True
+                
+                if failed_dPsat_dT or isinf(H):
+                    # Handle the case where vapor pressure reaches zero - needs special implementations
+                    dPsats_dT_over_Psats = self.dPsats_dT_over_Psats() 
+                    H = 0.0
+                    for i in cmps:
+#                        dV_vap = R*T/Psats[i] - Vms_sat[i]
+#                        dS_vap = dPsats_dT[i]*dV_vap
+                        Hvap = T*dPsats_dT_over_Psats[i]*RT
+                        H += zs[i]*(Cpig_integrals_pure[i] - Hvap)
+
                 if self.use_Tait:
                     dH_dP_integrals_Tait = self.dH_dP_integrals_Tait()
                     for i in cmps:
@@ -3443,8 +3547,10 @@ class GibbsExcessLiquid(Phase):
         for i in cmps:
             S -= zs[i]*log_zs[i]
         S *= R
+        S_base = S
         
         T_inv = 1.0/T
+        RT = R*T
         
         P_REF_IG_INV = self.P_REF_IG_INV
         
@@ -3471,27 +3577,43 @@ class GibbsExcessLiquid(Phase):
         
         if self.P_DEPENDENT_H_LIQ:
             if self.use_IG_Cp:
-                # Holy - actually consistent! Do NOT CHANGE ANYTHING
-                for i in self.cmps:
-                    dSi = Cpig_integrals_over_T_pure[i] 
-                    dVsat = R*T/Psats[i] - Vms_sat[i]
-                    dSvap = dPsats_dT[i]*dVsat
-    #                dSvap = Hvaps[i]/T # Confirmed - this line breaks everything - do not use
-                    dSi -= dSvap
-    #                dSi = Cpig_integrals_over_T_pure[i] - Hvaps[i]*T_inv # Do the transition at the temperature of the liquid
-                    # Take each component to its reference state change - saturation pressure
-    #                dSi -= R*log(P*P_REF_IG_INV)
-                    dSi -= R*log(Psats[i]*P_REF_IG_INV)
-    #                dSi -= R*log(P/101325.0)
-                    # Only include the
-                    dP = P - Psats[i]
-                    
-                    
-#                    dP = max(0.0, P - Psats[i])
-    #                if dP > 0.0:
-                    # I believe should include effect of pressure on all components, regardless of phase
-                    dSi -= dP*dVms_sat_dT[i]
-                    S += dSi*zs[i]
+                failed_dPsat_dT = False
+                try:
+                    for i in self.cmps:
+                        dSi = Cpig_integrals_over_T_pure[i] 
+                        dVsat = R*T/Psats[i] - Vms_sat[i]
+                        dSvap = dPsats_dT[i]*dVsat
+        #                dSvap = Hvaps[i]/T # Confirmed - this line breaks everything - do not use
+                        dSi -= dSvap
+        #                dSi = Cpig_integrals_over_T_pure[i] - Hvaps[i]*T_inv # Do the transition at the temperature of the liquid
+                        # Take each component to its reference state change - saturation pressure
+        #                dSi -= R*log(P*P_REF_IG_INV)
+                        dSi -= R*log(Psats[i]*P_REF_IG_INV)
+        #                dSi -= R*log(P/101325.0)
+                        # Only include the
+                        dP = P - Psats[i]
+    #                    dP = max(0.0, P - Psats[i])
+        #                if dP > 0.0:
+                        # I believe should include effect of pressure on all components, regardless of phase
+                        dSi -= dP*dVms_sat_dT[i]
+                        S += dSi*zs[i]
+                except (ZeroDivisionError, ValueError):
+                    # Handle the zero division on Psat or the log getting two small
+                    failed_dPsat_dT = True
+                
+                if failed_dPsat_dT or isinf(S):
+                    S = S_base
+                    # Handle the case where vapor pressure reaches zero - needs special implementations
+                    dPsats_dT_over_Psats = self.dPsats_dT_over_Psats()
+                    lnPsats = self.lnPsats()
+                    LOG_P_REF_IG = self.LOG_P_REF_IG
+                    for i in cmps:
+                        dSi = Cpig_integrals_over_T_pure[i] 
+                        dSvap = RT*dPsats_dT_over_Psats[i]
+                        dSi -= dSvap
+                        dSi -= R*(lnPsats[i] - LOG_P_REF_IG)#   trunc_log(Psats[i]*P_REF_IG_INV)
+                        dSi -= P*dVms_sat_dT[i]
+                        S += dSi*zs[i]
             else:
                 # mine
                 Hvaps_T_ref = self.Hvaps_T_ref()
@@ -3572,34 +3694,33 @@ class GibbsExcessLiquid(Phase):
                 d2Vms_sat_dT2 = self._d2Vms_sat_dT2
             except AttributeError:
                 d2Vms_sat_dT2 = self.d2Vms_sat_dT2()
-            
-            for i in self.cmps:
-                x0 = Psats[i]
-                Psat_inv = 1.0/x0
-                x1 = Vms_sat[i]
-                x2 = dPsats_dT[i]
-                x3 = R*Psat_inv
-                x4 = T*x3
-                x5 = -x1
-                x6 = dVms_sat_dT[i]
-                x7 = T*x2
-#                print(#-T*(P - x0)*d2Vms_sat_dT2[i],
-#                       - T*(x4 + x5)*d2Psats_dT2[i], T, x4, x5, d2Psats_dT2[i],
-                       #x2*(x1 - x4) + x2*(T*x6 + x5) - x7*(-R*x7*Psat_inv*Psat_inv + x3 - x6),
-                       #Cpigs_pure[i]
-#                       )
-                Cp += zs[i]*(-T*(P - x0)*d2Vms_sat_dT2[i] - T*(x4 + x5)*d2Psats_dT2[i] 
-                + x2*(x1 - x4) + x2*(T*x6 + x5) - x7*(-R*x7*Psat_inv*Psat_inv + x3 - x6) + Cpigs_pure[i])
-                # The second derivative of volume is zero when extrapolating, which causes zero issues, discontinuous derivative
 
+            failed_dPsat_dT = False
+            try:
+                for i in self.cmps:
+                    x0 = Psats[i]
+                    Psat_inv = 1.0/x0
+                    x1 = Vms_sat[i]
+                    x2 = dPsats_dT[i]
+                    x3 = R*Psat_inv
+                    x4 = T*x3
+                    x5 = -x1
+                    x6 = dVms_sat_dT[i]
+                    x7 = T*x2
+    #                print(#-T*(P - x0)*d2Vms_sat_dT2[i],
+    #                       - T*(x4 + x5)*d2Psats_dT2[i], T, x4, x5, d2Psats_dT2[i],
+                           #x2*(x1 - x4) + x2*(T*x6 + x5) - x7*(-R*x7*Psat_inv*Psat_inv + x3 - x6),
+                           #Cpigs_pure[i]
+    #                       )
+                    Cp += zs[i]*(-T*(P - x0)*d2Vms_sat_dT2[i] - T*(x4 + x5)*d2Psats_dT2[i] 
+                    + x2*(x1 - x4) + x2*(T*x6 + x5) - x7*(-R*x7*Psat_inv*Psat_inv + x3 - x6) + Cpigs_pure[i])
+                    # The second derivative of volume is zero when extrapolating, which causes zero issues, discontinuous derivative
                 '''
                 from sympy import *
                 T, P, R, zi = symbols('T, P, R, zi')
-                
                 Psat, Cpig_int, Vmsat = symbols('Psat, Cpig_int, Vmsat', cls=Function)
                 dVmsatdT = diff(Vmsat(T), T)
                 dPsatdT = diff(Psat(T), T)
-                
                 dV_vap = R*T/Psat(T) - Vmsat(T)
                 dS_vap = dPsatdT*dV_vap
                 Hvap = T*dS_vap
@@ -3610,12 +3731,31 @@ class GibbsExcessLiquid(Phase):
                 
                 (cse(diff(H, T), optimizations='basic'))
                 '''
-
-                
-                
-                
-                
-                
+            except (ZeroDivisionError, ValueError):
+                # Handle the zero division on Psat or the log getting two small
+                failed_dPsat_dT = True
+            
+            if failed_dPsat_dT or isinf(Cp) or isnan(Cp):
+                dlnPsats_dT = self.dlnPsats_dT()
+                d2lnPsats_dT2 = self.d2lnPsats_dT2()
+                Cp = 0.0
+                for i in self.cmps:
+                    Cp += zs[i]*(Cpigs_pure[i] - P*T*d2Vms_sat_dT2[i] - R*T*T*d2lnPsats_dT2[i]
+                    - 2.0*R*T*dlnPsats_dT[i])
+                    '''
+                    from sympy import *
+                    T, P, R, zi = symbols('T, P, R, zi')
+                    lnPsat, Cpig_T_int, Vmsat = symbols('lnPsat, Cpig_T_int, Vmsat', cls=Function)
+                    dVmsatdT = diff(Vmsat(T), T)
+                    dPsatdT = diff(exp(lnPsat(T)), T)
+                    dV_vap = R*T/exp(lnPsat(T)) - Vmsat(T)
+                    dS_vap = dPsatdT*dV_vap
+                    Hvap = T*dS_vap
+                    H = zi*(Cpig_int(T) - Hvap)
+                    dP = P
+                    H += zi*dP*(Vmsat(T) - T*dVmsatdT)
+                    print(simplify(expand(diff(H, T)).subs(exp(lnPsat(T)), 0)/zi))
+                    '''                
 #                Cp += zs[i]*(Cpigs_pure[i] - dHvaps_dT[i])
 #                Cp += zs[i]*(-T*(P - Psats[i])*d2Vms_sat_dT2[i] + (T*dVms_sat_dT[i] - Vms_sat[i])*dPsats_dT[i])
 
@@ -3637,6 +3777,7 @@ class GibbsExcessLiquid(Phase):
             pass
         # Needs testing
         T, P, P_DEPENDENT_H_LIQ = self.T, self.P, self.P_DEPENDENT_H_LIQ
+        RT = R*T
         Cp, zs = 0.0, self.zs
         Cpigs_pure = self.Cpigs_pure()
         dS_dT = 0.0
@@ -3648,16 +3789,78 @@ class GibbsExcessLiquid(Phase):
             Psats = self.Psats()
             dPsats_dT = self.dPsats_dT()
             d2Psats_dT2 = self.d2Psats_dT2()
-            for i in self.cmps:
-                x0 = Psats[i]
-                x1 = dPsats_dT[i]
-                x2 = R/x0
-                x3 = Vms_sat[i]
-                x4 = dVms_sat_dT[i]
-                dS_dT -= zs[i]*(x1*x2 - x1*x4 - x1*(R*T*x1/x0**2 - x2 + x4) + (P - x0)*d2Vms_sat_dT2[i]
-                + (T*x2 - x3)*d2Psats_dT2[i] - Cpigs_pure[i]*T_inv)
+            failed_dPsat_dT = False
+            for Psat in Psats:
+                if Psat < 1e-40:
+                    failed_dPsat_dT = True
+            if not failed_dPsat_dT:
+                try:
+                    '''
+                    from sympy import *
+                    T, P, R, zi, P_REF_IG = symbols('T, P, R, zi, P_REF_IG')
+                    
+                    Psat, Cpig_T_int, Vmsat = symbols('Psat, Cpig_T_int, Vmsat', cls=Function)
+                    dVmsatdT = diff(Vmsat(T), T)
+                    dPsatdT = diff(Psat(T), T)
+                    
+                    S = 0
+                    dSi = Cpig_T_int(T)
+                    dVsat = R*T/Psat(T) - Vmsat(T)
+                    dSvap = dPsatdT*dVsat
+                    dSi -= dSvap
+                    dSi -= R*log(Psat(T)/P_REF_IG)
+                    dP = P - Psat(T)
+                    dSi -= dP*dVmsatdT
+                    S += dSi*zi
+                    # cse(diff(S, T), optimizations='basic')
+                    '''
+                    for i in self.cmps:
+                        x0 = Psats[i]
+                        x1 = dPsats_dT[i]
+                        x2 = R/x0
+                        x3 = Vms_sat[i]
+                        x4 = dVms_sat_dT[i]
+                        dS_dT -= zs[i]*(x1*x2 - x1*x4 - x1*(RT*x1/x0**2 - x2 + x4) + (P - x0)*d2Vms_sat_dT2[i]
+                        + (T*x2 - x3)*d2Psats_dT2[i] - Cpigs_pure[i]*T_inv)
+                except (ZeroDivisionError, ValueError):
+                    # Handle the zero division on Psat or the log getting two small
+                    failed_dPsat_dT = True
                 
+            if failed_dPsat_dT:
+                lnPsats = self.lnPsats()
+                dlnPsats_dT = self.dlnPsats_dT()
+                d2lnPsats_dT2 = self.d2lnPsats_dT2()
+#                P*Derivative(Vmsat(T), (T, 2))
+#                R*T*Derivative(lnPsat(T), (T, 2))
+#                 2*R*Derivative(lnPsat(T), T) + Derivative(Cpig_T_int(T), T)
+                '''
+                from sympy import *
+                T, P, R, zi, P_REF_IG = symbols('T, P, R, zi, P_REF_IG')
                 
+                lnPsat, Cpig_T_int, Vmsat = symbols('lnPsat, Cpig_T_int, Vmsat', cls=Function)
+                # Psat, Cpig_T_int, Vmsat = symbols('Psat, Cpig_T_int, Vmsat', cls=Function)
+                dVmsatdT = diff(Vmsat(T), T)
+                dPsatdT = diff(exp(lnPsat(T)), T)
+                
+                S = 0
+                dSi = Cpig_T_int(T)
+                dVsat = R*T/exp(lnPsat(T)) - Vmsat(T)
+                dSvap = dPsatdT*dVsat
+                dSi -= dSvap
+                # dSi -= R*log(Psat(T)/P_REF_IG)
+                dSi -= R*(lnPsat(T) - log(P_REF_IG))
+                dP = P - exp(lnPsat(T))
+                dSi -= dP*dVmsatdT
+                S += dSi*zi
+                # cse(diff(S, T), optimizations='basic')
+                print(simplify(expand(diff(S, T)).subs(exp(lnPsat(T)), 0)/zi))
+
+
+                '''
+                dS_dT = 0.0
+                for i in self.cmps:
+                    dS_dT -= zs[i]*(P*d2Vms_sat_dT2[i] + RT*d2lnPsats_dT2[i]
+                    + 2.0*R*dlnPsats_dT[i]- Cpigs_pure[i]*T_inv)
                 
                 
         self._dS_dT = dS_dT
