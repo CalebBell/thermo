@@ -26,14 +26,17 @@ __all__ = ['WagnerMcGarry', 'AntoinePoling', 'WagnerPoling', 'AntoineExtended',
            'Antoine', 'Wagner_original', 'Wagner', 'TRC_Antoine_extended', 
            'vapor_pressure_methods', 'VaporPressure', 'Perrys2_8', 'VDI_PPDS_3',
            'boiling_critical_relation', 'Lee_Kesler', 'Ambrose_Walton', 
-           'Edalat', 'Sanjari', 'Psub_Clapeyron', 'SublimationPressure']
+           'Edalat', 'Sanjari', 'Psub_Clapeyron', 'SublimationPressure', 
+           'Antoine_coeffs_from_point', 'Antoine_AB_coeffs_from_point',
+           'DIPPR101_ABC_coeffs_from_point']
 
 import os
 from fluids.constants import R
-from fluids.numerics import polyint_over_x, horner_log, horner, polyint, horner_and_der, derivative, py_newton as newton
+from fluids.numerics import polyint_over_x, horner_log, horner, polyint, horner_and_der2, horner_and_der, derivative, py_newton as newton, linspace
 
 import numpy as np
 import pandas as pd
+from math import e
 from thermo.utils import log, exp, isnan
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
 from thermo.utils import TDependentProperty
@@ -139,6 +142,50 @@ def Antoine(T, A, B, C, base=10.0):
     '''
     return base**(A - B/(T + C))
 
+
+def Antoine_coeffs_from_point(T, Psat, dPsat_dT, d2Psat_dT2, base=10.0):
+    '''
+    from sympy import *
+    base, A, B, C, T = symbols('base, A, B, C, T')
+    v = base**(A - B/(T + C))
+    d1 = diff(v, T)
+    d2 = diff(v, T, 2)
+    vk, d1k, d2k = symbols('vk, d1k, d2k')
+    solve([Eq(v, vk), Eq(d1, d1k), Eq(d2, d2k)], [A, B, C])
+    '''
+    A = log(Psat*exp(2*dPsat_dT**2/(dPsat_dT**2 - d2Psat_dT2*Psat)))/log(base)
+    B = 4*dPsat_dT**3*Psat/((dPsat_dT**4 - 2*dPsat_dT**2*d2Psat_dT2*Psat + d2Psat_dT2**2*Psat**2)*log(base))
+    C = (-T*dPsat_dT**2 + T*d2Psat_dT2*Psat + 2*dPsat_dT*Psat)/(dPsat_dT**2 - d2Psat_dT2*Psat)
+    return (A, B, C)
+
+def Antoine_AB_coeffs_from_point(T, Psat, dPsat_dT, base=10.0):
+    '''
+    from sympy import *
+    base, A, B, T = symbols('base, A, B, T')
+    v = base**(A - B/T)
+    d1 = diff(v, T)
+    d2 = diff(v, T, 2)
+    vk, d1k, d2k = symbols('vk, d1k, d2k')
+    solve([Eq(v, vk), Eq(d1, d1k)], [A, B])
+    '''
+    A = log(Psat*exp(T*dPsat_dT/Psat))/log(base)
+    B = T**2*dPsat_dT/(Psat*log(base))
+    return (A, B)
+
+def DIPPR101_ABC_coeffs_from_point(T, Psat, dPsat_dT, d2Psat_dT2):
+    '''
+    from sympy import *
+    base, A, B, C, T = symbols('base, A, B, C, T')
+    v = exp(A - B/T + C*log(T))
+    d1 = diff(v, T)
+    d2 = diff(v, T, 2)
+    vk, d1k, d2k = symbols('vk, d1k, d2k')
+    solve([Eq(v, vk), Eq(d1, d1k), Eq(d2, d2k)], [A, B, C])
+    '''
+    A = (T*dPsat_dT*Psat + T*(T*dPsat_dT**2 - Psat*(T*d2Psat_dT2 + 2*dPsat_dT))*log(T) + T*(T*dPsat_dT**2 - Psat*(T*d2Psat_dT2 + 2*dPsat_dT)) + Psat**2*log(Psat))/Psat**2
+    B = T**2*(-T*dPsat_dT**2 + T*d2Psat_dT2*Psat + dPsat_dT*Psat)/Psat**2
+    C = -T*(T*dPsat_dT**2 - Psat*(T*d2Psat_dT2 + 2*dPsat_dT))/Psat**2
+    return (A, B, C)
 
 def TRC_Antoine_extended(T, Tc, to, A, B, C, n, E, F):
     r'''Calculates vapor pressure of a chemical using the TRC Extended Antoine
@@ -733,6 +780,32 @@ class VaporPressure(TDependentProperty):
             
             
         return derivative(self.calculate, T, dx=1e-6, args=[method], n=order, order=1+order*2)
+
+    def custom_set_best_fit(self):
+        try:
+            Tmin, Tmax = self.best_fit_Tmin, self.best_fit_Tmax
+            best_fit_coeffs = self.best_fit_coeffs
+            v_Tmin = horner(best_fit_coeffs, Tmin)
+            for T_trans in linspace(Tmin, Tmax, 25):
+                v, d1, d2 = horner_and_der2(best_fit_coeffs, T_trans)
+                Psat = exp(v)
+                dPsat_dT = Psat*d1
+                d2Psat_dT2 = Psat*(d1*d1 + d2)                
+                
+                A, B, C = Antoine_ABC = Antoine_coeffs_from_point(T_trans, Psat, dPsat_dT, d2Psat_dT2, base=e)
+                self.best_fit_AB = Antoine_AB_coeffs_from_point(T_trans, Psat, dPsat_dT, base=e)
+                self.DIPPR101_ABC = DIPPR101_ABC_coeffs_from_point(T_trans, Psat, dPsat_dT, d2Psat_dT2)
+                
+                B_OK = B > 0.0 # B is negated in this implementation, so the requirement is reversed
+                C_OK = -T_trans < C < 0.0
+                if B_OK and C_OK:
+                    self.best_fit_Antoine = Antoine_ABC
+                    break
+                else:
+                    continue
+
+        except:
+            pass
     
     def solve_prop_best_fit(self, goal):
         best_fit_Tmin, best_fit_Tmax = self.best_fit_Tmin, self.best_fit_Tmax

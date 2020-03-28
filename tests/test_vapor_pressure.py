@@ -24,7 +24,7 @@ from numpy.testing import assert_allclose
 import pytest
 import numpy as np
 import pandas as pd
-from fluids.numerics import assert_close
+from fluids.numerics import assert_close, derivative
 from thermo.vapor_pressure import *
 from thermo.vapor_pressure import VDI_TABULAR
 from thermo.identifiers import checkCAS
@@ -68,6 +68,34 @@ def test_Antoine():
     Psat = Antoine(94.91, 6.83706+2.1249, 339.2095, 268.70-273.15)
     assert_allclose(Psat, 162978.88655572367)
 
+def test_Antoine_fit_extrapolate():
+    T = 178.01
+    A, B, C =  (24.0989474955895, 4346.793091137991, -18.96968471040141)
+    Psat, dPsat_dT, d2Psat_dT2 = (0.03946094565666715, 0.006781441203850251, 0.0010801244983894853)
+    
+    assert_close(Psat, Antoine(T, A, B, C, base=e), rtol=1e-10)
+    dPsat_dT_num = derivative(lambda T: Antoine(T, A, B, C, base=e), T, dx=T*1e-9)
+    assert_close(dPsat_dT_num, dPsat_dT, rtol=1e-7)
+    d2Psat_dT2_num = derivative(lambda T: Antoine(T, A, B, C, base=e), T, dx=T*1e-7, n=2, order=13)
+    d2Psat_dT2_analytical = B*(B/(C + T) - 2)*exp(A - B/(C + T))/(C + T)**3
+    assert_close(d2Psat_dT2_num, d2Psat_dT2, rtol=1e-4)
+    assert_close(d2Psat_dT2_analytical, d2Psat_dT2, rtol=1e-10)
+
+def test_Antoine_AB_fit_extrapolate():
+    T = 178.01
+    Psat, dPsat_dT, d2Psat_dT2 = (0.03946094565666715, 0.006781441203850251, 0.0010801244983894853)
+    
+    A, B = (27.358925161569008, 5445.569591293226)
+    C = 0.0
+    assert_close(Psat, Antoine(T, A, B, C, base=e), rtol=1e-10)
+    dPsat_dT_num = derivative(lambda T: Antoine(T, A, B, C, base=e), T, dx=T*1e-9)
+    assert_close(dPsat_dT_num, dPsat_dT, rtol=1e-7)
+    # d2Psat_dT2_num = derivative(lambda T: Antoine(T, A, B, C, base=e), T, dx=T*1e-7, n=2, order=13)
+    
+    d2Psat_dT2_analytical = B*(B/T - 2)*exp(A - B/T)/T**3
+    
+    # Second derivative does not match, but is similar - small jump
+    assert_close(d2Psat_dT2, d2Psat_dT2_analytical, rtol=1e-2)
 
 ### Data integrity
 def test_WagnerMcGarry():

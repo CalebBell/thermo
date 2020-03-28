@@ -39,7 +39,7 @@ import os
 from scipy.interpolate import interp1d
 import pandas as pd
 
-from fluids.numerics import horner, np, polyder
+from fluids.numerics import horner, np, polyder, horner_and_der2, linspace, quadratic_from_f_ders
 from thermo.utils import R
 from thermo.utils import log, exp, isnan
 from thermo.utils import Vm_to_rho, rho_to_Vm, mixing_simple, none_and_length_check
@@ -938,6 +938,34 @@ class VolumeLiquid(TPDependentProperty):
         self.load_all_methods()
         if best_fit is not None:
             self.set_best_fit(best_fit)
+            
+    def custom_set_best_fit(self):
+        try:
+            Tmin, Tmax = self.best_fit_Tmin, self.best_fit_Tmax
+            best_fit_coeffs = self.best_fit_coeffs
+            v_Tmin = horner(best_fit_coeffs, Tmin)
+            for T_trans in linspace(Tmin, Tmax, 25):
+                # Create a new polynomial approximating the fit at T_trans;
+                p = quadratic_from_f_ders(Tmin, *horner_and_der2(best_fit_coeffs, T_trans))
+                # Evaluate the first and second derivative at Tmin
+                v_Tmin_refit, d1_Tmin, d2_Tmin = horner_and_der2(p, Tmin)
+                # If the first derivative is negative (volume liquid should always be posisitive except for water)
+                # try a point higher up the curve
+                if d1_Tmin < 0.0:
+                    continue
+                # If the second derivative would ever make the first derivative negative until
+                # it reaches zero K, limit the second derivative; this introduces only 1 discontinuity
+                if Tmin - d1_Tmin/d2_Tmin > 0.0:
+                    # When this happens, note the middle `p` coefficient becomes zero - this is expected
+                    d2_Tmin = d1_Tmin/Tmin
+                self._Tmin_T_trans = T_trans
+                p = quadratic_from_f_ders(Tmin, v_Tmin, d1_Tmin, d2_Tmin)
+                self.best_fit_Tmin_quadratic = p
+                break
+
+        except:
+            pass
+
 
     def load_all_methods(self):
         r'''Method which picks out coefficients for the specified chemical

@@ -26,10 +26,10 @@ __all__ = ['GibbsExcessLiquid', 'GibbsExcessSolid', 'Phase', 'EOSLiquid', 'EOSGa
 
 import sys
 from fluids.constants import R, R_inv
-from fluids.numerics import (horner, horner_and_der, horner_log, jacobian, derivative,
+from fluids.numerics import (horner, horner_and_der, horner_and_der2, horner_log, jacobian, derivative,
                              best_fit_integral_value, best_fit_integral_over_T_value,
                              evaluate_linear_fits, evaluate_linear_fits_d,
-                             evaluate_linear_fits_d2,
+                             evaluate_linear_fits_d2, quadratic_from_f_ders,
                              newton_system, trunc_log, trunc_exp)
 from thermo.utils import (log, log10, exp, Cp_minus_Cv, phase_identification_parameter,
                           isothermal_compressibility, isobaric_expansion,
@@ -2358,7 +2358,8 @@ class GibbsExcessLiquid(Phase):
                                [i.best_fit_Tmax_value for i in VaporPressures],
                                [i.best_fit_coeffs for i in VaporPressures],
                                [i.best_fit_d_coeffs for i in VaporPressures],
-                               [i.best_fit_d2_coeffs for i in VaporPressures])
+                               [i.best_fit_d2_coeffs for i in VaporPressures],
+                               [i.DIPPR101_ABC for i in VaporPressures],) # best_fit_AB
             
         self.N = len(VaporPressures)
         self.cmps = range(self.N)
@@ -2386,7 +2387,13 @@ class GibbsExcessLiquid(Phase):
                                  [i.best_fit_Tmax_value for i in VolumeLiquids],
                                  [i.best_fit_coeffs for i in VolumeLiquids],
                                  [i.best_fit_d_coeffs for i in VolumeLiquids],
-                                 [i.best_fit_d2_coeffs for i in VolumeLiquids])
+                                 [i.best_fit_d2_coeffs for i in VolumeLiquids],
+                                 [i.best_fit_Tmin_quadratic for i in VolumeLiquids],
+                                 )
+#            low_fits = self.Vms_sat_data[9]
+#            for i in self.cmps:
+#                low_fits[i][0] = max(0, low_fits[i][0])
+                
             
         self.incompressible = not use_Tait
         self.use_Tait = use_Tait
@@ -2623,13 +2630,19 @@ class GibbsExcessLiquid(Phase):
         except AttributeError:
             pass
         T, cmps = self.T, self.cmps
+        T_inv = 1.0/T
+        logT = log(T)
         self._Psats = Psats = []
         if self.Psats_locked:
             Psats_data = self.Psats_data
             Tmins, Tmaxes, coeffs = Psats_data[0], Psats_data[3], Psats_data[6]
             for i in cmps:
                 if T < Tmins[i]:
-                    Psat = (T - Tmins[i])*Psats_data[1][i] + Psats_data[2][i]
+                    A, B, C = Psats_data[9][i]
+                    Psat = (A + B*T_inv + C*logT)
+#                    A, B = Psats_data[9][i]
+#                    Psat = (A - B*T_inv)
+#                    Psat = (T - Tmins[i])*Psats_data[1][i] + Psats_data[2][i]
                 elif T > Tmaxes[i]:
                     Psat = (T - Tmaxes[i])*Psats_data[4][i] + Psats_data[5][i]
                 else:
@@ -2704,6 +2717,8 @@ class GibbsExcessLiquid(Phase):
         except:
             pass
         T, cmps = self.T, self.cmps
+        T_inv = 1.0/T
+        Tinv2 = T_inv*T_inv
         # Need to reset the method because for the T bounded solver,
         # will normally get a different than prefered method as it starts
         # at the boundaries
@@ -2717,7 +2732,11 @@ class GibbsExcessLiquid(Phase):
             Tmins, Tmaxes, dcoeffs = Psats_data[0], Psats_data[3], Psats_data[7]
             for i in cmps:
                 if T < Tmins[i]:
-                    dPsat_dT = Psats_data[1][i]*Psats[i]#*exp((T - Tmins[i])*Psats_data[1][i]
+#                    A, B = Psats_data[9][i]
+#                    dPsat_dT = B*Tinv2*Psats[i]                    
+                    A, B, C = Psats_data[9][i]
+                    dPsat_dT = Psats[i]*(-B*Tinv2 + C*T_inv)
+#                    dPsat_dT = Psats_data[1][i]*Psats[i]#*exp((T - Tmins[i])*Psats_data[1][i]
                                                  #   + Psats_data[2][i])
                 elif T > Tmaxes[i]:
                     dPsat_dT = Psats_data[4][i]*Psats[i]#*exp((T - Tmaxes[i])
@@ -2750,6 +2769,9 @@ class GibbsExcessLiquid(Phase):
         except AttributeError:
             dPsats_dT = self.dPsats_dT()
         T, cmps = self.T, self.cmps
+        T_inv = 1.0/T
+        T_inv2 = T_inv*T_inv
+        Tinv3 = T_inv*T_inv*T_inv
 
         self._d2Psats_dT2 = d2Psats_dT2 = []
         if self.Psats_locked:
@@ -2757,7 +2779,12 @@ class GibbsExcessLiquid(Phase):
             Tmins, Tmaxes, d2coeffs = Psats_data[0], Psats_data[3], Psats_data[8]
             for i in cmps:
                 if T < Tmins[i]:
-                    d2Psat_dT2 = Psats_data[1][i]*dPsats_dT[i]
+#                    A, B = Psats_data[9][i]
+#                    d2Psat_dT2 = B*Psats[i]*(B*T_inv - 2.0)*Tinv3
+                    A, B, C = Psats_data[9][i]
+                    x0 = (B*T_inv - C)
+                    d2Psat_dT2 = Psats[i]*(2.0*B*T_inv - C + x0*x0)*T_inv2                    
+#                    d2Psat_dT2 = Psats_data[1][i]*dPsats_dT[i]
                 elif T > Tmaxes[i]:
                     d2Psat_dT2 = Psats_data[4][i]*dPsats_dT[i]
                 else:
@@ -2779,21 +2806,27 @@ class GibbsExcessLiquid(Phase):
             pass
         T = self.T
         if self.Vms_sat_locked:
-            self._Vms_sat = evaluate_linear_fits(self.Vms_sat_data, T)
-            return self._Vms_sat
-#            Tmins, Tmaxes, coeffs = Vms_data[0], Vms_data[3], Vms_data[6]
-#            for i in cmps:
-#                if T < Tmins[i]:
+#            self._Vms_sat = evaluate_linear_fits(self.Vms_sat_data, T)
+#            return self._Vms_sat
+            Vms_data = self.Vms_sat_data
+            Tmins, Tmaxes, coeffs = Vms_data[0], Vms_data[3], Vms_data[6]
+            coeffs_Tmin = Vms_data[9]
+            self._Vms_sat = Vms_sat = []
+            for i in self.cmps:
+                if T < Tmins[i]:
+                    Vm = 0.0
+                    for c in coeffs_Tmin[i]:
+                        Vm = Vm*T + c
 #                    Vm = (T - Tmins[i])*Vms_data[1][i] + Vms_data[2][i]
-#                elif T > Tmaxes[i]:
-#                    Vm = (T - Tmaxes[i])*Vms_data[4][i] + Vms_data[5][i]
-#                else:
-#                    Vm = 0.0
-#                    for c in coeffs[i]:
-#                        Vm = Vm*T + c
-##                    Vm = horner(coeffs[i], T)
-#                Vms_sat.append(Vm)
-#            return Vms_sat
+                elif T > Tmaxes[i]:
+                    Vm = (T - Tmaxes[i])*Vms_data[4][i] + Vms_data[5][i]
+                else:
+                    Vm = 0.0
+                    for c in coeffs[i]:
+                        Vm = Vm*T + c
+#                    Vm = horner(coeffs[i], T)
+                Vms_sat.append(Vm)
+            return Vms_sat
         
         VolumeLiquids = self.VolumeLiquids
         self._Vms_sat = [VolumeLiquids[i].T_dependent_property(T) for i in self.cmps]
@@ -2807,21 +2840,23 @@ class GibbsExcessLiquid(Phase):
         T = self.T
 
         if self.Vms_sat_locked:
-            self._Vms_sat_dT = evaluate_linear_fits_d(self.Vms_sat_data, T)
-            return self._Vms_sat_dT
-#            Vms_data = self.Vms_sat_data
-#            Tmins, Tmaxes, dcoeffs = Vms_data[0], Vms_data[3], Vms_data[7]
-#            for i in cmps:
-#                if T < Tmins[i]:
+#            self._Vms_sat_dT = evaluate_linear_fits_d(self.Vms_sat_data, T)
+#            return self._Vms_sat_dT
+            Vms_data = self.Vms_sat_data
+            self._Vms_sat_dT = Vms_sat_dT = []
+            Tmins, Tmaxes, dcoeffs = Vms_data[0], Vms_data[3], Vms_data[7]
+            for i in self.cmps:
+                if T < Tmins[i]:
+                    dVm = horner_and_der2(Vms_data[9][i], T)[1]
 #                    dVm = Vms_data[1][i]
-#                elif T > Tmaxes[i]:
-#                    dVm = Vms_data[4][i]
-#                else:
-#                    dVm = 0.0
-#                    for c in dcoeffs[i]:
-#                        dVm = dVm*T + c
-#                Vms_sat_dT.append(dVm)
-#            return Vms_sat_dT
+                elif T > Tmaxes[i]:
+                    dVm = Vms_data[4][i]
+                else:
+                    dVm = 0.0
+                    for c in dcoeffs[i]:
+                        dVm = dVm*T + c
+                Vms_sat_dT.append(dVm)
+            return Vms_sat_dT
 
         VolumeLiquids = self.VolumeLiquids
         self._Vms_sat_dT = Vms_sat_dT = [obj.T_dependent_property_derivative(T=T) for obj in VolumeLiquids]
@@ -2836,18 +2871,21 @@ class GibbsExcessLiquid(Phase):
         T = self.T
         
         if self.Vms_sat_locked:
-            self._d2Vms_sat_dT2 = evaluate_linear_fits_d2(self.Vms_sat_data, T)
-            return self._d2Vms_sat_dT2
+#            self._d2Vms_sat_dT2 = evaluate_linear_fits_d2(self.Vms_sat_data, T)
+#            return self._d2Vms_sat_dT2
+            d2Vms_sat_dT2 = self._d2Vms_sat_dT2 = []
         
-#            Vms_data = self.Vms_sat_data
-#            Tmins, Tmaxes, d2coeffs = Vms_data[0], Vms_data[3], Vms_data[8]
-#            for i in cmps:
-#                d2Vm = 0.0
-#                if Tmins[i] < T < Tmaxes[i]:
-#                    for c in d2coeffs[i]:
-#                        d2Vm = d2Vm*T + c
-#                d2Vms_sat_dT2.append(d2Vm)
-#            return d2Vms_sat_dT2
+            Vms_data = self.Vms_sat_data
+            Tmins, Tmaxes, d2coeffs = Vms_data[0], Vms_data[3], Vms_data[8]
+            for i in self.cmps:
+                d2Vm = 0.0
+                if Tmins[i] < T < Tmaxes[i]:
+                    for c in d2coeffs[i]:
+                        d2Vm = d2Vm*T + c
+                elif T < Tmins[i]:
+                    d2Vm = horner_and_der2(Vms_data[9][i], T)[2]
+                d2Vms_sat_dT2.append(d2Vm)
+            return d2Vms_sat_dT2
 
         VolumeLiquids = self.VolumeLiquids
         self._d2Vms_sat_dT2 = [obj.T_dependent_property_derivative(T=T, order=2) for obj in VolumeLiquids]
@@ -3327,7 +3365,10 @@ class GibbsExcessLiquid(Phase):
                 H = 0.0
                 for i in cmps:
                     dV_vap = R*T/Psats[i] - Vms_sat[i]
+#                    print( R*T/Psats[i] , Vms_sat[i])
+                    # ratio of der to value might be easier?
                     dS_vap = dPsats_dT[i]*dV_vap
+#                    print(dPsats_dT[i]*dV_vap)
                     Hvap = T*dS_vap
                     H += zs[i]*(Cpig_integrals_pure[i] - Hvap)
                     
@@ -3542,6 +3583,11 @@ class GibbsExcessLiquid(Phase):
                 x5 = -x1
                 x6 = dVms_sat_dT[i]
                 x7 = T*x2
+#                print(#-T*(P - x0)*d2Vms_sat_dT2[i],
+#                       - T*(x4 + x5)*d2Psats_dT2[i], T, x4, x5, d2Psats_dT2[i],
+                       #x2*(x1 - x4) + x2*(T*x6 + x5) - x7*(-R*x7*Psat_inv*Psat_inv + x3 - x6),
+                       #Cpigs_pure[i]
+#                       )
                 Cp += zs[i]*(-T*(P - x0)*d2Vms_sat_dT2[i] - T*(x4 + x5)*d2Psats_dT2[i] 
                 + x2*(x1 - x4) + x2*(T*x6 + x5) - x7*(-R*x7*Psat_inv*Psat_inv + x3 - x6) + Cpigs_pure[i])
                 # The second derivative of volume is zero when extrapolating, which causes zero issues, discontinuous derivative
@@ -3592,7 +3638,6 @@ class GibbsExcessLiquid(Phase):
         # Needs testing
         T, P, P_DEPENDENT_H_LIQ = self.T, self.P, self.P_DEPENDENT_H_LIQ
         Cp, zs = 0.0, self.zs
-        dHvaps_dT = self.dHvaps_dT()
         Cpigs_pure = self.Cpigs_pure()
         dS_dT = 0.0
         T_inv = 1.0/T
@@ -3668,7 +3713,7 @@ class GibbsExcessLiquid(Phase):
 
     def Cp_dep(self):
         return self.Cp() - self.Cp_ideal_gas()
-    
+
     ### Volumetric properties
     def V(self):
         try:

@@ -48,7 +48,7 @@ from cmath import sqrt as csqrt
 from bisect import bisect_left
 import numpy as np
 from numpy.testing import assert_allclose
-from fluids.numerics import brenth, newton, linspace, polyint, polyint_over_x, derivative, polyder, horner
+from fluids.numerics import brenth, newton, linspace, polyint, polyint_over_x, derivative, polyder, horner, horner_and_der2, quadratic_from_f_ders
 from scipy.integrate import quad
 from scipy.interpolate import interp1d, interp2d
 
@@ -2935,14 +2935,17 @@ class TDependentProperty(object):
         elif prop > self.property_max:
             return False
         return True
-        
+    
+    def custom_set_best_fit(self):
+        pass
+    
     def set_best_fit(self, best_fit, set_limits=False):
         if (best_fit is not None and len(best_fit) and (best_fit[0] is not None
            and best_fit[1] is not None and  best_fit[2] is not None) 
             and not isnan(best_fit[0]) and not isnan(best_fit[1])):
             self.locked = True
-            self.best_fit_Tmin = best_fit[0]
-            self.best_fit_Tmax = best_fit[1]
+            self.best_fit_Tmin = Tmin = best_fit[0]
+            self.best_fit_Tmax = Tmax = best_fit[1]
             self.best_fit_coeffs = best_fit[2]
     
             self.best_fit_int_coeffs = polyint(best_fit[2])
@@ -2983,6 +2986,8 @@ class TDependentProperty(object):
 
             self.best_fit_Tmin_slope = horner(self.best_fit_d_coeffs, self.best_fit_Tmin)
             self.best_fit_Tmin_dT2 = horner(self.best_fit_d2_coeffs, self.best_fit_Tmin)
+            
+            self.custom_set_best_fit()
             
             if set_limits:
                 if self.Tmin is None:
