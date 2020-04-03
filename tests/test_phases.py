@@ -384,24 +384,32 @@ def test_GibbsExcessLiquid_lnPsats():
     HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [-9.48396765770823e-21, 4.444060985512694e-17, -8.628480671647472e-14, 8.883982004570444e-11, -5.0893293251198045e-08, 1.4947108372371731e-05, -0.0015271248410402886, 0.19186172941013854, 30.797883940134057]))]
     VolumeLiquids = [VolumeLiquid(best_fit=(178.01, 581.75, [2.2801490297347937e-23, -6.411956871696508e-20, 7.723152902379232e-17, -5.197203733189603e-14, 2.1348482785660093e-11, -5.476649499770259e-09, 8.564670053875876e-07, -7.455178589434267e-05, 0.0028545812080104068]))]
     correlations = PropertyCorrelationPackage(constants, VolumeLiquids=VolumeLiquids, VaporPressures=VaporPressures, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
-    liquid = GibbsExcessLiquid(VaporPressures=correlations.VaporPressures, 
+    liquid_AB = GibbsExcessLiquid(VaporPressures=correlations.VaporPressures, 
                                HeatCapacityGases=correlations.HeatCapacityGases,
                                VolumeLiquids=correlations.VolumeLiquids,
-                               use_phis_sat=False, use_Poynting=True, T=T, P=P, zs=zs)
+                               use_phis_sat=False, use_Poynting=True, T=T, P=P, zs=zs, Psat_extrpolation='AB')
+    liquid_ABC = GibbsExcessLiquid(VaporPressures=correlations.VaporPressures, 
+                               HeatCapacityGases=correlations.HeatCapacityGases,
+                               VolumeLiquids=correlations.VolumeLiquids,
+                               use_phis_sat=False, use_Poynting=True, T=T, P=P, zs=zs, Psat_extrpolation='ABC')
     
-    for T in (1, 5, 20, 100, 400, 591.74-1e-4, 591.74, 591.74+1e-10, 1000):
-        liquid = liquid.to(T=T, P=P, zs=zs)
-        assert_close(liquid.Psats()[0], exp(liquid.lnPsats()[0]), rtol=1e-12)
-    
-        dlnPsats_dT = liquid.dlnPsats_dT()[0]
-        dlnPsats_dT_num = derivative(lambda T: liquid.to(T=T, P=P, zs=zs).lnPsats()[0], T, dx=T*1e-7)
-        assert_close(dlnPsats_dT, dlnPsats_dT_num, rtol=5e-6)
+    for liquid in (liquid_AB, liquid_ABC):
+        for T in (1, 5, 20, 100, 400, 591.74-1e-4, 591.74, 591.74+1e-10, 1000):
+            liquid = liquid.to(T=T, P=P, zs=zs)
+            assert_close(liquid.Psats()[0], exp(liquid.lnPsats()[0]), rtol=1e-12)
         
-        # Lack of second derivative continuity means this doesn't work
-        if T < 591.73:
-            d2lnPsats_dT2 = liquid.d2lnPsats_dT2()[0]
-            d2lnPsats_dT2_num = derivative(lambda T: liquid.to(T=T, P=P, zs=zs).dlnPsats_dT()[0], T, dx=T*1e-7)
-            assert_close(d2lnPsats_dT2, d2lnPsats_dT2_num, rtol=5e-6)
+            dlnPsats_dT = liquid.dlnPsats_dT()[0]
+            dlnPsats_dT_num = derivative(lambda T: liquid.to(T=T, P=P, zs=zs).lnPsats()[0], T, dx=T*1e-7)
+            assert_close(dlnPsats_dT, dlnPsats_dT_num, rtol=5e-6)
+            
+            # Lack of second derivative continuity means this doesn't work
+            if T < 591.73 or liquid is liquid_ABC:
+                d2lnPsats_dT2 = liquid.d2lnPsats_dT2()[0]
+                d2lnPsats_dT2_num = derivative(lambda T: liquid.to(T=T, P=P, zs=zs).dlnPsats_dT()[0], T, dx=T*1e-7)
+                assert_close(d2lnPsats_dT2, d2lnPsats_dT2_num, rtol=5e-6)
+    
+    # Points which do not matter which high model is used
+    liquid = liquid_ABC
     
     liquid = liquid.to(T=300, P=P, zs=zs)
     assert_close(liquid.dPsats_dT_over_Psats()[0], 0.05097707819215502, rtol=1e-12)
@@ -415,6 +423,13 @@ def test_GibbsExcessLiquid_lnPsats():
     # High temp - avoid checking a value
     liquid = liquid.to(T=1000, P=P, zs=zs)
     assert_close(liquid.dPsats_dT_over_Psats()[0], liquid.dPsats_dT()[0]/liquid.Psats()[0], rtol=1e-12)
+    
+    # High temp- check value with both
+    assert_close(liquid_AB.to(T=600, P=P, zs=zs).Psats()[0], 4557099.181299873)
+
+    assert_close(liquid_ABC.to(T=600, P=P, zs=zs).Psats()[0], 4559674.018096333)
+    
+    
 
 def test_GibbsExcessLiquid_dHS_dT_low():
     T, P, zs = 100.0, 1e5, [1.0]

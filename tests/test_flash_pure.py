@@ -1452,7 +1452,7 @@ def test_IG_liq_poy_flashes(hacks):
                                HeatCapacityGases=HeatCapacityGases,
                                VolumeLiquids=VolumeLiquids,
                                EnthalpyVaporizations=EnthalpyVaporizations,
-                               use_phis_sat=False, use_Poynting=True).to_TP_zs(T, P, zs)
+                               use_phis_sat=False, use_Poynting=True, Psat_extrpolation='ABC').to_TP_zs(T, P, zs)
     eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
     gas = EOSGas(IGMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     flasher = FlashPureVLS(constants, correlations, liquids=[liquid], gas=gas, solids=[])
@@ -1509,8 +1509,7 @@ def test_IG_liq_poy_flashes(hacks):
         res =  flasher.flash(T=1000, P=1e10)
         assert res.liquid0 is not None
         assert 1 == res.phase_count
-        assert_allclose(res.liquid0.lnphis(), [189.5201904078434])
-        assert_close(res.G(), 1653472.4199520082)
+        assert_allclose(res.liquid0.lnphis(), [199.610302])
     
     # Vapor fraction flashes
     res = flasher.flash(T=646, VF=0)

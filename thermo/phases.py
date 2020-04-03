@@ -2373,7 +2373,7 @@ class GibbsExcessLiquid(Phase):
                                [i.best_fit_d2_coeffs for i in VaporPressures],
                                [i.DIPPR101_ABC for i in VaporPressures]]
             if Psat_extrpolation == 'AB':
-                Psats_data.append([i.best_fit_AB_high + (0.0,) for i in VaporPressures])
+                Psats_data.append([i.best_fit_AB_high_ABC_compat + (0.0,) for i in VaporPressures])
             elif Psat_extrpolation == 'ABC':
                 Psats_data.append([i.DIPPR101_ABC_high for i in VaporPressures])
             # Other option: raise?
@@ -2742,7 +2742,7 @@ class GibbsExcessLiquid(Phase):
         T_inv = 1.0/T
         Tinv2 = T_inv*T_inv
         dPsats_dT = []
-        Tmins, Tmaxes, dcoeffs, coeffs_low = Psats_data[0], Psats_data[3], Psats_data[7], Psats_data[9]
+        Tmins, Tmaxes, dcoeffs, coeffs_low, coeffs_high = Psats_data[0], Psats_data[3], Psats_data[7], Psats_data[9], Psats_data[10]
         for i in cmps:
             if T < Tmins[i]:
 #                    A, B = Psats_data[9][i]
@@ -2751,9 +2751,11 @@ class GibbsExcessLiquid(Phase):
 #                    dPsat_dT = Psats_data[1][i]*Psats[i]#*exp((T - Tmins[i])*Psats_data[1][i]
                                              #   + Psats_data[2][i])
             elif T > Tmaxes[i]:
-                dPsat_dT = Psats_data[4][i]*Psats[i]#*exp((T - Tmaxes[i])
-                                                    #*Psats_data[4][i]
-                                                    #+ Psats_data[5][i])
+                dPsat_dT = Psats[i]*(-coeffs_high[i][1]*Tinv2 + coeffs_high[i][2]*T_inv)
+                
+#                dPsat_dT = Psats_data[4][i]*Psats[i]#*exp((T - Tmaxes[i])
+#                                                    #*Psats_data[4][i]
+#                                                    #+ Psats_data[5][i])
             else:
                 dPsat_dT = 0.0
                 for c in dcoeffs[i]:
@@ -2823,7 +2825,10 @@ class GibbsExcessLiquid(Phase):
                     d2Psat_dT2 = Psats[i]*(2.0*B*T_inv - C + x0*x0)*T_inv2                    
 #                    d2Psat_dT2 = Psats_data[1][i]*dPsats_dT[i]
                 elif T > Tmaxes[i]:
-                    d2Psat_dT2 = Psats_data[4][i]*dPsats_dT[i]
+                    A, B, C = Psats_data[10][i]
+                    x0 = (B*T_inv - C)
+                    d2Psat_dT2 = Psats[i]*(2.0*B*T_inv - C + x0*x0)*T_inv2                    
+#                    d2Psat_dT2 = Psats_data[4][i]*dPsats_dT[i]
                 else:
                     d2Psat_dT2 = 0.0
                     for c in d2coeffs[i]:
@@ -2849,7 +2854,9 @@ class GibbsExcessLiquid(Phase):
                     A, B, C = Psats_data[9][i]
                     Psat = (A + B*T_inv + C*logT)
                 elif T > Tmaxes[i]:
-                    Psat = (T - Tmaxes[i])*Psats_data[4][i] + Psats_data[5][i]
+                    A, B, C = Psats_data[10][i]
+                    Psat = (A + B*T_inv + C*logT)
+#                    Psat = (T - Tmaxes[i])*Psats_data[4][i] + Psats_data[5][i]
                 else:
                     Psat = 0.0
                     for c in coeffs[i]:
@@ -2871,7 +2878,9 @@ class GibbsExcessLiquid(Phase):
                     A, B, C = Psats_data[9][i]
                     dPsat_dT = (-B*Tinv2 + C*T_inv)
                 elif T > Tmaxes[i]:
-                    dPsat_dT = Psats_data[4][i]
+                    A, B, C = Psats_data[10][i]
+                    dPsat_dT = (-B*Tinv2 + C*T_inv)
+#                    dPsat_dT = Psats_data[4][i]
                 else:
                     dPsat_dT = 0.0
                     for c in dcoeffs[i]:
@@ -2893,7 +2902,9 @@ class GibbsExcessLiquid(Phase):
                     A, B, C = Psats_data[9][i]
                     d2lnPsat_dT2 = (2.0*B*T_inv - C)*T_inv2                    
                 elif T > Tmaxes[i]:
-                    d2lnPsat_dT2 = 0.0
+                    A, B, C = Psats_data[10][i]
+                    d2lnPsat_dT2 = (2.0*B*T_inv - C)*T_inv2                    
+#                    d2lnPsat_dT2 = 0.0
                 else:
                     d2lnPsat_dT2 = 0.0
                     for c in d2coeffs[i]:
@@ -2908,12 +2919,13 @@ class GibbsExcessLiquid(Phase):
         if self.Psats_locked:
             dPsat_dT_over_Psats = []
             Psats_data = self.Psats_data
-            Tmins, Tmaxes, dcoeffs, low_coeffs = Psats_data[0], Psats_data[3], Psats_data[7], Psats_data[9]
+            Tmins, Tmaxes, dcoeffs, low_coeffs, high_coeffs = Psats_data[0], Psats_data[3], Psats_data[7], Psats_data[9], Psats_data[10]
             for i in cmps:
                 if T < Tmins[i]:
                     dPsat_dT_over_Psat = (-low_coeffs[i][1]*Tinv2 + low_coeffs[i][2]*T_inv)
                 elif T > Tmaxes[i]:
-                    dPsat_dT_over_Psat = Psats_data[4][i]
+                    dPsat_dT_over_Psat = (-high_coeffs[i][1]*Tinv2 + high_coeffs[i][2]*T_inv)
+#                    dPsat_dT_over_Psat = Psats_data[4][i]
                 else:
                     dPsat_dT_over_Psat = 0.0
                     for c in dcoeffs[i]:

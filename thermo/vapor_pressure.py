@@ -812,6 +812,7 @@ class VaporPressure(TDependentProperty):
             d2Psat_dT2 = Psat*(d1*d1 + d2)                
 #                A, B, C = Antoine_ABC = Antoine_coeffs_from_point(T_trans, Psat, dPsat_dT, d2Psat_dT2, base=e)
             self.best_fit_AB_high = Antoine_AB_coeffs_from_point(Tmax, Psat, dPsat_dT, base=e)
+            self.best_fit_AB_high_ABC_compat = (self.best_fit_AB_high[0], -self.best_fit_AB_high[1])
             self.DIPPR101_ABC_high = DIPPR101_ABC_coeffs_from_point(Tmax, Psat, dPsat_dT, d2Psat_dT2)
 
 
