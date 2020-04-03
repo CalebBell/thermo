@@ -587,6 +587,12 @@ class EquilibriumState(object):
                 phase = self.phases[0]
             else:
                 phase = self.bulk
+#        try:
+#            mu = phase.mu()
+#            if mu is not None:
+#                return mu
+#        except:
+#            pass
         if isinstance(phase, gas_phases):
             return self.correlations.ViscosityGasMixture.mixture_property(phase.T, phase.P, phase.zs, phase.ws())
         elif isinstance(phase, liquid_phases):
@@ -603,6 +609,12 @@ class EquilibriumState(object):
                 phase = self.phases[0]
             else:
                 phase = self.bulk
+#        try:
+#            k = phase.k()
+#            if k is not None:
+#                return k
+#        except:
+#            pass
         if isinstance(phase, gas_phases):
             return self.correlations.ThermalConductivityGasMixture.mixture_property(
                     phase.T, phase.P, phase.zs, phase.ws())

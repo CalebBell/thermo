@@ -39,6 +39,8 @@ __all__ = ['sequential_substitution_2P', 'sequential_substitution_GDEM3_2P',
            'assert_stab_success_2P', 'nonlin_equilibrium_NP',
            'nonlin_spec_NP',
            'TPV_solve_HSGUA_guesses_VL',
+           'solve_P_VF_IG_K_composition_independent', 
+           'solve_T_VF_IG_K_composition_independent'
            ]
 
 from fluids.constants import R, R2, R_inv
@@ -3149,6 +3151,99 @@ def PSF_pure_newton(T_guess, P, other_phases, solids, maxiter=200, xtol=1E-10):
     return Tsub, other, solid, iterations, err
 
 
+def solve_T_VF_IG_K_composition_independent(VF, T, zs, gas, liq, xtol=1e-10):
+    '''from sympy import *
+    zi, P, VF = symbols('zi, P, VF')
+    l_phi, g_phi = symbols('l_phi, g_phi', cls=Function)
+    # g_phi = symbols('g_phi')
+    # Ki = l_phi(P)/g_phi(P)
+    Ki = l_phi(P)#/g_phi
+    err = zi*(Ki-1)/(1+VF*(Ki-1))
+    cse([diff(err, P), err], optimizations='basic')'''
+    # gas phis are all one in IG model
+#     gas.to(T=T, P=P, zs=zs)
+    cmps = liq.cmps
+    global Ks, iterations, err
+    iterations = 0
+    def to_solve(lnP):
+        global Ks, iterations, err
+        iterations += 1
+        P = exp(lnP)
+        l = liq.to(T=T, P=P, zs=zs)
+        Ks = liquid_phis = l.phis()
+        dlnphis_dP_l = l.dphis_dP()
+        
+        err = derr = 0.0
+        for i in cmps:
+            x1 = liquid_phis[i] - 1.0
+            x2 = VF*x1
+            x3 = 1.0/(x2 + 1.0)
+            x4 = x3*zs[i]
+            err += x1*x4
+            derr += x4*(1.0 - x2*x3)*dlnphis_dP_l[i]
+        return err, P*derr
+    
+    # estimate bubble point and dew point
+    # Make sure to overwrite the phase so the Psats get cached
+    P_base = 1e5
+    liq = liq.to(T=T, P=P_base, zs=zs)
+    phis = liq.phis()
+    P_bub, P_dew = 0.0, 0.0
+    for i in liq.cmps:
+        P_bub += phis[i]*zs[i]
+        P_dew += zs[i]/(phis[i]*P_base)
+    P_bub = P_bub*liq.P
+    P_dew = 1.0/P_dew
+    P_guess = VF*P_dew + (1.0 - VF)*P_bub
+        
+    # When Poynting is on, the are only an estimate; otherwise it is dead on
+    # and there is no need for a solver
+    if liq.use_Poynting or 0.0 < VF < 1.0:
+        lnP = newton(to_solve, log(P_guess), xtol=xtol, fprime=True)
+        P = exp(lnP)
+    else:
+        if VF == 0.0:
+            P = P_bub
+        else:
+            P = P_dew
+    xs = [zs[i]/(1.+VF*(Ks[i]-1.)) for i in cmps]
+    for i in cmps:
+        Ks[i] *= xs[i]
+    ys = Ks
+    return P, xs, ys, iterations, err
+
+def solve_P_VF_IG_K_composition_independent(VF, P, zs, gas, liq, xtol=1e-10):
+    # gas phis are all one in IG model
+#     gas.to(T=T, P=P, zs=zs)
+    cmps = liq.cmps
+    global Ks, iterations, err
+    iterations = 0
+    def to_solve(T):
+        global Ks, iterations, err
+        iterations += 1
+        dlnphis_dT_l, liquid_phis = liq.dphis_dT_at(T, P, zs, phis_also=True)
+        Ks = liquid_phis
+#        l = liq.to(T=T, P=P, zs=zs)
+#        Ks = liquid_phis = l.phis()
+#        dlnphis_dT_l = l.dphis_dT()
+        err = derr = 0.0
+        for i in cmps:
+            x1 = liquid_phis[i] - 1.0
+            x2 = VF*x1
+            x3 = 1.0/(x2 + 1.0)
+            x4 = x3*zs[i]
+            err += x1*x4
+            derr += x4*(1.0 - x2*x3)*dlnphis_dT_l[i]
+        return err, derr
+    try:
+        T = newton(to_solve, 300.0, xtol=xtol, fprime=True)
+    except:
+        T = brenth(lambda x: to_solve(x)[0], 300, 1000)
+    xs = [zs[i]/(1.+VF*(Ks[i]-1.)) for i in cmps]
+    for i in cmps:
+        Ks[i] *= xs[i]
+    ys = Ks
+    return T, xs, ys, iterations, err
 
 def sequential_substitution_2P_sat(T, P, V, zs_dry, xs_guess, ys_guess, liquid_phase,
                                    gas_phase, idx, z0, z1=None, maxiter=1000, tol=1E-13,
@@ -4008,6 +4103,8 @@ def cm_flash_tol():
 
 empty_flash_conv = {'iterations': 0, 'err': 0.0, 'stab_guess_name': None}
 one_in_list = [1.0]
+empty_list = []
+
 
 class FlashBase(object):
     T_MAX_FIXED = Phase.T_MAX_FIXED
@@ -5078,7 +5175,7 @@ class FlashVL(FlashBase):
     HSGUA_NEWTON_ANALYTICAL_JAC = True
 
     solids = None
-    
+    K_composition_independent = False
     # TODO - add nested PT? Probably more reliable than SS_VF_simultaneous
     def __init__(self, constants, correlations, liquid, gas, settings=default_settings):
         self.constants = constants
@@ -5099,6 +5196,12 @@ class FlashVL(FlashBase):
         return self.flash_TVF_2P(T, VF, zs, self.liquid, self.gas, solution=solution, hot_start=hot_start)
                                  
     def flash_TVF_2P(self, T, VF, zs, liquid, gas, solution=None, hot_start=None):
+        if self.K_composition_independent:
+            # Assume pressure independent for guess
+            P, xs, ys, iterations, err = solve_T_VF_IG_K_composition_independent(VF, T, zs, gas, liquid, xtol=1e-10)
+            l, g = liquid.to(T=T, P=P, zs=xs), gas.to(T=T, P=P, zs=ys)
+            return P, l, g, iterations, err
+
         constants, correlations = self.constants, self.correlations
         
         dew_bubble_xtol = self.dew_bubble_xtol
@@ -5161,6 +5264,11 @@ class FlashVL(FlashBase):
         return self.flash_PVF_2P(P, VF, zs, self.liquid, self.gas, solution=solution, hot_start=hot_start)
         
     def flash_PVF_2P(self, P, VF, zs, liquid, gas, solution=None, hot_start=None):
+        if self.K_composition_independent:
+            # Assume pressure independent for guess
+            T, xs, ys, iterations, err = solve_P_VF_IG_K_composition_independent(VF, P, zs, gas, liquid, xtol=1e-10)
+            l, g = liquid.to(T=T, P=P, zs=xs), gas.to(T=T, P=P, zs=ys)
+            return T, l, g, iterations, err
         constants, correlations = self.constants, self.correlations
         
         dew_bubble_xtol = self.dew_bubble_xtol
@@ -5460,14 +5568,17 @@ class FlashVLN(FlashVL):
     
     SS_NP_STAB_HIGHEST_COMP_DIFF = False
     SS_NP_STAB_COMP_DIFF_MIN = None
+    
+    K_COMPOSITION_INDEPENDENT_HACK = True
 
 
     def __init__(self, constants, correlations, liquids, gas, settings=default_settings):
         self.constants = constants
         self.correlations = correlations
         self.liquids = liquids
+        self.liquid0 = liquids[0] if liquids else None
         self.max_liquids = len(liquids)
-        self.max_phases = 1 + self.max_liquids
+        self.max_phases = 1 + self.max_liquids if gas is not None else self.max_liquids
         self.phases = [gas] + liquids if gas is not None else liquids
         
         liquids_to_unique_liquids = []
@@ -5503,6 +5614,8 @@ class FlashVLN(FlashVL):
         self.settings = settings
         self.N = constants.N
         self.cmps = constants.cmps
+        
+        self.K_composition_independent = all([i.composition_independent for i in self.phases])
         
         self.aqueous_check = (self.SS_STAB_AQUEOUS_CHECK and '7732-18-5' in constants.CASs)
         self.stab = StabilityTester(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas,
@@ -5591,6 +5704,20 @@ class FlashVLN(FlashVL):
                                               trivial_solution_tol=self.SS_NP_TRIVIAL_TOL)
             return None, slnN[2], [], slnN[0], {'iterations': slnN[3], 'err': slnN[4],
                                                 'stab_guess_name': None}
+            
+            
+    def flash_TP_K_composition_idependent(self, T, P, zs):
+        Ks = liquid_phis = self.liquid0.phis_at(T, P, zs)
+#        Ks = [liquid_phis[i]/gas_phis[i] for i in self.cmps]
+        VF, xs, ys = flash_inner_loop(zs, Ks)
+        if VF > 1.0:
+            return None, [self.gas.to(T=T, P=P, zs=zs)], [], one_in_list, empty_flash_conv
+        elif VF < 0.0:
+            return None, [self.liquid0.to(T=T, P=P, zs=zs)], [], one_in_list, empty_flash_conv
+        else:
+            gas = self.gas.to(T=T, P=P, zs=ys)
+            liquid = self.liquid0.to(T=T, P=P, zs=xs)
+            return gas, [liquid], [], [VF, 1.0 - VF], empty_flash_conv
 
     def flash_TPV(self, T, P, V, zs=None, solution=None, hot_start=None):
         if hot_start is not None and hot_start.phase_count > 1:
@@ -5600,10 +5727,26 @@ class FlashVLN(FlashVL):
             except:
                 # Let anything fail
                 pass
-            
+        if self.K_composition_independent and self.K_COMPOSITION_INDEPENDENT_HACK and solution is None:
+            return self.flash_TP_K_composition_idependent(T, P, zs)
         
         gas, liquids, phases = self.phases_at(T, P, zs)
-        
+#        if self.K_composition_independent and self.K_COMPOSITION_INDEPENDENT_HACK:
+#            # TODO move into new function?
+#            if self.max_phases == 2:
+#                gas_phis = gas.phis()
+#                liquid_phis = liquids[0].phis()
+#                Ks = [liquid_phis[i]/gas_phis[i] for i in self.cmps]
+#                VF, xs, ys = flash_inner_loop(zs, Ks)
+#                if VF > 1.0:
+#                    return None, [gas], [], one_in_list, empty_flash_conv
+#                elif VF < 0.0:
+#                    return None, [liquids[0]], [], one_in_list, empty_flash_conv
+#                else:
+#                    gas = gas.to(T=T, P=P, zs=ys)
+#                    liquid = liquids[0].to(T=T, P=P, zs=xs)
+#                    return gas, [liquid], [], [VF, 1.0 - VF], empty_flash_conv
+                            
         min_phase_1P, G_min_1P = None, 1e100
         for p in phases:
             G = p.G()
@@ -6407,8 +6550,10 @@ class FlashPureVLS(FlashBase):
                 return False
         
         if (self.VL_only_CEOSs_same or self.VL_IG_activity) and not selection_fun_1P_specified and solution is None and fixed_var != 'V':
-            return self.flash_TPV_HSGUA_VL_bound_first(fixed_var_val=fixed_var_val, spec_val=spec_val, fixed_var=fixed_var, 
+            sln =  self.flash_TPV_HSGUA_VL_bound_first(fixed_var_val=fixed_var_val, spec_val=spec_val, fixed_var=fixed_var,
                                  spec=spec, iter_var=iter_var, hot_start=hot_start, selection_fun_1P=selection_fun_1P, cubic=self.VL_only_CEOSs_same)
+            if sln is not None:
+                return sln
         try:
             solutions_1P = []
             G_min = 1e100

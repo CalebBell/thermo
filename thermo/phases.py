@@ -38,6 +38,7 @@ from thermo.utils import (log, log10, exp, Cp_minus_Cv, phase_identification_par
                           normalize, hash_any_primitive)
 from thermo.activity import IdealSolution
 from thermo.coolprop import has_CoolProp, CP as CoolProp
+from thermo.eos_mix import IGMIX
 from random import randint
 from scipy.optimize import fsolve
 from collections import OrderedDict
@@ -83,6 +84,7 @@ class Phase(object):
     Cpgs_data = None
     Psats_locked = False 
     Cpgs_locked = False
+    composition_independent = False
     
     def __repr__(self):
         s =  '<%s, ' %(self.__class__.__name__)
@@ -113,16 +115,10 @@ class Phase(object):
         for i in range(len(zs)):
             S0 -= zs[i]*(R*lnphis[i] + R*T*dlnphis_dT[i])
         return abs(1.0 - S0/self.S())
+    
 
     def H_phi_consistency(self):
-        # From coco
-        H0 = self.H_ideal_gas()
-        lnphis = self.lnphis()
-        dlnphis_dT = self.dlnphis_dT()
-        T, zs = self.T, self.zs
-        for i in self.cmps:
-            H0 -= R*T*T*zs[i]*dlnphis_dT[i]
-        return abs(1.0 - H0/self.H())
+        return abs(1.0 - self.H_from_phi()/self.H())
     
     def G_phi_consistency(self):
         # Chapter 2 equation 31 Michaelson
@@ -141,6 +137,14 @@ class Phase(object):
         H_dep_recalc = -H_dep_RT2*R*T*T
         H_dep = self.H_dep()
         return abs(1.0 - H_dep/H_dep_recalc)
+
+    def H_from_phi(self):
+        H0 = self.H_ideal_gas()
+        dlnphis_dT = self.dlnphis_dT()
+        T, zs = self.T, self.zs
+        for i in self.cmps:
+            H0 -= R*T*T*zs[i]*dlnphis_dT[i]
+        return H0
 
     def V_phi_consistency(self):
         zs, P = self.zs, self.P
@@ -1611,6 +1615,7 @@ class IdealGas(Phase):
     '''
     phase = 'g'
     force_phase = 'g'
+    composition_independent = True
     def __init__(self, HeatCapacityGases=None, Hfs=None, Gfs=None):
         self.HeatCapacityGases = HeatCapacityGases
         self.Hfs = Hfs
@@ -1701,6 +1706,7 @@ class EOSGas(Phase):
         self.Gfs = Gfs
         self.Sfs = Sfs
         self.Cpgs_locked, self.Cpgs_data = self.setup_Cpigs(HeatCapacityGases)
+        self.composition_independent = eos_class is IGMIX
         
         if T is not None and P is not None and zs is not None:
             self.T = T
@@ -1737,6 +1743,7 @@ class EOSGas(Phase):
         new.HeatCapacityGases = self.HeatCapacityGases
         new.Cpgs_data = self.Cpgs_data
         new.Cpgs_locked = self.Cpgs_locked
+        new.composition_independent = self.composition_independent
         
         new.Hfs = self.Hfs
         new.Gfs = self.Gfs
@@ -1785,6 +1792,8 @@ class EOSGas(Phase):
         new.HeatCapacityGases = self.HeatCapacityGases
         new.Cpgs_data = self.Cpgs_data
         new.Cpgs_locked = self.Cpgs_locked
+        
+        new.composition_independent = self.composition_independent
         
         new.Hfs = self.Hfs
         new.Gfs = self.Gfs
@@ -2327,6 +2336,7 @@ class GibbsExcessLiquid(Phase):
                  Hfs=None, Gfs=None, Sfs=None,
                  henry_components=None, henry_data=None,
                  T=None, P=None, zs=None,
+                 Psat_extrpolation='AB',
                  ):
         '''It is quite possible to introduce a PVT relation ship for liquid 
         density and remain thermodynamically consistent. However, must be 
@@ -2352,7 +2362,7 @@ class GibbsExcessLiquid(Phase):
         self.VaporPressures = VaporPressures
         self.Psats_locked = all(i.locked for i in VaporPressures) if VaporPressures is not None else False
         if self.Psats_locked:
-            self.Psats_data = ([i.best_fit_Tmin for i in VaporPressures],
+            Psats_data = [[i.best_fit_Tmin for i in VaporPressures],
                                [i.best_fit_Tmin_slope for i in VaporPressures],
                                [i.best_fit_Tmin_value for i in VaporPressures],
                                [i.best_fit_Tmax for i in VaporPressures],
@@ -2361,7 +2371,13 @@ class GibbsExcessLiquid(Phase):
                                [i.best_fit_coeffs for i in VaporPressures],
                                [i.best_fit_d_coeffs for i in VaporPressures],
                                [i.best_fit_d2_coeffs for i in VaporPressures],
-                               [i.DIPPR101_ABC for i in VaporPressures],) # best_fit_AB
+                               [i.DIPPR101_ABC for i in VaporPressures]]
+            if Psat_extrpolation == 'AB':
+                Psats_data.append([i.best_fit_AB_high + (0.0,) for i in VaporPressures])
+            elif Psat_extrpolation == 'ABC':
+                Psats_data.append([i.DIPPR101_ABC_high for i in VaporPressures])
+            # Other option: raise?
+            self.Psats_data = Psats_data
             
         self.N = len(VaporPressures)
         self.cmps = range(self.N)
@@ -2395,7 +2411,7 @@ class GibbsExcessLiquid(Phase):
 #            low_fits = self.Vms_sat_data[9]
 #            for i in self.cmps:
 #                low_fits[i][0] = max(0, low_fits[i][0])
-                
+        
             
         self.incompressible = not use_Tait
         self.use_Tait = use_Tait
@@ -2436,6 +2452,8 @@ class GibbsExcessLiquid(Phase):
         self.has_henry_components = any(henry_components)
         self.henry_components = henry_components
         self.henry_data = henry_data
+
+        self.composition_independent = isinstance(GibbsExcessModel, IdealSolution) and not self.has_henry_components
         
         self.Hfs = Hfs
         self.Gfs = Gfs
@@ -2531,12 +2549,15 @@ class GibbsExcessLiquid(Phase):
         new.henry_components = self.henry_components
         new.has_henry_components = self.has_henry_components
         
+        new.composition_independent = self.composition_independent
+        
         new.use_Tait = self.use_Tait
         new.Tait_B_data = self.Tait_B_data
         new.Tait_C_data = self.Tait_C_data
         
         
-        if T_equal and self.zs is zs:
+        if T_equal and (self.composition_independent or self.zs is zs):
+            # Allow the composition inconsistency as it is harmless
             new.GibbsExcessModel = self.GibbsExcessModel
         else:
             new.GibbsExcessModel = self.GibbsExcessModel.to_T_xs(T=T, xs=zs)
@@ -2546,27 +2567,19 @@ class GibbsExcessLiquid(Phase):
                 if not self.has_henry_components:
                     try:
                         new._Psats = self._Psats
-                    except:
-                        pass
-                    try:
                         new._dPsats_dT = self._dPsats_dT
-                    except:
-                        pass
-                    try:
                         new._d2Psats_dT2 = self._d2Psats_dT2
                     except:
                         pass
                     
                 try:
                     new._Vms_sat = self._Vms_sat
-                except:
-                    pass
-                try:
                     new._Vms_sat_dT = self._Vms_sat_dT
+                    new._d2Vms_sat_dT2 = self._d2Vms_sat_dT2
                 except:
                     pass
                 try:
-                    new._d2Vms_sat_dT2 = self._d2Vms_sat_dT2
+                    new._Cpigs = self._Cpigs
                 except:
                     pass
                 try:
@@ -2575,10 +2588,6 @@ class GibbsExcessLiquid(Phase):
                     pass
                 try:
                     new._Cpig_integrals_pure = self._Cpig_integrals_pure
-                except:
-                    pass
-                try:
-                    new._Cpigs = self._Cpigs
                 except:
                     pass
         except:
@@ -2608,25 +2617,40 @@ class GibbsExcessLiquid(Phase):
         return self._Psats_T_ref
 
     def Psats_at(self, T):
-        cmps = self.cmps
-        Psats = []
         if self.Psats_locked:
-            Psats_data = self.Psats_data
-            Tmins, Tmaxes, coeffs = Psats_data[0], Psats_data[3], Psats_data[6]
-            for i in cmps:
-                if T < Tmins[i]:
-                    Psat = (T - Tmins[i])*Psats_data[1][i] + Psats_data[2][i]
-                elif T > Tmaxes[i]:
-                    Psat = (T - Tmaxes[i])*Psats_data[4][i] + Psats_data[5][i]
-                else:
-                    Psat = 0.0
-                    for c in coeffs[i]:
-                        Psat = Psat*T + c
-                Psats.append(exp(Psat))
-            return Psats
+            return self._Psats_at_locked(T, self.Psats_data, self.cmps)
         VaporPressures = self.VaporPressures
-        return [VaporPressures[i](T) for i in cmps] 
-
+        return [VaporPressures[i](T) for i in self.cmps] 
+    
+    @staticmethod
+    def _Psats_at_locked(T, Psats_data, cmps):
+        Psats = []
+        T_inv = 1.0/T
+        logT = log(T)
+        Tmins, Tmaxes, coeffs = Psats_data[0], Psats_data[3], Psats_data[6]
+        for i in cmps:
+            if T < Tmins[i]:
+                A, B, C = Psats_data[9][i]
+                Psat = (A + B*T_inv + C*logT)
+#                    A, B = Psats_data[9][i]
+#                    Psat = (A - B*T_inv)
+#                    Psat = (T - Tmins[i])*Psats_data[1][i] + Psats_data[2][i]
+            elif T > Tmaxes[i]:
+                A, B, C = Psats_data[10][i]
+                Psat = (A + B*T_inv + C*logT)
+#                A, B = Psats_data[10][i]
+#                Psat = (A - B*T_inv)
+#                Psat = (T - Tmaxes[i])*Psats_data[4][i] + Psats_data[5][i]
+            else:
+                Psat = 0.0
+                for c in coeffs[i]:
+                    Psat = Psat*T + c
+            try:
+                Psats.append(exp(Psat))
+            except:
+                Psats.append(trunc_exp(Psat, 1.6549840276802644e+300))
+                
+        return Psats
 
     def Psats(self):
         try:
@@ -2634,30 +2658,28 @@ class GibbsExcessLiquid(Phase):
         except AttributeError:
             pass
         T, cmps = self.T, self.cmps
-        T_inv = 1.0/T
-        logT = log(T)
-        self._Psats = Psats = []
         if self.Psats_locked:
-            Psats_data = self.Psats_data
-            Tmins, Tmaxes, coeffs = Psats_data[0], Psats_data[3], Psats_data[6]
-            for i in cmps:
-                if T < Tmins[i]:
-                    A, B, C = Psats_data[9][i]
-                    Psat = (A + B*T_inv + C*logT)
-#                    A, B = Psats_data[9][i]
-#                    Psat = (A - B*T_inv)
-#                    Psat = (T - Tmins[i])*Psats_data[1][i] + Psats_data[2][i]
-                elif T > Tmaxes[i]:
-                    Psat = (T - Tmaxes[i])*Psats_data[4][i] + Psats_data[5][i]
-                else:
-                    Psat = 0.0
-                    for c in coeffs[i]:
-                        Psat = Psat*T + c
-                Psats.append(exp(Psat))
+            self._Psats = Psats = self._Psats_at_locked(T, self.Psats_data, cmps)
+#            Psats_data = self.Psats_data
+#            Tmins, Tmaxes, coeffs = Psats_data[0], Psats_data[3], Psats_data[6]
+#            for i in cmps:
+#                if T < Tmins[i]:
+#                    A, B, C = Psats_data[9][i]
+#                    Psat = (A + B*T_inv + C*logT)
+##                    A, B = Psats_data[9][i]
+##                    Psat = (A - B*T_inv)
+##                    Psat = (T - Tmins[i])*Psats_data[1][i] + Psats_data[2][i]
+#                elif T > Tmaxes[i]:
+#                    Psat = (T - Tmaxes[i])*Psats_data[4][i] + Psats_data[5][i]
+#                else:
+#                    Psat = 0.0
+#                    for c in coeffs[i]:
+#                        Psat = Psat*T + c
+#                Psats.append(exp(Psat))
             return Psats
 
 
-        
+        self._Psats = Psats = []
         for i in self.VaporPressures:
         # Need to reset the method because for the T bounded solver,
         # will normally get a different than prefered method as it starts
@@ -2714,45 +2736,56 @@ class GibbsExcessLiquid(Phase):
 #    def PIP(self):
 #        # Force liquid
 #        return 2.0
+
+    @staticmethod
+    def _dPsats_dT_at_locked(T, Psats_data, cmps, Psats):
+        T_inv = 1.0/T
+        Tinv2 = T_inv*T_inv
+        dPsats_dT = []
+        Tmins, Tmaxes, dcoeffs, coeffs_low = Psats_data[0], Psats_data[3], Psats_data[7], Psats_data[9]
+        for i in cmps:
+            if T < Tmins[i]:
+#                    A, B = Psats_data[9][i]
+#                    dPsat_dT = B*Tinv2*Psats[i]                    
+                dPsat_dT = Psats[i]*(-coeffs_low[i][1]*Tinv2 + coeffs_low[i][2]*T_inv)
+#                    dPsat_dT = Psats_data[1][i]*Psats[i]#*exp((T - Tmins[i])*Psats_data[1][i]
+                                             #   + Psats_data[2][i])
+            elif T > Tmaxes[i]:
+                dPsat_dT = Psats_data[4][i]*Psats[i]#*exp((T - Tmaxes[i])
+                                                    #*Psats_data[4][i]
+                                                    #+ Psats_data[5][i])
+            else:
+                dPsat_dT = 0.0
+                for c in dcoeffs[i]:
+                    dPsat_dT = dPsat_dT*T + c
+#                    v, der = horner_and_der(coeffs[i], T)
+                dPsat_dT *= Psats[i]
+            dPsats_dT.append(dPsat_dT)
+        return dPsats_dT
     
+    def dPsats_dT_at(self, T, Psats=None):
+        if Psats is None:
+            Psats = self.Psats_at(T)
+        if self.Psats_locked:
+            return self._dPsats_dT_at_locked(T, self.Psats_data, self.cmps, Psats)
+        return [VaporPressure.T_dependent_property_derivative(T=T)
+                     for VaporPressure in self.VaporPressures]
+
     def dPsats_dT(self):
         try:
             return self._dPsats_dT
         except:
             pass
         T, cmps = self.T, self.cmps
-        T_inv = 1.0/T
-        Tinv2 = T_inv*T_inv
         # Need to reset the method because for the T bounded solver,
         # will normally get a different than prefered method as it starts
         # at the boundaries
-        self._dPsats_dT = dPsats_dT = []
         if self.Psats_locked:
             try:
                 Psats = self._Psats
             except AttributeError:
                 Psats = self.Psats()
-            Psats_data = self.Psats_data
-            Tmins, Tmaxes, dcoeffs = Psats_data[0], Psats_data[3], Psats_data[7]
-            for i in cmps:
-                if T < Tmins[i]:
-#                    A, B = Psats_data[9][i]
-#                    dPsat_dT = B*Tinv2*Psats[i]                    
-                    A, B, C = Psats_data[9][i]
-                    dPsat_dT = Psats[i]*(-B*Tinv2 + C*T_inv)
-#                    dPsat_dT = Psats_data[1][i]*Psats[i]#*exp((T - Tmins[i])*Psats_data[1][i]
-                                                 #   + Psats_data[2][i])
-                elif T > Tmaxes[i]:
-                    dPsat_dT = Psats_data[4][i]*Psats[i]#*exp((T - Tmaxes[i])
-                                                        #*Psats_data[4][i]
-                                                        #+ Psats_data[5][i])
-                else:
-                    dPsat_dT = 0.0
-                    for c in dcoeffs[i]:
-                        dPsat_dT = dPsat_dT*T + c
-#                    v, der = horner_and_der(coeffs[i], T)
-                    dPsat_dT *= Psats[i]
-                dPsats_dT.append(dPsat_dT)
+            self._dPsats_dT = dPsats_dT = self._dPsats_dT_at_locked(T, self.Psats_data, cmps, Psats)
             return dPsats_dT
 
         self._dPsats_dT = dPsats_dT = [VaporPressure.T_dependent_property_derivative(T=T)
@@ -2889,6 +2922,30 @@ class GibbsExcessLiquid(Phase):
             return dPsat_dT_over_Psats
         return [i/j for i, j in zip(self.dPsats_dT(), self.Psats())]
 
+    @staticmethod
+    def _Vms_sat_at(T, Vms_sat_data, cmps):
+        Tmins, Tmaxes, coeffs, coeffs_Tmin = Vms_sat_data[0], Vms_sat_data[3], Vms_sat_data[6], Vms_sat_data[9]
+        Vms_sat = []
+        for i in cmps:
+            if T < Tmins[i]:
+                Vm = 0.0
+                for c in coeffs_Tmin[i]:
+                    Vm = Vm*T + c
+#                    Vm = (T - Tmins[i])*Vms_sat_data[1][i] + Vms_sat_data[2][i]
+            elif T > Tmaxes[i]:
+                Vm = (T - Tmaxes[i])*Vms_sat_data[4][i] + Vms_sat_data[5][i]
+            else:
+                Vm = 0.0
+                for c in coeffs[i]:
+                    Vm = Vm*T + c
+            Vms_sat.append(Vm)
+        return Vms_sat
+
+    def Vms_sat_at(self, T):
+        if self.Vms_sat_locked:
+            return self._Vms_sat_at(T, self.Vms_sat_data, self.cmps)
+        VolumeLiquids = self.VolumeLiquids
+        return [VolumeLiquids[i].T_dependent_property(T) for i in self.cmps]
 
     def Vms_sat(self):
         try:
@@ -2899,29 +2956,36 @@ class GibbsExcessLiquid(Phase):
         if self.Vms_sat_locked:
 #            self._Vms_sat = evaluate_linear_fits(self.Vms_sat_data, T)
 #            return self._Vms_sat
-            Vms_data = self.Vms_sat_data
-            Tmins, Tmaxes, coeffs = Vms_data[0], Vms_data[3], Vms_data[6]
-            coeffs_Tmin = Vms_data[9]
-            self._Vms_sat = Vms_sat = []
-            for i in self.cmps:
-                if T < Tmins[i]:
-                    Vm = 0.0
-                    for c in coeffs_Tmin[i]:
-                        Vm = Vm*T + c
-#                    Vm = (T - Tmins[i])*Vms_data[1][i] + Vms_data[2][i]
-                elif T > Tmaxes[i]:
-                    Vm = (T - Tmaxes[i])*Vms_data[4][i] + Vms_data[5][i]
-                else:
-                    Vm = 0.0
-                    for c in coeffs[i]:
-                        Vm = Vm*T + c
-#                    Vm = horner(coeffs[i], T)
-                Vms_sat.append(Vm)
+            self._Vms_sat = Vms_sat = self._Vms_sat_at(T, self.Vms_sat_data, self.cmps)
             return Vms_sat
         
         VolumeLiquids = self.VolumeLiquids
+#        Psats = self.Psats()
+#        self._Vms_sat = [VolumeLiquids[i](T, Psats[i]) for i in self.cmps]
         self._Vms_sat = [VolumeLiquids[i].T_dependent_property(T) for i in self.cmps]
         return self._Vms_sat
+
+    @staticmethod
+    def _dVms_sat_dT_at(T, Vms_sat_data, cmps):
+        Vms_sat_data = Vms_sat_data
+        Vms_sat_dT = []
+        Tmins, Tmaxes, dcoeffs = Vms_sat_data[0], Vms_sat_data[3], Vms_sat_data[7]
+        for i in cmps:
+            if T < Tmins[i]:
+                dVm = horner_and_der2(Vms_sat_data[9][i], T)[1]
+            elif T > Tmaxes[i]:
+                dVm = Vms_sat_data[4][i]
+            else:
+                dVm = 0.0
+                for c in dcoeffs[i]:
+                    dVm = dVm*T + c
+            Vms_sat_dT.append(dVm)
+        return Vms_sat_dT
+
+    def dVms_sat_dT_at(self, T):
+        if self.Vms_sat_locked:
+            return self._dVms_sat_dT_at(T, self.Vms_sat_data, self.cmps)
+        return [obj.T_dependent_property_derivative(T=T) for obj in VolumeLiquids]
 
     def dVms_sat_dT(self):
         try:
@@ -2932,22 +2996,8 @@ class GibbsExcessLiquid(Phase):
 
         if self.Vms_sat_locked:
 #            self._Vms_sat_dT = evaluate_linear_fits_d(self.Vms_sat_data, T)
-#            return self._Vms_sat_dT
-            Vms_data = self.Vms_sat_data
-            self._Vms_sat_dT = Vms_sat_dT = []
-            Tmins, Tmaxes, dcoeffs = Vms_data[0], Vms_data[3], Vms_data[7]
-            for i in self.cmps:
-                if T < Tmins[i]:
-                    dVm = horner_and_der2(Vms_data[9][i], T)[1]
-#                    dVm = Vms_data[1][i]
-                elif T > Tmaxes[i]:
-                    dVm = Vms_data[4][i]
-                else:
-                    dVm = 0.0
-                    for c in dcoeffs[i]:
-                        dVm = dVm*T + c
-                Vms_sat_dT.append(dVm)
-            return Vms_sat_dT
+            self._Vms_sat_dT = self._dVms_sat_dT_at(T, self.Vms_sat_data, self.cmps)
+            return self._Vms_sat_dT
 
         VolumeLiquids = self.VolumeLiquids
         self._Vms_sat_dT = Vms_sat_dT = [obj.T_dependent_property_derivative(T=T) for obj in VolumeLiquids]
@@ -2966,15 +3016,15 @@ class GibbsExcessLiquid(Phase):
 #            return self._d2Vms_sat_dT2
             d2Vms_sat_dT2 = self._d2Vms_sat_dT2 = []
         
-            Vms_data = self.Vms_sat_data
-            Tmins, Tmaxes, d2coeffs = Vms_data[0], Vms_data[3], Vms_data[8]
+            Vms_sat_data = self.Vms_sat_data
+            Tmins, Tmaxes, d2coeffs = Vms_sat_data[0], Vms_sat_data[3], Vms_sat_data[8]
             for i in self.cmps:
                 d2Vm = 0.0
                 if Tmins[i] < T < Tmaxes[i]:
                     for c in d2coeffs[i]:
                         d2Vm = d2Vm*T + c
                 elif T < Tmins[i]:
-                    d2Vm = horner_and_der2(Vms_data[9][i], T)[2]
+                    d2Vm = horner_and_der2(Vms_sat_data[9][i], T)[2]
                 d2Vms_sat_dT2.append(d2Vm)
             return d2Vms_sat_dT2
 
@@ -3095,6 +3145,18 @@ class GibbsExcessLiquid(Phase):
         T_REF_IG = self.T_REF_IG
         self._Hvaps_T_ref = [EnthalpyVaporizations[i](T_REF_IG) for i in cmps] 
         return self._Hvaps_T_ref
+    
+    def Poyntings_at(self, T, P, Psats=None, Vms=None):
+        if not self.use_Poynting:
+            return [1.0]*self.N
+        
+        cmps = self.cmps
+        if Psats is None:
+            Psats = self.Psats_at(T)
+        if Vms is None:
+            Vms = self.Vms_sat_at(T)
+        RT_inv = 1.0/(R*T)
+        return [exp(Vms[i]*(P-Psats[i])*RT_inv) for i in cmps]
 
     def Poyntings(self):
         try:
@@ -3106,12 +3168,20 @@ class GibbsExcessLiquid(Phase):
             return self._Poyntings
         
         T, P = self.T, self.P
-        Psats = self.Psats()
-        Vmls = self.Vms_sat()
-#        Vmls = [VolumeLiquid.T_dependent_property(T=T) for VolumeLiquid in self.VolumeLiquids]        
-#        Vmls = [VolumeLiquid(T=T, P=P) for VolumeLiquid in self.VolumeLiquids]
-        self._Poyntings = [exp(Vml*(P-Psat)/(R*T)) for Psat, Vml in zip(Psats, Vmls)]
+        try:
+            Psats = self._Psats
+        except AttributeError:
+            Psats = self.Psats()
+        try:
+            Vms_sat = self._Vms_sat
+        except AttributeError:
+            Vms_sat = self.Vms_sat()
+#        Vms = [VolumeLiquid.T_dependent_property(T=T) for VolumeLiquid in self.VolumeLiquids]        
+#        Vms = [VolumeLiquid(T=T, P=P) for VolumeLiquid in self.VolumeLiquids]
+        RT_inv = 1.0/(R*T)
+        self._Poyntings = [exp(Vml*(P-Psat)*RT_inv) for Psat, Vml in zip(Psats, Vms_sat)]
         return self._Poyntings
+
     
     def dPoyntings_dT(self):
         try:
@@ -3129,13 +3199,13 @@ class GibbsExcessLiquid(Phase):
 #        dPsats_dT = [VaporPressure.T_dependent_property_derivative(T=T)
 #                     for VaporPressure in self.VaporPressures]
 
-        Vmls = self.Vms_sat()
-#        Vmls = [VolumeLiquid.T_dependent_property(T=T) for VolumeLiquid in self.VolumeLiquids]                    
-#        dVml_dTs = [VolumeLiquid.T_dependent_property_derivative(T=T) 
+        Vms = self.Vms_sat()
+#        Vms = [VolumeLiquid.T_dependent_property(T=T) for VolumeLiquid in self.VolumeLiquids]                    
+#        dVms_sat_dT = [VolumeLiquid.T_dependent_property_derivative(T=T) 
 #                    for VolumeLiquid in self.VolumeLiquids]
-        dVml_dTs = self.dVms_sat_dT()
-#        Vmls = [VolumeLiquid(T=T, P=P) for VolumeLiquid in self.VolumeLiquids]
-#        dVml_dTs = [VolumeLiquid.TP_dependent_property_derivative_T(T=T, P=P) 
+        dVms_sat_dT = self.dVms_sat_dT()
+#        Vms = [VolumeLiquid(T=T, P=P) for VolumeLiquid in self.VolumeLiquids]
+#        dVms_sat_dT = [VolumeLiquid.TP_dependent_property_derivative_T(T=T, P=P) 
 #                    for VolumeLiquid in self.VolumeLiquids]
         
         x0 = 1.0/R
@@ -3143,15 +3213,41 @@ class GibbsExcessLiquid(Phase):
         
         self._dPoyntings_dT = dPoyntings_dT = []
         for i in self.cmps:
-            x2 = Vmls[i]
+            x2 = Vms[i]
             x3 = Psats[i]
             
             x4 = P - x3
             x5 = x1*x2*x4
-            dPoyntings_dTi = -x0*x1*(x2*dPsats_dT[i] - x4*dVml_dTs[i] + x5)*exp(x0*x5)
+            dPoyntings_dTi = -x0*x1*(x2*dPsats_dT[i] - x4*dVms_sat_dT[i] + x5)*exp(x0*x5)
             dPoyntings_dT.append(dPoyntings_dTi)
         return dPoyntings_dT
-    
+
+    def dPoyntings_dT_at(self, T, P, Psats=None, Vms=None, dPsats_dT=None, dVms_sat_dT=None):
+        if not self.use_Poynting:
+            return [1.0]*self.N
+        
+        cmps = self.cmps
+        if Psats is None:
+            Psats = self.Psats_at(T)
+            
+        if dPsats_dT is None:
+            dPsats_dT = self.dPsats_dT_at(T, Psats)
+            
+        if Vms is None:
+            Vms = self.Vms_sat_at(T)
+            
+        if dVms_sat_dT is None:
+            dVms_sat_dT = self.dVms_sat_dT_at(T)
+        x0 = 1.0/R
+        x1 = 1.0/T
+        dPoyntings_dT = []
+        for i in self.cmps:
+            x2 = Vms[i]            
+            x4 = P - Psats[i]
+            x5 = x1*x2*x4
+            dPoyntings_dTi = -x0*x1*(x2*dPsats_dT[i] - x4*dVms_sat_dT[i] + x5)*exp(x0*x5)
+            dPoyntings_dT.append(dPoyntings_dTi)
+        return dPoyntings_dT
     
     def dPoyntings_dP(self):
         '''from sympy import *
@@ -3169,28 +3265,42 @@ class GibbsExcessLiquid(Phase):
         T, P = self.T, self.P
         Psats = self.Psats()
         
-        Vmls = self.Vms_sat()
-#        Vmls = [VolumeLiquid(T=T, P=P) for VolumeLiquid in self.VolumeLiquids]
+        Vms = self.Vms_sat()
+#        Vms = [VolumeLiquid(T=T, P=P) for VolumeLiquid in self.VolumeLiquids]
         
         self._dPoyntings_dP = dPoyntings_dPs = []
         for i in self.cmps:
-            x0 = Vmls[i]/(R*T)
+            x0 = Vms[i]/(R*T)
             dPoyntings_dPs.append(x0*exp(x0*(P - Psats[i])))
         return dPoyntings_dPs
+
+    def phis_sat_at(self, T):
+        if not self.use_phis_sat:
+            return [1.0]*self.N
+        return [i.phi_sat(T, polish=True) for i in self.eos_pure_instances]
         
     def phis_sat(self):
         try:
             return self._phis_sat
         except AttributeError:
             pass
+        # Goal: Have the polynomial here. Fitting specific to the compound is required.
     
         if not self.use_phis_sat:
             self._phis_sat = [1.0]*self.N
             return self._phis_sat
         
         T = self.T
-        self._phis_sat = [i.phi_sat(T) for i in self.eos_pure_instances]
+        self._phis_sat = [i.phi_sat(T, polish=True) for i in self.eos_pure_instances]
         return self._phis_sat
+
+
+
+
+    def dphis_sat_dT_at(self, T):
+        if not self.use_phis_sat:
+            return [1.0]*self.N
+        return [i.dphi_sat_dT(T) for i in self.eos_pure_instances]
                 
     def dphis_sat_dT(self):
         # Not actually implemented
@@ -3199,7 +3309,7 @@ class GibbsExcessLiquid(Phase):
         except AttributeError:
             pass
 
-        if not self._dphis_sat_dT:
+        if not self.use_phis_sat:
             self._dphis_sat_dT = [0.0]*self.N
             return self._dphis_sat_dT
 
@@ -3208,6 +3318,19 @@ class GibbsExcessLiquid(Phase):
         self._dphis_sat_dT = [i.dphi_sat_dT(T) for i in self.eos_pure_instances]
         return self._dphis_sat_dT
 
+    def phis_at(self, T, P, zs, Psats=None, gammas=None, phis_sat=None, Poyntings=None):
+        P = self.P
+        P_inv = 1.0/P
+        if Psats is None:
+            Psats = self.Psats_at(T)
+        if gammas is None:
+            gammas = self.gammas_at(T, zs)
+        if phis_sat is None:
+            phis_sat = self.phis_sat_at(T)
+        if Poyntings is None:
+            Poyntings = self.Poyntings_at(T, P, Psats=Psats)
+        return [gammas[i]*Psats[i]*Poyntings[i]*phis_sat[i]*P_inv
+                for i in self.cmps]
 
     def phis(self):
         r'''Method to calculate the fugacity coefficients of the
@@ -3310,10 +3433,10 @@ class GibbsExcessLiquid(Phase):
         dgammas_dT = self.GibbsExcessModel.dgammas_dT()
         
         if self.use_phis_sat:
-            dphis_sat_dT = 0.0
+            dphis_sat_dT = self.dphis_sat_dT()
             phis_sat = self.phis_sat()
         else:
-            dphis_sat_dT = 0.0
+            dphis_sat_dT = [0.0]*self.N
             phis_sat = [1.0]*self.N
         
 #        print(gammas, phis_sat, Psats, Poyntings, dgammas_dT, dPoyntings_dT, dPsats_dT)
@@ -3325,9 +3448,49 @@ class GibbsExcessLiquid(Phase):
             x3 = Poyntings[i]
             x4 = x2*x3
             x5 = x0*x1
-            v = (x0*x4*dphis_sat_dT + x1*x4*dgammas_dT[i] + x2*x5*dPoyntings_dT[i] + x3*x5*dPsats_dT[i])/P
+            v = (x0*x4*dphis_sat_dT[i] + x1*x4*dgammas_dT[i] + x2*x5*dPoyntings_dT[i] + x3*x5*dPsats_dT[i])/P
             dphis_dTl.append(v)
         return dphis_dTl
+
+    def dphis_dT_at(self, T, P, zs, phis_also=False):
+        Psats = self.Psats_at(T)
+        dPsats_dT = self.dPsats_dT_at(T, Psats)
+        Vms = self.Vms_sat_at(T)
+        dVms_sat_dT = self.dVms_sat_dT_at(T)
+
+        gammas = self.gammas_at(T, zs)
+        dgammas_dT = self.dgammas_dT_at(T, zs)
+        
+        if self.use_Poynting:
+            Poyntings = self.Poyntings_at(T, P, Psats, Vms)
+            dPoyntings_dT = self.dPoyntings_dT_at(T, P, Psats=Psats, Vms=Vms, dPsats_dT=dPsats_dT, dVms_sat_dT=dVms_sat_dT)
+        else:
+            Poyntings = [1.0]*self.N
+            dPoyntings_dT = [0.0]*self.N
+        
+        if self.use_phis_sat:
+            dphis_sat_dT = self.dphis_sat_dT_at(T)
+            phis_sat = self.phis_sat_at(T)
+        else:
+            dphis_sat_dT = [0.0]*self.N
+            phis_sat = [1.0]*self.N
+        
+        
+        dphis_dT = []
+        for i in self.cmps:
+            x0 = gammas[i]
+            x1 = phis_sat[i]
+            x2 = Psats[i]
+            x3 = Poyntings[i]
+            x4 = x2*x3
+            x5 = x0*x1
+            v = (x0*x4*dphis_sat_dT[i] + x1*x4*dgammas_dT[i] + x2*x5*dPoyntings_dT[i] + x3*x5*dPsats_dT[i])/P
+            dphis_dT.append(v)
+        if phis_also:
+            P_inv = 1.0/P
+            phis = [gammas[i]*Psats[i]*Poyntings[i]*phis_sat[i]*P_inv for i in self.cmps]
+            return dphis_dT, phis
+        return dphis_dT
         
     def dlnphis_dT(self):
         try:
@@ -3381,7 +3544,15 @@ class GibbsExcessLiquid(Phase):
         self._dlnphis_dP = [dPoyntings_dP[i]/Poyntings[i] - P_inv for i in self.cmps]
         return self._dlnphis_dP
                     
-    
+    def gammas_at(self, T, zs):
+        if self.composition_independent:
+            return [1.0]*self.N
+        return self.GibbsExcessModel.to_T_xs(T, xs).gammas()
+
+    def dgammas_dT_at(self, T, zs):
+        if self.composition_independent:
+            return [0.0]*self.N
+        return self.GibbsExcessModel.to_T_xs(T, xs).dgammas_dT()
 
     def gammas(self):
         try:
@@ -3480,7 +3651,7 @@ class GibbsExcessLiquid(Phase):
                     dH_dP_integrals_Tait = self.dH_dP_integrals_Tait()
                     for i in cmps:
                         H += zs[i]*dH_dP_integrals_Tait[i]
-                else:
+                elif self.use_Poynting:
                     for i in cmps:
                         # This bit is the differential with respect to pressure
 #                        dP = max(0.0, P - Psats[i]) # Breaks thermodynamic consistency
@@ -3614,6 +3785,13 @@ class GibbsExcessLiquid(Phase):
                         dSi -= R*(lnPsats[i] - LOG_P_REF_IG)#   trunc_log(Psats[i]*P_REF_IG_INV)
                         dSi -= P*dVms_sat_dT[i]
                         S += dSi*zs[i]
+                
+                if self.use_Tait:
+                    pass
+                elif self.use_Poynting:
+                    pass
+#                for i in cmps:
+                    
             else:
                 # mine
                 Hvaps_T_ref = self.Hvaps_T_ref()
@@ -4754,6 +4932,20 @@ class CoolPropPhase(Phase):
     
     def d2S_dTdP(self):
         return self.AS.second_partial_deriv(CPiSmolar, CPiT, CPiP, CPiP, CPiT)
+    
+    def mu(self):
+        try:
+            return self._mu
+        except AttributeError:
+            mu = self._mu = self.AS.viscosity()
+        return mu
+
+    def k(self):
+        try:
+            return self._k
+        except AttributeError:
+            k = self._k = self.AS.conductivity()
+        return k
 
 class CoolPropLiquid(CoolPropPhase):
     prefer_phase = CPliquid

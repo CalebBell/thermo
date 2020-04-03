@@ -2390,7 +2390,7 @@ class GCEOS(object):
         T : float
             Temperature, [K]
         polish : bool, optional
-            Whether to attempt to use a numerical solver to make the solution
+            Whether to attempt to use a numerical solver to make the solution 
             more precise or not
         also_Psat : bool, optional
             Calculating `dPsat_dT` necessarily involves calculating `Psat`;
@@ -2506,9 +2506,6 @@ class GCEOS(object):
         method is always used, but a solution may not exist if both phases
         cannot coexist. If Tr is above 1, likewise a solution does not exist.
         '''
-        # WARNING - For compounds whose a_alpha (x)values extend too high,
-        # this method is inaccurate.
-        # TODO: find way to extend the range? Multiple compounds?
         Tr = T/self.Tc
         if polish or not 0.32 <= Tr <= 1.0:
             e = self.to_TP(T=T, P=self.Psat(T, polish=True)) # True
@@ -2520,6 +2517,22 @@ class GCEOS(object):
         alpha = self.a_alpha_and_derivatives(T, full=False)/self.a
         x = alpha/Tr - 1.
         return horner(self.phi_sat_coeffs, x)
+    
+    def dphi_sat_dT(self, T, polish=True):
+        Psat = self.Psat(T, polish=polish)
+        sat_eos = self.to(T=T, P=Psat)
+        dfg_T, dfl_T = sat_eos.dfugacity_dT_g, sat_eos.dfugacity_dT_l
+        dfg_P, dfl_P = sat_eos.dfugacity_dP_g, sat_eos.dfugacity_dP_l
+        dPsat_dT = (dfg_T - dfl_T)/(dfl_P - dfg_P)
+        
+        fugacity = sat_eos.fugacity_l
+        dfugacity_sat_dT = dPsat_dT*sat_eos.dfugacity_dP_l + sat_eos.dfugacity_dT_l
+        
+        Psat_inv = 1.0/Psat
+        
+        return (dfugacity_sat_dT - fugacity*dPsat_dT*Psat_inv)*Psat_inv
+
+
 
     def V_l_sat(self, T):
         r'''Method to calculate molar volume of the liquid phase along the

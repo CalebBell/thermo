@@ -2063,6 +2063,16 @@ def test_phi_sat():
     assert_close(phi_good, phi_exp)
     phi_approx = eos.phi_sat(250.0, polish=False)
     assert_close(phi_good, phi_approx, rtol=1e-6)
+    
+def test_dphi_sat_dT():
+    T = 399.0
+    eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=T, P=1E6)
+    
+    dphi_sat_dT_analytical = eos.dphi_sat_dT(T)
+    dphi_sat_dT_num = derivative(lambda T: eos.phi_sat(T), T, order=3, dx=T*1e-5)
+    assert_close(dphi_sat_dT_analytical, dphi_sat_dT_num, rtol=1e-7)
+    assert_close(dphi_sat_dT_analytical, -0.0017161558583938723, rtol=1e-10)
+    
 
 def test_PRTranslatedTwu():
     from thermo.eos import PRTranslated, PRTranslatedTwu, PR

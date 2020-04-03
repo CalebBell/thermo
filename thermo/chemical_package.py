@@ -65,19 +65,27 @@ class ChemicalConstantsPackage(object):
     
     __slots__ = properties + ('N', 'cmps', 'water_index', 'n_atoms')
     non_vectors = ('atom_fractions',)
+    non_vectors_set = set(non_vectors)
     
     def subset(self, idxs):
         is_slice = isinstance(idxs, slice)
+        is_one = len(idxs) == 1
+        idx = idxs[0]
         
         def atindexes(values):
             if is_slice:
                 return values[idxs]
+            if is_one:
+                return [values[idx]]
             return [values[i] for i in idxs]
         
         new = {}
+        non_vectors = self.non_vectors_set
         for p in self.properties:
-            if hasattr(self, p) and getattr(self, p) is not None and p not in self.non_vectors:
-                new[p] = atindexes(getattr(self, p))
+            if hasattr(self, p):
+                v = getattr(self, p)
+                if v is not None and p not in non_vectors:
+                    new[p] = atindexes(v)
         return ChemicalConstantsPackage(**new)
     
     def __repr__(self):
@@ -357,8 +365,10 @@ class PropertyCorrelationPackage(object):
         
         new = {'constants': self.constants.subset(idxs)}
         for p in self.pure_correlations:
-            if hasattr(self, p) and getattr(self, p) is not None:
-                new[p] = atindexes(getattr(self, p))
+            if hasattr(self, p):
+                v = getattr(self, p)
+                if v is not None:
+                    new[p] = atindexes(v)
         return PropertyCorrelationPackage(**new)
 
 
@@ -552,6 +562,7 @@ class PropertyCorrelationPackage(object):
                 iter_props = self.pure_correlations
             
             s = '%s(' %(self.__class__.__name__)
+            s += 'constants=constants, skip_missing=True,\n'
             for prop in iter_props:
                 try:
                     s += '%s=%s,\n' %(prop, self.as_best_fit(getattr(self, prop)))

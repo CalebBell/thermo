@@ -803,6 +803,17 @@ class VaporPressure(TDependentProperty):
                     break
                 else:
                     continue
+                
+            # Calculate the extrapolation values
+            v_Tmax = horner(best_fit_coeffs, Tmax)
+            v, d1, d2 = horner_and_der2(best_fit_coeffs, Tmax)
+            Psat = exp(v)
+            dPsat_dT = Psat*d1
+            d2Psat_dT2 = Psat*(d1*d1 + d2)                
+#                A, B, C = Antoine_ABC = Antoine_coeffs_from_point(T_trans, Psat, dPsat_dT, d2Psat_dT2, base=e)
+            self.best_fit_AB_high = Antoine_AB_coeffs_from_point(Tmax, Psat, dPsat_dT, base=e)
+            self.DIPPR101_ABC_high = DIPPR101_ABC_coeffs_from_point(Tmax, Psat, dPsat_dT, d2Psat_dT2)
+
 
         except:
             pass
