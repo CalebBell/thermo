@@ -1446,12 +1446,10 @@ def test_IG_liq_poy_flashes(hacks):
     VaporPressures = [VaporPressure(best_fit=(273.17, 647.086, [-2.8478502840358144e-21, 1.7295186670575222e-17, -4.034229148562168e-14, 5.0588958391215855e-11, -3.861625996277003e-08, 1.886271475957639e-05, -0.005928371869421494, 1.1494956887882308, -96.74302379151317]))]
     HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))]
     VolumeLiquids = [VolumeLiquid(best_fit=(273.17, 637.096, [9.00307261049824e-24, -3.097008950027417e-20, 4.608271228765265e-17, -3.8726692841874345e-14, 2.0099220218891486e-11, -6.596204729785676e-09, 1.3368112879131157e-06, -0.00015298762503607717, 0.007589247005014652]))]
-    EnthalpyVaporizations = [EnthalpyVaporization(best_fit=(273.17, 642.095, 647.14, [3.897048781581251, 94.88210726884502, 975.3860042050983, 5488.360052656942, 18273.86104025691, 36258.751893749475, 42379.63786686855, 39492.82327945519, 58540.84902227406]))]
-    correlations = PropertyCorrelationPackage(constants, skip_missing=True, EnthalpyVaporizations=EnthalpyVaporizations, VolumeLiquids=VolumeLiquids, VaporPressures=VaporPressures, HeatCapacityGases=HeatCapacityGases)
+    correlations = PropertyCorrelationPackage(constants, skip_missing=True, VolumeLiquids=VolumeLiquids, VaporPressures=VaporPressures, HeatCapacityGases=HeatCapacityGases)
     liquid = GibbsExcessLiquid(VaporPressures=VaporPressures, 
                                HeatCapacityGases=HeatCapacityGases,
                                VolumeLiquids=VolumeLiquids,
-                               EnthalpyVaporizations=EnthalpyVaporizations,
                                use_phis_sat=False, use_Poynting=True, Psat_extrpolation='ABC').to_TP_zs(T, P, zs)
     eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
     gas = EOSGas(IGMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
