@@ -108,8 +108,9 @@ class StreamArgs(object):
         return StreamArgs(Vf_TP=self.Vf_TP, Q_TP=self.Q_TP, pkg=self.pkg,
                  single_composition_basis=self.single_composition_basis, **kwargs)
     
-    def __copy__(self):
-        return deepcopy(self)
+    __copy__ = copy
+#        return self.copy()
+#        return deepcopy(self)
     
     @property
     def IDs(self):

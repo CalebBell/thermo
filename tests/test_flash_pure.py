@@ -1190,7 +1190,21 @@ def test_EOS_TP_HSGUA_sln_in_VF(hacks):
     new = flasher.flash(S=base.S(), T=base.T)
     assert new.phase_count == 2
     assert_close(new.P, base.P)
-    
+
+def test_EOS_TP_HSGUA_missing_return_value():
+    '''This is only in the hacks for eos. If two volume roots were not present,
+    no return value was given.
+    '''
+    constants = ChemicalConstantsPackage(CASs=['124-38-9'], MWs=[44.0095], omegas=[0.2252], Pcs=[7376460.0], Tcs=[304.2])
+    correlations = PropertyCorrelationPackage(skip_missing=True, constants=constants, HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [-3.1115474168865828e-21, 1.39156078498805e-17, -2.5430881416264243e-14, 2.4175307893014295e-11, -1.2437314771044867e-08, 3.1251954264658904e-06, -0.00021220221928610925, 0.000884685506352987, 29.266811602924644]))])
+    kwargs = dict(eos_kwargs=dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas),
+                    HeatCapacityGases=correlations.HeatCapacityGases)
+    liquid = EOSLiquid(PRMIX, T=300, P=1e6, zs=[1], **kwargs)
+    gas = EOSGas(PRMIX, T=300, P=1e6, zs=[1], **kwargs)
+    flasher = FlashPureVLS(constants, correlations, gas, [liquid], [])
+    H_base = -354.6559586412054
+    assert_close(flasher.flash(P=1e6, H=H_base, zs=[1]).T, 300)
+
 
 def test_EOS_water_hot_start():
     constants = ChemicalConstantsPackage(Tcs=[647.14], Pcs=[22048320.0], omegas=[0.344], MWs=[18.01528],  CASs=['7732-18-5'],)

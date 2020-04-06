@@ -6020,7 +6020,7 @@ class FlashVLN(FlashVL):
         except:
             pass
         
-        if 0:
+        if 1:
             res, flash_convergence = self.solve_PT_HSGUA_NP_guess_bisect(zs, fixed_val, spec_val,
                                                            fixed_var=fixed_var, spec=spec, iter_var=iter_var)
             return None, res.phases, [], res.betas, flash_convergence
@@ -6482,7 +6482,13 @@ class FlashPureVLS(FlashBase):
                             flash_convergence['iterations'] = iterations
                             return g, ls, [], [1.0], flash_convergence
                     else:
-                        break
+                        if isinstance(phase, EOSGas):
+                            g, ls = phase, []
+                        else:
+                            g, ls = None, [phase]
+                        flash_convergence['err'] = err
+                        flash_convergence['iterations'] = iterations
+                        return g, ls, [], [1.0], flash_convergence
                 else:
                     if isinstance(phase, EOSGas):
                         g, ls = phase, []
@@ -6550,10 +6556,10 @@ class FlashPureVLS(FlashBase):
                 return False
         
         if (self.VL_only_CEOSs_same or self.VL_IG_activity) and not selection_fun_1P_specified and solution is None and fixed_var != 'V':
-            sln =  self.flash_TPV_HSGUA_VL_bound_first(fixed_var_val=fixed_var_val, spec_val=spec_val, fixed_var=fixed_var,
+            return self.flash_TPV_HSGUA_VL_bound_first(fixed_var_val=fixed_var_val, spec_val=spec_val, fixed_var=fixed_var,
                                  spec=spec, iter_var=iter_var, hot_start=hot_start, selection_fun_1P=selection_fun_1P, cubic=self.VL_only_CEOSs_same)
-            if sln is not None:
-                return sln
+#            if sln is not None:
+#                return sln
         try:
             solutions_1P = []
             G_min = 1e100
