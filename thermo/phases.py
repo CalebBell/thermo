@@ -2310,7 +2310,7 @@ class EOSGas(Phase):
             return self.correlations.ViscosityGasMixture.mixture_property(self.T, self.P, self.zs, self.ws())
         elif phase == 'l':
             return self.correlations.ViscosityLiquidMixture.mixture_property(self.T, self.P, self.zs, self.ws())
-        elif 'g' in phase:
+        else:
             return self.correlations.ViscosityGasMixture.mixture_property(self.T, self.P, self.zs, self.ws())
 
 def build_EOSLiquid():
@@ -2320,15 +2320,21 @@ def build_EOSLiquid():
     source = source.replace("'g'", "'gORIG'")
     source = source.replace("'l'", "'g'")
     source = source.replace("'gORIG'", "'l'")
-    
+    source = source.replace("ViscosityGasMixture", "gViscosityGasMixture")
+    source = source.replace("ViscosityLiquidMixture", "ViscosityGasMixture")
+    source = source.replace("gViscosityGasMixture", "ViscosityLiquidMixture")
     # TODO add new volume derivatives
     swap_strings = ('Cp_dep', 'd2P_dT2', 'd2P_dTdV', 'd2P_dV2', 'd2T_dV2',
                     'd2V_dT2', 'dH_dep_dP', 'dP_dT', 'dP_dV', 'phi',
-                    'dS_dep_dP', 'dS_dep_dT', 'H_dep', 'S_dep', '.V', '.Z')
+                    'dS_dep_dP', 'dS_dep_dT', 'G_dep', 'H_dep', 'S_dep', '.V', '.Z',
+                    'd2P_dVdT_TP', 'd2P_dT2_PV', 'd2P_dVdP', 'd2P_dTdP',
+                    'd2S_dep_dP', 'dH_dep_dV', 'dH_dep_dT', 'd2H_dep_dTdP',
+                    'd2H_dep_dP2', 'd2H_dep_dT2')
     for s in swap_strings:
         source = source.replace(s+'_g', 'gORIG')
         source = source.replace(s+'_l', s+'_g')
         source = source.replace('gORIG', s+'_l')
+#    print(source)
     return source
 
 try:
@@ -4648,6 +4654,8 @@ class GibbsExcessLiquid(Phase):
 #        print(dH_dP_integrals_Tait, self._dH_dP_integrals_Tait2)
         return dH_dP_integrals_Tait
         
+    def mu(self):
+        return self.correlations.ViscosityLiquidMixture.mixture_property(self.T, self.P, self.zs, self.ws())
 
     
 class GibbsExcessSolid(GibbsExcessLiquid):

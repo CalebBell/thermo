@@ -35,6 +35,7 @@ from thermo.volume import *
 from thermo.heat_capacity import *
 from thermo.phase_change import *
 from thermo.unifac import UNIFAC, UFSG, UFIP
+from thermo.coolprop import PropsSI
 
 def test_GibbbsExcessLiquid_VaporPressure():
     # Binary ethanol-water
@@ -983,6 +984,12 @@ def test_CoolPropPhase_Water():
     dS_dV_P_num = derivative(lambda V: CPP.to(P=P, V=V, zs=[1]).S(), CPP.V(), dx=CPP.V()*1e-6)
     assert_allclose(CPP.dS_dV_P(), dS_dV_P_num)
     
+def test_CoolPropPhase_Transport():
+    liq = CoolPropLiquid('HEOS', 'water', T=300, P=1e5, zs=[1.0])
+    assert_close(liq.mu(), PropsSI("VISCOSITY", "T", 300, "P", 1e5, "Water"), rtol=1e-12)
+    
+    gas = CoolPropGas('HEOS', 'water', T=400, P=1e5, zs=[1.0])
+    assert_close(gas.mu(), PropsSI("VISCOSITY", "T", 400, "P", 1e5, "Water"), rtol=1e-12)
     
 def test_model_hash():
     zs = [0.95, 0.05]

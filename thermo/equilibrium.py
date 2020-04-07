@@ -103,6 +103,7 @@ class EquilibriumState(object):
             self.liquid_bulk = liquid_bulk = Bulk(T, P, self.liquid_zs, self.liquids, self.betas_liquids)
             liquid_bulk.result = self
             liquid_bulk.constants = constants
+            liquid_bulk.correlations = correlations
             for i, l in enumerate(liquids):
                 setattr(self, 'liquid%d'%(i), l)
         elif liquid_count:
@@ -115,6 +116,7 @@ class EquilibriumState(object):
             self.solid_bulk = solid_bulk = Bulk(T, P, self.solid_zs, solids, self.betas_solids)
             solid_bulk.result = self
             solid_bulk.constants = constants
+            solid_bulk.correlations = correlations
             for i, s in enumerate(solids):
                 setattr(self, 'solid%d' %(i), s)
 
@@ -134,7 +136,7 @@ class EquilibriumState(object):
         for phase in self.phases:
             phase.result = self
             phase.constants = constants
-            
+            phase.correlations = correlations
     @property
     def phases_str(self):
         s = ''
