@@ -446,6 +446,9 @@ def test_ViscosityLiquidMixture():
     mu = obj.calculate(m.T, m.P, m.zs, m.ws, MIXING_LOG_MASS)
     assert_allclose(mu, 0.0008741268796817256)
     
+    mu = obj.calculate(m.T, m.P, m.zs, m.ws, SIMPLE)
+    assert_allclose(mu, 0.0010399923381840628)
+    
     # Test Laliberte
     m = Mixture(['water', 'sulfuric acid'], zs=[0.5, 0.5], T=298.15)
     ViscosityLiquids = [i.ViscosityLiquid for i in m.Chemicals]

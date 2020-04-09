@@ -355,7 +355,7 @@ class PropertyCorrelationPackage(object):
                          'ThermalConductivityLiquids', 'ThermalConductivityGases',
                          'SurfaceTensions')
 
-    def subset(self, idxs):
+    def subset(self, idxs, skip_missing=False):
         is_slice = isinstance(idxs, slice)
         
         def atindexes(values):
@@ -369,7 +369,7 @@ class PropertyCorrelationPackage(object):
                 v = getattr(self, p)
                 if v is not None:
                     new[p] = atindexes(v)
-        return PropertyCorrelationPackage(**new)
+        return PropertyCorrelationPackage(skip_missing=skip_missing, **new)
 
 
     def __init__(self, constants, VaporPressures=None, SublimationPressures=None,

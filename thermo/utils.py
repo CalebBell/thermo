@@ -1297,9 +1297,15 @@ def zs_to_ws(zs, MWs):
     >>> zs_to_ws([0.5, 0.5], [10, 20])
     [0.3333333333333333, 0.6666666666666666]
     '''
-    Mavg = sum([zi*MWi for zi, MWi in zip(zs, MWs)])
-    ws = [zi*MWi/Mavg for zi, MWi in zip(zs, MWs)]
+    cmps = range(len(zs))
+    ws = [zs[i]*MWs[i] for i in cmps]
+    Mavg = 1.0/sum(ws)
+    for i in cmps:
+        ws[i] *= Mavg
     return ws
+#    Mavg = sum([zi*MWi for zi, MWi in zip(zs, MWs)])
+#    ws = [zi*MWi/Mavg for zi, MWi in zip(zs, MWs)]
+#    return ws
 
 
 def ws_to_zs(ws, MWs):
@@ -3732,7 +3738,7 @@ class TPDependentProperty(TDependentProperty):
         ----------
         user_methods_P : str or list
             Methods by name to be considered or preferred for pressure effect.
-        forced : bool, optional
+        forced_P : bool, optional
             If True, only the user specified methods will ever be considered;
             if False other methods will be considered if no user methods
             suceed.
@@ -4385,7 +4391,18 @@ class MixtureProperty(object):
     
     TP_zs_ws_cached = (None, None, None, None)
     prop_cached = None
+    _correct_pressure_pure = True
 
+    @property
+    def correct_pressure_pure(self):
+        return self._correct_pressure_pure
+    
+    @correct_pressure_pure.setter        
+    def correct_pressure_pure(self, v):
+        if v != self._correct_pressure_pure:
+            self._correct_pressure_pure = v
+            self.TP_zs_ws_cached = (None, None, None, None)
+    
     def _complete_zs_ws(self, zs, ws):
         if zs is None and ws is None:
             raise Exception('No Composition Specified')
@@ -4461,6 +4478,7 @@ class MixtureProperty(object):
         if not self.user_methods and self.forced:
             raise Exception('Only user specified methods are considered when forced is True, but no methods were provided')
 
+        self.user_prefered_method = user_methods[0]
         # Remove previously selected methods
         self.method = None
         self.sorted_valid_methods = []

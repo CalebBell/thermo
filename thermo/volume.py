@@ -1625,6 +1625,9 @@ class VolumeLiquidMixture(MixtureProperty):
     VolumeLiquids : list[VolumeLiquid], optional
         VolumeLiquid objects created for all species in the mixture,  
         normally created by :obj:`thermo.chemical.Chemical`.
+    correct_pressure_pure : bool, optional
+        Whether to try to use the better pressure-corrected pure component 
+        models or to use only the T-only dependent pure species models, [-]
                  
     Notes
     -----
@@ -1669,7 +1672,7 @@ class VolumeLiquidMixture(MixtureProperty):
                       RACKETT_PARAMETERS, COSTALD_MIXTURE, RACKETT]
 
     def __init__(self, MWs=[], Tcs=[], Pcs=[], Vcs=[], Zcs=[], omegas=[], 
-                 CASs=[], VolumeLiquids=[]):
+                 CASs=[], VolumeLiquids=[], correct_pressure_pure=True):
         self.MWs = MWs
         self.Tcs = Tcs
         self.Pcs = Pcs
@@ -1678,6 +1681,8 @@ class VolumeLiquidMixture(MixtureProperty):
         self.omegas = omegas
         self.CASs = CASs
         self.VolumeLiquids = VolumeLiquids
+        
+        self._correct_pressure_pure = correct_pressure_pure
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
@@ -1762,7 +1767,15 @@ class VolumeLiquidMixture(MixtureProperty):
             [m^3/mol]
         '''
         if method == SIMPLE:
-            Vms = [i(T, P) for i in self.VolumeLiquids]
+            if self._correct_pressure_pure:
+                Vms = []
+                for obj in self.VolumeLiquids:
+                    Vm = obj.TP_dependent_property(T, P)
+                    if Vm is None:
+                        Vm = obj.T_dependent_property(T)
+                    Vms.append(Vm)
+            else:
+                Vms = [i.T_dependent_property(T) for i in self.VolumeLiquids]
             return Amgat(zs, Vms)
         elif method == LALIBERTE:
             ws = list(ws) ; ws.pop(self.index_w)

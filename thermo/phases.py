@@ -1619,6 +1619,19 @@ class Phase(object):
         else:
             raise NotImplementedError("Did not work")
 
+    def ws(self):
+        try:
+            return self._ws
+        except AttributeError:
+            pass
+        MWs = self.constants.MWs
+        zs, cmps = self.zs, self.cmps
+        ws = [zs[i]*MWs[i] for i in cmps]
+        Mavg = 1.0/sum(ws)
+        for i in cmps:
+            ws[i] *= Mavg
+        self._ws = ws
+        return ws
 
 for a in ('T', 'P', 'V', 'rho'):
     for b in ('T', 'P', 'V', 'rho'):
@@ -1636,7 +1649,7 @@ class IdealGas(Phase):
     phase = 'g'
     force_phase = 'g'
     composition_independent = True
-    def __init__(self, HeatCapacityGases=None, Hfs=None, Gfs=None):
+    def __init__(self, HeatCapacityGases=None, Hfs=None, Gfs=None, T=None, P=None, zs=None):
         self.HeatCapacityGases = HeatCapacityGases
         self.Hfs = Hfs
         self.Gfs = Gfs
@@ -1647,6 +1660,16 @@ class IdealGas(Phase):
             
         if HeatCapacityGases is not None:
             self.N = len(HeatCapacityGases)
+            self.cmps = range(self.N)
+        elif zs is not None:
+            self.N = len(zs)
+            self.cmps = range(self.N)
+        if zs is not None:
+            self.zs = zs
+        if T is not None:
+            self.T = T
+        if P is not None:
+            self.P = P
         
     def fugacities(self):
         P = self.P
@@ -1678,7 +1701,22 @@ class IdealGas(Phase):
         return new
  
     def mu(self):
-        return self.correlations.ViscosityGasMixture.mixture_property(self.T, self.P, self.zs, self.ws())
+        try:
+            return self._mu
+        except AttributeError:
+            pass
+        mu = self.correlations.ViscosityGasMixture.mixture_property(self.T, self.P, self.zs, self.ws())
+        self._mu = mu
+        return mu
+
+    def k(self):
+        try:
+            return self._k
+        except AttributeError:
+            pass
+        k = self.correlations.ThermalConductivityGasMixture.mixture_property(self.T, self.P, self.zs, self.ws())
+        self._k = k
+        return k
 
 class EOSGas(Phase):
     
@@ -2305,13 +2343,34 @@ class EOSGas(Phase):
         return P_max
     
     def mu(self):
+        try:
+            return self._mu
+        except AttributeError:
+            pass
         phase = self.eos_mix.phase
         if phase == 'g':
-            return self.correlations.ViscosityGasMixture.mixture_property(self.T, self.P, self.zs, self.ws())
+            mu = self.correlations.ViscosityGasMixture.mixture_property(self.T, self.P, self.zs, self.ws())
         elif phase == 'l':
-            return self.correlations.ViscosityLiquidMixture.mixture_property(self.T, self.P, self.zs, self.ws())
+            mu = self.correlations.ViscosityLiquidMixture.mixture_property(self.T, self.P, self.zs, self.ws())
         else:
-            return self.correlations.ViscosityGasMixture.mixture_property(self.T, self.P, self.zs, self.ws())
+            mu = self.correlations.ViscosityGasMixture.mixture_property(self.T, self.P, self.zs, self.ws())
+        self._mu = mu
+        return mu
+
+    def k(self):
+        try:
+            return self._k
+        except AttributeError:
+            pass
+        phase = self.eos_mix.phase
+        if phase == 'g':
+            k = self.correlations.ThermalConductivityGasMixture.mixture_property(self.T, self.P, self.zs, self.ws())
+        elif phase == 'l':
+            k = self.correlations.ThermalConductivityLiquidMixture.mixture_property(self.T, self.P, self.zs, self.ws())
+        else:
+            k = self.correlations.ThermalConductivityGasMixture.mixture_property(self.T, self.P, self.zs, self.ws())
+        self._k = k
+        return k
 
 def build_EOSLiquid():
     import inspect
@@ -2323,6 +2382,9 @@ def build_EOSLiquid():
     source = source.replace("ViscosityGasMixture", "gViscosityGasMixture")
     source = source.replace("ViscosityLiquidMixture", "ViscosityGasMixture")
     source = source.replace("gViscosityGasMixture", "ViscosityLiquidMixture")
+    source = source.replace("ThermalConductivityGasMixture", "gThermalConductivityGasMixture")
+    source = source.replace("ThermalConductivityLiquidMixture", "ThermalConductivityGasMixture")
+    source = source.replace("gThermalConductivityGasMixture", "ThermalConductivityLiquidMixture")
     # TODO add new volume derivatives
     swap_strings = ('Cp_dep', 'd2P_dT2', 'd2P_dTdV', 'd2P_dV2', 'd2T_dV2',
                     'd2V_dT2', 'dH_dep_dP', 'dP_dT', 'dP_dV', 'phi',
@@ -4655,7 +4717,20 @@ class GibbsExcessLiquid(Phase):
         return dH_dP_integrals_Tait
         
     def mu(self):
-        return self.correlations.ViscosityLiquidMixture.mixture_property(self.T, self.P, self.zs, self.ws())
+        try:
+            return self._mu
+        except AttributeError:
+            pass
+        mu = self._mu = self.correlations.ViscosityLiquidMixture.mixture_property(self.T, self.P, self.zs, self.ws())
+        return mu
+
+    def k(self):
+        try:
+            return self._k
+        except AttributeError:
+            pass
+        self._k = k = self.correlations.ThermalConductivityLiquidMixture.mixture_property(self.T, self.P, self.zs, self.ws())
+        return k
 
     
 class GibbsExcessSolid(GibbsExcessLiquid):

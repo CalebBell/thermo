@@ -985,7 +985,7 @@ for name in PropertyCorrelationPackage.correlations:
 
 ### For certain properties not supported by Phases/Bulk, allow them to call up to the 
 # EquilibriumState to get the property
-phases_properties_to_EquilibriumState = ['ws', 'k', 'atom_fractions', 'atom_mass_fractions',
+phases_properties_to_EquilibriumState = ['atom_fractions', 'atom_mass_fractions',
                                          'Hc', 'Hc_mass', 'Hc_lower', 'Hc_lower_mass', 'SG', 'SG_gas',
                                          'pseudo_Tc', 'pseudo_Pc', 'pseudo_Vc', 'pseudo_Zc',
                                          'V_gas_standard', 'V_gas_normal', 'Hc_normal', 'Hc_standard',

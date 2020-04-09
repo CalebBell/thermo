@@ -32,7 +32,8 @@ __all__ = ['Sheffy_Johnson', 'Sato_Riedel', 'Lakshmi_Prasad',
  'thermal_conductivity_gas_methods_P', 'ThermalConductivityGas', 
  'stiel_thodos_dense', 'eli_hanley_dense', 'chung_dense', 'Lindsay_Bromley',
  'Perrys2_314', 'Perrys2_315', 'VDI_PPDS_9',
- 'VDI_PPDS_10', 'ThermalConductivityGasMixture']
+ 'VDI_PPDS_10', 'ThermalConductivityGasMixture', 'ThermalConductivityLiquidMixture',
+ 'MAGOMEDOV', 'DIPPR_9H', 'FILIPPOV', 'LINDSAY_BROMLEY']
 
 import os
 import numpy as np
@@ -1168,7 +1169,7 @@ def Filippov(ws, ks):
 MAGOMEDOV = 'Magomedov'
 DIPPR_9H = 'DIPPR9H'
 FILIPPOV = 'Filippov'
-SIMPLE = 'SIMPLE'
+SIMPLE = 'Simple'
 
 thermal_conductivity_liquid_mixture_methods = [MAGOMEDOV, DIPPR_9H, FILIPPOV, SIMPLE]
 
@@ -1195,6 +1196,9 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
         mixture, normally created by :obj:`thermo.chemical.Chemical`.
     MWs : list[float], optional
         Molecular weights of all species in the mixture, [g/mol]
+    correct_pressure_pure : bool, optional
+        Whether to try to use the better pressure-corrected pure component 
+        models or to use only the T-only dependent pure species models, [-]
 
     Notes
     -----
@@ -1231,10 +1235,13 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
                             
     ranked_methods = [DIPPR_9H, SIMPLE, MAGOMEDOV, FILIPPOV]
 
-    def __init__(self, CASs=[], ThermalConductivityLiquids=[], MWs=[]):
+    def __init__(self, CASs=[], ThermalConductivityLiquids=[], MWs=[],
+                 correct_pressure_pure=True):
         self.CASs = CASs
         self.ThermalConductivityLiquids = ThermalConductivityLiquids
         self.MWs = MWs
+        
+        self._correct_pressure_pure = correct_pressure_pure
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
@@ -1310,19 +1317,27 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
         k : float
             Thermal conductivity of the liquid mixture, [W/m/K]
         '''
-        if method == SIMPLE:
-            ks = [i(T, P) for i in self.ThermalConductivityLiquids]
-            return mixing_simple(zs, ks)
-        elif method == DIPPR_9H:
-            ks = [i(T, P) for i in self.ThermalConductivityLiquids]
-            return DIPPR9H(ws, ks)
-        elif method == FILIPPOV:
-            ks = [i(T, P) for i in self.ThermalConductivityLiquids]
-            return Filippov(ws, ks)
-        elif method == MAGOMEDOV:
+        if method == MAGOMEDOV:
             k_w = self.ThermalConductivityLiquids[self.index_w](T, P)
             ws = list(ws) ; ws.pop(self.index_w)
             return thermal_conductivity_Magomedov(T, P, ws, self.wCASs, k_w)
+        
+        if self._correct_pressure_pure:
+            ks = []
+            for obj in self.ThermalConductivityLiquids:
+                k = obj.TP_dependent_property(T, P)
+                if k is None:
+                    k = obj.T_dependent_property(T)
+                ks.append(k)
+        else:
+            ks = [i.T_dependent_property(T) for i in self.ThermalConductivityLiquids]
+        
+        if method == SIMPLE:
+            return mixing_simple(zs, ks)
+        elif method == DIPPR_9H:
+            return DIPPR9H(ws, ks)
+        elif method == FILIPPOV:
+            return Filippov(ws, ks)
         else:
             raise Exception('Method not valid')
 
@@ -2740,6 +2755,9 @@ class ThermalConductivityGasMixture(MixtureProperty):
     ViscosityGases : list[ViscosityGas], optional
         ViscosityGas objects created for all species in the mixture, normally 
         created by :obj:`thermo.chemical.Chemical`.
+    correct_pressure_pure : bool, optional
+        Whether to try to use the better pressure-corrected pure component 
+        models or to use only the T-only dependent pure species models, [-]
 
     Notes
     -----
@@ -2770,12 +2788,14 @@ class ThermalConductivityGasMixture(MixtureProperty):
     ranked_methods = [LINDSAY_BROMLEY, SIMPLE]
 
     def __init__(self, MWs=[], Tbs=[], CASs=[], ThermalConductivityGases=[], 
-                 ViscosityGases=[]):
+                 ViscosityGases=[], correct_pressure_pure=True):
         self.MWs = MWs
         self.Tbs = Tbs
         self.CASs = CASs
         self.ThermalConductivityGases = ThermalConductivityGases
-        self.ViscosityGases = ViscosityGases                     
+        self.ViscosityGases = ViscosityGases 
+
+        self._correct_pressure_pure = correct_pressure_pure                    
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
@@ -2846,12 +2866,28 @@ class ThermalConductivityGasMixture(MixtureProperty):
         kg : float
             Thermal conductivity of gas mixture, [W/m/K]
         '''
+        if self._correct_pressure_pure:
+            ks = []
+            for obj in self.ThermalConductivityGases:
+                k = obj.TP_dependent_property(T, P)
+                if k is None:
+                    k = obj.T_dependent_property(T)
+                ks.append(k)
+        else:
+            ks = [i.T_dependent_property(T) for i in self.ThermalConductivityGases]
+        
         if method == SIMPLE:
-            ks = [i(T, P) for i in self.ThermalConductivityGases]
             return mixing_simple(zs, ks)
         elif method == LINDSAY_BROMLEY:
-            ks = [i(T, P) for i in self.ThermalConductivityGases]
-            mus = [i(T, P) for i in self.ViscosityGases]
+            if self._correct_pressure_pure:
+                mus = []
+                for obj in self.ViscosityGases:
+                    mu = obj.TP_dependent_property(T, P)
+                    if mu is None:
+                        mu = obj.T_dependent_property(T)
+                    mus.append(mu)
+            else:
+                mus = [i.T_dependent_property(T) for i in self.ViscosityGases]
             return Lindsay_Bromley(T=T, ys=zs, ks=ks, mus=mus, Tbs=self.Tbs, MWs=self.MWs)
         else:
             raise Exception('Method not valid')

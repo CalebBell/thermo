@@ -33,7 +33,9 @@ __all__ = ['Dutt_Prasad', 'VN3_data', 'VN2_data', 'VN2E_data', 'Perrys2_313',
 'Gharagheizi_gas_viscosity', 'viscosity_gas_methods', 'viscosity_gas_methods_P', 
 'Herning_Zipperer', 'Wilke', 'Brokaw', 
 'viscosity_index', 'viscosity_converter', 'ViscosityLiquidMixture', 
-'ViscosityGasMixture']
+'ViscosityGasMixture',
+'MIXING_LOG_MOLAR', 'MIXING_LOG_MASS',
+'BROKAW', 'HERNING_ZIPPERER', 'WILKE']
 
 import os
 import numpy as np
@@ -916,8 +918,9 @@ def Lucas(T, P, Tc, Pc, omega, P_sat, mu_l):
 LALIBERTE_MU = 'Laliberte'
 MIXING_LOG_MOLAR = 'Logarithmic mixing, molar'
 MIXING_LOG_MASS = 'Logarithmic mixing, mass'
+SIMPLE = 'Simple'
 
-viscosity_liquid_mixture_methods = [LALIBERTE_MU, MIXING_LOG_MOLAR, MIXING_LOG_MASS]
+viscosity_liquid_mixture_methods = [LALIBERTE_MU, MIXING_LOG_MOLAR, MIXING_LOG_MASS, SIMPLE]
 
 
 class ViscosityLiquidMixture(MixtureProperty):
@@ -938,6 +941,9 @@ class ViscosityLiquidMixture(MixtureProperty):
         normally created by :obj:`thermo.chemical.Chemical`.
     MWs : list[float], optional
         Molecular weights of all species in the mixture, [g/mol]
+    correct_pressure_pure : bool, optional
+        Whether to try to use the better pressure-corrected pure component 
+        models or to use only the T-only dependent pure species models, [-]
 
     Notes
     -----
@@ -953,6 +959,9 @@ class ViscosityLiquidMixture(MixtureProperty):
     **MIXING_LOG_MASS**:
         Logarithmic mole fraction mixing rule described in 
         :obj:`thermo.utils.mixing_logarithmic`.
+    **SIMPLE**:
+        Linear mole fraction mixing rule described in
+        :obj:`thermo.utils.mixing_simple`.
 
     See Also
     --------
@@ -971,12 +980,15 @@ class ViscosityLiquidMixture(MixtureProperty):
     '''Maximum valid value of liquid viscosity. Generous limit, as
     the value is that of bitumen in a Pitch drop experiment.'''
                             
-    ranked_methods = [LALIBERTE_MU, MIXING_LOG_MOLAR, MIXING_LOG_MASS]
+    ranked_methods = [LALIBERTE_MU, MIXING_LOG_MOLAR, MIXING_LOG_MASS, SIMPLE]
 
-    def __init__(self, CASs=[], ViscosityLiquids=[], MWs=[]):
+    def __init__(self, CASs=[], ViscosityLiquids=[], MWs=[], 
+                 correct_pressure_pure=True):
         self.CASs = CASs
         self.ViscosityLiquids = ViscosityLiquids
         self.MWs = MWs
+        
+        self._correct_pressure_pure = correct_pressure_pure
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
@@ -1008,7 +1020,7 @@ class ViscosityLiquidMixture(MixtureProperty):
         altered once the class is initialized. This method can be called again
         to reset the parameters.
         '''
-        methods = [MIXING_LOG_MOLAR, MIXING_LOG_MASS]
+        methods = [MIXING_LOG_MOLAR, MIXING_LOG_MASS, SIMPLE]
         if len(self.CASs) > 1 and '7732-18-5' in self.CASs:
             wCASs = [i for i in self.CASs if i != '7732-18-5'] 
             if all([i in _Laliberte_Viscosity_ParametersDict for i in wCASs]):
@@ -1022,7 +1034,7 @@ class ViscosityLiquidMixture(MixtureProperty):
             self.Tmin = max(Tmins)
         if Tmaxs:
             self.Tmax = max(Tmaxs)
-        
+            
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate viscosity of a liquid mixture at 
         temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
@@ -1049,15 +1061,25 @@ class ViscosityLiquidMixture(MixtureProperty):
         mu : float
             Viscosity of the liquid mixture, [Pa*s]
         '''
-        if method == MIXING_LOG_MOLAR:
-            mus = [i(T, P) for i in self.ViscosityLiquids]
-            return mixing_logarithmic(zs, mus)
-        elif method == MIXING_LOG_MASS:
-            mus = [i(T, P) for i in self.ViscosityLiquids]
-            return mixing_logarithmic(ws, mus)
-        elif method == LALIBERTE_MU:
+        if method == LALIBERTE_MU:
             ws = list(ws) ; ws.pop(self.index_w)
             return Laliberte_viscosity(T, ws, self.wCASs)
+        
+        if self._correct_pressure_pure:
+            mus = []
+            for obj in self.ViscosityLiquids:
+                mu = obj.TP_dependent_property(T, P)
+                if mu is None:
+                    mu = obj.T_dependent_property(T)
+                mus.append(mu)
+        else:
+            mus = [i.T_dependent_property(T) for i in self.ViscosityLiquids]
+        if method == MIXING_LOG_MOLAR:
+            return mixing_logarithmic(zs, mus)
+        elif method == MIXING_LOG_MASS:
+            return mixing_logarithmic(ws, mus)
+        elif method == SIMPLE:
+            return mixing_simple(zs, mus)
         else:
             raise Exception('Method not valid')
 
@@ -1960,7 +1982,6 @@ def Brokaw(T, ys, mus, MWs, molecular_diameters, Stockmayers):
 BROKAW = 'Brokaw'
 HERNING_ZIPPERER = 'Herning-Zipperer'
 WILKE = 'Wilke'
-SIMPLE = 'Simple'
 viscosity_gas_mixture_methods = [BROKAW, HERNING_ZIPPERER, WILKE, SIMPLE]
 
 
@@ -1986,6 +2007,9 @@ class ViscosityGasMixture(MixtureProperty):
     ViscosityGases : list[ViscosityGas], optional
         ViscosityGas objects created for all species in the mixture,  
         normally created by :obj:`thermo.chemical.Chemical`.
+    correct_pressure_pure : bool, optional
+        Whether to try to use the better pressure-corrected pure component 
+        models or to use only the T-only dependent pure species models, [-]
     
     Notes
     -----
@@ -2022,12 +2046,15 @@ class ViscosityGasMixture(MixtureProperty):
                             
     ranked_methods = [BROKAW, HERNING_ZIPPERER, SIMPLE, WILKE]
 
-    def __init__(self, MWs=[], molecular_diameters=[], Stockmayers=[], CASs=[], ViscosityGases=[]):
+    def __init__(self, MWs=[], molecular_diameters=[], Stockmayers=[], CASs=[], 
+                 ViscosityGases=[], correct_pressure_pure=True):
         self.MWs = MWs
         self.molecular_diameters = molecular_diameters
         self.Stockmayers = Stockmayers
         self.CASs = CASs
         self.ViscosityGases = ViscosityGases
+        
+        self._correct_pressure_pure = correct_pressure_pure
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
@@ -2098,17 +2125,23 @@ class ViscosityGasMixture(MixtureProperty):
         mu : float
             Viscosity of gas mixture, [Pa*s]
         '''
+        if self._correct_pressure_pure:
+            mus = []
+            for obj in self.ViscosityGases:
+                mu = obj.TP_dependent_property(T, P)
+                if mu is None:
+                    mu = obj.T_dependent_property(T)
+                mus.append(mu)
+        else:
+            mus = [i.T_dependent_property(T) for i in self.ViscosityGases]
+        
         if method == SIMPLE:
-            mus = [i(T, P) for i in self.ViscosityGases]
             return mixing_simple(zs, mus)
         elif method == HERNING_ZIPPERER:
-            mus = [i(T, P) for i in self.ViscosityGases]
             return Herning_Zipperer(zs, mus, self.MWs)
         elif method == WILKE:
-            mus = [i(T, P) for i in self.ViscosityGases]
             return Wilke(zs, mus, self.MWs)
         elif method == BROKAW:
-            mus = [i(T, P) for i in self.ViscosityGases]
             return Brokaw(T, zs, mus, self.MWs, self.molecular_diameters, self.Stockmayers)
         else:
             raise Exception('Method not valid')

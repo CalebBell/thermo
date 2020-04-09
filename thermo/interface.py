@@ -1252,6 +1252,9 @@ class SurfaceTensionMixture(MixtureProperty):
     VolumeLiquids : list[VolumeLiquid], optional
         VolumeLiquid objects created for all species in the mixture, normally 
         created by :obj:`thermo.chemical.Chemical`.
+    correct_pressure_pure : bool, optional
+        Whether to try to use the better pressure-corrected pure component 
+        models or to use only the T-only dependent pure species models, [-]
 
     Notes
     -----
@@ -1288,13 +1291,15 @@ class SurfaceTensionMixture(MixtureProperty):
     ranked_methods = [WINTERFELDSCRIVENDAVIS, DIGUILIOTEJA, SIMPLE]
 
     def __init__(self, MWs=[], Tbs=[], Tcs=[], CASs=[], SurfaceTensions=[], 
-                 VolumeLiquids=[]):
+                 VolumeLiquids=[], correct_pressure_pure=True):
         self.MWs = MWs
         self.Tbs = Tbs
         self.Tcs = Tcs
         self.CASs = CASs
         self.SurfaceTensions = SurfaceTensions
         self.VolumeLiquids = VolumeLiquids
+        
+        self._correct_pressure_pure = correct_pressure_pure
 
         self.Tmin = None
         '''Minimum temperature at which no method can calculate the
@@ -1369,7 +1374,15 @@ class SurfaceTensionMixture(MixtureProperty):
                                  Tbs=self.Tbs, Tcs=self.Tcs)
         elif method == WINTERFELDSCRIVENDAVIS:
             sigmas = [i(T) for i in self.SurfaceTensions]
-            rhoms = [1./i(T, P) for i in self.VolumeLiquids]
+            if self._correct_pressure_pure:
+                rhoms = []
+                for obj in self.VolumeLiquids:
+                    rho = obj.TP_dependent_property(T, P)
+                    if rho is None:
+                        rho = obj.T_dependent_property(T)
+                    rhoms.append(1.0/rho)
+            else:
+                rhoms = [1./i(T, P) for i in self.VolumeLiquids]
             return Winterfeld_Scriven_Davis(zs, sigmas, rhoms)
         else:
             raise Exception('Method not valid')
