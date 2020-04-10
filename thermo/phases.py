@@ -4437,7 +4437,6 @@ class GibbsExcessLiquid(Phase):
             return self._Cp
         except AttributeError:
             pass
-        # Needs testing
         T, P, zs, cmps = self.T, self.P, self.zs, self.cmps
         Cpigs_pure = self.Cpigs_pure()
         use_Poynting, use_phis_sat = self.use_Poynting, self.use_phis_sat
@@ -4518,11 +4517,7 @@ class GibbsExcessLiquid(Phase):
     
     dH_dT = Cp
 
-    def dS_dT(self):
-        try:
-            return self._dS_dT
-        except AttributeError:
-            pass
+    def dS_dT_old(self):
         # Needs testing
         T, P, P_DEPENDENT_H_LIQ = self.T, self.P, self.P_DEPENDENT_H_LIQ
         RT = R*T
@@ -4611,6 +4606,89 @@ class GibbsExcessLiquid(Phase):
                     + 2.0*R*dlnPsats_dT[i]- Cpigs_pure[i]*T_inv)
                 
         dS_dT += self.GibbsExcessModel.dSE_dT()
+        return dS_dT
+
+    def dS_dT(self):
+        try:
+            return self._dS_dT
+        except AttributeError:
+            pass
+        T, P, zs, cmps = self.T, self.P, self.zs, self.cmps
+        use_Poynting, use_phis_sat = self.use_Poynting, self.use_phis_sat
+        
+        if use_Poynting:
+            try:
+                d2Poyntings_dT2 = self._d2Poyntings_dT2
+            except AttributeError:
+                d2Poyntings_dT2 = self.d2Poyntings_dT2()        
+            try:
+                dPoyntings_dT = self._dPoyntings_dT
+            except AttributeError:
+                dPoyntings_dT = self.dPoyntings_dT()        
+            try:
+                Poyntings = self._Poyntings
+            except AttributeError:
+                Poyntings = self.Poyntings()
+        if use_phis_sat:
+            try:
+                d2phis_sat_dT2 = self._d2phis_sat_dT2
+            except AttributeError:
+                d2phis_sat_dT2 = self.d2phis_sat_dT2()
+            try:
+                dphis_sat_dT = self._dphis_sat_dT
+            except AttributeError:
+                dphis_sat_dT = self.dphis_sat_dT()
+            try:
+                phis_sat = self._phis_sat
+            except AttributeError:
+                phis_sat = self.phis_sat()
+            
+        dPsats_dT_over_Psats = self.dPsats_dT_over_Psats()
+        d2Psats_dT2_over_Psats = self.d2Psats_dT2_over_Psats()
+        Cpigs_pure = self.Cpigs_pure()
+
+        T_inv = 1.0/T
+        RT = R*T
+        R_2 = R + R
+        
+        dS_dT = 0.0
+        if use_Poynting and use_phis_sat:
+            for i in cmps:
+                Poy_inv = 1.0/Poyntings[i]
+                phi_inv = 1.0/phis_sat[i]
+                dPoy_ratio = dPoyntings_dT[i]*Poy_inv
+                dphi_ratio = dphis_sat_dT[i]*phi_inv
+                
+                a = (d2phis_sat_dT2[i]*phi_inv - dphi_ratio*dphi_ratio
+                     + d2Psats_dT2_over_Psats[i] - dPsats_dT_over_Psats[i]*dPsats_dT_over_Psats[i]
+                     + d2Poyntings_dT2[i]*Poy_inv - dPoy_ratio*dPoy_ratio)
+                
+                b = dphi_ratio + dPsats_dT_over_Psats[i] + dPoy_ratio
+                
+                dS_dT -= zs[i]*((RT*a + b*R_2) - Cpigs_pure[i]*T_inv)
+        elif use_Poynting:
+            for i in cmps:
+                Poy_inv = 1.0/Poyntings[i]
+                dPoy_ratio = dPoyntings_dT[i]*Poy_inv                
+                a = (d2Psats_dT2_over_Psats[i] - dPsats_dT_over_Psats[i]*dPsats_dT_over_Psats[i]
+                     + d2Poyntings_dT2[i]*Poy_inv - dPoy_ratio*dPoy_ratio)
+                b = dPsats_dT_over_Psats[i] + dPoy_ratio
+                dS_dT -= zs[i]*((RT*a + b*R_2) - Cpigs_pure[i]*T_inv)
+        elif use_phis_sat:
+            for i in cmps:
+                phi_inv = 1.0/phis_sat[i]
+                dphi_ratio = dphis_sat_dT[i]*phi_inv
+                a = (d2phis_sat_dT2[i]*phi_inv - dphi_ratio*dphi_ratio
+                     + d2Psats_dT2_over_Psats[i] - dPsats_dT_over_Psats[i]*dPsats_dT_over_Psats[i])
+                b = dphi_ratio + dPsats_dT_over_Psats[i]
+                dS_dT -= zs[i]*((RT*a + b*R_2) - Cpigs_pure[i]*T_inv)
+        else:
+            for i in cmps:
+                a = (d2Psats_dT2_over_Psats[i] - dPsats_dT_over_Psats[i]*dPsats_dT_over_Psats[i])
+                b = dPsats_dT_over_Psats[i]
+                dS_dT -= zs[i]*((RT*a + b*R_2) - Cpigs_pure[i]*T_inv)
+        if not self.composition_independent:
+            dS_dT += self.GibbsExcessModel.dSE_dT()
         self._dS_dT = dS_dT
         return dS_dT
 
