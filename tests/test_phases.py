@@ -489,7 +489,7 @@ def test_GibbsExcessLiquid_H_S_settings():
     Ss_sympy = [-86.99253060781912, -86.643966007413, -82.62865124423134, -82.28008664382519, -84.6099271604735]
     dS_dPs_sympy = [0.0, -9.88818764202604e-08, 0.0, -9.888187642025955e-08, -9.888187642025955e-08]
     dH_dPs_sympy = [0.0, 8.698318078557368e-06, 0.0, 8.698318078557368e-06, 8.698318078557368e-06]
-    dH_dTs_sympy = [94.2548168396676, 98.69733933373703, 124.56369893574335, 129.0062214298128, 129.0062214298128]
+    dH_dTs_sympy = [94.2548168396676, 98.69733933373703, 124.56369893574335, 129.0062214298128, 130.78758479494502]
 
     
     
@@ -509,6 +509,7 @@ def test_GibbsExcessLiquid_H_S_settings():
     Ss_sympy_25 = [-301.96338548883887, -301.9678046815029, -301.96338548872274, -301.9678046813865, -314.04477767859197]
     dS_dPs_sympy = [0.0, -4.419192663777862e-09, 0.0, -4.419192663777862e-09, -4.419192663777862e-09]
     dH_dPs_sympy = [0.0, 3.5159817348158034e-05, 0.0, 3.5159817348158034e-05, 3.5159817348158034e-05]
+    dH_dTs_sympy = [68.04056849108218, 68.0361492984164, 68.04132850171207, 68.03690930904685, 68.10956289004483]
     
     for i, liquid in enumerate(liquids):
         liquid = liquid.to(T=25.0, P=P, zs=zs)
@@ -516,6 +517,7 @@ def test_GibbsExcessLiquid_H_S_settings():
         assert_close(liquid.S(), Ss_sympy_25[i], rtol=1e-7)
         assert_close(liquid.dS_dP(), dS_dPs_sympy[i], rtol=1e-10, atol=1e-12)
         assert_close(liquid.dH_dP(), dH_dPs_sympy[i], rtol=1e-10, atol=1e-12)
+        assert_close(liquid.dH_dT(), dH_dTs_sympy[i], rtol=1e-10, atol=1e-12)
         assert liquid.H_phi_consistency() < 1e-12
         assert liquid.G_phi_consistency() < 1e-12
         assert liquid.S_phi_consistency() < 1e-12
@@ -524,12 +526,14 @@ def test_GibbsExcessLiquid_H_S_settings():
     Ss_sympy_100 = [-203.4071522317269, -203.42482900238204, -203.4071522317269, -203.42482900238204, -211.71645847200244]    
     dS_dPs_sympy = [0.0, -1.7676770655111447e-08, 0.0, -1.7676770655111447e-08, -1.7676770655111447e-08]
     dH_dPs_sympy = [0.0, 3.433121872369968e-05, 0.0, 3.433121872369968e-05, 3.433121872369968e-05]
+    dH_dTs_sympy = [74.75468655464286, 74.73700978398632, 74.75466094201647, 74.73698417136015, 81.29046163645835]
     for i, liquid in enumerate(liquids):
         liquid = liquid.to(T=100.0, P=P, zs=zs)
         assert_close(liquid.H(), Hs_sympy_100[i], rtol=1e-7)
         assert_close(liquid.S(), Ss_sympy_100[i], rtol=1e-7)
         assert_close(liquid.dS_dP(), dS_dPs_sympy[i], rtol=1e-10, atol=1e-12)
         assert_close(liquid.dH_dP(), dH_dPs_sympy[i], rtol=1e-10, atol=1e-12)
+        assert_close(liquid.dH_dT(), dH_dTs_sympy[i], rtol=1e-10, atol=1e-12)
         assert liquid.H_phi_consistency() < 1e-12
         assert liquid.G_phi_consistency() < 1e-12
         assert liquid.S_phi_consistency() < 1e-12
@@ -539,12 +543,14 @@ def test_GibbsExcessLiquid_H_S_settings():
     Ss_sympy_513_99 = [-65.67919656626539, -58.49338700743429, -48.01112147345394, -40.825311914622844, -42.73731658374935]
     dS_dPs_sympy = [0.0, -8.376661914247026e-07, 0.0, -8.376661914247026e-07, -8.376661914247026e-07]
     dH_dPs_sympy = [0.0, -0.0003510518255827751, 0.0, -0.0003510518255827751, -0.0003510518255827751]
+    dH_dTs_sympy = [44.13685354731808, 133.02499943518646, 126.23694387589718, 215.12508976376554, 216.69592015099428]
     for i, liquid in enumerate(liquids):
         liquid = liquid.to(T=513.99, P=P, zs=zs)
         assert_close(liquid.H(), Hs_sympy_513_99[i], rtol=1e-7)
         assert_close(liquid.S(), Ss_sympy_513_99[i], rtol=1e-7)
         assert_close(liquid.dS_dP(), dS_dPs_sympy[i], rtol=1e-10, atol=1e-12)
         assert_close(liquid.dH_dP(), dH_dPs_sympy[i], rtol=1e-10, atol=1e-12)
+        assert_close(liquid.dH_dT(), dH_dTs_sympy[i], rtol=1e-10, atol=1e-12)
         assert liquid.H_phi_consistency() < 1e-12
         assert liquid.G_phi_consistency() < 1e-12
         assert liquid.S_phi_consistency() < 1e-12
@@ -636,13 +642,13 @@ def test_GibbsExcessLiquid_dHS_dT_low():
     assert_close(liquid.S(), -463.15806679753285, rtol=1e-12)
     assert_close(liquid.dS_dT(), 9.368833868082978, rtol=1e-12)
     assert_close(liquid.H(), -73061.5146569193, rtol=1e-12)
-    assert_close(liquid.dH_dT(), 93.68833868183933, rtol=1e-12)
+    assert_close(liquid.dH_dT(), 93.68833868183933, rtol=1e-7)
     
     liquid = liquid.to(T=8.0, P=P, zs=zs)
     assert_close(liquid.S(), -484.0343032579679, rtol=1e-12)
     assert_close(liquid.dS_dT(), 11.67894683998161, rtol=1e-12)
     assert_close(liquid.H(), -73248.63457031998, rtol=1e-12)
-    assert_allclose(liquid.dH_dT(), 93.43157471985432, rtol=1e-12)
+    assert_allclose(liquid.dH_dT(), 93.43157471985432, rtol=1e-7)
     assert liquid.Psats()[0] == 0.0
     
     # used to return inf but not error - now check for infinity
@@ -650,13 +656,13 @@ def test_GibbsExcessLiquid_dHS_dT_low():
     assert_close(liquid.S(), -476.1934077017887, rtol=1e-12)
     assert_close(liquid.dS_dT(), 10.749591046689055, rtol=1e-12)
     assert_close(liquid.H(), -73183.20101443084, rtol=1e-12)
-    assert_allclose(liquid.dH_dT(), 93.52144210619554, rtol=1e-12) # used to be nan
+    assert_allclose(liquid.dH_dT(), 93.52144210619554, rtol=1e-7) # used to be nan
     
     # Point where vapor pressure was so low the calculation was not erroring
     # but was failing for floating point errors
     liquid = liquid.to(T=16.010610610610595, P=P, zs=zs)
     assert_allclose(liquid.dS_dT(), 5.899836993871634, rtol=1e-12)
-    assert_allclose(liquid.dH_dT(), 94.45999277445732, rtol=1e-12)
+    assert_allclose(liquid.dH_dT(), 94.45999277445732, rtol=1e-7)
 
 
 
