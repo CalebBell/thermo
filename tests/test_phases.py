@@ -487,31 +487,46 @@ def test_GibbsExcessLiquid_H_S_settings():
     
     Hs_sympy = [-33955.85490517719, -33782.17641365815, -32392.64972459377, -32218.97123307472, -32231.87689500188]
     Ss_sympy = [-86.99253060781912, -86.643966007413, -82.62865124423134, -82.28008664382519, -84.6099271604735]
+    dS_dPs_sympy = [0.0, -9.88818764202604e-08, 0.0, -9.888187642025955e-08, -9.888187642025955e-08]
+    dH_dPs_sympy = [0.0, 8.698318078557368e-06, 0.0, 8.698318078557368e-06, 8.698318078557368e-06]
+
     
+    
+
     liquids = [liquid_base, liquid_poy, liquid_phi, liquid_phi_poy, liquid_phi_poy_gamma]
     for i, liquid in enumerate(liquids):
         assert_close(liquid.H(), Hs_sympy[i], rtol=1e-7)
         assert_close(liquid.S(), Ss_sympy[i], rtol=1e-7)
+        assert_close(liquid.dS_dP(), dS_dPs_sympy[i], rtol=1e-10, atol=1e-12)
+        assert_close(liquid.dH_dP(), dH_dPs_sympy[i], rtol=1e-10, atol=1e-12)
         assert liquid.H_phi_consistency() < 1e-12
         assert liquid.G_phi_consistency() < 1e-12
         assert liquid.S_phi_consistency() < 1e-12
         
     Hs_sympy_25 = [-65338.10590845912, -65302.94609111096, -65338.10590845621, -65302.946091108046, -66674.23856545633]
     Ss_sympy_25 = [-301.96338548883887, -301.9678046815029, -301.96338548872274, -301.9678046813865, -314.04477767859197]
+    dS_dPs_sympy = [0.0, -4.419192663777862e-09, 0.0, -4.419192663777862e-09, -4.419192663777862e-09]
+    dH_dPs_sympy = [0.0, 3.5159817348158034e-05, 0.0, 3.5159817348158034e-05, 3.5159817348158034e-05]
     for i, liquid in enumerate(liquids):
         liquid = liquid.to(T=25.0, P=P, zs=zs)
         assert_close(liquid.H(), Hs_sympy_25[i], rtol=1e-7)
         assert_close(liquid.S(), Ss_sympy_25[i], rtol=1e-7)
+        assert_close(liquid.dS_dP(), dS_dPs_sympy[i], rtol=1e-10, atol=1e-12)
+        assert_close(liquid.dH_dP(), dH_dPs_sympy[i], rtol=1e-10, atol=1e-12)
         assert liquid.H_phi_consistency() < 1e-12
         assert liquid.G_phi_consistency() < 1e-12
         assert liquid.S_phi_consistency() < 1e-12
     
     Hs_sympy_100 = [-59946.52795254455, -59912.196733820856, -59946.52795254455, -59912.196733820856, -61013.95021615358]
     Ss_sympy_100 = [-203.4071522317269, -203.42482900238204, -203.4071522317269, -203.42482900238204, -211.71645847200244]    
+    dS_dPs_sympy = [0.0, -1.7676770655111447e-08, 0.0, -1.7676770655111447e-08, -1.7676770655111447e-08]
+    dH_dPs_sympy = [0.0, 3.433121872369968e-05, 0.0, 3.433121872369968e-05, 3.433121872369968e-05]
     for i, liquid in enumerate(liquids):
         liquid = liquid.to(T=100.0, P=P, zs=zs)
         assert_close(liquid.H(), Hs_sympy_100[i], rtol=1e-7)
         assert_close(liquid.S(), Ss_sympy_100[i], rtol=1e-7)
+        assert_close(liquid.dS_dP(), dS_dPs_sympy[i], rtol=1e-10, atol=1e-12)
+        assert_close(liquid.dH_dP(), dH_dPs_sympy[i], rtol=1e-10, atol=1e-12)
         assert liquid.H_phi_consistency() < 1e-12
         assert liquid.G_phi_consistency() < 1e-12
         assert liquid.S_phi_consistency() < 1e-12
@@ -519,10 +534,14 @@ def test_GibbsExcessLiquid_H_S_settings():
     
     Hs_sympy_513_99 = [-24370.789969661833, -20892.60843773296, -16638.418485822214, -13160.23695389335, -12983.67776053422]
     Ss_sympy_513_99 = [-65.67919656626539, -58.49338700743429, -48.01112147345394, -40.825311914622844, -42.73731658374935]
+    dS_dPs_sympy = [0.0, -8.376661914247026e-07, 0.0, -8.376661914247026e-07, -8.376661914247026e-07]
+    dH_dPs_sympy = [0.0, -0.0003510518255827751, 0.0, -0.0003510518255827751, -0.0003510518255827751]
     for i, liquid in enumerate(liquids):
         liquid = liquid.to(T=513.99, P=P, zs=zs)
         assert_close(liquid.H(), Hs_sympy_513_99[i], rtol=1e-7)
         assert_close(liquid.S(), Ss_sympy_513_99[i], rtol=1e-7)
+        assert_close(liquid.dS_dP(), dS_dPs_sympy[i], rtol=1e-10, atol=1e-12)
+        assert_close(liquid.dH_dP(), dH_dPs_sympy[i], rtol=1e-10, atol=1e-12)
         assert liquid.H_phi_consistency() < 1e-12
         assert liquid.G_phi_consistency() < 1e-12
         assert liquid.S_phi_consistency() < 1e-12
@@ -579,6 +598,23 @@ def test_GibbsExcessLiquid_lnPsats():
 
     assert_close(liquid_ABC.to(T=600, P=P, zs=zs).Psats()[0], 4559674.018096333)
     
+    # Second derivative values
+    for liquid in (liquid_ABC, liquid_AB):
+        liquid = liquid_ABC.to(T=300, P=P, zs=zs)
+        d2Psats_dT2_over_Psat_easy = (liquid.d2Psats_dT2()[0]/liquid.Psats()[0])
+        d2Psats_dT2_over_Psat = liquid.d2Psats_dT2_over_Psats()[0]
+        assert_close(d2Psats_dT2_over_Psat, 0.002194955009769976, rtol=1e-9)
+        assert_close(d2Psats_dT2_over_Psat, d2Psats_dT2_over_Psat_easy, rtol=1e-12)
+        
+        liquid = liquid.to(T=100, P=P, zs=zs)
+        d2Psats_dT2_over_Psat_easy = (liquid.d2Psats_dT2()[0]/liquid.Psats()[0])
+        d2Psats_dT2_over_Psat = liquid.d2Psats_dT2_over_Psats()[0]
+        assert_close(d2Psats_dT2_over_Psat, d2Psats_dT2_over_Psat_easy, rtol=1e-12)
+    
+        liquid = liquid.to(T=1000, P=P, zs=zs)
+        d2Psats_dT2_over_Psat_easy = (liquid.d2Psats_dT2()[0]/liquid.Psats()[0])
+        d2Psats_dT2_over_Psat = liquid.d2Psats_dT2_over_Psats()[0]
+        assert_close(d2Psats_dT2_over_Psat, d2Psats_dT2_over_Psat_easy, rtol=1e-12)
     
 
 def test_GibbsExcessLiquid_dHS_dT_low():
@@ -1150,3 +1186,38 @@ def test_viscosity_thermal_conductivity():
     phase.correlations = correlations
     assert_close(phase.mu(), 0.00028727346628185633, rtol=1e-7)
     assert_close(phase.k(), 0.15487898658770405, rtol=1e-7)
+    
+    
+def test_phase_with_constants():
+    constants = ChemicalConstantsPackage(Tcs=[508.1, 536.2, 512.5], Pcs=[4700000.0, 5330000.0, 8084000.0], omegas=[0.309, 0.21600000000000003, 0.5589999999999999],
+                             MWs=[58.07914, 119.37764000000001, 32.04186], CASs=['67-64-1', '67-66-3', '67-56-1'], names=['acetone', 'chloroform', 'methanol'])
+    HeatCapacityGases = [HeatCapacityGas(best_fit=(200.0, 1000.0, [-1.3320002425347943e-21, 6.4063345232664645e-18, -1.251025808150141e-14, 1.2265314167534311e-11, -5.535306305509636e-09, -4.32538332013644e-08, 0.0010438724775716248, -0.19650919978971002, 63.84239495676709])),
+    HeatCapacityGas(best_fit=(200.0, 1000.0, [1.5389278550737367e-21, -8.289631533963465e-18, 1.9149760160518977e-14, -2.470836671137373e-11, 1.9355882067011222e-08, -9.265600540761629e-06, 0.0024825718663005762, -0.21617464276832307, 48.149539665907696])),
+    HeatCapacityGas(best_fit=(50.0, 1000.0, [2.3511458696647882e-21, -9.223721411371584e-18, 1.3574178156001128e-14, -8.311274917169928e-12, 4.601738891380102e-10, 1.78316202142183e-06, -0.0007052056417063217, 0.13263597297874355, 28.44324970462924]))]
+    correlations = PropertyCorrelationPackage(constants=constants, skip_missing=True, HeatCapacityGases=HeatCapacityGases)
+    T, P = 350.0, 1e6
+    zs = [0.2, 0.3, 0.5]
+    eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas':constants.omegas}
+    
+    # gas point
+    phase = EOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    phase.constants = constants
+    def to_diff_T(T):
+        p = phase.to(T=T, P=P, zs=zs)
+        p.constants = constants
+        return p.rho_mass()
+    
+    drho_mass_dT = phase.drho_mass_dT()
+    drho_mass_dT_num = derivative(to_diff_T, T, T*1e-7)
+    assert_close(drho_mass_dT, drho_mass_dT_num, rtol=1e-6)
+    assert_close(drho_mass_dT, -0.19383571450986944, rtol=1e-6)
+    
+    def to_diff_P(P):
+        p = phase.to(T=T, P=P, zs=zs)
+        p.constants = constants
+        return p.rho_mass()
+    
+    drho_mass_dP = phase.drho_mass_dP()
+    drho_mass_dP_num = derivative(to_diff_P, P, P*1e-7)
+    assert_close(drho_mass_dP, drho_mass_dP_num, rtol=1e-6)
+    assert_close(drho_mass_dP, 4.230638302082921e-05, rtol=1e-9)

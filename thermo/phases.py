@@ -1201,6 +1201,8 @@ class Phase(object):
         for i in cmps:
             S += zs[i]*Cpig_integrals_over_T_pure[i]
         self._S_ideal_gas = S
+        
+        # dS_ideal_gas_dP = -R/P
         return S
     
     def Cp_ideal_gas(self):
@@ -1462,6 +1464,80 @@ class Phase(object):
             pass
         self._rho_mass = rho_mass = self.MW()/(1000.0*self.V())
         return rho_mass
+    
+    def drho_mass_dT(self):
+        r'''Method to calculate the mass density derivative with respect to
+        temperature, at constant pressure.
+        
+        .. math::
+            \left(\frac{\partial \rho}{\partial T}\right)_{P} = 
+            \frac{-\text{MW} \frac{\partial V_m}{\partial T}}{1000 V_m^2}
+            
+        Returns
+        -------
+        drho_mass_dT : float
+           Temperature derivative of mass density at constant pressure,
+           [kg/m^3/K]
+            
+        Notes
+        -----
+        Requires `dV_dT`, `MW`, and `V`.
+        
+        This expression is readily obtainable with SymPy:
+        
+        >>> from sympy import * # doctest: +SKIP
+        >>> T, P, MW = symbols('T, P, MW') # doctest: +SKIP
+        >>> Vm = symbols('Vm', cls=Function) # doctest: +SKIP
+        >>> rho_mass = (Vm(T))**-1*MW/1000 # doctest: +SKIP
+        >>> diff(rho_mass, T) # doctest: +SKIP
+        -MW*Derivative(Vm(T), T)/(1000*Vm(T)**2)
+        '''
+        try:
+            return self._drho_mass_dT
+        except AttributeError:
+            pass
+        MW = self.MW()
+        V = self.V()
+        dV_dT = self.dV_dT()
+        self._drho_mass_dT = drho_mass_dT = -MW*dV_dT/(1000.0*V*V)
+        return drho_mass_dT
+
+    def drho_mass_dP(self):
+        r'''Method to calculate the mass density derivative with respect to
+        pressure, at constant temperature.
+        
+        .. math::
+            \left(\frac{\partial \rho}{\partial P}\right)_{T} = 
+            \frac{-\text{MW} \frac{\partial V_m}{\partial P}}{1000 V_m^2}
+            
+        Returns
+        -------
+        drho_mass_dP : float
+           Pressure derivative of mass density at constant temperature,
+           [kg/m^3/Pa]
+            
+        Notes
+        -----
+        Requires `dV_dP`, `MW`, and `V`.
+        
+        This expression is readily obtainable with SymTy:
+        
+        >>> from sympy import * # doctest: +SKIP
+        >>> P, T, MW = symbols('P, T, MW') # doctest: +SKIP
+        >>> Vm = symbols('Vm', cls=Function) # doctest: +SKIP
+        >>> rho_mass = (Vm(P))**-1*MW/1000 # doctest: +SKIP
+        >>> diff(rho_mass, P) # doctest: +SKIP
+        -MW*Derivative(Vm(P), P)/(1000*Vm(P)**2)
+        '''
+        try:
+            return self._drho_mass_dP
+        except AttributeError:
+            pass
+        MW = self.MW()
+        V = self.V()
+        dV_dP = self.dV_dP()
+        self._drho_mass_dP = drho_mass_dP = -MW*dV_dP/(1000.0*V*V)
+        return drho_mass_dP
     
     def H_mass(self):
         try:
@@ -2747,7 +2823,7 @@ class GibbsExcessLiquid(Phase):
             try:
                 Psats.append(exp(Psat))
             except:
-                Psats.append(trunc_exp(Psat, 1.6549840276802644e+300))
+                Psats.append(1.6549840276802644e+300)
                 
         return Psats
 
@@ -3046,6 +3122,46 @@ class GibbsExcessLiquid(Phase):
         dPsat_dT_over_Psats = [i/j for i, j in zip(self.dPsats_dT(), self.Psats())]
         self._dPsats_dT_over_Psats = dPsat_dT_over_Psats
         return dPsat_dT_over_Psats
+
+    def d2Psats_dT2_over_Psats(self):
+        try:
+            return self._d2Psats_dT2_over_Psats
+        except AttributeError:
+            pass
+        T, cmps = self.T, self.cmps
+        T_inv = 1.0/T
+        Tinv2 = T_inv*T_inv
+        Tinv4 = Tinv2*Tinv2
+        c0 = (T + T)*Tinv4
+        if self.Psats_locked:
+            d2Psat_dT2_over_Psats = []
+            Psats_data = self.Psats_data
+            Tmins, Tmaxes, dcoeffs, low_coeffs, high_coeffs = Psats_data[0], Psats_data[3], Psats_data[7], Psats_data[9], Psats_data[10]
+            for i in cmps:
+                if T < Tmins[i]:
+                    B, C = low_coeffs[i][1], low_coeffs[i][2]
+                    x0 = (B - C*T)
+                    d2Psat_dT2_over_Psat = c0*B - C*Tinv2 + x0*x0*Tinv4
+#                    d2Psat_dT2_over_Psat = (2*B*T - C*T**2 + (B - C*T)**2)/T**4
+                elif T > Tmaxes[i]:
+                    B, C = high_coeffs[i][1], high_coeffs[i][2]
+                    x0 = (B - C*T)
+                    d2Psat_dT2_over_Psat = c0*B - C*Tinv2 + x0*x0*Tinv4
+                else:
+                    dPsat_dT = 0.0
+                    d2Psat_dT2 = 0.0
+                    for a in dcoeffs[i]:
+                        d2Psat_dT2 = T*d2Psat_dT2 + dPsat_dT
+                        dPsat_dT = T*dPsat_dT + a
+                    d2Psat_dT2_over_Psat = dPsat_dT*dPsat_dT + d2Psat_dT2
+
+                d2Psat_dT2_over_Psats.append(d2Psat_dT2_over_Psat)
+            self._d2Psats_dT2_over_Psats = d2Psat_dT2_over_Psats
+            return d2Psat_dT2_over_Psats
+
+        d2Psat_dT2_over_Psats = [i/j for i, j in zip(self.d2Psats_dT2(), self.Psats())]
+        self._d2Psats_dT2_over_Psats = d2Psat_dT2_over_Psats
+        return d2Psat_dT2_over_Psats
 
     @staticmethod
     def _Vms_sat_at(T, Vms_sat_data, cmps):
@@ -3525,7 +3641,6 @@ class GibbsExcessLiquid(Phase):
         return [i.dphi_sat_dT(T) for i in self.eos_pure_instances]
                 
     def dphis_sat_dT(self):
-        # Not actually implemented
         try:
             return self._dphis_sat_dT
         except AttributeError:
@@ -3536,9 +3651,23 @@ class GibbsExcessLiquid(Phase):
             return self._dphis_sat_dT
 
         T = self.T
-        # Not implemented
         self._dphis_sat_dT = [i.dphi_sat_dT(T) for i in self.eos_pure_instances]
         return self._dphis_sat_dT
+    
+    def d2phis_sat_dT2(self):
+        # Numerically implemented
+        try:
+            return self._d2phis_sat_dT2
+        except AttributeError:
+            pass
+        if not self.use_phis_sat:
+            self._d2phis_sat_dT2 = [0.0]*self.N
+            return self._d2phis_sat_dT2
+
+        T = self.T
+        self._d2phis_sat_dT2 = [i.d2phi_sat_dT2(T) for i in self.eos_pure_instances]
+        return self._d2phis_sat_dT2
+
 
     def phis_at(self, T, P, zs, Psats=None, gammas=None, phis_sat=None, Poyntings=None):
         P = self.P
@@ -4196,7 +4325,7 @@ class GibbsExcessLiquid(Phase):
         self._S = S
         return S
 
-    def Cp(self):
+    def Cp_old(self):
         try:
             return self._Cp
         except AttributeError:
@@ -4301,6 +4430,68 @@ class GibbsExcessLiquid(Phase):
                 Cp += zs[i]*(Cpigs_pure[i] - dHvaps_dT[i])
             
         Cp += self.GibbsExcessModel.CpE()
+        return Cp
+    
+    def Cp(self):
+        try:
+            return self._Cp
+        except AttributeError:
+            pass
+        # Needs testing
+        T, P, zs, cmps = self.T, self.P, self.zs, self.cmps
+        Cpigs_pure = self.Cpigs_pure()
+        use_Poynting, use_phis_sat = self.use_Poynting, self.use_phis_sat
+        
+#        if use_Poynting:
+        try:
+            d2Poyntings_dT2 = self._d2Poyntings_dT2
+        except AttributeError:
+            d2Poyntings_dT2 = self.d2Poyntings_dT2()        
+        try:
+            dPoyntings_dT = self._dPoyntings_dT
+        except AttributeError:
+            dPoyntings_dT = self.dPoyntings_dT()        
+        try:
+            Poyntings = self._Poyntings
+        except AttributeError:
+            Poyntings = self.Poyntings()
+#        if use_phis_sat:
+        try:
+            d2phis_sat_dT2 = self._d2phis_sat_dT2
+        except AttributeError:
+            d2phis_sat_dT2 = self.d2phis_sat_dT2()
+        try:
+            dphis_sat_dT = self._dphis_sat_dT
+        except AttributeError:
+            dphis_sat_dT = self.dphis_sat_dT()
+        try:
+            phis_sat = self._phis_sat
+        except AttributeError:
+            phis_sat = self.phis_sat()
+            
+        dPsats_dT_over_Psats = self.dPsats_dT_over_Psats()
+        d2Psats_dT2_over_Psats = self.d2Psats_dT2_over_Psats()
+        
+        RT = R*T
+        RT2 = RT*T
+        RT2_2 = RT + RT
+        
+        Cp = 0.0
+#        if use_Poynting and use_phis_sat:
+        for i in cmps:
+            Poy_inv = 1.0/Poyntings[i]
+            phi_inv = 1.0/phis_sat[i]
+            dPoy_ratio = dPoyntings_dT[i]*Poy_inv
+            dphi_ratio = dphis_sat_dT[i]*phi_inv
+            
+            a = (d2phis_sat_dT2[i]*phi_inv - dphi_ratio*dphi_ratio
+                 + d2Psats_dT2_over_Psats[i] - dPsats_dT_over_Psats[i]*dPsats_dT_over_Psats[i]
+                 + d2Poyntings_dT2[i]*Poy_inv - dPoy_ratio*dPoy_ratio)
+            
+            b = dphi_ratio + dPsats_dT_over_Psats[i] + dPoy_ratio
+            Cp -= zs[i]*(RT2*a + RT2_2*b - Cpigs_pure[i])
+        if not self.composition_independent:
+            Cp += self.GibbsExcessModel.CpE()
         self._Cp = Cp
         return Cp
     
@@ -4440,16 +4631,27 @@ class GibbsExcessLiquid(Phase):
             pass
         T = self.T
         P = self.P
+        P_inv = 1.0/P
         zs = self.zs
-        dS_dP = 0.0
-        
-        if self.P_DEPENDENT_H_LIQ:
-            if self.use_IG_Cp:
-                dVms_sat_dT = self.dVms_sat_dT()
-                Psats = self.Psats()
-                for i in self.cmps:
-                    if P > Psats[i]:
-                        dS_dP -= zs[i]*(dVms_sat_dT[i])
+        if self.use_Poynting:
+            dS_dP = -R*P_inv
+            Poyntings = self.Poyntings()
+            dPoyntings_dP = self.dPoyntings_dP()
+            dPoyntings_dT = self.dPoyntings_dT()
+            d2Poyntings_dPdT = self.d2Poyntings_dPdT()
+            for i in self.cmps:
+                Poy_inv = 1.0/Poyntings[i]
+                dS_dP -= zs[i]*R*Poy_inv*(dPoyntings_dP[i] - Poyntings[i]*P_inv
+                        +T*(d2Poyntings_dPdT[i] - dPoyntings_dP[i]*dPoyntings_dT[i]*Poy_inv))
+        else:
+            dS_dP = 0.0
+#        if self.P_DEPENDENT_H_LIQ:
+#            if self.use_IG_Cp:
+#                dVms_sat_dT = self.dVms_sat_dT()
+#                Psats = self.Psats()
+#                for i in self.cmps:
+#                    if P > Psats[i]:
+#                        dS_dP -= zs[i]*(dVms_sat_dT[i])
         self._dS_dP = dS_dP
         return dS_dP
 

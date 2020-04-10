@@ -2532,7 +2532,8 @@ class GCEOS(object):
         
         return (dfugacity_sat_dT - fugacity*dPsat_dT*Psat_inv)*Psat_inv
 
-
+    def d2phi_sat_dT2(self, T, polish=True):
+        return derivative(lambda T: self.dphi_sat_dT(T, polish=polish), T, dx=T*1e-7)
 
     def V_l_sat(self, T):
         r'''Method to calculate molar volume of the liquid phase along the
