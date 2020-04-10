@@ -3442,6 +3442,7 @@ class GibbsExcessLiquid(Phase):
         
         x0 = 1.0/R
         x1 = 1.0/T
+        RT_inv = x0*x1
         
         self._dPoyntings_dT = dPoyntings_dT = []
         for i in self.cmps:
@@ -3450,7 +3451,7 @@ class GibbsExcessLiquid(Phase):
             
             x4 = P - x3
             x5 = x1*x2*x4
-            dPoyntings_dTi = -x0*x1*(x2*dPsats_dT[i] - x4*dVms_sat_dT[i] + x5)*exp(x0*x5)
+            dPoyntings_dTi = -RT_inv*(x2*dPsats_dT[i] - x4*dVms_sat_dT[i] + x5)*exp(x0*x5)
             dPoyntings_dT.append(dPoyntings_dTi)
         return dPoyntings_dT
 

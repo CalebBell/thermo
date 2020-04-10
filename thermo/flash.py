@@ -5572,7 +5572,7 @@ class FlashVLN(FlashVL):
     K_COMPOSITION_INDEPENDENT_HACK = True
 
 
-    def __init__(self, constants, correlations, liquids, gas, settings=default_settings):
+    def __init__(self, constants, correlations, liquids, gas, solids=None, settings=default_settings):
         self.constants = constants
         self.correlations = correlations
         self.liquids = liquids
@@ -5580,6 +5580,8 @@ class FlashVLN(FlashVL):
         self.max_liquids = len(liquids)
         self.max_phases = 1 + self.max_liquids if gas is not None else self.max_liquids
         self.phases = [gas] + liquids if gas is not None else liquids
+        if solids:
+            raise ValueError("Solids are not supported in this model")
         
         liquids_to_unique_liquids = []
         unique_liquids, unique_liquid_hashes = [], []
