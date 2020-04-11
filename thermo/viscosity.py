@@ -1078,11 +1078,20 @@ class ViscosityLiquidMixture(MixtureProperty):
         else:
             mus = [i.T_dependent_property(T) for i in self.ViscosityLiquids]
         if method == MIXING_LOG_MOLAR:
-            return mixing_logarithmic(zs, mus)
+            ln_mu = 0.0
+            for i in range(len(zs)):
+                ln_mu += zs[i]*log(mus[i])
+            return exp(ln_mu)
         elif method == MIXING_LOG_MASS:
-            return mixing_logarithmic(ws, mus)
+            ln_mu = 0.0
+            for i in range(len(ws)):
+                ln_mu += ws[i]*log(mus[i])
+            return exp(ln_mu)
         elif method == SIMPLE:
-            return mixing_simple(zs, mus)
+            mu = 0.0
+            for i in range(len(zs)):
+                mu += zs[i]*mus[i]
+            return mu
         else:
             raise Exception('Method not valid')
 
