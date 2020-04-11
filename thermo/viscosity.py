@@ -329,11 +329,11 @@ def Przedziecki_Sridhar(T, Tm, Tc, Pc, Vc, Vm, omega, MW):
        Viscosities." AIChE Journal 31, no. 2 (February 1, 1985): 333-35.
        doi:10.1002/aic.690310225.
     '''
-    Pc = Pc/1E5  # Pa to atm
+    Pc = Pc*1e-5  # Pa to atm
     Vm, Vc = Vm*1E6, Vc*1E6  # m^3/mol to mL/mol
     Tr = T/Tc
     Gamma = 0.29607 - 0.09045*Tr - 0.04842*Tr**2
-    VrT = 0.33593-0.33953*Tr + 1.51941*Tr**2 - 2.02512*Tr**3 + 1.11422*Tr**4
+    VrT = 0.33593 - 0.33953*Tr + 1.51941*Tr**2 - 2.02512*Tr**3 + 1.11422*Tr**4
     V = VrT*(1.0 - omega*Gamma)*Vc
 
     Vo = 0.0085*omega*Tc - 2.02 + Vm/(0.342*(Tm/Tc) + 0.894)  # checked
@@ -1791,7 +1791,7 @@ class ViscosityGas(TPDependentProperty):
 ### Viscosity of gas mixtures
 
 
-def Herning_Zipperer(zs, mus, MWs):
+def Herning_Zipperer(zs, mus, MWs, MW_roots=None):
     r'''Calculates viscosity of a gas mixture according to
     mixing rules in [1]_.
 
@@ -1807,6 +1807,8 @@ def Herning_Zipperer(zs, mus, MWs):
         Gas viscosities of all components, [Pa*s]
     MWs : float
         Molecular weights of all components, [g/mol]
+    MW_roots : float, optional
+        Square roots of molecular weights of all components, [g^0.5/mol^0.5]
 
     Returns
     -------
@@ -1817,6 +1819,8 @@ def Herning_Zipperer(zs, mus, MWs):
     -----
     This equation is entirely dimensionless; all dimensions cancel.
     The original source has not been reviewed.
+    
+    Adding the square roots can speed up the calculation.
 
     Examples
     --------
@@ -1829,11 +1833,17 @@ def Herning_Zipperer(zs, mus, MWs):
        Technical Gas Mixtures from the Viscosity of Individual Gases, german",
        Gas u. Wasserfach (1936) 79, No. 49, 69.
     '''
-    if not none_and_length_check([zs, mus, MWs]):  # check same-length inputs
-        raise Exception('Function inputs are incorrect format')
-    MW_roots = [MWi**0.5 for MWi in MWs]
-    denominator = sum([zi*MW_root_i for zi, MW_root_i in zip(zs, MW_roots)])
-    k = sum([zi*mui*MW_root_i for zi, mui, MW_root_i in zip(zs, mus, MW_roots)])
+#    if not none_and_length_check([zs, mus, MWs]):  # check same-length inputs
+#        raise Exception('Function inputs are incorrect format')
+    if MW_roots is None:
+        MW_roots = [MWi**0.5 for MWi in MWs]
+    denominator = k = 0.0
+    for i in range(len(zs)):
+        v = zs[i]*MW_roots[i]
+        k += v*mus[i]
+        denominator += v
+#    denominator = sum([zi*MW_root_i for zi, MW_root_i in zip(zs, MW_roots)])
+#    k = sum([zi*mui*MW_root_i for zi, mui, MW_root_i in zip(zs, mus, MW_roots)])
     return k/denominator
 
 
@@ -1880,9 +1890,19 @@ def Wilke(ys, mus, MWs):
     if not none_and_length_check([ys, mus, MWs]):  # check same-length inputs
         raise Exception('Function inputs are incorrect format')
     cmps = range(len(ys))
+    MWs_inv = [1.0/MWs[i] for i in cmps]
+    
+    phi_fact_invs = [[1.0/(8.0*(1.0 + MWs[i]*MWs_inv[j]))**0.5
+                    for j in cmps] for i in cmps]
+    
+    t0s = [[(MWs[j]*MWs_inv[i])**0.5
+                    for j in cmps] for i in cmps]
+    
     phis = [[(1 + (mus[i]/mus[j])**0.5*(MWs[j]/MWs[i])**0.25)**2/(8*(1 + MWs[i]/MWs[j]))**0.5
                     for j in cmps] for i in cmps]
-
+    
+    # Some publications show the denominator sum should not consider i ==j and have only the 
+    # mole fraction  but this reduces to that as phi[i][i] == 1
     return sum([ys[i]*mus[i]/sum([ys[j]*phis[i][j] for j in cmps]) for i in cmps])
 
 
@@ -2053,7 +2073,10 @@ class ViscosityGasMixture(MixtureProperty):
         self.Stockmayers = Stockmayers
         self.CASs = CASs
         self.ViscosityGases = ViscosityGases
-        
+        try:
+            self.MW_roots = [i**0.5 for i in MWs]
+        except:
+            pass
         self._correct_pressure_pure = correct_pressure_pure
 
         self.Tmin = None
@@ -2138,7 +2161,7 @@ class ViscosityGasMixture(MixtureProperty):
         if method == SIMPLE:
             return mixing_simple(zs, mus)
         elif method == HERNING_ZIPPERER:
-            return Herning_Zipperer(zs, mus, self.MWs)
+            return Herning_Zipperer(zs, mus, None, self.MW_roots)
         elif method == WILKE:
             return Wilke(zs, mus, self.MWs)
         elif method == BROKAW:

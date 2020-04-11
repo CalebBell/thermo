@@ -26,6 +26,7 @@ import pytest
 from math import log, log10
 import numpy as np
 import pandas as pd
+from fluids.numerics import assert_close
 from thermo.viscosity import *
 from thermo.identifiers import checkCAS
 from thermo.viscosity import COOLPROP, LUCAS
@@ -207,9 +208,17 @@ def test_Herning_Zipperer():
     mu = Herning_Zipperer([0.05, 0.95], [1.34E-5, 9.5029E-6], [64.06, 46.07])
     assert_allclose(mu, 9.730630997268096e-06)
 
-    with pytest.raises(Exception):
-        Herning_Zipperer([0.05], [1.34E-5, 9.5029E-6], [64.06, 46.07])
+#    with pytest.raises(Exception):
+#        Herning_Zipperer([0.05], [1.34E-5, 9.5029E-6], [64.06, 46.07])
 
+    zs = [0.5, 0.25, 0.25]
+    mus =  [1.78e-05, 1.12e-05, 9.35e-06]
+    MWs = [28.0134, 16.043, 30.07]
+    MWs_roots = [i**0.5 for i in MWs]
+    mu_root = Herning_Zipperer(zs, mus, MWs, MWs_roots)
+    assert_close(mu_root, 1.4174908599465168e-05, rtol=1e-12)
+    mu_root = Herning_Zipperer(zs, mus, None, MWs_roots)
+    assert_close(mu_root, 1.4174908599465168e-05, rtol=1e-12)
 
 def test_Brockaw():
     mu = Brokaw(308.2, [0.05, 0.95], [1.34E-5, 9.5029E-6], [64.06, 46.07], [0.42, 0.19], [347, 432])

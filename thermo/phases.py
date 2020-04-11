@@ -1734,12 +1734,16 @@ class IdealGas(Phase):
         else:
             self.Sfs = None
             
-        if HeatCapacityGases is not None:
-            self.N = len(HeatCapacityGases)
-            self.cmps = range(self.N)
-        elif zs is not None:
-            self.N = len(zs)
-            self.cmps = range(self.N)
+        if zs is not None:
+            self.N = N = len(zs)
+            self.cmps = range(N)
+            self.zeros1d = [0.0]*N
+            self.ones1d = [1.0]*N
+        elif HeatCapacityGases is not None:
+            self.N = N = len(HeatCapacityGases)
+            self.cmps = range(N)
+            self.zeros1d = [0.0]*N
+            self.ones1d = [1.0]*N
         if zs is not None:
             self.zs = zs
         if T is not None:
@@ -1752,30 +1756,271 @@ class IdealGas(Phase):
         return [P*zi for zi in self.zs]
     
     def lnphis(self):
-        return [0.0]*self.N
+        return self.zeros1d
     
     lnphis_G_min = lnphis
     
+    def phis(self):
+        return self.ones1d
+    
+    def dphis_dT(self):
+        return self.zeros1d
+
+    def dphis_dP(self):
+        return self.zeros1d
+    
     def dlnphis_dT(self):
-        return [0.0]*self.N
+        return self.zeros1d
 
     def dlnphis_dP(self):
-        return [0.0]*self.N
+        return self.zeros1d
 
     def to_TP_zs(self, T, P, zs):
         new = self.__class__.__new__(self.__class__)
         new.T = T
         new.P = P
         new.zs = zs
-        new.N = len(zs)
-        new.cmps = range(new.N)
+        new.N = self.N
+        new.cmps = self.cmps
+        new.zeros1d = self.zeros1d
+        new.ones1d = self.ones1d
         
         new.HeatCapacityGases = self.HeatCapacityGases
         new.Hfs = self.Hfs
         new.Gfs = self.Gfs
         new.Sfs = self.Sfs
         return new
- 
+    
+    def to_zs_TPV(self, zs, T=None, P=None, V=None):
+        new = self.__class__.__new__(self.__class__)
+        if T is not None and V is not None:
+            P = R*T/V
+        elif P is not None and V is not None:
+            T = P*V/R
+        elif T is not None and P is not None:
+            pass
+        else:
+            raise ValueError("Two of T, P, or V are needed")
+        new.P = P
+        new.T = T
+        
+        new.zs = zs
+        new.N = self.N
+        new.cmps = self.cmps
+        new.zeros1d = self.zeros1d
+        new.ones1d = self.ones1d
+        
+        new.HeatCapacityGases = self.HeatCapacityGases
+        new.Hfs = self.Hfs
+        new.Gfs = self.Gfs
+        new.Sfs = self.Sfs
+
+        return new
+        
+    to = to_zs_TPV
+    
+    ### Volumetric properties
+    def V(self):
+        return R*self.T/self.P
+
+    def dP_dT(self):
+        return self.P/self.T
+    dP_dT_V = dP_dT
+
+    def dP_dV(self):
+        return -self.P*self.P/(R*self.T)
+
+    dP_dV_T = dP_dV
+
+    def d2P_dT2(self):
+        return 0.0
+    d2P_dT2_V = d2P_dT2
+
+    def d2P_dV2(self):
+        P, T = self.P, self.T
+        return 2.0*P*P*P/(R*R*T*T)
+
+    d2P_dV2_T = d2P_dV2
+
+    def d2P_dTdV(self):
+        P, T = self.P, self.T
+        return -P*P/(R*T*T)
+
+    def d2T_dV2(self):
+        return 0.0
+        
+    d2T_dV2_P = d2T_dV2
+
+    def d2V_dT2(self):
+        return 0.0
+        
+    d2V_dT2_P = d2V_dT2
+    
+    def dV_dT(self):
+        return R/self.P
+    
+    def PIP(self):
+        return 1.0 # For speed
+
+    def d2V_dP2(self):
+        P, T = self.P, self.T
+        return 2.0*R*T/(P*P*P)
+    
+    def d2T_dP2(self):
+        return 0.0
+    
+    def dV_dP(self):
+        P, T = self.P, self.T
+        return -R*T/(P*P)
+    
+    def dT_dP(self):
+        return self.T/self.P
+    
+    def dT_dV(self):
+        return self.P*R_inv
+    
+    d2T_dV2_P = d2T_dV2
+    d2V_dT2_P = d2V_dT2
+    d2V_dP2_T = d2V_dP2
+    d2T_dP2_V = d2T_dP2
+    dV_dP_T = dV_dP
+    dV_dT_P = dV_dT
+    dT_dP_V = dT_dP
+    dT_dV_P = dT_dV
+    
+    ### Thermodynamic properties
+
+    def H(self):
+        try:
+            return self._H
+        except AttributeError:
+            pass
+        zs = self.zs
+        try:
+            Cpig_integrals_pure = self._Cpig_integrals_pure
+        except AttributeError:
+            Cpig_integrals_pure = self.Cpig_integrals_pure()
+        H = 0.0
+        for i in self.cmps:
+            H += zs[i]*Cpig_integrals_pure[i]
+        self._H = H
+        return H
+
+    def S(self):
+        try:
+            return self._S
+        except AttributeError:
+            pass
+        Cpig_integrals_over_T_pure = self.Cpig_integrals_over_T_pure()
+        log_zs = self.log_zs()
+        T, P, zs, cmps = self.T, self.P, self.zs, self.cmps
+        P_REF_IG_INV = self.P_REF_IG_INV
+        S = 0.0
+        S -= R*sum([zs[i]*log_zs[i] for i in cmps]) # ideal composition entropy composition
+        S -= R*log(P*P_REF_IG_INV)
+        
+        for i in cmps:
+            S += zs[i]*Cpig_integrals_over_T_pure[i]
+        self._S = S
+        return S
+    
+    def Cp(self):
+        try:
+            return self._Cp
+        except AttributeError:
+            pass
+        Cpigs_pure = self.Cpigs_pure()
+        Cp, zs = 0.0, self.zs
+        for i in self.cmps:
+            Cp += zs[i]*Cpigs_pure[i]
+        self._Cp = Cp
+        return Cp 
+
+    dH_dT = Cp
+    dH_dT_V = Cp # H does not depend on P, so the P is increased without any effect on H
+
+    def dH_dP(self):
+        return 0.0
+        
+    def d2H_dT2(self):
+        try:
+            return self._d2H_dT2
+        except AttributeError:
+            pass
+        dCpigs_pure = self.dCpigs_dT_pure()
+        dCp, zs = 0.0, self.zs
+        for i in self.cmps:
+            dCp += zs[i]*dCpigs_pure[i]
+        self._d2H_dT2 = dCp
+        return dCp
+
+    def d2H_dP2(self):
+        return 0.0
+        
+    def d2H_dTdP(self):
+        return 0.0
+
+    def dH_dP_V(self):
+        dH_dP_V = self.Cp()*self.dT_dP()
+        return dH_dP_V
+
+    def dH_dV_T(self):
+        return 0.0
+        
+    def dH_dV_P(self):
+        dH_dV_P = self.dT_dV()*self.Cp()
+        return dH_dV_P
+
+    def dH_dzs(self):
+        return self.Cpig_integrals_pure()
+
+    def dS_dT(self):
+        dS_dT = self.Cp()/self.T
+        return dS_dT
+    dS_dT_P = dS_dT
+
+    def dS_dP(self):
+        return -R/self.P
+
+    def d2S_dP2(self):
+        P = self.P
+        return R/(P*P)
+    
+    def dS_dT_V(self):
+        dS_dT_V = self.Cp()/self.T - R/self.P*self.dP_dT()
+        return dS_dT_V
+
+    def dS_dP_V(self):
+        dS_dP_V = -R/self.P + self.Cp()/self.T*self.dT_dP()
+        return dS_dP_V
+    
+    def d2P_dTdP(self):
+        return 0.0
+        
+    def d2P_dVdP(self):
+        return 0.0
+    
+    def d2P_dVdT_TP(self):
+        return 0.0
+    
+    def d2P_dT2_PV(self):
+        return 0.0
+    
+    def dS_dzs(self):
+        try:
+            return self._dS_dzs
+        except AttributeError:
+            pass
+        cmps, eos_mix = self.cmps, self.eos_mix
+    
+        log_zs = self.log_zs()
+        integrals = self.Cpig_integrals_over_T_pure()
+
+        self._dS_dzs = [integrals[i] - R*(log_zs[i] + 1.0)
+                        for i in cmps]
+        return self._dS_dzs
+
+    # Properties using constants, correlations
     def mu(self):
         try:
             return self._mu
@@ -3417,8 +3662,6 @@ class GibbsExcessLiquid(Phase):
             Vms_sat = self._Vms_sat
         except AttributeError:
             Vms_sat = self.Vms_sat()
-#        Vms = [VolumeLiquid.T_dependent_property(T=T) for VolumeLiquid in self.VolumeLiquids]        
-#        Vms = [VolumeLiquid(T=T, P=P) for VolumeLiquid in self.VolumeLiquids]
         RT_inv = 1.0/(R*T)
         self._Poyntings = [exp(Vml*(P-Psat)*RT_inv) for Psat, Vml in zip(Psats, Vms_sat)]
         return self._Poyntings

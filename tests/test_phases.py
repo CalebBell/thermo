@@ -1235,3 +1235,160 @@ def test_phase_with_constants():
     drho_mass_dP_num = derivative(to_diff_P, P, P*1e-7)
     assert_close(drho_mass_dP, drho_mass_dP_num, rtol=1e-6)
     assert_close(drho_mass_dP, 4.230638302082921e-05, rtol=1e-9)
+    
+    
+def test_IdealGas_vs_IGMIX():
+    constants = ChemicalConstantsPackage(Tcs=[508.1, 536.2, 512.5], Pcs=[4700000.0, 5330000.0, 8084000.0], omegas=[0.309, 0.21600000000000003, 0.5589999999999999],
+                                 MWs=[58.07914, 119.37764000000001, 32.04186], CASs=['67-64-1', '67-66-3', '67-56-1'], names=['acetone', 'chloroform', 'methanol'])
+    HeatCapacityGases = [HeatCapacityGas(best_fit=(200.0, 1000.0, [-1.3320002425347943e-21, 6.4063345232664645e-18, -1.251025808150141e-14, 1.2265314167534311e-11, -5.535306305509636e-09, -4.32538332013644e-08, 0.0010438724775716248, -0.19650919978971002, 63.84239495676709])),
+                     HeatCapacityGas(best_fit=(200.0, 1000.0, [1.5389278550737367e-21, -8.289631533963465e-18, 1.9149760160518977e-14, -2.470836671137373e-11, 1.9355882067011222e-08, -9.265600540761629e-06, 0.0024825718663005762, -0.21617464276832307, 48.149539665907696])),
+                     HeatCapacityGas(best_fit=(50.0, 1000.0, [2.3511458696647882e-21, -9.223721411371584e-18, 1.3574178156001128e-14, -8.311274917169928e-12, 4.601738891380102e-10, 1.78316202142183e-06, -0.0007052056417063217, 0.13263597297874355, 28.44324970462924]))]
+    correlations = PropertyCorrelationPackage(constants=constants, skip_missing=True, HeatCapacityGases=HeatCapacityGases)
+    
+    
+    T, P = 350.0, 1e6
+    zs = [0.2, 0.3, 0.5]
+    eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas':constants.omegas}
+    phase = IdealGas(T=T, P=P, zs=zs, HeatCapacityGases=HeatCapacityGases)
+    phase_EOS = EOSGas(IGMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    
+    ### Copy specs
+
+    TV = phase.to(T=T, V=phase.V(), zs=zs)
+    assert_close(TV.P, phase.P, rtol=1e-12)
+    PV = phase.to(P=P, V=phase.V(), zs=zs)
+    assert_close(TV.T, phase.T, rtol=1e-12)
+    
+    new = phase.to_TP_zs(T=350.0, P=1e6, zs=zs)
+    assert new.T == phase.T
+    assert new.P == phase.P
+    
+    new = phase.to(P=P, T=T, zs=zs)
+    assert new.T == phase.T
+    assert new.P == phase.P
+    with pytest.raises(Exception):
+        phase.to(P=P, zs=zs)
+        
+    assert_close(phase.V(), phase_EOS.V(), rtol=1e-11)
+    assert_close(phase.PIP(), phase_EOS.PIP(), rtol=1e-11)
+    
+    ### Derivatives of volume
+    assert_close(phase.dV_dT(), phase_EOS.dV_dT(), rtol=1e-11)
+    assert_close(phase.dV_dT_P(), phase_EOS.dV_dT_P(), rtol=1e-11)
+    
+    assert_close(phase.dV_dP(), phase_EOS.dV_dP(), rtol=1e-11)
+    assert_close(phase.dV_dP_T(), phase_EOS.dV_dP_T(), rtol=1e-11)
+    
+    assert_close(phase.d2V_dT2(), phase_EOS.d2V_dT2(), rtol=1e-11)
+    assert_close(phase.d2V_dT2_P(), phase_EOS.d2V_dT2_P(), rtol=1e-11)
+    
+    assert_close(phase.d2V_dP2(), phase_EOS.d2V_dP2(), rtol=1e-11)
+    assert_close(phase.d2V_dP2_T(), phase_EOS.d2V_dP2_T(), rtol=1e-11)
+    
+    assert_close(phase.d2V_dTdP(), phase_EOS.d2V_dTdP(), rtol=1e-11)
+    assert_close(phase.d2V_dPdT(), phase_EOS.d2V_dPdT(), rtol=1e-11)
+    
+    ### Derivatives of pressure
+    assert_close(phase.dP_dV(), phase_EOS.dP_dV(), rtol=1e-11)
+    assert_close(phase.dP_dV_T(), phase_EOS.dP_dV_T(), rtol=1e-11)
+    
+    assert_close(phase.dP_dT(), phase_EOS.dP_dT(), rtol=1e-11)
+    assert_close(phase.dP_dT_V(), phase_EOS.dP_dT_V(), rtol=1e-11)
+    
+    assert_close(phase.d2P_dV2(), phase_EOS.d2P_dV2(), rtol=1e-11)
+    assert_close(phase.d2P_dV2_T(), phase_EOS.d2P_dV2_T(), rtol=1e-11)
+    
+    assert_close(phase.d2P_dT2(), phase_EOS.d2P_dT2(), rtol=1e-11)
+    assert_close(phase.d2P_dT2_V(), phase_EOS.d2P_dT2_V(), rtol=1e-11)
+    
+    assert_close(phase.d2P_dVdT(), phase_EOS.d2P_dVdT(), rtol=1e-11)
+    assert_close(phase.d2P_dTdV(), phase_EOS.d2P_dTdV(), rtol=1e-11)
+    
+    ### Derivatives of Temperature
+    assert_close(phase.dT_dV(), phase_EOS.dT_dV(), rtol=1e-11)
+    assert_close(phase.dT_dV_P(), phase_EOS.dT_dV_P(), rtol=1e-11)
+    
+    assert_close(phase.dT_dP(), phase_EOS.dT_dP(), rtol=1e-11)
+    assert_close(phase.dT_dP_V(), phase_EOS.dT_dP_V(), rtol=1e-11)
+    
+    assert_close(phase.d2T_dV2(), phase_EOS.d2T_dV2(), rtol=1e-11)
+    assert_close(phase.d2T_dV2_P(), phase_EOS.d2T_dV2_P(), rtol=1e-11)
+    
+    assert_close(phase.d2T_dP2(), phase_EOS.d2T_dP2(), rtol=1e-11)
+    assert_close(phase.d2T_dP2_V(), phase_EOS.d2T_dP2_V(), rtol=1e-11)
+    
+    assert_close(phase.d2T_dVdP(), phase_EOS.d2T_dVdP(), rtol=1e-11)
+    assert_close(phase.d2T_dPdV(), phase_EOS.d2T_dPdV(), rtol=1e-11)
+    
+    ### Phis and derivatives
+    assert_allclose(phase.phis(), phase_EOS.phis(), rtol=1e-11)
+    assert_allclose(phase.dphis_dT(), phase_EOS.dphis_dT(), rtol=1e-11)
+    assert_allclose(phase.dphis_dP(), phase_EOS.dphis_dP(), rtol=1e-11)
+    
+    assert_allclose(phase.lnphis(), phase_EOS.lnphis(), rtol=1e-11)
+    assert_allclose(phase.dlnphis_dT(), phase_EOS.dlnphis_dT(), rtol=1e-11)
+    assert_allclose(phase.dlnphis_dP(), phase_EOS.dlnphis_dP(), rtol=1e-11)
+    
+    assert_allclose(phase.fugacities(), phase_EOS.fugacities(), rtol=1e-11)
+    assert_allclose(phase.dfugacities_dT(), phase_EOS.dfugacities_dT(), rtol=1e-11)
+    assert_allclose(phase.dfugacities_dP(), phase_EOS.dfugacities_dP(), rtol=1e-11)
+    
+    # Basic thermodynamic quantities
+    assert_close(phase.H(), phase_EOS.H(), rtol=1e-11)
+    assert_close(phase.S(), phase_EOS.S(), rtol=1e-11)
+    assert_close(phase.G(), phase_EOS.G(), rtol=1e-11)
+    assert_close(phase.U(), phase_EOS.U(), rtol=1e-11)
+    assert_close(phase.A(), phase_EOS.A(), rtol=1e-11)
+    
+    ### First temperature derivative
+    
+    assert_close(phase.dH_dT(), phase_EOS.dH_dT(), rtol=1e-11)
+    assert_close(phase.dS_dT(), phase_EOS.dS_dT(), rtol=1e-11)
+    assert_close(phase.dG_dT(), phase_EOS.dG_dT(), rtol=1e-11)
+    assert_close(phase.dU_dT(), phase_EOS.dU_dT(), rtol=1e-11)
+    assert_close(phase.dA_dT(), phase_EOS.dA_dT(), rtol=1e-11)
+    
+    assert_close(phase.dH_dT_P(), phase_EOS.dH_dT_P(), rtol=1e-11)
+    assert_close(phase.dS_dT_P(), phase_EOS.dS_dT_P(), rtol=1e-11)
+    assert_close(phase.dG_dT_P(), phase_EOS.dG_dT_P(), rtol=1e-11)
+    assert_close(phase.dU_dT_P(), phase_EOS.dU_dT_P(), rtol=1e-11)
+    assert_close(phase.dA_dT_P(), phase_EOS.dA_dT_P(), rtol=1e-11)
+    
+    assert_close(phase.dH_dT_V(), phase_EOS.dH_dT_V(), rtol=1e-11)
+    assert_close(phase.dS_dT_V(), phase_EOS.dS_dT_V(), rtol=1e-11)
+    assert_close(phase.dG_dT_V(), phase_EOS.dG_dT_V(), rtol=1e-11)
+    assert_close(phase.dU_dT_V(), phase_EOS.dU_dT_V(), rtol=1e-11)
+    assert_close(phase.dA_dT_V(), phase_EOS.dA_dT_V(), rtol=1e-11)
+    
+    ### First pressure derivative
+    assert_close(phase.dH_dP(), phase_EOS.dH_dP(), rtol=1e-11)
+    assert_close(phase.dS_dP(), phase_EOS.dS_dP(), rtol=1e-11)
+    assert_close(phase.dG_dP(), phase_EOS.dG_dP(), rtol=1e-11)
+    assert_close(phase.dU_dP(), phase_EOS.dU_dP(), rtol=1e-11, atol=1e-16)
+    assert_close(phase.dA_dP(), phase_EOS.dA_dP(), rtol=1e-11)
+    
+    assert_close(phase.dH_dP_T(), phase_EOS.dH_dP_T(), rtol=1e-11)
+    assert_close(phase.dS_dP_T(), phase_EOS.dS_dP_T(), rtol=1e-11)
+    assert_close(phase.dG_dP_T(), phase_EOS.dG_dP_T(), rtol=1e-11)
+    assert_close(phase.dU_dP_T(), phase_EOS.dU_dP_T(), rtol=1e-11, atol=1e-16)
+    assert_close(phase.dA_dP_T(), phase_EOS.dA_dP_T(), rtol=1e-11)
+    
+    assert_close(phase.dH_dP_V(), phase_EOS.dH_dP_V(), rtol=1e-11)
+    assert_close(phase.dS_dP_V(), phase_EOS.dS_dP_V(), rtol=1e-11)
+    assert_close(phase.dG_dP_V(), phase_EOS.dG_dP_V(), rtol=1e-11)
+    assert_close(phase.dU_dP_V(), phase_EOS.dU_dP_V(), rtol=1e-11, atol=1e-16)
+    assert_close(phase.dA_dP_V(), phase_EOS.dA_dP_V(), rtol=1e-11)
+    
+    assert_close(phase.dH_dV_T(), phase_EOS.dH_dV_T(), rtol=1e-11)
+    assert_close(phase.dS_dV_T(), phase_EOS.dS_dV_T(), rtol=1e-11)
+    assert_close(phase.dG_dV_T(), phase_EOS.dG_dV_T(), rtol=1e-11)
+    
+    # Catastrophic cancellation in dU_dP; -P*dV_dP - V should equal zero but is 1e-19 instead.
+    assert_close(phase.dU_dV_T(), phase_EOS.dU_dV_T(), rtol=1e-11, atol=1e-9)
+    assert_close(phase.dA_dV_T(), phase_EOS.dA_dV_T(), rtol=1e-11)
+    
+    assert_close(phase.dH_dV_P(), phase_EOS.dH_dV_P(), rtol=1e-11)
+    assert_close(phase.dS_dV_P(), phase_EOS.dS_dV_P(), rtol=1e-11)
+    assert_close(phase.dG_dV_P(), phase_EOS.dG_dV_P(), rtol=1e-11)
+    assert_close(phase.dU_dV_P(), phase_EOS.dU_dV_P(), rtol=1e-11, atol=1e-16)
+    assert_close(phase.dA_dV_P(), phase_EOS.dA_dV_P(), rtol=1e-11)
