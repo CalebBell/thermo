@@ -27,6 +27,7 @@ from math import log, log10
 import numpy as np
 import pandas as pd
 from fluids.numerics import assert_close
+from thermo.utils import normalize
 from thermo.viscosity import *
 from thermo.identifiers import checkCAS
 from thermo.viscosity import COOLPROP, LUCAS
@@ -198,10 +199,47 @@ def test_Lucas_gas():
 
 def test_Wilke():
     mu = Wilke([0.05, 0.95], [1.34E-5, 9.5029E-6], [64.06, 46.07])
-    assert_allclose(mu, 9.701614885866193e-06)
+    assert_allclose(mu, 9.701614885866193e-06, rtol=1e-10)
 
     with pytest.raises(Exception):
         Wilke([0.05], [1.34E-5, 9.5029E-6], [64.06, 46.07])
+        
+    mu = Wilke_large([0.05, 0.95], [1.34E-5, 9.5029E-6], [64.06, 46.07])
+    assert_allclose(mu, 9.701614885866193e-06, rtol=1e-10)
+    
+    mu = Wilke_prefactored([0.05, 0.95], [1.34E-5, 9.5029E-6], *Wilke_prefactors([64.06, 46.07]))
+    assert_close(mu, 9.701614885866193e-06, rtol=1e-10)
+    
+    # Large composition test
+    zs = [0.10456352460469782, 0.10472506156674823, 0.10347781516834291, 1.4089716440797791e-05, 0.10488254481011455, 0.10078888107401028, 0.09902003237540975, 0.09045109410107957, 0.08642540418108867, 0.1043609364553231, 0.10129061594674436]
+    mus = [1.1601665408586192e-05, 9.408370570946896e-06, 8.19709294177777e-06, 1.4314548719058091e-05, 1.5057441002481923e-05, 7.5434795308593725e-06, 7.447082353139856e-06, 7.0365592301967965e-06, 6.720364621681796e-06, 1.2157004301638695e-05, 1.3006463728382868e-05]
+    MWs = [16.04246, 30.06904, 44.09562, 2.01588, 44.0095, 58.1222, 58.1222, 72.14878, 72.14878, 34.08088, 64.0638]
+    
+    # Make a large set of data, but don't actually use it anywhere; for easy of bencharmking
+    zs_new = []
+    mus_new = []
+    MWs_new = []
+    for i in range(20):
+        zs_new.extend(zs)
+        mus_new.extend(mus)
+        MWs_new.extend(MWs)
+    zs_large = normalize(zs_new)
+    mus_large = mus_new
+    MWs_large = MWs_new
+
+    mu_expect = 9.282311227289109e-06
+    assert_close(Wilke(zs, mus, MWs), mu_expect, rtol=1e-10)
+    assert_close(Wilke_large(zs, mus, MWs), mu_expect, rtol=1e-10)
+    prefactors = Wilke_prefactors(MWs)
+    assert_close(Wilke_prefactored(zs, mus, *prefactors), mu_expect, rtol=1e-10)
+    
+    # Test that the prefactors really work - use a different composition
+    zs_diff = normalize([.1, .2,.3, .4, .5, .6, .7, .8, .9, .10, .2])
+    mu_expect = 8.238656569251283e-06
+    assert_close(Wilke(zs_diff, mus, MWs), mu_expect, rtol=1e-10)
+    assert_close(Wilke_large(zs_diff, mus, MWs), mu_expect, rtol=1e-10)
+    assert_close(Wilke_prefactored(zs_diff, mus, *prefactors), mu_expect, rtol=1e-10)
+
 
 
 def test_Herning_Zipperer():

@@ -31,7 +31,10 @@ __all__ = ['Dutt_Prasad', 'VN3_data', 'VN2_data', 'VN2E_data', 'Perrys2_313',
 'viscosity_liquid_methods_P', 'ViscosityLiquid', 'ViscosityGas', 'Lucas', 
 'Yoon_Thodos', 'Stiel_Thodos', 'lucas_gas', 
 'Gharagheizi_gas_viscosity', 'viscosity_gas_methods', 'viscosity_gas_methods_P', 
-'Herning_Zipperer', 'Wilke', 'Brokaw', 
+'Herning_Zipperer', 
+'Wilke', 'Wilke_prefactors', 'Wilke_prefactored', 'Wilke_large',
+
+'Brokaw', 
 'viscosity_index', 'viscosity_converter', 'ViscosityLiquidMixture', 
 'ViscosityGasMixture',
 'MIXING_LOG_MOLAR', 'MIXING_LOG_MASS',
@@ -1833,8 +1836,6 @@ def Herning_Zipperer(zs, mus, MWs, MW_roots=None):
        Technical Gas Mixtures from the Viscosity of Individual Gases, german",
        Gas u. Wasserfach (1936) 79, No. 49, 69.
     '''
-#    if not none_and_length_check([zs, mus, MWs]):  # check same-length inputs
-#        raise Exception('Function inputs are incorrect format')
     if MW_roots is None:
         MW_roots = [MWi**0.5 for MWi in MWs]
     denominator = k = 0.0
@@ -1842,10 +1843,7 @@ def Herning_Zipperer(zs, mus, MWs, MW_roots=None):
         v = zs[i]*MW_roots[i]
         k += v*mus[i]
         denominator += v
-#    denominator = sum([zi*MW_root_i for zi, MW_root_i in zip(zs, MW_roots)])
-#    k = sum([zi*mui*MW_root_i for zi, mui, MW_root_i in zip(zs, mus, MW_roots)])
     return k/denominator
-
 
 def Wilke(ys, mus, MWs):
     r'''Calculates viscosity of a gas mixture according to
@@ -1854,6 +1852,7 @@ def Wilke(ys, mus, MWs):
     .. math::
         \eta_{mix} = \sum_{i=1}^n \frac{y_i \eta_i}{\sum_{j=1}^n y_j \phi_{ij}}
 
+    .. math::
         \phi_{ij} = \frac{(1 + \sqrt{\eta_i/\eta_j}(MW_j/MW_i)^{0.25})^2}
         {\sqrt{8(1+MW_i/MW_j)}}
 
@@ -1876,6 +1875,12 @@ def Wilke(ys, mus, MWs):
     This equation is entirely dimensionless; all dimensions cancel.
     The original source has not been reviewed or found.
 
+    See Also
+    --------
+    Wilke_prefactors
+    Wilke_prefactored
+    Wilke_large
+
     Examples
     --------
     >>> Wilke([0.05, 0.95], [1.34E-5, 9.5029E-6], [64.06, 46.07])
@@ -1890,20 +1895,220 @@ def Wilke(ys, mus, MWs):
     if not none_and_length_check([ys, mus, MWs]):  # check same-length inputs
         raise Exception('Function inputs are incorrect format')
     cmps = range(len(ys))
-    MWs_inv = [1.0/MWs[i] for i in cmps]
+    phis = [[(1.0 + (mus[i]/mus[j])**0.5*(MWs[j]/MWs[i])**0.25)**2.0/(8.0*(1.0 + MWs[i]/MWs[j]))**0.5
+                    for j in cmps] for i in cmps]
+    # Some publications show the denominator sum should not consider i ==j and have only the 
+    # mole fraction  but this reduces to that as phi[i][i] == 1    
+    return sum([ys[i]*mus[i]/sum([ys[j]*phis[i][j] for j in cmps]) for i in cmps])
+
+
+def Wilke_prefactors(MWs):
+    r'''The :obj:`Wilke` gas viscosity method can be sped up by precomputing several
+    matrices. The memory used is proportional to N^2, so it can be significant,
+    but is still a substantial performance increase even when they are so large
+    they cannot fit into cached memory. These matrices are functions of 
+    molecular weights only. These are used by the :obj:`Wilke_prefactored` function.
+
+    .. math::
+        t0_{i,j} = \frac{ \sqrt{\frac{MW_{j}}{MW_{i}}}}{
+        \sqrt{\frac{8 MW_{i}}{MW_{j}} + 8}} 
+        
+    .. math::
+        t1_{i,j} = \frac{2 \sqrt[4]{\frac{MW_{j}}{MW_{i}}}
+        }{\sqrt{\frac{8 MW_{i}}{MW_{j}} + 8}} 
+        
+    .. math::
+        t2_{i,j} = \frac{1}{\sqrt{\frac{8 MW_{i}}{MW_{j}} + 8}}
+
+    Parameters
+    ----------
+    MWs : list[float]
+        Molecular weights of all components, [g/mol]
+
+    Returns
+    -------
+    t0s : list[list[float]]
+        First terms, [-]
+    t1s : list[list[float]]
+        Second terms, [-]
+    t2s : list[list[float]]
+        Third terms, [-]
+        
+    Notes
+    -----
+    These terms are derived as follows using SymPy. The viscosity terms are not
+    known before hand so they are not included in the factors, but otherwise
+    these parameters simplify the computation of the :math:`\phi_{ij}` term
+    to the following:
+        
+    .. math::
+        \phi_{ij} = \frac{\mu_i}{\mu_j}t0_{i,j} + \sqrt{\frac{\mu_i}{\mu_j}}t1_{i,j} + t2_{i,j}
     
+    >>> from sympy import * # doctest: +SKIP
+    >>> MWi, MWj, mui, muj = symbols('MW_i, MW_j, mu_i, mu_j') # doctest: +SKIP
+    >>> f = (1 + sqrt(mui/muj)*(MWj/MWi)**Rational(1,4))**2 # doctest: +SKIP
+    >>> denom = sqrt(8*(1+MWi/MWj)) # doctest: +SKIP
+    >>> (expand(simplify(expand(f))/denom)) # doctest: +SKIP
+    mu_i*sqrt(MW_j/MW_i)/(mu_j*sqrt(8*MW_i/MW_j + 8)) + 2*(MW_j/MW_i)**(1/4)*sqrt(mu_i/mu_j)/sqrt(8*MW_i/MW_j + 8) + 1/sqrt(8*MW_i/MW_j + 8) # doctest: +SKIP
+
+    Examples
+    --------
+    >>> Wilke_prefactors([64.06, 46.07])
+    ([[0.25, 0.19392193320396522], [0.3179655106303118, 0.25]], [[0.5, 0.421161930934918], [0.5856226024677849, 0.5]], [[0.25, 0.22867110638055677], [0.2696470380083788, 0.25]])
+    >>> Wilke_prefactored([0.05, 0.95], [1.34E-5, 9.5029E-6], *Wilke_prefactors([64.06, 46.07]))
+    9.701614885866193e-06
+    '''
+    cmps = range(len(MWs))
+    MWs_inv = [1.0/MWi for MWi in MWs]
     phi_fact_invs = [[1.0/(8.0*(1.0 + MWs[i]*MWs_inv[j]))**0.5
                     for j in cmps] for i in cmps]
     
-    t0s = [[(MWs[j]*MWs_inv[i])**0.5
+    t0s = [[(MWs[j]*MWs_inv[i])**0.5*phi_fact_invs[i][j]
                     for j in cmps] for i in cmps]
     
-    phis = [[(1 + (mus[i]/mus[j])**0.5*(MWs[j]/MWs[i])**0.25)**2/(8*(1 + MWs[i]/MWs[j]))**0.5
+    t1s = [[2.0*(MWs[j]*MWs_inv[i])**0.25*phi_fact_invs[i][j]
                     for j in cmps] for i in cmps]
+    return t0s, t1s, phi_fact_invs
+
+def Wilke_prefactored(ys, mus, t0s, t1s, t2s):
+    r'''Calculates viscosity of a gas mixture according to
+    mixing rules in [1]_, using precomputed parameters.
+
+    .. math::
+        \eta_{mix} = \sum_{i=1}^n \frac{y_i \eta_i}{\sum_{j=1}^n y_j \phi_{ij}}
+
+    .. math::
+        \phi_{ij} = \frac{\mu_i}{\mu_j}t0_{i,j} + \sqrt{\frac{\mu_i}{\mu_j}}
+        t1_{i,j} + t2_{i,j}
+        
+    Parameters
+    ----------
+    ys : float
+        Mole fractions of gas components, [-]
+    mus : float
+        Gas viscosities of all components, [Pa*s]
+    t0s : list[list[float]]
+        First terms, [-]
+    t1s : list[list[float]]
+        Second terms, [-]
+    t2s : list[list[float]]
+        Third terms, [-]
+
+    Returns
+    -------
+    mug : float
+        Viscosity of gas mixture, [Pa*s]
+
+    Notes
+    -----
+    This equation is entirely dimensionless; all dimensions cancel.
+
+    See Also
+    --------
+    Wilke_prefactors
+    Wilke
+    Wilke_large
+
+    Examples
+    --------
+    >>> Wilke_prefactored([0.05, 0.95], [1.34E-5, 9.5029E-6], *Wilke_prefactors([64.06, 46.07]))
+    9.701614885866193e-06
+
+    References
+    ----------
+    .. [1] Wilke, C. R. "A Viscosity Equation for Gas Mixtures." The Journal of
+       Chemical Physics 18, no. 4 (April 1, 1950): 517-19. 
+       https://doi.org/10.1063/1.1747673.
+    '''
+    cmps = range(len(ys))
+    # 1/sqrt(mus)
+    mu_root_invs = [mui**-0.5 for mui in mus]
+    # sqrt(mus)
+    mu_roots = [mu_root_invs[i]*mus[i] for i in cmps]
+    # 1/mus
+    mus_inv = [mu_root_invs[i]*mu_root_invs[i] for i in cmps]
     
-    # Some publications show the denominator sum should not consider i ==j and have only the 
-    # mole fraction  but this reduces to that as phi[i][i] == 1
-    return sum([ys[i]*mus[i]/sum([ys[j]*phis[i][j] for j in cmps]) for i in cmps])
+    mu = 0.0
+    for i in cmps:
+        tot = 0.0
+        for j in cmps:
+            phiij = mus[i]*mus_inv[j]*t0s[i][j] + mu_roots[i]*mu_root_invs[j]*t1s[i][j] + t2s[i][j]
+            tot += ys[j]*phiij
+        mu += ys[i]*mus[i]/tot
+    return mu
+
+def Wilke_large(ys, mus, MWs):
+    r'''Calculates viscosity of a gas mixture according to
+    mixing rules in [1]_.
+    
+    This function is a slightly faster version of :obj:`Wilke`. It achieves its
+    extra speed by avoiding some checks, some powers, and by allocating less 
+    memory during the computation. For very large component vectors, this 
+    function should be called instead.
+
+    Parameters
+    ----------
+    ys : float
+        Mole fractions of gas components, [-]
+    mus : float
+        Gas viscosities of all components, [Pa*s]
+    MWs : float
+        Molecular weights of all components, [g/mol]
+
+    Returns
+    -------
+    mug : float
+        Viscosity of gas mixture, [Pa*s]
+
+    See Also
+    --------
+    Wilke_prefactors
+    Wilke_prefactored
+    Wilke
+
+    Examples
+    --------
+    >>> Wilke_large([0.05, 0.95], [1.34E-5, 9.5029E-6], [64.06, 46.07])
+    9.701614885866195e-06
+
+    References
+    ----------
+    .. [1] Wilke, C. R. "A Viscosity Equation for Gas Mixtures." The Journal of
+       Chemical Physics 18, no. 4 (April 1, 1950): 517-19. 
+       https://doi.org/10.1063/1.1747673.
+    '''
+    # For the cases where memory is sparse or not desired to be consumed
+    cmps = range(len(ys))
+    
+    # Compute the MW and assorted power vectors
+    MW_25_invs = [MWi**-0.25 for MWi in MWs]
+    MW_roots_invs = [i*i for i in MW_25_invs]
+    MW_invs = [i*i for i in MW_roots_invs]
+    MW_roots = [MWs[i]*MW_roots_invs[i] for i in cmps]
+    MW_25 = [MW_roots[i]*MW_25_invs[i] for i in cmps]
+    
+    # Compute the various viscosity powers
+    # 1/sqrt(mus)
+    mu_root_invs = [mui**-0.5 for mui in mus]
+    # sqrt(mus)
+    mu_roots = [mu_root_invs[i]*mus[i] for i in cmps]
+    # 1/mus
+    mus_inv = [mu_root_invs[i]*mu_root_invs[i] for i in cmps]
+
+    mu = 0.0
+    for i in cmps:
+        tot = 0.0
+        MWi = MWs[i]
+        MWs_root_invi = MW_roots_invs[i]
+        MW_25_invi = MW_25_invs[i]
+        for j in cmps:
+            phii_denom = (8.0*(1.0 + MWi*MW_invs[j]))**-0.5
+            phiij = phii_denom + phii_denom*(mus[i]*mus_inv[j]*MW_roots[j]*MWs_root_invi
+                                + mu_roots[i]*mu_root_invs[j]*2.0*MW_25[j]*MW_25_invi)
+            tot += ys[j]*phiij
+        mu += ys[i]*mus[i]/tot
+    return mu
+
 
 
 def Brokaw(T, ys, mus, MWs, molecular_diameters, Stockmayers):
@@ -2075,6 +2280,8 @@ class ViscosityGasMixture(MixtureProperty):
         self.ViscosityGases = ViscosityGases
         try:
             self.MW_roots = [i**0.5 for i in MWs]
+            MWs_inv = [1.0/MWi for MWi in MWs]
+            self.Wilke_t0s, self.Wilke_t1s, self.Wilke_t2s = Wilke_prefactors(MWs)
         except:
             pass
         self._correct_pressure_pure = correct_pressure_pure
@@ -2163,7 +2370,7 @@ class ViscosityGasMixture(MixtureProperty):
         elif method == HERNING_ZIPPERER:
             return Herning_Zipperer(zs, mus, None, self.MW_roots)
         elif method == WILKE:
-            return Wilke(zs, mus, self.MWs)
+            return Wilke_prefactored(zs, mus, self.Wilke_t0s, self.Wilke_t1s, self.Wilke_t2s)
         elif method == BROKAW:
             return Brokaw(T, zs, mus, self.MWs, self.molecular_diameters, self.Stockmayers)
         else:

@@ -2664,10 +2664,10 @@ class EOSGas(Phase):
         return P_max
     
     def mu(self):
-        try:
-            return self._mu
-        except AttributeError:
-            pass
+#        try:
+#            return self._mu
+#        except AttributeError:
+#            pass
         phase = self.eos_mix.phase
         if phase == 'g':
             mu = self.correlations.ViscosityGasMixture.mixture_property(self.T, self.P, self.zs, self.ws())
