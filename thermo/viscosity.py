@@ -696,7 +696,9 @@ class ViscosityLiquid(TPDependentProperty):
             elif T > self.best_fit_Tmax:
                 mu = (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
             else:
-                mu = horner(self.best_fit_coeffs, T)
+                mu = 0.0
+                for c in self.best_fit_coeffs:
+                    mu = mu*T + c
             mu = exp(mu)
         elif method in self.tabular_data:
             mu = self.interpolate(T, method)
@@ -988,7 +990,7 @@ class ViscosityLiquidMixture(MixtureProperty):
     def __init__(self, CASs=[], ViscosityLiquids=[], MWs=[], 
                  correct_pressure_pure=True):
         self.CASs = CASs
-        self.ViscosityLiquids = ViscosityLiquids
+        self.ViscosityLiquids = self.pure_objs = ViscosityLiquids
         self.MWs = MWs
         
         self._correct_pressure_pure = correct_pressure_pure
@@ -1010,6 +1012,7 @@ class ViscosityLiquidMixture(MixtureProperty):
         '''Set of all methods available for a given set of information;
         filled by :obj:`load_all_methods`.'''
         self.load_all_methods()
+        self.set_best_fit_coeffs()
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
@@ -1076,7 +1079,22 @@ class ViscosityLiquidMixture(MixtureProperty):
                     mu = obj.T_dependent_property(T)
                 mus.append(mu)
         else:
-            mus = [i.T_dependent_property(T) for i in self.ViscosityLiquids]
+            if self.locked:
+                best_fit_data = self.best_fit_data
+                Tmins, Tmaxs, coeffs = best_fit_data[0], best_fit_data[3], best_fit_data[6]
+                mus = []
+                for i in range(len(zs)):
+                    if T < Tmins[i]:
+                        mu = (T - Tmins[i])*best_fit_data[1][i] + best_fit_data[2][i]
+                    elif T > Tmaxs[i]:
+                        mu = (T - Tmaxs[i])*best_fit_data[4][i] + best_fit_data[5][i]
+                    else:
+                        mu = 0.0
+                        for c in coeffs[i]:
+                            mu = mu*T + c
+                    mus.append(exp(mu))
+            else:
+                mus = [i.T_dependent_property(T) for i in self.ViscosityLiquids]
         if method == MIXING_LOG_MOLAR:
             ln_mu = 0.0
             for i in range(len(zs)):
@@ -1676,7 +1694,9 @@ class ViscosityGas(TPDependentProperty):
             elif T > self.best_fit_Tmax:
                 mu = (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
             else:
-                mu = horner(self.best_fit_coeffs, T)
+                mu = 0.0
+                for c in self.best_fit_coeffs:
+                    mu = mu*T + c
         return mu
 
     def test_method_validity(self, T, method):
@@ -2286,7 +2306,7 @@ class ViscosityGasMixture(MixtureProperty):
         self.molecular_diameters = molecular_diameters
         self.Stockmayers = Stockmayers
         self.CASs = CASs
-        self.ViscosityGases = ViscosityGases
+        self.ViscosityGases = self.pure_objs = ViscosityGases
         try:
             self.MW_roots = [i**0.5 for i in MWs]
             MWs_inv = [1.0/MWi for MWi in MWs]
@@ -2312,6 +2332,8 @@ class ViscosityGasMixture(MixtureProperty):
         '''Set of all methods available for a given set of information;
         filled by :obj:`load_all_methods`.'''
         self.load_all_methods()
+        
+        self.set_best_fit_coeffs()
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
@@ -2372,7 +2394,22 @@ class ViscosityGasMixture(MixtureProperty):
                     mu = obj.T_dependent_property(T)
                 mus.append(mu)
         else:
-            mus = [i.T_dependent_property(T) for i in self.ViscosityGases]
+            if self.locked:
+                best_fit_data = self.best_fit_data
+                Tmins, Tmaxs, coeffs = best_fit_data[0], best_fit_data[3], best_fit_data[6]
+                mus = []
+                for i in range(len(zs)):
+                    if T < Tmins[i]:
+                        mu = (T - Tmins[i])*best_fit_data[1][i] + best_fit_data[2][i]
+                    elif T > Tmaxs[i]:
+                        mu = (T - Tmaxs[i])*best_fit_data[4][i] + best_fit_data[5][i]
+                    else:
+                        mu = 0.0
+                        for c in coeffs[i]:
+                            mu = mu*T + c
+                    mus.append(mu)
+            else:
+                mus = [i.T_dependent_property(T) for i in self.ViscosityGases]
         
         if method == SIMPLE:
             return mixing_simple(zs, mus)

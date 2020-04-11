@@ -2688,7 +2688,7 @@ class TDependentProperty(object):
 
     Designed to intelligently select which method to use at a given temperature,
     according to (1) selections made by the user specifying a list of ordered
-    method preferences and (2) by using a default list of prefered methods.
+    method preferences and (2) by using a default list of preferred methods.
 
     All methods should have defined criteria for determining if they are valid before
     calculation, i.e. a minimum and maximum temperature for coefficients to be
@@ -2847,7 +2847,7 @@ class TDependentProperty(object):
         Parameters
         ----------
         user_methods : str or list
-            Methods by name to be considered or prefered
+            Methods by name to be considered or preferred
         forced : bool, optional
             If True, only the user specified methods will ever be considered;
             if False other methods will be considered if no user methods
@@ -4392,7 +4392,20 @@ class MixtureProperty(object):
     TP_zs_ws_cached = (None, None, None, None)
     prop_cached = None
     _correct_pressure_pure = True
-
+    skip_validity_check = False
+    
+    def set_best_fit_coeffs(self):
+        if all(i.locked for i in self.pure_objs):
+            self.locked = True
+            pure_objs = self.pure_objs
+            self.best_fit_data = [[i.best_fit_Tmin for i in pure_objs],
+                               [i.best_fit_Tmin_slope for i in pure_objs],
+                               [i.best_fit_Tmin_value for i in pure_objs],
+                               [i.best_fit_Tmax for i in pure_objs],
+                               [i.best_fit_Tmax_slope for i in pure_objs],
+                               [i.best_fit_Tmax_value for i in pure_objs],
+                               [i.best_fit_coeffs for i in pure_objs]]
+    
     @property
     def correct_pressure_pure(self):
         return self._correct_pressure_pure
@@ -4478,7 +4491,7 @@ class MixtureProperty(object):
         if not self.user_methods and self.forced:
             raise Exception('Only user specified methods are considered when forced is True, but no methods were provided')
 
-        self.user_prefered_method = user_methods[0]
+        self.user_preferred_method = user_methods[0]
         # Remove previously selected methods
         self.method = None
         self.sorted_valid_methods = []
@@ -4594,6 +4607,8 @@ class MixtureProperty(object):
         '''
         if zs is None or ws is None:
             zs, ws = self._complete_zs_ws(zs, ws)
+        if self.skip_validity_check:
+            return self.calculate(T, P, zs, ws, self.user_preferred_method)
         # Optimistic track, with the already set method
 #        if self.method:
 #            # retest within range

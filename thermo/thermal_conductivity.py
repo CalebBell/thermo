@@ -1238,7 +1238,7 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
     def __init__(self, CASs=[], ThermalConductivityLiquids=[], MWs=[],
                  correct_pressure_pure=True):
         self.CASs = CASs
-        self.ThermalConductivityLiquids = ThermalConductivityLiquids
+        self.ThermalConductivityLiquids = self.pure_objs = ThermalConductivityLiquids
         self.MWs = MWs
         
         self._correct_pressure_pure = correct_pressure_pure
@@ -1260,6 +1260,8 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
         '''Set of all methods available for a given set of information;
         filled by :obj:`load_all_methods`.'''
         self.load_all_methods()
+        
+        self.set_best_fit_coeffs()
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
@@ -2793,7 +2795,7 @@ class ThermalConductivityGasMixture(MixtureProperty):
         self.Tbs = Tbs
         self.CASs = CASs
         self.ThermalConductivityGases = ThermalConductivityGases
-        self.ViscosityGases = ViscosityGases 
+        self.ViscosityGases = self.pure_objs = ViscosityGases 
 
         self._correct_pressure_pure = correct_pressure_pure                    
 
@@ -2814,6 +2816,8 @@ class ThermalConductivityGasMixture(MixtureProperty):
         '''Set of all methods available for a given set of information;
         filled by :obj:`load_all_methods`.'''
         self.load_all_methods()
+        
+        self.set_best_fit_coeffs()
 
 
     def load_all_methods(self):

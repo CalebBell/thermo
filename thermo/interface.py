@@ -1296,7 +1296,7 @@ class SurfaceTensionMixture(MixtureProperty):
         self.Tbs = Tbs
         self.Tcs = Tcs
         self.CASs = CASs
-        self.SurfaceTensions = SurfaceTensions
+        self.SurfaceTensions = self.pure_objs = SurfaceTensions
         self.VolumeLiquids = VolumeLiquids
         
         self._correct_pressure_pure = correct_pressure_pure
@@ -1318,6 +1318,8 @@ class SurfaceTensionMixture(MixtureProperty):
         '''Set of all methods available for a given set of information;
         filled by :obj:`load_all_methods`.'''
         self.load_all_methods()
+        
+        self.set_best_fit_coeffs()
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which

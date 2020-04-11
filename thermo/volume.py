@@ -1680,7 +1680,7 @@ class VolumeLiquidMixture(MixtureProperty):
         self.Zcs = Zcs
         self.omegas = omegas
         self.CASs = CASs
-        self.VolumeLiquids = VolumeLiquids
+        self.VolumeLiquids = self.pure_objs = VolumeLiquids
         
         self._correct_pressure_pure = correct_pressure_pure
 
@@ -1701,6 +1701,8 @@ class VolumeLiquidMixture(MixtureProperty):
         '''Set of all methods available for a given set of information;
         filled by :obj:`load_all_methods`.'''
         self.load_all_methods()
+        
+        self.set_best_fit_coeffs()
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
@@ -2237,7 +2239,7 @@ class VolumeGasMixture(MixtureProperty):
 
     def __init__(self, eos=None, CASs=[], VolumeGases=[], MWs=[]):
         self.CASs = CASs
-        self.VolumeGases = VolumeGases
+        self.VolumeGases = self.pure_objs = VolumeGases
         self.eos = eos
         self.MWs = MWs
 
@@ -2258,6 +2260,8 @@ class VolumeGasMixture(MixtureProperty):
         '''Set of all methods available for a given set of information;
         filled by :obj:`load_all_methods`.'''
         self.load_all_methods()
+        
+        self.set_best_fit_coeffs()
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
@@ -2628,7 +2632,7 @@ class VolumeSolidMixture(MixtureProperty):
 
     def __init__(self, CASs=[], VolumeSolids=[], MWs=[]):
         self.CASs = CASs
-        self.VolumeSolids = VolumeSolids
+        self.VolumeSolids = self.pure_objs = VolumeSolids
         self.MWs = MWs
 
         self.Tmin = 0
@@ -2649,6 +2653,8 @@ class VolumeSolidMixture(MixtureProperty):
         '''Set of all methods available for a given set of information;
         filled by :obj:`load_all_methods`.'''
         self.load_all_methods()
+        
+        self.set_best_fit_coeffs()
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
