@@ -49,6 +49,7 @@ base_specifications = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None,
                        'Hm': None, 'S': None, 'Sm': None, 'energy': None}
 
 class StreamArgs(object):
+    flashed = False
     def __add__(self, b):
         if not isinstance(b, StreamArgs):
             raise Exception('Adding to a StreamArgs requires that the other object '
@@ -1311,7 +1312,8 @@ first stream.' %self.IDs[i])
 
 
 class EquilibriumStream(EquilibriumState):
-
+    flashed = True
+    
     def __init__(self, flasher, zs=None, ws=None, Vfls=None, Vfgs=None,
                  ns=None, ms=None, Qls=None, Qgs=None, 
                  n=None, m=None, Q=None, 

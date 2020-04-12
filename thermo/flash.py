@@ -2582,7 +2582,8 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
 
 
 def solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var, 
-                       spec, iter_var, constants, correlations, last_conv=None):
+                       spec, iter_var, constants, correlations, last_conv=None,
+                       oscillation_detection=True):
     if iter_var == 'T':
         min_bound = Phase.T_MIN_FIXED
         max_bound = Phase.T_MAX_FIXED
@@ -2634,7 +2635,7 @@ def solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var,
         ytol = ytol/100
 
     _, phase, iterations, err = TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val=fixed_var_val, spec_val=spec_val, ytol=ytol,
-                                                   iter_var=iter_var, fixed_var=fixed_var, spec=spec, oscillation_detection=True,
+                                                   iter_var=iter_var, fixed_var=fixed_var, spec=spec, oscillation_detection=oscillation_detection,
                                                    minimum_progress=1e-4, maxiter=80, fprime=True,
                                                    bounded=True, min_bound=min_bound, max_bound=max_bound)
     T, P = phase.T, phase.P
@@ -6228,7 +6229,7 @@ class FlashPureVLS(FlashBase):
                             liquids[0].fluid == gas.fluid)
 
         self.VL_IG_activity = (len(liquids) == 1 and isinstance(liquids[0], GibbsExcessLiquid)
-                               and (gas.eos_class is IGMIX or isinstance(gas, IdealGas))
+                               and (isinstance(gas, IdealGas) or gas.eos_class is IGMIX)
                                 and len(solids) == 0)
 
         liquids_to_unique_liquids = []
@@ -6378,7 +6379,7 @@ class FlashPureVLS(FlashBase):
         elif self.VL_IG_activity:
             Tsat = self.correlations.VaporPressures[0].solve_prop_best_fit(P)
             sat_gas = self.gas.to_TP_zs(Tsat, P, zs)
-            sat_liq = self.liquids[0].to_TP_zs(Tsat, P, zs)
+            sat_liq = self.liquid.to_TP_zs(Tsat, P, zs)
             return Tsat, sat_liq, sat_gas, 0, 0.0
         else:
             Tsat = self.correlations.VaporPressures[0].solve_prop(P)
@@ -6446,9 +6447,9 @@ class FlashPureVLS(FlashBase):
             if 0.0 <= VF <= 1.0:
                 return VL_gas, [VL_liq], [], [VF, 1.0 - VF], flash_convergence
             elif VF < 0.0:
-                phases = [self.liquids[0], self.gas]
+                phases = [self.liquid, self.gas]
             else:
-                phases = [self.gas, self.liquids[0]]
+                phases = [self.gas, self.liquid]
         else:
             phases = self.phases
         solutions_1P = []
@@ -6463,7 +6464,8 @@ class FlashPureVLS(FlashBase):
         for phase in phases:
             try:                    
                 T, P, phase, iterations, err = solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var=fixed_var, 
-                                                                  spec=spec, iter_var=iter_var, constants=constants, correlations=correlations, last_conv=last_conv)
+                                                                  spec=spec, iter_var=iter_var, constants=constants, correlations=correlations, last_conv=last_conv,
+                                                                  oscillation_detection=cubic)
                 if cubic:
                     G = phase.G()
                     new = [T, phase, iterations, err, G]
@@ -6484,7 +6486,7 @@ class FlashPureVLS(FlashBase):
                             flash_convergence['iterations'] = iterations
                             return g, ls, [], [1.0], flash_convergence
                     else:
-                        if isinstance(phase, EOSGas):
+                        if isinstance(phase, (EOSGas, IdealGas)):
                             g, ls = phase, []
                         else:
                             g, ls = None, [phase]
@@ -6492,7 +6494,7 @@ class FlashPureVLS(FlashBase):
                         flash_convergence['iterations'] = iterations
                         return g, ls, [], [1.0], flash_convergence
                 else:
-                    if isinstance(phase, EOSGas):
+                    if isinstance(phase, (EOSGas, IdealGas)):
                         g, ls = phase, []
                     else:
                         g, ls = None, [phase]
