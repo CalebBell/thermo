@@ -1555,10 +1555,12 @@ class EquilibriumStream(EquilibriumState):
         the thermodynamic state of the system.
         '''
         specs = []
+        flash_specs = self.flash_specs
         for i, var in enumerate(('T', 'P', 'VF', 'H', 'S', 'energy')):
-            v = self.specs[i]
-            if v is not None:
-                specs.append((var, v))
+            if var in flash_specs:
+                v = flash_specs[var]
+                if v is not None:
+                    specs.append((var, v))
         return specs
 
     @property
