@@ -2367,6 +2367,14 @@ class EOSGas(Phase):
             return self.eos_mix.d2V_dT2_l
         
     d2V_dT2_P = d2V_dT2
+    
+    def dV_dzs(self):
+        eos_mix = self.eos_mix
+        try:
+            dV_dzs = self.eos_mix.dV_dzs(eos_mix.Z_g, eos_mix.zs)
+        except AttributeError:
+            dV_dzs = self.eos_mix.dV_dzs(eos_mix.Z_l, eos_mix.zs)
+        return dV_dzs
         
     def H(self):
         try:

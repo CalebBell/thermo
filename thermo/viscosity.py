@@ -37,6 +37,8 @@ __all__ = ['Dutt_Prasad', 'VN3_data', 'VN2_data', 'VN2E_data', 'Perrys2_313',
 'Brokaw', 
 'viscosity_index', 'viscosity_converter', 'ViscosityLiquidMixture', 
 'ViscosityGasMixture',
+
+'Lorentz_Bray_Clarke',
 'MIXING_LOG_MOLAR', 'MIXING_LOG_MASS',
 'BROKAW', 'HERNING_ZIPPERER', 'WILKE']
 
@@ -2450,7 +2452,110 @@ class ViscosityGasMixture(MixtureProperty):
         else:
             raise Exception('Method not valid')
 
+### Viscosity for Liquids or Gases
+            
+def Lorentz_Bray_Clarke(T, P, Vm, zs, MWs, Tcs, Pcs, Vcs):
+    r'''Calculates the viscosity of a gas or a liquid using the method of 
+    Lorentz, Bray, and Clarke [1]_. This method is not quite the same as the
+    original, but rather the form commonly presented and used today. The
+    original had a different formula for pressure correction for gases which
+    was tabular and not presented entirely in [1]_. However using that 
+    distinction introduces a discontinuity between the liquid and gas viscosity,
+    so it is not normally used.
 
+    .. math::
+        \mu [\text{centipoise}] = \mu_{\text{P low, Stiel-hThodos}} [\text{centipoise}]
+        + \frac{\text{poly}^4 - 0.0001}{\xi}
+        
+    .. math::
+        \text{poly} = (0.1023 + 0.023364 \rho_r + 0.058533\rho_r^2 
+            - 0.040758\rho_r^3 + 0.0093724\rho_r^4)
+
+    .. math::
+        \xi = T_c^{1/6} MW^{-1/2} (P_c\text{[atm]})^{-2/3}
+        
+    Parameters
+    ----------
+    T : float
+        Temperature of the fluid [K]
+    P : float
+        Pressure of the fluid [Pa]
+    Vm : float
+        Molar volume of the fluid at the actual conditions, [m^3/mol]
+    zs : list[float]
+        Mole fractions of chemicals in the fluid, [-]
+    MWs : list[float]
+        Molwcular weights of chemicals in the fluid [g/mol]
+    Tcs : float
+        Critical temperatures of chemicals in the fluid [K]
+    Pcs : float
+        Critical pressures of chemicals in the fluid [Pa]
+    Vcs : float
+        Critical molar volumes of chemicals in the fluid; these are often used
+        as tuning parameters, fit to match a pure component experimental
+        viscosity value [m^3/mol]
+
+    Returns
+    -------
+    mu : float
+        Viscosity of phase at actual conditions , [Pa*s]
+
+    Notes
+    -----
+    An example from [2]_ was implemented and checked for validation. Somewhat
+    different rounding is used in [2]_.
+    
+    The mixing of the pure component Stiel-Thodos viscosities happens with the
+    Herning-Zipperer mixing rule:
+    
+    .. math::
+        \mu = \frac{\sum x_i \mu_i \sqrt{MW_i}}{\sum x_i \sqrt{MW_i}}
+
+    Examples
+    --------
+    >>> mu = Lorentz_Bray_Clarke(T=300.0, P=1e6, Vm=0.0023025, zs=[.4, .3, .3],
+    ... MWs=[16.04246, 30.06904, 44.09562], Tcs=[190.564, 305.32, 369.83], 
+    ... Pcs=[4599000.0, 4872000.0, 4248000.0], Vcs=[9.86e-05, 0.0001455, 0.0002])
+    9.925488160761484e-06
+
+    References
+    ----------
+    .. [1] Lohrenz, John, Bruce G. Bray, and Charles R. Clark. "Calculating 
+       Viscosities of Reservoir Fluids From Their Compositions." Journal of 
+       Petroleum Technology 16, no. 10 (October 1, 1964): 1,171-1,176.
+       https://doi.org/10.2118/915-PA.
+    .. [2] Whitson, Curtis H., and Michael R. Brulé. Phase Behavior. Henry L. 
+       Doherty Memorial Fund of AIME, Society of Petroleum Engineers, 2000.
+    '''
+    Tc, Pc, Vc, MW = 0.0, 0.0, 0.0, 0.0
+    cmps = range(len(zs))
+    for i in cmps:
+        Tc += Tcs[i]*zs[i]
+        Pc += Pcs[i]*zs[i]
+        Vc += Vcs[i]*zs[i]
+        MW += MWs[i]*zs[i]
+
+    Pc = Pc/101325. # The `xi` parameter is defined using P in atmospheres
+    xi = Tc**(1.0/6.0)*MW**-0.5*Pc**(-2.0/3.0)
+    rhoc = 1.0/Vc # Molar pseudocritical density
+    rhom = 1.0/Vm
+    
+    rhor = rhom/rhoc    
+    # mu star is computed here
+    mus_low_gas = [Stiel_Thodos(T, Tcs[i], Pcs[i], MWs[i]) for i in cmps]
+    mu_low_gas = Herning_Zipperer(zs, mus_low_gas, MWs)
+    
+    # Polynomial - in horner form, validated
+    poly = rhor*(rhor*(rhor*(0.0093724*rhor - 0.040758) + 0.058533) + 0.023364) + 0.1023
+    
+    mu_low_gas *= 1e3 # Convert low-pressure viscosity to cP
+    
+    poly2 = poly*poly
+    mu = (mu_low_gas*xi + poly2*poly2 - 0.0001)/xi
+    return mu*1e-3 # Convert back from cP to Pa
+
+            
+            
 ### Misc functions
 
 

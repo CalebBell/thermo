@@ -27,7 +27,9 @@ from math import log, log10
 import numpy as np
 import pandas as pd
 from fluids.numerics import assert_close
-from thermo.utils import normalize
+from fluids.constants import psi, atm, foot, lb
+from fluids.core import R2K, F2K
+from thermo.utils import normalize, mixing_simple
 from thermo.viscosity import *
 from thermo.identifiers import checkCAS
 from thermo.viscosity import COOLPROP, LUCAS
@@ -289,6 +291,37 @@ def test_viscosity_index():
     assert 92 == viscosity_index(73.3E-6, 8.86E-6, rounding=True)
     assert None == viscosity_index(3E-6, 1.5E-6)
 
+
+def test_Lorentz_Bray_Clarke():
+    # Made up example
+    T = 300.0
+    P = 1e6
+    zs = [.4, .3, .3]
+    MWs = [16.04246, 30.06904, 44.09562]
+    Tcs = [190.564, 305.32, 369.83]
+    Pcs = [4599000.0, 4872000.0, 4248000.0]
+    Vcs = [9.86e-05, 0.0001455, 0.0002]
+    Vm = 0.002302491921416089
+    
+    mu = Lorentz_Bray_Clarke(T, P, Vm, zs, MWs, Tcs, Pcs, Vcs)
+    assert_close(mu, 9.925488946486405e-06, rtol=1e-6)    
+    
+    #  2,000 psig and 160°F.
+    zs = [0.875, 0.083, 0.021, 0.006, 0.008, 0.003, 0.002, 0.001, 0.001]
+    MWs = [16.04, 30.07, 44.09, 58.12, 58.12, 72.15, 72.15, 86.17, 114.00]
+    Pcs = [667.8*psi, 707.8*psi, 616.3*psi, 529.1*psi, 550.7*psi, 490.4*psi, 488.6*psi, 436.9*psi, 360.6*psi]
+    Tcs = [R2K(343.0), R2K(549.8), R2K(665.7), R2K(734.7), R2K(765.3), R2K(828.8), R2K(845.4), R2K(913.4), R2K(1023.9)]
+    Vcs = [1.590*foot**3/lb, 2.370*foot**3/lb, 3.250*foot**3/lb, 4.208*foot**3/lb, 4.080*foot**3/lb, 4.899*foot**3/lb, 4.870*foot**3/lb, 5.929*foot**3/lb, 7.882*foot**3/lb]
+    P = atm + 2000*psi
+    T = F2K(160.0)
+    
+    MW = mixing_simple(zs, MWs)
+    rho_mass = 6.74*lb/foot**3
+    rhom = rho_mass/MW 
+    Vm = 1.0/rhom
+    
+    mu = Lorentz_Bray_Clarke(T, P, Vm, zs, MWs, Tcs, Pcs, Vcs)
+    assert_close(mu, 1.636032602394696e-05)
 
 def test_viscosity_converter():
     # Barbey - todo viscosity_converter(95, 'barbey', 'parlin cup #7')
