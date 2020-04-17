@@ -827,6 +827,15 @@ def test_EOSGas_phis():
     assert_close(gas.G_phi_consistency(), 0, atol=1e-13)
     assert_close(gas.V_phi_consistency(), 0, atol=1e-13)
     assert_close(gas.V_from_phi(), gas.V(), rtol=1e-13)
+    
+    
+    # Volume mole number and mole fraction derivatives
+    assert_allclose(gas.dZ_dzs(), [-0.04617398831595753, -0.04699108820323984, -0.0392358074558725])
+    assert_allclose(gas.dZ_dns(), [-0.003992163312336275, -0.004809263199618587, 0.0029460175477487582])
+    assert_allclose(gas.dV_dzs(), [-0.0013993827945232515, -0.001424146423687046, -0.0011891091908125214])
+    assert_allclose(gas.dV_dns(), [-0.00012098943270793107, -0.0001457530618717256, 8.928417100279896e-05])
+
+
 
 def test_chemical_potential():
     T, P = 200.0, 1e5
@@ -1287,6 +1296,14 @@ def test_IdealGas_vs_IGMIX():
     
     assert_close(phase.d2V_dTdP(), phase_EOS.d2V_dTdP(), rtol=1e-11)
     assert_close(phase.d2V_dPdT(), phase_EOS.d2V_dPdT(), rtol=1e-11)
+
+    assert phase.dZ_dT() == 0.0
+    assert phase.dZ_dP() == 0.0
+    
+    assert_allclose(phase_EOS.dV_dzs(), [0.0, 0.0, 0.0], atol=0.0, rtol=0.0)
+    assert_allclose(phase_EOS.dZ_dzs(), [0.0, 0.0, 0.0], atol=0.0, rtol=0.0)
+    assert_allclose(phase_EOS.dV_dzs(), [0.0, 0.0, 0.0], atol=0.0, rtol=0.0)
+    assert_allclose(phase_EOS.dZ_dzs(), [0.0, 0.0, 0.0], atol=0.0, rtol=0.0)
     
     ### Derivatives of pressure
     assert_close(phase.dP_dV(), phase_EOS.dP_dV(), rtol=1e-11)

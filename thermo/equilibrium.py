@@ -100,10 +100,11 @@ class EquilibriumState(object):
 #                return [i*tot_inv for i in values]
             self.liquid_zs = normalize([sum([betas_liquids[j]*liquids[j].zs[i] for j in range(liquid_count)])
                                for i in self.cmps])
-            self.liquid_bulk = liquid_bulk = Bulk(T, P, self.liquid_zs, self.liquids, self.betas_liquids)
+            self.liquid_bulk = liquid_bulk = Bulk(T, P, self.liquid_zs, self.liquids, self.betas_liquids, 'l')
             liquid_bulk.result = self
             liquid_bulk.constants = constants
             liquid_bulk.correlations = correlations
+            liquid_bulk.settings = settings
             for i, l in enumerate(liquids):
                 setattr(self, 'liquid%d'%(i), l)
         elif liquid_count:
@@ -113,7 +114,7 @@ class EquilibriumState(object):
         if solids:
             self.solid_zs = normalize([sum([betas_solids[j]*solids[j].zs[i] for j in range(self.solid_count)])
                                for i in self.cmps])
-            self.solid_bulk = solid_bulk = Bulk(T, P, self.solid_zs, solids, self.betas_solids)
+            self.solid_bulk = solid_bulk = Bulk(T, P, self.solid_zs, solids, self.betas_solids, 's')
             solid_bulk.result = self
             solid_bulk.constants = constants
             solid_bulk.correlations = correlations
@@ -160,10 +161,78 @@ class EquilibriumState(object):
         return [betas[i]*MWs_phases[i]*tot_inv for i in phase_iter]
     
     @property
+    def betas_states(self):
+        return [self.beta_gas, sum(self.betas_liquids), sum(self.betas_solids)]
+    
+    @property
+    def betas_mass_states(self):
+        g_tot = l_tot = s_tot = 0.0
+        # Compute the mass fraction of the gas phase
+        gas, liquids, solids = self.gas, self.liquids, self.solids
+        beta_gas, betas_liquids, betas_solids = self.beta_gas, self.betas_liquids, self.betas_solids
+        gas_MW = gas.MW()
+        liq_MWs = [i.MW() for i in liquids]
+        solid_MWs = [i.MW() for i in solids]
+        
+        g_tot = gas_MW*beta_gas
+        for i in range(self.liquid_count):
+            l_tot += liq_MWs[i]*betas_liquids[i]
+        for i in range(self.solid_count):
+            s_tot += solid_MWs[i]*betas_solids[i]
+        tot = g_tot + l_tot + s_tot
+        tot = 1.0/tot
+
+        return [g_tot*tot, l_tot*tot, s_tot*tot]
+
+    @property
+    def betas_volume_states(self):
+        g_tot = l_tot = s_tot = 0.0
+        # Compute the mass fraction of the gas phase
+        gas, liquids, solids = self.gas, self.liquids, self.solids
+        beta_gas, betas_liquids, betas_solids = self.beta_gas, self.betas_liquids, self.betas_solids
+        gas_V = gas.V()
+        liq_Vs = [i.V() for i in liquids]
+        solid_Vs = [i.V() for i in solids]
+        
+        g_tot = gas_V*beta_gas
+        for i in range(self.liquid_count):
+            l_tot += liq_Vs[i]*betas_liquids[i]
+        for i in range(self.solid_count):
+            s_tot += solid_Vs[i]*betas_solids[i]
+        tot = g_tot + l_tot + s_tot
+        tot = 1.0/tot
+
+        return [g_tot*tot, l_tot*tot, s_tot*tot]
+
+    @property
+    def betas_mass_liquids(self):
+        phase_iter = range(self.liquid_count)
+        betas = self.betas_liquids
+        MWs_phases = [i.MW() for i in self.liquids]
+        tot = 0.0
+        for i in phase_iter:
+            tot += MWs_phases[i]*betas[i]
+        tot_inv = 1.0/tot
+        return [betas[i]*MWs_phases[i]*tot_inv for i in phase_iter]
+    
+
+    @property
     def betas_volume(self):
         phase_iter = range(self.phase_count)
         betas = self.betas
         Vs_phases = [i.V() for i in self.phases]
+        
+        tot = 0.0
+        for i in phase_iter:
+            tot += Vs_phases[i]*betas[i]
+        tot_inv = 1.0/tot
+        return [betas[i]*Vs_phases[i]*tot_inv for i in phase_iter]
+    
+    @property
+    def betas_volume_liquids(self):
+        phase_iter = range(self.liquid_count)
+        betas = self.betas_liquids
+        Vs_phases = [i.V() for i in self.liquids]
         
         tot = 0.0
         for i in phase_iter:
@@ -583,29 +652,29 @@ class EquilibriumState(object):
         return thermal_diffusivity(k=k, rho=rho, Cp=Cp)
 
     
-    def mu(self, phase=None):
-        if phase is None:
-            if self.phase_count == 1:
-                phase = self.phases[0]
-            else:
-                phase = None
-                for beta, p in zip(self.betas, self.phases):
-                    if beta == 1.0:
-                        phase = p
-                        break
-                if phase is None:
-                    phase = self.bulk
-        if phase is not self.bulk:
-            return phase.mu()
-        if isinstance(phase, gas_phases):
-            return self.correlations.ViscosityGasMixture.mixture_property(phase.T, phase.P, phase.zs, phase.ws())
-        elif isinstance(phase, liquid_phases):
-            return self.correlations.ViscosityLiquidMixture.mixture_property(phase.T, phase.P, phase.zs, phase.ws())
-        else:
-            raise NotImplementedError("no bulk methods")
+#    def mu(self, phase=None):
+#        if phase is None:
+#            if self.phase_count == 1:
+#                phase = self.phases[0]
+#            else:
+#                phase = None
+#                for beta, p in zip(self.betas, self.phases):
+#                    if beta == 1.0:
+#                        phase = p
+#                        break
+#                if phase is None:
+#                    phase = self.bulk
+#        if phase is not self.bulk:
+#            return phase.mu()
+#        if isinstance(phase, gas_phases):
+#            return self.correlations.ViscosityGasMixture.mixture_property(phase.T, phase.P, phase.zs, phase.ws())
+#        elif isinstance(phase, liquid_phases):
+#            return self.correlations.ViscosityLiquidMixture.mixture_property(phase.T, phase.P, phase.zs, phase.ws())
+#        else:
+#            raise NotImplementedError("no bulk methods")
             
     def nu(self, phase=None):
-        return self.mu(phase)/self.rho_mass(phase)
+        return self.mu()/self.rho_mass(phase)
     
     def k(self, phase=None):
         if phase is None:
@@ -1028,6 +1097,7 @@ bulk_props = ['V', 'Z', 'rho', 'Cp', 'Cv', 'H', 'S', 'U', 'G', 'A', 'dH_dT', 'dH
               'PIP', 'kappa', 'beta', 'Joule_Thomson', 'speed_of_sound',
               'speed_of_sound_mass',
               'U_dep', 'G_dep', 'A_dep', 'V_dep', 'V_iter',
+              'mu',
               ]
 
 for name in bulk_props:

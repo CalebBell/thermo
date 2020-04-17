@@ -346,6 +346,18 @@ class Phase(object):
                 r[j]*= fugacities_inv[i]
         return dlnfugacities_dns
 
+    def dlnfugacities_dzs(self):
+        zs, cmps = self.zs, self.cmps
+        fugacities = self.fugacities()
+        dlnfugacities_dzs = [list(i) for i in self.dfugacities_dzs()]
+        fugacities_inv = [1.0/fi for fi in fugacities]
+        for i in cmps:
+            r = dlnfugacities_dzs[i]
+            for j in cmps:
+                r[j]*= fugacities_inv[i]
+        return dlnfugacities_dzs
+
+
 
     def log_zs(self):
         try:
@@ -763,6 +775,16 @@ class Phase(object):
 
     def d2T_dVdP(self):
         return self.d2T_dPdV()
+
+    def dZ_dzs(self):
+        factor = self.P/(self.T*R)
+        return [dV*factor for dV in self.dV_dzs()]
+
+    def dZ_dns(self):
+        return dxs_to_dns(self.dZ_dzs(), self.zs)
+
+    def dV_dns(self):
+        return dxs_to_dns(self.dV_dzs(), self.zs)
 
     # Derived properties    
     def PIP(self):
@@ -1878,6 +1900,10 @@ class IdealGas(Phase):
     
     def dT_dV(self):
         return self.P*R_inv
+    
+    def dV_dzs(self):
+        return self.zeros1d
+
     
     d2T_dV2_P = d2T_dV2
     d2V_dT2_P = d2V_dT2

@@ -24,6 +24,8 @@ from __future__ import division
 __all__ = ['Bulk', 'BulkSettings', 'default_settings']
 
 from fluids.constants import R, R_inv, atm
+from fluids.two_phase_voidage import (McAdams, Beattie_Whalley, Cicchitti, 
+                                      Lin_Kwok, Fourar_Bories, Duckler, gas_liquid_viscosity)
 from thermo.utils import (log, exp, phase_identification_parameter,
                           isothermal_compressibility, isobaric_expansion,
                           Joule_Thomson, speed_of_sound)
@@ -51,8 +53,6 @@ DP_DT_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, EQUILIBRIUM_DERIVATIVE,
 
 DP_DV_METHODS = D2P_DV2_METHODS = D2P_DT2_METHODS = D2P_DTDV_METHODS = DP_DT_METHODS
 
-ViSCOSITY_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED]
-THERMAL_CONDUCTIVIVTY_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED]
 
 FROM_DERIVATIVE_SETTINGS = 'from derivative settings'
 
@@ -63,6 +63,59 @@ BETA_METHODS = [MOLE_WEIGHTED, EQUILIBRIUM_DERIVATIVE, FROM_DERIVATIVE_SETTINGS,
 KAPPA_METHODS = JT_METHODS = BETA_METHODS
 
 
+LOG_PROP_MOLE_WEIGHTED = 'log prop mole weighted'
+LOG_PROP_MASS_WEIGHTED = 'log prop mass weighted'
+LOG_PROP_VOLUME_WEIGHTED = 'log prop volume weighted'
+
+POWER_PROP_MOLE_WEIGHTED = 'power prop mole weighted'
+POWER_PROP_MASS_WEIGHTED = 'power prop mass weighted'
+POWER_PROP_VOLUME_WEIGHTED = 'power prop volume weighted'
+
+AS_ONE_LIQUID = 'as one liquid' # Calculate a transport property as if there was one liquid phase
+AS_ONE_GAS = 'as one gas' # Calculate a transport property as if there was one gas phase and liquids or solids
+
+MU_LL_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED,
+                 AS_ONE_LIQUID, 
+                 LOG_PROP_MOLE_WEIGHTED, LOG_PROP_MASS_WEIGHTED, LOG_PROP_VOLUME_WEIGHTED,
+                 POWER_PROP_MOLE_WEIGHTED, POWER_PROP_MASS_WEIGHTED, POWER_PROP_VOLUME_WEIGHTED
+                 ]
+
+BEATTIE_WHALLEY_MU_VL = 'Beattie Whalley'
+MCADAMS_MU_VL = 'McAdams'
+CICCHITTI_MU_VL = 'Cicchitti'
+LUN_KWOK_MU_VL = 'Lin Kwok'
+FOURAR_BORIES_MU_VL = 'Fourar Bories'
+DUCKLER_MU_VL = 'Duckler'
+
+MU_VL_CORRELATIONS = [BEATTIE_WHALLEY_MU_VL, MCADAMS_MU_VL, CICCHITTI_MU_VL,
+                      LUN_KWOK_MU_VL, FOURAR_BORIES_MU_VL, DUCKLER_MU_VL]
+MU_VL_CORRELATIONS_SET = set(MU_VL_CORRELATIONS)
+MU_VL_METHODS = MU_LL_METHODS + [AS_ONE_GAS] + MU_VL_CORRELATIONS
+
+K_LL_METHODS = MU_LL_METHODS
+
+ViSCOSITY_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED]
+THERMAL_CONDUCTIVIVTY_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED]
+
+
+__all__.extend(['MOLE_WEIGHTED', 'MASS_WEIGHTED', 'VOLUME_WEIGHTED', 
+                'LOG_PROP_MOLE_WEIGHTED', 'LOG_PROP_MASS_WEIGHTED', 'LOG_PROP_VOLUME_WEIGHTED',
+                'POWER_PROP_MOLE_WEIGHTED', 'POWER_PROP_MASS_WEIGHTED', 'POWER_PROP_VOLUME_WEIGHTED',
+                'AS_ONE_GAS', 'AS_ONE_LIQUID',
+                'BEATTIE_WHALLEY_MU_VL', 'MCADAMS_MU_VL','CICCHITTI_MU_VL', 
+                'LUN_KWOK_MU_VL', 'FOURAR_BORIES_MU_VL', 'DUCKLER_MU_VL',
+                ])
+
+mole_methods = set([MOLE_WEIGHTED, LOG_PROP_MOLE_WEIGHTED, POWER_PROP_MOLE_WEIGHTED])
+mass_methods = set([MASS_WEIGHTED, LOG_PROP_MASS_WEIGHTED, POWER_PROP_MASS_WEIGHTED])
+volume_methods = set([VOLUME_WEIGHTED, LOG_PROP_VOLUME_WEIGHTED, POWER_PROP_VOLUME_WEIGHTED])
+
+linear_methods = set([MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED])
+log_prop_methods = set([LOG_PROP_MOLE_WEIGHTED, LOG_PROP_MASS_WEIGHTED, LOG_PROP_VOLUME_WEIGHTED])
+prop_power_methods = set([POWER_PROP_MOLE_WEIGHTED, POWER_PROP_MASS_WEIGHTED, POWER_PROP_VOLUME_WEIGHTED])
+
+
+
 from thermo.phase_identification import VL_ID_PIP, S_ID_D2P_DVDT
 from thermo.phase_identification import DENSITY_MASS, PROP_SORT, WATER_NOT_SPECIAL
 
@@ -70,6 +123,9 @@ class BulkSettings(object):
     def __init__(self, dP_dT=MOLE_WEIGHTED, dP_dV=MOLE_WEIGHTED, 
                  d2P_dV2=MOLE_WEIGHTED, d2P_dT2=MOLE_WEIGHTED, 
                  d2P_dTdV=MOLE_WEIGHTED, mu=MASS_WEIGHTED, k=MASS_WEIGHTED,
+                 
+                 mu_LL=LOG_PROP_MASS_WEIGHTED, mu_LL_power_exponent=0.4,
+                 mu_VL=MCADAMS_MU_VL, mu_VL_power_exponent=0.4,
                  c=MOLE_WEIGHTED,
                  beta=MOLE_WEIGHTED, kappa=MOLE_WEIGHTED, JT=MOLE_WEIGHTED,
                  T_normal=288.15, P_normal=atm,
@@ -96,6 +152,11 @@ class BulkSettings(object):
         self.d2P_dT2 = d2P_dT2
         self.d2P_dTdV = d2P_dTdV
         self.mu = mu
+        self.mu_LL = mu_LL
+        self.mu_LL_power_exponent = mu_LL_power_exponent
+        self.mu_VL = mu_VL
+        self.mu_VL_power_exponent = mu_VL_power_exponent
+        
         self.k = k
         self.c = c
         self.T_normal = T_normal
@@ -138,7 +199,7 @@ class BulkSettings(object):
 default_settings = BulkSettings()
 
 class Bulk(Phase):
-    def __init__(self, T, P, zs, phases, phase_fractions):
+    def __init__(self, T, P, zs, phases, phase_fractions, state=None):
         self.T = T
         self.P = P
         self.zs = zs
@@ -146,6 +207,119 @@ class Bulk(Phase):
         self.phase_fractions = phase_fractions
         self.N = N = len(zs)
         self.cmps = range(N)
+        self.state = state
+
+    def mu(self):
+        try:
+            return self._mu
+        except AttributeError:
+            pass
+        phase_fractions = self.phase_fractions
+        phase_count = len(phase_fractions)
+        result = self.result
+        
+        if phase_count == 1:
+            self._mu = mu = self.phases[0].mu()
+            return mu
+        elif self.state == 'l' or self.result.gas is None:
+            # Multiple liquids - either a bulk liquid, or a result with no gases
+            method = self.settings.mu_LL
+            if method == AS_ONE_LIQUID:
+                mu = self.correlations.ViscosityLiquidMixture.mixture_property(self.T, self.P, self.zs, self.ws())
+            else:
+                mus = [i.mu() for i in self.phases]
+                if method in mole_methods:
+                    betas = self.phase_fractions
+                elif method in mass_methods:
+                    betas = self.betas_mass
+                elif method in volume_methods:
+                    betas = self.betas_volume
+                
+                mu = 0.0
+                if method in linear_methods:
+                    for i in range(len(self.phase_fractions)):
+                        mu += betas[i]*mus[i]
+                elif method in log_prop_methods:
+                    exponent = self.settings.mu_LL_power_exponent
+                    for i in range(len(self.phase_fractions)):
+                        mu += betas[i]*mus[i]**exponent
+                    mu = mu**(1.0/exponent)
+                elif method in log_prop_methods:
+                    for i in range(len(self.phase_fractions)):
+                        mu += betas[i]*log(mus[i])
+                    mu = exp(mu)
+            self._mu = mu
+            return mu
+        
+        
+        method = self.settings.mu_VL
+        if method == AS_ONE_LIQUID:
+            self._mu = mu = self.correlations.ViscosityLiquidMixture.mixture_property(self.T, self.P, self.zs, self.ws())
+            return mu
+        elif method == AS_ONE_GAS:
+            self._mu = mu = self.correlations.ViscosityGasMixture.mixture_property(self.T, self.P, self.zs, self.ws())
+            return mu
+        
+        mug = result.gas.mu()
+        if phase_count == 2:
+            mul = result.liquids[0].mu()
+        else:
+            mul = result.liquid_bulk.mu()
+            
+        if method in MU_VL_CORRELATIONS_SET:
+            x = result.betas_mass[0]
+            rhog = result.gas.rho_mass()
+            if phase_count == 2:
+                rhol = result.liquids[0].rho_mass()
+            else:
+                rhol = result.liquid_bulk.rho_mass()
+            
+            mu = gas_liquid_viscosity(x, mul, mug, rhol, rhog, Method=method)
+        else:
+            mus = [mug, mul]
+            if method in mole_methods:
+                VF = self.result.beta_gas
+                betas = [VF, 1.0 - VF]
+            elif method in mass_methods:
+                betas = self.betas_mass_states[:2]
+            elif method in volume_methods:
+                betas = self.betas_volume_states[:2]
+                
+            if method in linear_methods:
+                mu = betas[0]*mus[0] + betas[1]*mus[1]
+            elif method in log_prop_methods:
+                exponent = self.settings.mu_LL_power_exponent
+                mu = (betas[0]*mus[0]**exponent + betas[1]*mus[1]**exponent)**(1.0/exponent)
+            elif method in log_prop_methods:
+                mu = exp(betas[0]*log(mus[0]) + betas[1]*log(mus[1]))
+        self._mu = mu
+        return mu
+            
+            
+                
+    @property
+    def betas_mass(self):
+        betas = self.phase_fractions
+        phase_iter = range(len(betas))
+        MWs_phases = [i.MW() for i in self.phases]
+        tot = 0.0
+        for i in phase_iter:
+            tot += MWs_phases[i]*betas[i]
+        tot_inv = 1.0/tot
+        return [betas[i]*MWs_phases[i]*tot_inv for i in phase_iter]
+    
+    @property
+    def betas_volume(self):
+        betas = self.phase_fractions
+        phase_iter = range(len(betas))
+        Vs_phases = [i.V() for i in self.phases]
+        
+        tot = 0.0
+        for i in phase_iter:
+            tot += Vs_phases[i]*betas[i]
+        tot_inv = 1.0/tot
+        return [betas[i]*Vs_phases[i]*tot_inv for i in phase_iter]
+
 
     def MW(self):
         MWs = self.constants.MWs
