@@ -25,6 +25,7 @@ import pytest
 import numpy as np
 from thermo.utils import *
 from thermo.stream import Stream
+from fluids.numerics import assert_close, assert_close1d
 
 
 def test_to_num():

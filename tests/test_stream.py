@@ -23,13 +23,15 @@ SOFTWARE.'''
 from numpy.testing import assert_allclose
 from collections import OrderedDict
 import pytest
+from thermo.utils import OverspeficiedError
 from thermo.chemical import Chemical
 from thermo.mixture import Mixture
-from thermo.stream import Stream, StreamArgs
+from thermo.stream import Stream, StreamArgs, mole_balance
 import thermo
 from scipy.integrate import quad
 from math import *
 from fluids.constants import R
+from fluids.numerics import assert_close, assert_close1d
 
 
 def test_Stream():   
@@ -228,3 +230,334 @@ def test_StreamArgs():
     
     s = StreamArgs(T=540, P=1E6, n=2, ws=[.5, .5], IDs=['water', 'ethanol'])
     assert s.stream is not None
+
+def test_StreamArgs_flow_overspecified():
+    
+    with pytest.raises(OverspeficiedError):
+        StreamArgs(n=6, m=4)
+    with pytest.raises(OverspeficiedError):
+        StreamArgs(Q=4, m=4)
+    with pytest.raises(OverspeficiedError):
+        StreamArgs(Q=4, n=2)
+
+
+def test_StreamArgs_balance_ns():
+    f1 = StreamArgs(n=6, ns=[1,None, 4])
+    assert_close1d(f1.ns, [1, 1.0, 4])
+    
+    f1 = StreamArgs(n=6, ns=[None])
+    assert_close1d(f1.ns, [6])
+    
+    f1 = StreamArgs(n=6, ns=[1, None])
+    assert_close1d(f1.ns, [1, 5])
+    
+    f1 = StreamArgs(n=-6, ns=[-1, None])
+    assert_close1d(f1.ns, [-1, -5])
+    
+    f1 = StreamArgs(n=-6, ns=[-1, 2, None])
+    assert_close1d(f1.ns, [-1, 2, -7.0])
+
+    # Basic check that n_calc works
+    f1 = StreamArgs(ns=[3, 2, 5])
+    assert_close(f1.n_calc, 10)
+    
+    # Check that all can be specified without an error
+    f1 = StreamArgs(n=10, ns=[3, 2, 5])
+
+    # Check that the value can indeed differ, but that a stricter check works
+    
+    f1 = StreamArgs(n=10*(1+5e-16), ns=[3, 2, 5])
+    with pytest.raises(ValueError):
+        f1.reconcile_flows(n_tol=3e-16)
+
+def test_StreamArgs_balance_ms():
+    f1 = StreamArgs(m=6, ms=[1,None, 4])
+    assert_close1d(f1.ms, [1, 1.0, 4])
+    
+    f1 = StreamArgs(m=6, ms=[None])
+    assert_close1d(f1.ms, [6])
+    
+    f1 = StreamArgs(m=6, ms=[1, None])
+    assert_close1d(f1.ms, [1, 5])
+    
+    f1 = StreamArgs(m=-6, ms=[-1, None])
+    assert_close1d(f1.ms, [-1, -5])
+    
+    f1 = StreamArgs(m=-6, ms=[-1, 2, None])
+    assert_close1d(f1.ms, [-1, 2, -7.0])
+
+    # Basic check that m_calc works
+    f1 = StreamArgs(ms=[3, 2, 5])
+    assert_close(f1.m_calc, 10)
+    
+    # Check that all cam be specified without an error
+    f1 = StreamArgs(m=10, ms=[3, 2, 5])
+
+    # Check that the value can indeed differ, but that a stricter check works
+    
+    f1 = StreamArgs(m=10*(1+5e-16), ms=[3, 2, 5])
+    with pytest.raises(ValueError):
+        f1.reconcile_flows(m_tol=3e-16)
+
+def test_mole_balance_forward():
+    # First test case - solve for an outlet ns
+    
+    f0 = StreamArgs(ns=[1,2,3,4])
+    f1 = StreamArgs(n=5, zs=[.5, 0, 0, .5])
+    p0 = StreamArgs()
+    progress = mole_balance([f0, f1], [p0], compounds=4)
+    assert progress
+    p0_ns_expect = [3.5, 2.0, 3.0, 6.5]
+    assert_allclose(p0.ns, p0_ns_expect)
+    progress = mole_balance([f0, f1], [p0], compounds=4)
+    assert not progress
+    
+    # Second test case - solve for an outlet ns with two outlets
+    f0 = StreamArgs(ns=[1,2,3,4])
+    f1 = StreamArgs(n=5, zs=[.5, 0, 0, .5])
+    p0 = StreamArgs()
+    p1 = StreamArgs(n=1, zs=[.25, .25, .25, .25])
+    progress = mole_balance([f0, f1], [p0, p1], compounds=4)
+    
+    p0_ns_expect = [3.25, 1.75, 2.75, 6.25]
+    assert_allclose(p0.ns, p0_ns_expect)
+    
+    progress = mole_balance([f0, f1], [p0, p1], compounds=4)
+    assert not progress
+    
+    # Third test case - solve for an outlet ns with three outlets, p1 unknown
+    f0 = StreamArgs(ns=[1,2,3,4])
+    f1 = StreamArgs(n=5, zs=[.5, 0, 0, .5])
+    p0 = StreamArgs(n=1, zs=[.25, .25, .25, .25])
+    p1 = StreamArgs()
+    p2 = StreamArgs(n=1, zs=[.5, .5, .5, .5])
+    progress = mole_balance([f0, f1], [p0, p1, p2], compounds=4)
+    
+    assert progress
+    p1_ns_expect = [2.75, 1.25, 2.25, 5.75]
+    assert_allclose(p1.ns, p1_ns_expect)
+    
+    progress = mole_balance([f0, f1], [p0, p1, p2], compounds=4)
+    assert not progress
+    
+    # Fourth test case - solve for an outlet ns with three outlets, p1 unknown, negative flows
+    f0 = StreamArgs(ns=[1,2,3,4])
+    f1 = StreamArgs(n=5, zs=[.5, 0, 0, .5])
+    p0 = StreamArgs(n=1, zs=[.25, .25, .25, .25])
+    p1 = StreamArgs()
+    p2 = StreamArgs(n=1, zs=[-50, .5, 50, -50])
+    progress = mole_balance([f0, f1], [p0, p1, p2], compounds=4)
+    
+    assert progress
+    p1_ns_expect = [53.25, 1.25, -47.25, 56.25]
+    assert_allclose(p1.ns, p1_ns_expect)
+    
+    progress = mole_balance([f0, f1], [p0, p1, p2], compounds=4)
+    assert not progress
+    
+    # Fifth test - do component balances at end
+    f0 = StreamArgs(ns=[1, 2, 3, None])
+    f1 = StreamArgs(ns=[3, 5, 9, 3])
+    p0 = StreamArgs(ns=[None, None, None, 5])
+    progress = mole_balance([f0, f1], [p0], compounds=4)
+    
+    assert progress
+    f0_ns_expect = [1, 2, 3, 2]
+    f1_ns_expect = [3, 5, 9, 3]
+    p0_ns_expect = [4, 7, 12, 5]
+    assert_allclose(p0.ns, p0_ns_expect)
+    assert_allclose(f0.ns, f0_ns_expect)
+    assert_allclose(f1.ns, f1_ns_expect)
+    
+    progress = mole_balance([f0, f1], [p0], compounds=4)
+    assert not progress
+    
+    # Six test - can only solve some specs not all specs
+    f0 = StreamArgs(ns=[1, None, 3, None])
+    f1 = StreamArgs(ns=[None, 5, 9, 3])
+    p0 = StreamArgs(ns=[4, None, None, 5])
+    progress = mole_balance([f0, f1], [p0], compounds=4)
+    
+    assert progress
+    f0_ns_expect = [1, None, 3, 2]
+    f1_ns_expect = [3, 5, 9, 3]
+    p0_ns_expect = [4, None, 12, 5]
+    assert_close1d(p0.ns, p0_ns_expect)
+    assert_close1d(f0.ns, f0_ns_expect)
+    assert_close1d(f1.ns, f1_ns_expect)
+    
+    progress = mole_balance([f0, f1], [p0], compounds=4)
+    assert not progress
+
+    # 7th random test
+    f0 = StreamArgs(ns=[1, 2, 3, 4])
+    f1 = StreamArgs(ns=[None, None, None, None])
+    p0 = StreamArgs(ns=[0, 6, 7, 9])
+    progress = mole_balance([p0], [f0, f1], compounds=4)
+    
+    assert progress
+    assert_close1d(p0.ns, [0, 6, 7, 9])
+    assert_close1d(f0.ns,[1, 2, 3, 4])
+    assert_close1d(f1.ns, [-1.0, 4.0, 4.0, 5.0])
+    
+    progress = mole_balance([p0], [f0, f1], compounds=4)
+    assert not progress
+
+    # 8th test, mole balance at end
+    f0 = StreamArgs(ns=[1, 2, 3, 4])
+    f1 = StreamArgs()
+    f2 = StreamArgs(n=5)
+    p0 = StreamArgs(ns=[0, 6, 7, 9])
+    progress = mole_balance([f0, f1, f2], [p0], compounds=4)
+    assert progress
+    ns_expect = [10, 7.0, 5, 22]
+    ns_now = [f0.n_calc, f1.n_calc, f2.n_calc, p0.n_calc]
+    assert_close1d(ns_expect, ns_now)
+    
+    f0.ns, f1.ns, f2.ns, p0.ns, ()
+    
+    progress = mole_balance([f0, f1, f2], [p0], compounds=4)
+    assert not progress
+
+    # 9th test, mole balance at end goes nowhere
+    f0 = StreamArgs(ns=[1, 2, 3, 4])
+    f1 = StreamArgs()
+    f2 = StreamArgs()
+    p0 = StreamArgs(ns=[0, 6, 7, 9])
+    progress = mole_balance([f0, f1, f2], [p0], compounds=4)
+    assert not progress
+    ns_expect = [10, None, None, 22]
+    ns_now = [f0.n_calc, f1.n_calc, f2.n_calc, p0.n_calc]
+    assert_close1d(ns_expect, ns_now)
+
+
+
+def test_mole_balance_backward():
+    # THESE ARE ALL THE SAME TEST CASES - JUST SWITCH WHICH in/out LIST IS GIVEN AS INLET/OUTLET
+
+    # First test case - solve for an outlet ns
+    f0 = StreamArgs(ns=[1,2,3,4])
+    f1 = StreamArgs(n=5, zs=[.5, 0, 0, .5])
+    p0 = StreamArgs()
+    progress = mole_balance([p0], [f0, f1], compounds=4)
+    assert progress
+    p0_ns_expect = [3.5, 2.0, 3.0, 6.5]
+    assert_allclose(p0.ns, p0_ns_expect)
+    progress = mole_balance([p0], [f0, f1], compounds=4)
+    assert not progress
+    
+    # Second test case - solve for an outlet ns with two outlets
+    f0 = StreamArgs(ns=[1,2,3,4])
+    f1 = StreamArgs(n=5, zs=[.5, 0, 0, .5])
+    p0 = StreamArgs()
+    p1 = StreamArgs(n=1, zs=[.25, .25, .25, .25])
+    progress = mole_balance([p0, p1], [f0, f1], compounds=4)
+    
+    p0_ns_expect = [3.25, 1.75, 2.75, 6.25]
+    assert_allclose(p0.ns, p0_ns_expect)
+    
+    progress = mole_balance([p0, p1], [f0, f1], compounds=4)
+    assert not progress
+    
+    # Third test case - solve for an outlet ns with three outlets, p1 unknown
+    f0 = StreamArgs(ns=[1,2,3,4])
+    f1 = StreamArgs(n=5, zs=[.5, 0, 0, .5])
+    p0 = StreamArgs(n=1, zs=[.25, .25, .25, .25])
+    p1 = StreamArgs()
+    p2 = StreamArgs(n=1, zs=[.5, .5, .5, .5])
+    progress = mole_balance([p0, p1, p2], [f0, f1], compounds=4)
+    
+    assert progress
+    p1_ns_expect = [2.75, 1.25, 2.25, 5.75]
+    assert_allclose(p1.ns, p1_ns_expect)
+    
+    progress = mole_balance([p0, p1, p2], [f0, f1], compounds=4)
+    assert not progress
+    
+    # Fourth test case - solve for an outlet ns with three outlets, p1 unknown, negative flows
+    f0 = StreamArgs(ns=[1,2,3,4])
+    f1 = StreamArgs(n=5, zs=[.5, 0, 0, .5])
+    p0 = StreamArgs(n=1, zs=[.25, .25, .25, .25])
+    p1 = StreamArgs()
+    p2 = StreamArgs(n=1, zs=[-50, .5, 50, -50])
+    progress = mole_balance([p0, p1, p2], [f0, f1], compounds=4)
+    
+    assert progress
+    p1_ns_expect = [53.25, 1.25, -47.25, 56.25]
+    assert_allclose(p1.ns, p1_ns_expect)
+    
+    progress = mole_balance( [p0, p1, p2], [f0, f1], compounds=4)
+    assert not progress
+    
+    # Fifth test - do component balances at end
+    f0 = StreamArgs(ns=[1, 2, 3, None])
+    f1 = StreamArgs(ns=[3, 5, 9, 3])
+    p0 = StreamArgs(ns=[None, None, None, 5])
+    progress = mole_balance([p0], [f0, f1], compounds=4)
+    
+    assert progress
+    f0_ns_expect = [1, 2, 3, 2]
+    f1_ns_expect = [3, 5, 9, 3]
+    p0_ns_expect = [4, 7, 12, 5]
+    assert_allclose(p0.ns, p0_ns_expect)
+    assert_allclose(f0.ns, f0_ns_expect)
+    assert_allclose(f1.ns, f1_ns_expect)
+    
+    progress = mole_balance([p0], [f0, f1], compounds=4)
+    assert not progress
+    
+    # Six test - can only solve some specs not all specs
+    f0 = StreamArgs(ns=[1, None, 3, None])
+    f1 = StreamArgs(ns=[None, 5, 9, 3])
+    p0 = StreamArgs(ns=[4, None, None, 5])
+    progress = mole_balance([p0], [f0, f1], compounds=4)
+    
+    assert progress
+    f0_ns_expect = [1, None, 3, 2]
+    f1_ns_expect = [3, 5, 9, 3]
+    p0_ns_expect = [4, None, 12, 5]
+    assert_close1d(p0.ns, p0_ns_expect)
+    assert_close1d(f0.ns, f0_ns_expect)
+    assert_close1d(f1.ns, f1_ns_expect)
+    
+    progress = mole_balance([p0], [f0, f1], compounds=4)
+    assert not progress
+    
+    # 7th random test
+    f0 = StreamArgs(ns=[1, 2, 3, 4])
+    f1 = StreamArgs(ns=[None, None, None, None])
+    p0 = StreamArgs(ns=[0, 6, 7, 9])
+    progress = mole_balance([f0, f1], [p0], compounds=4)
+    
+    assert progress
+    assert_close1d(p0.ns, [0, 6, 7, 9])
+    assert_close1d(f0.ns,[1, 2, 3, 4])
+    assert_close1d(f1.ns, [-1.0, 4.0, 4.0, 5.0])
+    
+    progress = mole_balance([f0, f1], [p0], compounds=4)
+    assert not progress
+
+    # 8th test, mole balance at end
+    f0 = StreamArgs(ns=[1, 2, 3, 4])
+    f1 = StreamArgs()
+    f2 = StreamArgs(n=5)
+    p0 = StreamArgs(ns=[0, 6, 7, 9])
+    progress = mole_balance([p0], [f0, f1, f2], compounds=4)
+    assert progress
+    ns_expect = [10, 7.0, 5, 22]
+    ns_now = [f0.n_calc, f1.n_calc, f2.n_calc, p0.n_calc]
+    assert_close1d(ns_expect, ns_now)
+    
+    progress = mole_balance([p0], [f0, f1, f2], compounds=4)
+    assert not progress
+    
+    # 9th test, mole balance at end goes nowhere
+    f0 = StreamArgs(ns=[1, 2, 3, 4])
+    f1 = StreamArgs()
+    f2 = StreamArgs()
+    p0 = StreamArgs(ns=[0, 6, 7, 9])
+    progress = mole_balance([p0], [f0, f1, f2], compounds=4)
+    assert not progress
+    ns_expect = [10, None, None, 22]
+    ns_now = [f0.n_calc, f1.n_calc, f2.n_calc, p0.n_calc]
+    assert_close1d(ns_expect, ns_now)

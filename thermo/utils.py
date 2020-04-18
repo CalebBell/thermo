@@ -41,7 +41,7 @@ __all__ = ['isobaric_expansion', 'isothermal_compressibility',
 'phase_select_property', 'TDependentProperty', 
 'TPDependentProperty', 'MixtureProperty', 'allclose_variable', 'horner', 
 'polylog2', 'v_to_v_molar', 'v_molar_to_v', 'TrivialSolutionError',
-'PhaseCountReducedError']
+'PhaseCountReducedError', 'OverspeficiedError']
 
 import os
 from cmath import sqrt as csqrt
@@ -2635,8 +2635,6 @@ def solve_flow_composition_mix(Fs, zs, ws, MWs):
     return Fs, zs, ws
 
 
-
-
 def assert_energy_balance(inlets, outlets, energy_inlets, energy_outlets, 
                           rtol=1E-9, atol=0.0, reactive=False):
     try:
@@ -5176,6 +5174,11 @@ class MultiCheb1D(object):
             c1 = tmp + c1*x2
         return c0 + c1*x
 
+
+class OverspeficiedError(Exception):
+    '''Generic error to raise when multiple values are given, when only
+    one option should be given.
+    '''
 
 
 class TrivialSolutionError(Exception):

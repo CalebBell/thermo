@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['Stream', 'EnergyTypes', 'EnergyStream', 'StreamArgs', 'EquilibriumStream']
+__all__ = ['Stream', 'EnergyTypes', 'EnergyStream', 'StreamArgs', 'EquilibriumStream', 'mole_balance']
  
 import enum
 from copy import copy, deepcopy
@@ -31,6 +31,7 @@ from numbers import Number
 
 from thermo.utils import R
 from thermo.utils import property_molar_to_mass, property_mass_to_molar, solve_flow_composition_mix
+from thermo.utils import OverspeficiedError
 from thermo.utils import mixing_simple, normalize, Vfs_to_zs, ws_to_zs
 from thermo.mixture import Mixture, preprocess_mixture_composition
 from thermo.equilibrium import EquilibriumState
@@ -230,7 +231,23 @@ class StreamArgs(object):
                 self.specifications.update(args)
             else:
                 self.specifications['zs'] = arg
-
+    
+    @property
+    def zs_calc(self):
+        zs = self.specifications['zs']
+        if zs is not None:
+            if self.single_composition_basis:
+                return zs
+            else:
+                if None not in zs:
+                    return zs
+                return None
+        ns = self.specifications['ns']
+        if ns is not None:
+            if self.single_composition_basis:
+                return normalize(ns)
+        return None
+    
     @property
     def ws(self):
         return self.specifications['ws']
@@ -290,6 +307,24 @@ class StreamArgs(object):
                 self.specifications.update(args)
             else:
                 self.specifications['ns'] = arg
+
+    @property
+    def ns_calc(self):
+        ns = self.specifications['ns']
+        if ns is not None:
+            if self.single_composition_basis:
+                return ns
+            else:
+                if None not in ns:
+                    return ns
+                return None
+        n = self.specifications['n']
+        if n is not None:
+            zs = self.zs_calc
+            if zs is not None:
+                return [n*zi for zi in zs]
+        return None
+
     @property
     def ms(self):
         return self.specifications['ms']
@@ -360,6 +395,27 @@ class StreamArgs(object):
             args = {'ns': None, 'ms': None, 'Qls': None, 'Qgs': None,
                     'n': arg, 'm': None, 'Q': None}
             self.specifications.update(args)
+
+    @property
+    def n_calc(self):
+        n = self.specifications['n']
+        if n is not None:
+            return n
+        ns = self.specifications['ns']
+        if ns is not None and None not in ns:
+            return sum(ns)
+        return None
+
+    @property
+    def m_calc(self):
+        m = self.specifications['m']
+        if m is not None:
+            return m
+        ms = self.specifications['ms']
+        if ms is not None and None not in ms:
+            return sum(ms)
+        return None
+
     
     @property
     def Q(self):
@@ -466,7 +522,8 @@ class StreamArgs(object):
             state_specs += 1
             
         if flow_specs > 1:
-            raise ValueError("Flow specification is overspecified")
+            self.reconcile_flows()
+#            raise ValueError("Flow specification is overspecified")
         if composition_specs > 1 and single_composition_basis:
             raise ValueError("Composition specification is overspecified")
         if state_specs > 2:
@@ -491,7 +548,63 @@ class StreamArgs(object):
 #        self.n = n
 #        self.Q = Q
 #        self.energy = energy
+    
+    def reconcile_flows(self, n_tol=2e-15, m_tol=2e-15):
+        s = self.specifications
+        n, m, Q = s['n'], s['m'], s['Q']
+        overspecified = False
+        if n is not None:
+            if m is not None:
+                raise OverspeficiedError("Flow specification is overspecified: n=%g, m=%g" %(n, m))
+            elif Q is not None:
+                raise OverspeficiedError("Flow specification is overspecified: n=%g, Q=%g" %(n, Q))
+        elif m is not None and Q is not None:
+            raise OverspeficiedError("Flow specification is overspecified: m=%g, Q=%g" %(m, Q))
+        
+        ns, zs, ms, ws = s['ns'], s['zs'], s['ms'], s['ws']
+        if n is not None and ns is not None:
+            calc = 0.0
+            missing = 0
+            missing_idx = None
+            for i in range(len(ns)):
+                if ns[i] is None:
+                    missing += 1
+                    missing_idx = i
+                else:
+                    calc += ns[i]
+            if missing == 0:
+                if abs((calc - n)/n) > n_tol:
+                    raise ValueError("Flow specification is overspecified and inconsistent")
+            elif missing == 1:
+                ns[missing_idx] = n - calc
+        
+        if m is not None and ms is not None:
+            calc = 0.0
+            missing = 0
+            missing_idx = None
+            for i in range(len(ms)):
+                if ms[i] is None:
+                    missing += 1
+                    missing_idx = i
+                else:
+                    calc += ms[i]
+            if missing == 0:
+                if abs((calc - m)/m) > m_tol:
+                    raise ValueError("Flow specification is overspecified and inconsistent")
+            elif missing == 1:
+                ms[missing_idx] = m - calc
+        if (zs is not None or ns is not None) and (ws is not None or ms is not None) and (m is not None or n is not None or ns is not None or ms is not None):
+            # We need the MWs
+            try:
+                MWs = self
+            except:
+                return False
             
+            
+#            # Do our best to compute mole flows of everything
+#            if ns is not None:
+#                pass
+                
     
     @property
     def composition_spec(self):       
@@ -1616,4 +1729,150 @@ class EnergyStream(object):
         if not (Q is None or isinstance(Q, (float, int, Number))):
             raise Exception('Energy stream flow rate is not a flow rate')
         self.Q = Q
+
+
+
+def mole_balance(inlets, outlets, compounds):
+    inlet_count = len(inlets)
+    outlet_count = len(outlets)
+    
+    in_unknown_count = out_unknown_count = 0
+    in_unknown_idx = out_unknown_idx = None
+    ns_in, ns_out = [], []
+    all_ns_in, all_ns_out = [], []
+    all_in_known = all_out_known = True
+    
+    for i in range(inlet_count):
+        f = inlets[i]
+        ns = f.ns
+        if f.ns is None:
+            ns = f.ns_calc
+        if ns is None or None in ns:
+            all_in_known = False
+            in_unknown_count += 1
+            in_unknown_idx = i
+        all_ns_in.append(ns)
+    
+    if all_in_known:
+        inlet_ns = [] # List of all molar flows in; set only when everything in is known
+        for j in range(compounds):
+            v = 0.0
+            for i in range(inlet_count):
+                v += all_ns_in[i][j]
+            inlet_ns.append(v)
+            
+    # To be produced by copy/paste and replacing "in" with "out" only:
+    # "in([a-zA-Z_\.])"  for out\1
+    for i in range(outlet_count):
+        f = outlets[i]
+        ns = f.ns
+        if f.ns is None:
+            ns = f.ns_calc
+        if ns is None or None in ns:
+            all_out_known = False
+            out_unknown_count += 1
+            out_unknown_idx = i
+        all_ns_out.append(ns)
+    
+    if all_out_known:
+        outlet_ns = []
+        for j in range(compounds):
+            v = 0.0
+            for i in range(outlet_count):
+                v += all_ns_out[i][j]
+            outlet_ns.append(v)
+    
+    if out_unknown_count == 1 and in_unknown_count == 0:
+        if outlet_count == 1:
+            out_ns_calc = [i for i in inlet_ns]
+        else:
+            out_ns_calc = [inlet_ns[i] - sum(all_ns_out[j][i] for j in range(outlet_count) if (all_ns_out[j] and all_ns_out[j][i] is not None))
+                           for i in range(compounds)]
+        
+        outlets[out_unknown_idx].ns = out_ns_calc
+        return True
+    if in_unknown_count == 1 and out_unknown_count == 0:
+        if inlet_count == 1:
+            in_ns_calc = [i for i in outlet_ns]
+        else:
+            in_ns_calc = [outlet_ns[i] - sum(all_ns_in[j][i] for j in range(inlet_count) if (all_ns_in[j] and all_ns_in[j][i] is not None))
+                           for i in range(compounds)]
+        
+        inlets[in_unknown_idx].ns = in_ns_calc
+        return True
+    elif in_unknown_count == 0 and out_unknown_count == 0:
+        return False # Nothing to do - everything is known        
+    
+    progress = False
+    # For each component, see if only one stream is missing it
+    for j in range(compounds):
+        in_missing, idx_missing = None, None
+        missing_count = 0
+        v = 0
+        for i in range(inlet_count):
+            ns = all_ns_in[i]
+            if ns is None or ns[j] is None:
+                missing_count += 1
+                in_missing, idx_missing = True, i
+            else:
+                v += ns[j]
+        for i in range(outlet_count):
+            ns = all_ns_out[i]
+            if ns is None or ns[j] is None:
+                missing_count += 1
+                in_missing, idx_missing = False, i
+            else:
+                v -= ns[j]
+        if missing_count == 1:
+            progress = True
+            if in_missing:
+                inlets[idx_missing].specifications['ns'][j] = -v
+            else:
+                outlets[idx_missing].specifications['ns'][j] = v
+
+    if progress:
+        return progress
+
+    # Try a total mole balance
+    n_in_missing_count = 0
+    if all_in_known:
+        n_in = sum(inlet_ns)
+    else:
+        n_in_missing_idx = None
+        n_in = 0.0
+        for i in range(inlet_count):
+            f = inlets[i]
+            n = f.specifications['n']
+            if n is None:
+                n = f.n_calc
+            if n is None:
+                n_in_missing_count += 1
+                n_in_missing_idx = i
+            else:
+                n_in += n
+    
+    n_out_missing_count = 0
+    if all_out_known:
+        n_out = sum(outlet_ns)
+    else:
+        n_out_missing_idx = None
+        n_out = 0.0
+        for i in range(outlet_count):
+            f = outlets[i]
+            n = f.specifications['n']
+            if n is None:
+                n = f.n_calc
+            if n is None:
+                n_out_missing_count += 1
+                n_out_missing_idx = i
+            else:
+                n_out += n
+        
+    if n_out_missing_count == 0 and n_in_missing_count == 1:
+        inlets[n_in_missing_idx].specifications['n'] = n_out - n_in
+        progress = True
+    if n_in_missing_count == 0 and n_out_missing_count == 1:
+        outlets[n_out_missing_idx].specifications['n'] = n_in - n_out
+        progress = True
+    return progress
 
