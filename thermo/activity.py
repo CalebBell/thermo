@@ -2012,6 +2012,8 @@ def Rachford_Rice_solution_LN2(zs, Ks, guess=None):
     '''
     Kmin = min(Ks)
     Kmax = max(Ks)
+#    if Kmax < 1.0 or Kmin > 1.0:
+#        raise ValueError("Bad K values")
     z_of_Kmax = zs[Ks.index(Kmax)]
     
     one_m_Kmin = 1.0 - Kmin

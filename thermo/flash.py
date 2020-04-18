@@ -5713,24 +5713,21 @@ class FlashVLN(FlashVL):
         Ks = liquid_phis = self.liquid0.phis_at(T, P, zs)
 #        Ks = [liquid_phis[i]/gas_phis[i] for i in self.cmps]
         try:
-            VF, xs, ys = flash_inner_loop(zs, Ks)
-        except Exception as e:
-            try:
-                VF, xs, ys = flash_inner_loop(zs, Ks, check=True)
-            except PhaseCountReducedError:
-                K_low, K_high = False, False
-                for zi, Ki in zip(zs, Ks):
-                    if zi != 0.0:
-                        if Ki > 1.0:
-                            K_high = True
-                        else:
-                            K_low = True
-                if K_low and not K_high:
-                    VF = -0.5
-                elif K_high and not K_low:
-                    VF = 1.5
-                else:
-                    raise ValueError(e)
+            VF, xs, ys = flash_inner_loop(zs, Ks, check=True)
+        except PhaseCountReducedError:
+            K_low, K_high = False, False
+            for zi, Ki in zip(zs, Ks):
+                if zi != 0.0:
+                    if Ki > 1.0:
+                        K_high = True
+                    else:
+                        K_low = True
+            if K_low and not K_high:
+                VF = -0.5
+            elif K_high and not K_low:
+                VF = 1.5
+            else:
+                raise ValueError("Error")
                 
         if VF > 1.0:
             return None, [self.gas.to(T=T, P=P, zs=zs)], [], one_in_list, empty_flash_conv

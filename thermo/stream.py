@@ -1426,9 +1426,15 @@ class EquilibriumStream(EquilibriumState):
         if S_mass is not None:
             S = property_mass_to_molar(S_mass, MW)
         if energy is not None:
-            # Handle the various mole flows - converting to get energy
-            pass
-        
+            # Handle the various mole flows - converting to get energy; subset for now
+            if m is not None:
+                n = property_molar_to_mass(m, MW)  # m*10000/MW
+            elif ns is not None:
+                n = sum(ns)
+            elif ms is not None:
+                n = property_molar_to_mass(sum(ms), MW)
+            H = energy/n
+
         if existing_flash is not None:
             self.__dict__.update(existing_flash)
         else:
@@ -1453,7 +1459,6 @@ class EquilibriumStream(EquilibriumState):
                         V = flasher.liquids[0].to(T=Q_TP[0], P=Q_TP[1], zs=zs).V()
                     elif Q_TP[-1] == 'g':
                         V = flasher.gas.to(T=Q_TP[0], P=Q_TP[1], zs=zs).V()
-                    
                 else:
                     V = self.V()
                 n = Q/V
