@@ -2526,11 +2526,11 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
                     else:
                         zs2.append(zs[i])
                         Ks2.append(Ks[i])
-                    V_over_F, xs, ys =  flash_inner_loop(zs2, Ks2, Method=Method, limit=limit, guess=guess, check=True)
-                    for idx in zero_indexes:
-                        xs.insert(idx, 0.0)
-                        ys.insert(idx, 0.0)
-                    return V_over_F, xs, ys
+                V_over_F, xs, ys = flash_inner_loop(zs2, Ks2, Method=Method, limit=limit, guess=guess, check=True)
+                for idx in zero_indexes:
+                    xs.insert(idx, 0.0)
+                    ys.insert(idx, 0.0)
+                return V_over_F, xs, ys
         return Rachford_Rice_solution_trace(zs, Ks, guess)
 
     if Method == FLASH_INNER_LN2:

@@ -24,9 +24,12 @@ from numpy.testing import assert_allclose
 import pytest
 from fluids.numerics import derivative, assert_close, jacobian, hessian
 
+from copy import deepcopy, copy
 from thermo.chemical_package import ChemicalConstantsPackage, PropertyCorrelationPackage
 from thermo import Chemical, Mixture
 from math import *
+from thermo.equilibrium import *
+from thermo.bulk import *
 from thermo.phases import *
 from thermo.eos_mix import *
 from thermo.eos import *
@@ -669,6 +672,95 @@ def test_GibbsExcessLiquid_dHS_dT_low():
     assert_allclose(liquid.dS_dT(), 5.899836993871634, rtol=1e-11)
     assert_allclose(liquid.dH_dT(), 94.45999277445732, rtol=1e-7)
 
+def test_GibbsExcessLiquid_at_methods():
+    constants = ChemicalConstantsPackage(Tcs=[508.1, 536.2, 512.5], Pcs=[4700000.0, 5330000.0, 8084000.0], omegas=[0.309, 0.21600000000000003, 0.5589999999999999],
+                                         MWs=[58.07914, 119.37764000000001, 32.04186], CASs=['67-64-1', '67-66-3', '67-56-1'], names=['acetone', 'chloroform', 'methanol'])
+    
+    HeatCapacityGases = [HeatCapacityGas(best_fit=(200.0, 1000.0, [-1.3320002425347943e-21, 6.4063345232664645e-18, -1.251025808150141e-14, 1.2265314167534311e-11, -5.535306305509636e-09, -4.32538332013644e-08, 0.0010438724775716248, -0.19650919978971002, 63.84239495676709])),
+     HeatCapacityGas(best_fit=(200.0, 1000.0, [1.5389278550737367e-21, -8.289631533963465e-18, 1.9149760160518977e-14, -2.470836671137373e-11, 1.9355882067011222e-08, -9.265600540761629e-06, 0.0024825718663005762, -0.21617464276832307, 48.149539665907696])),
+     HeatCapacityGas(best_fit=(50.0, 1000.0, [2.3511458696647882e-21, -9.223721411371584e-18, 1.3574178156001128e-14, -8.311274917169928e-12, 4.601738891380102e-10, 1.78316202142183e-06, -0.0007052056417063217, 0.13263597297874355, 28.44324970462924]))]
+    VolumeLiquids = [VolumeLiquid(best_fit=(178.51, 498.1, [6.564241965071999e-23, -1.6568522275506375e-19, 1.800261692081815e-16, -1.0988731296761538e-13, 4.118691518070104e-11, -9.701938804617744e-09, 1.4022905458596618e-06, -0.00011362923883050033, 0.0040109650220160956])),
+                    VolumeLiquid(best_fit=(209.63, 509.5799999999999, [2.034047306563089e-23, -5.45567626310959e-20, 6.331811062990084e-17, -4.149759318710192e-14, 1.6788970104955462e-11, -4.291900093120011e-09, 6.769385838271721e-07, -6.0166473220815445e-05, 0.0023740769479069054])),
+                    VolumeLiquid(best_fit=(175.7, 502.5, [3.5725079384600736e-23, -9.031033742820083e-20, 9.819637959370411e-17, -5.993173551565636e-14, 2.2442465416964825e-11, -5.27776114586072e-09, 7.610461006178106e-07, -6.148574498547711e-05, 0.00216398089328537])),]
+    
+    VaporPressures = [VaporPressure(best_fit=(178.51, 508.09000000000003, [-1.3233111115238975e-19, 4.2217134794609376e-16, -5.861832547132719e-13, 4.6488594950801467e-10, -2.3199079844570237e-07, 7.548290741523459e-05, -0.015966705328994194, 2.093003523977292, -125.39006100979816])),
+                      VaporPressure(best_fit=(207.15, 536.4, [-8.714046553871422e-20, 2.910491615051279e-16, -4.2588796020294357e-13, 3.580003116042944e-10, -1.902612144361103e-07, 6.614096470077095e-05, -0.01494801055978542, 2.079082613726621, -130.24643185169472])),
+                      VaporPressure(best_fit=(175.7, 512.49, [-1.446088049406911e-19, 4.565038519454878e-16, -6.278051259204248e-13, 4.935674274379539e-10, -2.443464113936029e-07, 7.893819658700523e-05, -0.016615779444332356, 2.1842496316772264, -134.19766175812708]))]
+    
+    # With Poy, no phis sat
+    liquid = GibbsExcessLiquid(VaporPressures=VaporPressures, VolumeLiquids=VolumeLiquids, 
+                     HeatCapacityGases=HeatCapacityGases, use_Poynting=True,
+                     use_phis_sat=False)
+    liq2 = liquid.to(T=285.5, P=1e4, zs=[0.2, 0.0, 0.8])
+    
+    assert_allclose(liq2.Psats(), liquid.Psats_at(285.5), rtol=1e-12)
+    assert_allclose(liq2.dPsats_dT(), liquid.dPsats_dT_at(285.5), rtol=1e-12)
+    
+    assert_allclose(liq2.Vms_sat(), liquid.Vms_sat_at(285.5), rtol=1e-12)
+    assert_allclose(liq2.dVms_sat_dT(), liquid.dVms_sat_dT_at(285.5), rtol=1e-12)
+    
+    assert_allclose(liq2.phis_sat(), liquid.phis_sat_at(285.5), rtol=1e-12)
+    assert_allclose(liq2.dphis_sat_dT(), liquid.dphis_sat_dT_at(285.5), rtol=1e-12)
+    
+    assert_allclose(liq2.gammas(), liquid.gammas_at(285.5, [0.2, 0.0, 0.8]), rtol=1e-12)
+    assert_allclose(liq2.dgammas_dT(), liquid.dgammas_dT_at(285.5, [0.2, 0.0, 0.8]), rtol=1e-12)
+    
+    assert_allclose(liq2.Poyntings(), liquid.Poyntings_at(285.5, 1e4), rtol=1e-12)
+    assert_allclose(liq2.dPoyntings_dT(), liquid.dPoyntings_dT_at(285.5, 1e4), rtol=1e-12)
+    
+    assert_allclose(liq2.phis(), liquid.phis_at(285.5, 1e4, [0.2, 0.0, 0.8]), rtol=1e-12)
+    assert_allclose(liq2.dphis_dT(), liquid.dphis_dT_at(285.5, 1e4, [0.2, 0.0, 0.8]), rtol=1e-12)
+
+    # Without Poy, with phis sat
+    eoss = [PR(Tc=constants.Tcs[i], Pc=constants.Pcs[i], omega=constants.omegas[i], T=300, P=1e5) for i in range(3)]
+    
+    liquid = GibbsExcessLiquid(VaporPressures=VaporPressures, VolumeLiquids=VolumeLiquids, 
+                 HeatCapacityGases=HeatCapacityGases, use_Poynting=False,
+                 eos_pure_instances=eoss, use_phis_sat=True)
+    liq2 = liquid.to(T=285.5, P=1e4, zs=[0.2, 0.0, 0.8])
+    
+    assert_allclose(liq2.Psats(), liquid.Psats_at(285.5), rtol=1e-12)
+    assert_allclose(liq2.dPsats_dT(), liquid.dPsats_dT_at(285.5), rtol=1e-12)
+    
+    assert_allclose(liq2.Vms_sat(), liquid.Vms_sat_at(285.5), rtol=1e-12)
+    assert_allclose(liq2.dVms_sat_dT(), liquid.dVms_sat_dT_at(285.5), rtol=1e-12)
+    
+    assert_allclose(liq2.phis_sat(), liquid.phis_sat_at(285.5), rtol=1e-12)
+    assert_allclose(liq2.dphis_sat_dT(), liquid.dphis_sat_dT_at(285.5), rtol=1e-12)
+    
+    assert_allclose(liq2.gammas(), liquid.gammas_at(285.5, [0.2, 0.0, 0.8]), rtol=1e-12)
+    assert_allclose(liq2.dgammas_dT(), liquid.dgammas_dT_at(285.5, [0.2, 0.0, 0.8]), rtol=1e-12)
+    
+    assert_allclose(liq2.Poyntings(), liquid.Poyntings_at(285.5, 1e4), rtol=1e-12)
+    assert_allclose(liq2.dPoyntings_dT(), liquid.dPoyntings_dT_at(285.5, 1e4), rtol=1e-12)
+    
+    assert_allclose(liq2.phis(), liquid.phis_at(285.5, 1e4, [0.2, 0.0, 0.8]), rtol=1e-12)
+    assert_allclose(liq2.dphis_dT(), liquid.dphis_dT_at(285.5, 1e4, [0.2, 0.0, 0.8]), rtol=1e-12)
+
+    # With poy and phi sat
+    liquid = GibbsExcessLiquid(VaporPressures=VaporPressures, VolumeLiquids=VolumeLiquids, 
+                 HeatCapacityGases=HeatCapacityGases, use_Poynting=True,
+                 eos_pure_instances=eoss, use_phis_sat=True)
+    liq2 = liquid.to(T=285.5, P=1e4, zs=[0.2, 0.0, 0.8])
+    
+    assert_allclose(liq2.Psats(), liquid.Psats_at(285.5), rtol=1e-12)
+    assert_allclose(liq2.dPsats_dT(), liquid.dPsats_dT_at(285.5), rtol=1e-12)
+    
+    assert_allclose(liq2.Vms_sat(), liquid.Vms_sat_at(285.5), rtol=1e-12)
+    assert_allclose(liq2.dVms_sat_dT(), liquid.dVms_sat_dT_at(285.5), rtol=1e-12)
+    
+    assert_allclose(liq2.phis_sat(), liquid.phis_sat_at(285.5), rtol=1e-12)
+    assert_allclose(liq2.dphis_sat_dT(), liquid.dphis_sat_dT_at(285.5), rtol=1e-12)
+    
+    assert_allclose(liq2.gammas(), liquid.gammas_at(285.5, [0.2, 0.0, 0.8]), rtol=1e-12)
+    assert_allclose(liq2.dgammas_dT(), liquid.dgammas_dT_at(285.5, [0.2, 0.0, 0.8]), rtol=1e-12)
+    
+    assert_allclose(liq2.Poyntings(), liquid.Poyntings_at(285.5, 1e4), rtol=1e-12)
+    assert_allclose(liq2.dPoyntings_dT(), liquid.dPoyntings_dT_at(285.5, 1e4), rtol=1e-12)
+    
+    assert_allclose(liq2.phis(), liquid.phis_at(285.5, 1e4, [0.2, 0.0, 0.8]), rtol=1e-12)
+    assert_allclose(liq2.dphis_dT(), liquid.dphis_dT_at(285.5, 1e4, [0.2, 0.0, 0.8]), rtol=1e-12)
+
 
 
 def test_EOSGas_phis():
@@ -1209,6 +1301,95 @@ def test_viscosity_thermal_conductivity():
     phase.correlations = correlations
     assert_close(phase.mu(), 0.00028727346628185633, rtol=1e-7)
     assert_close(phase.k(), 0.15487898658770405, rtol=1e-7)
+    
+def test_viscosity_bulk():
+    T, P = 298.15, 1e5
+    zs = [.25, 0.7, .05]
+    #m = Mixture(['butanol', 'water', 'ethanol'], zs=zs)
+    
+    constants = ChemicalConstantsPackage(Tcs=[563.0, 647.14, 514.0], Pcs=[4414000.0, 22048320.0, 6137000.0],
+                                         omegas=[0.59, 0.344, 0.635], MWs=[74.1216, 18.01528, 46.06844], 
+                                         CASs=['71-36-3', '7732-18-5', '64-17-5'])
+    correlations = PropertyCorrelationPackage(constants=constants,
+                                            HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [-3.787200194613107e-20, 1.7692887427654656e-16, -3.445247207129205e-13, 3.612771874320634e-10, -2.1953250181084466e-07, 7.707135849197655e-05, -0.014658388538054169, 1.5642629364740657, -7.614560475001724])),
+                                            HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
+                                            HeatCapacityGas(best_fit=(50.0, 1000.0, [-1.162767978165682e-20, 5.4975285700787494e-17, -1.0861242757337942e-13, 1.1582703354362728e-10, -7.160627710867427e-08, 2.5392014654765875e-05, -0.004732593693568646, 0.5072291035198603, 20.037826650765965])),],
+    ViscosityGases=[ViscosityGas(best_fit=(390.65, 558.9, [4.166385860107714e-29, -1.859399624586853e-25, 3.723945144634823e-22, -4.410000193606962e-19, 3.412270901850386e-16, -1.7666632565075753e-13, 5.266250837132718e-11, 1.8202807683935545e-08, -3.7907568022643496e-07])),
+        ViscosityGas(best_fit=(273.16, 1073.15, [-1.1818252575481647e-27, 6.659356591849417e-24, -1.5958127917299133e-20, 2.1139343137119052e-17, -1.6813187290802144e-14, 8.127448028541097e-12, -2.283481528583874e-09, 3.674008403495927e-07, -1.9313694390100466e-05])),
+        ViscosityGas(best_fit=(300.0, 513.9, [2.7916394465461813e-24, -9.092375280175391e-21, 1.2862968526545343e-17, -1.032039387901207e-14, 5.13487008660069e-12, -1.6219017947521426e-09, 3.1752760767848214e-07, -3.51903254465602e-05, 0.0016941391616918362])),],
+    ViscosityLiquids=[ViscosityLiquid(best_fit=(190.0, 391.9, [1.8379049563136273e-17, -4.5666126233131545e-14, 4.9414486397781785e-11, -3.042378423089263e-08, 1.166244931040138e-05, -0.0028523723735774113, 0.4352378275340892, -37.99358630363772, 1456.8338572042996])),
+        ViscosityLiquid(best_fit=(273.17, 647.086, [-3.2967840446295976e-19, 1.083422738340624e-15, -1.5170905583877102e-12, 1.1751285808764222e-09, -5.453683174592268e-07, 0.00015251508129341616, -0.024118558027652552, 1.7440690494170135, -24.96090630337129])),
+        ViscosityLiquid(best_fit=(159.11, 514.7, [-2.0978513357499417e-18, 4.812669873819701e-15, -4.572016638774548e-12, 2.299873746519043e-09, -6.408737804647756e-07, 8.908272738941156e-05, -0.002254199305798619, -0.8783232122373867, 74.74147552003194])),],
+    ThermalConductivityGases=[ThermalConductivityGas(best_fit=(390.65, 558.9, [1.303338742188738e-26, -5.948868042722525e-23, 1.2393384322893673e-19, -1.5901481819379786e-16, 1.4993659486913432e-13, -1.367840742416352e-10, 1.7997602278525846e-07, 3.5456258123020795e-06, -9.803647813554084e-05])),
+        ThermalConductivityGas(best_fit=(273.16, 1073.15, [5.970987011074381e-24, -3.418727248605031e-20, 8.361744776811236e-17, -1.1380580431686535e-13, 9.399464593896363e-11, -4.811324545387991e-08, 1.4926199157586262e-05, -0.0024894865249832244, 0.18241710799965744])),
+        ThermalConductivityGas(best_fit=(300.0, 513.9, [-3.819572650075608e-20, 1.2584433383834293e-16, -1.8028677611780213e-13, 1.4665239736298113e-10, -7.406796299708538e-08, 2.3779007046303544e-05, -0.0047378686896172376, 0.5356260682733641, -26.29932866898386])),],
+    ThermalConductivityLiquids=[ThermalConductivityLiquid(best_fit=(390.65, 558.9, [-1.7703926719478098e-31, 5.532831178371296e-28, -7.157706109850407e-25, 4.824017093238245e-22, -1.678132299010268e-19, 1.8560214447222824e-17, 6.274769714658382e-15, -0.00020340000228224661, 0.21360000021862866])),
+        ThermalConductivityLiquid(best_fit=(273.16, 633.15, [6.552132522239823e-22, 3.0910916499614477e-18, -1.3957213337852534e-14, 2.092315700432526e-11, -1.6430543524434563e-08, 7.537748900819338e-06, -0.0020488791608887155, 0.30941988236478873, -19.636420494232954])),
+        ThermalConductivityLiquid(best_fit=(300.0, 513.9, [3.163888320633998e-17, -9.958408690033226e-14, 1.3643427085172672e-10, -1.062661463758585e-07, 5.1465666844943694e-05, -0.01587057865495585, 3.0431818575297354, -331.75594088517596, 15743.665383950109])),])
+    eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
+    
+    gas = EOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = EOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
+    
+    from thermo.bulk import default_settings
+    settings = deepcopy(default_settings)
+    settings.mu_LL_power_exponent = 0.4 # keep test value away from the default
+    settings.mu_LL = MOLE_WEIGHTED    
+
+    T_VLL = 361.0
+    VLL_betas = [0.027939322463013245, 0.6139152961492603, 0.35814538138772645]
+    VLL_zs_gas = [0.23840099709086618, 0.5786839935180893, 0.18291500939104433]
+    VLL_zs_l0 = [7.619975052238078e-05, 0.9989622883894993, 0.0009615118599781685]
+    VLL_zs_l1 = [0.6793120076703765, 0.19699746328631032, 0.12369052904331329]
+    gas_VLL = gas.to(T=T_VLL, P=P, zs=VLL_zs_gas)
+    l0_VLL = liq.to(T=T_VLL, P=P, zs=VLL_zs_l0)
+    l1_VLL = liq.to(T=T_VLL, P=P, zs=VLL_zs_l1)        
+
+    VLL_kwargs = dict(T=T_VLL, P=P, zs=zs, 
+                     gas=gas_VLL, liquids=[l0_VLL, l1_VLL], solids=[], betas=VLL_betas,
+                     flash_specs=None, flash_convergence=None,
+                     constants=constants, correlations=correlations, flasher=None,
+                     settings=settings)
+    settings.mu_LL = MOLE_WEIGHTED
+    mu = EquilibriumState(**VLL_kwargs).liquid_bulk.mu()
+    assert_close(mu, 0.0003908502185898114, rtol=1e-7)
+    
+    settings.mu_LL = MASS_WEIGHTED
+    mu = EquilibriumState(**VLL_kwargs).liquid_bulk.mu()
+    assert_close(mu, 0.00046383995637156665, rtol=1e-7)
+    
+    settings.mu_LL = VOLUME_WEIGHTED
+    mu = EquilibriumState(**VLL_kwargs).liquid_bulk.mu()
+    assert_close(mu, 0.00046843592978167614, rtol=1e-7)
+    
+    settings.mu_LL = AS_ONE_LIQUID
+    mu = EquilibriumState(**VLL_kwargs).liquid_bulk.mu()
+    assert_close(mu, 0.00038988367711175094, rtol=1e-7)
+    
+    settings.mu_LL = LOG_PROP_MOLE_WEIGHTED
+    mu = EquilibriumState(**VLL_kwargs).liquid_bulk.mu()
+    assert_close(mu, 0.0004854919332334303, rtol=1e-7)
+    
+    settings.mu_LL = LOG_PROP_MASS_WEIGHTED
+    mu = EquilibriumState(**VLL_kwargs).liquid_bulk.mu()
+    assert_close(mu, 0.0004514558084667009, rtol=1e-7)
+    
+    settings.mu_LL = LOG_PROP_VOLUME_WEIGHTED
+    mu = EquilibriumState(**VLL_kwargs).liquid_bulk.mu()
+    assert_close(mu, 0.00045640924901149454, rtol=1e-7)
+    
+    settings.mu_LL = POWER_PROP_MOLE_WEIGHTED
+    mu = EquilibriumState(**VLL_kwargs).liquid_bulk.mu()
+    assert_close(mu, 0.00036764158762373324, rtol=1e-7)
+    
+    settings.mu_LL = POWER_PROP_MASS_WEIGHTED
+    mu = EquilibriumState(**VLL_kwargs).liquid_bulk.mu()
+    assert_close(mu, 0.0004565646191601886, rtol=1e-7)
+    
+    settings.mu_LL = POWER_PROP_VOLUME_WEIGHTED
+    mu = EquilibriumState(**VLL_kwargs).liquid_bulk.mu()
+    assert_close(mu, 0.0004613915227881627, rtol=1e-7)
+
     
     
 def test_phase_with_constants():

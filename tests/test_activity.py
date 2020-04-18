@@ -1158,3 +1158,13 @@ def test_Rachford_Rice_polynomial_solution_VFs():
     Ks = [2.5250, 0.7708, 1.0660, 0.2401, 0.3140]
     VF =  Rachford_Rice_solution_polynomial(zs, Ks)[0]
     assert_allclose(VF, 0.5247206476383832)
+
+
+def test_check_flash_inner():
+    VF, xs, ys = flash_inner_loop([0.2, 0.0, 0.8], [0.971209295156525, 0.7996504795406192, 1.1403683517535024], check=True)
+    VF_expect = 26.36192330738477
+    xs_expect = [0.8298009848088218, 0.0, 0.17019901519117814]
+    ys_expect = [0.8059104295763668, 0.0, 0.19408957042363328]
+    assert_allclose(xs_expect, xs)
+    assert_allclose(ys_expect, ys)
+    assert_allclose(VF, VF_expect)

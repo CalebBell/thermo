@@ -239,7 +239,7 @@ class Bulk(Phase):
                 if method in linear_methods:
                     for i in range(len(self.phase_fractions)):
                         mu += betas[i]*mus[i]
-                elif method in log_prop_methods:
+                elif method in prop_power_methods:
                     exponent = self.settings.mu_LL_power_exponent
                     for i in range(len(self.phase_fractions)):
                         mu += betas[i]*mus[i]**exponent
@@ -287,7 +287,7 @@ class Bulk(Phase):
                 
             if method in linear_methods:
                 mu = betas[0]*mus[0] + betas[1]*mus[1]
-            elif method in log_prop_methods:
+            elif method in prop_power_methods:
                 exponent = self.settings.mu_LL_power_exponent
                 mu = (betas[0]*mus[0]**exponent + betas[1]*mus[1]**exponent)**(1.0/exponent)
             elif method in log_prop_methods:

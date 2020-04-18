@@ -3734,7 +3734,7 @@ class GibbsExcessLiquid(Phase):
 
     def dPoyntings_dT_at(self, T, P, Psats=None, Vms=None, dPsats_dT=None, dVms_sat_dT=None):
         if not self.use_Poynting:
-            return [1.0]*self.N
+            return [0.0]*self.N
         
         cmps = self.cmps
         if Psats is None:
@@ -3915,7 +3915,7 @@ class GibbsExcessLiquid(Phase):
 
     def dphis_sat_dT_at(self, T):
         if not self.use_phis_sat:
-            return [1.0]*self.N
+            return [0.0]*self.N
         return [i.dphi_sat_dT(T) for i in self.eos_pure_instances]
                 
     def dphis_sat_dT(self):
@@ -3948,7 +3948,6 @@ class GibbsExcessLiquid(Phase):
 
 
     def phis_at(self, T, P, zs, Psats=None, gammas=None, phis_sat=None, Poyntings=None):
-        P = self.P
         P_inv = 1.0/P
         if Psats is None:
             Psats = self.Psats_at(T)

@@ -1482,6 +1482,13 @@ class EquilibriumStream(EquilibriumState):
         self._ws = ws = [zi*MWi*MW_inv for zi, MWi in zip(zs, constants.MWs)]
         self.ms = [m*wi for wi in ws]
     
+    @property
+    def energy(self):
+        return self.H()*self.n
+        
+    @property
+    def energy_reactive(self):
+        return self.H_reactive()*self.n
     
     @property    
     def Q(self):

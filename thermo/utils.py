@@ -48,7 +48,7 @@ from cmath import sqrt as csqrt
 from bisect import bisect_left
 import numpy as np
 from numpy.testing import assert_allclose
-from fluids.numerics import brenth, newton, linspace, polyint, polyint_over_x, derivative, polyder, horner, horner_and_der2, quadratic_from_f_ders
+from fluids.numerics import brenth, newton, linspace, polyint, polyint_over_x, derivative, polyder, horner, horner_and_der2, quadratic_from_f_ders, assert_close
 from scipy.integrate import quad
 from scipy.interpolate import interp1d, interp2d
 
@@ -2461,16 +2461,21 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False)
 
     if reactive:
         # mass balance
-        assert_allclose(sum([i.m for i in inlets]), sum([i.m for i in outlets]))
+        assert_close(sum([i.m for i in inlets]), sum([i.m for i in outlets]))
+        
+        try:
+            ws = [i.ws for i in inlets]
+        except:
+            fractwsions = [i.ws() for i in inlets]
         
         feed_cmps, feed_masses = mix_multiple_component_flows(IDs=feed_CASs,
                                                               flows=[i.m for i in inlets], 
-                                                              fractions=[i.ws for i in inlets])
+                                                              fractions=ws)
         feed_mass_flows = {i:j for i, j in zip(feed_cmps, feed_masses)}
         
         product_cmps, product_mols = mix_multiple_component_flows(IDs=product_CASs, 
-                                                                  flows=[i.m for i in outlets], 
-                                                                  fractions=[i.ws for i in outlets])
+                                                                  flows=[i.n for i in outlets], 
+                                                                  fractions=[i.ns for i in outlets])
         product_mass_flows = {i:j for i, j in zip(product_cmps, product_mols)}
         
         # Mass flow of each component does not balance.
@@ -2494,7 +2499,7 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False)
         product_element_flows = {i:j for i, j in zip(product_cmps, product_element_flows)}
         
         for ele, flow in feed_element_flows.items():
-            assert_allclose(flow, product_element_flows[ele], rtol=rtol, atol=atol)
+            assert_close(flow, product_element_flows[ele], rtol=rtol, atol=atol)
             
         if set(feed_cmps) != set(product_cmps):
             raise Exception('Product and feeds have different elements in them')
@@ -2516,7 +2521,7 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False)
     if set(feed_cmps) != set(product_cmps):
         raise Exception('Product and feeds have different components in them')
     for CAS, flow in feed_flows.items():
-        assert_allclose(flow, product_flows[CAS], rtol=rtol, atol=atol)
+        assert_close(flow, product_flows[CAS], rtol=rtol, atol=atol)
 
 
 def solve_flow_composition_mix(Fs, zs, ws, MWs):
