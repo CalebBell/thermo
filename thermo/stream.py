@@ -1745,13 +1745,26 @@ def mole_balance(inlets, outlets, compounds):
     for i in range(inlet_count):
         f = inlets[i]
         ns = f.ns
-        if f.ns is None:
+        if ns is None:
             ns = f.ns_calc
         if ns is None or None in ns:
             all_in_known = False
             in_unknown_count += 1
             in_unknown_idx = i
         all_ns_in.append(ns)
+        
+    for i in range(outlet_count):
+        f = outlets[i]
+        ns = f.ns
+        if ns is None:
+            ns = f.ns_calc
+        if ns is None or None in ns:
+            all_out_known = False
+            out_unknown_count += 1
+            out_unknown_idx = i
+        all_ns_out.append(ns)
+    if all_out_known and all_in_known:
+        return False
     
     if all_in_known:
         inlet_ns = [] # List of all molar flows in; set only when everything in is known
@@ -1760,19 +1773,6 @@ def mole_balance(inlets, outlets, compounds):
             for i in range(inlet_count):
                 v += all_ns_in[i][j]
             inlet_ns.append(v)
-            
-    # To be produced by copy/paste and replacing "in" with "out" only:
-    # "in([a-zA-Z_\.])"  for out\1
-    for i in range(outlet_count):
-        f = outlets[i]
-        ns = f.ns
-        if f.ns is None:
-            ns = f.ns_calc
-        if ns is None or None in ns:
-            all_out_known = False
-            out_unknown_count += 1
-            out_unknown_idx = i
-        all_ns_out.append(ns)
     
     if all_out_known:
         outlet_ns = []
