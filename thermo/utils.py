@@ -2587,7 +2587,8 @@ def solve_flow_composition_mix(Fs, zs, ws, MWs):
     F_knowns = [F for F in Fs if F is not None]
     MWs_known = [MWs[i] for i in range(N) if Fs[i] is not None]
     F_known = sum(F_knowns)
-    MW_known = sum([F*MW/F_known for F, MW in zip(F_knowns, MWs_known)])
+    F_known_inv = 1.0/F_known
+    MW_known = sum([F*MW*F_known_inv for F, MW in zip(F_knowns, MWs_known)])
     
     if not any([i is not None for i in ws]):
         # Only flow rates or mole fractions!
@@ -2597,8 +2598,8 @@ def solve_flow_composition_mix(Fs, zs, ws, MWs):
             if Fs[i] is None:
                 Fs[i] = zs[i]*F_act
         
-        Ft = sum(Fs)
-        zs = [F/Ft for F in Fs]
+        Ft_inv = 1.0/sum(Fs)
+        zs = [F*Ft_inv for F in Fs]
         ws = zs_to_ws(zs, MWs)
         return Fs, zs, ws
 
@@ -2610,6 +2611,7 @@ def solve_flow_composition_mix(Fs, zs, ws, MWs):
     
     
     Ft = -F_known*(MW_known*weight_term + 1.0)/(MW_z_sum*weight_term + zs_sum - 1.0)
+    Ft_inv = 1.0/Ft
     # Once the problem had been reduced by putting all variables outside the
     # main loop, it was easy to get an analytical solution
 #    def to_solve(Ft):
@@ -2629,7 +2631,7 @@ def solve_flow_composition_mix(Fs, zs, ws, MWs):
         if ws[i] is not None:
             Fs[i] = -ws[i]*num_bracketed/(MWs[i]*den_bracketed)
     
-    zs = [F/Ft for F in Fs]
+    zs = [F*Ft_inv for F in Fs]
     ws = zs_to_ws(zs, MWs)
     
     return Fs, zs, ws

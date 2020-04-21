@@ -6040,9 +6040,16 @@ class FlashVLN(FlashVL):
             pass
         
         if 1:
-            res, flash_convergence = self.solve_PT_HSGUA_NP_guess_bisect(zs, fixed_val, spec_val,
-                                                           fixed_var=fixed_var, spec=spec, iter_var=iter_var)
-            return None, res.phases, [], res.betas, flash_convergence
+            try:
+                res, flash_convergence = self.solve_PT_HSGUA_NP_guess_bisect(zs, fixed_val, spec_val,
+                                                               fixed_var=fixed_var, spec=spec, iter_var=iter_var)
+                return None, res.phases, [], res.betas, flash_convergence
+            except:
+                g, ls, ss, betas, flash_convergence = self.solve_PT_HSGUA_NP_guess_newton_2P(zs, fixed_val, spec_val,
+                                                                                             fixed_var=fixed_var,
+                                                                                             spec=spec,
+                                                                                             iter_var=iter_var)
+                return g, ls, ss, betas, flash_convergence
         if 1:
             g, ls, ss, betas, flash_convergence = self.solve_PT_HSGUA_NP_guess_newton_2P(zs, fixed_val, spec_val,
                                                            fixed_var=fixed_var, spec=spec, iter_var=iter_var)
@@ -6891,6 +6898,8 @@ class FlashPureVLS(FlashBase):
         props = self.props_VF_data
         liq_props, gas_props = self.liq_VF_data, self.gas_VF_data
         VF_data_spline_kwargs = self.VF_data_spline_kwargs
+        liq_VF_interpolators = self.liq_VF_interpolators
+        gas_VF_interpolators = self.gas_VF_interpolators
 
         for base_prop, base_idx in zip(self.VF_data_base_props, self.VF_data_base_idxs):
             xs = liq_props[base_idx]

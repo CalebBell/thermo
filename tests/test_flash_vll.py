@@ -1281,3 +1281,21 @@ def test_PT_plot_N2_CH4_Ethane(eos):
                               pts=33, 
                               verbose=False, show=False, values=False)
         write_PT_plot(fig, eos, IDs, zs, flashN)
+
+
+def test_PH_TODO():
+    '''Secant is finding false bounds, meaning a failed PT - but the plot looks good. Needs more detail, and enthalpy plot.
+    
+    constants = ChemicalConstantsPackage(atomss=[{'H': 2, 'O': 1}, {'C': 2, 'H': 6, 'O': 1}], CASs=['7732-18-5', '64-17-5'], MWs=[18.01528, 46.06844], names=['water', 'ethanol'], omegas=[0.344, 0.635], Pcs=[22048320.0, 6137000.0], Tcs=[647.14, 514.0])
+    HeatCapacityGases = [HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
+                     HeatCapacityGas(best_fit=(50.0, 1000.0, [-1.162767978165682e-20, 5.4975285700787494e-17, -1.0861242757337942e-13, 1.1582703354362728e-10, -7.160627710867427e-08, 2.5392014654765875e-05, -0.004732593693568646, 0.5072291035198603, 20.037826650765965]))]
+    properties = PropertyCorrelationPackage(constants=constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
+    
+    eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
+    
+    gas = EOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=300.0, P=1e4, zs=[.5, .5])
+    liq = EOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=300.0, P=1e4, zs=[.5, .5])
+    flashN = FlashVLN(constants, properties, liquids=[liq], gas=gas)
+    flashN.flash(H=-1e4, P=2e5, zs=[.5, .5]).H()
+
+    '''

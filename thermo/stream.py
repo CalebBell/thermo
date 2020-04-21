@@ -32,7 +32,7 @@ from numbers import Number
 from thermo.utils import R
 from thermo.utils import property_molar_to_mass, property_mass_to_molar, solve_flow_composition_mix
 from thermo.utils import OverspeficiedError
-from thermo.utils import mixing_simple, normalize, Vfs_to_zs, ws_to_zs
+from thermo.utils import mixing_simple, normalize, Vfs_to_zs, ws_to_zs, zs_to_ws
 from thermo.mixture import Mixture, preprocess_mixture_composition
 from thermo.equilibrium import EquilibriumState
 from thermo.flash import FlashBase
@@ -51,6 +51,106 @@ base_specifications = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None,
 
 class StreamArgs(object):
     flashed = False
+    _state_cache = None
+    
+    def __init__(self, IDs=None, zs=None, ws=None, Vfls=None, Vfgs=None,
+                 T=None, P=None, 
+                 VF=None, H=None, Hm=None, S=None, Sm=None,
+                 ns=None, ms=None, Qls=None, Qgs=None, m=None, n=None, Q=None,
+                 energy=None,
+                 Vf_TP=(None, None), Q_TP=(None, None, ''), pkg=None,
+                 single_composition_basis=True):
+#        self.specifications = base_specifications.copy()
+        self.specifications = s = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None, 
+                       'ns': None, 'ms': None, 'Qls': None, 'Qgs': None,
+                       'n': None, 'm': None, 'Q': None,
+                       'T': None, 'P': None, 'VF': None, 'H': None,
+                       'Hm': None, 'S': None, 'Sm': None, 'energy': None}
+        
+        # If this is False, DO NOT CLEAR OTHER COMPOSITION / FLOW VARIABLES WHEN SETTING ONE!
+        # This makes sense for certain cases but not all.
+        self.single_composition_basis = single_composition_basis
+        self.IDs = IDs
+        self.Vf_TP = Vf_TP
+        self.Q_TP = Q_TP
+        # pkg should be either a property package or property package constants
+        self.pkg = self.property_package = self.property_package_constants = pkg
+        self.equilibrium_pkg = isinstance(pkg, FlashBase)
+        
+        composition_specs = state_specs = flow_specs = 0
+        if zs is not None:
+            s['zs'] = zs
+            composition_specs += 1
+        if ws is not None:
+            s['ws'] = ws
+            composition_specs += 1
+        if Vfls is not None:
+            s['Vfls'] = Vfls
+            composition_specs += 1
+        if Vfgs is not None:
+            s['Vfgs'] = Vfls
+            composition_specs += 1
+
+        if ns is not None:
+            s['ns'] = ns
+            composition_specs += 1
+            flow_specs += 1
+        if ms is not None:
+            s['ms'] = ms
+            composition_specs += 1
+            flow_specs += 1
+        if Qls is not None:
+            s['Qls'] = Qls
+            composition_specs += 1
+            flow_specs += 1
+        if Qgs is not None:
+            s['Qgs'] = Qgs
+            composition_specs += 1
+            flow_specs += 1
+        
+        if n is not None:
+            s['n'] = n
+            flow_specs += 1
+        if m is not None:
+            s['m'] = m
+            flow_specs += 1
+        if Q is not None:
+            s['Q'] = Q
+            flow_specs += 1
+
+        if T is not None:
+            s['T'] = T
+            state_specs += 1
+        if P is not None:
+            s['P'] = P
+            state_specs += 1
+        if VF is not None:
+            s['VF'] = VF
+            state_specs += 1
+        if Hm is not None:
+            s['Hm'] = Hm
+            state_specs += 1
+        if H is not None:
+            s['H'] = H
+            state_specs += 1
+        if Sm is not None:
+            s['Sm'] = Sm
+            state_specs += 1
+        if S is not None:
+            s['S'] = S
+            state_specs += 1
+        if energy is not None:
+            s['energy'] = energy
+            state_specs += 1
+            
+        if flow_specs > 1 or composition_specs > 1:
+            self.reconcile_flows()
+#            raise ValueError("Flow specification is overspecified")
+        if composition_specs > 1 and single_composition_basis:
+            raise ValueError("Composition specification is overspecified")
+        if state_specs > 2:
+            raise ValueError("State specification is overspecified")
+
     def __add__(self, b):
         if not isinstance(b, StreamArgs):
             raise Exception('Adding to a StreamArgs requires that the other object '
@@ -144,6 +244,48 @@ class StreamArgs(object):
         if self.specifications['T'] is None and self.specified_state_vars > 1:
             raise Exception('Two state vars already specified; unset another first')
         self.specifications['T'] = T
+    
+    @property
+    def T_calc(self):
+        T = self.specifications['T']
+        if T is not None:
+            return T
+        try:
+            return self.mixture.T
+        except:
+            return None
+
+    @property
+    def P_calc(self):
+        P = self.specifications['P']
+        if P is not None:
+            return P
+        try:
+            return self.mixture.P
+        except:
+            return None
+
+    @property
+    def VF_calc(self):
+        VF = self.specifications['VF']
+        if VF is not None:
+            return VF
+        try:
+            return self.mixture.VF
+        except:
+            return None
+
+    @property
+    def Hm_calc(self):
+        Hm = self.specifications['Hm']
+        if Hm is not None:
+            return Hm
+        try:
+            return self.mixture.H()
+        except:
+            return None
+
+
 
     @property
     def P(self):
@@ -234,7 +376,8 @@ class StreamArgs(object):
     
     @property
     def zs_calc(self):
-        zs = self.specifications['zs']
+        s = self.specifications
+        zs = s['zs']
         if zs is not None:
             if self.single_composition_basis:
                 return zs
@@ -242,10 +385,20 @@ class StreamArgs(object):
                 if None not in zs:
                     return zs
                 return None
-        ns = self.specifications['ns']
+        ns = s['ns']
         if ns is not None:
             if self.single_composition_basis:
                 return normalize(ns)
+        
+        if self.equilibrium_pkg:
+            MWs = self.pkg.constants.MWs
+            ws = s['ws']
+            if ws is not None and None not in ws:
+                return ws_to_zs(ws, MWs)
+            ms = s['ms']
+            if ms is not None and None not in ms:
+                return ws_to_zs(normalize(ms), MWs)
+            
         return None
     
     @property
@@ -310,7 +463,8 @@ class StreamArgs(object):
 
     @property
     def ns_calc(self):
-        ns = self.specifications['ns']
+        s = self.specifications
+        ns = s['ns']
         if ns is not None:
             if self.single_composition_basis:
                 return ns
@@ -318,11 +472,22 @@ class StreamArgs(object):
                 if None not in ns:
                     return ns
                 return None
-        n = self.specifications['n']
+        n = s['n']
         if n is not None:
             zs = self.zs_calc
             if zs is not None:
                 return [n*zi for zi in zs]
+        m = s['m']
+        if m is not None:
+            zs = self.zs_calc
+            try:
+                MWs = self.pkg.constants.MWs
+                MW = mixing_simple(MWs, zs)
+                n = property_molar_to_mass(m, MW)
+                return [n*zi for zi in zs]
+            except:
+                pass
+
         return None
 
     @property
@@ -431,123 +596,6 @@ class StreamArgs(object):
 
     def __repr__(self):
         return '<StreamArgs, specs %s>' % self.specifications
-    def __init__(self, IDs=None, zs=None, ws=None, Vfls=None, Vfgs=None,
-                 T=None, P=None, 
-                 VF=None, H=None, Hm=None, S=None, Sm=None,
-                 ns=None, ms=None, Qls=None, Qgs=None, m=None, n=None, Q=None,
-                 energy=None,
-                 Vf_TP=(None, None), Q_TP=(None, None, ''), pkg=None,
-                 single_composition_basis=True):
-#        self.specifications = base_specifications.copy()
-        self.specifications = s = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None, 
-                       'ns': None, 'ms': None, 'Qls': None, 'Qgs': None,
-                       'n': None, 'm': None, 'Q': None,
-                       'T': None, 'P': None, 'VF': None, 'H': None,
-                       'Hm': None, 'S': None, 'Sm': None, 'energy': None}
-        
-        # If this is False, DO NOT CLEAR OTHER COMPOSITION / FLOW VARIABLES WHEN SETTING ONE!
-        # This makes sense for certain cases but not all.
-        self.single_composition_basis = single_composition_basis
-        self.IDs = IDs
-        self.Vf_TP = Vf_TP
-        self.Q_TP = Q_TP
-        # pkg should be either a property package or property package constants
-        self.pkg = self.property_package = self.property_package_constants = pkg
-        self.equilibrium_pkg = isinstance(pkg, FlashBase)
-        
-        composition_specs = state_specs = flow_specs = 0
-        if zs is not None:
-            s['zs'] = zs
-            composition_specs += 1
-        if ws is not None:
-            s['ws'] = ws
-            composition_specs += 1
-        if Vfls is not None:
-            s['Vfls'] = Vfls
-            composition_specs += 1
-        if Vfgs is not None:
-            s['Vfgs'] = Vfls
-            composition_specs += 1
-
-        if ns is not None:
-            s['ns'] = ns
-            composition_specs += 1
-            flow_specs += 1
-        if ms is not None:
-            s['ms'] = ms
-            composition_specs += 1
-            flow_specs += 1
-        if Qls is not None:
-            s['Qls'] = Qls
-            composition_specs += 1
-            flow_specs += 1
-        if Qgs is not None:
-            s['Qgs'] = Qgs
-            composition_specs += 1
-            flow_specs += 1
-        
-        if n is not None:
-            s['n'] = n
-            flow_specs += 1
-        if m is not None:
-            s['m'] = m
-            flow_specs += 1
-        if Q is not None:
-            s['Q'] = Q
-            flow_specs += 1
-
-        if T is not None:
-            s['T'] = T
-            state_specs += 1
-        if P is not None:
-            s['P'] = P
-            state_specs += 1
-        if VF is not None:
-            s['VF'] = VF
-            state_specs += 1
-        if Hm is not None:
-            s['Hm'] = Hm
-            state_specs += 1
-        if H is not None:
-            s['H'] = H
-            state_specs += 1
-        if Sm is not None:
-            s['Sm'] = Sm
-            state_specs += 1
-        if S is not None:
-            s['S'] = S
-            state_specs += 1
-        if energy is not None:
-            s['energy'] = energy
-            state_specs += 1
-            
-        if flow_specs > 1:
-            self.reconcile_flows()
-#            raise ValueError("Flow specification is overspecified")
-        if composition_specs > 1 and single_composition_basis:
-            raise ValueError("Composition specification is overspecified")
-        if state_specs > 2:
-            raise ValueError("State specification is overspecified")
-#        self.zs = zs
-#        self.ws = ws
-#        self.Vfls = Vfls
-#        self.Vfgs = Vfgs
-#        self.T = T
-#        self.P = P
-#        self.VF = VF
-#        self.H = H
-#        self.Hm = Hm
-#        self.S = S
-#        self.Sm = Sm
-#        
-#        self.ns = ns
-#        self.ms = ms
-#        self.Qls = Qls
-#        self.Qgs = Qgs
-#        self.m = m
-#        self.n = n
-#        self.Q = Q
-#        self.energy = energy
     
     def reconcile_flows(self, n_tol=2e-15, m_tol=2e-15):
         s = self.specifications
@@ -593,10 +641,33 @@ class StreamArgs(object):
                     raise ValueError("Flow specification is overspecified and inconsistent")
             elif missing == 1:
                 ms[missing_idx] = m - calc
+        if ns is not None and ms is not None:
+            try:
+            # Convert any ms to ns
+                MWs = self.pkg.constants.MWs
+            except:
+                return False
+            for i in range(len(ms)):
+                if ms[i] is not None:
+                    ni = property_molar_to_mass(ms[i], MWs[i])
+                    if ns[i] is not None and abs((ns[i]  - ni)/ni) > n_tol:
+                        raise ValueError("Flow specification is overspecified and inconsistent on component %d" %i)
+                    else:
+                        ns[i] = ni
+                        
+                    
+                
+                
         if (zs is not None or ns is not None) and (ws is not None or ms is not None) and (m is not None or n is not None or ns is not None or ms is not None):
             # We need the MWs
             try:
-                MWs = self
+                MWs = self.pkg.constants.MWs
+                if zs is None:
+                    zs = [None]*len(MWs)
+                if ws is None:
+                    ws = [None]*len(MWs)
+                ns, zs, ws = solve_flow_composition_mix(ns, zs, ws, MWs)
+                s['ns'] = ns
             except:
                 return False
             
@@ -875,10 +946,28 @@ class StreamArgs(object):
         
     @property
     def mixture(self):
-        if self.IDs and self.composition_specified and self.state_specified:
-            return Mixture(IDs=self.IDs, zs=self.zs, ws=self.ws, Vfls=self.Vfls, Vfgs=self.Vfgs,
-                 T=self.T, P=self.P, VF=self.VF, H=self.H, S=self.S, Hm=self.Hm, Sm=self.Sm, 
-                 Vf_TP=self.Vf_TP, pkg=self.property_package)
+        if self.equilibrium_pkg:
+            if self.composition_specified and self.state_specified:
+                s = self.specifications
+                # Flash call only takes `zs`
+                zs = self.zs_calc
+                T, P, H, S, VF = s['T'], s['P'], s['Hm'], s['Sm'], s['VF']
+                state_cache = (T, P, H, S, VF, tuple(zs))
+                if state_cache == self._state_cache:
+                    try:
+                        return self._mixture
+                    except:
+                        pass
+                
+                m = self.property_package.flash(T=T, P=P, zs=zs, H=H, S=S, VF=VF)
+                self._mixture = m
+                self._state_cache = state_cache
+                return m
+        else:
+            if self.IDs and self.composition_specified and self.state_specified:
+                return Mixture(IDs=self.IDs, zs=self.zs, ws=self.ws, Vfls=self.Vfls, Vfgs=self.Vfgs,
+                     T=self.T, P=self.P, VF=self.VF, H=self.H, S=self.S, Hm=self.Hm, Sm=self.Sm, 
+                     Vf_TP=self.Vf_TP, pkg=self.property_package)
 
 class Stream(Mixture):
     '''Creates a Stream object which is useful for modeling mass and energy 
@@ -1051,6 +1140,7 @@ class Stream(Mixture):
     ...                     ('hexane', 0.00066)])
     >>> m = Stream(ws=comp, m=33)
     '''    
+    flashed = True
     def __repr__(self): # pragma: no cover
         txt = '<Stream, components=%s, mole fractions=%s, mass flow=%s kg/s, mole flow=%s mol/s' % (self.names, [round(i,4) for i in self.zs], self.m, self.n)
         # T and P may not be available if a flash has failed
@@ -1549,7 +1639,7 @@ class EquilibriumStream(EquilibriumState):
             H = energy/n
 
         if existing_flash is not None:
-            self.__dict__.update(existing_flash)
+            self.__dict__.update(existing_flash.__dict__)
         else:
             dest = super(EquilibriumStream, self).__init__
             flasher.flash(T=T, P=P, VF=VF, H=H, S=S, dest=dest, zs=zs, hot_start=hot_start)
@@ -1607,6 +1697,10 @@ class EquilibriumStream(EquilibriumState):
     @property
     def energy_reactive(self):
         return self.H_reactive()*self.n
+
+    @property
+    def property_package(self):
+        return self.flasher
     
     @property    
     def Q(self):
@@ -1738,13 +1832,15 @@ def mole_balance(inlets, outlets, compounds):
     
     in_unknown_count = out_unknown_count = 0
     in_unknown_idx = out_unknown_idx = None
-    ns_in, ns_out = [], []
     all_ns_in, all_ns_out = [], []
     all_in_known = all_out_known = True
     
     for i in range(inlet_count):
         f = inlets[i]
-        ns = f.ns
+        try:
+            ns = f.specifications['ns']
+        except:
+            ns = f.ns
         if ns is None:
             ns = f.ns_calc
         if ns is None or None in ns:
@@ -1755,7 +1851,10 @@ def mole_balance(inlets, outlets, compounds):
         
     for i in range(outlet_count):
         f = outlets[i]
-        ns = f.ns
+        try:
+            ns = f.specifications['ns']
+        except:
+            ns = f.ns
         if ns is None:
             ns = f.ns_calc
         if ns is None or None in ns:
@@ -1763,7 +1862,9 @@ def mole_balance(inlets, outlets, compounds):
             out_unknown_count += 1
             out_unknown_idx = i
         all_ns_out.append(ns)
+    
     if all_out_known and all_in_known:
+        # Fast path - all known
         return False
     
     if all_in_known:

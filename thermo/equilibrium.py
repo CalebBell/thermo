@@ -146,7 +146,12 @@ class EquilibriumState(object):
         s += 'L'*len(self.liquids)
         s += 'S'*len(self.solids)
         return s
-
+    
+    @property
+    def VF(self):
+        if self.gas is not None:
+            return self.betas[0]
+        return 0.0 # No gas phase
     
     @property
     def betas_mass(self):
