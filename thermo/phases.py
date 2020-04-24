@@ -801,6 +801,7 @@ class Phase(object):
         return isobaric_expansion(self.V(), self.dV_dT())
     
     def isentropic_exponent(self):
+#        return 1.3
         return self.Cp()/self.Cv()
     
     def dbeta_dT(self):

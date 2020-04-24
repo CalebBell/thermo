@@ -2106,7 +2106,7 @@ class GCEOS(object):
                 if guess < low_hope or guess > high_hope:
                     guess = 0.5*(low_hope + high_hope)
                 fprime = True
-                Tsat = newton(to_solve, guess, fprime=True, low=low_hope, high=high_hope, bisection=True)
+                Tsat = newton(to_solve, guess, xtol=1.48e-10,fprime=True, low=low_hope, high=high_hope, bisection=True)
     #            fprime = False
     #            Tsat = brenth(to_solve, low_hope, high_hope)
                 abs_rel_err = abs(curr_err)/P

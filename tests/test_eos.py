@@ -1511,6 +1511,11 @@ def test_Tsat_issues():
     # Cannot test that but this can be manually checked
     base = PRTranslatedConsistent(Tc=647.14, Pc=22048320.0, omega=0.344, c=5.2711e-06, alpha_coeffs=[0.3872, 0.87587208, 1.9668], T=298.15, P=101325.0)
     assert_close(base.Tsat(1e5), 371.95148202471137, rtol=1e-6)
+    
+    # Case was not solving with newton to the desired tolerance - increased xtol 
+    e = PR(Tc=304.2, Pc=7376460.0, omega=0.2252, T=298.15, P=101325.0)
+    assert_close(e.Tsat(135368.0749152002), 189.8172487166094)
+
 
 def test_Tsat_issues_extrapolation():
     P = 6100000.000000002

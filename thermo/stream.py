@@ -1704,7 +1704,7 @@ class EquilibriumStream(EquilibriumState):
     
     @property    
     def Q(self):
-        return self.m/self.rho_mass()
+        return self.n*self.V()
 
     @property
     def Qgs(self):
