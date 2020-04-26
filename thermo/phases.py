@@ -1734,14 +1734,31 @@ class Phase(object):
             ws[i] *= Mavg
         self._ws = ws
         return ws
-    
+
+    @property
     def beta(self):
         try:
             result = self.result
         except:
             return None
-        beta = result.betas
-#        phases = resu.phase
+        return result.betas[result.phases.index(self)]
+
+    @property
+    def beta_mass(self):
+        try:
+            result = self.result
+        except:
+            return None
+        return result.betas_mass[result.phases.index(self)]
+
+    @property
+    def beta_volume(self):
+        try:
+            result = self.result
+        except:
+            return None
+        return result.betas_volume[result.phases.index(self)]
+
 
 for a in ('T', 'P', 'V', 'rho'):
     for b in ('T', 'P', 'V', 'rho'):

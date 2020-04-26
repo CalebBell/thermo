@@ -66,6 +66,41 @@ def test_water_C1_C8():
     assert_allclose(res.water_phase.zs, [0.9999990988582429, 9.011417571269618e-07, 9.57378962042325e-17])
     assert_allclose(res.gas.zs, [0.026792655758364814, 0.9529209534990141, 0.020286390742620692])
     assert res.phase_count == 3
+
+
+    # Betas and so on
+    assert_close1d(res.betas, [0.3481686901529188, 0.3182988549790946, 0.33353245486798655])
+    assert_close1d(res.betas_mass, [0.12740321450325565, 0.11601025808509248, 0.7565865274116519])
+    assert_close1d(res.betas_volume, [0.9927185024780876, 0.0007904962655801318, 0.0064910012563324])
+    
+    assert res.solids_betas == []
+    assert res.VF == res.gas_beta
+    
+    assert_close1d(res.betas_states, [0.3481686901529188, 0.6518313098470812, 0])
+    assert_close1d(res.betas_mass_states, [0.12740321450325565, 0.8725967854967444, 0.0])
+    assert_close1d(res.betas_volume_states, [0.9927185024780874, 0.007281497521912531, 0.0])
+    
+    assert_close1d(res.betas_liquids, [0.4883147682086139, 0.5116852317913861])
+    assert_close1d(res.betas_mass_liquids, [0.13294829870253438, 0.8670517012974656])
+    assert_close1d(res.betas_volume_liquids, [0.10856232020971736, 0.8914376797902827])
+    
+    assert_close(res.gas.beta, 0.3481686901529188)
+    assert_close(res.liquid0.beta, 0.3182988549790946)
+    assert_close(res.liquid1.beta, 0.33353245486798655)
+    
+    assert_close(res.gas.beta_mass, 0.12740321450325565)
+    assert_close(res.liquid0.beta_mass, 0.11601025808509248)
+    assert_close(res.liquid1.beta_mass, 0.7565865274116519)
+    
+    assert_close(res.gas.beta_volume, 0.9927185024780876)
+    assert_close(res.liquid0.beta_volume, 0.0007904962655801318)
+    assert_close(res.liquid1.beta_volume, 0.0064910012563324)
+
+
+
+
+
+
     
     # Gas phase - high T
     highT = flashN.flash(T=500.0, P=P, zs=zs)
