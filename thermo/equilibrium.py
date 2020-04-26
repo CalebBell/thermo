@@ -124,7 +124,7 @@ class EquilibriumState(object):
         self.betas = betas
         self.gas_beta = betas[0] if gas_count else 0.0
         self.liquids_betas = betas_liquids = betas[gas_count:gas_count + liquid_count]
-        self.betas_solids = betas_solids = betas[gas_count + liquid_count:]
+        self.solids_betas = betas_solids = betas[gas_count + liquid_count:]
         
         if liquid_count > 1:
 #                tot_inv = 1.0/sum(values)
@@ -145,7 +145,7 @@ class EquilibriumState(object):
         if solids:
             self.solid_zs = normalize([sum([betas_solids[j]*solids[j].zs[i] for j in range(self.solid_count)])
                                for i in self.cmps])
-            self.solid_bulk = solid_bulk = Bulk(T, P, self.solid_zs, solids, self.betas_solids, 's')
+            self.solid_bulk = solid_bulk = Bulk(T, P, self.solid_zs, solids, self.solids_betas, 's')
             solid_bulk.result = self
             solid_bulk.constants = constants
             solid_bulk.correlations = correlations
@@ -198,14 +198,14 @@ class EquilibriumState(object):
     
     @property
     def betas_states(self):
-        return [self.gas_beta, sum(self.liquids_betas), sum(self.betas_solids)]
+        return [self.gas_beta, sum(self.liquids_betas), sum(self.solids_betas)]
     
     @property
     def betas_mass_states(self):
         g_tot = l_tot = s_tot = 0.0
         # Compute the mass fraction of the gas phase
         gas, liquids, solids = self.gas, self.liquids, self.solids
-        beta_gas, betas_liquids, betas_solids = self.gas_beta, self.liquids_betas, self.betas_solids
+        beta_gas, betas_liquids, betas_solids = self.gas_beta, self.liquids_betas, self.solids_betas
         gas_MW = gas.MW()
         liq_MWs = [i.MW() for i in liquids]
         solid_MWs = [i.MW() for i in solids]
@@ -225,7 +225,7 @@ class EquilibriumState(object):
         g_tot = l_tot = s_tot = 0.0
         # Compute the mass fraction of the gas phase
         gas, liquids, solids = self.gas, self.liquids, self.solids
-        beta_gas, betas_liquids, betas_solids = self.gas_beta, self.liquids_betas, self.betas_solids
+        beta_gas, betas_liquids, betas_solids = self.gas_beta, self.liquids_betas, self.solids_betas
         gas_V = gas.V()
         liq_Vs = [i.V() for i in liquids]
         solid_Vs = [i.V() for i in solids]
