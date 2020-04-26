@@ -185,6 +185,16 @@ class EquilibriumState(object):
         return 0.0 # No gas phase
     
     @property
+    def betas_liquids(self):
+        liquids_betas = self.liquids_betas
+        tot = 0.0
+        for vi in liquids_betas:
+            tot += vi
+        tot = 1.0/tot
+        return [vi*tot for vi in liquids_betas]
+    
+    
+    @property
     def betas_mass(self):
         phase_iter = range(self.phase_count)
         betas = self.betas
