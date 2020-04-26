@@ -122,7 +122,7 @@ class EquilibriumState(object):
             self.phases = liquids + solids
         
         self.betas = betas
-        self.beta_gas = betas[0] if gas_count else 0.0
+        self.gas_beta = betas[0] if gas_count else 0.0
         self.betas_liquids = betas_liquids = betas[gas_count:gas_count + liquid_count]
         self.betas_solids = betas_solids = betas[gas_count + liquid_count:]
         
@@ -198,14 +198,14 @@ class EquilibriumState(object):
     
     @property
     def betas_states(self):
-        return [self.beta_gas, sum(self.betas_liquids), sum(self.betas_solids)]
+        return [self.gas_beta, sum(self.betas_liquids), sum(self.betas_solids)]
     
     @property
     def betas_mass_states(self):
         g_tot = l_tot = s_tot = 0.0
         # Compute the mass fraction of the gas phase
         gas, liquids, solids = self.gas, self.liquids, self.solids
-        beta_gas, betas_liquids, betas_solids = self.beta_gas, self.betas_liquids, self.betas_solids
+        beta_gas, betas_liquids, betas_solids = self.gas_beta, self.betas_liquids, self.betas_solids
         gas_MW = gas.MW()
         liq_MWs = [i.MW() for i in liquids]
         solid_MWs = [i.MW() for i in solids]
@@ -225,7 +225,7 @@ class EquilibriumState(object):
         g_tot = l_tot = s_tot = 0.0
         # Compute the mass fraction of the gas phase
         gas, liquids, solids = self.gas, self.liquids, self.solids
-        beta_gas, betas_liquids, betas_solids = self.beta_gas, self.betas_liquids, self.betas_solids
+        beta_gas, betas_liquids, betas_solids = self.gas_beta, self.betas_liquids, self.betas_solids
         gas_V = gas.V()
         liq_Vs = [i.V() for i in liquids]
         solid_Vs = [i.V() for i in solids]
@@ -433,7 +433,7 @@ class EquilibriumState(object):
         return Zc
 
     def quality(self):
-        return vapor_mass_quality(self.beta_gas, MWl=self.liquid_bulk.MW(), MWg=self.gas.MW())
+        return vapor_mass_quality(self.gas_beta, MWl=self.liquid_bulk.MW(), MWg=self.gas.MW())
     
     def Tmc(self, phase=None):
         if phase is None:

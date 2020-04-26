@@ -1734,6 +1734,14 @@ class Phase(object):
             ws[i] *= Mavg
         self._ws = ws
         return ws
+    
+    def beta(self):
+        try:
+            result = self.result
+        except:
+            return None
+        beta = result.betas
+#        phases = resu.phase
 
 for a in ('T', 'P', 'V', 'rho'):
     for b in ('T', 'P', 'V', 'rho'):
