@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['Stream', 'EnergyTypes', 'EnergyStream', 'StreamArgs', 'EquilibriumStream', 'mole_balance']
+__all__ = ['Stream', 'EnergyTypes', 'EnergyStream', 'StreamArgs', 'EquilibriumStream', 'mole_balance', 'energy_balance']
  
 import enum
 from copy import copy, deepcopy
@@ -487,7 +487,27 @@ class StreamArgs(object):
                 return [n*zi for zi in zs]
             except:
                 pass
-
+        Q = s['Q']
+        if Q is not None:
+            zs = self.zs_calc
+            if zs is not None:
+                Q_TP = self.Q_TP
+                if Q_TP is not None:
+                    if len(Q_TP) == 2 or (len(Q_TP) == 3 and not Q_TP[-1]):
+                        # Calculate the volume via the property package
+                        expensive_flash = self.pkg.flash(zs=zs, T=Q_TP[0], P=Q_TP[1])
+                        V = expensive_flash.V()
+                    if Q_TP[-1] == 'l':
+                        V = self.pkg.liquids[0].to(T=Q_TP[0], P=Q_TP[1], zs=zs).V()
+                    elif Q_TP[-1] == 'g':
+                        V = self.pkg.gas.to(T=Q_TP[0], P=Q_TP[1], zs=zs).V()
+                else:
+                    mixture = self.mixture
+                    if mixture is not None:
+                        V = mixture.V()
+                if V is not None:
+                    n = Q/V
+                    return [n*zi for zi in zs]
         return None
 
     @property
@@ -563,14 +583,43 @@ class StreamArgs(object):
 
     @property
     def n_calc(self):
-        n = self.specifications['n']
+        s = self.specifications
+        n = s['n']
         if n is not None:
             return n
-        ns = self.specifications['ns']
+        ns = s['ns']
         if ns is not None and None not in ns:
             return sum(ns)
+        # Everything funnels into ns_calc to avoid conflicts
+        ns_calc = self.ns_calc
+        if ns_calc is not None and None not in ns_calc:
+            return sum(ns_calc)
+        
+        
+        
+#        m = s['m']
+#        if m is not None:
+#            zs = self.zs_calc
+#            if zs is not None and None not in zs:
+#                try:
+#                    MWs = self.pkg.constants.MWs
+#                    MW = mixing_simple(MWs, zs)
+#                    n = property_molar_to_mass(m, MW)
+#                    return n
+#                except:
+#                    pass
         return None
-
+    
+    @property
+    def MW(self):
+        try:
+            MWs = self.pkg.constants.MWs
+            zs = self.zs_calc
+            MW = mixing_simple(MWs, zs)
+            return MW        
+        except:
+            return None
+        
     @property
     def m_calc(self):
         m = self.specifications['m']
@@ -581,7 +630,46 @@ class StreamArgs(object):
             return sum(ms)
         return None
 
-    
+    @property
+    def energy_calc(self):
+        s = self.specifications
+        # Try to get H from energy, or a molar specification
+        Q = s['energy']
+        m, n = None, None
+        if Q is None:
+            H = s['Hm']
+            if H is not None:
+                n = s['n']
+                if n is None:
+                    n = self.n_calc
+                if n is not None:
+                    Q = n*H
+        # Try to get H from a mass specification
+        if Q is None:
+            H_mass = s['H']
+            if H_mass is not None:
+                m = s['m']
+                if m is None:
+                    m = self.m_calc
+                if m is not None:
+                    Q = m*H_mass
+        # Try to flash and get enthalpy
+
+        if Q is None:
+            n = self.n_calc
+            if n is None:
+                m = self.m_calc
+            if m is not None or n is not None:
+                mixture = self.mixture
+                if mixture is not None:
+                    if n is not None:
+                        Q = mixture.H()*n
+                    elif m is not None:
+                        Q = mixture.H()*property_molar_to_mass(m, mixture.MW())
+        return Q
+
+        
+        
     @property
     def Q(self):
         return self.specifications['Q']
@@ -952,6 +1040,41 @@ class StreamArgs(object):
                 # Flash call only takes `zs`
                 zs = self.zs_calc
                 T, P, H, S, VF = s['T'], s['P'], s['Hm'], s['Sm'], s['VF']
+                # Do we need
+                spec_count = 0
+                if T is not None:
+                    spec_count += 1
+                if P is not None:
+                    spec_count += 1
+                if H is not None:
+                    spec_count += 1
+                if S is not None:
+                    spec_count += 1
+                if VF is not None:
+                    spec_count += 1
+                if spec_count < 2:
+                    energy = s['energy']
+                    if energy is not None:
+                        n = self.n_calc
+                        if n is not None:
+                            H = energy/n
+                            spec_count += 1
+                if spec_count < 2:
+                    H_mass = s['H']
+                    if H_mass is not None:
+                        MW = self.MW
+                        if MW is not None:
+                            H = property_mass_to_molar(H_mass, MW)
+                            spec_count += 1
+                if spec_count < 2:
+                    S_mass = s['S']
+                    if S_mass is not None:
+                        MW = self.MW
+                        if MW is not None:
+                            S = property_mass_to_molar(S_mass, MW)
+                            spec_count += 1
+                            
+                            
                 state_cache = (T, P, H, S, VF, tuple(zs))
                 if state_cache == self._state_cache:
                     try:
@@ -1814,6 +1937,7 @@ class EnergyStream(object):
     '''
     Q = None
     medium = None
+    Hm = None
     def __repr__(self):
         return '<Energy stream, Q=%s W, medium=%s>' %(self.Q, self.medium.value)
     
@@ -1823,7 +1947,17 @@ class EnergyStream(object):
         if not (Q is None or isinstance(Q, (float, int, Number))):
             raise Exception('Energy stream flow rate is not a flow rate')
         self.Q = Q
-
+        
+    @property
+    def energy(self):
+        return self.Q
+    
+    @energy.setter
+    def energy(self, energy):
+        self.Q = energy
+        
+    energy_calc = energy
+    
 
 
 def mole_balance(inlets, outlets, compounds):
@@ -1977,3 +2111,79 @@ def mole_balance(inlets, outlets, compounds):
         progress = True
     return progress
 
+
+def energy_balance(inlets, outlets):
+    inlet_count = len(inlets)
+    outlet_count = len(outlets)
+    
+    in_unknown_count = out_unknown_count = 0
+    in_unknown_idx = out_unknown_idx = None
+    all_energy_in, all_energy_out = [], []
+    all_in_known = all_out_known = True
+    
+    if inlet_count == 1 and outlet_count == 1:
+        # Don't need flow rates for one in one out
+        fin = inlets[0]
+        try:
+            Hin = fin.H()
+        except:
+            Hin = fin.Hm_calc
+        fout = outlets[0]
+        try:
+            Hout = fout.H()
+        except:
+            Hout = fout.Hm_calc
+            
+        if Hin is not None and Hout is None:
+            fout.Hm = Hin
+            return True
+        elif Hin is None and Hout is not None:
+            fin.Hm = Hout
+            return True
+        
+    for i in range(inlet_count):
+        f = inlets[i]
+        Q = f.energy
+        if Q is None:
+            Q = f.energy_calc
+        if Q is None:
+            all_in_known = False
+            in_unknown_count += 1
+            in_unknown_idx = i
+        all_energy_in.append(Q)
+    
+    for i in range(outlet_count):
+        f = outlets[i]
+        Q = f.energy
+        if Q is None:
+            Q = f.energy_calc
+        if Q is None:
+            all_out_known = False
+            out_unknown_count += 1
+            out_unknown_idx = i
+        all_energy_out.append(Q)
+        
+    if all_out_known and all_in_known:
+        # Fast path - all known
+        return False
+    
+    if all_in_known:
+        inlet_energy = sum(all_energy_in)
+    if all_out_known:
+        outlet_energy = sum(all_energy_out)
+        
+    if out_unknown_count == 1 and in_unknown_count == 0:
+        set_energy = inlet_energy
+        for v in all_energy_out:
+            if v is not None:
+                set_energy -= v
+        outlets[out_unknown_idx].energy = set_energy
+        return True
+    if in_unknown_count == 1 and out_unknown_count == 0:
+        set_energy = outlet_energy
+        for v in all_energy_in:
+            if v is not None:
+                set_energy -= v
+        inlets[in_unknown_idx].energy = set_energy
+        return True
+    return False

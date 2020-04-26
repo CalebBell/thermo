@@ -525,6 +525,7 @@ class Mixture(object):
     ...                     ('hexane', 0.00066)])
     >>> m = Mixture(zs=comp)
     '''
+    flashed = True
     eos_in_a_box = []
     ks = None
     Vms = None

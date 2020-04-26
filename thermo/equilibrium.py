@@ -35,6 +35,33 @@ all_phases = gas_phases + liquid_phases + solid_phases
 
 CAS_H2O = '7732-18-5'
 
+PHASE_GAS = 'gas'
+PHASE_LIQUID0 = 'liquid0'
+PHASE_LIQUID1 = 'liquid1'
+PHASE_LIQUID2 = 'liquid2'
+PHASE_LIQUID3 = 'liquid3'
+PHASE_BULK_LIQUID = 'liquid_bulk'
+PHASE_WATER_LIQUID = 'water_phase'
+PHASE_LIGHTEST_LIQUID = 'lightest_liquid'
+PHASE_HEAVIEST_LIQUID = 'heaviest_liquid'
+PHASE_SOLID0 = 'solid0'
+PHASE_SOLID1 = 'solid1'
+PHASE_SOLID2 = 'solid2'
+PHASE_SOLID3 = 'solid3'
+PHASE_BULK_SOLID = 'solid_bulk'
+PHASE_BULK = 'bulk'
+
+PHASE_REFERENCES = [PHASE_GAS, PHASE_LIQUID0, PHASE_LIQUID1, PHASE_LIQUID2,
+                    PHASE_LIQUID3, PHASE_BULK_LIQUID, PHASE_WATER_LIQUID,
+                    PHASE_LIGHTEST_LIQUID, PHASE_HEAVIEST_LIQUID, PHASE_SOLID0,
+                    PHASE_SOLID1, PHASE_SOLID2, PHASE_SOLID3, PHASE_BULK_SOLID, 
+                    PHASE_BULK]
+
+__all__.extend(['PHASE_GAS', 'PHASE_LIQUID0', 'PHASE_LIQUID1', 'PHASE_LIQUID2',
+                'PHASE_LIQUID3', 'PHASE_BULK_LIQUID', 'PHASE_WATER_LIQUID',
+                'PHASE_LIGHTEST_LIQUID', 'PHASE_HEAVIEST_LIQUID', 'PHASE_SOLID0',
+                'PHASE_SOLID1', 'PHASE_SOLID2', 'PHASE_SOLID3', 'PHASE_BULK_SOLID',
+                'PHASE_BULK', 'PHASE_REFERENCES'])
 
 class EquilibriumState(object):
     '''Goal is to retrieve literally every thing about the flashed phases here.
@@ -52,6 +79,10 @@ class EquilibriumState(object):
     '''
     max_liquid_phases = 1
     reacted = False
+    flashed = True
+    
+    liquid_bulk = None
+    solid_bulk = None
 
     T_REF_IG = Phase.T_REF_IG
     T_REF_IG_INV = Phase.T_REF_IG_INV
@@ -139,7 +170,7 @@ class EquilibriumState(object):
             phase.constants = constants
             phase.correlations = correlations
     @property
-    def phases_str(self):
+    def phase(self):
         s = ''
         if self.gas:
             s += 'V'
@@ -1005,12 +1036,17 @@ class EquilibriumState(object):
         SG_gas = phase.SG_gas()
         return Hc*SG_gas**-0.5
     
-    def value(self, name):
+    def value(self, name, phase=None):
+        if phase is not None:
+            phase_idx = self.phases.index(phase)
+        
         v = getattr(self, name)
         try:
             v = v()
         except:
             pass
+        if phase is not None:
+            return v[phase_idx]
         return v
     
     @property

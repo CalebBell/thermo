@@ -99,6 +99,9 @@ class Phase(object):
         return randint(0, 10000000)
     
     def value(self, name):
+        if name in ('beta_mass',):
+            return self.result.value(name, self)
+        
         v = getattr(self, name)
         try:
             v = v()
