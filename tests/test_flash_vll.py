@@ -150,7 +150,7 @@ def test_C1_to_C5_water_gas():
     
     assert res.phase_count == 3
     assert_allclose(res.betas[0], 0.9254860647854957, rtol=1e-6)
-    assert_allclose(res.betas_liquids[res.water_phase_index], 0.027819781620531732, rtol=1e-5)
+    assert_allclose(res.liquids_betas[res.water_phase_index], 0.027819781620531732, rtol=1e-5)
     
     # Gibbs optimizer cannot find anything else for a third phase
     assert 2 == flashN.flash(T=273.15-130, P=1e6, zs=zs).phase_count

@@ -123,7 +123,7 @@ class EquilibriumState(object):
         
         self.betas = betas
         self.gas_beta = betas[0] if gas_count else 0.0
-        self.betas_liquids = betas_liquids = betas[gas_count:gas_count + liquid_count]
+        self.liquids_betas = betas_liquids = betas[gas_count:gas_count + liquid_count]
         self.betas_solids = betas_solids = betas[gas_count + liquid_count:]
         
         if liquid_count > 1:
@@ -131,7 +131,7 @@ class EquilibriumState(object):
 #                return [i*tot_inv for i in values]
             self.liquid_zs = normalize([sum([betas_liquids[j]*liquids[j].zs[i] for j in range(liquid_count)])
                                for i in self.cmps])
-            self.liquid_bulk = liquid_bulk = Bulk(T, P, self.liquid_zs, self.liquids, self.betas_liquids, 'l')
+            self.liquid_bulk = liquid_bulk = Bulk(T, P, self.liquid_zs, self.liquids, self.liquids_betas, 'l')
             liquid_bulk.result = self
             liquid_bulk.constants = constants
             liquid_bulk.correlations = correlations
@@ -198,14 +198,14 @@ class EquilibriumState(object):
     
     @property
     def betas_states(self):
-        return [self.gas_beta, sum(self.betas_liquids), sum(self.betas_solids)]
+        return [self.gas_beta, sum(self.liquids_betas), sum(self.betas_solids)]
     
     @property
     def betas_mass_states(self):
         g_tot = l_tot = s_tot = 0.0
         # Compute the mass fraction of the gas phase
         gas, liquids, solids = self.gas, self.liquids, self.solids
-        beta_gas, betas_liquids, betas_solids = self.gas_beta, self.betas_liquids, self.betas_solids
+        beta_gas, betas_liquids, betas_solids = self.gas_beta, self.liquids_betas, self.betas_solids
         gas_MW = gas.MW()
         liq_MWs = [i.MW() for i in liquids]
         solid_MWs = [i.MW() for i in solids]
@@ -225,7 +225,7 @@ class EquilibriumState(object):
         g_tot = l_tot = s_tot = 0.0
         # Compute the mass fraction of the gas phase
         gas, liquids, solids = self.gas, self.liquids, self.solids
-        beta_gas, betas_liquids, betas_solids = self.gas_beta, self.betas_liquids, self.betas_solids
+        beta_gas, betas_liquids, betas_solids = self.gas_beta, self.liquids_betas, self.betas_solids
         gas_V = gas.V()
         liq_Vs = [i.V() for i in liquids]
         solid_Vs = [i.V() for i in solids]
@@ -243,7 +243,7 @@ class EquilibriumState(object):
     @property
     def betas_mass_liquids(self):
         phase_iter = range(self.liquid_count)
-        betas = self.betas_liquids
+        betas = self.liquids_betas
         MWs_phases = [i.MW() for i in self.liquids]
         tot = 0.0
         for i in phase_iter:
@@ -267,7 +267,7 @@ class EquilibriumState(object):
     @property
     def betas_volume_liquids(self):
         phase_iter = range(self.liquid_count)
-        betas = self.betas_liquids
+        betas = self.liquids_betas
         Vs_phases = [i.V() for i in self.liquids]
         
         tot = 0.0
