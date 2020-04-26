@@ -97,8 +97,8 @@ def test_water_C1_C8():
     assert_close(res.liquid1.beta_volume, 0.0064910012563324)
 
 
-
-
+    assert_close(res.liquid_bulk.beta, 0.6518313098470812)
+    assert_close(res.bulk.beta, 1.0)
 
 
     

@@ -208,6 +208,12 @@ class Bulk(Phase):
         self.N = N = len(zs)
         self.cmps = range(N)
         self.state = state
+    
+
+
+    @property
+    def beta(self):
+        return sum(self.phase_fractions)
 
     def mu(self):
         try:

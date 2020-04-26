@@ -1758,6 +1758,11 @@ class Phase(object):
         except:
             return None
         return result.betas_volume[result.phases.index(self)]
+    
+    @property
+    def VF(self):
+        return self.result.gas_beta
+
 
 
 for a in ('T', 'P', 'V', 'rho'):
