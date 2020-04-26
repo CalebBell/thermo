@@ -291,7 +291,7 @@ def mini_sort_phases(phases, sort_method, prop, cmps, cmps_neg,
         elif prop == DENSITY:
             keys = [i.rho() for i in phases]
         elif prop == ISOTHERMAL_COMPRESSIBILITY:
-            keys = [i.beta() for i in phases]
+            keys = [i.isobaric_expansion() for i in phases]
         elif prop == HEAT_CAPACITY:
             keys = [i.Cp() for i in phases]
         phases = [p for _, p in sorted(zip(keys, phases))]

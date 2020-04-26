@@ -853,7 +853,7 @@ def test_EOSGas_phis():
     # Derived properties
     assert_allclose(gas.PIP(), 0.9434309912868786, rtol=1e-12)
     assert_allclose(gas.kappa(), 1.1224518535829717e-05, rtol=1e-12)
-    assert_allclose(gas.beta(), 0.0031916020840477414, rtol=1e-12)
+    assert_allclose(gas.isobaric_expansion(), 0.0031916020840477414, rtol=1e-12)
     assert_allclose(gas.Joule_Thomson(), 2.9206299207786268e-05, rtol=1e-12)
     assert_allclose(gas.speed_of_sound(), 55.867443841933685, rtol=1e-12)
     assert_allclose(gas.speed_of_sound(), (gas.dP_drho_S())**0.5, rtol=1e-11)

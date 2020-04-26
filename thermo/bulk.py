@@ -127,7 +127,7 @@ class BulkSettings(object):
                  mu_LL=LOG_PROP_MASS_WEIGHTED, mu_LL_power_exponent=0.4,
                  mu_VL=MCADAMS_MU_VL, mu_VL_power_exponent=0.4,
                  c=MOLE_WEIGHTED,
-                 beta=MOLE_WEIGHTED, kappa=MOLE_WEIGHTED, JT=MOLE_WEIGHTED,
+                 isobaric_expansion=MOLE_WEIGHTED, kappa=MOLE_WEIGHTED, JT=MOLE_WEIGHTED,
                  T_normal=288.15, P_normal=atm,
                  T_standard=288.7055555555555, P_standard=atm,
                  T_liquid_volume_ref=298.15,
@@ -168,7 +168,7 @@ class BulkSettings(object):
         self.T_gas_ref = T_gas_ref
         self.P_gas_ref = P_gas_ref
         
-        self.beta = beta
+        self.isobaric_expansion = isobaric_expansion
         self.kappa = kappa
         self.JT = JT
         self.VL_ID = VL_ID
@@ -750,8 +750,8 @@ class Bulk(Phase):
             raise ValueError("Unspecified error")
             
             
-    def beta(self):
-        beta_method = self.settings.beta
+    def isobaric_expansion(self):
+        beta_method = self.settings.isobaric_expansion
         if beta_method == EQUILIBRIUM_DERIVATIVE:
             return self.beta_equilibrium()
         elif beta_method == FROM_DERIVATIVE_SETTINGS:
@@ -759,7 +759,7 @@ class Bulk(Phase):
         elif beta_method in (MOLE_WEIGHTED, MASS_WEIGHTED, MINIMUM_PHASE_PROP, 
                              MAXIMUM_PHASE_PROP):
             phases = self.phases
-            betas = [p.beta() for p in phases]
+            betas = [p.isobaric_expansion() for p in phases]
             
             if beta_method == MOLE_WEIGHTED:
                 phase_fracs = self.phase_fractions

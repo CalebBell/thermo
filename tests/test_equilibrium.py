@@ -437,9 +437,9 @@ def test_two_eos_pure_flash_all_properties():
     assert_allclose([i.Zmc() for i in eq.phases], [Zmc_expect]*2, rtol=1e-5)
     
     # Properties calculated form derivatives
-    assert_allclose(eq.beta(), 0.002008218029645217, rtol=1e-12)
-    assert_allclose(eq.bulk.beta(), 0.002008218029645217, rtol=1e-12)
-    assert_allclose([i.beta() for i in eq.phases], [0.0033751089225799308, 0.0010969574343554077], rtol=1e-12)
+    assert_allclose(eq.isobaric_expansion(), 0.002008218029645217, rtol=1e-12)
+    assert_allclose(eq.bulk.isobaric_expansion(), 0.002008218029645217, rtol=1e-12)
+    assert_allclose([i.isobaric_expansion() for i in eq.phases], [0.0033751089225799308, 0.0010969574343554077], rtol=1e-12)
     
     assert_allclose(eq.kappa(), 2.277492845010776e-05, rtol=1e-12)
     assert_allclose(eq.bulk.kappa(), 2.277492845010776e-05, rtol=1e-12)

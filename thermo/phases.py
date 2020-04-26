@@ -800,7 +800,7 @@ class Phase(object):
     def isothermal_bulk_modulus(self):
         return 1.0/self.kappa()
 
-    def beta(self):
+    def isobaric_expansion(self):
         return isobaric_expansion(self.V(), self.dV_dT())
     
     def isentropic_exponent(self):
@@ -838,7 +838,7 @@ class Phase(object):
 
 
     def Joule_Thomson(self):
-        return Joule_Thomson(self.T, self.V(), self.Cp(), dV_dT=self.dV_dT(), beta=self.beta())
+        return Joule_Thomson(self.T, self.V(), self.Cp(), dV_dT=self.dV_dT(), beta=self.isobaric_expansion())
     
     def speed_of_sound(self):
         # Intentionally molar
