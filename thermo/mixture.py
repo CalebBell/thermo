@@ -2411,8 +2411,8 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
 
         Examples
         --------
-        >>> Mixture(['water'], ws=[1], T=647.1, P=22048320.0).isobaric_expansion
-        0.34074205839222449
+        >>> Mixture(['argon'], ws=[1], T=647.1, P=22048320.0).isobaric_expansion_g
+        0.0015661100323025273
         '''
         dV_dT = self.VolumeGasMixture.property_derivative_T(self.T, self.P, self.zs, self.ws)
         Vm = self.Vmg
@@ -2430,8 +2430,8 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
 
         Examples
         --------
-        >>> Mixture(['water'], ws=[1], T=647.1, P=22048320.0).isobaric_expansion
-        0.34074205839222449
+        >>> Mixture(['argon'], ws=[1], T=647.1, P=22048320.0).isobaric_expansion_l
+        0.001859152875154442
         '''
         dV_dT = self.VolumeLiquidMixture.property_derivative_T(self.T, self.P, self.zs, self.ws)
         Vm = self.Vml
