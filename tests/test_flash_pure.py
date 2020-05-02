@@ -1051,6 +1051,28 @@ def test_SRK_high_P_PV_failure(hacks):
     PV = flasher.flash(P=P, V=base.V(), solution='high')
     assert_allclose(242348.637577, PV.T, rtol=1e-7)
 
+@pytest.mark.parametrize("hacks", [True, False])
+def test_ethane_PH_failure_high_P(hacks):
+    '''Two phase flash for bounding was failing because the VL solution did not
+    exist at that pressure.
+    '''
+    T, P, zs = 402.3703, 101000000.0000, [1.0]
+    fluid_idx, eos = 2, SRKMIX # ethane
+    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
+    
+    kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
+                  HeatCapacityGases=pure_props.HeatCapacityGases)
+
+    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
+    flasher.VL_only_CEOSs_same = hacks
+
+    base = flasher.flash(T=T, P=P)
+    
+    PH = flasher.flash(P=P, H=base.H())
+    assert_close(T, PH.T, rtol=1e-7)
+
 
 @pytest.mark.parametrize("hacks", [True, False])
 def test_SRK_high_PT_on_VS_failure(hacks):

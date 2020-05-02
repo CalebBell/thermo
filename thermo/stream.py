@@ -238,12 +238,13 @@ class StreamArgs(object):
         return self.specifications['T']
     @T.setter
     def T(self, T):
+        s = self.specifications
         if T is None:
-            self.specifications['T'] = T
+            s['T'] = T
             return None
-        if self.specifications['T'] is None and self.specified_state_vars > 1:
+        if s['T'] is None and self.state_specified:
             raise Exception('Two state vars already specified; unset another first')
-        self.specifications['T'] = T
+        s['T'] = T
     
     @property
     def T_calc(self):
@@ -292,12 +293,13 @@ class StreamArgs(object):
         return self.specifications['P']
     @P.setter
     def P(self, P):
+        s = self.specifications
         if P is None:
-            self.specifications['P'] = P
+            s['P'] = None
             return None
-        if self.P is None and self.specified_state_vars > 1:
+        if s['P'] is None and self.state_specified:
             raise Exception('Two state vars already specified; unset another first')
-        self.specifications['P'] = P
+        s['P'] = P
 
     @property
     def VF(self):
@@ -307,7 +309,7 @@ class StreamArgs(object):
         if VF is None:
             self.specifications['VF'] = VF
             return None
-        if self.specified_state_vars > 1 and self.VF is None:
+        if self.state_specified and self.VF is None:
             raise Exception('Two state vars already specified; unset another first')
         self.specifications['VF'] = VF
 
@@ -319,7 +321,7 @@ class StreamArgs(object):
         if H is None:
             self.specifications['H'] = H
             return None
-        if self.specified_state_vars > 1 and self.H is None:
+        if self.state_specified and self.H is None:
             raise Exception('Two state vars already specified; unset another first')
         self.specifications['H'] = H
 
@@ -364,15 +366,17 @@ class StreamArgs(object):
         return self.specifications['zs']
     @zs.setter
     def zs(self, arg):
+        s = self.specifications
         if arg is None:
-            self.specifications['zs'] = arg
+            specifications['zs'] = arg
         else:
             if self.single_composition_basis:
-                args = {'zs': arg, 'ws': None, 'Vfls': None, 'Vfgs': None, 'ns': None,
-                        'ms': None, 'Qls': None, 'Qgs': None}
-                self.specifications.update(args)
+#                args = {'zs': arg, 'ws': None, 'Vfls': None, 'Vfgs': None, 'ns': None,
+#                        'ms': None, 'Qls': None, 'Qgs': None}
+                s['zs'] = arg
+                s['ws'] = s['Vfls'] = s['Vfgs'] = s['ns'] = s['ms'] = s['Qls'] = s['Qgs'] = None
             else:
-                self.specifications['zs'] = arg
+                specifications['zs'] = arg
     
     @property
     def zs_calc(self):
@@ -450,16 +454,15 @@ class StreamArgs(object):
         return self.specifications['ns']
     @ns.setter
     def ns(self, arg):
+        s = self.specifications
         if arg is None:
-            self.specifications['ns'] = arg
+            s['ns'] = arg
         else:
             if self.single_composition_basis:
-                args = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None, 
-                        'ns': arg, 'ms': None, 'Qls': None, 'Qgs': None,
-                        'n': None, 'm': None, 'Q': None}
-                self.specifications.update(args)
+                s['zs'] = s['ws'] = s['Vfls'] = s['Vfgs'] = s['ms'] = s['Qls'] = s['Qgs'] = s['n'] = s['m'] = s['Q'] = None
+                s['ns'] = arg
             else:
-                self.specifications['ns'] = arg
+                s['ns'] = arg
 
     @property
     def ns_calc(self):
@@ -515,31 +518,28 @@ class StreamArgs(object):
         return self.specifications['ms']
     @ms.setter
     def ms(self, arg):
+        s = self.specifications
         if arg is None:
-            self.specifications['ms'] = arg
+            s['ms'] = arg
         else:
             if self.single_composition_basis:
-                args = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None, 
-                        'ns': None, 'ms': arg, 'Qls': None, 'Qgs': None,
-                        'n': None, 'm': None, 'Q': None}
-                self.specifications.update(args)
+                s['zs'] = s['ws'] = s['Vfls'] = s['Vfgs'] = s['ns'] = s['Qls'] = s['Qgs'] = s['n'] = s['m'] = s['Q'] = None
+                s['ms'] = arg
             else:
-                self.specifications['ms'] = arg
+                s['ms'] = arg
     @property
     def Qls(self):
         return self.specifications['Qls']
     @Qls.setter
     def Qls(self, arg):
         if arg is None:
-            self.specifications['Qls'] = arg
+            s['Qls'] = arg
         else:
             if self.single_composition_basis:
-                args = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None, 
-                        'ns': None, 'ms': None, 'Qls': arg, 'Qgs': None,
-                        'n': None, 'm': None, 'Q': None}
-                self.specifications.update(args)
+                s['zs'] = s['ws'] = s['Vfls'] = s['Vfgs'] = s['ms'] = s['ns'] = s['Qgs'] = s['n'] = s['m'] = s['Q'] = None
+                s['Qls'] = arg
             else:
-                self.specifications['Qls'] = arg
+                s['Qls'] = arg
     
     @property
     def Qgs(self):
@@ -574,12 +574,12 @@ class StreamArgs(object):
         return self.specifications['n']
     @n.setter
     def n(self, arg):
+        s = self.specifications
         if arg is None:
-            self.specifications['n'] = arg
+            s['n'] = None
         else:
-            args = {'ns': None, 'ms': None, 'Qls': None, 'Qgs': None,
-                    'n': arg, 'm': None, 'Q': None}
-            self.specifications.update(args)
+            s['n'] = arg
+            s['ns'] = s['ms'] = s['Qls'] = s['Qgs'] = s['m'] = s['Q'] = None
 
     @property
     def n_calc(self):
@@ -829,21 +829,21 @@ class StreamArgs(object):
     def composition_specified(self):
         if self.equilibrium_pkg:
             s = self.specifications
-            if s['zs'] is not None:
+            if s['zs'] is not None and None not in s['zs']:
                 return True
-            if s['ws'] is not None:
+            if s['ws'] is not None and None not in s['ws']:
                 return True
-            if s['Vfls'] is not None:
+            if s['Vfls'] is not None and None not in s['Vfls']:
                 return True
-            if s['Vfgs'] is not None:
+            if s['Vfgs'] is not None and None not in s['Vfgs']:
                 return True
-            if s['ns'] is not None:
+            if s['ns'] is not None and None not in s['ns']:
                 return True
-            if s['ms'] is not None:
+            if s['ms'] is not None and None not in s['ms']:
                 return True
-            if s['Qls'] is not None:
+            if s['Qls'] is not None and None not in s['Qls']:
                 return True
-            if s['Qgs'] is not None:
+            if s['Qgs'] is not None and None not in s['Qgs']:
                 return True
             return False
         IDs, zs, ws, Vfls, Vfgs = preprocess_mixture_composition(IDs=self.IDs,
@@ -1744,7 +1744,11 @@ class EquilibriumStream(EquilibriumState):
         elif Vfgs is not None:
             zs = Vfgs
         
-        self._MW = MW = mixing_simple(zs, constants.MWs)
+        MW = 0.0
+        MWs = constants.MWs
+        for i in range(len(zs)):
+            MW  += zs[i]*MWs[i]
+        self._MW = MW
         MW_inv = 1.0/MW
 
         if H_mass is not None:
@@ -1762,7 +1766,15 @@ class EquilibriumStream(EquilibriumState):
             H = energy/n
 
         if existing_flash is not None:
+            # All variable which have been set
+            if type(existing_flash) is EquilibriumStream:
+                composition_spec, flow_spec = self.composition_spec, self.flow_spec
             self.__dict__.update(existing_flash.__dict__)
+            if type(existing_flash) is EquilibriumStream:
+                self.composition_spec, self.flow_spec = composition_spec, flow_spec
+                # TODO: are any variables caried over from an existing equilibrium stream?
+                # Delete if so
+
         else:
             dest = super(EquilibriumStream, self).__init__
             flasher.flash(T=T, P=P, VF=VF, H=H, S=S, dest=dest, zs=zs, hot_start=hot_start)

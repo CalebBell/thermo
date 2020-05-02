@@ -59,7 +59,8 @@ from numpy.testing import assert_allclose
 from scipy.optimize import minimize, fsolve, root
 from scipy.interpolate import CubicSpline
 from thermo.utils import (exp, log, log10, floor, copysign, normalize, has_matplotlib,
-                          mixing_simple, property_mass_to_molar, TrivialSolutionError, PhaseCountReducedError)
+                          mixing_simple, property_mass_to_molar, TrivialSolutionError, 
+                          PhaseCountReducedError, PhaseExistenceImpossible)
 from thermo.heat_capacity import (Lastovka_Shaw_T_for_Hm, Dadgostar_Shaw_integral,
                                   Dadgostar_Shaw_integral_over_T, Lastovka_Shaw_integral,
                                   Lastovka_Shaw_integral_over_T)
@@ -118,6 +119,7 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
         except OverflowError:
             Ks = [trunc_exp(lnphis_l[i] - lnphis_g[i]) for i in cmps] # K_value(phi_l=l, phi_g=g)
 
+        V_over_F_old = V_over_F
         try:
             V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks, guess=V_over_F)
         except Exception as e:
@@ -235,7 +237,7 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
         if err > 0.0 and err in (err1, err2, err3):
             raise OscillationError("Converged to cycle in errors, no progress being made")
         # Accept the new compositions
-        xs_old, ys_old, V_over_F_old, Ks_old = xs, ys, V_over_F, Ks
+        xs_old, ys_old, Ks_old = xs, ys, Ks
         # if not limited_Z:
         #     assert xs == l.zs
         #     assert ys == g.zs
@@ -251,7 +253,13 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
             raise TrivialSolutionError("Converged to trivial condition, compositions of both phases equal",
                                        comp_difference, iteration, err)
         if err < tol and not limited_Z:
-            return V_over_F, xs, ys, l, g, iteration, err
+            # err_mole_balance = 0.0
+            # for i in cmps:
+            #     err_mole_balance += abs(xs_old[i] * (1.0 - V_over_F_old) + ys_old[i] * V_over_F_old - zs[i])
+            # if err_mole_balance < mole_balance_tol:
+
+                # return V_over_F, xs, ys, l, g, iteration, err
+                return V_over_F_old, xs_old, ys_old, l, g, iteration, err
         # elif err < tol and limited_Z:
         #     print(l.fugacities()/np.array(g.fugacities()))
         err1, err2, err3 = err, err1, err2
@@ -3237,9 +3245,12 @@ def solve_P_VF_IG_K_composition_independent(VF, P, zs, gas, liq, xtol=1e-10):
             derr += x4*(1.0 - x2*x3)*dlnphis_dT_l[i]
         return err, derr
     try:
-        T = newton(to_solve, 300.0, xtol=xtol, fprime=True)
+        T = newton(to_solve, 300.0, xtol=xtol, fprime=True, low=1e-6)
     except:
-        T = brenth(lambda x: to_solve(x)[0], 300, 1000)
+        try:
+            T = brenth(lambda x: to_solve(x)[0], 300, 1000)
+        except:
+            T = newton(to_solve, 400.0, xtol=xtol, fprime=True, low=1e-6)
     xs = [zs[i]/(1.+VF*(Ks[i]-1.)) for i in cmps]
     for i in cmps:
         Ks[i] *= xs[i]
@@ -4299,8 +4310,12 @@ class FlashBase(object):
             if g:
                 phases += [g]
             T, P = phases[0].T, phases[0].P
-            
-            return dest(T, P, zs, gas=g, liquids=ls, solids=ss, 
+            if self.N > 1:
+                g, ls, ss, betas = identify_sort_phases(phases, betas, constants,
+                                                        correlations, settings=settings,
+                                                        skip_solids=not bool(self.solids))
+
+            return dest(T, P, zs, gas=g, liquids=ls, solids=ss,
                                     betas=betas, flash_specs=flash_specs, 
                                     flash_convergence=flash_convergence,
                                     constants=constants, correlations=correlations,
@@ -5138,7 +5153,7 @@ class FlashVL(FlashBase):
     # Settings for near-boundary conditions
     PT_SS_POLISH_TOL = 1e-25
     PT_SS_POLISH = True
-    PT_SS_POLISH_VF = 5e-8
+    PT_SS_POLISH_VF = 1e-6 # 5e-8
     PT_SS_POLISH_MAXITER = 1000
 
     SS_2P_STAB_HIGHEST_COMP_DIFF = False
@@ -5496,7 +5511,7 @@ class FlashVL(FlashBase):
             ls, g = ([liquid], None) if min_phase is liquid else ([], gas)
             return g, ls, [], [1.0], {'iterations': 0, 'err': 0.0, 'stab_info': stab_info}
 
-        if V_over_F < 0.0 or V_over_F > 1.0:
+        if V_over_F < self.PT_SS_POLISH_VF or V_over_F > 1.0-self.PT_SS_POLISH_VF:
             # Continue the SS, with the previous values, to a much tighter tolerance - if specified/allowed
             if (V_over_F > -self.PT_SS_POLISH_VF or V_over_F > 1.0 + self.PT_SS_POLISH_VF) and self.PT_SS_POLISH:
                 V_over_F, xs, ys, l, g, iteration, err = sequential_substitution_2P(T=T, P=P, V=None,
@@ -6395,7 +6410,10 @@ class FlashPureVLS(FlashBase):
             sat_liq = self.liquids[0].to(zs=zs, T=sat_gas.T, V=1.0/sat_gas_CoolProp.saturated_liquid_keyed_output(CPiDmolar))
             return sat_gas.T, sat_liq, sat_gas, 0, 0.0
         elif self.VL_only_CEOSs_same:
-            Tsat = self.gas.eos_pures_STP[0].Tsat(P)
+            try:
+                Tsat = self.gas.eos_pures_STP[0].Tsat(P)
+            except:
+                raise PhaseExistenceImpossible("Failed to calculate VL equilibrium T; likely supercritical", zs=zs, P=P)
             sat_gas = self.gas.to_TP_zs(Tsat, P, zs)
             sat_liq = self.liquids[0].to_TP_zs(Tsat, P, zs, other_eos=sat_gas.eos_mix)
             return Tsat, sat_liq, sat_gas, 0, 0.0
@@ -6583,8 +6601,11 @@ class FlashPureVLS(FlashBase):
                 return False
         
         if (self.VL_only_CEOSs_same or self.VL_IG_activity) and not selection_fun_1P_specified and solution is None and fixed_var != 'V':
-            return self.flash_TPV_HSGUA_VL_bound_first(fixed_var_val=fixed_var_val, spec_val=spec_val, fixed_var=fixed_var,
-                                 spec=spec, iter_var=iter_var, hot_start=hot_start, selection_fun_1P=selection_fun_1P, cubic=self.VL_only_CEOSs_same)
+            try:
+                return self.flash_TPV_HSGUA_VL_bound_first(fixed_var_val=fixed_var_val, spec_val=spec_val, fixed_var=fixed_var,
+                                     spec=spec, iter_var=iter_var, hot_start=hot_start, selection_fun_1P=selection_fun_1P, cubic=self.VL_only_CEOSs_same)
+            except PhaseExistenceImpossible:
+                pass
 #            if sln is not None:
 #                return sln
         try:

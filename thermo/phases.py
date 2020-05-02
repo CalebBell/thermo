@@ -2129,6 +2129,15 @@ class EOSGas(Phase):
         if phase in ('l', 'g'):
             return phase
         return 'g'
+    
+    def as_args(self):
+        eos_kwargs = self.eos_kwargs.copy()
+        base = 'EOSGas(eos_class=%s, eos_kwargs=%s, HeatCapacityGases=correlations.HeatCapacityGases,'  %(self.eos_class.__name__, self.eos_kwargs)
+        for s in ('Hfs', 'Gfs', 'Sfs', 'T', 'P', 'zs'):
+            if hasattr(self, s) and getattr(self, s) is not None:
+                base += '%s=%s, ' %(s, getattr(self, s))
+        base += ')'
+        return base
         
     def __init__(self, eos_class, eos_kwargs, HeatCapacityGases=None, Hfs=None,
                  Gfs=None, Sfs=None,

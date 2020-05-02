@@ -55,22 +55,23 @@ def test_C2_C5_PR():
     # Issue here was that (sum_criteria < 1e-7) was the check in the stability test result interpretation
     # Fixed it by decreasing the tolerance 10x (1e-8)
     res = flasher.flash(P=5475649.470049857+15, T=123.3+273.15, zs=zs)
-    assert_allclose(res.betas, [0.9999995467510435, 4.532489564779141e-07], rtol=1e-6)
-    assert_allclose(res.gas.zs, [0.7058337747935349, 0.29416622520646507])
-    assert_allclose(res.liquid0.zs, [0.4951794792559015, 0.5048205207440986])
+    assert_close1d(res.betas, [0.9999995457838572, 4.5421614280893863e-07], rtol=1e-4)
+    assert_close1d(res.gas.zs, [0.7058337751720506, 0.29416622482794935], rtol=1e-4)
+    assert_close1d(res.liquid0.zs, [0.49517964670906095, 0.504820353290939], rtol=1e-4)
     
-    # In this case, the tolerance had to be decreased 10x more - to 1e-9! Triggered at a dP of 0.5
+    
+    # # In this case, the tolerance had to be decreased 10x more - to 1e-9! Triggered at a dP of 0.5
     res = flasher.flash(P=5475649.470049857+0.5, T=123.3+273.15, zs=zs)
-    assert_allclose(res.betas, [0.9999999849318483, 1.5068151726360668e-08], rtol=1e-4)
-    assert_allclose(res.gas.zs, [0.7058336826506021, 0.29416631734939785])
-    assert_allclose(res.liquid0.zs, [0.49517789934188566, 0.5048221006581144])
-
-    # This one is too close to the border - the VF from SS is less than 0, 
-    # but if the tolerance is increased, it is positive (and should be)
+    assert_close1d(res.betas, [0.999999984859061, 1.5140938947055815e-08], rtol=1e-4)
+    assert_close1d(res.gas.zs, [0.7058336826506021, 0.29416631734939785])
+    assert_close1d(res.liquid0.zs, [0.4951780663825745, 0.5048219336174254])
+    
+    # # This one is too close to the border - the VF from SS is less than 0, 
+    # # but if the tolerance is increased, it is positive (and should be)
     res = flasher.flash(P=5475649.470049857+0.001, T=123.3+273.15, zs=zs)
-    assert_allclose(res.betas, [0.9999999999697166, 3.028344242039793e-11], rtol=1e-2)
-    assert_allclose(res.gas.zs, [0.7058336794959247, 0.29416632050407526])
-    assert_allclose(res.liquid0.zs, [0.49517801199759515, 0.5048219880024049])
+    assert_close1d(res.betas, [0.9999999999697144, 3.028555184414472e-11], rtol=3e-3)
+    assert_close1d(res.gas.zs, [0.7058336794959247, 0.29416632050407526])
+    assert_close1d(res.liquid0.zs, [0.49517801199759515, 0.5048219880024049])
     
     # This one is presently identified as a LL...  just check the number of phases
     assert flasher.flash(zs=zs, P=6.615e6, T=386).phase_count == 2

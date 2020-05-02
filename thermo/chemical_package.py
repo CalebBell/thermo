@@ -564,10 +564,12 @@ class PropertyCorrelationPackage(object):
             s = '%s(' %(self.__class__.__name__)
             s += 'constants=constants, skip_missing=True,\n'
             for prop in iter_props:
-                try:
-                    s += '%s=%s,\n' %(prop, self.as_best_fit(getattr(self, prop)))
-                except Exception as e:
-                    print(e, prop)
+                prop_attr = getattr(self, prop)
+                if prop_attr is not None:
+                    try:
+                        s += '%s=%s,\n' %(prop, self.as_best_fit(prop_attr))
+                    except Exception as e:
+                        print(e, prop)
                     
             s += ')'
             return s

@@ -41,7 +41,7 @@ __all__ = ['isobaric_expansion', 'isothermal_compressibility',
 'phase_select_property', 'TDependentProperty', 
 'TPDependentProperty', 'MixtureProperty', 'allclose_variable', 'horner', 
 'polylog2', 'v_to_v_molar', 'v_molar_to_v', 'TrivialSolutionError',
-'PhaseCountReducedError', 'OverspeficiedError']
+'PhaseCountReducedError', 'PhaseExistenceImpossible', 'OverspeficiedError']
 
 import os
 from cmath import sqrt as csqrt
@@ -2466,7 +2466,7 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False)
         try:
             ws = [i.ws for i in inlets]
         except:
-            fractwsions = [i.ws() for i in inlets]
+            ws = [i.ws() for i in inlets]
         
         feed_cmps, feed_masses = mix_multiple_component_flows(IDs=feed_CASs,
                                                               flows=[i.m for i in inlets], 
@@ -2676,7 +2676,7 @@ def assert_energy_balance(inlets, outlets, energy_inlets, energy_outlets,
     for product in energy_outlets:
         energy_out += product.Q
 
-    assert_allclose(energy_in, energy_out, rtol=rtol, atol=atol)
+    assert_close(energy_in, energy_out, rtol=rtol, atol=atol)
 
 
 TEST_METHOD_1 = 'Test method 1'
@@ -5200,3 +5200,12 @@ class PhaseCountReducedError(Exception):
         super(PhaseCountReducedError, self).__init__(message)
         self.zs = zs
         self.Ks = Ks
+
+class PhaseExistenceImpossible(Exception):
+    '''Error raised SS inner flash loop says all Ks are under 1 or above 1
+    '''
+    def __init__(self, message, zs=None, T=None, P=None):
+        super(PhaseExistenceImpossible, self).__init__(message)
+        self.zs = zs
+        self.T = T
+        self.P = P
