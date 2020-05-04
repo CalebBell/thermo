@@ -1338,6 +1338,39 @@ def test_PH_VL_not_identifying_phases():
     assert res.gas is not None
     assert len(res.liquids) == 1
     
+
+def test_TVF_PVF_reversed_mole_balance():
+    '''This is a test of TVF and PVF consistency. There is definitely error.
+    Fixing the error seems to require a tighter PT SS tolerance.
+    For now, run with lower tplerance. 
+    '''
+    constants = ChemicalConstantsPackage(atomss=[{'N': 2}, {'C': 2, 'H': 6}], CASs=['7727-37-9', '74-84-0'], MWs=[28.0134, 30.06904], names=['nitrogen', 'ethane'], omegas=[0.04, 0.098], Pcs=[3394387.5, 4872000.0], Tcs=[126.2, 305.32])
+    correlations = PropertyCorrelationPackage(constants=constants, skip_missing=True,
+        VaporPressures=[VaporPressure(best_fit=(63.2, 126.18199999999999, [5.490876411024536e-15, -3.709517805130509e-12, 1.0593254238679989e-09, -1.6344291780087318e-07, 1.4129990091975526e-05, -0.0005776268289835264, -0.004489180523814208, 1.511854256824242, -36.95425216567675])),
+        VaporPressure(best_fit=(90.4, 305.312, [-1.1908381885079786e-17, 2.1355746620587145e-14, -1.66363909858873e-11, 7.380706042464946e-09, -2.052789573477409e-06, 0.00037073086909253047, -0.04336716238170919, 3.1418840094903784, -102.75040650505277])),],
+        HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [-6.496329615255804e-23, 2.1505678500404716e-19, -2.2204849352453665e-16, 1.7454757436517406e-14, 9.796496485269412e-11, -4.7671178529502835e-08, 8.384926355629239e-06, -0.0005955479316119903, 29.114778709934264])),
+        HeatCapacityGas(best_fit=(50.0, 1000.0, [7.115386645067898e-21, -3.2034776773408394e-17, 5.957592282542187e-14, -5.91169369931607e-11, 3.391209091071677e-08, -1.158730780040934e-05, 0.002409311277400987, -0.18906638711444712, 37.94602410497228]))])
+    
+    eos_kwargs = {'Pcs':constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
+    gas = EOSGas(eos_class=PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, 
+           T=298.15, P=101325.0, zs=[0.5, 0.5])
+    liquid = EOSLiquid(eos_class=PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, 
+           T=298.15, P=101325.0, zs=[0.5, 0.5])
+    flasher = FlashVLN(constants, correlations, [liquid], gas)
+    base = flasher.flash(T=200.0, P=1e6, zs=[.5, .5])
+    
+    liquid = flasher.flash(zs=base.liquid0.zs, T=base.T, VF=0)
+    
+    # The issues comes when using the gas mole fractions
+    zs_balanced = [liquid.gas.zs[i]*base.gas_beta + liquid.liquid0.zs[i]*base.betas[1] for i in flasher.cmps]
+    err = sum(abs(i-j) for i, j in zip(base.zs, zs_balanced))
+    assert err < 1e-6
+    
+    liquid = flasher.flash(zs=base.liquid0.zs, P=base.P, VF=0)
+    
+    zs_balanced = [liquid.gas.zs[i]*base.gas_beta + liquid.liquid0.zs[i]*base.betas[1] for i in flasher.cmps]
+    err = sum(abs(i-j) for i, j in zip(base.zs, zs_balanced))
+    assert err < 1e-6
     
     
 def test_PH_TODO():

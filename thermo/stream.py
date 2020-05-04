@@ -1825,13 +1825,46 @@ class EquilibriumStream(EquilibriumState):
         self._ws = ws = [zi*MWi*MW_inv for zi, MWi in zip(zs, constants.MWs)]
         self.ms = [m*wi for wi in ws]
     
+    
+    @property
+    def T_calc(self):
+        return self.T
+
+    @property
+    def P_calc(self):
+        return self.P
+    
+    @property
+    def VF_calc(self):
+        return self.VF
+    
+    @property
+    def zs_calc(self):
+        return self.zs
+    
+    @property
+    def ns_calc(self):
+        return self.ns
+    
+    @property
+    def ms_calc(self):
+        return self.ms
+    
+    @property
+    def n_calc(self):
+        return self.n
+
     @property
     def energy(self):
         return self.H()*self.n
+    
+    energy_calc = energy
         
     @property
     def energy_reactive(self):
         return self.H_reactive()*self.n
+    
+    energy_reactive_calc = energy_reactive
 
     @property
     def property_package(self):
@@ -1840,6 +1873,8 @@ class EquilibriumStream(EquilibriumState):
     @property    
     def Q(self):
         return self.n*self.V()
+    
+    Q_calc = Q
 
     @property
     def Qgs(self):
@@ -1849,6 +1884,8 @@ class EquilibriumStream(EquilibriumState):
         n = self.n
         Vn = V*n
         return [zi*Vn for zi in self.zs]
+    
+    Qgs_calc = Qgs
 
     @property
     def Qls(self):
@@ -1856,6 +1893,8 @@ class EquilibriumStream(EquilibriumState):
         ns = self.ns
         Vms_TP = self.constants.Vml_STPs
         return [ns[i]*Vms_TP[i] for i in self.cmps]
+    
+    Qls_calc = Qls
         
     def StreamArgs(self):
         '''Goal to create a StreamArgs instance, with the user specified

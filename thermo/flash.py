@@ -4137,6 +4137,11 @@ class FlashBase(object):
            
            Can this be made part of the multiphase flash?
         '''
+        if zs is None:
+            if self.N == 1:
+                zs = [1.0]
+            else:
+                raise ValueError("Composition missing for flash")
         constants, correlations = self.constants, self.correlations
         settings = self.settings
         if dest is None:
@@ -4149,9 +4154,6 @@ class FlashBase(object):
 #                                           V=V, H=H, S=S, U=U, G=G, A=A, 
 #                                           solution=solution, retry=retry,
 #                                           hot_start=hot_start)
-        if zs is None:
-            zs = [1.0]
-
         T_spec = T is not None
         P_spec = P is not None
         V_spec = V is not None
@@ -5179,6 +5181,7 @@ class FlashVL(FlashBase):
     VF_flash_algos = [SS_VF_simultaneous]
     
     dew_bubble_xtol = 1e-8
+    dew_bubble_newton_xtol = 1e-5
     dew_bubble_maxiter = 200
     
     HSGUA_BISECT_XTOL = 1e-9
@@ -5221,6 +5224,7 @@ class FlashVL(FlashBase):
         constants, correlations = self.constants, self.correlations
         
         dew_bubble_xtol = self.dew_bubble_xtol
+        dew_bubble_newton_xtol = self.dew_bubble_newton_xtol
         dew_bubble_maxiter = self.dew_bubble_maxiter
         
         if hot_start is not None:
@@ -5229,7 +5233,7 @@ class FlashVL(FlashBase):
             for method in self.VF_guess_methods:
                 try:
                     if method is dew_bubble_newton_zs:
-                        xtol = max(1e-3*xtol, 1e-12)
+                        xtol = dew_bubble_newton_xtol
                     else:
                         xtol = dew_bubble_xtol
                     _, P, _, xs, ys = TP_solve_VF_guesses(zs=zs, method=method, constants=constants,
@@ -5289,14 +5293,14 @@ class FlashVL(FlashBase):
         
         dew_bubble_xtol = self.dew_bubble_xtol
         dew_bubble_maxiter = self.dew_bubble_maxiter
-        
+        dew_bubble_newton_xtol = self.dew_bubble_newton_xtol
         if hot_start is not None:
             T, xs, ys = hot_start.T, hot_start.liquid0.zs, hot_start.gas.zs
         else:
             for method in self.VF_guess_methods:
                 try:
                     if method is dew_bubble_newton_zs:
-                        xtol = max(1e-3*xtol, 1e-12)
+                        xtol = dew_bubble_newton_xtol
                     else:
                         xtol = dew_bubble_xtol
                     T, _, _, xs, ys = TP_solve_VF_guesses(zs=zs, method=method, constants=constants,
@@ -6380,6 +6384,7 @@ class FlashPureVLS(FlashBase):
         return Psat
 
     def flash_TVF(self, T, VF=None, zs=None, hot_start=None):
+        zs = [1.0]
         if self.VL_only_CoolProp:
             sat_gas_CoolProp = caching_state_CoolProp(self.gas.backend, self.gas.fluid, 1, T, CPQT_INPUTS, CPunknown, None)
             sat_gas = self.gas.from_AS(sat_gas_CoolProp)
@@ -6404,6 +6409,7 @@ class FlashPureVLS(FlashBase):
         return vals
 
     def flash_PVF(self, P, VF=None, zs=None, hot_start=None):
+        zs = [1.0]
         if self.VL_only_CoolProp:
             sat_gas_CoolProp = caching_state_CoolProp(self.gas.backend, self.gas.fluid, P, 1.0, CPPQ_INPUTS, CPunknown, None)
             sat_gas = self.gas.from_AS(sat_gas_CoolProp)
