@@ -1010,8 +1010,24 @@ def test_phases_at():
     
     flashN = FlashVLN(constants, properties, liquids=[liq2, liq3, liq, liq3, liq, liq2, liq2], gas=gas)
     assert 3 == len(set([id(i) for i in flashN.phases_at(T=T, P=P, zs=zs)[1]]))
+
+def test_VLL_handles_one_phase_only():
+    constants = ChemicalConstantsPackage(atomss=[{'N': 2}, {'O': 2}, {'Ar': 1}, {'H': 2, 'O': 1}], CASs=['7727-37-9', '7782-44-7', '7440-37-1', '7732-18-5'], MWs=[28.0134, 31.9988, 39.948, 18.01528], names=['nitrogen', 'oxygen', 'argon', 'water'], omegas=[0.04, 0.021, -0.004, 0.344], Pcs=[3394387.5, 5042945.25, 4873732.5, 22048320.0], Tcs=[126.2, 154.58, 150.8, 647.14])
     
+    correlations = PropertyCorrelationPackage(constants=constants, skip_missing=True,
+    HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [-6.496329615255804e-23, 2.1505678500404716e-19, -2.2204849352453665e-16, 1.7454757436517406e-14, 9.796496485269412e-11, -4.7671178529502835e-08, 8.384926355629239e-06, -0.0005955479316119903, 29.114778709934264])),
+    HeatCapacityGas(best_fit=(50.0, 1000.0, [7.682842888382947e-22, -3.3797331490434755e-18, 6.036320672021355e-15, -5.560319277907492e-12, 2.7591871443240986e-09, -7.058034933954475e-07, 9.350023770249747e-05, -0.005794412013028436, 29.229215579932934])),
+    HeatCapacityGas(best_fit=(50.0, 1000.0, [-1.0939921922581918e-31, 4.144146614006628e-28, -6.289942296644484e-25, 4.873620648503505e-22, -2.0309301195845294e-19, 4.3863747689727484e-17, -4.29308508081826e-15, 20.786156545383236])),
+    HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
+    ])
+    gas = IdealGas(HeatCapacityGases=correlations.HeatCapacityGases, T=298.15, P=101325.0, zs=[.25, .25, .25, .25])
+    flasher = FlashVLN(constants, correlations, liquids=[], gas=gas)
+    res = flasher.flash(T=300, P=1e5, zs=[.25, .25, .25, .25])
+    assert res.phase_count == 1
+    assert_close(res.rho_mass(), 1.1824324014080023)
     
+    # TODO: Test PH, etc.
+        
 def write_PT_plot(fig, eos, IDs, zs, flashN):
     # Helper function for PT plotting
     path = os.path.join(flashN_surfaces_dir, 'PT', 'Cubic')

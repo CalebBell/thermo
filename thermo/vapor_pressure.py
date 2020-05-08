@@ -26,7 +26,7 @@ __all__ = ['WagnerMcGarry', 'AntoinePoling', 'WagnerPoling', 'AntoineExtended',
            'Antoine', 'Wagner_original', 'Wagner', 'TRC_Antoine_extended', 
            'vapor_pressure_methods', 'VaporPressure', 'Perrys2_8', 'VDI_PPDS_3',
            'boiling_critical_relation', 'Lee_Kesler', 'Ambrose_Walton', 
-           'Edalat', 'Sanjari', 'Psub_Clapeyron', 'SublimationPressure', 
+           'Edalat', 'Sanjari', 'Psat_IAPWS', 'dPsat_IAPWS_dT', 'Psub_Clapeyron', 'SublimationPressure', 
            'Antoine_coeffs_from_point', 'Antoine_AB_coeffs_from_point',
            'DIPPR101_ABC_coeffs_from_point']
 
@@ -339,6 +339,118 @@ def Wagner(T, Tc, Pc, a, b, c, d):
     tau = 1.0 - T/Tc
     return Pc*exp((a*tau + b*tau**1.5 + c*tau**2.5 + d*tau**5)/Tr)
 
+
+def Psat_IAPWS(T):
+    r'''Calculates vapor pressure of water using the IAPWS explicit equation.
+
+    .. math::
+        P^{sat} = 10^6 \left[ \frac{2C}{-B + \sqrt{B^2 - 4AC}}  \right]^4
+        
+    .. math::
+        A = \nu^2 + n_1 \nu + n_2
+        
+    .. math::
+        B = n_3 \nu^2 + n_4\nu + n_5
+        
+    .. math::
+        C = n_6\nu^2 + n_7\nu + n_8
+        
+    .. math::
+        \nu = T + \frac{n_9}{T - n_{10}}
+
+    Parameters
+    ----------
+    T : float
+        Temperature of water, [K]
+
+    Returns
+    -------
+    Psat : float
+        Vapor pressure at T [Pa]
+
+    Notes
+    -----
+    This formulation is quite efficient, and can also be solved backward.
+    The range of validity of this equation is 273.15 K < T < 647.096 K, the 
+    IAPWS critical point.
+
+    Examples
+    --------
+    >>> Psat_IAPWS(300.)
+    3536.5894130130105
+
+    References
+    ----------
+    .. [1] Kretzschmar, Hans-Joachim, and Wolfgang Wagner. International Steam
+       Tables: Properties of Water and Steam Based on the Industrial
+       Formulation IAPWS-IF97. Springer, 2019.
+    '''
+    v = T - 0.23855557567849/(T - 0.65017534844798E3)
+    v2 = v*v
+    A = v2 + 0.11670521452767E4*v - 0.72421316703206E6
+    B = -0.17073846940092E2*v2 + 0.12020824702470E5*v - 0.32325550322333E7
+    C = 0.14915108613530E2*v2 - 0.48232657361591E4*v + 0.40511340542057E6
+    x = ((C + C)/((B*B - 4.0*A*C)**0.5 - B))
+    x2 = x*x
+    P = 1E6*x2*x2
+    return P
+
+
+def dPsat_IAPWS_dT(T):
+    r'''Calculates the first temperature dervative of vapor pressure of water 
+    using the IAPWS explicit equation. This was derived with SymPy, using the
+    CSE method.
+
+
+    Parameters
+    ----------
+    T : float
+        Temperature of water, [K]
+
+    Returns
+    -------
+    dPsat_dT : float
+        Temperature dervative of vapor pressure at T [Pa/K]
+
+    Notes
+    -----
+    The derivative of this is useful when solving for water dew point.
+
+    Examples
+    --------
+    >>> dPsat_IAPWS_dT(300.)
+    207.88388134164282
+
+    References
+    ----------
+    .. [1] Kretzschmar, Hans-Joachim, and Wolfgang Wagner. International Steam
+       Tables: Properties of Water and Steam Based on the Industrial
+       Formulation IAPWS-IF97. Springer, 2019.
+    '''
+    # 1 power, four divisions
+    x0 = 1.0/(T - 650.175348447980014)
+    x1 = T - 0.238555575678490006*x0
+    x2 = x1*x1
+    x3 = -0.0119059642846224972*T + 0.00284023416392566131*x0 + 0.0000368171193891888733*x2 + 1.0
+    x4 = 0.00371867596455583913*T
+    x5 = 0.000887110885486382334*x0
+    x6 = 5.28184261979789455e-6*x2
+    x7 = x4 - x5 - x6 - 1.0
+    x8 = 4668.20858110680001*T - 1113.62718545319967*x0 + 4.0*x2 - 2896852.66812823992
+    x9 = (x7*x7 - 9.56991643658934639e-14*x8*(-4823.26573615910002*T + 1150.61693433977007*x0 + 14.9151086135300002*x2 + 405113.405420569994))**0.5
+    x10 = -x4 + x5 + x6 + x9 + 1.0
+    x10_inv = 1.0/x10
+    x11 = 0.00153804662447919488*T - 1.0
+    x11 = 1.0/(x11*x11)
+    x12 = x1*(1.12864813714895499e-6*x11 + 2.0)
+    x20 = x10_inv*x10_inv*x10_inv*x10_inv
+    return (-3946.77829948379076*x3*x3*x3*(2.68752888216023447e-8*x11 - 0.000147268477556755493*x12 
+                + 0.0476238571384899889 + x3*(-8.39415340011308276e-9*x11 + 0.0000211273704791915782*x12
+                - 0.0148747038582233565 + 2.0*(x7*(4.19707670005654138e-9*x11 
+            - 0.0000105636852395957891*x12 + 0.00743735192911167825) + x8*(2.60482114645230015e-16*x11 
+            - 1.42736343074136086e-12*x12 + 4.6158250046507185e-10) + (0.00263438245944447809*x11 
+            + 4.0*x12 + 4668.20858110680001)*(4.6158250046507185e-10*T - 1.10113079121562103e-10*x0 
+            - 1.42736343074136086e-12*x2 - 3.8769014372169964e-8))/x9)*x10_inv)*x20)
 
 WAGNER_MCGARRY = 'WAGNER_MCGARRY'
 WAGNER_POLING = 'WAGNER_POLING'

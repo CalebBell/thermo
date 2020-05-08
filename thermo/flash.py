@@ -5729,6 +5729,11 @@ class FlashVLN(FlashVL):
             
             
     def flash_TP_K_composition_idependent(self, T, P, zs):
+        if self.max_phases == 1:
+            phase = self.phases[0].to(T=T, P=P, zs=zs)
+            return None, [phase], [], [1.0], {'iterations': 0, 'err': 0}
+        
+        
         Ks = liquid_phis = self.liquid0.phis_at(T, P, zs)
 #        Ks = [liquid_phis[i]/gas_phis[i] for i in self.cmps]
         try:

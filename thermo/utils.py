@@ -38,7 +38,7 @@ __all__ = ['isobaric_expansion', 'isothermal_compressibility',
  'vapor_mass_quality', 'mix_component_flows',
 'mix_multiple_component_flows', 'mix_component_partial_flows', 
 'solve_flow_composition_mix', 'assert_component_balance', 'assert_energy_balance',
-'phase_select_property', 'TDependentProperty', 
+'phase_select_property', 'TDependentProperty',
 'TPDependentProperty', 'MixtureProperty', 'allclose_variable', 'horner', 
 'polylog2', 'v_to_v_molar', 'v_molar_to_v', 'TrivialSolutionError',
 'PhaseCountReducedError', 'PhaseExistenceImpossible', 'OverspeficiedError']

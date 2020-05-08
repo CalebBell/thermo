@@ -326,7 +326,9 @@ class GCEOSMIX(GCEOS):
         return s
     
     def to_TP_zs_fast(self, T, P, zs, only_l=False, only_g=False, full_alphas=True):
-        
+        copy_alphas = T == self.T
+#        if copy_alphas and P == self.P and zs == self.zs:
+#            return self
         new = self.__class__.__new__(self.__class__)
         new.N = self.N
         new.cmps = self.cmps
@@ -338,7 +340,6 @@ class GCEOSMIX(GCEOS):
         new.ais = self.ais
         new.bs = self.bs
         
-        copy_alphas = T == self.T
         if copy_alphas:
             new.a_alphas = self.a_alphas
             new.da_alpha_dTs = self.da_alpha_dTs

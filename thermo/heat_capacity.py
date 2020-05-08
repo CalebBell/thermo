@@ -850,10 +850,17 @@ class HeatCapacityGas(TDependentProperty):
             self.TRCIG_coefs = [a0, a1, a2, a3, a4, a5, a6, a7]
             Tmins.append(self.TRCIG_Tmin); Tmaxs.append(self.TRCIG_Tmax)
         if self.CASRN in Poling_data.index and not isnan(Poling_data.at[self.CASRN, 'a0']):
-            _, self.POLING_Tmin, self.POLING_Tmax, a0, a1, a2, a3, a4, Cpg, Cpl = _Poling_data_values[Poling_data.index.get_loc(self.CASRN)].tolist()
+            _, POLING_Tmin, POLING_Tmax, a0, a1, a2, a3, a4, Cpg, Cpl = _Poling_data_values[Poling_data.index.get_loc(self.CASRN)].tolist()
             methods.append(POLING)
+            if isnan(POLING_Tmin):
+                POLING_Tmin = 50.0
+            if isnan(POLING_Tmax):
+                POLING_Tmax = 1000.0
+            self.POLING_Tmin = POLING_Tmin
+            Tmins.append(POLING_Tmin)
+            self.POLING_Tmax = POLING_Tmax
+            Tmaxs.append(POLING_Tmax)
             self.POLING_coefs = [a0, a1, a2, a3, a4]
-            Tmins.append(self.POLING_Tmin); Tmaxs.append(self.POLING_Tmax)
         if self.CASRN in Poling_data.index and not isnan(Poling_data.at[self.CASRN, 'Cpg']):
             methods.append(POLING_CONST)
             self.POLING_T = 298.15

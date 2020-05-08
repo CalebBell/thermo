@@ -1031,61 +1031,63 @@ class StreamArgs(object):
                      Hm=self.Hm, Sm=self.Sm, 
                      Vf_TP=self.Vf_TP, Q_TP=self.Q_TP, energy=self.energy,
                      pkg=self.property_package)
-        
+    
+    def flash_state(self, hot_start=None):
+        if self.composition_specified and self.state_specified:
+            s = self.specifications
+            # Flash call only takes `zs`
+            zs = self.zs_calc
+            T, P, H, S, VF = s['T'], s['P'], s['Hm'], s['Sm'], s['VF']
+            # Do we need
+            spec_count = 0
+            if T is not None:
+                spec_count += 1
+            if P is not None:
+                spec_count += 1
+            if H is not None:
+                spec_count += 1
+            if S is not None:
+                spec_count += 1
+            if VF is not None:
+                spec_count += 1
+            if spec_count < 2:
+                energy = s['energy']
+                if energy is not None:
+                    n = self.n_calc
+                    if n is not None:
+                        H = energy/n
+                        spec_count += 1
+            if spec_count < 2:
+                H_mass = s['H']
+                if H_mass is not None:
+                    MW = self.MW
+                    if MW is not None:
+                        H = property_mass_to_molar(H_mass, MW)
+                        spec_count += 1
+            if spec_count < 2:
+                S_mass = s['S']
+                if S_mass is not None:
+                    MW = self.MW
+                    if MW is not None:
+                        S = property_mass_to_molar(S_mass, MW)
+                        spec_count += 1
+                        
+                        
+            state_cache = (T, P, H, S, VF, tuple(zs))
+            if state_cache == self._state_cache:
+                try:
+                    return self._mixture
+                except:
+                    pass
+            
+            m = self.property_package.flash(T=T, P=P, zs=zs, H=H, S=S, VF=VF, hot_start=hot_start)
+            self._mixture = m
+            self._state_cache = state_cache
+            return m
     @property
     def mixture(self):
         if self.equilibrium_pkg:
-            if self.composition_specified and self.state_specified:
-                s = self.specifications
-                # Flash call only takes `zs`
-                zs = self.zs_calc
-                T, P, H, S, VF = s['T'], s['P'], s['Hm'], s['Sm'], s['VF']
-                # Do we need
-                spec_count = 0
-                if T is not None:
-                    spec_count += 1
-                if P is not None:
-                    spec_count += 1
-                if H is not None:
-                    spec_count += 1
-                if S is not None:
-                    spec_count += 1
-                if VF is not None:
-                    spec_count += 1
-                if spec_count < 2:
-                    energy = s['energy']
-                    if energy is not None:
-                        n = self.n_calc
-                        if n is not None:
-                            H = energy/n
-                            spec_count += 1
-                if spec_count < 2:
-                    H_mass = s['H']
-                    if H_mass is not None:
-                        MW = self.MW
-                        if MW is not None:
-                            H = property_mass_to_molar(H_mass, MW)
-                            spec_count += 1
-                if spec_count < 2:
-                    S_mass = s['S']
-                    if S_mass is not None:
-                        MW = self.MW
-                        if MW is not None:
-                            S = property_mass_to_molar(S_mass, MW)
-                            spec_count += 1
-                            
-                            
-                state_cache = (T, P, H, S, VF, tuple(zs))
-                if state_cache == self._state_cache:
-                    try:
-                        return self._mixture
-                    except:
-                        pass
-                
-                m = self.property_package.flash(T=T, P=P, zs=zs, H=H, S=S, VF=VF)
-                self._mixture = m
-                self._state_cache = state_cache
-                return m
+            return self.flash_state()
         else:
             if self.IDs and self.composition_specified and self.state_specified:
                 return Mixture(IDs=self.IDs, zs=self.zs, ws=self.ws, Vfls=self.Vfls, Vfgs=self.Vfgs,
@@ -1639,6 +1641,12 @@ first stream.' %self.IDs[i])
 
 class EquilibriumStream(EquilibriumState):
     flashed = True
+
+    def __repr__(self):
+        s = '<EquilibriumStream, T=%.4f, P=%.4f, zs=%s, betas=%s, mass flow=%s kg/s, mole flow=%s mol/s, phases=%s>'
+        s = s %(self.T, self.P, self.zs, self.betas, self.m, self.n, self.phases)
+        return s
+
     
     def __init__(self, flasher, zs=None, ws=None, Vfls=None, Vfgs=None,
                  ns=None, ms=None, Qls=None, Qgs=None, 

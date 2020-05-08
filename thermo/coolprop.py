@@ -24,7 +24,7 @@ from __future__ import division
 
 __all__ = ['has_CoolProp', 'coolprop_dict', 'CP_fluid', 'coolprop_fluids', 
 'CoolProp_T_dependent_property',
-'PropsSI', 'PhaseSI', 'CP', 'AbstractState']
+'PropsSI', 'PhaseSI','HAPropsSI', 'CP', 'AbstractState']
 import os
 import json
 import numpy as np
@@ -35,7 +35,7 @@ from bisect import bisect_left
 try:
     import CoolProp
     CoolProp_version = CoolProp.__version__
-    from CoolProp.CoolProp import PropsSI, PhaseSI
+    from CoolProp.CoolProp import PropsSI, PhaseSI, HAPropsSI
     import CoolProp.CoolProp as CP
     from CoolProp import AbstractState
     has_CoolProp = True

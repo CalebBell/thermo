@@ -196,6 +196,20 @@ def test_Sanjari():
     AARD_calc = sum([abs(Ambrose_Walton(T, 345.0, 26.40E5, 0.3170)-P*1E6)/(P*1E6) for T, P in zip(Ts_dat, Ps_dat)])/len(Ts_dat)
     assert_allclose(AARD_calc, 0.00841629399152493)
 
+def test_Psat_IAPWS():
+    Psat = Psat_IAPWS(300.)
+    assert_close(Psat, 3536.5894130130105, rtol=1e-12)
+    Psat = Psat_IAPWS(500.)
+    assert_close(Psat, 2638897.7562732217, rtol=1e-12)
+    Psat = Psat_IAPWS(600.)
+    assert_close(Psat, 12344314.578376647, rtol=1e-12)
+    
+    # Points obtained with CoolProp
+    assert_close(dPsat_IAPWS_dT(300.0), 207.88388134164325327, rtol=5e-15)
+    assert_close(dPsat_IAPWS_dT(500.0), 49008.859762957346618, rtol=5e-15)
+    assert_close(dPsat_IAPWS_dT(600.0), 160315.50500711359916, rtol=5e-15)
+    assert_close(dPsat_IAPWS_dT(100.0), -0.094715356431800557785, rtol=5e-15)
+
 
 ### Main predictor
 @pytest.mark.meta_T_dept

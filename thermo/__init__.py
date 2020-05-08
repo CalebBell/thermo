@@ -53,6 +53,7 @@ from . import phases
 from . import phase_identification
 from . import property_package
 from . import property_package_constants
+from . import psychrometrics
 from . import reaction
 from . import refractivity
 from . import regular_solution
@@ -100,6 +101,7 @@ from .mixture import *
 from .permittivity import *
 from .phase_change import *
 from .phases import *
+from .psychrometrics import *
 from .phase_identification import *
 from .property_package import *
 from .property_package_constants import *
@@ -134,7 +136,7 @@ __all__ = ['activity', 'chemical', 'chemical_package', 'combustion', 'critical',
  'vapor_pressure', 'virial', 'viscosity', 'volume', 'acentric', 'coolprop', 
  'datasheet', 'dippr', 'unifac', 'stream', 'mixture', 'property_package_constants',
  'chemical_utils', 'wilson', 'nrtl', 'uniquac', 'regular_solution',
- 'equilibrium', 'phase_identification']
+ 'equilibrium', 'phase_identification', 'psychrometrics']
 
 
 __all__.extend(acentric.__all__)
@@ -187,6 +189,7 @@ __all__.extend(nrtl.__all__)
 __all__.extend(uniquac.__all__)
 __all__.extend(regular_solution.__all__)
 __all__.extend(equilibrium.__all__)
+__all__.extend(psychrometrics.__all__)
 
 
 # backwards compatibility hack to allow thermo.chemical.Mixture to still be importable

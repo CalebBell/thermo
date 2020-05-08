@@ -255,8 +255,13 @@ def test_HeatCapacityGas():
     assert_allclose(1.35441088517, EtOH.T_dependent_property(275), rtol=2E-4)
 
     assert None == EtOH.T_dependent_property(5000)
-#test_HeatCapacityGas()
 
+    # Case where the limits were nans
+    obj = HeatCapacityGas(CASRN='7440-37-1', MW=39.948, similarity_variable=0.025032542304996495)
+    assert not isnan(obj.Tmax)
+    assert not isnan(obj.Tmin)
+    assert not isnan(obj.POLING_Tmin)
+    assert not isnan(obj.POLING_Tmax)
 @pytest.mark.meta_T_dept
 def test_HeatCapacityGas_integrals():
     # Enthalpy integrals
