@@ -94,7 +94,7 @@ def water_saturation(T, P, method='ideal'):
     air as a function of temperature and pressure.
     
     .. math::
-        \text{x_{water}} = P^{sat}_{water}(T)\cdot f(T, P)
+        x_{water} = \frac{P^{sat}_{water}(T)\cdot f(T, P)}{P}
         
     Where :math:`f(T, P)` is the enhancement factor, a correction for 
     non-ideality.
@@ -148,6 +148,8 @@ def water_saturation(T, P, method='ideal'):
         factor = 1.0
     elif method == 'ASHRAE1485_2020' or method == 'ASHRAE1485':
         factor = float(bisplev(T, P, ASHRAE_RP1485_saturation_tck))
+    elif method == 'CoolProp':
+        return HAPropsSI('psi_w', 'T', T, 'P', P, 'RH', 1.0)
     else:
         raise ValueError("Unsupported method")
     return factor*x_w_ideal
@@ -162,6 +164,10 @@ def water_saturation_and_der(T, P, method='ideal'):
     elif method == 'ASHRAE1485_2020' or method == 'ASHRAE1485':
         factor = float(bisplev(T, P, ASHRAE_RP1485_saturation_tck))
         dfactor_dT = float(sp_bisplev(T, P, ASHRAE_RP1485_saturation_tck, dx=1))
+    elif method == 'CoolProp':
+        x_w = HAPropsSI('psi_w', 'T', T, 'P', P, 'RH', 1.0)
+        dx_w_dT = derivative(lambda T: HAPropsSI('psi_w', 'T', T, 'P', P, 'RH', 1.0), T, dx=T*1e-6, order=7)
+        return x_w, dx_w_dT
     else:
         raise ValueError("Unsupported method")
     return x_w_ideal*factor, factor*der + dfactor_dT*x_w_ideal
