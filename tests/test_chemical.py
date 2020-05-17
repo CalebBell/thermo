@@ -23,7 +23,7 @@ SOFTWARE.'''
 from numpy.testing import assert_allclose
 import pytest
 from thermo.chemical import *
-from thermo.elements import periodic_table
+from chemicals.elements import periodic_table
 import thermo
 from thermo.identifiers import pubchem_db
 from scipy.integrate import quad

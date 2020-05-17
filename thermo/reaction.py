@@ -34,7 +34,7 @@ import numpy as np
 import scipy.linalg
 import pandas as pd
 from chemicals.utils import isnan, ceil, log10
-from thermo.elements import periodic_table, CAS_by_number_standard
+from chemicals.elements import periodic_table, CAS_by_number_standard
 from thermo.heat_capacity import TRC_gas_data, CRC_standard_data
 
 folder = os.path.join(os.path.dirname(__file__), 'Reactions')

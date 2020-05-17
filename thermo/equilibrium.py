@@ -26,8 +26,8 @@ __all__ = ['EquilibriumState']
 from fluids.constants import R, R_inv
 from fluids.core import thermal_diffusivity
 from chemicals.utils import log, exp, normalize, zs_to_ws, vapor_mass_quality, mixing_simple, Vm_to_rho, SG
+from chemicals.elements import atom_fractions, mass_fractions, simple_formula_parser, molecular_weight, mixture_atomic_composition
 from thermo.phases import gas_phases, liquid_phases, solid_phases, Phase
-from thermo.elements import atom_fractions, mass_fractions, simple_formula_parser, molecular_weight, mixture_atomic_composition
 from thermo.chemical_package import ChemicalConstantsPackage, PropertyCorrelationPackage
 from thermo.bulk import Bulk, BulkSettings, default_settings
 

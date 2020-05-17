@@ -33,7 +33,7 @@ from . import dipole
 from . import dippr
 from . import datasheet
 from . import electrochem
-from . import elements
+from chemicals import elements
 from . import environment
 from . import eos
 from . import eos_mix
@@ -85,7 +85,7 @@ from .dipole import *
 from .dippr import *
 from .datasheet import *
 from .electrochem import *
-from .elements import *
+from chemicals.elements import *
 from .environment import *
 from .eos import *
 from .eos_mix import *

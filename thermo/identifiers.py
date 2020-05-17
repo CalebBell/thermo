@@ -29,7 +29,7 @@ __all__ = ['checkCAS', 'CAS_from_any', 'PubChem', 'MW', 'formula', 'smiles',
 import os
 from io import open
 from chemicals.utils import to_num, CAS2int, int2CAS
-from thermo.elements import (periodic_table, homonuclear_elemental_gases,
+from chemicals.elements import (periodic_table, homonuclear_elemental_gases,
                              charge_from_formula, serialize_formula)
 
 folder = os.path.join(os.path.dirname(__file__), 'Identifiers')

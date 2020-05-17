@@ -24,7 +24,7 @@ from numpy.testing import assert_allclose
 import pytest
 import numpy as np
 import pandas as pd
-from thermo.elements import charge_from_formula, nested_formula_parser
+from chemicals.elements import charge_from_formula, nested_formula_parser
 from thermo.electrochem import *
 from thermo.electrochem import _Laliberte_Density_ParametersDict, _Laliberte_Viscosity_ParametersDict, _Laliberte_Heat_Capacity_ParametersDict
 from thermo.identifiers import checkCAS, CAS_from_any, pubchem_db, serialize_formula

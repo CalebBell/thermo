@@ -59,7 +59,7 @@ from fluids.numerics import (OscillationError, UnconvergedError,
 from fluids.constants import R, pi, N_A
 from chemicals.utils import log, log10, exp, copysign, dxs_to_dn_partials, dxs_to_dns, dns_to_dn_partials, d2xs_to_dxdn_partials, remove_zeros, normalize, Cp_minus_Cv, mixing_simple, property_mass_to_molar
 from thermo.utils import has_matplotlib
-from thermo.elements import mixture_atomic_composition, similarity_variable
+from chemicals.elements import mixture_atomic_composition, similarity_variable
 from thermo.identifiers import IDs_to_CASs
 from thermo.activity import K_value, Wilson_K_value, flash_inner_loop, dew_at_T, bubble_at_T, NRTL_gammas, Rachford_Rice_solution2, Wilson_gammas as Wilson
 from thermo.activity import flash_wilson, flash_Tb_Tc_Pc, Rachford_Rice_flash_error

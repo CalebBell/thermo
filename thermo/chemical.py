@@ -53,7 +53,7 @@ from thermo.environment import GWP, ODP, logP
 from thermo.law import legal_status, economic_status
 from thermo.refractivity import refractive_index
 from thermo.electrochem import conductivity
-from thermo.elements import atom_fractions, mass_fractions, similarity_variable, atoms_to_Hill, simple_formula_parser, molecular_weight, charge_from_formula, periodic_table, homonuclear_elements
+from chemicals.elements import atom_fractions, mass_fractions, similarity_variable, atoms_to_Hill, simple_formula_parser, molecular_weight, charge_from_formula, periodic_table, homonuclear_elements
 from thermo.coolprop import has_CoolProp
 from thermo.eos import *
 from thermo.eos_mix import *
@@ -299,7 +299,7 @@ class Chemical(object): # pragma: no cover
         dictionary of counts of individual atoms, indexed by symbol with
         proper capitalization, [-]
     similarity_variable : float
-        Similarity variable, see :obj:`thermo.elements.similarity_variable`
+        Similarity variable, see :obj:`chemicals.elements.similarity_variable`
         for the definition, [mol/g]
     smiles : str
         Simplified molecular-input line-entry system representation of the
@@ -1519,7 +1519,7 @@ class Chemical(object): # pragma: no cover
     @property
     def Hill(self):
         r'''Hill formula of a compound. For a description of the Hill system,
-        see :obj:`thermo.elements.atoms_to_Hill`.
+        see :obj:`chemicals.elements.atoms_to_Hill`.
 
         Examples
         --------

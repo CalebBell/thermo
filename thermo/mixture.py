@@ -46,7 +46,7 @@ from thermo.viscosity import ViscosityLiquidMixture, ViscosityGasMixture
 from thermo.safety import LFL_mixture, UFL_mixture
 from thermo.utils import *
 from chemicals.utils import *
-from thermo.elements import atom_fractions, mass_fractions, simple_formula_parser, molecular_weight, mixture_atomic_composition
+from chemicals.elements import atom_fractions, mass_fractions, simple_formula_parser, molecular_weight, mixture_atomic_composition
 from thermo.eos import *
 from thermo.eos_mix import *
 
@@ -1254,7 +1254,7 @@ class Mixture(object):
     @property
     def similarity_variables(self):
         r'''Similarity variables for all chemicals in the mixture, see 
-        :obj:`thermo.elements.similarity_variable` for the definition, [mol/g]
+        :obj:`chemicals.elements.similarity_variable` for the definition, [mol/g]
 
         Examples
         --------

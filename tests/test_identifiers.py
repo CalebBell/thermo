@@ -25,10 +25,9 @@ from numpy.testing import assert_allclose
 import pytest
 from thermo.identifiers import *
 from chemicals.utils import CAS2int, int2CAS
-from thermo.elements import periodic_table, serialize_formula
+from chemicals.elements import periodic_table, nested_formula_parser, serialize_formula, molecular_weight
 import os
 from thermo.identifiers import ChemicalMetadataDB, folder
-from thermo.elements import nested_formula_parser, serialize_formula, molecular_weight
 from thermo.chemical import Chemical
 
 # Force the whole db to load
