@@ -116,7 +116,6 @@ def water_saturation(T, P, method='ideal'):
         
     Notes
     -----
-    
     For the 'ASHRAE1485_2020' method, the average relative error is around 1e-5.
     However, some places have relative error up to 0.005 in mole fraction. 
     This is still substantially better than the ideal formuation. It is around

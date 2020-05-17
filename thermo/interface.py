@@ -1475,7 +1475,7 @@ def Meybodi_Daryasafar_Karimi(rho_water, rho_oil, T, Tc):
     A8 = 3.0084299030E0
     A9 = -3.8203072876E-3
     A10 = 3.5000000000E0
-    drho = abs(rho_water - rho_oil)/1000.0 # Correlation in units of g/mL
-    sigma = ((A1+ A2*drho + A3*drho**2 + A4*drho**3)
+    drho = abs(rho_water - rho_oil)*1e-3 # Correlation in units of g/mL
+    sigma = ((A1 + drho*(A2 + drho*(A3 + A4*drho)))
              /(A5 + A6*T**A7/Tc + A8*T**A9))**A10
     return sigma*1e-3 # mN/m to N/m

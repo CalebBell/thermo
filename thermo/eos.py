@@ -39,8 +39,7 @@ from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              horner, horner_and_der, horner_and_der2, derivative,
                              roots_cubic_a2, isclose, NoSolutionError,
                              roots_quartic)
-from fluids.constants import mmHg
-from thermo.utils import R
+from fluids.constants import mmHg, R
 from thermo.utils import (Cp_minus_Cv, isobaric_expansion,
                           isothermal_compressibility,
                           phase_identification_parameter)
