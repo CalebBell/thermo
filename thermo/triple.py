@@ -28,7 +28,7 @@ import os
 import numpy as np
 import pandas as pd
 
-from thermo.utils import isnan
+from chemicals.utils import isnan
 from thermo.phase_change import Tm
 from thermo.vapor_pressure import VaporPressure
 

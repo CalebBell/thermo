@@ -29,10 +29,10 @@ from copy import copy, deepcopy
 from collections import OrderedDict
 from numbers import Number
 
-from thermo.utils import R
-from thermo.utils import property_molar_to_mass, property_mass_to_molar, solve_flow_composition_mix
-from thermo.utils import OverspeficiedError
-from thermo.utils import mixing_simple, normalize, Vfs_to_zs, ws_to_zs, zs_to_ws
+from fluids.constants import R
+from chemicals.utils import property_molar_to_mass, property_mass_to_molar, solve_flow_composition_mix
+from chemicals.utils import OverspeficiedError
+from chemicals.utils import mixing_simple, normalize, Vfs_to_zs, ws_to_zs, zs_to_ws
 from thermo.mixture import Mixture, preprocess_mixture_composition
 from thermo.equilibrium import EquilibriumState
 from thermo.flash import FlashBase

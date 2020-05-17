@@ -37,7 +37,7 @@ from fluids.numerics import polyint_over_x, horner_log, horner, polyint, horner_
 import numpy as np
 import pandas as pd
 from math import e
-from thermo.utils import log, exp, isnan
+from chemicals.utils import log, exp, isnan
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
 from thermo.utils import TDependentProperty
 from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluids

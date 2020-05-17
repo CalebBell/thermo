@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 from __future__ import division
 from thermo.activity import GibbsExcess
-from math import log, exp
+from chemicals.utils import log, exp
 from fluids.constants import R
 
 __all__ = ['RegularSolution']

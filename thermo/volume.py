@@ -40,9 +40,9 @@ from scipy.interpolate import interp1d
 import pandas as pd
 
 from fluids.numerics import horner, np, polyder, horner_and_der2, linspace, quadratic_from_f_ders
-from thermo.utils import R
-from thermo.utils import log, exp, isnan
-from thermo.utils import Vm_to_rho, rho_to_Vm, mixing_simple, none_and_length_check
+from fluids.constants import R
+from chemicals.utils import log, exp, isnan
+from chemicals.utils import Vm_to_rho, rho_to_Vm, mixing_simple, none_and_length_check
 from thermo.virial import BVirial_Pitzer_Curl, BVirial_Abbott, BVirial_Tsonopoulos, BVirial_Tsonopoulos_extended
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
 from thermo.dippr import EQ105

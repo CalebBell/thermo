@@ -30,11 +30,10 @@ __all__ = ['API_TDB_data', 'ATcT_l', 'ATcT_g', 'Hf_methods', 'Hf',
            
 import os
 from fractions import Fraction
-from thermo.utils import ceil, log10
 import numpy as np
 import scipy.linalg
 import pandas as pd
-from thermo.utils import isnan
+from chemicals.utils import isnan, ceil, log10
 from thermo.elements import periodic_table, CAS_by_number_standard
 from thermo.heat_capacity import TRC_gas_data, CRC_standard_data
 

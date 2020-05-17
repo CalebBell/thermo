@@ -34,9 +34,8 @@ import numpy as np
 from scipy.optimize import golden, brent, minimize, fmin_slsqp, fsolve
 from fluids.numerics import brenth, ridder, derivative
 
-from thermo.utils import log, exp
-from thermo.utils import has_matplotlib, R, pi, N_A
-from thermo.utils import remove_zeros, normalize, Cp_minus_Cv
+from chemicals.utils import log, exp
+from fluids.constants import R, pi, N_A
 from thermo.identifiers import IDs_to_CASs
 from thermo.activity import K_value, Wilson_K_value, flash_inner_loop, dew_at_T, bubble_at_T
 from thermo.activity import get_T_bub_est, get_T_dew_est, get_P_dew_est, get_P_bub_est

@@ -40,9 +40,11 @@ import numpy as np
 from scipy.interpolate import interp2d
 import pandas as pd
 
-from thermo.utils import R, N_A, k
-from thermo.utils import log, exp
-from thermo.utils import mixing_simple, none_and_length_check, TPDependentProperty, MixtureProperty, horner
+from fluids.numerics import horner
+from fluids.constants import R, N_A, k
+from chemicals.utils import log, exp
+from chemicals.utils import mixing_simple, none_and_length_check
+from thermo.utils import TPDependentProperty, MixtureProperty
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
 from thermo.coolprop import has_CoolProp, coolprop_dict, coolprop_fluids, CoolProp_T_dependent_property, PropsSI, PhaseSI
 from thermo.electrochem import thermal_conductivity_Magomedov, Magomedovk_thermal_cond

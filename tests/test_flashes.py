@@ -27,6 +27,7 @@ from thermo.flash import *
 from thermo.phases import *
 from thermo.eos_mix import *
 from thermo.utils import *
+from chemicals.utils import *
 from thermo.eos import *
 from thermo.vapor_pressure import VaporPressure
 from thermo.volume import *

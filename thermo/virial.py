@@ -26,8 +26,8 @@ __all__ = ['BVirial_Pitzer_Curl', 'BVirial_Abbott', 'BVirial_Tsonopoulos',
            'BVirial_Tsonopoulos_extended']
 
 from fluids.numerics import derivative
-from thermo.utils import log
-from thermo.utils import R
+from chemicals.utils import log
+from fluids.constants import R
 
 
 ### Second Virial Coefficients

@@ -58,9 +58,10 @@ from fluids.optional.pychebfun import build_solve_pychebfun
 from numpy.testing import assert_allclose
 from scipy.optimize import minimize, fsolve, root
 from scipy.interpolate import CubicSpline
-from thermo.utils import (exp, log, log10, floor, copysign, normalize, has_matplotlib,
-                          mixing_simple, property_mass_to_molar, TrivialSolutionError, 
+from chemicals.utils import (exp, log, log10, floor, copysign, normalize,
+                          mixing_simple, property_mass_to_molar, TrivialSolutionError,
                           PhaseCountReducedError, PhaseExistenceImpossible)
+from thermo.utils import has_matplotlib
 from thermo.heat_capacity import (Lastovka_Shaw_T_for_Hm, Dadgostar_Shaw_integral,
                                   Dadgostar_Shaw_integral_over_T, Lastovka_Shaw_integral,
                                   Lastovka_Shaw_integral_over_T)

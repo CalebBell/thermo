@@ -33,9 +33,9 @@ __all__ = ['Mulero_Cachadina_data', 'Jasper_Lange_data', 'Somayajulu_data',
 
 import os
 import pandas as pd
-from thermo.utils import log, exp
-from thermo.utils import mixing_simple, none_and_length_check, Vm_to_rho
-from thermo.utils import N_A, k
+from chemicals.utils import log, exp
+from chemicals.utils import mixing_simple, none_and_length_check, Vm_to_rho
+from fluids.constants import N_A, k
 from thermo.utils import TDependentProperty, MixtureProperty
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
 from thermo.dippr import EQ106

@@ -25,7 +25,7 @@ from __future__ import division
 __all__ = ['EQ100', 'EQ101', 'EQ102', 'EQ104', 'EQ105', 'EQ106', 'EQ107', 
            'EQ114', 'EQ115', 'EQ116', 'EQ127']
 
-from thermo.utils import log, exp, sinh, cosh, atan, atanh, sqrt, tanh
+from chemicals.utils import log, exp, sinh, cosh, atan, atanh, sqrt, tanh
 from cmath import log as clog
 from cmath import sqrt as csqrt
 from scipy.special import hyp2f1

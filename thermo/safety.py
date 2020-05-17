@@ -36,9 +36,9 @@ from io import open
 import numpy as np
 import pandas as pd
 from fluids.core import F2K
-from thermo.utils import R
-from thermo.utils import isnan
-from thermo.utils import to_num, none_and_length_check, normalize
+from fluids.constants import R
+from chemicals.utils import isnan
+from chemicals.utils import to_num, none_and_length_check, normalize
 from thermo.identifiers import CAS_from_any
 
 folder = os.path.join(os.path.dirname(__file__), 'Safety')

@@ -28,8 +28,7 @@ __all__ = ['CRC_RI_organic', 'RI_methods', 'refractive_index',
 
 import os
 import pandas as pd
-from thermo.utils import pi
-from thermo.utils import N_A
+from fluids.constants import pi, N_A
 
 folder = os.path.join(os.path.dirname(__file__), 'Misc')
 

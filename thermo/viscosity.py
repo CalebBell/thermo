@@ -46,10 +46,11 @@ import os
 import numpy as np
 import pandas as pd
 from scipy.interpolate import UnivariateSpline
-from fluids.numerics import newton, interp
+from fluids.numerics import newton, interp, horner
 
-from thermo.utils import log, exp, log10
-from thermo.utils import horner, none_and_length_check, mixing_simple, mixing_logarithmic, TPDependentProperty, MixtureProperty
+from chemicals.utils import log, exp, log10
+from chemicals.utils import none_and_length_check, mixing_simple, mixing_logarithmic
+from thermo.utils import TPDependentProperty, MixtureProperty
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
 from thermo.electrochem import _Laliberte_Viscosity_ParametersDict, Laliberte_viscosity
 from thermo.coolprop import has_CoolProp, PropsSI, PhaseSI, coolprop_fluids, coolprop_dict, CoolProp_T_dependent_property

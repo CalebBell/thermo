@@ -28,7 +28,7 @@ __all__ = ['solubility_parameter_methods', 'solubility_parameter',
            
 import os
 from fluids.constants import R, atm
-from thermo.utils import log, exp
+from chemicals.utils import log, exp
 
 folder = os.path.join(os.path.dirname(__file__), 'Solubility')
 
