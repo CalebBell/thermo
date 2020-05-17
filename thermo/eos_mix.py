@@ -36,9 +36,9 @@ from scipy.optimize import minimize
 from scipy.misc import derivative
 from fluids.numerics import IS_PYPY, newton_system, broyden2, UnconvergedError, trunc_exp
 from fluids.numerics.arrays import det, subset_matrix
-from thermo.utils import normalize, Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter, dxs_to_dn_partials, dxs_to_dns, dns_to_dn_partials, d2xs_to_dxdn_partials, d2ns_to_dn2_partials, hash_any_primitive
-from thermo.utils import R
-from thermo.utils import log, exp, sqrt
+from fluids.constants import R
+from chemicals.utils import normalize, Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter, dxs_to_dn_partials, dxs_to_dns, dns_to_dn_partials, d2xs_to_dxdn_partials, d2ns_to_dn2_partials, hash_any_primitive
+from chemicals.utils import log, exp, sqrt
 from thermo.alpha_functions import (TwuPR95_a_alpha, TwuSRK95_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha, Soave_79_a_alpha)
 from thermo.eos import *
 from thermo.activity import Wilson_K_value, K_value, flash_inner_loop, Rachford_Rice_flash_error, Rachford_Rice_solution2

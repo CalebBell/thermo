@@ -32,7 +32,7 @@ from fluids.numerics import (horner, horner_and_der, horner_and_der2, horner_log
                              evaluate_linear_fits, evaluate_linear_fits_d,
                              evaluate_linear_fits_d2, quadratic_from_f_ders,
                              newton_system, trunc_log, trunc_exp)
-from thermo.utils import (log, log10, exp, Cp_minus_Cv, phase_identification_parameter,
+from chemicals.utils import (log, log10, exp, Cp_minus_Cv, phase_identification_parameter,
                           isothermal_compressibility, isobaric_expansion,
                           Joule_Thomson, speed_of_sound, dxs_to_dns, dns_to_dn_partials,
                           normalize, hash_any_primitive)

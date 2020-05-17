@@ -27,13 +27,13 @@ __all__ = ['ChemicalConstantsPackage', 'PropertyCorrelationPackage']
 from thermo.chemical import Chemical, get_chemical_constants
 from thermo.identifiers import *
 from thermo.activity import identify_phase_mixture, Pbubble_mixture, Pdew_mixture
-from thermo.critical import Tc_mixture, Pc_mixture, Vc_mixture
 from thermo.thermal_conductivity import ThermalConductivityLiquid, ThermalConductivityGas, ThermalConductivityLiquidMixture, ThermalConductivityGasMixture
 from thermo.volume import VolumeLiquidMixture, VolumeGasMixture, VolumeSolidMixture, VolumeLiquid, VolumeGas, VolumeSolid
 from thermo.permittivity import *
 from thermo.heat_capacity import HeatCapacitySolid, HeatCapacityGas, HeatCapacityLiquid, HeatCapacitySolidMixture, HeatCapacityGasMixture, HeatCapacityLiquidMixture
 from thermo.interface import SurfaceTension, SurfaceTensionMixture
 from thermo.viscosity import ViscosityLiquid, ViscosityGas, ViscosityLiquidMixture, ViscosityGasMixture
+from chemicals.utils import property_molar_to_mass
 from thermo.utils import *
 from thermo.vapor_pressure import VaporPressure, SublimationPressure
 from thermo.phase_change import EnthalpyVaporization, EnthalpySublimation

@@ -33,7 +33,7 @@ from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              trunc_exp, secant, linspace, logspace,
                              horner, horner_and_der2, horner_and_der3,
                              is_poly_positive, is_poly_negative)
-from thermo.utils import R
+from fluids.constants import R
 
 # Supported methods of lmfit
 methods_uncons = ['leastsq', 'least_squares', 'nelder', 'lbfgsb', 'powell', 

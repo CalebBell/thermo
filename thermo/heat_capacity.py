@@ -42,17 +42,17 @@ __all__ = ['Poling_data', 'TRC_gas_data', '_PerryI', 'CRC_standard_data',
            'HeatCapacityGasMixture', 'HeatCapacityLiquidMixture']
 import os
 from io import open
-from thermo.utils import log, exp, polylog2, isnan
 import numpy as np
 import pandas as pd
 from fluids.numerics import (polyint_over_x, horner_log, horner, polyint, 
                              fit_integral_linear_extrapolation,
                              fit_integral_over_T_linear_extrapolation)
 from fluids.numerics import py_newton as newton, py_brenth as brenth, secant
+from fluids.constants import R, calorie
 
 from scipy.integrate import quad
-from thermo.utils import R, calorie
-from thermo.utils import (to_num, property_molar_to_mass, none_and_length_check,
+from chemicals.utils import log, exp, polylog2, isnan
+from chemicals.utils import (to_num, property_molar_to_mass, none_and_length_check,
                           mixing_simple, property_mass_to_molar)
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
 from thermo.electrochem import (Laliberte_heat_capacity,

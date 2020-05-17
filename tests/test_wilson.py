@@ -24,7 +24,6 @@ from math import exp, log
 from numpy.testing import assert_allclose
 import pytest
 import numpy as np
-from thermo import normalize
 from fluids.constants import calorie, R
 from thermo.activity import *
 from thermo.mixture import Mixture
@@ -32,7 +31,7 @@ from thermo.wilson import Wilson
 import random
 from thermo import *
 import numpy as np
-from fluids.numerics import jacobian, hessian, derivative
+from fluids.numerics import jacobian, hessian, derivative, normalize
 
 
 

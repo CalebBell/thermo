@@ -23,7 +23,7 @@ SOFTWARE.'''
 from numpy.testing import assert_allclose
 import pytest
 from thermo.law import *
-from thermo.utils import int2CAS
+from chemicals.utils import int2CAS
 from thermo.identifiers import checkCAS
 
 load_law_data()

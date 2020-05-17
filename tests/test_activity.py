@@ -25,12 +25,11 @@ from numpy.testing import assert_allclose
 import pytest
 import numpy as np
 import pandas as pd
-from thermo import normalize
 from fluids.constants import calorie, R
 from thermo.activity import *
 from thermo.mixture import Mixture
 from thermo.activity import Rachford_Rice_solution_numpy
-from fluids.numerics import assert_close
+from fluids.numerics import assert_close, normalize
 from random import uniform
 from thermo.activity import Rachford_Rice_valid_solution_naive, Rachford_Rice_solution2
 from thermo.activity import Rachford_Rice_flash2_f_jac, Rachford_Rice_flashN_f_jac

@@ -24,7 +24,7 @@ import pandas as pd
 from numpy.testing import assert_allclose
 import pytest
 from thermo.identifiers import *
-from thermo.utils import CAS2int, int2CAS
+from chemicals.utils import CAS2int, int2CAS
 from thermo.elements import periodic_table, serialize_formula
 import os
 from thermo.identifiers import ChemicalMetadataDB, folder

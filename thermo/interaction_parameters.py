@@ -27,7 +27,7 @@ __all__ = ['InteractionParameterDB', 'IPDB']
 import os
 import json
 import numpy as np
-from thermo.utils import sorted_CAS_key
+from chemicals.utils import sorted_CAS_key
 from thermo.identifiers import checkCAS
 
 '''Need to be able to add NRTL parameters sets (T dept)

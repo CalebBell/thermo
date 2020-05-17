@@ -35,8 +35,8 @@ from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              horner, horner_and_der, horner_and_der2, derivative,
                              roots_cubic_a2, isclose, NoSolutionError,
                              roots_quartic)
-from thermo.utils import R
-from thermo.utils import log, log10, exp, sqrt, copysign
+from fluids.constants import R
+from chemicals.utils import log, log10, exp, sqrt, copysign
 
 
 def TWU_a_alpha_common(T, Tc, omega, a, full=True, quick=True, method='PR'):

@@ -23,6 +23,7 @@ SOFTWARE.'''
 from numpy.testing import assert_allclose
 import pytest
 import thermo
+from chemicals.utils import *
 from thermo import *
 from fluids.numerics import *
 from math import *

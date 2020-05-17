@@ -24,7 +24,7 @@ from __future__ import division
 from math import log, exp, log10
 from fluids.constants import psi, psi_inv
 from fluids.numerics import roots_quartic
-from thermo.utils import SG
+from chemicals.utils import SG
 __all__ = ['Caroll_hydrate_formation_P_pure', 'Motiee_hydrate_formation_T',
            'Towler_Mokhatab_hydrate_formation_T',
            'Hammerschmidt_hydrate_formation_T']

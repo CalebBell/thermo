@@ -27,7 +27,7 @@ __all__ = ['smarts_fragment', 'Joback', 'J_BIGGS_JOBACK_SMARTS',
 
 from collections import namedtuple, Counter
 from pprint import pprint
-from thermo.utils import to_num, horner, exp
+from chemicals.utils import to_num, horner, exp
 try:
     from rdkit import Chem
     from rdkit.Chem import Descriptors

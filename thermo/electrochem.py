@@ -36,12 +36,14 @@ __all__ = ['conductivity', 'Laliberte_density', 'Laliberte_heat_capacity',
 
 import os
 from collections import namedtuple
-from thermo.utils import exp, log10
-from thermo.utils import e, N_A
-from thermo.utils import to_num, ws_to_zs, horner
+from fluids.constants import e, N_A
+from fluids.numerics import newton, horner
+
+from chemicals.utils import exp, log10
+from chemicals.utils import to_num, ws_to_zs
 from thermo.identifiers import pubchem_db
+
 from scipy.interpolate import interp1d
-from fluids.numerics import newton
 import pandas as pd
 
 

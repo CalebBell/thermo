@@ -35,11 +35,13 @@ import numpy as np
 import pandas as pd
 
 from fluids.numerics import horner, horner_and_der
-from thermo.utils import log, isnan
-from thermo.utils import R, pi, N_A
+from fluids.constants import R, pi, N_A
+
+from chemicals.utils import log, isnan
+from chemicals.utils import property_molar_to_mass, mixing_simple, none_and_length_check
+from thermo.utils import TDependentProperty
 from thermo.miscdata import CRC_organic_data, CRC_inorganic_data
 from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
-from thermo.utils import property_molar_to_mass, mixing_simple, none_and_length_check, TDependentProperty
 from thermo.vapor_pressure import VaporPressure
 from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluids
 from thermo.dippr import EQ106

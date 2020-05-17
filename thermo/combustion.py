@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 from __future__ import division
 from pprint import pprint
-from thermo.utils import property_mass_to_molar, property_molar_to_mass
+from chemicals.utils import property_mass_to_molar, property_molar_to_mass
 from fluids.numerics import normalize
 
 __all__ = ['Hcombustion', 'combustion_products', 'combustion_products_mixture',

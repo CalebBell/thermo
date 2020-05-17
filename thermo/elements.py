@@ -34,7 +34,7 @@ import os
 import re
 import string
 from collections import Counter
-from thermo.utils import to_num
+from chemicals.utils import to_num
 
 folder = os.path.join(os.path.dirname(__file__), 'Misc')
 

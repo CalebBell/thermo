@@ -27,7 +27,7 @@ import pandas as pd
 from thermo.volume import *
 from thermo.volume import VDI_TABULAR
 from thermo.eos import *
-from thermo.utils import Vm_to_rho
+from chemicals.utils import Vm_to_rho
 from thermo.identifiers import checkCAS
 
 def test_volume_CSP():

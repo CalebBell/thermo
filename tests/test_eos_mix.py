@@ -22,7 +22,8 @@ SOFTWARE.'''
 
 from numpy.testing import assert_allclose
 import pytest
-from thermo.utils import normalize, TPD, hash_any_primitive
+from chemicals.utils import normalize, hash_any_primitive
+from thermo.utils import TPD
 from thermo.eos import *
 from thermo.eos_mix import *
 from fluids.constants import R

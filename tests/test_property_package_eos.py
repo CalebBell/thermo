@@ -23,7 +23,7 @@ SOFTWARE.'''
 import numpy as np
 from numpy.testing import assert_allclose
 import pytest
-from thermo.utils import normalize, TPD
+from thermo.utils import TPD
 from thermo.eos import *
 from thermo.eos_mix import *
 from scipy.misc import derivative
@@ -31,7 +31,7 @@ from scipy.optimize import minimize, newton
 from math import log, exp, sqrt, log10
 from thermo import Mixture
 from thermo.property_package import *
-from fluids.numerics import linspace, logspace
+from fluids.numerics import linspace, logspace, normalize
 from thermo.property_package_constants import (PropertyPackageConstants, PR_PKG)
 
 

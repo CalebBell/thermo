@@ -29,7 +29,7 @@ import pandas as pd
 from fluids.numerics import assert_close
 from fluids.constants import psi, atm, foot, lb
 from fluids.core import R2K, F2K
-from thermo.utils import normalize, mixing_simple
+from chemicals.utils import normalize, mixing_simple
 from thermo.viscosity import *
 from thermo.identifiers import checkCAS
 from thermo.viscosity import COOLPROP, LUCAS

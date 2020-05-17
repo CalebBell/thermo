@@ -40,10 +40,10 @@ from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              roots_cubic_a2, isclose, NoSolutionError,
                              roots_quartic)
 from fluids.constants import mmHg, R
-from thermo.utils import (Cp_minus_Cv, isobaric_expansion,
+from chemicals.utils import (Cp_minus_Cv, isobaric_expansion,
                           isothermal_compressibility,
                           phase_identification_parameter)
-from thermo.utils import log, log10, exp, sqrt, copysign
+from chemicals.utils import log, log10, exp, sqrt, copysign
 from thermo.alpha_functions import (Poly_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha,
                                     TwuSRK95_a_alpha, TwuPR95_a_alpha, Soave_79_a_alpha)
 from thermo.activity import Wilson_K_value

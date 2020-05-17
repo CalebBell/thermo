@@ -26,7 +26,7 @@ __all__ = ['dipole_moment', '_dipole_Poling', '_dipole_CCDB', '_dipole_Muller', 
 import os
 import numpy as np
 import pandas as pd
-from thermo.utils import isnan
+from chemicals.utils import isnan
 
 
 folder = os.path.join(os.path.dirname(__file__), 'Misc')

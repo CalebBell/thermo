@@ -26,7 +26,7 @@ __all__ = ['CRC_inorganic_data', 'CRC_organic_data', '_VDISaturationDict',
 import os
 import copy
 import pandas as pd
-from thermo.utils import to_num, rho_to_Vm
+from chemicals.utils import to_num, rho_to_Vm
 
 folder = os.path.join(os.path.dirname(__file__), 'Misc')
 

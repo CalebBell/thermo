@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 from numpy.testing import assert_allclose
 import pytest
-from thermo.utils import normalize, TPD
+from thermo.utils import TPD
 from fluids.core import K2F
 from fluids.constants import R, psi
 from fluids.numerics import *

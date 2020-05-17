@@ -28,7 +28,7 @@ __all__ = ['checkCAS', 'CAS_from_any', 'PubChem', 'MW', 'formula', 'smiles',
            'pubchem_db', 'ChemicalConstants', 'empty_chemical_constants']
 import os
 from io import open
-from thermo.utils import to_num, CAS2int, int2CAS
+from chemicals.utils import to_num, CAS2int, int2CAS
 from thermo.elements import (periodic_table, homonuclear_elemental_gases,
                              charge_from_formula, serialize_formula)
 

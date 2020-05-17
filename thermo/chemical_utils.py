@@ -28,7 +28,7 @@ import os
 import numpy as np
 import pandas as pd
 from scipy.integrate import quad
-from thermo.utils import isnan
+from chemicals.utils import isnan
 from thermo.chemical import *
 
 

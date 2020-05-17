@@ -31,7 +31,7 @@ from thermo.vapor_pressure import VaporPressure, SublimationPressure
 from thermo.phase_change import Tb, Tm, Hfus, Hsub, Tliquidus, EnthalpyVaporization, EnthalpySublimation
 from thermo.activity import identify_phase, identify_phase_mixture, Pbubble_mixture, Pdew_mixture
 
-from thermo.critical import Tc, Pc, Vc, Tc_mixture, Pc_mixture, Vc_mixture
+from chemicals.critical import Tc, Pc, Vc
 from thermo.acentric import omega, omega_mixture, StielPolar
 from thermo.triple import Tt, Pt
 from thermo.thermal_conductivity import ThermalConductivityLiquid, ThermalConductivityGas, ThermalConductivityLiquidMixture, ThermalConductivityGasMixture
@@ -45,6 +45,7 @@ from thermo.combustion import Hcombustion
 from thermo.safety import Tflash, Tautoignition, LFL, UFL, TWA, STEL, Ceiling, Skin, Carcinogen, LFL_mixture, UFL_mixture
 from thermo.solubility import solubility_parameter
 from thermo.dipole import dipole_moment as dipole
+from chemicals.utils import *
 from thermo.utils import *
 from fluids.core import Reynolds, Capillary, Weber, Bond, Grashof, Peclet_heat
 from thermo.lennard_jones import Stockmayer, molecular_diameter

@@ -37,8 +37,6 @@ from thermo.identifiers import *
 from thermo.identifiers import _MixtureDict, IDs_to_CASs
 from thermo.phase_change import Tliquidus
 from thermo.activity import identify_phase_mixture, Pbubble_mixture, Pdew_mixture
-from thermo.critical import Tc_mixture, Pc_mixture, Vc_mixture
-from thermo.acentric import omega_mixture
 from thermo.thermal_conductivity import ThermalConductivityLiquidMixture, ThermalConductivityGasMixture
 from thermo.volume import VolumeLiquidMixture, VolumeGasMixture, VolumeSolidMixture
 from thermo.permittivity import *
@@ -47,6 +45,7 @@ from thermo.interface import SurfaceTensionMixture
 from thermo.viscosity import ViscosityLiquidMixture, ViscosityGasMixture
 from thermo.safety import LFL_mixture, UFL_mixture
 from thermo.utils import *
+from chemicals.utils import *
 from thermo.elements import atom_fractions, mass_fractions, simple_formula_parser, molecular_weight, mixture_atomic_composition
 from thermo.eos import *
 from thermo.eos_mix import *
@@ -775,14 +774,14 @@ class Mixture(object):
         self.Tm_method = self.Tm_methods[0]
 
         # Critical Point, Methods only for Tc, Pc, Vc
-        self.Tc_methods = Tc_mixture(Tcs=self.Tcs, zs=self.zs, CASRNs=self.CASs, AvailableMethods=True)
-        self.Tc_method = self.Tc_methods[0]
-        self.Pc_methods = Pc_mixture(Pcs=self.Pcs, zs=self.zs, CASRNs=self.CASs, AvailableMethods=True)
-        self.Pc_method = self.Pc_methods[0]
-        self.Vc_methods = Vc_mixture(Vcs=self.Vcs, zs=self.zs, CASRNs=self.CASs, AvailableMethods=True)
-        self.Vc_method = self.Vc_methods[0]
-        self.omega_methods = omega_mixture(omegas=self.omegas, zs=self.zs, CASRNs=self.CASs, AvailableMethods=True)
-        self.omega_method = self.omega_methods[0]
+        self.Tc_methods = []#Tc_mixture(Tcs=self.Tcs, zs=self.zs, CASRNs=self.CASs, AvailableMethods=True)
+        self.Tc_method = None#self.Tc_methods[0]
+        self.Pc_methods = []#Pc_mixture(Pcs=self.Pcs, zs=self.zs, CASRNs=self.CASs, AvailableMethods=True)
+        self.Pc_method = None#self.Pc_methods[0]
+        self.Vc_methods = []#Vc_mixture(Vcs=self.Vcs, zs=self.zs, CASRNs=self.CASs, AvailableMethods=True)
+        self.Vc_method = None#self.Vc_methods[0]
+        self.omega_methods = []#omega_mixture(omegas=self.omegas, zs=self.zs, CASRNs=self.CASs, AvailableMethods=True)
+        self.omega_method = None#self.omega_methods[0]
 
         # No Flammability limits
         self.LFL_methods = LFL_mixture(ys=self.zs, LFLs=self.LFLs, AvailableMethods=True)
@@ -798,10 +797,22 @@ class Mixture(object):
         # Melting point
         self.Tm = Tliquidus(Tms=self.Tms, ws=self.ws, xs=self.zs, CASRNs=self.CASs, Method=self.Tm_method)
         # Critical Point
-        self.Tc = Tc_mixture(Tcs=self.Tcs, zs=self.zs, CASRNs=self.CASs, Method=self.Tc_method)
-        self.Pc = Pc_mixture(Pcs=self.Pcs, zs=self.zs, CASRNs=self.CASs, Method=self.Pc_method)
-        self.Vc = Vc_mixture(Vcs=self.Vcs, zs=self.zs, CASRNs=self.CASs, Method=self.Vc_method)
-        self.omega = omega_mixture(omegas=self.omegas, zs=self.zs, CASRNs=self.CASs, Method=self.omega_method)
+        try:
+            self.Tc = mixing_simple(zs, Tcs)
+        except:
+            self.Tc = None
+        try:
+            self.Pc = mixing_simple(zs, Pcs)
+        except:
+            self.Pc = None
+        try:
+            self.Vc = mixing_simple(zs, Vcs)
+        except:
+            self.Vc = None
+        try:
+            self.omega = mixing_simple(zs, omegas)
+        except:
+            self.omega = None
 
         self.Zc = Z(self.Tc, self.Pc, self.Vc) if all((self.Tc, self.Pc, self.Vc)) else None
         self.rhoc = Vm_to_rho(self.Vc, self.MW) if self.Vc else None

@@ -27,8 +27,8 @@ __all__.extend(['omega_methods', 'omega_mixture_methods', 'Stiel_polar_methods']
 
 from chemicals.utils import log, log10, isnan
 from chemicals.utils import mixing_simple, none_and_length_check
-from thermo.critical import Tc, Pc
-from thermo.critical import _crit_PSRKR4, _crit_PassutDanner, _crit_Yaws
+from chemicals import critical
+from chemicals.critical import Tc, Pc
 from thermo.phase_change import Tb
 from thermo.vapor_pressure import VaporPressure
 import numpy as np
@@ -116,11 +116,11 @@ def omega(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=['LK', 'DEFI
     '''
     def list_methods():
         methods = []
-        if CASRN in _crit_PSRKR4.index and not isnan(_crit_PSRKR4.at[CASRN, 'omega']):
+        if CASRN in critical._crit_PSRKR4.index and not isnan(critical._crit_PSRKR4.at[CASRN, 'omega']):
             methods.append('PSRK')
-        if CASRN in _crit_PassutDanner.index and not isnan(_crit_PassutDanner.at[CASRN, 'omega']):
+        if CASRN in critical._crit_PassutDanner.index and not isnan(critical._crit_PassutDanner.at[CASRN, 'omega']):
             methods.append('PD')
-        if CASRN in _crit_Yaws.index and not isnan(_crit_Yaws.at[CASRN, 'omega']):
+        if CASRN in critical._crit_Yaws.index and not isnan(critical._crit_Yaws.at[CASRN, 'omega']):
             methods.append('YAWS')
         Tcrit, Pcrit = Tc(CASRN), Pc(CASRN)
         if Tcrit and Pcrit:
@@ -140,11 +140,11 @@ def omega(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=['LK', 'DEFI
         Method = list_methods()[0]
     # This is the calculate, given the method section
     if Method == 'PSRK':
-        _omega = float(_crit_PSRKR4.at[CASRN, 'omega'])
+        _omega = float(critical._crit_PSRKR4.at[CASRN, 'omega'])
     elif Method == 'PD':
-        _omega = float(_crit_PassutDanner.at[CASRN, 'omega'])
+        _omega = float(critical._crit_PassutDanner.at[CASRN, 'omega'])
     elif Method == 'YAWS':
-        _omega = float(_crit_Yaws.at[CASRN, 'omega'])
+        _omega = float(critical._crit_Yaws.at[CASRN, 'omega'])
     elif Method == 'LK':
         _omega = LK_omega(Tb(CASRN), Tc(CASRN), Pc(CASRN))
     elif Method == 'DEFINITION':

@@ -30,7 +30,7 @@ __all__ = ['DSL_data', 'CAN_DSL_flags', 'TSCA_flags', 'TSCA_data',
 
 import os
 import zipfile
-from thermo.utils import to_num, CAS2int
+from chemicals.utils import to_num, CAS2int
 import pandas as pd
 from pprint import pprint
 

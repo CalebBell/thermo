@@ -24,7 +24,7 @@ from numpy.testing import assert_allclose
 import pytest
 import pandas as pd
 from thermo.acentric import *
-from thermo.acentric import _crit_PSRKR4, _crit_PassutDanner, _crit_Yaws
+from chemicals.critical import _crit_PSRKR4, _crit_PassutDanner, _crit_Yaws
 
 
 @pytest.mark.slow

@@ -37,8 +37,8 @@ __all__ = ['MagalhaesLJ_data', 'Stockmayer_methods', 'Stockmayer',
 
 import os
 import pandas as pd
-from thermo.utils import exp, log, sin
-from thermo.utils import k
+from chemicals.utils import exp, log, sin
+from fluids.constants import k
 
 folder = os.path.join(os.path.dirname(__file__), 'Viscosity')
 

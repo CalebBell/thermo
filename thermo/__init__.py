@@ -27,7 +27,7 @@ from . import activity
 from . import chemical
 from . import chemical_package
 from . import combustion
-from . import critical
+from chemicals import critical
 from . import coolprop
 from . import dipole
 from . import dippr
@@ -79,7 +79,7 @@ from .activity import *
 from .chemical import *
 from .chemical_package import *
 from .combustion import *
-from .critical import *
+from chemicals.critical import *
 from .coolprop import *
 from .dipole import *
 from .dippr import *
