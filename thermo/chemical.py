@@ -28,7 +28,7 @@ __all__ = ['Chemical', 'reference_states']
 from thermo.identifiers import *
 from thermo.identifiers import _MixtureDict, empty_chemical_constants
 from thermo.vapor_pressure import VaporPressure, SublimationPressure
-from thermo.phase_change import Tb, Tm, Hfus, Hsub, Tliquidus, EnthalpyVaporization, EnthalpySublimation
+from thermo.phase_change import Tb, Tm, Hfus, Hsub, EnthalpyVaporization, EnthalpySublimation
 from thermo.rachford_rice import identify_phase, identify_phase_mixture, Pbubble_mixture, Pdew_mixture
 
 from chemicals.critical import Tc, Pc, Vc

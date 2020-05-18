@@ -35,7 +35,6 @@ from fluids.core import Reynolds, Capillary, Weber, Bond, Grashof, Peclet_heat
 from thermo.chemical import Chemical
 from thermo.identifiers import *
 from thermo.identifiers import _MixtureDict, IDs_to_CASs
-from thermo.phase_change import Tliquidus
 from thermo.rachford_rice import identify_phase_mixture, Pbubble_mixture, Pdew_mixture
 from thermo.thermal_conductivity import ThermalConductivityLiquidMixture, ThermalConductivityGasMixture
 from thermo.volume import VolumeLiquidMixture, VolumeGasMixture, VolumeSolidMixture
@@ -769,10 +768,6 @@ class Mixture(object):
 
     def set_constant_sources(self):
         # None of this takes much time or is important
-        # Tliquidus assumes worst-case for now
-        self.Tm_methods = Tliquidus(Tms=self.Tms, ws=self.ws, xs=self.zs, CASRNs=self.CASs, AvailableMethods=True)
-        self.Tm_method = self.Tm_methods[0]
-
         # Critical Point, Methods only for Tc, Pc, Vc
         self.Tc_methods = []#Tc_mixture(Tcs=self.Tcs, zs=self.zs, CASRNs=self.CASs, AvailableMethods=True)
         self.Tc_method = None#self.Tc_methods[0]
@@ -795,7 +790,7 @@ class Mixture(object):
     def set_constants(self):
         # None of this takes much time or is important
         # Melting point
-        self.Tm = Tliquidus(Tms=self.Tms, ws=self.ws, xs=self.zs, CASRNs=self.CASs, Method=self.Tm_method)
+        self.Tm = mixing_simple(self.Tms, self.zs)
         # Critical Point
         try:
             self.Tc = mixing_simple(zs, Tcs)
