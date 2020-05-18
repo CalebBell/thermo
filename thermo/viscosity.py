@@ -51,7 +51,8 @@ from fluids.numerics import newton, interp, horner
 from chemicals.utils import log, exp, log10
 from chemicals.utils import none_and_length_check, mixing_simple, mixing_logarithmic
 from thermo.utils import TPDependentProperty, MixtureProperty
-from thermo.miscdata import VDI_saturation_data, VDI_tabular_data
+from chemicals import miscdata
+from chemicals.miscdata import VDI_tabular_data
 from thermo.electrochem import _Laliberte_Viscosity_ParametersDict, Laliberte_viscosity
 from thermo.coolprop import has_CoolProp, PropsSI, PhaseSI, coolprop_fluids, coolprop_dict, CoolProp_T_dependent_property
 from chemicals.dippr import EQ101, EQ102
@@ -596,7 +597,7 @@ class ViscosityLiquid(TPDependentProperty):
             methods.append(COOLPROP); methods_P.append(COOLPROP)
             self.CP_f = coolprop_fluids[self.CASRN]
             Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tc)
-        if self.CASRN in VDI_saturation_data:
+        if self.CASRN in miscdata.VDI_saturation_data:
             methods.append(VDI_TABULAR)
             Ts, props = VDI_tabular_data(self.CASRN, 'Mu (l)')
             self.VDI_Tmin = Ts[0]
@@ -1621,7 +1622,7 @@ class ViscosityGas(TPDependentProperty):
         '''
         methods, methods_P = [], []
         Tmins, Tmaxs = [], []
-        if self.CASRN in VDI_saturation_data:
+        if self.CASRN in miscdata.VDI_saturation_data:
             methods.append(VDI_TABULAR)
             Ts, props = VDI_tabular_data(self.CASRN, 'Mu (g)')
             self.VDI_Tmin = Ts[0]

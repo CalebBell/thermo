@@ -41,8 +41,8 @@ from chemicals.utils import log, isnan
 from chemicals.utils import property_molar_to_mass, mixing_simple, none_and_length_check
 from chemicals.dippr import EQ106
 from thermo.utils import TDependentProperty
-from thermo.miscdata import CRC_organic_data, CRC_inorganic_data
-from thermo.miscdata import VDI_saturation_data, VDI_tabular_data
+from chemicals import miscdata
+from chemicals.miscdata import VDI_tabular_data
 from thermo.vapor_pressure import VaporPressure
 from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluids
 
@@ -154,9 +154,9 @@ def Tb(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=[PSAT_DEFINITIO
     '''
     def list_methods():
         methods = []
-        if CASRN in CRC_inorganic_data.index and not isnan(CRC_inorganic_data.at[CASRN, 'Tb']):
+        if CASRN in miscdata.CRC_inorganic_data.index and not isnan(miscdata.CRC_inorganic_data.at[CASRN, 'Tb']):
             methods.append(CRC_INORG)
-        if CASRN in CRC_organic_data.index and not isnan(CRC_organic_data.at[CASRN, 'Tb']):
+        if CASRN in miscdata.CRC_organic_data.index and not isnan(miscdata.CRC_organic_data.at[CASRN, 'Tb']):
             methods.append(CRC_ORG)
         if CASRN in Yaws_data.index:
             methods.append(YAWS)
@@ -179,9 +179,9 @@ def Tb(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=[PSAT_DEFINITIO
         Method = list_methods()[0]
 
     if Method == CRC_INORG:
-        return float(CRC_inorganic_data.at[CASRN, 'Tb'])
+        return float(miscdata.CRC_inorganic_data.at[CASRN, 'Tb'])
     elif Method == CRC_ORG:
-        return float(CRC_organic_data.at[CASRN, 'Tb'])
+        return float(miscdata.CRC_organic_data.at[CASRN, 'Tb'])
     elif Method == YAWS:
         return float(Yaws_data.at[CASRN, 'Tb'])
     elif Method == PSAT_DEFINITION:
@@ -266,9 +266,9 @@ def Tm(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=[]):
         methods = []
         if CASRN in Tm_ON_data.index:
             methods.append(OPEN_NTBKM)
-        if CASRN in CRC_inorganic_data.index and not isnan(CRC_inorganic_data.at[CASRN, 'Tm']):
+        if CASRN in miscdata.CRC_inorganic_data.index and not isnan(miscdata.CRC_inorganic_data.at[CASRN, 'Tm']):
             methods.append(CRC_INORG)
-        if CASRN in CRC_organic_data.index and not isnan(CRC_organic_data.at[CASRN, 'Tm']):
+        if CASRN in miscdata.CRC_organic_data.index and not isnan(miscdata.CRC_organic_data.at[CASRN, 'Tm']):
             methods.append(CRC_ORG)
         if IgnoreMethods:
             for Method in IgnoreMethods:
@@ -284,9 +284,9 @@ def Tm(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=[]):
     if Method == OPEN_NTBKM:
         return float(Tm_ON_data.at[CASRN, 'Tm'])
     elif Method == CRC_INORG:
-        return float(CRC_inorganic_data.at[CASRN, 'Tm'])
+        return float(miscdata.CRC_inorganic_data.at[CASRN, 'Tm'])
     elif Method == CRC_ORG:
-        return float(CRC_organic_data.at[CASRN, 'Tm'])
+        return float(miscdata.CRC_organic_data.at[CASRN, 'Tm'])
     elif Method == NONE:
         return None
     else:
@@ -1129,7 +1129,7 @@ class EnthalpyVaporization(TDependentProperty):
             methods.append(COOLPROP)
             self.CP_f = coolprop_fluids[self.CASRN]
             Tmins.append(self.CP_f.Tt); Tmaxs.append(self.CP_f.Tc)
-        if self.CASRN in VDI_saturation_data:
+        if self.CASRN in miscdata.VDI_saturation_data:
             methods.append(VDI_TABULAR)
             Ts, props = VDI_tabular_data(self.CASRN, 'Hvap')
             self.VDI_Tmin = Ts[0]

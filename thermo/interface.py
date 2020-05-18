@@ -38,7 +38,8 @@ from chemicals.utils import mixing_simple, none_and_length_check, Vm_to_rho
 from chemicals.dippr import EQ106
 from fluids.constants import N_A, k
 from thermo.utils import TDependentProperty, MixtureProperty
-from thermo.miscdata import VDI_saturation_data, VDI_tabular_data
+from chemicals import miscdata
+from chemicals.miscdata import VDI_tabular_data
 
 folder = os.path.join(os.path.dirname(__file__), 'Interface')
 
@@ -924,7 +925,7 @@ class SurfaceTension(TDependentProperty):
             _, self.SOMAYAJULU_Tt, self.SOMAYAJULU_Tc, A, B, C = _Somayajulu_data_values[Somayajulu_data.index.get_loc(self.CASRN)].tolist()
             self.SOMAYAJULU_coeffs = [A, B, C]
             Tmins.append(self.SOMAYAJULU_Tt); Tmaxs.append(self.SOMAYAJULU_Tc)
-        if self.CASRN in VDI_saturation_data:
+        if self.CASRN in miscdata.VDI_saturation_data:
             methods.append(VDI_TABULAR)
             Ts, props = VDI_tabular_data(self.CASRN, 'sigma')
             self.VDI_Tmin = Ts[0]

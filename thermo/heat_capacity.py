@@ -54,7 +54,8 @@ from scipy.integrate import quad
 from chemicals.utils import log, exp, polylog2, isnan
 from chemicals.utils import (to_num, property_molar_to_mass, none_and_length_check,
                           mixing_simple, property_mass_to_molar)
-from thermo.miscdata import VDI_saturation_data, VDI_tabular_data
+from chemicals import miscdata
+from chemicals.miscdata import VDI_tabular_data
 from thermo.electrochem import (Laliberte_heat_capacity,
                                 _Laliberte_Heat_Capacity_ParametersDict)
 from thermo.utils import TDependentProperty, MixtureProperty
@@ -869,7 +870,7 @@ class HeatCapacityGas(TDependentProperty):
             methods.append(CRCSTD)
             self.CRCSTD_T = 298.15
             self.CRCSTD_constant = float(CRC_standard_data.at[self.CASRN, 'Cpg'])
-        if self.CASRN in VDI_saturation_data:
+        if self.CASRN in miscdata.VDI_saturation_data:
             # NOTE: VDI data is for the saturation curve, i.e. at increasing
             # pressure; it is normally substantially higher than the ideal gas
             # value
@@ -2151,7 +2152,7 @@ class HeatCapacityLiquid(TDependentProperty):
         if self.CASRN in zabransky_dict_sat_p:
             methods.append(ZABRANSKY_QUASIPOLYNOMIAL_SAT)
             self.Zabransky_quasipolynomial_sat = zabransky_dict_sat_p[self.CASRN]
-        if self.CASRN in VDI_saturation_data:
+        if self.CASRN in miscdata.VDI_saturation_data:
             # NOTE: VDI data is for the saturation curve, i.e. at increasing
             # pressure; it is normally substantially higher than the ideal gas
             # value

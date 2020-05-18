@@ -24,7 +24,7 @@ from numpy.testing import assert_allclose
 import pytest
 
 from thermo.phase_change import *
-from thermo.miscdata import CRC_inorganic_data, CRC_organic_data
+from chemicals.miscdata import CRC_inorganic_data, CRC_organic_data
 from thermo.identifiers import checkCAS
 
 

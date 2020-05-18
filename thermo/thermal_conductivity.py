@@ -47,7 +47,8 @@ from chemicals.utils import mixing_simple, none_and_length_check
 from chemicals.dippr import EQ100, EQ102
 
 from thermo.utils import TPDependentProperty, MixtureProperty
-from thermo.miscdata import VDI_saturation_data, VDI_tabular_data
+from chemicals import miscdata
+from chemicals.miscdata import VDI_tabular_data
 from thermo.coolprop import has_CoolProp, coolprop_dict, coolprop_fluids, CoolProp_T_dependent_property, PropsSI, PhaseSI
 from thermo.electrochem import thermal_conductivity_Magomedov, Magomedovk_thermal_cond
 
@@ -723,7 +724,7 @@ class ThermalConductivityLiquid(TPDependentProperty):
         '''
         methods, methods_P = [], []
         Tmins, Tmaxs = [], []
-        if self.CASRN in VDI_saturation_data:
+        if self.CASRN in miscdata.VDI_saturation_data:
             methods.append(VDI_TABULAR)
             Ts, props = VDI_tabular_data(self.CASRN, 'K (l)')
             self.VDI_Tmin = Ts[0]
@@ -2072,7 +2073,7 @@ class ThermalConductivityGas(TPDependentProperty):
         '''
         methods, methods_P = [], []
         Tmins, Tmaxs = [], []
-        if self.CASRN in VDI_saturation_data:
+        if self.CASRN in miscdata.VDI_saturation_data:
             methods.append(VDI_TABULAR)
             Ts, props = VDI_tabular_data(self.CASRN, 'K (g)')
             self.VDI_Tmin = Ts[0]
