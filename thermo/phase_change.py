@@ -862,13 +862,59 @@ def Vetere(Tb, Tc, Pc, F=1):
 
 ### Enthalpy of Vaporization adjusted for T
 
-def Watson(T, Hvap_ref, T_Ref, Tc, exponent=0.38):
-    '''
-    Adjusts enthalpy of vaporization of enthalpy for another temperature, for one temperature.
+def Watson(T, Hvap_ref, T_ref, Tc, exponent=0.38):
+    r'''Calculates enthalpy of vaporization of a chemical at a temperature 
+    using the known heat of vaporization at another temperature according to
+    the Watson [1]_ [2]_ correlation. This is an application of the 
+    corresponding-states principle, with an emperical temperature dependence.
+
+    .. math::
+        \frac{\Delta H_{vap}^{T2}}{\Delta H_{vap}^{T1}}  = \left(
+        \frac{1-T_{r,1}}{1-T_{r,2}} \right)^{0.38}
+
+    Parameters
+    ----------
+    T : float
+        Temperature for which to calculate heat of vaporization, [K]
+    Hvap_ref : float
+        Enthalpy of vaporization at the known temperature point, [J/mol]
+    T_ref : float
+        Reference temperature; ideally as close to `T` as posible, [K]
+    Tc : float
+        Critical temperature of fluid [K]
+    exponent : float, optional
+        A fit exponent can optionally be used instead of the Watson 0.38 
+        exponent, [-]
+
+    Returns
+    -------
+    Hvap : float
+        Enthalpy of vaporization at `T`, [J/mol]
+
+    Notes
+    -----
+
+    Examples
+    --------
+    Predict the enthalpy of vaporization of water at 320 K from a point at
+    300 K:
+        
+    >>> Watson(T=320, Hvap_ref=43908, T_ref=300.0, Tc=647.14)
+    42928.990094915454
+    
+    The error is 0.38% compared to the correct value of 43048 J/mol.
+
+    References
+    ----------
+    .. [1] Watson, KM. "Thermodynamics of the Liquid State." Industrial & 
+       Engineering Chemistry 35, no. 4 (1943): 398–406.
+    .. [2] Martin, Joseph J., and John B. Edwards. "Correlation of Latent Heats
+       of Vaporization.” AIChE Journal 11, no. 2 (1965): 331-33. 
+       https://doi.org/10.1002/aic.690110226.
     '''
     Tr = T/Tc
-    Trefr = T_Ref/Tc
-    H2 = Hvap_ref*((1-Tr)/(1-Trefr))**exponent
+    Trefr = T_ref/Tc
+    H2 = Hvap_ref*((1.0 - Tr)/(1.0 - Trefr))**exponent
     return H2
 
 
@@ -1341,40 +1387,81 @@ class EnthalpyVaporization(TDependentProperty):
 
 ### Heat of Fusion
 
+CRC = 'CRC'
+Hfus_methods = [CRC]
 
-def Hfus(T=298.15, P=101325, MW=None, AvailableMethods=False, Method=None, CASRN=''):  # pragma: no cover
-    '''This function handles the calculation of a chemical's enthalpy of fusion.
-    Generally this, is used by the chemical class, as all parameters are passed.
-    Calling the function directly works okay.
 
-    Enthalpy of fusion is a weak function of pressure, and its effects are
-    neglected.
+def Hfus(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=[]): 
+    r'''This function handles the retrieval of a chemical's heat of fusion.
+    Lookup is based on CASRNs. Will automatically select a data
+    source to use if no Method is provided; returns None if the data is not
+    available.
 
-    This API is considered experimental, and is expected to be removed in a
-    future release in favor of a more complete object-oriented interface.
+    The prefered source is 'CRC'. Function has data for approximately 1100 
+    chemicals.
 
+    Parameters
+    ----------
+    CASRN : string
+        CASRN [-]
+
+    Returns
+    -------
+    Hfus : float
+        Molar enthalpy of fusion at normal melting point, [J/mol]
+    methods : list, only returned if AvailableMethods == True
+        List of methods which can be used to obtain Tb with the given inputs
+
+    Other Parameters
+    ----------------
+    Method : string, optional
+        A string for the method name to use, as defined by constants in
+        Hfus_methods
+    AvailableMethods : bool, optional
+        If True, function will determine which methods can be used to obtain
+        hfus for the desired chemical, and will return methods instead of Hfus
+    IgnoreMethods : list, optional
+        A list of methods to ignore in obtaining the full list of methods,
+        useful for for performance reasons and ignoring inaccurate methods
+
+    Notes
+    -----
+    A total of one method is available for this function. They are:
+
+        * 'CRC', a compillation of data on organics and inorganics as published 
+        in [1]_.
+
+    Examples
+    --------
+    >>> Hfus('7732-18-5')
+    6010.0
+
+    References
+    ----------
+    .. [1] Haynes, W.M., Thomas J. Bruno, and David R. Lide. CRC Handbook of
+       Chemistry and Physics, 95E. Boca Raton, FL: CRC press, 2014.
     '''
     def list_methods():
         methods = []
         if CASRN in CRCHfus_data.index:
-            methods.append('CRC, at melting point')
-        methods.append('None')
+            methods.append(CRC)
+        methods.append(NONE)
+        if IgnoreMethods:
+            for Method in IgnoreMethods:
+                if Method in methods:
+                    methods.remove(Method)
         return methods
     if AvailableMethods:
         return list_methods()
     if not Method:
         Method = list_methods()[0]
-    # This is the calculate, given the method section
-    if Method == 'CRC, at melting point':
-        _Hfus = CRCHfus_data.at[CASRN, 'Hfus']
-    elif Method == 'None' or not MW:
-        _Hfus = None
+
+    if Method == CRC:
+        return CRCHfus_data.at[CASRN, 'Hfus']
+    elif Method == NONE:
+        return None
     else:
-        raise Exception('Failure in in function')
-    _Hfus = property_molar_to_mass(_Hfus, MW)
-    return _Hfus
-#print Hfus(CASRN='75-07-0')
-#['CRC, at melting point', 'None']
+        raise valueError('Unrecognized method')
 
 
 ### Heat of Sublimation

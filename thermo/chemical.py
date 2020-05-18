@@ -784,7 +784,7 @@ class Chemical(object): # pragma: no cover
         self.Pt_source = self.Pt_sources[0]
 
         # Enthalpy
-        self.Hfus_methods = Hfus(MW=self.MW, AvailableMethods=True, CASRN=self.CAS)
+        self.Hfus_methods = Hfus(AvailableMethods=True, CASRN=self.CAS)
         self.Hfus_method = self.Hfus_methods[0]
 
         self.Hsub_methods = Hsub(MW=self.MW, AvailableMethods=True, CASRN=self.CAS)
@@ -863,8 +863,8 @@ class Chemical(object): # pragma: no cover
         self.Tt = Tt(self.CAS, Method=self.Tt_source)
 
         # Enthalpy
-        self.Hfus = Hfus(MW=self.MW, Method=self.Hfus_method, CASRN=self.CAS)
-        self.Hfusm = property_mass_to_molar(self.Hfus, self.MW) if self.Hfus else None
+        self.Hfusm = Hfus(Method=self.Hfus_method, CASRN=self.CAS)
+        self.Hfus = property_molar_to_mass(self.Hfusm, self.MW) if self.Hfusm is not None else None
 
         self.Hsub = Hsub(MW=self.MW, Method=self.Hsub_method, CASRN=self.CAS)
         self.Hsubm = property_mass_to_molar(self.Hsub, self.MW)
