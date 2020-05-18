@@ -55,9 +55,6 @@ def test_Permittivity_class():
     assert Permittivity(CASRN='132451235-2151234-1234123').all_methods == set()
     assert Permittivity(CASRN='132451235-2151234-1234123').T_dependent_property(300) is None
 
-    tot_constant = sum([Permittivity(CASRN=i).calculate(T=298.15, method='CRC_CONSTANT') for i in CRC_Permittivity_data.index])
-    assert_close(tot_constant, 13526.653700000023)
-
     assert False == Permittivity(CASRN='7732-18-5').test_method_validity(228.15, 'CRC_CONSTANT')
     assert False == Permittivity(CASRN='7732-18-5').test_method_validity(228.15, 'CRC')
 
@@ -78,6 +75,11 @@ def test_Permittivity_class():
 @pytest.mark.fuzz
 @pytest.mark.meta_T_dept
 def test_Permittivity_class_fuzz():
+    tot_constant = sum([Permittivity(CASRN=i).calculate(T=298.15, method='CRC_CONSTANT') for i in CRC_Permittivity_data.index])
+    assert_close(tot_constant, 13526.653700000023)
+
+    
+    
     sums_min, sums_avg, sums_max = 0, 0, 0
     for i in CRC_Permittivity_data.index:
         a = Permittivity(CASRN=i)
