@@ -102,19 +102,20 @@ def Antoine(T, A, B, C, base=10.0):
     ----------
     T : float
         Temperature of fluid, [K]
-    A, B, C : floats
-        Regressed coefficients for Antoine equation for a chemical
+    A : float
+        Antoine `A` parameter, [-]
+    B : float
+        Antoine `B` parameter, [K]
+    C : float
+        Antoine `C` parameter, [K]
+    Base : float, optional
+        Optional base of logarithm; 10 by default
 
     Returns
     -------
     Psat : float
         Vapor pressure calculated with coefficients [Pa]
     
-    Other Parameters
-    ----------------
-    Base : float
-        Optional base of logarithm; 10 by default
-
     Notes
     -----
     Assumes coefficients are for calculating vapor pressure in Pascal. 
@@ -163,14 +164,58 @@ def Antoine(T, A, B, C, base=10.0):
 
 
 def Antoine_coeffs_from_point(T, Psat, dPsat_dT, d2Psat_dT2, base=10.0):
-    '''
-    from sympy import *
-    base, A, B, C, T = symbols('base, A, B, C, T')
-    v = base**(A - B/(T + C))
-    d1 = diff(v, T)
-    d2 = diff(v, T, 2)
-    vk, d1k, d2k = symbols('vk, d1k, d2k')
-    solve([Eq(v, vk), Eq(d1, d1k), Eq(d2, d2k)], [A, B, C])
+    r'''Calculates the antoine coefficients `A`, `B`, and `C` from a known
+    vapor pressure and its first and second temperature derivative.
+
+    .. math::
+        \log_{\text{base}} P^{\text{sat}} = A - \frac{B}{T+C}
+
+    Parameters
+    ----------
+    T : float
+        Temperature of fluid, [K]
+    Psat : float
+        Vapor pressure at specified `T` [Pa]
+    dPsat_dT : float
+        First temperature derivative of vapor pressure at specified `T` [Pa/K]
+    d2Psat_dT2 : float
+        Second temperature derivative of vapor pressure at specified `T` [Pa/K^2]
+    Base : float, optional
+        Base of logarithm; 10 by default
+
+    Returns
+    -------
+    A : float
+        Antoine `A` parameter, [-]
+    B : float
+        Antoine `B` parameter, [K]
+    C : float
+        Antoine `C` parameter, [K]
+
+    Notes
+    -----
+    Coefficients are for calculating vapor pressure in Pascal. 
+    
+    Derived with SymPy as follows:
+        
+    >>> from sympy import *
+    >>> base, A, B, C, T = symbols('base, A, B, C, T')
+    >>> v = base**(A - B/(T + C))
+    >>> d1, d2 = diff(v, T), diff(v, T, 2)
+    >>> vk, d1k, d2k = symbols('vk, d1k, d2k')
+    >>> solve([Eq(v, vk), Eq(d1, d1k), Eq(d2, d2k)], [A, B, C])
+
+    Examples
+    --------
+    Methane, coefficients from [1]_, at 100 K:
+    
+    >>> Antoine(100.0, 8.7687, 395.744, -6.469)
+    34478.367349639906
+    
+    References
+    ----------
+    .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
+       New York: McGraw-Hill Professional, 2000.
     '''
     A = log(Psat*exp(2*dPsat_dT**2/(dPsat_dT**2 - d2Psat_dT2*Psat)))/log(base)
     B = 4*dPsat_dT**3*Psat/((dPsat_dT**4 - 2*dPsat_dT**2*d2Psat_dT2*Psat + d2Psat_dT2**2*Psat**2)*log(base))
@@ -1221,10 +1266,13 @@ def Sanjari(T, Tc, Pc, omega):
        (June 2013): 1327-32. doi:10.1016/j.ijrefrig.2013.01.007.
     '''
     Tr = T/Tc
-    f0 = 6.83377 + -5.76051/Tr + 0.90654*log(Tr) + -1.16906*Tr**1.9
-    f1 = 5.32034 + -28.1460/Tr + -58.0352*log(Tr) + 23.57466*Tr**1.9
-    f2 = 18.19967 + 16.33839/Tr + 65.6995*log(Tr) + -35.9739*Tr**1.9
-    return Pc*exp(f0 + omega*f1 + omega**2*f2)
+    Tr_inv = 1.0/Tr
+    log_Tr = log(Tr)
+    Tr_19 = Tr**1.9
+    f0 = 6.83377 + -5.76051*Tr_inv + 0.90654*log_Tr + -1.16906*Tr_19
+    f1 = 5.32034 + -28.1460*Tr_inv + -58.0352*log_Tr + 23.57466*Tr_19
+    f2 = 18.19967 + 16.33839*Tr_inv + 65.6995*log_Tr + -35.9739*Tr_19
+    return Pc*exp(f0 + omega*f1 + omega*omega*f2)
 
 
 def Edalat(T, Tc, Pc, omega):

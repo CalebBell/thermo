@@ -24,7 +24,7 @@ from numpy.testing import assert_allclose
 import pytest
 import numpy as np
 import pandas as pd
-from fluids.numerics import assert_close, derivative
+from fluids.numerics import assert_close, derivative, assert_close1d
 from thermo.vapor_pressure import *
 from thermo.vapor_pressure import VDI_TABULAR
 from thermo.identifiers import checkCAS
@@ -80,6 +80,14 @@ def test_Antoine_fit_extrapolate():
     d2Psat_dT2_analytical = B*(B/(C + T) - 2)*exp(A - B/(C + T))/(C + T)**3
     assert_close(d2Psat_dT2_num, d2Psat_dT2, rtol=1e-4)
     assert_close(d2Psat_dT2_analytical, d2Psat_dT2, rtol=1e-10)
+
+def test_Antoine_coeffs_from_point():
+    T = 178.01
+    A, B, C = (24.0989474955895, 4346.793091137991, -18.96968471040141)
+    Psat = Antoine(T, A, B, C, base=exp(1))
+    dPsat_dT, d2Psat_dT2 = (0.006781441203850251, 0.0010801244983894853)
+    new_coeffs = Antoine_coeffs_from_point(T, Psat, dPsat_dT, d2Psat_dT2, base=exp(1))
+    assert_close1d(new_coeffs, [A, B, C], rtol=1e-9)
 
 def test_Antoine_AB_fit_extrapolate():
     T = 178.01
