@@ -54,8 +54,8 @@ def test_Chemical_properties():
     assert_allclose(pentane.Hfusm, 8400.0, rtol=1E-3)
     
     phenol = Chemical('phenol')
-    assert_allclose(phenol.Hsub, 740612.9172243401, rtol=1E-3)
-    assert_allclose(phenol.Hsubm, 69700.0)
+    assert_allclose(phenol.Hsub, 736964.419015, rtol=1E-3)
+    assert_allclose(phenol.Hsubm, 69356.6353093363)
 
     assert_allclose(phenol.Hfm, -96400.0)
     assert_allclose(phenol.Hcm, -3121919.0)

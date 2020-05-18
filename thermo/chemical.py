@@ -28,7 +28,7 @@ __all__ = ['Chemical', 'reference_states']
 from thermo.identifiers import *
 from thermo.identifiers import _MixtureDict, empty_chemical_constants
 from thermo.vapor_pressure import VaporPressure, SublimationPressure
-from thermo.phase_change import Tb, Tm, Hfus, Hsub, EnthalpyVaporization, EnthalpySublimation
+from thermo.phase_change import Tb, Tm, Hfus, EnthalpyVaporization, EnthalpySublimation
 from thermo.rachford_rice import identify_phase, identify_phase_mixture, Pbubble_mixture, Pdew_mixture
 
 from chemicals.critical import Tc, Pc, Vc
@@ -787,9 +787,6 @@ class Chemical(object): # pragma: no cover
         self.Hfus_methods = Hfus(AvailableMethods=True, CASRN=self.CAS)
         self.Hfus_method = self.Hfus_methods[0]
 
-        self.Hsub_methods = Hsub(MW=self.MW, AvailableMethods=True, CASRN=self.CAS)
-        self.Hsub_method = self.Hsub_methods[0]
-
         # Fire Safety Limits
         self.Tflash_sources = Tflash(self.CAS, AvailableMethods=True)
         self.Tflash_source = self.Tflash_sources[0]
@@ -865,9 +862,6 @@ class Chemical(object): # pragma: no cover
         # Enthalpy
         self.Hfusm = Hfus(Method=self.Hfus_method, CASRN=self.CAS)
         self.Hfus = property_molar_to_mass(self.Hfusm, self.MW) if self.Hfusm is not None else None
-
-        self.Hsub = Hsub(MW=self.MW, Method=self.Hsub_method, CASRN=self.CAS)
-        self.Hsubm = property_mass_to_molar(self.Hsub, self.MW)
 
         # Chemistry
         self.Hfm = Hf(CASRN=self.CAS, Method=self.Hf_source)
@@ -1055,7 +1049,8 @@ class Chemical(object): # pragma: no cover
                                                        Cpg=self.HeatCapacityGas, Cps=self.HeatCapacitySolid,
                                                        Hvap=self.EnthalpyVaporization,
                                                        best_fit=get_chemical_constants(self.CAS, 'EnthalpySublimation'))
-        self.Hsub_Ttm = self.EnthalpySublimation(self.Tt) if self.Tt is not None else None
+        self.Hsubm = self.Hsub_Ttm = self.EnthalpySublimation(self.Tt) if self.Tt is not None else None
+        self.Hsub = self.Hsub_Tt = property_molar_to_mass(self.Hsub_Ttm, self.MW) if self.Hsub_Ttm is not None else None
         self.Ssub_Ttm = self.Hsub_Ttm/self.Tt if (self.Tt is not None and self.Hsub_Ttm is not None) else None
         
         self.Sfusm = self.Hfusm/self.Tm if (self.Tm is not None and self.Hfusm is not None) else None
