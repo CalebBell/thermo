@@ -46,29 +46,47 @@ from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluid
 
 folder = os.path.join(os.path.dirname(__file__), 'Vapor Pressure')
 
+# 57463 bytes for df; 13720 bytes for numpy
 WagnerMcGarry = pd.read_csv(os.path.join(folder, 'Wagner Original McGarry.tsv'),
-                            sep='\t', index_col=0)
-_WagnerMcGarry_values = WagnerMcGarry.values
+                            sep='\t', index_col=0, dtype=
+                            {'A': float, 'B': float, 'C': float, 'D': float,
+                             'Pc': float, 'Tc': float, 'Tmin': float})
+_WagnerMcGarry_values_compact = np.array(WagnerMcGarry.values[:, 1:], dtype=float)
 
+
+# 58216 bytes for df; 13000 bytes for numpy
 AntoinePoling = pd.read_csv(os.path.join(folder, 'Antoine Collection Poling.tsv'),
                             sep='\t', index_col=0)
-_AntoinePoling_values = AntoinePoling.values
+_AntoinePoling_values = np.array(AntoinePoling.values[:, 1:], dtype=float)
 
+# 20928 bytes for df; 7488 bytes for numpy
 WagnerPoling = pd.read_csv(os.path.join(folder, 'Wagner Collection Poling.tsv'),
-                           sep='\t', index_col=0)
-_WagnerPoling_values = WagnerPoling.values
+                           sep='\t', index_col=0, dtype=
+                            {'A': float, 'B': float, 'C': float, 'D': float,
+                             'Pc': float, 'Tc': float, 'Pc': float, 'Tmin': float,
+                             'Tmax': float})
+_WagnerPoling_values = np.array(WagnerPoling.values[:, 1:], dtype=float)
 
+# 21388 bytes for df; 7760 bytes for numpy
 AntoineExtended = pd.read_csv(os.path.join(folder, 'Antoine Extended Collection Poling.tsv'),
-                              sep='\t', index_col=0)
-_AntoineExtended_values = AntoineExtended.values
+                              sep='\t', index_col=0, dtype=
+                            {'A': float, 'B': float, 'C': float, 'Tc': float,
+                             'to': float, 'n': float, 'E': float, 'F': float,
+                             'Tmin': float, 'Tmax': float})
+_AntoineExtended_values = np.array(AntoineExtended.values[:, 1:], dtype=float)
 
+# 65740 bytes for df; 21760 bytes for numpy
 Perrys2_8 = pd.read_csv(os.path.join(folder, 'Table 2-8 Vapor Pressure of Inorganic and Organic Liquids.tsv'),
                           sep='\t', index_col=0)
-_Perrys2_8_values = Perrys2_8.values
+_Perrys2_8_values = np.array(Perrys2_8.values[:, 1:], dtype=float)
 
+
+# 52742 bytes for df; 15400 bytes for numpy
 VDI_PPDS_3 = pd.read_csv(os.path.join(folder, 'VDI PPDS Boiling temperatures at different pressures.tsv'),
-                          sep='\t', index_col=0)
-_VDI_PPDS_3_values = VDI_PPDS_3.values
+                          sep='\t', index_col=0, dtype=
+                            {'Tm': float, 'Tc': float, 'Pc': float, 'A': float,
+                             'B': float, 'C': float, 'D': float})
+_VDI_PPDS_3_values = np.array(VDI_PPDS_3.values[:, 1:], dtype=float)
 
 
 def Antoine(T, A, B, C, base=10.0):
@@ -667,13 +685,13 @@ class VaporPressure(TDependentProperty):
         Tmins, Tmaxs = [], []
         if self.CASRN in WagnerMcGarry.index:
             methods.append(WAGNER_MCGARRY)
-            _, A, B, C, D, self.WAGNER_MCGARRY_Pc, self.WAGNER_MCGARRY_Tc, self.WAGNER_MCGARRY_Tmin = _WagnerMcGarry_values[WagnerMcGarry.index.get_loc(self.CASRN)].tolist()
+            A, B, C, D, self.WAGNER_MCGARRY_Pc, self.WAGNER_MCGARRY_Tc, self.WAGNER_MCGARRY_Tmin = _WagnerMcGarry_values_compact[WagnerMcGarry.index.get_loc(self.CASRN)].tolist()
             self.WAGNER_MCGARRY_coefs = [A, B, C, D]
             Tmins.append(self.WAGNER_MCGARRY_Tmin); Tmaxs.append(self.WAGNER_MCGARRY_Tc)
             
         if self.CASRN in WagnerPoling.index:
             methods.append(WAGNER_POLING)
-            _, A, B, C, D, self.WAGNER_POLING_Tc, self.WAGNER_POLING_Pc, Tmin, self.WAGNER_POLING_Tmax = _WagnerPoling_values[WagnerPoling.index.get_loc(self.CASRN)].tolist()
+            A, B, C, D, self.WAGNER_POLING_Tc, self.WAGNER_POLING_Pc, Tmin, self.WAGNER_POLING_Tmax = _WagnerPoling_values[WagnerPoling.index.get_loc(self.CASRN)].tolist()
             # Some Tmin values are missing; Arbitrary choice of 0.1 lower limit
             self.WAGNER_POLING_Tmin = Tmin if not isnan(Tmin) else self.WAGNER_POLING_Tmax*0.1
             self.WAGNER_POLING_coefs = [A, B, C, D]
@@ -681,19 +699,19 @@ class VaporPressure(TDependentProperty):
             
         if self.CASRN in AntoineExtended.index:
             methods.append(ANTOINE_EXTENDED_POLING)
-            _, A, B, C, Tc, to, n, E, F, self.ANTOINE_EXTENDED_POLING_Tmin, self.ANTOINE_EXTENDED_POLING_Tmax = _AntoineExtended_values[AntoineExtended.index.get_loc(self.CASRN)].tolist()
+            A, B, C, Tc, to, n, E, F, self.ANTOINE_EXTENDED_POLING_Tmin, self.ANTOINE_EXTENDED_POLING_Tmax = _AntoineExtended_values[AntoineExtended.index.get_loc(self.CASRN)].tolist()
             self.ANTOINE_EXTENDED_POLING_coefs = [Tc, to, A, B, C, n, E, F]
             Tmins.append(self.ANTOINE_EXTENDED_POLING_Tmin); Tmaxs.append(self.ANTOINE_EXTENDED_POLING_Tmax)
 
         if self.CASRN in AntoinePoling.index:
             methods.append(ANTOINE_POLING)
-            _, A, B, C, self.ANTOINE_POLING_Tmin, self.ANTOINE_POLING_Tmax = _AntoinePoling_values[AntoinePoling.index.get_loc(self.CASRN)].tolist()
+            A, B, C, self.ANTOINE_POLING_Tmin, self.ANTOINE_POLING_Tmax = _AntoinePoling_values[AntoinePoling.index.get_loc(self.CASRN)].tolist()
             self.ANTOINE_POLING_coefs = [A, B, C]
             Tmins.append(self.ANTOINE_POLING_Tmin); Tmaxs.append(self.ANTOINE_POLING_Tmax)
 
         if self.CASRN in Perrys2_8.index:
             methods.append(DIPPR_PERRY_8E)
-            _, C1, C2, C3, C4, C5, self.Perrys2_8_Tmin, self.Perrys2_8_Tmax = _Perrys2_8_values[Perrys2_8.index.get_loc(self.CASRN)].tolist()
+            C1, C2, C3, C4, C5, self.Perrys2_8_Tmin, self.Perrys2_8_Tmax = _Perrys2_8_values[Perrys2_8.index.get_loc(self.CASRN)].tolist()
             self.Perrys2_8_coeffs = [C1, C2, C3, C4, C5]
             Tmins.append(self.Perrys2_8_Tmin); Tmaxs.append(self.Perrys2_8_Tmax)
         if has_CoolProp and self.CASRN in coolprop_dict:
@@ -710,7 +728,7 @@ class VaporPressure(TDependentProperty):
             Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
 
         if self.CASRN in VDI_PPDS_3.index:
-            _,  Tm, Tc, Pc, A, B, C, D = _VDI_PPDS_3_values[VDI_PPDS_3.index.get_loc(self.CASRN)].tolist()
+            Tm, Tc, Pc, A, B, C, D = _VDI_PPDS_3_values[VDI_PPDS_3.index.get_loc(self.CASRN)].tolist()
             self.VDI_PPDS_coeffs = [A, B, C, D]
             self.VDI_PPDS_Tc = Tc
             self.VDI_PPDS_Tm = Tm
