@@ -49,7 +49,7 @@ from chemicals.utils import *
 from thermo.utils import *
 from fluids.core import Reynolds, Capillary, Weber, Bond, Grashof, Peclet_heat
 from thermo.lennard_jones import Stockmayer, molecular_diameter
-from thermo.environment import GWP, ODP, logP
+from chemicals.environment import GWP, ODP, logP
 from thermo.law import legal_status, economic_status
 from thermo.refractivity import refractive_index
 from thermo.electrochem import conductivity

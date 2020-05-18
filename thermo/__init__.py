@@ -34,7 +34,7 @@ from chemicals import dippr
 from . import datasheet
 from . import electrochem
 from chemicals import elements
-from . import environment
+from chemicals import environment
 from . import eos
 from . import eos_mix
 from . import equilibrium
@@ -87,7 +87,7 @@ from chemicals.dippr import *
 from .datasheet import *
 from .electrochem import *
 from chemicals.elements import *
-from .environment import *
+from chemicals.environment import *
 from .eos import *
 from .eos_mix import *
 from .flash import *
