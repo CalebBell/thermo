@@ -44,7 +44,7 @@ from . import identifiers
 from . import interaction_parameters
 from . import joback
 from . import law
-from . import lennard_jones
+from chemicals import lennard_jones
 from chemicals import miscdata
 from . import mixture
 from . import permittivity
@@ -96,7 +96,7 @@ from .joback import *
 from .identifiers import *
 from .interaction_parameters import *
 from .law import *
-from .lennard_jones import *
+from chemicals.lennard_jones import *
 from chemicals.miscdata import *
 from .mixture import *
 from .permittivity import *
