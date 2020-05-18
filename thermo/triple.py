@@ -30,7 +30,6 @@ import pandas as pd
 
 from chemicals.utils import isnan
 from thermo.phase_change import Tm
-from thermo.vapor_pressure import VaporPressure
 
 folder = os.path.join(os.path.dirname(__file__), 'Triple Properties')
 
@@ -119,8 +118,7 @@ def Tt(CASRN, AvailableMethods=False, Method=None):
         raise Exception('Failure in in function')
     return Tt
 
-DEFINITION = 'DEFINITION'
-Pt_methods = [STAVELEY, DEFINITION]
+Pt_methods = [STAVELEY]
 
 
 def Pt(CASRN, AvailableMethods=False, Method=None):
@@ -128,8 +126,12 @@ def Pt(CASRN, AvailableMethods=False, Method=None):
     Lookup is based on CASRNs. Will automatically select a data source to use
     if no Method is provided; returns None if the data is not available.
 
-    Returns data from [1]_, or attempts to calculate the vapor pressure at the
-    triple temperature, if data is available.
+    Returns data from [1]_ only. 
+    
+    This function doe snot implement it but it is also possible to calculate 
+    the vapor pressure at the triple temperature from a vapor pressure
+    correlation, if data is available; note most Antoine-type correlations do
+    not extrapolate well to this low of a pressure.
 
     Parameters
     ----------
@@ -174,8 +176,6 @@ def Pt(CASRN, AvailableMethods=False, Method=None):
         methods = []
         if CASRN in Staveley_data.index and not isnan(Staveley_data.at[CASRN, 'Pt']):
             methods.append(STAVELEY)
-        if Tt(CASRN) and VaporPressure(CASRN=CASRN).T_dependent_property(T=Tt(CASRN)):
-            methods.append(DEFINITION)
         methods.append(NONE)
         return methods
     if AvailableMethods:
@@ -184,11 +184,9 @@ def Pt(CASRN, AvailableMethods=False, Method=None):
         Method = list_methods()[0]
 
     if Method == STAVELEY:
-        Pt = Staveley_data.at[CASRN, 'Pt']
-    elif Method == DEFINITION:
-        Pt = VaporPressure(CASRN=CASRN).T_dependent_property(T=Tt(CASRN))
+        return Staveley_data.at[CASRN, 'Pt']
     elif Method == NONE:
-        Pt = None
+        return None
     else:
         raise Exception('Failure in in function')
     return Pt

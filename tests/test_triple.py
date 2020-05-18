@@ -20,7 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
-from numpy.testing import assert_allclose
+from fluids.numerics import assert_close, assert_close1d
 import pytest
 import pandas as pd
 from thermo.triple import *
@@ -28,13 +28,13 @@ from thermo.triple import *
 
 def test_data():
     Tt_sum = Staveley_data['Tt68'].sum()
-    assert_allclose(Tt_sum, 31251.845000000001)
+    assert_close(Tt_sum, 31251.845000000001)
 
     Pt_sum = Staveley_data['Pt'].sum()
-    assert_allclose(Pt_sum, 1886624.8374376972)
+    assert_close(Pt_sum, 1886624.8374376972)
 
     Pt_uncertainty_sum = Staveley_data['Pt_uncertainty'].sum()
-    assert_allclose(Pt_uncertainty_sum, 138.65526315789461)
+    assert_close(Pt_uncertainty_sum, 138.65526315789461)
 
     assert Staveley_data.index.is_unique
     assert Staveley_data.shape == (189, 5)
@@ -47,7 +47,7 @@ def test_Tt():
     Tt2 = 90.75
     Tt3_calc = Tt('74-82-8')
     Tt3 = 90.69
-    assert_allclose([Tt1_calc, Tt2_calc, Tt3_calc], [Tt1, Tt2, Tt3])
+    assert_close1d([Tt1_calc, Tt2_calc, Tt3_calc], [Tt1, Tt2, Tt3])
 
     m = Tt('7439-90-9', AvailableMethods=True)
     assert m == ['STAVELEY', 'MELTING', 'NONE']
@@ -56,26 +56,21 @@ def test_Tt():
         Tt('74-82-8', Method='BADMETHOD')
 
     Tt_sum = sum([Tt(i) for i in Staveley_data.index])
-    assert_allclose(Tt_sum, 31251.845000000001)
+    assert_close(Tt_sum, 31251.845000000001)
     Tt_sum2 = pd.Series([Tt(i, Method='MELTING') for i in Staveley_data.index]).sum()
-    assert_allclose(Tt_sum2, 28778.196000000004)
+    assert_close(Tt_sum2, 28778.196000000004)
 
 
 def test_Pt():
     Pt1_calc = Pt('7664-41-7')
     Pt1 = 6079.5
-    Pt2_calc = Pt('7664-41-7', Method='DEFINITION')
-    Pt2 = 6042.920357447978
-    # Add a test back for water if you allow extrapolation, letting water have
-    # its triple pressure back
-
-    assert_allclose([Pt1_calc, Pt2_calc], [Pt1, Pt2])
+    assert_close(Pt1_calc, Pt1)
 
     m = Pt('7664-41-7', AvailableMethods=True)
-    assert m == ['STAVELEY', 'DEFINITION', 'NONE']
+    assert m == ['STAVELEY', 'NONE']
     assert None == Pt('72433223439-90-9')
     with pytest.raises(Exception):
         Pt('74-82-8', Method='BADMETHOD')
 
     Pt_sum = sum([Pt(i) for i in Staveley_data.index if pd.notnull(Staveley_data.at[i, 'Pt'])])
-    assert_allclose(Pt_sum, 1886624.8374376972)
+    assert_close(Pt_sum, 1886624.8374376972)
