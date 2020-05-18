@@ -918,6 +918,86 @@ def Watson(T, Hvap_ref, T_ref, Tc, exponent=0.38):
     return H2
 
 
+### Heat of Fusion
+
+CRC = 'CRC'
+Hfus_methods = [CRC]
+
+
+def Hfus(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=[]): 
+    r'''This function handles the retrieval of a chemical's heat of fusion.
+    Lookup is based on CASRNs. Will automatically select a data
+    source to use if no Method is provided; returns None if the data is not
+    available.
+
+    The prefered source is 'CRC'. Function has data for approximately 1100 
+    chemicals.
+
+    Parameters
+    ----------
+    CASRN : string
+        CASRN [-]
+
+    Returns
+    -------
+    Hfus : float
+        Molar enthalpy of fusion at normal melting point, [J/mol]
+    methods : list, only returned if AvailableMethods == True
+        List of methods which can be used to obtain Tb with the given inputs
+
+    Other Parameters
+    ----------------
+    Method : string, optional
+        A string for the method name to use, as defined by constants in
+        Hfus_methods
+    AvailableMethods : bool, optional
+        If True, function will determine which methods can be used to obtain
+        hfus for the desired chemical, and will return methods instead of Hfus
+    IgnoreMethods : list, optional
+        A list of methods to ignore in obtaining the full list of methods,
+        useful for for performance reasons and ignoring inaccurate methods
+
+    Notes
+    -----
+    A total of one method is available for this function. They are:
+
+        * 'CRC', a compillation of data on organics and inorganics as published 
+        in [1]_.
+
+    Examples
+    --------
+    >>> Hfus('7732-18-5')
+    6010.0
+
+    References
+    ----------
+    .. [1] Haynes, W.M., Thomas J. Bruno, and David R. Lide. CRC Handbook of
+       Chemistry and Physics, 95E. Boca Raton, FL: CRC press, 2014.
+    '''
+    def list_methods():
+        methods = []
+        if CASRN in CRCHfus_data.index:
+            methods.append(CRC)
+        methods.append(NONE)
+        if IgnoreMethods:
+            for Method in IgnoreMethods:
+                if Method in methods:
+                    methods.remove(Method)
+        return methods
+    if AvailableMethods:
+        return list_methods()
+    if not Method:
+        Method = list_methods()[0]
+
+    if Method == CRC:
+        return CRCHfus_data.at[CASRN, 'Hfus']
+    elif Method == NONE:
+        return None
+    else:
+        raise valueError('Unrecognized method')
+
+
+
 COOLPROP = 'COOLPROP'
 VDI_TABULAR = 'VDI_TABULAR'
 CRC_HVAP_TB = 'CRC_HVAP_TB'
@@ -1384,86 +1464,6 @@ class EnthalpyVaporization(TDependentProperty):
             raise Exception('Method not valid')
         return validity
 
-
-### Heat of Fusion
-
-CRC = 'CRC'
-Hfus_methods = [CRC]
-
-
-def Hfus(CASRN, AvailableMethods=False, Method=None, IgnoreMethods=[]): 
-    r'''This function handles the retrieval of a chemical's heat of fusion.
-    Lookup is based on CASRNs. Will automatically select a data
-    source to use if no Method is provided; returns None if the data is not
-    available.
-
-    The prefered source is 'CRC'. Function has data for approximately 1100 
-    chemicals.
-
-    Parameters
-    ----------
-    CASRN : string
-        CASRN [-]
-
-    Returns
-    -------
-    Hfus : float
-        Molar enthalpy of fusion at normal melting point, [J/mol]
-    methods : list, only returned if AvailableMethods == True
-        List of methods which can be used to obtain Tb with the given inputs
-
-    Other Parameters
-    ----------------
-    Method : string, optional
-        A string for the method name to use, as defined by constants in
-        Hfus_methods
-    AvailableMethods : bool, optional
-        If True, function will determine which methods can be used to obtain
-        hfus for the desired chemical, and will return methods instead of Hfus
-    IgnoreMethods : list, optional
-        A list of methods to ignore in obtaining the full list of methods,
-        useful for for performance reasons and ignoring inaccurate methods
-
-    Notes
-    -----
-    A total of one method is available for this function. They are:
-
-        * 'CRC', a compillation of data on organics and inorganics as published 
-        in [1]_.
-
-    Examples
-    --------
-    >>> Hfus('7732-18-5')
-    6010.0
-
-    References
-    ----------
-    .. [1] Haynes, W.M., Thomas J. Bruno, and David R. Lide. CRC Handbook of
-       Chemistry and Physics, 95E. Boca Raton, FL: CRC press, 2014.
-    '''
-    def list_methods():
-        methods = []
-        if CASRN in CRCHfus_data.index:
-            methods.append(CRC)
-        methods.append(NONE)
-        if IgnoreMethods:
-            for Method in IgnoreMethods:
-                if Method in methods:
-                    methods.remove(Method)
-        return methods
-    if AvailableMethods:
-        return list_methods()
-    if not Method:
-        Method = list_methods()[0]
-
-    if Method == CRC:
-        return CRCHfus_data.at[CASRN, 'Hfus']
-    elif Method == NONE:
-        return None
-    else:
-        raise valueError('Unrecognized method')
-
-
 ### Heat of Sublimation
 
 
@@ -1711,7 +1711,4 @@ class EnthalpySublimation(TDependentProperty):
         else:
             raise Exception('Method not valid')
         return validity
-
-#print Hsub(CASRN='101-81-5')
-
 

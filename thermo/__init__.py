@@ -66,7 +66,7 @@ from . import triple
 from . import unifac
 from . import utils
 from . import vapor_pressure
-from . import virial
+from chemicals import virial
 from . import viscosity
 from . import volume
 from . import chemical_utils
@@ -118,7 +118,7 @@ from .triple import *
 from .unifac import *
 from .utils import *
 from .vapor_pressure import *
-from .virial import *
+from chemicals.virial import *
 from .viscosity import *
 from .volume import *
 from .chemical_utils import *

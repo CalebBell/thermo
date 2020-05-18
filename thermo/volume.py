@@ -45,7 +45,7 @@ from chemicals.utils import log, exp, isnan
 from chemicals.utils import Vm_to_rho, rho_to_Vm, mixing_simple, none_and_length_check
 from chemicals.dippr import EQ105
 
-from thermo.virial import BVirial_Pitzer_Curl, BVirial_Abbott, BVirial_Tsonopoulos, BVirial_Tsonopoulos_extended
+from chemicals.virial import BVirial_Pitzer_Curl, BVirial_Abbott, BVirial_Tsonopoulos, BVirial_Tsonopoulos_extended
 from chemicals import miscdata
 from chemicals.miscdata import VDI_tabular_data
 from thermo.electrochem import _Laliberte_Density_ParametersDict, Laliberte_density
@@ -1936,10 +1936,10 @@ class VolumeGas(TPDependentProperty):
 
     See Also
     --------
-    :obj:`thermo.virial.BVirial_Pitzer_Curl`
-    :obj:`thermo.virial.BVirial_Abbott`
-    :obj:`thermo.virial.BVirial_Tsonopoulos`
-    :obj:`thermo.virial.BVirial_Tsonopoulos_extended`
+    :obj:`chemicals.virial.BVirial_Pitzer_Curl`
+    :obj:`chemicals.virial.BVirial_Abbott`
+    :obj:`chemicals.virial.BVirial_Tsonopoulos`
+    :obj:`chemicals.virial.BVirial_Tsonopoulos_extended`
 
     References
     ----------
