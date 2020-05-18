@@ -89,6 +89,16 @@ def test_Antoine_coeffs_from_point():
     new_coeffs = Antoine_coeffs_from_point(T, Psat, dPsat_dT, d2Psat_dT2, base=exp(1))
     assert_close1d(new_coeffs, [A, B, C], rtol=1e-9)
 
+def test_test_Antoine_AB():
+    T = 178.01
+    A, B = (27.358925161569008, 5445.569591293226)
+    Psat = Antoine(T, A, B, C=0, base=e)
+    dPsat_dT = B*e**(A - B/T)*log(e)/T**2
+    AB = Antoine_AB_coeffs_from_point(T, Psat, dPsat_dT, base=exp(1))
+    assert_close(A, AB[0])
+    assert_close(B, AB[1])
+
+
 def test_Antoine_AB_fit_extrapolate():
     T = 178.01
     Psat, dPsat_dT, d2Psat_dT2 = (0.03946094565666715, 0.006781441203850251, 0.0010801244983894853)

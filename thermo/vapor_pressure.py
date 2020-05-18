@@ -167,9 +167,6 @@ def Antoine_coeffs_from_point(T, Psat, dPsat_dT, d2Psat_dT2, base=10.0):
     r'''Calculates the antoine coefficients `A`, `B`, and `C` from a known
     vapor pressure and its first and second temperature derivative.
 
-    .. math::
-        \log_{\text{base}} P^{\text{sat}} = A - \frac{B}{T+C}
-
     Parameters
     ----------
     T : float
@@ -194,7 +191,9 @@ def Antoine_coeffs_from_point(T, Psat, dPsat_dT, d2Psat_dT2, base=10.0):
 
     Notes
     -----
-    Coefficients are for calculating vapor pressure in Pascal. 
+    Coefficients are for calculating vapor pressure in Pascal. This is 
+    primarily useful for interconverting vapor pressure models, not fitting 
+    experimental data.
     
     Derived with SymPy as follows:
         
@@ -207,10 +206,15 @@ def Antoine_coeffs_from_point(T, Psat, dPsat_dT, d2Psat_dT2, base=10.0):
 
     Examples
     --------
-    Methane, coefficients from [1]_, at 100 K:
+    Recalculate some coefficients from a calcualted value and its derivative:
+        
     
-    >>> Antoine(100.0, 8.7687, 395.744, -6.469)
-    34478.367349639906
+    >>> T = 178.01
+    >>> A, B, C = (24.0989474955895, 4346.793091137991, -18.96968471040141)
+    >>> Psat = Antoine(T, A, B, C, base=exp(1))
+    >>> dPsat_dT, d2Psat_dT2 = (0.006781441203850251, 0.0010801244983894853) # precomputed
+    >>> Antoine_coeffs_from_point(T, Psat, dPsat_dT, d2Psat_dT2, base=exp(1))
+    (24.098947495155453, 4346.793090994682, -18.969684713118813)
     
     References
     ----------
@@ -223,14 +227,58 @@ def Antoine_coeffs_from_point(T, Psat, dPsat_dT, d2Psat_dT2, base=10.0):
     return (A, B, C)
 
 def Antoine_AB_coeffs_from_point(T, Psat, dPsat_dT, base=10.0):
-    '''
-    from sympy import *
-    base, A, B, T = symbols('base, A, B, T')
-    v = base**(A - B/T)
-    d1 = diff(v, T)
-    d2 = diff(v, T, 2)
-    vk, d1k, d2k = symbols('vk, d1k, d2k')
-    solve([Eq(v, vk), Eq(d1, d1k)], [A, B])
+    r'''Calculates the antoine coefficients `A`, `B`, with `C` set to zero to
+    improve low-temperature or high-temperature extrapolation, from a known
+    vapor pressure and its first temperature derivative.
+
+    Parameters
+    ----------
+    T : float
+        Temperature of fluid, [K]
+    Psat : float
+        Vapor pressure at specified `T` [Pa]
+    dPsat_dT : float
+        First temperature derivative of vapor pressure at specified `T` [Pa/K]
+    Base : float, optional
+        Base of logarithm; 10 by default
+
+    Returns
+    -------
+    A : float
+        Antoine `A` parameter, [-]
+    B : float
+        Antoine `B` parameter, [K]
+
+    Notes
+    -----
+    Coefficients are for calculating vapor pressure in Pascal. This is 
+    primarily useful for interconverting vapor pressure models, not fitting 
+    experimental data.
+    
+    Derived with SymPy as follows:
+        
+    >>> from sympy import *
+    >>> base, A, B, T = symbols('base, A, B, T')
+    >>> v = base**(A - B/T)
+    >>> d1, d2 = diff(v, T), diff(v, T, 2)
+    >>> vk, d1k = symbols('vk, d1k')
+    >>> solve([Eq(v, vk), Eq(d1, d1k)], [A, B])
+
+    Examples
+    --------
+    Recalculate some coefficients from a calcualted value and its derivative:
+        
+    >>> T = 178.01
+    >>> A, B = (27.358925161569008, 5445.569591293226)
+    >>> Psat = Antoine(T, A, B, C=0, base=e)
+    >>> dPsat_dT = B*e**(A - B/T)*log(e)/T**2
+    >>> Antoine_AB_coeffs_from_point(T, Psat, dPsat_dT, base=exp(1))
+    (27.35892516156901, 5445.56959129323)
+
+    References
+    ----------
+    .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
+       New York: McGraw-Hill Professional, 2000.
     '''
     A = log(Psat*exp(T*dPsat_dT/Psat))/log(base)
     B = T**2*dPsat_dT/(Psat*log(base))
