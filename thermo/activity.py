@@ -44,7 +44,6 @@ from fluids.numerics import newton_system, roots_cubic, roots_quartic, secant, h
 from chemicals.utils import exp, log
 from chemicals.utils import normalize, none_and_length_check, dxs_to_dns, dxs_to_dn_partials, d2xs_to_dxdn_partials, dns_to_dn_partials, PhaseCountReducedError
 import numpy as np
-from scipy.optimize import fsolve, root
 
 R_inv = 1.0/R
 

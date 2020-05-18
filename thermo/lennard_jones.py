@@ -1134,7 +1134,7 @@ def collision_integral_Kim_Monroe(Tstar, l=1, s=1):
        doi:10.1016/j.jcp.2014.05.018.
     '''
     if (l, s) not in As_collision:
-        raise Exception('Input values of l and s are not supported')
+        raise ValueError('Input values of l and s are not supported')
     omega = As_collision[(l, s)]
     for ki in range(6):
         Bs = Bs_collision[(l, s)]

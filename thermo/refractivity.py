@@ -235,8 +235,3 @@ def RI_from_molar_refractivity(Rm, Vm):
     return Rm
 
 
-### Mixtures
-
-#def Lorentz_Lorenz(ws=None, RIs=None, rhos=None, rho=None):
-#    if not length_check([ws, RIs, rhos]):
-#        raise Exception('Input dimentions are inconsistent')
