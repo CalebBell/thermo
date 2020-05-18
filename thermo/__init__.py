@@ -29,8 +29,8 @@ from . import chemical_package
 from . import combustion
 from chemicals import critical
 from . import coolprop
-from . import dipole
-from . import dippr
+from chemicals import dipole
+from chemicals import dippr
 from . import datasheet
 from . import electrochem
 from chemicals import elements
@@ -73,6 +73,7 @@ from . import chemical_utils
 from . import wilson
 from . import nrtl
 from . import uniquac
+from chemicals import temperature
 
 from .acentric import *
 from .activity import *
@@ -81,8 +82,8 @@ from .chemical_package import *
 from .combustion import *
 from chemicals.critical import *
 from .coolprop import *
-from .dipole import *
-from .dippr import *
+from chemicals.dipole import *
+from chemicals.dippr import *
 from .datasheet import *
 from .electrochem import *
 from chemicals.elements import *
@@ -125,6 +126,7 @@ from .wilson import *
 from .nrtl import *
 from .uniquac import *
 from .equilibrium import *
+from chemicals.temperature import *
 
 __all__ = ['activity', 'chemical', 'chemical_package', 'combustion', 'critical', 'flash',
  'dipole', 'electrochem', 'elements', 'environment', 'eos', 'eos_mix',
@@ -136,7 +138,7 @@ __all__ = ['activity', 'chemical', 'chemical_package', 'combustion', 'critical',
  'vapor_pressure', 'virial', 'viscosity', 'volume', 'acentric', 'coolprop', 
  'datasheet', 'dippr', 'unifac', 'stream', 'mixture', 'property_package_constants',
  'chemical_utils', 'wilson', 'nrtl', 'uniquac', 'regular_solution',
- 'equilibrium', 'phase_identification', 'psychrometrics']
+ 'equilibrium', 'phase_identification', 'psychrometrics', 'temperature']
 
 
 __all__.extend(acentric.__all__)
@@ -190,6 +192,7 @@ __all__.extend(uniquac.__all__)
 __all__.extend(regular_solution.__all__)
 __all__.extend(equilibrium.__all__)
 __all__.extend(psychrometrics.__all__)
+__all__.extend(temperature.__all__)
 
 
 # backwards compatibility hack to allow thermo.chemical.Mixture to still be importable

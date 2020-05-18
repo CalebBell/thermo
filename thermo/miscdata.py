@@ -21,7 +21,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
-__all__ = ['CRC_inorganic_data', 'CRC_organic_data', '_VDISaturationDict', 
+__all__ = ['CRC_inorganic_data', 'CRC_organic_data', 'VDI_saturation_data',
            'VDI_tabular_data']
 import os
 import copy
@@ -50,7 +50,7 @@ emptydict = {"Name": None, "MW": None, "Tc": None, "T": [], "P": [],
 
 # After some consideration, it has been devided to keep this load method as is.
 
-_VDISaturationDict = {}
+VDI_saturation_data = {}
 with open(os.path.join(folder, 'VDI Saturation Compounds Data.csv')) as f:
     '''Read in a dict of assorted chemical properties at saturation for 58
     industrially important chemicals, from:
@@ -63,7 +63,7 @@ with open(os.path.join(folder, 'VDI Saturation Compounds Data.csv')) as f:
     for line in f:
         values = to_num(line.strip('\n').split('\t'))
         (CASRN, _name, _MW, _Tc, T, P, rhol, rhog, Hvap, cpl, cpg, mul, mug, kl, kg, prl, prg, sigma, Beta) = values
-        newdict = (_VDISaturationDict[CASRN] if CASRN in _VDISaturationDict else copy.deepcopy(emptydict))
+        newdict = (VDI_saturation_data[CASRN] if CASRN in VDI_saturation_data else copy.deepcopy(emptydict))
         newdict["Name"] = _name
         newdict["MW"] = _MW
         newdict["Tc"] = _Tc
@@ -84,7 +84,7 @@ with open(os.path.join(folder, 'VDI Saturation Compounds Data.csv')) as f:
         newdict["Beta"].append(Beta)
         newdict["Volume (l)"].append(rho_to_Vm(rhol, _MW))
         newdict["Volume (g)"].append(rho_to_Vm(rhog, _MW))
-        _VDISaturationDict[CASRN] = newdict
+        VDI_saturation_data[CASRN] = newdict
 
 
 def VDI_tabular_data(CASRN, prop):
@@ -128,7 +128,7 @@ def VDI_tabular_data(CASRN, prop):
     .. [1] Gesellschaft, VDI, ed. VDI Heat Atlas. 2E. Berlin : Springer, 2010.
     '''
     try:
-        d = _VDISaturationDict[CASRN]
+        d = VDI_saturation_data[CASRN]
     except KeyError:
         raise Exception('CASRN not in VDI tabulation')
     try:

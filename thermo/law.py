@@ -183,10 +183,10 @@ def legal_status(CASRN, Method=None, AvailableMethods=False, CASi=None):
     --------
     >>> pprint(legal_status('64-17-5'))
     {'DSL': 'LISTED',
+     'TSCA': 'LISTED',
      'EINECS': 'LISTED',
      'NLP': 'UNLISTED',
-     'SPIN': 'LISTED',
-     'TSCA': 'LISTED'}
+     'SPIN': 'LISTED'}
 
     References
     ----------
@@ -243,19 +243,6 @@ def legal_status(CASRN, Method=None, AvailableMethods=False, CASi=None):
     else:
         raise Exception('Failure in in function')
     return status
-
-#print  legal_status(CASRN='64-17-5')
-#for i in [DSL, TSCA, EINECS, SPIN, NLP]:
-#    print  legal_status(CASRN='64-17-5', Method=i)
-#print 'hi'
-
-#print legal_status(CASRN='13775-50-3', Method=DSL)
-#print legal_status(CASRN='52-89-1')
-# _ECHATonnageDict, _EPACDRDict
-# 2.135340690612793, 3.499225616455078
-#print legal_status(CASRN='1648727-81-4')
-
-
 
 HPV_data, _EPACDRDict, _ECHATonnageDict = [None]*3
                                           

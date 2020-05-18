@@ -44,7 +44,7 @@ from thermo.reaction import Hf, Hf_g, S0_g, Gibbs_formation, Hf_basis_converter,
 from thermo.combustion import Hcombustion
 from thermo.safety import Tflash, Tautoignition, LFL, UFL, TWA, STEL, Ceiling, Skin, Carcinogen, LFL_mixture, UFL_mixture
 from thermo.solubility import solubility_parameter
-from thermo.dipole import dipole_moment as dipole
+from chemicals.dipole import dipole_moment as dipole
 from chemicals.utils import *
 from thermo.utils import *
 from fluids.core import Reynolds, Capillary, Weber, Bond, Grashof, Peclet_heat
@@ -928,7 +928,7 @@ class Chemical(object): # pragma: no cover
         
         for atom, count in self.atoms.items():
             try:
-                ele = getattr(periodic_table, atom)
+                ele = periodic_table[atom]
                 H0, S0 = ele.Hf, ele.S0
                 if ele.number in homonuclear_elements:
                     H0, S0 = 0.5 * H0, 0.5 * S0

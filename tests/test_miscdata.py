@@ -24,7 +24,7 @@ from numpy.testing import assert_allclose
 import pytest
 
 from thermo.miscdata import *
-from thermo.miscdata import _VDISaturationDict
+from thermo.miscdata import VDI_saturation_data
 from thermo.identifiers import checkCAS
 
 
@@ -68,7 +68,7 @@ def test_VDI_tabular_data():
         sums[i] = 0
 
     for prop in prop_keys:
-        for CASRN in sorted(_VDISaturationDict.keys()):
+        for CASRN in sorted(VDI_saturation_data.keys()):
             sums[prop]+= sum(VDI_tabular_data(CASRN, prop)[1])
 
     sums_calc = {'Volume (g)': 4480967.380663272, 'Mu (g)': 0.01092262, 'K (g)': 13.3338, 'P': 830362576.5100002, 'Pr (l)': 2561.917999999999, 'Cp (l)': 109652.14080415797, 'K (l)': 62.80901, 'T': 210960.66, 'Volume (l)': 0.06622819718826786, 'Beta': 3.66542, 'Pr (g)': 2561.917999999999, 'Hvap': 11146818.439615589, 'Mu (l)': 0.14801666, 'Cp (g)': 215899.05447308993, 'sigma': 9.08229, 'Density (l)': 510315.80999999994, 'Density (g)': 33258.34707901}

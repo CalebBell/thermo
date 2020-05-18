@@ -38,10 +38,10 @@ import numpy as np
 import pandas as pd
 from math import e
 from chemicals.utils import log, exp, isnan
-from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
+from chemicals.dippr import EQ101
+from thermo.miscdata import VDI_saturation_data, VDI_tabular_data
 from thermo.utils import TDependentProperty
 from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluids
-from thermo.dippr import EQ101
 
 folder = os.path.join(os.path.dirname(__file__), 'Vapor Pressure')
 
@@ -700,7 +700,7 @@ class VaporPressure(TDependentProperty):
             self.CP_f = coolprop_fluids[self.CASRN]
             Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tc)
 
-        if self.CASRN in _VDISaturationDict:
+        if self.CASRN in VDI_saturation_data:
             methods.append(VDI_TABULAR)
             Ts, props = VDI_tabular_data(self.CASRN, 'P')
             self.VDI_Tmin = Ts[0]

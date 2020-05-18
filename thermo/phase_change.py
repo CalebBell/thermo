@@ -39,12 +39,12 @@ from fluids.constants import R, pi, N_A
 
 from chemicals.utils import log, isnan
 from chemicals.utils import property_molar_to_mass, mixing_simple, none_and_length_check
+from chemicals.dippr import EQ106
 from thermo.utils import TDependentProperty
 from thermo.miscdata import CRC_organic_data, CRC_inorganic_data
-from thermo.miscdata import _VDISaturationDict, VDI_tabular_data
+from thermo.miscdata import VDI_saturation_data, VDI_tabular_data
 from thermo.vapor_pressure import VaporPressure
 from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluids
-from thermo.dippr import EQ106
 
 folder = os.path.join(os.path.dirname(__file__), 'Phase Change')
 
@@ -1129,7 +1129,7 @@ class EnthalpyVaporization(TDependentProperty):
             methods.append(COOLPROP)
             self.CP_f = coolprop_fluids[self.CASRN]
             Tmins.append(self.CP_f.Tt); Tmaxs.append(self.CP_f.Tc)
-        if self.CASRN in _VDISaturationDict:
+        if self.CASRN in VDI_saturation_data:
             methods.append(VDI_TABULAR)
             Ts, props = VDI_tabular_data(self.CASRN, 'Hvap')
             self.VDI_Tmin = Ts[0]
