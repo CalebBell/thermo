@@ -133,7 +133,7 @@ def test_UNIFAC_LLE_SS():
     from thermo.unifac import LLEUFIP, LLEUFSG, UNIFAC
     from thermo import VaporPressure, HeatCapacityGas, VolumeLiquid
     from thermo.phases import GibbsExcessLiquid
-    from thermo.activity import Rachford_Rice_solution
+    from thermo.rachford_rice import Rachford_Rice_solution
     P = 1e5
     T = 298.15
     xs = [0.9, 0.1]

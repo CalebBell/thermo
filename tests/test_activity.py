@@ -26,13 +26,13 @@ import pytest
 import numpy as np
 import pandas as pd
 from fluids.constants import calorie, R
-from thermo.activity import *
+from thermo.rachford_rice import *
 from thermo.mixture import Mixture
-from thermo.activity import Rachford_Rice_solution_numpy
+from thermo.rachford_rice import Rachford_Rice_solution_numpy
 from fluids.numerics import assert_close, normalize
 from random import uniform
-from thermo.activity import Rachford_Rice_valid_solution_naive, Rachford_Rice_solution2
-from thermo.activity import Rachford_Rice_flash2_f_jac, Rachford_Rice_flashN_f_jac
+from thermo.rachford_rice import Rachford_Rice_valid_solution_naive, Rachford_Rice_solution2
+from thermo.rachford_rice import Rachford_Rice_flash2_f_jac, Rachford_Rice_flashN_f_jac
 import random
 
 def test_K_value():
@@ -81,7 +81,7 @@ def test_RR_numpy():
     T_dew = 98.49898995287606
     Ks = [Wilson_K_value(T_dew, P, Tc=Tcs[i], Pc=Pcs[i], omega=omegas[i]) for i in range(len(zs))]
     
-    from thermo.activity import Rachford_Rice_solution_numpy
+    from thermo.rachford_rice import Rachford_Rice_solution_numpy
     VF, xs, ys = Rachford_Rice_solution_numpy(zs, Ks)
     assert_allclose(VF, 1)
 

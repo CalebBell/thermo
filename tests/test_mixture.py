@@ -185,7 +185,7 @@ def test_Mixture_VF_input():
 def test_bubble_at_P_with_ideal_mixing():
     '''Check to see if the bubble pressure calculated from the temperature
     matches the temperature calculated by the test function'''
-    from thermo.activity import bubble_at_P
+    from thermo.rachford_rice import bubble_at_P
 
     test_mix = Mixture(['ethylene oxide',
                         'tetrahydrofuran',

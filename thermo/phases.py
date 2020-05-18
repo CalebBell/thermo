@@ -36,7 +36,7 @@ from chemicals.utils import (log, log10, exp, Cp_minus_Cv, phase_identification_
                           isothermal_compressibility, isobaric_expansion,
                           Joule_Thomson, speed_of_sound, dxs_to_dns, dns_to_dn_partials,
                           normalize, hash_any_primitive)
-from thermo.activity import IdealSolution
+from thermo.rachford_rice import IdealSolution
 from thermo.coolprop import has_CoolProp, CP as CoolProp
 from thermo.eos_mix import IGMIX
 from random import randint

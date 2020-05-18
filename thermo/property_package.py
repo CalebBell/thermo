@@ -61,9 +61,9 @@ from chemicals.utils import log, log10, exp, copysign, dxs_to_dn_partials, dxs_t
 from thermo.utils import has_matplotlib
 from chemicals.elements import mixture_atomic_composition, similarity_variable
 from thermo.identifiers import IDs_to_CASs
-from thermo.activity import K_value, Wilson_K_value, flash_inner_loop, dew_at_T, bubble_at_T, NRTL_gammas, Rachford_Rice_solution2, Wilson_gammas as Wilson
-from thermo.activity import flash_wilson, flash_Tb_Tc_Pc, Rachford_Rice_flash_error
-from thermo.activity import get_T_bub_est, get_T_dew_est, get_P_dew_est, get_P_bub_est
+from thermo.rachford_rice import K_value, Wilson_K_value, flash_inner_loop, dew_at_T, bubble_at_T, NRTL_gammas, Rachford_Rice_solution2, Wilson_gammas as Wilson
+from thermo.rachford_rice import flash_wilson, flash_Tb_Tc_Pc, Rachford_Rice_flash_error
+from thermo.rachford_rice import get_T_bub_est, get_T_dew_est, get_P_dew_est, get_P_bub_est
 from thermo.unifac import UNIFAC_gammas, UFSG, DOUFSG, DOUFIP2006
 from thermo.eos_mix import *
 from thermo.eos import *

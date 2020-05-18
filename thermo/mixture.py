@@ -36,7 +36,7 @@ from thermo.chemical import Chemical
 from thermo.identifiers import *
 from thermo.identifiers import _MixtureDict, IDs_to_CASs
 from thermo.phase_change import Tliquidus
-from thermo.activity import identify_phase_mixture, Pbubble_mixture, Pdew_mixture
+from thermo.rachford_rice import identify_phase_mixture, Pbubble_mixture, Pdew_mixture
 from thermo.thermal_conductivity import ThermalConductivityLiquidMixture, ThermalConductivityGasMixture
 from thermo.volume import VolumeLiquidMixture, VolumeGasMixture, VolumeSolidMixture
 from thermo.permittivity import *

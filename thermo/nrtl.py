@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 from __future__ import division
 from fluids.numerics import numpy as np
-from thermo.activity import GibbsExcess, NRTL_gammas
+from thermo.rachford_rice import GibbsExcess, NRTL_gammas
 from math import log, exp
 from fluids.constants import R
 

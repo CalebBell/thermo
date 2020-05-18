@@ -25,7 +25,7 @@ from numpy.testing import assert_allclose
 import pytest
 import numpy as np
 from fluids.constants import calorie, R
-from thermo.activity import *
+from thermo.rachford_rice import *
 from thermo.mixture import Mixture
 from thermo.wilson import Wilson
 import random

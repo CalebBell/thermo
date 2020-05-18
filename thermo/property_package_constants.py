@@ -37,8 +37,8 @@ from fluids.numerics import brenth, ridder, derivative
 from chemicals.utils import log, exp
 from fluids.constants import R, pi, N_A
 from thermo.identifiers import IDs_to_CASs
-from thermo.activity import K_value, Wilson_K_value, flash_inner_loop, dew_at_T, bubble_at_T
-from thermo.activity import get_T_bub_est, get_T_dew_est, get_P_dew_est, get_P_bub_est
+from thermo.rachford_rice import K_value, Wilson_K_value, flash_inner_loop, dew_at_T, bubble_at_T
+from thermo.rachford_rice import get_T_bub_est, get_T_dew_est, get_P_dew_est, get_P_bub_est
 from thermo.unifac import UFSG, DOUFSG, DOUFIP2006
 from thermo.eos_mix import *
 from thermo.eos import *

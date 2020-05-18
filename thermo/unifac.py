@@ -114,7 +114,7 @@ __all__ = ['UNIFAC_gammas','UNIFAC',  'GibbsExcess',
 import os
 from fluids.constants import R
 from chemicals.utils import log, exp
-from thermo.activity import GibbsExcess
+from thermo.rachford_rice import GibbsExcess
 from chemicals.utils import dxs_to_dns
 folder = os.path.join(os.path.dirname(__file__), 'Phase Change')
 

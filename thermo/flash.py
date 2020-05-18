@@ -67,9 +67,9 @@ from thermo.heat_capacity import (Lastovka_Shaw_T_for_Hm, Dadgostar_Shaw_integra
                                   Lastovka_Shaw_integral_over_T)
 from thermo.phase_change import SMK
 from thermo.volume import COSTALD
-from thermo.activity import (flash_inner_loop, flash_wilson, flash_ideal, Rachford_Rice_solutionN,
-                             Rachford_Rice_flash_error, Rachford_Rice_solution2, flash_Tb_Tc_Pc,
-                             Rachford_Rice_solution_LN2)
+from thermo.rachford_rice import (flash_inner_loop, flash_wilson, flash_ideal, Rachford_Rice_solutionN,
+                                  Rachford_Rice_flash_error, Rachford_Rice_solution2, flash_Tb_Tc_Pc,
+                                  Rachford_Rice_solution_LN2)
 from thermo.equilibrium import EquilibriumState
 from thermo.phases import Phase, gas_phases, liquid_phases, solid_phases, EOSLiquid, EOSGas, CoolPropGas, CoolPropLiquid, CoolPropPhase, GibbsExcessLiquid, IdealGas
 from thermo.phases import CPPQ_INPUTS, CPQT_INPUTS, CPrhoT_INPUTS, CPunknown, caching_state_CoolProp, CPiDmolar

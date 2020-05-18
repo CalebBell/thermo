@@ -21,7 +21,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
-from thermo.activity import GibbsExcess, UNIQUAC_gammas
+from thermo.rachford_rice import GibbsExcess, UNIQUAC_gammas
 from math import log, exp
 from fluids.constants import R
 

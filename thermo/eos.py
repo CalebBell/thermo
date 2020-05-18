@@ -46,7 +46,7 @@ from chemicals.utils import (Cp_minus_Cv, isobaric_expansion,
 from chemicals.utils import log, log10, exp, sqrt, copysign
 from thermo.alpha_functions import (Poly_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha,
                                     TwuSRK95_a_alpha, TwuPR95_a_alpha, Soave_79_a_alpha)
-from thermo.activity import Wilson_K_value
+from thermo.rachford_rice import Wilson_K_value
 R2 = R*R
 R_2 = 0.5*R
 R_inv = 1.0/R
