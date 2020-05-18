@@ -43,7 +43,7 @@ from thermo.viscosity import ViscosityLiquid, ViscosityGas, ViscosityLiquidMixtu
 from thermo.reaction import Hf, Hf_g, S0_g, Gibbs_formation, Hf_basis_converter, entropy_formation
 from thermo.combustion import Hcombustion
 from thermo.safety import Tflash, Tautoignition, LFL, UFL, TWA, STEL, Ceiling, Skin, Carcinogen, LFL_mixture, UFL_mixture
-from thermo.solubility import solubility_parameter
+from chemicals.solubility import solubility_parameter
 from chemicals.dipole import dipole_moment as dipole
 from chemicals.utils import *
 from thermo.utils import *
@@ -51,7 +51,7 @@ from fluids.core import Reynolds, Capillary, Weber, Bond, Grashof, Peclet_heat
 from thermo.lennard_jones import Stockmayer, molecular_diameter
 from chemicals.environment import GWP, ODP, logP
 from thermo.law import legal_status, economic_status
-from thermo.refractivity import refractive_index
+from chemicals.refractivity import refractive_index
 from thermo.electrochem import conductivity
 from chemicals.elements import atom_fractions, mass_fractions, similarity_variable, atoms_to_Hill, simple_formula_parser, molecular_weight, charge_from_formula, periodic_table, homonuclear_elements
 from thermo.coolprop import has_CoolProp

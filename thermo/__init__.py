@@ -55,10 +55,10 @@ from . import property_package
 from . import property_package_constants
 from . import psychrometrics
 from . import reaction
-from . import refractivity
+from chemicals import refractivity
 from . import regular_solution
 from . import safety
-from . import solubility
+from chemicals import solubility
 from . import stream
 from . import interface
 from . import thermal_conductivity
@@ -107,10 +107,10 @@ from .phase_identification import *
 from .property_package import *
 from .property_package_constants import *
 from .reaction import *
-from .refractivity import *
+from chemicals.refractivity import *
 from .regular_solution import *
 from .safety import *
-from .solubility import *
+from chemicals.solubility import *
 from .stream import *
 from .interface import *
 from .thermal_conductivity import *
