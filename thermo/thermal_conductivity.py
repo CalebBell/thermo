@@ -40,7 +40,7 @@ import numpy as np
 import pandas as pd
 
 from fluids.numerics import horner
-from fluids.constants import R, N_A, k
+from fluids.constants import R, R_inv, N_A, k
 from chemicals.utils import log, exp
 from chemicals.utils import mixing_simple, none_and_length_check
 from chemicals.dippr import EQ100, EQ102
@@ -111,7 +111,7 @@ def Sheffy_Johnson(T, M, Tm):
        Liquids at High Temperatures." Journal of Chemical & Engineering Data
        6, no. 2 (April 1, 1961): 245-49. doi:10.1021/je60010a019
     '''
-    return 1.951*(1 - 0.00126*(T - Tm))/(Tm**0.216*M**0.3)
+    return 1.951*(1 - 0.00126*(T - Tm))*Tm**-0.216*M**-0.3
 
 
 def Sato_Riedel(T, M, Tb, Tc):
@@ -655,7 +655,7 @@ def DIPPR9H(ws, ks):
     .. [2] Danner, Ronald P, and Design Institute for Physical Property Data.
        Manual for Predicting Chemical Process Design Data. New York, N.Y, 1982.
     '''
-    return sum(ws[i]/ks[i]**2 for i in range(len(ws)))**(-0.5)
+    return sum(ws[i]/(ks[i]*ks[i]) for i in range(len(ws)))**(-0.5)
 
 
 def Filippov(ws, ks):
@@ -746,8 +746,8 @@ def Eucken(MW, Cvm, mu):
     .. [1] Reid, Robert C.; Prausnitz, John M.; Poling, Bruce E.
        Properties of Gases and Liquids. McGraw-Hill Companies, 1987.
     '''
-    MW = MW/1000.
-    return (1. + 9/4./(Cvm/R))*mu*Cvm/MW
+    MW = MW*1e-3
+    return (1. + 9.0/4.0*R/Cvm)*mu*Cvm/MW
 
 
 def Eucken_modified(MW, Cvm, mu):
@@ -789,8 +789,8 @@ def Eucken_modified(MW, Cvm, mu):
     .. [1] Reid, Robert C.; Prausnitz, John M.; Poling, Bruce E.
        Properties of Gases and Liquids. McGraw-Hill Companies, 1987.
     '''
-    MW = MW/1000.
-    return (1.32 + 1.77/(Cvm/R))*mu*Cvm/MW
+    MW = MW*1e-3
+    return (1.32 + 1.77*R/Cvm)*mu*Cvm/MW
 
 
 def DIPPR9B(T, MW, Cvm, mu, Tc=None, chemtype=None):
@@ -855,11 +855,9 @@ def DIPPR9B(T, MW, Cvm, mu, Tc=None, chemtype=None):
        Manual for Predicting Chemical Process Design Data. New York, N.Y, 1982.
     '''
     Cvm = Cvm*1000.  # J/g/K to J/kmol/K
-    if not chemtype:
-        chemtype = 'linear'
     if chemtype == 'monoatomic':
         return 2.5*mu*Cvm/MW
-    elif chemtype == 'linear':
+    elif chemtype == 'linear' or chemtype is None:
         Tr = T/Tc
         return mu/MW*(1.30*Cvm + 14644 - 2928.80/Tr)
     elif chemtype == 'nonlinear':
@@ -925,13 +923,13 @@ def Chung(T, MW, Tc, omega, Cvm, mu):
     .. [2] Reid, Robert C.; Prausnitz, John M.; Poling, Bruce E.
        Properties of Gases and Liquids. McGraw-Hill Companies, 1987.
     '''
-    MW = MW/1000.
-    alpha = Cvm/R - 1.5
-    beta = 0.7862 - 0.7109*omega + 1.3168*omega**2
-    Z = 2 + 10.5*(T/Tc)**2
-    psi = 1 + alpha*((0.215 + 0.28288*alpha - 1.061*beta + 0.26665*Z)
+    MW = MW*1e-3
+    alpha = Cvm*R_inv - 1.5
+    beta = 0.7862 - 0.7109*omega + 1.3168*omega*omega
+    Z = 2.0 + 10.5*T*T/(Tc*Tc)
+    psi = 1.0 + alpha*((0.215 + 0.28288*alpha - 1.061*beta + 0.26665*Z)
                       /(0.6366 + beta*Z + 1.061*alpha*beta))
-    return 3.75*psi/(Cvm/R)/MW*mu*Cvm
+    return 3.75*psi/(Cvm*MW)*R*mu*Cvm
 
 
 def eli_hanley(T, MW, Tc, Vc, Zc, omega, Cvm):
@@ -1012,19 +1010,21 @@ def eli_hanley(T, MW, Tc, Vc, Zc, omega, Cvm):
           7.062481330E4, -7.116620750E3, 4.325174400E2, -1.445911210E1, 2.037119479E-1]
 
     Tr = T/Tc
-    if Tr > 2: Tr = 2
-    theta = 1 + (omega - 0.011)*(0.56553 - 0.86276*log(Tr) - 0.69852/Tr)
-    psi = (1 + (omega-0.011)*(0.38560 - 1.1617*log(Tr)))*0.288/Zc
+    if Tr > 2.0:
+        Tr = 2.0
+    logTr = log(Tr)
+    theta = 1.0 + (omega - 0.011)*(0.56553 - 0.86276*logTr - 0.69852/Tr)
+    psi = (1.0 + (omega - 0.011)*(0.38560 - 1.1617*logTr))*0.288/Zc
     f = Tc/190.4*theta
     h = Vc/9.92E-5*psi
     T0 = T/f
     eta0 = 1E-7*sum([Ci*T0**((i+1. - 4.)/3.) for i, Ci in enumerate(Cs)])
     k0 = 1944*eta0
 
-    H = (16.04/MW)**0.5*f**0.5*h**(-2/3.)
+    H = (f*16.04/MW)**0.5*h**(-2.0/3.)
     etas = eta0*H*MW/16.04
     ks = k0*H
-    return ks + etas/(MW/1000.)*1.32*(Cvm - 1.5*R)
+    return ks + etas/(MW*1e-3)*1.32*(Cvm - 1.5*R)
 
 
 def Gharagheizi_gas(T, MW, Tb, Pc, omega):
@@ -1083,9 +1083,12 @@ def Gharagheizi_gas(T, MW, Tb, Pc, omega):
        Conductivity of Liquid Chemical Compounds at Atmospheric Pressure."
        AIChE Journal 59, no. 5 (May 1, 2013): 1702-8. doi:10.1002/aic.13938
     '''
-    Pc = Pc/1E4
-    B = T + (2.*omega + 2.*T - 2.*T*(2.*omega + 3.2825)/Tb + 3.2825)/(2*omega + T - T*(2*omega+3.2825)/Tb + 3.2825) - T*(2*omega+3.2825)/Tb
-    A = (2*omega + T - T*(2*omega + 3.2825)/Tb + 3.2825)/(0.1*MW*Pc*T) * (3.9752*omega + 0.1*Pc + 1.9876*B + 6.5243)**2
+    Pc = Pc*1e-4
+    Tb_inv = 1.0/Tb
+    B = T + (2.*omega + 2.*T - 2.*T*(2.*omega + 3.2825)*Tb_inv + 3.2825)/(2.0*omega + T - T*(2.0*omega + 3.2825)*Tb_inv + 3.2825) - T*(2.0*omega + 3.2825)*Tb_inv
+    
+    x0 = (3.9752*omega + 0.1*Pc + 1.9876*B + 6.5243)
+    A = (2.0*omega + T - T*(2.0*omega + 3.2825)*Tb_inv + 3.2825)/(0.1*MW*Pc*T) * x0*x0
     return 7.9505E-4 + 3.989E-5*T - 5.419E-5*MW + 3.989E-5*A
 
 

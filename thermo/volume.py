@@ -662,7 +662,374 @@ def CRC_inorganic(T, rho0, k, Tm):
     '''
     return rho0 - k*(T-Tm)
 
+
+
+
+
+
+def COSTALD_compressed(T, P, Psat, Tc, Pc, omega, Vs):
+    r'''Calculates compressed-liquid volume, using the COSTALD [1]_ CSP
+    method and a chemical's critical properties.
+
+    The molar volume of a liquid is given by:
+
+    .. math::
+        V = V_s\left( 1 - C \ln \frac{B + P}{B + P^{sat}}\right)
+
+        \frac{B}{P_c} = -1 + a\tau^{1/3} + b\tau^{2/3} + d\tau + e\tau^{4/3}
+
+        e = \exp(f + g\omega_{SRK} + h \omega_{SRK}^2)
+
+        C = j + k \omega_{SRK}
+
+    Parameters
+    ----------
+    T : float
+        Temperature of fluid [K]
+    P : float
+        Pressure of fluid [Pa]
+    Psat : float
+        Saturation pressure of the fluid [Pa]
+    Tc : float
+        Critical temperature of fluid [K]
+    Pc : float
+        Critical pressure of fluid [Pa]
+    omega : float
+        (ideally SRK) Acentric factor for fluid, [-]
+        This parameter is alternatively a fit parameter.
+    Vs : float
+        Saturation liquid volume, [m^3/mol]
+
+    Returns
+    -------
+    V_dense : float
+        High-pressure liquid volume, [m^3/mol]
+
+    Notes
+    -----
+    Original equation was in terms of density, but it is converted here.
+
+    The example is from DIPPR, and exactly correct.
+    This is DIPPR Procedure 4C: Method for Estimating the Density of Pure
+    Organic Liquids under Pressure.
+
+    Examples
+    --------
+    >>> COSTALD_compressed(303., 9.8E7, 85857.9, 466.7, 3640000.0, 0.281, 0.000105047)
+    9.287482879788505e-05
+
+    References
+    ----------
+    .. [1]  Thomson, G. H., K. R. Brobst, and R. W. Hankinson. "An Improved
+       Correlation for Densities of Compressed Liquids and Liquid Mixtures."
+       AIChE Journal 28, no. 4 (July 1, 1982): 671-76. doi:10.1002/aic.690280420
+    '''
+    a = -9.070217
+    b = 62.45326
+    d = -135.1102
+    f = 4.79594
+    g = 0.250047
+    h = 1.14188
+    j = 0.0861488
+    k = 0.0344483
+    e = exp(f + omega*(g + h*omega))
+    C = j + k*omega
+    tau = 1.0 - T/Tc
+    tau13 = tau**(1.0/3.0)
+    B = Pc*(-1.0 + a*tau13 + b*tau13*tau13 + d*tau + e*tau*tau13)
+    return Vs*(1.0 - C*log((B + P)/(B + Psat)))
+
+
+### Liquid Mixtures
+
+def Amgat(xs, Vms):
+    r'''Calculate mixture liquid density using the Amgat mixing rule.
+    Highly inacurate, but easy to use. Assumes idea liquids with
+    no excess volume. Average molecular weight should be used with it to obtain
+    density.
+
+    .. math::
+        V_{mix} = \sum_i x_i V_i
+
+    or in terms of density:
+
+    .. math::
+
+        \rho_{mix} = \sum\frac{x_i}{\rho_i}
+
+    Parameters
+    ----------
+    xs : array
+        Mole fractions of each component, []
+    Vms : array
+        Molar volumes of each fluids at conditions [m^3/mol]
+
+    Returns
+    -------
+    Vm : float
+        Mixture liquid volume [m^3/mol]
+
+    Notes
+    -----
+    Units are that of the given volumes.
+    It has been suggested to use this equation with weight fractions,
+    but the results have been less accurate.
+
+    Examples
+    --------
+    >>> Amgat([0.5, 0.5], [4.057e-05, 5.861e-05])
+    4.9590000000000005e-05
+    '''
+    if not none_and_length_check([xs, Vms]):
+        raise Exception('Function inputs are incorrect format')
+    return mixing_simple(xs, Vms)
+
+
+def Rackett_mixture(T, xs, MWs, Tcs, Pcs, Zrs):
+    r'''Calculate mixture liquid density using the Rackett-derived mixing rule
+    as shown in [2]_.
+
+    .. math::
+        V_m = \sum_i\frac{x_i T_{ci}}{MW_i P_{ci}} Z_{R,m}^{(1 + (1 - T_r)^{2/7})} R \sum_i x_i MW_i
+
+    Parameters
+    ----------
+    T : float
+        Temperature of liquid [K]
+    xs: list
+        Mole fractions of each component, []
+    MWs : list
+        Molecular weights of each component [g/mol]
+    Tcs : list
+        Critical temperatures of each component [K]
+    Pcs : list
+        Critical pressures of each component [Pa]
+    Zrs : list
+        Rackett parameters of each component []
+
+    Returns
+    -------
+    Vm : float
+        Mixture liquid volume [m^3/mol]
+
+    Notes
+    -----
+    Model for pure compounds in [1]_ forms the basis for this model, shown in
+    [2]_. Molecular weights are used as weighing by such has been found to
+    provide higher accuracy in [2]_. The model can also be used without
+    molecular weights, but results are somewhat different.
+
+    As with the Rackett model, critical compressibilities may be used if
+    Rackett parameters have not been regressed.
+
+    Critical mixture temperature, and compressibility are all obtained with
+    simple mixing rules.
+
+    Examples
+    --------
+    Calculation in [2]_ for methanol and water mixture. Result matches example.
+
+    >>> Rackett_mixture(T=298., xs=[0.4576, 0.5424], MWs=[32.04, 18.01], Tcs=[512.58, 647.29], Pcs=[8.096E6, 2.209E7], Zrs=[0.2332, 0.2374])
+    2.625288603174508e-05
+
+    References
+    ----------
+    .. [1] Rackett, Harold G. "Equation of State for Saturated Liquids."
+       Journal of Chemical & Engineering Data 15, no. 4 (1970): 514-517.
+       doi:10.1021/je60047a012
+    .. [2] Danner, Ronald P, and Design Institute for Physical Property Data.
+       Manual for Predicting Chemical Process Design Data. New York, N.Y, 1982.
+    '''
+    if not none_and_length_check([xs, MWs, Tcs, Pcs, Zrs]):
+        raise Exception('Function inputs are incorrect format')
+    Tc = mixing_simple(xs, Tcs)
+    Zr = mixing_simple(xs, Zrs)
+    MW = mixing_simple(xs, MWs)
+    Tr = T/Tc
+    bigsum = sum(xs[i]*Tcs[i]/Pcs[i]/MWs[i] for i in range(len(xs)))
+    return (R*bigsum*Zr**(1.0 + (1.0 - Tr)**(2.0/7.0)))*MW
+
+
+def COSTALD_mixture(xs, T, Tcs, Vcs, omegas):
+    r'''Calculate mixture liquid density using the COSTALD CSP method.
+
+    A popular and accurate estimation method. If possible, fit parameters are
+    used; alternatively critical properties work well.
+
+    The mixing rules giving parameters for the pure component COSTALD
+    equation are:
+
+    .. math::
+        T_{cm} = \frac{\sum_i\sum_j x_i x_j (V_{ij}T_{cij})}{V_m}
+
+        V_m = 0.25\left[ \sum x_i V_i + 3(\sum x_i V_i^{2/3})(\sum_i x_i V_i^{1/3})\right]
+
+        V_{ij}T_{cij} = (V_iT_{ci}V_{j}T_{cj})^{0.5}
+
+        \omega = \sum_i z_i \omega_i
+
+    Parameters
+    ----------
+    xs: list
+        Mole fractions of each component
+    T : float
+        Temperature of fluid [K]
+    Tcs : list
+        Critical temperature of fluids [K]
+    Vcs : list
+        Critical volumes of fluids [m^3/mol].
+        This parameter is alternatively a fit parameter
+    omegas : list
+        (ideally SRK) Acentric factor of all fluids, [-]
+        This parameter is alternatively a fit parameter.
+
+    Returns
+    -------
+    Vs : float
+        Saturation liquid mixture volume
+
+    Notes
+    -----
+    Range: 0.25 < Tr < 0.95, often said to be to 1.0
+    No example has been found.
+    Units are that of critical or fit constant volume.
+
+    Examples
+    --------
+    >>> COSTALD_mixture([0.4576, 0.5424], 298.,  [512.58, 647.29],[0.000117, 5.6e-05], [0.559,0.344] )
+    2.706588773271354e-05
+
+    References
+    ----------
+    .. [1] Hankinson, Risdon W., and George H. Thomson. "A New Correlation for
+       Saturated Densities of Liquids and Their Mixtures." AIChE Journal
+       25, no. 4 (1979): 653-663. doi:10.1002/aic.690250412
+    '''
+    cmps = range(len(xs))
+    if not none_and_length_check([xs, Tcs, Vcs, omegas]):
+        raise Exception('Function inputs are incorrect format')
+#    sum1, sum2, sum3 = 0.0, 0.0, 0.0
+#    for i in cmps:
+#        sum1 += xi*Vci
+        
+        
+    sum1 = sum([xi*Vci for xi, Vci in zip(xs, Vcs)])
+    sum2 = sum([xi*Vci**(2.0/3.) for xi, Vci in zip(xs, Vcs)])
+    sum3 = sum([xi*Vci**(1.0/3.) for xi, Vci in zip(xs, Vcs)])
+    Vm = 0.25*(sum1 + 3.0*sum2*sum3)
+    VijTcij = [[(Tcs[i]*Tcs[j]*Vcs[i]*Vcs[j])**0.5 for j in cmps] for i in cmps]
+    omega = mixing_simple(xs, omegas)
+    Tcm = sum([xs[i]*xs[j]*VijTcij[i][j]/Vm for j in cmps for i in cmps])
+    return COSTALD(T, Tcm, Vm, omega)
+
+
+### Gases
+
+
+def ideal_gas(T, P):
+    r'''Calculates ideal gas molar volume.
+    The molar volume of an ideal gas is given by:
+
+    .. math::
+        V = \frac{RT}{P}
+
+    Parameters
+    ----------
+    T : float
+        Temperature of fluid [K]
+    P : float
+        Pressure of fluid [Pa]
+
+    Returns
+    -------
+    V : float
+        Gas volume, [m^3/mol]
+
+    Examples
+    --------
+    >>> ideal_gas(298.15, 101325.)
+    0.02446539540458919
+    '''
+    return R*T/P
+
+
+### Solids
+
+def Goodman(T, Tt, Vml):
+    r'''Calculates solid density at T using the simple relationship
+    by a member of the DIPPR.
+
+    The molar volume of a solid is given by:
+
+    .. math::
+        \frac{1}{V_m} = \left( 1.28 - 0.16 \frac{T}{T_t}\right)
+        \frac{1}{{Vm}_L(T_t)}
+
+    Parameters
+    ----------
+    T : float
+        Temperature of fluid [K]
+    Tt : float
+        Triple temperature of fluid [K]
+    Vml : float
+        Liquid molar volume of the organic liquid at the triple point,
+        [m^3/mol]
+
+    Returns
+    -------
+    Vms : float
+        Solid molar volume, [m^3/mol]
+
+    Notes
+    -----
+    Works to the next solid transition temperature or to approximately 0.3Tt.
+
+    Examples
+    --------
+    Decane at 200 K:
+        
+    >>> Goodman(200, 243.225, 0.00023585)
+    0.0002053665090860923
+
+    References
+    ----------
+    .. [1] Goodman, Benjamin T., W. Vincent Wilding, John L. Oscarson, and
+       Richard L. Rowley. "A Note on the Relationship between Organic Solid
+       Density and Liquid Density at the Triple Point." Journal of Chemical &
+       Engineering Data 49, no. 6 (2004): 1512-14. doi:10.1021/je034220e.
+    '''
+    return 1.0/((1.28 - 0.16*(T/Tt))*(1.0/Vml))
+
+
+
+
+
+
+
+def Tait_parameters_COSTALD(Tc, Pc, omega, Tr_min=.27, Tr_max=.95):
+    # Limits of any of their data for Tr
+    a = -9.070217
+    b = 62.45326
+    d = -135.1102
+    f = 4.79594
+    g = 0.250047
+    h = 1.14188
+    j = 0.0861488
+    k = 0.0344483
+    e = exp(f + omega*(g + h*omega))
+    C = j + k*omega
+        
+    Tc_inv = 1.0/Tc
+    def B_fun(T):
+        tau = 1.0 - T*Tc_inv
+        tau13 = tau**(1.0/3.0)
+        return Pc*(-1.0 + a*tau13 + b*tau13*tau13 + d*tau + e*tau*tau13)
+    from fluids.optional.pychebfun import cheb_to_poly, chebfun
     
+    fun = chebfun(B_fun, domain=[Tr_min*Tc, Tr_max*Tc], N=3)
+    B_params = cheb_to_poly(fun)
+    return B_params, [C]
+
 COOLPROP = 'COOLPROP'
 PERRYDIPPR = 'PERRYDIPPR'
 VDI_PPDS = 'VDI_PPDS'
@@ -1304,289 +1671,6 @@ class VolumeLiquid(TPDependentProperty):
         return B_data, C_data
         
         
-
-
-
-def COSTALD_compressed(T, P, Psat, Tc, Pc, omega, Vs):
-    r'''Calculates compressed-liquid volume, using the COSTALD [1]_ CSP
-    method and a chemical's critical properties.
-
-    The molar volume of a liquid is given by:
-
-    .. math::
-        V = V_s\left( 1 - C \ln \frac{B + P}{B + P^{sat}}\right)
-
-        \frac{B}{P_c} = -1 + a\tau^{1/3} + b\tau^{2/3} + d\tau + e\tau^{4/3}
-
-        e = \exp(f + g\omega_{SRK} + h \omega_{SRK}^2)
-
-        C = j + k \omega_{SRK}
-
-    Parameters
-    ----------
-    T : float
-        Temperature of fluid [K]
-    P : float
-        Pressure of fluid [Pa]
-    Psat : float
-        Saturation pressure of the fluid [Pa]
-    Tc : float
-        Critical temperature of fluid [K]
-    Pc : float
-        Critical pressure of fluid [Pa]
-    omega : float
-        (ideally SRK) Acentric factor for fluid, [-]
-        This parameter is alternatively a fit parameter.
-    Vs : float
-        Saturation liquid volume, [m^3/mol]
-
-    Returns
-    -------
-    V_dense : float
-        High-pressure liquid volume, [m^3/mol]
-
-    Notes
-    -----
-    Original equation was in terms of density, but it is converted here.
-
-    The example is from DIPPR, and exactly correct.
-    This is DIPPR Procedure 4C: Method for Estimating the Density of Pure
-    Organic Liquids under Pressure.
-
-    Examples
-    --------
-    >>> COSTALD_compressed(303., 9.8E7, 85857.9, 466.7, 3640000.0, 0.281, 0.000105047)
-    9.287482879788505e-05
-
-    References
-    ----------
-    .. [1]  Thomson, G. H., K. R. Brobst, and R. W. Hankinson. "An Improved
-       Correlation for Densities of Compressed Liquids and Liquid Mixtures."
-       AIChE Journal 28, no. 4 (July 1, 1982): 671-76. doi:10.1002/aic.690280420
-    '''
-    a = -9.070217
-    b = 62.45326
-    d = -135.1102
-    f = 4.79594
-    g = 0.250047
-    h = 1.14188
-    j = 0.0861488
-    k = 0.0344483
-    e = exp(f + omega*(g + h*omega))
-    C = j + k*omega
-    tau = 1.0 - T/Tc
-    tau13 = tau**(1.0/3.0)
-    B = Pc*(-1.0 + a*tau13 + b*tau13*tau13 + d*tau + e*tau*tau13)
-    return Vs*(1.0 - C*log((B + P)/(B + Psat)))
-
-
-def Tait_parameters_COSTALD(Tc, Pc, omega, Tr_min=.27, Tr_max=.95):
-    # Limits of any of their data for Tr
-    a = -9.070217
-    b = 62.45326
-    d = -135.1102
-    f = 4.79594
-    g = 0.250047
-    h = 1.14188
-    j = 0.0861488
-    k = 0.0344483
-    e = exp(f + omega*(g + h*omega))
-    C = j + k*omega
-        
-    Tc_inv = 1.0/Tc
-    def B_fun(T):
-        tau = 1.0 - T*Tc_inv
-        tau13 = tau**(1.0/3.0)
-        return Pc*(-1.0 + a*tau13 + b*tau13*tau13 + d*tau + e*tau*tau13)
-    from fluids.optional.pychebfun import cheb_to_poly, chebfun
-    
-    fun = chebfun(B_fun, domain=[Tr_min*Tc, Tr_max*Tc], N=3)
-    B_params = cheb_to_poly(fun)
-    return B_params, [C]
-
-### Liquid Mixtures
-
-def Amgat(xs, Vms):
-    r'''Calculate mixture liquid density using the Amgat mixing rule.
-    Highly inacurate, but easy to use. Assumes idea liquids with
-    no excess volume. Average molecular weight should be used with it to obtain
-    density.
-
-    .. math::
-        V_{mix} = \sum_i x_i V_i
-
-    or in terms of density:
-
-    .. math::
-
-        \rho_{mix} = \sum\frac{x_i}{\rho_i}
-
-    Parameters
-    ----------
-    xs : array
-        Mole fractions of each component, []
-    Vms : array
-        Molar volumes of each fluids at conditions [m^3/mol]
-
-    Returns
-    -------
-    Vm : float
-        Mixture liquid volume [m^3/mol]
-
-    Notes
-    -----
-    Units are that of the given volumes.
-    It has been suggested to use this equation with weight fractions,
-    but the results have been less accurate.
-
-    Examples
-    --------
-    >>> Amgat([0.5, 0.5], [4.057e-05, 5.861e-05])
-    4.9590000000000005e-05
-    '''
-    if not none_and_length_check([xs, Vms]):
-        raise Exception('Function inputs are incorrect format')
-    return mixing_simple(xs, Vms)
-
-
-def Rackett_mixture(T, xs, MWs, Tcs, Pcs, Zrs):
-    r'''Calculate mixture liquid density using the Rackett-derived mixing rule
-    as shown in [2]_.
-
-    .. math::
-        V_m = \sum_i\frac{x_i T_{ci}}{MW_i P_{ci}} Z_{R,m}^{(1 + (1 - T_r)^{2/7})} R \sum_i x_i MW_i
-
-    Parameters
-    ----------
-    T : float
-        Temperature of liquid [K]
-    xs: list
-        Mole fractions of each component, []
-    MWs : list
-        Molecular weights of each component [g/mol]
-    Tcs : list
-        Critical temperatures of each component [K]
-    Pcs : list
-        Critical pressures of each component [Pa]
-    Zrs : list
-        Rackett parameters of each component []
-
-    Returns
-    -------
-    Vm : float
-        Mixture liquid volume [m^3/mol]
-
-    Notes
-    -----
-    Model for pure compounds in [1]_ forms the basis for this model, shown in
-    [2]_. Molecular weights are used as weighing by such has been found to
-    provide higher accuracy in [2]_. The model can also be used without
-    molecular weights, but results are somewhat different.
-
-    As with the Rackett model, critical compressibilities may be used if
-    Rackett parameters have not been regressed.
-
-    Critical mixture temperature, and compressibility are all obtained with
-    simple mixing rules.
-
-    Examples
-    --------
-    Calculation in [2]_ for methanol and water mixture. Result matches example.
-
-    >>> Rackett_mixture(T=298., xs=[0.4576, 0.5424], MWs=[32.04, 18.01], Tcs=[512.58, 647.29], Pcs=[8.096E6, 2.209E7], Zrs=[0.2332, 0.2374])
-    2.625288603174508e-05
-
-    References
-    ----------
-    .. [1] Rackett, Harold G. "Equation of State for Saturated Liquids."
-       Journal of Chemical & Engineering Data 15, no. 4 (1970): 514-517.
-       doi:10.1021/je60047a012
-    .. [2] Danner, Ronald P, and Design Institute for Physical Property Data.
-       Manual for Predicting Chemical Process Design Data. New York, N.Y, 1982.
-    '''
-    if not none_and_length_check([xs, MWs, Tcs, Pcs, Zrs]):
-        raise Exception('Function inputs are incorrect format')
-    Tc = mixing_simple(xs, Tcs)
-    Zr = mixing_simple(xs, Zrs)
-    MW = mixing_simple(xs, MWs)
-    Tr = T/Tc
-    bigsum = sum(xs[i]*Tcs[i]/Pcs[i]/MWs[i] for i in range(len(xs)))
-    return (R*bigsum*Zr**(1.0 + (1.0 - Tr)**(2.0/7.0)))*MW
-
-
-def COSTALD_mixture(xs, T, Tcs, Vcs, omegas):
-    r'''Calculate mixture liquid density using the COSTALD CSP method.
-
-    A popular and accurate estimation method. If possible, fit parameters are
-    used; alternatively critical properties work well.
-
-    The mixing rules giving parameters for the pure component COSTALD
-    equation are:
-
-    .. math::
-        T_{cm} = \frac{\sum_i\sum_j x_i x_j (V_{ij}T_{cij})}{V_m}
-
-        V_m = 0.25\left[ \sum x_i V_i + 3(\sum x_i V_i^{2/3})(\sum_i x_i V_i^{1/3})\right]
-
-        V_{ij}T_{cij} = (V_iT_{ci}V_{j}T_{cj})^{0.5}
-
-        \omega = \sum_i z_i \omega_i
-
-    Parameters
-    ----------
-    xs: list
-        Mole fractions of each component
-    T : float
-        Temperature of fluid [K]
-    Tcs : list
-        Critical temperature of fluids [K]
-    Vcs : list
-        Critical volumes of fluids [m^3/mol].
-        This parameter is alternatively a fit parameter
-    omegas : list
-        (ideally SRK) Acentric factor of all fluids, [-]
-        This parameter is alternatively a fit parameter.
-
-    Returns
-    -------
-    Vs : float
-        Saturation liquid mixture volume
-
-    Notes
-    -----
-    Range: 0.25 < Tr < 0.95, often said to be to 1.0
-    No example has been found.
-    Units are that of critical or fit constant volume.
-
-    Examples
-    --------
-    >>> COSTALD_mixture([0.4576, 0.5424], 298.,  [512.58, 647.29],[0.000117, 5.6e-05], [0.559,0.344] )
-    2.706588773271354e-05
-
-    References
-    ----------
-    .. [1] Hankinson, Risdon W., and George H. Thomson. "A New Correlation for
-       Saturated Densities of Liquids and Their Mixtures." AIChE Journal
-       25, no. 4 (1979): 653-663. doi:10.1002/aic.690250412
-    '''
-    cmps = range(len(xs))
-    if not none_and_length_check([xs, Tcs, Vcs, omegas]):
-        raise Exception('Function inputs are incorrect format')
-#    sum1, sum2, sum3 = 0.0, 0.0, 0.0
-#    for i in cmps:
-#        sum1 += xi*Vci
-        
-        
-    sum1 = sum([xi*Vci for xi, Vci in zip(xs, Vcs)])
-    sum2 = sum([xi*Vci**(2.0/3.) for xi, Vci in zip(xs, Vcs)])
-    sum3 = sum([xi*Vci**(1.0/3.) for xi, Vci in zip(xs, Vcs)])
-    Vm = 0.25*(sum1 + 3.0*sum2*sum3)
-    VijTcij = [[(Tcs[i]*Tcs[j]*Vcs[i]*Vcs[j])**0.5 for j in cmps] for i in cmps]
-    omega = mixing_simple(xs, omegas)
-    Tcm = sum([xs[i]*xs[j]*VijTcij[i][j]/Vm for j in cmps for i in cmps])
-    return COSTALD(T, Tcm, Vm, omega)
-
-
 NONE = 'None'
 LALIBERTE = 'Laliberte'
 COSTALD_MIXTURE = 'COSTALD mixture'
@@ -1829,36 +1913,6 @@ class VolumeLiquidMixture(MixtureProperty):
             return True
         else:
             raise Exception('Method not valid')
-
-
-### Gases
-
-
-def ideal_gas(T, P):
-    r'''Calculates ideal gas molar volume.
-    The molar volume of an ideal gas is given by:
-
-    .. math::
-        V = \frac{RT}{P}
-
-    Parameters
-    ----------
-    T : float
-        Temperature of fluid [K]
-    P : float
-        Pressure of fluid [Pa]
-
-    Returns
-    -------
-    V : float
-        Gas volume, [m^3/mol]
-
-    Examples
-    --------
-    >>> ideal_gas(298.15, 101325.)
-    0.02446539540458919
-    '''
-    return R*T/P
 
 
 #PR = 'PR'
@@ -2347,52 +2401,6 @@ class VolumeGasMixture(MixtureProperty):
         else:
             raise Exception('Method not valid')
 
-### Solids
-
-def Goodman(T, Tt, Vml):
-    r'''Calculates solid density at T using the simple relationship
-    by a member of the DIPPR.
-
-    The molar volume of a solid is given by:
-
-    .. math::
-        \frac{1}{V_m} = \left( 1.28 - 0.16 \frac{T}{T_t}\right)
-        \frac{1}{{Vm}_L(T_t)}
-
-    Parameters
-    ----------
-    T : float
-        Temperature of fluid [K]
-    Tt : float
-        Triple temperature of fluid [K]
-    Vml : float
-        Liquid molar volume of the organic liquid at the triple point,
-        [m^3/mol]
-
-    Returns
-    -------
-    Vms : float
-        Solid molar volume, [m^3/mol]
-
-    Notes
-    -----
-    Works to the next solid transition temperature or to approximately 0.3Tt.
-
-    Examples
-    --------
-    Decane at 200 K:
-        
-    >>> Goodman(200, 243.225, 0.00023585)
-    0.0002053665090860923
-
-    References
-    ----------
-    .. [1] Goodman, Benjamin T., W. Vincent Wilding, John L. Oscarson, and
-       Richard L. Rowley. "A Note on the Relationship between Organic Solid
-       Density and Liquid Density at the Triple Point." Journal of Chemical &
-       Engineering Data 49, no. 6 (2004): 1512-14. doi:10.1021/je034220e.
-    '''
-    return 1.0/((1.28 - 0.16*(T/Tt))*(1.0/Vml))
 
 
 GOODMAN = 'GOODMAN'
