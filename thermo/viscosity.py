@@ -22,8 +22,8 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['Dutt_Prasad', 'VN3_data', 'VN2_data', 'VN2E_data', 'Perrys2_313',
-'Perrys2_312','VDI_PPDS_7', 'VDI_PPDS_8',
+__all__ = ['mu_data_Dutt_Prasad', 'mu_data_VN3', 'mu_data_VN2', 'mu_data_VN2E', 'mu_data_Perrys_8E_2_313',
+           'mu_data_Perrys_8E_2_312', 'mu_data_VDI_PPDS_7', 'mu_data_VDI_PPDS_8',
 'Viswanath_Natarajan_3',
 'Letsou_Stiel', 'Przedziecki_Sridhar', 
 'Viswanath_Natarajan_2', 'Viswanath_Natarajan_2_exponential',
@@ -34,13 +34,13 @@ __all__ = ['Dutt_Prasad', 'VN3_data', 'VN2_data', 'VN2E_data', 'Perrys2_313',
 'Herning_Zipperer', 
 'Wilke', 'Wilke_prefactors', 'Wilke_prefactored', 'Wilke_large',
 
-'Brokaw', 
-'viscosity_index', 'viscosity_converter', 'ViscosityLiquidMixture', 
-'ViscosityGasMixture',
+           'Brokaw',
+           'viscosity_index', 'viscosity_converter', 'ViscosityLiquidMixture',
+           'ViscosityGasMixture',
 
-'Lorentz_Bray_Clarke',
-'MIXING_LOG_MOLAR', 'MIXING_LOG_MASS',
-'BROKAW', 'HERNING_ZIPPERER', 'WILKE']
+           'Lorentz_Bray_Clarke',
+           'MIXING_LOG_MOLAR', 'MIXING_LOG_MASS',
+           'BROKAW', 'HERNING_ZIPPERER', 'WILKE']
 
 import os
 import numpy as np
@@ -58,39 +58,39 @@ from thermo.coolprop import has_CoolProp, PropsSI, PhaseSI, coolprop_fluids, coo
 from chemicals.dippr import EQ101, EQ102
 
 folder = os.path.join(os.path.dirname(__file__), 'Viscosity')
-mu_data_Dutt_Prasad
-Dutt_Prasad = pd.read_csv(os.path.join(folder, 'Dutt Prasad 3 term.tsv'),
+
+mu_data_Dutt_Prasad = pd.read_csv(os.path.join(folder, 'Dutt Prasad 3 term.tsv'),
+                                  sep='\t', index_col=0)
+mu_values_Dutt_Prasad = mu_data_Dutt_Prasad.values
+
+
+mu_data_VN3 = pd.read_csv(os.path.join(folder, 'Viswanath Natarajan Dynamic 3 term.tsv'),
                           sep='\t', index_col=0)
-_Dutt_Prasad_values = Dutt_Prasad.values
-mu_values_Dutt_Prasad
+mu_values_VN3 = mu_data_VN3.values
 
-VN3_data = pd.read_csv(os.path.join(folder, 'Viswanath Natarajan Dynamic 3 term.tsv'),
-                       sep='\t', index_col=0)
-_VN3_data_values = VN3_data.values
-
-VN2_data = pd.read_csv(os.path.join(folder, 'Viswanath Natarajan Dynamic 2 term.tsv'),
-                       sep='\t', index_col=0)
-_VN2_data_values = VN2_data.values
-
-VN2E_data = pd.read_csv(os.path.join(folder, 'Viswanath Natarajan Dynamic 2 term Exponential.tsv'),
-                        sep='\t', index_col=0)
-_VN2E_data_values = VN2E_data.values
-
-Perrys2_313 = pd.read_csv(os.path.join(folder, 'Table 2-313 Viscosity of Inorganic and Organic Liquids.tsv'),
+mu_data_VN2 = pd.read_csv(os.path.join(folder, 'Viswanath Natarajan Dynamic 2 term.tsv'),
                           sep='\t', index_col=0)
-_Perrys2_313_values = Perrys2_313.values
+mu_values_VN2 = mu_data_VN2.values
 
-Perrys2_312 = pd.read_csv(os.path.join(folder, 'Table 2-312 Vapor Viscosity of Inorganic and Organic Substances.tsv'),
-                          sep='\t', index_col=0)
-_Perrys2_312_values = Perrys2_312.values
+mu_data_VN2E = pd.read_csv(os.path.join(folder, 'Viswanath Natarajan Dynamic 2 term Exponential.tsv'),
+                           sep='\t', index_col=0)
+mu_values_VN2E = mu_data_VN2E.values
 
-VDI_PPDS_7 = pd.read_csv(os.path.join(folder, 'VDI PPDS Dynamic viscosity of saturated liquids polynomials.tsv'),
-                          sep='\t', index_col=0)
-_VDI_PPDS_7_values = VDI_PPDS_7.values
+mu_data_Perrys_8E_2_313 = pd.read_csv(os.path.join(folder, 'Table 2-313 Viscosity of Inorganic and Organic Liquids.tsv'),
+                                      sep='\t', index_col=0)
+mu_values_Perrys_8E_2_313 = mu_data_Perrys_8E_2_313.values
 
-VDI_PPDS_8 = pd.read_csv(os.path.join(folder, 'VDI PPDS Dynamic viscosity of gases polynomials.tsv'),
-                          sep='\t', index_col=0)
-_VDI_PPDS_8_values = VDI_PPDS_8.values
+mu_data_Perrys_8E_2_312 = pd.read_csv(os.path.join(folder, 'Table 2-312 Vapor Viscosity of Inorganic and Organic Substances.tsv'),
+                                      sep='\t', index_col=0)
+mu_values_Perrys_8E_2_312 = mu_data_Perrys_8E_2_312.values
+
+mu_data_VDI_PPDS_7 = pd.read_csv(os.path.join(folder, 'VDI PPDS Dynamic viscosity of saturated liquids polynomials.tsv'),
+                                 sep='\t', index_col=0)
+mu_values_PPDS_7 = mu_data_VDI_PPDS_7.values
+
+mu_data_VDI_PPDS_8 = pd.read_csv(os.path.join(folder, 'VDI PPDS Dynamic viscosity of gases polynomials.tsv'),
+                                 sep='\t', index_col=0)
+mu_values_PPDS_8 = mu_data_VDI_PPDS_8.values
 
 
 def Viswanath_Natarajan_2(T, A, B):
@@ -1831,7 +1831,7 @@ class ViscosityLiquid(TPDependentProperty):
         A simple function as expressed in [1]_, with data available for
         432 fluids. Temperature limits are available for all fluids. See
         :obj:`Viswanath_Natarajan_3` for details.
-    **VN2_data**:
+    **mu_data_VN2**:
         A simple function as expressed in [1]_, with data available for
         135 fluids. Temperature limits are available for all fluids. See
         :obj:`Viswanath_Natarajan_2` for details.
@@ -2011,34 +2011,34 @@ class ViscosityLiquid(TPDependentProperty):
             self.VDI_Tmax = Ts[-1]
             self.tabular_data[VDI_TABULAR] = (Ts, props)
             Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
-        if self.CASRN in Dutt_Prasad.index:
+        if self.CASRN in mu_data_Dutt_Prasad.index:
             methods.append(DUTT_PRASAD)
-            _, A, B, C, self.DUTT_PRASAD_Tmin, self.DUTT_PRASAD_Tmax = _Dutt_Prasad_values[Dutt_Prasad.index.get_loc(self.CASRN)].tolist()
+            _, A, B, C, self.DUTT_PRASAD_Tmin, self.DUTT_PRASAD_Tmax = mu_values_Dutt_Prasad[mu_data_Dutt_Prasad.index.get_loc(self.CASRN)].tolist()
             self.DUTT_PRASAD_coeffs = [A - 3.0, B, C]
             Tmins.append(self.DUTT_PRASAD_Tmin); Tmaxs.append(self.DUTT_PRASAD_Tmax)
-        if self.CASRN in VN3_data.index:
+        if self.CASRN in mu_data_VN3.index:
             methods.append(VISWANATH_NATARAJAN_3)
-            _, _, A, B, C, self.VISWANATH_NATARAJAN_3_Tmin, self.VISWANATH_NATARAJAN_3_Tmax = _VN3_data_values[VN3_data.index.get_loc(self.CASRN)].tolist()
+            _, _, A, B, C, self.VISWANATH_NATARAJAN_3_Tmin, self.VISWANATH_NATARAJAN_3_Tmax = mu_values_VN3[mu_data_VN3.index.get_loc(self.CASRN)].tolist()
             self.VISWANATH_NATARAJAN_3_coeffs = [A - 3.0, B, C]
             Tmins.append(self.VISWANATH_NATARAJAN_3_Tmin); Tmaxs.append(self.VISWANATH_NATARAJAN_3_Tmax)
-        if self.CASRN in VN2_data.index:
+        if self.CASRN in mu_data_VN2.index:
             methods.append(VISWANATH_NATARAJAN_2)
-            _, _, A, B, self.VISWANATH_NATARAJAN_2_Tmin, self.VISWANATH_NATARAJAN_2_Tmax = _VN2_data_values[VN2_data.index.get_loc(self.CASRN)].tolist()
+            _, _, A, B, self.VISWANATH_NATARAJAN_2_Tmin, self.VISWANATH_NATARAJAN_2_Tmax = mu_values_VN2[mu_data_VN2.index.get_loc(self.CASRN)].tolist()
             self.VISWANATH_NATARAJAN_2_coeffs = [A - 4.605170185988092, B] # log(100), 4.605170185988092
             Tmins.append(self.VISWANATH_NATARAJAN_2_Tmin); Tmaxs.append(self.VISWANATH_NATARAJAN_2_Tmax)
-        if self.CASRN in VN2E_data.index:
+        if self.CASRN in mu_data_VN2E.index:
             methods.append(VISWANATH_NATARAJAN_2E)
-            _, _, C, D, self.VISWANATH_NATARAJAN_2E_Tmin, self.VISWANATH_NATARAJAN_2E_Tmax = _VN2E_data_values[VN2E_data.index.get_loc(self.CASRN)].tolist()
+            _, _, C, D, self.VISWANATH_NATARAJAN_2E_Tmin, self.VISWANATH_NATARAJAN_2E_Tmax = mu_values_VN2E[mu_data_VN2E.index.get_loc(self.CASRN)].tolist()
             self.VISWANATH_NATARAJAN_2E_coeffs = [C, D]
             Tmins.append(self.VISWANATH_NATARAJAN_2E_Tmin); Tmaxs.append(self.VISWANATH_NATARAJAN_2E_Tmax)
-        if self.CASRN in Perrys2_313.index:
+        if self.CASRN in mu_data_Perrys_8E_2_313.index:
             methods.append(DIPPR_PERRY_8E)
-            _, C1, C2, C3, C4, C5, self.Perrys2_313_Tmin, self.Perrys2_313_Tmax = _Perrys2_313_values[Perrys2_313.index.get_loc(self.CASRN)].tolist()
+            _, C1, C2, C3, C4, C5, self.Perrys2_313_Tmin, self.Perrys2_313_Tmax = mu_values_Perrys_8E_2_313[mu_data_Perrys_8E_2_313.index.get_loc(self.CASRN)].tolist()
             self.Perrys2_313_coeffs = [C1, C2, C3, C4, C5]
             Tmins.append(self.Perrys2_313_Tmin); Tmaxs.append(self.Perrys2_313_Tmax)
-        if self.CASRN in VDI_PPDS_7.index:
+        if self.CASRN in mu_data_VDI_PPDS_7.index:
             methods.append(VDI_PPDS)
-            self.VDI_PPDS_coeffs = _VDI_PPDS_7_values[VDI_PPDS_7.index.get_loc(self.CASRN)].tolist()[2:]
+            self.VDI_PPDS_coeffs = mu_values_PPDS_7[mu_data_VDI_PPDS_7.index.get_loc(self.CASRN)].tolist()[2:]
         if all((self.MW, self.Tc, self.Pc, self.omega)):
             methods.append(LETSOU_STIEL)
             Tmins.append(self.Tc/4); Tmaxs.append(self.Tc) # TODO: test model at low T
@@ -2475,14 +2475,14 @@ class ViscosityGas(TPDependentProperty):
             methods.append(COOLPROP); methods_P.append(COOLPROP)
             self.CP_f = coolprop_fluids[self.CASRN]
             Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tmax)
-        if self.CASRN in Perrys2_312.index:
+        if self.CASRN in mu_data_Perrys_8E_2_312.index:
             methods.append(DIPPR_PERRY_8E)
-            _, C1, C2, C3, C4, self.Perrys2_312_Tmin, self.Perrys2_312_Tmax = _Perrys2_312_values[Perrys2_312.index.get_loc(self.CASRN)].tolist()
+            _, C1, C2, C3, C4, self.Perrys2_312_Tmin, self.Perrys2_312_Tmax = mu_values_Perrys_8E_2_312[mu_data_Perrys_8E_2_312.index.get_loc(self.CASRN)].tolist()
             self.Perrys2_312_coeffs = [C1, C2, C3, C4]
             Tmins.append(self.Perrys2_312_Tmin); Tmaxs.append(self.Perrys2_312_Tmax)
-        if self.CASRN in VDI_PPDS_8.index:
+        if self.CASRN in mu_data_VDI_PPDS_8.index:
             methods.append(VDI_PPDS)
-            self.VDI_PPDS_coeffs = _VDI_PPDS_8_values[VDI_PPDS_8.index.get_loc(self.CASRN)].tolist()[1:]
+            self.VDI_PPDS_coeffs = mu_values_PPDS_8[mu_data_VDI_PPDS_8.index.get_loc(self.CASRN)].tolist()[1:]
             self.VDI_PPDS_coeffs.reverse() # in format for horner's scheme
         if all([self.Tc, self.Pc, self.MW]):
             methods.append(GHARAGHEIZI)
