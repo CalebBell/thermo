@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2016, 2017, 2018, 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -60,37 +60,38 @@ from chemicals.dippr import EQ101, EQ102
 folder = os.path.join(os.path.dirname(__file__), 'Viscosity')
 
 mu_data_Dutt_Prasad = pd.read_csv(os.path.join(folder, 'Dutt Prasad 3 term.tsv'),
-                                  sep='\t', index_col=0)
-mu_values_Dutt_Prasad = mu_data_Dutt_Prasad.values
+                                  sep='\t', index_col=0, dtype={'A': float, 'B': float, 'C': float, 'Tmin': float, 'Tmax': float})
+mu_values_Dutt_Prasad = np.array(mu_data_Dutt_Prasad.values[:, 1:], dtype=float)
 
 
 mu_data_VN3 = pd.read_csv(os.path.join(folder, 'Viswanath Natarajan Dynamic 3 term.tsv'),
-                          sep='\t', index_col=0)
-mu_values_VN3 = mu_data_VN3.values
+                          sep='\t', index_col=0, dtype={'A': float, 'B': float, 'C': float, 'Tmin': float, 'Tmax': float})
+mu_values_VN3 = np.array(mu_data_VN3.values[:, 2:], dtype=float)
 
 mu_data_VN2 = pd.read_csv(os.path.join(folder, 'Viswanath Natarajan Dynamic 2 term.tsv'),
-                          sep='\t', index_col=0)
-mu_values_VN2 = mu_data_VN2.values
+                          sep='\t', index_col=0, dtype={'A': float, 'B': float, 'Tmin': float, 'Tmax': float})
+mu_values_VN2 = np.array(mu_data_VN2.values[:, 2:], dtype=float)
 
 mu_data_VN2E = pd.read_csv(os.path.join(folder, 'Viswanath Natarajan Dynamic 2 term Exponential.tsv'),
-                           sep='\t', index_col=0)
-mu_values_VN2E = mu_data_VN2E.values
+                           sep='\t', index_col=0, dtype={'C': float, 'D': float, 'Tmin': float, 'Tmax': float})
+mu_values_VN2E = np.array(mu_data_VN2E.values[:, 2:], dtype=float)
 
 mu_data_Perrys_8E_2_313 = pd.read_csv(os.path.join(folder, 'Table 2-313 Viscosity of Inorganic and Organic Liquids.tsv'),
                                       sep='\t', index_col=0)
-mu_values_Perrys_8E_2_313 = mu_data_Perrys_8E_2_313.values
+mu_values_Perrys_8E_2_313 = np.array(mu_data_Perrys_8E_2_313.values[:, 1:], dtype=float)
 
 mu_data_Perrys_8E_2_312 = pd.read_csv(os.path.join(folder, 'Table 2-312 Vapor Viscosity of Inorganic and Organic Substances.tsv'),
-                                      sep='\t', index_col=0)
-mu_values_Perrys_8E_2_312 = mu_data_Perrys_8E_2_312.values
+                                      sep='\t', index_col=0, 
+                                      dtype={'C1': float, 'C2': float, 'C3': float, 'C4': float, 'Tmin': float, 'Tmax': float})
+mu_values_Perrys_8E_2_312 = np.array(mu_data_Perrys_8E_2_312.values[:, 1:], dtype=float)
 
 mu_data_VDI_PPDS_7 = pd.read_csv(os.path.join(folder, 'VDI PPDS Dynamic viscosity of saturated liquids polynomials.tsv'),
                                  sep='\t', index_col=0)
-mu_values_PPDS_7 = mu_data_VDI_PPDS_7.values
+mu_values_PPDS_7 = np.array(mu_data_VDI_PPDS_7.values[:, 2:], dtype=float)
 
 mu_data_VDI_PPDS_8 = pd.read_csv(os.path.join(folder, 'VDI PPDS Dynamic viscosity of gases polynomials.tsv'),
                                  sep='\t', index_col=0)
-mu_values_PPDS_8 = mu_data_VDI_PPDS_8.values
+mu_values_PPDS_8 = np.array(mu_data_VDI_PPDS_8.values[:, 1:], dtype=float)
 
 
 def Viswanath_Natarajan_2(T, A, B):
@@ -2013,32 +2014,32 @@ class ViscosityLiquid(TPDependentProperty):
             Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
         if self.CASRN in mu_data_Dutt_Prasad.index:
             methods.append(DUTT_PRASAD)
-            _, A, B, C, self.DUTT_PRASAD_Tmin, self.DUTT_PRASAD_Tmax = mu_values_Dutt_Prasad[mu_data_Dutt_Prasad.index.get_loc(self.CASRN)].tolist()
+            A, B, C, self.DUTT_PRASAD_Tmin, self.DUTT_PRASAD_Tmax = mu_values_Dutt_Prasad[mu_data_Dutt_Prasad.index.get_loc(self.CASRN)].tolist()
             self.DUTT_PRASAD_coeffs = [A - 3.0, B, C]
             Tmins.append(self.DUTT_PRASAD_Tmin); Tmaxs.append(self.DUTT_PRASAD_Tmax)
         if self.CASRN in mu_data_VN3.index:
             methods.append(VISWANATH_NATARAJAN_3)
-            _, _, A, B, C, self.VISWANATH_NATARAJAN_3_Tmin, self.VISWANATH_NATARAJAN_3_Tmax = mu_values_VN3[mu_data_VN3.index.get_loc(self.CASRN)].tolist()
+            A, B, C, self.VISWANATH_NATARAJAN_3_Tmin, self.VISWANATH_NATARAJAN_3_Tmax = mu_values_VN3[mu_data_VN3.index.get_loc(self.CASRN)].tolist()
             self.VISWANATH_NATARAJAN_3_coeffs = [A - 3.0, B, C]
             Tmins.append(self.VISWANATH_NATARAJAN_3_Tmin); Tmaxs.append(self.VISWANATH_NATARAJAN_3_Tmax)
         if self.CASRN in mu_data_VN2.index:
             methods.append(VISWANATH_NATARAJAN_2)
-            _, _, A, B, self.VISWANATH_NATARAJAN_2_Tmin, self.VISWANATH_NATARAJAN_2_Tmax = mu_values_VN2[mu_data_VN2.index.get_loc(self.CASRN)].tolist()
+            A, B, self.VISWANATH_NATARAJAN_2_Tmin, self.VISWANATH_NATARAJAN_2_Tmax = mu_values_VN2[mu_data_VN2.index.get_loc(self.CASRN)].tolist()
             self.VISWANATH_NATARAJAN_2_coeffs = [A - 4.605170185988092, B] # log(100), 4.605170185988092
             Tmins.append(self.VISWANATH_NATARAJAN_2_Tmin); Tmaxs.append(self.VISWANATH_NATARAJAN_2_Tmax)
         if self.CASRN in mu_data_VN2E.index:
             methods.append(VISWANATH_NATARAJAN_2E)
-            _, _, C, D, self.VISWANATH_NATARAJAN_2E_Tmin, self.VISWANATH_NATARAJAN_2E_Tmax = mu_values_VN2E[mu_data_VN2E.index.get_loc(self.CASRN)].tolist()
+            C, D, self.VISWANATH_NATARAJAN_2E_Tmin, self.VISWANATH_NATARAJAN_2E_Tmax = mu_values_VN2E[mu_data_VN2E.index.get_loc(self.CASRN)].tolist()
             self.VISWANATH_NATARAJAN_2E_coeffs = [C, D]
             Tmins.append(self.VISWANATH_NATARAJAN_2E_Tmin); Tmaxs.append(self.VISWANATH_NATARAJAN_2E_Tmax)
         if self.CASRN in mu_data_Perrys_8E_2_313.index:
             methods.append(DIPPR_PERRY_8E)
-            _, C1, C2, C3, C4, C5, self.Perrys2_313_Tmin, self.Perrys2_313_Tmax = mu_values_Perrys_8E_2_313[mu_data_Perrys_8E_2_313.index.get_loc(self.CASRN)].tolist()
+            C1, C2, C3, C4, C5, self.Perrys2_313_Tmin, self.Perrys2_313_Tmax = mu_values_Perrys_8E_2_313[mu_data_Perrys_8E_2_313.index.get_loc(self.CASRN)].tolist()
             self.Perrys2_313_coeffs = [C1, C2, C3, C4, C5]
             Tmins.append(self.Perrys2_313_Tmin); Tmaxs.append(self.Perrys2_313_Tmax)
         if self.CASRN in mu_data_VDI_PPDS_7.index:
             methods.append(VDI_PPDS)
-            self.VDI_PPDS_coeffs = mu_values_PPDS_7[mu_data_VDI_PPDS_7.index.get_loc(self.CASRN)].tolist()[2:]
+            self.VDI_PPDS_coeffs = mu_values_PPDS_7[mu_data_VDI_PPDS_7.index.get_loc(self.CASRN)].tolist()
         if all((self.MW, self.Tc, self.Pc, self.omega)):
             methods.append(LETSOU_STIEL)
             Tmins.append(self.Tc/4); Tmaxs.append(self.Tc) # TODO: test model at low T
@@ -2477,12 +2478,12 @@ class ViscosityGas(TPDependentProperty):
             Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tmax)
         if self.CASRN in mu_data_Perrys_8E_2_312.index:
             methods.append(DIPPR_PERRY_8E)
-            _, C1, C2, C3, C4, self.Perrys2_312_Tmin, self.Perrys2_312_Tmax = mu_values_Perrys_8E_2_312[mu_data_Perrys_8E_2_312.index.get_loc(self.CASRN)].tolist()
+            C1, C2, C3, C4, self.Perrys2_312_Tmin, self.Perrys2_312_Tmax = mu_values_Perrys_8E_2_312[mu_data_Perrys_8E_2_312.index.get_loc(self.CASRN)].tolist()
             self.Perrys2_312_coeffs = [C1, C2, C3, C4]
             Tmins.append(self.Perrys2_312_Tmin); Tmaxs.append(self.Perrys2_312_Tmax)
         if self.CASRN in mu_data_VDI_PPDS_8.index:
             methods.append(VDI_PPDS)
-            self.VDI_PPDS_coeffs = mu_values_PPDS_8[mu_data_VDI_PPDS_8.index.get_loc(self.CASRN)].tolist()[1:]
+            self.VDI_PPDS_coeffs = mu_values_PPDS_8[mu_data_VDI_PPDS_8.index.get_loc(self.CASRN)].tolist()
             self.VDI_PPDS_coeffs.reverse() # in format for horner's scheme
         if all([self.Tc, self.Pc, self.MW]):
             methods.append(GHARAGHEIZI)
