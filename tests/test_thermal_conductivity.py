@@ -192,6 +192,30 @@ def test_CSP_gas_dense():
     assert_allclose(kg, 0.06160569232570781)
 
 
+def test_DIPPR9H():
+    k = DIPPR9H([0.258, 0.742], [0.1692, 0.1528])
+    assert_allclose(k, 0.15657104706719646)
+
+#    with pytest.raises(Exception):
+#        DIPPR9H([0.258, 0.742], [0.1692])
+
+def test_Filippov():
+    kl = Filippov([0.258, 0.742], [0.1692, 0.1528])
+    assert_allclose(kl, 0.15929167628799998)
+
+    with pytest.raises(ValueError):
+        Filippov([0.258], [0.1692, 0.1528])
+
+
+def test_Lindsay_Bromley():
+    kg = Lindsay_Bromley(323.15, [0.23, 0.77], [1.939E-2, 1.231E-2], [1.002E-5, 1.015E-5], [248.31, 248.93], [46.07, 50.49])
+    assert_allclose(kg, 0.01390264417969313)
+
+#    with pytest.raises(Exception):
+#        Lindsay_Bromley(323.15, [0.23], [1.939E-2, 1.231E-2], [1.002E-5, 1.015E-5], [248.31, 248.93], [46.07, 50.49])
+
+
+
 @pytest.mark.meta_T_dept
 def test_ThermalConductivityLiquid():
     EtOH = ThermalConductivityLiquid(CASRN='64-17-5', MW=46.06844, Tm=159.05, Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, Hfus=4931.0)
@@ -305,30 +329,6 @@ def test_ThermalConductivityGas():
         EtOH.test_method_validity_P(300, 1E5, 'BADMETHOD')
 
     assert False == EtOH.test_method_validity_P(100, 1E5, COOLPROP)
-
-
-def test_DIPPR9H():
-    k = DIPPR9H([0.258, 0.742], [0.1692, 0.1528])
-    assert_allclose(k, 0.15657104706719646)
-
-#    with pytest.raises(Exception):
-#        DIPPR9H([0.258, 0.742], [0.1692])
-
-def test_Filippov():
-    kl = Filippov([0.258, 0.742], [0.1692, 0.1528])
-    assert_allclose(kl, 0.15929167628799998)
-
-    with pytest.raises(ValueError):
-        Filippov([0.258], [0.1692, 0.1528])
-
-
-def test_Lindsay_Bromley():
-    kg = Lindsay_Bromley(323.15, [0.23, 0.77], [1.939E-2, 1.231E-2], [1.002E-5, 1.015E-5], [248.31, 248.93], [46.07, 50.49])
-    assert_allclose(kg, 0.01390264417969313)
-
-#    with pytest.raises(Exception):
-#        Lindsay_Bromley(323.15, [0.23], [1.939E-2, 1.231E-2], [1.002E-5, 1.015E-5], [248.31, 248.93], [46.07, 50.49])
-
 
 
 def test_ThermalConductivityGasMixture():
