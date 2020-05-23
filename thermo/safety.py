@@ -290,7 +290,7 @@ NONE = 'None'
 TWA_methods = [ONTARIO]
 
 
-def TWA(CASRN, AvailableMethods=False, Method=None):  # pragma: no cover
+def TWA(CASRN, get_methods=False, method=None):  # pragma: no cover
     '''This function handles the retrieval of Time-Weighted Average limits on worker
     exposure to dangerous chemicals.
 
@@ -301,7 +301,7 @@ def TWA(CASRN, AvailableMethods=False, Method=None):  # pragma: no cover
     (10.0, 'ppm')
     >>> TWA('1303-00-0')
     (5.0742430905659505e-05, 'ppm')
-    >>> TWA('7782-42-5', AvailableMethods=True)
+    >>> TWA('7782-42-5', get_methods=True)
     ['Ontario Limits', 'None']
     '''
     def list_methods():
@@ -310,24 +310,24 @@ def TWA(CASRN, AvailableMethods=False, Method=None):  # pragma: no cover
             methods.append(ONTARIO)
         methods.append(NONE)
         return methods
-    if AvailableMethods:
+    if get_methods:
         return list_methods()
-    if not Method:
-        Method = list_methods()[0]
+    if not method:
+        method = list_methods()[0]
 
-    if Method == ONTARIO:
+    if method == ONTARIO:
         if _OntarioExposureLimits[CASRN]["TWA (ppm)"]:
             _TWA = (_OntarioExposureLimits[CASRN]["TWA (ppm)"], 'ppm')
         elif _OntarioExposureLimits[CASRN]["TWA (mg/m^3)"]:
             _TWA = (_OntarioExposureLimits[CASRN]["TWA (mg/m^3)"], 'mg/m^3')
-    elif Method == NONE:
+    elif method == NONE:
         _TWA = None
     else:
         raise Exception('Failure in in function')
     return _TWA
 
 
-def STEL(CASRN, AvailableMethods=False, Method=None):  # pragma: no cover
+def STEL(CASRN, get_methods=False, method=None):  # pragma: no cover
     '''This function handles the retrieval of Short-term Exposure Limit on
     worker exposure to dangerous chemicals.
 
@@ -340,7 +340,7 @@ def STEL(CASRN, AvailableMethods=False, Method=None):  # pragma: no cover
     (0.7489774978301237, 'ppm')
     >>> STEL('55720-99-5')
     (2.0, 'mg/m^3')
-    >>> STEL('86290-81-5', AvailableMethods=True)
+    >>> STEL('86290-81-5', get_methods=True)
     ['Ontario Limits', 'None']
     '''
     def list_methods():
@@ -349,24 +349,24 @@ def STEL(CASRN, AvailableMethods=False, Method=None):  # pragma: no cover
             methods.append(ONTARIO)
         methods.append(NONE)
         return methods
-    if AvailableMethods:
+    if get_methods:
         return list_methods()
-    if not Method:
-        Method = list_methods()[0]
+    if not method:
+        method = list_methods()[0]
 
-    if Method == ONTARIO:
+    if method == ONTARIO:
         if _OntarioExposureLimits[CASRN]["STEL (ppm)"]:
             _STEL = (_OntarioExposureLimits[CASRN]["STEL (ppm)"], 'ppm')
         elif _OntarioExposureLimits[CASRN]["STEL (mg/m^3)"]:
             _STEL = (_OntarioExposureLimits[CASRN]["STEL (mg/m^3)"], 'mg/m^3')
-    elif Method == NONE:
+    elif method == NONE:
         _STEL = None
     else:
         raise Exception('Failure in in function')
     return _STEL
 
 
-def Ceiling(CASRN, AvailableMethods=False, Method=None):  # pragma: no cover
+def Ceiling(CASRN, get_methods=False, method=None):  # pragma: no cover
     '''This function handles the retrieval of Ceiling limits on worker
     exposure to dangerous chemicals.
 
@@ -377,7 +377,7 @@ def Ceiling(CASRN, AvailableMethods=False, Method=None):  # pragma: no cover
     (25.0, 'ppm')
     >>> Ceiling('1395-21-7')
     (6e-05, 'mg/m^3')
-    >>> Ceiling('7572-29-4', AvailableMethods=True)
+    >>> Ceiling('7572-29-4', get_methods=True)
     ['Ontario Limits', 'None']
     '''
     def list_methods():
@@ -386,24 +386,24 @@ def Ceiling(CASRN, AvailableMethods=False, Method=None):  # pragma: no cover
             methods.append(ONTARIO)
         methods.append(NONE)
         return methods
-    if AvailableMethods:
+    if get_methods:
         return list_methods()
-    if not Method:
-        Method = list_methods()[0]
+    if not method:
+        method = list_methods()[0]
 
-    if Method == ONTARIO:
+    if method == ONTARIO:
         if _OntarioExposureLimits[CASRN]["Ceiling (ppm)"]:
             _Ceiling = (_OntarioExposureLimits[CASRN]["Ceiling (ppm)"], 'ppm')
         elif _OntarioExposureLimits[CASRN]["Ceiling (mg/m^3)"]:
             _Ceiling = (_OntarioExposureLimits[CASRN]["Ceiling (mg/m^3)"], 'mg/m^3')
-    elif Method == NONE:
+    elif method == NONE:
         _Ceiling = None
     else:
         raise Exception('Failure in in function')
     return _Ceiling
 
 
-def Skin(CASRN, AvailableMethods=False, Method=None):  # pragma: no cover
+def Skin(CASRN, get_methods=False, method=None):  # pragma: no cover
     '''This function handles the retrieval of whether or not a chemical can
     be absorbed through the skin, relevant to chemical safety calculations.
 
@@ -414,7 +414,7 @@ def Skin(CASRN, AvailableMethods=False, Method=None):  # pragma: no cover
     True
     >>> Skin('1395-21-7')
     False
-    >>> Skin('7572-29-4', AvailableMethods=True)
+    >>> Skin('7572-29-4', get_methods=True)
     ['Ontario Limits', 'None']
     '''
     def list_methods():
@@ -423,14 +423,14 @@ def Skin(CASRN, AvailableMethods=False, Method=None):  # pragma: no cover
             methods.append(ONTARIO)
         methods.append(NONE)
         return methods
-    if AvailableMethods:
+    if get_methods:
         return list_methods()
-    if not Method:
-        Method = list_methods()[0]
+    if not method:
+        method = list_methods()[0]
 
-    if Method == ONTARIO:
+    if method == ONTARIO:
         _Skin = (_OntarioExposureLimits[CASRN]["Skin"])
-    elif Method == NONE:
+    elif method == NONE:
         _Skin = None
     else:
         raise Exception('Failure in in function')
@@ -446,7 +446,7 @@ COMBINED = 'Combined'
 Carcinogen_methods = [IARC, NTP]
 
 
-def Carcinogen(CASRN, AvailableMethods=False, Method=None):
+def Carcinogen(CASRN, get_methods=False, method=None):
     r'''Looks up if a chemical is listed as a carcinogen or not according to
     either a specifc method or with all methods.
 
@@ -463,16 +463,16 @@ def Carcinogen(CASRN, AvailableMethods=False, Method=None):
     -------
     status : str or dict
         Carcinogen status information [-]
-    methods : list, only returned if AvailableMethods == True
+    methods : list, only returned if get_methods == True
         List of methods which can be used to obtain carcinogen status with the
         given inputs
 
     Other Parameters
     ----------------
-    Method : string, optional
+    method : string, optional
         A string for the method name to use, as defined by constants in
         Carcinogen_methods
-    AvailableMethods : bool, optional
+    get_methods : bool, optional
         If True, function will determine which methods can be used to obtain
         if a chemical is listed as carcinogenic, and will return methods
         instead of the status
@@ -507,24 +507,24 @@ def Carcinogen(CASRN, AvailableMethods=False, Method=None):
        http://ntp.niehs.nih.gov/pubhealth/roc/roc13/
     '''
     methods = [COMBINED, IARC, NTP]
-    if AvailableMethods:
+    if get_methods:
         return methods
-    if not Method:
-        Method = methods[0]
-    if Method == IARC:
+    if not method:
+        method = methods[0]
+    if method == IARC:
         if CASRN in IARC_data.index:
             status = IARC_codes[IARC_data.at[CASRN, 'group']]
         else:
             status = UNLISTED
-    elif Method == NTP:
+    elif method == NTP:
         if CASRN in NTP_data.index:
             status = NTP_codes[NTP_data.at[CASRN, 'Listing']]
         else:
             status = UNLISTED
-    elif Method == COMBINED:
+    elif method == COMBINED:
         status = {}
         for method in methods[1:]:
-            status[method] = Carcinogen(CASRN, Method=method)
+            status[method] = Carcinogen(CASRN, method=method)
     else:
         raise Exception('Failure in in function')
     return status
@@ -544,10 +544,10 @@ SERAT = 'Serat DIPPR (2017)'
 Tflash_methods = [IEC, NFPA, SERAT]
 
 
-def Tflash(CASRN, AvailableMethods=False, Method=None):
+def Tflash(CASRN, get_methods=False, method=None):
     r'''This function handles the retrieval or calculation of a chemical's
     flash point. Lookup is based on CASRNs. No predictive methods are currently
-    implemented. Will automatically select a data source to use if no Method
+    implemented. Will automatically select a data source to use if no method
     is provided; returns None if the data is not available.
 
     Prefered source is 'IEC 60079-20-1 (2010)' [1]_, with the secondary source
@@ -569,16 +569,16 @@ def Tflash(CASRN, AvailableMethods=False, Method=None):
     -------
     Tflash : float
         Flash point of the chemical, [K]
-    methods : list, only returned if AvailableMethods == True
+    methods : list, only returned if get_methods == True
         List of methods which can be used to obtain Tflash with the given
         inputs
 
     Other Parameters
     ----------------
-    Method : string, optional
+    method : string, optional
         A string for the method name to use, as defined by constants in
         Tflash_methods
-    AvailableMethods : bool, optional
+    get_methods : bool, optional
         If True, function will determine which methods can be used to obtain
         Tflash for the desired chemical, and will return methods instead of
         Tflash
@@ -612,18 +612,18 @@ def Tflash(CASRN, AvailableMethods=False, Method=None):
             methods.append(SERAT)
         methods.append(NONE)
         return methods
-    if AvailableMethods:
+    if get_methods:
         return list_methods()
-    if not Method:
-        Method = list_methods()[0]
+    if not method:
+        method = list_methods()[0]
 
-    if Method == IEC:
+    if method == IEC:
         return float(IEC_2010.at[CASRN, 'Tflash'])
-    elif Method == NFPA:
+    elif method == NFPA:
         return float(NFPA_2008.at[CASRN, "Tflash"])
-    elif Method == SERAT:
+    elif method == SERAT:
         return float(DIPPR_SERAT.at[CASRN, "Tflash"])
-    elif Method == NONE:
+    elif method == NONE:
         return None
     else:
         raise Exception('Failure in in function')
@@ -632,11 +632,11 @@ def Tflash(CASRN, AvailableMethods=False, Method=None):
 Tautoignition_methods = [IEC, NFPA]
 
 
-def Tautoignition(CASRN, AvailableMethods=False, Method=None):
+def Tautoignition(CASRN, get_methods=False, method=None):
     r'''This function handles the retrieval or calculation of a chemical's
     autoifnition temperature. Lookup is based on CASRNs. No predictive methods
     are currently implemented. Will automatically select a data source to use
-    if no Method is provided; returns None if the data is not available.
+    if no method is provided; returns None if the data is not available.
 
     Prefered source is 'IEC 60079-20-1 (2010)' [1]_, with the secondary source
     'NFPA 497 (2008)' [2]_ having very similar data.
@@ -655,16 +655,16 @@ def Tautoignition(CASRN, AvailableMethods=False, Method=None):
     -------
     Tautoignition : float
         Autoignition point of the chemical, [K]
-    methods : list, only returned if AvailableMethods == True
+    methods : list, only returned if get_methods == True
         List of methods which can be used to obtain Tautoignition with the
         given inputs
 
     Other Parameters
     ----------------
-    Method : string, optional
+    method : string, optional
         A string for the method name to use, as defined by constants in
         Tautoignition_methods
-    AvailableMethods : bool, optional
+    get_methods : bool, optional
         If True, function will determine which methods can be used to obtain
         Tautoignition for the desired chemical, and will return methods
         instead of Tautoignition
@@ -690,16 +690,16 @@ def Tautoignition(CASRN, AvailableMethods=False, Method=None):
             methods.append(NFPA)
         methods.append(NONE)
         return methods
-    if AvailableMethods:
+    if get_methods:
         return list_methods()
-    if not Method:
-        Method = list_methods()[0]
+    if not method:
+        method = list_methods()[0]
 
-    if Method == IEC:
+    if method == IEC:
         return float(IEC_2010.at[CASRN, 'Tautoignition'])
-    elif Method == NFPA:
+    elif method == NFPA:
         return float(NFPA_2008.at[CASRN, 'Tautoignition'])
-    elif Method == NONE:
+    elif method == NONE:
         return None
     else:
         raise Exception('Failure in in function')
@@ -711,11 +711,11 @@ CROWLLOUVAR = 'Crowl and Louvar (2001)'
 LFL_methods = [IEC, NFPA, SUZUKI, CROWLLOUVAR]
 
 
-def LFL(Hc=None, atoms={}, CASRN='', AvailableMethods=False, Method=None):
+def LFL(Hc=None, atoms={}, CASRN='', get_methods=False, method=None):
     r'''This function handles the retrieval or calculation of a chemical's
     Lower Flammability Limit. Lookup is based on CASRNs. Two predictive methods
     are currently implemented. Will automatically select a data source to use
-    if no Method is provided; returns None if the data is not available.
+    if no method is provided; returns None if the data is not available.
 
     Prefered source is 'IEC 60079-20-1 (2010)' [1]_, with the secondary source
     'NFPA 497 (2008)' [2]_ having very similar data. If the heat of combustion
@@ -740,16 +740,16 @@ def LFL(Hc=None, atoms={}, CASRN='', AvailableMethods=False, Method=None):
     -------
     LFL : float
         Lower flammability limit of the gas in an atmosphere at STP, [mole fraction]
-    methods : list, only returned if AvailableMethods == True
+    methods : list, only returned if get_methods == True
         List of methods which can be used to obtain LFL with the
         given inputs
 
     Other Parameters
     ----------------
-    Method : string, optional
+    method : string, optional
         A string for the method name to use, as defined by constants in
         LFL_methods
-    AvailableMethods : bool, optional
+    get_methods : bool, optional
         If True, function will determine which methods can be used to obtain
         the Lower Flammability Limit for the desired chemical, and will return
         methods instead of Lower Flammability Limit.
@@ -779,20 +779,20 @@ def LFL(Hc=None, atoms={}, CASRN='', AvailableMethods=False, Method=None):
             methods.append(CROWLLOUVAR)
         methods.append(NONE)
         return methods
-    if AvailableMethods:
+    if get_methods:
         return list_methods()
-    if not Method:
-        Method = list_methods()[0]
+    if not method:
+        method = list_methods()[0]
 
-    if Method == IEC:
+    if method == IEC:
         return float(IEC_2010.at[CASRN, 'LFL'])
-    elif Method == NFPA:
+    elif method == NFPA:
         return float(NFPA_2008.at[CASRN, 'LFL'])
-    elif Method == SUZUKI:
+    elif method == SUZUKI:
         return Suzuki_LFL(Hc=Hc)
-    elif Method == CROWLLOUVAR:
+    elif method == CROWLLOUVAR:
         return Crowl_Louvar_LFL(atoms=atoms)
-    elif Method == NONE:
+    elif method == NONE:
         return None
     else:
         raise Exception('Failure in in function')
@@ -801,11 +801,11 @@ def LFL(Hc=None, atoms={}, CASRN='', AvailableMethods=False, Method=None):
 UFL_methods = [IEC, NFPA, SUZUKI, CROWLLOUVAR]
 
 
-def UFL(Hc=None, atoms={}, CASRN='', AvailableMethods=False, Method=None):
+def UFL(Hc=None, atoms={}, CASRN='', get_methods=False, method=None):
     r'''This function handles the retrieval or calculation of a chemical's
     Upper Flammability Limit. Lookup is based on CASRNs. Two predictive methods
     are currently implemented. Will automatically select a data source to use
-    if no Method is provided; returns None if the data is not available.
+    if no method is provided; returns None if the data is not available.
 
     Prefered source is 'IEC 60079-20-1 (2010)' [1]_, with the secondary source
     'NFPA 497 (2008)' [2]_ having very similar data. If the heat of combustion
@@ -830,16 +830,16 @@ def UFL(Hc=None, atoms={}, CASRN='', AvailableMethods=False, Method=None):
     -------
     UFL : float
         Upper flammability limit of the gas in an atmosphere at STP, [mole fraction]
-    methods : list, only returned if AvailableMethods == True
+    methods : list, only returned if get_methods == True
         List of methods which can be used to obtain UFL with the
         given inputs
 
     Other Parameters
     ----------------
-    Method : string, optional
+    method : string, optional
         A string for the method name to use, as defined by constants in
         UFL_methods
-    AvailableMethods : bool, optional
+    get_methods : bool, optional
         If True, function will determine which methods can be used to obtain
         the Upper Flammability Limit for the desired chemical, and will return
         methods instead of Upper Flammability Limit.
@@ -869,20 +869,20 @@ def UFL(Hc=None, atoms={}, CASRN='', AvailableMethods=False, Method=None):
             methods.append(CROWLLOUVAR)
         methods.append(NONE)
         return methods
-    if AvailableMethods:
+    if get_methods:
         return list_methods()
-    if not Method:
-        Method = list_methods()[0]
+    if not method:
+        method = list_methods()[0]
 
-    if Method == IEC:
+    if method == IEC:
         return float(IEC_2010.at[CASRN, 'UFL'])
-    elif Method == NFPA:
+    elif method == NFPA:
         return float(NFPA_2008.at[CASRN, 'UFL'])
-    elif Method == SUZUKI:
+    elif method == SUZUKI:
         return Suzuki_UFL(Hc=Hc)
-    elif Method == CROWLLOUVAR:
+    elif method == CROWLLOUVAR:
         return Crowl_Louvar_UFL(atoms=atoms)
-    elif Method == NONE:
+    elif method == NONE:
         return None
     else:
         raise Exception('Failure in in function')
@@ -911,8 +911,8 @@ inerts = {"7440-37-1": "Argon", "124-38-9": "Carbon Dioxide", "7440-59-7":
           "water", "7782-50-5": "chlorine", "7782-41-4": "fluorine"}
 
 
-def LFL_mixture(ys=None, LFLs=None, CASRNs=None, AvailableMethods=False,
-                Method=None):  # pragma: no cover
+def LFL_mixture(ys=None, LFLs=None, CASRNs=None, get_methods=False,
+                method=None):  # pragma: no cover
     '''Inert gases are ignored.
 
     This API is considered experimental, and is expected to be removed in a
@@ -940,16 +940,16 @@ def LFL_mixture(ys=None, LFLs=None, CASRNs=None, AvailableMethods=False,
                 methods.append('Summed Inverse')
         methods.append('None')
         return methods
-    if AvailableMethods:
+    if get_methods:
         return list_methods()
-    if not Method:
-        Method = list_methods()[0]
+    if not method:
+        method = list_methods()[0]
     # This is the calculate, given the method section
 #    if not none_and_length_check([LFLs, ys]):
 #        raise Exception('Function inputs are incorrect format')
-    if Method == 'Summed Inverse':
+    if method == 'Summed Inverse':
         return fire_mixing(ys, LFLs)
-    elif Method == 'Summed Inverse, inerts removed':
+    elif method == 'Summed Inverse, inerts removed':
         CASRNs2 = list(CASRNs)
         LFLs2 = list(LFLs)
         ys2 = list(ys)
@@ -960,14 +960,14 @@ def LFL_mixture(ys=None, LFLs=None, CASRNs=None, AvailableMethods=False,
                 LFLs2.pop(ind)
                 ys2.pop(ind)
         return fire_mixing(normalize(ys2), LFLs2)
-    elif Method == 'None':
+    elif method == 'None':
         return None
     else:
         raise Exception('Failure in in function')
 
 
-def UFL_mixture(ys=None, UFLs=None, CASRNs=None, AvailableMethods=False,
-                Method=None):  # pragma: no cover
+def UFL_mixture(ys=None, UFLs=None, CASRNs=None, get_methods=False,
+                method=None):  # pragma: no cover
     '''Inert gases are ignored.
 
     This API is considered experimental, and is expected to be removed in a
@@ -994,16 +994,16 @@ def UFL_mixture(ys=None, UFLs=None, CASRNs=None, AvailableMethods=False,
             methods.append('Summed Inverse')
         methods.append('None')
         return methods
-    if AvailableMethods:
+    if get_methods:
         return list_methods()
-    if not Method:
-        Method = list_methods()[0]
+    if not method:
+        method = list_methods()[0]
     # This is the calculate, given the method section
 #    if not none_and_length_check([UFLs, ys]):  # check same-length inputs
 #        raise Exception('Function inputs are incorrect format')
-    if Method == 'Summed Inverse':
+    if method == 'Summed Inverse':
         return fire_mixing(ys, UFLs)
-    elif Method == 'Summed Inverse, inerts removed':
+    elif method == 'Summed Inverse, inerts removed':
         CASRNs2 = list(CASRNs)
         UFLs2 = list(UFLs)
         ys2 = list(ys)
@@ -1014,7 +1014,7 @@ def UFL_mixture(ys=None, UFLs=None, CASRNs=None, AvailableMethods=False,
                 UFLs2.pop(ind)
                 ys2.pop(ind)
         return fire_mixing(normalize(ys2), UFLs2)
-    elif Method == 'None':
+    elif method == 'None':
         return None
     else:
         raise Exception('Failure in in function')

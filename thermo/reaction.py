@@ -66,7 +66,7 @@ DEFINITION = 'Definition'
 Hf_methods = [DEFINITION, API_TDB]
 
 
-def Hf(CASRN, AvailableMethods=False, Method=None):
+def Hf(CASRN, get_methods=False, method=None):
     r'''This function handles the retrieval of a chemical's standard-phase
     heat of formation. The lookup is based on CASRNs. Selects the only
     data source available ('API TDB') if the chemical is in it.
@@ -83,15 +83,15 @@ def Hf(CASRN, AvailableMethods=False, Method=None):
     -------
     Hf : float
         Standard-state heat of formation, [J/mol]
-    methods : list, only returned if AvailableMethods == True
+    methods : list, only returned if get_methods == True
         List of methods which can be used to obtain Hf with the given inputs
 
     Other Parameters
     ----------------
-    Method : string, optional
+    method : string, optional
         A string for the method name to use, as defined by constants in
         Hf_methods
-    AvailableMethods : bool, optional
+    get_methods : bool, optional
         If True, function will determine which methods can be used to obtain
         Hf for the desired chemical, and will return methods instead of Hf
 
@@ -127,16 +127,16 @@ def Hf(CASRN, AvailableMethods=False, Method=None):
             methods.append(DEFINITION)
         methods.append(NONE)
         return methods
-    if AvailableMethods:
+    if get_methods:
         return list_methods()
-    if not Method:
-        Method = list_methods()[0]
+    if not method:
+        method = list_methods()[0]
 
-    if Method == API_TDB:
+    if method == API_TDB:
         return float(API_TDB_data.at[CASRN, 'Hf'])
-    elif Method == DEFINITION:
+    elif method == DEFINITION:
         return 0.0
-    elif Method == NONE:
+    elif method == NONE:
         return None
     else:
         raise Exception('Failure in in function')
@@ -148,7 +148,7 @@ ATCT_G = 'ATCT_G'
 Hf_l_methods = [ATCT_L]
 
 
-def Hf_l(CASRN, AvailableMethods=False, Method=None):
+def Hf_l(CASRN, get_methods=False, method=None):
     r'''This function handles the retrieval of a chemical's liquid standard
     phase heat of formation. The lookup is based on CASRNs. Selects the only
     data source available, Active Thermochemical Tables (l), if the chemical is
@@ -165,15 +165,15 @@ def Hf_l(CASRN, AvailableMethods=False, Method=None):
     -------
     Hfl : float
         Liquid standard-state heat of formation, [J/mol]
-    methods : list, only returned if AvailableMethods == True
+    methods : list, only returned if get_methods == True
         List of methods which can be used to obtain Hf(l) with the given inputs
 
     Other Parameters
     ----------------
-    Method : string, optional
+    method : string, optional
         A string for the method name to use, as defined by constants in
         Hf_l_methods
-    AvailableMethods : bool, optional
+    get_methods : bool, optional
         If True, function will determine which methods can be used to obtain
         Hf(l) for the desired chemical, and will return methods instead of Hf(l)
 
@@ -202,14 +202,14 @@ def Hf_l(CASRN, AvailableMethods=False, Method=None):
             methods.append(ATCT_L)
         methods.append(NONE)
         return methods
-    if AvailableMethods:
+    if get_methods:
         return list_methods()
-    if not Method:
-        Method = list_methods()[0]
+    if not method:
+        method = list_methods()[0]
 
-    if Method == ATCT_L:
+    if method == ATCT_L:
         _Hfl = float(ATcT_l.at[CASRN, 'Hf_298K'])
-    elif Method == NONE:
+    elif method == NONE:
         return None
     else:
         raise Exception('Failure in in function')
@@ -220,10 +220,10 @@ TRC = 'TRC'
 Hf_g_methods = [ATCT_G, TRC, CRC, YAWS]
 
 
-def Hf_g(CASRN, AvailableMethods=False, Method=None):
+def Hf_g(CASRN, get_methods=False, method=None):
     r'''This function handles the retrieval of a chemical's gas heat of
     formation. Lookup is based on CASRNs. Will automatically select a data
-    source to use if no Method is provided; returns None if the data is not
+    source to use if no method is provided; returns None if the data is not
     available.
 
     Prefered sources are 'CRC' and 'Yaws'.
@@ -238,15 +238,15 @@ def Hf_g(CASRN, AvailableMethods=False, Method=None):
     -------
     Hfg : float
         Ideal gas phase heat of formation, [J/mol]
-    methods : list, only returned if AvailableMethods == True
+    methods : list, only returned if get_methods == True
         List of methods which can be used to obtain Hf(g) with the given inputs
 
     Other Parameters
     ----------------
-    Method : string, optional
+    method : string, optional
         A string for the method name to use, as defined by constants in
         Hf_g_methods
-    AvailableMethods : bool, optional
+    get_methods : bool, optional
         If True, function will determine which methods can be used to obtain
         Hf(g) for the desired chemical, and will return methods instead of Hf(g)
 
@@ -266,11 +266,11 @@ def Hf_g(CASRN, AvailableMethods=False, Method=None):
     --------
     >>> Hf_g('67-56-1')
     -200700.0
-    >>> Hf_g('67-56-1', Method='YAWS')
+    >>> Hf_g('67-56-1', method='YAWS')
     -200900.0
-    >>> Hf_g('67-56-1', Method='CRC')
+    >>> Hf_g('67-56-1', method='CRC')
     -201000.0
-    >>> Hf_g('67-56-1', Method='TRC')
+    >>> Hf_g('67-56-1', method='TRC')
     -190100.0
 
     References
@@ -302,20 +302,20 @@ def Hf_g(CASRN, AvailableMethods=False, Method=None):
             methods.append(TRC)
         methods.append(NONE)
         return methods
-    if AvailableMethods:
+    if get_methods:
         return list_methods()
-    if not Method:
-        Method = list_methods()[0]
+    if not method:
+        method = list_methods()[0]
 
-    if Method == ATCT_G:
+    if method == ATCT_G:
         _Hfg = float(ATcT_g.at[CASRN, 'Hf_298K'])
-    elif Method == TRC:
+    elif method == TRC:
         _Hfg = float(TRC_gas_data.at[CASRN, 'Hf'])
-    elif Method == YAWS:
+    elif method == YAWS:
         _Hfg = float(Yaws_Hf_S0.at[CASRN, 'Hf(g)'])
-    elif Method == CRC:
+    elif method == CRC:
         _Hfg = float(CRC_standard_data.at[CASRN, 'Hfg'])
-    elif Method == NONE:
+    elif method == NONE:
         return None
     else:
         raise Exception('Failure in in function')
@@ -326,13 +326,13 @@ def Hf_g(CASRN, AvailableMethods=False, Method=None):
 S0_g_methods = [CRC, YAWS]
 
 
-def S0_g(CASRN, AvailableMethods=False, Method=None):
+def S0_g(CASRN, get_methods=False, method=None):
     r'''This function handles the retrieval of a chemical's absolute
     entropy at a reference temperature of 298.15 K and pressure of 1 bar,
     in the ideal gas state.
 
     Lookup is based on CASRNs. Will automatically select a data
-    source to use if no Method is provided; returns None if the data is not
+    source to use if no method is provided; returns None if the data is not
     available.
 
     Prefered sources are 'CRC', or 'Yaws'.
@@ -347,15 +347,15 @@ def S0_g(CASRN, AvailableMethods=False, Method=None):
     -------
     S0_g : float
         Ideal gas standard absolute entropy of compound, [J/mol/K]
-    methods : list, only returned if AvailableMethods == True
+    methods : list, only returned if get_methods == True
         List of methods which can be used to obtain S0(g) with the given inputs
 
     Other Parameters
     ----------------
-    Method : string, optional
+    method : string, optional
         A string for the method name to use, as defined by constants in
         S0_g_methods
-    AvailableMethods : bool, optional
+    get_methods : bool, optional
         If True, function will determine which methods can be used to obtain
         S0(g) for the desired chemical, and will return methods instead of S0(g)
 
@@ -370,7 +370,7 @@ def S0_g(CASRN, AvailableMethods=False, Method=None):
     --------
     >>> S0_g('67-56-1')
     239.9
-    >>> S0_g('67-56-1', Method='YAWS')
+    >>> S0_g('67-56-1', method='YAWS')
     239.88
 
     References
@@ -389,16 +389,16 @@ def S0_g(CASRN, AvailableMethods=False, Method=None):
             methods.append(YAWS)
         methods.append(NONE)
         return methods
-    if AvailableMethods:
+    if get_methods:
         return list_methods()
-    if not Method:
-        Method = list_methods()[0]
+    if not method:
+        method = list_methods()[0]
 
-    if Method == CRC:
+    if method == CRC:
         return float(CRC_standard_data.at[CASRN, 'Sfg'])
-    elif Method == YAWS:
+    elif method == YAWS:
         return float(Yaws_Hf_S0.at[CASRN, 'S0(g)'])
-    elif Method == NONE:
+    elif method == NONE:
         return None
     else:
         raise Exception('Failure in in function')

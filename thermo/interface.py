@@ -39,7 +39,7 @@ from chemicals.dippr import EQ106
 from fluids.constants import N_A, k
 from thermo.utils import TDependentProperty, MixtureProperty
 from chemicals import miscdata
-from chemicals.miscdata import VDI_tabular_data
+from chemicals.miscdata import lookup_VDI_tabular_data
 
 folder = os.path.join(os.path.dirname(__file__), 'Interface')
 
@@ -699,6 +699,67 @@ def Mersmann_Kind_surface_tension(T, Tm, Tb, Tc, Pc, n_associated=1):
     sigma = sigma_star*(k*Tc)**(1/3.)*(Tm/Tc)*Pc**(2/3.)*n_associated**(-1/3.)
     return sigma
 
+
+
+### Water-hydrocarbon interfacial tensions
+
+
+def Meybodi_Daryasafar_Karimi(rho_water, rho_oil, T, Tc):
+    r'''Calculates the interfacial tension between water and a hydrocabon
+    liquid according to the correlation of [1]_.
+    
+    .. math::
+        \gamma_{hw} = \left(\frac{A_1 + A_2 \Delta \rho + A_3\Delta\rho^2 
+        + A_4\Delta\rho^3} {A_5 + A_6\frac{T^{A_7}}{T_{c,h}} + A_8T^{A_9}}
+        \right)^{A_{10}}
+        
+    Parameters
+    ----------
+    rho_water : float
+        The density of the aqueous phase, [kg/m^3]
+    rho_oil : float
+        The density of the hydrocarbon phase, [kg/m^3]
+    T : float
+        Temperature of the fluid, [K]
+    Tc : float
+        Critical temperature of the hydrocarbon mixture, [K]
+
+    Returns
+    -------
+    sigma : float
+        Hydrocarbon-water surface tension [N/m]
+
+    Notes
+    -----
+    Internal units of the equation are g/mL and mN/m.
+    
+    Examples
+    --------
+    >>> Meybodi_Daryasafar_Karimi(980, 760, 580, 914)
+    0.02893598143089256
+    
+    References
+    ----------
+    .. [1] Kalantari Meybodi, Mahdi, Amin Daryasafar, and Masoud Karimi. 
+       "Determination of Hydrocarbon-Water Interfacial Tension Using a New 
+       Empirical Correlation."  Fluid Phase Equilibria 415 (May 15, 2016): 
+       42-50. doi:10.1016/j.fluid.2016.01.037.
+    '''
+    A1 = -1.3687340042E-1
+    A2 = -3.0391828884E-1
+    A3 = 5.6225871072E-1
+    A4 = -3.3074367079E-1
+    A5 = -3.0050179309E0
+    A6 = 5.8914210205E-5
+    A7 = -4.1388901263E0
+    A8 = 3.0084299030E0
+    A9 = -3.8203072876E-3
+    A10 = 3.5000000000E0
+    drho = abs(rho_water - rho_oil)*1e-3 # Correlation in units of g/mL
+    sigma = ((A1 + drho*(A2 + drho*(A3 + A4*drho)))
+             /(A5 + A6*T**A7/Tc + A8*T**A9))**A10
+    return sigma*1e-3 # mN/m to N/m
+
     
 STREFPROP = 'REFPROP'
 SUPERCRITICAL = 'SUPERCRITICAL'
@@ -925,9 +986,9 @@ class SurfaceTension(TDependentProperty):
             _, self.SOMAYAJULU_Tt, self.SOMAYAJULU_Tc, A, B, C = _Somayajulu_data_values[Somayajulu_data.index.get_loc(self.CASRN)].tolist()
             self.SOMAYAJULU_coeffs = [A, B, C]
             Tmins.append(self.SOMAYAJULU_Tt); Tmaxs.append(self.SOMAYAJULU_Tc)
-        if self.CASRN in miscdata.VDI_saturation_data:
+        if self.CASRN in miscdata.VDI_saturation_dict:
             methods.append(VDI_TABULAR)
-            Ts, props = VDI_tabular_data(self.CASRN, 'sigma')
+            Ts, props = lookup_VDI_tabular_data(self.CASRN, 'sigma')
             self.VDI_Tmin = Ts[0]
             self.VDI_Tmax = Ts[-1]
             self.tabular_data[VDI_TABULAR] = (Ts, props)
@@ -1421,62 +1482,3 @@ class SurfaceTensionMixture(MixtureProperty):
         else:
             raise Exception('Method not valid')
 
-
-### Water-hydrocarbon interfacial tensions
-
-
-def Meybodi_Daryasafar_Karimi(rho_water, rho_oil, T, Tc):
-    r'''Calculates the interfacial tension between water and a hydrocabon
-    liquid according to the correlation of [1]_.
-    
-    .. math::
-        \gamma_{hw} = \left(\frac{A_1 + A_2 \Delta \rho + A_3\Delta\rho^2 
-        + A_4\Delta\rho^3} {A_5 + A_6\frac{T^{A_7}}{T_{c,h}} + A_8T^{A_9}}
-        \right)^{A_{10}}
-        
-    Parameters
-    ----------
-    rho_water : float
-        The density of the aqueous phase, [kg/m^3]
-    rho_oil : float
-        The density of the hydrocarbon phase, [kg/m^3]
-    T : float
-        Temperature of the fluid, [K]
-    Tc : float
-        Critical temperature of the hydrocarbon mixture, [K]
-
-    Returns
-    -------
-    sigma : float
-        Hydrocarbon-water surface tension [N/m]
-
-    Notes
-    -----
-    Internal units of the equation are g/mL and mN/m.
-    
-    Examples
-    --------
-    >>> Meybodi_Daryasafar_Karimi(980, 760, 580, 914)
-    0.02893598143089256
-    
-    References
-    ----------
-    .. [1] Kalantari Meybodi, Mahdi, Amin Daryasafar, and Masoud Karimi. 
-       "Determination of Hydrocarbon-Water Interfacial Tension Using a New 
-       Empirical Correlation."  Fluid Phase Equilibria 415 (May 15, 2016): 
-       42-50. doi:10.1016/j.fluid.2016.01.037.
-    '''
-    A1 = -1.3687340042E-1
-    A2 = -3.0391828884E-1
-    A3 = 5.6225871072E-1
-    A4 = -3.3074367079E-1
-    A5 = -3.0050179309E0
-    A6 = 5.8914210205E-5
-    A7 = -4.1388901263E0
-    A8 = 3.0084299030E0
-    A9 = -3.8203072876E-3
-    A10 = 3.5000000000E0
-    drho = abs(rho_water - rho_oil)*1e-3 # Correlation in units of g/mL
-    sigma = ((A1 + drho*(A2 + drho*(A3 + A4*drho)))
-             /(A5 + A6*T**A7/Tc + A8*T**A9))**A10
-    return sigma*1e-3 # mN/m to N/m

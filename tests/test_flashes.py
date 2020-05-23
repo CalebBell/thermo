@@ -34,6 +34,8 @@ from thermo.volume import *
 from thermo.heat_capacity import *
 from thermo.phase_change import *
 from thermo import ChemicalConstantsPackage, PropertyCorrelationPackage
+from chemicals.exceptions import PhaseCountReducedError, TrivialSolutionError
+
 
 def test_minimize_gibbs_NP_transformed():
     T=298.15

@@ -99,11 +99,11 @@ def test_Carcinogen():
     expected = {NTP: UNLISTED, IARC: UNLISTED}
     assert Carcinogen('7732-18-5') == expected
 
-    assert Carcinogen('71-43-2', AvailableMethods=True) == [COMBINED, IARC, NTP]
-    assert Carcinogen('71-43-2', Method=NTP) == NTP_codes[1]
+    assert Carcinogen('71-43-2', get_methods=True) == [COMBINED, IARC, NTP]
+    assert Carcinogen('71-43-2', method=NTP) == NTP_codes[1]
 
     with pytest.raises(Exception):
-        Carcinogen('71-43-2', Method='BADMETHOD')
+        Carcinogen('71-43-2', method='BADMETHOD')
 
 
 def test_safety_predictions():
@@ -177,14 +177,14 @@ def test_DIPPR_SERAT():
 
 
 def test_Tflash():
-    T1 = Tflash('8006-61-9', Method=NFPA)
+    T1 = Tflash('8006-61-9', method=NFPA)
     T2 = Tflash('71-43-2')
-    T3 = Tflash('71-43-2', Method=IEC)
+    T3 = Tflash('71-43-2', method=IEC)
 
     Ts = [227.15, 262.15, 262.15]
     assert_allclose([T1, T2, T3], Ts)
 
-    methods = Tflash('110-54-3', AvailableMethods=True)
+    methods = Tflash('110-54-3', get_methods=True)
     assert methods[0:-1] == Tflash_methods
     
     tot1 = pd.Series([Tflash(i) for i in IEC_2010.index]).sum()
@@ -198,18 +198,18 @@ def test_Tflash():
     assert None == Tflash(CASRN='132451235-2151234-1234123')
 
     with pytest.raises(Exception):
-        Tflash(CASRN='8006-61-9', Method='BADMETHOD')
+        Tflash(CASRN='8006-61-9', method='BADMETHOD')
 
 
 def test_Tautoignition():
-    T1 = Tautoignition('8006-61-9', Method=NFPA)
+    T1 = Tautoignition('8006-61-9', method=NFPA)
     T2 = Tautoignition('71-43-2')
-    T3 = Tautoignition('71-43-2', Method=IEC)
+    T3 = Tautoignition('71-43-2', method=IEC)
 
     Ts = [553.15, 771.15, 771.15]
     assert_allclose([T1, T2, T3], Ts)
 
-    methods = Tautoignition('8006-61-9', AvailableMethods=True)
+    methods = Tautoignition('8006-61-9', get_methods=True)
     assert methods[0:-1] == Tautoignition_methods
 
     tot_default = pd.Series([Tautoignition(i) for i in set(list(IEC_2010.index) + list(NFPA_2008.index))]).sum()
@@ -218,20 +218,20 @@ def test_Tautoignition():
     assert None == Tautoignition(CASRN='132451235-2151234-1234123')
 
     with pytest.raises(Exception):
-        Tautoignition(CASRN='8006-61-9', Method='BADMETHOD')
+        Tautoignition(CASRN='8006-61-9', method='BADMETHOD')
 
 
 def test_LFL():
     LFL1 = LFL(CASRN='8006-61-9')
-    LFL2 = LFL(CASRN='71-43-2', Method=NFPA)
-    LFL3 = LFL(CASRN='71-43-2', Method=IEC)
+    LFL2 = LFL(CASRN='71-43-2', method=NFPA)
+    LFL3 = LFL(CASRN='71-43-2', method=IEC)
     LFL4 = LFL(CASRN='71-43-2')
     LFL5 = LFL(Hc=-764464.0)
     LFL6 = LFL(atoms={'H': 4, 'C': 1, 'O': 1})
     LFLs = [0.014, 0.012, 0.012, 0.012, 0.05870183749384112, 0.06756756756756757]
     assert_allclose([LFL1, LFL2, LFL3, LFL4, LFL5, LFL6], LFLs)
 
-    methods = LFL(CASRN='71-43-2', Hc=-764464, atoms={'H': 4, 'C': 1, 'O': 1}, AvailableMethods=True)
+    methods = LFL(CASRN='71-43-2', Hc=-764464, atoms={'H': 4, 'C': 1, 'O': 1}, get_methods=True)
     assert methods[0:-1] == LFL_methods
 
     tot_default = pd.Series([LFL(CASRN=i) for i in set(list(IEC_2010.index) + list(NFPA_2008.index))]).sum()
@@ -240,19 +240,19 @@ def test_LFL():
     assert None == LFL(CASRN='132451235-2151234-1234123')
 
     with pytest.raises(Exception):
-        LFL(CASRN='8006-61-9', Method='BADMETHOD')
+        LFL(CASRN='8006-61-9', method='BADMETHOD')
 
 def test_UFL():
     UFL1 = UFL(CASRN='8006-61-9')
-    UFL2 = UFL(CASRN='71-43-2', Method=NFPA)
-    UFL3 = UFL(CASRN='71-43-2', Method=IEC)
+    UFL2 = UFL(CASRN='71-43-2', method=NFPA)
+    UFL3 = UFL(CASRN='71-43-2', method=IEC)
     UFL4 = UFL(CASRN='71-43-2')
     UFL5 = UFL(Hc=-764464.0)
     UFL6 = UFL(atoms={'H': 4, 'C': 1, 'O': 1})
     UFLs = [0.076, 0.078, 0.086, 0.086, 0.1901523455253683, 0.4299754299754299]
     assert_allclose([UFL1, UFL2, UFL3, UFL4, UFL5, UFL6], UFLs)
 
-    methods = UFL(CASRN='71-43-2', Hc=-764464, atoms={'H': 4, 'C': 1, 'O': 1}, AvailableMethods=True)
+    methods = UFL(CASRN='71-43-2', Hc=-764464, atoms={'H': 4, 'C': 1, 'O': 1}, get_methods=True)
     assert methods[0:-1] == UFL_methods
 
     tot_default = pd.Series([UFL(CASRN=i) for i in set(list(IEC_2010.index) + list(NFPA_2008.index))]).sum()
@@ -261,7 +261,7 @@ def test_UFL():
     assert None == UFL(CASRN='132451235-2151234-1234123')
 
     with pytest.raises(Exception):
-        UFL(CASRN='8006-61-9', Method='BADMETHOD')
+        UFL(CASRN='8006-61-9', method='BADMETHOD')
 
 
 def test_unit_conv_TLV():

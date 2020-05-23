@@ -104,7 +104,7 @@ def load_law_data():
 legal_status_methods = [COMBINED, DSL, TSCA, EINECS, SPIN, NLP]
 
 
-def legal_status(CASRN, Method=None, AvailableMethods=False, CASi=None):
+def legal_status(CASRN, method=None, get_methods=False, CASi=None):
     r'''Looks up the legal status of a chemical according to either a specifc
     method or with all methods.
 
@@ -121,16 +121,16 @@ def legal_status(CASRN, Method=None, AvailableMethods=False, CASi=None):
     -------
     status : str or dict
         Legal status information [-]
-    methods : list, only returned if AvailableMethods == True
+    methods : list, only returned if get_methods == True
         List of methods which can be used to obtain legal status with the
         given inputs
 
     Other Parameters
     ----------------
-    Method : string, optional
+    method : string, optional
         A string for the method name to use, as defined by constants in
         legal_status_methods
-    AvailableMethods : bool, optional
+    get_methods : bool, optional
         If True, function will determine which methods can be used to obtain
         the legal status for the desired chemical, and will return methods
         instead of the status
@@ -203,16 +203,16 @@ def legal_status(CASRN, Method=None, AvailableMethods=False, CASi=None):
     if not CASi:
         CASi = CAS2int(CASRN)
     methods = [COMBINED, DSL, TSCA, EINECS, NLP, SPIN]
-    if AvailableMethods:
+    if get_methods:
         return methods
-    if not Method:
-        Method = methods[0]
-    if Method == DSL:
+    if not method:
+        method = methods[0]
+    if method == DSL:
         if CASi in DSL_data.index:
             status = CAN_DSL_flags[DSL_data.at[CASi, 'Registry']]
         else:
             status = UNLISTED
-    elif Method == TSCA:
+    elif method == TSCA:
         if CASi in TSCA_data.index:
             data = TSCA_data.loc[CASi].to_dict()
             if any(data.values()):
@@ -221,25 +221,25 @@ def legal_status(CASRN, Method=None, AvailableMethods=False, CASi=None):
                 status = LISTED
         else:
             status = UNLISTED
-    elif Method == EINECS:
+    elif method == EINECS:
         if CASi in EINECS_data.index:
             status = LISTED
         else:
             status = UNLISTED
-    elif Method == NLP:
+    elif method == NLP:
         if CASi in NLP_data.index:
             status = LISTED
         else:
             status = UNLISTED
-    elif Method == SPIN:
+    elif method == SPIN:
         if CASi in SPIN_data.index:
             status = LISTED
         else:
             status = UNLISTED
-    elif Method == COMBINED:
+    elif method == COMBINED:
         status = {}
         for method in methods[1:]:
-            status[method] = legal_status(CASRN, Method=method, CASi=CASi)
+            status[method] = legal_status(CASRN, method=method, CASi=CASi)
     else:
         raise Exception('Failure in in function')
     return status
@@ -294,7 +294,7 @@ OECD = 'OECD high production volume chemicals'
 economic_status_methods = [EPACDR, ECHA, OECD]
 
 
-def economic_status(CASRN, Method=None, AvailableMethods=False):  # pragma: no cover
+def economic_status(CASRN, method=None, get_methods=False):  # pragma: no cover
     '''Look up the economic status of a chemical.
 
     This API is considered experimental, and is expected to be removed in a
@@ -307,9 +307,9 @@ def economic_status(CASRN, Method=None, AvailableMethods=False):  # pragma: no c
 
     >>> economic_status(CASRN='13775-50-3')  # SODIUM SESQUISULPHATE
     []
-    >>> economic_status(CASRN='98-00-0', Method='OECD high production volume chemicals')
+    >>> economic_status(CASRN='98-00-0', method='OECD high production volume chemicals')
     'OECD HPV Chemicals'
-    >>> economic_status(CASRN='98-01-1', Method='European Chemicals Agency Total Tonnage Bands')
+    >>> economic_status(CASRN='98-01-1', method='European Chemicals Agency Total Tonnage Bands')
     [u'10,000 - 100,000 tonnes per annum']
     '''
     load_economic_data()
@@ -326,18 +326,18 @@ def economic_status(CASRN, Method=None, AvailableMethods=False):  # pragma: no c
             methods.append(OECD)
         methods.append(NONE)
         return methods
-    if AvailableMethods:
+    if get_methods:
         return list_methods()
-    if not Method:
-        Method = list_methods()[0]
+    if not method:
+        method = list_methods()[0]
     # This is the calculate, given the method section
-    if Method == EPACDR:
+    if method == EPACDR:
         status = 'US public: ' + str(_EPACDRDict[CASRN])
-    elif Method == ECHA:
+    elif method == ECHA:
         status = _ECHATonnageDict[CASRN]
-    elif Method == OECD:
+    elif method == OECD:
         status = 'OECD HPV Chemicals'
-    elif Method == 'Combined':
+    elif method == 'Combined':
         status = []
         if CASRN in _EPACDRDict:
             status += ['US public: ' + str(_EPACDRDict[CASRN])]
@@ -345,7 +345,7 @@ def economic_status(CASRN, Method=None, AvailableMethods=False):  # pragma: no c
             status += _ECHATonnageDict[CASRN]
         if CASi in HPV_data.index:
             status += ['OECD HPV Chemicals']
-    elif Method == NONE:
+    elif method == NONE:
         status = None
     else:
         raise Exception('Failure in in function')

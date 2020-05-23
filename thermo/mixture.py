@@ -264,7 +264,7 @@ class Mixture(object):
         Acentric factors of all chemicals in the mixture, [-]
     StielPolars : list of float
         Stiel Polar factors of all chemicals in the mixture, 
-        see :obj:`thermo.acentric.StielPolar` for the definition, [-]
+        see :obj:`chemicals.acentric.Stiel_polar_factor` for the definition, [-]
     Tts : list of float
         Triple temperatures of all chemicals in the mixture, [K]
     Pts : list of float
@@ -769,19 +769,19 @@ class Mixture(object):
     def set_constant_sources(self):
         # None of this takes much time or is important
         # Critical Point, Methods only for Tc, Pc, Vc
-        self.Tc_methods = []#Tc_mixture(Tcs=self.Tcs, zs=self.zs, CASRNs=self.CASs, AvailableMethods=True)
+        self.Tc_methods = []#Tc_mixture(Tcs=self.Tcs, zs=self.zs, CASRNs=self.CASs, get_methods=True)
         self.Tc_method = None#self.Tc_methods[0]
-        self.Pc_methods = []#Pc_mixture(Pcs=self.Pcs, zs=self.zs, CASRNs=self.CASs, AvailableMethods=True)
+        self.Pc_methods = []#Pc_mixture(Pcs=self.Pcs, zs=self.zs, CASRNs=self.CASs, get_methods=True)
         self.Pc_method = None#self.Pc_methods[0]
-        self.Vc_methods = []#Vc_mixture(Vcs=self.Vcs, zs=self.zs, CASRNs=self.CASs, AvailableMethods=True)
+        self.Vc_methods = []#Vc_mixture(Vcs=self.Vcs, zs=self.zs, CASRNs=self.CASs, get_methods=True)
         self.Vc_method = None#self.Vc_methods[0]
-        self.omega_methods = []#omega_mixture(omegas=self.omegas, zs=self.zs, CASRNs=self.CASs, AvailableMethods=True)
+        self.omega_methods = []#omega_mixture(omegas=self.omegas, zs=self.zs, CASRNs=self.CASs, get_methods=True)
         self.omega_method = None#self.omega_methods[0]
 
         # No Flammability limits
-        self.LFL_methods = LFL_mixture(ys=self.zs, LFLs=self.LFLs, AvailableMethods=True)
+        self.LFL_methods = LFL_mixture(ys=self.zs, LFLs=self.LFLs, get_methods=True)
         self.LFL_method = self.LFL_methods[0]
-        self.UFL_methods = UFL_mixture(ys=self.zs, UFLs=self.UFLs, AvailableMethods=True)
+        self.UFL_methods = UFL_mixture(ys=self.zs, UFLs=self.UFLs, get_methods=True)
         self.UFL_method = self.UFL_methods[0]
         # No triple point
         # Mixed Hf linear
@@ -813,8 +813,8 @@ class Mixture(object):
         self.rhoc = Vm_to_rho(self.Vc, self.MW) if self.Vc else None
         self.rhocm = 1./self.Vc if self.Vc else None
 
-        self.LFL = LFL_mixture(ys=self.zs, LFLs=self.LFLs, Method=self.LFL_method)
-        self.UFL = UFL_mixture(ys=self.zs, UFLs=self.UFLs, Method=self.UFL_method)
+        self.LFL = LFL_mixture(ys=self.zs, LFLs=self.LFLs, method=self.LFL_method)
+        self.UFL = UFL_mixture(ys=self.zs, UFLs=self.UFLs, method=self.UFL_method)
 
     def set_eos(self, T, P, eos=PRMIX):
         try:

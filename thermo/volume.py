@@ -47,7 +47,7 @@ from chemicals.dippr import EQ105
 
 from chemicals.virial import BVirial_Pitzer_Curl, BVirial_Abbott, BVirial_Tsonopoulos, BVirial_Tsonopoulos_extended
 from chemicals import miscdata
-from chemicals.miscdata import VDI_tabular_data
+from chemicals.miscdata import lookup_VDI_tabular_data
 from thermo.electrochem import _Laliberte_Density_ParametersDict, Laliberte_density
 from thermo.coolprop import has_CoolProp, PropsSI, PhaseSI, coolprop_fluids, coolprop_dict, CoolProp_T_dependent_property
 from thermo.utils import TDependentProperty, TPDependentProperty, MixtureProperty
@@ -1005,9 +1005,9 @@ class VolumeLiquid(TPDependentProperty):
             self.VDI_PPDS_Tc = Tc
             self.VDI_PPDS_rhoc = rhoc
             Tmaxs.append(self.VDI_PPDS_Tc)
-        if self.CASRN in miscdata.VDI_saturation_data:
+        if self.CASRN in miscdata.VDI_saturation_dict:
             methods.append(VDI_TABULAR)
-            Ts, props = VDI_tabular_data(self.CASRN, 'Volume (l)')
+            Ts, props = lookup_VDI_tabular_data(self.CASRN, 'Volume (l)')
             self.VDI_Tmin = Ts[0]
             self.VDI_Tmax = Ts[-1]
             self.tabular_data[VDI_TABULAR] = (Ts, props)

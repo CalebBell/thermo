@@ -122,9 +122,9 @@ def test_legal_status():
     assert hit == hit_desc
 
     for Method, hit in zip([DSL, TSCA, EINECS, SPIN, NLP], [LISTED, LISTED, LISTED, LISTED, UNLISTED]):
-        assert hit == legal_status(CASRN='64-17-5', Method=Method)
+        assert hit == legal_status(CASRN='64-17-5', method=Method)
 
-    assert legal_status(CASRN='1648727-81-4', AvailableMethods=True) == [COMBINED, DSL, TSCA, EINECS, NLP, SPIN]
+    assert legal_status(CASRN='1648727-81-4', get_methods=True) == [COMBINED, DSL, TSCA, EINECS, NLP, SPIN]
 
     with pytest.raises(Exception):
         legal_status()
@@ -133,4 +133,4 @@ def test_legal_status():
         legal_status(CASRN=1648727814)
 
     with pytest.raises(Exception):
-        legal_status(CASRN='1648727-81-4', Method='BADMETHOD')
+        legal_status(CASRN='1648727-81-4', method='BADMETHOD')

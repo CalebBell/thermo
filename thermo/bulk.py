@@ -280,7 +280,7 @@ class Bulk(Phase):
             else:
                 rhol = result.liquid_bulk.rho_mass()
             
-            mu = gas_liquid_viscosity(x, mul, mug, rhol, rhog, Method=method)
+            mu = gas_liquid_viscosity(x, mul, mug, rhol, rhog, method=method)
         else:
             mus = [mug, mul]
             if method in mole_methods:

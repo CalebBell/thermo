@@ -32,8 +32,8 @@ from thermo.phase_change import Tb, Tm, Hfus, EnthalpyVaporization, EnthalpySubl
 from thermo.rachford_rice import identify_phase, identify_phase_mixture, Pbubble_mixture, Pdew_mixture
 
 from chemicals.critical import Tc, Pc, Vc
-from thermo.acentric import omega, omega_mixture, StielPolar
-from thermo.triple import Tt, Pt
+from chemicals.acentric import omega, Stiel_polar_factor
+from chemicals.triple import Tt, Pt
 from thermo.thermal_conductivity import ThermalConductivityLiquid, ThermalConductivityGas, ThermalConductivityLiquidMixture, ThermalConductivityGasMixture
 from thermo.volume import VolumeGas, VolumeLiquid, VolumeSolid, VolumeLiquidMixture, VolumeGasMixture, VolumeSolidMixture
 from thermo.permittivity import *
@@ -331,7 +331,7 @@ class Chemical(object): # pragma: no cover
     omega : float
         Acentric factor [-]
     StielPolar : float
-        Stiel Polar factor, see :obj:`thermo.acentric.StielPolar` for
+        Stiel Polar factor, see :obj:`chemicals.acentric.Stiel_polar_factor` for
         the definition [-]
     Tt : float
         Triple temperature, [K]
@@ -762,109 +762,106 @@ class Chemical(object): # pragma: no cover
             return 'py3Dmol, RDKit, and IPython are required for this feature.'
 
     def set_constant_sources(self):
-        self.Tm_sources = Tm(CASRN=self.CAS, AvailableMethods=True)
-        self.Tm_source = self.Tm_sources[0]
-        self.Tb_sources = Tb(CASRN=self.CAS, AvailableMethods=True)
-        self.Tb_source = self.Tb_sources[0]
+        self.Tm_sources = Tm(CASRN=self.CAS, get_methods=True)
+        self.Tm_source = self.Tm_sources[0] if self.Tm_sources else None
+        self.Tb_sources = Tb(CASRN=self.CAS, get_methods=True)
+        self.Tb_source = self.Tb_sources[0] if self.Tb_sources else None
 
         # Critical Point
-        self.Tc_methods = Tc(self.CAS, AvailableMethods=True)
-        self.Tc_method = self.Tc_methods[0]
-        self.Pc_methods = Pc(self.CAS, AvailableMethods=True)
-        self.Pc_method = self.Pc_methods[0]
-        self.Vc_methods = Vc(self.CAS, AvailableMethods=True)
-        self.Vc_method = self.Vc_methods[0]
-        self.omega_methods = omega(CASRN=self.CAS, AvailableMethods=True)
-        self.omega_method = self.omega_methods[0]
+        self.Tc_methods = Tc(self.CAS, get_methods=True)
+        self.Tc_method = self.Tc_methods[0] if self.Tc_methods else None
+        self.Pc_methods = Pc(self.CAS, get_methods=True)
+        self.Pc_method = self.Pc_methods[0] if self.Pc_methods else None
+        self.Vc_methods = Vc(self.CAS, get_methods=True)
+        self.Vc_method = self.Vc_methods[0] if self.Vc_methods else None
+        self.omega_methods = omega(CASRN=self.CAS, get_methods=True)
+        self.omega_method = self.omega_methods[0] if self.omega_methods else None
 
         # Triple point
-        self.Tt_sources = Tt(self.CAS, AvailableMethods=True)
-        self.Tt_source = self.Tt_sources[0]
-        self.Pt_sources = Pt(self.CAS, AvailableMethods=True)
-        self.Pt_source = self.Pt_sources[0]
+        self.Tt_sources = Tt(self.CAS, get_methods=True)
+        self.Tt_source = self.Tt_sources[0] if self.Tt_sources else None
+        self.Pt_sources = Pt(self.CAS, get_methods=True)
+        self.Pt_source = self.Pt_sources[0] if self.Pt_sources else None
 
         # Enthalpy
-        self.Hfus_methods = Hfus(AvailableMethods=True, CASRN=self.CAS)
-        self.Hfus_method = self.Hfus_methods[0]
+        self.Hfus_methods = Hfus(get_methods=True, CASRN=self.CAS)
+        self.Hfus_method = self.Hfus_methods[0] if self.Hfus_methods else None
 
         # Fire Safety Limits
-        self.Tflash_sources = Tflash(self.CAS, AvailableMethods=True)
-        self.Tflash_source = self.Tflash_sources[0]
-        self.Tautoignition_sources = Tautoignition(self.CAS, AvailableMethods=True)
-        self.Tautoignition_source = self.Tautoignition_sources[0]
+        self.Tflash_sources = Tflash(self.CAS, get_methods=True)
+        self.Tflash_source = self.Tflash_sources[0] if self.Tflash_sources else None
+        self.Tautoignition_sources = Tautoignition(self.CAS, get_methods=True)
+        self.Tautoignition_source = self.Tautoignition_sources[0] if self.Tautoignition_sources else None
 
         # Chemical Exposure Limits
-        self.TWA_sources = TWA(self.CAS, AvailableMethods=True)
-        self.TWA_source = self.TWA_sources[0]
-        self.STEL_sources = STEL(self.CAS, AvailableMethods=True)
-        self.STEL_source = self.STEL_sources[0]
-        self.Ceiling_sources = Ceiling(self.CAS, AvailableMethods=True)
-        self.Ceiling_source = self.Ceiling_sources[0]
-        self.Skin_sources = Skin(self.CAS, AvailableMethods=True)
-        self.Skin_source = self.Skin_sources[0]
-        self.Carcinogen_sources = Carcinogen(self.CAS, AvailableMethods=True)
-        self.Carcinogen_source = self.Carcinogen_sources[0]
+        self.TWA_sources = TWA(self.CAS, get_methods=True)
+        self.TWA_source = self.TWA_sources[0] if self.TWA_sources else None
+        self.STEL_sources = STEL(self.CAS, get_methods=True)
+        self.STEL_source = self.STEL_sources[0] if self.STEL_sources else None
+        self.Ceiling_sources = Ceiling(self.CAS, get_methods=True)
+        self.Ceiling_source = self.Ceiling_sources[0] if self.Ceiling_sources else None
+        self.Skin_sources = Skin(self.CAS, get_methods=True)
+        self.Skin_source = self.Skin_sources[0] if self.Skin_sources else None
+        self.Carcinogen_sources = Carcinogen(self.CAS, get_methods=True)
+        self.Carcinogen_source = self.Carcinogen_sources[0] if self.Carcinogen_sources else None
 
         # Chemistry - currently molar
-        self.Hf_sources = Hf(CASRN=self.CAS, AvailableMethods=True)
-        self.Hf_source = self.Hf_sources[0]
+        self.Hf_sources = Hf(CASRN=self.CAS, get_methods=True)
+        self.Hf_source = self.Hf_sources[0] if self.Hf_sources else None
         
-        self.Hfg_sources = Hf_g(CASRN=self.CAS, AvailableMethods=True)
-        self.Hfg_source = self.Hfg_sources[0]
+        self.Hfg_sources = Hf_g(CASRN=self.CAS, get_methods=True)
+        self.Hfg_source = self.Hfg_sources[0] if self.Hfg_sources else None
         
-        self.S0g_sources = S0_g(CASRN=self.CAS, AvailableMethods=True)
-        self.S0g_source = self.S0g_sources[0]
+        self.S0g_sources = S0_g(CASRN=self.CAS, get_methods=True)
+        self.S0g_source = self.S0g_sources[0] if self.S0g_sources else None
         
 
         # Misc
-        self.dipole_sources = dipole(CASRN=self.CAS, AvailableMethods=True)
-        self.dipole_source = self.dipole_sources[0]
+        self.dipole_sources = dipole(CASRN=self.CAS, get_methods=True)
+        self.dipole_source = self.dipole_sources[0] if self.dipole_sources else None
 
         # Environmental
-        self.GWP_sources = GWP(CASRN=self.CAS, AvailableMethods=True)
-        self.GWP_source = self.GWP_sources[0]
-        self.ODP_sources = ODP(CASRN=self.CAS, AvailableMethods=True)
-        self.ODP_source = self.ODP_sources[0]
-        self.logP_sources = logP(CASRN=self.CAS, AvailableMethods=True)
-        self.logP_source = self.logP_sources[0]
+        self.GWP_sources = GWP(CASRN=self.CAS, get_methods=True)
+        self.GWP_source = self.GWP_sources[0] if self.GWP_sources else None
+        self.ODP_sources = ODP(CASRN=self.CAS, get_methods=True)
+        self.ODP_source = self.ODP_sources[0] if self.ODP_sources else None
+        self.logP_sources = logP(CASRN=self.CAS, get_methods=True)
+        self.logP_source = self.logP_sources[0] if self.logP_sources else None
 
         # Analytical
-        self.RI_sources = refractive_index(CASRN=self.CAS, AvailableMethods=True)
-        self.RI_source = self.RI_sources[0]
+        self.RI_sources = refractive_index(CASRN=self.CAS, get_methods=True)
+        self.RI_source = self.RI_sources[0] if self.RI_sources else None
 
-        self.conductivity_sources = conductivity(CASRN=self.CAS, AvailableMethods=True)
-        self.conductivity_source = self.conductivity_sources[0]
+        self.conductivity_sources = conductivity(CASRN=self.CAS, get_methods=True)
+        self.conductivity_source = self.conductivity_sources[0] if self.conductivity_sources else None
         
 
 
     def set_constants(self):
-        self.Tm = Tm(self.CAS, Method=self.Tm_source)
-        self.Tb = Tb(self.CAS, Method=self.Tb_source)
+        self.Tm = Tm(self.CAS, method=self.Tm_source)
+        self.Tb = Tb(self.CAS, method=self.Tb_source)
 
         # Critical Point
-        self.Tc = Tc(self.CAS, Method=self.Tc_method)
-        self.Pc = Pc(self.CAS, Method=self.Pc_method)
-        self.Vc = Vc(self.CAS, Method=self.Vc_method)
-        self.omega = omega(self.CAS, Method=self.omega_method)
+        self.Tc = Tc(self.CAS, method=self.Tc_method)
+        self.Pc = Pc(self.CAS, method=self.Pc_method)
+        self.Vc = Vc(self.CAS, method=self.Vc_method)
+        self.omega = omega(self.CAS, method=self.omega_method)
 
-        self.StielPolar_methods = StielPolar(Tc=self.Tc, Pc=self.Pc, omega=self.omega, CASRN=self.CAS, AvailableMethods=True)
-        self.StielPolar_method = self.StielPolar_methods[0]
-        self.StielPolar = StielPolar(Tc=self.Tc, Pc=self.Pc, omega=self.omega, CASRN=self.CAS, Method=self.StielPolar_method)
 
         self.Zc = Z(self.Tc, self.Pc, self.Vc) if all((self.Tc, self.Pc, self.Vc)) else None
         self.rhoc = Vm_to_rho(self.Vc, self.MW) if self.Vc else None
         self.rhocm = 1./self.Vc if self.Vc else None
 
         # Triple point
-        self.Pt = Pt(self.CAS, Method=self.Pt_source)
-        self.Tt = Tt(self.CAS, Method=self.Tt_source)
+        self.Pt = Pt(self.CAS, method=self.Pt_source)
+        self.Tt = Tt(self.CAS, method=self.Tt_source)
 
         # Enthalpy
-        self.Hfusm = Hfus(Method=self.Hfus_method, CASRN=self.CAS)
+        self.Hfusm = Hfus(method=self.Hfus_method, CASRN=self.CAS)
         self.Hfus = property_molar_to_mass(self.Hfusm, self.MW) if self.Hfusm is not None else None
 
         # Chemistry
-        self.Hfm = Hf(CASRN=self.CAS, Method=self.Hf_source)
+        self.Hfm = Hf(CASRN=self.CAS, method=self.Hf_source)
         self.Hf = property_molar_to_mass(self.Hfm, self.MW) if (self.Hfm is not None) else None
         
         self.Hcm = Hcombustion(atoms=self.atoms, Hf=self.Hfm, CASRN=self.CAS, higher=True)
@@ -874,41 +871,41 @@ class Chemical(object): # pragma: no cover
         self.Hc_lower = property_molar_to_mass(self.Hcm_lower, self.MW) if (self.Hcm_lower is not None) else None
 
         # Fire Safety Limits
-        self.Tflash = Tflash(self.CAS, Method=self.Tflash_source)
-        self.Tautoignition = Tautoignition(self.CAS, Method=self.Tautoignition_source)
-        self.LFL_sources = LFL(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS, AvailableMethods=True)
+        self.Tflash = Tflash(self.CAS, method=self.Tflash_source)
+        self.Tautoignition = Tautoignition(self.CAS, method=self.Tautoignition_source)
+        self.LFL_sources = LFL(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS, get_methods=True)
         self.LFL_source = self.LFL_sources[0]
-        self.UFL_sources = UFL(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS, AvailableMethods=True)
+        self.UFL_sources = UFL(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS, get_methods=True)
         self.UFL_source = self.UFL_sources[0]
-        self.LFL = LFL(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS, Method=self.LFL_source)
-        self.UFL = UFL(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS, Method=self.UFL_source)
+        self.LFL = LFL(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS, method=self.LFL_source)
+        self.UFL = UFL(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS, method=self.UFL_source)
 
         # Chemical Exposure Limits
-        self.TWA = TWA(self.CAS, Method=self.TWA_source)
-        self.STEL = STEL(self.CAS, Method=self.STEL_source)
-        self.Ceiling = Ceiling(self.CAS, Method=self.Ceiling_source)
-        self.Skin = Skin(self.CAS, Method=self.Skin_source)
-        self.Carcinogen = Carcinogen(self.CAS, Method=self.Carcinogen_source)
+        self.TWA = TWA(self.CAS, method=self.TWA_source)
+        self.STEL = STEL(self.CAS, method=self.STEL_source)
+        self.Ceiling = Ceiling(self.CAS, method=self.Ceiling_source)
+        self.Skin = Skin(self.CAS, method=self.Skin_source)
+        self.Carcinogen = Carcinogen(self.CAS, method=self.Carcinogen_source)
 
         # Misc
-        self.dipole = dipole(self.CAS, Method=self.dipole_source) # Units of Debye
-        self.Stockmayer_sources = Stockmayer(Tc=self.Tc, Zc=self.Zc, omega=self.omega, AvailableMethods=True, CASRN=self.CAS)
-        self.Stockmayer_source = self.Stockmayer_sources[0]
-        self.Stockmayer = Stockmayer(Tm=self.Tm, Tb=self.Tb, Tc=self.Tc, Zc=self.Zc, omega=self.omega, Method=self.Stockmayer_source, CASRN=self.CAS)
+        self.dipole = dipole(self.CAS, method=self.dipole_source) # Units of Debye
+        self.Stockmayer_sources = Stockmayer(Tc=self.Tc, Zc=self.Zc, omega=self.omega, get_methods=True, CASRN=self.CAS)
+        self.Stockmayer_source = self.Stockmayer_sources[0] if self.Stockmayer_sources else None
+        self.Stockmayer = Stockmayer(Tm=self.Tm, Tb=self.Tb, Tc=self.Tc, Zc=self.Zc, omega=self.omega, method=self.Stockmayer_source, CASRN=self.CAS)
 
         # Environmental
-        self.GWP = GWP(CASRN=self.CAS, Method=self.GWP_source)
-        self.ODP = ODP(CASRN=self.CAS, Method=self.ODP_source)
-        self.logP = logP(CASRN=self.CAS, Method=self.logP_source)
+        self.GWP = GWP(CASRN=self.CAS, method=self.GWP_source)
+        self.ODP = ODP(CASRN=self.CAS, method=self.ODP_source)
+        self.logP = logP(CASRN=self.CAS, method=self.logP_source)
 
         # Analytical
-        self.RI, self.RIT = refractive_index(CASRN=self.CAS, Method=self.RI_source)
-        self.conductivity, self.conductivityT = conductivity(CASRN=self.CAS, Method=self.conductivity_source)
+        self.RI, self.RIT = refractive_index(CASRN=self.CAS, method=self.RI_source)
+        self.conductivity, self.conductivityT = conductivity(CASRN=self.CAS, method=self.conductivity_source)
 
-        self.Hfgm = Hf_g(CASRN=self.CAS, Method=self.Hfg_source)
+        self.Hfgm = Hf_g(CASRN=self.CAS, method=self.Hfg_source)
         self.Hfg = property_molar_to_mass(self.Hfgm, self.MW) if (self.Hfgm is not None) else None
 
-        self.S0gm = S0_g(CASRN=self.CAS, Method=self.S0g_source)
+        self.S0gm = S0_g(CASRN=self.CAS, method=self.S0g_source)
         self.S0g = property_molar_to_mass(self.S0gm, self.MW) if (self.S0gm is not None) else None
         
         # Calculated later
@@ -998,6 +995,11 @@ class Chemical(object): # pragma: no cover
         if self.Pt is None and self.Tt is not None:
             self.Pt = self.VaporPressure(self.Tt)
             self.Pt_source = 'VaporPressure'
+        
+        try:
+            self.StielPolar = Stiel_polar_factor(Psat=self.VaporPressure(T=self.Tc*0.6), Pc=self.Pc, omega=self.omega)
+        except:
+            self.StielPolar = None
 
 
         self.VolumeLiquid = VolumeLiquid(MW=self.MW, Tb=self.Tb, Tc=self.Tc,
@@ -1043,7 +1045,7 @@ class Chemical(object): # pragma: no cover
         self.Svap_Tbm = self.Hvap_Tb/self.Tb if (self.Tb is not None and self.Hvap_Tb is not None) else None
         
         self.Hvapm_298 = self.EnthalpyVaporization.T_dependent_property(298.15)
-        self.Hvap_298 = property_molar_to_mass(self.Hvapm_298, self.MW)
+        self.Hvap_298 = property_molar_to_mass(self.Hvapm_298, self.MW) if self.Hvapm_298 else None
         
         self.EnthalpySublimation = EnthalpySublimation(CASRN=self.CAS, Tm=self.Tm, Tt=self.Tt, 
                                                        Cpg=self.HeatCapacityGas, Cps=self.HeatCapacitySolid,
@@ -1080,13 +1082,13 @@ class Chemical(object): # pragma: no cover
 
         self.Permittivity = Permittivity(CASRN=self.CAS)
 
-        self.solubility_parameter_methods = solubility_parameter(Hvapm=self.Hvap_Tbm, Vml=self.Vml_STP, AvailableMethods=True, CASRN=self.CAS)
-        self.solubility_parameter_method = self.solubility_parameter_methods[0]
+        self.solubility_parameter_methods = solubility_parameter(Hvapm=self.Hvap_Tbm, Vml=self.Vml_STP, get_methods=True, CASRN=self.CAS)
+        self.solubility_parameter_method = self.solubility_parameter_methods[0] if self.solubility_parameter_methods else None
 
         # set molecular_diameter; depends on Vml_Tb, Vml_Tm
-        self.molecular_diameter_sources = molecular_diameter(Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, Vm=self.Vml_Tm, Vb=self.Vml_Tb, AvailableMethods=True, CASRN=self.CAS)
-        self.molecular_diameter_source = self.molecular_diameter_sources[0]
-        self.molecular_diameter = molecular_diameter(Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, Vm=self.Vml_Tm, Vb=self.Vml_Tb, Method=self.molecular_diameter_source, CASRN=self.CAS)
+        self.molecular_diameter_sources = molecular_diameter(Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, Vm=self.Vml_Tm, Vb=self.Vml_Tb, get_methods=True, CASRN=self.CAS)
+        self.molecular_diameter_source = self.molecular_diameter_sources[0] if self.molecular_diameter_sources else None
+        self.molecular_diameter = molecular_diameter(Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, Vm=self.Vml_Tm, Vb=self.Vml_Tb, method=self.molecular_diameter_source, CASRN=self.CAS)
 
         # Adjust Gf, Hf if needed
         try:            
@@ -1577,7 +1579,7 @@ class Chemical(object): # pragma: no cover
         if self.__legal_status:
             return self.__legal_status
         else:
-            self.__legal_status = legal_status(self.CAS, Method='COMBINED')
+            self.__legal_status = legal_status(self.CAS, method='COMBINED')
             return self.__legal_status
 
     @property
@@ -1595,7 +1597,7 @@ class Chemical(object): # pragma: no cover
         if self.__economic_status:
             return self.__economic_status
         else:
-            self.__economic_status = economic_status(self.CAS, Method='Combined')
+            self.__economic_status = economic_status(self.CAS, method='Combined')
             return self.__economic_status
 
 
@@ -2683,7 +2685,7 @@ class Chemical(object): # pragma: no cover
         24766.329043856073
         '''
         return solubility_parameter(T=self.T, Hvapm=self.Hvapm, Vml=self.Vml,
-                                    Method=self.solubility_parameter_method,
+                                    method=self.solubility_parameter_method,
                                     CASRN=self.CAS)
 
     @property

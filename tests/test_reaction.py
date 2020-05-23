@@ -55,10 +55,10 @@ def test_ATcT_g():
 
 
 def test_Hf():
-    Hfs = [Hf('7732-18-5'), Hf('7732-18-5', Method='API_TDB')]
+    Hfs = [Hf('7732-18-5'), Hf('7732-18-5', method='API_TDB')]
     assert_allclose(Hfs, [-241820.0]*2)
 
-    assert Hf('7732-18-5', AvailableMethods=True) == ['API_TDB', 'NONE']
+    assert Hf('7732-18-5', get_methods=True) == ['API_TDB', 'NONE']
 
     assert None == Hf('98-00-0')
 
@@ -66,60 +66,60 @@ def test_Hf():
     assert_allclose(tot, 101711260.0)
 
     with pytest.raises(Exception):
-        Hf('98-00-0', Method='BADMETHOD')
+        Hf('98-00-0', method='BADMETHOD')
 
 
 def test_Hf_l():
-    Hfs = [Hf_l('67-56-1'), Hf_l('67-56-1', Method='ATCT_L')]
+    Hfs = [Hf_l('67-56-1'), Hf_l('67-56-1', method='ATCT_L')]
     assert_allclose(Hfs, [-238400.0]*2)
 
-    assert Hf_l('67-56-1', AvailableMethods=True) == ['ATCT_L', 'NONE']
+    assert Hf_l('67-56-1', get_methods=True) == ['ATCT_L', 'NONE']
     assert None == Hf_l('98-00-0')
 
     tot = sum([abs(Hf_l(i)) for i in ATcT_l.index])
     assert_allclose(tot, 6819443.0)
 
     with pytest.raises(Exception):
-        Hf_l('98-00-0', Method='BADMETHOD')
+        Hf_l('98-00-0', method='BADMETHOD')
 
 
 def test_Hf_g():
-    Hfs = [Hf_g('67-56-1', Method=i) for i in Hf_g_methods]
+    Hfs = [Hf_g('67-56-1', method=i) for i in Hf_g_methods]
     assert_allclose(Hfs, [-200700., -190100., -201000., -200900.])
 
-    assert Hf_g('67-56-1', AvailableMethods=True) == ['ATCT_G', 'YAWS', 'CRC', 'TRC', 'NONE']
+    assert Hf_g('67-56-1', get_methods=True) == ['ATCT_G', 'YAWS', 'CRC', 'TRC', 'NONE']
     assert_allclose(-218900.0, Hf_g('98-00-0'))
 
     with pytest.raises(Exception):
-        Hf_g('98-00-0', Method='BADMETHOD')
+        Hf_g('98-00-0', method='BADMETHOD')
 
-    tot1 = sum([abs(Hf_g(i, Method='TRC')) for i in TRC_gas_data.index[pd.notnull(TRC_gas_data['Hf'])]])
+    tot1 = sum([abs(Hf_g(i, method='TRC')) for i in TRC_gas_data.index[pd.notnull(TRC_gas_data['Hf'])]])
     assert_allclose(tot1, 495689880.0)
 
-    tot2 = sum([abs(Hf_g(i, Method='ATCT_G')) for i in ATcT_g.index])
+    tot2 = sum([abs(Hf_g(i, method='ATCT_G')) for i in ATcT_g.index])
     assert_allclose(tot2, 300592764.0)
     
-    tot3 = sum([abs(Hf_g(i, Method='YAWS')) for i in Yaws_Hf_S0.index[pd.notnull(Yaws_Hf_S0['Hf(g)'])]])
+    tot3 = sum([abs(Hf_g(i, method='YAWS')) for i in Yaws_Hf_S0.index[pd.notnull(Yaws_Hf_S0['Hf(g)'])]])
     assert_allclose(tot3, 1545148533.0)
     
-    tot4 = sum([abs(Hf_g(i, Method='CRC')) for i in CRC_standard_data.index[pd.notnull(CRC_standard_data['Hfg'])]])
+    tot4 = sum([abs(Hf_g(i, method='CRC')) for i in CRC_standard_data.index[pd.notnull(CRC_standard_data['Hfg'])]])
     assert_allclose(tot4, 392946600.0)
 
 def test_S0_g():
-    S0s = [S0_g('7732-18-5', Method=i) for i in S0_g_methods]
+    S0s = [S0_g('7732-18-5', method=i) for i in S0_g_methods]
     assert_allclose(S0s, [188.8, 188.84])
 
-    assert S0_g('67-56-1', AvailableMethods=True) == ['CRC', 'YAWS', 'NONE']
+    assert S0_g('67-56-1', get_methods=True) == ['CRC', 'YAWS', 'NONE']
     
     assert_allclose(239.9, S0_g('67-56-1'))
     
     with pytest.raises(Exception):
-        S0_g('98-00-0', Method='BADMETHOD')
+        S0_g('98-00-0', method='BADMETHOD')
 
-    tot3 = sum([abs(S0_g(i, Method='YAWS')) for i in Yaws_Hf_S0.index[pd.notnull(Yaws_Hf_S0['S0(g)'])]])
+    tot3 = sum([abs(S0_g(i, method='YAWS')) for i in Yaws_Hf_S0.index[pd.notnull(Yaws_Hf_S0['S0(g)'])]])
     assert_allclose(tot3, 2691892.382999995)
     
-    tot4 = sum([abs(S0_g(i, Method='CRC')) for i in CRC_standard_data.index[pd.notnull(CRC_standard_data['Sfg'])]])
+    tot4 = sum([abs(S0_g(i, method='CRC')) for i in CRC_standard_data.index[pd.notnull(CRC_standard_data['Sfg'])]])
     assert_allclose(tot4, 141558.30000000008)
 
 

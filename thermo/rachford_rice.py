@@ -42,7 +42,8 @@ from fluids.constants import R
 from fluids.numerics import IS_PYPY, one_epsilon_larger, one_epsilon_smaller, NotBoundedError
 from fluids.numerics import newton_system, roots_cubic, roots_quartic, secant, horner, py_brenth as brenth, py_newton as newton, oscillation_checker, roots_cubic_a1, linspace, horner_and_der
 from chemicals.utils import exp, log
-from chemicals.utils import normalize, none_and_length_check, dxs_to_dns, dxs_to_dn_partials, d2xs_to_dxdn_partials, dns_to_dn_partials, PhaseCountReducedError
+from chemicals.utils import normalize, none_and_length_check, dxs_to_dns, dxs_to_dn_partials, d2xs_to_dxdn_partials, dns_to_dn_partials
+from chemicals.exceptions import PhaseCountReducedError
 import numpy as np
 
 R_inv = 1.0/R
@@ -2427,13 +2428,13 @@ def flash_inner_loop_list_methods(l):
     return methods
 
 
-def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
+def flash_inner_loop(zs, Ks, get_methods=False, method=None,
                      limit=True, guess=None, check=False):
     r'''This function handles the solution of the inner loop of a flash
     calculation, solving for liquid and gas mole fractions and vapor fraction
     based on specified overall mole fractions and K values. As K values are
     weak functions of composition, this should be called repeatedly by an outer
-    loop. Will automatically select an algorithm to use if no Method is
+    loop. Will automatically select an algorithm to use if no method is
     provided. Should always provide a solution.
 
     The automatic algorithm selection will try an analytical solution, and use
@@ -2459,20 +2460,20 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
         Mole fractions of each species in the liquid phase, [-]
     ys : list[float]
         Mole fractions of each species in the vapor phase, [-]
-    methods : list, only returned if AvailableMethods == True
+    methods : list, only returned if get_methods == True
         List of methods which can be used to obtain a solution with the given
         inputs
 
     Other Parameters
     ----------------
-    Method : string, optional
+    method : string, optional
         The method name to use. Accepted methods are 'Analytical',
         'Rachford-Rice (Secant)', 'Rachford-Rice (Newton-Raphson)', 
         'Rachford-Rice (Halley)', 'Rachford-Rice (NumPy)', 
         'Leibovici and Nichita 2', 'Rachford-Rice (polynomial)', and 
         'Li-Johns-Ahmadi'. All valid values are also held
         in the list `flash_inner_loop_methods`.
-    AvailableMethods : bool, optional
+    get_methods : bool, optional
         If True, function will determine which methods can be used to obtain
         a solution for the desired chemical, and will return methods instead of
         `V_over_F`, `xs`, and `ys`.
@@ -2497,12 +2498,12 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
     >>> flash_inner_loop(zs=[0.5, 0.3, 0.2], Ks=[1.685, 0.742, 0.532])
     (0.6907302627738537, [0.3394086969663437, 0.36505605903717053, 0.29553524399648573], [0.5719036543882892, 0.2708715958055805, 0.1572247498061304])
     '''
-    if AvailableMethods:
+    if get_methods:
         l = len(zs)
         return flash_inner_loop_list_methods(l)
-    if Method is None:
+    if method is None:
         l = len(zs)
-        Method = FLASH_INNER_ANALYTICAL if l < 3 else (FLASH_INNER_NUMPY if (not IS_PYPY and l >= 10) else FLASH_INNER_LN2)    
+        method = FLASH_INNER_ANALYTICAL if l < 3 else (FLASH_INNER_NUMPY if (not IS_PYPY and l >= 10) else FLASH_INNER_LN2)    
     if check:
         K_low, K_high = False, False
         for zi, Ki in zip(zs, Ks):
@@ -2527,18 +2528,18 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
                     else:
                         zs2.append(zs[i])
                         Ks2.append(Ks[i])
-                V_over_F, xs, ys = flash_inner_loop(zs2, Ks2, Method=Method, limit=limit, guess=guess, check=True)
+                V_over_F, xs, ys = flash_inner_loop(zs2, Ks2, method=method, limit=limit, guess=guess, check=True)
                 for idx in zero_indexes:
                     xs.insert(idx, 0.0)
                     ys.insert(idx, 0.0)
                 return V_over_F, xs, ys
         return Rachford_Rice_solution_trace(zs, Ks, guess)
 
-    if Method == FLASH_INNER_LN2:
+    if method == FLASH_INNER_LN2:
         return Rachford_Rice_solution_LN2(zs, Ks, guess)
-    elif Method == FLASH_INNER_SECANT:
+    elif method == FLASH_INNER_SECANT:
         return Rachford_Rice_solution(zs, Ks, limit=limit)
-    elif Method == FLASH_INNER_ANALYTICAL:
+    elif method == FLASH_INNER_ANALYTICAL:
         l = len(zs)
         if l == 2:
             z1, z2 = zs
@@ -2580,23 +2581,23 @@ def flash_inner_loop(zs, Ks, AvailableMethods=False, Method=None,
         ys = [Ki*xi for xi, Ki in zip(xs, Ks)]
         return V_over_F, xs, ys
     
-    elif Method == FLASH_INNER_NUMPY:
+    elif method == FLASH_INNER_NUMPY:
         try:
             return Rachford_Rice_solution_numpy(zs=zs, Ks=Ks, limit=limit)
         except:
             return Rachford_Rice_solution(zs=zs, Ks=Ks, limit=limit)
-    elif Method == FLASH_INNER_NR:
+    elif method == FLASH_INNER_NR:
         return Rachford_Rice_solution(zs=zs, Ks=Ks, limit=limit, fprime=True)
-    elif Method == FLASH_INNER_HALLEY:
+    elif method == FLASH_INNER_HALLEY:
         return Rachford_Rice_solution(zs=zs, Ks=Ks, limit=limit, fprime=True, 
                                       fprime2=True)
     
-    elif Method == FLASH_INNER_LJA:
+    elif method == FLASH_INNER_LJA:
         return Li_Johns_Ahmadi_solution(zs=zs, Ks=Ks)
-    elif Method == FLASH_INNER_POLY:
+    elif method == FLASH_INNER_POLY:
         return Rachford_Rice_solution_polynomial(zs=zs, Ks=Ks)
     else:
-        raise Exception('Incorrect Method input')
+        raise Exception('Incorrect method input')
 
 
 def NRTL_gammas(xs, taus, alphas):
@@ -3130,7 +3131,7 @@ mixture_phase_methods = ['IDEAL_VLE', 'SUPERCRITICAL_T', 'SUPERCRITICAL_P', 'IDE
 
 def identify_phase_mixture(T=None, P=None, zs=None, Tcs=None, Pcs=None,
                            Psats=None, CASRNs=None,
-                           AvailableMethods=False, Method=None):  # pragma: no cover
+                           get_methods=False, method=None):  # pragma: no cover
     '''
     >>> identify_phase_mixture(T=280, P=5000., zs=[0.5, 0.5], Psats=[1400, 7000])
     ('l', [0.5, 0.5], None, 0)
@@ -3153,13 +3154,13 @@ def identify_phase_mixture(T=None, P=None, zs=None, Tcs=None, Pcs=None,
             methods.append('IDEAL_VLE_SUPERCRITICAL')
         methods.append('NONE')
         return methods
-    if AvailableMethods:
+    if get_methods:
         return list_methods()
-    if not Method:
-        Method = list_methods()[0]
+    if not method:
+        method = list_methods()[0]
     # This is the calculate, given the method section
     xs, ys, phase, V_over_F = None, None, None, None
-    if Method == 'IDEAL_VLE':
+    if method == 'IDEAL_VLE':
         Pdew = dew_at_T(zs, Psats)
         Pbubble = bubble_at_T(zs, Psats)
         if P >= Pbubble:
@@ -3175,17 +3176,17 @@ def identify_phase_mixture(T=None, P=None, zs=None, Tcs=None, Pcs=None,
         elif Pdew < P < Pbubble:
             xs, ys, V_over_F = flash_ideal_basic(P, zs, Psats)
             phase = 'two-phase'
-    elif Method == 'SUPERCRITICAL_T':
+    elif method == 'SUPERCRITICAL_T':
         if all([T >= i for i in Tcs]):
             phase = 'g'
         else: # The following is nonsensical
             phase = 'two-phase'
-    elif Method == 'SUPERCRITICAL_P':
+    elif method == 'SUPERCRITICAL_P':
         if all([P >= i for i in Pcs]):
             phase = 'g'
         else: # The following is nonsensical
             phase = 'two-phase'
-    elif Method == 'IDEAL_VLE_SUPERCRITICAL':
+    elif method == 'IDEAL_VLE_SUPERCRITICAL':
         Psats = list(Psats)
         for i in range(len(Psats)):
             if not Psats[i] and Tcs[i] and Tcs[i] <= T:
@@ -3206,7 +3207,7 @@ def identify_phase_mixture(T=None, P=None, zs=None, Tcs=None, Pcs=None,
             xs, ys, V_over_F = flash_ideal_basic(P, zs, Psats)
             phase = 'two-phase'
 
-    elif Method == 'NONE':
+    elif method == 'NONE':
         pass
     else:
         raise Exception('Failure in in function')
@@ -3214,7 +3215,7 @@ def identify_phase_mixture(T=None, P=None, zs=None, Tcs=None, Pcs=None,
 
 
 def Pbubble_mixture(T=None, zs=None, Psats=None, CASRNs=None,
-                   AvailableMethods=False, Method=None):  # pragma: no cover
+                   get_methods=False, method=None):  # pragma: no cover
     '''
     >>> Pbubble_mixture(zs=[0.5, 0.5], Psats=[1400, 7000])
     4200.0
@@ -3225,14 +3226,14 @@ def Pbubble_mixture(T=None, zs=None, Psats=None, CASRNs=None,
             methods.append('IDEAL_VLE')
         methods.append('NONE')
         return methods
-    if AvailableMethods:
+    if get_methods:
         return list_methods()
-    if not Method:
-        Method = list_methods()[0]
+    if not method:
+        method = list_methods()[0]
     # This is the calculate, given the method section
-    if Method == 'IDEAL_VLE':
+    if method == 'IDEAL_VLE':
         Pbubble = bubble_at_T(zs, Psats)
-    elif Method == 'NONE':
+    elif method == 'NONE':
         Pbubble = None
     else:
         raise Exception('Failure in in function')
@@ -3274,7 +3275,7 @@ def bubble_at_P(P, zs, vapor_pressure_eqns, fugacities=None, gammas=None):
 
 
 def Pdew_mixture(T=None, zs=None, Psats=None, CASRNs=None,
-                 AvailableMethods=False, Method=None):  # pragma: no cover
+                 get_methods=False, method=None):  # pragma: no cover
     '''
     >>> Pdew_mixture(zs=[0.5, 0.5], Psats=[1400, 7000])
     2333.3333333333335
@@ -3285,14 +3286,14 @@ def Pdew_mixture(T=None, zs=None, Psats=None, CASRNs=None,
             methods.append('IDEAL_VLE')
         methods.append('NONE')
         return methods
-    if AvailableMethods:
+    if get_methods:
         return list_methods()
-    if not Method:
-        Method = list_methods()[0]
+    if not method:
+        method = list_methods()[0]
     # This is the calculate, given the method section
-    if Method == 'IDEAL_VLE':
+    if method == 'IDEAL_VLE':
         Pdew = dew_at_T(zs, Psats)
-    elif Method == 'NONE':
+    elif method == 'NONE':
         Pdew = None
     else:
         raise Exception('Failure in in function')

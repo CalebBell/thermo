@@ -688,10 +688,10 @@ NONE = 'None'
 conductivity_methods = [LANGE_COND]
 
 
-def conductivity(CASRN=None, AvailableMethods=False, Method=None, full_info=True):
+def conductivity(CASRN=None, get_methods=False, method=None, full_info=True):
     r'''This function handles the retrieval of a chemical's conductivity.
     Lookup is based on CASRNs. Will automatically select a data source to use
-    if no Method is provided; returns None if the data is not available.
+    if no method is provided; returns None if the data is not available.
 
     Function has data for approximately 100 chemicals.
 
@@ -706,15 +706,15 @@ def conductivity(CASRN=None, AvailableMethods=False, Method=None, full_info=True
         Electrical conductivity of the fluid, [S/m]
     T : float, only returned if full_info == True
         Temperature at which conductivity measurement was made
-    methods : list, only returned if AvailableMethods == True
+    methods : list, only returned if get_methods == True
         List of methods which can be used to obtain RI with the given inputs
 
     Other Parameters
     ----------------
-    Method : string, optional
+    method : string, optional
         A string for the method name to use, as defined by constants in
         conductivity_methods
-    AvailableMethods : bool, optional
+    get_methods : bool, optional
         If True, function will determine which methods can be used to obtain
         conductivity for the desired chemical, and will return methods instead
         of conductivity
@@ -745,16 +745,16 @@ def conductivity(CASRN=None, AvailableMethods=False, Method=None, full_info=True
             methods.append(LANGE_COND)
         methods.append(NONE)
         return methods
-    if AvailableMethods:
+    if get_methods:
         return list_methods()
-    if not Method:
-        Method = list_methods()[0]
-    if Method == LANGE_COND:
+    if not method:
+        method = list_methods()[0]
+    if method == LANGE_COND:
         kappa = float(Lange_cond_pure.at[CASRN, 'Conductivity'])
         if full_info:
             T = float(Lange_cond_pure.at[CASRN, 'T'])
 
-    elif Method == NONE:
+    elif method == NONE:
         kappa, T = None, None
     else:
         raise Exception('Failure in in function')
@@ -1376,7 +1376,7 @@ def balance_ions(anions, cations, anion_zs=None, cation_zs=None,
         else:
             selected_ion = selected_ion[0]
     else:
-        raise Exception('Method not recognized')
+        raise Exception('method not recognized')
     if selected_ion is None:
         raise Exception("For methods 'adjust', 'increase', 'decrease', and "
                         "'makeup', an ion must be specified with the "

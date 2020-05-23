@@ -149,7 +149,7 @@ def test_conductivity():
 
     assert conductivity(CASRN='234-34-44', full_info=False) == None
     with pytest.raises(Exception):
-        conductivity(CASRN='7732-18-5', Method='BADMETHOD')
+        conductivity(CASRN='7732-18-5', method='BADMETHOD')
 
     assert conductivity('7732-18-5', full_info=False) == 4e-06
 

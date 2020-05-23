@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 import os
 
-from . import acentric
+from chemicals import acentric
 from . import rachford_rice
 from . import chemical
 from . import chemical_package
@@ -62,7 +62,7 @@ from chemicals import solubility
 from . import stream
 from . import interface
 from . import thermal_conductivity
-from . import triple
+from chemicals import triple
 from . import unifac
 from . import utils
 from . import vapor_pressure
@@ -75,7 +75,7 @@ from . import nrtl
 from . import uniquac
 from chemicals import temperature
 
-from .acentric import *
+from chemicals.acentric import *
 from .rachford_rice import *
 from .chemical import *
 from .chemical_package import *
@@ -114,7 +114,7 @@ from chemicals.solubility import *
 from .stream import *
 from .interface import *
 from .thermal_conductivity import *
-from .triple import *
+from chemicals.triple import *
 from .unifac import *
 from .utils import *
 from .vapor_pressure import *

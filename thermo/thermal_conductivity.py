@@ -37,7 +37,6 @@ __all__ = ['Sheffy_Johnson', 'Sato_Riedel', 'Lakshmi_Prasad',
 
 import os
 import numpy as np
-from scipy.interpolate import interp2d
 import pandas as pd
 
 from fluids.numerics import horner
@@ -48,7 +47,7 @@ from chemicals.dippr import EQ100, EQ102
 
 from thermo.utils import TPDependentProperty, MixtureProperty
 from chemicals import miscdata
-from chemicals.miscdata import VDI_tabular_data
+from chemicals.miscdata import lookup_VDI_tabular_data
 from thermo.coolprop import has_CoolProp, coolprop_dict, coolprop_fluids, CoolProp_T_dependent_property, PropsSI, PhaseSI
 from thermo.electrochem import thermal_conductivity_Magomedov, Magomedovk_thermal_cond
 
@@ -159,7 +158,7 @@ def Sato_Riedel(T, M, Tb, Tc):
     '''
     Tr = T/Tc
     Tbr = Tb/Tc
-    return 1.1053*(3. + 20.*(1 - Tr)**(2/3.))*M**-0.5/(3. + 20.*(1 - Tbr)**(2/3.))
+    return 1.1053*(3. + 20.*(1.0 - Tr)**(2.0/3.0))*M**-0.5/(3.0 + 20.0*(1.0 - Tbr)**(2.0/3.))
 
 
 def Lakshmi_Prasad(T, M):
@@ -256,11 +255,13 @@ def Gharagheizi_liquid(T, M, Tb, Pc, omega):
         Conductivity of Liquid Chemical Compounds at Atmospheric Pressure."
         AIChE Journal 59, no. 5 (May 1, 2013): 1702-8. doi:10.1002/aic.13938
     '''
-    Pc = Pc/1E5
+    Pc = Pc*1E-5
     B = 16.0407*M + 2.*Tb - 27.9074
     A = 3.8588*M**8*(1.0045*B + 6.5152*M - 8.9756)
-    kl = 1E-4*(10.*omega + 2.*Pc - 2.*T + 4. + 1.908*(Tb + 1.009*B*B/(M*M))
-        + 3.9287*M**4*B**-4 + A*B**-8)
+    M2 = M*M
+    B_inv4 = B**-4.0
+    kl = 1E-4*(10.*omega + 2.*Pc - 2.*T + 4. + 1.908*(Tb + 1.009*B*B/(M2))
+        + 3.9287*M2*M2*B_inv4 + A*B_inv4*B_inv4)
     return kl
 
 
@@ -316,7 +317,7 @@ def Nicola_original(T, M, Tc, omega, Hfus):
     '''
     Tr = T/Tc
     Hfus = Hfus*1000
-    return -0.5694 - 0.1436*Tr + 5.4893E-10*Hfus + 0.0508*omega + (1./M)**0.0622
+    return -0.5694 - 0.1436*Tr + 5.4893E-10*Hfus + 0.0508*omega + M**-0.0622
 
 
 def Nicola(T, M, Tc, Pc, omega):
@@ -367,8 +368,8 @@ def Nicola(T, M, Tc, Pc, omega):
        doi:10.1016/j.ijrefrig.2014.06.003
     '''
     Tr = T/Tc
-    Pc = Pc/1E5
-    return 0.5147*(-0.2537*Tr + 0.0017*Pc + 0.1501*omega + (1./M)**0.2999)
+    Pc = Pc*1E-5
+    return 0.5147*(-0.2537*Tr + 0.0017*Pc + 0.1501*omega + M**-0.2999)
 
 
 def Bahadori_liquid(T, M):
@@ -408,7 +409,7 @@ def Bahadori_liquid(T, M):
     Data point from [1]_.
 
     >>> Bahadori_liquid(273.15, 170)
-    0.14274278108272603
+    0.1427427810827268
 
     References
     ----------
@@ -416,16 +417,17 @@ def Bahadori_liquid(T, M):
        Conductivity of Hydrocarbons." Chemical Engineering 115, no. 13
        (December 2008): 52-54
     '''
-    A = [-6.48326E-2, 2.715015E-3, -1.08580E-5, 9.853917E-9]
-    B = [1.565612E-2, -1.55833E-4, 5.051114E-7, -4.68030E-10]
-    C = [-1.80304E-4, 1.758693E-6, -5.55224E-9, 5.201365E-12]
-    D = [5.880443E-7, -5.65898E-9, 1.764384E-11, -1.65944E-14]
+    A = (-6.48326E-2, 2.715015E-3, -1.08580E-5, 9.853917E-9)
+    B = (1.565612E-2, -1.55833E-4, 5.051114E-7, -4.68030E-10)
+    C = (-1.80304E-4, 1.758693E-6, -5.55224E-9, 5.201365E-12)
+    D = (5.880443E-7, -5.65898E-9, 1.764384E-11, -1.65944E-14)
     X, Y = M, T
-    a = A[0] + B[0]*X + C[0]*X**2 + D[0]*X**3
-    b = A[1] + B[1]*X + C[1]*X**2 + D[1]*X**3
-    c = A[2] + B[2]*X + C[2]*X**2 + D[2]*X**3
-    d = A[3] + B[3]*X + C[3]*X**2 + D[3]*X**3
-    return a + b*Y + c*Y**2 + d*Y**3
+    
+    a = A[0] + X*(B[0] + X*(C[0] + D[0]*X))
+    b = A[1] + X*(B[1] + X*(C[1] + D[1]*X))
+    c = A[2] + X*(B[2] + X*(C[2] + D[2]*X))
+    d = A[3] + X*(B[3] + X*(C[3] + D[3]*X))
+    return a + Y*(b + Y*(c + d*Y))
 
 
 def Mersmann_Kind_thermal_conductivity_liquid(T, MW, Tc, Vc, atoms):
@@ -478,487 +480,12 @@ def Mersmann_Kind_thermal_conductivity_liquid(T, MW, Tc, Vc, atoms):
     '''
     na = sum(atoms.values())
     lambda_star = 2/3.*(na + 40.*(1. - T/Tc)**0.5)
-    Vc = Vc*1000 # m^3/mol to m^3/kmol
-    N_A2 = N_A*1000 # Their avogadro's constant is per kmol
-    kl = lambda_star*(k*Tc)**1.5*N_A2**(7/6.)*Vc**(-2/3.)/Tc*MW**-0.5
+    Vc = Vc*1000.0 # m^3/mol to m^3/kmol
+    N_A2 = N_A*1000.0 # Their avogadro's constant is per kmol
+    kl = lambda_star*(k*Tc)**1.5*N_A2**(7.0/6.)*Vc**(-2.0/3.)/Tc*MW**-0.5
     return kl
 
 
-VDI_TABULAR = 'VDI_TABULAR'
-VDI_PPDS = 'VDI_PPDS'
-COOLPROP = 'COOLPROP'
-GHARAGHEIZI_L = 'GHARAGHEIZI_L'
-NICOLA = 'NICOLA'
-NICOLA_ORIGINAL = 'NICOLA_ORIGINAL'
-SATO_RIEDEL = 'SATO_RIEDEL'
-SHEFFY_JOHNSON = 'SHEFFY_JOHNSON'
-BAHADORI_L = 'BAHADORI_L'
-LAKSHMI_PRASAD = 'LAKSHMI_PRASAD'
-MISSENARD = 'MISSENARD'
-NONE = 'NONE'
-DIPPR_PERRY_8E = 'DIPPR_PERRY_8E'
-NEGLIGIBLE = 'NEGLIGIBLE'
-DIPPR_9G = 'DIPPR_9G'
-BESTFIT = 'Best fit'
-
-thermal_conductivity_liquid_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, 
-                                       VDI_TABULAR, GHARAGHEIZI_L, 
-                                       SHEFFY_JOHNSON, SATO_RIEDEL,
-                                       LAKSHMI_PRASAD, BAHADORI_L,
-                                       NICOLA, NICOLA_ORIGINAL]
-'''Holds all low-pressure methods available for the ThermalConductivityLiquid
-class, for use in iterating over them.'''
-
-thermal_conductivity_liquid_methods_P = [COOLPROP, DIPPR_9G, MISSENARD]
-'''Holds all high-pressure methods available for the ThermalConductivityLiquid
-class, for use in iterating over them.'''
-
-class ThermalConductivityLiquid(TPDependentProperty):
-    r'''Class for dealing with liquid thermal conductivity as a function of
-    temperature and pressure.
-
-    For low-pressure (at 1 atm while under the vapor pressure; along the
-    saturation line otherwise) liquids, there is one source of tabular
-    information, one polynomial-based method, 7 corresponding-states estimators, 
-    and the external library CoolProp.
-
-    For high-pressure liquids (also, <1 atm liquids), there are two
-    corresponding-states estimator, and the external library CoolProp.
-
-    Parameters
-    ----------
-    CASs : list[str], optional
-        The CAS numbers of all species in the mixture
-    MW : float, optional
-        Molecular weight, [g/mol]
-    Tm : float, optional
-        Melting point, [K]
-    Tb : float, optional
-        Boiling point, [K]
-    Tc : float, optional
-        Critical temperature, [K]
-    Pc : float, optional
-        Critical pressure, [Pa]
-    omega : float, optional
-        Acentric factor, [-]
-    Hfus : float, optional
-        Heat of fusion, [J/mol]
-
-    Notes
-    -----
-    To iterate over all methods, use the lists stored in
-    :obj:`thermal_conductivity_liquid_methods` and
-    :obj:`thermal_conductivity_liquid_methods_P` for low and high pressure
-    methods respectively.
-
-    Low pressure methods:
-
-    **GHARAGHEIZI_L**:
-        CSP method, described in :obj:`Gharagheizi_liquid`.
-    **SATO_RIEDEL**:
-        CSP method, described in :obj:`Sato_Riedel`.
-    **NICOLA**:
-        CSP method, described in :obj:`Nicola`.
-    **NICOLA_ORIGINAL**:
-        CSP method, described in :obj:`Nicola_original`.
-    **SHEFFY_JOHNSON**:
-        CSP method, described in :obj:`Sheffy_Johnson`.
-    **BAHADORI_L**:
-        CSP method, described in :obj:`Bahadori_liquid`.
-    **LAKSHMI_PRASAD**:
-        CSP method, described in :obj:`Lakshmi_Prasad`.
-    **DIPPR_PERRY_8E**:
-        A collection of 340 coefficient sets from the DIPPR database published
-        openly in [3]_. Provides temperature limits for all its fluids. 
-        :obj:`thermo.dippr.EQ100` is used for its fluids.
-    **VDI_PPDS**:
-        Coefficients for a equation form developed by the PPDS, published 
-        openly in [2]_. Covers a large temperature range, but does not 
-        extrapolate well at very high or very low temperatures. 271 compounds.
-    **COOLPROP**:
-        CoolProp external library; with select fluids from its library.
-        Range is limited to that of the equations of state it uses, as
-        described in [1]_. Very slow.
-    **VDI_TABULAR**:
-        Tabular data in [2]_ along the saturation curve; interpolation is as
-        set by the user or the default.
-
-    High pressure methods:
-
-    **DIPPR_9G**:
-        CSP method, described in :obj:`DIPPR9G`. Calculates a
-        low-pressure thermal conductivity first, using `T_dependent_property`.
-    **MISSENARD**:
-        CSP method, described in :obj:`Missenard`. Calculates a
-        low-pressure thermal conductivity first, using `T_dependent_property`.
-    **COOLPROP**:
-        CoolProp external library; with select fluids from its library.
-        Range is limited to that of the equations of state it uses, as
-        described in [1]_. Very slow, but unparalled in accuracy for pressure
-        dependence.
-
-    See Also
-    --------
-    Sheffy_Johnson
-    Sato_Riedel
-    Lakshmi_Prasad
-    Gharagheizi_liquid
-    Nicola_original
-    Nicola
-    Bahadori_liquid
-    DIPPR9G
-    Missenard
-
-    References
-    ----------
-    .. [1] Bell, Ian H., Jorrit Wronski, Sylvain Quoilin, and Vincent Lemort.
-       "Pure and Pseudo-Pure Fluid Thermophysical Property Evaluation and the
-       Open-Source Thermophysical Property Library CoolProp." Industrial &
-       Engineering Chemistry Research 53, no. 6 (February 12, 2014):
-       2498-2508. doi:10.1021/ie4033999. http://www.coolprop.org/
-    .. [2] Gesellschaft, V. D. I., ed. VDI Heat Atlas. 2nd edition.
-       Berlin; New York:: Springer, 2010.
-    .. [3] Green, Don, and Robert Perry. Perry's Chemical Engineers' Handbook,
-       Eighth Edition. McGraw-Hill Professional, 2007.
-    '''
-    name = 'liquid thermal conductivity'
-    units = 'W/m/K'
-    interpolation_T = None
-    '''No interpolation transformation by default.'''
-    interpolation_P = None
-    '''No interpolation transformation by default.'''
-    interpolation_property = None
-    '''No interpolation transformation by default.'''
-    interpolation_property_inv = None
-    '''No interpolation transformation by default.'''
-    tabular_extrapolation_permitted = True
-    '''Allow tabular extrapolation by default.'''
-    property_min = 0
-    '''Mimimum valid value of liquid thermal conductivity.'''
-    property_max = 10
-    '''Maximum valid value of liquid thermal conductivity. Generous limit.'''
-
-    ranked_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR,
-                      GHARAGHEIZI_L, SHEFFY_JOHNSON, SATO_RIEDEL, 
-                      LAKSHMI_PRASAD, BAHADORI_L, NICOLA, NICOLA_ORIGINAL]
-    '''Default rankings of the low-pressure methods.'''
-    ranked_methods_P = [COOLPROP, DIPPR_9G, MISSENARD]
-    '''Default rankings of the high-pressure methods.'''
-
-
-    def __init__(self, CASRN='', MW=None, Tm=None, Tb=None, Tc=None, Pc=None,
-                 omega=None, Hfus=None, best_fit=None):
-        self.CASRN = CASRN
-        self.MW = MW
-        self.Tm = Tm
-        self.Tb = Tb
-        self.Tc = Tc
-        self.Pc = Pc
-        self.omega = omega
-        self.Hfus = Hfus
-
-        self.Tmin = None
-        '''Minimum temperature at which no method can calculate the
-        liquid thermal conductivity under.'''
-        self.Tmax = None
-        '''Maximum temperature at which no method can calculate the
-        liquid thermal conductivity above.'''
-
-        self.tabular_data = {}
-        '''tabular_data, dict: Stored (Ts, properties) for any
-        tabular data; indexed by provided or autogenerated name.'''
-        self.tabular_data_interpolators = {}
-        '''tabular_data_interpolators, dict: Stored (extrapolator,
-        spline) tuples which are interp1d instances for each set of tabular
-        data; indexed by tuple of (name, interpolation_T,
-        interpolation_property, interpolation_property_inv) to ensure that
-        if an interpolation transform is altered, the old interpolator which
-        had been created is no longer used.'''
-
-        self.tabular_data_P = {}
-        '''tabular_data_P, dict: Stored (Ts, Ps, properties) for any
-        tabular data; indexed by provided or autogenerated name.'''
-        self.tabular_data_interpolators_P = {}
-        '''tabular_data_interpolators_P, dict: Stored (extrapolator,
-        spline) tuples which are interp2d instances for each set of tabular
-        data; indexed by tuple of (name, interpolation_T, interpolation_P,
-        interpolation_property, interpolation_property_inv) to ensure that
-        if an interpolation transform is altered, the old interpolator which
-        had been created is no longer used.'''
-
-        self.sorted_valid_methods = []
-        '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `T_dependent_property`.'''
-        self.sorted_valid_methods_P = []
-        '''sorted_valid_methods_P, list: Stored methods which were found valid
-        at a specific temperature; set by `TP_dependent_property`.'''
-        self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `T_dependent_property`.'''
-        self.user_methods_P = []
-        '''user_methods_P, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `TP_dependent_property`.'''
-
-        self.all_methods = set()
-        '''Set of all low-pressure methods available for a given CASRN and
-        properties; filled by :obj:`load_all_methods`.'''
-        self.all_methods_P = set()
-        '''Set of all high-pressure methods available for a given CASRN and
-        properties; filled by :obj:`load_all_methods`.'''
-
-        self.load_all_methods()
-        if best_fit is not None:
-            self.set_best_fit(best_fit)
-
-    def load_all_methods(self):
-        r'''Method which picks out coefficients for the specified chemical
-        from the various dictionaries and DataFrames storing it. All data is
-        stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
-        :obj:`all_methods` and obj:`all_methods_P` as a set of methods for
-        which the data exists for.
-
-        Called on initialization only. See the source code for the variables at
-        which the coefficients are stored. The coefficients can safely be
-        altered once the class is initialized. This method can be called again
-        to reset the parameters.
-        '''
-        methods, methods_P = [], []
-        Tmins, Tmaxs = [], []
-        if self.CASRN in miscdata.VDI_saturation_data:
-            methods.append(VDI_TABULAR)
-            Ts, props = VDI_tabular_data(self.CASRN, 'K (l)')
-            self.VDI_Tmin = Ts[0]
-            self.VDI_Tmax = Ts[-1]
-            self.tabular_data[VDI_TABULAR] = (Ts, props)
-            Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
-        if has_CoolProp and self.CASRN in coolprop_dict:
-            methods.append(COOLPROP); methods_P.append(COOLPROP)
-            self.CP_f = coolprop_fluids[self.CASRN]
-            Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tc)
-        if self.MW:
-            methods.extend([BAHADORI_L, LAKSHMI_PRASAD])
-            # Tmin and Tmax are not extended by these simple models, who often
-            # give values of 0; BAHADORI_L even has 3 roots.
-            # LAKSHMI_PRASAD works down to 0 K, and has an upper limit of
-            # 50.0*(131.0*sqrt(M) + 2771.0)/(50.0*M**0.5 + 197.0)
-            # where it becomes 0.
-        if self.CASRN in Perrys2_315.index:
-            methods.append(DIPPR_PERRY_8E)
-            _, C1, C2, C3, C4, C5, self.Perrys2_315_Tmin, self.Perrys2_315_Tmax = _Perrys2_315_values[Perrys2_315.index.get_loc(self.CASRN)].tolist()
-            self.Perrys2_315_coeffs = [C1, C2, C3, C4, C5]
-            Tmins.append(self.Perrys2_315_Tmin); Tmaxs.append(self.Perrys2_315_Tmax)
-        if self.CASRN in VDI_PPDS_9.index:
-            _,  A, B, C, D, E = _VDI_PPDS_9_values[VDI_PPDS_9.index.get_loc(self.CASRN)].tolist()
-            self.VDI_PPDS_coeffs = [A, B, C, D, E]
-            self.VDI_PPDS_coeffs.reverse()
-            methods.append(VDI_PPDS)
-        if all([self.MW, self.Tm]):
-            methods.append(SHEFFY_JOHNSON)
-            Tmins.append(0); Tmaxs.append(self.Tm + 793.65)
-            # Works down to 0, has a nice limit at T = Tm+793.65 from Sympy
-        if all([self.Tb, self.Pc, self.omega]):
-            methods.append(GHARAGHEIZI_L)
-            Tmins.append(self.Tb); Tmaxs.append(self.Tc)
-            # Chosen as the model is weird
-        if all([self.Tc, self.Pc, self.omega]):
-            methods.append(NICOLA)
-        if all([self.Tb, self.Tc]):
-            methods.append(SATO_RIEDEL)
-        if all([self.Hfus, self.Tc, self.omega]):
-            methods.append(NICOLA_ORIGINAL)
-        if all([self.Tc, self.Pc]):
-            methods_P.extend([DIPPR_9G, MISSENARD])
-        self.all_methods = set(methods)
-        self.all_methods_P = set(methods_P)
-        if Tmins and Tmaxs:
-            self.Tmin, self.Tmax = min(Tmins), max(Tmaxs)
-
-    def calculate(self, T, method):
-        r'''Method to calculate low-pressure liquid thermal conductivity at
-        tempearture `T` with a given method.
-
-        This method has no exception handling; see `T_dependent_property`
-        for that.
-
-        Parameters
-        ----------
-        T : float
-            Temperature of the liquid, [K]
-        method : str
-            Name of the method to use
-
-        Returns
-        -------
-        kl : float
-            Thermal conductivity of the liquid at T and a low pressure, [W/m/K]
-        '''
-        if method == SHEFFY_JOHNSON:
-            kl = Sheffy_Johnson(T, self.MW, self.Tm)
-        elif method == SATO_RIEDEL:
-            kl = Sato_Riedel(T, self.MW, self.Tb, self.Tc)
-        elif method == GHARAGHEIZI_L:
-            kl = Gharagheizi_liquid(T, self.MW, self.Tb, self.Pc, self.omega)
-        elif method == NICOLA:
-            kl = Nicola(T, self.MW, self.Tc, self.Pc, self.omega)
-        elif method == NICOLA_ORIGINAL:
-            kl = Nicola_original(T, self.MW, self.Tc, self.omega, self.Hfus)
-        elif method == LAKSHMI_PRASAD:
-            kl = Lakshmi_Prasad(T, self.MW)
-        elif method == BAHADORI_L:
-            kl = Bahadori_liquid(T, self.MW)
-        elif method == DIPPR_PERRY_8E:
-            kl = EQ100(T, *self.Perrys2_315_coeffs)
-        elif method == VDI_PPDS:
-            kl = horner(self.VDI_PPDS_coeffs, T)
-        elif method == COOLPROP:
-            kl = CoolProp_T_dependent_property(T, self.CASRN, 'L', 'l')
-        elif method in self.tabular_data:
-            kl = self.interpolate(T, method)
-        elif method == BESTFIT:
-            if T < self.best_fit_Tmin:
-                kl = (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value
-            elif T > self.best_fit_Tmax:
-                kl = (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
-            else:
-                kl = horner(self.best_fit_coeffs, T)
-        return kl
-
-    def calculate_P(self, T, P, method):
-        r'''Method to calculate pressure-dependent liquid thermal conductivity
-        at temperature `T` and pressure `P` with a given method.
-
-        This method has no exception handling; see `TP_dependent_property`
-        for that.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to calculate liquid thermal conductivity, [K]
-        P : float
-            Pressure at which to calculate liquid thermal conductivity, [K]
-        method : str
-            Name of the method to use
-
-        Returns
-        -------
-        kl : float
-            Thermal conductivity of the liquid at T and P, [W/m/K]
-        '''
-        if method == DIPPR_9G:
-            kl = self.T_dependent_property(T)
-            kl = DIPPR9G(T, P, self.Tc, self.Pc, kl)
-        elif method == MISSENARD:
-            kl = self.T_dependent_property(T)
-            kl = Missenard(T, P, self.Tc, self.Pc, kl)
-        elif method == COOLPROP:
-            kl = PropsSI('L', 'T', T, 'P', P, self.CASRN)
-        elif method in self.tabular_data:
-            kl = self.interpolate_P(T, P, method)
-        return kl
-
-    def test_method_validity(self, T, method):
-        r'''Method to check the validity of a temperature-dependent
-        low-pressure method. For CSP methods, the models **BAHADORI_L**,
-        **LAKSHMI_PRASAD**, and **SHEFFY_JOHNSON** are considered valid for all
-        temperatures. For methods **GHARAGHEIZI_L**, **NICOLA**,
-        and **NICOLA_ORIGINAL**, the methods are considered valid up to 1.5Tc
-        and down to 0 K. Method **SATO_RIEDEL** does not work above the
-        critical point, so it is valid from 0 K to the critical point.
-
-        For tabular data, extrapolation outside of the range is used if
-        :obj:`tabular_extrapolation_permitted` is set; if it is, the extrapolation
-        is considered valid for all temperatures.
-
-        It is not guaranteed that a method will work or give an accurate
-        prediction simply because this method considers the method valid.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to test the method, [K]
-        method : str
-            Name of the method to test
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a method is valid
-        '''
-        if method == SATO_RIEDEL:
-            if T > self.Tc:
-                return False
-                # Doesn't run, no lower limit though
-        elif method in [GHARAGHEIZI_L, NICOLA, NICOLA_ORIGINAL]:
-            if T > self.Tc*1.5:
-                return False
-            # No lower limit, give a wide margin of acceptability here
-        elif method == DIPPR_PERRY_8E:
-            if T < self.Perrys2_315_Tmin or T > self.Perrys2_315_Tmax:
-                return False
-        elif method in [BAHADORI_L, LAKSHMI_PRASAD, SHEFFY_JOHNSON]:
-            pass
-            # no limits at all
-        elif method == VDI_PPDS:
-            if self.Tc and T > self.Tc:
-                return False
-        elif method == COOLPROP:
-            if T < self.CP_f.Tt or T > self.CP_f.Tc:
-                return False
-        elif method in self.tabular_data:
-            # if tabular_extrapolation_permitted, good to go without checking
-            if not self.tabular_extrapolation_permitted:
-                Ts, properties = self.tabular_data[method]
-                if T < Ts[0] or T > Ts[-1]:
-                    return False
-        else:
-            raise Exception('Method not valid')
-        return True
-
-    def test_method_validity_P(self, T, P, method):
-        r'''Method to check the validity of a high-pressure method. For
-        **COOLPROP**, the fluid must be both a liquid and under the maximum
-        pressure of the fluid's EOS. **MISSENARD** has defined limits;
-        between 0.5Tc and 0.8Tc, and below 200Pc. The CSP method **DIPPR_9G**
-        is considered valid for all temperatures and pressures.
-
-        For tabular data, extrapolation outside of the range is used if
-        :obj:`tabular_extrapolation_permitted` is set; if it is, the
-        extrapolation is considered valid for all temperatures and pressures.
-
-        It is not guaranteed that a method will work or give an accurate
-        prediction simply because this method considers the method valid.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to test the method, [K]
-        P : float
-            Pressure at which to test the method, [Pa]
-        method : str
-            Name of the method to test
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a method is valid
-        '''
-        validity = True
-        if method == MISSENARD:
-            if T/self.Tc < 0.5 or T/self.Tc > 0.8 or P/self.Pc > 200:
-                validity = False
-        elif method == DIPPR_9G:
-            if T < 0 or P < 0:
-                validity = False
-        elif method == COOLPROP:
-            validity = PhaseSI('T', T, 'P', P, self.CASRN) in ['liquid', 'supercritical_liquid']
-        elif method in self.tabular_data:
-            if not self.tabular_extrapolation_permitted:
-                Ts, Ps, properties = self.tabular_data[method]
-                if T < Ts[0] or T > Ts[-1] or P < Ps[0] or P > Ps[-1]:
-                    validity = False
-        else:
-            raise Exception('Method not valid')
-        return validity
 
 
 ### Thermal Conductivity of Dense Liquids
@@ -1016,13 +543,19 @@ def DIPPR9G(T, P, Tc, Pc, kl):
     return kl*(0.98 + 0.0079*Pr*Tr**1.4 + 0.63*Tr**1.2*(Pr/(30. + Pr)))
 
 
-Trs_Missenard = [0.8, 0.7, 0.6, 0.5]
-Prs_Missenard = [1, 5, 10, 50, 100, 200]
-Qs_Missenard = np.array([[0.036, 0.038, 0.038, 0.038, 0.038, 0.038],
-                         [0.018, 0.025, 0.027, 0.031, 0.032, 0.032],
-                         [0.015, 0.020, 0.022, 0.024, 0.025, 0.025],
-                         [0.012, 0.0165, 0.017, 0.019, 0.020, 0.020]])
-Qfunc_Missenard = interp2d(Prs_Missenard, Trs_Missenard, Qs_Missenard)
+global Qfunc_Missenard
+Qfunc_Missenard = None
+def _create_Qfunc_Missenard():
+    global Qfunc_Missenard
+    from scipy.interpolate import interp2d
+
+    Trs_Missenard = [0.8, 0.7, 0.6, 0.5]
+    Prs_Missenard = [1, 5, 10, 50, 100, 200]
+    Qs_Missenard = np.array([[0.036, 0.038, 0.038, 0.038, 0.038, 0.038],
+                             [0.018, 0.025, 0.027, 0.031, 0.032, 0.032],
+                             [0.015, 0.020, 0.022, 0.024, 0.025, 0.025],
+                             [0.012, 0.0165, 0.017, 0.019, 0.020, 0.020]])
+    Qfunc_Missenard = interp2d(Prs_Missenard, Trs_Missenard, Qs_Missenard)
 
 
 def Missenard(T, P, Tc, Pc, kl):
@@ -1070,6 +603,8 @@ def Missenard(T, P, Tc, Pc, kl):
     .. [2] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
        New York: McGraw-Hill Professional, 2000.
     '''
+    if Qfunc_Missenard is None:
+        _create_Qfunc_Missenard()
     Tr = T/Tc
     Pr = P/Pc
     Q = float(Qfunc_Missenard(Pr, Tr))
@@ -1120,8 +655,6 @@ def DIPPR9H(ws, ks):
     .. [2] Danner, Ronald P, and Design Institute for Physical Property Data.
        Manual for Predicting Chemical Process Design Data. New York, N.Y, 1982.
     '''
-    if not none_and_length_check([ks, ws]):  # check same-length inputs
-        raise Exception('Function inputs are incorrect format')
     return sum(ws[i]/ks[i]**2 for i in range(len(ws)))**(-0.5)
 
 
@@ -1165,219 +698,11 @@ def Filippov(ws, ks):
        Filippov, L. P., and N. S. Novoselova: Vestn. Mosk. Univ., Ser. F
        iz. Mat. Estestv.Nauk, CI0B): 37-40A955); Chem. Abstr., 49: 11366 A955).
     '''
-    if not none_and_length_check([ks, ws], 2):  # check same-length inputs
-        raise Exception('Function inputs are incorrect format')
+    len_ks = len(ks)
+    if len_ks != len(ws) or len_ks != 2:
+        raise ValueError("Filippov method is only defined for mixtures of two components")
     return ws[0]*ks[0] + ws[1]*ks[1] - 0.72*ws[0]*ws[1]*(ks[1] - ks[0])
 
-
-MAGOMEDOV = 'Magomedov'
-DIPPR_9H = 'DIPPR9H'
-FILIPPOV = 'Filippov'
-SIMPLE = 'Simple'
-
-thermal_conductivity_liquid_mixture_methods = [MAGOMEDOV, DIPPR_9H, FILIPPOV, SIMPLE]
-
-
-class ThermalConductivityLiquidMixture(MixtureProperty):
-    '''Class for dealing with thermal conductivity of a liquid mixture as a   
-    function of temperature, pressure, and composition.
-    Consists of two mixing rule specific to liquid thremal conductivity, one
-    coefficient-based method for aqueous electrolytes, and mole weighted 
-    averaging. 
-         
-    Prefered method is :obj:`DIPPR9H` which requires mass
-    fractions, and pure component liquid thermal conductivities. This is 
-    substantially better than the ideal mixing rule based on mole fractions, 
-    **SIMPLE**. **Filippov** is of similar accuracy but applicable to binary
-    systems only.
-        
-    Parameters
-    ----------
-    CASs : str, optional
-        The CAS numbers of all species in the mixture
-    ThermalConductivityLiquids : list[ThermalConductivityLiquid], optional
-        ThermalConductivityLiquid objects created for all species in the
-        mixture, normally created by :obj:`thermo.chemical.Chemical`.
-    MWs : list[float], optional
-        Molecular weights of all species in the mixture, [g/mol]
-    correct_pressure_pure : bool, optional
-        Whether to try to use the better pressure-corrected pure component 
-        models or to use only the T-only dependent pure species models, [-]
-
-    Notes
-    -----
-    To iterate over all methods, use the list stored in
-    :obj:`thermal_conductivity_liquid_mixture_methods`.
-
-    **DIPPR9H**:
-        Mixing rule described in :obj:`DIPPR9H`.
-    **Filippov**:
-        Mixing rule described in :obj:`Filippov`; for two binary systems only.
-    **Magomedov**:
-        Coefficient-based method for aqueous electrolytes only, described in
-        :obj:`thermo.electrochem.thermal_conductivity_Magomedov`.
-    **SIMPLE**:
-        Mixing rule described in :obj:`thermo.utils.mixing_simple`.
-
-    See Also
-    --------
-    DIPPR9H
-    Filippov
-    thermal_conductivity_Magomedov
-
-    References
-    ----------
-    .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
-       New York: McGraw-Hill Professional, 2000.
-    '''
-    name = 'liquid thermal conductivity'
-    units = 'W/m/K'
-    property_min = 0
-    '''Mimimum valid value of liquid thermal conductivity.'''
-    property_max = 10
-    '''Maximum valid value of liquid thermal conductivity. Generous limit.'''
-                            
-    ranked_methods = [DIPPR_9H, SIMPLE, MAGOMEDOV, FILIPPOV]
-
-    def __init__(self, CASs=[], ThermalConductivityLiquids=[], MWs=[],
-                 correct_pressure_pure=True):
-        self.CASs = CASs
-        self.ThermalConductivityLiquids = self.pure_objs = ThermalConductivityLiquids
-        self.MWs = MWs
-        
-        self._correct_pressure_pure = correct_pressure_pure
-
-        self.Tmin = None
-        '''Minimum temperature at which no method can calculate the
-        liquid thermal conductivity under.'''
-        self.Tmax = None
-        '''Maximum temperature at which no method can calculate the
-        liquid thermal conductivity above.'''
-
-        self.sorted_valid_methods = []
-        '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `mixture_property`.'''
-        self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `mixture_property`.'''
-        self.all_methods = set()
-        '''Set of all methods available for a given set of information;
-        filled by :obj:`load_all_methods`.'''
-        self.load_all_methods()
-        
-        self.set_best_fit_coeffs()
-
-    def load_all_methods(self):
-        r'''Method to initialize the object by precomputing any values which
-        may be used repeatedly and by retrieving mixture-specific variables.
-        All data are stored as attributes. This method also sets :obj:`Tmin`, 
-        :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should 
-        work to calculate the property.
-
-        Called on initialization only. See the source code for the variables at
-        which the coefficients are stored. The coefficients can safely be
-        altered once the class is initialized. This method can be called again
-        to reset the parameters.
-        '''
-        methods = [DIPPR_9H, SIMPLE]        
-        if len(self.CASs) == 2:
-            methods.append(FILIPPOV)
-        if '7732-18-5' in self.CASs and len(self.CASs)>1:
-            wCASs = [i for i in self.CASs if i != '7732-18-5']
-            if all([i in Magomedovk_thermal_cond.index for i in wCASs]):
-                methods.append(MAGOMEDOV)
-                self.wCASs = wCASs
-                self.index_w = self.CASs.index('7732-18-5')
-            
-        self.all_methods = set(methods)
-        Tmins = [i.Tmin for i in self.ThermalConductivityLiquids if i.Tmin]
-        Tmaxs = [i.Tmax for i in self.ThermalConductivityLiquids if i.Tmax]
-        if Tmins:
-            self.Tmin = max(Tmins)
-        if Tmaxs:
-            self.Tmax = max(Tmaxs)
-        
-    def calculate(self, T, P, zs, ws, method):
-        r'''Method to calculate thermal conductivity of a liquid mixture at 
-        temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
-        `ws` with a given method.
-
-        This method has no exception handling; see `mixture_property`
-        for that.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to calculate the property, [K]
-        P : float
-            Pressure at which to calculate the property, [Pa]
-        zs : list[float]
-            Mole fractions of all species in the mixture, [-]
-        ws : list[float]
-            Weight fractions of all species in the mixture, [-]
-        method : str
-            Name of the method to use
-
-        Returns
-        -------
-        k : float
-            Thermal conductivity of the liquid mixture, [W/m/K]
-        '''
-        if method == MAGOMEDOV:
-            k_w = self.ThermalConductivityLiquids[self.index_w](T, P)
-            ws = list(ws) ; ws.pop(self.index_w)
-            return thermal_conductivity_Magomedov(T, P, ws, self.wCASs, k_w)
-        
-        if self._correct_pressure_pure:
-            ks = []
-            for obj in self.ThermalConductivityLiquids:
-                k = obj.TP_dependent_property(T, P)
-                if k is None:
-                    k = obj.T_dependent_property(T)
-                ks.append(k)
-        else:
-            ks = [i.T_dependent_property(T) for i in self.ThermalConductivityLiquids]
-        
-        if method == SIMPLE:
-            return mixing_simple(zs, ks)
-        elif method == DIPPR_9H:
-            return DIPPR9H(ws, ks)
-        elif method == FILIPPOV:
-            return Filippov(ws, ks)
-        else:
-            raise Exception('Method not valid')
-
-    def test_method_validity(self, T, P, zs, ws, method):
-        r'''Method to test the validity of a specified method for the given
-        conditions. If **Magomedov** is applicable (electrolyte system), no
-        other methods are considered viable. Otherwise, there are no easy
-        checks that can be performed here.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to check method validity, [K]
-        P : float
-            Pressure at which to check method validity, [Pa]
-        zs : list[float]
-            Mole fractions of all species in the mixture, [-]
-        ws : list[float]
-            Weight fractions of all species in the mixture, [-]
-        method : str
-            Method name to use
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a specifid method is valid
-        '''
-        if MAGOMEDOV in self.all_methods:
-            if method in self.all_methods:
-                return method == MAGOMEDOV
-        if method in [SIMPLE, DIPPR_9H, FILIPPOV]:
-            return True
-        else:
-            raise Exception('Method not valid')
 
 
 ### Thermal Conductivity of Gases
@@ -1540,7 +865,7 @@ def DIPPR9B(T, MW, Cvm, mu, Tc=None, chemtype=None):
     elif chemtype == 'nonlinear':
         return mu/MW*(1.15*Cvm + 16903.36)
     else:
-        raise Exception('Specified chemical type is not an option')
+        raise ValueError('Specified chemical type is not an option')
 
 
 def Chung(T, MW, Tc, omega, Cvm, mu):
@@ -1818,503 +1143,6 @@ def Bahadori_gas(T, MW):
     d = A[3] + B[3]*X + C[3]*X**2 + D[3]*X**3
     return a + b*Y + c*Y**2 + d*Y**3
 
-
-GHARAGHEIZI_G = 'GHARAGHEIZI_G'
-CHUNG = 'CHUNG'
-ELI_HANLEY = 'ELI_HANLEY'
-ELI_HANLEY_DENSE = 'ELI_HANLEY_DENSE'
-CHUNG_DENSE = 'CHUNG_DENSE'
-EUCKEN_MOD = 'EUCKEN_MOD'
-EUCKEN = 'EUCKEN'
-BAHADORI_G = 'BAHADORI_G'
-STIEL_THODOS_DENSE = 'STIEL_THODOS_DENSE'
-DIPPR_9B = 'DIPPR_9B'
-
-
-
-thermal_conductivity_gas_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR, GHARAGHEIZI_G,
-                                    DIPPR_9B, CHUNG, ELI_HANLEY, EUCKEN_MOD,
-                                    EUCKEN, BAHADORI_G]
-'''Holds all low-pressure methods available for the ThermalConductivityGas
-class, for use in iterating over them.'''
-thermal_conductivity_gas_methods_P = [COOLPROP, ELI_HANLEY_DENSE, CHUNG_DENSE,
-                                      STIEL_THODOS_DENSE]
-'''Holds all high-pressure methods available for the ThermalConductivityGas
-class, for use in iterating over them.'''
-
-class ThermalConductivityGas(TPDependentProperty):
-    r'''Class for dealing with gas thermal conductivity as a function of
-    temperature and pressure.
-
-    For gases at atmospheric pressure, there are 7 corresponding-states
-    estimators, one source of tabular information, and the external library
-    CoolProp.
-
-    For gases under the fluid's boiling point (at sub-atmospheric pressures),
-    and high-pressure gases above the boiling point, there are three
-    corresponding-states estimators, and the external library CoolProp.
-
-    Parameters
-    ----------
-    CASs : list[str], optional
-        The CAS numbers of all species in the mixture
-    MW : float, optional
-        Molecular weight, [g/mol]
-    Tb : float, optional
-        Boiling point, [K]
-    Tc : float, optional
-        Critical temperature, [K]
-    Pc : float, optional
-        Critical pressure, [Pa]
-    Vc : float, optional
-        Critical volume, [m^3/mol]
-    Zc : float, optional
-        Critical compressibility, [-]
-    omega : float, optional
-        Acentric factor, [-]
-    dipole : float, optional
-        Dipole moment of the fluid, [debye]
-    Vmg : float or callable, optional
-        Molar volume of the fluid at a pressure and temperature or callable for
-        the same, [m^3/mol]
-    Cvgm : float or callable, optional
-        Molar heat capacity of the fluid at a pressure and temperature or 
-        or callable for the same, [J/mol/K]
-    mug : float or callable, optional
-        Gas viscosity of the fluid at a pressure and temperature or callable
-        for the same, [Pa*s]
-
-    Notes
-    -----
-    To iterate over all methods, use the lists stored in
-    :obj:`thermal_conductivity_gas_methods` and
-    :obj:`thermal_conductivity_gas_methods_P` for low and high pressure
-    methods respectively.
-
-    Low pressure methods:
-
-    **GHARAGHEIZI_G**:
-        CSP method, described in :obj:`Gharagheizi_gas`.
-    **DIPPR_9B**:
-        CSP method, described in :obj:`DIPPR9B`.
-    **CHUNG**:
-        CSP method, described in :obj:`Chung`.
-    **ELI_HANLEY**:
-        CSP method, described in :obj:`eli_hanley`.
-    **EUCKEN_MOD**:
-        CSP method, described in :obj:`Eucken_modified`.
-    **EUCKEN**:
-        CSP method, described in :obj:`Eucken`.
-    **BAHADORI_G**:
-        CSP method, described in :obj:`Bahadori_gas`.
-    **DIPPR_PERRY_8E**:
-        A collection of 345 coefficient sets from the DIPPR database published
-        openly in [3]_. Provides temperature limits for all its fluids. 
-        :obj:`thermo.dippr.EQ102` is used for its fluids.
-    **VDI_PPDS**:
-        Coefficients for a equation form developed by the PPDS, published 
-        openly in [2]_. Covers a large temperature range, but does not 
-        extrapolate well at very high or very low temperatures. 275 compounds.
-    **COOLPROP**:
-        CoolProp external library; with select fluids from its library.
-        Range is limited to that of the equations of state it uses, as
-        described in [1]_. Very slow.
-    **VDI_TABULAR**:
-        Tabular data in [2]_ along the saturation curve; interpolation is as
-        set by the user or the default.
-
-    High pressure methods:
-
-    **STIEL_THODOS_DENSE**:
-        CSP method, described in :obj:`stiel_thodos_dense`. Calculates a
-        low-pressure thermal conductivity first, using `T_dependent_property`.
-    **ELI_HANLEY_DENSE**:
-        CSP method, described in :obj:`eli_hanley_dense`. Calculates a
-        low-pressure thermal conductivity first, using `T_dependent_property`.
-    **CHUNG_DENSE**:
-        CSP method, described in :obj:`chung_dense`. Calculates a
-        low-pressure thermal conductivity first, using `T_dependent_property`.
-    **COOLPROP**:
-        CoolProp external library; with select fluids from its library.
-        Range is limited to that of the equations of state it uses, as
-        described in [1]_. Very slow, but unparalled in accuracy for pressure
-        dependence.
-
-    See Also
-    --------
-    Bahadori_gas
-    Gharagheizi_gas
-    eli_hanley
-    Chung
-    DIPPR9B
-    Eucken_modified
-    Eucken
-    stiel_thodos_dense
-    eli_hanley_dense
-    chung_dense
-
-    References
-    ----------
-    .. [1] Bell, Ian H., Jorrit Wronski, Sylvain Quoilin, and Vincent Lemort.
-       "Pure and Pseudo-Pure Fluid Thermophysical Property Evaluation and the
-       Open-Source Thermophysical Property Library CoolProp." Industrial &
-       Engineering Chemistry Research 53, no. 6 (February 12, 2014):
-       2498-2508. doi:10.1021/ie4033999. http://www.coolprop.org/
-    .. [2] Gesellschaft, V. D. I., ed. VDI Heat Atlas. 2nd edition.
-       Berlin; New York:: Springer, 2010.
-    .. [3] Green, Don, and Robert Perry. Perry's Chemical Engineers' Handbook,
-       Eighth Edition. McGraw-Hill Professional, 2007.
-    '''
-    name = 'gas thermal conductivity'
-    units = 'W/m/K'
-    interpolation_T = None
-    '''No interpolation transformation by default.'''
-    interpolation_P = None
-    '''No interpolation transformation by default.'''
-    interpolation_property = None
-    '''No interpolation transformation by default.'''
-    interpolation_property_inv = None
-    '''No interpolation transformation by default.'''
-    tabular_extrapolation_permitted = True
-    '''Allow tabular extrapolation by default.'''
-    property_min = 0
-    '''Mimimum valid value of gas thermal conductivity.'''
-    property_max = 10
-    '''Maximum valid value of gas thermal conductivity. Generous limit.'''
-
-    ranked_methods = [COOLPROP, VDI_PPDS, DIPPR_PERRY_8E, VDI_TABULAR, GHARAGHEIZI_G, DIPPR_9B,
-                      CHUNG, ELI_HANLEY, EUCKEN_MOD, EUCKEN,
-                      BAHADORI_G]
-    '''Default rankings of the low-pressure methods.'''
-    ranked_methods_P = [COOLPROP, ELI_HANLEY_DENSE, CHUNG_DENSE,
-                        STIEL_THODOS_DENSE]
-    '''Default rankings of the high-pressure methods.'''
-
-    def __init__(self, CASRN='', MW=None, Tb=None, Tc=None, Pc=None, Vc=None,
-                 Zc=None, omega=None, dipole=None, Vmg=None, Cvgm=None, mug=None,
-                 best_fit=None):
-        self.CASRN = CASRN
-        self.MW = MW
-        self.Tb = Tb
-        self.Tc = Tc
-        self.Pc = Pc
-        self.Vc = Vc
-        self.Zc = Zc
-        self.omega = omega
-        self.dipole = dipole
-        self.Vmg = Vmg
-        self.Cvgm = Cvgm
-        self.mug = mug
-
-        self.Tmin = None
-        '''Minimum temperature at which no method can calculate the
-        gas thermal conductivity under.'''
-        self.Tmax = None
-        '''Maximum temperature at which no method can calculate the
-        gas thermal conductivity above.'''
-
-        self.tabular_data = {}
-        '''tabular_data, dict: Stored (Ts, properties) for any
-        tabular data; indexed by provided or autogenerated name.'''
-        self.tabular_data_interpolators = {}
-        '''tabular_data_interpolators, dict: Stored (extrapolator,
-        spline) tuples which are interp1d instances for each set of tabular
-        data; indexed by tuple of (name, interpolation_T,
-        interpolation_property, interpolation_property_inv) to ensure that
-        if an interpolation transform is altered, the old interpolator which
-        had been created is no longer used.'''
-
-        self.tabular_data_P = {}
-        '''tabular_data_P, dict: Stored (Ts, Ps, properties) for any
-        tabular data; indexed by provided or autogenerated name.'''
-        self.tabular_data_interpolators_P = {}
-        '''tabular_data_interpolators_P, dict: Stored (extrapolator,
-        spline) tuples which are interp2d instances for each set of tabular
-        data; indexed by tuple of (name, interpolation_T, interpolation_P,
-        interpolation_property, interpolation_property_inv) to ensure that
-        if an interpolation transform is altered, the old interpolator which
-        had been created is no longer used.'''
-
-        self.sorted_valid_methods = []
-        '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by `T_dependent_property`.'''
-        self.sorted_valid_methods_P = []
-        '''sorted_valid_methods_P, list: Stored methods which were found valid
-        at a specific temperature; set by `TP_dependent_property`.'''
-        self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `T_dependent_property`.'''
-        self.user_methods_P = []
-        '''user_methods_P, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by `TP_dependent_property`.'''
-
-        self.all_methods = set()
-        '''Set of all low-pressure methods available for a given CASRN and
-        properties; filled by :obj:`load_all_methods`.'''
-        self.all_methods_P = set()
-        '''Set of all high-pressure methods available for a given CASRN and
-        properties; filled by :obj:`load_all_methods`.'''
-
-        self.load_all_methods()
-        if best_fit is not None:
-            self.set_best_fit(best_fit)
-
-    def load_all_methods(self):
-        r'''Method which picks out coefficients for the specified chemical
-        from the various dictionaries and DataFrames storing it. All data is
-        stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
-        :obj:`all_methods` and obj:`all_methods_P` as a set of methods for
-        which the data exists for.
-
-        Called on initialization only. See the source code for the variables at
-        which the coefficients are stored. The coefficients can safely be
-        altered once the class is initialized. This method can be called again
-        to reset the parameters.
-        '''
-        methods, methods_P = [], []
-        Tmins, Tmaxs = [], []
-        if self.CASRN in miscdata.VDI_saturation_data:
-            methods.append(VDI_TABULAR)
-            Ts, props = VDI_tabular_data(self.CASRN, 'K (g)')
-            self.VDI_Tmin = Ts[0]
-            self.VDI_Tmax = Ts[-1]
-            self.tabular_data[VDI_TABULAR] = (Ts, props)
-            Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
-        if has_CoolProp and self.CASRN in coolprop_dict:
-            methods.append(COOLPROP); methods_P.append(COOLPROP)
-            self.CP_f = coolprop_fluids[self.CASRN]
-            Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tc)
-        if self.CASRN in Perrys2_314.index:
-            methods.append(DIPPR_PERRY_8E)
-            _, C1, C2, C3, C4, self.Perrys2_314_Tmin, self.Perrys2_314_Tmax = _Perrys2_314_values[Perrys2_314.index.get_loc(self.CASRN)].tolist()
-            self.Perrys2_314_coeffs = [C1, C2, C3, C4]
-            Tmins.append(self.Perrys2_314_Tmin); Tmaxs.append(self.Perrys2_314_Tmax)
-        if self.CASRN in VDI_PPDS_10.index:
-            _,  A, B, C, D, E = _VDI_PPDS_10_values[VDI_PPDS_10.index.get_loc(self.CASRN)].tolist()
-            self.VDI_PPDS_coeffs = [A, B, C, D, E]
-            self.VDI_PPDS_coeffs.reverse()
-            methods.append(VDI_PPDS)
-        if all((self.MW, self.Tb, self.Pc, self.omega)):
-            methods.append(GHARAGHEIZI_G)
-            # Turns negative at low T; do not set Tmin
-            Tmaxs.append(3000)
-        if all((self.Cvgm, self.mug, self.MW, self.Tc)):
-            methods.append(DIPPR_9B)
-            Tmins.append(0.01); Tmaxs.append(1E4)  # No limit here
-        if all((self.Cvgm, self.mug, self.MW, self.Tc, self.omega)):
-            methods.append(CHUNG)
-            Tmins.append(0.01); Tmaxs.append(1E4)  # No limit
-        if all((self.Cvgm, self.MW, self.Tc, self.Vc, self.Zc, self.omega)):
-            methods.append(ELI_HANLEY)
-            Tmaxs.append(1E4)  # Numeric error at low T
-        if all((self.Cvgm, self.mug, self.MW)):
-            methods.append(EUCKEN_MOD)
-            methods.append(EUCKEN)
-            Tmins.append(0.01); Tmaxs.append(1E4)  # No limits
-        if self.MW:
-            methods.append(BAHADORI_G)
-            # Terrible method, so don't set methods
-        if all([self.MW, self.Tc, self.Vc, self.Zc, self.omega]):
-            methods_P.append(ELI_HANLEY_DENSE)
-        if all([self.MW, self.Tc, self.Vc, self.omega, self.dipole]):
-            methods_P.append(CHUNG_DENSE)
-        if all([self.MW, self.Tc, self.Pc, self.Vc, self.Zc]):
-            methods_P.append(STIEL_THODOS_DENSE)
-        self.all_methods = set(methods)
-        self.all_methods_P = set(methods_P)
-        if Tmins and Tmaxs:
-            self.Tmin, self.Tmax = min(Tmins), max(Tmaxs)
-
-    def calculate(self, T, method):
-        r'''Method to calculate low-pressure gas thermal conductivity at
-        tempearture `T` with a given method.
-
-        This method has no exception handling; see `T_dependent_property`
-        for that.
-
-        Parameters
-        ----------
-        T : float
-            Temperature of the gas, [K]
-        method : str
-            Name of the method to use
-
-        Returns
-        -------
-        kg : float
-            Thermal conductivity of the gas at T and a low pressure, [W/m/K]
-        '''
-        if method == GHARAGHEIZI_G:
-            kg = Gharagheizi_gas(T, self.MW, self.Tb, self.Pc, self.omega)
-        elif method == DIPPR_9B:
-            Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
-            mug = self.mug(T) if hasattr(self.mug, '__call__') else self.mug
-            kg = DIPPR9B(T, self.MW, Cvgm, mug, self.Tc)
-        elif method == CHUNG:
-            Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
-            mug = self.mug(T) if hasattr(self.mug, '__call__') else self.mug
-            kg = Chung(T, self.MW, self.Tc, self.omega, Cvgm, mug)
-        elif method == ELI_HANLEY:
-            Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
-            kg = eli_hanley(T, self.MW, self.Tc, self.Vc, self.Zc, self.omega, Cvgm)
-        elif method == EUCKEN_MOD:
-            Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
-            mug = self.mug(T) if hasattr(self.mug, '__call__') else self.mug
-            kg = Eucken_modified(self.MW, Cvgm, mug)
-        elif method == EUCKEN:
-            Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
-            mug = self.mug(T) if hasattr(self.mug, '__call__') else self.mug
-            kg = Eucken(self.MW, Cvgm, mug)
-        elif method == DIPPR_PERRY_8E:
-            kg = EQ102(T, *self.Perrys2_314_coeffs)
-        elif method == VDI_PPDS:
-            kg = horner(self.VDI_PPDS_coeffs, T)
-        elif method == BAHADORI_G:
-            kg = Bahadori_gas(T, self.MW)
-        elif method == COOLPROP:
-            kg = CoolProp_T_dependent_property(T, self.CASRN, 'L', 'g')
-        elif method == BESTFIT:
-            if T < self.best_fit_Tmin:
-                kg = (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value
-            elif T > self.best_fit_Tmax:
-                kg = (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
-            else:
-                kg = horner(self.best_fit_coeffs, T)
-        elif method in self.tabular_data:
-            kg = self.interpolate(T, method)
-        return kg
-
-    def calculate_P(self, T, P, method):
-        r'''Method to calculate pressure-dependent gas thermal conductivity
-        at temperature `T` and pressure `P` with a given method.
-
-        This method has no exception handling; see `TP_dependent_property`
-        for that.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to calculate gas thermal conductivity, [K]
-        P : float
-            Pressure at which to calculate gas thermal conductivity, [K]
-        method : str
-            Name of the method to use
-
-        Returns
-        -------
-        kg : float
-            Thermal conductivity of the gas at T and P, [W/m/K]
-        '''
-        if method == ELI_HANLEY_DENSE:
-            Vmg = self.Vmg(T, P) if hasattr(self.Vmg, '__call__') else self.Vmg
-            Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
-            kg = eli_hanley_dense(T, self.MW, self.Tc, self.Vc, self.Zc, self.omega, Cvgm, Vmg)
-        elif method == CHUNG_DENSE:
-            Vmg = self.Vmg(T, P) if hasattr(self.Vmg, '__call__') else self.Vmg
-            Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
-            mug = self.mug(T, P) if hasattr(self.mug, '__call__') else self.mug
-            kg = chung_dense(T, self.MW, self.Tc, self.Vc, self.omega, Cvgm, Vmg, mug, self.dipole)
-        elif method == STIEL_THODOS_DENSE:
-            kg = self.T_dependent_property(T)
-            Vmg = self.Vmg(T, P) if hasattr(self.Vmg, '__call__') else self.Vmg
-            kg = stiel_thodos_dense(T, self.MW, self.Tc, self.Pc, self.Vc, self.Zc, Vmg, kg)
-        elif method == COOLPROP:
-            kg = PropsSI('L', 'T', T, 'P', P, self.CASRN)
-        elif method in self.tabular_data:
-            kg = self.interpolate_P(T, P, method)
-        return kg
-
-    def test_method_validity(self, T, method):
-        r'''Method to check the validity of a temperature-dependent
-        low-pressure method. For CSP methods, the all methods are considered
-        valid from 0 K and up.
-
-        For tabular data, extrapolation outside of the range is used if
-        :obj:`tabular_extrapolation_permitted` is set; if it is, the extrapolation
-        is considered valid for all temperatures.
-
-        It is not guaranteed that a method will work or give an accurate
-        prediction simply because this method considers the method valid.
-        **GHARAGHEIZI_G** and **BAHADORI_G** are known to sometimes produce
-        negative results.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to test the method, [K]
-        method : str
-            Name of the method to test
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a method is valid
-        '''
-        if method in [GHARAGHEIZI_G, DIPPR_9B, CHUNG, ELI_HANLEY, EUCKEN_MOD,
-                      EUCKEN, BAHADORI_G, VDI_PPDS]:
-            pass
-        elif method == DIPPR_PERRY_8E:
-            if T < self.Perrys2_314_Tmin or T > self.Perrys2_314_Tmax:
-                return False
-        elif method == COOLPROP:
-            if T < self.CP_f.Tmin or T > self.CP_f.Tmax:
-                return False
-        elif method in self.tabular_data:
-            # if tabular_extrapolation_permitted, good to go without checking
-            if not self.tabular_extrapolation_permitted:
-                Ts, properties = self.tabular_data[method]
-                if T < Ts[0] or T > Ts[-1]:
-                    return False
-        else:
-            raise Exception('Method not valid')
-        return True
-
-    def test_method_validity_P(self, T, P, method):
-        r'''Method to check the validity of a high-pressure method. For
-        **COOLPROP**, the fluid must be both a gas and under the maximum
-        pressure of the fluid's EOS. The CSP method **ELI_HANLEY_DENSE**,
-        **CHUNG_DENSE**, and **STIEL_THODOS_DENSE** are considered valid for
-        all temperatures and pressures.
-
-        For tabular data, extrapolation outside of the range is used if
-        :obj:`tabular_extrapolation_permitted` is set; if it is, the
-        extrapolation is considered valid for all temperatures and pressures.
-
-        It is not guaranteed that a method will work or give an accurate
-        prediction simply because this method considers the method valid.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to test the method, [K]
-        P : float
-            Pressure at which to test the method, [Pa]
-        method : str
-            Name of the method to test
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a method is valid
-        '''
-        validity = True
-        if method in [ELI_HANLEY_DENSE, CHUNG_DENSE, STIEL_THODOS_DENSE]:
-            if T < 0 or P < 0:
-                validity = False
-            # no better checks known
-        elif method == COOLPROP:
-            if T < self.CP_f.Tmin or T > self.CP_f.Tmax or P > self.CP_f.Pmax:
-                return False
-            else:
-                return PhaseSI('T', T, 'P', P, self.CASRN) in ['gas', 'supercritical_gas', 'supercritical', 'supercritical_liquid']
-        elif method in self.tabular_data:
-            if not self.tabular_extrapolation_permitted:
-                Ts, Ps, properties = self.tabular_data[method]
-                if T < Ts[0] or T > Ts[-1] or P < Ps[0] or P > Ps[-1]:
-                    validity = False
-        else:
-            raise Exception('Method not valid')
-        return validity
 
 
 ### Thermal Conductivity of dense gases
@@ -2716,9 +1544,6 @@ def Lindsay_Bromley(T, ys, ks, mus, Tbs, MWs):
     .. [2] Danner, Ronald P, and Design Institute for Physical Property Data.
        Manual for Predicting Chemical Process Design Data. New York, N.Y, 1982.
     '''
-    if not none_and_length_check([ys, ks, mus, Tbs, MWs]):
-        raise Exception('Function inputs are incorrect format')
-
     cmps = range(len(ys))
     Ss = [1.5*Tb for Tb in Tbs]
     Sij = [[(Si*Sj)**0.5 for Sj in Ss] for Si in Ss]
@@ -2729,6 +1554,1191 @@ def Lindsay_Bromley(T, ys, ks, mus, Tbs, MWs):
             
     return sum([ys[i]*ks[i]/sum(ys[j]*Aij[i][j] for j in cmps) for i in cmps])
 
+
+
+
+VDI_TABULAR = 'VDI_TABULAR'
+VDI_PPDS = 'VDI_PPDS'
+COOLPROP = 'COOLPROP'
+GHARAGHEIZI_L = 'GHARAGHEIZI_L'
+NICOLA = 'NICOLA'
+NICOLA_ORIGINAL = 'NICOLA_ORIGINAL'
+SATO_RIEDEL = 'SATO_RIEDEL'
+SHEFFY_JOHNSON = 'SHEFFY_JOHNSON'
+BAHADORI_L = 'BAHADORI_L'
+LAKSHMI_PRASAD = 'LAKSHMI_PRASAD'
+MISSENARD = 'MISSENARD'
+NONE = 'NONE'
+DIPPR_PERRY_8E = 'DIPPR_PERRY_8E'
+NEGLIGIBLE = 'NEGLIGIBLE'
+DIPPR_9G = 'DIPPR_9G'
+BESTFIT = 'Best fit'
+
+thermal_conductivity_liquid_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, 
+                                       VDI_TABULAR, GHARAGHEIZI_L, 
+                                       SHEFFY_JOHNSON, SATO_RIEDEL,
+                                       LAKSHMI_PRASAD, BAHADORI_L,
+                                       NICOLA, NICOLA_ORIGINAL]
+'''Holds all low-pressure methods available for the ThermalConductivityLiquid
+class, for use in iterating over them.'''
+
+thermal_conductivity_liquid_methods_P = [COOLPROP, DIPPR_9G, MISSENARD]
+'''Holds all high-pressure methods available for the ThermalConductivityLiquid
+class, for use in iterating over them.'''
+
+class ThermalConductivityLiquid(TPDependentProperty):
+    r'''Class for dealing with liquid thermal conductivity as a function of
+    temperature and pressure.
+
+    For low-pressure (at 1 atm while under the vapor pressure; along the
+    saturation line otherwise) liquids, there is one source of tabular
+    information, one polynomial-based method, 7 corresponding-states estimators, 
+    and the external library CoolProp.
+
+    For high-pressure liquids (also, <1 atm liquids), there are two
+    corresponding-states estimator, and the external library CoolProp.
+
+    Parameters
+    ----------
+    CASs : list[str], optional
+        The CAS numbers of all species in the mixture
+    MW : float, optional
+        Molecular weight, [g/mol]
+    Tm : float, optional
+        Melting point, [K]
+    Tb : float, optional
+        Boiling point, [K]
+    Tc : float, optional
+        Critical temperature, [K]
+    Pc : float, optional
+        Critical pressure, [Pa]
+    omega : float, optional
+        Acentric factor, [-]
+    Hfus : float, optional
+        Heat of fusion, [J/mol]
+
+    Notes
+    -----
+    To iterate over all methods, use the lists stored in
+    :obj:`thermal_conductivity_liquid_methods` and
+    :obj:`thermal_conductivity_liquid_methods_P` for low and high pressure
+    methods respectively.
+
+    Low pressure methods:
+
+    **GHARAGHEIZI_L**:
+        CSP method, described in :obj:`Gharagheizi_liquid`.
+    **SATO_RIEDEL**:
+        CSP method, described in :obj:`Sato_Riedel`.
+    **NICOLA**:
+        CSP method, described in :obj:`Nicola`.
+    **NICOLA_ORIGINAL**:
+        CSP method, described in :obj:`Nicola_original`.
+    **SHEFFY_JOHNSON**:
+        CSP method, described in :obj:`Sheffy_Johnson`.
+    **BAHADORI_L**:
+        CSP method, described in :obj:`Bahadori_liquid`.
+    **LAKSHMI_PRASAD**:
+        CSP method, described in :obj:`Lakshmi_Prasad`.
+    **DIPPR_PERRY_8E**:
+        A collection of 340 coefficient sets from the DIPPR database published
+        openly in [3]_. Provides temperature limits for all its fluids. 
+        :obj:`thermo.dippr.EQ100` is used for its fluids.
+    **VDI_PPDS**:
+        Coefficients for a equation form developed by the PPDS, published 
+        openly in [2]_. Covers a large temperature range, but does not 
+        extrapolate well at very high or very low temperatures. 271 compounds.
+    **COOLPROP**:
+        CoolProp external library; with select fluids from its library.
+        Range is limited to that of the equations of state it uses, as
+        described in [1]_. Very slow.
+    **VDI_TABULAR**:
+        Tabular data in [2]_ along the saturation curve; interpolation is as
+        set by the user or the default.
+
+    High pressure methods:
+
+    **DIPPR_9G**:
+        CSP method, described in :obj:`DIPPR9G`. Calculates a
+        low-pressure thermal conductivity first, using `T_dependent_property`.
+    **MISSENARD**:
+        CSP method, described in :obj:`Missenard`. Calculates a
+        low-pressure thermal conductivity first, using `T_dependent_property`.
+    **COOLPROP**:
+        CoolProp external library; with select fluids from its library.
+        Range is limited to that of the equations of state it uses, as
+        described in [1]_. Very slow, but unparalled in accuracy for pressure
+        dependence.
+
+    See Also
+    --------
+    Sheffy_Johnson
+    Sato_Riedel
+    Lakshmi_Prasad
+    Gharagheizi_liquid
+    Nicola_original
+    Nicola
+    Bahadori_liquid
+    DIPPR9G
+    Missenard
+
+    References
+    ----------
+    .. [1] Bell, Ian H., Jorrit Wronski, Sylvain Quoilin, and Vincent Lemort.
+       "Pure and Pseudo-Pure Fluid Thermophysical Property Evaluation and the
+       Open-Source Thermophysical Property Library CoolProp." Industrial &
+       Engineering Chemistry Research 53, no. 6 (February 12, 2014):
+       2498-2508. doi:10.1021/ie4033999. http://www.coolprop.org/
+    .. [2] Gesellschaft, V. D. I., ed. VDI Heat Atlas. 2nd edition.
+       Berlin; New York:: Springer, 2010.
+    .. [3] Green, Don, and Robert Perry. Perry's Chemical Engineers' Handbook,
+       Eighth Edition. McGraw-Hill Professional, 2007.
+    '''
+    name = 'liquid thermal conductivity'
+    units = 'W/m/K'
+    interpolation_T = None
+    '''No interpolation transformation by default.'''
+    interpolation_P = None
+    '''No interpolation transformation by default.'''
+    interpolation_property = None
+    '''No interpolation transformation by default.'''
+    interpolation_property_inv = None
+    '''No interpolation transformation by default.'''
+    tabular_extrapolation_permitted = True
+    '''Allow tabular extrapolation by default.'''
+    property_min = 0
+    '''Mimimum valid value of liquid thermal conductivity.'''
+    property_max = 10
+    '''Maximum valid value of liquid thermal conductivity. Generous limit.'''
+
+    ranked_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR,
+                      GHARAGHEIZI_L, SHEFFY_JOHNSON, SATO_RIEDEL, 
+                      LAKSHMI_PRASAD, BAHADORI_L, NICOLA, NICOLA_ORIGINAL]
+    '''Default rankings of the low-pressure methods.'''
+    ranked_methods_P = [COOLPROP, DIPPR_9G, MISSENARD]
+    '''Default rankings of the high-pressure methods.'''
+
+
+    def __init__(self, CASRN='', MW=None, Tm=None, Tb=None, Tc=None, Pc=None,
+                 omega=None, Hfus=None, best_fit=None):
+        self.CASRN = CASRN
+        self.MW = MW
+        self.Tm = Tm
+        self.Tb = Tb
+        self.Tc = Tc
+        self.Pc = Pc
+        self.omega = omega
+        self.Hfus = Hfus
+
+        self.Tmin = None
+        '''Minimum temperature at which no method can calculate the
+        liquid thermal conductivity under.'''
+        self.Tmax = None
+        '''Maximum temperature at which no method can calculate the
+        liquid thermal conductivity above.'''
+
+        self.tabular_data = {}
+        '''tabular_data, dict: Stored (Ts, properties) for any
+        tabular data; indexed by provided or autogenerated name.'''
+        self.tabular_data_interpolators = {}
+        '''tabular_data_interpolators, dict: Stored (extrapolator,
+        spline) tuples which are interp1d instances for each set of tabular
+        data; indexed by tuple of (name, interpolation_T,
+        interpolation_property, interpolation_property_inv) to ensure that
+        if an interpolation transform is altered, the old interpolator which
+        had been created is no longer used.'''
+
+        self.tabular_data_P = {}
+        '''tabular_data_P, dict: Stored (Ts, Ps, properties) for any
+        tabular data; indexed by provided or autogenerated name.'''
+        self.tabular_data_interpolators_P = {}
+        '''tabular_data_interpolators_P, dict: Stored (extrapolator,
+        spline) tuples which are interp2d instances for each set of tabular
+        data; indexed by tuple of (name, interpolation_T, interpolation_P,
+        interpolation_property, interpolation_property_inv) to ensure that
+        if an interpolation transform is altered, the old interpolator which
+        had been created is no longer used.'''
+
+        self.sorted_valid_methods = []
+        '''sorted_valid_methods, list: Stored methods which were found valid
+        at a specific temperature; set by `T_dependent_property`.'''
+        self.sorted_valid_methods_P = []
+        '''sorted_valid_methods_P, list: Stored methods which were found valid
+        at a specific temperature; set by `TP_dependent_property`.'''
+        self.user_methods = []
+        '''user_methods, list: Stored methods which were specified by the user
+        in a ranked order of preference; set by `T_dependent_property`.'''
+        self.user_methods_P = []
+        '''user_methods_P, list: Stored methods which were specified by the user
+        in a ranked order of preference; set by `TP_dependent_property`.'''
+
+        self.all_methods = set()
+        '''Set of all low-pressure methods available for a given CASRN and
+        properties; filled by :obj:`load_all_methods`.'''
+        self.all_methods_P = set()
+        '''Set of all high-pressure methods available for a given CASRN and
+        properties; filled by :obj:`load_all_methods`.'''
+
+        self.load_all_methods()
+        if best_fit is not None:
+            self.set_best_fit(best_fit)
+
+    def load_all_methods(self):
+        r'''Method which picks out coefficients for the specified chemical
+        from the various dictionaries and DataFrames storing it. All data is
+        stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
+        :obj:`all_methods` and obj:`all_methods_P` as a set of methods for
+        which the data exists for.
+
+        Called on initialization only. See the source code for the variables at
+        which the coefficients are stored. The coefficients can safely be
+        altered once the class is initialized. This method can be called again
+        to reset the parameters.
+        '''
+        methods, methods_P = [], []
+        Tmins, Tmaxs = [], []
+        if self.CASRN in miscdata.VDI_saturation_dict:
+            methods.append(VDI_TABULAR)
+            Ts, props = lookup_VDI_tabular_data(self.CASRN, 'K (l)')
+            self.VDI_Tmin = Ts[0]
+            self.VDI_Tmax = Ts[-1]
+            self.tabular_data[VDI_TABULAR] = (Ts, props)
+            Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
+        if has_CoolProp and self.CASRN in coolprop_dict:
+            methods.append(COOLPROP); methods_P.append(COOLPROP)
+            self.CP_f = coolprop_fluids[self.CASRN]
+            Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tc)
+        if self.MW:
+            methods.extend([BAHADORI_L, LAKSHMI_PRASAD])
+            # Tmin and Tmax are not extended by these simple models, who often
+            # give values of 0; BAHADORI_L even has 3 roots.
+            # LAKSHMI_PRASAD works down to 0 K, and has an upper limit of
+            # 50.0*(131.0*sqrt(M) + 2771.0)/(50.0*M**0.5 + 197.0)
+            # where it becomes 0.
+        if self.CASRN in Perrys2_315.index:
+            methods.append(DIPPR_PERRY_8E)
+            _, C1, C2, C3, C4, C5, self.Perrys2_315_Tmin, self.Perrys2_315_Tmax = _Perrys2_315_values[Perrys2_315.index.get_loc(self.CASRN)].tolist()
+            self.Perrys2_315_coeffs = [C1, C2, C3, C4, C5]
+            Tmins.append(self.Perrys2_315_Tmin); Tmaxs.append(self.Perrys2_315_Tmax)
+        if self.CASRN in VDI_PPDS_9.index:
+            _,  A, B, C, D, E = _VDI_PPDS_9_values[VDI_PPDS_9.index.get_loc(self.CASRN)].tolist()
+            self.VDI_PPDS_coeffs = [A, B, C, D, E]
+            self.VDI_PPDS_coeffs.reverse()
+            methods.append(VDI_PPDS)
+        if all([self.MW, self.Tm]):
+            methods.append(SHEFFY_JOHNSON)
+            Tmins.append(0); Tmaxs.append(self.Tm + 793.65)
+            # Works down to 0, has a nice limit at T = Tm+793.65 from Sympy
+        if all([self.Tb, self.Pc, self.omega]):
+            methods.append(GHARAGHEIZI_L)
+            Tmins.append(self.Tb); Tmaxs.append(self.Tc)
+            # Chosen as the model is weird
+        if all([self.Tc, self.Pc, self.omega]):
+            methods.append(NICOLA)
+        if all([self.Tb, self.Tc]):
+            methods.append(SATO_RIEDEL)
+        if all([self.Hfus, self.Tc, self.omega]):
+            methods.append(NICOLA_ORIGINAL)
+        if all([self.Tc, self.Pc]):
+            methods_P.extend([DIPPR_9G, MISSENARD])
+        self.all_methods = set(methods)
+        self.all_methods_P = set(methods_P)
+        if Tmins and Tmaxs:
+            self.Tmin, self.Tmax = min(Tmins), max(Tmaxs)
+
+    def calculate(self, T, method):
+        r'''Method to calculate low-pressure liquid thermal conductivity at
+        tempearture `T` with a given method.
+
+        This method has no exception handling; see `T_dependent_property`
+        for that.
+
+        Parameters
+        ----------
+        T : float
+            Temperature of the liquid, [K]
+        method : str
+            Name of the method to use
+
+        Returns
+        -------
+        kl : float
+            Thermal conductivity of the liquid at T and a low pressure, [W/m/K]
+        '''
+        if method == SHEFFY_JOHNSON:
+            kl = Sheffy_Johnson(T, self.MW, self.Tm)
+        elif method == SATO_RIEDEL:
+            kl = Sato_Riedel(T, self.MW, self.Tb, self.Tc)
+        elif method == GHARAGHEIZI_L:
+            kl = Gharagheizi_liquid(T, self.MW, self.Tb, self.Pc, self.omega)
+        elif method == NICOLA:
+            kl = Nicola(T, self.MW, self.Tc, self.Pc, self.omega)
+        elif method == NICOLA_ORIGINAL:
+            kl = Nicola_original(T, self.MW, self.Tc, self.omega, self.Hfus)
+        elif method == LAKSHMI_PRASAD:
+            kl = Lakshmi_Prasad(T, self.MW)
+        elif method == BAHADORI_L:
+            kl = Bahadori_liquid(T, self.MW)
+        elif method == DIPPR_PERRY_8E:
+            kl = EQ100(T, *self.Perrys2_315_coeffs)
+        elif method == VDI_PPDS:
+            kl = horner(self.VDI_PPDS_coeffs, T)
+        elif method == COOLPROP:
+            kl = CoolProp_T_dependent_property(T, self.CASRN, 'L', 'l')
+        elif method in self.tabular_data:
+            kl = self.interpolate(T, method)
+        elif method == BESTFIT:
+            if T < self.best_fit_Tmin:
+                kl = (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value
+            elif T > self.best_fit_Tmax:
+                kl = (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
+            else:
+                kl = horner(self.best_fit_coeffs, T)
+        return kl
+
+    def calculate_P(self, T, P, method):
+        r'''Method to calculate pressure-dependent liquid thermal conductivity
+        at temperature `T` and pressure `P` with a given method.
+
+        This method has no exception handling; see `TP_dependent_property`
+        for that.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate liquid thermal conductivity, [K]
+        P : float
+            Pressure at which to calculate liquid thermal conductivity, [K]
+        method : str
+            Name of the method to use
+
+        Returns
+        -------
+        kl : float
+            Thermal conductivity of the liquid at T and P, [W/m/K]
+        '''
+        if method == DIPPR_9G:
+            kl = self.T_dependent_property(T)
+            kl = DIPPR9G(T, P, self.Tc, self.Pc, kl)
+        elif method == MISSENARD:
+            kl = self.T_dependent_property(T)
+            kl = Missenard(T, P, self.Tc, self.Pc, kl)
+        elif method == COOLPROP:
+            kl = PropsSI('L', 'T', T, 'P', P, self.CASRN)
+        elif method in self.tabular_data:
+            kl = self.interpolate_P(T, P, method)
+        return kl
+
+    def test_method_validity(self, T, method):
+        r'''Method to check the validity of a temperature-dependent
+        low-pressure method. For CSP methods, the models **BAHADORI_L**,
+        **LAKSHMI_PRASAD**, and **SHEFFY_JOHNSON** are considered valid for all
+        temperatures. For methods **GHARAGHEIZI_L**, **NICOLA**,
+        and **NICOLA_ORIGINAL**, the methods are considered valid up to 1.5Tc
+        and down to 0 K. Method **SATO_RIEDEL** does not work above the
+        critical point, so it is valid from 0 K to the critical point.
+
+        For tabular data, extrapolation outside of the range is used if
+        :obj:`tabular_extrapolation_permitted` is set; if it is, the extrapolation
+        is considered valid for all temperatures.
+
+        It is not guaranteed that a method will work or give an accurate
+        prediction simply because this method considers the method valid.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to test the method, [K]
+        method : str
+            Name of the method to test
+
+        Returns
+        -------
+        validity : bool
+            Whether or not a method is valid
+        '''
+        if method == SATO_RIEDEL:
+            if T > self.Tc:
+                return False
+                # Doesn't run, no lower limit though
+        elif method in [GHARAGHEIZI_L, NICOLA, NICOLA_ORIGINAL]:
+            if T > self.Tc*1.5:
+                return False
+            # No lower limit, give a wide margin of acceptability here
+        elif method == DIPPR_PERRY_8E:
+            if T < self.Perrys2_315_Tmin or T > self.Perrys2_315_Tmax:
+                return False
+        elif method in [BAHADORI_L, LAKSHMI_PRASAD, SHEFFY_JOHNSON]:
+            pass
+            # no limits at all
+        elif method == VDI_PPDS:
+            if self.Tc and T > self.Tc:
+                return False
+        elif method == COOLPROP:
+            if T < self.CP_f.Tt or T > self.CP_f.Tc:
+                return False
+        elif method in self.tabular_data:
+            # if tabular_extrapolation_permitted, good to go without checking
+            if not self.tabular_extrapolation_permitted:
+                Ts, properties = self.tabular_data[method]
+                if T < Ts[0] or T > Ts[-1]:
+                    return False
+        else:
+            raise Exception('Method not valid')
+        return True
+
+    def test_method_validity_P(self, T, P, method):
+        r'''Method to check the validity of a high-pressure method. For
+        **COOLPROP**, the fluid must be both a liquid and under the maximum
+        pressure of the fluid's EOS. **MISSENARD** has defined limits;
+        between 0.5Tc and 0.8Tc, and below 200Pc. The CSP method **DIPPR_9G**
+        is considered valid for all temperatures and pressures.
+
+        For tabular data, extrapolation outside of the range is used if
+        :obj:`tabular_extrapolation_permitted` is set; if it is, the
+        extrapolation is considered valid for all temperatures and pressures.
+
+        It is not guaranteed that a method will work or give an accurate
+        prediction simply because this method considers the method valid.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to test the method, [K]
+        P : float
+            Pressure at which to test the method, [Pa]
+        method : str
+            Name of the method to test
+
+        Returns
+        -------
+        validity : bool
+            Whether or not a method is valid
+        '''
+        validity = True
+        if method == MISSENARD:
+            if T/self.Tc < 0.5 or T/self.Tc > 0.8 or P/self.Pc > 200:
+                validity = False
+        elif method == DIPPR_9G:
+            if T < 0 or P < 0:
+                validity = False
+        elif method == COOLPROP:
+            validity = PhaseSI('T', T, 'P', P, self.CASRN) in ['liquid', 'supercritical_liquid']
+        elif method in self.tabular_data:
+            if not self.tabular_extrapolation_permitted:
+                Ts, Ps, properties = self.tabular_data[method]
+                if T < Ts[0] or T > Ts[-1] or P < Ps[0] or P > Ps[-1]:
+                    validity = False
+        else:
+            raise Exception('Method not valid')
+        return validity
+
+MAGOMEDOV = 'Magomedov'
+DIPPR_9H = 'DIPPR9H'
+FILIPPOV = 'Filippov'
+SIMPLE = 'Simple'
+
+thermal_conductivity_liquid_mixture_methods = [MAGOMEDOV, DIPPR_9H, FILIPPOV, SIMPLE]
+
+
+class ThermalConductivityLiquidMixture(MixtureProperty):
+    '''Class for dealing with thermal conductivity of a liquid mixture as a   
+    function of temperature, pressure, and composition.
+    Consists of two mixing rule specific to liquid thremal conductivity, one
+    coefficient-based method for aqueous electrolytes, and mole weighted 
+    averaging. 
+         
+    Prefered method is :obj:`DIPPR9H` which requires mass
+    fractions, and pure component liquid thermal conductivities. This is 
+    substantially better than the ideal mixing rule based on mole fractions, 
+    **SIMPLE**. **Filippov** is of similar accuracy but applicable to binary
+    systems only.
+        
+    Parameters
+    ----------
+    CASs : str, optional
+        The CAS numbers of all species in the mixture
+    ThermalConductivityLiquids : list[ThermalConductivityLiquid], optional
+        ThermalConductivityLiquid objects created for all species in the
+        mixture, normally created by :obj:`thermo.chemical.Chemical`.
+    MWs : list[float], optional
+        Molecular weights of all species in the mixture, [g/mol]
+    correct_pressure_pure : bool, optional
+        Whether to try to use the better pressure-corrected pure component 
+        models or to use only the T-only dependent pure species models, [-]
+
+    Notes
+    -----
+    To iterate over all methods, use the list stored in
+    :obj:`thermal_conductivity_liquid_mixture_methods`.
+
+    **DIPPR9H**:
+        Mixing rule described in :obj:`DIPPR9H`.
+    **Filippov**:
+        Mixing rule described in :obj:`Filippov`; for two binary systems only.
+    **Magomedov**:
+        Coefficient-based method for aqueous electrolytes only, described in
+        :obj:`thermo.electrochem.thermal_conductivity_Magomedov`.
+    **SIMPLE**:
+        Mixing rule described in :obj:`thermo.utils.mixing_simple`.
+
+    See Also
+    --------
+    DIPPR9H
+    Filippov
+    thermal_conductivity_Magomedov
+
+    References
+    ----------
+    .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
+       New York: McGraw-Hill Professional, 2000.
+    '''
+    name = 'liquid thermal conductivity'
+    units = 'W/m/K'
+    property_min = 0
+    '''Mimimum valid value of liquid thermal conductivity.'''
+    property_max = 10
+    '''Maximum valid value of liquid thermal conductivity. Generous limit.'''
+                            
+    ranked_methods = [DIPPR_9H, SIMPLE, MAGOMEDOV, FILIPPOV]
+
+    def __init__(self, CASs=[], ThermalConductivityLiquids=[], MWs=[],
+                 correct_pressure_pure=True):
+        self.CASs = CASs
+        self.ThermalConductivityLiquids = self.pure_objs = ThermalConductivityLiquids
+        self.MWs = MWs
+        
+        self._correct_pressure_pure = correct_pressure_pure
+
+        self.Tmin = None
+        '''Minimum temperature at which no method can calculate the
+        liquid thermal conductivity under.'''
+        self.Tmax = None
+        '''Maximum temperature at which no method can calculate the
+        liquid thermal conductivity above.'''
+
+        self.sorted_valid_methods = []
+        '''sorted_valid_methods, list: Stored methods which were found valid
+        at a specific temperature; set by `mixture_property`.'''
+        self.user_methods = []
+        '''user_methods, list: Stored methods which were specified by the user
+        in a ranked order of preference; set by `mixture_property`.'''
+        self.all_methods = set()
+        '''Set of all methods available for a given set of information;
+        filled by :obj:`load_all_methods`.'''
+        self.load_all_methods()
+        
+        self.set_best_fit_coeffs()
+
+    def load_all_methods(self):
+        r'''Method to initialize the object by precomputing any values which
+        may be used repeatedly and by retrieving mixture-specific variables.
+        All data are stored as attributes. This method also sets :obj:`Tmin`, 
+        :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should 
+        work to calculate the property.
+
+        Called on initialization only. See the source code for the variables at
+        which the coefficients are stored. The coefficients can safely be
+        altered once the class is initialized. This method can be called again
+        to reset the parameters.
+        '''
+        methods = [DIPPR_9H, SIMPLE]        
+        if len(self.CASs) == 2:
+            methods.append(FILIPPOV)
+        if '7732-18-5' in self.CASs and len(self.CASs)>1:
+            wCASs = [i for i in self.CASs if i != '7732-18-5']
+            if all([i in Magomedovk_thermal_cond.index for i in wCASs]):
+                methods.append(MAGOMEDOV)
+                self.wCASs = wCASs
+                self.index_w = self.CASs.index('7732-18-5')
+            
+        self.all_methods = set(methods)
+        Tmins = [i.Tmin for i in self.ThermalConductivityLiquids if i.Tmin]
+        Tmaxs = [i.Tmax for i in self.ThermalConductivityLiquids if i.Tmax]
+        if Tmins:
+            self.Tmin = max(Tmins)
+        if Tmaxs:
+            self.Tmax = max(Tmaxs)
+        
+    def calculate(self, T, P, zs, ws, method):
+        r'''Method to calculate thermal conductivity of a liquid mixture at 
+        temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
+        `ws` with a given method.
+
+        This method has no exception handling; see `mixture_property`
+        for that.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the property, [K]
+        P : float
+            Pressure at which to calculate the property, [Pa]
+        zs : list[float]
+            Mole fractions of all species in the mixture, [-]
+        ws : list[float]
+            Weight fractions of all species in the mixture, [-]
+        method : str
+            Name of the method to use
+
+        Returns
+        -------
+        k : float
+            Thermal conductivity of the liquid mixture, [W/m/K]
+        '''
+        if method == MAGOMEDOV:
+            k_w = self.ThermalConductivityLiquids[self.index_w](T, P)
+            ws = list(ws) ; ws.pop(self.index_w)
+            return thermal_conductivity_Magomedov(T, P, ws, self.wCASs, k_w)
+        
+        if self._correct_pressure_pure:
+            ks = []
+            for obj in self.ThermalConductivityLiquids:
+                k = obj.TP_dependent_property(T, P)
+                if k is None:
+                    k = obj.T_dependent_property(T)
+                ks.append(k)
+        else:
+            ks = [i.T_dependent_property(T) for i in self.ThermalConductivityLiquids]
+        
+        if method == SIMPLE:
+            return mixing_simple(zs, ks)
+        elif method == DIPPR_9H:
+            return DIPPR9H(ws, ks)
+        elif method == FILIPPOV:
+            return Filippov(ws, ks)
+        else:
+            raise Exception('Method not valid')
+
+    def test_method_validity(self, T, P, zs, ws, method):
+        r'''Method to test the validity of a specified method for the given
+        conditions. If **Magomedov** is applicable (electrolyte system), no
+        other methods are considered viable. Otherwise, there are no easy
+        checks that can be performed here.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to check method validity, [K]
+        P : float
+            Pressure at which to check method validity, [Pa]
+        zs : list[float]
+            Mole fractions of all species in the mixture, [-]
+        ws : list[float]
+            Weight fractions of all species in the mixture, [-]
+        method : str
+            Method name to use
+
+        Returns
+        -------
+        validity : bool
+            Whether or not a specifid method is valid
+        '''
+        if MAGOMEDOV in self.all_methods:
+            if method in self.all_methods:
+                return method == MAGOMEDOV
+        if method in [SIMPLE, DIPPR_9H, FILIPPOV]:
+            return True
+        else:
+            raise Exception('Method not valid')
+
+
+GHARAGHEIZI_G = 'GHARAGHEIZI_G'
+CHUNG = 'CHUNG'
+ELI_HANLEY = 'ELI_HANLEY'
+ELI_HANLEY_DENSE = 'ELI_HANLEY_DENSE'
+CHUNG_DENSE = 'CHUNG_DENSE'
+EUCKEN_MOD = 'EUCKEN_MOD'
+EUCKEN = 'EUCKEN'
+BAHADORI_G = 'BAHADORI_G'
+STIEL_THODOS_DENSE = 'STIEL_THODOS_DENSE'
+DIPPR_9B = 'DIPPR_9B'
+
+
+
+thermal_conductivity_gas_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR, GHARAGHEIZI_G,
+                                    DIPPR_9B, CHUNG, ELI_HANLEY, EUCKEN_MOD,
+                                    EUCKEN, BAHADORI_G]
+'''Holds all low-pressure methods available for the ThermalConductivityGas
+class, for use in iterating over them.'''
+thermal_conductivity_gas_methods_P = [COOLPROP, ELI_HANLEY_DENSE, CHUNG_DENSE,
+                                      STIEL_THODOS_DENSE]
+'''Holds all high-pressure methods available for the ThermalConductivityGas
+class, for use in iterating over them.'''
+
+class ThermalConductivityGas(TPDependentProperty):
+    r'''Class for dealing with gas thermal conductivity as a function of
+    temperature and pressure.
+
+    For gases at atmospheric pressure, there are 7 corresponding-states
+    estimators, one source of tabular information, and the external library
+    CoolProp.
+
+    For gases under the fluid's boiling point (at sub-atmospheric pressures),
+    and high-pressure gases above the boiling point, there are three
+    corresponding-states estimators, and the external library CoolProp.
+
+    Parameters
+    ----------
+    CASs : list[str], optional
+        The CAS numbers of all species in the mixture
+    MW : float, optional
+        Molecular weight, [g/mol]
+    Tb : float, optional
+        Boiling point, [K]
+    Tc : float, optional
+        Critical temperature, [K]
+    Pc : float, optional
+        Critical pressure, [Pa]
+    Vc : float, optional
+        Critical volume, [m^3/mol]
+    Zc : float, optional
+        Critical compressibility, [-]
+    omega : float, optional
+        Acentric factor, [-]
+    dipole : float, optional
+        Dipole moment of the fluid, [debye]
+    Vmg : float or callable, optional
+        Molar volume of the fluid at a pressure and temperature or callable for
+        the same, [m^3/mol]
+    Cvgm : float or callable, optional
+        Molar heat capacity of the fluid at a pressure and temperature or 
+        or callable for the same, [J/mol/K]
+    mug : float or callable, optional
+        Gas viscosity of the fluid at a pressure and temperature or callable
+        for the same, [Pa*s]
+
+    Notes
+    -----
+    To iterate over all methods, use the lists stored in
+    :obj:`thermal_conductivity_gas_methods` and
+    :obj:`thermal_conductivity_gas_methods_P` for low and high pressure
+    methods respectively.
+
+    Low pressure methods:
+
+    **GHARAGHEIZI_G**:
+        CSP method, described in :obj:`Gharagheizi_gas`.
+    **DIPPR_9B**:
+        CSP method, described in :obj:`DIPPR9B`.
+    **CHUNG**:
+        CSP method, described in :obj:`Chung`.
+    **ELI_HANLEY**:
+        CSP method, described in :obj:`eli_hanley`.
+    **EUCKEN_MOD**:
+        CSP method, described in :obj:`Eucken_modified`.
+    **EUCKEN**:
+        CSP method, described in :obj:`Eucken`.
+    **BAHADORI_G**:
+        CSP method, described in :obj:`Bahadori_gas`.
+    **DIPPR_PERRY_8E**:
+        A collection of 345 coefficient sets from the DIPPR database published
+        openly in [3]_. Provides temperature limits for all its fluids. 
+        :obj:`thermo.dippr.EQ102` is used for its fluids.
+    **VDI_PPDS**:
+        Coefficients for a equation form developed by the PPDS, published 
+        openly in [2]_. Covers a large temperature range, but does not 
+        extrapolate well at very high or very low temperatures. 275 compounds.
+    **COOLPROP**:
+        CoolProp external library; with select fluids from its library.
+        Range is limited to that of the equations of state it uses, as
+        described in [1]_. Very slow.
+    **VDI_TABULAR**:
+        Tabular data in [2]_ along the saturation curve; interpolation is as
+        set by the user or the default.
+
+    High pressure methods:
+
+    **STIEL_THODOS_DENSE**:
+        CSP method, described in :obj:`stiel_thodos_dense`. Calculates a
+        low-pressure thermal conductivity first, using `T_dependent_property`.
+    **ELI_HANLEY_DENSE**:
+        CSP method, described in :obj:`eli_hanley_dense`. Calculates a
+        low-pressure thermal conductivity first, using `T_dependent_property`.
+    **CHUNG_DENSE**:
+        CSP method, described in :obj:`chung_dense`. Calculates a
+        low-pressure thermal conductivity first, using `T_dependent_property`.
+    **COOLPROP**:
+        CoolProp external library; with select fluids from its library.
+        Range is limited to that of the equations of state it uses, as
+        described in [1]_. Very slow, but unparalled in accuracy for pressure
+        dependence.
+
+    See Also
+    --------
+    Bahadori_gas
+    Gharagheizi_gas
+    eli_hanley
+    Chung
+    DIPPR9B
+    Eucken_modified
+    Eucken
+    stiel_thodos_dense
+    eli_hanley_dense
+    chung_dense
+
+    References
+    ----------
+    .. [1] Bell, Ian H., Jorrit Wronski, Sylvain Quoilin, and Vincent Lemort.
+       "Pure and Pseudo-Pure Fluid Thermophysical Property Evaluation and the
+       Open-Source Thermophysical Property Library CoolProp." Industrial &
+       Engineering Chemistry Research 53, no. 6 (February 12, 2014):
+       2498-2508. doi:10.1021/ie4033999. http://www.coolprop.org/
+    .. [2] Gesellschaft, V. D. I., ed. VDI Heat Atlas. 2nd edition.
+       Berlin; New York:: Springer, 2010.
+    .. [3] Green, Don, and Robert Perry. Perry's Chemical Engineers' Handbook,
+       Eighth Edition. McGraw-Hill Professional, 2007.
+    '''
+    name = 'gas thermal conductivity'
+    units = 'W/m/K'
+    interpolation_T = None
+    '''No interpolation transformation by default.'''
+    interpolation_P = None
+    '''No interpolation transformation by default.'''
+    interpolation_property = None
+    '''No interpolation transformation by default.'''
+    interpolation_property_inv = None
+    '''No interpolation transformation by default.'''
+    tabular_extrapolation_permitted = True
+    '''Allow tabular extrapolation by default.'''
+    property_min = 0
+    '''Mimimum valid value of gas thermal conductivity.'''
+    property_max = 10
+    '''Maximum valid value of gas thermal conductivity. Generous limit.'''
+
+    ranked_methods = [COOLPROP, VDI_PPDS, DIPPR_PERRY_8E, VDI_TABULAR, GHARAGHEIZI_G, DIPPR_9B,
+                      CHUNG, ELI_HANLEY, EUCKEN_MOD, EUCKEN,
+                      BAHADORI_G]
+    '''Default rankings of the low-pressure methods.'''
+    ranked_methods_P = [COOLPROP, ELI_HANLEY_DENSE, CHUNG_DENSE,
+                        STIEL_THODOS_DENSE]
+    '''Default rankings of the high-pressure methods.'''
+
+    def __init__(self, CASRN='', MW=None, Tb=None, Tc=None, Pc=None, Vc=None,
+                 Zc=None, omega=None, dipole=None, Vmg=None, Cvgm=None, mug=None,
+                 best_fit=None):
+        self.CASRN = CASRN
+        self.MW = MW
+        self.Tb = Tb
+        self.Tc = Tc
+        self.Pc = Pc
+        self.Vc = Vc
+        self.Zc = Zc
+        self.omega = omega
+        self.dipole = dipole
+        self.Vmg = Vmg
+        self.Cvgm = Cvgm
+        self.mug = mug
+
+        self.Tmin = None
+        '''Minimum temperature at which no method can calculate the
+        gas thermal conductivity under.'''
+        self.Tmax = None
+        '''Maximum temperature at which no method can calculate the
+        gas thermal conductivity above.'''
+
+        self.tabular_data = {}
+        '''tabular_data, dict: Stored (Ts, properties) for any
+        tabular data; indexed by provided or autogenerated name.'''
+        self.tabular_data_interpolators = {}
+        '''tabular_data_interpolators, dict: Stored (extrapolator,
+        spline) tuples which are interp1d instances for each set of tabular
+        data; indexed by tuple of (name, interpolation_T,
+        interpolation_property, interpolation_property_inv) to ensure that
+        if an interpolation transform is altered, the old interpolator which
+        had been created is no longer used.'''
+
+        self.tabular_data_P = {}
+        '''tabular_data_P, dict: Stored (Ts, Ps, properties) for any
+        tabular data; indexed by provided or autogenerated name.'''
+        self.tabular_data_interpolators_P = {}
+        '''tabular_data_interpolators_P, dict: Stored (extrapolator,
+        spline) tuples which are interp2d instances for each set of tabular
+        data; indexed by tuple of (name, interpolation_T, interpolation_P,
+        interpolation_property, interpolation_property_inv) to ensure that
+        if an interpolation transform is altered, the old interpolator which
+        had been created is no longer used.'''
+
+        self.sorted_valid_methods = []
+        '''sorted_valid_methods, list: Stored methods which were found valid
+        at a specific temperature; set by `T_dependent_property`.'''
+        self.sorted_valid_methods_P = []
+        '''sorted_valid_methods_P, list: Stored methods which were found valid
+        at a specific temperature; set by `TP_dependent_property`.'''
+        self.user_methods = []
+        '''user_methods, list: Stored methods which were specified by the user
+        in a ranked order of preference; set by `T_dependent_property`.'''
+        self.user_methods_P = []
+        '''user_methods_P, list: Stored methods which were specified by the user
+        in a ranked order of preference; set by `TP_dependent_property`.'''
+
+        self.all_methods = set()
+        '''Set of all low-pressure methods available for a given CASRN and
+        properties; filled by :obj:`load_all_methods`.'''
+        self.all_methods_P = set()
+        '''Set of all high-pressure methods available for a given CASRN and
+        properties; filled by :obj:`load_all_methods`.'''
+
+        self.load_all_methods()
+        if best_fit is not None:
+            self.set_best_fit(best_fit)
+
+    def load_all_methods(self):
+        r'''Method which picks out coefficients for the specified chemical
+        from the various dictionaries and DataFrames storing it. All data is
+        stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
+        :obj:`all_methods` and obj:`all_methods_P` as a set of methods for
+        which the data exists for.
+
+        Called on initialization only. See the source code for the variables at
+        which the coefficients are stored. The coefficients can safely be
+        altered once the class is initialized. This method can be called again
+        to reset the parameters.
+        '''
+        methods, methods_P = [], []
+        Tmins, Tmaxs = [], []
+        if self.CASRN in miscdata.VDI_saturation_dict:
+            methods.append(VDI_TABULAR)
+            Ts, props = lookup_VDI_tabular_data(self.CASRN, 'K (g)')
+            self.VDI_Tmin = Ts[0]
+            self.VDI_Tmax = Ts[-1]
+            self.tabular_data[VDI_TABULAR] = (Ts, props)
+            Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
+        if has_CoolProp and self.CASRN in coolprop_dict:
+            methods.append(COOLPROP); methods_P.append(COOLPROP)
+            self.CP_f = coolprop_fluids[self.CASRN]
+            Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tc)
+        if self.CASRN in Perrys2_314.index:
+            methods.append(DIPPR_PERRY_8E)
+            _, C1, C2, C3, C4, self.Perrys2_314_Tmin, self.Perrys2_314_Tmax = _Perrys2_314_values[Perrys2_314.index.get_loc(self.CASRN)].tolist()
+            self.Perrys2_314_coeffs = [C1, C2, C3, C4]
+            Tmins.append(self.Perrys2_314_Tmin); Tmaxs.append(self.Perrys2_314_Tmax)
+        if self.CASRN in VDI_PPDS_10.index:
+            _,  A, B, C, D, E = _VDI_PPDS_10_values[VDI_PPDS_10.index.get_loc(self.CASRN)].tolist()
+            self.VDI_PPDS_coeffs = [A, B, C, D, E]
+            self.VDI_PPDS_coeffs.reverse()
+            methods.append(VDI_PPDS)
+        if all((self.MW, self.Tb, self.Pc, self.omega)):
+            methods.append(GHARAGHEIZI_G)
+            # Turns negative at low T; do not set Tmin
+            Tmaxs.append(3000)
+        if all((self.Cvgm, self.mug, self.MW, self.Tc)):
+            methods.append(DIPPR_9B)
+            Tmins.append(0.01); Tmaxs.append(1E4)  # No limit here
+        if all((self.Cvgm, self.mug, self.MW, self.Tc, self.omega)):
+            methods.append(CHUNG)
+            Tmins.append(0.01); Tmaxs.append(1E4)  # No limit
+        if all((self.Cvgm, self.MW, self.Tc, self.Vc, self.Zc, self.omega)):
+            methods.append(ELI_HANLEY)
+            Tmaxs.append(1E4)  # Numeric error at low T
+        if all((self.Cvgm, self.mug, self.MW)):
+            methods.append(EUCKEN_MOD)
+            methods.append(EUCKEN)
+            Tmins.append(0.01); Tmaxs.append(1E4)  # No limits
+        if self.MW:
+            methods.append(BAHADORI_G)
+            # Terrible method, so don't set methods
+        if all([self.MW, self.Tc, self.Vc, self.Zc, self.omega]):
+            methods_P.append(ELI_HANLEY_DENSE)
+        if all([self.MW, self.Tc, self.Vc, self.omega, self.dipole]):
+            methods_P.append(CHUNG_DENSE)
+        if all([self.MW, self.Tc, self.Pc, self.Vc, self.Zc]):
+            methods_P.append(STIEL_THODOS_DENSE)
+        self.all_methods = set(methods)
+        self.all_methods_P = set(methods_P)
+        if Tmins and Tmaxs:
+            self.Tmin, self.Tmax = min(Tmins), max(Tmaxs)
+
+    def calculate(self, T, method):
+        r'''Method to calculate low-pressure gas thermal conductivity at
+        tempearture `T` with a given method.
+
+        This method has no exception handling; see `T_dependent_property`
+        for that.
+
+        Parameters
+        ----------
+        T : float
+            Temperature of the gas, [K]
+        method : str
+            Name of the method to use
+
+        Returns
+        -------
+        kg : float
+            Thermal conductivity of the gas at T and a low pressure, [W/m/K]
+        '''
+        if method == GHARAGHEIZI_G:
+            kg = Gharagheizi_gas(T, self.MW, self.Tb, self.Pc, self.omega)
+        elif method == DIPPR_9B:
+            Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
+            mug = self.mug(T) if hasattr(self.mug, '__call__') else self.mug
+            kg = DIPPR9B(T, self.MW, Cvgm, mug, self.Tc)
+        elif method == CHUNG:
+            Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
+            mug = self.mug(T) if hasattr(self.mug, '__call__') else self.mug
+            kg = Chung(T, self.MW, self.Tc, self.omega, Cvgm, mug)
+        elif method == ELI_HANLEY:
+            Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
+            kg = eli_hanley(T, self.MW, self.Tc, self.Vc, self.Zc, self.omega, Cvgm)
+        elif method == EUCKEN_MOD:
+            Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
+            mug = self.mug(T) if hasattr(self.mug, '__call__') else self.mug
+            kg = Eucken_modified(self.MW, Cvgm, mug)
+        elif method == EUCKEN:
+            Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
+            mug = self.mug(T) if hasattr(self.mug, '__call__') else self.mug
+            kg = Eucken(self.MW, Cvgm, mug)
+        elif method == DIPPR_PERRY_8E:
+            kg = EQ102(T, *self.Perrys2_314_coeffs)
+        elif method == VDI_PPDS:
+            kg = horner(self.VDI_PPDS_coeffs, T)
+        elif method == BAHADORI_G:
+            kg = Bahadori_gas(T, self.MW)
+        elif method == COOLPROP:
+            kg = CoolProp_T_dependent_property(T, self.CASRN, 'L', 'g')
+        elif method == BESTFIT:
+            if T < self.best_fit_Tmin:
+                kg = (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value
+            elif T > self.best_fit_Tmax:
+                kg = (T - self.best_fit_Tmax)*self.best_fit_Tmax_slope + self.best_fit_Tmax_value
+            else:
+                kg = horner(self.best_fit_coeffs, T)
+        elif method in self.tabular_data:
+            kg = self.interpolate(T, method)
+        return kg
+
+    def calculate_P(self, T, P, method):
+        r'''Method to calculate pressure-dependent gas thermal conductivity
+        at temperature `T` and pressure `P` with a given method.
+
+        This method has no exception handling; see `TP_dependent_property`
+        for that.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate gas thermal conductivity, [K]
+        P : float
+            Pressure at which to calculate gas thermal conductivity, [K]
+        method : str
+            Name of the method to use
+
+        Returns
+        -------
+        kg : float
+            Thermal conductivity of the gas at T and P, [W/m/K]
+        '''
+        if method == ELI_HANLEY_DENSE:
+            Vmg = self.Vmg(T, P) if hasattr(self.Vmg, '__call__') else self.Vmg
+            Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
+            kg = eli_hanley_dense(T, self.MW, self.Tc, self.Vc, self.Zc, self.omega, Cvgm, Vmg)
+        elif method == CHUNG_DENSE:
+            Vmg = self.Vmg(T, P) if hasattr(self.Vmg, '__call__') else self.Vmg
+            Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
+            mug = self.mug(T, P) if hasattr(self.mug, '__call__') else self.mug
+            kg = chung_dense(T, self.MW, self.Tc, self.Vc, self.omega, Cvgm, Vmg, mug, self.dipole)
+        elif method == STIEL_THODOS_DENSE:
+            kg = self.T_dependent_property(T)
+            Vmg = self.Vmg(T, P) if hasattr(self.Vmg, '__call__') else self.Vmg
+            kg = stiel_thodos_dense(T, self.MW, self.Tc, self.Pc, self.Vc, self.Zc, Vmg, kg)
+        elif method == COOLPROP:
+            kg = PropsSI('L', 'T', T, 'P', P, self.CASRN)
+        elif method in self.tabular_data:
+            kg = self.interpolate_P(T, P, method)
+        return kg
+
+    def test_method_validity(self, T, method):
+        r'''Method to check the validity of a temperature-dependent
+        low-pressure method. For CSP methods, the all methods are considered
+        valid from 0 K and up.
+
+        For tabular data, extrapolation outside of the range is used if
+        :obj:`tabular_extrapolation_permitted` is set; if it is, the extrapolation
+        is considered valid for all temperatures.
+
+        It is not guaranteed that a method will work or give an accurate
+        prediction simply because this method considers the method valid.
+        **GHARAGHEIZI_G** and **BAHADORI_G** are known to sometimes produce
+        negative results.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to test the method, [K]
+        method : str
+            Name of the method to test
+
+        Returns
+        -------
+        validity : bool
+            Whether or not a method is valid
+        '''
+        if method in [GHARAGHEIZI_G, DIPPR_9B, CHUNG, ELI_HANLEY, EUCKEN_MOD,
+                      EUCKEN, BAHADORI_G, VDI_PPDS]:
+            pass
+        elif method == DIPPR_PERRY_8E:
+            if T < self.Perrys2_314_Tmin or T > self.Perrys2_314_Tmax:
+                return False
+        elif method == COOLPROP:
+            if T < self.CP_f.Tmin or T > self.CP_f.Tmax:
+                return False
+        elif method in self.tabular_data:
+            # if tabular_extrapolation_permitted, good to go without checking
+            if not self.tabular_extrapolation_permitted:
+                Ts, properties = self.tabular_data[method]
+                if T < Ts[0] or T > Ts[-1]:
+                    return False
+        else:
+            raise Exception('Method not valid')
+        return True
+
+    def test_method_validity_P(self, T, P, method):
+        r'''Method to check the validity of a high-pressure method. For
+        **COOLPROP**, the fluid must be both a gas and under the maximum
+        pressure of the fluid's EOS. The CSP method **ELI_HANLEY_DENSE**,
+        **CHUNG_DENSE**, and **STIEL_THODOS_DENSE** are considered valid for
+        all temperatures and pressures.
+
+        For tabular data, extrapolation outside of the range is used if
+        :obj:`tabular_extrapolation_permitted` is set; if it is, the
+        extrapolation is considered valid for all temperatures and pressures.
+
+        It is not guaranteed that a method will work or give an accurate
+        prediction simply because this method considers the method valid.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to test the method, [K]
+        P : float
+            Pressure at which to test the method, [Pa]
+        method : str
+            Name of the method to test
+
+        Returns
+        -------
+        validity : bool
+            Whether or not a method is valid
+        '''
+        validity = True
+        if method in [ELI_HANLEY_DENSE, CHUNG_DENSE, STIEL_THODOS_DENSE]:
+            if T < 0 or P < 0:
+                validity = False
+            # no better checks known
+        elif method == COOLPROP:
+            if T < self.CP_f.Tmin or T > self.CP_f.Tmax or P > self.CP_f.Pmax:
+                return False
+            else:
+                return PhaseSI('T', T, 'P', P, self.CASRN) in ['gas', 'supercritical_gas', 'supercritical', 'supercritical_liquid']
+        elif method in self.tabular_data:
+            if not self.tabular_extrapolation_permitted:
+                Ts, Ps, properties = self.tabular_data[method]
+                if T < Ts[0] or T > Ts[-1] or P < Ps[0] or P > Ps[-1]:
+                    validity = False
+        else:
+            raise Exception('Method not valid')
+        return validity
 
 
 LINDSAY_BROMLEY = 'LINDSAY_BROMLEY'

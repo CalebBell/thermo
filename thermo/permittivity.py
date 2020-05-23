@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2016, 2017, 2018, 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -317,25 +317,4 @@ class Permittivity(TDependentProperty):
         else:
             raise Exception('Method not valid')
         return validity
-
-
-#from scipy.constants import pi, N_A, k
-##from scipy.optimize import fsolve
-#
-#def calc_molecular_polarizability(T, Vm, dipole, permittivity):
-#    dipole *= 3.33564E-30
-#    rhom = 1./Vm
-#    alpha = (-4*N_A*permittivity*dipole**2*pi*rhom - 8*N_A*dipole**2*pi*rhom + 9*T*permittivity*k - 9*T*k)/(12*N_A*T*k*pi*rhom*(permittivity + 2))
-#
-##    def to_solve(alpha):
-##        ans = rhom*(4*pi*N_A*alpha/3. + 4*pi*N_A*dipole**2/9/k/T) - (permittivity-1)/(permittivity+2)
-##        return ans
-##
-##    alpha = fsolve(to_solve, 1e-30)
-#
-#    return alpha
-
-#
-#print(calc_molecular_polarizability(T=293.15, Vm=0.023862, dipole=0.827, permittivity=1.00279))
-#3.61E-24
 

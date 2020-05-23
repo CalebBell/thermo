@@ -42,6 +42,7 @@ __all__ = ['sequential_substitution_2P', 'sequential_substitution_GDEM3_2P',
            'solve_P_VF_IG_K_composition_independent', 
            'solve_T_VF_IG_K_composition_independent'
            ]
+from chemicals.exceptions import TrivialSolutionError, PhaseCountReducedError, PhaseExistenceImpossible
 
 from fluids.constants import R, R2, R_inv
 from fluids.numerics import (UnconvergedError, trunc_exp, py_newton as newton,
@@ -59,8 +60,7 @@ from numpy.testing import assert_allclose
 from scipy.optimize import minimize, fsolve, root
 from scipy.interpolate import CubicSpline
 from chemicals.utils import (exp, log, log10, floor, copysign, normalize,
-                          mixing_simple, property_mass_to_molar, TrivialSolutionError,
-                          PhaseCountReducedError, PhaseExistenceImpossible)
+                          mixing_simple, property_mass_to_molar)
 from thermo.utils import has_matplotlib
 from thermo.heat_capacity import (Lastovka_Shaw_T_for_Hm, Dadgostar_Shaw_integral,
                                   Dadgostar_Shaw_integral_over_T, Lastovka_Shaw_integral,

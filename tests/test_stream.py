@@ -23,7 +23,7 @@ SOFTWARE.'''
 from numpy.testing import assert_allclose
 from collections import OrderedDict
 import pytest
-from chemicals.utils import OverspeficiedError
+from chemicals.exceptions import OverspeficiedError
 from thermo.chemical import Chemical
 from thermo.mixture import Mixture
 from thermo.stream import Stream, StreamArgs, mole_balance
