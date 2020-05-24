@@ -20,14 +20,13 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
-from numpy.testing import assert_allclose
 import pytest
 import numpy as np
 import pandas as pd
 from thermo.interface import *
 from thermo.interface import VDI_TABULAR
 from thermo.identifiers import checkCAS
-from fluids.numerics import assert_close
+from fluids.numerics import assert_close, assert_close1d
 
 
 def test_CSP():
@@ -50,7 +49,7 @@ def test_CSP():
     sigma2 = Sastri_Rao(293.15, 404.75, 633.0, 4530000.0, chemicaltype='alcohol')
     sigma3 = Sastri_Rao(293.15, 404.75, 633.0, 4530000.0, chemicaltype='acid')
     sigmas = [0.03234567739694441, 0.023255104102733407, 0.02558993464948134]
-    assert_allclose([sigma1, sigma2, sigma3], sigmas)
+    assert_close1d([sigma1, sigma2, sigma3], sigmas)
 
     sigma = Zuo_Stenby(293., 633.0, 4530000.0, 0.249)
     assert_close(sigma, 0.03345569011871088)
@@ -137,41 +136,6 @@ def test_VDI_PPDS_11_data():
     for calc, fixed in zip(tots_calc, tots):
         assert_close(calc, fixed)
 
-
-
-@pytest.mark.meta_T_dept
-def test_SurfaceTension():
-    # Ethanol, test as many methods as possible at once
-    EtOH = SurfaceTension(Tb=351.39, Tc=514.0, Pc=6137000.0, Vc=0.000168, Zc=0.24125, omega=0.635, StielPolar=-0.01266, CASRN='64-17-5')
-    EtOH.T_dependent_property(305.)
-    methods = EtOH.sorted_valid_methods
-    methods.remove(VDI_TABULAR)
-    sigma_calcs = [(EtOH.set_user_methods(i), EtOH.T_dependent_property(305.))[1] for i in methods]
-    sigma_exp = [0.021222422444285592, 0.02171156653650729, 0.02171156653650729, 0.021462066798796135, 0.02140008, 0.038055725907414066, 0.03739257387107131, 0.02645171690486362, 0.03905907338532845, 0.03670733205970745]
-
-    assert_allclose(sorted(sigma_calcs), sorted(sigma_exp), rtol=1e-6)
-    assert_close(EtOH.calculate(305., VDI_TABULAR), 0.021533867879206747, rtol=1E-4)
-
-    # Test that methods return None
-    sigma_calcs = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(5000))[1] for i in EtOH.sorted_valid_methods]
-    assert [None]*11 == sigma_calcs
-
-    EtOH.set_user_methods('VDI_TABULAR', forced=True)
-    EtOH.tabular_extrapolation_permitted = False
-    assert None == EtOH.T_dependent_property(700.)
-
-    with pytest.raises(Exception):
-        EtOH.test_method_validity(300, 'BADMETHOD')
-
-    # Test Aleem
-    
-    CH4 = SurfaceTension(Tb=111.65, Cpl=2465., Hvap_Tb=510870., MW=16.04246, Vml=3.497e-05)
-    assert_close(CH4.T_dependent_property(90), 0.016704545538936296)
-    
-    assert not CH4.test_method_validity(600, 'Aleem')
-    assert CH4.test_method_validity(100, 'Aleem')
-
-
 def test_Winterfeld_Scriven_Davis():
     # The example is from [2]_; all results agree.
     # The original source has not been reviewed.
@@ -201,6 +165,44 @@ def test_Diguilio_Teja():
 
 
 
+def test_Meybodi_Daryasafar_Karimi():
+    sigma = Meybodi_Daryasafar_Karimi(980, 760, 580, 914)
+    assert_close(sigma, 0.02893598143089256)
+
+@pytest.mark.meta_T_dept
+def test_SurfaceTension():
+    # Ethanol, test as many methods as possible at once
+    EtOH = SurfaceTension(Tb=351.39, Tc=514.0, Pc=6137000.0, Vc=0.000168, Zc=0.24125, omega=0.635, StielPolar=-0.01266, CASRN='64-17-5')
+    EtOH.T_dependent_property(305.)
+    methods = EtOH.sorted_valid_methods
+    methods.remove(VDI_TABULAR)
+    sigma_calcs = [(EtOH.set_user_methods(i), EtOH.T_dependent_property(305.))[1] for i in methods]
+    sigma_exp = [0.021222422444285592, 0.02171156653650729, 0.02171156653650729, 0.021462066798796135, 0.02140008, 0.038055725907414066, 0.03739257387107131, 0.02645171690486362, 0.03905907338532845, 0.03670733205970745]
+
+    assert_close1d(sorted(sigma_calcs), sorted(sigma_exp), rtol=1e-6)
+    assert_close(EtOH.calculate(305., VDI_TABULAR), 0.021533867879206747, rtol=1E-4)
+
+    # Test that methods return None
+    sigma_calcs = [(EtOH.set_user_methods(i, forced=True), EtOH.T_dependent_property(5000))[1] for i in EtOH.sorted_valid_methods]
+    assert [None]*11 == sigma_calcs
+
+    EtOH.set_user_methods('VDI_TABULAR', forced=True)
+    EtOH.tabular_extrapolation_permitted = False
+    assert None == EtOH.T_dependent_property(700.)
+
+    with pytest.raises(Exception):
+        EtOH.test_method_validity(300, 'BADMETHOD')
+
+    # Test Aleem
+    
+    CH4 = SurfaceTension(Tb=111.65, Cpl=2465., Hvap_Tb=510870., MW=16.04246, Vml=3.497e-05)
+    assert_close(CH4.T_dependent_property(90), 0.016704545538936296)
+    
+    assert not CH4.test_method_validity(600, 'Aleem')
+    assert CH4.test_method_validity(100, 'Aleem')
+
+
+
 def test_SurfaceTensionMixture():
     from thermo.mixture import Mixture
     from thermo.interface import SurfaceTensionMixture, DIGUILIOTEJA, SIMPLE, WINTERFELDSCRIVENDAVIS
@@ -217,14 +219,10 @@ def test_SurfaceTensionMixture():
     assert_close(sigma, 0.025331490604571537)
     
     sigmas = [a.calculate(m.T, m.P, m.zs, m.ws, i) for i in [DIGUILIOTEJA, SIMPLE, WINTERFELDSCRIVENDAVIS]]
-    assert_allclose(sigmas, [0.025257338967448677, 0.025331490604571537, 0.023887948426185343])
+    assert_close1d(sigmas, [0.025257338967448677, 0.025331490604571537, 0.023887948426185343])
     
     with pytest.raises(Exception):
         a.test_method_validity(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
     with pytest.raises(Exception):
         a.calculate(m.T, m.P, m.zs, m.ws, 'BADMETHOD')
 
-
-def test_Meybodi_Daryasafar_Karimi():
-    sigma = Meybodi_Daryasafar_Karimi(980, 760, 580, 914)
-    assert_close(sigma, 0.02893598143089256)
