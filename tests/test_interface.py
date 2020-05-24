@@ -181,8 +181,8 @@ def test_Winterfeld_Scriven_Davis():
     sigma = Winterfeld_Scriven_Davis([0.1606, 0.8394], [0.01547, 0.02877], [8610., 15530.])
     assert_close(sigma, 0.024967388450439817)
 
-    with pytest.raises(Exception):
-        Winterfeld_Scriven_Davis([0.1606, 0.8394, 0.118], [0.01547, 0.02877], [8610., 15530.])
+#    with pytest.raises(Exception):
+#        Winterfeld_Scriven_Davis([0.1606, 0.8394, 0.118], [0.01547, 0.02877], [8610., 15530.])
 
 
 def test_Diguilio_Teja():
@@ -193,8 +193,8 @@ def test_Diguilio_Teja():
     sigma = Diguilio_Teja(T=298.15, xs=[0.1606, 0.8394], sigmas_Tb=[0.01424, 0.02530], Tbs=[309.21, 312.95], Tcs=[469.7, 508.0])
     assert_close(sigma, 0.025716823875045505)
 
-    with pytest.raises(Exception):
-        Diguilio_Teja(T=298.15, xs=[0.1606, 0.8394, 0.118], sigmas_Tb=[0.01424, 0.02530], Tbs=[309.21, 312.95], Tcs=[469.7, 508.0])
+#    with pytest.raises(Exception):
+#        Diguilio_Teja(T=298.15, xs=[0.1606, 0.8394, 0.118], sigmas_Tb=[0.01424, 0.02530], Tbs=[309.21, 312.95], Tcs=[469.7, 508.0])
 
     with pytest.raises(Exception):
          Diguilio_Teja(T=501.85, xs=[0.1606, 0.8394], sigmas_Tb=[0.01424, 0.02530], Tbs=[309.21, 312.95], Tcs=[469.7, 508.0])

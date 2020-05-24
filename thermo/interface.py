@@ -176,7 +176,8 @@ def Somayajulu(T, Tc, A, B, C):
        Thermophysics 9, no. 4 (July 1988): 559-66. doi:10.1007/BF00503154.
     '''
     X = (Tc-T)/Tc
-    sigma = (A*X**1.25 + B*X**2.25 + C*X**3.25)/1000.
+    X_125 = X**1.25
+    sigma = X_125*(A + X*(B + C*X))*1e-3
     return sigma
 
 
@@ -219,7 +220,7 @@ def Jasper(T, a, b):
     .. [2] Speight, James. Lange's Handbook of Chemistry. 16 edition.
        McGraw-Hill Professional, 2005.
     '''
-    sigma = (a - b*(T-273.15))/1000
+    sigma = (a - b*(T-273.15))*1e-3
     return sigma
 
 
@@ -280,10 +281,10 @@ def Brock_Bird(T, Tb, Tc, Pc):
     '''
     Tbr = Tb/Tc
     Tr = T/Tc
-    Pc = Pc/1E5  # Convert to bar
-    Q = 0.1196*(1 + Tbr*log(Pc/1.01325)/(1-Tbr))-0.279
-    sigma = (Pc)**(2/3.)*Tc**(1/3.)*Q*(1-Tr)**(11/9.)
-    sigma = sigma/1000  # convert to N/m
+    Pc = Pc*1e-5  # Convert to bar
+    Q = 0.1196*(1.0 + Tbr*log(Pc/1.01325)/(1.0 - Tbr)) - 0.279
+    sigma = (Pc)**(2.0/3.0)*Tc**(1.0/3.0)*Q*(1.0 - Tr)**(11.0/9.0)
+    sigma = sigma*1e-3  # convert to N/m
     return sigma
 
 
@@ -336,10 +337,10 @@ def Pitzer(T, Tc, Pc, omega):
        1995, p. 521.
     '''
     Tr = T/Tc
-    Pc = Pc/1E5  # Convert to bar
-    sigma = Pc**(2/3.0)*Tc**(1/3.0)*(1.86+1.18*omega)/19.05 * (
-        (3.75+0.91*omega)/(0.291-0.08*omega))**(2/3.0)*(1-Tr)**(11/9.0)
-    sigma = sigma/1000  # N/m, please
+    Pc = Pc*1e-5  # Convert to bar
+    sigma = Pc**(2.0/3.0)*Tc**(1.0/3.0)*(1.86+1.18*omega)/19.05 * (
+        (3.75+0.91*omega)/(0.291-0.08*omega))**(2.0/3.0)*(1.0-Tr)**(11.0/9.0)
+    sigma = sigma*1e-3  # N/m, please
     return sigma
 
 
@@ -394,8 +395,8 @@ def Sastri_Rao(T, Tb, Tc, Pc, chemicaltype=None):
     Tr = T/Tc
     Tbr = Tb/Tc
     Pc = Pc/1E5  # Convert to bar
-    sigma = k*Pc**x*Tb**y*Tc**z*((1 - Tr)/(1 - Tbr))**m
-    sigma = sigma/1000  # N/m
+    sigma = k*Pc**x*Tb**y*Tc**z*((1.0 - Tr)/(1.0 - Tbr))**m
+    sigma = sigma*1e-3  # N/m
     return sigma
 
 
@@ -446,25 +447,22 @@ def Zuo_Stenby(T, Tc, Pc, omega):
        Canadian Journal of Chemical Engineering 75, no. 6 (December 1, 1997):
        1130-37. doi:10.1002/cjce.5450750617
     '''
-    Tc_1, Pc_1, omega_1 = 190.56, 4599000.0/1E5, 0.012
-    Tc_2, Pc_2, omega_2 = 568.7, 2490000.0/1E5, 0.4
-    Pc = Pc/1E5
-
-    def ST_r(ST, Tc, Pc):
-        return log(1 + ST/(Tc**(1/3.0)*Pc**(2/3.0)))
+    Tc_1, Pc_1, omega_1 = 190.56, 4599000.0*1e-5, 0.012
+    Tc_2, Pc_2, omega_2 = 568.7, 2490000.0*1e-5, 0.4
+    Pc = Pc*1e-5
 
     ST_1 = 40.520*(1 - T/Tc)**1.287  # Methane
     ST_2 = 52.095*(1 - T/Tc)**1.21548  # n-octane
-
-    ST_r_1, ST_r_2 = ST_r(ST_1, Tc_1, Pc_1), ST_r(ST_2, Tc_2, Pc_2)
-
+    
+    ST_r_1 = log(1.0 + ST_1/(Tc_1**(1.0/3.0)*Pc_1**(2.0/3.0)))
+    ST_r_2 = log(1.0 + ST_2/(Tc_2**(1.0/3.0)*Pc_2**(2.0/3.0)))
     sigma_r = ST_r_1 + (omega-omega_1)/(omega_2 - omega_1)*(ST_r_2-ST_r_1)
-    sigma = Tc**(1/3.0)*Pc**(2/3.0)*(exp(sigma_r)-1)
-    sigma = sigma/1000  # N/m, please
+    sigma = Tc**(1.0/3.0)*Pc**(2.0/3.0)*(exp(sigma_r) - 1.0)
+    sigma = sigma*1e-3  # N/m, please
     return sigma
 
 
-def Hakim_Steinberg_Stiel(T, Tc, Pc, omega, StielPolar=0):
+def Hakim_Steinberg_Stiel(T, Tc, Pc, omega, StielPolar=0.0):
     r'''Calculates air-water surface tension using the reference fluids methods
     of [1]_.
 
@@ -511,14 +509,16 @@ def Hakim_Steinberg_Stiel(T, Tc, Pc, omega, StielPolar=0):
        Engineering Chemistry Fundamentals 10, no. 1 (February 1, 1971): 174-75.
        doi:10.1021/i160037a032.
     '''
-    Q = (0.1574 + 0.359*omega - 1.769*StielPolar - 13.69*StielPolar**2
-        - 0.510*omega**2 + 1.298*StielPolar*omega)
-    m = (1.210 + 0.5385*omega - 14.61*StielPolar - 32.07*StielPolar**2
-        - 1.656*omega**2 + 22.03*StielPolar*omega)
+    omega2 = omega*omega
+    StielPolar2 = StielPolar*StielPolar
+    Q = (0.1574 + 0.359*omega - 1.769*StielPolar - 13.69*StielPolar2
+        - 0.510*omega2 + 1.298*StielPolar*omega)
+    m = (1.210 + 0.5385*omega - 14.61*StielPolar - 32.07*StielPolar2
+        - 1.656*omega2 + 22.03*StielPolar*omega)
     Tr = T/Tc
     Pc = Pc/101325.
-    sigma = Pc**(2/3.)*Tc**(1/3.)*Q*((1 - Tr)/0.4)**m
-    sigma = sigma/1000.  # convert to N/m
+    sigma = Pc**(2.0/3.)*Tc**(1.0/3.0)*Q*((1.0 - Tr)*2.5)**m
+    sigma = sigma*1e-3  # convert to N/m
     return sigma
 
 
@@ -570,8 +570,8 @@ def Miqueu(T, Tc, Vc, omega):
        169-82. doi:10.1016/S0378-3812(00)00384-8.
     '''
     Vc = Vc*1E6
-    t = 1.-T/Tc
-    sigma = k*Tc*(N_A/Vc)**(2/3.)*(4.35 + 4.14*omega)*t**1.26*(1+0.19*t**0.5 - 0.25*t)*10000
+    t = 1. - T/Tc
+    sigma = k*Tc*(N_A/Vc)**(2.0/3.0)*(4.35 + 4.14*omega)*t**1.26*(1.0 + 0.19*t**0.5 - 0.25*t)*10000.0
     return sigma
 
     
@@ -639,9 +639,9 @@ def Aleem(T, MW, Tb, rhol, Hvap_Tb, Cpl):
        Liquids." Petroleum Science and Technology 33, no. 23-24 (December 17, 
        2015): 1908-15. doi:10.1080/10916466.2015.1110593.
     '''
-    MW = MW/1000. # Use kg/mol for consistency with the other units
+    MW = MW*1e-3 # Use kg/mol for consistency with the other units
     sphericity = 1. - 0.0047*MW + 6.8E-6*MW*MW
-    return sphericity*MW**(1/3.)/(6.*N_A**(1/3.))*rhol**(2/3.)*(Hvap_Tb + Cpl*(Tb-T))
+    return sphericity*MW**(1.0/3.0)/(6.*N_A**(1.0/3.0))*rhol**(2.0/3.)*(Hvap_Tb + Cpl*(Tb-T))
 
 
 def Mersmann_Kind_surface_tension(T, Tm, Tb, Tc, Pc, n_associated=1):
@@ -695,9 +695,143 @@ def Mersmann_Kind_surface_tension(T, Tm, Tb, Tc, Pc, n_associated=1):
        2017. https://doi.org/10.1021/acs.iecr.6b04323.
     '''
     Tr = T/Tc
-    sigma_star = ((Tb - Tm)/Tm)**(1/3.)*(6.25*(1. - Tr) + 31.3*(1. - Tr)**(4/3.))
-    sigma = sigma_star*(k*Tc)**(1/3.)*(Tm/Tc)*Pc**(2/3.)*n_associated**(-1/3.)
+    sigma_star = ((Tb - Tm)/Tm)**(1.0/3.)*(6.25*(1. - Tr) + 31.3*(1. - Tr)**(4.0/3.))
+    sigma = sigma_star*(k*Tc)**(1.0/3.0)*(Tm/Tc)*Pc**(2.0/3.0)*n_associated**(-1.0/3.0)
     return sigma
+
+### Surface Tension Mixtures
+
+def Winterfeld_Scriven_Davis(xs, sigmas, rhoms):
+    r'''Calculates surface tension of a liquid mixture according to
+    mixing rules in [1]_ and also in [2]_.
+
+    .. math::
+        \sigma_M = \sum_i \sum_j \frac{1}{V_L^{L2}}\left(x_i V_i \right)
+        \left( x_jV_j\right)\sqrt{\sigma_i\cdot \sigma_j}
+
+    Parameters
+    ----------
+    xs : array-like
+        Mole fractions of all components, [-]
+    sigmas : array-like
+        Surface tensions of all components, [N/m]
+    rhoms : array-like
+        Molar densities of all components, [mol/m^3]
+
+    Returns
+    -------
+    sigma : float
+        Air-liquid surface tension of mixture, [N/m]
+
+    Notes
+    -----
+    DIPPR Procedure 7C: Method for the Surface Tension of Nonaqueous Liquid
+    Mixtures
+
+    Becomes less accurate as liquid-liquid critical solution temperature is
+    approached. DIPPR Evaluation:  3-4% AARD, from 107 nonaqueous binary
+    systems, 1284 points. Internally, densities are converted to kmol/m^3. The
+    Amgat function is used to obtain liquid mixture density in this equation.
+
+    Raises a ZeroDivisionError if either molar volume are zero, and a
+    ValueError if a surface tensions of a pure component is negative.
+
+    Examples
+    --------
+    >>> Winterfeld_Scriven_Davis([0.1606, 0.8394], [0.01547, 0.02877],
+    ... [8610., 15530.])
+    0.024967388450439824
+
+    References
+    ----------
+    .. [1] Winterfeld, P. H., L. E. Scriven, and H. T. Davis. "An Approximate
+       Theory of Interfacial Tensions of Multicomponent Systems: Applications
+       to Binary Liquid-Vapor Tensions." AIChE Journal 24, no. 6
+       (November 1, 1978): 1010-14. doi:10.1002/aic.690240610.
+    .. [2] Danner, Ronald P, and Design Institute for Physical Property Data.
+       Manual for Predicting Chemical Process Design Data. New York, N.Y, 1982.
+    '''
+    Vms = [1e3/i for i in rhoms]
+    rho = 1./mixing_simple(xs, Vms)
+    cmps = range(len(xs))
+    # For speed, transform the Vms array to contain
+#    xs[i]*Vms[i]*sigmas_05[i]*rho
+    sigmas_05 = [i**0.5 for i in sigmas]
+    for i in cmps:
+        Vms[i] *= sigmas_05[i]*xs[i]*rho
+    tot = 0.0
+    for i in cmps:
+        for j in cmps:
+            tot += Vms[i]*Vms[j]
+    return tot
+        
+
+def Diguilio_Teja(T, xs, sigmas_Tb, Tbs, Tcs):
+    r'''Calculates surface tension of a liquid mixture according to
+    mixing rules in [1]_.
+
+    .. math::
+        \sigma = 1.002855(T^*)^{1.118091} \frac{T}{T_b} \sigma_r
+
+        T^*  = \frac{(T_c/T)-1}{(T_c/T_b)-1}
+
+        \sigma_r = \sum x_i \sigma_i
+
+        T_b = \sum x_i T_{b,i}
+
+        T_c = \sum x_i T_{c,i}
+
+    Parameters
+    ----------
+    T : float
+        Temperature of fluid [K]
+    xs : array-like
+        Mole fractions of all components
+    sigmas_Tb : array-like
+        Surface tensions of all components at the boiling point, [N/m]
+    Tbs : array-like
+        Boiling temperatures of all components, [K]
+    Tcs : array-like
+        Critical temperatures of all components, [K]
+
+    Returns
+    -------
+    sigma : float
+        Air-liquid surface tension of mixture, [N/m]
+
+    Notes
+    -----
+    Simple model, however it has 0 citations. Gives similar results to the
+    `Winterfeld_Scriven_Davis` model.
+
+    Raises a ValueError if temperature is greater than the mixture's critical
+    temperature or if the given temperature is negative, or if the mixture's
+    boiling temperature is higher than its critical temperature.
+    
+    [1]_ claims a 4.63 percent average absolute error on 21 binary and 4 
+    ternary non-aqueous systems. [1]_ also considered Van der Waals mixing 
+    rules for `Tc`, but found it provided a higher error of 5.58%
+
+    Examples
+    --------
+    >>> Diguilio_Teja(T=298.15, xs=[0.1606, 0.8394],
+    ... sigmas_Tb=[0.01424, 0.02530], Tbs=[309.21, 312.95], Tcs=[469.7, 508.0])
+    0.025716823875045505
+
+    References
+    ----------
+    .. [1] Diguilio, Ralph, and Amyn S. Teja. "Correlation and Prediction of
+       the Surface Tensions of Mixtures." The Chemical Engineering Journal 38,
+       no. 3 (July 1988): 205-8. doi:10.1016/0300-9467(88)80079-0.
+    '''
+
+    Tc = mixing_simple(xs, Tcs)
+    if T > Tc:
+        raise ValueError('T > Tc according to Kays rule - model is not valid in this range.')
+    Tb = mixing_simple(xs, Tbs)
+    sigmar = mixing_simple(xs, sigmas_Tb)
+    Tst = (Tc/T - 1.)/(Tc/Tb - 1.0)
+    return 1.002855*Tst**1.118091*(T/Tb)*sigmar
 
 
 
@@ -1142,138 +1276,6 @@ class SurfaceTension(TDependentProperty):
             raise Exception('Method not valid')
         return validity
 
-
-### Surface Tension Mixtures
-
-def Winterfeld_Scriven_Davis(xs, sigmas, rhoms):
-    r'''Calculates surface tension of a liquid mixture according to
-    mixing rules in [1]_ and also in [2]_.
-
-    .. math::
-        \sigma_M = \sum_i \sum_j \frac{1}{V_L^{L2}}\left(x_i V_i \right)
-        \left( x_jV_j\right)\sqrt{\sigma_i\cdot \sigma_j}
-
-    Parameters
-    ----------
-    xs : array-like
-        Mole fractions of all components, [-]
-    sigmas : array-like
-        Surface tensions of all components, [N/m]
-    rhoms : array-like
-        Molar densities of all components, [mol/m^3]
-
-    Returns
-    -------
-    sigma : float
-        Air-liquid surface tension of mixture, [N/m]
-
-    Notes
-    -----
-    DIPPR Procedure 7C: Method for the Surface Tension of Nonaqueous Liquid
-    Mixtures
-
-    Becomes less accurate as liquid-liquid critical solution temperature is
-    approached. DIPPR Evaluation:  3-4% AARD, from 107 nonaqueous binary
-    systems, 1284 points. Internally, densities are converted to kmol/m^3. The
-    Amgat function is used to obtain liquid mixture density in this equation.
-
-    Raises a ZeroDivisionError if either molar volume are zero, and a
-    ValueError if a surface tensions of a pure component is negative.
-
-    Examples
-    --------
-    >>> Winterfeld_Scriven_Davis([0.1606, 0.8394], [0.01547, 0.02877],
-    ... [8610., 15530.])
-    0.024967388450439824
-
-    References
-    ----------
-    .. [1] Winterfeld, P. H., L. E. Scriven, and H. T. Davis. "An Approximate
-       Theory of Interfacial Tensions of Multicomponent Systems: Applications
-       to Binary Liquid-Vapor Tensions." AIChE Journal 24, no. 6
-       (November 1, 1978): 1010-14. doi:10.1002/aic.690240610.
-    .. [2] Danner, Ronald P, and Design Institute for Physical Property Data.
-       Manual for Predicting Chemical Process Design Data. New York, N.Y, 1982.
-    '''
-    if not none_and_length_check([xs, sigmas, rhoms]):
-        raise Exception('Function inputs are incorrect format')
-    rhoms = [i*1E-3 for i in rhoms]
-    Vms = [1./i for i in rhoms]
-    rho = 1./mixing_simple(xs, Vms)
-    cmps = range(len(xs))
-    rho2 = rho*rho
-    return sum([rho2*xs[i]/rhoms[i]*xs[j]/rhoms[j]*(sigmas[j]*sigmas[i])**0.5
-                for i in cmps for j in cmps])
-
-
-def Diguilio_Teja(T, xs, sigmas_Tb, Tbs, Tcs):
-    r'''Calculates surface tension of a liquid mixture according to
-    mixing rules in [1]_.
-
-    .. math::
-        \sigma = 1.002855(T^*)^{1.118091} \frac{T}{T_b} \sigma_r
-
-        T^*  = \frac{(T_c/T)-1}{(T_c/T_b)-1}
-
-        \sigma_r = \sum x_i \sigma_i
-
-        T_b = \sum x_i T_{b,i}
-
-        T_c = \sum x_i T_{c,i}
-
-    Parameters
-    ----------
-    T : float
-        Temperature of fluid [K]
-    xs : array-like
-        Mole fractions of all components
-    sigmas_Tb : array-like
-        Surface tensions of all components at the boiling point, [N/m]
-    Tbs : array-like
-        Boiling temperatures of all components, [K]
-    Tcs : array-like
-        Critical temperatures of all components, [K]
-
-    Returns
-    -------
-    sigma : float
-        Air-liquid surface tension of mixture, [N/m]
-
-    Notes
-    -----
-    Simple model, however it has 0 citations. Gives similar results to the
-    `Winterfeld_Scriven_Davis` model.
-
-    Raises a ValueError if temperature is greater than the mixture's critical
-    temperature or if the given temperature is negative, or if the mixture's
-    boiling temperature is higher than its critical temperature.
-    
-    [1]_ claims a 4.63 percent average absolute error on 21 binary and 4 
-    ternary non-aqueous systems. [1]_ also considered Van der Waals mixing 
-    rules for `Tc`, but found it provided a higher error of 5.58%
-
-    Examples
-    --------
-    >>> Diguilio_Teja(T=298.15, xs=[0.1606, 0.8394],
-    ... sigmas_Tb=[0.01424, 0.02530], Tbs=[309.21, 312.95], Tcs=[469.7, 508.0])
-    0.025716823875045505
-
-    References
-    ----------
-    .. [1] Diguilio, Ralph, and Amyn S. Teja. "Correlation and Prediction of
-       the Surface Tensions of Mixtures." The Chemical Engineering Journal 38,
-       no. 3 (July 1988): 205-8. doi:10.1016/0300-9467(88)80079-0.
-    '''
-    if not none_and_length_check([xs, sigmas_Tb, Tbs, Tcs]):
-        raise Exception('Function inputs are incorrect format')
-
-    Tc = mixing_simple(xs, Tcs)
-    if T > Tc:
-        raise ValueError('T > Tc according to Kays rule - model is not valid in this range.')
-    Tb = mixing_simple(xs, Tbs)
-    sigmar = mixing_simple(xs, sigmas_Tb)
-    Tst = (Tc/T - 1.)/(Tc/Tb - 1)
-    return 1.002855*Tst**1.118091*(T/Tb)*sigmar
 
 
 WINTERFELDSCRIVENDAVIS = 'Winterfeld, Scriven, and Davis (1978)'
