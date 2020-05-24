@@ -780,8 +780,6 @@ def Amgat(xs, Vms):
     >>> Amgat([0.5, 0.5], [4.057e-05, 5.861e-05])
     4.9590000000000005e-05
     '''
-    if not none_and_length_check([xs, Vms]):
-        raise Exception('Function inputs are incorrect format')
     return mixing_simple(xs, Vms)
 
 
@@ -840,8 +838,6 @@ def Rackett_mixture(T, xs, MWs, Tcs, Pcs, Zrs):
     .. [2] Danner, Ronald P, and Design Institute for Physical Property Data.
        Manual for Predicting Chemical Process Design Data. New York, N.Y, 1982.
     '''
-    if not none_and_length_check([xs, MWs, Tcs, Pcs, Zrs]):
-        raise Exception('Function inputs are incorrect format')
     Tc = mixing_simple(xs, Tcs)
     Zr = mixing_simple(xs, Zrs)
     MW = mixing_simple(xs, MWs)
@@ -906,8 +902,6 @@ def COSTALD_mixture(xs, T, Tcs, Vcs, omegas):
        25, no. 4 (1979): 653-663. doi:10.1002/aic.690250412
     '''
     cmps = range(len(xs))
-    if not none_and_length_check([xs, Tcs, Vcs, omegas]):
-        raise Exception('Function inputs are incorrect format')
 #    sum1, sum2, sum3 = 0.0, 0.0, 0.0
 #    for i in cmps:
 #        sum1 += xi*Vci
