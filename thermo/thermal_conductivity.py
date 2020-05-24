@@ -1359,7 +1359,7 @@ def Eli_Hanley_dense(T, MW, Tc, Vc, Zc, omega, Cvm, Vm):
     else:
         dtheta = (omega - 0.011)*(-0.86276/T + (Vr-0.5)*0.46568*Tc/T**2)
     dfdT = Tc/190.4*dtheta
-    X = ((1 - T/f*dfdT)*0.288/Zc)**1.5
+    X = ((1.0 - T/f*dfdT)*0.288/Zc)**1.5
 
     H = (16.04/MW)**0.5*f**0.5/h**(2/3.)
     ks = (k1*X + k2 + k3)*H
