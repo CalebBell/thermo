@@ -27,10 +27,10 @@ __all__ = ['Sheffy_Johnson', 'Sato_Riedel', 'Lakshmi_Prasad',
 'Mersmann_Kind_thermal_conductivity_liquid',
 'thermal_conductivity_liquid_methods', 'ThermalConductivityLiquid', 'DIPPR9G',
  'Missenard', 'DIPPR9H', 'Filippov', 
- 'Eucken', 'Eucken_modified', 'DIPPR9B', 'Chung', 'eli_hanley', 
+ 'Eucken', 'Eucken_modified', 'DIPPR9B', 'Chung', 'Eli_Hanley',
  'Gharagheizi_gas', 'Bahadori_gas', 'thermal_conductivity_gas_methods', 
- 'thermal_conductivity_gas_methods_P', 'ThermalConductivityGas', 
- 'stiel_thodos_dense', 'eli_hanley_dense', 'chung_dense', 'Lindsay_Bromley',
+ 'thermal_conductivity_gas_methods_P', 'ThermalConductivityGas',
+           'Stiel_Thodos_dense', 'Eli_Hanley_dense', 'Chung_dense', 'Lindsay_Bromley',
  'Perrys2_314', 'Perrys2_315', 'VDI_PPDS_9',
  'VDI_PPDS_10', 'ThermalConductivityGasMixture', 'ThermalConductivityLiquidMixture',
  'MAGOMEDOV', 'DIPPR_9H', 'FILIPPOV', 'LINDSAY_BROMLEY']
@@ -932,7 +932,7 @@ def Chung(T, MW, Tc, omega, Cvm, mu):
     return 3.75*psi/(Cvm*MW)*R*mu*Cvm
 
 
-def eli_hanley(T, MW, Tc, Vc, Zc, omega, Cvm):
+def Eli_Hanley(T, MW, Tc, Vc, Zc, omega, Cvm):
     r'''Estimates the thermal conductivity of a gas as a function of
     temperature using the reference fluid method of Eli and Hanley [1]_ as
     shown in [2]_.
@@ -993,7 +993,7 @@ def eli_hanley(T, MW, Tc, Vc, Zc, omega, Cvm):
     --------
     2-methylbutane at low pressure, 373.15 K. Mathes calculation in [2]_.
 
-    >>> eli_hanley(T=373.15, MW=72.151, Tc=460.4, Vc=3.06E-4, Zc=0.267,
+    >>> Eli_Hanley(T=373.15, MW=72.151, Tc=460.4, Vc=3.06E-4, Zc=0.267,
     ... omega=0.227, Cvm=135.9)
     0.02247951789135337
 
@@ -1150,7 +1150,7 @@ def Bahadori_gas(T, MW):
 
 ### Thermal Conductivity of dense gases
 
-def stiel_thodos_dense(T, MW, Tc, Pc, Vc, Zc, Vm, kg):
+def Stiel_Thodos_dense(T, MW, Tc, Pc, Vc, Zc, Vm, kg):
     r'''Estimates the thermal conductivity of a gas at high pressure as a
     function of temperature using difference method of Stiel and Thodos [1]_
     as shown in [2]_.
@@ -1202,7 +1202,7 @@ def stiel_thodos_dense(T, MW, Tc, Pc, Vc, Zc, Vm, kg):
 
     Examples
     --------
-    >>> stiel_thodos_dense(T=378.15, MW=44.013, Tc=309.6, Pc=72.4E5,
+    >>> Stiel_Thodos_dense(T=378.15, MW=44.013, Tc=309.6, Pc=72.4E5,
     ... Vc=97.4E-6, Zc=0.274, Vm=144E-6, kg=2.34E-2)
     0.041245574404863684
 
@@ -1214,21 +1214,21 @@ def stiel_thodos_dense(T, MW, Tc, Pc, Vc, Zc, Vm, kg):
     .. [2] Reid, Robert C.; Prausnitz, John M.; Poling, Bruce E.
        Properties of Gases and Liquids. McGraw-Hill Companies, 1987.
     '''
-    gamma = 210*(Tc*MW**3./(Pc/1E5)**4)**(1/6.)
+    gamma = 210.0*(Tc*MW*MW*MW*(Pc*1e-5)**-4.0)**(1.0/6.0)
     rhor = Vc/Vm
     if rhor < 0.5:
         term = 1.22E-2*(exp(0.535*rhor) - 1.)
-    elif rhor < 2:
+    elif rhor < 2.0:
         term = 1.14E-2*(exp(0.67*rhor) - 1.069)
     else:
         # Technically only up to 2.8
         term = 2.60E-3*(exp(1.155*rhor) + 2.016)
-    diff = term/Zc**5/gamma
+    diff = term*Zc**-5/gamma
     kg = kg + diff
     return kg
 
 
-def eli_hanley_dense(T, MW, Tc, Vc, Zc, omega, Cvm, Vm):
+def Eli_Hanley_dense(T, MW, Tc, Vc, Zc, omega, Cvm, Vm):
     r'''Estimates the thermal conductivity of a gas at high pressure as a
     function of temperature using the reference fluid method of Eli and
     Hanley [1]_ as shown in [2]_.
@@ -1305,7 +1305,7 @@ def eli_hanley_dense(T, MW, Tc, Vc, Zc, omega, Cvm, Vm):
 
     Examples
     --------
-    >>> eli_hanley_dense(T=473., MW=42.081, Tc=364.9, Vc=1.81E-4, Zc=0.274,
+    >>> Eli_Hanley_dense(T=473., MW=42.081, Tc=364.9, Vc=1.81E-4, Zc=0.274,
     ... omega=0.144, Cvm=82.70, Vm=1.721E-4)
     0.06038475936515042
 
@@ -1323,24 +1323,26 @@ def eli_hanley_dense(T, MW, Tc, Vc, Zc, omega, Cvm, Vm):
           2.037119479E-1]
 
     Tr = T/Tc
-    if Tr > 2:
-        Tr = 2
+    if Tr > 2.0:
+        Tr = 2.0
     Vr = Vm/Vc
-    if Vr > 2:
-        Vr = 2
-    theta = 1 + (omega - 0.011)*(0.09057 - 0.86276*log(Tr) + (0.31664 - 0.46568/Tr)*(Vr-0.5))
-    psi = (1 + (omega-0.011)*(0.39490*(Vr-1.02355) - 0.93281*(Vr-0.75464)*log(Tr)))*0.288/Zc
+    if Vr > 2.0:
+        Vr = 2.0
+    logTr = log(Tr)
+    theta = 1.0 + (omega - 0.011)*(0.09057 - 0.86276*logTr + (0.31664 - 0.46568/Tr)*(Vr-0.5))
+    psi = (1.0 + (omega- 0.011)*(0.39490*(Vr-1.02355) - 0.93281*(Vr-0.75464)*logTr))*0.288/Zc
     f = Tc/190.4*theta
     h = Vc/9.92E-5*psi
     T0 = T/f
     rho0 = 16.04/(Vm*1E6)*h  # Vm must be in cm^3/mol here.
-    eta0 = 1E-7*sum([Cs[i]*T0**((i+1-4)/3.) for i in range(len(Cs))])
+    eta0 = 1E-7*sum([Cs[i]*T0**((i + 1.0 - 4.0)/3.) for i in range(len(Cs))])
     k1 = 1944*eta0
     b1 = -0.25276920E0
     b2 = 0.334328590E0
     b3 = 1.12
     b4 = 0.1680E3
-    k2 = (b1 + b2*(b3 - log(T0/b4))**2)/1000.*rho0
+    x0 = (b3 - log(T0/b4))
+    k2 = (b1 + b2*x0*x0)*1e-3*rho0
 
     a1 = -7.19771
     a2 = 85.67822
@@ -1350,10 +1352,10 @@ def eli_hanley_dense(T, MW, Tc, Vc, Zc, omega, Cvm, Vm):
     a6 = 69.79841
     a7 = -872.8833
 
-    k3 = exp(a1 + a2/T0)*(exp((a3 + a4/T0**1.5)*rho0**0.1 + (rho0/0.1617 - 1)*rho0**0.5*(a5 + a6/T0 + a7/T0**2)) - 1)/1000.
+    k3 = exp(a1 + a2/T0)*(exp((a3 + a4/T0**1.5)*rho0**0.1 + (rho0/0.1617 - 1.0)*rho0**0.5*(a5 + a6/T0 + a7/T0**2)) - 1)/1000.
 
-    if T/Tc > 2:
-        dtheta = 0
+    if T/Tc > 2.0:
+        dtheta = 0.0
     else:
         dtheta = (omega - 0.011)*(-0.86276/T + (Vr-0.5)*0.46568*Tc/T**2)
     dfdT = Tc/190.4*dtheta
@@ -1363,19 +1365,19 @@ def eli_hanley_dense(T, MW, Tc, Vc, Zc, omega, Cvm, Vm):
     ks = (k1*X + k2 + k3)*H
 
     ### Uses calculations similar to those for pure species here
-    theta = 1 + (omega - 0.011)*(0.56553 - 0.86276*log(Tr) - 0.69852/Tr)
-    psi = (1 + (omega-0.011)*(0.38560 - 1.1617*log(Tr)))*0.288/Zc
+    theta = 1.0 + (omega - 0.011)*(0.56553 - 0.86276*logTr - 0.69852/Tr)
+    psi = (1.0 + (omega - 0.011)*(0.38560 - 1.1617*logTr))*0.288/Zc
     f = Tc/190.4*theta
     h = Vc/9.92E-5*psi
     T0 = T/f
     eta0 = 1E-7*sum([Cs[i]*T0**((i+1-4)/3.) for i in range(len(Cs))])
-    H = (16.04/MW)**0.5*f**0.5/h**(2/3.)
+    H = (16.04*f/MW)**0.5*h**(-2.0/3.)
     etas = eta0*H*MW/16.04
-    k = ks + etas/(MW/1000.)*1.32*(Cvm-3*R/2.)
+    k = ks + etas*1e3/(MW)*1.32*(Cvm - 1.5*R)
     return k
 
 
-def chung_dense(T, MW, Tc, Vc, omega, Cvm, Vm, mu, dipole, association=0):
+def Chung_dense(T, MW, Tc, Vc, omega, Cvm, Vm, mu, dipole, association=0.0):
     r'''Estimates the thermal conductivity of a gas at high pressure as a
     function of temperature using the reference fluid method of
     Chung [1]_ as shown in [2]_.
@@ -1451,7 +1453,7 @@ def chung_dense(T, MW, Tc, Vc, omega, Cvm, Vm, mu, dipole, association=0):
 
     Examples
     --------
-    >>> chung_dense(T=473., MW=42.081, Tc=364.9, Vc=184.6E-6, omega=0.142,
+    >>> Chung_dense(T=473., MW=42.081, Tc=364.9, Vc=184.6E-6, omega=0.142,
     ... Cvm=82.67, Vm=172.1E-6, mu=134E-7, dipole=0.4)
     0.06160570379787278
 
@@ -1470,6 +1472,8 @@ def chung_dense(T, MW, Tc, Vc, omega, Cvm, Vm, mu, dipole, association=0):
     dis = [1.2172E+2, 6.9983E+1, 2.7039E+1, 7.4344E+1, 6.3173E+0, 6.5529E+1, 5.2381E+2]
     Tr = T/Tc
     mur = 131.3*dipole/(Vc*1E6*Tc)**0.5
+    mur4 = mur*mur
+    mur4 *= mur4 
 
     # From Chung Method
     alpha = Cvm/R - 1.5
@@ -1478,7 +1482,7 @@ def chung_dense(T, MW, Tc, Vc, omega, Cvm, Vm, mu, dipole, association=0):
     psi = 1 + alpha*((0.215 + 0.28288*alpha - 1.061*beta + 0.26665*Z)/(0.6366 + beta*Z + 1.061*alpha*beta))
 
     y = Vc/(6*Vm)
-    B1, B2, B3, B4, B5, B6, B7 = [ais[i] + bis[i]*omega + cis[i]*mur**4 + dis[i]*association for i in range(7)]
+    B1, B2, B3, B4, B5, B6, B7 = [ais[i] + bis[i]*omega + cis[i]*mur4 + dis[i]*association for i in range(7)]
     G1 = (1 - 0.5*y)/(1. - y)**3
     G2 = (B1/y*(1 - exp(-B4*y)) + B2*G1*exp(B5*y) + B3*G1)/(B1*B4 + B2 + B3)
     q = 3.586E-3*(Tc/(MW/1000.))**0.5/(Vc*1E6)**(2/3.)
@@ -2327,7 +2331,7 @@ class ThermalConductivityGas(TPDependentProperty):
     **CHUNG**:
         CSP method, described in :obj:`Chung`.
     **ELI_HANLEY**:
-        CSP method, described in :obj:`eli_hanley`.
+        CSP method, described in :obj:`Eli_Hanley`.
     **EUCKEN_MOD**:
         CSP method, described in :obj:`Eucken_modified`.
     **EUCKEN**:
@@ -2353,13 +2357,13 @@ class ThermalConductivityGas(TPDependentProperty):
     High pressure methods:
 
     **STIEL_THODOS_DENSE**:
-        CSP method, described in :obj:`stiel_thodos_dense`. Calculates a
+        CSP method, described in :obj:`Stiel_Thodos_dense`. Calculates a
         low-pressure thermal conductivity first, using `T_dependent_property`.
     **ELI_HANLEY_DENSE**:
-        CSP method, described in :obj:`eli_hanley_dense`. Calculates a
+        CSP method, described in :obj:`Eli_Hanley_dense`. Calculates a
         low-pressure thermal conductivity first, using `T_dependent_property`.
     **CHUNG_DENSE**:
-        CSP method, described in :obj:`chung_dense`. Calculates a
+        CSP method, described in :obj:`Chung_dense`. Calculates a
         low-pressure thermal conductivity first, using `T_dependent_property`.
     **COOLPROP**:
         CoolProp external library; with select fluids from its library.
@@ -2371,14 +2375,14 @@ class ThermalConductivityGas(TPDependentProperty):
     --------
     Bahadori_gas
     Gharagheizi_gas
-    eli_hanley
+    Eli_Hanley
     Chung
     DIPPR9B
     Eucken_modified
     Eucken
-    stiel_thodos_dense
-    eli_hanley_dense
-    chung_dense
+    Stiel_Thodos_dense
+    Eli_Hanley_dense
+    Chung_dense
 
     References
     ----------
@@ -2583,7 +2587,7 @@ class ThermalConductivityGas(TPDependentProperty):
             kg = Chung(T, self.MW, self.Tc, self.omega, Cvgm, mug)
         elif method == ELI_HANLEY:
             Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
-            kg = eli_hanley(T, self.MW, self.Tc, self.Vc, self.Zc, self.omega, Cvgm)
+            kg = Eli_Hanley(T, self.MW, self.Tc, self.Vc, self.Zc, self.omega, Cvgm)
         elif method == EUCKEN_MOD:
             Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
             mug = self.mug(T) if hasattr(self.mug, '__call__') else self.mug
@@ -2635,16 +2639,16 @@ class ThermalConductivityGas(TPDependentProperty):
         if method == ELI_HANLEY_DENSE:
             Vmg = self.Vmg(T, P) if hasattr(self.Vmg, '__call__') else self.Vmg
             Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
-            kg = eli_hanley_dense(T, self.MW, self.Tc, self.Vc, self.Zc, self.omega, Cvgm, Vmg)
+            kg = Eli_Hanley_dense(T, self.MW, self.Tc, self.Vc, self.Zc, self.omega, Cvgm, Vmg)
         elif method == CHUNG_DENSE:
             Vmg = self.Vmg(T, P) if hasattr(self.Vmg, '__call__') else self.Vmg
             Cvgm = self.Cvgm(T) if hasattr(self.Cvgm, '__call__') else self.Cvgm
             mug = self.mug(T, P) if hasattr(self.mug, '__call__') else self.mug
-            kg = chung_dense(T, self.MW, self.Tc, self.Vc, self.omega, Cvgm, Vmg, mug, self.dipole)
+            kg = Chung_dense(T, self.MW, self.Tc, self.Vc, self.omega, Cvgm, Vmg, mug, self.dipole)
         elif method == STIEL_THODOS_DENSE:
             kg = self.T_dependent_property(T)
             Vmg = self.Vmg(T, P) if hasattr(self.Vmg, '__call__') else self.Vmg
-            kg = stiel_thodos_dense(T, self.MW, self.Tc, self.Pc, self.Vc, self.Zc, Vmg, kg)
+            kg = Stiel_Thodos_dense(T, self.MW, self.Tc, self.Pc, self.Vc, self.Zc, Vmg, kg)
         elif method == COOLPROP:
             kg = PropsSI('L', 'T', T, 'P', P, self.CASRN)
         elif method in self.tabular_data:

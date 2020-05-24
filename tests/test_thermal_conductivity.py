@@ -162,10 +162,10 @@ def test_CSP_gas():
     kg = Chung(T=373.15, MW=72.151, Tc=460.4, omega=0.227, Cvm=135.9, mu=8.77E-6)
     assert_close(kg, 0.023015653729496946)
 
-    kg = eli_hanley(T=373.15, MW=72.151, Tc=460.4, Vc=3.06E-4, Zc=0.267, omega=0.227, Cvm=135.9)
+    kg = Eli_Hanley(T=373.15, MW=72.151, Tc=460.4, Vc=3.06E-4, Zc=0.267, omega=0.227, Cvm=135.9)
     assert_close(kg, 0.022479517891353377)
 
-    kg = eli_hanley(T=1000, MW=72.151, Tc=460.4, Vc=3.06E-4, Zc=0.267, omega=0.227, Cvm=135.9)
+    kg = Eli_Hanley(T=1000, MW=72.151, Tc=460.4, Vc=3.06E-4, Zc=0.267, omega=0.227, Cvm=135.9)
     assert_close(kg, 0.06369581356766069)
 
     kg = Bahadori_gas(40+273.15, 20)
@@ -176,19 +176,19 @@ def test_CSP_gas():
 
 
 def test_CSP_gas_dense():
-    kgs = [stiel_thodos_dense(T=378.15, MW=44.013, Tc=309.6, Pc=72.4E5, Vc=97.4E-6, Zc=0.274, Vm=i, kg=2.34E-2) for i in [144E-6, 24E-6, 240E-6]]
+    kgs = [Stiel_Thodos_dense(T=378.15, MW=44.013, Tc=309.6, Pc=72.4E5, Vc=97.4E-6, Zc=0.274, Vm=i, kg=2.34E-2) for i in [144E-6, 24E-6, 240E-6]]
     kgs_exp = [0.041245574404863684, 0.9158718777539487, 0.03258313269922979]
     assert_allclose(kgs, kgs_exp)
 
 
-    kgs = [eli_hanley_dense(T=T, MW=42.081, Tc=364.9, Vc=1.81E-4, Zc=0.274, omega=0.144, Cvm=82.70, Vm=1.721E-4) for T in [473., 900]]
+    kgs = [Eli_Hanley_dense(T=T, MW=42.081, Tc=364.9, Vc=1.81E-4, Zc=0.274, omega=0.144, Cvm=82.70, Vm=1.721E-4) for T in [473., 900]]
     kgs_exp = [0.06038475936515042, 0.08987438807653142]
     assert_allclose(kgs, kgs_exp)
 
-    kg = eli_hanley_dense(700, MW=42.081, Tc=364.9, Vc=1.81E-4, Zc=0.274, omega=0.144, Cvm=82.70, Vm=3.721E-4)
+    kg = Eli_Hanley_dense(700, MW=42.081, Tc=364.9, Vc=1.81E-4, Zc=0.274, omega=0.144, Cvm=82.70, Vm=3.721E-4)
     assert_allclose(kg, 0.06953791121177173)
 
-    kg = chung_dense(T=473., MW=42.081, Tc=364.9, Vc=184.6E-6, omega=0.142, Cvm=82.67, Vm=172.1E-6, mu=134E-7, dipole=0.4)
+    kg = Chung_dense(T=473., MW=42.081, Tc=364.9, Vc=184.6E-6, omega=0.142, Cvm=82.67, Vm=172.1E-6, mu=134E-7, dipole=0.4)
     assert_allclose(kg, 0.06160569232570781)
 
 
