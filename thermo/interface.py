@@ -22,8 +22,8 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['Mulero_Cachadina_data', 'Jasper_Lange_data', 'Somayajulu_data', 
-           'VDI_PPDS_11', 'Somayajulu_data_2', 'REFPROP', 'Somayajulu', 'Jasper', 
+__all__ = ['sigma_data_Mulero_Cachadina', 'sigma_data_Jasper_Lange', 'sigma_data_Somayajulu',
+           'sigma_data_VDI_PPDS_11', 'sigma_data_Somayajulu2', 'REFPROP_sigma', 'Somayajulu', 'Jasper',
            'Brock_Bird', 'Pitzer', 'Sastri_Rao', 'Zuo_Stenby', 
            'Mersmann_Kind_surface_tension',
            'Hakim_Steinberg_Stiel', 'Miqueu', 'Aleem', 'surface_tension_methods', 
@@ -44,31 +44,31 @@ from chemicals.miscdata import lookup_VDI_tabular_data
 folder = os.path.join(os.path.dirname(__file__), 'Interface')
 
 
-Mulero_Cachadina_data = pd.read_csv(os.path.join(folder,
+sigma_data_Mulero_Cachadina = pd.read_csv(os.path.join(folder,
                         'MuleroCachadinaParameters.tsv'), sep='\t', index_col=0)
-_Mulero_Cachadina_data_values = Mulero_Cachadina_data.values
+sigma_values_Mulero_Cachadina = sigma_data_Mulero_Cachadina.values
 
-Jasper_Lange_data = pd.read_csv(os.path.join(folder, 'Jasper-Lange.tsv'),
-                      sep='\t', index_col=0)
-_Jasper_Lange_data_values = Jasper_Lange_data.values
+sigma_data_Jasper_Lange = pd.read_csv(os.path.join(folder, 'Jasper-Lange.tsv'),
+                                      sep='\t', index_col=0)
+sigma_values_Jasper_Lange = sigma_data_Jasper_Lange.values
 
-Somayajulu_data = pd.read_csv(os.path.join(folder, 'Somayajulu.tsv'),
-                      sep='\t', index_col=0)
-_Somayajulu_data_values = Somayajulu_data.values
+sigma_data_Somayajulu = pd.read_csv(os.path.join(folder, 'Somayajulu.tsv'),
+                                    sep='\t', index_col=0)
+sigma_values_Somayajulu = sigma_data_Somayajulu.values
 
-Somayajulu_data_2 = pd.read_csv(os.path.join(folder, 'SomayajuluRevised.tsv'),
-                      sep='\t', index_col=0)
-_Somayajulu_data_2_values = Somayajulu_data_2.values
+sigma_data_Somayajulu2 = pd.read_csv(os.path.join(folder, 'SomayajuluRevised.tsv'),
+                                     sep='\t', index_col=0)
+sigma_values_Somayajulu2 = sigma_data_Somayajulu2.values
 
-VDI_PPDS_11 = pd.read_csv(os.path.join(folder, 'VDI PPDS surface tensions.tsv'),
-                          sep='\t', index_col=0)
-_VDI_PPDS_11_values = VDI_PPDS_11.values
+sigma_data_VDI_PPDS_11 = pd.read_csv(os.path.join(folder, 'VDI PPDS surface tensions.tsv'),
+                                     sep='\t', index_col=0)
+sigma_values_VDI_PPDS_11 = sigma_data_VDI_PPDS_11.values
 
 
 ### Regressed coefficient-based functions
 
-def REFPROP(T, Tc, sigma0, n0, sigma1=0, n1=0, sigma2=0, n2=0):
-    r'''Calculates air-liquid surface tension  using the REFPROP [1]_
+def REFPROP_sigma(T, Tc, sigma0, n0, sigma1=0.0, n1=0.0, sigma2=0.0, n2=0.0):
+    r'''Calculates air-liquid surface tension  using the REFPROP_sigma [1]_
     regression-based method. Relatively recent, and most accurate.
 
     .. math::
@@ -112,7 +112,7 @@ def REFPROP(T, Tc, sigma0, n0, sigma1=0, n1=0, sigma2=0, n2=0):
     --------
     Parameters for water at 298.15 K
 
-    >>> REFPROP(298.15, 647.096, -0.1306, 2.471, 0.2151, 1.233)
+    >>> REFPROP_sigma(298.15, 647.096, -0.1306, 2.471, 0.2151, 1.233)
     0.07205503890847453
 
     References
@@ -960,7 +960,7 @@ class SurfaceTension(TDependentProperty):
 
     **STREFPROP**:
         The REFPROP coefficient-based method, documented in the function
-        :obj:`REFPROP` for 115 fluids from [5]_.
+        :obj:`REFPROP_sigma` for 115 fluids from [5]_.
     **SOMAYAJULU and SOMAYAJULU2**:
         The Somayajulu coefficient-based method,
         documented in the function :obj:`Somayajulu`. Both methods have data
@@ -990,7 +990,7 @@ class SurfaceTension(TDependentProperty):
 
     See Also
     --------
-    REFPROP
+    REFPROP_sigma
     Somayajulu
     Jasper
     Brock_Bird
@@ -1105,19 +1105,19 @@ class SurfaceTension(TDependentProperty):
         '''
         methods = []
         Tmins, Tmaxs = [], []
-        if self.CASRN in Mulero_Cachadina_data.index:
+        if self.CASRN in sigma_data_Mulero_Cachadina.index:
             methods.append(STREFPROP)
-            _, sigma0, n0, sigma1, n1, sigma2, n2, Tc, self.STREFPROP_Tmin, self.STREFPROP_Tmax = _Mulero_Cachadina_data_values[Mulero_Cachadina_data.index.get_loc(self.CASRN)].tolist()
+            _, sigma0, n0, sigma1, n1, sigma2, n2, Tc, self.STREFPROP_Tmin, self.STREFPROP_Tmax = sigma_values_Mulero_Cachadina[sigma_data_Mulero_Cachadina.index.get_loc(self.CASRN)].tolist()
             self.STREFPROP_coeffs = [sigma0, n0, sigma1, n1, sigma2, n2, Tc]
             Tmins.append(self.STREFPROP_Tmin); Tmaxs.append(self.STREFPROP_Tmax)
-        if self.CASRN in Somayajulu_data_2.index:
+        if self.CASRN in sigma_data_Somayajulu2.index:
             methods.append(SOMAYAJULU2)
-            _, self.SOMAYAJULU2_Tt, self.SOMAYAJULU2_Tc, A, B, C = _Somayajulu_data_2_values[Somayajulu_data_2.index.get_loc(self.CASRN)].tolist()
+            _, self.SOMAYAJULU2_Tt, self.SOMAYAJULU2_Tc, A, B, C = sigma_values_Somayajulu2[sigma_data_Somayajulu2.index.get_loc(self.CASRN)].tolist()
             self.SOMAYAJULU2_coeffs = [A, B, C]
             Tmins.append(self.SOMAYAJULU2_Tt); Tmaxs.append(self.SOMAYAJULU2_Tc)
-        if self.CASRN in Somayajulu_data.index:
+        if self.CASRN in sigma_data_Somayajulu.index:
             methods.append(SOMAYAJULU)
-            _, self.SOMAYAJULU_Tt, self.SOMAYAJULU_Tc, A, B, C = _Somayajulu_data_values[Somayajulu_data.index.get_loc(self.CASRN)].tolist()
+            _, self.SOMAYAJULU_Tt, self.SOMAYAJULU_Tc, A, B, C = sigma_values_Somayajulu[sigma_data_Somayajulu.index.get_loc(self.CASRN)].tolist()
             self.SOMAYAJULU_coeffs = [A, B, C]
             Tmins.append(self.SOMAYAJULU_Tt); Tmaxs.append(self.SOMAYAJULU_Tc)
         if self.CASRN in miscdata.VDI_saturation_dict:
@@ -1127,9 +1127,9 @@ class SurfaceTension(TDependentProperty):
             self.VDI_Tmax = Ts[-1]
             self.tabular_data[VDI_TABULAR] = (Ts, props)
             Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
-        if self.CASRN in Jasper_Lange_data.index:
+        if self.CASRN in sigma_data_Jasper_Lange.index:
             methods.append(JASPER)
-            _, a, b, self.JASPER_Tmin, self.JASPER_Tmax= _Jasper_Lange_data_values[Jasper_Lange_data.index.get_loc(self.CASRN)].tolist()
+            _, a, b, self.JASPER_Tmin, self.JASPER_Tmax= sigma_values_Jasper_Lange[sigma_data_Jasper_Lange.index.get_loc(self.CASRN)].tolist()
             self.JASPER_coeffs = [a, b]
             Tmins.append(self.JASPER_Tmin); Tmaxs.append(self.JASPER_Tmax)
         if all((self.Tc, self.Vc, self.omega)):
@@ -1143,8 +1143,8 @@ class SurfaceTension(TDependentProperty):
             methods.append(PITZER)
             methods.append(ZUO_STENBY)
             Tmins.append(0.0); Tmaxs.append(self.Tc)
-        if self.CASRN in VDI_PPDS_11.index:
-            _,  Tm, Tc, A, B, C, D, E = _VDI_PPDS_11_values[VDI_PPDS_11.index.get_loc(self.CASRN)].tolist()
+        if self.CASRN in sigma_data_VDI_PPDS_11.index:
+            _,  Tm, Tc, A, B, C, D, E = sigma_values_VDI_PPDS_11[sigma_data_VDI_PPDS_11.index.get_loc(self.CASRN)].tolist()
             self.VDI_PPDS_coeffs = [A, B, C, D, E]
             self.VDI_PPDS_Tc = Tc
             self.VDI_PPDS_Tm = Tm
@@ -1189,8 +1189,8 @@ class SurfaceTension(TDependentProperty):
         '''
         if method == STREFPROP:
             sigma0, n0, sigma1, n1, sigma2, n2, Tc = self.STREFPROP_coeffs
-            sigma = REFPROP(T, Tc=Tc, sigma0=sigma0, n0=n0, sigma1=sigma1, n1=n1,
-                            sigma2=sigma2, n2=n2)
+            sigma = REFPROP_sigma(T, Tc=Tc, sigma0=sigma0, n0=n0, sigma1=sigma1, n1=n1,
+                                  sigma2=sigma2, n2=n2)
         elif method == VDI_PPDS:
             sigma = EQ106(T, self.VDI_PPDS_Tc, *self.VDI_PPDS_coeffs)
         elif method == SOMAYAJULU2:

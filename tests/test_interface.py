@@ -77,7 +77,7 @@ def test_Aleem():
     
     
 def test_REFPROP():
-    sigma = REFPROP(298.15, 647.096, -0.1306, 2.471, 0.2151, 1.233)
+    sigma = REFPROP_sigma(298.15, 647.096, -0.1306, 2.471, 0.2151, 1.233)
     assert_close(sigma, 0.07205503890847453)
 
 
@@ -92,47 +92,47 @@ def test_Jasper():
 
 
 def test_data():
-    tot = sum([Mulero_Cachadina_data[i].sum() for i in Mulero_Cachadina_data.columns[1:]])
+    tot = sum([sigma_data_Mulero_Cachadina[i].sum() for i in sigma_data_Mulero_Cachadina.columns[1:]])
     assert_close(tot, 114350.07371931802)
 
-    assert np.all(Mulero_Cachadina_data.columns == [u'Fluid', u'sigma0', u'n0',
+    assert np.all(sigma_data_Mulero_Cachadina.columns == [u'Fluid', u'sigma0', u'n0',
                                                     u'sigma1', u'n1', u'sigma2',
                                                     u'n2', u'Tc', u'Tmin',
                                                     u'Tmax'])
-    assert Mulero_Cachadina_data.shape == (115, 10)
-    assert Mulero_Cachadina_data.index.is_unique
+    assert sigma_data_Mulero_Cachadina.shape == (115, 10)
+    assert sigma_data_Mulero_Cachadina.index.is_unique
 
-    tot = sum([Jasper_Lange_data[i].sum() for i in Jasper_Lange_data.columns[1:]])
+    tot = sum([sigma_data_Jasper_Lange[i].sum() for i in sigma_data_Jasper_Lange.columns[1:]])
     assert_close(tot, 343153.38953333395)
 
-    assert np.all(Jasper_Lange_data.columns == [u'Name', u'a', u'b', u'Tmin', u'Tmax'])
-    assert Jasper_Lange_data.shape == (522, 5)
-    assert Jasper_Lange_data.index.is_unique
+    assert np.all(sigma_data_Jasper_Lange.columns == [u'Name', u'a', u'b', u'Tmin', u'Tmax'])
+    assert sigma_data_Jasper_Lange.shape == (522, 5)
+    assert sigma_data_Jasper_Lange.index.is_unique
 
-    tot = sum([Somayajulu_data[i].sum() for i in Somayajulu_data.columns[1:]])
+    tot = sum([sigma_data_Somayajulu[i].sum() for i in sigma_data_Somayajulu.columns[1:]])
     assert_close(tot, 38941.199955999997)
 
-    assert np.all(Somayajulu_data.columns == [u'Chemical', u'Tt', u'Tc', u'A', u'B', u'C'])
-    assert Somayajulu_data.shape == (64, 6)
-    assert Somayajulu_data.index.is_unique
+    assert np.all(sigma_data_Somayajulu.columns == [u'Chemical', u'Tt', u'Tc', u'A', u'B', u'C'])
+    assert sigma_data_Somayajulu.shape == (64, 6)
+    assert sigma_data_Somayajulu.index.is_unique
 
-    tot = sum([Somayajulu_data_2[i].sum() for i in Somayajulu_data_2.columns[1:]])
+    tot = sum([sigma_data_Somayajulu2[i].sum() for i in sigma_data_Somayajulu2.columns[1:]])
     assert_close(tot, 39471.356771000006)
-    assert np.all(Somayajulu_data_2.columns == [u'Chemical', u'Tt', u'Tc', u'A', u'B', u'C'])
-    assert Somayajulu_data_2.shape == (64, 6)
-    assert Somayajulu_data_2.index.is_unique
+    assert np.all(sigma_data_Somayajulu2.columns == [u'Chemical', u'Tt', u'Tc', u'A', u'B', u'C'])
+    assert sigma_data_Somayajulu2.shape == (64, 6)
+    assert sigma_data_Somayajulu2.index.is_unique
 
 def test_VDI_PPDS_11_data():
     '''I believe there are no errors here. 
     '''
-    for i in VDI_PPDS_11.index:
+    for i in sigma_data_VDI_PPDS_11.index:
         assert checkCAS(i)
     
-    assert VDI_PPDS_11.index.is_unique
-    assert VDI_PPDS_11.shape == (272, 8)
+    assert sigma_data_VDI_PPDS_11.index.is_unique
+    assert sigma_data_VDI_PPDS_11.shape == (272, 8)
 
     # Doing the sums on the arrays is faster but much uglier. Worth it?
-    tots_calc = [VDI_PPDS_11[i].abs().sum() for i in [u'A', u'B', u'C', u'D', u'E', u'Tc', u'Tm']]
+    tots_calc = [sigma_data_VDI_PPDS_11[i].abs().sum() for i in [u'A', u'B', u'C', u'D', u'E', u'Tc', u'Tm']]
     tots = [18.495069999999998, 336.69950000000006, 6.5941200000000002, 7.7347200000000003, 6.4262199999999998, 150142.28, 56917.699999999997]
     for calc, fixed in zip(tots_calc, tots):
         assert_close(calc, fixed)
