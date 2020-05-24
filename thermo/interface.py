@@ -33,6 +33,7 @@ __all__ = ['sigma_data_Mulero_Cachadina', 'sigma_data_Jasper_Lange', 'sigma_data
 
 import os
 import pandas as pd
+import numpy as np
 from chemicals.utils import log, exp
 from chemicals.utils import mixing_simple, none_and_length_check, Vm_to_rho
 from chemicals.dippr import EQ106
@@ -46,23 +47,23 @@ folder = os.path.join(os.path.dirname(__file__), 'Interface')
 
 sigma_data_Mulero_Cachadina = pd.read_csv(os.path.join(folder,
                         'MuleroCachadinaParameters.tsv'), sep='\t', index_col=0)
-sigma_values_Mulero_Cachadina = sigma_data_Mulero_Cachadina.values
+sigma_values_Mulero_Cachadina = np.array(sigma_data_Mulero_Cachadina.values[:, 1:], dtype=float)
 
 sigma_data_Jasper_Lange = pd.read_csv(os.path.join(folder, 'Jasper-Lange.tsv'),
                                       sep='\t', index_col=0)
-sigma_values_Jasper_Lange = sigma_data_Jasper_Lange.values
+sigma_values_Jasper_Lange = np.array(sigma_data_Jasper_Lange.values[:, 1:], dtype=float)
 
 sigma_data_Somayajulu = pd.read_csv(os.path.join(folder, 'Somayajulu.tsv'),
                                     sep='\t', index_col=0)
-sigma_values_Somayajulu = sigma_data_Somayajulu.values
+sigma_values_Somayajulu = np.array(sigma_data_Somayajulu.values[:, 1:], dtype=float)
 
 sigma_data_Somayajulu2 = pd.read_csv(os.path.join(folder, 'SomayajuluRevised.tsv'),
                                      sep='\t', index_col=0)
-sigma_values_Somayajulu2 = sigma_data_Somayajulu2.values
+sigma_values_Somayajulu2 = np.array(sigma_data_Somayajulu2.values[:, 1:], dtype=float)
 
 sigma_data_VDI_PPDS_11 = pd.read_csv(os.path.join(folder, 'VDI PPDS surface tensions.tsv'),
                                      sep='\t', index_col=0)
-sigma_values_VDI_PPDS_11 = sigma_data_VDI_PPDS_11.values
+sigma_values_VDI_PPDS_11 = np.array(sigma_data_VDI_PPDS_11.values[:, 1:], dtype=float)
 
 
 ### Regressed coefficient-based functions
@@ -1107,17 +1108,17 @@ class SurfaceTension(TDependentProperty):
         Tmins, Tmaxs = [], []
         if self.CASRN in sigma_data_Mulero_Cachadina.index:
             methods.append(STREFPROP)
-            _, sigma0, n0, sigma1, n1, sigma2, n2, Tc, self.STREFPROP_Tmin, self.STREFPROP_Tmax = sigma_values_Mulero_Cachadina[sigma_data_Mulero_Cachadina.index.get_loc(self.CASRN)].tolist()
+            sigma0, n0, sigma1, n1, sigma2, n2, Tc, self.STREFPROP_Tmin, self.STREFPROP_Tmax = sigma_values_Mulero_Cachadina[sigma_data_Mulero_Cachadina.index.get_loc(self.CASRN)].tolist()
             self.STREFPROP_coeffs = [sigma0, n0, sigma1, n1, sigma2, n2, Tc]
             Tmins.append(self.STREFPROP_Tmin); Tmaxs.append(self.STREFPROP_Tmax)
         if self.CASRN in sigma_data_Somayajulu2.index:
             methods.append(SOMAYAJULU2)
-            _, self.SOMAYAJULU2_Tt, self.SOMAYAJULU2_Tc, A, B, C = sigma_values_Somayajulu2[sigma_data_Somayajulu2.index.get_loc(self.CASRN)].tolist()
+            self.SOMAYAJULU2_Tt, self.SOMAYAJULU2_Tc, A, B, C = sigma_values_Somayajulu2[sigma_data_Somayajulu2.index.get_loc(self.CASRN)].tolist()
             self.SOMAYAJULU2_coeffs = [A, B, C]
             Tmins.append(self.SOMAYAJULU2_Tt); Tmaxs.append(self.SOMAYAJULU2_Tc)
         if self.CASRN in sigma_data_Somayajulu.index:
             methods.append(SOMAYAJULU)
-            _, self.SOMAYAJULU_Tt, self.SOMAYAJULU_Tc, A, B, C = sigma_values_Somayajulu[sigma_data_Somayajulu.index.get_loc(self.CASRN)].tolist()
+            self.SOMAYAJULU_Tt, self.SOMAYAJULU_Tc, A, B, C = sigma_values_Somayajulu[sigma_data_Somayajulu.index.get_loc(self.CASRN)].tolist()
             self.SOMAYAJULU_coeffs = [A, B, C]
             Tmins.append(self.SOMAYAJULU_Tt); Tmaxs.append(self.SOMAYAJULU_Tc)
         if self.CASRN in miscdata.VDI_saturation_dict:
@@ -1129,7 +1130,7 @@ class SurfaceTension(TDependentProperty):
             Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
         if self.CASRN in sigma_data_Jasper_Lange.index:
             methods.append(JASPER)
-            _, a, b, self.JASPER_Tmin, self.JASPER_Tmax= sigma_values_Jasper_Lange[sigma_data_Jasper_Lange.index.get_loc(self.CASRN)].tolist()
+            a, b, self.JASPER_Tmin, self.JASPER_Tmax= sigma_values_Jasper_Lange[sigma_data_Jasper_Lange.index.get_loc(self.CASRN)].tolist()
             self.JASPER_coeffs = [a, b]
             Tmins.append(self.JASPER_Tmin); Tmaxs.append(self.JASPER_Tmax)
         if all((self.Tc, self.Vc, self.omega)):
@@ -1144,7 +1145,7 @@ class SurfaceTension(TDependentProperty):
             methods.append(ZUO_STENBY)
             Tmins.append(0.0); Tmaxs.append(self.Tc)
         if self.CASRN in sigma_data_VDI_PPDS_11.index:
-            _,  Tm, Tc, A, B, C, D, E = sigma_values_VDI_PPDS_11[sigma_data_VDI_PPDS_11.index.get_loc(self.CASRN)].tolist()
+            Tm, Tc, A, B, C, D, E = sigma_values_VDI_PPDS_11[sigma_data_VDI_PPDS_11.index.get_loc(self.CASRN)].tolist()
             self.VDI_PPDS_coeffs = [A, B, C, D, E]
             self.VDI_PPDS_Tc = Tc
             self.VDI_PPDS_Tm = Tm
