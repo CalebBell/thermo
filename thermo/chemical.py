@@ -1103,8 +1103,6 @@ class Chemical(object): # pragma: no cover
 
         self.Permittivity = Permittivity(CASRN=self.CAS)
 
-        self.solubility_parameter_methods = solubility_parameter(Hvapm=self.Hvap_Tbm, Vml=self.Vml_STP, get_methods=True, CASRN=self.CAS)
-        self.solubility_parameter_method = self.solubility_parameter_methods[0] if self.solubility_parameter_methods else None
 
         # set molecular_diameter; depends on Vml_Tb, Vml_Tm
         self.molecular_diameter_sources = molecular_diameter(Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, Vm=self.Vml_Tm, Vb=self.Vml_Tb, get_methods=True, CASRN=self.CAS)
@@ -2705,9 +2703,7 @@ class Chemical(object): # pragma: no cover
         >>> Chemical('NH3').solubility_parameter
         24766.329043856073
         '''
-        return solubility_parameter(T=self.T, Hvapm=self.Hvapm, Vml=self.Vml,
-                                    method=self.solubility_parameter_method,
-                                    CASRN=self.CAS)
+        return solubility_parameter(T=self.T, Hvapm=self.Hvapm, Vml=self.Vml)
 
     @property
     def Parachor(self):
