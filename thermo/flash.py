@@ -46,7 +46,7 @@ from chemicals.exceptions import TrivialSolutionError, PhaseCountReducedError, P
 
 from fluids.constants import R, R2, R_inv
 from fluids.numerics import (UnconvergedError, trunc_exp, py_newton as newton,
-                             py_brenth as brenth, secant, py_bisect as bisect,
+                             brenth, secant, py_bisect as bisect,
                              py_ridder as ridder, broyden2,
                              numpy as np, linspace, 
                              logspace, oscillation_checker, damping_maintain_sign,

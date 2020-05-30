@@ -39,13 +39,14 @@ try:
     import CoolProp.CoolProp as CP
     from CoolProp import AbstractState
     has_CoolProp = True
-except ImportError:  # pragma: no cover
+    CPiP_min = CP.iP_min
+except:  # pragma: no cover
+    # Don't just except 
     has_CoolProp = False
-    PropsSI, PhaseSI, CP, AbstractState = None, None, None, None
-    CoolProp_version = None
+    PropsSI, PhaseSI, HAPropsSI, CP, AbstractState = None, None, None, None, None
+    CPiP_min = CoolProp_version = None
 #has_CoolProp = False # For testing
     
-CPiP_min = CP.iP_min
 
 
 folder = os.path.join(os.path.dirname(__file__), 'Misc')

@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['Poling_data', 'TRC_gas_data', '_PerryI', 'CRC_standard_data', 
+__all__ = ['Cp_data_Poling', 'TRC_gas_data', '_PerryI', 'CRC_standard_data',
            'Lastovka_Shaw', 'Lastovka_Shaw_integral', 
            'Lastovka_Shaw_integral_over_T',
            'Lastovka_Shaw_T_for_Hm', 'Lastovka_Shaw_T_for_Sm',
@@ -32,13 +32,13 @@ __all__ = ['Poling_data', 'TRC_gas_data', '_PerryI', 'CRC_standard_data',
            'heat_capacity_gas_methods', 'HeatCapacityGas', 
            'Rowlinson_Poling', 'Rowlinson_Bondi', 'Dadgostar_Shaw', 
            'Zabransky_quasi_polynomial', 'Zabransky_quasi_polynomial_integral',
-           'Zabransky_quasi_polynomial_integral_over_T', 'Zabransky_cubic', 
+           'Zabransky_quasi_polynomial_integral_over_T', 'Zabransky_cubic',
            'Zabransky_cubic_integral', 'Zabransky_cubic_integral_over_T',
            'Zabransky_quasipolynomial', 'Zabransky_spline',
-           'ZABRANSKY_TO_DICT', 'heat_capacity_liquid_methods', 
-           'HeatCapacityLiquid', 'Lastovka_solid', 'Lastovka_solid_integral', 
-           'Lastovka_solid_integral_over_T', 'heat_capacity_solid_methods', 
-           'HeatCapacitySolid', 'HeatCapacitySolidMixture', 
+           'ZABRANSKY_TO_DICT', 'heat_capacity_liquid_methods',
+           'HeatCapacityLiquid', 'Lastovka_solid', 'Lastovka_solid_integral',
+           'Lastovka_solid_integral_over_T', 'heat_capacity_solid_methods',
+           'HeatCapacitySolid', 'HeatCapacitySolidMixture',
            'HeatCapacityGasMixture', 'HeatCapacityLiquidMixture']
 import os
 from io import open
@@ -47,7 +47,7 @@ import pandas as pd
 from fluids.numerics import (polyint_over_x, horner_log, horner, polyint, 
                              fit_integral_linear_extrapolation,
                              fit_integral_over_T_linear_extrapolation)
-from fluids.numerics import py_newton as newton, py_brenth as brenth, secant
+from fluids.numerics import py_newton as newton, brenth, secant
 from fluids.constants import R, calorie
 
 from scipy.integrate import quad
@@ -68,10 +68,10 @@ from cmath import log as clog, exp as cexp
 folder = os.path.join(os.path.dirname(__file__), 'Heat Capacity')
 
 
-Poling_data = pd.read_csv(os.path.join(folder,
+Cp_data_Poling = pd.read_csv(os.path.join(folder,
                        'PolingDatabank.tsv'), sep='\t',
-                       index_col=0)
-_Poling_data_values = Poling_data.values
+                             index_col=0)
+_Poling_data_values = Cp_data_Poling.values
 
 
 TRC_gas_data = pd.read_csv(os.path.join(folder,
@@ -1875,8 +1875,8 @@ class HeatCapacityGas(TDependentProperty):
             _, self.TRCIG_Tmin, self.TRCIG_Tmax, a0, a1, a2, a3, a4, a5, a6, a7, _, _, _ = _TRC_gas_data_values[TRC_gas_data.index.get_loc(self.CASRN)].tolist()
             self.TRCIG_coefs = [a0, a1, a2, a3, a4, a5, a6, a7]
             Tmins.append(self.TRCIG_Tmin); Tmaxs.append(self.TRCIG_Tmax)
-        if self.CASRN in Poling_data.index and not isnan(Poling_data.at[self.CASRN, 'a0']):
-            _, POLING_Tmin, POLING_Tmax, a0, a1, a2, a3, a4, Cpg, Cpl = _Poling_data_values[Poling_data.index.get_loc(self.CASRN)].tolist()
+        if self.CASRN in Cp_data_Poling.index and not isnan(Cp_data_Poling.at[self.CASRN, 'a0']):
+            _, POLING_Tmin, POLING_Tmax, a0, a1, a2, a3, a4, Cpg, Cpl = _Poling_data_values[Cp_data_Poling.index.get_loc(self.CASRN)].tolist()
             methods.append(POLING)
             if isnan(POLING_Tmin):
                 POLING_Tmin = 50.0
@@ -1887,10 +1887,10 @@ class HeatCapacityGas(TDependentProperty):
             self.POLING_Tmax = POLING_Tmax
             Tmaxs.append(POLING_Tmax)
             self.POLING_coefs = [a0, a1, a2, a3, a4]
-        if self.CASRN in Poling_data.index and not isnan(Poling_data.at[self.CASRN, 'Cpg']):
+        if self.CASRN in Cp_data_Poling.index and not isnan(Cp_data_Poling.at[self.CASRN, 'Cpg']):
             methods.append(POLING_CONST)
             self.POLING_T = 298.15
-            self.POLING_constant = float(Poling_data.at[self.CASRN, 'Cpg'])
+            self.POLING_constant = float(Cp_data_Poling.at[self.CASRN, 'Cpg'])
         if self.CASRN in CRC_standard_data.index and not isnan(CRC_standard_data.at[self.CASRN, 'Cpg']):
             methods.append(CRCSTD)
             self.CRCSTD_T = 298.15
@@ -2335,10 +2335,10 @@ class HeatCapacityLiquid(TDependentProperty):
         if self.CASRN in zabransky_dict_iso_p:
             methods.append(ZABRANSKY_QUASIPOLYNOMIAL_C)
             self.Zabransky_quasipolynomial_iso = zabransky_dict_iso_p[self.CASRN]
-        if self.CASRN in Poling_data.index and not isnan(Poling_data.at[self.CASRN, 'Cpl']):
+        if self.CASRN in Cp_data_Poling.index and not isnan(Cp_data_Poling.at[self.CASRN, 'Cpl']):
             methods.append(POLING_CONST)
             self.POLING_T = 298.15
-            self.POLING_constant = float(Poling_data.at[self.CASRN, 'Cpl'])
+            self.POLING_constant = float(Cp_data_Poling.at[self.CASRN, 'Cpl'])
         if self.CASRN in CRC_standard_data.index and not isnan(CRC_standard_data.at[self.CASRN, 'Cpl']):
             methods.append(CRCSTD)
             self.CRCSTD_T = 298.15

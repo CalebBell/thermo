@@ -53,7 +53,7 @@ from scipy.optimize import golden, brent, minimize, fmin_slsqp, fsolve
 from fluids.numerics import (OscillationError, UnconvergedError, 
                              ridder, derivative, caching_decorator,
                              py_newton as newton, linspace, logspace, 
-                             py_brenth as brenth, py_solve, 
+                             brenth, py_solve, 
                              oscillation_checker, secant, damping_maintain_sign,
                              oscillation_checking_wrapper)
 from fluids.constants import R, pi, N_A

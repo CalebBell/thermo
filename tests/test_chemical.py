@@ -57,8 +57,8 @@ def test_Chemical_properties():
     assert_allclose(phenol.Hsub, 736964.419015, rtol=1E-3)
     assert_allclose(phenol.Hsubm, 69356.6353093363)
 
-    assert_allclose(phenol.Hfm, -96400.0)
-    assert_allclose(phenol.Hcm, -3121919.0)
+    assert_allclose(phenol.Hfm, -165100.)
+    assert_allclose(phenol.Hcm, -3053219.)
 
     assert_allclose(phenol.Tflash, 348.15)
     assert_allclose(phenol.Tautoignition, 868.15)

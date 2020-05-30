@@ -40,7 +40,7 @@ from thermo.permittivity import *
 from thermo.heat_capacity import HeatCapacitySolid, HeatCapacityGas, HeatCapacityLiquid, HeatCapacitySolidMixture, HeatCapacityGasMixture, HeatCapacityLiquidMixture
 from thermo.interface import SurfaceTension, SurfaceTensionMixture
 from thermo.viscosity import ViscosityLiquid, ViscosityGas, ViscosityLiquidMixture, ViscosityGasMixture
-from thermo.reaction import Hf, Hf_g, S0_g, Gibbs_formation, Hf_basis_converter, entropy_formation
+from chemicals.reactions import Hfs, Hfl, Hfg, S0g, S0l, S0s, Gibbs_formation, Hf_basis_converter, entropy_formation
 from thermo.combustion import Hcombustion
 from thermo.safety import Tflash, Tautoignition, LFL, UFL, TWA, STEL, Ceiling, Skin, Carcinogen, LFL_mixture, UFL_mixture
 from chemicals.solubility import solubility_parameter
@@ -805,14 +805,10 @@ class Chemical(object): # pragma: no cover
         self.Carcinogen_sources = Carcinogen(self.CAS, get_methods=True)
         self.Carcinogen_source = self.Carcinogen_sources[0] if self.Carcinogen_sources else None
 
-        # Chemistry - currently molar
-        self.Hf_sources = Hf(CASRN=self.CAS, get_methods=True)
-        self.Hf_source = self.Hf_sources[0] if self.Hf_sources else None
-        
-        self.Hfg_sources = Hf_g(CASRN=self.CAS, get_methods=True)
+        self.Hfg_sources = Hfg(CASRN=self.CAS, get_methods=True)
         self.Hfg_source = self.Hfg_sources[0] if self.Hfg_sources else None
         
-        self.S0g_sources = S0_g(CASRN=self.CAS, get_methods=True)
+        self.S0g_sources = S0g(CASRN=self.CAS, get_methods=True)
         self.S0g_source = self.S0g_sources[0] if self.S0g_sources else None
         
 
@@ -860,26 +856,8 @@ class Chemical(object): # pragma: no cover
         self.Hfusm = Hfus(method=self.Hfus_method, CASRN=self.CAS)
         self.Hfus = property_molar_to_mass(self.Hfusm, self.MW) if self.Hfusm is not None else None
 
-        # Chemistry
-        self.Hfm = Hf(CASRN=self.CAS, method=self.Hf_source)
-        self.Hf = property_molar_to_mass(self.Hfm, self.MW) if (self.Hfm is not None) else None
+
         
-        self.Hcm = Hcombustion(atoms=self.atoms, Hf=self.Hfm, CASRN=self.CAS, higher=True)
-        self.Hc = property_molar_to_mass(self.Hcm, self.MW) if (self.Hcm is not None) else None
-
-        self.Hcm_lower = Hcombustion(atoms=self.atoms, Hf=self.Hfm, CASRN=self.CAS, higher=False)
-        self.Hc_lower = property_molar_to_mass(self.Hcm_lower, self.MW) if (self.Hcm_lower is not None) else None
-
-        # Fire Safety Limits
-        self.Tflash = Tflash(self.CAS, method=self.Tflash_source)
-        self.Tautoignition = Tautoignition(self.CAS, method=self.Tautoignition_source)
-        self.LFL_sources = LFL(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS, get_methods=True)
-        self.LFL_source = self.LFL_sources[0]
-        self.UFL_sources = UFL(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS, get_methods=True)
-        self.UFL_source = self.UFL_sources[0]
-        self.LFL = LFL(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS, method=self.LFL_source)
-        self.UFL = UFL(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS, method=self.UFL_source)
-
         # Chemical Exposure Limits
         self.TWA = TWA(self.CAS, method=self.TWA_source)
         self.STEL = STEL(self.CAS, method=self.STEL_source)
@@ -902,52 +880,7 @@ class Chemical(object): # pragma: no cover
         self.RI, self.RIT = refractive_index(CASRN=self.CAS, method=self.RI_source)
         self.conductivity, self.conductivityT = conductivity(CASRN=self.CAS, method=self.conductivity_source)
 
-        self.Hfgm = Hf_g(CASRN=self.CAS, method=self.Hfg_source)
-        self.Hfg = property_molar_to_mass(self.Hfgm, self.MW) if (self.Hfgm is not None) else None
 
-        self.S0gm = S0_g(CASRN=self.CAS, method=self.S0g_source)
-        self.S0g = property_molar_to_mass(self.S0gm, self.MW) if (self.S0gm is not None) else None
-        
-        # Calculated later
-        self.S0m = None
-        self.S0 = None
-
-        # Compute Gf and Gf(ig)
-        dHfs_std = []
-        S0_abs_elements = []
-        coeffs_elements = []
-        
-        for atom, count in self.atoms.items():
-            try:
-                ele = periodic_table[atom]
-                H0, S0 = ele.Hf, ele.S0
-                if ele.number in homonuclear_elements:
-                    H0, S0 = 0.5 * H0, 0.5 * S0
-            except KeyError:
-                H0, S0 = None, None # D, T
-            dHfs_std.append(H0)
-            S0_abs_elements.append(S0)
-            coeffs_elements.append(count)
-        
-        self.elemental_reaction_data = (dHfs_std, S0_abs_elements, coeffs_elements)
-
-
-        try:
-            self.Gfgm = Gibbs_formation(self.Hfgm, self.S0gm, dHfs_std, S0_abs_elements, coeffs_elements)
-        except:
-            self.Gfgm = None
-        self.Gfg = property_molar_to_mass(self.Gfgm, self.MW) if (self.Gfgm is not None) else None
-
-        # Compute Entropy of formation
-        self.Sfgm = (self.Hfgm - self.Gfgm)/298.15 if (self.Hfgm is not None and self.Gfgm is not None) else None # hardcoded
-        self.Sfg = property_molar_to_mass(self.Sfgm, self.MW) if (self.Sfgm is not None) else None
-
-        
-        self.Hcgm = Hcombustion(atoms=self.atoms, Hf=self.Hfgm)
-        self.Hcg = property_molar_to_mass(self.Hcgm, self.MW) if (self.Hcgm is not None) else None
-
-        self.Hcgm_lower = Hcombustion(atoms=self.atoms, Hf=self.Hfgm, higher=False)
-        self.Hcg_lower = property_molar_to_mass(self.Hcgm_lower, self.MW) if (self.Hcgm_lower is not None) else None
         
         
         
@@ -995,6 +928,94 @@ class Chemical(object): # pragma: no cover
         if self.Pt is None and self.Tt is not None:
             self.Pt = self.VaporPressure(self.Tt)
             self.Pt_source = 'VaporPressure'
+
+
+
+        # Chemistry
+        if self.phase_STP == 'g':
+            H_fun = Hfg
+        elif self.phase_STP == 'l':
+            H_fun = Hfl
+        elif self.phase_STP == 's':
+            H_fun = Hfs
+        else:
+            H_fun = None
+            
+        if H_fun is not None:
+            self.Hf_sources = H_fun(CASRN=self.CAS, get_methods=True)
+            self.Hf_source = self.Hf_sources[0] if self.Hf_sources else None
+            self.Hfm = H_fun(CASRN=self.CAS, method=self.Hf_source)
+        else:
+            self.Hf_sources = []
+            self.Hf_source = self.Hfm = None
+
+        self.Hf = property_molar_to_mass(self.Hfm, self.MW) if (self.Hfm is not None) else None        
+
+
+        self.Hcm = Hcombustion(atoms=self.atoms, Hf=self.Hfm, CASRN=self.CAS, higher=True)
+        self.Hc = property_molar_to_mass(self.Hcm, self.MW) if (self.Hcm is not None) else None
+
+        self.Hcm_lower = Hcombustion(atoms=self.atoms, Hf=self.Hfm, CASRN=self.CAS, higher=False)
+        self.Hc_lower = property_molar_to_mass(self.Hcm_lower, self.MW) if (self.Hcm_lower is not None) else None
+
+        # Fire Safety Limits
+        self.Tflash = Tflash(self.CAS, method=self.Tflash_source)
+        self.Tautoignition = Tautoignition(self.CAS, method=self.Tautoignition_source)
+        self.LFL_sources = LFL(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS, get_methods=True)
+        self.LFL_source = self.LFL_sources[0]
+        self.UFL_sources = UFL(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS, get_methods=True)
+        self.UFL_source = self.UFL_sources[0]
+        self.LFL = LFL(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS, method=self.LFL_source)
+        self.UFL = UFL(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS, method=self.UFL_source)
+
+
+        self.Hfgm = Hfg(CASRN=self.CAS, method=self.Hfg_source)
+        self.Hfg = property_molar_to_mass(self.Hfgm, self.MW) if (self.Hfgm is not None) else None
+
+        self.S0gm = S0g(CASRN=self.CAS, method=self.S0g_source)
+        self.S0g = property_molar_to_mass(self.S0gm, self.MW) if (self.S0gm is not None) else None
+        
+        # Calculated later
+        self.S0m = None
+        self.S0 = None
+
+        # Compute Gf and Gf(ig)
+        dHfs_std = []
+        S0_abs_elements = []
+        coeffs_elements = []
+        
+        for atom, count in self.atoms.items():
+            try:
+                ele = periodic_table[atom]
+                H0, S0 = ele.Hf, ele.S0
+                if ele.number in homonuclear_elements:
+                    H0, S0 = 0.5 * H0, 0.5 * S0
+            except KeyError:
+                H0, S0 = None, None # D, T
+            dHfs_std.append(H0)
+            S0_abs_elements.append(S0)
+            coeffs_elements.append(count)
+        
+        self.elemental_reaction_data = (dHfs_std, S0_abs_elements, coeffs_elements)
+
+
+        try:
+            self.Gfgm = Gibbs_formation(self.Hfgm, self.S0gm, dHfs_std, S0_abs_elements, coeffs_elements)
+        except:
+            self.Gfgm = None
+        self.Gfg = property_molar_to_mass(self.Gfgm, self.MW) if (self.Gfgm is not None) else None
+
+        # Compute Entropy of formation
+        self.Sfgm = (self.Hfgm - self.Gfgm)/298.15 if (self.Hfgm is not None and self.Gfgm is not None) else None # hardcoded
+        self.Sfg = property_molar_to_mass(self.Sfgm, self.MW) if (self.Sfgm is not None) else None
+
+        
+        self.Hcgm = Hcombustion(atoms=self.atoms, Hf=self.Hfgm)
+        self.Hcg = property_molar_to_mass(self.Hcgm, self.MW) if (self.Hcgm is not None) else None
+
+        self.Hcgm_lower = Hcombustion(atoms=self.atoms, Hf=self.Hfgm, higher=False)
+        self.Hcg_lower = property_molar_to_mass(self.Hcgm_lower, self.MW) if (self.Hcgm_lower is not None) else None
+
         
         try:
             self.StielPolar = Stiel_polar_factor(Psat=self.VaporPressure(T=self.Tc*0.6), Pc=self.Pc, omega=self.omega)

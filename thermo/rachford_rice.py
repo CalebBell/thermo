@@ -40,7 +40,7 @@ __all__ = ['K_value', 'Wilson_K_value', 'flash_wilson',
 
 from fluids.constants import R
 from fluids.numerics import IS_PYPY, one_epsilon_larger, one_epsilon_smaller, NotBoundedError
-from fluids.numerics import newton_system, roots_cubic, roots_quartic, secant, horner, py_brenth as brenth, py_newton as newton, oscillation_checker, roots_cubic_a1, linspace, horner_and_der
+from fluids.numerics import newton_system, roots_cubic, roots_quartic, secant, horner, brenth, py_newton as newton, oscillation_checker, roots_cubic_a1, linspace, horner_and_der
 from chemicals.utils import exp, log
 from chemicals.utils import normalize, none_and_length_check, dxs_to_dns, dxs_to_dn_partials, d2xs_to_dxdn_partials, dns_to_dn_partials
 from chemicals.exceptions import PhaseCountReducedError

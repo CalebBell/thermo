@@ -614,7 +614,7 @@ class ViscosityGas(TPDependentProperty):
     **STIEL_THODOS**:
         CSP method, described in :obj:`chemicals.viscosity.Stiel_Thodos`.
     **LUCAS_GAS**:
-        CSP method, described in :obj:`chemicals.viscosity.lucas_gas`.
+        CSP method, described in :obj:`chemicals.viscosity.Lucas_gas`.
     **DIPPR_PERRY_8E**:
         A collection of 345 coefficient sets from the DIPPR database published
         openly in [3]_. Provides temperature limits for all its fluids. 
@@ -644,7 +644,7 @@ class ViscosityGas(TPDependentProperty):
     Gharagheizi_gas_viscosity
     Yoon_Thodos
     Stiel_Thodos
-    lucas_gas
+    Lucas_gas
 
     References
     ----------
@@ -827,7 +827,7 @@ class ViscosityGas(TPDependentProperty):
         elif method == STIEL_THODOS:
             mu = Stiel_Thodos(T, self.Tc, self.Pc, self.MW)
         elif method == LUCAS_GAS:
-            mu = lucas_gas(T, self.Tc, self.Pc, self.Zc, self.MW, self.dipole, CASRN=self.CASRN)
+            mu = Lucas_gas(T, self.Tc, self.Pc, self.Zc, self.MW, self.dipole, CASRN=self.CASRN)
         elif method in self.tabular_data:
             mu = self.interpolate(T, method)
         if method == BESTFIT:

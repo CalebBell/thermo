@@ -5512,6 +5512,8 @@ class ChaoSeader(GraysonStreed):
     simple_coeffs = (5.75748, -3.01761, -4.985, 2.02299, 0.0, 0.08427, 0.26667, -0.31138, -0.02655, 0.02883)
     version = 0
 
+# Emperically measured to be ~140 KB/instance, do not want to cache too many - 35 is 5 MB
+max_CoolProp_states = 35
 
 if has_CoolProp:
     CPPT_INPUTS = CoolProp.PT_INPUTS
@@ -5565,8 +5567,6 @@ if has_CoolProp:
 #        free.add(AS)
 
 
-    # Emperically measured to be ~140 KB/instance, do not want to cache too many - 35 is 5 MB
-    max_CoolProp_states = 35
     # Forget about time - just use them last; make sure the LRU is at the top
     # 
     if not SORTED_DICT:
@@ -5614,7 +5614,10 @@ if has_CoolProp:
             AS.update(spec_set, spec0, spec1)
             caching_states_CoolProp[key] = AS
         return AS
-        
+else:
+    CPunknown = CPliquid = CPgas = None
+    CPPQ_INPUTS = CPQT_INPUTS = CPiDmolar = CPrhoT_INPUTS = None
+    caching_state_CoolProp = None
 
 class CoolPropPhase(Phase):
     prefer_phase = CPunknown

@@ -54,7 +54,7 @@ from . import phase_identification
 from . import property_package
 from . import property_package_constants
 from . import psychrometrics
-from . import reaction
+from chemicals import reactions
 from chemicals import refractivity
 from . import regular_solution
 from . import safety
@@ -106,7 +106,7 @@ from .psychrometrics import *
 from .phase_identification import *
 from .property_package import *
 from .property_package_constants import *
-from .reaction import *
+from chemicals.reactions import *
 from chemicals.refractivity import *
 from .regular_solution import *
 from .safety import *
@@ -132,7 +132,7 @@ __all__ = ['rachford_rice', 'chemical', 'chemical_package', 'combustion', 'criti
  'dipole', 'electrochem', 'elements', 'environment', 'eos', 'eos_mix',
  'heat_capacity',  'identifiers', 'joback', 'law', 'lennard_jones',
  'miscdata',
- 'permittivity', 'phase_change', 'phases', 'property_package', 'reaction',
+ 'permittivity', 'phase_change', 'phases', 'property_package', 'reactions',
  'refractivity', 'safety', 'solubility', 'interface', 'interaction_parameters',
  'thermal_conductivity', 'triple', 'utils',
  'vapor_pressure', 'virial', 'viscosity', 'volume', 'acentric', 'coolprop', 
@@ -170,7 +170,7 @@ __all__.extend(phase_change.__all__)
 __all__.extend(phases.__all__)
 __all__.extend(phase_identification.__all__)
 __all__.extend(property_package.__all__)
-__all__.extend(reaction.__all__)
+__all__.extend(reactions.__all__)
 __all__.extend(refractivity.__all__)
 __all__.extend(safety.__all__)
 __all__.extend(solubility.__all__)

@@ -185,13 +185,13 @@ def test_CRC_standard_data():
     assert CRC_standard_data.shape == (2470, 13)
 
 def test_Poling_data():
-    tots_calc = [Poling_data[i].abs().sum() for i in ['Tmin', 'Tmax', 'a0', 'a1', 'a2', 'a3', 'a4', 'Cpg', 'Cpl']]
+    tots_calc = [Cp_data_Poling[i].abs().sum() for i in ['Tmin', 'Tmax', 'a0', 'a1', 'a2', 'a3', 'a4', 'Cpg', 'Cpl']]
     tots = [40966.0, 301000.0, 1394.7919999999999, 10.312580799999999, 0.024578948000000003, 3.1149672999999997e-05, 1.2539125599999999e-08, 43530.690000000002, 50002.459999999999]
     assert_close1d(tots_calc, tots)
 
 
-    assert Poling_data.index.is_unique
-    assert Poling_data.shape == (368, 10)
+    assert Cp_data_Poling.index.is_unique
+    assert Cp_data_Poling.shape == (368, 10)
 
 
 def test_TRC_gas_data():
