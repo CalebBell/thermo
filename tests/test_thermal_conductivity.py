@@ -39,13 +39,13 @@ from thermo.thermal_conductivity import (GHARAGHEIZI_G, CHUNG, ELI_HANLEY, VDI_P
 def test_Perrys2_314_data():
     # In perry's, only 102 is used. No chemicals are missing.
     # Tmaxs all match to 5E-4. Tmins match to 1E-3.
-    assert all([checkCAS(i) for i in Perrys2_314.index])
-    tots_calc = [Perrys2_314[i].abs().sum() for i in [u'C1', u'C2', u'C3', u'C4', u'Tmin', u'Tmax']]
+    assert all([checkCAS(i) for i in k_data_Perrys_8E_2_314.index])
+    tots_calc = [k_data_Perrys_8E_2_314[i].abs().sum() for i in [u'C1', u'C2', u'C3', u'C4', u'Tmin', u'Tmax']]
     tots = [48935634.823768869, 297.41545078799999, 421906466448.71423, 232863514627157.62, 125020.26000000001, 347743.42000000004]
     assert_close(tots_calc, tots)
     
-    assert Perrys2_314.index.is_unique
-    assert Perrys2_314.shape == (345, 7)
+    assert k_data_Perrys_8E_2_314.index.is_unique
+    assert k_data_Perrys_8E_2_314.shape == (345, 7)
 
 
 def test_Perrys2_315_data():
@@ -53,13 +53,13 @@ def test_Perrys2_315_data():
     # All perry's use #100.
     # Tmins all match at 5E-4.
     # Tmaxs all match at 2E-3.
-    assert all([checkCAS(i) for i in Perrys2_315.index])
-    tots_calc = [Perrys2_315[i].abs().sum() for i in [u'C1', u'C2', u'C3', u'C4', u'C5', u'Tmin', u'Tmax']]
+    assert all([checkCAS(i) for i in k_data_Perrys_8E_2_315.index])
+    tots_calc = [k_data_Perrys_8E_2_315[i].abs().sum() for i in [u'C1', u'C2', u'C3', u'C4', u'C5', u'Tmin', u'Tmax']]
     tots = [82.001667499999996, 0.19894598900000002, 0.0065330144999999999, 0.00046928630199999995, 1.0268010799999999e-07, 70996.369999999995, 138833.41]
     assert_close1d(tots_calc, tots)
     
-    assert Perrys2_315.index.is_unique
-    assert Perrys2_315.shape == (340, 8)
+    assert k_data_Perrys_8E_2_315.index.is_unique
+    assert k_data_Perrys_8E_2_315.shape == (340, 8)
 
 
 def test_VDI_PPDS_10_data():
@@ -73,13 +73,13 @@ def test_VDI_PPDS_10_data():
     These have been checked - it appears the tabulated data is just incorrect.
     '''
 
-    assert all([checkCAS(i) for i in VDI_PPDS_10.index])
-    tots_calc = [VDI_PPDS_10[i].abs().sum() for i in [u'A', u'B', u'C', u'D', u'E']]
+    assert all([checkCAS(i) for i in k_data_VDI_PPDS_10.index])
+    tots_calc = [k_data_VDI_PPDS_10[i].abs().sum() for i in [u'A', u'B', u'C', u'D', u'E']]
     tots = [2.2974640014599998, 0.015556001460000001, 1.9897655000000001e-05, 6.7747269999999993e-09, 2.3260109999999999e-12]
     assert_close1d(tots_calc, tots)
     
-    assert VDI_PPDS_10.index.is_unique
-    assert VDI_PPDS_10.shape == (275, 6)
+    assert k_data_VDI_PPDS_10.index.is_unique
+    assert k_data_VDI_PPDS_10.shape == (275, 6)
 
 
 def test_VDI_PPDS_9_data():
@@ -91,13 +91,13 @@ def test_VDI_PPDS_9_data():
     These have been checked - it appears the tabulated data is just incorrect.
     '''
 
-    assert all([checkCAS(i) for i in VDI_PPDS_9.index])
-    tots_calc = [VDI_PPDS_9[i].abs().sum() for i in [u'A', u'B', u'C', u'D', u'E']]
+    assert all([checkCAS(i) for i in k_data_VDI_PPDS_9.index])
+    tots_calc = [k_data_VDI_PPDS_9[i].abs().sum() for i in [u'A', u'B', u'C', u'D', u'E']]
     tots = [63.458699999999993, 0.14461469999999998, 0.00042270770000000005, 1.7062660000000002e-06, 3.2715370000000003e-09]
     assert_close1d(tots_calc, tots)
     
-    assert VDI_PPDS_9.index.is_unique
-    assert VDI_PPDS_9.shape == (271, 6)
+    assert k_data_VDI_PPDS_9.index.is_unique
+    assert k_data_VDI_PPDS_9.shape == (271, 6)
 
 
 def test_CSP_liq():

@@ -25,15 +25,23 @@ from __future__ import division
 __all__ = ['Sheffy_Johnson', 'Sato_Riedel', 'Lakshmi_Prasad', 
 'Gharagheizi_liquid', 'Nicola_original', 'Nicola', 'Bahadori_liquid', 
 'Mersmann_Kind_thermal_conductivity_liquid',
-'thermal_conductivity_liquid_methods', 'ThermalConductivityLiquid', 'DIPPR9G',
+ 'DIPPR9G',
  'Missenard', 'DIPPR9H', 'Filippov', 
  'Eucken', 'Eucken_modified', 'DIPPR9B', 'Chung', 'Eli_Hanley',
- 'Gharagheizi_gas', 'Bahadori_gas', 'thermal_conductivity_gas_methods', 
- 'thermal_conductivity_gas_methods_P', 'ThermalConductivityGas',
+ 'Gharagheizi_gas', 'Bahadori_gas', 
            'Stiel_Thodos_dense', 'Eli_Hanley_dense', 'Chung_dense', 'Lindsay_Bromley',
- 'Perrys2_314', 'Perrys2_315', 'VDI_PPDS_9',
- 'VDI_PPDS_10', 'ThermalConductivityGasMixture', 'ThermalConductivityLiquidMixture',
- 'MAGOMEDOV', 'DIPPR_9H', 'FILIPPOV', 'LINDSAY_BROMLEY']
+
+           'k_data_Perrys_8E_2_314', 'k_data_Perrys_8E_2_315', 'k_data_VDI_PPDS_9',
+           'k_data_VDI_PPDS_10',
+ 
+ 'ThermalConductivityGasMixture', 'ThermalConductivityLiquidMixture',
+ 'MAGOMEDOV', 'DIPPR_9H', 'FILIPPOV', 'LINDSAY_BROMLEY',
+ 'thermal_conductivity_liquid_methods', 'ThermalConductivityLiquid',
+ 
+ 'thermal_conductivity_gas_methods', 
+ 'thermal_conductivity_gas_methods_P', 'ThermalConductivityGas',
+
+           ]
 
 import os
 import numpy as np
@@ -54,24 +62,45 @@ from thermo.electrochem import thermal_conductivity_Magomedov, Magomedovk_therma
 
 folder = os.path.join(os.path.dirname(__file__), 'Thermal Conductivity')
 
-Perrys2_314 = pd.read_csv(os.path.join(folder, 'Table 2-314 Vapor Thermal Conductivity of Inorganic and Organic Substances.tsv'),
-                          sep='\t', index_col=0)
-_Perrys2_314_values = Perrys2_314.values
+from chemicals.data_reader import register_df_source, data_source
 
-Perrys2_315 = pd.read_csv(os.path.join(folder, 'Table 2-315 Thermal Conductivity of Inorganic and Organic Liquids.tsv'),
-                          sep='\t', index_col=0)
-_Perrys2_315_values = Perrys2_315.values
+register_df_source(folder, 'Table 2-314 Vapor Thermal Conductivity of Inorganic and Organic Substances.tsv')
+register_df_source(folder, 'Table 2-315 Thermal Conductivity of Inorganic and Organic Liquids.tsv')
+register_df_source(folder, 'VDI PPDS Thermal conductivity of saturated liquids.tsv')
+register_df_source(folder, 'VDI PPDS Thermal conductivity of gases.tsv')
 
-VDI_PPDS_9 = pd.read_csv(os.path.join(folder, 'VDI PPDS Thermal conductivity of saturated liquids.tsv'),
-                          sep='\t', index_col=0)
-_VDI_PPDS_9_values = VDI_PPDS_9.values
+_k_data_loaded = False
+def _load_k_data():
+    global _k_data_loaded, k_data_Perrys_8E_2_314, k_values_Perrys_8E_2_314
+    global k_data_Perrys_8E_2_315, k_values_Perrys_8E_2_315, k_data_VDI_PPDS_9
+    global k_values_VDI_PPDS_9, k_data_VDI_PPDS_10, k_values_VDI_PPDS_10
 
-VDI_PPDS_10 = pd.read_csv(os.path.join(folder, 'VDI PPDS Thermal conductivity of gases.tsv'),
-                          sep='\t', index_col=0)
-_VDI_PPDS_10_values = VDI_PPDS_10.values
+    k_data_Perrys_8E_2_314 = data_source('Table 2-314 Vapor Thermal Conductivity of Inorganic and Organic Substances.tsv')
+    k_values_Perrys_8E_2_314 = np.array(k_data_Perrys_8E_2_314.values[:, 1:], dtype=float)
+    
+    k_data_Perrys_8E_2_315 = data_source('Table 2-315 Thermal Conductivity of Inorganic and Organic Liquids.tsv')
+    k_values_Perrys_8E_2_315 = np.array(k_data_Perrys_8E_2_315.values[:, 1:], dtype=float)
+    
+    k_data_VDI_PPDS_9 = data_source('VDI PPDS Thermal conductivity of saturated liquids.tsv')
+    k_values_VDI_PPDS_9 = np.array(k_data_VDI_PPDS_9.values[:, 1:], dtype=float)
+    
+    k_data_VDI_PPDS_10 = data_source('VDI PPDS Thermal conductivity of gases.tsv')
+    k_values_VDI_PPDS_10 = np.array(k_data_VDI_PPDS_10.values[:, 1:], dtype=float)
+
+#k_data_Perrys_8E_2_314 = pd.read_csv(os.path.join(folder, 'Table 2-314 Vapor Thermal Conductivity of Inorganic and Organic Substances.tsv'),
+#                                     sep='\t', index_col=0)
+
+#k_data_Perrys_8E_2_315 = pd.read_csv(os.path.join(folder, 'Table 2-315 Thermal Conductivity of Inorganic and Organic Liquids.tsv'),
+#                                     sep='\t', index_col=0)
+
+#k_data_VDI_PPDS_9 = pd.read_csv(os.path.join(folder, 'VDI PPDS Thermal conductivity of saturated liquids.tsv'),
+#                                sep='\t', index_col=0)
+
+#k_data_VDI_PPDS_10 = pd.read_csv(os.path.join(folder, 'VDI PPDS Thermal conductivity of gases.tsv'),
+#                                 sep='\t', index_col=0)
 
 ### Purely CSP Methods - Liquids
-
+_load_k_data()
 
 def Sheffy_Johnson(T, M, Tm):
     r'''Calculate the thermal conductivity of a liquid as a function of
@@ -1822,13 +1851,13 @@ class ThermalConductivityLiquid(TPDependentProperty):
             # LAKSHMI_PRASAD works down to 0 K, and has an upper limit of
             # 50.0*(131.0*sqrt(M) + 2771.0)/(50.0*M**0.5 + 197.0)
             # where it becomes 0.
-        if self.CASRN in Perrys2_315.index:
+        if self.CASRN in k_data_Perrys_8E_2_315.index:
             methods.append(DIPPR_PERRY_8E)
-            _, C1, C2, C3, C4, C5, self.Perrys2_315_Tmin, self.Perrys2_315_Tmax = _Perrys2_315_values[Perrys2_315.index.get_loc(self.CASRN)].tolist()
+            C1, C2, C3, C4, C5, self.Perrys2_315_Tmin, self.Perrys2_315_Tmax = k_values_Perrys_8E_2_315[k_data_Perrys_8E_2_315.index.get_loc(self.CASRN)].tolist()
             self.Perrys2_315_coeffs = [C1, C2, C3, C4, C5]
             Tmins.append(self.Perrys2_315_Tmin); Tmaxs.append(self.Perrys2_315_Tmax)
-        if self.CASRN in VDI_PPDS_9.index:
-            _,  A, B, C, D, E = _VDI_PPDS_9_values[VDI_PPDS_9.index.get_loc(self.CASRN)].tolist()
+        if self.CASRN in k_data_VDI_PPDS_9.index:
+            A, B, C, D, E = k_values_VDI_PPDS_9[k_data_VDI_PPDS_9.index.get_loc(self.CASRN)].tolist()
             self.VDI_PPDS_coeffs = [A, B, C, D, E]
             self.VDI_PPDS_coeffs.reverse()
             methods.append(VDI_PPDS)
@@ -2515,13 +2544,13 @@ class ThermalConductivityGas(TPDependentProperty):
             methods.append(COOLPROP); methods_P.append(COOLPROP)
             self.CP_f = coolprop_fluids[self.CASRN]
             Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tc)
-        if self.CASRN in Perrys2_314.index:
+        if self.CASRN in k_data_Perrys_8E_2_314.index:
             methods.append(DIPPR_PERRY_8E)
-            _, C1, C2, C3, C4, self.Perrys2_314_Tmin, self.Perrys2_314_Tmax = _Perrys2_314_values[Perrys2_314.index.get_loc(self.CASRN)].tolist()
+            C1, C2, C3, C4, self.Perrys2_314_Tmin, self.Perrys2_314_Tmax = k_values_Perrys_8E_2_314[k_data_Perrys_8E_2_314.index.get_loc(self.CASRN)].tolist()
             self.Perrys2_314_coeffs = [C1, C2, C3, C4]
             Tmins.append(self.Perrys2_314_Tmin); Tmaxs.append(self.Perrys2_314_Tmax)
-        if self.CASRN in VDI_PPDS_10.index:
-            _,  A, B, C, D, E = _VDI_PPDS_10_values[VDI_PPDS_10.index.get_loc(self.CASRN)].tolist()
+        if self.CASRN in k_data_VDI_PPDS_10.index:
+            A, B, C, D, E = k_values_VDI_PPDS_10[k_data_VDI_PPDS_10.index.get_loc(self.CASRN)].tolist()
             self.VDI_PPDS_coeffs = [A, B, C, D, E]
             self.VDI_PPDS_coeffs.reverse()
             methods.append(VDI_PPDS)
