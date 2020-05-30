@@ -25,18 +25,7 @@ import pytest
 import pandas as pd
 import numpy as np
 from thermo.permittivity import *
-
-def test_permittivity_data():
-    assert CRC_Permittivity_data.index.is_unique
-    assert CRC_Permittivity_data.shape == (1303, 9)
-
-
-def test_permittivity_IAPWS():
-    Ts = [238., 256., 273., 273., 323., 323., 373., 373., 510., 523., 614., 647., 673., 673., 773., 773., 873.]
-    rhos = [975.06, 995.25, 999.83, 1180., 988.10,  1258., 958.46, 1110., 15.832, 900., 94.29, 358., 100., 900., 100., 900., 450.]
-    permittivity_calc = [permittivity_IAPWS(T, rho) for T, rho in zip(Ts, rhos)]
-    permittivity_exp = [106.31159697963018, 95.19633650530638, 87.96431108641572, 107.06291112337524, 69.96455480833566, 97.7606839686273, 55.56584297721836, 67.73206302035597, 1.1224589212024803, 32.23229227177932, 1.7702660877662086, 6.194373838662447, 1.7541419715602131, 23.59653593827129, 1.6554135047590008, 20.160449425540186, 6.283091796558804]
-    assert_close1d(permittivity_calc, permittivity_exp)
+from chemicals.permittivity import *
 
 
 @pytest.mark.meta_T_dept
