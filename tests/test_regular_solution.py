@@ -20,18 +20,15 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
-from math import exp, log
+from math import log
 from numpy.testing import assert_allclose
-import pytest
-import numpy as np
-from fluids.constants import calorie, R
-from thermo.rachford_rice import *
-from thermo.mixture import Mixture
-from thermo.regular_solution import RegularSolution
-import random
+from fluids.constants import R
+
+from thermo.activity import GibbsExcess
 from thermo import *
 import numpy as np
-from fluids.numerics import jacobian, hessian, derivative, normalize
+from fluids.numerics import jacobian, hessian
+
 
 def test_4_components():
 #    m = Mixture(['acetone', 'chloroform', 'methanol', 'water'], zs=xs, T=300)

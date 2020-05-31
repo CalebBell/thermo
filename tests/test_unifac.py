@@ -23,8 +23,9 @@ SOFTWARE.'''
 from numpy.testing import assert_allclose
 import pytest
 import numpy as np
-import pandas as pd
 from math import *
+
+from thermo.activity import GibbsExcess
 from thermo.unifac import *
 from fluids.numerics import *
 from fluids.constants import R

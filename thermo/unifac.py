@@ -100,8 +100,7 @@ Data for VTPR UNIFAC
 
 from __future__ import division
 
-__all__ = ['UNIFAC_gammas','UNIFAC',  'GibbsExcess', 
-           'UNIFAC_psi', 'DOUFMG', 'DOUFSG', 'UFSG', 'UFMG', 
+__all__ = ['UNIFAC_gammas','UNIFAC', 'UNIFAC_psi', 'DOUFMG', 'DOUFSG', 'UFSG', 'UFMG',
            'DOUFIP2016', 'DOUFIP2006', 'UFIP', 'DDBST_UNIFAC_assignments', 
            'DDBST_MODIFIED_UNIFAC_assignments', 'DDBST_PSRK_assignments',
            'UNIFAC_RQ', 'Van_der_Waals_volume', 'Van_der_Waals_area',
@@ -114,7 +113,7 @@ __all__ = ['UNIFAC_gammas','UNIFAC',  'GibbsExcess',
 import os
 from fluids.constants import R
 from chemicals.utils import log, exp
-from thermo.rachford_rice import GibbsExcess
+from thermo.activity import GibbsExcess
 from chemicals.utils import dxs_to_dns
 folder = os.path.join(os.path.dirname(__file__), 'Phase Change')
 
