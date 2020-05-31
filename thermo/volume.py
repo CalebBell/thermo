@@ -53,36 +53,65 @@ from thermo.coolprop import has_CoolProp, PropsSI, PhaseSI, coolprop_fluids, coo
 from thermo.utils import TDependentProperty, TPDependentProperty, MixtureProperty
 from thermo.eos import PR78
 
+from chemicals.utils import PY37
+from chemicals.data_reader import data_source, register_df_source
 folder = os.path.join(os.path.dirname(__file__), 'Density')
 
-rho_data_COSTALD = pd.read_csv(os.path.join(folder, 'COSTALD Parameters.tsv'),
-                               sep='\t', index_col=0)
+register_df_source(folder, 'COSTALD Parameters.tsv')
+register_df_source(folder, 'Mchaweh SN0 deltas.tsv')
+register_df_source(folder, 'Perry Parameters 105.tsv')
+register_df_source(folder, 'CRC Liquid Inorganic Constant Densities.tsv')
+register_df_source(folder, 'CRC Solid Inorganic Constant Densities.tsv')
 
-rho_data_SNM0 = pd.read_csv(os.path.join(folder, 'Mchaweh SN0 deltas.tsv'),
-                            sep='\t', index_col=0)
-
-rho_data_Perry_8E_105_l = pd.read_csv(os.path.join(folder, 'Perry Parameters 105.tsv'),
-                                      sep='\t', index_col=0)
-rho_values_Perry_8E_105_l = np.array(rho_data_Perry_8E_105_l.values[:, 1:], dtype=float)
-
-rho_data_VDI_PPDS_2 = pd.read_csv(os.path.join(folder, 'VDI PPDS Density of Saturated Liquids.tsv'),
-                                  sep='\t', index_col=0, dtype={'rhoc': float}) # rhoc being interpreted as int64
-rho_values_VDI_PPDS_2 = np.array(rho_data_VDI_PPDS_2.values[:, 1:], dtype=float)
+register_df_source(folder, 'VDI PPDS Density of Saturated Liquids.tsv', csv_kwargs={
+        'dtype':{'rhoc': float}})
+register_df_source(folder, 'CRC Inorganics densties of molten compounds and salts.tsv', csv_kwargs={
+        'dtype':{'rho': float}})
+register_df_source(folder, 'CRC Virial polynomials.tsv', csv_kwargs={
+        'dtype':{'a1': float, 'a2': float, 'a3': float, 'a4': float, 'a5': float}})
 
 
-rho_data_CRC_inorg_l = pd.read_csv(os.path.join(folder, 'CRC Inorganics densties of molten compounds and salts.tsv'),
-                                   sep='\t', index_col=0, dtype={'rho': float}) # rho interpreted as int
-rho_values_CRC_inorg_l = np.array(rho_data_CRC_inorg_l.values[:, 1:], dtype=float)
+_rho_data_loaded = False
+def _load_rho_data():
+    global _rho_data_loaded, rho_data_COSTALD, rho_data_SNM0
+    global rho_data_Perry_8E_105_l, rho_values_Perry_8E_105_l
+    global rho_data_VDI_PPDS_2, rho_values_VDI_PPDS_2
+    global rho_data_CRC_inorg_l, rho_values_CRC_inorg_l
+    global rho_data_CRC_inorg_l_const, rho_data_CRC_inorg_s_const
+    global rho_data_CRC_virial, rho_values_CRC_virial
 
-rho_data_CRC_inorg_l_const = pd.read_csv(os.path.join(folder, 'CRC Liquid Inorganic Constant Densities.tsv'),
-                                         sep='\t', index_col=0)
+    rho_data_COSTALD = data_source('COSTALD Parameters.tsv')
+    rho_data_SNM0 = data_source('Mchaweh SN0 deltas.tsv')
+    rho_data_Perry_8E_105_l = data_source('Perry Parameters 105.tsv')
+    rho_values_Perry_8E_105_l = np.array(rho_data_Perry_8E_105_l.values[:, 1:], dtype=float)
+    
+    rho_data_VDI_PPDS_2 = data_source('VDI PPDS Density of Saturated Liquids.tsv')
+    rho_values_VDI_PPDS_2 = np.array(rho_data_VDI_PPDS_2.values[:, 1:], dtype=float)
+    
+    rho_data_CRC_inorg_l = data_source('CRC Inorganics densties of molten compounds and salts.tsv')
+    rho_values_CRC_inorg_l = np.array(rho_data_CRC_inorg_l.values[:, 1:], dtype=float)
 
-rho_data_CRC_inorg_s_const = pd.read_csv(os.path.join(folder, 'CRC Solid Inorganic Constant Densities.tsv'),
-                                         sep='\t', index_col=0)
+    rho_data_CRC_inorg_l_const = data_source('CRC Liquid Inorganic Constant Densities.tsv')
+    rho_data_CRC_inorg_s_const = data_source('CRC Solid Inorganic Constant Densities.tsv')
 
-rho_data_CRC_virial = pd.read_csv(os.path.join(folder, 'CRC Virial polynomials.tsv'),
-                                  sep='\t', index_col=0, dtype={'a1': float, 'a2': float, 'a3': float, 'a4': float, 'a5': float})
-rho_values_CRC_virial = np.array(rho_data_CRC_virial.values[:, 1:], dtype=float)
+    rho_data_CRC_virial = data_source('CRC Virial polynomials.tsv')
+    rho_values_CRC_virial = np.array(rho_data_CRC_virial.values[:, 1:], dtype=float)
+
+if PY37:
+    def __getattr__(name):
+        if name in ('rho_data_COSTALD', 'rho_data_SNM0', 'rho_data_Perry_8E_105_l',
+                    'rho_values_Perry_8E_105_l', 'rho_data_VDI_PPDS_2', 
+                    'rho_values_VDI_PPDS_2', 'rho_data_CRC_inorg_l', 
+                    'rho_values_CRC_inorg_l', 'rho_data_CRC_inorg_l_const',
+                    'rho_data_CRC_inorg_s_const', 'rho_data_CRC_virial', 
+                    'rho_values_CRC_virial'):
+            _load_rho_data()
+            return globals()[name]
+        raise AttributeError("module %s has no attribute %s" %(__name__, name))
+else:
+    _load_rho_data()
+
+
 
 ### Critical-properties based
 

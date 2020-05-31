@@ -194,6 +194,74 @@ def test_solids_CSP():
     assert_allclose(0.0002053665090860923, V)
 
 
+
+# More gases:
+def test_ideal_gas():
+    assert_allclose(ideal_gas(298.15, 101325.), 0.024465403697038125)
+
+
+def test_Amgat():
+    Vl = Amgat([0.5, 0.5], [4.057e-05, 5.861e-05])
+    assert_allclose(Vl, 4.9590000000000005e-05)
+
+#    with pytest.raises(Exception):
+#        Amgat([0.5], [4.057e-05, 5.861e-05])
+
+
+def test_Rackett_mixture():
+    Vl = Rackett_mixture(T=298., xs=[0.4576, 0.5424], MWs=[32.04, 18.01], Tcs=[512.58, 647.29], Pcs=[8.096E6, 2.209E7], Zrs=[0.2332, 0.2374])
+    assert_allclose(Vl, 2.6252894930056885e-05)
+
+#    with pytest.raises(Exception):
+#        Rackett_mixture(T=298., xs=[0.4576], MWs=[32.04, 18.01], Tcs=[512.58, 647.29], Pcs=[8.096E6, 2.209E7], Zrs=[0.2332, 0.2374])
+
+def test_COSTALD_mixture():
+    Vl = COSTALD_mixture([0.4576, 0.5424], 298.,  [512.58, 647.29],[0.000117, 5.6e-05], [0.559,0.344] )
+    assert_allclose(Vl, 2.706588773271354e-05)
+
+#    with pytest.raises(Exception):
+#        COSTALD_mixture([0.4576, 0.5424], 298.,  [512.58],[0.000117, 5.6e-05], [0.559,0.344] )
+
+@pytest.mark.meta_T_dept
+def test_VolumeGas():
+    eos = [PR(T=300, P=1E5, Tc=430.8, Pc=7884098.25, omega=0.251)]
+    SO2 = VolumeGas(CASRN='7446-09-5', MW=64.0638,  Tc=430.8, Pc=7884098.25, omega=0.251, dipole=1.63, eos=eos)
+    Vm_calcs = [(SO2.set_user_methods_P(i, forced_P=True), SO2.TP_dependent_property(305, 1E5))[1] for i in SO2.all_methods_P]
+    Vm_exp = [0.025024302563892417, 0.02499978619699621, 0.02499586901117375, 0.02499627309459868, 0.02499978619699621, 0.024971467450477493, 0.02535910239]
+    assert_allclose(sorted(Vm_calcs), sorted(Vm_exp), rtol=1e-5)
+
+    # Test that methods return None
+    assert [None]*7 == [(SO2.set_user_methods_P(i, forced_P=True), SO2.TP_dependent_property(-100, 1E5))[1] for i in SO2.all_methods_P]
+    assert [None]*7 == [(SO2.set_user_methods_P(i, forced_P=True), SO2.TP_dependent_property(100, -1E5))[1] for i in SO2.all_methods_P]
+
+
+    with pytest.raises(Exception):
+        SO2.test_method_validity_P(300, 1E5, 'BADMETHOD')
+
+
+
+    # Ethanol data, calculated from CoolProp
+    EtOH = VolumeGas(MW=46.06844, Tc=514.0, Pc=6137000.0, omega=0.635, dipole=1.44, CASRN='64-17-5')
+    Ts = [400, 500, 600]
+    Ps = [5E3, 1E4, 5E4]
+
+    TP_data = [[0.6646136629870959, 0.8312205608372635, 0.9976236498685168], [0.33203434186506636, 0.4154969056659669, 0.49875532241189763], [0.06596765735649, 0.08291758227639608, 0.09966060658661156]]
+    EtOH.set_tabular_data_P(Ts, Ps, TP_data, name='CPdata')
+    recalc_pts = [[EtOH.TP_dependent_property(T, P) for T in Ts] for P in Ps]
+    assert_allclose(TP_data, recalc_pts)
+
+    EtOH.forced_P = True
+    assert_allclose(EtOH.TP_dependent_property(300, 9E4), 0.06596765735649)
+    EtOH.tabular_extrapolation_permitted = False
+    assert None == EtOH.TP_dependent_property(300, 9E4)
+
+    # Test CRC Virial data
+    H2 = VolumeGas(CASRN='1333-74-0')
+    H2.set_user_methods_P('CRC_VIRIAL', forced_P=True)
+    assert_allclose(H2.TP_dependent_property(300, 1E5), 0.024958843346854165)
+
+
+
 @pytest.mark.meta_T_dept
 def test_VolumeLiquid():
     # Ethanol, test all methods at once
@@ -304,72 +372,6 @@ def test_VolumeSolid():
     BaN2O6.tabular_extrapolation_permitted = False
     BaN2O6.test_method_validity(150, 'fake')
 
-
-# More gases:
-def test_ideal_gas():
-    assert_allclose(ideal_gas(298.15, 101325.), 0.024465403697038125)
-
-
-@pytest.mark.meta_T_dept
-def test_VolumeGas():
-    eos = [PR(T=300, P=1E5, Tc=430.8, Pc=7884098.25, omega=0.251)]
-    SO2 = VolumeGas(CASRN='7446-09-5', MW=64.0638,  Tc=430.8, Pc=7884098.25, omega=0.251, dipole=1.63, eos=eos)
-    Vm_calcs = [(SO2.set_user_methods_P(i, forced_P=True), SO2.TP_dependent_property(305, 1E5))[1] for i in SO2.all_methods_P]
-    Vm_exp = [0.025024302563892417, 0.02499978619699621, 0.02499586901117375, 0.02499627309459868, 0.02499978619699621, 0.024971467450477493, 0.02535910239]
-    assert_allclose(sorted(Vm_calcs), sorted(Vm_exp), rtol=1e-5)
-
-    # Test that methods return None
-    assert [None]*7 == [(SO2.set_user_methods_P(i, forced_P=True), SO2.TP_dependent_property(-100, 1E5))[1] for i in SO2.all_methods_P]
-    assert [None]*7 == [(SO2.set_user_methods_P(i, forced_P=True), SO2.TP_dependent_property(100, -1E5))[1] for i in SO2.all_methods_P]
-
-
-    with pytest.raises(Exception):
-        SO2.test_method_validity_P(300, 1E5, 'BADMETHOD')
-
-
-
-    # Ethanol data, calculated from CoolProp
-    EtOH = VolumeGas(MW=46.06844, Tc=514.0, Pc=6137000.0, omega=0.635, dipole=1.44, CASRN='64-17-5')
-    Ts = [400, 500, 600]
-    Ps = [5E3, 1E4, 5E4]
-
-    TP_data = [[0.6646136629870959, 0.8312205608372635, 0.9976236498685168], [0.33203434186506636, 0.4154969056659669, 0.49875532241189763], [0.06596765735649, 0.08291758227639608, 0.09966060658661156]]
-    EtOH.set_tabular_data_P(Ts, Ps, TP_data, name='CPdata')
-    recalc_pts = [[EtOH.TP_dependent_property(T, P) for T in Ts] for P in Ps]
-    assert_allclose(TP_data, recalc_pts)
-
-    EtOH.forced_P = True
-    assert_allclose(EtOH.TP_dependent_property(300, 9E4), 0.06596765735649)
-    EtOH.tabular_extrapolation_permitted = False
-    assert None == EtOH.TP_dependent_property(300, 9E4)
-
-    # Test CRC Virial data
-    H2 = VolumeGas(CASRN='1333-74-0')
-    H2.set_user_methods_P('CRC_VIRIAL', forced_P=True)
-    assert_allclose(H2.TP_dependent_property(300, 1E5), 0.024958843346854165)
-
-
-def test_Amgat():
-    Vl = Amgat([0.5, 0.5], [4.057e-05, 5.861e-05])
-    assert_allclose(Vl, 4.9590000000000005e-05)
-
-#    with pytest.raises(Exception):
-#        Amgat([0.5], [4.057e-05, 5.861e-05])
-
-
-def test_Rackett_mixture():
-    Vl = Rackett_mixture(T=298., xs=[0.4576, 0.5424], MWs=[32.04, 18.01], Tcs=[512.58, 647.29], Pcs=[8.096E6, 2.209E7], Zrs=[0.2332, 0.2374])
-    assert_allclose(Vl, 2.6252894930056885e-05)
-
-#    with pytest.raises(Exception):
-#        Rackett_mixture(T=298., xs=[0.4576], MWs=[32.04, 18.01], Tcs=[512.58, 647.29], Pcs=[8.096E6, 2.209E7], Zrs=[0.2332, 0.2374])
-
-def test_COSTALD_mixture():
-    Vl = COSTALD_mixture([0.4576, 0.5424], 298.,  [512.58, 647.29],[0.000117, 5.6e-05], [0.559,0.344] )
-    assert_allclose(Vl, 2.706588773271354e-05)
-
-#    with pytest.raises(Exception):
-#        COSTALD_mixture([0.4576, 0.5424], 298.,  [512.58],[0.000117, 5.6e-05], [0.559,0.344] )
 
 
 def test_VolumeLiquidMixture():
