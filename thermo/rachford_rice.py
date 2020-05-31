@@ -169,11 +169,11 @@ def K_value(P=None, Psat=None, phi_l=None, phi_g=None, gamma=None, Poynting=1):
        edition. Boca Raton, FL: CRC Press, 2008.
     '''
     try:
-        if gamma:
-            if phi_l:
+        if gamma is not None:
+            if phi_l is not None:
                 return gamma*Psat*phi_l*Poynting/(phi_g*P)
             return gamma*Psat*Poynting/P
-        elif phi_l:
+        elif phi_l is not None:
             return phi_l/phi_g
         return Psat/P
     except TypeError:

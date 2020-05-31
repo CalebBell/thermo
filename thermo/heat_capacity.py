@@ -334,7 +334,7 @@ class Zabransky_spline(object):
             
         Returns
         -------
-        dS : float
+        dH : float
             Enthalpy difference between `T1` and `T2`, [J/mol/K]
         '''        
         # Simplify the problem so we can assume T2 >= T1

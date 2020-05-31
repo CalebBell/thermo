@@ -117,24 +117,24 @@ def test_CRC_inorganic():
     assert_allclose(rho, 2206.30796)
 
 def test_COSTALD_parameters():
-    assert all([checkCAS(i) for i in COSTALD_data.index])
-    assert COSTALD_data.index.is_unique
-    tots_calc = [COSTALD_data[i].sum() for i in ['omega_SRK', 'Vchar', 'Z_RA']]
+    assert all([checkCAS(i) for i in rho_data_COSTALD.index])
+    assert rho_data_COSTALD.index.is_unique
+    tots_calc = [rho_data_COSTALD[i].sum() for i in ['omega_SRK', 'Vchar', 'Z_RA']]
     tots = [72.483900000000006, 0.086051663333333334, 49.013500000000001]
     assert_allclose(tots_calc, tots)
 
 def test_SN0_data():
-    assert SNM0_data.index.is_unique
-    assert all([checkCAS(i) for i in SNM0_data.index])
-    tot = SNM0_data['delta_SRK'].abs().sum()
+    assert rho_data_SNM0.index.is_unique
+    assert all([checkCAS(i) for i in rho_data_SNM0.index])
+    tot = rho_data_SNM0['delta_SRK'].abs().sum()
     assert_allclose(tot, 2.0715134)
 
 
 def test_Perry_l_data():
-    assert Perry_l_data.index.is_unique
-    assert all([checkCAS(i) for i in Perry_l_data.index])
+    assert rho_data_Perry_8E_105_l.index.is_unique
+    assert all([checkCAS(i) for i in rho_data_Perry_8E_105_l.index])
 
-    tots_calc = [Perry_l_data[i].sum() for i in ['C1', 'C2', 'C3', 'C4', 'Tmin', 'Tmax']]
+    tots_calc = [rho_data_Perry_8E_105_l[i].sum() for i in ['C1', 'C2', 'C3', 'C4', 'Tmin', 'Tmax']]
     tots = [376364.41000000003, 89.676429999999996, 189873.32999999999, 96.68741, 71151.899999999994, 189873.32999999999]
     assert_allclose(tots_calc, tots)
 
@@ -149,42 +149,42 @@ def test_VDI_PPDS_2_data():
     Note this table needed to have Tc and MW added to it as well, from the 
     same source.
     '''
-    assert all([checkCAS(i) for i in VDI_PPDS_2.index])
-    tots_calc = [VDI_PPDS_2[i].abs().sum() for i in [u'A', u'B', u'C', u'D', u'Tc', u'rhoc', u'MW']]
+    assert all([checkCAS(i) for i in rho_data_VDI_PPDS_2.index])
+    tots_calc = [rho_data_VDI_PPDS_2[i].abs().sum() for i in [u'A', u'B', u'C', u'D', u'Tc', u'rhoc', u'MW']]
     tots = [208878.27130000002, 117504.59450000001, 202008.99950000001, 85280.333600000013, 150142.28, 97269, 27786.919999999998]
     assert_allclose(tots_calc, tots)
     
-    assert VDI_PPDS_2.index.is_unique
-    assert VDI_PPDS_2.shape == (272, 8)
+    assert rho_data_VDI_PPDS_2.index.is_unique
+    assert rho_data_VDI_PPDS_2.shape == (272, 8)
 
 def test_CRC_inorg_l_data2():
-    tots_calc = [CRC_inorg_l_data[i].abs().sum() for i in ['rho', 'k', 'Tm', 'Tmax']]
+    tots_calc = [rho_data_CRC_inorg_l[i].abs().sum() for i in ['rho', 'k', 'Tm', 'Tmax']]
     tots = [882131, 181.916, 193785.09499999997, 233338.04999999996]
     assert_allclose(tots_calc, tots)
 
-    assert CRC_inorg_l_data.index.is_unique
-    assert all([checkCAS(i) for i in CRC_inorg_l_data.index])
+    assert rho_data_CRC_inorg_l.index.is_unique
+    assert all([checkCAS(i) for i in rho_data_CRC_inorg_l.index])
 
 
 def test_CRC_const_inorg_l():
-    assert CRC_inorg_l_const_data.index.is_unique
-    assert all([checkCAS(i) for i in CRC_inorg_l_const_data.index])
+    assert rho_data_CRC_inorg_l_const.index.is_unique
+    assert all([checkCAS(i) for i in rho_data_CRC_inorg_l_const.index])
 
-    tot_calc = CRC_inorg_l_const_data['Vm'].sum()
+    tot_calc = rho_data_CRC_inorg_l_const['Vm'].sum()
     tot = 0.01106122489849834
     assert_allclose(tot_calc, tot)
 
 def test_CRC_const_inorg_s():
-    tot = CRC_inorg_s_const_data['Vm'].sum()
+    tot = rho_data_CRC_inorg_s_const['Vm'].sum()
     assert_allclose(tot, 0.13528770767318143)
-    assert CRC_inorg_s_const_data.index.is_unique
-    assert all([checkCAS(i) for i in CRC_inorg_s_const_data.index])
+    assert rho_data_CRC_inorg_s_const.index.is_unique
+    assert all([checkCAS(i) for i in rho_data_CRC_inorg_s_const.index])
 
 
 def test_CRC_virial_poly():
-    assert CRC_virial_data.index.is_unique
-    assert all([checkCAS(i) for i in CRC_virial_data.index])
-    tots_calc = [CRC_virial_data[i].abs().sum() for i in ['a1', 'a2', 'a3', 'a4', 'a5']]
+    assert rho_data_CRC_virial.index.is_unique
+    assert all([checkCAS(i) for i in rho_data_CRC_virial.index])
+    tots_calc = [rho_data_CRC_virial[i].abs().sum() for i in ['a1', 'a2', 'a3', 'a4', 'a5']]
     tots = [146559.69999999998, 506997.70000000001, 619708.59999999998, 120772.89999999999, 4483]
     assert_allclose(tots_calc, tots)
 

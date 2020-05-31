@@ -22,18 +22,18 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['COSTALD_data', 'SNM0_data', 'Perry_l_data', 'CRC_inorg_l_data', 
-'VDI_PPDS_2',
-'CRC_inorg_l_const_data', 'CRC_inorg_s_const_data', 'CRC_virial_data', 
+__all__ = ['rho_data_COSTALD', 'rho_data_SNM0', 'rho_data_Perry_8E_105_l', 'rho_data_CRC_inorg_l',
+           'rho_data_VDI_PPDS_2',
+           'rho_data_CRC_inorg_l_const', 'rho_data_CRC_inorg_s_const', 'rho_data_CRC_virial',
 'Yen_Woods_saturation', 'Rackett', 'Yamada_Gunn', 'Townsend_Hales', 
 'Bhirud_normal', 'COSTALD', 'Campbell_Thodos', 'SNM0', 'CRC_inorganic', 
 'volume_liquid_methods', 'volume_liquid_methods_P', 'VolumeLiquid', 
 'COSTALD_compressed', 'Amgat', 'Rackett_mixture', 'COSTALD_mixture', 
 'ideal_gas', 'volume_gas_methods', 'VolumeGas', 
 'volume_gas_mixture_methods', 'volume_solid_mixture_methods', 'Goodman',
- 'volume_solid_methods', 'VolumeSolid',
-'VolumeLiquidMixture', 'VolumeGasMixture', 'VolumeSolidMixture',
-'Tait_parameters_COSTALD']
+           'volume_solid_methods', 'VolumeSolid',
+           'VolumeLiquidMixture', 'VolumeGasMixture', 'VolumeSolidMixture',
+           'Tait_parameters_COSTALD']
 
 import os
 from scipy.interpolate import interp1d
@@ -55,34 +55,34 @@ from thermo.eos import PR78
 
 folder = os.path.join(os.path.dirname(__file__), 'Density')
 
-COSTALD_data = pd.read_csv(os.path.join(folder, 'COSTALD Parameters.tsv'),
-                           sep='\t', index_col=0)
-
-SNM0_data = pd.read_csv(os.path.join(folder, 'Mchaweh SN0 deltas.tsv'),
-                        sep='\t', index_col=0)
-
-Perry_l_data = pd.read_csv(os.path.join(folder, 'Perry Parameters 105.tsv'),
-                           sep='\t', index_col=0)
-_Perry_l_data_values = Perry_l_data.values
-
-VDI_PPDS_2 = pd.read_csv(os.path.join(folder, 'VDI PPDS Density of Saturated Liquids.tsv'),
-                          sep='\t', index_col=0)
-_VDI_PPDS_2_values = VDI_PPDS_2.values
-
-
-CRC_inorg_l_data = pd.read_csv(os.path.join(folder, 'CRC Inorganics densties of molten compounds and salts.tsv'),
+rho_data_COSTALD = pd.read_csv(os.path.join(folder, 'COSTALD Parameters.tsv'),
                                sep='\t', index_col=0)
-_CRC_inorg_l_data_values = CRC_inorg_l_data.values
 
-CRC_inorg_l_const_data = pd.read_csv(os.path.join(folder, 'CRC Liquid Inorganic Constant Densities.tsv'),
-                                     sep='\t', index_col=0)
+rho_data_SNM0 = pd.read_csv(os.path.join(folder, 'Mchaweh SN0 deltas.tsv'),
+                            sep='\t', index_col=0)
 
-CRC_inorg_s_const_data = pd.read_csv(os.path.join(folder, 'CRC Solid Inorganic Constant Densities.tsv'),
-                                     sep='\t', index_col=0)
+rho_data_Perry_8E_105_l = pd.read_csv(os.path.join(folder, 'Perry Parameters 105.tsv'),
+                                      sep='\t', index_col=0)
+rho_values_Perry_8E_105_l = np.array(rho_data_Perry_8E_105_l.values[:, 1:], dtype=float)
 
-CRC_virial_data = pd.read_csv(os.path.join(folder, 'CRC Virial polynomials.tsv'),
-                              sep='\t', index_col=0)
-_CRC_virial_data_values = CRC_virial_data.values
+rho_data_VDI_PPDS_2 = pd.read_csv(os.path.join(folder, 'VDI PPDS Density of Saturated Liquids.tsv'),
+                                  sep='\t', index_col=0, dtype={'rhoc': float}) # rhoc being interpreted as int64
+rho_values_VDI_PPDS_2 = np.array(rho_data_VDI_PPDS_2.values[:, 1:], dtype=float)
+
+
+rho_data_CRC_inorg_l = pd.read_csv(os.path.join(folder, 'CRC Inorganics densties of molten compounds and salts.tsv'),
+                                   sep='\t', index_col=0, dtype={'rho': float}) # rho interpreted as int
+rho_values_CRC_inorg_l = np.array(rho_data_CRC_inorg_l.values[:, 1:], dtype=float)
+
+rho_data_CRC_inorg_l_const = pd.read_csv(os.path.join(folder, 'CRC Liquid Inorganic Constant Densities.tsv'),
+                                         sep='\t', index_col=0)
+
+rho_data_CRC_inorg_s_const = pd.read_csv(os.path.join(folder, 'CRC Solid Inorganic Constant Densities.tsv'),
+                                         sep='\t', index_col=0)
+
+rho_data_CRC_virial = pd.read_csv(os.path.join(folder, 'CRC Virial polynomials.tsv'),
+                                  sep='\t', index_col=0, dtype={'a1': float, 'a2': float, 'a3': float, 'a4': float, 'a5': float})
+rho_values_CRC_virial = np.array(rho_data_CRC_virial.values[:, 1:], dtype=float)
 
 ### Critical-properties based
 
@@ -1349,18 +1349,18 @@ class VolumeLiquid(TPDependentProperty):
             methods.append(COOLPROP); methods_P.append(COOLPROP)
             self.CP_f = coolprop_fluids[self.CASRN]
             Tmins.append(self.CP_f.Tt); Tmaxs.append(self.CP_f.Tc)
-        if self.CASRN in CRC_inorg_l_data.index:
+        if self.CASRN in rho_data_CRC_inorg_l.index:
             methods.append(CRC_INORG_L)
-            _, self.CRC_INORG_L_MW, self.CRC_INORG_L_rho, self.CRC_INORG_L_k, self.CRC_INORG_L_Tm, self.CRC_INORG_L_Tmax = _CRC_inorg_l_data_values[CRC_inorg_l_data.index.get_loc(self.CASRN)].tolist()
+            self.CRC_INORG_L_MW, self.CRC_INORG_L_rho, self.CRC_INORG_L_k, self.CRC_INORG_L_Tm, self.CRC_INORG_L_Tmax = rho_values_CRC_inorg_l[rho_data_CRC_inorg_l.index.get_loc(self.CASRN)].tolist()
             Tmins.append(self.CRC_INORG_L_Tm); Tmaxs.append(self.CRC_INORG_L_Tmax)
-        if self.CASRN in Perry_l_data.index:
+        if self.CASRN in rho_data_Perry_8E_105_l.index:
             methods.append(PERRYDIPPR)
-            _, C1, C2, C3, C4, self.DIPPR_Tmin, self.DIPPR_Tmax = _Perry_l_data_values[Perry_l_data.index.get_loc(self.CASRN)].tolist()
+            C1, C2, C3, C4, self.DIPPR_Tmin, self.DIPPR_Tmax = rho_values_Perry_8E_105_l[rho_data_Perry_8E_105_l.index.get_loc(self.CASRN)].tolist()
             self.DIPPR_coeffs = [C1, C2, C3, C4]
             Tmins.append(self.DIPPR_Tmin); Tmaxs.append(self.DIPPR_Tmax)
-        if self.CASRN in VDI_PPDS_2.index:
+        if self.CASRN in rho_data_VDI_PPDS_2.index:
             methods.append(VDI_PPDS)
-            _, MW, Tc, rhoc, A, B, C, D = _VDI_PPDS_2_values[VDI_PPDS_2.index.get_loc(self.CASRN)].tolist()
+            MW, Tc, rhoc, A, B, C, D = rho_values_VDI_PPDS_2[rho_data_VDI_PPDS_2.index.get_loc(self.CASRN)].tolist()
             self.VDI_PPDS_coeffs = [A, B, C, D]
             self.VDI_PPDS_MW = MW
             self.VDI_PPDS_Tc = Tc
@@ -1373,18 +1373,18 @@ class VolumeLiquid(TPDependentProperty):
             self.VDI_Tmax = Ts[-1]
             self.tabular_data[VDI_TABULAR] = (Ts, props)
             Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
-        if self.Tc and self.CASRN in COSTALD_data.index:
+        if self.Tc and self.CASRN in rho_data_COSTALD.index:
             methods.append(HTCOSTALDFIT)
-            self.COSTALD_Vchar = float(COSTALD_data.at[self.CASRN, 'Vchar'])
-            self.COSTALD_omega_SRK = float(COSTALD_data.at[self.CASRN, 'omega_SRK'])
+            self.COSTALD_Vchar = float(rho_data_COSTALD.at[self.CASRN, 'Vchar'])
+            self.COSTALD_omega_SRK = float(rho_data_COSTALD.at[self.CASRN, 'omega_SRK'])
             Tmins.append(0); Tmaxs.append(self.Tc)
-        if self.Tc and self.Pc and self.CASRN in COSTALD_data.index and not isnan(COSTALD_data.at[self.CASRN, 'Z_RA']):
+        if self.Tc and self.Pc and self.CASRN in rho_data_COSTALD.index and not isnan(rho_data_COSTALD.at[self.CASRN, 'Z_RA']):
             methods.append(RACKETTFIT)
-            self.RACKETT_Z_RA = float(COSTALD_data.at[self.CASRN, 'Z_RA'])
+            self.RACKETT_Z_RA = float(rho_data_COSTALD.at[self.CASRN, 'Z_RA'])
             Tmins.append(0); Tmaxs.append(self.Tc)
-        if self.CASRN in CRC_inorg_l_const_data.index:
+        if self.CASRN in rho_data_CRC_inorg_l_const.index:
             methods.append(CRC_INORG_L_CONST)
-            self.CRC_INORG_L_CONST_Vm = float(CRC_inorg_l_const_data.at[self.CASRN, 'Vm'])
+            self.CRC_INORG_L_CONST_Vm = float(rho_data_CRC_inorg_l_const.at[self.CASRN, 'Vm'])
             # Roughly data at STP; not guaranteed however; not used for Trange
         if all((self.Tc, self.Vc, self.Zc)):
             methods.append(YEN_WOODS_SAT)
@@ -1400,9 +1400,9 @@ class VolumeLiquid(TPDependentProperty):
             methods.append(TOWNSEND_HALES)
             methods.append(HTCOSTALD)
             methods.append(MMSNM0)
-            if self.CASRN in SNM0_data.index:
+            if self.CASRN in rho_data_SNM0.index:
                 methods.append(MMSNM0FIT)
-                self.SNM0_delta_SRK = float(SNM0_data.at[self.CASRN, 'delta_SRK'])
+                self.SNM0_delta_SRK = float(rho_data_SNM0.at[self.CASRN, 'delta_SRK'])
             Tmins.append(0); Tmaxs.append(self.Tc)
         if all((self.Tc, self.Vc, self.omega, self.Tb, self.MW)):
             methods.append(CAMPBELL_THODOS)
@@ -1800,15 +1800,15 @@ class VolumeLiquidMixture(MixtureProperty):
         
         if none_and_length_check([self.Tcs, self.Vcs, self.omegas]):
             methods.append(COSTALD_MIXTURE)
-            if none_and_length_check([self.Tcs, self.CASs]) and all([i in COSTALD_data.index for i in self.CASs]):
-                self.COSTALD_Vchars = [COSTALD_data.at[CAS, 'Vchar'] for CAS in self.CASs]
-                self.COSTALD_omegas = [COSTALD_data.at[CAS, 'omega_SRK'] for CAS in self.CASs]
+            if none_and_length_check([self.Tcs, self.CASs]) and all([i in rho_data_COSTALD.index for i in self.CASs]):
+                self.COSTALD_Vchars = [rho_data_COSTALD.at[CAS, 'Vchar'] for CAS in self.CASs]
+                self.COSTALD_omegas = [rho_data_COSTALD.at[CAS, 'omega_SRK'] for CAS in self.CASs]
                 methods.append(COSTALD_MIXTURE_FIT)
             
         if none_and_length_check([self.MWs, self.Tcs, self.Pcs, self.Zcs]):
             methods.append(RACKETT)
-            if none_and_length_check([self.Tcs, self.CASs]) and all([CAS in COSTALD_data.index for CAS in self.CASs]):
-                Z_RAs = [COSTALD_data.at[CAS, 'Z_RA'] for CAS in self.CASs]
+            if none_and_length_check([self.Tcs, self.CASs]) and all([CAS in rho_data_COSTALD.index for CAS in self.CASs]):
+                Z_RAs = [rho_data_COSTALD.at[CAS, 'Z_RA'] for CAS in self.CASs]
                 if not any(np.isnan(Z_RAs)):
                     self.Z_RAs = Z_RAs
                     methods.append(RACKETT_PARAMETERS)
@@ -2103,9 +2103,9 @@ class VolumeGas(TPDependentProperty):
                             PITZER_CURL])
             if self.eos:
                 methods_P.append(EOS)
-        if self.CASRN in CRC_virial_data.index:
+        if self.CASRN in rho_data_CRC_virial.index:
             methods_P.append(CRC_VIRIAL)
-            self.CRC_VIRIAL_coeffs = _CRC_virial_data_values[CRC_virial_data.index.get_loc(self.CASRN)].tolist()[1:]
+            self.CRC_VIRIAL_coeffs = rho_values_CRC_virial[rho_data_CRC_virial.index.get_loc(self.CASRN)].tolist()
         if has_CoolProp and self.CASRN in coolprop_dict:
             methods_P.append(COOLPROP)
             self.CP_f = coolprop_fluids[self.CASRN]
@@ -2513,9 +2513,9 @@ class VolumeSolid(TDependentProperty):
         to reset the parameters.
         '''
         methods = []
-        if self.CASRN in CRC_inorg_s_const_data.index:
+        if self.CASRN in rho_data_CRC_inorg_s_const.index:
             methods.append(CRC_INORG_S)
-            self.CRC_INORG_S_Vm = float(CRC_inorg_s_const_data.at[self.CASRN, 'Vm'])
+            self.CRC_INORG_S_Vm = float(rho_data_CRC_inorg_s_const.at[self.CASRN, 'Vm'])
         if all((self.Tt, self.Vml_Tt, self.MW)):
             methods.append(GOODMAN)
         self.all_methods = set(methods)
