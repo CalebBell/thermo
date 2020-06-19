@@ -52,7 +52,7 @@ import numpy as np
 from scipy.optimize import golden, brent, minimize, fmin_slsqp, fsolve
 from fluids.numerics import (OscillationError, UnconvergedError, 
                              ridder, derivative, caching_decorator,
-                             py_newton as newton, linspace, logspace, 
+                             newton, linspace, logspace, 
                              brenth, py_solve, 
                              oscillation_checker, secant, damping_maintain_sign,
                              oscillation_checking_wrapper)
@@ -61,9 +61,12 @@ from chemicals.utils import log, log10, exp, copysign, dxs_to_dn_partials, dxs_t
 from thermo.utils import has_matplotlib
 from chemicals.elements import mixture_atomic_composition, similarity_variable
 from thermo.identifiers import IDs_to_CASs
-from thermo.rachford_rice import K_value, Wilson_K_value, flash_inner_loop, dew_at_T, bubble_at_T, NRTL_gammas, Rachford_Rice_solution2, Wilson_gammas as Wilson
-from thermo.rachford_rice import flash_wilson, flash_Tb_Tc_Pc, Rachford_Rice_flash_error
-from thermo.rachford_rice import get_T_bub_est, get_T_dew_est, get_P_dew_est, get_P_bub_est
+from chemicals.rachford_rice import flash_inner_loop, Rachford_Rice_solution2
+from thermo.flash_basic import K_value, Wilson_K_value, flash_wilson, flash_Tb_Tc_Pc, dew_at_T, bubble_at_T, \
+      get_T_bub_est, get_T_dew_est, get_P_dew_est, get_P_bub_est
+from thermo.wilson import Wilson_gammas as Wilson
+from thermo.nrtl import NRTL_gammas
+from chemicals.rachford_rice import Rachford_Rice_flash_error
 from thermo.unifac import UNIFAC_gammas, UFSG, DOUFSG, DOUFIP2006
 from thermo.eos_mix import *
 from thermo.eos import *

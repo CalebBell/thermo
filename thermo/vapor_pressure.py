@@ -27,7 +27,7 @@ __all__ = ['vapor_pressure_methods', 'VaporPressure', 'SublimationPressure',
 
 import os
 from fluids.constants import R
-from fluids.numerics import polyint_over_x, horner_log, horner, polyint, horner_and_der2, horner_and_der, derivative, py_newton as newton, linspace
+from fluids.numerics import polyint_over_x, horner_log, horner, polyint, horner_and_der2, horner_and_der, derivative, newton, linspace
 
 import numpy as np
 from math import e

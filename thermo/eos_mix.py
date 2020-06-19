@@ -41,7 +41,8 @@ from chemicals.utils import normalize, Cp_minus_Cv, isobaric_expansion, isotherm
 from chemicals.utils import log, exp, sqrt
 from thermo.alpha_functions import (TwuPR95_a_alpha, TwuSRK95_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha, Soave_79_a_alpha)
 from thermo.eos import *
-from thermo.rachford_rice import Wilson_K_value, K_value, flash_inner_loop, Rachford_Rice_flash_error, Rachford_Rice_solution2
+from chemicals.rachford_rice import flash_inner_loop, Rachford_Rice_flash_error, Rachford_Rice_solution2
+from thermo.flash_basic import K_value, Wilson_K_value
 
 R2 = R*R
 R_inv = 1.0/R

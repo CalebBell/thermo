@@ -29,7 +29,7 @@ __all__ = ['Poly_a_alpha', 'TwuSRK95_a_alpha', 'TwuPR95_a_alpha',
 
 from cmath import atanh as catanh, log as clog
 from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
-                             roots_cubic_a1, numpy as np, py_newton as newton,
+                             roots_cubic_a1, numpy as np,
                              py_bisect as bisect, inf, polyder, chebder, 
                              trunc_exp, secant, linspace, logspace,
                              horner, horner_and_der, horner_and_der2, derivative,

@@ -23,7 +23,8 @@ SOFTWARE.'''
 import os
 
 from chemicals import acentric
-from . import rachford_rice
+from chemicals import rachford_rice
+from . import flash_basic
 from . import chemical
 from . import chemical_package
 from . import combustion
@@ -76,7 +77,8 @@ from . import uniquac
 from chemicals import temperature
 
 from chemicals.acentric import *
-from .rachford_rice import *
+from chemicals.rachford_rice import *
+from .flash_basic import *
 from .chemical import *
 from .chemical_package import *
 from .combustion import *
@@ -128,7 +130,7 @@ from .uniquac import *
 from .equilibrium import *
 from chemicals.temperature import *
 
-__all__ = ['rachford_rice', 'chemical', 'chemical_package', 'combustion', 'critical', 'flash',
+__all__ = ['rachford_rice', 'flash_basic', 'chemical', 'chemical_package', 'combustion', 'critical', 'flash',
  'dipole', 'electrochem', 'elements', 'environment', 'eos', 'eos_mix',
  'heat_capacity',  'identifiers', 'joback', 'law', 'lennard_jones',
  'miscdata',
@@ -143,6 +145,7 @@ __all__ = ['rachford_rice', 'chemical', 'chemical_package', 'combustion', 'criti
 
 __all__.extend(acentric.__all__)
 __all__.extend(rachford_rice.__all__)
+__all__.extend(flash_basic.__all__)
 __all__.extend(chemical_package.__all__)
 __all__.extend(chemical.__all__)
 __all__.extend(combustion.__all__)

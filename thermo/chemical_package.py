@@ -26,7 +26,7 @@ __all__ = ['ChemicalConstantsPackage', 'PropertyCorrelationPackage']
 
 from thermo.chemical import Chemical, get_chemical_constants
 from thermo.identifiers import *
-from thermo.rachford_rice import identify_phase_mixture, Pbubble_mixture, Pdew_mixture
+from thermo.flash_basic import identify_phase_mixture, Pbubble_mixture, Pdew_mixture
 from thermo.thermal_conductivity import ThermalConductivityLiquid, ThermalConductivityGas, ThermalConductivityLiquidMixture, ThermalConductivityGasMixture
 from thermo.volume import VolumeLiquidMixture, VolumeGasMixture, VolumeSolidMixture, VolumeLiquid, VolumeGas, VolumeSolid
 from thermo.permittivity import *

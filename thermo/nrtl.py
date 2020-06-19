@@ -22,12 +22,11 @@ SOFTWARE.'''
 
 from __future__ import division
 from fluids.numerics import numpy as np
-from thermo.rachford_rice import NRTL_gammas
 from thermo.activity import GibbsExcess
 from math import log, exp
 from fluids.constants import R
 
-__all__ = ['NRTL']
+__all__ = ['NRTL', 'NRTL_gammas']
 
 
 class NRTL(GibbsExcess):
@@ -988,3 +987,118 @@ class NRTL(GibbsExcess):
             tot += xs[i]*(term1 + term2 + term3 + term4 + term5)/sum1
         self._d2GE_dT2 = d2GE_dT2 = R*tot
         return d2GE_dT2
+
+
+def NRTL_gammas(xs, taus, alphas):
+    r'''Calculates the activity coefficients of each species in a mixture
+    using the Non-Random Two-Liquid (NRTL) method, given their mole fractions,
+    dimensionless interaction parameters, and nonrandomness constants. Those
+    are normally correlated with temperature in some form, and need to be
+    calculated separately.
+
+    .. math::
+        \ln(\gamma_i)=\frac{\displaystyle\sum_{j=1}^{n}{x_{j}\tau_{ji}G_{ji}}}
+        {\displaystyle\sum_{k=1}^{n}{x_{k}G_{ki}}}+\sum_{j=1}^{n}
+        {\frac{x_{j}G_{ij}}{\displaystyle\sum_{k=1}^{n}{x_{k}G_{kj}}}}
+        {\left ({\tau_{ij}-\frac{\displaystyle\sum_{m=1}^{n}{x_{m}\tau_{mj}
+        G_{mj}}}{\displaystyle\sum_{k=1}^{n}{x_{k}G_{kj}}}}\right )}
+
+        G_{ij}=\text{exp}\left ({-\alpha_{ij}\tau_{ij}}\right )
+
+    Parameters
+    ----------
+    xs : list[float]
+        Liquid mole fractions of each species, [-]
+    taus : list[list[float]]
+        Dimensionless interaction parameters of each compound with each other,
+        [-]
+    alphas : list[list[float]]
+        Nonrandomness constants of each compound interacting with each other, [-]
+
+    Returns
+    -------
+    gammas : list[float]
+        Activity coefficient for each species in the liquid mixture, [-]
+
+    Notes
+    -----
+    This model needs N^2 parameters.
+
+    One common temperature dependence of the nonrandomness constants is:
+
+    .. math::
+        \alpha_{ij}=c_{ij}+d_{ij}T
+
+    Most correlations for the interaction parameters include some of the terms
+    shown in the following form:
+
+    .. math::
+        \tau_{ij}=A_{ij}+\frac{B_{ij}}{T}+\frac{C_{ij}}{T^{2}}+D_{ij}
+        \ln{\left ({T}\right )}+E_{ij}T^{F_{ij}}
+
+    The original form of this model used the temperature dependence of taus in
+    the form (values can be found in the literature, often with units of
+    calories/mol):
+
+    .. math::
+        \tau_{ij}=\frac{b_{ij}}{RT}
+
+    For this model to produce ideal acitivty coefficients (gammas = 1),
+    all interaction parameters should be 0; the value of alpha does not impact
+    the calculation when that is the case.
+
+    Examples
+    --------
+    Ethanol-water example, at 343.15 K and 1 MPa:
+
+    >>> NRTL_gammas(xs=[0.252, 0.748], taus=[[0, -0.178], [1.963, 0]],
+    ... alphas=[[0, 0.2974],[.2974, 0]])
+    [1.9363183763514304, 1.1537609663170014]
+
+    References
+    ----------
+    .. [1] Renon, Henri, and J. M. Prausnitz. "Local Compositions in
+       Thermodynamic Excess Functions for Liquid Mixtures." AIChE Journal 14,
+       no. 1 (1968): 135-144. doi:10.1002/aic.690140124.
+    .. [2] Gmehling, Jurgen, Barbel Kolbe, Michael Kleiber, and Jurgen Rarey.
+       Chemical Thermodynamics for Process Simulation. 1st edition. Weinheim:
+       Wiley-VCH, 2012.
+    '''
+    gammas = []
+    cmps = range(len(xs))
+    # Gs does not depend on composition
+    Gs = []
+    for i in cmps:
+        alphasi = alphas[i]
+        tausi = taus[i]
+        Gs.append([exp(-alphasi[j]*tausi[j]) for j in cmps])
+
+
+    td2s = []
+    tn3s = []
+    for j in cmps:
+        td2 = 0.0
+        tn3 = 0.0
+        for k in cmps:
+            xkGkj = xs[k]*Gs[k][j]
+            td2 += xkGkj
+            tn3 += xkGkj*taus[k][j]
+        td2 = 1.0/td2
+        td2xj = td2*xs[j]
+        td2s.append(td2xj)
+        tn3s.append(tn3*td2*td2xj)
+
+    for i in cmps:
+        tn1, td1, total2 = 0., 0., 0.
+        Gsi = Gs[i]
+        tausi = taus[i]
+        for j in cmps:
+            xjGji = xs[j]*Gs[j][i]
+
+            td1 += xjGji
+            tn1 += xjGji*taus[j][i]
+            total2 += Gsi[j]*(tausi[j]*td2s[j] - tn3s[j])
+
+        gamma = exp(tn1/td1 + total2)
+        gammas.append(gamma)
+    return gammas

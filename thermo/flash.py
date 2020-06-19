@@ -45,9 +45,9 @@ __all__ = ['sequential_substitution_2P', 'sequential_substitution_GDEM3_2P',
 from chemicals.exceptions import TrivialSolutionError, PhaseCountReducedError, PhaseExistenceImpossible
 
 from fluids.constants import R, R2, R_inv
-from fluids.numerics import (UnconvergedError, trunc_exp, py_newton as newton,
+from fluids.numerics import (UnconvergedError, trunc_exp, newton,
                              brenth, secant, py_bisect as bisect,
-                             py_ridder as ridder, broyden2,
+                             ridder, broyden2,
                              numpy as np, linspace, 
                              logspace, oscillation_checker, damping_maintain_sign,
                              oscillation_checking_wrapper, OscillationError,
@@ -67,9 +67,9 @@ from thermo.heat_capacity import (Lastovka_Shaw_T_for_Hm, Dadgostar_Shaw_integra
                                   Lastovka_Shaw_integral_over_T)
 from thermo.phase_change import SMK
 from thermo.volume import COSTALD
-from thermo.rachford_rice import (flash_inner_loop, flash_wilson, flash_ideal, Rachford_Rice_solutionN,
-                                  Rachford_Rice_flash_error, Rachford_Rice_solution2, flash_Tb_Tc_Pc,
-                                  Rachford_Rice_solution_LN2)
+from chemicals.rachford_rice import (flash_inner_loop, Rachford_Rice_solutionN,
+                                  Rachford_Rice_flash_error, Rachford_Rice_solution2, Rachford_Rice_solution_LN2)
+from thermo.flash_basic import flash_wilson, flash_Tb_Tc_Pc, flash_ideal
 from thermo.equilibrium import EquilibriumState
 from thermo.phases import Phase, gas_phases, liquid_phases, solid_phases, EOSLiquid, EOSGas, CoolPropGas, CoolPropLiquid, CoolPropPhase, GibbsExcessLiquid, IdealGas
 from thermo.phases import CPPQ_INPUTS, CPQT_INPUTS, CPrhoT_INPUTS, CPunknown, caching_state_CoolProp, CPiDmolar
@@ -1172,7 +1172,7 @@ def nonlin_2P_newton(T, P, zs, xs_guess, ys_guess, liquid_phase,
     # TODO trust-region
     sln, iterations = newton_system(to_solve, guesses, jac=True, xtol=xtol, 
                                     maxiter=maxiter, 
-                                    damping_func=make_damp_initial(3),
+                                    damping_func=make_damp_initial(steps=3),
                                     damping=.5)
 
     VF, xs, ys, l, g, Fs, J = info

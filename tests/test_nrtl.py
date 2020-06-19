@@ -25,13 +25,125 @@ from numpy.testing import assert_allclose
 import pytest
 import numpy as np
 from fluids.constants import calorie, R
-from thermo.rachford_rice import *
+from chemicals.rachford_rice import *
 from thermo.mixture import Mixture
 from thermo.nrtl import NRTL
 from random import random
 from thermo import *
 import numpy as np
 from fluids.numerics import jacobian, hessian, derivative, normalize
+
+def test_NRTL():
+    # P05.01b VLE Behavior of Ethanol - Water Using NRTL
+    gammas = NRTL_gammas([0.252, 0.748], [[0, -0.178], [1.963, 0]], [[0, 0.2974],[.2974, 0]])
+    assert_allclose(gammas, [1.9363183763514304, 1.1537609663170014])
+
+    # Test the general form against the simpler binary form
+    def NRTL2(xs, taus, alpha):
+        x1, x2 = xs
+        tau12, tau21 = taus
+        G12 = exp(-alpha*tau12)
+        G21 = exp(-alpha*tau21)
+        gamma1 = exp(x2**2*(tau21*(G21/(x1+x2*G21))**2 + G12*tau12/(x2+x1*G12)**2))
+        gamma2 = exp(x1**2*(tau12*(G12/(x2+x1*G12))**2 + G21*tau21/(x1+x2*G21)**2))
+        return gamma1, gamma2
+
+    gammas = NRTL2(xs=[0.252, 0.748], taus=[-0.178, 1.963], alpha=0.2974)
+    assert_allclose(gammas, [1.9363183763514304, 1.1537609663170014])
+
+
+    # Example by
+    # https://github.com/iurisegtovich/PyTherm-applied-thermodynamics/blob/master/contents/main-lectures/GE1-NRTL-graphically.ipynb
+    tau = [[0.0, 2.291653777670652, 0.5166949715946564], [4.308652420938829, 0.0, 1.6753963198550983], [0.5527434579849811, 0.15106032392136134, 0.0]]
+    alpha = [[0.0, 0.4, 0.3], [0.4, 0.0, 0.3], [0.3, 0.3, 0.0]]
+    xs = [.1, .3, .6]
+    gammas = NRTL_gammas(xs, tau, alpha)
+    assert_allclose(gammas, [2.7175098659360413, 2.1373006474468697, 1.085133765593844])
+
+    # Test the values which give activity coefficients of 1:
+    gammas = NRTL_gammas([0.252, 0.748], [[0, 0], [0, 0]], [[0, 0.5],[.9, 0]])
+    assert_allclose(gammas, [1, 1])
+    # alpha does not matter
+    
+    a = b = np.zeros((6, 6)).tolist()
+    gammas = NRTL_gammas([0., 1, 0, 0, 0, 0], a, b)
+    assert_allclose(gammas, [1,1,1,1,1,1]) 
+
+    # Test vs chemsep parameters, same water ethanol T and P
+    T = 343.15
+    b12 = -57.9601*calorie
+    b21 = 1241.7396*calorie
+    tau12 = b12/(R*T)
+    tau21 = b21/(R*T)
+
+    gammas = NRTL_gammas(xs=[0.252, 0.748], taus=[[0, tau12], [tau21, 0]],
+    alphas=[[0, 0.2937],[.2937, 0]])
+    assert_allclose(gammas, [1.9853834856640085, 1.146380779201308])
+    
+    
+    
+    # Random bad example
+    alphas = [[0.0, 0.35, 0.35, 0.35, 0.35],
+             [0.35, 0.0, 0.35, 0.35, 0.35],
+             [0.35, 0.35, 0.0, 0.35, 0.35],
+             [0.35, 0.35, 0.35, 0.0, 0.35],
+             [0.35, 0.35, 0.35, 0.35, 0.0]]
+    taus = [[0.0, 0.651, 2.965, 1.738, 0.761], [1.832, 0.0, 2.783, 1.35, 0.629],
+            [0.528, 1.288, 0.0, 0.419, 2.395], [1.115, 1.838, 2.16, 0.0, 0.692], 
+            [1.821, 2.466, 1.587, 1.101, 0.0]]
+    
+    xs = [0.18736982702111407, 0.2154173017033719, 0.2717319464745698, 0.11018333572613222, 0.215297589074812]
+    gammas = NRTL_gammas(xs, taus, alphas)
+    gammas_expect = [2.503204848288857, 2.910723989902569, 2.2547951278295497, 2.9933258413917154, 2.694165187439594]
+    assert_allclose(gammas, gammas_expect)
+
+@pytest.mark.slow
+def test_NRTL_slow():
+    # ten component
+#    m = Mixture(['water', 'ethanol', 'methanol', '1-pentanol', '2-pentanol', '3-pentanol',
+#             '1-decanol', '2-decanol', '3-decanol', '4-decanol'], 
+#             P=1e5, zs=[.1]*10, T=273.15+70)
+    xs = [.1]*10
+    T = 343.15
+    alphas = [[0.0, 0.2937, 0.2999, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3],
+     [0.2937, 0.0, 0.3009, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3],
+     [0.2999, 0.3009, 0.0, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3],
+     [0.3, 0.3, 0.3, 0.0, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3],
+     [0.3, 0.3, 0.3, 0.3, 0.0, 0.3, 0.3, 0.3, 0.3, 0.3],
+     [0.3, 0.3, 0.3, 0.3, 0.3, 0.0, 0.3, 0.3, 0.3, 0.3],
+     [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.0, 0.3, 0.3, 0.3],
+     [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.0, 0.3, 0.3],
+     [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.0, 0.3],
+     [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.0]]
+    
+    taus = [[0.0, 1.8209751485908323, 1.162621164496251, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [-0.08499680747061582, 0.0, -0.10339969905688821, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [-0.2772318019157448, 0.0986791288154995, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]
+    
+    gammas = NRTL_gammas(xs=xs, taus=taus, alphas=alphas)
+    gammas_expect = [1.1600804309840225, 1.0892286716705042, 1.0384940848807305, 0.9836770920034531, 0.9836770920034531, 0.9836770920034531, 0.9836770920034531, 0.9836770920034531, 0.9836770920034531, 0.9836770920034531]
+    assert_allclose(gammas, gammas_expect)
+    
+    N = 44
+    taus = [[random.random() for i in range(N)] for j in range(N)]
+    alphas = [[random.random() for i in range(N)] for j in range(N)]
+    xs = normalize([random.random() for i in range(N)])
+    gammas = NRTL_gammas(xs=xs, taus=taus, alphas=alphas)
+    
+    
+    # Takes 40 ms - not a great idea
+    N = 200
+    taus = [[random.random() for i in range(N)] for j in range(N)]
+    alphas = [[random.random() for i in range(N)] for j in range(N)]
+    xs = normalize([random.random() for i in range(N)])
+    gammas = NRTL_gammas(xs=xs, taus=taus, alphas=alphas)
 
 def make_alphas(N):
     cmps = range(N)

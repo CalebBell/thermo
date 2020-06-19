@@ -28,7 +28,7 @@ __all__ = ['alpha_Twu91_objf', 'alpha_Twu91_objfc', 'fit',
 
 from cmath import atanh as catanh
 from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
-                             roots_cubic_a1, numpy as np, py_newton as newton,
+                             roots_cubic_a1, numpy as np, newton,
                              py_bisect as bisect, inf, polyder, chebder, 
                              trunc_exp, secant, linspace, logspace,
                              horner, horner_and_der2, horner_and_der3,

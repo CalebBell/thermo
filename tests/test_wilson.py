@@ -20,10 +20,11 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
-from math import log
+from math import log, exp
 from numpy.testing import assert_allclose
 import pytest
 from fluids.constants import R
+
 
 from thermo.activity import GibbsExcess
 from thermo import *
@@ -31,6 +32,39 @@ import numpy as np
 from fluids.numerics import jacobian, hessian, derivative, normalize
 
 
+def test_Wilson():
+    # P05.01a VLE Behavior of Ethanol - Water Using Wilson
+    # http://chemthermo.ddbst.com/Problems_Solutions/Mathcad_Files/P05.01a%20VLE%20Behavior%20of%20Ethanol%20-%20Water%20Using%20Wilson.xps
+    gammas = Wilson_gammas([0.252, 0.748], [[1, 0.154], [0.888, 1]])
+    assert_allclose(gammas, [1.8814926087178843, 1.1655774931125487])
+
+    # Test the general form against the simpler binary form
+    def Wilson2(molefracs, lambdas):
+        x1 = molefracs[0]
+        x2 = molefracs[1]
+        l12 = lambdas[0]
+        l21 = lambdas[1]
+        gamma1 = exp(-log(x1+x2*l12) + x2*(l12/(x1+x2*l12) - l21/(x2+x1*l21)))
+        gamma2 = exp(-log(x2+x1*l21) - x1*(l12/(x1+x2*l12) - l21/(x2+x1*l21)))
+        return [gamma1, gamma2]
+    gammas = Wilson2([0.252, 0.748], [0.154, 0.888])
+
+    assert_allclose(gammas, [1.8814926087178843, 1.1655774931125487])
+
+    # Test 3 parameter version:
+    # 05.09 Compare Experimental VLE to Wilson Equation Results
+    # http://chemthermo.ddbst.com/Problems_Solutions/Mathcad_Files/05.09%20Compare%20Experimental%20VLE%20to%20Wilson%20Equation%20Results.xps
+    # Extra decimals obtained via the actual MathCad worksheet
+    xs = [0.229, 0.175, 0.596]
+    params = [[1, 1.1229699812593, 0.73911816162836],
+              [3.26947621620298, 1, 1.16749678447695],
+              [0.37280197780932, 0.01917909648619, 1]]
+    gammas = Wilson_gammas(xs, params)
+    assert_allclose(gammas, [1.22339343348885, 1.10094590247015, 1.2052899281172])
+
+    # Test the values which produce gamma = 1
+    gammas = Wilson_gammas([0.252, 0.748], [[1, 1], [1, 1]])
+    assert_allclose(gammas, [1, 1])
 
 def test_DDBST_example():
     # One good numerical example - acetone, chloroform, methanol

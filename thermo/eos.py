@@ -33,7 +33,7 @@ __all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',
 from cmath import atanh as catanh, log as clog
 from math import isnan
 from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
-                             roots_cubic_a1, numpy as np, py_newton as newton,
+                             roots_cubic_a1, numpy as np, newton,
                              py_bisect as bisect, inf, polyder, chebder,
                              trunc_exp, secant, linspace, logspace,
                              horner, horner_and_der, horner_and_der2, derivative,
@@ -46,7 +46,8 @@ from chemicals.utils import (Cp_minus_Cv, isobaric_expansion,
 from chemicals.utils import log, log10, exp, sqrt, copysign
 from thermo.alpha_functions import (Poly_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha,
                                     TwuSRK95_a_alpha, TwuPR95_a_alpha, Soave_79_a_alpha)
-from thermo.rachford_rice import Wilson_K_value
+from thermo.flash_basic import Wilson_K_value
+
 R2 = R*R
 R_2 = 0.5*R
 R_inv = 1.0/R

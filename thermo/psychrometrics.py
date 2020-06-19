@@ -27,7 +27,7 @@ __all__ = ['x_w_to_humidity_ratio', 'water_saturation',
 
 import os
 from fluids.constants import R
-from fluids.numerics import bisplev, implementation_optimize_tck, horner, horner_and_der, derivative, py_newton as newton, linspace
+from fluids.numerics import bisplev, implementation_optimize_tck, horner, horner_and_der, derivative, newton, linspace
 from chemicals.utils import log, exp, isnan
 from thermo.utils import TDependentProperty
 from thermo.coolprop import has_CoolProp, HAPropsSI
