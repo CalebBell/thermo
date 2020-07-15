@@ -433,8 +433,12 @@ def COSTALD(T, Tc, Vc, omega):
     Tr = T/Tc
     V_delta = (-0.296123 + 0.386914*Tr - 0.0427258*Tr**2
         - 0.0480645*Tr**3)/(Tr - 1.00001)
-    V_0 = 1 - 1.52816*(1-Tr)**(1/3.) + 1.43907*(1-Tr)**(2/3.) \
-        - 0.81446*(1-Tr) + 0.190454*(1-Tr)**(4/3.)
+    if Tr <= 1:
+        V_0 = 1 - 1.52816*(1-Tr)**(1/3.) + 1.43907*(1-Tr)**(2/3.) \
+            - 0.81446*(1-Tr) + 0.190454*(1-Tr)**(4/3.)
+    else:
+        V_0 = 1 + 1.52816*(Tr-1)**(1/3.) - 1.43907*(Tr-1)**(2/3.) \
+            + 0.81446*(Tr-1) - 0.190454*(Tr-1)**(4/3.)
     return Vc*V_0*(1-omega*V_delta)
 
 
@@ -1291,7 +1295,10 @@ def COSTALD_compressed(T, P, Psat, Tc, Pc, omega, Vs):
     tau = 1 - T/Tc
     e = exp(f + g*omega + h*omega**2)
     C = j + k*omega
-    B = Pc*(-1 + a*tau**(1/3.) + b*tau**(2/3.) + d*tau + e*tau**(4/3.))
+    if tau >= 0:
+        B = Pc*(-1 + a*tau**(1/3.) + b*tau**(2/3.) + d*tau + e*tau**(4/3.))
+    else:
+        B = Pc * (-1 - a * (-tau) ** (1 / 3.) - b * (-tau) ** (2 / 3.) - d * (-tau) - e * (-tau) ** (4 / 3.))
     return Vs*(1 - C*log((B + P)/(B + Psat)))
 
 
