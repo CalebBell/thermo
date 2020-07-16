@@ -34,7 +34,7 @@ from cmath import atanh as catanh, log as clog
 from math import isnan
 from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              roots_cubic_a1, numpy as np, newton,
-                             py_bisect as bisect, inf, polyder, chebder,
+                             bisect, inf, polyder, chebder,
                              trunc_exp, secant, linspace, logspace,
                              horner, horner_and_der, horner_and_der2, derivative,
                              roots_cubic_a2, isclose, NoSolutionError,

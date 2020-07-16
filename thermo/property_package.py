@@ -62,15 +62,14 @@ from thermo.utils import has_matplotlib
 from chemicals.elements import mixture_atomic_composition, similarity_variable
 from thermo.identifiers import IDs_to_CASs
 from chemicals.rachford_rice import flash_inner_loop, Rachford_Rice_solution2
-from thermo.flash_basic import K_value, Wilson_K_value, flash_wilson, flash_Tb_Tc_Pc, dew_at_T, bubble_at_T, \
-      get_T_bub_est, get_T_dew_est, get_P_dew_est, get_P_bub_est
+from thermo.flash_basic import K_value, Wilson_K_value, flash_wilson, flash_Tb_Tc_Pc, dew_at_T, bubble_at_T
 from thermo.wilson import Wilson_gammas as Wilson
 from thermo.nrtl import NRTL_gammas
 from chemicals.rachford_rice import Rachford_Rice_flash_error
 from thermo.unifac import UNIFAC_gammas, UFSG, DOUFSG, DOUFIP2006
 from thermo.eos_mix import *
 from thermo.eos import *
-from thermo.heat_capacity import Lastovka_Shaw_T_for_Hm, Lastovka_Shaw_T_for_Sm, Dadgostar_Shaw_integral_over_T, Dadgostar_Shaw_integral, Lastovka_Shaw_integral
+from chemicals.heat_capacity import Lastovka_Shaw_T_for_Hm, Lastovka_Shaw_T_for_Sm, Dadgostar_Shaw_integral_over_T, Dadgostar_Shaw_integral, Lastovka_Shaw_integral
 from thermo.phase_change import SMK
 
 
@@ -6148,8 +6147,7 @@ class GceosBase(Ideal):
         negative_Ts = []
         positive_VFs = []
         positive_Ts = []
-        guess = get_T_bub_est(P=P, zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs)
-        
+        guess = flash_Tb_Tc_Pc(zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs, P=P, VF=0.0)[0]
         eos_l = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
                              zs=zs, kijs=self.kijs, T=self.T_REF_IG, P=P, **self.eos_kwargs)
 
@@ -6191,7 +6189,7 @@ class GceosBase(Ideal):
         negative_Ts = []
         positive_VFs = []
         positive_Ts = []
-        guess = get_T_dew_est(P=P, zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs)
+        guess = flash_Tb_Tc_Pc(zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs, P=P, VF=1.0)[0]
         
         eos_l = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
                              zs=zs, kijs=self.kijs, T=self.T_REF_IG, P=P, **self.eos_kwargs)
@@ -6493,7 +6491,7 @@ class GceosBase(Ideal):
         negative_Ps = []
         positive_VFs = []
         positive_Ps = []
-        guess = get_P_dew_est(T=T, zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs)
+        guess = flash_Tb_Tc_Pc(zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs, T=T, VF=1.0)[1]
         
         eos_l = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
                              zs=zs, kijs=self.kijs, T=T, P=self.P_REF_IG, **self.eos_kwargs)
@@ -6769,7 +6767,7 @@ class GceosBase(Ideal):
         negative_Ps = []
         positive_VFs = []
         positive_Ps = []
-        guess = get_P_bub_est(T=T, zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs)
+        guess = flash_Tb_Tc_Pc(zs=zs, Tbs=self.Tbs, Tcs=self.Tcs, Pcs=self.Pcs, T=T, VF=0.0)[1]
         
         eos_l = self.eos_mix(Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas,
                              zs=zs, kijs=self.kijs, T=T, P=self.P_REF_IG, **self.eos_kwargs)

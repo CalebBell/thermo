@@ -34,7 +34,7 @@ import numpy as np
 from cmath import log as clog, atanh as catanh
 from scipy.optimize import minimize
 from scipy.misc import derivative
-from fluids.numerics import IS_PYPY, newton_system, broyden2, UnconvergedError, trunc_exp
+from fluids.numerics import IS_PYPY, newton_system, broyden2, UnconvergedError, trunc_exp, solve_2_direct
 from fluids.numerics.arrays import det, subset_matrix
 from fluids.constants import R
 from chemicals.utils import normalize, Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter, dxs_to_dn_partials, dxs_to_dns, dns_to_dn_partials, d2xs_to_dxdn_partials, d2ns_to_dn2_partials, hash_any_primitive
@@ -1124,7 +1124,8 @@ class GCEOSMIX(GCEOS):
         Tmc = sum([(Tcs[i]*Tcs[j])**0.5*zs[j]*zs[i] for i in self.cmps
                   for j in self.cmps])
         TP, iterations = newton_system(self._mechanical_critical_point_f_jac,
-                                       x0=[Tmc, Pmc], jac=True, ytol=1e-10)
+                                       x0=[Tmc, Pmc], jac=True, ytol=1e-10,
+                                       solve_func=solve_2_direct)
         T, P = float(TP[0]), float(TP[1])
         return T, P
         

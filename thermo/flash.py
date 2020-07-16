@@ -46,7 +46,7 @@ from chemicals.exceptions import TrivialSolutionError, PhaseCountReducedError, P
 
 from fluids.constants import R, R2, R_inv
 from fluids.numerics import (UnconvergedError, trunc_exp, newton,
-                             brenth, secant, py_bisect as bisect,
+                             brenth, secant, bisect,
                              ridder, broyden2,
                              numpy as np, linspace, 
                              logspace, oscillation_checker, damping_maintain_sign,
@@ -62,7 +62,7 @@ from scipy.interpolate import CubicSpline
 from chemicals.utils import (exp, log, log10, floor, copysign, normalize,
                           mixing_simple, property_mass_to_molar)
 from thermo.utils import has_matplotlib
-from thermo.heat_capacity import (Lastovka_Shaw_T_for_Hm, Dadgostar_Shaw_integral,
+from chemicals.heat_capacity import (Lastovka_Shaw_T_for_Hm, Dadgostar_Shaw_integral,
                                   Dadgostar_Shaw_integral_over_T, Lastovka_Shaw_integral,
                                   Lastovka_Shaw_integral_over_T)
 from thermo.phase_change import SMK

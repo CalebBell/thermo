@@ -492,7 +492,7 @@ class NRTL(GibbsExcess):
     def d3Gs_dT3(self):
         '''
         ... math::
-            - \left(\alpha{\left(T \right)} \frac{d}{d T} \tau{\left(T \right)} + \tau{\left(T \right)} \frac{d}{d T} \alpha{\left(T \right)}\right)^{3} + \left(3 \alpha{\left(T \right)} \frac{d}{d T} \tau{\left(T \right)} + 3 \tau{\left(T \right)} \frac{d}{d T} \alpha{\left(T \right)}\right) \left(\alpha{\left(T \right)} \frac{d^{2}}{d T^{2}} \tau{\left(T \right)} + 2 \frac{d}{d T} \alpha{\left(T \right)} \frac{d}{d T} \tau{\left(T \right)}\right) - \alpha{\left(T \right)} \frac{d^{3}}{d T^{3}} \tau{\left(T \right)} - 3 \frac{d}{d T} \alpha{\left(T \right)} \frac{d^{2}}{d T^{2}} \tau{\left(T \right)}
+            \left(\alpha{\left(T \right)} \frac{d}{d T} \tau{\left(T \right)} + \tau{\left(T \right)} \frac{d}{d T} \alpha{\left(T \right)}\right)^{3} + \left(3 \alpha{\left(T \right)} \frac{d}{d T} \tau{\left(T \right)} + 3 \tau{\left(T \right)} \frac{d}{d T} \alpha{\left(T \right)}\right) \left(\alpha{\left(T \right)} \frac{d^{2}}{d T^{2}} \tau{\left(T \right)} + 2 \frac{d}{d T} \alpha{\left(T \right)} \frac{d}{d T} \tau{\left(T \right)}\right) - \alpha{\left(T \right)} \frac{d^{3}}{d T^{3}} \tau{\left(T \right)} - 3 \frac{d}{d T} \alpha{\left(T \right)} \frac{d^{2}}{d T^{2}} \tau{\left(T \right)}
         '''
         '''
         from sympy import *

@@ -31,8 +31,7 @@ from chemicals.rachford_rice import flash_inner_loop
 __all__ = ['K_value','Wilson_K_value', 'PR_water_K_value', 'flash_wilson', 
            'flash_Tb_Tc_Pc', 'flash_ideal', 'flash_ideal_basic', 'dew_at_T',
            'bubble_at_T', 'identify_phase', 'identify_phase_mixture',
-           'Pbubble_mixture', 'bubble_at_P', 'Pdew_mixture', 'get_T_bub_est',
-           'get_T_dew_est', 'get_P_dew_est', 'get_P_bub_est']
+           'Pbubble_mixture', 'bubble_at_P', 'Pdew_mixture']
 
 
 def K_value(P=None, Psat=None, phi_l=None, phi_g=None, gamma=None, Poynting=1):
@@ -620,6 +619,14 @@ def flash_Tb_Tc_Pc(zs, Tbs, Tcs, Pcs, T=None, P=None, VF=None):
     solver. It is used in the PVF solvers. This typically allows pressures
     up to 2 MPa to be converged to. Failures may still occur for other
     conditions.
+    
+    This model is based on [1]_, which aims to estimate dew and bubble points
+    using the same K value formulation as used here. While this implementation
+    uses a numerical solver to provide an exact bubble/dew point estimate,
+    [1]_ suggests a sequential substitution and flowchart based solver with 
+    loose tolerances. That model was also implemented, but found to be slower
+    and less reliable than this implementation.
+    
 
     Examples
     --------
@@ -629,6 +636,14 @@ def flash_Tb_Tc_Pc(zs, Tbs, Tcs, Pcs, T=None, P=None, VF=None):
     >>> zs = [0.4, 0.6]
     >>> flash_Tb_Tc_Pc(zs=zs, Tcs=Tcs, Pcs=Pcs, Tbs=Tbs, T=300, P=1e5)
     (300, 100000.0, 0.3807040748145384, [0.031157843036568357, 0.9688421569634317], [0.9999999998827085, 1.1729141887515062e-10])
+
+    References
+    ----------
+    .. [1] Kandula, Vamshi Krishna, John C. Telotte, and F. Carl Knopf. "It’s 
+       Not as Easy as It Looks: Revisiting Peng—Robinson Equation of State 
+       Convergence Issues for Dew Point, Bubble Point and Flash Calculations."
+       International Journal of Mechanical Engineering Education 41, no. 3 
+       (July 1, 2013): 188-202. https://doi.org/10.7227/IJMEE.41.3.2.
     '''
     T_MAX = 50000
     N = len(zs)
@@ -637,6 +652,7 @@ def flash_Tb_Tc_Pc(zs, Tbs, Tcs, Pcs, T=None, P=None, VF=None):
     if T is not None and P is not None:
         Ks = [Pcs[i]**((1.0/T - 1.0/Tbs[i])/(1.0/Tcs[i] - 1.0/Tbs[i]))/P for i in cmps]
         return (T, P) + flash_inner_loop(zs=zs, Ks=Ks, check=True)
+
 
     if T is not None and VF == 0:
         P_bubble = 0.0
@@ -1205,78 +1221,3 @@ def Pdew_mixture(T=None, zs=None, Psats=None, CASRNs=None,
         raise Exception('Failure in in function')
     return Pdew
 
-
-def get_T_bub_est(P, zs, Tbs, Tcs, Pcs):
-    T_bub_est = 0.7*sum([zi*Tci for zi, Tci in zip(zs, Tcs)])
-    T_LO = T_HI = 0.0
-    for i in range(1000):
-        Ks = [Pc**((1./T_bub_est - 1./Tb)/(1./Tc - 1./Tb))/P for Tb, Tc, Pc in zip(Tbs, Tcs, Pcs)]
-        y_bub_sum = sum([zi*Ki for zi, Ki in zip(zs, Ks)])
-        if y_bub_sum < 1.:
-            T_LO = T_bub_est
-            y_LO_sum = y_bub_sum - 1.
-            T_new = T_bub_est*1.1
-        elif y_bub_sum > 1.:
-            T_HI = T_bub_est
-            y_HI_sum = y_bub_sum - 1.
-            T_new = T_bub_est/1.1
-        else:
-            return T_bub_est
-        if T_LO*T_HI > 0.0:
-            T_new = (y_HI_sum*T_LO - y_LO_sum*T_HI)/(y_HI_sum - y_LO_sum)
-
-        if abs(T_bub_est - T_new) < 1E-3:
-            return T_bub_est
-        elif abs(y_bub_sum - 1.) < 1E-5:
-            return T_bub_est
-        else:
-            T_bub_est = T_new
-
-
-def get_T_dew_est(P, zs, Tbs, Tcs, Pcs, T_bub_est=None):
-    if T_bub_est is None:
-        T_bub_est = get_T_bub_est(P, zs, Tbs, Tcs, Pcs)
-    T_dew_est = 1.1*T_bub_est
-    T_LO = T_HI = 0.0
-    for i in range(10000):
-        Ks = [Pc**((1./T_dew_est - 1./Tb)/(1./Tc - 1./Tb))/P for Tb, Tc, Pc in zip(Tbs, Tcs, Pcs)]
-        x_dew_sum = sum([zi/Ki for zi, Ki in zip(zs, Ks)])
-        if x_dew_sum < 1.:
-            T_LO = T_dew_est
-            x_LO_sum = x_dew_sum - 1.
-            T_new = T_dew_est/1.1
-        elif x_dew_sum > 1.:
-            T_HI = T_dew_est
-            x_HI_sum = x_dew_sum - 1.
-            T_new = T_dew_est*1.1
-        else:
-            return T_dew_est
-        if T_LO*T_HI > 0.0:
-            T_new = (x_HI_sum*T_LO - x_LO_sum*T_HI)/(x_HI_sum - x_LO_sum)
-
-        if abs(T_dew_est - T_new) < 1E-3:
-            return T_dew_est
-        elif abs(x_dew_sum - 1.) < 1E-5:
-            return T_dew_est
-        else:
-            T_dew_est = T_new
-
-
-def get_P_dew_est(T, zs, Tbs, Tcs, Pcs):
-    def err(P):
-        e = get_T_dew_est(P, zs, Tbs, Tcs, Pcs) - T
-        return e
-    try:
-        return brenth(err, 1E-2, 1e8)
-    except:
-        return brenth(err, 1E-3, 1E12)
-
-
-def get_P_bub_est(T, zs, Tbs, Tcs, Pcs):
-    def err(P):
-        e = get_T_bub_est(P, zs, Tbs, Tcs, Pcs) - T
-        return e
-    try:
-        return brenth(err, 1E-2, 1e8)
-    except:
-        return brenth(err, 1E-3, 1E12)

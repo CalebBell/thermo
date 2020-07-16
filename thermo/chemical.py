@@ -28,30 +28,31 @@ __all__ = ['Chemical', 'reference_states']
 from thermo.identifiers import *
 from thermo.identifiers import _MixtureDict, empty_chemical_constants
 from thermo.vapor_pressure import VaporPressure, SublimationPressure
-from thermo.phase_change import Tb, Tm, Hfus, EnthalpyVaporization, EnthalpySublimation
+from chemicals.phase_change import Tb, Tm, Hfus, Tb_methods, Tm_methods, Hfus_methods
+from thermo.phase_change import EnthalpyVaporization, EnthalpySublimation
 from thermo.flash_basic import identify_phase, identify_phase_mixture, Pbubble_mixture, Pdew_mixture
 
-from chemicals.critical import Tc, Pc, Vc
-from chemicals.acentric import omega, Stiel_polar_factor
-from chemicals.triple import Tt, Pt
+from chemicals.critical import Tc, Pc, Vc, Tc_methods, Pc_methods, Vc_methods
+from chemicals.acentric import omega, Stiel_polar_factor, omega_methods
+from chemicals.triple import Tt, Pt, Tt_methods, Pt_methods
 from thermo.thermal_conductivity import ThermalConductivityLiquid, ThermalConductivityGas, ThermalConductivityLiquidMixture, ThermalConductivityGasMixture
 from thermo.volume import VolumeGas, VolumeLiquid, VolumeSolid, VolumeLiquidMixture, VolumeGasMixture, VolumeSolidMixture
 from thermo.permittivity import *
 from thermo.heat_capacity import HeatCapacitySolid, HeatCapacityGas, HeatCapacityLiquid, HeatCapacitySolidMixture, HeatCapacityGasMixture, HeatCapacityLiquidMixture
 from thermo.interface import SurfaceTension, SurfaceTensionMixture
 from thermo.viscosity import ViscosityLiquid, ViscosityGas, ViscosityLiquidMixture, ViscosityGasMixture
-from chemicals.reactions import Hfs, Hfl, Hfg, S0g, S0l, S0s, Gibbs_formation, Hf_basis_converter, entropy_formation
+from chemicals.reactions import Hfg_methods, S0g_methods, Hfl_methods, Hfs_methods, Hfs, Hfl, Hfg, S0g, S0l, S0s, Gibbs_formation, Hf_basis_converter, entropy_formation
 from thermo.combustion import Hcombustion
 from thermo.safety import Tflash, Tautoignition, LFL, UFL, TWA, STEL, Ceiling, Skin, Carcinogen, LFL_mixture, UFL_mixture
 from chemicals.solubility import solubility_parameter
-from chemicals.dipole import dipole_moment as dipole
+from chemicals.dipole import dipole_moment as dipole, dipole_moment_methods
 from chemicals.utils import *
 from thermo.utils import *
 from fluids.core import Reynolds, Capillary, Weber, Bond, Grashof, Peclet_heat
 from chemicals.lennard_jones import Stockmayer, molecular_diameter
-from chemicals.environment import GWP, ODP, logP
+from chemicals.environment import GWP, ODP, logP, GWP_methods, ODP_methods, logP_methods
 from thermo.law import legal_status, economic_status
-from chemicals.refractivity import refractive_index
+from chemicals.refractivity import RI, RI_methods
 from thermo.electrochem import conductivity
 from chemicals.elements import atom_fractions, mass_fractions, similarity_variable, atoms_to_Hill, simple_formula_parser, molecular_weight, charge_from_formula, periodic_table, homonuclear_elements
 from thermo.coolprop import has_CoolProp
@@ -762,29 +763,29 @@ class Chemical(object): # pragma: no cover
             return 'py3Dmol, RDKit, and IPython are required for this feature.'
 
     def set_constant_sources(self):
-        self.Tm_sources = Tm(CASRN=self.CAS, get_methods=True)
+        self.Tm_sources = Tm_methods(CASRN=self.CAS)
         self.Tm_source = self.Tm_sources[0] if self.Tm_sources else None
-        self.Tb_sources = Tb(CASRN=self.CAS, get_methods=True)
+        self.Tb_sources = Tb_methods(CASRN=self.CAS)
         self.Tb_source = self.Tb_sources[0] if self.Tb_sources else None
 
         # Critical Point
-        self.Tc_methods = Tc(self.CAS, get_methods=True)
+        self.Tc_methods = Tc_methods(self.CAS)
         self.Tc_method = self.Tc_methods[0] if self.Tc_methods else None
-        self.Pc_methods = Pc(self.CAS, get_methods=True)
+        self.Pc_methods = Pc_methods(self.CAS)
         self.Pc_method = self.Pc_methods[0] if self.Pc_methods else None
-        self.Vc_methods = Vc(self.CAS, get_methods=True)
+        self.Vc_methods = Vc_methods(self.CAS)
         self.Vc_method = self.Vc_methods[0] if self.Vc_methods else None
-        self.omega_methods = omega(CASRN=self.CAS, get_methods=True)
+        self.omega_methods = omega_methods(self.CAS)
         self.omega_method = self.omega_methods[0] if self.omega_methods else None
 
         # Triple point
-        self.Tt_sources = Tt(self.CAS, get_methods=True)
+        self.Tt_sources = Tt_methods(self.CAS)
         self.Tt_source = self.Tt_sources[0] if self.Tt_sources else None
-        self.Pt_sources = Pt(self.CAS, get_methods=True)
+        self.Pt_sources = Pt_methods(self.CAS)
         self.Pt_source = self.Pt_sources[0] if self.Pt_sources else None
 
         # Enthalpy
-        self.Hfus_methods = Hfus(get_methods=True, CASRN=self.CAS)
+        self.Hfus_methods = Hfus_methods(CASRN=self.CAS)
         self.Hfus_method = self.Hfus_methods[0] if self.Hfus_methods else None
 
         # Fire Safety Limits
@@ -805,27 +806,27 @@ class Chemical(object): # pragma: no cover
         self.Carcinogen_sources = Carcinogen(self.CAS, get_methods=True)
         self.Carcinogen_source = self.Carcinogen_sources[0] if self.Carcinogen_sources else None
 
-        self.Hfg_sources = Hfg(CASRN=self.CAS, get_methods=True)
+        self.Hfg_sources = Hfg_methods(CASRN=self.CAS)
         self.Hfg_source = self.Hfg_sources[0] if self.Hfg_sources else None
         
-        self.S0g_sources = S0g(CASRN=self.CAS, get_methods=True)
+        self.S0g_sources = S0g_methods(CASRN=self.CAS)
         self.S0g_source = self.S0g_sources[0] if self.S0g_sources else None
         
 
         # Misc
-        self.dipole_sources = dipole(CASRN=self.CAS, get_methods=True)
+        self.dipole_sources = dipole_moment_methods(CASRN=self.CAS)
         self.dipole_source = self.dipole_sources[0] if self.dipole_sources else None
 
         # Environmental
-        self.GWP_sources = GWP(CASRN=self.CAS, get_methods=True)
+        self.GWP_sources = GWP_methods(CASRN=self.CAS)
         self.GWP_source = self.GWP_sources[0] if self.GWP_sources else None
-        self.ODP_sources = ODP(CASRN=self.CAS, get_methods=True)
+        self.ODP_sources = ODP_methods(CASRN=self.CAS)
         self.ODP_source = self.ODP_sources[0] if self.ODP_sources else None
-        self.logP_sources = logP(CASRN=self.CAS, get_methods=True)
+        self.logP_sources = logP_methods(CASRN=self.CAS)
         self.logP_source = self.logP_sources[0] if self.logP_sources else None
 
         # Analytical
-        self.RI_sources = refractive_index(CASRN=self.CAS, get_methods=True)
+        self.RI_sources = RI_methods(CASRN=self.CAS)
         self.RI_source = self.RI_sources[0] if self.RI_sources else None
 
         self.conductivity_sources = conductivity(CASRN=self.CAS, get_methods=True)
@@ -877,7 +878,7 @@ class Chemical(object): # pragma: no cover
         self.logP = logP(CASRN=self.CAS, method=self.logP_source)
 
         # Analytical
-        self.RI, self.RIT = refractive_index(CASRN=self.CAS, method=self.RI_source)
+        self.RI, self.RIT = RI(CASRN=self.CAS, method=self.RI_source)
         self.conductivity, self.conductivityT = conductivity(CASRN=self.CAS, method=self.conductivity_source)
 
 
@@ -934,15 +935,18 @@ class Chemical(object): # pragma: no cover
         # Chemistry
         if self.phase_STP == 'g':
             H_fun = Hfg
+            H_methods_fun = Hfg_methods
         elif self.phase_STP == 'l':
             H_fun = Hfl
+            H_methods_fun = Hfl_methods
         elif self.phase_STP == 's':
             H_fun = Hfs
+            H_methods_fun = Hfs_methods
         else:
-            H_fun = None
+            H_methods_fun = H_fun = None
             
         if H_fun is not None:
-            self.Hf_sources = H_fun(CASRN=self.CAS, get_methods=True)
+            self.Hf_sources = H_methods_fun(CASRN=self.CAS)
             self.Hf_source = self.Hf_sources[0] if self.Hf_sources else None
             self.Hfm = H_fun(CASRN=self.CAS, method=self.Hf_source)
         else:

@@ -38,8 +38,7 @@ from chemicals.utils import log, exp
 from fluids.constants import R, pi, N_A
 from thermo.identifiers import IDs_to_CASs
 from chemicals.rachford_rice import flash_inner_loop
-from thermo.flash_basic import (K_value, Wilson_K_value, dew_at_T, bubble_at_T, get_T_bub_est, get_T_dew_est,
-      get_P_dew_est, get_P_bub_est)
+from thermo.flash_basic import (K_value, Wilson_K_value, dew_at_T, bubble_at_T)
 from thermo.unifac import UFSG, DOUFSG, DOUFIP2006
 from thermo.eos_mix import *
 from thermo.eos import *
