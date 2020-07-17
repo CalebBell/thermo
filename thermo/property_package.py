@@ -62,7 +62,7 @@ from thermo.utils import has_matplotlib
 from chemicals.elements import mixture_atomic_composition, similarity_variable
 from thermo.identifiers import IDs_to_CASs
 from chemicals.rachford_rice import flash_inner_loop, Rachford_Rice_solution2
-from thermo.flash_basic import K_value, Wilson_K_value, flash_wilson, flash_Tb_Tc_Pc, dew_at_T, bubble_at_T
+from chemicals.flash_basic import K_value, Wilson_K_value, flash_wilson, flash_Tb_Tc_Pc, flash_ideal
 from thermo.wilson import Wilson_gammas as Wilson
 from thermo.nrtl import NRTL_gammas
 from chemicals.rachford_rice import Rachford_Rice_flash_error
@@ -1350,8 +1350,8 @@ class Ideal(PropertyPackage):
         if self.N == 1:
             Pdew = Pbubble = Psats[0]
         else:
-            Pdew = dew_at_T(zs, Psats)
-            Pbubble = bubble_at_T(zs, Psats)
+            Pdew = 1.0/sum([zs[i]/Psats[i] for i in range(self.N)])
+            Pbubble = sum([zs[i]*Psats[i] for i in range(self.N)])
         if P <= Pdew:
             # phase, ys, xs, quality - works for 1 comps too
             return 'g', None, zs, 1
@@ -1376,9 +1376,9 @@ class Ideal(PropertyPackage):
             return 'l/g', list(zs), list(zs), VF, Psats[zs.index(1.0)]
 
         if VF == 0:
-            P = bubble_at_T(zs, Psats)
+            P = sum([zs[i]*Psats[i] for i in range(self.N)])
         elif VF == 1:
-            P = dew_at_T(zs, Psats)
+            P = 1.0/sum([zs[i]/Psats[i] for i in range(self.N)])
         else:
             P = brenth(self._T_VF_err_ideal, min(Psats)*(1+1E-7), max(Psats)*(1-1E-7), args=(VF, zs, Psats))
         Ks = [K_value(P=P, Psat=Psat) for Psat in Psats]

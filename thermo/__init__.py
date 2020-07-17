@@ -24,7 +24,7 @@ import os
 
 from chemicals import acentric
 from chemicals import rachford_rice
-from . import flash_basic
+from chemicals import flash_basic
 from . import chemical
 from . import chemical_package
 from . import combustion
@@ -78,7 +78,7 @@ from chemicals import temperature
 
 from chemicals.acentric import *
 from chemicals.rachford_rice import *
-from .flash_basic import *
+from chemicals.flash_basic import *
 from .chemical import *
 from .chemical_package import *
 from .combustion import *

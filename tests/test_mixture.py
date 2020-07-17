@@ -23,6 +23,7 @@ SOFTWARE.'''
 from numpy.testing import assert_allclose
 import numpy as np
 import pytest
+from fluids.numerics import assert_close, assert_close1d
 from collections import OrderedDict
 from thermo.chemical import *
 from thermo.mixture import Mixture
@@ -185,7 +186,7 @@ def test_Mixture_VF_input():
 def test_bubble_at_P_with_ideal_mixing():
     '''Check to see if the bubble pressure calculated from the temperature
     matches the temperature calculated by the test function'''
-    from thermo.flash_basic import bubble_at_P
+    from thermo.flash_basic import flash_ideal
 
     test_mix = Mixture(['ethylene oxide',
                         'tetrahydrofuran',
@@ -193,9 +194,8 @@ def test_bubble_at_P_with_ideal_mixing():
                        ws=[6021, 111569.76, 30711.21, ],
                        T=273.15 + 80,
                        P=101325 + 1.5e5)
+    
+    T, _, _, _, _ = flash_ideal(zs=test_mix.zs, funcs=test_mix.VaporPressures,
+                                P=101325 + 1.5e5, VF=0, Tcs=test_mix.Tcs)
+    assert_close(T, 367.2891791672172, rtol=1e-3)
 
-    bubble_temp = bubble_at_P(test_mix.Pbubble,
-                              test_mix.zs,
-                              test_mix.VaporPressures)
-
-    assert_allclose(test_mix.T, bubble_temp)

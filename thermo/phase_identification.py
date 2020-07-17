@@ -39,7 +39,7 @@ __all__ = ['vapor_score_Tpc', 'vapor_score_Vpc',
 
 
 from chemicals.rachford_rice import Rachford_Rice_flash_error, flash_inner_loop
-from thermo.flash_basic import Wilson_K_value
+from chemicals.flash_basic import Wilson_K_value
 from chemicals.utils import phase_identification_parameter, Vm_to_rho
 
 def vapor_score_Tpc(T, Tcs, zs):

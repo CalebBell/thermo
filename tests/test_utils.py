@@ -30,6 +30,50 @@ from fluids.numerics import assert_close, assert_close1d
 
 
 
+def test_identify_phase():
+    # Above the melting point, higher pressure than the vapor pressure
+    assert 'l' == identify_phase(T=280, P=101325, Tm=273.15, Psat=991)
+
+    # Above the melting point, lower pressure than the vapor pressure
+    assert 'g' == identify_phase(T=480, P=101325, Tm=273.15, Psat=1791175)
+
+    # Above the melting point, above the critical pressure (no vapor pressure available)
+    assert 'g' == identify_phase(T=650, P=10132500000, Tm=273.15, Psat=None, Tc=647.3)
+
+    # No vapor pressure specified, under the melting point
+    assert 's' == identify_phase(T=250, P=100, Tm=273.15)
+
+    # No data, returns None
+    assert None == identify_phase(T=500, P=101325)
+
+    # No Tm, under Tb, at normal atmospheric pressure
+    assert 'l' == identify_phase(T=200, P=101325, Tb=373.15)
+
+    # Incorrect case by design:
+    # at 371 K, Psat is 93753 Pa, meaning the actual phase is gas
+    assert 'l' == identify_phase(T=371, P=91000, Tb=373.15)
+    
+    # Very likely wrong, pressure has dropped substantially
+    # Consider behavior
+    assert 'l' == identify_phase(T=373.14, P=91327, Tb=373.15)
+
+    # Above Tb, while still atmospheric == gas
+    assert 'g' == identify_phase(T=400, P=101325, Tb=373.15)
+
+    # Above Tb, 1 MPa == None - don't try to guess
+    assert None == identify_phase(T=400, P=1E6, Tb=373.15)
+
+    # Another wrong point - at 1 GPa, should actually be a solid as well
+    assert 'l' == identify_phase(T=371, P=1E9, Tb=373.15)
+
+    # At the critical point, consider it a gas
+    assert 'g' == identify_phase(T=647.3, P=22048320.0, Tm=273.15, Psat=22048320.0, Tc=647.3)
+
+    # Just under the critical point
+    assert 'l' == identify_phase(T=647.2, P=22048320.0, Tm=273.15, Psat=22032638.96749514, Tc=647.3)
+
+
+
 def test_TDependentProperty():
     TEST_METHOD_1 = 'Test method 1'
     TEST_METHOD_2 = 'Test method 2'

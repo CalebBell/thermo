@@ -69,7 +69,7 @@ from thermo.phase_change import SMK
 from thermo.volume import COSTALD
 from chemicals.rachford_rice import (flash_inner_loop, Rachford_Rice_solutionN,
                                   Rachford_Rice_flash_error, Rachford_Rice_solution2, Rachford_Rice_solution_LN2)
-from thermo.flash_basic import flash_wilson, flash_Tb_Tc_Pc, flash_ideal
+from chemicals.flash_basic import flash_wilson, flash_Tb_Tc_Pc, flash_ideal
 from thermo.equilibrium import EquilibriumState
 from thermo.phases import Phase, gas_phases, liquid_phases, solid_phases, EOSLiquid, EOSGas, CoolPropGas, CoolPropLiquid, CoolPropPhase, GibbsExcessLiquid, IdealGas
 from thermo.phases import CPPQ_INPUTS, CPQT_INPUTS, CPrhoT_INPUTS, CPunknown, caching_state_CoolProp, CPiDmolar

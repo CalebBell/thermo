@@ -30,7 +30,7 @@ from thermo.identifiers import _MixtureDict, empty_chemical_constants
 from thermo.vapor_pressure import VaporPressure, SublimationPressure
 from chemicals.phase_change import Tb, Tm, Hfus, Tb_methods, Tm_methods, Hfus_methods
 from thermo.phase_change import EnthalpyVaporization, EnthalpySublimation
-from thermo.flash_basic import identify_phase, identify_phase_mixture, Pbubble_mixture, Pdew_mixture
+from thermo.utils import identify_phase
 
 from chemicals.critical import Tc, Pc, Vc, Tc_methods, Pc_methods, Vc_methods
 from chemicals.acentric import omega, Stiel_polar_factor, omega_methods
