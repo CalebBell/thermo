@@ -4863,7 +4863,7 @@ class FlashBase(object):
             for P in Ps:
                 try:
                     state = self.flash(T=T, P=P, zs=zs)
-                    row.append(state.phases_str)
+                    row.append(state.phase)
                 except Exception as e:
                     if verbose:
                         print([T, P, e])

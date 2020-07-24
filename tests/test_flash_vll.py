@@ -1038,6 +1038,28 @@ def write_PT_plot(fig, eos, IDs, zs, flashN):
     fig.savefig(os.path.join(path, key + '.png'))
     plt.close()
 
+
+def test_PT_plot_works():
+    # Do a small grid test to prove the thing is working.
+    IDs = ['butanol', 'water', 'ethanol']
+    zs = [.25, 0.7, .05]
+    # m = Mixture(['butanol', 'water', 'ethanol'], zs=zs)
+    constants = ChemicalConstantsPackage(Tcs=[563.0, 647.14, 514.0], Pcs=[4414000.0, 22048320.0, 6137000.0], omegas=[0.59, 0.344, 0.635], MWs=[74.1216, 18.01528, 46.06844], CASs=['71-36-3', '7732-18-5', '64-17-5'])
+    properties = PropertyCorrelationPackage(constants=constants,
+                                            HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [-3.787200194613107e-20, 1.7692887427654656e-16, -3.445247207129205e-13, 3.612771874320634e-10, -2.1953250181084466e-07, 7.707135849197655e-05, -0.014658388538054169, 1.5642629364740657, -7.614560475001724])),
+                                            HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
+                                            HeatCapacityGas(best_fit=(50.0, 1000.0, [-1.162767978165682e-20, 5.4975285700787494e-17, -1.0861242757337942e-13, 1.1582703354362728e-10, -7.160627710867427e-08, 2.5392014654765875e-05, -0.004732593693568646, 0.5072291035198603, 20.037826650765965])),],)
+    eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
+    gas = EOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=298.15, P=1e5, zs=zs)
+    liq = EOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=298.15, P=1e5, zs=zs)
+    flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
+    values = flashN.debug_PT(zs=zs, Tmin=300, Tmax=600, Pmin=1e5, Pmax=3e7, pts=3, verbose=False, show=False, values=True)
+    assert_close1d(values[0], [300., 424.2640687119287, 600], rtol=1e-12)
+    assert_close1d(values[1], [100000.0, 1732050.8075688777, 30000000.00000001], rtol=1e-12)
+    assert str(values[2]) == "[['LL', 'LL', 'LL'], ['V', 'LL', 'LL'], ['V', 'V', 'L']]"
+
+
+
 @pytest.mark.plot   
 @pytest.mark.slow   
 @pytest.mark.parametrize("eos", [PRMIX, SRKMIX, VDWMIX]) # eos_mix_list

@@ -733,6 +733,37 @@ def test_V_G_min_plot(fluid, eos):
 
 @pytest.mark.slow
 @pytest.mark.plot
+@pytest.mark.parametric
+@pytest.mark.parametrize("fluid", pure_fluids)
+@pytest.mark.parametrize("eos", eos_list)
+def test_a_alpha_plot(fluid, eos):
+    path = os.path.join(pure_surfaces_dir, fluid, "a_alpha")
+    if not os.path.exists(path):
+        os.makedirs(path)
+    key = '%s - %s - %s' %('a_alpha', eos.__name__, fluid)
+
+    if eos in (IG,):
+        plot_fig = plot_unsupported('Ideal gas has a_alpha of zero', color='g')
+        plot_fig.savefig(os.path.join(path, key + '.png'), bbox_inches='tight')
+        plt.close()
+        return
+    T, P = 298.15, 101325.0
+    fluid_idx = pure_fluids.index(fluid)
+    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
+    kwargs = dict(Tc=pure_const.Tcs[0], Pc=pure_const.Pcs[0], omega=pure_const.omegas[0])
+    
+    obj = eos(T=T, P=P, **kwargs)
+    a_alphas, plot_fig = obj.a_alpha_plot(Tmin=1e-4, Tmax=pure_const.Tcs[0]*30, pts=500,
+                                          plot=True, show=False)
+
+    plot_fig.savefig(os.path.join(path, key + '.png'))
+    plt.close()
+    # Not sure how to add error to this one
+    
+
+
+@pytest.mark.slow
+@pytest.mark.plot
 @pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("eos", eos_list)
 @pytest.mark.parametric
@@ -844,36 +875,6 @@ def test_V_error_plot(fluid, eos, P_range):
 #test_V_error_plot('hydrogen', IGMIX, 'low')
 
 
-
-@pytest.mark.slow
-@pytest.mark.plot
-@pytest.mark.parametric
-@pytest.mark.parametrize("fluid", pure_fluids)
-@pytest.mark.parametrize("eos", eos_list)
-def test_a_alpha_plot(fluid, eos):
-    path = os.path.join(pure_surfaces_dir, fluid, "a_alpha")
-    if not os.path.exists(path):
-        os.makedirs(path)
-    key = '%s - %s - %s' %('a_alpha', eos.__name__, fluid)
-
-    if eos in (IG,):
-        plot_fig = plot_unsupported('Ideal gas has a_alpha of zero', color='g')
-        plot_fig.savefig(os.path.join(path, key + '.png'), bbox_inches='tight')
-        plt.close()
-        return
-    T, P = 298.15, 101325.0
-    fluid_idx = pure_fluids.index(fluid)
-    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
-    kwargs = dict(Tc=pure_const.Tcs[0], Pc=pure_const.Pcs[0], omega=pure_const.omegas[0])
-    
-    obj = eos(T=T, P=P, **kwargs)
-    a_alphas, plot_fig = obj.a_alpha_plot(Tmin=1e-4, Tmax=pure_const.Tcs[0]*30, pts=500,
-                                          plot=True, show=False)
-
-    plot_fig.savefig(os.path.join(path, key + '.png'))
-    plt.close()
-    
-    
 #### Ideal property package - dead out of the gate, second T derivative of V is zero - breaks requirements
 @pytest.mark.plot
 @pytest.mark.slow

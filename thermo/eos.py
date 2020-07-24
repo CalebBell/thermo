@@ -1729,7 +1729,7 @@ class GCEOS(object):
                 Tc = self.pseudo_Tc
             else:
                 Tc = self.Tc
-        Tmax = Tc*10
+            Tmax = Tc*10
 
         Ts = logspace(log10(Tmin), log10(Tmax), pts)
 
