@@ -186,7 +186,7 @@ def test_Mixture_VF_input():
 def test_bubble_at_P_with_ideal_mixing():
     '''Check to see if the bubble pressure calculated from the temperature
     matches the temperature calculated by the test function'''
-    from thermo.flash_basic import flash_ideal
+    from chemicals.flash_basic import flash_ideal
 
     test_mix = Mixture(['ethylene oxide',
                         'tetrahydrofuran',

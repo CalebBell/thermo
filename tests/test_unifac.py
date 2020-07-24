@@ -213,7 +213,7 @@ def test_UNIFAC_psi():
 
 def test_UNIFAC_flash_1():
     from chemicals.rachford_rice import flash_inner_loop
-    from thermo.flash_basic import K_value
+    from chemicals.flash_basic import K_value
     def flash_UNIFAC_sequential_substitution(T, P, zs, Psats, chemgroups):
         gammas = UNIFAC_gammas(chemgroups=chemgroups, T=T, xs=zs)
         Ks = [K_value(P=P, Psat=Psat, gamma=gamma) for Psat, gamma in zip(Psats, gammas)]
