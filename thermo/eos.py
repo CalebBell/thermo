@@ -53,6 +53,66 @@ R_2 = 0.5*R
 R_inv = 1.0/R
 R_inv2 = R_inv*R_inv
 
+try:
+    from doubledouble import DoubleDouble
+    
+    def imag_div_dd(x0, x1, y0, y1):
+        a, b, c, d = x0, x1, y0, y1
+        den_inv = 1/(c*c + d*d)
+        real = (a*c + b*d)*den_inv
+        comp = (b*c - a*d)*den_inv
+        return real, comp
+    
+    def imag_mult_dd(x0, x1, y0, y1):
+        x, y, u, v = x0, x1, y0, y1
+        return x*u - y*v, x*v + y*u
+    
+    def imag_add_dd(x0, x1, y0, y1):
+        return x0 + y0, x1+y1
+    
+    third_dd = (DoubleDouble(1)/DoubleDouble(3))
+    sqrt3_dd = DoubleDouble(1.7320508075688772, 1.0035084221806902e-16) # DoubleDouble(3).root(2)
+    sqrt3_quarter_dd = DoubleDouble(0.4330127018922193, 2.5087710554517254e-17)
+    quarter_dd = DoubleDouble(1)/DoubleDouble(4)
+    
+    
+    def cbrt_dd(x):
+        # http://web.mit.edu/tabbott/Public/quaddouble-debian/qd-2.3.4-old/docs/qd.pdf
+        # start off with a "good" guess
+        y = 1/DoubleDouble(float(x)**(1.0/3.))
+        y = y + third_dd*y*(1-x*y*y*y)
+        y = y + third_dd*y*(1-x*y*y*y)
+    #     y = y + third_dd*y*(1-x*y*y*y)
+        return 1/y
+    
+    
+    def imag_cbrt_dd(xr, xc):
+        y_guess = (float(xr)+float(xc)*1.0j)**(-1.0/3.)
+        
+        yr, yc = DoubleDouble(y_guess.real), DoubleDouble(y_guess.imag)
+    #     print(repr(yr), repr(yc))
+        t0r, t0c = imag_mult_dd(yr, yc, yr, yc) # have y*y
+        t0r, t0c = imag_mult_dd(t0r, t0c, yr, yc) # have y*y*y
+        t0r, t0c = imag_mult_dd(xr, xc, t0r, t0c) # have x*y*y*y
+        t0r, t0c = imag_add_dd(1.0, 0.0, -t0r, -t0c) # have 1-x*y*y*y
+        t0r, t0c = imag_mult_dd(yr, yc, t0r, t0c) # have y*(1-x*y*y*y)
+        t0r, t0c = imag_mult_dd(third_dd, 0.0, t0r, t0c) # have third_dd*y*(1-x*y*y*y)
+        yr, yc = imag_add_dd(yr, yc, t0r, t0c) # have y
+        
+    #     print(repr(yr), repr(yc))
+        
+#        t0r, t0c = imag_mult_dd(yr, yc, yr, yc) # have y*y
+#        t0r, t0c = imag_mult_dd(t0r, t0c, yr, yc) # have y*y*y
+#        t0r, t0c = imag_mult_dd(xr, xc, t0r, t0c) # have x*y*y*y
+#        t0r, t0c = imag_add_dd(1.0, 0.0, -t0r, -t0c) # have 1-x*y*y*y
+#        t0r, t0c = imag_mult_dd(yr, yc, t0r, t0c) # have y*(1-x*y*y*y)
+#        t0r, t0c = imag_mult_dd(third_dd, 0.0, t0r, t0c) # have third_dd*y*(1-x*y*y*y)
+#        yr, yc = imag_add_dd(yr, yc, t0r, t0c) # have y
+        
+        return imag_div_dd(1.0, 0.0, yr, yc)
+except:
+    pass
+
 class GCEOS(object):
     r'''Class for solving a generic Pressure-explicit three-parameter cubic
     equation of state. Does not implement any parameters itself; must be
@@ -939,6 +999,92 @@ class GCEOS(object):
                      -(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)/(3*(-1/2 + sqrt(3)*1j/2)*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)) - (-1/2 + sqrt(3)*1j/2)*(sqrt(-4*(-3*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P + (-P*b + P*delta - R*T)**2/P**2)**3 + (27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/P - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/P**2 + 2*(-P*b + P*delta - R*T)**3/P**3)**2)/2 + 27*(-P*b*epsilon - R*T*epsilon - a_alpha*b)/(2*P) - 9*(-P*b + P*delta - R*T)*(-P*b*delta + P*epsilon - R*T*delta + a_alpha)/(2*P**2) + (-P*b + P*delta - R*T)**3/P**3)**(1/3)/3 - (-P*b + P*delta - R*T)/(3*P)]
 
     @staticmethod
+    def volume_solutions_doubledouble(T, P, b, delta, epsilon, a_alpha, quick=True):
+#        print(T, P, b, delta, epsilon, a_alpha)
+        T = DoubleDouble(T)
+        P = DoubleDouble(P)
+        b = DoubleDouble(b)
+        delta = DoubleDouble(delta)
+        epsilon = DoubleDouble(epsilon)
+        delta = DoubleDouble(delta)
+        R = DoubleDouble(8.31446261815324)
+        x0 = 1/P
+        x1 = P*b
+        x2 = R*T
+        x3 = P*delta
+        x4 = x1 + x2 - x3
+        x5 = x0*x4
+        x22 = x5 + x5
+        x6 = a_alpha*b
+        x7 = epsilon*x1
+        x8 = epsilon*x2
+        x9 = x0*x0
+        x10 = P*epsilon
+        x11 = delta*x1
+        x12 = delta*x2
+        x17 = -x4
+        x17_2 = x17*x17
+        x18 = x0*x17_2
+        tm1 = x12 - a_alpha + (x11  - x10)
+        t0 = x6 + x7 + x8
+        t1 = (3*tm1  + x18)
+        t2 = ((9*x0*x17*tm1) + 2*x17_2*x17*x9  - 27*t0)
+
+        x4x9  = x4*x9
+#        print('x9, x0, t1, t2', float(x9), float(x0), float(t1), float(t2))
+        
+        to_sqrt = x9*(-4*t1*t1*t1*x0 + t2*t2)
+#        print('to_sqrt', float(to_sqrt))
+        if to_sqrt < 0.0:
+            sqrted = (-to_sqrt).sqrt()
+            imag_rt = True
+        else:
+            sqrted = (to_sqrt).sqrt()
+            imag_rt = False
+            
+        easy_adds = -13.5*x0*t0 - 4.5*x4x9*tm1 - x4*x4x9*x5
+        if imag_rt:
+            v0r, v0c = easy_adds, 0.5*sqrted
+        else:
+            v0r, v0c = easy_adds + 0.5*sqrted, 0.0
+            
+        x19r, x19c = imag_cbrt_dd(v0r, v0c)
+        x20r, x20c = imag_div_dd(-t1, -0.0, x19r, x19c)
+
+        f0r, f0c = imag_mult_dd(x20r, x20c, x0, 0.0)
+        x25r, x25c = 4.0*f0r, 4.0*f0c
+
+        x24r, x24c = 1, sqrt3_dd
+        x24_invr, x24_invc = quarter_dd, -sqrt3_quarter_dd
+#        x26 = -1.73205080756887729352744634151j + 1.
+        x26r, x26c = 1, -sqrt3_dd
+#        x26_inv = 0.25 + 0.433012701892219323381861585376j
+        x26_invr, x26_invc = quarter_dd, sqrt3_quarter_dd
+        
+        g0 = float(f0r - x19r + x5)
+        g1 = float(f0c - x19c)
+        
+        f1r, f1c = imag_mult_dd(x19r, x19c, x24r, x24c)
+        f2r, f2c = imag_mult_dd(x25r, x25c, x24_invr, x24_invc)
+#        f2 = x25*x24_inv
+        g2 = float(f1r + x22 - f2r)
+        g3 = float(f1c - f2c)
+        
+#        f3 = x19*x26
+        f3r, f3c = imag_mult_dd(x19r, x19c, x26r, x26c)
+        f4r, f4c = imag_mult_dd(x25r, x25c, x26_invr, x26_invc) #x25*x26_inv
+        
+        g4 = float(f3r + x22 - f4r)
+        g5 = float(f3c - f4c)
+        return [(g0 + g1*1j)*third,
+                (g2 + g3*1j)*sixth,
+                (g4 + g5*1j)*sixth]
+#        return [(g0 + g1*1j)*third,
+#                (g2 + g3*1j)*sixth,
+##                (x19*x24 + x22 - x25*x24_inv)*sixth,
+#                (x19*x26 + x22 - x25*x26_inv)*sixth]
+
+    @staticmethod
     def volume_solutions_Cardano(T, P, b, delta, epsilon, a_alpha, quick=True):
         RT_inv = R_inv/T
         P_RT_inv = P*RT_inv
@@ -1247,7 +1393,8 @@ class GCEOS(object):
         return Vs
 
     # Default method
-    volume_solutions = volume_solutions_NR#_volume_solutions_numpy#volume_solutions_NR
+    volume_solutions = volume_solutions_doubledouble
+#    volume_solutions = volume_solutions_NR#_volume_solutions_numpy#volume_solutions_NR
 #    volume_solutions= _volume_solutions_numpy
 #    volume_solutions = volume_solutions_fast
 #    volume_solutions = volume_solutions_Cardano
@@ -1388,7 +1535,7 @@ class GCEOS(object):
                     pass
 #            roots = np.roots([1.0, b, c, d]).tolist()
             if roots is not None:
-                RT_P = R*T/P
+                RT_P = mp.mpf(R)*T/P
                 hits = [V*RT_P for V in roots]
 
         if roots is None:

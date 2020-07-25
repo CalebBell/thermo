@@ -1997,6 +1997,10 @@ class EnergyStream(object):
     Q = None
     medium = None
     Hm = None
+    
+    def copy(self):
+        return EnergyStream(Q=self.Q, medium=self.medium)
+    
     def __repr__(self):
         return '<Energy stream, Q=%s W, medium=%s>' %(self.Q, self.medium.value)
     

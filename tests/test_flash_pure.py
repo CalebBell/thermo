@@ -30,11 +30,13 @@ import json
 import os
 import numpy as np
 from thermo.test_utils import *
+import sys
 try:
     import matplotlib.pyplot as plt
 except:
     pass
 
+PY2 = sys.version[0] == '2'
 pure_surfaces_dir = os.path.join(thermo.thermo_dir, '..', 'surfaces', 'pure')
 
 pure_fluids = ['water', 'methane', 'ethane', 'decane', 'ammonia', 'nitrogen', 'oxygen', 'methanol', 'eicosane', 'hydrogen']
@@ -847,6 +849,32 @@ def test_V_error_plot(fluid, eos, P_range):
     kwargs = dict(Tc=pure_const.Tcs[0], Pc=pure_const.Pcs[0], omega=pure_const.omegas[0])
     
     
+    # Caching layer
+#    orig_func = GCEOS.volume_solutions_mpmath
+        
+    mem_cache = {}
+    
+    did_new_dat = [False]
+    
+#    @staticmethod
+#    def cache_persistent(*args):
+#        if args in mem_cache:
+#            return mem_cache[args]
+#        ans = orig_func(*args)
+#        mem_cache[args] = ans
+#        did_new_dat[0] = True
+#        return ans
+#    
+#    if not PY2:
+#        GCEOS.volume_solutions_mpmath = cache_persistent 
+#    else:
+#        setattr(GCEOS, 'volume_solutions_mpmath', cache_persistent)
+    # Cannot use json - key is a tuple which json does not support.
+    import pickle
+    try:
+        mem_cache = pickle.load(open(os.path.join(path, key + '.dat'), 'r'))
+    except:
+        pass
     
     if P_range == 'high':
         Pmin = 1e-2
@@ -854,13 +882,34 @@ def test_V_error_plot(fluid, eos, P_range):
     elif P_range == 'low':
         Pmax = 1e-2
         Pmin = 1e-60
-#    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
-    obj = eos(T=T, P=P, **kwargs)
+    
+    class VolumeWrapper(eos):
+        @staticmethod
+        def volume_solutions_mpmath(*args):
+            if args in mem_cache:
+                return mem_cache[args]
+            Vs = GCEOS.volume_solutions_mpmath(*args)
+            mem_cache[args] = Vs
+            did_new_dat[0] = True
+            return [float(Vi.real) + float(Vi.imag)*1.0j for Vi in Vs]
+        
+        
+    obj = VolumeWrapper(T=T, P=P, **kwargs)
+#    try:
     errs, plot_fig = obj.volume_errors(plot=True, show=False, pts=50,
                                        Tmin=1e-4, Tmax=1e4, Pmin=Pmin, Pmax=Pmax,
                                        trunc_err_low=1e-15, color_map=cm_flash_tol())
-
-    
+#    except Exception as e:
+#        if not PY2:
+#            GCEOS.volume_solutions_mpmath = orig_func
+#        else:
+#            setattr(GCEOS, 'volume_solutions_mpmath', orig_func)
+#        raise e
+#
+#    if not PY2:
+#        GCEOS.volume_solutions_mpmath = orig_func
+#    else:
+#        setattr(GCEOS, 'volume_solutions_mpmath', orig_func)
         
     plot_fig.savefig(os.path.join(path, key + '.png'))
     plt.close()
@@ -868,9 +917,15 @@ def test_V_error_plot(fluid, eos, P_range):
     
     max_err = np.max(errs)
     assert max_err < 1e-10
+    
+    if did_new_dat[0]:
+        pickle.dump(mem_cache, open(os.path.join(path, key + '.dat'), 'wb'), protocol=2)
+        
 
-#test_V_error_plot('ethane', PR, 'high')
-#test_V_error_plot('decane', PR, 'high')
+test_V_error_plot('ethane', SRK, 'low')
+#test_V_error_plot('ethane', SRK, 'high')
+#test_V_error_plot('decane', SRK, 'high')
+#test_V_error_plot('hydrogen', SRK, 'high')
 #test_V_error_plot('hydrogen', TWUSRKMIX, 'high')
 #test_V_error_plot('hydrogen', IGMIX, 'low')
 
