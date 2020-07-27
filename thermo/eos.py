@@ -113,6 +113,23 @@ try:
 except:
     pass
 
+def deflate_cubic(b, c, d, x0):
+    F = b + x0
+    G = -d/x0
+    
+    D = F*F - 4.0*G
+#     if D < 0.0:
+#         D = (-D)**0.5
+#         x1 = (-F + D*1.0j)*0.5
+#         x2 = (-F - D*1.0j)*0.5
+#     else:
+    if D < 0.0:
+        return (0.0, 0.0)
+    D = D**0.5
+    x1 = 0.5*(D - F)#(D - c)*0.5
+    x2 = 0.5*(-F - D) #-(c + D)*0.5
+    return x1, x2
+
 class GCEOS(object):
     r'''Class for solving a generic Pressure-explicit three-parameter cubic
     equation of state. Does not implement any parameters itself; must be
@@ -376,6 +393,7 @@ class GCEOS(object):
             self.phase = 'l/g'
         else:
             # Even in the case of three real roots, it is still the min/max that make sense
+            print([self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha, 'coordinates of failure'])
             raise Exception('No acceptable roots were found; the roots are %s, T is %s K, P is %s Pa, a_alpha is %s, b is %s' %(str(Vs), str(self.T), str(self.P), str([self.a_alpha]), str([self.b])))
 
 
@@ -1005,6 +1023,7 @@ class GCEOS(object):
         P = DoubleDouble(P)
         b = DoubleDouble(b)
         delta = DoubleDouble(delta)
+        a_alpha = DoubleDouble(a_alpha)
         epsilon = DoubleDouble(epsilon)
         delta = DoubleDouble(delta)
         R = DoubleDouble(8.31446261815324)
@@ -1033,7 +1052,7 @@ class GCEOS(object):
         x4x9  = x4*x9
 #        print('x9, x0, t1, t2', float(x9), float(x0), float(t1), float(t2))
         
-        to_sqrt = x9*(-4*t1*t1*t1*x0 + t2*t2)
+        to_sqrt = x9*(-4*t1*t1*t1*x0 + t2*t2) # For low P, this value overflows. No ideas how to compute and not interested in it.
 #        print('to_sqrt', float(to_sqrt))
         if to_sqrt < 0.0:
             sqrted = (-to_sqrt).sqrt()
@@ -1067,7 +1086,7 @@ class GCEOS(object):
         f1r, f1c = imag_mult_dd(x19r, x19c, x24r, x24c)
         f2r, f2c = imag_mult_dd(x25r, x25c, x24_invr, x24_invc)
 #        f2 = x25*x24_inv
-        g2 = float(f1r + x22 - f2r)
+        g2 = float(f1r + x22 - f2r) # try to take away decimals anywhere and more error appears.
         g3 = float(f1c - f2c)
         
 #        f3 = x19*x26
@@ -1083,6 +1102,85 @@ class GCEOS(object):
 #                (g2 + g3*1j)*sixth,
 ##                (x19*x24 + x22 - x25*x24_inv)*sixth,
 #                (x19*x26 + x22 - x25*x26_inv)*sixth]
+
+    @staticmethod
+    def volume_solutions_doubledouble_inline(T, P, b, delta, epsilon, a_alpha, quick=True):
+        T = DoubleDouble(T)
+        P = DoubleDouble(P)
+        b = DoubleDouble(b)
+        delta = DoubleDouble(delta)
+        a_alpha = DoubleDouble(a_alpha)
+        epsilon = DoubleDouble(epsilon)
+        delta = DoubleDouble(delta)
+        R = DoubleDouble(8.31446261815324)
+        x0 = 1/P
+        x1 = P*b
+        
+        x2 = R*T
+        
+        
+        x3 = P*delta
+        x4 = x1 + x2 - x3
+        x5 = x0*x4
+        x22 = x5 + x5
+        x6 = a_alpha*b
+        x7 = epsilon*x1
+        x8 = epsilon*x2
+        x9 = x0*x0
+        x10 = P*epsilon
+        x11 = delta*x1
+        x12 = delta*x2
+        x17 = -x4
+        x17_2 = x17*x17
+        x18 = x0*x17_2
+        tm1 = x12 - a_alpha + (x11  - x10)
+        t0 = x6 + x7 + x8
+        t1 = (3*tm1  + x18)
+        t2 = ((9*x0*x17*tm1) + 2*x17_2*x17*x9  - 27*t0)
+
+        x4x9  = x4*x9
+        
+        to_sqrt = x9*(-4*t1*t1*t1*x0 + t2*t2) # For low P, this value overflows. No ideas how to compute and not interested in it.
+        if to_sqrt < 0.0:
+            sqrted = (-to_sqrt).sqrt()
+            imag_rt = True
+        else:
+            sqrted = (to_sqrt).sqrt()
+            imag_rt = False
+            
+        easy_adds = -13.5*x0*t0 - 4.5*x4x9*tm1 - x4*x4x9*x5
+        if imag_rt:
+            v0r, v0c = easy_adds, 0.5*sqrted
+        else:
+            v0r, v0c = easy_adds + 0.5*sqrted, 0.0
+            
+        x19r, x19c = imag_cbrt_dd(v0r, v0c)
+        x20r, x20c = imag_div_dd(-t1, -0.0, x19r, x19c)
+
+        f0r, f0c = imag_mult_dd(x20r, x20c, x0, 0.0)
+        x25r, x25c = 4.0*f0r, 4.0*f0c
+
+        x24r, x24c = 1, sqrt3_dd
+        x24_invr, x24_invc = quarter_dd, -sqrt3_quarter_dd
+        x26r, x26c = 1, -sqrt3_dd
+        x26_invr, x26_invc = quarter_dd, sqrt3_quarter_dd
+        
+        g0 = float(f0r - x19r + x5)
+        g1 = float(f0c - x19c)
+        
+        f1r, f1c = imag_mult_dd(x19r, x19c, x24r, x24c)
+        f2r, f2c = imag_mult_dd(x25r, x25c, x24_invr, x24_invc)
+        g2 = float(f1r + x22 - f2r)
+        g3 = float(f1c - f2c)
+        
+        f3r, f3c = imag_mult_dd(x19r, x19c, x26r, x26c)
+        f4r, f4c = imag_mult_dd(x25r, x25c, x26_invr, x26_invc)
+        
+        g4 = float(f3r + x22 - f4r)
+        g5 = float(f3c - f4c)
+        return [(g0 + g1*1j)*third,
+                (g2 + g3*1j)*sixth,
+                (g4 + g5*1j)*sixth]
 
     @staticmethod
     def volume_solutions_Cardano(T, P, b, delta, epsilon, a_alpha, quick=True):
@@ -1236,8 +1334,131 @@ class GCEOS(object):
 #            print('root fail', ratio, [b, c, d])
 #
 #        return [V*RT_P for V in roots]
+    
+    @staticmethod
+    def volume_solutions_H(T, P, b, delta, epsilon, a_alpha, quick=True):
+        if a_alpha == 0.0:
+            return [b + R*T/P, -1j, -1j]
+        if P < 1e-2:
+        # if 0 or (0 and ((T < 1e-2 and P > 1e6) or (P < 1e-3 and T < 1e-2) or (P < 1e-1 and T < 1e-4) or P < 1)):
+            # Not perfect but so much wasted dev time need to move on, try other fluids and move this tolerance up if needed
+            # if P < min(GCEOS.P_discriminant_zeros_analytical(T=T, b=b, delta=delta, epsilon=epsilon, a_alpha=a_alpha, valid=True)):
+                # TODO - need function that returns range two solutions are available!
+                # Very important because the below strategy only works for that regime.
+            if T > 1e-2 or 1:
+                try:
+                    return GCEOS.volume_solutions_NR_low_P(T, P, b, delta, epsilon, a_alpha)
+                except Exception as e:
+                    print(e, 'was not 2 phase')
 
-
+            try:
+                return GCEOS.volume_solutions_mpmath_float(T, P, b, delta, epsilon, a_alpha)
+            except:
+                pass
+            
+        RT = R*T
+        RT_2 = RT + RT
+        a_alpha_2 = a_alpha + a_alpha
+        P_inv = 1.0/P
+    #     Vs = [R*T*P_inv, b*1.000001]
+        damping = 1.0
+        V0, V1 = 0.0, 0.0
+        for i in range(3):
+            if i == 0:
+                V = Vi = R*T*P_inv
+            elif i == 1:
+                V = Vi = b*1.000001
+            elif i == 2:
+                V = Vi = b*20
+            fval_oldold = 1.0
+            fval_old = 0.0
+            for j in range(50):
+                x0_inv = 1.0/(V - b)
+                x1_inv = 1.0/(V*(V + delta) + epsilon)
+                x2 = V + V + delta
+                fval = -P + RT*x0_inv - a_alpha*x1_inv
+                x0_inv2 = x0_inv*x0_inv # make it 1/x0^2
+                x1_inv2 = x1_inv*x1_inv # make it 1/x1^2
+                x3 = a_alpha*x1_inv2
+                fder = x2*x3 - RT*x0_inv2
+                fder2 = RT_2*x0_inv2*x0_inv - a_alpha_2*x2*x2*x1_inv2*x1_inv + x3 + x3
+    
+                fder_inv = 1.0/fder
+                step = fval*fder_inv
+                V = V - step/(1.0 - 0.5*step*fder2*fder_inv)*damping
+                
+                rel_err = abs(fval*P_inv)
+    #             print(fval*P_inv, rel_err, i)
+                if (rel_err < 3e-15 or V == Vi or fval_old == fval or fval == fval_oldold
+                    or (j > 10 and rel_err < 1e-12)):
+                    # Conditional check probably not worth it
+                    break
+                fval_oldold, fval_old = fval_old, fval
+    
+    #         if i == 0:
+    #             V0 = V
+    #         elif i == 1:
+    #             V1 = V
+            if j != 49:
+                RT_inv = R_inv/T
+                P_RT_inv = P*RT_inv
+                B = etas = b*P_RT_inv
+                deltas = delta*P_RT_inv
+                thetas = a_alpha*P_RT_inv*RT_inv
+                epsilons = epsilon*P_RT_inv*P_RT_inv
+    
+                b2 = (deltas - B - 1.0)
+                c2 = (thetas + epsilons - deltas*(B + 1.0))
+                d2 = -(epsilons*(B + 1.0) + thetas*etas)
+                
+                RT_P = R*T/P
+                V0 = V
+                
+                x1, x2 = deflate_cubic(b2, c2, d2, V/RT_P)
+                if x1 == 0.0:
+                    return (V0, 1.0j, 1.0j)
+                V1 = x1*RT_P
+                V2 = x2*RT_P
+    #             print(V1, V2, 'deflated Vs')
+                
+                # Take a step with V1
+                V = V1
+                x0_inv = 1.0/(V - b)
+                t90 = V*(V + delta) + epsilon
+                if t90 != 0.0:
+                    x1_inv = 1.0/(V*(V + delta) + epsilon)
+                    x2 = V + V + delta
+                    fval = -P + RT*x0_inv - a_alpha*x1_inv
+                    x0_inv2 = x0_inv*x0_inv # make it 1/x0^2
+                    x1_inv2 = x1_inv*x1_inv # make it 1/x1^2
+                    x3 = a_alpha*x1_inv2
+                    fder = x2*x3 - RT*x0_inv2
+                    fder2 = RT_2*x0_inv2*x0_inv - a_alpha_2*x2*x2*x1_inv2*x1_inv + x3 + x3
+    
+                    fder_inv = 1.0/fder
+                    step = fval*fder_inv
+                    V1 = V - step/(1.0 - 0.5*step*fder2*fder_inv)*damping
+                
+                # Take a step with V2
+                V = V2
+                x0_inv = 1.0/(V - b)
+                t90 = V*(V + delta) + epsilon
+                if t90 != 0.0:
+                    x1_inv = 1.0/(t90)
+                    x2 = V + V + delta
+                    fval = -P + RT*x0_inv - a_alpha*x1_inv
+                    x0_inv2 = x0_inv*x0_inv # make it 1/x0^2
+                    x1_inv2 = x1_inv*x1_inv # make it 1/x1^2
+                    x3 = a_alpha*x1_inv2
+                    fder = x2*x3 - RT*x0_inv2
+                    fder2 = RT_2*x0_inv2*x0_inv - a_alpha_2*x2*x2*x1_inv2*x1_inv + x3 + x3
+    
+                    fder_inv = 1.0/fder
+                    step = fval*fder_inv
+                    V2 = V - step/(1.0 - 0.5*step*fder2*fder_inv)*damping
+                return (V0, V1, V2)
+        return (0.0, 0.0, 0.0)
+        
     @staticmethod
     def volume_solutions_NR(T, P, b, delta, epsilon, a_alpha, quick=True, tries=0):
         '''Even if mpmath is used for greater precision in the calculated root,
@@ -1393,11 +1614,13 @@ class GCEOS(object):
         return Vs
 
     # Default method
-    volume_solutions = volume_solutions_doubledouble
+#    volume_solutions = volume_solutions_doubledouble
+#    volume_solutions = volume_solutions_doubledouble_inline
 #    volume_solutions = volume_solutions_NR#_volume_solutions_numpy#volume_solutions_NR
 #    volume_solutions= _volume_solutions_numpy
 #    volume_solutions = volume_solutions_fast
 #    volume_solutions = volume_solutions_Cardano
+    volume_solutions = volume_solutions_H
 
     @staticmethod
     def volume_solutions_NR_low_P(T, P, b, delta, epsilon, a_alpha, quick=True,
@@ -1724,7 +1947,7 @@ class GCEOS(object):
                 else:
                     val = float(obj.volume_error())
                     if val > 1e-7:
-                        print([T, P])
+                        print([obj.T, obj.P, obj.b, obj.delta, obj.epsilon, obj.a_alpha, 'coordinates of failure'])
                 err_row.append(val)
             errs.append(err_row)
 

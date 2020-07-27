@@ -827,7 +827,8 @@ def test_Psat_plot(fluid, eos):
 @pytest.mark.parametric
 @pytest.mark.parametrize("fluid", pure_fluids)
 @pytest.mark.parametrize("eos", eos_list)
-@pytest.mark.parametrize("P_range", ['high', 'low'])
+#@pytest.mark.parametrize("P_range", ['high', 'low'])
+@pytest.mark.parametrize("P_range", ['high'])
 def test_V_error_plot(fluid, eos, P_range):
     path = os.path.join(pure_surfaces_dir, fluid, "V_error")
     if not os.path.exists(path):
@@ -922,7 +923,8 @@ def test_V_error_plot(fluid, eos, P_range):
         pickle.dump(mem_cache, open(os.path.join(path, key + '.dat'), 'wb'), protocol=2)
         
 
-test_V_error_plot('ethane', SRK, 'low')
+#test_V_error_plot('ethane', SRK, 'low')
+#test_V_error_plot('hydrogen', PR, 'high')
 #test_V_error_plot('ethane', SRK, 'high')
 #test_V_error_plot('decane', SRK, 'high')
 #test_V_error_plot('hydrogen', SRK, 'high')
