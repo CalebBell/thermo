@@ -253,7 +253,9 @@ class Mixture(object):
     isentropic_exponent
     isentropic_exponents
     isobaric_expansion
+    isobaric_expansion_g
     isobaric_expansion_gs
+    isobaric_expansion_l
     isobaric_expansion_ls
     IUPAC_names
     JT
@@ -364,8 +366,6 @@ class Mixture(object):
     conductivity = None
     Hm = None
     H = None
-    isobaric_expansion_g = None
-    isobaric_expansion_l = None
 
     def __repr__(self):
         return '<Mixture, components=%s, mole fractions=%s, T=%.2f K, P=%.0f \
@@ -2399,6 +2399,44 @@ Pa>' % (self.names, [round(i,4) for i in self.zs], self.T, self.P)
         0.34074205839222449
         '''
         return phase_select_property(phase=self.phase, l=self.isobaric_expansion_l, g=self.isobaric_expansion_g)
+
+    @property
+    def isobaric_expansion_g(self):
+        r'''Isobaric (constant-pressure) expansion of the gas phase of the
+        mixture at its current temperature and pressure, in units of [1/K].
+        Available only if single phase.
+
+        .. math::
+            \beta = \frac{1}{V}\left(\frac{\partial V}{\partial T} \right)_P
+
+        Examples
+        --------
+        >>> Mixture(['argon'], ws=[1], T=647.1, P=22048320.0).isobaric_expansion_g
+        0.0015661100323025273
+        '''
+        dV_dT = self.VolumeGasMixture.property_derivative_T(self.T, self.P, self.zs, self.ws)
+        Vm = self.Vmg
+        if dV_dT and Vm:
+            return isobaric_expansion(V=Vm, dV_dT=dV_dT)
+
+    @property
+    def isobaric_expansion_l(self):
+        r'''Isobaric (constant-pressure) expansion of the liquid phase of the
+        mixture at its current temperature and pressure, in units of [1/K].
+        Available only if single phase.
+
+        .. math::
+            \beta = \frac{1}{V}\left(\frac{\partial V}{\partial T} \right)_P
+
+        Examples
+        --------
+        >>> Mixture(['argon'], ws=[1], T=647.1, P=22048320.0).isobaric_expansion_l
+        0.001859152875154442
+        '''
+        dV_dT = self.VolumeLiquidMixture.property_derivative_T(self.T, self.P, self.zs, self.ws)
+        Vm = self.Vml
+        if dV_dT and Vm:
+            return isobaric_expansion(V=Vm, dV_dT=dV_dT)
 
     @property
     def JT(self):
