@@ -1338,8 +1338,8 @@ class GCEOS(object):
     @staticmethod
     def volume_solutions_H(T, P, b, delta, epsilon, a_alpha, quick=True):
         if a_alpha == 0.0:
-            return [b + R*T/P, -1j, -1j]
-        if P < 1e-2:
+            return (b + R*T/P, 0.0, 0.0)
+        if P < 1e-2 or a_alpha < 1e-9:
         # if 0 or (0 and ((T < 1e-2 and P > 1e6) or (P < 1e-3 and T < 1e-2) or (P < 1e-1 and T < 1e-4) or P < 1)):
             # Not perfect but so much wasted dev time need to move on, try other fluids and move this tolerance up if needed
             # if P < min(GCEOS.P_discriminant_zeros_analytical(T=T, b=b, delta=delta, epsilon=epsilon, a_alpha=a_alpha, valid=True)):
@@ -1347,7 +1347,7 @@ class GCEOS(object):
                 # Very important because the below strategy only works for that regime.
             if T > 1e-2 or 1:
                 try:
-                    return GCEOS.volume_solutions_NR_low_P(T, P, b, delta, epsilon, a_alpha)
+                    return GCEOS.volume_solutions_NR(T, P, b, delta, epsilon, a_alpha)
                 except Exception as e:
                     print(e, 'was not 2 phase')
 
@@ -1360,12 +1360,25 @@ class GCEOS(object):
         RT_2 = RT + RT
         a_alpha_2 = a_alpha + a_alpha
         P_inv = 1.0/P
-    #     Vs = [R*T*P_inv, b*1.000001]
-        damping = 1.0
+    
+        RT_inv = R_inv/T
+        P_RT_inv = P*RT_inv
+        B = etas = b*P_RT_inv
+        deltas = delta*P_RT_inv
+        thetas = a_alpha*P_RT_inv*RT_inv
+        epsilons = epsilon*P_RT_inv*P_RT_inv
+    
+        b2 = (deltas - B - 1.0)
+        c2 = (thetas + epsilons - deltas*(B + 1.0))
+        d2 = -(epsilons*(B + 1.0) + thetas*etas)
+        RT_P = RT*P_inv
+        
         V0, V1 = 0.0, 0.0
         for i in range(3):
             if i == 0:
-                V = Vi = R*T*P_inv
+                V = Vi = -RT_P*d2/c2#R*T*P_inv
+                if V <= b:
+                    V = b*1.000001 # avoid a division by zero
             elif i == 1:
                 V = Vi = b*1.000001
             elif i == 2:
@@ -1373,10 +1386,11 @@ class GCEOS(object):
             fval_oldold = 1.0
             fval_old = 0.0
             for j in range(50):
+    #             print(j, V)
                 x0_inv = 1.0/(V - b)
                 x1_inv = 1.0/(V*(V + delta) + epsilon)
                 x2 = V + V + delta
-                fval = -P + RT*x0_inv - a_alpha*x1_inv
+                fval = RT*x0_inv - P - a_alpha*x1_inv
                 x0_inv2 = x0_inv*x0_inv # make it 1/x0^2
                 x1_inv2 = x1_inv*x1_inv # make it 1/x1^2
                 x3 = a_alpha*x1_inv2
@@ -1385,10 +1399,13 @@ class GCEOS(object):
     
                 fder_inv = 1.0/fder
                 step = fval*fder_inv
-                V = V - step/(1.0 - 0.5*step*fder2*fder_inv)*damping
-                
                 rel_err = abs(fval*P_inv)
-    #             print(fval*P_inv, rel_err, i)
+    #             print(fval, rel_err, i, step)
+                step_den = 1.0 - 0.5*step*fder2*fder_inv
+                if step_den == 0.0:
+                    continue
+                V = V - step/step_den
+                
                 if (rel_err < 3e-15 or V == Vi or fval_old == fval or fval == fval_oldold
                     or (j > 10 and rel_err < 1e-12)):
                     # Conditional check probably not worth it
@@ -1400,28 +1417,18 @@ class GCEOS(object):
     #         elif i == 1:
     #             V1 = V
             if j != 49:
-                RT_inv = R_inv/T
-                P_RT_inv = P*RT_inv
-                B = etas = b*P_RT_inv
-                deltas = delta*P_RT_inv
-                thetas = a_alpha*P_RT_inv*RT_inv
-                epsilons = epsilon*P_RT_inv*P_RT_inv
-    
-                b2 = (deltas - B - 1.0)
-                c2 = (thetas + epsilons - deltas*(B + 1.0))
-                d2 = -(epsilons*(B + 1.0) + thetas*etas)
-                
-                RT_P = R*T/P
                 V0 = V
                 
-                x1, x2 = deflate_cubic(b2, c2, d2, V/RT_P)
+                x1, x2 = deflate_cubic(b2, c2, d2, V*P_RT_inv)
                 if x1 == 0.0:
-                    return (V0, 1.0j, 1.0j)
+                    return (V0, 0.0, 0.0)
+                # 8 divisions only for polishing
                 V1 = x1*RT_P
                 V2 = x2*RT_P
     #             print(V1, V2, 'deflated Vs')
                 
-                # Take a step with V1
+                # Fixed a lot of really bad points in the plots with these.
+                # Article suggests they are not needed, but 1 is better than 11 iterations!
                 V = V1
                 x0_inv = 1.0/(V - b)
                 t90 = V*(V + delta) + epsilon
@@ -1437,7 +1444,7 @@ class GCEOS(object):
     
                     fder_inv = 1.0/fder
                     step = fval*fder_inv
-                    V1 = V - step/(1.0 - 0.5*step*fder2*fder_inv)*damping
+                    V1 = V - step/(1.0 - 0.5*step*fder2*fder_inv)
                 
                 # Take a step with V2
                 V = V2
@@ -1455,10 +1462,10 @@ class GCEOS(object):
     
                     fder_inv = 1.0/fder
                     step = fval*fder_inv
-                    V2 = V - step/(1.0 - 0.5*step*fder2*fder_inv)*damping
+                    V2 = V - step/(1.0 - 0.5*step*fder2*fder_inv)
                 return (V0, V1, V2)
         return (0.0, 0.0, 0.0)
-        
+            
     @staticmethod
     def volume_solutions_NR(T, P, b, delta, epsilon, a_alpha, quick=True, tries=0):
         '''Even if mpmath is used for greater precision in the calculated root,
