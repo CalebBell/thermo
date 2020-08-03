@@ -6650,7 +6650,7 @@ class FlashPureVLS(FlashBase):
             if self.gas_count and self.liquid_count:
                 if fixed_var == 'T' and self.Psat_guess(fixed_var_val) > 1e-2:                    
                     Psat, VL_liq, VL_gas, VL_iter, VL_err = self.flash_TVF(fixed_var_val, zs=zs, VF=.5)
-                elif fixed_var == 'P' and fixed_var > 1e-2:
+                elif fixed_var == 'P' and fixed_var_val > 1e-2:
                     Tsat, VL_liq, VL_gas, VL_iter, VL_err = self.flash_PVF(fixed_var_val, zs=zs, VF=.5)
             elif fixed_var == 'V':
                 raise NotImplementedError("Does not make sense here because there is no actual vapor frac spec")

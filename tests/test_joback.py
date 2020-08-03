@@ -32,6 +32,7 @@ folder = os.path.join(os.path.dirname(__file__), 'Data')
 
 try:
     import rdkit
+    from rdkit import Chem
 except:
     rdkit = None
 

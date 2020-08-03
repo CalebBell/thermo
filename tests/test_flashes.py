@@ -36,7 +36,7 @@ from thermo.phase_change import *
 from thermo import ChemicalConstantsPackage, PropertyCorrelationPackage
 from chemicals.exceptions import PhaseCountReducedError, TrivialSolutionError
 
-
+@pytest.mark.skip
 def test_minimize_gibbs_NP_transformed():
     T=298.15
     P = 101325.0

@@ -84,6 +84,41 @@ DIRECT_2P = 'Direct 2 Phase'
 RIGOROUS_BISECTION = 'Bisection'
 CAS_H2O = '7732-18-5'
 
+def Rachford_Rice_solution_negative(zs, Ks):
+    try:
+        return flash_inner_loop(zs, Ks)
+    except:
+        pass
+    # Only here for backwards compatibility
+    # Works when component compositions go negative.
+    
+
+    Kmin = min(Ks)
+    Kmax = max(Ks)
+    z_of_Kmax = zs[Ks.index(Kmax)]
+
+    V_over_F_min = ((Kmax-Kmin)*z_of_Kmax - (1.-Kmin))/((1.-Kmin)*(Kmax-1.))
+    V_over_F_max = 1./(1.-Kmin)
+
+    V_over_F_min2 = max(0., V_over_F_min)
+    V_over_F_max2 = min(1., V_over_F_max)
+
+    x0 = (V_over_F_min2 + V_over_F_max2)*0.5
+    try:
+        # Newton's method is marginally faster than brenth
+        V_over_F = secant(Rachford_Rice_flash_error, x0, args=(zs, Ks))
+        # newton skips out of its specified range in some cases, finding another solution
+        # Check for that with asserts, and use brenth if it did
+        assert V_over_F >= V_over_F_min2
+        assert V_over_F <= V_over_F_max2
+    except:
+        V_over_F = brenth(Rachford_Rice_flash_error, V_over_F_max-1E-7, V_over_F_min+1E-7, args=(zs, Ks))
+    # Cases not covered by the above solvers: When all components have K > 1, or all have K < 1
+    # Should get a solution for all other cases.
+    xs = [zi/(1.+V_over_F*(Ki-1.)) for zi, Ki in zip(zs, Ks)]
+    ys = [Ki*xi for xi, Ki in zip(xs, Ks)]
+    return V_over_F, xs, ys
+
 #from random import uniform, seed
 #seed(0)
 #print([uniform(0, 1) for _ in range(1000)])
@@ -1267,12 +1302,12 @@ class Ideal(PropertyPackage):
 
     def _T_VF_err_ideal(self, P, VF, zs, Psats):
         Ks = [K_value(P=P, Psat=Psat) for Psat in Psats]
-        return flash_inner_loop(zs=zs, Ks=Ks)[0] - VF
+        return Rachford_Rice_solution_negative(zs=zs, Ks=Ks)[0] - VF
         
     def _P_VF_err_ideal(self, T, P, VF, zs):
         Psats = self._Psats(T)
         Ks = [K_value(P=P, Psat=Psat) for Psat in Psats]
-        return flash_inner_loop(zs=zs, Ks=Ks)[0] - VF
+        return Rachford_Rice_solution_negative(zs=zs, Ks=Ks)[0] - VF
     
     def _Psats(self, T):
         # Need to reset the method because for the T bounded solver,
@@ -1337,7 +1372,7 @@ class Ideal(PropertyPackage):
         Ks, dKs_dT = self.Ks_and_dKs_dT(self.T, self.P, zs)
         # Perturb the Ks
         Ks2 = [Ki + dKi*delta for Ki, dKi in zip(Ks, dKs_dT)]
-        VF2, _, _ = flash_inner_loop(zs, Ks2, guess=VF1)
+        VF2, _, _ = Rachford_Rice_solution_negative(zs, Ks2, guess=VF1)
         return (VF2 - VF1)/delta
 
 
@@ -1359,7 +1394,7 @@ class Ideal(PropertyPackage):
             return 'l', zs, None, 0
         else:
             Ks = [K_value(P=P, Psat=Psat) for Psat in Psats]
-            V_over_F, xs, ys = flash_inner_loop(zs=zs, Ks=Ks)
+            V_over_F, xs, ys = Rachford_Rice_solution_negative(zs=zs, Ks=Ks)
             return 'l/g', xs, ys, V_over_F
         
         
@@ -1382,7 +1417,7 @@ class Ideal(PropertyPackage):
         else:
             P = brenth(self._T_VF_err_ideal, min(Psats)*(1+1E-7), max(Psats)*(1-1E-7), args=(VF, zs, Psats))
         Ks = [K_value(P=P, Psat=Psat) for Psat in Psats]
-        V_over_F, xs, ys = flash_inner_loop(zs=zs, Ks=Ks)
+        V_over_F, xs, ys = Rachford_Rice_solution_negative(zs=zs, Ks=Ks)
         return 'l/g', xs, ys, V_over_F, P
     
     def flash_PVF_zs(self, P, VF, zs):
@@ -1399,7 +1434,7 @@ class Ideal(PropertyPackage):
         T = brenth(self._P_VF_err_ideal, min(Tsats)*(1+1E-7), max(Tsats)*(1-1E-7), args=(P, VF, zs))
         Psats = self._Psats(T)
         Ks = [K_value(P=P, Psat=Psat) for Psat in Psats]
-        V_over_F, xs, ys = flash_inner_loop(zs=zs, Ks=Ks)
+        V_over_F, xs, ys = Rachford_Rice_solution_negative(zs=zs, Ks=Ks)
         return 'l/g', xs, ys, V_over_F, T
 
 
@@ -1996,14 +2031,14 @@ class GammaPhi(PropertyPackage):
             V_over_F, xs, ys = restart
         else:
             Ks = self.Ks(T, P, zs, zs, Psats)
-            V_over_F, xs, ys = flash_inner_loop(zs, Ks)
+            V_over_F, xs, ys = Rachford_Rice_solution_negative(zs, Ks)
         for i in range(100):
             if any(i < 0 for i in xs):
                 xs = zs
             if any(i < 0 for i in ys):
                 ys = zs
             Ks = self.Ks(T, P, xs, ys, Psats)
-            V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks)
+            V_over_F, xs_new, ys_new = Rachford_Rice_solution_negative(zs, Ks)
             err = (sum([abs(x_new - x_old) for x_new, x_old in zip(xs_new, xs)]) +
                   sum([abs(y_new - y_old) for y_new, y_old in zip(ys_new, ys)]))
             xs, ys = xs_new, ys_new
