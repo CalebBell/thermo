@@ -27,7 +27,7 @@ from chemicals import rachford_rice
 from chemicals import flash_basic
 from . import chemical
 from . import chemical_package
-from . import combustion
+from chemicals import combustion
 from chemicals import critical
 from . import coolprop
 from chemicals import dipole
@@ -55,7 +55,7 @@ from . import phase_identification
 from . import property_package
 from . import property_package_constants
 from . import psychrometrics
-from chemicals import reactions
+from chemicals import reaction
 from chemicals import refractivity
 from . import regular_solution
 from . import safety
@@ -81,7 +81,7 @@ from chemicals.rachford_rice import *
 from chemicals.flash_basic import *
 from .chemical import *
 from .chemical_package import *
-from .combustion import *
+from chemicals.combustion import *
 from chemicals.critical import *
 from .coolprop import *
 from chemicals.dipole import *
@@ -108,7 +108,7 @@ from .psychrometrics import *
 from .phase_identification import *
 from .property_package import *
 from .property_package_constants import *
-from chemicals.reactions import *
+from chemicals.reaction import *
 from chemicals.refractivity import *
 from .regular_solution import *
 from .safety import *
@@ -130,11 +130,14 @@ from .uniquac import *
 from .equilibrium import *
 from chemicals.temperature import *
 
+#from chemicals import *
+
+
 __all__ = ['rachford_rice', 'flash_basic', 'chemical', 'chemical_package', 'combustion', 'critical', 'flash',
  'dipole', 'electrochem', 'elements', 'environment', 'eos', 'eos_mix',
  'heat_capacity',  'identifiers', 'joback', 'law', 'lennard_jones',
  'miscdata',
- 'permittivity', 'phase_change', 'phases', 'property_package', 'reactions',
+ 'permittivity', 'phase_change', 'phases', 'property_package', 'reaction',
  'refractivity', 'safety', 'solubility', 'interface', 'interaction_parameters',
  'thermal_conductivity', 'triple', 'utils',
  'vapor_pressure', 'virial', 'viscosity', 'volume', 'acentric', 'coolprop', 
@@ -173,7 +176,7 @@ __all__.extend(phase_change.__all__)
 __all__.extend(phases.__all__)
 __all__.extend(phase_identification.__all__)
 __all__.extend(property_package.__all__)
-__all__.extend(reactions.__all__)
+__all__.extend(reaction.__all__)
 __all__.extend(refractivity.__all__)
 __all__.extend(safety.__all__)
 __all__.extend(solubility.__all__)

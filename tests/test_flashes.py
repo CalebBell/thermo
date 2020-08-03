@@ -186,9 +186,9 @@ def test_dew_bubble_newton_zs():
     jac_analytical = [list(i) for i in cb(comp + [iter_val], jac=True)[1]]
     
     assert_allclose(TVF0_jac_expect, jac_analytical, rtol=1e-7)
-    assert_allclose(jac_num, jac_analytical, rtol=1e-6)
-    assert_allclose(comp, [0.5959851041217594, 0.3614714142727822, 0.04254348160545845], rtol=1e-6)
-    assert_allclose(iter_val, 369706.09616182366, rtol=1e-8)
+    assert_allclose(jac_num, jac_analytical, rtol=2e-6)
+    assert_allclose(comp, [0.5959851041217594, 0.3614714142727822, 0.04254348160545845], rtol=2e-6)
+    assert_allclose(iter_val, 369706.09616182366, rtol=2e-6)
     
     # TVF-1
     TVF1 = dew_bubble_newton_zs(P, T, zs, liq, gas, 

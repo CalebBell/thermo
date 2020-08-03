@@ -1623,11 +1623,11 @@ class GCEOS(object):
     # Default method
 #    volume_solutions = volume_solutions_doubledouble
 #    volume_solutions = volume_solutions_doubledouble_inline
-#    volume_solutions = volume_solutions_NR#_volume_solutions_numpy#volume_solutions_NR
+    volume_solutions = volume_solutions_NR#_volume_solutions_numpy#volume_solutions_NR
 #    volume_solutions= _volume_solutions_numpy
 #    volume_solutions = volume_solutions_fast
 #    volume_solutions = volume_solutions_Cardano
-    volume_solutions = volume_solutions_H
+#    volume_solutions = volume_solutions_H
 
     @staticmethod
     def volume_solutions_NR_low_P(T, P, b, delta, epsilon, a_alpha, quick=True,

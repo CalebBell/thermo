@@ -728,7 +728,7 @@ def test_VDWIX_quick():
     lnphis_l_num = jacobian(lnphi_dnxpartial, zs, perturbation=2e-7, args=('l',))
     assert_allclose(lnphis_l_num, base.lnphis_l, rtol=1e-6)
     lnphis_g_num = jacobian(lnphi_dnxpartial, zs, perturbation=2e-7, args=('g',))
-    assert_allclose(lnphis_g_num, base.lnphis_g)
+    assert_allclose(lnphis_g_num, base.lnphis_g, rtol=1e-6)
 
     # Gas phase only test point
     a = VDWMIX(T=300, P=1E7, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])

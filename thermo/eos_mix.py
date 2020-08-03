@@ -6228,6 +6228,7 @@ class PRMIX(GCEOSMIX, PR):
         ais, kappas, Tcs = self.ais, self.kappas, self.Tcs
         
         if not full:
+            # Broken!!! Bug.
             a_alphas = []
             for i in self.cmps:
                 x1 = Tcs[i]**-0.5

@@ -41,8 +41,8 @@ from thermo.permittivity import *
 from thermo.heat_capacity import HeatCapacitySolid, HeatCapacityGas, HeatCapacityLiquid, HeatCapacitySolidMixture, HeatCapacityGasMixture, HeatCapacityLiquidMixture
 from thermo.interface import SurfaceTension, SurfaceTensionMixture
 from thermo.viscosity import ViscosityLiquid, ViscosityGas, ViscosityLiquidMixture, ViscosityGasMixture
-from chemicals.reactions import Hfg_methods, S0g_methods, Hfl_methods, Hfs_methods, Hfs, Hfl, Hfg, S0g, S0l, S0s, Gibbs_formation, Hf_basis_converter, entropy_formation
-from thermo.combustion import Hcombustion
+from chemicals.reaction import Hfg_methods, S0g_methods, Hfl_methods, Hfs_methods, Hfs, Hfl, Hfg, S0g, S0l, S0s, Gibbs_formation, Hf_basis_converter, entropy_formation
+from chemicals.combustion import combustion_stoichiometry, HHV_stoichiometry, LHV_from_HHV
 from thermo.safety import Tflash, Tautoignition, LFL, UFL, TWA, STEL, Ceiling, Skin, Carcinogen, LFL_mixture, UFL_mixture
 from chemicals.solubility import solubility_parameter
 from chemicals.dipole import dipole_moment as dipole, dipole_moment_methods
@@ -954,12 +954,15 @@ class Chemical(object): # pragma: no cover
             self.Hf_source = self.Hfm = None
 
         self.Hf = property_molar_to_mass(self.Hfm, self.MW) if (self.Hfm is not None) else None        
-
-
-        self.Hcm = Hcombustion(atoms=self.atoms, Hf=self.Hfm, CASRN=self.CAS, higher=True)
+        
+        self.combustion_stoichiometry = combustion_stoichiometry(self.atoms)
+        try:
+            self.Hcm = HHV_stoichiometry(self.combustion_stoichiometry, Hf=self.Hfm) if self.Hfm is not None else None
+        except:
+            self.Hcm = None
         self.Hc = property_molar_to_mass(self.Hcm, self.MW) if (self.Hcm is not None) else None
 
-        self.Hcm_lower = Hcombustion(atoms=self.atoms, Hf=self.Hfm, CASRN=self.CAS, higher=False)
+        self.Hcm_lower = LHV_from_HHV(self.Hcm, self.combustion_stoichiometry.get('H2O', 0.0)) if self.Hcm is not None else None
         self.Hc_lower = property_molar_to_mass(self.Hcm_lower, self.MW) if (self.Hcm_lower is not None) else None
 
         # Fire Safety Limits
@@ -1012,12 +1015,14 @@ class Chemical(object): # pragma: no cover
         # Compute Entropy of formation
         self.Sfgm = (self.Hfgm - self.Gfgm)/298.15 if (self.Hfgm is not None and self.Gfgm is not None) else None # hardcoded
         self.Sfg = property_molar_to_mass(self.Sfgm, self.MW) if (self.Sfgm is not None) else None
-
         
-        self.Hcgm = Hcombustion(atoms=self.atoms, Hf=self.Hfgm)
+        try:
+            self.Hcgm = HHV_stoichiometry(self.combustion_stoichiometry, Hf=self.Hfgm) if self.Hfgm is not None else None
+        except:
+            self.Hcgm = None
         self.Hcg = property_molar_to_mass(self.Hcgm, self.MW) if (self.Hcgm is not None) else None
 
-        self.Hcgm_lower = Hcombustion(atoms=self.atoms, Hf=self.Hfgm, higher=False)
+        self.Hcgm_lower = LHV_from_HHV(self.Hcgm, self.combustion_stoichiometry.get('H2O', 0.0)) if self.Hcgm is not None else None
         self.Hcg_lower = property_molar_to_mass(self.Hcgm_lower, self.MW) if (self.Hcgm_lower is not None) else None
 
         
