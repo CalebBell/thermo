@@ -42,7 +42,7 @@ def test_PRMIX_quick():
     eos = PRMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
 
     Vs_calc = eos.sorted_volumes
-#    eos.volume_solutions(115, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
+#    eos.volume_solutions_full(115, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
     Vs_expected = [3.6257362939705926e-05, 0.0001938347308115875, 0.0007006659231347702]
     assert_allclose(Vs_calc, Vs_expected)
 
@@ -501,8 +501,8 @@ def test_Stateva_Tsvetkov_TPDF_PRMIX_Nitrogen_Methane_Ethane():
 def test_PRMIX_VS_PR():
     # Test solution for molar volumes
     eos = PRMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., P=1E6)
-    Vs_fast = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_slow = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
+    Vs_fast = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
+    Vs_slow = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
     Vs_expected = [(0.00013022212513965833+0j), (0.001123631313468268+0.0012926967234386066j), (0.001123631313468268-0.0012926967234386066j)]
     assert_allclose(Vs_fast, Vs_expected)
     assert_allclose(Vs_slow, Vs_expected)
@@ -622,8 +622,8 @@ def test_SRKMIX_vs_SRK():
     # Copy and paste from SRK, changed to list inputs only
     # Test solution for molar volumes
     eos = SRKMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., P=1E6)
-    Vs_fast = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_slow = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
+    Vs_fast = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
+    Vs_slow = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
     Vs_expected = [(0.0001468210773547259+0j), (0.0011696016227365465+0.001304089515440735j), (0.0011696016227365465-0.001304089515440735j)]
     assert_allclose(Vs_fast, Vs_expected)
     assert_allclose(Vs_slow, Vs_expected)
@@ -911,8 +911,8 @@ def test_TWUPRMIX_vs_TWUPR():
     # Copy and pasted
     # Test solution for molar volumes
     eos = TWUPRMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., P=1E6)
-    Vs_fast = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_slow = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
+    Vs_fast = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
+    Vs_slow = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
     Vs_expected = [(0.00013017554170570767+0j), (0.0011236546051852433+0.0012949262365671505j), (0.0011236546051852433-0.0012949262365671505j)]
 
     assert_allclose(Vs_fast, Vs_expected)
@@ -1113,8 +1113,8 @@ def test_TWUSRKMIX_quick():
 def test_APISRKMIX_vs_APISRK():
     # Test solution for molar volumes
     eos = APISRKMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., P=1E6)
-    Vs_fast = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_slow = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
+    Vs_fast = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
+    Vs_slow = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
     Vs_expected = [(0.00014681828835112518+0j), (0.0011696030172383468+0.0013042038361510636j), (0.0011696030172383468-0.0013042038361510636j)]
     assert_allclose(Vs_fast, Vs_expected)
     assert_allclose(Vs_slow, Vs_expected)
@@ -1560,6 +1560,7 @@ def test_PR_d_lbphis_dT():
     assert_allclose(analytical_diffs, analytical_diffs_generic, rtol=1e-11)
 
 @pytest.mark.sympy
+@pytest.mark.slow
 def test_PR_dlnphis_dT_sympy():
     from sympy import Derivative, symbols, sqrt, diff, log, N, Function
     from fluids.constants import R as R_num
@@ -1643,6 +1644,7 @@ def test_SRK_dlnphis_dT():
 
 
 @pytest.mark.sympy
+@pytest.mark.slow
 def test_SRK_dlnphis_dT_sympy():
     from sympy import Derivative, symbols, sqrt, diff, log, N, Function
     from fluids.constants import R as R_num
@@ -1726,6 +1728,7 @@ def test_VDW_dlnphis_dT():
 #    assert_allclose(analytical_diffs, analytical_diffs_generic, rtol=1e-11)
 
 @pytest.mark.sympy
+@pytest.mark.slow
 def test_VDW_dlnphis_dT_sympy():
     from sympy import Derivative, symbols, sqrt, diff, log, N, Function
     from fluids.constants import R as R_num
@@ -1812,6 +1815,7 @@ def test_PR_dlnphis_dP():
     analytical_diffs = super(eos.__class__, eos).dlnphis_dP('g')
     assert_allclose(analytical_diffs, expected_diffs, rtol=1e-11)
 
+@pytest.mark.slow
 @pytest.mark.sympy
 def test_PR_dlnphis_dP_sympy():
     from sympy import Derivative, symbols, sqrt, diff, log, N, Function
@@ -1891,6 +1895,7 @@ def test_SRK_dlnphis_dP():
     analytical_diffs = super(eos.__class__, eos).dlnphis_dP('g')
     assert_allclose(analytical_diffs, expected_diffs, rtol=1e-11)
 
+@pytest.mark.slow
 @pytest.mark.sympy
 def test_SRK_dlnphis_dP_sympy():
     from sympy import Derivative, symbols, sqrt, diff, log, N, Function
@@ -1970,6 +1975,7 @@ def test_VDW_dlnphis_dP():
 #    assert_allclose(analytical_diffs, expected_diffs, rtol=1e-11)
 
 @pytest.mark.sympy
+@pytest.mark.slow
 def test_VDW_dlnphis_dP_sympy():
     from sympy import Derivative, symbols, sqrt, diff, log, N, Function
     from fluids.constants import R as R_num
@@ -2207,6 +2213,7 @@ def test_d2b_d2nx(kwargs):
 #test_d2b_d2nx(ternary_basic)
 
 
+@pytest.mark.slow
 @pytest.mark.sympy
 @pytest.mark.parametrize("kwargs", [quaternary_basic])
 def test_d3b_dnz(kwargs):
@@ -2279,7 +2286,7 @@ def test_d3b_dnz(kwargs):
 
 #test_d3b_dnz(quaternary_basic)
 
-
+@pytest.mark.slow
 @pytest.mark.sympy
 @pytest.mark.parametrize("kwargs", [quaternary_basic])
 def test_d3delta_dnz(kwargs):
@@ -2381,6 +2388,7 @@ def test_d3delta_dnz(kwargs):
             assert_allclose(analytical, implemented, rtol=1e-11)
 
 #test_d3delta_dnz(quaternary_basic)
+@pytest.mark.slow
 @pytest.mark.sympy
 @pytest.mark.parametrize("kwargs", [ternary_basic])
 def test_d2delta_dnz_sympy(kwargs):
@@ -2479,6 +2487,7 @@ def test_d2delta_dnz_sympy(kwargs):
 #test_d2delta_dnz_sympy(ternary_basic)
 
 @pytest.mark.sympy
+@pytest.mark.slow
 @pytest.mark.parametrize("kwargs", [quaternary_basic])
 def test_d3epsilon_dnz(kwargs):
     from thermo.eos_mix import PRMIXTranslated
@@ -2581,6 +2590,7 @@ def test_d3epsilon_dnz(kwargs):
 #test_d3epsilon_dnz(quaternary_basic)
 
 @pytest.mark.sympy
+@pytest.mark.slow
 @pytest.mark.parametrize("kwargs", [ternary_basic])
 def test_d2epsilon_dnz_sympy(kwargs):
     from thermo.eos_mix import PRMIXTranslated
@@ -2825,6 +2835,7 @@ def test_d2a_alpha_d2nx(kwargs):
         assert_allclose(numericals, analytical, rtol=5e-4)
 
 @pytest.mark.sympy
+@pytest.mark.slow
 def test_d3a_alpha_dninjnk():
     from sympy import Function, symbols, diff, simplify
     a_alpha11, a_alpha12, a_alpha13, a_alpha14, a_alpha21, a_alpha22, a_alpha23, a_alpha24, a_alpha31, a_alpha32, a_alpha33, a_alpha34, a_alpha41, a_alpha42, a_alpha43, a_alpha44 = symbols(
@@ -3740,7 +3751,7 @@ def test_dV_dns_d2V_dninjs_num_sample():
     d2V_dninjs_expect = [[-0.00044088987788337583, -7.757131783309099e-05, 2.3019124011504547e-05, -0.0002852566859105065], [-7.757131783309099e-05, 9.773049710937305e-05, 0.00014640302633090873, -3.051226852812143e-06], [2.301912401150454e-05, 0.0001464030263309087, 0.00018073925735201586, 7.514096567393496e-05], [-0.0002852566859105065, -3.0512268528121433e-06, 7.514096567393496e-05, -0.00016461632966720052]]
     d2V_dninjs = eos_g.d2V_dninjs(eos_g.Z_g, zs)
     d2V_dninjs_num = hessian(to_jac_V, zs, perturbation=4e-5)
-    assert_allclose(d2V_dninjs_num, d2V_dninjs, rtol=2e-4)
+    assert_allclose(d2V_dninjs_num, d2V_dninjs, rtol=5e-4)
     assert_allclose(d2V_dninjs, d2V_dninjs_expect, rtol=1e-10)
     # import numdifftools as nd
     # assert_allclose(nd.Hessian(to_jac_V, step=18e-5)(zs), d2V_dninjs, rtol=3.5e-7)
@@ -3777,7 +3788,7 @@ def test_d2G_dep_dninjs_sample():
     d2G_dep_dninjs = eos_g.d2G_dep_dninjs(eos_g.Z_g, zs)
     d2G_dep_dninjs_num = np.array(hessian(to_jac, zs, perturbation=10e-5))
     assert_allclose(d2G_dep_dninjs, d2G_dep_dninjs_expect, rtol=1e-10)
-    assert_allclose(d2G_dep_dninjs, d2G_dep_dninjs_num, rtol=5e-4)
+    assert_allclose(d2G_dep_dninjs, d2G_dep_dninjs_num, rtol=1e-3)
 
 
 def test_d2lnphi_dninjs_sample():
@@ -3804,14 +3815,14 @@ def test_d2lnphi_dninjs_sample():
     d2lnphi_dninjs_num = np.array(hessian(to_jac, zs, perturbation=4e-5))
     d2lnphi_dninjs_expect = [[-6.689080501315258, -0.24842847604437732, 1.6030867223014982, -4.214982710070737], [-0.24842847604437557, 0.9467781934478982, 1.2755675533571427, 0.27240608003425404], [1.6030867223014982, 1.275567553357141, 1.162300999011552, 1.5569674849978443], [-4.214982710070737, 0.2724060800342547, 1.5569674849978434, -2.468513348339236]]
     assert_allclose(d2lnphi_dninjs, d2lnphi_dninjs_expect, rtol=1e-10)
-    assert_allclose(d2lnphi_dninjs, d2lnphi_dninjs_num, rtol=8e-5)
+    assert_allclose(d2lnphi_dninjs, d2lnphi_dninjs_num, rtol=1e-4)
     
     phase = 'g'
     d2lnphi_dninjs_expect = [[-0.19289340705999877, -0.037565904047903664, 0.005393839310568691, -0.1261683467023644], [-0.037565904047903664, 0.045022626380554834, 0.06793645435921593, -0.0023875231224451303], [0.005393839310568688, 0.06793645435921591, 0.08532588448405505, 0.03187838266115353], [-0.1261683467023644, -0.002387523122445131, 0.03187838266115353, -0.07312506069317169]]
     d2lnphi_dninjs = eos_g.d2lnphi_dninjs(eos_g.Z_g, zs)
     d2lnphi_dninjs_num = np.array(hessian(to_jac, zs, perturbation=10e-5))
     assert_allclose(d2lnphi_dninjs, d2lnphi_dninjs_expect, rtol=1e-10)
-    assert_allclose(d2lnphi_dninjs, d2lnphi_dninjs_num, rtol=5e-4)
+    assert_allclose(d2lnphi_dninjs, d2lnphi_dninjs_num, rtol=1e-3)
     # import numdifftools as nd
     # assert_allclose(nd.Hessian(to_jac, step=1.5e-4)(zs), d2lnphi_dninjs, rtol=4e-7)
 
@@ -3873,7 +3884,7 @@ def test_dfugacities_dns_PR_4():
     dfugacities_dns_l_expect =[[16181029.072792342, 50151.468339063846, 2994997.142794145, -6316580.859463232], [7601.827445166389, 1447527.9179300785, -703943.29300887, -197706.94606967806], [327913.730146497, -508471.37649235234, 207659.02085379465, 16512.99006920588], [-8963347.443242379, -1850869.2682689782, 214018.1973988597, 3005757.846895938]]
     dfugacities_dns_num = jacobian(to_diff_fugacities, zs, scalar=False, perturbation=1.5e-7)
     assert_allclose(dfugacities_dns_l, dfugacities_dns_l_expect, rtol=1e-10)
-    assert_allclose(dfugacities_dns_l, dfugacities_dns_num, rtol=2e-6)
+    assert_allclose(dfugacities_dns_l, dfugacities_dns_num, rtol=5e-6)
     # assert_allclose(nd.Jacobian(lambda x: np.array(to_diff_fugacities(x.tolist())), step=13.e-7)(np.array(zs)),
     #                 dfugacities_dns_l, rtol=1e-8)
 
@@ -3936,7 +3947,7 @@ def test_dlnfugacities_dn_PR():
     dfugacities_dns_l_expect =[[6.1582411240412345, 0.01908684752788581, 1.1398480583755637, -2.4039897485559263], [0.019086847527884032, 3.6344872152359278, -1.7674774123530248, -0.4964072602351657], [1.1398480583755635, -1.7674774123530226, 0.7218353791365238, 0.057400157230227386], [-2.403989748555926, -0.49640726023516624, 0.05740015723022828, 0.8061509493338931]]
     dfugacities_dns_num = jacobian(to_diff_fugacities, zs, scalar=False, perturbation=2e-7)
     assert_allclose(dfugacities_dns_l, dfugacities_dns_l_expect, rtol=1e-10)
-    assert_allclose(dfugacities_dns_l, dfugacities_dns_num, rtol=2e-6)
+    assert_allclose(dfugacities_dns_l, dfugacities_dns_num, rtol=5e-6)
     # assert_allclose(nd.Jacobian(lambda x: np.array(to_diff_fugacities(x.tolist())), step=13.e-7)(np.array(zs)),
     #                 dfugacities_dns_l, rtol=1e-8)
 

@@ -157,8 +157,8 @@ def test_PR_with_sympy():
 def test_PR_quick():
     # Test solution for molar volumes
     eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
-    Vs_fast = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_slow = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
+    Vs_fast = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
+    Vs_slow = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
     Vs_expected = [(0.00013022212513965863+0j), (0.001123631313468268+0.0012926967234386068j), (0.001123631313468268-0.0012926967234386068j)]
     assert_allclose(Vs_fast, Vs_expected)
     assert_allclose(Vs_slow, Vs_expected)
@@ -702,8 +702,8 @@ def test_VDW_Psat():
 def test_RK_quick():
     # Test solution for molar volumes
     eos = RK(Tc=507.6, Pc=3025000, T=299., P=1E6)
-    Vs_fast = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_slow = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
+    Vs_fast = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
+    Vs_slow = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
     Vs_expected = [(0.00015189346878119082+0j), (0.0011670654270233137+0.001117116441729614j), (0.0011670654270233137-0.001117116441729614j)]
     assert_allclose(Vs_fast, Vs_expected)
     assert_allclose(Vs_slow, Vs_expected)
@@ -800,8 +800,8 @@ def test_RK_Psat():
 def test_SRK_quick():
     # Test solution for molar volumes
     eos = SRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
-    Vs_fast = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_slow = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
+    Vs_fast = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
+    Vs_slow = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
     Vs_expected = [0.0001468210773547258, (0.0011696016227365465+0.001304089515440735j), (0.0011696016227365465-0.001304089515440735j)]
     assert_allclose(Vs_fast, Vs_expected)
     assert_allclose(Vs_slow, Vs_expected)
@@ -897,8 +897,8 @@ def test_SRK_Psat():
 def test_APISRK_quick():
     # Test solution for molar volumes
     eos = APISRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
-    Vs_fast = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_slow = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
+    Vs_fast = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
+    Vs_slow = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
     Vs_expected = [(0.00014681828835112518+0j), (0.0011696030172383468+0.0013042038361510636j), (0.0011696030172383468-0.0013042038361510636j)]
     assert_allclose(Vs_fast, Vs_expected)
     assert_allclose(Vs_slow, Vs_expected)
@@ -963,8 +963,8 @@ def test_APISRK_quick():
 def test_TWUPR_quick():
     # Test solution for molar volumes
     eos = TWUPR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
-    Vs_fast = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_slow = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
+    Vs_fast = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
+    Vs_slow = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
     Vs_expected = [0.0001301755417057077, (0.0011236546051852435+0.001294926236567151j), (0.0011236546051852435-0.001294926236567151j)]
 
     assert_allclose(Vs_fast, Vs_expected)
@@ -1026,8 +1026,8 @@ def test_TWUPR_quick():
 def test_TWUSRK_quick():
     # Test solution for molar volumes
     eos = TWUSRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
-    Vs_fast = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_slow = eos.volume_solutions(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
+    Vs_fast = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
+    Vs_slow = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
     Vs_expected = [(0.00014689222296622437+0j), (0.001169566049930797+0.0013011782630948804j), (0.001169566049930797-0.0013011782630948804j)]
 
     assert_allclose(Vs_fast, Vs_expected)
@@ -1814,7 +1814,7 @@ def test_d2H_dep_dTdP():
     eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E5)
     d2H_dep_dTdP_g_num = derivative(lambda P: eos.to(P=P, T=eos.T).dH_dep_dT_g, eos.P, dx=eos.P*3e-8)
     assert_allclose(eos.d2H_dep_dTdP_g, 2.4880842067857194e-05, rtol=1e-11)
-    assert_allclose(eos.d2H_dep_dTdP_g, d2H_dep_dTdP_g_num, rtol=1e-8)
+    assert_allclose(eos.d2H_dep_dTdP_g, d2H_dep_dTdP_g_num, rtol=1e-7)
 
     d2H_dep_dTdP_l_num = derivative(lambda P: eos.to(P=P, T=eos.T).dH_dep_dT_l, eos.P, dx=eos.P*3e-7)
     assert_allclose(eos.d2H_dep_dTdP_l, -3.662334969933377e-07, rtol=1e-11)
@@ -1824,11 +1824,11 @@ def test_d2S_dep_dTdP():
     eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E5)
     d2S_dep_dTdP_g_num = derivative(lambda P: eos.to(P=P, T=eos.T).dS_dep_dT_g, eos.P, dx=eos.P*4e-8)
     assert_allclose(eos.d2S_dep_dTdP_g, 8.321351862159589e-08, rtol=1e-11)
-    assert_allclose(eos.d2S_dep_dTdP_g, d2S_dep_dTdP_g_num, rtol=1e-8)
+    assert_allclose(eos.d2S_dep_dTdP_g, d2S_dep_dTdP_g_num, rtol=1e-7)
 
     d2S_dep_dTdP_l_num = derivative(lambda P: eos.to(P=P, T=eos.T).dS_dep_dT_l, eos.P, dx=eos.P*2e-6, order=5)
     assert_allclose(eos.d2S_dep_dTdP_l, -1.2248611939576295e-09, rtol=1e-11)
-    assert_allclose(eos.d2S_dep_dTdP_l, d2S_dep_dTdP_l_num, rtol=1e-7)
+    assert_allclose(eos.d2S_dep_dTdP_l, d2S_dep_dTdP_l_num, rtol=5e-7)
     
 def test_d2P_dVdP():
     eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E5)
@@ -2218,3 +2218,10 @@ def test_Psats_low_P():
             base = eos(**kwargs)
             T_calc = base.Tsat(P, polish=True)
             assert_allclose(base.Psat(T_calc, polish=True), P, rtol=1e-9)
+            
+            
+def test_misc_volume_issues():
+    # Case where a_alpha becomes so small, reverts to ideal gas
+    obj = PRTranslatedConsistent(Tc=126.2, Pc=3394387.5, omega=0.04, T=1e4, P=1e9)
+    assert_close(obj.V_l, 0.00010895770362725658, rtol=1e-13)
+    assert not hasattr(obj, 'V_g')

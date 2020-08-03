@@ -426,15 +426,17 @@ def test_two_eos_pure_flash_all_properties():
     assert_allclose(eq.bulk.Pmc(), Pmc_expect, rtol=1e-12)
     assert_allclose([i.Pmc() for i in eq.phases], [Pmc_expect]*2, rtol=1e-12)
     
+    # The solver tolerance here is loose
     Vmc_expect = 0.00016203642168563802
-    assert_allclose(eq.Vmc(), Vmc_expect, rtol=1e-5)
-    assert_allclose(eq.bulk.Vmc(), Vmc_expect, rtol=1e-5)
-    assert_allclose([i.Vmc() for i in eq.phases], [Vmc_expect]*2, rtol=1e-5)
+    assert_allclose(eq.Vmc(), Vmc_expect, rtol=1e-4)
+    assert_allclose(eq.bulk.Vmc(), Vmc_expect, rtol=1e-4)
+    assert_allclose([i.Vmc() for i in eq.phases], [Vmc_expect]*2, rtol=1e-4)
     
+    # The solver tolerance here is loose
     Zmc_expect = 0.30740497655001947
-    assert_allclose(eq.Zmc(), Zmc_expect, rtol=1e-5)
-    assert_allclose(eq.bulk.Zmc(), Zmc_expect, rtol=1e-5)
-    assert_allclose([i.Zmc() for i in eq.phases], [Zmc_expect]*2, rtol=1e-5)
+    assert_allclose(eq.Zmc(), Zmc_expect, rtol=1e-4)
+    assert_allclose(eq.bulk.Zmc(), Zmc_expect, rtol=1e-4)
+    assert_allclose([i.Zmc() for i in eq.phases], [Zmc_expect]*2, rtol=1e-4)
     
     # Properties calculated form derivatives
     assert_allclose(eq.isobaric_expansion(), 0.002008218029645217, rtol=1e-12)

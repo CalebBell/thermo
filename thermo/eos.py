@@ -1337,7 +1337,18 @@ class GCEOS(object):
     
     @staticmethod
     def volume_solutions_H(T, P, b, delta, epsilon, a_alpha, quick=True):
-        if a_alpha == 0.0:
+        
+        '''
+        Cases known to be failing:
+            ( nitrogen); goes to the other solver and it reports a wrong duplicate root
+            obj = PRTranslatedConsistent(Tc=126.2, Pc=3394387.5, omega=0.04, T=3204.081632653062, P=1e9)
+
+        '''
+        # Test the case where a_alpha is so low, even with the lowest possible volume `b`, 
+        # the value of the second term plus P is equal to P.
+#        if a_alpha == 0.0:
+#            return (b + R*T/P, 0.0, 0.0)
+        if a_alpha/(b*(b + delta) + epsilon) + P == P:
             return (b + R*T/P, 0.0, 0.0)
         if P < 1e-2 or a_alpha < 1e-9:
         # if 0 or (0 and ((T < 1e-2 and P > 1e6) or (P < 1e-3 and T < 1e-2) or (P < 1e-1 and T < 1e-4) or P < 1)):
@@ -1355,7 +1366,10 @@ class GCEOS(object):
                 return GCEOS.volume_solutions_mpmath_float(T, P, b, delta, epsilon, a_alpha)
             except:
                 pass
-            
+        
+        
+        
+        
         RT = R*T
         RT_2 = RT + RT
         a_alpha_2 = a_alpha + a_alpha
@@ -1623,11 +1637,14 @@ class GCEOS(object):
     # Default method
 #    volume_solutions = volume_solutions_doubledouble
 #    volume_solutions = volume_solutions_doubledouble_inline
-    volume_solutions = volume_solutions_NR#_volume_solutions_numpy#volume_solutions_NR
+#    volume_solutions = volume_solutions_NR#_volume_solutions_numpy#volume_solutions_NR
 #    volume_solutions= _volume_solutions_numpy
 #    volume_solutions = volume_solutions_fast
 #    volume_solutions = volume_solutions_Cardano
-#    volume_solutions = volume_solutions_H
+    volume_solutions = volume_solutions_H
+    
+    # Solver which actually has the roots
+    volume_solutions_full = volume_solutions_NR
 
     @staticmethod
     def volume_solutions_NR_low_P(T, P, b, delta, epsilon, a_alpha, quick=True,
@@ -1821,6 +1838,7 @@ class GCEOS(object):
         Vs_good = self.volume_solutions_mpmath(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
         Vs_filtered = [i.real for i in Vs_good if (i.real ==0 or abs(i.imag/i.real) < 1E-20) and i.real > self.b]
         if len(Vs_filtered) in (2, 3):
+            two_roots_mpmath = True
             Vl_mpmath, Vg_mpmath = min(Vs_filtered), max(Vs_filtered)
         else:
             if hasattr(self, 'V_l') and hasattr(self, 'V_g'):
@@ -1830,8 +1848,12 @@ class GCEOS(object):
                 Vl_mpmath = Vs_filtered[0]
             elif hasattr(self, 'V_g'):
                 Vg_mpmath = Vs_filtered[0]
-
+            two_roots_mpmath = False
         err = 0
+        
+        if two_roots_mpmath:
+            if (not hasattr(self, 'V_l') or not hasattr(self, 'V_g')):
+                return 1.0
 
         # Important not to confuse the roots and also to not consider the third root
         try:
@@ -2285,7 +2307,8 @@ class GCEOS(object):
         [(0.00013022212513965896+0j), (0.0011236313134682665-0.0012926967234386064j), (0.0011236313134682665+0.0012926967234386064j)]
         '''
         sort_fun = lambda x: (x.real, x.imag)
-        return sorted(self.raw_volumes, key=sort_fun)
+        full_volumes = self.volume_solutions_full(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
+        return sorted(full_volumes, key=sort_fun)
 
     def PIP_map(self, Tmin=1e-4, Tmax=1e4, Pmin=1e-2, Pmax=1e9,
                       pts=50, plot=False, show=False, color_map=None):

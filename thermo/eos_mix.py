@@ -1125,6 +1125,7 @@ class GCEOSMIX(GCEOS):
                   for j in self.cmps])
         TP, iterations = newton_system(self._mechanical_critical_point_f_jac,
                                        x0=[Tmc, Pmc], jac=True, ytol=1e-10,
+                                       xtol=1e-12,
                                        solve_func=solve_2_direct)
         T, P = float(TP[0]), float(TP[1])
         return T, P
