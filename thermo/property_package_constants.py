@@ -39,8 +39,8 @@ from fluids.constants import R, pi, N_A
 from thermo.identifiers import IDs_to_CASs
 from chemicals.rachford_rice import flash_inner_loop
 from thermo.unifac import UFSG, DOUFSG, DOUFIP2006
-from thermo.eos_mix import *
-from thermo.eos import *
+from thermo.eos_mix import PRMIX, SRKMIX 
+from thermo.eos import PR, SRK
 from thermo.chemical import Chemical
 from thermo.mixture import Mixture
 

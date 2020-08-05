@@ -76,7 +76,7 @@ def test_Laliberte_heat_capacity_i():
 
 def test_Laliberte_heat_capacity():
     Cp = Laliberte_heat_capacity(273.15+1.5, [0.00398447], ['7647-14-5'])
-    assert_allclose(Cp, 4186.566417712068, rtol=1E-6)
+    assert_allclose(Cp, 4186.566417712068, rtol=1E-5)
 
 
 

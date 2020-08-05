@@ -29,7 +29,7 @@ from thermo.eos import eos_2P_list
 from chemicals.utils import allclose_variable
 from fluids.constants import R
 from math import log, exp, sqrt, log10
-from fluids.numerics import linspace, derivative, logspace, assert_close
+from fluids.numerics import linspace, derivative, logspace, assert_close, assert_close1d, assert_close2d, assert_close3d
 
 
 @pytest.mark.slow
@@ -158,17 +158,13 @@ def test_PR_quick():
     # Test solution for molar volumes
     eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
     Vs_fast = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_slow = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
     Vs_expected = [(0.00013022212513965863+0j), (0.001123631313468268+0.0012926967234386068j), (0.001123631313468268-0.0012926967234386068j)]
     assert_allclose(Vs_fast, Vs_expected)
-    assert_allclose(Vs_slow, Vs_expected)
     
     # Test of a_alphas
     a_alphas = [3.801262003434438, -0.006647930535193546, 1.6930139095364687e-05]
-    a_alphas_fast = eos.a_alpha_and_derivatives_pure(299, quick=True)
-    assert_allclose(a_alphas, a_alphas_fast)
-    a_alphas_slow = eos.a_alpha_and_derivatives_pure(299, quick=False)
-    assert_allclose(a_alphas, a_alphas_slow)
+    a_alphas_implemented = eos.a_alpha_and_derivatives_pure(299)
+    assert_allclose(a_alphas, a_alphas_implemented)
     
     # PR back calculation for T
     eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, V=0.00013022212513965863, P=1E6)
@@ -582,12 +578,15 @@ def test_PRSV():
     # Test of a_alphas
     a_alphas = [3.812985698311453, -0.006976903474851659, 2.0026560811043733e-05]
     
-    a_alphas_fast = eos.a_alpha_and_derivatives_pure(299)
-    assert_allclose(a_alphas, a_alphas_fast)
-    
-    a_alphas_fast = eos.a_alpha_and_derivatives_pure(299, quick=False)
-    assert_allclose(a_alphas, a_alphas_fast)
-    
+    a_alphas_implemented = eos.a_alpha_and_derivatives_pure(299)
+    assert_close1d(a_alphas, a_alphas_implemented)
+    T, Tc, a, kappa0, kappa1 = eos.T, eos.Tc, eos.a, eos.kappa0, eos.kappa1
+    a_alpha = a*((kappa0 + kappa1*(sqrt(T/Tc) + 1)*(-T/Tc + 0.7))*(-sqrt(T/Tc) + 1) + 1)**2
+    da_alpha_dT = a*((kappa0 + kappa1*(sqrt(T/Tc) + 1)*(-T/Tc + 0.7))*(-sqrt(T/Tc) + 1) + 1)*(2*(-sqrt(T/Tc) + 1)*(-kappa1*(sqrt(T/Tc) + 1)/Tc + kappa1*sqrt(T/Tc)*(-T/Tc + 0.7)/(2*T)) - sqrt(T/Tc)*(kappa0 + kappa1*(sqrt(T/Tc) + 1)*(-T/Tc + 0.7))/T)
+    d2a_alpha_dT2 = a*((kappa1*(sqrt(T/Tc) - 1)*(20*(sqrt(T/Tc) + 1)/Tc + sqrt(T/Tc)*(10*T/Tc - 7)/T) - sqrt(T/Tc)*(10*kappa0 - kappa1*(sqrt(T/Tc) + 1)*(10*T/Tc - 7))/T)**2 - sqrt(T/Tc)*((10*kappa0 - kappa1*(sqrt(T/Tc) + 1)*(10*T/Tc - 7))*(sqrt(T/Tc) - 1) - 10)*(kappa1*(40/Tc - (10*T/Tc - 7)/T)*(sqrt(T/Tc) - 1) + 2*kappa1*(20*(sqrt(T/Tc) + 1)/Tc + sqrt(T/Tc)*(10*T/Tc - 7)/T) + (10*kappa0 - kappa1*(sqrt(T/Tc) + 1)*(10*T/Tc - 7))/T)/T)/200
+    assert_close1d(a_alphas_implemented, (a_alpha, da_alpha_dT, d2a_alpha_dT2), rtol=1e-13)
+
+
     # PR back calculation for T
     eos = PRSV(Tc=507.6, Pc=3025000, omega=0.2975, V=0.0001301269135543934, P=1E6, kappa1=0.05104)
     assert_allclose(eos.T, 299)
@@ -616,6 +615,9 @@ def test_PRSV():
     test = PRSV(P=1e16, V=0.3498789873827434, Tc=507.6, Pc=3025000.0, omega=0.2975)
     assert_allclose(test.T, 421177338800932.0)
 
+
+
+
 def test_PRSV2():
     eos = PRSV2(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, kappa1=0.05104, kappa2=0.8634, kappa3=0.460)
     three_props = [eos.V_l, eos.H_dep_l, eos.S_dep_l]
@@ -625,11 +627,16 @@ def test_PRSV2():
     # Test of PRSV2 a_alphas
     a_alphas = [3.80542021117275, -0.006873163375791913, 2.3078023705053787e-05]
     
-    a_alphas_fast = eos.a_alpha_and_derivatives_pure(299)
-    assert_allclose(a_alphas, a_alphas_fast)
-    a_alphas_fast = eos.a_alpha_and_derivatives_pure(299, quick=False)
-    assert_allclose(a_alphas, a_alphas_fast)
+    a_alphas_implemented = eos.a_alpha_and_derivatives_pure(299)
+    assert_allclose(a_alphas, a_alphas_implemented)
     
+    
+    T, Tc, a, kappa, kappa0, kappa1, kappa2, kappa3 = eos.T, eos.Tc, eos.a, eos.kappa, eos.kappa0, eos.kappa1, eos.kappa2, eos.kappa3
+    a_alpha = a*(1 + kappa*(1-sqrt(T/Tc)))**2
+    da_alpha_dT = a*((kappa0 + (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)*(-T/Tc + 7/10))*(-sqrt(T/Tc) + 1) + 1)*(2*(-sqrt(T/Tc) + 1)*((sqrt(T/Tc) + 1)*(-T/Tc + 7/10)*(-kappa2*(-sqrt(T/Tc) + 1)/Tc - kappa2*sqrt(T/Tc)*(-T/Tc + kappa3)/(2*T)) - (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)/Tc + sqrt(T/Tc)*(kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(-T/Tc + 7/10)/(2*T)) - sqrt(T/Tc)*(kappa0 + (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)*(-T/Tc + 7/10))/T)
+    d2a_alpha_dT2 = a*((kappa0 + (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)*(-T/Tc + 7/10))*(-sqrt(T/Tc) + 1) + 1)*(2*(-sqrt(T/Tc) + 1)*((sqrt(T/Tc) + 1)*(-T/Tc + 7/10)*(kappa2*sqrt(T/Tc)/(T*Tc) + kappa2*sqrt(T/Tc)*(-T/Tc + kappa3)/(4*T**2)) - 2*(sqrt(T/Tc) + 1)*(-kappa2*(-sqrt(T/Tc) + 1)/Tc - kappa2*sqrt(T/Tc)*(-T/Tc + kappa3)/(2*T))/Tc + sqrt(T/Tc)*(-T/Tc + 7/10)*(-kappa2*(-sqrt(T/Tc) + 1)/Tc - kappa2*sqrt(T/Tc)*(-T/Tc + kappa3)/(2*T))/T - sqrt(T/Tc)*(kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))/(T*Tc) - sqrt(T/Tc)*(kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(-T/Tc + 7/10)/(4*T**2)) - 2*sqrt(T/Tc)*((sqrt(T/Tc) + 1)*(-T/Tc + 7/10)*(-kappa2*(-sqrt(T/Tc) + 1)/Tc - kappa2*sqrt(T/Tc)*(-T/Tc + kappa3)/(2*T)) - (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)/Tc + sqrt(T/Tc)*(kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(-T/Tc + 7/10)/(2*T))/T + sqrt(T/Tc)*(kappa0 + (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)*(-T/Tc + 7/10))/(2*T**2)) + a*((-sqrt(T/Tc) + 1)*((sqrt(T/Tc) + 1)*(-T/Tc + 7/10)*(-kappa2*(-sqrt(T/Tc) + 1)/Tc - kappa2*sqrt(T/Tc)*(-T/Tc + kappa3)/(2*T)) - (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)/Tc + sqrt(T/Tc)*(kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(-T/Tc + 7/10)/(2*T)) - sqrt(T/Tc)*(kappa0 + (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)*(-T/Tc + 7/10))/(2*T))*(2*(-sqrt(T/Tc) + 1)*((sqrt(T/Tc) + 1)*(-T/Tc + 7/10)*(-kappa2*(-sqrt(T/Tc) + 1)/Tc - kappa2*sqrt(T/Tc)*(-T/Tc + kappa3)/(2*T)) - (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)/Tc + sqrt(T/Tc)*(kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(-T/Tc + 7/10)/(2*T)) - sqrt(T/Tc)*(kappa0 + (kappa1 + kappa2*(-sqrt(T/Tc) + 1)*(-T/Tc + kappa3))*(sqrt(T/Tc) + 1)*(-T/Tc + 7/10))/T)
+    assert_close1d(a_alphas_implemented, (a_alpha, da_alpha_dT, d2a_alpha_dT2), rtol=1e-13)
+
     # PSRV2 back calculation for T
     eos = PRSV2(Tc=507.6, Pc=3025000, omega=0.2975, V=0.00013018825759153257, P=1E6, kappa1=0.05104, kappa2=0.8634, kappa3=0.460)
     assert_allclose(eos.T, 299)
@@ -703,10 +710,8 @@ def test_RK_quick():
     # Test solution for molar volumes
     eos = RK(Tc=507.6, Pc=3025000, T=299., P=1E6)
     Vs_fast = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_slow = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
     Vs_expected = [(0.00015189346878119082+0j), (0.0011670654270233137+0.001117116441729614j), (0.0011670654270233137-0.001117116441729614j)]
     assert_allclose(Vs_fast, Vs_expected)
-    assert_allclose(Vs_slow, Vs_expected)
     
     # Test of a_alphas
     a_alphas = [3.279649770989796, -0.005484364165534776, 2.7513532603017274e-05]
@@ -801,10 +806,8 @@ def test_SRK_quick():
     # Test solution for molar volumes
     eos = SRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
     Vs_fast = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_slow = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
     Vs_expected = [0.0001468210773547258, (0.0011696016227365465+0.001304089515440735j), (0.0011696016227365465-0.001304089515440735j)]
     assert_allclose(Vs_fast, Vs_expected)
-    assert_allclose(Vs_slow, Vs_expected)
     
     # Test of a_alphas
     a_alphas = [3.72718144448615, -0.007332994130304654, 1.9476133436500582e-05]
@@ -898,17 +901,19 @@ def test_APISRK_quick():
     # Test solution for molar volumes
     eos = APISRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
     Vs_fast = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_slow = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
     Vs_expected = [(0.00014681828835112518+0j), (0.0011696030172383468+0.0013042038361510636j), (0.0011696030172383468-0.0013042038361510636j)]
     assert_allclose(Vs_fast, Vs_expected)
-    assert_allclose(Vs_slow, Vs_expected)
     
     # Test of a_alphas
     a_alphas = [3.727476773890392, -0.007334914894987986, 1.948255305988373e-05]
-    a_alphas_fast = eos.a_alpha_and_derivatives_pure(299)
-    assert_allclose(a_alphas, a_alphas_fast)
-    a_alphas_slow = eos.a_alpha_and_derivatives_pure(299, quick=False)
-    assert_allclose(a_alphas, a_alphas_slow)
+    a_alphas_implemented = eos.a_alpha_and_derivatives_pure(299)
+    assert_allclose(a_alphas, a_alphas_implemented)
+    
+    a, Tc, S1, S2, T = eos.a, eos.Tc, eos.S1, eos.S2, eos.T
+    a_alpha = a*(S1*(-sqrt(T/Tc) + 1) + S2*(-sqrt(T/Tc) + 1)/sqrt(T/Tc) + 1)**2
+    da_alpha_dT = a*((S1*(-sqrt(T/Tc) + 1) + S2*(-sqrt(T/Tc) + 1)/sqrt(T/Tc) + 1)*(-S1*sqrt(T/Tc)/T - S2/T - S2*(-sqrt(T/Tc) + 1)/(T*sqrt(T/Tc))))
+    d2a_alpha_dT2 = a*(((S1*sqrt(T/Tc) + S2 - S2*(sqrt(T/Tc) - 1)/sqrt(T/Tc))**2 - (S1*sqrt(T/Tc) + 3*S2 - 3*S2*(sqrt(T/Tc) - 1)/sqrt(T/Tc))*(S1*(sqrt(T/Tc) - 1) + S2*(sqrt(T/Tc) - 1)/sqrt(T/Tc) - 1))/(2*T**2))
+    assert_allclose((a_alpha, da_alpha_dT, d2a_alpha_dT2), a_alphas_implemented)
 
     # SRK back calculation for T
     eos = APISRK(Tc=507.6, Pc=3025000, omega=0.2975, V=0.00014681828835112518, P=1E6)
@@ -964,11 +969,8 @@ def test_TWUPR_quick():
     # Test solution for molar volumes
     eos = TWUPR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
     Vs_fast = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_slow = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
     Vs_expected = [0.0001301755417057077, (0.0011236546051852435+0.001294926236567151j), (0.0011236546051852435-0.001294926236567151j)]
-
     assert_allclose(Vs_fast, Vs_expected)
-    assert_allclose(Vs_slow, Vs_expected)
     
     # Test of a_alphas
     a_alphas = [3.8069848647566698, -0.006971714700883658, 2.366703486824857e-05]
@@ -1027,11 +1029,8 @@ def test_TWUSRK_quick():
     # Test solution for molar volumes
     eos = TWUSRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
     Vs_fast = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_slow = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
     Vs_expected = [(0.00014689222296622437+0j), (0.001169566049930797+0.0013011782630948804j), (0.001169566049930797-0.0013011782630948804j)]
-
     assert_allclose(Vs_fast, Vs_expected)
-    assert_allclose(Vs_slow, Vs_expected)
     
     # Test of a_alphas
     a_alphas = [3.7196696151053654, -0.00726972623757774, 2.305590221826195e-05]
@@ -1202,11 +1201,8 @@ def test_PRTranslatedPPJP():
     # Test of a_alphas
     a_alphas = [3.811942643891255, -0.006716261984061717, 1.714789853730881e-05]
 
-    a_alphas_fast = eos.a_alpha_and_derivatives_pure(299)
-    assert_allclose(a_alphas, a_alphas_fast)
-
-    a_alphas_fast = eos.a_alpha_and_derivatives_pure(299, quick=False)
-    assert_allclose(a_alphas, a_alphas_fast)
+    a_alphas_implemented = eos.a_alpha_and_derivatives_pure(299)
+    assert_allclose(a_alphas, a_alphas_implemented)
 
     # back calculation for T
     eos = PRTranslatedPPJP(Tc=507.6, Pc=3025000, omega=0.2975, V=0.00013013535006092269, P=1E6)
@@ -1257,11 +1253,9 @@ def test_SRKTranslatedPPJP():
     # Test of a_alphas
     a_alphas = [3.7274765423787573, -0.007334913389260811, 1.9482548027213383e-05]
 
-    a_alphas_fast = eos.a_alpha_and_derivatives_pure(299)
-    assert_allclose(a_alphas, a_alphas_fast)
+    a_alphas_implemented = eos.a_alpha_and_derivatives_pure(299)
+    assert_allclose(a_alphas, a_alphas_implemented)
 
-    a_alphas_fast = eos.a_alpha_and_derivatives_pure(299, quick=False)
-    assert_allclose(a_alphas, a_alphas_fast)
 
     # back calculation for T
     eos = SRKTranslatedPPJP(Tc=507.6, Pc=3025000, omega=0.2975, V=0.0001468182905372137, P=1E6)
@@ -2225,3 +2219,21 @@ def test_misc_volume_issues():
     obj = PRTranslatedConsistent(Tc=126.2, Pc=3394387.5, omega=0.04, T=1e4, P=1e9)
     assert_close(obj.V_l, 0.00010895770362725658, rtol=1e-13)
     assert not hasattr(obj, 'V_g')
+    
+def test_a_alpha_pure():
+    from thermo.eos import eos_list
+    for e in eos_list:
+        obj = e(Tc=507.6, Pc=3025000.0, omega=0.2975, T=400., P=1E6)
+        a_alpha0 = obj.a_alpha_pure(obj.T)
+        a_alpha1 = obj.a_alpha_and_derivatives_pure(obj.T)[0]
+        assert_close(a_alpha0, a_alpha1, rtol=1e-13)
+
+
+def test_properties_removed_from_default():
+    obj = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=400., P=1E6)
+    assert_close(obj.V_dep_l, -0.0031697118624756325, rtol=1e-10)
+    assert_close(obj.V_dep_g, -0.001183908230519499, rtol=1e-10)
+    assert_close(obj.U_dep_l, -22942.165709199802, rtol=1e-10)
+    assert_close(obj.U_dep_g, -2365.3923474388685, rtol=1e-10)
+    assert_close(obj.A_dep_l, 297.2134281175058, rtol=1e-10)
+    assert_close(obj.A_dep_g, 210.38840980284795, rtol=1e-10)

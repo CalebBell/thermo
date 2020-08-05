@@ -352,7 +352,7 @@ def test_HeatCapacityLiquidMixture():
     obj = HeatCapacityLiquidMixture(MWs=m.MWs, CASs=m.CASs, HeatCapacityLiquids=m.HeatCapacityLiquids)
     
     Cp = obj(m.T, m.P, m.zs, m.ws)
-    assert_allclose(Cp, 72.29643435124115)
+    assert_allclose(Cp, 72.29643435124115, rtol=1e-5)
     
     Cp = obj.calculate(m.T, m.P, m.zs, m.ws, SIMPLE)
     assert_allclose(Cp, 73.715439, rtol=.01)

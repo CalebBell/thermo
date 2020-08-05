@@ -206,6 +206,13 @@ chemical.__dict__['Mixture'] = mixture.Mixture
 chemical.__dict__['Stream'] = stream.Stream
 # However, they cannot go in thermo.chemical's __all__ or they will appear in the
 # documentation and Sphinx currently has no wat to exclude them
+submodules = [chemical, chemical_package, chemical_utils, coolprop, datasheet, 
+              electrochem, eos, eos_mix, equilibrium, flash, heat_capacity,
+              identifiers, interaction_parameters, interface, joback, law, 
+              mixture, nrtl, permittivity, phase_change, phase_identification,
+              phases, property_package, property_package_constants, psychrometrics,
+              regular_solution, stream, thermal_conductivity, unifac, uniquac, 
+              utils, vapor_pressure, viscosity, volume, wilson]
 
 thermo_dir = os.path.dirname(__file__)
 

@@ -37,7 +37,7 @@ __all__ = ['conductivity', 'Laliberte_density', 'Laliberte_heat_capacity',
 import os
 from collections import namedtuple
 from fluids.constants import e, N_A
-from fluids.numerics import newton, horner
+from fluids.numerics import newton, horner, chebval
 
 from chemicals.utils import exp, log10
 from chemicals.utils import to_num, ws_to_zs
@@ -70,6 +70,22 @@ CRC_aqueous_thermodynamics = pd.read_csv(os.path.join(folder, 'CRC Thermodynamic
                           sep='\t', index_col=0) 
 
 electrolyte_dissociation_reactions = pd.read_csv(os.path.join(folder, 'Electrolyte dissociations.csv'), sep='\t')
+
+McCleskey_parameters = namedtuple("McCleskey_parameters",
+                                  ["Formula", 'lambda_coeffs', 'A_coeffs', 'B', 'multiplier'])
+
+McCleskey_conductivities = {}
+with open(os.path.join(folder, 'McCleskey Electrical Conductivity.csv')) as f:
+    next(f)
+    for line in f:
+        values = line.strip().split('\t')
+        formula, CASRN, lbt2, lbt, lbc, At2, At, Ac, B, multiplier = to_num(values)
+        McCleskey_conductivities[CASRN] = McCleskey_parameters(formula, 
+            [lbt2, lbt, lbc], [At2, At, Ac], B, multiplier)
+
+
+Lange_cond_pure = pd.read_csv(os.path.join(folder, 'Lange Pure Species Conductivity.tsv'),
+                          sep='\t', index_col=0)
 
 
 _Laliberte_Density_ParametersDict = {}
@@ -130,7 +146,7 @@ def Laliberte_viscosity_w(T):
     Examples
     --------
     >>> Laliberte_viscosity_w(298)
-    0.0008932264487033279
+    0.000893226448703328
 
     References
     ----------
@@ -140,8 +156,8 @@ def Laliberte_viscosity_w(T):
        doi:10.1021/je8008123
     '''
     t = T-273.15
-    mu_w = (t + 246)/((0.05594*t+5.2842)*t + 137.37)
-    return mu_w/1000.
+    mu_w = (t + 246.0)/((0.05594*t+5.2842)*t + 137.37)
+    return mu_w*1e-3
 
 
 def Laliberte_viscosity_i(T, w_w, v1, v2, v3, v4, v5, v6):
@@ -186,7 +202,7 @@ def Laliberte_viscosity_i(T, w_w, v1, v2, v3, v4, v5, v6):
     '''
     t = T - 273.15
     mu_i = exp((v1*(1.0 - w_w)**v2 + v3)/(v4*t + 1.0))/(v5*(1.0 - w_w)**v6 + 1.0)
-    return mu_i/1000.
+    return mu_i*1e-3
 
 
 def Laliberte_viscosity(T, ws, CASRNs):
@@ -236,7 +252,7 @@ def Laliberte_viscosity(T, ws, CASRNs):
         d = _Laliberte_Viscosity_ParametersDict[CASRNs[i]]
         mu_i = Laliberte_viscosity_i(T, w_w, d["V1"], d["V2"], d["V3"], d["V4"], d["V5"], d["V6"])*1000.
         mu = mu_i**(ws[i])*mu
-    return mu/1000.
+    return mu*1e-3
 
 
 ### Laliberty Density Functions
@@ -328,7 +344,7 @@ def Laliberte_density_i(T, w_w, c0, c1, c2, c3, c4):
     '''
     t = T - 273.15
     tc4 = t + c4
-    return ((c0*(1 - w_w)+c1)*exp(1E-6*tc4*tc4))/((1.0 - w_w) + c2 + c3*t)
+    return ((c0*(1.0 - w_w)+c1)*exp(1E-6*tc4*tc4))/((1.0 - w_w) + c2 + c3*t)
 
 
 def Laliberte_density(T, ws, CASRNs):
@@ -382,7 +398,10 @@ def Laliberte_density(T, ws, CASRNs):
 
 _T_array = [-15, -10, -5, 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140]
 _Cp_array = [4294.03, 4256.88, 4233.58, 4219.44, 4204.95, 4195.45, 4189.1, 4184.8, 4181.9, 4180.02, 4178.95, 4178.86, 4178.77, 4179.56, 4180.89, 4182.77, 4185.17, 4188.1, 4191.55, 4195.52, 4200.01, 4205.02, 4210.57, 4216.64, 4223.23, 4230.36, 4238.07, 4246.37, 4255.28, 4264.84, 4275.08, 4286.04]
-Laliberte_heat_capacity_w_interp = interp1d(_T_array, _Cp_array, kind='cubic')
+#Laliberte_heat_capacity_w_interp = interp1d(_T_array, _Cp_array, kind='cubic')
+
+# 1e-6 average error on cubic spline git
+Laliberte_heat_capacity_coeffs = [4228.506275726314, 13.859638974036017, 51.12143245170611, -12.90387025377214, 7.992709462644314, -3.737776928318681, 1.6667217703320034, -0.7011591222507434, 0.47615741350304575, -0.493658639074539, 0.45382402984949977, -0.2979206670910628, 0.0818355999576994, 0.1113371262709677, -0.21771870666886173, 0.23339766592859235, -0.1854788014782116, 0.08676288798618259, 0.03621105533331104, -0.1282405541135745, 0.15239930922413691, -0.10788380795227681, 0.028345111214775898, 0.035069303368203464, -0.06495590102171889, 0.07363090302945352, -0.06331457054710654, 0.02942889002358129, 0.020298208143387342, -0.05909390678584714, 0.05963564932631016, -0.02516892518832492, -0.012125676723016454, 0.02583462983905349, -0.019854257138064213, 0.013767379089216547, -0.012529247440497215, 0.004935128815787948, 0.012004756458708243, -0.023387087952343677, 0.01519082828964713, 0.0054837626370698445, -0.01605331777994934, 0.006710668291447064, 0.006166715295293557, -0.004472342227487047, -0.006087884102271346, 0.007269043765461447, 0.0039102753200097595, -0.005634128353356971]
 
 def Laliberte_heat_capacity_w(T):
     r'''Calculate the heat capacity of water using the interpolation proposed
@@ -413,7 +432,7 @@ def Laliberte_heat_capacity_w(T):
     Examples
     --------
     >>> Laliberte_heat_capacity_w(273.15+3.56)
-    4208.878020261102
+    4208.878727051538
 
     References
     ----------
@@ -422,7 +441,7 @@ def Laliberte_heat_capacity_w(T):
        Chemical & Engineering Data 54, no. 6 (June 11, 2009): 1725-60.
        doi:10.1021/je8008123
     '''
-    return float(Laliberte_heat_capacity_w_interp(T - 273.15))
+    return chebval(0.012903225806451612892*(T - 335.64999999999997726), Laliberte_heat_capacity_coeffs)
 
 
 def Laliberte_heat_capacity_i(T, w_w, a1, a2, a3, a4, a5, a6):
@@ -501,7 +520,7 @@ def Laliberte_heat_capacity(T, ws, CASRNs):
     Examples
     --------
     >>> Laliberte_heat_capacity(273.15+1.5, [0.00398447], ['7647-14-5']) 
-    4186.569908672113
+    4186.575407596064
 
     References
     ----------
@@ -519,17 +538,6 @@ def Laliberte_heat_capacity(T, ws, CASRNs):
         Cp_i = Laliberte_heat_capacity_i(T, w_w, d["A1"], d["A2"], d["A3"], d["A4"], d["A5"], d["A6"])
         Cp = Cp + ws[i]*Cp_i
     return Cp
-
-#print Laliberte_heat_capacity(298.15, [0.1], ['7664-41-7']) #4186.0988
-
-## Aqueous HCl, trying to find heat capacity of Cl- as H+ is zero.
-#zero = Laliberte_heat_capacity(298.15, [0.0000000000000001], ['7647-01-0'])
-#small = Laliberte_heat_capacity(298.15, [0.1], ['7647-01-0'])  # 1 molal
-#print zero, small
-#print (zero-small)*36.46094/100
-## cRC gives -136.4 J/mol
-## I cannot reproduce this at all.
-
 
 ### Electrical Conductivity
 
@@ -587,18 +595,6 @@ def dilute_ionic_conductivity(ionic_conductivities, zs, rhom):
     '''
     return sum([ci*(zi*rhom) for zi, ci in zip(zs, ionic_conductivities)])
 
-
-McCleskey_parameters = namedtuple("McCleskey_parameters",
-                                  ["Formula", 'lambda_coeffs', 'A_coeffs', 'B', 'multiplier'])
-
-McCleskey_conductivities = {}
-with open(os.path.join(folder, 'McCleskey Electrical Conductivity.csv')) as f:
-    next(f)
-    for line in f:
-        values = line.strip().split('\t')
-        formula, CASRN, lbt2, lbt, lbc, At2, At, Ac, B, multiplier = to_num(values)
-        McCleskey_conductivities[CASRN] = McCleskey_parameters(formula, 
-            [lbt2, lbt, lbc], [At2, At, Ac], B, multiplier)
 
 
 def conductivity_McCleskey(T, M, lambda_coeffs, A_coeffs, B, multiplier, rho=1000.):
@@ -676,10 +672,6 @@ def conductivity_McCleskey(T, M, lambda_coeffs, A_coeffs, B, multiplier, rho=100
     return param*C*multiplier*0.1 # convert from mS/cm to S/m
 
 
-
-
-Lange_cond_pure = pd.read_csv(os.path.join(folder, 'Lange Pure Species Conductivity.tsv'),
-                          sep='\t', index_col=0)
 
 
 LANGE_COND = "LANGE_COND"
@@ -965,8 +957,9 @@ def Kweq_IAPWS_gas(T):
     gamma1 = 4.825133E4
     gamma2 = -6.770793E4
     gamma3 = 1.010210E7
-    T2 = T*T
-    K_w_G = 10**(-(gamma0 + gamma1/T + gamma2/T2 + gamma3/(T2*T)))
+    T_inv = 1.0/T
+    T_inv2 = T_inv*T_inv
+    K_w_G = 10**(-(gamma0 + gamma1*T_inv + gamma2*T_inv2 + gamma3*T_inv2*T_inv))
     return K_w_G
 
 
@@ -1022,7 +1015,7 @@ def Kweq_IAPWS(T, rho_w):
        doi:10.1063/1.1928231
     '''
     K_w_G = Kweq_IAPWS_gas(T)
-    rho_w = rho_w/1000.
+    rho_w = rho_w*1e-3
     n = 6
     alpha0 = -0.864671
     alpha1 = 8659.19
@@ -1309,7 +1302,7 @@ def balance_ions(anions, cations, anion_zs=None, cation_zs=None,
     charges = anion_charges + cation_charges + [0]
 
     MW_water = [18.01528]
-    rho_w = rho_w/1000 # Convert to kg/liter
+    rho_w = rho_w*1e-3 # Convert to kg/liter
     
     if anion_concs is not None and cation_concs is not None:
         anion_ws = [i*1E-6/rho_w for i in anion_concs]

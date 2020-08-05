@@ -42,7 +42,6 @@ def test_PRMIX_quick():
     eos = PRMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
 
     Vs_calc = eos.sorted_volumes
-#    eos.volume_solutions_full(115, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
     Vs_expected = [3.6257362939705926e-05, 0.0001938347308115875, 0.0007006659231347702]
     assert_allclose(Vs_calc, Vs_expected)
 
@@ -502,10 +501,8 @@ def test_PRMIX_VS_PR():
     # Test solution for molar volumes
     eos = PRMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., P=1E6)
     Vs_fast = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_slow = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
     Vs_expected = [(0.00013022212513965833+0j), (0.001123631313468268+0.0012926967234386066j), (0.001123631313468268-0.0012926967234386066j)]
     assert_allclose(Vs_fast, Vs_expected)
-    assert_allclose(Vs_slow, Vs_expected)
     
     # Test of a_alphas
     a_alphas = (3.8012620034344384, -0.006647930535193548, 1.693013909536469e-05)
@@ -623,10 +620,8 @@ def test_SRKMIX_vs_SRK():
     # Test solution for molar volumes
     eos = SRKMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., P=1E6)
     Vs_fast = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_slow = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
     Vs_expected = [(0.0001468210773547259+0j), (0.0011696016227365465+0.001304089515440735j), (0.0011696016227365465-0.001304089515440735j)]
     assert_allclose(Vs_fast, Vs_expected)
-    assert_allclose(Vs_slow, Vs_expected)
     
     # Test of a_alphas
     a_alphas = (3.72718144448615, -0.007332994130304653, 1.9476133436500582e-05)
@@ -912,11 +907,8 @@ def test_TWUPRMIX_vs_TWUPR():
     # Test solution for molar volumes
     eos = TWUPRMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., P=1E6)
     Vs_fast = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_slow = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
     Vs_expected = [(0.00013017554170570767+0j), (0.0011236546051852433+0.0012949262365671505j), (0.0011236546051852433-0.0012949262365671505j)]
-
     assert_allclose(Vs_fast, Vs_expected)
-    assert_allclose(Vs_slow, Vs_expected)
     
     # Test of a_alphas
     a_alphas = (3.8069848647566698, -0.006971714700883658, 2.366703486824857e-05)
@@ -1114,10 +1106,8 @@ def test_APISRKMIX_vs_APISRK():
     # Test solution for molar volumes
     eos = APISRKMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., P=1E6)
     Vs_fast = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_slow = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha, quick=False)
     Vs_expected = [(0.00014681828835112518+0j), (0.0011696030172383468+0.0013042038361510636j), (0.0011696030172383468-0.0013042038361510636j)]
     assert_allclose(Vs_fast, Vs_expected)
-    assert_allclose(Vs_slow, Vs_expected)
     
     # Test of a_alphas
     a_alphas = (3.727476773890392, -0.007334914894987986, 1.9482553059883725e-05)
