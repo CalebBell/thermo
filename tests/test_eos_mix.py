@@ -3687,7 +3687,7 @@ def test_dlnphi_dns_PR_sample():
     dlnphi_dns = eos_g.dlnphi_dns(eos_g.Z_g, zs)
     dlnphi_dns_num = jacobian(to_jac, zs, perturbation=2.5e-8)
     assert_allclose(dlnphi_dns, dlnphi_dns_expect, rtol=1e-10)
-    assert_allclose(dlnphi_dns, dlnphi_dns_num, rtol=1e-6)
+    assert_allclose(dlnphi_dns, dlnphi_dns_num, rtol=2e-6)
     
     phase = 'l'
     dlnphi_dns_expect = [1.9236608126782464, -0.656145489105985, -1.3868994766041807, 0.8873321488365646]

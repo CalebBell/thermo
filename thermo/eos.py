@@ -1157,7 +1157,7 @@ class GCEOS(object):
 
         dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP, d2P_dT2, d2P_dV2, d2V_dT2,
         d2V_dP2, d2T_dV2, d2T_dP2, d2V_dPdT, d2P_dTdV, d2T_dPdV, H_dep, S_dep,
-        beta, kappa, Cp_minus_Cv, G_dep, fugacity, phi,
+        G_dep
         and PIP.
 
         Parameters
@@ -1315,10 +1315,6 @@ class GCEOS(object):
 
             G_{dep} = H_{dep} - T S_{dep}
 
-            \text{fugacity} = P\exp\left(\frac{G_{dep}}{RT}\right)
-
-            \phi = \frac{\text{fugacity}}{P}
-
             C_{v, dep} = T\int_\infty^V \left(\frac{\partial^2 P}{\partial
             T^2}\right) dV = - T a \left(\sqrt{\frac{1}{\delta^{2} - 4
             \epsilon}} \log{\left (V - \frac{\delta^{2}}{2} \sqrt{\frac{1}{
@@ -1354,28 +1350,15 @@ class GCEOS(object):
         V_inv = 1.0/V
         Z = P*V*RT_inv
 
-        beta = dV_dT*V_inv # isobaric_expansion(V, dV_dT)
-        kappa = -dV_dP*V_inv # isothermal_compressibility(V, dV_dP)
         Cp_m_Cv = -T*dP_dT*dP_dT*dV_dP # Cp_minus_Cv(T, dP_dT, dP_dV)
 
         Cp_dep = Cp_m_Cv + Cv_dep - R
 
         G_dep = H_dep - T*S_dep
-        try:
-            fugacity = P*exp(G_dep*RT_inv)
-        except OverflowError:
-            fugacity = P*trunc_exp(G_dep*RT_inv, trunc=1e308)
-        phi = fugacity*P_inv
-
         PIP = V*(d2P_dTdV*dT_dP - d2P_dV2*dV_dP) # phase_identification_parameter(V, dP_dT, dP_dV, d2P_dV2, d2P_dTdV)
-
-
          # 1 + 1e-14 - allow a few dozen unums of toleranve to keep ideal gas model a gas
         if force_l or (not force_g and PIP > 1.00000000000001):
-            self.V_l, self.Z_l = V, Z
-            self.beta_l, self.kappa_l = beta, kappa
-            self.PIP_l, self.Cp_minus_Cv_l = PIP, Cp_m_Cv
-
+            self.V_l, self.Z_l, self.PIP_l = V, Z, PIP
             self.dP_dT_l, self.dP_dV_l, self.dV_dT_l = dP_dT, dP_dV, dV_dT
             self.dV_dP_l, self.dT_dV_l, self.dT_dP_l = dV_dP, dT_dV, dT_dP
 
@@ -1386,14 +1369,10 @@ class GCEOS(object):
             self.d2V_dPdT_l, self.d2P_dTdV_l, self.d2T_dPdV_l = d2V_dPdT, d2P_dTdV, d2T_dPdV
 
             self.H_dep_l, self.S_dep_l, self.G_dep_l = H_dep, S_dep, G_dep,
-            self.fugacity_l, self.phi_l = fugacity, phi
             self.Cp_dep_l, self.Cv_dep_l = Cp_dep, Cv_dep
             return 'l'
         else:
-            self.V_g, self.Z_g = V, Z
-            self.beta_g, self.kappa_g = beta, kappa
-            self.PIP_g, self.Cp_minus_Cv_g = PIP, Cp_m_Cv
-
+            self.V_g, self.Z_g, self.PIP_g = V, Z, PIP
             self.dP_dT_g, self.dP_dV_g, self.dV_dT_g = dP_dT, dP_dV, dV_dT
             self.dV_dP_g, self.dT_dV_g, self.dT_dP_g = dV_dP, dT_dV, dT_dP
 
@@ -1404,7 +1383,6 @@ class GCEOS(object):
             self.d2V_dPdT_g, self.d2P_dTdV_g, self.d2T_dPdV_g = d2V_dPdT, d2P_dTdV, d2T_dPdV
 
             self.H_dep_g, self.S_dep_g, self.G_dep_g = H_dep, S_dep, G_dep,
-            self.fugacity_g, self.phi_g = fugacity, phi
             self.Cp_dep_g, self.Cv_dep_g = Cp_dep, Cv_dep
             return 'g'
 
@@ -3735,6 +3713,118 @@ class GCEOS(object):
         rho2 = -P_low*P_low*((rho_low - 1.4*rho_pseudo_mc)*0.5 + P_low/dP_drho)
         rho_ans = rho0 + rho1/eos_low.P + rho2/(eos_low.P*eos_low.P)
         return 1.0/rho_ans
+
+    @property
+    def fugacity_l(self):
+        r'''Fugacity for the liquid phase, [Pa].
+
+        .. math::
+            \text{fugacity} = P\exp\left(\frac{G_{dep}}{RT}\right)
+        '''
+        arg = self.G_dep_l*R_inv/self.T
+        try:
+            return self.P*exp(arg)
+        except:
+            return self.P*1e308
+
+    @property
+    def fugacity_g(self):
+        r'''Fugacity for the gas phase, [Pa].
+
+        .. math::
+            \text{fugacity} = P\exp\left(\frac{G_{dep}}{RT}\right)
+        '''
+        arg = self.G_dep_g*R_inv/self.T
+        try:
+            return self.P*exp(arg)
+        except:
+            return self.P*1e308
+
+    @property
+    def phi_l(self):
+        r'''Fugacity coefficient for the liquid phase, [Pa].
+
+        .. math::
+            \phi = \frac{\text{fugacity}}{P}
+        '''
+        arg = self.G_dep_l*R_inv/self.T
+        try:
+            return exp(arg)
+        except:
+            return 1e308
+
+    @property
+    def phi_g(self):
+        r'''Fugacity coefficient for the gas phase, [Pa].
+
+        .. math::
+            \phi = \frac{\text{fugacity}}{P}
+        '''
+        arg = self.G_dep_g*R_inv/self.T
+        try:
+            return exp(arg)
+        except:
+            return 1e308
+
+    @property
+    def Cp_minus_Cv_l(self):
+        r'''Cp - Cv for the liquid phase, [J/mol/K].
+
+        .. math::
+            C_p - C_v = -T\left(\frac{\partial P}{\partial T}\right)_V^2/
+            \left(\frac{\partial P}{\partial V}\right)_T
+        '''
+        return -self.T*self.dP_dT_l*self.dP_dT_l*self.dV_dP_l
+
+    @property
+    def Cp_minus_Cv_g(self):
+        r'''Cp - Cv for the gas phase, [J/mol/K].
+
+        .. math::
+            C_p - C_v = -T\left(\frac{\partial P}{\partial T}\right)_V^2/
+            \left(\frac{\partial P}{\partial V}\right)_T
+        '''
+        return -self.T*self.dP_dT_g*self.dP_dT_g*self.dV_dP_g
+
+    @property
+    def beta_l(self):
+        r'''Isobaric (constant-pressure) expansion coefficient for the liquid 
+        phase, [1/K].
+
+        .. math::
+            \beta = \frac{1}{V}\frac{\partial V}{\partial T}
+        '''
+        return self.dV_dT_l/self.V_l
+
+    @property
+    def beta_g(self):
+        r'''Isobaric (constant-pressure) expansion coefficient for the gas 
+        phase, [1/K].
+
+        .. math::
+            \beta = \frac{1}{V}\frac{\partial V}{\partial T}
+        '''
+        return self.dV_dT_g/self.V_g
+
+    @property
+    def kappa_l(self):
+        r'''Isothermal (constant-temperature) expansion coefficient for the liquid 
+        phase, [1/Pa].
+
+        .. math::
+            \kappa = \frac{-1}{V}\frac{\partial V}{\partial P}
+        '''
+        return -self.dV_dP_l/self.V_l
+
+    @property
+    def kappa_g(self):
+        r'''Isothermal (constant-temperature) expansion coefficient for the gas 
+        phase, [1/Pa].
+
+        .. math::
+            \kappa = \frac{-1}{V}\frac{\partial V}{\partial P}
+        '''
+        return -self.dV_dP_g/self.V_g
 
     @property
     def V_dep_l(self):

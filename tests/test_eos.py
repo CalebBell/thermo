@@ -2237,3 +2237,18 @@ def test_properties_removed_from_default():
     assert_close(obj.U_dep_g, -2365.3923474388685, rtol=1e-10)
     assert_close(obj.A_dep_l, 297.2134281175058, rtol=1e-10)
     assert_close(obj.A_dep_g, 210.38840980284795, rtol=1e-10)
+    
+    assert_close(obj.beta_l, 0.0026933709177837427, rtol=1e-10)
+    assert_close(obj.beta_g, 0.010123223911174954, rtol=1e-10)
+    
+    assert_close(obj.kappa_l, 9.335721543829307e-09, rtol=1e-10)
+    assert_close(obj.kappa_g, 1.9710669809793286e-06, rtol=1e-10)
+    
+    assert_close(obj.Cp_minus_Cv_l, 48.510162249729795, rtol=1e-10)
+    assert_close(obj.Cp_minus_Cv_g, 44.54416112806537, rtol=1e-10)
+    
+    assert_close(obj.phi_g, 0.7462319487885894, rtol=1e-10)
+    assert_close(obj.phi_l, 0.4215970078576569, rtol=1e-10)
+    
+    assert_close(obj.fugacity_l, 421597.0078576569, rtol=1e-10)
+    assert_close(obj.fugacity_g, 746231.9487885894, rtol=1e-10)
