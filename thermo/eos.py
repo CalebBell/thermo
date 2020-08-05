@@ -1238,10 +1238,6 @@ class GCEOS(object):
             \right)^{3}} + \frac{a \alpha{\left (T \right )}}{\left(V^{2} + V
             \delta + \epsilon\right)^{2}}\right)
 
-            \left(\frac{\partial^2 V}{\partial P^2}\right)_T = -\left(\frac{
-            \partial^2 P}{\partial V^2}\right)_T \left(\frac{\partial P}{
-            \partial V}\right)^{-3}_T
-
             \left(\frac{\partial^2 V}{\partial T^2}\right)_P = -\left[
             \left(\frac{\partial^2 P}{\partial T^2}\right)_V
             \left(\frac{\partial P}{\partial V}\right)_T
@@ -1309,7 +1305,7 @@ class GCEOS(object):
            Butterworth-Heinemann, 1985.
         '''
         (dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP,
-            d2P_dT2, d2P_dV2, d2V_dT2, d2V_dP2, _, _,
+            d2P_dT2, d2P_dV2, d2V_dT2, _, _, _,
             _, d2P_dTdV, _,
             H_dep, S_dep, Cv_dep) = self.derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha, da_alpha_dT, d2a_alpha_dT2, quick=quick)
 
@@ -1338,7 +1334,7 @@ class GCEOS(object):
             self.dV_dP_l, self.dT_dV_l, self.dT_dP_l = dV_dP, dT_dV, dT_dP
 
             self.d2P_dT2_l, self.d2P_dV2_l = d2P_dT2, d2P_dV2
-            self.d2V_dT2_l, self.d2V_dP2_l = d2V_dT2, d2V_dP2
+            self.d2V_dT2_l = d2V_dT2
 
             self.d2P_dTdV_l = d2P_dTdV
 
@@ -1351,7 +1347,7 @@ class GCEOS(object):
             self.dV_dP_g, self.dT_dV_g, self.dT_dP_g = dV_dP, dT_dV, dT_dP
 
             self.d2P_dT2_g, self.d2P_dV2_g = d2P_dT2, d2P_dV2
-            self.d2V_dT2_g, self.d2V_dP2_g = d2V_dT2, d2V_dP2
+            self.d2V_dT2_g = d2V_dT2
             self.d2P_dTdV_g = d2P_dTdV
 
             self.H_dep_g, self.S_dep_g, self.G_dep_g = H_dep, S_dep, G_dep,
@@ -3943,7 +3939,7 @@ class GCEOS(object):
     @property
     def d2T_dP2_g(self):
         r'''Second partial derivative of temperature with respect to 
-        pressure (constant temperature) for the gas phase, [K/Pa^2]
+        pressure (constant volume) for the gas phase, [K/Pa^2]
 
         .. math::
             \left(\frac{\partial^2 T}{\partial P^2}\right)_V = -\left(\frac{
@@ -3953,6 +3949,34 @@ class GCEOS(object):
         '''
         dT_dP = self.dT_dP_g
         return -self.d2P_dT2_g*dT_dP*dT_dP*dT_dP # unused
+
+    @property
+    def d2V_dP2_l(self):
+        r'''Second partial derivative of volume with respect to 
+        pressure (constant temperature) for the liquid phase, [m^3/(Pa^2*mol)]
+
+        .. math::
+            \left(\frac{\partial^2 V}{\partial P^2}\right)_T = -\left(\frac{
+            \partial^2 P}{\partial V^2}\right)_T \left(\frac{\partial P}{
+            \partial V}\right)^{-3}_T
+
+        '''
+        dV_dP = self.dV_dP_l
+        return -self.d2P_dV2_l*dV_dP*dV_dP*dV_dP
+
+    @property
+    def d2V_dP2_g(self):
+        r'''Second partial derivative of volume with respect to 
+        pressure (constant temperature) for the gas phase, [m^3/(Pa^2*mol)]
+
+        .. math::
+            \left(\frac{\partial^2 V}{\partial P^2}\right)_T = -\left(\frac{
+            \partial^2 P}{\partial V^2}\right)_T \left(\frac{\partial P}{
+            \partial V}\right)^{-3}_T
+
+        '''
+        dV_dP = self.dV_dP_g
+        return -self.d2P_dV2_g*dV_dP*dV_dP*dV_dP
 
     @property
     def d2T_dV2_l(self):
