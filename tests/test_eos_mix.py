@@ -3874,7 +3874,7 @@ def test_dfugacities_dns_PR_4():
     dfugacities_dns_l_expect =[[16181029.072792342, 50151.468339063846, 2994997.142794145, -6316580.859463232], [7601.827445166389, 1447527.9179300785, -703943.29300887, -197706.94606967806], [327913.730146497, -508471.37649235234, 207659.02085379465, 16512.99006920588], [-8963347.443242379, -1850869.2682689782, 214018.1973988597, 3005757.846895938]]
     dfugacities_dns_num = jacobian(to_diff_fugacities, zs, scalar=False, perturbation=1.5e-7)
     assert_allclose(dfugacities_dns_l, dfugacities_dns_l_expect, rtol=1e-10)
-    assert_allclose(dfugacities_dns_l, dfugacities_dns_num, rtol=5e-6)
+    assert_allclose(dfugacities_dns_l, dfugacities_dns_num, rtol=1e-5)
     # assert_allclose(nd.Jacobian(lambda x: np.array(to_diff_fugacities(x.tolist())), step=13.e-7)(np.array(zs)),
     #                 dfugacities_dns_l, rtol=1e-8)
 
@@ -3937,7 +3937,7 @@ def test_dlnfugacities_dn_PR():
     dfugacities_dns_l_expect =[[6.1582411240412345, 0.01908684752788581, 1.1398480583755637, -2.4039897485559263], [0.019086847527884032, 3.6344872152359278, -1.7674774123530248, -0.4964072602351657], [1.1398480583755635, -1.7674774123530226, 0.7218353791365238, 0.057400157230227386], [-2.403989748555926, -0.49640726023516624, 0.05740015723022828, 0.8061509493338931]]
     dfugacities_dns_num = jacobian(to_diff_fugacities, zs, scalar=False, perturbation=2e-7)
     assert_allclose(dfugacities_dns_l, dfugacities_dns_l_expect, rtol=1e-10)
-    assert_allclose(dfugacities_dns_l, dfugacities_dns_num, rtol=5e-6)
+    assert_allclose(dfugacities_dns_l, dfugacities_dns_num, rtol=1e-5)
     # assert_allclose(nd.Jacobian(lambda x: np.array(to_diff_fugacities(x.tolist())), step=13.e-7)(np.array(zs)),
     #                 dfugacities_dns_l, rtol=1e-8)
 

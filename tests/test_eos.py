@@ -2252,3 +2252,26 @@ def test_properties_removed_from_default():
     
     assert_close(obj.fugacity_l, 421597.0078576569, rtol=1e-10)
     assert_close(obj.fugacity_g, 746231.9487885894, rtol=1e-10)
+    
+    
+    assert_close(obj.d2T_dPdV_l, 0.06648808797660258, rtol=1e-10)
+    assert_close(obj.d2T_dPdV_g, 0.11547009948453864, rtol=1e-10)
+    
+    assert_close(obj.d2V_dPdT_l, -3.138778202711144e-14, rtol=1e-10)
+    assert_close(obj.d2V_dPdT_g, 4.093861979513936e-11, rtol=1e-10)
+    
+    assert_close(obj.d2T_dP2_l, 9.807759281716453e-15, rtol=1e-10)
+    assert_close(obj.d2T_dP2_g, 1.6022283800180742e-11, rtol=1e-10)
+    
+    assert_close(obj.d2T_dV2_l, -76277125910.67743, rtol=1e-10)
+    assert_close(obj.d2T_dV2_g, 47976821.951772854, rtol=1e-10)
+    
+    assert_close(obj.d2V_dP2_l, 1.4539647915909343e-19, rtol=1e-10)
+    assert_close(obj.d2V_dP2_g, 2.2516313983125958e-15, rtol=1e-10)
+    
+    assert_close(obj.d2V_dT2_l, 5.665884245566452e-09, rtol=1e-10)
+    assert_close(obj.d2V_dT2_g, -4.890705089284328e-07, rtol=1e-10)
+    
+    assert_close(obj.d2P_dT2_g, -2.170585015391721, rtol=1e-10)
+    assert_close(obj.d2P_dT2_l, -235.51286126983416, rtol=1e-10)
+    

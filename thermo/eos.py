@@ -1344,16 +1344,8 @@ class GCEOS(object):
             d2V_dPdT, d2P_dTdV, d2T_dPdV,
             H_dep, S_dep, Cv_dep) = self.derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha, da_alpha_dT, d2a_alpha_dT2, quick=quick)
 
-        RT = R*T
-        RT_inv = 1.0/RT
-        P_inv = 1.0/P
-        V_inv = 1.0/V
-        Z = P*V*RT_inv
-
-        Cp_m_Cv = -T*dP_dT*dP_dT*dV_dP # Cp_minus_Cv(T, dP_dT, dP_dV)
-
-        Cp_dep = Cp_m_Cv + Cv_dep - R
-
+        Z = P*V*R_inv/T
+        Cp_dep = -T*dP_dT*dP_dT*dV_dP + Cv_dep - R
         G_dep = H_dep - T*S_dep
         PIP = V*(d2P_dTdV*dT_dP - d2P_dV2*dV_dP) # phase_identification_parameter(V, dP_dT, dP_dV, d2P_dV2, d2P_dTdV)
          # 1 + 1e-14 - allow a few dozen unums of toleranve to keep ideal gas model a gas
@@ -2070,7 +2062,7 @@ class GCEOS(object):
                                              d2a_alpha_dT2, quick=quick))
         try:
             inverse_dP_dV = 1.0/dP_dV
-        except ZeroDivisionError:
+        except:
             inverse_dP_dV = inf
         dT_dP = 1./dP_dT
 
@@ -2085,25 +2077,20 @@ class GCEOS(object):
         inverse_dP_dT2 = dT_dP*dT_dP
         inverse_dP_dT3 = inverse_dP_dT2*dT_dP
 
-        d2V_dP2 = -d2P_dV2*inverse_dP_dV3
-        d2T_dP2 = -d2P_dT2*inverse_dP_dT3
+        d2V_dP2 = -d2P_dV2*inverse_dP_dV3 # unused
+        d2T_dP2 = -d2P_dT2*inverse_dP_dT3 # unused
 
         d2T_dV2 = (-(d2P_dV2*dP_dT - dP_dV*d2P_dTdV)*inverse_dP_dT2
-                   +(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*inverse_dP_dT3*dP_dV)
-        d2V_dT2 = (-(d2P_dT2*dP_dV - dP_dT*d2P_dTdV)*inverse_dP_dV2
+                   +(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*inverse_dP_dT3*dP_dV) # unused
+        d2V_dT2 = (-(d2P_dT2*dP_dV - dP_dT*d2P_dTdV)*inverse_dP_dV2 # unused
                    +(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*inverse_dP_dV3*dP_dT)
 
-        d2V_dPdT = -(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*inverse_dP_dV3
-        d2T_dPdV = -(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*inverse_dP_dT3
+        d2V_dPdT = -(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*inverse_dP_dV3 # unused
+        d2T_dPdV = -(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*inverse_dP_dT3 # unused
 
-        # TODO return one large tuple - quicker, constructing the lists is slow
-#        return ([dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP],
-#                [d2P_dT2, d2P_dV2, d2V_dT2, d2V_dP2, d2T_dV2, d2T_dP2],
-#                [d2V_dPdT, d2P_dTdV, d2T_dPdV],
-#                [H_dep, S_dep, Cv_dep])
         return (dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP,
                 d2P_dT2, d2P_dV2, d2V_dT2, d2V_dP2, d2T_dV2, d2T_dP2,
-                d2V_dPdT, d2P_dTdV, d2T_dPdV,
+                d2V_dPdT, d2P_dTdV, d2T_dPdV, # d2P_dTdV is used
                 H_dep, S_dep, Cv_dep)
 
 
@@ -2196,7 +2183,7 @@ class GCEOS(object):
         x10 = x9 - epsilon2 - epsilon2
         try:
             x11 = x10**-0.5
-        except ZeroDivisionError:
+        except:
             # Needed for ideal gas model
             x11 = 0.0
         x11_half = 0.5*x11
