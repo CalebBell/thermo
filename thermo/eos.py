@@ -1238,20 +1238,6 @@ class GCEOS(object):
             \right)^{3}} + \frac{a \alpha{\left (T \right )}}{\left(V^{2} + V
             \delta + \epsilon\right)^{2}}\right)
 
-            \left(\frac{\partial^2 V}{\partial T^2}\right)_P = -\left[
-            \left(\frac{\partial^2 P}{\partial T^2}\right)_V
-            \left(\frac{\partial P}{\partial V}\right)_T
-            - \left(\frac{\partial P}{\partial T}\right)_V
-            \left(\frac{\partial^2 P}{\partial T \partial V}\right) \right]
-            \left(\frac{\partial P}{\partial V}\right)^{-2}_T
-            + \left[\left(\frac{\partial^2 P}{\partial T\partial V}\right)
-            \left(\frac{\partial P}{\partial V}\right)_T
-            - \left(\frac{\partial P}{\partial T}\right)_V
-            \left(\frac{\partial^2 P}{\partial V^2}\right)_T\right]
-            \left(\frac{\partial P}{\partial V}\right)_T^{-3}
-            \left(\frac{\partial P}{\partial T}\right)_V
-
-
         Second derivatives with respect to the other two variables; those of
         `T` and `V` use identities shown in [1]_ and verified numerically:
 
@@ -1304,16 +1290,10 @@ class GCEOS(object):
         .. [3] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
            Butterworth-Heinemann, 1985.
         '''
-        (dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP,
-            d2P_dT2, d2P_dV2, d2V_dT2, _, _, _,
-            _, d2P_dTdV, _,
-            H_dep, S_dep, Cv_dep) = self.derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha, da_alpha_dT, d2a_alpha_dT2, quick=quick)
-
         dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep = (
         self.main_derivatives_and_departures(T, P, V, b, delta, epsilon,
                                              a_alpha, da_alpha_dT,
                                              d2a_alpha_dT2, quick=quick))
-
         try:
             dV_dP = 1.0/dP_dV
         except:
@@ -1332,12 +1312,7 @@ class GCEOS(object):
             self.V_l, self.Z_l, self.PIP_l = V, Z, PIP
             self.dP_dT_l, self.dP_dV_l, self.dV_dT_l = dP_dT, dP_dV, dV_dT
             self.dV_dP_l, self.dT_dV_l, self.dT_dP_l = dV_dP, dT_dV, dT_dP
-
-            self.d2P_dT2_l, self.d2P_dV2_l = d2P_dT2, d2P_dV2
-            self.d2V_dT2_l = d2V_dT2
-
-            self.d2P_dTdV_l = d2P_dTdV
-
+            self.d2P_dT2_l, self.d2P_dV2_l, self.d2P_dTdV_l = d2P_dT2, d2P_dV2, d2P_dTdV
             self.H_dep_l, self.S_dep_l, self.G_dep_l = H_dep, S_dep, G_dep,
             self.Cp_dep_l, self.Cv_dep_l = Cp_dep, Cv_dep
             return 'l'
@@ -1345,11 +1320,7 @@ class GCEOS(object):
             self.V_g, self.Z_g, self.PIP_g = V, Z, PIP
             self.dP_dT_g, self.dP_dV_g, self.dV_dT_g = dP_dT, dP_dV, dV_dT
             self.dV_dP_g, self.dT_dV_g, self.dT_dP_g = dV_dP, dT_dV, dT_dP
-
-            self.d2P_dT2_g, self.d2P_dV2_g = d2P_dT2, d2P_dV2
-            self.d2V_dT2_g = d2V_dT2
-            self.d2P_dTdV_g = d2P_dTdV
-
+            self.d2P_dT2_g, self.d2P_dV2_g, self.d2P_dTdV_g = d2P_dT2, d2P_dV2, d2P_dTdV
             self.H_dep_g, self.S_dep_g, self.G_dep_g = H_dep, S_dep, G_dep,
             self.Cp_dep_g, self.Cv_dep_g = Cp_dep, Cv_dep
             return 'g'
@@ -4029,6 +4000,64 @@ class GCEOS(object):
         d2T_dV2 = dT_dP2*(-(self.d2P_dV2_g*self.dP_dT_g - self.dP_dV_g*self.d2P_dTdV_g)
                    +(self.d2P_dTdV_g*self.dP_dT_g - self.dP_dV_g*self.d2P_dT2_g)*dT_dP*self.dP_dV_g)
         return d2T_dV2
+
+
+    @property
+    def d2V_dT2_l(self):
+        r'''Second partial derivative of volume with respect to 
+        temperature (constant pressure) for the liquid phase, [m^3/(mol*K^2)].
+
+        .. math::
+            \left(\frac{\partial^2 V}{\partial T^2}\right)_P = -\left[
+            \left(\frac{\partial^2 P}{\partial T^2}\right)_V
+            \left(\frac{\partial P}{\partial V}\right)_T
+            - \left(\frac{\partial P}{\partial T}\right)_V
+            \left(\frac{\partial^2 P}{\partial T \partial V}\right) \right]
+            \left(\frac{\partial P}{\partial V}\right)^{-2}_T
+            + \left[\left(\frac{\partial^2 P}{\partial T\partial V}\right)
+            \left(\frac{\partial P}{\partial V}\right)_T
+            - \left(\frac{\partial P}{\partial T}\right)_V
+            \left(\frac{\partial^2 P}{\partial V^2}\right)_T\right]
+            \left(\frac{\partial P}{\partial V}\right)_T^{-3}
+            \left(\frac{\partial P}{\partial T}\right)_V
+
+        '''
+        dV_dP = self.dV_dP_l
+        dP_dV = self.dP_dV_l
+        d2P_dTdV = self.d2P_dTdV_l
+        dP_dT = self.dP_dT_l
+        d2V_dT2 = dV_dP*dV_dP*(-(self.d2P_dT2_l*dP_dV - dP_dT*d2P_dTdV) # unused
+                   +(d2P_dTdV*dP_dV - dP_dT*self.d2P_dV2_l)*dV_dP*dP_dT)
+        return d2V_dT2
+
+
+    @property
+    def d2V_dT2_g(self):
+        r'''Second partial derivative of volume with respect to 
+        temperature (constant pressure) for the gas phase, [m^3/(mol*K^2)].
+
+        .. math::
+            \left(\frac{\partial^2 V}{\partial T^2}\right)_P = -\left[
+            \left(\frac{\partial^2 P}{\partial T^2}\right)_V
+            \left(\frac{\partial P}{\partial V}\right)_T
+            - \left(\frac{\partial P}{\partial T}\right)_V
+            \left(\frac{\partial^2 P}{\partial T \partial V}\right) \right]
+            \left(\frac{\partial P}{\partial V}\right)^{-2}_T
+            + \left[\left(\frac{\partial^2 P}{\partial T\partial V}\right)
+            \left(\frac{\partial P}{\partial V}\right)_T
+            - \left(\frac{\partial P}{\partial T}\right)_V
+            \left(\frac{\partial^2 P}{\partial V^2}\right)_T\right]
+            \left(\frac{\partial P}{\partial V}\right)_T^{-3}
+            \left(\frac{\partial P}{\partial T}\right)_V
+
+        '''
+        dV_dP = self.dV_dP_g
+        dP_dV = self.dP_dV_g
+        d2P_dTdV = self.d2P_dTdV_g
+        dP_dT = self.dP_dT_g
+        d2V_dT2 = dV_dP*dV_dP*(-(self.d2P_dT2_g*dP_dV - dP_dT*d2P_dTdV) # unused
+                   +(d2P_dTdV*dP_dV - dP_dT*self.d2P_dV2_g)*dV_dP*dP_dT)
+        return d2V_dT2
 
     @property
     def Vc(self):
