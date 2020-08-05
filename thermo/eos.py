@@ -1282,13 +1282,6 @@ class GCEOS(object):
             \frac{d \alpha{\left (T \right )}}{d T}}{\left(V^{2} + V \delta
             + \epsilon\right)^{2}}
 
-            \left(\frac{\partial^2 V}{\partial T\partial P}\right) =
-            - \left[\left(\frac{\partial^2 P}{\partial T \partial V}\right)
-            \left(\frac{\partial P}{\partial V}\right)_T
-            - \left(\frac{\partial P}{\partial T}\right)_V
-            \left(\frac{\partial^2 P}{\partial V^2}\right)_T
-            \right]\left(\frac{\partial P}{\partial V}\right)_T^{-3}
-
         Excess properties
 
         .. math::
@@ -1334,7 +1327,7 @@ class GCEOS(object):
         '''
         (dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP,
             d2P_dT2, d2P_dV2, d2V_dT2, d2V_dP2, d2T_dV2, d2T_dP2,
-            d2V_dPdT, d2P_dTdV, _,
+            _, d2P_dTdV, _,
             H_dep, S_dep, Cv_dep) = self.derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha, da_alpha_dT, d2a_alpha_dT2, quick=quick)
 
         dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep = (
@@ -1343,13 +1336,12 @@ class GCEOS(object):
                                              d2a_alpha_dT2, quick=quick))
 
         try:
-            inverse_dP_dV = 1.0/dP_dV
+            dV_dP = 1.0/dP_dV
         except:
-            inverse_dP_dV = inf
+            dV_dP = inf
         dT_dP = 1./dP_dT
 
-        dV_dT = -dP_dT*inverse_dP_dV
-        dV_dP = -dV_dT*dT_dP
+        dV_dT = -dP_dT*dV_dP
         dT_dV = 1./dV_dT
 
         Z = P*V*R_inv/T
@@ -1366,7 +1358,7 @@ class GCEOS(object):
             self.d2V_dT2_l, self.d2V_dP2_l = d2V_dT2, d2V_dP2
             self.d2T_dV2_l, self.d2T_dP2_l = d2T_dV2, d2T_dP2
 
-            self.d2V_dPdT_l, self.d2P_dTdV_l = d2V_dPdT, d2P_dTdV
+            self.d2P_dTdV_l = d2P_dTdV
 
             self.H_dep_l, self.S_dep_l, self.G_dep_l = H_dep, S_dep, G_dep,
             self.Cp_dep_l, self.Cv_dep_l = Cp_dep, Cv_dep
@@ -1380,7 +1372,7 @@ class GCEOS(object):
             self.d2V_dT2_g, self.d2V_dP2_g = d2V_dT2, d2V_dP2
             self.d2T_dV2_g, self.d2T_dP2_g = d2T_dV2, d2T_dP2
 
-            self.d2V_dPdT_g, self.d2P_dTdV_g = d2V_dPdT, d2P_dTdV
+            self.d2P_dTdV_g = d2P_dTdV
 
             self.H_dep_g, self.S_dep_g, self.G_dep_g = H_dep, S_dep, G_dep,
             self.Cp_dep_g, self.Cv_dep_g = Cp_dep, Cv_dep
@@ -2069,31 +2061,30 @@ class GCEOS(object):
                                              a_alpha, da_alpha_dT,
                                              d2a_alpha_dT2, quick=quick))
         try:
-            inverse_dP_dV = 1.0/dP_dV
+            dV_dP = 1.0/dP_dV
         except:
-            inverse_dP_dV = inf
+            dV_dP = inf
         dT_dP = 1./dP_dT
 
-        dV_dT = -dP_dT*inverse_dP_dV
-        dV_dP = -dV_dT*dT_dP
+        dV_dT = -dP_dT*dV_dP
         dT_dV = 1./dV_dT
 
 
-        inverse_dP_dV2 = inverse_dP_dV*inverse_dP_dV
-        inverse_dP_dV3 = inverse_dP_dV*inverse_dP_dV2
+        dV_dP2 = dV_dP*dV_dP
+        dV_dP3 = dV_dP*dV_dP2
 
         inverse_dP_dT2 = dT_dP*dT_dP
         inverse_dP_dT3 = inverse_dP_dT2*dT_dP
 
-        d2V_dP2 = -d2P_dV2*inverse_dP_dV3 # unused
+        d2V_dP2 = -d2P_dV2*dV_dP3 # unused
         d2T_dP2 = -d2P_dT2*inverse_dP_dT3 # unused
 
         d2T_dV2 = (-(d2P_dV2*dP_dT - dP_dV*d2P_dTdV)*inverse_dP_dT2
                    +(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*inverse_dP_dT3*dP_dV) # unused
-        d2V_dT2 = (-(d2P_dT2*dP_dV - dP_dT*d2P_dTdV)*inverse_dP_dV2 # unused
-                   +(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*inverse_dP_dV3*dP_dT)
+        d2V_dT2 = (-(d2P_dT2*dP_dV - dP_dT*d2P_dTdV)*dV_dP2 # unused
+                   +(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*dV_dP3*dP_dT)
 
-        d2V_dPdT = -(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*inverse_dP_dV3 # unused
+        d2V_dPdT = -(d2P_dTdV*dP_dV - dP_dT*d2P_dV2)*dV_dP3 # unused
         d2T_dPdV = -(d2P_dTdV*dP_dT - dP_dV*d2P_dT2)*inverse_dP_dT3 # unused
 
         return (dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP,
@@ -3920,6 +3911,40 @@ class GCEOS(object):
         inverse_dP_dT3 = inverse_dP_dT2*self.dT_dP_g
         d2T_dPdV = -(self.d2P_dTdV_g*self.dP_dT_g - self.dP_dV_g*self.d2P_dT2_g)*inverse_dP_dT3
         return d2T_dPdV
+
+    @property
+    def d2V_dPdT_l(self):
+        r'''Second partial derivative of volume with respect to 
+        pressure (constant temperature) and then presssure (constant temperature)
+        for the liquid phase, [m^3/(K*Pa*mol)]
+
+        .. math::
+            \left(\frac{\partial^2 V}{\partial T\partial P}\right) =
+            - \left[\left(\frac{\partial^2 P}{\partial T \partial V}\right)
+            \left(\frac{\partial P}{\partial V}\right)_T
+            - \left(\frac{\partial P}{\partial T}\right)_V
+            \left(\frac{\partial^2 P}{\partial V^2}\right)_T
+            \right]\left(\frac{\partial P}{\partial V}\right)_T^{-3}
+        '''
+        dV_dP = self.dV_dP_l
+        return -(self.d2P_dTdV_l*self.dP_dV_l - self.dP_dT_l*self.d2P_dV2_l)*dV_dP*dV_dP*dV_dP 
+
+    @property
+    def d2V_dPdT_g(self):
+        r'''Second partial derivative of volume with respect to 
+        pressure (constant temperature) and then presssure (constant temperature)
+        for the gas phase, [m^3/(K*Pa*mol)]
+
+        .. math::
+            \left(\frac{\partial^2 V}{\partial T\partial P}\right) =
+            - \left[\left(\frac{\partial^2 P}{\partial T \partial V}\right)
+            \left(\frac{\partial P}{\partial V}\right)_T
+            - \left(\frac{\partial P}{\partial T}\right)_V
+            \left(\frac{\partial^2 P}{\partial V^2}\right)_T
+            \right]\left(\frac{\partial P}{\partial V}\right)_T^{-3}
+        '''
+        dV_dP = self.dV_dP_g
+        return -(self.d2P_dTdV_g*self.dP_dV_g - self.dP_dT_g*self.d2P_dV2_g)*dV_dP*dV_dP*dV_dP 
 
     @property
     def Vc(self):
