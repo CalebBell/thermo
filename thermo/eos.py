@@ -30,7 +30,8 @@ __all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',
 #'PRVTTwu'
 ]
 
-__all__.extend(['volume_solutions_halley'])
+__all__.extend(['volume_solutions_halley', 'main_derivatives_and_departures',
+                'main_derivatives_and_departures_VDW'])
 
 
 from cmath import atanh as catanh, log as clog
@@ -874,6 +875,86 @@ def volume_solutions_ideal(T, P, b, delta, epsilon, a_alpha):
     # Saves some time
     return [R*T/P, 0.0, 0.0]
 
+
+def main_derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha,
+                                    da_alpha_dT, d2a_alpha_dT2, quick=True):
+    epsilon2 = epsilon + epsilon
+    x0 = 1.0/(V - b)
+    x1 = 1.0/(V*(V + delta) + epsilon)
+    x3 = R*T
+    x4 = x0*x0
+    x5 = V + V + delta
+    x6 = x1*x1
+    x7 = a_alpha*x6
+    x8 = P*V
+    x9 = delta*delta
+    x10 = x9 - epsilon2 - epsilon2
+    try:
+        x11 = x10**-0.5
+    except:
+        # Needed for ideal gas model
+        x11 = 0.0
+    x11_half = 0.5*x11
+    x12 = 2.*x11*catanh(x11*x5).real # Possible to use a catan, but then a complex division and sq root is needed too
+    x14 = 0.5*x5
+    x15 = epsilon2*x11
+    x16 = x11_half*x9
+    x17 = x5*x6
+    dP_dT = R*x0 - da_alpha_dT*x1
+    dP_dV = x5*x7 - x3*x4
+    d2P_dT2 = -d2a_alpha_dT2*x1
+
+    d2P_dV2 = (x7 + x3*x4*x0 - a_alpha*x5*x17*x1)
+    d2P_dV2 += d2P_dV2
+
+    d2P_dTdV = da_alpha_dT*x17 - R*x4
+    H_dep = x12*(T*da_alpha_dT - a_alpha) - x3 + x8
+
+    t1 = (x3*x0/P)
+    S_dep = -R*clog(t1).real + da_alpha_dT*x12  # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
+#        S_dep = -R_2*log(t1*t1) + da_alpha_dT*x12  # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
+
+    x18 = x16 - x15
+    x19 = (x14 + x18)/(x14 - x18)
+    Cv_dep = T*d2a_alpha_dT2*x11_half*(log(x19*x19)) # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
+    return dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep
+
+
+def main_derivatives_and_departures_VDW(T, P, V, b, delta, epsilon, a_alpha,
+                                    da_alpha_dT, d2a_alpha_dT2, quick=True):
+    '''Re-implementation of derivatives and excess property calculations,
+    as ZeroDivisionError errors occur with the general solution. The
+    following derivation is the source of these formulas.
+
+    >>> from sympy import *
+    >>> P, T, V, R, b, a = symbols('P, T, V, R, b, a')
+    >>> P_vdw = R*T/(V-b) - a/(V*V)
+    >>> vdw = P_vdw - P
+    >>>
+    >>> dP_dT = diff(vdw, T)
+    >>> dP_dV = diff(vdw, V)
+    >>> d2P_dT2 = diff(vdw, T, 2)
+    >>> d2P_dV2 = diff(vdw, V, 2)
+    >>> d2P_dTdV = diff(vdw, T, V)
+    >>> H_dep = integrate(T*dP_dT - P_vdw, (V, oo, V))
+    >>> H_dep += P*V - R*T
+    >>> S_dep = integrate(dP_dT - R/V, (V,oo,V))
+    >>> S_dep += R*log(P*V/(R*T))
+    >>> Cv_dep = T*integrate(d2P_dT2, (V,oo,V))
+    >>>
+    >>> dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep
+    (R/(V - b), -R*T/(V - b)**2 + 2*a/V**3, 0, 2*(R*T/(V - b)**3 - 3*a/V**4), -R/(V - b)**2, P*V - R*T - a/V, R*(-log(V) + log(V - b)) + R*log(P*V/(R*T)), 0)
+    '''
+    dP_dT = R/(V - b)
+    dP_dV = -R*T*(V - b)**-2 + 2*a_alpha*V**-3
+    d2P_dT2 = 0
+    d2P_dV2 = 2*(R*T*(V - b)**-3 - 3*a_alpha*V**-4) # Causes issues at low T when V fourth power fails
+    d2P_dTdV = -R*(V - b)**-2
+    H_dep = P*V - R*T - a_alpha/V
+    S_dep = R*(-log(V) + log(V - b)) + R*log(P*V/(R*T))
+    Cv_dep = 0
+    return [dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep]
+
 class GCEOS(object):
     r'''Class for solving a generic Pressure-explicit three-parameter cubic
     equation of state. Does not implement any parameters itself; must be
@@ -940,6 +1021,8 @@ class GCEOS(object):
     P_zero_g_cheb_coeffs = None
     P_zero_g_cheb_limits = (0.0, 0.0)
     Psat_cheb_range = (0.0, 0.0)
+    
+    main_derivatives_and_departures = staticmethod(main_derivatives_and_departures)
 
     @property
     def state_specs(self):
@@ -1105,7 +1188,7 @@ class GCEOS(object):
 
         if good_root_count == 1:
             self.phase = self.set_properties_from_solution(self.T, self.P,
-                                                           good_roots[0], self.b,
+                                                           good_roots[0], b,
                                                            self.delta, self.epsilon,
                                                            self.a_alpha, self.da_alpha_dT,
                                                            self.d2a_alpha_dT2)
@@ -1117,7 +1200,7 @@ class GCEOS(object):
                 force_l = not self.phase == 'l'
                 force_g = not self.phase == 'g'
                 self.set_properties_from_solution(self.T, self.P,
-                                                  good_roots[0], self.b,
+                                                  good_roots[0], b,
                                                   self.delta, self.epsilon,
                                                   self.a_alpha, self.da_alpha_dT,
                                                   self.d2a_alpha_dT2,
@@ -1128,21 +1211,21 @@ class GCEOS(object):
             V_l, V_g = min(good_roots), max(good_roots)
 
             if not only_g:
-                self.set_properties_from_solution(self.T, self.P, V_l, self.b,
+                self.set_properties_from_solution(self.T, self.P, V_l, b,
                                                    self.delta, self.epsilon,
                                                    self.a_alpha, self.da_alpha_dT,
                                                    self.d2a_alpha_dT2,
                                                    force_l=True)
             if not only_l:
-                self.set_properties_from_solution(self.T, self.P, V_g, self.b,
+                self.set_properties_from_solution(self.T, self.P, V_g, b,
                                                    self.delta, self.epsilon,
                                                    self.a_alpha, self.da_alpha_dT,
                                                    self.d2a_alpha_dT2, force_g=True)
             self.phase = 'l/g'
         else:
             # Even in the case of three real roots, it is still the min/max that make sense
-            print([self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha, 'coordinates of failure'])
-            raise Exception('No acceptable roots were found; the roots are %s, T is %s K, P is %s Pa, a_alpha is %s, b is %s' %(str(Vs), str(self.T), str(self.P), str([self.a_alpha]), str([self.b])))
+            print([self.T, self.P, b, self.delta, self.epsilon, self.a_alpha, 'coordinates of failure'])
+            raise ValueError('No acceptable roots were found; the roots are %s, T is %s K, P is %s Pa, a_alpha is %s, b is %s' %(str(Vs), str(self.T), str(self.P), str([self.a_alpha]), str([self.b])))
 
 
     def set_properties_from_solution(self, T, P, V, b, delta, epsilon, a_alpha,
@@ -2108,54 +2191,6 @@ class GCEOS(object):
 
             return PIPs, fig
 
-    @staticmethod
-    def main_derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha,
-                                        da_alpha_dT, d2a_alpha_dT2, quick=True):
-        if not quick:
-            return GCEOS.main_derivatives_and_departures(T, P, V, b, delta,
-                                                         epsilon, a_alpha,
-                                                         da_alpha_dT,
-                                                         d2a_alpha_dT2)
-        epsilon2 = epsilon + epsilon
-        x0 = 1.0/(V - b)
-        x1 = 1.0/(V*(V + delta) + epsilon)
-        x3 = R*T
-        x4 = x0*x0
-        x5 = V + V + delta
-        x6 = x1*x1
-        x7 = a_alpha*x6
-        x8 = P*V
-        x9 = delta*delta
-        x10 = x9 - epsilon2 - epsilon2
-        try:
-            x11 = x10**-0.5
-        except:
-            # Needed for ideal gas model
-            x11 = 0.0
-        x11_half = 0.5*x11
-        x12 = 2.*x11*catanh(x11*x5).real # Possible to use a catan, but then a complex division and sq root is needed too
-        x14 = 0.5*x5
-        x15 = epsilon2*x11
-        x16 = x11_half*x9
-        x17 = x5*x6
-        dP_dT = R*x0 - da_alpha_dT*x1
-        dP_dV = x5*x7 - x3*x4
-        d2P_dT2 = -d2a_alpha_dT2*x1
-
-        d2P_dV2 = (x7 + x3*x4*x0 - a_alpha*x5*x17*x1)
-        d2P_dV2 += d2P_dV2
-
-        d2P_dTdV = da_alpha_dT*x17 - R*x4
-        H_dep = x12*(T*da_alpha_dT - a_alpha) - x3 + x8
-
-        t1 = (x3*x0/P)
-        S_dep = -R*clog(t1).real + da_alpha_dT*x12  # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
-#        S_dep = -R_2*log(t1*t1) + da_alpha_dT*x12  # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
-
-        x18 = x16 - x15
-        x19 = (x14 + x18)/(x14 - x18)
-        Cv_dep = T*d2a_alpha_dT2*x11_half*(log(x19*x19)) # Consider Real part of the log only via log(x**2)/2 = Re(log(x))
-        return dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep
 
     @staticmethod
     def main_derivatives_and_departures_slow(T, P, V, b, delta, epsilon, a_alpha,
@@ -7634,7 +7669,7 @@ class VDW(GCEOS):
 
     P_zero_l_cheb_coeffs = [0.23949680596158576, -0.28552048884377407, 0.17223773827357045, -0.10535895068953466, 0.06539081523178862, -0.04127943642449526, 0.02647106353835149, -0.017260750015435533, 0.011558172064668568, -0.007830624115831804, 0.005422844032253547, -0.00383463423135285, 0.0027718803475398936, -0.0020570084561681613, 0.0015155074622906842, -0.0011495238177958583, 0.000904782154904249, -0.000683347677699564, 0.0005800187592994201, -0.0004529246894177611, 0.00032901743817593566, -0.0002990561659229427, 0.00023524411148843384, -0.00019464055011993858, 0.0001441665975916752, -0.00013106835607900116, 9.72812311007959e-05, -7.611327134024459e-05, 5.240433315348986e-05, -3.6415012576658176e-05, 3.89310794418167e-05, -2.2160354688301534e-05, 2.7908599229672926e-05, 1.6405692108915904e-05, -1.3931165551671343e-06, -4.80770003354232e-06]
     P_zero_l_cheb_limits = (0.002354706203222534, 9.0)
-
+    main_derivatives_and_departures = staticmethod(main_derivatives_and_departures_VDW)
     def __init__(self, Tc, Pc, T=None, P=None, V=None, omega=None):
         self.Tc = Tc
         self.Pc = Pc
@@ -7787,44 +7822,6 @@ class VDW(GCEOS):
         roots = roots_cubic(a_coeff, b_coeff, c, d)
 #        roots = np.roots([a_coeff, b_coeff, c, d]).tolist()
         return roots
-
-    @staticmethod
-    def main_derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha,
-                                        da_alpha_dT, d2a_alpha_dT2, quick=True):
-        '''Re-implementation of derivatives and excess property calculations,
-        as ZeroDivisionError errors occur with the general solution. The
-        following derivation is the source of these formulas.
-
-        >>> from sympy import *
-        >>> P, T, V, R, b, a = symbols('P, T, V, R, b, a')
-        >>> P_vdw = R*T/(V-b) - a/(V*V)
-        >>> vdw = P_vdw - P
-        >>>
-        >>> dP_dT = diff(vdw, T)
-        >>> dP_dV = diff(vdw, V)
-        >>> d2P_dT2 = diff(vdw, T, 2)
-        >>> d2P_dV2 = diff(vdw, V, 2)
-        >>> d2P_dTdV = diff(vdw, T, V)
-        >>> H_dep = integrate(T*dP_dT - P_vdw, (V, oo, V))
-        >>> H_dep += P*V - R*T
-        >>> S_dep = integrate(dP_dT - R/V, (V,oo,V))
-        >>> S_dep += R*log(P*V/(R*T))
-        >>> Cv_dep = T*integrate(d2P_dT2, (V,oo,V))
-        >>>
-        >>> dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep
-        (R/(V - b), -R*T/(V - b)**2 + 2*a/V**3, 0, 2*(R*T/(V - b)**3 - 3*a/V**4), -R/(V - b)**2, P*V - R*T - a/V, R*(-log(V) + log(V - b)) + R*log(P*V/(R*T)), 0)
-        '''
-        dP_dT = R/(V - b)
-        dP_dV = -R*T*(V - b)**-2 + 2*a_alpha*V**-3
-        d2P_dT2 = 0
-        d2P_dV2 = 2*(R*T*(V - b)**-3 - 3*a_alpha*V**-4) # Causes issues at low T when V fourth power fails
-        d2P_dTdV = -R*(V - b)**-2
-        H_dep = P*V - R*T - a_alpha/V
-        S_dep = R*(-log(V) + log(V - b)) + R*log(P*V/(R*T))
-        Cv_dep = 0
-        return [dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep]
-
-
 
 class RK(GCEOS):
     r'''Class for solving the Redlich-Kwong cubic

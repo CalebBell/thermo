@@ -27,7 +27,9 @@ __all__ = ['GCEOSMIX', 'PRMIX', 'SRKMIX', 'PR78MIX', 'VDWMIX', 'PRSVMIX',
 'PRMIXTranslatedConsistent', 'PRMIXTranslatedPPJP',
 'SRKMIXTranslatedConsistent', 'PSRK', 'MSRKMIXTranslated',
 'eos_Z_test_phase_stability', 'eos_Z_trial_phase_stability',
-'eos_mix_list', 'eos_mix_no_coeffs_list']
+'eos_mix_list', 'eos_mix_no_coeffs_list',
+
+'a_alpha_quadratic_terms']
 
 import sys
 import numpy as np
@@ -215,6 +217,66 @@ def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
         return a_alpha, da_alpha_dT, d2a_alpha_dT2, d2a_alpha_dT2_ijs, da_alpha_dT_ijs, a_alpha_ijs
     return a_alpha, da_alpha_dT, d2a_alpha_dT2, da_alpha_dT_ijs, a_alpha_ijs
 
+
+def a_alpha_quadratic_terms(a_alphas, a_alpha_i_roots, T, zs, kijs):
+    r'''Calculates the `a_alpha` term for an equation of state along with the
+    vector quantities needed to compute the fugacities of the mixture. This
+    routine is efficient in both numba and PyPy.
+    
+    .. math::
+        a \alpha = \sum_i \sum_j z_i z_j {(a\alpha)}_{ij}
+        
+    .. math::
+        (a\alpha)_{ij} = (1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}
+    
+    The secondary values are as follows:
+        
+    .. math::
+        \sum_i y_i(a\alpha)_{ij}
+
+    Parameters
+    ----------
+    a_alphas : list[float]
+        EOS attractive terms, [J^2/mol^2/Pa]]
+    a_alpha_i_roots : list[float]
+        Square roots of `a_alphas` [J/mol/Pa^0.5]
+    T : float
+        Temperature, not used, [K]
+    zs : list[float]
+        Mole fractions of each species
+    kijs : list[list[float]]
+        Constant kijs, [-]
+
+    Returns
+    -------
+    a_alpha : float
+        EOS attractive term, [J^2/mol^2/Pa]]
+
+    Notes
+    -----
+    Tried moving the i=j loop out, no difference in speed, maybe got a bit slower
+    in PyPy.
+    
+    '''
+    N = len(a_alphas)
+    a_alpha_j_rows = np.zeros(N)
+    a_alpha = 0.0
+    for i in range(N):
+        kijs_i = kijs[i]
+        a_alpha_i_root_i = a_alpha_i_roots[i]
+        for j in range(i):
+            a_alpha_ijs_ij = (1. - kijs_i[j])*a_alpha_i_root_i*a_alpha_i_roots[j]
+            t200 = a_alpha_ijs_ij*zs[i]
+            a_alpha_j_rows[j] += t200
+            a_alpha_j_rows[i] += zs[j]*a_alpha_ijs_ij
+            t200 *= zs[j]
+            a_alpha += t200 + t200
+            
+        t200 = (1. - kijs_i[i])*a_alphas[i]*zs[i]
+        a_alpha += t200*zs[i]
+        a_alpha_j_rows[i] += t200
+                
+    return a_alpha, a_alpha_j_rows
 
 
 class GCEOSMIX(GCEOS):
@@ -707,7 +769,7 @@ class GCEOSMIX(GCEOS):
         else:
             a_alphas, da_alpha_dTs, d2a_alpha_dT2s = self.a_alphas, self.da_alpha_dTs, self.d2a_alpha_dT2s
 
-        if not IS_PYPY and self.N > 20:
+        if not IS_PYPY and self.N > 200:
             return self.a_alpha_and_derivatives_numpy(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=full, quick=quick)
         return self.a_alpha_and_derivatives_py(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=full, quick=quick)
         
@@ -2198,42 +2260,42 @@ class GCEOSMIX(GCEOS):
         return V_over_F_new-1.0
 #        return abs(V_over_F-1)
     
-    def _fugacity_sum_terms(self):
-#        try:
-#            return self.fugacity_sum_terms
-#        except:
-#            pass
-        zs = self.zs
-        cmps = self.cmps
-        a_alpha_ijs = self.a_alpha_ijs
-        fugacity_sum_terms = []
-        for i in cmps:
-            l = a_alpha_ijs[i]
-            sum_term = 0.0
-            for j in cmps:
-                sum_term += zs[j]*l[j]
-            fugacity_sum_terms.append(sum_term)
-        self.fugacity_sum_terms = fugacity_sum_terms
-        return fugacity_sum_terms
+#    def _a_alpha_j_rows(self):
+##        try:
+##            return self.a_alpha_j_rows
+##        except:
+##            pass
+#        zs = self.zs
+#        cmps = self.cmps
+#        a_alpha_ijs = self.a_alpha_ijs
+#        a_alpha_j_rows = []
+#        for i in cmps:
+#            l = a_alpha_ijs[i]
+#            sum_term = 0.0
+#            for j in cmps:
+#                sum_term += zs[j]*l[j]
+#            a_alpha_j_rows.append(sum_term)
+#        self.a_alpha_j_rows = a_alpha_j_rows
+#        return a_alpha_j_rows
     
     
     @property
-    def _fugacity_sum_terms(self):
+    def _a_alpha_j_rows(self):
         try:
-            return self.fugacity_sum_terms
+            return self.a_alpha_j_rows
         except:
             pass
         zs = self.zs
         a_alpha_ijs = self.a_alpha_ijs
-        fugacity_sum_terms = [0.0]*self.N
+        a_alpha_j_rows = [0.0]*self.N
         for i in self.cmps:
             l = a_alpha_ijs[i]
             for j in range(i):
-                fugacity_sum_terms[j] += zs[i]*l[j]
-                fugacity_sum_terms[i] += zs[j]*l[j]
-            fugacity_sum_terms[i] += zs[i]*l[i]
-        self.fugacity_sum_terms = fugacity_sum_terms
-        return fugacity_sum_terms
+                a_alpha_j_rows[j] += zs[i]*l[j]
+                a_alpha_j_rows[i] += zs[j]*l[j]
+            a_alpha_j_rows[i] += zs[i]*l[i]
+        self.a_alpha_j_rows = a_alpha_j_rows
+        return a_alpha_j_rows
 
 
 
@@ -2517,10 +2579,10 @@ class GCEOSMIX(GCEOS):
         This derivative is checked numerically.
         '''
         try:
-            fugacity_sum_terms = self.fugacity_sum_terms
+            a_alpha_j_rows = self.a_alpha_j_rows
         except:
-            fugacity_sum_terms = self._fugacity_sum_terms
-        return [i + i for i in fugacity_sum_terms]
+            a_alpha_j_rows = self._a_alpha_j_rows
+        return [i + i for i in a_alpha_j_rows]
 
     @property
     def da_alpha_dns(self):   
@@ -2542,11 +2604,11 @@ class GCEOSMIX(GCEOS):
         This derivative is checked numerically.
         '''
         try:
-            fugacity_sum_terms = self.fugacity_sum_terms
+            a_alpha_j_rows = self.a_alpha_j_rows
         except:
-            fugacity_sum_terms = self._fugacity_sum_terms
+            a_alpha_j_rows = self._a_alpha_j_rows
         a_alpha = self.a_alpha
-        return [2.0*(t - a_alpha) for t in fugacity_sum_terms]
+        return [2.0*(t - a_alpha) for t in a_alpha_j_rows]
 
     @property
     def dna_alpha_dns(self):   
@@ -2568,11 +2630,11 @@ class GCEOSMIX(GCEOS):
         This derivative is checked numerically.
         '''
         try:
-            fugacity_sum_terms = self.fugacity_sum_terms
+            a_alpha_j_rows = self.a_alpha_j_rows
         except:
-            fugacity_sum_terms = self._fugacity_sum_terms
+            a_alpha_j_rows = self._a_alpha_j_rows
         a_alpha = self.a_alpha
-        return [t + t - a_alpha for t in fugacity_sum_terms]
+        return [t + t - a_alpha for t in a_alpha_j_rows]
 
     @property
     def d2a_alpha_dzizjs(self):   
@@ -2626,9 +2688,9 @@ class GCEOSMIX(GCEOS):
         This derivative is checked numerically.
         '''
         try:
-            fugacity_sum_terms = self.fugacity_sum_terms
+            a_alpha_j_rows = self.a_alpha_j_rows
         except:
-            fugacity_sum_terms = self._fugacity_sum_terms
+            a_alpha_j_rows = self._a_alpha_j_rows
         a_alpha = self.a_alpha
         a_alpha_ijs = self.a_alpha_ijs
         N, cmps = self.N, self.cmps
@@ -2639,7 +2701,7 @@ class GCEOSMIX(GCEOS):
         for i in cmps:
             for j in range(i+1):
                 if i == j:
-                    term = 2.0*fugacity_sum_terms[i]
+                    term = 2.0*a_alpha_j_rows[i]
                 else:
                     term = 0.0
                     for k in cmps:
@@ -6352,18 +6414,18 @@ class PRMIX(GCEOSMIX, PR):
             # less than zero
             x4 = 0.0
 
-        fugacity_sum_terms = self._fugacity_sum_terms
+        a_alpha_j_rows = self._a_alpha_j_rows
         try:
             t50 = 2.0*x4/(a_alpha*two_root_two_B)
         except ZeroDivisionError:
             return [0.0]*self.N
         t51 = (x4 + (Z - 1.0)*two_root_two_B)/(b*two_root_two_B)
 
-        return [bs[i]*t51 - x0 - t50*fugacity_sum_terms[i]
+        return [bs[i]*t51 - x0 - t50*a_alpha_j_rows[i]
                 for i in self.cmps]
         
 #        phis = []
-##        fugacity_sum_terms = []
+##        a_alpha_j_rows = []
 #        for i in cmps:
 ##            a_alpha_js = a_alpha_ijs[i]
 ##            b_ratio = bs[i]*b_inv
@@ -6373,14 +6435,14 @@ class PRMIX(GCEOSMIX, PR):
 ##            sum_term = sum([zs[j]*a_alpha_js[j] for j in cmps])
 #
 ##            t3 = b_ratio*Zm1 - x0 - x4*(x1*sum_term - b_ratio)
-#            t3 = bs[i]*t51 - x0 - t50*fugacity_sum_terms[i]
+#            t3 = bs[i]*t51 - x0 - t50*a_alpha_j_rows[i]
 #            # Let wherever calls the exp deal with overflow
 ##            if t3 > 700.0:
 ##                t3 = 700.0
 #            phis.append(t3)
-##            fugacity_sum_terms.append(sum_term)
+##            a_alpha_j_rows.append(sum_term)
 #            
-##        self.fugacity_sum_terms = fugacity_sum_terms
+##        self.a_alpha_j_rows = a_alpha_j_rows
 #        return phis
 
 
@@ -6442,10 +6504,10 @@ class PRMIX(GCEOSMIX, PR):
         
         # Composition stuff
         
-        fugacity_sum_terms = self._fugacity_sum_terms
+        a_alpha_j_rows = self._a_alpha_j_rows
         da_alpha_dT_j_rows = self._da_alpha_dT_j_rows
         
-        d_lnphis_dTs = [x52 + bs[i]*x58 + x50*(x59*fugacity_sum_terms[i] + da_alpha_dT_j_rows[i])
+        d_lnphis_dTs = [x52 + bs[i]*x58 + x50*(x59*a_alpha_j_rows[i] + da_alpha_dT_j_rows[i])
                         for i in self.cmps]
         return d_lnphis_dTs
          
@@ -6469,13 +6531,13 @@ class PRMIX(GCEOSMIX, PR):
                 + x13*(dZ_dP - root_two_m1*x6)/(root_two_m1*x8 - Z))/(4.0*x13))
         x16 = dZ_dP + x15
 
-        fugacity_sum_terms = self._fugacity_sum_terms
+        a_alpha_j_rows = self._a_alpha_j_rows
 
         x50 = -2.0/a_alpha
         d_lnphi_dPs = []
         for i in cmps:
             x3 = bs[i]*x2
-            x10 = x50*fugacity_sum_terms[i]
+            x10 = x50*a_alpha_j_rows[i]
 #            d_lnphi_dP = dZ_dP*x3 + x15*(x10 + x3) + x9
             
             
@@ -6634,7 +6696,7 @@ class PRMIX(GCEOSMIX, PR):
         a_alpha = self.a_alpha
         a_alpha_ijs = self.a_alpha_ijs
         a_alphas = self.a_alphas
-        fugacity_sum_terms = self.fugacity_sum_terms
+        a_alpha_j_rows = self.a_alpha_j_rows
         N = len(zs)
         cmps = range(N)
 
@@ -6656,7 +6718,7 @@ class PRMIX(GCEOSMIX, PR):
         
         t4 = 2.0/a_alpha
         t5 = -A/(two_root_two*B)
-        Eis = [t5*(t4*fugacity_sum_terms[i] - bs[i]*b_inv) for i in cmps]
+        Eis = [t5*(t4*a_alpha_j_rows[i] - bs[i]*b_inv) for i in cmps]
 #        ln_phis = []
 #        for i in cmps:
 #            ln_phis.append(log(C) + Dis[i] + Eis[i]*log(G))
@@ -6671,7 +6733,7 @@ class PRMIX(GCEOSMIX, PR):
         # THIS IS WRONG - the sum changes w.r.t (or does it?)
         # Believed right now?
         const = (P+P)*RT_inv*RT_inv
-        dA_dxks = [const*term_i for term_i in fugacity_sum_terms]
+        dA_dxks = [const*term_i for term_i in a_alpha_j_rows]
             
         dF_dZ_inv = 1.0/(3.0*Z*Z - 2.0*Z*(1.0 - B) + (A - 3.0*B*B - 2.0*B))
         
@@ -6713,7 +6775,7 @@ class PRMIX(GCEOSMIX, PR):
         # Symmetric matrix!
         dE_dxs = [[0.0]*N for _ in cmps] # TODO - makes little sense. Too many i indexes.
         for i in cmps:
-            zm_aim_tot = fugacity_sum_terms[i]
+            zm_aim_tot = a_alpha_j_rows[i]
             t30 = t34*bs[i] + t35*zm_aim_tot
             t31 = t33*zm_aim_tot
             
@@ -6721,7 +6783,7 @@ class PRMIX(GCEOSMIX, PR):
             a_alpha_ijs_i = a_alpha_ijs[i]
             for k in range(0, i+1):
                 # Sign was wrong in article - should be a plus
-                second = t2*(t31*fugacity_sum_terms[k] - t32*a_alpha_ijs_i[k] - bs[i]*bs[k]*a_alpha2)
+                second = t2*(t31*a_alpha_j_rows[k] - t32*a_alpha_ijs_i[k] - bs[i]*bs[k]*a_alpha2)
                 dE_dxs[i][k] = dE_dxs[k][i] = t30*t50s[k] + second
                 
 #                dE_dxs_i.append(t1*(first + second))
@@ -6773,7 +6835,7 @@ class PRMIX(GCEOSMIX, PR):
 #        T, P = self.T, self.P
 #        bs, b = self.bs, self.b
 #        RT_inv = R_inv/T
-#        fugacity_sum_terms = self.fugacity_sum_terms
+#        a_alpha_j_rows = self.a_alpha_j_rows
 #        A = self.a_alpha*P*RT_inv*RT_inv
 #        B = b*P*RT_inv
 #        C = 1.0/(Z - B)
@@ -6784,7 +6846,7 @@ class PRMIX(GCEOSMIX, PR):
 #        dB_dxks = [t6*bk for bk in bs]
 #        
 #        const = (P+P)*RT_inv*RT_inv
-#        dA_dxks = [const*term_i for term_i in fugacity_sum_terms]
+#        dA_dxks = [const*term_i for term_i in a_alpha_j_rows]
 #        
 #        dF_dZ_inv = 1.0/(3.0*Z*Z - 2.0*Z*(1.0 - B) + (A - 3.0*B*B - 2.0*B))
 #        
@@ -7728,17 +7790,13 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
         t3 = log(1. + B/Z)
         Z_minus_one_over_B = (Z - 1.0)/B
         two_over_a_alpha = 2./self.a_alpha
+        a_alpha_j_rows = self._a_alpha_j_rows
         phis = []
-        fugacity_sum_terms = []
         for i in self.cmps:
             Bi = self.bs[i]*P_RT
             t1 = Bi*Z_minus_one_over_B - t0
-            l = self.a_alpha_ijs[i]
-            sum_term = sum([zs[j]*l[j] for j in self.cmps])
-            t2 = A_B*(Bi/B - two_over_a_alpha*sum_term)
+            t2 = A_B*(Bi/B - two_over_a_alpha*a_alpha_j_rows[i])
             phis.append(t1 + t2*t3)
-            fugacity_sum_terms.append(sum_term)
-        self.fugacity_sum_terms = fugacity_sum_terms
         return phis
         
 
@@ -7751,7 +7809,7 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
             Z = self.Z_l
             dZ_dT = self.dZ_dT_l
 
-        a_alpha_ijs, da_alpha_dT_ijs = self.a_alpha_ijs, self.da_alpha_dT_ijs
+        da_alpha_dT_j_rows = self._da_alpha_dT_j_rows
         cmps = self.cmps
         P, bs, b = self.P, self.bs, self.b
         
@@ -7781,17 +7839,11 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
         # Composition stuff
         d_lnphis_dTs = []
         
-        try:
-            fugacity_sum_terms = self.fugacity_sum_terms
-        except AttributeError:
-            fugacity_sum_terms = [sum([zs[j]*a_alpha_ijs[i][j] for j in cmps]) for i in cmps]
+        a_alpha_j_rows = self.a_alpha_j_rows
 
         for i in cmps:
-            x7 = fugacity_sum_terms[i]
-#            x7 = sum([zs[j]*a_alpha_ijs[i][j] for j in cmps])
-            der_sum = sum([zs[j]*da_alpha_dT_ijs[i][j] for j in cmps])
-    
-            x15 = (x50*(x51*x7*x9 + 2.0*der_sum) + x52)
+            x7 = a_alpha_j_rows[i]
+            x15 = (x50*(x51*x7*x9 + 2.0*da_alpha_dT_j_rows[i]) + x52)
 
             x16 = bs[i]*x11
             x18 = -x16 + 2.0*x7*x9
@@ -7810,6 +7862,7 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
         cmps = self.cmps
         bs, b = self.bs, self.b
         T_inv = 1.0/self.T
+        a_alpha_j_rows = self._a_alpha_j_rows
 
         RT_inv = T_inv*R_inv
         x0 = Z
@@ -7821,16 +7874,11 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
         x7 = a_alpha
         x9 = 1./Z
         x10 = a_alpha*x9*(self.P*dZ_dP*x9 - 1)*RT_inv*RT_inv/((x5*x9 + 1.0))
-        try:
-            fugacity_sum_terms = self.fugacity_sum_terms
-        except AttributeError:
-            a_alpha_ijs = self.a_alpha_ijs
-            fugacity_sum_terms = [sum([zs[j]*a_alpha_ijs[i][j] for j in cmps]) for i in cmps]
 
         x50 = 2.0/a_alpha
         d_lnphi_dPs = []
         for i in cmps:
-            x8 = x50*fugacity_sum_terms[i]
+            x8 = x50*a_alpha_j_rows[i]
             x3 = bs[i]*x2
             d_lnphi_dP = dZ_dP*x3 + x10*(x8 - x3) + x6
             d_lnphi_dPs.append(d_lnphi_dP)
@@ -8626,7 +8674,6 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
             Z = self.Z_l
             dZ_dT = self.dZ_dT_l
 
-        a_alpha_ijs, da_alpha_dT_ijs = self.a_alpha_ijs, self.da_alpha_dT_ijs
         cmps = self.cmps
         T, P, ais, bs, b = self.T, self.P, self.ais, self.bs, self.b
         
