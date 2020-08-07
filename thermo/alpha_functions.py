@@ -23,6 +23,8 @@ SOFTWARE.'''
 from __future__ import division, print_function
 
 __all__ = ['Poly_a_alpha', 'TwuSRK95_a_alpha', 'TwuPR95_a_alpha',
+           'PR_a_alphas_vectorized', 'PR_a_alpha_and_derivatives_vectorized',
+           'RK_a_alpha_and_derivatives_vectorized', 'RK_a_alphas_vectorized',
 
 ]
 
@@ -37,6 +39,65 @@ from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
 from fluids.constants import R
 from chemicals.utils import log, log10, exp, sqrt, copysign
 
+def PR_a_alphas_vectorized(T, Tcs, ais, kappas):
+    N = len(Tcs)
+    x0_inv = T**-0.5
+    x0 = T*x0_inv
+    a_alphas = [0.0]*N
+    for i in range(N):
+        x1 = Tcs[i]**-0.5
+        x2 = kappas[i]*(x0*x1 - 1.) - 1.
+        a_alphas[i] = ais[i]*x2*x2
+    return a_alphas
+
+def PR_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappas):
+    N = len(Tcs)
+    x0_inv = T**-0.5
+    x0 = T*x0_inv
+    T_inv = x0_inv*x0_inv
+    x0T_inv = x0_inv*T_inv
+    x5, x6 = 0.5*T_inv, 0.5*x0T_inv
+    
+    a_alphas = [0.0]*N
+    da_alpha_dTs = [0.0]*N
+    d2a_alpha_dT2s = [0.0]*N
+    for i in range(N):
+        x1 = Tcs[i]**-0.5
+        x2 = kappas[i]*(x0*x1 - 1.) - 1.
+        x3 = ais[i]*kappas[i]
+        x4 = x1*x2
+        a_alphas[i] = ais[i]*x2*x2
+        da_alpha_dTs[i] = x4*x3*x0_inv
+        d2a_alpha_dT2s[i] = x3*(x5*x1*x1*kappas[i] - x4*x6)
+    return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
+
+def RK_a_alphas_vectorized(T, Tcs, ais):
+    N = len(ais)
+    a_alphas = [0.0]*N
+    T_root_inv = T**-0.5
+    for i in range(N):
+        a_alphas[i] = ais[i]*Tcs[i]**0.5*T_root_inv
+    return a_alphas
+
+def RK_a_alpha_and_derivatives_vectorized(T, Tcs, ais):
+    N = len(ais)
+    a_alphas = [0.0]*N
+    da_alpha_dTs = [0.0]*N
+    d2a_alpha_dT2s = [0.0]*N
+    T_root_inv = T**-0.5
+    T_inv = T_root_inv*T_root_inv
+    T_15_inv = T_inv*T_root_inv
+    T_25_inv = T_inv*T_15_inv
+    x0 = -0.5*T_15_inv
+    x1 = 0.75*T_25_inv
+
+    for i in range(N):
+        Tc_05 = Tcs[i]**0.5
+        aiTc_05 = ais[i]*Tc_05
+        a_alphas[i] = aiTc_05*T_root_inv
+        da_alpha_dTs[i] = aiTc_05*x0
+        d2a_alpha_dT2s[i] = aiTc_05*x1
+    return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
 
 def TWU_a_alpha_common(T, Tc, omega, a, full=True, quick=True, method='PR'):
     r'''Function to calculate `a_alpha` and optionally its first and second

@@ -29,7 +29,9 @@ __all__ = ['GCEOSMIX', 'PRMIX', 'SRKMIX', 'PR78MIX', 'VDWMIX', 'PRSVMIX',
 'eos_Z_test_phase_stability', 'eos_Z_trial_phase_stability',
 'eos_mix_list', 'eos_mix_no_coeffs_list',
 
-'a_alpha_quadratic_terms']
+'a_alpha_quadratic_terms', 'a_alpha_and_derivatives_quadratic_terms',
+
+'PR_lnphis', 'PR_lnphis_direct']
 
 import sys
 import numpy as np
@@ -41,10 +43,13 @@ from fluids.numerics.arrays import det, subset_matrix
 from fluids.constants import R
 from chemicals.utils import normalize, Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter, dxs_to_dn_partials, dxs_to_dns, dns_to_dn_partials, d2xs_to_dxdn_partials, d2ns_to_dn2_partials, hash_any_primitive
 from chemicals.utils import log, exp, sqrt
-from thermo.alpha_functions import (TwuPR95_a_alpha, TwuSRK95_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha, Soave_79_a_alpha)
+from thermo.alpha_functions import (TwuPR95_a_alpha, TwuSRK95_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha, 
+                                    Soave_79_a_alpha, PR_a_alpha_and_derivatives_vectorized, PR_a_alphas_vectorized,
+                                    RK_a_alpha_and_derivatives_vectorized, RK_a_alphas_vectorized)
 from thermo.eos import *
 from chemicals.rachford_rice import flash_inner_loop, Rachford_Rice_flash_error, Rachford_Rice_solution2
 from chemicals.flash_basic import K_value, Wilson_K_value
+
 
 R2 = R*R
 R_inv = 1.0/R
@@ -250,7 +255,9 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_i_roots, T, zs, kijs):
     Returns
     -------
     a_alpha : float
-        EOS attractive term, [J^2/mol^2/Pa]]
+        EOS attractive term, [J^2/mol^2/Pa]
+    a_alpha_j_rows : list[float]
+        EOS attractive term row sums, [J^2/mol^2/Pa]
 
     Notes
     -----
@@ -259,7 +266,7 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_i_roots, T, zs, kijs):
     
     '''
     N = len(a_alphas)
-    a_alpha_j_rows = np.zeros(N)
+    a_alpha_j_rows = [0.0]*N
     a_alpha = 0.0
     for i in range(N):
         kijs_i = kijs[i]
@@ -278,6 +285,155 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_i_roots, T, zs, kijs):
                 
     return a_alpha, a_alpha_j_rows
 
+def a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_i_roots,
+                                            da_alpha_dTs, d2a_alpha_dT2s, T, zs, kijs):
+    N = len(a_alphas)
+    a_alpha = da_alpha_dT = d2a_alpha_dT2 = 0.0
+    
+#     da_alpha_dT_off = d2a_alpha_dT2_off = 0.0
+#     a_alpha_j_rows = np.zeros(N)
+    a_alpha_j_rows = [0.0]*N
+#     da_alpha_dT_j_rows = np.zeros(N)
+    da_alpha_dT_j_rows = [0.0]*N
+    
+    # If d2a_alpha_dT2s were all halved, could save one more multiply
+    for i in range(N):
+        kijs_i = kijs[i]
+        a_alpha_i_root_i = a_alpha_i_roots[i]
+        
+        # delete these references?
+        a_alphai = a_alphas[i]
+        da_alpha_dT_i = da_alpha_dTs[i]
+        d2a_alpha_dT2_i = d2a_alpha_dT2s[i]
+        workingd1 = workings2 = 0.0
+
+        for j in range(i):
+            v0 = a_alpha_i_root_i*a_alpha_i_roots[j]
+            a_alpha_ijs_ij = (1. - kijs_i[j])*v0
+            t200 = a_alpha_ijs_ij*zs[i]
+            a_alpha_j_rows[j] += t200
+            a_alpha_j_rows[i] += zs[j]*a_alpha_ijs_ij
+            t200 *= zs[j]
+            a_alpha += t200 + t200
+
+            a_alphaj = a_alphas[j]
+            da_alpha_dT_j = da_alpha_dTs[j]
+            zi_zj = zs[i]*zs[j]
+            
+            x1 = a_alphai*da_alpha_dT_j
+            x2 = a_alphaj*da_alpha_dT_i
+            x1_x2 = x1 + x2
+
+            kij_m1 = kijs_i[j] - 1.0
+            
+            v0_inv = 1.0/v0
+            v1 = kij_m1*v0_inv
+            da_alpha_dT_ij = x1_x2*v1
+#             da_alpha_dT_ij = -0.5*x1_x2*v1 # Factor the -0.5 out, apply at end
+            da_alpha_dT_j_rows[j] += zs[i]*da_alpha_dT_ij
+            da_alpha_dT_j_rows[i] += zs[j]*da_alpha_dT_ij
+
+            da_alpha_dT_ij *= zi_zj
+
+            x0 = a_alphai*a_alphaj
+            
+            # Technically could use a second list of double a_alphas, probably not used
+            d2a_alpha_dT2_ij =  v0_inv*v0_inv*v1*(  (x0*(
+                              -0.5*(a_alphai*d2a_alpha_dT2s[j] + a_alphaj*d2a_alpha_dT2_i)
+                              - da_alpha_dT_i*da_alpha_dT_j) +.25*x1_x2*x1_x2))
+            
+            d2a_alpha_dT2_ij *= zi_zj
+            workingd1 += da_alpha_dT_ij
+            workings2 += d2a_alpha_dT2_ij
+            # 23 multiplies, 1 divide in this loop
+            
+
+        # Simplifications for j=i, kij is always 0 by definition.
+        t200 = a_alphas[i]*zs[i]
+        a_alpha_j_rows[i] += t200
+        a_alpha += t200*zs[i]
+        zi_zj = zs[i]*zs[i]
+        da_alpha_dT_ij = -da_alpha_dT_i - da_alpha_dT_i#da_alpha_dT_i*-2.0
+        da_alpha_dT_j_rows[i] += zs[i]*da_alpha_dT_ij
+        da_alpha_dT_ij *= zi_zj
+        da_alpha_dT -= 0.5*(da_alpha_dT_ij + (workingd1 + workingd1))
+        d2a_alpha_dT2 += d2a_alpha_dT2_i*zi_zj + (workings2 + workings2)
+    for i in range(N):
+        da_alpha_dT_j_rows[i] *= -0.5
+        
+    return a_alpha, da_alpha_dT, d2a_alpha_dT2, a_alpha_j_rows, da_alpha_dT_j_rows
+
+
+def PR_lnphis(T, P, Z, b, a_alpha, zs, bs, a_alpha_j_rows):
+    N = len(zs)
+    T_inv = 1.0/T
+    P_T = P*T_inv
+
+    A = a_alpha*P_T*R2_inv*T_inv
+    B = b*P_T*R_inv
+    x0 = log(Z - B)
+    root_two_B = B*root_two
+    two_root_two_B = root_two_B + root_two_B
+    ZB = Z + B
+    x4 = A*log((ZB + root_two_B)/(ZB - root_two_B))
+    t50 = (x4 + x4)/(a_alpha*two_root_two_B)
+    t51 = (x4 + (Z - 1.0)*two_root_two_B)/(b*two_root_two_B)
+    lnphis = [0.0]*N
+    for i in range(N):
+        lnphis[i] = bs[i]*t51 - x0 - t50*a_alpha_j_rows[i]
+    return lnphis
+
+c1R2_PR = PR.c1R2
+c2R_PR = PR.c2R
+
+def PR_lnphis_direct(zs, T, P, Tcs, Pcs, omegas, kijs, l=False, g=False):
+    # zs should be first so args can be used for the other arguments
+    N = len(Tcs)
+    b = 0.0
+#    ais = np.zeros(N)
+#    bs = np.zeros(N)
+#    kappas = np.zeros(N)
+
+    ais = [0.0]*N
+    bs = [0.0]*N
+    kappas = [0.0]*N
+
+    for i in range(N):
+        f = Tcs[i]/Pcs[i]
+        ais[i] = c1R2_PR*Tcs[i]*f
+        bs[i] = c2R_PR*f
+        b += f*zs[i]
+        kappas[i] = omegas[i]*(-0.26992*omegas[i] + 1.54226) + 0.37464 
+    b *= c2R_PR
+    delta = 2.0*b
+    epsilon = -b*b
+    
+    a_alphas = PR_a_alphas_vectorized(T, Tcs, ais, kappas)
+    a_alpha_i_roots = [0.0]*N
+#    a_alpha_i_roots = np.zeros(N)
+    for i in range(N):
+        a_alpha_i_roots[i] = a_alphas[i]**0.5
+    
+    a_alpha, a_alpha_j_rows = a_alpha_quadratic_terms(a_alphas, a_alpha_i_roots, T, zs, kijs)
+    V0, V1, V2 = volume_solutions_halley(T, P, b, delta, epsilon, a_alpha)
+    if l:
+        # Prefer liquid, ensure V0 is the smalest root
+        if V1 != 0.0:
+            if V0 > V1:
+                V0 = V1
+            if V0 > V2:
+                V0 = V2
+    elif g:
+        if V1 != 0.0:
+            if V0 < V1:
+                V0 = V1
+            if V0 < V2:
+                V0 = V2
+    else:
+        raise ValueError("Root must be specified")
+    Z = Z = P*V0/(R*T)
+    return PR_lnphis(T, P, Z, b, a_alpha, zs, bs, a_alpha_j_rows)
+            
 
 class GCEOSMIX(GCEOS):
     r'''Class for solving a generic pressure-explicit three-parameter cubic 
@@ -772,7 +928,10 @@ class GCEOSMIX(GCEOS):
         if not IS_PYPY and self.N > 200:
             return self.a_alpha_and_derivatives_numpy(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=full, quick=quick)
         return self.a_alpha_and_derivatives_py(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=full, quick=quick)
-        
+
+
+
+
     def a_alpha_and_derivatives_py(self, a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=True, quick=True):
         # For 44 components, takes 150 us in PyPy.; 95 in pythran. Much of that is type conversions.
         # 4 ms pypy for 44*4, 1.3 ms for pythran, 10 ms python with numpy
@@ -929,7 +1088,27 @@ class GCEOSMIX(GCEOS):
             return a_alpha, da_alpha_dT, d2a_alpha_dT2
         else:
             return a_alpha
-        
+
+    def a_alpha_and_derivatives_py(self, a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=True, quick=True):
+        zs, kijs = self.zs, self.kijs
+        self.a_alpha_i_roots = a_alpha_i_roots = [i**0.5 for i in a_alphas]
+        if full:
+            # Converting kijs into a matrix kills the performance! 5x slower than the performance of the functions.
+            # converting the 1d arrays also takes as long as the function.
+#            a_alpha, da_alpha_dT, d2a_alpha_dT2, self.a_alpha_j_rows, self.da_alpha_dT_j_rows = (
+#                    a_alpha_and_derivatives_quadratic_terms(np.array(a_alphas), np.array(a_alpha_i_roots), np.array(da_alpha_dTs), 
+#                                                            np.array(d2a_alpha_dT2s), T, np.array(zs), np.array(kijs)))
+            a_alpha, da_alpha_dT, d2a_alpha_dT2, self.a_alpha_j_rows, self.da_alpha_dT_j_rows = (
+                    a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_i_roots, da_alpha_dTs, 
+                                                            d2a_alpha_dT2s, T, zs, kijs))
+            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+
+        else:
+#            a_alpha, self.a_alpha_j_rows = a_alpha_quadratic_terms(np.array(a_alphas), np.array(a_alpha_i_roots), T, np.array(zs), np.array(kijs))
+            a_alpha, self.a_alpha_j_rows = a_alpha_quadratic_terms(a_alphas, a_alpha_i_roots, T, zs, kijs)
+            return a_alpha
+
+
         
     def a_alpha_and_derivatives_numpy(self, a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=True, quick=True):
         zs, kijs = self.zs, np.array(self.kijs)
@@ -2297,7 +2476,43 @@ class GCEOSMIX(GCEOS):
         self.a_alpha_j_rows = a_alpha_j_rows
         return a_alpha_j_rows
 
+    def _set_alpha_matrices(self):
+        try:
+            a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(self.a_alphas, self.kijs)
+        except ZeroDivisionError:
+            a_alpha_ijs, a_alpha_i_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent_support_zeros(self.a_alphas, self.kijs)
+        
+        
+        _, _, _, d2a_alpha_dT2_ijs, da_alpha_dT_ijs, a_alpha_ijs = a_alpha_and_derivatives_full(
+                self.a_alphas, self.da_alpha_dTs, self.d2a_alpha_dT2s, self.T, self.zs, self.kijs,
+                a_alpha_ijs, self.a_alpha_i_roots, a_alpha_ij_roots_inv, second_derivative=True)
+        self._d2a_alpha_dT2_ijs = d2a_alpha_dT2_ijs
+        self._da_alpha_dT_ijs = da_alpha_dT_ijs
+        self._a_alpha_ijs = a_alpha_ijs
+        
+    @property
+    def a_alpha_ijs(self):
+        try:
+            return self._a_alpha_ijs
+        except:
+            self._set_alpha_matrices()
+            return self._a_alpha_ijs
 
+    @property
+    def da_alpha_dT_ijs(self):
+        try:
+            return self._da_alpha_dT_ijs
+        except:
+            self._set_alpha_matrices()
+            return self._da_alpha_dT_ijs
+
+    @property
+    def d2a_alpha_dT2_ijs(self):
+        try:
+            return self._d2a_alpha_dT2_ijs
+        except:
+            self._set_alpha_matrices()
+            return self._d2a_alpha_dT2_ijs
 
     @property
     def _da_alpha_dT_j_rows(self):
@@ -5751,7 +5966,7 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
         self.bs = self.ais = self.zeros1d = [0.0]*N
         
         self.zeros2d = [[0.0]*N for _ in self.cmps]
-        self.a_alpha_ijs = self.da_alpha_dT_ijs = self.d2a_alpha_dT2_ijs = self.zeros2d
+#        self.a_alpha_ijs = self.da_alpha_dT_ijs = self.d2a_alpha_dT2_ijs = self.zeros2d
 
         self.solve(only_l=only_l, only_g=only_g)
         if fugacities:
@@ -5763,9 +5978,9 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
         self.b = other.b
         self.zeros1d = other.zeros1d
         self.zeros2d = other.zeros2d
-        self.a_alpha_ijs = other.a_alpha_ijs
-        self.da_alpha_dT_ijs = other.da_alpha_dT_ijs
-        self.d2a_alpha_dT2_ijs = other.d2a_alpha_dT2_ijs
+#        self.a_alpha_ijs = other.a_alpha_ijs
+#        self.da_alpha_dT_ijs = other.da_alpha_dT_ijs
+#        self.d2a_alpha_dT2_ijs = other.d2a_alpha_dT2_ijs
 
 
     def a_alpha_and_derivatives_vectorized(self, T, full=False):
@@ -5824,6 +6039,17 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
          
     def dlnphis_dP(self, phase):
         return self.zeros1d
+    @property
+    def a_alpha_ijs(self):
+        return self.zeros2d
+
+    @property
+    def da_alpha_dT_ijs(self):
+        return self.zeros2d
+
+    @property
+    def d2a_alpha_dT2_ijs(self):
+        return self.zeros2d
 
 
 class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
@@ -5976,27 +6202,9 @@ class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
          [-0.0006303525736818202, -0.0013052075512123066],
          [8.221990091502003e-06, 1.702444632016052e-05])
         '''
-        ais, Tcs = self.ais, self.Tcs
-        
-        ais = [ai*Tci**0.5 for ai, Tci in zip(ais, Tcs)]
-        T_root_inv = T**-0.5
-        
-        if not full:
-            a_alphas = [ais[i]*T_root_inv for i in self.cmps]
-            return a_alphas
-        else:
-            T_inv = T_root_inv*T_root_inv
-            T_15_inv = T_inv*T_root_inv
-            T_25_inv = T_inv*T_15_inv
-            
-            x0 = -0.5*T_15_inv
-            x1 = 0.75*T_25_inv
-            cmps = self.cmps
-
-            a_alphas = [ais[i]*T_root_inv for i in cmps]
-            da_alpha_dTs = [ais[i]*x0 for i in cmps]
-            d2a_alpha_dT2s = [ais[i]*x1 for i in cmps]
-            return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
+        if full:
+            return RK_a_alpha_and_derivatives_vectorized(T, self.Tcs, self.ais)
+        return RK_a_alphas_vectorized(T, self.Tcs, self.ais)
 
     def solve_T(self, P, V, quick=True, solution=None):
         if self.N == 1 and type(self) is RKMIX:
@@ -6253,8 +6461,10 @@ class PRMIX(GCEOSMIX, PR):
         self.delta = 2.0*b
         self.epsilon = -b*b
 
+    def a_alpha_vectorized(self, T):
+        return PR_a_alphas_vectorized(T, self.Tcs, self.ais, self.kappas)
 
-    def a_alpha_and_derivatives_vectorized(self, T, full=False):
+    def a_alpha_and_derivatives_vectorized(self, T, full=True):
         r'''Method to calculate the pure-component `a_alphas` and their first  
         and second derivatives for the PR EOS. This vectorized implementation 
         is added for extra speed.
@@ -6289,34 +6499,9 @@ class PRMIX(GCEOSMIX, PR):
             EOS-specific method, [J^2/mol^2/Pa/K**2]
         '''
         ais, kappas, Tcs = self.ais, self.kappas, self.Tcs
-        
-        if not full:
-            # Broken!!! Bug.
-            a_alphas = []
-            for i in self.cmps:
-                x1 = Tcs[i]**-0.5
-                x2 = 1.0 + kappas[i]*(1.0 - T*x1)
-                a_alphas.append(ais[i]*x2*x2)
-            return a_alphas
-        else:
-            T_inv = 1.0/T
-            x0 = T**0.5
-            x0_inv = 1.0/x0
-            x0T_inv = x0_inv*T_inv
-            
-            x5, x6 = 0.5*T_inv, 0.5*x0T_inv
-            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
-            
-            for a, kappa, Tc in zip(ais, kappas, Tcs):
-                x1 = Tc**-0.5
-                x2 = kappa*(x0*x1 - 1.) - 1.
-                x3 = a*kappa
-                x4 = x1*x2
-                a_alphas.append(a*x2*x2)
-                da_alpha_dTs.append(x4*x3*x0_inv)
-                d2a_alpha_dT2s.append(x3*(x5*x1*x1*kappa - x4*x6))
-
-            return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
+        if full:
+            return PR_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappas)
+        return PR_a_alphas_vectorized(T, Tcs, ais, kappas)
     
     @property
     def d3a_alpha_dT3(self):

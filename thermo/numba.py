@@ -56,11 +56,18 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
     else:
         conv_fun = numba.jit
         
-    to_change = ['eos.volume_solutions_halley']
+    to_change = ['eos.volume_solutions_halley', 'eos_mix.a_alpha_quadratic_terms',
+                 'eos_mix.a_alpha_and_derivatives_quadratic_terms',
+                 'eos_mix.PR_lnphis', 'eos_mix.PR_lnphis_direct',
+                 'alpha_functions.PR_a_alphas_vectorized', 
+                 'alpha_functions.PR_a_alpha_and_derivatives_vectorized']
     normal_fluids.numba.transform_lists_to_arrays(normal, to_change, __funcs, cache_blacklist=cache_blacklist)
 
     for mod in new_mods:
         mod.__dict__.update(__funcs)
+        
+    __funcs['eos'].GCEOS.volume_solutions = staticmethod(__funcs['volume_solutions_halley'])
+    __funcs['eos'].GCEOS.main_derivatives_and_departures = staticmethod(__funcs['main_derivatives_and_departures'])
 
 
 transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False)

@@ -22,6 +22,7 @@ SOFTWARE.'''
 
 import os
 
+from . import alpha_functions
 from chemicals import acentric
 from chemicals import rachford_rice
 from chemicals import flash_basic
@@ -76,6 +77,7 @@ from . import nrtl
 from . import uniquac
 from chemicals import temperature
 
+from .alpha_functions import *
 from chemicals.acentric import *
 from chemicals.rachford_rice import *
 from chemicals.flash_basic import *
@@ -143,9 +145,10 @@ __all__ = ['rachford_rice', 'flash_basic', 'chemical', 'chemical_package', 'comb
  'vapor_pressure', 'virial', 'viscosity', 'volume', 'acentric', 'coolprop', 
  'datasheet', 'dippr', 'unifac', 'stream', 'mixture', 'property_package_constants',
  'chemical_utils', 'wilson', 'nrtl', 'uniquac', 'regular_solution',
- 'equilibrium', 'phase_identification', 'psychrometrics', 'temperature']
+ 'equilibrium', 'phase_identification', 'psychrometrics', 'temperature',
+ 'alpha_functions']
 
-
+__all__.extend(alpha_functions.__all__)
 __all__.extend(acentric.__all__)
 __all__.extend(rachford_rice.__all__)
 __all__.extend(flash_basic.__all__)
@@ -212,7 +215,7 @@ submodules = [chemical, chemical_package, chemical_utils, coolprop, datasheet,
               mixture, nrtl, permittivity, phase_change, phase_identification,
               phases, property_package, property_package_constants, psychrometrics,
               regular_solution, stream, thermal_conductivity, unifac, uniquac, 
-              utils, vapor_pressure, viscosity, volume, wilson]
+              utils, vapor_pressure, viscosity, volume, wilson, alpha_functions]
 
 thermo_dir = os.path.dirname(__file__)
 

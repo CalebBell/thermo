@@ -2275,3 +2275,15 @@ def test_properties_removed_from_default():
     assert_close(obj.d2P_dT2_g, -2.170585015391721, rtol=1e-10)
     assert_close(obj.d2P_dT2_l, -235.51286126983416, rtol=1e-10)
     
+
+def test_a_alpha_vectorized():
+    from thermo.eos_mix import eos_mix_list
+    for e in eos_mix_list:
+        obj = e(T=126.0, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,.001],[0.001,0]])
+        try:
+            a_alpha0 = obj.a_alpha_vectorized(obj.T)
+        except:
+            a_alpha0 = obj.a_alpha_and_derivatives_vectorized(obj.T, full=False)
+        
+        a_alpha1 = obj.a_alpha_and_derivatives_vectorized(obj.T, full=True)[0]
+        assert_close1d(a_alpha0, a_alpha1, rtol=1e-13)
