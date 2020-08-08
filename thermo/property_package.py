@@ -4662,6 +4662,7 @@ class GceosBase(Ideal):
                     except AttributeError:
                         G_dep_g = eos_g.G_dep_l
                 
+                    # This comparison is not correct
                     G_TP = G_dep_l*(1.0 - VF) + G_dep_g*VF
                     
 #                    print(VF)

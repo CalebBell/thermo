@@ -7572,6 +7572,7 @@ class PRSV2(PR):
     def a_alpha_pure(self, T):
         Tc, a, kappa0, kappa1, kappa2, kappa3 = self.Tc, self.a, self.kappa0, self.kappa1, self.kappa2, self.kappa3
         Tr = T/Tc
+        # TODO use self.kappa
         kappa = kappa0 + ((kappa1 + kappa2*(kappa3 - Tr)*(1 - Tr**0.5))*(1 + Tr**0.5)*(0.7 - Tr))
         return a*(1 + kappa*(1-sqrt(T/Tc)))**2
 

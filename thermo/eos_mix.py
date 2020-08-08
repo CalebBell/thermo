@@ -31,7 +31,7 @@ __all__ = ['GCEOSMIX', 'PRMIX', 'SRKMIX', 'PR78MIX', 'VDWMIX', 'PRSVMIX',
 
 'a_alpha_quadratic_terms', 'a_alpha_and_derivatives_quadratic_terms',
 
-'PR_lnphis', 'PR_lnphis_direct']
+'PR_lnphis']
 
 import sys
 import numpy as np
@@ -45,7 +45,11 @@ from chemicals.utils import normalize, Cp_minus_Cv, isobaric_expansion, isotherm
 from chemicals.utils import log, exp, sqrt
 from thermo.alpha_functions import (TwuPR95_a_alpha, TwuSRK95_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha, 
                                     Soave_79_a_alpha, PR_a_alpha_and_derivatives_vectorized, PR_a_alphas_vectorized,
-                                    RK_a_alpha_and_derivatives_vectorized, RK_a_alphas_vectorized)
+                                    RK_a_alpha_and_derivatives_vectorized, RK_a_alphas_vectorized,
+                                    SRK_a_alpha_and_derivatives_vectorized, SRK_a_alphas_vectorized,
+                                    PRSV_a_alphas_vectorized, PRSV_a_alpha_and_derivatives_vectorized,
+                                    PRSV2_a_alphas_vectorized, PRSV2_a_alpha_and_derivatives_vectorized,
+                                    APISRK_a_alphas_vectorized, APISRK_a_alpha_and_derivatives_vectorized)
 from thermo.eos import *
 from chemicals.rachford_rice import flash_inner_loop, Rachford_Rice_flash_error, Rachford_Rice_solution2
 from chemicals.flash_basic import K_value, Wilson_K_value
@@ -386,33 +390,64 @@ def PR_lnphis(T, P, Z, b, a_alpha, zs, bs, a_alpha_j_rows):
 c1R2_PR = PR.c1R2
 c2R_PR = PR.c2R
 
-def PR_lnphis_direct(zs, T, P, Tcs, Pcs, omegas, kijs, l=False, g=False):
-    # zs should be first so args can be used for the other arguments
-    N = len(Tcs)
+#def PR_lnphis_direct(zs, T, P, Tcs, Pcs, omegas, kijs, l=False, g=False):
+#    # zs should be first so args can be used for the other arguments
+#    N = len(Tcs)
+#    b = 0.0
+##    ais = np.zeros(N)
+##    bs = np.zeros(N)
+##    kappas = np.zeros(N)
+#
+#    ais = [0.0]*N
+#    bs = [0.0]*N
+#    kappas = [0.0]*N
+#
+#    for i in range(N):
+#        f = Tcs[i]/Pcs[i]
+#        ais[i] = c1R2_PR*Tcs[i]*f
+#        bs[i] = c2R_PR*f
+#        b += f*zs[i]
+#        kappas[i] = omegas[i]*(-0.26992*omegas[i] + 1.54226) + 0.37464 
+#    b *= c2R_PR
+#    delta = 2.0*b
+#    epsilon = -b*b
+#    
+#    a_alphas = PR_a_alphas_vectorized(T, Tcs, ais, kappas)
+#    a_alpha_i_roots = [0.0]*N
+##    a_alpha_i_roots = np.zeros(N)
+#    for i in range(N):
+#        a_alpha_i_roots[i] = a_alphas[i]**0.5
+#    
+#    a_alpha, a_alpha_j_rows = a_alpha_quadratic_terms(a_alphas, a_alpha_i_roots, T, zs, kijs)
+#    V0, V1, V2 = volume_solutions_halley(T, P, b, delta, epsilon, a_alpha)
+#    if l:
+#        # Prefer liquid, ensure V0 is the smalest root
+#        if V1 != 0.0:
+#            if V0 > V1:
+#                V0 = V1
+#            if V0 > V2:
+#                V0 = V2
+#    elif g:
+#        if V1 != 0.0:
+#            if V0 < V1:
+#                V0 = V1
+#            if V0 < V2:
+#                V0 = V2
+#    else:
+#        raise ValueError("Root must be specified")
+#    Z = Z = P*V0/(R*T)
+#    return PR_lnphis(T, P, Z, b, a_alpha, zs, bs, a_alpha_j_rows)
+
+
+def PR_lnphis_fastest(zs, T, P, kijs, l, g, ais, bs, a_alphas, a_alpha_i_roots, kappas):
+    # Uses precomputed values
+    # Only creates its own arrays for a_alpha_j_rows and PR_lnphis
+    N = len(bs)
     b = 0.0
-#    ais = np.zeros(N)
-#    bs = np.zeros(N)
-#    kappas = np.zeros(N)
-
-    ais = [0.0]*N
-    bs = [0.0]*N
-    kappas = [0.0]*N
-
     for i in range(N):
-        f = Tcs[i]/Pcs[i]
-        ais[i] = c1R2_PR*Tcs[i]*f
-        bs[i] = c2R_PR*f
-        b += f*zs[i]
-        kappas[i] = omegas[i]*(-0.26992*omegas[i] + 1.54226) + 0.37464 
-    b *= c2R_PR
+        b += bs[i]*zs[i]
     delta = 2.0*b
     epsilon = -b*b
-    
-    a_alphas = PR_a_alphas_vectorized(T, Tcs, ais, kappas)
-    a_alpha_i_roots = [0.0]*N
-#    a_alpha_i_roots = np.zeros(N)
-    for i in range(N):
-        a_alpha_i_roots[i] = a_alphas[i]**0.5
     
     a_alpha, a_alpha_j_rows = a_alpha_quadratic_terms(a_alphas, a_alpha_i_roots, T, zs, kijs)
     V0, V1, V2 = volume_solutions_halley(T, P, b, delta, epsilon, a_alpha)
@@ -433,7 +468,7 @@ def PR_lnphis_direct(zs, T, P, Tcs, Pcs, omegas, kijs, l=False, g=False):
         raise ValueError("Root must be specified")
     Z = Z = P*V0/(R*T)
     return PR_lnphis(T, P, Z, b, a_alpha, zs, bs, a_alpha_j_rows)
-            
+
 
 class GCEOSMIX(GCEOS):
     r'''Class for solving a generic pressure-explicit three-parameter cubic 
@@ -469,6 +504,7 @@ class GCEOSMIX(GCEOS):
     kwargs_square = ('kijs',)
     kwargs_linear = tuple()
     multicomponent = True
+    scalar = True
 
     def subset(self, idxs):
         is_slice = isinstance(idxs, slice)
@@ -558,16 +594,14 @@ class GCEOSMIX(GCEOS):
         new.kwargs = self.kwargs
         new.ais = self.ais
         new.bs = self.bs
+        new.scalar = self.scalar
         
         if copy_alphas:
             new.a_alphas = self.a_alphas
-            new.da_alpha_dTs = self.da_alpha_dTs
-            new.d2a_alpha_dT2s = self.d2a_alpha_dT2s
             try:
-                new.a_alpha_ijs = self.a_alpha_ijs
-                new.a_alpha_i_roots = self.a_alpha_i_roots
-                new.a_alpha_ij_roots_inv = self.a_alpha_ij_roots_inv
-            except AttributeError:
+                new.da_alpha_dTs = self.da_alpha_dTs
+                new.d2a_alpha_dT2s = self.d2a_alpha_dT2s
+            except:
                 pass
         
         new.zs = zs
@@ -575,7 +609,7 @@ class GCEOSMIX(GCEOS):
         new.P = P
         new.V = None
         new._fast_init_specific(self)
-        new.solve(pure_a_alphas=(not copy_alphas), only_l=only_l, 
+        new.solve(pure_a_alphas=(not copy_alphas), only_l=only_l,
                   only_g=only_g, full_alphas=full_alphas)
         return new
 
@@ -903,28 +937,37 @@ class GCEOSMIX(GCEOS):
         >>> #diff(a_alpha_ij, T, T)
         '''
         if pure_a_alphas:
-            try:
-                # TODO do not compute derivatives if full=False
-                a_alphas, da_alpha_dTs, d2a_alpha_dT2s = self.a_alpha_and_derivatives_vectorized(T, full=True)
-            except NotImplementedError:
-                a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
-                method_obj = super(type(self).__mro__[self.a_alpha_mro], self)
-                for i in self.cmps:
-                    self.setup_a_alpha_and_derivatives(i, T=T)
-                    # Abuse method resolution order to call the a_alpha_and_derivatives
-                    # method of the original pure EOS
-                    # -4 goes back from object, GCEOS, SINGLEPHASEEOS, up to GCEOSMIX
-                    # 
-                    ds = method_obj.a_alpha_and_derivatives_pure(T)
-                    a_alphas.append(ds[0])
-                    da_alpha_dTs.append(ds[1])
-                    d2a_alpha_dT2s.append(ds[2])
-                self.cleanup_a_alpha_and_derivatives()
+            if full:
+                a_alphas, da_alpha_dTs, d2a_alpha_dT2s = self.a_alpha_and_derivatives_vectorized(T)
+                self.a_alphas, self.da_alpha_dTs, self.d2a_alpha_dT2s = a_alphas, da_alpha_dTs, d2a_alpha_dT2s
+            else:
+                self.a_alphas = a_alphas = self.a_alphas_vectorized(T)
+                da_alpha_dTs = d2a_alpha_dT2s = None
+#            except NotImplementedError:
+#                a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
+#                method_obj = super(type(self).__mro__[self.a_alpha_mro], self)
+#                for i in self.cmps:
+#                    self.setup_a_alpha_and_derivatives(i, T=T)
+#                    # Abuse method resolution order to call the a_alpha_and_derivatives
+#                    # method of the original pure EOS
+#                    # -4 goes back from object, GCEOS, SINGLEPHASEEOS, up to GCEOSMIX
+#                    # 
+#                    ds = method_obj.a_alpha_and_derivatives_pure(T)
+#                    a_alphas.append(ds[0])
+#                    da_alpha_dTs.append(ds[1])
+#                    d2a_alpha_dT2s.append(ds[2])
+#                self.cleanup_a_alpha_and_derivatives()
                 
-            self.a_alphas, self.da_alpha_dTs, self.d2a_alpha_dT2s = a_alphas, da_alpha_dTs, d2a_alpha_dT2s
         else:
-            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = self.a_alphas, self.da_alpha_dTs, self.d2a_alpha_dT2s
-
+            try:
+                a_alphas, da_alpha_dTs, d2a_alpha_dT2s = self.a_alphas, self.da_alpha_dTs, self.d2a_alpha_dT2s
+            except:
+                if full:
+                    a_alphas, da_alpha_dTs, d2a_alpha_dT2s = self.a_alpha_and_derivatives_vectorized(T)
+                    self.a_alphas, self.da_alpha_dTs, self.d2a_alpha_dT2s = a_alphas, da_alpha_dTs, d2a_alpha_dT2s
+                else:
+                    self.a_alphas = a_alphas = self.a_alphas_vectorized(T)
+                    da_alpha_dTs = d2a_alpha_dT2s = None
         if not IS_PYPY and self.N > 200:
             return self.a_alpha_and_derivatives_numpy(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=full, quick=quick)
         return self.a_alpha_and_derivatives_py(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=full, quick=quick)
@@ -1091,7 +1134,10 @@ class GCEOSMIX(GCEOS):
 
     def a_alpha_and_derivatives_py(self, a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=True, quick=True):
         zs, kijs = self.zs, self.kijs
-        self.a_alpha_i_roots = a_alpha_i_roots = [i**0.5 for i in a_alphas]
+        if type(a_alphas) is list:
+            self.a_alpha_i_roots = a_alpha_i_roots = [i**0.5 for i in a_alphas]
+        else:
+            self.a_alpha_i_roots = a_alpha_i_roots = a_alphas**0.5
         if full:
             # Converting kijs into a matrix kills the performance! 5x slower than the performance of the functions.
             # converting the 1d arrays also takes as long as the function.
@@ -5796,7 +5842,7 @@ class PSRKMixingRules(object):
             \right]
         '''
         if pure_a_alphas:
-            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = self.a_alpha_and_derivatives_vectorized(T, full=True)
+            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = self.a_alpha_and_derivatives_vectorized(T)
             self.a_alphas, self.da_alpha_dTs, self.d2a_alpha_dT2s = a_alphas, da_alpha_dTs, d2a_alpha_dT2s
         else:
             a_alphas, da_alpha_dTs, d2a_alpha_dT2s = self.a_alphas, self.da_alpha_dTs, self.d2a_alpha_dT2s
@@ -5982,8 +6028,10 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
 #        self.da_alpha_dT_ijs = other.da_alpha_dT_ijs
 #        self.d2a_alpha_dT2_ijs = other.d2a_alpha_dT2_ijs
 
-
-    def a_alpha_and_derivatives_vectorized(self, T, full=False):
+    def a_alphas_vectorized(self, T):
+        return self.zeros1d
+    
+    def a_alpha_and_derivatives_vectorized(self, T):
         r'''Method to calculate the pure-component `a_alphas` and their first  
         and second derivatives for the Ideal Gas EOS. This vectorized  
         implementation is added for extra speed.
@@ -5999,8 +6047,6 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
         ----------
         T : float
             Temperature, [K]
-        full : bool, optional
-            If False, calculates and returns only `a_alphas`, [-]
             
         Returns
         -------
@@ -6013,10 +6059,10 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
             Second temperature derivative of coefficient calculated by  
             EOS-specific method, [J^2/mol^2/Pa/K**2]
         '''
-        if not full:
-            return self.zeros1d
-        else:
-            return self.zeros1d, self.zeros1d, self.zeros1d
+#        if not full:
+#            return self.zeros1d
+#        else:
+        return self.zeros1d, self.zeros1d, self.zeros1d
 
     def a_alpha_and_derivatives(self, T, full=True, quick=True,
                                 pure_a_alphas=True):
@@ -6162,8 +6208,11 @@ class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
         for bi, zi in zip(self.bs, self.zs):
             b += bi*zi
         self.b = self.delta = b
+    
+    def a_alphas_vectorized(self, T):
+        return RK_a_alphas_vectorized(T, self.Tcs, self.ais)
 
-    def a_alpha_and_derivatives_vectorized(self, T, full=False):
+    def a_alpha_and_derivatives_vectorized(self, T):
         r'''Method to calculate the pure-component `a_alphas` and their first  
         and second derivatives for the RK EOS. This vectorized implementation 
         is added for extra speed.
@@ -6179,8 +6228,6 @@ class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
         ----------
         T : float
             Temperature, [K]
-        full : bool, optional
-            If False, calculates and returns only `a_alphas`, [-]
         
         Returns
         -------
@@ -6197,14 +6244,14 @@ class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
         --------
         
         >>> eos = RKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
-        >>> eos.a_alpha_and_derivatives_vectorized(115, full=True)
+        >>> eos.a_alpha_and_derivatives_vectorized(115)
         ([0.14498109194681866, 0.3001977367788305],
          [-0.0006303525736818202, -0.0013052075512123066],
          [8.221990091502003e-06, 1.702444632016052e-05])
         '''
-        if full:
-            return RK_a_alpha_and_derivatives_vectorized(T, self.Tcs, self.ais)
-        return RK_a_alphas_vectorized(T, self.Tcs, self.ais)
+#        if full:
+        return RK_a_alpha_and_derivatives_vectorized(T, self.Tcs, self.ais)
+#        return RK_a_alphas_vectorized(T, self.Tcs, self.ais)
 
     def solve_T(self, P, V, quick=True, solution=None):
         if self.N == 1 and type(self) is RKMIX:
@@ -6435,15 +6482,22 @@ class PRMIX(GCEOSMIX, PR):
         # optimization, unfortunately
         c1R2, c2R = self.c1*R2, self.c2*R
         # Also tried to store the inverse of Pcs, without success - slows it down
-        self.ais = [c1R2*Tcs[i]*Tcs[i]/Pcs[i] for i in cmps]
-        self.bs = bs = [c2R*Tcs[i]/Pcs[i] for i in cmps]
-        
-        b = 0.0
-        for i in cmps:
-            b += bs[i]*zs[i]
+        self.scalar = scalar = type(Tcs) is list
+        if scalar:
+            self.ais = [c1R2*Tcs[i]*Tcs[i]/Pcs[i] for i in cmps]
+            self.bs = bs = [c2R*Tcs[i]/Pcs[i] for i in cmps]
+            self.kappas = [omega*(-0.26992*omega + 1.54226) + 0.37464 for omega in omegas]
+            b = 0.0
+            for i in cmps:
+                b += bs[i]*zs[i]
+        else:
+            Tc_Pc_ratio = Tcs/Pcs
+            self.ais = c1R2*Tcs*Tc_Pc_ratio
+            self.bs = bs = c2R*Tc_Pc_ratio
+            self.kappas = omegas*(-0.26992*omegas + 1.54226) + 0.37464
+            b = float((bs*zs).sum())
         self.b = b
         
-        self.kappas = [omega*(-0.26992*omega + 1.54226) + 0.37464 for omega in omegas]
         
         self.delta = 2.0*b
         self.epsilon = -b*b
@@ -6454,17 +6508,20 @@ class PRMIX(GCEOSMIX, PR):
 
     def _fast_init_specific(self, other):
         self.kappas = other.kappas
-        b = 0.0
-        for bi, zi in zip(self.bs, self.zs):
-            b += bi*zi
+        if self.scalar:
+            b = 0.0
+            for bi, zi in zip(self.bs, self.zs):
+                b += bi*zi
+        else:
+            b = float((self.bs*self.zs).sum())
         self.b = b
         self.delta = 2.0*b
         self.epsilon = -b*b
 
-    def a_alpha_vectorized(self, T):
+    def a_alphas_vectorized(self, T):
         return PR_a_alphas_vectorized(T, self.Tcs, self.ais, self.kappas)
 
-    def a_alpha_and_derivatives_vectorized(self, T, full=True):
+    def a_alpha_and_derivatives_vectorized(self, T):
         r'''Method to calculate the pure-component `a_alphas` and their first  
         and second derivatives for the PR EOS. This vectorized implementation 
         is added for extra speed.
@@ -6484,8 +6541,6 @@ class PRMIX(GCEOSMIX, PR):
         ----------
         T : float
             Temperature, [K]
-        full : bool, optional
-            If False, calculates and returns only `a_alphas`, [-]
         
         Returns
         -------
@@ -6499,9 +6554,8 @@ class PRMIX(GCEOSMIX, PR):
             EOS-specific method, [J^2/mol^2/Pa/K**2]
         '''
         ais, kappas, Tcs = self.ais, self.kappas, self.Tcs
-        if full:
-            return PR_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappas)
-        return PR_a_alphas_vectorized(T, Tcs, ais, kappas)
+        return PR_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappas)
+#        return PR_a_alphas_vectorized(T, Tcs, ais, kappas)
     
     @property
     def d3a_alpha_dT3(self):
@@ -7872,8 +7926,11 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
         self.ms = other.ms
         self.b = b = sum([bi*zi for bi, zi in zip(self.bs, self.zs)])
         self.delta = self.b
-
-    def a_alpha_and_derivatives_vectorized(self, T, full=False):
+    
+    def a_alphas_vectorized(self, T):
+        return SRK_a_alphas_vectorized(T, self.Tcs, self.ais, self.ms)
+        
+    def a_alpha_and_derivatives_vectorized(self, T):
         r'''Method to calculate the pure-component `a_alphas` and their first  
         and second derivatives for the SRK EOS. This vectorized implementation 
         is added for extra speed.
@@ -7892,8 +7949,6 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
         ----------
         T : float
             Temperature, [K]
-        full : bool, optional
-            If False, calculates and returns only `a_alphas`, [-]
         
         Returns
         -------
@@ -7906,28 +7961,9 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
             Second temperature derivative of coefficient calculated by  
             EOS-specific method, [J^2/mol^2/Pa/K**2]
         '''
-        ais, Tcs, ms = self.ais, self.Tcs, self.ms
-        sqrtT = T**0.5
-        if not full:
-            a_alphas = []
-            for i in self.cmps:
-                x0 = ms[i]*(1. - sqrtT*Tcs[i]**-0.5) + 1.0
-                a_alphas.append(ais[i]*x0*x0)
-            return a_alphas
-        else:
-            T_inv = 1.0/T
-            x10 = 0.5*T_inv*T_inv
-            nT_inv = -T_inv
-            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
-            for i in self.cmps:
-                x1 = sqrtT*Tcs[i]**-0.5
-                x2 = ais[i]*ms[i]*x1
-                x3 = ms[i]*(1.0 - x1) + 1.
-                
-                a_alphas.append(ais[i]*x3*x3)
-                da_alpha_dTs.append(x2*nT_inv*x3)
-                d2a_alpha_dT2s.append(x2*x10*(ms[i] + 1.))
-            return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
+#        if full:
+        return SRK_a_alpha_and_derivatives_vectorized(T, self.Tcs, self.ais, self.ms)
+#        return SRK_a_alphas_vectorized(T, self.Tcs, self.ais, self.ms)
         
     def fugacity_coefficients(self, Z, zs):
         r'''Literature formula for calculating fugacity coefficients for each
@@ -8774,8 +8810,11 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
 
     def _fast_init_specific(self, other):
         self.b = sum(bi*zi for bi, zi in zip(self.bs, self.zs))
-        
-    def a_alpha_and_derivatives_vectorized(self, T, full=False):
+    
+    def a_alphas_vectorized(self, T):
+        return self.ais
+    
+    def a_alpha_and_derivatives_vectorized(self, T):
         r'''Method to calculate the pure-component `a_alphas` and their first  
         and second derivatives for the VDW EOS. This vectorized implementation 
         is added for extra speed.
@@ -8791,8 +8830,6 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
         ----------
         T : float
             Temperature, [K]
-        full : bool, optional
-            If False, calculates and returns only `a_alphas`, [-]
         
         Returns
         -------
@@ -8805,12 +8842,12 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
             Second temperature derivative of coefficient calculated by  
             EOS-specific method, [J^2/mol^2/Pa/K**2]
         '''
-        if not full:
-            return self.ais
-        else:
-            zeros = [0.0]*self.N
-            return self.ais, zeros, zeros
-        
+#        if full:
+        zeros = [0.0]*self.N
+        return self.ais, zeros, zeros
+#        else:
+#            return self.ais
+
     def fugacity_coefficients(self, Z, zs):
         r'''Literature formula for calculating fugacity coefficients for each
         species in a mixture. Verified numerically.
@@ -9047,7 +9084,7 @@ class PRSVMIX(PRMIX, PRSV):
 
         a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}
         
-	  b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
+	    b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
         
         \alpha(T)_i=[1+\kappa_i(1-\sqrt{T_{r,i}})]^2
         
@@ -9191,7 +9228,10 @@ class PRSVMIX(PRMIX, PRSV):
         self.delta = 2.0*b
         self.epsilon = -b*b
 
-    def a_alpha_and_derivatives_vectorized(self, T, full=False):
+    def a_alphas_vectorized(self, T):
+        return PRSV_a_alphas_vectorized(T, self.Tcs, self.ais, self.kappa0s, self.kappa1s)
+
+    def a_alpha_and_derivatives_vectorized(self, T):
         r'''Method to calculate the pure-component `a_alphas` and their first  
         and second derivatives for the PRSV EOS. This vectorized implementation 
         is added for extra speed.
@@ -9205,8 +9245,6 @@ class PRSVMIX(PRMIX, PRSV):
         ----------
         T : float
             Temperature, [K]
-        full : bool, optional
-            If False, calculates and returns only `a_alphas`, [-]
         
         Returns
         -------
@@ -9219,46 +9257,10 @@ class PRSVMIX(PRMIX, PRSV):
             Second temperature derivative of coefficient calculated by  
             EOS-specific method, [J^2/mol^2/Pa/K**2]
         '''
-        ais, Tcs, kappa0s, kappa1s = self.ais, self.Tcs, self.kappa0s, self.kappa1s
-        sqrtT = T**0.5
-        if not full:
-            a_alphas = []
-            for i in self.cmps:
-                Tc_inv_root = Tcs[i]**-0.5
-                Tc_inv = Tc_inv_root*Tc_inv_root
-                x0 = Tc_inv_root*sqrtT
-                x2 = (1.0 + (kappa0s[i] + kappa1s[i]*(x0 + 1.0)*(0.7 - T*Tc_inv))*(1.0 - x0))
-                a_alphas.append(ais[i]*x2*x2)
-            return a_alphas
-        else:
-            T_inv = 1.0/T
-            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
-            for i in self.cmps:
-                Tc_inv_root = Tcs[i]**-0.5
-                Tc_inv = Tc_inv_root*Tc_inv_root
-                
-                x1 = T*Tc_inv
-                x2 = sqrtT*Tc_inv_root
-                
-                x3 = x2 - 1.
-                x4 = 10.*x1 - 7.
-                x5 = x2 + 1.
-                x6 = 10.*kappa0s[i] - kappa1s[i]*x4*x5
-                x7 = x3*x6
-                x8 = x7*0.1 - 1.
-                x10 = x6*T_inv
-                x11 = kappa1s[i]*x3
-                x12 = x4*T_inv
-                x13 = 20.*Tc_inv*x5 + x12*x2
-                x14 = -x10*x2 + x11*x13
-                a_alpha = ais[i]*x8*x8
-                da_alpha_dT = -ais[i]*x14*x8*0.1
-                d2a_alpha_dT2 = ais[i]*0.005*(x14*x14 - x2*T_inv*(x7 - 10.)*(2.*kappa1s[i]*x13 + x10 + x11*(40.*Tc_inv - x12)))
-                
-                a_alphas.append(a_alpha)
-                da_alpha_dTs.append(da_alpha_dT)
-                d2a_alpha_dT2s.append(d2a_alpha_dT2)
-            return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
+#        if full:
+        return PRSV_a_alpha_and_derivatives_vectorized(T, self.Tcs, self.ais, self.kappa0s, self.kappa1s)
+#        return PRSV_a_alphas_vectorized(T, self.Tcs, self.ais, self.kappa0s, self.kappa1s)
+
 
 class PRSV2MIX(PRMIX, PRSV2):
     r'''Class for solving the Peng-Robinson-Stryjek-Vera 2 equations of state 
@@ -9420,7 +9422,10 @@ class PRSV2MIX(PRMIX, PRSV2):
         self.delta = b + b
         self.epsilon = -b*b
 
-    def a_alpha_and_derivatives_vectorized(self, T, full=False):
+    def a_alphas_vectorized(self, T):
+        return PRSV2_a_alphas_vectorized(T, self.Tcs, self.ais, self.kappa0s, self.kappa1s, self.kappa2s, self.kappa3s)
+
+    def a_alpha_and_derivatives_vectorized(self, T):
         r'''Method to calculate the pure-component `a_alphas` and their first  
         and second derivatives for the PRSV2 EOS. This vectorized  
         implementation is added for extra speed.
@@ -9429,8 +9434,6 @@ class PRSV2MIX(PRMIX, PRSV2):
         ----------
         T : float
             Temperature, [K]
-        full : bool, optional
-            If False, calculates and returns only `a_alphas`, [-]
         
         Returns
         -------
@@ -9443,58 +9446,9 @@ class PRSV2MIX(PRMIX, PRSV2):
             Second temperature derivative of coefficient calculated by  
             EOS-specific method, [J^2/mol^2/Pa/K**2]
         '''
-        Tcs, ais, kappa0s, kappa1s, kappa2s, kappa3s = self.Tcs, self.ais, self.kappa0s, self.kappa1s, self.kappa2s, self.kappa3s
-        sqrtT = T**0.5
-        if not full:
-            a_alphas = []
-            for i in self.cmps:
-                Tc_inv_root = Tcs[i]**-0.5
-                Tr_sqrt = sqrtT*Tc_inv_root
-                Tr = T*Tc_inv_root*Tc_inv_root
-                kappa = (kappa0s[i] + ((kappa1s[i] + kappa2s[i]*(kappa3s[i] - Tr)
-                         *(1.0 - Tc_inv_root))*(1.0 + Tc_inv_root)*(0.7 - Tr)))
-                x0 = (1.0 + kappa*(1.0 - Tr_sqrt))
-                a_alphas.append(ais[i]*x0*x0)
-            return a_alphas
-        else:
-            T_inv = 1.0/T
-            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
-            for i in self.cmps:
-                Tc_inv_root = Tcs[i]**-0.5
-                Tc_inv = Tc_inv_root*Tc_inv_root
-                x1 = T*Tc_inv
-                x2 = sqrtT*Tc_inv_root
-                
-                x3 = x2 - 1.
-                x4 = x2 + 1.
-                x5 = 10.*x1 - 7.
-                x6 = -kappa3s[i] + x1
-                x7 = kappa1s[i] + kappa2s[i]*x3*x6
-                x8 = x5*x7
-                x9 = 10.*kappa0s[i] - x4*x8
-                x10 = x3*x9
-                x11 = x10*0.1 - 1.0
-                x13 = x2*T_inv
-                x14 = x7*Tc_inv
-                x15 = kappa2s[i]*x4*x5
-                x16 = 2.*(-x2 + 1.)*Tc_inv + x13*(kappa3s[i] - x1)
-                x17 = -x13*x8 - x14*(20.*x2 + 20.) + x15*x16
-                x18 = x13*x9 + x17*x3
-                x19 = x2*T_inv*T_inv
-                x20 = 2.*x2*T_inv
-                
-                a_alpha = ais[i]*x11*x11
-                da_alpha_dT = ais[i]*x11*x18*0.1
-                d2a_alpha_dT2 = ais[i]*(x18*x18 + (x10 - 10.)*(x17*x20 - x19*x9
-                                   + x3*(40.*kappa2s[i]*Tc_inv*x16*x4 
-                                 + kappa2s[i]*x16*x20*x5 - 40.*T_inv*x14*x2
-                                 - x15*T_inv*x2*(4.0*Tc_inv - x6*T_inv) 
-                                 + x19*x8)))*0.005
-                
-                a_alphas.append(a_alpha)
-                da_alpha_dTs.append(da_alpha_dT)
-                d2a_alpha_dT2s.append(d2a_alpha_dT2)
-            return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
+#        if full:
+        return PRSV2_a_alpha_and_derivatives_vectorized(T, self.Tcs, self.ais, self.kappa0s, self.kappa1s, self.kappa2s, self.kappa3s)
+#        return PRSV2_a_alphas_vectorized(T, self.Tcs, self.ais, self.kappa0s, self.kappa1s, self.kappa2s, self.kappa3s)
 
 
 class TWUPRMIX(TwuPR95_a_alpha, PRMIX):
@@ -9911,8 +9865,10 @@ class APISRKMIX(SRKMIX, APISRK):
         self.b = b = sum([bi*zi for bi, zi in zip(self.bs, self.zs)])
         self.delta = self.b
         
-
-    def a_alpha_and_derivatives_vectorized(self, T, full=False):
+    def a_alphas_vectorized(self, T):
+        return APISRK_a_alphas_vectorized(T, self.Tcs, self.ais, self.S1s, self.S2s)
+    
+    def a_alpha_and_derivatives_vectorized(self, T):
         r'''Method to calculate the pure-component `a_alphas` and their first  
         and second derivatives for the API SRK EOS. This vectorized implementation 
         is added for extra speed.
@@ -9937,8 +9893,6 @@ class APISRKMIX(SRKMIX, APISRK):
         ----------
         T : float
             Temperature, [K]
-        full : bool, optional
-            If False, calculates and returns only `a_alphas`, [-]
         
         Returns
         -------
@@ -9951,34 +9905,9 @@ class APISRKMIX(SRKMIX, APISRK):
             Second temperature derivative of coefficient calculated by  
             EOS-specific method, [J^2/mol^2/Pa/K**2]
         '''
-        ais, Tcs, S1s, S2s = self.ais, self.Tcs, self.S1s, self.S2s
-        sqrtT = T**0.5
-        if not full:
-            a_alphas = []
-            for i in self.cmps:
-                a_alpha = ais[i]*(S1s[i]*(-(T/Tcs[i])**0.5 + 1.) + S2s[i]*(-(T/Tcs[i])**0.5 + 1)*(T/Tcs[i])**-0.5 + 1)**2
-                a_alphas.append(a_alpha)
-            return a_alphas
-        else:
-            T_inv = 1.0/T
-            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
-            for i in self.cmps:
-                x0 = (T/Tcs[i])**0.5
-                x1 = x0 - 1.
-                x2 = x1/x0
-                x3 = S2s[i]*x2
-                x4 = S1s[i]*x1 + x3 - 1.
-                x5 = S1s[i]*x0
-                x6 = S2s[i] - x3 + x5
-                x7 = 3.*S2s[i]
-                a_alpha = ais[i]*x4*x4
-                da_alpha_dT = ais[i]*x4*x6/T
-                d2a_alpha_dT2 = ais[i]*(-x4*(-x2*x7 + x5 + x7) + x6*x6)/(2.*T*T)
-                
-                a_alphas.append(a_alpha)
-                da_alpha_dTs.append(da_alpha_dT)
-                d2a_alpha_dT2s.append(d2a_alpha_dT2)
-            return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
+#        if full:
+        return APISRK_a_alpha_and_derivatives_vectorized(T, self.Tcs, self.ais, self.S1s, self.S2s)
+#        return APISRK_a_alphas_vectorized(T, self.Tcs, self.ais, self.S1s, self.S2s)
 
 
     def P_max_at_V(self, V):

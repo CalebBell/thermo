@@ -104,15 +104,24 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
     V_over_F_old = V_over_F
     restrained = 0
     restrained_switch_count = 300
+    
+    # Code for testing phis at zs
+    l, g = liquid_phase, gas_phase
+    if liquid_phase.T != T or liquid_phase.P != P:
+        liquid_phase = liquid_phase.to_TP_zs(T=T, P=P, zs=xs)
+    if gas_phase.T != T or gas_phase.P != P:
+        gas_phase = gas_phase.to_TP_zs(T=T, P=P, zs=ys)
 
     for iteration in range(maxiter):
-        g = gas_phase.to_zs_TPV(ys, T=T, P=P, V=V)
 #        g = gas_phase.to_TP_zs(T=T, P=P, zs=ys)
-        l = liquid_phase.to_zs_TPV(xs, T=T, P=P, V=V)        
 #        l = liquid_phase.to_TP_zs(T=T, P=P, zs=xs)
-        
-        lnphis_g = g.lnphis()
-        lnphis_l = l.lnphis()
+
+#        l = liquid_phase.to_zs_TPV(xs, T=T, P=P, V=V)        
+#        g = gas_phase.to_zs_TPV(ys, T=T, P=P, V=V)
+#        lnphis_g = g.lnphis()
+#        lnphis_l = l.lnphis()
+        lnphis_g = gas_phase.lnphis_at_zs(ys)
+        lnphis_l = liquid_phase.lnphis_at_zs(xs)
         limited_Z = False
         
         try:
@@ -260,7 +269,11 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
             # if err_mole_balance < mole_balance_tol:
 
                 # return V_over_F, xs, ys, l, g, iteration, err
-                return V_over_F_old, xs_old, ys_old, l, g, iteration, err
+                
+            # Temporary!
+            g = gas_phase.to_zs_TPV(ys_old, T=T, P=P, V=V)
+            l = liquid_phase.to_zs_TPV(xs_old, T=T, P=P, V=V)        
+            return V_over_F_old, xs_old, ys_old, l, g, iteration, err
         # elif err < tol and limited_Z:
         #     print(l.fugacities()/np.array(g.fugacities()))
         err1, err2, err3 = err, err1, err2
@@ -3637,8 +3650,9 @@ def stabiliy_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
     sum_zs_test = sum_zs_test_inv = 1.0
     converged = False
     for _ in range(maxiter):
-        test_phase = test_phase.to(T=T, P=P, zs=zs_test)
-        fugacities_test = test_phase.fugacities_lowest_Gibbs()
+#        test_phase = test_phase.to(T=T, P=P, zs=zs_test)
+#        fugacities_test = test_phase.fugacities_lowest_Gibbs()
+        fugacities_test = test_phase.fugacities_at_zs(zs_test)
         
         err = 0.0
         for i in cmps:
@@ -3670,7 +3684,7 @@ def stabiliy_iteration_Michelsen(trial_phase, zs_test, test_phase=None,
             
         # Calculate the dG of the feed
         dG_RT = 0.0
-        lnphis_test = test_phase.lnphis()
+        lnphis_test = test_phase.lnphis_at_zs(zs_test) #test_phase.lnphis()
         for i in cmps:
             dG_RT += zs_test[i]*(log(zs_test[i]) + lnphis_test[i])
         dG_RT *= V_over_F
@@ -5211,6 +5225,9 @@ class FlashVL(FlashBase):
         self.flash_pure = FlashPureVLS(constants=constants, correlations=correlations,
                                        gas=gas, liquids=[liquid], solids=[], 
                                        settings=settings)
+        
+        self.K_composition_independent = gas.composition_independent and liquid.composition_independent
+        self.ideal_gas_basis = gas.ideal_gas_basis and liquid.ideal_gas_basis
     
     def flash_TVF(self, T, VF, zs, solution=None, hot_start=None):
         return self.flash_TVF_2P(T, VF, zs, self.liquid, self.gas, solution=solution, hot_start=hot_start)
@@ -5459,7 +5476,10 @@ class FlashVL(FlashBase):
         if not phases_ready:
             liquid = liquid.to(T=T, P=P, zs=zs)
             gas = gas.to(T=T, P=P, zs=zs)
-        G_liq, G_gas = liquid.G(), gas.G()
+        if self.ideal_gas_basis:
+            G_liq, G_gas = liquid.G_dep(), gas.G_dep()
+        else:
+            G_liq, G_gas = liquid.G(), gas.G()
         if G_liq < G_gas: # How handle equal?
             min_phase, other_phase = liquid, gas
         elif G_liq == G_gas:
@@ -5639,6 +5659,8 @@ class FlashVLN(FlashVL):
         self.cmps = constants.cmps
         
         self.K_composition_independent = all([i.composition_independent for i in self.phases])
+        self.ideal_gas_basis = all([i.ideal_gas_basis for i in self.phases])
+
         
         self.aqueous_check = (self.SS_STAB_AQUEOUS_CHECK and '7732-18-5' in constants.CASs)
         self.stab = StabilityTester(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas,
@@ -5792,10 +5814,17 @@ class FlashVLN(FlashVL):
 #                    return gas, [liquid], [], [VF, 1.0 - VF], empty_flash_conv
                             
         min_phase_1P, G_min_1P = None, 1e100
-        for p in phases:
-            G = p.G()
-            if G < G_min_1P:
-                min_phase_1P, G_min_1P = p, G
+        ideal_gas_basis = self.ideal_gas_basis
+        if ideal_gas_basis:
+            for p in phases:
+                G = p.G_min_criteria()
+                if G < G_min_1P:
+                    min_phase_1P, G_min_1P = p, G
+        else:
+            for p in phases:
+                G = p.G()
+                if G < G_min_1P:
+                    min_phase_1P, G_min_1P = p, G
         one_phase_sln = None, [min_phase_1P], [], one_in_list, empty_flash_conv
 
         sln_2P, one_phase_min = None, None
@@ -5803,7 +5832,7 @@ class FlashVLN(FlashVL):
         phase_evolved = [False]*self.max_phases
 
         try:
-            sln_2P = self.flash_TP_stability_test(T, P, zs, liquids[0], gas, solution=solution, phases_ready=False)
+            sln_2P = self.flash_TP_stability_test(T, P, zs, liquids[0], gas, solution=solution, phases_ready=True)
             if len(sln_2P[3]) == 2: # One phase only
                 VL_solved = True
                 g, l0 = sln_2P[0], sln_2P[1][0]
@@ -5832,7 +5861,10 @@ class FlashVLN(FlashVL):
             found_betas = [1]
         
         existing_comps = [i.zs for i in found_phases]
-        G_2P = sum([found_betas[i]*found_phases[i].G() for i in range(len(found_phases))])
+        if ideal_gas_basis:
+            G_2P = sum([found_betas[i]*found_phases[i].G_min_criteria() for i in range(len(found_phases))])
+        else:
+            G_2P = sum([found_betas[i]*found_phases[i].G() for i in range(len(found_phases))])
 
         if sln_2P is not None and self.DOUBLE_CHECK_2P:
             g_id, ls_id, _, _ = identify_sort_phases(found_phases, found_betas, self.constants,
@@ -5856,7 +5888,10 @@ class FlashVLN(FlashVL):
                     double_check_betas = double_check_sln[3]
                     if len(double_check_betas) == 2:
                         double_check_phases = double_check_sln[1]
-                        G_2P_new = sum([double_check_betas[i]*double_check_phases[i].G() for i in range(2)])
+                        if ideal_gas_basis:
+                            G_2P_new = sum([double_check_betas[i]*double_check_phases[i].G_min_criteria() for i in range(2)])
+                        else:
+                            G_2P_new = sum([double_check_betas[i]*double_check_phases[i].G() for i in range(2)])
                         if G_2P_new < G_2P:
                             sln_2P = double_check_sln
                             G_2P = G_2P_new
@@ -5919,7 +5954,10 @@ class FlashVLN(FlashVL):
 
                 sln3 = sequential_substitution_NP(T, P, zs, flash_comps, flash_betas, flash_phases, maxiter=self.SS_NP_MAXITER, tol=self.SS_NP_TOL,
                                trivial_solution_tol=self.SS_NP_TRIVIAL_TOL)
-                G_3P = sum([sln3[0][i]*sln3[2][i].G() for i in range(3)])
+                if ideal_gas_basis:
+                    G_3P = sum([sln3[0][i]*sln3[2][i].G_min_criteria() for i in range(3)])
+                else:
+                    G_3P = sum([sln3[0][i]*sln3[2][i].G() for i in range(3)])
                 new_betas = sln3[0]
                 good_betas = True
                 for b in new_betas:
@@ -5948,7 +5986,10 @@ class FlashVLN(FlashVL):
                                                                                             maxiter=self.PT_SS_POLISH_MAXITER,
                                                                                             tol=self.PT_SS_POLISH_TOL,
                                                                                             V_over_F_guess=V_over_F)
-                        new_G_2P = V_over_F*g.G() + (1.0 - V_over_F)*l.G()
+                        if ideal_gas_basis:
+                            new_G_2P = V_over_F*g.G_min_criteria() + (1.0 - V_over_F)*l.G_min_criteria()
+                        else:
+                            new_G_2P = V_over_F*g.G() + (1.0 - V_over_F)*l.G()
                         if new_G_2P < G_2P:
                             return None, [l, g], [], [1.0 - V_over_F, V_over_F], {'iterations': iteration, 'err': err, 
                                          'stab_guess_name': stab_guess_name, 'G_2P': G_2P}
@@ -6352,6 +6393,12 @@ class FlashPureVLS(FlashBase):
             else:
                 gas = self.gas.to_zs_TPV(zs=zs, T=T, P=P, V=V)
                 return gas, [], [], betas, None
+        elif self.VL_only_CEOSs_same and V is not None and (T is not None or P is not None) and solution is None:
+            gas = self.gas.to_zs_TPV(zs=zs, T=T, P=P, V=V)
+            if gas.eos_mix.phase == 'g':
+                return gas, [], [], betas, None
+            else:
+                return None, [gas], [], betas, None
         
         if self.gas_count:
             gas = self.gas.to_zs_TPV(zs=zs, T=T, P=P, V=V)
@@ -6405,14 +6452,20 @@ class FlashPureVLS(FlashBase):
         gas = self.gas.to_TP_zs(T, Psat, zs)
 
         if self.VL_only_CEOSs_same:
+            if T > self.constants.Tcs[0]:
+                raise PhaseExistenceImpossible("Specified T is in the supercritical region", zs=zs, T=T)
+
             sat_liq = self.liquids[0].to_TP_zs(T, Psat, zs, other_eos=gas.eos_mix)
             return Psat, sat_liq, gas, 0, 0.0
 
         liquids = [l.to_TP_zs(T, Psat, zs) for l in self.liquids]
 #        return TVF_pure_newton(Psat, T, liquids, gas, maxiter=200, xtol=1E-10)
-        vals = TVF_pure_secant(Psat, T, liquids, gas, maxiter=200, xtol=1E-10)
+        Psat, l, g, iterations, err = TVF_pure_secant(Psat, T, liquids, gas, maxiter=200, xtol=1E-10)
+        if l.Z() == g.Z():
+            raise PhaseExistenceImpossible("Converged to trivial solution", zs=zs, T=T)
+
 #        print('P', P, 'solved')
-        return vals
+        return Psat, l, g, iterations, err
 
     def flash_PVF(self, P, VF=None, zs=None, hot_start=None):
         zs = [1.0]
@@ -6422,6 +6475,8 @@ class FlashPureVLS(FlashBase):
             sat_liq = self.liquids[0].to(zs=zs, T=sat_gas.T, V=1.0/sat_gas_CoolProp.saturated_liquid_keyed_output(CPiDmolar))
             return sat_gas.T, sat_liq, sat_gas, 0, 0.0
         elif self.VL_only_CEOSs_same:
+            if P > self.constants.Pcs[0]:
+                raise PhaseExistenceImpossible("Specified P is in the supercritical region", zs=zs, P=P)
             try:
                 Tsat = self.gas.eos_pures_STP[0].Tsat(P)
             except:
@@ -6438,7 +6493,10 @@ class FlashPureVLS(FlashBase):
             Tsat = self.correlations.VaporPressures[0].solve_prop(P)
         gas = self.gas.to_TP_zs(Tsat, P, zs)
         liquids = [l.to_TP_zs(Tsat, P, zs) for l in self.liquids]
-        return PVF_pure_newton(Tsat, P, liquids, gas, maxiter=200, xtol=1E-10)
+        Tsat, l, g, iterations, err = PVF_pure_newton(Tsat, P, liquids, gas, maxiter=200, xtol=1E-10)
+        if l.Z() == g.Z():
+            raise PhaseExistenceImpossible("Converged to trivial solution", zs=zs, P=P)
+        return Tsat, l, g, iterations, err
 #        return PVF_pure_secant(Tsat, P, liquids, gas, maxiter=200, xtol=1E-10)
 
     def flash_TSF(self, T, SF=None, zs=None, hot_start=None):

@@ -38,7 +38,7 @@ from chemicals.utils import (log, log10, exp, Cp_minus_Cv, phase_identification_
                           normalize, hash_any_primitive)
 from thermo.activity import IdealSolution
 from thermo.coolprop import has_CoolProp, CP as CoolProp
-from thermo.eos_mix import IGMIX
+from thermo.eos_mix import IGMIX, PR_lnphis_fastest
 from random import randint
 from scipy.optimize import fsolve
 from collections import OrderedDict
@@ -63,6 +63,7 @@ INCOMPRESSIBLE_CONST = 1e30
 
 
 class Phase(object):
+    ideal_gas_basis = False # Parameter fot has the same ideal gas Cp
     T_REF_IG = 298.15
     T_REF_IG_INV = 1.0/T_REF_IG
     P_REF_IG = 101325.
@@ -171,6 +172,22 @@ class Phase(object):
         obj = sum(zs[i]*dlnphis_dP[i] for i in self.cmps)
         Z = P*obj + 1.0
         return Z*R*self.T/P
+
+    def G_min_criteria(self):
+        # Definition implemented that does not use the H, or S ideal gas contribution
+        # Allows for faster checking of which phase is at lowest G, but can only
+        # be used when all models use an ideal gas basis
+        zs = self.zs
+        log_zs = self.log_zs()
+        return self.G_dep() + self.T*R*sum([zs[i]*log_zs[i] for i in self.cmps])
+
+    def lnphis_at_zs(self, zs):
+        return self.to_TP_zs(self.T, self.P, zs).lnphis()
+
+    def fugacities_at_zs(self, zs):
+        P = self.P
+        lnphis = self.lnphis_at_zs(zs)
+        return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(len(zs))]
 
     def lnphi(self):
         if self.N != 1:
@@ -1781,6 +1798,7 @@ class IdealGas(Phase):
     phase = 'g'
     force_phase = 'g'
     composition_independent = True
+    ideal_gas_basis = True
     def __init__(self, HeatCapacityGases=None, Hfs=None, Gfs=None, T=None, P=None, zs=None):
         self.HeatCapacityGases = HeatCapacityGases
         self.Hfs = Hfs
@@ -2100,7 +2118,9 @@ class IdealGas(Phase):
         return k
 
 class EOSGas(Phase):
-    
+    is_gas = True
+    is_liquid = False
+    ideal_gas_basis = True
     def model_hash(self, ignore_phase=False):
         if ignore_phase:
             try:
@@ -2292,7 +2312,17 @@ class EOSGas(Phase):
             return eos_mix.fugacity_coefficients(eos_mix.Z_g, self.zs)
         except AttributeError:
             return eos_mix.fugacity_coefficients(eos_mix.Z_l, self.zs)
-        
+
+    def lnphis_at_zs(self, zs):
+        eos_mix = self.eos_mix
+        if eos_mix.__class__.__name__ == 'PRMIX':
+            return PR_lnphis_fastest(zs, self.T, self.P, eos_mix.kijs, self.is_liquid, self.is_gas,
+                                     eos_mix.ais, eos_mix.bs, eos_mix.a_alphas, eos_mix.a_alpha_i_roots, 
+                                     eos_mix.kappas)
+        return self.to_TP_zs(self.T, self.P, zs).lnphis()
+    
+
+    
     def lnphis(self):
         try:
             return self.eos_mix.fugacity_coefficients(self.eos_mix.Z_g, self.zs)
@@ -2368,6 +2398,12 @@ class EOSGas(Phase):
             return self.eos_mix.S_dep_g
         except AttributeError:
             return self.eos_mix.S_dep_l
+
+    def G_dep(self):
+        try:
+            return self.eos_mix.G_dep_g
+        except AttributeError:
+            return self.eos_mix.G_dep_l
 
     def Cp_dep(self):
         try:
@@ -2802,6 +2838,8 @@ try:
 except:
     # Cost is ~10 ms - must be pasted in the future!
     exec(build_EOSLiquid())
+EOSLiquid.is_gas = False
+EOSLiquid.is_liquid = True
 
 class GibbsExcessLiquid(Phase):
     force_phase = 'l'
@@ -2814,6 +2852,7 @@ class GibbsExcessLiquid(Phase):
     Hvap_locked = False
     Hvap_data = None
     use_IG_Cp = True
+    ideal_gas_basis = True
     
     Cpls_locked = False
     Cpls_data = None
@@ -5355,6 +5394,7 @@ class GibbsExcessLiquid(Phase):
 
     
 class GibbsExcessSolid(GibbsExcessLiquid):
+    ideal_gas_basis = True
     force_phase = 's'
     phase = 's'
     def __init__(self, SublimationPressures, VolumeSolids=None, 
@@ -5621,6 +5661,7 @@ else:
 
 class CoolPropPhase(Phase):
     prefer_phase = CPunknown
+    ideal_gas_basis = False
     
         
     def __repr__(self):

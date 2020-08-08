@@ -25,7 +25,10 @@ from __future__ import division, print_function
 __all__ = ['Poly_a_alpha', 'TwuSRK95_a_alpha', 'TwuPR95_a_alpha',
            'PR_a_alphas_vectorized', 'PR_a_alpha_and_derivatives_vectorized',
            'RK_a_alpha_and_derivatives_vectorized', 'RK_a_alphas_vectorized',
-
+           'SRK_a_alpha_and_derivatives_vectorized', 'SRK_a_alphas_vectorized',
+           'PRSV_a_alphas_vectorized', 'PRSV_a_alpha_and_derivatives_vectorized',
+           'PRSV2_a_alphas_vectorized', 'PRSV2_a_alpha_and_derivatives_vectorized',
+           'APISRK_a_alphas_vectorized', 'APISRK_a_alpha_and_derivatives_vectorized',
 ]
 
 
@@ -71,6 +74,36 @@ def PR_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappas):
         d2a_alpha_dT2s[i] = x3*(x5*x1*x1*kappas[i] - x4*x6)
     return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
 
+def SRK_a_alphas_vectorized(T, Tcs, ais, ms):
+    sqrtT = T**0.5
+    N = len(Tcs)
+    a_alphas = [0.0]*N
+    for i in range(N):
+        x0 = ms[i]*(1. - sqrtT*Tcs[i]**-0.5) + 1.0
+        a_alphas[i] = ais[i]*x0*x0
+    return a_alphas
+
+def SRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, ms):
+    N = len(Tcs)
+    sqrtnT = T**-0.5
+    sqrtT = T*sqrtnT
+    T_inv = sqrtnT*sqrtnT
+    x10 = 0.5*T_inv*T_inv
+    nT_inv = -T_inv
+    a_alphas = [0.0]*N
+    da_alpha_dTs = [0.0]*N
+    d2a_alpha_dT2s = [0.0]*N
+    
+    for i in range(N):
+        x1 = sqrtT*Tcs[i]**-0.5
+        x2 = ais[i]*ms[i]*x1
+        x3 = ms[i]*(1.0 - x1) + 1.
+
+        a_alphas[i] = ais[i]*x3*x3
+        da_alpha_dTs[i] = x2*nT_inv*x3
+        d2a_alpha_dT2s[i] = x2*x10*(ms[i] + 1.)
+    return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
+
 def RK_a_alphas_vectorized(T, Tcs, ais):
     N = len(ais)
     a_alphas = [0.0]*N
@@ -97,6 +130,139 @@ def RK_a_alpha_and_derivatives_vectorized(T, Tcs, ais):
         a_alphas[i] = aiTc_05*T_root_inv
         da_alpha_dTs[i] = aiTc_05*x0
         d2a_alpha_dT2s[i] = aiTc_05*x1
+    return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
+
+def PRSV_a_alphas_vectorized(T, Tcs, ais, kappa0s, kappa1s):
+    sqrtT = T**0.5
+    N = len(Tcs)
+    a_alphas = [0.0]*N
+    for i in range(N):
+        Tc_inv_root = Tcs[i]**-0.5
+        Tc_inv = Tc_inv_root*Tc_inv_root
+        x0 = Tc_inv_root*sqrtT
+        x2 = (1.0 + (kappa0s[i] + kappa1s[i]*(x0 + 1.0)*(0.7 - T*Tc_inv))*(1.0 - x0))
+        a_alphas[i] = ais[i]*x2*x2
+    return a_alphas
+
+def PRSV_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappa0s, kappa1s):
+    sqrtT = T**0.5
+    T_inv = 1.0/T
+    N = len(Tcs)
+    a_alphas = [0.0]*N
+    da_alpha_dTs = [0.0]*N
+    d2a_alpha_dT2s = [0.0]*N
+    for i in range(N):
+        Tc_inv_root = Tcs[i]**-0.5
+        Tc_inv = Tc_inv_root*Tc_inv_root
+
+        x1 = T*Tc_inv
+        x2 = sqrtT*Tc_inv_root
+
+        x3 = x2 - 1.
+        x4 = 10.*x1 - 7.
+        x5 = x2 + 1.
+        x6 = 10.*kappa0s[i] - kappa1s[i]*x4*x5
+        x7 = x3*x6
+        x8 = x7*0.1 - 1.
+        x10 = x6*T_inv
+        x11 = kappa1s[i]*x3
+        x12 = x4*T_inv
+        x13 = 20.*Tc_inv*x5 + x12*x2
+        x14 = -x10*x2 + x11*x13
+        a_alpha = ais[i]*x8*x8
+        da_alpha_dT = -ais[i]*x14*x8*0.1
+        d2a_alpha_dT2 = ais[i]*0.005*(x14*x14 - x2*T_inv*(x7 - 10.)*(2.*kappa1s[i]*x13 + x10 + x11*(40.*Tc_inv - x12)))
+
+        a_alphas[i] = a_alpha
+        da_alpha_dTs[i] = da_alpha_dT
+        d2a_alpha_dT2s[i] = d2a_alpha_dT2
+    return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
+
+def PRSV2_a_alphas_vectorized(T, Tcs, ais, kappa0s, kappa1s, kappa2s, kappa3s):
+    sqrtT = T**0.5
+    N = len(Tcs)
+    a_alphas = [0.0]*N
+    for i in range(N):
+        Tc_inv_root = Tcs[i]**-0.5
+        Tr_sqrt = sqrtT*Tc_inv_root
+        Tr = T*Tc_inv_root*Tc_inv_root
+        kappa = (kappa0s[i] + ((kappa1s[i] + kappa2s[i]*(kappa3s[i] - Tr)
+                 *(1.0 - Tr_sqrt))*(1.0 + Tr_sqrt)*(0.7 - Tr)))
+        x0 = (1.0 + kappa*(1.0 - Tr_sqrt))
+        a_alphas[i] = ais[i]*x0*x0
+    return a_alphas
+
+def PRSV2_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappa0s, kappa1s, kappa2s, kappa3s):
+    sqrtT = T**0.5
+    T_inv = 1.0/T
+    N = len(Tcs)
+    a_alphas = [0.0]*N
+    da_alpha_dTs = [0.0]*N
+    d2a_alpha_dT2s = [0.0]*N
+    for i in range(N):
+        Tc_inv_root = Tcs[i]**-0.5
+        Tc_inv = Tc_inv_root*Tc_inv_root
+        x1 = T*Tc_inv
+        x2 = sqrtT*Tc_inv_root
+
+        x3 = x2 - 1.
+        x4 = x2 + 1.
+        x5 = 10.*x1 - 7.
+        x6 = -kappa3s[i] + x1
+        x7 = kappa1s[i] + kappa2s[i]*x3*x6
+        x8 = x5*x7
+        x9 = 10.*kappa0s[i] - x4*x8
+        x10 = x3*x9
+        x11 = x10*0.1 - 1.0
+        x13 = x2*T_inv
+        x14 = x7*Tc_inv
+        x15 = kappa2s[i]*x4*x5
+        x16 = 2.*(-x2 + 1.)*Tc_inv + x13*(kappa3s[i] - x1)
+        x17 = -x13*x8 - x14*(20.*x2 + 20.) + x15*x16
+        x18 = x13*x9 + x17*x3
+        x19 = x2*T_inv*T_inv
+        x20 = 2.*x2*T_inv
+
+        a_alpha = ais[i]*x11*x11
+        da_alpha_dT = ais[i]*x11*x18*0.1
+        d2a_alpha_dT2 = ais[i]*(x18*x18 + (x10 - 10.)*(x17*x20 - x19*x9
+                           + x3*(40.*kappa2s[i]*Tc_inv*x16*x4 
+                         + kappa2s[i]*x16*x20*x5 - 40.*T_inv*x14*x2
+                         - x15*T_inv*x2*(4.0*Tc_inv - x6*T_inv) 
+                         + x19*x8)))*0.005
+
+        a_alphas[i] = a_alpha
+        da_alpha_dTs[i] = da_alpha_dT
+        d2a_alpha_dT2s[i] = d2a_alpha_dT2
+    return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
+
+def APISRK_a_alphas_vectorized(T, Tcs, ais, S1s, S2s):
+    N = len(Tcs)
+    sqrtT = T**0.5
+    a_alphas = [0.0]*N
+    for i in range(N):
+        a_alpha = ais[i]*(S1s[i]*(-(T/Tcs[i])**0.5 + 1.) + S2s[i]*(-(T/Tcs[i])**0.5 + 1)*(T/Tcs[i])**-0.5 + 1)**2
+        a_alphas[i] = a_alpha
+    return a_alphas
+
+def APISRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, S1s, S2s):
+    N = len(Tcs)
+    T_inv = 1.0/T
+    a_alphas = [0.0]*N
+    da_alpha_dTs = [0.0]*N
+    d2a_alpha_dT2s = [0.0]*N
+    for i in range(N):
+        x0 = (T/Tcs[i])**0.5
+        x1 = x0 - 1.
+        x2 = x1/x0
+        x3 = S2s[i]*x2
+        x4 = S1s[i]*x1 + x3 - 1.
+        x5 = S1s[i]*x0
+        x6 = S2s[i] - x3 + x5
+        x7 = 3.*S2s[i]
+        a_alphas[i] = ais[i]*x4*x4
+        da_alpha_dTs[i] = ais[i]*x4*x6/T
+        d2a_alpha_dT2s[i] = ais[i]*(-x4*(-x2*x7 + x5 + x7) + x6*x6)/(2.*T*T)
     return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
 
 def TWU_a_alpha_common(T, Tc, omega, a, full=True, quick=True, method='PR'):
@@ -415,47 +581,49 @@ class Mathias_Copeman_untruncated_a_alpha(a_alpha_base):
 
 
 class Mathias_Copeman_a_alpha(a_alpha_base):
-    
-    def a_alpha_and_derivatives_vectorized(self, T, full=False):
+
+    def a_alphas_vectorized(self, T):
         ais, alpha_coeffs, Tcs = self.ais, self.alpha_coeffs, self.Tcs
-        if not full:
-            a_alphas = []
-            for i in self.cmps:
-                tau = 1.0 - (T/Tcs[i])**0.5
-                if T < Tcs[i]:
-                    x0 = horner(alpha_coeffs[i], tau)
-                    a_alpha = x0*x0*ais[i]
-                else:
-                    x = (1.0 + alpha_coeffs[i][-2]*tau)
-                    a_alpha = ais[i]*x*x
-                a_alphas.append(a_alpha)
-            return a_alphas
-        else:
-            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
-            for i in self.cmps:
-                a = ais[i]
-                Tc = Tcs[i]
-                rt = (T/Tc)**0.5
-                tau = 1.0 - rt
-                if T < Tc:
-                    x0, x1, x2 = horner_and_der2(alpha_coeffs[i], tau)
-                    a_alpha = x0*x0*a
-                    da_alpha_dT = -a*(rt*x0*x1/T)
-                    d2a_alpha_dT2 = a*((x0*x2/Tc + x1*x1/Tc + rt*x0*x1/T)/(2.0*T))
-                else:
-                    c1 = alpha_coeffs[i][-2]
-                    x0 = 1.0/T
-                    x1 = 1.0/Tc
-                    x2 = rt#sqrt(T*x1)
-                    x3 = c1*(x2 - 1.0) - 1.0
-                    x4 = x0*x2*x3
-                    a_alpha = a*x3*x3
-                    da_alpha_dT = a*c1*x4
-                    d2a_alpha_dT2 = a*0.5*c1*x0*(c1*x1 - x4)
-                a_alphas.append(a_alpha)
-                da_alpha_dTs.append(da_alpha_dT)
-                d2a_alpha_dT2s.append(d2a_alpha_dT2)
-            return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
+        a_alphas = []
+        for i in self.cmps:
+            tau = 1.0 - (T/Tcs[i])**0.5
+            if T < Tcs[i]:
+                x0 = horner(alpha_coeffs[i], tau)
+                a_alpha = x0*x0*ais[i]
+            else:
+                x = (1.0 + alpha_coeffs[i][-2]*tau)
+                a_alpha = ais[i]*x*x
+            a_alphas.append(a_alpha)
+        return a_alphas
+
+    def a_alpha_and_derivatives_vectorized(self, T):
+        ais, alpha_coeffs, Tcs = self.ais, self.alpha_coeffs, self.Tcs
+        a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
+        for i in self.cmps:
+            a = ais[i]
+            Tc = Tcs[i]
+            rt = (T/Tc)**0.5
+            tau = 1.0 - rt
+            if T < Tc:
+                x0, x1, x2 = horner_and_der2(alpha_coeffs[i], tau)
+                a_alpha = x0*x0*a
+                da_alpha_dT = -a*(rt*x0*x1/T)
+                d2a_alpha_dT2 = a*((x0*x2/Tc + x1*x1/Tc + rt*x0*x1/T)/(2.0*T))
+            else:
+                c1 = alpha_coeffs[i][-2]
+                x0 = 1.0/T
+                x1 = 1.0/Tc
+                x2 = rt#sqrt(T*x1)
+                x3 = c1*(x2 - 1.0) - 1.0
+                x4 = x0*x2*x3
+                a_alpha = a*x3*x3
+                da_alpha_dT = a*c1*x4
+                d2a_alpha_dT2 = a*0.5*c1*x0*(c1*x1 - x4)
+            a_alphas.append(a_alpha)
+            da_alpha_dTs.append(da_alpha_dT)
+            d2a_alpha_dT2s.append(d2a_alpha_dT2)
+        return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
+
     def a_alpha_pure(self, T):
         Tc = self.Tc
         a = self.a
@@ -824,6 +992,7 @@ class Twu91_a_alpha(a_alpha_base):
                 da_alpha_dT = a*(-c0*c1*c2*(T/Tc)**(c1*c2)*(T/Tc)**(c2*(c1 - 1))*exp(c0*(-(T/Tc)**(c1*c2) + 1))/T + c2*(T/Tc)**(c2*(c1 - 1))*(c1 - 1)*exp(c0*(-(T/Tc)**(c1*c2) + 1))/T)
                 d2a_alpha_dT2 = a*(c2*(T/Tc)**(c2*(c1 - 1))*(c0**2*c1**2*c2*(T/Tc)**(2*c1*c2) - c0*c1**2*c2*(T/Tc)**(c1*c2) - 2*c0*c1*c2*(T/Tc)**(c1*c2)*(c1 - 1) + c0*c1*(T/Tc)**(c1*c2) - c1 + c2*(c1 - 1)**2 + 1)*exp(-c0*((T/Tc)**(c1*c2) - 1))/T**2)
                 return a_alpha, da_alpha_dT, d2a_alpha_dT2
+
     def a_alpha_pure(self, T):
         c0, c1, c2 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
@@ -831,7 +1000,17 @@ class Twu91_a_alpha(a_alpha_base):
         a_alpha = a*(Tr**(c2*(c1 - 1.0))*exp(c0*(1.0 - (Tr)**(c1*c2))))
         return a_alpha
 
-    def a_alpha_and_derivatives_vectorized(self, T, full=False):
+    def a_alphas_vectorized(self, T):
+        ais, alpha_coeffs, Tcs = self.ais, self.alpha_coeffs, self.Tcs
+        a_alphas = []
+        for i in self.cmps:
+            coeffs = alpha_coeffs[i] 
+            Tr = T/Tcs[i]
+            a_alpha = ais[i]*(Tr**(coeffs[2]*(coeffs[1] - 1.0))*exp(coeffs[0]*(1.0 - (Tr)**(coeffs[1]*coeffs[2]))))
+            a_alphas.append(a_alpha)
+        return a_alphas
+
+    def a_alpha_and_derivatives_vectorized(self, T):
         r'''Method to calculate the pure-component `a_alphas` and their first  
         and second derivatives for TWU91 alpha function EOS. This vectorized 
         implementation is added for extra speed.
@@ -860,39 +1039,30 @@ class Twu91_a_alpha(a_alpha_base):
             EOS-specific method, [J^2/mol^2/Pa/K**2]
         '''
         ais, alpha_coeffs, Tcs = self.ais, self.alpha_coeffs, self.Tcs
-        if not full:
-            a_alphas = []
-            for i in self.cmps:
-                coeffs = alpha_coeffs[i] 
-                Tr = T/Tcs[i]
-                a_alpha = ais[i]*(Tr**(coeffs[2]*(coeffs[1] - 1.0))*exp(coeffs[0]*(1.0 - (Tr)**(coeffs[1]*coeffs[2]))))
-                a_alphas.append(a_alpha)
-            return a_alphas
-        else:
-            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
-            T_inv = 1.0/T
-            for i in self.cmps:
-                coeffs = alpha_coeffs[i]
-                c0, c1, c2 = coeffs[0], coeffs[1], coeffs[2]
-                Tr = T/Tcs[i]
-                
-                x1 = c1 - 1.0
-                x2 = c2*x1
-                x3 = c1*c2
-                x4 = Tr**x3
-                x5 = ais[i]*Tr**x2*exp(-c0*(x4 - 1.0))
-                x6 = c0*x4
-                x7 = c1*x6
-                x8 = c2*x5
-                x9 = c1*c1*c2
-                
-                d2a_alpha_dT2 = (x8*(c0*c0*x4*x4*x9 - c1 + c2*x1*x1 
-                                     - 2.0*x2*x7 - x6*x9 + x7 + 1.0)*T_inv*T_inv)            
-                a_alphas.append(x5)
-                da_alpha_dTs.append(x8*(x1 - x7)*T_inv)
-                d2a_alpha_dT2s.append(d2a_alpha_dT2)
+        a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
+        T_inv = 1.0/T
+        for i in self.cmps:
+            coeffs = alpha_coeffs[i]
+            c0, c1, c2 = coeffs[0], coeffs[1], coeffs[2]
+            Tr = T/Tcs[i]
+            
+            x1 = c1 - 1.0
+            x2 = c2*x1
+            x3 = c1*c2
+            x4 = Tr**x3
+            x5 = ais[i]*Tr**x2*exp(-c0*(x4 - 1.0))
+            x6 = c0*x4
+            x7 = c1*x6
+            x8 = c2*x5
+            x9 = c1*c1*c2
+            
+            d2a_alpha_dT2 = (x8*(c0*c0*x4*x4*x9 - c1 + c2*x1*x1 
+                                 - 2.0*x2*x7 - x6*x9 + x7 + 1.0)*T_inv*T_inv)            
+            a_alphas.append(x5)
+            da_alpha_dTs.append(x8*(x1 - x7)*T_inv)
+            d2a_alpha_dT2s.append(d2a_alpha_dT2)
 
-            return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
+        return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
 
 
 class Soave_93_a_alpha(a_alpha_base):
@@ -1111,20 +1281,21 @@ class TwuSRK95_a_alpha(a_alpha_base):
 
     def a_alpha_pure(self, T):
         return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=False, quick=True, method='SRK')
-
-    def a_alpha_and_derivatives_vectorized(self, T, full=False):
+    
+    def a_alphas_vectorized(self, T):
         Tcs, omegas, ais = self.Tcs, self.omegas, self.ais
-        if not full:
-            return [TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=full, quick=True, method='SRK')
-                    for i in self.cmps]
-        else:
-            r0, r1, r2 = [], [], []
-            for i in self.cmps:
-                v0, v1, v2 = TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=full, quick=True, method='SRK')
-                r0.append(v0)
-                r1.append(v1)
-                r2.append(v2)
-            return r0, r1, r2
+        return [TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=False, quick=True, method='SRK')
+                for i in self.cmps]
+        
+    def a_alpha_and_derivatives_vectorized(self, T):
+        Tcs, omegas, ais = self.Tcs, self.omegas, self.ais
+        r0, r1, r2 = [], [], []
+        for i in self.cmps:
+            v0, v1, v2 = TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=True, quick=True, method='SRK')
+            r0.append(v0)
+            r1.append(v1)
+            r2.append(v2)
+        return r0, r1, r2
         
 
 
@@ -1143,19 +1314,20 @@ class TwuPR95_a_alpha(a_alpha_base):
     def a_alpha_pure(self, T):
         return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=False, quick=True, method='PR')
 
-    def a_alpha_and_derivatives_vectorized(self, T, full=False):
+    def a_alphas_vectorized(self, T):
         Tcs, omegas, ais = self.Tcs, self.omegas, self.ais
-        if not full:
-            return [TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=full, quick=True, method='PR')
-                    for i in self.cmps]
-        else:
-            r0, r1, r2 = [], [], []
-            for i in self.cmps:
-                v0, v1, v2 = TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=full, quick=True, method='PR')
-                r0.append(v0)
-                r1.append(v1)
-                r2.append(v2)
-            return r0, r1, r2
+        return [TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=False, quick=True, method='PR')
+                for i in self.cmps]
+
+    def a_alpha_and_derivatives_vectorized(self, T):
+        Tcs, omegas, ais = self.Tcs, self.omegas, self.ais
+        r0, r1, r2 = [], [], []
+        for i in self.cmps:
+            v0, v1, v2 = TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=True, quick=True, method='PR')
+            r0.append(v0)
+            r1.append(v1)
+            r2.append(v2)
+        return r0, r1, r2
         
         
 class Soave_79_a_alpha(a_alpha_base):
@@ -1193,31 +1365,32 @@ class Soave_79_a_alpha(a_alpha_base):
         Tr = T/Tc
         return a*(1.0 + (1.0 - Tr)*(M + N/Tr))
 
-    def a_alpha_and_derivatives_vectorized(self, T, full=False):
+    def a_alphas_vectorized(self, T):
         ais, alpha_coeffs, Tcs = self.ais, self.alpha_coeffs, self.Tcs
-        if not full:
-            a_alphas = []
-            for i in self.cmps:
-                Tr = T/Tcs[i]
-                M, N = alpha_coeffs[i]
-                a_alphas.append(a*(1.0 + (1.0 - Tr)*(M + N/Tr)))
-            return a_alphas
-        else:
-            T_inv = 1.0/T
-            a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
-            for i in self.cmps:
-                a = ais[i]
-                M, N = alpha_coeffs[i]
-                x0 = Tc_inv = 1.0/Tcs[i]
-                x1 = T*x0 - 1.0
-                x2 = Tc*T_inv
-                x3 = M + N*x2
-                x4 = N*T_inv*T_inv
+        a_alphas = []
+        for i in self.cmps:
+            Tr = T/Tcs[i]
+            M, N = alpha_coeffs[i]
+            a_alphas.append(a*(1.0 + (1.0 - Tr)*(M + N/Tr)))
+        return a_alphas
 
-                a_alphas.append(a*(1.0 - x1*x3))
-                da_alpha_dTs.append(a*(Tc*x1*x4 - x0*x3))
-                d2a_alpha_dT2s.append(a*(2.0*x4*(1.0 - x1*x2)))
-            return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
+    def a_alpha_and_derivatives_vectorized(self, T):
+        ais, alpha_coeffs, Tcs = self.ais, self.alpha_coeffs, self.Tcs
+        T_inv = 1.0/T
+        a_alphas, da_alpha_dTs, d2a_alpha_dT2s = [], [], []
+        for i in self.cmps:
+            a = ais[i]
+            M, N = alpha_coeffs[i]
+            x0 = Tc_inv = 1.0/Tcs[i]
+            x1 = T*x0 - 1.0
+            x2 = Tc*T_inv
+            x3 = M + N*x2
+            x4 = N*T_inv*T_inv
+
+            a_alphas.append(a*(1.0 - x1*x3))
+            da_alpha_dTs.append(a*(Tc*x1*x4 - x0*x3))
+            d2a_alpha_dT2s.append(a*(2.0*x4*(1.0 - x1*x2)))
+        return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
 
 
 a_alpha_bases = [Soave_1972_a_alpha, Heyen_a_alpha, Harmens_Knapp_a_alpha, Mathias_1983_a_alpha,

@@ -30,6 +30,7 @@ import json
 import os
 import numpy as np
 from thermo.test_utils import *
+from chemicals.exceptions import PhaseExistenceImpossible
 import sys
 try:
     import matplotlib.pyplot as plt
@@ -1491,6 +1492,21 @@ def test_VL_EOSMIX_fast_return(hacks):
     # Do a vapor check for consistency
     point = flasher.flash(T=300, P=3200)
     assert_close(point.Z(), 0.9995223890086967, rtol=1e-5)
+    
+    # Do a check exception is raised for T
+    with pytest.raises(PhaseExistenceImpossible):
+        res = flasher.flash(T=900, VF=1)
+    with pytest.raises(PhaseExistenceImpossible):
+        res = flasher.flash(T=900, VF=.5)
+    with pytest.raises(PhaseExistenceImpossible):
+        res = flasher.flash(T=900, VF=0)
+    with pytest.raises(PhaseExistenceImpossible):
+        res = flasher.flash(P=constants.Pcs[0]*1.1, VF=1)
+    with pytest.raises(PhaseExistenceImpossible):
+        res = flasher.flash(P=constants.Pcs[0]*1.1, VF=.5)
+    with pytest.raises(PhaseExistenceImpossible):
+        res = flasher.flash(P=constants.Pcs[0]*1.1, VF=0)
+
 
 def test_APISRK_multiple_T_slns():
     constants = ChemicalConstantsPackage(Tcs=[768.0], Pcs=[1070000.0], omegas=[0.8805], MWs=[282.54748], CASs=['112-95-8'])

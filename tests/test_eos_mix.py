@@ -3904,7 +3904,7 @@ def test_dfugacities_dns_SRK():
      [-64000.89353453027, 42667.26235635359]]
     dfugacities_dns_num = jacobian(to_diff_fugacities, eos.zs, scalar=False, perturbation=1e-7)
     assert_allclose(dfugacities_dns_l, dfugacities_dns_l_expect, rtol=1e-10)
-    assert_allclose(dfugacities_dns_l, dfugacities_dns_num)
+    assert_allclose(dfugacities_dns_l, dfugacities_dns_num, rtol=3e-7)
          
 def test_dfugacities_dns_PR_4():
     liquid_IDs = ['nitrogen', 'carbon dioxide', 'H2S', 'methane']
@@ -4322,5 +4322,94 @@ def test_RK_alpha_functions():
     ais = [0.1384531188470736, 0.23318192635290255]
     Tcs = [126.1, 190.6]
     assert_close1d(RK_a_alphas_vectorized(115.0, Tcs, ais), [0.14498109194681863, 0.3001977367788305], rtol=1e-14)
+
     assert_close1d(RK_a_alpha_and_derivatives_vectorized(115.0, Tcs, ais)[0], [0.14498109194681863, 0.3001977367788305], rtol=1e-14)
+    assert_close1d(RK_a_alpha_and_derivatives_vectorized(115.0, Tcs, ais)[1], [-0.0006303525736818201, -0.0013052075512123066], rtol=1e-14)
+    assert_close1d(RK_a_alpha_and_derivatives_vectorized(115.0, Tcs, ais)[2], [8.221990091502003e-06, 1.702444632016052e-05], rtol=1e-13)
     
+def test_PR_alpha_functions():
+
+    Tcs = [126.1, 190.6]
+    ais = [0.14809032104845268, 0.24941284547327386]
+    kappas = [0.43589852799999995, 0.39157219967999995]
+    
+    a_alphas, da_alpha_dTs, d2a_alpha_dT2s = PR_a_alpha_and_derivatives_vectorized(115.0, Tcs, ais, kappas)
+    assert_close1d(a_alphas, [0.15396048485001743, 0.2949230880108655], rtol=1e-14)
+    assert_close1d(da_alpha_dTs, [-0.0005465714105321387, -0.0007173238607866328], rtol=1e-14)
+    assert_close1d(d2a_alpha_dT2s, [3.346582439767926e-06, 3.9911514454308145e-06], rtol=1e-14)
+    
+    a_alphas = PR_a_alphas_vectorized(115.0, Tcs, ais, kappas)
+    assert_close1d(a_alphas, [0.15396048485001743, 0.2949230880108655], rtol=1e-14)
+
+
+def test_PRSV_alpha_functions():
+
+    ais = [0.14809032104845266, 0.24941284547327375]
+    Tcs = [126.1, 190.6]
+    kappa0s = [0.4382087603776, 0.39525916492525737]
+    kappa1s = [0.05104, 0.01104]
+    
+    
+    a_alphas_expect = [0.15370439761238955, 0.2955994861673986]
+    da_alpha_dTs_expect = [-0.0005338727780453475, -0.0007404240680706123]
+    d2a_alpha_dT2s_expect = [5.2512516570475544e-06, 4.409149878219855e-06]
+    
+    assert_close1d(PRSV_a_alphas_vectorized(115.0, Tcs, ais, kappa0s, kappa1s), a_alphas_expect, rtol=1e-14)
+    assert_close1d(PRSV_a_alpha_and_derivatives_vectorized(115.0, Tcs, ais, kappa0s, kappa1s)[0], a_alphas_expect, rtol=1e-14)
+    
+    assert_close1d(PRSV_a_alpha_and_derivatives_vectorized(115.0, Tcs, ais, kappa0s, kappa1s)[1], da_alpha_dTs_expect, rtol=1e-14)
+    assert_close1d(PRSV_a_alpha_and_derivatives_vectorized(115.0, Tcs, ais, kappa0s, kappa1s)[2], d2a_alpha_dT2s_expect, rtol=1e-14)
+    
+
+
+def test_PRSV2_alpha_functions():
+
+    Tcs = [507.6, 600.0]
+    ais = [2.6923169620277805, 5.689588335410997]
+    kappa0s = [0.8074380841890093, 0.6701405640000001]
+    kappa1s = [0.05104, 0.021]
+    kappa2s = [0.8634, 0.9]
+    kappa3s = [0.46, 0.5]
+    
+    a_alphas_expect = [3.798558549698909, 8.170895926776046]
+    da_alpha_dTs_expect = [-0.006850196568677346, -0.011702937527408558]
+    d2a_alpha_dT2s_expect = [2.2856042557952587e-05, 4.6721843378941576e-05]
+    
+    assert_close1d(PRSV2_a_alphas_vectorized(300.0, Tcs, ais, kappa0s, kappa1s, kappa2s, kappa3s), a_alphas_expect, rtol=1e-14)
+    assert_close1d(PRSV2_a_alpha_and_derivatives_vectorized(300.0, Tcs, ais, kappa0s, kappa1s, kappa2s, kappa3s)[0], a_alphas_expect, rtol=1e-14)
+    
+    assert_close1d(PRSV2_a_alpha_and_derivatives_vectorized(300.0, Tcs, ais, kappa0s, kappa1s, kappa2s, kappa3s)[1], da_alpha_dTs_expect, rtol=1e-14)
+    assert_close1d(PRSV2_a_alpha_and_derivatives_vectorized(300.0, Tcs, ais, kappa0s, kappa1s, kappa2s, kappa3s)[2], d2a_alpha_dT2s_expect, rtol=1e-14)
+
+
+def test_APISRKMIX_alpha_functions():
+    S1s = [0.546898592, 0.50212991827]
+    S2s = [.01, .05]
+    a_alphas_expect = [0.14548965755290622, 0.2958898875550272]
+    da_alpha_dTs_expect = [-0.0006574900079117923, -0.0010379050345490982]
+    d2a_alpha_dT2s_expect = [4.456678907400026e-06, 7.611477457376546e-06]
+    ais = [0.1384531188470736, 0.23318192635290255]
+    Tcs = [126.1, 190.6]
+    T = 115.0
+    
+    assert_close1d(APISRK_a_alphas_vectorized(T, Tcs, ais, S1s, S2s), a_alphas_expect, rtol=1e-14)
+    assert_close1d(APISRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, S1s, S2s)[0], a_alphas_expect, rtol=1e-14)
+    assert_close1d(APISRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, S1s, S2s)[1], da_alpha_dTs_expect, rtol=1e-14)
+    assert_close1d(APISRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, S1s, S2s)[2], d2a_alpha_dT2s_expect, rtol=1e-14)
+    
+def test_a_alpha_vectorized():
+    from thermo.eos_mix import eos_mix_list
+    for e in eos_mix_list:
+        obj = e(T=126.0, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,.001],[0.001,0]])
+        a_alpha0 = obj.a_alphas_vectorized(obj.T)
+        
+        a_alpha1 = obj.a_alpha_and_derivatives_vectorized(obj.T)[0]
+        assert_close1d(a_alpha0, a_alpha1, rtol=1e-13)
+        
+def test_missing_alphas_working():
+    # Failed at one point
+    base = PRMIX(Tcs=[305.32, 469.7], Pcs=[4872000.0, 3370000.0], omegas=[0.098, 0.251], kijs=[[0, 0.007609447], [0.007609447, 0]], zs=[0.9999807647739885, 1.9235226011608224e-05], T=129.84555527466244, P=1000.0)
+    new = base.to_TP_zs_fast(320.5, 1e5, base.zs, full_alphas=False)
+    new.to_TP_zs_fast(320.5, 1e5, base.zs)
+
+
