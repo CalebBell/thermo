@@ -28,7 +28,6 @@ from thermo.volume import *
 from thermo.volume import VDI_TABULAR
 from thermo.eos import *
 from chemicals.utils import Vm_to_rho
-from thermo.identifiers import checkCAS
 
 
 @pytest.mark.meta_T_dept

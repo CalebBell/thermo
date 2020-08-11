@@ -25,7 +25,6 @@ import pytest
 from fluids.numerics import assert_close, assert_close1d
 from thermo.thermal_conductivity import *
 from thermo.mixture import Mixture
-from thermo.identifiers import checkCAS
 from thermo.thermal_conductivity import MAGOMEDOV, DIPPR_9H, FILIPPOV, SIMPLE, ThermalConductivityLiquidMixture
 from thermo.thermal_conductivity import (GHARAGHEIZI_G, CHUNG, ELI_HANLEY, VDI_PPDS,
                                         ELI_HANLEY_DENSE, CHUNG_DENSE, 

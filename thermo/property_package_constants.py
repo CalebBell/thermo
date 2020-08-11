@@ -36,7 +36,7 @@ from fluids.numerics import brenth, ridder, derivative
 
 from chemicals.utils import log, exp
 from fluids.constants import R, pi, N_A
-from thermo.identifiers import IDs_to_CASs
+from chemicals.identifiers import IDs_to_CASs
 from chemicals.rachford_rice import flash_inner_loop
 from thermo.unifac import UFSG, DOUFSG, DOUFIP2006
 from thermo.eos_mix import PRMIX, SRKMIX 

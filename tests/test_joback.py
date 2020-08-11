@@ -26,7 +26,7 @@ import pytest
 from thermo.joback import *
 from thermo.joback import J_BIGGS_JOBACK_SMARTS_id_dict
 
-from thermo.identifiers import pubchem_db
+from chemicals.identifiers import pubchem_db
 
 folder = os.path.join(os.path.dirname(__file__), 'Data')
 

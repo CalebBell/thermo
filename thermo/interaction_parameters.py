@@ -28,7 +28,7 @@ import os
 import json
 import numpy as np
 from chemicals.utils import sorted_CAS_key
-from thermo.identifiers import checkCAS
+from chemicals.identifiers import checkCAS
 
 '''Need to be able to add NRTL parameters sets (T dept)
 Need to add single kijis, and kijs with T dept

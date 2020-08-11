@@ -33,15 +33,15 @@ from fluids.core import *
 from fluids.core import Reynolds, Capillary, Weber, Bond, Grashof, Peclet_heat
 
 from thermo.chemical import Chemical
-from thermo.identifiers import *
-from thermo.identifiers import _MixtureDict, IDs_to_CASs
+from chemicals.identifiers import *
+from chemicals.identifiers import IDs_to_CASs
 from thermo.thermal_conductivity import ThermalConductivityLiquidMixture, ThermalConductivityGasMixture
 from thermo.volume import VolumeLiquidMixture, VolumeGasMixture, VolumeSolidMixture
 from thermo.permittivity import *
 from thermo.heat_capacity import HeatCapacitySolidMixture, HeatCapacityGasMixture, HeatCapacityLiquidMixture
 from thermo.interface import SurfaceTensionMixture
 from thermo.viscosity import ViscosityLiquidMixture, ViscosityGasMixture
-from thermo.safety import LFL_mixture, UFL_mixture
+from chemicals.safety import LFL_mixture, UFL_mixture
 from thermo.utils import *
 from chemicals.utils import *
 from chemicals.elements import atom_fractions, mass_fractions, simple_formula_parser, molecular_weight, mixture_atomic_composition
@@ -96,10 +96,9 @@ def preprocess_mixture_composition(IDs=None, zs=None, ws=None, Vfls=None,
     if hasattr(IDs, 'strip') or (isinstance(IDs, list) and len(IDs) == 1):
         try:
             # Assume the name was a pre-defined mixture
-            mixname = mixture_from_any(IDs)
-            _d = _MixtureDict[mixname]
-            IDs = _d["CASs"]
-            ws = _d["ws"]
+            mix = mixture_from_any(IDs)
+            IDs = mix.CASs#d["CASs"]
+            ws = mix.ws#_d["ws"]
         except:
             if hasattr(IDs, 'strip'):
                 IDs = [IDs]
@@ -778,10 +777,10 @@ class Mixture(object):
         self.omega_method = None#self.omega_methods[0]
 
         # No Flammability limits
-        self.LFL_methods = LFL_mixture(ys=self.zs, LFLs=self.LFLs, get_methods=True)
-        self.LFL_method = self.LFL_methods[0]
-        self.UFL_methods = UFL_mixture(ys=self.zs, UFLs=self.UFLs, get_methods=True)
-        self.UFL_method = self.UFL_methods[0]
+#        self.LFL_methods = LFL_mixture(ys=self.zs, LFLs=self.LFLs, get_methods=True)
+#        self.LFL_method = self.LFL_methods[0]
+#        self.UFL_methods = UFL_mixture(ys=self.zs, UFLs=self.UFLs, get_methods=True)
+#        self.UFL_method = self.UFL_methods[0]
         # No triple point
         # Mixed Hf linear
         # Exposure limits are minimum of any of them or lower

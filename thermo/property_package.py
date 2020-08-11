@@ -60,7 +60,7 @@ from fluids.constants import R, pi, N_A
 from chemicals.utils import log, log10, exp, copysign, dxs_to_dn_partials, dxs_to_dns, dns_to_dn_partials, d2xs_to_dxdn_partials, remove_zeros, normalize, Cp_minus_Cv, mixing_simple, property_mass_to_molar
 from thermo.utils import has_matplotlib
 from chemicals.elements import mixture_atomic_composition, similarity_variable
-from thermo.identifiers import IDs_to_CASs
+from chemicals.identifiers import IDs_to_CASs
 from chemicals.rachford_rice import flash_inner_loop, Rachford_Rice_solution2
 from chemicals.flash_basic import K_value, Wilson_K_value, flash_wilson, flash_Tb_Tc_Pc, flash_ideal
 from thermo.wilson import Wilson_gammas as Wilson

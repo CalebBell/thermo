@@ -25,8 +25,7 @@ from __future__ import division
 __all__ = ['Chemical', 'reference_states']
 
 
-from thermo.identifiers import *
-from thermo.identifiers import _MixtureDict, empty_chemical_constants
+from chemicals.identifiers import *
 from thermo.vapor_pressure import VaporPressure, SublimationPressure
 from chemicals.phase_change import Tb, Tm, Hfus, Tb_methods, Tm_methods, Hfus_methods
 from thermo.phase_change import EnthalpyVaporization, EnthalpySublimation
@@ -43,7 +42,7 @@ from thermo.interface import SurfaceTension, SurfaceTensionMixture
 from thermo.viscosity import ViscosityLiquid, ViscosityGas, ViscosityLiquidMixture, ViscosityGasMixture
 from chemicals.reaction import Hfg_methods, S0g_methods, Hfl_methods, Hfs_methods, Hfs, Hfl, Hfg, S0g, S0l, S0s, Gibbs_formation, Hf_basis_converter, entropy_formation
 from chemicals.combustion import combustion_stoichiometry, HHV_stoichiometry, LHV_from_HHV
-from thermo.safety import Tflash, Tautoignition, LFL, UFL, TWA, STEL, Ceiling, Skin, Carcinogen, LFL_mixture, UFL_mixture
+from chemicals.safety import Tflash, Tautoignition, LFL, UFL, TWA, STEL, Ceiling, Skin, Carcinogen, LFL_mixture, UFL_mixture, Tflash_methods, Tautoignition_methods, LFL_methods, UFL_methods, TWA_methods, STEL_methods, Ceiling_methods, Skin_methods, Carcinogen_methods
 from chemicals.solubility import solubility_parameter
 from chemicals.dipole import dipole_moment as dipole, dipole_moment_methods
 from chemicals.utils import *
@@ -98,6 +97,66 @@ SUPERPRO = (298.15, 101325, 'calc', 0, 0, True) # No support for entropy found, 
 
 reference_states = [IAPWS, ASHRAE, IIR, REFPROP, CHEMSEP, PRO_II, HYSYS,
                     UNISIM, SUPERPRO]
+
+
+
+
+
+        
+class ChemicalConstants(object):
+    __slots__ = ('CAS', 'Tc', 'Pc', 'Vc', 'omega', 'Tb', 'Tm', 'Tt', 'Pt', 
+                 'Hfus', 'Hsub', 'Hf', 'dipole',
+                 'HeatCapacityGas', 'HeatCapacityLiquid', 'HeatCapacitySolid',
+                 'ThermalConductivityLiquid', 'ThermalConductivityGas',
+                 'ViscosityLiquid', 'ViscosityGas',
+                 'EnthalpyVaporization', 'VaporPressure', 'VolumeLiquid',
+                 'EnthalpySublimation', 'SublimationPressure', 'SurfaceTension',
+                 'VolumeSolid',
+                 )
+
+    # Or can I store the actual objects without doing the searches?
+    def __init__(self, CAS, Tc=None, Pc=None, Vc=None, omega=None, Tb=None, 
+                 Tm=None, Tt=None, Pt=None, Hfus=None, Hsub=None, Hf=None,
+                 dipole=None,
+                 HeatCapacityGas=(), HeatCapacityLiquid=(), 
+                 HeatCapacitySolid=(), 
+                 ThermalConductivityLiquid=(), ThermalConductivityGas=(),
+                 ViscosityLiquid=(), ViscosityGas=(),
+                 EnthalpyVaporization=(), VaporPressure=(), VolumeLiquid=(),
+                 SublimationPressure=(), EnthalpySublimation=(), 
+                 SurfaceTension=(), VolumeSolid=(),
+                 ):
+        self.CAS = CAS
+        self.Tc = Tc
+        self.Pc = Pc
+        self.Vc = Vc
+        self.omega = omega
+        self.Tb = Tb
+        self.Tm = Tm
+        self.Tt = Tt
+        self.Pt = Pt
+        self.Hfus = Hfus
+        self.Hsub = Hsub
+        self.Hf = Hf
+        self.dipole = dipole
+        self.HeatCapacityGas = HeatCapacityGas
+        self.HeatCapacityLiquid = HeatCapacityLiquid
+        self.HeatCapacitySolid = HeatCapacitySolid
+        self.ThermalConductivityLiquid = ThermalConductivityLiquid
+        self.ThermalConductivityGas = ThermalConductivityGas
+        self.ViscosityLiquid = ViscosityLiquid
+        self.ViscosityGas = ViscosityGas
+        self.EnthalpyVaporization = EnthalpyVaporization
+        self.EnthalpySublimation = EnthalpySublimation
+        self.VaporPressure = VaporPressure
+        self.SublimationPressure = SublimationPressure
+        self.VolumeLiquid = VolumeLiquid
+        self.SurfaceTension = SurfaceTension
+        self.VolumeSolid = VolumeSolid
+
+empty_chemical_constants = ChemicalConstants(None)
+
+
 _chemical_cache = {}
 
 property_lock = False
@@ -636,9 +695,8 @@ class Chemical(object): # pragma: no cover
         else:
             self.ID = ID
             # Identification
-            self.CAS = CAS_from_any(ID)
-            self.ChemicalMetadata = pubchem_db.search_CAS(self.CAS)
-
+            self.ChemicalMetadata = search_chemical(ID)
+            self.CAS = self.ChemicalMetadata.CAS
 
         if self.CAS in _chemical_cache and caching:
             self.__dict__.update(_chemical_cache[self.CAS].__dict__)
@@ -789,21 +847,21 @@ class Chemical(object): # pragma: no cover
         self.Hfus_method = self.Hfus_methods[0] if self.Hfus_methods else None
 
         # Fire Safety Limits
-        self.Tflash_sources = Tflash(self.CAS, get_methods=True)
+        self.Tflash_sources = Tflash_methods(self.CAS)
         self.Tflash_source = self.Tflash_sources[0] if self.Tflash_sources else None
-        self.Tautoignition_sources = Tautoignition(self.CAS, get_methods=True)
+        self.Tautoignition_sources = Tautoignition_methods(self.CAS)
         self.Tautoignition_source = self.Tautoignition_sources[0] if self.Tautoignition_sources else None
 
         # Chemical Exposure Limits
-        self.TWA_sources = TWA(self.CAS, get_methods=True)
+        self.TWA_sources = TWA_methods(self.CAS)
         self.TWA_source = self.TWA_sources[0] if self.TWA_sources else None
-        self.STEL_sources = STEL(self.CAS, get_methods=True)
+        self.STEL_sources = STEL_methods(self.CAS)
         self.STEL_source = self.STEL_sources[0] if self.STEL_sources else None
-        self.Ceiling_sources = Ceiling(self.CAS, get_methods=True)
+        self.Ceiling_sources = Ceiling_methods(self.CAS)
         self.Ceiling_source = self.Ceiling_sources[0] if self.Ceiling_sources else None
-        self.Skin_sources = Skin(self.CAS, get_methods=True)
+        self.Skin_sources = Skin_methods(self.CAS)
         self.Skin_source = self.Skin_sources[0] if self.Skin_sources else None
-        self.Carcinogen_sources = Carcinogen(self.CAS, get_methods=True)
+        self.Carcinogen_sources = Carcinogen_methods(self.CAS)
         self.Carcinogen_source = self.Carcinogen_sources[0] if self.Carcinogen_sources else None
 
         self.Hfg_sources = Hfg_methods(CASRN=self.CAS)
@@ -968,9 +1026,9 @@ class Chemical(object): # pragma: no cover
         # Fire Safety Limits
         self.Tflash = Tflash(self.CAS, method=self.Tflash_source)
         self.Tautoignition = Tautoignition(self.CAS, method=self.Tautoignition_source)
-        self.LFL_sources = LFL(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS, get_methods=True)
+        self.LFL_sources = LFL_methods(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS)
         self.LFL_source = self.LFL_sources[0]
-        self.UFL_sources = UFL(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS, get_methods=True)
+        self.UFL_sources = UFL_methods(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS)
         self.UFL_source = self.UFL_sources[0]
         self.LFL = LFL(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS, method=self.LFL_source)
         self.UFL = UFL(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS, method=self.UFL_source)

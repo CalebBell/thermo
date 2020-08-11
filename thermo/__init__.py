@@ -42,7 +42,7 @@ from . import eos_mix
 from . import equilibrium
 from . import flash
 from . import heat_capacity
-from . import identifiers
+from chemicals import identifiers
 from . import interaction_parameters
 from . import joback
 from . import law
@@ -59,7 +59,7 @@ from . import psychrometrics
 from chemicals import reaction
 from chemicals import refractivity
 from . import regular_solution
-from . import safety
+from chemicals import safety
 from chemicals import solubility
 from . import stream
 from . import interface
@@ -97,7 +97,7 @@ from .eos_mix import *
 from .flash import *
 from .heat_capacity import *
 from .joback import *
-from .identifiers import *
+from chemicals.identifiers import *
 from .interaction_parameters import *
 from .law import *
 from chemicals.lennard_jones import *
@@ -113,7 +113,7 @@ from .property_package_constants import *
 from chemicals.reaction import *
 from chemicals.refractivity import *
 from .regular_solution import *
-from .safety import *
+from chemicals.safety import *
 from chemicals.solubility import *
 from .stream import *
 from .interface import *
@@ -214,7 +214,7 @@ submodules = [chemical, chemical_package, chemical_utils, coolprop, datasheet,
               identifiers, interaction_parameters, interface, joback, law, 
               mixture, nrtl, permittivity, phase_change, phase_identification,
               phases, property_package, property_package_constants, psychrometrics,
-              regular_solution, stream, thermal_conductivity, unifac, uniquac, 
+              regular_solution, stream, thermal_conductivity, unifac, uniquac, safety,
               utils, vapor_pressure, viscosity, volume, wilson, alpha_functions]
 
 thermo_dir = os.path.dirname(__file__)

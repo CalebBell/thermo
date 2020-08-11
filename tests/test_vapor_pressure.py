@@ -27,7 +27,7 @@ import pandas as pd
 from fluids.numerics import assert_close, derivative, assert_close1d
 from thermo.vapor_pressure import *
 from thermo.vapor_pressure import VDI_TABULAR
-from thermo.identifiers import checkCAS
+from chemicals.identifiers import checkCAS
 from math import *
 
 ### Main predictor

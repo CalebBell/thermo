@@ -25,7 +25,7 @@ import pytest
 from thermo.chemical import *
 from chemicals.elements import periodic_table
 import thermo
-from thermo.identifiers import pubchem_db
+from chemicals.identifiers import pubchem_db
 from scipy.integrate import quad
 from math import *
 from fluids.constants import R

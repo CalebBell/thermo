@@ -25,7 +25,7 @@ from __future__ import division
 __all__ = ['ChemicalConstantsPackage', 'PropertyCorrelationPackage']
 
 from thermo.chemical import Chemical, get_chemical_constants
-from thermo.identifiers import *
+from chemicals.identifiers import *
 from thermo.thermal_conductivity import ThermalConductivityLiquid, ThermalConductivityGas, ThermalConductivityLiquidMixture, ThermalConductivityGasMixture
 from thermo.volume import VolumeLiquidMixture, VolumeGasMixture, VolumeSolidMixture, VolumeLiquid, VolumeGas, VolumeSolid
 from thermo.permittivity import *

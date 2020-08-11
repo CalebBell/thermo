@@ -41,7 +41,7 @@ from fluids.numerics import newton, horner, chebval
 
 from chemicals.utils import exp, log10
 from chemicals.utils import to_num, ws_to_zs
-from thermo.identifiers import pubchem_db
+from chemicals.identifiers import pubchem_db
 
 from scipy.interpolate import interp1d
 import pandas as pd
