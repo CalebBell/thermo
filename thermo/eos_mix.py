@@ -270,11 +270,8 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_i_roots, T, zs, kijs):
     
     '''
     N = len(a_alphas)
-    z = [0.0]*N
     a_alpha_j_rows = [0.0]*N
-
     things0 = [0.0]*N
-    things1 = [0.0]*N
     for i in range(N):
         things0[i] = a_alpha_i_roots[i]*zs[i]
         
@@ -284,6 +281,7 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_i_roots, T, zs, kijs):
         kijs_i = kijs[i]
         a_alpha_i_root_i = a_alpha_i_roots[i]
         for j in range(i):
+            # Ideally store 1-kij?
             one_m_kij = (1. - kijs_i[j])
             a_alpha_j_rows[j] += a_alpha_i_roots[j]*one_m_kij*things0[i]
             a_alpha_j_rows[i] += a_alpha_i_roots[i]*one_m_kij*things0[j]
