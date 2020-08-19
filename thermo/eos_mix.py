@@ -269,6 +269,7 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_i_roots, T, zs, kijs):
     in PyPy.
     
     '''
+    # This is faster in PyPy and can be made even faster optimizing a_alpha!
 #    N = len(a_alphas)
 #    a_alpha_j_rows = [0.0]*N
 #    a_alpha = 0.0
@@ -292,29 +293,25 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_i_roots, T, zs, kijs):
     N = len(a_alphas)
     a_alpha_j_rows = [0.0]*N
     things0 = [0.0]*N
-    things1 = [0.0]*N
-    things2 = [0.0]*N
     for i in range(N):
         things0[i] = a_alpha_i_roots[i]*zs[i]
-        
     
     a_alpha = 0.0
-    for i in range(N):
+    i = 0
+    while i < N:
         kijs_i = kijs[i]
-        a_alpha_i_root_i = a_alpha_i_roots[i]
-        for j in range(i):
-            # Ideally store 1-kij?
-            one_m_kij = (1. - kijs_i[j])
-            things1[j] += one_m_kij*things0[i]
-            things2[i] += one_m_kij*things0[j]
+        j = 0
+        while j < i:
+            # Numba appears to be better with this split into two loops.
+            # PyPy has 1.5x speed reduction when so.
+            a_alpha_j_rows[j] += (1. - kijs_i[j])*things0[i]
+            a_alpha_j_rows[i] += (1. - kijs_i[j])*things0[j]
+            j += 1
+        i += 1
             
-        t200 = (1. - kijs_i[i])*a_alphas[i]*zs[i]
-#        a_alpha += t200*zs[i]
-        a_alpha_j_rows[i] += t200
     for i in range(N):
-        a_alpha_j_rows[i] += a_alpha_i_roots[i]*(things1[i] + things2[i])
-    
-    for i in range(N):
+        a_alpha_j_rows[i] *= a_alpha_i_roots[i]
+        a_alpha_j_rows[i] += (1. -  kijs[i][i])*a_alphas[i]*zs[i]
         a_alpha += a_alpha_j_rows[i]*zs[i]
                 
     return a_alpha, a_alpha_j_rows
