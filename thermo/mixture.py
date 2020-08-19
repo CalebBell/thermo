@@ -41,7 +41,6 @@ from thermo.permittivity import *
 from thermo.heat_capacity import HeatCapacitySolidMixture, HeatCapacityGasMixture, HeatCapacityLiquidMixture
 from thermo.interface import SurfaceTensionMixture
 from thermo.viscosity import ViscosityLiquidMixture, ViscosityGasMixture
-from chemicals.safety import LFL_mixture, UFL_mixture
 from thermo.utils import *
 from chemicals.utils import *
 from chemicals.elements import atom_fractions, mass_fractions, simple_formula_parser, molecular_weight, mixture_atomic_composition
@@ -811,8 +810,8 @@ class Mixture(object):
         self.rhoc = Vm_to_rho(self.Vc, self.MW) if self.Vc else None
         self.rhocm = 1./self.Vc if self.Vc else None
 
-        self.LFL = LFL_mixture(ys=self.zs, LFLs=self.LFLs, method=self.LFL_method)
-        self.UFL = UFL_mixture(ys=self.zs, UFLs=self.UFLs, method=self.UFL_method)
+#        self.LFL = LFL_mixture(ys=self.zs, LFLs=self.LFLs, method=self.LFL_method)
+#        self.UFL = UFL_mixture(ys=self.zs, UFLs=self.UFLs, method=self.UFL_method)
 
     def set_eos(self, T, P, eos=PRMIX):
         try:

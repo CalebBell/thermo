@@ -270,22 +270,29 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_i_roots, T, zs, kijs):
     
     '''
     N = len(a_alphas)
+    z = [0.0]*N
     a_alpha_j_rows = [0.0]*N
+
+    things0 = [0.0]*N
+    things1 = [0.0]*N
+    for i in range(N):
+        things0[i] = a_alpha_i_roots[i]*zs[i]
+        
+    
     a_alpha = 0.0
     for i in range(N):
         kijs_i = kijs[i]
         a_alpha_i_root_i = a_alpha_i_roots[i]
         for j in range(i):
-            a_alpha_ijs_ij = (1. - kijs_i[j])*a_alpha_i_root_i*a_alpha_i_roots[j]
-            t200 = a_alpha_ijs_ij*zs[i]
-            a_alpha_j_rows[j] += t200
-            a_alpha_j_rows[i] += zs[j]*a_alpha_ijs_ij
-            t200 *= zs[j]
-            a_alpha += t200 + t200
+            one_m_kij = (1. - kijs_i[j])
+            a_alpha_j_rows[j] += a_alpha_i_roots[j]*one_m_kij*things0[i]
+            a_alpha_j_rows[i] += a_alpha_i_roots[i]*one_m_kij*things0[j]
             
         t200 = (1. - kijs_i[i])*a_alphas[i]*zs[i]
-        a_alpha += t200*zs[i]
+#        a_alpha += t200*zs[i]
         a_alpha_j_rows[i] += t200
+    for i in range(N):
+        a_alpha += a_alpha_j_rows[i]*zs[i]
                 
     return a_alpha, a_alpha_j_rows
 
@@ -968,7 +975,7 @@ class GCEOSMIX(GCEOS):
                 else:
                     self.a_alphas = a_alphas = self.a_alphas_vectorized(T)
                     da_alpha_dTs = d2a_alpha_dT2s = None
-        if not IS_PYPY and self.N > 200:
+        if not IS_PYPY and self.N > 2000:
             return self.a_alpha_and_derivatives_numpy(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=full, quick=quick)
         return self.a_alpha_and_derivatives_py(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=full, quick=quick)
 
@@ -1135,7 +1142,7 @@ class GCEOSMIX(GCEOS):
     def a_alpha_and_derivatives_py(self, a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, full=True, quick=True):
         zs, kijs = self.zs, self.kijs
         if type(a_alphas) is list:
-            self.a_alpha_i_roots = a_alpha_i_roots = [i**0.5 for i in a_alphas]
+            self.a_alpha_i_roots = a_alpha_i_roots = [sqrt(i) for i in a_alphas]
         else:
             self.a_alpha_i_roots = a_alpha_i_roots = a_alphas**0.5
         if full:

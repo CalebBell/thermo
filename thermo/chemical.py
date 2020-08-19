@@ -42,7 +42,7 @@ from thermo.interface import SurfaceTension, SurfaceTensionMixture
 from thermo.viscosity import ViscosityLiquid, ViscosityGas, ViscosityLiquidMixture, ViscosityGasMixture
 from chemicals.reaction import Hfg_methods, S0g_methods, Hfl_methods, Hfs_methods, Hfs, Hfl, Hfg, S0g, S0l, S0s, Gibbs_formation, Hf_basis_converter, entropy_formation
 from chemicals.combustion import combustion_stoichiometry, HHV_stoichiometry, LHV_from_HHV
-from chemicals.safety import Tflash, Tautoignition, LFL, UFL, TWA, STEL, Ceiling, Skin, Carcinogen, LFL_mixture, UFL_mixture, Tflash_methods, Tautoignition_methods, LFL_methods, UFL_methods, TWA_methods, STEL_methods, Ceiling_methods, Skin_methods, Carcinogen_methods
+from chemicals.safety import Tflash, Tautoignition, LFL, UFL, TWA, STEL, Ceiling, Skin, Carcinogen, Tflash_methods, Tautoignition_methods, LFL_methods, UFL_methods, TWA_methods, STEL_methods, Ceiling_methods, Skin_methods, Carcinogen_methods
 from chemicals.solubility import solubility_parameter
 from chemicals.dipole import dipole_moment as dipole, dipole_moment_methods
 from chemicals.utils import *
@@ -696,7 +696,7 @@ class Chemical(object): # pragma: no cover
             self.ID = ID
             # Identification
             self.ChemicalMetadata = search_chemical(ID)
-            self.CAS = self.ChemicalMetadata.CAS
+            self.CAS = self.ChemicalMetadata.CASs
 
         if self.CAS in _chemical_cache and caching:
             self.__dict__.update(_chemical_cache[self.CAS].__dict__)
@@ -1030,8 +1030,14 @@ class Chemical(object): # pragma: no cover
         self.LFL_source = self.LFL_sources[0]
         self.UFL_sources = UFL_methods(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS)
         self.UFL_source = self.UFL_sources[0]
-        self.LFL = LFL(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS, method=self.LFL_source)
-        self.UFL = UFL(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS, method=self.UFL_source)
+        try:
+            self.LFL = LFL(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS, method=self.LFL_source)
+        except:
+            self.LFL = None
+        try:
+            self.UFL = UFL(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS, method=self.UFL_source)
+        except:
+            self.UFL = None
 
 
         self.Hfgm = Hfg(CASRN=self.CAS, method=self.Hfg_source)
