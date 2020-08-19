@@ -269,9 +269,31 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_i_roots, T, zs, kijs):
     in PyPy.
     
     '''
+#    N = len(a_alphas)
+#    a_alpha_j_rows = [0.0]*N
+#    a_alpha = 0.0
+#    for i in range(N):
+#        kijs_i = kijs[i]
+#        a_alpha_i_root_i = a_alpha_i_roots[i]
+#        for j in range(i):
+#            a_alpha_ijs_ij = (1. - kijs_i[j])*a_alpha_i_root_i*a_alpha_i_roots[j]
+#            t200 = a_alpha_ijs_ij*zs[i]
+#            a_alpha_j_rows[j] += t200
+#            a_alpha_j_rows[i] += zs[j]*a_alpha_ijs_ij
+#            t200 *= zs[j]
+#            a_alpha += t200 + t200
+#            
+#        t200 = (1. - kijs_i[i])*a_alphas[i]*zs[i]
+#        a_alpha += t200*zs[i]
+#        a_alpha_j_rows[i] += t200
+#                
+#    return a_alpha, a_alpha_j_rows
+
     N = len(a_alphas)
     a_alpha_j_rows = [0.0]*N
     things0 = [0.0]*N
+    things1 = [0.0]*N
+    things2 = [0.0]*N
     for i in range(N):
         things0[i] = a_alpha_i_roots[i]*zs[i]
         
@@ -283,12 +305,15 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_i_roots, T, zs, kijs):
         for j in range(i):
             # Ideally store 1-kij?
             one_m_kij = (1. - kijs_i[j])
-            a_alpha_j_rows[j] += a_alpha_i_roots[j]*one_m_kij*things0[i]
-            a_alpha_j_rows[i] += a_alpha_i_roots[i]*one_m_kij*things0[j]
+            things1[j] += one_m_kij*things0[i]
+            things2[i] += one_m_kij*things0[j]
             
         t200 = (1. - kijs_i[i])*a_alphas[i]*zs[i]
 #        a_alpha += t200*zs[i]
         a_alpha_j_rows[i] += t200
+    for i in range(N):
+        a_alpha_j_rows[i] += a_alpha_i_roots[i]*(things1[i] + things2[i])
+    
     for i in range(N):
         a_alpha += a_alpha_j_rows[i]*zs[i]
                 
