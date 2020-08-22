@@ -44,18 +44,18 @@ from chemicals.utils import log, log10, exp, sqrt, copysign
 
 def PR_a_alphas_vectorized(T, Tcs, ais, kappas):
     N = len(Tcs)
-    x0_inv = T**-0.5
+    x0_inv = 1.0/sqrt(T)
     x0 = T*x0_inv
     a_alphas = [0.0]*N
     for i in range(N):
-        x1 = Tcs[i]**-0.5
+        x1 = 1.0/sqrt(Tcs[i])
         x2 = kappas[i]*(x0*x1 - 1.) - 1.
         a_alphas[i] = ais[i]*x2*x2
     return a_alphas
 
 def PR_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappas):
     N = len(Tcs)
-    x0_inv = T**-0.5
+    x0_inv = 1.0/sqrt(T)
     x0 = T*x0_inv
     T_inv = x0_inv*x0_inv
     x0T_inv = x0_inv*T_inv
@@ -65,7 +65,7 @@ def PR_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappas):
     da_alpha_dTs = [0.0]*N
     d2a_alpha_dT2s = [0.0]*N
     for i in range(N):
-        x1 = Tcs[i]**-0.5
+        x1 = 1.0/sqrt(Tcs[i])
         x2 = kappas[i]*(x0*x1 - 1.) - 1.
         x3 = ais[i]*kappas[i]
         x4 = x1*x2

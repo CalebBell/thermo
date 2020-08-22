@@ -339,6 +339,7 @@ def a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_i_roots,
         workingd1 = workings2 = 0.0
 
         for j in range(i):
+            # TODO: optimize this, compute a_alpha after
             v0 = a_alpha_i_root_i*a_alpha_i_roots[j]
             a_alpha_ijs_ij = (1. - kijs_i[j])*v0
             t200 = a_alpha_ijs_ij*zs[i]

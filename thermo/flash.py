@@ -60,7 +60,7 @@ from numpy.testing import assert_allclose
 from scipy.optimize import minimize, fsolve, root
 from scipy.interpolate import CubicSpline
 from chemicals.utils import (exp, log, log10, floor, copysign, normalize,
-                          mixing_simple, property_mass_to_molar)
+                          mixing_simple, property_mass_to_molar, rho_to_Vm)
 from thermo.utils import has_matplotlib
 from chemicals.heat_capacity import (Lastovka_Shaw_T_for_Hm, Dadgostar_Shaw_integral,
                                   Dadgostar_Shaw_integral_over_T, Lastovka_Shaw_integral,
@@ -4141,7 +4141,8 @@ class FlashBase(object):
     P_MIN_FIXED = Phase.P_MIN_FIXED
 
     def flash(self, zs=None, T=None, P=None, VF=None, SF=None, V=None, H=None,
-              S=None, U=None, G=None, A=None, solution=None, retry=False,
+              S=None, U=None, G=None, A=None, rho_mass=None, solution=None, 
+              retry=False,
               hot_start=None, dest=None):
         '''
         solution : str or int
@@ -4169,6 +4170,9 @@ class FlashBase(object):
 #                                           V=V, H=H, S=S, U=U, G=G, A=A, 
 #                                           solution=solution, retry=retry,
 #                                           hot_start=hot_start)
+        if rho_mass is not None:
+            V = rho_to_Vm(rho_mass, mixing_simple(zs, constants.MWs))
+            
         T_spec = T is not None
         P_spec = P is not None
         V_spec = V is not None

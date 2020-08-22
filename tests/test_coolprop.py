@@ -23,7 +23,7 @@ SOFTWARE.'''
 from numpy.testing import assert_allclose
 import pytest
 from thermo.coolprop import *
-from chemcials.identifiers import checkCAS
+from chemicals.identifiers import checkCAS
 
 def test_fluid_props():
 #    tots = [sum([getattr(f, prop) for f in coolprop_fluids.values()]) for prop in ['Tmin', 'Tmax', 'Pmax', 'Tc', 'Pc', 'Tt', 'omega']]
