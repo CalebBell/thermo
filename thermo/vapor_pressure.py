@@ -252,9 +252,9 @@ class VaporPressure(TDependentProperty):
         '''
         methods = []
         Tmins, Tmaxs = [], []
-        if self.CASRN in vapor_pressure.WagnerMcGarry.index:
+        if self.CASRN in vapor_pressure.Psat_data_WagnerMcGarry.index:
             methods.append(WAGNER_MCGARRY)
-            A, B, C, D, self.WAGNER_MCGARRY_Pc, self.WAGNER_MCGARRY_Tc, self.WAGNER_MCGARRY_Tmin = vapor_pressure._WagnerMcGarry_values[vapor_pressure.WagnerMcGarry.index.get_loc(self.CASRN)].tolist()
+            A, B, C, D, self.WAGNER_MCGARRY_Pc, self.WAGNER_MCGARRY_Tc, self.WAGNER_MCGARRY_Tmin = vapor_pressure.Psat_values_WagnerMcGarry[vapor_pressure.Psat_data_WagnerMcGarry.index.get_loc(self.CASRN)].tolist()
             self.WAGNER_MCGARRY_coefs = [A, B, C, D]
             Tmins.append(self.WAGNER_MCGARRY_Tmin); Tmaxs.append(self.WAGNER_MCGARRY_Tc)
             

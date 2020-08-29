@@ -26,7 +26,7 @@ import pytest
 from thermo import eos
 from thermo.eos import *
 from thermo.eos import eos_2P_list
-from chemicals.utils import allclose_variable
+from thermo.utils import allclose_variable
 from fluids.constants import R
 from math import log, exp, sqrt, log10
 from fluids.numerics import linspace, derivative, logspace, assert_close, assert_close1d, assert_close2d, assert_close3d

@@ -49,7 +49,7 @@ from chemicals.dipole import dipole_moment as dipole, dipole_moment_methods
 from chemicals.utils import *
 from thermo.utils import *
 from fluids.core import Reynolds, Capillary, Weber, Bond, Grashof, Peclet_heat
-from chemicals.lennard_jones import Stockmayer, molecular_diameter
+from chemicals.lennard_jones import Stockmayer_methods, molecular_diameter_methods, Stockmayer, molecular_diameter
 from chemicals.environment import GWP, ODP, logP, GWP_methods, ODP_methods, logP_methods
 from thermo.law import legal_status, economic_status
 from chemicals.refractivity import RI, RI_methods
@@ -927,7 +927,7 @@ class Chemical(object): # pragma: no cover
 
         # Misc
         self.dipole = dipole(self.CAS, method=self.dipole_source) # Units of Debye
-        self.Stockmayer_sources = Stockmayer(Tc=self.Tc, Zc=self.Zc, omega=self.omega, get_methods=True, CASRN=self.CAS)
+        self.Stockmayer_sources = Stockmayer_methods(Tc=self.Tc, Zc=self.Zc, omega=self.omega, CASRN=self.CAS)
         self.Stockmayer_source = self.Stockmayer_sources[0] if self.Stockmayer_sources else None
         self.Stockmayer = Stockmayer(Tm=self.Tm, Tb=self.Tb, Tc=self.Tc, Zc=self.Zc, omega=self.omega, method=self.Stockmayer_source, CASRN=self.CAS)
 
@@ -1179,7 +1179,7 @@ class Chemical(object): # pragma: no cover
 
 
         # set molecular_diameter; depends on Vml_Tb, Vml_Tm
-        self.molecular_diameter_sources = molecular_diameter(Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, Vm=self.Vml_Tm, Vb=self.Vml_Tb, get_methods=True, CASRN=self.CAS)
+        self.molecular_diameter_sources = molecular_diameter_methods(Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, Vm=self.Vml_Tm, Vb=self.Vml_Tb, CASRN=self.CAS)
         self.molecular_diameter_source = self.molecular_diameter_sources[0] if self.molecular_diameter_sources else None
         self.molecular_diameter = molecular_diameter(Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, Vm=self.Vml_Tm, Vb=self.Vml_Tb, method=self.molecular_diameter_source, CASRN=self.CAS)
 
