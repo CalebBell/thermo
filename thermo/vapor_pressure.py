@@ -258,29 +258,29 @@ class VaporPressure(TDependentProperty):
             self.WAGNER_MCGARRY_coefs = [A, B, C, D]
             Tmins.append(self.WAGNER_MCGARRY_Tmin); Tmaxs.append(self.WAGNER_MCGARRY_Tc)
             
-        if self.CASRN in vapor_pressure.WagnerPoling.index:
+        if self.CASRN in vapor_pressure.Psat_data_WagnerPoling.index:
             methods.append(WAGNER_POLING)
-            A, B, C, D, self.WAGNER_POLING_Tc, self.WAGNER_POLING_Pc, Tmin, self.WAGNER_POLING_Tmax = vapor_pressure._WagnerPoling_values[vapor_pressure.WagnerPoling.index.get_loc(self.CASRN)].tolist()
+            A, B, C, D, self.WAGNER_POLING_Tc, self.WAGNER_POLING_Pc, Tmin, self.WAGNER_POLING_Tmax = vapor_pressure.Psat_values_WagnerPoling[vapor_pressure.Psat_data_WagnerPoling.index.get_loc(self.CASRN)].tolist()
             # Some Tmin values are missing; Arbitrary choice of 0.1 lower limit
             self.WAGNER_POLING_Tmin = Tmin if not isnan(Tmin) else self.WAGNER_POLING_Tmax*0.1
             self.WAGNER_POLING_coefs = [A, B, C, D]
             Tmins.append(Tmin); Tmaxs.append(self.WAGNER_POLING_Tmax)
             
-        if self.CASRN in vapor_pressure.AntoineExtended.index:
+        if self.CASRN in vapor_pressure.Psat_data_AntoineExtended.index:
             methods.append(ANTOINE_EXTENDED_POLING)
-            A, B, C, Tc, to, n, E, F, self.ANTOINE_EXTENDED_POLING_Tmin, self.ANTOINE_EXTENDED_POLING_Tmax = vapor_pressure._AntoineExtended_values[vapor_pressure.AntoineExtended.index.get_loc(self.CASRN)].tolist()
+            A, B, C, Tc, to, n, E, F, self.ANTOINE_EXTENDED_POLING_Tmin, self.ANTOINE_EXTENDED_POLING_Tmax = vapor_pressure.Psat_values_AntoineExtended[vapor_pressure.Psat_data_AntoineExtended.index.get_loc(self.CASRN)].tolist()
             self.ANTOINE_EXTENDED_POLING_coefs = [Tc, to, A, B, C, n, E, F]
             Tmins.append(self.ANTOINE_EXTENDED_POLING_Tmin); Tmaxs.append(self.ANTOINE_EXTENDED_POLING_Tmax)
 
-        if self.CASRN in vapor_pressure.AntoinePoling.index:
+        if self.CASRN in vapor_pressure.Psat_data_AntoinePoling.index:
             methods.append(ANTOINE_POLING)
-            A, B, C, self.ANTOINE_POLING_Tmin, self.ANTOINE_POLING_Tmax = vapor_pressure._AntoinePoling_values[vapor_pressure.AntoinePoling.index.get_loc(self.CASRN)].tolist()
+            A, B, C, self.ANTOINE_POLING_Tmin, self.ANTOINE_POLING_Tmax = vapor_pressure.Psat_values_AntoinePoling[vapor_pressure.Psat_data_AntoinePoling.index.get_loc(self.CASRN)].tolist()
             self.ANTOINE_POLING_coefs = [A, B, C]
             Tmins.append(self.ANTOINE_POLING_Tmin); Tmaxs.append(self.ANTOINE_POLING_Tmax)
 
-        if self.CASRN in vapor_pressure.Perrys2_8.index:
+        if self.CASRN in vapor_pressure.Psat_data_Perrys2_8.index:
             methods.append(DIPPR_PERRY_8E)
-            C1, C2, C3, C4, C5, self.Perrys2_8_Tmin, self.Perrys2_8_Tmax = vapor_pressure._Perrys2_8_values[vapor_pressure.Perrys2_8.index.get_loc(self.CASRN)].tolist()
+            C1, C2, C3, C4, C5, self.Perrys2_8_Tmin, self.Perrys2_8_Tmax = vapor_pressure.Psat_values_Perrys2_8[vapor_pressure.Psat_data_Perrys2_8.index.get_loc(self.CASRN)].tolist()
             self.Perrys2_8_coeffs = [C1, C2, C3, C4, C5]
             Tmins.append(self.Perrys2_8_Tmin); Tmaxs.append(self.Perrys2_8_Tmax)
         if has_CoolProp and self.CASRN in coolprop_dict:
@@ -296,8 +296,8 @@ class VaporPressure(TDependentProperty):
             self.tabular_data[VDI_TABULAR] = (Ts, props)
             Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
 
-        if self.CASRN in vapor_pressure.VDI_PPDS_3.index:
-            Tm, Tc, Pc, A, B, C, D = vapor_pressure._VDI_PPDS_3_values[vapor_pressure.VDI_PPDS_3.index.get_loc(self.CASRN)].tolist()
+        if self.CASRN in vapor_pressure.Psat_data_VDI_PPDS_3.index:
+            Tm, Tc, Pc, A, B, C, D = vapor_pressure.Psat_values_VDI_PPDS_3[vapor_pressure.Psat_data_VDI_PPDS_3.index.get_loc(self.CASRN)].tolist()
             self.VDI_PPDS_coeffs = [A, B, C, D]
             self.VDI_PPDS_Tc = Tc
             self.VDI_PPDS_Tm = Tm
