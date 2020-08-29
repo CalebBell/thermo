@@ -28,6 +28,28 @@ from thermo.utils import *
 from thermo.stream import Stream
 from fluids.numerics import assert_close, assert_close1d
 
+def test_allclose_variable():
+    x = [2.7244322249597719e-08, 3.0105683900110473e-10, 2.7244124924802327e-08, 3.0105259397637556e-10, 2.7243929226310193e-08, 3.0104990272770901e-10, 2.7243666849384451e-08, 3.0104101821236015e-10, 2.7243433745917367e-08, 3.0103707421519949e-10]
+    y = [2.7244328304561904e-08, 3.0105753470546008e-10, 2.724412872417824e-08,  3.0105303055834564e-10, 2.7243914341030203e-08, 3.0104819238021998e-10, 2.7243684057561379e-08, 3.0104299541023674e-10, 2.7243436694839306e-08, 3.010374130526363e-10]
+
+    assert allclose_variable(x, y, limits=[.0, .5], rtols=[1E-5, 1E-6])
+        
+    with pytest.raises(Exception):
+        assert allclose_variable(x, y, limits=[.0, .1], rtols=[1E-5, 1E-6])
+        
+    with pytest.raises(Exception):
+        allclose_variable(x, y[1:], limits=[.0, .5], rtols=[1E-5, 1E-6])
+
+    with pytest.raises(Exception):
+        ans = allclose_variable(x, y, limits=[.0, .1])
+
+
+    x = [1,1,1,1,1,1,1,1,1]
+    y = [.9,.9,.9,.9,.9,.9,.9,.9, .9]
+    assert allclose_variable(x, y, limits=[.0], atols=[.1])
+
+
+    
 
 def test_phase_select_property():
     assert 150 == phase_select_property(phase='s', s=150, l=10)
