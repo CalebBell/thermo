@@ -40,6 +40,7 @@ from thermo.permittivity import *
 from thermo.heat_capacity import HeatCapacitySolid, HeatCapacityGas, HeatCapacityLiquid, HeatCapacitySolidMixture, HeatCapacityGasMixture, HeatCapacityLiquidMixture
 from thermo.interface import SurfaceTension, SurfaceTensionMixture
 from thermo.viscosity import ViscosityLiquid, ViscosityGas, ViscosityLiquidMixture, ViscosityGasMixture
+from chemicals.virial import B_from_Z
 from chemicals.reaction import Hfg_methods, S0g_methods, Hfl_methods, Hfs_methods, Hfs, Hfl, Hfg, S0g, S0l, S0s, Gibbs_formation, Hf_basis_converter, entropy_formation
 from chemicals.combustion import combustion_stoichiometry, HHV_stoichiometry, LHV_from_HHV
 from chemicals.safety import Tflash, Tautoignition, LFL, UFL, TWA, STEL, Ceiling, Skin, Carcinogen, Tflash_methods, Tautoignition_methods, LFL_methods, UFL_methods, TWA_methods, STEL_methods, Ceiling_methods, Skin_methods, Carcinogen_methods
@@ -861,8 +862,8 @@ class Chemical(object): # pragma: no cover
         self.Ceiling_source = self.Ceiling_sources[0] if self.Ceiling_sources else None
         self.Skin_sources = Skin_methods(self.CAS)
         self.Skin_source = self.Skin_sources[0] if self.Skin_sources else None
-        self.Carcinogen_sources = Carcinogen_methods(self.CAS)
-        self.Carcinogen_source = self.Carcinogen_sources[0] if self.Carcinogen_sources else None
+#        self.Carcinogen_sources = Carcinogen_methods(self.CAS)
+#        self.Carcinogen_source = self.Carcinogen_sources[0] if self.Carcinogen_sources else None
 
         self.Hfg_sources = Hfg_methods(CASRN=self.CAS)
         self.Hfg_source = self.Hfg_sources[0] if self.Hfg_sources else None
@@ -922,7 +923,7 @@ class Chemical(object): # pragma: no cover
         self.STEL = STEL(self.CAS, method=self.STEL_source)
         self.Ceiling = Ceiling(self.CAS, method=self.Ceiling_source)
         self.Skin = Skin(self.CAS, method=self.Skin_source)
-        self.Carcinogen = Carcinogen(self.CAS, method=self.Carcinogen_source)
+        self.Carcinogen = Carcinogen(self.CAS)
 
         # Misc
         self.dipole = dipole(self.CAS, method=self.dipole_source) # Units of Debye

@@ -24,7 +24,8 @@ from __future__ import division
 
 __all__ = ['has_matplotlib', 'Stateva_Tsvetkov_TPDF', 'TPD',
 'assert_component_balance', 'assert_energy_balance',
-'TDependentProperty','TPDependentProperty', 'MixtureProperty', 'identify_phase']
+'TDependentProperty','TPDependentProperty', 'MixtureProperty', 'identify_phase',
+'phase_select_property']
 
 import os
 from cmath import sqrt as csqrt
@@ -53,6 +54,63 @@ try:  # pragma: no cover
 except ImportError:  # pragma: no cover
     data_dir = ''
 
+def phase_select_property(phase=None, s=None, l=None, g=None, V_over_F=None,
+                          self=None):
+    r'''Determines which phase's property should be set as a default, given
+    the phase a chemical is, and the property values of various phases. For the
+    case of liquid-gas phase, returns None. If the property is not available
+    for the current phase, or if the current phase is not known, returns None.
+
+    Parameters
+    ----------
+    phase : str
+        One of {'s', 'l', 'g', 'two-phase'}
+    s : float
+        Solid-phase property, [`prop`]
+    l : float
+        Liquid-phase property, [`prop`]
+    g : float
+        Gas-phase property, [`prop`]
+    V_over_F : float
+        Vapor phase fraction, [-]
+    self : Object, optional
+        If self is not None, the properties are assumed to be python properties
+        with a fget method available, [-]
+
+    Returns
+    -------
+    prop : float
+        The selected/calculated property for the relevant phase, [`prop`]
+
+    Notes
+    -----
+    Could calculate mole-fraction weighted properties for the two phase regime.
+    Could also implement equilibria with solid phases.
+    
+    The use of self and fget ensures the properties not needed are not 
+    calculated.
+
+    Examples
+    --------
+    >>> phase_select_property(phase='g', l=1560.14, g=3312.)
+    3312.0
+    '''
+    if phase == 's':
+        if self is not None and s is not None:
+            return s.fget(self)
+        return s
+    elif phase == 'l':
+        if self is not None and l is not None:
+            return l.fget(self)
+        return l
+    elif phase == 'g':
+        if self is not None and g is not None:
+            return g.fget(self)
+        return g
+    elif phase is None or phase == 'two-phase':
+        return None  
+    else:
+        raise Exception('Property not recognized')
 
 def identify_phase(T, P=101325.0, Tm=None, Tb=None, Tc=None, Psat=None):
     r'''Determines the phase of a one-species chemical system according to
