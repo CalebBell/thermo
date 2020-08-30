@@ -1,4 +1,4 @@
-CASRN	Names	Tflash	Tautoignition	LFL	UFL
+CASRN	Names	T_flash	T_autoignition	LFL	UFL
 50-00-0	Formaldehyde; (Methanal); (Methyl aldehyde); (Methylene oxide); HCHO	333.15	697.15	0.07	0.73
 51-80-9	N,N,N1,N1-Tetramethyl; methanediamine; (CH3)2NCH2N(CH3)2	260.15	453.15	0.0161	
 57-14-7	1.1-Dimethylhydrazine; (CH3)2NNH2	255.15	513.15	0.024	0.2

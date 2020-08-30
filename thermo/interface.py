@@ -122,7 +122,7 @@ class SurfaceTension(TDependentProperty):
         CSP method documented in :obj:`Sastri_Rao`.
         Second most popular estimation method; from 1995.
     **PITZER**:
-        CSP method documented in :obj:`Pitzer`; from 1958.
+        CSP method documented in :obj:`Pitzer_sigma`; from 1958.
     **ZUO_STENBY**:
         CSP method documented in :obj:`Zuo_Stenby`; from 1997.
     **MIQUEU**:
@@ -351,7 +351,7 @@ class SurfaceTension(TDependentProperty):
         elif method == SASTRI_RAO:
             sigma = Sastri_Rao(T, self.Tb, self.Tc, self.Pc)
         elif method == PITZER:
-            sigma = Pitzer(T, self.Tc, self.Pc, self.omega)
+            sigma = Pitzer_sigma(T, self.Tc, self.Pc, self.omega)
         elif method == ZUO_STENBY:
             sigma = Zuo_Stenby(T, self.Tc, self.Pc, self.omega)
         elif method == MIQUEU:

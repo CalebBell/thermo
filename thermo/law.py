@@ -30,7 +30,7 @@ __all__ = ['DSL_data', 'CAN_DSL_flags', 'TSCA_flags', 'TSCA_data',
 
 import os
 import zipfile
-from chemicals.identifiers import CAS2int
+from chemicals.identifiers import CAS_to_int
 from chemicals.utils import to_num
 import pandas as pd
 from pprint import pprint
@@ -202,7 +202,7 @@ def legal_status(CASRN, method=None, get_methods=False, CASi=None):
     '''
     load_law_data()
     if not CASi:
-        CASi = CAS2int(CASRN)
+        CASi = CAS_to_int(CASRN)
     methods = [COMBINED, DSL, TSCA, EINECS, NLP, SPIN]
     if get_methods:
         return methods
@@ -314,7 +314,7 @@ def economic_status(CASRN, method=None, get_methods=False):  # pragma: no cover
     [u'10,000 - 100,000 tonnes per annum']
     '''
     load_economic_data()
-    CASi = CAS2int(CASRN)
+    CASi = CAS_to_int(CASRN)
 
     def list_methods():
         methods = []

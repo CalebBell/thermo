@@ -43,7 +43,7 @@ from thermo.viscosity import ViscosityLiquid, ViscosityGas, ViscosityLiquidMixtu
 from chemicals.virial import B_from_Z
 from chemicals.reaction import Hfg_methods, S0g_methods, Hfl_methods, Hfs_methods, Hfs, Hfl, Hfg, S0g, S0l, S0s, Gibbs_formation, Hf_basis_converter, entropy_formation
 from chemicals.combustion import combustion_stoichiometry, HHV_stoichiometry, LHV_from_HHV
-from chemicals.safety import Tflash, Tautoignition, LFL, UFL, TWA, STEL, Ceiling, Skin, Carcinogen, Tflash_methods, Tautoignition_methods, LFL_methods, UFL_methods, TWA_methods, STEL_methods, Ceiling_methods, Skin_methods, Carcinogen_methods
+from chemicals.safety import T_flash, T_autoignition, LFL, UFL, TWA, STEL, Ceiling, Skin, Carcinogen, T_flash_methods, T_autoignition_methods, LFL_methods, UFL_methods, TWA_methods, STEL_methods, Ceiling_methods, Skin_methods, Carcinogen_methods
 from chemicals.solubility import solubility_parameter
 from chemicals.dipole import dipole_moment as dipole, dipole_moment_methods
 from chemicals.utils import *
@@ -848,9 +848,9 @@ class Chemical(object): # pragma: no cover
         self.Hfus_method = self.Hfus_methods[0] if self.Hfus_methods else None
 
         # Fire Safety Limits
-        self.Tflash_sources = Tflash_methods(self.CAS)
+        self.Tflash_sources = T_flash_methods(self.CAS)
         self.Tflash_source = self.Tflash_sources[0] if self.Tflash_sources else None
-        self.Tautoignition_sources = Tautoignition_methods(self.CAS)
+        self.Tautoignition_sources = T_autoignition_methods(self.CAS)
         self.Tautoignition_source = self.Tautoignition_sources[0] if self.Tautoignition_sources else None
 
         # Chemical Exposure Limits
@@ -1025,8 +1025,8 @@ class Chemical(object): # pragma: no cover
         self.Hc_lower = property_molar_to_mass(self.Hcm_lower, self.MW) if (self.Hcm_lower is not None) else None
 
         # Fire Safety Limits
-        self.Tflash = Tflash(self.CAS, method=self.Tflash_source)
-        self.Tautoignition = Tautoignition(self.CAS, method=self.Tautoignition_source)
+        self.Tflash = T_flash(self.CAS, method=self.Tflash_source)
+        self.Tautoignition = T_autoignition(self.CAS, method=self.Tautoignition_source)
         self.LFL_sources = LFL_methods(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS)
         self.LFL_source = self.LFL_sources[0]
         self.UFL_sources = UFL_methods(atoms=self.atoms, Hc=self.Hcm, CASRN=self.CAS)
