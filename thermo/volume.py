@@ -36,7 +36,7 @@ from fluids.numerics import horner, np, polyder, horner_and_der2, linspace, quad
 from fluids.constants import R
 from chemicals.utils import log, exp, isnan
 from chemicals.utils import Vm_to_rho, rho_to_Vm, mixing_simple, none_and_length_check
-from chemicals.dippr import EQ105
+from chemicals.dippr import EQ105, EQ116
 from chemicals.volume import *
 from chemicals import volume
 from chemicals.virial import BVirial_Pitzer_Curl, BVirial_Abbott, BVirial_Tsonopoulos, BVirial_Tsonopoulos_extended
@@ -161,7 +161,8 @@ class VolumeLiquid(TPDependentProperty):
         344 fluids. Temperature limits are available for all fluids. Believed
         very accurate.
     **VDI_PPDS**:
-        Coefficients for a equation form developed by the PPDS, published 
+        Coefficients for a equation form developed by the PPDS (:obj:`EQ116` in 
+        terms of mass density), published 
         openly in [3]_. Valid up to the critical temperature, and extrapolates
         to very low temperatures well.
     **MMSNM0FIT**:
@@ -522,8 +523,7 @@ class VolumeLiquid(TPDependentProperty):
             Vm = rho_to_Vm(rho, self.CRC_INORG_L_MW)
         elif method == VDI_PPDS:
             A, B, C, D = self.VDI_PPDS_coeffs
-            tau = 1. - T/self.VDI_PPDS_Tc
-            rho = self.VDI_PPDS_rhoc + A*tau**0.35 + B*tau**(2/3.) + C*tau + D*tau**(4/3.)
+            rho = EQ116(T, self.VDI_PPDS_Tc, self.VDI_PPDS_rhoc, A, B, C, D)
             Vm = rho_to_Vm(rho, self.VDI_PPDS_MW)
         elif method == CRC_INORG_L_CONST:
             Vm = self.CRC_INORG_L_CONST_Vm

@@ -389,14 +389,7 @@ class ViscosityLiquid(TPDependentProperty):
             Vml = self.Vml(T) if hasattr(self.Vml, '__call__') else self.Vml
             mu = Przedziecki_Sridhar(T, self.Tm, self.Tc, self.Pc, self.Vc, Vml, self.omega, self.MW)
         elif method == VDI_PPDS:
-            A, B, C, D, E = self.VDI_PPDS_coeffs
-            term = (C - T)/(T-D)
-            if term < 0:
-                term1 = -((T - C)/(T-D))**(1/3.)
-            else:
-                term1 = term**(1/3.)
-            term2 = term*term1
-            mu = E*exp(A*term1 + B*term2)
+            return PPDS9(T, *self.VDI_PPDS_coeffs)
         elif method == BESTFIT:
             if T < self.best_fit_Tmin:
                 mu = (T - self.best_fit_Tmin)*self.best_fit_Tmin_slope + self.best_fit_Tmin_value

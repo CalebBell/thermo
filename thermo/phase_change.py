@@ -30,7 +30,7 @@ import numpy as np
 import pandas as pd
 
 from fluids.numerics import horner, horner_and_der
-from fluids.constants import R, pi, N_A
+from fluids.constants import R
 
 from chemicals.utils import log, isnan
 from chemicals.utils import property_molar_to_mass, mixing_simple, none_and_length_check
@@ -386,7 +386,7 @@ class EnthalpyVaporization(TDependentProperty):
             Hvap = R*self.VDI_PPDS_Tc*(A*tau**(1/3.) + B*tau**(2/3.) + C*tau
                                        + D*tau**2 + E*tau**6)
         elif method == ALIBAKHSHI:
-            Hvap = (4.5*pi*N_A)**(1/3.)*4.2E-7*(self.Tc-6.) - R/2.*T*log(T) + self.Alibakhshi_C*T
+            Hvap = Alibakhshi(T=T, Tc=self.Tc, C=self.Alibakhshi_C)
         elif method == MORGAN_KOBAYASHI:
             Hvap = MK(T, self.Tc, self.omega)
         elif method == SIVARAMAN_MAGEE_KOBAYASHI:
