@@ -23,7 +23,7 @@ SOFTWARE.'''
 from numpy.testing import assert_allclose
 import pytest
 from thermo.coolprop import *
-from chemicals.identifiers import checkCAS
+from chemicals.identifiers import check_CAS
 
 def test_fluid_props():
 #    tots = [sum([getattr(f, prop) for f in coolprop_fluids.values()]) for prop in ['Tmin', 'Tmax', 'Pmax', 'Tc', 'Pc', 'Tt', 'omega']]
@@ -34,7 +34,7 @@ def test_fluid_props():
 
     assert len(coolprop_fluids) == len(coolprop_dict)
     assert len(coolprop_dict) == 105
-    assert all([checkCAS(i) for i in coolprop_dict])
+    assert all([check_CAS(i) for i in coolprop_dict])
 
 
 

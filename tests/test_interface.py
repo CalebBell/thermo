@@ -25,7 +25,7 @@ import numpy as np
 import pandas as pd
 from thermo.interface import *
 from thermo.interface import VDI_TABULAR
-from chemicals.identifiers import checkCAS
+from chemicals.identifiers import check_CAS
 from fluids.numerics import assert_close, assert_close1d
 
 @pytest.mark.meta_T_dept

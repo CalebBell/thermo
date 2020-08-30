@@ -25,7 +25,7 @@ import pytest
 from fluids.numerics import assert_close, assert_close1d
 from thermo.phase_change import *
 from chemicals.miscdata import CRC_inorganic_data, CRC_organic_data
-from chemicals.identifiers import checkCAS
+from chemicals.identifiers import check_CAS
 
 
 

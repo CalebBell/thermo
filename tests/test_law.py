@@ -23,8 +23,7 @@ SOFTWARE.'''
 from numpy.testing import assert_allclose
 import pytest
 from thermo.law import *
-from chemicals.utils import int2CAS
-from chemicals.identifiers import checkCAS
+from chemicals.identifiers import check_CAS, int2CAS
 
 load_law_data()
 load_economic_data()
@@ -38,7 +37,7 @@ def test_DSL_data():
     assert DSL_data['Registry'].sum() == 48363
     assert DSL_data.shape == (73036, 1)
 
-    assert all([checkCAS(int2CAS(i)) for i in DSL_data.index])
+    assert all([check_CAS(int2CAS(i)) for i in DSL_data.index])
 
 
 @pytest.mark.slow
@@ -50,7 +49,7 @@ def test_TSCA_data():
     assert TSCA_data.index.is_unique
     assert TSCA_data.shape == (67635, 13)
 
-    assert all([checkCAS(int2CAS(i)) for i in TSCA_data.index])
+    assert all([check_CAS(int2CAS(i)) for i in TSCA_data.index])
 
 
 @pytest.mark.slow
@@ -59,7 +58,7 @@ def test_EINECS_data():
     assert EINECS_data.shape == (100203, 0)
     assert sum(list(EINECS_data.index))  == 4497611272838
 
-    assert all([checkCAS(int2CAS(i)) for i in EINECS_data.index])
+    assert all([check_CAS(int2CAS(i)) for i in EINECS_data.index])
 
 
 @pytest.mark.slow
@@ -68,7 +67,7 @@ def test_SPIN_data():
     assert SPIN_data.shape == (26023, 0)
     assert sum(list(SPIN_data.index)) == 1666688770043
 
-    assert all([checkCAS(int2CAS(i)) for i in SPIN_data.index])
+    assert all([check_CAS(int2CAS(i)) for i in SPIN_data.index])
 
 
 def test_NLP_data():
@@ -76,7 +75,7 @@ def test_NLP_data():
     assert NLP_data.shape == (698, 0)
     assert sum(list(NLP_data.index)) == 83268755392
 
-    assert all([checkCAS(int2CAS(i)) for i in NLP_data.index])
+    assert all([check_CAS(int2CAS(i)) for i in NLP_data.index])
 
 
 def test_HPV_data():
@@ -85,7 +84,7 @@ def test_HPV_data():
     assert sum(list(HPV_data.index)) == 176952023632
 
     for i in HPV_data.index:
-        assert checkCAS(int2CAS(i))
+        assert check_CAS(int2CAS(i))
 
 
 def test_legal_status():

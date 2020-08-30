@@ -27,8 +27,7 @@ __all__ = ['InteractionParameterDB', 'IPDB']
 import os
 import json
 import numpy as np
-from chemicals.utils import sorted_CAS_key
-from chemicals.identifiers import checkCAS
+from chemicals.identifiers import check_CAS, sorted_CAS_key
 
 '''Need to be able to add NRTL parameters sets (T dept)
 Need to add single kijis, and kijs with T dept
@@ -62,7 +61,7 @@ class InteractionParameterDB(object):
             # Check the key is the right length
             assert len(CASs) == components
             # Check all CAS number keys are valid
-            assert all(checkCAS(i) for i in CASs)
+            assert all(check_CAS(i) for i in CASs)
             
             values = table[key]
             for i in necessary_keys:

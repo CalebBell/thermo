@@ -27,7 +27,7 @@ import pandas as pd
 from chemicals.elements import charge_from_formula, nested_formula_parser
 from thermo.electrochem import *
 from thermo.electrochem import _Laliberte_Density_ParametersDict, _Laliberte_Viscosity_ParametersDict, _Laliberte_Heat_Capacity_ParametersDict
-from chemicals.identifiers import checkCAS, CAS_from_any, pubchem_db, serialize_formula
+from chemicals.identifiers import check_CAS, CAS_from_any, pubchem_db, serialize_formula
 from math import log10
 
 
@@ -178,7 +178,7 @@ def test_CRC_ion_conductivities():
     
     
 def test_CRC_aqueous_thermodynamics():
-    assert all([checkCAS(i) for i in CRC_aqueous_thermodynamics.index])
+    assert all([check_CAS(i) for i in CRC_aqueous_thermodynamics.index])
     
     # Check CASs match up
     assert all([CAS_from_any(i) == i for i in CRC_aqueous_thermodynamics.index])
@@ -213,7 +213,7 @@ def test_CRC_aqueous_thermodynamics():
 
     
 def test_Magomedovk_thermal_cond():
-    assert all([checkCAS(i) for i in Magomedovk_thermal_cond.index])
+    assert all([check_CAS(i) for i in Magomedovk_thermal_cond.index])
     assert Magomedovk_thermal_cond.index.is_unique
     assert Magomedovk_thermal_cond.shape == (39, 3)
     tot_calc = Magomedovk_thermal_cond['Ai'].abs().sum()

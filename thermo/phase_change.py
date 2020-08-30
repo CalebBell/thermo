@@ -381,10 +381,7 @@ class EnthalpyVaporization(TDependentProperty):
             Hvap = EQ106(T, *self.Perrys2_150_coeffs)
         # CSP methods
         elif method == VDI_PPDS:
-            A, B, C, D, E = self.VDI_PPDS_coeffs
-            tau = 1. - T/self.VDI_PPDS_Tc
-            Hvap = R*self.VDI_PPDS_Tc*(A*tau**(1/3.) + B*tau**(2/3.) + C*tau
-                                       + D*tau**2 + E*tau**6)
+            Hvap = PPDS12(T, self.VDI_PPDS_Tc, *self.VDI_PPDS_coeffs)
         elif method == ALIBAKHSHI:
             Hvap = Alibakhshi(T=T, Tc=self.Tc, C=self.Alibakhshi_C)
         elif method == MORGAN_KOBAYASHI:

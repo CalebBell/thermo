@@ -32,7 +32,7 @@ from fluids.core import R2K, F2K
 from chemicals.utils import normalize, mixing_simple
 from chemicals.viscosity import *
 from thermo.viscosity import *
-from chemicals.identifiers import checkCAS
+from chemicals.identifiers import check_CAS
 from thermo.viscosity import COOLPROP, LUCAS
 from thermo.mixture import Mixture
 from thermo.viscosity import LALIBERTE_MU, MIXING_LOG_MOLAR, MIXING_LOG_MASS, BROKAW, HERNING_ZIPPERER, WILKE, SIMPLE

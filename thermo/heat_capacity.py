@@ -552,7 +552,7 @@ class HeatCapacityLiquid(TDependentProperty):
     **POLING_CONST**:
         Constant values in [2]_ at 298.15 K; available for 245 liquids.
     **CRCSTD**:
-        Consta values tabulated in [4]_ at 298.15 K; data is available for 433
+        Constant values tabulated in [4]_ at 298.15 K; data is available for 433
         liquids.
 
     See Also
