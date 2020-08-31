@@ -39,7 +39,7 @@ from thermo.utils import log
 from thermo.utils import mixing_simple, none_and_length_check
 
 
-folder = os.path.join(os.path.dirname(__file__), 'Critical Properties')
+folder = os.path.join(os.path.dirname(__file__), 'Critical_Properties')
 
 
 ### Read the various data files
@@ -63,7 +63,7 @@ _crit_CRC['Zc'] = pd.Series(_crit_CRC['Pc']*_crit_CRC['Vc']/_crit_CRC['Tc']/R,
 
 
 _crit_PSRKR4 = pd.read_csv(os.path.join(folder,
-'Appendix to PSRK Revision 4.tsv'), sep='\t', index_col=0)
+'Appendix_to_PSRK_Revision_4.tsv'), sep='\t', index_col=0)
 _crit_PSRKR4['Zc'] = pd.Series(_crit_PSRKR4['Pc']*_crit_PSRKR4['Vc']/_crit_PSRKR4['Tc']/R,
                              index=_crit_PSRKR4.index)
 
@@ -72,7 +72,7 @@ _crit_PassutDanner = pd.read_csv(os.path.join(folder, 'PassutDanner1973.tsv'),
                                  sep='\t', index_col=0)
 
 
-_crit_Yaws = pd.read_csv(os.path.join(folder, 'Yaws Collection.tsv'),
+_crit_Yaws = pd.read_csv(os.path.join(folder, 'Yaws_Collection.tsv'),
                          sep='\t', index_col=0)
 _crit_Yaws['Zc'] = pd.Series(_crit_Yaws['Pc']*_crit_Yaws['Vc']/_crit_Yaws['Tc']/R,
                              index=_crit_Yaws.index)

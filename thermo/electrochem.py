@@ -52,22 +52,22 @@ folder = os.path.join(os.path.dirname(__file__), 'Electrolytes')
 
 
 
-Lange_cond_pure = pd.read_csv(os.path.join(folder, 'Lange Pure Species Conductivity.tsv'),
+Lange_cond_pure = pd.read_csv(os.path.join(folder, 'Lange_Pure_Species_Conductivity.tsv'),
                           sep='\t', index_col=0)
 
-Marcus_ion_conductivities = pd.read_csv(os.path.join(folder, 'Marcus Ion Conductivities.tsv'),
+Marcus_ion_conductivities = pd.read_csv(os.path.join(folder, 'Marcus_Ion_Conductivities.tsv'),
                           sep='\t', index_col=0)
 
-CRC_ion_conductivities = pd.read_csv(os.path.join(folder, 'CRC conductivity infinite dilution.tsv'),
+CRC_ion_conductivities = pd.read_csv(os.path.join(folder, 'CRC_conductivity_infinite_dilution.tsv'),
                           sep='\t', index_col=0)
 
-Magomedovk_thermal_cond = pd.read_csv(os.path.join(folder, 'Magomedov Thermal Conductivity.tsv'),
+Magomedovk_thermal_cond = pd.read_csv(os.path.join(folder, 'Magomedov_Thermal_Conductivity.tsv'),
                           sep='\t', index_col=0)
 
-CRC_aqueous_thermodynamics = pd.read_csv(os.path.join(folder, 'CRC Thermodynamic Properties of Aqueous Ions.csv'),
+CRC_aqueous_thermodynamics = pd.read_csv(os.path.join(folder, 'CRC_Thermodynamic_Properties_of_Aqueous_Ions.csv'),
                           sep='\t', index_col=0) 
 
-electrolyte_dissociation_reactions = pd.read_csv(os.path.join(folder, 'Electrolyte dissociations.csv'), sep='\t')
+electrolyte_dissociation_reactions = pd.read_csv(os.path.join(folder, 'Electrolyte_dissociations.csv'), sep='\t')
 
 
 _Laliberte_Density_ParametersDict = {}
@@ -587,7 +587,7 @@ McCleskey_parameters = namedtuple("McCleskey_parameters",
                                   ["Formula", 'lambda_coeffs', 'A_coeffs', 'B', 'multiplier'])
 
 McCleskey_conductivities = {}
-with open(os.path.join(folder, 'McCleskey Electrical Conductivity.csv')) as f:
+with open(os.path.join(folder, 'McCleskey_Electrical_Conductivity.csv')) as f:
     next(f)
     for line in f:
         values = line.strip().split('\t')
@@ -673,7 +673,7 @@ def conductivity_McCleskey(T, M, lambda_coeffs, A_coeffs, B, multiplier, rho=100
 
 
 
-Lange_cond_pure = pd.read_csv(os.path.join(folder, 'Lange Pure Species Conductivity.tsv'),
+Lange_cond_pure = pd.read_csv(os.path.join(folder, 'Lange_Pure_Species_Conductivity.tsv'),
                           sep='\t', index_col=0)
 
 

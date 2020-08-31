@@ -56,7 +56,7 @@ from thermo.coolprop import *
                          
                          
                          
-folder = os.path.join(os.path.dirname(__file__), 'Heat Capacity')
+folder = os.path.join(os.path.dirname(__file__), 'Heat_Capacity')
 
 
 Poling_data = pd.read_csv(os.path.join(folder,
@@ -66,14 +66,14 @@ _Poling_data_values = Poling_data.values
 
 
 TRC_gas_data = pd.read_csv(os.path.join(folder,
-                       'TRC Thermodynamics of Organic Compounds in the Gas State.tsv'), sep='\t',
+                       'TRC_Thermodynamics_of_Organic_Compounds_in_the_Gas_State.tsv'), sep='\t',
                        index_col=0)
 _TRC_gas_data_values = TRC_gas_data.values
 
 
 
 _PerryI = {}
-with open(os.path.join(folder, 'Perrys Table 2-151.tsv'), encoding='utf-8') as f:
+with open(os.path.join(folder, 'Perrys_Table_2-151.tsv'), encoding='utf-8') as f:
     '''Read in a dict of heat capacities of irnorganic and elemental solids.
     These are in section 2, table 151 in:
     Green, Don, and Robert Perry. Perry's Chemical Engineers' Handbook,
@@ -115,7 +115,7 @@ with open(os.path.join(folder, 'Perrys Table 2-151.tsv'), encoding='utf-8') as f
 #        Chemistry and Physics. [Boca Raton, FL]: CRC press, 2014.
 #        Warning: 11 duplicated chemicals are present and currently clobbered.
 CRC_standard_data = pd.read_csv(os.path.join(folder,
-                       'CRC Standard Thermodynamic Properties of Chemical Substances.tsv'), sep='\t',
+                       'CRC_Standard_Thermodynamic_Properties_of_Chemical_Substances.tsv'), sep='\t',
                        index_col=0)
 
 

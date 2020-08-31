@@ -290,11 +290,11 @@ def CoolProp_T_dependent_property(T, CASRN, prop, phase):
         raise Exception('Error in CoolProp property function')
 
 if has_CoolProp:
-    f = open(os.path.join(folder, 'CoolProp vapor properties fits.json'), 'r')
+    f = open(os.path.join(folder, 'CoolProp_vapor_properties_fits.json'), 'r')
     vapor_properties = json.load(f)
     f.close()
     
-    f = open(os.path.join(folder, 'CoolProp CP0MOLAR fits.json'), 'r')
+    f = open(os.path.join(folder, 'CoolProp_CP0MOLAR_fits.json'), 'r')
     idea_gas_heat_capacity = json.load(f)
     f.close()
     

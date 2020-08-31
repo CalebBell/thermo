@@ -31,10 +31,10 @@ import pandas as pd
 from thermo.phase_change import Tm
 from thermo.vapor_pressure import VaporPressure
 
-folder = os.path.join(os.path.dirname(__file__), 'Triple Properties')
+folder = os.path.join(os.path.dirname(__file__), 'Triple_Properties')
 
 
-Staveley_data = pd.read_csv(os.path.join(folder, 'Staveley 1981.tsv'),
+Staveley_data = pd.read_csv(os.path.join(folder, 'Staveley_1981.tsv'),
                        sep='\t', index_col=0)
 
 STAVELEY = 'STAVELEY'

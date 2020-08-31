@@ -32,7 +32,7 @@ __all__ = ['UNIFAC', 'UNIFAC_psi', 'DOUFMG', 'DOUFSG', 'UFSG', 'UFMG',
 import os
 from thermo.utils import log, exp
 
-folder = os.path.join(os.path.dirname(__file__), 'Phase Change')
+folder = os.path.join(os.path.dirname(__file__), 'Phase_Change')
 
 
 class UNIFAC_subgroup(object):
@@ -832,21 +832,21 @@ PSRKSG[152] = UNIFAC_subgroup('CNH2', 14, 'CNH2', 0.9147, 0.6140)
 
 
 UFIP = {i: {} for i in list(range(1, 52)) + [55, 84, 85]}
-with open(os.path.join(folder, 'UNIFAC original interaction parameters.tsv')) as f:
+with open(os.path.join(folder, 'UNIFAC_original_interaction_parameters.tsv')) as f:
     for line in f:
         maingroup1, maingroup2, interaction_parameter = line.strip('\n').split('\t')
         # Index by both int, order maters, to only one parameter.
         UFIP[int(maingroup1)][int(maingroup2)] = float(interaction_parameter)
 
 DOUFIP2006 = {i: {} for i in DOUFMG.keys()}
-with open(os.path.join(folder, 'UNIFAC modified Dortmund interaction parameters 2006.tsv')) as f:
+with open(os.path.join(folder, 'UNIFAC_modified_Dortmund_interaction_parameters_2006.tsv')) as f:
     for line in f:
         maingroup1, maingroup2, a, b, c = line.strip('\n').split('\t')
         DOUFIP2006[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
 
 DOUFIP2016 = {i: {} for i in list(DOUFMG.keys())+[50, 77, 98, 99]}
 # Some of the groups have no public parameters unfortunately
-with open(os.path.join(folder, 'UNIFAC modified Dortmund interaction parameters.tsv')) as f:
+with open(os.path.join(folder, 'UNIFAC_modified_Dortmund_interaction_parameters.tsv')) as f:
     for line in f:
         maingroup1, maingroup2, a, b, c = line.strip('\n').split('\t')
         DOUFIP2016[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
@@ -855,14 +855,14 @@ with open(os.path.join(folder, 'UNIFAC modified Dortmund interaction parameters.
 #NISTUFIP = {i: {} for i in list(NISTUFMG.keys())}
 NISTUFIP = {i: {} for i in range(400)}
 
-with open(os.path.join(folder, 'UNIFAC modified NIST 2015 interaction parameters.tsv')) as f:
+with open(os.path.join(folder, 'UNIFAC_modified_NIST_2015_interaction_parameters.tsv')) as f:
     for line in f:
         maingroup1, maingroup2, a, b, c, Tmin, Tmax = line.strip('\n').split('\t')
         NISTUFIP[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
 
 PSRKIP = {i: {} for i in range(400)}
 
-with open(os.path.join(folder, 'PSRK interaction parameters.tsv')) as f:
+with open(os.path.join(folder, 'PSRK_interaction_parameters.tsv')) as f:
     for line in f:
         maingroup1, maingroup2, a, b, c = line.strip('\n').split('\t')
         PSRKIP[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
@@ -884,7 +884,7 @@ def load_group_assignments_DDBST():
     # Do not allow running multiple times
     if DDBST_UNIFAC_assignments:
         return None
-    with open(os.path.join(folder, 'DDBST UNIFAC assignments.tsv')) as f:
+    with open(os.path.join(folder, 'DDBST_UNIFAC_assignments.tsv')) as f:
         _group_assignments = [DDBST_UNIFAC_assignments, DDBST_MODIFIED_UNIFAC_assignments, DDBST_PSRK_assignments]
         for line in f.readlines():
             key, valids, original, modified, PSRK = line.split('\t')

@@ -58,7 +58,7 @@ Somayajulu_data_2 = pd.read_csv(os.path.join(folder, 'SomayajuluRevised.tsv'),
                       sep='\t', index_col=0)
 _Somayajulu_data_2_values = Somayajulu_data_2.values
 
-VDI_PPDS_11 = pd.read_csv(os.path.join(folder, 'VDI PPDS surface tensions.tsv'),
+VDI_PPDS_11 = pd.read_csv(os.path.join(folder, 'VDI_PPDS_surface_tensions.tsv'),
                           sep='\t', index_col=0)
 _VDI_PPDS_11_values = VDI_PPDS_11.values
 

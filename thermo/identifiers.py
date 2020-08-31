@@ -124,18 +124,18 @@ class ChemicalMetadata(object):
 
 class ChemicalMetadataDB(object):
     exclusion_options = [os.path.join(folder, 'dippr_2014_int.csv'),
-                         os.path.join(folder, 'Chemicals with data.csv')]
+                         os.path.join(folder, 'Chemicals_with_data.csv')]
     
     def __init__(self, create_pubchem_index=True, create_CAS_index=True,
                  create_name_index=True, create_smiles_index=True, 
                  create_InChI_index=True, create_InChI_key_index=True, 
                  create_formula_index=True,
                  restrict_identifiers_file=None, elements=True,
-                 main_db=os.path.join(folder, 'chemical identifiers.tsv'),
-                 user_dbs=[os.path.join(folder, 'chemical identifiers example user db.tsv'),
-                           os.path.join(folder, 'Cation db.tsv'),
-                           os.path.join(folder, 'Anion db.tsv'),
-                           os.path.join(folder, 'Inorganic db.tsv')]):
+                 main_db=os.path.join(folder, 'chemical_identifiers.tsv'),
+                 user_dbs=[os.path.join(folder, 'chemical_identifiers_example_user_db.tsv'),
+                           os.path.join(folder, 'Cation_db.tsv'),
+                           os.path.join(folder, 'Anion_db.tsv'),
+                           os.path.join(folder, 'Inorganic_db.tsv')]):
         
         
         self.pubchem_index = {}
@@ -659,7 +659,7 @@ with open(os.path.join(folder, 'dippr_2014.csv')) as f:
 
 _MixtureDict = {}
 _MixtureDictLookup = {}
-with open(os.path.join(folder, 'Mixtures Compositions.tsv')) as f:
+with open(os.path.join(folder, 'Mixtures_Compositions.tsv')) as f:
     '''Read in a dict of 90 or so mixutres, their components, and synonyms.
     Small errors in mole fractions not adding to 1 are known.
     Errors in adding mass fraction are less common, present at the 5th decimal.

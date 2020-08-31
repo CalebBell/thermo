@@ -52,32 +52,32 @@ from thermo.eos import PR78
 
 folder = os.path.join(os.path.dirname(__file__), 'Density')
 
-COSTALD_data = pd.read_csv(os.path.join(folder, 'COSTALD Parameters.tsv'),
+COSTALD_data = pd.read_csv(os.path.join(folder, 'COSTALD_Parameters.tsv'),
                            sep='\t', index_col=0)
 
-SNM0_data = pd.read_csv(os.path.join(folder, 'Mchaweh SN0 deltas.tsv'),
+SNM0_data = pd.read_csv(os.path.join(folder, 'Mchaweh_SN0_deltas.tsv'),
                         sep='\t', index_col=0)
 
-Perry_l_data = pd.read_csv(os.path.join(folder, 'Perry Parameters 105.tsv'),
+Perry_l_data = pd.read_csv(os.path.join(folder, 'Perry_Parameters_105.tsv'),
                            sep='\t', index_col=0)
 _Perry_l_data_values = Perry_l_data.values
 
-VDI_PPDS_2 = pd.read_csv(os.path.join(folder, 'VDI PPDS Density of Saturated Liquids.tsv'),
+VDI_PPDS_2 = pd.read_csv(os.path.join(folder, 'VDI_PPDS_Density_of_Saturated_Liquids.tsv'),
                           sep='\t', index_col=0)
 _VDI_PPDS_2_values = VDI_PPDS_2.values
 
 
-CRC_inorg_l_data = pd.read_csv(os.path.join(folder, 'CRC Inorganics densties of molten compounds and salts.tsv'),
+CRC_inorg_l_data = pd.read_csv(os.path.join(folder, 'CRC_Inorganics_densties_of_molten_compounds_and_salts.tsv'),
                                sep='\t', index_col=0)
 _CRC_inorg_l_data_values = CRC_inorg_l_data.values
 
-CRC_inorg_l_const_data = pd.read_csv(os.path.join(folder, 'CRC Liquid Inorganic Constant Densities.tsv'),
+CRC_inorg_l_const_data = pd.read_csv(os.path.join(folder, 'CRC_Liquid_Inorganic_Constant_Densities.tsv'),
                                      sep='\t', index_col=0)
 
-CRC_inorg_s_const_data = pd.read_csv(os.path.join(folder, 'CRC Solid Inorganic Constant Densities.tsv'),
+CRC_inorg_s_const_data = pd.read_csv(os.path.join(folder, 'CRC_Solid_Inorganic_Constant_Densities.tsv'),
                                      sep='\t', index_col=0)
 
-CRC_virial_data = pd.read_csv(os.path.join(folder, 'CRC Virial polynomials.tsv'),
+CRC_virial_data = pd.read_csv(os.path.join(folder, 'CRC_Virial_polynomials.tsv'),
                               sep='\t', index_col=0)
 _CRC_virial_data_values = CRC_virial_data.values
 

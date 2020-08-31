@@ -33,7 +33,7 @@ from thermo.utils import N_A
 
 folder = os.path.join(os.path.dirname(__file__), 'Misc')
 
-CRC_RI_organic = pd.read_csv(os.path.join(folder, 'CRC Handbook Organic RI.csv'),
+CRC_RI_organic = pd.read_csv(os.path.join(folder, 'CRC_Handbook_Organic_RI.csv'),
                              sep='\t', index_col=0)
 
 CRC = 'CRC'

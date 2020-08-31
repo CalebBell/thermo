@@ -155,14 +155,14 @@ def str_to_ppm_mgm3(line, MW):  # pragma: no cover
     return (_ppm, _mgm3)
 
 
-NFPA_2008 = pd.read_csv(os.path.join(folder, 'NFPA 497 2008.tsv'),
+NFPA_2008 = pd.read_csv(os.path.join(folder, 'NFPA_497_2008.tsv'),
                         sep='\t', index_col=0)
 
 
-IEC_2010 = pd.read_csv(os.path.join(folder, 'IS IEC 60079-20-1 2010.tsv'),
+IEC_2010 = pd.read_csv(os.path.join(folder, 'IS_IEC_60079-20-1_2010.tsv'),
                        sep='\t', index_col=0)
 
-DIPPR_SERAT = pd.read_csv(os.path.join(folder, 'DIPPR Tflash Serat.csv'), 
+DIPPR_SERAT = pd.read_csv(os.path.join(folder, 'DIPPR_Tflash_Serat.csv'), 
                           sep='\t', index_col=0)
 
 _OntarioExposureLimits = {}
@@ -195,7 +195,7 @@ _OntarioExposureLimits = {}
 #                "Ceiling (mg/m^3)": _mgm3_C, "Skin":_skin}
 
 
-with open(os.path.join(folder, 'Ontario Exposure Limits.tsv'), encoding='utf-8') as f:
+with open(os.path.join(folder, 'Ontario_Exposure_Limits.tsv'), encoding='utf-8') as f:
     '''Read in a dict of TWAs, STELs, and Ceiling Limits. The data source
     is the Ontario Labor Website. They have obtained their data in part from
     their own reviews, and also from ACGIH.
@@ -243,7 +243,7 @@ with open(os.path.join(folder, 'Ontario Exposure Limits.tsv'), encoding='utf-8')
 
 #TODO: Add CRC exposure limits. Note that functions should be used.
 #_CRCExposureLimits = {}
-#with open(os.path.join(folder,'CRC Exposure Limits.csv')) as f:
+#with open(os.path.join(folder,'CRC_Exposure_Limits.csv')) as f:
 #    '''Read in a dict of TWAs and STELs. The data source
 #    is the CRC Handbook.. They have obtained their data from
 #    NIOSH, and OSHA Chemical Information Manual, and ACGIH.
@@ -267,12 +267,12 @@ with open(os.path.join(folder, 'Ontario Exposure Limits.tsv'), encoding='utf-8')
 #{'STEL (ppm)': 150.0, 'Name': '(2-Methoxymethylethoxy) propanol (DPGME) [34590-94-8]', 'Ceiling (mg/m^3)': None, 'Ceiling (ppm)': None, 'TWA (mg/m^3)': None, 'STEL (mg/m^3)': None, 'TWA (ppm)': 100.0}
 
 
-NTP_data = pd.read_csv(os.path.join(folder, 'National Toxicology Program Carcinogens.tsv'),
+NTP_data = pd.read_csv(os.path.join(folder, 'National_Toxicology_Program_Carcinogens.tsv'),
                        sep='\t', index_col=0)
 
 NTP_codes = {1: 'Known', 2: 'Reasonably Anticipated'}
 
-IARC_data = pd.read_csv(os.path.join(folder, 'IARC Carcinogen Database.tsv'),
+IARC_data = pd.read_csv(os.path.join(folder, 'IARC_Carcinogen_Database.tsv'),
                         sep='\t', index_col=0)
 
 IARC_codes = {1: 'Carcinogenic to humans (1)',

@@ -37,29 +37,29 @@ from thermo.utils import TDependentProperty
 from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluids
 from thermo.dippr import EQ101
 
-folder = os.path.join(os.path.dirname(__file__), 'Vapor Pressure')
+folder = os.path.join(os.path.dirname(__file__), 'Vapor_Pressure')
 
-WagnerMcGarry = pd.read_csv(os.path.join(folder, 'Wagner Original McGarry.tsv'),
+WagnerMcGarry = pd.read_csv(os.path.join(folder, 'Wagner_Original_McGarry.tsv'),
                             sep='\t', index_col=0)
 _WagnerMcGarry_values = WagnerMcGarry.values
 
-AntoinePoling = pd.read_csv(os.path.join(folder, 'Antoine Collection Poling.tsv'),
+AntoinePoling = pd.read_csv(os.path.join(folder, 'Antoine_Collection_Poling.tsv'),
                             sep='\t', index_col=0)
 _AntoinePoling_values = AntoinePoling.values
 
-WagnerPoling = pd.read_csv(os.path.join(folder, 'Wagner Collection Poling.tsv'),
+WagnerPoling = pd.read_csv(os.path.join(folder, 'Wagner_Collection_Poling.tsv'),
                            sep='\t', index_col=0)
 _WagnerPoling_values = WagnerPoling.values
 
-AntoineExtended = pd.read_csv(os.path.join(folder, 'Antoine Extended Collection Poling.tsv'),
+AntoineExtended = pd.read_csv(os.path.join(folder, 'Antoine_Extended_Collection_Poling.tsv'),
                               sep='\t', index_col=0)
 _AntoineExtended_values = AntoineExtended.values
 
-Perrys2_8 = pd.read_csv(os.path.join(folder, 'Table 2-8 Vapor Pressure of Inorganic and Organic Liquids.tsv'),
+Perrys2_8 = pd.read_csv(os.path.join(folder, 'Table_2-8_Vapor_Pressure_of_Inorganic_and_Organic_Liquids.tsv'),
                           sep='\t', index_col=0)
 _Perrys2_8_values = Perrys2_8.values
 
-VDI_PPDS_3 = pd.read_csv(os.path.join(folder, 'VDI PPDS Boiling temperatures at different pressures.tsv'),
+VDI_PPDS_3 = pd.read_csv(os.path.join(folder, 'VDI_PPDS_Boiling_temperatures_at_different_pressures.tsv'),
                           sep='\t', index_col=0)
 _VDI_PPDS_3_values = VDI_PPDS_3.values
 

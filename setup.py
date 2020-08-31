@@ -71,10 +71,10 @@ setup(
   'combustion', 'environmental engineering', 'solubility', 'vapor pressure', 
   'equation of state', 'molecule'],
   classifiers = classifiers,
-  package_data={'thermo': ['Critical Properties/*', 'Density/*', 
-  'Electrolytes/*', 'Environment/*', 'Heat Capacity/*', 'Identifiers/*',
-  'Law/*', 'Misc/*', 'Phase Change/*', 'Reactions/*', 'Safety/*', 
-  'Solubility/*', 'Interface/*', 'Triple Properties/*', 
-  'Thermal Conductivity/*', 
-  'Vapor Pressure/*', 'Viscosity/*']}
+  package_data={'thermo': ['Critical_Properties/*', 'Density/*', 
+  'Electrolytes/*', 'Environment/*', 'Heat_Capacity/*', 'Identifiers/*',
+  'Law/*', 'Misc/*', 'Phase_Change/*', 'Reactions/*', 'Safety/*', 
+  'Solubility/*', 'Interface/*', 'Triple_Properties/*', 
+  'Thermal_Conductivity/*', 
+  'Vapor_Pressure/*', 'Viscosity/*']}
 )

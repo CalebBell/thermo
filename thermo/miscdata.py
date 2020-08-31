@@ -33,11 +33,11 @@ folder = os.path.join(os.path.dirname(__file__), 'Misc')
 ### CRC Handbook general tables
 
 CRC_inorganic_data = pd.read_csv(os.path.join(folder,
-'Physical Constants of Inorganic Compounds.csv'), sep='\t', index_col=0)
+'Physical_Constants_of_Inorganic_Compounds.csv'), sep='\t', index_col=0)
 
 
 CRC_organic_data = pd.read_csv(os.path.join(folder,
-'Physical Constants of Organic Compounds.csv'), sep='\t', index_col=0)
+'Physical_Constants_of_Organic_Compounds.csv'), sep='\t', index_col=0)
 
 
 ### VDI Saturation
@@ -51,7 +51,7 @@ emptydict = {"Name": None, "MW": None, "Tc": None, "T": [], "P": [],
 # After some consideration, it has been devided to keep this load method as is.
 
 _VDISaturationDict = {}
-with open(os.path.join(folder, 'VDI Saturation Compounds Data.csv')) as f:
+with open(os.path.join(folder, 'VDI_Saturation_Compounds_Data.csv')) as f:
     '''Read in a dict of assorted chemical properties at saturation for 58
     industrially important chemicals, from:
     Gesellschaft, V. D. I., ed. VDI Heat Atlas. 2E. Berlin : Springer, 2010.

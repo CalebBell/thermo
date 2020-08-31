@@ -35,19 +35,19 @@ folder = os.path.join(os.path.dirname(__file__), 'Environment')
 ### Global Warming Potentials
 
 GWP_data = pd.read_csv(os.path.join(folder,
-                       'Official Global Warming Potentials.tsv'), sep='\t',
+                       'Official_Global_Warming_Potentials.tsv'), sep='\t',
                        index_col=0)
 
 ODP_data = pd.read_csv(os.path.join(folder,
-                       'Ozone Depletion Potentials.tsv'), sep='\t',
+                       'Ozone_Depletion_Potentials.tsv'), sep='\t',
                        index_col=0)
 
 CRClogPDict = pd.read_csv(os.path.join(folder,
-                       'CRC logP table.tsv'), sep='\t',
+                       'CRC_logP_table.tsv'), sep='\t',
                        index_col=0)
 
 SyrresDict2 = pd.read_csv(os.path.join(folder,
-                       'Syrres logP data.csv.gz'), sep='\t',
+                       'Syrres_logP_data.csv.gz'), sep='\t',
                        index_col=0, compression='gzip')
 
 IPCC100 = 'IPCC (2007) 100yr'

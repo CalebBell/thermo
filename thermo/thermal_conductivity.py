@@ -48,21 +48,21 @@ from thermo.electrochem import thermal_conductivity_Magomedov, Magomedovk_therma
 from thermo.dippr import EQ100, EQ102
 
 
-folder = os.path.join(os.path.dirname(__file__), 'Thermal Conductivity')
+folder = os.path.join(os.path.dirname(__file__), 'Thermal_Conductivity')
 
-Perrys2_314 = pd.read_csv(os.path.join(folder, 'Table 2-314 Vapor Thermal Conductivity of Inorganic and Organic Substances.tsv'),
+Perrys2_314 = pd.read_csv(os.path.join(folder, 'Table_2-314_Vapor_Thermal_Conductivity_of_Inorganic_and_Organic_Substances.tsv'),
                           sep='\t', index_col=0)
 _Perrys2_314_values = Perrys2_314.values
 
-Perrys2_315 = pd.read_csv(os.path.join(folder, 'Table 2-315 Thermal Conductivity of Inorganic and Organic Liquids.tsv'),
+Perrys2_315 = pd.read_csv(os.path.join(folder, 'Table_2-315_Thermal_Conductivity_of_Inorganic_and_Organic_Liquids.tsv'),
                           sep='\t', index_col=0)
 _Perrys2_315_values = Perrys2_315.values
 
-VDI_PPDS_9 = pd.read_csv(os.path.join(folder, 'VDI PPDS Thermal conductivity of saturated liquids.tsv'),
+VDI_PPDS_9 = pd.read_csv(os.path.join(folder, 'VDI_PPDS_Thermal_conductivity_of_saturated_liquids.tsv'),
                           sep='\t', index_col=0)
 _VDI_PPDS_9_values = VDI_PPDS_9.values
 
-VDI_PPDS_10 = pd.read_csv(os.path.join(folder, 'VDI PPDS Thermal conductivity of gases.tsv'),
+VDI_PPDS_10 = pd.read_csv(os.path.join(folder, 'VDI_PPDS_Thermal_conductivity_of_gases.tsv'),
                           sep='\t', index_col=0)
 _VDI_PPDS_10_values = VDI_PPDS_10.values
 

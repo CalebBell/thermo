@@ -30,13 +30,13 @@ import pandas as pd
 
 folder = os.path.join(os.path.dirname(__file__), 'Misc')
 
-_dipole_Poling = pd.read_csv(os.path.join(folder, 'Poling Dipole.csv'),
+_dipole_Poling = pd.read_csv(os.path.join(folder, 'Poling_Dipole.csv'),
                           sep='\t', index_col=0)
 
-_dipole_CCDB = pd.read_csv(os.path.join(folder, 'cccbdb.nist.gov Dipoles.csv'),
+_dipole_CCDB = pd.read_csv(os.path.join(folder, 'cccbdb.nist.gov_Dipoles.csv'),
                           sep='\t', index_col=0)
 
-_dipole_Muller = pd.read_csv(os.path.join(folder, 'Muller Supporting Info Dipoles.csv'),
+_dipole_Muller = pd.read_csv(os.path.join(folder, 'Muller_Supporting_Info_Dipoles.csv'),
                           sep='\t', index_col=0)
 
 

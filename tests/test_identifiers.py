@@ -52,7 +52,7 @@ def test_database_formulas():
 
 def test_organic_user_db():
     db = ChemicalMetadataDB(elements=False,
-                            main_db=os.path.join(folder, 'chemical identifiers example user db.tsv'),
+                            main_db=os.path.join(folder, 'chemical_identifiers_example_user_db.tsv'),
                             user_dbs=[])
     for CAS, d in  db.CAS_index.items():
         assert CAS_from_any(d.CASs) == d.CASs
@@ -98,7 +98,7 @@ def test_organic_user_db():
 
 def test_inorganic_db():
     db = ChemicalMetadataDB(elements=False,
-                            main_db=os.path.join(folder, 'Inorganic db.tsv'),
+                            main_db=os.path.join(folder, 'Inorganic_db.tsv'),
                             user_dbs=[])
 
     # Check CAS lookup
@@ -271,7 +271,7 @@ for i in reversed(range(100000)):
     s = "20{0:0>5}000-00-0".format(i)
     if checkCAS(s):
         known.append(s+'\t\n')
-f = open('Fake CAS Registry.tsv', 'w')
+f = open('Fake_CAS_Registry.tsv', 'w')
 f.writelines(known)
 f.close()
 '''

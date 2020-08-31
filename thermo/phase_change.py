@@ -42,36 +42,36 @@ from thermo.vapor_pressure import VaporPressure
 from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluids
 from thermo.dippr import EQ106
 
-folder = os.path.join(os.path.dirname(__file__), 'Phase Change')
+folder = os.path.join(os.path.dirname(__file__), 'Phase_Change')
 
 
 Yaws_data = pd.read_csv(os.path.join(folder,
-'Yaws Boiling Points.tsv'), sep='\t', index_col=0)
+'Yaws_Boiling_Points.tsv'), sep='\t', index_col=0)
 
-Tm_ON_data = pd.read_csv(os.path.join(folder, 'OpenNotebook Melting Points.tsv'),
+Tm_ON_data = pd.read_csv(os.path.join(folder, 'OpenNotebook_Melting_Points.tsv'),
                          sep='\t', index_col=0)
 
-GharagheiziHvap_data = pd.read_csv(os.path.join(folder, 'Ghazerati Appendix Vaporization Enthalpy.tsv'),
+GharagheiziHvap_data = pd.read_csv(os.path.join(folder, 'Ghazerati_Appendix_Vaporization_Enthalpy.tsv'),
                                    sep='\t', index_col=0)
 
-CRCHvap_data = pd.read_csv(os.path.join(folder, 'CRC Handbook Heat of Vaporization.tsv'),
+CRCHvap_data = pd.read_csv(os.path.join(folder, 'CRC_Handbook_Heat_of_Vaporization.tsv'),
                            sep='\t', index_col=0)
 
-CRCHfus_data = pd.read_csv(os.path.join(folder, 'CRC Handbook Heat of Fusion.tsv'),
+CRCHfus_data = pd.read_csv(os.path.join(folder, 'CRC_Handbook_Heat_of_Fusion.tsv'),
                                     sep='\t', index_col=0)
 
-GharagheiziHsub_data = pd.read_csv(os.path.join(folder, 'Ghazerati Appendix Sublimation Enthalpy.tsv'),
+GharagheiziHsub_data = pd.read_csv(os.path.join(folder, 'Ghazerati_Appendix_Sublimation_Enthalpy.tsv'),
                                     sep='\t', index_col=0)
 
-Perrys2_150 = pd.read_csv(os.path.join(folder, 'Table 2-150 Heats of Vaporization of Inorganic and Organic Liquids.tsv'),
+Perrys2_150 = pd.read_csv(os.path.join(folder, 'Table_2-150_Heats_of_Vaporization_of_Inorganic_and_Organic_Liquids.tsv'),
                           sep='\t', index_col=0)
 _Perrys2_150_values = Perrys2_150.values
 
-VDI_PPDS_4 = pd.read_csv(os.path.join(folder, 'VDI PPDS Enthalpies of vaporization.tsv'),
+VDI_PPDS_4 = pd.read_csv(os.path.join(folder, 'VDI_PPDS_Enthalpies_of_vaporization.tsv'),
                           sep='\t', index_col=0)
 _VDI_PPDS_4_values = VDI_PPDS_4.values
 
-Alibakhshi_Cs = pd.read_csv(os.path.join(folder, 'Alibakhshi one-coefficient enthalpy of vaporization.tsv'),
+Alibakhshi_Cs = pd.read_csv(os.path.join(folder, 'Alibakhshi_one-coefficient_enthalpy_of_vaporization.tsv'),
                           sep='\t', index_col=0)
 
 
