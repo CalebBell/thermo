@@ -36,7 +36,7 @@ from fluids.numerics import brenth, newton, linspace, polyint, polyint_over_x, d
 from fluids.constants import R
 from scipy.integrate import quad
 from scipy.interpolate import interp1d, interp2d
-from chemicals.utils import isnan, isinf, log, exp
+from chemicals.utils import isnan, isinf, log, exp, ws_to_zs, zs_to_ws
 #from chemicals.utils import *
 from chemicals.utils import mix_multiple_component_flows, hash_any_primitive
 

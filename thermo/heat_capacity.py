@@ -43,7 +43,7 @@ from scipy.integrate import quad
 from chemicals.utils import log, exp, isnan
 from chemicals.utils import (to_num, property_molar_to_mass, none_and_length_check,
                           mixing_simple, property_mass_to_molar)
-from chemicals.heat_capacity import Cp_data_PerryI, TRC_gas_data, gas_values_TRC, Cp_data_Poling, Cp_values_Poling, CRC_standard_data
+from chemicals.heat_capacity import Cp_dict_PerryI, TRC_gas_data, TRC_gas_values, Cp_data_Poling, Cp_values_Poling, CRC_standard_data
 from chemicals.heat_capacity import zabransky_dict_sat_s, zabransky_dict_sat_p, zabransky_dict_const_s, zabransky_dict_const_p, zabransky_dict_iso_s, zabransky_dict_iso_p, type_to_zabransky_dict, zabransky_dicts
 from chemicals import miscdata
 from chemicals.miscdata import lookup_VDI_tabular_data
@@ -214,7 +214,7 @@ class HeatCapacityGas(TDependentProperty):
         Tmins, Tmaxs = [], []
         if self.CASRN in TRC_gas_data.index:
             methods.append(TRCIG)
-            self.TRCIG_Tmin, self.TRCIG_Tmax, a0, a1, a2, a3, a4, a5, a6, a7, _, _, _ = gas_values_TRC[TRC_gas_data.index.get_loc(self.CASRN)].tolist()
+            self.TRCIG_Tmin, self.TRCIG_Tmax, a0, a1, a2, a3, a4, a5, a6, a7, _, _, _ = TRC_gas_values[TRC_gas_data.index.get_loc(self.CASRN)].tolist()
             self.TRCIG_coefs = [a0, a1, a2, a3, a4, a5, a6, a7]
             Tmins.append(self.TRCIG_Tmin); Tmaxs.append(self.TRCIG_Tmax)
         if self.CASRN in Cp_data_Poling.index and not isnan(Cp_data_Poling.at[self.CASRN, 'a0']):
@@ -1080,13 +1080,13 @@ class HeatCapacitySolid(TDependentProperty):
         '''
         methods = []
         Tmins, Tmaxs = [], []
-        if self.CASRN and self.CASRN in Cp_data_PerryI and 'c' in Cp_data_PerryI[self.CASRN]:
-            self.PERRY151_Tmin = Cp_data_PerryI[self.CASRN]['c']['Tmin'] if Cp_data_PerryI[self.CASRN]['c']['Tmin'] else 0
-            self.PERRY151_Tmax = Cp_data_PerryI[self.CASRN]['c']['Tmax'] if Cp_data_PerryI[self.CASRN]['c']['Tmax'] else 2000
-            self.PERRY151_const = Cp_data_PerryI[self.CASRN]['c']['Const']
-            self.PERRY151_lin = Cp_data_PerryI[self.CASRN]['c']['Lin']
-            self.PERRY151_quad = Cp_data_PerryI[self.CASRN]['c']['Quad']
-            self.PERRY151_quadinv = Cp_data_PerryI[self.CASRN]['c']['Quadinv']
+        if self.CASRN and self.CASRN in Cp_dict_PerryI and 'c' in Cp_dict_PerryI[self.CASRN]:
+            self.PERRY151_Tmin = Cp_dict_PerryI[self.CASRN]['c']['Tmin'] if Cp_dict_PerryI[self.CASRN]['c']['Tmin'] else 0
+            self.PERRY151_Tmax = Cp_dict_PerryI[self.CASRN]['c']['Tmax'] if Cp_dict_PerryI[self.CASRN]['c']['Tmax'] else 2000
+            self.PERRY151_const = Cp_dict_PerryI[self.CASRN]['c']['Const']
+            self.PERRY151_lin = Cp_dict_PerryI[self.CASRN]['c']['Lin']
+            self.PERRY151_quad = Cp_dict_PerryI[self.CASRN]['c']['Quad']
+            self.PERRY151_quadinv = Cp_dict_PerryI[self.CASRN]['c']['Quadinv']
             methods.append(PERRY151)
             Tmins.append(self.PERRY151_Tmin); Tmaxs.append(self.PERRY151_Tmax)
         if self.CASRN in CRC_standard_data.index and not isnan(CRC_standard_data.at[self.CASRN, 'Cps']):

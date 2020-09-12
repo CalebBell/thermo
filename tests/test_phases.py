@@ -1590,3 +1590,28 @@ def test_IdealGas_vs_IGMIX():
     assert_close(phase.dG_dV_P(), phase_EOS.dG_dV_P(), rtol=1e-11)
     assert_close(phase.dU_dV_P(), phase_EOS.dU_dV_P(), rtol=1e-11, atol=1e-16)
     assert_close(phase.dA_dV_P(), phase_EOS.dA_dV_P(), rtol=1e-11)
+
+
+def test_IAPWS97_basics():
+    region1_PT = IAPWS97(330, 8e5, [1])
+    region1_PV = region1_PT.to(P=region1_PT.P, V=region1_PT.V(), zs=[1])
+    assert_close(region1_PV.T, region1_PT.T)
+    region1_TV = region1_PT.to(T=region1_PT.T, V=region1_PT.V(), zs=[1])
+    assert_close(region1_TV.P, region1_PT.P)
+    
+    # Begin derivative tests
+    dV_dP_num = derivative(lambda P: region1_PT.to(T=region1_PT.T, P=P, zs=[1]).V(), region1_PT.P, dx=region1_PT.P*1e-5)
+    dV_dP = region1_PT.dV_dP()
+    assert_close(dV_dP, dV_dP_num, rtol=1e-7)
+    assert_close(dV_dP, -8.068586623543971e-15, rtol=1e-14)
+    
+    dV_dT_num = derivative(lambda T: region1_PT.to(T=T, P=region1_PT.P, zs=[1]).V(), region1_PT.T, dx=region1_PT.T*1e-5)
+    dV_dT = region1_PT.dV_dT()
+    assert_close(dV_dT_num, dV_dT)
+    assert_close(dV_dT, 9.194171980696402e-09)
+    
+    dP_dT_num = derivative(lambda T: region1_PT.to(T=T, V=region1_PT.V(), zs=[1]).P, region1_PT.T, dx=region1_PT.T*1e-5)
+    dP_dT = region1_PT.dP_dT()
+    assert_close(dP_dT, dP_dT_num)
+    assert_close(dP_dT, 1139502.1717766523, rtol=1e-10)
+    

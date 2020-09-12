@@ -21,7 +21,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
-__all__ = ['GibbsExcessLiquid', 'GibbsExcessSolid', 'Phase', 'EOSLiquid', 'EOSGas', 'IdealGas',
+__all__ = ['GibbsExcessLiquid', 'GibbsExcessSolid', 'Phase', 'EOSLiquid', 'EOSGas', 'IdealGas', 'IAPWS97',
            'gas_phases', 'liquid_phases', 'solid_phases', 'CombinedPhase', 'CoolPropPhase', 'CoolPropLiquid', 'CoolPropGas', 'INCOMPRESSIBLE_CONST']
 
 import sys
@@ -35,13 +35,16 @@ from fluids.numerics import (horner, horner_and_der, horner_and_der2, horner_log
 from chemicals.utils import (log, log10, exp, Cp_minus_Cv, phase_identification_parameter,
                           isothermal_compressibility, isobaric_expansion,
                           Joule_Thomson, speed_of_sound, dxs_to_dns, dns_to_dn_partials,
-                          normalize, hash_any_primitive)
+                          normalize, hash_any_primitive, rho_to_Vm, Vm_to_rho)
 from thermo.activity import IdealSolution
 from thermo.coolprop import has_CoolProp, CP as CoolProp
 from thermo.eos_mix import IGMIX, PR_lnphis_fastest
 from random import randint
 from scipy.optimize import fsolve
 from collections import OrderedDict
+from chemicals.iapws import *
+from chemicals.viscosity import mu_IAPWS
+from chemicals.thermal_conductivity import k_IAPWS
 '''
 All phase objects are immutable.
 
@@ -63,6 +66,29 @@ INCOMPRESSIBLE_CONST = 1e30
 
 
 class Phase(object):
+    
+    '''
+    For basic functionality, a subclass should implement:
+    
+    H, S, Cp
+        
+        
+        
+    dP_dT
+    dP_dV
+    d2P_dT2
+    d2P_dV2
+    d2P_dTdV
+    
+    Additional functionality is enabled by the methods:
+    
+    dH_dP, d2H_dT2, d2H_dP2 dS_dT dS_dP d2S_dP2
+    
+    d2H_dTdP dH_dT_V dH_dP_V dH_dV_T dH_dV_P     dS_dT_P dS_dT_V dS_dP_V d2P_dTdP
+    d2P_dVdP d2P_dVdT_TP d2P_dT2_PV d2H_dT2_V
+
+    '''
+    
     ideal_gas_basis = False # Parameter fot has the same ideal gas Cp
     T_REF_IG = 298.15
     T_REF_IG_INV = 1.0/T_REF_IG
@@ -5551,6 +5577,454 @@ class ChaoSeader(GraysonStreed):
     methane_coeffs = (2.4384, -2.2455, -0.34084, 0.00212, -0.00223, 0.10486, -0.03691, 0.0, 0.0, 0.0)
     simple_coeffs = (5.75748, -3.01761, -4.985, 2.02299, 0.0, 0.08427, 0.26667, -0.31138, -0.02655, 0.02883)
     version = 0
+
+class IAPWS97(Phase):
+    _MW = 18.015268
+    R = 461.526
+    Tc = 647.096
+    Pc = 22.064E6
+    rhoc = 322.
+    
+    def mu(self):
+        return mu_IAPWS(T=self.T, rho=self._rho_mass)
+    
+    def k(self):
+        # TODO add properties; even industrial formulation recommends them
+        return k_IAPWS(T=self.T, rho=self._rho_mass)
+
+    ### Region 1,2,5 Gibbs
+    def G(self):
+        try:
+            return self._G
+        except:
+            pass
+        tau, pi, region = self.tau, self.pi, self.region
+        if region == 1:
+            G = iapws97_G_region1(tau, pi)
+        elif region == 2:
+            G = (iapws97_Gr_region2(tau, pi) + iapws97_G0_region2(tau, pi))
+        elif region == 5:
+            G = (iapws97_Gr_region5(tau, pi) + iapws97_G0_region5(tau, pi))
+        elif region == 4:
+            G = self.H() - self.T*self.S()
+        self._G = G
+        return G
+
+        
+    def dG_dpi(self):
+        try:
+            return self._dG_dpi
+        except:
+            pass
+        tau, pi, region = self.tau, self.pi, self.region
+        if region == 1:
+            dG_dpi = iapws97_dG_dpi_region1(tau, pi)
+        elif region == 2:
+            dG_dpi = 1.0/pi + iapws97_dGr_dpi_region2(tau, pi)
+        elif region == 5:
+            dG_dpi = 1.0/pi + iapws97_dGr_dpi_region5(tau, pi)
+        self._dG_dpi = dG_dpi
+        return dG_dpi
+        
+    def d2G_d2pi(self):
+        try:
+            return self._d2G_d2pi
+        except:
+            pass
+        tau, pi, region = self.tau, self.pi, self.region
+        if region == 1:
+            d2G_d2pi = iapws97_d2G_dpi2_region1(tau, pi)
+        elif region == 2:
+            d2G_d2pi = -1.0/(pi*pi) + iapws97_d2Gr_dpi2_region2(tau, pi)
+        elif region == 5:
+            d2G_d2pi = -1.0/(pi*pi) + iapws97_d2Gr_dpi2_region5(tau, pi)
+        self._d2G_d2pi = d2G_d2pi
+        return d2G_d2pi
+    
+    def dG_dtau(self):
+        try:
+            return self._dG_dtau
+        except:
+            pass
+        tau, pi, region = self.tau, self.pi, self.region
+        if region == 1:
+            dG_dtau = iapws97_dG_dtau_region1(tau, pi)
+        elif region == 2:
+            dG_dtau = iapws97_dG0_dtau_region2(tau, pi) + iapws97_dGr_dtau_region2(tau, pi)
+        elif region == 5:
+            dG_dtau = iapws97_dG0_dtau_region5(tau, pi) + iapws97_dGr_dtau_region5(tau, pi)
+        self._dG_dtau = dG_dtau
+        return dG_dtau
+
+    def d2G_d2tau(self):
+        try:
+            return self._d2G_d2tau
+        except:
+            pass
+        tau, pi, region = self.tau, self.pi, self.region
+        if region == 1:
+            d2G_d2tau = iapws97_d2G_d2tau_region1(tau, pi)
+        elif region == 2:
+            d2G_d2tau = (iapws97_d2Gr_d2tau_region2(tau, pi)
+                         + iapws97_d2G0_d2tau_region2(tau, pi))
+        elif region == 5:
+            d2G_d2tau = (iapws97_d2Gr_d2tau_region5(tau, pi)
+                         + iapws97_d2G0_d2tau_region5(tau, pi))
+        self._d2G_d2tau = d2G_d2tau
+        return d2G_d2tau
+
+    def d2G_dpidtau(self):
+        try:
+            return self._d2G_dpidtau
+        except:
+            pass
+        tau, pi, region = self.tau, self.pi, self.region
+        if region == 1:
+            d2G_dpidtau = iapws97_d2G_dpidtau_region1(tau, pi)
+        elif region == 2:
+            d2G_dpidtau = iapws97_d2Gr_dpidtau_region2(tau, pi)
+        elif region == 5:
+            d2G_dpidtau = iapws97_d2Gr_dpidtau_region5(tau, pi)
+        self._d2G_dpidtau = d2G_dpidtau
+        return d2G_dpidtau
+    
+
+    ### Region 3 Helmholtz
+    def A_region3(self):
+        try:
+            return self._A_region3
+        except:
+            pass
+        self._A_region3 = A_region3 = iapws97_A_region3_region3(self.tau, self.delta)
+        return A_region3
+
+    def dA_ddelta(self):
+        try:
+            return self._dA_ddelta
+        except:
+            pass
+        self._dA_ddelta = dA_ddelta = iapws97_dA_ddelta_region3(self.tau, self.delta)
+        return dA_ddelta
+
+    def d2A_d2delta(self):
+        try:
+            return self._d2A_d2delta
+        except:
+            pass
+        self._d2A_d2delta = d2A_d2delta = iapws97_d2A_d2delta_region3(self.tau, self.delta)
+        return d2A_d2delta
+
+    def dA_dtau(self):
+        try:
+            return self._dA_dtau
+        except:
+            pass
+        self._dA_dtau = dA_dtau = iapws97_dA_dtau_region3(self.tau, self.delta)
+        return dA_dtau
+
+    def d2A_d2tau(self):
+        try:
+            return self._d2A_d2tau
+        except:
+            pass
+        self._d2A_d2tau = d2A_d2tau = iapws97_d2A_d2tau_region3(self.tau, self.delta)
+        return d2A_d2tau
+
+    def d2A_ddeltadtau(self):
+        try:
+            return self._d2A_ddeltadtau
+        except:
+            pass
+        self._d2A_ddeltadtau = d2A_ddeltadtau = iapws97_d2A_ddeltadtau_region3(self.tau, self.delta)
+        return d2A_ddeltadtau
+
+    def __init__(self, T=None, P=None, zs=None):
+        self.T = T
+        self.P = P
+        self._rho_mass = iapws97_rho(T, P)
+        self._V = rho_to_Vm(rho=self._rho_mass, MW=self._MW)
+        self.region = region = iapws97_identify_region_TP(T, P)
+        if region == 1:
+            self.pi = P*6.049606775559589e-08 #1/16.53E6
+            self.tau = 1386.0/T
+            self.Pref = 16.53E6
+            self.Tref = 1386.0
+        elif region == 2:
+            self.pi = P*1e-6
+            self.tau = 540.0/T
+            self.Pref = 1e6
+            self.Tref = 540.0
+        elif region == 3:
+            self.tau = self.Tc/T
+            self.Tref = self.Tc
+            self.delta = self._rho_mass*0.003105590062111801 # 1/322.0
+            self.rhoref = 322.0
+        elif region == 5:
+            self.pi = P*1e-6
+            self.tau = 1000.0/T
+            self.Tref = 1000.0
+            self.Pref = 1e6
+
+
+
+    def to_TP_zs(self, T, P, zs, other_eos=None):
+        new = self.__class__.__new__(self.__class__)
+        new.T = T
+        new.P = P
+        new.zs = zs
+        self._rho_mass = iapws97_rho(T, P)
+        self._V = rho_to_Vm(rho=self._rho_mass, MW=self._MW)
+        self.region = region = iapws97_identify_region_TP(T, P)
+        if region == 1:
+            self.pi = P*6.049606775559589e-08 #1/16.53E6
+            self.tau = 1386.0/T
+        elif region == 2:
+            self.pi = P*1e-6
+            self.tau = 540.0/T
+        elif region == 3:
+            self.tau = self.Tc/T
+            self.delta = self._rho_mass*0.003105590062111801 # 1/322.0
+        elif region == 5:
+            self.pi = P*1e-6
+            self.tau = 1000.0/T
+
+    def to_zs_TPV(self, zs, T=None, P=None, V=None):
+        new = self.__class__.__new__(self.__class__)
+        new.zs = zs
+
+        if T is not None:
+            new.T = T
+            if P is not None:
+                new._rho_mass = rho_mass = iapws97_rho(T, P)
+                new._V = rho_to_Vm(rho=rho_mass, MW=self._MW)
+                new.P = P
+            elif V is not None:
+                new._rho_mass = rho_mass = Vm_to_rho(V, MW=self._MW)
+                P = iapws97_P(T, rho_mass)
+                new.V = V
+                new.P = P
+        elif P is not None and V is not None:
+            new._rho_mass = rho_mass = Vm_to_rho(V, MW=self._MW)
+            T = new.T = iapws97_T(P, rho_mass)
+            new.V = V
+            new.P = P
+        else:
+            raise ValueError("Two of T, P, or V are needed")
+            
+        new.region = region = iapws97_identify_region_TP(new.T, new.P)
+        if region == 1:
+            new.pi = P*6.049606775559589e-08 #1/16.53E6
+            new.tau = 1386.0/T
+            new.Pref = 16.53E6
+            new.Tref = 1386.0
+        elif region == 2:
+            new.pi = P*1e-6
+            new.tau = 540.0/T
+            new.Pref = 1e6
+            new.Tref = 540.0
+        elif region == 3:
+            new.tau = new.Tc/T
+            new.Tref = new.Tc
+            new.delta = new._rho_mass*0.003105590062111801 # 1/322.0
+            new.rhoref = 322.0
+        elif region == 5:
+            new.pi = P*1e-6
+            new.tau = 1000.0/T
+            new.Tref = 1000.0
+            new.Pref = 1e6
+
+        new.P = P
+        new.T = T
+        
+        return new
+        
+    to = to_zs_TPV
+    
+    def V(self):
+        return self._V
+    
+    def U(self):
+        try:
+            return self._U
+        except:
+            pass
+            
+        if self.region != 3:
+            try:
+                dG_dtau = self._dG_dtau
+            except:
+                dG_dtau = self.dG_dtau()
+            try:
+                dG_dpi = self._dG_dpi
+            except:
+                dG_dpi = self.dG_dpi()
+            U = self.R*self.T(*self.tau*dG_dtau - self.pi*dG_dpi)
+        self._U = U
+        return U
+    
+    def S(self):
+        try:
+            return self._S
+        except:
+            pass
+        if self.region != 3:
+            try:
+                G = self._G
+            except:
+                G = self.G()
+            try:
+                dG_dtau = self._dG_dtau
+            except:
+                dG_dtau = self.dG_dtau()
+            S = self.R*(self.tau*dG_dtau - G)
+        self._S = S
+        return S
+    
+    def H(self):
+        try:
+            return self._H
+        except:
+            pass
+        if self.region != 3:
+            try:
+                dG_dtau = self._dG_dtau
+            except:
+                dG_dtau = self.dG_dtau()
+            H = self.R*self.T*self.tau*dG_dtau
+        self._H = H
+        return H
+    
+    def Cv(self):
+        try:
+            return self._Cv
+        except:
+            pass
+        if self.region != 3:
+            try:
+                d2G_d2tau = self._d2G_d2tau
+            except:
+                d2G_d2tau = self.d2G_d2tau()
+            try:
+                dG_dpi = self._dG_dpi
+            except:
+                dG_dpi = self.dG_dpi()
+            try:
+                d2G_dpidtau = self._d2G_dpidtau
+            except:
+                d2G_dpidtau = self.d2G_dpidtau()
+            try:
+                d2G_d2pi = self._d2G_d2pi
+            except:
+                d2G_d2pi = self.d2G_d2pi()
+            
+            tau = self.tau
+            x0 = (dG_dpi - tau*d2G_dpidtau)
+            Cv = self.R*(-tau*tau*d2G_d2tau + x0*x0/d2G_d2pi)
+            
+    
+    def Cp(self):
+        try:
+            return self._Cp
+        except:
+            pass
+        
+        if self.region == 3:
+            tau, delta = self.tau, self.delta # attributes set on init
+            try:
+                dA_ddelta = self._dA_ddelta
+            except:
+                dA_ddelta = self.dA_ddelta()
+            try:
+                d2A_ddeltadtau = self._d2A_ddeltadtau
+            except:
+                d2A_ddeltadtau = self.d2A_ddeltadtau()
+            try:
+                d2A_d2delta = self._d2A_d2delta
+            except:
+                d2A_d2delta = self.d2A_d2delta()
+            try:
+                d2A_d2tau = self._d2A_d2tau
+            except:
+                d2A_d2tau = self.d2A_d2tau()
+            
+            x0 = (delta*dA_ddelta - delta*tau*d2A_ddeltadtau)
+            Cp = self.R*(-tau*tau*d2A_d2tau + x0*x0/(delta*(2.0*dA_ddelta + delta*d2A_d2delta)))
+            
+#        self.Cp = (-self.tau**2*self.ddA_ddtau + (self.delta*self.dA_ddelta - self.delta*self.tau*self.ddA_ddelta_dtau)**2\
+#                  /(2*self.delta*self.dA_ddelta + self.delta**2*self.ddA_dddelta))*R
+
+        else:
+            tau = self.tau
+            Cp = -self.R*tau*tau*self.d2G_d2tau()
+        Cp *= self._MW*1e-3
+        self._Cp = Cp
+        return Cp
+
+    ### Derivatives
+    def dV_dP(self):
+        '''
+        from sympy import *
+        R, T, MW, P, Pref, Tref = symbols('R, T, MW, P, Pref, Tref')
+        dG_dpif = symbols('dG_dpi', cls=Function)
+        pi = P/Pref
+        tau = Tref/T
+        dG_dpi = dG_dpif(tau, pi)
+        V = (R*T*pi*dG_dpi*MW)/(1000*P)
+        print(diff(V, P))
+
+        MW*R*T*Subs(Derivative(dG_dpi(Tref/T, _xi_2), _xi_2), _xi_2, P/Pref)/(1000*Pref**2)
+        '''
+        try:
+            return self._dV_dP
+        except:
+            pass
+        if self.region != 3:
+            try:
+                d2G_d2pi = self._d2G_d2pi
+            except:
+                d2G_d2pi = self.d2G_d2pi()
+            dV_dP = self._MW*self.R*self.T*d2G_d2pi/(1000.0*self.Pref*self.Pref)
+        
+        self._dV_dP = dV_dP
+        return dV_dP
+    
+    def dV_dT(self):
+        # similar to dV_dP
+        try:
+            return self._dV_dT
+        except:
+            pass
+        if self.region != 3:
+            try:
+                dG_dpi = self._dG_dpi
+            except:
+                dG_dpi = self.dG_dpi()
+            try:
+                d2G_dpidtau = self._d2G_dpidtau
+            except:
+                d2G_dpidtau = self.d2G_dpidtau()
+        
+        
+            dV_dT = (self._MW*self.R*dG_dpi/(1000*self.Pref)
+            - self._MW*self.R*self.Tref*d2G_dpidtau/(1000*self.Pref*self.T))
+        self._dV_dT = dV_dT
+        return dV_dT
+            
+    def dP_dT(self):
+        try:
+            return self._dP_dT
+        except:
+            pass
+        if self.region != 3:
+            dP_dT = -self.dV_dT()/self.dV_dP()
+        self._dP_dT = dP_dT
+        return dP_dT
+
+    def dP_dV(self):
+        return 1.0/self.dV_dP()
+        
+    
+
 
 # Emperically measured to be ~140 KB/instance, do not want to cache too many - 35 is 5 MB
 max_CoolProp_states = 35

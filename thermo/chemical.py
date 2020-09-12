@@ -714,7 +714,7 @@ class Chemical(object): # pragma: no cover
                 self.InChI_Key = self.ChemicalMetadata.InChI_key
                 self.IUPAC_name = self.ChemicalMetadata.iupac_name.lower()
                 self.name = self.ChemicalMetadata.common_name.lower()
-                self.synonyms = self.ChemicalMetadata.all_names
+                self.synonyms = self.ChemicalMetadata.synonyms
 
             self.atoms = simple_formula_parser(self.formula)
             self.similarity_variable = similarity_variable(self.atoms, self.MW)
