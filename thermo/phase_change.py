@@ -337,11 +337,11 @@ class EnthalpyVaporization(TDependentProperty):
             Tmaxs.append(self.Tc); Tmins.append(0)
         if self.CASRN in phase_change.phase_change_data_Perrys2_150.index:
             methods.append(DIPPR_PERRY_8E)
-            Tc, C1, C2, C3, C4, self.Perrys2_150_Tmin, self.Perrys2_150_Tmax = phase_change.phase_change_data_Perrys2_150_values[phase_change.phase_change_data_Perrys2_150.index.get_loc(self.CASRN)].tolist()
+            Tc, C1, C2, C3, C4, self.Perrys2_150_Tmin, self.Perrys2_150_Tmax = phase_change.phase_change_values_Perrys2_150[phase_change.phase_change_data_Perrys2_150.index.get_loc(self.CASRN)].tolist()
             self.Perrys2_150_coeffs = [Tc, C1, C2, C3, C4]
             Tmins.append(self.Perrys2_150_Tmin); Tmaxs.append(self.Perrys2_150_Tmax)
         if self.CASRN in phase_change.phase_change_data_VDI_PPDS_4.index:
-            Tc, A, B, C, D, E = phase_change.phase_change_data_VDI_PPDS_4_values[phase_change.phase_change_data_VDI_PPDS_4.index.get_loc(self.CASRN)].tolist()
+            Tc, A, B, C, D, E = phase_change.phase_change_values_VDI_PPDS_4[phase_change.phase_change_data_VDI_PPDS_4.index.get_loc(self.CASRN)].tolist()
             self.VDI_PPDS_coeffs = [A, B, C, D, E]
             self.VDI_PPDS_Tc = Tc
             methods.append(VDI_PPDS)

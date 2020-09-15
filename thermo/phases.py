@@ -5578,6 +5578,67 @@ class ChaoSeader(GraysonStreed):
     simple_coeffs = (5.75748, -3.01761, -4.985, 2.02299, 0.0, 0.08427, 0.26667, -0.31138, -0.02655, 0.02883)
     version = 0
 
+class IAPWS95(Phase):
+    _MW = 18.015268
+    Tc = 647.096
+    Pc = 22.064E6
+    rhoc = 322.
+    R = 461.51805 # Differs from the 97 formulation
+    
+    def A(self):
+        try:
+            return self._A
+        except:
+            pass
+        tau, delta = self.tau, self.delta
+        A = self._A = iapws95_A0(tau, delta) + iapws95_Ar(tau, delta)
+        return A
+
+    def dA_ddelta(self):
+        try:
+            return self._dA_ddelta
+        except:
+            pass
+        tau, delta = self.tau, self.delta
+        dA_ddelta = self._dA_ddelta = iapws95_dAr_ddelta(tau, delta) + 1./delta
+        return dA_ddelta 
+
+    def d2A_ddelta2(self):
+        try:
+            return self._d2A_ddelta2
+        except:
+            pass
+        tau, delta = self.tau, self.delta
+        self._d2A_ddelta2 = d2A_ddelta2 =  iapws95_d2Ar_ddelta2(tau, delta) -1./(delta*delta)
+        return d2A_ddelta2
+
+    def dA_dtau(self):
+        try:
+            return self._dA_dtau
+        except:
+            pass
+        tau, delta = self.tau, self.delta
+        dA_dtau = self._dA_dtau = iapws95_dAr_dtau(tau, delta) + iapws95_dA0dtau(tau, delta)
+        return dA_dtau 
+
+    def d2A_dtau2(self):
+        try:
+            return self._d2A_dtau2
+        except:
+            pass
+        tau, delta = self.tau, self.delta
+        self._d2A_dtau2 = d2A_dtau2 = iapws95_d2Ar_dtau2(tau, delta) + iapws95_d2A0_d2tau(tau, delta)
+        return d2A_dtau2
+
+    def d2A_ddeltadtau(self):
+        try:
+            return self._d2A_ddeltadtau
+        except:
+            pass
+        tau, delta = self.tau, self.delta
+        self._d2A_ddeltadtau = d2A_ddeltadtau = iapws95_d2Ar_ddeltadtau(tau, delta)
+        return d2A_ddeltadtau
+
 class IAPWS97(Phase):
     _MW = 18.015268
     R = 461.526
