@@ -22,6 +22,7 @@ SOFTWARE.'''
 
 from __future__ import division
 __all__ = ['GibbsExcessLiquid', 'GibbsExcessSolid', 'Phase', 'EOSLiquid', 'EOSGas', 'IdealGas', 'IAPWS97',
+           'IAPWS95', 'IAPWS95Gas', 'IAPWS95Liquid',
            'gas_phases', 'liquid_phases', 'solid_phases', 'CombinedPhase', 'CoolPropPhase', 'CoolPropLiquid', 'CoolPropGas', 'INCOMPRESSIBLE_CONST']
 
 import sys
@@ -33,7 +34,7 @@ from fluids.numerics import (horner, horner_and_der, horner_and_der2, horner_log
                              evaluate_linear_fits_d2, quadratic_from_f_ders,
                              newton_system, trunc_log, trunc_exp)
 from chemicals.utils import (log, log10, exp, Cp_minus_Cv, phase_identification_parameter,
-                          isothermal_compressibility, isobaric_expansion,
+                          isothermal_compressibility, isobaric_expansion, property_mass_to_molar,
                           Joule_Thomson, speed_of_sound, dxs_to_dns, dns_to_dn_partials,
                           normalize, hash_any_primitive, rho_to_Vm, Vm_to_rho)
 from thermo.activity import IdealSolution
@@ -5584,7 +5585,74 @@ class IAPWS95(Phase):
     Pc = 22.064E6
     rhoc = 322.
     R = 461.51805 # Differs from the 97 formulation
+    _MW_kg = _MW*1e-3
+    R_MW_0_001 = _MW_kg*R
+
+    def __init__(self, T=None, P=None, zs=None):
+        self.T = T
+        self.P = P
+        self._rho_mass = rho_mass = iapws95_rho(T, P)
+        self._V = rho_to_Vm(rho=rho_mass, MW=self._MW)
+        self.tau = self.Tc/T
+        self.delta = rho_mass/self.rhoc
+
+    def to_TP_zs(self, T, P, zs):
+        new = self.__class__.__new__(self.__class__)
+        new.zs = zs
+        new.T = T
+        new.P = P
+        new._rho_mass = rho_mass = iapws95_rho(T, P)
+        new._V = rho_to_Vm(rho=rho_mass, MW=self._MW)
+        new.tau = new.Tc/T
+        new.delta = rho_mass/new.rhoc
+        return new
+
+    def to_zs_TPV(self, zs, T=None, P=None, V=None):
+        new = self.__class__.__new__(self.__class__)
+        new.zs = zs
+        if T is not None:
+            new.T = T
+            if P is not None:
+                new._rho_mass = rho_mass = iapws95_rho(T, P)
+                new._V = rho_to_Vm(rho=rho_mass, MW=self._MW)
+                new.P = P
+            elif V is not None:
+                new._rho_mass = rho_mass = Vm_to_rho(V, MW=self._MW)
+                P = iapws95_P(T, rho_mass)
+                new.V = V
+                new.P = P
+        elif P is not None and V is not None:
+            raise NotImplementedError("TODO")
+            new._rho_mass = rho_mass = Vm_to_rho(V, MW=self._MW)
+            T = new.T = iapws95_T(P, rho_mass)
+            new.V = V
+            new.P = P
+        else:
+            raise ValueError("Two of T, P, or V are needed")
+
+        new.P = P
+        new.T = T
+        new.tau = new.Tc/T
+        new.delta = rho_mass/new.rhoc
+        
+        return new
+        
+    to = to_zs_TPV
     
+#    def P(self):
+#        try:
+#            return self._P
+#        except:
+#            pass
+#        dA_ddelta = self.dA_ddelta()
+#        delta = self.delta
+#        rho_mass = self._rho_mass
+#        P = self._P = (dA_ddelta*delta)*rho_mass*self.R*self.T
+#        return P
+    
+    def V(self):
+        return self._V
+
     def A(self):
         try:
             return self._A
@@ -5638,6 +5706,126 @@ class IAPWS95(Phase):
         tau, delta = self.tau, self.delta
         self._d2A_ddeltadtau = d2A_ddeltadtau = iapws95_d2Ar_ddeltadtau(tau, delta)
         return d2A_ddeltadtau
+    
+    def S(self):
+        try:
+            return self._S
+        except:
+            pass
+        try:
+            dA_dtau = self._dA_dtau
+        except:
+            dA_dtau = self.dA_dtau()
+        try:
+            A = self._A
+        except:
+            A = self.A()
+        self._S = S = (self.tau*dA_dtau - A)*self.R_MW_0_001
+        return S
+    
+    def H(self):
+        try:
+            return self._H
+        except:
+            pass
+        try:
+            dA_dtau = self._dA_dtau
+        except:
+            dA_dtau = self.dA_dtau()
+        try:
+            dA_ddelta = self._dA_ddelta
+        except:
+            dA_ddelta = self.dA_ddelta()
+        self._H = H = (self.tau*dA_dtau + dA_ddelta*self.delta)*self.T*self.R_MW_0_001
+        return H
+    
+    def Cv(self):
+        try:
+            return self._Cv
+        except:
+            pass
+        try:
+            d2A_dtau2 = self._d2A_dtau2
+        except:
+            d2A_dtau2 = self.d2A_dtau2()
+        tau = self.tau
+        self._Cv = Cv = -tau*tau*d2A_dtau2*self.R_MW_0_001
+        return Cv
+    
+    def Cp(self):
+        try:
+            return self._Cp
+        except:
+            pass
+        tau, delta = self.tau, self.delta
+        try:
+            d2A_dtau2 = self._d2A_dtau2
+        except:
+            d2A_dtau2 = self.d2A_dtau2()
+        try:
+            dA_ddelta = self._dA_ddelta
+        except:
+            dA_ddelta = self.dA_ddelta()
+        try:
+            d2A_ddelta2 = self._d2A_ddelta2
+        except:
+            d2A_ddelta2 = self.d2A_ddelta2()
+        try:
+            d2A_ddeltadtau = self._d2A_ddeltadtau
+        except:
+            d2A_ddeltadtau = self.d2A_ddeltadtau()
+        
+        x0 = delta*dA_ddelta - delta*tau*d2A_ddeltadtau
+        den = delta*(dA_ddelta + dA_ddelta + delta*d2A_ddelta2)
+        self._Cp = Cp = (-tau*tau*d2A_dtau2 + x0*x0/den)*self.R_MW_0_001
+        return Cp
+    
+    def dP_dT(self):
+        try:
+            return self._dP_dT
+        except:
+            pass
+        try:
+            dA_ddelta = self._dA_ddelta
+        except:
+            dA_ddelta = self.dA_ddelta()
+        try:
+            d2A_ddeltadtau = self._d2A_ddeltadtau
+        except:
+            d2A_ddeltadtau = self.d2A_ddeltadtau()
+        self._dP_dT = dP_dT = self._rho_mass*self.R*self.delta*(dA_ddelta - self.tau*d2A_ddeltadtau)
+        return dP_dT
+    
+    def dP_dV(self):
+        try:
+            return self._dP_dV
+        except:
+            pass
+        try:
+            dA_ddelta = self._dA_ddelta
+        except:
+            dA_ddelta = self.dA_ddelta()
+        try:
+            d2A_ddelta2 = self._d2A_ddelta2
+        except:
+            d2A_ddelta2 = self.d2A_ddelta2()
+        rho_mass, delta = self._rho_mass, self.delta
+        
+        MW, R, T, V = self._MW, self.R, self.T, self._V
+        rhoc, Tc = self.rhoc, self.Tc
+        self._dP_dV = dP_dV = (-MW*MW*R*T*(1.0e-9*MW*d2A_ddelta2 + 2.0e-6*V*rhoc*dA_ddelta)/(V*V*V*V*rhoc*rhoc))
+        
+        # Expression given 
+#        self._dP_dV = dP_dV = -self.R*rho_mass*rho_mass*self.T*delta*(2.0*dA_ddelta + delta*d2A_ddelta2)
+        return dP_dV
+    
+    
+#    MW**2*R95*(-1.0e-9*MW*Subs(Derivative(iapws95_dA_ddelta(Tc/T, _xi_2), _xi_2), _xi_2, 0.001*MW/(V*rhoc))/(V*rhoc) + 1.0e-9*MW*Tc*Subs(Derivative(iapws95_dA_ddelta(_Tc/T, _xi_2), _xi_2, _Tc/T), _xi_2, 0.001*MW/(V*rhoc))/(T*V*rhoc) - 2.0e-6*iapws95_dA_ddelta(Tc/T, 0.001*MW/(V*rhoc)) + 2.0e-6*Tc*Subs(Derivative(iapws95_dA_ddelta(_xi_1, 0.001*MW/(V*rhoc)), _xi_1), _xi_1, Tc/T)/T)/(V**3*rhoc)
+class IAPWS95Gas(IAPWS95):
+    force_phase = 'g'
+
+class IAPWS95Liquid(IAPWS95):
+    force_phase = 'l'
 
 class IAPWS97(Phase):
     _MW = 18.015268
@@ -6167,7 +6355,7 @@ if has_CoolProp:
             AS.specify_phase(phase)
             if zs is not None:
                 AS.set_mole_fractions(zs)
-            AS.update(spec_set, spec0, spec1)
+            AS.update(spec_set, spec0, spec1) # A failed call here takes ~400 us.
             caching_states_CoolProp[key] = AS
             return AS
         else:

@@ -1614,4 +1614,18 @@ def test_IAPWS97_basics():
     dP_dT = region1_PT.dP_dT()
     assert_close(dP_dT, dP_dT_num)
     assert_close(dP_dT, 1139502.1717766523, rtol=1e-10)
+
+
+def test_IAPWS95_basics():
+    # Values compared against CoolProp
+    obj = IAPWS95(T=300, P=1e5, zs=[1])
+    assert_close(obj.rho_mass(), 996.5563403888946, rtol=1e-10)
+    assert_close(obj.rho(), 55317.31975282824, rtol=1e-10)
+    assert_close(obj.U(), 2027.678478692999, rtol=1e-10)
+    assert_close(obj.S(), 7.081125085901274, rtol=1e-10)
+    assert_close(obj.H(), 2029.4862307757019, rtol=1e-10)    
+    assert_close(obj.Cv(), 74.40627463770178, rtol=1e-10)
+    assert_close(obj.Cp(), 75.3153414006345, rtol=1e-10)
     
+    assert_close(obj.dP_dT(), 609976.4283507243, rtol=1e-9)
+    assert_close(obj.dP_dV(), -122786771549048.27, rtol=1e-9)
