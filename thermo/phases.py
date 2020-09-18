@@ -1592,7 +1592,7 @@ class Phase(object):
         
         This expression is readily obtainable with SymTy:
         
-        >>> from sympy import * # doctest: +SKIP
+        >>> from sympy import * # doctest: +SKIPu[]
         >>> P, T, MW = symbols('P, T, MW') # doctest: +SKIP
         >>> Vm = symbols('Vm', cls=Function) # doctest: +SKIP
         >>> rho_mass = (Vm(P))**-1*MW/1000 # doctest: +SKIP
@@ -5619,13 +5619,13 @@ class IAPWS95(Phase):
             elif V is not None:
                 new._rho_mass = rho_mass = Vm_to_rho(V, MW=self._MW)
                 P = iapws95_P(T, rho_mass)
-                new.V = V
+                new._V = V
                 new.P = P
         elif P is not None and V is not None:
             raise NotImplementedError("TODO")
             new._rho_mass = rho_mass = Vm_to_rho(V, MW=self._MW)
             T = new.T = iapws95_T(P, rho_mass)
-            new.V = V
+            new._V = V
             new.P = P
         else:
             raise ValueError("Two of T, P, or V are needed")
@@ -5723,6 +5723,49 @@ class IAPWS95(Phase):
         self._S = S = (self.tau*dA_dtau - A)*self.R_MW_0_001
         return S
     
+    def dS_dT_V(self):
+        try:
+            return self._dS_dT_V
+        except:
+            pass
+        try:
+            d2A_dtau2 = self._d2A_dtau2
+        except:
+            d2A_dtau2 = self.d2A_dtau2()
+
+        T, Tc = self.T, self.Tc
+        self._dS_dT_V = dS_dT_V = (-Tc*Tc*d2A_dtau2)*self.R_MW_0_001/(T*T*T)
+        return dS_dT_V
+    
+    def dS_dV_T(self):
+        try:
+            return self._dS_dV_T
+        except:
+            pass
+        try:
+            d2A_dtau2 = self._d2A_dtau2
+        except:
+            d2A_dtau2 = self.d2A_dtau2()
+        try:
+            dA_ddelta = self._dA_ddelta
+        except:
+            dA_ddelta = self.dA_ddelta()
+        try:
+            d2A_ddeltadtau = self._d2A_ddeltadtau
+        except:
+            d2A_ddeltadtau = self.d2A_ddeltadtau()
+        
+        T, Tc, rhoc, MW, V = self.T, self.Tc, self.rhoc, self._MW, self._V
+        self._dS_dV_T = dS_dV_T = ((dA_ddelta - Tc*d2A_ddeltadtau/T)
+                                   *self.R_MW_0_001*MW*0.001/(V*V*rhoc))
+        return dS_dV_T
+    
+    def dS_dP_T(self):
+        # From chain rule
+        return self.dS_dV_T()/self.dP_dV()
+    dS_dP = dS_dP_T
+
+    
     def H(self):
         try:
             return self._H
@@ -5739,6 +5782,65 @@ class IAPWS95(Phase):
         self._H = H = (self.tau*dA_dtau + dA_ddelta*self.delta)*self.T*self.R_MW_0_001
         return H
     
+    def dH_dT_V(self):
+        try:
+            return self._dH_dT_V
+        except:
+            pass
+        try:
+            dA_dtau = self._dA_dtau
+        except:
+            dA_dtau = self.dA_dtau()
+        try:
+            dA_ddelta = self._dA_ddelta
+        except:
+            dA_ddelta = self.dA_ddelta()
+        try:
+            d2A_ddeltadtau = self._d2A_ddeltadtau
+        except:
+            d2A_ddeltadtau = self.d2A_ddeltadtau()
+        try:
+            d2A_dtau2 = self._d2A_dtau2
+        except:
+            d2A_dtau2 = self.d2A_dtau2()
+        
+        T, Tc, rho, rhoc = self.T, self.Tc, self._rho_mass, self.rhoc
+            
+        self._dH_dT_V = dH_dT_V = (T*(-Tc*rho*d2A_ddeltadtau/(T**2*rhoc)
+                    - Tc*dA_dtau/T**2 - Tc**2*d2A_dtau2/T**3) + rho*dA_ddelta/rhoc + Tc*dA_dtau/T)*self.R_MW_0_001
+        return dH_dT_V
+    
+    def dH_dV_T(self):
+        try:
+            return self._dH_dV_T
+        except:
+            pass
+        try:
+            dA_ddelta = self._dA_ddelta
+        except:
+            dA_ddelta = self.dA_ddelta()
+        try:
+            d2A_ddeltadtau = self._d2A_ddeltadtau
+        except:
+            d2A_ddeltadtau = self.d2A_ddeltadtau()
+        try:
+            d2A_ddelta2 = self._d2A_ddelta2
+        except:
+            d2A_ddelta2 = self.d2A_ddelta2()
+        
+        T, Tc, rhoc, MW, V = self.T, self.Tc, self.rhoc, self._MW, self._V
+    
+        self._dH_dV_T = dH_dV_T = T*MW*(-1.0e-6*MW*d2A_ddelta2/(V*rhoc) - 0.001*dA_ddelta
+         - 0.001*Tc*d2A_ddeltadtau/T)*self.R_MW_0_001/(rhoc*V*V)
+        return dH_dV_T
+    
+    def dH_dP_T(self):
+        # From chain rule
+        return self.dH_dV_T()/self.dP_dV()
+    dH_dP = dH_dP_T
+    
+    
+
     def Cv(self):
         try:
             return self._Cv
@@ -5819,8 +5921,12 @@ class IAPWS95(Phase):
 #        self._dP_dV = dP_dV = -self.R*rho_mass*rho_mass*self.T*delta*(2.0*dA_ddelta + delta*d2A_ddelta2)
         return dP_dV
     
-    
-#    MW**2*R95*(-1.0e-9*MW*Subs(Derivative(iapws95_dA_ddelta(Tc/T, _xi_2), _xi_2), _xi_2, 0.001*MW/(V*rhoc))/(V*rhoc) + 1.0e-9*MW*Tc*Subs(Derivative(iapws95_dA_ddelta(_Tc/T, _xi_2), _xi_2, _Tc/T), _xi_2, 0.001*MW/(V*rhoc))/(T*V*rhoc) - 2.0e-6*iapws95_dA_ddelta(Tc/T, 0.001*MW/(V*rhoc)) + 2.0e-6*Tc*Subs(Derivative(iapws95_dA_ddelta(_xi_1, 0.001*MW/(V*rhoc)), _xi_1), _xi_1, Tc/T)/T)/(V**3*rhoc)
+    dP_dT_V = dP_dT
+    dP_dV_T = dP_dV
+
+
+
+
 class IAPWS95Gas(IAPWS95):
     force_phase = 'g'
 

@@ -1629,3 +1629,36 @@ def test_IAPWS95_basics():
     
     assert_close(obj.dP_dT(), 609976.4283507243, rtol=1e-9)
     assert_close(obj.dP_dV(), -122786771549048.27, rtol=1e-9)
+    
+    
+    dS_dT_V = obj.dS_dT_V()
+    dS_dT_num = derivative(lambda T: obj.to(T=T, V=obj.V(), zs=[1]).S(), obj.T, dx=obj.T*1e-6)
+    assert_close(dS_dT_V, 0.24802091545900598, rtol=1e-8)
+    assert_close(dS_dT_V, dS_dT_num)
+
+    dH_dT_V = obj.dH_dT_V()
+    dH_dT_num = derivative(lambda T: obj.to(T=T, V=obj.V(), zs=[1]).H(), obj.T, dx=obj.T*1e-6)
+    assert_close(dH_dT_V, 85.43313622601181, rtol=1e-8)
+    assert_close(dH_dT_V, dH_dT_num)
+
+    dH_dV_T = obj.dH_dV_T()
+    dH_dV_T_num = derivative(lambda V: obj.to(T=obj.T, V=V, zs=[1]).H(), obj.V(), dx=obj.V()*1e-6)
+    assert_close(dH_dV_T, -2036687491.618003, rtol=1e-8)
+    assert_close(dH_dV_T, dH_dV_T_num)
+    
+    dS_dV_T = obj.dS_dV_T()
+    dS_dV_T_num = derivative(lambda V: obj.to(T=obj.T, V=V, zs=[1]).S(), obj.V(), dx=obj.V()*1e-6)
+    assert_close(dS_dV_T, 609976.4283507244, rtol=1e-8)
+    assert_close(dS_dV_T, dS_dV_T_num)
+
+
+    # Things that need a gas phase to make derivatives clearer
+    gas = IAPWS95(T=800, P=1e5, zs=[1])
+    
+    assert_close(gas.dS_dP_T(), -8.330783578446263e-05)
+    dS_dP_T_num = derivative(lambda P: gas.to(T=gas.T, P=P, zs=[1]).S(), gas.P, dx=gas.P*1e-5, order=3)
+    assert_close(dS_dP_T_num, gas.dS_dP_T())
+    
+    assert_close(gas.dH_dP_T(), -0.00017515040276121823)
+    dH_dP_T_num = derivative(lambda P: gas.to(T=gas.T, P=P, zs=[1]).H(), gas.P, dx=gas.P*1e-5, order=3)
+    assert_close(dH_dP_T_num, gas.dH_dP_T())
