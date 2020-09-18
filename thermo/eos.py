@@ -2281,7 +2281,9 @@ class GCEOS(object):
         low = guess*0.5
 #        return newton(to_solve, guess, fprime=True, ytol=1e-6, high=self.Pc)
 #        return newton(to_solve, guess, ytol=1e-6, high=self.Pc)
-        low_hope, high_hope = max(guess*.7, 0.2*Tc), min(Tc, guess*1.3)
+
+        # Methanol is a good example of why 1.5 is needed
+        low_hope, high_hope = max(guess*.5, 0.2*Tc), min(Tc, guess*1.5)
 
 
         try:
@@ -2609,11 +2611,15 @@ class GCEOS(object):
 
         a_alphas = self.a_alpha_and_derivatives(T)
         a_inv = 1.0/self.a
-        Tc, alpha, d_alpha_dT = self.Tc, a_alphas[0]*a_inv, a_alphas[1]*a_inv
+        try:
+            Tc, Pc = self.Tc, self.Pc
+        except:
+            Tc, Pc = self.pseudo_Tc, self.pseudo_Pc
+            
+        alpha, d_alpha_dT = a_alphas[0]*a_inv, a_alphas[1]*a_inv
         Tc_inv = 1.0/Tc
         T_inv = 1.0/T
         Tr = T*Tc_inv
-        Pc = self.Pc
 #        if Tr < 0.32 and not isinstance(self, PR):
 #            # Delete
 #            c = self.Psat_coeffs_limiting
