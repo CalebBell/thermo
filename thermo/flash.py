@@ -2606,6 +2606,9 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
 def solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var, 
                        spec, iter_var, constants, correlations, last_conv=None,
                        oscillation_detection=True):
+    # TODO: replace oscillation detection with bounding parameters and translation
+    # The cost should be less.
+    
     if iter_var == 'T':
         min_bound = Phase.T_MIN_FIXED
         max_bound = Phase.T_MAX_FIXED
@@ -6687,6 +6690,7 @@ class FlashPureVLS(FlashBase):
             G_min = 1e100
             results_G_min_1P = None
             for phase in self.phases:
+                # TODO: for eoss wit boundaries, and well behaved fluids, only solve ocne instead of twice (i.e. per phase, doubling the computation.)
                 try:                    
                     T, P, phase, iterations, err = solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var=fixed_var, 
                                                                       spec=spec, iter_var=iter_var, constants=constants, correlations=correlations)
