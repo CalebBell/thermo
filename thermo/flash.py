@@ -78,7 +78,7 @@ from thermo.bulk import default_settings
 from thermo.eos_mix import VDWMIX, IGMIX
 from thermo.property_package import StabilityTester
 from thermo.coolprop import CPiP_min
-from chemicals.iapws import iapws95_Psat, rhog_sat_IAPWS95, rhol_sat_IAPWS95
+from chemicals.iapws import iapws95_Psat, iapws95_Tsat, iapws95_rhog_sat, iapws95_rhol_sat, iapws95_Tc, iapws95_Pc, iapws95_MW
 
 if has_matplotlib:
     import matplotlib
@@ -6460,12 +6460,12 @@ class FlashPureVLS(FlashBase):
             sat_liq = self.liquid.to_TP_zs(T, Psat, zs)
             return Psat, sat_liq, sat_gas, 0, 0.0
         elif self.VL_only_IAPWS95:
-            if T > 647.096:
+            if T > iapws95_Tc:
                 raise PhaseExistenceImpossible("Specified T is in the supercritical region", zs=zs, T=T)
 
             Psat = iapws95_Psat(T)
-            sat_gas = self.gas.to(T=T, V=rho_to_Vm(rhog_sat_IAPWS95(T), self.gas._MW), zs=zs)
-            sat_liq = self.liquid.to(T=T, V=rho_to_Vm(rhol_sat_IAPWS95(T), self.liquid._MW), zs=zs)
+            sat_gas = self.gas.to(T=T, V=rho_to_Vm(iapws95_rhog_sat(T), self.gas._MW), zs=zs)
+            sat_liq = self.liquid.to(T=T, V=rho_to_Vm(iapws95_rhol_sat(T), self.liquid._MW), zs=zs)
             return Psat, sat_liq, sat_gas, 0, 0.0
         Psat = self.Psat_guess(T)
         gas = self.gas.to_TP_zs(T, Psat, zs)
@@ -6507,6 +6507,14 @@ class FlashPureVLS(FlashBase):
             Tsat = self.correlations.VaporPressures[0].solve_prop_best_fit(P)
             sat_gas = self.gas.to_TP_zs(Tsat, P, zs)
             sat_liq = self.liquid.to_TP_zs(Tsat, P, zs)
+            return Tsat, sat_liq, sat_gas, 0, 0.0
+        elif self.VL_only_IAPWS95:
+            if P > iapws95_Pc:
+                raise PhaseExistenceImpossible("Specified P is in the supercritical region", zs=zs, P=P)
+
+            Tsat = iapws95_Tsat(P)
+            sat_gas = self.gas.to(T=Tsat, V=1e-3*iapws95_MW/iapws95_rhog_sat(Tsat), zs=zs)
+            sat_liq = self.liquid.to(T=Tsat, V=1e-3*iapws95_MW/iapws95_rhol_sat(Tsat), zs=zs)
             return Tsat, sat_liq, sat_gas, 0, 0.0
         else:
             Tsat = self.correlations.VaporPressures[0].solve_prop(P)
