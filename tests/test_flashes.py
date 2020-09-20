@@ -511,3 +511,21 @@ def test_ideal_bubble_failing():
     res = solve_P_VF_IG_K_composition_independent(VF=.5, P=1e6, zs=[0.1, 0.2, 0.3, 0.4], gas=gas, liq=liquid, xtol=1e-10)
     # Really needs improvement
     assert_close(res[0], 460.6186021529634)
+
+
+def test_flash_iapws95():
+    from thermo import iapws_constants, iapws_correlations
+    # TODO probably put these tests in their own file
+    
+    liquid = IAPWS95Liquid(T=300, P=1e5, zs=[1])
+    gas = IAPWS95Gas(T=300, P=1e5, zs=[1])
+    
+    flasher = FlashPureVLS(iapws_constants, iapws_correlations, gas, [liquid], [])
+    base = flasher.flash(T=300, P=1e6)
+
+    res = flasher.flash(T=300.0, VF=.3)
+    assert_close(res.liquid0.G(), res.gas.G())
+    assert_close(res.liquid0.P, res.gas.P)
+    
+    assert_close(res.liquid0.rho_mass(), 996.5130274681279, rtol=1e-5)
+    assert_close(res.gas.rho_mass(), 0.025589673682920137, rtol=1e-5)

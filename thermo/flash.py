@@ -71,13 +71,14 @@ from chemicals.rachford_rice import (flash_inner_loop, Rachford_Rice_solutionN,
                                   Rachford_Rice_flash_error, Rachford_Rice_solution2, Rachford_Rice_solution_LN2)
 from chemicals.flash_basic import flash_wilson, flash_Tb_Tc_Pc, flash_ideal
 from thermo.equilibrium import EquilibriumState
-from thermo.phases import Phase, gas_phases, liquid_phases, solid_phases, EOSLiquid, EOSGas, CoolPropGas, CoolPropLiquid, CoolPropPhase, GibbsExcessLiquid, IdealGas
+from thermo.phases import Phase, gas_phases, liquid_phases, solid_phases, EOSLiquid, EOSGas, CoolPropGas, CoolPropLiquid, CoolPropPhase, GibbsExcessLiquid, IdealGas, IAPWS95Liquid, IAPWS95Gas
 from thermo.phases import CPPQ_INPUTS, CPQT_INPUTS, CPrhoT_INPUTS, CPunknown, caching_state_CoolProp, CPiDmolar
 from thermo.phase_identification import identify_sort_phases
 from thermo.bulk import default_settings
 from thermo.eos_mix import VDWMIX, IGMIX
 from thermo.property_package import StabilityTester
 from thermo.coolprop import CPiP_min
+from chemicals.iapws import iapws95_Psat, rhog_sat_IAPWS95, rhol_sat_IAPWS95
 
 if has_matplotlib:
     import matplotlib
@@ -6314,6 +6315,9 @@ class FlashPureVLS(FlashBase):
         self.VL_only = self.phase_count == 2 and self.liquid_count == 1 and self.gas is not None
         self.VL_only_CEOSs = (self.VL_only and gas and liquids and isinstance(self.liquids[0], EOSLiquid) and isinstance(self.gas, EOSGas))
         
+        self.VL_only_IAPWS95 = (len(liquids) == 1 and isinstance(liquids[0], IAPWS95Liquid) 
+                                 and isinstance(gas, IAPWS95Gas) and (not solids))
+        
         # TODO implement as function of phases/or EOS
         self.VL_only_CEOSs_same = (self.VL_only_CEOSs and 
                                    self.liquids[0].eos_class is self.gas.eos_class
@@ -6454,6 +6458,14 @@ class FlashPureVLS(FlashBase):
             Psat = self.liquid.Psats_at(T)[0]
             sat_gas = self.gas.to_TP_zs(T, Psat, zs)
             sat_liq = self.liquid.to_TP_zs(T, Psat, zs)
+            return Psat, sat_liq, sat_gas, 0, 0.0
+        elif self.VL_only_IAPWS95:
+            if T > 647.096:
+                raise PhaseExistenceImpossible("Specified T is in the supercritical region", zs=zs, T=T)
+
+            Psat = iapws95_Psat(T)
+            sat_gas = self.gas.to(T=T, V=rho_to_Vm(rhog_sat_IAPWS95(T), self.gas._MW), zs=zs)
+            sat_liq = self.liquid.to(T=T, V=rho_to_Vm(rhol_sat_IAPWS95(T), self.liquid._MW), zs=zs)
             return Psat, sat_liq, sat_gas, 0, 0.0
         Psat = self.Psat_guess(T)
         gas = self.gas.to_TP_zs(T, Psat, zs)

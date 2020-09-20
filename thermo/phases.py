@@ -5686,7 +5686,7 @@ class IAPWS95(Phase):
         except:
             pass
         tau, delta = self.tau, self.delta
-        dA_dtau = self._dA_dtau = iapws95_dAr_dtau(tau, delta) + iapws95_dA0dtau(tau, delta)
+        dA_dtau = self._dA_dtau = iapws95_dAr_dtau(tau, delta) + iapws95_dA0_dtau(tau, delta)
         return dA_dtau 
 
     def d2A_dtau2(self):
@@ -5695,7 +5695,7 @@ class IAPWS95(Phase):
         except:
             pass
         tau, delta = self.tau, self.delta
-        self._d2A_dtau2 = d2A_dtau2 = iapws95_d2Ar_dtau2(tau, delta) + iapws95_d2A0_d2tau(tau, delta)
+        self._d2A_dtau2 = d2A_dtau2 = iapws95_d2Ar_dtau2(tau, delta) + iapws95_d2A0_dtau2(tau, delta)
         return d2A_dtau2
 
     def d2A_ddeltadtau(self):
