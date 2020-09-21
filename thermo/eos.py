@@ -1174,7 +1174,7 @@ class GCEOS(object):
 
         Notes
         -----
-        An optimizatino attempt was made to remove min() and max() from this
+        An optimization attempt was made to remove min() and max() from this
         function; that is indeed possible, but the check for handling if there
         are two or three roots makes it not worth it.
         '''
@@ -1196,6 +1196,7 @@ class GCEOS(object):
             if self.N == 1 and (
                     (self.multicomponent and (self.Tcs[0] == self.T and self.Pcs[0] == self.P))
                     or (not self.multicomponent and self.Tc == self.T and self.Pc == self.P)):
+                # Do not have any tests for this - not good!
 
                 force_l = not self.phase == 'l'
                 force_g = not self.phase == 'g'

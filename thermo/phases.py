@@ -46,6 +46,12 @@ from collections import OrderedDict
 from chemicals.iapws import *
 from chemicals.viscosity import mu_IAPWS
 from chemicals.thermal_conductivity import k_IAPWS
+import chemicals.iapws
+
+l = chemicals.iapws.__numba_additional_funcs__
+for n in l:
+    globals()[n] = getattr(chemicals.iapws, n)
+
 '''
 All phase objects are immutable.
 
@@ -2552,9 +2558,8 @@ class EOSGas(Phase):
         Cp += self.Cp_dep()
         self._Cp = Cp
         return Cp 
-
-    def dH_dT(self):
-        return self.Cp()
+    
+    dH_dT = dH_dT_P = Cp
 
     def dH_dP(self):
         try:
@@ -5882,6 +5887,9 @@ class IAPWS95(Phase):
         self._Cp = Cp = (-tau*tau*d2A_dtau2 + x0*x0/den)*self.R_MW_0_001
         return Cp
     
+    dH_dT = dH_dT_P = Cp
+
+    
     def dP_dT(self):
         try:
             return self._dP_dT
@@ -6314,6 +6322,8 @@ class IAPWS97(Phase):
         Cp *= self._MW*1e-3
         self._Cp = Cp
         return Cp
+    
+    dH_dT = dH_dT_P = Cp
 
     ### Derivatives
     def dV_dP(self):

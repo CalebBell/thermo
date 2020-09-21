@@ -71,7 +71,7 @@ from chemicals.rachford_rice import (flash_inner_loop, Rachford_Rice_solutionN,
                                   Rachford_Rice_flash_error, Rachford_Rice_solution2, Rachford_Rice_solution_LN2)
 from chemicals.flash_basic import flash_wilson, flash_Tb_Tc_Pc, flash_ideal
 from thermo.equilibrium import EquilibriumState
-from thermo.phases import Phase, gas_phases, liquid_phases, solid_phases, EOSLiquid, EOSGas, CoolPropGas, CoolPropLiquid, CoolPropPhase, GibbsExcessLiquid, IdealGas, IAPWS95Liquid, IAPWS95Gas
+from thermo.phases import Phase, gas_phases, liquid_phases, solid_phases, EOSLiquid, EOSGas, CoolPropGas, CoolPropLiquid, CoolPropPhase, GibbsExcessLiquid, IdealGas, IAPWS95Liquid, IAPWS95Gas, IAPWS95
 from thermo.phases import CPPQ_INPUTS, CPQT_INPUTS, CPrhoT_INPUTS, CPunknown, caching_state_CoolProp, CPiDmolar
 from thermo.phase_identification import identify_sort_phases
 from thermo.bulk import default_settings
@@ -2616,6 +2616,9 @@ def solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var,
         if isinstance(phase, CoolPropPhase):
             min_bound = phase.AS.Tmin()
             max_bound = phase.AS.Tmax()
+        if isinstance(phase, IAPWS95):
+            min_bound = 235.0
+            max_bound = 5000.0
     elif iter_var == 'P':
         min_bound = Phase.P_MIN_FIXED*(1.0 - 1e-12)
         max_bound = Phase.P_MAX_FIXED*(1.0 + 1e-12)
