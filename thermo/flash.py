@@ -60,7 +60,7 @@ from numpy.testing import assert_allclose
 from scipy.optimize import minimize, fsolve, root
 from scipy.interpolate import CubicSpline
 from chemicals.utils import (exp, log, log10, floor, copysign, normalize,
-                          mixing_simple, property_mass_to_molar, rho_to_Vm)
+                          mixing_simple, property_mass_to_molar, rho_to_Vm, Vm_to_rho)
 from thermo.utils import has_matplotlib
 from chemicals.heat_capacity import (Lastovka_Shaw_T_for_Hm, Dadgostar_Shaw_integral,
                                   Dadgostar_Shaw_integral_over_T, Lastovka_Shaw_integral,
@@ -78,7 +78,7 @@ from thermo.bulk import default_settings
 from thermo.eos_mix import VDWMIX, IGMIX
 from thermo.property_package import StabilityTester
 from thermo.coolprop import CPiP_min
-from chemicals.iapws import iapws95_Psat, iapws95_Tsat, iapws95_rhog_sat, iapws95_rhol_sat, iapws95_Tc, iapws95_Pc, iapws95_MW
+from chemicals.iapws import iapws95_Psat, iapws95_Tsat, iapws95_rhog_sat, iapws95_rhol_sat, iapws95_Tc, iapws95_Pc, iapws95_MW, iapws95_T
 
 if has_matplotlib:
     import matplotlib
@@ -6413,6 +6413,46 @@ class FlashPureVLS(FlashBase):
                 return gas, [], [], betas, None
             else:
                 return None, [gas], [], betas, None
+        elif self.VL_only_IAPWS95 and solution is None:
+            if T is not None:
+                if T > iapws95_Tc:
+                    # super critical no matter what
+                    gas = self.gas.to_zs_TPV(zs=zs, T=T, P=P, V=V)
+                    return gas, [], [], betas, None
+                elif P is not None:
+                    Psat = iapws95_Psat(T)
+                    if P < Psat:
+                        gas = self.gas.to_zs_TPV(zs=zs, T=T, P=P, V=V)
+                        return gas, [], [], betas, None
+                    else:
+                        l = self.liquid.to_zs_TPV(zs=zs, T=T, P=P, V=V)
+                        return None, [l], [], betas, None
+                elif V is not None:
+                    rhol_sat = iapws95_rhol_sat(T)
+                    rho_mass = Vm_to_rho(V, iapws95_MW)
+                    if rho_mass >= rhol_sat:
+                        l = self.liquid.to_zs_TPV(zs=zs, T=T, V=V)
+                        return None, [l], [], betas, None
+                    rhog_sat = iapws95_rhog_sat(T)
+                    if rho_mass <= rhog_sat:
+                        gas = self.gas.to_zs_TPV(zs=zs, T=T, V=V)
+                        return gas, [], [], betas, None
+                    # There is no feasible solution between the two curves
+
+            elif P is not None and V is not None:
+                T = iapws95_T(P=P, rho=Vm_to_rho(V, iapws95_MW))
+                try:
+                    Tsat = iapws95_Tsat(P)
+                    if T < Tsat:
+                        l = self.liquid.to_zs_TPV(zs=zs, T=T, V=V)
+                        return None, [l], [], betas, None
+                    else:
+                        gas = self.gas.to_zs_TPV(zs=zs, T=T, V=V)
+                        return gas, [], [], betas, None
+                except:
+                    l = self.liquid.to_zs_TPV(zs=zs, T=T, V=V)
+                    return None, [l], [], betas, None
+                # TODO more logic
         
         if self.gas_count:
             gas = self.gas.to_zs_TPV(zs=zs, T=T, P=P, V=V)
@@ -6569,7 +6609,6 @@ class FlashPureVLS(FlashBase):
         zs = [1.0]
         VL_liq, VL_gas = None, None
         flash_convergence = {}
-        G_VL = 1e100
         has_VL = False
         need_both = True
         if fixed_var == 'T':
@@ -6594,7 +6633,6 @@ class FlashPureVLS(FlashBase):
         else:
             phases = self.phases
         solutions_1P = []
-        G_min = 1e100
         results_G_min_1P = None
         if hot_start is None:
             last_conv = None
@@ -6604,17 +6642,11 @@ class FlashPureVLS(FlashBase):
             last_conv = hot_start.P
         for phase in phases:
             try:                    
+                # TODO: use has_VL to bound the solver
                 T, P, phase, iterations, err = solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var=fixed_var, 
                                                                   spec=spec, iter_var=iter_var, constants=constants, correlations=correlations, last_conv=last_conv,
                                                                   oscillation_detection=cubic)
                 if cubic:
-                    G = phase.G()
-                    new = [T, phase, iterations, err, G]
-                    if results_G_min_1P is None or selection_fun_1P(new, results_G_min_1P):
-                        G_min = G
-                        results_G_min_1P = new
-                    
-                    solutions_1P.append(new)
                     phase.eos_mix.solve_missing_volumes()
                     if phase.eos_mix.phase == 'l/g':
                         # Check we are not metastable

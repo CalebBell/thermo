@@ -30,6 +30,7 @@ from thermo import Chemical, Mixture
 from math import *
 from thermo.equilibrium import *
 from thermo.bulk import *
+from chemicals.utils import rho_to_Vm, Vm_to_rho
 from thermo.phases import *
 from thermo.eos_mix import *
 from thermo.eos import *
@@ -1616,6 +1617,51 @@ def test_IAPWS97_basics():
     assert_close(dP_dT, 1139502.1717766523, rtol=1e-10)
 
 
+def test_transport_IAPWS95():
+    liquid = IAPWS95Liquid(T=300, P=1e5, zs=[1])
+
+    mu_point = liquid.to(T=647.35, V=rho_to_Vm(372, IAPWS95Liquid._MW), zs=[1])
+    assert_close(mu_point.mu(), 45.688204e-6, rtol=2e-8)
+    assert_close(mu_point.mu(), 45.688204e-6, rtol=2e-8)
+    
+    assert_close(mu_point.k(), 650.319402E-3, rtol=1e-9)
+    del mu_point._k
+    assert_close(mu_point.k(), 650.319402E-3, rtol=1e-9)
+
+def test_IAPWS95_initialization():
+    liquid = IAPWS95Liquid(T=300, P=1e5, zs=[1])
+    objs = [liquid.to(T=300.0, P=1e5, zs=[1]),
+           liquid.to_TP_zs(T=300.0, P=1e5, zs=[1]),
+           liquid.to_zs_TPV(T=300.0, P=1e5, zs=[1]),
+           IAPWS95Gas(T=300, P=1e5, zs=[1]),
+           IAPWS95(T=300, P=1e5, zs=[1]),
+            
+          ]
+    for same_point in objs:
+        assert_close(liquid.T, same_point.T, rtol=1e-16)
+        assert_close(liquid.P, same_point.P, rtol=1e-16)
+        assert_close(liquid._V, same_point._V, rtol=1e-16)
+        assert_close(liquid.tau, same_point.tau, rtol=1e-16)
+        assert_close(liquid.delta, same_point.delta, rtol=1e-16)
+    
+    objs = [liquid.to_zs_TPV(T=300.0, V=liquid.V(), zs=[1]),
+            liquid.to(T=300.0, V=liquid.V(), zs=[1]),
+            liquid.to(P=1e5, V=liquid.V(), zs=[1])]
+    
+    for similar_point in objs:
+        assert_close(liquid.T, similar_point.T, rtol=1e-13)
+        assert_close(liquid.P, similar_point.P, rtol=1e-10)
+        assert_close(liquid._V, similar_point._V, rtol=1e-16)
+        assert_close(liquid.tau, similar_point.tau, rtol=1e-13)
+        assert_close(liquid.delta, similar_point.delta, rtol=1e-16)
+        
+    with pytest.raises(ValueError):
+        liquid.to(zs=[1], T=300)
+    with pytest.raises(ValueError):
+        liquid.to(zs=[1], P=300)
+    with pytest.raises(ValueError):
+        liquid.to(zs=[1], V=100)
+    
 def test_IAPWS95_basics():
     # Values compared against CoolProp
     obj = IAPWS95(T=300, P=1e5, zs=[1])
@@ -1630,6 +1676,76 @@ def test_IAPWS95_basics():
     assert_close(obj.dP_dT(), 609976.4283507243, rtol=1e-9)
     assert_close(obj.dP_dV(), -122786771549048.27, rtol=1e-9)
     
+    assert_close(obj.lnphis()[0], -3.3429696227322294, rtol=1e-10)
+    assert_close(obj.H_dep(), -43935.22827155906, rtol=1e-10)
+    assert_close(obj.S_dep(), -58.54579369069855, rtol=1e-10)
+
+    obj.dH_dP()
+    obj.dH_dT()
+    obj.dS_dT()
+    obj.dS_dP()
+    
+    obj.dH_dT_V()
+    obj.dH_dP_V()
+    obj.dH_dV_T()
+    obj.dH_dV_P()
+    
+    obj.dS_dT_V()
+    obj.dS_dP_V()
+    obj.dS_dV_T()
+    obj.dS_dV_P()
+
+    # temporary - numerical derivatives - todo tighten values
+    assert_close(obj.d2P_dT2(), 24321.468162726393, rtol=1e-6)
+    assert_close(obj.d2P_dTdV(), -463259151365.4649, rtol=1e-6)
+
+
+    assert_close(obj.d2P_dV2(), 4.5561589074031804e+19, rtol=1e-13)
+    d2P_dV2_num = derivative(lambda V: obj.to(T=obj.T, V=V, zs=[1]).dP_dV_T(), obj.V(), 
+                             order=3, dx=obj.V()*1e-4)
+    assert_close(obj.d2P_dV2(), d2P_dV2_num, rtol=1e-6)
+
+    
+    dlnphis_dV_T = obj.dlnphis_dV_T()[0]
+    assert_close(dlnphis_dV_T, 1226977818.506873, rtol=1e-10)
+    dlnphis_dV_T_num = derivative(lambda V: obj.to(T=obj.T, V=V, zs=[1]).lnphis()[0], 
+                                  obj.V(), obj.V()*2e-8)
+    
+    assert_close(dlnphis_dV_T, dlnphis_dV_T_num, rtol=2e-7)
+
+
+    assert_close(obj.dlnphis_dT_V()[0], -6.036629575896844, rtol=1e-10)
+    dlnphis_dT_V_num = derivative(lambda T: obj.to(T=T, V=obj.V(), zs=[1]).lnphis()[0],
+               obj.T, 
+               obj.T*4e-7, order=3)
+    assert_close(obj.dlnphis_dT_V()[0], dlnphis_dT_V_num, rtol=1e-6)
+
+    dlnphis_dT_P_num = derivative(lambda T: obj.to(T=T, P=obj.P, zs=[1]).lnphis()[0],
+               obj.T, 
+               obj.T*1e-5, order=3)
+    assert_close(dlnphis_dT_P_num, obj.dlnphis_dT_P()[0], rtol=1e-5)
+    
+    assert_close(obj.dlnphis_dT_P()[0], 0.058713904157271735, rtol=1e-10)
+
+    assert_close(obj.dlnphis_dP_V()[0], -9.896496479739217e-06, rtol=1e-10)
+    dlnphis_dP_V_num = derivative(lambda P: obj.to(V=obj.V(), P=P, zs=[1]).lnphis()[0],
+               obj.P, 
+               obj.P*1e-4, order=3)
+    assert_close(obj.dlnphis_dP_V()[0], dlnphis_dP_V_num, rtol=2e-6)
+
+    assert_close(obj.dlnphis_dV_P()[0], 11818966.113173217, rtol=1e-7)
+    
+    dlnphis_dV_P_num = derivative(lambda V: obj.to(V=V, P=obj.P, zs=[1]).lnphis()[0],
+               obj.V(), 
+               obj.V()*1e-5, order=3)
+    assert_close(obj.dlnphis_dV_P()[0], dlnphis_dV_P_num, rtol=2e-6)
+
+    assert_close(obj.dlnphis_dP_T()[0], -9.992752501166183e-06, rtol=1e-10)
+    dlnphis_dP_T_num = derivative(lambda P: obj.to(T=obj.T, P=P, zs=[1]).lnphis()[0],
+               obj.P, 
+               obj.P*1e-3, order=3)
+    assert_close(obj.dlnphis_dP_T()[0], dlnphis_dP_T_num, rtol=6)
+
     
     dS_dT_V = obj.dS_dT_V()
     dS_dT_num = derivative(lambda T: obj.to(T=T, V=obj.V(), zs=[1]).S(), obj.T, dx=obj.T*1e-6)
@@ -1640,6 +1756,15 @@ def test_IAPWS95_basics():
     dH_dT_num = derivative(lambda T: obj.to(T=T, V=obj.V(), zs=[1]).H(), obj.T, dx=obj.T*1e-6)
     assert_close(dH_dT_V, 85.43313622601181, rtol=1e-8)
     assert_close(dH_dT_V, dH_dT_num)
+
+    assert_close(obj.dH_dP_V(), .00014005973387694497, rtol=1e-10)
+    dH_dP_V_num = derivative(lambda P: obj.to(P=P, V=obj.V(), zs=[1]).H(), obj.P, dx=obj.P*2e-4)
+    assert_close(dH_dP_V_num, obj.dH_dP_V())
+
+    assert_close(obj.dH_dV_P(), 15160795055.150928, rtol=1e-10)
+    dH_dV_P_num = derivative(lambda V: obj.to(P=obj.P, V=V, zs=[1]).H(), obj.V(), dx=obj.V()*1e-6)
+    assert_close(dH_dV_P_num, obj.dH_dV_P(), rtol=1e-7)
+
 
     dH_dV_T = obj.dH_dV_T()
     dH_dV_T_num = derivative(lambda V: obj.to(T=obj.T, V=V, zs=[1]).H(), obj.V(), dx=obj.V()*1e-6)
@@ -1662,3 +1787,8 @@ def test_IAPWS95_basics():
     assert_close(gas.dH_dP_T(), -0.00017515040276121823)
     dH_dP_T_num = derivative(lambda P: gas.to(T=gas.T, P=P, zs=[1]).H(), gas.P, dx=gas.P*1e-5, order=3)
     assert_close(dH_dP_T_num, gas.dH_dP_T())
+
+    gas = IAPWS95(T=800, P=1e5, zs=[1])
+    assert_close(gas.dS_dT_P(), 0.048472990237155726, rtol=1e-11)
+    dS_dT_P_num = derivative(lambda T: gas.to(T=T, P=gas.P, zs=[1]).S(), gas.T, dx=gas.T*1e-7, order=3)
+    assert_close(dS_dT_P_num, gas.dS_dT_P())
