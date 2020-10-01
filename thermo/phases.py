@@ -5587,11 +5587,13 @@ class ChaoSeader(GraysonStreed):
     simple_coeffs = (5.75748, -3.01761, -4.985, 2.02299, 0.0, 0.08427, 0.26667, -0.31138, -0.02655, 0.02883)
     version = 0
 
+
 class IAPWS95(Phase):
-    _MW = 18.015268
-    Tc = 647.096
-    Pc = 22.064E6
-    rhoc = 322.
+    _MW = iapws95_MW
+    Tc = iapws95_Tc
+    Pc = iapws95_Pc
+    rhoc = iapws95_rhoc
+    rhoc_inv = 1.0/iapws95_rhoc
     R = 461.51805 # Differs from the 97 formulation
     _MW_kg = _MW*1e-3
     R_MW_0_001 = _MW_kg*R
@@ -5605,7 +5607,7 @@ class IAPWS95(Phase):
         self._rho_mass = rho_mass = iapws95_rho(T, P)
         self._V = rho_to_Vm(rho=rho_mass, MW=self._MW)
         self.tau = tau = self.Tc/T
-        self.delta = delta = rho_mass/self.rhoc
+        self.delta = delta = rho_mass*self.rhoc_inv
         self.A0, self.dA0_dtau, self.d2A0_dtau2, self.d3A0_dtau3 = iapws95_A0_tau_derivatives(tau, delta)
 
     def to_TP_zs(self, T, P, zs):
@@ -5616,7 +5618,7 @@ class IAPWS95(Phase):
         new._rho_mass = rho_mass = iapws95_rho(T, P)
         new._V = rho_to_Vm(rho=rho_mass, MW=self._MW)
         new.tau = tau = new.Tc/T
-        new.delta = delta = rho_mass/new.rhoc
+        new.delta = delta = rho_mass*new.rhoc_inv
         new.A0, new.dA0_dtau, new.d2A0_dtau2, new.d3A0_dtau3 = iapws95_A0_tau_derivatives(tau, delta)
         return new
 
@@ -5645,23 +5647,12 @@ class IAPWS95(Phase):
         new.P = P
         new.T = T
         new.tau = tau = new.Tc/T
-        new.delta = delta = rho_mass/new.rhoc
+        new.delta = delta = rho_mass*new.rhoc_inv
         new.A0, new.dA0_dtau, new.d2A0_dtau2, new.d3A0_dtau3 = iapws95_A0_tau_derivatives(tau, delta)
         
         return new
         
     to = to_zs_TPV
-    
-#    def P(self):
-#        try:
-#            return self._P
-#        except:
-#            pass
-#        dA_ddelta = self.dA_ddelta()
-#        delta = self.delta
-#        rho_mass = self._rho_mass
-#        P = self._P = (dA_ddelta*delta)*rho_mass*self.R*self.T
-#        return P
     
     def mu(self):
         try:
@@ -5683,7 +5674,7 @@ class IAPWS95(Phase):
         drho_mass_dP = self.drho_mass_dP()
         
         # TODO: curve fit drho_dP_Tr better than IAPWS did (mpmath)
-        drho_dP_Tr = self.to(T=970.644, V=self._V, zs=[1]).drho_mass_dP()
+        drho_dP_Tr = self.to(T=self.Tc*1.5, V=self._V, zs=[1]).drho_mass_dP()
         self._mu = mu_IAPWS(T=self.T, rho=self._rho_mass, drho_dP=drho_mass_dP,
                         drho_dP_Tr=drho_dP_Tr)
         
@@ -5698,8 +5689,7 @@ class IAPWS95(Phase):
             return self._A
         except:
             pass
-        tau, delta = self.tau, self.delta
-        A = self._A = self.A0 + iapws95_Ar(tau, delta)
+        A = self._A = self.A0 + iapws95_Ar(self.tau, self.delta)
         return A
 
     def dA_ddelta(self):
@@ -5707,8 +5697,8 @@ class IAPWS95(Phase):
             return self._dA_ddelta
         except:
             pass
-        tau, delta = self.tau, self.delta
-        dA_ddelta = self._dA_ddelta = iapws95_dAr_ddelta(tau, delta) + 1./delta
+        delta = self.delta
+        dA_ddelta = self._dA_ddelta = iapws95_dAr_ddelta(self.tau, delta) + 1./delta
         return dA_ddelta 
 
     def d2A_ddelta2(self):
@@ -5716,8 +5706,8 @@ class IAPWS95(Phase):
             return self._d2A_ddelta2
         except:
             pass
-        tau, delta = self.tau, self.delta
-        self._d2A_ddelta2 = d2A_ddelta2 =  iapws95_d2Ar_ddelta2(tau, delta) -1./(delta*delta)
+        delta = self.delta
+        self._d2A_ddelta2 = d2A_ddelta2 =  iapws95_d2Ar_ddelta2(self.tau, delta) -1./(delta*delta)
         return d2A_ddelta2
 
 
@@ -5726,8 +5716,8 @@ class IAPWS95(Phase):
             return self._d3A_ddelta3
         except:
             pass
-        tau, delta = self.tau, self.delta
-        self._d3A_ddelta3 = d3A_ddelta3 = iapws95_d3Ar_ddelta3(tau, delta) + 2./(delta*delta*delta)
+        delta = self.delta
+        self._d3A_ddelta3 = d3A_ddelta3 = iapws95_d3Ar_ddelta3(self.tau, delta) + 2./(delta*delta*delta)
         return d3A_ddelta3
 
     def dA_dtau(self):
@@ -5735,8 +5725,7 @@ class IAPWS95(Phase):
             return self._dA_dtau
         except:
             pass
-        tau, delta = self.tau, self.delta
-        dA_dtau = self._dA_dtau = iapws95_dAr_dtau(tau, delta) + self.dA0_dtau
+        dA_dtau = self._dA_dtau = iapws95_dAr_dtau(self.tau, self.delta) + self.dA0_dtau
         return dA_dtau 
 
     def d2A_dtau2(self):
@@ -5744,8 +5733,7 @@ class IAPWS95(Phase):
             return self._d2A_dtau2
         except:
             pass
-        tau, delta = self.tau, self.delta
-        self._d2A_dtau2 = d2A_dtau2 = iapws95_d2Ar_dtau2(tau, delta) + self.d2A0_dtau2
+        self._d2A_dtau2 = d2A_dtau2 = iapws95_d2Ar_dtau2(self.tau, self.delta) + self.d2A0_dtau2
         return d2A_dtau2
 
     def d2A_ddeltadtau(self):
@@ -5753,8 +5741,7 @@ class IAPWS95(Phase):
             return self._d2A_ddeltadtau
         except:
             pass
-        tau, delta = self.tau, self.delta
-        self._d2A_ddeltadtau = d2A_ddeltadtau = iapws95_d2Ar_ddeltadtau(tau, delta)
+        self._d2A_ddeltadtau = d2A_ddeltadtau = iapws95_d2Ar_ddeltadtau(self.tau, self.delta)
         return d2A_ddeltadtau
     
     def d3A_ddelta2dtau(self):
@@ -5783,13 +5770,14 @@ class IAPWS95(Phase):
             A = self._A
         except:
             A = self.A()
-        lnphi = A - self.A0 + delta*(dA_ddelta - 1.0/delta) - log(delta*(dA_ddelta - 1.0/delta) + 1.0)
+        x0 = delta*(dA_ddelta - 1.0/delta)
+        lnphi = A - self.A0 + x0 - log(x0 + 1.0)
         
         return [lnphi]
     
     def dlnphis_dV_T(self):
         rho = self._rho_mass
-        delta, tau = self.delta, self.tau
+        delta = self.delta
         rhoc = self.rhoc
         try:
             dA_ddelta = self._dA_ddelta
@@ -5799,18 +5787,24 @@ class IAPWS95(Phase):
             d2A_ddelta2 = self._d2A_ddelta2
         except:
             d2A_ddelta2 = self.d2A_ddelta2()
-
+        
+        rho_inv = 1.0/rho
+        x0 = self.rhoc_inv
+        x1 = -rhoc*rho_inv
+        x2 = rho*(d2A_ddelta2*x0 + rhoc*rho_inv*rho_inv)
+        x3 = dA_ddelta + x1
+        dlnphi_dV_T = x0*(2.0*dA_ddelta + x1 + x2 - (x2 + x3)/(rho*x0*x3 + 1.0) - 1.0/delta)
         
         # calculate dlnphi_drho_mass_T 
         # TODO optimize
-        dlnphi_dV_T = (rho*(d2A_ddelta2
-        /rhoc + rhoc/rho**2)/rhoc - (rho*(d2A_ddelta2
-        /rhoc + rhoc/rho**2)/rhoc + (dA_ddelta - rhoc/rho)/rhoc)/(rho*(dA_ddelta 
-                    - rhoc/rho)/rhoc + 1) + (dA_ddelta - rhoc/rho)/rhoc
-             + dA_ddelta/rhoc - 1./delta/rhoc)
-
+#        dlnphi_dV_T = (rho*(d2A_ddelta2
+#        /rhoc + rhoc/rho**2)/rhoc - (rho*(d2A_ddelta2
+#        /rhoc + rhoc/rho**2)/rhoc + (dA_ddelta - rhoc/rho)/rhoc)/(rho*(dA_ddelta 
+#                    - rhoc/rho)/rhoc + 1) + (dA_ddelta - rhoc/rho)/rhoc
+#             + dA_ddelta/rhoc - 1./delta/rhoc)
+#
         # Convert to dlnphi_dV_T
-        dlnphi_dV_T *= -0.001*self._MW/(self._V*self._V)
+        dlnphi_dV_T *= -self._MW_kg/(self._V*self._V)
 
         return [dlnphi_dV_T]
         

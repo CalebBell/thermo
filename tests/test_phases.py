@@ -1642,7 +1642,7 @@ def test_IAPWS95_initialization():
         assert_close(liquid.P, same_point.P, rtol=1e-16)
         assert_close(liquid._V, same_point._V, rtol=1e-16)
         assert_close(liquid.tau, same_point.tau, rtol=1e-16)
-        assert_close(liquid.delta, same_point.delta, rtol=1e-16)
+        assert_close(liquid.delta, same_point.delta, rtol=1e-15)
     
     objs = [liquid.to_zs_TPV(T=300.0, V=liquid.V(), zs=[1]),
             liquid.to(T=300.0, V=liquid.V(), zs=[1]),
@@ -1653,7 +1653,7 @@ def test_IAPWS95_initialization():
         assert_close(liquid.P, similar_point.P, rtol=1e-10)
         assert_close(liquid._V, similar_point._V, rtol=1e-16)
         assert_close(liquid.tau, similar_point.tau, rtol=1e-13)
-        assert_close(liquid.delta, similar_point.delta, rtol=1e-16)
+        assert_close(liquid.delta, similar_point.delta, rtol=1e-15)
         
     with pytest.raises(ValueError):
         liquid.to(zs=[1], T=300)
@@ -1700,7 +1700,7 @@ def test_IAPWS95_basics():
     assert_close(obj.d2P_dTdV(), -463259151365.4649, rtol=1e-6)
 
 
-    assert_close(obj.d2P_dV2(), 4.5561589074031804e+19, rtol=1e-13)
+    assert_close(obj.d2P_dV2(), 4.5561589074031804e+19, rtol=1e-12)
     d2P_dV2_num = derivative(lambda V: obj.to(T=obj.T, V=V, zs=[1]).dP_dV_T(), obj.V(), 
                              order=3, dx=obj.V()*1e-4)
     assert_close(obj.d2P_dV2(), d2P_dV2_num, rtol=1e-6)
