@@ -4372,13 +4372,13 @@ class FlashBase(object):
         if Ts is None:
             if Tmin is None:
                 if physical:
-                    Tmin = Phase.T_MIN_FIXED
+                    Tmin = max(p.T_MIN_FIXED for p in self.phases)
                 elif realistic:
                     # Round the temperature widely, ensuring consistent rounding
                     Tmin = 1e-2*round(floor(Tc), -1)
             if Tmax is None:
                 if physical:
-                    Tmax = Phase.T_MAX_FIXED
+                    Tmax = min(p.T_MAX_FIXED for p in self.phases)
                 elif realistic:
                     # Round the temperature widely, ensuring consistent rounding
                     Tmax = min(10*round(floor(Tc), -1), 2000)
@@ -6286,6 +6286,9 @@ class FlashPureVLS(FlashBase):
     N = 1
     VL_EOS_hacks = True
     VL_IG_hack = True
+    
+    def __repr__(self):
+        return "FlashPureVLS(gas=%s, liquids=%s, solids=%s)" %(self.gas, self.liquids, self.solids)
     def __init__(self, constants, correlations, gas, liquids, solids, 
                  settings=default_settings):
         self.constants = constants

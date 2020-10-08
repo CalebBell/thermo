@@ -130,6 +130,48 @@ def test_PV_plot(fluid, backend):
 # CoolProp does not pass
 del test_PV_plot
 
+
+@pytest.mark.slow
+@pytest.mark.parametric
+@pytest.mark.parametrize("fluid", pure_fluids)
+@pytest.mark.parametrize("backend", backends)
+def test_TV_plot_CoolProp(fluid, backend):
+    T, P = 298.15, 101325.0
+    zs = [1.0]
+    fluid_idx = pure_fluids.index(fluid)
+    
+    pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
+    
+    gas = CoolPropGas(backend, fluid, T=T, P=P, zs=zs)
+    liquid = CoolPropLiquid(backend, fluid, T=T, P=P, zs=zs)
+
+    flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
+    
+#    CoolPropInfo = coolprop_fluids[pure_const.CASs[0]]
+    T_min, T_max, P_max = gas.AS.Tmin(), gas.AS.Tmax(), gas.AS.pmax()
+    P_min = PropsSI(fluid, 'PMIN')
+    V_max = flasher.flash(T=T_max, P=P_min).V()
+    V_min = flasher.flash(T=T_min, P=P_max).V()
+    
+    res = flasher.TPV_inputs(zs=zs, pts=200, spec0='T', spec1='P', check0='T', check1='V', prop0='P',
+                           trunc_err_low=1e-15, 
+                           trunc_err_high=1, color_map=cm_flash_tol(),
+                           Tmax=T_max*(1.0 - 1e-6), Tmin=T_min*(1.0+4e-2), 
+                           Vmin=V_min*(1.0), Vmax=V_max*(1.0 - 1e-5),
+                           show=False)
+
+    matrix_spec_flashes, matrix_flashes, errs, plot_fig = res
+    
+    path = os.path.join(pure_surfaces_dir, fluid, "TV")
+    if not os.path.exists(path):
+        os.makedirs(path)
+    
+    key = '%s - %s - %s' %('TV', backend, fluid)
+
+    plot_fig.savefig(os.path.join(path, key + '.png'))
+    plt.close()
+#test_TV_plot_CoolProp('water', 'HEOS')
+
 def test_water_95():
     # TVF, PVF, TP, TV, PV are covered and optimized
     T, P = 298.15, 1e5

@@ -1707,14 +1707,14 @@ def test_IAPWS95_basics():
 
     
     dlnphis_dV_T = obj.dlnphis_dV_T()[0]
-    assert_close(dlnphis_dV_T, 1226977818.506873, rtol=1e-10)
+    assert_close(dlnphis_dV_T, 1226977818.506873, rtol=1e-9)
     dlnphis_dV_T_num = derivative(lambda V: obj.to(T=obj.T, V=V, zs=[1]).lnphis()[0], 
                                   obj.V(), obj.V()*2e-8)
     
     assert_close(dlnphis_dV_T, dlnphis_dV_T_num, rtol=2e-7)
 
 
-    assert_close(obj.dlnphis_dT_V()[0], -6.036629575896844, rtol=1e-10)
+    assert_close(obj.dlnphis_dT_V()[0], -6.036629575896844, rtol=1e-9)
     dlnphis_dT_V_num = derivative(lambda T: obj.to(T=T, V=obj.V(), zs=[1]).lnphis()[0],
                obj.T, 
                obj.T*4e-7, order=3)
@@ -1727,7 +1727,7 @@ def test_IAPWS95_basics():
     
     assert_close(obj.dlnphis_dT_P()[0], 0.058713904157271735, rtol=1e-10)
 
-    assert_close(obj.dlnphis_dP_V()[0], -9.896496479739217e-06, rtol=1e-10)
+    assert_close(obj.dlnphis_dP_V()[0], -9.896496479739217e-06, rtol=1e-9)
     dlnphis_dP_V_num = derivative(lambda P: obj.to(V=obj.V(), P=P, zs=[1]).lnphis()[0],
                obj.P, 
                obj.P*1e-4, order=3)
@@ -1740,7 +1740,7 @@ def test_IAPWS95_basics():
                obj.V()*1e-5, order=3)
     assert_close(obj.dlnphis_dV_P()[0], dlnphis_dV_P_num, rtol=2e-6)
 
-    assert_close(obj.dlnphis_dP_T()[0], -9.992752501166183e-06, rtol=1e-10)
+    assert_close(obj.dlnphis_dP_T()[0], -9.992752501166183e-06, rtol=1e-9)
     dlnphis_dP_T_num = derivative(lambda P: obj.to(T=obj.T, P=P, zs=[1]).lnphis()[0],
                obj.P, 
                obj.P*1e-3, order=3)
@@ -1759,11 +1759,11 @@ def test_IAPWS95_basics():
 
     assert_close(obj.dH_dP_V(), .00014005973387694497, rtol=1e-10)
     dH_dP_V_num = derivative(lambda P: obj.to(P=P, V=obj.V(), zs=[1]).H(), obj.P, dx=obj.P*2e-4)
-    assert_close(dH_dP_V_num, obj.dH_dP_V())
+    assert_close(dH_dP_V_num, obj.dH_dP_V(), rtol=2e-7)
 
     assert_close(obj.dH_dV_P(), 15160795055.150928, rtol=1e-10)
     dH_dV_P_num = derivative(lambda V: obj.to(P=obj.P, V=V, zs=[1]).H(), obj.V(), dx=obj.V()*1e-6)
-    assert_close(dH_dV_P_num, obj.dH_dV_P(), rtol=1e-7)
+    assert_close(dH_dV_P_num, obj.dH_dV_P(), rtol=2e-7)
 
 
     dH_dV_T = obj.dH_dV_T()

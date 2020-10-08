@@ -75,9 +75,9 @@ class Phase(object):
     '''
     For basic functionality, a subclass should implement:
     
-    H, S, Cp
+    H, S, Cp, Cv
         
-        
+
         
     dP_dT
     dP_dV
@@ -98,6 +98,7 @@ class Phase(object):
     
 
     '''
+    
     
     ideal_gas_basis = False # Parameter fot has the same ideal gas Cp
     T_REF_IG = 298.15
@@ -133,6 +134,8 @@ class Phase(object):
         return s
     
     def model_hash(self, ignore_phase=False):
+        r'''
+        '''
         return randint(0, 10000000)
     
     def value(self, name):
@@ -145,6 +148,21 @@ class Phase(object):
         except:
             pass
         return v
+
+    def compute_main_properties(self):
+        '''Method which computes some basic properties. For benchmarking;
+        returns nothing.
+        '''
+        self.H()
+        self.S()
+        self.Cp()
+        self.Cv()
+        self.dP_dT()
+        self.dP_dV()
+        self.d2P_dT2()
+        self.d2P_dV2()
+        self.d2P_dTdV()
+        self.PIP()
     
     def S_phi_consistency(self):
         # From coco
@@ -5601,6 +5619,9 @@ class IAPWS95(Phase):
     cmps = [0]
     HeatCapacityGases = iapws_correlations.HeatCapacityGases
 
+    T_MAX_FIXED = 5000.0
+    T_MIN_FIXED = 245.0
+
     def __init__(self, T=None, P=None, zs=None):
         self.T = T
         self.P = P
@@ -5679,7 +5700,7 @@ class IAPWS95(Phase):
                         drho_dP_Tr=drho_dP_Tr)
         
         self._k = k_IAPWS(T=self.T, rho=self._rho_mass, Cp=self.Cp_mass(), Cv=self.Cv_mass(),
-                       mu=self.mu(), drho_dP=self.drho_mass_dP(), drho_dP_Tr=drho_dP_Tr)
+                       mu=self._mu, drho_dP=drho_mass_dP, drho_dP_Tr=drho_dP_Tr)
 
     def V(self):
         return self._V
