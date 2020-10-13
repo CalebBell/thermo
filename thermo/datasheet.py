@@ -37,7 +37,7 @@ def tabulate_solid(chemical, Tmin=None, Tmax=None, pts=10):
     (rhos, Cps) = [[] for i in range(2)]
     if not Tmin:  # pragma: no cover
         if chem.Tm:
-            Tmin = chem.Tm-100
+            Tmin = max(chem.Tm-100, 1e-4)
         else:
             Tmin = 150.
     if not Tmax:  # pragma: no cover
