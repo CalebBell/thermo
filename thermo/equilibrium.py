@@ -27,7 +27,7 @@ from fluids.constants import R, R_inv
 from fluids.core import thermal_diffusivity
 from chemicals.utils import log, exp, normalize, zs_to_ws, vapor_mass_quality, mixing_simple, Vm_to_rho, SG
 from chemicals.elements import atom_fractions, mass_fractions, simple_formula_parser, molecular_weight, mixture_atomic_composition
-from thermo.phases import gas_phases, liquid_phases, solid_phases, Phase
+from thermo.phases import gas_phases, liquid_phases, solid_phases, Phase, derivatives_thermodynamic, derivatives_thermodynamic_mass, derivatives_jacobian
 from thermo.chemical_package import ChemicalConstantsPackage, PropertyCorrelationPackage
 from thermo.bulk import Bulk, BulkSettings, default_settings
 
@@ -1137,8 +1137,8 @@ for name in Bulk_properties_to_EquilibriumState:
     setattr(Bulk, name, method)
 
 ### For certain properties of the Bulk phase, make EquilibriumState get it from the Bulk
-bulk_props = ['V', 'Z', 'rho', 'Cp', 'Cv', 'H', 'S', 'U', 'G', 'A', 'dH_dT', 'dH_dP', 'dS_dT', 'dS_dP',
-              'dU_dT', 'dU_dP', 'dG_dT', 'dG_dP', 'dA_dT', 'dA_dP', 
+bulk_props = ['V', 'Z', 'rho', 'Cp', 'Cv', 'H', 'S', 'U', 'G', 'A', #'dH_dT', 'dH_dP', 'dS_dT', 'dS_dP',
+              #'dU_dT', 'dU_dP', 'dG_dT', 'dG_dP', 'dA_dT', 'dA_dP', 
               'H_reactive', 'S_reactive', 'G_reactive', 'U_reactive', 'A_reactive',
               'Cp_Cv_ratio', 'log_zs', 'isothermal_bulk_modulus',
               'dP_dT_frozen', 'dP_dV_frozen', 'd2P_dT2_frozen', 'd2P_dV2_frozen',
@@ -1150,6 +1150,9 @@ bulk_props = ['V', 'Z', 'rho', 'Cp', 'Cv', 'H', 'S', 'U', 'G', 'A', 'dH_dT', 'dH
               'U_dep', 'G_dep', 'A_dep', 'V_dep', 'V_iter',
               'mu',
               ]
+bulk_props += derivatives_thermodynamic
+bulk_props += derivatives_thermodynamic_mass
+bulk_props += derivatives_jacobian
 
 for name in bulk_props:
     # Maybe take this out and implement it manually for performance?

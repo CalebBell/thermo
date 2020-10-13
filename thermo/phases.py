@@ -23,7 +23,9 @@ SOFTWARE.'''
 from __future__ import division
 __all__ = ['GibbsExcessLiquid', 'GibbsExcessSolid', 'Phase', 'EOSLiquid', 'EOSGas', 'IdealGas', 'IAPWS97',
            'IAPWS95', 'IAPWS95Gas', 'IAPWS95Liquid',
-           'gas_phases', 'liquid_phases', 'solid_phases', 'CombinedPhase', 'CoolPropPhase', 'CoolPropLiquid', 'CoolPropGas', 'INCOMPRESSIBLE_CONST']
+           'gas_phases', 'liquid_phases', 'solid_phases', 'CombinedPhase', 'CoolPropPhase', 'CoolPropLiquid', 'CoolPropGas', 'INCOMPRESSIBLE_CONST',
+           
+           'derivatives_thermodynamic', 'derivatives_thermodynamic_mass', 'derivatives_jacobian']
 
 import sys
 from math import isinf, isnan
@@ -1835,13 +1837,32 @@ class Phase(object):
         return self.result.gas_beta
 
 
+derivatives_jacobian = []
 
 for a in ('T', 'P', 'V', 'rho'):
     for b in ('T', 'P', 'V', 'rho'):
         for c in ('H', 'S', 'G', 'U', 'A'):
            def _der(self, a=a, b=b, c=c):
                return self._derivs_jacobian(a=a, b=b, c=c)
-           setattr(Phase, 'd%s_d%s_%s' %(a, b, c), _der)
+           t = 'd%s_d%s_%s' %(a, b, c)
+           setattr(Phase, t, _der)
+           derivatives_jacobian.append(t)
+           
+derivatives_thermodynamic = ['dA_dP', 'dA_dP_T', 'dA_dP_V', 'dA_dT', 'dA_dT_P', 'dA_dT_V', 'dA_dV_P', 'dA_dV_T',
+             'dCv_dP_T', 'dCv_dT_P', 'dG_dP', 'dG_dP_T', 'dG_dP_V', 'dG_dT', 'dG_dT_P', 'dG_dT_V',
+             'dG_dV_P', 'dG_dV_T', 'dH_dP', 'dH_dP_T', 'dH_dP_V', 'dH_dT', 'dH_dT_P', 'dH_dT_V', 
+             'dH_dV_P', 'dH_dV_T', 'dS_dP', 'dS_dP_T', 'dS_dP_V', 'dS_dT', 'dS_dT_P', 'dS_dT_V', 
+             'dS_dV_P', 'dS_dV_T', 'dU_dP', 'dU_dP_T', 'dU_dP_V', 'dU_dT', 'dU_dT_P', 'dU_dT_V', 
+             'dU_dV_P', 'dU_dV_T']
+derivatives_thermodynamic_mass = []
+for attr in derivatives_thermodynamic:
+    def _der(self, prop=attr):
+        return getattr(self, prop)()*1e3*self.MW_inv()
+    base, end = attr.split('_', maxsplit=1)
+    s = '%s_mass_%s' %(base, end)
+    setattr(Phase, s, _der)
+    derivatives_thermodynamic_mass.append(s)
+    
 
 
 class IdealGas(Phase):
@@ -6172,7 +6193,7 @@ class IAPWS95(Phase):
         '''
         from sympy import *
         from chemicals import Vm_to_rho
-        Tc, rhoc, R95 = symbols('Tc, rhoc, R95')
+        Tc, rhoc, iapws95_R = symbols('Tc, rhoc, iapws95_R')
         T, MW = symbols('T, MW')
         V = symbols('V')
         rho = Vm_to_rho(V, MW)
@@ -6183,7 +6204,7 @@ class IAPWS95(Phase):
         tau = Tc/T
         delta = rho*rhoc_inv
         dA_ddelta = iapws95_dA_ddelta(tau, delta)
-        P = (dA_ddelta*delta)*rho*R95*T
+        P = (dA_ddelta*delta)*rho*iapws95_R*T
         print(diff(P, V, 2))
         '''
         MW, R, T = self._MW, self.R, self.T
