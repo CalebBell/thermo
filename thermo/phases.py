@@ -5732,12 +5732,12 @@ class HelmholtzEOS(Phase):
         except:
             d2A_ddelta2 = self.d2A_ddelta2()
         delta = self.delta
-        rho, rhoc = 1/self._V, self.rhoc
-        x0 = self.rhoc_inv        
+        rho, rho_red = 1/self._V, self.rho_red
+        x0 = self.rho_red_inv        
         rho_inv = 1.0/rho
 
-        x1 = -rhoc*rho_inv
-        x2 = rho*(d2A_ddelta2*x0 + rhoc*rho_inv*rho_inv)
+        x1 = -rho_red*rho_inv
+        x2 = rho*(d2A_ddelta2*x0 + rho_red*rho_inv*rho_inv)
         x3 = dA_ddelta + x1
         dlnphi_dV_T = x0*(2.0*dA_ddelta + x1 + x2 - (x2 + x3)/(rho*x0*x3 + 1.0) - 1.0/delta)
 #
@@ -5764,13 +5764,13 @@ class HelmholtzEOS(Phase):
             dA_dtau = self.dA_dtau()
         
         rho = 1.0/self._V
-        rhoc_inv = self.rhoc_inv
-        rhoc = self.rhoc
+        rho_red_inv = self.rho_red_inv
+        rho_red = self.rho_red
         
         Tc, T = self.Tc, self.T
             
-        dlnphi_dT_V = Tc/(T*T)*(rhoc_inv*rho*d2A_ddeltadtau*(-1.0
-                        + 1.0/(rho*(dA_ddelta - rhoc/rho)*rhoc_inv + 1.0))
+        dlnphi_dT_V = Tc/(T*T)*(rho_red_inv*rho*d2A_ddeltadtau*(-1.0
+                        + 1.0/(rho*(dA_ddelta - rho_red/rho)*rho_red_inv + 1.0))
                         - dA_dtau
                         + self.dA0_dtau)
         return [dlnphi_dT_V]
@@ -5845,9 +5845,9 @@ class HelmholtzEOS(Phase):
         except:
             d2A_ddeltadtau = self.d2A_ddeltadtau()
             
-        R, T, V, rhoc, Tc = self.R, self.T, self._V, self.rhoc, self.Tc
+        R, T, V, rho_red, Tc = self.R, self.T, self._V, self.rho_red, self.Tc
             
-        self._dS_dV_T = dS_dV_T = R*(dA_ddelta - Tc*d2A_ddeltadtau/(T))/(V*V*rhoc)
+        self._dS_dV_T = dS_dV_T = R*(dA_ddelta - Tc*d2A_ddeltadtau/(T))/(V*V*rho_red)
         return dS_dV_T
     
     def dS_dP_T(self):
@@ -5922,10 +5922,10 @@ class HelmholtzEOS(Phase):
             d2A_dtau2 = self.d2A_dtau2()
             
             
-        T, Tc, V, R, rhoc = self.T, self.Tc, self._V, self.R, self.rhoc
+        T, Tc, V, R, rho_red = self.T, self.Tc, self._V, self.R, self.rho_red
         T_inv = 1.0/T
 
-        self._dH_dT_V = dH_dT_V = R*T*(-Tc*dA_dtau*T_inv*T_inv - T_inv*T_inv*Tc*d2A_ddeltadtau/(V*rhoc) - Tc*Tc*T_inv*T_inv*T_inv*d2A_dtau2) + R*(dA_ddelta/(V*rhoc) + Tc*dA_dtau/T)
+        self._dH_dT_V = dH_dT_V = R*T*(-Tc*dA_dtau*T_inv*T_inv - T_inv*T_inv*Tc*d2A_ddeltadtau/(V*rho_red) - Tc*Tc*T_inv*T_inv*T_inv*d2A_dtau2) + R*(dA_ddelta/(V*rho_red) + Tc*dA_dtau/T)
         return dH_dT_V
 
     def dH_dV_T(self):
@@ -5946,9 +5946,9 @@ class HelmholtzEOS(Phase):
         except:
             d2A_ddelta2 = self.d2A_ddelta2()
             
-        T, Tc, V, R, rhoc = self.T, self.Tc, self._V, self.R, self.rhoc
+        T, Tc, V, R, rho_red = self.T, self.Tc, self._V, self.R, self.rho_red
 
-        self._dH_dV_T = dH_dV_T = R*T*(-dA_ddelta/(V*V*rhoc) - d2A_ddelta2/(V*V*V*rhoc*rhoc) - Tc*d2A_ddeltadtau/(T*V*V*rhoc))
+        self._dH_dV_T = dH_dV_T = R*T*(-dA_ddelta/(V*V*rho_red) - d2A_ddelta2/(V*V*V*rho_red*rho_red) - Tc*d2A_ddeltadtau/(T*V*V*rho_red))
         return dH_dV_T
 
     def dH_dP_V(self):
@@ -6052,8 +6052,8 @@ class HelmholtzEOS(Phase):
         except:
             pass
         d3A_ddeltadtau2 = self.d3A_ddeltadtau2()
-        T, Tc, delta, V, rhoc, R = self.T, self.Tc, self.delta, self._V, self.rhoc, self.R
-        self._d2P_dT2 = d2P_dT2 = R*Tc*Tc*d3A_ddeltadtau2/(T*T*T*V*V*rhoc)
+        T, Tc, delta, V, rho_red, R = self.T, self.Tc, self.delta, self._V, self.rho_red, self.R
+        self._d2P_dT2 = d2P_dT2 = R*Tc*Tc*d3A_ddeltadtau2/(T*T*T*V*V*rho_red)
         return d2P_dT2        
     
     def d2P_dV2(self):
@@ -6076,22 +6076,22 @@ class HelmholtzEOS(Phase):
         '''
         from sympy import *
         from chemicals import Vm_to_rho
-        Tc, rhoc, V, R = symbols('Tc, rhoc, V, R')
+        Tc, rho_red, V, R = symbols('Tc, rho_red, V, R')
         T = symbols('T')
         rho = 1/V
         
         iapws95_dA_ddelta = symbols('ddelta', cls=Function)
         
-        rhoc_inv = (1/rhoc)
+        rho_red_inv = (1/rho_red)
         tau = Tc/T
-        delta = rho*rhoc_inv
+        delta = rho*rho_red_inv
         dA_ddelta = iapws95_dA_ddelta(tau, delta)
         P = (dA_ddelta*delta)*rho*R*T
         print(diff(P,V, 2))
         '''
-        R, T, V, rhoc = self.R, self.T, self._V, self.rhoc
+        R, T, V, rho_red = self.R, self.T, self._V, self.rho_red
         
-        self._d2P_dV2 = d2P_dV2 = R*T*(6.0*dA_ddelta + (2*d2A_ddelta2 + d3A_ddelta3/(V*rhoc))/(V*rhoc) + 4*d2A_ddelta2/(V*rhoc))/(V**4*rhoc)
+        self._d2P_dV2 = d2P_dV2 = R*T*(6.0*dA_ddelta + (2*d2A_ddelta2 + d3A_ddelta3/(V*rho_red))/(V*rho_red) + 4*d2A_ddelta2/(V*rho_red))/(V**4*rho_red)
         return d2P_dV2
     
     def d2P_dTdV(self):
@@ -6112,10 +6112,10 @@ class HelmholtzEOS(Phase):
         except:
             d2A_ddeltadtau = self.d2A_ddeltadtau()
         d3A_ddelta2dtau = self.d3A_ddelta2dtau()
-        R, T, Tc, V, rhoc = self.R, self.T, self.Tc, self._V, self.rhoc
+        R, T, Tc, V, rho_red = self.R, self.T, self.Tc, self._V, self.rho_red
         
-        self._d2P_dTdV = d2P_dTdV = R*(-2.0*dA_ddelta - d2A_ddelta2/(V*rhoc) + 2.0*Tc*d2A_ddeltadtau/T 
-                                       + Tc*d3A_ddelta2dtau/(T*V*rhoc))/(V*V*V*rhoc)
+        self._d2P_dTdV = d2P_dTdV = R*(-2.0*dA_ddelta - d2A_ddelta2/(V*rho_red) + 2.0*Tc*d2A_ddeltadtau/T 
+                                       + Tc*d3A_ddelta2dtau/(T*V*rho_red))/(V*V*V*rho_red)
         return d2P_dTdV
 
 
@@ -6129,6 +6129,12 @@ class IAPWS95(HelmholtzEOS):
     
     rhoc_inv = rho_to_Vm(rhoc_mass, iapws95_MW)
     rhoc = 1.0/rhoc_inv
+    
+    rho_red = rhoc
+    rho_red_inv = rhoc_inv
+    
+    T_red = Tc
+    
     _MW_kg = _MW*1e-3
     R = _MW_kg*iapws95_R # This is just the gas constant 8.314... but matching iapws to their decimals
 
