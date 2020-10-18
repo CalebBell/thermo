@@ -56,8 +56,8 @@ def test_water_C1_C8():
     properties = PropertyCorrelationPackage(constants=constants, HeatCapacityGases=HeatCapacityGases)
     eos_kwargs = dict(Tcs=Tcs, Pcs=Pcs, omegas=omegas, kijs=kijs)
     
-    gas = EOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     
     
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
@@ -136,7 +136,7 @@ def test_water_C1_C8():
     assert_close(res.lightest_liquid.Z(), 0.011644749497712284)
     
     # Test the flash bubble works OK with multiple liquids (T-VF=1 and P-VF=1)
-    liq_SRK = EOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    liq_SRK = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     
     res_PR = FlashVLN(constants, properties, liquids=[liq], gas=gas).flash(T=298.15, VF=1, zs=zs)
     res_SRK = FlashVLN(constants, properties, liquids=[liq_SRK], gas=gas).flash(T=298.15, VF=1, zs=zs)
@@ -177,8 +177,8 @@ def test_C1_to_C5_water_gas():
                                                                 HeatCapacityGas(best_fit=(50.0, 1000.0, [-3.4967172940791855e-22, 1.7086617923088487e-18, -3.505442235019261e-15, 3.911995832871371e-12, -2.56012228400194e-09, 9.620884103239162e-07, -0.00016570643705524543, 0.011886900701175745, 32.972342195898534])),])
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
     
-    gas = EOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
     res = flashN.flash(T=T, P=P, zs=zs)
@@ -211,8 +211,8 @@ def test_C1_C8_water_TEG():
                                                                     HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),])
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
     
-    gas = EOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     
     flashN = FlashVLN(constants, properties, liquids=[liq, liq, liq], gas=gas)
     VLL = flashN.flash(T=T, P=P, zs=zs)
@@ -238,8 +238,8 @@ def test_C5_C6_C7():
     T, P = 180.0, 4.0
     eos_kwargs = dict(Tcs=Tcs, Pcs=Pcs, omegas=omegas, kijs=kijs)
     
-    gas = EOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     flashN = FlashVLN(constants, properties, liquids=[liq], gas=gas)
     
     # Extremely low pressure point - genuinely is a VL point, but G is lower by a tiny amount
@@ -260,8 +260,8 @@ def test_binary_LLL_specified_still_one_phase():
     properties = PropertyCorrelationPackage(constants=constants, HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
                                                                  HeatCapacityGas(best_fit=(50.0, 1000.0, [-3.4967172940791855e-22, 1.7086617923088487e-18, -3.505442235019261e-15, 3.911995832871371e-12, -2.56012228400194e-09, 9.620884103239162e-07, -0.00016570643705524543, 0.011886900701175745, 32.972342195898534]))],)
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas, kijs=kijs)
-    gas = EOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     flashN = FlashVLN(constants, properties, liquids=[liq, liq, liq], gas=gas)
     res = flashN.flash(T=T, P=P, zs=zs)
     assert res.phase_count == 1
@@ -282,8 +282,8 @@ def test_binary_phase_switch():
                       omegas=constants.omegas, kijs=[[0.0, -.0057], [-.0057, 0.0]])
     
     
-    gas = EOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
     
@@ -312,8 +312,8 @@ def test_three_phase_ethylene_ethanol_nitrogen():
                       omegas=constants.omegas, kijs=[[0.0, -.0057, 0.0], [-.0057, 0.0, 0.0], [0.0, 0.0, 0.0]])
     
     
-    gas = EOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     
     # SS trivial solution needs to be checked
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
@@ -363,8 +363,8 @@ def test_ethanol_water_cyclohexane_3_liquids():
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs,
                       omegas=constants.omegas)
     
-    gas = EOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
     res = flashN.flash(T=150, P=1e6, zs=zs)
@@ -387,8 +387,8 @@ def test_butanol_water_ethanol_3P():
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs,
                       omegas=constants.omegas)
     
-    gas = EOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
     
@@ -432,8 +432,8 @@ def test_VLL_PR_random0_wrong_stab_test():
     T, P = 313.0156681953369, 115139.53993264504
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
     
-    gas = EOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
     
     res = flashN.flash(T=T, P=P, zs=zs)
@@ -454,8 +454,8 @@ def test_LLL_PR_random1_missing_LLL_trivial_gas():
     zs = [.2, .2, .2, .2, .2]
     T = 150.0
     P=381214.0
-    gas = EOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
     res = flashN.flash(T=T, P=P, zs=zs)
     assert 3 == res.phase_count
@@ -481,8 +481,8 @@ def test_LLL_random2_decrease_tolerance_similar_comp_stab():
                         HeatCapacityGas(best_fit=(195.15, 575.6, [-4.4626862569926e-19, 1.5426193954174004e-15, -2.2990858376078466e-12, 1.9176735381876706e-09, -9.677520492563025e-07, 0.0002957533403178217, -0.051211100401858944, 4.615337526886703, -64.55339891849962]))])
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
     
-    gas = EOSGas(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
     flashN = FlashVLN(constants, correlations, liquids=[liq, liq], gas=gas)
     
     res = flashN.flash(T=T, P=P, zs=zs)
@@ -507,8 +507,8 @@ def test_VLLL_water_C1_C8_iron():
                                                                 HeatCapacityGas(best_fit=(1811.15, 9340.0, [-1.5383706701397728e-29, 7.680207832265723e-25, -1.6470428514880497e-20, 1.9827016753030861e-16, -1.468410412876826e-12, 6.88624351096193e-09, -2.019180028341396e-05, 0.03467141804375052, 61.33135714266571]))])
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
     
-    gas = EOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     flashN = FlashVLN(constants, properties, liquids=[liq, liq, liq], gas=gas)
     
     res = flashN.flash(T=T, P=P, zs=zs)
@@ -534,8 +534,8 @@ def test_VLLLL_first():
                                                                 HeatCapacityGas(best_fit=(250.35, 632.0, [-9.534610090167143e-20, 3.4583416772306854e-16, -5.304513883184021e-13, 4.410937690059558e-10, -2.0905505018557675e-07, 5.20661895325169e-05, -0.004134468659764938, -0.3746374641720497, 114.90130267531933])),
                                                                 HeatCapacityGas(best_fit=(1811.15, 9340.0, [-1.5383706701397728e-29, 7.680207832265723e-25, -1.6470428514880497e-20, 1.9827016753030861e-16, -1.468410412876826e-12, 6.88624351096193e-09, -2.019180028341396e-05, 0.03467141804375052, 61.33135714266571]))])
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
-    gas = EOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     flashN = FlashVLN(constants, properties, liquids=[liq, liq, liq, liq], gas=gas)
     res = flashN.flash(T=T, P=P, zs=zs)
     assert res.phase_count == 5
@@ -554,8 +554,8 @@ def test_problem_1_Ivanov_CH4_H2S():
     properties = PropertyCorrelationPackage(constants=constants, HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
                                                                  HeatCapacityGas(best_fit=(50.0, 1000.0, [-3.4967172940791855e-22, 1.7086617923088487e-18, -3.505442235019261e-15, 3.911995832871371e-12, -2.56012228400194e-09, 9.620884103239162e-07, -0.00016570643705524543, 0.011886900701175745, 32.972342195898534]))],)
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas, kijs=kijs)
-    gas = EOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     flashN = FlashVLN(constants, properties, liquids=[liq, liq, liq], gas=gas)
 
     # Worked fine
@@ -614,8 +614,8 @@ def test_problem_2_Ivanov_CH4_propane():
     properties = PropertyCorrelationPackage(constants=constants, HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
                                                                                     HeatCapacityGas(best_fit=(50.0, 1000.0, [7.008452174279456e-22, -1.7927920989992578e-18, 1.1218415948991092e-17, 4.23924157032547e-12, -5.279987063309569e-09, 2.5119646468572195e-06, -0.0004080663744697597, 0.1659704314379956, 26.107282495650367])),],)
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas, kijs=kijs)
-    gas = EOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
 
     # Should converge to two phase solution
@@ -642,8 +642,8 @@ def test_problem_3_Ivanov_N2_ethane():
     properties = PropertyCorrelationPackage(constants=constants, HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [-6.496329615255804e-23, 2.1505678500404716e-19, -2.2204849352453665e-16, 1.7454757436517406e-14, 9.796496485269412e-11, -4.7671178529502835e-08, 8.384926355629239e-06, -0.0005955479316119903, 29.114778709934264])),
                                                                                     HeatCapacityGas(best_fit=(50.0, 1000.0, [7.115386645067898e-21, -3.2034776773408394e-17, 5.957592282542187e-14, -5.91169369931607e-11, 3.391209091071677e-08, -1.158730780040934e-05, 0.002409311277400987, -0.18906638711444712, 37.94602410497228]))],)
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas, kijs=kijs)
-    gas = EOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
 
 
@@ -674,8 +674,8 @@ def test_problem_4_Ivanov_CO2_CH4():
     properties = PropertyCorrelationPackage(constants=constants, HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [-6.496329615255804e-23, 2.1505678500404716e-19, -2.2204849352453665e-16, 1.7454757436517406e-14, 9.796496485269412e-11, -4.7671178529502835e-08, 8.384926355629239e-06, -0.0005955479316119903, 29.114778709934264])),
                                                                                     HeatCapacityGas(best_fit=(50.0, 1000.0, [7.115386645067898e-21, -3.2034776773408394e-17, 5.957592282542187e-14, -5.91169369931607e-11, 3.391209091071677e-08, -1.158730780040934e-05, 0.002409311277400987, -0.18906638711444712, 37.94602410497228]))],)
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas, kijs=kijs)
-    gas = EOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     flashN = FlashVLN(constants, properties, liquids=[liq], gas=gas)
 
     # Didn't find anything wrong, but here is a point I wanted to double confirm
@@ -705,8 +705,8 @@ def test_problem_5_Ivanov_N2_CH4_Ethane():
                                                                                     HeatCapacityGas(best_fit=(50.0, 1000.0, [7.115386645067898e-21, -3.2034776773408394e-17, 5.957592282542187e-14, -5.91169369931607e-11, 3.391209091071677e-08, -1.158730780040934e-05, 0.002409311277400987, -0.18906638711444712, 37.94602410497228]))])
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas, kijs=kijs)
     
-    gas = EOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
 
     res = flashN.flash(T=T, P=P, zs=[0.3, 0.1, 0.6])
@@ -744,8 +744,8 @@ def test_problem_6_Ivanov_CH4_CO2_H2S():
                                                                         HeatCapacityGas(best_fit=(50.0, 1000.0, [-3.4967172940791855e-22, 1.7086617923088487e-18, -3.505442235019261e-15, 3.911995832871371e-12, -2.56012228400194e-09, 9.620884103239162e-07, -0.00016570643705524543, 0.011886900701175745, 32.972342195898534]))])
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas, kijs=kijs)
     
-    gas = EOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
 
     # There is a good two phase solution very nearly the same Gibbs but not quite
@@ -787,8 +787,8 @@ def test_problem_7_Ivanov_CH4_CO2_C6_H2S():
                                                                                     HeatCapacityGas(best_fit=(50.0, 1000.0, [-3.4967172940791855e-22, 1.7086617923088487e-18, -3.505442235019261e-15, 3.911995832871371e-12, -2.56012228400194e-09, 9.620884103239162e-07, -0.00016570643705524543, 0.011886900701175745, 32.972342195898534]))])
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas, kijs=kijs)
     
-    gas = EOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
     
     # Test has only one point
@@ -823,8 +823,8 @@ def test_problem_8_Ivanov():
                                                                                     HeatCapacityGas(best_fit=(200.0, 1000.0, [-2.608494166540452e-21, 1.3127902917979555e-17, -2.7500977814441112e-14, 3.0563338307642794e-11, -1.866070373718589e-08, 5.4505831355984375e-06, -0.00024022110003950325, 0.04007078628096955, 55.70646822218319])),
                                                                                     HeatCapacityGas(best_fit=(200.0, 1000.0, [7.537198394065234e-22, -4.946850205122326e-18, 1.4223747507170372e-14, -2.3451318313798008e-11, 2.4271676873997662e-08, -1.6055220805830093e-05, 0.006379734000450042, -1.0360272314628292, 141.84695243411866]))])
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas, kijs=kijs)
-    gas = EOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
     
     # LL point
@@ -874,8 +874,8 @@ def test_problem_9_Ivanov():
                                                                         HeatCapacityGas(best_fit=(200.0, 1000.0, [1.3740654453881647e-21, -8.344496203280677e-18, 2.2354782954548568e-14, -3.4659555330048226e-11, 3.410703030634579e-08, -2.1693611029230923e-05, 0.008373280796376588, -1.356180511425385, 175.67091124888998]))])
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas, kijs=kijs)
     
-    gas = EOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
     
     # Could not get a three phase system out of it
@@ -909,8 +909,8 @@ def test_problem_10_Ivanov():
                                                         HeatCapacityGas(best_fit=(200.0, 1000.0, [1.3740654453881647e-21, -8.344496203280677e-18, 2.2354782954548568e-14, -3.4659555330048226e-11, 3.410703030634579e-08, -2.1693611029230923e-05, 0.008373280796376588, -1.356180511425385, 175.67091124888998]))])
    
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)  # kijs all zero
-    gas = EOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
     
     res = flashN.flash(T=T, P=P, zs=zs)
@@ -944,8 +944,8 @@ def test_problem_11_Ivanov():
     # kijs all zero
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
     
-    gas = EOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
     
     res = flashN.flash(T=T, P=P, zs=zs)
@@ -981,8 +981,8 @@ def test_problem_12_Ivanov():
     T = 240.0
     P = 60e5
     zs = [0.833482, 0.075260, 0.020090, 0.003050, 0.005200, 0.001200, 0.001440, 0.000680, 0.000138, 0.000110, 0.056510, 0.002840]
-    gas = EOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
     
     res = flashN.flash(T=T, P=P, zs=zs)
@@ -1003,10 +1003,10 @@ def test_phases_at():
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs,
                       omegas=constants.omegas, kijs=[[0.0, -.0057], [-.0057, 0.0]])
     
-    gas = EOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq2 = EOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq3 = EOSLiquid(VDWMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq2 = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq3 = CEOSLiquid(VDWMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     
     flashN = FlashVLN(constants, properties, liquids=[liq2, liq3, liq, liq3, liq, liq2, liq2], gas=gas)
     assert 3 == len(set([id(i) for i in flashN.phases_at(T=T, P=P, zs=zs)[1]]))
@@ -1050,8 +1050,8 @@ def test_PT_plot_works():
                                             HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
                                             HeatCapacityGas(best_fit=(50.0, 1000.0, [-1.162767978165682e-20, 5.4975285700787494e-17, -1.0861242757337942e-13, 1.1582703354362728e-10, -7.160627710867427e-08, 2.5392014654765875e-05, -0.004732593693568646, 0.5072291035198603, 20.037826650765965])),],)
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
-    gas = EOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=298.15, P=1e5, zs=zs)
-    liq = EOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=298.15, P=1e5, zs=zs)
+    gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=298.15, P=1e5, zs=zs)
+    liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=298.15, P=1e5, zs=zs)
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
     values = flashN.debug_PT(zs=zs, Tmin=300, Tmax=600, Pmin=1e5, Pmax=3e7, pts=3, verbose=False, show=False, values=True)
     assert_close1d(values[0], [300., 424.2640687119287, 600], rtol=1e-12)
@@ -1073,8 +1073,8 @@ def test_PT_plot_butanol_water_ethanol(eos):
                                             HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
                                             HeatCapacityGas(best_fit=(50.0, 1000.0, [-1.162767978165682e-20, 5.4975285700787494e-17, -1.0861242757337942e-13, 1.1582703354362728e-10, -7.160627710867427e-08, 2.5392014654765875e-05, -0.004732593693568646, 0.5072291035198603, 20.037826650765965])),],)
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
-    gas = EOSGas(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=298.15, P=1e5, zs=zs)
-    liq = EOSLiquid(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=298.15, P=1e5, zs=zs)
+    gas = CEOSGas(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=298.15, P=1e5, zs=zs)
+    liq = CEOSLiquid(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=298.15, P=1e5, zs=zs)
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
     fig = flashN.debug_PT(zs=zs, Tmin=300, Tmax=600, Pmin=1e5, Pmax=3e7, pts=25, verbose=False, show=False, values=False)
     write_PT_plot(fig, eos, IDs, zs, flashN)
@@ -1094,8 +1094,8 @@ def test_PT_plot_ethanol_water_cyclohexane(eos):
                                                             HeatCapacityGas(best_fit=(100.0, 1000.0, [-2.974359561904494e-20, 1.4314483633408613e-16, -2.8871179135718834e-13, 3.1557554273363386e-10, -2.0114283147465467e-07, 7.426722872136983e-05, -0.014718631011050769, 1.6791476987773946, -34.557986234881355]))])
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
 
-    gas = EOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=298.15, P=1e5, zs=zs)
-    liq = EOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=298.15, P=1e5, zs=zs)
+    gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=298.15, P=1e5, zs=zs)
+    liq = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=298.15, P=1e5, zs=zs)
     
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
     fig = flashN.debug_PT(zs=zs, Tmin=175, Tmax=700, Pmin=1e4, Pmax=2.5e7, pts=50, verbose=False, show=False, values=False)
@@ -1125,8 +1125,8 @@ def test_PT_plot_C1_to_C5_water_gas(eos):
                                                                 HeatCapacityGas(best_fit=(50.0, 1000.0, [-3.1115474168865828e-21, 1.39156078498805e-17, -2.5430881416264243e-14, 2.4175307893014295e-11, -1.2437314771044867e-08, 3.1251954264658904e-06, -0.00021220221928610925, 0.000884685506352987, 29.266811602924644])),
                                                                 HeatCapacityGas(best_fit=(50.0, 1000.0, [-3.4967172940791855e-22, 1.7086617923088487e-18, -3.505442235019261e-15, 3.911995832871371e-12, -2.56012228400194e-09, 9.620884103239162e-07, -0.00016570643705524543, 0.011886900701175745, 32.972342195898534])),])
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
-    gas = EOSGas(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
     fig = flashN.debug_PT(zs=zs, Tmin=175, Tmax=430, Pmin=1e4, Pmax=3.5e7, pts=150, verbose=False, show=False, values=False)
     write_PT_plot(fig, eos, IDs, zs, flashN)
@@ -1151,8 +1151,8 @@ def test_PT_plot_water_C1_C8(eos):
                                          CASs=['7732-18-5', '74-82-8', '111-65-9'])
     properties = PropertyCorrelationPackage(constants=constants, HeatCapacityGases=HeatCapacityGases)
     eos_kwargs = dict(Tcs=Tcs, Pcs=Pcs, omegas=omegas, kijs=kijs)
-    gas = EOSGas(eos, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(eos, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(eos, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(eos, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
     fig = flashN.debug_PT(zs=zs, Tmin=175, Tmax=700, Pmin=1e4, Pmax=1e8, pts=35, verbose=False, show=False, values=False)
     write_PT_plot(fig, eos, IDs, zs, flashN)
@@ -1172,8 +1172,8 @@ def test_PT_plot_ethylene_ethanol_nitrogen(eos):
                                                                                     HeatCapacityGas(best_fit=(50.0, 1000.0, [-6.496329615255804e-23, 2.1505678500404716e-19, -2.2204849352453665e-16, 1.7454757436517406e-14, 9.796496485269412e-11, -4.7671178529502835e-08, 8.384926355629239e-06, -0.0005955479316119903, 29.114778709934264]))])
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs,
                       omegas=constants.omegas, kijs=[[0.0, -.0057, 0.0], [-.0057, 0.0, 0.0], [0.0, 0.0, 0.0]])
-    gas = EOSGas(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
     fig = flashN.debug_PT(zs=zs, Tmin=175, Tmax=500, Pmin=1e5, Pmax=1e8, pts=25, verbose=False, show=False, values=False)
     write_PT_plot(fig, eos, IDs, zs, flashN)
@@ -1195,8 +1195,8 @@ def test_PT_plot_LLL_plot_random1(eos):
     zs = [.2, .2, .2, .2, .2]
     T = 150.0
     P = 381214.0
-    gas = EOSGas(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
     fig = flashN.debug_PT(zs=zs, Tmin=120, Tmax=700, Pmin=1e4, Pmax=1e8, pts=25, verbose=False, show=False, values=False)
     write_PT_plot(fig, eos, IDs, zs, flashN)
@@ -1219,8 +1219,8 @@ def test_PT_plot_H2S_CH4(eos):
     properties = PropertyCorrelationPackage(constants=constants, HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
                                                                  HeatCapacityGas(best_fit=(50.0, 1000.0, [-3.4967172940791855e-22, 1.7086617923088487e-18, -3.505442235019261e-15, 3.911995832871371e-12, -2.56012228400194e-09, 9.620884103239162e-07, -0.00016570643705524543, 0.011886900701175745, 32.972342195898534]))],)
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas, kijs=kijs)
-    gas = EOSGas(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     flashN = FlashVLN(constants, properties, liquids=[liq, liq, liq], gas=gas)
     
     zs_list = ([.9885, .0115], [.9813, .0187], [0.93, 0.07], 
@@ -1248,8 +1248,8 @@ def test_PT_plot_CH4_propane(eos):
     properties = PropertyCorrelationPackage(constants=constants, HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
                                                                                     HeatCapacityGas(best_fit=(50.0, 1000.0, [7.008452174279456e-22, -1.7927920989992578e-18, 1.1218415948991092e-17, 4.23924157032547e-12, -5.279987063309569e-09, 2.5119646468572195e-06, -0.0004080663744697597, 0.1659704314379956, 26.107282495650367])),],)
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas, kijs=kijs)
-    gas = EOSGas(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     flashN = FlashVLN(constants, properties, liquids=[liq, liq, liq], gas=gas)
     zs_list = ([.4, .6], [.68, .32], [.73, .27], [.9, .1])
     for zs in zs_list:
@@ -1277,8 +1277,8 @@ def test_PT_plot_N2_ethane(eos):
     properties = PropertyCorrelationPackage(constants=constants, HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [-6.496329615255804e-23, 2.1505678500404716e-19, -2.2204849352453665e-16, 1.7454757436517406e-14, 9.796496485269412e-11, -4.7671178529502835e-08, 8.384926355629239e-06, -0.0005955479316119903, 29.114778709934264])),
                                                                                     HeatCapacityGas(best_fit=(50.0, 1000.0, [7.115386645067898e-21, -3.2034776773408394e-17, 5.957592282542187e-14, -5.91169369931607e-11, 3.391209091071677e-08, -1.158730780040934e-05, 0.002409311277400987, -0.18906638711444712, 37.94602410497228]))],)
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas, kijs=kijs)
-    gas = EOSGas(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     flashN = FlashVLN(constants, properties, liquids=[liq], gas=gas)
     zs_list = ([.1, .9], [.18, .82], [.3, .7], [.44, .56], [.6, .4])
     for zs in zs_list:
@@ -1309,8 +1309,8 @@ def test_PT_plot_CO2_CH4(eos):
                                                                                     HeatCapacityGas(best_fit=(50.0, 1000.0, [7.115386645067898e-21, -3.2034776773408394e-17, 5.957592282542187e-14, -5.91169369931607e-11, 3.391209091071677e-08, -1.158730780040934e-05, 0.002409311277400987, -0.18906638711444712, 37.94602410497228]))],)
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas, kijs=kijs)
 
-    gas = EOSGas(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     flashN = FlashVLN(constants, properties, liquids=[liq], gas=gas)
     for zs in zs_list:
         fig = flashN.debug_PT(zs=zs, Tmin=100, Tmax=300, Pmin=1e4, Pmax=1e8,
@@ -1346,8 +1346,8 @@ def test_PT_plot_N2_CH4_Ethane(eos):
                                                                                     HeatCapacityGas(best_fit=(50.0, 1000.0, [7.115386645067898e-21, -3.2034776773408394e-17, 5.957592282542187e-14, -5.91169369931607e-11, 3.391209091071677e-08, -1.158730780040934e-05, 0.002409311277400987, -0.18906638711444712, 37.94602410497228]))])
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas, kijs=kijs)
     
-    gas = EOSGas(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(eos, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
     for zs in all_zs:
         fig = flashN.debug_PT(zs=zs, Tmin=120, Tmax=400, Pmin=1e4, Pmax=1e8,
@@ -1365,10 +1365,10 @@ def test_PH_VL_not_identifying_phases():
         HeatCapacityGas(best_fit=(50.0, 1000.0, [7.115386645067898e-21, -3.2034776773408394e-17, 5.957592282542187e-14, -5.91169369931607e-11, 3.391209091071677e-08, -1.158730780040934e-05, 0.002409311277400987, -0.18906638711444712, 37.94602410497228]))])
     
     eos_kwargs = {'Pcs':constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
-    gas = EOSGas(eos_class=PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, 
-           T=298.15, P=101325.0, zs=[0.5, 0.5])
-    liquid = EOSLiquid(eos_class=PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, 
-           T=298.15, P=101325.0, zs=[0.5, 0.5])
+    gas = CEOSGas(eos_class=PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases,
+                  T=298.15, P=101325.0, zs=[0.5, 0.5])
+    liquid = CEOSLiquid(eos_class=PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases,
+                        T=298.15, P=101325.0, zs=[0.5, 0.5])
     
     # Case where PH flashes were not having their IDs, ID'd
     flasher = FlashVLN(constants, correlations, [liquid], gas)
@@ -1390,10 +1390,10 @@ def test_TVF_PVF_reversed_mole_balance():
         HeatCapacityGas(best_fit=(50.0, 1000.0, [7.115386645067898e-21, -3.2034776773408394e-17, 5.957592282542187e-14, -5.91169369931607e-11, 3.391209091071677e-08, -1.158730780040934e-05, 0.002409311277400987, -0.18906638711444712, 37.94602410497228]))])
     
     eos_kwargs = {'Pcs':constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
-    gas = EOSGas(eos_class=PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, 
-           T=298.15, P=101325.0, zs=[0.5, 0.5])
-    liquid = EOSLiquid(eos_class=PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, 
-           T=298.15, P=101325.0, zs=[0.5, 0.5])
+    gas = CEOSGas(eos_class=PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases,
+                  T=298.15, P=101325.0, zs=[0.5, 0.5])
+    liquid = CEOSLiquid(eos_class=PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases,
+                        T=298.15, P=101325.0, zs=[0.5, 0.5])
     flasher = FlashVLN(constants, correlations, [liquid], gas)
     base = flasher.flash(T=200.0, P=1e6, zs=[.5, .5])
     
@@ -1421,8 +1421,8 @@ def test_PH_TODO():
     
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
     
-    gas = EOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=300.0, P=1e4, zs=[.5, .5])
-    liq = EOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=300.0, P=1e4, zs=[.5, .5])
+    gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=300.0, P=1e4, zs=[.5, .5])
+    liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=300.0, P=1e4, zs=[.5, .5])
     flashN = FlashVLN(constants, properties, liquids=[liq], gas=gas)
     flashN.flash(H=-1e4, P=2e5, zs=[.5, .5]).H()
 

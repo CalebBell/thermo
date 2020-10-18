@@ -42,8 +42,8 @@ def test_C2_C5_liq_Wilson():
 
     Tcs, Pcs, omegas = [305.32, 469.7], [4872000.0, 3370000.0], [0.098, 0.251]
     eos_kwargs = {'Pcs': Pcs, 'Tcs': Tcs, 'omegas': omegas}
-    gas = EOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     stab = StabilityTester(Tcs=Tcs, Pcs=Pcs, omegas=omegas)
 
     assert_stab_success_2P(liq, gas, stab, 360.0, 3e6, zs, 'Wilson liquid', xs=[0.8178671482462099, 0.18213285175379013], 

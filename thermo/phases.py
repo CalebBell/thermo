@@ -21,7 +21,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
 from __future__ import division
-__all__ = ['GibbsExcessLiquid', 'GibbsExcessSolid', 'Phase', 'EOSLiquid', 'EOSGas', 'IdealGas', 'IAPWS97',
+__all__ = ['GibbsExcessLiquid', 'GibbsExcessSolid', 'Phase', 'CEOSLiquid', 'CEOSGas', 'IdealGas', 'IAPWS97', 'HelmholtzEOS',
            'IAPWS95', 'IAPWS95Gas', 'IAPWS95Liquid',
            'gas_phases', 'liquid_phases', 'solid_phases', 'CombinedPhase', 'CoolPropPhase', 'CoolPropLiquid', 'CoolPropGas', 'INCOMPRESSIBLE_CONST',
            
@@ -2192,7 +2192,7 @@ class IdealGas(Phase):
         self._k = k
         return k
 
-class EOSGas(Phase):
+class CEOSGas(Phase):
     is_gas = True
     is_liquid = False
     ideal_gas_basis = True
@@ -2227,7 +2227,7 @@ class EOSGas(Phase):
     
     def as_args(self):
         eos_kwargs = self.eos_kwargs.copy()
-        base = 'EOSGas(eos_class=%s, eos_kwargs=%s, HeatCapacityGases=correlations.HeatCapacityGases,'  %(self.eos_class.__name__, self.eos_kwargs)
+        base = 'CEOSGas(eos_class=%s, eos_kwargs=%s, HeatCapacityGases=correlations.HeatCapacityGases,'  %(self.eos_class.__name__, self.eos_kwargs)
         for s in ('Hfs', 'Gfs', 'Sfs', 'T', 'P', 'zs'):
             if hasattr(self, s) and getattr(self, s) is not None:
                 base += '%s=%s, ' %(s, getattr(self, s))
@@ -2880,10 +2880,10 @@ class EOSGas(Phase):
         self._k = k
         return k
 
-def build_EOSLiquid():
+def build_CEOSLiquid():
     import inspect
-    source = inspect.getsource(EOSGas)
-    source = source.replace('EOSGas', 'EOSLiquid').replace('only_g', 'only_l')
+    source = inspect.getsource(CEOSGas)
+    source = source.replace('CEOSGas', 'CEOSLiquid').replace('only_g', 'only_l')
     source = source.replace("'g'", "'gORIG'")
     source = source.replace("'l'", "'g'")
     source = source.replace("'gORIG'", "'l'")
@@ -2908,12 +2908,13 @@ def build_EOSLiquid():
     return source
 
 try:
-    EOSLiquid
+    CEOSLiquid
 except:
     # Cost is ~10 ms - must be pasted in the future!
-    exec(build_EOSLiquid())
-EOSLiquid.is_gas = False
-EOSLiquid.is_liquid = True
+    exec(build_CEOSLiquid())
+
+CEOSLiquid.is_gas = False
+CEOSLiquid.is_liquid = True
 
 class GibbsExcessLiquid(Phase):
     force_phase = 'l'
@@ -5626,117 +5627,7 @@ class ChaoSeader(GraysonStreed):
     simple_coeffs = (5.75748, -3.01761, -4.985, 2.02299, 0.0, 0.08427, 0.26667, -0.31138, -0.02655, 0.02883)
     version = 0
 
-
-class IAPWS95(Phase):
-    _MW = iapws95_MW
-    Tc = iapws95_Tc
-    Pc = iapws95_Pc
-    rhoc_mass = iapws95_rhoc
-    rhoc_mass_inv = 1.0/iapws95_rhoc
-    
-    rhoc_inv = rho_to_Vm(rhoc_mass, iapws95_MW)
-    rhoc = 1.0/rhoc_inv
-    _MW_kg = _MW*1e-3
-    R = _MW_kg*iapws95_R # This is just the gas constant 8.314... but matching iapws to their decimals
-
-    #R = property_mass_to_molar(iapws95_R, iapws95_MW)
-    zs = [1.0]
-    cmps = [0]
-    HeatCapacityGases = iapws_correlations.HeatCapacityGases
-
-    T_MAX_FIXED = 5000.0
-    T_MIN_FIXED = 245.0
-
-    _d3Ar_ddeltadtau2_func = staticmethod(iapws95_d3Ar_ddeltadtau2)
-    _d3Ar_ddelta2dtau_func = staticmethod(iapws95_d3Ar_ddelta2dtau)
-    _d2Ar_ddeltadtau_func = staticmethod(iapws95_d2Ar_ddeltadtau)
-    _d2Ar_dtau2_func = staticmethod(iapws95_d2Ar_dtau2)
-    _dAr_dtau_func = staticmethod(iapws95_dAr_dtau)
-    _d3Ar_ddelta3_func = staticmethod(iapws95_d3Ar_ddelta3)
-    _d2Ar_ddelta2_func = staticmethod(iapws95_d2Ar_ddelta2)
-    _dAr_ddelta_func = staticmethod(iapws95_dAr_ddelta)
-    _Ar_func = staticmethod(iapws95_Ar)
-
-    def __init__(self, T=None, P=None, zs=None):
-        self.T = T
-        self.P = P
-        self._rho_mass = rho_mass = iapws95_rho(T, P)
-        self._V = rho_to_Vm(rho=rho_mass, MW=self._MW)
-        self.tau = tau = self.Tc/T
-        self.delta = delta = rho_mass*self.rhoc_mass_inv
-        self.A0, self.dA0_dtau, self.d2A0_dtau2, self.d3A0_dtau3 = iapws95_A0_tau_derivatives(tau, delta)
-
-    def to_TP_zs(self, T, P, zs):
-        new = self.__class__.__new__(self.__class__)
-        new.zs = zs
-        new.T = T
-        new.P = P
-        new._rho_mass = rho_mass = iapws95_rho(T, P)
-        new._V = rho_to_Vm(rho=rho_mass, MW=self._MW)
-        new.tau = tau = new.Tc/T
-        new.delta = delta = rho_mass*new.rhoc_mass_inv
-        new.A0, new.dA0_dtau, new.d2A0_dtau2, new.d3A0_dtau3 = iapws95_A0_tau_derivatives(tau, delta)
-        return new
-
-    def to_zs_TPV(self, zs, T=None, P=None, V=None):
-        new = self.__class__.__new__(self.__class__)
-        new.zs = zs
-        if T is not None and P is not None:
-            new.T = T
-            new._rho_mass = rho_mass = iapws95_rho(T, P)
-            new._V = rho_to_Vm(rho=rho_mass, MW=self._MW)
-            new.P = P
-        elif T is not None and V is not None:
-            new.T = T
-            new._rho_mass = rho_mass = 1e-3*self._MW/V
-            P = iapws95_P(T, rho_mass)
-            new._V = V
-            new.P = P
-        elif P is not None and V is not None:
-            new._rho_mass = rho_mass = Vm_to_rho(V, MW=self._MW)
-            T = new.T = iapws95_T(P, rho_mass)
-            new._V = V
-            new.P = P
-        else:
-            raise ValueError("Two of T, P, or V are needed")
-
-        new.P = P
-        new.T = T
-        new.tau = tau = new.Tc/T
-        new.delta = delta = rho_mass*new.rhoc_mass_inv
-        new.A0, new.dA0_dtau, new.d2A0_dtau2, new.d3A0_dtau3 = iapws95_A0_tau_derivatives(tau, delta)
-        
-        return new
-        
-    to = to_zs_TPV
-    
-    def mu(self):
-        try:
-            return self._mu
-        except:
-            pass
-        self.__mu_k()
-        return self._mu
-    
-    def k(self):
-        try:
-            return self._k
-        except:
-            pass
-        self.__mu_k()
-        return self._k
-
-    def __mu_k(self):
-        drho_mass_dP = self.drho_mass_dP()
-        
-        # TODO: curve fit drho_dP_Tr better than IAPWS did (mpmath)
-        drho_dP_Tr = self.to(T=self.Tc*1.5, V=self._V, zs=[1]).drho_mass_dP()
-        self._mu = mu_IAPWS(T=self.T, rho=self._rho_mass, drho_dP=drho_mass_dP,
-                        drho_dP_Tr=drho_dP_Tr)
-        
-        self._k = k_IAPWS(T=self.T, rho=self._rho_mass, Cp=self.Cp_mass(), Cv=self.Cv_mass(),
-                       mu=self._mu, drho_dP=drho_mass_dP, drho_dP_Tr=drho_dP_Tr)
-
+class HelmholtzEOS(Phase):
     def V(self):
         return self._V
 
@@ -6227,6 +6118,117 @@ class IAPWS95(Phase):
                                        + Tc*d3A_ddelta2dtau/(T*V*rhoc))/(V*V*V*rhoc)
         return d2P_dTdV
 
+
+
+class IAPWS95(HelmholtzEOS):
+    _MW = iapws95_MW
+    Tc = iapws95_Tc
+    Pc = iapws95_Pc
+    rhoc_mass = iapws95_rhoc
+    rhoc_mass_inv = 1.0/iapws95_rhoc
+    
+    rhoc_inv = rho_to_Vm(rhoc_mass, iapws95_MW)
+    rhoc = 1.0/rhoc_inv
+    _MW_kg = _MW*1e-3
+    R = _MW_kg*iapws95_R # This is just the gas constant 8.314... but matching iapws to their decimals
+
+    #R = property_mass_to_molar(iapws95_R, iapws95_MW)
+    zs = [1.0]
+    cmps = [0]
+    HeatCapacityGases = iapws_correlations.HeatCapacityGases
+
+    T_MAX_FIXED = 5000.0
+    T_MIN_FIXED = 245.0
+
+    _d3Ar_ddeltadtau2_func = staticmethod(iapws95_d3Ar_ddeltadtau2)
+    _d3Ar_ddelta2dtau_func = staticmethod(iapws95_d3Ar_ddelta2dtau)
+    _d2Ar_ddeltadtau_func = staticmethod(iapws95_d2Ar_ddeltadtau)
+    _d2Ar_dtau2_func = staticmethod(iapws95_d2Ar_dtau2)
+    _dAr_dtau_func = staticmethod(iapws95_dAr_dtau)
+    _d3Ar_ddelta3_func = staticmethod(iapws95_d3Ar_ddelta3)
+    _d2Ar_ddelta2_func = staticmethod(iapws95_d2Ar_ddelta2)
+    _dAr_ddelta_func = staticmethod(iapws95_dAr_ddelta)
+    _Ar_func = staticmethod(iapws95_Ar)
+
+    def __init__(self, T=None, P=None, zs=None):
+        self.T = T
+        self.P = P
+        self._rho_mass = rho_mass = iapws95_rho(T, P)
+        self._V = rho_to_Vm(rho=rho_mass, MW=self._MW)
+        self.tau = tau = self.Tc/T
+        self.delta = delta = rho_mass*self.rhoc_mass_inv
+        self.A0, self.dA0_dtau, self.d2A0_dtau2, self.d3A0_dtau3 = iapws95_A0_tau_derivatives(tau, delta)
+
+    def to_TP_zs(self, T, P, zs):
+        new = self.__class__.__new__(self.__class__)
+        new.zs = zs
+        new.T = T
+        new.P = P
+        new._rho_mass = rho_mass = iapws95_rho(T, P)
+        new._V = rho_to_Vm(rho=rho_mass, MW=self._MW)
+        new.tau = tau = new.Tc/T
+        new.delta = delta = rho_mass*new.rhoc_mass_inv
+        new.A0, new.dA0_dtau, new.d2A0_dtau2, new.d3A0_dtau3 = iapws95_A0_tau_derivatives(tau, delta)
+        return new
+
+    def to_zs_TPV(self, zs, T=None, P=None, V=None):
+        new = self.__class__.__new__(self.__class__)
+        new.zs = zs
+        if T is not None and P is not None:
+            new.T = T
+            new._rho_mass = rho_mass = iapws95_rho(T, P)
+            new._V = rho_to_Vm(rho=rho_mass, MW=self._MW)
+            new.P = P
+        elif T is not None and V is not None:
+            new.T = T
+            new._rho_mass = rho_mass = 1e-3*self._MW/V
+            P = iapws95_P(T, rho_mass)
+            new._V = V
+            new.P = P
+        elif P is not None and V is not None:
+            new._rho_mass = rho_mass = Vm_to_rho(V, MW=self._MW)
+            T = new.T = iapws95_T(P, rho_mass)
+            new._V = V
+            new.P = P
+        else:
+            raise ValueError("Two of T, P, or V are needed")
+
+        new.P = P
+        new.T = T
+        new.tau = tau = new.Tc/T
+        new.delta = delta = rho_mass*new.rhoc_mass_inv
+        new.A0, new.dA0_dtau, new.d2A0_dtau2, new.d3A0_dtau3 = iapws95_A0_tau_derivatives(tau, delta)
+        
+        return new
+        
+    to = to_zs_TPV
+    
+    def mu(self):
+        try:
+            return self._mu
+        except:
+            pass
+        self.__mu_k()
+        return self._mu
+    
+    def k(self):
+        try:
+            return self._k
+        except:
+            pass
+        self.__mu_k()
+        return self._k
+
+    def __mu_k(self):
+        drho_mass_dP = self.drho_mass_dP()
+        
+        # TODO: curve fit drho_dP_Tr better than IAPWS did (mpmath)
+        drho_dP_Tr = self.to(T=self.Tc*1.5, V=self._V, zs=[1]).drho_mass_dP()
+        self._mu = mu_IAPWS(T=self.T, rho=self._rho_mass, drho_dP=drho_mass_dP,
+                        drho_dP_Tr=drho_dP_Tr)
+        
+        self._k = k_IAPWS(T=self.T, rho=self._rho_mass, Cp=self.Cp_mass(), Cv=self.Cv_mass(),
+                       mu=self._mu, drho_dP=drho_mass_dP, drho_dP_Tr=drho_dP_Tr)
 
 
 
@@ -7235,6 +7237,6 @@ class CombinedPhase(Phase):
     
     
     
-gas_phases = (IdealGas, EOSGas, CoolPropGas, IAPWS95Gas)
-liquid_phases = (EOSLiquid, GibbsExcessLiquid, CoolPropLiquid, IAPWS95Liquid)
+gas_phases = (IdealGas, CEOSGas, CoolPropGas, IAPWS95Gas)
+liquid_phases = (CEOSLiquid, GibbsExcessLiquid, CoolPropLiquid, IAPWS95Liquid)
 solid_phases = (GibbsExcessSolid,)

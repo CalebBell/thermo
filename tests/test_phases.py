@@ -780,7 +780,7 @@ def test_EOSGas_phis():
      HeatCapacityGas(best_fit=(200.0, 1000.0, [1.5389278550737367e-21, -8.289631533963465e-18, 1.9149760160518977e-14, -2.470836671137373e-11, 1.9355882067011222e-08, -9.265600540761629e-06, 0.0024825718663005762, -0.21617464276832307, 48.149539665907696])),
      HeatCapacityGas(best_fit=(50.0, 1000.0, [2.3511458696647882e-21, -9.223721411371584e-18, 1.3574178156001128e-14, -8.311274917169928e-12, 4.601738891380102e-10, 1.78316202142183e-06, -0.0007052056417063217, 0.13263597297874355, 28.44324970462924]))]
     
-    gas = EOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     
     lnphis_expect = [-0.02360432649642419, -0.024402271514780954, -0.016769813943198587]
     assert_allclose(gas.lnphis(), lnphis_expect, rtol=1e-12)
@@ -947,8 +947,8 @@ def test_chemical_potential():
     Sfs = [-216.5, -110.0, -129.8]
     Gfs = [-151520.525, -70713.5, -162000.13]
     
-    liquid = EOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, Hfs=Hfs,
-                       Sfs=Sfs, Gfs=Gfs, T=T, P=P, zs=zs)
+    liquid = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, Hfs=Hfs,
+                        Sfs=Sfs, Gfs=Gfs, T=T, P=P, zs=zs)
     mu_r_exp = [-188705.73988392908, -97907.9761772734, -193308.17514525697]
     mu_r_calc = liquid.chemical_potential()
     assert_allclose(mu_r_exp, mu_r_calc, rtol=1e-9)
@@ -977,7 +977,7 @@ def test_chemical_potential():
     gammas_expect = [1.8877873731435573, 1.52276935445383, 1.5173639948878495]
     assert_allclose(liquid.gammas(), gammas_expect, rtol=1e-12)
     
-    gammas_parent = super(EOSLiquid, liquid).gammas()
+    gammas_parent = super(CEOSLiquid, liquid).gammas()
     assert_allclose(gammas_parent, gammas_expect, rtol=1e-12)
     
     
@@ -986,7 +986,7 @@ def test_EOSGas_volume_HSGUA_derivatives():
                                                                   4.601738891380102e-10, 1.78316202142183e-06, -0.0007052056417063217, 0.13263597297874355, 28.44324970462924])), ]
     kwargs = dict(eos_kwargs=dict(Tcs=[512.5], Pcs=[8084000.0], omegas=[.559]),
                  HeatCapacityGases=HeatCapacityGases)
-    gas = EOSGas(PRMIX, T=330, P=1e5, zs=[1], **kwargs)
+    gas = CEOSGas(PRMIX, T=330, P=1e5, zs=[1], **kwargs)
     
     dH_dT_V_num = derivative(lambda T: gas.to(V=gas.V(), T=T, zs=gas.zs).H(), gas.T, dx=gas.T*1e-6)
     assert_allclose(dH_dT_V_num, gas.dH_dT_V(), rtol=1e-8)
@@ -1159,10 +1159,10 @@ def test_model_hash():
     HeatCapacityGases = properties.HeatCapacityGases
     
     eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
-    gas = EOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(PRMIX, dict(eos_kwargs), HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    liq2 = EOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties2.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq3 = EOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties2.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(PRMIX, dict(eos_kwargs), HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    liq2 = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties2.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq3 = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties2.HeatCapacityGases, T=T, P=P, zs=zs)
     assert gas.model_hash() != liq.model_hash()
     assert liq2.model_hash() == liq.model_hash()
     assert liq3.model_hash() != liq.model_hash()
@@ -1183,8 +1183,8 @@ def test_dlnfugacities_SRK():
                          HeatCapacityGas(best_fit=(273, 1000, [-1.575967061488898e-21, 8.453271073419098e-18, -1.921448640274908e-14, 2.3921686769873392e-11, -1.7525253961492494e-08, 7.512525679465744e-06, -0.0018211688612260338, 0.3869010410224839, 35.590034427486614])),]
     
     eos_kwargs = {'Pcs': [33.94E5, 46.04E5], 'Tcs': [126.1, 190.6], 'omegas': [0.04, 0.011]}
-    gas = EOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     assert_allclose(gas.dlnfugacities_dns(), dlnfugacities_dns_expect, rtol=1e-9)
     assert_allclose(liq.dlnfugacities_dns(), dlnfugacities_dns_l_expect, rtol=1e-9)
     
@@ -1247,7 +1247,7 @@ def test_viscosity_thermal_conductivity():
     eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas':constants.omegas}#  'kijs': [[0, 0.038, 0.08], [0.038, 0, 0.021], [0.08, 0.021, 0]]}
     
     # gas point
-    phase = EOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    phase = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     phase.constants = constants
     phase.correlations = correlations
     assert_close(phase.mu(), 1.1006640924847626e-05, rtol=1e-7)
@@ -1261,7 +1261,7 @@ def test_viscosity_thermal_conductivity():
     assert_close(phase.k(), 0.15487898658770405, rtol=1e-7)
     
     # Liquid point
-    phase = EOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    phase = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     phase.constants = constants
     phase.correlations = correlations
     assert_close(phase.mu(), 0.00028727346628185633, rtol=1e-7)
@@ -1329,8 +1329,8 @@ def test_viscosity_bulk():
         ThermalConductivityLiquid(best_fit=(300.0, 513.9, [3.163888320633998e-17, -9.958408690033226e-14, 1.3643427085172672e-10, -1.062661463758585e-07, 5.1465666844943694e-05, -0.01587057865495585, 3.0431818575297354, -331.75594088517596, 15743.665383950109])),])
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
     
-    gas = EOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
     
     from thermo.bulk import default_settings
     settings = deepcopy(default_settings)
@@ -1405,7 +1405,7 @@ def test_phase_with_constants():
     eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas':constants.omegas}
     
     # gas point
-    phase = EOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    phase = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     phase.constants = constants
     def to_diff_T(T):
         p = phase.to(T=T, P=P, zs=zs)
@@ -1441,7 +1441,7 @@ def test_IdealGas_vs_IGMIX():
     zs = [0.2, 0.3, 0.5]
     eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas':constants.omegas}
     phase = IdealGas(T=T, P=P, zs=zs, HeatCapacityGases=HeatCapacityGases)
-    phase_EOS = EOSGas(IGMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    phase_EOS = CEOSGas(IGMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     
     ### Copy specs
 

@@ -73,11 +73,11 @@ def test_two_eos_pure_flash_all_properties():
                               EnthalpyVaporizations=EnthalpyVaporizations, HeatCapacitySolids=HeatCapacitySolids, SublimationPressures=SublimationPressures, 
                               EnthalpySublimations=EnthalpySublimations, VolumeSolids=VolumeSolids)
     
-    eos_liquid = EOSLiquid(PRMIX, dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas), HeatCapacityGases=HeatCapacityGases,
-                          Hfs=constants.Hfgs, Sfs=constants.Sfgs, Gfs=constants.Gfgs)
+    eos_liquid = CEOSLiquid(PRMIX, dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas), HeatCapacityGases=HeatCapacityGases,
+                            Hfs=constants.Hfgs, Sfs=constants.Sfgs, Gfs=constants.Gfgs)
     
-    gas = EOSGas(PRMIX, dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas), HeatCapacityGases=HeatCapacityGases,
-                Hfs=constants.Hfgs, Sfs=constants.Sfgs, Gfs=constants.Gfgs)
+    gas = CEOSGas(PRMIX, dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas), HeatCapacityGases=HeatCapacityGases,
+                  Hfs=constants.Hfgs, Sfs=constants.Sfgs, Gfs=constants.Gfgs)
     
     # Pseudo vapor volume for eos gas?
     flasher = FlashPureVLS(constants, correlations, gas, [eos_liquid], [])

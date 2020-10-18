@@ -158,8 +158,8 @@ def test_PV_plot(fluid, eos, auto_range):
     kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
                   HeatCapacityGases=pure_props.HeatCapacityGases)
 
-    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
-    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    liquid = CEOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = CEOSGas(eos, T=T, P=P, zs=zs, **kwargs)
 
     flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
 
@@ -218,8 +218,8 @@ def test_TV_plot(fluid, eos, auto_range):
     kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
                   HeatCapacityGases=pure_props.HeatCapacityGases)
 
-    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
-    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    liquid = CEOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = CEOSGas(eos, T=T, P=P, zs=zs, **kwargs)
 
     flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
 
@@ -289,8 +289,8 @@ def test_PS_plot(fluid, eos, auto_range):
     kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
                   HeatCapacityGases=pure_props.HeatCapacityGases)
 
-    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
-    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    liquid = CEOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = CEOSGas(eos, T=T, P=P, zs=zs, **kwargs)
 
     flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
 
@@ -344,8 +344,8 @@ def test_PH_plot(fluid, eos, auto_range):
     kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
                   HeatCapacityGases=pure_props.HeatCapacityGases)
 
-    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
-    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    liquid = CEOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = CEOSGas(eos, T=T, P=P, zs=zs, **kwargs)
 
     flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
 
@@ -403,8 +403,8 @@ def test_PU_plot(fluid, eos, auto_range):
     kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
                   HeatCapacityGases=pure_props.HeatCapacityGases)
 
-    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
-    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    liquid = CEOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = CEOSGas(eos, T=T, P=P, zs=zs, **kwargs)
 
     flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
 
@@ -449,8 +449,8 @@ def test_VU_plot(fluid, eos, auto_range):
     kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
                   HeatCapacityGases=pure_props.HeatCapacityGases)
 
-    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
-    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    liquid = CEOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = CEOSGas(eos, T=T, P=P, zs=zs, **kwargs)
 
     flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
 
@@ -503,8 +503,8 @@ def test_VS_plot(fluid, eos, auto_range):
     kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
                   HeatCapacityGases=pure_props.HeatCapacityGases)
 
-    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
-    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    liquid = CEOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = CEOSGas(eos, T=T, P=P, zs=zs, **kwargs)
 
     flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
 
@@ -553,8 +553,8 @@ def test_VH_plot(fluid, eos, auto_range):
     kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
                   HeatCapacityGases=pure_props.HeatCapacityGases)
 
-    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
-    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    liquid = CEOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = CEOSGas(eos, T=T, P=P, zs=zs, **kwargs)
 
     flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
 
@@ -614,8 +614,8 @@ def test_TS_plot(fluid, eos, auto_range):
     kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
                   HeatCapacityGases=pure_props.HeatCapacityGases)
 
-    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
-    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    liquid = CEOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = CEOSGas(eos, T=T, P=P, zs=zs, **kwargs)
 
     flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
 
@@ -671,8 +671,8 @@ def test_TH_plot(fluid, eos, auto_range):
     kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
                   HeatCapacityGases=pure_props.HeatCapacityGases)
 
-    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
-    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    liquid = CEOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = CEOSGas(eos, T=T, P=P, zs=zs, **kwargs)
 
     flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
 
@@ -711,7 +711,7 @@ def test_V_G_min_plot(fluid, eos):
     
 #    kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
 #                  HeatCapacityGases=pure_props.HeatCapacityGases)
-#    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+#    gas = CEOSGas(eos, T=T, P=P, zs=zs, **kwargs)
     
     kwargs = dict(Tc=pure_const.Tcs[0], Pc=pure_const.Pcs[0], omega=pure_const.omegas[0])
     
@@ -960,7 +960,7 @@ def test_PH_plot_ideal_Poy(fluid):
                            VolumeLiquids=pure_props.VolumeLiquids,
                            use_phis_sat=False, use_Poynting=True).to_TP_zs(T, P, zs)
 
-    gas = EOSGas(IGMIX, T=T, P=P, zs=zs, **ig_kwargs)
+    gas = CEOSGas(IGMIX, T=T, P=P, zs=zs, **ig_kwargs)
 #
     flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
     flasher.VL_IG_activity = True
@@ -996,8 +996,8 @@ def test_some_flashes_bad(hacks):
     kwargs = dict(eos_kwargs=dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas),
                  HeatCapacityGases=HeatCapacityGases)
     
-    liquid = EOSLiquid(SRKMIX, T=330, P=1e5, zs=[1], **kwargs)
-    gas = EOSGas(SRKMIX, T=330, P=1e5, zs=[1], **kwargs)
+    liquid = CEOSLiquid(SRKMIX, T=330, P=1e5, zs=[1], **kwargs)
+    gas = CEOSGas(SRKMIX, T=330, P=1e5, zs=[1], **kwargs)
     
     flasher = FlashPureVLS(constants, correlations, gas, [liquid], [])
     flasher.VL_only_CEOSs_same = hacks
@@ -1012,8 +1012,8 @@ def test_EOS_dew_bubble_same_eos_id():
     correlations = PropertyCorrelationPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
     kwargs = dict(eos_kwargs=dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas),
                  HeatCapacityGases=HeatCapacityGases)
-    liquid = EOSLiquid(SRKMIX, T=330, P=1e5, zs=[1], **kwargs)
-    gas = EOSGas(SRKMIX, T=330, P=1e5, zs=[1], **kwargs)
+    liquid = CEOSLiquid(SRKMIX, T=330, P=1e5, zs=[1], **kwargs)
+    gas = CEOSGas(SRKMIX, T=330, P=1e5, zs=[1], **kwargs)
     flasher = FlashPureVLS(constants, correlations, gas, [liquid], [])
 
     # Test which covers the ID of returned dew/bubble flash phases are the same
@@ -1033,8 +1033,8 @@ def test_VS_issue_PRSV(hacks):
     kwargs = dict(eos_kwargs=dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas),
                     HeatCapacityGases=HeatCapacityGases)
     
-    liquid = EOSLiquid(PRSVMIX, T=330, P=1e5, zs=[1], **kwargs)
-    gas = EOSGas(PRSVMIX, T=330, P=1e5, zs=[1], **kwargs)
+    liquid = CEOSLiquid(PRSVMIX, T=330, P=1e5, zs=[1], **kwargs)
+    gas = CEOSGas(PRSVMIX, T=330, P=1e5, zs=[1], **kwargs)
     
     flasher = FlashPureVLS(constants, correlations, gas, [liquid], [])
     flasher.VL_only_CEOSs_same = hacks
@@ -1053,8 +1053,8 @@ def test_PS_1P_vs_VL_issue0(hacks):
     kwargs = dict(eos_kwargs=dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas),
                  HeatCapacityGases=HeatCapacityGases)
     
-    liquid = EOSLiquid(PR78MIX, T=200, P=1e5, zs=[1], **kwargs)
-    gas = EOSGas(PR78MIX, T=200, P=1e5, zs=[1], **kwargs)
+    liquid = CEOSLiquid(PR78MIX, T=200, P=1e5, zs=[1], **kwargs)
+    gas = CEOSGas(PR78MIX, T=200, P=1e5, zs=[1], **kwargs)
     flasher = FlashPureVLS(constants, correlations, gas, [liquid], []) # 
     flasher.VL_only_CEOSs_same = hacks
     
@@ -1075,8 +1075,8 @@ def test_HSGUA_early_return_eos(hacks):
     kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
                   HeatCapacityGases=pure_props.HeatCapacityGases)
 
-    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
-    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    liquid = CEOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = CEOSGas(eos, T=T, P=P, zs=zs, **kwargs)
     flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
     flasher.VL_only_CEOSs_same = hacks
 
@@ -1097,8 +1097,8 @@ def test_SRK_high_P_PV_failure(hacks):
     kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
                   HeatCapacityGases=pure_props.HeatCapacityGases)
 
-    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
-    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    liquid = CEOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = CEOSGas(eos, T=T, P=P, zs=zs, **kwargs)
     flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
     flasher.VL_only_CEOSs_same = hacks
 
@@ -1122,8 +1122,8 @@ def test_ethane_PH_failure_high_P(hacks):
     kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
                   HeatCapacityGases=pure_props.HeatCapacityGases)
 
-    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
-    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    liquid = CEOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = CEOSGas(eos, T=T, P=P, zs=zs, **kwargs)
     flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
     flasher.VL_only_CEOSs_same = hacks
 
@@ -1142,8 +1142,8 @@ def test_SRK_high_PT_on_VS_failure(hacks):
     kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
                   HeatCapacityGases=pure_props.HeatCapacityGases)
 
-    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
-    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    liquid = CEOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = CEOSGas(eos, T=T, P=P, zs=zs, **kwargs)
     flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
     flasher.VL_only_CEOSs_same = hacks
 
@@ -1165,8 +1165,8 @@ def test_APISRK_VS_at_Pmax_error_failure(hacks):
     kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
                   HeatCapacityGases=pure_props.HeatCapacityGases)
 
-    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
-    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    liquid = CEOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = CEOSGas(eos, T=T, P=P, zs=zs, **kwargs)
     flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
     flasher.VL_only_CEOSs_same = hacks
 
@@ -1185,8 +1185,8 @@ def test_Twu_missing_Pmax_on_VS_failure(hacks):
         kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
                       HeatCapacityGases=pure_props.HeatCapacityGases)
     
-        liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
-        gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+        liquid = CEOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+        gas = CEOSGas(eos, T=T, P=P, zs=zs, **kwargs)
         flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
         flasher.VL_only_CEOSs_same = hacks
         base = flasher.flash(T=T, P=P)
@@ -1206,8 +1206,8 @@ def test_TWU_SRK_PR_T_alpha_interp_failure(hacks):
                   HeatCapacityGases=pure_props.HeatCapacityGases)
     
     for eos in [TWUSRKMIX, TWUPRMIX]:
-        liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
-        gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+        liquid = CEOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+        gas = CEOSGas(eos, T=T, P=P, zs=zs, **kwargs)
         flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
         flasher.VL_only_CEOSs_same = hacks
         base = flasher.flash(T=T, P=P)
@@ -1226,8 +1226,8 @@ def test_TS_EOS_fast_path(hacks):
                  HeatCapacityGases=HeatCapacityGases)
     
     T, P = 300.0, 1e5
-    liquid = EOSLiquid(PRMIX, T=T, P=P, zs=[1], **kwargs)
-    gas = EOSGas(PRMIX, T=T, P=P, zs=[1], **kwargs)
+    liquid = CEOSLiquid(PRMIX, T=T, P=P, zs=[1], **kwargs)
+    gas = CEOSGas(PRMIX, T=T, P=P, zs=[1], **kwargs)
     
     # TS one phase fast case
     flasher = FlashPureVLS(constants, correlations, gas, [liquid], []) # 
@@ -1257,8 +1257,8 @@ def test_EOS_TP_HSGUA_sln_in_VF(hacks):
                  HeatCapacityGases=HeatCapacityGases)
     
     T, P = 300.0, 1e5
-    liquid = EOSLiquid(PRMIX, T=T, P=P, zs=[1], **kwargs)
-    gas = EOSGas(PRMIX, T=T, P=P, zs=[1], **kwargs)
+    liquid = CEOSLiquid(PRMIX, T=T, P=P, zs=[1], **kwargs)
+    gas = CEOSGas(PRMIX, T=T, P=P, zs=[1], **kwargs)
     
     flasher = FlashPureVLS(constants, correlations, gas, [liquid], []) # 
     flasher.VL_only_CEOSs_same = hacks
@@ -1280,8 +1280,8 @@ def test_EOS_TP_HSGUA_missing_return_value():
     correlations = PropertyCorrelationPackage(skip_missing=True, constants=constants, HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [-3.1115474168865828e-21, 1.39156078498805e-17, -2.5430881416264243e-14, 2.4175307893014295e-11, -1.2437314771044867e-08, 3.1251954264658904e-06, -0.00021220221928610925, 0.000884685506352987, 29.266811602924644]))])
     kwargs = dict(eos_kwargs=dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas),
                     HeatCapacityGases=correlations.HeatCapacityGases)
-    liquid = EOSLiquid(PRMIX, T=300, P=1e6, zs=[1], **kwargs)
-    gas = EOSGas(PRMIX, T=300, P=1e6, zs=[1], **kwargs)
+    liquid = CEOSLiquid(PRMIX, T=300, P=1e6, zs=[1], **kwargs)
+    gas = CEOSGas(PRMIX, T=300, P=1e6, zs=[1], **kwargs)
     flasher = FlashPureVLS(constants, correlations, gas, [liquid], [])
     H_base = -354.6559586412054
     assert_close(flasher.flash(P=1e6, H=H_base, zs=[1]).T, 300)
@@ -1295,8 +1295,8 @@ def test_EOS_water_hot_start():
                  HeatCapacityGases=HeatCapacityGases)
     
     T, P = 300.0, 1e5
-    liquid = EOSLiquid(PRMIX, T=T, P=P, zs=[1], **kwargs)
-    gas = EOSGas(PRMIX, T=T, P=P, zs=[1], **kwargs)
+    liquid = CEOSLiquid(PRMIX, T=T, P=P, zs=[1], **kwargs)
+    gas = CEOSGas(PRMIX, T=T, P=P, zs=[1], **kwargs)
     
     # TS one phase fast case
     flasher = FlashPureVLS(constants, correlations, gas, [liquid], [])
@@ -1331,8 +1331,8 @@ def test_PRMIXTranslatedConsistent_VS_low_prec_failure():
     kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
                   HeatCapacityGases=pure_props.HeatCapacityGases)
 
-    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
-    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    liquid = CEOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = CEOSGas(eos, T=T, P=P, zs=zs, **kwargs)
     flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
 
     base = flasher.flash(T=T, P=P)
@@ -1373,8 +1373,8 @@ def test_PRMIXTranslatedConsistent_TV_epsilon_consistency_with_fast():
     kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
                   HeatCapacityGases=pure_props.HeatCapacityGases)
 
-    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
-    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    liquid = CEOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = CEOSGas(eos, T=T, P=P, zs=zs, **kwargs)
     flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
 
     base = flasher.flash(T=T, P=P, zs=zs)
@@ -1390,8 +1390,8 @@ def test_SRKMIXTranslatedConsistent_PV_consistency_issue():
     kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
                   HeatCapacityGases=pure_props.HeatCapacityGases)
     
-    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
-    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    liquid = CEOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = CEOSGas(eos, T=T, P=P, zs=zs, **kwargs)
     flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
 
     flashes_base, flashes_new, errs = flasher.TPV_inputs(spec0='T', spec1='P', check0='P', check1='V', prop0='T',
@@ -1409,8 +1409,8 @@ def test_TWU_SRK_PR_T_alpha_interp_failure_2():
                   HeatCapacityGases=pure_props.HeatCapacityGases)
     
     for eos in [TWUSRKMIX, TWUPRMIX]:
-        liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
-        gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+        liquid = CEOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+        gas = CEOSGas(eos, T=T, P=P, zs=zs, **kwargs)
         flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
         base = flasher.flash(T=T, P=P)
         
@@ -1427,8 +1427,8 @@ def test_flash_identical_two_liquids():
     kwargs = dict(eos_kwargs=dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas),
                  HeatCapacityGases=HeatCapacityGases)
 
-    liquid = EOSLiquid(PRMIX, T=300, P=1e5, zs=[1], **kwargs)
-    gas = EOSGas(PRMIX, T=300, P=1e5, zs=[1], **kwargs)
+    liquid = CEOSLiquid(PRMIX, T=300, P=1e5, zs=[1], **kwargs)
+    gas = CEOSGas(PRMIX, T=300, P=1e5, zs=[1], **kwargs)
     flasher_2L = FlashPureVLS(constants, correlations, gas, [liquid, liquid], []) # 
     Z_2L = flasher_2L.flash(T=300, P=1e5).Z()
 
@@ -1444,8 +1444,8 @@ def test_flash_liquid_only():
     kwargs = dict(eos_kwargs=dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas),
                  HeatCapacityGases=HeatCapacityGases)
     
-    liquid = EOSLiquid(PRMIX, T=400, P=1e5, zs=[1], **kwargs)
-    gas = EOSGas(PRMIX, T=400, P=1e5, zs=[1], **kwargs)
+    liquid = CEOSLiquid(PRMIX, T=400, P=1e5, zs=[1], **kwargs)
+    gas = CEOSGas(PRMIX, T=400, P=1e5, zs=[1], **kwargs)
     flasher = FlashPureVLS(constants, correlations, None, [liquid], []) # 
     res = flasher.flash(T=400, P=1e5)
     assert_close(res.Z(), 0.0006952919695535529)
@@ -1459,8 +1459,8 @@ def test_flash_gas_only():
     kwargs = dict(eos_kwargs=dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas),
                  HeatCapacityGases=HeatCapacityGases)
 
-    liquid = EOSLiquid(PRMIX, T=300, P=1e5, zs=[1], **kwargs)
-    gas = EOSGas(PRMIX, T=300, P=1e5, zs=[1], **kwargs)
+    liquid = CEOSLiquid(PRMIX, T=300, P=1e5, zs=[1], **kwargs)
+    gas = CEOSGas(PRMIX, T=300, P=1e5, zs=[1], **kwargs)
     flasher = FlashPureVLS(constants, correlations, gas, [], []) # 
     res = flasher.flash(T=300, P=1e5)
     assert_close(res.Z(), 0.9847766773458833)
@@ -1480,8 +1480,8 @@ def test_VL_EOSMIX_fast_return(hacks):
                                             ViscosityGases=[ViscosityGas(best_fit=(273.16, 1073.15, [-1.1818252575481647e-27, 6.659356591849417e-24, -1.5958127917299133e-20, 2.1139343137119052e-17, -1.6813187290802144e-14, 8.127448028541097e-12, -2.283481528583874e-09, 3.674008403495927e-07, -1.9313694390100466e-05]))])
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas,
     alpha_coeffs=[[0.3872, 0.87587208, 1.9668]], cs=[5.2711E-6])
-    gas = EOSGas(PRMIXTranslatedConsistent, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = EOSLiquid(PRMIXTranslatedConsistent, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(PRMIXTranslatedConsistent, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(PRMIXTranslatedConsistent, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     flasher = FlashPureVLS(constants, properties, liquids=[liq], gas=gas, solids=[])
     flasher.VL_only_CEOSs_same = hacks
 
@@ -1516,8 +1516,8 @@ def test_APISRK_multiple_T_slns():
     kwargs = dict(eos_kwargs=dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas),
                     HeatCapacityGases=HeatCapacityGases)
     
-    liquid = EOSLiquid(APISRKMIX, T=330, P=1e5, zs=[1], **kwargs)
-    gas = EOSGas(APISRKMIX, T=330, P=1e5, zs=[1], **kwargs)
+    liquid = CEOSLiquid(APISRKMIX, T=330, P=1e5, zs=[1], **kwargs)
+    gas = CEOSGas(APISRKMIX, T=330, P=1e5, zs=[1], **kwargs)
     
     flasher = FlashPureVLS(constants, correlations, gas, [liquid], [])
     
@@ -1562,7 +1562,7 @@ def test_IG_liq_poy_flashes(hacks):
                                VolumeLiquids=VolumeLiquids,
                                use_phis_sat=False, use_Poynting=True, Psat_extrpolation='ABC').to_TP_zs(T, P, zs)
     eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
-    gas = EOSGas(IGMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(IGMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     flasher = FlashPureVLS(constants, correlations, liquids=[liquid], gas=gas, solids=[])
     flasher.VL_IG_activity = hacks
 
@@ -1647,8 +1647,8 @@ def test_VF_H_cases():
                   HeatCapacityGases=pure_props.HeatCapacityGases)
     
     eos = PRMIX
-    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
-    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    liquid = CEOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = CEOSGas(eos, T=T, P=P, zs=zs, **kwargs)
     flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
 
     # Two solutions
@@ -1701,8 +1701,8 @@ def test_VF_U_cases():
                   HeatCapacityGases=pure_props.HeatCapacityGases)
     
     eos = PRMIX
-    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
-    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    liquid = CEOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = CEOSGas(eos, T=T, P=P, zs=zs, **kwargs)
     flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
 
     # Two solutions
@@ -1747,8 +1747,8 @@ def test_VF_A_cases():
                   HeatCapacityGases=pure_props.HeatCapacityGases)
     
     eos = PRMIX
-    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
-    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    liquid = CEOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = CEOSGas(eos, T=T, P=P, zs=zs, **kwargs)
     flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
 
     # Two solutions
@@ -1786,8 +1786,8 @@ def test_VF_G_cases():
                   HeatCapacityGases=pure_props.HeatCapacityGases)
     
     eos = PRMIX
-    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
-    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    liquid = CEOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = CEOSGas(eos, T=T, P=P, zs=zs, **kwargs)
     flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
 
     
@@ -1816,8 +1816,8 @@ def test_VF_S_cases():
                   HeatCapacityGases=pure_props.HeatCapacityGases)
     
     eos = PRMIX
-    liquid = EOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
-    gas = EOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+    liquid = CEOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+    gas = CEOSGas(eos, T=T, P=P, zs=zs, **kwargs)
     flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
 
     # Two solutions

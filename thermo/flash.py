@@ -71,7 +71,7 @@ from chemicals.rachford_rice import (flash_inner_loop, Rachford_Rice_solutionN,
                                   Rachford_Rice_flash_error, Rachford_Rice_solution2, Rachford_Rice_solution_LN2)
 from chemicals.flash_basic import flash_wilson, flash_Tb_Tc_Pc, flash_ideal
 from thermo.equilibrium import EquilibriumState
-from thermo.phases import Phase, gas_phases, liquid_phases, solid_phases, EOSLiquid, EOSGas, CoolPropGas, CoolPropLiquid, CoolPropPhase, GibbsExcessLiquid, IdealGas, IAPWS95Liquid, IAPWS95Gas, IAPWS95
+from thermo.phases import Phase, gas_phases, liquid_phases, solid_phases, CEOSLiquid, CEOSGas, CoolPropGas, CoolPropLiquid, CoolPropPhase, GibbsExcessLiquid, IdealGas, IAPWS95Liquid, IAPWS95Gas, IAPWS95
 from thermo.phases import CPPQ_INPUTS, CPQT_INPUTS, CPrhoT_INPUTS, CPunknown, caching_state_CoolProp, CPiDmolar
 from thermo.phase_identification import identify_sort_phases
 from thermo.bulk import default_settings
@@ -2629,7 +2629,7 @@ def solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var,
     elif iter_var == 'V':
         min_bound = Phase.V_MIN_FIXED
         max_bound = Phase.V_MAX_FIXED
-        if isinstance(phase, (EOSLiquid, EOSGas)):
+        if isinstance(phase, (CEOSLiquid, CEOSGas)):
             c2R = phase.eos_class.c2*R
             Tcs, Pcs = constants.Tcs, constants.Pcs
             b = sum([c2R*Tcs[i]*zs[i]/Pcs[i] for i in constants.cmps])
@@ -4441,7 +4441,7 @@ class FlashBase(object):
         
         min_bound = None
         for phase in self.phases:
-            if isinstance(phase, (EOSLiquid, EOSGas)):
+            if isinstance(phase, (CEOSLiquid, CEOSGas)):
                 c2R = phase.eos_class.c2*R
                 Tcs, Pcs = constants.Tcs, constants.Pcs
                 b = sum([c2R*Tcs[i]*zs[i]/Pcs[i] for i in constants.cmps])
@@ -6319,7 +6319,7 @@ class FlashPureVLS(FlashBase):
             setattr(self, 'solid' + str(i), s)
             
         self.VL_only = self.phase_count == 2 and self.liquid_count == 1 and self.gas is not None
-        self.VL_only_CEOSs = (self.VL_only and gas and liquids and isinstance(self.liquids[0], EOSLiquid) and isinstance(self.gas, EOSGas))
+        self.VL_only_CEOSs = (self.VL_only and gas and liquids and isinstance(self.liquids[0], CEOSLiquid) and isinstance(self.gas, CEOSGas))
         
         self.VL_only_IAPWS95 = (len(liquids) == 1 and isinstance(liquids[0], IAPWS95Liquid) 
                                  and isinstance(gas, IAPWS95Gas) and (not solids))
@@ -6654,7 +6654,7 @@ class FlashPureVLS(FlashBase):
                     if phase.eos_mix.phase == 'l/g':
                         # Check we are not metastable
                         if min(phase.eos_mix.G_dep_l, phase.eos_mix.G_dep_g) == phase.G_dep(): # If we do not have a metastable phase
-                            if isinstance(phase, EOSGas):
+                            if isinstance(phase, CEOSGas):
                                 g, ls = phase, []
                             else:
                                 g, ls = None, [phase]
@@ -6662,7 +6662,7 @@ class FlashPureVLS(FlashBase):
                             flash_convergence['iterations'] = iterations
                             return g, ls, [], [1.0], flash_convergence
                     else:
-                        if isinstance(phase, (EOSGas, IdealGas)):
+                        if isinstance(phase, (CEOSGas, IdealGas)):
                             g, ls = phase, []
                         else:
                             g, ls = None, [phase]
@@ -6670,7 +6670,7 @@ class FlashPureVLS(FlashBase):
                         flash_convergence['iterations'] = iterations
                         return g, ls, [], [1.0], flash_convergence
                 else:
-                    if isinstance(phase, (EOSGas, IdealGas)):
+                    if isinstance(phase, (CEOSGas, IdealGas)):
                         g, ls = phase, []
                     else:
                         g, ls = None, [phase]
