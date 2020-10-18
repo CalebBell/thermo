@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 from __future__ import division
 __all__ = ['GibbsExcessLiquid', 'GibbsExcessSolid', 'Phase', 'CEOSLiquid', 'CEOSGas', 'IdealGas', 'IAPWS97', 'HelmholtzEOS',
-           'IAPWS95', 'IAPWS95Gas', 'IAPWS95Liquid',
+           'IAPWS95', 'IAPWS95Gas', 'IAPWS95Liquid', 'DryAirLemmon',
            'gas_phases', 'liquid_phases', 'solid_phases', 'CombinedPhase', 'CoolPropPhase', 'CoolPropLiquid', 'CoolPropGas', 'INCOMPRESSIBLE_CONST',
            
            'derivatives_thermodynamic', 'derivatives_thermodynamic_mass', 'derivatives_jacobian']
@@ -46,6 +46,7 @@ from random import randint
 from scipy.optimize import fsolve
 from collections import OrderedDict
 from chemicals.iapws import *
+from chemicals.air import *
 from chemicals.viscosity import mu_IAPWS
 from chemicals.thermal_conductivity import k_IAPWS
 import chemicals.iapws
@@ -6118,6 +6119,93 @@ class HelmholtzEOS(Phase):
                                        + T_red*d3A_ddelta2dtau/(T*V*rho_red))/(V*V*V*rho_red)
         return d2P_dTdV
 
+
+class DryAirLemmon(HelmholtzEOS):
+    _MW = lemmon2000_air_MW
+    rho_red = lemmon2000_air_rho_reducing
+    rho_red_inv = 1.0/rho_red
+    T_red = lemmon2000_air_T_reducing
+    R = lemmon2000_air_R
+
+    zs = [1.0]
+    cmps = [0]
+    T_MAX_FIXED = 2000.0
+    T_MIN_FIXED = 132.6313 # For now gas only.
+
+    _Ar_func = staticmethod(lemmon2000_air_Ar)
+
+    _d3Ar_ddeltadtau2_func = staticmethod(lemmon2000_air_d3Ar_ddeltadtau2)
+    _d3Ar_ddelta2dtau_func = staticmethod(lemmon2000_air_d3Ar_ddelta2dtau)
+    _d2Ar_ddeltadtau_func = staticmethod(lemmon2000_air_d2Ar_ddeltadtau)
+    
+    _dAr_dtau_func = staticmethod(lemmon2000_air_dAr_dtau)
+    _d2Ar_dtau2_func = staticmethod(lemmon2000_air_d2Ar_dtau2)
+    _d3Ar_dtau3_func = staticmethod(lemmon2000_air_d3Ar_dtau3)
+    _d4Ar_dtau4_func = staticmethod(lemmon2000_air_d4Ar_dtau4)
+    
+    _dAr_ddelta_func = staticmethod(lemmon2000_air_dAr_ddelta)
+    _d2Ar_ddelta2_func = staticmethod(lemmon2000_air_d2Ar_ddelta2)
+    _d3Ar_ddelta3_func = staticmethod(lemmon2000_air_d3Ar_ddelta3)
+    _d4Ar_ddelta4_func = staticmethod(lemmon2000_air_d4Ar_ddelta4)
+
+    _d4Ar_ddelta2dtau2_func = staticmethod(lemmon2000_air_d4Ar_ddelta2dtau2)
+    _d4Ar_ddelta3dtau_func = staticmethod(lemmon2000_air_d4Ar_ddelta3dtau)
+    _d4Ar_ddeltadtau3_func = staticmethod(lemmon2000_air_d4Ar_ddeltadtau3)
+
+    def __init__(self, T=None, P=None, zs=None):
+        self.T = T
+        self.P = P
+        self._rho = rho = lemmon2000_rho(T, P)
+        self._V = 1.0/rho
+        self.tau = tau = self.T_red/T
+        self.delta = delta = rho*self.rho_red_inv
+        self.A0 = lemmon2000_air_A0(tau, delta)
+        self.dA0_dtau = lemmon2000_air_dA0_dtau(tau, delta)
+        self.d2A0_dtau2 = lemmon2000_air_d2A0_dtau2(tau, delta)
+        self.d3A0_dtau3 = lemmon2000_air_d3A0_dtau3(tau, delta)
+
+    def to_TP_zs(self, T, P, zs):
+        new = self.__class__.__new__(self.__class__)
+        new.zs = zs
+        new.T = T
+        new.P = P
+        new._rho = rho = lemmon2000_rho(T, P)
+        new._V = 1.0/rho
+        new.tau = tau = new.T_red/T
+        new.delta = delta = rho*new.rho_red_inv
+        new.A0 = lemmon2000_air_A0(tau, delta)
+        new.dA0_dtau = lemmon2000_air_dA0_dtau(tau, delta)
+        new.d2A0_dtau2 = lemmon2000_air_d2A0_dtau2(tau, delta)
+        new.d3A0_dtau3 = lemmon2000_air_d3A0_dtau3(tau, delta)
+        return new
+
+    def to_zs_TPV(self, zs, T=None, P=None, V=None):
+        new = self.__class__.__new__(self.__class__)
+        new.zs = zs
+        if T is not None and P is not None:
+            new.T = T
+            new._rho = lemmon2000_rho(T, P)
+            new._V = 1.0/new._rho
+            new.P = P
+        elif T is not None and V is not None:
+            raise NotImplementedError("TODO")
+        elif P is not None and V is not None:
+            raise NotImplementedError("TODO")
+        else:
+            raise ValueError("Two of T, P, or V are needed")
+
+        new.P = P
+        new.T = T
+        new.tau = tau = new.Tc/T
+        new.delta = delta = new._rho*new.rho_red_inv
+        
+        new.A0 = lemmon2000_air_A0(tau, delta)
+        new.dA0_dtau = lemmon2000_air_dA0_dtau(tau, delta)
+        new.d2A0_dtau2 = lemmon2000_air_d2A0_dtau2(tau, delta)
+        new.d3A0_dtau3 = lemmon2000_air_d3A0_dtau3(tau, delta)        
+        return new
+        
+    to = to_zs_TPV
 
 
 class IAPWS95(HelmholtzEOS):

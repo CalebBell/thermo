@@ -1792,3 +1792,10 @@ def test_IAPWS95_basics():
     assert_close(gas.dS_dT_P(), 0.048472990237155726, rtol=1e-11)
     dS_dT_P_num = derivative(lambda T: gas.to(T=T, P=gas.P, zs=[1]).S(), gas.T, dx=gas.T*1e-7, order=3)
     assert_close(dS_dT_P_num, gas.dS_dT_P())
+
+
+def test_DryAirLemmon():
+    obj = DryAirLemmon(T=300.0, P=1e5)
+    assert_close(obj.rho(), 40.10292351061863, rtol=1e-13)
+    assert_close(obj.Cp(), 29.149477654366663, rtol=1e-13)
+    assert_close(obj.PIP(), 0.9973809705661576, rtol=1e-13)
