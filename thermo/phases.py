@@ -47,7 +47,7 @@ from scipy.optimize import fsolve
 from collections import OrderedDict
 from chemicals.iapws import *
 from chemicals.air import *
-from chemicals.viscosity import mu_IAPWS
+from chemicals.viscosity import mu_IAPWS, mu_air_lemmon
 from chemicals.thermal_conductivity import k_IAPWS
 import chemicals.iapws
 from thermo.chemical_package import iapws_correlations
@@ -6122,6 +6122,7 @@ class HelmholtzEOS(Phase):
 
 class DryAirLemmon(HelmholtzEOS):
     _MW = lemmon2000_air_MW
+    _MW = 28.96546 # CoolProp
     rho_red = lemmon2000_air_rho_reducing
     rho_red_inv = 1.0/rho_red
     T_red = lemmon2000_air_T_reducing
@@ -6188,7 +6189,9 @@ class DryAirLemmon(HelmholtzEOS):
             new._V = 1.0/new._rho
             new.P = P
         elif T is not None and V is not None:
-            raise NotImplementedError("TODO")
+            new._rho = 1.0/V
+            new._V = V
+            P = lemmon2000_P(T, new._rho)
         elif P is not None and V is not None:
             raise NotImplementedError("TODO")
         else:
@@ -6196,7 +6199,7 @@ class DryAirLemmon(HelmholtzEOS):
 
         new.P = P
         new.T = T
-        new.tau = tau = new.Tc/T
+        new.tau = tau = new.T_red/T
         new.delta = delta = new._rho*new.rho_red_inv
         
         new.A0 = lemmon2000_air_A0(tau, delta)
@@ -6206,6 +6209,14 @@ class DryAirLemmon(HelmholtzEOS):
         return new
         
     to = to_zs_TPV
+    
+    def mu(self):
+        try:
+            return self._mu
+        except:
+            pass
+        self._mu = mu = mu_air_lemmon(self.T, self._rho)
+        return mu
 
 
 class IAPWS95(HelmholtzEOS):
