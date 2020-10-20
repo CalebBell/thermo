@@ -6119,6 +6119,78 @@ class HelmholtzEOS(Phase):
                                        + T_red*d3A_ddelta2dtau/(T*V*rho_red))/(V*V*V*rho_red)
         return d2P_dTdV
 
+    def B_virial(self):
+        try:
+            f0 = self._dAr_ddelta_func(self.tau, 0.0)
+        except:
+            f0 = self._dAr_ddelta_func(self.tau, 1e-20)
+        return f0/self.rho_red
+
+    def dB_virial_dT(self):
+        tau = self.tau
+        try:
+            f0 = self._d2Ar_ddeltadtau_func(tau, 0.0)
+        except:
+            f0 = self._d2Ar_ddeltadtau_func(tau, 1e-20)
+        return -tau*tau*f0/(self.rho_red*self.T_red)
+    
+    def d2B_virial_dT2(self):
+        T, T_red, tau = self.T, self.T_red, self.tau
+        
+        try:
+            f0 = self._d2Ar_ddeltadtau_func(tau, 0.0)
+        except:
+            f0 = self._d2Ar_ddeltadtau_func(tau, 1e-20)
+        try:
+            f1 = self._d3Ar_ddeltadtau2_func(tau, 0.0)
+        except:
+            f1 = self._d3Ar_ddeltadtau2_func(tau, 1e-20)
+        return T_red*(2.0*f0 + tau*f1)/(T*T*T*self.rho_red)
+
+    def d3B_virial_dT3(self):
+        T, T_red, tau = self.T, self.T_red, self.tau
+        
+        try:
+            f0 = self._d2Ar_ddeltadtau_func(tau, 0.0)
+        except:
+            f0 = self._d2Ar_ddeltadtau_func(tau, 1e-20)
+        try:
+            f1 = self._d3Ar_ddeltadtau2_func(tau, 0.0)
+        except:
+            f1 = self._d3Ar_ddeltadtau2_func(tau, 1e-20)
+        try:
+            f2 = self._d4Ar_ddeltadtau3_func(tau, 0.0)
+        except:
+            f2 = self._d4Ar_ddeltadtau3_func(tau, 1e-20)
+        return (-T_red*(6.0*f0 + 6.0*tau*f1 + tau*tau*f2)/(T*T*T*T*self.rho_red))
+    
+    def C_virial(self):
+        try:
+            f0 = self._d2Ar_ddelta2_func(self.tau, 0.0)
+        except:
+            f0 = self._d2Ar_ddelta2_func(self.tau, 1e-20)
+        return f0/(self.rho_red*self.rho_red)
+
+    def dC_virial_dT(self):
+        tau = self.tau
+        try:
+            f0 = self._d3Ar_ddelta2dtau_func(tau, 0.0)
+        except:
+            f0 = self._d3Ar_ddelta2dtau_func(tau, 1e-20)
+        return -tau*tau*f0/(self.rho_red*self.rho_red*self.T_red)
+
+    def d2C_virial_dT2(self):
+        T, T_red, tau = self.T, self.T_red, self.tau
+        try:
+            f0 = self._d3Ar_ddelta2dtau_func(tau, 0.0)
+        except:
+            f0 = self._d3Ar_ddelta2dtau_func(tau, 1e-20)
+            
+        try:
+            f1 = self._d4Ar_ddelta2dtau2_func(tau, 0.0)
+        except:
+            f1 = self._d4Ar_ddelta2dtau2_func(tau, 1e-20)
+        return T_red*(2.0*f0 + tau*f1)/(T*T*T*self.rho_red*self.rho_red)
 
 class DryAirLemmon(HelmholtzEOS):
     _MW = lemmon2000_air_MW

@@ -1794,8 +1794,54 @@ def test_IAPWS95_basics():
     assert_close(dS_dT_P_num, gas.dS_dT_P())
 
 
+    # Virial - had issues here
+    obj = IAPWS95(T=320, P=1e5, zs=[1])
+    
+    assert_close(obj.C_virial(), -2.169601376256456e-06, rtol=1e-7)
+    assert_close(obj.B_virial(), -0.0008709181154542471, rtol=1e-7)
+    
+    dB_virial_dT_num = derivative(lambda T: obj.to(T=T, P=obj.P, zs=[1]).B_virial(), obj.T, dx=obj.T*1e-7)
+    assert_close(obj.dB_virial_dT(), dB_virial_dT_num)
+    
+    d2B_virial_dT2_num = derivative(lambda T: obj.to(T=T, P=obj.P, zs=[1]).dB_virial_dT(), obj.T, dx=obj.T*1e-7)
+    
+    assert_close(obj.d2B_virial_dT2(), d2B_virial_dT2_num)
+    
+    dC_virial_dT_num = derivative(lambda T: obj.to(T=T, P=obj.P, zs=[1]).C_virial(), obj.T, dx=obj.T*1e-7)
+    assert_close(obj.dC_virial_dT(), dC_virial_dT_num)
+
+
 def test_DryAirLemmon():
     obj = DryAirLemmon(T=300.0, P=1e5)
     assert_close(obj.rho(), 40.10292351061863, rtol=1e-13)
     assert_close(obj.Cp(), 29.149477654366663, rtol=1e-13)
     assert_close(obj.PIP(), 0.9973809705661576, rtol=1e-13)
+    assert_close(obj.B_virial(), -7.762109770817756e-06, rtol=1e-7)
+    assert_close(obj.C_virial(), 1.8116663791964838e-09, rtol=1e-5)
+    
+    
+    assert_close(obj.dB_virial_dT(), 1.9329886622026706e-07, rtol=1e-9)
+    
+    dB_virial_dT_num = derivative(lambda T: obj.to(T=T, P=obj.P, zs=[1]).B_virial(), obj.T, dx=obj.T*1e-7)
+    assert_close(obj.dB_virial_dT(), dB_virial_dT_num)
+    
+    d2B_virial_dT2_num = derivative(lambda T: obj.to(T=T, P=obj.P, zs=[1]).dB_virial_dT(), obj.T, dx=obj.T*1e-7)
+    
+    assert_close(obj.d2B_virial_dT2(), d2B_virial_dT2_num)
+    assert_close(obj.d2B_virial_dT2(), -1.5217681559667127e-09, rtol=1e-9)
+    
+    d3B_virial_dT3_num = derivative(lambda T: obj.to(T=T, P=obj.P, zs=[1]).d2B_virial_dT2(), obj.T, dx=obj.T*1e-7)
+    assert_close(obj.d3B_virial_dT3(), 1.714578192540477e-11, rtol=1e-9)
+    assert_close(obj.d3B_virial_dT3(), d3B_virial_dT3_num)
+
+
+    dC_virial_dT_num = derivative(lambda T: obj.to(T=T, P=obj.P, zs=[1]).C_virial(), obj.T, dx=obj.T*1e-7)
+    assert_close(obj.dC_virial_dT(), dC_virial_dT_num)
+    
+    assert_close(obj.dC_virial_dT(), -2.6835805429839692e-12, rtol=1e-9)
+    
+    d2C_virial_dT2_num = derivative(lambda T: obj.to(T=T, P=obj.P, zs=[1]).dC_virial_dT(), obj.T, dx=obj.T*1e-7)
+    
+    assert_close(obj.d2C_virial_dT2(), d2C_virial_dT2_num)
+    
+    assert_close(obj.d2C_virial_dT2(), 2.325769803919441e-14, rtol=1e-9)
