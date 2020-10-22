@@ -29,9 +29,8 @@ import os
 from fluids.constants import R
 from fluids.numerics import bisplev, implementation_optimize_tck, horner, horner_and_der, derivative, newton, linspace
 from chemicals.utils import log, exp, isnan
-from thermo.utils import TDependentProperty
 from thermo.coolprop import has_CoolProp, HAPropsSI
-from thermo.vapor_pressure import Psat_IAPWS, dPsat_IAPWS_dT
+from chemicals.vapor_pressure import Psat_IAPWS, dPsat_IAPWS_dT
 from scipy.interpolate import bisplev as sp_bisplev
 
 
