@@ -871,6 +871,10 @@ class Phase(object):
     def kappa(self):
         return isothermal_compressibility(self.V(), self.dV_dP())
     
+    def dkappa_dT(self):
+        V, dV_dP, dV_dT, d2V_dTdP = self.V(), self.dV_dP(), self.dV_dT(), self.d2V_dTdP()
+        return -d2V_dTdP/V + dV_dP*dV_dT/(V*V)
+    
     def isothermal_bulk_modulus(self):
         return 1.0/self.kappa()
 

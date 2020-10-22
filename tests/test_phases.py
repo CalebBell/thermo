@@ -1845,3 +1845,8 @@ def test_DryAirLemmon():
     assert_close(obj.d2C_virial_dT2(), d2C_virial_dT2_num)
     
     assert_close(obj.d2C_virial_dT2(), 2.325769803919441e-14, rtol=1e-9)
+
+
+    air = DryAirLemmon(T=400.0, P=1e6)
+    assert_close(derivative(lambda T: air.to(T=T, P=air.P, zs=[1]).kappa(), air.T, dx=3e-7*air.T), air.dkappa_dT())
+    assert_close(air.dkappa_dT(), -2.2997479495042184e-11, rtol=1e-13)
