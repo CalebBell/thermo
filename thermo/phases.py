@@ -24,7 +24,7 @@ from __future__ import division
 __all__ = ['GibbsExcessLiquid', 'GibbsExcessSolid', 'Phase', 'CEOSLiquid', 'CEOSGas', 'IdealGas', 'IAPWS97', 'HelmholtzEOS',
            'IAPWS95', 'IAPWS95Gas', 'IAPWS95Liquid', 'DryAirLemmon', 'VirialGas',
            'gas_phases', 'liquid_phases', 'solid_phases', 'CombinedPhase', 'CoolPropPhase', 'CoolPropLiquid', 'CoolPropGas', 'INCOMPRESSIBLE_CONST',
-           
+           'HumidAirRP1485',
            'derivatives_thermodynamic', 'derivatives_thermodynamic_mass', 'derivatives_jacobian',
            
            'VirialCorrelationsPitzerCurl', # For testing - try to get rid of
@@ -6179,6 +6179,69 @@ class VirialGas(Phase):
         self._d2C_dT2 = d2C_dT2
         return d2C_dT2
 
+class HumidAirRP1485(VirialGas):
+    def __init__(self, Hfs=None, Gfs=None, T=None, P=None, zs=None,
+                 ):
+        # Although in put is zs, it is required to be in the order of
+        # (air, water) mole fraction
+        self.Hfs = Hfs
+        self.Gfs = Gfs
+        if Hfs is not None and Gfs is not None and None not in Hfs and None not in Gfs:
+            self.Sfs = [(Hfi - Gfi)/298.15 for Hfi, Gfi in zip(Hfs, Gfs)]
+        else:
+            self.Sfs = None
+            
+        if zs is not None:
+            self.N = N = len(zs)
+        elif HeatCapacityGases is not None:
+            self.N = N = len(HeatCapacityGases)
+        if zs is not None:
+            self.psi_w = psi_w = zs[1]
+            self.psi_a = psi_a = zs[0]
+            self.zs = zs
+        if T is not None:
+            self.T = T
+        if P is not None:
+            self.P = P
+        if T is not None and P is not None and zs is not None:
+            self.air = DryAirLemmon(T=T, P=P)
+            self.water = IAPWS95(T=T, P=P)
+            Z = Z_from_virial_density_form(T, P, self.B(), self.C())
+            self._V = Z*R*T/P
+            self._MW = DryAirLemmon._MW*psi_a + IAPWS95._MW*psi_w
+            
+    def B(self):
+        try:
+            return self._B
+        except:
+            pass
+        Baa = self.air.B_virial()
+        Baw = TEOS10_BAW_derivatives(self.T)[0]
+        Bww = self.water.B_virial()
+        psi_a, psi_w = self.psi_a, self.psi_w
+        
+        self._B = B = psi_a*psi_a*Baa + 2.0*psi_a*psi_w*Baw + psi_w*psi_w*Bww
+        return B
+    
+    def C(self):
+        try:
+            return self._C
+        except:
+            pass
+        T = self.T
+        Caaa = self.air.C_virial()
+        Cwww = self.water.C_virial()
+        Caww = TEOS10_CAWW_derivatives(T)[0]
+        Caaw = TEOS10_CAAW_derivatives(T)[0]
+        psi_a, psi_w = self.psi_a, self.psi_w
+        self._C = C = (psi_a*psi_a*(Caaa + 3.0*psi_w*Caaw)
+                       + psi_w*psi_w*(3.0*psi_a*Caww + psi_w*Cwww))
+        return C
+        
+            
+            
+        
+    
 class HelmholtzEOS(Phase):
     def V(self):
         return self._V
@@ -7966,6 +8029,6 @@ class CombinedPhase(Phase):
     
     
     
-gas_phases = (IdealGas, CEOSGas, CoolPropGas, IAPWS95Gas)
+gas_phases = (IdealGas, CEOSGas, CoolPropGas, IAPWS95Gas, VirialGas, HumidAirRP1485)
 liquid_phases = (CEOSLiquid, GibbsExcessLiquid, CoolPropLiquid, IAPWS95Liquid)
 solid_phases = (GibbsExcessSolid,)
