@@ -25,9 +25,8 @@ from __future__ import division
 __all__ = ['standard_entropy', 'S0_basis_converter']
            
 import os
-import numpy as np
+from fluids.numerics import quad, numpy as np
 import pandas as pd
-from scipy.integrate import quad
 from chemicals.utils import isnan
 from thermo.chemical import *
 

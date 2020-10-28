@@ -43,14 +43,17 @@ from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              horner, horner_and_der, horner_and_der2, derivative,
                              roots_cubic_a2, isclose, NoSolutionError,
                              roots_quartic, deflate_cubic_real_roots)
+
 from fluids.constants import mmHg, R
+
 from chemicals.utils import (Cp_minus_Cv, isobaric_expansion,
                           isothermal_compressibility,
                           phase_identification_parameter)
 from chemicals.utils import log, log10, exp, sqrt, copysign
+from chemicals.flash_basic import Wilson_K_value
+
 from thermo.alpha_functions import (Poly_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha,
                                     TwuSRK95_a_alpha, TwuPR95_a_alpha, Soave_79_a_alpha)
-from chemicals.flash_basic import Wilson_K_value
 
 R2 = R*R
 R_2 = 0.5*R
@@ -58,6 +61,7 @@ R_inv = 1.0/R
 R_inv2 = R_inv*R_inv
 
 try:
+    1/0
     from doubledouble import DoubleDouble
     
     def imag_div_dd(x0, x1, y0, y1):

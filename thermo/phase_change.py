@@ -297,7 +297,7 @@ class EnthalpyVaporization(TDependentProperty):
         '''
         methods = []
         Tmins, Tmaxs = [], []
-        if has_CoolProp and self.CASRN in coolprop_dict:
+        if has_CoolProp() and self.CASRN in coolprop_dict:
             methods.append(COOLPROP)
             self.CP_f = coolprop_fluids[self.CASRN]
             Tmins.append(self.CP_f.Tt); Tmaxs.append(self.CP_f.Tc)

@@ -49,7 +49,6 @@ __all__ = ['PropertyPackage', 'Ideal', 'Unifac', 'GammaPhi',
 from copy import copy
 from random import uniform, shuffle, seed
 import numpy as np
-from scipy.optimize import golden, brent, minimize, fmin_slsqp, fsolve
 from fluids.numerics import (OscillationError, UnconvergedError, 
                              ridder, derivative, caching_decorator,
                              newton, linspace, logspace, 
@@ -66,17 +65,12 @@ from chemicals.flash_basic import K_value, Wilson_K_value, flash_wilson, flash_T
 from thermo.wilson import Wilson_gammas as Wilson
 from thermo.nrtl import NRTL_gammas
 from chemicals.rachford_rice import Rachford_Rice_flash_error
-from thermo.unifac import UNIFAC_gammas, UFSG, DOUFSG, DOUFIP2006
+from thermo.unifac import UNIFAC_gammas, UFSG, DOUFSG
+from thermo import unifac
 from thermo.eos_mix import *
 from thermo.eos import *
 from chemicals.heat_capacity import Lastovka_Shaw_T_for_Hm, Lastovka_Shaw_T_for_Sm, Dadgostar_Shaw_integral_over_T, Dadgostar_Shaw_integral, Lastovka_Shaw_integral
 from thermo.phase_change import SMK
-
-
-
-if has_matplotlib:
-    import matplotlib
-    import matplotlib.pyplot as plt
 
 
 DIRECT_1P = 'Direct 1 Phase'
@@ -344,7 +338,7 @@ class StabilityTester(object):
                 if convert:
                 # Convert the guess to a basis squared
                     guess = [i**0.5*2.0 for i in guess]
-                
+                from scipy.optimize import minimize
                 ans = minimize(self.f_unconstrained, guess, method=method, tol=tol)
                 # Convert the answer to a normal basis
                 Ys = [(alpha/2.)**2 for alpha in ans['x']]
@@ -357,6 +351,7 @@ class StabilityTester(object):
 
     def stationary_points_constrained(self, random=True, guesses=None, 
                                       fmin=1e-7, iter=1000, tol=1e-12, method='fmin_slsqp'):
+        from scipy.optimize import fmin_slsqp
         if not guesses:
             guesses = self.guesses(T=self.T, P=self.P, zs=self.zs, random=random)
         results = []
@@ -660,7 +655,7 @@ class PropertyPackage(object):
         
     def plot_Pxy(self, T, pts=30, display=True, ignore_errors=True,
                  values=False): # pragma: no cover
-        if not has_matplotlib and values is not False:
+        if not has_matplotlib() and values is not False:
             raise Exception('Optional dependency matplotlib is required for plotting')
         if self.N != 2:
             raise Exception('Pxy plotting requires a mixture of exactly two components')
@@ -688,7 +683,8 @@ class PropertyPackage(object):
                     raise e
         if values:
             return z1, z2, Ps_bubble, Ps_dew
-
+        
+        import matplotlib.pyplot as plt
         plt.title('Pxy diagram at T=%s K' %T)
         plt.plot(z1, Ps_dew, label='Dew pressure')
         plt.plot(z1, Ps_bubble, label='Bubble pressure')
@@ -702,7 +698,7 @@ class PropertyPackage(object):
         
     def plot_Txy(self, P, pts=30, display=True, ignore_errors=True,
                  values=False): # pragma: no cover
-        if not has_matplotlib and values is not False:
+        if not has_matplotlib() and values is not False:
             raise Exception('Optional dependency matplotlib is required for plotting')
         if self.N != 2:
             raise Exception('Txy plotting requires a mixture of exactly two components')
@@ -730,6 +726,7 @@ class PropertyPackage(object):
                     raise e
         if values:
             return z1, z2, Ts_bubble, Ts_dew
+        import matplotlib.pyplot as plt
         plt.title('Txy diagram at P=%s Pa' %P)
         plt.plot(z1, Ts_dew, label='Dew temperature, K')
         plt.plot(z1, Ts_bubble, label='Bubble temperature, K')
@@ -742,11 +739,11 @@ class PropertyPackage(object):
             return plt
         
     def plot_xy(self, P=None, T=None, pts=30, display=True): # pragma: no cover
-        if not has_matplotlib:
+        if not has_matplotlib():
             raise Exception('Optional dependency matplotlib is required for plotting')
         if self.N != 2:
             raise Exception('xy plotting requires a mixture of exactly two components')
-        
+        import matplotlib.pyplot as plt
         z1 = np.linspace(1e-8, 1-1e-8, pts)
         z2 = 1 - z1
         y1_bubble = []
@@ -780,12 +777,13 @@ class PropertyPackage(object):
         
     def plot_PT(self, zs, Pmin=None, Pmax=None, pts=50, branches=[],
                 ignore_errors=True, values=False): # pragma: no cover
-        if not has_matplotlib and not values:
+        if not has_matplotlib() and not values:
             raise Exception('Optional dependency matplotlib is required for plotting')
         if not Pmin:
             Pmin = 1e4
         if not Pmax:
             Pmax = min(self.Pcs)
+        import matplotlib.pyplot as plt
         Ps = logspace(log10(Pmin), log10(Pmax), pts)
         T_dews = []
         T_bubbles = []
@@ -824,6 +822,7 @@ class PropertyPackage(object):
                             raise e
         if values:
             return Ps, T_dews, T_bubbles, branch_Ts
+        import matplotlib.pyplot as plt
         plt.plot(Ps, T_dews, label='PT dew point curve')
         plt.plot(Ps, T_bubbles, label='PT bubble point curve')
         plt.xlabel('System pressure, Pa')
@@ -838,7 +837,7 @@ class PropertyPackage(object):
         
     def plot_TP(self, zs, Tmin=None, Tmax=None, pts=50, branches=[],
                 ignore_errors=True, values=False): # pragma: no cover
-        if not has_matplotlib and not values:
+        if not has_matplotlib() and not values:
             raise Exception('Optional dependency matplotlib is required for plotting')
         if not Tmin:
             Tmin = min(self.Tms)
@@ -882,6 +881,7 @@ class PropertyPackage(object):
                             raise e
         if values:
             return Ts, P_dews, P_bubbles, branch_Ps
+        import matplotlib.pyplot as plt
         plt.plot(Ts, P_dews, label='TP dew point curve')
         plt.plot(Ts, P_bubbles, label='TP bubble point curve')
         plt.xlabel('System temperature, K')
@@ -895,7 +895,7 @@ class PropertyPackage(object):
 
     
     def plot_ternary(self, T, scale=10): # pragma: no cover
-        if not has_matplotlib:
+        if not has_matplotlib():
             raise Exception('Optional dependency matplotlib is required for plotting')
         try:
             import ternary
@@ -916,6 +916,9 @@ class PropertyPackage(object):
             zs = remove_zeros(zs, 1e-6)
             self.flash(T=T, zs=zs, VF=1)
             return self.P
+        
+        import matplotlib
+        import matplotlib.pyplot as plt
         
         
         axes_colors = {'b': 'g', 'l': 'r', 'r':'b'}
@@ -967,7 +970,7 @@ class PropertyPackage(object):
         prop_name = {'Hm': 'enthalpy', 'Sm': 'entropy', 'Gm': 'Gibbs energy'}[prop]
         prop_units = {'Hm': 'J/mol', 'Sm': 'J/mol/K', 'Gm': 'J/mol'}[prop]
 
-        if not has_matplotlib:
+        if not has_matplotlib():
             raise Exception('Optional dependency matplotlib is required for plotting')
         from mpl_toolkits.mplot3d import axes3d
         from matplotlib.ticker import FormatStrFormatter
@@ -4004,7 +4007,7 @@ class UnifacDortmund(Unifac):
     def gammas(self, T, xs, cached=None):
         return UNIFAC_gammas(chemgroups=self.UNIFAC_groups, T=T, xs=xs, 
                       cached=self.UNIFAC_cached_inputs,
-                      subgroup_data=DOUFSG, interaction_data=DOUFIP2006, modified=True)
+                      subgroup_data=DOUFSG, interaction_data=unifac.DOUFIP2006, modified=True)
 
 
 class UnifacCaloric(Unifac, GammaPhiCaloric):
@@ -4824,6 +4827,7 @@ class GceosBase(Ideal):
             except:
                 pass
             if T is None:
+                from scipy.optimize import fsolve
                 try:
                     T = float(fsolve(err, T_guess_as_pure))
                 except:
@@ -4880,6 +4884,7 @@ class GceosBase(Ideal):
                 pass
             if P is None:
                 try:
+                    from scipy.optimize import fsolve
                     P = float(fsolve(err, P_guess_as_pure, xtol=self.FLASH_VF_TOL))
                 except Exception as e:
 #                    print(e, 'fsolve failed')
@@ -6164,6 +6169,7 @@ class GceosBase(Ideal):
                     T = newton(self._err_bubble_T, T_guess, args=args, ytol=self.FLASH_VF_TOL)
                 except Exception as e:
                     print('bubble T - newton failed with initial guess (%g):' %(T_guess)  + str(e))
+                    from scipy.optimize import fsolve
                     T = float(fsolve(self._err_bubble_T, T_guess, factor=.1, xtol=self.FLASH_VF_TOL, args=args))
     #            print(T, T_guess)
                 return info[0], info[1], info[5], T, info[3], info[4]
@@ -6500,6 +6506,7 @@ class GceosBase(Ideal):
                     T = newton(self._err_dew_T, T_guess, ytol=self.FLASH_VF_TOL, args=(P, zs, maxiter, xtol, info))
                 except Exception as e:
                     print('dew_T newton failed with %g K guess' %(T_guess), e)
+                    from scipy.optimize import fsolve
                     try:
                         T = float(fsolve(self._err_dew_T, T_guess, factor=.1, xtol=self.FLASH_VF_TOL, args=(P, zs, maxiter, xtol, info)))
                     except Exception as e:
@@ -6783,6 +6790,7 @@ class GceosBase(Ideal):
                 pass
             if P is None:
                 try:
+                    from scipy.optimize import fsolve
                     P = float(fsolve(self._err_dew_P, P_guess, xtol=self.FLASH_VF_TOL,
                                      factor=.1, args=(T, zs, maxiter, xtol, info)))
                 except Exception as e:
@@ -7078,6 +7086,7 @@ class GceosBase(Ideal):
             except Exception as e:
                 print('bubble_P newton failure with guess %s' %(P_guess), e)
                 try:
+                    from scipy.optimize import fsolve
                     P = float(fsolve(self._err_bubble_P, P_guess, xtol=self.FLASH_VF_TOL,
                                      factor=.1, args=(T, zs, maxiter, xtol, info)))
                     if P > maxP:

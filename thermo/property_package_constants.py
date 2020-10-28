@@ -29,21 +29,17 @@ __all__ = ['PropertyPackageConstants', 'IDEAL_PKG', 'NRTL_PKG', 'UNIFAC_PKG',
            'UNIFAC_DORTMUND_PKG', 'PR_PKG', 'SRK_PKG']
 
 from copy import copy
-from random import uniform, shuffle, seed
 import numpy as np
-from scipy.optimize import golden, brent, minimize, fmin_slsqp, fsolve
 from fluids.numerics import brenth, ridder, derivative
 
 from chemicals.utils import log, exp
 from fluids.constants import R, pi, N_A
 from chemicals.identifiers import IDs_to_CASs
 from chemicals.rachford_rice import flash_inner_loop
-from thermo.unifac import UFSG, DOUFSG, DOUFIP2006
-from thermo.eos_mix import PRMIX, SRKMIX 
+from thermo.eos_mix import PRMIX, SRKMIX
 from thermo.eos import PR, SRK
 from thermo.chemical import Chemical
 from thermo.mixture import Mixture
-
 from thermo.property_package import *
 
 

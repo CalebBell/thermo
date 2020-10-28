@@ -23,98 +23,140 @@ SOFTWARE.'''
 from __future__ import division
 
 __all__ = ['conductivity', 'Laliberte_density', 'Laliberte_heat_capacity', 
-           'Laliberte_viscosity', 'Laliberte_data', 'Laliberte_viscosity_w', 
+           'Laliberte_viscosity', 'Laliberte_viscosity_w', 
            'Laliberte_viscosity_i', 'Laliberte_density_w', 
            'Laliberte_density_i', 'Laliberte_heat_capacity_w', 
            'Laliberte_heat_capacity_i', 'dilute_ionic_conductivity', 
-           'conductivity_McCleskey', 'Lange_cond_pure', 
-           'conductivity_methods', 'Magomedovk_thermal_cond',
+           'conductivity_McCleskey', 
+           'conductivity_methods',
            'thermal_conductivity_Magomedov', 'ionic_strength', 'Kweq_1981', 
-           'Kweq_IAPWS_gas', 'Kweq_IAPWS', 'Marcus_ion_conductivities',
-           'balance_ions', 'McCleskey_conductivities', 'CRC_ion_conductivities',
-           'CRC_aqueous_thermodynamics', 'electrolyte_dissociation_reactions']
+           'Kweq_IAPWS_gas', 'Kweq_IAPWS',
+           'balance_ions',
+           ]
 
 import os
 from collections import namedtuple
 from fluids.constants import e, N_A
+from chemicals.utils import source_path, os_path_join, can_load_data, PY37
 from fluids.numerics import newton, horner, chebval
-
+from chemicals.data_reader import data_source, register_df_source
 from chemicals.utils import exp, log10
 from chemicals.utils import to_num, ws_to_zs
-from chemicals.identifiers import pubchem_db
-
-from scipy.interpolate import interp1d
+from chemicals import identifiers
 import pandas as pd
 
 
 F = e*N_A
 
 
-folder = os.path.join(os.path.dirname(__file__), 'Electrolytes')
+folder = os_path_join(source_path, 'Electrolytes')
+
+register_df_source(folder, 'Lange Pure Species Conductivity.tsv')
+register_df_source(folder, 'Marcus Ion Conductivities.tsv')
+register_df_source(folder, 'CRC conductivity infinite dilution.tsv')
+register_df_source(folder, 'Magomedov Thermal Conductivity.tsv')
+register_df_source(folder, 'CRC Thermodynamic Properties of Aqueous Ions.tsv')
+
+_load_electrochem_data = False
+def _load_electrochem_data():
+    global Lange_cond_pure, Marcus_ion_conductivities, CRC_ion_conductivities, Magomedovk_thermal_cond
+    global CRC_aqueous_thermodynamics, electrolyte_dissociation_reactions
+    global McCleskey_conductivities, Lange_cond_pure, _Laliberte_Density_ParametersDict
+    global _Laliberte_Viscosity_ParametersDict, _Laliberte_Heat_Capacity_ParametersDict, Laliberte_data
+    
+    Lange_cond_pure = data_source('Lange Pure Species Conductivity.tsv')
+    Marcus_ion_conductivities = data_source('Marcus Ion Conductivities.tsv')
+    CRC_ion_conductivities = data_source('CRC conductivity infinite dilution.tsv')
+
+    Magomedovk_thermal_cond = data_source('Magomedov Thermal Conductivity.tsv')
+    CRC_aqueous_thermodynamics = data_source('CRC Thermodynamic Properties of Aqueous Ions.tsv')
+
+    McCleskey_conductivities = {}
+    with open(os_path_join(folder, 'McCleskey Electrical Conductivity.tsv')) as f:
+        next(f)
+        for line in f:
+            values = line.strip().split('\t')
+            formula, CASRN, lbt2, lbt, lbc, At2, At, Ac, B, multiplier = to_num(values)
+            McCleskey_conductivities[CASRN] = McCleskey_parameters(formula, 
+                [lbt2, lbt, lbc], [At2, At, Ac], B, multiplier)
+
+    _Laliberte_Density_ParametersDict = {}
+    _Laliberte_Viscosity_ParametersDict = {}
+    _Laliberte_Heat_Capacity_ParametersDict = {}
+    
+    
+    # Do not re-implement with Pandas, as current methodology uses these dicts in each function
+    with open(os.path.join(folder, 'Laliberte2009.tsv')) as f:
+        next(f)
+        for line in f:
+            values = to_num(line.split('\t'))
+    
+            _name, CASRN, _formula, _MW, c0, c1, c2, c3, c4, Tmin, Tmax, wMax, pts = values[0:13]
+            if c0:
+                _Laliberte_Density_ParametersDict[CASRN] = {"Name":_name, "Formula":_formula,
+                "MW":_MW, "C0":c0, "C1":c1, "C2":c2, "C3":c3, "C4":c4, "Tmin":Tmin, "Tmax":Tmax, "wMax":wMax}
+    
+            v1, v2, v3, v4, v5, v6, Tmin, Tmax, wMax, pts = values[13:23]
+            if v1:
+                _Laliberte_Viscosity_ParametersDict[CASRN] = {"Name":_name, "Formula":_formula,
+                "MW":_MW, "V1":v1, "V2":v2, "V3":v3, "V4":v4, "V5":v5, "V6":v6, "Tmin":Tmin, "Tmax":Tmax, "wMax":wMax}
+    
+            a1, a2, a3, a4, a5, a6, Tmin, Tmax, wMax, pts = values[23:34]
+            if a1:
+                _Laliberte_Heat_Capacity_ParametersDict[CASRN] = {"Name":_name, "Formula":_formula,
+                "MW":_MW, "A1":a1, "A2":a2, "A3":a3, "A4":a4, "A5":a5, "A6":a6, "Tmin":Tmin, "Tmax":Tmax, "wMax":wMax}
+    Laliberte_data = pd.read_csv(os.path.join(folder, 'Laliberte2009.tsv'),
+                              sep='\t', index_col=0)
+    
+    electrolyte_dissociation_reactions = pd.read_csv(os_path_join(folder, 'Electrolyte dissociations.tsv'), sep='\t')
+
+
+    
+    _load_electrochem_data = True
+    
+    
+if PY37:
+    def __getattr__(name):
+        if name in ('Lange_cond_pure', 'Marcus_ion_conductivities', 'CRC_ion_conductivities',
+                    'Magomedovk_thermal_cond', 'CRC_aqueous_thermodynamics',
+                    'electrolyte_dissociation_reactions', 'McCleskey_conductivities', 
+                    'Lange_cond_pure', '_Laliberte_Density_ParametersDict', '_Laliberte_Viscosity_ParametersDict',
+                    '_Laliberte_Heat_Capacity_ParametersDict'):
+            _load_electrochem_data()
+            return globals()[name]
+        raise AttributeError("module %s has no attribute %s" %(__name__, name))
+else:
+    if can_load_data:
+        _load_electrochem_data()
 
 
 
-Lange_cond_pure = pd.read_csv(os.path.join(folder, 'Lange Pure Species Conductivity.tsv'),
-                          sep='\t', index_col=0)
+#Lange_cond_pure = pd.read_csv(os.path.join(folder, 'Lange Pure Species Conductivity.tsv'),
+#                          sep='\t', index_col=0)
+#
+#Marcus_ion_conductivities = pd.read_csv(os.path.join(folder, 'Marcus Ion Conductivities.tsv'),
+#                          sep='\t', index_col=0)
+#
+#CRC_ion_conductivities = pd.read_csv(os.path.join(folder, 'CRC conductivity infinite dilution.tsv'),
+#                          sep='\t', index_col=0)
+#
+#Magomedovk_thermal_cond = pd.read_csv(os.path.join(folder, 'Magomedov Thermal Conductivity.tsv'),
+#                          sep='\t', index_col=0)
+#
+#CRC_aqueous_thermodynamics = pd.read_csv(os.path.join(folder, 'CRC Thermodynamic Properties of Aqueous Ions.csv'),
+#                          sep='\t', index_col=0) 
 
-Marcus_ion_conductivities = pd.read_csv(os.path.join(folder, 'Marcus Ion Conductivities.tsv'),
-                          sep='\t', index_col=0)
-
-CRC_ion_conductivities = pd.read_csv(os.path.join(folder, 'CRC conductivity infinite dilution.tsv'),
-                          sep='\t', index_col=0)
-
-Magomedovk_thermal_cond = pd.read_csv(os.path.join(folder, 'Magomedov Thermal Conductivity.tsv'),
-                          sep='\t', index_col=0)
-
-CRC_aqueous_thermodynamics = pd.read_csv(os.path.join(folder, 'CRC Thermodynamic Properties of Aqueous Ions.csv'),
-                          sep='\t', index_col=0) 
-
-electrolyte_dissociation_reactions = pd.read_csv(os.path.join(folder, 'Electrolyte dissociations.csv'), sep='\t')
+#electrolyte_dissociation_reactions = pd.read_csv(os.path.join(folder, 'Electrolyte dissociations.tsv'), sep='\t')
 
 McCleskey_parameters = namedtuple("McCleskey_parameters",
                                   ["Formula", 'lambda_coeffs', 'A_coeffs', 'B', 'multiplier'])
 
-McCleskey_conductivities = {}
-with open(os.path.join(folder, 'McCleskey Electrical Conductivity.csv')) as f:
-    next(f)
-    for line in f:
-        values = line.strip().split('\t')
-        formula, CASRN, lbt2, lbt, lbc, At2, At, Ac, B, multiplier = to_num(values)
-        McCleskey_conductivities[CASRN] = McCleskey_parameters(formula, 
-            [lbt2, lbt, lbc], [At2, At, Ac], B, multiplier)
 
 
-Lange_cond_pure = pd.read_csv(os.path.join(folder, 'Lange Pure Species Conductivity.tsv'),
-                          sep='\t', index_col=0)
+#Lange_cond_pure = pd.read_csv(os.path.join(folder, 'Lange Pure Species Conductivity.tsv'),
+#                          sep='\t', index_col=0)
 
 
-_Laliberte_Density_ParametersDict = {}
-_Laliberte_Viscosity_ParametersDict = {}
-_Laliberte_Heat_Capacity_ParametersDict = {}
-
-
-# Do not re-implement with Pandas, as current methodology uses these dicts in each function
-with open(os.path.join(folder, 'Laliberte2009.tsv')) as f:
-    next(f)
-    for line in f:
-        values = to_num(line.split('\t'))
-
-        _name, CASRN, _formula, _MW, c0, c1, c2, c3, c4, Tmin, Tmax, wMax, pts = values[0:13]
-        if c0:
-            _Laliberte_Density_ParametersDict[CASRN] = {"Name":_name, "Formula":_formula,
-            "MW":_MW, "C0":c0, "C1":c1, "C2":c2, "C3":c3, "C4":c4, "Tmin":Tmin, "Tmax":Tmax, "wMax":wMax}
-
-        v1, v2, v3, v4, v5, v6, Tmin, Tmax, wMax, pts = values[13:23]
-        if v1:
-            _Laliberte_Viscosity_ParametersDict[CASRN] = {"Name":_name, "Formula":_formula,
-            "MW":_MW, "V1":v1, "V2":v2, "V3":v3, "V4":v4, "V5":v5, "V6":v6, "Tmin":Tmin, "Tmax":Tmax, "wMax":wMax}
-
-        a1, a2, a3, a4, a5, a6, Tmin, Tmax, wMax, pts = values[23:34]
-        if a1:
-            _Laliberte_Heat_Capacity_ParametersDict[CASRN] = {"Name":_name, "Formula":_formula,
-            "MW":_MW, "A1":a1, "A2":a2, "A3":a3, "A4":a4, "A5":a5, "A6":a6, "Tmin":Tmin, "Tmax":Tmax, "wMax":wMax}
-Laliberte_data = pd.read_csv(os.path.join(folder, 'Laliberte2009.tsv'),
-                          sep='\t', index_col=0)
 
 
 ### Laliberty Viscosity Functions
@@ -296,9 +338,10 @@ def Laliberte_density_w(T):
        Chemical & Engineering Data 54, no. 6 (June 11, 2009): 1725-60.
        doi:10.1021/je8008123
     '''
-    t = T-273.15
-    rho_w = (((((-2.8054253E-10*t + 1.0556302E-7)*t - 4.6170461E-5)*t - 0.0079870401)*t + 16.945176)*t + 999.83952) \
-        / (1.0 + 0.01687985*t)
+    t = T - 273.15
+    rho_w = ((((((-2.8054253E-10*t + 1.0556302E-7)*t - 4.6170461E-5)*t 
+               - 0.0079870401)*t + 16.945176)*t + 999.83952) 
+        / (1.0 + 0.01687985*t))
     return rho_w
 
 
@@ -530,7 +573,7 @@ def Laliberte_heat_capacity(T, ws, CASRNs):
        doi:10.1021/je8008123
     '''
     Cp_w = Laliberte_heat_capacity_w(T)
-    w_w = 1 - sum(ws)
+    w_w = 1.0 - sum(ws)
     Cp = w_w*Cp_w
 
     for i in range(len(CASRNs)):
@@ -668,7 +711,7 @@ def conductivity_McCleskey(T, M, lambda_coeffs, A_coeffs, B, multiplier, rho=100
     A = horner(A_coeffs, t)
     M_root = M**0.5
     param = lambda_coeff - A*M_root/(1. + B*M_root)
-    C = M*rho/1000. # convert to mol/L to get concentration
+    C = M*rho*1e-3 # convert to mol/L to get concentration
     return param*C*multiplier*0.1 # convert from mS/cm to S/m
 
 
@@ -1277,8 +1320,8 @@ def balance_ions(anions, cations, anion_zs=None, cation_zs=None,
     --------
     >>> anions_n = ['Cl-', 'HCO3-', 'SO4-2']
     >>> cations_n = ['Na+', 'K+', 'Ca+2', 'Mg+2']
-    >>> cations = [pubchem_db.search_name(i) for i in cations_n]
-    >>> anions = [pubchem_db.search_name(i) for i in anions_n]
+    >>> cations = [identifiers.pubchem_db.search_name(i) for i in cations_n]
+    >>> anions = [identifiers.pubchem_db.search_name(i) for i in anions_n]
     >>> an_res, cat_res, an_zs, cat_zs, z_water = balance_ions(anions, cations,
     ... anion_zs=[0.02557, 0.00039, 0.00026], cation_zs=[0.0233, 0.00075,
     ... 0.00262, 0.00119], method='proportional excess ions decrease')
@@ -1342,15 +1385,15 @@ def balance_ions(anions, cations, anion_zs=None, cation_zs=None,
     elif method == 'Na or Cl increase':
         increase = True
         if balance_error < 0:
-            selected_ion = pubchem_db.search_name('Na+')
+            selected_ion = identifiers.pubchem_db.search_name('Na+')
         else:
-            selected_ion = pubchem_db.search_name('Cl-')
+            selected_ion = identifiers.pubchem_db.search_name('Cl-')
     elif method == 'Na or Cl decrease':
         increase = False
         if balance_error > 0:
-            selected_ion = pubchem_db.search_name('Na+')
+            selected_ion = identifiers.pubchem_db.search_name('Na+')
         else:
-            selected_ion = pubchem_db.search_name('Cl-')
+            selected_ion = identifiers.pubchem_db.search_name('Cl-')
     # All of the below work with the variable selected_ion
     elif method == 'adjust':
         # A single ion will be increase or decreased to fix the balance automatically

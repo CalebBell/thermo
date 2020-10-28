@@ -584,7 +584,13 @@ class PropertyCorrelationPackage(object):
 # Values except for omega from IAPWS; heat capacity isn't official.
 iapws_constants = ChemicalConstantsPackage(CASs=['7732-18-5'], MWs=[18.015268], omegas=[0.344], 
                                            Pcs=[22064000.0], Tcs=[647.096])
-iapws_correlations = PropertyCorrelationPackage(constants=iapws_constants, 
-                HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18,
-                                                                            4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))])
-
+global _iapws_correlations
+_iapws_correlations = None
+def iapws_correlations():
+    global _iapws_correlations
+    if _iapws_correlations is None:
+        _iapws_correlations = PropertyCorrelationPackage(constants=iapws_constants, 
+                        HeatCapacityGases=[HeatCapacityGas(best_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18,
+                                                                                    4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))])
+        
+    return _iapws_correlations

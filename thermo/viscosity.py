@@ -32,7 +32,6 @@ __all__ = ['viscosity_liquid_methods', 'viscosity_liquid_methods_P',
 import os
 import numpy as np
 import pandas as pd
-from scipy.interpolate import UnivariateSpline
 from fluids.numerics import newton, interp, horner
 
 from chemicals.utils import log, exp, log10
@@ -40,7 +39,8 @@ from chemicals.utils import none_and_length_check, mixing_simple, mixing_logarit
 from thermo.utils import TPDependentProperty, MixtureProperty
 from chemicals import miscdata
 from chemicals.miscdata import lookup_VDI_tabular_data
-from thermo.electrochem import _Laliberte_Viscosity_ParametersDict, Laliberte_viscosity
+from thermo import electrochem
+from thermo.electrochem import Laliberte_viscosity
 from thermo.coolprop import has_CoolProp, PropsSI, PhaseSI, coolprop_fluids, coolprop_dict, CoolProp_T_dependent_property
 from chemicals.dippr import EQ101, EQ102
 from chemicals import viscosity
@@ -296,7 +296,7 @@ class ViscosityLiquid(TPDependentProperty):
         '''
         methods, methods_P = [], []
         Tmins, Tmaxs = [], []
-        if has_CoolProp and self.CASRN in coolprop_dict:
+        if has_CoolProp() and self.CASRN in coolprop_dict:
             methods.append(COOLPROP); methods_P.append(COOLPROP)
             self.CP_f = coolprop_fluids[self.CASRN]
             Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tc)
@@ -760,7 +760,7 @@ class ViscosityGas(TPDependentProperty):
             self.VDI_Tmax = Ts[-1]
             self.tabular_data[VDI_TABULAR] = (Ts, props)
             Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
-        if has_CoolProp and self.CASRN in coolprop_dict:
+        if has_CoolProp() and self.CASRN in coolprop_dict:
             methods.append(COOLPROP); methods_P.append(COOLPROP)
             self.CP_f = coolprop_fluids[self.CASRN]
             Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tmax)
@@ -1064,7 +1064,7 @@ class ViscosityLiquidMixture(MixtureProperty):
         methods = [MIXING_LOG_MOLAR, MIXING_LOG_MASS, SIMPLE]
         if len(self.CASs) > 1 and '7732-18-5' in self.CASs:
             wCASs = [i for i in self.CASs if i != '7732-18-5'] 
-            if all([i in _Laliberte_Viscosity_ParametersDict for i in wCASs]):
+            if all([i in electrochem._Laliberte_Viscosity_ParametersDict for i in wCASs]):
                 methods.append(LALIBERTE_MU)
                 self.wCASs = wCASs
                 self.index_w = self.CASs.index('7732-18-5')

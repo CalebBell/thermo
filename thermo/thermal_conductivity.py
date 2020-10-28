@@ -48,7 +48,8 @@ from thermo.utils import TPDependentProperty, MixtureProperty
 from chemicals import miscdata
 from chemicals.miscdata import lookup_VDI_tabular_data
 from thermo.coolprop import has_CoolProp, coolprop_dict, coolprop_fluids, CoolProp_T_dependent_property, PropsSI, PhaseSI
-from thermo.electrochem import thermal_conductivity_Magomedov, Magomedovk_thermal_cond
+from thermo import electrochem
+from thermo.electrochem import thermal_conductivity_Magomedov
 
 
 
@@ -300,7 +301,7 @@ class ThermalConductivityLiquid(TPDependentProperty):
             self.VDI_Tmax = Ts[-1]
             self.tabular_data[VDI_TABULAR] = (Ts, props)
             Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
-        if has_CoolProp and self.CASRN in coolprop_dict:
+        if has_CoolProp() and self.CASRN in coolprop_dict:
             methods.append(COOLPROP); methods_P.append(COOLPROP)
             self.CP_f = coolprop_fluids[self.CASRN]
             Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tc)
@@ -643,7 +644,7 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
             methods.append(FILIPPOV)
         if '7732-18-5' in self.CASs and len(self.CASs)>1:
             wCASs = [i for i in self.CASs if i != '7732-18-5']
-            if all([i in Magomedovk_thermal_cond.index for i in wCASs]):
+            if all([i in electrochem.Magomedovk_thermal_cond.index for i in wCASs]):
                 methods.append(MAGOMEDOV)
                 self.wCASs = wCASs
                 self.index_w = self.CASs.index('7732-18-5')
@@ -1000,7 +1001,7 @@ class ThermalConductivityGas(TPDependentProperty):
             self.VDI_Tmax = Ts[-1]
             self.tabular_data[VDI_TABULAR] = (Ts, props)
             Tmins.append(self.VDI_Tmin); Tmaxs.append(self.VDI_Tmax)
-        if has_CoolProp and self.CASRN in coolprop_dict:
+        if has_CoolProp() and self.CASRN in coolprop_dict:
             methods.append(COOLPROP); methods_P.append(COOLPROP)
             self.CP_f = coolprop_fluids[self.CASRN]
             Tmins.append(self.CP_f.Tmin); Tmaxs.append(self.CP_f.Tc)

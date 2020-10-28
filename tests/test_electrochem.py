@@ -29,6 +29,7 @@ from thermo.electrochem import *
 from thermo.electrochem import _Laliberte_Density_ParametersDict, _Laliberte_Viscosity_ParametersDict, _Laliberte_Heat_Capacity_ParametersDict
 from chemicals.identifiers import check_CAS, CAS_from_any, pubchem_db, serialize_formula
 from math import log10
+from thermo.electrochem import Lange_cond_pure, Marcus_ion_conductivities, CRC_ion_conductivities, Magomedovk_thermal_cond, CRC_aqueous_thermodynamics, electrolyte_dissociation_reactions, McCleskey_conductivities, Lange_cond_pure, _Laliberte_Density_ParametersDict, _Laliberte_Viscosity_ParametersDict, _Laliberte_Heat_Capacity_ParametersDict, Laliberte_data
 
 
 def test_Laliberte_viscosity_w():

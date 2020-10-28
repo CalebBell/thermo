@@ -43,10 +43,9 @@ from chemicals.utils import (log, log10, exp, Cp_minus_Cv, phase_identification_
                           Joule_Thomson, speed_of_sound, dxs_to_dns, dns_to_dn_partials,
                           normalize, hash_any_primitive, rho_to_Vm, Vm_to_rho)
 from thermo.activity import IdealSolution
-from thermo.coolprop import has_CoolProp, CP as CoolProp
+from thermo.coolprop import has_CoolProp
 from thermo.eos_mix import IGMIX, PR_lnphis_fastest
 from random import randint
-from scipy.optimize import fsolve
 from collections import OrderedDict
 from chemicals.iapws import *
 from chemicals.air import *
@@ -6926,7 +6925,7 @@ class IAPWS95(HelmholtzEOS):
     #R = property_mass_to_molar(iapws95_R, iapws95_MW)
     zs = [1.0]
     cmps = [0]
-    HeatCapacityGases = iapws_correlations.HeatCapacityGases
+#    HeatCapacityGases = iapws_correlations.HeatCapacityGases
 
     T_MAX_FIXED = 5000.0
     T_MIN_FIXED = 245.0
@@ -7484,8 +7483,16 @@ class IAPWS97(Phase):
 
 # Emperically measured to be ~140 KB/instance, do not want to cache too many - 35 is 5 MB
 max_CoolProp_states = 35
-
-if has_CoolProp:
+global CoolProp
+global CoolProp_constants_set 
+CoolProp_constants_set = False
+def set_coolprop_constants():
+    global CPPT_INPUTS, CPrhoT_INPUTS, CPrhoP_INPUTS, CPiP, CPiT, CPiDmolar, CPiHmolar, CPiSmolar
+    global CPPQ_INPUTS, CPQT_INPUTS, CoolProp_gas_phases, CoolProp_liquid_phases
+    global CPliquid, CPgas, CPunknown, caching_states_CoolProp, caching_state_CoolProp
+    global CoolProp
+    import CoolProp
+    CoolProp_constants_set = True
     CPPT_INPUTS = CoolProp.PT_INPUTS
     CPrhoT_INPUTS = CoolProp.DmolarT_INPUTS
     CPrhoP_INPUTS = CoolProp.DmolarP_INPUTS
@@ -7584,13 +7591,18 @@ if has_CoolProp:
             AS.update(spec_set, spec0, spec1)
             caching_states_CoolProp[key] = AS
         return AS
-else:
-    CPunknown = CPliquid = CPgas = None
-    CPPQ_INPUTS = CPQT_INPUTS = CPiDmolar = CPrhoT_INPUTS = None
-    caching_state_CoolProp = None
+
+CPgas = 5
+CPliquid = 0
+CPunknown = 8
+CPPQ_INPUTS = 2
+CPQT_INPUTS = 1
+CPiDmolar = 24
+CPrhoT_INPUTS = 11
+caching_state_CoolProp = None
 
 class CoolPropPhase(Phase):
-    prefer_phase = CPunknown
+    prefer_phase = 8
     ideal_gas_basis = False
     
         
@@ -7630,6 +7642,11 @@ class CoolPropPhase(Phase):
     def __init__(self, backend, fluid,
                  T=None, P=None, zs=None,  Hfs=None,
                  Gfs=None, Sfs=None,):
+        if not CoolProp_constants_set:
+            if has_CoolProp():
+                set_coolprop_constants()
+            else:
+                raise ValueError("CoolProp is not installed")
 
         self.Hfs = Hfs
         self.Gfs = Gfs

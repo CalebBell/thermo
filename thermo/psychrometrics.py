@@ -29,9 +29,9 @@ import os
 from fluids.constants import R
 from fluids.numerics import bisplev, implementation_optimize_tck, horner, horner_and_der, derivative, newton, linspace
 from chemicals.utils import log, exp, isnan
-from thermo.coolprop import has_CoolProp, HAPropsSI
+from thermo.coolprop import HAPropsSI
 from chemicals.vapor_pressure import Psat_IAPWS, dPsat_IAPWS_dT
-from scipy.interpolate import bisplev as sp_bisplev
+
 
 
 def x_w_to_humidity_ratio(x_w, MW_water=18.015268, MW_dry_air=28.96546):
@@ -145,6 +145,7 @@ def water_saturation(T, P, method='ideal'):
     if method == 'ideal':
         factor = 1.0
     elif method == 'ASHRAE1485_2020' or method == 'ASHRAE1485':
+        from scipy.interpolate import bisplev as sp_bisplev
         factor = float(bisplev(T, P, ASHRAE_RP1485_saturation_tck))
     elif method == 'CoolProp':
         return HAPropsSI('psi_w', 'T', T, 'P', P, 'RH', 1.0)
@@ -161,6 +162,7 @@ def water_saturation_and_der(T, P, method='ideal'):
         dfactor_dT = 0.0
     elif method == 'ASHRAE1485_2020' or method == 'ASHRAE1485':
         factor = float(bisplev(T, P, ASHRAE_RP1485_saturation_tck))
+        from scipy.interpolate import bisplev as sp_bisplev
         dfactor_dT = float(sp_bisplev(T, P, ASHRAE_RP1485_saturation_tck, dx=1))
     elif method == 'CoolProp':
         x_w = HAPropsSI('psi_w', 'T', T, 'P', P, 'RH', 1.0)

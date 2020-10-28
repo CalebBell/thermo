@@ -25,21 +25,17 @@ from __future__ import division
 __all__ = ['Chemical', 'reference_states']
 
 
-from chemicals.identifiers import *
-from thermo.vapor_pressure import VaporPressure, SublimationPressure
-from chemicals.phase_change import Tb, Tm, Hfus, Tb_methods, Tm_methods, Hfus_methods
-from thermo.phase_change import EnthalpyVaporization, EnthalpySublimation
-from thermo.utils import identify_phase
+from fluids.constants import epsilon_0
 
+from fluids.core import Reynolds, Capillary, Weber, Bond, Grashof, Peclet_heat
+from fluids.core import *
+from fluids.numerics import newton, numpy as np
+
+from chemicals.identifiers import *
+from chemicals.phase_change import Tb, Tm, Hfus, Tb_methods, Tm_methods, Hfus_methods
 from chemicals.critical import Tc, Pc, Vc, Tc_methods, Pc_methods, Vc_methods
 from chemicals.acentric import omega, Stiel_polar_factor, omega_methods
 from chemicals.triple import Tt, Pt, Tt_methods, Pt_methods
-from thermo.thermal_conductivity import ThermalConductivityLiquid, ThermalConductivityGas, ThermalConductivityLiquidMixture, ThermalConductivityGasMixture
-from thermo.volume import VolumeGas, VolumeLiquid, VolumeSolid, VolumeLiquidMixture, VolumeGasMixture, VolumeSolidMixture
-from thermo.permittivity import *
-from thermo.heat_capacity import HeatCapacitySolid, HeatCapacityGas, HeatCapacityLiquid, HeatCapacitySolidMixture, HeatCapacityGasMixture, HeatCapacityLiquidMixture
-from thermo.interface import SurfaceTension, SurfaceTensionMixture
-from thermo.viscosity import ViscosityLiquid, ViscosityGas, ViscosityLiquidMixture, ViscosityGasMixture
 from chemicals.virial import B_from_Z
 from chemicals.reaction import Hfg_methods, S0g_methods, Hfl_methods, Hfs_methods, Hfs, Hfl, Hfg, S0g, S0l, S0s, Gibbs_formation, Hf_basis_converter, entropy_formation
 from chemicals.combustion import combustion_stoichiometry, HHV_stoichiometry, LHV_from_HHV
@@ -47,24 +43,28 @@ from chemicals.safety import T_flash, T_autoignition, LFL, UFL, TWA, STEL, Ceili
 from chemicals.solubility import solubility_parameter
 from chemicals.dipole import dipole_moment as dipole, dipole_moment_methods
 from chemicals.utils import *
-from thermo.utils import *
-from fluids.core import Reynolds, Capillary, Weber, Bond, Grashof, Peclet_heat
 from chemicals.lennard_jones import Stockmayer_methods, molecular_diameter_methods, Stockmayer, molecular_diameter
 from chemicals.environment import GWP, ODP, logP, GWP_methods, ODP_methods, logP_methods
-from thermo.law import legal_status, economic_status
 from chemicals.refractivity import RI, RI_methods
-from thermo.electrochem import conductivity
 from chemicals.elements import atom_fractions, mass_fractions, similarity_variable, atoms_to_Hill, simple_formula_parser, molecular_weight, charge_from_formula, periodic_table, homonuclear_elements
-from thermo.coolprop import has_CoolProp
+
+from thermo.vapor_pressure import VaporPressure, SublimationPressure
+from thermo.phase_change import EnthalpyVaporization, EnthalpySublimation
+from thermo.utils import identify_phase
+from thermo.thermal_conductivity import ThermalConductivityLiquid, ThermalConductivityGas, ThermalConductivityLiquidMixture, ThermalConductivityGasMixture
+from thermo.volume import VolumeGas, VolumeLiquid, VolumeSolid, VolumeLiquidMixture, VolumeGasMixture, VolumeSolidMixture
+from thermo.permittivity import *
+from thermo.heat_capacity import HeatCapacitySolid, HeatCapacityGas, HeatCapacityLiquid, HeatCapacitySolidMixture, HeatCapacityGasMixture, HeatCapacityLiquidMixture
+from thermo.interface import SurfaceTension, SurfaceTensionMixture
+from thermo.viscosity import ViscosityLiquid, ViscosityGas, ViscosityLiquidMixture, ViscosityGasMixture
+from thermo.utils import *
+from thermo.law import legal_status, economic_status
+from thermo.electrochem import conductivity
 from thermo.eos import *
 from thermo.eos_mix import *
 from thermo.unifac import DDBST_UNIFAC_assignments, DDBST_MODIFIED_UNIFAC_assignments, DDBST_PSRK_assignments, load_group_assignments_DDBST, UNIFAC_RQ, Van_der_Waals_volume, Van_der_Waals_area
 
 
-from fluids.core import *
-from fluids.numerics import newton
-from scipy.constants import physical_constants
-import numpy as np
 
 # RDKIT
 try:
@@ -2565,7 +2565,7 @@ class Chemical(object): # pragma: no cover
         '''
         permittivity = self.permittivity
         if permittivity is not None:
-            return permittivity*physical_constants['electric constant'][0]
+            return permittivity*epsilon_0
         return None
 
     @property

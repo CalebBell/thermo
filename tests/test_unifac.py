@@ -29,6 +29,7 @@ from thermo.activity import GibbsExcess
 from thermo.unifac import *
 from fluids.numerics import *
 from fluids.constants import R
+from thermo.unifac import UFIP, LLEUFIP, LUFIP, DOUFIP2006, DOUFIP2016, NISTUFIP, NISTKTUFIP, PSRKIP, VTPRIP
 import types
 
 '''

@@ -42,7 +42,8 @@ from chemicals import volume
 from chemicals.virial import BVirial_Pitzer_Curl, BVirial_Abbott, BVirial_Tsonopoulos, BVirial_Tsonopoulos_extended
 from chemicals import miscdata
 from chemicals.miscdata import lookup_VDI_tabular_data
-from thermo.electrochem import _Laliberte_Density_ParametersDict, Laliberte_density
+from thermo import electrochem
+from thermo.electrochem import Laliberte_density
 from thermo.coolprop import has_CoolProp, PropsSI, PhaseSI, coolprop_fluids, coolprop_dict, CoolProp_T_dependent_property
 from thermo.utils import TDependentProperty, TPDependentProperty, MixtureProperty
 from thermo.eos import PR78
@@ -863,7 +864,7 @@ class VolumeLiquidMixture(MixtureProperty):
         
         if len(self.CASs) > 1 and '7732-18-5' in self.CASs:
             wCASs = [i for i in self.CASs if i != '7732-18-5'] 
-            if all([i in _Laliberte_Density_ParametersDict for i in wCASs]):
+            if all([i in electrochem._Laliberte_Density_ParametersDict for i in wCASs]):
                 methods.append(LALIBERTE)
                 self.wCASs = wCASs
                 self.index_w = self.CASs.index('7732-18-5')

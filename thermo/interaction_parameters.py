@@ -22,11 +22,12 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['InteractionParameterDB', 'IPDB']
+__all__ = ['InteractionParameterDB']
 
 import os
 import json
 import numpy as np
+from chemicals.utils import can_load_data, PY37
 from chemicals.identifiers import check_CAS, sorted_CAS_key
 
 '''Need to be able to add NRTL parameters sets (T dept)
@@ -137,9 +138,26 @@ class InteractionParameterDB(object):
 ip_files = {'ChemSep PR': os.path.join(chemsep_db_path, 'pr.json'),
             'ChemSep NRTL': os.path.join(chemsep_db_path, 'nrtl.json')}
 
-IPDB = InteractionParameterDB()
-for name, file in ip_files.items():
-    IPDB.load_json(file, name)
+_loaded_interactions = False
+def load_all_interaction_parameters():
+    global IPDB, _loaded_interactions
+    
+    IPDB = InteractionParameterDB()
+    for name, file in ip_files.items():
+        IPDB.load_json(file, name)
+    
+    _loaded_interactions = True
+    
+if PY37:
+    def __getattr__(name):
+        if name in ('IPDB',):
+            load_all_interaction_parameters()
+            return globals()[name]
+        raise AttributeError("module %s has no attribute %s" %(__name__, name))
+else:
+    if can_load_data:
+        load_all_interaction_parameters()
+
 
 
 # Nothing wrong with storing alpha twice...

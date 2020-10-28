@@ -101,20 +101,21 @@ Data for VTPR UNIFAC
 from __future__ import division
 
 __all__ = ['UNIFAC_gammas','UNIFAC', 'UNIFAC_psi', 'DOUFMG', 'DOUFSG', 'UFSG', 'UFMG',
-           'DOUFIP2016', 'DOUFIP2006', 'UFIP', 'DDBST_UNIFAC_assignments', 
+
+           'DDBST_UNIFAC_assignments', 
            'DDBST_MODIFIED_UNIFAC_assignments', 'DDBST_PSRK_assignments',
+
            'UNIFAC_RQ', 'Van_der_Waals_volume', 'Van_der_Waals_area',
-           'load_group_assignments_DDBST', 'DDBST_UNIFAC_assignments', 
-           'DDBST_MODIFIED_UNIFAC_assignments', 'DDBST_PSRK_assignments',
-           'PSRKIP', 'PSRKSG', 'LLEUFIP', 'LLEUFSG', 'LLEMG', 
-           'LUFIP', 'LUFSG', 'NISTUFSG', 'NISTUFMG', 'NISTUFIP', 'VTPRIP',
-           'VTPRSG', 'VTPRMG', 'NISTKTUFSG', 'NISTKTUFIP', 'NISTKTUFMG',
+           'load_group_assignments_DDBST', 
+
+           'PSRKSG', 'LLEUFSG', 'LLEMG', 
+            'LUFSG', 'NISTUFSG', 'NISTUFMG',
+           'VTPRSG', 'VTPRMG', 'NISTKTUFSG', 'NISTKTUFMG',
            'LUFMG', 'PSRKMG']
 import os
 from fluids.constants import R
-from chemicals.utils import log, exp
+from chemicals.utils import log, exp, dxs_to_dns, can_load_data, PY37
 from thermo.activity import GibbsExcess
-from chemicals.utils import dxs_to_dns
 folder = os.path.join(os.path.dirname(__file__), 'Phase Change')
 
 
@@ -1621,71 +1622,85 @@ the dict-in-dict structure is found emperically to take 111608 bytes vs.
 79096 bytes, or 30% less memory.
 '''
 
-UFIP = {i: {} for i in list(range(1, 52)) + [55, 84, 85]}
-with open(os.path.join(folder, 'UNIFAC original interaction parameters.tsv')) as f:
-    for line in f:
-        maingroup1, maingroup2, interaction_parameter = line.strip('\n').split('\t')
-        # Index by both int, order maters, to only one parameter.
-        UFIP[int(maingroup1)][int(maingroup2)] = float(interaction_parameter)
-
-
-LLEUFIP = {i: {} for i in list(range(1, 33))}
-with open(os.path.join(folder, 'UNIFAC LLE interaction parameters.tsv')) as f:
-    for line in f:
-        maingroup1, maingroup2, interaction_parameter = line.strip('\n').split('\t')
-        LLEUFIP[int(maingroup1)][int(maingroup2)] = float(interaction_parameter)
-
-LUFIP = {i: {} for i in list(range(1, 22))}
-with open(os.path.join(folder, 'UNIFAC Lyngby interaction parameters.tsv')) as f:
-    for line in f:
-        maingroup1, maingroup2, a, b, c = line.strip('\n').split('\t')
-        LUFIP[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
-
-
-DOUFIP2006 = {i: {} for i in DOUFMG.keys()}
-with open(os.path.join(folder, 'UNIFAC modified Dortmund interaction parameters 2006.tsv')) as f:
-    for line in f:
-        maingroup1, maingroup2, a, b, c = line.strip('\n').split('\t')
-        DOUFIP2006[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
-
-DOUFIP2016 = {i: {} for i in list(DOUFMG.keys())+[50, 77, 98, 99]}
-# Some of the groups have no public parameters unfortunately
-with open(os.path.join(folder, 'UNIFAC modified Dortmund interaction parameters.tsv')) as f:
-    for line in f:
-        maingroup1, maingroup2, a, b, c = line.strip('\n').split('\t')
-        DOUFIP2016[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
-
-
-#NISTUFIP = {i: {} for i in list(NISTUFMG.keys())}
-NISTUFIP = {i: {} for i in list(range(87)) + [92, 94, 95, 96] }
-
-with open(os.path.join(folder, 'UNIFAC modified NIST 2015 interaction parameters.tsv')) as f:
-    for line in f:
-        maingroup1, maingroup2, a, b, c, Tmin, Tmax = line.strip('\n').split('\t')
-        NISTUFIP[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
-        
-NISTKTUFIP = {i: {} for i in range(1, 53) }
-with open(os.path.join(folder, 'NIST KT 2011 interaction parameters.tsv')) as f:
-    for line in f:
-        maingroup1, maingroup2, a, b, c = line.strip('\n').split('\t')
-        NISTKTUFIP[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
-
-
-PSRKIP = {i: {} for i in range(1, 86)}
-
-with open(os.path.join(folder, 'PSRK interaction parameters.tsv')) as f:
-    for line in f:
-        maingroup1, maingroup2, a, b, c = line.strip('\n').split('\t')
-        PSRKIP[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
-
-
-VTPRIP = {i: {} for i in range(1, 200)}
-# Three existing documents
-for name in ('VTPR 2012 interaction parameters.tsv', 'VTPR 2014 interaction parameters.tsv', 'VTPR 2016 interaction parameters.tsv'):
-    with open(os.path.join(folder, name)) as f:
+def load_unifac_ip():
+    global UFIP, LLEUFIP, LUFIP, DOUFIP2006, DOUFIP2016, NISTUFIP, NISTKTUFIP, PSRKIP, VTPRIP
+    UFIP = {i: {} for i in list(range(1, 52)) + [55, 84, 85]}
+    with open(os.path.join(folder, 'UNIFAC original interaction parameters.tsv')) as f:
+        for line in f:
+            maingroup1, maingroup2, interaction_parameter = line.strip('\n').split('\t')
+            # Index by both int, order maters, to only one parameter.
+            UFIP[int(maingroup1)][int(maingroup2)] = float(interaction_parameter)
+    
+    
+    LLEUFIP = {i: {} for i in list(range(1, 33))}
+    with open(os.path.join(folder, 'UNIFAC LLE interaction parameters.tsv')) as f:
+        for line in f:
+            maingroup1, maingroup2, interaction_parameter = line.strip('\n').split('\t')
+            LLEUFIP[int(maingroup1)][int(maingroup2)] = float(interaction_parameter)
+    
+    LUFIP = {i: {} for i in list(range(1, 22))}
+    with open(os.path.join(folder, 'UNIFAC Lyngby interaction parameters.tsv')) as f:
         for line in f:
             maingroup1, maingroup2, a, b, c = line.strip('\n').split('\t')
-            VTPRIP[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
+            LUFIP[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
+    
+    
+    DOUFIP2006 = {i: {} for i in DOUFMG.keys()}
+    with open(os.path.join(folder, 'UNIFAC modified Dortmund interaction parameters 2006.tsv')) as f:
+        for line in f:
+            maingroup1, maingroup2, a, b, c = line.strip('\n').split('\t')
+            DOUFIP2006[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
+    
+    DOUFIP2016 = {i: {} for i in list(DOUFMG.keys())+[50, 77, 98, 99]}
+    # Some of the groups have no public parameters unfortunately
+    with open(os.path.join(folder, 'UNIFAC modified Dortmund interaction parameters.tsv')) as f:
+        for line in f:
+            maingroup1, maingroup2, a, b, c = line.strip('\n').split('\t')
+            DOUFIP2016[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
+    
+    
+    #NISTUFIP = {i: {} for i in list(NISTUFMG.keys())}
+    NISTUFIP = {i: {} for i in list(range(87)) + [92, 94, 95, 96] }
+    
+    with open(os.path.join(folder, 'UNIFAC modified NIST 2015 interaction parameters.tsv')) as f:
+        for line in f:
+            maingroup1, maingroup2, a, b, c, Tmin, Tmax = line.strip('\n').split('\t')
+            NISTUFIP[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
+            
+    NISTKTUFIP = {i: {} for i in range(1, 53) }
+    with open(os.path.join(folder, 'NIST KT 2011 interaction parameters.tsv')) as f:
+        for line in f:
+            maingroup1, maingroup2, a, b, c = line.strip('\n').split('\t')
+            NISTKTUFIP[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
+    
+    
+    PSRKIP = {i: {} for i in range(1, 86)}
+    
+    with open(os.path.join(folder, 'PSRK interaction parameters.tsv')) as f:
+        for line in f:
+            maingroup1, maingroup2, a, b, c = line.strip('\n').split('\t')
+            PSRKIP[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
+    
+    
+    VTPRIP = {i: {} for i in range(1, 200)}
+    # Three existing documents
+    for name in ('VTPR 2012 interaction parameters.tsv', 'VTPR 2014 interaction parameters.tsv', 'VTPR 2016 interaction parameters.tsv'):
+        with open(os.path.join(folder, name)) as f:
+            for line in f:
+                maingroup1, maingroup2, a, b, c = line.strip('\n').split('\t')
+                VTPRIP[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
+
+
+if PY37:
+    def __getattr__(name):
+        if name in ('UFIP', 'LLEUFIP', 'LUFIP', 'DOUFIP2006', 'DOUFIP2016',
+                    'NISTUFIP', 'NISTKTUFIP', 'PSRKIP', 'VTPRIP'):
+            load_unifac_ip()
+            return globals()[name]
+        raise AttributeError("module %s has no attribute %s" %(__name__, name))
+else:
+    if can_load_data:
+        load_unifac_ip()
 
 
 

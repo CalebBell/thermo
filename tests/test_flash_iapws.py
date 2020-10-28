@@ -26,6 +26,7 @@ import thermo
 from thermo import *
 from thermo.coolprop import *
 from thermo.phases import IAPWS95Gas, IAPWS95Liquid
+from thermo.chemical_package import iapws_correlations
 from fluids.numerics import *
 from math import *
 import json
@@ -38,6 +39,8 @@ except:
 
 fluid = 'water'
 pure_surfaces_dir = os.path.join(thermo.thermo_dir, '..', 'surfaces', 'iapws95')
+
+iapws_correlations = iapws_correlations()
 
 def test_iapws95_basic_flash():
     liquid = IAPWS95Liquid(T=300, P=1e5, zs=[1])

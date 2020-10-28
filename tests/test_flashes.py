@@ -520,7 +520,7 @@ def test_flash_iapws95():
     liquid = IAPWS95Liquid(T=300, P=1e5, zs=[1])
     gas = IAPWS95Gas(T=300, P=1e5, zs=[1])
     
-    flasher = FlashPureVLS(iapws_constants, iapws_correlations, gas, [liquid], [])
+    flasher = FlashPureVLS(iapws_constants, iapws_correlations(), gas, [liquid], [])
     base = flasher.flash(T=300, P=1e6)
 
     res = flasher.flash(T=300.0, VF=.3)

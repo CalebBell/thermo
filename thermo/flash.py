@@ -42,47 +42,46 @@ __all__ = ['sequential_substitution_2P', 'sequential_substitution_GDEM3_2P',
            'solve_P_VF_IG_K_composition_independent', 
            'solve_T_VF_IG_K_composition_independent'
            ]
-from chemicals.exceptions import TrivialSolutionError, PhaseCountReducedError, PhaseExistenceImpossible
+
 
 from fluids.constants import R, R2, R_inv
 from fluids.numerics import (UnconvergedError, trunc_exp, newton,
                              brenth, secant, bisect,
                              ridder, broyden2,
-                             numpy as np, linspace, 
+                             numpy as np, linspace, assert_close, assert_close1d,
                              logspace, oscillation_checker, damping_maintain_sign,
                              oscillation_checking_wrapper, OscillationError,
                              NoSolutionError, NotBoundedError, jacobian,
                              best_bounding_bounds, isclose, newton_system,
-                             make_damp_initial, newton_minimize)
+                             make_damp_initial, newton_minimize,
+                             root, minimize, fsolve)
 from fluids.numerics import py_solve, trunc_log
 from fluids.optional.pychebfun import build_solve_pychebfun
-from numpy.testing import assert_allclose
-from scipy.optimize import minimize, fsolve, root
-from scipy.interpolate import CubicSpline
+
 from chemicals.utils import (exp, log, log10, floor, copysign, normalize,
                           mixing_simple, property_mass_to_molar, rho_to_Vm, Vm_to_rho)
-from thermo.utils import has_matplotlib
 from chemicals.heat_capacity import (Lastovka_Shaw_T_for_Hm, Dadgostar_Shaw_integral,
                                   Dadgostar_Shaw_integral_over_T, Lastovka_Shaw_integral,
                                   Lastovka_Shaw_integral_over_T)
-from thermo.phase_change import SMK
-from thermo.volume import COSTALD
 from chemicals.rachford_rice import (flash_inner_loop, Rachford_Rice_solutionN,
                                   Rachford_Rice_flash_error, Rachford_Rice_solution2, Rachford_Rice_solution_LN2)
+from chemicals.phase_change import SMK
+from chemicals.volume import COSTALD
 from chemicals.flash_basic import flash_wilson, flash_Tb_Tc_Pc, flash_ideal
+from chemicals.exceptions import TrivialSolutionError, PhaseCountReducedError, PhaseExistenceImpossible
+from chemicals.iapws import iapws95_Psat, iapws95_Tsat, iapws95_rhog_sat, iapws95_rhol_sat, iapws95_Tc, iapws95_Pc, iapws95_MW, iapws95_T
+
+from thermo.utils import has_matplotlib
 from thermo.equilibrium import EquilibriumState
 from thermo.phases import Phase, gas_phases, liquid_phases, solid_phases, CEOSLiquid, CEOSGas, CoolPropGas, CoolPropLiquid, CoolPropPhase, GibbsExcessLiquid, IdealGas, IAPWS95Liquid, IAPWS95Gas, IAPWS95
-from thermo.phases import CPPQ_INPUTS, CPQT_INPUTS, CPrhoT_INPUTS, CPunknown, caching_state_CoolProp, CPiDmolar
+from thermo.phases import CPPQ_INPUTS, CPQT_INPUTS, CPrhoT_INPUTS, CPunknown, CPiDmolar
+from thermo import phases
 from thermo.phase_identification import identify_sort_phases
 from thermo.bulk import default_settings
 from thermo.eos_mix import VDWMIX, IGMIX
 from thermo.property_package import StabilityTester
 from thermo.coolprop import CPiP_min
-from chemicals.iapws import iapws95_Psat, iapws95_Tsat, iapws95_rhog_sat, iapws95_rhol_sat, iapws95_Tc, iapws95_Pc, iapws95_MW, iapws95_T
 
-if has_matplotlib:
-    import matplotlib
-    import matplotlib.pyplot as plt
 
 
 CAS_H2O = '7732-18-5'
@@ -3781,12 +3780,12 @@ def assert_stab_success_2P(liq, gas, stab, T, P, zs, guess_name, xs=None,
                                                                         liquid_phase=min_phase, tol=SS_tol,
                                                                         gas_phase=other_phase)
     if xs_calc is not None:
-        assert_allclose(xs, xs_calc, rtol)
+        assert_close1d(xs, xs_calc, rtol)
     if ys_calc is not None:
-        assert_allclose(ys, ys_calc, rtol)
+        assert_close1d(ys, ys_calc, rtol)
     if VF is not None:
-        assert_allclose(V_over_F, VF, rtol)
-    assert_allclose(l.fugacities(), g.fugacities(), rtol)
+        assert_close(V_over_F, VF, rtol)
+    assert_close1d(l.fugacities(), g.fugacities(), rtol)
     
 
 IDEAL_WILSON = 'Ideal Wilson'
@@ -4861,7 +4860,7 @@ class FlashBase(object):
     def debug_PT(self, zs, Pmin=None, Pmax=None, Tmin=None, Tmax=None, pts=50, 
                 ignore_errors=True, values=False, verbose=False, show=False,
                 T_pts=None, P_pts=None, Ts=None, Ps=None): # pragma: no cover
-        if not has_matplotlib and not values:
+        if not has_matplotlib() and not values:
             raise Exception('Optional dependency matplotlib is required for plotting')
         if Pmin is None:
             Pmin = 1e4
@@ -4962,7 +4961,7 @@ class FlashBase(object):
                 
     def plot_TP(self, zs, Tmin=None, Tmax=None, pts=50, branches=[],
                 ignore_errors=True, values=False, hot=True): # pragma: no cover
-        if not has_matplotlib and not values:
+        if not has_matplotlib() and not values:
             raise Exception('Optional dependency matplotlib is required for plotting')
         if not Tmin:
             Tmin = min(self.constants.Tms)
@@ -5012,6 +5011,7 @@ class FlashBase(object):
                             raise e
         if values:
             return Ts, P_dews, P_bubbles, branch_Ps
+        import matplotlib.pyplot as plt
         plt.semilogy(Ts, P_dews, label='TP dew point curve')
         plt.semilogy(Ts, P_bubbles, label='TP bubble point curve')
         plt.xlabel('System temperature, K')
@@ -5026,7 +5026,7 @@ class FlashBase(object):
 
     def plot_PT(self, zs, Pmin=None, Pmax=None, pts=50, branches=[],
                 ignore_errors=True, values=False, hot=True): # pragma: no cover
-        if not has_matplotlib and not values:
+        if not has_matplotlib() and not values:
             raise Exception('Optional dependency matplotlib is required for plotting')
         if not Pmin:
             Pmin = 1e4
@@ -5075,6 +5075,7 @@ class FlashBase(object):
                             raise e
         if values:
             return Ps, T_dews, T_bubbles, branch_Ts
+        import matplotlib.pyplot as plt
         plt.plot(Ps, T_dews, label='PT dew point curve')
         plt.plot(Ps, T_bubbles, label='PT bubble point curve')
         plt.xlabel('System pressure, Pa')
@@ -5087,7 +5088,7 @@ class FlashBase(object):
         plt.show()
 
     def plot_ternary(self, T, scale=10): # pragma: no cover
-        if not has_matplotlib:
+        if not has_matplotlib():
             raise Exception('Optional dependency matplotlib is required for plotting')
         try:
             import ternary
@@ -5109,7 +5110,8 @@ class FlashBase(object):
             res = self.flash(T=T, zs=zs, VF=1)
             return res.P
         
-        
+        import matplotlib.pyplot as plt
+        import matplotlib
         axes_colors = {'b': 'g', 'l': 'r', 'r':'b'}
         ticks = [round(i / float(10), 1) for i in range(10+1)]
         
@@ -6496,7 +6498,7 @@ class FlashPureVLS(FlashBase):
     def flash_TVF(self, T, VF=None, zs=None, hot_start=None):
         zs = [1.0]
         if self.VL_only_CoolProp:
-            sat_gas_CoolProp = caching_state_CoolProp(self.gas.backend, self.gas.fluid, 1, T, CPQT_INPUTS, CPunknown, None)
+            sat_gas_CoolProp = phases.caching_state_CoolProp(self.gas.backend, self.gas.fluid, 1, T, CPQT_INPUTS, CPunknown, None)
             sat_gas = self.gas.from_AS(sat_gas_CoolProp)
             sat_liq = self.liquid.to(zs=zs, T=T, V=1.0/sat_gas_CoolProp.saturated_liquid_keyed_output(CPiDmolar))
             return sat_gas.P, sat_liq, sat_gas, 0, 0.0
@@ -6535,7 +6537,7 @@ class FlashPureVLS(FlashBase):
     def flash_PVF(self, P, VF=None, zs=None, hot_start=None):
         zs = [1.0]
         if self.VL_only_CoolProp:
-            sat_gas_CoolProp = caching_state_CoolProp(self.gas.backend, self.gas.fluid, P, 1.0, CPPQ_INPUTS, CPunknown, None)
+            sat_gas_CoolProp = phases.caching_state_CoolProp(self.gas.backend, self.gas.fluid, P, 1.0, CPPQ_INPUTS, CPunknown, None)
             sat_gas = self.gas.from_AS(sat_gas_CoolProp)
             sat_liq = self.liquids[0].to(zs=zs, T=sat_gas.T, V=1.0/sat_gas_CoolProp.saturated_liquid_keyed_output(CPiDmolar))
             return sat_gas.T, sat_liq, sat_gas, 0, 0.0
@@ -6984,7 +6986,7 @@ class FlashPureVLS(FlashBase):
         for i, k in enumerate(props):
             ref = ref_props[i]
             for s in states:
-                assert_allclose(s.value(k), ref, rtol=rtol)
+                assert_close(s.value(k), ref, rtol=rtol)
         
     def generate_VF_data(self, Pmin=None, Pmax=None, pts=100, 
                          props=['T', 'P', 'V', 'S', 'H', 'G', 'U', 'A']):
@@ -7057,6 +7059,7 @@ class FlashPureVLS(FlashBase):
         VF_data_spline_kwargs = self.VF_data_spline_kwargs
         liq_VF_interpolators = self.liq_VF_interpolators
         gas_VF_interpolators = self.gas_VF_interpolators
+        from scipy.interpolate import CubicSpline
 
         for base_prop, base_idx in zip(self.VF_data_base_props, self.VF_data_base_idxs):
             xs = liq_props[base_idx]

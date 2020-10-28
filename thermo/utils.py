@@ -31,20 +31,22 @@ import os
 from cmath import sqrt as csqrt
 from bisect import bisect_left
 import numpy as np
-from numpy.testing import assert_allclose
-from fluids.numerics import brenth, newton, linspace, polyint, polyint_over_x, derivative, polyder, horner, horner_and_der2, quadratic_from_f_ders, assert_close
+from fluids.numerics import quad, brenth, newton, linspace, polyint, polyint_over_x, derivative, polyder, horner, horner_and_der2, quadratic_from_f_ders, assert_close
 from fluids.constants import R
-from scipy.integrate import quad
-from scipy.interpolate import interp1d, interp2d
 from chemicals.utils import isnan, isinf, log, exp, ws_to_zs, zs_to_ws
-#from chemicals.utils import *
 from chemicals.utils import mix_multiple_component_flows, hash_any_primitive
 
-try:
-    import matplotlib.pyplot as plt
-    has_matplotlib = True
-except:
-    has_matplotlib = False
+global _has_matplotlib
+_has_matplotlib = None
+def has_matplotlib():
+    global _has_matplotlib
+    if _has_matplotlib is None:
+        try:
+            import matplotlib.pyplot as plt
+            _has_matplotlib = True
+        except:
+            _has_matplotlib = False
+    return _has_matplotlib
     
 try:  # pragma: no cover
     from appdirs import user_data_dir, user_config_dir
@@ -53,6 +55,11 @@ try:  # pragma: no cover
         os.mkdir(data_dir)
 except ImportError:  # pragma: no cover
     data_dir = ''
+
+try:
+    source_path = os.path.dirname(__file__) # micropython
+except:
+    source_path = ''
 
 def allclose_variable(a, b, limits, rtols=None, atols=None):
     """Returns True if two arrays are element-wise equal within several
@@ -1007,7 +1014,7 @@ class TDependentProperty(object):
             If True, displays the plot; otherwise, returns it
         '''
         # This function cannot be tested
-        if not has_matplotlib:
+        if not has_matplotlib():
             raise Exception('Optional dependency matplotlib is required for plotting')
         if Tmin is None:
             if self.Tmin is not None:
@@ -1146,6 +1153,7 @@ class TDependentProperty(object):
         if key in self.tabular_data_interpolators:
             extrapolator, spline = self.tabular_data_interpolators[key]
         else:
+            from scipy.interpolate import interp1d
             Ts, properties = self.tabular_data[name]
 
             if self.interpolation_T:  # Transform ths Ts with interpolation_T if set
@@ -1851,6 +1859,7 @@ class TPDependentProperty(TDependentProperty):
         if key in self.tabular_data_interpolators:
             extrapolator, spline = self.tabular_data_interpolators[key]
         else:
+            from scipy.interpolate import interp2d
             Ts, Ps, properties = self.tabular_data[name]
 
             if self.interpolation_T:  # Transform ths Ts with interpolation_T if set
@@ -1926,7 +1935,7 @@ class TPDependentProperty(TDependentProperty):
             checking and use methods outside their bounds
         '''
         # This function cannot be tested
-        if not has_matplotlib:
+        if not has_matplotlib():
             raise Exception('Optional dependency matplotlib is required for plotting')
         if Pmin is None:
             if self.Pmin is not None:
@@ -1999,7 +2008,7 @@ class TPDependentProperty(TDependentProperty):
             and handle errors; if False, attempt calculation without any
             checking and use methods outside their bounds
         '''
-        if not has_matplotlib:
+        if not has_matplotlib():
             raise Exception('Optional dependency matplotlib is required for plotting')
         if Tmin is None:
             if self.Tmin is not None:
@@ -2074,7 +2083,7 @@ class TPDependentProperty(TDependentProperty):
             and handle errors; if False, attempt calculation without any
             checking and use methods outside their bounds
         '''
-        if not has_matplotlib:
+        if not has_matplotlib():
             raise Exception('Optional dependency matplotlib is required for plotting')
         from mpl_toolkits.mplot3d import axes3d
         from matplotlib.ticker import FormatStrFormatter
@@ -2812,7 +2821,7 @@ class MixtureProperty(object):
         if zs is None or ws is None:
             zs, ws = self._complete_zs_ws(zs, ws)
         # This function cannot be tested
-        if not has_matplotlib:
+        if not has_matplotlib():
             raise Exception('Optional dependency matplotlib is required for plotting')
         if Pmin is None:
             if self.Pmin is not None:
@@ -2894,7 +2903,7 @@ class MixtureProperty(object):
         '''
         if zs is None or ws is None:
             zs, ws = self._complete_zs_ws(zs, ws)
-        if not has_matplotlib:
+        if not has_matplotlib():
             raise Exception('Optional dependency matplotlib is required for plotting')
         if Tmin is None:
             if self.Tmin is not None:
@@ -2974,7 +2983,7 @@ class MixtureProperty(object):
             and handle errors; if False, attempt calculation without any
             checking and use methods outside their bounds
         '''
-        if not has_matplotlib:
+        if not has_matplotlib():
             raise Exception('Optional dependency matplotlib is required for plotting')
         from mpl_toolkits.mplot3d import axes3d
         from matplotlib.ticker import FormatStrFormatter
