@@ -340,7 +340,7 @@ def TPD(T, zs, lnphis, ys, lnphis_test):
     >>> gas = PRMIX(Tcs=[305.32, 469.7], Pcs=[4872000.0, 3370000.0], omegas=[0.098, 0.251], kijs=[[0, 0.0078], [0.0078, 0]], zs=[0.9946656798618667, 0.005334320138133337], T=254.43857191839297, P=1000000.0)
     >>> liq = PRMIX(Tcs=[305.32, 469.7], Pcs=[4872000.0, 3370000.0], omegas=[0.098, 0.251], kijs=[[0, 0.0078], [0.0078, 0]], zs=[0.7058334393128614, 0.2941665606871387], T=254.43857191839297, P=1000000.0)
     >>> TPD(liq.T, liq.zs, liq.lnphis_l, gas.zs, gas.lnphis_g)
-    -4.039718547593688e-09
+    -4.0339949303e-09
     
     References
     ----------
@@ -507,15 +507,15 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False)
             raise Exception('Product and feeds have different components in them')
 
         # element balance
-        feed_cmps, feed_element_flows = mix_multiple_component_flows(IDs=[i.atoms.keys() for i in inlets],
+        feed_cmps, feed_element_flows = mix_multiple_component_flows(IDs=[list(i.atoms.keys()) for i in inlets],
                                                               flows=[i.n for i in inlets], 
-                                                              fractions=[i.atoms.values() for i in inlets])
+                                                              fractions=[list(i.atoms.values()) for i in inlets])
         feed_element_flows = {i:j for i, j in zip(feed_cmps, feed_element_flows)}
         
         
-        product_cmps, product_element_flows = mix_multiple_component_flows(IDs=[i.atoms.keys() for i in outlets],
+        product_cmps, product_element_flows = mix_multiple_component_flows(IDs=[list(i.atoms.keys()) for i in outlets],
                                                               flows=[i.n for i in outlets], 
-                                                              fractions=[i.atoms.values() for i in outlets])
+                                                              fractions=[list(i.atoms.values()) for i in outlets])
         product_element_flows = {i:j for i, j in zip(product_cmps, product_element_flows)}
         
         for ele, flow in feed_element_flows.items():
@@ -523,7 +523,7 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False)
             
         if set(feed_cmps) != set(product_cmps):
             raise Exception('Product and feeds have different elements in them')
-        return True
+        return 
 
     feed_ns = [i.n for i in inlets]
     feed_zs = [i.zs for i in inlets]
@@ -539,7 +539,7 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False)
 
     # Fail on unmatching 
     if set(feed_cmps) != set(product_cmps):
-        raise Exception('Product and feeds have different components in them')
+        raise ValueError('Product and feeds have different components in them')
     for CAS, flow in feed_flows.items():
         assert_close(flow, product_flows[CAS], rtol=rtol, atol=atol)
 

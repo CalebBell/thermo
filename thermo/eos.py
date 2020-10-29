@@ -1294,21 +1294,26 @@ class GCEOS(object):
             - \frac{a \frac{d \alpha{\left (T \right )}}{d T}}{V^{2} + V \delta
             + \epsilon}
 
+        .. math::
             \left(\frac{\partial P}{\partial V}\right)_T = - \frac{R T}{\left(
             V - b\right)^{2}} - \frac{a \left(- 2 V - \delta\right) \alpha{
             \left (T \right )}}{\left(V^{2} + V \delta + \epsilon\right)^{2}}
 
+        .. math::
             \left(\frac{\partial V}{\partial T}\right)_P =-\frac{
             \left(\frac{\partial P}{\partial T}\right)_V}{
             \left(\frac{\partial P}{\partial V}\right)_T}
 
+        .. math::
             \left(\frac{\partial V}{\partial P}\right)_T =-\frac{
             \left(\frac{\partial V}{\partial T}\right)_P}{
             \left(\frac{\partial P}{\partial T}\right)_V}
 
+        .. math::
             \left(\frac{\partial T}{\partial V}\right)_P = \frac{1}
             {\left(\frac{\partial V}{\partial T}\right)_P}
 
+        .. math::
             \left(\frac{\partial T}{\partial P}\right)_V = \frac{1}
             {\left(\frac{\partial P}{\partial T}\right)_V}
 
@@ -1320,6 +1325,7 @@ class GCEOS(object):
             \frac{d^{2} \alpha{\left (T \right )}}{d T^{2}}}{V^{2} + V \delta
             + \epsilon}
 
+        .. math::
             \left(\frac{\partial^2  P}{\partial V^2}\right)_T = 2 \left(\frac{
             R T}{\left(V - b\right)^{3}} - \frac{a \left(2 V + \delta\right)^{
             2} \alpha{\left (T \right )}}{\left(V^{2} + V \delta + \epsilon
@@ -1345,6 +1351,7 @@ class GCEOS(object):
             {\left (\frac{2 V + \delta}{\sqrt{\delta^{2} - 4 \epsilon}}
             \right)}
 
+        .. math::
             S_{dep} = \int_{\infty}^V\left[\frac{\partial P}{\partial T}
             - \frac{R}{V}\right] dV + R\log\frac{PV}{RT} = - R \log{\left (V
             \right )} + R \log{\left (\frac{P V}{R T} \right )} + R \log{\left
@@ -1352,8 +1359,10 @@ class GCEOS(object):
             }{\sqrt{\delta^{2} - 4 \epsilon}} \operatorname{atanh}{\left (\frac
             {2 V + \delta}{\sqrt{\delta^{2} - 4 \epsilon}} \right )}
 
+        .. math::
             G_{dep} = H_{dep} - T S_{dep}
 
+        .. math::
             C_{v, dep} = T\int_\infty^V \left(\frac{\partial^2 P}{\partial
             T^2}\right) dV = - T a \left(\sqrt{\frac{1}{\delta^{2} - 4
             \epsilon}} \log{\left (V - \frac{\delta^{2}}{2} \sqrt{\frac{1}{
@@ -1364,6 +1373,7 @@ class GCEOS(object):
             - 2 \epsilon \sqrt{\frac{1}{\delta^{2} - 4 \epsilon}} \right )}
             \right) \frac{d^{2} \alpha{\left (T \right )} }{d T^{2}}
 
+        .. math::
             C_{p, dep} = (C_p-C_v)_{\text{from EOS}} + C_{v, dep} - R
 
 
@@ -2141,11 +2151,12 @@ class GCEOS(object):
         Examples
         --------
         >>> PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6).sorted_volumes
-        [(0.00013022212513965896+0j), (0.0011236313134682665-0.0012926967234386064j), (0.0011236313134682665+0.0012926967234386064j)]
+        ((0.000130222125139+0j), (0.00112363131346-0.00129269672343j), (0.00112363131346+0.00129269672343j))
         '''
         sort_fun = lambda x: (x.real, x.imag)
         full_volumes = self.volume_solutions_full(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
-        return sorted(full_volumes, key=sort_fun)
+        full_volumes = [i + 0.0j for i in full_volumes]
+        return tuple(sorted(full_volumes, key=sort_fun))
 
     def PIP_map(self, Tmin=1e-4, Tmax=1e4, Pmin=1e-2, Pmax=1e9,
                       pts=50, plot=False, show=False, color_map=None):
@@ -3042,7 +3053,7 @@ class GCEOS(object):
         >>> base = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=500.0, P=1E6)
         >>> new = base.to_TP(T=1.0, P=2.0)
         >>> base.state_specs, new.state_specs
-        ({'P': 1000000.0, 'T': 500.0}, {'P': 2.0, 'T': 1.0})
+        ({'T': 500.0, 'P': 1000000.0}, {'T': 1.0, 'P': 2.0})
         '''
         if T != self.T or P != self.P:
             return self.__class__(T=T, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega, **self.kwargs)
@@ -3077,7 +3088,7 @@ class GCEOS(object):
         >>> base = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=500.0, P=1E6)
         >>> new = base.to_TV(T=1000000.0, V=1.0)
         >>> base.state_specs, new.state_specs
-        ({'P': 1000000.0, 'T': 500.0}, {'T': 1000000.0, 'V': 1.0})
+        ({'T': 500.0, 'P': 1000000.0}, {'T': 1000000.0, 'V': 1.0})
         '''
         if T != self.T or V != self.V:
             # Only allow creation of new class if volume actually specified
@@ -3114,7 +3125,7 @@ class GCEOS(object):
         >>> base = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=500.0, P=1E6)
         >>> new = base.to_PV(P=1000.0, V=1.0)
         >>> base.state_specs, new.state_specs
-        ({'P': 1000000.0, 'T': 500.0}, {'P': 1000.0, 'V': 1.0})
+        ({'T': 500.0, 'P': 1000000.0}, {'P': 1000.0, 'V': 1.0})
         '''
         if P != self.P or V != self.V:
             return self.__class__(V=V, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega, **self.kwargs)
@@ -3150,7 +3161,7 @@ class GCEOS(object):
 
         >>> base = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=500.0, P=1E6)
         >>> base.to(T=300.0, P=1e9).state_specs
-        {'P': 1000000000.0, 'T': 300.0}
+        {'T': 300.0, 'P': 1000000000.0}
         >>> base.to(T=300.0, V=1.0).state_specs
         {'T': 300.0, 'V': 1.0}
         >>> base.to(P=1e5, V=1.0).state_specs
@@ -5603,10 +5614,10 @@ class GCEOS(object):
             {\left (T,P \right )} - \operatorname{S_{dep}}{\left (T,P \right )}
             + \frac{\partial}{\partial T} \operatorname{H_{dep}}{\left (T,P
             \right )}\right) - \frac{1}{R T^{2}} \left(- T \operatorname{
-                S_{dep}}{\left (T,P \right )} + \operatorname{H_{dep}}{\left
-                (T,P \right )}\right)\right) e^{\frac{1}{R T} \left(- T
-                \operatorname{S_{dep}}{\left (T,P \right )} + \operatorname
-                {H_{dep}}{\left (T,P \right )}\right)}
+            S_{dep}}{\left (T,P \right )} + \operatorname{H_{dep}}{\left
+            (T,P \right )}\right)\right) e^{\frac{1}{R T} \left(- T
+            \operatorname{S_{dep}}{\left (T,P \right )} + \operatorname
+            {H_{dep}}{\left (T,P \right )}\right)}
         '''
         T, P = self.T, self.P
         T_inv = 1.0/T
@@ -6164,7 +6175,7 @@ class IG(GCEOS):
     >>> eos.H_dep_g, eos.S_dep_g, eos.U_dep_g, eos.G_dep_g, eos.A_dep_g
     (0.0, 0.0, 0.0, 0.0, 0.0)
     >>> eos.beta_g, eos.kappa_g, eos.Cp_dep_g, eos.Cv_dep_g
-    (0.0024999999999999996, 1e-06, -1.7763568394002505e-15, 0.0)
+    (0.0025, 1e-06, 0.0, 0.0)
     >>> eos.fugacity_g, eos.PIP_g, eos.Z_g, eos.dP_dT_g
     (1000000.0, 0.9999999999999999, 1.0, 2500.0)
 
@@ -6246,12 +6257,16 @@ class PR(GCEOS):
     .. math::
         P = \frac{RT}{v-b}-\frac{a\alpha(T)}{v(v+b)+b(v-b)}
 
+    .. math::
         a=0.45724\frac{R^2T_c^2}{P_c}
 
+    .. math::
 	     b=0.07780\frac{RT_c}{P_c}
 
+    .. math::
         \alpha(T)=[1+\kappa(1-\sqrt{T_r})]^2
 
+    .. math::
         \kappa=0.37464+1.54226\omega-0.26992\omega^2
 
     Parameters
@@ -6275,45 +6290,45 @@ class PR(GCEOS):
 
     >>> eos = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=400., P=1E6)
     >>> eos.V_l, eos.V_g
-    (0.00015607313188529268, 0.0021418760907613724)
+    (0.000156073184785, 0.0021418768167)
     >>> eos.phase
     'l/g'
     >>> eos.H_dep_l, eos.H_dep_g
-    (-26111.868721160878, -3549.2993749373945)
+    (-26111.8775716, -3549.30057795)
     >>> eos.S_dep_l, eos.S_dep_g
-    (-58.09842815106099, -6.439449710478305)
+    (-58.098447843, -6.4394518931)
     >>> eos.U_dep_l, eos.U_dep_g
-    (-22942.157933046172, -2365.391545698767)
+    (-22942.1657091, -2365.3923474)
     >>> eos.G_dep_l, eos.G_dep_g
-    (-2872.497460736482, -973.5194907460723)
+    (-2872.49843435, -973.51982071)
     >>> eos.A_dep_l, eos.A_dep_g
-    (297.21332737822377, 210.38833849255525)
+    (297.21342811, 210.38840980)
     >>> eos.beta_l, eos.beta_g
-    (0.0026933709177837514, 0.01012322391117497)
+    (0.00269337091778, 0.0101232239111)
     >>> eos.kappa_l, eos.kappa_g
-    (9.33572154382935e-09, 1.9710669809793307e-06)
+    (9.3357215438e-09, 1.97106698097e-06)
     >>> eos.Cp_minus_Cv_l, eos.Cp_minus_Cv_g
-    (48.510145807408, 44.54414603000346)
+    (48.510162249, 44.544161128)
     >>> eos.Cv_dep_l, eos.Cp_dep_l
-    (18.89210627002112, 59.08779227742912)
+    (18.8921126734, 59.0878123050)
 
     P-T initialization, liquid phase, and round robin trip:
 
     >>> eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
     >>> eos.phase, eos.V_l, eos.H_dep_l, eos.S_dep_l
-    ('l', 0.00013022208100139945, -31134.740290463425, -72.47559475426019)
+    ('l', 0.000130222125139, -31134.75084, -72.47561931)
 
     T-V initialization, liquid phase:
 
-    >>> eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., V=0.00013022208100139953)
-    >>> eos.P, eos.phase
-    (1000000.0000020266, 'l')
+    >>> eos2 = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., V=eos.V_l)
+    >>> eos2.P, eos2.phase
+    (1000000.00, 'l')
 
     P-V initialization at same state:
 
-    >>> eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, V=0.00013022208100139953, P=1E6)
-    >>> eos.T, eos.phase
-    (298.99999999999926, 'l')
+    >>> eos3 = PR(Tc=507.6, Pc=3025000, omega=0.2975, V=eos.V_l, P=1E6)
+    >>> eos3.T, eos3.phase
+    (299.0000000000, 'l')
 
     Notes
     -----
@@ -6446,9 +6461,11 @@ class PR(GCEOS):
             a\alpha = a \left(\kappa \left(- \frac{T^{0.5}}{Tc^{0.5}}
             + 1\right) + 1\right)^{2}
 
+        .. math::
             \frac{d a\alpha}{dT} = - \frac{1.0 a \kappa}{T^{0.5} Tc^{0.5}}
             \left(\kappa \left(- \frac{T^{0.5}}{Tc^{0.5}} + 1\right) + 1\right)
 
+        .. math::
             \frac{d^2 a\alpha}{dT^2} = 0.5 a \kappa \left(- \frac{1}{T^{1.5}
             Tc^{0.5}} \left(\kappa \left(\frac{T^{0.5}}{Tc^{0.5}} - 1\right)
             - 1\right) + \frac{\kappa}{T^{1.0} Tc^{1.0}}\right)
@@ -6459,14 +6476,14 @@ class PR(GCEOS):
         # Thermodynamics of aqueous systems with industrial applications 133 (1980): 393-414.
         # Applies up to Tr .85.
         # Suggested in Equations of State And PVT Analysis.
-        Tc, kappa = self.Tc, self.kappa
+        Tc, kappa, a = self.Tc, self.kappa, self.a
         x0 = T**0.5
         x1 = Tc**-0.5
         x2 = kappa*(x0*x1 - 1.) - 1.
-        x3 = self.a*kappa
+        x3 = a*kappa
         x4 = x1*x2
 
-        a_alpha = self.a*x2*x2
+        a_alpha = a*x2*x2
         da_alpha_dT = x4*x3/x0
         d2a_alpha_dT2 = 0.5*x3*(kappa/(T*Tc) - x4/(x0*T))
 
@@ -6810,15 +6827,20 @@ class PR78(PR):
     .. math::
         P = \frac{RT}{v-b}-\frac{a\alpha(T)}{v(v+b)+b(v-b)}
 
+    .. math::
         a=0.45724\frac{R^2T_c^2}{P_c}
 
+    .. math::
 	    b=0.07780\frac{RT_c}{P_c}
 
+    .. math::
         \alpha(T)=[1+\kappa(1-\sqrt{T_r})]^2
 
+    .. math::
         \kappa_i = 0.37464+1.54226\omega_i-0.26992\omega_i^2 \text{ if } \omega_i
         \le 0.491
 
+    .. math::
         \kappa_i = 0.379642 + 1.48503 \omega_i - 0.164423\omega_i^2 + 0.016666
         \omega_i^3 \text{ if } \omega_i > 0.491
 
@@ -6843,7 +6865,7 @@ class PR78(PR):
 
     >>> eos = PR78(Tc=632, Pc=5350000, omega=0.734, T=299., P=1E6)
     >>> eos.phase, eos.V_l, eos.H_dep_l, eos.S_dep_l
-    ('l', 8.351960066075009e-05, -63764.649480508735, -130.73710891262687)
+    ('l', 8.3519628969e-05, -63764.671093, -130.737153225)
 
     Notes
     -----
@@ -6867,15 +6889,15 @@ class PR78(PR):
         self.P = P
         self.V = V
 
-        self.a = self.c1*R*R*Tc*Tc/Pc
-        self.b = self.c2*R*Tc/Pc
-        self.delta = 2*self.b
-        self.epsilon = -self.b*self.b
+        self.a = self.c1*R2*Tc*Tc/Pc
+        self.b = b = self.c2*R*Tc/Pc
+        self.delta = 2.0*b
+        self.epsilon = -b*b
 
         if omega <= 0.491:
             self.kappa = 0.37464 + 1.54226*omega - 0.26992*omega*omega
         else:
-            self.kappa = 0.379642 + 1.48503*omega - 0.164423*omega**2 + 0.016666*omega**3
+            self.kappa = omega*(omega*(0.016666*omega - 0.164423) + 1.48503) + 0.379642
 
         self.solve()
 
@@ -7168,14 +7190,19 @@ class PRSV(PR):
     .. math::
         P = \frac{RT}{v-b}-\frac{a\alpha(T)}{v(v+b)+b(v-b)}
 
+    .. math::
         a=0.45724\frac{R^2T_c^2}{P_c}
 
+    .. math::
         b=0.07780\frac{RT_c}{P_c}
 
+    .. math::
         \alpha(T)=[1+\kappa(1-\sqrt{T_r})]^2
 
+    .. math::
         \kappa = \kappa_0 + \kappa_1(1 + T_r^{0.5})(0.7 - T_r)
 
+    .. math::
         \kappa_0 = 0.378893 + 1.4897153\omega - 0.17131848\omega^2
         + 0.0196554\omega^3
 
@@ -7202,7 +7229,7 @@ class PRSV(PR):
 
     >>> eos = PRSV(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, kappa1=0.05104)
     >>> eos.phase, eos.V_l, eos.H_dep_l, eos.S_dep_l
-    ('l', 0.000130126869448406, -31698.916002476693, -74.16749024350415)
+    ('l', 0.000130126913554, -31698.926746, -74.16751538)
 
     Notes
     -----
@@ -7391,15 +7418,20 @@ class PRSV2(PR):
     .. math::
         P = \frac{RT}{v-b}-\frac{a\alpha(T)}{v(v+b)+b(v-b)}
 
+    .. math::
         a=0.45724\frac{R^2T_c^2}{P_c}
 
+    .. math::
 	    b=0.07780\frac{RT_c}{P_c}
 
+    .. math::
         \alpha(T)=[1+\kappa(1-\sqrt{T_r})]^2
 
+    .. math::
         \kappa = \kappa_0 + [\kappa_1 + \kappa_2(\kappa_3 - T_r)(1-T_r^{0.5})]
         (1 + T_r^{0.5})(0.7 - T_r)
 
+    .. math::
         \kappa_0 = 0.378893 + 1.4897153\omega - 0.17131848\omega^2
         + 0.0196554\omega^3
 
@@ -7430,7 +7462,7 @@ class PRSV2(PR):
 
     >>> eos = PRSV2(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, kappa1=0.05104, kappa2=0.8634, kappa3=0.460)
     >>> eos.phase, eos.V_l, eos.H_dep_l, eos.S_dep_l
-    ('l', 0.00013018821346475235, -31496.173493225797, -73.61525801151421)
+    ('l', 0.000130188257591, -31496.1841687, -73.615282963)
 
     Notes
     -----
@@ -7604,8 +7636,10 @@ class VDW(GCEOS):
     .. math::
         P=\frac{RT}{V-b}-\frac{a}{V^2}
 
+    .. math::
         a=\frac{27}{64}\frac{(RT_c)^2}{P_c}
 
+    .. math::
         b=\frac{RT_c}{8P_c}
 
     Parameters
@@ -7627,7 +7661,7 @@ class VDW(GCEOS):
     --------
     >>> eos = VDW(Tc=507.6, Pc=3025000, T=299., P=1E6)
     >>> eos.phase, eos.V_l, eos.H_dep_l, eos.S_dep_l
-    ('l', 0.00022332978038490077, -13385.722837649315, -32.65922018109096)
+    ('l', 0.000223329856081, -13385.7273746, -32.65923125)
 
     Notes
     -----
@@ -7702,8 +7736,10 @@ class VDW(GCEOS):
         .. math::
             a\alpha = a
 
+        .. math::
             \frac{d a\alpha}{dT} = 0
 
+        .. math::
             \frac{d^2 a\alpha}{dT^2} = 0
         '''
         return self.a, 0.0, 0.0
@@ -7850,9 +7886,11 @@ class RK(GCEOS):
     .. math::
         P =\frac{RT}{V-b}-\frac{a}{V\sqrt{\frac{T}{Tc}}(V+b)}
 
+    .. math::
         a=\left(\frac{R^2(T_c)^{2}}{9(\sqrt[3]{2}-1)P_c} \right)
         =\frac{0.42748\cdot R^2(T_c)^{2.5}}{P_c}
 
+    .. math::
         b=\left( \frac{(\sqrt[3]{2}-1)}{3}\right)\frac{RT_c}{P_c}
         =\frac{0.08664\cdot R T_c}{P_c}
 
@@ -7873,7 +7911,7 @@ class RK(GCEOS):
     --------
     >>> eos = RK(Tc=507.6, Pc=3025000, T=299., P=1E6)
     >>> eos.phase, eos.V_l, eos.H_dep_l, eos.S_dep_l
-    ('l', 0.00015189341729751862, -26160.833620674086, -63.01311649400544)
+    ('l', 0.000151893468781, -26160.8424877, -63.013137852)
 
     Notes
     -----
@@ -8140,14 +8178,18 @@ class SRK(GCEOS):
     .. math::
         P = \frac{RT}{V-b} - \frac{a\alpha(T)}{V(V+b)}
 
+    .. math::
         a=\left(\frac{R^2(T_c)^{2}}{9(\sqrt[3]{2}-1)P_c} \right)
         =\frac{0.42748\cdot R^2(T_c)^{2}}{P_c}
 
+    .. math::
         b=\left( \frac{(\sqrt[3]{2}-1)}{3}\right)\frac{RT_c}{P_c}
         =\frac{0.08664\cdot R T_c}{P_c}
 
+    .. math::
         \alpha(T) = \left[1 + m\left(1 - \sqrt{\frac{T}{T_c}}\right)\right]^2
 
+    .. math::
         m = 0.480 + 1.574\omega - 0.176\omega^2
 
     Parameters
@@ -8169,7 +8211,7 @@ class SRK(GCEOS):
     --------
     >>> eos = SRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
     >>> eos.phase, eos.V_l, eos.H_dep_l, eos.S_dep_l
-    ('l', 0.00014682102759032003, -31754.65309653571, -74.3732468359525)
+    ('l', 0.000146821077354, -31754.663859, -74.373272044)
 
     References
     ----------
@@ -8249,9 +8291,11 @@ class SRK(GCEOS):
             a\alpha = a \left(m \left(- \sqrt{\frac{T}{Tc}} + 1\right)
             + 1\right)^{2}
 
+        .. math::
             \frac{d a\alpha}{dT} = \frac{a m}{T} \sqrt{\frac{T}{Tc}} \left(m
             \left(\sqrt{\frac{T}{Tc}} - 1\right) - 1\right)
 
+        .. math::
             \frac{d^2 a\alpha}{dT^2} = \frac{a m \sqrt{\frac{T}{Tc}}}{2 T^{2}}
             \left(m + 1\right)
         '''
@@ -8811,15 +8855,19 @@ class APISRK(SRK):
     .. math::
         P = \frac{RT}{V-b} - \frac{a\alpha(T)}{V(V+b)}
 
+    .. math::
         a=\left(\frac{R^2(T_c)^{2}}{9(\sqrt[3]{2}-1)P_c} \right)
         =\frac{0.42748\cdot R^2(T_c)^{2}}{P_c}
 
+    .. math::
         b=\left( \frac{(\sqrt[3]{2}-1)}{3}\right)\frac{RT_c}{P_c}
         =\frac{0.08664\cdot R T_c}{P_c}
 
+    .. math::
         \alpha(T) = \left[1 + S_1\left(1-\sqrt{T_r}\right) + S_2\frac{1
         - \sqrt{T_r}}{\sqrt{T_r}}\right]^2
 
+    .. math::
         S_1 = 0.48508 + 1.55171\omega - 0.15613\omega^2 \text{ if S1 is not tabulated }
 
     Parameters
@@ -8845,7 +8893,7 @@ class APISRK(SRK):
     --------
     >>> eos = APISRK(Tc=514.0, Pc=6137000.0, S1=1.678665, S2=-0.216396, P=1E6, T=299)
     >>> eos.phase, eos.V_l, eos.H_dep_l, eos.S_dep_l
-    ('l', 7.045692682173235e-05, -42826.271630638774, -103.62694391379836)
+    ('l', 7.0456950702e-05, -42826.286146, -103.626979037)
 
     References
     ----------
@@ -8888,12 +8936,14 @@ class APISRK(SRK):
             a\alpha(T) = a\left[1 + S_1\left(1-\sqrt{T_r}\right) + S_2\frac{1
             - \sqrt{T_r}}{\sqrt{T_r}}\right]^2
 
+        .. math::
             \frac{d a\alpha}{dT} = a\frac{Tc}{T^{2}} \left(- S_{2} \left(\sqrt{
             \frac{T}{Tc}} - 1\right) + \sqrt{\frac{T}{Tc}} \left(S_{1} \sqrt{
             \frac{T}{Tc}} + S_{2}\right)\right) \left(S_{2} \left(\sqrt{\frac{
             T}{Tc}} - 1\right) + \sqrt{\frac{T}{Tc}} \left(S_{1} \left(\sqrt{
             \frac{T}{Tc}} - 1\right) - 1\right)\right)
 
+        .. math::
             \frac{d^2 a\alpha}{dT^2} = a\frac{1}{2 T^{3}} \left(S_{1}^{2} T
             \sqrt{\frac{T}{Tc}} - S_{1} S_{2} T \sqrt{\frac{T}{Tc}} + 3 S_{1}
             S_{2} Tc \sqrt{\frac{T}{Tc}} + S_{1} T \sqrt{\frac{T}{Tc}}
@@ -9006,12 +9056,16 @@ class TWUPR(TwuPR95_a_alpha, PR):
     .. math::
         P = \frac{RT}{v-b}-\frac{a\alpha(T)}{v(v+b)+b(v-b)}
 
+    .. math::
         a=0.45724\frac{R^2T_c^2}{P_c}
 
-	  b=0.07780\frac{RT_c}{P_c}
+    .. math::
+	    b=0.07780\frac{RT_c}{P_c}
 
+    .. math::
        \alpha = \alpha^{(0)} + \omega(\alpha^{(1)}-\alpha^{(0)})
 
+    .. math::
        \alpha^{(i)} = T_r^{N(M-1)}\exp[L(1-T_r^{NM})]
 
     For sub-critical conditions:
@@ -9045,7 +9099,7 @@ class TWUPR(TwuPR95_a_alpha, PR):
     --------
     >>> eos = TWUPR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
     >>> eos.V_l, eos.H_dep_l, eos.S_dep_l
-    (0.0001301754975832378, -31652.72639160809, -74.11282530917981)
+    (0.00013017554170, -31652.73712, -74.112850429)
 
     Notes
     -----
@@ -9096,14 +9150,18 @@ class TWUSRK(TwuSRK95_a_alpha, SRK):
     .. math::
         P = \frac{RT}{V-b} - \frac{a\alpha(T)}{V(V+b)}
 
+    .. math::
         a=\left(\frac{R^2(T_c)^{2}}{9(\sqrt[3]{2}-1)P_c} \right)
         =\frac{0.42748\cdot R^2(T_c)^{2}}{P_c}
 
+    .. math::
         b=\left( \frac{(\sqrt[3]{2}-1)}{3}\right)\frac{RT_c}{P_c}
         =\frac{0.08664\cdot R T_c}{P_c}
 
+    .. math::
         \alpha = \alpha^{(0)} + \omega(\alpha^{(1)}-\alpha^{(0)})
 
+    .. math::
         \alpha^{(i)} = T_r^{N(M-1)}\exp[L(1-T_r^{NM})]
 
     For sub-critical conditions:
@@ -9137,7 +9195,7 @@ class TWUSRK(TwuSRK95_a_alpha, SRK):
     --------
     >>> eos = TWUSRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
     >>> eos.phase, eos.V_l, eos.H_dep_l, eos.S_dep_l
-    ('l', 0.00014689217317770398, -31612.591872087483, -74.02294100343829)
+    ('l', 0.000146892222966, -31612.6025870, -74.022966093)
 
     Notes
     -----

@@ -4317,6 +4317,9 @@ def test_subset():
         assert e.subset([0, 1, 2]).model_hash() == e.model_hash()
         assert e.subset([0, 1, 2]).subset([0, 1]).model_hash() == e.subset([0, 1]).model_hash()
         
+    with pytest.raises(ValueError):
+        PR_case.subset([])
+        
         
 def test_RK_alpha_functions():
     ais = [0.1384531188470736, 0.23318192635290255]

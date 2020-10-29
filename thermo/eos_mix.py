@@ -19,7 +19,99 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+
+This module contains implementations of most cubic equations of state for 
+mixtures. This includes Peng-Robinson, SRK, Van der Waals, PRSV, TWU and 
+many other variants.
+
+For reporting bugs, adding feature requests, or submitting pull requests,
+please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
+
+.. contents:: :local:
+
+Base Class
+----------
+.. autoclass:: thermo.eos_mix.GCEOSMIX
+
+Different Mixing Rules
+----------------------
+.. autoclass:: thermo.eos_mix.EpsilonZeroMixingRules
+.. autoclass:: thermo.eos_mix.PSRKMixingRules
+
+Alpha Function Mixing Rules
+---------------------------
+These are where the bulk of the time is spent in solving the equation of state.
+For that reason, these functional forms often duplicate functionality but have
+different performance characteristics.
+
+Implementations which store N^2 matrices for other calculations:
+
+.. autofunction:: thermo.eos_mix.a_alpha_aijs_composition_independent 
+.. autofunction:: thermo.eos_mix.a_alpha_aijs_composition_independent_support_zeros 
+.. autofunction:: thermo.eos_mix.a_alpha_and_derivatives_full 
+
+Compute only the alpha term itself:
+
+.. autofunction:: thermo.eos_mix.a_alpha_and_derivatives 
+
+Faster implementations which do not store N^2 matrices:
+
+.. autofunction:: thermo.eos_mix.a_alpha_quadratic_terms 
+.. autofunction:: thermo.eos_mix.a_alpha_and_derivatives_quadratic_terms 
+
+Direct fugacity calls
+---------------------
+The object-oriented interface is quite convenient. However, sometimes it is 
+desireable to perform a calculation at maximum speed, with no garbage collection
+and the only temperature-dependent parts re-used each calculation.
+For that reason, select equations of state have these functional forms 
+implemented
+
+.. autofunction:: thermo.eos_mix.PR_lnphis
+.. autofunction:: thermo.eos_mix.PR_lnphis_fastest
+
+
+Peng-Robinson Family EOSs
+-------------------------
+.. autoclass:: thermo.eos_mix.PRMIX
+.. autoclass:: thermo.eos_mix.PR78MIX
+.. autoclass:: thermo.eos_mix.PRSVMIX
+.. autoclass:: thermo.eos_mix.PRSV2MIX
+.. autoclass:: thermo.eos_mix.TWUPRMIX
+.. autoclass:: thermo.eos_mix.PRMIXTranslatedConsistent
+.. autoclass:: thermo.eos_mix.PRMIXTranslatedPPJP
+
+SRK Family EOSs
+---------------
+.. autoclass:: thermo.eos_mix.SRKMIX
+.. autoclass:: thermo.eos_mix.TWUSRKMIX
+.. autoclass:: thermo.eos_mix.APISRKMIX
+.. autoclass:: thermo.eos_mix.SRKMIXTranslatedConsistent
+.. autoclass:: thermo.eos_mix.MSRKMIXTranslated
+   :no-inherited-members:
+   :no-undoc-members:
+   :no-show-inheritance:
+        
+Cubic Equation of State with Activity Coefficients
+--------------------------------------------------
+.. autoclass:: thermo.eos_mix.PSRK
+
+Other Cubic Equations of State
+------------------------------
+.. autoclass:: thermo.eos_mix.VDWMIX
+.. autoclass:: thermo.eos_mix.RKMIX
+
+Ideal Gas Equation of State
+---------------------------
+.. autoclass:: thermo.eos_mix.IGMIX
+
+Lists of Equations of State
+---------------------------
+.. autodata:: thermo.eos_mix.eos_mix_list
+.. autodata:: thermo.eos_mix.eos_mix_no_coeffs_list
+
+'''
 from __future__ import division
 
 __all__ = ['GCEOSMIX', 'PRMIX', 'SRKMIX', 'PR78MIX', 'VDWMIX', 'PRSVMIX', 
@@ -533,6 +625,33 @@ class GCEOSMIX(GCEOS):
     scalar = True
 
     def subset(self, idxs):
+        r'''Method to construct a new EOSMIX that removes all components
+        not specified in the `idxs` argument.
+        
+        Parameters
+        ----------
+        idxs : list[int] or Slice
+            Indexese of components that should be included, [-]
+
+        Returns
+        -------
+        subset_eos : EOSMIX
+            Multicomponent EOSMIX at the same specified specs but with a 
+            composition normalized to 1 and with fewer components, [-]
+            
+        Notes
+        -----
+        Subclassing equations of state require their `kwargs_linear` and 
+        `kwargs_square` attributes to be correct for this to work.
+        `Tcs`, `Pcs`, and `omegas` are always assumed to be used.
+        
+        Examples
+        --------
+        >>> kijs = [[0.0, 0.00076, 0.00171], [0.00076, 0.0, 0.00061], [0.00171, 0.00061, 0.0]]
+        >>> PR3 = PRMIX(Tcs=[469.7, 507.4, 540.3], zs=[0.8168, 0.1501, 0.0331], omegas=[0.249, 0.305, 0.349], Pcs=[3.369E6, 3.012E6, 2.736E6], T=322.29, P=101325.0, kijs=kijs)
+        >>> PR3.subset([1,2])
+        PRMIX(Tcs=[507.4, 540.3], Pcs=[3012000.0, 2736000.0], omegas=[0.305, 0.349], kijs=[[0.0, 0.00061], [0.00061, 0.0]], zs=[0.8193231441048036, 0.1806768558951965], T=322.29, P=101325.0)
+        '''
         is_slice = isinstance(idxs, slice)
         
         if is_slice:
@@ -546,6 +665,8 @@ class GCEOSMIX(GCEOS):
         
         
         zs = atindexes(self.zs)
+        if not zs:
+            raise ValueError("Cannot create an EOS without any components selected")
         zs_tot_inv = 1.0/sum(zs)
         for i in range(len(zs)):
             zs[i] *= zs_tot_inv
@@ -567,11 +688,14 @@ class GCEOSMIX(GCEOS):
         variables stored as `kwargs`. This is useful for comparing to models to 
         determine if they are the same, i.e. in a VLL flash it is important to 
         know if both liquids have the same model.
+        
+        Note that the hashes should only be compared on the same system running
+        in the same process!
         '''
-#        try:
-#            return self._model_hash
-#        except AttributeError:
-#            pass
+        try:
+            return self._model_hash
+        except AttributeError:
+            pass
 #        print('start')
         h = hash(self.__class__)
 #        print(h)
@@ -587,7 +711,7 @@ class GCEOSMIX(GCEOS):
                 pass
 #                print(h)
 #        print('end')
-#        self._model_hash = h
+        self._model_hash = h
         return h
     
     
@@ -689,7 +813,7 @@ class GCEOSMIX(GCEOS):
         --------
         >>> base = PRMIX(T=500.0, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.6, 0.4])
         >>> base.to(T=300.0, P=1e9).state_specs
-        {'P': 1000000000.0, 'T': 300.0}
+        {'T': 300.0, 'P': 1000000000.0}
         >>> base.to(T=300.0, V=1.0).state_specs
         {'T': 300.0, 'V': 1.0}
         >>> base.to(P=1e5, V=1.0).state_specs
@@ -740,7 +864,7 @@ class GCEOSMIX(GCEOS):
         >>> base = RKMIX(T=500.0, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.6, 0.4])
         >>> new = base.to_TP(T=10.0, P=2000.0)
         >>> base.state_specs, new.state_specs
-        ({'T': 500.0, 'P': 1000000.0}, {'T': 10.0, 'P': 2000.0})                  
+        ({'T': 500.0, 'P': 1000000.0}, {'T': 10.0, 'P': 2000.0})               
         '''
         return self.to_TP_zs(T, P, zs=self.zs)
 
@@ -772,7 +896,7 @@ class GCEOSMIX(GCEOS):
         >>> base = RKMIX(T=500.0, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.6, 0.4])
         >>> new = base.to_TV(T=1000000.0, V=1.0)
         >>> base.state_specs, new.state_specs
-        ({'P': 1000000.0, 'T': 500.0}, {'T': 1000000.0, 'V': 1.0})
+        ({'T': 500.0, 'P': 1000000.0}, {'T': 1000000.0, 'V': 1.0})
         '''
         return self.to_TV_zs(T=T, V=V, zs=self.zs)
         
@@ -804,7 +928,7 @@ class GCEOSMIX(GCEOS):
         >>> base = RKMIX(T=500.0, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.6, 0.4])
         >>> new = base.to_PV(P=1000000.0, V=1.0)
         >>> base.state_specs, new.state_specs
-        ({'P': 1000000.0, 'T': 500.0}, {'P': 1000000.0, 'V': 1.0})
+        ({'T': 500.0, 'P': 1000000.0}, {'P': 1000000.0, 'V': 1.0})
         '''
         return self.to_PV_zs(P=P, V=V, zs=self.zs)
 
@@ -925,6 +1049,7 @@ class GCEOSMIX(GCEOS):
         .. math::
             a \alpha = \sum_i \sum_j z_i z_j {(a\alpha)}_{ij}
             
+        .. math::
             (a\alpha)_{ij} = (1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}
         
         Parameters
@@ -956,11 +1081,12 @@ class GCEOSMIX(GCEOS):
         The exact expressions can be obtained with the following SymPy 
         expression below, commented out for brevity.
         
-        >>> from sympy import *
-        >>> a_alpha_i, a_alpha_j, kij, T = symbols('a_alpha_i, a_alpha_j, kij, T')
-        >>> a_alpha_ij = (1-kij)*sqrt(a_alpha_i(T)*a_alpha_j(T))
-        >>> #diff(a_alpha_ij, T)
-        >>> #diff(a_alpha_ij, T, T)
+        >>> from sympy import *  # doctest:+SKIP
+        >>> kij, T = symbols('kij, T ')  # doctest:+SKIP
+        >>> a_alpha_i, a_alpha_j = symbols('a_alpha_i, a_alpha_j', cls=Function)  # doctest:+SKIP
+        >>> a_alpha_ij = (1-kij)*sqrt(a_alpha_i(T)*a_alpha_j(T))  # doctest:+SKIP
+        >>> diff(a_alpha_ij, T)  # doctest:+SKIP
+        >>> diff(a_alpha_ij, T, T)  # doctest:+SKIP
         '''
         if pure_a_alphas:
             if full:
@@ -1457,6 +1583,7 @@ class GCEOSMIX(GCEOS):
         .. math::
             \hat \phi_i^g = \frac{\hat f_i^g}{x_i P}
         
+        .. math::
             \hat \phi_i^l = \frac{\hat f_i^l}{x_i P}
             
         Note that in a flash calculation, each phase requires their own EOS
@@ -1487,6 +1614,7 @@ class GCEOSMIX(GCEOS):
              \ln \hat \phi_i = \int_{0}^P\left(\frac{\hat V_i}
              {RT} - \frac{1}{P}\right)dP
 
+        .. math::
              \ln \hat \phi_i = \int_V^\infty \left[
              \frac{1}{RT}\frac{\partial P}{ \partial n_i}
              - \frac{1}{V}\right] d V - \ln Z
@@ -1660,8 +1788,10 @@ class GCEOSMIX(GCEOS):
             \frac{\partial \; TPD^*}{\partial \alpha_i} = \sqrt{Y_i} \left[
             \ln \phi_i(Y) + \ln(Y_i) - h_i\right]
             
+        .. math::
             \alpha_i = 2 \sqrt{Y_i}
             
+        .. math::
             d_i(z) = \ln z_i + \ln \phi_i(z)
             
         Parameters
@@ -3729,7 +3859,7 @@ class GCEOSMIX(GCEOS):
     
     def dP_dns_Vt(self, phase):
         # Checked numerically, working. Evaluated at constant temperature and total volume.
-        '''from sympy import *
+        r'''from sympy import *
         Vt, P, T, R, n1, n2, n3, no = symbols('Vt, P, T, R, n1, n2, n3, no') # doctest:+SKIP
         n, P, V, a_alpha, delta, epsilon, b = symbols('n, P, V, a\ \\alpha, delta, epsilon, b', cls=Function) # doctest:+SKIP
         da_alpha_dT, d2a_alpha_dT2 = symbols('da_alpha_dT, d2a_alpha_dT2', cls=Function) # doctest:+SKIP
@@ -4719,7 +4849,8 @@ class GCEOSMIX(GCEOS):
     def _d2_A_dep_d2_helper(self, V, d_Vs, d2Vs, dbs, d2bs, d_epsilons, 
                             d2_epsilons, d_deltas, d2_deltas, da_alphas,
                             d2a_alphas):
-        '''from sympy import * # doctest:+SKIP
+        # pass
+        r'''from sympy import * # doctest:+SKIP
         P, T, R, x1, x2 = symbols('P, T, R, x1, x2') # doctest:+SKIP
         a_alpha, delta, epsilon, V, b = symbols('a\ \\alpha, delta, epsilon, V, b', cls=Function) # doctest:+SKIP
         da_alpha_dT, d2a_alpha_dT2 = symbols('da_alpha_dT, d2a_alpha_dT2', cls=Function) # doctest:+SKIP
@@ -4817,7 +4948,8 @@ class GCEOSMIX(GCEOS):
                                      da_alphas=da_alpha_dns, d2a_alphas=d2a_alpha_dninjs)
                        
     def dA_dep_dns_Vt(self, phase):
-        '''
+        # pass
+        r'''
         from sympy import *
         Vt, P, T, R, n1, n2, n3 = symbols('Vt, P, T, R, n1, n2, n3') # doctest:+SKIP
         P, V, a_alpha, delta, epsilon, b = symbols('P, V, a\ \\alpha, delta, epsilon, b', cls=Function) # doctest:+SKIP
@@ -6065,8 +6197,10 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
         .. math::
             a\alpha = 0
         
+        .. math::
             \frac{d a\alpha}{dT} = 0
 
+        .. math::
             \frac{d^2 a\alpha}{dT^2} = 0
         
         Parameters
@@ -6133,15 +6267,20 @@ class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
     .. math::
         P =\frac{RT}{V-b}-\frac{a}{V\sqrt{T}(V+b)}
         
+    .. math::
         a = \sum_i \sum_j z_i z_j {a}_{ij}
             
+    .. math::
         b = \sum_i z_i b_i
 
+    .. math::
         a_{ij} = (1-k_{ij})\sqrt{a_{i}a_{j}}
 
+    .. math::
         a_i =\left(\frac{R^2(T_{c,i})^{2}}{9(\sqrt[3]{2}-1)P_{c,i}} \right)
         =\frac{0.42748\cdot R^2(T_{c,i})^{2}}{P_{c,i}}
         
+    .. math::
         b_i=\left( \frac{(\sqrt[3]{2}-1)}{3}\right)\frac{RT_{c,i}}{P_{c,i}}
         =\frac{0.08664\cdot R T_{c,i}}{P_{c,i}}
                     
@@ -6180,9 +6319,7 @@ class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
     
     >>> eos = RKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
     >>> eos.V_l, eos.V_g
-    (4.04841478191211e-05, 0.0007006060586399438)
-    >>> eos.fugacities_l, eos.fugacities_g
-    ([845014.9091158316, 57493.50906829033], [443627.1645350597, 355331.8131029061])
+    (4.048414781e-05, 0.00070060605863)
 
     Notes
     -----
@@ -6246,8 +6383,10 @@ class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
         .. math::
             a\alpha = \frac{a}{\sqrt{\frac{T}{Tc}}}
         
+        .. math::
             \frac{d a\alpha}{dT} = - \frac{a}{2 T\sqrt{\frac{T}{Tc}}}
 
+        .. math::
             \frac{d^2 a\alpha}{dT^2} = \frac{3 a}{4 T^{2}\sqrt{\frac{T}{Tc}}}
         
         Parameters
@@ -6271,9 +6410,7 @@ class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
         
         >>> eos = RKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
         >>> eos.a_alpha_and_derivatives_vectorized(115)
-        ([0.14498109194681866, 0.3001977367788305],
-         [-0.0006303525736818202, -0.0013052075512123066],
-         [8.221990091502003e-06, 1.702444632016052e-05])
+        ([0.1449810919468, 0.30019773677], [-0.000630352573681, -0.00130520755121], [8.2219900915e-06, 1.7024446320e-05])
         '''
 #        if full:
         return RK_a_alpha_and_derivatives_vectorized(T, self.Tcs, self.ais)
@@ -6418,18 +6555,25 @@ class PRMIX(GCEOSMIX, PR):
     .. math::
         P = \frac{RT}{v-b}-\frac{a\alpha(T)}{v(v+b)+b(v-b)}
         
+    .. math::
         a \alpha = \sum_i \sum_j z_i z_j {(a\alpha)}_{ij}
         
+    .. math::
         (a\alpha)_{ij} = (1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}
         
+    .. math::
         b = \sum_i z_i b_i
 
+    .. math::
         a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}
         
+    .. math::
 	    b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
 
+    .. math::
         \alpha(T)_i=[1+\kappa_i(1-\sqrt{T_{r,i}})]^2
         
+    .. math::
         \kappa_i=0.37464+1.54226\omega_i-0.26992\omega^2_i
         
     Parameters
@@ -6467,9 +6611,9 @@ class PRMIX(GCEOSMIX, PR):
     
     >>> eos = PRMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
     >>> eos.V_l, eos.V_g
-    (3.625735065042031e-05, 0.0007006656856469095)
+    (3.6257362939e-05, 0.00070066592313)
     >>> eos.fugacities_l, eos.fugacities_g
-    ([793860.8382114634, 73468.55225303846], [436530.9247009119, 358114.63827532396])
+    ([793860.83821, 73468.552253], [436530.92470, 358114.63827])
     
     Notes
     -----
@@ -6556,9 +6700,11 @@ class PRMIX(GCEOSMIX, PR):
             a\alpha = a \left(\kappa \left(- \frac{T^{0.5}}{Tc^{0.5}} 
             + 1\right) + 1\right)^{2}
         
+        .. math::
             \frac{d a\alpha}{dT} = - \frac{1.0 a \kappa}{T^{0.5} Tc^{0.5}}
             \left(\kappa \left(- \frac{T^{0.5}}{Tc^{0.5}} + 1\right) + 1\right)
 
+        .. math::
             \frac{d^2 a\alpha}{dT^2} = 0.5 a \kappa \left(- \frac{1}{T^{1.5} 
             Tc^{0.5}} \left(\kappa \left(\frac{T^{0.5}}{Tc^{0.5}} - 1\right)
             - 1\right) + \frac{\kappa}{T^{1.0} Tc^{1.0}}\right)
@@ -6626,8 +6772,10 @@ class PRMIX(GCEOSMIX, PR):
             \left[\frac{B_i}{B} - \frac{2}{a\alpha}\sum_i y_i(a\alpha)_{ij}\right]
             \log\left[\frac{Z + (1+\sqrt{2})B}{Z-(\sqrt{2}-1)B}\right]
             
+        .. math::
             A = \frac{(a\alpha)P}{R^2 T^2}
             
+        .. math::
             B = \frac{b P}{RT}
         
         Parameters
@@ -7844,20 +7992,27 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
     .. math::
         P = \frac{RT}{V-b} - \frac{a\alpha(T)}{V(V+b)}
         
+    .. math::
         a \alpha = \sum_i \sum_j z_i z_j {(a\alpha)}_{ij}
         
+    .. math::
         (a\alpha)_{ij} = (1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}
 
+    .. math::
         b = \sum_i z_i b_i
 
+    .. math::
         a_i =\left(\frac{R^2(T_{c,i})^{2}}{9(\sqrt[3]{2}-1)P_{c,i}} \right)
         =\frac{0.42748\cdot R^2(T_{c,i})^{2}}{P_{c,i}}
     
+    .. math::
         b_i =\left( \frac{(\sqrt[3]{2}-1)}{3}\right)\frac{RT_{c,i}}{P_{c,i}}
         =\frac{0.08664\cdot R T_{c,i}}{P_{c,i}}
         
+    .. math::
         \alpha(T)_i = \left[1 + m_i\left(1 - \sqrt{\frac{T}{T_{c,i}}}\right)\right]^2
         
+    .. math::
         m_i = 0.480 + 1.574\omega_i - 0.176\omega_i^2
             
     Parameters
@@ -7895,9 +8050,7 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
     
     >>> SRK_mix = SRKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
     >>> SRK_mix.V_l, SRK_mix.V_g
-    (4.104755570185169e-05, 0.0007110155639819185)
-    >>> SRK_mix.fugacities_l, SRK_mix.fugacities_g
-    ([817841.6430546861, 72382.81925202614], [442137.12801246037, 361820.79211909405])
+    (4.1047569614e-05, 0.0007110158049)
     
     Notes
     -----
@@ -7965,9 +8118,11 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
             a\alpha = a \left(m \left(- \sqrt{\frac{T}{Tc}} + 1\right)
             + 1\right)^{2}
         
+        .. math::
             \frac{d a\alpha}{dT} = \frac{a m}{T} \sqrt{\frac{T}{Tc}} \left(m
             \left(\sqrt{\frac{T}{Tc}} - 1\right) - 1\right)
 
+        .. math::
             \frac{d^2 a\alpha}{dT^2} = \frac{a m \sqrt{\frac{T}{Tc}}}{2 T^{2}}
             \left(m + 1\right)
         
@@ -8003,8 +8158,10 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
             \left[\frac{B_i}{B} - \frac{2}{a \alpha}\sum_i y_i(a\alpha)_{ij}
             \right]\ln\left(1+\frac{B}{Z}\right)
             
+        .. math::
             A=\frac{a\alpha P}{R^2T^2}
             
+        .. math::
             B = \frac{bP}{RT}
         
         Parameters
@@ -8627,21 +8784,29 @@ class PR78MIX(PRMIX):
     .. math::
         P = \frac{RT}{v-b}-\frac{a\alpha(T)}{v(v+b)+b(v-b)}
         
+    .. math::
         a \alpha = \sum_i \sum_j z_i z_j {(a\alpha)}_{ij}
         
+    .. math::
         (a\alpha)_{ij} = (1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}
         
+    .. math::
         b = \sum_i z_i b_i
 
+    .. math::
         a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}
         
-	  b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
+    .. math::
+	    b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
 
+    .. math::
         \alpha(T)_i=[1+\kappa_i(1-\sqrt{T_{r,i}})]^2
         
+    .. math::
         \kappa_i = 0.37464+1.54226\omega_i-0.26992\omega_i^2 \text{ if } \omega_i
         \le 0.491
         
+    .. math::
         \kappa_i = 0.379642 + 1.48503 \omega_i - 0.164423\omega_i^2 + 0.016666
         \omega_i^3 \text{ if } \omega_i > 0.491
         
@@ -8681,9 +8846,9 @@ class PR78MIX(PRMIX):
     
     >>> eos = PR78MIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.6, 0.7], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
     >>> eos.V_l, eos.V_g
-    (3.239642793468725e-05, 0.0005043378493002219)
+    (3.2396438915e-05, 0.00050433802024)
     >>> eos.fugacities_l, eos.fugacities_g
-    ([833048.4511980312, 6160.908815331656], [460717.2776793945, 279598.90103207604])
+    ([833048.45119, 6160.9088153], [460717.27767, 279598.90103])
     
     Notes
     -----
@@ -8747,14 +8912,19 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
     .. math::
         P=\frac{RT}{V-b}-\frac{a}{V^2}
         
+    .. math::
         a = \sum_i \sum_j z_i z_j {a}_{ij}
             
+    .. math::
         b = \sum_i z_i b_i
 
+    .. math::
         a_{ij} = (1-k_{ij})\sqrt{a_{i}a_{j}}
 
+    .. math::
         a_i=\frac{27}{64}\frac{(RT_{c,i})^2}{P_{c,i}}
 
+    .. math::
         b_i=\frac{RT_{c,i}}{8P_{c,i}}
             
     Parameters
@@ -8792,9 +8962,9 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
     
     >>> eos = VDWMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
     >>> eos.V_l, eos.V_g
-    (5.881367851416652e-05, 0.0007770869741895236)
+    (5.881369844883e-05, 0.00077708723758)
     >>> eos.fugacities_l, eos.fugacities_g
-    ([854533.2669205057, 207126.84972762014], [448470.7363380735, 397826.543999929])
+    ([854533.266920, 207126.8497276], [448470.736338, 397826.543999])
 
     Notes
     -----
@@ -8848,8 +9018,10 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
         .. math::
             a\alpha = a
         
+        .. math::
             \frac{d a\alpha}{dT} = 0
 
+        .. math::
             \frac{d^2 a\alpha}{dT^2} = 0
         
         Parameters
@@ -9102,20 +9274,28 @@ class PRSVMIX(PRMIX, PRSV):
     .. math::
         P = \frac{RT}{v-b}-\frac{a\alpha(T)}{v(v+b)+b(v-b)}
         
+    .. math::
         a \alpha = \sum_i \sum_j z_i z_j {(a\alpha)}_{ij}
         
+    .. math::
         (a\alpha)_{ij} = (1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}
         
+    .. math::
         b = \sum_i z_i b_i
 
+    .. math::
         a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}
         
+    .. math::
 	    b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
         
+    .. math::
         \alpha(T)_i=[1+\kappa_i(1-\sqrt{T_{r,i}})]^2
         
+    .. math::
         \kappa_i = \kappa_{0,i} + \kappa_{1,i}(1 + T_{r,i}^{0.5})(0.7 - T_{r,i})
         
+    .. math::
         \kappa_{0,i} = 0.378893 + 1.4897153\omega_i - 0.17131848\omega_i^2 
         + 0.0196554\omega_i^3
         
@@ -9156,7 +9336,7 @@ class PRSVMIX(PRMIX, PRSV):
     
     >>> eos = PRSVMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
     >>> eos.phase, eos.V_l, eos.H_dep_l, eos.S_dep_l
-    ('l/g', 3.6235523883756384e-05, -6349.003406339954, -49.12403359687132)
+    ('l/g', 3.6235536165e-05, -6349.0055583, -49.1240502472)
     
     Notes
     -----
@@ -9300,21 +9480,29 @@ class PRSV2MIX(PRMIX, PRSV2):
     .. math::
         P = \frac{RT}{v-b}-\frac{a\alpha(T)}{v(v+b)+b(v-b)}
         
+    .. math::
         a \alpha = \sum_i \sum_j z_i z_j {(a\alpha)}_{ij}
         
+    .. math::
         (a\alpha)_{ij} = (1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}
         
+    .. math::
         b = \sum_i z_i b_i
 
+    .. math::
         a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}
         
+    .. math::
 	    b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
         
+    .. math::
         \alpha(T)_i=[1+\kappa_i(1-\sqrt{T_{r,i}})]^2
         
+    .. math::
         \kappa_i = \kappa_{0,i} + [\kappa_{1,i} + \kappa_{2,i}(\kappa_{3,i} - T_{r,i})(1-T_{r,i}^{0.5})]
         (1 + T_{r,i}^{0.5})(0.7 - T_{r,i})
         
+    .. math::
         \kappa_{0,i} = 0.378893 + 1.4897153\omega_i - 0.17131848\omega_i^2 
         + 0.0196554\omega_i^3
         
@@ -9359,9 +9547,9 @@ class PRSV2MIX(PRMIX, PRSV2):
     
     >>> eos = PRSV2MIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
     >>> eos.V_l, eos.V_g
-    (3.6235523883756384e-05, 0.0007002421492037558)
+    (3.6235536165e-05, 0.00070024238654)
     >>> eos.fugacities_l, eos.fugacities_g
-    ([794057.5831840535, 72851.22327178411], [436553.65618350444, 357878.1106688994])
+    ([794057.58318, 72851.22327], [436553.65618, 357878.11066])
     
     Notes
     -----    
@@ -9487,18 +9675,25 @@ class TWUPRMIX(TwuPR95_a_alpha, PRMIX):
     .. math::
         P = \frac{RT}{v-b}-\frac{a\alpha(T)}{v(v+b)+b(v-b)}
         
+    .. math::
         a \alpha = \sum_i \sum_j z_i z_j {(a\alpha)}_{ij}
         
+    .. math::
         (a\alpha)_{ij} = (1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}
         
+    .. math::
         b = \sum_i z_i b_i
 
+    .. math::
         a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}
         
+    .. math::
 	    b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
    
+    .. math::
        \alpha_i = \alpha_i^{(0)} + \omega_i(\alpha_i^{(1)}-\alpha_i^{(0)})
        
+    .. math::
        \alpha^{(\text{0 or 1})} = T_{r,i}^{N(M-1)}\exp[L(1-T_{r,i}^{NM})]
       
     For sub-critical conditions:
@@ -9548,9 +9743,9 @@ class TWUPRMIX(TwuPR95_a_alpha, PRMIX):
     
     >>> eos = TWUPRMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
     >>> eos.V_l, eos.V_g
-    (3.624569813157017e-05, 0.0007004398944116553)
+    (3.624571041e-05, 0.0007004401318)
     >>> eos.fugacities_l, eos.fugacities_g
-    ([792155.022163319, 73305.88829726777], [436468.9677642441, 358049.24955730926])
+    ([792155.022163, 73305.88829], [436468.967764, 358049.2495573])
     
     Notes
     -----
@@ -9628,20 +9823,27 @@ class TWUSRKMIX(TwuSRK95_a_alpha, SRKMIX):
     .. math::
         P = \frac{RT}{V-b} - \frac{a\alpha(T)}{V(V+b)}
         
+    .. math::
         a_i =\left(\frac{R^2(T_{c,i})^{2}}{9(\sqrt[3]{2}-1)P_{c,i}} \right)
         =\frac{0.42748\cdot R^2(T_{c,i})^{2}}{P_{c,i}}
     
+    .. math::
         b_i =\left( \frac{(\sqrt[3]{2}-1)}{3}\right)\frac{RT_{c,i}}{P_{c,i}}
         =\frac{0.08664\cdot R T_{c,i}}{P_{c,i}}
         
+    .. math::
         a \alpha = \sum_i \sum_j z_i z_j {(a\alpha)}_{ij}
         
+    .. math::
         (a\alpha)_{ij} = (1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}
         
+    .. math::
         b = \sum_i z_i b_i
         
+    .. math::
         \alpha_i = \alpha^{(0,i)} + \omega_i(\alpha^{(1,i)}-\alpha^{(0,i)})
        
+    .. math::
         \alpha^{(\text{0 or 1, i})} = T_{r,i}^{N(M-1)}\exp[L(1-T_{r,i}^{NM})]
       
     For sub-critical conditions:
@@ -9691,9 +9893,9 @@ class TWUSRKMIX(TwuSRK95_a_alpha, SRKMIX):
     
     >>> eos = TWUSRKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
     >>> eos.V_l, eos.V_g
-    (4.1087913616390855e-05, 0.000711707084027679)
+    (4.1087927542e-05, 0.00071170732525)
     >>> eos.fugacities_l, eos.fugacities_g
-    ([809692.8308266959, 74093.63881572774], [441783.43148985505, 362470.31741077645])
+    ([809692.830826, 74093.6388157], [441783.431489, 362470.3174107])
     
     Notes
     -----
@@ -9771,21 +9973,28 @@ class APISRKMIX(SRKMIX, APISRK):
     .. math::
         P = \frac{RT}{V-b} - \frac{a\alpha(T)}{V(V+b)}
         
+    .. math::
         a \alpha = \sum_i \sum_j z_i z_j {(a\alpha)}_{ij}
         
+    .. math::
         (a\alpha)_{ij} = (1-k_{ij})\sqrt{(a\alpha)_{i}(a\alpha)_{j}}
 
+    .. math::
         b = \sum_i z_i b_i
 
+    .. math::
         a_i =\left(\frac{R^2(T_{c,i})^{2}}{9(\sqrt[3]{2}-1)P_{c,i}} \right)
         =\frac{0.42748\cdot R^2(T_{c,i})^{2}}{P_{c,i}}
     
+    .. math::
         b_i =\left( \frac{(\sqrt[3]{2}-1)}{3}\right)\frac{RT_{c,i}}{P_{c,i}}
         =\frac{0.08664\cdot R T_{c,i}}{P_{c,i}}
         
+    .. math::
         \alpha(T)_i = \left[1 + S_{1,i}\left(1-\sqrt{T_{r,i}}\right) + S_{2,i}
         \frac{1- \sqrt{T_{r,i}}}{\sqrt{T_{r,i}}}\right]^2
         
+    .. math::
         S_{1,i} = 0.48508 + 1.55171\omega_i - 0.15613\omega_i^2 \text{ if S1 is not tabulated }
         
     Parameters
@@ -9831,9 +10040,9 @@ class APISRKMIX(SRKMIX, APISRK):
     
     >>> eos = APISRKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
     >>> eos.V_l, eos.V_g
-    (4.1015909205567394e-05, 0.0007104685894929316)
+    (4.101592310e-05, 0.00071046883030)
     >>> eos.fugacities_l, eos.fugacities_g
-    ([817882.3033490371, 71620.48238123357], [442158.29113191745, 361519.7987757053])
+    ([817882.3033, 71620.4823812], [442158.29113, 361519.79877])
 
     References
     ----------
@@ -9903,12 +10112,14 @@ class APISRKMIX(SRKMIX, APISRK):
             a\alpha(T) = a\left[1 + S_1\left(1-\sqrt{T_r}\right) + S_2\frac{1
             - \sqrt{T_r}}{\sqrt{T_r}}\right]^2
         
+        .. math::
             \frac{d a\alpha}{dT} = a\frac{Tc}{T^{2}} \left(- S_{2} \left(\sqrt{
             \frac{T}{Tc}} - 1\right) + \sqrt{\frac{T}{Tc}} \left(S_{1} \sqrt{
             \frac{T}{Tc}} + S_{2}\right)\right) \left(S_{2} \left(\sqrt{\frac{
             T}{Tc}} - 1\right) + \sqrt{\frac{T}{Tc}} \left(S_{1} \left(\sqrt{
             \frac{T}{Tc}} - 1\right) - 1\right)\right)
 
+        .. math::
             \frac{d^2 a\alpha}{dT^2} = a\frac{1}{2 T^{3}} \left(S_{1}^{2} T
             \sqrt{\frac{T}{Tc}} - S_{1} S_{2} T \sqrt{\frac{T}{Tc}} + 3 S_{1}
             S_{2} Tc \sqrt{\frac{T}{Tc}} + S_{1} T \sqrt{\frac{T}{Tc}} 

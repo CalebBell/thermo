@@ -1628,7 +1628,7 @@ class Phase(object):
         
         This expression is readily obtainable with SymTy:
         
-        >>> from sympy import * # doctest: +SKIPu[]
+        >>> from sympy import * # doctest: +SKIP
         >>> P, T, MW = symbols('P, T, MW') # doctest: +SKIP
         >>> Vm = symbols('Vm', cls=Function) # doctest: +SKIP
         >>> rho_mass = (Vm(P))**-1*MW/1000 # doctest: +SKIP

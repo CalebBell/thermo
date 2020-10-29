@@ -132,8 +132,8 @@ def water_saturation(T, P, method='ideal'):
     0.03551758880618026
     
     >>> T, P  = 330, 92000.0
-    >>> 1-water_saturation_ASHRAE1485(T, P)/HAPropsSI('psi_w', 'T', T, 'P', P, 'RH', 1)
-    -7.299148780326448e-05
+    >>> 1-water_saturation(T=T, P=P, method='ASHRAE1485')/HAPropsSI('psi_w', 'T', T, 'P', P, 'RH', 1)
+    -7.29914878032e-05
     
     References
     ----------

@@ -1622,8 +1622,10 @@ the dict-in-dict structure is found emperically to take 111608 bytes vs.
 79096 bytes, or 30% less memory.
 '''
 
+global _unifac_ip_loaded
+_unifac_ip_loaded = False
 def load_unifac_ip():
-    global UFIP, LLEUFIP, LUFIP, DOUFIP2006, DOUFIP2016, NISTUFIP, NISTKTUFIP, PSRKIP, VTPRIP
+    global _unifac_ip_loaded, UFIP, LLEUFIP, LUFIP, DOUFIP2006, DOUFIP2016, NISTUFIP, NISTKTUFIP, PSRKIP, VTPRIP
     UFIP = {i: {} for i in list(range(1, 52)) + [55, 84, 85]}
     with open(os.path.join(folder, 'UNIFAC original interaction parameters.tsv')) as f:
         for line in f:
@@ -1689,6 +1691,8 @@ def load_unifac_ip():
             for line in f:
                 maingroup1, maingroup2, a, b, c = line.strip('\n').split('\t')
                 VTPRIP[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
+
+    _unifac_ip_loaded = True
 
 
 if PY37:
@@ -2055,12 +2059,13 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
     Examples
     --------
     >>> UNIFAC_gammas(T=333.15, xs=[0.5, 0.5], chemgroups=[{1:2, 2:4}, {1:1, 2:1, 18:1}])
-    [1.4276025835624173, 1.3646545010104225]
+    [1.427602583562, 1.364654501010]
     
+    >>> from thermo.unifac import DOUFIP2006
     >>> UNIFAC_gammas(373.15, [0.2, 0.3, 0.2, 0.2], 
     ... [{9:6}, {78:6}, {1:1, 18:1}, {1:1, 2:1, 14:1}],
     ... subgroup_data=DOUFSG, interaction_data=DOUFIP2006, modified=True)
-    [1.186431113706829, 1.440280133911197, 1.204479833499608, 1.9720706090299824]
+    [1.1864311137, 1.44028013391, 1.20447983349, 1.972070609029]
 
     References
     ----------
@@ -2088,7 +2093,8 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
         subgroups = UFSG
     else:
         subgroups = subgroup_data
-    if interaction_data is None:
+    if interaction_data is None: 
+        if not _unifac_ip_loaded: load_unifac_ip()
         interactions = UFIP
     else:
         interactions = interaction_data
@@ -2226,6 +2232,7 @@ class UNIFAC(GibbsExcess):
         if subgroups is None:
             subgroups = UFSG
         if interaction_data is None:
+            if not _unifac_ip_loaded: load_unifac_ip()
             interaction_data = UFIP
         rs = []
         qs = []

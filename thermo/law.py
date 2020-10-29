@@ -182,12 +182,8 @@ def legal_status(CASRN, method=None, get_methods=False, CASi=None):
 
     Examples
     --------
-    >>> pprint(legal_status('64-17-5'))
-    {'DSL': 'LISTED',
-     'TSCA': 'LISTED',
-     'EINECS': 'LISTED',
-     'NLP': 'UNLISTED',
-     'SPIN': 'LISTED'}
+    >>> legal_status('64-17-5')
+    {'DSL': 'LISTED', 'TSCA': 'LISTED', 'EINECS': 'LISTED', 'NLP': 'UNLISTED', 'SPIN': 'LISTED'}
 
     References
     ----------
@@ -301,17 +297,15 @@ def economic_status(CASRN, method=None, get_methods=False):  # pragma: no cover
     This API is considered experimental, and is expected to be removed in a
     future release in favor of a more complete object-oriented interface.
 
-    >>> pprint(economic_status(CASRN='98-00-0'))
-    ["US public: {'Manufactured': 0.0, 'Imported': 10272.711, 'Exported': 184.127}",
-     u'10,000 - 100,000 tonnes per annum',
-     'OECD HPV Chemicals']
+    >>> economic_status(CASRN='98-00-0')
+    ["US public: {'Manufactured': 0.0, 'Imported': 10272.711, 'Exported': 184.127}", '10,000 - 100,000 tonnes per annum', 'OECD HPV Chemicals']
 
     >>> economic_status(CASRN='13775-50-3')  # SODIUM SESQUISULPHATE
     []
     >>> economic_status(CASRN='98-00-0', method='OECD high production volume chemicals')
     'OECD HPV Chemicals'
     >>> economic_status(CASRN='98-01-1', method='European Chemicals Agency Total Tonnage Bands')
-    [u'10,000 - 100,000 tonnes per annum']
+    ['10,000 - 100,000 tonnes per annum']
     '''
     load_economic_data()
     CASi = CAS_to_int(CASRN)

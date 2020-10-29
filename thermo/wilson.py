@@ -925,7 +925,7 @@ def Wilson_gammas(xs, params):
     --------
     Ethanol-water example, at 343.15 K and 1 MPa:
 
-    >>> Wilson([0.252, 0.748], [[1, 0.154], [0.888, 1]])
+    >>> Wilson_gammas([0.252, 0.748], [[1, 0.154], [0.888, 1]])
     [1.8814926087178843, 1.1655774931125487]
 
     References

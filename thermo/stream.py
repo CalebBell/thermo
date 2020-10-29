@@ -1208,13 +1208,13 @@ class Stream(Mixture):
 
     >>> from thermo import Stream
     >>> Stream(['water', 'ethanol'], Vfls=[.6, .4], T=300, P=1E5, m=1)
-    <Stream, components=['water', 'ethanol'], mole fractions=[0.8299, 0.1701], mole flow=43.8839741023 mol/s, T=300.00 K, P=100000 Pa>
-    
+    <Stream, components=['water', 'ethanol'], mole fractions=[0.8299, 0.1701], mass flow=1.0 kg/s, mole flow=43.883974 mol/s, T=300.00 K, P=100000 Pa>    
+
     A stream of air at 400 K and 1 bar, flow rate of 1 mol/s:
     
     >>> Stream('air', T=400, P=1e5, n=1)
-    <Stream, components=['nitrogen', 'argon', 'oxygen'], mole fractions=[0.7812, 0.0092, 0.2096], mole flow=1 mol/s, T=400.00 K, P=100000 Pa>
-
+    <Stream, components=['nitrogen', 'argon', 'oxygen'], mole fractions=[0.7812, 0.0092, 0.2096], mass flow=0.028958 kg/s, mole flow=1 mol/s, T=400.00 K, P=100000 Pa>
+    
     A flow of 1 L/s of 10 wt% phosphoric acid at 320 K:
     
     >>> Stream(['water', 'phosphoric acid'], ws=[.9, .1], T=320, P=1E5, Q=0.001)

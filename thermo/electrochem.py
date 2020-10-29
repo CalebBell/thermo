@@ -57,12 +57,13 @@ register_df_source(folder, 'CRC conductivity infinite dilution.tsv')
 register_df_source(folder, 'Magomedov Thermal Conductivity.tsv')
 register_df_source(folder, 'CRC Thermodynamic Properties of Aqueous Ions.tsv')
 
-_load_electrochem_data = False
+_loaded_electrochem_data = False
 def _load_electrochem_data():
     global Lange_cond_pure, Marcus_ion_conductivities, CRC_ion_conductivities, Magomedovk_thermal_cond
     global CRC_aqueous_thermodynamics, electrolyte_dissociation_reactions
     global McCleskey_conductivities, Lange_cond_pure, _Laliberte_Density_ParametersDict
     global _Laliberte_Viscosity_ParametersDict, _Laliberte_Heat_Capacity_ParametersDict, Laliberte_data
+    global _loaded_electrochem_data
     
     Lange_cond_pure = data_source('Lange Pure Species Conductivity.tsv')
     Marcus_ion_conductivities = data_source('Marcus Ion Conductivities.tsv')
@@ -112,7 +113,7 @@ def _load_electrochem_data():
 
 
     
-    _load_electrochem_data = True
+    _loaded_electrochem_data = True
     
     
 if PY37:
@@ -231,8 +232,8 @@ def Laliberte_viscosity_i(T, w_w, v1, v2, v3, v4, v5, v6):
 
     Examples
     --------
-    >>> d =  _Laliberte_Viscosity_ParametersDict['7647-14-5']
-    >>> Laliberte_viscosity_i(273.15+5, 1-0.005810, d["V1"], d["V2"], d["V3"], d["V4"], d["V5"], d["V6"] )
+    >>> params = [16.221788633396, 1.32293086770011, 1.48485985010431, 0.00746912559657377, 30.7802007540575, 2.05826852322558]
+    >>> Laliberte_viscosity_i(273.15+5, 1-0.005810, *params)
     0.004254025533308794
 
     References
@@ -287,6 +288,7 @@ def Laliberte_viscosity(T, ws, CASRNs):
        Chemical & Engineering Data 54, no. 6 (June 11, 2009): 1725-60.
        doi:10.1021/je8008123
     '''
+    if not _loaded_electrochem_data: _load_electrochem_data()
     mu_w = Laliberte_viscosity_w(T)*1000.
     w_w = 1.0 - sum(ws)
     mu = mu_w**(w_w)
@@ -374,9 +376,9 @@ def Laliberte_density_i(T, w_w, c0, c1, c2, c3, c4):
 
     Examples
     --------
-    >>> d = _Laliberte_Density_ParametersDict['7647-14-5']
-    >>> Laliberte_density_i(273.15+0, 1-0.0037838838, d["C0"], d["C1"], d["C2"], d["C3"], d["C4"])
-    3761.8917585699983
+    >>> params = [-0.00324112223655149, 0.0636354335906616, 1.01371399467365, 0.0145951015210159, 3317.34854426537]
+    >>> Laliberte_density_i(273.15+0, 1-0.0037838838, *params)
+    3761.8917585
 
     References
     ----------
@@ -418,7 +420,7 @@ def Laliberte_density(T, ws, CASRNs):
     Examples
     --------
     >>> Laliberte_density(273.15, [0.0037838838], ['7647-14-5'])
-    1002.6250120185854
+    1002.62501201
 
     References
     ----------
@@ -427,6 +429,7 @@ def Laliberte_density(T, ws, CASRNs):
        Chemical & Engineering Data 54, no. 6 (June 11, 2009): 1725-60.
        doi:10.1021/je8008123
     '''
+    if not _loaded_electrochem_data: _load_electrochem_data()
     rho_w = Laliberte_density_w(T)
     w_w = 1.0 - sum(ws)
     rho = w_w/rho_w
@@ -516,9 +519,9 @@ def Laliberte_heat_capacity_i(T, w_w, a1, a2, a3, a4, a5, a6):
 
     Examples
     --------
-    >>> d = _Laliberte_Heat_Capacity_ParametersDict['7647-14-5']
-    >>> Laliberte_heat_capacity_i(1.5+273.15, 1-0.00398447, d["A1"], d["A2"], d["A3"], d["A4"], d["A5"], d["A6"])
-    -2930.7353945880477
+    >>> params = [-0.0693559668993322, -0.0782134167486952, 3.84798479408635, -11.2762109247072, 8.73187698542672, 1.81245930472755]
+    >>> Laliberte_heat_capacity_i(1.5+273.15, 1-0.00398447, *params)
+    -2930.73539458
 
     References
     ----------
@@ -572,6 +575,7 @@ def Laliberte_heat_capacity(T, ws, CASRNs):
        Chemical & Engineering Data 54, no. 6 (June 11, 2009): 1725-60.
        doi:10.1021/je8008123
     '''
+    if not _loaded_electrochem_data: _load_electrochem_data()
     Cp_w = Laliberte_heat_capacity_w(T)
     w_w = 1.0 - sum(ws)
     Cp = w_w*Cp_w
@@ -774,6 +778,7 @@ def conductivity(CASRN=None, get_methods=False, method=None, full_info=True):
     .. [1] Speight, James. Lange's Handbook of Chemistry. 16 edition.
        McGraw-Hill Professional, 2005.
     '''
+    _load_electrochem_data()
     def list_methods():
         methods = []
         if CASRN in Lange_cond_pure.index:
