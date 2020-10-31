@@ -32,14 +32,21 @@ term.
 
 from __future__ import division, print_function
 
-__all__ = ['Poly_a_alpha', 'TwuSRK95_a_alpha', 'TwuPR95_a_alpha',
+__all__ = [
            'PR_a_alphas_vectorized', 'PR_a_alpha_and_derivatives_vectorized',
            'RK_a_alpha_and_derivatives_vectorized', 'RK_a_alphas_vectorized',
            'SRK_a_alpha_and_derivatives_vectorized', 'SRK_a_alphas_vectorized',
            'PRSV_a_alphas_vectorized', 'PRSV_a_alpha_and_derivatives_vectorized',
            'PRSV2_a_alphas_vectorized', 'PRSV2_a_alpha_and_derivatives_vectorized',
            'APISRK_a_alphas_vectorized', 'APISRK_a_alpha_and_derivatives_vectorized',
-]
+
+'a_alpha_base', 'Poly_a_alpha', 'Soave_1972_a_alpha', 'Heyen_a_alpha',
+'Harmens_Knapp_a_alpha', 'Mathias_1983_a_alpha', 'Mathias_Copeman_untruncated_a_alpha',
+ 'Mathias_Copeman_a_alpha', 'Gibbons_Laughton_a_alpha', 'Soave_1984_a_alpha',
+ 'Yu_Lu_a_alpha', 'Trebble_Bishnoi_a_alpha', 'Melhem_a_alpha', 'Androulakis_a_alpha',
+ 'Schwartzentruber_a_alpha', 'Almeida_a_alpha', 'Twu91_a_alpha', 'Soave_93_a_alpha',
+ 'Gasem_a_alpha', 'Coquelet_a_alpha', 'Haghtalab_a_alpha', 'Saffari_a_alpha',
+ 'Chen_Yang_a_alpha', 'TwuSRK95_a_alpha', 'TwuPR95_a_alpha', 'Soave_79_a_alpha']
 
 
 from fluids.numerics import (horner, horner_and_der2)
@@ -630,14 +637,141 @@ def PRSV2_a_alphas_vectorized(T, Tcs, ais, kappa0s, kappa1s, kappa2s, kappa3s):
     return a_alphas
 
 def PRSV2_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappa0s, kappa1s, kappa2s, kappa3s):
-    sqrtT = T**0.5
+    r'''Calculates the `a_alpha` terms and their first and second derivatives
+    for the Peng-Robinson-Stryjek-Vera 2
+    equation of state given the critical temperatures `Tcs`, constants `ais`,
+    PRSV2 parameters `kappa0s, `kappa1s`, `kappa2s`, and `kappa3s`.
+
+    .. math::
+        a_i\alpha_i = a_{i} \left(\left(1 - \sqrt{\frac{T}{T_{c,i}}}\right)
+        \left(\kappa_{0,i} + \left(\kappa_{1,i} + \kappa_{2,i} \left(1
+        - \sqrt{\frac{T}{T_{c,i}}}\right) \left(- \frac{T}{T_{c,i}}
+        + \kappa_{3,i}\right)\right) \left(\sqrt{\frac{T}{T_{c,i}}} + 1\right)
+        \left(- \frac{T}{T_{c,i}} + \frac{7}{10}\right)\right) + 1\right)^{2}
+
+    .. math::
+        \frac{d a_i\alpha_i}{dT} = a_{i} \left(\left(1 - \sqrt{\frac{T}{T_{c,i}
+        }}\right) \left(\kappa_{0,i} + \left(\kappa_{1,i} + \kappa_{2,i} \left(
+        1 - \sqrt{\frac{T}{T_{c,i}}}\right) \left(- \frac{T}{T_{c,i}}
+        + \kappa_{3,i}\right)\right) \left(\sqrt{\frac{T}{T_{c,i}}} + 1\right)
+        \left(- \frac{T}{T_{c,i}} + \frac{7}{10}\right)\right) + 1\right)
+        \left(2 \left(1 - \sqrt{\frac{T}{T_{c,i}}}\right) \left(\left(\sqrt{
+        \frac{T}{T_{c,i}}} + 1\right) \left(- \frac{T}{T_{c,i}} + \frac{7}{10}
+        \right) \left(- \frac{\kappa_{2,i} \left(1 - \sqrt{\frac{T}{T_{c,i}}}
+        \right)}{T_{c,i}} - \frac{\kappa_{2,i} \sqrt{\frac{T}{T_{c,i}}} \left(
+        - \frac{T}{T_{c,i}} + \kappa_{3,i}\right)}{2 T}\right) - \frac{\left(
+        \kappa_{1,i} + \kappa_{2,i} \left(1 - \sqrt{\frac{T}{T_{c,i}}}\right)
+        \left(- \frac{T}{T_{c,i}} + \kappa_{3,i}\right)\right) \left(\sqrt{
+        \frac{T}{T_{c,i}}} + 1\right)}{T_{c,i}} + \frac{\sqrt{\frac{T}{T_{c,i}
+        }} \left(\kappa_{1,i} + \kappa_{2,i} \left(1 - \sqrt{\frac{T}{T_{c,i}}}
+        \right) \left(- \frac{T}{T_{c,i}} + \kappa_{3,i}\right)\right) \left(
+        - \frac{T}{T_{c,i}} + \frac{7}{10}\right)}{2 T}\right) - \frac{\sqrt{
+        \frac{T}{T_{c,i}}} \left(\kappa_{0,i} + \left(\kappa_{1,i}
+        + \kappa_{2,i} \left(1 - \sqrt{\frac{T}{T_{c,i}}}\right) \left(
+        - \frac{T}{T_{c,i}} + \kappa_{3,i}\right)\right) \left(\sqrt{\frac{T}
+        {T_{c,i}}} + 1\right) \left(- \frac{T}{T_{c,i}} + \frac{7}{10}\right)
+        \right)}{T}\right)
+
+    .. math::
+        \frac{d^2 a_i\alpha_i}{dT^2} = - \frac{a_{i} \left(\left(\left(10
+        \kappa_{0,i} - \left(\kappa_{1,i} + \kappa_{2,i} \left(\sqrt{\frac{T}
+        {T_{c,i}}} - 1\right) \left(\frac{T}{T_{c,i}} - \kappa_{3,i}\right)
+        \right) \left(\sqrt{\frac{T}{T_{c,i}}} + 1\right) \left(\frac{10 T}
+        {T_{c,i}} - 7\right)\right) \left(\sqrt{\frac{T}{T_{c,i}}} - 1\right)
+        - 10\right) \left(\left(\sqrt{\frac{T}{T_{c,i}}} - 1\right) \left(
+        \frac{40 \kappa_{2,i} \left(\sqrt{\frac{T}{T_{c,i}}} + 1\right) \left(
+        \frac{2 \left(\sqrt{\frac{T}{T_{c,i}}} - 1\right)}{T_{c,i}} + \frac{
+        \sqrt{\frac{T}{T_{c,i}}} \left(\frac{T}{T_{c,i}} - \kappa_{3,i}\right)}
+        {T}\right)}{T_{c,i}} + \frac{\kappa_{2,i} \sqrt{\frac{T}{T_{c,i}}}
+        \left(\frac{4}{T_{c,i}} - \frac{\frac{T}{T_{c,i}} - \kappa_{3,i}}{T}
+        \right) \left(\sqrt{\frac{T}{T_{c,i}}} + 1\right) \left(\frac{10 T}
+        {T_{c,i}} - 7\right)}{T} + \frac{2 \kappa_{2,i} \sqrt{\frac{T}{T_{c,i}}}
+        \left(\frac{10 T}{T_{c,i}} - 7\right) \left(\frac{2 \left(\sqrt{\frac
+        {T}{T_{c,i}}} - 1\right)}{T_{c,i}} + \frac{\sqrt{\frac{T}{T_{c,i}}}
+        \left(\frac{T}{T_{c,i}} - \kappa_{3,i}\right)}{T}\right)}{T} + \frac{40
+        \sqrt{\frac{T}{T_{c,i}}} \left(\kappa_{1,i} + \kappa_{2,i} \left(\sqrt{
+        \frac{T}{T_{c,i}}} - 1\right) \left(\frac{T}{T_{c,i}} - \kappa_{3,i}
+        \right)\right)}{T T_{c,i}} - \frac{\sqrt{\frac{T}{T_{c,i}}} \left(
+        \kappa_{1,i} + \kappa_{2,i} \left(\sqrt{\frac{T}{T_{c,i}}} - 1\right)
+        \left(\frac{T}{T_{c,i}} - \kappa_{3,i}\right)\right) \left(\frac{10 T}
+        {T_{c,i}} - 7\right)}{T^{2}}\right) + \frac{2 \sqrt{\frac{T}{T_{c,i}}}
+        \left(\kappa_{2,i} \left(\sqrt{\frac{T}{T_{c,i}}} + 1\right)
+        \left(\frac{10 T}{T_{c,i}} - 7\right) \left(\frac{2 \left(\sqrt{
+        \frac{T}{T_{c,i}}} - 1\right)}{T_{c,i}} + \frac{\sqrt{\frac{T}
+        {T_{c,i}}} \left(\frac{T}{T_{c,i}} - \kappa_{3,i}\right)}{T}\right)
+        + \frac{20 \left(\kappa_{1,i} + \kappa_{2,i} \left(\sqrt{\frac{T}
+        {T_{c,i}}} - 1\right) \left(\frac{T}{T_{c,i}} - \kappa_{3,i}\right)
+        \right) \left(\sqrt{\frac{T}{T_{c,i}}} + 1\right)}{T_{c,i}}
+        + \frac{\sqrt{\frac{T}{T_{c,i}}} \left(\kappa_{1,i} + \kappa_{2,i}
+        \left(\sqrt{\frac{T}{T_{c,i}}} - 1\right) \left(\frac{T}{T_{c,i}}
+        - \kappa_{3,i}\right)\right) \left(\frac{10 T}{T_{c,i}} - 7\right)}
+        {T}\right)}{T} + \frac{\sqrt{\frac{T}{T_{c,i}}} \left(10 \kappa_{0,i}
+        - \left(\kappa_{1,i} + \kappa_{2,i} \left(\sqrt{\frac{T}{T_{c,i}}}
+        - 1\right) \left(\frac{T}{T_{c,i}} - \kappa_{3,i}\right)\right)
+        \left(\sqrt{\frac{T}{T_{c,i}}} + 1\right) \left(\frac{10 T}{T_{c,i}}
+        - 7\right)\right)}{T^{2}}\right) - \left(\left(\sqrt{\frac{T}{T_{c,i}}}
+        - 1\right) \left(\kappa_{2,i} \left(\sqrt{\frac{T}{T_{c,i}}} + 1\right)
+        \left(\frac{10 T}{T_{c,i}} - 7\right) \left(\frac{2 \left(\sqrt{
+        \frac{T}{T_{c,i}}} - 1\right)}{T_{c,i}} + \frac{\sqrt{\frac{T}{T_{c,i}}}
+        \left(\frac{T}{T_{c,i}} - \kappa_{3,i}\right)}{T}\right) + \frac{20
+        \left(\kappa_{1,i} + \kappa_{2,i} \left(\sqrt{\frac{T}{T_{c,i}}}
+        - 1\right) \left(\frac{T}{T_{c,i}} - \kappa_{3,i}\right)\right) \left(
+        \sqrt{\frac{T}{T_{c,i}}} + 1\right)}{T_{c,i}} + \frac{\sqrt{\frac{T}
+        {T_{c,i}}} \left(\kappa_{1,i} + \kappa_{2,i} \left(\sqrt{\frac{T}
+        {T_{c,i}}} - 1\right) \left(\frac{T}{T_{c,i}} - \kappa_{3,i}\right)
+        \right) \left(\frac{10 T}{T_{c,i}} - 7\right)}{T}\right) - \frac{
+        \sqrt{\frac{T}{T_{c,i}}} \left(10 \kappa_{0,i} - \left(\kappa_{1,i}
+        + \kappa_{2,i} \left(\sqrt{\frac{T}{T_{c,i}}} - 1\right) \left(\frac{T}
+        {T_{c,i}} - \kappa_{3,i}\right)\right) \left(\sqrt{\frac{T}{T_{c,i}}}
+        + 1\right) \left(\frac{10 T}{T_{c,i}} - 7\right)\right)}{T}\right)^{2}
+        \right)}{200}
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    Tcs : list[float]
+        Critical temperatures of components, [K]
+    ais : list[float]
+        `a` parameters of cubic EOS,
+        :math:`a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}`, [Pa*m^6/mol^2]
+    kappa0s : list[float]
+        `kappa0` parameters of PRSV EOS; the original form uses
+        :math:`\kappa_{0,i} = 0.378893 + 1.4897153\omega_i - 0.17131848\omega_i^2 + 0.0196554\omega_i^3`, [-]
+    kappa1s : list[float]
+        Fit parameters, can be set to 0 if unknown [-]
+    kappa2s : list[float]
+        Fit parameters, can be set to 0 if unknown [-]
+    kappa3s : list[float]
+        Fit parameters, can be set to 0 if unknown [-]
+
+    Returns
+    -------
+    a_alphas : list[float]
+        Pure component `a_alpha` terms in the cubic EOS, [Pa*m^6/mol^2]
+    da_alpha_dTs : list[float]
+        First temperature derivative of pure component `a_alpha`,
+        [Pa*m^6/(mol^2*K)]
+    d2a_alpha_dT2s : list[float]
+        Second temperature derivative of pure component `a_alpha`,
+        [Pa*m^6/(mol^2*K^2)]
+
+    Notes
+    -----
+
+    Examples
+    --------
+    >>> PRSV2_a_alpha_and_derivatives_vectorized(400.0, Tcs=[507.6], ais=[2.6923169620277805], kappa0s=[0.8074380841890093], kappa1s=[0.05104], kappa2s=[0.8634], kappa3s=[0.460])
+    ([3.2005700986], [-0.005301195971], [1.11181477576e-05])
+    '''
+    sqrtT = sqrt(T)
     T_inv = 1.0/T
     N = len(Tcs)
     a_alphas = [0.0]*N
     da_alpha_dTs = [0.0]*N
     d2a_alpha_dT2s = [0.0]*N
     for i in range(N):
-        Tc_inv_root = Tcs[i]**-0.5
+        Tc_inv_root = 1.0/sqrt(Tcs[i])
         Tc_inv = Tc_inv_root*Tc_inv_root
         x1 = T*Tc_inv
         x2 = sqrtT*Tc_inv_root
