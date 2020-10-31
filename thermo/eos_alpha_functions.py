@@ -48,7 +48,7 @@ def PR_a_alphas_vectorized(T, Tcs, ais, kappas):
     `kappas`.
 
     .. math::
-        \alpha(T)_i=[1+\kappa_i(1-\sqrt{T_{r,i}})]^2
+        a_i\alpha(T)_i=a_i [1+\kappa_i(1-\sqrt{T_{r,i}})]^2
 
     Parameters
     ----------
@@ -61,7 +61,7 @@ def PR_a_alphas_vectorized(T, Tcs, ais, kappas):
         :math:`a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}`, [Pa*m^6/mol^2]
     kappas : list[float]
         `kappa` parameters of Peng-Robinson EOS; formulas vary, but
-        the origianl form uses 
+        the original form uses 
         :math:`\kappa_i=0.37464+1.54226\omega_i-0.26992\omega^2_i`, [-]
 
     Returns
@@ -99,17 +99,17 @@ def PR_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappas):
     `kappas`.
 
     .. math::
-        \alpha(T)_i=[1+\kappa_i(1-\sqrt{T_{r,i}})]^2
+        a_i\alpha(T)_i=a_i[1+\kappa_i(1-\sqrt{T_{r,i}})]^2
 
         
     .. math::
-        \frac{d a\alpha}{dT} = - \frac{a \kappa}{T^{0.5} Tc^{0.5}}
-        \left(\kappa \left(- \frac{T^{0.5}}{Tc^{0.5}} + 1\right) + 1\right)
+        \frac{d a_i\alpha_i}{dT} = - \frac{a_i \kappa_i}{T^{0.5} {T_c}_i^{0.5}}
+        \left(\kappa_i \left(- \frac{T^{0.5}}{{T_c}_i^{0.5}} + 1\right) + 1\right)
 
     .. math::
-        \frac{d^2 a\alpha}{dT^2} = 0.5 a \kappa \left(- \frac{1}{T^{1.5} 
-        Tc^{0.5}} \left(\kappa \left(\frac{T^{0.5}}{Tc^{0.5}} - 1\right)
-        - 1\right) + \frac{\kappa}{T Tc}\right)
+        \frac{d^2 a_i\alpha_i}{dT^2} = 0.5 a_i \kappa_i \left(- \frac{1}{T^{1.5} 
+        {T_c}_i^{0.5}} \left(\kappa_i \left(\frac{T^{0.5}}{{T_c}_i^{0.5}} - 1\right)
+        - 1\right) + \frac{\kappa_i}{T {T_c}_i}\right)
     
     Parameters
     ----------
@@ -122,7 +122,7 @@ def PR_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappas):
         :math:`a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}` [Pa*m^6/mol^2]
     kappas : list[float]
         `kappa` parameters of Peng-Robinson EOS; formulas vary, but
-        the origianl form uses 
+        the original form uses 
         :math:`\kappa_i=0.37464+1.54226\omega_i-0.26992\omega^2_i`, [-]
 
     Returns
@@ -168,11 +168,51 @@ def PR_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappas):
     return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
 
 def SRK_a_alphas_vectorized(T, Tcs, ais, ms):
-    sqrtT = T**0.5
+    r'''Calculates the `a_alpha` terms for the SRK equation of state
+    given the critcal temperatures `Tcs`, critical constants `ais`, and 
+    `kappas`.
+
+    .. math::
+        a_i\alpha(T)_i = \left[1 + m_i\left(1 - \sqrt{\frac{T}{T_{c,i}}}
+        \right)\right]^2
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    Tcs : list[float]
+        Critical temperatures of components, [K]
+    ais : list[float]
+        `a` parameters of cubic EOS,
+        :math:`a_i=\frac{0.42748\cdot R^2(T_{c,i})^{2}}{P_{c,i}}`, [Pa*m^6/mol^2]
+    ms : list[float]
+        `m` parameters of SRK EOS; formulas vary, but
+        the original form uses 
+        :math:`m_i = 0.480 + 1.574\omega_i - 0.176\omega_i^2`, [-]
+
+    Returns
+    -------
+    a_alphas : list[float]
+        Pure component `a_alpha` terms in the cubic EOS, [Pa*m^6/mol^2]
+
+    Notes
+    -----
+    A mixing rule must be used on the `a_alphas` to get the overall `a_alpha`
+    term.
+
+    Examples
+    --------
+    >>> Tcs = [469.7, 507.4, 540.3]
+    >>> ais = [1.9351940385541342, 2.525982668162287, 3.1531036708059315]
+    >>> ms = [0.8610138239999999, 0.9436976, 1.007889024]
+    >>> SRK_a_alphas_vectorized(322.29, Tcs=Tcs, ais=ais, ms=ms)
+    [2.549485814512, 3.586598245260, 4.76614806648]
+    '''
+    sqrtT = sqrt(T)
     N = len(Tcs)
     a_alphas = [0.0]*N
     for i in range(N):
-        x0 = ms[i]*(1. - sqrtT*Tcs[i]**-0.5) + 1.0
+        x0 = ms[i]*(1. - sqrtT/sqrt(Tcs[i])) + 1.0
         a_alphas[i] = ais[i]*x0*x0
     return a_alphas
 
