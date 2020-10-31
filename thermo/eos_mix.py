@@ -29,10 +29,16 @@ For reporting bugs, adding feature requests, or submitting pull requests,
 please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 
 .. contents:: :local:
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 Base Class
 ----------
 .. autoclass:: thermo.eos_mix.GCEOSMIX
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 Different Mixing Rules
 ----------------------
@@ -75,6 +81,8 @@ implemented
 Peng-Robinson Family EOSs
 -------------------------
 .. autoclass:: thermo.eos_mix.PRMIX
+   :show-inheritance:
+   :members: a_alphas_vectorized, a_alpha_and_derivatives_vectorized, d3a_alpha_dT3, d3a_alpha_dT3_vectorized, fugacity_coefficients, dlnphis_dT, dlnphis_dP, d_lnphi_dzs, ddelta_dzs, ddelta_dns, d2delta_dzizjs, d2delta_dninjs, d3delta_dninjnks, depsilon_dzs, depsilon_dns, d2epsilon_dzizjs, d2epsilon_dninjs, d3epsilon_dninjnks, solve_T
 .. autoclass:: thermo.eos_mix.PR78MIX
 .. autoclass:: thermo.eos_mix.PRSVMIX
 .. autoclass:: thermo.eos_mix.PRSV2MIX
@@ -89,9 +97,6 @@ SRK Family EOSs
 .. autoclass:: thermo.eos_mix.APISRKMIX
 .. autoclass:: thermo.eos_mix.SRKMIXTranslatedConsistent
 .. autoclass:: thermo.eos_mix.MSRKMIXTranslated
-   :no-inherited-members:
-   :no-undoc-members:
-   :no-show-inheritance:
         
 Cubic Equation of State with Activity Coefficients
 --------------------------------------------------
@@ -731,6 +736,45 @@ class GCEOSMIX(GCEOS):
         return s
     
     def to_TP_zs_fast(self, T, P, zs, only_l=False, only_g=False, full_alphas=True):
+        r'''Method to construct a new GCEOSMIX instance with the same
+        parameters as the existing object. If both instances are at the same
+        temperature, `a_alphas` and `da_alpha_dTs` and `d2a_alpha_dT2s` are
+        shared between the instances. It is always assumed the new object has
+        a differet composition. Optionally, only one set of phase properties
+        can be solved for, increasing speed. Additionally, if `full_alphas`
+        is set to False no temperature derivatives of `a_alpha` will be 
+        computed. Those derivatives are not needed in the context of a 
+        PT or PVF flash.
+        
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        P : float
+            Pressure, [Pa]
+        zs : list[float]
+            Mole fractions of each component, [-]
+        only_l : bool
+            When true, if there is a liquid and a vapor root, only the liquid
+            root (and properties) will be set.
+        only_g : bool
+            When true, if there is a liquid and a vapor root, only the vapor
+            root (and properties) will be set.
+
+        Returns
+        -------
+        eos : GCEOSMIX
+            Multicomponent GCEOSMIX at the specified conditions [-]
+            
+        Notes
+        -----
+        
+        Examples
+        --------
+        >>> base = RKMIX(T=500.0, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.6, 0.4])
+        >>> base.to_TP_zs_fast(T=300)
+        PRMIX(Tcs=[507.4, 540.3], Pcs=[3012000.0, 2736000.0], omegas=[0.305, 0.349], kijs=[[0.0, 0.00061], [0.00061, 0.0]], zs=[0.8193231441048036, 0.1806768558951965], T=322.29, P=101325.0)
+        '''
         copy_alphas = T == self.T
 #        if copy_alphas and P == self.P and zs == self.zs:
 #            return self
@@ -990,6 +1034,15 @@ class GCEOSMIX(GCEOS):
     
     @property
     def pseudo_Tc(self):
+        '''Apply a linear mole-fraction mixing rule to compute the average 
+        critical temperature, [K]
+        
+        Examples
+        --------
+        >>> base = RKMIX(T=150.0, P=4e6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.6, 0.4])
+        >>> base.pseudo_Tc
+        151.9
+        '''
         zs = self.zs
         Tcs = self.Tcs
         Tc = 0.0
@@ -1005,6 +1058,15 @@ class GCEOSMIX(GCEOS):
         for i in self.cmps:
             Pc += zs[i]*Pcs[i]
         return Pc
+
+    @property
+    def pseudo_omega(self):
+        zs = self.zs
+        omegas = self.omegas
+        omega = 0.0
+        for i in self.cmps:
+            omega += zs[i]*omegas[i]
+        return omega
 
     @property
     def pseudo_a(self):
@@ -1518,7 +1580,7 @@ class GCEOSMIX(GCEOS):
             \frac{\partial^2 P}{\partial \rho^2}|_T =  0
             
         Returns
-        ----------
+        -------
         T : float
             Mechanical critical temperature, [K]
         P : float
@@ -3589,7 +3651,7 @@ class GCEOSMIX(GCEOS):
             List of mole factions, either overall or in a specific phase, [-]
         
         Returns
-        ----------
+        -------
         d2V_dzizjs : float
             Molar volume second composition derivatives, [m^3/mol]
             
@@ -6548,8 +6610,6 @@ class PRMIX(GCEOSMIX, PR):
     mixture of any number of compounds. Subclasses `PR`. Solves the EOS on
     initialization and calculates fugacities for all components in all phases.
 
-    The implemented method here is `fugacity_coefficients`, which implements
-    the formula for fugacity coefficients in a mixture as given in [1]_.
     Two of `T`, `P`, and `V` are needed to solve the EOS.
 
     .. math::
@@ -6725,9 +6785,7 @@ class PRMIX(GCEOSMIX, PR):
             Second temperature derivative of coefficient calculated by  
             EOS-specific method, [J^2/mol^2/Pa/K**2]
         '''
-        ais, kappas, Tcs = self.ais, self.kappas, self.Tcs
-        return PR_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappas)
-#        return PR_a_alphas_vectorized(T, Tcs, ais, kappas)
+        return PR_a_alpha_and_derivatives_vectorized(T, self.Tcs, self.ais, self.kappas)
     
     @property
     def d3a_alpha_dT3(self):

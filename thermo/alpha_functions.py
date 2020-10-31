@@ -43,6 +43,45 @@ from fluids.constants import R
 from chemicals.utils import log, log10, exp, sqrt, copysign
 
 def PR_a_alphas_vectorized(T, Tcs, ais, kappas):
+    r'''Calculates the `a_alpha` terms for the Peng-Robinson equation of state
+    given the critcal temperatures `Tcs`, critical constants `ais`, and 
+    `kappas`.
+
+    .. math::
+        \alpha(T)_i=[1+\kappa_i(1-\sqrt{T_{r,i}})]^2
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    Tcs : list[float]
+        Critical temperatures of components, [K]
+    ais : list[float]
+        `a` parameters of cubic EOS,
+        :math:`a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}`, [Pa*m^6/mol^2]
+    kappas : list[float]
+        `kappa` parameters of Peng-Robinson EOS; formulas vary, but
+        the origianl form uses 
+        :math:`\kappa_i=0.37464+1.54226\omega_i-0.26992\omega^2_i`, [-]
+
+    Returns
+    -------
+    a_alphas : list[float]
+        Pure component `a_alpha` terms in the cubic EOS, [Pa*m^6/mol^2]
+
+    Notes
+    -----
+    A mixing rule must be used on the `a_alphas` to get the overall `a_alpha`
+    term.
+
+    Examples
+    --------
+    >>> Tcs = [469.7, 507.4, 540.3]
+    >>> ais = [2.0698956357716662, 2.7018068455659545, 3.3725793885832323]
+    >>> kappas = [0.74192743008, 0.819919992, 0.8800122140799999]
+    >>> PR_a_alphas_vectorized(322.29, Tcs=Tcs, ais=ais, kappas=kappas)
+    [2.6306811679, 3.6761503348, 4.8593286234]
+    '''
     N = len(Tcs)
     x0_inv = 1.0/sqrt(T)
     x0 = T*x0_inv
@@ -54,6 +93,60 @@ def PR_a_alphas_vectorized(T, Tcs, ais, kappas):
     return a_alphas
 
 def PR_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappas):
+    r'''Calculates the `a_alpha` terms and their first two temperature 
+    derivatives for the Peng-Robinson equation of state
+    given the critcal temperatures `Tcs`, critical constants `ais`, and 
+    `kappas`.
+
+    .. math::
+        \alpha(T)_i=[1+\kappa_i(1-\sqrt{T_{r,i}})]^2
+
+        
+    .. math::
+        \frac{d a\alpha}{dT} = - \frac{a \kappa}{T^{0.5} Tc^{0.5}}
+        \left(\kappa \left(- \frac{T^{0.5}}{Tc^{0.5}} + 1\right) + 1\right)
+
+    .. math::
+        \frac{d^2 a\alpha}{dT^2} = 0.5 a \kappa \left(- \frac{1}{T^{1.5} 
+        Tc^{0.5}} \left(\kappa \left(\frac{T^{0.5}}{Tc^{0.5}} - 1\right)
+        - 1\right) + \frac{\kappa}{T Tc}\right)
+    
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    Tcs : list[float]
+        Critical temperatures of components, [K]
+    ais : list[float]
+        `a` parameters of cubic EOS,
+        :math:`a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}` [Pa*m^6/mol^2]
+    kappas : list[float]
+        `kappa` parameters of Peng-Robinson EOS; formulas vary, but
+        the origianl form uses 
+        :math:`\kappa_i=0.37464+1.54226\omega_i-0.26992\omega^2_i`, [-]
+
+    Returns
+    -------
+    a_alphas : list[float]
+        Pure component `a_alpha` terms in the cubic EOS, [Pa*m^6/mol^2]
+    da_alpha_dTs : list[float]
+        First temperature derivative of pure component `a_alpha`,
+        [Pa*m^6/(mol^2*K)]
+    d2a_alpha_dT2s : list[float]
+        Second temperature derivative of pure component `a_alpha`,
+        [Pa*m^6/(mol^2*K^2)]
+    
+    Notes
+    -----
+
+    Examples
+    --------
+    >>> Tcs = [469.7, 507.4, 540.3]
+    >>> ais = [2.0698956357716662, 2.7018068455659545, 3.3725793885832323]
+    >>> kappas = [0.74192743008, 0.819919992, 0.8800122140799999]
+    >>> PR_a_alpha_and_derivatives_vectorized(322.29, Tcs=Tcs, ais=ais, kappas=kappas)
+    ([2.63068116797, 3.67615033489, 4.859328623453], [-0.0044497546430, -0.00638993749167, -0.0085372308846], [1.066668360e-05, 1.546687574587e-05, 2.07440632117e-05])
+    '''
     N = len(Tcs)
     x0_inv = 1.0/sqrt(T)
     x0 = T*x0_inv

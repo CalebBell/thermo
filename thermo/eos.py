@@ -1015,6 +1015,11 @@ class GCEOS(object):
     with it. Finally, it sets all these properties as attibutes or either
     the liquid or gas phase with the convention of adding on `_l` or `_g` to
     the variable names.
+
+    Attributes
+    ----------
+    a : float
+        `a` parameter of cubic EOS; formulas vary with the EOS, [Pa*m^6/mol^2]
     '''
     # Slots does not help performance in either implementation
     kwargs = {}
