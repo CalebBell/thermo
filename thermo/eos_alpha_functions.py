@@ -18,7 +18,17 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+
+
+This module contains implementations of the calculation of pure-component
+EOS `a \alpha` parameters in a vectorized way. Functions for calculating their
+temperature derivatives as may be necessary are included as well.
+
+A mixing rule must be used on the `a_alphas` to get the overall `a_alpha`
+term.
+
+'''
 
 from __future__ import division, print_function
 
@@ -37,7 +47,7 @@ from chemicals.utils import log, exp, sqrt, copysign
 
 def PR_a_alphas_vectorized(T, Tcs, ais, kappas):
     r'''Calculates the `a_alpha` terms for the Peng-Robinson equation of state
-    given the critical temperatures `Tcs`, critical constants `ais`, and
+    given the critical temperatures `Tcs`, constants `ais`, and
     `kappas`.
 
     .. math::
@@ -64,8 +74,6 @@ def PR_a_alphas_vectorized(T, Tcs, ais, kappas):
 
     Notes
     -----
-    A mixing rule must be used on the `a_alphas` to get the overall `a_alpha`
-    term.
 
     Examples
     --------
@@ -88,7 +96,7 @@ def PR_a_alphas_vectorized(T, Tcs, ais, kappas):
 def PR_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappas):
     r'''Calculates the `a_alpha` terms and their first two temperature
     derivatives for the Peng-Robinson equation of state
-    given the critical temperatures `Tcs`, critical constants `ais`, and
+    given the critical temperatures `Tcs`, constants `ais`, and
     `kappas`.
 
     .. math::
@@ -161,7 +169,7 @@ def PR_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappas):
 
 def SRK_a_alphas_vectorized(T, Tcs, ais, ms):
     r'''Calculates the `a_alpha` terms for the SRK equation of state
-    given the critical temperatures `Tcs`, critical constants `ais`, and
+    given the critical temperatures `Tcs`, constants `ais`, and
     `kappas`.
 
     .. math::
@@ -189,8 +197,6 @@ def SRK_a_alphas_vectorized(T, Tcs, ais, ms):
 
     Notes
     -----
-    A mixing rule must be used on the `a_alphas` to get the overall `a_alpha`
-    term.
 
     Examples
     --------
@@ -211,7 +217,7 @@ def SRK_a_alphas_vectorized(T, Tcs, ais, ms):
 def SRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, ms):
     r'''Calculates the `a_alpha` terms and their first and second temperature
     derivatives for the SRK equation of state
-    given the critical temperatures `Tcs`, critical constants `ais`, and
+    given the critical temperatures `Tcs`, constants `ais`, and
     `kappas`.
 
     .. math::
@@ -253,8 +259,6 @@ def SRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, ms):
 
     Notes
     -----
-    A mixing rule must be used on the `a_alphas` to get the overall `a_alpha`
-    term.
 
     Examples
     --------
@@ -314,8 +318,6 @@ def RK_a_alphas_vectorized(T, Tcs, ais):
 
     Notes
     -----
-    A mixing rule must be used on the `a_alphas` to get the overall `a_alpha`
-    term.
 
     Examples
     --------
@@ -363,8 +365,6 @@ def RK_a_alpha_and_derivatives_vectorized(T, Tcs, ais):
 
     Notes
     -----
-    A mixing rule must be used on the `a_alphas` to get the overall `a_alpha`
-    term.
 
     Examples
     --------
@@ -393,11 +393,53 @@ def RK_a_alpha_and_derivatives_vectorized(T, Tcs, ais):
     return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
 
 def PRSV_a_alphas_vectorized(T, Tcs, ais, kappa0s, kappa1s):
-    sqrtT = T**0.5
+    r'''Calculates the `a_alpha` terms for the Peng-Robinson-Stryjek-Vera
+    equation of state given the critical temperatures `Tcs`, constants `ais`, PRSV
+    parameters `kappa0s` and `kappa1s`.
+
+    .. math::
+        a_i\alpha_i = a_i \left(\left(\kappa_{0} + \kappa_{1} \left(\sqrt{\frac{
+        T}{T_{c,i}}} + 1\right) \left(- \frac{T}{T_{c,i}} + \frac{7}{10}\right)
+        \right) \left(- \sqrt{\frac{T}{T_{c,i}}} + 1\right) + 1\right)^{2}
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    Tcs : list[float]
+        Critical temperatures of components, [K]
+    ais : list[float]
+        `a` parameters of cubic EOS,
+        :math:`a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}`, [Pa*m^6/mol^2]
+    kappa0s : list[float]
+        `kappa0` parameters of PRSV EOS;
+        the original form uses
+        :math:`\kappa_{0,i} = 0.378893 + 1.4897153\omega_i - 0.17131848\omega_i^2 + 0.0196554\omega_i^3`, [-]
+    kappa1s : list[float]
+        Fit parameters, can be set to 0 if unknown [-]
+
+    Returns
+    -------
+    a_alphas : list[float]
+        Pure component `a_alpha` terms in the cubic EOS, [Pa*m^6/mol^2]
+
+    Notes
+    -----
+
+    Examples
+    --------
+    >>> Tcs = [507.6]
+    >>> ais = [2.6923169620277805]
+    >>> kappa0s = [0.8074380841890093]
+    >>> kappa1s = [0.05104]
+    >>> PRSV_a_alphas_vectorized(299.0, Tcs=Tcs, ais=ais, kappa0s=kappa0s, kappa1s=kappa1s)
+    [3.81298569831]
+    '''
+    sqrtT = sqrt(T)
     N = len(Tcs)
     a_alphas = [0.0]*N
     for i in range(N):
-        Tc_inv_root = Tcs[i]**-0.5
+        Tc_inv_root = 1.0/sqrt(Tcs[i])
         Tc_inv = Tc_inv_root*Tc_inv_root
         x0 = Tc_inv_root*sqrtT
         x2 = (1.0 + (kappa0s[i] + kappa1s[i]*(x0 + 1.0)*(0.7 - T*Tc_inv))*(1.0 - x0))
@@ -677,7 +719,7 @@ class Soave_1972_a_alpha(a_alpha_base):
         requiring `alpha_coeffs` to be set. One coefficient needed.
 
         .. math::
-            \alpha = \left(c_{1} \left(- \sqrt{\frac{T}{Tc}} + 1\right)
+            \alpha = \left(c_{1} \left(- \sqrt{\frac{T}{T_{c,i}}} + 1\right)
             + 1\right)^{2}
 
         References
@@ -714,7 +756,7 @@ class Heyen_a_alpha(a_alpha_base):
         documentation. Two coefficients needed.
 
         .. math::
-            \alpha = e^{c_{1} \left(- \left(\frac{T}{Tc}\right)^{c_{2}}
+            \alpha = e^{c_{1} \left(- \left(\frac{T}{T_{c,i}}\right)^{c_{2}}
             + 1\right)}
 
         References
@@ -747,8 +789,8 @@ class Harmens_Knapp_a_alpha(a_alpha_base):
         for more documentation. Two coefficients needed.
 
         .. math::
-            \alpha = \left(c_{1} \left(- \sqrt{\frac{T}{Tc}} + 1\right)
-            - c_{2} \left(1 - \frac{Tc}{T}\right) + 1\right)^{2}
+            \alpha = \left(c_{1} \left(- \sqrt{\frac{T}{T_{c,i}}} + 1\right)
+            - c_{2} \left(1 - \frac{T_{c,i}}{T}\right) + 1\right)^{2}
 
         References
         ----------
@@ -780,8 +822,8 @@ class Mathias_1983_a_alpha(a_alpha_base):
         for more documentation. Two coefficients needed.
 
         .. math::
-            \alpha = \left(c_{1} \left(- \sqrt{\frac{T}{Tc}} + 1\right)
-            - c_{2} \left(- \frac{T}{Tc} + 0.7\right) \left(- \frac{T}{Tc}
+            \alpha = \left(c_{1} \left(- \sqrt{\frac{T}{T_{c,i}}} + 1\right)
+            - c_{2} \left(- \frac{T}{T_{c,i}} + 0.7\right) \left(- \frac{T}{T_{c,i}}
             + 1\right) + 1\right)^{2}
 
         References
@@ -813,9 +855,9 @@ class Mathias_Copeman_untruncated_a_alpha(a_alpha_base):
         for more documentation. Three coefficients needed.
 
         .. math::
-            \alpha = \left(c_{1} \left(- \sqrt{\frac{T}{Tc}} + 1\right)
-            + c_{2} \left(- \sqrt{\frac{T}{Tc}} + 1\right)^{2} + c_{3} \left(
-            - \sqrt{\frac{T}{Tc}} + 1\right)^{3} + 1\right)^{2}
+            \alpha = \left(c_{1} \left(- \sqrt{\frac{T}{T_{c,i}}} + 1\right)
+            + c_{2} \left(- \sqrt{\frac{T}{T_{c,i}}} + 1\right)^{2} + c_{3} \left(
+            - \sqrt{\frac{T}{T_{c,i}}} + 1\right)^{3} + 1\right)^{2}
 
         References
         ----------
@@ -951,8 +993,8 @@ class Gibbons_Laughton_a_alpha(a_alpha_base):
         for more documentation. Two coefficients needed.
 
         .. math::
-            \alpha = c_{1} \left(\frac{T}{Tc} - 1\right) + c_{2}
-            \left(\sqrt{\frac{T}{Tc}} - 1\right) + 1
+            \alpha = c_{1} \left(\frac{T}{T_{c,i}} - 1\right) + c_{2}
+            \left(\sqrt{\frac{T}{T_{c,i}}} - 1\right) + 1
 
         References
         ----------
@@ -983,8 +1025,8 @@ class Soave_1984_a_alpha(a_alpha_base):
         documentation. Two coefficients needed.
 
         .. math::
-            \alpha = c_{1} \left(- \frac{T}{Tc} + 1\right) + c_{2} \left(-1
-            + \frac{Tc}{T}\right) + 1
+            \alpha = c_{1} \left(- \frac{T}{T_{c,i}} + 1\right) + c_{2} \left(-1
+            + \frac{T_{c,i}}{T}\right) + 1
 
         References
         ----------
@@ -1016,8 +1058,8 @@ class Yu_Lu_a_alpha(a_alpha_base):
         for more documentation. Four coefficients needed.
 
         .. math::
-            \alpha = 10^{c_{4} \left(- \frac{T}{Tc} + 1\right) \left(
-            \frac{T^{2} c_{3}}{Tc^{2}} + \frac{T c_{2}}{Tc} + c_{1}\right)}
+            \alpha = 10^{c_{4} \left(- \frac{T}{T_{c,i}} + 1\right) \left(
+            \frac{T^{2} c_{3}}{Tc^{2}} + \frac{T c_{2}}{T_{c,i}} + c_{1}\right)}
 
         References
         ----------
@@ -1049,7 +1091,7 @@ class Trebble_Bishnoi_a_alpha(a_alpha_base):
         for more documentation. One coefficient needed.
 
         .. math::
-            \alpha = e^{c_{1} \left(- \frac{T}{Tc} + 1\right)}
+            \alpha = e^{c_{1} \left(- \frac{T}{T_{c,i}} + 1\right)}
 
         References
         ----------
@@ -1078,8 +1120,8 @@ class Melhem_a_alpha(a_alpha_base):
         for more documentation. Two coefficients needed.
 
         .. math::
-            \alpha = e^{c_{1} \left(- \frac{T}{Tc} + 1\right) + c_{2}
-            \left(- \sqrt{\frac{T}{Tc}} + 1\right)^{2}}
+            \alpha = e^{c_{1} \left(- \frac{T}{T_{c,i}} + 1\right) + c_{2}
+            \left(- \sqrt{\frac{T}{T_{c,i}}} + 1\right)^{2}}
 
         References
         ----------
@@ -1110,9 +1152,9 @@ class Androulakis_a_alpha(a_alpha_base):
         for more documentation. Three coefficients needed.
 
         .. math::
-            \alpha = c_{1} \left(- \left(\frac{T}{Tc}\right)^{\frac{2}{3}}
-            + 1\right) + c_{2} \left(- \left(\frac{T}{Tc}\right)^{\frac{2}{3}}
-            + 1\right)^{2} + c_{3} \left(- \left(\frac{T}{Tc}\right)^{
+            \alpha = c_{1} \left(- \left(\frac{T}{T_{c,i}}\right)^{\frac{2}{3}}
+            + 1\right) + c_{2} \left(- \left(\frac{T}{T_{c,i}}\right)^{\frac{2}{3}}
+            + 1\right)^{2} + c_{3} \left(- \left(\frac{T}{T_{c,i}}\right)^{
             \frac{2}{3}} + 1\right)^{3} + 1
 
         References
@@ -1145,9 +1187,9 @@ class Schwartzentruber_a_alpha(a_alpha_base):
         for more documentation. Three coefficients needed.
 
         .. math::
-            \alpha = \left(c_{4} \left(- \sqrt{\frac{T}{Tc}} + 1\right)
-            - \left(- \sqrt{\frac{T}{Tc}} + 1\right) \left(\frac{T^{2} c_{3}}
-            {Tc^{2}} + \frac{T c_{2}}{Tc} + c_{1}\right) + 1\right)^{2}
+            \alpha = \left(c_{4} \left(- \sqrt{\frac{T}{T_{c,i}}} + 1\right)
+            - \left(- \sqrt{\frac{T}{T_{c,i}}} + 1\right) \left(\frac{T^{2} c_{3}}
+            {Tc^{2}} + \frac{T c_{2}}{T_{c,i}} + c_{1}\right) + 1\right)^{2}
 
         References
         ----------
@@ -1177,9 +1219,9 @@ class Almeida_a_alpha(a_alpha_base):
         for more documentation. Three coefficients needed.
 
         .. math::
-            \alpha = e^{c_{1} \left(- \frac{T}{Tc} + 1\right) \left|{
-            \frac{T}{Tc} - 1}\right|^{c_{2} - 1} + c_{3} \left(-1
-            + \frac{Tc}{T}\right)}
+            \alpha = e^{c_{1} \left(- \frac{T}{T_{c,i}} + 1\right) \left|{
+            \frac{T}{T_{c,i}} - 1}\right|^{c_{2} - 1} + c_{3} \left(-1
+            + \frac{T_{c,i}}{T}\right)}
 
         References
         ----------
@@ -1212,8 +1254,8 @@ class Twu91_a_alpha(a_alpha_base):
         for more documentation. Three coefficients needed.
 
         .. math::
-            \alpha = \left(\frac{T}{Tc}\right)^{c_{3} \left(c_{2}
-            - 1\right)} e^{c_{1} \left(- \left(\frac{T}{Tc}
+            \alpha = \left(\frac{T}{T_{c,i}}\right)^{c_{3} \left(c_{2}
+            - 1\right)} e^{c_{1} \left(- \left(\frac{T}{T_{c,i}}
             \right)^{c_{2} c_{3}} + 1\right)}
 
         References
@@ -1276,8 +1318,8 @@ class Twu91_a_alpha(a_alpha_base):
         implementation is added for extra speed.
 
         .. math::
-            \alpha = \left(\frac{T}{Tc}\right)^{c_{3} \left(c_{2}
-            - 1\right)} e^{c_{1} \left(- \left(\frac{T}{Tc}
+            \alpha = \left(\frac{T}{T_{c,i}}\right)^{c_{3} \left(c_{2}
+            - 1\right)} e^{c_{1} \left(- \left(\frac{T}{T_{c,i}}
             \right)^{c_{2} c_{3}} + 1\right)}
 
         Parameters
@@ -1333,8 +1375,8 @@ class Soave_93_a_alpha(a_alpha_base):
         documentation. Two coefficient needed.
 
         .. math::
-            \alpha = c_{1} \left(- \frac{T}{Tc} + 1\right) + c_{2}
-            \left(- \sqrt{\frac{T}{Tc}} + 1\right)^{2} + 1
+            \alpha = c_{1} \left(- \frac{T}{T_{c,i}} + 1\right) + c_{2}
+            \left(- \sqrt{\frac{T}{T_{c,i}}} + 1\right)^{2} + 1
 
         References
         ----------
@@ -1365,8 +1407,8 @@ class Gasem_a_alpha(a_alpha_base):
         documentation. Three coefficients needed.
 
         .. math::
-            \alpha = e^{\left(- \left(\frac{T}{Tc}\right)^{c_{3}} + 1\right)
-            \left(\frac{T c_{2}}{Tc} + c_{1}\right)}
+            \alpha = e^{\left(- \left(\frac{T}{T_{c,i}}\right)^{c_{3}} + 1\right)
+            \left(\frac{T c_{2}}{T_{c,i}} + c_{1}\right)}
 
         References
         ----------
@@ -1398,9 +1440,9 @@ class Coquelet_a_alpha(a_alpha_base):
         documentation. Three coefficients needed.
 
         .. math::
-            \alpha = e^{c_{1} \left(- \frac{T}{Tc} + 1\right) \left(c_{2}
-            \left(- \sqrt{\frac{T}{Tc}} + 1\right)^{2} + c_{3}
-            \left(- \sqrt{\frac{T}{Tc}} + 1\right)^{3} + 1\right)^{2}}
+            \alpha = e^{c_{1} \left(- \frac{T}{T_{c,i}} + 1\right) \left(c_{2}
+            \left(- \sqrt{\frac{T}{T_{c,i}}} + 1\right)^{2} + c_{3}
+            \left(- \sqrt{\frac{T}{T_{c,i}}} + 1\right)^{3} + 1\right)^{2}}
 
         References
         ----------
@@ -1434,8 +1476,8 @@ class Haghtalab_a_alpha(a_alpha_base):
         documentation. Three coefficients needed.
 
         .. math::
-            \alpha = e^{\left(- c_{3}^{\log{\left (\frac{T}{Tc} \right )}}
-            + 1\right) \left(- \frac{T c_{2}}{Tc} + c_{1}\right)}
+            \alpha = e^{\left(- c_{3}^{\log{\left (\frac{T}{T_{c,i}} \right )}}
+            + 1\right) \left(- \frac{T c_{2}}{T_{c,i}} + c_{1}\right)}
 
         References
         ----------
@@ -1468,8 +1510,8 @@ class Saffari_a_alpha(a_alpha_base):
         documentation. Three coefficients needed.
 
         .. math::
-            \alpha = e^{\frac{T c_{1}}{Tc} + c_{2} \log{\left (\frac{T}{Tc}
-            \right )} + c_{3} \left(- \sqrt{\frac{T}{Tc}} + 1\right)}
+            \alpha = e^{\frac{T c_{1}}{T_{c,i}} + c_{2} \log{\left (\frac{T}{T_{c,i}}
+            \right )} + c_{3} \left(- \sqrt{\frac{T}{T_{c,i}}} + 1\right)}
 
         References
         ----------
@@ -1501,8 +1543,8 @@ class Chen_Yang_a_alpha(a_alpha_base):
         for more documentation. Seven coefficients needed.
 
         .. math::
-            \alpha = e^{\left(- c_{3}^{\log{\left (\frac{T}{Tc} \right )}}
-            + 1\right) \left(- \frac{T c_{2}}{Tc} + c_{1}\right)}
+            \alpha = e^{\left(- c_{3}^{\log{\left (\frac{T}{T_{c,i}} \right )}}
+            + 1\right) \left(- \frac{T c_{2}}{T_{c,i}} + c_{1}\right)}
 
         References
         ----------
