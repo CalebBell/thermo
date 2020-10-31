@@ -531,7 +531,16 @@ def PRSV_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappa0s, kappa1s):
     >>> PRSV_a_alpha_and_derivatives_vectorized(299.0, Tcs=Tcs, ais=ais, kappa0s=kappa0s, kappa1s=kappa1s)
     ([3.8129856983], [-0.0069769034748], [2.00265608110e-05])
     '''
-    sqrtT = T**0.5
+    r'''
+    Formula derived with:
+    from sympy import *
+    Tc = symbols('T_{c\,i}')
+    T, a, kappa0, kappa1 = symbols('T, a_i, \kappa_{0\,i}, \kappa_{1\,i}')
+    kappa = kappa0 + kappa1*(1 + sqrt(T/Tc))*(Rational(7, 10)-T/Tc)
+    a_alpha = a*(1 + kappa*(1-sqrt(T/Tc)))**2
+    diff(a_alpha, T, 2)
+    '''
+    sqrtT = sqrt(T)
     T_inv = 1.0/T
     N = len(Tcs)
     a_alphas = [0.0]*N
@@ -565,11 +574,55 @@ def PRSV_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappa0s, kappa1s):
     return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
 
 def PRSV2_a_alphas_vectorized(T, Tcs, ais, kappa0s, kappa1s, kappa2s, kappa3s):
-    sqrtT = T**0.5
+    r'''Calculates the `a_alpha` terms for the Peng-Robinson-Stryjek-Vera 2
+    equation of state given the critical temperatures `Tcs`, constants `ais`,
+    PRSV2 parameters `kappa0s, `kappa1s`, `kappa2s`, and `kappa3s`.
+
+    .. math::
+        a_i\alpha_i = a_{i} \left(\left(1 - \sqrt{\frac{T}{T_{c,i}}}\right)
+        \left(\kappa_{0,i} + \left(\kappa_{1,i} + \kappa_{2,i} \left(1
+        - \sqrt{\frac{T}{T_{c,i}}}\right) \left(- \frac{T}{T_{c,i}}
+        + \kappa_{3,i}\right)\right) \left(\sqrt{\frac{T}{T_{c,i}}} + 1\right)
+        \left(- \frac{T}{T_{c,i}} + \frac{7}{10}\right)\right) + 1\right)^{2}
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    Tcs : list[float]
+        Critical temperatures of components, [K]
+    ais : list[float]
+        `a` parameters of cubic EOS,
+        :math:`a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}`, [Pa*m^6/mol^2]
+    kappa0s : list[float]
+        `kappa0` parameters of PRSV EOS;
+        the original form uses
+        :math:`\kappa_{0,i} = 0.378893 + 1.4897153\omega_i - 0.17131848\omega_i^2 + 0.0196554\omega_i^3`, [-]
+    kappa1s : list[float]
+        Fit parameters, can be set to 0 if unknown [-]
+    kappa2s : list[float]
+        Fit parameters, can be set to 0 if unknown [-]
+    kappa3s : list[float]
+        Fit parameters, can be set to 0 if unknown [-]
+
+    Returns
+    -------
+    a_alphas : list[float]
+        Pure component `a_alpha` terms in the cubic EOS, [Pa*m^6/mol^2]
+
+    Notes
+    -----
+
+    Examples
+    --------
+    >>> PRSV2_a_alphas_vectorized(400.0, Tcs=[507.6], ais=[2.6923169620277805], kappa0s=[0.8074380841890093], kappa1s=[0.05104], kappa2s=[0.8634], kappa3s=[0.460])
+    [3.2005700986984]
+    '''
+    sqrtT = sqrt(T)
     N = len(Tcs)
     a_alphas = [0.0]*N
     for i in range(N):
-        Tc_inv_root = Tcs[i]**-0.5
+        Tc_inv_root = 1.0/sqrt(Tcs[i])
         Tr_sqrt = sqrtT*Tc_inv_root
         Tr = T*Tc_inv_root*Tc_inv_root
         kappa = (kappa0s[i] + ((kappa1s[i] + kappa2s[i]*(kappa3s[i] - Tr)
