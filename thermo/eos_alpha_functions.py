@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+r'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+Copyright (C) 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -20,13 +20,146 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-
 This module contains implementations of the calculation of pure-component
-EOS `a \alpha` parameters in a vectorized way. Functions for calculating their
+EOS :math:`a \alpha` parameters in a vectorized way. Functions for calculating their
 temperature derivatives as may be necessary are included as well.
+
+For certain alpha functions, a class is available to provide these functions to
+and class that inherits from it.
 
 A mixing rule must be used on the `a_alphas` to get the overall `a_alpha`
 term.
+
+.. contents:: :local:
+
+Vectorized Alpha Functions
+--------------------------
+.. autofunction:: thermo.eos_alpha_functions.PR_a_alphas_vectorized
+.. autofunction:: thermo.eos_alpha_functions.SRK_a_alphas_vectorized
+.. autofunction:: thermo.eos_alpha_functions.PRSV_a_alphas_vectorized
+.. autofunction:: thermo.eos_alpha_functions.PRSV2_a_alphas_vectorized
+.. autofunction:: thermo.eos_alpha_functions.APISRK_a_alphas_vectorized
+.. autofunction:: thermo.eos_alpha_functions.RK_a_alphas_vectorized
+
+Vectorized Alpha Functions With Derivatives
+-------------------------------------------
+.. autofunction:: thermo.eos_alpha_functions.PR_a_alpha_and_derivatives_vectorized
+.. autofunction:: thermo.eos_alpha_functions.SRK_a_alpha_and_derivatives_vectorized
+.. autofunction:: thermo.eos_alpha_functions.PRSV_a_alpha_and_derivatives_vectorized
+.. autofunction:: thermo.eos_alpha_functions.PRSV2_a_alpha_and_derivatives_vectorized
+.. autofunction:: thermo.eos_alpha_functions.APISRK_a_alpha_and_derivatives_vectorized
+.. autofunction:: thermo.eos_alpha_functions.RK_a_alpha_and_derivatives_vectorized
+
+Class With Alpha Functions
+--------------------------
+The class-based ones van save a little code when implementing a new EOS.
+If there is not a standalone function available for an alpha function, it has
+not yet been accelerated in a nice vectorized way.
+
+.. autoclass:: thermo.eos_alpha_functions.a_alpha_base
+    :members:
+    :undoc-members:
+    :show-inheritance:
+.. autoclass:: thermo.eos_alpha_functions.Almeida_a_alpha
+    :members:
+    :undoc-members:
+    :show-inheritance:
+.. autoclass:: thermo.eos_alpha_functions.Androulakis_a_alpha
+    :members:
+    :undoc-members:
+    :show-inheritance:
+.. autoclass:: thermo.eos_alpha_functions.Chen_Yang_a_alpha
+    :members:
+    :undoc-members:
+    :show-inheritance:
+.. autoclass:: thermo.eos_alpha_functions.Coquelet_a_alpha
+    :members:
+    :undoc-members:
+    :show-inheritance:
+.. autoclass:: thermo.eos_alpha_functions.Gasem_a_alpha
+    :members:
+    :undoc-members:
+    :show-inheritance:
+.. autoclass:: thermo.eos_alpha_functions.Gibbons_Laughton_a_alpha
+    :members:
+    :undoc-members:
+    :show-inheritance:
+.. autoclass:: thermo.eos_alpha_functions.Haghtalab_a_alpha
+    :members:
+    :undoc-members:
+    :show-inheritance:
+.. autoclass:: thermo.eos_alpha_functions.Harmens_Knapp_a_alpha
+    :members:
+    :undoc-members:
+    :show-inheritance:
+.. autoclass:: thermo.eos_alpha_functions.Heyen_a_alpha
+    :members:
+    :undoc-members:
+    :show-inheritance:
+.. autoclass:: thermo.eos_alpha_functions.Mathias_1983_a_alpha
+    :members:
+    :undoc-members:
+    :show-inheritance:
+.. autoclass:: thermo.eos_alpha_functions.Mathias_Copeman_a_alpha
+    :members:
+    :undoc-members:
+    :show-inheritance:
+.. autoclass:: thermo.eos_alpha_functions.Mathias_Copeman_untruncated_a_alpha
+    :members:
+    :undoc-members:
+    :show-inheritance:
+.. autoclass:: thermo.eos_alpha_functions.Melhem_a_alpha
+    :members:
+    :undoc-members:
+    :show-inheritance:
+.. autoclass:: thermo.eos_alpha_functions.Poly_a_alpha
+    :members:
+    :undoc-members:
+    :show-inheritance:
+.. autoclass:: thermo.eos_alpha_functions.Saffari_a_alpha
+    :members:
+    :undoc-members:
+    :show-inheritance:
+.. autoclass:: thermo.eos_alpha_functions.Schwartzentruber_a_alpha
+    :members:
+    :undoc-members:
+    :show-inheritance:
+.. autoclass:: thermo.eos_alpha_functions.Soave_1972_a_alpha
+    :members:
+    :undoc-members:
+    :show-inheritance:
+.. autoclass:: thermo.eos_alpha_functions.Soave_1984_a_alpha
+    :members:
+    :undoc-members:
+    :show-inheritance:
+.. autoclass:: thermo.eos_alpha_functions.Soave_79_a_alpha
+    :members:
+    :undoc-members:
+    :show-inheritance:
+.. autoclass:: thermo.eos_alpha_functions.Soave_93_a_alpha
+    :members:
+    :undoc-members:
+    :show-inheritance:
+.. autoclass:: thermo.eos_alpha_functions.Trebble_Bishnoi_a_alpha
+    :members:
+    :undoc-members:
+    :show-inheritance:
+.. autoclass:: thermo.eos_alpha_functions.Twu91_a_alpha
+    :members:
+    :undoc-members:
+    :show-inheritance:
+.. autoclass:: thermo.eos_alpha_functions.TwuPR95_a_alpha
+    :members:
+    :undoc-members:
+    :show-inheritance:
+.. autoclass:: thermo.eos_alpha_functions.TwuSRK95_a_alpha
+    :members:
+    :undoc-members:
+    :show-inheritance:
+.. autoclass:: thermo.eos_alpha_functions.Yu_Lu_a_alpha
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 '''
 
@@ -34,8 +167,8 @@ from __future__ import division, print_function
 
 __all__ = [
            'PR_a_alphas_vectorized', 'PR_a_alpha_and_derivatives_vectorized',
-           'RK_a_alpha_and_derivatives_vectorized', 'RK_a_alphas_vectorized',
-           'SRK_a_alpha_and_derivatives_vectorized', 'SRK_a_alphas_vectorized',
+           'RK_a_alphas_vectorized', 'RK_a_alpha_and_derivatives_vectorized',
+           'SRK_a_alphas_vectorized', 'SRK_a_alpha_and_derivatives_vectorized',
            'PRSV_a_alphas_vectorized', 'PRSV_a_alpha_and_derivatives_vectorized',
            'PRSV2_a_alphas_vectorized', 'PRSV2_a_alpha_and_derivatives_vectorized',
            'APISRK_a_alphas_vectorized', 'APISRK_a_alpha_and_derivatives_vectorized',
@@ -316,12 +449,6 @@ def RK_a_alphas_vectorized(T, Tcs, ais):
     -------
     a_alphas : list[float]
         Pure component `a_alpha` terms in the cubic EOS, [Pa*m^6/mol^2]
-    da_alpha_dTs : list[float]
-        First temperature derivative of pure component `a_alpha`,
-        [Pa*m^6/(mol^2*K)]
-    d2a_alpha_dT2s : list[float]
-        Second temperature derivative of pure component `a_alpha`,
-        [Pa*m^6/(mol^2*K^2)]
 
     Notes
     -----
