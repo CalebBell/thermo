@@ -856,13 +856,72 @@ def APISRK_a_alphas_vectorized(T, Tcs, ais, S1s, S2s):
     return a_alphas
 
 def APISRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, S1s, S2s):
+    r'''Calculates the `a_alpha` terms and their first two temperature
+    derivatives for the API SRK equation of state
+    given the critical temperatures `Tcs`, constants `ais`, and
+    API parameters `S1s` and `S2s`.
+
+    .. math::
+        a_i\alpha(T)_i = a_i \left[1 + S_{1,i}\left(1-\sqrt{T_{r,i}}\right)
+         + S_{2,i} \frac{1- \sqrt{T_{r,i}}}{\sqrt{T_{r,i}}}\right]^2
+
+    .. math::
+        \frac{d a_i\alpha_i}{dT} = a_i\frac{T_{c,i}}{T^{2}} \left(- S_{2,i} \left(\sqrt{
+        \frac{T}{T_{c,i}}} - 1\right) + \sqrt{\frac{T}{T_{c,i}}} \left(S_{1,i} \sqrt{
+        \frac{T}{T_{c,i}}} + S_{2,i}\right)\right) \left(S_{2,i} \left(\sqrt{\frac{
+        T}{T_{c,i}}} - 1\right) + \sqrt{\frac{T}{T_{c,i}}} \left(S_{1,i} \left(\sqrt{
+        \frac{T}{T_{c,i}}} - 1\right) - 1\right)\right)
+
+    .. math::
+        \frac{d^2 a_i\alpha_i}{dT^2} = a_i\frac{1}{2 T^{3}} \left(S_{1,i}^{2} T
+        \sqrt{\frac{T}{T_{c,i}}} - S_{1,i} S_{2,i} T \sqrt{\frac{T}{T_{c,i}}} + 3 S_{1,i}
+        S_{2,i} T_{c,i} \sqrt{\frac{T}{T_{c,i}}} + S_{1,i} T \sqrt{\frac{T}{T_{c,i}}}
+        - 3 S_{2,i}^{2} T_{c,i} \sqrt{\frac{T}{T_{c,i}}} + 4 S_{2,i}^{2} T_{c,i} + 3 S_{2,i}
+        T_{c,i} \sqrt{\frac{T}{T_{c,i}}}\right)
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    Tcs : list[float]
+        Critical temperatures of components, [K]
+    ais : list[float]
+        `a` parameters of cubic EOS,
+        :math:`a_i=\frac{0.42748\cdot R^2(T_{c,i})^{2}}{P_{c,i}}`, [Pa*m^6/mol^2]
+    S1s : list[float]
+        `S1` parameters of API SRK EOS; regressed or estimated with
+        :math:`S_{1,i} = 0.48508 + 1.55171\omega_i - 0.15613\omega_i^2`, [-]
+    S2s : list[float]
+        `S2` parameters of API SRK EOS; regressed or set to zero, [-]
+
+    Returns
+    -------
+    a_alphas : list[float]
+        Pure component `a_alpha` terms in the cubic EOS, [Pa*m^6/mol^2]
+    da_alpha_dTs : list[float]
+        First temperature derivative of pure component `a_alpha`,
+        [Pa*m^6/(mol^2*K)]
+    d2a_alpha_dT2s : list[float]
+        Second temperature derivative of pure component `a_alpha`,
+        [Pa*m^6/(mol^2*K^2)]
+
+
+    Notes
+    -----
+
+    Examples
+    --------
+    >>> APISRK_a_alpha_and_derivatives_vectorized(T=430.0, Tcs=[514.0], ais=[1.2721974560809934],  S1s=[1.678665], S2s=[-0.216396])
+    ([1.60465652994], [-0.0043155855337], [8.9931026263e-06])
+    '''
     N = len(Tcs)
     T_inv = 1.0/T
+    c0 = T_inv*T_inv*0.5
     a_alphas = [0.0]*N
     da_alpha_dTs = [0.0]*N
     d2a_alpha_dT2s = [0.0]*N
     for i in range(N):
-        x0 = (T/Tcs[i])**0.5
+        x0 = sqrt(T/Tcs[i])
         x1 = x0 - 1.
         x2 = x1/x0
         x3 = S2s[i]*x2
@@ -871,8 +930,8 @@ def APISRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, S1s, S2s):
         x6 = S2s[i] - x3 + x5
         x7 = 3.*S2s[i]
         a_alphas[i] = ais[i]*x4*x4
-        da_alpha_dTs[i] = ais[i]*x4*x6/T
-        d2a_alpha_dT2s[i] = ais[i]*(-x4*(-x2*x7 + x5 + x7) + x6*x6)/(2.*T*T)
+        da_alpha_dTs[i] = ais[i]*x4*x6*T_inv
+        d2a_alpha_dT2s[i] = ais[i]*(-x4*(-x2*x7 + x5 + x7) + x6*x6)*c0
     return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
 
 def TWU_a_alpha_common(T, Tc, omega, a, full=True, quick=True, method='PR'):

@@ -9855,20 +9855,6 @@ class TWUPRMIX(TwuPR95_a_alpha, PRMIX):
         self.delta = 2.0*b
         self.epsilon = -b*b
 
-#    def a_alpha_and_derivatives_vectorized(self, T, full=False):
-#        raise NotImplementedError("Not implemented")
-
-#    def setup_a_alpha_and_derivatives(self, i, T=None):
-#        r'''Sets `a`, `omega`, and `Tc` for a specific component before the
-#        pure-species EOS's `a_alpha_and_derivatives` method is called. Both are
-#        called by `GCEOSMIX.a_alpha_and_derivatives` for every component.'''
-#        self.a, self.Tc, self.omega  = self.ais[i], self.Tcs[i], self.omegas[i]
-#    def cleanup_a_alpha_and_derivatives(self):
-#        r'''Removes properties set by `setup_a_alpha_and_derivatives`; run by
-#        `GCEOSMIX.a_alpha_and_derivatives` after `a_alpha` is calculated for
-#        every component'''
-#        del(self.a, self.Tc, self.omega)
-
 class TWUSRKMIX(TwuSRK95_a_alpha, SRKMIX):
     r'''Class for solving the Twu variant of the Soave-Redlich-Kwong cubic
     equation of state for a mixture. Subclasses `TWUSRK`. Solves the EOS on
@@ -9995,21 +9981,6 @@ class TWUSRKMIX(TwuSRK95_a_alpha, SRKMIX):
         self.solve(only_l=only_l, only_g=only_g)
         if fugacities:
             self.fugacities()
-
-#    def a_alpha_and_derivatives_vectorized(self, T, full=False):
-#        raise NotImplementedError("Not implemented")
-
-#    def setup_a_alpha_and_derivatives(self, i, T=None):
-#        r'''Sets `a`, `omega`, and `Tc` for a specific component before the
-#        pure-species EOS's `a_alpha_and_derivatives` method is called. Both are
-#        called by `GCEOSMIX.a_alpha_and_derivatives` for every component.'''
-#        self.a, self.Tc, self.omega  = self.ais[i], self.Tcs[i], self.omegas[i]
-#
-#    def cleanup_a_alpha_and_derivatives(self):
-#        r'''Removes properties set by `setup_a_alpha_and_derivatives`; run by
-#        `GCEOSMIX.a_alpha_and_derivatives` after `a_alpha` is calculated for
-#        every component'''
-#        del(self.a, self.Tc, self.omega)
 
     def _fast_init_specific(self, other):
         b = 0.0
