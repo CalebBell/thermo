@@ -1034,8 +1034,6 @@ def test_TWUSRK_quick():
     a_alphas = [3.7196696151053654, -0.00726972623757774, 2.305590221826195e-05]
     a_alphas_fast = eos.a_alpha_and_derivatives_pure(299)
     assert_allclose(a_alphas, a_alphas_fast)
-    a_alphas_slow = eos.a_alpha_and_derivatives_pure(299, quick=False)
-    assert_allclose(a_alphas, a_alphas_slow)
 
     # back calculation for T
     eos = TWUSRK(Tc=507.6, Pc=3025000, omega=0.2975, V=0.00014689222296622437, P=1E6)
@@ -1145,9 +1143,6 @@ def test_SRKTranslatedConsistent():
     a_alphas = [3.720329980107943, -0.007300826722636607, 2.1378814745831847e-05]
 
     a_alphas_fast = eos.a_alpha_and_derivatives_pure(299)
-    assert_allclose(a_alphas, a_alphas_fast)
-
-    a_alphas_fast = eos.a_alpha_and_derivatives_pure(299, quick=False)
     assert_allclose(a_alphas, a_alphas_fast)
 
     # back calculation for T

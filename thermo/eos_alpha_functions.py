@@ -1196,17 +1196,14 @@ class a_alpha_base(object):
         self.__dict__.update(kwargs)
 
 class Poly_a_alpha(object):
-    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
-        if not full:
-            return horner(self.alpha_coeffs, T)
-        else:
-            return horner_and_der2(self.alpha_coeffs, T)
+    def a_alpha_and_derivatives_pure(self, T):
+        return horner_and_der2(self.alpha_coeffs, T)
 
     def a_alpha_pure(self, T):
         return horner(self.alpha_coeffs, T)
 
 class Soave_1972_a_alpha(a_alpha_base):
-    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives according to Soave (1972) [1]_. Returns `a_alpha`, `da_alpha_dT`, and
         `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more
@@ -1231,12 +1228,9 @@ class Soave_1972_a_alpha(a_alpha_base):
         c1 = self.alpha_coeffs[0]
         Tc, a = self.Tc, self.a
         a_alpha = a*(c1*(-sqrt(T/Tc) + 1) + 1)**2
-        if not full:
-            return a_alpha
-        else:
-            da_alpha_dT = -a*c1*sqrt(T/Tc)*(c1*(-sqrt(T/Tc) + 1) + 1)/T
-            d2a_alpha_dT2 = a*c1*(c1/Tc - sqrt(T/Tc)*(c1*(sqrt(T/Tc) - 1) - 1)/T)/(2*T)
-            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+        da_alpha_dT = -a*c1*sqrt(T/Tc)*(c1*(-sqrt(T/Tc) + 1) + 1)/T
+        d2a_alpha_dT2 = a*c1*(c1/Tc - sqrt(T/Tc)*(c1*(sqrt(T/Tc) - 1) - 1)/T)/(2*T)
+        return a_alpha, da_alpha_dT, d2a_alpha_dT2
     def a_alpha_pure(self, T):
         c1 = self.alpha_coeffs[0]
         Tc, a = self.Tc, self.a
@@ -1244,7 +1238,7 @@ class Soave_1972_a_alpha(a_alpha_base):
         return a_alpha
 
 class Heyen_a_alpha(a_alpha_base):
-    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives according to Heyen (1980) [1]_. Returns `a_alpha`, `da_alpha_dT`,
         and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more
@@ -1264,12 +1258,10 @@ class Heyen_a_alpha(a_alpha_base):
         c1, c2 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         a_alpha = a*exp(c1*(1 -(T/Tc)**c2))
-        if not full:
-            return a_alpha
-        else:
-            da_alpha_dT = -a*c1*c2*(T/Tc)**c2*exp(c1*(-(T/Tc)**c2 + 1))/T
-            d2a_alpha_dT2 = a*c1*c2*(T/Tc)**c2*(c1*c2*(T/Tc)**c2 - c2 + 1)*exp(-c1*((T/Tc)**c2 - 1))/T**2
-            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+        da_alpha_dT = -a*c1*c2*(T/Tc)**c2*exp(c1*(-(T/Tc)**c2 + 1))/T
+        d2a_alpha_dT2 = a*c1*c2*(T/Tc)**c2*(c1*c2*(T/Tc)**c2 - c2 + 1)*exp(-c1*((T/Tc)**c2 - 1))/T**2
+        return a_alpha, da_alpha_dT, d2a_alpha_dT2
+
     def a_alpha_pure(self, T):
         c1, c2 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
@@ -1277,7 +1269,7 @@ class Heyen_a_alpha(a_alpha_base):
         return a_alpha
 
 class Harmens_Knapp_a_alpha(a_alpha_base):
-    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives according to Harmens and Knapp (1980) [1]_. Returns `a_alpha`,
         `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`
@@ -1297,12 +1289,9 @@ class Harmens_Knapp_a_alpha(a_alpha_base):
         c1, c2 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         a_alpha = a*(c1*(-sqrt(T/Tc) + 1) - c2*(1 - Tc/T) + 1)**2
-        if not full:
-            return a_alpha
-        else:
-            da_alpha_dT = a*(-c1*sqrt(T/Tc)/T - 2*Tc*c2/T**2)*(c1*(-sqrt(T/Tc) + 1) - c2*(1 - Tc/T) + 1)
-            d2a_alpha_dT2 = a*((c1*sqrt(T/Tc) + 2*Tc*c2/T)**2 - (c1*sqrt(T/Tc) + 8*Tc*c2/T)*(c1*(sqrt(T/Tc) - 1) + c2*(1 - Tc/T) - 1))/(2*T**2)
-            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+        da_alpha_dT = a*(-c1*sqrt(T/Tc)/T - 2*Tc*c2/T**2)*(c1*(-sqrt(T/Tc) + 1) - c2*(1 - Tc/T) + 1)
+        d2a_alpha_dT2 = a*((c1*sqrt(T/Tc) + 2*Tc*c2/T)**2 - (c1*sqrt(T/Tc) + 8*Tc*c2/T)*(c1*(sqrt(T/Tc) - 1) + c2*(1 - Tc/T) - 1))/(2*T**2)
+        return a_alpha, da_alpha_dT, d2a_alpha_dT2
     def a_alpha_pure(self, T):
         c1, c2 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
@@ -1310,7 +1299,7 @@ class Harmens_Knapp_a_alpha(a_alpha_base):
         return a_alpha
 
 class Mathias_1983_a_alpha(a_alpha_base):
-    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives according to Mathias (1983) [1]_. Returns `a_alpha`,
         `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`
@@ -1332,12 +1321,10 @@ class Mathias_1983_a_alpha(a_alpha_base):
         Tc, a = self.Tc, self.a
         Tr = T/Tc
         a_alpha = a*(1 + c1*(1-sqrt(Tr)) -c2*(1-Tr)*(0.7-Tr))**2
-        if not full:
-            return a_alpha
-        else:
-            da_alpha_dT = a*(c1*(-sqrt(T/Tc) + 1) - c2*(-T/Tc + 0.7)*(-T/Tc + 1) + 1)*(2*c2*(-T/Tc + 0.7)/Tc + 2*c2*(-T/Tc + 1)/Tc - c1*sqrt(T/Tc)/T)
-            d2a_alpha_dT2 = a*((8*c2/Tc**2 - c1*sqrt(T/Tc)/T**2)*(c1*(sqrt(T/Tc) - 1) + c2*(T/Tc - 1)*(T/Tc - 0.7) - 1) + (2*c2*(T/Tc - 1)/Tc + 2*c2*(T/Tc - 0.7)/Tc + c1*sqrt(T/Tc)/T)**2)/2
-            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+        da_alpha_dT = a*(c1*(-sqrt(T/Tc) + 1) - c2*(-T/Tc + 0.7)*(-T/Tc + 1) + 1)*(2*c2*(-T/Tc + 0.7)/Tc + 2*c2*(-T/Tc + 1)/Tc - c1*sqrt(T/Tc)/T)
+        d2a_alpha_dT2 = a*((8*c2/Tc**2 - c1*sqrt(T/Tc)/T**2)*(c1*(sqrt(T/Tc) - 1) + c2*(T/Tc - 1)*(T/Tc - 0.7) - 1) + (2*c2*(T/Tc - 1)/Tc + 2*c2*(T/Tc - 0.7)/Tc + c1*sqrt(T/Tc)/T)**2)/2
+        return a_alpha, da_alpha_dT, d2a_alpha_dT2
+
     def a_alpha_pure(self, T):
         c1, c2 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
@@ -1345,7 +1332,7 @@ class Mathias_1983_a_alpha(a_alpha_base):
         return a*(1 + c1*(1-sqrt(Tr)) -c2*(1-Tr)*(0.7-Tr))**2
 
 class Mathias_Copeman_untruncated_a_alpha(a_alpha_base):
-    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives according to Mathias and Copeman (1983) [1]_. Returns `a_alpha`,
         `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`
@@ -1367,12 +1354,10 @@ class Mathias_Copeman_untruncated_a_alpha(a_alpha_base):
         c1, c2, c3 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         a_alpha = a*(c1*(-sqrt(T/Tc) + 1) + c2*(-sqrt(T/Tc) + 1)**2 + c3*(-sqrt(T/Tc) + 1)**3 + 1)**2
-        if not full:
-            return a_alpha
-        else:
-            da_alpha_dT = a*(-c1*sqrt(T/Tc)/T - 2*c2*sqrt(T/Tc)*(-sqrt(T/Tc) + 1)/T - 3*c3*sqrt(T/Tc)*(-sqrt(T/Tc) + 1)**2/T)*(c1*(-sqrt(T/Tc) + 1) + c2*(-sqrt(T/Tc) + 1)**2 + c3*(-sqrt(T/Tc) + 1)**3 + 1)
-            d2a_alpha_dT2 = a*(T*(c1 - 2*c2*(sqrt(T/Tc) - 1) + 3*c3*(sqrt(T/Tc) - 1)**2)**2 - (2*T*(c2 - 3*c3*(sqrt(T/Tc) - 1)) + Tc*sqrt(T/Tc)*(c1 - 2*c2*(sqrt(T/Tc) - 1) + 3*c3*(sqrt(T/Tc) - 1)**2))*(c1*(sqrt(T/Tc) - 1) - c2*(sqrt(T/Tc) - 1)**2 + c3*(sqrt(T/Tc) - 1)**3 - 1))/(2*T**2*Tc)
-            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+        da_alpha_dT = a*(-c1*sqrt(T/Tc)/T - 2*c2*sqrt(T/Tc)*(-sqrt(T/Tc) + 1)/T - 3*c3*sqrt(T/Tc)*(-sqrt(T/Tc) + 1)**2/T)*(c1*(-sqrt(T/Tc) + 1) + c2*(-sqrt(T/Tc) + 1)**2 + c3*(-sqrt(T/Tc) + 1)**3 + 1)
+        d2a_alpha_dT2 = a*(T*(c1 - 2*c2*(sqrt(T/Tc) - 1) + 3*c3*(sqrt(T/Tc) - 1)**2)**2 - (2*T*(c2 - 3*c3*(sqrt(T/Tc) - 1)) + Tc*sqrt(T/Tc)*(c1 - 2*c2*(sqrt(T/Tc) - 1) + 3*c3*(sqrt(T/Tc) - 1)**2))*(c1*(sqrt(T/Tc) - 1) - c2*(sqrt(T/Tc) - 1)**2 + c3*(sqrt(T/Tc) - 1)**3 - 1))/(2*T**2*Tc)
+        return a_alpha, da_alpha_dT, d2a_alpha_dT2
+
     def a_alpha_pure(self, T):
         c1, c2, c3 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
@@ -1438,52 +1423,42 @@ class Mathias_Copeman_a_alpha(a_alpha_base):
             x = (1.0 + alpha_coeffs[-2]*tau)
             return a*x*x
 
-    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T):
         Tc = self.Tc
         a = self.a
         rt = (T/Tc)**0.5
         tau = 1.0 - rt
         alpha_coeffs = self.alpha_coeffs
-#        alpha_coeffs [c3, c2, c1, 1] always
-        if not full:
-            if T < Tc:
-                x0 = horner(alpha_coeffs, tau)
-                a_alpha = x0*x0*a
-                return a_alpha
-            else:
-                x = (1.0 + alpha_coeffs[-2]*tau)
-                return a*x*x
-        else:
-            if T < Tc:
-                # Do not optimize until unit tests are in place
-                x0, x1, x2 = horner_and_der2(alpha_coeffs, tau)
-                a_alpha = x0*x0*a
+        if T < Tc:
+            # Do not optimize until unit tests are in place
+            x0, x1, x2 = horner_and_der2(alpha_coeffs, tau)
+            a_alpha = x0*x0*a
 
-                da_alpha_dT = -a*(rt*x0*x1/T)
-                d2a_alpha_dT2 = a*((x0*x2/Tc + x1*x1/Tc + rt*x0*x1/T)/(2.0*T))
-                return a_alpha, da_alpha_dT, d2a_alpha_dT2
-            else:
-                c1 = alpha_coeffs[-2]
-                x0 = 1.0/T
-                x1 = 1.0/Tc
-                x2 = rt#sqrt(T*x1)
-                x3 = c1*(x2 - 1.0) - 1.0
-                x4 = x0*x2*x3
-                a_alpha = a*x3*x3
-                da_alpha_dT = a*c1*x4
-                d2a_alpha_dT2 = 0.5*a*c1*x0*(c1*x1 - x4)
-                return a_alpha, da_alpha_dT, d2a_alpha_dT2
-                '''
-                from sympy import *
-                T, Tc, c1 = symbols('T, Tc, c1')
-                tau = 1 - sqrt(T/Tc)
-                alpha = (1 + c1*tau)**2
-                cse([alpha, diff(alpha, T), diff(alpha, T, T)], optimizations='basic')
-                '''
+            da_alpha_dT = -a*(rt*x0*x1/T)
+            d2a_alpha_dT2 = a*((x0*x2/Tc + x1*x1/Tc + rt*x0*x1/T)/(2.0*T))
+            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+        else:
+            '''
+            from sympy import *
+            T, Tc, c1 = symbols('T, Tc, c1')
+            tau = 1 - sqrt(T/Tc)
+            alpha = (1 + c1*tau)**2
+            cse([alpha, diff(alpha, T), diff(alpha, T, T)], optimizations='basic')
+            '''
+            c1 = alpha_coeffs[-2]
+            x0 = 1.0/T
+            x1 = 1.0/Tc
+            x2 = rt#sqrt(T*x1)
+            x3 = c1*(x2 - 1.0) - 1.0
+            x4 = x0*x2*x3
+            a_alpha = a*x3*x3
+            da_alpha_dT = a*c1*x4
+            d2a_alpha_dT2 = 0.5*a*c1*x0*(c1*x1 - x4)
+            return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
 
 class Gibbons_Laughton_a_alpha(a_alpha_base):
-    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives according to Gibbons and Laughton (1984) [1]_. Returns `a_alpha`,
         `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`
@@ -1502,12 +1477,10 @@ class Gibbons_Laughton_a_alpha(a_alpha_base):
         c1, c2 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         a_alpha = a*(c1*(T/Tc - 1) + c2*(sqrt(T/Tc) - 1) + 1)
-        if not full:
-            return a_alpha
-        else:
-            da_alpha_dT = a*(c1/Tc + c2*sqrt(T/Tc)/(2*T))
-            d2a_alpha_dT2 = a*(-c2*sqrt(T/Tc)/(4*T**2))
-            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+        da_alpha_dT = a*(c1/Tc + c2*sqrt(T/Tc)/(2*T))
+        d2a_alpha_dT2 = a*(-c2*sqrt(T/Tc)/(4*T**2))
+        return a_alpha, da_alpha_dT, d2a_alpha_dT2
+
     def a_alpha_pure(self, T):
         c1, c2 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
@@ -1515,7 +1488,7 @@ class Gibbons_Laughton_a_alpha(a_alpha_base):
 
 
 class Soave_1984_a_alpha(a_alpha_base):
-    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives according to Soave (1984) [1]_. Returns `a_alpha`, `da_alpha_dT`, and
         `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more
@@ -1534,12 +1507,9 @@ class Soave_1984_a_alpha(a_alpha_base):
         c1, c2 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         a_alpha = a*(c1*(-T/Tc + 1) + c2*(-1 + Tc/T) + 1)
-        if not full:
-            return a_alpha
-        else:
-            da_alpha_dT = a*(-c1/Tc - Tc*c2/T**2)
-            d2a_alpha_dT2 = a*(2*Tc*c2/T**3)
-            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+        da_alpha_dT = a*(-c1/Tc - Tc*c2/T**2)
+        d2a_alpha_dT2 = a*(2*Tc*c2/T**3)
+        return a_alpha, da_alpha_dT, d2a_alpha_dT2
     # "Stryjek-Vera" skipped, doesn't match PRSV or PRSV2
     def a_alpha_pure(self, T):
         c1, c2 = self.alpha_coeffs
@@ -1548,7 +1518,7 @@ class Soave_1984_a_alpha(a_alpha_base):
 
 
 class Yu_Lu_a_alpha(a_alpha_base):
-    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives according to Yu and Lu (1987) [1]_. Returns `a_alpha`,
         `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`
@@ -1568,12 +1538,9 @@ class Yu_Lu_a_alpha(a_alpha_base):
         c1, c2, c3, c4 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         a_alpha = a*10**(c4*(-T/Tc + 1)*(T**2*c3/Tc**2 + T*c2/Tc + c1))
-        if not full:
-            return a_alpha
-        else:
-            da_alpha_dT = a*(10**(c4*(-T/Tc + 1)*(T**2*c3/Tc**2 + T*c2/Tc + c1))*(c4*(-T/Tc + 1)*(2*T*c3/Tc**2 + c2/Tc) - c4*(T**2*c3/Tc**2 + T*c2/Tc + c1)/Tc)*log(10))
-            d2a_alpha_dT2 = a*(10**(-c4*(T/Tc - 1)*(T**2*c3/Tc**2 + T*c2/Tc + c1))*c4*(-4*T*c3/Tc - 2*c2 - 2*c3*(T/Tc - 1) + c4*(T**2*c3/Tc**2 + T*c2/Tc + c1 + (T/Tc - 1)*(2*T*c3/Tc + c2))**2*log(10))*log(10)/Tc**2)
-            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+        da_alpha_dT = a*(10**(c4*(-T/Tc + 1)*(T**2*c3/Tc**2 + T*c2/Tc + c1))*(c4*(-T/Tc + 1)*(2*T*c3/Tc**2 + c2/Tc) - c4*(T**2*c3/Tc**2 + T*c2/Tc + c1)/Tc)*log(10))
+        d2a_alpha_dT2 = a*(10**(-c4*(T/Tc - 1)*(T**2*c3/Tc**2 + T*c2/Tc + c1))*c4*(-4*T*c3/Tc - 2*c2 - 2*c3*(T/Tc - 1) + c4*(T**2*c3/Tc**2 + T*c2/Tc + c1 + (T/Tc - 1)*(2*T*c3/Tc + c2))**2*log(10))*log(10)/Tc**2)
+        return a_alpha, da_alpha_dT, d2a_alpha_dT2
     def a_alpha_pure(self, T):
         c1, c2, c3, c4 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
@@ -1581,7 +1548,7 @@ class Yu_Lu_a_alpha(a_alpha_base):
 
 
 class Trebble_Bishnoi_a_alpha(a_alpha_base):
-    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives according to Trebble and Bishnoi (1987) [1]_. Returns `a_alpha`,
         `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`
@@ -1599,18 +1566,15 @@ class Trebble_Bishnoi_a_alpha(a_alpha_base):
         c1 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         a_alpha = a*exp(c1*(-T/Tc + 1))
-        if not full:
-            return a_alpha
-        else:
-            da_alpha_dT = a*-c1*exp(c1*(-T/Tc + 1))/Tc
-            d2a_alpha_dT2 = a*c1**2*exp(-c1*(T/Tc - 1))/Tc**2
-            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+        da_alpha_dT = a*-c1*exp(c1*(-T/Tc + 1))/Tc
+        d2a_alpha_dT2 = a*c1**2*exp(-c1*(T/Tc - 1))/Tc**2
+        return a_alpha, da_alpha_dT, d2a_alpha_dT2
     def a_alpha_pure(self, T):
         c1 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         return a*exp(c1*(-T/Tc + 1))
 class Melhem_a_alpha(a_alpha_base):
-    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives according to Melhem et al. (1989) [1]_. Returns `a_alpha`,
         `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`
@@ -1630,19 +1594,16 @@ class Melhem_a_alpha(a_alpha_base):
         c1, c2 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         a_alpha = a*exp(c1*(-T/Tc + 1) + c2*(-sqrt(T/Tc) + 1)**2)
-        if not full:
-            return a_alpha
-        else:
-            da_alpha_dT = a*((-c1/Tc - c2*sqrt(T/Tc)*(-sqrt(T/Tc) + 1)/T)*exp(c1*(-T/Tc + 1) + c2*(-sqrt(T/Tc) + 1)**2))
-            d2a_alpha_dT2 = a*(((c1/Tc - c2*sqrt(T/Tc)*(sqrt(T/Tc) - 1)/T)**2 + c2*(1/Tc - sqrt(T/Tc)*(sqrt(T/Tc) - 1)/T)/(2*T))*exp(-c1*(T/Tc - 1) + c2*(sqrt(T/Tc) - 1)**2))
-            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+        da_alpha_dT = a*((-c1/Tc - c2*sqrt(T/Tc)*(-sqrt(T/Tc) + 1)/T)*exp(c1*(-T/Tc + 1) + c2*(-sqrt(T/Tc) + 1)**2))
+        d2a_alpha_dT2 = a*(((c1/Tc - c2*sqrt(T/Tc)*(sqrt(T/Tc) - 1)/T)**2 + c2*(1/Tc - sqrt(T/Tc)*(sqrt(T/Tc) - 1)/T)/(2*T))*exp(-c1*(T/Tc - 1) + c2*(sqrt(T/Tc) - 1)**2))
+        return a_alpha, da_alpha_dT, d2a_alpha_dT2
     def a_alpha_pure(self, T):
         c1, c2 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         return a*exp(c1*(-T/Tc + 1) + c2*(-sqrt(T/Tc) + 1)**2)
 
 class Androulakis_a_alpha(a_alpha_base):
-    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives according to Androulakis et al. (1989) [1]_. Returns `a_alpha`,
         `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`
@@ -1664,12 +1625,9 @@ class Androulakis_a_alpha(a_alpha_base):
         c1, c2, c3 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         a_alpha = a*(c1*(-(T/Tc)**(2/3) + 1) + c2*(-(T/Tc)**(2/3) + 1)**2 + c3*(-(T/Tc)**(2/3) + 1)**3 + 1)
-        if not full:
-            return a_alpha
-        else:
-            da_alpha_dT = a*(-2*c1*(T/Tc)**(2/3)/(3*T) - 4*c2*(T/Tc)**(2/3)*(-(T/Tc)**(2/3) + 1)/(3*T) - 2*c3*(T/Tc)**(2/3)*(-(T/Tc)**(2/3) + 1)**2/T)
-            d2a_alpha_dT2 = a*(2*(T/Tc)**(2/3)*(c1 + 4*c2*(T/Tc)**(2/3) - 2*c2*((T/Tc)**(2/3) - 1) - 12*c3*(T/Tc)**(2/3)*((T/Tc)**(2/3) - 1) + 3*c3*((T/Tc)**(2/3) - 1)**2)/(9*T**2))
-            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+        da_alpha_dT = a*(-2*c1*(T/Tc)**(2/3)/(3*T) - 4*c2*(T/Tc)**(2/3)*(-(T/Tc)**(2/3) + 1)/(3*T) - 2*c3*(T/Tc)**(2/3)*(-(T/Tc)**(2/3) + 1)**2/T)
+        d2a_alpha_dT2 = a*(2*(T/Tc)**(2/3)*(c1 + 4*c2*(T/Tc)**(2/3) - 2*c2*((T/Tc)**(2/3) - 1) - 12*c3*(T/Tc)**(2/3)*((T/Tc)**(2/3) - 1) + 3*c3*((T/Tc)**(2/3) - 1)**2)/(9*T**2))
+        return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
     def a_alpha_pure(self, T):
         c1, c2, c3 = self.alpha_coeffs
@@ -1677,7 +1635,7 @@ class Androulakis_a_alpha(a_alpha_base):
         return a*(c1*(-(T/Tc)**(2/3) + 1) + c2*(-(T/Tc)**(2/3) + 1)**2 + c3*(-(T/Tc)**(2/3) + 1)**3 + 1)
 
 class Schwartzentruber_a_alpha(a_alpha_base):
-    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives according to Schwartzentruber et al. (1990) [1]_. Returns `a_alpha`,
         `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`
@@ -1696,12 +1654,10 @@ class Schwartzentruber_a_alpha(a_alpha_base):
         c1, c2, c3, c4 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         a_alpha = a*((c4*(-sqrt(T/Tc) + 1) - (-sqrt(T/Tc) + 1)*(T**2*c3/Tc**2 + T*c2/Tc + c1) + 1)**2)
-        if not full:
-            return a_alpha
-        else:
-            da_alpha_dT = a*((c4*(-sqrt(T/Tc) + 1) - (-sqrt(T/Tc) + 1)*(T**2*c3/Tc**2 + T*c2/Tc + c1) + 1)*(-2*(-sqrt(T/Tc) + 1)*(2*T*c3/Tc**2 + c2/Tc) - c4*sqrt(T/Tc)/T + sqrt(T/Tc)*(T**2*c3/Tc**2 + T*c2/Tc + c1)/T))
-            d2a_alpha_dT2 = a*(((-c4*(sqrt(T/Tc) - 1) + (sqrt(T/Tc) - 1)*(T**2*c3/Tc**2 + T*c2/Tc + c1) + 1)*(8*c3*(sqrt(T/Tc) - 1)/Tc**2 + 4*sqrt(T/Tc)*(2*T*c3/Tc + c2)/(T*Tc) + c4*sqrt(T/Tc)/T**2 - sqrt(T/Tc)*(T**2*c3/Tc**2 + T*c2/Tc + c1)/T**2) + (2*(sqrt(T/Tc) - 1)*(2*T*c3/Tc + c2)/Tc - c4*sqrt(T/Tc)/T + sqrt(T/Tc)*(T**2*c3/Tc**2 + T*c2/Tc + c1)/T)**2)/2)
-            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+        da_alpha_dT = a*((c4*(-sqrt(T/Tc) + 1) - (-sqrt(T/Tc) + 1)*(T**2*c3/Tc**2 + T*c2/Tc + c1) + 1)*(-2*(-sqrt(T/Tc) + 1)*(2*T*c3/Tc**2 + c2/Tc) - c4*sqrt(T/Tc)/T + sqrt(T/Tc)*(T**2*c3/Tc**2 + T*c2/Tc + c1)/T))
+        d2a_alpha_dT2 = a*(((-c4*(sqrt(T/Tc) - 1) + (sqrt(T/Tc) - 1)*(T**2*c3/Tc**2 + T*c2/Tc + c1) + 1)*(8*c3*(sqrt(T/Tc) - 1)/Tc**2 + 4*sqrt(T/Tc)*(2*T*c3/Tc + c2)/(T*Tc) + c4*sqrt(T/Tc)/T**2 - sqrt(T/Tc)*(T**2*c3/Tc**2 + T*c2/Tc + c1)/T**2) + (2*(sqrt(T/Tc) - 1)*(2*T*c3/Tc + c2)/Tc - c4*sqrt(T/Tc)/T + sqrt(T/Tc)*(T**2*c3/Tc**2 + T*c2/Tc + c1)/T)**2)/2)
+        return a_alpha, da_alpha_dT, d2a_alpha_dT2
+
     def a_alpha_pure(self, T):
         c1, c2, c3, c4 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
@@ -1709,7 +1665,7 @@ class Schwartzentruber_a_alpha(a_alpha_base):
 
 
 class Almeida_a_alpha(a_alpha_base):
-    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives according to Almeida et al. (1991) [1]_. Returns `a_alpha`,
         `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`
@@ -1731,12 +1687,9 @@ class Almeida_a_alpha(a_alpha_base):
         c1, c2, c3 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         a_alpha = a*exp(c1*(-T/Tc + 1)*abs(T/Tc - 1)**(c2 - 1) + c3*(-1 + Tc/T))
-        if not full:
-            return a_alpha
-        else:
-            da_alpha_dT = a*((c1*(c2 - 1)*(-T/Tc + 1)*abs(T/Tc - 1)**(c2 - 1)*copysign(1, T/Tc - 1)/(Tc*abs(T/Tc - 1)) - c1*abs(T/Tc - 1)**(c2 - 1)/Tc - Tc*c3/T**2)*exp(c1*(-T/Tc + 1)*abs(T/Tc - 1)**(c2 - 1) + c3*(-1 + Tc/T)))
-            d2a_alpha_dT2 = a*exp(c3*(Tc/T - 1) - c1*abs(T/Tc - 1)**(c2 - 1)*(T/Tc - 1))*((c1*abs(T/Tc - 1)**(c2 - 1))/Tc + (Tc*c3)/T**2 + (c1*abs(T/Tc - 1)**(c2 - 2)*copysign(1, T/Tc - 1)*(c2 - 1)*(T/Tc - 1))/Tc)**2 - exp(c3*(Tc/T - 1) - c1*abs(T/Tc - 1)**(c2 - 1)*(T/Tc - 1))*((2*c1*abs(T/Tc - 1)**(c2 - 2)*copysign(1, T/Tc - 1)*(c2 - 1))/Tc**2 - (2*Tc*c3)/T**3 + (c1*abs(T/Tc - 1)**(c2 - 3)*copysign(1, T/Tc - 1)**2*(c2 - 1)*(c2 - 2)*(T/Tc - 1))/Tc**2)
-            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+        da_alpha_dT = a*((c1*(c2 - 1)*(-T/Tc + 1)*abs(T/Tc - 1)**(c2 - 1)*copysign(1, T/Tc - 1)/(Tc*abs(T/Tc - 1)) - c1*abs(T/Tc - 1)**(c2 - 1)/Tc - Tc*c3/T**2)*exp(c1*(-T/Tc + 1)*abs(T/Tc - 1)**(c2 - 1) + c3*(-1 + Tc/T)))
+        d2a_alpha_dT2 = a*exp(c3*(Tc/T - 1) - c1*abs(T/Tc - 1)**(c2 - 1)*(T/Tc - 1))*((c1*abs(T/Tc - 1)**(c2 - 1))/Tc + (Tc*c3)/T**2 + (c1*abs(T/Tc - 1)**(c2 - 2)*copysign(1, T/Tc - 1)*(c2 - 1)*(T/Tc - 1))/Tc)**2 - exp(c3*(Tc/T - 1) - c1*abs(T/Tc - 1)**(c2 - 1)*(T/Tc - 1))*((2*c1*abs(T/Tc - 1)**(c2 - 2)*copysign(1, T/Tc - 1)*(c2 - 1))/Tc**2 - (2*Tc*c3)/T**3 + (c1*abs(T/Tc - 1)**(c2 - 3)*copysign(1, T/Tc - 1)**2*(c2 - 1)*(c2 - 2)*(T/Tc - 1))/Tc**2)
+        return a_alpha, da_alpha_dT, d2a_alpha_dT2
     def a_alpha_pure(self, T):
         c1, c2, c3 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
@@ -1744,7 +1697,7 @@ class Almeida_a_alpha(a_alpha_base):
 
 
 class Twu91_a_alpha(a_alpha_base):
-    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives according to Twu et al. (1991) [1]_. Returns `a_alpha`,
         `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`
@@ -1765,32 +1718,19 @@ class Twu91_a_alpha(a_alpha_base):
         c0, c1, c2 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         Tr = T/Tc
-        if quick:
-            if not full:
-                a_alpha = a*(Tr**(c2*(c1 - 1.0))*exp(c0*(1.0 - (Tr)**(c1*c2))))
-                return a_alpha
-            else:
-                T_inv = 1.0/T
-                x1 = c1 - 1.0
-                x2 = c2*x1
-                x3 = c1*c2
-                x4 = Tr**x3
-                x5 = a*Tr**x2*exp(-c0*(x4 - 1.0))
-                x6 = c0*x4
-                x7 = c1*x6
-                x8 = c2*x5
-                x9 = c1*c1*c2
-                d2a_alpha_dT2 = (x8*(c0*c0*x4*x4*x9 - c1 + c2*x1*x1
-                                     - 2.0*x2*x7 - x6*x9 + x7 + 1.0)*T_inv*T_inv)
-                return x5, x8*(x1 - x7)*T_inv, d2a_alpha_dT2
-        else:
-            a_alpha = a*(Tr**(c2*(c1 - 1.0))*exp(c0*(1.0 - (Tr)**(c1*c2))))
-            if not full:
-                return a_alpha
-            else:
-                da_alpha_dT = a*(-c0*c1*c2*(T/Tc)**(c1*c2)*(T/Tc)**(c2*(c1 - 1))*exp(c0*(-(T/Tc)**(c1*c2) + 1))/T + c2*(T/Tc)**(c2*(c1 - 1))*(c1 - 1)*exp(c0*(-(T/Tc)**(c1*c2) + 1))/T)
-                d2a_alpha_dT2 = a*(c2*(T/Tc)**(c2*(c1 - 1))*(c0**2*c1**2*c2*(T/Tc)**(2*c1*c2) - c0*c1**2*c2*(T/Tc)**(c1*c2) - 2*c0*c1*c2*(T/Tc)**(c1*c2)*(c1 - 1) + c0*c1*(T/Tc)**(c1*c2) - c1 + c2*(c1 - 1)**2 + 1)*exp(-c0*((T/Tc)**(c1*c2) - 1))/T**2)
-                return a_alpha, da_alpha_dT, d2a_alpha_dT2
+        T_inv = 1.0/T
+        x1 = c1 - 1.0
+        x2 = c2*x1
+        x3 = c1*c2
+        x4 = Tr**x3
+        x5 = a*Tr**x2*exp(-c0*(x4 - 1.0))
+        x6 = c0*x4
+        x7 = c1*x6
+        x8 = c2*x5
+        x9 = c1*c1*c2
+        d2a_alpha_dT2 = (x8*(c0*c0*x4*x4*x9 - c1 + c2*x1*x1
+                             - 2.0*x2*x7 - x6*x9 + x7 + 1.0)*T_inv*T_inv)
+        return x5, x8*(x1 - x7)*T_inv, d2a_alpha_dT2
 
     def a_alpha_pure(self, T):
         c0, c1, c2 = self.alpha_coeffs
@@ -1865,7 +1805,7 @@ class Twu91_a_alpha(a_alpha_base):
 
 
 class Soave_93_a_alpha(a_alpha_base):
-    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives according to Soave (1983) [1]_. Returns `a_alpha`, `da_alpha_dT`, and
         `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more
@@ -1884,12 +1824,9 @@ class Soave_93_a_alpha(a_alpha_base):
         c1, c2 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         a_alpha = a*(c1*(-T/Tc + 1) + c2*(-sqrt(T/Tc) + 1)**2 + 1)
-        if not full:
-            return a_alpha
-        else:
-            da_alpha_dT = a*(-c1/Tc - c2*sqrt(T/Tc)*(-sqrt(T/Tc) + 1)/T)
-            d2a_alpha_dT2 = a*(c2*(1/Tc - sqrt(T/Tc)*(sqrt(T/Tc) - 1)/T)/(2*T))
-            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+        da_alpha_dT = a*(-c1/Tc - c2*sqrt(T/Tc)*(-sqrt(T/Tc) + 1)/T)
+        d2a_alpha_dT2 = a*(c2*(1/Tc - sqrt(T/Tc)*(sqrt(T/Tc) - 1)/T)/(2*T))
+        return a_alpha, da_alpha_dT, d2a_alpha_dT2
     def a_alpha_pure(self, T):
         c1, c2 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
@@ -1897,7 +1834,7 @@ class Soave_93_a_alpha(a_alpha_base):
 
 
 class Gasem_a_alpha(a_alpha_base):
-    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives according to Gasem (2001) [1]_. Returns `a_alpha`, `da_alpha_dT`, and
         `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more
@@ -1917,12 +1854,10 @@ class Gasem_a_alpha(a_alpha_base):
         c1, c2, c3 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         a_alpha = a*(exp((-(T/Tc)**c3 + 1)*(T*c2/Tc + c1)))
-        if not full:
-            return a_alpha
-        else:
-            da_alpha_dT = a*((c2*(-(T/Tc)**c3 + 1)/Tc - c3*(T/Tc)**c3*(T*c2/Tc + c1)/T)*exp((-(T/Tc)**c3 + 1)*(T*c2/Tc + c1)))
-            d2a_alpha_dT2 = a*(((c2*((T/Tc)**c3 - 1)/Tc + c3*(T/Tc)**c3*(T*c2/Tc + c1)/T)**2 - c3*(T/Tc)**c3*(2*c2/Tc + c3*(T*c2/Tc + c1)/T - (T*c2/Tc + c1)/T)/T)*exp(-((T/Tc)**c3 - 1)*(T*c2/Tc + c1)))
-            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+        da_alpha_dT = a*((c2*(-(T/Tc)**c3 + 1)/Tc - c3*(T/Tc)**c3*(T*c2/Tc + c1)/T)*exp((-(T/Tc)**c3 + 1)*(T*c2/Tc + c1)))
+        d2a_alpha_dT2 = a*(((c2*((T/Tc)**c3 - 1)/Tc + c3*(T/Tc)**c3*(T*c2/Tc + c1)/T)**2 - c3*(T/Tc)**c3*(2*c2/Tc + c3*(T*c2/Tc + c1)/T - (T*c2/Tc + c1)/T)/T)*exp(-((T/Tc)**c3 - 1)*(T*c2/Tc + c1)))
+        return a_alpha, da_alpha_dT, d2a_alpha_dT2
+
     def a_alpha_pure(self, T):
         c1, c2, c3 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
@@ -1930,7 +1865,7 @@ class Gasem_a_alpha(a_alpha_base):
 
 
 class Coquelet_a_alpha(a_alpha_base):
-    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives according to Coquelet et al. (2004) [1]_. Returns `a_alpha`, `da_alpha_dT`, and
         `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more
@@ -1953,12 +1888,10 @@ class Coquelet_a_alpha(a_alpha_base):
         c1, c2, c3 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         a_alpha = a*(exp(c1*(-T/Tc + 1)*(c2*(-sqrt(T/Tc) + 1)**2 + c3*(-sqrt(T/Tc) + 1)**3 + 1)**2))
-        if not full:
-            return a_alpha
-        else:
-            da_alpha_dT = a*((c1*(-T/Tc + 1)*(-2*c2*sqrt(T/Tc)*(-sqrt(T/Tc) + 1)/T - 3*c3*sqrt(T/Tc)*(-sqrt(T/Tc) + 1)**2/T)*(c2*(-sqrt(T/Tc) + 1)**2 + c3*(-sqrt(T/Tc) + 1)**3 + 1) - c1*(c2*(-sqrt(T/Tc) + 1)**2 + c3*(-sqrt(T/Tc) + 1)**3 + 1)**2/Tc)*exp(c1*(-T/Tc + 1)*(c2*(-sqrt(T/Tc) + 1)**2 + c3*(-sqrt(T/Tc) + 1)**3 + 1)**2))
-            d2a_alpha_dT2 = a*(c1*(c1*(-(c2*(sqrt(T/Tc) - 1)**2 - c3*(sqrt(T/Tc) - 1)**3 + 1)/Tc + sqrt(T/Tc)*(-2*c2 + 3*c3*(sqrt(T/Tc) - 1))*(sqrt(T/Tc) - 1)*(T/Tc - 1)/T)**2*(c2*(sqrt(T/Tc) - 1)**2 - c3*(sqrt(T/Tc) - 1)**3 + 1)**2 - ((T/Tc - 1)*(c2*(sqrt(T/Tc) - 1)**2 - c3*(sqrt(T/Tc) - 1)**3 + 1)*(2*c2/Tc - 6*c3*(sqrt(T/Tc) - 1)/Tc - 2*c2*sqrt(T/Tc)*(sqrt(T/Tc) - 1)/T + 3*c3*sqrt(T/Tc)*(sqrt(T/Tc) - 1)**2/T) + 4*sqrt(T/Tc)*(2*c2 - 3*c3*(sqrt(T/Tc) - 1))*(sqrt(T/Tc) - 1)*(c2*(sqrt(T/Tc) - 1)**2 - c3*(sqrt(T/Tc) - 1)**3 + 1)/Tc + (2*c2 - 3*c3*(sqrt(T/Tc) - 1))**2*(sqrt(T/Tc) - 1)**2*(T/Tc - 1)/Tc)/(2*T))*exp(-c1*(T/Tc - 1)*(c2*(sqrt(T/Tc) - 1)**2 - c3*(sqrt(T/Tc) - 1)**3 + 1)**2))
-            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+        da_alpha_dT = a*((c1*(-T/Tc + 1)*(-2*c2*sqrt(T/Tc)*(-sqrt(T/Tc) + 1)/T - 3*c3*sqrt(T/Tc)*(-sqrt(T/Tc) + 1)**2/T)*(c2*(-sqrt(T/Tc) + 1)**2 + c3*(-sqrt(T/Tc) + 1)**3 + 1) - c1*(c2*(-sqrt(T/Tc) + 1)**2 + c3*(-sqrt(T/Tc) + 1)**3 + 1)**2/Tc)*exp(c1*(-T/Tc + 1)*(c2*(-sqrt(T/Tc) + 1)**2 + c3*(-sqrt(T/Tc) + 1)**3 + 1)**2))
+        d2a_alpha_dT2 = a*(c1*(c1*(-(c2*(sqrt(T/Tc) - 1)**2 - c3*(sqrt(T/Tc) - 1)**3 + 1)/Tc + sqrt(T/Tc)*(-2*c2 + 3*c3*(sqrt(T/Tc) - 1))*(sqrt(T/Tc) - 1)*(T/Tc - 1)/T)**2*(c2*(sqrt(T/Tc) - 1)**2 - c3*(sqrt(T/Tc) - 1)**3 + 1)**2 - ((T/Tc - 1)*(c2*(sqrt(T/Tc) - 1)**2 - c3*(sqrt(T/Tc) - 1)**3 + 1)*(2*c2/Tc - 6*c3*(sqrt(T/Tc) - 1)/Tc - 2*c2*sqrt(T/Tc)*(sqrt(T/Tc) - 1)/T + 3*c3*sqrt(T/Tc)*(sqrt(T/Tc) - 1)**2/T) + 4*sqrt(T/Tc)*(2*c2 - 3*c3*(sqrt(T/Tc) - 1))*(sqrt(T/Tc) - 1)*(c2*(sqrt(T/Tc) - 1)**2 - c3*(sqrt(T/Tc) - 1)**3 + 1)/Tc + (2*c2 - 3*c3*(sqrt(T/Tc) - 1))**2*(sqrt(T/Tc) - 1)**2*(T/Tc - 1)/Tc)/(2*T))*exp(-c1*(T/Tc - 1)*(c2*(sqrt(T/Tc) - 1)**2 - c3*(sqrt(T/Tc) - 1)**3 + 1)**2))
+        return a_alpha, da_alpha_dT, d2a_alpha_dT2
+
     def a_alpha_pure(self, T):
         c1, c2, c3 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
@@ -1966,7 +1899,7 @@ class Coquelet_a_alpha(a_alpha_base):
 
 
 class Haghtalab_a_alpha(a_alpha_base):
-    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives according to Haghtalab et al. (2010) [1]_. Returns `a_alpha`, `da_alpha_dT`, and
         `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more
@@ -1987,12 +1920,9 @@ class Haghtalab_a_alpha(a_alpha_base):
         c1, c2, c3 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         a_alpha = a*exp((-c3**log(T/Tc) + 1)*(-T*c2/Tc + c1))
-        if not full:
-            return a_alpha
-        else:
-            da_alpha_dT = a*((-c2*(-c3**log(T/Tc) + 1)/Tc - c3**log(T/Tc)*(-T*c2/Tc + c1)*log(c3)/T)*exp((-c3**log(T/Tc) + 1)*(-T*c2/Tc + c1)))
-            d2a_alpha_dT2 = a*(((c2*(c3**log(T/Tc) - 1)/Tc + c3**log(T/Tc)*(T*c2/Tc - c1)*log(c3)/T)**2 + c3**log(T/Tc)*(2*c2/Tc + (T*c2/Tc - c1)*log(c3)/T - (T*c2/Tc - c1)/T)*log(c3)/T)*exp((c3**log(T/Tc) - 1)*(T*c2/Tc - c1)))
-            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+        da_alpha_dT = a*((-c2*(-c3**log(T/Tc) + 1)/Tc - c3**log(T/Tc)*(-T*c2/Tc + c1)*log(c3)/T)*exp((-c3**log(T/Tc) + 1)*(-T*c2/Tc + c1)))
+        d2a_alpha_dT2 = a*(((c2*(c3**log(T/Tc) - 1)/Tc + c3**log(T/Tc)*(T*c2/Tc - c1)*log(c3)/T)**2 + c3**log(T/Tc)*(2*c2/Tc + (T*c2/Tc - c1)*log(c3)/T - (T*c2/Tc - c1)/T)*log(c3)/T)*exp((c3**log(T/Tc) - 1)*(T*c2/Tc - c1)))
+        return a_alpha, da_alpha_dT, d2a_alpha_dT2
     def a_alpha_pure(self, T):
         c1, c2, c3 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
@@ -2000,7 +1930,7 @@ class Haghtalab_a_alpha(a_alpha_base):
 
 
 class Saffari_a_alpha(a_alpha_base):
-    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives according to Saffari and Zahedi (2013) [1]_. Returns `a_alpha`, `da_alpha_dT`, and
         `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more
@@ -2020,12 +1950,9 @@ class Saffari_a_alpha(a_alpha_base):
         c1, c2, c3 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         a_alpha = a*(exp(T*c1/Tc + c2*log(T/Tc) + c3*(-sqrt(T/Tc) + 1)))
-        if not full:
-            return a_alpha
-        else:
-            da_alpha_dT = a*((c1/Tc + c2/T - c3*sqrt(T/Tc)/(2*T))*exp(T*c1/Tc + c2*log(T/Tc) + c3*(-sqrt(T/Tc) + 1)))
-            d2a_alpha_dT2 = a*(((2*c1/Tc + 2*c2/T - c3*sqrt(T/Tc)/T)**2 - (4*c2 - c3*sqrt(T/Tc))/T**2)*exp(T*c1/Tc + c2*log(T/Tc) - c3*(sqrt(T/Tc) - 1))/4)
-            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+        da_alpha_dT = a*((c1/Tc + c2/T - c3*sqrt(T/Tc)/(2*T))*exp(T*c1/Tc + c2*log(T/Tc) + c3*(-sqrt(T/Tc) + 1)))
+        d2a_alpha_dT2 = a*(((2*c1/Tc + 2*c2/T - c3*sqrt(T/Tc)/T)**2 - (4*c2 - c3*sqrt(T/Tc))/T**2)*exp(T*c1/Tc + c2*log(T/Tc) - c3*(sqrt(T/Tc) - 1))/4)
+        return a_alpha, da_alpha_dT, d2a_alpha_dT2
     def a_alpha_pure(self, T):
         c1, c2, c3 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
@@ -2033,7 +1960,7 @@ class Saffari_a_alpha(a_alpha_base):
 
 
 class Chen_Yang_a_alpha(a_alpha_base):
-    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives according to Hamid and Yang (2017) [1]_. Returns `a_alpha`,
         `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`
@@ -2054,19 +1981,17 @@ class Chen_Yang_a_alpha(a_alpha_base):
         c1, c2, c3, c4, c5, c6, c7 = self.alpha_coeffs
         Tc, a, omega = self.Tc, self.a, self.omega
         a_alpha = a*exp(c4*log((-sqrt(T/Tc) + 1)*(c5 + c6*omega + c7*omega**2) + 1)**2 + (-T/Tc + 1)*(c1 + c2*omega + c3*omega**2))
-        if not full:
-            return a_alpha
-        else:
-            da_alpha_dT = a*(-(c1 + c2*omega + c3*omega**2)/Tc - c4*sqrt(T/Tc)*(c5 + c6*omega + c7*omega**2)*log((-sqrt(T/Tc) + 1)*(c5 + c6*omega + c7*omega**2) + 1)/(T*((-sqrt(T/Tc) + 1)*(c5 + c6*omega + c7*omega**2) + 1)))*exp(c4*log((-sqrt(T/Tc) + 1)*(c5 + c6*omega + c7*omega**2) + 1)**2 + (-T/Tc + 1)*(c1 + c2*omega + c3*omega**2))
-            d2a_alpha_dT2 = a*(((c1 + c2*omega + c3*omega**2)/Tc - c4*sqrt(T/Tc)*(c5 + c6*omega + c7*omega**2)*log(-(sqrt(T/Tc) - 1)*(c5 + c6*omega + c7*omega**2) + 1)/(T*((sqrt(T/Tc) - 1)*(c5 + c6*omega + c7*omega**2) - 1)))**2 - c4*(c5 + c6*omega + c7*omega**2)*((c5 + c6*omega + c7*omega**2)*log(-(sqrt(T/Tc) - 1)*(c5 + c6*omega + c7*omega**2) + 1)/(Tc*((sqrt(T/Tc) - 1)*(c5 + c6*omega + c7*omega**2) - 1)) - (c5 + c6*omega + c7*omega**2)/(Tc*((sqrt(T/Tc) - 1)*(c5 + c6*omega + c7*omega**2) - 1)) + sqrt(T/Tc)*log(-(sqrt(T/Tc) - 1)*(c5 + c6*omega + c7*omega**2) + 1)/T)/(2*T*((sqrt(T/Tc) - 1)*(c5 + c6*omega + c7*omega**2) - 1)))*exp(c4*log(-(sqrt(T/Tc) - 1)*(c5 + c6*omega + c7*omega**2) + 1)**2 - (T/Tc - 1)*(c1 + c2*omega + c3*omega**2))
-            return a_alpha, da_alpha_dT, d2a_alpha_dT2
+        da_alpha_dT = a*(-(c1 + c2*omega + c3*omega**2)/Tc - c4*sqrt(T/Tc)*(c5 + c6*omega + c7*omega**2)*log((-sqrt(T/Tc) + 1)*(c5 + c6*omega + c7*omega**2) + 1)/(T*((-sqrt(T/Tc) + 1)*(c5 + c6*omega + c7*omega**2) + 1)))*exp(c4*log((-sqrt(T/Tc) + 1)*(c5 + c6*omega + c7*omega**2) + 1)**2 + (-T/Tc + 1)*(c1 + c2*omega + c3*omega**2))
+        d2a_alpha_dT2 = a*(((c1 + c2*omega + c3*omega**2)/Tc - c4*sqrt(T/Tc)*(c5 + c6*omega + c7*omega**2)*log(-(sqrt(T/Tc) - 1)*(c5 + c6*omega + c7*omega**2) + 1)/(T*((sqrt(T/Tc) - 1)*(c5 + c6*omega + c7*omega**2) - 1)))**2 - c4*(c5 + c6*omega + c7*omega**2)*((c5 + c6*omega + c7*omega**2)*log(-(sqrt(T/Tc) - 1)*(c5 + c6*omega + c7*omega**2) + 1)/(Tc*((sqrt(T/Tc) - 1)*(c5 + c6*omega + c7*omega**2) - 1)) - (c5 + c6*omega + c7*omega**2)/(Tc*((sqrt(T/Tc) - 1)*(c5 + c6*omega + c7*omega**2) - 1)) + sqrt(T/Tc)*log(-(sqrt(T/Tc) - 1)*(c5 + c6*omega + c7*omega**2) + 1)/T)/(2*T*((sqrt(T/Tc) - 1)*(c5 + c6*omega + c7*omega**2) - 1)))*exp(c4*log(-(sqrt(T/Tc) - 1)*(c5 + c6*omega + c7*omega**2) + 1)**2 - (T/Tc - 1)*(c1 + c2*omega + c3*omega**2))
+        return a_alpha, da_alpha_dT, d2a_alpha_dT2
+
     def a_alpha_pure(self, T):
         c1, c2, c3, c4, c5, c6, c7 = self.alpha_coeffs
         Tc, a, omega = self.Tc, self.a, self.omega
         return a*exp(c4*log((-sqrt(T/Tc) + 1)*(c5 + c6*omega + c7*omega**2) + 1)**2 + (-T/Tc + 1)*(c1 + c2*omega + c3*omega**2))
 
 class TwuSRK95_a_alpha(a_alpha_base):
-    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives for this EOS. Returns `a_alpha`, `da_alpha_dT`, and
         `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more
@@ -2076,7 +2001,7 @@ class TwuSRK95_a_alpha(a_alpha_base):
         external `TWU_a_alpha_common` function. See it for further
         documentation.
         '''
-        return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=full, quick=quick, method='SRK')
+        return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=True, quick=True, method='SRK')
 
     def a_alpha_pure(self, T):
         return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=False, quick=True, method='SRK')
@@ -2117,7 +2042,7 @@ class TwuPR95_a_alpha(a_alpha_base):
 
 
 class Soave_79_a_alpha(a_alpha_base):
-    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives according to Soave (1979) [1]_. Returns `a_alpha`,
         `da_alpha_dT`, and `d2a_alpha_dT2`. Three coefficients are needed.
@@ -2134,17 +2059,14 @@ class Soave_79_a_alpha(a_alpha_base):
         '''
         M, N = self.alpha_coeffs#self.M, self.N
         Tc, a = self.Tc, self.a
-        if not full:
-            Tr = T/Tc
-            return a*(1.0 + (1.0 - Tr)*(M + N/Tr))
-        else:
-            T_inv = 1.0/T
-            x0 = Tc_inv = 1.0/Tc
-            x1 = T*x0 - 1.0
-            x2 = Tc*T_inv
-            x3 = M + N*x2
-            x4 = N*T_inv*T_inv
-            return (a*(1.0 - x1*x3), a*(Tc*x1*x4 - x0*x3), a*(2.0*x4*(1.0 - x1*x2)))
+        T_inv = 1.0/T
+        x0 = 1.0/Tc
+        x1 = T*x0 - 1.0
+        x2 = Tc*T_inv
+        x3 = M + N*x2
+        x4 = N*T_inv*T_inv
+        return (a*(1.0 - x1*x3), a*(Tc*x1*x4 - x0*x3), a*(2.0*x4*(1.0 - x1*x2)))
+
     def a_alpha_pure(self, T):
         M, N = self.alpha_coeffs#self.M, self.N
         Tc, a = self.Tc, self.a
@@ -2167,7 +2089,7 @@ class Soave_79_a_alpha(a_alpha_base):
         for i in self.cmps:
             a = ais[i]
             M, N = alpha_coeffs[i]
-            x0 = Tc_inv = 1.0/Tcs[i]
+            x0 = 1.0/Tcs[i]
             x1 = T*x0 - 1.0
             x2 = Tcs[i]*T_inv
             x3 = M + N*x2
