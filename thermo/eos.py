@@ -52,7 +52,7 @@ from chemicals.utils import (Cp_minus_Cv, isobaric_expansion,
 from chemicals.utils import log, log10, exp, sqrt, copysign
 from chemicals.flash_basic import Wilson_K_value
 
-from thermo.alpha_functions import (Poly_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha,
+from thermo.eos_alpha_functions import (Poly_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha,
                                     TwuSRK95_a_alpha, TwuPR95_a_alpha, Soave_79_a_alpha)
 
 R2 = R*R

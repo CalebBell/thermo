@@ -1074,7 +1074,7 @@ def test_TWUSRK_quick():
     # Error checking
     with pytest.raises(Exception):
         TWUSRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299.) 
-    from thermo.alpha_functions import TWU_a_alpha_common
+    from thermo.eos_alpha_functions import TWU_a_alpha_common
     with pytest.raises(Exception):
         TWU_a_alpha_common(299.0, 507.6, 0.2975, 2.5171086468571824, method='FAIL')
         

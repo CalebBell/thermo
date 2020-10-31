@@ -138,7 +138,7 @@ from fluids.numerics.arrays import det, subset_matrix
 from fluids.constants import R
 from chemicals.utils import normalize, Cp_minus_Cv, isobaric_expansion, isothermal_compressibility, phase_identification_parameter, dxs_to_dn_partials, dxs_to_dns, dns_to_dn_partials, d2xs_to_dxdn_partials, d2ns_to_dn2_partials, hash_any_primitive
 from chemicals.utils import log, exp, sqrt
-from thermo.alpha_functions import (TwuPR95_a_alpha, TwuSRK95_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha, 
+from thermo.eos_alpha_functions import (TwuPR95_a_alpha, TwuSRK95_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha, 
                                     Soave_79_a_alpha, PR_a_alpha_and_derivatives_vectorized, PR_a_alphas_vectorized,
                                     RK_a_alpha_and_derivatives_vectorized, RK_a_alphas_vectorized,
                                     SRK_a_alpha_and_derivatives_vectorized, SRK_a_alphas_vectorized,

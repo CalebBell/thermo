@@ -26,7 +26,7 @@ from chemicals.utils import normalize, hash_any_primitive
 from thermo.utils import TPD
 from thermo.eos import *
 from thermo.eos_mix import *
-from thermo.alpha_functions import *
+from thermo.eos_alpha_functions import *
 from fluids.constants import R
 from fluids.numerics import jacobian, hessian, assert_close, assert_close1d, assert_close2d, assert_close3d, derivative
 from scipy.optimize import minimize, newton
