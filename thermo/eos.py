@@ -8119,7 +8119,7 @@ class APISRK(SRK):
 
         self.solve()
 
-    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives for this EOS. Returns `a_alpha`, `da_alpha_dT`, and
         `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more
@@ -8327,7 +8327,7 @@ class TWUPR(TwuPR95_a_alpha, PR):
 
         self.solve()
 
-    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
+    def a_alpha_and_derivatives_pure(self, T):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives for this EOS. Returns `a_alpha`, `da_alpha_dT`, and
         `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more
@@ -8337,10 +8337,10 @@ class TWUPR(TwuPR95_a_alpha, PR):
         external `TWU_a_alpha_common` function. See it for further
         documentation.
         '''
-        return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=full, quick=quick, method='PR')
+        return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=True, method='PR')
 
     def a_alpha_pure(self, T):
-        return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=False, quick=True, method='PR')
+        return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=False, method='PR')
 
 class TWUSRK(TwuSRK95_a_alpha, SRK):
     r'''Class for solving the Soave-Redlich-Kwong cubic

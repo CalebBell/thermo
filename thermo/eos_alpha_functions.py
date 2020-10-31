@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=E1101
 r'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -1329,6 +1330,7 @@ class Mathias_1983_a_alpha(a_alpha_base):
         '''
         c1, c2 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
+        Tr = T/Tc
         a_alpha = a*(1 + c1*(1-sqrt(Tr)) -c2*(1-Tr)*(0.7-Tr))**2
         if not full:
             return a_alpha
@@ -1339,6 +1341,7 @@ class Mathias_1983_a_alpha(a_alpha_base):
     def a_alpha_pure(self, T):
         c1, c2 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
+        Tr = T/Tc
         return a*(1 + c1*(1-sqrt(Tr)) -c2*(1-Tr)*(0.7-Tr))**2
 
 class Mathias_Copeman_untruncated_a_alpha(a_alpha_base):
@@ -1690,7 +1693,7 @@ class Schwartzentruber_a_alpha(a_alpha_base):
         .. [1] J. Schwartzentruber, H. Renon, and S. Watanasiri, "K-values for
            Non-Ideal Systems:An Easier Way," Chem. Eng., March 1990, 118-124.
         '''
-        c1, c2, c3 = self.alpha_coeffs
+        c1, c2, c3, c4 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         a_alpha = a*((c4*(-sqrt(T/Tc) + 1) - (-sqrt(T/Tc) + 1)*(T**2*c3/Tc**2 + T*c2/Tc + c1) + 1)**2)
         if not full:
@@ -1700,7 +1703,7 @@ class Schwartzentruber_a_alpha(a_alpha_base):
             d2a_alpha_dT2 = a*(((-c4*(sqrt(T/Tc) - 1) + (sqrt(T/Tc) - 1)*(T**2*c3/Tc**2 + T*c2/Tc + c1) + 1)*(8*c3*(sqrt(T/Tc) - 1)/Tc**2 + 4*sqrt(T/Tc)*(2*T*c3/Tc + c2)/(T*Tc) + c4*sqrt(T/Tc)/T**2 - sqrt(T/Tc)*(T**2*c3/Tc**2 + T*c2/Tc + c1)/T**2) + (2*(sqrt(T/Tc) - 1)*(2*T*c3/Tc + c2)/Tc - c4*sqrt(T/Tc)/T + sqrt(T/Tc)*(T**2*c3/Tc**2 + T*c2/Tc + c1)/T)**2)/2)
             return a_alpha, da_alpha_dT, d2a_alpha_dT2
     def a_alpha_pure(self, T):
-        c1, c2, c3 = self.alpha_coeffs
+        c1, c2, c3, c4 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         return a*((c4*(-sqrt(T/Tc) + 1) - (-sqrt(T/Tc) + 1)*(T**2*c3/Tc**2 + T*c2/Tc + c1) + 1)**2)
 
@@ -1731,7 +1734,7 @@ class Almeida_a_alpha(a_alpha_base):
         if not full:
             return a_alpha
         else:
-            da_alpha_dT = a*((c1*(c2 - 1)*(-T/Tc + 1)*abs(T/Tc - 1)**(c2 - 1)*copysign(1, T/Tc - 1)/(Tc*Abs(T/Tc - 1)) - c1*abs(T/Tc - 1)**(c2 - 1)/Tc - Tc*c3/T**2)*exp(c1*(-T/Tc + 1)*abs(T/Tc - 1)**(c2 - 1) + c3*(-1 + Tc/T)))
+            da_alpha_dT = a*((c1*(c2 - 1)*(-T/Tc + 1)*abs(T/Tc - 1)**(c2 - 1)*copysign(1, T/Tc - 1)/(Tc*abs(T/Tc - 1)) - c1*abs(T/Tc - 1)**(c2 - 1)/Tc - Tc*c3/T**2)*exp(c1*(-T/Tc + 1)*abs(T/Tc - 1)**(c2 - 1) + c3*(-1 + Tc/T)))
             d2a_alpha_dT2 = a*exp(c3*(Tc/T - 1) - c1*abs(T/Tc - 1)**(c2 - 1)*(T/Tc - 1))*((c1*abs(T/Tc - 1)**(c2 - 1))/Tc + (Tc*c3)/T**2 + (c1*abs(T/Tc - 1)**(c2 - 2)*copysign(1, T/Tc - 1)*(c2 - 1)*(T/Tc - 1))/Tc)**2 - exp(c3*(Tc/T - 1) - c1*abs(T/Tc - 1)**(c2 - 1)*(T/Tc - 1))*((2*c1*abs(T/Tc - 1)**(c2 - 2)*copysign(1, T/Tc - 1)*(c2 - 1))/Tc**2 - (2*Tc*c3)/T**3 + (c1*abs(T/Tc - 1)**(c2 - 3)*copysign(1, T/Tc - 1)**2*(c2 - 1)*(c2 - 2)*(T/Tc - 1))/Tc**2)
             return a_alpha, da_alpha_dT, d2a_alpha_dT2
     def a_alpha_pure(self, T):
@@ -2049,7 +2052,7 @@ class Chen_Yang_a_alpha(a_alpha_base):
            Engineering Data, August 31, 2017. doi:10.1021/acs.jced.7b00496.
         '''
         c1, c2, c3, c4, c5, c6, c7 = self.alpha_coeffs
-        Tc, a = self.Tc, self.a
+        Tc, a, omega = self.Tc, self.a, self.omega
         a_alpha = a*exp(c4*log((-sqrt(T/Tc) + 1)*(c5 + c6*omega + c7*omega**2) + 1)**2 + (-T/Tc + 1)*(c1 + c2*omega + c3*omega**2))
         if not full:
             return a_alpha
@@ -2059,7 +2062,7 @@ class Chen_Yang_a_alpha(a_alpha_base):
             return a_alpha, da_alpha_dT, d2a_alpha_dT2
     def a_alpha_pure(self, T):
         c1, c2, c3, c4, c5, c6, c7 = self.alpha_coeffs
-        Tc, a = self.Tc, self.a
+        Tc, a, omega = self.Tc, self.a, self.omega
         return a*exp(c4*log((-sqrt(T/Tc) + 1)*(c5 + c6*omega + c7*omega**2) + 1)**2 + (-T/Tc + 1)*(c1 + c2*omega + c3*omega**2))
 
 class TwuSRK95_a_alpha(a_alpha_base):
@@ -2154,7 +2157,7 @@ class Soave_79_a_alpha(a_alpha_base):
         for i in self.cmps:
             Tr = T/Tcs[i]
             M, N = alpha_coeffs[i]
-            a_alphas.append(a*(1.0 + (1.0 - Tr)*(M + N/Tr)))
+            a_alphas.append(ais[i]*(1.0 + (1.0 - Tr)*(M + N/Tr)))
         return a_alphas
 
     def a_alpha_and_derivatives_vectorized(self, T):
@@ -2166,12 +2169,12 @@ class Soave_79_a_alpha(a_alpha_base):
             M, N = alpha_coeffs[i]
             x0 = Tc_inv = 1.0/Tcs[i]
             x1 = T*x0 - 1.0
-            x2 = Tc*T_inv
+            x2 = Tcs[i]*T_inv
             x3 = M + N*x2
             x4 = N*T_inv*T_inv
 
             a_alphas.append(a*(1.0 - x1*x3))
-            da_alpha_dTs.append(a*(Tc*x1*x4 - x0*x3))
+            da_alpha_dTs.append(a*(Tcs[i]*x1*x4 - x0*x3))
             d2a_alpha_dT2s.append(a*(2.0*x4*(1.0 - x1*x2)))
         return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
 

@@ -976,8 +976,6 @@ def test_TWUPR_quick():
     a_alphas = [3.8069848647566698, -0.006971714700883658, 2.366703486824857e-05]
     a_alphas_fast = eos.a_alpha_and_derivatives_pure(299)
     assert_allclose(a_alphas, a_alphas_fast)
-    a_alphas_slow = eos.a_alpha_and_derivatives_pure(299, quick=False)
-    assert_allclose(a_alphas, a_alphas_slow)
 
     # back calculation for T
     eos = TWUPR(Tc=507.6, Pc=3025000, omega=0.2975, V=0.0001301755417057077, P=1E6)
@@ -1096,9 +1094,6 @@ def test_PRTranslatedConsistent():
     a_alphas = [3.805629668918672, -0.0068587409608788265, 2.1778830141804843e-05]
 
     a_alphas_fast = eos.a_alpha_and_derivatives_pure(299)
-    assert_allclose(a_alphas, a_alphas_fast)
-
-    a_alphas_fast = eos.a_alpha_and_derivatives_pure(299, quick=False)
     assert_allclose(a_alphas, a_alphas_fast)
 
     # back calculation for T
