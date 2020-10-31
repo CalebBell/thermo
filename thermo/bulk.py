@@ -24,7 +24,7 @@ from __future__ import division
 __all__ = ['Bulk', 'BulkSettings', 'default_settings']
 
 from fluids.constants import R, R_inv, atm
-from fluids.two_phase_voidage import (McAdams, Beattie_Whalley, Cicchitti, 
+from fluids.two_phase_voidage import (McAdams, Beattie_Whalley, Cicchitti,
                                       Lin_Kwok, Fourar_Bories, Duckler, gas_liquid_viscosity)
 from chemicals.utils import (log, exp, phase_identification_parameter,
                           isothermal_compressibility, isobaric_expansion,
@@ -75,7 +75,7 @@ AS_ONE_LIQUID = 'as one liquid' # Calculate a transport property as if there was
 AS_ONE_GAS = 'as one gas' # Calculate a transport property as if there was one gas phase and liquids or solids
 
 MU_LL_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED,
-                 AS_ONE_LIQUID, 
+                 AS_ONE_LIQUID,
                  LOG_PROP_MOLE_WEIGHTED, LOG_PROP_MASS_WEIGHTED, LOG_PROP_VOLUME_WEIGHTED,
                  POWER_PROP_MOLE_WEIGHTED, POWER_PROP_MASS_WEIGHTED, POWER_PROP_VOLUME_WEIGHTED
                  ]
@@ -98,11 +98,11 @@ ViSCOSITY_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED]
 THERMAL_CONDUCTIVIVTY_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED]
 
 
-__all__.extend(['MOLE_WEIGHTED', 'MASS_WEIGHTED', 'VOLUME_WEIGHTED', 
+__all__.extend(['MOLE_WEIGHTED', 'MASS_WEIGHTED', 'VOLUME_WEIGHTED',
                 'LOG_PROP_MOLE_WEIGHTED', 'LOG_PROP_MASS_WEIGHTED', 'LOG_PROP_VOLUME_WEIGHTED',
                 'POWER_PROP_MOLE_WEIGHTED', 'POWER_PROP_MASS_WEIGHTED', 'POWER_PROP_VOLUME_WEIGHTED',
                 'AS_ONE_GAS', 'AS_ONE_LIQUID',
-                'BEATTIE_WHALLEY_MU_VL', 'MCADAMS_MU_VL','CICCHITTI_MU_VL', 
+                'BEATTIE_WHALLEY_MU_VL', 'MCADAMS_MU_VL','CICCHITTI_MU_VL',
                 'LUN_KWOK_MU_VL', 'FOURAR_BORIES_MU_VL', 'DUCKLER_MU_VL',
                 ])
 
@@ -120,10 +120,10 @@ from thermo.phase_identification import VL_ID_PIP, S_ID_D2P_DVDT
 from thermo.phase_identification import DENSITY_MASS, PROP_SORT, WATER_NOT_SPECIAL
 
 class BulkSettings(object):
-    def __init__(self, dP_dT=MOLE_WEIGHTED, dP_dV=MOLE_WEIGHTED, 
-                 d2P_dV2=MOLE_WEIGHTED, d2P_dT2=MOLE_WEIGHTED, 
+    def __init__(self, dP_dT=MOLE_WEIGHTED, dP_dV=MOLE_WEIGHTED,
+                 d2P_dV2=MOLE_WEIGHTED, d2P_dT2=MOLE_WEIGHTED,
                  d2P_dTdV=MOLE_WEIGHTED, mu=MASS_WEIGHTED, k=MASS_WEIGHTED,
-                 
+
                  mu_LL=LOG_PROP_MASS_WEIGHTED, mu_LL_power_exponent=0.4,
                  mu_VL=MCADAMS_MU_VL, mu_VL_power_exponent=0.4,
                  c=MOLE_WEIGHTED,
@@ -132,7 +132,7 @@ class BulkSettings(object):
                  T_standard=288.7055555555555, P_standard=atm,
                  T_liquid_volume_ref=298.15,
                  T_gas_ref=288.15, P_gas_ref=atm,
-                 
+
                  VL_ID=VL_ID_PIP, VL_ID_settings=None,
                  S_ID=S_ID_D2P_DVDT, S_ID_settings=None,
 
@@ -140,11 +140,11 @@ class BulkSettings(object):
                  liquid_sort_method=PROP_SORT,
                  liquid_sort_cmps=[], solid_sort_cmps=[],
                  liquid_sort_cmps_neg=[], solid_sort_cmps_neg=[],
-                 liquid_sort_prop=DENSITY_MASS, 
+                 liquid_sort_prop=DENSITY_MASS,
                  solid_sort_prop=DENSITY_MASS,
                  phase_sort_higher_first=True,
                  water_sort=WATER_NOT_SPECIAL,
-                 
+
                  ):
         self.dP_dT = dP_dT
         self.dP_dV = dP_dV
@@ -156,7 +156,7 @@ class BulkSettings(object):
         self.mu_LL_power_exponent = mu_LL_power_exponent
         self.mu_VL = mu_VL
         self.mu_VL_power_exponent = mu_VL_power_exponent
-        
+
         self.k = k
         self.c = c
         self.T_normal = T_normal
@@ -164,36 +164,36 @@ class BulkSettings(object):
         self.T_standard = T_standard
         self.P_standard = P_standard
         self.T_liquid_volume_ref = T_liquid_volume_ref
-        
+
         self.T_gas_ref = T_gas_ref
         self.P_gas_ref = P_gas_ref
-        
+
         self.isobaric_expansion = isobaric_expansion
         self.kappa = kappa
         self.JT = JT
         self.VL_ID = VL_ID
         self.VL_ID_settings = VL_ID_settings
-        
+
         self.S_ID = S_ID
         self.S_ID_settings = S_ID_settings
-        
-        
+
+
         # These are all lists of lists; can be any number; each has booleans,
         # length number of components
         self.liquid_sort_cmps = liquid_sort_cmps
         self.liquid_sort_cmps_neg = liquid_sort_cmps_neg
         self.solid_sort_cmps = solid_sort_cmps
         self.solid_sort_cmps_neg = solid_sort_cmps_neg
-        
+
         self.liquid_sort_prop = liquid_sort_prop
         self.solid_sort_prop = solid_sort_prop
-        
+
         self.phase_sort_higher_first = phase_sort_higher_first
         self.water_sort = water_sort
-        
+
         self.solid_sort_method = solid_sort_method
         self.liquid_sort_method = liquid_sort_method
-        
+
         self.phase_sort_higher_first = phase_sort_higher_first
 
 default_settings = BulkSettings()
@@ -208,7 +208,7 @@ class Bulk(Phase):
         self.N = N = len(zs)
         self.cmps = range(N)
         self.state = state
-    
+
 
 
     @property
@@ -223,7 +223,7 @@ class Bulk(Phase):
         phase_fractions = self.phase_fractions
         phase_count = len(phase_fractions)
         result = self.result
-        
+
         if phase_count == 1:
             self._mu = mu = self.phases[0].mu()
             return mu
@@ -240,7 +240,7 @@ class Bulk(Phase):
                     betas = self.betas_mass
                 elif method in volume_methods:
                     betas = self.betas_volume
-                
+
                 mu = 0.0
                 if method in linear_methods:
                     for i in range(len(self.phase_fractions)):
@@ -256,8 +256,8 @@ class Bulk(Phase):
                     mu = exp(mu)
             self._mu = mu
             return mu
-        
-        
+
+
         method = self.settings.mu_VL
         if method == AS_ONE_LIQUID:
             self._mu = mu = self.correlations.ViscosityLiquidMixture.mixture_property(self.T, self.P, self.zs, self.ws())
@@ -265,13 +265,13 @@ class Bulk(Phase):
         elif method == AS_ONE_GAS:
             self._mu = mu = self.correlations.ViscosityGasMixture.mixture_property(self.T, self.P, self.zs, self.ws())
             return mu
-        
+
         mug = result.gas.mu()
         if phase_count == 2:
             mul = result.liquids[0].mu()
         else:
             mul = result.liquid_bulk.mu()
-            
+
         if method in MU_VL_CORRELATIONS_SET:
             x = result.betas_mass[0]
             rhog = result.gas.rho_mass()
@@ -279,7 +279,7 @@ class Bulk(Phase):
                 rhol = result.liquids[0].rho_mass()
             else:
                 rhol = result.liquid_bulk.rho_mass()
-            
+
             mu = gas_liquid_viscosity(x, mul, mug, rhol, rhog, Method=method)
         else:
             mus = [mug, mul]
@@ -290,7 +290,7 @@ class Bulk(Phase):
                 betas = self.betas_mass_states[:2]
             elif method in volume_methods:
                 betas = self.betas_volume_states[:2]
-                
+
             if method in linear_methods:
                 mu = betas[0]*mus[0] + betas[1]*mus[1]
             elif method in prop_power_methods:
@@ -300,9 +300,9 @@ class Bulk(Phase):
                 mu = exp(betas[0]*log(mus[0]) + betas[1]*log(mus[1]))
         self._mu = mu
         return mu
-            
-            
-                
+
+
+
     @property
     def betas_mass(self):
         betas = self.phase_fractions
@@ -313,13 +313,13 @@ class Bulk(Phase):
             tot += MWs_phases[i]*betas[i]
         tot_inv = 1.0/tot
         return [betas[i]*MWs_phases[i]*tot_inv for i in phase_iter]
-    
+
     @property
     def betas_volume(self):
         betas = self.phase_fractions
         phase_iter = range(len(betas))
         Vs_phases = [i.V() for i in self.phases]
-        
+
         tot = 0.0
         for i in phase_iter:
             tot += Vs_phases[i]*betas[i]
@@ -334,35 +334,35 @@ class Bulk(Phase):
         for i in range(len(MWs)):
             MW += zs[i]*MWs[i]
         return MW
-        
+
     def V(self):
         # Is there a point to anything else?
         try:
             return self._V
         except AttributeError:
             pass
-        
+
         betas, phases = self.phase_fractions, self.phases
         V = 0.0
         for i in range(len(betas)):
             V += betas[i]*phases[i].V()
         self._V = V
         return V
-    
+
     def V_iter(self, force=False):
         betas, phases = self.phase_fractions, self.phases
         V = 0.0
         for i in range(len(betas)):
             V += betas[i]*phases[i].V_iter(force)
         return V
-    
-    
+
+
     def Cp(self):
         try:
             return self._Cp
         except AttributeError:
             pass
-        
+
         betas, phases = self.phase_fractions, self.phases
         Cp = 0.0
         for i in range(len(betas)):
@@ -375,7 +375,7 @@ class Bulk(Phase):
             return self._H
         except AttributeError:
             pass
-        
+
         betas, phases = self.phase_fractions, self.phases
         H = 0.0
         for i in range(len(betas)):
@@ -388,20 +388,20 @@ class Bulk(Phase):
             return self._S
         except AttributeError:
             pass
-        
+
         betas, phases = self.phase_fractions, self.phases
         S = 0.0
         for i in range(len(betas)):
             S += betas[i]*phases[i].S()
         self._S = S
         return S
-    
+
     def dH_dT(self):
         try:
             return self._dH_dT
         except AttributeError:
             pass
-        
+
         betas, phases = self.phase_fractions, self.phases
         dH_dT = 0.0
         for i in range(len(betas)):
@@ -414,7 +414,7 @@ class Bulk(Phase):
             return self._dH_dP
         except AttributeError:
             pass
-        
+
         betas, phases = self.phase_fractions, self.phases
         dH_dP = 0.0
         for i in range(len(betas)):
@@ -427,7 +427,7 @@ class Bulk(Phase):
             return self._dS_dP
         except AttributeError:
             pass
-        
+
         betas, phases = self.phase_fractions, self.phases
         dS_dP = 0.0
         for i in range(len(betas)):
@@ -440,7 +440,7 @@ class Bulk(Phase):
             return self._dS_dT
         except AttributeError:
             pass
-        
+
         betas, phases = self.phase_fractions, self.phases
         dS_dT = 0.0
         for i in range(len(betas)):
@@ -453,7 +453,7 @@ class Bulk(Phase):
             return self._dG_dT
         except AttributeError:
             pass
-        
+
         betas, phases = self.phase_fractions, self.phases
         dG_dT = 0.0
         for i in range(len(betas)):
@@ -466,7 +466,7 @@ class Bulk(Phase):
             return self._dG_dP
         except AttributeError:
             pass
-        
+
         betas, phases = self.phase_fractions, self.phases
         dG_dP = 0.0
         for i in range(len(betas)):
@@ -479,7 +479,7 @@ class Bulk(Phase):
             return self._dU_dT
         except AttributeError:
             pass
-        
+
         betas, phases = self.phase_fractions, self.phases
         dU_dT = 0.0
         for i in range(len(betas)):
@@ -492,7 +492,7 @@ class Bulk(Phase):
             return self._dU_dP
         except AttributeError:
             pass
-        
+
         betas, phases = self.phase_fractions, self.phases
         dU_dP = 0.0
         for i in range(len(betas)):
@@ -505,7 +505,7 @@ class Bulk(Phase):
             return self._dA_dT
         except AttributeError:
             pass
-        
+
         betas, phases = self.phase_fractions, self.phases
         dA_dT = 0.0
         for i in range(len(betas)):
@@ -518,20 +518,20 @@ class Bulk(Phase):
             return self._dA_dP
         except AttributeError:
             pass
-        
+
         betas, phases = self.phase_fractions, self.phases
         dA_dP = 0.0
         for i in range(len(betas)):
             dA_dP += betas[i]*phases[i].dA_dP()
         self._dA_dP = dA_dP
         return dA_dP
-    
+
     def H_reactive(self):
         try:
             return self._H_reactive
         except AttributeError:
             pass
-        
+
         betas, phases = self.phase_fractions, self.phases
         H_reactive = 0.0
         for i in range(len(betas)):
@@ -544,7 +544,7 @@ class Bulk(Phase):
             return self._S_reactive
         except AttributeError:
             pass
-        
+
         betas, phases = self.phase_fractions, self.phases
         S_reactive = 0.0
         for i in range(len(betas)):
@@ -557,7 +557,7 @@ class Bulk(Phase):
             return self._dP_dT_frozen
         except AttributeError:
             pass
-        
+
         betas, phases = self.phase_fractions, self.phases
         dP_dT_frozen = 0.0
         for i in range(len(betas)):
@@ -570,7 +570,7 @@ class Bulk(Phase):
             return self._dP_dV_frozen
         except AttributeError:
             pass
-        
+
         betas, phases = self.phase_fractions, self.phases
         dP_dV_frozen = 0.0
         for i in range(len(betas)):
@@ -583,7 +583,7 @@ class Bulk(Phase):
             return self._d2P_dT2_frozen
         except AttributeError:
             pass
-        
+
         betas, phases = self.phase_fractions, self.phases
         d2P_dT2_frozen = 0.0
         for i in range(len(betas)):
@@ -596,7 +596,7 @@ class Bulk(Phase):
             return self._d2P_dV2_frozen
         except AttributeError:
             pass
-        
+
         betas, phases = self.phase_fractions, self.phases
         d2P_dV2_frozen = 0.0
         for i in range(len(betas)):
@@ -609,7 +609,7 @@ class Bulk(Phase):
             return self._d2P_dTdV_frozen
         except AttributeError:
             pass
-        
+
         betas, phases = self.phase_fractions, self.phases
         d2P_dTdV_frozen = 0.0
         for i in range(len(betas)):
@@ -623,11 +623,11 @@ class Bulk(Phase):
             return self._dP_dT_equilibrium
         except AttributeError:
             pass
-        
+
         dP_dT_1 = self.dP_dT_frozen()
         dT = self.T*1e-6
         T2 = self.T + dT
-        
+
         dT_results = self.flasher.flash(T=T2, V=self.V(), zs=self.zs)
 #        dP_dT_2 = dT_results.bulk.dP_dT_frozen()
         dP_dT_equilibrium = (dT_results.P - self.P)/dT
@@ -641,11 +641,11 @@ class Bulk(Phase):
             return self.dP_dT_frozen()
         elif dP_dT_method == EQUILIBRIUM_DERIVATIVE:
             return self.dP_dT_equilibrium()
-        elif dP_dT_method in (MASS_WEIGHTED, MINIMUM_PHASE_PROP, 
+        elif dP_dT_method in (MASS_WEIGHTED, MINIMUM_PHASE_PROP,
                               MAXIMUM_PHASE_PROP):
             phases = self.phases
             dP_dTs = [p.dP_dT() for p in phases]
-            
+
             if dP_dT_method == MASS_WEIGHTED:
                 ws = self.result.betas_mass
                 dP_dT = 0.0
@@ -665,11 +665,11 @@ class Bulk(Phase):
             return self.dP_dV_frozen()
         elif dP_dV_method == EQUILIBRIUM_DERIVATIVE:
             return self.dP_dV_equilibrium()
-        elif dP_dV_method in (MASS_WEIGHTED, MINIMUM_PHASE_PROP, 
+        elif dP_dV_method in (MASS_WEIGHTED, MINIMUM_PHASE_PROP,
                               MAXIMUM_PHASE_PROP):
             phases = self.phases
             dP_dVs = [p.dP_dV() for p in phases]
-            
+
             if dP_dV_method == MASS_WEIGHTED:
                 ws = self.result.betas_mass
                 dP_dV = 0.0
@@ -689,11 +689,11 @@ class Bulk(Phase):
             return self.d2P_dT2_frozen()
         elif d2P_dT2_method == EQUILIBRIUM_DERIVATIVE:
             return self.d2P_dT2_equilibrium()
-        elif d2P_dT2_method in (MASS_WEIGHTED, MINIMUM_PHASE_PROP, 
+        elif d2P_dT2_method in (MASS_WEIGHTED, MINIMUM_PHASE_PROP,
                               MAXIMUM_PHASE_PROP):
             phases = self.phases
             d2P_dT2s = [p.d2P_dT2() for p in phases]
-            
+
             if d2P_dT2_method == MASS_WEIGHTED:
                 ws = self.result.betas_mass
                 d2P_dT2 = 0.0
@@ -713,11 +713,11 @@ class Bulk(Phase):
             return self.d2P_dV2_frozen()
         elif d2P_dV2_method == EQUILIBRIUM_DERIVATIVE:
             return self.d2P_dV2_equilibrium()
-        elif d2P_dV2_method in (MASS_WEIGHTED, MINIMUM_PHASE_PROP, 
+        elif d2P_dV2_method in (MASS_WEIGHTED, MINIMUM_PHASE_PROP,
                               MAXIMUM_PHASE_PROP):
             phases = self.phases
             d2P_dV2s = [p.d2P_dV2() for p in phases]
-            
+
             if d2P_dV2_method == MASS_WEIGHTED:
                 ws = self.result.betas_mass
                 d2P_dV2 = 0.0
@@ -737,11 +737,11 @@ class Bulk(Phase):
             return self.d2P_dTdV_frozen()
         elif d2P_dTdV_method == EQUILIBRIUM_DERIVATIVE:
             return self.d2P_dTdV_equilibrium()
-        elif d2P_dTdV_method in (MASS_WEIGHTED, MINIMUM_PHASE_PROP, 
+        elif d2P_dTdV_method in (MASS_WEIGHTED, MINIMUM_PHASE_PROP,
                               MAXIMUM_PHASE_PROP):
             phases = self.phases
             d2P_dTdVs = [p.d2P_dTdV() for p in phases]
-            
+
             if d2P_dTdV_method == MASS_WEIGHTED:
                 ws = self.result.betas_mass
                 d2P_dTdV = 0.0
@@ -754,19 +754,19 @@ class Bulk(Phase):
                 return max(d2P_dTdVs)
         else:
             raise ValueError("Unspecified error")
-            
-            
+
+
     def isobaric_expansion(self):
         beta_method = self.settings.isobaric_expansion
         if beta_method == EQUILIBRIUM_DERIVATIVE:
             return self.beta_equilibrium()
         elif beta_method == FROM_DERIVATIVE_SETTINGS:
             return isobaric_expansion(self.V(), self.dV_dT())
-        elif beta_method in (MOLE_WEIGHTED, MASS_WEIGHTED, MINIMUM_PHASE_PROP, 
+        elif beta_method in (MOLE_WEIGHTED, MASS_WEIGHTED, MINIMUM_PHASE_PROP,
                              MAXIMUM_PHASE_PROP):
             phases = self.phases
             betas = [p.isobaric_expansion() for p in phases]
-            
+
             if beta_method == MOLE_WEIGHTED:
                 phase_fracs = self.phase_fractions
                 beta = 0.0
@@ -792,11 +792,11 @@ class Bulk(Phase):
             return self.kappa_equilibrium()
         elif kappa_method == FROM_DERIVATIVE_SETTINGS:
             return isobaric_expansion(self.V(), self.dV_dT())
-        elif kappa_method in (MOLE_WEIGHTED, MASS_WEIGHTED, MINIMUM_PHASE_PROP, 
+        elif kappa_method in (MOLE_WEIGHTED, MASS_WEIGHTED, MINIMUM_PHASE_PROP,
                              MAXIMUM_PHASE_PROP):
             phases = self.phases
             kappas = [p.kappa() for p in phases]
-            
+
             if kappa_method == MOLE_WEIGHTED:
                 phase_fracs = self.phase_fractions
                 kappa = 0.0
@@ -822,11 +822,11 @@ class Bulk(Phase):
             return self.Joule_Thomson_equilibrium()
         elif Joule_Thomson_method == FROM_DERIVATIVE_SETTINGS:
             return isobaric_expansion(self.V(), self.dV_dT())
-        elif Joule_Thomson_method in (MOLE_WEIGHTED, MASS_WEIGHTED, MINIMUM_PHASE_PROP, 
+        elif Joule_Thomson_method in (MOLE_WEIGHTED, MASS_WEIGHTED, MINIMUM_PHASE_PROP,
                              MAXIMUM_PHASE_PROP):
             phases = self.phases
             Joule_Thomsons = [p.Joule_Thomson() for p in phases]
-            
+
             if Joule_Thomson_method == MOLE_WEIGHTED:
                 phase_fracs = self.phase_fractions
                 Joule_Thomson = 0.0
@@ -852,11 +852,11 @@ class Bulk(Phase):
             return self.speed_of_sound_equilibrium()
         elif speed_of_sound_method == FROM_DERIVATIVE_SETTINGS:
             return isobaric_expansion(self.V(), self.dV_dT())
-        elif speed_of_sound_method in (MOLE_WEIGHTED, MASS_WEIGHTED, MINIMUM_PHASE_PROP, 
+        elif speed_of_sound_method in (MOLE_WEIGHTED, MASS_WEIGHTED, MINIMUM_PHASE_PROP,
                              MAXIMUM_PHASE_PROP):
             phases = self.phases
             speed_of_sounds = [p.speed_of_sound() for p in phases]
-            
+
             if speed_of_sound_method == MOLE_WEIGHTED:
                 phase_fracs = self.phase_fractions
                 speed_of_sound = 0.0
@@ -958,7 +958,7 @@ class Bulk(Phase):
         S = 0.0
         S -= R*sum([zs[i]*log_zs[i] for i in cmps]) # ideal composition entropy composition
         S -= R*log(P*P_REF_IG_INV)
-        
+
         for i in cmps:
             S += zs[i]*Cpig_integrals_over_T_pure[i]
 

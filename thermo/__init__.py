@@ -144,7 +144,7 @@ __all__ = ['rachford_rice', 'flash_basic', 'chemical', 'chemical_package', 'comb
  'permittivity', 'phase_change', 'phases', 'property_package', 'reaction',
  'refractivity', 'safety', 'solubility', 'interface', 'interaction_parameters',
  'thermal_conductivity', 'triple', 'utils',
- 'vapor_pressure', 'virial', 'viscosity', 'volume', 'acentric', 'coolprop', 
+ 'vapor_pressure', 'virial', 'viscosity', 'volume', 'acentric', 'coolprop',
  'datasheet', 'dippr', 'unifac', 'stream', 'mixture', 'property_package_constants',
  'chemical_utils', 'wilson', 'nrtl', 'uniquac', 'regular_solution',
  'equilibrium', 'phase_identification', 'psychrometrics', 'temperature',
@@ -212,9 +212,9 @@ chemical.__dict__['Mixture'] = mixture.Mixture
 chemical.__dict__['Stream'] = stream.Stream
 # However, they cannot go in thermo.chemical's __all__ or they will appear in the
 # documentation and Sphinx currently has no wat to exclude them
-submodules = [chemical, chemical_package, chemical_utils, coolprop, datasheet, 
+submodules = [chemical, chemical_package, chemical_utils, coolprop, datasheet,
               electrochem, eos, eos_mix, equilibrium, flash, heat_capacity,
-              identifiers, interaction_parameters, interface, joback, law, 
+              identifiers, interaction_parameters, interface, joback, law,
               mixture, nrtl, permittivity, phase_change, phase_identification,
               phases, property_package, property_package_constants, psychrometrics,
               regular_solution, stream, thermal_conductivity, unifac, uniquac, safety,
