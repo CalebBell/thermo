@@ -329,14 +329,14 @@ spelling-store-unknown-words=no
 [BASIC]
 
 # Naming style matching correct argument names.
-argument-naming-style=snake_case
+argument-naming-style=any
 
 # Regular expression matching correct argument names. Overrides argument-
 # naming-style.
 #argument-rgx=
 
 # Naming style matching correct attribute names.
-attr-naming-style=snake_case
+attr-naming-style=any
 
 # Regular expression matching correct attribute names. Overrides attr-naming-
 # style.
@@ -380,7 +380,7 @@ const-naming-style=UPPER_CASE
 docstring-min-length=-1
 
 # Naming style matching correct function names.
-function-naming-style=snake_case
+function-naming-style=any
 
 # Regular expression matching correct function names. Overrides function-
 # naming-style.
@@ -409,7 +409,7 @@ inlinevar-naming-style=any
 #inlinevar-rgx=
 
 # Naming style matching correct method names.
-method-naming-style=snake_case
+method-naming-style=any
 
 # Regular expression matching correct method names. Overrides method-naming-
 # style.
@@ -436,7 +436,7 @@ no-docstring-rgx=^_
 property-classes=abc.abstractproperty
 
 # Naming style matching correct variable names.
-variable-naming-style=snake_case
+variable-naming-style=any
 
 # Regular expression matching correct variable names. Overrides variable-
 # naming-style.
@@ -459,10 +459,10 @@ indent-after-paren=4
 indent-string='    '
 
 # Maximum number of characters on a single line.
-max-line-length=100
+max-line-length=300
 
 # Maximum number of lines in a module.
-max-module-lines=1000
+max-module-lines=10000
 
 # Allow the body of a class to be on the same line as the declaration if body
 # contains single statement.
@@ -555,7 +555,6 @@ max-statements=50
 
 # Minimum number of public methods for a class (see R0903).
 min-public-methods=2
-
 
 [CLASSES]
 
