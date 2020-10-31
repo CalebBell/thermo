@@ -347,7 +347,6 @@ def RK_a_alpha_and_derivatives_vectorized(T, Tcs, ais):
     .. math::
         \frac{d^2 a_i\alpha_i}{dT^2} = \frac{3 a_i}{4 T^{2}\sqrt{\frac{T}{T_{c,i}}}}
 
-
     Parameters
     ----------
     T : float
@@ -362,6 +361,12 @@ def RK_a_alpha_and_derivatives_vectorized(T, Tcs, ais):
     -------
     a_alphas : list[float]
         Pure component `a_alpha` terms in the cubic EOS, [Pa*m^6/mol^2]
+    da_alpha_dTs : list[float]
+        First temperature derivative of pure component `a_alpha`,
+        [Pa*m^6/(mol^2*K)]
+    d2a_alpha_dT2s : list[float]
+        Second temperature derivative of pure component `a_alpha`,
+        [Pa*m^6/(mol^2*K^2)]
 
     Notes
     -----
@@ -447,6 +452,85 @@ def PRSV_a_alphas_vectorized(T, Tcs, ais, kappa0s, kappa1s):
     return a_alphas
 
 def PRSV_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappa0s, kappa1s):
+    r'''Calculates the `a_alpha` terms and their first and second derivative
+    for the Peng-Robinson-Stryjek-Vera
+    equation of state given the critical temperatures `Tcs`, constants `ais`, PRSV
+    parameters `kappa0s` and `kappa1s`.
+
+    .. math::
+        a_i\alpha_i = a_i \left(\left(\kappa_{0} + \kappa_{1} \left(\sqrt{\frac{
+        T}{T_{c,i}}} + 1\right) \left(- \frac{T}{T_{c,i}} + \frac{7}{10}\right)
+        \right) \left(- \sqrt{\frac{T}{T_{c,i}}} + 1\right) + 1\right)^{2}
+
+    .. math::
+        \frac{d a_i\alpha_i}{dT} =a_{i} \left(\left(1 - \sqrt{\frac{T}{T_{c,i}}}
+        \right) \left(\kappa_{0,i} + \kappa_{1,i} \left(\sqrt{\frac{T}{T_{c,i}}}
+        + 1\right) \left(- \frac{T}{T_{c,i}} + \frac{7}{10}\right)\right)
+        + 1\right) \left(2 \left(1 - \sqrt{\frac{T}{T_{c,i}}}\right) \left(
+        - \frac{\kappa_{1,i} \left(\sqrt{\frac{T}{T_{c,i}}} + 1\right)}{T_{c,i}}
+        + \frac{\kappa_{1,i} \sqrt{\frac{T}{T_{c,i}}} \left(- \frac{T}{T_{c,i}}
+        + \frac{7}{10}\right)}{2 T}\right) - \frac{\sqrt{\frac{T}{T_{c,i}}}
+        \left(\kappa_{0,i} + \kappa_{1,i} \left(\sqrt{\frac{T}{T_{c,i}}}
+        + 1\right) \left(- \frac{T}{T_{c,i}} + \frac{7}{10}\right)\right)}{T}
+        \right)
+
+    .. math::
+        \frac{d^2 a_i\alpha_i}{dT^2} = \frac{a_{i} \left(\left(\kappa_{1,i}
+        \left(\sqrt{\frac{T}{T_{c,i}}} - 1\right) \left(\frac{20 \left(\sqrt{
+        \frac{T}{T_{c,i}}} + 1\right)}{T_{c,i}} + \frac{\sqrt{\frac{T}{T_{c,i}}}
+        \left(\frac{10 T}{T_{c,i}} - 7\right)}{T}\right) - \frac{\sqrt{\frac{T}
+        {T_{c,i}}} \left(10 \kappa_{0,i} - \kappa_{1,i} \left(\sqrt{\frac{T}
+        {T_{c,i}}} + 1\right) \left(\frac{10 T}{T_{c,i}} - 7\right)\right)}{T}
+        \right)^{2} - \frac{\sqrt{\frac{T}{T_{c,i}}} \left(\left(10 \kappa_{0,i}
+        - \kappa_{1,i} \left(\sqrt{\frac{T}{T_{c,i}}} + 1\right)
+        \left(\frac{10 T}{T_{c,i}} - 7\right)\right) \left(\sqrt{\frac{T}
+        {T_{c,i}}} - 1\right) - 10\right) \left(\kappa_{1,i} \left(\frac{40}
+        {T_{c,i}} - \frac{\frac{10 T}{T_{c,i}} - 7}{T}\right) \left(\sqrt{
+        \frac{T}{T_{c,i}}} - 1\right) + 2 \kappa_{1,i} \left(\frac{20 \left(
+        \sqrt{\frac{T}{T_{c,i}}} + 1\right)}{T_{c,i}} + \frac{\sqrt{\frac{T}
+        {T_{c,i}}} \left(\frac{10 T}{T_{c,i}} - 7\right)}{T}\right) + \frac{10
+        \kappa_{0,i} - \kappa_{1,i} \left(\sqrt{\frac{T}{T_{c,i}}} + 1\right)
+        \left(\frac{10 T}{T_{c,i}} - 7\right)}{T}\right)}{T}\right)}{200}
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    Tcs : list[float]
+        Critical temperatures of components, [K]
+    ais : list[float]
+        `a` parameters of cubic EOS,
+        :math:`a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}`, [Pa*m^6/mol^2]
+    kappa0s : list[float]
+        `kappa0` parameters of PRSV EOS;
+        the original form uses
+        :math:`\kappa_{0,i} = 0.378893 + 1.4897153\omega_i - 0.17131848\omega_i^2 + 0.0196554\omega_i^3`, [-]
+    kappa1s : list[float]
+        Fit parameters, can be set to 0 if unknown [-]
+
+    Returns
+    -------
+    a_alphas : list[float]
+        Pure component `a_alpha` terms in the cubic EOS, [Pa*m^6/mol^2]
+    da_alpha_dTs : list[float]
+        First temperature derivative of pure component `a_alpha`,
+        [Pa*m^6/(mol^2*K)]
+    d2a_alpha_dT2s : list[float]
+        Second temperature derivative of pure component `a_alpha`,
+        [Pa*m^6/(mol^2*K^2)]
+
+    Notes
+    -----
+
+    Examples
+    --------
+    >>> Tcs = [507.6]
+    >>> ais = [2.6923169620277805]
+    >>> kappa0s = [0.8074380841890093]
+    >>> kappa1s = [0.05104]
+    >>> PRSV_a_alpha_and_derivatives_vectorized(299.0, Tcs=Tcs, ais=ais, kappa0s=kappa0s, kappa1s=kappa1s)
+    ([3.8129856983], [-0.0069769034748], [2.00265608110e-05])
+    '''
     sqrtT = T**0.5
     T_inv = 1.0/T
     N = len(Tcs)
@@ -454,7 +538,7 @@ def PRSV_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappa0s, kappa1s):
     da_alpha_dTs = [0.0]*N
     d2a_alpha_dT2s = [0.0]*N
     for i in range(N):
-        Tc_inv_root = Tcs[i]**-0.5
+        Tc_inv_root = 1.0/sqrt(Tcs[i])
         Tc_inv = Tc_inv_root*Tc_inv_root
 
         x1 = T*Tc_inv
