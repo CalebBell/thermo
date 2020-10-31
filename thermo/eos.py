@@ -58,7 +58,8 @@ from thermo.eos_volume import (volume_solutions_mpmath, volume_solutions_mpmath_
                                volume_solutions_Cardano, volume_solutions_numpy,
                                volume_solutions_ideal)
 from thermo.eos_alpha_functions import (Poly_a_alpha, Twu91_a_alpha, Mathias_Copeman_a_alpha,
-                                    TwuSRK95_a_alpha, TwuPR95_a_alpha, Soave_79_a_alpha)
+                                    TwuSRK95_a_alpha, TwuPR95_a_alpha, Soave_79_a_alpha,
+                                    TWU_a_alpha_common)
 
 R2 = R*R
 R_2 = 0.5*R
@@ -8326,6 +8327,20 @@ class TWUPR(TwuPR95_a_alpha, PR):
 
         self.solve()
 
+    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
+        r'''Method to calculate `a_alpha` and its first and second
+        derivatives for this EOS. Returns `a_alpha`, `da_alpha_dT`, and
+        `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more
+        documentation. Uses the set values of `Tc`, `omega`, and `a`.
+
+        Because of its similarity for the TWUSRK EOS, this has been moved to an
+        external `TWU_a_alpha_common` function. See it for further
+        documentation.
+        '''
+        return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=full, quick=quick, method='PR')
+
+    def a_alpha_pure(self, T):
+        return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=False, quick=True, method='PR')
 
 class TWUSRK(TwuSRK95_a_alpha, SRK):
     r'''Class for solving the Soave-Redlich-Kwong cubic

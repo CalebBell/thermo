@@ -502,8 +502,7 @@ def PRSV_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappa0s, kappa1s):
         `a` parameters of cubic EOS,
         :math:`a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}`, [Pa*m^6/mol^2]
     kappa0s : list[float]
-        `kappa0` parameters of PRSV EOS;
-        the original form uses
+        `kappa0` parameters of PRSV EOS; the original form uses
         :math:`\kappa_{0,i} = 0.378893 + 1.4897153\omega_i - 0.17131848\omega_i^2 + 0.0196554\omega_i^3`, [-]
     kappa1s : list[float]
         Fit parameters, can be set to 0 if unknown [-]
@@ -595,8 +594,7 @@ def PRSV2_a_alphas_vectorized(T, Tcs, ais, kappa0s, kappa1s, kappa2s, kappa3s):
         `a` parameters of cubic EOS,
         :math:`a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}`, [Pa*m^6/mol^2]
     kappa0s : list[float]
-        `kappa0` parameters of PRSV EOS;
-        the original form uses
+        `kappa0` parameters of PRSV EOS; the original form uses
         :math:`\kappa_{0,i} = 0.378893 + 1.4897153\omega_i - 0.17131848\omega_i^2 + 0.0196554\omega_i^3`, [-]
     kappa1s : list[float]
         Fit parameters, can be set to 0 if unknown [-]
@@ -769,7 +767,7 @@ def TWU_a_alpha_common(T, Tc, omega, a, full=True, quick=True, method='PR'):
             L0, M0, N0 = 0.441411, 6.500018, -0.20
             L1, M1, N1 = 0.032580,  1.289098, -8.0
     else:
-        raise Exception('Only `PR` and `SRK` are accepted as method')
+        raise ValueError('Only `PR` and `SRK` are accepted as method')
 
     if not full:
         alpha0 = Tr**(N0*(M0-1.))*exp(L0*(1.-Tr**(N0*M0)))
@@ -1739,19 +1737,6 @@ class TwuSRK95_a_alpha(a_alpha_base):
 
 
 class TwuPR95_a_alpha(a_alpha_base):
-    def a_alpha_and_derivatives_pure(self, T, full=True, quick=True):
-        r'''Method to calculate `a_alpha` and its first and second
-        derivatives for this EOS. Returns `a_alpha`, `da_alpha_dT`, and
-        `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more
-        documentation. Uses the set values of `Tc`, `omega`, and `a`.
-
-        Because of its similarity for the TWUSRK EOS, this has been moved to an
-        external `TWU_a_alpha_common` function. See it for further
-        documentation.
-        '''
-        return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=full, quick=quick, method='PR')
-    def a_alpha_pure(self, T):
-        return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=False, quick=True, method='PR')
 
     def a_alphas_vectorized(self, T):
         Tcs, omegas, ais = self.Tcs, self.omegas, self.ais
