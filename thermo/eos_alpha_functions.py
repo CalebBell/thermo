@@ -37,7 +37,7 @@ from chemicals.utils import log, exp, sqrt, copysign
 
 def PR_a_alphas_vectorized(T, Tcs, ais, kappas):
     r'''Calculates the `a_alpha` terms for the Peng-Robinson equation of state
-    given the critcal temperatures `Tcs`, critical constants `ais`, and
+    given the critical temperatures `Tcs`, critical constants `ais`, and
     `kappas`.
 
     .. math::
@@ -88,7 +88,7 @@ def PR_a_alphas_vectorized(T, Tcs, ais, kappas):
 def PR_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappas):
     r'''Calculates the `a_alpha` terms and their first two temperature
     derivatives for the Peng-Robinson equation of state
-    given the critcal temperatures `Tcs`, critical constants `ais`, and
+    given the critical temperatures `Tcs`, critical constants `ais`, and
     `kappas`.
 
     .. math::
@@ -161,7 +161,7 @@ def PR_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappas):
 
 def SRK_a_alphas_vectorized(T, Tcs, ais, ms):
     r'''Calculates the `a_alpha` terms for the SRK equation of state
-    given the critcal temperatures `Tcs`, critical constants `ais`, and
+    given the critical temperatures `Tcs`, critical constants `ais`, and
     `kappas`.
 
     .. math::
@@ -211,7 +211,7 @@ def SRK_a_alphas_vectorized(T, Tcs, ais, ms):
 def SRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, ms):
     r'''Calculates the `a_alpha` terms and their first and second temperature
     derivatives for the SRK equation of state
-    given the critcal temperatures `Tcs`, critical constants `ais`, and
+    given the critical temperatures `Tcs`, critical constants `ais`, and
     `kappas`.
 
     .. math::
@@ -285,19 +285,99 @@ def SRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, ms):
     return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
 
 def RK_a_alphas_vectorized(T, Tcs, ais):
+    r'''Calculates the `a_alpha` terms for the RK equation of state
+    given the critical temperatures `Tcs`, and `a` parameters `ais`.
+
+    .. math::
+         a_i\alpha_i = \frac{a_i}{\sqrt{\frac{T}{T_{c,i}}}}
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    Tcs : list[float]
+        Critical temperatures of components, [K]
+    ais : list[float]
+        `a` parameters of cubic EOS,
+        :math:`a_i=\frac{0.42748\cdot R^2(T_{c,i})^{2}}{P_{c,i}}`, [Pa*m^6/mol^2]
+
+    Returns
+    -------
+    a_alphas : list[float]
+        Pure component `a_alpha` terms in the cubic EOS, [Pa*m^6/mol^2]
+    da_alpha_dTs : list[float]
+        First temperature derivative of pure component `a_alpha`,
+        [Pa*m^6/(mol^2*K)]
+    d2a_alpha_dT2s : list[float]
+        Second temperature derivative of pure component `a_alpha`,
+        [Pa*m^6/(mol^2*K^2)]
+
+    Notes
+    -----
+    A mixing rule must be used on the `a_alphas` to get the overall `a_alpha`
+    term.
+
+    Examples
+    --------
+    >>> Tcs = [469.7, 507.4, 540.3]
+    >>> ais = [1.9351940385541342, 2.525982668162287, 3.1531036708059315]
+    >>> RK_a_alphas_vectorized(322.29, Tcs=Tcs, ais=ais)
+    [2.3362073307, 3.16943743055, 4.0825575798]
+    '''
     N = len(ais)
     a_alphas = [0.0]*N
-    T_root_inv = T**-0.5
+    T_root_inv = 1.0/sqrt(T)
     for i in range(N):
-        a_alphas[i] = ais[i]*Tcs[i]**0.5*T_root_inv
+        a_alphas[i] = ais[i]*sqrt(Tcs[i])*T_root_inv
     return a_alphas
 
 def RK_a_alpha_and_derivatives_vectorized(T, Tcs, ais):
+    r'''Calculates the `a_alpha` terms and their first and second temperature
+    derivatives for the RK equation of state
+    given the critical temperatures `Tcs`, and `a` parameters `ais`.
+
+    .. math::
+         a_i\alpha_i = \frac{a_i}{\sqrt{\frac{T}{T_{c,i}}}}
+
+    .. math::
+        \frac{d a_i\alpha_i}{dT} = - \frac{a_i}{2 T\sqrt{\frac{T}{T_{c,i}}}}
+
+    .. math::
+        \frac{d^2 a_i\alpha_i}{dT^2} = \frac{3 a_i}{4 T^{2}\sqrt{\frac{T}{T_{c,i}}}}
+
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    Tcs : list[float]
+        Critical temperatures of components, [K]
+    ais : list[float]
+        `a` parameters of cubic EOS,
+        :math:`a_i=\frac{0.42748\cdot R^2(T_{c,i})^{2}}{P_{c,i}}`, [Pa*m^6/mol^2]
+
+    Returns
+    -------
+    a_alphas : list[float]
+        Pure component `a_alpha` terms in the cubic EOS, [Pa*m^6/mol^2]
+
+    Notes
+    -----
+    A mixing rule must be used on the `a_alphas` to get the overall `a_alpha`
+    term.
+
+    Examples
+    --------
+    >>> Tcs = [469.7, 507.4, 540.3]
+    >>> ais = [1.9351940385541342, 2.525982668162287, 3.1531036708059315]
+    >>> RK_a_alpha_and_derivatives_vectorized(322.29, Tcs=Tcs, ais=ais)
+    ([2.3362073307, 3.16943743055, 4.08255757984], [-0.00362438693525, -0.0049170582868, -0.00633367088622], [1.6868597855e-05, 2.28849403652e-05, 2.94781294155e-05])
+    '''
     N = len(ais)
     a_alphas = [0.0]*N
     da_alpha_dTs = [0.0]*N
     d2a_alpha_dT2s = [0.0]*N
-    T_root_inv = T**-0.5
+    T_root_inv = 1.0/sqrt(T)
     T_inv = T_root_inv*T_root_inv
     T_15_inv = T_inv*T_root_inv
     T_25_inv = T_inv*T_15_inv
@@ -305,7 +385,7 @@ def RK_a_alpha_and_derivatives_vectorized(T, Tcs, ais):
     x1 = 0.75*T_25_inv
 
     for i in range(N):
-        Tc_05 = Tcs[i]**0.5
+        Tc_05 = sqrt(Tcs[i])
         aiTc_05 = ais[i]*Tc_05
         a_alphas[i] = aiTc_05*T_root_inv
         da_alpha_dTs[i] = aiTc_05*x0
