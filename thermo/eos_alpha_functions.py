@@ -808,12 +808,51 @@ def PRSV2_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappa0s, kappa1s, kapp
     return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
 
 def APISRK_a_alphas_vectorized(T, Tcs, ais, S1s, S2s):
+    r'''Calculates the `a_alpha` terms for the API SRK equation of state
+    given the critical temperatures `Tcs`, constants `ais`, and
+    API parameters `S1s` and `S2s`.
+
+    .. math::
+        a_i\alpha(T)_i = a_i \left[1 + S_{1,i}\left(1-\sqrt{T_{r,i}}\right)
+         + S_{2,i} \frac{1- \sqrt{T_{r,i}}}{\sqrt{T_{r,i}}}\right]^2
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    Tcs : list[float]
+        Critical temperatures of components, [K]
+    ais : list[float]
+        `a` parameters of cubic EOS,
+        :math:`a_i=\frac{0.42748\cdot R^2(T_{c,i})^{2}}{P_{c,i}}`, [Pa*m^6/mol^2]
+    S1s : list[float]
+        `S1` parameters of API SRK EOS; regressed or estimated with
+        :math:`S_{1,i} = 0.48508 + 1.55171\omega_i - 0.15613\omega_i^2`, [-]
+    S2s : list[float]
+        `S2` parameters of API SRK EOS; regressed or set to zero, [-]
+
+    Returns
+    -------
+    a_alphas : list[float]
+        Pure component `a_alpha` terms in the cubic EOS, [Pa*m^6/mol^2]
+
+    Notes
+    -----
+
+    Examples
+    --------
+    >>> APISRK_a_alphas_vectorized(T=430.0, Tcs=[514.0], ais=[1.2721974560809934],  S1s=[1.678665], S2s=[-0.216396])
+    [1.60465652994097]
+    '''
     N = len(Tcs)
-    sqrtT = T**0.5
+    sqrtT = sqrt(T)
     a_alphas = [0.0]*N
     for i in range(N):
-        a_alpha = ais[i]*(S1s[i]*(-(T/Tcs[i])**0.5 + 1.) + S2s[i]*(-(T/Tcs[i])**0.5 + 1)*(T/Tcs[i])**-0.5 + 1)**2
-        a_alphas[i] = a_alpha
+        rtTr = 1.0/sqrt(Tcs[i])
+        x0 = (-rtTr*sqrtT + 1.)
+        x1 = 1.0/(rtTr*sqrtT)
+        x2 = (S1s[i]*x0 + S2s[i]*(x0)*x1 + 1.0)
+        a_alphas[i] = ais[i]*x2*x2
     return a_alphas
 
 def APISRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, S1s, S2s):

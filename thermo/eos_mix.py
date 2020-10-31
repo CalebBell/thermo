@@ -10198,9 +10198,7 @@ class APISRKMIX(SRKMIX, APISRK):
             Second temperature derivative of coefficient calculated by
             EOS-specific method, [J^2/mol^2/Pa/K**2]
         '''
-#        if full:
         return APISRK_a_alpha_and_derivatives_vectorized(T, self.Tcs, self.ais, self.S1s, self.S2s)
-#        return APISRK_a_alphas_vectorized(T, self.Tcs, self.ais, self.S1s, self.S2s)
 
 
     def P_max_at_V(self, V):
