@@ -209,8 +209,63 @@ def SRK_a_alphas_vectorized(T, Tcs, ais, ms):
     return a_alphas
 
 def SRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, ms):
+    r'''Calculates the `a_alpha` terms and their first and second temperature
+    derivatives for the SRK equation of state
+    given the critcal temperatures `Tcs`, critical constants `ais`, and
+    `kappas`.
+
+    .. math::
+        a_i\alpha(T)_i = \left[1 + m_i\left(1 - \sqrt{\frac{T}{T_{c,i}}}
+        \right)\right]^2
+
+    .. math::
+        \frac{d a_i\alpha_i}{dT} = \frac{a_i m_i}{T} \sqrt{\frac{T}{T_{c,i}}}
+         \left(m_i \left(\sqrt{\frac{T}{T{c,i}}} - 1\right) - 1\right)
+
+    .. math::
+        \frac{d^2 a_i\alpha_i}{dT^2} = \frac{a_i m_i \sqrt{\frac{T}{T_{c,i}}}}
+        {2 T^{2}} \left(m_i + 1\right)
+
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    Tcs : list[float]
+        Critical temperatures of components, [K]
+    ais : list[float]
+        `a` parameters of cubic EOS,
+        :math:`a_i=\frac{0.42748\cdot R^2(T_{c,i})^{2}}{P_{c,i}}`, [Pa*m^6/mol^2]
+    ms : list[float]
+        `m` parameters of SRK EOS; formulas vary, but
+        the original form uses
+        :math:`m_i = 0.480 + 1.574\omega_i - 0.176\omega_i^2`, [-]
+
+    Returns
+    -------
+    a_alphas : list[float]
+        Pure component `a_alpha` terms in the cubic EOS, [Pa*m^6/mol^2]
+    da_alpha_dTs : list[float]
+        First temperature derivative of pure component `a_alpha`,
+        [Pa*m^6/(mol^2*K)]
+    d2a_alpha_dT2s : list[float]
+        Second temperature derivative of pure component `a_alpha`,
+        [Pa*m^6/(mol^2*K^2)]
+
+    Notes
+    -----
+    A mixing rule must be used on the `a_alphas` to get the overall `a_alpha`
+    term.
+
+    Examples
+    --------
+    >>> Tcs = [469.7, 507.4, 540.3]
+    >>> ais = [1.9351940385541342, 2.525982668162287, 3.1531036708059315]
+    >>> ms = [0.8610138239999999, 0.9436976, 1.007889024]
+    >>> SRK_a_alpha_and_derivatives_vectorized(322.29, Tcs=Tcs, ais=ais, ms=ms)
+    ([2.549485814512, 3.586598245260, 4.76614806648], [-0.004915469296196, -0.00702410108423, -0.00936320876945], [1.236441916324e-05, 1.77752796719e-05, 2.37231823137e-05])
+    '''
     N = len(Tcs)
-    sqrtnT = T**-0.5
+    sqrtnT = 1.0/sqrt(T)
     sqrtT = T*sqrtnT
     T_inv = sqrtnT*sqrtnT
     x10 = 0.5*T_inv*T_inv
@@ -220,7 +275,7 @@ def SRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, ms):
     d2a_alpha_dT2s = [0.0]*N
 
     for i in range(N):
-        x1 = sqrtT*Tcs[i]**-0.5
+        x1 = sqrtT/sqrt(Tcs[i])
         x2 = ais[i]*ms[i]*x1
         x3 = ms[i]*(1.0 - x1) + 1.
 

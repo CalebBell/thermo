@@ -8200,9 +8200,7 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
             Second temperature derivative of coefficient calculated by
             EOS-specific method, [J^2/mol^2/Pa/K**2]
         '''
-#        if full:
         return SRK_a_alpha_and_derivatives_vectorized(T, self.Tcs, self.ais, self.ms)
-#        return SRK_a_alphas_vectorized(T, self.Tcs, self.ais, self.ms)
 
     def fugacity_coefficients(self, Z, zs):
         r'''Literature formula for calculating fugacity coefficients for each
