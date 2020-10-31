@@ -32,15 +32,8 @@ __all__ = ['Poly_a_alpha', 'TwuSRK95_a_alpha', 'TwuPR95_a_alpha',
 ]
 
 
-from cmath import atanh as catanh, log as clog
-from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
-                             roots_cubic_a1, numpy as np, inf, polyder, chebder, 
-                             trunc_exp, secant, linspace, logspace,
-                             horner, horner_and_der, horner_and_der2, derivative,
-                             roots_cubic_a2, isclose, NoSolutionError,
-                             roots_quartic)
-from fluids.constants import R
-from chemicals.utils import log, log10, exp, sqrt, copysign
+from fluids.numerics import (horner, horner_and_der2)
+from chemicals.utils import log, exp, sqrt, copysign
 
 def PR_a_alphas_vectorized(T, Tcs, ais, kappas):
     r'''Calculates the `a_alpha` terms for the Peng-Robinson equation of state
